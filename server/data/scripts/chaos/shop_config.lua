@@ -128,6 +128,34 @@ local RUNE_PACKS = {
 	{2261, {100, 250}, "Removes a magic field."} -- Dispel
 }
 local okRunes, RUNES = pcall(dofile, "data/lib/chaos_rune_supply.lua")
+-- Potion packs (owner 2026-10-23: "coloque pots melhores a venda na store e packs maiores também"). The coins of a 100
+-- pack are kept as they were (15-30); the ultimate mana and spirit potions (level 130) join at 25. Bigger packs take
+-- the rune packs' discounts: 250 5% and 500 10% off the 100 pack, rounded up. The keys of the 100 packs stay
+-- "item:<id>x100". Delivery like every store item: stacks of 100 into the purse (server/README.md "Delivery to the purse").
+local POTION_PACKS = {
+	-- {potion id, coins for 100, plural name, what it does}
+	{7590, 15, "Great Mana Potions", "Restores a large amount of mana."},
+	{8472, 15, "Great Spirit Potions", "Restores health and mana."},
+	{8473, 20, "Ultimate Health Potions", "Restores a large amount of health."},
+	{26029, 25, "Ultimate Mana Potions", "Restores a huge amount of mana. Level 130."},
+	{26030, 25, "Ultimate Spirit Potions", "Restores a lot of health and mana. Level 130."},
+	{26031, 30, "Supreme Health Potions", "Restores a huge amount of health. Level 200."}
+}
+local POTION_SIZES = {100, 250, 500}
+
+local function potionOffers()
+	local out = {}
+	for _, p in ipairs(POTION_PACKS) do
+		for _, n in ipairs(POTION_SIZES) do
+			local pct = RUNE_DISCOUNT[n] or 0
+			local cost = math.ceil(p[2] * n / 100 * (100 - pct) / 100)
+			out[#out + 1] = {kind = "item", id = p[1], count = n, cost = cost,
+				name = n .. " " .. p[3], description = p[4] .. (pct > 0 and (" " .. pct .. "% off the 100 pack.") or "")}
+		end
+	end
+	return out
+end
+
 local function runeOffers()
 	local out = {}
 	if not okRunes or type(RUNES) ~= "table" then
@@ -348,12 +376,7 @@ local cfg = {
 		{
 			-- the Supplies category of before (the Backpack of Holding moved to Convenience)
 			name = "Potions", parent = P_CONSUMABLES, icon = {item = 7590, count = 100},
-			offers = {
-				{kind = "item", id = 7590, count = 100, cost = 15, name = "100 Great Mana Potions", description = "Restores a large amount of mana."},
-				{kind = "item", id = 8472, count = 100, cost = 15, name = "100 Great Spirit Potions", description = "Restores health and mana."},
-				{kind = "item", id = 8473, count = 100, cost = 20, name = "100 Ultimate Health Potions", description = "Restores a large amount of health."},
-				{kind = "item", id = 26031, count = 100, cost = 30, name = "100 Supreme Health Potions", description = "Restores a huge amount of health."}
-			}
+			offers = potionOffers()
 		},
 		{
 			-- rune packs (RUNE_PACKS above): the Reaper's, Searing Orb and Grand Mending 100s of Supplies moved here

@@ -392,7 +392,7 @@
 		"spell.count": 111,
 		"store.categories": 36,
 		"store.cosmetic": 627,
-		"store.offers": 741,
+		"store.offers": 755,
 		"store.service": 26,
 		"store.unlockCost": 0,
 		"support.count": 20,
@@ -39177,7 +39177,7 @@
 								["XP Boosts", "2", "50-225", "Boost"],
 								["Blessings", "2", "60-750", "Boost, Service"],
 								["World Buffs", "4", "250-300", "Boost"],
-								["Potions", "4", "15-30", "Consumable item"],
+								["Potions", "18", "15-135", "Consumable item"],
 								["Runes", "29", "3-108", "Consumable item"],
 								["Training", "21", "25-450", "Consumable item"],
 								["Convenience", "7", "50-400", "Convenience"],
@@ -39256,7 +39256,7 @@
 								["Chaos Pact", "1"],
 								["Season pass", "4"],
 								["Boost", "7"],
-								["Consumable item", "54"],
+								["Consumable item", "68"],
 								["Crafting item", "3"],
 								["Premium time", "3"],
 								["Bundle", "9"]
@@ -39721,11 +39721,11 @@
 				{
 					"id": "store:11",
 					"name": "Potions",
-					"sub": "4 offers, 15-30 coins. Consumable item.",
+					"sub": "18 offers, 15-135 coins. Consumable item.",
 					"color": "#ff70c0",
 					"group": "category",
 					"sections": [
-						{"h": "Category", "p": ["4 offers, 15-30 Chaos Coins. Consumable item."]},
+						{"h": "Category", "p": ["18 offers, 15-135 Chaos Coins. Consumable item."]},
 						{
 							"h": "Offers",
 							"cols": ["Offer", "Coins", "Type", "What it is"],
@@ -39737,7 +39737,31 @@
 									"Consumable item",
 									"Restores a large amount of mana."
 								],
+								[
+									"250 Great Mana Potions",
+									"36",
+									"Consumable item",
+									"Restores a large amount of mana. 5% off the 100 pack."
+								],
+								[
+									"500 Great Mana Potions",
+									"68",
+									"Consumable item",
+									"Restores a large amount of mana. 10% off the 100 pack."
+								],
 								["100 Great Spirit Potions", "15", "Consumable item", "Restores health and mana."],
+								[
+									"250 Great Spirit Potions",
+									"36",
+									"Consumable item",
+									"Restores health and mana. 5% off the 100 pack."
+								],
+								[
+									"500 Great Spirit Potions",
+									"68",
+									"Consumable item",
+									"Restores health and mana. 10% off the 100 pack."
+								],
 								[
 									"100 Ultimate Health Potions",
 									"20",
@@ -39745,13 +39769,92 @@
 									"Restores a large amount of health."
 								],
 								[
+									"250 Ultimate Health Potions",
+									"48",
+									"Consumable item",
+									"Restores a large amount of health. 5% off the 100 pack."
+								],
+								[
+									"500 Ultimate Health Potions",
+									"90",
+									"Consumable item",
+									"Restores a large amount of health. 10% off the 100 pack."
+								],
+								[
+									"100 Ultimate Mana Potions",
+									"25",
+									"Consumable item",
+									"Restores a huge amount of mana. Level 130."
+								],
+								[
+									"250 Ultimate Mana Potions",
+									"60",
+									"Consumable item",
+									"Restores a huge amount of mana. Level 130. 5% off the 100 pack."
+								],
+								[
+									"500 Ultimate Mana Potions",
+									"113",
+									"Consumable item",
+									"Restores a huge amount of mana. Level 130. 10% off the 100 pack."
+								],
+								[
+									"100 Ultimate Spirit Potions",
+									"25",
+									"Consumable item",
+									"Restores a lot of health and mana. Level 130."
+								],
+								[
+									"250 Ultimate Spirit Potions",
+									"60",
+									"Consumable item",
+									"Restores a lot of health and mana. Level 130. 5% off the 100 pack."
+								],
+								[
+									"500 Ultimate Spirit Potions",
+									"113",
+									"Consumable item",
+									"Restores a lot of health and mana. Level 130. 10% off the 100 pack."
+								],
+								[
 									"100 Supreme Health Potions",
 									"30",
 									"Consumable item",
-									"Restores a huge amount of health."
+									"Restores a huge amount of health. Level 200."
+								],
+								[
+									"250 Supreme Health Potions",
+									"72",
+									"Consumable item",
+									"Restores a huge amount of health. Level 200. 5% off the 100 pack."
+								],
+								[
+									"500 Supreme Health Potions",
+									"135",
+									"Consumable item",
+									"Restores a huge amount of health. Level 200. 10% off the 100 pack."
 								]
 							],
-							"sprites": [{"item": 7590}, {"item": 8472}, {"item": 8473}, {"item": 26031}]
+							"sprites": [
+								{"item": 7590},
+								{"item": 7590},
+								{"item": 7590},
+								{"item": 8472},
+								{"item": 8472},
+								{"item": 8472},
+								{"item": 8473},
+								{"item": 8473},
+								{"item": 8473},
+								{"item": 26029},
+								{"item": 26029},
+								{"item": 26029},
+								{"item": 26030},
+								{"item": 26030},
+								{"item": 26030},
+								{"item": 26031},
+								{"item": 26031},
+								{"item": 26031}
+							]
 						}
 					],
 					"icon": "wiki/i/k-blood-drop.png"

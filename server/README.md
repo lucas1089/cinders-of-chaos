@@ -3529,6 +3529,11 @@ convenience only, never power. Every price was decided on 2026-10-14 (owner dele
   `chaos_coin_payments`, and the coins taken back up to the balance, "Donations"), so a reversed donation never makes the
   next one "first" again; a refund before crediting gives no bonus at all. Shown on the Donate page and in the client's
   donation tab ("double Chaos Coins (+100%, up to 1000 extra)"); the voluntary donation wording before and after payment is unchanged.
+- **Potion packs** (owner 2026-10-23: "coloque pots melhores a venda na store e packs maiores também"). The "Potions"
+  category is built in `shop_config.lua` from `POTION_PACKS`: Great Mana, Great Spirit, Ultimate Health, Ultimate Mana,
+  Ultimate Spirit and Supreme Health in 100 / 250 / 500. The 100 packs keep their keys and coins (15, 15, 20, 30; the
+  two new ultimate potions 25); the 250 and 500 packs take the rune discounts (5% and 10%, rounded up: 500 Supreme
+  Health 135). Delivery to the purse like every store item. Tests: `tests/shop_test.lua`.
 - **Runes** (owner approval 2026-10-13: "Pode colocar packs de runas na loja"; rune conjuring is gone, "Rune supply"). A
   "Runes" category built in `shop_config.lua` from `RUNE_PACKS` and the vendor price per rune of
   `data/lib/chaos_rune_supply.lua`: 100 / 250 / 500 of Searing Orb, Rockfall, Stormcall, Frostfall, Reaper's Rune,
@@ -19606,8 +19611,9 @@ already (the Vigils auras, `vigils*.lua`, `ChaosVigils`, buff keys `vigil_*`; an
   (one offer per boss of `ChaosPocketBoss.bosses()`, sharing one weekly limit, the boss's own level counts; delivered with
   `ChaosPocketBoss.addCharges`, 0 added = refunded with its reason), the common orbs (Awakening, Ember, Tempering,
   Unmaking, Grafting once a week; the chase orbs Echoes, Fate, Dawn and the Orb of Ruin are refused by
-  `K.validate`), Whetstones, Chipped and Flawed gems of a random type, Rune Shards, three supply bundles sharing one
-  limit, and offers for other systems' APIs that show only while the API exists (`kind = "call"`: a rested vial
+  `K.validate`), Whetstones, Chipped and Flawed gems of a random type, Rune Shards, four supply bundles and four Supply
+  Crates sharing one limit (a crate is four bundles of its tier for three bundles' price; tier IV at level 200: supreme
+  health and ultimate mana potions; 2026-10-23), and offers for other systems' APIs that show only while the API exists (`kind = "call"`: a rested vial
   `ChaosRested.addVials`, bounty and kill task rerolls `ChaosBounty.addRerolls` / `ChaosBestiary.addRerolls`; none exist
   yet), and three cosmetics of our own, once per account (`ChaosCosmetics.grant`, source `"candlemarks"` in
   `cosmetics_config.lua`: never sold for Chaos Coins, no exclusive): Candle Seal (kill effect, 150), Candlelight Name
@@ -19638,6 +19644,10 @@ already (the Vigils auras, `vigils*.lua`, `ChaosVigils`, buff keys `vigil_*`; an
   account, progress across a relog, purchases, weekly limits, the inbox, the transaction order, both crash cases,
   the guarded offers, refunds, staff), `opcode_fuzz_test.lua`, client `candlemarksview_test.lua` and the client
   fuzz test. Not run on a live server or in a client yet.
+- **Empty list fixed (2026-10-23).** The window's offer list sits inside `listFrame`, and `render()` read `window.list`,
+  which is nil (the engine sets only direct children as fields): the header showed, the list stayed empty and the
+  error was swallowed by `safe()`. It now reads `window.listFrame.list`. `tools/ci/check_modules.py` refuses a
+  `window.<id>` whose id is only nested in the module's `.otui` (it also found the Chronicle's tab buttons).
 
 ## Conquest Tokens, the Conquest vendor and bad-luck protection (`conquest.lua`, `conquest_core.lua`, `conquest_config.lua`, `sql/chaos_conquest.sql`, `tools/install_conquest.py`, NPC `data/npc/Iselde Varrow.xml`, client `game_conquest`)
 

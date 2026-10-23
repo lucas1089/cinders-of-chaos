@@ -106,7 +106,7 @@ local function render()
   window.week:setText(text(h.week))
   window.shop:setText(text(h.shop))
   window.shop:setColor(state and state.near == false and V.COLORS.bad or V.COLORS.good)
-  local list = window.list
+  local list = window.listFrame.list
   list:destroyChildren()
   for i, r in ipairs(V.offers(state)) do
     local row = g_ui.createWidget('CandlemarkRow', list)

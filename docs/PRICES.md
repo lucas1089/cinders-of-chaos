@@ -52,7 +52,7 @@ show".
 | Boosts | All Blessings 60 | | | kept; the Stamina Refill (40) and the Stamina Extension (8) were removed 2026-10-15 (pay to farm; low stamina now halves the loot instead of zeroing it) |
 | Boosts | Double Experience Potion 50, five for 225 (not for season characters) | | | kept |
 | Boosts | World Experience / World Loot 300, World Training 250 (for everybody) | | | kept |
-| Supplies | potion packs 15-30 | | | kept |
+| Supplies | potion packs: 100 for 15-30, 250 and 500 at 5% and 10% off; Ultimate Mana and Ultimate Spirit 25 a 100 | | | kept; bigger packs and two potions added 2026-10-23 |
 | Runes | vendor gold x count / 1000, 5% off 250, 10% off 500 | | | kept |
 | Services | Name Change 250, Vocation Change 400, Sex Change 100, Skull Remover 150, Passive Reset 60 | | | kept |
 | Classes | Necromancer, Monk, Templar | - | - | not sold since 2026-10-15: free for the account at level 200 (was 750, then 500 or level 500) |
