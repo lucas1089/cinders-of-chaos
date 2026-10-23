@@ -327,6 +327,53 @@ eq(b.source, None, 'no loopback source address for another host')
 A.host = '127.0.0.1'
 eq(T.TesterBot(260, dict(bot), A(), 1, res, {'rotation': [], 'heal': None}).source, '127.1.2.11', 'its own 127.1.x.y')
 
+# ---------------------------------------------------------------- keep alive: heal, potion, flee
+class C:
+    def __init__(self):
+        self.sent = []
+
+    def send(self, data):
+        self.sent.append(data)
+
+
+heal = {'words': 'exura x', 'group': 'healing', 'cooldown': 1000, 'groupcooldown': 1000}
+hit = {'words': 'exori x', 'group': 'attack', 'cooldown': 2000, 'groupcooldown': 2000}
+r3 = T.Results(1)
+k = T.TesterBot(2, dict(bot), A(), 1, r3, {'rotation': [hit], 'heal': heal})
+k.conn, k.cid = C(), 0x10000002
+k.helper['info'] = {'potions': {'health': 266}}
+said = []
+k.say = lambda text, kind=1: said.append(text)
+k.read(b'\x8c' + struct.pack('<I', k.cid) + b'\x23')  # 35 %
+k.keep_alive(100.0)
+eq(said, ['exura x'], 'under 50 %: the heal, no attack spell (mana for the heal)')
+eq(len(k.conn.sent), 1, 'under 40 %: a potion')
+eq(sorted(k.pending), ['heal_spell', 'potion'], 'both wait for a health rise')
+k.read(b'\x8c' + struct.pack('<I', k.cid) + b'\x41')  # 65 %
+eq((r3.d['behaviours']['heal_spell']['ok'], r3.d['behaviours']['potion']['ok']), (1, 1), 'the rise counts both ok')
+eq(k.pending, {}, 'nothing pending after it')
+k.keep_alive(100.5)
+eq(said[-1], 'exori x', 'over 50 %: the rotation')
+k.read(b'\x8c' + struct.pack('<I', k.cid) + b'\x0f')  # 15 %
+k.keep_alive(100.6)
+eq(said[-1], '!tester town', 'at 15 % with the heal and the potion on cooldown: flee to the temple')
+eq(r3.d['behaviours']['flee']['tried'], 1, 'a flee counted')
+k.keep_alive(101.2)
+eq(said[-1], 'exura x', 'the heal again once its cooldown is over')
+k.keep_alive(104.5)
+eq(r3.d['behaviours']['heal_spell']['failed'], 1, 'no rise within 3 seconds: the heal failed')
+k.keep_alive(115.7)
+eq('!tester hunt' in said, True, 'back to the hunt after the rest')
+eq(said.count('!tester town'), 1, 'one flee a minute')
+
+# the shop failure says whether the NPC answered at all (a creature speak packet with its name)
+k.shop_npc, k.npc_spoke = 'Material Broker', False
+k.read(b'\x61' + LT.string('Material Broker'))
+eq(k.npc_spoke, False, 'its name in a creature update is no answer')
+k.read(b'\xaa' + struct.pack('<I', 7) + LT.string('Material Broker') + b'\x0c' + LT.string('Ore, herbs...'))
+eq(k.npc_spoke, True, 'its speech is an answer')
+k.shop_npc = None
+
 # ---------------------------------------------------------------- healing spells
 spells = [{'words': 'heal a', 'group': 'healing', 'level': 10, 'needlearn': False, 'params': False, 'vocations': set()},
           {'words': 'heal b', 'group': 'healing', 'level': 50, 'needlearn': False, 'params': False,

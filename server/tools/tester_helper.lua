@@ -35,7 +35,8 @@ local GROUPS, STEP_MS, RANGE = 4, 500, 5
 local SUPPLIES = {{7618, 100}, {7620, 100}} -- stock health / mana potion
 local GOLD = 20000 -- into the bank: NPC purchases pay from it (Chaos.pay)
 local LOCKERS = {2589, 2590, 2591, 2592} -- depot_config.lua lockerIds
-local SEARCH = 30 -- tiles around the temple for a locker / an NPC
+local SEARCH = 30 -- tiles around the temple for an NPC
+local LOCKER_SEARCH = 45 -- tiles around the temple for a depot locker (its floor and the ones above and below)
 -- NPCs with a trade window, tried first by "shop": the NPC nearest the temple may only talk
 local TRADERS = {"Material Broker", "Loot Buyer", "Wandering Merchant"}
 
@@ -87,39 +88,76 @@ local function temple(player)
 	return town and town:getTemplePosition() or player:getPosition()
 end
 
-local function freeNear(center)
-	for r = 1, 2 do
-		for dx = -r, r do
-			for dy = -r, r do
-				local p = Position(center.x + dx, center.y + dy, center.z)
-				local tile = Tile(p)
-				if tile and tile:getGround() and not tile:hasFlag(TILESTATE_BLOCKSOLID) and not tile:getTopCreature() then
-					return p
-				end
+-- a free tile next to `center`: the four straight neighbours first, then the corners, then two tiles out; never a
+-- floor change or a teleport (the tester would land elsewhere). With `npc`: only a tile where that NPC is the one that
+-- answers (no other NPC within talk range as near or nearer: data/lib/chaos_npc_focus.lua lets only the nearest answer)
+local RINGS = {{0, -1}, {1, 0}, {0, 1}, {-1, 0}, {-1, -1}, {1, -1}, {1, 1}, {-1, 1}}
+for dx = -2, 2 do
+	for dy = -2, 2 do
+		if math.max(math.abs(dx), math.abs(dy)) == 2 then
+			RINGS[#RINGS + 1] = {dx, dy}
+		end
+	end
+end
+
+local function nearestNpc(npc, p)
+	local mine = math.max(math.abs(npc:getPosition().x - p.x), math.abs(npc:getPosition().y - p.y))
+	for _, c in ipairs(Game.getSpectators(p, false, false, 3, 3, 3, 3) or {}) do
+		if c:isNpc() and c:getId() ~= npc:getId() then
+			local o = c:getPosition()
+			if o.z == p.z and math.max(math.abs(o.x - p.x), math.abs(o.y - p.y)) <= mine then
+				return false
+			end
+		end
+	end
+	return true
+end
+
+local function freeNear(center, npc, reach)
+	for _, d in ipairs(RINGS) do
+		if math.max(math.abs(d[1]), math.abs(d[2])) <= (reach or 2) then
+			local p = Position(center.x + d[1], center.y + d[2], center.z)
+			local tile = Tile(p)
+			if tile and tile:getGround() and not tile:hasFlag(TILESTATE_BLOCKSOLID) and not tile:getTopCreature()
+				and not tile:hasFlag(TILESTATE_FLOORCHANGE) and not tile:hasFlag(TILESTATE_TELEPORT)
+				and (not npc or nearestNpc(npc, p)) then
+				return p
 			end
 		end
 	end
 	return nil
 end
 
+-- the nearest locker round the temple with a free tile next to it: {pos, id, stackpos, spot}
 local function findLocker(origin)
-	local best, bestD
-	for dx = -SEARCH, SEARCH do
-		for dy = -SEARCH, SEARCH do
-			local tile = Tile(Position(origin.x + dx, origin.y + dy, origin.z))
-			if tile then
-				for _, id in ipairs(LOCKERS) do
-					if tile:getItemById(id) then
-						local d = math.max(math.abs(dx), math.abs(dy))
-						if not bestD or d < bestD then
-							best, bestD = {pos = tile:getPosition(), id = id}, d
+	local found = {}
+	for dz = -1, 1 do -- the depot is often a floor up or down from the temple
+		for dx = -LOCKER_SEARCH, LOCKER_SEARCH do
+			for dy = -LOCKER_SEARCH, LOCKER_SEARCH do
+				local z = origin.z + dz
+				local tile = z >= 0 and z <= 15 and Tile(Position(origin.x + dx, origin.y + dy, z))
+				if tile then
+					for _, id in ipairs(LOCKERS) do
+						local item = tile:getItemById(id)
+						if item then
+							local ok, index = pcall(function() return tile:getThingIndex(item) end)
+							found[#found + 1] = {pos = tile:getPosition(), id = id,
+								d = math.max(math.abs(dx), math.abs(dy)) + 10 * math.abs(dz),
+								stackpos = ok and type(index) == "number" and index >= 0 and index or 1}
 						end
 					end
 				end
 			end
 		end
 	end
-	return best
+	table.sort(found, function(x, y) return x.d < y.d end)
+	for _, l in ipairs(found) do
+		l.spot = freeNear(l.pos, nil, 1) -- next to it: a locker opens from an adjacent tile
+		if l.spot then
+			return l
+		end
+	end
+	return nil
 end
 
 local function findNpc(origin)
@@ -168,20 +206,21 @@ end
 
 function commands.depot(player)
 	local locker = findLocker(temple(player))
-	local spot = locker and freeNear(locker.pos)
+	local spot = locker and locker.spot
 	if not spot then
 		tell(player, "depot", {err = "no depot locker near the temple"})
 		return
 	end
 	player:teleportTo(spot)
 	local it = ItemType(locker.id)
-	tell(player, "depot", {pos = posOf(player:getPosition()), locker = posOf(locker.pos), clientId = it:getClientId()})
+	tell(player, "depot", {pos = posOf(player:getPosition()), locker = posOf(locker.pos), clientId = it:getClientId(),
+		stackpos = locker.stackpos})
 end
 
 local function findTrader(origin)
 	for _, name in ipairs(TRADERS) do
 		local npc = Creature(name)
-		if npc and npc:isNpc() and freeNear(npc:getPosition()) then
+		if npc and npc:isNpc() and freeNear(npc:getPosition(), npc) then
 			return npc
 		end
 	end
@@ -190,7 +229,7 @@ end
 
 function commands.shop(player)
 	local npc = findTrader(temple(player))
-	local spot = npc and freeNear(npc:getPosition())
+	local spot = npc and freeNear(npc:getPosition(), npc)
 	if not spot then
 		tell(player, "shop", {err = "no NPC near the temple"})
 		return

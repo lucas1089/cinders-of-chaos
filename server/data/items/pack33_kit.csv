@@ -288,7 +288,7 @@ client_id,server_id,key,kind,mode,name,size,otb_group,otb_flags,top_order,speed,
 38379,41379,coffin_open,stump,new,open coffin,2x2,0,8193,2,0,0,0,family=props|review=decor
 38380,41380,cauldron,stump,new,cauldron,1x1,0,16785409,2,0,0,0,family=props|ms=125
 38381,41381,broom_leaning,stump,new,leaning broom,1x1,0,8193,2,0,0,0,family=props
-38382,41382,witch_hat,decor,new,witch hat,1x1,0,0,0,0,0,0,family=props
+38382,41382,witch_hat,decor,new,crooked witch hat,1x1,0,0,0,0,0,0,family=props
 38383,41383,candles_cluster,decor,new,candles,1x1,0,16777216,0,0,3,206,family=props|ms=125
 38384,41384,lantern_post,stump,new,lantern post,1x1,0,16785409,2,0,3,206,family=props|ms=125
 38385,41385,candle_skull,decor,new,candle skull,1x1,0,0,0,0,3,206,family=props

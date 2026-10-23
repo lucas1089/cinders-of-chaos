@@ -6368,6 +6368,17 @@ Merchant), counts as ok when the trade window opens, and buys or sells one piece
 failed `town`, `depot` or `shop` names why in the failure list. The report lists the deaths the server logged by
 killer, level and tester beside the bots' own count. It reads `error` as a whole word only (a "Terror Bird" death is no
 error) and keeps up to three stack traceback lines under a warning.
+Since 2026-10-23 (the run with 11,700 deaths in an hour): a bot heals in its own task four times a second, also while a
+behaviour waits (a shop visit, a coverage scenario at the hunt); before, it healed only between behaviours. Under 50 %
+health with a healing spell it casts no attack spell (the mana is for the heal), and the heal sets its group cooldown
+(no "exhausted" from a support spell of the same group right after it). A heal or a potion counts ok when the health
+rises within 3 seconds (`HEAL_SEEN`), else failed: before, both were only ever "tried". Under 20 % (`FLEE_AT`) with the
+heal and the potion on cooldown the bot says `!tester town` (as a player's Town Portal), at most once a minute, and goes
+back to its hunt 15 seconds later (behaviour `flee`). The helper puts a bot next to an NPC or a locker on a straight
+neighbour first, never on a floor change or a teleport, next to an NPC only where that NPC is the nearest (only the
+nearest answers, `chaos_npc_focus.lua`: a Material Broker in a row of stalls never heard the bot's "hi"), next to a
+locker only on an adjacent tile, with the locker's stack position, and looks for a locker 45 tiles round the temple on
+its floor and the ones above and below. A shop failure says whether the NPC answered at all.
 
 ```
 sudo /opt/chaos/repo/server/deploy/chaos-ctl.sh testers start 100 60 --restart 300
