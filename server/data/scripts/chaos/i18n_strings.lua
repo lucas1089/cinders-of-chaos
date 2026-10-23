@@ -556,6 +556,8 @@ return {
 		["A gift waits for you at level %s."] = "Um presente espera por você no nível %s.",
 		["Gifts wait for you at levels %s and %s."] = "Presentes esperam por você nos níveis %s e %s.",
 		["You received the %s starter kit.%s"] = "Você recebeu o kit inicial de %s.%s",
+		["Your Thief now fights with a dagger in each hand. You received a second dagger."] =
+			"Seu Thief agora luta com uma adaga em cada mão. Você recebeu uma segunda adaga.",
 		[" Some of it did not fit: it is in your inbox."] = " Parte dele não coube: está na sua caixa de entrada.",
 		["Level %d gift: %s.%s"] = "Presente do nível %d: %s.%s",
 		["Ok"] = "Ok",
@@ -3080,6 +3082,8 @@ return {
 			"Cada poção é vendida uma de cada vez. Os pacotes grandes ficam na loja.",
 		["Veyra, apothecary. I sell potions of every tier one at a time, the runes hunters ask for most, and rope, shovel, torch and backpack. Ask for a {trade}."] =
 			"Veyra, boticária. Vendo poções de todos os níveis, uma de cada vez, as runas que os caçadores mais pedem, e corda, pá, tocha e mochila. Peça uma {trade}.",
+		["A deck holds your cards: five in the Bronze, ten in the Silver, twenty in the Golden. Carry it, then use a card to put it in and turn it on. Ask for a {trade}."] =
+			"Um baralho guarda suas cartas: cinco no de Bronze, dez no de Prata, vinte no de Ouro. Carregue-o e use uma carta para guardá-la nele e ativá-la. Peça uma {trade}.",
 		["Health, mana and spirit draughts from the small to the supreme, each for a level. In bulk the store sells packs of one hundred for less. Ask for a {trade}."] =
 			"Poções de vida, mana e espírito, da pequena à suprema, cada uma para um nível. Em grande quantidade, a loja vende pacotes de cem por menos. Peça uma {trade}.",
 		["No potion leaves a flask now. Old empty ones I still buy, five gold each."] =
@@ -3159,6 +3163,85 @@ return {
 		["This item can't be worn. The Loot Buyer buys it."] = "Este item não pode ser equipado. O Loot Buyer compra ele.",
 		["These slots are retired: decks, ships, belts and gloves can't be worn. Moved: %s."] =
 			"Estes slots foram aposentados: decks, navios, cintos e luvas não podem ser equipados. Movidos: %s.",
+		-- Cards and decks (cards_core.lua, cards.lua)
+		["You turned on %s: %s"] =
+			"Você ativou %s: %s",
+		["You turned off %s."] =
+			"Você desativou %s.",
+		["%s went into your %s."] =
+			"%s foi para o seu %s.",
+		["%s is already on with another copy of it. Only one copy counts."] =
+			"%s já está ativa com outra cópia dela. Só uma cópia conta.",
+		["You already have %d cards on, the most there can be. Turn one off first."] =
+			"Você já tem %d cartas ativas, o máximo possível. Desative uma primeiro.",
+		["Your decks are full. Take a card out of a deck that is off, or buy a bigger deck from %s."] =
+			"Seus decks estão cheios. Tire uma carta desativada de um deck, ou compre um deck maior de %s.",
+		["You need a deck to use cards. Buy one from %s in the hub: Bronze Deck for %d gold (5 cards), Silver Deck for %d (10 cards, level %d), Golden Deck for %d (20 cards, level %d). Carry it, then use the card again."] =
+			"Você precisa de um deck para usar cartas. Compre um de %s no hub: Bronze Deck por %d de ouro (5 cartas), Silver Deck por %d (10 cartas, nível %d), Golden Deck por %d (20 cartas, nível %d). Carregue-o na mochila e use a carta de novo.",
+		["The card %s is no longer in a deck you carry: turned off."] =
+			"A carta %s não está mais em um deck que você carrega: desativada.",
+		["Carry the card in your backpack to use it: not in the depot or the Purse."] =
+			"Carregue a carta na mochila para usá-la: não no depot nem na Purse.",
+		["The card could not be moved into your deck."] =
+			"Não foi possível colocar a carta no seu deck.",
+		["Decks carried: %s"] =
+			"Decks que você carrega: %s",
+		["You carry no deck."] =
+			"Você não carrega nenhum deck.",
+		["Cards on (%d of %d):"] =
+			"Cartas ativas (%d de %d):",
+		["Cards in your decks, off:"] =
+			"Cartas nos seus decks, desativadas:",
+		["Cards carried outside a deck (use one to put it in a deck):"] =
+			"Cartas fora de um deck (use uma para colocá-la em um deck):",
+		["No card is on."] =
+			"Nenhuma carta está ativa.",
+		["... and %d more."] =
+			"... e mais %d.",
+		["%s %d of %d"] =
+			"%s %d de %d",
+		["Cards"] =
+			"Cartas",
+		["Use a card you carry: it goes into a deck and turns on. Use it again to turn it off. At most %d cards are on at once."] =
+			"Use uma carta que você carrega: ela vai para um deck e é ativada. Use de novo para desativar. No máximo %d cartas ficam ativas ao mesmo tempo.",
+		["Drown"] =
+			"Afogamento",
+		["Minor"] =
+			"menor",
+		["Major"] =
+			"maior",
+		["Intense"] =
+			"intenso",
+		["Powerful"] =
+			"poderoso",
+		["While on, %s deals %s damage instead. With several cards of this spell on, the highest one counts."] =
+			"Ativa, %s causa dano de %s no lugar. Com várias cartas desta magia ativas, vale a mais alta.",
+		["While on, %s heals %d%% more. With several cards of this spell on, the highest one counts."] =
+			"Ativa, %s cura %d%% a mais. Com várias cartas desta magia ativas, vale a mais alta.",
+		["While on, %s lasts %d seconds longer and gives %d more percentage points of melee skill."] =
+			"Ativa, %s dura %d segundos a mais e dá %d pontos percentuais a mais de skill corpo a corpo.",
+		["While on, %s reaches a wider area (step %d of 4)."] =
+			"Ativa, %s alcança uma área maior (degrau %d de 4).",
+		["While on, %s lasts %d seconds longer and gives %d more percentage points of distance skill."] =
+			"Ativa, %s dura %d segundos a mais e dá %d pontos percentuais a mais de skill de distância.",
+		["Needs %s in your left hand. While on, a hit of %d damage or more has a %d%% chance to summon a monster that fights with you and gives you %d more %s for %d seconds. Only one summon at a time."] =
+			"Precisa de %s na mão esquerda. Ativa, um golpe de %d de dano ou mais tem %d%% de chance de invocar um monstro que luta com você e dá %d a mais de %s por %d segundos. Só uma invocação por vez.",
+		["Use it to put it in a deck you carry and turn it on, use it again to turn it off. Veyra the Apothecary sells decks."] =
+			"Use para colocá-la em um deck que você carrega e ativá-la, use de novo para desativá-la. Veyra the Apothecary vende decks.",
+		["magic level"] =
+			"nível mágico",
+		["distance skill"] =
+			"skill de distância",
+		["melee skill"] =
+			"skill corpo a corpo",
+		["a wand"] =
+			"uma varinha",
+		["a rod"] =
+			"um cajado",
+		["a bow or a crossbow"] =
+			"um arco ou uma besta",
+		["a melee weapon"] =
+			"uma arma corpo a corpo",
 		-- Prizes into the backpack (prizes_core.lua)
 		["Your prize %s is in your Purse (the store inbox): your backpack had no room."] =
 			"Seu prêmio %s está na sua Purse (a caixa da loja): sua mochila não tinha espaço.",

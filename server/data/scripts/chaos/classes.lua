@@ -98,6 +98,11 @@ function M.isNinja(vocId)
 	return vocId == cfg().ids.ninja
 end
 
+-- Thief and Ninja hold a blade in each hand (cfg.dualWield.vocations); the Samurai keeps one sword
+function M.isDualWielder(vocId)
+	return cfg().dualWield.vocations[vocId] == true
+end
+
 function M.isSamurai(vocId)
 	return vocId == cfg().ids.samurai
 end
@@ -372,6 +377,51 @@ function M.offhandDamage(hit, mainAttack, offAttack, targetIsPlayer, extraShare)
 	return math.floor(value + 0.5)
 end
 
+-- The auto attack's speed compensation: a weapon hit of a vocation whose attack interval was shortened is cut by
+-- now / was (cfg.attackSpeed), so its damage per second stays where it was balanced. 1 for every other vocation.
+function M.speedComp(vocId)
+	local a = cfg().attackSpeed[vocId]
+	if not a then
+		return 1
+	end
+	return a.now / a.was
+end
+
+-- The Thief's two daggers: the main hit is cut so that main + off-hand hit deal what the single hit did (the off-hand
+-- tree bonus is on top). 1 for a vocation that is not `neutral` (the Ninja), or without a blade in the off hand
+function M.dualNeutral(vocId, mainAttack, offAttack)
+	local d = cfg().dualWield
+	if not d.neutral[vocId] then
+		return 1
+	end
+	local ratio = 1
+	if (mainAttack or 0) > 0 then
+		ratio = (offAttack or 0) / mainAttack
+	end
+	ratio = math.max(d.minRatio, math.min(d.maxRatio, ratio))
+	return 1 / (1 + d.share * ratio)
+end
+
+-- What to do at login about the second dagger of a Thief made before it dual wielded. Once per character (`flag`,
+-- storage offhandGranted). leftIsBlade: the main hand holds a one-handed sword. rightKind: nil = empty off hand,
+-- "blade" = a one-handed sword, "other" = a shield or anything else.
+--   "grant"  put a dagger in the empty off hand (and set the flag)
+--   "mark"   the off hand holds a blade already: set the flag, give nothing
+--   nil      nothing now (not a Thief, flag set, no main-hand blade yet, or a shield in the off hand: the grant stays
+--            open until the off hand is empty, it is still one dagger at most)
+function M.offhandGrant(vocId, flag, leftIsBlade, rightKind)
+	if (flag or 0) > 0 or vocId ~= cfg().ids.thief then
+		return nil
+	end
+	if rightKind == "blade" then
+		return "mark"
+	end
+	if rightKind == nil and leftIsBlade then
+		return "grant"
+	end
+	return nil
+end
+
 -- Poison Blades: damage per tick for a weapon hit of `hit`. bonus: Blackblood Creed's poisonBonus (0 / nil = none).
 -- vocId: the attacker's vocation (cfg.poisonBlades.classScale; nil = the plain share)
 function M.poisonTick(hit, bonus, vocId)
@@ -446,11 +496,11 @@ function M.monsterMayTarget(stealthActive, isPlayerTarget)
 end
 
 -- ------------------------------------------------------------------------------------------------ dual wield
--- An off-hand strike follows a main-hand hit when: the attacker is a Ninja, the hit is a melee weapon hit (not a
+-- An off-hand strike follows a main-hand hit when: the attacker is a Thief or Ninja, the hit is a melee weapon hit (not a
 -- scripted strike: `scripted` is the guard flag thief_combat.lua sets around its own strikes), and both hands hold
 -- a light blade.
 function M.dualWieldProc(vocId, isMeleeWeaponHit, mainIsBlade, offIsBlade, scripted, amount)
-	return M.isNinja(vocId) and isMeleeWeaponHit and mainIsBlade and offIsBlade and not scripted
+	return M.isDualWielder(vocId) and isMeleeWeaponHit and mainIsBlade and offIsBlade and not scripted
 		and math.abs(amount or 0) > 0 or false
 end
 
@@ -536,10 +586,41 @@ end
 -- vocation change
 function M.syncDualWield(player)
 	local key = cfg().storage.dualWield
-	local want = M.isNinja(player:getVocation():getId()) and 1 or -1
+	local want = M.isDualWielder(player:getVocation():getId()) and 1 or -1
 	if player:getStorageValue(key) ~= want then
 		player:setStorageValue(key, want)
 	end
+end
+
+-- The one-time second dagger of a Thief made before dual wield (M.offhandGrant): at login, after syncDualWield (the
+-- engine takes a sword in the shield hand only while that storage is 1). Gives nothing to a Thief who has an off-hand
+-- weapon, a shield or no main-hand dagger, and nothing twice. Returns "grant", "mark" or nil.
+function M.grantOffhand(player)
+	local c = cfg()
+	local function bladeIn(slot)
+		local item = player:getSlotItem(slot)
+		if not item then
+			return false, nil
+		end
+		local it = ItemType(item:getId())
+		return M.isLightBlade(it:getWeaponType(), it:getSlotPosition()), item
+	end
+	local left = bladeIn(CONST_SLOT_LEFT)
+	local rightBlade, rightItem = bladeIn(CONST_SLOT_RIGHT)
+	local kind = rightItem and (rightBlade and "blade" or "other") or nil
+	local flag = player:getStorageValue(c.storage.offhandGranted)
+	local act = M.offhandGrant(player:getVocation():getId(), flag, left, kind)
+	if act == "grant" then
+		-- mark first: a failed add must not be retried forever, and never gives two
+		player:setStorageValue(c.storage.offhandGranted, os.time())
+		if player:addItem(c.offhandGrant.itemId, 1, false, 1, CONST_SLOT_RIGHT) then
+			local text = "Your Thief now fights with a dagger in each hand. You received a second dagger."
+			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t and Chaos.t(player, text) or text)
+		end
+	elseif act == "mark" then
+		player:setStorageValue(c.storage.offhandGranted, os.time())
+	end
+	return act
 end
 
 -- forget everything about a creature (logout, death)

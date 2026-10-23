@@ -427,7 +427,7 @@ do
 		ok(K.kits[kind], "test kit for vocation " .. vocId)
 	end
 	eq(K.kindFor(14), "berserker", "berserker"); eq(K.kindFor(15), "beastmaster", "beastmaster")
-	eq(K.kindFor(11), "thief", "thief"); eq(K.kindFor(12), "ninja", "ninja"); eq(K.kindFor(13), "thief", "samurai")
+	eq(K.kindFor(11), "thief", "thief"); eq(K.kindFor(12), "ninja", "ninja"); eq(K.kindFor(13), "samurai", "samurai")
 	eq(K.kindFor(18), "monk", "shadowfist"); eq(K.kindFor(22), "necromancer", "bone lord"); eq(K.kindFor(25), "templar", "sentinel")
 	eq(K.kindFor(99), "mage", "unknown vocation")
 	local b = K.kits.berserker
@@ -435,7 +435,8 @@ do
 	eq(K.kits.knight.slots[CONST_SLOT_RIGHT], 10318, "the knight kit keeps its shield")
 	eq(K.kits.beastmaster.quiver.id, 28050, "beastmaster quiver"); eq(K.kits.paladin.quiver.id, 29566, "paladin quiver")
 	eq(K.kits.beastmaster.ammo, nil, "no arrows"); eq(K.kits.paladin.ammo, nil, "no bolts")
-	eq(K.kits.ninja.slots[CONST_SLOT_RIGHT], 11395, "ninja off-hand"); eq(K.kits.thief.slots[CONST_SLOT_RIGHT], nil, "thief: none")
+	eq(K.kits.ninja.slots[CONST_SLOT_RIGHT], 11395, "ninja off-hand"); eq(K.kits.thief.slots[CONST_SLOT_RIGHT], 11395, "thief: dual wield")
+	eq(K.kits.samurai.slots[CONST_SLOT_RIGHT], nil, "samurai: one sword")
 	eq(K.kits.thief.quiver, false, "thief: no quiver"); eq(K.kits.thief.extra, nil, "no assassin stars (throwables left the game)")
 	eq(K.kits.monk.slots[CONST_SLOT_LEFT], nil, "monk: unarmed"); eq(K.kits.monk.skills[SKILL_FIST], 120, "fist")
 	eq(K.kits.necromancer.druidWeapon, false, "necromancer keeps the wand")

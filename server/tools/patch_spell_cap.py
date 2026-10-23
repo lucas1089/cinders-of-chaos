@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
-"""The 15-spell cap: every class keeps at most 15 spells of its own (idempotent). install_all.py step `spells`, second
+"""The spell cap: every class keeps at most MAX_SPELLS (20) spells of its own (idempotent). install_all.py step `spells`, second
 (after retire_cure_spells.py, before register_spells.py).
 
 usage: python3 -I patch_spell_cap.py DATA_DIR [--dry-run]       (python3 -I patch_spell_cap.py --list prints the table)
 
 Owner decision (2026-10-20, "mysthic tem magias demais. abaixe pra 15. faça isso pra todas as classes"): every class
-and ascension (docs/CLASSES.md vocation ids) can learn and cast at most 15 spells: attack, healing and support, the
+and ascension (docs/CLASSES.md vocation ids) can learn and cast at most 15 spells (raised to 20 on 2026-10-23: the owner
+asked for the same number of attack spells in every class, "devem ter a mesma quantidade", so every class has 10 and the
+Bone Lord, the class with most other spells, reaches 20; docs/CLASSES.md "Attack spell parity"): attack, healing and support, the
 stock spells it kept and the Chaos spells. Not counted (UNIVERSAL below): the 15 spells every character shares (light,
 great light, find person, rope, levitate, haste, Town Portal, Flickerdash, Hunter's Instinct, the four vigils, Banner
 Call, Soulward) and Radiant Lantern (a light spell like the other two), nor Ward of the Mind (OUTSIDE_CAP: the classic
@@ -35,7 +37,7 @@ MARK = 'Chaos: spell cap (patch_spell_cap.py): '
 UNIVERSAL = ("Town Portal", "Bloodtrail", "Lantern", "Greater Lantern", "Ghost Rope", "Wraith Step", "Fleetfoot",
              "Hunter's Instinct", "Flickerdash", "Vigil of Clarity", "Vigil of Haste", "Vigil of Iron", "Vigil of Wrath",
              "Banner Call", "Soulward", "Radiant Lantern")
-MAX_SPELLS = 15
+MAX_SPELLS = 20  # was 15 until 2026-10-23 (the attack kit: 10 attack spells in every class)
 # kept by some classes but not counted in their 15 (owner 2026-10-21: the classic Magic Shield back "somente pra mages e
 # rangers", the Necromancer counted as a mage; add_vocations.py LINE_STOCK_SPELLS gives it to the Mystic, Necromancer
 # and Ranger lines, CAP keeps exactly those nine)

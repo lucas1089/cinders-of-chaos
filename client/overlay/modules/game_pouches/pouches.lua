@@ -17,6 +17,7 @@ local window
 local asWindow
 local asState = AV.normalize(nil)
 local asStateAt = 0 -- os.time when the state came (the cooldown counts down from it)
+local asKnown = false -- the server has sent the state at least once this session
 local asTick = nil
 local asChecks = {}
 local rules = V.normalize(nil)
@@ -145,6 +146,7 @@ end
 local function onAutoSeller(d)
   asState = AV.normalize(d)
   asStateAt = os.time()
+  asKnown = true
   refreshAutoSeller()
   if asState.open and asWindow then
     asWindow:show()
@@ -258,6 +260,17 @@ function sellAll()
   send('sell')
 end
 
+-- for the helper (game_helper, helper_sell.lua): what the server last said about the Auto Seller, without a window.
+-- known: the state came; unlocked: the store unlock is there; cooldown: seconds left of the 30 s limit.
+function getAutoSeller()
+  return { known = asKnown, unlocked = asState.unlocked == true, cooldown = asKnown and asLeft() or 0 }
+end
+
+-- ask the server for the state (the answer does not open the window)
+function syncAutoSeller()
+  send('as_sync')
+end
+
 function openStore()
   if modules.game_shop and modules.game_shop.toggle then modules.game_shop.toggle() end
 end
@@ -293,6 +306,7 @@ local function onGameEnd()
   hideSettings()
   hideAutoSeller()
   asState = AV.normalize(nil)
+  asKnown = false
 end
 
 function init()

@@ -185,6 +185,34 @@ eq(cmap[42], false, 'the stock 42 leaves the helper lists')
 F.restore(cundo)
 eq(cinfo['Conjure Rations'].id, 42, 'restore the id')
 
+-- the attack kit (2026-10-23) took the ids of 37 stock spells that the cap retired (Deep Mending 2, Summon Creature 9 ...):
+-- each of those entries moves off its id, so the Chaos spell keeps the id's cooldown and its helper entries
+do
+  local capRemoved = F.removedWords(ChaosRemovedSpells, ChaosCappedSpells)
+  local ids = F.chaosIds(ChaosSpellData)
+  local f = io.open(dir .. 'spelldata.lua', 'r')
+  local text = f:read('*a')
+  f:close()
+  local capped = text:sub((text:find('ChaosCappedSpells = {', 1, true)))
+  local moved, kit = 0, {}
+  for _, s in ipairs(ChaosSpellData) do
+    if s.name == 'Gorehook' or s.name == 'Bulwark Slam' or s.name == 'Rampart Quake' then kit[s.id] = s.name end
+  end
+  for words, keep, name, id in capped:gmatch('%["([^"]+)"%] = (%b{}), %-%- ([^\n]-) %((%d+)%)') do
+    id = tonumber(id)
+    if #keep == 2 and ids[id] then
+      local info = { [name] = entry(id, name, words) }
+      local _, map, rids = F.apply(info, {}, {}, server, capRemoved, ids)
+      eq(info[name].id, id + F.OFF_SERVER, name .. ' moved off id ' .. id .. ' (a Chaos spell has it)')
+      eq(info[name].notOnServer, true, name .. ' is never cast')
+      eq(rids[id], nil, 'id ' .. id .. ' is not a removed id')
+      moved = moved + 1
+    end
+  end
+  eq(moved >= 37, true, 'at least the 37 kit ids were stock ids: ' .. moved)
+  eq(next(kit) ~= nil, true, 'the kit spells are in the Chaos spell data')
+end
+
 -- a stock spell the server retired (ChaosRetiredSpells: Sharpshooter, 2026-10-20): no rename, so its stock words are not
 -- the server's; it leaves id 135 to the Chaos Tautstring and is never cast, and the helper's lists drop the stock 135
 eq(ChaosRetiredSpells and ChaosRetiredSpells['utito tempo san'], true, 'Sharpshooter is a retired stock spell')

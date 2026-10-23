@@ -18,13 +18,21 @@ end
 
 check(type(T) == "table", "chaos_fx_send_offsets.lua loads")
 
--- the owner's report (2026-10-22): Banner Call's holy_spiral 405, a 5x5 judgement pillar kept as 4x4, two tiles off
+-- the owner's report (2026-10-22): Banner Call's holy_spiral 405, a 5x5 judgement pillar kept as 4x4, up and left of
+-- its tile. Its pivot was pulled 47 px, so one tile brings it to 15 px of its place (two tiles to 17 px past it)
 local x, y = M.shift(100, 200, 405, T)
-eq(x, 102, "405 sent two tiles right")
-eq(y, 202, "405 sent two tiles down")
--- a 3x3 art one tile, a 2x2 art (stock size) and an unknown id not at all, no table: nothing
+eq(x, 101, "405 sent one tile right")
+eq(y, 201, "405 sent one tile down")
+-- the owner's report (2026-10-23): the blue teleport 11 (streaks into a ring, the login effect) and the yellow holy
+-- 201 and 262 sat a tile down and right. Their pivots were pulled only 3-11 px: the art is already where it belongs
+for _, id in ipairs({3, 7, 11, 167, 201, 226, 262, 309, 416}) do
+  x, y = M.shift(100, 200, id, T)
+  eq(x * 1000 + y, 100 * 1000 + 200, "effect " .. id .. " is sent at its own tile")
+end
+-- a 3x3 art whose pivot was pulled a whole tile one tile, a 2x2 art (stock size) and an unknown id not at all, no
+-- table: nothing
 x, y = M.shift(100, 200, 15, T)
-eq(x * 1000 + y, 101 * 1000 + 201, "15 (3x3) one tile")
+eq(x * 1000 + y, 101 * 1000 + 201, "15 (3x3, healing) one tile")
 x, y = M.shift(100, 200, 40, T)
 eq(x * 1000 + y, 100 * 1000 + 200, "40 (2x2) unchanged")
 x, y = M.shift(100, 200, 999999, T)

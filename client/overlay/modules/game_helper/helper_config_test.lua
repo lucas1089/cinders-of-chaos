@@ -1,5 +1,8 @@
 -- luajit helper_config_test.lua && lua5.3 helper_config_test.lua (from the repository root or this folder)
 local dir = (arg and arg[0] or ''):match('^(.*[/\\])') or './'
+dofile(dir .. 'helper_logic.lua')
+dofile(dir .. 'helper_runes.lua')
+dofile(dir .. 'helper_ally.lua')
 dofile(dir .. 'helper_config.lua')
 local C = ChaosHelperCfg
 local fails = 0
@@ -99,6 +102,104 @@ local m = {}
 eq(C.timersMigrated(m), false, 'not migrated')
 C.markTimersMigrated(m)
 eq(C.timersMigrated(m), true, 'migrated')
+
+-- the four sections of 2026-10-23: defaults and sanitize
+local d2 = C.defaults()
+eq(d2.autoSell.enabled, false, 'auto sell is off by default')
+eq(d2.autoSell.minutes, 30, 'auto sell default interval')
+eq(d2.follow.enabled, false, 'follow is off by default')
+eq(#d2.runeHeal, 2, 'two heal rune rows')
+eq(#d2.shooterProfiles.Default.runes, 3, 'three attack rune rows')
+eq(#d2.allies.friends.names, 5, 'five friend names')
+local bad = C.sanitize({ autoSell = { enabled = 'yes', minutes = 7, capacity = -5, belowCap = 1 },
+  follow = { enabled = true, mode = 'x', name = 'Bad"Name; say hi', distance = 99 },
+  runeHeal = { { id = 'a', percent = 500 } },
+  allies = { party = { enabled = true, percent = 0 }, friends = { names = { 'Ann', 'ann', 'B"ob', 5 }, percent = 200 },
+    spell = -3, group = { id = 82, count = 50 }, rune = 'x' } })
+eq(bad.autoSell.enabled, false, 'auto sell bool')
+eq(bad.autoSell.minutes, 30, 'auto sell minutes only from the list')
+eq(bad.autoSell.capacity, 0, 'capacity clamped')
+eq(bad.follow.mode, 'name', 'follow mode')
+eq(bad.follow.name, '', 'a name with a quote is dropped')
+eq(bad.follow.distance, 5, 'follow distance clamped')
+eq(bad.runeHeal[1].id, 0, 'rune id')
+eq(bad.runeHeal[1].percent, 99, 'rune percent clamped')
+eq(bad.allies.party.percent, 1, 'party percent clamped')
+eq(bad.allies.friends.percent, 99, 'friend percent clamped')
+eq(bad.allies.friends.names[1], 'Ann', 'a friend name')
+eq(bad.allies.friends.names[2], '', 'a repeated name is dropped')
+eq(bad.allies.friends.names[3], '', 'a name with a quote is dropped')
+eq(bad.allies.spell, 0, 'ally spell id')
+eq(bad.allies.group.count, 8, 'group count clamped')
+eq(bad.allies.rune.id, 0, 'ally rune')
+
+-- migration of the former helper's follow friend, named Sio, party heals and Auto Sell Loot
+local mig = C.sanitize({
+  followFriendEnabled = true, followFriendName = '  Ana  Maria ',
+  namedSio = { enabled = true, name = 'Bob, Cleo,, "evil"', percent = 85, spell = 'gransio' },
+  friendhealing = { knight = { enabled = true, percent = 80 }, druid = { enabled = true, percent = 90 },
+    monk = { enabled = false, percent = 99 } },
+  masreshealing = { extended = false, paladin = { enabled = true, percent = 60 } },
+  autoQuillSell = true, autoQuillSellBelowCap = true, autoQuillSellCapacity = 150,
+})
+eq(mig.follow.enabled, true, 'follow friend taken over')
+eq(mig.follow.name, 'Ana Maria', 'follow name cleaned')
+eq(mig.follow.mode, 'name', 'follow by name')
+eq(mig.allies.friends.enabled, true, 'named Sio taken over')
+eq(mig.allies.friends.names[1], 'Bob', 'first name')
+eq(mig.allies.friends.names[2], 'Cleo', 'second name')
+eq(mig.allies.friends.names[3], '', 'the evil name is dropped')
+eq(mig.allies.friends.percent, 85, 'named percent')
+eq(mig.allies.party.enabled, true, 'party heal taken over')
+eq(mig.allies.party.percent, 90, 'the highest enabled percent')
+eq(mig.allies.spell, 84, 'Heal Friend becomes Kindred Mend')
+eq(mig.allies.group.id, 82, 'Mass Healing becomes Circle of Mending')
+eq(mig.autoSell.enabled, true, 'auto sell taken over')
+eq(mig.autoSell.belowCap, true, 'below capacity taken over')
+eq(mig.autoSell.capacity, 150, 'capacity taken over')
+eq(mig.autoQuillSell, true, 'the old keys stay in the file')
+local gran = C.sanitize({ gransiohealing = { monk = { enabled = true, percent = 70 } } })
+eq(gran.allies.spell, 101, 'Nature Embrace becomes Heartwood Embrace')
+eq(gran.allies.party.enabled, false, 'no party heal for a gransio only file')
+-- once: a file that has the new sections is not migrated again
+local once = C.sanitize({ followFriendEnabled = true, followFriendName = 'Old', follow = { enabled = false, name = 'New' },
+  autoQuillSell = true, autoSell = { enabled = false } })
+eq(once.follow.name, 'New', 'an existing follow section wins')
+eq(once.autoSell.enabled, false, 'an existing auto sell section wins')
+local again2 = C.sanitize(mig)
+eq(again2.follow.name, 'Ana Maria', 'second pass keeps the follow')
+eq(again2.allies.friends.names[2], 'Cleo', 'second pass keeps the names')
+-- nothing of the old: the defaults
+local none = C.sanitize({ spells = {} })
+eq(none.follow.enabled, false, 'no follow without the old keys')
+eq(none.allies.party.enabled, false, 'no party heal without the old keys')
+
+-- rune rows: from the rules of the former helper and from its old list
+local rr = C.sanitize({ shooterProfiles = {
+  A = { rules = { { type = 'rune', itemId = 3155, creatures = 2, hpMin = 10, hpMax = 50, enabled = true },
+    { type = 'rune', itemId = 3172, enabled = true }, -- a field rune is not carried
+    { type = 'rune', itemId = 3191, creatures = 3, countLowerThan = true, enabled = true }, -- "N-" is not carried
+    { type = 'rune', itemId = 3174, enabled = false },
+    { type = 'spell', spellId = 5, enabled = true } } },
+  B = { spells = { { id = 5, percent = 10, creatures = 1, priority = 1 } },
+    runes = { { id = 3191, creatures = 4, priority = 2 }, { id = 3198, creatures = 1, priority = 1 } } },
+  Cc = { spells = {}, runes = { { id = 3174, creatures = 2, priority = 1 } }, runesVersion = 1 },
+} })
+local A_, B_, Cc = rr.shooterProfiles.A, rr.shooterProfiles.B, rr.shooterProfiles.Cc
+eq(A_.runes[1].id, 3155, 'a rune rule becomes row 1')
+eq(A_.runes[1].creatures, 2, 'rune creatures')
+eq(A_.runes[1].hpMin, 10, 'rune hp min kept')
+eq(A_.runes[1].hpMax, 50, 'rune hp max kept')
+eq(A_.runes[2].id, 0, 'field rune, N- rule and disabled rule are not carried')
+eq(A_.spells[1].id, 5, 'the spell rule still goes to the slots')
+eq(B_.runes[1].id, 3191, 'the old rune list is carried')
+eq(B_.runes[2].id, 3198, 'second old rune')
+eq(B_.runesVersion, 1, 'the list is marked')
+eq(Cc.runes[1].id, 3174, 'a list of this helper is not converted again')
+eq(#Cc.runes, 3, 'rune rows padded')
+local rows, dr = C.rulesToRunes({ { type = 'rune', itemId = 3152, enabled = true } }, nil)
+eq(rows[1].id, 0, 'a healing rune is no attack rune row')
+eq(dr, 1, 'and counts as dropped')
 
 if fails > 0 then os.exit(1) end
 print('helper_config_test: ok')

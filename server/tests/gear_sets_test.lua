@@ -102,7 +102,7 @@ local pool = assert(io.open("data/scripts/chaos/bounty_pool.lua", "r")):read("*a
 for name in pool:gmatch('name = "([^"]+)"') do
 	known[name] = true
 end
-local p = io.popen('ls data/monster/monsters/chaos/*.xml 2>/dev/null')
+local p = io.popen("find data/monster/monsters/chaos -name '*.xml' 2>/dev/null")
 for path in p:lines() do
 	local text = assert(io.open(path, "r")):read("*a")
 	local name = text:match('<monster name="([^"]+)"')

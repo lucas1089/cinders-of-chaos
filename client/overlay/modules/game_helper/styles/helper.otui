@@ -1,5 +1,5 @@
-// The helper window (game_helper, client/MANIFEST.md "Helper"): four tabs (Healing, Combat, Support, Tools), the Auto setup
-// host row and the status line. Styles from client_chaos_theme. The rows are made by helper.lua; every text goes through
+// The helper window (game_helper, client/MANIFEST.md "Helper"): six tabs (Healing, Combat, Runes, Allies, Support, Tools),
+// the Auto setup host row and the status line. Styles from client_chaos_theme. The rows are made by helper.lua; every text goes through
 // tr() (pt-BR in client_chaos_locale/pt_br.lua).
 //
 // The ids below are looked up by the other helper modules (game_helperrotation, game_helpersupport, game_helperhud):
@@ -191,13 +191,80 @@ ChaosHelperSlotRow < UIWidget
     !text: tr('Self')
     !tooltip: tr('Cast it on yourself, not on the target')
 
+// a spell or a rune picker: an optional icon, a combo, a label and a second combo (a count)
+ChaosHelperPickRow < UIWidget
+  height: 36
+
+  ChaosHelperIcon
+    id: icon
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+
+  ChaosComboBox
+    id: spell
+    width: 260
+    height: 22
+    anchors.left: icon.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 8
+
+  ChaosLabel
+    id: label
+    anchors.left: spell.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 10
+    text-auto-resize: true
+
+  ChaosComboBox
+    id: count
+    width: 64
+    height: 22
+    anchors.left: label.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 6
+
+// one attack rune of a preset: the rune, the monsters it must hit and the health range of the target. Fixed columns.
+ChaosHelperRuneRow < UIWidget
+  height: 30
+
+  ChaosComboBox
+    id: rune
+    width: 230
+    height: 22
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+
+  ChaosComboBox
+    id: creatures
+    width: 52
+    height: 22
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 240
+
+  ChaosComboBox
+    id: hpMin
+    width: 78
+    height: 22
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 302
+
+  ChaosComboBox
+    id: hpMax
+    width: 78
+    height: 22
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 390
+
 ChaosHelperTab < ChaosTabButton
-  size: 116 26
+  size: 98 26
 
 // ---------------------------------------------------------------- the window
 ChaosHelperWindow < ChaosMainWindow
   id: helperWindow
-  size: 520 600
+  size: 640 600
   !text: tr('Helper')
 
   Panel
@@ -244,9 +311,23 @@ ChaosHelperWindow < ChaosMainWindow
       !text: tr('Combat')
 
     ChaosHelperTab
-      id: supportMenu
+      id: runesMenu
       anchors.top: parent.top
       anchors.left: combatMenu.right
+      margin-left: 4
+      !text: tr('Runes')
+
+    ChaosHelperTab
+      id: alliesMenu
+      anchors.top: parent.top
+      anchors.left: runesMenu.right
+      margin-left: 4
+      !text: tr('Allies')
+
+    ChaosHelperTab
+      id: supportMenu
+      anchors.top: parent.top
+      anchors.left: alliesMenu.right
       margin-left: 4
       !text: tr('Support')
 
@@ -506,6 +587,319 @@ ChaosHelperWindow < ChaosMainWindow
           !text: tr('Only reachable monsters')
           !tooltip: tr('Skip monsters you cannot get to')
 
+    // ------------------------------------------------------------ Runes
+    ChaosPanelDark
+      id: runesPanel
+      anchors.fill: parent
+      visible: false
+
+      ChaosHelperHeading
+        id: runeHealTitle
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        !text: tr('Healing runes on yourself')
+
+      Panel
+        id: runeHealRows
+        anchors.top: runeHealTitle.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: 56
+
+      ChaosHelperHint
+        id: runeHealHint
+        anchors.top: runeHealRows.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        !text: tr('Runes are taken from your backpacks. Health runes go on the healing timer.')
+
+      ChaosHelperHeading
+        id: runeAttackTitle
+        anchors.top: runeHealHint.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin-top: 10
+        !text: tr('Attack runes on the target (this preset)')
+
+      Panel
+        id: runeHeading
+        anchors.top: runeAttackTitle.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: 16
+
+        ChaosHelperHint
+          anchors.left: parent.left
+          anchors.top: parent.top
+          width: 230
+          !text: tr('Rune')
+
+        ChaosHelperHint
+          anchors.left: parent.left
+          anchors.top: parent.top
+          margin-left: 240
+          width: 60
+          !text: tr('Monsters')
+          !tooltip: tr('The least number of monsters the rune must hit')
+
+        ChaosHelperHint
+          anchors.left: parent.left
+          anchors.top: parent.top
+          margin-left: 302
+          width: 84
+          !text: tr('Target from')
+          !tooltip: tr('The rune is used while the target has at least this percent of health')
+
+        ChaosHelperHint
+          anchors.left: parent.left
+          anchors.top: parent.top
+          margin-left: 390
+          width: 84
+          !text: tr('Target to')
+          !tooltip: tr('The rune is used while the target has at most this percent of health (Any: no limit)')
+
+      Panel
+        id: runeAttackRows
+        anchors.top: runeHeading.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: 90
+
+      ChaosHelperHint
+        id: runeAttackHint
+        anchors.top: runeAttackRows.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        !text: tr('Attack runes are used while Magic shooter is on. Only damage runes are listed.')
+
+    // ------------------------------------------------------------ Allies
+    ChaosPanelDark
+      id: alliesPanel
+      anchors.fill: parent
+      visible: false
+
+      ChaosHelperHeading
+        id: alliesTitle
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        !text: tr('Heal party and friends')
+
+      Panel
+        id: partyRow
+        anchors.top: alliesTitle.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: 28
+
+        ChaosCheckBox
+          id: partyEnable
+          width: 220
+          anchors.left: parent.left
+          anchors.verticalCenter: parent.verticalCenter
+          !text: tr('Heal party members')
+          !tooltip: tr('Heal the members of your party who are in view')
+
+        ChaosLabel
+          id: partyLabel
+          anchors.left: partyEnable.right
+          anchors.verticalCenter: parent.verticalCenter
+          margin-left: 10
+          text-auto-resize: true
+          !text: tr('Health at or below')
+
+        ChaosComboBox
+          id: partyPercent
+          width: 64
+          height: 22
+          anchors.left: partyLabel.right
+          anchors.verticalCenter: parent.verticalCenter
+          margin-left: 6
+
+      Panel
+        id: friendsRow
+        anchors.top: partyRow.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: 28
+
+        ChaosCheckBox
+          id: friendsEnable
+          width: 220
+          anchors.left: parent.left
+          anchors.verticalCenter: parent.verticalCenter
+          !text: tr('Heal friends by name')
+          !tooltip: tr('Heal the players named below when they are in view')
+
+        ChaosLabel
+          id: friendsLabel
+          anchors.left: friendsEnable.right
+          anchors.verticalCenter: parent.verticalCenter
+          margin-left: 10
+          text-auto-resize: true
+          !text: tr('Health at or below')
+
+        ChaosComboBox
+          id: friendsPercent
+          width: 64
+          height: 22
+          anchors.left: friendsLabel.right
+          anchors.verticalCenter: parent.verticalCenter
+          margin-left: 6
+
+      Panel
+        id: friendNames
+        anchors.top: friendsRow.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: 54
+
+        ChaosTextEdit
+          id: friendName1
+          width: 190
+          anchors.top: parent.top
+          anchors.left: parent.left
+          margin-top: 2
+          max-length: 29
+
+        ChaosTextEdit
+          id: friendName2
+          width: 190
+          anchors.top: parent.top
+          anchors.left: friendName1.right
+          margin-top: 2
+          margin-left: 8
+          max-length: 29
+
+        ChaosTextEdit
+          id: friendName3
+          width: 190
+          anchors.top: parent.top
+          anchors.left: friendName2.right
+          margin-top: 2
+          margin-left: 8
+          max-length: 29
+
+        ChaosTextEdit
+          id: friendName4
+          width: 190
+          anchors.top: friendName1.bottom
+          anchors.left: parent.left
+          margin-top: 6
+          max-length: 29
+
+        ChaosTextEdit
+          id: friendName5
+          width: 190
+          anchors.top: friendName1.bottom
+          anchors.left: friendName4.right
+          margin-top: 6
+          margin-left: 8
+          max-length: 29
+
+      ChaosHelperHeading
+        id: allySpellTitle
+        anchors.top: friendNames.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin-top: 4
+        !text: tr('Heal spell for one player')
+
+      ChaosHelperPickRow
+        id: allySpellRow
+        anchors.top: allySpellTitle.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+
+      ChaosHelperHeading
+        id: allyGroupTitle
+        anchors.top: allySpellRow.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        !text: tr('Heal spell for a group')
+
+      ChaosHelperPickRow
+        id: allyGroupRow
+        anchors.top: allyGroupTitle.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+
+      ChaosHelperHeading
+        id: allyRuneTitle
+        anchors.top: allyGroupRow.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        !text: tr('Heal rune for one player')
+
+      ChaosHelperPickRow
+        id: allyRuneRow
+        anchors.top: allyRuneTitle.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+
+      ChaosHelperHint
+        id: allyHint
+        anchors.top: allyRuneRow.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        !text: tr('Your own heals come first. Only players in view and in line of sight are healed.')
+
+      ChaosHelperHeading
+        id: followTitle
+        anchors.top: allyHint.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin-top: 6
+        !text: tr('Follow')
+
+      Panel
+        id: followRow
+        anchors.top: followTitle.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: 28
+
+        ChaosCheckBox
+          id: followEnable
+          width: 130
+          anchors.left: parent.left
+          anchors.verticalCenter: parent.verticalCenter
+          !text: tr('Follow')
+          !tooltip: tr('Walk after a friend or the party leader. Stops in a protection zone and when the leader leaves your screen')
+
+        ChaosComboBox
+          id: followMode
+          width: 170
+          height: 22
+          anchors.left: followEnable.right
+          anchors.verticalCenter: parent.verticalCenter
+          margin-left: 8
+
+        ChaosTextEdit
+          id: followName
+          width: 190
+          anchors.left: followMode.right
+          anchors.verticalCenter: parent.verticalCenter
+          margin-left: 8
+          max-length: 29
+
+        ChaosLabel
+          id: followDistanceLabel
+          anchors.left: followName.right
+          anchors.verticalCenter: parent.verticalCenter
+          margin-left: 10
+          text-auto-resize: true
+          !text: tr('Distance')
+
+        ChaosComboBox
+          id: followDistance
+          width: 56
+          height: 22
+          anchors.left: followDistanceLabel.right
+          anchors.verticalCenter: parent.verticalCenter
+          margin-left: 6
+
     // ------------------------------------------------------------ Support (game_helpersupport builds its panel here)
     Panel
       id: supportHost
@@ -556,8 +950,62 @@ ChaosHelperWindow < ChaosMainWindow
           margin-left: 8
 
       ChaosHelperHeading
-        id: hudTitle
+        id: sellTitle
         anchors.top: exerciseRow.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin-top: 12
+        !text: tr('Auto sell')
+
+      Panel
+        id: sellRow
+        anchors.top: sellTitle.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: 30
+
+        ChaosCheckBox
+          id: sellEnable
+          width: 250
+          anchors.left: parent.left
+          anchors.verticalCenter: parent.verticalCenter
+          !text: tr('Sell the Loot Bag by itself')
+          !tooltip: tr('Ask the Auto Seller to sell your Loot Bag. Needs the Auto Seller from the store. Locked items, unique items and items you wear are never sold')
+
+        ChaosComboBox
+          id: sellMinutes
+          width: 150
+          height: 22
+          anchors.left: sellEnable.right
+          anchors.verticalCenter: parent.verticalCenter
+          margin-left: 8
+
+      Panel
+        id: sellCapRow
+        anchors.top: sellRow.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: 30
+
+        ChaosCheckBox
+          id: sellBelowCap
+          width: 250
+          anchors.left: parent.left
+          anchors.verticalCenter: parent.verticalCenter
+          !text: tr('Also when free capacity is low')
+          !tooltip: tr('Sell as soon as your free capacity is at or below the number, without waiting for the timer')
+
+        ChaosComboBox
+          id: sellCapacity
+          width: 150
+          height: 22
+          anchors.left: sellBelowCap.right
+          anchors.verticalCenter: parent.verticalCenter
+          margin-left: 8
+
+      ChaosHelperHeading
+        id: hudTitle
+        anchors.top: sellCapRow.bottom
         anchors.left: parent.left
         anchors.right: parent.right
         margin-top: 12

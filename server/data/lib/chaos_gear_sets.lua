@@ -14,7 +14,7 @@
 -- 64 per set (server ids 36995..37442, data/lib/chaos_gear_sets_items.lua, generated with their levels and stats).
 -- Each set covers every class (heavy, medium and cloth armour, the weapons of every line) over a level band:
 --   Blightfang 8-150 (venom), Wyrmscale 40-220 (green dragon), Cinderwrought 120-450 (fire), Bloodmoon 300-650
---   (blood), Rimewraith 450-1000 (frost and spectral), Azure Vigil 800-1350 (holy), Gildcrown 1200-2000 (gold).
+--   (blood), Rimewraith 450-1000 (frost and spectral), Azure Vigil 800-1350 (holy), Gildcrown 1250-2000 (gold).
 --
 -- How players get them: loot of the monsters of the set's theme (sources below), every piece whose level is near the
 -- monster's (window), a small total chance per kill shared by those pieces; the themed bosses more. The chaos loot
@@ -76,9 +76,9 @@ M.sources = {
 		bosses = {{"Ossivane the Gravecage", 1100}}
 	},
 	gildcrown = {
-		monsters = {{"Golden Dragon", 1160}, {"Winterstride", 1220}, {"Bloodantler Fiend", 1600},
-			{"Mirecoil Wyrm", 1900}},
-		bosses = {{"Vaelith the Fallen Seraph", 1700}}
+		monsters = {{"Winterstride", 1220}, {"Bloodantler Fiend", 1600},
+			{"Mirecoil Wyrm", 1900}, {"Pyrewing Tyrant", 2000}, {"Pyre Stork", 2000}},
+		bosses = {{"Vaelith the Fallen Seraph", 1700}, {"Azhkarrath the Chained Wyrm", 2100}}
 	}
 }
 
@@ -171,7 +171,7 @@ M.bonuses = {
 		{n = 4, stats = {monsterreduction = 3, healing = 4}},
 		{n = 6, stats = {monsterreduction = 2, maxhealthpct = 4}}
 	},
-	gildcrown = { -- gold and loot (1200-2000)
+	gildcrown = { -- gold and loot (1250-2000)
 		{n = 2, stats = {goldfind = 10}},
 		{n = 4, stats = {rarityfind = 8, itemfind = 5}},
 		{n = 6, stats = {bossdamage = 6}}

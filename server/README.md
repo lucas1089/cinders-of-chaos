@@ -1012,7 +1012,7 @@ Texts: the base `!exp` line "You didn't have any current Double EXP enhancement.
 | `!build export/import/confirm/cancel` | Character > Passive Tree (Alt+P), Build Code panel |
 | `!achievements`, `!title [name]` | Character > Achievements (title selector: every title held, over the opcode) |
 | `!pet [summon/dismiss/rename]` | Character > Pets |
-| `!classes`, `!ascension`, `!exp`, `!pos`, `!resis`, `!kills`, `!deathlist`, `!ancestral`, `!deck` | Character > Character Info |
+| `!classes`, `!ascension`, `!exp`, `!pos`, `!resis`, `!kills`, `!deathlist`, `!ancestral`, `!deck` (`cards.lua`: every card with what it gives, the decks; replaces the base dialog) | Character > Character Info (`deck` runs on open) |
 | `!changename`, `!changevocation`, `!ascend` (free switch), `!skiptutorial`, `!summonfamiliar`, `!familiarlevel`, `!choosefamiliar`, `!shop` (web shop items) | Character > Services |
 | `!rift` | Adventure > Rifts |
 | `!tower [start/leave]` | Adventure > Infinity Tower (Enter / Leave Tower buttons) |
@@ -1783,6 +1783,20 @@ split (`Game::combatChangeHealth`); no Chaos patch changes it.
   on a mocked engine flow), the mana shield checks of `monster_tiers_test`, `boss_mechanics_test`, `raid_test`,
   `pocketboss_test`, `invasion_test`, `trials_flow_test`, `archetypes_test`, `class_keystones_test`,
   `tools/patch_spell_cap_test.py`. Not run on a live server.
+
+### Attack kit (owner 2026-10-23: "devem ter a mesma quantidade"; `attack_kit_config.lua`, `attack_kit_core.lua`, `data/spells/chaos/_attackkit.lua`)
+
+Every class and ascension has 10 attack spells (rule, list, balance: `data/spells/README.md` "Attack spell parity").
+37 spells in `spells_chaos.xml`, each with a stub script under `data/spells/chaos/<line>/` that calls
+`AttackKit.cast(key, creature, variant)`; the numbers are in `attack_kit_config.lua` (also `rotation_model.csv`; the
+test `tests/attack_kit_test.lua` keeps config, XML and model equal, and casts every spell on a mocked engine). Shapes:
+single, dot, circle, around, wave, line. Hits go through the school's helpers (Templar holy strike, Necromancer damage and
+dots, Monk chi and finisher, Thief weapon strikes, `doTargetCombat` with ORIGIN_SPELL for the rest), so the class spell
+factor applies as for the other spells. `chaos_supports_config.lua` `kindOverride` keeps them out of Support.
+The spell cap is now 20 (`patch_spell_cap.py` `MAX_SPELLS`). The 37 ids are base ids the cap retires; `register_spells`
+runs after the cap and skips commented-out instants, so they are free at install. Opcodes and storage keys: none new.
+CI step "Attack spell parity": `tools/ci/check_attack_counts.py` (21 classes x 10) and its test. Not run on a live
+server.
 
 ### Monster spells (owner report 2026-10-21: "Unknown spell name: arc bolt" / "dread" after the spell cap)
 
@@ -2963,6 +2977,41 @@ Before this the uniques stopped at level 1000 with flat stats, and the first one
 - Lists: `data/items/README.md` "Leveling and endgame uniques". Tests: `tests/unique_mods_test.lua` (every spec.mods key
   and cap, ChaosMakeUnique writes T8 modifiers the totals count, levels, rules, one power per endgame unique, drop
   sources), `tests/unique_equip_test.lua` (an empty class list).
+
+## Thief dual wield, attack speed and daggers (2026-10-23)
+Owner: "thief deveriam ser criados já com dual wield de daggers. devem atacar mais rápido que a outras classes, empatado com o monk"
+and "adicione também mais daggers pros thiefs". Class rules: docs/CLASSES.md; balance numbers: `data/spells/README.md` "Thief dual wield
+and attack speed". Lua and XML only: no engine rebuild (src-patch 0002 already reads the dual-wield storage and scales the weapon speed
+by the vocation's); a server restart after `install_all.py` loads the new vocation speeds.
+- **Dual wield for the Thief.** `ChaosClasses.isDualWielder` (`Chaos.classes.dualWield.vocations`: Thief 11 and Ninja 12; the Samurai
+  keeps one sword). `syncDualWield` keeps storage 7100200 at 1 for them (login, ascension, vocation change), which lets the
+  engine put a one-handed sword in the shield hand; `thief_combat.lua` adds the off-hand strike. A Thief who ascends to the Samurai
+  keeps a dagger already in the shield hand (it does nothing there).
+- **Kit.** `newplayer_config.lua` `thief`: dagger 2379 in the left hand and in the right hand (`NP.giveWearable` syncs the storage
+  first, the login event of the class may come after the kit's); no spare dagger in the backpack any more. The Ninja inherits it.
+  The Samurai has `{slot = "right", none = true}`: a `none` row drops the base kit's slot (`NP.resolveKit`), so it keeps one katana.
+- **Existing Thieves.** At login `ChaosClasses.grantOffhand` gives one dagger 2379 into an EMPTY shield hand, once per character
+  (storage `Chaos.storage.offhandGranted`, 7100204, set before the add so a failure never repeats it), only to a base Thief
+  (11) with a one-handed sword in the main hand. Nothing when the shield hand holds a shield (the grant stays open until it is
+  empty; it is still one dagger, ever), a weapon already there marks the flag without giving anything, and a Ninja or Samurai gets
+  none (the Ninja's old kit had the spare in the backpack). Not exploitable: one common dagger (2 gold) per character, flag
+  per character, not reset by a vocation change. Test: `classes_test.lua`.
+- **Attack speed.** `chaos_vocations.xml`: Thief 1500, Ninja 1300, Samurai 1700 (the Monk line 1500 / 1300 / 1700, everyone else
+  2000). `Chaos.classes.attackSpeed` lists was / now; `ChaosClasses.speedComp` (now / was) cuts the weapon hits of those three
+  in `thief_combat.lua` so their damage per second is unchanged, and `dualNeutral` (Thief only) cuts the main hit by
+  1 / (1 + share x ratio) while both hands hold a light blade. A test reads the vocation XML and fails if the table and the XML
+  disagree, if the Thief is not tied with the Monk or if any class outside the two lines is not at 2000.
+- **Thief daggers.** Five uniques on dagger-sprite bases (one unique per base id), see `data/items/README.md` "Thief daggers":
+  Cutpurse's Sliver (knife, level 10) and Moonlit Shiv (silver dagger, 28) from magic monsters and up of the low hunts (every class);
+  Gravewhisper Stiletto (combat knife, 600), Nightbloom Stiletto (poison dagger, 1250) and Misericorde of the Pale Vow (drownkin
+  ceremonial dagger, 1900) for the Thief line, with attack speed and the line's poison / penetration modifiers (the last two with a
+  legendary power, from waystone kills). Bands: 1-9 the shop dagger (2379), 10-27 and 28-599 the two leveling daggers and the stock
+  daggers (assassin dagger 7404 from level 40, ceremonial 27193 from 180), 300 the Duskstalker Fang, 600+ the Thief-only ones up
+  to 2400+. Attack by the gear curve (`install_gear_sets.py`); the auto attack power factors (`weapon_power_config.lua`,
+  `weapon_sim.py --power --check` passes) scale it as every melee weapon. Only the level 600+ ones are Thief-line only. Drop pool,
+  codex, wiki and tooltip come from the same files as every unique (`gen_unique_specs.py`, `gen_codex_data.lua`,
+  `gen_wiki_data.lua`); uniques have no NPC price (`gen_item_prices.py --check`).
+- Storage 7100204 is in the 7100000-7100999 block (`Chaos.storage`), next to 7100200-7100203.
 
 ## Build sharing (`buildshare.lua`, `buildshare_core.lua`)
 A build can be exported as a short text code and imported on another character (or after a reset). The server encodes, decodes,
@@ -5356,7 +5405,9 @@ por favor?" Audit (the base engine is TFS 1.4.2 and no src-patch touches `Weapon
     typical skill, so the balance numbers stand; +10 skill at level 1000 is now +9.3% instead of +5.6%, +28 skill +26.7%
     instead of +15.7% (table in server/data/spells/README.md "Auto attack power"). A wand keeps the magic level factor of
     "Weapon damage scales with skills".
-* Not touched: fists (the Monk line is at 58% of its rotation), spells, runes, conditions, procs. The tooltip's "Estimated
+* Fists (kind `fist`: the Monk's bare hands and fist weapons, applied in `monk_combat.lua`): the level factor is 1.00 (the
+  Monk line is at 53-62% of its rotation already, target 30%); the skill factor applies with the fist skill. Not touched:
+  spells, runes, conditions, procs. The tooltip's "Estimated
   DPS" (`weapon_dps_core.lua`) includes both factors when `weapon_power_core.lua` is loaded (`item_tooltip.lua` loads it).
 * To retune: change `POWER_KINDS` (share, reference class) or `SKILL_POWER` in `tools/weapon_sim.py`, run `--power --write`.
   A class or spell change moves the rotation numbers, `--power --check` (CI) then asks for a new config.
@@ -7099,6 +7150,7 @@ service NPCs that replaced them sell none. **Veyra the Apothecary** stands in th
 | antidote 8474 | 50 | level 0 |
 | ten runes: Mending, Grand Mending, Dispel, Greater Hexdart, Rockfall, Stormcall, Frostfall, Searing Orb, Reaper's, Shackle | the rune supply's price (95, 240, 30, 23, 70, 70, 84, 84, 220, 890) | the runes of the store's packs. The other runes and the unscribed rune stay with Raloth and Isora (`chaos_rune_supply.lua` `vendors`) |
 | rope 2120 / shovel 2554 / torch 2050 / backpack 1988 | 50 / 50 / 2 / 20 | |
+| decks: Bronze 27632 / Silver 27633 / Golden 27634 | 1,000 / 6,000 / 30,000 | level 0 / 50 / 100; 5 / 10 / 20 cards ("Cards and decks"). Owner 2026-10-23: "coloque o deck à venda na Veyra também" |
 | buys: the old empty potion flasks 7634-7636 | 5 | the item price table's price; no potion leaves a flask any more ("Potions") |
 
 - **Prices.** The base server's lowest asking price per potion (`hunt_supplies.lua`), docs/PRICES.md. Great Spirit is 190
@@ -7107,7 +7159,7 @@ service NPCs that replaced them sell none. **Veyra the Apothecary** stands in th
   gold a coin at her single prices, so coins never buy supplies below their gold value. No arbitrage: every price is at
   least twice what any NPC pays for the item (`ChaosItemPrices`, `buyShare`) and `install_item_prices.py` changes none of her
   entries (checked in `tools/install_apothecary_test.py`).
-- **Level gate.** The shop system has none, so her script (`CALLBACK_ONBUY`) refuses a buyer below the potion's level with a line
+- **Level gate.** The shop system has none, so her script (`CALLBACK_ONBUY`) refuses a buyer below the potion's (or the deck's) level with a line
   ("A <potion> is for level N and up, and you are not there yet."). The potion script still decides who may drink (vocations,
   level). **Assumed, not read from the base items** (the base server is not in the repo): the levels of the stock potions
   (50, 80, 130, 200) and that 8704 is the small health potion, 8474 the antidote and 26029 / 26030 / 26031 the ultimate mana,
@@ -7122,6 +7174,79 @@ service NPCs that replaced them sell none. **Veyra the Apothecary** stands in th
   `tools/install_apothecary_test.py` (files, dry run, idempotence; the rune, potion and price steps on her XML), `tests/npc_booths_test.lua`.
 
 Not seen in a client or on a live server: her stall, the trade window, the level refusals.
+
+## Cards and decks (`cards.lua`, `cards_core.lua`, `cards_config.lua`, `tools/patch_badges.py`, `tools/gen_card_descriptions.lua`)
+
+Owner 2026-10-23 (pt-BR): "como alguém pega um deck pra colocar as cartas? usar elas não funciona e no character info só diz
+se ela está ativada ou desativada", then "as cartas ainda referenciam as magias antigas" (a card said "convert Exori Mas
+Spell to Earth damage"). The base deck system (76 cards, 3 decks) stays; Chaos fixes how it is reached, read and named.
+No opcode, no table, no storage key of its own: the base's card storages (37000-37059, 37065-37080) and action id 37866.
+
+- **Root cause of "use does nothing".** The base registers a use action for every card (`deckSystem:id(cardId)`), but it
+  only does something for a card that is already inside a deck: it looks for the card with `container:getItemsById` in the
+  deck and flips its storage. A card loose in the backpack with a deck carried was not found, and the player got the
+  base line "This card cannot be used on this deck slot..."; with no deck carried the action returned nothing and the engine
+  said "You cannot use this object". Nothing ever said where a deck comes from (decks dropped from monsters and came from
+  one task; the roulettes lost them with the badge slot change). `!deck` only printed "Activated" or "Deactivated" per card.
+- **Use a card** (`patch_badges.py` step 4 puts one hook at the top of the base card action: `ChaosCards.use(player, item)`;
+  nil means "not a card", so the base runs). The card is looked up in every bag the player carries at any depth, closed bags
+  and decks included (`ChaosCards.scan`, at most `scanLimit` 600 items; slots 1-10, 12, 13, never the store inbox). Then
+  `ChaosCardsCore.decide`: **off** (it was the copy that is on: storage 0, action id off), **dupe** (another copy is on:
+  one copy counts), **max** (five cards on), **on** (it already sits in a deck), **move** (it goes into the first carried
+  deck with room, the biggest deck first, then turns on), **nodeck** (the text says to buy one from Veyra with the three
+  prices, read from `apothecary_config.lua`) or **full**. Messages go through `Chaos.t`, pt-BR in `i18n_strings.lua`.
+- **Decks.** Veyra the Apothecary sells Bronze (5 cards) 1,000 gold, Silver (10) 6,000 from level 50, Golden (20) 30,000
+  from level 100 ("The Apothecary"); decks still drop and one task gives one. A deck is carried, not worn.
+- **Character Info.** The `deck` command (`ChaosCommands`, replaces the base `!deck` dialog) lists the decks carried with
+  used and total slots, the cards that are on (at most five) with what each gives, the cards in decks that are off, the
+  cards carried outside a deck, and, without a deck, how to get one. The text stays under `maxTextBytes` (6,000; the list
+  ends with "... and N more."), below the extended opcode's 8,192 bytes, so `Chaos.sendChunked` is not needed. The client
+  page runs `deck` when Character Info opens (`game_chaosinfo`, 6 auto commands, the server's `MAX_IDS`); an older client
+  still gets the richer text from the Card Deck button.
+- **State stays true.** `ChaosCards.reconcile` runs on use, on `deck`, at login and every 60 s (`reconcileMs`): a card whose
+  storage is 1 but whose copy is no longer in a carried deck (dropped on death, a bag put away) is turned off with a
+  message, and a stray action id (a second copy, a copy outside a deck) is cleared so the card can be moved again. Login is
+  silent when nothing changed. A card counts once however many decks or copies a player has.
+- **The cards name the spells you have.** The 60 common cards are 15 lines of 4 tiers; the base wrote the stock spell into
+  each text. Every line belongs to one current spell in `cards_config.lua` (name and spell id). What each line does in the
+  base: the spell scripts read the card storages (convert lines: the highest tier on sets the element; Deep Mending: a
+  stronger heal; Blood Rage: longer and stronger; Challenge: a wider area). Six lines still have their stock script (Tempest
+  Fan, Sanctum Burst, Frostfall Rune, Pyre Torrent, Bloodlust, Taunt of Iron) and work as they did. Nine lines belonged to
+  spells that were retired (`rename_spells.py`, `patch_spell_cap.py`, `retire_cure_spells.py`), so their cards did nothing;
+  they now act on the Chaos spell of the same role:
+
+| Line (first card) | Stock spell | Now acts on | What it does |
+|---|---|---|---|
+| 27482 | Berserk | Reaping Gyre | element of the highest tier on |
+| 27486 | Terra Wave | Rime Bloom | element |
+| 27502 | Eternal Winter | Doomtide | element |
+| 27506 | Rage of the Skies | Primordial Squall | element |
+| 27510 | Groundshaker | Earthbreaker | element |
+| 27522 | Strong Ice Wave | Frozen Crypt | element |
+| 27526 | Intense Healing | Grand Mending | heals 10 / 20 / 30 / 40 percent more |
+| 27530 | Divine Missile | Dawnpiercer | element |
+| 27538 | Sharpshooter (no consumer even in the base) | Tautstring | 2 / 4 / 6 / 8 seconds longer, 2 / 4 / 6 / 8 more percentage points of distance skill |
+
+  The `ChaosCardsHit` creature event (`cards.lua`, on the monsters a player attacks and on every player at login) reads the cast
+  context the spells state writes (`ChaosSupports.ctxDecode`), and for these spell ids moves the whole hit to the element
+  (`ChaosSupports.convert` with the target's resistances) or scales the heal (`ChaosSupports.scale`). Tautstring reads the
+  line's storages itself (`cards_config.lua` `buffBonus`, the spells state). The base spell scripts, `supports.lua` and the
+  rune effects are untouched. The eight "hit" lines are `C.byTarget`. The four legendary classes need a weapon in the left
+  hand, not a vocation, and their chances are the base config's 7 / 9 / 14 / 20 percent (the base text said 2 / 3 / 4 / 5).
+- **Descriptions.** `tools/gen_card_descriptions.lua` writes `data/items/card_descriptions.csv` (id, description) from
+  `cards_core.lua` (`--check` in CI); `patch_badges.py` items step puts it into `items.xml` (English), and
+  `item_tooltip.lua` sets the tooltip text per player language (`ChaosCardsCore.description`). Spell and element names come from
+  the config and the item types, so no stock name is in the repo. `tests/cards_test.lua` scans every description (en and
+  pt-BR) for the old stock names and words of `data/spells/spell_names.csv`, requires every line's spell to be a current
+  spell with the right id (`stock_spells.csv`, `spells_chaos.xml`, `patch_spell_cap.py`), and checks the hint matches the tool.
+- **Install:** step `badges` (`patch_badges.py`, idempotent; the hook and the descriptions). The Lua files are scripts.
+- **Tests:** `tests/cards_test.lua` (data, reconcile and decide, the glue on a mocked engine, texts in en and pt-BR, the hit
+  event, Tautstring's bonus, the stale-name scan), `tools/patch_badges_test.py` (hook once, descriptions, hint migration),
+  `tests/apothecary_test.lua` (decks), `client/overlay/modules/game_chaosinfo/chaosinfoview_test.lua`.
+- **Not seen in a client or on a live server.** The base is not in the repo: the right-click menu "Use" entry depends on
+  the item's `.dat` usable flag (the base registered the action, so it is expected); the legendary summons check the base
+  weapon id lists (`itemidKnights` and the others), which may not hold the Chaos weapons, so a legendary card may never
+  fire with them (left, the base script is untouched); the nine moved lines are tested on a mocked engine only.
 
 ## Tile labels (`tile_labels.lua`, `tile_labels_core.lua`, `tile_labels_config.lua`)
 
@@ -9464,7 +9589,7 @@ files,gearsets` (step `gearsets`, after `assetsdecor` and after `vocations`, who
 | Bloodmoon | crimson, blood | 300-650 | Elder Bloodjaw, Bloodfang Reaver, Bloodthirst Bulgeye, Bloodspark Adept, Bloodshade Reaper (326-501) | - |
 | Rimewraith | teal frost, spectral | 450-1000 | Distorted, Capricious and Hazardous Phantom, Frost Hydra (406-449), Glacial Hellcharger, Frost Maiden, Ice Lich (612-1000) | - |
 | Azure Vigil | blue and gold, holy | 800-1350 | Dawn Strayer, Spirit of Purity, Celestial Wyrm (980-1080; Rimecrown Depths, Slagmourn Foundry) | Ossivane the Gravecage |
-| Gildcrown | gold | 1200-2000 | Golden Dragon, Winterstride, Bloodantler Fiend, Mirecoil Wyrm (1160-1900; the gilded owner looks) | Vaelith the Fallen Seraph |
+| Gildcrown | gold | 1250-2000 | Winterstride, Bloodantler Fiend, Mirecoil Wyrm, Pyrewing Tyrant, Pyre Stork (1220-2000; the gilded owner looks) | Vaelith the Fallen Seraph, Azhkarrath the Chained Wyrm |
 
 The bands overlap, so a character always has a set running and the next one starting.
 
@@ -9508,7 +9633,7 @@ The bands overlap, so a character always has a set running and the next one star
 | Bloodmoon (300-650) | Health on Hit +8 | Life on Kill +40 | Health on Hit +8, Health Regeneration +10 per second |
 | Rimewraith (450-1000) | Chance to Chill +8% | Dodge +2% | Ice Resistance +8%, Dodge +1% |
 | Azure Vigil (800-1350) | Death Resistance +8% | Damage Taken from Monsters -3%, Healing Done +4% | Damage Taken from Monsters -2%, Maximum Health +4% |
-| Gildcrown (1200-2000) | Gold Find +10% | Rarity Find +8%, Item Find +5% | Damage to Elites and Bosses +6% |
+| Gildcrown (1250-2000) | Gold Find +10% | Rarity Find +8%, Item Find +5% | Damage to Elites and Bosses +6% |
 
   The tooltip (server `tip.set` for a plain piece, client `tooltiplogic.lua`) and the look text show the set, the pieces
   worn (an open set lists only those), "Active tier: n of 3" and every bonus, active ones bright / "[active]".
@@ -11514,6 +11639,65 @@ on the point (contested; covered by the unit test), parallel brackets, the sched
 `tests/siege_test.lua` covers the schedule, sign-up rules, brackets, the arena geometry, capture control, standings,
 rewards and the champion title.
 
+## Weapon coverage (`tools/weapon_coverage.lua`, `weapon_coverage_config.lua`, `survey_base_weapons.py`, 2026-10-23)
+Owner question: does every class have enough weapons? The audit answers it from the real data, in CI, so a gap fails the build.
+- **What it counts.** For each class (docs/CLASSES.md, all 21) and each level band (1-20, 20-50, 50-100, 100-200, 200-400,
+  400-700, 700-1000, 1000-1500, 1500-2400+): the weapons the class can wield and can get, whose required level is in the band.
+  Wield = the class lists of the stock entry or the unique `equipLines` (Berserker two-handed melee only, Beastmaster bows
+  only, crossbows Ranger and Deadeye, rods Illusionist, Mystic and the Necromancer line). Get = at least one way: a shop sells
+  it, a monster drops it (chance of 0.02% or more per kill), a recipe makes it or a reward gives it. Charge weapons do not
+  count. Power = attack (wand: mean damage) against the tier, the gear set attack curve at the band's own level
+  (two-handed +3, crossbow +3).
+- **Inputs.** `data/items/base_weapons.csv` is a snapshot of the stock weapons of an installed server, made by
+  `python3 -I tools/survey_base_weapons.py INSTALLED_DATA` (like `base_item_values.csv`, so CI needs no game data; run it
+  again when `install_all.py` changes a weapon). The rest is in the repo: `chaos_items.xml`, `chaos_unique_specs.lua`,
+  `chaos_unique_items.lua` (drops), `chaos_gear_sets_items.lua` and `chaos_gear_sets.lua` (sources), `chaos_fist_weapons.lua`,
+  the base recipes and the Chaos monster loot.
+- **Check (CI).** `cd server && luajit tools/weapon_coverage.lua --check` (and `lua5.3`) fails when a class has fewer than
+  `minOptions` (3) weapons in a band, or its best one is under `minPower` (80%) of the tier, unless the cell is listed in
+  `weapon_coverage_config.lua` (`knownGaps`, `handledElsewhere`). It fails too when the table below is out of date. Tighten
+  the numbers in that file. Other commands: `--md` (the table), `--list [Class]` (every weapon of a class by band), `--write`
+  (rewrite the table below).
+- **Gaps found and filled.** Before: Berserker had no weapon at 1500+, Elementalist and Illusionist one, the Ranger line,
+  Beastmaster, Mystic and the Necromancer line two. Beastmaster had two bows at 20-50 and at 700-1000. Fixed with
+  (a) three sources for the Gildcrown level 2000 pieces, which no monster could drop (Pyrewing Tyrant, Pyre Stork,
+  Azhkarrath the Chained Wyrm), (b) the Gildcrown band 1250-2000 (was 1200), which moves the second wand and rod to level
+  1500, and (c) seven uniques with built-in modifiers: Hoarfen Bow (40), Moonlit Gallows Bow (900), Hollow Throne Claymore
+  (1550), Gravetide Arbalest (1800), Emberhowl Greataxe (1950), Wake-Heron Longbow (2100) and Bellringer of the Last Vigil
+  (2200). Their power is 106 to 108% of the tier. Wands and rods have no new unique because a unique keeps the damage of
+  its base item.
+- **Not touched.** The Thief line (dual daggers and daggers) and the Monk line (Monk weapons) are filled by other changes.
+  They have no gap now, so they are not in `knownGaps`.
+- **Limits.** Quivers stop at level 1000 (`chaos_archery_config.lua`). A band can pass with 3 options of one kind.
+
+<!-- weapon-coverage:begin (luajit tools/weapon_coverage.lua --write) -->
+
+| Class | 1-20 | 20-50 | 50-100 | 100-200 | 200-400 | 400-700 | 700-1000 | 1000-1500 | 1500-2400+ |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Warrior | 55/325 | 66/136 | 69/121 | 42/135 | 56/111 | 19/113 | 8/99 | 17/122 | 10/114 |
+| Juggernaut | 55/325 | 66/136 | 69/121 | 42/135 | 56/111 | 19/113 | 8/99 | 17/122 | 10/114 |
+| Berserker | 8/147 | 29/136 | 34/121 | 18/135 | 22/111 | 8/101 | 4/99 | 8/122 | 4/108 |
+| Ranger | 6/114 | 4/110 | 12/111 | 16/121 | 24/101 | 10/101 | 4/106 | 7/101 | 6/107 |
+| Deadeye | 6/114 | 4/110 | 12/111 | 16/121 | 24/101 | 10/101 | 4/106 | 7/101 | 6/107 |
+| Beastmaster | 4/114 | 3/110 | 5/108 | 9/110 | 15/101 | 5/101 | 3/106 | 4/101 | 4/107 |
+| Mystic | 9/135 | 13/215 | 6/182 | 16/253 | 30/131 | 14/145 | 6/100 | 5/153 | 6/100 |
+| Elementalist | 5/135 | 6/215 | 4/182 | 10/253 | 16/131 | 8/145 | 3/100 | 3/153 | 3/100 |
+| Illusionist | 8/135 | 11/215 | 4/182 | 11/253 | 26/131 | 9/145 | 3/100 | 3/153 | 3/100 |
+| Thief * | 60/325 | 68/140 | 73/149 | 43/142 | 56/111 | 20/113 | 8/99 | 18/122 | 7/114 |
+| Ninja * | 60/325 | 68/140 | 73/149 | 43/142 | 56/111 | 20/113 | 8/99 | 18/122 | 7/114 |
+| Samurai * | 55/325 | 66/136 | 69/121 | 42/135 | 56/111 | 20/113 | 8/99 | 18/122 | 7/114 |
+| Necromancer | 9/135 | 13/215 | 6/182 | 16/253 | 30/131 | 14/145 | 6/100 | 5/153 | 6/100 |
+| Lich | 9/135 | 13/215 | 6/182 | 16/253 | 30/131 | 14/145 | 6/100 | 5/153 | 6/100 |
+| Bone Lord | 9/135 | 13/215 | 6/182 | 16/253 | 30/131 | 14/145 | 6/100 | 5/153 | 6/100 |
+| Monk * | 57/325 | 67/167 | 70/121 | 44/135 | 57/111 | 21/113 | 9/106 | 20/122 | 11/114 |
+| Shadowfist * | 57/325 | 67/167 | 70/121 | 44/135 | 57/111 | 21/113 | 9/106 | 20/122 | 11/114 |
+| Iron Sage * | 57/325 | 67/167 | 70/121 | 44/135 | 57/111 | 21/113 | 9/106 | 20/122 | 11/114 |
+| Templar | 55/325 | 66/136 | 69/121 | 42/135 | 56/111 | 19/113 | 8/99 | 17/122 | 10/114 |
+| Inquisitor | 55/325 | 66/136 | 69/121 | 42/135 | 56/111 | 19/113 | 8/99 | 17/122 | 10/114 |
+| Sentinel | 55/325 | 66/136 | 69/121 | 42/135 | 56/111 | 19/113 | 8/99 | 17/122 | 10/114 |
+
+<!-- weapon-coverage:end -->
+
 ## Item prices (`data/lib/chaos_item_prices.lua`, `tools/gen_item_prices.py`, `tools/install_item_prices.py`, the Loot Buyer)
 
 Owner request (2026-10-14): every item a player can loot or craft sells to an NPC at a sensible price, and rarer and
@@ -11723,7 +11907,8 @@ boss loot, the task rewards and the roulette, and no tool puts them back.
   in the base sea tiles). Belts and gloves (24 items, slot type `beltgloves`) have no other use: they can't be worn,
   and since 2026-10-22 the base armorsmith no longer crafts them (its only source; coordinator decision); the Loot
   Buyer buys the copies players hold. Decks and ships keep their sources (the monster loot, the task deck, the first
-  ship), as they work when carried; only the roulette lost them ("Prizes into the backpack"). The items.xml
+  ship), as they work when carried; only the roulette lost them ("Prizes into the backpack"). Veyra the Apothecary sells
+  the three decks ("The Apothecary"). The items.xml
   descriptions say so. `Player:onMoveItem` refuses a move into a retired
   slot with a message (the engine refuses it too).
 - **Migration at login**, idempotent, never deletes: every item in a slot no client draws (12, 14, 15, 16, a deck in
@@ -11748,13 +11933,15 @@ boss loot, the task rewards and the roulette, and no tool puts them back.
 
 `tools/patch_badges.py DATA_DIR [--dry-run] [--check]` (install_all.py step `badges`, after `itemnames`), idempotent:
 1. items.xml: the badges get slot type `badge`; the decks, ships, belts and gloves get their description. The 76
-   cards the deck system turns on (`CARDS`: 27482-27541 and the level 6 legendaries 27547-27631 every 6th, 27640) keep
-   their description with `CARD_HINT` appended: "Put it in a Bronze, Silver or Golden Deck you carry and use it there
-   to turn it on or off." (beta question 2026-10-22: "como eu acesso o deck?"). The legendary levels 1-5 only upgrade:
-   no hint. English only: items.xml descriptions are one text for every viewer ("Server texts in pt-BR": left).
+   cards the deck system turns on (`CARDS`: 27482-27541 and the level 6 legendaries 27547-27631 every 6th, 27640) get the
+   description of `data/items/card_descriptions.csv` ("Cards and decks"): what the card gives, with the Chaos name of the
+   spell, then `CARD_HINT` ("Use it to put it in a deck you carry and turn it on, use it again to turn it off. Veyra the
+   Apothecary sells decks."). A card the file lacks keeps its text with the hint appended. The legendary levels 1-5 only
+   upgrade: no hint. English in items.xml (one text for every viewer); the tooltip and Character Info are in the player's
+   language (pt-BR in `i18n_strings.lua`).
 2. the boss loot's Fury catalyst [3].
 3. `Player:onMoveItem` asks `ChaosBadges.onMoveItem` first.
-4. the base deck system reads the carried deck.
+4. the base deck system: the card action asks `ChaosCards.use` first, and the cards are looked for in the carried deck.
 5. the base sea tiles: a carried ship sails.
 6. the ship NPC says to carry the ship.
 7. `droploot.lua`: the death loss takes slot 13.
@@ -15115,12 +15302,25 @@ effect packs of docs/CREDITS.md into the game. Effects only: no damage, area, ti
   now shows the new art. `combat_fx.lua` sends what it sent before. The pack's word pop-ups (`w_text_*`, English) are
   appended but sent by nothing.
 - **Send offsets of the in-place art** (2026-10-22, owner: "a animação amarela está totalmente fora de centro", Banner
-  Call's `holy_spiral` 405, a 5x5 judgement pillar kept as 4x4, drawn two tiles up and left). The in-place art keeps
-  its bottom-right tile on the tile it is sent to, so 23 ids of 3x3 / 4x4 / 2x3 / 3x2 art sat up-left of the target.
+  Call's `holy_spiral` 405, a 5x5 judgement pillar kept as 4x4, drawn two tiles up and left; again 2026-10-23, "efeito
+  fora de centro. mesma coisa com o efeito amarelo": the blue teleport 11, the login effect, and the yellow holy 201 and
+  262, drawn about a tile down and right). The in-place art keeps its bottom-right tile on the tile it is sent to, and
+  `gen_pack36_fx.py` moved art reaching past that tile up and left as a whole, so each effect's pivot (the ring's
+  middle, the spot the pack author meant) sits a few to some 60 pixels up and left of its place. The first table (23
+  ids) moved every 3x3 / 4x4 art by the size of the art from its appended twin, which was a whole tile too much where
+  the pull was small: the teleport ring was pulled 4, 10 px and got a tile. Now the build records the pull of each
+  effect (`art_import/pack36_replace_pivots.csv`, from the pack art) and
   `data/lib/chaos_fx_send_offsets.lua` (`ChaosFxSendOffset[id] = {dx, dy}`, generated by
-  `client/tools/sprites/gen_fx_send_offsets.py` from the pair 36 specs, `--check` in CI) gives each its centring tile;
-  `Position:sendMagicEffect` (the guard of `chaos_constants.lua`, `fx_send_offset_core.lua`) sends there, so every
-  Lua send (`ChaosSpell.fx`, `Fx`, scripts) is centred. 2x2 art stays at its tile (stock placement). Engine sends
+  `client/tools/sprites/gen_fx_send_offsets.py`, `--check` and a unit test in CI) holds the whole-tile offset that brings
+  the pivot nearest to its place: 15 ids, and every one of the 141 in-place effects ends within 15 px of its place
+  (the old table left 15 of them 17-31 px off, the teleport 11 by 28, the holy 262 by 31; 96 now are within 4 px).
+  Ids no longer listed, because they sit where they were drawn: 3 puff of smoke, 7 fire area, 11 teleport, 167 red
+  smoke, 201 and 262 holy, 226 fire, 309 arcane, 416 dodge. 405 (the 4x4 pillar) goes one tile now, 15 px up and left of
+  the middle (two tiles were 17 px past it); it and 409, 399 and 4 (13-15 px) would fit exactly only with the art re-cut
+  in a new pair. No pair or client change is needed: a server restart is enough, with or without the engine patch.
+  `Position:sendMagicEffect` (the guard of
+  `chaos_constants.lua`, `fx_send_offset_core.lua`) sends there, so every
+  Lua send (`ChaosSpell.fx`, `Fx`, scripts) is centred. Engine sends
   (src-patch 0060): `fx_send_offset_core.lua` hands the same table to the engine at every load of
   `chaos_constants.lua` (`Game.setFxSendOffsets(ChaosFxSendOffset)`, read anew on a reload), and
   `ProtocolGame::sendMagicEffect` sends every packet of a listed id at the centring tile: combat
@@ -15129,7 +15329,9 @@ effect packs of docs/CREDITS.md into the game. Effects only: no damage, area, ti
   effect at the target, as before. Once the engine took the table the Lua guard sends at the target tile, so nothing
   is shifted twice; an engine without 0060 has no `Game.setFxSendOffsets` and the Lua guard shifts the Lua sends as
   before. The pair 29 hit overrides (src-patch 0045) carry their own dx, dy on `ChaosVfx` ids, none in the table.
-  Tests: `tests/fx_send_offset_test.lua` (405 two tiles, no `ChaosVfx` id shifted twice),
+  Tests: `client/tools/sprites/gen_fx_send_offsets_test.py` (the rounding, synthetic pivots, every in-place effect has a
+  pivot and ends within 15 px, the Lua table is the generated one), `tests/fx_send_offset_test.lua` (405 one tile, 11, 201
+  and 262 at their own tile, no `ChaosVfx` id shifted twice),
   `tests/magic_effect_guard_test.lua`, `tests/fx_send_offset_engine_test.lua` (the hand-over, no double shift, an
   engine without the patch), `tools/chaosfxoffsets_test.cpp` (lookup, map clamp, viewers at the edge; CI).
 - **Appended:** effects 855-4101 and missiles 189-250, named in `data/lib/chaos_pack36_fx_ids.lua` (generated by
@@ -16744,6 +16946,28 @@ west to east (north before south in a column). A floor with too few slots is gro
   of the map already stands a monster on counts as a cell (`install_content_areas.spawned_tiles`), and an end
   teleport takes the two cells on its outer side. On the base map only z 6 (31659, 32254) is left without a cell (it
   shares its one cell with 31657). The next install replaces the old blocks.
+  - **Wyrmspine Hollows and the cell-less slot (beta 2026-10-22/23, "Wyrmspine Hollows showcase empty").** Root cause
+    of the empty Wyrmspine showcase: the plan had `display = false` (all its monsters are 4x4 or 5x5, they spilled over
+    the cell walls), so the install added no display spawn for it. `standIn = true` with the base server's 2x2 Elder
+    Wyrm (config `plans`, 2026-10-22) fixes it; the live server gets it with the `contentareas` step, which `update-apply`
+    of `chaos-ctl.sh` (the admin app's update) runs as part of `install_all.py`. Checked on a copy of the base map, full
+    install: Wyrmspine's slot is z 6 31614 (the third of the floor, west wing), its cells 31613 and 31615 on y 32253
+    get the two `Elder Wyrm` blocks; from a spawn file without them the next `contentareas` run adds exactly those two,
+    a second run changes nothing. Not checkable here (no client pair): that look 561 draws and is 2x2 in the pair.
+    Scan of all 103 hunts of the hall in the same install: 102 had a display, Bonewright Galleries (the slot z 6 31659,
+    above) had none. Its slot now keeps a **spare cell**, the tile right behind the teleport (`hall_order.spare_cell`): when
+    the cells beside it all go to the neighbour (`share_cells`) it takes the spare, and a spare that is still a counter
+    tile (`items.counter` = 1642 in `hunt_teleports_config.lua`, ground + counter only, no PZ) is opened by the install
+    (`hall_edit`: the counter item comes off, log "display cell(s) opened"). Now all 103 hunts show a monster; three
+    more (Rotbloom Sanctum, Leechwater Fen, Scorchpit Delve) have one cell instead of two, by the map's shape.
+  - **Loud when a hunt shows nothing.** The install logs `hall: WARNING: ...` for a hunt whose slot has no display cell
+    or no display monster, for a display monster (base or planned hunt) that is no monster of the server and for one
+    that turns invisible; `install_all.py` lifts every `WARNING:` line of the `contentareas` step into its warnings
+    (always shown, counted in the summary; the step output itself cuts after 15 lines). The summary's `hall.nodisplay`
+    lists the hunts. `install_content_areas_test.py` (`shared_cell_checks`, `display_monster_checks`) covers it: the
+    shared-cell case, the warnings, and a scan of every display monster of the CSV and the config (a Chaos monster
+    with a look that is no blank outfit and no `invisible` defense, or a base type under a name `monsternames` keeps);
+    `hunt_teleports_test.lua` refuses a plan with `display = false`.
 - **Beta fixes, 2026-10-20** (owner: "the teleports are wrong ... the quest rewards stayed and the quests are gone",
   "many black squares in the TP room", "the teleports inside the hunts take you to random places"; the cause of each
   checked on a copy of the base map with the installer of the time):
@@ -17762,41 +17986,94 @@ Art from the October 2026 art sets, converted to our 32 px format once and kept 
   map has no valid town area; `tests/invasion_test.lua` passes with them), selling to Grimgan (he is not on the test map).
 
 ## Fist weapons (`tools/install_fist_weapons.py`, `data/lib/chaos_fist_weapons.lua`, `scripts/chaos/fist_weapons.lua`)
-The Monk line's fist weapons (docs/CLASSES.md "Monk"): six new items of our own art (client ids 33654..33659, server ids
-36654..36659; client/MANIFEST.md "Fist weapons and bone effects"). A fist weapon is a hand item of weaponType "shield"
-with an attack (no stock shield has one): on this server the left hand only takes real weapons, so it goes in the shield
-hand; the engine still hits with fists (`Weapon::useFist`), and `monk_combat.lua` and the Monk spells (`_monk.lua`) use its
-attack instead of the level value when it is higher (`ChaosMonk.cfg.unarmed.fistWeapons`). Its defense is a shield's.
+The Monk line's fist weapons (docs/CLASSES.md "Monk"). Owner 2026-10-23: "creio que o monk nao tem armas pra ele. se nao
+tiver, faca por favor".
 
-| item | level | attack | defense | where |
-|---|---|---|---|---|
-| pair of charred hand wraps | 8 | 42 | 4 | weapon dealers 400 gp (buy back 80); Monk 0.9%, Dark Monk 0.7% |
-| ashbound cestus | 60 | 44 | 8 | weapon dealers 7,000 gp (buy back 1,400); Undead Gladiator 0.4%, Renegade Knight 0.3% |
-| pair of ember knuckles | 150 | 46 | 12 | Burning Gladiator 0.35%, Hellfire Fighter 0.3%; Grimgan buys 4,500 |
-| ossuary gauntlet | 300 | 50 | 16 | Bonecleaver, Doombone, Bonelich, Grimbone, Bonecrusher 0.25%; Grimgan buys 12,000 |
-| pair of cinderforged talons | 500 | 55 | 20 | Inferno Juggernaut, Nightflare Dreadknight, Grindmaw the Mauler 0.15%, Orclops Ravager 0.12%; Grimgan buys 28,000 |
-| Grasp of the Pyre Saint (unique, base "pyre saint's grasp") | 650 | 64 | 24 | legendary unique only (`chaos_unique_items.lua`): fist skill +5, crit 4% / +15%, fire absorb 6% |
+* **The gap found.** The Monk did have six fist weapons (levels 8 to 650), but: nothing for levels 1 to 7 and 9 to 59 (the
+  kit was empty hands); one unique (level 650) and none to level up with; after level 650 nothing, so a Monk from level 650
+  to 2400+ wore the same talons or went bare (bare fists reach their cap of 60 at level 800 and nothing beat them); the
+  family was sold only from level 8 and dropped only to level 500; the fist skill did not scale the auto attack (melee got
+  the skill factor of "Auto attack power", fists did not); the Monk's starter kit had no weapon.
+* **Two item families, one list.** A fist weapon is a hand item of weaponType "shield" with an attack (no stock shield has
+  one): on this server the left hand only takes real weapons, so it goes in the shield hand; the engine still hits with
+  fists (`Weapon::useFist`), and `monk_combat.lua` and the Monk spells (`_monk.lua`) use its attack instead of the level
+  value when it is higher (`ChaosMonk.cfg.unarmed.fistWeapons`, kept in step with `ChaosFistWeapons.ids` by
+  `tests/fist_weapons_test.lua`). Its defense is a shield's.
+  * `data/items/fist_items.csv`: the six items of our own art (client ids 33654..33659, server ids 36654..36659;
+    client/MANIFEST.md "Fist weapons and bone effects").
+  * `data/items/fist_claws.csv` (new): thirteen "claws" (nine plain, four unique bases) on looks the pair already has (donor B "claw 1..13", client ids
+    28000..28012, server ids 40000..40012 = client id + 12000). **No new sprite and no client update.** The donor step
+    (`install_donor_items.py`) keeps their items.otb nodes (the same bytes as this tool writes; tested) and leaves their
+    items.xml entries to this tool, which writes the full entries and drops an old bare one.
 
-- Balance: bare fists are 40 + level x 0.025 (at most 60), so each tier is about 2 attack above them at its level: x1.04
-  .. x1.06 damage (level 300 with the ossuary gauntlet: x1.047 by formula; on the test server 979 against 933 per hit
-  over 64 / 76 hits on a dummy). The unique is the only fist weapon above the bare cap (60, level 800).
-- Rarities, item levels, modifiers: drops get the stock rarity roll and the chaos gear pass like any gear;
+| item | server id | level | attack | defense | where |
+|---|---|---|---|---|---|
+| pair of splinter claws | 40000 | 1 | 41 | 2 | weapon dealers 150 gp (buy back 30); the Monk's starter kit |
+| pair of charred hand wraps | 36654 | 8 | 42 | 4 | weapon dealers 400 gp (buy back 80); Monk 0.9%, Dark Monk 0.7% |
+| Vigil-Knot Wraps (unique) | 40009 | 14 | 43 | 8 | magic unique from 16 low-level monsters (Troll, Orc, Spider, Wolf, ...): dodge 4, life on kill 22, skill fist +2 |
+| Chapel-Iron Knuckles (unique) | 40010 | 26 | 44 | 10 | magic unique from 16 mid-level monsters (Ghoul, Mummy, Vampire, ...): shock chance 12, mana on kill 15, skill fist +2 |
+| pair of rustiron claws | 40001 | 35 | 43 | 6 | weapon dealers 2,800 gp (buy back 700) |
+| ashbound cestus | 36655 | 60 | 44 | 8 | weapon dealers 7,000 gp (buy back 1,400); Undead Gladiator 0.4%, Renegade Knight 0.3% |
+| pair of ashen steel claws | 40002 | 100 | 45 | 10 | weapon dealers 12,000 gp (buy back 3,000); Plaguesmith, Cobra Assassin, Wyrmblood Elite 0.25% |
+| pair of ember knuckles | 36656 | 150 | 46 | 12 | Burning Gladiator 0.35%, Hellfire Fighter 0.3%; Grimgan buys 4,500 |
+| ossuary gauntlet | 36657 | 300 | 50 | 16 | Bonecleaver, Doombone, Bonelich, Grimbone, Bonecrusher 0.25%; Grimgan buys 12,000 |
+| pair of cinderforged talons | 36658 | 500 | 55 | 20 | Inferno Juggernaut, Nightflare Dreadknight, Grindmaw the Mauler 0.15%, Orclops Ravager 0.12%; Grimgan buys 28,000 |
+| Grasp of the Pyre Saint (unique, base "pyre saint's grasp") | 36659 | 650 | 64 | 24 | legendary unique only (`chaos_unique_items.lua`): fist skill +5, crit 4% / +15%, fire absorb 6% |
+| pair of emberhide claws | 40003 | 800 | 62 | 26 | Frost Maiden, Glacial Hellcharger 0.15%, Plague Warbringer 0.12%; Grimgan buys 31,000 |
+| pair of voidglass claws | 40004 | 1000 | 63 | 28 | Dawn Strayer, Spirit of Purity, Celestial Wyrm 0.15%, Ossivane the Gravecage 1.5%; Grimgan buys 32,000 |
+| pair of stormforged claws | 40005 | 1250 | 64 | 30 | Golden Dragon, Winterstride 0.12%; Grimgan buys 33,834 |
+| Gravewind Talons (unique) | 40011 | 1400 | 68 | 38 | rare or better, monsters of level 1000+ (chance 6): physical penetration 14, life on hit 45, boss damage 16, blood rush 5, crit 6% / +25%, skill fist +4 |
+| pair of wyrmbone claws | 40006 | 1500 | 65 | 32 | Bloodantler Fiend 0.1%, Vaelith the Fallen Seraph 1.2%; Grimgan buys 33,834 |
+| pair of gravewrought claws | 40007 | 1800 | 66 | 34 | Mirecoil Wyrm 0.1%, Vaelith the Fallen Seraph 1.0%; Grimgan buys 33,834 |
+| Dawnless Gauntlets (unique) | 40012 | 2000 | 70 | 42 | rare or better, monsters of level 1000+ (chance 6): boss damage 20, DoT 30, regen 40, last breath 35, crit 8% / +30%, physical absorb 5%, skill fist +6 |
+| pair of last-dawn claws | 40008 | 2200 | 67 | 36 | Morgrath the Umbral Archmage, Nyxdrath the Midnight Terror 1.5%, Mirecoil Wyrm 0.1%; Grimgan buys 33,834 |
+
+(Attack and defense of a unique are those of its `chaos_items.xml` entry; the base item in the manifest has the same or a
+little lower attack. The Pyre Saint's base is 62 / 22.)
+
+* **Balance.** Bare fists are 40 + level x 0.025 (at most 60, from level 800). A plain tier is 1 to 7 attack above them at its
+  own level: **x1.00 .. x1.12 damage** (asserted in `fist_weapons_test.lua`: a gain over 1 and at most 1.12 at the level of
+  each plain tier; the old tiers measured x1.047 at level 300, 979 against 933 per hit on a dummy). The Monk's auto attack
+  is 53-62% of its single-target spell rotation (`weapon_sim.py --power`, below) and a plain claw adds at most 12% to it,
+  so the share stays where the other weapon classes are (30-60%). The family is an upgrade path and a gear slot, not a new
+  damage tier. The uniques go further on purpose (the Pyre Saint's grasp 64, Gravewind Talons 68, Dawnless Gauntlets 70,
+  up to +17% over the bare cap) and carry their value in modifiers.
+* **Fist skill scales the hit (new).** `weapon_power_config.lua` has a fourth kind `fist` (`POWER_KINDS['fist'] = (0.30,
+  'Monk', 1.5)` in `weapon_sim.py`: lifted to 30% of a Monk's rotation, a lift that never cuts; the Monk is already at
+  53-62%, so the level factor is **1.00 at every level**). The skill factor `(fist skill / typical skill)^0.5`, clamped to
+  0.7 .. 1.6, now applies to bare fists and fist weapons too (`monk_combat.lua`: `WP.hitFactor("fist", level, fist skill)`
+  after `unarmedFactor`). It is 1 at the typical skill (no balance number moves) and +10 skill at level 1000 is +9.3%
+  where the engine alone gave +5.6%. The Monk's attack speed is not touched.
+* Rarities, item levels, modifiers: drops get the stock rarity roll and the chaos gear pass like any gear;
   `chaos_item_mods.lua` treats a shield with an attack as a weapon, so they roll weapon modifiers (attack speed,
-  ailments, penetration, ...). The unique is a copy of its own base item with the attributes of `chaos_items.xml`
-  (`gen_unique_specs.py` now maps `skillFist` to the stock rarity attribute `rarity_fistSkill`).
-- Install: step `fistweapons` of `install_all.py` (`python3 -I server/tools/install_fist_weapons.py DATA_DIR [--dry-run]`):
+  ailments, penetration, ...). A unique is a copy of its own base item with the attributes of `chaos_items.xml`
+  (`gen_unique_specs.py` maps `skillFist` to the stock rarity attribute `rarity_fistSkill` and the `mods` attribute to
+  built-in Chaos modifiers, two to four per unique). Slot `"fist"` in `chaos_unique_items.lua`; the leveling pair drops
+  as magic from ordinary monsters (chance 25), the endgame pair as rare or better from monsters of level 1000+ (chance
+  6, `minMonsterLevel`). The base item of a unique is in no shop and no loot.
+* Prices: `gen_item_prices.py` reads both manifests (`fist_rows()`); the csv `sell` is the table price, the NPC buy is at
+  least twice the sell (no buy-below-sell loop) and the gear price cap (33,834) holds. The cheap tiers are sold by the 17
+  weapon dealers; the rest only drops, and Grimgan buys it.
+* Starter kit: the Monk's new-player kit (`newplayer_config.lua`) gets the pair of splinter claws in the right slot (the
+  shield hand), given at level 1 and worn from level 1. The admin test kit (`admin/testkit.lua`) gets the cinderforged
+  talons.
+* Install: step `fistweapons` of `install_all.py` (`python3 -I server/tools/install_fist_weapons.py DATA_DIR [--dry-run]`):
   items.otb nodes, an items.xml block, a movements.xml block (Equip / DeEquip, slot shield, the level, Monk / Shadowfist /
-  Iron Sage), and the NPC shops: every weapon dealer (an XML buy list with the battle hammer, 17 NPCs) sells the first two
-  and buys them back, Grimgan buys the rest. `install_fist_weapons.py --lua` rewrites `data/lib/chaos_fist_weapons.lua` from
-  `data/items/fist_items.csv` (the importer's manifest). `add_vocations.py` gives the Monk line any fist weapon equip entry
-  (rule `fist`), so a re-run never changes these entries.
-- Loot: `fist_weapons.lua` adds the rows of `ChaosFistWeapons.loot` to the monster types at startup
-  (`MonsterType:addLoot`, chance per 100,000); no monster file changes. The console prints `[Chaos fist weapons] 15 loot
+  Iron Sage), and the NPC shops: every weapon dealer (an XML buy list with the battle hammer, 17 NPCs) sells the cheap
+  tiers and buys them back, Grimgan buys the rest. `install_fist_weapons.py --lua` rewrites
+  `data/lib/chaos_fist_weapons.lua` from both manifests, sorted by level. `add_vocations.py` gives the Monk line any fist
+  weapon equip entry (rule `fist`), so a re-run never changes these entries. The `donoritems` step runs before
+  `fistweapons`; a server that ran the old donor step has bare claw entries, which this tool replaces.
+* Loot: `fist_weapons.lua` adds the rows of `ChaosFistWeapons.loot` to the monster types at startup
+  (`MonsterType:addLoot`, chance per 100,000); no monster file changes. The console prints `[Chaos fist weapons] 34 loot
   rows added to the monster types (0 skipped)`.
-- Tested (`tests/fist_weapons_test.lua`; in game on a test server with the pair `things_custom9_fx`): equip in the shield
-  hand, the look text ("It can only be wielded properly by monks of level 300 or higher"), the unique given with
-  `ChaosGiveUnique`, the loot rows, the damage with and without the gauntlet. Not tested: the NPC trade window (the test
-  map has no NPCs), a real drop.
+* Client: **no client update and no new sprites.** The claws use looks that the current pair already holds (donor B claws,
+  client/MANIFEST.md "Donor art libraries"); names and stats come from the server.
+* Tested (`tests/fist_weapons_test.lua`, `tests/weapon_power_test.lua`, `tests/newplayer_test.lua`,
+  `tools/install_fist_weapons_test.py`; earlier tiers in game on a test server with the pair `things_custom9_fx`): equip in
+  the shield hand, the look text ("It can only be wielded properly by monks of level 300 or higher"), the unique given with
+  `ChaosGiveUnique`, the loot rows, the damage with and without the gauntlet. Not tested live: the new claws and uniques,
+  the NPC trade window (the test map has no NPCs), a real drop.
 
 ## Iron Palm stun on players (`monk_combat.lua`, `monk_chi_core.lua`, spell `ironsage/iron_palm.lua`)
 

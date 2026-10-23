@@ -152,6 +152,11 @@ local function answer(player, data)
 			end
 			local ok, tip = pcall(T.build, item, {equippedIds = equipped, attrs = attrs, wielder = wielder, setState = setState})
 			if ok then
+				-- a card: what it gives and how to use it, in the player's language (cards_core.lua K.description; the item
+				-- type's own text is the English one tools/patch_badges.py installs)
+				if ChaosCardsCore and type(tip) == "table" and ChaosCardsCore.isCard(item:getId()) then
+					tip.desc = ChaosCardsCore.description(Chaos.lang and Chaos.lang(player) or nil, item:getId())
+				end
 				-- the display scale of the item's level requirement (display_scale_core.lua DS.itemTip)
 				row.tip = (ChaosDisplayScale and ChaosDisplayScale.itemTip and ChaosDisplayScale.itemTip(tip) or tip)
 				-- where it comes from (itemfinder.lua F.brief): the first two sources, the expected effort, a token price

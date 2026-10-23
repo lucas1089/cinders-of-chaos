@@ -84,6 +84,10 @@ for _, b in ipairs(cfg.basics) do
 	expected[b.id] = {name = b.name, price = b.price}
 	n = n + 1
 end
+for _, d in ipairs(cfg.decks) do
+	expected[d.id] = {name = d.name, price = d.price}
+	n = n + 1
+end
 eq(#buyable, n, "the XML sells exactly the config's goods")
 for id, e in pairs(expected) do
 	local x = byId[id]
@@ -148,6 +152,14 @@ end
 for _, f in ipairs(sellable) do
 	check(byId[f.id] == nil, "a flask is bought, never sold")
 end
+
+-- the decks: all three tiers (the base deck item ids), dearer and later with each tier
+eq(#cfg.decks, 3, "three decks")
+eq(cfg.decks[1].id, 27632, "Bronze Deck first") eq(cfg.decks[2].id, 27633, "Silver Deck second") eq(cfg.decks[3].id, 27634, "Golden Deck third")
+check(cfg.decks[1].price < cfg.decks[2].price and cfg.decks[2].price < cfg.decks[3].price, "a bigger deck costs more")
+check(cfg.decks[1].level <= cfg.decks[2].level and cfg.decks[2].level <= cfg.decks[3].level, "a bigger deck needs more level")
+-- the NPC script refuses a deck below its level like a potion tier
+check(fileText("data/npc/scripts/" .. scriptName):find("cfg.decks", 1, true) ~= nil, "her script gates the decks")
 
 -- the store's potion packs stay the bulk way: a pack of 100 is worth at least 800 gold a coin at her single price
 -- (shop_config.lua: "about 800 gold a coin"), and the single prices are the ones the packs are built on

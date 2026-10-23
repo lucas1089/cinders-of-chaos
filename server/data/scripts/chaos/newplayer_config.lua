@@ -67,18 +67,19 @@ return {
 		thief = {
 			equip = {
 				{slot = "left", id = 2379}, -- dagger (a one-handed sword)
+				{slot = "right", id = 2379}, -- the second dagger: Thieves dual wield (owner 2026-10-23; classes.lua)
 				{slot = "head", id = 2461},
 				{slot = "armor", id = 2467}, -- leather armor
 				{slot = "legs", id = 2468},
 				{slot = "feet", id = 2643}
 			},
-			backpack = {
-				{id = 2379, count = 1} -- the second dagger (owner 2026-10-17: the Thief starts with 2 daggers)
-			},
+			backpack = {}, -- (until 2026-10-23 the second dagger was a spare here; now it is worn in the off hand)
 			role = "ranged" -- the Royal Paladin's potions (add_vocations.py)
 		},
-		monk = { -- the Monk line fights unarmed: no weapon, the light armour the Ranger may wear (add_vocations.py)
+		monk = { -- the Monk line fights with its fists: the first fist weapon (a pair of splinter claws, level 1, worn in the
+			-- shield hand, install_fist_weapons.py), the light armour the Ranger may wear (add_vocations.py)
 			equip = {
+				{slot = "right", id = 40000}, -- pair of splinter claws (fist weapon, Monk line only)
 				{slot = "head", id = 2461}, -- leather helmet
 				{slot = "armor", id = 2467}, -- leather armor
 				{slot = "legs", id = 2468}, -- studded legs
@@ -108,10 +109,11 @@ return {
 		samurai = { -- one katana-style sword: the base server's katana (a one-handed sword, no level) instead of the dagger
 			base = "thief",
 			equip = {
-				{slot = "left", id = 2412} -- katana
+				{slot = "left", id = 2412}, -- katana
+				{slot = "right", none = true} -- no off-hand dagger: the Samurai fights with one sword
 			}
 		},
-		ninja = { -- like the Thief (which carries the second dagger for the off hand)
+		ninja = { -- like the Thief (a dagger in each hand)
 			base = "thief"
 		},
 		default = {

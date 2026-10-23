@@ -54,6 +54,7 @@ show".
 | Boosts | World Experience / World Loot 300, World Training 250 (for everybody) | | | kept |
 | Supplies | potion packs: 100 for 15-30, 250 and 500 at 5% and 10% off; Ultimate Mana and Ultimate Spirit 25 a 100 | | | kept; bigger packs and two potions added 2026-10-23 |
 | Supplies | single potions at Veyra the Apothecary (hub): health 20-500, mana 50-350, spirit 190-350 gold, by tier; runes of the packs at the rune supply price; rope, shovel 50 | | | new 2026-10-23: normal gold prices, the packs stay the bulk way (15-30 coins for 100) |
+| Supplies | decks at Veyra the Apothecary: Bronze Deck (5 cards) 1,000 gold, Silver Deck (10 cards) 6,000 from level 50, Golden Deck (20 cards) 30,000 from level 100 | | | new 2026-10-23 (owner: "coloque o deck à venda na Veyra também"): the sell prices of the item table are 55, 55 and 2,500, so every ask is at least twice what any NPC pays; a deck also still drops from monsters and comes from a task |
 | Runes | vendor gold x count / 1000, 5% off 250, 10% off 500 | | | kept |
 | Services | Name Change 250, Vocation Change 400, Sex Change 100, Skull Remover 150, Passive Reset 60 | | | kept |
 | Classes | Necromancer, Monk, Templar | - | - | not sold since 2026-10-15: free for the account at level 200 (was 750, then 500 or level 500) |
@@ -84,6 +85,9 @@ Why these changes:
 | Creator hold | 14 days | same | Kept (refunds and chargebacks come first). |
 | Referral main reward (`referral_config.lua`, key `l250`) | level 250 | 150 | With pack combat level 150 takes 1.5-3 hours: too easy to farm with fresh accounts. Level 250 (about 3-6 hours) is a friend who stayed. |
 | `brlPerUsd` | 5 | same | Gives round Pix prices with the .98 USD prices. |
+| Monk fist weapons, gold (`data/items/fist_items.csv`, `fist_claws.csv`; `gen_item_prices.py` reads both) | dealers sell 150 / 400 / 2,800 / 7,000 / 12,000 gp (levels 1, 8, 35, 60, 100) and buy back at a fifth to a quarter; the rest only drops and sells for 4,500 up to 33,834 gp | 400 / 7,000 for two tiers | Owner 2026-10-23, the Monk had no weapons from level 100 on. NPC buy is at least twice the sell (no buy-below-sell loop), the gear cap 33,834 holds, a unique's base is in no shop. |
+| Thief dagger uniques (2026-10-23, `chaos_items.xml`) | no NPC price | n/a | Uniques are never sold to an NPC (`reasons.unique`); the 5 new daggers are 5 more of the 153. The shop dagger (2379, 5 gold to buy, 2 to sell) is unchanged, so no buy-below-sell loop exists. |
+| Weapon coverage uniques (2026-10-23) | not sold, not bought | new | Seven uniques (server/README.md "Weapon coverage") are drops only, like every unique: no NPC floor, salvage or market. `gen_item_prices.py` lists them as `unique` and found no buy below sell loop (0 failures). No shop price changed. |
 
 ## What we looked at (2026-10-14)
 

@@ -631,6 +631,132 @@ def display_cell_checks():
           == {(11, 10, 6)}, 'spawned tiles: the monster\'s tile')
 
 
+def shared_cell_checks(root):
+    """beta 2026-10-23 (a hunt with no showcase): two teleports with one free cell between them (z 6 31657 / 31659 on
+    the base map: the cells beside the second one are a wall and the first one's) left the second hunt without a display
+    monster. Its slot now takes the cell behind its teleport, a counter tile that the install opens; a slot that ends
+    with no cell is said loudly (WARNING), and a monster the server does not have too"""
+    import hall_order as H
+    extra = {}
+    for x in (2, 4):
+        extra[(x, 11, Z)] = tile(G, PORTAL, STONE, tele=(700 + x, 700, 7))
+        extra[(x, 9, Z)] = tile(G, COUNTER, SIGN)
+    extra[(1, 10, Z)] = tile(G, WALL, flags=1)
+    extra[(3, 10, Z)] = tile(G, flags=0)
+    extra[(5, 10, Z)] = tile(G, WALL, flags=1)
+    extra[(12, 11, Z)] = tile(G, PORTAL, STONE, tele=(710, 700, 7))
+    extra[(12, 15, Z)] = tile(G, PORTAL, STONE, tele=(720, 700, 7))
+    extra[(2, 10, Z)] = tile(G, COUNTER, flags=0)
+    extra[(4, 10, Z)] = tile(G, COUNTER, flags=0)
+    srv, plans, comp = setup(os.path.join(root, 'shared'), extra)
+    csvp = os.path.join(root, 'shared', 'hall_hunts.csv')
+    rows = [dict(id='base_6_2_11', z=Z, x=2, y=11, dest_x=702, dest_y=700, dest_z=7, name='Rat', lo=10, hi=40,
+                 display='Rat', spawntime=120, monsters='Rat'),
+            dict(id='base_6_4_11', z=Z, x=4, y=11, dest_x=704, dest_y=700, dest_z=7, name='Bat', lo=20, hi=50,
+                 display='Bat', spawntime=120, monsters='Bat')]
+    for x, y, lo in ((12, 11, 700), (12, 15, 800)):  # the module's own teleports (the wing's copies need them)
+        rows.append(dict(id='base_6_%d_%d' % (x, y), z=Z, x=x, y=y, dest_x=700 + x * 0 + lo // 70, dest_y=700, dest_z=7,
+                         name='Dragon', lo=lo, hi=lo + 90, display='', spawntime=120, monsters='Dragon'))
+    H.write_csv(rows, csvp)
+    cfg = json.loads(json.dumps(CFG))
+    cfg['hall'] = {'enabled': True, 'floors': [Z], 'x': [0, 40], 'endRow': 13, 'temple': [500, 500, 7], 'labels': [],
+                   'closed': {'wall': WALL, 'decor': [STONE]}}
+    log = []
+    kw = dict(plans_dir=plans, compiled=comp, log=log.append, fixed_dirs=(), hall_csv=csvp)
+    # without the counter item in the config: the second hunt has no cell, and the install says so
+    res = T.run(os.path.join(srv, 'data'), config=cfg, **kw)
+    check(res['hall']['nodisplay'] == ['base_6_4_11'], 'no counter item: the hunt without a cell is listed: %s' % res['hall']['nodisplay'])
+    check(any(l.startswith('hall: WARNING: base_6_4_11') and 'no display cell' in l for l in log), 'no cell: said loudly: %s' % log)
+    sp = open(os.path.join(srv, 'data', 'world', 'w-spawn.xml')).read()
+    check('chaoshunt="base_6_2_11"' in sp and 'chaoshunt="base_6_4_11"' not in sp, 'only the first hunt has display monsters')
+    # with it: the counter behind the second teleport is opened and the monster stands there
+    cfg['items']['counter'] = COUNTER
+    del log[:]
+    res = T.run(os.path.join(srv, 'data'), config=cfg, **kw)
+    check(res['hall']['nodisplay'] == [], 'counter item: every hunt has a display: %s' % res['hall']['nodisplay'])
+    check(not any('WARNING' in l for l in log), 'counter item: no warning: %s' % [l for l in log if 'WARNING' in l])
+    stacks, _t, flags = map_state(srv)
+    check(stacks[(4, 10, Z)] == [G] and flags[(4, 10, Z)] == 0, 'the counter behind the second teleport is off: %s' % stacks[(4, 10, Z)])
+    check(stacks[(2, 10, Z)] == [G, COUNTER] and stacks[(3, 10, Z)] == [G], 'the first teleport\'s counter stays, the shared cell too')
+    sp = open(os.path.join(srv, 'data', 'world', 'w-spawn.xml')).read()
+    check('centerx="3" centery="10" centerz="6" radius="1" chaoshunt="base_6_2_11"' in sp
+          and 'centerx="4" centery="10" centerz="6" radius="1" chaoshunt="base_6_4_11"' in sp, 'display monsters in both cells: %s' % sp)
+    once = digest(srv)
+    T.run(os.path.join(srv, 'data'), config=cfg, **kw)
+    check(digest(srv) == once, 'shared cell: a second run changes nothing')
+    # a display monster the server has no monster for: left out, and said (the base hunts and the planned ones)
+    mdir = os.path.join(srv, 'data', 'monster')
+    os.makedirs(mdir)
+    open(os.path.join(mdir, 'monsters.xml'), 'w').write('<monsters>\n\t<monster name="Bog Rat" file="monsters/bog_rat.xml" />\n'
+                                                       '\t<monster name="Rat" file="monsters/rat.xml" />\n</monsters>\n')
+    del log[:]
+    res = T.run(os.path.join(srv, 'data'), config=cfg, **kw)
+    check(any('WARNING: base_6_4_11: no monster named Bat' in l for l in log), 'unknown base display monster: said loudly')
+    check(any('WARNING: other_hunt: no monster named Bat' in l for l in log), 'unknown planned display monster: said loudly: %s' % log)
+    check('other_hunt' not in res['hall']['displays'] and res['hall']['displays'].get('tiny_hunt') == 'Bog Rat',
+          'the unknown one has no display, the known one keeps it: %s' % res['hall']['displays'])
+    # install_all.py shows these lines as the step's warnings (its output otherwise cuts after 15 lines)
+    import install_all as A
+    ok, lines, warn = A.tool_result_warn((True, ['a', '    hall: WARNING: x: its slot has no display cell', 'b']))
+    check(ok and lines == ['a', 'b'] and warn == ['x: its slot has no display cell'], 'WARNING lines become step warnings: %s' % warn)
+
+
+def display_monster_checks():
+    """every display monster of the hall exists on the installed server and shows something (beta 2026-10-22/23: rooms
+    with an empty showcase): the base hunts' (tools/hall_hunts.csv) and the planned hunts' (hunt_teleports_config.lua)
+    are a Chaos monster of this repository (XML or Lua) with a look that is no blank outfit of the pair and no
+    `invisible` defense, or a base type (data/monster/base_monster_hashes.txt) under a name the monsternames step does not
+    rename; a planned hunt hides its display only with `display = false`"""
+    import csv as _csv
+    import glob
+    import hashlib
+    import re
+    import hall_order as H
+    data = os.path.join(HERE, '..', 'data')
+    hashes = set(open(os.path.join(data, 'monster', 'base_monster_hashes.txt')).read().split())
+    rows = [r for r in _csv.DictReader(open(os.path.join(data, 'monster', 'base_monster_names.csv'), encoding='utf-8'))
+            if r['kind'] == 'monster']
+    old = {r['sha256'] for r in rows}
+    renamed = {r['name'].lower() for r in rows}  # the Chaos names of renamed base types
+    chaos = {}
+    for p in glob.glob(os.path.join(data, 'monster', 'monsters', 'chaos', '**', '*.xml'), recursive=True):
+        m = re.search(r'<monster\s[^>]*name="([^"]+)"', open(p, encoding='latin-1').read())
+        if m:
+            chaos[m.group(1).lower()] = p
+    for p in glob.glob(os.path.join(data, 'monster', 'lua', 'chaos', '**', '*.lua'), recursive=True):
+        for m in re.finditer(r'createMonsterType\(\s*"([^"]+)"', open(p, encoding='latin-1').read()):
+            chaos[m.group(1).lower()] = p
+    ci = open(os.path.join(HERE, '..', '..', 'tools', 'ci', 'check_content.py'), encoding='utf-8').read()
+    blank = set()
+    for part in re.search(r"PAIR_BLANK = \((.*?)\)\n", ci, re.S).group(1).replace("'", ' ').replace('\n', ' ').split():
+        a, _, b = part.partition('-')
+        blank.update(range(int(a), int(b or a) + 1))
+    cfg = open(os.path.join(data, 'scripts', 'chaos', 'hunt_teleports_config.lua'), encoding='utf-8').read()
+    plans = cfg[cfg.index('\tplans = {'):]
+    names = [(r['id'], H.room_monster(r)) for r in H.read_csv() if r['kind'] == H.KIND_HUNT]
+    hidden = re.findall(r'id = "(\w+)"[^}]*display = false', plans)
+    check(not hidden, 'no planned hunt hides its showcase: %s' % hidden)
+    ids = re.findall(r'\{id = "(\w+)", monster = "([^"]+)"', plans)
+    check(len(ids) >= 58, 'the config lists the planned hunts: %d' % len(ids))
+    names += ids
+    for hid, m in names:
+        l = m.lower()
+        if l in chaos:
+            text = open(chaos[l], encoding='latin-1').read()
+            look = re.search(r'<look\s+type="(\d+)"|lookType\s*=\s*(\d+)', text)
+            check(look is not None, '%s: %s has no look (it is invisible)' % (hid, m))
+            if look:
+                lt = int(look.group(1) or look.group(2))
+                check(lt not in blank, '%s: %s look %d is a blank outfit of the pair' % (hid, m, lt))
+            check(not H.is_invisible(chaos[l]), '%s: %s turns invisible' % (hid, m))
+        elif l not in renamed:
+            h = hashlib.sha256(l.encode('utf-8')).hexdigest()
+            check(h in hashes, '%s: no monster named %s (not a Chaos monster, not a base type)' % (hid, m))
+            check(h not in old, '%s: %s is an old base name the monsternames step renames' % (hid, m))
+    standin = re.search(r'id = "wyrmspine_hollows", monster = "([^"]+)", standIn = true', plans)
+    check(standin and standin.group(1) == 'Elder Wyrm', 'Wyrmspine Hollows shows the Elder Wyrm stand-in')
+
+
 def write_frame(out, pid, positions, ground=919):
     frame = {p: dict(ground=ground, items=[], flags=0) for p in positions}
     open(os.path.join(out, pid + '-frame.otbm'), 'wb').write(otbm_file(frame))
@@ -863,6 +989,7 @@ def main():
         floor_rule_checks()
         quest_hall_checks(root)
         wing_ground_checks(root)
+        shared_cell_checks(root)
 
         # the real hunts: ascending by band, every plan exactly once, and ascending along the corridor's slots
         real = T.plan_files(T.PLANS_DIR)
@@ -891,6 +1018,7 @@ def main():
     finally:
         shutil.rmtree(root, ignore_errors=True)
     csv_name_checks()
+    display_monster_checks()
     print('install_content_areas_test: %s' % ('ok' if not failed else '%d failed' % failed))
     return 1 if failed else 0
 

@@ -1299,7 +1299,7 @@ function W.itemNames(texts)
 		end
 	end
 	csv("data/items/base_item_names.csv", "id", "name")
-	for _, f in ipairs({"art_items", "theme_items", "donor_items", "fist_items", "owner_decor", "dark_tiles"}) do
+	for _, f in ipairs({"art_items", "theme_items", "fist_items", "fist_claws", "donor_items", "owner_decor", "dark_tiles"}) do
 		csv("data/items/" .. f .. ".csv", "server_id", "name")
 	end
 	for _, data in ipairs(texts) do

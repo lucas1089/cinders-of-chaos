@@ -18,7 +18,7 @@ Inputs (all in the repo; the base server is read only by `survey`, `income` and 
                                     sources (no names: the base names are not ours)
   data/items/base_recipes.csv       the base crafting recipes (product, count, gold cost, materials)
   data/items/item_price_rules.csv   overrides: id, category, price, note (a fixed price or a category such as quest)
-  the Chaos sources: art_items.csv (creature products, food), fist_items.csv, gear_sets.csv (pair 28), the gems, supports and charms configs,
+  the Chaos sources: art_items.csv (creature products, food), fist_items.csv and fist_claws.csv, gear_sets.csv (pair 28), the gems, supports and charms configs,
   the uniques (chaos_items.xml), the professions, orbs, omens, Ascended items, faction tokens, pouches, the Everfull
   Ration, the store's items (shop_config.lua) and every Chaos monster's loot (monsters/chaos, monster/lua/chaos)
 Outputs (generated, committed, CI diffs them):
@@ -302,6 +302,11 @@ def csv_rows(name):
         return list(csv.DictReader(f))
 
 
+def fist_rows():
+    """the Monk line's fist weapons: fist_items.csv (the first six) and fist_claws.csv (the claws of the pair)"""
+    return csv_rows('fist_items.csv') + csv_rows('fist_claws.csv')
+
+
 def extra(text):
     out = {}
     for part in (text or '').split('|'):
@@ -366,7 +371,7 @@ def chaos_items():
             put(sid, r['name'], 'material', int(ex['sell']) if ex.get('sell') else None, src='art_items.csv product')
         elif r['kind'] == 'food':
             put(sid, r['name'], 'food', None, src='art_items.csv food')
-    for r in csv_rows('fist_items.csv'):
+    for r in fist_rows():
         ex = extra(r.get('extra'))
         put(int(r['server_id']), r['name'], 'equip', int(ex['sell']) if ex.get('sell') else None, 'weapon',
             int(ex.get('level', 0)), 'fist_items.csv')
@@ -451,7 +456,7 @@ def build():
         for iid, _c, ch in m['loot']:
             cloot.setdefault(iid, []).append((m['level'], ch))
     # fist weapons are added to base monsters' loot by install_fist_weapons.py (loot=Name:chance;...)
-    for r in csv_rows('fist_items.csv'):
+    for r in fist_rows():
         ex = extra(r.get('extra'))
         if ex.get('loot'):
             for part in ex['loot'].split(';'):
@@ -716,7 +721,7 @@ def our_buy_prices():
     inv = read(os.path.join(DATA, 'scripts', 'chaos', 'invasion_config.lua'))
     for i, p in re.findall(r'\{id = (\d+), price = (\d+)', inv):
         out.append((int(i), int(p), 'Wandering Merchant'))
-    for r in csv_rows('fist_items.csv'):
+    for r in fist_rows():
         ex = extra(r.get('extra'))
         if ex.get('buy'):
             out.append((int(r['server_id']), int(ex['buy']), 'fist weapon dealers'))
@@ -838,7 +843,7 @@ def check(table, uq, recipes):
                 bad.append('recipe %d: NPC materials + cost %d < the best sale %d (loop)' % (r['id'], cost, top))
     # the Chaos sources that write NPC shop entries themselves (install_pack_items.py, install_fist_weapons.py) must
     # agree with the table, or install_item_prices.py and they would rewrite each other's prices on every install
-    for r in csv_rows('art_items.csv') + csv_rows('fist_items.csv'):
+    for r in csv_rows('art_items.csv') + fist_rows():
         ex = extra(r.get('extra'))
         e = table.get(int(r['server_id']))
         if ex.get('sell') and e and e['price'] != int(ex['sell']):

@@ -447,6 +447,31 @@ player), and are back to full 10 s after the last hit. So the Illusionist heals 
 (e.g. Hail of Dawn ~1830 per cast on a level 300 player): a focused Illusionist still dies; arena and siege rules unit-tested
 (not run in a live match).
 
+### Thief dual wield and attack speed (2026-10-23; owner: "thief ... dual wield de daggers ... atacar mais rápido ... empatado com o monk"; computed, not measured in game)
+
+Attack interval (vocation `attackspeed`, ms; the weapon's own speed is scaled by it / 2000, src-patch 0002): Thief 1600 -> **1500**
+(= Monk), Ninja 1400 -> **1300** (= Shadowfist), Samurai 1800 -> **1700** (= Iron Sage); every other class 2000. The Thief is the
+fastest base class together with the Monk; the three ascended pairs tie. The Thief now dual wields as the Ninja did.
+
+Damage per second stays where it was balanced above (the Thief 54-58% of its rotation in "Auto attack power", the measured Ninja and
+Samurai totals): the weapon hits of the three are cut by new / old interval, and the Thief's main-hand hit by
+1 / (1 + 0.5 x off-hand ratio) while it holds a dagger in each hand. Twin Fangs (Ninja tree) and the ratio of the two daggers' attacks
+(clamped 0.5 - 1.25) are on top. Spells, poison (computed from the uncut hit) and the Ninja's own off-hand share are not cut.
+
+| Class | Interval before -> now | Hits per second x | Main-hand hit x | Off-hand strike | Auto attack per second, equal daggers |
+|---|---|---|---|---|---|
+| Thief (two daggers) | 1600 -> 1500 | 1.067 | 1500/1600 x 2/3 = 0.625 | 0.5 x main = 0.3125 (of the old hit) | 1.067 x (0.625 + 0.3125) = **1.000** (before: 1.000, one dagger) |
+| Thief (one dagger, nothing in the off hand) | 1600 -> 1500 | 1.067 | 0.9375 | none | **1.000** |
+| Ninja | 1400 -> 1300 | 1.077 | 0.929 | 0.5 x main | 1.077 x 0.929 x 1.5 = **1.500** (before: 1.500) |
+| Samurai | 1800 -> 1700 | 1.059 | 0.944 | none | **1.000** |
+
+The Thief's total per swing is unchanged (a dagger swing used to be one hit; it is now two hits adding up to that), so the class
+stays in its balance band and the Ninja (the one that always dual wielded) stays 50% above a single dagger as before. Attack speed
+modifiers (item and gem `attackspeed`, dexterity) still work: they shorten the vocation's interval in the engine, and the cap
+(src-patch 0011, `minPlayerAttackInterval` 1000 ms) is untouched, so a Ninja at 1300 reaches it with 23% faster attacks (a Thief at 1500 with 33%).
+Test: `tests/classes_test.lua` (the vocation XML against `Chaos.classes.attackSpeed`, the Thief tied with the Monk and faster than
+every class outside the two lines, the damage per second of every entry, the neutral cut with equal and unequal daggers).
+
 ### Thief line (Thief, Ninja, Samurai)
 
 Ascension at level 100 (the Ascendant Oracle, data/scripts/chaos/ascension.lua). The kit's mechanics are scripted in
@@ -459,7 +484,7 @@ Ascension at level 100 (the Ascendant Oracle, data/scripts/chaos/ascension.lua).
 - **Area strikes** (2026-10-15, `chaos/_blades.lua`): Blade Flurry (all three, a weapon strike on every monster around
   the caster) and Iaido Sweep (Samurai, the target and the monsters in a 3 x 2 cut in front): "Pack farming for every
   class" below.
-- **Dual wield** (Ninja): a one-handed sword in each hand (the shield hand takes it only with `server/src-patches/0002`); every melee hit of
+- **Dual wield** (Thief and Ninja since 2026-10-23, balance below): a one-handed sword in each hand (the shield hand takes it only with `server/src-patches/0002`); every melee hit of
   the main hand is followed 0.15 s later by an off-hand strike for 50% of it x (off-hand attack / main-hand attack, clamped 0.5-1.25).
 - **Level factor**: dropped with the class trees (docs/CLASSES.md "Phase 2b"); see "Classes with the passive trees" below for the
   line's damage factor and the numbers measured with tree builds.
@@ -2296,6 +2321,12 @@ with the level.
 | | 500 | 51 | 499 | 10% | 1.69 | 17% |
 | | 1000 | 59 | 657 | 9% | 1.69 | 15% |
 | | 2000 | 69 | 801 | 9% | 1.74 | 15% |
+| fists and fist weapons (Monk) | 50 | 61 | 114 | 53% | 1.00 | 53% |
+| | 100 | 109 | 193 | 56% | 1.00 | 56% |
+| | 300 | 175 | 299 | 58% | 1.00 | 58% |
+| | 500 | 220 | 370 | 59% | 1.00 | 59% |
+| | 1000 | 314 | 518 | 61% | 1.00 | 61% |
+| | 2000 | 381 | 614 | 62% | 1.00 | 62% |
 
 Other classes at the same levels (unchanged): the two-handed Berserker 44-46% of its rotation (3 s swing); Thief
 line 54-58% (1.6 s swing), Templar line about 50%, Monk line 58%. The factor never cuts, so below its share a kind is lifted and above
@@ -2611,6 +2642,7 @@ bring it back to before the ladder:
 
 ### Class spell factor (2026-10-20; owner decision on the cooldown ladder proposals; computed with rotation_sim.py, not measured in game)
 
+(Retuned 2026-10-23 with the attack kit: the table in "Attack spell parity" below replaces the numbers in this paragraph.)
 A factor on every spell hit of a class (`data/scripts/chaos/spell_factor_config.lua`, by vocation id): Templar and
 Sentinel x0.6, Inquisitor, Elementalist, Illusionist, Lich, Bone Lord and Shadowfist x0.7, Necromancer x0.8, Beastmaster
 x1.25; every other class 1. The server applies it to damage with origin ORIGIN_SPELL (server/README.md "Class spell
@@ -2674,6 +2706,111 @@ The best set of at most 5 (spell damage per second, 1 target and the 5-dummy pac
   ("Cooldown ladder" above).
 - Not in the numbers: auto attacks, minions, the passive tree, conditions (burns, rots) and runes. On the server a rune a
   factored class uses takes the factor too (its hit is ORIGIN_SPELL); a burn or rot a spell leaves does not.
+
+### Attack spell parity (2026-10-23; owner: "veja quantas magias de ataque cada classe tem. devem ter a mesma quantidade"; computed, not measured in game)
+
+**Counting rule.** An attack spell is an `<instant group="attack">` of `spells_chaos.xml`, or a `stock_spells.csv` row of
+group attack, counted once per vocation. Snares, Feral Command, Corpse Explosion and the debuff strikes count. Minions,
+supports and heals do not. `tools/ci/check_attack_counts.py` counts by class line and by ascension (`--table` prints it);
+`check_attack_counts_test.py` tests the counter. Both run in CI ("Attack spell parity").
+
+Before: Warrior 8, Juggernaut 8, Berserker 9, Ranger 8, Deadeye 9, Beastmaster 7, Mystic 10, Elementalist 10, Illusionist
+7, Thief 5, Ninja 7, Samurai 6, Monk 4, Shadowfist 7, Iron Sage 6, Necromancer 4, Lich 5, Bone Lord 3, Templar 3,
+Inquisitor 4, Sentinel 3. After: **10 for all 21**. The target is the highest count (Mystic and Elementalist). 37 new spells fill 77 class slots (Warrior 2, Juggernaut 2, Berserker 1, Ranger
+2, Deadeye 1, Beastmaster 3, Illusionist 3, Thief 5, Ninja 3, Samurai 4, Monk 6, Shadowfist 3, Iron Sage 4,
+Necromancer 6, Lich 5, Bone Lord 7, Templar 7, Inquisitor 6, Sentinel 7). Each fills a thin level band of its class, and
+each line has single and area spells. Numbers: `attack_kit_config.lua` (fitted with `rotation_sim.py`), the XML and
+`rotation_model.csv` (`tests/attack_kit_test.lua` checks that all three agree). The cast is data driven
+(`data/spells/chaos/_attackkit.lua`, pure rules in `attack_kit_core.lua`). The hit uses the school of the class: melee,
+distance and magic strikes, the Monk's chi, the Templar's holy strike, the Necromancer's death damage, the Thief's blade
+and shuriken weapon strikes. Every one has a `kindOverride` in `chaos_supports_config.lua`, so none is listed as Support.
+
+| Spell | Classes | Level | Shape | School | Mana |
+|---|---|---|---|---|---|
+| Gorehook | Warrior, Juggernaut, Berserker | 130 | dot | melee | 115 |
+| Rift Cleaver | Warrior, Juggernaut | 220 | line | melee | 135 |
+| Sunspear | Ranger, Deadeye, Beastmaster | 160 | single | distance | 115 |
+| Arrowstorm | Ranger, Beastmaster | 220 | circle | distance | 85 |
+| Packhunter's Dart | Beastmaster | 140 | single | distance | 50 |
+| Phantom Needles | Illusionist | 130 | single | magic | 275 |
+| Mirror Shards | Illusionist | 170 | around | magic | 345 |
+| Dreamrot | Illusionist | 230 | dot | magic | 470 |
+| Gutting Slash | Thief, Ninja, Samurai | 100 | single | blade | 60 |
+| Razor Rain | Thief, Ninja, Samurai | 130 | circle | shuriken | 75 |
+| Venom Spiral | Thief, Ninja | 150 | dot | spell | 85 |
+| Crescent Cut | Thief, Samurai | 170 | wave | blade | 85 |
+| Last Breath | Thief, Samurai | 230 | single | blade | 150 |
+| Hollow Knuckle | Monk, Shadowfist, Iron Sage | 70 | single | monk | 45 |
+| Quaking Stomp | Monk, Iron Sage | 90 | around | monk | 60 |
+| Chi Lance | Monk, Shadowfist | 120 | line | monk | 145 |
+| Cleaving Heel | Monk, Iron Sage | 150 | single | monk | 60 |
+| Tidal Palm | Monk, Iron Sage | 190 | wave | monk | 75 |
+| Skysplitter Fist | Monk, Shadowfist | 250 | single | monk | 220 |
+| Marrow Bolt | Necromancer, Lich, Bone Lord | 70 | single | necro | 135 |
+| Wraithwind | Necromancer, Lich, Bone Lord | 90 | wave | necro | 180 |
+| Gravewail | Necromancer, Lich, Bone Lord | 110 | circle | necro | 200 |
+| Blightbrand | Necromancer, Lich, Bone Lord | 135 | dot | necro | 310 |
+| Soulrend Beam | Necromancer, Lich, Bone Lord | 170 | line | necro | 270 |
+| Crypt Collapse | Necromancer, Bone Lord | 210 | circle | necro | 415 |
+| Ossuary Surge | Bone Lord | 250 | around | necro | 365 |
+| Hallowed Cut | Templar, Inquisitor, Sentinel | 80 | single | templar | 115 |
+| Censer Swing | Templar, Sentinel | 100 | around | templar | 135 |
+| Penitent Lash | Templar, Inquisitor | 120 | wave | templar | 145 |
+| Martyr's Pyre | Templar, Sentinel | 140 | dot | templar | 145 |
+| Bell of Reckoning | Templar, Inquisitor, Sentinel | 160 | circle | templar | 165 |
+| Lance of Vigil | Templar, Inquisitor | 190 | line | templar | 185 |
+| Sanctum Verdict | Templar, Sentinel | 230 | single | templar | 290 |
+| Heretic's Brand | Inquisitor | 90 | single | templar | 175 |
+| Zealot's Wrath | Inquisitor | 200 | around | templar | 170 |
+| Bulwark Slam | Sentinel | 110 | single | templar | 125 |
+| Rampart Quake | Sentinel | 210 | around | templar | 175 |
+
+(Mana shown is the cost after the 0.6 mana cut.)
+
+**Cooldowns.** The ladder ("Cooldown ladder") gives every class's attack spells 2, 4 ... 20 s by damage, so a class with
+10 spells has all ten rungs and its older spells moved. Moved cooldowns: Headsman's Hurl 16 to 20 s (the only stock
+change: `stock_spells.csv`, `spell_timings.csv`, client `spellfix.lua`). In `spells_chaos.xml` the ladder re-ranked the
+Chaos attack spells of the lines with new spells; the diff of the file is the list. Examples: Withering Curse 4 to 8 s,
+Consecration 6 to 18 s, Judgement 4 to 12 s, Rift Cleaver 14 to 16 s, Bewitching Hex 10 to 6 s, Colossus Fall, Palm
+Shockwave, Pressure Points and Iron Chain.
+
+**Spell cap.** The cap of 15 per class became **20** (`patch_spell_cap.py` `MAX_SPELLS`; the Bone Lord reaches 20).
+The pinned kit sizes: Warrior 17, Juggernaut 17, Berserker 16, Ranger 17, Deadeye 16, Beastmaster 17, Mystic 15,
+Elementalist 14, Illusionist 18, Thief 15, Ninja 16, Samurai 17, Monk 13, Shadowfist 13, Iron Sage 15, Necromancer 18,
+Lich 18, Bone Lord 20, Templar 11, Inquisitor 12, Sentinel 14. The 37 ids are base ids the cap retired, free at install
+(`spell_ids_test.lua` reads them from the cap table); in the client they are in `ChaosCappedSpells` and `spellfix.lua`
+moves the stock entry to id + 1000.
+
+**Class factor retune** (`spell_factor_config.lua`, "Class spell factor"): Deadeye 1.19, Ranger 1.06, Monk 0.87, Lich
+0.82, Inquisitor 0.75, Shadowfist 0.74, Illusionist 0.73, Elementalist 0.7, Templar 0.6, Necromancer 0.59 (was 0.8),
+Bone Lord 0.59 (was 0.7), Sentinel 0.57 (was 0.6). The Beastmaster lost its 1.25. The Thief line has none: its strikes
+are weapon hits, so strength is set per spell.
+
+**Balance.** Best-set score (1 target + 0.25 x pack, `rotation_sim.py`) against before the kit, at levels 300 / 600 /
+1000 (positive is stronger):
+
+| Class | 300 | 600 | 1000 |
+|---|---|---|---|
+| Warrior, Juggernaut, Berserker, Iron Sage, Mystic, Elementalist | within 4% | within 4% | within 4% |
+| Ranger, Illusionist, Monk, Templar, Inquisitor, Sentinel | within 4% | within 4% | within 4% |
+| Deadeye | +8% | -4% | -4% |
+| Beastmaster | +14% | -8% | -9% |
+| Thief | +12% | +11% | +10% |
+| Ninja | +1% | -9% | -9% |
+| Samurai | -5.5% | -5% | -5% |
+| Necromancer | +12% | -1% | -10% |
+| Lich | +9% | -1% | -8% |
+| Bone Lord | +12% | 0% | -11% |
+| Shadowfist | +14.5% | -6% | -7% |
+
+Known gaps, accepted: (1) early levels 30 / 60 / 100 dip for Necromancer (-26 / -36 / -17%), Bone Lord (-16 / -33 /
++12%), Monk (-19 / -17 / -16%), Beastmaster (-20 / -20 / -17%), Templar (0 / -25 / -6%), Inquisitor (+7 / -36 / -2%),
+Sentinel (-5 / -43 / -8%): the ladder rungs shift (Consecration 6 to 18 s) and one factor per class cannot fix low and
+high levels together. (2) Level 200 spikes: Illusionist +42%, Ranger +27%, Deadeye +28%. (3) The Thief is +10 to 12%
+(no factor). (4) The helper's best 5 of 10 keeps a 4 to 6 s gap at high levels for Beastmaster, Illusionist, Necromancer,
+Lich, Bone Lord, Templar and Sentinel. `rotation_sim.py --ladder --check` and `--mana --check` pass. The
+`weapon_power_config.lua` `distance` row fell at levels 500 and up when regenerated (`weapon_sim.py --power --write`):
+its reference is the Ranger rotation, which changed.
 
 ### Mana cut (2026-10-22; owner: "custo de mana do ranger ainda está alto", "reveja o custo de mana das outras classes também"; computed with rotation_sim.py)
 

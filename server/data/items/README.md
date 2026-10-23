@@ -117,6 +117,10 @@ Columns: server id / client id, the stock item that was overridden, required lev
 | Widow's Last Vow | ring | 10510 / 9593 | broken wedding ring | 90 | rare | lifeLeechChance 4, lifeLeechAmount 5, manaLeechChance 4, manaLeechAmount 5, maxHitPoints 100 |
 | Veil of the Wraith | ring | 29868 / 27212 | Myst Regalia Ring | 120 | boss | Arm 4, skillShield 5, magicPoints 2, absorbPercentPhysical 5 |
 | Grasp of the Pyre Saint | fist | 36659 / 33659 | our own "pyre saint's grasp" (server/README.md "Fist weapons") | 650 | legendary | Atk 64, Def 24, skillFist 5, criticalHitChance 4, criticalHitAmount 15, absorbPercentFire 6 |
+| Vigil-Knot Wraps | fist | 40009 / 28009 | our "vigil-knot wraps" on donor B claw 10 (`fist_claws.csv`) | 14 | magic | Atk 43, Def 8, skillFist 2, mods dodge 4, lifeonkill 22 |
+| Chapel-Iron Knuckles | fist | 40010 / 28010 | our "chapel-iron knuckles" on donor B claw 11 | 26 | magic | Atk 44, Def 10, skillFist 2, mods shockchance 12, manaonkill 15 |
+| Gravewind Talons | fist | 40011 / 28011 | our "gravewind talons" on donor B claw 12 | 1400 | rare | Atk 68, Def 38, skillFist 4, criticalHitChance 6, criticalHitAmount 25, mods physpen 14, lifeonhit 45, bossdamage 16, bloodrush 5 |
+| Dawnless Gauntlets | fist | 40012 / 28012 | our "dawnless gauntlets" on donor B claw 13 | 2000 | rare | Atk 70, Def 42, skillFist 6, criticalHitChance 8, criticalHitAmount 30, absorbPercentPhysical 5, mods bossdamage 20, dot 30, regen 40, lastbreath 35 |
 
 Drop chances (per 10000 per kill before the tier multiplier x1/x2/x4/x6 for magic/rare/legendary/boss; normal tier never drops uniques)
 are 4-6 (magic), 4-6 (rare), 7-9 (legendary) and 20 (boss-only items) and are in `chaos_unique_items.lua`. Measured with the
@@ -125,6 +129,23 @@ mock harness over 20000 simulated kills of a Demon: normal 0, magic 20, rare 276
 ### Embers of Aranoth set (6 pieces)
 Hornsworn Helm, Cindermail Coat, Emberveil Greaves, Bloodstep Boots, Emberwarden, Cinderclaw Band. The set bonuses are
 documented in `ChaosSets` but **not implemented** (see below).
+
+### Weapon coverage uniques (2026-10-23)
+
+Server/README.md "Weapon coverage". Added after the audit (`server/tools/weapon_coverage.lua`) found thin bands. The same
+rules as the endgame uniques below (`equipLevel`, `equipLines`, built-in modifiers, drops from the waystone bosses and
+monsters of the band, chance 6; the Hoarfen Bow from magic monsters and up, chance 25; the Moonlit Gallows Bow from monster
+level 800).
+
+| name | slot | id | stock item | level | classes | stats | built-in modifiers |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Hoarfen Bow | distance | 13873 | shimmer bow | 40 | Ranger line | attack 40, hitChance 95, range 6, skillDist 2 | attackspeed:6, chillchance:10, lifeonkill:20 |
+| Moonlit Gallows Bow | distance | 26765 | exowing bow | 900 | Ranger line | attack 83, hitChance 99, range 7, skillDist 6, criticalHitChance 5, criticalHitAmount 20 | attackspeed:12, physpen:14, bleedchance:18, echoshot:18 |
+| Hollow Throne Claymore | sword | 25880 | slayer of mayhem | 1550 | Warrior, Templar | attack 73, defense 38, skillSword 6, criticalHitChance 6, criticalHitAmount 30 | attackspeed:12, bossdamage:20, physpen:18, bloodrush:4 |
+| Gravetide Arbalest | distance | 25886 | crossbow of mayhem | 1800 | Ranger line | attack 92, hitChance 95, range 6, skillDist 7, criticalHitChance 8, criticalHitAmount 30 | attackspeed:12, physpen:18, poisonchance:20, hunterrush:22 |
+| Emberhowl Greataxe | axe | 25882 | chopper of mayhem | 1950 | Warrior, Templar | attack 77, defense 36, skillAxe 7, lifeLeechChance 10, lifeLeechAmount 8 | bleedchance:24, dot:42, lifeonhit:50, crimsonburst:20 |
+| Wake-Heron Longbow | distance | 25885 | bow of mayhem | 2100 | Ranger line | attack 91, hitChance 98, range 7, skillDist 7, criticalHitChance 8, criticalHitAmount 30 | attackspeed:14, elepen:18, dot:40, echoshot:20 |
+| Bellringer of the Last Vigil | club | 25884 | hammer of mayhem | 2200 | Warrior, Templar | attack 78, defense 36, skillClub 7 | shockchance:22, execute:8, monsterreduction:6, arclightning:20 |
 
 ### Leveling and endgame uniques (2026-10-23)
 
@@ -197,3 +218,18 @@ attributes of the stock item (boots of haste style timers, equip transforms) wer
   `weaponType wand`; only magic level and bonuses were changed (shoot type and range kept).
 * **Set bonuses are not implemented**, `ChaosSets` is documentation. Drop monster lists use names that exist in our monster data (checked against stock + chaos monster XML).
 * Items with several identical-looking stock twins (e.g. two "crimson sword" ids) were chosen on purpose to avoid collisions with the stock loot tables.
+
+## Thief daggers (2026-10-23)
+
+Owner: "adicione também mais daggers pros thiefs". Five uniques on dagger-sprite bases (one unique per base id), so a Thief has
+a dagger to find in every band; with the shop dagger (2379), the stock assassin dagger (7404, level 40), the Duskstalker Fang
+(level 300) and the gear sets' blades this fills 1-2400+. Attack follows the one-handed melee curve (`install_gear_sets.py`
+`CURVES['attack']`), skill +1 to +5 by level steps, built-in modifiers, no NPC price.
+
+| name | id | stock item | level | tier | who | modifiers |
+| --- | --- | --- | --- | --- | --- | --- |
+| Cutpurse's Sliver | 2403 | knife | 10 | magic, chance 25 | every class | life on kill 20, attack speed 8 |
+| Moonlit Shiv | 2402 | silver dagger | 28 | magic, chance 25 | every class | poison chance 12, life on hit 6, attack speed 8 |
+| Gravewhisper Stiletto | 2404 | combat knife | 600 | rare, chance 6 | Thief line | attack speed 10, poison chance 16, life on hit 30 |
+| Nightbloom Stiletto | 2411 | poison dagger | 1250 | rare, chance 6, waystone kills | Thief line | attack speed 15, poison chance 24, physical penetration 18, Critical Echo 20 |
+| Misericorde of the Pale Vow | 27193 | drownkin ceremonial dagger | 1900 | rare, chance 6, waystone kills | Thief line | attack speed 14, life on hit 45, physical penetration 18, Bloodrush 4 |

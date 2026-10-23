@@ -55,6 +55,16 @@ C.basics = {
 	{id = 1988, name = "backpack", price = 20}
 }
 
+-- The decks for the cards (README "Cards and decks"): a card goes into a deck the player carries. The base deck item sizes
+-- are 5 (Bronze), 10 (Silver) and 20 (Golden) cards; at most 5 cards are on at once whatever the deck, so Bronze is enough to
+-- play and the bigger decks keep the spare cards. A buyer below `level` is refused at the counter like a potion tier. Each
+-- price is at least twice the item price table's sell price (55, 55, 2500): no gold loop.
+C.decks = {
+	{id = 27632, name = "bronze deck", price = 1000, level = 0},
+	{id = 27633, name = "silver deck", price = 6000, level = 50},
+	{id = 27634, name = "golden deck", price = 30000, level = 100}
+}
+
 -- What she buys: the old empty flasks (no potion leaves one any more, README "Potions"), at the item price table's 5
 -- gold (the Loot Buyer and the Auto Seller pay the same).
 C.flasks = {

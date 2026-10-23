@@ -8,7 +8,7 @@
  "counts": {
   "opcode": 58,
   "out": 38,
-  "passive": 67,
+  "passive": 69,
   "place": 13,
   "staff": 10
  },
@@ -2388,6 +2388,13 @@
     "/atlas"
    ]
   },
+  "attack_kit": {
+   "files": [],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
   "autosell": {
    "files": [
     "autosell.lua",
@@ -2544,6 +2551,15 @@
    "talkactions": [
     "/candlemarks"
    ]
+  },
+  "cards": {
+   "files": [
+    "cards.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
   },
   "catchup": {
    "files": [
@@ -4239,6 +4255,7 @@
   },
   "weapon_power": {
    "files": [
+    "monk_combat.lua",
     "weapon_styles.lua"
    ],
    "kind": "passive",

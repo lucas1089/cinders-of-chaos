@@ -63,7 +63,7 @@ SETS = [
     ('azurevigil', 'Azure Vigil', (800, 1350), 'holy', 'death', 'earth', 'smallholy', 'crystallinearrow',
      'prismaticbolt'),
     ('bloodmoon', 'Bloodmoon', (300, 650), 'death', 'death', 'holy', 'suddendeath', 'onyxarrow', 'drillbolt'),
-    ('gildcrown', 'Gildcrown', (1200, 2000), 'energy', 'energy', 'earth', 'energy', 'crystallinearrow', 'vortexbolt'),
+    ('gildcrown', 'Gildcrown', (1250, 2000), 'energy', 'energy', 'earth', 'energy', 'crystallinearrow', 'vortexbolt'),
     ('blightfang', 'Blightfang', (8, 150), 'earth', 'earth', 'fire', 'poison', 'poisonarrow', 'drillbolt'),
 ]
 SET_BY_KEY = {s[0]: s for s in SETS}

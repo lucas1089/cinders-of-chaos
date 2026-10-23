@@ -32,11 +32,12 @@ a party with an Illusionist out-damages the same party without one.
 
 ## Class kits (first draft)
 
-**Thief** (base): fast attack speed with daggers and light swords; shuriken spells with a
+**Thief** (base): fights with a dagger in each hand (dual wield since 2026-10-23: the kit is two daggers, one in each hand; the
+off-hand dagger adds a second strike on each hit) and attacks as fast as the Monk (1500 ms); shuriken spells with a shuriken spells with a
 short range (no stars to carry); **Shadow Veil** stealth (monsters lose track of you, broken by attacking; the first hit out of
 stealth crits); poison blades (a poison tick is 30% of the hit a second, the Ninja's 18%, 2026-10-17); evasion (dodge chance); Blade Flurry (a spin that strikes every monster next to you,
 the line's area strike, 2026-10-15).
-- **Ninja**: dual wield, where the off-hand dagger adds a second, weaker strike on each attack (scripted:
+- **Ninja**: dual wield (as the Thief since 2026-10-23), where the off-hand dagger adds a second, weaker strike on each attack (scripted:
   the engine has no dual wield); Shadow Step (teleport behind the target); smoke bomb (area blind); a
   shuriken barrage that hits several targets.
 - **Samurai** (duelist off-tank): one sword; Iaijutsu (charged draw strike, big single hit); Counter Stance (3 s: parry the
@@ -228,6 +229,15 @@ Elementalist 5, Mystic 4 -> rung 4 (8 s); Withering Curse Bone Lord 2, Lich 5, N
 
 ## Spell cap
 
+**Raised to 20 on 2026-10-23** (owner: "veja quantas magias de ataque cada classe tem. devem ter a mesma quantidade"): the
+attack kit gave every class and ascension **10 attack spells** (37 new spells, 77 class slots; list, levels and balance:
+server/data/spells/README.md "Attack spell parity"; CI: `tools/ci/check_attack_counts.py`). The Bone Lord reaches 20, so
+`MAX_SPELLS` is 20. The per-class counts in the tables below are from before the kit (15 cap): add the new spells.
+Attack spells per class now: Warrior, Juggernaut, Berserker, Ranger, Deadeye, Beastmaster, Mystic, Elementalist,
+Illusionist, Thief, Ninja, Samurai, Monk, Shadowfist, Iron Sage, Necromancer, Lich, Bone Lord, Templar, Inquisitor and
+Sentinel: 10 each (before: 8, 8, 9, 8, 9, 7, 10, 10, 7, 5, 7, 6, 4, 7, 6, 4, 5, 3, 3, 4, 3). The cooldown ladder now has
+ten rungs per class (2 to 20 s), so some older spells moved; Headsman's Hurl is 20 s.
+
 **15 spells per class (2026-10-20, owner: "mysthic tem magias demais. abaixe pra 15. faça isso pra todas as classes")**:
 every class and ascension can learn and cast at most 15 spells of its own: attack, healing and support, the stock spells
 it kept and the Chaos spells. An ascension's 15 include the base spells it keeps (an ascension may drop a base spell).
@@ -313,6 +323,15 @@ early fists are still ahead (server/data/spells/README.md "Weapon damage per sec
 ones are the same item now) for the Warrior, Thief, Monk and Templar lines, which trains the melee skill, and **fist fighting for the
 Monk line**; a bow for the Ranger and Thief lines (distance); a rod and a wand for the Mystic, Necromancer and Templar lines
 (magic level); a shield for every class (shielding). Server/README.md "Training weapons".
+**Weapon coverage (owner, 2026-10-23, "veja se todas as classes tem armas o suficiente")**: every class has at least three
+weapons it can wield and obtain in each of the nine level bands (1-20, 20-50, 50-100, 100-200, 200-400, 400-700, 700-1000,
+1000-1500, 1500-2400+), and the best of them is at least 80% of the tier (the gear set attack curve). A check in CI keeps it
+(`server/tools/weapon_coverage.lua --check`; the table and the thresholds: server/README.md "Weapon coverage"). Gaps found:
+the Berserker (two-handed melee only) had nothing at 1500+, the Elementalist and Illusionist one weapon, the Beastmaster
+(bows only) two bows at 20-50 and at 700-1000, the Ranger line, Mystic and Necromancer line two weapons at 1500+. Filled with
+seven uniques (Berserker: Hollow Throne Claymore 1550, Emberhowl Greataxe 1950, Bellringer of the Last Vigil 2200; Ranger
+line: Hoarfen Bow 40, Moonlit Gallows Bow 900, Gravetide Arbalest 1800, Wake-Heron Longbow 2100) and by making the level 2000
+Gildcrown pieces droppable (wands and rods got their third piece by moving the set to 1250-2000).
 Every auto attack scales with its skill (owner, 2026-10-20): swords, axes, clubs, distance weapons and fists by the engine's
 formula (the skill is 79-94% of the hit), wands and rods by the magic level since 2026-10-20 (before: a flat roll whatever the
 magic level; at the typical magic level of a level the hit is the same as before). server/README.md "Weapon damage scales
@@ -445,9 +464,16 @@ for free, at the migration.
 
   | id | Name | from | client byte | hp / mana / cap per level | attackspeed | base speed | melee / dist damage |
   |---|---|---|---|---|---|---|---|
-  | 11 | Thief | 11 | 6 | 12 / 10 / 22 | 1600 | 230 | 1.2 |
-  | 12 | Ninja | 11 | 16 | 12 / 10 / 22 | 1400 | 232 | 1.2 |
-  | 13 | Samurai | 11 | 26 | 13 / 9 / 24 (defense / armor 1.1) | 1800 | 230 | 1.3 |
+  | 11 | Thief | 11 | 6 | 12 / 10 / 22 | 1500 (was 1600) | 230 | 1.2 |
+  | 12 | Ninja | 11 | 16 | 12 / 10 / 22 | 1300 (was 1400) | 232 | 1.2 |
+  | 13 | Samurai | 11 | 26 | 13 / 9 / 24 (defense / armor 1.1) | 1700 (was 1800) | 230 | 1.3 |
+
+  Attack speed since 2026-10-23 (owner: the Thief attacks faster than the other classes, tied with the Monk): Thief = Monk 1500,
+  Ninja = Shadowfist 1300, Samurai = Iron Sage 1700 ms; every class outside the two lines keeps 2000. The weapon hits of the
+  three are cut by new / old (`Chaos.classes.attackSpeed`), so the auto attack's damage per second is where it was balanced.
+  A Thief with a dagger in each hand also gives up the share the off-hand strike adds (main hit x 1 / 1.5 with equal daggers).
+  The Thief's starting kit is two daggers (main hand and shield hand); a Thief made before gets the second dagger once at login
+  (`Chaos.storage.offhandGranted`, 7100204). Daggers by band: server/README.md "Thief daggers".
 
   Skills: the three melee skills (sword, club, axe) 1.1 (like the Knight's swords; one melee skill since 2026-10-17), distance 1.2, magic level 2.0. The tool also adds the line to the
   vocation lists of one-handed swords and throwing weapons (`weapons.xml`, hand equip in `movements.xml`) and to everything else the
@@ -611,18 +637,23 @@ Open for the Necromancer:
   Skills: fist fighting and the three melee skills (club, sword, axe) 1.1, distance 1.3, shielding 1.2 (Iron Sage 1.1), magic level 2.0. the Ascendant Oracle
   at level 100. All ids (vocations, client bytes, spells 63-72, storages 7100800-7100809, condition sub ids 71030-71044, opcode 247) are in
   `ChaosMonk.ids` (`server/data/scripts/chaos/monk_chi_core.lua`). Equipment (`add_vocations.py`): every sword, axe and club (staves too) and
-  whatever the Ranger may wear, and the fist weapons; the Royal Paladin's potions. New-player kit: light armour, no weapon.
+  whatever the Ranger may wear, and the fist weapons; the Royal Paladin's potions. New-player kit: light armour and a pair of splinter claws (fist weapon, level 1).
 - **Unarmed combat on this engine**: without a weapon the engine hits with fists (`Weapon::useFist`): fist fighting skill, a fixed attack
   value of 7, the vocation's attackspeed (minus the dexterity stat), the usual weapon formula and the fight mode factor, but **not** the
   vocation's meleeDamage multiplier, and there is no "fist" weapon type in the item types. So the Monk's unarmed damage is scripted on the
   weapon hook, without an engine patch: `monk_combat.lua` scales a Monk's fist hit (melee origin, nothing in the hands) by (formula with
   the Monk's fist attack x meleeDamage) / (formula with attack 7). The fist attack grows with level: 40 + level x 0.025, at most 60
-  (level 300: 47.5). Fist weapons (`ChaosMonk.cfg.unarmed.fistWeapons`, server/README.md "Fist weapons"): six hand items of weaponType
-  "shield" with an attack, worn in the shield hand by the Monk line only; their attack replaces the level value when higher
-  (charred hand wraps 42 at level 8, ashbound cestus 44 / 60, ember knuckles 46 / 150, ossuary gauntlet 50 / 300,
-  cinderforged talons 55 / 500, the legendary unique Grasp of the Pyre Saint 64 / 650, the only one above the bare cap 60).
-  About +5% damage over bare fists at each one's level (level 300: x1.047 by formula, 979 against 933 per hit measured
-  on a dummy). Staves are
+  (level 300: 47.5). Fist weapons (`ChaosMonk.cfg.unarmed.fistWeapons`, server/README.md "Fist weapons"): nineteen hand items of weaponType
+  "shield" with an attack, worn in the shield hand by the Monk line only, from level 1 to 2200; their attack replaces the level
+  value when higher. Plain tiers: splinter claws 41 / level 1 (the starter kit), charred hand wraps 42 / 8, rustiron claws 43 / 35,
+  ashbound cestus 44 / 60, ashen steel claws 45 / 100, ember knuckles 46 / 150, ossuary gauntlet 50 / 300, cinderforged talons 55 /
+  500, emberhide claws 62 / 800, voidglass claws 63 / 1000, stormforged claws 64 / 1250, wyrmbone claws 65 / 1500, gravewrought claws
+  66 / 1800, last-dawn claws 67 / 2200. Uniques: Vigil-Knot Wraps 43 / 14 and Chapel-Iron Knuckles 44 / 26 (leveling, magic), Grasp
+  of the Pyre Saint 64 / 650 (legendary), Gravewind Talons 68 / 1400 and Dawnless Gauntlets 70 / 2000 (endgame, rare or better,
+  strong monsters), each with Chaos modifiers built in. A plain tier is x1.00 .. x1.12 damage over bare fists (cap 60) at its
+  level; the auto attack stays at 53-62% of the Monk's rotation. The fist skill scales the hit like the melee skill does for the
+  other classes (`(skill / typical)^0.5`, 0.7 .. 1.6; 1 at the typical skill). The Monk's attack speed is not changed.
+  Staves are
   ordinary weapons (club skill, the two-handed factor of `weapon_styles.lua`, the attack speed patch 0002).
 - **Chi**: a player storage (shared by the spells' and the scripts' Lua states) with the time of its last change; gone after 12 s untouched.
   +1 per melee hit (at most one per 2 s), +2 Ashen Fist, +1 Pressure Points; a finisher needs 1 chi and spends all of it, x(0.30 + 0.14 per

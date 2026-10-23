@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Test of patch_spell_cap.py (the 15-spell cap, owner 2026-10-20) and of the cap itself.
+"""Test of patch_spell_cap.py (the spell cap, owner 2026-10-20: 15, raised to 20 on 2026-10-23 for the attack kit) and of the cap itself.
   * patch(): classes a spell lost leave its <vocation> lines, a spell no class keeps becomes a marked comment (or the
     monster-only form when a monster names it, monster_spells.py), the
     Chaos block and comments stay, a second run changes nothing, --dry-run writes nothing;
-  * the repo data: every class and ascension has at most 15 spells of its own, counted from
+  * the repo data: every class and ascension has at most 20 spells of its own, counted from
     data/spells/chaos/spells_chaos.xml, data/spells/stock_spells.csv (stock attack and healing spells as installed)
     and CAP (the stock support spells the classes keep), without UNIVERSAL and OUTSIDE_CAP; the counts are pinned (docs/CLASSES.md
     "Spell cap": update both when a kit changes).
@@ -76,10 +76,10 @@ ORDER = ['Warrior', 'Juggernaut', 'Berserker', 'Ranger', 'Deadeye', 'Beastmaster
          'Illusionist', 'Thief', 'Ninja', 'Samurai', 'Monk', 'Shadowfist', 'Iron Sage', 'Necromancer', 'Lich',
          'Bone Lord', 'Templar', 'Inquisitor', 'Sentinel']
 # spells of its own per class after the cap (docs/CLASSES.md "Spell cap")
-PINNED = {'Warrior': 15, 'Juggernaut': 15, 'Berserker': 15, 'Ranger': 15, 'Deadeye': 15, 'Beastmaster': 14,
-          'Mystic': 15, 'Elementalist': 14, 'Illusionist': 15, 'Thief': 10, 'Ninja': 13, 'Samurai': 13, 'Monk': 7,
-          'Shadowfist': 10, 'Iron Sage': 11, 'Necromancer': 12, 'Lich': 13, 'Bone Lord': 13, 'Templar': 4,
-          'Inquisitor': 6, 'Sentinel': 7}
+PINNED = {'Warrior': 17, 'Juggernaut': 17, 'Berserker': 16, 'Ranger': 17, 'Deadeye': 16, 'Beastmaster': 17,
+          'Mystic': 15, 'Elementalist': 14, 'Illusionist': 18, 'Thief': 15, 'Ninja': 16, 'Samurai': 17, 'Monk': 13,
+          'Shadowfist': 13, 'Iron Sage': 15, 'Necromancer': 18, 'Lich': 18, 'Bone Lord': 20, 'Templar': 11,
+          'Inquisitor': 12, 'Sentinel': 14}
 kit = {v: set() for v in ORDER}
 xml = re.sub(r'<!--.*?-->', '', open(os.path.join(SPELLS, 'chaos', 'spells_chaos.xml'), encoding='utf-8').read(), flags=re.S)
 for m in re.finditer(r'<instant ([^>]*)>(.*?)</instant>', xml, re.S):

@@ -40,6 +40,7 @@ local player = {}
 function player:getPlayer() return self end
 function player:addCondition(c) added[#added + 1] = c; return true end
 function player:getPosition() return pos end
+function player:getStorageValue() return -1 end
 function player:changeSpeed() error("Tautstring must not change the caster's speed") end
 
 realDofile("data/spells/chaos/paladin/tautstring.lua")

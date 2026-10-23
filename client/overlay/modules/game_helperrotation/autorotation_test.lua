@@ -60,10 +60,15 @@ eq(A.gap({ 3, 1 }, S), 4, 'a 4 s attack group lock')
 eq(A.gap({ 4, 5 }, S), 8, 'two spells of one secondary group share it')
 eq(A.gap({ 6, 1 }, S), 2, 'a 1.5 s cast fits in the group cooldown')
 
--- the Templar line: Radiant Smite (2 s since the rotation pass) fills every turn
-local templar = A.presetFor(23, 300)
-eq(templar.gap, 2, 'Templar 300: 2 s')
-ok(table.concat(templar.spells, ','):find('189'), 'Templar 300: Radiant Smite in it')
+-- the Templar line: Radiant Smite (2 s since the rotation pass) fills every turn at level 100. At 300 the line has ten
+-- attack spells (the attack kit, 2026-10-23), the best five keep 4 s between casts: the sim's 95% damage rule comes
+-- before the gap (server/data/spells/README.md "Attack spell parity")
+local templar = A.presetFor(23, 100)
+eq(templar.gap, 2, 'Templar 100: 2 s')
+ok(table.concat(templar.spells, ','):find('189'), 'Templar 100: Radiant Smite in it')
+local templar300 = A.presetFor(23, 300)
+eq(templar300.gap, 4, 'Templar 300: 4 s')
+ok(#templar300.spells <= 5, 'Templar 300: at most 5 spells')
 
 -- select: every spell castable gives the preset
 local p300 = A.presetFor(5, 300) -- Elementalist

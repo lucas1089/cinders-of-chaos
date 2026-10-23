@@ -38,6 +38,10 @@ python3 -I tools/ci/check_names.py     # no other server/game/client names anywh
 python3 -I tools/ci/check_locales.py   # every client tr() key has pt-BR; no hard-coded UI text (--missing, --fix)
 python3 -I tools/ci/check_credits.py   # every pack of the art *sources.csv files is in docs/CREDITS.md; pt-BR headings
 python3 -I tools/ci/check_credits_test.py && python3 -I client/tools/gen_credits_test.py
+cd server && luajit tools/weapon_coverage.lua --check && lua5.3 tools/weapon_coverage.lua --check  # every class has 3+ weapons per level band (thresholds: tools/weapon_coverage_config.lua); table in server/README.md (--write)
+python3 -I tools/ci/check_attack_counts.py   # every class and ascension has the same number of attack spells
+cd server && luajit tools/gen_card_descriptions.lua --check   # -> data/items/card_descriptions.csv (card texts name current spells)
+python3 -I server/tools/survey_base_weapons_test.py   # base_weapons.csv: re-run server/tools/survey_base_weapons.py on an installed server when a base weapon changes
 python3 client/tools/make_fonts_test.py
 python3 -I client/tools/check_text_fit.py          # options menu entries fit their buttons (en + pt-BR)
 python3 -I client/tools/gen_orb_art.py --check     # liquid orb art, one ring and mask per orb size

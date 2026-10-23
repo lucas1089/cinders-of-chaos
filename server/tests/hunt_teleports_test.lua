@@ -28,9 +28,20 @@ eq(#cfg.plans, 58, "fifty-eight plans")
 local shown = {}
 for _, p in ipairs(cfg.plans) do
 	local k = p.monster:lower()
+	-- beta 2026-10-22: Wyrmspine Hollows had `display = false` (all its monsters too big) and its showcase stood empty:
+	-- no plan hides its display; a hunt whose monsters are all too big takes a stand-in
+	ok(p.display ~= false, p.id .. ": the hunt shows a monster (a stand-in when its own are too big)")
 	ok(not shown[k], "one slot per monster (owner 2026-10-22): " .. p.monster .. " shown by " .. p.id .. " and " .. tostring(shown[k]))
 	shown[k] = p.id
 end
+local wyrm
+for _, p in ipairs(cfg.plans) do
+	if p.id == "wyrmspine_hollows" then
+		wyrm = p
+	end
+end
+ok(wyrm and wyrm.monster == "Elder Wyrm" and wyrm.standIn == true, "Wyrmspine Hollows shows the Elder Wyrm stand-in")
+ok(cfg.items.counter == 1642, "the counter piece behind a teleport (the spare display cell the install opens)")
 local seen = {}
 for _, p in ipairs(cfg.plans) do
 	ok(not seen[p.id], "plan listed once: " .. p.id)

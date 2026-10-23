@@ -186,7 +186,8 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                type (README "Absorb ceiling"; matches engine patch 0049)
   badges       tools/patch_badges.py             the badge slot (engine 0058, client 0113): the badges get slot type "badge";
                the deck, ship, belt and gloves slots are retired: Player:onMoveItem refuses them, a carried deck
-               holds the cards, a carried ship sails, the items.xml descriptions say so (a card: where it goes);
+               holds the cards (using a card carried anywhere puts it in a deck and turns it on: README "Cards and decks"), a
+               carried ship sails, the items.xml descriptions say so (a card: where it goes);
                the boss loot's Fury catalyst [3] typo is fixed; the death loss takes the badge slot; the armorsmith no
                longer crafts belts and gloves (README "Badge slot"; after itemnames)
   prizes       tools/patch_prizes.py             the base scripts give prizes into the backpack, else the Purse, else
@@ -1043,9 +1044,9 @@ def step_contentareas(server, data, ctx):
         mp = ctx.get('dry_map') or tool_map_path(real)
         if not mp:
             return tool_result((False, ['no map in %s/world' % real]))
-        return tool_result(run_tool([tool('install_content_areas.py'), data, '--dry-run', '--map', mp],
-                                    'install_content_areas.py'))
-    return tool_result(run_tool([tool('install_content_areas.py'), data], 'install_content_areas.py'))
+        return tool_result_warn(run_tool([tool('install_content_areas.py'), data, '--dry-run', '--map', mp],
+                                         'install_content_areas.py'))
+    return tool_result_warn(run_tool([tool('install_content_areas.py'), data], 'install_content_areas.py'))
 
 
 STEPS.insert(STEPS.index('houses') + 1, 'contentareas')  # after houses (map steps), before poi
@@ -1211,6 +1212,14 @@ def tool(name):
 def tool_result(res):
     ok, lines = res
     return ok, lines, []
+
+
+def tool_result_warn(res):
+    """like tool_result, but the tool's lines that say `WARNING: ...` (any prefix before it) become the step's warnings:
+    the step output shows only its first lines, the warnings are always shown and counted"""
+    ok, lines = res
+    warn = [l.split('WARNING: ', 1)[1] for l in lines if 'WARNING: ' in l]
+    return ok, [l for l in lines if 'WARNING: ' not in l], warn
 
 
 def class_hooks():

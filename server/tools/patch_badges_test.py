@@ -170,12 +170,31 @@ def main():
         ok('Use this Amplifier on Moon Badge' in item_block(xml, 27849), 'a catalyst keeps its base description')
         ok('Keep me.' in item_block(xml, 2160), 'another item is untouched')
         ok('description' not in item_block(xml, 27811), 'a badge gets no description')
-        ok('value="Enabling this card on your Deck give the possibility to turn a strike to Earth damage. %s"'
-           % P.CARD_HINT in item_block(xml, 27482), 'a card keeps its description, the hint appended')
-        ok('<attribute key="description" value="%s" />' % P.CARD_HINT in item_block(xml, 27640),
-           'a card without a description gets the hint')
+        ok('value="%s"' % P.CARD_TEXTS[27482] in item_block(xml, 27482) and 'Enabling this card' not in xml,
+           'a card gets the description of card_descriptions.csv (the base text named the stock spell)')
+        ok('Reaping Gyre deals Earth damage instead' in item_block(xml, 27482), 'and it names the current spell')
+        ok('value="%s"' % P.CARD_TEXTS[27640] in item_block(xml, 27640), 'a card without a description gets one')
         ok(P.CARD_HINT not in item_block(xml, 27639), 'an upgrade-only legendary (level 5) gets no hint')
         ok(xml.count(P.CARD_HINT) == 2, 'the hint once per card')
+
+        # a card patched by the earlier hint gets the new one, never both
+        # (a card the descriptions file lacks keeps its text with the hint appended)
+        old = P.OLD_CARD_HINTS[0]
+        saved, P.CARD_TEXTS = P.CARD_TEXTS, {}
+        migrated, count = P.items_xml('<item id="27482" name="x"><attribute key="description" value="Base text. %s" /></item>' % old)
+        ok(count == 1 and P.CARD_HINT in migrated and old not in migrated and migrated.count('Base text.') == 1,
+           'the earlier card hint is replaced')
+        ok(P.items_xml(migrated)[1] == 0, 'and the new one is stable')
+        P.CARD_TEXTS = saved
+        again = P.items_xml(P.items_xml(ITEMS)[0])
+        ok(again[1] == 0, 'the card descriptions are stable on a second run')
+
+        # card_descriptions.csv: one per card, ends with the hint, no stock spell word
+        ok(set(P.CARD_TEXTS) == set(P.CARDS), 'a description for each of the 76 cards')
+        ok(all(t.endswith(P.CARD_HINT) for t in P.CARD_TEXTS.values()), 'each ends with the hint')
+        ok(not any(w in t.lower() for t in P.CARD_TEXTS.values() for w in ('exori', 'exevo', 'exura', 'utito', 'exeta')),
+           'none has a stock spell word')
+        ok(not any(' give ' in t for t in P.CARD_TEXTS.values()), 'the grammar of the base text ("give") is gone')
 
         ok(get(data, 'monster/lua/bosses/boss.lua') == BOSS_OUT, 'only the line after Fury [2] becomes Fury [3]')
         ok('exiled amplifier catalyst [3]' in get(data, 'monster/lua/other.lua'), 'a lone Exiled [3] stays')
@@ -187,6 +206,9 @@ def main():
 
         deck = get(data, 'scripts/customs/deck_system/deck_system.lua')
         ok('ChaosBadges.deckOf(player) or player:getSlotItem(CONST_SLOT_DECK)' in deck, 'the deck system asks deckOf')
+        ok('ChaosCards.use(player, item)' in deck and deck.index('ChaosCards.use') < deck.index('deckSystemCard'),
+           'the card action asks cards.lua first')
+        ok(deck.count('ChaosCards.use(player, item)') == 1, 'the cards hook once')
         ok(get(data, 'scripts/chaos/mine.lua') == DECK, 'scripts/chaos is not touched')
         sea = get(data, 'scripts/customs/boat/boat_navigation.lua')
         ok('ChaosBadges.boardShip(chaosSailor)' in sea and sea.index('boardShip') < sea.index('local player ='),

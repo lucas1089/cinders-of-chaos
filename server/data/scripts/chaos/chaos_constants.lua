@@ -1114,7 +1114,8 @@ Chaos.classes = {
 		dualWield = 7100200, -- 1 while the character may hold an off-hand sword (read by server/src-patches/0002)
 		ascended = 7100201, -- os.time of the ascension (information only)
 		migratedFrom = 7100202, -- the old vocation id until the login message of the migration was shown, then 0
-		freeSwitch = 7100203 -- the ascended vocation id a migrated character may still switch to for free (!ascend)
+		freeSwitch = 7100203, -- the ascended vocation id a migrated character may still switch to for free (!ascend)
+		offhandGranted = 7100204 -- os.time of the one-time off-hand dagger of a Thief made before dual wield (classes.lua offhandGrant)
 	},
 	-- condition sub ids of the class buffs (CONDITIONID_COMBAT). The spells and the combat scripts run in different
 	-- Lua states; the conditions are the state both see. Stealth is CONDITION_INVISIBLE, the others
@@ -1140,7 +1141,18 @@ Chaos.classes = {
 	poisonBlades = {durationMs = 20000, share = 1.2, ticks = 4, tickMs = 1000, classScale = {[12] = 0.6}},
 	-- Ninja dual wield: each main-hand weapon hit adds an off-hand strike of `share` of the hit, scaled by the
 	-- off-hand weapon's attack against the main hand's (clamped to minRatio..maxRatio)
-	dualWield = {share = 0.5, minRatio = 0.5, maxRatio = 1.25, delayMs = 150},
+	-- Thief and Ninja (`vocations`) dual wield. `neutral`: the Thief's main hit is cut by 1 / (1 + share x ratio) so that
+	-- a swing of two daggers deals what one dagger swing did before the Thief dual wielded (2026-10-23, server/data/spells/
+	-- README.md "Thief dual wield and attack speed"); the Ninja, who always dual wielded, is not cut
+	dualWield = {share = 0.5, minRatio = 0.5, maxRatio = 1.25, delayMs = 150, vocations = {[11] = true, [12] = true},
+		neutral = {[11] = true}},
+	-- Attack interval in ms (the `attackspeed` of chaos_vocations.xml), `was` -> `now` (2026-10-23, owner: the Thief
+	-- attacks as fast as the Monk, 1500; the ascended classes tie with the Monk line's: Ninja = Shadowfist 1300,
+	-- Samurai = Iron Sage 1700). The weapon hits of these vocations are scaled by was / now so that the damage per
+	-- second of the auto attack stays where it was measured (classes.lua speedComp; every other vocation 2000, unchanged)
+	attackSpeed = {[11] = {was = 1600, now = 1500}, [12] = {was = 1400, now = 1300}, [13] = {was = 1800, now = 1700}},
+	-- a Thief made before dual wield gets the missing second dagger once (storage `offhandGranted`)
+	offhandGrant = {itemId = 2379},
 	-- Samurai Counter Stance (the duelist off-tank, docs/CLASSES.md): the next melee hit taken within windowMs is parried
 	-- (no damage) and answered with a strike of `multiplier` x the parried hit; while the stance lasts every other hit
 	-- taken is `guard` smaller; the cast taunts the monsters within tauntRadius sqm

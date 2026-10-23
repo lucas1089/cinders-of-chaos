@@ -42,6 +42,8 @@ data. So nothing cut here is committed: art_import/pack36_fx/ is ignored by git;
 specs (names, sizes, offsets, frame counts), pack36_fx.sums (sha256 of each strip's decoded pixels) and
 pack36_fx_sources.csv (name, pack, source effect/variant). The script reads the packs' frames, alpha boxes and
 metadata only to place them; it never samples a palette or a style.
+pack36_replace_pivots.csv (build writes it, --check compares it): per in-place effect, how far pull() moved the art and
+its pivot up and left; gen_fx_send_offsets.py turns it into the send offsets of server/data/lib/chaos_fx_send_offsets.lua.
 Deterministic: no randomness; Pillow 12.3.0 and numpy 2.5.3 (the CI pins).
 """
 import argparse
@@ -65,6 +67,7 @@ ART = os.path.join(HERE, 'art_import')
 OUT = os.path.join(ART, 'pack36_fx')
 SUMS = os.path.join(ART, 'pack36_fx.sums')
 SOURCES = os.path.join(ART, 'pack36_fx_sources.csv')
+PIVOTS = os.path.join(ART, 'pack36_replace_pivots.csv')
 GITIGNORE_TEXT = ('# strips cut from the purchased effect packs: not to be redistributed, never committed '
                   '(gen_pack36_fx.py)\n*\n!.gitignore\n')
 GROUPS = ['replace', 'missiles', 'tile', 'field', 'area', 'cone', 'mega', 'impact', 'circle', 'aura',
@@ -481,10 +484,9 @@ REPLACE_MAX_MISSILE_TILES = 2
 REPLACE_OFFSET = {628: (1, 1)}
 
 
-def anchored(frames, anchor, point, dx, dy, max_tiles, name):
-    """frames placed with a FIXED send offset (dx, dy): the art is shifted left / up when it reaches past the
-    bottom-right tile (a whole-strip shift, so it stays together), and cut only past max_tiles.
-    -> (frames on the canvas, w, h, share of art pixels cut)"""
+def extents(frames, anchor, point):
+    """-> (x0, y0, x1, y1): the art's box over all frames, in pixels from the left / top of the tile the effect's
+    point (the pivot: tile centre or feet) is placed on"""
     ox, oy = point[0] - anchor[0], point[1] - anchor[1]
     x0 = y0 = 10 ** 6
     x1 = y1 = -10 ** 6
@@ -492,8 +494,24 @@ def anchored(frames, anchor, point, dx, dy, max_tiles, name):
         ys, xs = np.nonzero(fr[:, :, 3] > 0)
         x0, x1 = min(x0, xs.min() + ox), max(x1, xs.max() + 1 + ox)
         y0, y1 = min(y0, ys.min() + oy), max(y1, ys.max() + 1 + oy)
-    sx = min(0, (dx + 1) * 32 - x1)
-    sy = min(0, (dy + 1) * 32 - y1)
+    return x0, y0, x1, y1
+
+
+def pull(frames, anchor, point, dx, dy):
+    """-> (sx, sy): how far (pixels, 0 or negative) anchored() moves the whole art left / up so that it ends at the
+    bottom-right tile. The effect's pivot lands there too: at `point` + (sx, sy) inside the tile it is sent to, not
+    on `point`. gen_fx_send_offsets.py sends the effect at the tile that brings the pivot back (pack36_replace_pivots.csv)"""
+    _, _, x1, y1 = extents(frames, anchor, point)
+    return int(min(0, (dx + 1) * 32 - x1)), int(min(0, (dy + 1) * 32 - y1))
+
+
+def anchored(frames, anchor, point, dx, dy, max_tiles, name):
+    """frames placed with a FIXED send offset (dx, dy): the art is shifted left / up when it reaches past the
+    bottom-right tile (a whole-strip shift, so it stays together), and cut only past max_tiles.
+    -> (frames on the canvas, w, h, share of art pixels cut)"""
+    ox, oy = point[0] - anchor[0], point[1] - anchor[1]
+    x0, y0, x1, y1 = extents(frames, anchor, point)
+    sx, sy = pull(frames, anchor, point, dx, dy)
     t = lambda v: int(-(-max(0, v) // 32))
     left = min(t(-(x0 + sx)), max_tiles - 1 - dx)
     top = min(t(-(y0 + sy)), max_tiles - 1 - dy)
@@ -523,6 +541,7 @@ def replaced_effect(name, frames, anchor, point, loop, oid):
             frames[k] = G.dissolve(frames[k], (FADE - j) / (FADE + 1))
         frames = trim(frames)
     dx, dy = REPLACE_OFFSET.get(oid, (0, 0))
+    PULL[name] = pull(frames, anchor, point, dx, dy)
     placed, w, h, cut = anchored(frames, anchor, point, dx, dy, REPLACE_MAX_TILES, name)
     placed = [f for f in placed if f[:, :, 3].any()]
     n = len(placed) + 1
@@ -623,6 +642,7 @@ def picks(found):
 
 
 CUT = {}                     # replaced name -> share of its art pixels cut by the fixed offset (printed by build)
+PULL = {}                    # replaced effect name -> (sx, sy), pull(): the pivot's distance from its tile centre / feet point
 
 
 def convert(p):
@@ -693,6 +713,19 @@ def sources_text(entries):
     return buf.getvalue()
 
 
+def pivots_text(rows):
+    """pack36_replace_pivots.csv: per in-place effect, how far gen_pack36_fx.pull() moved its pivot up and left
+    (pixels, 0 or negative; the effect's own centre sits at tile centre / feet point + this). The send offsets of
+    gen_fx_send_offsets.py come from it."""
+    buf = io.StringIO()
+    wr = csv.writer(buf, lineterminator='\n')
+    wr.writerow(['replace', 'name', 'pull_x', 'pull_y'])
+    for r in rows:
+        if r['kind'] == 'effect':
+            wr.writerow([r['replace'], r['name'], *PULL[r['name']]])
+    return buf.getvalue()
+
+
 def existing_names():
     """every ChaosVfx / ChaosVfxMissile name of the committed Lua tables (a new name must not shadow one)"""
     names = set()
@@ -722,7 +755,7 @@ def work(args):
         if save:
             Image.fromarray(strip).save(os.path.join(ART, row['file']), optimize=False)
         res.append((row, G.digest(strip), tiles_in(strip)))
-    return res, CUT.get(p.name)
+    return res, CUT.get(p.name), PULL.get(p.name)
 
 
 def build(srcs, check, only=None):
@@ -747,9 +780,11 @@ def build(srcs, check, only=None):
     import multiprocessing
     with multiprocessing.get_context('fork').Pool(JOBS) as pool:
         done = list(pool.imap(work, [(p, not check) for p in allp], chunksize=4))
-    for i, (p, (out, cut)) in enumerate(zip(allp, done)):
+    for i, (p, (out, cut, pl)) in enumerate(zip(allp, done)):
         if cut is not None:
             CUT[p.name] = cut
+        if pl is not None:
+            PULL[p.name] = pl
         if not out:
             skipped.append(p)
             continue
@@ -770,6 +805,7 @@ def build(srcs, check, only=None):
     assert FIRST_MISSILE + nm - 1 <= 255, 'missiles are uint8'
     texts = {SPEC[g]: spec_text(g, rows[g]) for g in GROUPS}
     texts[SOURCES] = sources_text(entries)
+    texts[PIVOTS] = pivots_text(rows['replace'])
     texts[SUMS] = ''.join(f'{sums[r["file"]]}  {r["file"]}\n' for g in GROUPS for r in rows[g])
     if check:
         bad = [p for p, t in texts.items() if not os.path.exists(p) or open(p, newline='').read() != t]
@@ -826,7 +862,12 @@ def check_without_art():
     sums = [l.split('  ', 1)[1].strip() for l in open(SUMS)] if os.path.exists(SUMS) else []
     if sums != files:
         errs.append('pack36_fx.sums does not list the spec files in order')
-    have = [f for f in files if os.path.exists(os.path.join(ART, f))]
+    piv = [r['name'] for r in csv.DictReader(open(PIVOTS, newline=''))] if os.path.exists(PIVOTS) else []
+    rep = [r['name'] for r in csv.DictReader(open(SPEC['replace'], newline='')) if r['kind'] == 'effect'] \
+        if os.path.exists(SPEC['replace']) else []
+    if piv != rep:
+        errs.append('pack36_replace_pivots.csv does not list the in-place effects in order')
+    have =[f for f in files if os.path.exists(os.path.join(ART, f))]
     if have:
         want = {l.split('  ', 1)[1].strip(): l.split('  ', 1)[0] for l in open(SUMS)}
         for f in have:

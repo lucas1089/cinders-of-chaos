@@ -183,6 +183,11 @@ ChaosUniqueItems = {
 	  bossOnly = false, monsters = {"Troll", "Orc", "Spider", "Wolf", "Skeleton", "Poison Spider", "Frost Troll", "Wasp", "Orc Spearman", "Dwarf", "Minotaur", "Orc Warrior", "Scorpion", "Larva", "Gutworm", "Dwarf Soldier"} },
 	{ name = "Lantern-Ward Buckler", id = 10294, minTier = "magic", chance = 25, level = 25, slot = "shield",
 	  bossOnly = false, monsters = {"Ghoul", "Scarab", "Ghost", "Tarantula", "Demon Skeleton", "Mummy", "Crypt Shambler", "Vampire", "Dwarf Guard", "Gargoyle", "Cyclops", "Fire Elemental", "Bonelord", "Orc Berserker", "Zombie", "Dragon Hatchling"} },
+	-- the Monk's leveling uniques (owner 2026-10-23, server/README.md "Fist weapons"): fist weapon bases of their own
+	{ name = "Vigil-Knot Wraps", id = 40009, minTier = "magic", chance = 25, level = 14, slot = "fist",
+	  bossOnly = false, monsters = {"Troll", "Orc", "Spider", "Wolf", "Skeleton", "Poison Spider", "Frost Troll", "Wasp", "Orc Spearman", "Dwarf", "Minotaur", "Orc Warrior", "Scorpion", "Larva", "Gutworm", "Dwarf Soldier"} },
+	{ name = "Chapel-Iron Knuckles", id = 40010, minTier = "magic", chance = 25, level = 26, slot = "fist",
+	  bossOnly = false, monsters = {"Ghoul", "Scarab", "Ghost", "Tarantula", "Demon Skeleton", "Mummy", "Crypt Shambler", "Vampire", "Dwarf Guard", "Gargoyle", "Cyclops", "Fire Elemental", "Bonelord", "Orc Berserker", "Zombie", "Dragon Hatchling"} },
 	-- endgame uniques (2026-10-23): the waystone bosses of the band (x6) and the band's waystone monsters (rare and up);
 	-- minMonsterLevel keeps them to waystone-level kills
 	{ name = "Ashfall Verdict", id = 8931, minTier = "rare", chance = 6, level = 1300, slot = "sword", minMonsterLevel = 1000,
@@ -209,6 +214,39 @@ ChaosUniqueItems = {
 	  bossOnly = false, monsters = {"Vorgrun of the Jade Fangs", "Fractalis the Shardmaw", "Armorcoil", "Blazefang", "Gorgulith", "Nexlurith", "Voidwagner", "Aegis Sentinel", "Flarevein Wyrm", "Gloomstinger", "Pyroquill", "Toxic Mauler"} },
 	{ name = "Choirless Pendant", id = 22691, minTier = "boss", chance = 8, level = 2400, slot = "necklace",
 	  bossOnly = true, monsters = {"Morgrath the Umbral Archmage", "Nyxdrath the Midnight Terror", "Ysgrath the Cinderheart"} },
+	-- the Monk's endgame uniques (same bands as the others): fist weapon bases of their own
+	{ name = "Gravewind Talons", id = 40011, minTier = "rare", chance = 6, level = 1400, slot = "fist", minMonsterLevel = 1000,
+	  bossOnly = false, monsters = {"Vorgrun of the Jade Fangs", "Fractalis the Shardmaw", "Armorcoil", "Blazefang", "Gorgulith", "Nexlurith", "Voidwagner", "Aegis Sentinel", "Flarevein Wyrm", "Gloomstinger", "Pyroquill", "Toxic Mauler"} },
+	{ name = "Dawnless Gauntlets", id = 40012, minTier = "rare", chance = 6, level = 2000, slot = "fist", minMonsterLevel = 1000,
+	  bossOnly = false, monsters = {"Frostreaver the Glacialblade", "Rhazgor the Crimson Slayer", "Ashfang Wrym", "Bloodspark Adept", "Glacial Hellcharger", "Nightfang Widow", "Shadowcrystal Widow", "Bloodshade Reaper", "Duskhorn Drake", "Nightflare Dreadknight", "Shadowvein Wrym", "Umbral Arcanist"} },
+	-- Thief daggers (2026-10-23, owner: more daggers for the Thieves): one dagger-sprite base each, so a Thief has a
+	-- dagger to find in every band (server/README.md "Thief daggers"); the base dagger 2379 is the shop dagger of level 1
+	{ name = "Cutpurse's Sliver", id = 2403, minTier = "magic", chance = 25, level = 10, slot = "sword",
+	  bossOnly = false, monsters = {"Troll", "Orc", "Spider", "Wolf", "Skeleton", "Poison Spider", "Frost Troll", "Wasp", "Orc Spearman", "Dwarf", "Minotaur", "Orc Warrior", "Scorpion", "Larva", "Gutworm", "Dwarf Soldier"} },
+	{ name = "Moonlit Shiv", id = 2402, minTier = "magic", chance = 25, level = 28, slot = "sword",
+	  bossOnly = false, monsters = {"Ghoul", "Scarab", "Ghost", "Tarantula", "Demon Skeleton", "Mummy", "Crypt Shambler", "Vampire", "Dwarf Guard", "Gargoyle", "Cyclops", "Fire Elemental", "Bonelord", "Orc Berserker", "Zombie", "Dragon Hatchling"} },
+	{ name = "Gravewhisper Stiletto", id = 2404, minTier = "rare", chance = 6, level = 600, slot = "sword",
+	  bossOnly = false, monsters = {"Inferno Juggernaut", "Nightflare Dreadknight", "Orclops Ravager", "Grindmaw the Mauler", "Royal Man", "Grove Keeper", "Garack", "Dreamgorger"} },
+	{ name = "Nightbloom Stiletto", id = 2411, minTier = "rare", chance = 6, level = 1250, slot = "sword", minMonsterLevel = 1000,
+	  bossOnly = false, monsters = {"Vorgrun of the Jade Fangs", "Fractalis the Shardmaw", "Armorcoil", "Blazefang", "Gorgulith", "Nexlurith", "Voidwagner", "Aegis Sentinel", "Flarevein Wyrm", "Gloomstinger", "Pyroquill", "Toxic Mauler"} },
+	{ name = "Misericorde of the Pale Vow", id = 27193, minTier = "rare", chance = 6, level = 1900, slot = "sword", minMonsterLevel = 1000,
+	  bossOnly = false, monsters = {"Frostreaver the Glacialblade", "Rhazgor the Crimson Slayer", "Ashfang Wrym", "Bloodspark Adept", "Glacial Hellcharger", "Nightfang Widow", "Shadowcrystal Widow", "Bloodshade Reaper", "Duskhorn Drake", "Nightflare Dreadknight", "Shadowvein Wrym", "Umbral Arcanist"} },
+	-- weapon coverage uniques (2026-10-23): a leveling bow for the Beastmaster and endgame weapons the audit found missing
+	-- (tools/weapon_coverage.lua); the same rules as the other leveling and endgame uniques
+	{ name = "Hoarfen Bow", id = 13873, minTier = "magic", chance = 25, level = 40, slot = "distance",
+	  bossOnly = false, monsters = {"Ghoul", "Scarab", "Ghost", "Tarantula", "Demon Skeleton", "Mummy", "Crypt Shambler", "Vampire", "Dwarf Guard", "Gargoyle", "Cyclops", "Fire Elemental", "Bonelord", "Orc Berserker", "Zombie", "Dragon Hatchling"} },
+	{ name = "Hollow Throne Claymore", id = 25880, minTier = "rare", chance = 6, level = 1550, slot = "sword", minMonsterLevel = 1000,
+	  bossOnly = false, monsters = {"Frostreaver the Glacialblade", "Rhazgor the Crimson Slayer", "Ashfang Wrym", "Bloodspark Adept", "Glacial Hellcharger", "Nightfang Widow", "Shadowcrystal Widow", "Bloodshade Reaper", "Duskhorn Drake", "Nightflare Dreadknight", "Shadowvein Wrym", "Umbral Arcanist"} },
+	{ name = "Emberhowl Greataxe", id = 25882, minTier = "rare", chance = 6, level = 1950, slot = "axe", minMonsterLevel = 1000,
+	  bossOnly = false, monsters = {"Frostreaver the Glacialblade", "Rhazgor the Crimson Slayer", "Ashfang Wrym", "Bloodspark Adept", "Glacial Hellcharger", "Nightfang Widow", "Shadowcrystal Widow", "Bloodshade Reaper", "Duskhorn Drake", "Nightflare Dreadknight", "Shadowvein Wrym", "Umbral Arcanist"} },
+	{ name = "Bellringer of the Last Vigil", id = 25884, minTier = "rare", chance = 6, level = 2200, slot = "club", minMonsterLevel = 1000,
+	  bossOnly = false, monsters = {"Morgrath the Umbral Archmage", "Nyxdrath the Midnight Terror", "Hellmaw Brute", "Mirethorn Hexer", "Mossfang Drake", "Plague Warbringer", "Viridscale Wrym", "Embermaw Archon", "Inferno Juggernaut", "Pitlord Incarnate", "Stormvein Wrym", "Waterglow Conjurer"} },
+	{ name = "Gravetide Arbalest", id = 25886, minTier = "rare", chance = 6, level = 1800, slot = "distance", minMonsterLevel = 1000,
+	  bossOnly = false, monsters = {"Frostreaver the Glacialblade", "Rhazgor the Crimson Slayer", "Ashfang Wrym", "Bloodspark Adept", "Glacial Hellcharger", "Nightfang Widow", "Shadowcrystal Widow", "Bloodshade Reaper", "Duskhorn Drake", "Nightflare Dreadknight", "Shadowvein Wrym", "Umbral Arcanist"} },
+	{ name = "Wake-Heron Longbow", id = 25885, minTier = "rare", chance = 6, level = 2100, slot = "distance", minMonsterLevel = 1000,
+	  bossOnly = false, monsters = {"Morgrath the Umbral Archmage", "Nyxdrath the Midnight Terror", "Hellmaw Brute", "Mirethorn Hexer", "Mossfang Drake", "Plague Warbringer", "Viridscale Wrym", "Embermaw Archon", "Inferno Juggernaut", "Pitlord Incarnate", "Stormvein Wrym", "Waterglow Conjurer"} },
+	{ name = "Moonlit Gallows Bow", id = 26765, minTier = "rare", chance = 6, level = 900, slot = "distance", minMonsterLevel = 800,
+	  bossOnly = false, monsters = {"Vorgrun of the Jade Fangs", "Fractalis the Shardmaw", "Armorcoil", "Blazefang", "Gorgulith", "Nexlurith", "Voidwagner", "Aegis Sentinel", "Flarevein Wyrm", "Gloomstinger", "Pyroquill", "Toxic Mauler"} },
 	-- the Ascended uniques (uber.lua, server/README.md "Ascended Omens and the Cinderheart"): ascended = true keeps them
 	-- out of the Omen chest pool (rift.lua); corpse drops of the listed bosses (x6 boss tier) and the spoils' unique rolls
 	{ name = "Sanguine Crescent", id = 2408, minTier = "boss", chance = 10, level = 1000, slot = "sword",

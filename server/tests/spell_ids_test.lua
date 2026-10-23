@@ -54,6 +54,21 @@ do -- the three are really removed: their scripts are R.otherConjures of the run
 	end
 end
 for _, id in ipairs(RETIRED) do taken[id] = nil end
+-- Ids of the stock spells the 15-spell cap retires (tools/patch_spell_cap.py CAP rows with no class left, owner
+-- 2026-10-20; the instant is commented out, or kept in the monster-only form without a spellid, so its id is free). The
+-- attack kit (owner 2026-10-23, 37 attack spells) takes the first of them. Read from the tool, so a CAP change cannot
+-- leave a kit spell on an id that is taken again.
+local CAP_RETIRED = {}
+do
+	local tool = io.open("tools/patch_spell_cap.py"):read("*a")
+	local block = tool:match("\nCAP = {(.-)\n}\n")
+	if not block then error("spell_ids_test: CAP table not found in patch_spell_cap.py") end
+	for id in block:gmatch("%((%d+), [^\n]-, %(%)%)") do
+		CAP_RETIRED[#CAP_RETIRED + 1] = tonumber(id)
+	end
+	if #CAP_RETIRED < 40 then error("spell_ids_test: only " .. #CAP_RETIRED .. " retired ids parsed from CAP") end
+	for _, id in ipairs(CAP_RETIRED) do taken[id] = nil end
+end
 for _, id in ipairs(PATCHED) do taken[id] = "patch_spell_ids.py" end
 -- the three ids are really switched off: their conjure scripts are in the archery config
 local arch = io.open("data/lib/chaos_archery_config.lua"):read("*a")

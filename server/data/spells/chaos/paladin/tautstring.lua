@@ -8,15 +8,20 @@ dofile('data/spells/scripts/chaos/_common.lua')
 local DURATION = 12000
 local DISTANCE_PERCENT = 125
 
+-- the card line of this spell (data/scripts/chaos/cards_config.lua, kind bow) adds seconds and percentage points while on
+local cards = rawget(_G, "ChaosCardsConfig") or dofile('data/scripts/chaos/cards_config.lua')
+ChaosCardsConfig = cards
+
 function onCastSpell(creature, variant, isHotkey)
 	local player = creature:getPlayer()
 	if not player then
 		return false
 	end
+	local extraSecs, extraPct = cards.buffBonus(135, function(key) return player:getStorageValue(key) end)
 	local buff = Condition(CONDITION_ATTRIBUTES)
 	buff:setParameter(CONDITION_PARAM_SUBID, ChaosSpell.SUBID.tautstring)
-	buff:setParameter(CONDITION_PARAM_TICKS, DURATION)
-	buff:setParameter(CONDITION_PARAM_SKILL_DISTANCEPERCENT, DISTANCE_PERCENT)
+	buff:setParameter(CONDITION_PARAM_TICKS, DURATION + extraSecs * 1000)
+	buff:setParameter(CONDITION_PARAM_SKILL_DISTANCEPERCENT, DISTANCE_PERCENT + extraPct)
 	buff:setParameter(CONDITION_PARAM_BUFF_SPELL, true)
 	player:addCondition(buff)
 

@@ -1,25 +1,42 @@
--- The Monk line's fist weapons (server/tools/install_fist_weapons.py --lua, from server/data/items/fist_items.csv).
--- Generated; do not edit by hand. The items exist after the "fistweapons" install step and need the matching
--- client pair (client/tools/sprites/import_art_things.py with art_import/fist_weapons.csv).
--- ids: the server ids (the same list as ChaosMonk.cfg.unarmed.fistWeapons); items[id]: key, name, attack,
+-- The Monk line's fist weapons (server/tools/install_fist_weapons.py --lua, from server/data/items/fist_items.csv and
+-- fist_claws.csv). Generated; do not edit by hand. The items exist after the "fistweapons" install step and need
+-- the matching client pair (client/tools/sprites/import_art_things.py with art_import/fist_weapons.csv for the
+-- 3665x items; the 4000x claws use looks the pair has already: donor B claws 1-13).
+-- ids: the server ids by level (the same list as ChaosMonk.cfg.unarmed.fistWeapons); items[id]: key, name, attack,
 -- defense, level; loot: {monster, item id, chance per 100000} added to the monster types at startup
 -- (data/scripts/chaos/fist_weapons.lua).
 
 ChaosFistWeapons = {
-	ids = {36654, 36655, 36656, 36657, 36658, 36659},
+	ids = {40000, 36654, 40009, 40010, 40001, 36655, 40002, 36656, 36657, 36658, 36659, 40003, 40004, 40005, 40011, 40006, 40007, 40012, 40008},
 	items = {
+		[40000] = {key = "fist_c1", name = "pair of splinter claws", attack = 41, defense = 2, level = 1},
 		[36654] = {key = "fist_t1", name = "pair of charred hand wraps", attack = 42, defense = 4, level = 8},
+		[40009] = {key = "fist_u1", name = "vigil-knot wraps", attack = 43, defense = 8, level = 14, unique = "Vigil-Knot Wraps"},
+		[40010] = {key = "fist_u2", name = "chapel-iron knuckles", attack = 44, defense = 10, level = 26, unique = "Chapel-Iron Knuckles"},
+		[40001] = {key = "fist_c2", name = "pair of rustiron claws", attack = 43, defense = 6, level = 35},
 		[36655] = {key = "fist_t2", name = "ashbound cestus", attack = 44, defense = 8, level = 60},
+		[40002] = {key = "fist_c3", name = "pair of ashen steel claws", attack = 45, defense = 10, level = 100},
 		[36656] = {key = "fist_t3", name = "pair of ember knuckles", attack = 46, defense = 12, level = 150},
 		[36657] = {key = "fist_t4", name = "ossuary gauntlet", attack = 50, defense = 16, level = 300},
 		[36658] = {key = "fist_t5", name = "pair of cinderforged talons", attack = 55, defense = 20, level = 500},
 		[36659] = {key = "fist_pyre", name = "pyre saint's grasp", attack = 62, defense = 22, level = 650, unique = "Grasp of the Pyre Saint"},
+		[40003] = {key = "fist_c4", name = "pair of emberhide claws", attack = 62, defense = 26, level = 800},
+		[40004] = {key = "fist_c5", name = "pair of voidglass claws", attack = 63, defense = 28, level = 1000},
+		[40005] = {key = "fist_c6", name = "pair of stormforged claws", attack = 64, defense = 30, level = 1250},
+		[40011] = {key = "fist_u3", name = "gravewind talons", attack = 68, defense = 38, level = 1400, unique = "Gravewind Talons"},
+		[40006] = {key = "fist_c7", name = "pair of wyrmbone claws", attack = 65, defense = 32, level = 1500},
+		[40007] = {key = "fist_c8", name = "pair of gravewrought claws", attack = 66, defense = 34, level = 1800},
+		[40012] = {key = "fist_u4", name = "dawnless gauntlets", attack = 70, defense = 42, level = 2000, unique = "Dawnless Gauntlets"},
+		[40008] = {key = "fist_c9", name = "pair of last-dawn claws", attack = 67, defense = 36, level = 2200},
 	},
 	loot = {
 		{"Monk", 36654, 900},
 		{"Dark Monk", 36654, 700},
 		{"Undead Gladiator", 36655, 400},
 		{"Renegade Knight", 36655, 300},
+		{"Plaguesmith", 40002, 250},
+		{"Cobra Assassin", 40002, 250},
+		{"Wyrmblood Elite", 40002, 250},
 		{"Burning Gladiator", 36656, 350},
 		{"Hellfire Fighter", 36656, 300},
 		{"Bonecleaver", 36657, 250},
@@ -31,5 +48,21 @@ ChaosFistWeapons = {
 		{"Nightflare Dreadknight", 36658, 150},
 		{"Orclops Ravager", 36658, 120},
 		{"Grindmaw the Mauler", 36658, 150},
+		{"Frost Maiden", 40003, 150},
+		{"Glacial Hellcharger", 40003, 150},
+		{"Plague Warbringer", 40003, 120},
+		{"Dawn Strayer", 40004, 150},
+		{"Spirit of Purity", 40004, 150},
+		{"Celestial Wyrm", 40004, 150},
+		{"Ossivane the Gravecage", 40004, 1500},
+		{"Golden Dragon", 40005, 120},
+		{"Winterstride", 40005, 120},
+		{"Bloodantler Fiend", 40006, 100},
+		{"Vaelith the Fallen Seraph", 40006, 1200},
+		{"Mirecoil Wyrm", 40007, 100},
+		{"Vaelith the Fallen Seraph", 40007, 1000},
+		{"Morgrath the Umbral Archmage", 40008, 1500},
+		{"Nyxdrath the Midnight Terror", 40008, 1500},
+		{"Mirecoil Wyrm", 40008, 100},
 	}
 }

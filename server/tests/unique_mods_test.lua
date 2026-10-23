@@ -153,6 +153,39 @@ for _, name in ipairs(REWORKED) do
 	check(id and SPECS[id].mods and #SPECS[id].mods >= 2, name .. ": built-in modifiers")
 end
 
+-- Thief daggers (2026-10-23): a dagger for every band, each its own dagger-sprite base, a Thief-only rule from level 600
+local DAGGERS = {{"Cutpurse's Sliver", 2403, 10}, {"Moonlit Shiv", 2402, 28}, {"Gravewhisper Stiletto", 2404, 600},
+	{"Nightbloom Stiletto", 2411, 1250}, {"Misericorde of the Pale Vow", 27193, 1900}}
+for _, d in ipairs(DAGGERS) do
+	local spec, e = common(d[1])
+	if spec then
+		eq(e.id, d[2], d[1] .. ": the dagger base"); eq(e.level, d[3], d[1] .. ": level")
+		eq(e.slot, "sword", d[1] .. ": a sword-type weapon")
+		check(spec.attributes[ITEM_ATTRIBUTE_ATTACK] and spec.attributes[ITEM_ATTRIBUTE_ATTACK] >= 20, d[1] .. ": attack")
+		if d[3] >= 600 then
+			eq(spec.equip.lines[1], "Thief", d[1] .. ": the Thief line's"); eq(#spec.equip.lines, 1, d[1] .. ": only the Thief line")
+			check(e.minTier ~= "magic", d[1] .. ": rare and up")
+		else
+			eq(#spec.equip.vocations, 0, d[1] .. ": every class from the leveling levels")
+			eq(e.minTier, "magic", d[1] .. ": magic monsters and up")
+		end
+		if d[3] >= 1200 then
+			eq(powers(spec), 1, d[1] .. ": one legendary power")
+			check((e.minMonsterLevel or 0) >= 1000, d[1] .. ": waystone-level kills")
+		end
+	end
+end
+-- the attack follows the one-handed melee curve of install_gear_sets.py (leveling daggers above it, like the leveling uniques)
+do
+	local curve = {[600] = 55.7, [1250] = 63.0, [1900] = 68.2}
+	for _, d in ipairs(DAGGERS) do
+		local atk = SPECS[d[2]].attributes[ITEM_ATTRIBUTE_ATTACK]
+		if curve[d[3]] then
+			check(math.abs(atk - curve[d[3]]) <= 2, d[1] .. ": attack " .. atk .. " on the curve " .. curve[d[3]])
+		end
+	end
+end
+
 -- ------------------------------------------------------------------------------------------------ the generator
 local f = io.open("tools/gen_unique_specs.py")
 local src = f and f:read("*a") or ""
