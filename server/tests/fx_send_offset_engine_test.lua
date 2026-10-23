@@ -57,7 +57,7 @@ for id, o in pairs(T) do
 	local e = engineTable and engineTable[id]
 	check(e ~= nil and e[1] == o[1] and e[2] == o[2], "engine has " .. tostring(id))
 end
-check(n > 0 and engineTable[405][1] == 2 and engineTable[405][2] == 2, "405 is 2, 2 in the engine")
+check(n > 0 and engineTable[405][1] == 1 and engineTable[405][2] == 1, "405 is 1, 1 in the engine")
 -- the guard sends at the target tile: the engine centres it (no second shift)
 check(Position.sendMagicEffect({x = 100, y = 200, z = 7}, 405) == true and at[1].x == 100 and at[1].y == 200
 	and at[1].z == 7, "405 sent at the target tile by Lua, the engine shifts it")

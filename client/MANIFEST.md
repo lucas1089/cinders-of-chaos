@@ -2366,11 +2366,16 @@ of each thing) and `pack36_fx.sums` (sha256 of each strip, for `build --check`).
   crit (173, 415), dodge and reflect ids get pack animations, not the pack's word pop-ups (owner 2026-10-17: "the
   animation, not the word"; 416 is also Mistborne Step, 417 a shield buff fallback). The word pop-ups (`w_text_*`,
   English words in the art) are appended and sent by nothing. Every engine, monster and script send of those ids shows the new art; send
-  offset 0, 0 (628: 1, 1, as before); art past the bottom-right tile is moved up and left as a whole, cut beyond 4 x 4
-  tiles (2 effects lose 3-6 % of their pixels). So a 3x3 or 4x4 in-place art sent at the target tile sits up-left
-  of it; the server moves the 23 such ids to their centring tile (Lua sends, and engine sends with src-patch 0060) (`tools/sprites/gen_fx_send_offsets.py`
-  -> `server/data/lib/chaos_fx_send_offsets.lua`, server/README.md "Purchased effect packs (pair 36)"). The pair is
-  unchanged.
+  offset 0, 0 (628: 1, 1, as before); art past the bottom-right tile is moved up and left as a whole by (sx, sy)
+  pixels, cut beyond 4 x 4 tiles (2 effects lose 3-6 % of their pixels). The effect's pivot (the ring's middle, the
+  pack author's centre) goes with the art, so it sits (sx, sy) up and left of its place. The build records every pull
+  in `art_import/pack36_replace_pivots.csv` (`gen_pack36_fx.pull`; checked by `build --check`), and the server sends
+  each id at the whole-tile offset that brings the pivot back, 15 px off at worst (`tools/sprites/gen_fx_send_offsets.py`
+  -> `server/data/lib/chaos_fx_send_offsets.lua`, 15 ids: Lua sends, and engine sends with src-patch 0060; server/README.md
+  "Purchased effect packs (pair 36)"). Owner 2026-10-23: the first table moved every 3x3 / 4x4 art by its size, which
+  put the teleport 11 (pivot pulled 4, 10 px) and the holy 201 / 262 a tile down and right. `gen_fx_send_offsets.py
+  --pair DAT SPR` compares the pivots with the art of a pair (pair 40: all 141 in-place effects agree). The pair is
+  unchanged. Cutting the art so the pivot sits exactly on its tile (no half-tile residue) would need a new pair.
 - **Appended**: 3247 effects (tile spells 346, fields 150, areas 547, cones 784, Mega 1012, impacts 195, circles 21,
   auras 84, traps 31, game feel 65, beams 12; directional effects as `_n` .. `_nw`) and 62 missiles, named in
   `server/data/lib/chaos_pack36_fx_ids.lua` and `server/data/spells/pack36_fx_catalog.csv`. Server use:
