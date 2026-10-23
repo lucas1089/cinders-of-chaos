@@ -573,6 +573,31 @@ S.REWARDS[#S.REWARDS + 1] = {key = "pocketboss", fn = function(D, emit)
 	end
 end}
 
+-- D.pocketBoss.islandReward: an island boss in its pocket gives every player the base orbs x lootMult and picks of the pool
+S.REWARDS[#S.REWARDS + 1] = {key = "pocketisland", fn = function(D, emit)
+	local pc = D.pocketBoss
+	local r = pc and pc.enabled ~= false and pc.islandReward
+	local cat = pc and pc.categories and pc.categories.island
+	if not r or r.enabled == false or not cat then
+		return
+	end
+	items(r.base, function(id, n)
+		reward(emit, id, n, "Pocket boss", string.format("island boss pocket: x%s at random", tostring(cat.lootMult or 1)), 0)
+	end)
+	local total = 0
+	for _, e in ipairs(r.pool or {}) do
+		total = total + (e.weight or 0)
+	end
+	for _, e in ipairs(r.pool or {}) do
+		if e.kind == "item" and e.id and total > 0 then
+			local c = e.count or {1, 1}
+			emit("reward", e.id, {n = "Pocket boss", c = K.countText(c[1], c[2]), o = 1,
+				d = string.format("island boss pocket: %d%% of each of the %d picks", math.floor(100 * e.weight / total + 0.5),
+					r.picks or 0)})
+		end
+	end
+end}
+
 -- D.invasion = invasion_config.lua
 S.REWARDS[#S.REWARDS + 1] = {key = "invasion", fn = function(D, emit)
 	local inv = D.invasion

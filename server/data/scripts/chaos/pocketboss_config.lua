@@ -92,6 +92,35 @@ return {
 	},
 	-- boss keys left out
 	exclude = {},
+	-- the island bosses' reward in the pocket (the second category of the window; beta 2026-10-23: "the second section only
+	-- gives the cards as reward, and the cards did not work"). The corpse of an island pocket is the stock loot table x
+	-- lootMult, a long list of 0.1-0.2% gear and a few high-chance items, cards among them; a world pocket also pays an
+	-- event share (worldReward). Now every player present at an island kill gets, besides the corpse:
+	--   base   orbs x lootMult (rounded at random), as the world bosses' base orbs, fewer
+	--   picks  rolls of the weighted pool below (weights relative; a kind that has nothing to give is skipped):
+	--     gear   one piece of the boss's own loot table gear (the stock gear of the island, made with a rarity of `rarity`
+	--            and the kill's item level); none when the table has no gear
+	--     item   id x count {min, max}: essences (the materials of the island's own loot table), orbs, crystal coins
+	--     card   one deck card (cards.lua): a tier by `cardTiers` weights (Minor .. Powerful), then a line at random. The
+	--            card lines cover all 21 classes since 2026-10-23; cards are one of seven kinds, not the whole reward
+	-- At about 40% of a scheduled fight's value per kill, in line with the world pocket's orbs x0.6 and one gear roll at 9%.
+	islandReward = {
+		enabled = true,
+		base = {{id = 29856, count = 2}, {id = 29857, count = 1}}, -- Orbs of Upheaval, Orb of Fate
+		picks = 2,
+		rarity = {3, 4}, -- stored ids of data/lib/chaos_rarity.lua: 3 Magic, 4 Rare (the world pocket's gear is Legendary)
+		cardTiers = {40, 30, 20, 10},
+		pool = {
+			{kind = "gear", weight = 14},
+			{kind = "card", weight = 16},
+			{kind = "item", id = 27705, count = {2, 5}, weight = 18}, -- Mythic Essence
+			{kind = "item", id = 27701, count = {1, 3}, weight = 14}, -- Legendary Abyssal Essence
+			{kind = "item", id = 27702, count = {1, 2}, weight = 8}, -- Legendary Ancestral Essence
+			{kind = "item", id = 29856, count = {1, 2}, weight = 14}, -- Orb of Upheaval
+			{kind = "item", id = 2160, count = {20, 60}, weight = 16}, -- crystal coins
+		},
+	},
+
 	-- the Boss Spawns window: these categories list their bosses by pocket level, then name (the 25 raid bosses)
 	sortSpawns = {raid = true},
 

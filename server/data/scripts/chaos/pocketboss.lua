@@ -19,7 +19,8 @@
 --               attaches its profile when it has one; a lethal hit is caught (catchLethal): the player goes back out
 --   rewards     experience x xpMult (EventCallback onGainExperience), the corpse x lootMult (loot.lua reads
 --               ChaosPocketBoss.lootMultOf), Conquest Tokens (ChaosConquest.grant, "pocketboss:<key>"), for world bosses
---               a reduced share of the event reward (orbs, a gear roll of the boss's set, a unique roll). The boss passive
+--               a reduced share of the event reward (orbs, a gear roll of the boss's set, a unique roll), for island
+--               bosses orbs plus picks of gear, materials and deck cards (islandReward). The boss passive
 --               point comes from bosspoints.lua as for any kill of that type.
 --   no stacking a character rewarded by the event of a boss cannot open its pocket for noStackSeconds (event_at in
 --               chaos_pocketboss: a restart keeps it)
@@ -672,6 +673,60 @@ local function worldRewardOf(run, player)
 	end
 end
 
+-- the cards by tier (1 Minor .. 4 Powerful) of cards_config.lua, for the island reward
+local function cardsByTier()
+	local cfg = ChaosCardsConfig
+	if not cfg then
+		local ok, loaded = pcall(dofile, "data/scripts/chaos/cards_config.lua")
+		cfg = ok and loaded or nil
+	end
+	local out = {{}, {}, {}, {}}
+	for id, c in pairs((cfg or {}).cards or {}) do
+		if not c.legendary and out[c.tier] then
+			out[c.tier][#out[c.tier] + 1] = id
+		end
+	end
+	for t = 1, 4 do
+		table.sort(out[t])
+	end
+	return out
+end
+
+-- the island bosses' reward (pocketboss_config.lua islandReward): orbs, picks of gear of the boss's own loot table,
+-- materials and deck cards, for every player present at the kill. Cards were the one sure item of the island loot tables.
+local function islandRewardOf(run, player, gearIds, cards)
+	local cfg = C().islandReward
+	if not cfg or cfg.enabled == false then
+		return
+	end
+	local r = K.islandReward(cfg, run.settings.lootMult or 1, gearIds, cards, math.random)
+	local parts, inboxUsed = {}, false
+	for _, it in ipairs(r.items) do
+		inboxUsed = giveStack(player, it.id, it.count) or inboxUsed
+		parts[#parts + 1] = it.count .. "x " .. itemName(it.id)
+	end
+	for _, g in ipairs(r.gear) do
+		local level = run.bossDrop and run.bossDrop.level or nil
+		local item = ChaosCrafting and ChaosCrafting.createItem and ChaosCrafting.createItem(g.id, g.rarity or 0, level)
+			or Game.createItem(g.id, 1)
+		if item then
+			inboxUsed = giveEx(player, item) or inboxUsed
+			parts[#parts + 1] = itemName(g.id)
+		end
+	end
+	for _, id in ipairs(r.cards) do
+		local item = Game.createItem(id, 1)
+		if item then
+			inboxUsed = giveEx(player, item) or inboxUsed
+			parts[#parts + 1] = itemName(id)
+		end
+	end
+	if #parts > 0 then
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "Pocket reward of %s: %s.%s", run.boss.name,
+			table.concat(parts, ", "), inboxUsed and Chaos.t(player, " Your backpack was full: the rest is in your inbox.") or ""))
+	end
+end
+
 -- the boss's loot when its corpse had none (K.needsFallbackLoot: a reward boss whose loot goes to the reward chest of
 -- its home room, or an empty corpse): every player of the run gets a personal roll of its loot table x lootMult, gear
 -- with the stock rarity roll and the boss floor of the loot layer, at the kill's item level. Returns the players served.
@@ -795,6 +850,23 @@ local function success(run)
 			end
 			if run.boss.category == "world" then
 				try("world reward", worldRewardOf, run, p)
+			end
+		end
+	end
+	if run.boss.category == "island" then
+		local gearIds, seenGear = {}, {}
+		for _, e in ipairs(run.bossDrop and run.bossDrop.loot or {}) do
+			local gid = tonumber(e.itemId or e.id)
+			if gid and not seenGear[gid] and ChaosLoot and ChaosLoot.isGearId and ChaosLoot.isGearId(gid) then
+				seenGear[gid] = true
+				gearIds[#gearIds + 1] = gid
+			end
+		end
+		local cards = cardsByTier()
+		for id in pairs(run.players) do
+			local p = Player(id)
+			if p then
+				try("island reward", islandRewardOf, run, p, gearIds, cards)
 			end
 		end
 	end

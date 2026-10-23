@@ -829,6 +829,26 @@ do
 	ok(not corpse2.gone, "a container corpse stays")
 	eq(r2.bossDrop.corpseItems, 3, "its size read after the loot went in")
 	eq(got2, 0, "a corpse with loot: no personal roll on top")
+
+	-- an island pocket kill pays the island reward on top of the corpse
+	local function filled(cp)
+		local c = {id = 6080, at = {x = cp.x, y = cp.y, z = cp.z}, size = 3}
+		function c:getId() return self.id end
+		function c:getPosition() return self.at end
+		function c:isContainer() return true end
+		function c:getSize() return self.size end
+		function c:remove() self.gone = true return true end
+		return c
+	end
+	local nmsgs = #a.msgs
+	pocketKill("dreadscale", filled)
+	local found
+	for i = nmsgs + 1, #a.msgs do
+		if tostring(a.msgs[i]):find("Pocket reward of", 1, true) then
+			found = a.msgs[i]
+		end
+	end
+	ok(found, "the island kill tells the pocket reward")
 end
 
 -- the contested fight: an island boss spawned by the base server; every helper above 2% gets a personal roll
@@ -874,5 +894,49 @@ eq(okE, false, "no pocket right after the contested reward")
 local lair = newMonster("Ul'thazmor", pos(32322, 31932, 6))
 ch(lair, owner, -1000, 1, 0, 1, 0)
 eq(PB.contest[lair.id], false, "not an island / raid spawn: no personal loot")
+
+-- the island reward of a pocket (islandReward): orbs, then picks of gear, cards and materials
+local ir = pcfg.islandReward
+ok(ir and ir.enabled, "the island reward is configured")
+eq(#ir.cardTiers, 4, "four card tier weights")
+local kinds = {}
+for _, e in ipairs(ir.pool) do
+	kinds[e.kind] = true
+end
+ok(kinds.gear and kinds.card and kinds.item, "gear, cards and materials are all in the pool")
+local cardsT = {{101, 102}, {201}, {301}, {401}}
+local gearsI = {7001, 7002}
+local gotCard, gotGear, gotItem, maxPicks = 0, 0, 0, 0
+for _ = 1, 4000 do
+	local r = K.islandReward(ir, 0.6, gearsI, cardsT, lcg)
+	maxPicks = math.max(maxPicks, #r.gear + #r.cards)
+	gotGear = gotGear + #r.gear
+	gotCard = gotCard + #r.cards
+	for _, it in ipairs(r.items) do
+		if it.id ~= 29856 and it.id ~= 29857 then
+			gotItem = gotItem + 1
+		end
+	end
+	for _, g in ipairs(r.gear) do
+		ok(g.id == 7001 or g.id == 7002, "gear from the boss table")
+		ok(g.rarity >= ir.rarity[1] and g.rarity <= ir.rarity[2], "gear rarity in range")
+	end
+end
+ok(gotGear > 0 and gotCard > 0 and gotItem > 0, "all three kinds come up")
+ok(maxPicks <= ir.picks, "never more gear and cards than picks")
+-- no gear ids and no cards: only materials are drawn
+local only = K.islandReward(ir, 1, {}, {{}, {}, {}, {}}, lcg)
+eq(#only.gear + #only.cards, 0, "nothing to give: gear and cards skipped")
+local itemsOnly = 0
+for _, it in ipairs(only.items) do
+	itemsOnly = itemsOnly + it.count
+end
+ok(itemsOnly > 0, "materials and orbs still come")
+-- base orbs scale with the pocket's loot multiplier
+local zero = K.islandReward({base = {{id = 29856, count = 2}}, picks = 0, pool = {}}, 0.6, {}, {}, fixed({0.99}))
+eq(#zero.items, 1, "base orbs x0.6 rounded up on a high roll")
+eq(zero.items[1].count, 1, "2 x 0.6 = 1.2 rounds to 1")
+local noPicks = K.islandReward({base = {}, picks = 3, pool = {}}, 1, {1}, cardsT, lcg)
+eq(#noPicks.items + #noPicks.gear + #noPicks.cards, 0, "an empty pool gives nothing")
 
 print(string.format("pocketboss_test: %d checks passed", checks))

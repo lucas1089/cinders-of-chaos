@@ -33,6 +33,14 @@ four take nothing. The rules are data/scripts/chaos/badges_core.lua; this tool c
    are wrapped in a block comment, so nobody crafts an item no slot takes. The Loot Buyer still buys the copies players
    hold. The other recipes keep their order.
 
+9. the base legendary cards (the script with `config.itemidKnights`, legendary_cards_system.lua): a hit fires a card only
+   when the item in the left hand is in one of four lists of stock item ids (itemidKnights, itemidDruid, itemidSorcerer,
+   itemidPaladin). They miss most stock weapons and every Chaos weapon, fist weapon and bare fist, so "my card does not
+   work" (beta 2026-10-23). The 16 checks `leftHand and table.find(config.<list>, leftHand.itemid)` become
+   chaosHolds(player, "<class>", leftHand, config.<list>), a local function put before whenPlayerAttack that asks
+   ChaosCards.holds (cards.lua: the weapon type decides, the stock ids still count) and falls back to the base check
+   while cards.lua is not loaded. cards.lua also frees the base's "one summon at a time" lock when the summon died.
+
 Nothing is taken out of a drop: the decks and ships keep their uses (the monster loot, the task reward and the first
 ship stay); the belts and gloves drop nowhere and step 8 takes them out of the armorsmith. A second run changes nothing. --check changes nothing and exits 1 when something is still to
 do.
@@ -159,6 +167,31 @@ def deck_system(text):
     return text, n
 
 
+LEGENDARY_CHECK = re.compile(r'leftHand and table\.find\(config\.(itemid(Knights|Druid|Sorcerer|Paladin)), leftHand\.itemid\)')
+LEGENDARY_CLASS = {'Knights': 'Knight', 'Druid': 'Druid', 'Sorcerer': 'Sorcerer', 'Paladin': 'Paladin'}
+LEGENDARY_FUNC = re.compile(r'^local function whenPlayerAttack\(player, damage\)[ \t]*\n', re.M)
+LEGENDARY_HELPER = ('-- {mark}: the weapon decides, not a list of stock item ids (cards.lua ChaosCards.holds)\n'
+                    'local function chaosHolds(player, class, leftHand, stockIds)\n'
+                    '    if ChaosCards and ChaosCards.holds then\n'
+                    '        return ChaosCards.holds(player, class, leftHand, stockIds)\n'
+                    '    end\n'
+                    '    return leftHand and table.find(stockIds, leftHand.itemid)\n'
+                    'end\n\n').format(mark=MARK)
+
+
+def legendary(text):
+    """the 16 left-hand item id checks of the legendary cards ask chaosHolds (ChaosCards.holds) instead"""
+    if 'chaosHolds(' in text:
+        return text, 0
+    m = LEGENDARY_FUNC.search(text)
+    if not m or not LEGENDARY_CHECK.search(text):
+        return text, 0
+    new, n = LEGENDARY_CHECK.subn(
+        lambda c: 'chaosHolds(player, "%s", leftHand, config.%s)' % (LEGENDARY_CLASS[c.group(2)], c.group(1)), text)
+    m = LEGENDARY_FUNC.search(new)
+    return new[:m.start()] + LEGENDARY_HELPER + new[m.start():], n + 1
+
+
 def droploot(text):
     if MARK in text:
         return text, 0
@@ -272,6 +305,8 @@ def run(data, dry=False):
         text = read(path)
         if DECK_CALL in text or MARK in text and 'deckOf' in text:
             apply(path, deck_system, 'deck')
+        if 'config.itemidKnights' in text and 'whenPlayerAttack' in text:
+            apply(path, legendary, 'legendary')
         if SEA_LINE.search(text.replace('\r\n', '\n')):
             apply(path, lambda t: hook(t, SEA_LINE, SEA_HOOK), 'sea')
         if RECIPE_TABLE.search(text.replace('\r\n', '\n')):
@@ -293,7 +328,8 @@ def run(data, dry=False):
         apply(xml_path, items_xml)
     if not dry:
         for what, where in (('move', 'Player:onMoveItem'), ('deck', 'the deck system'), ('sea', 'the sea tiles'),
-                            ('drop', 'the death loss (droploot.lua)'), ('recipes', 'the belt and gloves recipes')):
+                            ('drop', 'the death loss (droploot.lua)'), ('recipes', 'the belt and gloves recipes'),
+                            ('legendary', 'the legendary cards')):
             if what not in found:
                 report.append('%s not found (skipped)' % where)
     return report, changed

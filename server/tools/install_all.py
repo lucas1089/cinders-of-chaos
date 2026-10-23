@@ -189,7 +189,8 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                holds the cards (using a card carried anywhere puts it in a deck and turns it on: README "Cards and decks"), a
                carried ship sails, the items.xml descriptions say so (a card: where it goes);
                the boss loot's Fury catalyst [3] typo is fixed; the death loss takes the badge slot; the armorsmith no
-               longer crafts belts and gloves (README "Badge slot"; after itemnames)
+               longer crafts belts and gloves; the 16 legendary card checks ask ChaosCards.holds (the weapon decides, not
+               four lists of stock item ids) (README "Badge slot", "Cards and decks"; after itemnames)
   prizes       tools/patch_prizes.py             the base scripts give prizes into the backpack, else the Purse, else
                the ground, never an inventory slot: the roulettes (no retired item in their pools, nil guards), the
                task rewards, the crafting script, the ship NPC (README "Prizes into the backpack"; after badges and

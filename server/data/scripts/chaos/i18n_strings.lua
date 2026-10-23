@@ -3216,6 +3216,8 @@ return {
 			"poderoso",
 		["While on, %s deals %s damage instead. With several cards of this spell on, the highest one counts."] =
 			"Ativa, %s causa dano de %s no lugar. Com várias cartas desta magia ativas, vale a mais alta.",
+		["While on, %s deal %s damage instead. With several cards of these spells on, the highest one counts."] =
+			"Ativa, %s causam dano de %s no lugar. Com várias cartas destas magias ativas, vale a mais alta.",
 		["While on, %s heals %d%% more. With several cards of this spell on, the highest one counts."] =
 			"Ativa, %s cura %d%% a mais. Com várias cartas desta magia ativas, vale a mais alta.",
 		["While on, %s lasts %d seconds longer and gives %d more percentage points of melee skill."] =
@@ -3224,8 +3226,8 @@ return {
 			"Ativa, %s alcança uma área maior (degrau %d de 4).",
 		["While on, %s lasts %d seconds longer and gives %d more percentage points of distance skill."] =
 			"Ativa, %s dura %d segundos a mais e dá %d pontos percentuais a mais de skill de distância.",
-		["Needs %s in your left hand. While on, a hit of %d damage or more has a %d%% chance to summon a monster that fights with you and gives you %d more %s for %d seconds. Only one summon at a time."] =
-			"Precisa de %s na mão esquerda. Ativa, um golpe de %d de dano ou mais tem %d%% de chance de invocar um monstro que luta com você e dá %d a mais de %s por %d segundos. Só uma invocação por vez.",
+		["Needs %s. While on, a hit of %d damage or more has a %d%% chance to summon a monster that fights with you and gives you %d more %s for %d seconds. Only one summon at a time."] =
+			"Precisa de %s. Ativa, um golpe de %d de dano ou mais tem %d%% de chance de invocar um monstro que luta com você e dá %d a mais de %s por %d segundos. Só uma invocação por vez.",
 		["Use it to put it in a deck you carry and turn it on, use it again to turn it off. Veyra the Apothecary sells decks."] =
 			"Use para colocá-la em um deck que você carrega e ativá-la, use de novo para desativá-la. Veyra the Apothecary vende decks.",
 		["magic level"] =
@@ -3234,14 +3236,12 @@ return {
 			"skill de distância",
 		["melee skill"] =
 			"skill corpo a corpo",
-		["a wand"] =
-			"uma varinha",
-		["a rod"] =
-			"um cajado",
-		["a bow or a crossbow"] =
-			"um arco ou uma besta",
-		["a melee weapon"] =
-			"uma arma corpo a corpo",
+		["a wand or a rod in your left hand"] =
+			"uma varinha ou um cajado na mão esquerda",
+		["a bow or a crossbow in your left hand"] =
+			"um arco ou uma besta na mão esquerda",
+		["a melee weapon in your left hand (the Monk line: a fist weapon or bare fists)"] =
+			"uma arma corpo a corpo na mão esquerda (a linha do Monk: uma arma de punho ou as mãos nuas)",
 		-- Prizes into the backpack (prizes_core.lua)
 		["Your prize %s is in your Purse (the store inbox): your backpack had no room."] =
 			"Seu prêmio %s está na sua Purse (a caixa da loja): sua mochila não tinha espaço.",

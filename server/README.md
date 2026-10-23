@@ -7287,9 +7287,38 @@ No opcode, no table, no storage key of its own: the base's card storages (37000-
   event, Tautstring's bonus, the stale-name scan), `tools/patch_badges_test.py` (hook once, descriptions, hint migration),
   `tests/apothecary_test.lua` (decks), `client/overlay/modules/game_chaosinfo/chaosinfoview_test.lua`.
 - **Not seen in a client or on a live server.** The base is not in the repo: the right-click menu "Use" entry depends on
-  the item's `.dat` usable flag (the base registered the action, so it is expected); the legendary summons check the base
-  weapon id lists (`itemidKnights` and the others), which may not hold the Chaos weapons, so a legendary card may never
-  fire with them (left, the base script is untouched); the nine moved lines are tested on a mocked engine only.
+  the item's `.dat` usable flag (the base registered the action, so it is expected); the nine moved lines are tested on a
+  mocked engine only. (The legendary weapon lists were left here once; fixed in O142 below.)
+
+### Cards that did not fire (O142, beta 2026-10-23)
+
+Beta: "a card in the deck does not work at all". Four root causes, all fixed; deploy: `badges` and `files` installer steps and
+a server restart, no client update.
+
+- **Legendary cards ignored most weapons.** The base `legendary_cards_system.lua` asks the left-hand item id against four
+  hard-coded lists of stock ids (38 of 134 swords, 31 of 126 clubs, 34 of 114 axes, 26 of 37 bows, 24 of 29 crossbows, 41 of
+  65 wands, 11 of 77 Chaos items matched). `patch_badges.py` step 9 rewrites the 16 checks to `chaosHolds(player, "<class>",
+  leftHand, config.<list>)`, a local helper that calls `ChaosCards.holds` (cards.lua) and falls back to the base check while
+  cards.lua is not loaded. `holds` decides by weapon type: Knight sword, club, axe or a fist weapon (the Monk line also
+  fights bare-handed), Paladin distance, Sorcerer and Druid wand (wands and rods share one type; either mage card works
+  with either). The stock ids still count. The fixture test is in `tools/patch_badges_test.py`.
+- **The summon lock stuck.** The base sets `DeckSystem.Legendary.CanCreateSummon` to 1 on a summon and never releases it
+  when the summon dies, so the card worked once and then never. `ChaosCards.releaseSummon` clears it when the player has no
+  summons (a global event every `summonReleaseMs` 5000, and at login).
+- **No card line for several classes.** Lines were tied to one spell. Thief, Ninja, Samurai, Monk line, Templar line and the
+  Necromancer line had no usable line (Frostfall Rune is a rune everyone can use but gives no class value). Four hit lines
+  now carry an `also` list of a second spell: Doomtide + Blade Flurry (Thief line), Earthbreaker + Consecration (Templar
+  line), Frozen Crypt + Sundering Palm (Monk line), Dawnpiercer + Bone Spear (Necromancer line). `C.byTarget` maps every
+  spell to its line; card texts name every spell ("these spells", "with several cards the highest one counts").
+  No existing line was removed, so nobody loses a card.
+- **Texts.** Legendary text now says what to hold ("Needs a melee weapon in your left hand (the Monk line: a fist weapon or
+  bare fists)"); `card_descriptions.csv` regenerated; pt-BR in `i18n_strings.lua`.
+
+`tests/cards_test.lua` now walks all 21 classes (`C.classes`) against all 60 common cards and the 16 legendary cards (about
+45,000 checks): every line is castable by some class, every class has a common line and a hit that fires, every legendary card
+fires for each class weapon, fist weapons, Chaos items, stock ids, bare fists for the Monk line, and the summon lock.
+`luajit tests/cards_test.lua --table` prints the lines per class. Limit: the base `elseif` chain checks only the first
+legendary storage that is on, so with two legendary classes on only the first can fire.
 
 ## Tile labels (`tile_labels.lua`, `tile_labels_core.lua`, `tile_labels_config.lua`)
 
@@ -18771,6 +18800,15 @@ restart refund, the event blocking its pocket, the island boss's personal loot. 
 `pocket*` actions through the Boss Spawns handler. Client: `game_bossspawns/bossspawnsview_test.lua` (the button). Not
 run against a live server: the island and raid bosses' health and damage scaling are guesses until measured (their XML
 lives in the base data).
+
+**Island reward (O142, beta 2026-10-23: "the second section only gives the cards as reward, and the cards did not work").**
+The island bosses' corpse is the stock loot table x `lootMult` 0.6, where the sure items were cards. Now every player at an
+island kill also gets `islandReward` (`pocketboss_config.lua`, `K.islandReward`, `islandRewardOf` in `pocketboss.lua`):
+Orb of Upheaval x2 and Orb of Fate x1 (x0.6, rounded at random) and 2 picks of a weighted pool: a piece of the boss's own
+loot table gear (Magic or Rare, kill item level; skipped when the table has none), a deck card (tier 40/30/20/10), Mythic
+Essence, Legendary Abyssal or Ancestral Essence, Orb of Upheaval, crystal coins. Cards are about a sixth of the picks. A
+failure is logged and never blocks the kill. The Item Finder lists the items (`pocketisland`). Tests: `K.islandReward`
+weights and skips, an island pocket kill. Gear comes from the existing table, so `loot_model` and `gear_coverage` do not move.
 
 ## Map markers (`partymarkers.lua`, `poi.lua` and their `_core` / `_config` files, `tools/gen_poi.py`, `sql/chaos_poi.sql`, client `game_mapmarkers`)
 

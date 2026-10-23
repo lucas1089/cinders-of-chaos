@@ -65,11 +65,12 @@ K.TEXT = {
 	howto = "Use a card you carry: it goes into a deck and turns on. Use it again to turn it off. At most %d cards are on at once.",
 	-- bonus texts: one per kind of card (the item description is this plus HINT)
 	convert = "While on, %s deals %s damage instead. With several cards of this spell on, the highest one counts.",
+	convert2 = "While on, %s deal %s damage instead. With several cards of these spells on, the highest one counts.",
 	heal = "While on, %s heals %d%% more. With several cards of this spell on, the highest one counts.",
 	melee = "While on, %s lasts %d seconds longer and gives %d more percentage points of melee skill.",
 	widen = "While on, %s reaches a wider area (step %d of 4).",
 	bow = "While on, %s lasts %d seconds longer and gives %d more percentage points of distance skill.",
-	legendary = "Needs %s in your left hand. While on, a hit of %d damage or more has a %d%% chance to summon a monster that fights with you and gives you %d more %s for %d seconds. Only one summon at a time.",
+	legendary = "Needs %s. While on, a hit of %d damage or more has a %d%% chance to summon a monster that fights with you and gives you %d more %s for %d seconds. Only one summon at a time.",
 }
 
 -- the hint every card description ends with (tools/patch_badges.py CARD_HINT is the same text; tests compare them)
@@ -87,6 +88,16 @@ function K.bonusText(lang, id)
 		return ""
 	end
 	if c.kind == "convert" then
+		if c.spellNames and #c.spellNames > 1 then
+			-- a line that acts on spells of several classes: "A and B deal Fire damage instead"
+			local names = {}
+			for i, n in ipairs(c.spellNames) do
+				names[i] = n
+			end
+			local last = table.remove(names)
+			local list = table.concat(names, ", ") .. T(lang, " and ") .. last
+			return T(lang, K.TEXT.convert2, list, word(lang, c.element))
+		end
 		return T(lang, K.TEXT.convert, c.spell, word(lang, c.element))
 	elseif c.kind == "heal" then
 		return T(lang, K.TEXT.heal, c.spell, c.pct)
@@ -138,6 +149,58 @@ function K.noDeckText(lang, sellers)
 	local sp, sl = priceOf(sellers, 27633)
 	local gp, gl = priceOf(sellers, 27634)
 	return T(lang, K.TEXT.nodeck, C.seller, bp, sp, sl, gp, gl)
+end
+
+-- ---------------------------------------------------------------- legendary cards: the weapon
+-- The legendary card of a class fires when the hit comes with the right weapon in the left hand (the base script: four
+-- lists of stock item ids; tools/patch_badges.py now hands the check to ChaosCards.holds, which classifies by weapon
+-- type). kind: "sword", "club", "axe", "distance", "wand" (engine weapon types), "fist" (a fist weapon: weapon type
+-- shield with an attack, in the shield hand), nil for an empty hand.
+function K.kindOf(typeName, isFistItem)
+	if typeName == "sword" or typeName == "club" or typeName == "axe" or typeName == "distance" or typeName == "wand" then
+		return typeName
+	end
+	if isFistItem then
+		return "fist"
+	end
+	return nil
+end
+
+-- class: "Knight" | "Paladin" | "Sorcerer" | "Druid"; hands = {left = kind, right = kind (the other hand), fistLine = the
+-- player is in the Monk line}. A fist weapon counts from either hand (it sits in the shield hand), and the Monk line
+-- fights with an empty left hand.
+function K.holds(class, hands)
+	local kinds = C.legendaryKinds[class]
+	if not kinds or not hands then
+		return false
+	end
+	if hands.left and kinds[hands.left] then
+		return true
+	end
+	if hands.right == "fist" and kinds.fist then
+		return true
+	end
+	return hands.left == nil and hands.fistLine == true and kinds.fist == true
+end
+
+-- the legendary card ids that fire for a class row of C.classes with one of its weapons ("none" = empty hands)
+function K.legendaryFor(classRow, weapon)
+	local out = {}
+	for id, c in pairs(C.cards) do
+		if c.legendary then
+			local hands = {fistLine = classRow.line == C.fistLine}
+			if weapon == "fist" then
+				hands.right = "fist"
+			elseif weapon ~= "none" then
+				hands.left = weapon
+			end
+			if K.holds(c.class, hands) then
+				out[#out + 1] = id
+			end
+		end
+	end
+	table.sort(out)
+	return out
 end
 
 -- ---------------------------------------------------------------- reconcile

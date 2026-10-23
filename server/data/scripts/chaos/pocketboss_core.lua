@@ -13,6 +13,7 @@
 --   K.scale(curve, players)               -> health / damage factor
 --   K.scaleExp(exp, mult, rand)           -> experience x mult, rounded at random
 --   K.worldReward(r, boss, mult, unique, rand, opts) -> {items, gear, gearRarity, unique} of one player
+--   K.islandReward(r, mult, gearIds, cardsByTier, rand) -> {items, gear = {{id, rarity}}, cards = {id}} of one player
 --   K.noteEvent(cfg, row, now)            -> the row with eventAt = now (a reward of the boss's event)
 --   K.noStackLeft(lastAt, now, seconds)   -> seconds before the pocket of that boss opens again for this player
 --   K.contestEligible(stats, maxHealth, cfg, ownerGuid) -> players for a personal loot roll, best first
@@ -299,6 +300,86 @@ function K.worldReward(r, boss, mult, uniquePool, rand, opts)
 	uniquePool = uniquePool or {}
 	if opts.unique and #uniquePool > 0 and rand(10000) <= floor((r.uniqueChance or 0) * mult) then
 		out.unique = uniquePool[rand(#uniquePool)]
+	end
+	return out
+end
+
+-- one player's island boss reward in a pocket (pocketboss_config.lua islandReward). r = that table, mult = the pocket's
+-- lootMult, gearIds = the gear ids of the boss's loot table (may be empty), cardsByTier = {[1..4] = {card ids}} (may be
+-- empty), rand as in worldReward. The base items are x mult rounded at random; every pick draws one pool entry by weight
+-- among those that can give something.
+function K.islandReward(r, mult, gearIds, cardsByTier, rand)
+	r = r or {}
+	local out = {items = {}, gear = {}, cards = {}}
+	local function add(id, n)
+		for _, it in ipairs(out.items) do
+			if it.id == id then
+				it.count = it.count + n
+				return
+			end
+		end
+		out.items[#out.items + 1] = {id = id, count = n}
+	end
+	for _, it in ipairs(r.base or {}) do
+		local n = roundAtRandom((it.count or 0) * mult, rand)
+		if n > 0 then
+			add(it.id, n)
+		end
+	end
+	local function haveCards()
+		for t = 1, 4 do
+			if cardsByTier and cardsByTier[t] and #cardsByTier[t] > 0 then
+				return true
+			end
+		end
+		return false
+	end
+	local entries, total = {}, 0
+	for _, e in ipairs(r.pool or {}) do
+		local w = tonumber(e.weight) or 0
+		local usable = w > 0 and (e.kind ~= "gear" or #(gearIds or {}) > 0) and (e.kind ~= "card" or haveCards())
+		if usable then
+			entries[#entries + 1] = {e = e, w = w}
+			total = total + w
+		end
+	end
+	if total <= 0 then
+		return out
+	end
+	for _ = 1, r.picks or 0 do
+		local roll, pick = rand(total), nil
+		for _, x in ipairs(entries) do
+			if roll <= x.w then
+				pick = x.e
+				break
+			end
+			roll = roll - x.w
+		end
+		pick = pick or entries[#entries].e
+		if pick.kind == "gear" then
+			local lo, hi = (r.rarity or {0, 0})[1], (r.rarity or {0, 0})[2]
+			out.gear[#out.gear + 1] = {id = gearIds[rand(#gearIds)], rarity = rand(lo, max(lo, hi))}
+		elseif pick.kind == "card" then
+			local weights, sum = {}, 0
+			for t = 1, 4 do
+				local w = (cardsByTier[t] and #cardsByTier[t] > 0) and ((r.cardTiers or {})[t] or 1) or 0
+				weights[t] = w
+				sum = sum + w
+			end
+			local tr, tier = rand(sum), 4
+			for t = 1, 4 do
+				if tr <= weights[t] then
+					tier = t
+					break
+				end
+				tr = tr - weights[t]
+			end
+			local list = cardsByTier[tier]
+			out.cards[#out.cards + 1] = list[rand(#list)]
+		else
+			local c = pick.count or {1, 1}
+			add(pick.id, rand(c[1], max(c[1], c[2])))
+		end
 	end
 	return out
 end
