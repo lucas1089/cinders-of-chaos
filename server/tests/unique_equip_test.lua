@@ -76,6 +76,9 @@ check(E.allows(nil, 1, "Ranger"), "no rule: anyone")
 check(E.allows({}, 1, "Ranger"), "an empty rule: anyone")
 check(E.allows({level = 60}, 60, "Knight"), "a level only")
 check(not E.allows({level = 60}, 59, "Mystic"), "below the level")
+-- equipLevel without equipLines: the spec has an empty class list, which lets every class wear it
+check(E.allows({level = 12, vocations = {}}, 12, "Ranger"), "an empty class list: every class")
+check(not E.allows({level = 12, vocations = {}}, 11, "Ranger"), "an empty class list keeps the level")
 local STOCK = {[27390] = {level = 400, vocations = {"Mystic", "Elementalist", "Illusionist", "Necromancer", "Lich", "Bone Lord"}},
 	[27668] = {level = 230, vocations = {"Mystic", "Illusionist", "Necromancer", "Lich", "Bone Lord"}}, [15453] = {}}
 eq(E.ruleOf(27390, true, SPECS, STOCK), SPECS[27390].equip, "a unique copy: its own rule")

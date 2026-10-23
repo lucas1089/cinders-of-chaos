@@ -157,6 +157,58 @@ ChaosUniqueItems = {
 	  bossOnly = false, monsters = {"Lich", "Vampire", "Banshee", "Ghoul", "Grim Reaper", "Undead Dragon", "Demon Skeleton", "Betrayed Wraith", "Blightwalker", "Juggernaut", "Behemoth", "Minotaur", "Orc Warlord", "Destroyer"} },
 	{ name = "Stillheart Robe", id = 27390, minTier = "legendary", chance = 7, level = 300, slot = "body",
 	  bossOnly = false, monsters = {"Inferno Juggernaut", "Nightflare Dreadknight", "Orclops Ravager", "Grindmaw the Mauler", "Royal Man", "Grove Keeper", "Garack", "Dreamgorger"} },
+	-- leveling uniques (2026-10-23): low monsters, magic and better, higher odds than the rest (server/README.md
+	-- "Leveling and endgame uniques"); equipLevel holds each copy to its level (chaos_unique_equip.lua)
+	{ name = "Ashen Pilgrim's Blade", id = 10292, minTier = "magic", chance = 25, level = 12, slot = "sword",
+	  bossOnly = false, monsters = {"Troll", "Orc", "Spider", "Wolf", "Skeleton", "Poison Spider", "Frost Troll", "Wasp", "Orc Spearman", "Dwarf", "Minotaur", "Orc Warrior", "Scorpion", "Larva", "Gutworm", "Dwarf Soldier"} },
+	{ name = "Hatchet of the First Winter", id = 8601, minTier = "magic", chance = 25, level = 15, slot = "axe",
+	  bossOnly = false, monsters = {"Troll", "Orc", "Spider", "Wolf", "Skeleton", "Poison Spider", "Frost Troll", "Wasp", "Orc Spearman", "Dwarf", "Minotaur", "Orc Warrior", "Scorpion", "Larva", "Gutworm", "Dwarf Soldier"} },
+	{ name = "Tallow-Bell Mace", id = 10302, minTier = "magic", chance = 25, level = 15, slot = "club",
+	  bossOnly = false, monsters = {"Troll", "Orc", "Spider", "Wolf", "Skeleton", "Poison Spider", "Frost Troll", "Wasp", "Orc Spearman", "Dwarf", "Minotaur", "Orc Warrior", "Scorpion", "Larva", "Gutworm", "Dwarf Soldier"} },
+	{ name = "Fenwatch Longbow", id = 7438, minTier = "magic", chance = 25, level = 12, slot = "distance",
+	  bossOnly = false, monsters = {"Troll", "Orc", "Spider", "Wolf", "Skeleton", "Poison Spider", "Frost Troll", "Wasp", "Orc Spearman", "Dwarf", "Minotaur", "Orc Warrior", "Scorpion", "Larva", "Gutworm", "Dwarf Soldier"} },
+	{ name = "Cinder-Wick Wand", id = 23719, minTier = "magic", chance = 25, level = 10, slot = "wand",
+	  bossOnly = false, monsters = {"Troll", "Orc", "Spider", "Wolf", "Skeleton", "Poison Spider", "Frost Troll", "Wasp", "Orc Spearman", "Dwarf", "Minotaur", "Orc Warrior", "Scorpion", "Larva", "Gutworm", "Dwarf Soldier"} },
+	{ name = "Hood of the Roaming Pyre", id = 10291, minTier = "magic", chance = 25, level = 20, slot = "head",
+	  bossOnly = false, monsters = {"Troll", "Orc", "Spider", "Wolf", "Skeleton", "Poison Spider", "Frost Troll", "Wasp", "Orc Spearman", "Dwarf", "Minotaur", "Orc Warrior", "Scorpion", "Larva", "Gutworm", "Dwarf Soldier"} },
+	{ name = "Pathfinder's Treads", id = 25412, minTier = "magic", chance = 25, level = 20, slot = "feet",
+	  bossOnly = false, monsters = {"Troll", "Orc", "Spider", "Wolf", "Skeleton", "Poison Spider", "Frost Troll", "Wasp", "Orc Spearman", "Dwarf", "Minotaur", "Orc Warrior", "Scorpion", "Larva", "Gutworm", "Dwarf Soldier"} },
+	{ name = "Band of the Second Dawn", id = 10502, minTier = "magic", chance = 25, level = 25, slot = "ring",
+	  bossOnly = false, monsters = {"Ghoul", "Scarab", "Ghost", "Tarantula", "Demon Skeleton", "Mummy", "Crypt Shambler", "Vampire", "Dwarf Guard", "Gargoyle", "Cyclops", "Fire Elemental", "Bonelord", "Orc Berserker", "Zombie", "Dragon Hatchling"} },
+	{ name = "Moth-Lantern Pendant", id = 11393, minTier = "magic", chance = 25, level = 30, slot = "necklace",
+	  bossOnly = false, monsters = {"Ghoul", "Scarab", "Ghost", "Tarantula", "Demon Skeleton", "Mummy", "Crypt Shambler", "Vampire", "Dwarf Guard", "Gargoyle", "Cyclops", "Fire Elemental", "Bonelord", "Orc Berserker", "Zombie", "Dragon Hatchling"} },
+	{ name = "Gutter-Saint's Mail", id = 21692, minTier = "magic", chance = 25, level = 35, slot = "body",
+	  bossOnly = false, monsters = {"Ghoul", "Scarab", "Ghost", "Tarantula", "Demon Skeleton", "Mummy", "Crypt Shambler", "Vampire", "Dwarf Guard", "Gargoyle", "Cyclops", "Fire Elemental", "Bonelord", "Orc Berserker", "Zombie", "Dragon Hatchling"} },
+	{ name = "Wanderer's Leggings", id = 2648, minTier = "magic", chance = 25, level = 18, slot = "legs",
+	  bossOnly = false, monsters = {"Troll", "Orc", "Spider", "Wolf", "Skeleton", "Poison Spider", "Frost Troll", "Wasp", "Orc Spearman", "Dwarf", "Minotaur", "Orc Warrior", "Scorpion", "Larva", "Gutworm", "Dwarf Soldier"} },
+	{ name = "Lantern-Ward Buckler", id = 10294, minTier = "magic", chance = 25, level = 25, slot = "shield",
+	  bossOnly = false, monsters = {"Ghoul", "Scarab", "Ghost", "Tarantula", "Demon Skeleton", "Mummy", "Crypt Shambler", "Vampire", "Dwarf Guard", "Gargoyle", "Cyclops", "Fire Elemental", "Bonelord", "Orc Berserker", "Zombie", "Dragon Hatchling"} },
+	-- endgame uniques (2026-10-23): the waystone bosses of the band (x6) and the band's waystone monsters (rare and up);
+	-- minMonsterLevel keeps them to waystone-level kills
+	{ name = "Ashfall Verdict", id = 8931, minTier = "rare", chance = 6, level = 1300, slot = "sword", minMonsterLevel = 1000,
+	  bossOnly = false, monsters = {"Vorgrun of the Jade Fangs", "Fractalis the Shardmaw", "Armorcoil", "Blazefang", "Gorgulith", "Nexlurith", "Voidwagner", "Aegis Sentinel", "Flarevein Wyrm", "Gloomstinger", "Pyroquill", "Toxic Mauler"} },
+	{ name = "Wyrmgrave Cleaver", id = 25881, minTier = "rare", chance = 6, level = 1500, slot = "axe", minMonsterLevel = 1000,
+	  bossOnly = false, monsters = {"Vorgrun of the Jade Fangs", "Fractalis the Shardmaw", "Armorcoil", "Blazefang", "Gorgulith", "Nexlurith", "Voidwagner", "Aegis Sentinel", "Flarevein Wyrm", "Gloomstinger", "Pyroquill", "Toxic Mauler"} },
+	{ name = "Maul of the Sunken Choir", id = 14334, minTier = "rare", chance = 6, level = 1800, slot = "club", minMonsterLevel = 1000,
+	  bossOnly = false, monsters = {"Frostreaver the Glacialblade", "Rhazgor the Crimson Slayer", "Ashfang Wrym", "Bloodspark Adept", "Glacial Hellcharger", "Nightfang Widow", "Shadowcrystal Widow", "Bloodshade Reaper", "Duskhorn Drake", "Nightflare Dreadknight", "Shadowvein Wrym", "Umbral Arcanist"} },
+	{ name = "Stormherald's Recurve", id = 22417, minTier = "rare", chance = 6, level = 1600, slot = "distance", minMonsterLevel = 1000,
+	  bossOnly = false, monsters = {"Frostreaver the Glacialblade", "Rhazgor the Crimson Slayer", "Ashfang Wrym", "Bloodspark Adept", "Glacial Hellcharger", "Nightfang Widow", "Shadowcrystal Widow", "Bloodshade Reaper", "Duskhorn Drake", "Nightflare Dreadknight", "Shadowvein Wrym", "Umbral Arcanist"} },
+	{ name = "Diadem of the Ninth Pyre", id = 24744, minTier = "rare", chance = 6, level = 1400, slot = "head", minMonsterLevel = 1000,
+	  bossOnly = false, monsters = {"Vorgrun of the Jade Fangs", "Fractalis the Shardmaw", "Armorcoil", "Blazefang", "Gorgulith", "Nexlurith", "Voidwagner", "Aegis Sentinel", "Flarevein Wyrm", "Gloomstinger", "Pyroquill", "Toxic Mauler"} },
+	{ name = "Vestments of the Hollow Choir", id = 2656, minTier = "rare", chance = 6, level = 2000, slot = "body", minMonsterLevel = 1000,
+	  bossOnly = false, monsters = {"Frostreaver the Glacialblade", "Rhazgor the Crimson Slayer", "Ashfang Wrym", "Bloodspark Adept", "Glacial Hellcharger", "Nightfang Widow", "Shadowcrystal Widow", "Bloodshade Reaper", "Duskhorn Drake", "Nightflare Dreadknight", "Shadowvein Wrym", "Umbral Arcanist"} },
+	{ name = "Bastion of the Last Dawn", id = 2472, minTier = "rare", chance = 6, level = 2200, slot = "body", minMonsterLevel = 1000,
+	  bossOnly = false, monsters = {"Morgrath the Umbral Archmage", "Nyxdrath the Midnight Terror", "Hellmaw Brute", "Mirethorn Hexer", "Mossfang Drake", "Plague Warbringer", "Viridscale Wrym", "Embermaw Archon", "Inferno Juggernaut", "Pitlord Incarnate", "Stormvein Wrym", "Waterglow Conjurer"} },
+	{ name = "Greaves of the Endless Road", id = 2646, minTier = "rare", chance = 6, level = 1200, slot = "feet", minMonsterLevel = 1000,
+	  bossOnly = false, monsters = {"Vorgrun of the Jade Fangs", "Fractalis the Shardmaw", "Armorcoil", "Blazefang", "Gorgulith", "Nexlurith", "Voidwagner", "Aegis Sentinel", "Flarevein Wyrm", "Gloomstinger", "Pyroquill", "Toxic Mauler"} },
+	{ name = "Legguards of Unmaking", id = 2495, minTier = "rare", chance = 6, level = 1700, slot = "legs", minMonsterLevel = 1000,
+	  bossOnly = false, monsters = {"Frostreaver the Glacialblade", "Rhazgor the Crimson Slayer", "Ashfang Wrym", "Bloodspark Adept", "Glacial Hellcharger", "Nightfang Widow", "Shadowcrystal Widow", "Bloodshade Reaper", "Duskhorn Drake", "Nightflare Dreadknight", "Shadowvein Wrym", "Umbral Arcanist"} },
+	{ name = "Band of the Severed Star", id = 22516, minTier = "rare", chance = 6, level = 1900, slot = "ring", minMonsterLevel = 1000,
+	  bossOnly = false, monsters = {"Frostreaver the Glacialblade", "Rhazgor the Crimson Slayer", "Ashfang Wrym", "Bloodspark Adept", "Glacial Hellcharger", "Nightfang Widow", "Shadowcrystal Widow", "Bloodshade Reaper", "Duskhorn Drake", "Nightflare Dreadknight", "Shadowvein Wrym", "Umbral Arcanist"} },
+	{ name = "Rampart of Grey Tides", id = 6391, minTier = "rare", chance = 6, level = 1500, slot = "shield", minMonsterLevel = 1000,
+	  bossOnly = false, monsters = {"Vorgrun of the Jade Fangs", "Fractalis the Shardmaw", "Armorcoil", "Blazefang", "Gorgulith", "Nexlurith", "Voidwagner", "Aegis Sentinel", "Flarevein Wyrm", "Gloomstinger", "Pyroquill", "Toxic Mauler"} },
+	{ name = "Choirless Pendant", id = 22691, minTier = "boss", chance = 8, level = 2400, slot = "necklace",
+	  bossOnly = true, monsters = {"Morgrath the Umbral Archmage", "Nyxdrath the Midnight Terror", "Ysgrath the Cinderheart"} },
 	-- the Ascended uniques (uber.lua, server/README.md "Ascended Omens and the Cinderheart"): ascended = true keeps them
 	-- out of the Omen chest pool (rift.lua); corpse drops of the listed bosses (x6 boss tier) and the spoils' unique rolls
 	{ name = "Sanguine Crescent", id = 2408, minTier = "boss", chance = 10, level = 1000, slot = "sword",
@@ -201,6 +253,16 @@ function ChaosMakeUnique(item)
 	end
 	for key, value in pairs(spec.custom) do
 		item:setCustomAttribute(key, value)
+	end
+	-- built-in Chaos modifiers and legendary powers (spec.mods, attribute `mods` of chaos_items.xml): stored as T8
+	-- modifiers, read and capped like rolled ones (chaos_item_mods.lua); no orb touches a unique (chaos_crafting.lua)
+	if spec.mods then
+		if not ChaosItemMods then
+			dofile("data/lib/chaos_item_mods.lua")
+		end
+		for _, m in ipairs(spec.mods) do
+			ChaosItemMods.set(item, m[1], m[2], 8)
+		end
 	end
 	item:setCustomAttribute("chaos_unique", 1)
 	if spec.set then

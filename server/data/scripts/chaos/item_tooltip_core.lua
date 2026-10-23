@@ -541,8 +541,8 @@ function T.build(item, opts)
 				row.tr = m.tier
 				row.sd = m.side == "prefix" and "p" or (m.side == "implicit" and "i" or "s")
 				row.bd = m.bound or nil
-				row.pw = m.power or nil
 			end
+			row.pw = m.power or nil -- a unique's built-in legendary power shows in the power colour too
 			tip.mods[#tip.mods + 1] = row
 			local fmt = modFmt(m)
 			if m.group == "special" then

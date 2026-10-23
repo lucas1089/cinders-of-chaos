@@ -2934,6 +2934,32 @@ into `chaos_unique_specs.lua` as `equip = {level, lines, vocations}`.
   Charm, 230 for the Diadem, where the unique asks more); the unique's description says its own level and lines.
 - Tests: `tests/unique_equip_test.lua` (every round-two unique can be worn by the classes its archetype names and not
   below its level; unique and stock copies; the tool on a small movements.xml, idempotent; the generated script).
+- **No lines, every class** (2026-10-23): `equipLevel` without `equipLines` writes an empty class list; that lets every
+  class wear it from the level (before, an empty list let nobody). A weapon base without a stock entry gets a `hand`
+  entry. The leveling and endgame uniques below use both.
+
+## Leveling and endgame uniques (`chaos_items.xml` `mods`, `chaos_unique_items.lua`, 2026-10-23)
+Before this the uniques stopped at level 1000 with flat stats, and the first one dropped at level 40.
+- **Built-in modifiers.** `<attribute key="mods" value="key:value,..." />` names modifiers of `chaos_item_mods.lua` and
+  legendary powers of `chaos_powers.lua`. `tools/gen_unique_specs.py` checks the keys and writes `mods = {{key, value}}`
+  into the spec; `ChaosMakeUnique` stores them as T8 modifiers (`ChaosItemMods.set`). They count in the equipped totals
+  like rolled ones, under the same caps. The tooltip shows them (a power in the power colour), the Codex and the wiki
+  list them. No orb touches a unique, so they never change.
+- **Leveling, 12 uniques, level 10-35**, one per weapon kind and slot (sword, axe, club, bow, wand, helmet, boots, ring,
+  amulet, body, legs, shield): life / mana on kill, health on hit, regeneration, experience +5-8%, movement speed +10%,
+  attack speed +8%, ailment chances. Flat numbers that carry a character to about level 100-150 and then fade. They drop
+  from magic monsters and up of the level 5-40 hunts at chance 25 (the other uniques 4-10, x the tier multiplier).
+- **Endgame, 12 uniques, level 1200-2400**, each with near-cap modifiers and one legendary power (Critical Echo,
+  Bloodrush, Arc Lightning, Echo Shot, Crimson Burst, Smoldering Aura, Last Breath, Hunter's Rush, Glacial Ward, Death
+  Blast). They drop from the waystone bosses of their band (x6) and the band's waystone monsters (rare and up,
+  `minMonsterLevel = 1000`) at chance 6; the Choirless Pendant (2400) from the high band bosses and Ysgrath only.
+  Weapons and class armour have `equipLines`.
+- **Reworked**: the 13 uniques of level 800 and 1000 got built-in modifiers, a legendary power on 11 of them.
+- Every new unique has `equipLevel`, so a copy traded to a low character cannot be worn. The bases have no abilities of
+  their own (a unique keeps its base item type's abilities) and no stock equip script; none is a transmog set look.
+- Lists: `data/items/README.md` "Leveling and endgame uniques". Tests: `tests/unique_mods_test.lua` (every spec.mods key
+  and cap, ChaosMakeUnique writes T8 modifiers the totals count, levels, rules, one power per endgame unique, drop
+  sources), `tests/unique_equip_test.lua` (an empty class list).
 
 ## Build sharing (`buildshare.lua`, `buildshare_core.lua`)
 A build can be exported as a short text code and imported on another character (or after a reset). The server encodes, decodes,

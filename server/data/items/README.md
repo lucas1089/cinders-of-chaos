@@ -1,6 +1,6 @@
 # Chaos unique items
 
-49 unique/legendary items. Each one is a **normal copy of an existing base item** that gets its own name, description
+The unique/legendary items (148 with the sets). Each one is a **normal copy of an existing base item** that gets its own name, description
 and stats as item attributes when it drops or is given (`ChaosMakeUnique`). `items.xml` is not touched.
 
 Why not override `items.xml`: a first run of the server showed that 28 of the 48 base items are found **by their stock name**
@@ -20,6 +20,11 @@ How the stats are applied: attack, defense, extra defense, armor, hit chance and
 level, critical hit, leech and absorbs as the custom attributes the stock rarity scripts already apply on equip. Max health,
 max mana, speed, regeneration, element damage and attack speed cannot be stored per item in this engine, so they were
 dropped (listed as `skipped` in `chaos_unique_specs.lua`).
+
+Built-in Chaos modifiers (2026-10-23): `<attribute key="mods" value="lifeonkill:25,attackspeed:8" />` gives a unique
+modifiers of `data/lib/chaos_item_mods.lua` and legendary powers of `data/lib/chaos_powers.lua` (key:value, each key
+once; the generator stops on an unknown key). `ChaosMakeUnique` writes them as T8 modifiers; they count like rolled ones
+and the per-character caps still hold. No orb touches a unique. The tooltip, the Codex and the wiki show them.
 
 ## Install
 
@@ -120,6 +125,52 @@ mock harness over 20000 simulated kills of a Demon: normal 0, magic 20, rare 276
 ### Embers of Aranoth set (6 pieces)
 Hornsworn Helm, Cindermail Coat, Emberveil Greaves, Bloodstep Boots, Emberwarden, Cinderclaw Band. The set bonuses are
 documented in `ChaosSets` but **not implemented** (see below).
+
+### Leveling and endgame uniques (2026-10-23)
+
+Server/README.md "Leveling and endgame uniques". Every one has `equipLevel` (and the class ones `equipLines`), so a
+copy traded down cannot be worn early (install step uniqueequip, "Unique equip rules"). The bases have no abilities of
+their own and no stock equip script.
+
+Leveling (level 10-35): strong flat bonuses that fade by level 100-150. Magic monsters and up of the level 5-40 hunts,
+chance 25 (the other uniques 4-10).
+
+| name | slot | id | stock item | level | classes | stats | built-in modifiers |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Ashen Pilgrim's Blade | sword | 10292 | pointed rabbitslayer | 12 | every class | attack 30, defense 14, skillSword 2 | lifeonkill:25, attackspeed:8 |
+| Hatchet of the First Winter | axe | 8601 | steel axe | 15 | every class | attack 32, defense 12, skillAxe 2 | chillchance:12, lifeonhit:6 |
+| Tallow-Bell Mace | club | 10302 | club of the fury | 15 | every class | attack 31, defense 14, skillClub 2 | shockchance:12, lifeonkill:25 |
+| Fenwatch Longbow | distance | 7438 | elvish bow | 12 | every class | attack 36, hitChance 92, range 6, skillDist 2 | attackspeed:8, lifeonkill:20 |
+| Cinder-Wick Wand | wand | 23719 | scorcher | 10 | every class | magicPoints 2 | ignitechance:12, manaonkill:15 |
+| Hood of the Roaming Pyre | head | 10291 | odd hat | 20 | every class | armor 7 | experience:8, regen:8 |
+| Pathfinder's Treads | feet | 25412 | treader of torment | 20 | every class | armor 3 | movespeed:10, dodge:4 |
+| Band of the Second Dawn | ring | 10502 | engraved wedding ring | 25 | every class | - | experience:5, lifeonkill:20, goldfind:10 |
+| Moth-Lantern Pendant | necklace | 11393 | lucky clover amulet | 30 | every class | armor 2 | manaonkill:15, regen:8, itemfind:8 |
+| Gutter-Saint's Mail | body | 21692 | albino plate | 35 | every class | armor 12 | monsterreduction:6, lifeonhit:6, regen:6 |
+| Wanderer's Leggings | legs | 2648 | chain legs | 18 | every class | armor 6 | regen:8, lifeonkill:20 |
+| Lantern-Ward Buckler | shield | 10294 | shield of the white knight | 25 | every class | defense 26, skillShield 2 | block:6, thorns:30 |
+
+Endgame (level 1200-2400): one legendary power each. The waystone bosses of the band (low 1100-1500: Vorgrun,
+Fractalis; mid 1600-2000: Frostreaver, Rhazgor; high 2100-2500: Morgrath, Nyxdrath) and the band's waystone monsters
+(rare and up, monster level 1000+), chance 6. The Choirless Pendant drops from the high band bosses and Ysgrath only.
+
+| name | slot | id | stock item | level | classes | stats | built-in modifiers |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Ashfall Verdict | sword | 8931 | the epiphany | 1300 | Warrior, Thief, Monk, Templar | attack 72, defense 36, extraDef 3, skillSword 6, criticalHitChance 7, criticalHitAmount 30 | attackspeed:15, bossdamage:20, physpen:20, critecho:22 |
+| Wyrmgrave Cleaver | axe | 25881 | axe of mayhem | 1500 | Warrior, Thief, Monk, Templar | attack 74, defense 33, skillAxe 6, lifeLeechChance 10, lifeLeechAmount 8 | bleedchance:25, dot:44, lifeonhit:55, bloodrush:4 |
+| Maul of the Sunken Choir | club | 14334 | giant smithhammer | 1800 | Warrior, Thief, Monk, Templar | attack 76, defense 34, skillClub 7 | shockchance:24, execute:8, monsterreduction:6, arclightning:22 |
+| Stormherald's Recurve | distance | 22417 | umbral bow | 1600 | Ranger | attack 88, hitChance 97, range 7, skillDist 7, criticalHitChance 8, criticalHitAmount 30 | attackspeed:14, elepen:20, chillchance:20, echoshot:22 |
+| Diadem of the Ninth Pyre | head | 24744 | enchanted werewolf helmet | 1400 | Mystic, Necromancer | armor 16, magicPoints 8, absorbPercentFire 8 | cdr:15, manacost:15, ignitechance:20, crimsonburst:20 |
+| Vestments of the Hollow Choir | body | 2656 | blue robe | 2000 | Mystic, Necromancer | armor 28, magicPoints 10, absorbPercentDeath 10, absorbPercentPhysical 6 | dot:45, regen:65, manaonhit:45, smolderaura:30 |
+| Bastion of the Last Dawn | body | 2472 | magic plate armor | 2200 | Warrior, Templar | armor 33, skillShield 6, absorbPercentPhysical 10, absorbPercentFire 6 | monsterreduction:8, reflect:10, thorns:220, lastbreath:45 |
+| Greaves of the Endless Road | feet | 2646 | golden boots | 1200 | every class | armor 6 | movespeed:12, dodge:7, lifeonkill:220, hunterrush:24 |
+| Legguards of Unmaking | legs | 2495 | demon legs | 1700 | every class | armor 16, absorbPercentPhysical 6, absorbPercentDeath 6 | regen:60, lifeonhit:50, monsterreduction:5, frostward:24 |
+| Band of the Severed Star | ring | 22516 | ring of ending | 1900 | every class | criticalHitChance 6, criticalHitAmount 30, skillSword 4, skillAxe 4, skillClub 4, skillDist 4, skillFist 4, magicPoints 4 | bossdamage:22, execute:8, itemfind:15, deathblast:22 |
+| Rampart of Grey Tides | shield | 6391 | nightmare shield | 1500 | Warrior, Templar | defense 58, skillShield 7, absorbPercentIce 8, absorbPercentPhysical 4 | block:15, reflect:12, regen:50, frostward:26 |
+| Choirless Pendant | necklace | 22691 | jade amulet | 2400 | every class | armor 6, magicPoints 5, skillSword 5, skillAxe 5, skillClub 5, skillDist 5, skillFist 5, absorbPercentPhysical 6 | experience:10, rarityfind:30, cdr:10, bloodrush:5 |
+
+The level 800 / 1000 uniques (the Ascended four, the world boss drops, the Ashwarden set) got built-in modifiers too, a
+legendary power on 11 of the 13, so they stay worth wearing past level 1000.
 
 ## How the XML was made
 For every id the stock entry was copied for structural attributes (`weight`, `weaponType`, `slotType`, `ammoType`, `shootType`,
