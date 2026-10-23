@@ -1,0 +1,35 @@
+# The main Lua state is made once LuaEnvironment is whole (server/README.md "Engine hardening (sanitizers, fuzzing)").
+# Found by the UndefinedBehaviorSanitizer build (server/tools/build_sanitized.sh), at every start: "member call on
+# address ... which does not point to an object of type 'LuaEnvironment'". g_luaEnvironment is a LuaScriptInterface;
+# the base constructor called g_luaEnvironment.initState() while g_luaEnvironment itself was being built (only its
+# base part existed). It happened to work (the call only touched the base part), but it is undefined behaviour, and
+# the report at every start would hide a new one. Now the base constructor skips g_luaEnvironment, and the
+# LuaEnvironment constructor calls initState() at its end: the same state, made a moment later. No change in behaviour.
+# Apply in the server source root after 0001-0061: patch -p1 < 0062-lua-environment-built-first.patch.
+diff --git a/src/luascript.cpp b/src/luascript.cpp
+--- a/src/luascript.cpp
++++ b/src/luascript.cpp
+@@ -263,7 +263,10 @@
+ 
+ LuaScriptInterface::LuaScriptInterface(std::string interfaceName) : interfaceName(std::move(interfaceName))
+ {
+-	if (!g_luaEnvironment.getLuaState()) {
++	// Chaos (patch 0062): not for g_luaEnvironment itself. Its base part is built here before the LuaEnvironment part
++	// exists, and a member call on it then is undefined behaviour (UndefinedBehaviorSanitizer at every start); the
++	// LuaEnvironment constructor makes the state once it is whole.
++	if (this != &g_luaEnvironment && !g_luaEnvironment.getLuaState()) {
+ 		g_luaEnvironment.initState();
+ 	}
+ }
+@@ -18633,7 +18636,10 @@
+ }
+ 
+ //
+-LuaEnvironment::LuaEnvironment() : LuaScriptInterface("Main Interface") {}
++LuaEnvironment::LuaEnvironment() : LuaScriptInterface("Main Interface")
++{
++	initState(); // Chaos (patch 0062): the main Lua state, as soon as the object is whole (see LuaScriptInterface's constructor)
++}
+ 
+ LuaEnvironment::~LuaEnvironment()
+ {

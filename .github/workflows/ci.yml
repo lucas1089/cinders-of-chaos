@@ -487,6 +487,16 @@ jobs:
           shellcheck tools/linux/harden_vps.sh
           python3 -I tools/linux/harden_vps_test.py
 
+      - name: Fuzz harnesses on their seed corpus (ASan + UBSan; PROXY protocol, client guard, login limit; netfuzz.py on a stand-in server)
+        run: |
+          sudo apt-get install -y -qq libcrypto++-dev libfmt-dev
+          python3 -I server/tools/fuzz/gen_corpus.py --check
+          server/tools/fuzz/build_fuzz.sh "$(mktemp -d)" --run
+          python3 -I server/tools/netfuzz_test.py
+
+      - name: Base opcode handlers accept only a JSON object (patch_base_json_guards.py, synthetic copies)
+        run: python3 -I server/tools/patch_base_json_guards_test.py
+
       - name: Gateway and backend firewall scripts (render and check, no changes)
         run: |
           bash -n server/deploy/gateway/setup_gateway.sh

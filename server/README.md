@@ -224,6 +224,13 @@ server/
                                       than a tile goes to its centring tile, engine sends included; Lua hands over the
                                       table (Game.setFxSendOffsets); 0060-0069 reserved (see "Purchased effect packs
                                       (pair 36)"; header src/chaosfxoffsets.h, tools/chaosfxoffsets_test.cpp)
+  src-patches/0061-scheduler-timers-before-service.patch   engine: the scheduler's pending timers are destroyed
+                                      before their io_context (a use-after-free at every shutdown; see "Engine
+                                      hardening (sanitizers, fuzzing)")
+  src-patches/0062-lua-environment-built-first.patch   engine: the main Lua state is made once LuaEnvironment is
+                                      whole (UBSan report at every start; see "Engine hardening")
+  src-patches/0063-first-packet-reads-zeros.patch   engine: a read past the end of a connection's first, plain packet
+                                      returns zeros, never old bytes (see "Engine hardening"; tools/fuzz/fuzz_netmsg.cpp)
     remote_cmd.lua    remote_cmd_core.lua    remote_cmd_config.lua  (remote admin commands by file, see "Remote admin commands")
     helpai.lua  helpai_core.lua  helpai_config.lua (Ember answers questions in the Help channel through the sidecar
                                       tools/helpai.py, see "Help channel assistant")
@@ -20547,3 +20554,111 @@ the NPCs and had to wait it out. Every 2 seconds a player standing in a protecti
 white, red or black skull, loses the harmful conditions of monsters (fire, poison, energy, bleeding, freezing, dazzle,
 curse, drown, paralysis, root) and the battle lock. Outside protection zones nothing changes. The list is
 `ChaosTempleCleanseCore.conditions`. Tests: `tests/temple_cleanse_test.lua`.
+
+## Engine hardening (sanitizers, fuzzing) (`tools/build_sanitized.sh`, `tools/fuzz/`, `tools/netfuzz.py`, `src-patches/0061`-`0063`)
+
+ROADMAP "Open decisions and loose ends", owner 2026-10-20: harden the engine instead of a Rust rewrite. Parts (1) a
+sanitizer build under a bot load test and (2) fuzzing of the packet parsers are done; (3) Rust for new services is
+open. Goal: a malformed packet is an error, never a crash.
+
+**Sanitizer build.** `server/tools/build_sanitized.sh BASE_TAR_OR_DIR WORK_DIR [--jobs N] [--cxx g++|clang++]
+[--clean-objects]` extracts only the engine source (CMakeLists.txt, cmake/, src/) of the base download into
+`WORK_DIR/src-tree`, applies every `src-patches/*.patch` in order, and builds `WORK_DIR/build/tfs` with
+`-O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer` (Ninja). Its own copy of CMakeLists.txt drops `-Werror`
+and link-time optimisation; the base download is not changed. Idempotent: a stamp (sha256 of the patches and the base)
+keeps the tree, ninja rebuilds what changed; a new patch set starts a clean tree. A full build takes about 25 minutes
+on 4 cores and about 3 GB with objects (`--clean-objects` keeps only the binary). Run it from a test server folder:
+
+```
+ASAN_OPTIONS=detect_leaks=0:quarantine_size_mb=64:malloc_context_size=15:log_path=asan \
+UBSAN_OPTIONS=print_stacktrace=1:log_path=ubsan  WORK_DIR/build/tfs
+```
+
+Leak checking is off: the engine does not free its world at exit, every global would be a report. UBSan keeps running
+after a report (set `halt_on_error=1` to stop at the first). On the full map the server needs about 5.7 GB RSS at idle
+and starts in about 2 minutes 15 seconds (ASan shadow memory and the slower allocator). Never on the live server.
+
+**Fuzz harnesses** (`server/tools/fuzz/`, libFuzzer entry points that also build as plain regression tests):
+
+| Harness | What it feeds | Engine code |
+|---|---|---|
+| `fuzz_proxyprotocol` | PROXY v1 / v2 headers read in the engine's steps, the trusted list, `looksLikeHeader` | `proxyprotocol.cpp` of 0025 |
+| `fuzz_clientguard` | guard answers (`checkAnswer`, with a MAC that must pass), `gateReason` with build lists and a manifest file | `clientguard.cpp` of 0021 |
+| `fuzz_loginlimit` | sequences of failures, successes and checks per IP and account; the block never longer than configured, the table bounded | `loginlimit.h` of 0047 |
+| `fuzz_netmsg` | whole connections: framing, checksum, the login and game server's first-packet reads (RSA block as plain), XTEA and the in-game reads; traps on a read past the received bytes | the real `networkmessage.h`, `getString`, `getPosition`, `adlerChecksum`, `XTEA_decrypt`, mirrors of `Connection::parseHeader` / `parsePacket` and the login reads |
+
+`server/tools/fuzz/build_fuzz.sh OUT_DIR [--src ENGINE_DIR] [--libfuzzer] [--run] [--only NAME,...]`. Without `--src`
+it takes the new files out of the patches (what CI does) and builds the first three; `--src WORK_DIR/src-tree` (the
+sanitizer build's tree) also builds `fuzz_netmsg`, and checks the engine still has the lines the harness mirrors.
+Default: g++ with ASan + UBSan and `standalone_main.cpp`, which runs each file of `corpus/<name>/` once (CI);
+`--libfuzzer` builds with clang `-fsanitize=fuzzer` for real fuzzing:
+
+```
+server/tools/fuzz/build_fuzz.sh /tmp/fz --src WORK_DIR/src-tree --libfuzzer
+/tmp/fz/fuzz_netmsg -max_total_time=300 /tmp/fz/new-corpus server/tools/fuzz/corpus/netmsg
+```
+
+`python3 -I server/tools/fuzz/gen_corpus.py [--check]` writes the seed files (`seed-*`, deterministic). An input that
+found a bug is kept by hand as `regress-*` and runs with the seeds. Needs clang's libFuzzer runtime
+(`libclang-rt-18-dev` on Ubuntu 24.04), Crypto++ and fmt.
+
+**Network fuzzer.** `python3 -I server/tools/netfuzz.py --key SERVER/key.pem --dev-key --server-pid PID [--duration
+1800] [--workers 4] [--seed N] [--bots 900,20] [--log FILE]` sends malformed traffic to a running TEST server (its
+docstring lists every case): raw bytes and lying length headers, every protocol id, the status protocol, PROXY headers
+from an untrusted address, login packets with bad or mutated RSA blocks, game logins with broken sessions, names and
+OTCv8 markers, and in-game sessions of the loadbot accounts (`loadtest.py setup`) that send 5-60 game packets with random
+fields, cut-short packets, extended opcodes to every Chaos and base opcode with random bytes or odd JSON, bad client
+guard answers and XTEA frames with lying sizes. Every case has its own seed (`--replay SEED:CASE`) and a loopback source
+address of its own (the per-IP limits never see two cases as one player). A probe logs in every 5 seconds; 3 misses in
+a row, or the process gone, is a hit: exit code 1 and the last 40 cases. It logs bots in and makes them act at random:
+never against a live server. `server/tools/netfuzz_test.py` (CI) runs the raw, login and game cases against a stand-in
+server and checks that a seed sends the same bytes again.
+
+**What was run (2026-10-23, a private test server on the base full map (197 MB .otbm), 4 cores, 15 GB).**
+- Run 1, engine 0001-0059 with 0061-0063 not yet written: 100 load test bots (`loadtest.py run --count 100 --hunt`)
+  for 1200 seconds, all 100 in game, no failure, no disconnect; RSS 5.68 GB idle, 5.80 GB max; CPU 103% avg of one
+  core; at the same time `netfuzz.py` for 1500 seconds, seed 2, 4 workers: 7489 cases (1889 raw, 1831 login, 1946
+  game, 1823 in-game sessions), no hit. One ASan report (at shutdown) and one UBSan report (at start): fixed below.
+- Run 2, engine 0001-0059 with 0061-0063 and the `jsonguards` step: 50 load test bots for 1500 seconds, all 50 in
+  game, no failure, no disconnect; RSS 5.68 GB max; at the same time `netfuzz.py` for 1563 seconds, seed 3, 4
+  workers, now also to the base opcodes: 7382 cases (1788 raw, 1883 login, 1840 game, 1871 in-game sessions), no hit,
+  no ASan or UBSan report (start and shutdown included), no Lua error.
+- Run 3, the full chain 0001-0063 (with 0060, written on another branch at the same time): built with the sanitizers,
+  started, `netfuzz.py` for 300 seconds, seed 4: 1542 cases, no hit, no report, a clean shutdown.
+- libFuzzer (clang 18, ASan + UBSan, 300 seconds each): `fuzz_proxyprotocol` 4.5 million inputs, `fuzz_clientguard`
+  1.8 million, `fuzz_loginlimit` 2.1 million, no finding; `fuzz_netmsg` found the over-read below in its first
+  seconds, then 600 seconds with 0063: 22 million inputs, no finding.
+- In all: about 62 minutes of the server under ASan with bots or the network fuzzer at work, 56 of them with the
+  network fuzzer (16413 cases, three seeds).
+
+**Found and fixed.**
+- `src-patches/0061-scheduler-timers-before-service.patch` (ASan, every shutdown): heap-use-after-free in
+  `~Scheduler`. `scheduler.h` declared the map of pending timers before the `io_context`; members die in reverse
+  order, so the timer service was freed first and each pending timer read it in its destructor. A shutdown (the daily
+  restart) could crash or corrupt the heap after the save. The map now comes after the `io_context`.
+- `src-patches/0062-lua-environment-built-first.patch` (UBSan, every start): `luascript.cpp` "member call on address
+  ... which does not point to an object of type 'LuaEnvironment'". The `LuaScriptInterface` constructor called
+  `g_luaEnvironment.initState()` while `g_luaEnvironment` was still being built. The `LuaEnvironment` constructor now
+  makes its state at its end; no change in behaviour.
+- `src-patches/0063-first-packet-reads-zeros.patch` (`fuzz_netmsg`): `NetworkMessage::canRead` allows reads up to 8
+  bytes past `info.length`. For a decrypted message that is inside the message; for a connection's first, plain packet
+  (the login packet of both servers) it is past the bytes received, so a lying string length read the end of an
+  earlier packet or, since 0032 took the buffer's zeroing out, memory never written in this connection. No crash, but
+  stale bytes could enter an account name, password or character name. `Connection::parseHeader` now zeroes the 8 bytes
+  after each body. Regression input: `tools/fuzz/corpus/netmsg/regress-first-message-overread`.
+- Install step `jsonguards` (`tools/patch_base_json_guards.py`, test `tools/patch_base_json_guards_test.py`;
+  netfuzz.py, run 1): a store request (opcode 201) with valid JSON that is not an object (`1`) gave "Lua Script Error
+  ... game_store.lua:350: attempt to index local 'json_data' (a number value)". The same flaw was in the base handlers
+  of tasks (92), upgrades (181), inspect (107), character stats (106) and the waystone device (202, which did not even
+  catch a decode error). Each now returns, as for bad JSON, unless the decoded value is a table. A Lua error is caught
+  by the engine (no crash), but each such packet wrote an error to the log.
+
+No suppression file is used: every report above was a real bug in our engine or scripts.
+
+**Not run / not covered.** The Windows build; a sanitizer run with real players or on the VPS; MemorySanitizer and
+ThreadSanitizer (the dispatcher, scheduler and network threads were not checked for data races); the client; the
+`fuzz_netmsg` harness in CI (it needs the base engine source, not in git; `build_fuzz.sh --src` runs it locally). The
+harness mirrors the engine's read sequences rather than calling `ProtocolLogin` / `ProtocolGame` (they need the whole
+game), and `build_fuzz.sh` stops when those lines change. In-game packets were fuzzed through the network only, as
+full-engine handlers. The server never reassembles chunked extended opcodes (`Chaos.sendChunked` is server to client
+only), so there is no server-side chunk parser to fuzz.
