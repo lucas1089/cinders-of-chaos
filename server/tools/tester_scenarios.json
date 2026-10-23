@@ -8,7 +8,7 @@
  "counts": {
   "opcode": 58,
   "out": 38,
-  "passive": 67,
+  "passive": 68,
   "place": 13,
   "staff": 10
  },
@@ -2544,6 +2544,15 @@
    "talkactions": [
     "/candlemarks"
    ]
+  },
+  "cards": {
+   "files": [
+    "cards.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
   },
   "catchup": {
    "files": [

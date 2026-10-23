@@ -32,6 +32,11 @@ end
 
 -- item id -> {name, level} of the goods with a level
 local gated = {}
+for _, d in ipairs(cfg.decks or {}) do
+	if (d.level or 0) > 0 then
+		gated[d.id] = d
+	end
+end
 for _, p in ipairs(cfg.potions or {}) do
 	if (p.level or 0) > 0 then
 		gated[p.id] = p
@@ -60,6 +65,9 @@ local function creatureSayCallback(cid, type, msg)
 		return true
 	elseif has(text, "potion", "pack", "bulk") then
 		npcHandler:say(t(cid, "Health, mana and spirit draughts from the small to the supreme, each for a level. In bulk the store sells packs of one hundred for less. Ask for a {trade}."), cid)
+		return true
+	elseif has(text, "deck", "card") then
+		npcHandler:say(t(cid, "A deck holds your cards: five in the Bronze, ten in the Silver, twenty in the Golden. Carry it, then use a card to put it in and turn it on. Ask for a {trade}."), cid)
 		return true
 	elseif has(text, "flask", "vial", "empty") then
 		npcHandler:say(t(cid, "No potion leaves a flask now. Old empty ones I still buy, five gold each."), cid)

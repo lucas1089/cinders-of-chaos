@@ -564,6 +564,12 @@ jobs:
           lua5.3 tools/gen_codex_data.lua --check  # Lua 5.3 must write the same bytes
           git diff --exit-code ../client/overlay/modules/game_codex/codex_data.lua
 
+      - name: Card descriptions are up to date with the card config (gen_card_descriptions.lua)
+        run: |
+          cd server
+          luajit tools/gen_card_descriptions.lua --check
+          lua5.3 tools/gen_card_descriptions.lua --check
+
       - name: Website wiki data is up to date with the server data files (gen_wiki_data.lua)
         run: |
           cd server

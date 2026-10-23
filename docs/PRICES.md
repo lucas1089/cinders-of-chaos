@@ -54,6 +54,7 @@ show".
 | Boosts | World Experience / World Loot 300, World Training 250 (for everybody) | | | kept |
 | Supplies | potion packs: 100 for 15-30, 250 and 500 at 5% and 10% off; Ultimate Mana and Ultimate Spirit 25 a 100 | | | kept; bigger packs and two potions added 2026-10-23 |
 | Supplies | single potions at Veyra the Apothecary (hub): health 20-500, mana 50-350, spirit 190-350 gold, by tier; runes of the packs at the rune supply price; rope, shovel 50 | | | new 2026-10-23: normal gold prices, the packs stay the bulk way (15-30 coins for 100) |
+| Supplies | decks at Veyra the Apothecary: Bronze Deck (5 cards) 1,000 gold, Silver Deck (10 cards) 6,000 from level 50, Golden Deck (20 cards) 30,000 from level 100 | | | new 2026-10-23 (owner: "coloque o deck à venda na Veyra também"): the sell prices of the item table are 55, 55 and 2,500, so every ask is at least twice what any NPC pays; a deck also still drops from monsters and comes from a task |
 | Runes | vendor gold x count / 1000, 5% off 250, 10% off 500 | | | kept |
 | Services | Name Change 250, Vocation Change 400, Sex Change 100, Skull Remover 150, Passive Reset 60 | | | kept |
 | Classes | Necromancer, Monk, Templar | - | - | not sold since 2026-10-15: free for the account at level 200 (was 750, then 500 or level 500) |

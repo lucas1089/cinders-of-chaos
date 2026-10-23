@@ -15,8 +15,8 @@ local V = ChaosInfoView
 
 V.PAGES = {
   { id = 'character', title = 'Character Info',
-    text = 'Your classes, ascension, double experience, position and the item sets you wear. The buttons show more.',
-    auto = { 'classes', 'ascension', 'exp', 'pos', 'sets' },
+    text = 'Your classes, ascension, double experience, position, the item sets you wear and your cards. The buttons show more.',
+    auto = { 'classes', 'ascension', 'exp', 'pos', 'sets', 'deck' },
     headings = { classes = 'Classes', ascension = 'Ascension', exp = 'Double EXP', pos = 'Position', sets = 'Item Sets',
                  resis = 'Resistances', kills = 'Kills', deathlist = 'Deaths', ancestral = 'Ancestral Tasks',
                  deck = 'Card Deck' },
@@ -25,7 +25,7 @@ V.PAGES = {
                     { text = 'Kills', id = 'kills', hint = 'Your player kills.' },
                     { text = 'Deaths', id = 'deathlist', hint = 'Your last deaths.' },
                     { text = 'Ancestral Tasks', id = 'ancestral', hint = 'Your task rank, points and current tasks.' },
-                    { text = 'Card Deck', id = 'deck', hint = 'The cards of your deck.' },
+                    { text = 'Card Deck', id = 'deck', hint = 'Your cards and what they give, the decks you carry and how to get one.' },
                     { text = 'Item Sets', id = 'sets', hint = 'The item sets you wear and their bonuses.' } } },
     } },
   { id = 'services', title = 'Services',

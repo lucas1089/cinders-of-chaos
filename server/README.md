@@ -1012,7 +1012,7 @@ Texts: the base `!exp` line "You didn't have any current Double EXP enhancement.
 | `!build export/import/confirm/cancel` | Character > Passive Tree (Alt+P), Build Code panel |
 | `!achievements`, `!title [name]` | Character > Achievements (title selector: every title held, over the opcode) |
 | `!pet [summon/dismiss/rename]` | Character > Pets |
-| `!classes`, `!ascension`, `!exp`, `!pos`, `!resis`, `!kills`, `!deathlist`, `!ancestral`, `!deck` | Character > Character Info |
+| `!classes`, `!ascension`, `!exp`, `!pos`, `!resis`, `!kills`, `!deathlist`, `!ancestral`, `!deck` (`cards.lua`: every card with what it gives, the decks; replaces the base dialog) | Character > Character Info (`deck` runs on open) |
 | `!changename`, `!changevocation`, `!ascend` (free switch), `!skiptutorial`, `!summonfamiliar`, `!familiarlevel`, `!choosefamiliar`, `!shop` (web shop items) | Character > Services |
 | `!rift` | Adventure > Rifts |
 | `!tower [start/leave]` | Adventure > Infinity Tower (Enter / Leave Tower buttons) |
@@ -7136,6 +7136,7 @@ service NPCs that replaced them sell none. **Veyra the Apothecary** stands in th
 | antidote 8474 | 50 | level 0 |
 | ten runes: Mending, Grand Mending, Dispel, Greater Hexdart, Rockfall, Stormcall, Frostfall, Searing Orb, Reaper's, Shackle | the rune supply's price (95, 240, 30, 23, 70, 70, 84, 84, 220, 890) | the runes of the store's packs. The other runes and the unscribed rune stay with Raloth and Isora (`chaos_rune_supply.lua` `vendors`) |
 | rope 2120 / shovel 2554 / torch 2050 / backpack 1988 | 50 / 50 / 2 / 20 | |
+| decks: Bronze 27632 / Silver 27633 / Golden 27634 | 1,000 / 6,000 / 30,000 | level 0 / 50 / 100; 5 / 10 / 20 cards ("Cards and decks"). Owner 2026-10-23: "coloque o deck à venda na Veyra também" |
 | buys: the old empty potion flasks 7634-7636 | 5 | the item price table's price; no potion leaves a flask any more ("Potions") |
 
 - **Prices.** The base server's lowest asking price per potion (`hunt_supplies.lua`), docs/PRICES.md. Great Spirit is 190
@@ -7144,7 +7145,7 @@ service NPCs that replaced them sell none. **Veyra the Apothecary** stands in th
   gold a coin at her single prices, so coins never buy supplies below their gold value. No arbitrage: every price is at
   least twice what any NPC pays for the item (`ChaosItemPrices`, `buyShare`) and `install_item_prices.py` changes none of her
   entries (checked in `tools/install_apothecary_test.py`).
-- **Level gate.** The shop system has none, so her script (`CALLBACK_ONBUY`) refuses a buyer below the potion's level with a line
+- **Level gate.** The shop system has none, so her script (`CALLBACK_ONBUY`) refuses a buyer below the potion's (or the deck's) level with a line
   ("A <potion> is for level N and up, and you are not there yet."). The potion script still decides who may drink (vocations,
   level). **Assumed, not read from the base items** (the base server is not in the repo): the levels of the stock potions
   (50, 80, 130, 200) and that 8704 is the small health potion, 8474 the antidote and 26029 / 26030 / 26031 the ultimate mana,
@@ -7159,6 +7160,79 @@ service NPCs that replaced them sell none. **Veyra the Apothecary** stands in th
   `tools/install_apothecary_test.py` (files, dry run, idempotence; the rune, potion and price steps on her XML), `tests/npc_booths_test.lua`.
 
 Not seen in a client or on a live server: her stall, the trade window, the level refusals.
+
+## Cards and decks (`cards.lua`, `cards_core.lua`, `cards_config.lua`, `tools/patch_badges.py`, `tools/gen_card_descriptions.lua`)
+
+Owner 2026-10-23 (pt-BR): "como alguém pega um deck pra colocar as cartas? usar elas não funciona e no character info só diz
+se ela está ativada ou desativada", then "as cartas ainda referenciam as magias antigas" (a card said "convert Exori Mas
+Spell to Earth damage"). The base deck system (76 cards, 3 decks) stays; Chaos fixes how it is reached, read and named.
+No opcode, no table, no storage key of its own: the base's card storages (37000-37059, 37065-37080) and action id 37866.
+
+- **Root cause of "use does nothing".** The base registers a use action for every card (`deckSystem:id(cardId)`), but it
+  only does something for a card that is already inside a deck: it looks for the card with `container:getItemsById` in the
+  deck and flips its storage. A card loose in the backpack with a deck carried was not found, and the player got the
+  base line "This card cannot be used on this deck slot..."; with no deck carried the action returned nothing and the engine
+  said "You cannot use this object". Nothing ever said where a deck comes from (decks dropped from monsters and came from
+  one task; the roulettes lost them with the badge slot change). `!deck` only printed "Activated" or "Deactivated" per card.
+- **Use a card** (`patch_badges.py` step 4 puts one hook at the top of the base card action: `ChaosCards.use(player, item)`;
+  nil means "not a card", so the base runs). The card is looked up in every bag the player carries at any depth, closed bags
+  and decks included (`ChaosCards.scan`, at most `scanLimit` 600 items; slots 1-10, 12, 13, never the store inbox). Then
+  `ChaosCardsCore.decide`: **off** (it was the copy that is on: storage 0, action id off), **dupe** (another copy is on:
+  one copy counts), **max** (five cards on), **on** (it already sits in a deck), **move** (it goes into the first carried
+  deck with room, the biggest deck first, then turns on), **nodeck** (the text says to buy one from Veyra with the three
+  prices, read from `apothecary_config.lua`) or **full**. Messages go through `Chaos.t`, pt-BR in `i18n_strings.lua`.
+- **Decks.** Veyra the Apothecary sells Bronze (5 cards) 1,000 gold, Silver (10) 6,000 from level 50, Golden (20) 30,000
+  from level 100 ("The Apothecary"); decks still drop and one task gives one. A deck is carried, not worn.
+- **Character Info.** The `deck` command (`ChaosCommands`, replaces the base `!deck` dialog) lists the decks carried with
+  used and total slots, the cards that are on (at most five) with what each gives, the cards in decks that are off, the
+  cards carried outside a deck, and, without a deck, how to get one. The text stays under `maxTextBytes` (6,000; the list
+  ends with "... and N more."), below the extended opcode's 8,192 bytes, so `Chaos.sendChunked` is not needed. The client
+  page runs `deck` when Character Info opens (`game_chaosinfo`, 6 auto commands, the server's `MAX_IDS`); an older client
+  still gets the richer text from the Card Deck button.
+- **State stays true.** `ChaosCards.reconcile` runs on use, on `deck`, at login and every 60 s (`reconcileMs`): a card whose
+  storage is 1 but whose copy is no longer in a carried deck (dropped on death, a bag put away) is turned off with a
+  message, and a stray action id (a second copy, a copy outside a deck) is cleared so the card can be moved again. Login is
+  silent when nothing changed. A card counts once however many decks or copies a player has.
+- **The cards name the spells you have.** The 60 common cards are 15 lines of 4 tiers; the base wrote the stock spell into
+  each text. Every line belongs to one current spell in `cards_config.lua` (name and spell id). What each line does in the
+  base: the spell scripts read the card storages (convert lines: the highest tier on sets the element; Deep Mending: a
+  stronger heal; Blood Rage: longer and stronger; Challenge: a wider area). Six lines still have their stock script (Tempest
+  Fan, Sanctum Burst, Frostfall Rune, Pyre Torrent, Bloodlust, Taunt of Iron) and work as they did. Nine lines belonged to
+  spells that were retired (`rename_spells.py`, `patch_spell_cap.py`, `retire_cure_spells.py`), so their cards did nothing;
+  they now act on the Chaos spell of the same role:
+
+| Line (first card) | Stock spell | Now acts on | What it does |
+|---|---|---|---|
+| 27482 | Berserk | Reaping Gyre | element of the highest tier on |
+| 27486 | Terra Wave | Rime Bloom | element |
+| 27502 | Eternal Winter | Doomtide | element |
+| 27506 | Rage of the Skies | Primordial Squall | element |
+| 27510 | Groundshaker | Earthbreaker | element |
+| 27522 | Strong Ice Wave | Frozen Crypt | element |
+| 27526 | Intense Healing | Grand Mending | heals 10 / 20 / 30 / 40 percent more |
+| 27530 | Divine Missile | Dawnpiercer | element |
+| 27538 | Sharpshooter (no consumer even in the base) | Tautstring | 2 / 4 / 6 / 8 seconds longer, 2 / 4 / 6 / 8 more percentage points of distance skill |
+
+  The `ChaosCardsHit` creature event (`cards.lua`, on the monsters a player attacks and on every player at login) reads the cast
+  context the spells state writes (`ChaosSupports.ctxDecode`), and for these spell ids moves the whole hit to the element
+  (`ChaosSupports.convert` with the target's resistances) or scales the heal (`ChaosSupports.scale`). Tautstring reads the
+  line's storages itself (`cards_config.lua` `buffBonus`, the spells state). The base spell scripts, `supports.lua` and the
+  rune effects are untouched. The eight "hit" lines are `C.byTarget`. The four legendary classes need a weapon in the left
+  hand, not a vocation, and their chances are the base config's 7 / 9 / 14 / 20 percent (the base text said 2 / 3 / 4 / 5).
+- **Descriptions.** `tools/gen_card_descriptions.lua` writes `data/items/card_descriptions.csv` (id, description) from
+  `cards_core.lua` (`--check` in CI); `patch_badges.py` items step puts it into `items.xml` (English), and
+  `item_tooltip.lua` sets the tooltip text per player language (`ChaosCardsCore.description`). Spell and element names come from
+  the config and the item types, so no stock name is in the repo. `tests/cards_test.lua` scans every description (en and
+  pt-BR) for the old stock names and words of `data/spells/spell_names.csv`, requires every line's spell to be a current
+  spell with the right id (`stock_spells.csv`, `spells_chaos.xml`, `patch_spell_cap.py`), and checks the hint matches the tool.
+- **Install:** step `badges` (`patch_badges.py`, idempotent; the hook and the descriptions). The Lua files are scripts.
+- **Tests:** `tests/cards_test.lua` (data, reconcile and decide, the glue on a mocked engine, texts in en and pt-BR, the hit
+  event, Tautstring's bonus, the stale-name scan), `tools/patch_badges_test.py` (hook once, descriptions, hint migration),
+  `tests/apothecary_test.lua` (decks), `client/overlay/modules/game_chaosinfo/chaosinfoview_test.lua`.
+- **Not seen in a client or on a live server.** The base is not in the repo: the right-click menu "Use" entry depends on
+  the item's `.dat` usable flag (the base registered the action, so it is expected); the legendary summons check the base
+  weapon id lists (`itemidKnights` and the others), which may not hold the Chaos weapons, so a legendary card may never
+  fire with them (left, the base script is untouched); the nine moved lines are tested on a mocked engine only.
 
 ## Tile labels (`tile_labels.lua`, `tile_labels_core.lua`, `tile_labels_config.lua`)
 
@@ -11819,7 +11893,8 @@ boss loot, the task rewards and the roulette, and no tool puts them back.
   in the base sea tiles). Belts and gloves (24 items, slot type `beltgloves`) have no other use: they can't be worn,
   and since 2026-10-22 the base armorsmith no longer crafts them (its only source; coordinator decision); the Loot
   Buyer buys the copies players hold. Decks and ships keep their sources (the monster loot, the task deck, the first
-  ship), as they work when carried; only the roulette lost them ("Prizes into the backpack"). The items.xml
+  ship), as they work when carried; only the roulette lost them ("Prizes into the backpack"). Veyra the Apothecary sells
+  the three decks ("The Apothecary"). The items.xml
   descriptions say so. `Player:onMoveItem` refuses a move into a retired
   slot with a message (the engine refuses it too).
 - **Migration at login**, idempotent, never deletes: every item in a slot no client draws (12, 14, 15, 16, a deck in
@@ -11844,13 +11919,15 @@ boss loot, the task rewards and the roulette, and no tool puts them back.
 
 `tools/patch_badges.py DATA_DIR [--dry-run] [--check]` (install_all.py step `badges`, after `itemnames`), idempotent:
 1. items.xml: the badges get slot type `badge`; the decks, ships, belts and gloves get their description. The 76
-   cards the deck system turns on (`CARDS`: 27482-27541 and the level 6 legendaries 27547-27631 every 6th, 27640) keep
-   their description with `CARD_HINT` appended: "Put it in a Bronze, Silver or Golden Deck you carry and use it there
-   to turn it on or off." (beta question 2026-10-22: "como eu acesso o deck?"). The legendary levels 1-5 only upgrade:
-   no hint. English only: items.xml descriptions are one text for every viewer ("Server texts in pt-BR": left).
+   cards the deck system turns on (`CARDS`: 27482-27541 and the level 6 legendaries 27547-27631 every 6th, 27640) get the
+   description of `data/items/card_descriptions.csv` ("Cards and decks"): what the card gives, with the Chaos name of the
+   spell, then `CARD_HINT` ("Use it to put it in a deck you carry and turn it on, use it again to turn it off. Veyra the
+   Apothecary sells decks."). A card the file lacks keeps its text with the hint appended. The legendary levels 1-5 only
+   upgrade: no hint. English in items.xml (one text for every viewer); the tooltip and Character Info are in the player's
+   language (pt-BR in `i18n_strings.lua`).
 2. the boss loot's Fury catalyst [3].
 3. `Player:onMoveItem` asks `ChaosBadges.onMoveItem` first.
-4. the base deck system reads the carried deck.
+4. the base deck system: the card action asks `ChaosCards.use` first, and the cards are looked for in the carried deck.
 5. the base sea tiles: a carried ship sails.
 6. the ship NPC says to carry the ship.
 7. `droploot.lua`: the death loss takes slot 13.

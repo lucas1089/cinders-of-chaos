@@ -11,13 +11,17 @@ four take nothing. The rules are data/scripts/chaos/badges_core.lua; this tool c
 1. data/items/items.xml: the 40 badges (27803-27842) get slot type "badge" (0058: the badge bit only; "deckbadge" also
    has the deck bit, and the badge slot refuses an item with it). The decks, ships, belts and gloves get a description
    that says they can't be worn and what they still do; the Loot Buyer buys them (data/items/item_price_rules.csv).
-   The 76 cards a deck turns on (CARDS) keep their description with CARD_HINT appended: where a card goes.
+   The 76 cards a deck turns on (CARDS) get the description of data/items/card_descriptions.csv (written by
+   tools/gen_card_descriptions.lua from cards_config.lua): what the card gives, with the Chaos name of the spell it acts
+   on (the base text named the stock spell), then CARD_HINT: where a card goes. A card the file lacks keeps its
+   description with CARD_HINT appended.
 2. data/monster/**: the base boss loot lists "exiled amplifier catalyst [3]" twice and the Fury catalyst [3] (27848)
    never: the second one, right after "fury amplifier catalyst [2]", becomes "fury amplifier catalyst [3]".
 3. data/events/scripts/player.lua: Player:onMoveItem asks ChaosBadges.onMoveItem first (a move into a retired slot is
    refused with a message; the engine refuses it too).
-4. the base deck system (the script with `getSlotItem(CONST_SLOT_DECK)`): the cards are looked for in the deck the
-   player carries (ChaosBadges.deckOf), not in slot 12.
+4. the base deck system (the script with `getSlotItem(CONST_SLOT_DECK)`): its card action asks ChaosCards.use first
+   (cards.lua: a card carried anywhere goes into a deck and turns on or off, with a clear message; "Cards and decks"),
+   and the cards are looked for in the deck the player carries (ChaosBadges.deckOf), not in slot 12.
 5. the base sea tiles (the script with `function boatSystem.onStepIn`): ChaosBadges.boardShip sets the ship storages
    from the ships the player carries first, so a carried ship sails.
 6. the NPC that builds the first ship (the script that gives 27799 and names the "Boat Slot"): it says to carry the
@@ -33,6 +37,7 @@ Nothing is taken out of a drop: the decks and ships keep their uses (the monster
 ship stay); the belts and gloves drop nowhere and step 8 takes them out of the armorsmith. A second run changes nothing. --check changes nothing and exits 1 when something is still to
 do.
 """
+import csv
 import os
 import re
 import sys
@@ -44,15 +49,32 @@ DECKS = (27632, 27633, 27634)
 SHIPS = tuple(range(27796, 27803))
 BELTGLOVES = (29577, 29578, 29582, 29583, 29584, 29586, 29587, 29588, 29589, 29590, 29591, 29592, 29593, 29594, 29595,
               29596, 29597, 29598, 29914, 29915, 29916, 29917, 29918, 29919)
-DECK_DESC = ("A deck for cards. It can't be worn: carry it, and use a card inside it to turn the card on or off. "
-             "The Loot Buyer buys it.")
+DECK_DESC = ("A deck for cards. It can't be worn: carry it, then use a card you carry to put it in the deck and turn it "
+             "on. Veyra the Apothecary sells decks. The Loot Buyer buys it.")
 SHIP_DESC = "A ship. It can't be worn: carry it and walk from a dock onto the sea to sail. The Loot Buyer buys it."
 BELTGLOVES_DESC = "It can't be worn. The Loot Buyer buys it."
 # the cards the base deck system turns on (its cardsAllowed): the 60 common to mythic cards and the level 6 legendaries;
 # the legendary levels 1-5 only upgrade and keep their text. Players did not find where a card goes (beta,
 # 2026-10-22: "como eu acesso o deck?"), so their description ends with where to put it.
 CARDS = tuple(range(27482, 27542)) + tuple(range(27547, 27632, 6)) + (27640,)
-CARD_HINT = "Put it in a Bronze, Silver or Golden Deck you carry and use it there to turn it on or off."
+CARD_HINT = ("Use it to put it in a deck you carry and turn it on, use it again to turn it off. "
+             "Veyra the Apothecary sells decks.")
+# earlier texts of the hint: replaced, so a second install never appends two
+CARD_DESCRIPTIONS_CSV = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data', 'items',
+                                     'card_descriptions.csv')
+
+
+def card_texts(path=None):
+    """{card id: description} from card_descriptions.csv (gen_card_descriptions.lua); {} when the file is not there"""
+    try:
+        with open(path or CARD_DESCRIPTIONS_CSV, encoding='utf-8', newline='') as f:
+            return {int(r['id']): r['description'] for r in csv.DictReader(f)}
+    except OSError:
+        return {}
+
+
+CARD_TEXTS = card_texts()
+OLD_CARD_HINTS = ("Put it in a Bronze, Silver or Golden Deck you carry and use it there to turn it on or off.",)
 DESCRIPTIONS = {}
 DESCRIPTIONS.update({i: DECK_DESC for i in DECKS})
 DESCRIPTIONS.update({i: SHIP_DESC for i in SHIPS})
@@ -77,6 +99,15 @@ SEA_LINE = re.compile(r'^function boatSystem\.onStepIn\(creature, item, position
 DECK_CALL = 'player:getSlotItem(CONST_SLOT_DECK)'
 DECK_NEW = ('(ChaosBadges and ChaosBadges.deckOf and ChaosBadges.deckOf(player) or player:getSlotItem(CONST_SLOT_DECK))'
             ' -- ' + MARK)
+USE_LINE = re.compile(r'^function deckSystem\.onUse\(player, item, fromPosition, target, toPosition, isHotkey\)[ \t]*\n', re.M)
+USE_HOOK_TEST = 'ChaosCards.use(player, item)'
+USE_HOOK = ('    -- {mark}: cards.lua puts a card carried anywhere into a deck and turns it on or off\n'
+            '    if ChaosCards and ChaosCards.use then\n'
+            '        local chaosCardRet = ChaosCards.use(player, item)\n'
+            '        if chaosCardRet ~= nil then\n'
+            '            return chaosCardRet\n'
+            '        end\n'
+            '    end\n').format(mark=MARK)
 NPC_TEXTS = (
     (re.compile(r'place the explorer to the boat slot on your inventory and walk'), 'carry the explorer with you and walk'),
     (re.compile(r'Equip the explorer on the Boat Slot of your inventory, and walk'), 'Carry the explorer with you and walk'),
@@ -118,9 +149,14 @@ def hook(text, line_re, code):
 
 
 def deck_system(text):
-    if MARK in text or DECK_CALL not in text:
-        return text, 0
-    return text.replace(DECK_CALL, DECK_NEW, 1), 1
+    """the carried deck instead of slot 12, and cards.lua first: a card used anywhere in the bags goes into a deck"""
+    n = 0
+    if MARK not in text and DECK_CALL in text:
+        text, n = text.replace(DECK_CALL, DECK_NEW, 1), 1
+    m = USE_LINE.search(text)
+    if m and USE_HOOK_TEST not in text:
+        text, n = text[:m.end()] + USE_HOOK + text[m.end():], n + 1
+    return text, n
 
 
 def droploot(text):
@@ -175,7 +211,13 @@ def items_xml(xml):
         d = re.search(r'<attribute\s+key="description"\s+value="([^"]*)"\s*/>', body)
         if iid in CARDS:
             old = d.group(1).rstrip() if d else ''
-            want = old if old.endswith(CARD_HINT) else (old + ' ' + CARD_HINT).lstrip()
+            for gone in OLD_CARD_HINTS:
+                if old.endswith(gone):
+                    old = old[:-len(gone)].rstrip()
+            if iid in CARD_TEXTS:
+                want = CARD_TEXTS[iid].replace('&', '&amp;').replace('<', '&lt;').replace('"', '&quot;')
+            else:
+                want = old if old.endswith(CARD_HINT) else (old + ' ' + CARD_HINT).lstrip()
         if want is None:
             return m.group(0)
         if d:
