@@ -2366,7 +2366,7 @@ of each thing) and `pack36_fx.sums` (sha256 of each strip, for `build --check`).
   English words in the art) are appended and sent by nothing. Every engine, monster and script send of those ids shows the new art; send
   offset 0, 0 (628: 1, 1, as before); art past the bottom-right tile is moved up and left as a whole, cut beyond 4 x 4
   tiles (2 effects lose 3-6 % of their pixels). So a 3x3 or 4x4 in-place art sent at the target tile sits up-left
-  of it; the server's Lua sends move the 23 such ids to their centring tile (`tools/sprites/gen_fx_send_offsets.py`
+  of it; the server moves the 23 such ids to their centring tile (Lua sends, and engine sends with src-patch 0060) (`tools/sprites/gen_fx_send_offsets.py`
   -> `server/data/lib/chaos_fx_send_offsets.lua`, server/README.md "Purchased effect packs (pair 36)"). The pair is
   unchanged.
 - **Appended**: 3247 effects (tile spells 346, fields 150, areas 547, cones 784, Mega 1012, impacts 195, circles 21,
@@ -2554,6 +2554,63 @@ other old thing byte-identical. Built twice: identical md5s.
   (0be5499cc4b17c9e0b495b31e30561a29164019d5df96b06243a62fcc19d9709); unpacks to the md5s above. Pushed to
   windows-assets at 1102087c (on ee8e82eb; the owner allowed new pairs without asking). No server change.
 - A client on pair 38 or older keeps drawing the set floating. Renders: scratchpad only. Not run in a client.
+
+## Creature palette pass (pair 40: 48 creature looks in place, `tools/sprites/gen_creature_palette.py`, `monster_looks/creature_palette.csv`; built 2026-10-23)
+Owner approved 2026-10-23: variant A of the style study of 2026-10-22 (one palette per look and a despeckle; the
+study's reference sprites were for comparison only, none of their pixels is used). Prototype: monster 2125 from 646
+colours and speckle 0.57 to 24 and 0.16. Not approved: variant B's tinted outline and rim light (the outline rule is open).
+- **Pass** (docs/SPRITE_STYLE.md "Palette pass on donor creatures"): one palette per look for every frame group,
+  phase, direction, addon, mount and art layer, 32 colours, k-means in CIE Lab with a fixed seed, each entry a real
+  colour (the weighted medoid of its cluster). Near-black, neutral greys, accents (vivid hue families under 6% of the
+  pixels, and vivid colours used in small spots: eyes, runes, sparks) and the rest get separate entries and never mix.
+  Then two despeckle passes on body pixels (not the rim, not accents, not across luma 24). A look of 32 colours or
+  fewer keeps its palette (despeckle only). Alpha is untouched; a colour mask layer and the base pixels under it are
+  kept (none of the targets has one). Near-black pixels stay near-black and no other pixel becomes near-black, so the outline
+  keeps its shape.
+- **Accent guard:** a look is left as it was when more than 10% of its vivid pixels or of its spot pixels move more
+  than 20 in Lab, or the vivid pixels move more than 10 on average. Checked by eye on before / after sheets as well.
+- **Targets:** donor looks 2100-2139 (things_custom11, 13, 14), the theme recolours 2188-2193 (`theme_recolour.py`)
+  and the rift rank variants 2200-2207 (`rift_variants.py`). Not the owner's art, import-only packs or player looks.
+- **Changed (48):** 2100-2113, 2115-2129, 2131-2135, 2188-2193, 2200-2207. Colours of the look before -> after, e.g.
+  2106 8,255 -> 32, 2111 5,479 -> 32, 2128 13,168 -> 32, 2125 932 -> 32; speckle (body pixels no neighbour shares)
+  2106 0.88 -> 0.15, 2124 0.77 -> 0.07, 2125 0.54 -> 0.17, 2128 0.89 -> 0.08; the most colours in one 32 px cell
+  2128 905 -> 28, 2106 775 -> 29. Every look's numbers: `monster_looks/creature_palette.csv`.
+- **Left as they were (6):** 2114 Forsaken Sanctum elite (692 of 3,872 vivid pixels would move: the green glyph
+  glow), 2130 Vhoss the Hexmaw (37 colours, 484 of 2,872 vivid pixels would move: its blue spots), the auras
+  2136-2139 (soft glow effects, 70-100% semi-transparent, not creature pixel art).
+- **Theme recolours** are remade from their passed source, not passed on their own: the build first checks that the
+  recolour of pair 39's 2108 / 2104 is exactly pair 39's 2188-2193, then recolours the passed source.
+  `gen_theme_art.py recolour` on pair 40 rewrote the six `art_import/theme_recolour/*.png` sheets; they equal pair 40's
+  2188-2193 cell for cell (300 cells). The rift variant sheets in `art_import/rift_variants/` stay pair 24's import
+  source; pair 40 holds their passed form.
+
+```
+python3 -I client/tools/sprites/gen_creature_palette.py build --dat pair39/Tibia.dat --spr pair39/Tibia.spr \
+    --expect-dat-md5 9d0c474ef9202a93117e910d465c7efc --out-dir pair40 [--sheets DIR]
+python3 -I client/tools/sprites/gen_creature_palette.py build --dat pair39/Tibia.dat --spr pair39/Tibia.spr --check
+python3 -I client/tools/sprites/check_pair.py pair40/Tibia.dat pair40/Tibia.spr --old pair39/Tibia.dat pair39/Tibia.spr \
+    --allow-changed 'outfit:2100-2113,2115-2129,2131-2135,2188-2193,2200-2207'   # as a comma list of ids
+python3 -I client/tools/sprites/gen_theme_art.py recolour --dat pair40/Tibia.dat --spr pair40/Tibia.spr
+python3 -I client/tools/sprites/gen_outfit_anchors.py pair40/Tibia.dat pair40/Tibia.spr
+python3 -I client/tools/sprites/gen_info_lift.py pair40/Tibia.dat pair40/Tibia.spr
+```
+Input pair 39 (windows-assets 1102087c, dat 9d0c474ef9202a93117e910d465c7efc, spr 968b604ee9b6b6f9666549da880ce1d2).
+Output **pair 40**: dat 5f9edac3d6424155a96c95bef6691d18 (11,217,716 bytes, same size: only sprite ids change), spr
+2b157338e1664c58d3c07b8899ed5938 (1,536,990,834 bytes, 1,349,517 sprites: 8,474 appended, 1 reused; 10,920 sprite
+slots rewritten), 38,641 items, 2,681 outfits, 4101 effects, 250 missiles. The build verified 1,984 frames of the 48
+looks decode to the pass, every other thing byte-identical and 2,999 sampled old sprites unchanged. Built twice:
+identical md5s and report.
+- `check_pair.py --old --allow-changed` (the 48 looks): `--new-only` 0 errors, 0 warnings; full check 0 errors, 216
+  warnings (pair 39's). With only one look allowed it reports the other 47 (47 errors): the guard sees every change.
+- `outfit_anchors.lua` and `info_lifts.lua`: only the dat md5 changes (alpha untouched, so no anchor or lift moves).
+  `gen_theme_art.py recolour --check`, `gen_dungeon_banners.py --check`, `check_content.py --pair` and
+  `gen_sprite_images.py --publish own,donor` pass on pair 40.
+- Archive (the pair 37 recipe, `--mtime='2026-10-22 00:00:00Z'`, xz 5.4.5, `split -b 95M -d -a 2`; it rebuilds pair 39's sha256 a55e9ad7...):
+  146,658,260 bytes, sha256 0a08dd219f0df19256b5dbd87e377bf532c8a89f1b9aedba99ed18d0402dd4d7; parts `things-1098.tar.xz.part00` (99,614,720 bytes, sha256 1c69150f6e94d1ce1593cbe5965ecef240520c9a167180e43e6f6978dc930f76) and `.part01`
+  (47,043,540 bytes, sha256 a6f42a6b2c4c2c2de6a99c6b2f69a04a4c2e87afe7ba2b899bd038a1a84bf255). Pushed to windows-assets at e662cd24 (on 1102087c; the owner allowed new pairs without asking). No
+  server change.
+- A client on pair 39 or older keeps the old art; nothing breaks. Before / after sheets: scratchpad only. Not run in a
+  client.
 
 ## Owner art (things_custom26: outfits 2213-2233, items 33940-33985, `tools/sprites/gen_owner_art.py`, `art_import/owner_art.csv`; on windows-assets 50645056, switch on since 2026-10-15)
 **Source and licence.** The owner's Google Drive folder "ots", files added 2026-10-15. The owner confirmed the art is

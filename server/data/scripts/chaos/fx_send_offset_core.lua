@@ -15,12 +15,35 @@ function M.shift(x, y, effect, tbl)
 	return x + o[1], y + o[2]
 end
 
--- the table, loaded once from data/lib (nil when the file is missing: nothing is shifted)
-function M.load()
-	if ChaosFxSendOffset == nil then
+-- the table, loaded once from data/lib (nil when the file is missing: nothing is shifted); `reread` loads the file
+-- again (a scripts reload picks up a new table)
+function M.load(reread)
+	if ChaosFxSendOffset == nil or reread then
 		pcall(dofile, "data/lib/chaos_fx_send_offsets.lua")
 	end
 	return ChaosFxSendOffset
+end
+
+-- true once the engine shifts the effects itself (src-patch 0060 took the table): the Lua guard of
+-- Position:sendMagicEffect then sends at the target tile, so no effect is shifted twice
+M.engine = M.engine or false
+
+-- hand the table to the engine (src-patch 0060, `G` = the engine's Game table). An engine without the patch has no
+-- Game.setFxSendOffsets: M.engine stays false and the Lua guard shifts the Lua sends as before. -> M.engine
+function M.applyEngine(G, reread)
+	if type(G) ~= "table" or type(G.setFxSendOffsets) ~= "function" then
+		M.engine = false
+		return false
+	end
+	local t = M.load(reread)
+	local ok, n = pcall(G.setFxSendOffsets, type(t) == "table" and t or {})
+	M.engine = ok and type(n) == "number" or false
+	return M.engine
+end
+
+-- does the Lua guard shift `effect` (its table has the id and the engine does not shift it)
+function M.luaShifts(effect, tbl)
+	return not M.engine and tbl ~= nil and tbl[effect] ~= nil
 end
 
 return M
