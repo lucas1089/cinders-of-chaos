@@ -28,6 +28,9 @@ The live spectator (2026-10-23): spectate NAME refuses bad names and queues noth
 per 5 s, waits for a fresh snapshot of that name, runs the renderer (a stub) with the name as one argument, keeps one
 view at a time (busy, exit 75) and one every 0.8 s, answers no-answer for an old snapshot; spectate-pair status and its
 refusals (no git checkout, a bad branch).
+The live cast (phase 2): cast NAME refuses bad names, is off without castPort (or with a port out of range), queues
+"cast NAME", runs the relay (a stub reading stdin to its end) with the port and the name as one argument, queues
+"caststop" when it ends, and keeps one cast at a time (busy, exit 75).
 
 usage: python3 -I server/deploy/chaos_ctl_test.py
 """
@@ -322,6 +325,43 @@ def main():
         check(r.returncode != 0 and 'no git checkout' in r.stderr, 'fetch-now needs the git checkout: ' + r.stderr)
         r = run('spectate-pair', 'fetch-now', extra=dict(spe, CHAOS_PAIR_BRANCH='a..b'))
         check(r.returncode != 0 and 'bad CHAOS_PAIR_BRANCH' in r.stderr, 'a bad branch is refused')
+
+        # cast: the name checked, the port from config.lua, "cast NAME" queued, the relay (a stub that reads stdin to
+        # its end) run in the foreground with the name as one argument, "caststop" queued after; busy; port off
+        with open(os.path.join(tools, 'cast_relay.py'), 'w') as f:
+            f.write('import json, sys\nsys.stdin.read()\nprint(json.dumps({"t": "end", "args": sys.argv[1:]}))\n')
+        os.makedirs(os.path.join(tmp, 'pair'), exist_ok=True)
+        for fn in ('Tibia.dat', 'Tibia.spr'):
+            open(os.path.join(tmp, 'pair', fn), 'wb').close()
+        cfg_lua = os.path.join(server, 'config.lua')
+        had_cfg = open(cfg_lua).read() if os.path.exists(cfg_lua) else None
+        before = spool()
+        for bad in (('cast',), ('cast', 'ab'), ('cast', 'Bob;ls'), ('cast', '$(id)'), ('cast', 'Bob '), ('cast', 'Bo  b'),
+                    ('cast', '1Bob'), ('cast', 'Bob', 'Ann'), ('cast', 'Bob\ncaststop')):
+            check(run(*bad, extra=spe).returncode != 0, 'cast refuses %r' % (bad[1:],))
+        r = run('cast', 'Bob', extra=spe)
+        check(r.returncode != 0 and '"cast-off"' in r.stdout, 'no castPort: the cast is off: ' + r.stdout)
+        check(spool() == before, 'a refused cast queues nothing')
+        with open(cfg_lua, 'a') as f:
+            f.write('\ncastPort = 7179 -- the live cast\n')
+        r = run('cast', "Sir O'Neil", extra=spe, stdin='')
+        args = json.loads(r.stdout)['args'] if r.returncode == 0 and r.stdout.startswith('{') else []
+        check(r.returncode == 0 and "Sir O'Neil" in args and args[args.index('--port') + 1] == '7179',
+              'cast runs the relay with the port and the name as one argument: %r %s' % (args, r.stderr))
+        check(os.path.join(tmp, 'pair', 'Tibia.dat') in args and '--max-seconds' in args, 'the pair and the limit')
+        check(spool() == before + "cast Sir O'Neil\ncaststop\n", 'cast queues its line, then caststop: %r'
+              % spool()[len(before):])
+        r = run('cast', 'Bob', extra=dict(spe, CHAOS_CAST_PORT='70000'))
+        check(r.returncode != 0 and '"cast-off"' in r.stdout, 'a port out of range is off')
+        with open(os.path.join(spstate, 'cast.lock'), 'w') as lk:
+            fcntl.flock(lk, fcntl.LOCK_EX)
+            r = run('cast', 'Bob', extra=spe)
+        check(r.returncode == 75 and '"busy"' in r.stdout, 'one cast at a time: busy, exit 75: ' + r.stdout)
+        if had_cfg is None:
+            os.remove(cfg_lua)
+        else:
+            with open(cfg_lua, 'w') as f:
+                f.write(had_cfg)
 
         for bad in ('not a key', 'ssh-rsa AAAA\nssh-rsa BBBB', 'ssh-rsa AAAA; rm -rf /', ''):
             r = run('install-admin', '-', stdin=bad)
