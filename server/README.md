@@ -3707,6 +3707,17 @@ bag opens. A sale stays one chat line and one window state. Measured on the mock
 sale of 255 items, unpatched 255 container + 255 stats packets, patched 1 + 1; gold identical. The client side is cheap
 on its own too (client base patch 0109, `game_lootfilter`, `game_depottabs`: one redraw per container per frame).
 
+**Loot burst: one update** (owner 2026-10-23: "o client dá uma travada rápida quando a janela do loot bag está aberta e o auto
+loot pega muita coisa de uma vez"). The stow of one kill was already one held batch (`Chaos.containerBatch`, engine patch 0054),
+but every kill ended its batch with its own full container packet for the open Loot Bag, and the client answers a full packet
+for an open window by refreshing up to 255 slots (before client base patch 0122, by rebuilding all of them). An area spell
+that kills ten monsters in one tick was ten such packets. `pouches.lua` `collect` now runs inside
+`Chaos.containerBurst(player, fn)` (`chaos_constants.lua`): the first kill of a burst begins an outer batch for the player and
+a 150 ms timer (`Chaos.burstWindowMs`) ends it, so every kill in that window shares one packet per open window and one stats
+packet. Cost: the Loot Bag window shows the loot up to 150 ms later. The timer looks the player up again (a player gone by
+then is skipped); without engine patch 0054 `fn` just runs. Checked in `tests/pouches_test.lua`: four kills in one tick, one
+hold and one release timer, balanced afterwards; a later kill holds again. Client side: `client/BASE.md` 69n.
+
 **Sell every X minutes** (owner 2026-10-17: "Auto seller: opção de vender a cada X minutos"; `autosell.lua`, `autosell_core.lua`
 `INTERVALS`, window dropdown "Sell the Loot Bag automatically every" in `autoseller.otui`). Off by default; choices 5, 10,
 15, 30, 60 minutes, stored in storage 7100152 (`Chaos.storage.autosellInterval`), action `asevery {minutes = 0|5|10|15|30|60}`

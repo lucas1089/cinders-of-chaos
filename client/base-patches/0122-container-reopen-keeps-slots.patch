@@ -1,0 +1,44 @@
+# Chaos: a full container packet for an open window keeps its slot widgets (modules/game_containers/containers.lua;
+# after 0001-0116, touching the same file as 0109 and 0115 in other places). Owner report 2026-10-23: "o client dá uma
+# travada rápida quando a janela do loot bag está aberta e o auto loot pega muita coisa de uma vez". Server patch 0054
+# ends every loot batch with one full container packet, and the client answers a full packet for an open window with
+# onContainerOpen(container, previousContainer), which ran destroyChildren and one createWidget('Item') per slot (255 for
+# the Loot Bag) each time. An area kill with auto loot is one such packet per corpse, so a burst was a rebuild of 255
+# widgets several times in a row. Now the slots are kept when the capacity and the lock state are the same as before
+# and only their contents are set again (through chaosSetSlotItem of 0115, so an emptied slot still clears its marks).
+# The server also holds the packets of one burst of kills and sends one (server/README.md "Loot burst: one update").
+--- a/modules/game_containers/containers.lua
++++ b/modules/game_containers/containers.lua
+@@ -264,14 +264,28 @@
+   local itemTop = container:getContainerItem()
+   containerItemWidget:setItem(itemTop)
+ 
+-  containerPanel:destroyChildren()
++  -- Chaos (base patch 0122): a full container packet for a window that is already open (the server sends one at the end
++  -- of every loot batch, sale and sort) keeps the slot widgets when they still fit (same capacity, same lock): only
++  -- their contents are set again. Before, destroyChildren + one createWidget per slot (255 for the Loot Bag) ran for
++  -- every packet, and an auto loot burst of several kills was several such rebuilds in a row.
++  local locked = not container:isUnlocked()
++  local capacity = container:getCapacity()
++  local reuse = previousContainer ~= nil and containerPanel.chaosSlots == capacity and
++    containerPanel.chaosLocked == locked and containerPanel:getChildCount() == capacity
++  if not reuse then
++    containerPanel:destroyChildren()
++  end
++  containerPanel.chaosSlots, containerPanel.chaosLocked = capacity, locked
+ 
+   for slot=0,container:getCapacity()-1 do
+-    local itemWidget = g_ui.createWidget('Item', containerPanel)
+-    itemWidget:setId('item' .. slot)
++    local itemWidget = reuse and containerPanel:getChildById('item' .. slot) or nil
++    if not itemWidget then
++      itemWidget = g_ui.createWidget('Item', containerPanel)
++      itemWidget:setId('item' .. slot)
++    end
+     local itemSlot = container:getItem(slot)
+ 
+-    itemWidget:setItem(itemSlot)
++    chaosSetSlotItem(itemWidget, itemSlot)
+     ItemsDatabase.setRarityItem(itemWidget, itemSlot)
+     ItemsDatabase.setTier(itemWidget, itemSlot)
+     itemWidget:setMargin(0)

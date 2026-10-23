@@ -46,7 +46,7 @@ end
 local queries = {}
 db = {query = function(q) queries[#queries + 1] = q; return true end}
 local events = {}
-function addEvent(fn, ms, ...) events[#events + 1] = {fn = fn, args = {...}} end
+function addEvent(fn, ms, ...) events[#events + 1] = {fn = fn, ms = ms, args = {...}} end
 local sent = {}
 json = {encode = function(t) return t end, decode = function(t) return t end}
 
@@ -445,7 +445,32 @@ do
 	local a, b = item(2401), item(2403, {cat = "equipment"})
 	drop(nil, corpse(hero.id, {a, b}))
 	eq(a.parent, lootPouch, "batched kill: still stowed")
-	eq(begins, 1, "one batch per kill") eq(ends, 1, "the batch is closed") eq(depth, 0, "balanced")
+	-- the batch of the kill is closed; the burst's outer batch stays held for the window (Chaos.containerBurst)
+	eq(begins, 2, "burst batch + kill batch") eq(ends, 1, "the kill's batch is closed") eq(depth, 1, "the burst batch is still held")
+	-- three more kills in the same tick: no second burst, one release for all of them
+	local more = {}
+	for i = 1, 3 do more[i] = item(2401) drop(nil, corpse(hero.id, {more[i]})) end
+	eq(begins, 5, "each kill batches, the burst is not begun again") eq(ends, 4, "each kill's batch closed") eq(depth, 1, "still one held batch")
+	local timers = 0
+	for _, e in ipairs(events) do
+		if e.ms == Chaos.burstWindowMs then timers = timers + 1 end
+	end
+	eq(timers, 1, "one release timer for the whole burst")
+	for _, e in ipairs(events) do
+		if e.ms == Chaos.burstWindowMs then e.fn() e.ms = -1 end
+	end
+	eq(ends, 5, "the timer releases the burst") eq(depth, 0, "balanced after the window")
+	-- the next burst starts a new hold
+	drop(nil, corpse(hero.id, {item(2401)}))
+	eq(depth, 1, "a later kill holds again")
+	for _, e in ipairs(events) do
+		if e.ms == Chaos.burstWindowMs then e.fn() e.ms = -1 end
+	end
+	eq(depth, 0, "and releases again")
+	for _, m in ipairs(more) do
+		for i = #lootPouch.items, 1, -1 do if lootPouch.items[i] == m then table.remove(lootPouch.items, i) end end
+		m.parent = nil
+	end
 	for _, it in ipairs({a, b}) do
 		for i = #lootPouch.items, 1, -1 do if lootPouch.items[i] == it then table.remove(lootPouch.items, i) end end
 		it.parent = nil

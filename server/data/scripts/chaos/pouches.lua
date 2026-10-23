@@ -506,7 +506,8 @@ local function collect(monster, corpse)
 	local notes = {full = {}, sortLater = {}}
 	-- the stow and the sort of one kill are one container update for the client (Chaos.containerBatch, engine patch
 	-- 0054): before, every item moved into an open Loot Bag and every sort move was its own packet and window refresh
-	Chaos.containerBatch(owner, function()
+	-- and the kills of one burst share one update (Chaos.containerBurst: 150 ms, one full packet per open window)
+	Chaos.containerBurst(owner, function()
 		for _, item in ipairs(corpse:getItems() or {}) do
 			local info = infoOf(item, list)
 			local kinds, spilled = P.plan(info, rules, s, c, pouches)
