@@ -14609,6 +14609,25 @@ of every line are read at run time from `Chaos.classes.ascension`, so a new clas
   (dual-wield storage set); a locked Templar was refused at the confirmation; the Ascendant Oracle and `/ascendset` as documented.
   Not measured: the guardian's balance against geared characters (the numbers are first estimates).
 
+## Ascension tracker (`ascension_tracker.lua`, `ascension_tracker_core.lua`, client `game_goals`)
+
+The twin of the Next Goals tracker for the ascension quest (owner 2026-10-23, ROADMAP O123). Rows, in order: Hear the Calling
+(0/1, stage 1+), Proof of Strength (points / `proof.needed`, full from stage 2), Win the Ascension Trial (0/1, stage 3+) and
+Choose your ascended class (0/1). The quest's stages and storages (7101000 block) are read as they are; nothing new is stored.
+
+- **Rule.** Shown for a base class whose line has an ascension, from `Chaos.classes.ascension.minLevel` until the character has
+  ascended. Ascended classes, lines without an ascension and characters below the level get no rows, so the client hides the
+  section. A character the store's Vocation Change took back to a base class sees the finished steps and the Choice again.
+- **Protocol.** No new opcode: the goals opcode 178 carries `ascension {rows = [{key, title, progress, target, state}]}`
+  (empty rows hide the section). Titles are sent in the player's language (pt-BR entries in `i18n_strings.lua`).
+- **Refresh.** At login, when the client asks for `tracker`, and whenever the rows change: a 3 s sweep compares a signature
+  per online character, so the Oracle NPC's own Lua state, the quest script, level ups, a Vocation Change and `/ascendset`
+  all reach it without hooks. Nothing is sent while nothing changed.
+- **Client.** The section sits below the goals in the same panel, with the same rows, wrapping and bars (done rows are green
+  with "Done"). It shares the fold and the Goal Tracker switch (Adventure > Goal Tracker); with no open goals the panel is
+  titled "Ascension".
+- Tests: `tests/ascension_tracker_test.lua` (rules, languages, signature, mocked engine), client `goalsview_test.lua`.
+
 ## Base scripts and the classes (`tools/patch_base_classes.py`)
 
 The base server's scripts test the stock vocation ids (1-10) by number or with `Player.isSorcerer / isDruid / isKnight /

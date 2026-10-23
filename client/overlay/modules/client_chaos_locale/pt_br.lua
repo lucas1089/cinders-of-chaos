@@ -3340,6 +3340,7 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Next Goals"] = "Próximos objetivos",
   ["Goal Tracker"] = "Rastreador de objetivos",
   ["Next Goals (%d) +"] = "Próximos objetivos (%d) +",
+  ["Ascension (%d) +"] = "Ascensão (%d) +",
   ["Level %d-%d: %s"] = "Nível %d-%d: %s",
   ["Level %d+: %s"] = "Nível %d+: %s",
   ["Level %d: %s"] = "Nível %d: %s",
