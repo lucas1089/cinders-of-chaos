@@ -488,7 +488,8 @@ function L.rollExtraLoot(lootTable, tier, ctx)
 end
 
 -- waystone drops (loot_config.lua waystone): removes the waystone items of a corpse when the monster is below the level.
--- Returns the number of items removed. Matches by item name (the base items.xml names them "Waystone Tier I".."VI").
+-- Returns the number of items removed. Matches by item name ("Waystone Tier I".."XV": the base items.xml and
+-- tools/install_waystone_items.py).
 function L.isWaystone(item)
 	local w = cfg().waystone
 	if not (w and w.namePattern) then
@@ -968,8 +969,8 @@ function L.baseMonsterLevel(monster)
 	return ChaosItemMods.estimateMonsterLevel(okE and exp or 0, okH and hp or 0)
 end
 
--- the monster's level: its own level (L.baseMonsterLevel); a waystone tier's monster inside its tier's map counts at
--- the tier's level (waystone_tiers.lua)
+-- the monster's level: its own level (L.baseMonsterLevel); a waystone map's monster counts at its run's tier level
+-- (waystone_tiers.lua)
 function L.monsterLevel(monster)
 	local base = L.baseMonsterLevel(monster)
 	if ChaosWaystoneTiers and ChaosWaystoneTiers.levelOf then
@@ -1118,6 +1119,11 @@ local function processKill(monster, corpse)
 	-- 0a. waystones only drop from high level monsters (owner 2026-10-17). The stock pass (or the monster's own loot
 	-- list) already put them in the corpse; the ones of a monster below waystone.minMonsterLevel are taken out again
 	L.gateWaystones(corpse, ctx.orbLevel, tier)
+	-- the waystones left become the tier of the waystone run the monster died in (Tier I outside the maps); the run's
+	-- boss adds one of the next tier (waystone_tiers.lua, owner 2026-10-23)
+	if ChaosWaystoneTiers and ChaosWaystoneTiers.retierDrops then
+		pcall(ChaosWaystoneTiers.retierDrops, corpse, monster, L.isWaystone)
+	end
 
 	-- 0b. pack combat (pace.lua): the stock loot thinned by the monster's level only (owner 2026-10-21; server/README.md
 	-- "Loot by monster level"; pace_core.lua P.levelPlan): notable drops stay, coins and junk pay for them, coins come

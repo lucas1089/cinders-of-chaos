@@ -13352,24 +13352,48 @@ the queue runs the dungeon with its cap, a monster does nothing, the rate limit.
 siege got the same few lines (config, a warning call in the tick, the cap and the busy text, the registry) without an
 engine test of their own. Not run in game.
 
-## Waystone tiers (`waystone_tiers.lua`, `waystone_tiers_core.lua`, `waystone_tiers_config.lua`, `tools/patch_waystone_bosses.py`)
+## Waystone tiers (`waystone_tiers.lua`, `waystone_tiers_core.lua`, `waystone_tiers_config.lua`, `tools/patch_waystone_bosses.py`, `tools/install_waystone_items.py`)
 
 The base waystone system (`data/scripts/customs/waystone_system/tier_maps.lua`) has six tiers of two maps each. Its
-monster files have the same flat stats in every tier, so every tier showed the bounty pool level, about 468-612. Now a
-tier's own monster type inside a map of its tier counts at that level x `levelMult[tier]` (1.0, 1.2 ... 2.0):
-`ChaosWaystoneTiers.levelOf`, read by `loot.lua` `ChaosLoot.monsterLevel` (the old body is
-`ChaosLoot.baseMonsterLevel`). Shown level: `Chaos.spawnLevel` at onSpawn index 40. Max health x the engine's level
-factor at the first think. Experience x target / native level (onGainExperience). Damage to players x the engine's
-damage factor (`monster_damage.lua`). Summons, other monsters and a tier's type outside its maps are untouched.
-Bosses keep their own level and health, since the base files rise by tier; their damage is x `bossDamage[tier]`.
-Morgrath (tier V) took no damage away from a Katoi Pillar, and Nyxdrath (tier VI) took only the adjacent pillar's
-element. `tools/patch_waystone_bosses.py` (install step `waystonebosses`) makes their health events keep
+monster files have the same flat stats in every tier (hunting level about 468-612). Owner 2026-10-23: the first waystone
+at monster level 1100, the last at 2500, new waystones in between, a gradual rise, and 2-3 scenarios each for the low,
+middle and high levels. So:
+
+| Band | Tiers | Monster level | Scenarios (maps of the base tiers) |
+|---|---|---|---|
+| low | I-V | 1100-1500 | 4: the water cave and the cave (base I), the plain and the cave (base II) |
+| mid | VI-X | 1600-2000 | 4: the plain and the cave (base III), the forest and the underground (base IV) |
+| high | XI-XV | 2100-2500 | 4: the desert and the ice (base V), the undead cave and the forest & desert (base VI) |
+
+Each tier is +100 levels (`tiers` in the config). Tier I-VI are the base items (29845-29850); VII-XV are new items
+41951-41959 (`tools/install_waystone_items.py`, install step `waystoneitems`: copies of the base tablet nodes with their
+own server ids, looks of base III-VI, so no client pair is needed; a hotkey use of one picks the base item of the same
+look, so use them from the backpack or on the device). `tools/patch_waystone_hideout.py` part 3 lets the base device take
+them (`ChaosWaystoneTiers.tablets`), open a map of the tier's band (`optionsFor`), show each tier's level in the window
+(client `game_waystone`) and call `startRun` when the pads open.
+
+**Level.** A base tier's monster type (or boss) inside a map of that base tier counts at the level of the map's run: the
+tier of the last waystone that opened it, else the band's first tier. `ChaosWaystoneTiers.levelOf` is read by `loot.lua`
+`ChaosLoot.monsterLevel` (shown level, item level of drops, late-game damage boost, pack combat). Shown level:
+`Chaos.spawnLevel` at onSpawn index 40. Max health x the engine's level factor at the first think, from the monster's
+hunting level to the run's level (bosses: from the band's first tier level, their base health); experience x target /
+native; damage to players x the engine's damage factor (`monster_damage.lua`), bosses also x `bossDamage` of their base
+tier. `startRun` rescales the monsters already standing in the map (same health share, new shown level); respawns during
+the run spawn at its level. Summons, other monsters and a type outside its maps are untouched.
+
+**Drops.** After the level gate (`loot.lua` `gateWaystones`), `retierDrops` turns every waystone in a corpse into one of
+the run's tier: T 60%, T+1 30%, T+2 10% (`drops.inside`, capped at XV); outside the maps a waystone is a Tier I. The run's
+boss adds one waystone of tier T+1 (`drops.bossNext`).
+
+**Bosses.** Morgrath (base V) took no damage away from a Katoi Pillar, and Nyxdrath (base VI) took only the adjacent
+pillar's element. `tools/patch_waystone_bosses.py` (install step `waystonebosses`) makes their health events keep
 `shieldedShare` (0.25) of such a hit and hint the attacker every `hintSeconds`. The same tool moves the Waystone III
 Frostreaver entrance off a tar tile (32965 to 32964,33236,7). At startup `ChaosWaystoneTiers.clearPaths` removes the
-items that block both tier IV boss levers: a fir tree at 33217,33237,7 and nine rope railings on y 33412, floor 8.
-Both were found by a walk check on the base map. Tests: `tests/waystone_tiers_test.lua`,
-`tools/patch_waystone_bosses_test.py`. The website and codex levels still come from the bounty pool. Balance numbers
-are first guesses. Not run in game.
+items that block both base IV boss levers: a fir tree at 33217,33237,7 and nine rope railings on y 33412, floor 8.
+
+Tests: `tests/waystone_tiers_test.lua`, `tools/install_waystone_items_test.py`, `tools/patch_waystone_hideout_test.py`,
+`tools/patch_waystone_bosses_test.py`, client `waystonelogic_test.lua`. The website and codex levels still come from the
+bounty pool. Balance numbers are first guesses. Not run in game.
 
 ## Rifts (`rift.lua`, `rift_core.lua`, `rift_config.lua`, `rift_layout_core.lua`, client `game_rift`)
 

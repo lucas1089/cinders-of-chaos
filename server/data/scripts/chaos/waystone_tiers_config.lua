@@ -3,25 +3,64 @@
 --
 -- The base waystone system (data/scripts/customs/waystone_system/tier_maps.lua) sends a group with a Waystone Tier
 -- item (I to VI) to one of two maps of that tier. Its monsters (data/monster/lua/waystone_portals/waystone_map_<tier>)
--- have about the same experience and health in every tier (38k-65k experience, 35k-120k health), so their hunting
--- level (bounty_pool.lua, the experience / health estimate) is 468-612 in every tier: player report 2026-10-22 "from
--- tier 1 to tier 4 the monsters are the same level". Here a tier's monsters, inside that tier's maps, count at their
--- hunting level x levelMult[tier]: the level shown after the name, the item level of their drops, the late-game damage
--- boost (monster_damage.lua) and pack combat read it (ChaosLoot.monsterLevel); health, damage to players and experience
--- follow the engine's own level formulas (health x(1 + 0.0074 L), damage x(1 + 0.0015 L), experience x L), as the
--- generated areas scale theirs (areagen_core.lua A.levelScale).
+-- have about the same experience and health in every tier (hunting level 468-612). Owner 2026-10-23: "the first
+-- waystone level 1100 and the last 2500, new waystones for it, a gradual rise; 2-3 scenarios for the low, the middle and
+-- the high levels". So there are 15 tiers now (I-VI the base items, VII-XV ours: tools/install_waystone_items.py), each
+-- 100 levels above the one before, in three bands of five; a band opens one of the maps of its band (the base's two maps
+-- of two base tiers: four scenarios a band). A run's tier sets the level of every monster of the map it opened
+-- (tools/patch_waystone_hideout.py part 3 calls ChaosWaystoneTiers.startRun): the level shown after the name, the item
+-- level of drops, the late-game damage boost and pack combat read it (ChaosLoot.monsterLevel); health, damage to players
+-- and experience follow the engine's own level formulas (health x(1 + 0.0074 L), damage x(1 + 0.0015 L),
+-- experience x L), from the monster's hunting level to the run's level, as the generated areas scale theirs
+-- (areagen_core.lua A.levelScale). A map with no run yet counts at the first tier of its band.
 return {
 	enabled = true,
 
-	-- the level of a tier's monster = its hunting level x this (tier I stays as it was: 468-612)
-	levelMult = {1.0, 1.2, 1.4, 1.6, 1.8, 2.0},
+	-- the tiers, in order: the level of the run's monsters and the Waystone Tier item that opens it. I-VI: the base
+	-- items (base = true: the base window keys them by their client ids); VII-XV: tools/install_waystone_items.py
+	tiers = {
+		{level = 1100, item = 29845, base = true},
+		{level = 1200, item = 29846, base = true},
+		{level = 1300, item = 29847, base = true},
+		{level = 1400, item = 29848, base = true},
+		{level = 1500, item = 29849, base = true},
+		{level = 1600, item = 29850, base = true},
+		{level = 1700, item = 41951},
+		{level = 1800, item = 41952},
+		{level = 1900, item = 41953},
+		{level = 2000, item = 41954},
+		{level = 2100, item = 41955},
+		{level = 2200, item = 41956},
+		{level = 2300, item = 41957},
+		{level = 2400, item = 41958},
+		{level = 2500, item = 41959}
+	},
+
+	-- the bands: tiers first..last open a map of the base tiers `maps` (each base tier has two maps, see `maps` below)
+	--   low  1100-1500: the water cave and the cave of tier I, the plain and the cave of tier II
+	--   mid  1600-2000: the plain and the cave of tier III, the forest and the underground of tier IV
+	--   high 2100-2500: the desert, the ice, the undead cave, the forest & desert
+	bands = {
+		{name = "low", first = 1, last = 5, maps = {1, 2}},
+		{name = "mid", first = 6, last = 10, maps = {3, 4}},
+		{name = "high", first = 11, last = 15, maps = {5, 6}}
+	},
+
+	-- waystone drops (ChaosWaystoneTiers.retierDrops, after loot.lua's level gate): a waystone dropped outside the maps
+	-- is a Tier I; inside a run of tier T it is T, T+1 or T+2 by these chances (never above the last tier), and the
+	-- run's boss always drops one of tier T+1 as well
+	drops = {
+		inside = {{step = 0, chance = 60}, {step = 1, chance = 30}, {step = 2, chance = 10}},
+		bossNext = true
+	},
 
 	-- the engine's level factors (config.lua monsterBonus*: the same numbers areagen_core.lua A.levelScale uses)
 	healthPerLevel = 0.0074,
 	damagePerLevel = 0.0015,
 
-	-- the tier bosses keep their own health and level (the base files already rise by tier: 300k to 1M health); their
-	-- damage to players is x this (player report 2026-10-22: "the boss barely damages")
+	-- the bosses of the base tiers (the base files already rise by base tier: 300k to 1M health): damage to players x
+	-- this (player report 2026-10-22: "the boss barely damages"); in a run above the first tier of its band, health,
+	-- damage and experience x the engine's level factors from that first tier's level to the run's
 	bossDamage = {1.0, 1.1, 1.2, 1.3, 1.4, 1.5},
 
 	-- Morgrath (tier V) takes damage only next to a Katoi Pillar, Nyxdrath (tier VI) only of the element of the pillar
@@ -31,7 +70,8 @@ return {
 	shieldedShare = 0.25,
 	hintSeconds = 20,
 
-	-- the maps of each tier (tier_maps.lua teleportMapping: fromPos / toPos of each area)
+	-- the maps of each base tier (tier_maps.lua teleportMapping: fromPos / toPos of each area); the map's monsters are
+	-- that base tier's (below), whatever the run's tier
 	maps = {
 		{tier = 1, from = {x = 33314, y = 33066, z = 8}, to = {x = 33606, y = 33178, z = 8}},
 		{tier = 1, from = {x = 32848, y = 33353, z = 7}, to = {x = 33096, y = 33506, z = 7}},

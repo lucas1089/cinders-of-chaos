@@ -54,7 +54,7 @@ ChaosMainWindow
     height: 44
     text-wrap: true
     text-align: left
-    !text: tr('Pick a Waystone Tier you carry. Four portals open around the device for 60 seconds and lead to a random map of that tier.')
+    !text: tr('Pick a Waystone Tier you carry. Four portals open around the device for 60 seconds and lead to a random map whose monsters have the level shown.')
 
   UIScrollArea
     id: tierList

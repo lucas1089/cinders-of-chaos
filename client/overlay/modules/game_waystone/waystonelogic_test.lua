@@ -9,14 +9,15 @@ end
 local function ok(c, what) eq(not not c, true, what) end
 
 eq(W.OPCODE, 202, 'the base waystone opcode')
-eq(#W.TIER_CLIENT_IDS, 6, 'six tiers')
+eq(#W.TIER_CLIENT_IDS, 6, 'six base tiers')
+eq(#W.ROMAN, 15, 'fifteen numerals')
 
 -- a patched server: the tiers held, a pick
 local rows = W.rows({ action = 'show', tiers = {
   { clientId = 27189, look = 30001, tier = 1, count = 2 },
   { clientId = 27191, tier = 3, count = 1 },
   { clientId = 27194, tier = 6, count = 0 },
-  { clientId = 99999, tier = 7, count = 5 },     -- not a tier: ignored
+  { clientId = 99999, tier = 16, count = 5 },    -- not a tier: ignored
   'junk', { clientId = 'x' } }, pick = 27191 })
 eq(#rows, 6, 'six rows')
 eq(rows[1].roman, 'I', 'tier I')
@@ -32,6 +33,25 @@ eq(W.firstRow(rows, nil), 1, 'no pick: the lowest tier held')
 eq(W.firstRow(rows, 12345), 1, 'an unknown pick: the lowest held')
 eq(W.countText(rows[1]), '2 held', 'count text')
 eq(W.countText(rows[2]), 'none', 'none text')
+
+-- part 3: fifteen tiers, VII-XV keyed by their server ids, with levels
+local list = {}
+for t = 1, 15 do
+  list[#list + 1] = { clientId = t <= 6 and 27188 + t or 41944 + t, tier = t, count = t == 15 and 1 or 0, level = 1000 + 100 * t }
+end
+local r15 = W.rows({ action = 'show', tiers = list, pick = 41959 })
+eq(#r15, 15, 'fifteen rows')
+eq(r15[15].roman, 'XV', 'tier XV')
+eq(r15[15].clientId, 41959, 'its key')
+eq(r15[1].level, 1100, 'tier I level 1100')
+eq(r15[15].level, 2500, 'tier XV level 2500')
+eq(W.levelText(r15[15]), 'level 2500', 'level text')
+eq(W.firstRow(r15, 41959), 15, 'tier XV picked')
+ok(r15[15].usable and not r15[7].usable, 'held / not held')
+eq(W.levelText({}), '', 'no level: no text')
+r15 = W.rows({ tiers = { { clientId = 41951, tier = 7, count = 1, level = -5 } } })
+eq(#r15, 7, 'the six and tier VII')
+eq(r15[7].level, nil, 'a bad level: none')
 
 -- the request
 local req = W.teleportRequest(rows[3])

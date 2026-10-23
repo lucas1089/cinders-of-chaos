@@ -3850,10 +3850,11 @@ ChaosLocaleStrings['pt-BR'] = {
   ["free (a free reset is used)"] = "grátis (um reset grátis é usado)",
   -- game_waystone: the waystone device window
   ["%d held"] = "%d na bolsa",
+  ["level %d"] = "nível %d",
   ["Only the default look is unlocked."] = "Só o visual padrão está liberado.",
   ["Open portals"] = "Abrir portais",
   ["Opening the portals..."] = "Abrindo os portais...",
-  ["Pick a Waystone Tier you carry. Four portals open around the device for 60 seconds and lead to a random map of that tier."] = "Escolha uma Waystone que você carrega. Quatro portais abrem em volta do dispositivo por 60 segundos e levam a um mapa aleatório desse nível.",
+  ["Pick a Waystone Tier you carry. Four portals open around the device for 60 seconds and lead to a random map whose monsters have the level shown."] = "Escolha uma Waystone que você carrega. Quatro portais abrem em volta do dispositivo por 60 segundos e levam a um mapa aleatório com monstros do nível mostrado.",
   ["Pick a portal look."] = "Escolha o visual do portal.",
   ["Portal look"] = "Visual do portal",
   ["Portal look saved."] = "Visual do portal salvo.",

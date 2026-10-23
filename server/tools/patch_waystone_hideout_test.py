@@ -27,6 +27,10 @@ local clientToServer = { --- Client ID -> Item ID ( Tier Tablets )
   [27194] = 29850, -- Tier VI
 }
 
+local teleportMapping = {
+  [29845] = { { area = { fromPos = Position(33314, 33066, 8) }, destination = Position(33597, 33141, 8) } },
+}
+
 local pendingTablet = {}
 local pendingCenter = {}
 local pendingPortals = {}
@@ -56,6 +60,8 @@ local function handle(player, data)
   end
   if data.action == "teleport" then
     local serverTypeId = clientToServer[data.clientId]
+    local options = teleportMapping[serverTypeId]
+    local finalArea = options and options[1].area
     local center = pendingCenter[guid]
     pendingCenter[guid] = nil
     for _, d in ipairs({}) do
@@ -73,6 +79,7 @@ local function handle(player, data)
         "There is no space in your house to spawn portals.")
       return true
     end
+    player:sendExtendedOpcode(OPCODE, json.encode{ action = "teleport_done" })
   end
 end
 '''
@@ -142,7 +149,12 @@ def check_tree(d, label, lua, xml):
     ok(t.index('local clientToServer') < t.index('local function chaosWaystoneTiers'), label + ': tiers helper after the table')
     ok(t.index('You have no waystone of that tier.') < t.index('local center = pendingCenter[guid]'), label + ': item check first')
     ok(t.index('chaosTierUse:register()') > t.index('showTabletUI:register()'), label + ': tier action after the device')
-    ok('chaosTierUse:id(29845, 29846, 29847, 29848, 29849, 29850)' in t, label + ': the six tiers')
+    ok('chaosTierUse:id(29845, 29846, 29847, 29848, 29849, 29850, 41951, ' in t and ', 41959)' in t, label + ': the fifteen tiers')
+    ok(t.count(P.MARK3) == 1, label + ': part 3 once')
+    ok(t.index('local function chaosWaystoneOptions') > t.index('local teleportMapping'), label + ': part 3 helpers after the mapping')
+    ok(t.index('chaosWaystoneMerge()') < t.index('local serverTypeId = clientToServer[data.clientId]'), label + ': merged before the lookup')
+    ok('local options = chaosWaystoneOptions(serverTypeId)' in t, label + ': the band\'s maps')
+    ok(t.index('ChaosWaystoneTiers.startRun') > t.index('action = "teleport_done"'), label + ': the run\'s tier after the pads')
     return t
 
 
@@ -194,6 +206,7 @@ try:
                 'function a:register() actions[#actions + 1] = self end return a end\n'
                 'json = {encode = function(t) return t end}\n'
                 'MESSAGE_INFO_DESCR = 1\n'
+                'function Position(x, y, z) return {x = x, y = y, z = z} end\n'
                 'function Tile(pos) return {getHouse = function() return pos.house end} end\n'
                 'local held = {[29845] = 2, [29847] = 1}\n'
                 'local me = {}\n'
@@ -210,7 +223,7 @@ try:
                 'local function eq(a, b, m) if a ~= b then error(m .. ": " .. tostring(a), 2) end end\n'
                 'eq(#actions, 2, "device action and tier action")\n'
                 'local dev, tier = actions[1], actions[2]\n'
-                'eq(#tier.ids, 6, "six tier ids")\n'
+                'eq(#tier.ids, 15, "fifteen tier ids")\n'
                 'dev.onUse(me, device, dpos, nil, dpos, false)\n'
                 'local m = sent[#sent]\n'
                 'eq(m.action, "show", "show")\n'
@@ -231,6 +244,14 @@ try:
                 'eq(sent[#sent].pick, 27191, "used on the device: tier III picked")\n'
                 'dev.onUse(me, device, dpos, nil, dpos, false)\n'
                 'eq(sent[#sent].pick, nil, "the pick is used once")\n'
+                'held[41959] = 3\n'
+                'ChaosWaystoneTiers = {tablets = function() local o = {} for i = 41951, 41959 do o[i] = i end return o end, '
+                'tierLevel = function(t) return 1000 + 100 * t end}\n'
+                'dev.onUse(me, device, dpos, nil, dpos, false)\n'
+                'm = sent[#sent]\n'
+                'eq(#m.tiers, 15, "part 3: fifteen tiers")\n'
+                'eq(m.tiers[1].level, 1100, "tier I level") eq(m.tiers[15].clientId, 41959, "tier XV keyed by its server id")\n'
+                'eq(m.tiers[15].count, 3, "tier XV held") eq(m.tiers[15].level, 2500, "tier XV level")\n'
                 'print("part 2 ok")\n') % lua_path(d)
             r = subprocess.run([lua, '-e', probe2], stdin=subprocess.DEVNULL, capture_output=True, timeout=30)
             ok(r.returncode == 0 and b'part 2 ok' in r.stdout, '%s runs part 2: %s %s' % (lua, r.stdout[-300:], r.stderr[:300]))

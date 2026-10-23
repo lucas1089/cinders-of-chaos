@@ -4,7 +4,8 @@
 -- The device is the base server's waystone system (data/scripts/customs/waystone_system/tier_maps.lua of the installed
 -- server, made to work in the hideout by server/tools/patch_waystone_hideout.py). It talks on extended opcode 202 in
 -- its own JSON, without the {action, data} wrapper of the Chaos modules:
---   server -> client  show {tiers = {{clientId, look, tier, count}, ...}, pick}   (tiers and pick: patch part 2)
+--   server -> client  show {tiers = {{clientId, look, tier, count, level}, ...}, pick}   (tiers and pick: patch part 2;
+--                     part 3: the tiers VII-XV keyed by their server ids, and each tier's monster level)
 --                     teleport_done | teleport_error {text} | choice_show {choices = {{id, text}}} | choice_done |
 --                     choice_error {text} | wrap_done | wrap_error {text}
 --   client -> server  teleport {clientId} | choice | choice_apply {choiceId}
@@ -14,9 +15,10 @@ ChaosWaystone = ChaosWaystone or {}
 local W = ChaosWaystone
 
 W.OPCODE = 202
--- the client ids of the Waystone Tier I-VI items, in tier order (tier_maps.lua clientToServer; server ids 29845-29850)
+-- the client ids of the Waystone Tier I-VI items, in tier order (tier_maps.lua clientToServer; server ids 29845-29850).
+-- A server with part 3 of the patch lists VII-XV as well (owner 2026-10-23: 15 tiers, monster level 1100 to 2500).
 W.TIER_CLIENT_IDS = { 27189, 27190, 27191, 27192, 27193, 27194 }
-W.ROMAN = { 'I', 'II', 'III', 'IV', 'V', 'VI' }
+W.ROMAN = { 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII', 'XIII', 'XIV', 'XV' }
 
 local function whole(v)
   v = tonumber(v)
@@ -25,33 +27,55 @@ local function whole(v)
   return v
 end
 
--- the six rows of the window from a "show" message: {tier, roman, clientId, look (the icon's client id), count, usable}. count is nil when the
--- server did not say (a server without part 2 of the patch): such a row stays usable and the server decides.
+-- the rows of the window from a "show" message, in tier order: {tier, roman, clientId, look (the icon's client id), count,
+-- level, usable}. The six base tiers always; a tier the server lists (a whole tier 1..15 with a client id) adds or
+-- replaces its row. count is nil when the server did not say (a server without part 2 of the patch): such a row stays
+-- usable and the server decides. level is nil without part 3.
 function W.rows(msg)
-  local byClient = {}
+  local byTier = {}
+  for i, clientId in ipairs(W.TIER_CLIENT_IDS) do
+    byTier[i] = { clientId = clientId }
+  end
   local tiers = type(msg) == 'table' and type(msg.tiers) == 'table' and msg.tiers or nil
   if tiers then
+    local base = {}
+    for i, clientId in ipairs(W.TIER_CLIENT_IDS) do base[clientId] = i end
     for _, t in ipairs(tiers) do
       if type(t) == 'table' then
-        local id = whole(t.clientId)
-        if id then byClient[id] = t end
+        local id, tier = whole(t.clientId), whole(t.tier)
+        if id and base[id] then tier = base[id] end
+        if id and tier and tier >= 1 and tier <= #W.ROMAN then
+          byTier[tier] = { clientId = id, info = t }
+        end
       end
     end
   end
   local out = {}
-  for i, clientId in ipairs(W.TIER_CLIENT_IDS) do
-    local t = byClient[clientId]
-    local count = nil
-    if tiers then
-      count = t and whole(t.count) or 0
-      if count < 0 then count = 0 end
+  for tier = 1, #W.ROMAN do
+    local e = byTier[tier]
+    if e then
+      local t = e.info
+      local count = nil
+      if tiers then
+        count = t and whole(t.count) or 0
+        if count < 0 then count = 0 end
+      end
+      local look = t and whole(t.look) or e.clientId
+      if look <= 0 then look = e.clientId end
+      local level = t and whole(t.level) or nil
+      if level and level <= 0 then level = nil end
+      out[#out + 1] = { tier = tier, roman = W.ROMAN[tier], clientId = e.clientId, look = look, count = count,
+        level = level, usable = count == nil or count > 0 }
     end
-    local look = t and whole(t.look) or clientId
-    if look <= 0 then look = clientId end
-    out[i] = { tier = i, roman = W.ROMAN[i], clientId = clientId, look = look, count = count,
-      usable = count == nil or count > 0 }
   end
   return out
+end
+
+-- the level text of a row ('' without a level)
+function W.levelText(row, tr)
+  tr = tr or function(s, ...) return select('#', ...) > 0 and string.format(s, ...) or s end
+  if type(row) ~= 'table' or not row.level then return '' end
+  return tr('level %d', row.level)
 end
 
 -- the row to select first: the server's pick (a tier used on the device), else the lowest tier the player holds,
