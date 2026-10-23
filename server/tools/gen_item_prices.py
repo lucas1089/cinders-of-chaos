@@ -333,7 +333,12 @@ def chaos_monsters():
 
 def store_ids():
     text = read(os.path.join(DATA, 'scripts', 'chaos', 'shop_config.lua'))
-    return {int(x) for x in re.findall(r'kind\s*=\s*"item"\s*,\s*id\s*=\s*(\d+)', text)}
+    ids = {int(x) for x in re.findall(r'kind\s*=\s*"item"\s*,\s*id\s*=\s*(\d+)', text)}
+    # the potion packs are built from POTION_PACKS rows {id, coins, name, text} (2026-10-23)
+    m = re.search(r'local POTION_PACKS = \{(.*?)\n\}', text, re.S)
+    if m:
+        ids |= {int(x) for x in re.findall(r'^\s*\{(\d+),', m.group(1), re.M)}
+    return ids
 
 
 def uniques():
