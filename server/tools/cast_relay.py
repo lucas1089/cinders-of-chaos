@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The live cast relay (server/README.md "Live spectator", phase 2; docs/ADMIN_APP.md "Assistir jogador").
+"""The live cast relay (server/README.md "Live spectator", phases 2 and 3; docs/ADMIN_APP.md "Assistir jogador").
 
 The engine (src-patch 0064) mirrors the game messages of one player to a port on 127.0.0.1 (config.lua castPort):
 u16 length + one message body per frame, plain 10.98 protocol as our client reads it. This tool reads that port, keeps
@@ -17,11 +17,19 @@ Lines (each a JSON object with "t"):
            e (effect), m (missile); "key"; "png" base64; cell "cw","ch"; anchor "ax","ay" (the cell's top-left from the
            tile's top-left); items / effects / missiles: "np" patterns (rows), "nf" frames (columns), "fd" ms per
            frame; outfits: rows north, east, south, west; "ni" idle then "nw" walking frames (columns), "fd"
-  full     the whole view: "c" [x, y, z] the camera, "tiles", "cr", "st", "light"
+  full     the whole view: "c" [x, y, z] the camera, "tiles", "cr", "st", "light"; protocol 3: "fl" [first, last]
+           (the floors the client draws), "ft" (tiles of the other floors)
   d        changes since the last line (at most ~20 a second): "c", "tiles", "cr", "walk", "fx", "mi", "tx", "say",
-           "st", "light", only the keys that changed
+           "st", "light", only the keys that changed; protocol 3: "fl" (when the range changed), "fc" (floors that
+           came into view whole: forget their tiles first), "ft", "fxf", "mif" (effects / missiles of other floors)
   hb       nothing happened for a second
   end      {"t":"end","why"}: the relay stops
+Protocol 3 (phase 3, the hello's "v"; older lines are read as 2): every addition is a new key, so an older app keeps
+working. "ft" tiles are [z, x, y, under, over, elevation] (an empty tile clears the app's) for the floors in "fl" and
+the cells the app can show: floor f is drawn (camera z - f) tiles up and left. An effect on another floor is
+[x, y, sheet key, pattern, z], a missile [fx, fy, tx, ty, key, pattern, ms, z]. Light: the "light" key [intensity,
+colour], a creature's "lt" [intensity, colour] (absent: none), an item / effect / missile sheet's "lt" when it shines
+and "gr" 1 on a ground. The floors follow the client's rule for floors covered by a roof or ceiling (World.floors).
 A tile is [x, y, under, over, elevation] on the camera's floor: under / over are lists of [sheet key, pattern, lift]
 in drawing order (ground, borders, bottom, common items oldest first; then the creatures; then the top items). A
 creature is {"n","hp","d","o" (outfit sheet key or null),"p" [x, y, z] or null,"sk","sh","ty","sp"}. A walk is
@@ -55,6 +63,7 @@ sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.join(REPO, 'client', 'tools', 'sprites'))
 sys.path.insert(0, os.path.join(REPO, 'website', 'tools'))
 
+PROTOCOL = 3            # the hello line's "v": 2 = phase 2 (camera floor only); 3 adds floors, light, other-floor effects
 MAX_THINGS = 10
 SEA_FLOOR = 7
 UNDERGROUND = 8
@@ -141,11 +150,25 @@ class Msg:
 # ------------------------------------------------------------------------------------------------ thing types
 class ItemType:
     """what the relay needs of one client item: stack priority, wire bytes, pattern rules, elevation, ground speed"""
-    __slots__ = ('prio', 'sub', 'phase', 'stack', 'fluid', 'elev', 'speed')
+    __slots__ = ('prio', 'sub', 'phase', 'stack', 'fluid', 'elev', 'speed', 'block', 'dont_hide', 'light')
 
-    def __init__(self, prio=5, sub=False, phase=False, stack=False, fluid=False, elev=0, speed=0):
+    def __init__(self, prio=5, sub=False, phase=False, stack=False, fluid=False, elev=0, speed=0, block=False,
+                 dont_hide=False, light=None):
         self.prio, self.sub, self.phase, self.stack, self.fluid = prio, sub, phase, stack, fluid
         self.elev, self.speed = elev, speed
+        self.block, self.dont_hide, self.light = block, dont_hide, light    # blocks the view / is never hidden / [i, c]
+
+
+def light_of(flags):
+    """[intensity, colour] of a dat thing that shines (the client's light flag), else None"""
+    v = flags.get('light')
+    if not v:
+        return None
+    try:
+        i, c = int(v[0]), int(v[1])
+    except (TypeError, ValueError, IndexError):
+        return None
+    return [min(i, 255), min(c, 255)] if i > 0 else None
 
 
 def item_types(dat, otb_nodes=None):
@@ -169,7 +192,8 @@ def item_types(dat, otb_nodes=None):
         stack = 'stackable' in f
         fluid = 'fluid' in f or 'splash' in f
         out[t.id] = ItemType(prio, stack or quiver or fluid, t.phases > 1, stack, fluid and not stack,
-                             int(f.get('elevation', 0) or 0), int(f.get('ground', 0) or 0) if 'ground' in f else 0)
+                             int(f.get('elevation', 0) or 0), int(f.get('ground', 0) or 0) if 'ground' in f else 0,
+                             'blockmissile' in f, 'donthide' in f, light_of(f))
     if otb_nodes:
         seen = set()
         for _sid, cid, group, flags in otb_nodes:
@@ -266,17 +290,83 @@ class World:
         self.mi = []
         self.tx = []
         self.say = []
+        self.ch_ftiles = set()      # changed tiles on the other floors
+        self.fxf = []               # effects and missiles on the other floors (phase 3)
+        self.mif = []
         self.ch_stats = False
         self.ch_light = False
         self.ch_central = False
 
     def dirty(self):
         return bool(self.full or self.ch_tiles or self.ch_cr or self.walks or self.fx or self.mi or self.tx
-                    or self.say or self.ch_stats or self.ch_light or self.ch_central)
+                    or self.say or self.ch_stats or self.ch_light or self.ch_central or self.ch_ftiles or self.fxf
+                    or self.mif)
 
     def touch(self, pos):
-        if self.central is not None and pos[2] == self.central[2]:
+        if self.central is None:
+            return
+        if pos[2] == self.central[2]:
             self.ch_tiles.add(pos)
+        elif len(self.ch_ftiles) < 20000:
+            self.ch_ftiles.add(pos)
+
+    # -------------------------------------------------------- the floors the client draws (phase 3)
+    def last_floor(self):
+        """the lowest floor drawn: 7 above ground, two below the camera underground"""
+        z = self.central[2]
+        return SEA_FLOOR if z <= SEA_FLOOR else min(MAX_Z, z + AWARE_UNDER)
+
+    def limits_view(self, pos, free):
+        """Tile::limitsFloorsView of the client: does this tile hide the floors under it? free: the tile is seen
+        through an opening, so only a ground counts; else a ground or a bottom item (walls, window frames) does. A
+        thing marked don't-hide never does."""
+        for th in self.tiles.get(pos) or ():
+            if th[0] != 'i':
+                continue
+            it = self.items.get(th[1])
+            if it is None or it.dont_hide:
+                continue
+            if it.prio == 0 or (not free and it.prio == 2):
+                return True
+        return False
+
+    def look_possible(self, pos):
+        st = self.tiles.get(pos)
+        if not st:
+            return False
+        return not any(th[0] == 'i' and self.items.get(th[1]) is not None and self.items[th[1]].block for th in st)
+
+    def first_floor(self):
+        """the highest floor drawn (MapView::calcFirstVisibleFloor of the client): floor 0 above ground (two above
+        the camera underground), raised for every floor a roof or ceiling closes over the camera or the open tiles
+        beside it. Each floor up, the tile physically above stays put and the tile geometrically above moves one
+        east and one south."""
+        cx, cy, cz = self.central
+        first = 0 if cz <= SEA_FLOOR else max(0, cz - AWARE_UNDER)
+        for ix in (-1, 0, 1):
+            for iy in (-1, 0, 1):
+                if first >= cz:
+                    return cz
+                if not ((ix == 0 and iy == 0) or (abs(ix) != abs(iy) and self.look_possible((cx + ix, cy + iy, cz)))):
+                    continue
+                look = self.look_possible((cx + ix, cy + iy, cz))
+                px, py = cx + ix, cy + iy
+                k = 0
+                while True:
+                    k += 1
+                    if cz - k < 0 or cz - k < first:
+                        break
+                    if self.limits_view((px, py, cz - k), not look):
+                        first = cz - k + 1
+                        break
+                    if self.limits_view((px + k, py + k, cz - k), look):
+                        first = cz - k + 1
+                        break
+        return min(first, cz)
+
+    def floors(self):
+        """[first, last]: the floors the client draws, the camera's among them"""
+        return [self.first_floor(), self.last_floor()]
 
     # -------------------------------------------------------- aware range
     def left(self):
@@ -677,8 +767,13 @@ class World:
     def op_effect(self, m, _now):
         pos = m.pos()
         kind = m.u16()
-        if self.central and pos[2] == self.central[2] and len(self.fx) < 200:
-            self.fx.append([pos[0], pos[1], kind])
+        if not self.central:
+            return
+        if pos[2] == self.central[2]:
+            if len(self.fx) < 200:
+                self.fx.append([pos[0], pos[1], kind])
+        elif len(self.fxf) < 200:
+            self.fxf.append([pos[0], pos[1], kind, pos[2]])
 
     def op_text(self, m, _now):
         pos = m.pos()
@@ -694,8 +789,13 @@ class World:
         a = m.pos()
         b = m.pos()
         kind = m.u8()
-        if self.central and a[2] == self.central[2] and len(self.mi) < 200:
-            self.mi.append([a[0], a[1], b[0], b[1], kind])
+        if not self.central:
+            return
+        if a[2] == self.central[2]:
+            if len(self.mi) < 200:
+                self.mi.append([a[0], a[1], b[0], b[1], kind])
+        elif len(self.mif) < 200:
+            self.mif.append([a[0], a[1], b[0], b[1], kind, a[2]])
 
     def _cr(self, m):
         cid = m.u32()
@@ -944,17 +1044,24 @@ class Sheets:
         t = self.items.get(cid)
         if t is None:
             return None
-        return self._grid(GroupView(t), 'i', 'i%d' % cid, 500, {'el': int(t.flags.get('elevation', 0) or 0)})
+        extra = {'el': int(t.flags.get('elevation', 0) or 0)}
+        if 'ground' in t.flags:
+            extra['gr'] = 1
+        if light_of(t.flags):
+            extra['lt'] = light_of(t.flags)
+        return self._grid(GroupView(t), 'i', 'i%d' % cid, 500, extra)
 
     def effect(self, kind):
         if not 1 <= kind <= len(self.dat.effects):
             return None
-        return self._grid(GroupView(self.dat.effects[kind - 1]), 'e', 'e%d' % kind, 75)
+        t = self.dat.effects[kind - 1]
+        return self._grid(GroupView(t), 'e', 'e%d' % kind, 75, {'lt': light_of(t.flags)} if light_of(t.flags) else None)
 
     def missile(self, kind):
         if not 1 <= kind <= len(self.dat.missiles):
             return None
-        return self._grid(GroupView(self.dat.missiles[kind - 1]), 'm', 'm%d' % kind, 100)
+        t = self.dat.missiles[kind - 1]
+        return self._grid(GroupView(t), 'm', 'm%d' % kind, 100, {'lt': light_of(t.flags)} if light_of(t.flags) else None)
 
     @staticmethod
     def frames(t):
@@ -1053,6 +1160,8 @@ class View:
         self.w = world
         self.sheets = sheets
         self.dims = dims or {}       # {client id: (px, py, pz)}
+        self.fl = None               # [first, last] floor the app was told
+        self.floors_sent = set()     # the other floors whose tiles the app holds
 
     def item_pattern(self, cid, sub, pos):
         px, py, pz = self.dims.get(cid, (1, 1, 1))
@@ -1108,9 +1217,13 @@ class View:
             key = 'i%d' % o['x']
             self._sheet(out, key, lambda: self.sheets.item(o['x']))
         p = c.get('p')
-        return {'n': c.get('n', ''), 'hp': c.get('hp', 0), 'd': c.get('d', 2), 'o': key,
-                'p': list(p) if p is not None else None, 'sk': c.get('sk', 0), 'sh': c.get('sh', 0),
-                'ty': c.get('ty', 0), 'sp': c.get('sp', 0)}
+        v = {'n': c.get('n', ''), 'hp': c.get('hp', 0), 'd': c.get('d', 2), 'o': key,
+             'p': list(p) if p is not None else None, 'sk': c.get('sk', 0), 'sh': c.get('sh', 0),
+             'ty': c.get('ty', 0), 'sp': c.get('sp', 0)}
+        lt = c.get('lt')
+        if lt and lt[0]:
+            v['lt'] = [lt[0], lt[1]]        # phase 3: the creature's own light [intensity, colour]; absent: none
+        return v
 
     def floor_tiles(self):
         if self.w.central is None:
@@ -1119,6 +1232,41 @@ class View:
         return [p for p in self.w.tiles if p[2] == cz and abs(p[0] - cx) <= self.w.horizontal()
                 and abs(p[1] - cy) <= self.w.vertical()]
 
+    def in_window(self, p):
+        """is a tile of another floor inside the cells the app can show? Floor f is drawn shifted (cz - f) tiles
+        up and left, so its tile x sits at the cell x - (cz - f)."""
+        w = self.w
+        cx, cy, cz = w.central
+        s = cz - p[2]
+        return -(w.left() + 1) <= p[0] - s - cx <= w.right() + 1 and -(w.top() + 1) <= p[1] - s - cy <= w.bottom() + 1
+
+    def other_floors(self, fl):
+        cz = self.w.central[2]
+        return {f for f in range(fl[0], fl[1] + 1) if f != cz}
+
+    def floor_entries(self, pos_list, out, only=None):
+        """[z, x, y, under, over, elevation] of tiles on other floors; an empty tile clears the app's"""
+        res = []
+        for p in sorted(pos_list):
+            if (only is None or p[2] in only) and self.in_window(p):
+                x, y, under, over, elev = self.tile(p, out)
+                res.append([p[2], x, y, under, over, elev])
+        return res
+
+    def fx_line(self, out, x, y, kind):
+        self._sheet(out, 'e%d' % kind, lambda k=kind: self.sheets.effect(k))
+        t = self.sheets.dat.effects[kind - 1] if self.sheets and 1 <= kind <= len(self.sheets.dat.effects) else None
+        pat = (y % t.py) * t.px + x % t.px if t is not None else 0
+        return [x, y, 'e%d' % kind, pat]
+
+    def mi_line(self, out, fx_, fy, tx, ty, kind):
+        self._sheet(out, 'm%d' % kind, lambda k=kind: self.sheets.missile(k))
+        px, py = missile_pattern(fx_, fy, tx, ty)
+        t = self.sheets.dat.missiles[kind - 1] if self.sheets and 1 <= kind <= len(self.sheets.dat.missiles) else None
+        pat = (py % t.py) * t.px + px % t.px if t is not None else py * 3 + px
+        ms = int(150 * math.sqrt(max(1, (tx - fx_) ** 2 + (ty - fy) ** 2)))
+        return [fx_, fy, tx, ty, 'm%d' % kind, pat, min(ms, 2000)]
+
     def lines(self):
         """the lines for what changed (sheets first); the World's changes start again"""
         w = self.w
@@ -1126,6 +1274,8 @@ class View:
         if w.central is None:
             w.reset_changes()
             return out
+        fl = w.floors()
+        others = self.other_floors(fl)
         if w.full:
             tiles = [self.tile(p, out) for p in sorted(self.floor_tiles())]
             cr = {}
@@ -1133,7 +1283,12 @@ class View:
                 v = self.creature(cid, out)
                 if v is not None:
                     cr[str(cid)] = v
-            line = {'t': 'full', 'c': list(w.central), 'id': w.player, 'tiles': tiles, 'cr': cr}
+            line = {'t': 'full', 'c': list(w.central), 'id': w.player, 'tiles': tiles, 'cr': cr, 'fl': fl}
+            ft = self.floor_entries([p for p in w.tiles if p[2] in others and w.tiles[p]], out, others)
+            if ft:
+                line['ft'] = ft
+            self.floors_sent = set(others)
+            self.fl = fl
             if w.stats:
                 line['st'] = w.stats
             if w.light:
@@ -1149,6 +1304,19 @@ class View:
                 line['c'] = list(w.central)
             if w.ch_tiles:
                 line['tiles'] = [self.tile(p, out) for p in sorted(w.ch_tiles)]
+            # the other floors: the range, floors that came into view whole (the app clears them first), changes
+            if fl != self.fl:
+                line['fl'] = fl
+                self.fl = fl
+            newly = others - self.floors_sent
+            self.floors_sent = set(others)
+            ft = []
+            if newly:
+                line['fc'] = sorted(newly)
+                ft = self.floor_entries([p for p in w.tiles if p[2] in newly and w.tiles[p]], out, newly)
+            ft += self.floor_entries([p for p in w.ch_ftiles if p[2] not in newly], out, others)
+            if ft:
+                line['ft'] = ft
             if w.ch_cr:
                 cr = {}
                 for cid in sorted(w.ch_cr):
@@ -1164,25 +1332,16 @@ class View:
         if w.walks:
             line['walk'] = w.walks
         if w.fx:
-            fx = []
-            for x, y, kind in w.fx:
-                self._sheet(out, 'e%d' % kind, lambda k=kind: self.sheets.effect(k))
-                t = self.sheets.dat.effects[kind - 1] if self.sheets and 1 <= kind <= len(self.sheets.dat.effects) \
-                    else None
-                pat = (y % t.py) * t.px + x % t.px if t is not None else 0
-                fx.append([x, y, 'e%d' % kind, pat])
-            line['fx'] = fx
+            line['fx'] = [self.fx_line(out, x, y, kind) for x, y, kind in w.fx]
         if w.mi:
-            mi = []
-            for fx_, fy, tx, ty, kind in w.mi:
-                self._sheet(out, 'm%d' % kind, lambda k=kind: self.sheets.missile(k))
-                px, py = missile_pattern(fx_, fy, tx, ty)
-                t = self.sheets.dat.missiles[kind - 1] if self.sheets and 1 <= kind <= len(self.sheets.dat.missiles) \
-                    else None
-                pat = (py % t.py) * t.px + px % t.px if t is not None else py * 3 + px
-                ms = int(150 * math.sqrt(max(1, (tx - fx_) ** 2 + (ty - fy) ** 2)))
-                mi.append([fx_, fy, tx, ty, 'm%d' % kind, pat, min(ms, 2000)])
-            line['mi'] = mi
+            line['mi'] = [self.mi_line(out, *m) for m in w.mi]
+        # phase 3: effects and missiles on the other floors that are drawn (a separate key, an old app ignores it)
+        fxf = [self.fx_line(out, x, y, kind) + [z] for x, y, kind, z in w.fxf if z in others]
+        if fxf:
+            line['fxf'] = fxf
+        mif = [self.mi_line(out, a, b, c, d, kind) + [z] for a, b, c, d, kind, z in w.mif if z in others]
+        if mif:
+            line['mif'] = mif
         if w.tx:
             line['tx'] = w.tx
         if w.say:
@@ -1249,7 +1408,7 @@ class Session:
                     raise WrongTarget(self.world.name)
                 self.started = True
                 out.append({'t': 'hello', 'id': self.world.player, 'name': self.world.name,
-                            'aware': list(self.world.aware)})
+                            'aware': list(self.world.aware), 'v': PROTOCOL})
                 continue
             self.world.frame(body, now_ms)
         return out

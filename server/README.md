@@ -18180,8 +18180,8 @@ quero ver o gameplay em tempo real. Faça o patch na engine." The phone shows th
   at about 30 frames a second: the 15 x 11 tiles of the player's floor with item patterns and animation, elevation,
   creatures walking between tiles with their walking frames, effects, missiles, health bars, names, numbers and
   speech, scaled without smoothing. The camera follows the player's steps. Level, health and mana show under it. It
-  stops on Parar, on leaving the tab or the app, on an error and after 30 minutes. Not drawn: other floors, light,
-  the client's own interface.
+  stops on Parar, on leaving the tab or the app, on an error and after 30 minutes. Phase 3 (below) adds the other
+  floors and the light. Not drawn: the client's own interface.
 - Tests: `tools/chaoscast_test.cpp` (the message whitelist, frames, hello bytes; CI), `tools/cast_relay_test.py`
   (synthetic frames for every opcode, both client markers, sheets, the loop with a local port, a fuzz; CI),
   `tests/remote_cmd_test.lua` (`cast`, `caststop`), `server/deploy/chaos_ctl_test.py` (cast refusals, lock, quoting),
@@ -18190,6 +18190,51 @@ quero ver o gameplay em tempo real. Faça o patch na engine." The phone shows th
   listened on 127.0.0.1 only, `cast Loadbot Aaa` through `remote.cmd`, and in 45 s the relay wrote hello, 170 sheets,
   the full view and 76 changes (walks, effects, numbers, speech) with no resync and no sanitizer report. The full view
   drawn from those lines matched the game. Untested: the app on a phone, `chaos-ctl.sh cast` on the VPS.
+
+**Phase 3: the other floors and the light (O152, `cast_relay.py` protocol 3, `CastView.java`, `CastMath.java`).**
+Owner, 2026-10-23, same request as phase 2: the view should be what the client shows. No engine change: src-patch 0064
+already mirrors the floors (map, `0x4B`, floor changes), world light (`0x82`), creature light (`0x8D`), magic effects
+(`0x83`) and distance missiles (`0x85`); phase 2 drew effects and missiles of the camera floor only and dropped the rest.
+- **Version.** The hello line carries `"v":3` (phase 2 had no `v`, read as 2). Every addition is a new key or a new
+  field after the old ones; `tiles`, `fx`, `mi` and `cr` keep their meaning (the camera floor). An older app ignores the
+  new keys and shows the camera floor as before; a newer app on an older relay (no `v`, no `fl`) draws one floor, unlit.
+- **Floors the client draws.** `World.floors()` = `[first, last]`: `last` is 7 above ground (the camera floor + 2
+  underground, at most 15); `first` is 0 above ground (camera - 2 underground), raised for every floor a roof or
+  ceiling closes over the camera. The rule is the client's `calcFirstVisibleFloor` as remembered: for the camera tile
+  and the open (look-possible, nothing that blocks a missile) tiles north, south, east and west of it, walk up one floor
+  at a time; the tile straight above and the tile one east and one south per floor (the geometric cover) end the walk
+  when a tile limits the view (`limitsFloorsView`: a ground, or for a tile seen from an open one also a bottom item such
+  as a wall; things with the don't-hide flag never do). The base client tree is not in the repo, so this is an
+  approximation of the real rule; a wrong floor shows as a roof drawn or hidden by mistake.
+- **Lines.** `full` has `fl` and `ft`; `d` has `fl` when the range changed, `fc` (floors that came into view whole:
+  the app drops their old tiles first) and `ft`. `ft` is a list of `[z, x, y, under, over, elevation]` (the tile format
+  of `tiles` with the floor first; an empty tile clears the app's). Only floors in `fl` and tiles in the window the app
+  can show (floor f is drawn `camera z - f` tiles up and left, so tile x sits at cell x - (camera z - f)) are sent;
+  a change on a hidden floor is not sent, the floor comes back whole (`fc`) when it is shown again. `fxf` is
+  `[x, y, sheet key, pattern, z]` and `mif` `[fx, fy, tx, ty, key, pattern, ms, z]` for floors other than the camera's
+  (dropped when their floor is not drawn). Numbers and speech stay on the camera floor, as in the client.
+- **Light data.** The `spr` line of an item sheet has `gr` (a ground) and `lt` `[intensity, colour]` when the dat thing
+  shines; effect and missile sheets have `lt` likewise; a creature in `cr` has `lt` when its light is on (the key is
+  absent when off); the `light` key (`[intensity, colour]`) was already in phase 2. Item lights need no tile change:
+  the app looks the sheet of each drawn entry up.
+- **App.** `CastView.java` keeps tiles of every floor, draws the floors from the lowest to the highest (a floor above
+  over the ones under it, creatures, effects and missiles of a floor in that floor's pass; health bars and names for the
+  camera floor only), skips the cells a ground on a floor above covers (the client does this too, and it keeps 8 floors
+  cheap), and then lights the frame as the client's light view does: a quarter-size bitmap filled with the ambient
+  light (the world light's colour at intensity / 255; underground 0, the sun does not reach), a round glow added for
+  every source (creatures, item entries of the drawn floors, effects and missiles that shine; radius intensity x 32 px
+  capped at 8 tiles, brighter the stronger), multiplied over the frame and smoothed up. The player gets a light of 2 of
+  his own in the dark (world light under 64) and underground, as the client does. Full daylight (every channel of the
+  ambient at 94% or more) draws nothing. `CastMath.java` holds the arithmetic (cells of other floors, 8-bit colours, the
+  light numbers) without Android classes.
+- Tests: `cast_relay_test.py` now also covers the visible-floor rule (open sky, roof above, geometric roof, a roof that
+  is not above, don't-hide ground, wall, open and blocked neighbour tiles, underground, the lowest floor), the full and
+  delta lines of other floors (window, empty tile, roof appears and goes, hidden floor silent, whole floors again with
+  `fc`), effects and missiles on other floors (and their cap, and dropped when hidden), creature, item and effect light,
+  the `v` field. The app compiles against the Android API jar with `javac` (there is no Android SDK on the build
+  machine, so no gradle build was run); `CastMath` was run on a JVM. Untested: the drawing itself (the floors, the
+  light overlay and its speed) on any device, the cover rule against the real client, a live run of the new lines on a
+  server.
 
 **chaos-ctl.sh settings file (`/etc/chaos/ctl.conf`).** Owner, 2026-10-20: the app showed "service not found, codigo 5"
 on the beta VPS. The kit there runs from `/opt/chaos-trial` (`tools/linux/server/start-server.sh`) with no systemd

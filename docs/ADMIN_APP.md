@@ -121,8 +121,11 @@ instalada é desconhecida: o passo 2 baixa a mais nova e, se o `tfs` for igual a
   muda no jogo.
   - **Ao vivo** (`cast NOME`): o jogo como o jogador vê, em movimento, uns 30 quadros por segundo. Os 15 x 11
     quadrados do andar dele, com itens animados, criaturas andando, magias, projéteis, barras de vida, nomes, falas e
-    números de dano. Nível, vida e mana embaixo. Para no botão Parar, ao trocar de aba, ao sair do app, num erro e
-    depois de 30 minutos. Uma visão ao vivo por vez. Não desenha outros andares nem a luz.
+    números de dano. Desenha também os outros andares que o jogo mostra (o de cima some quando há telhado ou teto
+    sobre o jogador, como no jogo) e a luz: o escuro da noite e das cavernas, com um brilho redondo em volta de
+    tochas, criaturas e magias que brilham. Nível, vida e mana embaixo. Para no botão Parar, ao trocar de aba, ao sair
+    do app, num erro e depois de 30 minutos. Uma visão ao vivo por vez. Não desenha a interface do jogo. Precisa do app
+    novo e do relay novo juntos para ver andares e luz; um dos dois antigos ainda mostra o andar do jogador.
   - **Ligar a porta de cast (uma vez):** o motor precisa do src-patch 0064 e de `castPort` no `config.lua` (porta só
     em 127.0.0.1, desligada por padrão). No app: Painel > Atualizar servidor com uma versão que tenha o patch 0064. A
     atualização roda o `install_all.py`, e o passo `castport` liga a porta (7179). Sem o app, na VPS:
@@ -196,8 +199,10 @@ shell livre. Rode `chaos-ctl.sh help`. Aviso, expulsar, abrir, fechar e salvar p
   de XP, Contas, Saúde, Logs GM) não foram abertas num aparelho.
 - Assistir jogador: a Foto foi testada com um motor simulado e sprites sintéticos (`spectate_test.lua`,
   `spectate_render_test.py`, `chaos_ctl_test.py`). O Ao vivo tem testes do relay com quadros sintéticos
-  (`cast_relay_test.py`) e do motor (`chaoscast_test.cpp`); o motor com o patch 0064 compila. O app compila; o card
-  não foi aberto num celular.
+  (`cast_relay_test.py`, agora também andares, regra do telhado, luz e efeitos de outros andares) e do motor
+  (`chaoscast_test.cpp`); o motor com o patch 0064 compila. O app compila só contra o `android.jar` com o `javac` (a
+  máquina de build não tem o Android SDK, então o gradle não rodou); a conta de andares e luz (`CastMath`) rodou numa
+  JVM. O card não foi aberto num celular: andares, luz e a regra do telhado nunca foram vistos na tela.
 - O terminal executa um comando por vez (sem programas interativos como `nano` ou `top`). Use `top -bn1` no lugar de `top`.
 - O layout assumido é o de `docs/LAUNCH.md` (`/opt/chaos`, unidade `chaos-server`). Outro layout: veja abaixo.
 

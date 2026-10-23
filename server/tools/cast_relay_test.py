@@ -48,7 +48,8 @@ GREEN, RED, BLUE, WHITE, BROWN = (0, 160, 0, 255), (220, 0, 0, 255), (0, 0, 220,
     (120, 80, 40, 255)
 MASK_HEAD = (255, 255, 0, 255)
 GREY = (128, 128, 128, 255)
-GROUND, TOP, COMMON, ELEV, STACK, FLUID, ANIM = 100, 101, 102, 103, 104, 105, 106
+GROUND, TOP, COMMON, ELEV, STACK, FLUID, ANIM, LAMP, WALL, GLASS, CLOSED = 100, 101, 102, 103, 104, 105, 106, 107, \
+    108, 109, 110
 
 
 def make_pair(d):
@@ -61,13 +62,17 @@ def make_pair(d):
              cpt.entry(bytes([26]) + struct.pack('<H', 8), [cpt.group([4])]),   # 103 elevation 8
              cpt.entry(bytes([5]), [cpt.group(list(range(8, 16)), px=4, py=2)]),  # 104 stackable
              cpt.entry(bytes([10]), [cpt.group([5] * 8, px=4, py=2)]),    # 105 fluid container
-             cpt.entry(b'', [cpt.group([3, 4], phases=2)])]               # 106 two phases
+             cpt.entry(b'', [cpt.group([3, 4], phases=2)]),               # 106 two phases
+             cpt.entry(bytes([22]) + struct.pack('<HH', 6, 206), [cpt.group([3])]),   # 107 a lamp: light 6, colour 206
+             cpt.entry(bytes([2, 14]), [cpt.group([2])]),                 # 108 a wall: bottom, blocks the view
+             cpt.entry(bytes([0]) + struct.pack('<H', 100) + bytes([23]), [cpt.group([1])]),   # 109 ground, don't hide
+             cpt.entry(bytes([14]), [cpt.group([3])])]                    # 110 blocks the view, nothing else
     # look 1: idle group (1 phase), walking group (2 phases); 4 directions, art + template
     idle = [5, 6] * 4
     walk = [5, 6] * 8
     outfits = [cpt.entry(b'', [cpt.group(idle, layers=2, px=4, gtype=0),
                                cpt.group(walk, layers=2, px=4, phases=2, gtype=1)], outfit=True)]
-    effects = [cpt.entry(b'', [cpt.group([2, 3, 4], phases=3)])]
+    effects = [cpt.entry(bytes([22]) + struct.pack('<HH', 3, 215), [cpt.group([2, 3, 4], phases=3)])]
     missiles = [cpt.entry(b'', [cpt.group([7] * 9, px=3, py=3)])]
     os.makedirs(d, exist_ok=True)
     dat, spr = os.path.join(d, 'Tibia.dat'), os.path.join(d, 'Tibia.spr')
@@ -429,6 +434,177 @@ def test_floors(items, dims):
     expect(w.central == (PX, PY, PZ) and w.creatures[PID]['p'] == (PX, PY, PZ), 'the view from 0x4B floors')
 
 
+# ------------------------------------------------------------------------------------------------ phase 3
+def tile_msg(enc, x, y, z, *things):
+    return u8(0x69) + pos(x, y, z) + u16(0) + b''.join(things) + u16(0xFF00)
+
+
+def floor_world(items, dims, extra=None, z=PZ):
+    """a world with ground under the player and `extra` {(x, y, z): [things]} on other floors"""
+    enc = Enc()
+    w = cr.World(items, dims)
+    tiles = base_tiles(enc, z=z)
+    for p, things in (extra or {}).items():
+        tiles[p] = things
+    body = u8(0x64) + pos(PX, PY, z) + enc.area(tiles, PX - 8, PY - 6, z, 18, 14)
+    w.hello(hello())
+    w.frame(body)
+    return enc, w
+
+
+def test_visible_floors(items, dims):
+    enc = Enc()
+    g = [enc.item(GROUND)]
+    _e, w = floor_world(items, dims)
+    expect(w.floors() == [0, 7], 'open sky: floors 0..7, got %s' % w.floors())
+    _e, w = floor_world(items, dims, extra={(PX, PY, 6): g})
+    expect(w.floors() == [7, 7], 'a roof directly above: only the camera floor, got %s' % w.floors())
+    _e, w = floor_world(items, dims, extra={(PX + 2, PY + 2, 5): g})
+    expect(w.floors() == [6, 7], 'a roof two floors up (geometrically above): floors 6..7, got %s' % w.floors())
+    _e, w = floor_world(items, dims, extra={(PX + 3, PY + 3, 5): g})
+    expect(w.floors() == [0, 7], 'a roof that is not above the player hides nothing, got %s' % w.floors())
+    _e, w = floor_world(items, dims, extra={(PX, PY, 6): [enc.item(GLASS)]})
+    expect(w.floors() == [0, 7], "a don't-hide ground: floors stay, got %s" % w.floors())
+    _e, w = floor_world(items, dims, extra={(PX, PY, 6): [enc.item(WALL)]})
+    expect(w.floors() == [7, 7], 'a wall above the player closes it, got %s' % w.floors())
+    _e, w = floor_world(items, dims, extra={(PX + 1, PY, 6): g})
+    expect(w.floors() == [7, 7], 'a roof above the open east neighbour closes the view, got %s' % w.floors())
+    t = base_tiles(enc)
+    t[(PX, PY - 1, 6)] = g
+    w2 = cr.World(items, dims)
+    w2.hello(hello())
+    w2.frame(u8(0x64) + pos(PX, PY, PZ) + enc.area(t, PX - 8, PY - 6, PZ, 18, 14))
+    expect(w2.floors() == [7, 7], 'a roof above the open north neighbour closes the view, got %s' % w2.floors())
+    t[(PX, PY - 1, PZ)] = [enc.item(GROUND), enc.item(CLOSED)]
+    w2 = cr.World(items, dims)
+    w2.hello(hello())
+    w2.frame(u8(0x64) + pos(PX, PY, PZ) + enc.area(t, PX - 8, PY - 6, PZ, 18, 14))
+    expect(w2.floors() == [0, 7], 'a neighbour tile that blocks the view is not looked through, got %s' % w2.floors())
+    # underground: two floors up and two down of the camera, a ceiling closes it
+    t = base_tiles(enc, z=10)
+    w = cr.World(items, dims)
+    w.hello(hello())
+    w.frame(u8(0x64) + pos(PX, PY, 10) + enc.area(t, PX - 8, PY - 6, 10, 18, 14))
+    expect(w.floors() == [8, 12], 'underground: camera - 2 .. camera + 2, got %s' % w.floors())
+    t[(PX, PY, 9)] = g
+    w = cr.World(items, dims)
+    w.hello(hello())
+    w.frame(u8(0x64) + pos(PX, PY, 10) + enc.area(t, PX - 8, PY - 6, 10, 18, 14))
+    expect(w.floors() == [10, 12], 'underground ceiling: from the camera floor down, got %s' % w.floors())
+    t = base_tiles(enc, z=15)
+    w = cr.World(items, dims)
+    w.hello(hello())
+    w.frame(u8(0x64) + pos(PX, PY, 15) + enc.area(t, PX - 8, PY - 6, 15, 18, 14))
+    expect(w.floors() == [13, 15], 'the lowest floor: no floor below 15, got %s' % w.floors())
+
+
+def test_floor_lines(dat, spr, items, dims):
+    enc = Enc()
+    g = [enc.item(GROUND)]
+    extra = {(PX + 3, PY + 1, 6): [enc.item(GROUND), enc.item(LAMP)], (PX - 3, PY - 1, 3): g,
+             (PX + 1, PY + 5, 6): [enc.item(GROUND), enc.creature(0x20000001, name='Rat')]}
+    _e, w = floor_world(items, dims, extra=extra)
+    lines = cr.View(w, cr.Sheets(dat, spr), dims).lines()
+    full_line = [ln for ln in lines if ln['t'] == 'full'][0]
+    expect(full_line['fl'] == [0, 7], 'the full line names the floors: %s' % full_line['fl'])
+    zs = sorted((t[0], t[1], t[2]) for t in full_line['ft'])
+    expect(zs == [(3, PX - 3, PY - 1), (6, PX + 1, PY + 5), (6, PX + 3, PY + 1)], 'the other floors tiles: %s' % zs)
+    expect(all(len(t) == 5 for t in full_line['tiles']), 'tiles stays the camera floor, five fields')
+    lamp = [t for t in full_line['ft'] if t[:3] == [6, PX + 3, PY + 1]][0]
+    expect([e[0] for e in lamp[3]] == ['i100', 'i107'], 'under entries of a floor tile: %s' % lamp[3])
+    expect(full_line['cr'].get(str(0x20000001), {}).get('p') == [PX + 1, PY + 5, 6], 'a creature on another floor')
+    keys = {ln['key']: ln for ln in lines if ln['t'] == 'spr'}
+    expect(keys['i100'].get('gr') == 1 and 'gr' not in keys['i107'], 'ground flag in the item sheet')
+    expect(keys['i107'].get('lt') == [6, 206] and 'lt' not in keys['i100'], 'item light in the sheet')
+    # the window: a tile far away on floor 6 is not sent
+    _e, w = floor_world(items, dims, extra={(PX + 40, PY, 6): g})
+    expect('ft' not in cr.View(w, None, dims).lines()[-1], 'a far tile is left out')
+    # a change on another floor: d line with ft; outside the window or on a hidden floor nothing is sent
+    _e, w = floor_world(items, dims, extra=extra)
+    v = cr.View(w, None, dims)
+    v.lines()
+    w.frame(tile_msg(enc, PX + 3, PY + 1, 6, enc.item(GROUND)))
+    d = v.lines()[-1]
+    expect(d['t'] == 'd' and d['ft'] == [[6, PX + 3, PY + 1, [['i100', 0, 0]], [], 0]] and 'fl' not in d
+           and 'fc' not in d, 'a tile change on floor 6: %s' % d)
+    expect(w.ch_ftiles == set(), 'changes start again')
+    w.frame(tile_msg(enc, PX + 3, PY + 1, 6))
+    d = v.lines()[-1]
+    expect(d['ft'] == [[6, PX + 3, PY + 1, [], [], 0]], 'a tile that became empty is sent empty (the app clears it)')
+    w.frame(tile_msg(enc, PX + 50, PY, 6, enc.item(GROUND)))
+    expect(v.lines() == [], 'a tile outside the window changes nothing in the line')
+    # a roof appears over the player: floors 0..6 leave, the camera floor stays
+    w.frame(u8(0x6A) + pos(PX, PY, 6) + u8(255) + enc.item(GROUND))
+    d = v.lines()[-1]
+    expect(d['fl'] == [7, 7] and 'ft' not in d, 'a roof: only floor 7 now: %s' % d)
+    w.frame(tile_msg(enc, PX + 3, PY + 1, 6, enc.item(GROUND)))
+    expect(v.lines() == [], 'a change on a hidden floor is not sent')
+    # the roof goes: the floors come back whole, the app clears them first
+    w.frame(u8(0x6C) + pos(PX, PY, 6) + u8(0))
+    d = v.lines()[-1]
+    expect(d['fl'] == [0, 7] and d['fc'] == [0, 1, 2, 3, 4, 5, 6], 'the roof goes: floors back, cleared first: %s' % d)
+    got = sorted((t[0], t[1], t[2]) for t in d['ft'])
+    expect((6, PX + 3, PY + 1) in got and (3, PX - 3, PY - 1) in got and (6, PX + 1, PY + 5) in got,
+           'the whole floors are sent again: %s' % got)
+    json.dumps(d)
+    # an old app keeps working: tiles / fx / mi still hold the camera floor only, the rest are new keys
+    expect(set(d) <= {'t', 'fl', 'fc', 'ft', 'tiles', 'c', 'cr', 'st', 'light'}, 'only known or new keys: %s' % set(d))
+
+
+def test_floor_events(dat, spr, items, dims):
+    enc = Enc()
+    _e, w = floor_world(items, dims)
+    w.reset_changes()
+    w.full = False
+    w.frame(u8(0x83) + pos(PX + 1, PY, 6) + u16(1))
+    w.frame(u8(0x83) + pos(PX + 1, PY, PZ) + u16(1))
+    w.frame(u8(0x85) + pos(PX, PY, 5) + pos(PX + 3, PY, 5) + u8(1))
+    w.frame(u8(0x85) + pos(PX, PY, PZ) + pos(PX + 3, PY, PZ) + u8(1))
+    expect(w.fx == [[PX + 1, PY, 1]] and w.fxf == [[PX + 1, PY, 1, 6]], 'effects: camera floor and others apart')
+    expect(w.mi == [[PX, PY, PX + 3, PY, 1]] and w.mif == [[PX, PY, PX + 3, PY, 1, 5]], 'missiles likewise')
+    lines = cr.View(w, cr.Sheets(dat, spr), dims).lines()
+    d = lines[-1]
+    expect(d['fx'] == [[PX + 1, PY, 'e1', 0]] and d['fxf'] == [[PX + 1, PY, 'e1', 0, 6]], 'fx and fxf lines: %s' % d)
+    expect(d['mi'][0][:5] == [PX, PY, PX + 3, PY, 'm1'] and d['mif'][0][7] == 5 and d['mif'][0][5] == 5,
+           'mi and mif lines: %s' % d)
+    sp = {ln['key']: ln for ln in lines if ln['t'] == 'spr'}
+    expect(sp['e1'].get('lt') == [3, 215] and 'lt' not in sp['m1'], 'an effect that shines carries its light')
+    # floors hidden by a roof: their effects are dropped
+    _e, w = floor_world(items, dims, extra={(PX, PY, 6): [enc.item(GROUND)]})
+    v = cr.View(w, None, dims)
+    v.lines()
+    w.frame(u8(0x83) + pos(PX + 1, PY, 3) + u16(1))
+    w.frame(u8(0x85) + pos(PX, PY, 3) + pos(PX + 3, PY, 3) + u8(1))
+    expect(v.lines() == [], 'effects on floors hidden by a roof are not sent')
+    for _ in range(300):
+        w.frame(u8(0x83) + pos(PX, PY, 2) + u16(1))
+    expect(len(w.fxf) <= 200, 'bounded')
+
+
+def test_light_lines(dat, spr, items, dims):
+    enc = Enc()
+    w = cr.World(items, dims)
+    w.hello(hello())
+    tiles = base_tiles(enc)
+    w.frame(u8(0x64) + pos(PX, PY, PZ) + enc.area(tiles, PX - 8, PY - 6, PZ, 18, 14))
+    w.frame(u8(0x82) + u8(40) + u8(215))
+    v = cr.View(w, None, dims)
+    full_line = [ln for ln in v.lines() if ln['t'] == 'full'][0]
+    expect(full_line['light'] == [40, 215], 'world light in the full line')
+    expect('lt' not in full_line['cr'][str(PID)], 'no light, no key')
+    w.frame(u8(0x8D) + u32(PID) + u8(7) + u8(206))
+    d = v.lines()[-1]
+    expect(d['cr'][str(PID)]['lt'] == [7, 206], 'creature light in the delta: %s' % d)
+    w.frame(u8(0x8D) + u32(PID) + u8(0) + u8(0))
+    d = v.lines()[-1]
+    expect('lt' not in d['cr'][str(PID)], 'the light went out: the key is gone')
+    s = cr.Session(items, dims, None)
+    out = s.feed(framed(hello()))
+    expect(out[0]['v'] == cr.PROTOCOL == 3 and out[0]['t'] == 'hello', 'the hello line carries the version')
+    expect(cr.light_of({'light': (0, 5)}) is None and cr.light_of({}) is None
+           and cr.light_of({'light': (8, 215)}) == [8, 215], 'light_of')
+
+
 def test_errors(items, dims):
     enc = Enc()
     w = cr.World(items, dims)
@@ -642,6 +818,10 @@ def main():
         test_creatures(items, dims)
         test_events(items, dims)
         test_floors(items, dims)
+        test_visible_floors(items, dims)
+        test_floor_lines(dat, spr, items, dims)
+        test_floor_events(dat, spr, items, dims)
+        test_light_lines(dat, spr, items, dims)
         test_errors(items, dims)
         test_sheets(dat, spr, items, dims)
         test_loop(dat_path, spr_path, dat, spr, items, dims)
