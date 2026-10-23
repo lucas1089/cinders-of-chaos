@@ -1470,6 +1470,9 @@ function onExtendedOpcode(protocol, code, buffer)
 end
 
 function updateNodes(data)
+	if requestTreeTotals and not viewing then
+		requestTreeTotals(400) -- totals.lua: the allocation changed
+	end
 	if viewing then
 		ownNodes = data -- shown when the inspected tree is closed
 		return
@@ -1910,19 +1913,37 @@ function calculateStats()
 		elseif (paragon.free or 0) > 0 then
 			table.insert(lines, string.format("%d unspent Paragon points.", paragon.free))
 		end
+		for _, line in ipairs(ParagonMath.masteryLines(paragon)) do
+			table.insert(lines, line)
+		end
 		for _, line in ipairs(lines) do
 			label = g_ui.createWidget("InfoLabel", labels)
 			label:setText(line)
 		end
 	end
 
-	return 
+	-- raw against effective values (soft caps) and the critical chance / damage including gear (totals.lua, O146)
+	local totalLines = not viewing and treeTotalsLines and treeTotalsLines() or {}
+	if #totalLines > 0 then
+		label = g_ui.createWidget("InfoLabel", labels)
+		label:setText(tr("---------------- TOTALS (raw -> effective) ----------------"))
+		for _, line in ipairs(totalLines) do
+			label = g_ui.createWidget("InfoLabel", labels)
+			label:setText(line.text)
+			label:setColor(line.color)
+		end
+	end
+
+	return
 end
 
 function destroy()
 	serverVocation = nil -- the next character may have another class
 	serverClass, serverLine = nil, nil
 	destroyParagon() -- paragon.lua
+	if destroyTreeTotals then
+		destroyTreeTotals() -- totals.lua
+	end
 	destroyTrials() -- trials.lua
 	cancelBuild()
 	builtFor = nil
@@ -1967,6 +1988,9 @@ function show()
 	sendAction("requestPoints")
 	sendAction("requestNodesUnlocked")
 	sendAction("paragonRequest")
+	if requestTreeTotals then
+		requestTreeTotals(350) -- totals.lua
+	end
 	if requestStatInfo then
 		requestStatInfo() -- statinfo.lua
 	end

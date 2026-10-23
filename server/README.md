@@ -806,6 +806,7 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7102720 - 7102739 | day book (`embercache_config.lua` `daybook`): +0 day, +1/+2 experience (hi x 1e9 + lo), +3 kills, +4/+5 loot gold, +6/+7 supplies gold, +8 orbs, +9 uniques, +10 rarity items, +11 deaths, +12 level at the day's start, +13 seconds played, +14 Ember points; +15..19 free |
 | 7102750 - 7102779 | tutorial reset (`Chaos.storage.tutorialSnapshot`, `newplayer_core.lua` `NP.SNAP`): +0 saved, +1 level, +2/+3 experience (hi x 1e9 + lo), +4 magic level, +5 mana spent, +6 max health, +7 max mana, +8 capacity, +9 leather armors, +10 orbs, +11..+17 skill levels, +18..+24 skill tries; +25..29 free |
 | 7102740 - 7102744 | gentle deaths (`gentledeath_config.lua` `storage`): +0 day of the last first-death-of-the-day discount, +1 Eternal Blessing owned; +2..4 free |
+| 7102500 - 7102509 | Paragon exchange (`Chaos.storage.paragonConverted`, "Soft caps, Paragon Mastery and totals (O146)"): +0 free passive tree points exchanged for Paragon points (subtracted from the tree's points, added to Paragon's); +1..9 free |
 | 7102400 - 7102409 | time-friendly progression (`catchup_config.lua` `storage`): +0 rested pool (centi-minutes), +1 day of the last low stamina notice, +2 the returning boost this character was welcomed for; +3 bounty rerolls held (`bounty_config.lua` `rerollStorage`), +4 kill task board rerolls held, +5 the task day of +6, +6 the board rerolls used that day (`bestiary_config.lua` `rerollStorage`); +7..9 free |
 | 7102460 - 7102469 | Candlemarks (`candlemarks_config.lua` `storage`): +0 the id of the last Candlemark purchase delivered to the character (the crash-safe delivery mark); +1..9 free |
 | 7102490 - 7102499 | rarity migration (`rarity_migrate.lua`): +0 the version of the walk this character had; +1..9 free |
@@ -2485,6 +2486,53 @@ CREATE TABLE IF NOT EXISTS `chaos_paragon` (
   mana 1: hit 1579 (x1.20), crit 20, absorb 11, health 18078 x 1.325, mana 6060 x 1.125, taken 890. Gold find 20: the callback added
   207 gold to 1035 in 40 dragon corpses (20.0%). Reset (gold), the store reset, the forged requests, relog, restart and the login
   refund were checked too.
+
+## Soft caps, Paragon Mastery and totals (O146)
+Beta report (level 1500): strength about 280 against a cap of 120, physical damage 300-400 against 150, the Paragon track
+full at level 1100-1200 with about 300 points left, and the gear's critical chance (about 28%) and damage (about 40%) not
+shown in the tree window. All real: the caps were hard (`ChaosPassiveCharStat`, `ChaosPassiveDamagePercent` in
+`passivetree_effects.lua`), `Chaos.paragon` had no sink for points past its eight stats, and the window listed node sums only.
+No passive that needs a critical chance threshold exists in the repo, so there was none to change.
+
+**Soft cap** (`ChaosSoftCap(raw, cap, H)`, numbers in `passivetree_effects.lua` `softCap`): `eff = raw` up to the cap, then
+`cap + H x ln(1 + (raw - cap) / H)`. Continuous, never decreasing, slope 1 at the cap, no upper bound.
+- Damage percents (physical, the elements, all elements): cap 150, H 60. Raw 300 gives 225.2, 400 gives 248.5, 1000 gives 313.1.
+- Attributes: the points past the cap are soft capped with H = the cap (wisdom 40), then follow the curve's slope at the cap
+  (`max x (1 - knee share) / (cap - knee)`). 280 strength counts as 221.7 points, about +7% damage over 120. Dexterity is a
+  divisor and stays under a value of 50. Vitality 300 gives +72% max health (cap +50%).
+- Hard on purpose: absorb (75, engine patch 0049 ceiling) and speed (80).
+PvP stays bounded: three times the cap in points gives under +45% of the capped value (+35% dexterity). `tests/softcap_test.lua`
+checks the properties and numbers; `weapon_sim.py --power --check`, `rotation_sim` and the PvP balance tests are unchanged.
+
+**Paragon Mastery** (`Chaos.paragon.mastery`, `paragon.lua`): seven endless masteries, a rank costs 1 point, `n` ranks give
+`scale x ln(1 + n / h)` percent on the same bonus as the category stat (damage 6/50, crit damage 8/50, health 8/50,
+reduction 3/60, mana 8/50, gold find 10/50, item find 8/50). 300 damage ranks give +11.67%. At most 60000 ranks per mastery
+(`chaos_paragon` rows, smallint: no DB migration). No crit chance or speed mastery: crit chance is a PvP lever and speed is
+an integer condition. **Exchange** (`Chaos.paragon.exchange`, ratio 1): free passive tree points become Paragon points for
+good; the count is in storage 7102500, subtracted in `passivetree.lua totalPoints`, added in `ChaosParagon.pointsOf`.
+Points earned after the track is full stay free and are never lost.
+Protocol (opcode 65): `paragonMastery {key, n}`, `paragonConvert {n}` in; `paragonState` gains `mastery {maxRanks, rows[]}` and
+`exchange {ratio, treeFree, converted}`. Build codes carry the category stats only (`buildshare.lua`); loadouts check both.
+
+**Totals** (`passivetree_totals.lua`, rules `passivetree_totals_core.lua`): request `statTotals`, answer `statTotals
+{attributes[], damage[], crit {chance {total, tree, other}, amount {total, tree, paragon, other}}}` (rate limit 300 ms). The
+crit totals are the engine's own value (gear, gems, blessings, tree, Paragon). Client: `totals.lua`, `totalsview.lua`.
+
+**Critical reach** (`luajit tools/crit_reach.lua`, from the item mod, crafting, gem and tree tables). The T8 critical modifier
+(item level 140+) rolls amount 8-10 and gives chance 5-7 (9 at +30% quality) on each of 8 slots:
+
+| Source | Critical chance |
+|---|---|
+| Gear, 8 slots T8: lowest / average / highest roll | 40 / 48 / 56 (72 with quality) |
+| Gear, T7 only: average / highest | 40 / 48 |
+| Gems | 10 (damage 75) |
+| Tree crit nodes of a class: best / median / worst | 40 / 29 / 15 |
+| Trial node, Keen Edge mastery | 5, 2 (damage 30, 5) |
+| Ceiling / dedicated build / casual build | 129 / 68 / 30 |
+
+A gated passive should ask for at most 45% (halfway between the casual and the dedicated build); 70-80% needs the ceiling
+case. Critical damage ceiling 214 from gear, gems, trial and mastery, plus Paragon 15.
+Deploy: server `files` step and a restart, client update, no DB migration.
 
 ## Passive tree keystones (`passivetree_keystones.lua`)
 Two new paths at the edge of the tree, each two notables and a keystone (1 point per node, like every node): **Wrath**

@@ -144,22 +144,32 @@ ChaosWindow
     id: applyButton
     anchors.bottom: parent.bottom
     anchors.left: parent.left
-    width: 130
+    width: 104
     !text: tr('Apply')
     @onClick: modules.game_passivetree.applyParagon()
 
   ChaosButton
     id: resetButton
     anchors.bottom: parent.bottom
-    anchors.horizontalCenter: parent.horizontalCenter
-    width: 130
+    anchors.left: applyButton.right
+    margin-left: 6
+    width: 104
     !text: tr('Reset')
     @onClick: modules.game_passivetree.resetParagon()
+
+  ChaosButton
+    id: masteryButton
+    anchors.bottom: parent.bottom
+    anchors.left: resetButton.right
+    margin-left: 6
+    width: 104
+    !text: tr('Mastery')
+    @onClick: modules.game_passivetree.toggleParagonMastery()
 
   ChaosButton
     id: closeButton
     anchors.bottom: parent.bottom
     anchors.right: parent.right
-    width: 130
+    width: 104
     !text: tr('Close')
     @onClick: modules.game_passivetree.closeParagon()

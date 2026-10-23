@@ -1,0 +1,135 @@
+// Paragon Mastery window of the passive tree (paragonmastery.lua): the endless sink for spare Paragon points.
+ParagonMasteryRow < UIWidget
+  height: 40
+  phantom: false
+
+  ChaosLabel
+    id: masteryName
+    anchors.top: parent.top
+    anchors.left: parent.left
+    width: 150
+    text-auto-resize: false
+
+  ChaosLabelDim
+    id: masteryNext
+    anchors.top: masteryName.bottom
+    anchors.left: parent.left
+    width: 150
+    text-auto-resize: false
+
+  ChaosLabel
+    id: masteryRanks
+    anchors.left: masteryName.right
+    anchors.verticalCenter: parent.verticalCenter
+    width: 80
+    text-align: center
+    text-auto-resize: false
+
+  ChaosLabel
+    id: masteryValue
+    anchors.left: masteryRanks.right
+    anchors.verticalCenter: parent.verticalCenter
+    width: 70
+    text-align: center
+    text-auto-resize: false
+
+  ChaosButton
+    id: buy100Button
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    width: 44
+    size: 44 22
+    padding: 0
+    text: +100
+
+  ChaosButton
+    id: buy10Button
+    anchors.right: buy100Button.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-right: 3
+    size: 38 22
+    padding: 0
+    text: +10
+
+  ChaosButton
+    id: buy1Button
+    anchors.right: buy10Button.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-right: 3
+    size: 32 22
+    padding: 0
+    text: +1
+
+ChaosWindow
+  id: paragonMasteryWindow
+  !text: tr('Paragon Mastery')
+  size: 520 470
+  anchors.centerIn: parent
+  @onEscape: modules.game_passivetree.closeParagonMastery()
+
+  ChaosLabel
+    id: summary
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    text-align: center
+    text-auto-resize: false
+    height: 18
+
+  ChaosLabelDim
+    id: hint
+    anchors.top: summary.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 2
+    height: 44
+    text-wrap: true
+    text-auto-resize: false
+    text-align: center
+    !text: tr('Endless: every rank costs one Paragon point and adds a little less than the one before. Points earned after the Paragon track is full are never lost.')
+
+  ChaosSeparator
+    id: sep
+    anchors.top: hint.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+
+  Panel
+    id: rows
+    anchors.top: sep.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: exchangeLabel.top
+    margin-top: 6
+    margin-bottom: 6
+    layout:
+      type: verticalBox
+      spacing: 4
+
+  ChaosLabelDim
+    id: exchangeLabel
+    anchors.bottom: exchangeButton.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-bottom: 4
+    height: 32
+    text-wrap: true
+    text-auto-resize: false
+    text-align: center
+
+  ChaosButton
+    id: exchangeButton
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    width: 240
+    !text: tr('Exchange free tree points')
+    @onClick: modules.game_passivetree.exchangeTreePoints()
+
+  ChaosButton
+    id: closeButton
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    width: 130
+    !text: tr('Close')
+    @onClick: modules.game_passivetree.closeParagonMastery()

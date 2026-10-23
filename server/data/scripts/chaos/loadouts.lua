@@ -215,7 +215,8 @@ local function paragonCheck(player, alloc)
 	if not (P and P.defs) then
 		return {}, 0, false
 	end
-	return Core.validateParagon(alloc, P.defs, P.totalPoints(player:getLevel()))
+	-- the categories and the masteries (O146); the points are the level's plus the exchanged tree points
+	return Core.validateParagon(alloc, P.allDefs or P.defs, P.pointsOf and P.pointsOf(player) or P.totalPoints(player:getLevel()))
 end
 
 -- ------------------------------------------------------------------------------------------------ support runes

@@ -124,6 +124,12 @@ function onParagonState(data)
     end
     refreshParagon()
   end
+  if refreshParagonMastery then
+    refreshParagonMastery() -- paragonmastery.lua
+  end
+  if requestTreeTotals then
+    requestTreeTotals(400) -- totals.lua: Paragon bonuses feed the crit damage total
+  end
   local tree = getTreeWindow()
   if tree and tree:isVisible() then
     calculateStats()
@@ -153,6 +159,9 @@ function closeParagon()
     paragonWindow:hide()
   end
   paragonPending = {}
+  if closeParagonMastery then
+    closeParagonMastery() -- paragonmastery.lua
+  end
   if resetBox then
     resetBox:destroy()
     resetBox = nil
@@ -203,6 +212,9 @@ end
 
 function destroyParagon()
   closeParagon()
+  if destroyParagonMastery then
+    destroyParagonMastery() -- paragonmastery.lua
+  end
   if paragonWindow then
     paragonWindow:destroy()
     paragonWindow = nil

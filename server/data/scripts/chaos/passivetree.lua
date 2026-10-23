@@ -73,7 +73,9 @@ local function totalPoints(player)
 	local extra = player:getStorageValue(Chaos.storage.passiveExtraPoints)
 	-- +1 per major boss killed once (bosspoints.lua): kept through every reset, refund and build code
 	local bosses = ChaosBossPoints and ChaosBossPoints.count and ChaosBossPoints.count(player) or 0
-	return byLevel + math.max(0, extra) + bosses
+	-- minus the free points exchanged for Paragon points (paragon.lua paragonConvert; O146), for good
+	local converted = Chaos.storage.paragonConverted and math.max(0, player:getStorageValue(Chaos.storage.paragonConverted)) or 0
+	return math.max(0, byLevel + math.max(0, extra) + bosses - converted)
 end
 
 -- preset rows: {{preset=1,name="..",nodes={ids},masteries={[id]=choice}}, ...} ordered by preset
