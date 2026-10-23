@@ -45,8 +45,8 @@ ChaosAutoRotationData = {
       { level = 60, gap = 2.00, spells = { 221, 220, 61 }, creatures = { 2, 2, 1 } },
       { level = 70, gap = 2.00, spells = { 221, 59, 61 }, creatures = { 2, 2, 1 } },
       { level = 90, gap = 2.00, spells = { 105, 221, 220, 59, 61 }, creatures = { 2, 2, 2, 2, 1 } },
-      { level = 100, gap = 2.00, spells = { 105, 246, 221, 59, 61 }, creatures = { 2, 2, 2, 2, 1 } },
-      { level = 130, gap = 2.00, spells = { 246, 221, 59, 2, 61 }, creatures = { 2, 2, 2, 1, 1 } },
+      { level = 130, gap = 2.00, spells = { 105, 221, 220, 59, 2 }, creatures = { 2, 2, 2, 2, 1 } },
+      { level = 190, gap = 2.00, spells = { 246, 221, 59, 2, 61 }, creatures = { 2, 2, 2, 1, 1 } },
       { level = 260, gap = 2.00, spells = { 225, 246, 221, 59, 61 }, creatures = { 2, 2, 2, 2, 1 } },
       { level = 300, gap = 2.00, spells = { 225, 221, 59, 37, 61 }, creatures = { 2, 2, 2, 1, 1 } },
       { level = 380, gap = 2.00, spells = { 225, 145, 221, 59, 61 }, creatures = { 2, 2, 2, 2, 1 } },
@@ -93,7 +93,7 @@ ChaosAutoRotationData = {
       { level = 140, gap = 2.00, spells = { 216, 124, 23, 214, 111 }, creatures = { 2, 2, 1, 1, 1 } },
       { level = 160, gap = 2.00, spells = { 216, 124, 19, 214, 111 }, creatures = { 2, 2, 1, 1, 1 } },
       { level = 220, gap = 2.00, spells = { 22, 216, 124, 19, 111 }, creatures = { 2, 2, 2, 1, 1 } },
-      { level = 380, gap = 2.00, spells = { 22, 124, 19, 214, 147 }, creatures = { 2, 2, 1, 1, 1 } },
+      { level = 320, gap = 2.00, spells = { 22, 124, 19, 214, 147 }, creatures = { 2, 2, 1, 1, 1 } },
       { level = 600, gap = 2.00, spells = { 22, 124, 19, 147, 214 }, creatures = { 2, 2, 1, 1, 1 } },
       { level = 1000, gap = 2.00, spells = { 22, 216, 19, 147, 111 }, creatures = { 2, 2, 1, 1, 1 } },
     }, heals = {
@@ -159,7 +159,7 @@ ChaosAutoRotationData = {
       { level = 100, gap = 2.00, spells = { 73, 240, 45, 236 }, creatures = { 2, 1, 1, 1 } },
       { level = 130, gap = 2.00, spells = { 73, 56, 240, 45, 236 }, creatures = { 2, 2, 1, 1, 1 } },
       { level = 180, gap = 2.00, spells = { 73, 56, 242, 240, 236 }, creatures = { 2, 2, 2, 1, 1 } },
-      { level = 360, gap = 2.00, spells = { 164, 73, 56, 242, 236 }, creatures = { 2, 2, 2, 2, 1 } },
+      { level = 270, gap = 2.00, spells = { 164, 73, 56, 242, 236 }, creatures = { 2, 2, 2, 2, 1 } },
     }, heals = {
       { id = 98, level = 25 },
     } },

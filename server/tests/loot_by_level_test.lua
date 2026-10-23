@@ -82,9 +82,15 @@ for L = 20, 2000, 10 do
 	check(g.junkKeep == nil, "generated " .. L .. ": no junkKeep (stacks thinned by count as before)")
 	near(g.notable, g.loot, 1e-12, "generated " .. L .. ": notable = loot")
 end
--- below 450 the coins follow the old linear gold (x0.963, the floor) and above 450 stay under 0.30
+-- below 400 the coins follow the old linear gold (x0.963, the floor); 400-600 they are the O141 smooth gold curve
+-- (0.73-0.90, lootLevel.goldPerHour: the 0.30 plateau left the gold per hour at 400-600 under the level 300 band's);
+-- from 650 they stay under the old 0.30
 near(P.factors(cfg, 100, false).coins, 0.963, 1e-9, "base 100: coins 0.963")
-for L = 450, 1500, 25 do
+for L = 400, 600, 25 do
+	local c = P.factors(cfg, L, false).coins
+	check(c >= 0.70 and c <= 0.95, "base " .. L .. ": coins on the O141 gold curve (" .. c .. ")")
+end
+for L = 650, 1500, 25 do -- (625 is the ramp down)
 	check(P.factors(cfg, L, false).coins <= 0.30, "base " .. L .. ": coins at most the old 0.30")
 end
 -- a config without the new keys keeps the 2026-10-20 reading
@@ -210,7 +216,8 @@ eq(#rows, 6, "six bands: 100, 300, 500, 800, 1000, 1500")
 for _, r in ipairs(rows) do
 	check(r.monsters >= 5, r.band .. ": a sample of monsters (" .. r.monsters .. ")")
 	check(r.kills > 1000 and r.kills < 1700, r.band .. ": the pack model's kills per hour (" .. r.kills .. ")")
-	near(r.newGold / r.oldGold, 1, M.TOL.gold, r.band .. ": gold per hour kept (" .. M.fmt(r.oldGold) .. " -> " ..
+	local goldRef = (ctx.ll.goldPerHour or {})[r.band] or r.oldGold -- O141: the smooth target where the config has one
+	near(r.newGold / goldRef, 1, M.TOL.gold, r.band .. ": gold per hour kept (" .. M.fmt(r.oldGold) .. " -> " ..
 		M.fmt(r.newGold) .. ")")
 	near(r.newItems / r.oldItems, 1, M.TOL.items, r.band .. ": items per hour kept (" .. M.fmt(r.oldItems) .. " -> " ..
 		M.fmt(r.newItems) .. ")")
@@ -218,6 +225,19 @@ for _, r in ipairs(rows) do
 	if r.band >= 300 then
 		check(r.newEmpty < r.oldEmpty / 2, r.band .. ": empty corpses at most half as often (" .. r.oldEmpty .. " -> " ..
 			r.newEmpty .. ")")
+	end
+end
+-- O141: gold per hour grows with the level from 300 to 1000 (no dip at 400-600) by at most M.MAX_STEP between bands
+do
+	local prev
+	for _, b in ipairs({300, 350, 400, 450, 500, 550, 600, 650, 700, 800, 900, 1000}) do
+		M.RANGES[b] = M.RANGES[b] or {math.floor(b * 0.85), math.ceil(b * 1.15)}
+		local g = M.band(ctx, b).newGold
+		if prev then
+			check(g >= prev[2] and g / prev[2] <= M.MAX_STEP, "gold per hour " .. prev[1] .. " -> " .. b .. " smooth (" ..
+				M.fmt(prev[2]) .. " -> " .. M.fmt(g) .. ")")
+		end
+		prev = {b, g}
 	end
 end
 -- the model's own rule matches the core: the shipped factors of a level

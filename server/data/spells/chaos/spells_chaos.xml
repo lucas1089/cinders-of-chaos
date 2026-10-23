@@ -294,7 +294,7 @@
 		<vocation name="Samurai" />
 	</instant>
 	<!-- berserker -->
-	<instant group="attack" spellid="246" name="Skyfall Cleave" words="drai skai hrun" level="100" mana="60" premium="0" range="5" needweapon="1" needtarget="1" blockwalls="1" cooldown="10000" groupcooldown="2000" needlearn="0" script="chaos/berserker/skyfall_cleave.lua">
+	<instant group="attack" spellid="246" name="Skyfall Cleave" words="drai skai hrun" level="190" mana="60" premium="0" range="5" needweapon="1" needtarget="1" blockwalls="1" cooldown="10000" groupcooldown="2000" needlearn="0" script="chaos/berserker/skyfall_cleave.lua">
 		<vocation name="Berserker" />
 	</instant>
 	<instant group="support" spellid="247" name="Bloodrage" words="vyr sang khar" level="120" mana="120" premium="0" aggressive="0" selftarget="1" cooldown="30000" groupcooldown="2000" needlearn="0" script="chaos/berserker/bloodrage.lua">
@@ -585,7 +585,7 @@
 	<instant group="support" spellid="29" name="Bastion Cry" words="vok gal rhov kor" level="340" mana="300" premium="0" aggressive="0" selftarget="1" cooldown="40000" groupcooldown="2000" needlearn="0" script="chaos/knight/bastion_cry.lua">
 		<vocation name="Juggernaut" />
 	</instant>
-	<instant group="attack" spellid="58" name="Anvil Fall" words="kah gal brak thun" level="460" mana="270" premium="0" range="3" needweapon="1" needtarget="1" blockwalls="1" cooldown="12000" groupcooldown="2000" needlearn="0" script="chaos/knight/anvil_fall.lua">
+	<instant group="attack" spellid="58" name="Anvil Fall" words="kah gal brak thun" level="380" mana="270" premium="0" range="3" needweapon="1" needtarget="1" blockwalls="1" cooldown="12000" groupcooldown="2000" needlearn="0" script="chaos/knight/anvil_fall.lua">
 		<vocation name="Juggernaut" />
 	</instant>
 	<instant group="attack" spellid="144" name="Twin Verdict" words="kah gal sol judh vael" level="400" mana="540" premium="0" range="6" needtarget="1" blockwalls="1" cooldown="18000" groupcooldown="2000" needlearn="0" script="chaos/paladin/twin_verdict.lua">
@@ -597,10 +597,10 @@
 	<instant group="attack" spellid="146" name="Glacial Doom" words="drai hyr infr doma" level="420" mana="1320" premium="0" selftarget="1" cooldown="20000" groupcooldown="2000" needlearn="0" script="chaos/sorcerer/glacial_doom.lua">
 		<vocation name="Elementalist" />
 	</instant>
-	<instant group="attack" spellid="147" name="Pack Frenzy" words="kah ferh vas" level="380" mana="270" premium="0" range="7" needtarget="1" blockwalls="1" cooldown="6000" groupcooldown="2000" needlearn="0" script="chaos/beastmaster/pack_frenzy.lua">
+	<instant group="attack" spellid="147" name="Pack Frenzy" words="kah ferh vas" level="320" mana="270" premium="0" range="7" needtarget="1" blockwalls="1" cooldown="6000" groupcooldown="2000" needlearn="0" script="chaos/beastmaster/pack_frenzy.lua">
 		<vocation name="Beastmaster" />
 	</instant>
-	<instant group="attack" spellid="164" name="Shuriken Tempest" words="kah sai vas hyr" level="360" mana="360" premium="0" range="5" needtarget="1" blockwalls="1" cooldown="20000" groupcooldown="2000" needlearn="0" script="chaos/ninja/shuriken_tempest.lua">
+	<instant group="attack" spellid="164" name="Shuriken Tempest" words="kah sai vas hyr" level="270" mana="360" premium="0" range="5" needtarget="1" blockwalls="1" cooldown="20000" groupcooldown="2000" needlearn="0" script="chaos/ninja/shuriken_tempest.lua">
 		<vocation name="Ninja" />
 	</instant>
 	<!-- the Ranger line's fight buff in place of the stock Sharpshooter / Hawkeye (owner 2026-10-20: its slow stopped the

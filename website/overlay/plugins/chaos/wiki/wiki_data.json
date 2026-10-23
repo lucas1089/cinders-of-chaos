@@ -506,16 +506,16 @@
 								["Vigil of Iron", "vigh tor", "60", "0", "2 s", "whole line"],
 								["Soulward", "tor anh", "80", "90", "40 s", "whole line"],
 								["Red Frenzy", "vyr ira cruor", "100", "180", "40 s", "Warrior, Berserker"],
-								["Skyfall Cleave", "drai skai hrun", "100", "60", "10 s", "Berserker"],
 								["Iron Bellow", "vok vas rhov", "120", "120", "20 s", "Warrior, Juggernaut"],
 								["Bloodrage", "vyr sang khar", "120", "120", "30 s", "Berserker"],
 								["Gorehook", "kah sang hrak", "130", "115", "18 s", "whole line"],
 								["Vaulting Cleave", "kah brak skai", "170", "150", "8 s", "Warrior"],
+								["Skyfall Cleave", "drai skai hrun", "190", "60", "10 s", "Berserker"],
 								["Rift Cleaver", "kah rhim brak", "220", "135", "16 s", "Warrior, Juggernaut"],
 								["Colossus Fall", "kah gal vas tyr", "260", "240", "14 s", "whole line"],
 								["Bastion Cry", "vok gal rhov kor", "340", "300", "40 s", "Juggernaut"],
-								["Rampage Leap", "drai skai hrun vas", "380", "240", "14 s", "Berserker"],
-								["Anvil Fall", "kah gal brak thun", "460", "270", "12 s", "Juggernaut"]
+								["Anvil Fall", "kah gal brak thun", "380", "270", "12 s", "Juggernaut"],
+								["Rampage Leap", "drai skai hrun vas", "380", "240", "14 s", "Berserker"]
 							],
 							"links": [
 								"spell:254",
@@ -531,16 +531,16 @@
 								"spell:255",
 								"spell:234",
 								"spell:222",
-								"spell:246",
 								"spell:223",
 								"spell:247",
 								"spell:2",
 								"spell:224",
+								"spell:246",
 								"spell:9",
 								"spell:225",
 								"spell:29",
-								"spell:145",
-								"spell:58"
+								"spell:58",
+								"spell:145"
 							]
 						},
 						{
@@ -659,7 +659,7 @@
 								["Final Verdict", "kah gal sol judh", "200", "270", "16 s", "Deadeye"],
 								["Arrowstorm", "drai sag vex", "220", "85", "14 s", "Ranger, Beastmaster"],
 								["Hail of Dawn", "drai gal vas sol volv", "280", "480", "20 s", "Ranger, Deadeye"],
-								["Pack Frenzy", "kah ferh vas", "380", "270", "6 s", "Beastmaster"],
+								["Pack Frenzy", "kah ferh vas", "320", "270", "6 s", "Beastmaster"],
 								["Twin Verdict", "kah gal sol judh vael", "400", "540", "18 s", "Deadeye"]
 							],
 							"links": [
@@ -987,7 +987,7 @@
 								["Shuriken Barrage", "drai vas shur", "180", "240", "8 s", "Ninja"],
 								["Iaido Sweep", "drai gal kaen", "200", "270", "14 s", "Samurai"],
 								["Last Breath", "kah nyx kaen", "230", "150", "18 s", "Thief, Samurai"],
-								["Shuriken Tempest", "kah sai vas hyr", "360", "360", "20 s", "Ninja"]
+								["Shuriken Tempest", "kah sai vas hyr", "270", "360", "20 s", "Ninja"]
 							],
 							"links": [
 								"spell:254",
@@ -3531,34 +3531,6 @@
 					"icon": "wiki/i/sp-243.png"
 				},
 				{
-					"id": "spell:246",
-					"name": "Skyfall Cleave",
-					"sub": "\"drai skai hrun\", level 100, 60 mana, cooldown 10 s",
-					"color": "#9fdc7f",
-					"sections": [
-						{
-							"h": "Effect",
-							"p": [
-								"Leap next to the target (range 5) and bring the two-handed weapon down on it: physical damage to everything in a 3x3 square around the target, from weapon attack and skill (the knight spells' formula style). The Berserker's leaping slam. Every hit gets Rage (data/scripts/chaos/berserker_combat.lua), and the slam staggers (30% slow, 2 s)."
-							]
-						},
-						{
-							"h": "Spell",
-							"cols": ["", ""],
-							"w": [35, 65],
-							"rows": [
-								["Words", "drai skai hrun"],
-								["Level", "100"],
-								["Mana", "60"],
-								["Cooldown", "10 s"],
-								["Kind", "Attack"],
-								["Classes", "Berserker"]
-							]
-						}
-					],
-					"icon": "wiki/i/sp-246.png"
-				},
-				{
 					"id": "spell:248",
 					"name": "Wild Bond",
 					"sub": "\"vael ferh\", level 100, 180 mana, cooldown 10 s",
@@ -4945,6 +4917,34 @@
 					"icon": "wiki/i/k-holy-missile.png"
 				},
 				{
+					"id": "spell:246",
+					"name": "Skyfall Cleave",
+					"sub": "\"drai skai hrun\", level 190, 60 mana, cooldown 10 s",
+					"color": "#9fdc7f",
+					"sections": [
+						{
+							"h": "Effect",
+							"p": [
+								"Leap next to the target (range 5) and bring the two-handed weapon down on it: physical damage to everything in a 3x3 square around the target, from weapon attack and skill (the knight spells' formula style). The Berserker's leaping slam. Every hit gets Rage (data/scripts/chaos/berserker_combat.lua), and the slam staggers (30% slow, 2 s)."
+							]
+						},
+						{
+							"h": "Spell",
+							"cols": ["", ""],
+							"w": [35, 65],
+							"rows": [
+								["Words", "drai skai hrun"],
+								["Level", "190"],
+								["Mana", "60"],
+								["Cooldown", "10 s"],
+								["Kind", "Attack"],
+								["Classes", "Berserker"]
+							]
+						}
+					],
+					"icon": "wiki/i/sp-246.png"
+				},
+				{
 					"id": "spell:74",
 					"name": "Iaido Sweep",
 					"sub": "\"drai gal kaen\", level 200, 270 mana, cooldown 14 s",
@@ -5386,6 +5386,34 @@
 					"icon": "wiki/i/sp-226.png"
 				},
 				{
+					"id": "spell:164",
+					"name": "Shuriken Tempest",
+					"sub": "\"kah sai vas hyr\", level 270, 360 mana, cooldown 20 s",
+					"color": "#9fdc7f",
+					"sections": [
+						{
+							"h": "Effect",
+							"p": [
+								"Shuriken Barrage's late sibling. A storm of shurikens at your target and up to 8 more monsters within 4 sqm of it, two ranged weapon strikes each, 0.5 s apart (shuriken power as Shuriken Toss, 1.1 times a Barrage strike). 14 s cooldown (the cooldown ladder, 2026-10-20; was 30 s). Other players are only hit when they are the spell's target."
+							]
+						},
+						{
+							"h": "Spell",
+							"cols": ["", ""],
+							"w": [35, 65],
+							"rows": [
+								["Words", "kah sai vas hyr"],
+								["Level", "270"],
+								["Mana", "360"],
+								["Cooldown", "20 s"],
+								["Kind", "Attack"],
+								["Classes", "Ninja"]
+							]
+						}
+					],
+					"icon": "wiki/i/k-steel-shuriken.png"
+				},
+				{
 					"id": "spell:219",
 					"name": "Hail of Dawn",
 					"sub": "\"drai gal vas sol volv\", level 280, 480 mana, cooldown 20 s",
@@ -5470,6 +5498,34 @@
 					"icon": "wiki/i/sp-207.png"
 				},
 				{
+					"id": "spell:147",
+					"name": "Pack Frenzy",
+					"sub": "\"kah ferh vas\", level 320, 270 mana, cooldown 6 s",
+					"color": "#9fdc7f",
+					"sections": [
+						{
+							"h": "Effect",
+							"p": [
+								"Feral Command's late sibling. Your companions leap at the target (range 7) and maul it in a frenzy, each for 3.3 bites at once (Feral Command: 1.5). 6 s cooldown (the cooldown ladder, 2026-10-20; was 20 s). The Beastmaster's command. A bite is physical damage dealt as you, from your level and distance skill (ChaosClasses.biteValues, Chaos.classes.companion); it needs a companion out (Wild Bond)."
+							]
+						},
+						{
+							"h": "Spell",
+							"cols": ["", ""],
+							"w": [35, 65],
+							"rows": [
+								["Words", "kah ferh vas"],
+								["Level", "320"],
+								["Mana", "270"],
+								["Cooldown", "6 s"],
+								["Kind", "Attack"],
+								["Classes", "Beastmaster"]
+							]
+						}
+					],
+					"icon": "wiki/i/k-nature-paw.png"
+				},
+				{
 					"id": "spell:29",
 					"name": "Bastion Cry",
 					"sub": "\"vok gal rhov kor\", level 340, 300 mana, cooldown 40 s",
@@ -5498,15 +5554,15 @@
 					"icon": "wiki/i/k-steel-banner.png"
 				},
 				{
-					"id": "spell:164",
-					"name": "Shuriken Tempest",
-					"sub": "\"kah sai vas hyr\", level 360, 360 mana, cooldown 20 s",
+					"id": "spell:58",
+					"name": "Anvil Fall",
+					"sub": "\"kah gal brak thun\", level 380, 270 mana, cooldown 12 s",
 					"color": "#9fdc7f",
 					"sections": [
 						{
 							"h": "Effect",
 							"p": [
-								"Shuriken Barrage's late sibling. A storm of shurikens at your target and up to 8 more monsters within 4 sqm of it, two ranged weapon strikes each, 0.5 s apart (shuriken power as Shuriken Toss, 1.1 times a Barrage strike). 14 s cooldown (the cooldown ladder, 2026-10-20; was 30 s). Other players are only hit when they are the spell's target."
+								"The Juggernaut brings its weapon down on the target (range 3): one crushing blow to everything in a 5x5 square around it, from weapon attack and skill; every enemy hit is stunned (90% slow) for 2.5 s. 12 s cooldown (the cooldown ladder, 2026-10-20; was 20 s). About 0.8 of Colossus Fall's damage on a smaller area, in one hit (docs/CLASSES.md \"Spells by level\")."
 							]
 						},
 						{
@@ -5514,16 +5570,16 @@
 							"cols": ["", ""],
 							"w": [35, 65],
 							"rows": [
-								["Words", "kah sai vas hyr"],
-								["Level", "360"],
-								["Mana", "360"],
-								["Cooldown", "20 s"],
+								["Words", "kah gal brak thun"],
+								["Level", "380"],
+								["Mana", "270"],
+								["Cooldown", "12 s"],
 								["Kind", "Attack"],
-								["Classes", "Ninja"]
+								["Classes", "Juggernaut"]
 							]
 						}
 					],
-					"icon": "wiki/i/k-steel-shuriken.png"
+					"icon": "wiki/i/k-steel-hammer.png"
 				},
 				{
 					"id": "spell:145",
@@ -5552,34 +5608,6 @@
 						}
 					],
 					"icon": "wiki/i/k-blood-slam.png"
-				},
-				{
-					"id": "spell:147",
-					"name": "Pack Frenzy",
-					"sub": "\"kah ferh vas\", level 380, 270 mana, cooldown 6 s",
-					"color": "#9fdc7f",
-					"sections": [
-						{
-							"h": "Effect",
-							"p": [
-								"Feral Command's late sibling. Your companions leap at the target (range 7) and maul it in a frenzy, each for 3.3 bites at once (Feral Command: 1.5). 6 s cooldown (the cooldown ladder, 2026-10-20; was 20 s). The Beastmaster's command. A bite is physical damage dealt as you, from your level and distance skill (ChaosClasses.biteValues, Chaos.classes.companion); it needs a companion out (Wild Bond)."
-							]
-						},
-						{
-							"h": "Spell",
-							"cols": ["", ""],
-							"w": [35, 65],
-							"rows": [
-								["Words", "kah ferh vas"],
-								["Level", "380"],
-								["Mana", "270"],
-								["Cooldown", "6 s"],
-								["Kind", "Attack"],
-								["Classes", "Beastmaster"]
-							]
-						}
-					],
-					"icon": "wiki/i/k-nature-paw.png"
 				},
 				{
 					"id": "spell:144",
@@ -5636,34 +5664,6 @@
 						}
 					],
 					"icon": "wiki/i/k-frost-swirl.png"
-				},
-				{
-					"id": "spell:58",
-					"name": "Anvil Fall",
-					"sub": "\"kah gal brak thun\", level 460, 270 mana, cooldown 12 s",
-					"color": "#9fdc7f",
-					"sections": [
-						{
-							"h": "Effect",
-							"p": [
-								"The Juggernaut brings its weapon down on the target (range 3): one crushing blow to everything in a 5x5 square around it, from weapon attack and skill; every enemy hit is stunned (90% slow) for 2.5 s. 12 s cooldown (the cooldown ladder, 2026-10-20; was 20 s). About 0.8 of Colossus Fall's damage on a smaller area, in one hit (docs/CLASSES.md \"Spells by level\")."
-							]
-						},
-						{
-							"h": "Spell",
-							"cols": ["", ""],
-							"w": [35, 65],
-							"rows": [
-								["Words", "kah gal brak thun"],
-								["Level", "460"],
-								["Mana", "270"],
-								["Cooldown", "12 s"],
-								["Kind", "Attack"],
-								["Classes", "Juggernaut"]
-							]
-						}
-					],
-					"icon": "wiki/i/k-steel-hammer.png"
 				}
 			],
 			"banner": "wiki/hero/tab-spells.webp",

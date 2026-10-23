@@ -1620,9 +1620,9 @@ the area cure (Purifying Wellspring), because they are not cleanse spells of one
 lifted by the Font of Ash or a Lightward-type effect.
 
 New spells (ids reused, `spells_chaos.xml`, scripts in `data/spells/chaos/<class>/`, icon cells 301-307, sheets now 16 rows):
-Juggernaut Bastion Cry 29 (level 340, support: taunt, slow, Iron Will, heal) and Anvil Fall 58 (460); Deadeye Twin Verdict 144
-(400); Berserker Rampage Leap 145 (380); Elementalist Glacial Doom 146 (420, 2 s cast); Beastmaster Pack Frenzy 147 (380);
-Ninja Shuriken Tempest 164 (360). Not covered for lack of ids: Illusionist, Samurai, Lich, Bone Lord, Shadowfist, Iron Sage,
+Juggernaut Bastion Cry 29 (level 340, support: taunt, slow, Iron Will, heal) and Anvil Fall 58 (380); Deadeye Twin Verdict 144
+(400); Berserker Rampage Leap 145 (380); Elementalist Glacial Doom 146 (420, 2 s cast); Beastmaster Pack Frenzy 147 (320);
+Ninja Shuriken Tempest 164 (270). Not covered for lack of ids: Illusionist, Samurai, Lich, Bone Lord, Shadowfist, Iron Sage,
 Inquisitor, Sentinel (next free ids need another retired or merged spell). Numbers are computed with the rotation sim
 (`rotation_model.csv` rows), not measured in game; scripts not run in a live engine. `tests/class_spell_progression_test.lua`
 pins the own-spell counts (max 15) and the new rows; `tests/spell_ids_test.lua` knows the retired ids.
@@ -15862,8 +15862,8 @@ hunt, so it is slower); only the shape matters here, and the band hours of 100+ 
 | Steps of 3 every 50 levels | 301 to 700 | each 50th level paid 8-20% less per kill (x36, 33, 30, ... 15) | one multiplier per step, rows of 14-17 levels, the same averages (hours of 300-700 within 0.5%) |
 | Paragon track ends | level 1282 to 2200 | 282 points, one a level, all spent at 1282: 900 levels of level-ups with no new choice | one point a level up to 1100, then one every 6 levels: all 282 at level 2192; points already owned stay |
 | Hall hunt gaps | levels 163-233, 386-518 (by a window of 0.8-1.1 L) | 0-2 hall hunts, the nearest 22% above | fixed by O139 (below, "Hall coverage (O139)"): 8 new hunts, `--check` also fails on fewer than 3 within 0.8-1.1 L in the listed ranges |
-| Gold per hour | 300 to 800 | 469k (300), 393k (500), 2.5M (800): a dip, then a 6x jump (`tools/loot_model.lua`) | not changed (loot tables are another owner's work); reported |
-| Spell unlock gaps | levels 130-380 | longest stretches without a new spell below 300: Ninja 180 to 360, Beastmaster 220 to 380, Berserker 130 to 260, Lich 170 to 300, Shadowfist 150 to 250 | not changed (`spells_chaos.xml` belongs to the spell work); `--spells` prints all 21 |
+| Gold per hour | 300 to 800 | 469k (300), 393k (500), 2.5M (800): a dip, then a 6x jump (`tools/loot_model.lua`) | fixed by O141 ("Balance follow-ups (O141)"): 469k, 860k (500), 2.5M; reported at first |
+| Spell unlock gaps | levels 130-380 | longest stretches without a new spell below 300: Ninja 180 to 360, Beastmaster 220 to 380, Berserker 130 to 260, Lich 170 to 300, Shadowfist 150 to 250 | fixed by O141 for the attack spells (4 unlock levels moved); `--spells` prints all 21 and counts supports too |
 
 Before and after (minutes a level, mean of 3 levels; stage):
 
@@ -15911,6 +15911,26 @@ which the kit update runs): config.lua is read at the engine's start, so restart
 replaced; `chaos-ctl.sh xp-rate` keeps its factor (it scales the release table). Paragon needs only the script reload.
 No client update and no engine rebuild.
 
+
+## Balance follow-ups (O141, 2026-10-23)
+
+The open items noted after the O135-O140 balance pass, each checked with the repo's models before changing anything. All numbers are
+computed (`rotation_sim.py`, `loot_model.lua`, `progression_model.lua`), not measured in game.
+
+| # | Item | Real? | What changed |
+|---|---|---|---|
+| 1 | Long attack spell unlock gaps | yes for 4 classes. `progression_model.lua --spells` counts every spell (supports too), so Lich's 130 and Shadowfist's 100 are utility gaps; counting only attack spells (`group="attack"`, the rule of `check_attack_counts.py`) the stretches over 120 levels were Ninja 180 (180 to 360), Juggernaut 160 (300 to 460), Beastmaster 160 (220 to 380), Berserker 130 (130 to 260). Deadeye and Elementalist have exactly 120 and stay | Unlock levels in `spells_chaos.xml` (no spell added or removed, so `check_attack_counts.py` still says 10 for all 21): Shuriken Tempest 360 -> 270, Pack Frenzy 380 -> 320, Anvil Fall 460 -> 380, Skyfall Cleave 100 -> 190. Longest attack stretch now Ninja 90, Juggernaut 90, Beastmaster 100, Berserker 80 |
+| 2 | Templar about 10% short at level 50 | yes, but against the class's own value before the attack kit (the level curve target of O136, "the largest error left ... Templar 10% at level 50"), not against the median class: best-set score (1 target + 0.25 x pack) 109.3 against 121.4 before the kit (-10.0%; -14.9% at 55). Against the median of the 21 classes at level 50 it was -2.7% (the spread between classes is 0.46x to 2.0x at that level, so the median is not a target) | `spell_factor_config.lua` `byLevel[23]`: knots 45 / 50 / 55 / 59 (0.99 / 0.97 / 0.96 / 1.00) between 40 (1.01) and 60 (0.80). Score at 45 / 50 / 55 / 59: 107.1 / 117.2 / 128.9 / 145.6 against 109.0 / 121.4 / 134.6 / 145.7 before the kit (-1.7 / -3.5 / -4.2 / -0.1%), and +4.3% (50) and +3.6% (55) over the median class. The factor sits a little under the pre-kit value on purpose: at 1.00 Templar would be +8% over the median |
+| 3 | Gold per hour dips around 500, jumps at 800 | yes. Gold per hour by monster band (the 2026-10-20 economy, which the loot rule had to keep): 300 469k, 350 568k, 400 325k, 450 371k, 500 394k, 550 436k, 600 537k, 650 1.8M, 700 2.4M, 800 2.5M. The dip is the old rule's 0.30 coin plateau from 450 on, and the 3.4x jump is at 600 to 650 where the level-scaled hunts begin | `pace_config.lua` `base.coins` / `scaled.coins` points 400-600 (0.73 / 0.74 / 0.88 / 0.90 / 0.90 instead of 0.291 / 0.280 at 450 / 550) and `junkKeep` points 300-600 so that items per hour stay within 7% of the old rule. Gold per hour now 300 469k, 350 601k, 400 626k, 450 786k, 500 860k, 550 1.00M, 600 1.06M, 650 2.05M, 700 2.38M, 800 2.50M: it never falls and the biggest step is 1.9x (600 to 650, was 3.4x). The "Respec" model reference is 5.5M at 500, so the new values stay far under it. `lootLevel.goldPerHour` holds the targets of the bands 350-600; `loot_model.lua --check` holds them within 5%, the other bands within 5% of the 2026-10-20 rule as before, and fails a dip or a step over 2.3x between checked bands from level 300 (`M.MAX_STEP`; bands 350, 400 and 600 are checked now too) |
+| 4 | Legendary cards may never fire with Chaos weapons | not part of O141 (the cards files belong to another change). For that change: the base script `legendary_cards_system.lua` tests the left-hand item id against four lists of stock ids, which hold 38 of the base server's 134 swords, 31 of 126 clubs, 34 of 114 axes and 11 of the 77 weapon and shield items of `chaos_items.xml` (counted from `base_weapons.csv` and `chaos_items.xml` against the lists in a base copy found on the build machine) | Nothing |
+| 5 | No wand or rod unique per band | no: `weapon_coverage.lua --check` is green, every wand line has 3 or more options in every band (the lowest is 3, Elementalist at 700-1000, 1000-1500 and 1500+), and the table shows no `!` cell. A wand or rod unique keeps the damage of its base item and no tool sets it ("Wands and rods" in the gear audit above) | Nothing |
+
+Install: server `files` and `spells` steps and a restart (spell levels, factors and loot curves are read at start). Client update for
+`spelldata.lua` (Spellbook levels) and `autorotation_data.lua` (the helper's presets); the wiki data is regenerated. Characters that
+already passed a moved level just get the spell (a lower unlock level); a Berserker between level 100 and 189 loses Skyfall Cleave until
+190 (best-set score at 100 / 150 / 189: 272 / 317 / 354 -> 260 / 307 / 345, -4.6 / -3.1 / -2.5%).
+Tests: `tests/class_spell_progression_test.lua` (new levels), `tests/spell_factor_test.lua` (Templar at 50 and 59), `tests/loot_by_level_test.lua`
+(coins on the curve, gold per hour grows between bands).
 
 ## Hall coverage (O139, `tools/areaplan/plans/`, `progression_config.lua` `hall.tight`, 2026-10-23)
 

@@ -46,9 +46,13 @@ return {
 		-- drops kept (Rare+ gear, rare drops), never below `loot`. From 700 every notable drop stays, and coins and junk
 		-- pay for it; below 650 nothing changes but the coins. The points from 650 on are tools/loot_model.lua --derive:
 		-- the same gold and items per hour as the 2026-10-20 rule at the pack model's kills per hour.
-		coins = {{35, 1.00}, {100, 0.963}, {300, 0.828}, {450, 0.291}, {550, 0.280}, {650, 0.176}, {700, 0.179},
-			{800, 0.133}, {900, 0.252}, {1000, 0.271}, {1250, 0.290}},
-		junkKeep = {{650, 3.67}, {700, 0.312}, {800, 0.114}, {900, 0.613}, {1000, 3.45}},
+		-- O141 (2026-10-23): the points 400-600 are fitted to the smooth gold curve of `lootLevel.goldPerHour` (they were
+		-- 0.291 at 450 and 0.280 at 550, which put the gold per hour at 400-600 under the level 300 band's: 469k at 300,
+		-- 325-537k at 400-600, 1.8M at 650); junkKeep holds the items per hour of the 2026-10-20 rule there
+		coins = {{35, 1.00}, {100, 0.963}, {300, 0.828}, {400, 0.730}, {450, 0.740}, {500, 0.880}, {550, 0.900},
+			{600, 0.900}, {650, 0.176}, {700, 0.179}, {800, 0.133}, {900, 0.252}, {1000, 0.271}, {1250, 0.290}},
+		junkKeep = {{300, 3.67}, {400, 0.700}, {450, 0.500}, {500, 0.720}, {550, 0.800}, {600, 0.880}, {650, 3.67},
+			{700, 0.312}, {800, 0.114}, {900, 0.613}, {1000, 3.45}},
 		notable = {{650, 0}, {700, 1}}
 	},
 
@@ -83,9 +87,10 @@ return {
 		goal = {{650, 16.9}, {800, 20.9}, {1000, 25.8}, {1300, 30.9}, {1600, 34.3}, {2000, 36.6}},
 		-- loot by monster level: the base points from 450 on (the old `gold` reached 0.30 at 450 in both sets); below,
 		-- the old ramp from 100 x the 0.963 the base curve carries there (the empty-corpse floor)
-		coins = {{100, 0.963}, {275, 0.626}, {450, 0.291}, {550, 0.280}, {650, 0.176}, {700, 0.179}, {800, 0.133},
-			{900, 0.252}, {1000, 0.271}, {1250, 0.290}},
-		junkKeep = {{650, 3.67}, {700, 0.312}, {800, 0.114}, {900, 0.613}, {1000, 3.45}},
+		coins = {{100, 0.963}, {275, 0.626}, {400, 0.730}, {450, 0.740}, {500, 0.880}, {550, 0.900}, {600, 0.900},
+			{650, 0.176}, {700, 0.179}, {800, 0.133}, {900, 0.252}, {1000, 0.271}, {1250, 0.290}},
+		junkKeep = {{300, 3.67}, {400, 0.700}, {450, 0.500}, {500, 0.720}, {550, 0.800}, {600, 0.880}, {650, 3.67},
+			{700, 0.312}, {800, 0.114}, {900, 0.613}, {1000, 3.45}},
 		notable = {{650, 0}, {700, 1}}
 	},
 
@@ -118,6 +123,9 @@ return {
 		enabled = true,
 		notableRarity = 4,
 		notableChance = 1000,
+		-- O141: the gold per hour (tools/loot_model.lua) the bands 350-600 are held to by `--check` (the other bands keep
+		-- the 2026-10-20 rule's within 5%); `base.coins` / `base.junkKeep` points 400-600 are fitted to it
+		goldPerHour = {[350] = 600000, [400] = 625000, [450] = 785000, [500] = 860000, [550] = 1005000, [600] = 1055000},
 		-- these monsters pay their coins as crystal coins only, a random whole number with the same expected value
 		-- (pace_core.lua P.crystalStacks; beta report 2026-10-22: their pay filled the bag with three coin kinds)
 		crystalOnly = {"Nightfang Widow", "Shadowcrystal Widow"}
