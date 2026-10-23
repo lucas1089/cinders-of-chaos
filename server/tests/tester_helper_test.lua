@@ -323,6 +323,15 @@ check(last(tester):find('"name":"Boss B"', 1, true) ~= nil, "enter: the answer n
 talks["!tester"].onSay(tester, "!tester", "enter npc Keeper of Trials")
 eq(tester.pos.x, 69, "enter npc: next to the NPC")
 check(last(tester):find('"npc":"Keeper of Trials"', 1, true) ~= nil, "enter npc: the answer")
+-- shop: a trader first (the NPC nearest the temple may only talk), the nearest NPC without one
+talks["!tester"].onSay(tester, "!tester", "shop")
+check(last(tester):find('shop {"err":"no NPC near the temple"}', 1, true) ~= nil, "shop: no trader, no NPC near: an error")
+npcs["Material Broker"] = {getName = function() return "Material Broker" end, isNpc = function() return true end,
+	getPosition = function() return {x = 80, y = 80, z = 7} end}
+talks["!tester"].onSay(tester, "!tester", "shop")
+eq(tester.pos.x, 79, "shop: next to the trader")
+check(last(tester):find('"npc":"Material Broker"', 1, true) ~= nil, "shop: the answer names the trader")
+npcs["Material Broker"] = nil
 local tps = #tester.log.teleports
 talks["!tester"].onSay(tester, "!tester", "enter npc Ana")
 check(last(tester):find('"err":"no such NPC"', 1, true) ~= nil, "a player's name is not an NPC")

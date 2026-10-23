@@ -113,6 +113,31 @@ for want in ('2x Lua Script Error', 'Anomalies (2)', 'hit taken over 3x max heal
              '1x You have been idle', 'shop', 'never reached: needs two parties'):
     ok(want in r, 'the report has %r' % want)
 
+# a monster named "Terror Bird" is no error; the bots' own records stay out of the error list; a guard warning keeps
+# its stack traceback; the deaths the server logged, by killer, beside the bots' own count
+p2 = TC.parse_log([
+    '[tester-event] {"kind":"death","who":"Tester Aad","level":30,"killer":"Terror Bird"}',
+    '[tester-event] {"kind":"death","who":"Tester Aas","level":30,"killer":"Terror Bird"}',
+    '[2026-10-22 21:00:00] [Warning - Chaos] Position:sendMagicEffect with effect nil refused',
+    'stack traceback:',
+    '\t[C]: in function \'sendMagicEffect\'',
+    '\tdata/scripts/chaos/raid.lua:907: in function \'fxAt\'',
+    '\tdata/scripts/chaos/raid.lua:950: in function <x>',
+    'Loading map done',
+    '> Warning: run as root',
+    'Server online',
+])
+eq(p2['errors'], {}, 'no error in death records of a "Terror" monster')
+eq(len(p2['events']), 2, 'both deaths are events')
+ok(any('raid.lua:907' in w for w in p2['warnings']), 'the warning keeps its traceback')
+ok(not any('raid.lua:950' in w for w in p2['warnings']), 'three lines of it')
+ok('> Warning: run as root' in p2['warnings'], 'a warning without a traceback stands alone')
+eq(TC.is_error('[Error - mysql_real_query] x'), True, 'Error is an error')
+eq(TC.is_error('Terror Bird killed Tester Aad'), False, 'Terror is not')
+r2 = TC.build_report({'deaths': 9}, p2)
+ok('== Deaths on the server (2; the bots counted 9)' in r2, 'server deaths beside the bots count')
+ok('by killer: Terror Bird 2' in r2 and 'by tester: Tester Aad 1, Tester Aas 1' in r2, 'deaths by killer and tester')
+
 # ---------------------------------------------------------------- names, accounts, the key file
 eq([T.tester_name(i) for i in (0, 1, 26, 150)], ['Tester Aaa', 'Tester Aab', 'Tester Aba', 'Tester Afu'], 'names')
 ok(all(T.safe_name(T.tester_name(i)) for i in range(T.TC.MAX_BOTS * 3)), 'every generated name fits the pattern')
@@ -273,6 +298,15 @@ b.read(b'\x28\x00')
 eq(res.d['deaths'], 1, 'the death window counts a death')
 eq(res.d['anomalies'][0]['rule'], 'death within one hit from full health', 'dead from full health')
 b.read(b'\xb4\x16' + LT.string('You are dead.'))
+
+# the bot learns its own creature id from the helper's info (the login answer may come after the guard's challenge)
+b2 = T.TesterBot(1, dict(bot), A(), 1, res, {'rotation': [], 'heal': None})
+eq(b2.cid, 0, 'no creature id before the info')
+b2.on_text('[tester-helper] info {"cid":268435999,"level":30}')
+eq((b2.cid, T.ONLINE.get(268435999)), (268435999, b2), 'the creature id from the info, online under it')
+b2.read(b'\x8c' + struct.pack('<I', 268435999) + b'\x37')
+eq(b2.health, 55, 'and its health packets are read')
+T.ONLINE.pop(268435999, None)
 eq(res.d['deaths'], 1, 'the death text after the window is the same death')
 b.on_extended(238, payload)
 eq(b.kills[0]['k'], 3, 'a loot filter kill is kept for a take')

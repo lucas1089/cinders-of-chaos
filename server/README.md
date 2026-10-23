@@ -6346,6 +6346,14 @@ The login block is encrypted with the key the engine really uses: the first file
 bots always took `key.pem`: with our own key the server could not read the block and closed every login without a
 message at "waiting for the character list". `testers.py run` prints the key file it uses (only the path).
 `CHAOS_TESTER_KEY` in ctl.conf names another file.
+A bot takes its own creature id from the helper's `info` answer (`cid`) when the game login answer does not come first
+(the client guard's challenge can come before it). Before 2026-10-23 such bots had no id: they read no health packet,
+so they never healed or drank a potion, every death looked like one hit from full health, and no bot was a pm or party
+partner. `shop` goes to a trader first (`TRADERS` in tester_helper.lua: Material Broker, Loot Buyer, Wandering
+Merchant), counts as ok when the trade window opens, and buys or sells one piece (u16 amounts, protocol 10.98). A
+failed `town`, `depot` or `shop` names why in the failure list. The report lists the deaths the server logged by
+killer, level and tester beside the bots' own count. It reads `error` as a whole word only (a "Terror Bird" death is no
+error) and keeps up to three stack traceback lines under a warning.
 
 ```
 sudo /opt/chaos/repo/server/deploy/chaos-ctl.sh testers start 100 60 --restart 300

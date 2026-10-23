@@ -183,7 +183,8 @@ TS_RE = re.compile(r'^\[?\d{4}-\d\d-\d\d[ T]\d\d:\d\d:\d\d[^ ]*\]?[ :-]*')
 
 
 def is_error(line):
-    return 'Lua Script Error' in line or re.search(r'error|exception|segfault', line, re.I) is not None
+    # whole words: a monster name such as "Terror Bird" in a death line is no error
+    return 'Lua Script Error' in line or re.search(r'\berrors?\b|\bexception\b|segfault', line, re.I) is not None
 
 
 def is_warning(line):
@@ -201,7 +202,7 @@ def parse_log(lines):
         out[kind][text] = out[kind].get(text, 0) + 1
         out['first'].setdefault(text, n)
 
-    cur, join, cur_n = None, 0, 0
+    cur, join, cur_n, cur_kind = None, 0, 0, 'errors'
     for n, raw in enumerate(lines, 1):
         line = raw.rstrip('\r\n')
         for mark, key in ((ANOMALY_MARK, 'anomalies'), (EVENT_MARK, 'events')):
@@ -214,25 +215,30 @@ def parse_log(lines):
                 except ValueError:
                     pass
         if join > 0:
-            if not line.strip() or is_error(line):
-                add('errors', cur, cur_n)
+            # a Lua error, or a warning with its stack traceback (the guards print one): the next lines join it
+            more = line.strip() and (cur_kind == 'errors' and not is_error(line)
+                                     or cur_kind == 'warnings' and (line[:1] in ' \t' or line.startswith('stack traceback')))
+            if not more:
+                add(cur_kind, cur, cur_n)
                 cur, join = None, 0
             else:
                 cur += ' | ' + line.strip()
                 join -= 1
                 if join == 0:
-                    add('errors', cur, cur_n)
+                    add(cur_kind, cur, cur_n)
                     cur = None
                 continue
         if 'Lua Script Error' in line:
-            cur, join, cur_n = line, 2, n
+            cur, join, cur_n, cur_kind = line, 2, n, 'errors'
             continue
-        if is_error(line) and ANOMALY_MARK not in line:
+        if ANOMALY_MARK in line or EVENT_MARK in line:
+            continue  # the bots' own records: reported apart (anomalies, deaths)
+        if is_error(line):
             add('errors', line, n)
         elif is_warning(line):
-            add('warnings', line, n)
+            cur, join, cur_n, cur_kind = line, 3, n, 'warnings'
     if cur is not None:
-        add('errors', cur, cur_n)
+        add(cur_kind, cur, cur_n)
     return out
 
 
@@ -264,6 +270,14 @@ def build_report(run, log):
     L.append('== Server log: warnings (%d kinds)' % len(log['warnings']))
     for text, n in group(log['warnings'], 20):
         L.append('%5dx %s' % (n, text))
+    deaths = [e for e in log['events'] if e.get('kind') == 'death']
+    L.append('== Deaths on the server (%d; the bots counted %d)' % (len(deaths), run.get('deaths', 0)))
+    for title, key in (('killer', 'killer'), ('level', 'level'), ('tester', 'who')) if deaths else ():
+        counts = {}
+        for e in deaths:
+            k = str(e.get(key, '?'))
+            counts[k] = counts.get(k, 0) + 1
+        L.append('  by %s: %s' % (title, ', '.join('%s %d' % kv for kv in group(counts, 10))))
     anomalies = list(log['anomalies']) + list(run.get('anomalies', []))
     L.append('== Anomalies (%d)' % len(anomalies))
     by_rule = {}
