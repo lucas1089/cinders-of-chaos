@@ -9501,7 +9501,7 @@ files,gearsets` (step `gearsets`, after `assetsdecor` and after `vocations`, who
 | Bloodmoon | crimson, blood | 300-650 | Elder Bloodjaw, Bloodfang Reaver, Bloodthirst Bulgeye, Bloodspark Adept, Bloodshade Reaper (326-501) | - |
 | Rimewraith | teal frost, spectral | 450-1000 | Distorted, Capricious and Hazardous Phantom, Frost Hydra (406-449), Glacial Hellcharger, Frost Maiden, Ice Lich (612-1000) | - |
 | Azure Vigil | blue and gold, holy | 800-1350 | Dawn Strayer, Spirit of Purity, Celestial Wyrm (980-1080; Rimecrown Depths, Slagmourn Foundry) | Ossivane the Gravecage |
-| Gildcrown | gold | 1200-2000 | Golden Dragon, Winterstride, Bloodantler Fiend, Mirecoil Wyrm (1160-1900; the gilded owner looks) | Vaelith the Fallen Seraph |
+| Gildcrown | gold | 1250-2000 | Winterstride, Bloodantler Fiend, Mirecoil Wyrm, Pyrewing Tyrant, Pyre Stork (1220-2000; the gilded owner looks) | Vaelith the Fallen Seraph, Azhkarrath the Chained Wyrm |
 
 The bands overlap, so a character always has a set running and the next one starting.
 
@@ -9545,7 +9545,7 @@ The bands overlap, so a character always has a set running and the next one star
 | Bloodmoon (300-650) | Health on Hit +8 | Life on Kill +40 | Health on Hit +8, Health Regeneration +10 per second |
 | Rimewraith (450-1000) | Chance to Chill +8% | Dodge +2% | Ice Resistance +8%, Dodge +1% |
 | Azure Vigil (800-1350) | Death Resistance +8% | Damage Taken from Monsters -3%, Healing Done +4% | Damage Taken from Monsters -2%, Maximum Health +4% |
-| Gildcrown (1200-2000) | Gold Find +10% | Rarity Find +8%, Item Find +5% | Damage to Elites and Bosses +6% |
+| Gildcrown (1250-2000) | Gold Find +10% | Rarity Find +8%, Item Find +5% | Damage to Elites and Bosses +6% |
 
   The tooltip (server `tip.set` for a plain piece, client `tooltiplogic.lua`) and the look text show the set, the pieces
   worn (an open set lists only those), "Active tier: n of 3" and every bonus, active ones bright / "[active]".
@@ -11550,6 +11550,65 @@ the champion look text and the +5% experience; everyone sent out and the arena c
 on the point (contested; covered by the unit test), parallel brackets, the scheduled start at the real time,
 `tests/siege_test.lua` covers the schedule, sign-up rules, brackets, the arena geometry, capture control, standings,
 rewards and the champion title.
+
+## Weapon coverage (`tools/weapon_coverage.lua`, `weapon_coverage_config.lua`, `survey_base_weapons.py`, 2026-10-23)
+Owner question: does every class have enough weapons? The audit answers it from the real data, in CI, so a gap fails the build.
+- **What it counts.** For each class (docs/CLASSES.md, all 21) and each level band (1-20, 20-50, 50-100, 100-200, 200-400,
+  400-700, 700-1000, 1000-1500, 1500-2400+): the weapons the class can wield and can get, whose required level is in the band.
+  Wield = the class lists of the stock entry or the unique `equipLines` (Berserker two-handed melee only, Beastmaster bows
+  only, crossbows Ranger and Deadeye, rods Illusionist, Mystic and the Necromancer line). Get = at least one way: a shop sells
+  it, a monster drops it (chance of 0.02% or more per kill), a recipe makes it or a reward gives it. Charge weapons do not
+  count. Power = attack (wand: mean damage) against the tier, the gear set attack curve at the band's own level
+  (two-handed +3, crossbow +3).
+- **Inputs.** `data/items/base_weapons.csv` is a snapshot of the stock weapons of an installed server, made by
+  `python3 -I tools/survey_base_weapons.py INSTALLED_DATA` (like `base_item_values.csv`, so CI needs no game data; run it
+  again when `install_all.py` changes a weapon). The rest is in the repo: `chaos_items.xml`, `chaos_unique_specs.lua`,
+  `chaos_unique_items.lua` (drops), `chaos_gear_sets_items.lua` and `chaos_gear_sets.lua` (sources), `chaos_fist_weapons.lua`,
+  the base recipes and the Chaos monster loot.
+- **Check (CI).** `cd server && luajit tools/weapon_coverage.lua --check` (and `lua5.3`) fails when a class has fewer than
+  `minOptions` (3) weapons in a band, or its best one is under `minPower` (80%) of the tier, unless the cell is listed in
+  `weapon_coverage_config.lua` (`knownGaps`, `handledElsewhere`). It fails too when the table below is out of date. Tighten
+  the numbers in that file. Other commands: `--md` (the table), `--list [Class]` (every weapon of a class by band), `--write`
+  (rewrite the table below).
+- **Gaps found and filled.** Before: Berserker had no weapon at 1500+, Elementalist and Illusionist one, the Ranger line,
+  Beastmaster, Mystic and the Necromancer line two. Beastmaster had two bows at 20-50 and at 700-1000. Fixed with
+  (a) three sources for the Gildcrown level 2000 pieces, which no monster could drop (Pyrewing Tyrant, Pyre Stork,
+  Azhkarrath the Chained Wyrm), (b) the Gildcrown band 1250-2000 (was 1200), which moves the second wand and rod to level
+  1500, and (c) seven uniques with built-in modifiers: Hoarfen Bow (40), Moonlit Gallows Bow (900), Hollow Throne Claymore
+  (1550), Gravetide Arbalest (1800), Emberhowl Greataxe (1950), Wake-Heron Longbow (2100) and Bellringer of the Last Vigil
+  (2200). Their power is 106 to 108% of the tier. Wands and rods have no new unique because a unique keeps the damage of
+  its base item.
+- **Not touched.** The Thief line (dual daggers and daggers) and the Monk line (Monk weapons) are filled by other changes.
+  They have no gap now, so they are not in `knownGaps`.
+- **Limits.** Quivers stop at level 1000 (`chaos_archery_config.lua`). A band can pass with 3 options of one kind.
+
+<!-- weapon-coverage:begin (luajit tools/weapon_coverage.lua --write) -->
+
+| Class | 1-20 | 20-50 | 50-100 | 100-200 | 200-400 | 400-700 | 700-1000 | 1000-1500 | 1500-2400+ |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Warrior | 55/325 | 66/136 | 69/121 | 42/135 | 56/111 | 19/113 | 8/99 | 17/122 | 10/114 |
+| Juggernaut | 55/325 | 66/136 | 69/121 | 42/135 | 56/111 | 19/113 | 8/99 | 17/122 | 10/114 |
+| Berserker | 8/147 | 29/136 | 34/121 | 18/135 | 22/111 | 8/101 | 4/99 | 8/122 | 4/108 |
+| Ranger | 6/114 | 4/110 | 12/111 | 16/121 | 24/101 | 10/101 | 4/106 | 7/101 | 6/107 |
+| Deadeye | 6/114 | 4/110 | 12/111 | 16/121 | 24/101 | 10/101 | 4/106 | 7/101 | 6/107 |
+| Beastmaster | 4/114 | 3/110 | 5/108 | 9/110 | 15/101 | 5/101 | 3/106 | 4/101 | 4/107 |
+| Mystic | 9/135 | 13/215 | 6/182 | 16/253 | 30/131 | 14/145 | 6/100 | 5/153 | 6/100 |
+| Elementalist | 5/135 | 6/215 | 4/182 | 10/253 | 16/131 | 8/145 | 3/100 | 3/153 | 3/100 |
+| Illusionist | 8/135 | 11/215 | 4/182 | 11/253 | 26/131 | 9/145 | 3/100 | 3/153 | 3/100 |
+| Thief * | 60/325 | 68/140 | 73/149 | 43/142 | 56/111 | 20/113 | 8/99 | 18/122 | 7/114 |
+| Ninja * | 60/325 | 68/140 | 73/149 | 43/142 | 56/111 | 20/113 | 8/99 | 18/122 | 7/114 |
+| Samurai * | 55/325 | 66/136 | 69/121 | 42/135 | 56/111 | 20/113 | 8/99 | 18/122 | 7/114 |
+| Necromancer | 9/135 | 13/215 | 6/182 | 16/253 | 30/131 | 14/145 | 6/100 | 5/153 | 6/100 |
+| Lich | 9/135 | 13/215 | 6/182 | 16/253 | 30/131 | 14/145 | 6/100 | 5/153 | 6/100 |
+| Bone Lord | 9/135 | 13/215 | 6/182 | 16/253 | 30/131 | 14/145 | 6/100 | 5/153 | 6/100 |
+| Monk * | 57/325 | 67/167 | 70/121 | 44/135 | 57/111 | 21/113 | 9/106 | 20/122 | 11/114 |
+| Shadowfist * | 57/325 | 67/167 | 70/121 | 44/135 | 57/111 | 21/113 | 9/106 | 20/122 | 11/114 |
+| Iron Sage * | 57/325 | 67/167 | 70/121 | 44/135 | 57/111 | 21/113 | 9/106 | 20/122 | 11/114 |
+| Templar | 55/325 | 66/136 | 69/121 | 42/135 | 56/111 | 19/113 | 8/99 | 17/122 | 10/114 |
+| Inquisitor | 55/325 | 66/136 | 69/121 | 42/135 | 56/111 | 19/113 | 8/99 | 17/122 | 10/114 |
+| Sentinel | 55/325 | 66/136 | 69/121 | 42/135 | 56/111 | 19/113 | 8/99 | 17/122 | 10/114 |
+
+<!-- weapon-coverage:end -->
 
 ## Item prices (`data/lib/chaos_item_prices.lua`, `tools/gen_item_prices.py`, `tools/install_item_prices.py`, the Loot Buyer)
 

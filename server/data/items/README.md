@@ -130,6 +130,23 @@ mock harness over 20000 simulated kills of a Demon: normal 0, magic 20, rare 276
 Hornsworn Helm, Cindermail Coat, Emberveil Greaves, Bloodstep Boots, Emberwarden, Cinderclaw Band. The set bonuses are
 documented in `ChaosSets` but **not implemented** (see below).
 
+### Weapon coverage uniques (2026-10-23)
+
+Server/README.md "Weapon coverage". Added after the audit (`server/tools/weapon_coverage.lua`) found thin bands. The same
+rules as the endgame uniques below (`equipLevel`, `equipLines`, built-in modifiers, drops from the waystone bosses and
+monsters of the band, chance 6; the Hoarfen Bow from magic monsters and up, chance 25; the Moonlit Gallows Bow from monster
+level 800).
+
+| name | slot | id | stock item | level | classes | stats | built-in modifiers |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Hoarfen Bow | distance | 13873 | shimmer bow | 40 | Ranger line | attack 40, hitChance 95, range 6, skillDist 2 | attackspeed:6, chillchance:10, lifeonkill:20 |
+| Moonlit Gallows Bow | distance | 26765 | exowing bow | 900 | Ranger line | attack 83, hitChance 99, range 7, skillDist 6, criticalHitChance 5, criticalHitAmount 20 | attackspeed:12, physpen:14, bleedchance:18, echoshot:18 |
+| Hollow Throne Claymore | sword | 25880 | slayer of mayhem | 1550 | Warrior, Templar | attack 73, defense 38, skillSword 6, criticalHitChance 6, criticalHitAmount 30 | attackspeed:12, bossdamage:20, physpen:18, bloodrush:4 |
+| Gravetide Arbalest | distance | 25886 | crossbow of mayhem | 1800 | Ranger line | attack 92, hitChance 95, range 6, skillDist 7, criticalHitChance 8, criticalHitAmount 30 | attackspeed:12, physpen:18, poisonchance:20, hunterrush:22 |
+| Emberhowl Greataxe | axe | 25882 | chopper of mayhem | 1950 | Warrior, Templar | attack 77, defense 36, skillAxe 7, lifeLeechChance 10, lifeLeechAmount 8 | bleedchance:24, dot:42, lifeonhit:50, crimsonburst:20 |
+| Wake-Heron Longbow | distance | 25885 | bow of mayhem | 2100 | Ranger line | attack 91, hitChance 98, range 7, skillDist 7, criticalHitChance 8, criticalHitAmount 30 | attackspeed:14, elepen:18, dot:40, echoshot:20 |
+| Bellringer of the Last Vigil | club | 25884 | hammer of mayhem | 2200 | Warrior, Templar | attack 78, defense 36, skillClub 7 | shockchance:22, execute:8, monsterreduction:6, arclightning:20 |
+
 ### Leveling and endgame uniques (2026-10-23)
 
 Server/README.md "Leveling and endgame uniques". Every one has `equipLevel` (and the class ones `equipLines`), so a

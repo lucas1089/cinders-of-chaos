@@ -1906,4 +1906,110 @@
 		<attribute key="description" value="The last mercy of a drowned order, given to anyone who can carry it. Carry two. (Requires level 1900.)" />
 		<attribute key="showattributes" value="1" />
 	</item>
+	<!-- weapon coverage uniques (2026-10-23, server/README.md "Weapon coverage"): fill the bands the audit found thin -->
+	<!-- 13873: stock "shimmer bow" -->
+	<item id="13873" article="a" name="Hoarfen Bow">
+		<attribute key="weight" value="3200" />
+		<attribute key="weaponType" value="distance" />
+		<attribute key="attack" value="40" />
+		<attribute key="hitChance" value="95" />
+		<attribute key="range" value="6" />
+		<attribute key="skillDist" value="2" />
+		<attribute key="mods" value="attackspeed:6,chillchance:10,lifeonkill:20" />
+		<attribute key="equipLevel" value="40" />
+		<attribute key="equipLines" value="Ranger" />
+		<attribute key="description" value="Strung with fen reeds that froze overnight and never thawed. (Requires level 40.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 25880: stock "slayer of mayhem" -->
+	<item id="25880" article="a" name="Hollow Throne Claymore">
+		<attribute key="weight" value="6500" />
+		<attribute key="weaponType" value="sword" />
+		<attribute key="attack" value="73" />
+		<attribute key="defense" value="38" />
+		<attribute key="skillSword" value="6" />
+		<attribute key="criticalHitChance" value="6" />
+		<attribute key="criticalHitAmount" value="30" />
+		<attribute key="mods" value="attackspeed:12,bossdamage:20,physpen:18,bloodrush:4" />
+		<attribute key="equipLevel" value="1550" />
+		<attribute key="equipLines" value="Warrior,Templar" />
+		<attribute key="description" value="No king sits the hollow throne. The blade keeps the seat warm. (Requires level 1550.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 25882: stock "chopper of mayhem" -->
+	<item id="25882" article="an" name="Emberhowl Greataxe">
+		<attribute key="weight" value="7000" />
+		<attribute key="weaponType" value="axe" />
+		<attribute key="attack" value="77" />
+		<attribute key="defense" value="36" />
+		<attribute key="skillAxe" value="7" />
+		<attribute key="lifeLeechChance" value="10" />
+		<attribute key="lifeLeechAmount" value="8" />
+		<attribute key="mods" value="bleedchance:24,dot:42,lifeonhit:50,crimsonburst:20" />
+		<attribute key="equipLevel" value="1950" />
+		<attribute key="equipLines" value="Warrior,Templar" />
+		<attribute key="description" value="It howls when swung, and the embers answer from far away. (Requires level 1950.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 25884: stock "hammer of mayhem" -->
+	<item id="25884" article="a" name="Bellringer of the Last Vigil">
+		<attribute key="weight" value="7500" />
+		<attribute key="weaponType" value="club" />
+		<attribute key="attack" value="78" />
+		<attribute key="defense" value="36" />
+		<attribute key="skillClub" value="7" />
+		<attribute key="mods" value="shockchance:22,execute:8,monsterreduction:6,arclightning:20" />
+		<attribute key="equipLevel" value="2200" />
+		<attribute key="equipLines" value="Warrior,Templar" />
+		<attribute key="description" value="The last watch rang it once, and the hour has not ended since. (Requires level 2200.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 25886: stock "crossbow of mayhem" -->
+	<item id="25886" article="a" name="Gravetide Arbalest">
+		<attribute key="weight" value="3200" />
+		<attribute key="weaponType" value="distance" />
+		<attribute key="attack" value="92" />
+		<attribute key="hitChance" value="95" />
+		<attribute key="range" value="6" />
+		<attribute key="skillDist" value="7" />
+		<attribute key="criticalHitChance" value="8" />
+		<attribute key="criticalHitAmount" value="30" />
+		<attribute key="mods" value="attackspeed:12,physpen:18,poisonchance:20,hunterrush:22" />
+		<attribute key="equipLevel" value="1800" />
+		<attribute key="equipLines" value="Ranger" />
+		<attribute key="description" value="Its bolts come back with the tide, and bring something with them. (Requires level 1800.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 25885: stock "bow of mayhem" -->
+	<item id="25885" article="a" name="Wake-Heron Longbow">
+		<attribute key="weight" value="3200" />
+		<attribute key="weaponType" value="distance" />
+		<attribute key="attack" value="91" />
+		<attribute key="hitChance" value="98" />
+		<attribute key="range" value="7" />
+		<attribute key="skillDist" value="7" />
+		<attribute key="criticalHitChance" value="8" />
+		<attribute key="criticalHitAmount" value="30" />
+		<attribute key="mods" value="attackspeed:14,elepen:18,dot:40,echoshot:20" />
+		<attribute key="equipLevel" value="2100" />
+		<attribute key="equipLines" value="Ranger" />
+		<attribute key="description" value="The heron stands over the dead water, and nothing it watches walks away. (Requires level 2100.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 26765: stock "exowing bow" -->
+	<item id="26765" article="a" name="Moonlit Gallows Bow">
+		<attribute key="weight" value="3200" />
+		<attribute key="weaponType" value="distance" />
+		<attribute key="attack" value="83" />
+		<attribute key="hitChance" value="99" />
+		<attribute key="range" value="7" />
+		<attribute key="skillDist" value="6" />
+		<attribute key="criticalHitChance" value="5" />
+		<attribute key="criticalHitAmount" value="20" />
+		<attribute key="mods" value="attackspeed:12,physpen:14,bleedchance:18,echoshot:18" />
+		<attribute key="equipLevel" value="900" />
+		<attribute key="equipLines" value="Ranger" />
+		<attribute key="description" value="Cut from the gallows beam of a village the moon forgot to leave. (Requires level 900.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
 </items>

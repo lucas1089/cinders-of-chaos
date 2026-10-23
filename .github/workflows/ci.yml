@@ -130,6 +130,11 @@ jobs:
           python3 -I server/tools/loot_bands_test.py
           cd server && luajit tools/loot_model.lua --check && lua5.3 tools/loot_model.lua --check
 
+      - name: Every class has weapons in every level band (weapon_coverage.lua; the base_weapons.csv snapshot)
+        run: |
+          python3 -I server/tools/survey_base_weapons_test.py
+          cd server && luajit tools/weapon_coverage.lua --check && lua5.3 tools/weapon_coverage.lua --check
+
       - name: Painted icons are up to date with their source sheet (gen_painted_icons.py)
         run: python3 client/tools/gen_painted_icons.py --check  # not -I: Pillow from the user site (installed above)
 

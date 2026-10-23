@@ -1,0 +1,520 @@
+id,kind,hands,level,attack,element,defense,hit,range,wmin,wmax,mana,charges,classes
+1294,throw,1,0,5,0,0,0,4,0,0,0,0,*
+2181,wand,1,26,0,0,0,0,3,42,48,8,0,Mystic|Illusionist|Necromancer|Lich|Bone Lord
+2182,wand,1,7,0,0,0,0,3,8,18,2,0,Mystic|Illusionist|Necromancer|Lich|Bone Lord
+2183,wand,1,33,0,0,0,0,3,55,75,13,0,Mystic|Illusionist|Necromancer|Lich|Bone Lord
+2185,wand,1,19,0,0,0,0,3,27,33,5,0,Mystic|Illusionist|Necromancer|Lich|Bone Lord
+2186,wand,1,13,0,0,0,0,3,13,25,3,0,Mystic|Illusionist|Necromancer|Lich|Bone Lord
+2187,wand,1,33,0,0,0,0,3,55,75,13,0,Mystic|Elementalist|Illusionist|Necromancer|Lich|Bone Lord
+2188,wand,1,19,0,0,0,0,3,27,33,5,0,Mystic|Elementalist|Illusionist|Necromancer|Lich|Bone Lord
+2189,wand,1,26,0,0,0,0,3,42,48,8,0,Mystic|Elementalist|Illusionist|Necromancer|Lich|Bone Lord
+2190,wand,1,7,0,0,0,0,3,8,18,2,0,Mystic|Elementalist|Illusionist|Necromancer|Lich|Bone Lord
+2191,wand,1,13,0,0,0,0,3,13,25,3,0,Mystic|Elementalist|Illusionist|Necromancer|Lich|Bone Lord
+2321,club,1,0,24,0,14,0,0,0,0,0,0,*
+2376,sword,1,0,14,0,12,0,0,0,0,0,200,*
+2377,sword,2,20,30,0,25,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+2378,axe,2,0,25,0,10,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+2379,sword,1,0,8,0,6,0,0,0,0,0,0,*
+2380,axe,1,0,10,0,5,0,0,0,0,0,0,*
+2381,axe,2,25,35,0,14,0,0,0,0,0,0,*
+2382,club,1,0,7,0,7,0,0,0,0,0,0,*
+2383,sword,1,0,24,0,21,0,0,0,0,0,0,*
+2384,sword,1,0,10,0,8,0,0,0,0,0,0,*
+2385,sword,1,0,12,0,10,0,0,0,0,0,0,*
+2386,axe,1,0,12,0,6,0,0,0,0,0,0,*
+2387,axe,2,25,35,0,12,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+2388,axe,1,0,15,0,8,0,0,0,0,0,0,*
+2389,throw,1,0,25,0,0,0,3,0,0,0,0,*
+2390,sword,2,140,55,0,40,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+2391,club,2,50,45,0,10,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+2392,sword,1,30,24,11,20,0,0,0,0,0,0,*
+2393,sword,2,55,46,0,22,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+2394,club,1,0,25,0,11,0,0,0,0,0,0,*
+2395,sword,1,0,15,0,13,0,0,0,0,0,0,*
+2396,sword,1,0,42,18,1,0,0,0,0,0,1,*
+2397,sword,1,0,17,0,14,0,0,0,0,0,0,*
+2398,club,1,0,16,0,11,0,0,0,0,0,0,*
+2399,throw,1,0,30,0,0,0,4,0,0,0,0,*
+2400,sword,1,80,48,0,35,0,0,0,0,0,0,*
+2401,club,2,0,10,0,25,0,0,0,0,0,0,*
+2402,sword,1,0,9,0,7,0,0,0,0,0,0,*
+2403,sword,1,0,5,0,5,0,0,0,0,0,0,*
+2404,sword,1,0,8,0,6,0,0,0,0,0,0,*
+2405,axe,1,0,5,0,4,0,0,0,0,0,0,*
+2406,sword,1,0,11,0,11,0,0,0,0,0,0,*
+2407,sword,1,30,36,0,30,0,0,0,0,0,0,*
+2408,sword,2,120,53,0,38,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+2409,sword,1,0,18,8,15,0,0,0,0,0,0,*
+2410,throw,1,0,25,0,0,0,4,0,0,0,0,*
+2411,sword,1,0,18,2,8,0,0,0,0,0,0,*
+2412,sword,1,0,16,0,12,0,0,0,0,0,0,*
+2413,sword,2,0,26,0,23,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+2414,axe,2,60,47,0,16,0,0,0,0,0,0,*
+2415,axe,2,95,52,0,22,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+2416,club,1,0,5,0,6,0,0,0,0,0,0,*
+2417,club,1,0,24,0,14,0,0,0,0,0,0,*
+2418,axe,1,0,13,0,6,0,0,0,0,0,0,*
+2419,sword,1,0,19,0,13,0,0,0,0,0,0,*
+2420,sword,1,0,12,0,9,0,0,0,0,0,0,*
+2421,club,1,85,49,0,35,0,0,0,0,0,0,*
+2422,club,1,0,18,0,10,0,0,0,0,0,0,*
+2423,club,1,20,28,0,15,0,0,0,0,0,0,*
+2424,club,1,45,41,0,30,0,0,0,0,0,0,*
+2425,axe,2,20,34,0,10,0,0,0,0,0,0,*
+2426,axe,2,25,39,0,25,0,0,0,0,0,0,*
+2427,axe,2,55,46,0,15,0,0,0,0,0,0,*
+2428,axe,1,0,23,0,12,0,0,0,0,0,0,*
+2429,axe,1,20,28,0,18,0,0,0,0,0,0,*
+2430,axe,1,25,33,0,21,0,0,0,0,0,0,*
+2431,axe,1,90,50,0,30,0,0,0,0,0,0,*
+2432,axe,1,35,27,11,16,0,0,0,0,0,0,*
+2433,club,2,0,39,0,45,0,0,0,0,0,0,*
+2434,club,1,25,32,0,20,0,0,0,0,0,0,*
+2435,axe,1,20,31,0,19,0,0,0,0,0,0,*
+2436,club,1,30,36,0,12,0,0,0,0,0,0,*
+2437,club,1,0,14,0,9,0,0,0,0,0,0,*
+2438,sword,1,30,37,0,23,0,0,0,0,0,0,*
+2439,club,1,0,21,0,12,0,0,0,0,0,0,*
+2440,axe,2,25,39,0,15,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+2441,axe,1,0,17,0,8,0,0,0,0,0,0,*
+2442,sword,1,0,16,0,10,0,0,0,0,0,0,*
+2443,axe,2,70,49,0,14,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+2444,club,2,65,48,0,12,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+2445,club,1,35,38,0,16,0,0,0,0,0,0,*
+2446,sword,1,45,41,0,23,0,0,0,0,0,0,*
+2447,axe,2,50,45,0,24,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+2448,club,1,0,9,0,8,0,0,0,0,0,0,*
+2449,club,1,0,12,0,8,0,0,0,0,0,0,*
+2450,sword,1,0,13,0,10,0,0,0,0,0,0,*
+2451,sword,1,35,38,0,22,0,0,0,0,0,0,*
+2452,club,2,70,49,0,15,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+2453,club,2,75,50,0,30,0,0,0,0,0,0,*
+2454,axe,2,65,48,0,10,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+2455,crossbow,2,0,32,0,0,87,5,0,0,0,0,*
+2456,bow,2,0,29,0,0,93,6,0,0,0,0,*
+2550,axe,2,0,8,0,3,0,0,0,0,0,0,*
+3961,club,1,40,40,0,30,0,0,0,0,0,0,*
+3962,axe,1,30,35,0,12,0,0,0,0,0,0,*
+3963,sword,1,0,23,0,15,0,0,0,0,0,0,*
+3964,axe,2,0,28,0,7,0,0,0,0,0,0,*
+3965,throw,1,20,32,0,0,0,3,0,0,0,0,*
+3966,club,1,0,25,0,15,0,0,0,0,0,0,*
+5803,crossbow,2,75,58,0,0,92,6,0,0,0,0,Ranger|Deadeye
+6101,sword,1,0,12,0,10,0,0,0,0,0,0,*
+6528,sword,2,75,50,0,38,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+6553,axe,2,75,50,0,15,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+7366,throw,1,0,28,0,0,80,4,0,0,0,0,*
+7367,throw,1,42,38,0,0,0,4,0,0,0,0,*
+7368,throw,1,80,65,0,0,0,4,0,0,0,0,*
+7378,throw,1,25,35,0,0,0,3,0,0,0,0,*
+7379,club,2,25,35,0,15,0,0,0,0,0,0,*
+7380,axe,2,35,42,0,20,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+7381,club,1,20,30,0,15,0,0,0,0,0,0,*
+7382,sword,2,60,47,0,22,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+7383,sword,1,50,42,0,24,0,0,0,0,0,0,*
+7384,sword,1,60,44,0,25,0,0,0,0,0,0,*
+7385,sword,1,20,28,0,20,0,0,0,0,0,0,*
+7386,sword,2,40,43,0,27,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+7387,club,1,25,34,0,18,0,0,0,0,0,0,*
+7388,axe,1,55,43,0,19,0,0,0,0,0,0,*
+7389,axe,1,60,44,0,24,0,0,0,0,0,0,*
+7390,sword,1,75,47,0,24,0,0,0,0,0,0,*
+7391,sword,2,50,45,0,29,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+7392,club,2,35,42,0,18,0,0,0,0,0,0,*
+7402,sword,2,45,44,0,28,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+7403,sword,2,65,48,0,21,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+7404,sword,1,40,40,0,12,0,0,0,0,0,0,*
+7405,sword,2,70,49,0,34,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+7406,sword,2,35,42,0,22,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+7407,sword,2,30,40,0,12,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+7408,sword,1,25,32,0,19,0,0,0,0,0,0,*
+7409,club,1,50,42,0,15,0,0,0,0,0,0,*
+7410,club,1,55,43,0,19,0,0,0,0,0,0,*
+7411,axe,1,50,42,0,22,0,0,0,0,0,0,*
+7412,axe,1,45,41,0,24,0,0,0,0,0,0,*
+7413,axe,2,40,43,0,30,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+7414,club,2,60,47,0,21,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+7415,club,1,60,44,0,20,0,0,0,0,0,0,*
+7416,sword,1,55,43,0,21,0,0,0,0,0,0,*
+7417,sword,1,65,45,0,32,0,0,0,0,0,0,*
+7418,sword,1,70,46,0,23,0,0,0,0,0,0,*
+7419,axe,1,40,40,0,19,0,0,0,0,0,0,*
+7420,axe,1,70,46,0,25,0,0,0,0,0,0,*
+7421,club,1,65,45,0,18,0,0,0,0,0,0,*
+7422,club,1,75,46,0,20,0,0,0,0,0,0,*
+7423,club,2,85,51,0,20,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+7424,club,2,30,40,0,25,0,0,0,0,0,0,*
+7425,club,2,20,30,0,18,0,0,0,0,0,0,*
+7426,club,2,40,43,0,25,0,0,0,0,0,0,*
+7427,club,2,45,44,0,21,0,0,0,0,0,0,*
+7428,club,2,55,46,0,15,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+7429,club,1,75,47,0,21,0,0,0,0,0,0,*
+7430,club,1,30,35,0,18,0,0,0,0,0,0,*
+7431,club,1,80,48,0,38,0,0,0,0,0,0,*
+7432,club,1,20,31,0,19,0,0,0,0,0,0,*
+7433,axe,1,65,45,0,22,0,0,0,0,0,0,*
+7434,axe,1,75,47,0,25,0,0,0,0,0,0,*
+7435,axe,1,85,49,0,25,0,0,0,0,0,0,*
+7436,axe,2,45,44,0,24,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+7437,club,1,30,37,0,18,0,0,0,0,0,0,*
+7438,bow,2,0,29,0,0,98,6,0,0,0,0,*
+7449,sword,2,25,35,0,26,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+7450,club,2,120,52,0,35,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+7451,club,1,35,39,0,17,0,0,0,0,0,0,*
+7452,club,2,30,41,0,21,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+7453,axe,2,85,51,0,20,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+7454,axe,2,30,40,0,23,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+7455,axe,1,80,48,0,28,0,0,0,0,0,0,*
+7456,axe,1,35,39,0,22,0,0,0,0,0,0,*
+7744,sword,1,0,20,4,21,0,0,0,0,0,1000,*
+7745,sword,1,50,34,8,24,0,0,0,0,0,1000,*
+7746,sword,1,60,36,8,25,0,0,0,0,0,1000,*
+7747,sword,2,35,35,7,22,0,0,0,0,0,1000,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+7748,sword,2,45,35,9,28,0,0,0,0,0,1000,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+7749,axe,1,20,23,5,18,0,0,0,0,0,1000,*
+7750,axe,1,25,27,6,21,0,0,0,0,0,1000,*
+7751,axe,1,60,35,9,24,0,0,0,0,0,1000,*
+7752,axe,2,35,34,8,20,0,0,0,0,0,1000,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+7753,axe,2,65,39,9,10,0,0,0,0,0,1000,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+7754,club,1,20,23,5,15,0,0,0,0,0,1000,*
+7755,club,1,35,31,7,16,0,0,0,0,0,1000,*
+7756,club,1,60,36,8,20,0,0,0,0,0,1000,*
+7757,club,2,35,35,7,18,0,0,0,0,0,1000,*
+7758,club,2,50,36,9,10,0,0,0,0,0,1000,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+7763,sword,1,0,20,4,21,0,0,0,0,0,1000,*
+7764,sword,1,50,34,8,24,0,0,0,0,0,1000,*
+7765,sword,1,60,36,8,25,0,0,0,0,0,1000,*
+7766,sword,2,35,35,7,22,0,0,0,0,0,1000,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+7767,sword,2,45,35,9,28,0,0,0,0,0,1000,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+7768,axe,1,20,23,5,18,0,0,0,0,0,1000,*
+7769,axe,1,25,27,6,21,0,0,0,0,0,1000,*
+7770,axe,1,60,35,9,24,0,0,0,0,0,1000,*
+7771,axe,2,35,34,8,20,0,0,0,0,0,1000,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+7772,axe,2,65,39,9,10,0,0,0,0,0,1000,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+7773,club,1,20,23,5,15,0,0,0,0,0,1000,*
+7774,club,1,35,31,7,16,0,0,0,0,0,1000,*
+7775,club,1,60,36,8,20,0,0,0,0,0,1000,*
+7776,club,2,35,35,7,18,0,0,0,0,0,1000,*
+7777,club,2,50,36,9,10,0,0,0,0,0,1000,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+7854,sword,1,0,20,4,21,0,0,0,0,0,1000,*
+7855,sword,1,50,34,8,24,0,0,0,0,0,1000,*
+7856,sword,1,60,36,8,25,0,0,0,0,0,1000,*
+7857,sword,2,35,35,7,22,0,0,0,0,0,1000,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+7858,sword,2,45,35,9,28,0,0,0,0,0,1000,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+7859,axe,1,20,23,5,18,0,0,0,0,0,1000,*
+7860,axe,1,25,27,6,21,0,0,0,0,0,1000,*
+7861,axe,1,60,35,9,24,0,0,0,0,0,1000,*
+7862,axe,2,35,34,8,20,0,0,0,0,0,1000,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+7863,axe,2,65,39,9,10,0,0,0,0,0,1000,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+7864,club,1,20,23,5,15,0,0,0,0,0,1000,*
+7865,club,1,35,31,7,16,0,0,0,0,0,1000,*
+7866,club,1,60,36,8,20,0,0,0,0,0,1000,*
+7867,club,2,35,35,7,18,0,0,0,0,0,1000,*
+7868,club,2,50,36,9,10,0,0,0,0,0,1000,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+7869,sword,1,0,20,4,21,0,0,0,0,0,1000,*
+7870,sword,1,50,34,8,24,0,0,0,0,0,1000,*
+7871,sword,1,60,36,8,25,0,0,0,0,0,1000,*
+7872,sword,2,35,35,7,22,0,0,0,0,0,1000,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+7873,sword,2,45,35,9,28,0,0,0,0,0,1000,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+7874,axe,1,20,23,5,18,0,0,0,0,0,1000,*
+7875,axe,1,25,27,6,21,0,0,0,0,0,1000,*
+7876,axe,1,60,35,9,24,0,0,0,0,0,1000,*
+7877,axe,2,35,34,8,20,0,0,0,0,0,1000,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+7878,axe,2,65,39,9,10,0,0,0,0,0,1000,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+7879,club,1,20,23,5,15,0,0,0,0,0,1000,*
+7880,club,1,35,31,7,16,0,0,0,0,0,1000,*
+7881,club,1,60,36,8,20,0,0,0,0,0,1000,*
+7882,club,2,35,35,7,18,0,0,0,0,0,1000,*
+7883,club,2,50,36,9,10,0,0,0,0,0,1000,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+8209,sword,1,0,18,0,10,0,0,0,0,0,0,*
+8601,axe,1,0,21,0,10,0,0,0,0,0,0,*
+8602,sword,1,0,21,0,14,0,0,0,0,0,0,*
+8849,crossbow,2,45,36,0,0,90,5,0,0,0,0,Ranger|Deadeye
+8850,crossbow,2,60,44,0,0,91,3,0,0,0,0,Ranger|Deadeye
+8851,crossbow,2,130,71,0,0,93,6,0,0,0,0,Ranger|Deadeye
+8852,crossbow,2,100,86,0,0,70,6,0,0,0,0,Ranger|Deadeye
+8853,crossbow,2,80,60,0,0,90,5,0,0,0,0,Ranger|Deadeye
+8854,bow,2,80,41,0,0,99,7,0,0,0,0,Ranger|Deadeye|Beastmaster
+8855,bow,2,50,41,0,0,96,6,0,0,0,0,Ranger|Deadeye|Beastmaster
+8856,bow,2,60,38,0,0,100,7,0,0,0,0,Ranger|Deadeye|Beastmaster
+8857,bow,2,40,38,0,0,97,6,0,0,0,0,Ranger|Deadeye|Beastmaster
+8858,bow,2,70,45,0,0,94,4,0,0,0,0,Ranger|Deadeye|Beastmaster
+8910,wand,1,42,0,0,0,0,3,55,75,13,0,Mystic|Illusionist|Necromancer|Lich|Bone Lord
+8911,wand,1,22,0,0,0,0,3,27,33,5,0,Mystic|Illusionist|Necromancer|Lich|Bone Lord
+8912,wand,1,37,0,0,0,0,3,55,75,13,0,Mystic|Illusionist|Necromancer|Lich|Bone Lord
+8920,wand,1,37,0,0,0,0,3,55,75,13,0,Mystic|Elementalist|Illusionist|Necromancer|Lich|Bone Lord
+8921,wand,1,22,0,0,0,0,3,27,33,5,0,Mystic|Elementalist|Illusionist|Necromancer|Lich|Bone Lord
+8922,wand,1,42,0,0,0,0,3,55,75,13,0,Mystic|Elementalist|Necromancer|Lich|Bone Lord
+8924,axe,1,110,51,0,28,0,0,0,0,0,0,*
+8925,axe,1,130,52,0,29,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+8926,axe,2,120,53,0,20,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+8927,club,1,120,51,0,32,0,0,0,0,0,0,*
+8928,club,1,100,50,0,30,0,0,0,0,0,0,*
+8929,club,2,100,51,0,20,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+8930,sword,1,100,49,0,33,0,0,0,0,0,0,*
+8931,sword,1,120,50,0,35,0,0,0,0,0,0,*
+8932,sword,2,100,51,0,35,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+10290,club,1,0,16,0,10,0,0,0,0,0,0,*
+10292,sword,1,0,16,0,8,0,0,0,0,0,0,*
+10293,club,1,0,18,0,8,0,0,0,0,0,0,*
+10295,bow,2,0,29,0,0,93,4,0,0,0,0,*
+10301,axe,2,0,16,0,6,0,0,0,0,0,0,*
+10302,club,1,0,16,0,8,0,0,0,0,0,0,*
+10303,sword,2,0,17,0,7,0,0,0,0,0,0,*
+10304,sword,1,0,10,0,8,0,0,0,0,0,0,*
+10313,sword,1,0,17,0,14,0,0,0,0,0,0,*
+11305,axe,2,60,47,0,20,0,0,0,0,0,0,*
+11306,sword,2,50,45,0,27,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+11307,sword,1,55,43,0,18,0,0,0,0,0,0,*
+11308,club,2,55,46,0,25,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+11309,axe,2,20,32,0,22,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+11323,axe,2,25,37,0,15,0,0,0,0,0,0,*
+11395,sword,1,0,18,0,10,0,0,0,0,0,0,*
+11426,sword,1,0,12,0,10,0,0,0,0,0,0,*
+12613,sword,2,58,47,0,30,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+12648,club,1,82,48,0,29,0,0,0,0,0,0,*
+12649,sword,1,82,48,0,29,0,0,0,0,0,0,*
+13760,wand,1,37,0,0,0,0,3,55,75,13,0,Mystic|Elementalist|Illusionist|Necromancer|Lich|Bone Lord
+13829,sword,1,0,7,0,7,0,0,0,0,0,0,*
+13838,sword,2,25,35,0,17,0,0,0,0,0,0,*
+13871,sword,1,40,42,0,20,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+13872,wand,1,40,0,0,0,0,4,55,75,13,0,Mystic|Illusionist|Necromancer|Lich|Bone Lord
+13873,bow,2,40,39,0,0,100,6,0,0,0,0,Ranger|Deadeye|Beastmaster
+13880,wand,1,40,0,0,0,0,4,55,75,13,0,Mystic|Elementalist|Illusionist|Necromancer|Lich|Bone Lord
+14334,club,1,0,24,0,14,0,0,0,0,0,0,*
+15400,club,2,38,43,0,23,0,0,0,0,0,0,*
+15404,axe,1,80,49,0,29,0,0,0,0,0,0,*
+15414,club,1,90,49,0,24,0,0,0,0,0,0,*
+15451,axe,1,40,42,0,21,0,0,0,0,0,0,*
+15454,axe,2,50,46,0,11,0,0,0,0,0,0,*
+15492,axe,1,70,46,0,24,0,0,0,0,0,0,*
+15643,bow,2,85,40,0,0,99,6,0,0,0,0,Ranger|Deadeye|Beastmaster
+15644,crossbow,2,50,37,0,0,91,6,0,0,0,0,Ranger|Deadeye
+15647,club,1,48,44,0,28,0,0,0,0,0,0,*
+16111,crossbow,2,150,75,0,0,91,6,0,0,0,0,Ranger|Deadeye
+18390,wand,1,65,0,0,0,0,4,70,100,17,0,Mystic|Elementalist|Necromancer|Lich|Bone Lord
+18409,wand,1,65,0,0,0,0,4,70,100,17,0,Mystic|Elementalist|Illusionist|Necromancer|Lich|Bone Lord
+18411,wand,1,65,0,0,0,0,4,70,100,17,0,Mystic|Illusionist|Necromancer|Lich|Bone Lord
+18412,wand,1,300,0,0,0,0,4,70,100,17,0,Mystic|Illusionist|Necromancer|Lich|Bone Lord
+18450,sword,1,62,47,0,34,0,0,0,0,0,0,*
+18451,axe,1,120,51,0,29,0,0,0,0,0,0,*
+18452,club,1,120,50,0,31,0,0,0,0,0,0,*
+18453,crossbow,2,90,70,0,0,93,6,0,0,0,0,Ranger|Deadeye
+18454,bow,2,105,69,0,0,99,6,0,0,0,0,Ranger|Deadeye|Beastmaster
+18465,sword,1,120,50,0,35,0,0,0,0,0,0,*
+19389,sword,1,0,14,0,7,0,0,0,0,0,0,*
+19390,throw,1,0,15,0,0,0,3,0,0,0,0,*
+19391,wand,1,1,0,0,0,0,3,8,18,2,0,None
+20092,sword,1,15,27,0,19,0,0,0,0,0,0,*
+20093,club,1,15,27,0,19,0,0,0,0,0,0,*
+20104,club,1,0,17,0,12,0,0,0,0,0,0,*
+20108,club,2,50,45,0,17,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+20139,club,1,20,31,0,14,0,0,0,0,0,0,*
+21690,crossbow,2,70,59,0,0,92,5,0,0,0,0,Ranger|Deadeye
+21696,bow,2,0,30,0,0,97,6,0,0,0,0,*
+22398,sword,1,75,48,0,26,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+22399,sword,1,120,50,0,29,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+22400,sword,1,250,52,0,31,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+22401,sword,2,75,51,0,29,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+22402,sword,2,120,52,0,31,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+22403,sword,2,250,54,0,35,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+22404,axe,1,75,49,0,24,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+22405,axe,1,120,51,0,27,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+22406,axe,1,250,53,0,30,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+22407,axe,2,75,51,0,27,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+22408,axe,2,120,52,0,30,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+22409,axe,2,250,54,0,34,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+22410,club,1,75,48,0,22,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+22411,club,1,120,50,0,26,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+22412,club,1,250,52,0,30,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+22413,club,2,75,51,0,27,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+22414,club,2,120,53,0,30,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+22415,club,2,250,55,0,34,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+22416,bow,2,75,40,0,0,99,7,0,0,0,0,Ranger|Deadeye|Beastmaster
+22417,bow,2,150,69,0,0,100,7,0,0,0,0,Ranger|Deadeye|Beastmaster
+22418,bow,2,250,71,0,0,100,7,0,0,0,0,Ranger|Deadeye|Beastmaster
+22419,crossbow,2,75,59,0,0,91,5,0,0,0,0,Ranger|Deadeye
+22420,crossbow,2,150,72,0,0,92,5,0,0,0,0,Ranger|Deadeye
+22421,crossbow,2,250,75,0,0,94,5,0,0,0,0,Ranger|Deadeye
+22690,sword,1,0,10,0,8,0,0,0,0,0,0,*
+23529,throw,1,60,55,0,0,0,3,0,0,0,0,*
+23542,club,1,55,44,0,20,0,0,0,0,0,0,*
+23543,club,1,25,33,0,19,0,0,0,0,0,0,*
+23544,club,2,60,47,0,21,0,0,0,0,0,0,*
+23545,axe,1,45,40,0,23,0,0,0,0,0,0,*
+23547,axe,2,55,46,0,18,0,0,0,0,0,0,*
+23548,sword,1,25,34,0,19,0,0,0,0,0,0,*
+23549,club,2,75,39,26,1,0,0,0,0,0,2,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+23550,sword,2,75,39,26,1,0,0,0,0,0,2,Warrior|Juggernaut|Berserker|Ranger|Deadeye|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+23551,axe,2,75,39,26,1,0,0,0,0,0,2,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+23590,club,2,70,49,0,22,0,0,0,0,0,0,*
+23719,wand,1,1,0,0,0,0,3,3,7,1,0,*
+23721,wand,1,1,0,0,0,0,3,3,7,1,0,*
+24827,club,2,50,45,0,25,0,0,0,0,0,0,*
+24828,axe,2,25,39,0,23,0,0,0,0,0,0,*
+24839,wand,1,37,0,0,0,0,3,56,74,13,0,Mystic|Illusionist|Necromancer|Lich|Bone Lord
+25383,axe,2,70,48,0,28,0,0,0,0,0,0,*
+25415,axe,1,150,26,26,31,0,0,0,0,0,0,*
+25416,sword,1,150,26,26,31,0,0,0,0,0,0,*
+25418,club,1,150,51,0,32,0,0,0,0,0,0,*
+25420,club,1,100,20,0,30,0,0,0,0,0,0,*
+25421,wand,1,65,0,0,0,0,3,65,95,17,0,Mystic|Elementalist|Illusionist|Necromancer|Lich|Bone Lord
+25422,wand,1,100,0,0,0,0,4,80,110,19,0,Mystic|Elementalist|Illusionist|Necromancer|Lich|Bone Lord
+25522,bow,2,120,70,0,0,98,7,0,0,0,0,Ranger|Deadeye|Beastmaster
+25523,crossbow,2,120,71,0,0,94,5,0,0,0,0,Ranger|Deadeye
+25526,throw,1,0,250,0,0,0,4,0,0,0,0,*
+25879,sword,1,0,50,0,33,0,0,0,0,0,0,*
+25880,sword,2,0,52,0,32,0,0,0,0,0,0,*
+25881,axe,1,0,51,0,31,0,0,0,0,0,0,*
+25882,axe,2,0,52,0,32,0,0,0,0,0,0,*
+25883,club,1,0,50,0,30,0,0,0,0,0,0,*
+25884,club,2,0,53,0,30,0,0,0,0,0,0,*
+25885,bow,2,0,71,0,0,100,6,0,0,0,0,*
+25886,crossbow,2,0,72,0,0,96,5,0,0,0,0,*
+26756,wand,1,100,0,0,0,0,4,115,165,25,0,Mystic|Elementalist|Illusionist|Necromancer|Lich|Bone Lord
+26757,wand,1,100,0,0,0,0,4,115,165,25,0,Mystic|Illusionist|Necromancer|Lich|Bone Lord
+26758,bow,2,100,69,0,0,100,7,0,0,0,0,Ranger|Deadeye|Beastmaster
+26759,sword,1,100,54,0,27,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+26760,sword,1,100,54,0,27,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+26765,bow,2,100,72,0,0,99,7,0,0,0,0,Ranger|Deadeye|Beastmaster
+26806,sword,1,0,10,42,29,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+27193,wand,1,180,0,0,0,0,6,86,98,23,0,Mystic|Elementalist|Illusionist|Necromancer|Lich|Bone Lord
+27194,wand,1,230,0,0,0,0,5,80,120,23,0,Mystic|Elementalist|Illusionist|Necromancer|Lich|Bone Lord
+27197,wand,1,300,0,0,0,0,5,87,101,20,0,Mystic|Illusionist|Necromancer|Lich|Bone Lord
+27198,wand,1,300,0,0,0,0,5,86,102,21,0,Mystic|Elementalist|Illusionist|Necromancer|Lich|Bone Lord
+27199,bow,2,300,72,0,0,100,6,0,0,0,0,Ranger|Deadeye|Beastmaster
+27204,sword,2,300,56,0,34,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+27205,axe,2,300,10,47,33,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+27206,club,1,300,11,41,33,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+27208,wand,1,270,0,0,0,0,4,94,100,22,0,Mystic|Elementalist|Illusionist|Necromancer|Lich|Bone Lord
+27209,wand,1,270,0,0,0,0,5,70,110,21,0,Mystic|Illusionist|Necromancer|Lich|Bone Lord
+27210,club,1,270,8,44,29,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+27212,crossbow,2,270,73,0,0,96,6,0,0,0,0,Ranger|Deadeye
+27214,sword,1,270,52,0,31,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+27218,throw,1,60,48,2,0,90,4,0,0,0,0,Ranger|Deadeye|Thief|Ninja|Samurai
+27219,throw,1,120,64,2,0,0,5,0,0,0,0,Ranger|Deadeye|Thief|Ninja|Samurai
+27229,club,1,220,8,44,27,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+27230,bow,2,220,71,0,0,99,6,0,0,0,0,Ranger|Deadeye|Beastmaster
+27269,sword,2,250,7,49,32,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+27285,axe,2,180,5,49,32,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+27377,sword,1,400,7,45,32,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+27378,sword,2,400,10,47,35,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+27379,axe,1,400,7,45,32,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+27380,axe,2,400,10,47,35,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+27381,club,1,400,6,46,33,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+27382,club,2,400,10,47,35,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+27383,bow,2,400,73,0,0,100,6,0,0,0,0,Ranger|Deadeye|Beastmaster
+27384,crossbow,2,400,75,0,0,96,6,0,0,0,0,Ranger|Deadeye
+27385,wand,1,400,0,0,0,0,6,100,120,22,0,Mystic|Elementalist|Necromancer|Lich|Bone Lord
+27386,wand,1,400,0,0,0,0,6,98,118,21,0,Mystic|Illusionist|Necromancer|Lich|Bone Lord
+27395,bow,2,270,71,0,0,99,6,0,0,0,0,Ranger|Deadeye|Beastmaster
+27396,wand,1,270,0,0,0,0,5,85,105,20,0,Mystic|Illusionist|Necromancer|Lich|Bone Lord
+27397,wand,1,270,0,0,0,0,4,89,109,21,0,Mystic|Elementalist|Illusionist|Necromancer|Lich|Bone Lord
+27400,sword,1,270,8,44,31,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+27404,axe,1,270,8,44,31,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+27405,club,1,270,8,44,31,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+27458,sword,1,600,8,46,32,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+27459,sword,1,600,10,50,32,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+27460,club,1,600,8,46,32,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+27461,club,1,600,10,50,32,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+27462,axe,1,600,8,46,32,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+27463,axe,1,600,10,50,32,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+27464,sword,2,600,8,50,35,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+27465,sword,2,600,10,54,35,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+27466,club,2,600,8,50,35,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+27467,club,2,600,10,54,35,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+27468,axe,2,600,8,50,35,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+27469,axe,2,600,10,54,35,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+27471,bow,2,600,74,0,0,100,6,0,0,0,0,Ranger|Deadeye|Beastmaster
+27472,bow,2,600,75,0,0,100,6,0,0,0,0,Ranger|Deadeye|Beastmaster
+27473,crossbow,2,600,75,0,0,97,6,0,0,0,0,Ranger|Deadeye
+27474,crossbow,2,600,76,0,0,98,6,0,0,0,0,Ranger|Deadeye
+27476,wand,1,600,0,0,0,0,6,110,130,25,0,Mystic|Elementalist|Illusionist|Necromancer|Lich|Bone Lord
+27477,wand,1,600,0,0,0,0,6,120,140,26,0,Mystic|Elementalist|Illusionist|Necromancer|Lich|Bone Lord
+27479,wand,1,600,0,0,0,0,6,110,130,25,0,Mystic|Illusionist|Necromancer|Lich|Bone Lord
+27480,wand,1,600,0,0,0,0,6,120,140,26,0,Mystic|Illusionist|Necromancer|Lich|Bone Lord
+27642,club,2,150,52,0,31,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+27643,axe,1,150,51,0,30,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+27646,bow,2,150,71,0,0,100,6,0,0,0,0,Ranger|Deadeye|Beastmaster
+27649,wand,1,150,0,0,0,0,4,80,100,19,0,Mystic|Illusionist|Necromancer|Lich|Bone Lord
+27650,wand,1,150,0,0,0,0,4,80,100,19,0,Mystic|Elementalist|Illusionist|Necromancer|Lich|Bone Lord
+27654,sword,2,250,6,50,33,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+27655,sword,2,250,7,52,34,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+27656,club,2,250,6,50,33,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+27657,club,2,250,7,52,34,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+27658,axe,2,250,56,0,33,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+27659,axe,2,250,58,0,34,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+27661,bow,2,250,71,0,0,100,6,0,0,0,0,Ranger|Deadeye|Beastmaster
+27662,bow,2,250,72,0,0,100,6,0,0,0,0,Ranger|Deadeye|Beastmaster
+27665,wand,1,250,0,0,0,0,4,85,105,22,0,Mystic|Elementalist|Illusionist|Necromancer|Lich|Bone Lord
+27666,wand,1,250,0,0,0,0,4,95,115,25,0,Mystic|Elementalist|Illusionist|Necromancer|Lich|Bone Lord
+27671,wand,1,250,0,0,0,0,4,85,105,22,0,Mystic|Illusionist|Necromancer|Lich|Bone Lord
+27672,wand,1,250,0,0,0,0,4,95,115,25,0,Mystic|Illusionist|Necromancer|Lich|Bone Lord
+27681,sword,1,300,8,44,31,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+27682,axe,1,300,8,44,31,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+27683,club,2,300,52,0,31,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+27685,crossbow,2,300,74,0,0,97,6,0,0,0,0,Ranger|Deadeye
+27688,wand,1,250,0,0,0,0,6,95,115,21,0,Mystic|Elementalist|Illusionist|Necromancer|Lich|Bone Lord
+27689,wand,1,250,0,0,0,0,6,90,110,21,0,Mystic|Illusionist|Necromancer|Lich|Bone Lord
+28025,axe,1,400,8,55,33,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+28026,sword,1,400,8,55,33,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+28027,club,2,400,8,55,33,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+28042,wand,1,400,0,0,0,0,6,135,155,28,0,Mystic|Elementalist|Illusionist|Necromancer|Lich|Bone Lord
+28051,crossbow,2,400,75,0,0,96,6,0,0,0,0,Ranger|Deadeye
+28052,bow,2,400,73,0,0,100,6,0,0,0,0,Ranger|Deadeye|Beastmaster
+28102,sword,1,300,55,0,30,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+28103,axe,1,300,55,0,30,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+28104,club,1,300,55,0,30,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+28110,wand,1,300,0,0,0,0,5,90,130,23,0,Mystic|Elementalist|Illusionist|Necromancer|Lich|Bone Lord
+28116,bow,2,300,72,0,0,100,6,0,0,0,0,Ranger|Deadeye|Beastmaster
+28128,sword,2,330,0,50,34,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+28129,axe,2,330,0,50,34,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+28130,club,2,330,0,50,34,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+28131,bow,2,330,72,0,0,100,6,0,0,0,0,Ranger|Deadeye|Beastmaster
+28132,wand,1,330,0,0,0,0,5,98,140,20,0,Mystic|Elementalist|Illusionist|Necromancer|Lich|Bone Lord
+28133,wand,1,330,0,0,0,0,5,98,140,20,0,Mystic|Illusionist|Necromancer|Lich|Bone Lord
+28134,sword,1,330,0,46,32,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+28135,axe,1,330,0,46,32,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+28136,club,1,330,0,46,32,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+28137,crossbow,2,330,74,0,0,97,6,0,0,0,0,Ranger|Deadeye
+28373,sword,1,350,56,0,33,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+28374,axe,1,350,56,0,33,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+28375,club,1,350,56,0,33,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+28376,wand,1,350,0,0,0,0,6,115,160,23,0,Mystic|Elementalist|Illusionist|Necromancer|Lich|Bone Lord
+28377,bow,2,350,73,0,0,100,7,0,0,0,0,Ranger|Deadeye|Beastmaster
+28378,crossbow,2,350,78,0,0,95,5,0,0,0,0,Ranger|Deadeye
+28712,axe,1,220,52,0,30,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+28713,bow,2,220,69,0,0,100,7,0,0,0,0,Ranger|Deadeye|Beastmaster
+28714,club,1,220,52,0,30,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+28715,crossbow,2,220,72,0,0,92,6,0,0,0,0,Ranger|Deadeye
+28716,sword,1,220,52,0,30,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+28717,wand,1,220,0,0,0,0,5,92,125,22,0,Mystic|Elementalist|Illusionist|Necromancer|Lich|Bone Lord
+29477,bow,2,300,72,0,0,100,6,0,0,0,0,Ranger|Deadeye|Beastmaster
+29478,bow,2,300,72,0,0,100,6,0,0,0,0,Ranger|Deadeye|Beastmaster
+29479,crossbow,2,300,75,0,0,93,5,0,0,0,0,Ranger|Deadeye
+29480,crossbow,2,300,75,0,0,93,5,0,0,0,0,Ranger|Deadeye
+29481,axe,1,300,11,0,36,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+29482,axe,1,300,11,0,36,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+29483,club,1,300,11,0,36,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+29484,club,1,300,11,0,36,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+29485,sword,1,300,11,0,36,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+29486,sword,1,300,11,0,36,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+29487,wand,1,300,0,0,0,0,6,100,140,24,0,Mystic|Elementalist|Illusionist|Necromancer|Lich|Bone Lord
+29488,wand,1,300,0,0,0,0,6,100,140,24,0,Mystic|Elementalist|Illusionist|Necromancer|Lich|Bone Lord
+29489,wand,1,300,0,0,0,0,6,100,140,24,0,Mystic|Illusionist|Necromancer|Lich|Bone Lord
+29490,wand,1,300,0,0,0,0,6,100,140,24,0,Mystic|Illusionist|Necromancer|Lich|Bone Lord
+29556,axe,1,400,60,0,36,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+29557,club,1,400,60,0,36,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+29558,sword,1,400,60,0,36,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+29564,crossbow,2,400,76,0,0,95,5,0,0,0,0,Ranger|Deadeye
+29565,bow,2,400,72,0,0,100,7,0,0,0,0,Ranger|Deadeye|Beastmaster
+29571,wand,1,400,0,0,0,0,6,120,165,28,0,Mystic|Elementalist|Illusionist|Necromancer|Lich|Bone Lord
+29866,wand,1,1000,0,0,0,0,6,150,210,35,0,Mystic|Elementalist|Illusionist|Necromancer|Lich|Bone Lord
+29874,bow,2,1000,71,0,0,100,7,0,0,0,0,Ranger|Deadeye|Beastmaster
+29875,crossbow,2,1000,78,0,0,93,5,0,0,0,0,Ranger|Deadeye
+29883,sword,1,1000,65,0,38,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+29884,sword,2,1000,71,0,42,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+29885,axe,1,1000,65,0,38,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+29886,sword,2,1000,71,0,42,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+29887,club,1,1000,65,0,38,0,0,0,0,0,0,Warrior|Juggernaut|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel
+29888,sword,2,1000,71,0,42,0,0,0,0,0,0,Warrior|Juggernaut|Berserker|Thief|Ninja|Samurai|Monk|Shadowfist|Iron Sage|Templar|Inquisitor|Sentinel

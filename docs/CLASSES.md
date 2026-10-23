@@ -314,6 +314,15 @@ early fists are still ahead (server/data/spells/README.md "Weapon damage per sec
 ones are the same item now) for the Warrior, Thief, Monk and Templar lines, which trains the melee skill, and **fist fighting for the
 Monk line**; a bow for the Ranger and Thief lines (distance); a rod and a wand for the Mystic, Necromancer and Templar lines
 (magic level); a shield for every class (shielding). Server/README.md "Training weapons".
+**Weapon coverage (owner, 2026-10-23, "veja se todas as classes tem armas o suficiente")**: every class has at least three
+weapons it can wield and obtain in each of the nine level bands (1-20, 20-50, 50-100, 100-200, 200-400, 400-700, 700-1000,
+1000-1500, 1500-2400+), and the best of them is at least 80% of the tier (the gear set attack curve). A check in CI keeps it
+(`server/tools/weapon_coverage.lua --check`; the table and the thresholds: server/README.md "Weapon coverage"). Gaps found:
+the Berserker (two-handed melee only) had nothing at 1500+, the Elementalist and Illusionist one weapon, the Beastmaster
+(bows only) two bows at 20-50 and at 700-1000, the Ranger line, Mystic and Necromancer line two weapons at 1500+. Filled with
+seven uniques (Berserker: Hollow Throne Claymore 1550, Emberhowl Greataxe 1950, Bellringer of the Last Vigil 2200; Ranger
+line: Hoarfen Bow 40, Moonlit Gallows Bow 900, Gravetide Arbalest 1800, Wake-Heron Longbow 2100) and by making the level 2000
+Gildcrown pieces droppable (wands and rods got their third piece by moving the set to 1250-2000).
 Every auto attack scales with its skill (owner, 2026-10-20): swords, axes, clubs, distance weapons and fists by the engine's
 formula (the skill is 79-94% of the hit), wands and rods by the magic level since 2026-10-20 (before: a flat roll whatever the
 magic level; at the typical magic level of a level the hit is the same as before). server/README.md "Weapon damage scales

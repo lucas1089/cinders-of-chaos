@@ -573,7 +573,7 @@ return {
 		[37436] = true, [37437] = true, [37438] = true, [37439] = true, [37440] = true, [37441] = true, [37442] = true, [40000] = true, [40001] = true, [40002] = true, [40003] = true, [40004] = true,
 		[40005] = true, [40006] = true, [40007] = true, [40008] = true, [40009] = true, [40010] = true, [40011] = true, [40012] = true,
 	},
-	-- a unique copy (custom attribute chaos_unique) is never sold to an NPC: reasons.unique (157 uniques)
+	-- a unique copy (custom attribute chaos_unique) is never sold to an NPC: reasons.unique (164 uniques)
 	-- [server id] = reason: never sold to an NPC (keys of reasons)
 	unsellable = {
 		[2148] = "currency", [2152] = "currency", [2159] = "currency", [2160] = "currency", [2320] = "quest", [2348] = "quest",

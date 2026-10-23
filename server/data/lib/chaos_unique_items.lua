@@ -231,6 +231,22 @@ ChaosUniqueItems = {
 	  bossOnly = false, monsters = {"Vorgrun of the Jade Fangs", "Fractalis the Shardmaw", "Armorcoil", "Blazefang", "Gorgulith", "Nexlurith", "Voidwagner", "Aegis Sentinel", "Flarevein Wyrm", "Gloomstinger", "Pyroquill", "Toxic Mauler"} },
 	{ name = "Misericorde of the Pale Vow", id = 27193, minTier = "rare", chance = 6, level = 1900, slot = "sword", minMonsterLevel = 1000,
 	  bossOnly = false, monsters = {"Frostreaver the Glacialblade", "Rhazgor the Crimson Slayer", "Ashfang Wrym", "Bloodspark Adept", "Glacial Hellcharger", "Nightfang Widow", "Shadowcrystal Widow", "Bloodshade Reaper", "Duskhorn Drake", "Nightflare Dreadknight", "Shadowvein Wrym", "Umbral Arcanist"} },
+	-- weapon coverage uniques (2026-10-23): a leveling bow for the Beastmaster and endgame weapons the audit found missing
+	-- (tools/weapon_coverage.lua); the same rules as the other leveling and endgame uniques
+	{ name = "Hoarfen Bow", id = 13873, minTier = "magic", chance = 25, level = 40, slot = "distance",
+	  bossOnly = false, monsters = {"Ghoul", "Scarab", "Ghost", "Tarantula", "Demon Skeleton", "Mummy", "Crypt Shambler", "Vampire", "Dwarf Guard", "Gargoyle", "Cyclops", "Fire Elemental", "Bonelord", "Orc Berserker", "Zombie", "Dragon Hatchling"} },
+	{ name = "Hollow Throne Claymore", id = 25880, minTier = "rare", chance = 6, level = 1550, slot = "sword", minMonsterLevel = 1000,
+	  bossOnly = false, monsters = {"Frostreaver the Glacialblade", "Rhazgor the Crimson Slayer", "Ashfang Wrym", "Bloodspark Adept", "Glacial Hellcharger", "Nightfang Widow", "Shadowcrystal Widow", "Bloodshade Reaper", "Duskhorn Drake", "Nightflare Dreadknight", "Shadowvein Wrym", "Umbral Arcanist"} },
+	{ name = "Emberhowl Greataxe", id = 25882, minTier = "rare", chance = 6, level = 1950, slot = "axe", minMonsterLevel = 1000,
+	  bossOnly = false, monsters = {"Frostreaver the Glacialblade", "Rhazgor the Crimson Slayer", "Ashfang Wrym", "Bloodspark Adept", "Glacial Hellcharger", "Nightfang Widow", "Shadowcrystal Widow", "Bloodshade Reaper", "Duskhorn Drake", "Nightflare Dreadknight", "Shadowvein Wrym", "Umbral Arcanist"} },
+	{ name = "Bellringer of the Last Vigil", id = 25884, minTier = "rare", chance = 6, level = 2200, slot = "club", minMonsterLevel = 1000,
+	  bossOnly = false, monsters = {"Morgrath the Umbral Archmage", "Nyxdrath the Midnight Terror", "Hellmaw Brute", "Mirethorn Hexer", "Mossfang Drake", "Plague Warbringer", "Viridscale Wrym", "Embermaw Archon", "Inferno Juggernaut", "Pitlord Incarnate", "Stormvein Wrym", "Waterglow Conjurer"} },
+	{ name = "Gravetide Arbalest", id = 25886, minTier = "rare", chance = 6, level = 1800, slot = "distance", minMonsterLevel = 1000,
+	  bossOnly = false, monsters = {"Frostreaver the Glacialblade", "Rhazgor the Crimson Slayer", "Ashfang Wrym", "Bloodspark Adept", "Glacial Hellcharger", "Nightfang Widow", "Shadowcrystal Widow", "Bloodshade Reaper", "Duskhorn Drake", "Nightflare Dreadknight", "Shadowvein Wrym", "Umbral Arcanist"} },
+	{ name = "Wake-Heron Longbow", id = 25885, minTier = "rare", chance = 6, level = 2100, slot = "distance", minMonsterLevel = 1000,
+	  bossOnly = false, monsters = {"Morgrath the Umbral Archmage", "Nyxdrath the Midnight Terror", "Hellmaw Brute", "Mirethorn Hexer", "Mossfang Drake", "Plague Warbringer", "Viridscale Wrym", "Embermaw Archon", "Inferno Juggernaut", "Pitlord Incarnate", "Stormvein Wrym", "Waterglow Conjurer"} },
+	{ name = "Moonlit Gallows Bow", id = 26765, minTier = "rare", chance = 6, level = 900, slot = "distance", minMonsterLevel = 800,
+	  bossOnly = false, monsters = {"Vorgrun of the Jade Fangs", "Fractalis the Shardmaw", "Armorcoil", "Blazefang", "Gorgulith", "Nexlurith", "Voidwagner", "Aegis Sentinel", "Flarevein Wyrm", "Gloomstinger", "Pyroquill", "Toxic Mauler"} },
 	-- the Ascended uniques (uber.lua, server/README.md "Ascended Omens and the Cinderheart"): ascended = true keeps them
 	-- out of the Omen chest pool (rift.lua); corpse drops of the listed bosses (x6 boss tier) and the spoils' unique rolls
 	{ name = "Sanguine Crescent", id = 2408, minTier = "boss", chance = 10, level = 1000, slot = "sword",
