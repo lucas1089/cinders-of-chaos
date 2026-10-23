@@ -222,7 +222,7 @@ server/
                                       (see "Tester bots"; header src/chaostesters.h, tools/chaostesters_test.cpp)
   src-patches/0060-fx-send-offsets.patch   engine: every effect packet of an in-place pair 36 id with art bigger
                                       than a tile goes to its centring tile, engine sends included; Lua hands over the
-                                      table (Game.setFxSendOffsets); 0060-0069 reserved (see "Purchased effect packs
+                                      table (Game.setFxSendOffsets) (see "Purchased effect packs
                                       (pair 36)"; header src/chaosfxoffsets.h, tools/chaosfxoffsets_test.cpp)
   src-patches/0061-scheduler-timers-before-service.patch   engine: the scheduler's pending timers are destroyed
                                       before their io_context (a use-after-free at every shutdown; see "Engine
