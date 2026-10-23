@@ -29,6 +29,12 @@
 #                               server/tools/spectate_render.py (the 15 x 11 view drawn with the client pair as a base64
 #                               PNG, name, level, health, mana, position; or ok false and an error). One at a time
 #                               (busy: exit 75), at most one view every 0.8 s, the drawing stopped after 25 s
+#   cast NAME                   the app's live view in real time (server/README.md "Live spectator", phase 2): queues
+#                               "cast NAME" (the engine's cast port, src-patch 0064, mirrors that player), then runs
+#                               server/tools/cast_relay.py in the foreground: JSON lines on stdout until stdin closes
+#                               (the app's channel), stdout breaks or 30 minutes pass; "caststop" is queued at the end.
+#                               One at a time (busy: exit 75). Needs castPort in config.lua (install_all.py step
+#                               castport) or CHAOS_CAST_PORT, and the client pair of spectate
 #   spectate-pair [status | fetch | fetch-now | log [N]]
 #                               the client pair spectate draws with (CHAOS_SPECTATE_PAIR, default CHAOS_ROOT/pair, the same
 #                               folder as the site's CHAOS_SPRITE_PAIR): status key=value lines; fetch takes the pair
@@ -121,7 +127,8 @@
 # CHAOS_TESTER_KEY /etc/chaos/tester-client-key, CHAOS_TESTER_STATE /var/lib/chaos/testers, CHAOS_TESTER_LOG
 # /var/log/chaos/testers.log. For vps: CHAOS_VPS_LOG /var/log/chaos/vps-upgrade.log. For spectate: CHAOS_SPECTATE_PAIR
 # $CHAOS_ROOT/pair, CHAOS_SPECTATE_STATE /var/lib/chaos/spectate (lock, renewal time, the dat index), CHAOS_PAIR_BRANCH
-# windows-assets, CHAOS_SPECTATE_LOG /var/log/chaos/spectate-pair.log.
+# windows-assets, CHAOS_SPECTATE_LOG /var/log/chaos/spectate-pair.log. For cast: CHAOS_CAST_PORT (else castPort of
+# the server's config.lua).
 # They come from /etc/chaos/ctl.conf (server/deploy/ctl.conf.example): simple KEY=VALUE lines, only those keys, read
 # only when the file is owned by root (or by the user running the script) and not writable by group or others. It is
 # never sourced. The environment wins over the file, but sudo drops the environment, so the app (which runs this through
@@ -145,7 +152,7 @@ CHAOS_PID_FILE CHAOS_DB_SOCKET CHAOS_MYSQL CHAOS_BACKUP_DIR CHAOS_PUBLISH_LOG CH
 CHAOS_UPDATE_PUBLIC CHAOS_UPDATE_REPO CHAOS_UPDATE_URL CHAOS_WORK_DIR CHAOS_KIT_DIR CHAOS_UPDATE_BRANCH \
 CHAOS_RELEASE_REPO CHAOS_KIT_STATE CHAOS_BOOT_TIMEOUT CHAOS_DL_DIR CHAOS_SITE_ENV CHAOS_SITE_LOG CHAOS_TESTER_KEY \
 CHAOS_TESTER_STATE CHAOS_TESTER_LOG CHAOS_VPS_LOG CHAOS_SPECTATE_PAIR CHAOS_SPECTATE_STATE CHAOS_PAIR_BRANCH \
-CHAOS_SPECTATE_LOG "
+CHAOS_SPECTATE_LOG CHAOS_CAST_PORT "
 declare -A CFG=()
 # KEY=VALUE, optional "" or '' around the value, # comments; a value is a path or a unit name (no spaces, no $ or `)
 read_conf() {
@@ -420,6 +427,16 @@ sp_log() { printf '[%s] %s\n' "$(date '+%F %T')" "$*"; }
 spg() { git -C "$REPO" -c safe.directory="$REPO" "$@"; }
 # the state folder (lock, renewal time, the dat index), root only
 sp_state() { { mkdir -p "$SPSTATE" && chmod 0700 "$SPSTATE"; } || die "cannot create $SPSTATE"; }
+# the cast port: CHAOS_CAST_PORT, else the last castPort line of the server's config.lua (digits only)
+cast_port() {
+  local p
+  p=$(setting CHAOS_CAST_PORT "")
+  if [ -z "$p" ] && [ -r "$SERVER/config.lua" ]; then
+    p=$(sed -n 's/^[[:space:]]*castPort[[:space:]]*=[[:space:]]*\([0-9]\{1,5\}\)[[:space:]]*\(--.*\)\{0,1\}$/\1/p' \
+      "$SERVER/config.lua" | tail -n 1)
+  fi
+  printf '%s' "$p"
+}
 # the pair archive of SPBRANCH into SPPAIR (fetch-now; the background fetch runs this too)
 pair_fetch() {
   local work p parts=()
@@ -626,6 +643,32 @@ case $cmd in
     rc=$?
     [ "$rc" = 124 ] && sp_fail timeout "the drawing took over 25 s (the first one builds the sprite index: try again)"
     exit "$rc"
+    ;;
+  cast)
+    [ $# -eq 1 ] || die "cast NAME"
+    name=$1
+    if ! [[ $name =~ ^[A-Za-z][A-Za-z\ \'-]{2,28}$ ]] || [[ $name == *' ' ]] || [[ $name == *'  '* ]]; then
+      die "cast NAME: a character name (letters, spaces, ' and -, 3 to 29 characters)"
+    fi
+    [ -d "$SERVER" ] || die "no server folder $SERVER"
+    CTOOL="$REPO/server/tools/cast_relay.py"
+    [ -r "$CTOOL" ] || sp_fail no-tool "no $CTOOL (CHAOS_REPO)"
+    port=$(cast_port)
+    if ! num "$port" || [ "$port" -lt 1 ] || [ "$port" -gt 65535 ]; then
+      sp_fail cast-off "the cast port is off: castPort in config.lua (install_all.py step castport), then a restart"
+    fi
+    { [ -r "$SPPAIR/Tibia.dat" ] && [ -r "$SPPAIR/Tibia.spr" ]; } || sp_fail no-pair "no client pair in $SPPAIR (spectate-pair fetch)"
+    sp_state
+    exec 7> "$SPSTATE/cast.lock"
+    flock -n 7 || sp_fail busy "another live view is running" 75
+    spool "cast $name" >/dev/null
+    trap '( spool caststop ) >/dev/null 2>&1 || true' EXIT
+    trap 'exit 143' TERM HUP INT
+    otb=()
+    [ -r "$SERVER/data/items/items.otb" ] && otb=(--otb "$SERVER/data/items/items.otb")
+    timeout 1830 python3 -I "$CTOOL" --port "$port" --dat "$SPPAIR/Tibia.dat" --spr "$SPPAIR/Tibia.spr" "${otb[@]}" \
+      --name "$name" --max-seconds 1800
+    exit $?
     ;;
   spectate-pair)
     sub=${1:-status}

@@ -310,6 +310,43 @@ eq(#logged, 1, "but is not logged")
 print = realPrint
 ChaosSpectate = nil
 
+-- ================================================================== cast (engine patch 0064, the live cast)
+c = parsed("cast Bad Player")
+eq(c and c.cmd, "cast", "cast parses")
+eq(c and c.arg, "Bad Player", "with the name")
+c = parsed("caststop")
+eq(c and c.cmd, "caststop", "caststop parses")
+for _, bad in ipairs({"cast", "cast ab", "cast x; rm -rf /", "cast $(id)", "cast 1abc", "cast a|b", "caststop Bob",
+	"cast " .. string.rep("a", 30)}) do
+	eq(parsed(bad), nil, "refused: " .. bad)
+end
+logged = {}
+print = function(s) logged[#logged + 1] = tostring(s) end
+local setCast = Game.setCastTarget
+Game.setCastTarget = nil
+disk["remote.cmd"] = "cast Bob\n"
+RC.check()
+check(logged[#logged] and logged[#logged]:find("no cast port", 1, true) ~= nil, "an engine without patch 0064 says so")
+local targets, portOpen = {}, true
+Game.setCastTarget = function(name)
+	targets[#targets + 1] = name
+	return portOpen
+end
+logged = {}
+disk["remote.cmd"] = "cast Bob\ncaststop\n"
+eq(RC.check(), 2, "cast and caststop run")
+eq(targets[1], "Bob", "cast sets the target")
+eq(targets[2], "", "caststop clears it")
+check(logged[1] and logged[1]:find("cast Bob: casting Bob", 1, true) ~= nil, "cast is logged")
+check(logged[2] and logged[2]:find("cast stopped", 1, true) ~= nil, "caststop is logged")
+portOpen = false
+logged = {}
+disk["remote.cmd"] = "cast Bob\n"
+RC.check()
+check(logged[1] and logged[1]:find("cast port is closed", 1, true) ~= nil, "a closed port is reported")
+Game.setCastTarget = setCast
+print = realPrint
+
 print(string.format("remote_cmd_test: %d checks, %d failures", count, failures))
 if failures > 0 then
 	os.exit(1)

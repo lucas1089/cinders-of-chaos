@@ -21,32 +21,32 @@ import java.util.Locale;
 import java.util.regex.Pattern;
 
 /**
- * Comandos > Ações rápidas > Assistir jogador: the live view of one character, drawn on the VPS with the game's own
- * sprites (chaos-ctl.sh spectate NAME, server/README.md "Live spectator"). Polls about once a second over the open ssh
- * session, shows the PNG scaled without smoothing (the pixels stay sharp) and the character's level, health and mana
- * under it. Stops on Parar, when the tab or the app is left, and after repeated failures. Read only: the player is not
- * told and nothing in the game changes. docs/ADMIN_APP.md "Assistir jogador".
+ * Comandos > Ações rápidas > Assistir jogador: one character's screen, with the game's own sprites
+ * (server/README.md "Live spectator", docs/ADMIN_APP.md "Assistir jogador").
+ * Ao vivo: chaos-ctl.sh cast NAME over one long ssh channel. The engine mirrors the player's game messages to the cast
+ * port (src-patch 0064), cast_relay.py turns them into JSON lines and CastView draws them at about 30 frames a second.
+ * Foto: one picture drawn on the VPS (chaos-ctl.sh spectate NAME), scaled without smoothing.
+ * Stops on Parar, when the tab or the app is left, and on an error. Read only: the player is not told and nothing in
+ * the game changes.
  */
 final class SpectateCard {
     /** The same rule as chaos-ctl.sh and the engine: a letter, then letters, single spaces, ' and -, 3 to 29. */
     private static final Pattern NAME = Pattern.compile("^[A-Za-z][A-Za-z '-]{2,28}$");
-    private static final long EVERY_MS = 1000L;
-    private static final long OFFLINE_EVERY_MS = 4000L;
-    private static final int MAX_FAILURES = 6;
 
     final MaterialCardView card;
     private final MainActivity a;
     private final Ui ui;
     private final TextInputLayout name;
-    private final MaterialButton startB;
+    private final MaterialButton liveB;
+    private final MaterialButton photoB;
     private final MaterialButton stopB;
+    private final CastView live;
     private final ImageView view;
     private final TextView info;
     private final TextView state;
     private boolean running = false;
-    private boolean first = true;
-    private int generation = 0;
-    private int failures = 0;
+    private volatile int generation = 0;
+    private Ssh.Stream stream;
     private String who = "";
 
     SpectateCard(MainActivity a) {
@@ -54,23 +54,29 @@ final class SpectateCard {
         this.ui = a.ui;
         card = ui.titledCard("Assistir jogador");
         LinearLayout b = Ui.body(card);
-        b.addView(ui.hint("A tela do personagem ao vivo, com os sprites do jogo, mais ou menos uma vez por segundo. Só "
-                + "leitura: o jogador não é avisado e nada muda no jogo. Para sozinho ao sair desta aba ou do app."));
+        b.addView(ui.hint("A tela do personagem com os sprites do jogo. Ao vivo: movimento, magias e falas em tempo "
+                + "real (precisa da porta de cast ligada). Foto: uma imagem só. Só leitura: o jogador não é avisado e "
+                + "nada muda no jogo. Para sozinho ao sair desta aba ou do app."));
         name = ui.field("Nome do personagem", "Precisa estar online.", "",
                 InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_WORDS);
         b.addView(name, ui.gap(8));
-        startB = ui.primary("Iniciar", R.drawable.ic_play);
-        startB.setOnClickListener(v -> start());
+        liveB = ui.primary("Ao vivo", R.drawable.ic_play);
+        liveB.setOnClickListener(v -> startLive());
+        photoB = ui.secondary("Foto", R.drawable.ic_search);
+        photoB.setOnClickListener(v -> photo());
         stopB = ui.secondary("Parar", R.drawable.ic_stop);
         stopB.setOnClickListener(v -> stop("Parado."));
         stopB.setEnabled(false);
-        b.addView(ui.evenRow(startB, stopB), ui.gap(8));
+        b.addView(ui.evenRow(liveB, photoB, stopB), ui.gap(8));
 
+        live = new CastView(a);
+        live.setVisibility(View.GONE);
+        b.addView(live, ui.gap(10));
         view = new ImageView(a);
         view.setAdjustViewBounds(true);
         view.setScaleType(ImageView.ScaleType.FIT_CENTER);
         view.setBackgroundColor(ui.iron0);
-        view.setContentDescription("Visão do personagem");
+        view.setContentDescription("Foto do personagem");
         view.setVisibility(View.GONE);
         b.addView(view, ui.gap(10));
         info = ui.text("");
@@ -94,39 +100,42 @@ final class SpectateCard {
         b.addView(log, ui.gap(2));
     }
 
-    // ------------------------------------------------------------------------------------------------ watching
-
-    private void start() {
+    /** the name in the field, or null (with the field's error shown) */
+    private String readName() {
         if (!a.store.configured()) {
             a.snack("Configure o servidor na aba Config.", false);
-            return;
+            return null;
         }
-        String n = Ui.value(name).replaceAll("\\s+", " ");
+        String n = Ui.value(name).trim().replaceAll("\\s+", " ");
         if (!NAME.matcher(n).matches()) {
             name.setError("Um nome de personagem: letras, espaços, ' e -, de 3 a 29.");
-            return;
+            return null;
         }
         name.setError(null);
-        who = n;
-        running = true;
-        first = true;
-        failures = 0;
-        generation++;
-        startB.setEnabled(false);
-        stopB.setEnabled(true);
-        say("Conectando a " + n + "...");
-        poll(generation);
+        return n;
     }
 
-    /** Stops the polling (Parar, leaving the tab or the app); the last picture stays on screen. */
+    private void busy(boolean on) {
+        running = on;
+        liveB.setEnabled(!on);
+        photoB.setEnabled(!on);
+        stopB.setEnabled(on);
+    }
+
+    /** Stops the live view (Parar, leaving the tab or the app, an error); the last picture stays on screen. */
     void stop(String why) {
         if (!running) {
             return;
         }
-        running = false;
         generation++;
-        startB.setEnabled(true);
-        stopB.setEnabled(false);
+        Ssh.Stream s = stream;
+        stream = null;
+        if (s != null) {
+            // disconnecting blocks on the network: not on the screen thread
+            a.pool.execute(s::cancel);
+        }
+        live.animate(false);
+        busy(false);
         say(why);
     }
 
@@ -134,97 +143,233 @@ final class SpectateCard {
         return running;
     }
 
-    private void poll(final int gen) {
-        if (!running || gen != generation) {
+    // ------------------------------------------------------------------------------------------------ ao vivo
+
+    private void startLive() {
+        String n = readName();
+        if (n == null) {
             return;
         }
-        final String cmd = a.ctl("spectate " + Ssh.sq(who));
-        if (first) {
-            // the first call goes through remote(): the progress bar, and the first-connection fingerprint dialog
-            first = false;
-            a.remote(cmd, 40, (r, e) -> answered(gen, r, e));
-            return;
-        }
+        who = n;
+        final int gen = ++generation;
+        busy(true);
+        view.setVisibility(View.GONE);
+        info.setVisibility(View.GONE);
+        live.reset();
+        live.setVisibility(View.VISIBLE);
+        live.animate(true);
+        say("Conectando a " + n + "...");
+        final Ssh.Stream s = new Ssh.Stream();
+        stream = s;
+        final String cmd = a.ctl("cast " + Ssh.sq(n));
         a.pool.execute(() -> {
-            Ssh.Result r = null;
+            final boolean[] fingerprint = {true};
+            final String[] last = {""};
+            int code;
             Exception err = null;
             try {
-                r = Ssh.exec(a.store, cmd, 40);
+                code = Ssh.stream(a.store, cmd, line -> {
+                    if (fingerprint[0]) {
+                        fingerprint[0] = false;
+                        a.main.post(a::newHostDialog);
+                    }
+                    String t = line(gen, line);
+                    if (t != null) {
+                        last[0] = t;
+                    }
+                }, s);
             } catch (Exception e) {
+                code = -1;
                 err = e;
             }
-            final Ssh.Result fr = r;
+            final int fc = code;
             final Exception fe = err;
+            final String ft = last[0];
             a.main.post(() -> {
-                if (!a.isFinishing() && !a.isDestroyed()) {
-                    answered(gen, fr, fe);
+                if (a.isFinishing() || a.isDestroyed()) {
+                    return;
                 }
+                a.newHostDialog();
+                ended(gen, fc, fe, ft);
             });
         });
     }
 
-    private void answered(int gen, Ssh.Result r, Exception e) {
-        if (!running || gen != generation) {
+    /**
+     * One line of the relay, on the streaming thread: the drawing state takes it at once, the texts go to the screen
+     * thread. Returns its type for the end of the stream, or null for a line that is not JSON.
+     */
+    private String line(final int gen, String text) {
+        if (gen != generation || text.isEmpty() || text.charAt(0) != '{') {
+            return null;
+        }
+        final JSONObject j;
+        try {
+            j = new JSONObject(text);
+        } catch (Exception e) {
+            return null;
+        }
+        if (j.has("ok") && !j.optBoolean("ok", true)) {
+            // a chaos-ctl.sh failure before the relay starts
+            a.main.post(() -> {
+                if (gen == generation) {
+                    stop(castError(j.optString("error"), j.optString("message")));
+                }
+            });
+            return "fail";
+        }
+        final String t;
+        try {
+            t = live.apply(j);
+        } catch (RuntimeException e) {
+            return null;    // one broken line does not end the view
+        }
+        if ("spr".equals(t) || "hb".equals(t)) {
+            return t;
+        }
+        final JSONObject st = live.stats();
+        a.main.post(() -> {
+            if (gen != generation) {
+                return;
+            }
+            switch (t) {
+                case "wait":
+                    say("port".equals(j.optString("why"))
+                            ? "A porta de cast não respondeu: o servidor está ligado? Tentando de novo..."
+                            : who + " não está online (ou outro personagem está no cast). Esperando...");
+                    break;
+                case "hello":
+                    say("Ao vivo.");
+                    break;
+                case "resync":
+                    say("Recomeçando a visão (" + j.optString("why") + ")...");
+                    break;
+                case "full":
+                case "d":
+                    stats(st);
+                    break;
+                case "end":
+                    stop(endText(j.optString("why")));
+                    break;
+                default:
+                    break;
+            }
+        });
+        return t;
+    }
+
+    private void ended(int gen, int code, Exception e, String last) {
+        if (gen != generation || !running) {
             return;
         }
-        long next = EVERY_MS;
         if (e != null) {
             Friendly f = Friendly.ofException(e);
-            fail(f.title + ". " + f.detail);
+            stop(f.title + ". " + f.detail);
+        } else if (code == -1) {
+            stop("A conexão caiu.");
+        } else if (last.isEmpty()) {
+            stop("O comando cast falhou (código " + code + "). A VPS tem a versão nova do chaos-ctl.sh? "
+                    + "Atualize em Comandos > Versão do servidor.");
         } else {
+            stop("Fim da visão ao vivo.");
+        }
+    }
+
+    /** the error codes of chaos-ctl.sh cast */
+    private String castError(String code, String message) {
+        switch (code) {
+            case "cast-off":
+                return "A porta de cast está desligada. Ligue com install_all.py (passo castport) e reinicie o "
+                        + "servidor; veja docs/ADMIN_APP.md.";
+            case "busy":
+                return "Outra visão ao vivo já está aberta. Pare a outra e tente de novo.";
+            case "no-pair":
+                return "A VPS não tem os sprites do client. Toque em Baixar sprites e tente de novo quando o "
+                        + "download terminar.";
+            case "no-tool":
+                return "A VPS não tem o cast_relay.py: atualize o repositório na VPS.";
+            default:
+                return code + ": " + message;
+        }
+    }
+
+    private String endText(String why) {
+        switch (why) {
+            case "time":
+                return "Parado depois de 30 minutos. Toque em Ao vivo para continuar.";
+            case "no-pair":
+                return "A VPS não tem os sprites do client. Toque em Baixar sprites.";
+            case "bad-port":
+                return "A porta de cast está errada em config.lua (castPort).";
+            case "bad-name":
+                return "Nome de personagem inválido.";
+            default:
+                return "Fim da visão ao vivo (" + why + ").";
+        }
+    }
+
+    private void stats(JSONObject st) {
+        if (st == null) {
+            return;
+        }
+        int hp = st.optInt("hp"), mhp = st.optInt("mhp");
+        info.setText(String.format(Locale.ROOT, "%s  ·  nível %d\nVida %d / %d (%d%%)  ·  Mana %d / %d",
+                who, st.optInt("lvl"), hp, mhp, pct(hp, mhp), st.optInt("mp"), st.optInt("mmp")));
+        info.setVisibility(View.VISIBLE);
+    }
+
+    // ------------------------------------------------------------------------------------------------ foto
+
+    /** One picture drawn on the VPS (chaos-ctl.sh spectate NAME). */
+    private void photo() {
+        String n = readName();
+        if (n == null) {
+            return;
+        }
+        who = n;
+        say("Pedindo a foto de " + n + "...");
+        photoB.setEnabled(false);
+        a.remote(a.ctl("spectate " + Ssh.sq(n)), 40, (r, e) -> {
+            photoB.setEnabled(!running);
+            if (running) {
+                return;
+            }
+            if (e != null) {
+                Friendly f = Friendly.ofException(e);
+                say(f.title + ". " + f.detail);
+                return;
+            }
             JSONObject j = lastJson(r.out);
             if (j == null) {
                 Friendly f = Friendly.ofResult(r.out, r.code);
-                fail(f.ok ? "Resposta inesperada da VPS." : f.title + ". " + f.detail);
+                say(f.ok ? "Resposta inesperada da VPS." : f.title + ". " + f.detail);
             } else if (j.optBoolean("ok", false)) {
-                if (show(j)) {
-                    failures = 0;
-                } else {
-                    fail("A imagem não pôde ser lida.");
+                if (!show(j)) {
+                    say("A imagem não pôde ser lida.");
                 }
             } else {
-                next = error(j.optString("error"), j.optString("message"));
+                say(photoError(j.optString("error"), j.optString("message")));
             }
-        }
-        if (running && gen == generation) {
-            a.main.postDelayed(() -> poll(gen), next);
-        }
+        });
     }
 
-    /** an error answer of the script: what to tell, and when to ask again (stops for the ones that will not pass) */
-    private long error(String code, String message) {
+    private String photoError(String code, String message) {
         switch (code) {
             case "offline":
-                failures = 0;
-                say(who + " não está online. Tentando de novo a cada 4 s.");
-                return OFFLINE_EVERY_MS;
+                return who + " não está online.";
             case "busy":
-                return EVERY_MS;
+                return "A VPS está desenhando outra foto. Tente de novo em um segundo.";
             case "no-pair":
-                stop("A VPS não tem os sprites do client. Toque em Baixar sprites e tente de novo quando o download "
-                        + "terminar.");
-                return EVERY_MS;
+                return "A VPS não tem os sprites do client. Toque em Baixar sprites e tente de novo quando o "
+                        + "download terminar.";
             case "timeout":
-                fail("A VPS demorou para desenhar (a primeira vez prepara o índice dos sprites).");
-                return EVERY_MS;
+                return "A VPS demorou para desenhar (a primeira vez prepara o índice dos sprites). Tente de novo.";
             case "no-answer":
-                fail("O servidor não respondeu: ele está ligado? (" + message + ")");
-                return 2000L;
+                return "O servidor não respondeu: ele está ligado? (" + message + ")";
             case "stale":
-                fail("A visão de " + who + " ainda não chegou; esperando a próxima.");
-                return EVERY_MS;
+                return "A visão de " + who + " ainda não chegou. Tente de novo.";
             default:
-                fail(code + ": " + message);
-                return EVERY_MS;
-        }
-    }
-
-    private void fail(String text) {
-        failures++;
-        if (failures >= MAX_FAILURES) {
-            stop("Parado depois de " + failures + " falhas seguidas. " + text);
-        } else {
-            say(text);
+                return code + ": " + message;
         }
     }
 
@@ -246,6 +391,7 @@ final class SpectateCard {
         d.setFilterBitmap(false);
         d.setAntiAlias(false);
         d.setDither(false);
+        live.setVisibility(View.GONE);
         view.setImageDrawable(d);
         view.setVisibility(View.VISIBLE);
 
@@ -266,7 +412,7 @@ final class SpectateCard {
         info.setText(s.toString());
         info.setVisibility(View.VISIBLE);
         int age = j.optInt("age");
-        say(age > 2 ? String.format(Locale.ROOT, "Ao vivo (atraso de %d s).", age) : "Ao vivo.");
+        say(age > 2 ? String.format(Locale.ROOT, "Foto (de %d s atrás).", age) : "Foto.");
         return true;
     }
 
