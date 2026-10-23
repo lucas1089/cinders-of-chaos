@@ -2,7 +2,10 @@
 """The pack model: experience per hour of every class in packs, against the median class at the same level (computed,
 not measured; server/README.md "Pack combat (pace)", data/spells/README.md "Pack farming for every class").
 
-usage: python3 -I server/tools/pack_model.py [--levels 300,800,1000] [--no-cleave] [--no-kit] [--rounded] [--top]
+usage: python3 -I server/tools/pack_model.py [--levels 300,800,1000] [--no-cleave] [--no-kit] [--rounded] [--top] [--check]
+
+--check (CI, O138): the pack of the median class in the level-scaled late sets (hunting level 670 and up) dies in at most
+LATE_MAX (3.0) times the time of a base hunt's pack at the same level (at most level 1000); prints the table.
 
 Prints experience per hour against the median class; --top prints each class's kills per hour (experience per kill is
 the same for every class, so this is its experience per hour up to one factor) and its share of the top class's.
@@ -61,6 +64,8 @@ TIER_HEALTH = 1.11
 # the level-scaled late sets: health at their level (server/README.md "Pack combat (pace)")
 SCALED_HEALTH = [(670, 88600), (800, 130000), (980, 200000), (1300, 324000), (2000, 593000)]
 ABOVE_1000 = 2.41  # damage per level above 1000 (README "Solo kill times")
+LATE_MAX = 3.0  # --check: late pack clear time / base pack clear time, at most (O138: 2.0-2.5 today, was 4-11)
+LATE_LEVELS = (670, 800, 1000, 1300, 1600, 2000)
 CLEAVE_FROM, CLEAVE_TO = 300, 1000  # a cleave's `percent` up to level 300, linear to its `high` at 1000 (pace_config)
 
 
@@ -172,7 +177,37 @@ def spread(levels=((300, False), (800, False), (1000, True)), cleave=True, kit=T
     return out
 
 
+def pack_clear(L, scaled, cfg, mons):
+    """(seconds the pack of the median class (by kills per hour) takes, pack size P, kills per hour) at level L"""
+    health = lin(SCALED_HEALTH, L) if scaled else median_health(mons, L)
+    rows = sorted((kills_per_hour(c, L, scaled, cfg, health) + (c,) for c in C4))
+    k, P, c = rows[len(rows) // 2]
+    d1, d5 = damage(c, L)
+    if VOC[c] in cfg['cleave']:
+        e = cfg['cleave'][VOC[c]]
+        d5 *= 1 + lin([(CLEAVE_FROM, e[0]), (CLEAVE_TO, e[2])], L) / 100.0 * min(e[1], 4)
+    m = lin(cfg['scaled'] if scaled else cfg['base'], L)
+    return P * health * m / (d1 + (P - 1) * max(0.0, (d5 - d1) / 4)), P, k
+
+
+def check():
+    cfg, mons = pace(), monsters()
+    bad = 0
+    print('| Level | Base pack | Late pack | Late / base | P | Kills/h base | Kills/h late |')
+    print('|---|---|---|---|---|---|---|')
+    for L in LATE_LEVELS:
+        b, bp, bk = pack_clear(min(L, 1000), False, cfg, mons)
+        s, sp, sk = pack_clear(L, True, cfg, mons)
+        flag = '' if s <= LATE_MAX * b else ' FAIL'
+        bad += bool(flag)
+        print('| %d | %.1f s | %.1f s | %.2f%s | %.1f | %d | %d |' % (L, b, s, s / b, flag, sp, bk, sk))
+    print('late pack check: %s (limit %.1fx a base hunt pack)' % ('FAIL' if bad else 'ok', LATE_MAX))
+    return 1 if bad else 0
+
+
 def main(argv):
+    if '--check' in argv:
+        return check()
     levels = ((300, False), (800, False), (1000, True))
     if '--levels' in argv:
         ls = [int(x) for x in argv[argv.index('--levels') + 1].split(',')]

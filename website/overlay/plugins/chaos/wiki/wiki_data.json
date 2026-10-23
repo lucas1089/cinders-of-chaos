@@ -8489,10 +8489,10 @@
 								["300", "21%", "22%", "24%", "65%"],
 								["600", "21%", "21%", "23%", "55%"],
 								["1000", "21%", "22%", "24%", "40%"],
-								["650 (own level)", "35%", "11%", "100%", "53%"],
-								["1000 (own level)", "40%", "11%", "74%", "40%"],
-								["1300 (own level)", "42%", "11%", "71%", "40%"],
-								["2000 (own level)", "42%", "11%", "66%", "40%"]
+								["650 (own level)", "14%", "6%", "58%", "53%"],
+								["1000 (own level)", "8%", "4%", "28%", "40%"],
+								["1300 (own level)", "7%", "4%", "22%", "40%"],
+								["2000 (own level)", "6%", "3%", "18%", "40%"]
 							]
 						},
 						{
@@ -38706,7 +38706,7 @@
 								["Level", "860-900"],
 								[
 									"In hunts (pack combat)",
-									"health x0.376, experience and loot per kill x0.112 / x0.794, damage x0.43 at level 880 (Basics: Pack combat)"
+									"health x0.098, experience and loot per kill x0.049 / x0.352, damage x0.43 at level 880 (Basics: Pack combat)"
 								]
 							]
 						},
@@ -38756,7 +38756,7 @@
 								["Level", "700-740"],
 								[
 									"In hunts (pack combat)",
-									"health x0.355, experience and loot per kill x0.111 / x0.918, damage x0.49 at level 720 (Basics: Pack combat)"
+									"health x0.126, experience and loot per kill x0.060 / x0.497, damage x0.49 at level 720 (Basics: Pack combat)"
 								]
 							]
 						},
@@ -38854,7 +38854,7 @@
 								["Level", "960-1000"],
 								[
 									"In hunts (pack combat)",
-									"health x0.396, experience and loot per kill x0.113 / x0.752, damage x0.41 at level 980 (Basics: Pack combat)"
+									"health x0.083, experience and loot per kill x0.043 / x0.289, damage x0.41 at level 980 (Basics: Pack combat)"
 								]
 							]
 						},
@@ -38936,7 +38936,7 @@
 								["Level", "760-800"],
 								[
 									"In hunts (pack combat)",
-									"health x0.359, experience and loot per kill x0.111 / x0.850, damage x0.46 at level 780 (Basics: Pack combat)"
+									"health x0.114, experience and loot per kill x0.055 / x0.427, damage x0.46 at level 780 (Basics: Pack combat)"
 								]
 							]
 						},
@@ -39066,7 +39066,7 @@
 								["Level", "800-840"],
 								[
 									"In hunts (pack combat)",
-									"health x0.364, experience and loot per kill x0.111 / x0.820, damage x0.45 at level 820 (Basics: Pack combat)"
+									"health x0.107, experience and loot per kill x0.053 / x0.390, damage x0.45 at level 820 (Basics: Pack combat)"
 								]
 							]
 						},
@@ -39117,7 +39117,7 @@
 								["Level", "710-750"],
 								[
 									"In hunts (pack combat)",
-									"health x0.355, experience and loot per kill x0.111 / x0.906, damage x0.49 at level 730 (Basics: Pack combat)"
+									"health x0.124, experience and loot per kill x0.059 / x0.485, damage x0.49 at level 730 (Basics: Pack combat)"
 								]
 							]
 						},
@@ -39721,7 +39721,7 @@
 								["Level", "880-920"],
 								[
 									"In hunts (pack combat)",
-									"health x0.380, experience and loot per kill x0.112 / x0.786, damage x0.43 at level 900 (Basics: Pack combat)"
+									"health x0.095, experience and loot per kill x0.048 / x0.340, damage x0.43 at level 900 (Basics: Pack combat)"
 								]
 							]
 						},
@@ -39810,7 +39810,7 @@
 								["Level", "960-1000"],
 								[
 									"In hunts (pack combat)",
-									"health x0.396, experience and loot per kill x0.113 / x0.752, damage x0.41 at level 980 (Basics: Pack combat)"
+									"health x0.083, experience and loot per kill x0.043 / x0.289, damage x0.41 at level 980 (Basics: Pack combat)"
 								]
 							]
 						},
@@ -39890,7 +39890,7 @@
 								["Level", "680-720"],
 								[
 									"In hunts (pack combat)",
-									"health x0.353, experience and loot per kill x0.111 / x0.940, damage x0.50 at level 700 (Basics: Pack combat)"
+									"health x0.130, experience and loot per kill x0.061 / x0.520, damage x0.50 at level 700 (Basics: Pack combat)"
 								]
 							]
 						},
@@ -40001,7 +40001,7 @@
 								["Level", "920-960"],
 								[
 									"In hunts (pack combat)",
-									"health x0.388, experience and loot per kill x0.112 / x0.769, damage x0.42 at level 940 (Basics: Pack combat)"
+									"health x0.089, experience and loot per kill x0.046 / x0.314, damage x0.42 at level 940 (Basics: Pack combat)"
 								]
 							]
 						},
@@ -40084,7 +40084,7 @@
 								["Level", "900-940"],
 								[
 									"In hunts (pack combat)",
-									"health x0.384, experience and loot per kill x0.112 / x0.778, damage x0.42 at level 920 (Basics: Pack combat)"
+									"health x0.092, experience and loot per kill x0.047 / x0.327, damage x0.42 at level 920 (Basics: Pack combat)"
 								]
 							]
 						},
@@ -40135,7 +40135,7 @@
 								["Level", "940-980"],
 								[
 									"In hunts (pack combat)",
-									"health x0.392, experience and loot per kill x0.113 / x0.761, damage x0.41 at level 960 (Basics: Pack combat)"
+									"health x0.086, experience and loot per kill x0.044 / x0.301, damage x0.41 at level 960 (Basics: Pack combat)"
 								]
 							]
 						},
@@ -40186,7 +40186,7 @@
 								["Level", "790-830"],
 								[
 									"In hunts (pack combat)",
-									"health x0.362, experience and loot per kill x0.111 / x0.824, damage x0.45 at level 810 (Basics: Pack combat)"
+									"health x0.108, experience and loot per kill x0.053 / x0.397, damage x0.45 at level 810 (Basics: Pack combat)"
 								]
 							]
 						},
@@ -40455,7 +40455,7 @@
 								["Level", "650-690"],
 								[
 									"In hunts (pack combat)",
-									"health x0.351, experience and loot per kill x0.112 / x0.974, damage x0.52 at level 670 (Basics: Pack combat)"
+									"health x0.136, experience and loot per kill x0.063 / x0.555, damage x0.52 at level 670 (Basics: Pack combat)"
 								]
 							]
 						},
@@ -40567,7 +40567,7 @@
 								["Level", "810-850"],
 								[
 									"In hunts (pack combat)",
-									"health x0.366, experience and loot per kill x0.111 / x0.815, damage x0.44 at level 830 (Basics: Pack combat)"
+									"health x0.105, experience and loot per kill x0.052 / x0.384, damage x0.44 at level 830 (Basics: Pack combat)"
 								]
 							]
 						},
@@ -40655,7 +40655,7 @@
 								["Level", "650-690"],
 								[
 									"In hunts (pack combat)",
-									"health x0.351, experience and loot per kill x0.112 / x0.974, damage x0.52 at level 670 (Basics: Pack combat)"
+									"health x0.136, experience and loot per kill x0.063 / x0.555, damage x0.52 at level 670 (Basics: Pack combat)"
 								]
 							]
 						},
@@ -40789,7 +40789,7 @@
 								["Level", "760-800"],
 								[
 									"In hunts (pack combat)",
-									"health x0.359, experience and loot per kill x0.111 / x0.850, damage x0.46 at level 780 (Basics: Pack combat)"
+									"health x0.114, experience and loot per kill x0.055 / x0.427, damage x0.46 at level 780 (Basics: Pack combat)"
 								]
 							]
 						},
@@ -40955,7 +40955,7 @@
 								["Level", "810-850"],
 								[
 									"In hunts (pack combat)",
-									"health x0.366, experience and loot per kill x0.111 / x0.815, damage x0.44 at level 830 (Basics: Pack combat)"
+									"health x0.105, experience and loot per kill x0.052 / x0.384, damage x0.44 at level 830 (Basics: Pack combat)"
 								]
 							]
 						},

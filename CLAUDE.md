@@ -42,6 +42,7 @@ cd server && luajit tools/weapon_coverage.lua --check && lua5.3 tools/weapon_cov
 cd server && luajit tools/gear_coverage.lua --check && lua5.3 tools/gear_coverage.lua --check  # every class has 3+ pieces per slot and level band, weapon drops are fair (thresholds: tools/gear_coverage_config.lua); table in server/README.md (--write)
 python3 -I tools/ci/check_attack_counts.py   # every class and ascension has the same number of attack spells
 cd server && luajit tools/progression_model.lua --check && lua5.3 tools/progression_model.lua --check  # smooth leveling: stages, minutes per level 8-2200, hunts in reach (limits: data/scripts/chaos/progression_config.lua); no flag prints the table, --spells the unlock gaps
+python3 -I server/tools/pack_model.py --check   # level-scaled late packs (hunting level 670+) die in at most 3x a base hunt pack of the median class (O138; pace_config.lua scaled.health)
 cd server && luajit tools/gen_card_descriptions.lua --check   # -> data/items/card_descriptions.csv (card texts name current spells)
 python3 -I server/tools/survey_base_weapons_test.py   # base_weapons.csv: re-run server/tools/survey_base_weapons.py on an installed server when a base weapon changes
 python3 client/tools/make_fonts_test.py

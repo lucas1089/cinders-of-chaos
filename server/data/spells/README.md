@@ -2744,6 +2744,34 @@ computed with `pack_model.py` (`kills_per_hour`): health x0.5 of the `scaled.hea
 `scaled.goal` must go x0.65 / 0.63 / 0.61 / 0.59 (linear in between) for the same experience, loot and goals per hour; health
 x0.35 gives 15 / 19 / 27 / 36 s with x0.55 / 0.52 / 0.49 / 0.47.
 
+**1b. Late sets faster (O138, 2026-10-23, applied; computed with `pack_model.py`, not measured in game).** The proposal above, with the
+health points fitted so a pack of 8 dies in about 2.2 times a base hunt's pack (the owner's range x0.35-0.5 was not enough
+from level 1000: x0.5 still gave 5 times). `pace_config.lua` `scaled`: health x0.40 / 0.31 / 0.20 / 0.16 / 0.15 / 0.14 of the
+O108 curve at 650 / 800 / 1000 / 1300 / 1600 / 2000, experience and loot per kill divided by the kill rate gain, kill goals
+multiplied by it (the README above wrote x0.5-0.65 for the goals; a goal counts kills, so it follows the kill rate up: with
+x0.65 contracts would end 2.4 times faster at the same reward). Median class, `pack_model.py --check` (clear time of a pack of 8
+at the model's lure rule, cleave included; the numbers differ from the table above, which is another class pick and no cleave):
+
+| Hunting level | Base hunt pack | Late pack before | Late pack after | Kills per hour before -> after | Experience, gold, goals per hour |
+|---|---|---|---|---|---|
+| 670 | 5.1 s | 27.2 s (5.3x) | 10.5 s (2.1x) | 955 -> 1,661 (x1.72) | unchanged |
+| 800 | 4.7 s | 33.9 s (7.2x) | 10.4 s (2.2x) | 815 -> 1,674 (x2.05) | unchanged |
+| 1000 | 4.3 s | 47.6 s (11.1x) | 9.5 s (2.2x) | 617 -> 1,661 (x2.69) | unchanged |
+| 1300 | 4.3 s | 60.5 s (14.1x) | 9.8 s (2.3x) | 509 -> 1,642 (x3.22) | unchanged |
+| 1600 | 4.3 s | 67.4 s (15.8x) | 10.0 s (2.3x) | 465 -> 1,631 (x3.50) | unchanged |
+| 2000 | 4.3 s | 73.6 s (17.2x) | 10.2 s (2.4x) | 432 -> 1,616 (x3.74) | unchanged |
+
+Per kill, `scaled` at 650 / 1000 / 2000: health 0.35 / 0.40 / 0.42 -> 0.140 / 0.080 / 0.058, experience 0.086 / 0.087 / 0.087
+-> 0.0499 / 0.0323 / 0.0233, loot 0.83 / 0.62 / 0.55 -> 0.482 / 0.230 / 0.147, goals 9.8 / 9.6 / 9.8 -> 16.9 / 25.8 / 36.6
+(the 2026-10-14 model's 20-37 again). `spawn_tuning.json` `paceKillsPerHour.scaled` 485 / 412 / 323 / 254 / 232 / 211 -> 836 /
+846 / 869 / 819 / 813 / 789 (base hunts 1,200). `progression_model.lua --check` and `loot_model.lua --check` pass unchanged
+(gold per hour of the 800 band +1.5%, 1000 band +0.7%, as before). Monster damage is unchanged: a fight is 3-7 times
+shorter, so a pack deals 3-7 times less damage to a player before it dies, at the same damage per second (no change to
+healing needed; the burst is the same). If the late hunts turn out too easy in the beta, raise `pace_config.lua` `damage`
+(0.40 at 1000) before the health. CI: `pack_model.py --check` holds the late pack at 3 times a base pack at most. Bosses,
+rifts, waystones, invasions, the raid and the arena are not paced and are not affected (their fights stay as long as they
+were; the rift health budget is its own model).
+
 **2. Class curve (the early dips and the level 200 spikes).** One factor per class could not hold levels 30-200 and
 300-1000 together. `spell_factor_config.lua` now has `byLevel[vocation]`: {level, factor} points (flat below the first,
 linear between points, the last point's value above; `spell_factor_core.lua` `forVocation(voc, cfg, level)`, the event

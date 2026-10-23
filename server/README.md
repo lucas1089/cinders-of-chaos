@@ -15998,6 +15998,14 @@ Basics page "Pack combat"):
 | Kill goals x (level-scaled, O108) | 9.8 | 10.2 | 9.6 | 9.6 | 9.8 | 9.8 |
 | Kill goals x (generated points) | 20 | 24 | 28 | 32 | 35 | 37 |
 
+**Late sets faster (O138, 2026-10-23).** The rows "level-scaled" above are the O108 values. Since O138 `scaled` is health
+0.140 / 0.110 / 0.080 / 0.068 / 0.062 / 0.058, experience 0.0499 / 0.0414 / 0.0323 / 0.0270 / 0.0245 / 0.0233, loot 0.482 /
+0.336 / 0.230 / 0.185 / 0.163 / 0.147 and kill goals 16.9 / 20.9 / 25.8 / 30.9 / 34.3 / 36.6 at 650 / 800 / 1000 / 1300 / 1600 /
+2000 (a pack of 8 in 10 s instead of 27-74 s for the median class, 2.1-2.4 times a base pack; `python3 -I tools/pack_model.py
+--check` fails above 3 times). `spawn_tuning.json` `model.paceKillsPerHour.scaled` is now 836 / 846 / 869 / 819 / 813 / 789.
+Experience, gold and goal pace per hour are the O108 ones (`progression_model.lua --check`, `loot_model.lua --check`).
+Generated area points and bosses are unchanged. Deploy: `files` and `spawns` install steps and a server restart; the client codex page (`codex_data.lua`) and the website wiki data were regenerated.
+
 These come on top of the engine's x(1 + 0.0074 L) health and x0.03 L experience of a monster with a level of its own.
 Loot: `pace_config.lua` (and "Loot by monster level").
 
