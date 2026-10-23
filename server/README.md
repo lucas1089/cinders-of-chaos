@@ -1217,9 +1217,9 @@ Beta test mode (O147)
   `factions_core.lua`), `battleground_honor_cap` (6,000 honor a week, `battleground_core.lua`), `community_daily_cap` (the
   daily point caps of the community goal, `community_core.lua`).
 - **Never lifted:** everything bought with real money. The store's `weeklyLimit` offers (Double Experience Potion 4 + 2 packs,
-  Whetstones, Orb of Excision, Orb of Binding) stay capped. The one exception is opt-in: an offer key the owner writes in
-  `storeOfferKeys` (empty) is lifted while the mode is on, for example `"item:32252x1"` (Orb of Binding) while the beta
-  coins are free starter coins ("Beta starter coins", wiped at launch). Not lifted either: the Ember Descent free daily
+  Whetstones, Orb of Excision) stay capped. The one exception is opt-in: an offer key the owner writes in
+  `storeOfferKeys` is lifted while the mode is on. The owner lifted `"item:32252x1"` (Orb of Binding, 2026-10-23) while the
+  beta coins are free starter coins ("Beta starter coins", wiped at launch). Not lifted either: the Ember Descent free daily
   and weekly runs, pocket boss daily charges, faction reputation caps, the store gift limit, anti-bot and rate limits.
 - Turn it off at launch (docs/LAUNCH.md). Tests: `tests/beta_mode_test.lua` (every limit on and off, the store stays),
   `tests/dungeons_area_test.lua` (the dungeon cooldown), `tests/shop_test.lua`, `deploy/chaos_ctl_test.py`,

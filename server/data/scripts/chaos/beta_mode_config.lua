@@ -5,12 +5,12 @@
 -- (B.LIMITS), so testers can try content without waiting for a week or for a partner. Nothing that is bought with real
 -- money changes: the store's weeklyLimit offers (Double Experience Potion, Whetstones, ...) stay capped.
 -- Switch it with `chaos-ctl.sh beta-mode on|off|status` (it edits the `enabled = ...` line below with sed) or the admin
--- app (Server tab > Beta test mode > On / Off); then `chaos-ctl.sh restart` (or /reload scripts) to read it.
+-- app (Comandos tab > Modo beta (testes) > Ligar / Desligar); then `chaos-ctl.sh restart` (or /reload scripts) to read it.
 -- Keep it OFF on the launch server (docs/LAUNCH.md).
 return {
 	enabled = false,
-	-- Store offer keys (shop_config.lua `key`) whose weekly limit beta mode ALSO lifts. Empty on purpose: the store sells
-	-- for Chaos Coins, which players buy with real money, so the owner decides offer by offer (e.g. "item:32252x1" for the
-	-- Orb of Binding while the beta coins are free starter coins). Used only while enabled = true.
-	storeOfferKeys = {}
+	-- Store offer keys (shop_config.lua `key`) whose weekly limit beta mode ALSO lifts. The store sells for Chaos Coins,
+	-- which players buy with real money, so the owner decides offer by offer. Owner 2026-10-23: the Orb of Binding is
+	-- lifted while the beta coins are free starter coins. Used only while enabled = true.
+	storeOfferKeys = {"item:32252x1"}
 }

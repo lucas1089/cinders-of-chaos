@@ -26,7 +26,8 @@ ok(B ~= nil, "chaos_constants.lua loads ChaosBetaMode")
 -- ---------------------------------------------------------------- the config and the switch
 local cfgFile = dofile("data/scripts/chaos/beta_mode_config.lua")
 eq(cfgFile.enabled, false, "the shipped config is off")
-eq(#cfgFile.storeOfferKeys, 0, "no store offer is named in the shipped config")
+eq(#cfgFile.storeOfferKeys, 1, "the shipped config names one store offer")
+eq(cfgFile.storeOfferKeys[1], "item:32252x1", "the owner lifted the Orb of Binding (2026-10-23)")
 eq(Chaos.betaMode.enabled, false, "Chaos.betaMode is off after the start")
 ok(not B.enabled(), "B.enabled() is false")
 for _, l in ipairs(B.LIMITS) do
