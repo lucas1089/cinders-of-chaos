@@ -392,7 +392,7 @@
 		"spell.count": 111,
 		"store.categories": 36,
 		"store.cosmetic": 627,
-		"store.offers": 755,
+		"store.offers": 749,
 		"store.service": 26,
 		"store.unlockCost": 0,
 		"support.count": 20,
@@ -39179,7 +39179,7 @@
 								["World Buffs", "4", "250-300", "Boost"],
 								["Potions", "18", "15-135", "Consumable item"],
 								["Runes", "29", "3-108", "Consumable item"],
-								["Training", "21", "25-450", "Consumable item"],
+								["Training", "15", "25-450", "Consumable item"],
 								["Convenience", "7", "50-400", "Convenience"],
 								["Outfits", "60", "300-750", "Cosmetic"],
 								["Costumes", "6", "300", "Cosmetic"],
@@ -39256,7 +39256,7 @@
 								["Chaos Pact", "1"],
 								["Season pass", "4"],
 								["Boost", "7"],
-								["Consumable item", "68"],
+								["Consumable item", "62"],
 								["Crafting item", "3"],
 								["Premium time", "3"],
 								["Bundle", "9"]
@@ -40035,161 +40035,119 @@
 				{
 					"id": "store:13",
 					"name": "Training",
-					"sub": "21 offers, 25-450 coins. Consumable item.",
+					"sub": "15 offers, 25-450 coins. Consumable item.",
 					"color": "#ff70c0",
 					"group": "category",
 					"sections": [
-						{"h": "Category", "p": ["21 offers, 25-450 Chaos Coins. Consumable item."]},
+						{"h": "Category", "p": ["15 offers, 25-450 Chaos Coins. Consumable item."]},
 						{
 							"h": "Offers",
 							"cols": ["Offer", "Coins", "Type", "What it is"],
 							"w": [24, 10, 16, 50],
 							"rows": [
 								[
-									"Exercise Sword (500)",
+									"Exercise Melee Weapon (500)",
 									"25",
 									"Consumable item",
-									"Use the chest to get a sword with 500 training charges."
-								],
-								[
-									"Exercise Axe (500)",
-									"25",
-									"Consumable item",
-									"Use the chest to get an axe with 500 training charges."
-								],
-								[
-									"Exercise Club (500)",
-									"25",
-									"Consumable item",
-									"Use the chest to get a club with 500 training charges."
+									"Use the chest to get a melee training weapon with 500 charges. Trains melee (fist for the Monk line). Warrior, Thief, Monk and Templar lines."
 								],
 								[
 									"Exercise Bow (500)",
 									"25",
 									"Consumable item",
-									"Use the chest to get a bow with 500 training charges."
+									"Use the chest to get a bow with 500 charges. Trains distance. Ranger and Thief lines."
 								],
 								[
 									"Exercise Rod (500)",
 									"25",
 									"Consumable item",
-									"Use the chest to get a rod with 500 training charges."
+									"Use the chest to get a rod with 500 charges. Trains magic level. Mystic, Necromancer and Templar lines."
 								],
 								[
 									"Exercise Wand (500)",
 									"25",
 									"Consumable item",
-									"Use the chest to get a wand with 500 training charges."
+									"Use the chest to get a wand with 500 charges. Trains magic level. Mystic, Necromancer and Templar lines."
 								],
 								[
 									"Exercise Shield (500)",
 									"25",
 									"Consumable item",
-									"Use the chest to get a shield with 500 training charges."
+									"Use the chest to get a shield with 500 charges. Trains shielding. Every class."
 								],
 								[
-									"Durable Exercise Sword (1800)",
+									"Durable Exercise Melee Weapon (1800)",
 									"75",
 									"Consumable item",
-									"Use the chest to get a sword with 1800 training charges."
-								],
-								[
-									"Durable Exercise Axe (1800)",
-									"75",
-									"Consumable item",
-									"Use the chest to get an axe with 1800 training charges."
-								],
-								[
-									"Durable Exercise Club (1800)",
-									"75",
-									"Consumable item",
-									"Use the chest to get a club with 1800 training charges."
+									"Use the chest to get a melee training weapon with 1800 charges. Trains melee (fist for the Monk line). Warrior, Thief, Monk and Templar lines."
 								],
 								[
 									"Durable Exercise Bow (1800)",
 									"75",
 									"Consumable item",
-									"Use the chest to get a bow with 1800 training charges."
+									"Use the chest to get a bow with 1800 charges. Trains distance. Ranger and Thief lines."
 								],
 								[
 									"Durable Exercise Rod (1800)",
 									"75",
 									"Consumable item",
-									"Use the chest to get a rod with 1800 training charges."
+									"Use the chest to get a rod with 1800 charges. Trains magic level. Mystic, Necromancer and Templar lines."
 								],
 								[
 									"Durable Exercise Wand (1800)",
 									"75",
 									"Consumable item",
-									"Use the chest to get a wand with 1800 training charges."
+									"Use the chest to get a wand with 1800 charges. Trains magic level. Mystic, Necromancer and Templar lines."
 								],
 								[
 									"Durable Exercise Shield (1800)",
 									"75",
 									"Consumable item",
-									"Use the chest to get a shield with 1800 training charges."
+									"Use the chest to get a shield with 1800 charges. Trains shielding. Every class."
 								],
 								[
-									"Lasting Exercise Sword (14400)",
+									"Lasting Exercise Melee Weapon (14400)",
 									"450",
 									"Consumable item",
-									"Use the chest to get a sword with 14400 training charges."
-								],
-								[
-									"Lasting Exercise Axe (14400)",
-									"450",
-									"Consumable item",
-									"Use the chest to get an axe with 14400 training charges."
-								],
-								[
-									"Lasting Exercise Club (14400)",
-									"450",
-									"Consumable item",
-									"Use the chest to get a club with 14400 training charges."
+									"Use the chest to get a melee training weapon with 14400 charges. Trains melee (fist for the Monk line). Warrior, Thief, Monk and Templar lines."
 								],
 								[
 									"Lasting Exercise Bow (14400)",
 									"450",
 									"Consumable item",
-									"Use the chest to get a bow with 14400 training charges."
+									"Use the chest to get a bow with 14400 charges. Trains distance. Ranger and Thief lines."
 								],
 								[
 									"Lasting Exercise Rod (14400)",
 									"450",
 									"Consumable item",
-									"Use the chest to get a rod with 14400 training charges."
+									"Use the chest to get a rod with 14400 charges. Trains magic level. Mystic, Necromancer and Templar lines."
 								],
 								[
 									"Lasting Exercise Wand (14400)",
 									"450",
 									"Consumable item",
-									"Use the chest to get a wand with 14400 training charges."
+									"Use the chest to get a wand with 14400 charges. Trains magic level. Mystic, Necromancer and Templar lines."
 								],
 								[
 									"Lasting Exercise Shield (14400)",
 									"450",
 									"Consumable item",
-									"Use the chest to get a shield with 14400 training charges."
+									"Use the chest to get a shield with 14400 charges. Trains shielding. Every class."
 								]
 							],
 							"sprites": [
 								{"item": 27761},
-								{"item": 27762},
-								{"item": 27763},
 								{"item": 27764},
 								{"item": 27765},
 								{"item": 27766},
 								{"item": 27767},
 								{"item": 27768},
-								{"item": 27769},
-								{"item": 27770},
 								{"item": 27771},
 								{"item": 27772},
 								{"item": 27773},
 								{"item": 27774},
 								{"item": 27775},
-								{"item": 27776},
-								{"item": 27777},
 								{"item": 27778},
 								{"item": 27779},
 								{"item": 27780},

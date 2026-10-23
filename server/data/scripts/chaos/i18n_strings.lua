@@ -20,6 +20,19 @@ return {
 			"Você está parado na cidade: em %d segundos será levado ao Idle Hall. Dê um passo para ficar.",
 		["You stood idle in town for %d minutes and were moved to the Idle Hall. Its portal leads back to your temple."] =
 			"Você ficou parado na cidade por %d minutos e foi levado ao Idle Hall. O portal dele leva de volta ao seu templo.",
+		-- Exercise (training) weapons (exercise_training.lua, exercise_core.lua)
+		["Your vocation cannot use this item."] = "Sua vocação não pode usar este item.",
+		["Your class cannot train with this item. It is for: %s."] =
+			"Sua classe não pode treinar com este item. Ele é para: %s.",
+		["Use it on a training dummy."] = "Use no boneco de treino.",
+		["Your class is locked: nothing is trained."] = "Sua classe está bloqueada: nada é treinado.",
+		["The dummy is on another floor."] = "O boneco está em outro andar.",
+		["Get closer to the dummy."] = "Chegue mais perto do boneco.",
+		["You can only train in a protection zone."] = "Você só pode treinar em uma zona de proteção.",
+		["Your training weapon vanished."] = "Sua arma de treino sumiu.",
+		["You are already training."] = "Você já está treinando.",
+		["You started training."] = "Você começou a treinar.",
+		["Your training has stopped."] = "Seu treino parou.",
 		-- Time-friendly progression (catchup.lua)
 		["Rested Vial: +%d minutes of rested hunting (%d in all)."] =
 			"Frasco de Descanso: +%d minutos de caça descansada (%d no total).",

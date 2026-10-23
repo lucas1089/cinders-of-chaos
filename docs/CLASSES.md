@@ -309,6 +309,10 @@ one- or two-handed, is open to the Warrior, Thief, Monk and Templar lines (the B
 class rule); armour, shields, launchers, wands and rods keep their lists. Of the same tier, a two-handed melee weapon deals 1.07x the
 damage per second of one hand + shield at every level (it was +28% at level 8 and +13% from level 75); launchers and the Monk's
 early fists are still ahead (server/data/spells/README.md "Weapon damage per second": owner decision).
+**Training weapons (owner, 2026-10-23)**: the exercise weapons on a training dummy: one **melee** weapon (the sword, axe and club
+ones are the same item now) for the Warrior, Thief, Monk and Templar lines, which trains the melee skill, and **fist fighting for the
+Monk line**; a bow for the Ranger and Thief lines (distance); a rod and a wand for the Mystic, Necromancer and Templar lines
+(magic level); a shield for every class (shielding). Server/README.md "Training weapons".
 Every auto attack scales with its skill (owner, 2026-10-20): swords, axes, clubs, distance weapons and fists by the engine's
 formula (the skill is 79-94% of the hit), wands and rods by the magic level since 2026-10-20 (before: a flat roll whatever the
 magic level; at the typical magic level of a level the hit is the same as before). server/README.md "Weapon damage scales

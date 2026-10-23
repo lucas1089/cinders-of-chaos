@@ -224,7 +224,8 @@ local SITES = {
 	["community.lua"] = {}, ["community_core.lua"] = CORE_T, ["dungeons.lua"] = {},
 	["treasure_goblin.lua"] = {}, ["loot.lua"] = {}, ["rift_core.lua"] = CORE_T, ["infinitytower_run.lua"] = {},
 	["conquest.lua"] = {"result%(player,%s*%a+,%s*"}, ["harvest_event.lua"] = {"tell%(player,%s*"},
-	["waystone_tiers.lua"] = {}
+	["waystone_tiers.lua"] = {},
+	["exercise_training.lua"] = {"say%(player,%s*", "stop%(pid,%s*gen,%s*"}
 }
 local used = 0
 for f, extra in pairs(SITES) do

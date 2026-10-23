@@ -3590,7 +3590,7 @@ client module needed no change.
 | | Loot Bag / Orbs Pouch / Rift Key Pouch | 250 / 200 / 150 | store pouch items, one of each per character ("Store pouches" below) |
 | | Auto Seller | 400 | unlock (also lent by an active Chaos Pact), see below |
 | | Rarity Autoloot / Everfull Ration | 300 / 100 | per character, see "Store pouches and the Everfull Ration" |
-| Training | 21 exercise weapon chests | 25 / 75 / 450 | the base server's chests: sword, axe, club, bow, rod, wand, shield with 500 / 1800 / 14400 charges |
+| Training | 15 exercise weapon chests | 25 / 75 / 450 | the base server's chests: melee (the one sword / axe / club weapon since 2026-10-23), bow, rod, wand, shield with 500 / 1800 / 14400 charges ("Training weapons") |
 
 Premium (250 for 30 days) stays where it was.
 
@@ -5434,8 +5434,8 @@ for the Monk line). What is done without an engine patch, and what is not:
   (`ChaosMeleeSkill.routeTarget`); a tie keeps them where they are. The vocations' three multipliers are equal now
   (`chaos_vocations*.xml`: the Thief line sword 1.1, club and axe 1.3 -> 1.1; the Monk line sword and axe 1.3 -> 1.1; the Templar
   line axe 1.2 -> 1.1), so no skill is slower to level. **Saved characters lose nothing**: the three skills keep their stored
-  values and tries, only the weaker two stop growing; the best one is what counts. The exercise weapons (sword, axe, club) keep
-  their class lists (`patch_base_classes.py`): every melee class can train with at least one.
+  values and tries, only the weaker two stop growing; the best one is what counts. The exercise weapons (sword, axe, club) are one
+  melee weapon since 2026-10-23, for every melee class ("Training weapons").
 - **Items by group, not by type** (`add_vocations.py` step 3, run by `install_all.py` and safe to run again on an installed
   server; `install_gear_sets.py` FITS the same): every sword, axe and club, one- or two-handed, that lists vocations is open to
   the Warrior, Thief, Monk and Templar lines (the weapon lists and the hand equip events); the Berserker stays two-handed only
@@ -5509,6 +5509,65 @@ Now a melee bonus raises all three, so it raises the best one, the player's Mele
 
 Not changed: the passive tree's single-skill nodes (`passivetree_data.lua`, sword or club nodes) still raise their own
 skill; the market's modifier filter still names the sword, axe and club keys apart.
+
+## Training weapons (`exercise_core.lua`, `exercise_config.lua`, `exercise_training.lua`, `tools/patch_exercise_weapons.py`, `tests/exercise_test.lua`)
+
+Owner 2026-10-23 ("reveja os itens de training. o monk não pode usar nenhum. axe, sword e club podem ser trocados por um de
+melee"; ROADMAP O125).
+
+**What was wrong.** The base server has 21 exercise weapons (sword, axe, club, bow, rod, wand, shield in three charge tiers: 500,
+1800 and 14400), used on an exercise dummy. Its script `actions/scripts/other/exercise_weapons.lua` lists the vocations of each
+weapon, and `patch_base_classes.py` had given the classes lists of those. The Monk got only the club one, which trains the club
+skill; but a Monk hits and casts with **fist fighting** (`monk_combat.lua`, `kindled_breath.lua`, `chi_ward.lua`, `mantra_of_stone.lua`
+all read `SKILL_FIST`), so nothing a Monk could use trained anything it uses (and the melee reroute of `melee_skill.lua` sent the
+club tries to the best of sword / club / axe, not to fist). The Monk could not train its shielding either. The Templar (magic
+level: Radiant Rebuke, Thorns, Penitent's Wrath) had no rod or wand, and shielding was open to the Warrior and Templar lines only
+(the Ranger, Mystic, Thief, Monk and Necromancer lines have a shielding multiplier too). The Monk's spells use fist fighting, never
+the magic level, so it gets no rod or wand. The
+sword, axe and club weapons were three items for one skill (since "One melee skill").
+
+**The weapons now** (`exercise_config.lua`: `kinds`, `items`, `lines`):
+
+| Kind | Items (500 / 1800 / 14400) | Classes | Trains |
+|---|---|---|---|
+| melee | sword 27732 / 27738 / 27744 (axe 27733 / 27739 / 27745 and club 27734 / 27740 / 27746 work the same) | Warrior, Thief, Monk, Templar lines | the best of sword / club / axe (one melee skill); **fist fighting for the Monk line** |
+| ranged | bow 27735 / 27741 / 27747 | Ranger, Thief lines | distance |
+| rod, wand | 27736 / 27742 / 27748 and 27737 / 27743 / 27749 | Mystic, Necromancer, Templar lines | magic level |
+| shield | 27758 / 27759 / 27760 | every class | shielding |
+
+Every class line has a weapon for every skill it uses (`tests/exercise_test.lua` walks the 21 vocations). The melee weapon
+trains the **best** melee skill, not the skill of its own look: the stage rate (x5 below 51, x3 to 100, x2 to 200, then the server
+rate) is that of the skill that gets the tries, so a character with a weak sword and a strong axe is not trained at the weak
+skill's fast rate (the old script did that for any weapon whose skill was low). `melee_skill.lua` would have rerouted the tries to
+the best skill anyway, but after the wrong multiplier. A Monk who wields a staff still trains fist: fist is the skill its spells use.
+**Old items.** The store, the NPCs and the Ancestral Store no longer sell the axe and club chests (27762, 27763, 27769, 27770,
+27776, 27777); chests bought before still open (they give an axe or club weapon), and the roulette prizes still hand them out.
+An axe or club weapon turns into the sword (melee) one of the same tier **the first time it is used, charges kept** (`E.convertTo`,
+`Item:transform(id, charges)`); if the transform fails the weapon is used as it is. The sword weapons and chests are renamed
+"exercise melee weapon" / "Exercise Melee Chest" (`data/items/base_item_names.csv`, step `itemnames`; NPC lists follow). The axe and
+club chests are `store` in `item_price_rules.csv` (never sold to an NPC: without it they would have had a 7700 and a 120 gold price).
+
+**The script** (`exercise_training.lua`) replaces the base one: `tools/patch_exercise_weapons.py` (install step `exercise`, after
+`runes`, before `potions` and `itemprices`) comments the 21 `<action ... script="other/exercise_weapons.lua">` lines out of
+`actions.xml`, so the revscript owns the item ids (an id registered twice would keep the XML one); it also writes the item
+descriptions (what it trains, who may use it) and takes the six retired chests out of the 17 NPC shop lists that sell them. The
+stock script and the edits of `patch_base_classes.py` / `patch_base_events.py` stay in the folder, unused. Review of the old script
+(each fixed in the new one):
+- **A charge was taken before the vocation check**, so a refused class lost a charge per click. Now a step checks the class, the
+  class lock (`ChaosClassUnlocks.isRestricted`: a locked class gains nothing), the dummy, the position and the protection zone first.
+- **One click, one chain.** The "already training" branch reset the flag that the running chain keeps setting, so the next click
+  started a second chain: N pairs of clicks trained N times as fast for the same charges. `E.beginChain` allows one live chain per
+  player (alive while its last step is newer than 2 s; a stalled one is replaced and its old events stop by their generation number).
+- **Range.** The bow, rod and wand had `allowfaruse` and no range check, so a modified client could use one on any dummy of its
+  floor, house dummies included. Now a ranged weapon reaches 7 tiles, a melee or shield weapon the next tile, another floor never.
+- **The flag `Exercise_Training.isTraining` (37100)**, which the Idle Hall reads, was left at 1 after a logout, a restart or a
+  chain that ended silently, which kept the character out of the Idle Hall for good. It is cleared whenever a chain ends and at login
+  and logout.
+- Texts in English and pt-BR (`Chaos.t`; the stock script's were English only); no charge for a missing dummy.
+Charges are shown live as before (`item:sendUpdate()`, engine patch 0003; fallback: a transform to the same id). The 10% of the
+hall's and the houses' dummies and the free dummies (5787, 27750, 27757) are as in the base script. Not run on a live engine (the
+tests mock it): check a Monk with the melee weapon (fist row in the skills window), a Ranger refused with the class list, an old
+exercise axe turning into the melee weapon, a bow from 8 tiles refused.
 
 ## Attack delay after changing floor (owner debug item 50: "Demora para começar a atacar depois de subir ou descer escada"; analysed, not fixed)
 
@@ -14725,7 +14784,9 @@ class count as one stock vocation:
 - NPC spell teachers (`KeywordHandler:addSpellKeyword`): the spell's own list in `spells.xml` decides (the NPC's stock
   vocation only when the spell is unknown). All player spells are `needlearn="0"`, so this is about the offer only.
 - Exercise weapons: sword Warrior / Thief / Templar lines, axe and shield Warrior / Templar, club Warrior / Monk / Templar,
-  bow Ranger / Thief, rod and wand Mystic / Necromancer (the Berserker was refused before).
+  bow Ranger / Thief, rod and wand Mystic / Necromancer (the Berserker was refused before). Superseded on 2026-10-23: the
+  revscript `exercise_training.lua` runs all 21 weapons with its own class lists ("Training weapons"); these stock-script
+  edits stay but the script is switched off in `actions.xml`.
 - Party shared experience: the bonus for different vocations counts the class lines, at most 5 (the stock x2.5).
   Why it can look dead, and what tells the leader: see "Party shared experience: why it is off" (`party_xp.lua`).
 - The vocation Oracles (The Oracle, The Oracle3, Captain Ironwake): Warrior, Ranger, Mystic, Thief (the old words choose

@@ -93,6 +93,7 @@ jobs:
           python3 -I server/tools/patch_bank_payments_test.py  # every gold price of the base scripts pays from the bank too
           python3 -I server/tools/add_vocations_potion_text_test.py
           python3 -I server/tools/exercise_charges_patch_test.py
+          python3 -I server/tools/patch_exercise_weapons_test.py  # one melee training weapon: stock lines, descriptions, NPC lists
           python3 -I server/tools/rarity_stock_patch_test.py  # the seven rarities: the stock roll of default_onDropLoot.lua
           python3 -I server/tools/patch_base_throwables_test.py  # stackable throwing weapons leave loot, shops and rewards
           python3 -I server/tools/retire_cure_spells_test.py  # the stock cure spells and Hawkeye leave spells.xml
