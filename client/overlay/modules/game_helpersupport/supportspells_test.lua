@@ -387,6 +387,17 @@ ok(not okL and whyL == 'utility', 'Radiant Lantern by its Chaos words: left out'
 ok(not H.eligible(rope), 'Ghost Rope (any case): left out')
 ok(H.eligible(ward), 'a renamed support spell that is no utility stays')
 local spells = { [75] = lantern, [76] = rope, [44] = ward }
+-- by name too (owner 2026-10-23: Greater Lantern, Ghost Rope and Lantern still in Support): every stock utility's Chaos
+-- name is in NEVER_NAMES, and a saved utility row is never cast
+for w in pairs(H.NEVER_STOCK) do
+  local e = ChaosSpellNames[w]
+  if e then ok(H.NEVER_NAMES[e.name:lower()], 'utility by name: ' .. e.name) end
+end
+local glantern = { id = 11, name = 'Greater Lantern', words = 'unknown words', group = { [3] = 2000 }, level = 13, mana = 60 }
+eq(select(2, H.eligible(glantern)), 'utility', 'Greater Lantern left out by its name alone')
+eq(H.why(H.newState(), { enabled = true, reserve = 0, slots = {} }, { id = 11, enabled = true },
+  { now = 0, spellOf = function() return glantern end }), 'utility', 'a saved Greater Lantern row is never cast')
+
 local kept, dropped = H.dropUtilities({ { id = 44, enabled = true }, { id = 75, enabled = true }, { id = 76, enabled = false },
   { id = 999, enabled = true } }, function(id) return spells[id] end)
 eq(dropped, 2, 'a saved list loses Lantern and Ghost Rope')
