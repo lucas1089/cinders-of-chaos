@@ -1,5 +1,5 @@
 -- Run from the server/ folder: luajit tests/fx_send_offset_engine_test.lua (CI runs it with LuaJIT and Lua 5.3)
--- An engine with src-patch 0070 (Game.setFxSendOffsets) takes the send offsets table and shifts every effect packet
+-- An engine with src-patch 0060 (Game.setFxSendOffsets) takes the send offsets table and shifts every effect packet
 -- itself; the Lua guard of Position:sendMagicEffect then sends at the target tile, so nothing is shifted twice.
 local fails, count = 0, 0
 local function check(cond, what)
@@ -15,14 +15,14 @@ dofile("data/scripts/chaos/fx_send_offset_core.lua")
 local M = ChaosFxSendOffsetCore
 local T = M.load()
 check(M.applyEngine(nil) == false and M.engine == false, "no Game: the Lua guard shifts")
-check(M.applyEngine({}) == false and M.engine == false, "an engine without 0070: the Lua guard shifts")
-check(M.luaShifts(405, T) == true, "without 0070 the Lua guard shifts 405")
+check(M.applyEngine({}) == false and M.engine == false, "an engine without 0060: the Lua guard shifts")
+check(M.luaShifts(405, T) == true, "without 0060 the Lua guard shifts 405")
 check(M.luaShifts(40, T) == false, "40 (2x2) is never shifted")
 check(M.applyEngine({setFxSendOffsets = function() error("boom") end}) == false and M.engine == false,
 	"an engine call that fails: the Lua guard shifts")
 check(M.applyEngine({setFxSendOffsets = function() return 0 end}) == true and M.engine == true,
 	"an engine that took the table: M.engine")
-check(M.luaShifts(405, T) == false, "with 0070 the Lua guard does not shift 405")
+check(M.luaShifts(405, T) == false, "with 0060 the Lua guard does not shift 405")
 M.engine = false
 
 -- the engine mock: Game.setFxSendOffsets keeps the table as the C++ side does (ids 1..65535, offsets not 0, 0)

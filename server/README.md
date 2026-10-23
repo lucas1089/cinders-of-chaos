@@ -220,7 +220,7 @@ server/
   src-patches/0059-tester-bots-not-counted.patch   engine: a tester bot (storage 7102900 = 1) is never counted
                                       online: status protocol, players record, players_online, the waiting list
                                       (see "Tester bots"; header src/chaostesters.h, tools/chaostesters_test.cpp)
-  src-patches/0070-fx-send-offsets.patch   engine: every effect packet of an in-place pair 36 id with art bigger
+  src-patches/0060-fx-send-offsets.patch   engine: every effect packet of an in-place pair 36 id with art bigger
                                       than a tile goes to its centring tile, engine sends included; Lua hands over the
                                       table (Game.setFxSendOffsets); 0060-0069 reserved (see "Purchased effect packs
                                       (pair 36)"; header src/chaosfxoffsets.h, tools/chaosfxoffsets_test.cpp)
@@ -14756,13 +14756,13 @@ effect packs of docs/CREDITS.md into the game. Effects only: no damage, area, ti
   `client/tools/sprites/gen_fx_send_offsets.py` from the pair 36 specs, `--check` in CI) gives each its centring tile;
   `Position:sendMagicEffect` (the guard of `chaos_constants.lua`, `fx_send_offset_core.lua`) sends there, so every
   Lua send (`ChaosSpell.fx`, `Fx`, scripts) is centred. 2x2 art stays at its tile (stock placement). Engine sends
-  (src-patch 0070): `fx_send_offset_core.lua` hands the same table to the engine at every load of
+  (src-patch 0060): `fx_send_offset_core.lua` hands the same table to the engine at every load of
   `chaos_constants.lua` (`Game.setFxSendOffsets(ChaosFxSendOffset)`, read anew on a reload), and
   `ProtocolGame::sendMagicEffect` sends every packet of a listed id at the centring tile: combat
   `COMBAT_PARAM_EFFECT` areas and targets, monster `areaEffect` / `shootEffect` impacts, the crit 173 / 415, poffs,
   teleports, Lua sends. Kept on the map, same floor; a player who sees the target but not the centring tile gets the
   effect at the target, as before. Once the engine took the table the Lua guard sends at the target tile, so nothing
-  is shifted twice; an engine without 0070 has no `Game.setFxSendOffsets` and the Lua guard shifts the Lua sends as
+  is shifted twice; an engine without 0060 has no `Game.setFxSendOffsets` and the Lua guard shifts the Lua sends as
   before. The pair 29 hit overrides (src-patch 0045) carry their own dx, dy on `ChaosVfx` ids, none in the table.
   Tests: `tests/fx_send_offset_test.lua` (405 two tiles, no `ChaosVfx` id shifted twice),
   `tests/magic_effect_guard_test.lua`, `tests/fx_send_offset_engine_test.lua` (the hand-over, no double shift, an

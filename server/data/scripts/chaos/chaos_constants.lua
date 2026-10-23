@@ -38,7 +38,7 @@ if Chaos then
 	if ChaosPzGuard then
 		ChaosPzGuard.install()
 	end
-	-- a reload hands the effect send offsets to the engine again, read anew (src-patch 0070; see the guard below)
+	-- a reload hands the effect send offsets to the engine again, read anew (src-patch 0060; see the guard below)
 	if ChaosFxSendOffsetCore and ChaosFxSendOffsetCore.applyEngine then
 		ChaosFxSendOffsetCore.applyEngine(Game, true)
 	end
@@ -1920,7 +1920,7 @@ end
 -- sendMagicEffect refuses it here and names the caller once (a script that computed an effect and got nothing), so the
 -- source can be found and fixed; nothing is sent. Installed once (a reload keeps the first wrapper).
 -- An effect redrawn in place with art bigger than a tile (pair 36) is sent at its offset tile, so it is centred on
--- the target (fx_send_offset_core.lua, data/lib/chaos_fx_send_offsets.lua). An engine with src-patch 0070 takes the
+-- the target (fx_send_offset_core.lua, data/lib/chaos_fx_send_offsets.lua). An engine with src-patch 0060 takes the
 -- table (Game.setFxSendOffsets, handed over on every load of this file) and shifts every effect packet itself,
 -- engine sends included; the guard then sends at the target tile. Without the patch it shifts the Lua sends only.
 if not ChaosFxSendOffsetCore then

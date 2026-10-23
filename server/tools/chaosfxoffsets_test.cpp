@@ -1,4 +1,4 @@
-// Tests of src/chaosfxoffsets.h (server src-patch 0070): send offsets of the effects redrawn in place, applied by the
+// Tests of src/chaosfxoffsets.h (server src-patch 0060): send offsets of the effects redrawn in place, applied by the
 // engine to every effect packet.
 // Build (CI): the header is cut out of the patch, then
 //   g++ -std=c++17 -Wall -Wextra -I DIR server/tools/chaosfxoffsets_test.cpp && ./a.out

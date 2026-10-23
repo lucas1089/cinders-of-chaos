@@ -24,11 +24,11 @@ function M.load(reread)
 	return ChaosFxSendOffset
 end
 
--- true once the engine shifts the effects itself (src-patch 0070 took the table): the Lua guard of
+-- true once the engine shifts the effects itself (src-patch 0060 took the table): the Lua guard of
 -- Position:sendMagicEffect then sends at the target tile, so no effect is shifted twice
 M.engine = M.engine or false
 
--- hand the table to the engine (src-patch 0070, `G` = the engine's Game table). An engine without the patch has no
+-- hand the table to the engine (src-patch 0060, `G` = the engine's Game table). An engine without the patch has no
 -- Game.setFxSendOffsets: M.engine stays false and the Lua guard shifts the Lua sends as before. -> M.engine
 function M.applyEngine(G, reread)
 	if type(G) ~= "table" or type(G.setFxSendOffsets) ~= "function" then
