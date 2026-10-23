@@ -44,6 +44,15 @@ return {
 		[194] = "area", [195] = "area", [196] = "area", [197] = "area", [137] = "area", [170] = "area", [136] = "area",
 		-- the snares (data/spells/chaos/_snares.lua): a brand rune socketed in them picks their element
 		[99] = "area", [100] = "area", [104] = "buff", -- Snare Trap, Seeker Mine, Detonate Mines
+		-- the attack kit (owner 2026-10-23, data/spells/chaos/_attackkit.lua; the strikes are dealt by the shared cast, so
+		-- the parse sees no damage call): single target and damage over time
+		[2] = "single", [19] = "single", [23] = "single", [24] = "single", [43] = "single", [45] = "single",
+		[57] = "single", [80] = "single", [82] = "single", [88] = "single", [90] = "single", [106] = "single",
+		[113] = "single", [121] = "single", [127] = "single", [131] = "single", [138] = "single", [140] = "single",
+		-- the attack kit: circles, bursts around the caster, waves and lines
+		[9] = "area", [22] = "area", [38] = "area", [56] = "area", [62] = "area", [84] = "area", [87] = "area",
+		[89] = "area", [107] = "area", [112] = "area", [118] = "area", [119] = "area", [120] = "area", [122] = "area",
+		[126] = "area", [128] = "area", [129] = "area", [139] = "area", [141] = "area",
 	},
 
 	-- ------------------------------------------------------------------ the supports

@@ -20,22 +20,24 @@ dofile("data/scripts/chaos/spell_factor_core.lua")
 local F, C = ChaosSpellFactor, ChaosSpellFactorConfig
 
 -- the table: the owner's factors by vocation id (docs/CLASSES.md ids)
-local want = {[23] = 0.6, [25] = 0.6, [24] = 0.7, [5] = 0.7, [10] = 0.7, [21] = 0.7, [22] = 0.7, [18] = 0.7, [20] = 0.8,
-	[15] = 1.25}
+-- retuned 2026-10-23 with the attack kit (server/data/spells/README.md "Attack spell parity")
+local want = {[7] = 1.19, [3] = 1.06, [17] = 0.87, [21] = 0.82, [24] = 0.75, [18] = 0.74, [10] = 0.73, [5] = 0.7,
+	[23] = 0.6, [20] = 0.59, [22] = 0.59, [25] = 0.57}
 local count = 0
 for id, v in pairs(C.byVocation) do
 	count = count + 1
 	eq(v, want[id], "factor of vocation " .. id)
 end
-eq(count, 10, "ten classes listed")
-for _, id in ipairs({1, 3, 4, 7, 8, 11, 12, 13, 14, 17, 19}) do
+eq(count, 12, "twelve classes listed")
+for _, id in ipairs({1, 4, 8, 11, 12, 13, 14, 15, 19}) do
 	eq(F.forVocation(id), 1, "vocation " .. id .. " keeps 1")
 end
 
 -- the rule
 local SPELL, MELEE, COND, WAND, HEAL, FIRE = 1, 2, 3, 4, 100, 7
 eq(F.factor(23, SPELL, FIRE, SPELL, HEAL, false), 0.6, "a Templar spell hit")
-eq(F.factor(15, SPELL, FIRE, SPELL, HEAL, false), 1.25, "a Beastmaster spell hit")
+eq(F.factor(7, SPELL, FIRE, SPELL, HEAL, false), 1.19, "a Deadeye spell hit")
+eq(F.factor(15, SPELL, FIRE, SPELL, HEAL, false), 1, "a Beastmaster spell hit (1 since 2026-10-23)")
 eq(F.factor(23, MELEE, FIRE, SPELL, HEAL, false), 1, "a weapon hit")
 eq(F.factor(23, WAND, FIRE, SPELL, HEAL, false), 1, "a wand hit")
 eq(F.factor(23, COND, FIRE, SPELL, HEAL, false), 1, "a condition tick")
@@ -93,8 +95,8 @@ ChaosKeystones = {depth = 1}
 d1 = ev.onHealthChange({}, templar, -1000, COMBAT_HOLYDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL)
 ChaosKeystones.depth = 0
 eq(d1, -1000, "event: a keystone proc unchanged")
-d1 = ev.onHealthChange({}, player(15), -1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL)
-eq(d1, -1250, "event: a Beastmaster spell hit x1.25")
+d1 = ev.onHealthChange({}, player(7), -1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL)
+eq(d1, -1190, "event: a Deadeye spell hit x1.19")
 
 -- the guards in the combat scripts
 local function read(p) local f = io.open(p); local s = f:read("*a"); f:close(); return s end

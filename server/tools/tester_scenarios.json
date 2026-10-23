@@ -8,7 +8,7 @@
  "counts": {
   "opcode": 58,
   "out": 38,
-  "passive": 68,
+  "passive": 69,
   "place": 13,
   "staff": 10
  },
@@ -2387,6 +2387,13 @@
    "talkactions": [
     "/atlas"
    ]
+  },
+  "attack_kit": {
+   "files": [],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
   },
   "autosell": {
    "files": [

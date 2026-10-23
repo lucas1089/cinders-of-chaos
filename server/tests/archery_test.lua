@@ -946,7 +946,7 @@ do -- at level 1000 and the typical skill the launcher is lifted by the level fa
 	local base = math.floor(100 * W.factor("crossbow", 1000) + 0.5)
 	eq(hitEv.onHealthChange(mob, shooter, -100, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_RANGED),
 		-math.floor(base * WP.levelFactor("distance", 1000) + 0.5), "crossbow at level 1000: the level factor of the power")
-	ok(WP.levelFactor("distance", 1000) > 1.2, "(which lifts it by more than 20%)")
+	ok(WP.levelFactor("distance", 1000) > 1.1, "(which lifts it by more than 10%; the attack kit lowered the Ranger rotation it is set from)")
 	sk = 168
 	ok(-hitEv.onHealthChange(mob, shooter, -100, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_RANGED)
 		> base * WP.levelFactor("distance", 1000) * 1.08, "and a higher distance skill hits harder")

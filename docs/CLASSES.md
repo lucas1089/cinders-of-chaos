@@ -229,6 +229,15 @@ Elementalist 5, Mystic 4 -> rung 4 (8 s); Withering Curse Bone Lord 2, Lich 5, N
 
 ## Spell cap
 
+**Raised to 20 on 2026-10-23** (owner: "veja quantas magias de ataque cada classe tem. devem ter a mesma quantidade"): the
+attack kit gave every class and ascension **10 attack spells** (37 new spells, 77 class slots; list, levels and balance:
+server/data/spells/README.md "Attack spell parity"; CI: `tools/ci/check_attack_counts.py`). The Bone Lord reaches 20, so
+`MAX_SPELLS` is 20. The per-class counts in the tables below are from before the kit (15 cap): add the new spells.
+Attack spells per class now: Warrior, Juggernaut, Berserker, Ranger, Deadeye, Beastmaster, Mystic, Elementalist,
+Illusionist, Thief, Ninja, Samurai, Monk, Shadowfist, Iron Sage, Necromancer, Lich, Bone Lord, Templar, Inquisitor and
+Sentinel: 10 each (before: 8, 8, 9, 8, 9, 7, 10, 10, 7, 5, 7, 6, 4, 7, 6, 4, 5, 3, 3, 4, 3). The cooldown ladder now has
+ten rungs per class (2 to 20 s), so some older spells moved; Headsman's Hurl is 20 s.
+
 **15 spells per class (2026-10-20, owner: "mysthic tem magias demais. abaixe pra 15. faça isso pra todas as classes")**:
 every class and ascension can learn and cast at most 15 spells of its own: attack, healing and support, the stock spells
 it kept and the Chaos spells. An ascension's 15 include the base spells it keeps (an ascension may drop a base spell).

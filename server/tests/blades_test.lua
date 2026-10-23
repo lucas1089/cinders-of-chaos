@@ -281,7 +281,7 @@ do
 	eq(fl:match('words="([^"]+)"'), "drai vas kaen", "Blade Flurry words")
 	eq(fl:match('group="(%a+)"'), "attack", "Blade Flurry: attack group")
 	eq(fl:match('level="(%d+)"'), "50", "Blade Flurry level")
-	eq(fl:match(' cooldown="(%d+)"'), "10000", "Blade Flurry cooldown (the cooldown ladder, 2026-10-20: was 8 s)")
+	eq(fl:match(' cooldown="(%d+)"'), "12000", "Blade Flurry cooldown (the cooldown ladder, 2026-10-20: was 8 s; 12 s with the attack kit)")
 	eq(fl:match('groupcooldown="(%d+)"'), "2000", "Blade Flurry group cooldown")
 	ok(fl:find('selftarget="1"', 1, true), "Blade Flurry: around the caster")
 	for _, v in ipairs({"Thief", "Ninja", "Samurai"}) do
@@ -290,7 +290,7 @@ do
 	eq(sw:match('spellid="(%d+)"'), "74", "Iaido Sweep id")
 	eq(sw:match('words="([^"]+)"'), "drai gal kaen", "Iaido Sweep words")
 	eq(sw:match('level="(%d+)"'), "200", "Iaido Sweep level")
-	eq(sw:match(' cooldown="(%d+)"'), "8000", "Iaido Sweep cooldown (second pass)")
+	eq(sw:match(' cooldown="(%d+)"'), "14000", "Iaido Sweep cooldown (the ladder with the attack kit)")
 	eq(sw:match('range="(%d+)"'), tostring(B.cfg.sweep.reach), "Iaido Sweep reach = its range")
 	ok(sw:find('needtarget="1"', 1, true), "Iaido Sweep needs a target")
 	ok(sw:find('<vocation name="Samurai" />', 1, true) and not sw:find('"Thief"', 1, true), "Iaido Sweep: Samurai only")

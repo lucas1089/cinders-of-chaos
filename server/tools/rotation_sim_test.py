@@ -140,7 +140,8 @@ for cls, rows in per_class.items():
     check(all(rows[i][2] <= rows[i + 1][2] for i in range(1, len(rows) - 1)), '%s: weakest to strongest' % cls)
 
 # the class spell factor (spell_factor_config.lua): read from the server's table, applied to every spell of the class
-check(R.spell_factors() == {23: 0.6, 25: 0.6, 24: 0.7, 5: 0.7, 10: 0.7, 21: 0.7, 22: 0.7, 18: 0.7, 20: 0.8, 15: 1.25},
+check(R.spell_factors() == {7: 1.19, 3: 1.06, 17: 0.87, 21: 0.82, 24: 0.75, 18: 0.74, 10: 0.73, 5: 0.7, 23: 0.6, 20: 0.59,
+                            22: 0.59, 25: 0.57},
       'the class spell factors of spell_factor_config.lua')
 check(R.spell_factor('Warrior') == 1.0 and R.spell_factor('Templar') == 0.6, 'a class not listed keeps 1')
 smite = [s for s in spells if s['name'] == 'Radiant Smite']

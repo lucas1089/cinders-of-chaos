@@ -429,7 +429,22 @@ ICONS = [  # (spell name, theme, glyph)
     # cells 309-310)
     ('Ironhold', 'steel', 'shield'), ('Wildstride', 'nature', 'dash'),
     # the Necromancer line's area attack after Withering Curse (2026-10-22, cell 311)
-    ('Grave Nova', 'necrotic', 'gravenova')]
+    ('Grave Nova', 'necrotic', 'gravenova'),
+    # the attack kit (2026-10-23, cells 312-348): 37 attack spells so every class has 10 (docs/CLASSES.md "Attack spell
+    # parity"). Existing glyphs in the theme of the spell's element; same order as the kit's attack_kit_config.lua
+    ('Gorehook', 'blood', 'fang'), ('Rift Cleaver', 'steel', 'rift'), ('Sunspear', 'light', 'missile'),
+    ('Arrowstorm', 'nature', 'arrows'), ("Packhunter's Dart", 'poison', 'paw'), ('Phantom Needles', 'arcane', 'shrapnel'),
+    ('Mirror Shards', 'frost', 'crystal'), ('Dreamrot', 'shadow', 'swirl'), ('Gutting Slash', 'blood', 'sword'),
+    ('Razor Rain', 'steel', 'shuriken'), ('Venom Spiral', 'poison', 'swirl'), ('Crescent Cut', 'steel', 'sweep'),
+    ('Last Breath', 'shadow', 'daggers'), ('Hollow Knuckle', 'ember', 'fist'), ('Quaking Stomp', 'ember', 'slam'),
+    ('Chi Lance', 'water', 'bolt'), ('Cleaving Heel', 'blood', 'kick'), ('Tidal Palm', 'water', 'palmwave'),
+    ('Skysplitter Fist', 'light', 'fist'), ('Marrow Bolt', 'bone', 'bonespear'), ('Wraithwind', 'shadow', 'ghost'),
+    ('Gravewail', 'necrotic', 'skull'), ('Blightbrand', 'necrotic', 'flame'), ('Soulrend Beam', 'necrotic', 'bolt'),
+    ('Crypt Collapse', 'bone', 'gate'), ('Ossuary Surge', 'bone', 'ribs'), ('Hallowed Cut', 'holy', 'sword'),
+    ('Censer Swing', 'holy', 'ring'), ('Penitent Lash', 'holy', 'sweep'), ("Martyr's Pyre", 'holy', 'flame'),
+    ('Bell of Reckoning', 'holy', 'burst'), ('Lance of Vigil', 'holy', 'missile'), ('Sanctum Verdict', 'holy', 'hammer'),
+    ("Heretic's Brand", 'holy', 'cross'), ("Zealot's Wrath", 'fire', 'burst'), ('Bulwark Slam', 'steel', 'shield'),
+    ('Rampart Quake', 'steel', 'mountain')]
 
 def render(theme, glyph):
     c = COL[theme]

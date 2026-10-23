@@ -38,7 +38,7 @@ F.STOCK = {
   ["saen tin brak"] = { id = 175 },                                 -- Salve of Scars (170)
   ["drai ira vas sol"] = { id = 34, level = 300, range = 7, needTarget = true, vocations = { 3, mana = 95 }, exhaustion = 12000 }, -- Radiant Shard (258)
   ["drai zar nyx"] = { id = 35, level = 300, group = { [1] = 2000 }, vocations = { 1, 5 } }, -- Lance of the Grave (260)
-  ["kah rek sang"] = { id = 37, level = 300, mana = 60, range = 7, vocations = { 4, 8, 14 }, exhaustion = 16000 }, -- Headsman's Hurl (261)
+  ["kah rek sang"] = { id = 37, level = 300, mana = 60, range = 7, vocations = { 4, 8, 14 }, exhaustion = 20000 }, -- Headsman's Hurl (261)
   ["drai orr hyr"] = { id = 40, level = 300, group = { [1] = 2000 }, vocations = { 1, 10 } }, -- Shatterfrost (263/262)
   ["drai orr gor"] = { id = 41, level = 300, group = { [1] = 2000 }, vocations = { 1, 10 } }, -- Quakeburst (262/263)
   ["vael mur sol"] = { id = 46, level = 300, vocations = { 3 } },                 -- Hallowed Ground (268)

@@ -1784,6 +1784,20 @@ split (`Game::combatChangeHealth`); no Chaos patch changes it.
   `pocketboss_test`, `invasion_test`, `trials_flow_test`, `archetypes_test`, `class_keystones_test`,
   `tools/patch_spell_cap_test.py`. Not run on a live server.
 
+### Attack kit (owner 2026-10-23: "devem ter a mesma quantidade"; `attack_kit_config.lua`, `attack_kit_core.lua`, `data/spells/chaos/_attackkit.lua`)
+
+Every class and ascension has 10 attack spells (rule, list, balance: `data/spells/README.md` "Attack spell parity").
+37 spells in `spells_chaos.xml`, each with a stub script under `data/spells/chaos/<line>/` that calls
+`AttackKit.cast(key, creature, variant)`; the numbers are in `attack_kit_config.lua` (also `rotation_model.csv`; the
+test `tests/attack_kit_test.lua` keeps config, XML and model equal, and casts every spell on a mocked engine). Shapes:
+single, dot, circle, around, wave, line. Hits go through the school's helpers (Templar holy strike, Necromancer damage and
+dots, Monk chi and finisher, Thief weapon strikes, `doTargetCombat` with ORIGIN_SPELL for the rest), so the class spell
+factor applies as for the other spells. `chaos_supports_config.lua` `kindOverride` keeps them out of Support.
+The spell cap is now 20 (`patch_spell_cap.py` `MAX_SPELLS`). The 37 ids are base ids the cap retires; `register_spells`
+runs after the cap and skips commented-out instants, so they are free at install. Opcodes and storage keys: none new.
+CI step "Attack spell parity": `tools/ci/check_attack_counts.py` (21 classes x 10) and its test. Not run on a live
+server.
+
 ### Monster spells (owner report 2026-10-21: "Unknown spell name: arc bolt" / "dread" after the spell cap)
 
 Monsters cast player spells by name: an `<attack name="arc bolt">` (XML) or `{name = "arc bolt"}` (Lua) without a

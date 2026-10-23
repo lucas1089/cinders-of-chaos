@@ -84,6 +84,11 @@ jobs:
       - name: Server content (XML, spells, items, monsters)
         run: python3 -I tools/ci/check_content.py
 
+      - name: Attack spell parity (every class and ascension has the same number of attack spells)
+        run: |
+          python3 -I tools/ci/check_attack_counts.py
+          python3 -I tools/ci/check_attack_counts_test.py
+
       - name: Item prices (table up to date, every loot priced or unsellable, no arbitrage, Auto Seller table; installer)
         run: |
           python3 -I server/tools/gen_item_prices.py --check

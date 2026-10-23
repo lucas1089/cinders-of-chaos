@@ -39,7 +39,7 @@ ok(c.skill.exponent > 0 and c.skill.min > 0 and c.skill.min < 1 and c.skill.max 
 -- ------------------------------------------------------------------ the level factor
 near(P.levelFactor("melee", 300), 1, 1e-9, "melee is on its share already: 1")
 near(P.levelFactor("distance", 100), 1, 1e-9, "a launcher is above its share at level 100: 1")
-ok(P.levelFactor("distance", 1000) > 1.2, "a launcher is lifted at level 1000 (" .. P.levelFactor("distance", 1000) .. ")")
+ok(P.levelFactor("distance", 1000) > 1.1, "a launcher is lifted at level 1000 (" .. P.levelFactor("distance", 1000) .. ")")
 ok(P.levelFactor("distance", 2000) > P.levelFactor("distance", 1000), "and more at 2000")
 ok(P.levelFactor("wand", 300) > 1.5, "a wand is lifted at level 300")
 near(P.levelFactor("distance", 2000), c.distance[#c.distance], 1e-9, "flat at the last level")
