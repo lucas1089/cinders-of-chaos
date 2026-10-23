@@ -98,7 +98,7 @@ Progression systems:
 - **Vocation Trials.** Solo arenas per class, Normal / Cruel / Merciless. 7 families. Done.
 - **Class looks and signature effects.** An outfit per class line, 35 signature effects. Done.
 - **Experience curve.** Smoothed after 700; late game spawns (#4, #5). Done.
-- **Experience cap and display scale.** Damage shown in millions at the end game (#128). Done.
+- **Experience cap and display scale.** Damage shown in millions at the end game (#128). Done; the display scale is off since 2026-10-23 (real numbers at every level).
 - **Level-up effect.** Golden wings on level up (#84), since 2026-10-22 the purchased level-up effect of pair 36 (#207). Done.
 - **Waystone upgrades.** Experience, Loot, Rarity upgrades fixed (#6). Done.
 - **Time-friendly progression** (#164). Done, not run live.

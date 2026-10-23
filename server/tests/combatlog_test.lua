@@ -696,7 +696,7 @@ ok(pushed >= 0, "first tick")
 -- of its own level (totals, rows, elements, the party's totals); hits, crits and durations stay; the meter's own
 -- numbers stay raw; a new factor (a level up) is a new state for the push
 dofile("data/scripts/chaos/display_scale_core.lua")
-ChaosDisplayScale.configure(dofile("data/scripts/chaos/display_scale_config.lua"))
+ChaosDisplayScale.configure({curve = {{100, 1}, {1000, 1000}, {1500, 10000}}}) -- the scale is off (x1); its code is tested on the old curve
 function C:getLevel() return self.level or 1 end
 local plainState = msg(hero, "seg", {id = "s"}).data
 hero.level = 1000

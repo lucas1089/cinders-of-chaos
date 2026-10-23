@@ -7,16 +7,15 @@
 -- internal numbers (health, damage, balance, the database) are never changed. Mana is never scaled (owner 2026-10-21:
 -- a spell's mana cost is one fixed number at every level; engine src-patch 0052, server/README.md "Fixed spell
 -- costs"): the own mana, spell costs, party members' mana and the mana rows of item tooltips stay as they are.
--- Lua 5.1 / LuaJIT compatible.
+-- Turned off 2026-10-23: the curve is x1 at every level, so every number is the internal one (the code stays, a factor
+-- of 1 changes nothing). Lua 5.1 / LuaJIT compatible.
 return {
 	-- the curve: {level, factor} points; the factor is 1 up to the first point's level, between two points it grows
 	-- exponentially (a straight line of log(factor)), past the last point it stays at the last factor (the cap). The
 	-- factor is rounded to a whole number, so every shown number is the internal one x an integer: a sum of shown hits
 	-- is exactly the shown total and a boss bar minus the shown hits is exactly its new value (no rounding drift).
 	curve = {
-		{100, 1}, -- levels 1-100 see the internal numbers (today's numbers)
-		{1000, 1000}, -- level 1000: x1000 (the median single-target DPS of about 2600 is shown as about 2.6M)
-		{1500, 10000} -- past 1000 slower (x10 over 500 levels), capped at x10000 from level 1500 on
+		{1, 1} -- owner 2026-10-23 ("Tire a inflação artificial de números"): every level sees the internal numbers
 	},
 
 	-- the largest number sent: a JSON number stays exact up to 2^53; the engine's text message fields are uint32 and

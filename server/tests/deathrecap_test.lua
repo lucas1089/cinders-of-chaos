@@ -612,6 +612,7 @@ eq(json.decode(hero.sent[1].s).data.id, olderId, "the asked one")
 -- the display scale (display_scale_core.lua): each recap at the factor of the level the character had at that death
 -- (a level-1000 death: x1000), whatever its level now; the stored rows stay raw
 dofile("data/scripts/chaos/display_scale_core.lua")
+ChaosDisplayScale.configure({curve = {{100, 1}, {1000, 1000}, {1500, 10000}}}) -- the scale is off (x1); its code is tested on the old curve
 local newest
 for _, r in ipairs(rows) do if r.player_id == 7 and (not newest or r.id > newest.id) then newest = r end end
 local rawData = newest.data

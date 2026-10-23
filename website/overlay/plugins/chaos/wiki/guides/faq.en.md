@@ -37,7 +37,3 @@ Use System > Report a Bug in game. Reporting a bug is never punished.
 ## How do I reach the staff?
 
 On our Discord. Staff never ask for your password.
-
-## Why are my damage numbers so big?
-
-From level {{scale.from}} on, every combat number you see grows with your level: your damage and healing, your health and mana, monster health, the DPS meter, the combat log, the death recap and the damage boards. Your screen shows them x{{scale.l200}} at level 200, x{{scale.l500}} at level 500, x{{scale.l700}} at level 700 and x{{scale.l1000}} at level 1000, up to x{{scale.cap}} from level {{scale.capLevel}} on. It is only how the numbers are shown: nothing gets stronger or weaker by it. Each player sees with their own level, so in PvP or in a party two players can see different numbers for the same hit. An item's tooltip uses the item's level requirement instead, so it reads the same for everybody. This wiki quotes the base numbers (what a character up to level {{scale.from}} sees).
