@@ -110,7 +110,9 @@ function WT.optionsFor(serverId, mapping)
 	for _, bt in ipairs(K.baseTiersOf(WT.config, t)) do
 		local base = WT.config.tiers[bt]
 		for _, opt in ipairs(base and mapping[base.item] or {}) do
-			out[#out + 1] = opt
+			if not K.isRetired(WT.config, opt.area and opt.area.fromPos) then
+				out[#out + 1] = opt
+			end
 		end
 	end
 	return #out > 0 and out or nil
@@ -208,6 +210,8 @@ local function addWaystone(corpse, t, monster, inside, extra)
 		end
 	end
 end
+
+WT.addWaystone = addWaystone -- content_rewards.lua: the boss table's and the trickle's waystones
 
 -- loot.lua, after the level gate: every waystone in the corpse becomes one of the run's tier (Tier I outside the
 -- maps; inside, each with a rarity and modifiers); the run's boss adds one of the next tier. isWaystone(item): loot.lua

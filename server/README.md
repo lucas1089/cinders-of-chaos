@@ -13976,6 +13976,71 @@ Hooks: `WM.lootMult`, `WM.rarityFind`, `WM.expMult`, `WM.extraWaystone`, `WM.rol
 Tests: `tests/waystone_atlas_test.lua` (core, mocked engine and the hooks). Balance numbers are first guesses. Not run in
 game.
 
+## Content rewards (`content_rewards.lua`, `content_rewards_core.lua`, `content_rewards_config.lua`, `tools/content_reward_model.lua`, `tools/audit_waystone_maps.py`)
+
+Beta feedback 2026-10-23: inside a waystone "the monsters are the same as outside with the same drops", the boss dropped
+almost nothing, and nobody knew what the content was for. Owner: rifts and waystones need separate drops.
+
+**What each paid before (O143 audit).** Rift: the monsters' own loot x the key's quantity bonus (rateMult), the guardian's
+chest per finisher (gold, Upheaval / Fate, item rolls, gems), the next key. Waystone: the same monsters' own loot x the
+modifiers' quantity and rarity, one next-tier waystone from the boss. The base waystone monster files hold coins,
+potions, materials and orbs and **no gear and no waystone at all** (`data/monster/lua/waystone_portals`), and the corpse
+rule by monster level (`pace_core.lua`) thins a level 1100+ boss's table to a few coins. So the boss was worth less than
+a hunted pack and a waystone could not even pay for the next one.
+
+**Identity.** Rifts = crafting currency. Waystones = gear. Each keeps the other's reward out.
+
+| | Rift (key tier 1-15) | Waystone (tier 1-15) |
+|---|---|---|
+| Every kill | an orb: 1.5% (tier 1) to 5.7% (tier 15) of normal kills, x2.5 magic, x5 rare, x12 legendary; drawn Upheaval 30, Awakening 20, Fate 18, Gilding 12, Grafting 8, Unmaking 6, Erasure 6 | a set piece (Azure Vigil / Gildcrown, level 0.45-1.0 x the run's) on 2.5% (tier 1) to 6.7% (tier 15), same tier multipliers; always Rare or better (Legendary 29%, Divine 1% + 0.2% per tier); the loot layer then rolls item level, sockets, modifiers; smart loot may turn it into the killer's class |
+| Run bonus | the key's modifiers (unchanged) | quantity +10% + 1.5% per tier, rarity find +20% + 3.5% per tier, on top of the modifiers; 12% of the monsters are magic or rare (loot-tier name and look via `ChaosApplyTier`; `waystone_mods_config.lua` `elites.runBase`) |
+| Boss | the guardian's corpse: 4 + 0.8 x tier orbs (same draw) and 1 + 0.1 x tier unique rolls at 2x find; the chest as before | 3 + 0.25 x (tier - 1) Legendary (85%) or Divine pieces, 2 + 0.2 x (tier - 1) unique rolls at 3x find (boss tier), Awakening 2-4, Gilding 1-2, Grafting 35%, Fate 25%, one waystone of the run's tier plus the tier + 1 one; pieces x the quantity |
+| The loop | a sealed rift leaves a key (below) | 0.4% of the kills drop a waystone of the run's tier (x tier multiplier), the boss two |
+
+Everything scales with the modifiers' quantity (`ChaosWaystoneMods.lootMult`, `ChaosRift.contentOf`). `loot.lua` calls
+`ChaosContentRewards.onKill` after the extra rolls and before the gear quality step (a piece gets item level, sockets and
+modifiers like any drop). Summons pay nothing. Omen arenas keep their own chest. `enabled = false` turns it all off.
+
+**Key ladder (`rift_config.lua` `keyDrop.pity`, `R.keyGuarantee`).** Report: a level 800-1500 character ran Rift Level 1 six
+times and never got a Level 2 key. The old rule is pure RNG (55% a key, 70% of those tier + 1: 38% per run for a one
+modifier key, so six misses in a row happen to 6% of players). Now: (1) pity: `runs` = 2 sealed rifts in a row with no
+stronger key (counter on the receiver, storage `riftRun + 5`) make the third leave tier + 1; (2) fast step: a finisher at
+1.5x the tier's entry level or more always gets a key of the tier his level fits (`R.fitTier`), at least +1 and at most
++3 per run (level 1000 in tier 1: tier 4, then 7, 10). The Ashen Ascent keystone turns both off. Rift monsters stay at
+the key tier's level window (a tier 1 rift is level 80-180 whatever the player's level): scaling them to the party would
+make the low tiers a grind at a high level, so they are a quick step with a guaranteed key instead.
+
+**Layout audit.** `tools/audit_waystone_maps.py BASE_SERVER_DIR --check` walks each of the 12 maps of `tier_maps.lua` on
+the base `.otbm` (players walk onto fields; `clearPath` items taken off; the Frostreaver entrance moved): the arrival
+region, every lever tile, the boss entrance and boss tile, that the boss room is closed, that 85% of the spawn points
+are reachable and that at least four of the tier's five monster types spawn. Result 2026-10-23: all 12 pass; **maps 7
+(tier IV forest) and 8 (tier IV underground) fail on the raw map** (lever cut off: a small fir tree; rope railings),
+which `clearPath` fixes at each start (`waystone_tiers.lua` `clearPaths`; this was already in place). The monsters
+Nexlurith, Nightflare Dreadknight and Inferno Juggernaut spawn in only one of their tier's two maps, which is not a
+defect. `waystone_tiers_config.lua` `layouts` records the audit and `retired` lists maps `WT.optionsFor` must leave out
+(none today). The base map is not in the repository: CI runs `tools/audit_waystone_maps_test.py` (synthetic maps,
+parsers) and `tests/waystone_layouts_test.lua` (12 rows, rectangles, clearPath inside maps, a band keeps two maps); run
+the audit by hand after a map or `clearPath` change. The generated rift layouts (including the fungus forest theme
+"Forsaken Sanctum") are validated for every theme and size band by `tests/rift_layout_test.lua`.
+
+**The model (`tools/content_reward_model.lua --check`, both interpreters).** Per hour at the pack model's kills (x0.85
+waystone, x0.8 rift for the walking), against the richest stock hunting band (1000; the 1500 band's stock tables hold no
+gear):
+
+| Content | Tier 1 | Tier 15 | With +60% quantity |
+|---|---|---|---|
+| Waystone Rare+ gear/h (hunting 24.8) | 43.5 (x2.8) | 132.9 (x6.4) | x3.8 / x9.3 |
+| Rift orbs/h (hunting 69 / 51) | 47.8 (x1.7) | 135.1 (x3.7) | x2.1 / x5.2 |
+
+`bounds` in `content_rewards_config.lua`: waystone gear gain at least x2 with no modifiers and at most x14 with them, rift
+orbs at least x1.5 and at most x10. The gold and experience models are untouched (the contents add gear and orbs, no
+coins; `loot_model.lua --check` stays green). Computed, not measured in game; the pieces are Rare or better, so their NPC
+value is not in the gold model. Not done: waystone-exclusive or rift-exclusive items (new items need art and an
+`items.xml` install; the pools are the set pieces and the unique pool) and faction materials (none exist).
+
+Client: the device window, the Atlas window (under the map, per mode) and the rift HUD (label and tooltip) say what each
+pays. Tests: `tests/content_rewards_test.lua`, `tests/waystone_layouts_test.lua`, `tools/audit_waystone_maps_test.py`.
+
 ## Rifts (`rift.lua`, `rift_core.lua`, `rift_config.lua`, `rift_layout_core.lua`, client `game_rift`)
 
 **Limits** (`rift_config.lua` `limits`, "Instance limits"): 12 / 13 / 15 minutes a run by the size of its map (tiers 1-5 / 6-10 / 11-15, `layout.sizes`; was 10 for all; Omen arenas keep 10), warnings at 5 min, 1 min and 10 s; time up fails the rift (out to where the key was used, the key is spent); a run kept open only for fallen players who may come back closes after 3 minutes as a failed rift; at most 16 rifts and Omen arenas at once, a player who finds them busy (or none ready yet) hears the wait and waits in line.
@@ -14070,6 +14135,7 @@ storages 7100400-7100409, action ids 47401 (key), 47402 (reward chest) and 47403
   one life; the next login of that character puts it back at the rift's entrance with 5 s in which rift monsters do
   not hurt it. The death that takes the last life collapses the rift (everyone out, no chest, key spent). Fallen players
   who may still return keep a run open and share the chest. HUD shows "Lives: n / max". The Flawless Seal achievement now needs no deaths.
+- **Key ladder (2026-10-23).** A sealed rift's key is pity-backed: two rifts in a row without a stronger key make the third leave tier + 1, and a finisher at 1.5x the tier's entry level or more always gets a key of the tier his level fits (at most +3 a run). See "Content rewards".
 - **Omens.** Sealed rifts of tier 6+ add Omen Fragments (item 32071, copy of the red crystal fragment) to every finisher's
   chest: 2 + 1 per tier above 6, x quantity; rare / legendary monsters of those rifts carry one 8% / 25%. Using 60
   fragments binds an Omen Key (item 32072, copy of the eye of the storm; attribute omen_kind) of a random kind. The key

@@ -1164,6 +1164,12 @@ local function processKill(monster, corpse)
 		end
 	end
 
+	-- 1a. content rewards (content_rewards.lua; server/README.md "Content rewards"): the gear, boss table and waystones of
+	-- a waystone run, the orbs of a rift. Before the gear quality step so its pieces are forged like any drop
+	if ChaosContentRewards and ChaosContentRewards.onKill then
+		ChaosContentRewards.onKill(monster, corpse, owner, ctx, L, bonus)
+	end
+
 	-- 1b. smart loot (smartloot.lua): a gear drop nobody near can wear may become one of this loot table they can
 	if ChaosSmartLoot and ChaosSmartLoot.apply then
 		local okSmart, errSmart = pcall(ChaosSmartLoot.apply, corpse, owner, lootTable, rnd)

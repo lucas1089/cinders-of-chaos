@@ -1204,9 +1204,8 @@ local function success(run, pos)
 		end
 	end
 	-- the next key: to the player who used the key, else a random finisher
-	local drop = not run.omen and R.rollKeyDrop(cfg, run.key.tier, #run.key.mods, rand, run.atlasRun) or nil
-	if drop then
-		local target
+	local target
+	if not run.omen then
 		for id, e in pairs(run.players) do
 			if e.guid == run.openerGuid then
 				target = Player(id)
@@ -1219,6 +1218,14 @@ local function success(run, pos)
 			end
 			target = #ids > 0 and Player(ids[rand(1, #ids)]) or nil
 		end
+	end
+	local pityKey = ST + 5 -- sealed rifts in a row without a stronger key (R.keyGuarantee)
+	local who = target and {level = target:getLevel(), pity = math.max(0, target:getStorageValue(pityKey))} or nil
+	local drop = not run.omen and R.rollKeyDrop(cfg, run.key.tier, #run.key.mods, rand, run.atlasRun, who) or nil
+	if target then
+		target:setStorageValue(pityKey, (drop and drop.tier > run.key.tier) and 0 or ((who and who.pity or 0) + 1))
+	end
+	if drop then
 		if target then
 			RF.giveKey(target, drop, drop.tier > run.key.tier and "The rift leaves a stronger key behind" or "The rift leaves a key behind")
 			if drop.tier > run.key.tier then
@@ -2446,6 +2453,17 @@ function RF.lootMult(ctx)
 	return (1 + (run.bonus.quantity or 0) / 100) * (run.fx.party and run.fx.party.loot or 1) -- x the party's loot bonus
 end
 
+-- content_rewards.lua: the rift the corpse owner is in, for a kill of one of its monsters: {tier, quantity, guardian, omen}
+-- (quantity: the key's bonus x the party's loot bonus, as RF.lootMult)
+function RF.contentOf(monster, player)
+	local run = player and RF.runOf[player:getId()]
+	if not run or not run.key then
+		return nil
+	end
+	return {tier = run.key.tier, omen = run.omen ~= nil and run.omen ~= false, guardian = RF.bossDead[monster:getId()] == true,
+		quantity = RF.lootMult({player = player})}
+end
+
 -- bounty.lua: a completed (paid) contract may give a tier-1 key
 function RF.onBountyPaid(player, contract)
 	local cfg = C()
@@ -2581,6 +2599,7 @@ chestAction:register()
 -- killer's kill event (ChaosRiftPlayerKill, the player or the master of the summon that killed it) or, for a kill
 -- nobody of the run made, from the tick's sweep. Each monster is counted once (RF.dead).
 RF.dead = RF.dead or {}
+RF.bossDead = RF.bossDead or {}
 riftDeath = function(mid, creature, corpse)
 	if RF.dead[mid] then
 		return
@@ -2609,6 +2628,9 @@ riftDeath = function(mid, creature, corpse)
 	end
 	if run.bossIds and run.bossIds[mid] then
 		run.bossIds[mid] = nil
+		-- content_rewards.lua: the guardian's corpse gets its orb burst (the loot event follows this one)
+		RF.bossDead[mid] = true
+		addEvent(function(id) RF.bossDead[id] = nil end, 5000, mid)
 		local res = R.onBossKilled(run, os.time())
 		if res == "success" then
 			success(run, creature and creature:getPosition() or nil)

@@ -38,6 +38,14 @@ ChaosPanelDark
     color: #8c8070
     text-align: center
 
+  RiftHudLabel
+    id: pays
+    color: #8c8070
+    text-align: center
+    !text: tr('Pays in crafting orbs and keys')
+    !tooltip: tr('Rifts pay in crafting currency: orbs from the kills (Upheaval, Fate, the waystone orbs), a burst from the guardian, and a stronger key when you seal a rift. Waystones are the place for gear.')
+    phantom: false
+
   UILabel
     id: clock
     font: sans-bold-16px

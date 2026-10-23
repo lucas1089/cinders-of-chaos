@@ -361,7 +361,11 @@ return {
 
 	-- next key from a completed rift (one per run, to the player who used the key, else a random finisher):
 	-- chance = base + perMod x modifiers (capped at max), and of those `nextTier` + perMod x modifiers are tier + 1
-	keyDrop = {base = 45, perMod = 10, max = 75, nextTier = 60, nextPerMod = 10},
+	-- pity (R.keyGuarantee): `runs` sealed rifts in a row that left no stronger key (counter on the receiver, storage
+	-- riftRun + 5) make the next one leave tier + 1; a finisher at `outlevel` x the tier's entry level or more always
+	-- gets a key of the tier his level fits, at least +1, at most +maxJump (so tier 1 for level 1000 is a fast step)
+	keyDrop = {base = 45, perMod = 10, max = 75, nextTier = 60, nextPerMod = 10,
+		pity = {runs = 2, outlevel = 1.5, maxJump = 3}},
 	-- rare / legendary monsters killed inside a rift: percent chance of a key of the rift's tier in the corpse
 	eliteKeyChance = {rare = 4, legendary = 10},
 

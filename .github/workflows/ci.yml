@@ -150,6 +150,12 @@ jobs:
       - name: Store prices are consistent (store_model.lua; coin packs, boost caps, gold per coin, store_balance_config.lua)
         run: cd server && luajit tools/store_model.lua --check && lua5.3 tools/store_model.lua --check
 
+      - name: Rifts pay orbs and waystones pay gear, per hour above hunting but inside bounds (content_reward_model.lua; content_rewards_config.lua bounds)
+        run: cd server && luajit tools/content_reward_model.lua --check && lua5.3 tools/content_reward_model.lua --check
+
+      - name: Waystone map audit parsers and rules (audit_waystone_maps.py; the base map itself is checked by hand)
+        run: python3 -I server/tools/audit_waystone_maps_test.py
+
       - name: Late packs die in at most 3x a base hunt pack (pack_model.py --check; pace_config.lua scaled.health)
         run: python3 -I server/tools/pack_model.py --check
 

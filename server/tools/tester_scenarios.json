@@ -8,7 +8,7 @@
  "counts": {
   "opcode": 58,
   "out": 38,
-  "passive": 69,
+  "passive": 71,
   "place": 13,
   "staff": 10
  },
@@ -2736,6 +2736,15 @@
    ],
    "why": "needs guilds of real players"
   },
+  "content_rewards": {
+   "files": [
+    "content_rewards.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
   "cooldown_channels": {
    "files": [
     "cooldown_channels.lua"
@@ -3814,6 +3823,15 @@
     "hunt"
    ],
    "talkactions": []
+  },
+  "retired_spells": {
+   "files": [
+    "retired_spells.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
   },
   "reward_sparkle": {
    "files": [
