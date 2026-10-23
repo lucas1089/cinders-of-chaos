@@ -2366,7 +2366,7 @@ of each thing) and `pack36_fx.sums` (sha256 of each strip, for `build --check`).
   English words in the art) are appended and sent by nothing. Every engine, monster and script send of those ids shows the new art; send
   offset 0, 0 (628: 1, 1, as before); art past the bottom-right tile is moved up and left as a whole, cut beyond 4 x 4
   tiles (2 effects lose 3-6 % of their pixels). So a 3x3 or 4x4 in-place art sent at the target tile sits up-left
-  of it; the server's Lua sends move the 23 such ids to their centring tile (`tools/sprites/gen_fx_send_offsets.py`
+  of it; the server moves the 23 such ids to their centring tile (Lua sends, and engine sends with src-patch 0070) (`tools/sprites/gen_fx_send_offsets.py`
   -> `server/data/lib/chaos_fx_send_offsets.lua`, server/README.md "Purchased effect packs (pair 36)"). The pair is
   unchanged.
 - **Appended**: 3247 effects (tile spells 346, fields 150, areas 547, cones 784, Mega 1012, impacts 195, circles 21,

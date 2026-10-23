@@ -38,6 +38,10 @@ if Chaos then
 	if ChaosPzGuard then
 		ChaosPzGuard.install()
 	end
+	-- a reload hands the effect send offsets to the engine again, read anew (src-patch 0070; see the guard below)
+	if ChaosFxSendOffsetCore and ChaosFxSendOffsetCore.applyEngine then
+		ChaosFxSendOffsetCore.applyEngine(Game, true)
+	end
 	return
 end
 
@@ -1916,9 +1920,14 @@ end
 -- sendMagicEffect refuses it here and names the caller once (a script that computed an effect and got nothing), so the
 -- source can be found and fixed; nothing is sent. Installed once (a reload keeps the first wrapper).
 -- An effect redrawn in place with art bigger than a tile (pair 36) is sent at its offset tile, so it is centred on
--- the target (fx_send_offset_core.lua, data/lib/chaos_fx_send_offsets.lua). Engine-sent effects are not shifted.
+-- the target (fx_send_offset_core.lua, data/lib/chaos_fx_send_offsets.lua). An engine with src-patch 0070 takes the
+-- table (Game.setFxSendOffsets, handed over on every load of this file) and shifts every effect packet itself,
+-- engine sends included; the guard then sends at the target tile. Without the patch it shifts the Lua sends only.
 if not ChaosFxSendOffsetCore then
 	pcall(dofile, "data/scripts/chaos/fx_send_offset_core.lua")
+end
+if ChaosFxSendOffsetCore and ChaosFxSendOffsetCore.applyEngine then
+	ChaosFxSendOffsetCore.applyEngine(Game)
 end
 if type(Position) == "table" and Position.sendMagicEffect and not Chaos.magicEffectGuard then
 	local rawSendMagicEffect = Position.sendMagicEffect
@@ -1934,7 +1943,8 @@ if type(Position) == "table" and Position.sendMagicEffect and not Chaos.magicEff
 			end
 			return false
 		end
-		if offsets and offsets[effect] and type(self) ~= "number" and tonumber(self.x) and tonumber(self.y) then
+		if offsets and ChaosFxSendOffsetCore.luaShifts(effect, offsets) and type(self) ~= "number"
+			and tonumber(self.x) and tonumber(self.y) then
 			local x, y = ChaosFxSendOffsetCore.shift(self.x, self.y, effect, offsets)
 			return rawSendMagicEffect(Position(x, y, self.z), effect, ...)
 		end
