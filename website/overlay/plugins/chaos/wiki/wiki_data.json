@@ -42726,7 +42726,7 @@
 								["Chaos Pact", "1", "300", "Chaos Pact"],
 								["Storage & Slots", "13", "100-300", "Account storage"],
 								["Season Pass", "4", "500-2500", "Season pass"],
-								["Services", "5", "60-400", "Service"],
+								["Services", "5", "100-400", "Service"],
 								["XP Boosts", "2", "50-225", "Boost"],
 								["Blessings", "2", "60-750", "Boost, Service"],
 								["World Buffs", "4", "250-300", "Boost"],
@@ -42749,7 +42749,7 @@
 								["Spell Effects", "12", "250", "Cosmetic"],
 								["Loot Labels", "4", "150", "Cosmetic"],
 								["Chat Colours", "5", "200", "Cosmetic"],
-								["Name Plates", "13", "300", "Cosmetic"],
+								["Name Plates", "13", "200", "Cosmetic"],
 								["Pets", "7", "400", "Pet (small abilities)"],
 								["Appearances", "9", "300-400", "Cosmetic"],
 								["Portal Styles", "6", "250-300", "Cosmetic"],
@@ -43120,11 +43120,11 @@
 				{
 					"id": "store:7",
 					"name": "Services",
-					"sub": "5 offers, 60-400 coins. Service.",
+					"sub": "5 offers, 100-400 coins. Service.",
 					"color": "#ff70c0",
 					"group": "category",
 					"sections": [
-						{"h": "Category", "p": ["5 offers, 60-400 Chaos Coins. Service."]},
+						{"h": "Category", "p": ["5 offers, 100-400 Chaos Coins. Service."]},
 						{
 							"h": "Offers",
 							"cols": ["Offer", "Coins", "Type", "What it is"],
@@ -43156,7 +43156,7 @@
 								],
 								[
 									"Passive Tree Reset",
-									"60",
+									"100",
 									"Service",
 									"Refunds every passive tree and Paragon point at once, without the gold cost of the normal resets."
 								]
@@ -43183,13 +43183,13 @@
 									"Double Experience Potion",
 									"50",
 									"Boost",
-									"1 hour of double experience per potion (Character > Character Info). Not for season characters. (not for season characters)"
+									"1 hour of double experience per potion (Character > Character Info). Not for season characters. 4 per week. (4 a week, not for season characters)"
 								],
 								[
 									"5 Double Experience Potions",
 									"225",
 									"Boost",
-									"Five hours of double experience, one potion at a time. (not for season characters)"
+									"Five hours of double experience, one potion at a time. 2 per week. (2 a week, not for season characters)"
 								]
 							],
 							"sprites": [{"item": 28095}, {"item": 28095}]
@@ -45469,11 +45469,11 @@
 				{
 					"id": "store:30",
 					"name": "Name Plates",
-					"sub": "13 offers, 300 coins. Cosmetic.",
+					"sub": "13 offers, 200 coins. Cosmetic.",
 					"color": "#ff70c0",
 					"group": "category",
 					"sections": [
-						{"h": "Category", "p": ["13 offers, 300 Chaos Coins. Cosmetic."]},
+						{"h": "Category", "p": ["13 offers, 200 Chaos Coins. Cosmetic."]},
 						{
 							"h": "Offers",
 							"cols": ["Offer", "Coins", "Type", "What it is"],
@@ -45481,79 +45481,79 @@
 							"rows": [
 								[
 									"Violet Plate Frame",
-									"300",
+									"200",
 									"Cosmetic",
 									"A violet frame round your name plate, for good. Switch frames in Info & Services > Services."
 								],
 								[
 									"Frost Plate Frame",
-									"300",
+									"200",
 									"Cosmetic",
 									"A frost-blue frame round your name plate, for good. Switch frames in Info & Services > Services."
 								],
 								[
 									"Ember Plate Frame",
-									"300",
+									"200",
 									"Cosmetic",
 									"A smouldering orange frame round your name plate, for good. Switch frames in Info & Services > Services."
 								],
 								[
 									"Verdant Plate Frame",
-									"300",
+									"200",
 									"Cosmetic",
 									"A leaf-green frame round your name plate, for good. Switch frames in Info & Services > Services."
 								],
 								[
 									"Bone Plate Frame",
-									"300",
+									"200",
 									"Cosmetic",
 									"A pale bone frame round your name plate, for good. Switch frames in Info & Services > Services."
 								],
 								[
 									"Ashen Plate Frame",
-									"300",
+									"200",
 									"Cosmetic",
 									"A grey ash frame round your name plate, for good. Switch frames in Info & Services > Services."
 								],
 								[
 									"Sapphire Plate Frame",
-									"300",
+									"200",
 									"Cosmetic",
 									"A deep sapphire frame round your name plate, for good. Switch frames in Info & Services > Services."
 								],
 								[
 									"Rose Plate Frame",
-									"300",
+									"200",
 									"Cosmetic",
 									"A rose-pink frame round your name plate, for good. Switch frames in Info & Services > Services."
 								],
 								[
 									"Jade Plate Frame",
-									"300",
+									"200",
 									"Cosmetic",
 									"A jade-green frame round your name plate, for good. Switch frames in Info & Services > Services."
 								],
 								[
 									"Copper Plate Frame",
-									"300",
+									"200",
 									"Cosmetic",
 									"A burnished copper frame round your name plate, for good. Switch frames in Info & Services > Services."
 								],
 								[
 									"Obsidian Plate Frame",
-									"300",
+									"200",
 									"Cosmetic",
 									"A black obsidian frame with violet light round your name plate, for good. Switch frames in Info & Services > Services."
 								],
 								[
 									"Amber Plate Frame",
-									"300",
+									"200",
 									"Cosmetic",
 									"A warm amber frame round your name plate, for good. Switch frames in Info & Services > Services."
 								],
 								[
 									"Storm Plate Frame",
-									"300",
+									"200",
 									"Cosmetic",
 									"A storm-blue frame edged in white round your name plate, for good. Switch frames in Info & Services > Services."
 								]

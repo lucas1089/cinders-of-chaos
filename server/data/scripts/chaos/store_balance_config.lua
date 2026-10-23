@@ -1,0 +1,47 @@
+-- Store balance rules (O140): the limits that tools/store_model.lua --check enforces on the coin packs, the store prices and the
+-- boosts. Plain table, loaded with dofile; the engine loads it as a script and it only returns a table. Numbers are in
+-- docs/PRICES.md ("Store balance (O140)"). Lua 5.1 / LuaJIT and Lua 5.3 compatible.
+return {
+	-- one Chaos Coin is worth this much gold: the rate the potion and rune packs are built on (shop_config.lua
+	-- RUNE_GOLD_PER_COIN). Every gold alternative of a store item is measured against it.
+	goldPerCoin = 1000,
+	-- the store may be at most this many times cheaper than the gold way (premium never more than ~2x as efficient)
+	maxCheaperThanGold = 2,
+
+	packs = {
+		coinsPerReal = 10,        -- the base rate: one coin is about R$ 0,10
+		baseTolerancePct = 1.5,   -- the packs without a bonus differ at most this much in coins per real (R$ 9,90 vs 24,90 rounding)
+		maxBonusPct = 20,         -- the biggest pack bonus ("modest bulk bonus")
+		maxBulkMult = 1.25,       -- coins per real of the biggest pack / the base rate
+		starterMaxMult = 3.5,     -- the one-time Starter pack, coins per real / the base rate
+		firstMaxMult = 2.25,      -- the first donation doubling (at most +maxBonus coins), coins per real / the base rate
+		usdCentsEnding = 98,      -- every USD price ends in .98 so that x brlPerUsd 5 gives R$ x9,90
+		pixCentsEnding = 90
+	},
+
+	-- supplies sold in packs: gold value of a pack (NPC ask x count) per coin, any size
+	supplies = {minGoldPerCoin = 700, maxGoldPerCoin = 2000, maxPackDiscountPct = 10},
+	-- no item of the store may sell to an NPC for more than this many gold per coin it cost (half a coin's gold: no coin -> gold loop)
+	maxSellGoldPerCoin = 500,
+
+	boosts = {
+		xpPotion = {itemId = 28095, maxHoursPerWeek = 14},   -- 4 singles + 2 packs of 5, hours of x2 per account and week
+		xpPackMaxDiscountPct = 15,
+		worldBuffMaxBonus = {xp = 0.25, loot = 0.25, skill = 0.25, hunt = 0.5},
+		worldBuffMaxCapMinutes = 180,
+		worldBuffMaxSpreadPct = 25,                           -- the hourly prices of xp / loot / skill differ at most this much
+		xpCapMax = 4.0                                        -- xpcap_config.lua cap: every bonus together
+	},
+
+	services = {
+		passiveResetMaxLevelAt2x = 800,   -- the flat price covers the in-window reset (level x 250 gold) up to this level
+		blessingLevel = 120,              -- the level where one blessing reaches its mid price (gentledeath_config.lua)
+		eternalMinTimes = 8, eternalMaxTimes = 15   -- Eternal Blessing in All Blessings purchases
+	},
+
+	premium = {minDiscountPct90 = 5, maxDiscountPct90 = 20, maxDiscountPct180 = 25},
+	pactDayTolerancePct = 10,           -- the Pact days of a starter pack at the Pact's own price per day
+	bundles = {maxStarterDiscountPct = 55, maxSetDiscountPct = 25},
+	perCharacterConvenienceMax = 1400,  -- Loot Bag + Auto Seller + Rarity Autoloot + pouches + Ration for one character
+	cosmetics = {min = 80, max = 800}  -- every cosmetic offer; a static plate frame costs no more than the cheapest wings
+}

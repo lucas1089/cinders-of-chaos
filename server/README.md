@@ -3630,7 +3630,7 @@ client module needed no change.
 |---|---|---|---|
 | Boosts | ~~Stamina Refill~~ | - | removed 2026-10-15 ("Time-friendly progression": paying to farm at full loot); the `stamina` service handler stays, unused |
 | | ~~Stamina Extension~~ | - | removed 2026-10-15 (the base server's item 27990, +2 h; owned ones still work) |
-| | Double Experience Potion / 5 potions | 50 / 225 | the base server's item 28095: x2 experience for 1 h per potion (storage 6000, Character > Character Info) |
+| | Double Experience Potion / 5 potions | 50 / 225 | the base server's item 28095: x2 experience for 1 h per potion (storage 6000, Character > Character Info); `weeklyLimit` 4 / 2 per account (14 hours a week, O140) |
 | | All Blessings | 60 | blessings 1-5 (refused when all are owned) |
 | World Buffs | World Experience | 300 | +25% monster experience for everybody, 1 h, up to 3 h |
 | | World Loot | 300 | +25% Chaos loot (`rateMult`) and one extra loot roll on every monster, like the Loot Frenzy event, 1 h, up to 3 h |
@@ -3639,7 +3639,7 @@ client module needed no change.
 | | Vocation Change | 400 | a token for Character > Services |
 | | Sex Change | 100 | at once; every owned outfit and addon is copied to the other sex (pairs by name in `data/XML/outfits.xml`) |
 | | Frag & Skull Remover | 150 | skull time (the engine's unjustified-kill counter) to 0, red/black skull removed; not in combat |
-| | Passive Tree Reset | 60 | empties every preset for free (the in-window reset costs level x 250 gold) |
+| | Passive Tree Reset | 100 | empties every preset for free (the in-window reset costs level x 250 gold; 60 before O140, see "Store balance (O140)") |
 | Convenience | (the Temple Teleport Scroll is no longer sold) | | see below |
 | | Loot Bag / Orbs Pouch / Rift Key Pouch | 250 / 200 / 150 | store pouch items, one of each per character ("Store pouches" below) |
 | | Auto Seller | 400 | unlock (also lent by an active Chaos Pact), see below |
@@ -3647,6 +3647,19 @@ client module needed no change.
 | Training | 15 exercise weapon chests | 25 / 75 / 450 | the base server's chests: melee (the one sword / axe / club weapon since 2026-10-23), bow, rod, wand, shield with 500 / 1800 / 14400 charges ("Training weapons") |
 
 Premium (250 for 30 days) stays where it was.
+
+**Store balance (O140, 2026-10-23).** `cd server && luajit tools/store_model.lua` prints the price tables (coin packs, coins per hour of
+benefit of every time saver, gold per coin of the supply packs, services against their gold way, bundles); `--check` (also
+`lua5.3`) enforces the rules of `data/scripts/chaos/store_balance_config.lua` and CI runs it; `tests/store_model_test.lua` breaks each
+rule on purpose and expects the problem. Rules: coin packs have `usdCents` ending in .98 and round Pix prices, the packs without a
+bonus are within 1.5% of 10 coins per real, bonuses rise 0-20%, the Starter pack is at most 3.5x and the first donation at most 2.25x
+the base rate; a supply pack is worth 700-2,000 gold per coin (a coin is 1,000 gold, store at most 2x cheaper than gold) and no store
+item sells to an NPC for more than 500 gold per coin; the Double Experience Potion has weekly limits that add up to at most 14 hours,
+the world buffs stay at 25% (Hunt 50%) and 3 hours, the experience cap at 4; the Passive Tree Reset is within 2x of its gold way up to
+level 800; the Eternal Blessing is 8-15 All Blessings; a static plate frame costs no more than the cheapest wings; the Pact days of a
+starter pack are listed at the Pact's price per day. Prices, before and after, and the reasons: docs/PRICES.md "Store balance (O140)".
+Changed: Double Experience Potion weekly limit (new), Passive Tree Reset 60 -> 100, plate frames 300 -> 200. Server: `files` step and a
+restart; the website wiki data is regenerated (`tools/gen_wiki_data.lua`).
 
 **Temple Teleport Scroll (retired from the store).** Every character has the free Town Portal now ("Town Portal" below), so the store no longer offers the scroll or the 25-use scroll. Scrolls bought earlier keep working: the handler, `S.teleportBlocked` and the action id stay in `shop_services.lua`, and `shop_config.lua` keeps the `templeScroll` service kind. The old description: an ordinary "scroll" (item 6119, used by no other script) with action id 47301, the name
 "temple teleport scroll", a description and the uses left in the custom attribute `chaos_uses`; no new item id. Using it
