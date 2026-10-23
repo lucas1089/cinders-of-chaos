@@ -15,6 +15,9 @@ return {
 	items = {
 		portal = 1387, -- magic forcefield, the same item as the room's own teleports
 		sign = 5360, -- the sign on the counter behind each teleport (its text is written at startup)
+		-- the counter piece on the tile behind a teleport (room.cellRows): where a teleport has no free cell beside it
+		-- the install takes it off and the monster stands there (hall_order.spare_cell; z 6 31659)
+		counter = 1642,
 		-- the base quests' other teleport items: the entry floor's Inquisition alcove (5023) and the two quest sites'
 		-- own ways back (5023, 11796); read with the portal so the quest hall can move them (hall_quests.py)
 		questPortals = {5023, 11796}

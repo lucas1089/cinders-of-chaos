@@ -1043,9 +1043,9 @@ def step_contentareas(server, data, ctx):
         mp = ctx.get('dry_map') or tool_map_path(real)
         if not mp:
             return tool_result((False, ['no map in %s/world' % real]))
-        return tool_result(run_tool([tool('install_content_areas.py'), data, '--dry-run', '--map', mp],
-                                    'install_content_areas.py'))
-    return tool_result(run_tool([tool('install_content_areas.py'), data], 'install_content_areas.py'))
+        return tool_result_warn(run_tool([tool('install_content_areas.py'), data, '--dry-run', '--map', mp],
+                                         'install_content_areas.py'))
+    return tool_result_warn(run_tool([tool('install_content_areas.py'), data], 'install_content_areas.py'))
 
 
 STEPS.insert(STEPS.index('houses') + 1, 'contentareas')  # after houses (map steps), before poi
@@ -1211,6 +1211,14 @@ def tool(name):
 def tool_result(res):
     ok, lines = res
     return ok, lines, []
+
+
+def tool_result_warn(res):
+    """like tool_result, but the tool's lines that say `WARNING: ...` (any prefix before it) become the step's warnings:
+    the step output shows only its first lines, the warnings are always shown and counted"""
+    ok, lines = res
+    warn = [l.split('WARNING: ', 1)[1] for l in lines if 'WARNING: ' in l]
+    return ok, [l for l in lines if 'WARNING: ' not in l], warn
 
 
 def class_hooks():

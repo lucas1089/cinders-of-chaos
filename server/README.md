@@ -16759,6 +16759,28 @@ west to east (north before south in a column). A floor with too few slots is gro
   of the map already stands a monster on counts as a cell (`install_content_areas.spawned_tiles`), and an end
   teleport takes the two cells on its outer side. On the base map only z 6 (31659, 32254) is left without a cell (it
   shares its one cell with 31657). The next install replaces the old blocks.
+  - **Wyrmspine Hollows and the cell-less slot (beta 2026-10-22/23, "Wyrmspine Hollows showcase empty").** Root cause
+    of the empty Wyrmspine showcase: the plan had `display = false` (all its monsters are 4x4 or 5x5, they spilled over
+    the cell walls), so the install added no display spawn for it. `standIn = true` with the base server's 2x2 Elder
+    Wyrm (config `plans`, 2026-10-22) fixes it; the live server gets it with the `contentareas` step, which `update-apply`
+    of `chaos-ctl.sh` (the admin app's update) runs as part of `install_all.py`. Checked on a copy of the base map, full
+    install: Wyrmspine's slot is z 6 31614 (the third of the floor, west wing), its cells 31613 and 31615 on y 32253
+    get the two `Elder Wyrm` blocks; from a spawn file without them the next `contentareas` run adds exactly those two,
+    a second run changes nothing. Not checkable here (no client pair): that look 561 draws and is 2x2 in the pair.
+    Scan of all 103 hunts of the hall in the same install: 102 had a display, Bonewright Galleries (the slot z 6 31659,
+    above) had none. Its slot now keeps a **spare cell**, the tile right behind the teleport (`hall_order.spare_cell`): when
+    the cells beside it all go to the neighbour (`share_cells`) it takes the spare, and a spare that is still a counter
+    tile (`items.counter` = 1642 in `hunt_teleports_config.lua`, ground + counter only, no PZ) is opened by the install
+    (`hall_edit`: the counter item comes off, log "display cell(s) opened"). Now all 103 hunts show a monster; three
+    more (Rotbloom Sanctum, Leechwater Fen, Scorchpit Delve) have one cell instead of two, by the map's shape.
+  - **Loud when a hunt shows nothing.** The install logs `hall: WARNING: ...` for a hunt whose slot has no display cell
+    or no display monster, for a display monster (base or planned hunt) that is no monster of the server and for one
+    that turns invisible; `install_all.py` lifts every `WARNING:` line of the `contentareas` step into its warnings
+    (always shown, counted in the summary; the step output itself cuts after 15 lines). The summary's `hall.nodisplay`
+    lists the hunts. `install_content_areas_test.py` (`shared_cell_checks`, `display_monster_checks`) covers it: the
+    shared-cell case, the warnings, and a scan of every display monster of the CSV and the config (a Chaos monster
+    with a look that is no blank outfit and no `invisible` defense, or a base type under a name `monsternames` keeps);
+    `hunt_teleports_test.lua` refuses a plan with `display = false`.
 - **Beta fixes, 2026-10-20** (owner: "the teleports are wrong ... the quest rewards stayed and the quests are gone",
   "many black squares in the TP room", "the teleports inside the hunts take you to random places"; the cause of each
   checked on a copy of the base map with the installer of the time):

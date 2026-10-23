@@ -454,6 +454,26 @@ def display_cells(world, room, pos, known=(), end_row=None):
     return []
 
 
+def spare_cell(world, room, pos, known=(), counter=None):
+    """the cell right behind a teleport, kept for the case that the cells beside it go to its neighbour (two
+    teleports on one shared cell, beta 2026-10-23: the second hunt of z 6 31657 / 31659 had no showcase at all): a
+    bare non-PZ tile, or one that holds only the ground and the `counter` item (the install takes the counter off:
+    hall_edit). None when there is none."""
+    x, y, z = pos
+    rows = room['teleportRows']
+    if y not in rows:
+        return None
+    c = (x, room['cellRows'][rows.index(y)], z)
+    if c in set(known):
+        return c
+    st = world.stack(c)
+    if st is None or world.flags(c) & 1:
+        return None
+    if len(st) == 1 or (counter is not None and len(st) == 2 and st[1] == counter):
+        return c
+    return None
+
+
 def sign_of(world, room, pos, sign_id):
     x, y, z = pos
     rows = room['teleportRows']
@@ -488,11 +508,11 @@ def cells_of(room, pos):
     return [(x - 1, row, z), (x + 1, row, z)]
 
 
-def hall_slots(world, room, sign_id, base_rows, wing_slots, quest_rows=(), known=(), end_row=None):
+def hall_slots(world, room, sign_id, base_rows, wing_slots, quest_rows=(), known=(), end_row=None, counter=None):
     """every hunt slot of the hall: the base hunts' places (from the CSV, whatever stands there now), the places of
     the quest teleports (their alcoves become hunt slots once the quests have moved) and the grown wings' slots. A
-    display cell goes to the first slot (hall order) that claims it. A hunt without a place is not a slot. known,
-    end_row: display_cells'."""
+    display cell goes to the first slot (hall order) that claims it; a slot left with none takes its spare cell
+    (spare_cell). A hunt without a place is not a slot. known, end_row: display_cells'; counter: spare_cell's."""
     slots = []
     quest_at = {(r['x'], r['y'], r['z']) for r in quest_rows}
     for r in list(hunts_of(base_rows)) + list(quest_rows):
@@ -502,7 +522,8 @@ def hall_slots(world, room, sign_id, base_rows, wing_slots, quest_rows=(), known
         if not world.has(p):
             raise HallError('%s: %d,%d,%d is not a tile of the map (hall_hunts.csv is for another map?)' % ((r['id'],) + p))
         cells = cells_of(room, p) if p in quest_at else display_cells(world, room, p, known, end_row)
-        slots.append(dict(teleport=p, sign=sign_of(world, room, p, sign_id), cells=cells, base=r['id']))
+        spare = None if p in quest_at else spare_cell(world, room, p, known, counter)
+        slots.append(dict(teleport=p, sign=sign_of(world, room, p, sign_id), cells=cells, base=r['id'], spare=spare))
     have = {s['teleport'] for s in slots}
     for s in wing_slots:
         if tuple(s['teleport']) not in have:
@@ -512,9 +533,15 @@ def hall_slots(world, room, sign_id, base_rows, wing_slots, quest_rows=(), known
 
 def share_cells(slots, hall):
     taken = set()
-    for s in sorted(slots, key=lambda s: slot_key(hall, s['teleport'])):
+    order = sorted(slots, key=lambda s: slot_key(hall, s['teleport']))
+    for s in order:
         s['cells'] = [c for c in s['cells'] if c not in taken]
         taken.update(s['cells'])
+    for s in order:
+        sp = s.get('spare')
+        if not s['cells'] and sp and sp not in taken:
+            s['cells'] = [sp]
+            taken.add(sp)
     return slots
 
 

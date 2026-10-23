@@ -749,8 +749,9 @@ def hall_layout(world, cfg, rows, lay_slots, order, plans, placed, hall_on, log,
     all_rows = rows
     quests = H.quests_of(rows) if hall_on else []  # a quest alcove is a hunt slot once its quest has moved
     rows = H.hunts_of(rows)  # a `not a hunt` row keeps its teleport where it stands, untouched
+    counter = cfg['items'].get('counter')
     slots = H.share_cells(H.hall_slots(world, room, cfg['items']['sign'], rows, lay_slots, quests, known,
-                                       hall.get('endRow')), hall)
+                                       hall.get('endRow'), counter), hall)
     mons = {p['id']: p for p in order}
     ours = [dict(id=pid, lo=int(plans[pid][1]['level'][0]), hi=int(plans[pid][1]['level'][1]), level=None) for pid in placed]
     hunts = [dict(id=r['id'], lo=r['lo'], hi=r['hi'], level=r['level']) for r in rows] + ours
@@ -765,7 +766,8 @@ def hall_layout(world, cfg, rows, lay_slots, order, plans, placed, hall_on, log,
         # where the order puts each hunt: a way back that leads there goes back to the old place
         try:
             ordered = H.assign(hunts, H.share_cells(H.hall_slots(world, room, cfg['items']['sign'], rows, lay_slots,
-                                                                  H.quests_of(all_rows), known, hall.get('endRow')),
+                                                                  H.quests_of(all_rows), known, hall.get('endRow'),
+                                                                  counter),
                                                     hall), hall)
         except H.HallError:
             ordered = {}
@@ -786,16 +788,37 @@ def hall_layout(world, cfg, rows, lay_slots, order, plans, placed, hall_on, log,
             m = H.room_monster(by_row[hid])
             f = monsters.get(m.lower()) if monsters else None
             if monsters and not f:
-                log('hall: %s: no monster named %s on this server: no display monster (fix hall_hunts.csv)' % (hid, m))
+                log('hall: WARNING: %s: no monster named %s on this server: no display monster (fix hall_hunts.csv)' % (hid, m))
             elif m:
                 if f and H.is_invisible(f):
-                    log('hall: %s: %s turns invisible: its room shows nothing (choose another in hall_hunts.csv)' % (hid, m))
+                    log('hall: WARNING: %s: %s turns invisible: its room shows nothing (choose another in hall_hunts.csv)' % (hid, m))
                 displays[hid] = (m, s['cells'], by_row[hid]['spawntime'])
         else:
             p = mons.get(hid) or {}
             if p.get('monster') and p.get('display', True):
-                displays[hid] = (p['monster'], s['cells'], cfg.get('displaySpawntime', 120))
+                m = p['monster']
+                f = monsters.get(m.lower()) if monsters else None
+                if monsters and not f:
+                    # the same check as for the base hunts: a name the server has no monster for spawns nothing
+                    # ("Couldn't spawn monster" at every start, an empty cell in the showcase)
+                    log('hall: WARNING: %s: no monster named %s on this server: no display monster (fix hunt_teleports_config.lua)' % (hid, m))
+                    continue
+                if f and H.is_invisible(f):
+                    log('hall: WARNING: %s: %s turns invisible: its room shows nothing (choose another in hunt_teleports_config.lua)' % (hid, m))
+                displays[hid] = (m, s['cells'], cfg.get('displaySpawntime', 120))
     takeover = {c for s in slots for c in s['cells']}
+    # a hunt whose slot has no display cell (or no display monster) shows nothing in the hall: said loudly, once per
+    # hunt (beta 2026-10-22/23: "Wyrmspine Hollows showcase empty"); install_all.py lifts these lines into its warnings
+    nodisplay = []
+    for hid, s in sorted(assign.items(), key=lambda kv: H.slot_key(hall, kv[1]['teleport'])):
+        if hid not in by_row and (hid not in mons or not mons[hid].get('display', True)):
+            continue  # not ours to show (a quest alcove, a plan with `display = false`)
+        if not s['cells']:
+            nodisplay.append(hid)
+            log('hall: WARNING: %s: its slot %d,%d,%d has no display cell: the room shows no monster' % ((hid,) + tuple(s['teleport'])))
+        elif hid not in displays:
+            nodisplay.append(hid)
+            log('hall: WARNING: %s: no display monster for its slot %d,%d,%d' % ((hid,) + tuple(s['teleport'])))
     base = []
     for hid, s in sorted(assign.items(), key=lambda kv: H.slot_key(hall, kv[1]['teleport'])):
         r = by_row.get(hid)
@@ -812,7 +835,7 @@ def hall_layout(world, cfg, rows, lay_slots, order, plans, placed, hall_on, log,
             log('hall: floor %d (levels %s): %d hunts on %d slots' % (
                 f['z'], H.floor_range_text(hall, f['z']), on, sum(1 for s in slots if s['teleport'][2] == f['z'])))
     log('hall: %d hunts on %d slots (%s)' % (len(assign), len(slots), 'by floor and level' if hall_on else 'as the base server had them'))
-    return dict(assign=assign, portal=portal, displays=displays, takeover=takeover, base=base, floors=floors, slots=slots,
+    return dict(assign=assign, portal=portal, displays=displays, takeover=takeover, nodisplay=nodisplay, base=base, floors=floors, slots=slots,
                 quests=quests, ordered=ordered)
 
 
@@ -965,6 +988,15 @@ def hall_edit(world, map_path, cfg, rows, hl, hall_on, new_tiles, log, wing_lays
     ed = Q.TileEditor(world, map_path, new_tiles)
     ed.need(*hl['portal'])
     used = {s['teleport'] for s in hl['assign'].values()}
+    # a display cell that is still a counter tile (the spare cell behind a teleport whose neighbour has the shared cell
+    # beside it, hall_order.spare_cell) is opened: the counter item comes off, so a monster can stand there
+    counter = cfg['items'].get('counter')
+    opened = []
+    if counter and hall_on:
+        for s in hl['slots']:
+            if tuple(s['teleport']) in used:
+                opened += [tuple(c) for c in s['cells'] if c[0] == s['teleport'][0] and counter in (world.stack(tuple(c)) or ())]
+        ed.need(*opened)
     for s in hl['slots']:
         if s['sign']:
             ed.need(tuple(s['sign']))
@@ -1041,6 +1073,12 @@ def hall_edit(world, map_path, cfg, rows, hl, hall_on, new_tiles, log, wing_lays
             if t is None:
                 raise Q.QuestError('no tile at %d,%d,%d for a hunt teleport' % p)
             ed.set(p, H.with_portal(t, portal, dest, grounds))
+        for c in opened:
+            t = ed.get(c)
+            if t is not None:
+                ed.set(c, dict(flags=t['flags'], ground=t['ground'], items=[(i, a) for i, a in t['items'] if i != counter]))
+        if opened:
+            log('hall: %d display cell(s) opened: the counter behind the teleport taken off (first %d,%d,%d)' % ((len(opened),) + opened[0]))
         if hall_on:
             for s in hl['slots']:
                 if s['teleport'] not in used and s['sign']:
@@ -1312,7 +1350,8 @@ def run(data_dir, dry=False, only=None, room_on=True, plans_dir=PLANS_DIR, confi
             quests = dict(label=qlay['label'], entrance=qlay['entrance'], count=len(qlay['alcoves'])) if (qlay and hall_on) else None
             text = places_lua(cfg['room']['back'], entries, hl['base'], hl['floors'] if hall_on else [], hall_on, quests)
             summary['hall'] = dict(on=hall_on, assign={k: v['teleport'] for k, v in hl['assign'].items()},
-                                   floors=hl['floors'], displays={k: v[0] for k, v in hl['displays'].items()})
+                                   floors=hl['floors'], displays={k: v[0] for k, v in hl['displays'].items()},
+                                   nodisplay=hl['nodisplay'])
         else:
             text = places_lua(cfg['room']['back'], entries)
         dst = os.path.join(data_dir, PLACES_REL)
