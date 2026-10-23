@@ -7505,8 +7505,33 @@ a server restart, no client update.
 `tests/cards_test.lua` now walks all 21 classes (`C.classes`) against all 60 common cards and the 16 legendary cards (about
 45,000 checks): every line is castable by some class, every class has a common line and a hit that fires, every legendary card
 fires for each class weapon, fist weapons, Chaos items, stock ids, bare fists for the Monk line, and the summon lock.
-`luajit tests/cards_test.lua --table` prints the lines per class. Limit: the base `elseif` chain checks only the first
-legendary storage that is on, so with two legendary classes on only the first can fire.
+`luajit tests/cards_test.lua --table` prints the lines per class. The `elseif` limit is fixed in O149 below.
+
+### Cards: two legendaries, class lines, wands and rods (O149)
+
+Follow-ups of O142. Deploy: `badges` and `files` installer steps and a server restart; no client update.
+
+- **Every active legendary card fires.** The base script was `if A then .. elseif B then .. end` over 16 storages, so only the
+  first legendary card that is on was checked. `patch_badges.py` step 9 now also turns the 15 `elseif player:getStorageValue(
+  DeckSystem.Legendary.Legendary..Lv6) == 1 then` into `end` + `if`, so each card rolls on its own hit (up to 5 cards are on
+  at once). The base `CanCreateSummon` lock stays: only one summon at a time, so a second summon card rolls but its summon
+  waits for the first to end; the stat bonus of a card that does not summon is not given either (it is inside the same
+  branch). A script patched by O142 (helper there, `elseif` still in the chain) is upgraded by a second run; CRLF is kept;
+  a second run changes nothing. Test: `tools/patch_badges_test.py` (fixture, an O142-style script, the real base copy when
+  the machine has one, two cards on both fire under luajit or lua5.3).
+- **Usable common cards per class** (`luajit tests/cards_test.lua --table`; the Frostfall Rune counts for everyone). Before: Warrior
+  line, Ranger line 4 each, Mystic 3, Elementalist 7, Illusionist 2, Thief line 2, Necromancer line 3, Monk line 2, Templar line
+  2 (median 3). After: all at least 3, Mystic 4 (gained Frozen Crypt), Necromancer line 4, Illusionist, Thief line, Monk
+  line, Templar line 3. New `also` spells (`cards_config.lua`): Marrow Bolt and Soulrend Beam on Rime Bloom (Necromancer line),
+  Radiant Smite on Dawnpiercer (Templar line), Shattered Psyche on Frozen Crypt (Mystic, Illusionist), Shuriken Toss on
+  Primordial Squall (Thief line), Palm Shockwave on Earthbreaker (Monk line). No line was removed. The test asserts at least
+  3 lines per class, a median of 3 and 4 for the Necromancer line; an `also` spell must belong to one class line (Shattered
+  Psyche is the one exception: Mystic and Illusionist cast it, the Elementalist does not).
+- **Wands and rods stay one type.** The engine has one weapon type for both and the items have no wand or rod flag, so the
+  Sorcerer and Druid legendary cards fire with either. Decided as fine: cards belong to the weapon in the hand, not to a
+  vocation, and a wand or rod user wants a mage card either way. No item id lists to keep in step with `chaos_items.xml`.
+- `card_descriptions.csv`, the codex and wiki data, tester scenarios and wiki art are regenerated; pt-BR texts are built
+  from the same spell lists.
 
 ## Tile labels (`tile_labels.lua`, `tile_labels_core.lua`, `tile_labels_config.lua`)
 

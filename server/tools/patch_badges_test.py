@@ -249,6 +249,12 @@ def main():
            'the helper is defined before the function that calls it')
         ok('ChaosCards.holds(player, class, leftHand, stockIds)' in leg, 'the helper asks cards.lua')
         ok(leg.count('local function chaosHolds') == 1, 'the helper once')
+        ok('elseif' not in leg, 'no elseif is left in the chain (O149)')
+        ok(leg.count('if player:getStorageValue(DeckSystem.Legendary.Legendary') == 16, 'sixteen independent ifs')
+        old = leg.replace('    end\n    if player:getStorageValue(DeckSystem.Legendary', '    elseif player:getStorageValue(DeckSystem.Legendary')
+        # a script patched before O149 (chaosHolds there, elseif still in the chain) is upgraded by a second patch
+        new, n = P.legendary(old)
+        ok(n == 15 and 'elseif' not in new and P.legendary(new)[1] == 0, 'an O142-patched script gets the 15 ifs, once (%d)' % n)
         lua = shutil.which('luajit') or shutil.which('lua5.3')
         if lua:
             # the patched script runs: with ChaosCards the weapon decides; without it the stock list does
@@ -270,8 +276,21 @@ def main():
                         'whenPlayerAttack(player({itemid = 99999}), 100)\n'
                         'io.write(fired)\n')
             res = subprocess.run([lua, script], capture_output=True, text=True)
-            ok(res.stdout.strip() == '1;1;2', 'the patched script fires by stock id, not by an unknown one, then by '
-               'the weapon: %r %r' % (res.stdout, res.stderr))
+            ok(res.stdout.strip() == '4;4;8', 'every active card fires (4 knight cards), by stock id, not by an unknown '
+               'one, then by the weapon: %r %r' % (res.stdout, res.stderr))
+            # two legendary cards on (the first and the last of the chain): both are checked, not only the first
+            with open(script, 'w') as f:
+                f.write('DeckSystem = {Legendary = setmetatable({}, {__index = function(_, k) return k end})}\n'
+                        'CONST_SLOT_LEFT = 6\nlocal fired = 0\nfunction summon() fired = fired + 1 end\n'
+                        'function table.find(t, v) for _, x in ipairs(t) do if x == v then return true end end end\n'
+                        + body +
+                        'local on = {LegendaryAncestralKaiserLv6 = true, LegendaryExoticKaiserLv6 = true}\n'
+                        'local p = {getSlotItem = function() return {itemid = 2408} end,\n'
+                        '  getStorageValue = function(_, k) return on[k] and 1 or 0 end}\n'
+                        'math.random = function() return 1 end\n'
+                        'whenPlayerAttack(p, 100)\nio.write(fired)\n')
+            res = subprocess.run([lua, script], capture_output=True, text=True)
+            ok(res.stdout.strip() == '2', 'two legendary cards on: both fire: %r %r' % (res.stdout, res.stderr))
         real = '/tmp/wk/srv/data/scripts/customs/deck_system/legendary_cards_system.lua'
         if os.path.isfile(real):
             # a copy of the real base script, when this machine has one: all 16 checks, still valid Lua

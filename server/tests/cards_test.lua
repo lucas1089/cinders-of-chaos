@@ -562,8 +562,11 @@ for f, fam in ipairs(C.families) do
 			end
 		end
 		ok(line ~= nil, sp[1] .. ": cast by a class")
+		-- the whole class line casts it, except a spell of the Mystic line that only some ascensions have (O149)
 		for _, row in ipairs(C.classes) do
-			if row.line == line then ok(casts(row, sp[2]), sp[1] .. " is cast by " .. row.name) end
+			if row.line == line and not (line == "Mystic" and sp[2] == 228) then
+				ok(casts(row, sp[2]), sp[1] .. " is cast by " .. row.name)
+			end
 		end
 		ok(newNames[sp[1]:lower()] and ids[sp[1]:lower()] == sp[2], sp[1] .. " is a current spell with id " .. sp[2])
 		for t = 1, 4 do
@@ -573,15 +576,21 @@ for f, fam in ipairs(C.families) do
 end
 
 -- every class has at least one common line (and the table is printed by `luajit tests/cards_test.lua --table`)
-local rows = {}
+local rows, counts = {}, {}
+local MIN_LINES = 3 -- the median class had 3 lines before O149; no class stays below it
 for _, row in ipairs(C.classes) do
 	local lines = {}
 	for f, fam in ipairs(C.families) do
 		if lineClasses[f][row.name] then lines[#lines + 1] = fam.spell end
 	end
 	ok(#lines >= 1, row.name .. ": at least one common card line (" .. #lines .. ")")
+	counts[#counts + 1] = #lines
+	ok(#lines >= MIN_LINES, row.name .. ": at least " .. MIN_LINES .. " usable common lines, the median (" .. #lines .. ")")
+	if row.line == "Necromancer" then ok(#lines >= 4, row.name .. ": 4 lines like the martial lines (" .. #lines .. ")") end
 	rows[#rows + 1] = row.name .. ": " .. table.concat(lines, ", ")
 end
+table.sort(counts)
+ok(counts[11] >= MIN_LINES, "the median class has at least " .. MIN_LINES .. " lines (" .. counts[11] .. ")")
 if arg and arg[1] == "--table" then print(table.concat(rows, "\n")) end
 
 -- every common card triggers: a hit line moves a physical hit to the card's element (or heals more) for every spell of
