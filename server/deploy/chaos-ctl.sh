@@ -657,7 +657,7 @@ case $cmd in
     if ! num "$port" || [ "$port" -lt 1 ] || [ "$port" -gt 65535 ]; then
       sp_fail cast-off "the cast port is off: castPort in config.lua (install_all.py step castport), then a restart"
     fi
-    [ -r "$SPPAIR/Tibia.dat" ] && [ -r "$SPPAIR/Tibia.spr" ] || sp_fail no-pair "no client pair in $SPPAIR (spectate-pair fetch)"
+    { [ -r "$SPPAIR/Tibia.dat" ] && [ -r "$SPPAIR/Tibia.spr" ]; } || sp_fail no-pair "no client pair in $SPPAIR (spectate-pair fetch)"
     sp_state
     exec 7> "$SPSTATE/cast.lock"
     flock -n 7 || sp_fail busy "another live view is running" 75
