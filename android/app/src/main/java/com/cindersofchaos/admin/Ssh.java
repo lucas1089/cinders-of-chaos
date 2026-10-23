@@ -123,6 +123,95 @@ final class Ssh {
         }
     }
 
+    /** One line of a streamed command's stdout (without the line end), on the streaming thread. */
+    interface Lines {
+        void line(String line);
+    }
+
+    /** Lets another thread end a stream: closing the channel closes the command's stdin on the server. */
+    static final class Stream {
+        private volatile ChannelExec ch;
+        private volatile boolean cancelled;
+
+        void cancel() {
+            cancelled = true;
+            ChannelExec c = ch;
+            if (c != null) {
+                c.disconnect();
+            }
+        }
+
+        boolean cancelled() {
+            return cancelled;
+        }
+    }
+
+    /**
+     * Runs a long command and hands each line of its stdout to sink as it comes (chaos-ctl.sh cast: JSON lines). The
+     * command's stdin stays open until the stream ends (cancel(), the command ends, or the connection drops); stderr
+     * is dropped. Lines over 8 MiB end the stream. Blocks; returns the exit status (-1 when cancelled or cut).
+     */
+    static int stream(Store st, String command, Lines sink, Stream handle) throws Exception {
+        Session s;
+        try {
+            s = connect(st);
+        } catch (SecurityException e) {
+            throw e;
+        } catch (Exception first) {
+            close();
+            s = connect(st);
+        }
+        ChannelExec ch = (ChannelExec) s.openChannel("exec");
+        handle.ch = ch;
+        try {
+            ch.setCommand(command);
+            ch.setPty(false);
+            ch.setErrStream(new java.io.OutputStream() {
+                @Override
+                public void write(int b) {
+                }
+
+                @Override
+                public void write(byte[] b, int off, int len) {
+                }
+            });
+            java.io.InputStream in = ch.getInputStream();
+            if (handle.cancelled) {
+                return -1;
+            }
+            ch.connect(10000);
+            java.io.BufferedReader r = new java.io.BufferedReader(
+                    new java.io.InputStreamReader(in, StandardCharsets.UTF_8), 65536);
+            StringBuilder line = new StringBuilder();
+            char[] buf = new char[65536];
+            int n;
+            while (!handle.cancelled && (n = r.read(buf)) >= 0) {
+                int start = 0;
+                for (int i = 0; i < n; i++) {
+                    if (buf[i] == '\n') {
+                        line.append(buf, start, i - start);
+                        sink.line(line.toString());
+                        line.setLength(0);
+                        start = i + 1;
+                    }
+                }
+                line.append(buf, start, n - start);
+                if (line.length() > 8 * 1024 * 1024) {
+                    throw new java.io.IOException("linha longa demais");
+                }
+            }
+            return handle.cancelled ? -1 : ch.getExitStatus();
+        } catch (java.io.IOException e) {
+            if (handle.cancelled) {
+                return -1;
+            }
+            throw e;
+        } finally {
+            handle.ch = null;
+            ch.disconnect();
+        }
+    }
+
     /** Single quotes around a text for the remote shell. */
     static String sq(String s) {
         return "'" + s.replace("'", "'\\''") + "'";
