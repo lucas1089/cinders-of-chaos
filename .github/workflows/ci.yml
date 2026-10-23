@@ -695,6 +695,9 @@ jobs:
       - name: Live spectator renderer (spectate_render_test.py; a synthetic pair, draw order, outfits, the pair archive)
         run: python3 -I server/tools/spectate_render_test.py
 
+      - name: Live cast relay (cast_relay_test.py; synthetic frames for every opcode, sheets, the loop, a fuzz)
+        run: python3 -I server/tools/cast_relay_test.py
+
       - name: PHP for the website tests (php-cli with PDO SQLite and mbstring)
         run: |
           if ! php -r 'exit(extension_loaded("pdo_sqlite") && extension_loaded("mbstring") ? 0 : 1);' 2>/dev/null; then

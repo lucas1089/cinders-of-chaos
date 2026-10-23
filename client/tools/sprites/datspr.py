@@ -41,7 +41,7 @@ class ParseError(Exception):
 
 class Thing:
     __slots__ = ('id', 'flags', 'w', 'h', 'exact', 'layers', 'px', 'py', 'pz', 'phases',
-                 'anim', 'sprites', 'raw', 'cat', 'extras', 'spr_pos', 'u32', 'attr_end')
+                 'anim', 'sprites', 'raw', 'cat', 'extras', 'spr_pos', 'u32', 'attr_end', 'groups')
 
     def __repr__(self):
         return f'<Thing {self.cat}{self.id} {self.w}x{self.h} L{self.layers} P{self.px}{self.py}{self.pz} F{self.phases}>'
@@ -131,6 +131,7 @@ class Dat:
                 t.spr_pos = spr_pos
                 t.u32 = u32
                 ngroups = 1
+                groups = []
                 if fg and cat == 'outfit':
                     ngroups = d[pos]; pos += 1
                     if not 1 <= ngroups <= 2:
@@ -167,7 +168,11 @@ class Dat:
                         sp_ = struct.unpack_from(f'<{ns}H', d, pos); pos += 2 * ns
                     if gi == 0:
                         g0 = (w, h, exact, layers, px, py, pz, ph, sp_)
+                    groups.append((w, h, exact, layers, px, py, pz, ph, sp_, t.anim))
                 w, h, exact, layers, px, py, pz, ph, sp_ = g0
+                # every frame group (outfits of a dat with idle / moving groups have two): (w, h, exact, layers, px,
+                # py, pz, phases, sprites, anim); the attributes above are group 0's, t.anim the last group's
+                t.groups = groups
                 t.w, t.h, t.exact, t.layers, t.px, t.py, t.pz, t.phases = w, h, exact, layers, px, py, pz, ph
                 t.sprites = sp_
                 t.raw = (start, pos)
