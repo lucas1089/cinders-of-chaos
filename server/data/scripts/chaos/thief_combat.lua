@@ -8,10 +8,10 @@
 --     cannot attack it (onTargetCombat below); a hit from anything else, or the player dealing damage, ends it. The
 --     first weapon hit out of it is a critical hit (x ambushMultiplier).
 --   * Poison Blades (spell): while the buff lasts, weapon hits poison the target (earth damage over a few seconds).
---   * Ninja dual wield: with a light blade (a one-handed sword) in each hand, every melee hit of the main hand is
+--   * Dual wield (Thief and Ninja): with a light blade (a one-handed sword) in each hand, every melee hit of the main hand is
 --     followed by an off-hand strike for ~50% of it. Holding the second sword in the shield hand needs the engine
---     change server/src-patches/0002-dual-wield-and-vocation-attack-speed.patch, which reads the storage this
---     file keeps at 1 for Ninjas (Chaos.classes.storage.dualWield).
+--     change server/src-patches/0002-dual-wield-and-vocation-attack-speed.patch, which reads the storage
+--     classes.lua keeps at 1 for Thieves and Ninjas (Chaos.classes.storage.dualWield).
 --   * Samurai Counter Stance (spell): the next melee hit within 2 s is parried and answered.
 --   * Samurai Bushido Focus (spell): crit chance stacks every second without taking damage.
 --   * The class section of the passive tree (class_tree.lua): Twin Fangs (off-hand share), Fleet Shadow (evasion),
@@ -174,16 +174,35 @@ local function onOffence(creature, attacker, primaryDamage, primaryType, seconda
 		poison(player, creature, amount, creed and CT.fx.ksBlackbloodCreed.poisonBonus or 0)
 	end
 
-	-- Ninja dual wield: an off-hand strike after each melee hit of the main hand
-	if origin == ORIGIN_MELEE then
-		local main, off = player:getSlotItem(CONST_SLOT_LEFT), player:getSlotItem(CONST_SLOT_RIGHT)
-		if C.dualWieldProc(voc, true, lightBlade(main), lightBlade(off), scripted, amount) then
-			local value = C.offhandDamage(amount, itemAttack(main), itemAttack(off), creature:isPlayer(),
-				CT.value(player, "ctTwinFangs", "offhandShare"))
-			if value > 0 then
-				addEvent(offhandStrike, cfg().dualWield.delayMs, player:getId(), creature:getId(), value,
-					primaryType)
-			end
+	-- The weapon hits of a vocation with a shortened attack interval are cut by now / was (classes.lua speedComp), so
+	-- the auto attack's damage per second stays where it was balanced; a Thief with a dagger in each hand also gives
+	-- up the share the off-hand strike adds (dualNeutral). Poison above used the full hit on purpose.
+	local main, off, comp, neutral
+	if isWeapon then
+		comp = C.speedComp(voc)
+		if origin == ORIGIN_MELEE then
+			main, off = player:getSlotItem(CONST_SLOT_LEFT), player:getSlotItem(CONST_SLOT_RIGHT)
+		end
+	end
+	local dual = origin == ORIGIN_MELEE
+		and C.dualWieldProc(voc, true, lightBlade(main), lightBlade(off), scripted, amount)
+	if dual then
+		neutral = C.dualNeutral(voc, itemAttack(main), itemAttack(off))
+	end
+	local factor = (comp or 1) * (neutral or 1)
+	if factor ~= 1 then
+		primaryDamage = scale(primaryDamage, factor)
+		secondaryDamage = scale(secondaryDamage, factor)
+		amount = math.abs(primaryDamage) + math.abs(secondaryDamage)
+	end
+
+	-- dual wield (Thief, Ninja): an off-hand strike after each melee hit of the main hand
+	if dual then
+		local value = C.offhandDamage(amount, itemAttack(main), itemAttack(off), creature:isPlayer(),
+			CT.value(player, "ctTwinFangs", "offhandShare"))
+		if value > 0 then
+			addEvent(offhandStrike, cfg().dualWield.delayMs, player:getId(), creature:getId(), value,
+				primaryType)
 		end
 	end
 	return primaryDamage, secondaryDamage
@@ -324,6 +343,7 @@ function login.onLogin(player)
 	player:registerEvent("ChaosThiefCombat")
 	player:registerEvent("ChaosThiefLogout")
 	C.syncDualWield(player)
+	C.grantOffhand(player)
 	return true
 end
 login:register()

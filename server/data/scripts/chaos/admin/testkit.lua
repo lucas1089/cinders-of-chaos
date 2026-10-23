@@ -101,13 +101,15 @@ K.kits.berserker = derive("knight", {slots = {
 K.kits.beastmaster = derive("paladin", {slots = {
 	[CONST_SLOT_LEFT] = 27230}, -- Doomtide Longbow (unique)
 	quiver = {id = 28050, rarity = 5}}) -- a Legendary quiver of level 500
--- the Thief line: one-handed swords, the Ranger's armour; the shuriken spells need no star (docs/CLASSES.md). Samurai: the same kit
-K.kits.thief = derive("paladin", {
+-- the Thief line: one-handed swords, the Ranger's armour; the shuriken spells need no star (docs/CLASSES.md).
+-- The Samurai: one sword. The Thief (dual wield since 2026-10-23) and the Ninja: a blade in each hand
+K.kits.samurai = derive("paladin", {
 	skills = {[SKILL_SWORD] = 120, [SKILL_DISTANCE] = 110, [SKILL_SHIELD] = 90}, magic = 30,
 	slots = {[CONST_SLOT_LEFT] = 8209}, -- Soulreaper (unique)
 	quiver = false})
--- the Ninja: a second blade in the shield hand (dual wield, server/src-patches/0002; without it it goes to the backpack)
-K.kits.ninja = derive("thief", {slots = {[CONST_SLOT_RIGHT] = 11395}}) -- Bloodmoon Edge (unique)
+-- a second blade in the shield hand (dual wield, server/src-patches/0002; without it it goes to the backpack)
+K.kits.thief = derive("samurai", {slots = {[CONST_SLOT_RIGHT] = 11395}}) -- Bloodmoon Edge (unique)
+K.kits.ninja = derive("thief", {})
 -- the Monk line fights with its fists in the Ranger's armour: the level 500 fist weapon in the shield hand (36658, pair of
 -- cinderforged talons; docs/CLASSES.md "Monk")
 K.kits.monk = derive("paladin", {
@@ -124,7 +126,7 @@ K.kindByVocation = {
 	[4] = "knight", [8] = "knight", [14] = "berserker",
 	[3] = "paladin", [7] = "paladin", [15] = "beastmaster",
 	[1] = "mage", [5] = "mage", [10] = "mage",
-	[11] = "thief", [12] = "ninja", [13] = "thief",
+	[11] = "thief", [12] = "ninja", [13] = "samurai",
 	[17] = "monk", [18] = "monk", [19] = "monk",
 	[20] = "necromancer", [21] = "necromancer", [22] = "necromancer",
 	[23] = "templar", [24] = "templar", [25] = "templar"

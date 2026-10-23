@@ -447,6 +447,31 @@ player), and are back to full 10 s after the last hit. So the Illusionist heals 
 (e.g. Hail of Dawn ~1830 per cast on a level 300 player): a focused Illusionist still dies; arena and siege rules unit-tested
 (not run in a live match).
 
+### Thief dual wield and attack speed (2026-10-23; owner: "thief ... dual wield de daggers ... atacar mais rápido ... empatado com o monk"; computed, not measured in game)
+
+Attack interval (vocation `attackspeed`, ms; the weapon's own speed is scaled by it / 2000, src-patch 0002): Thief 1600 -> **1500**
+(= Monk), Ninja 1400 -> **1300** (= Shadowfist), Samurai 1800 -> **1700** (= Iron Sage); every other class 2000. The Thief is the
+fastest base class together with the Monk; the three ascended pairs tie. The Thief now dual wields as the Ninja did.
+
+Damage per second stays where it was balanced above (the Thief 54-58% of its rotation in "Auto attack power", the measured Ninja and
+Samurai totals): the weapon hits of the three are cut by new / old interval, and the Thief's main-hand hit by
+1 / (1 + 0.5 x off-hand ratio) while it holds a dagger in each hand. Twin Fangs (Ninja tree) and the ratio of the two daggers' attacks
+(clamped 0.5 - 1.25) are on top. Spells, poison (computed from the uncut hit) and the Ninja's own off-hand share are not cut.
+
+| Class | Interval before -> now | Hits per second x | Main-hand hit x | Off-hand strike | Auto attack per second, equal daggers |
+|---|---|---|---|---|---|
+| Thief (two daggers) | 1600 -> 1500 | 1.067 | 1500/1600 x 2/3 = 0.625 | 0.5 x main = 0.3125 (of the old hit) | 1.067 x (0.625 + 0.3125) = **1.000** (before: 1.000, one dagger) |
+| Thief (one dagger, nothing in the off hand) | 1600 -> 1500 | 1.067 | 0.9375 | none | **1.000** |
+| Ninja | 1400 -> 1300 | 1.077 | 0.929 | 0.5 x main | 1.077 x 0.929 x 1.5 = **1.500** (before: 1.500) |
+| Samurai | 1800 -> 1700 | 1.059 | 0.944 | none | **1.000** |
+
+The Thief's total per swing is unchanged (a dagger swing used to be one hit; it is now two hits adding up to that), so the class
+stays in its balance band and the Ninja (the one that always dual wielded) stays 50% above a single dagger as before. Attack speed
+modifiers (item and gem `attackspeed`, dexterity) still work: they shorten the vocation's interval in the engine, and the cap
+(src-patch 0011, `minPlayerAttackInterval` 1000 ms) is untouched, so a Ninja at 1300 reaches it with 23% faster attacks (a Thief at 1500 with 33%).
+Test: `tests/classes_test.lua` (the vocation XML against `Chaos.classes.attackSpeed`, the Thief tied with the Monk and faster than
+every class outside the two lines, the damage per second of every entry, the neutral cut with equal and unequal daggers).
+
 ### Thief line (Thief, Ninja, Samurai)
 
 Ascension at level 100 (the Ascendant Oracle, data/scripts/chaos/ascension.lua). The kit's mechanics are scripted in
@@ -459,7 +484,7 @@ Ascension at level 100 (the Ascendant Oracle, data/scripts/chaos/ascension.lua).
 - **Area strikes** (2026-10-15, `chaos/_blades.lua`): Blade Flurry (all three, a weapon strike on every monster around
   the caster) and Iaido Sweep (Samurai, the target and the monsters in a 3 x 2 cut in front): "Pack farming for every
   class" below.
-- **Dual wield** (Ninja): a one-handed sword in each hand (the shield hand takes it only with `server/src-patches/0002`); every melee hit of
+- **Dual wield** (Thief and Ninja since 2026-10-23, balance below): a one-handed sword in each hand (the shield hand takes it only with `server/src-patches/0002`); every melee hit of
   the main hand is followed 0.15 s later by an off-hand strike for 50% of it x (off-hand attack / main-hand attack, clamped 0.5-1.25).
 - **Level factor**: dropped with the class trees (docs/CLASSES.md "Phase 2b"); see "Classes with the passive trees" below for the
   line's damage factor and the numbers measured with tree builds.

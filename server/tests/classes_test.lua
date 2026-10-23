@@ -135,7 +135,8 @@ eq(C.isLightBlade(WEAPON_CLUB, 48), false, "club")
 eq(C.isLightBlade(nil, 48), false, "no item")
 
 eq(C.dualWieldProc(NINJA, true, true, true, false, 300), true, "ninja, two blades, melee hit")
-eq(C.dualWieldProc(THIEF, true, true, true, false, 300), false, "only the ninja")
+eq(C.dualWieldProc(THIEF, true, true, true, false, 300), true, "the thief dual wields since 2026-10-23")
+eq(C.dualWieldProc(4, true, true, true, false, 300), false, "not the warrior")
 eq(C.dualWieldProc(SAMURAI, true, true, true, false, 300), false, "not the samurai")
 eq(C.dualWieldProc(NINJA, false, true, true, false, 300), false, "not on spells / ranged")
 eq(C.dualWieldProc(NINJA, true, true, false, false, 300), false, "needs a blade in the off hand")
@@ -300,6 +301,107 @@ do
 	r.enabled = false
 	eq(#C.classOutfitsFor(MYSTIC), 0, "off again"); eq(C.outfitSwap(MYSTIC, 1559), nil, "off again: no swap")
 	r.enabled = shipped
+end
+
+-- ------------------------------------------------------------------ dual wield for the Thief, attack speed (2026-10-23)
+do
+	eq(C.isDualWielder(THIEF) and C.isDualWielder(NINJA), true, "thief and ninja dual wield")
+	eq(C.isDualWielder(SAMURAI), false, "the samurai keeps one sword"); eq(C.isDualWielder(17), false, "monk")
+
+	-- the vocation table (chaos_vocations*.xml) against Chaos.classes.attackSpeed: the Thief ties with the Monk and is
+	-- faster than every class outside the two lines; the ascended classes tie with the Monk line's
+	local speeds = {}
+	for _, f in ipairs({"chaos_vocations", "chaos_vocations_monk", "chaos_vocations_necro", "chaos_vocations_templar"}) do
+		local fh = assert(io.open("data/XML/" .. f .. ".xml", "r"))
+		local text = fh:read("*a"); fh:close()
+		for tag in text:gmatch("<vocation [^>]*>") do
+			local id, spd = tag:match('id="(%d+)"'), tag:match('attackspeed="(%d+)"')
+			if id and spd then speeds[tonumber(id)] = tonumber(spd) end
+		end
+	end
+	local MONK = cfg.ids.monk
+	eq(speeds[THIEF], speeds[MONK], "thief attacks as fast as the monk")
+	eq(speeds[NINJA], speeds[18], "ninja ties with the shadowfist"); eq(speeds[SAMURAI], speeds[19], "samurai ties with the iron sage")
+	for id, spd in pairs(speeds) do
+		local line = C.isThiefLine(id) or cfg.baseOf[id] == MONK
+		if not line then
+			eq(spd, 2000, "vocation " .. id .. " keeps the stock interval")
+			assert(speeds[THIEF] < spd, "the thief is faster than vocation " .. id)
+		end
+	end
+	for id, a in pairs(cfg.attackSpeed) do
+		eq(speeds[id], a.now, "attackSpeed table matches the xml for " .. id)
+		assert(a.now < a.was, "shortened")
+		eq(C.speedComp(id), a.now / a.was, "speedComp " .. id)
+	end
+	eq(C.speedComp(4), 1, "warrior: no compensation"); eq(C.speedComp(MONK), 1, "monk: none")
+	-- damage per second: hit x comp / now interval = hit / was interval
+	for id, a in pairs(cfg.attackSpeed) do
+		assert(math.abs(C.speedComp(id) / a.now - 1 / a.was) < 1e-12, "dps unchanged for " .. id)
+	end
+
+	-- dual neutral: two equal daggers: the Thief's main + off-hand strike deal one old hit; the Ninja is not cut
+	local n = C.dualNeutral(THIEF, 20, 20)
+	assert(math.abs(n - 1 / 1.5) < 1e-12, "thief main hit x 2/3")
+	local main = 300 * n
+	local off = C.offhandDamage(main, 20, 20, false, 0)
+	assert(math.abs(main + off - 300) <= 1, "thief swing total is the old hit")
+	eq(C.dualNeutral(NINJA, 20, 20), 1, "ninja not cut"); eq(C.dualNeutral(SAMURAI, 20, 20), 1, "samurai")
+	assert(math.abs(C.dualNeutral(THIEF, 20, 40) - 1 / (1 + 0.5 * 1.25)) < 1e-12, "clamped high")
+	assert(math.abs(C.dualNeutral(THIEF, 20, 2) - 1 / (1 + 0.5 * 0.5)) < 1e-12, "clamped low")
+	-- Twin Fangs stays a bonus on top of the neutral cut
+	assert(C.offhandDamage(main, 20, 20, false, 0.15) > off, "twin fangs adds")
+
+	-- the one-time second dagger of a Thief made before
+	eq(C.offhandGrant(THIEF, -1, true, nil), "grant", "thief with a dagger and an empty off hand")
+	eq(C.offhandGrant(THIEF, 0, true, nil), "grant", "flag 0")
+	eq(C.offhandGrant(THIEF, 1700000000, true, nil), nil, "once only")
+	eq(C.offhandGrant(THIEF, -1, true, "blade"), "mark", "already two blades: mark, give nothing")
+	eq(C.offhandGrant(THIEF, -1, true, "other"), nil, "a shield stays")
+	eq(C.offhandGrant(THIEF, -1, false, nil), nil, "no main-hand blade (new character before the kit)")
+	eq(C.offhandGrant(NINJA, -1, true, nil), nil, "ninja: not granted"); eq(C.offhandGrant(SAMURAI, -1, true, nil), nil, "samurai")
+	eq(C.offhandGrant(4, -1, true, nil), nil, "warrior")
+	assert(cfg.storage.offhandGranted == 7100204 and cfg.storage.offhandGranted ~= cfg.storage.freeSwitch, "own storage key")
+
+	-- login sync and grant on a mocked player
+	local stor, items, given = {}, {}, {}
+	local function mk(voc, left, right)
+		local p = {}
+		items[CONST_SLOT_LEFT] = left; items[CONST_SLOT_RIGHT] = right
+		function p:getVocation() return {getId = function() return voc end} end
+		function p:getStorageValue(k) return stor[k] or -1 end
+		function p:setStorageValue(k, v) stor[k] = v end
+		function p:getSlotItem(slot) return items[slot] end
+		function p:addItem(id, n, drop, sub, slot)
+			given[#given + 1] = {id, slot}
+			items[slot] = {getId = function() return id end}
+			return items[slot]
+		end
+		function p:sendTextMessage() end
+		return p
+	end
+	CONST_SLOT_LEFT, CONST_SLOT_RIGHT, MESSAGE_EVENT_ADVANCE = 6, 5, 1
+	function ItemType(id)
+		return {getWeaponType = function() return id == 2379 and WEAPON_SWORD or WEAPON_CLUB end,
+			getSlotPosition = function() return 48 end}
+	end
+	local dagger = {getId = function() return 2379 end}
+	local shield = {getId = function() return 2525 end}
+	stor = {}; given = {}
+	local p = mk(THIEF, dagger, nil)
+	C.syncDualWield(p); eq(stor[cfg.storage.dualWield], 1, "thief: dual wield storage 1")
+	eq(C.grantOffhand(p), "grant", "granted"); eq(#given, 1, "one dagger"); eq(given[1][1], 2379, "a dagger")
+	eq(given[1][2], CONST_SLOT_RIGHT, "in the off hand")
+	assert(stor[cfg.storage.offhandGranted] > 0, "flag set")
+	eq(C.grantOffhand(p), nil, "second login: nothing"); eq(#given, 1, "still one")
+	items[CONST_SLOT_RIGHT] = nil; eq(C.grantOffhand(p), nil, "the dagger sold: never again"); eq(#given, 1, "still one dagger")
+	stor = {}; given = {}
+	p = mk(THIEF, dagger, shield); eq(C.grantOffhand(p), nil, "shield: nothing"); eq(#given, 0, "no dagger")
+	eq(stor[cfg.storage.offhandGranted], nil, "flag open")
+	p = mk(THIEF, dagger, dagger); eq(C.grantOffhand(p), "mark", "two daggers: marked"); eq(#given, 0, "nothing given")
+	assert(stor[cfg.storage.offhandGranted] > 0, "marked")
+	stor = {}; p = mk(NINJA, dagger, nil); C.syncDualWield(p); eq(stor[cfg.storage.dualWield], 1, "ninja still dual wields")
+	stor = {}; p = mk(SAMURAI, dagger, nil); C.syncDualWield(p); eq(stor[cfg.storage.dualWield] or -1, -1, "samurai does not")
 end
 
 print("classes_test: OK")

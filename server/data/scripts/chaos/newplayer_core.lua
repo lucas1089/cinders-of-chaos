@@ -111,7 +111,9 @@ function NP.resolveKit(name, c)
 						table.remove(kit.equip, i)
 					end
 				end
-				copyList({e}, kit.equip)
+				if not e.none then -- `none`: this kit has nothing in the slot (drops the base kit's row)
+					copyList({e}, kit.equip)
+				end
 			end
 		end
 		copyList(row.backpack, kit.backpack)

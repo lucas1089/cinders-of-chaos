@@ -32,11 +32,12 @@ a party with an Illusionist out-damages the same party without one.
 
 ## Class kits (first draft)
 
-**Thief** (base): fast attack speed with daggers and light swords; shuriken spells with a
+**Thief** (base): fights with a dagger in each hand (dual wield since 2026-10-23: the kit is two daggers, one in each hand; the
+off-hand dagger adds a second strike on each hit) and attacks as fast as the Monk (1500 ms); shuriken spells with a shuriken spells with a
 short range (no stars to carry); **Shadow Veil** stealth (monsters lose track of you, broken by attacking; the first hit out of
 stealth crits); poison blades (a poison tick is 30% of the hit a second, the Ninja's 18%, 2026-10-17); evasion (dodge chance); Blade Flurry (a spin that strikes every monster next to you,
 the line's area strike, 2026-10-15).
-- **Ninja**: dual wield, where the off-hand dagger adds a second, weaker strike on each attack (scripted:
+- **Ninja**: dual wield (as the Thief since 2026-10-23), where the off-hand dagger adds a second, weaker strike on each attack (scripted:
   the engine has no dual wield); Shadow Step (teleport behind the target); smoke bomb (area blind); a
   shuriken barrage that hits several targets.
 - **Samurai** (duelist off-tank): one sword; Iaijutsu (charged draw strike, big single hit); Counter Stance (3 s: parry the
@@ -445,9 +446,16 @@ for free, at the migration.
 
   | id | Name | from | client byte | hp / mana / cap per level | attackspeed | base speed | melee / dist damage |
   |---|---|---|---|---|---|---|---|
-  | 11 | Thief | 11 | 6 | 12 / 10 / 22 | 1600 | 230 | 1.2 |
-  | 12 | Ninja | 11 | 16 | 12 / 10 / 22 | 1400 | 232 | 1.2 |
-  | 13 | Samurai | 11 | 26 | 13 / 9 / 24 (defense / armor 1.1) | 1800 | 230 | 1.3 |
+  | 11 | Thief | 11 | 6 | 12 / 10 / 22 | 1500 (was 1600) | 230 | 1.2 |
+  | 12 | Ninja | 11 | 16 | 12 / 10 / 22 | 1300 (was 1400) | 232 | 1.2 |
+  | 13 | Samurai | 11 | 26 | 13 / 9 / 24 (defense / armor 1.1) | 1700 (was 1800) | 230 | 1.3 |
+
+  Attack speed since 2026-10-23 (owner: the Thief attacks faster than the other classes, tied with the Monk): Thief = Monk 1500,
+  Ninja = Shadowfist 1300, Samurai = Iron Sage 1700 ms; every class outside the two lines keeps 2000. The weapon hits of the
+  three are cut by new / old (`Chaos.classes.attackSpeed`), so the auto attack's damage per second is where it was balanced.
+  A Thief with a dagger in each hand also gives up the share the off-hand strike adds (main hit x 1 / 1.5 with equal daggers).
+  The Thief's starting kit is two daggers (main hand and shield hand); a Thief made before gets the second dagger once at login
+  (`Chaos.storage.offhandGranted`, 7100204). Daggers by band: server/README.md "Thief daggers".
 
   Skills: the three melee skills (sword, club, axe) 1.1 (like the Knight's swords; one melee skill since 2026-10-17), distance 1.2, magic level 2.0. The tool also adds the line to the
   vocation lists of one-handed swords and throwing weapons (`weapons.xml`, hand equip in `movements.xml`) and to everything else the

@@ -2964,6 +2964,41 @@ Before this the uniques stopped at level 1000 with flat stats, and the first one
   and cap, ChaosMakeUnique writes T8 modifiers the totals count, levels, rules, one power per endgame unique, drop
   sources), `tests/unique_equip_test.lua` (an empty class list).
 
+## Thief dual wield, attack speed and daggers (2026-10-23)
+Owner: "thief deveriam ser criados já com dual wield de daggers. devem atacar mais rápido que a outras classes, empatado com o monk"
+and "adicione também mais daggers pros thiefs". Class rules: docs/CLASSES.md; balance numbers: `data/spells/README.md` "Thief dual wield
+and attack speed". Lua and XML only: no engine rebuild (src-patch 0002 already reads the dual-wield storage and scales the weapon speed
+by the vocation's); a server restart after `install_all.py` loads the new vocation speeds.
+- **Dual wield for the Thief.** `ChaosClasses.isDualWielder` (`Chaos.classes.dualWield.vocations`: Thief 11 and Ninja 12; the Samurai
+  keeps one sword). `syncDualWield` keeps storage 7100200 at 1 for them (login, ascension, vocation change), which lets the
+  engine put a one-handed sword in the shield hand; `thief_combat.lua` adds the off-hand strike. A Thief who ascends to the Samurai
+  keeps a dagger already in the shield hand (it does nothing there).
+- **Kit.** `newplayer_config.lua` `thief`: dagger 2379 in the left hand and in the right hand (`NP.giveWearable` syncs the storage
+  first, the login event of the class may come after the kit's); no spare dagger in the backpack any more. The Ninja inherits it.
+  The Samurai has `{slot = "right", none = true}`: a `none` row drops the base kit's slot (`NP.resolveKit`), so it keeps one katana.
+- **Existing Thieves.** At login `ChaosClasses.grantOffhand` gives one dagger 2379 into an EMPTY shield hand, once per character
+  (storage `Chaos.storage.offhandGranted`, 7100204, set before the add so a failure never repeats it), only to a base Thief
+  (11) with a one-handed sword in the main hand. Nothing when the shield hand holds a shield (the grant stays open until it is
+  empty; it is still one dagger, ever), a weapon already there marks the flag without giving anything, and a Ninja or Samurai gets
+  none (the Ninja's old kit had the spare in the backpack). Not exploitable: one common dagger (2 gold) per character, flag
+  per character, not reset by a vocation change. Test: `classes_test.lua`.
+- **Attack speed.** `chaos_vocations.xml`: Thief 1500, Ninja 1300, Samurai 1700 (the Monk line 1500 / 1300 / 1700, everyone else
+  2000). `Chaos.classes.attackSpeed` lists was / now; `ChaosClasses.speedComp` (now / was) cuts the weapon hits of those three
+  in `thief_combat.lua` so their damage per second is unchanged, and `dualNeutral` (Thief only) cuts the main hit by
+  1 / (1 + share x ratio) while both hands hold a light blade. A test reads the vocation XML and fails if the table and the XML
+  disagree, if the Thief is not tied with the Monk or if any class outside the two lines is not at 2000.
+- **Thief daggers.** Five uniques on dagger-sprite bases (one unique per base id), see `data/items/README.md` "Thief daggers":
+  Cutpurse's Sliver (knife, level 10) and Moonlit Shiv (silver dagger, 28) from magic monsters and up of the low hunts (every class);
+  Gravewhisper Stiletto (combat knife, 600), Nightbloom Stiletto (poison dagger, 1250) and Misericorde of the Pale Vow (drownkin
+  ceremonial dagger, 1900) for the Thief line, with attack speed and the line's poison / penetration modifiers (the last two with a
+  legendary power, from waystone kills). Bands: 1-9 the shop dagger (2379), 10-27 and 28-599 the two leveling daggers and the stock
+  daggers (assassin dagger 7404 from level 40, ceremonial 27193 from 180), 300 the Duskstalker Fang, 600+ the Thief-only ones up
+  to 2400+. Attack by the gear curve (`install_gear_sets.py`); the auto attack power factors (`weapon_power_config.lua`,
+  `weapon_sim.py --power --check` passes) scale it as every melee weapon. Only the level 600+ ones are Thief-line only. Drop pool,
+  codex, wiki and tooltip come from the same files as every unique (`gen_unique_specs.py`, `gen_codex_data.lua`,
+  `gen_wiki_data.lua`); uniques have no NPC price (`gen_item_prices.py --check`).
+- Storage 7100204 is in the 7100000-7100999 block (`Chaos.storage`), next to 7100200-7100203.
+
 ## Build sharing (`buildshare.lua`, `buildshare_core.lua`)
 A build can be exported as a short text code and imported on another character (or after a reset). The server encodes, decodes,
 validates and applies; the client only shows what the server sends.

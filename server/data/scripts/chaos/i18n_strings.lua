@@ -556,6 +556,8 @@ return {
 		["A gift waits for you at level %s."] = "Um presente espera por você no nível %s.",
 		["Gifts wait for you at levels %s and %s."] = "Presentes esperam por você nos níveis %s e %s.",
 		["You received the %s starter kit.%s"] = "Você recebeu o kit inicial de %s.%s",
+		["Your Thief now fights with a dagger in each hand. You received a second dagger."] =
+			"Seu Thief agora luta com uma adaga em cada mão. Você recebeu uma segunda adaga.",
 		[" Some of it did not fit: it is in your inbox."] = " Parte dele não coube: está na sua caixa de entrada.",
 		["Level %d gift: %s.%s"] = "Presente do nível %d: %s.%s",
 		["Ok"] = "Ok",

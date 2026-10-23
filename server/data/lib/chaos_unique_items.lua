@@ -219,6 +219,18 @@ ChaosUniqueItems = {
 	  bossOnly = false, monsters = {"Vorgrun of the Jade Fangs", "Fractalis the Shardmaw", "Armorcoil", "Blazefang", "Gorgulith", "Nexlurith", "Voidwagner", "Aegis Sentinel", "Flarevein Wyrm", "Gloomstinger", "Pyroquill", "Toxic Mauler"} },
 	{ name = "Dawnless Gauntlets", id = 40012, minTier = "rare", chance = 6, level = 2000, slot = "fist", minMonsterLevel = 1000,
 	  bossOnly = false, monsters = {"Frostreaver the Glacialblade", "Rhazgor the Crimson Slayer", "Ashfang Wrym", "Bloodspark Adept", "Glacial Hellcharger", "Nightfang Widow", "Shadowcrystal Widow", "Bloodshade Reaper", "Duskhorn Drake", "Nightflare Dreadknight", "Shadowvein Wrym", "Umbral Arcanist"} },
+	-- Thief daggers (2026-10-23, owner: more daggers for the Thieves): one dagger-sprite base each, so a Thief has a
+	-- dagger to find in every band (server/README.md "Thief daggers"); the base dagger 2379 is the shop dagger of level 1
+	{ name = "Cutpurse's Sliver", id = 2403, minTier = "magic", chance = 25, level = 10, slot = "sword",
+	  bossOnly = false, monsters = {"Troll", "Orc", "Spider", "Wolf", "Skeleton", "Poison Spider", "Frost Troll", "Wasp", "Orc Spearman", "Dwarf", "Minotaur", "Orc Warrior", "Scorpion", "Larva", "Gutworm", "Dwarf Soldier"} },
+	{ name = "Moonlit Shiv", id = 2402, minTier = "magic", chance = 25, level = 28, slot = "sword",
+	  bossOnly = false, monsters = {"Ghoul", "Scarab", "Ghost", "Tarantula", "Demon Skeleton", "Mummy", "Crypt Shambler", "Vampire", "Dwarf Guard", "Gargoyle", "Cyclops", "Fire Elemental", "Bonelord", "Orc Berserker", "Zombie", "Dragon Hatchling"} },
+	{ name = "Gravewhisper Stiletto", id = 2404, minTier = "rare", chance = 6, level = 600, slot = "sword",
+	  bossOnly = false, monsters = {"Inferno Juggernaut", "Nightflare Dreadknight", "Orclops Ravager", "Grindmaw the Mauler", "Royal Man", "Grove Keeper", "Garack", "Dreamgorger"} },
+	{ name = "Nightbloom Stiletto", id = 2411, minTier = "rare", chance = 6, level = 1250, slot = "sword", minMonsterLevel = 1000,
+	  bossOnly = false, monsters = {"Vorgrun of the Jade Fangs", "Fractalis the Shardmaw", "Armorcoil", "Blazefang", "Gorgulith", "Nexlurith", "Voidwagner", "Aegis Sentinel", "Flarevein Wyrm", "Gloomstinger", "Pyroquill", "Toxic Mauler"} },
+	{ name = "Misericorde of the Pale Vow", id = 27193, minTier = "rare", chance = 6, level = 1900, slot = "sword", minMonsterLevel = 1000,
+	  bossOnly = false, monsters = {"Frostreaver the Glacialblade", "Rhazgor the Crimson Slayer", "Ashfang Wrym", "Bloodspark Adept", "Glacial Hellcharger", "Nightfang Widow", "Shadowcrystal Widow", "Bloodshade Reaper", "Duskhorn Drake", "Nightflare Dreadknight", "Shadowvein Wrym", "Umbral Arcanist"} },
 	-- the Ascended uniques (uber.lua, server/README.md "Ascended Omens and the Cinderheart"): ascended = true keeps them
 	-- out of the Omen chest pool (rift.lua); corpse drops of the listed bosses (x6 boss tier) and the spoils' unique rolls
 	{ name = "Sanguine Crescent", id = 2408, minTier = "boss", chance = 10, level = 1000, slot = "sword",

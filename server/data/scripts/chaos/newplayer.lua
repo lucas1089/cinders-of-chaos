@@ -177,6 +177,11 @@ function NP.giveWearable(player, force)
 	local parts = NP.kitParts(kit, player:getLevel())
 	local container = kitContainer(player, kit, false)
 	local inbox = false
+	-- a dual-wield class needs its storage (the engine takes a sword in the shield hand only while it is 1) before the
+	-- off-hand dagger: classes.lua syncs it at login, which may come after this event
+	if ChaosClasses and ChaosClasses.syncDualWield then
+		ChaosClasses.syncDualWield(player)
+	end
 	for _, e in ipairs(parts.wear) do
 		local slot = SLOTS[e.slot]
 		local placed = false
@@ -191,6 +196,10 @@ function NP.giveWearable(player, force)
 		ChaosPotions.giveAll(player, container)
 	end
 	setS(player, "wear", os.time())
+	-- a Thief made with the kit has its second dagger: no later one-time grant (classes.lua grantOffhand)
+	if ChaosClasses and ChaosClasses.grantOffhand then
+		ChaosClasses.grantOffhand(player)
+	end
 	-- a snapshot taken before this (a character already on the island): the kit's items are not the island's
 	if NP.snapshotAddItems then
 		NP.snapshotAddItems(player)

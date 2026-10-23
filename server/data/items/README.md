@@ -201,3 +201,18 @@ attributes of the stock item (boots of haste style timers, equip transforms) wer
   `weaponType wand`; only magic level and bonuses were changed (shoot type and range kept).
 * **Set bonuses are not implemented**, `ChaosSets` is documentation. Drop monster lists use names that exist in our monster data (checked against stock + chaos monster XML).
 * Items with several identical-looking stock twins (e.g. two "crimson sword" ids) were chosen on purpose to avoid collisions with the stock loot tables.
+
+## Thief daggers (2026-10-23)
+
+Owner: "adicione também mais daggers pros thiefs". Five uniques on dagger-sprite bases (one unique per base id), so a Thief has
+a dagger to find in every band; with the shop dagger (2379), the stock assassin dagger (7404, level 40), the Duskstalker Fang
+(level 300) and the gear sets' blades this fills 1-2400+. Attack follows the one-handed melee curve (`install_gear_sets.py`
+`CURVES['attack']`), skill +1 to +5 by level steps, built-in modifiers, no NPC price.
+
+| name | id | stock item | level | tier | who | modifiers |
+| --- | --- | --- | --- | --- | --- | --- |
+| Cutpurse's Sliver | 2403 | knife | 10 | magic, chance 25 | every class | life on kill 20, attack speed 8 |
+| Moonlit Shiv | 2402 | silver dagger | 28 | magic, chance 25 | every class | poison chance 12, life on hit 6, attack speed 8 |
+| Gravewhisper Stiletto | 2404 | combat knife | 600 | rare, chance 6 | Thief line | attack speed 10, poison chance 16, life on hit 30 |
+| Nightbloom Stiletto | 2411 | poison dagger | 1250 | rare, chance 6, waystone kills | Thief line | attack speed 15, poison chance 24, physical penetration 18, Critical Echo 20 |
+| Misericorde of the Pale Vow | 27193 | drownkin ceremonial dagger | 1900 | rare, chance 6, waystone kills | Thief line | attack speed 14, life on hit 45, physical penetration 18, Bloodrush 4 |
