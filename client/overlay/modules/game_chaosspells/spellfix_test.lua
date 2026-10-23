@@ -408,5 +408,36 @@ do
   end
 end
 
+-- slots and hotkeys of retired spells are cleared (O145, base patch 0123)
+do
+  local set = F.retiredWordSet(ChaosRemovedSpells, ChaosCappedSpells, ChaosRetiredSpells, ChaosSpellNames, ChaosSpellData)
+  eq(set['ruan gal ul'], true, 'Galeborne Stride (new words) is retired')
+  eq(set['utani gran hur'], true, 'and its stock words')
+  eq(set['utito tempo san'], true, 'Swift Foot, retired by the cure step')
+  for _, c in ipairs(ChaosSpellData) do
+    eq(set[c.words:lower()], nil, c.name .. ' is not retired')
+  end
+  local live = { notOnServer = false }
+  local function lookup(text) if text == 'odd words' then return { notOnServer = true } end return live end
+  eq(F.slotIsRetired('ruan gal ul', set, lookup), true, 'retired words')
+  eq(F.slotIsRetired('Ruan Gal Ul', set, lookup), true, 'any case')
+  eq(F.slotIsRetired('odd words', set, lookup), true, 'a stock entry the server does not have')
+  eq(F.slotIsRetired(ChaosSpellData[1].words, set, lookup), false, 'a live Chaos spell stays')
+  eq(F.slotIsRetired('hello world', set, lookup), false, 'plain text stays')
+  eq(F.slotIsRetired('', set, lookup), false, 'empty')
+  local maps = {
+    { actionBar = 1, actionButton = 1, actionsetting = { chatText = 'ruan gal ul' } },
+    { actionBar = 1, actionButton = 2, actionsetting = { chatText = ChaosSpellData[1].words } },
+    { keysequence = 'F2', actionsetting = { chatText = 'utani gran hur' } },
+    { actionBar = 1, actionButton = 3, actionsetting = { useObject = 3031 } },
+    { actionBar = 1, actionButton = 4, actionsetting = { chatText = 'odd words' } },
+  }
+  eq(F.pruneRetiredSlots(maps, lookup, set), 3, 'three mappings cleared')
+  eq(#maps, 2, 'two stay')
+  eq(maps[1].actionButton .. ':' .. maps[2].actionButton, '2:3', 'in order')
+  eq(F.pruneRetiredSlots(maps, lookup, set), 0, 'a second pass changes nothing')
+  eq(F.pruneRetiredSlots(nil, lookup, set), 0, 'no mappings')
+end
+
 if fails > 0 then os.exit(1) end
 print('spell fix tests OK')

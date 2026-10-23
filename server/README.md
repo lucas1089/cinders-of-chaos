@@ -1816,10 +1816,12 @@ to learn what went. Fix, three parts:
   attack spell now leaves the list at load, like the utilities did.
 * Patch note bullet "Retired supports, and what replaces them" (`data/patchnotes/2026-10-22.md`).
 
-Not fixed (base client code, `0017`/`0079`): action bar and hotkey slots keep the spell id they were saved with. A slot of a
-retired spell does nothing; a slot saved with an id the kit took (2, 9, 19, 22 ...) casts the kit spell now. Tests:
-`tests/retired_spells_test.lua`, `game_helpersupport/supportspells_test.lua`. Needs a server restart (login script) and a
-client update (helper). Not run on a live server.
+Action bar slots and hotkeys are saved by the words they say (not by id), so the attack kit's reused ids never moved a slot
+to another spell; a slot of a retired spell stayed and did nothing. Client base patch `0123` makes the action bar call
+`ChaosSpellFix.pruneRetiredSlots` (`game_chaosspells/spellfix.lua`) when the character enters the game: it removes the
+slots and hotkeys that say a retired spell (old stock words too) and saves the options. Tests: `tests/retired_spells_test.lua`,
+`game_helpersupport/supportspells_test.lua`, `game_chaosspells/spellfix_test.lua`. Needs a server restart (login script) and
+a client update (helper, action bar). Not run on a live server.
 
 ### Monster spells (owner report 2026-10-21: "Unknown spell name: arc bolt" / "dread" after the spell cap)
 

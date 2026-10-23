@@ -499,3 +499,53 @@ function F.castableFromInfo(info, removedIds)
   table.sort(out, function(a, b) return a.id < b.id end)
   return out
 end
+
+-- Action bar slots and hotkeys of retired spells (O145, base patch 0123). A slot is saved by the words it says, so a spell
+-- the server no longer has (retired by the cap, removed, or an old stock entry) stayed in the bar and did nothing. The set
+-- holds the words of those spells, old stock words too; a Chaos spell's current words are never in it.
+function F.retiredWordSet(removed, capped, retired, names, chaosSpells)
+  local s = F.removedWords(removed, capped)
+  for words in pairs(retired or {}) do
+    s[words:lower()] = true
+  end
+  -- a slot saved before the rename holds the stock words of a retired spell
+  for old, e in pairs(names or {}) do
+    if type(e) == 'table' and e.words and s[e.words:lower()] then
+      s[old:lower()] = true
+    end
+  end
+  for _, c in ipairs(chaosSpells or {}) do
+    if c.words then s[c.words:lower()] = nil end
+  end
+  return s
+end
+
+-- is this saved text (a spell's words, maybe with a quoted parameter) a retired spell? lookup(text) -> the client's spell
+-- entry or nil (Spells.getSpellDataByParamWords)
+function F.slotIsRetired(text, set, lookup)
+  if type(text) ~= 'string' or text == '' then return false end
+  local lower = text:lower()
+  local base = (lower:match('^(.-)%s*"') or lower):match('^%s*(.-)%s*$')
+  if set and set[base] then return true end
+  local spell = lookup and lookup(lower)
+  return type(spell) == 'table' and spell.notOnServer == true
+end
+
+-- removes the mappings (action bar slots and hotkeys: Options.actionBarMappings) that say a retired spell; returns how many.
+-- The arguments default to the client's globals, so the base patch calls it with the mappings only.
+function F.pruneRetiredSlots(mappings, lookup, set)
+  if type(mappings) ~= 'table' then return 0 end
+  lookup = lookup or (rawget(_G, 'Spells') and Spells.getSpellDataByParamWords)
+  set = set or F.retiredWordSet(rawget(_G, 'ChaosRemovedSpells'), rawget(_G, 'ChaosCappedSpells'),
+    rawget(_G, 'ChaosRetiredSpells'), rawget(_G, 'ChaosSpellNames'), rawget(_G, 'ChaosSpellData'))
+  local removed = 0
+  for i = #mappings, 1, -1 do
+    local setting = type(mappings[i]) == 'table' and mappings[i]['actionsetting']
+    local text = type(setting) == 'table' and setting['chatText']
+    if text and F.slotIsRetired(text, set, lookup) then
+      table.remove(mappings, i)
+      removed = removed + 1
+    end
+  end
+  return removed
+end
