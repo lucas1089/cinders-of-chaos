@@ -576,6 +576,13 @@ Chaos.dungeons = {
 	cooldownSeconds = 900,
 	failCooldownSeconds = 300,
 	queueTickMs = 3000,
+	-- party size (beta feedback 2026-10-22: dungeons must be doable solo). A base dungeon's NeedParty / AmountParty is now
+	-- only the MAXIMUM group; one player may enter alone. The monster numbers (curves, trashHealth, bossHealth) are the
+	-- measured solo ones, so 1 player = x1.0 and every further player adds: health x (1 + healthPerExtra (n-1)), damage
+	-- to the run's players x (1 + damagePerExtra (n-1)) (dungeons_difficulty.lua D.partyHealth / D.partyDamage). Health
+	-- grows slower than the group's damage, so a group clears faster than a solo player. A queue entry waits
+	-- soloWaitSeconds for a partner of the same difficulty, then the run starts with whoever is queued.
+	party = {healthPerExtra = 0.6, damagePerExtra = 0.1, soloWaitSeconds = 5},
 	maxDifficulty = 6, -- client has 6 difficulty buttons
 	-- percentage of the run's monsters that must die to unlock the boss (owner, 2026-10-14: 85, was 100): the members
 	-- get "Boss unlocked!", a generated dungeon (areagen.lua) opens its boss room gate and spawns its boss; a run is won
@@ -2037,4 +2044,13 @@ if type(Position) == "table" and Position.sendMagicEffect and not Chaos.magicEff
 		end
 		return rawSendMagicEffect(self, effect, ...)
 	end
+end
+
+-- Beta test mode (beta_mode_core.lua, beta_mode_config.lua; server/README.md "Beta test mode"): read at the start of the
+-- scripts, so a /reload or a restart picks up `chaos-ctl.sh beta-mode on|off`. Off unless the file says otherwise.
+if Chaos then
+	-- (a failed load, e.g. a client test that runs this file from the repo root, leaves the mode off)
+	pcall(dofile, "data/scripts/chaos/beta_mode_core.lua")
+	local okCfg, cfgBeta = pcall(dofile, "data/scripts/chaos/beta_mode_config.lua")
+	Chaos.betaMode = okCfg and type(cfgBeta) == "table" and cfgBeta or {enabled = false}
 end

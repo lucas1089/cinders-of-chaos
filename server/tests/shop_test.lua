@@ -568,6 +568,18 @@ eq(buy(B, "outfit:151"), "Not possible", "premium outfit without premium")
 for i = 1, 5 do eq(buy(B, "item:32256x10"), "Purchase complete", "whetstones " .. i) end
 title, msg = buy(B, "item:32256x10")
 eq(title, "Not possible", "weekly limit"); ok(msg:find("this week"), msg)
+-- beta test mode (beta_mode_core.lua) never lifts a store limit on its own: Chaos Coins are bought with real money
+local betaBefore = Chaos.betaMode
+Chaos.betaMode = {enabled = true, storeOfferKeys = {}}
+title, msg = buy(B, "item:32256x10")
+eq(title, "Not possible", "beta mode on: the store weekly limit stays"); ok(msg:find("this week"), msg)
+-- only an offer the owner names in storeOfferKeys is lifted
+Chaos.betaMode = {enabled = true, storeOfferKeys = {"item:32256x10"}}
+eq(buy(B, "item:32256x10"), "Purchase complete", "beta mode on + the owner named the offer: lifted")
+Chaos.betaMode = {enabled = false, storeOfferKeys = {"item:32256x10"}}
+title = buy(B, "item:32256x10")
+eq(title, "Not possible", "beta mode off: a named offer is capped again")
+Chaos.betaMode = betaBefore
 
 -- season characters
 local S1 = newPlayer("Seasoned", {realm = 1})

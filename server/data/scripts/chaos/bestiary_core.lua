@@ -467,10 +467,11 @@ function C.canAccept(task, st, cfg, lang)
 	if active >= cfg.maxActive then
 		return false, T(lang, "You can hold at most %d kill tasks at once.", cfg.maxActive)
 	end
-	if st.doneDay + active >= cfg.dailyLimit then
+	local beta = ChaosBetaMode and ChaosBetaMode.lifted("bestiary_tasks") -- beta test mode: no daily / weekly limit
+	if st.doneDay + active >= cfg.dailyLimit and not beta then
 		return false, T(lang, "You can complete at most %d kill tasks a day.", cfg.dailyLimit)
 	end
-	if st.doneWeek + active >= cfg.weeklyLimit then
+	if st.doneWeek + active >= cfg.weeklyLimit and not beta then
 		return false, T(lang, "You can complete at most %d kill tasks a week.", cfg.weeklyLimit)
 	end
 	return true

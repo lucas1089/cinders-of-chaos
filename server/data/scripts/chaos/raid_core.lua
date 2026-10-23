@@ -221,6 +221,9 @@ end
 
 -- may this character loot `boss` this week? (true, or false and why)
 function K.eligible(lockSet, bossKey)
+	if ChaosBetaMode and ChaosBetaMode.lifted("raid_lockout") then
+		return true -- beta test mode: loot from every kill
+	end
 	if lockSet and lockSet[bossKey] then
 		return false, "locked"
 	end

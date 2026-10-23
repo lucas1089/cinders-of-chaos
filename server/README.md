@@ -547,7 +547,7 @@ working directory, as with the rest of the base server libs).
 | game_daily | `daily.lua`, `daily_core.lua`, `daily_config.lua` | 207 | 7-day reward cycle with claim, midnight rollover, Adventure > Daily Reward, open on login through the login window queue. Rewards: platinum coins, Orbs of Upheaval and Fate and a crystal coin, plus a week bonus on day 7 (all or nothing); edit `Chaos.daily` in `chaos_constants.lua`. Account-wide login streaks with milestones, titles and grace days (see "Daily reward and login streaks"). |
 | game_notifications | `notifications.lua` | 79 out, 151/152 in | `/gmnotify`, accept/decline of a standard TFS party invite, `ChaosNotify.*` sender API. Catacomb start / leave-queue are hooks only; nothing triggers party/catacomb/task/battle pass toasts automatically. |
 | game_passivetree | `passivetree.lua`, `passivetree_data.lua`, `passivetree_effects.lua`, `passivetree_keystones.lua`, `archetypes.lua` (with `archetypes_core.lua`, `archetypes_config.lua`), `paragon.lua` | 65 | Points, save with full validation (known ids, connected to root, point cap), preset storage, priced reset and single-node refund (see "Respec"), build codes (see "Build sharing"); the bonuses are applied (see "Passive tree effects"); the build archetype keystones (see "Build archetypes"). Paragon track past level 1000 on the same opcode (see "Paragon"). |
-| game_dungeons | `dungeons.lua` | 109 | Reads the base server `DUNGEON_SYSTEM` table. Queue, group formation, teleport in, timer, monster-count progress, boss kill, difficulty unlock, speed/flawless challenges, solo/group rankings, teleport out. Difficulty does not change monsters; loot panel is display only. A shutdown ends the queue runs without a cooldown (members back where they entered); the first login after a restart or a crash inside a dungeon box goes to the temple (also for runs of the base modal, whose exit timer dies with the server). Map spawns (owner 2026-10-17): every monster the map places at the server start inside a dungeon area is remembered; a run opens by clearing the area and creating all of them at once, and while it lasts the map's own respawn inside the area is refused (EventCallback `onSpawn`, `tests/dungeons_area_test.lua`), so nothing comes back uncounted; the area spawns again after the run (without a start-up record, such as after a script reload or in a generated dungeon, the monsters that stand there stay). A run lasts DungeonTime but at most 45 minutes (`Chaos.dungeons.maxTimeSeconds`) with warnings at 5 min, 1 min and 10 s; the queue shows the wait of the run inside; a relog inside the box while the server runs goes to the temple with the cooldown ("Instance limits"). |
+| game_dungeons | `dungeons.lua` | 109 | Reads the base server `DUNGEON_SYSTEM` table. Queue, group formation (one player may enter alone; the monsters scale with the group size: health x(1+0.6(n-1)), damage x(1+0.1(n-1)), O147), teleport in, timer, monster-count progress, boss kill, difficulty unlock, speed/flawless challenges, solo/group rankings, teleport out. Difficulty does not change monsters; loot panel is display only. A shutdown ends the queue runs without a cooldown (members back where they entered); the first login after a restart or a crash inside a dungeon box goes to the temple (also for runs of the base modal, whose exit timer dies with the server). Map spawns (owner 2026-10-17): every monster the map places at the server start inside a dungeon area is remembered; a run opens by clearing the area and creating all of them at once, and while it lasts the map's own respawn inside the area is refused (EventCallback `onSpawn`, `tests/dungeons_area_test.lua`), so nothing comes back uncounted; the area spawns again after the run (without a start-up record, such as after a script reload or in a generated dungeon, the monsters that stand there stay). A run lasts DungeonTime but at most 45 minutes (`Chaos.dungeons.maxTimeSeconds`) with warnings at 5 min, 1 min and 10 s; the queue shows the wait of the run inside; a relog inside the box while the server runs goes to the temple with the cooldown ("Instance limits"). |
 | game_infinitytower | `infinitytower.lua`, `infinitytower_run.lua` | 214 | Seasons, points, best floor/time, ranking, milestone claim, Adventure > Infinity Tower, `/towerrun` staff test helper. The tower gameplay is `infinitytower_run.lua` (runtime-built arenas, floors as waves, boss floors; results through `ChaosTower.recordRun`; see "Infinity Tower gameplay"). Season-end top 3 chests: "Infinity Tower season rewards"; `/towerseason` staff status. |
 | game_stash | `stash.lua`, `stash_core.lua`, `stash_config.lua`, `item_codec.lua`, `sql/chaos_stash.sql` | **110** (new), Economy > Supply Stash | The one item storage (the depot boxes retire into it): whole items with every attribute, deposit and withdraw in town, remote deposit as a paid unlock (store or the Chaos Pact), general and affinity tabs, Stow Everything, the never-stash list, the journal (no loss, no duplicate on a crash), the depot migration (see "Stash"). The tabs of before were tested in game; the whole-item stash is tested on a mocked engine only. |
 | game_spellbook | `spellbook.lua` | 219, Character > Spellbook / `/spells` | Spell list window: every player spell of `data/spells/spells.xml` with its data, a short description and its area of effect (see "Spellbook" below). |
@@ -1136,7 +1136,8 @@ passivetree
 
 dungeons
 - Entry is by queue, not by the base server modal/PZ/party rules: no PZ requirement, no real party needed,
-  players are matched individually (same difficulty, group size = `AmountParty` when `NeedParty`, else 1).
+  players are matched individually (same difficulty). Solo and groups (beta feedback 2026-10-22, O147): the largest group
+  is `AmountParty` when `NeedParty`, else 1, and **one player may always enter alone**; see "Solo dungeons" below.
 - Bosses are assumed to exist inside the dungeon box (map spawns or `SpawnMonsters`). Boss names per
   dungeon id are in `Chaos.dungeons.extra` (guessed from the base server boss scripts) and must match the monster
   names on your server. Progress % = monsters that disappeared from the box / monsters at start (summons
@@ -1179,6 +1180,50 @@ dungeons
   this window instead of its modal window (`tools/patch_base_dungeon.py`, "Instance limits", "Base modal dungeon
   entry"), so its own `DungeonTime` timer never starts.
 - Ranking: solo = best time per player (party size 1), group = best runs with 2+ players. Times in ms.
+
+Solo dungeons (O147, beta feedback 2026-10-22: "dungeons need two players; my testing partners are often offline")
+- **Entry.** The base table's `NeedParty` / `AmountParty` (2 for the Bones Dungeon, Master of the Elements, Forbidden
+  Chevalier and Rootmaw) is now the largest group, not a minimum (`dungeons.lua` `groupSizeOf`). A queued player waits
+  `Chaos.dungeons.party.soloWaitSeconds` (5) for a partner of the same difficulty; a full group starts at once. The window's
+  "Party" requirement shows "1-2". The generated dungeons 5-9 (`party = 1`) were solo already.
+- **Scaling formula** (`dungeons_difficulty.lua` `D.partyHealth` / `D.partyDamage`, numbers in `Chaos.dungeons.party`),
+  n = the players that went in:
+  `health(n) = 1 + 0.6 (n - 1)` and `damage(n) = 1 + 0.1 (n - 1)` (the damage the run's monsters deal to its players).
+  The health and damage curves of every dungeon (`extra[id].bossHealth` / `trashHealth`, the difficulty table) are the
+  measured solo ones ("Solo kill times", "Pack combat (pace)"), so **1 player = x1.0**. Two players: monsters x1.6 health
+  and x1.1 damage; four: x2.8 and x1.3. Health grows slower than the group's damage output (n players deal about n times
+  one), so a group clears faster than a solo player (two players: about 20% faster) and takes slightly more per hit.
+  It multiplies with the difficulty step (`scaleMonster` for the health, `scaleHit` for the damage). The ranking keeps
+  solo and group apart already (party size 1 against 2+).
+- **Respawn and boss check (the old bug).** The map's own respawn inside a running dungeon is refused (`onSpawn`, owner
+  2026-10-17), the run's monsters are created once, and the unlock (generated dungeons: the boss) fires once. A gap was
+  found and closed: a won run stays in `runs[]` for `exitDelayMs` (10 s) with `ended` set, and `runAt` skipped ended runs,
+  so the map could respawn the boss and the trash beside the group while it walked out. `runAt` now holds until the
+  teardown. `tests/dungeons_area_test.lua` (blocks "solo entry and party scaling" and "the old bug") fails on the old code.
+
+Beta test mode (O147)
+- `Chaos.betaMode` = `data/scripts/chaos/beta_mode_config.lua` (`enabled`, default **false**), read when the scripts start
+  (`chaos_constants.lua`; a restart or `/reload scripts` reads it again), logic in `beta_mode_core.lua`
+  (`ChaosBetaMode.lifted(key)`). Each system asks at the one place it enforces a limit. Switch it with
+  `chaos-ctl.sh beta-mode on|off|status [restart]` (edits the `enabled` line with `sed --follow-symlinks`, keeps
+  `beta_mode_config.lua.before-beta`, checks the result, restores on a failed edit) or the admin app (Comandos tab >
+  card "Modo beta (testes)" > Ligar / Desligar, or Ligar / Desligar e reiniciar). `install_all.py` (`files` step,
+  `keep_switch`) keeps the installed value on an update.
+- **Lifted while on (eight):** `dungeon_cooldown` (the 15 minute cooldown after a clear and the 5 minute one after a failed
+  run, `dungeons.lua`), `raid_lockout` (the weekly lockout of each Ashen Sepulchre boss: loot from every kill,
+  `raid_core.lua`), `guildboss_weekly` (the guild boss's one kill and three summons a week, `guildboss_core.lua`),
+  `bestiary_tasks` (4 kill tasks a day and 20 a week, `bestiary_core.lua`), `candlemarks_weekly` (the weekly limit of every
+  Candlemarks offer, `candlemarks_core.lua`), `faction_offers_weekly` (the weekly limit of the quartermaster offers,
+  `factions_core.lua`), `battleground_honor_cap` (6,000 honor a week, `battleground_core.lua`), `community_daily_cap` (the
+  daily point caps of the community goal, `community_core.lua`).
+- **Never lifted:** everything bought with real money. The store's `weeklyLimit` offers (Double Experience Potion 4 + 2 packs,
+  Whetstones, Orb of Excision, Orb of Binding) stay capped. The one exception is opt-in: an offer key the owner writes in
+  `storeOfferKeys` (empty) is lifted while the mode is on, for example `"item:32252x1"` (Orb of Binding) while the beta
+  coins are free starter coins ("Beta starter coins", wiped at launch). Not lifted either: the Ember Descent free daily
+  and weekly runs, pocket boss daily charges, faction reputation caps, the store gift limit, anti-bot and rate limits.
+- Turn it off at launch (docs/LAUNCH.md). Tests: `tests/beta_mode_test.lua` (every limit on and off, the store stays),
+  `tests/dungeons_area_test.lua` (the dungeon cooldown), `tests/shop_test.lua`, `deploy/chaos_ctl_test.py`,
+  `tools/install_all_keepswitch_test.py`.
 
 infinitytower
 - The gameplay is `infinitytower_run.lua` ("Infinity Tower gameplay"); its engine calls are assumed from the engine

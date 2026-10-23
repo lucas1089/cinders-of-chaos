@@ -98,6 +98,8 @@ local function titleOf(id, dg)
 	return extraOf(id).title or dg.Name
 end
 
+-- the largest group a dungeon takes (the base AmountParty when NeedParty, else 1). Since beta feedback 2026-10-22 it is
+-- only the maximum: one player may enter alone (cfg.party; the run's monsters scale with its size, dungeons_difficulty.lua)
 local function groupSizeOf(dg)
 	if dg.NeedParty then
 		return math.max(1, dg.AmountParty or 1)
@@ -324,8 +326,8 @@ end
 
 local function queueInfo(id, dg)
 	local waiting = queues[id] and #queues[id] or 0
-	local missing = math.max(0, groupSizeOf(dg) - waiting)
-	local estimated = missing * 30000
+	-- the longest wait for a start: a full group goes at once, anyone else after soloWaitSeconds (a partner may join)
+	local estimated = (waiting >= groupSizeOf(dg)) and 0 or ((cfg.party and cfg.party.soloWaitSeconds or 0) * 1000)
 	-- a run inside: the queue waits at least for its end (instance limits: the wait the window shows)
 	local run = runOfDungeon[id]
 	if run and not run.ended then
@@ -412,7 +414,7 @@ local function dungeonPayload(player, id, dg)
 
 	local req = {level = levelOf(dg)}
 	if dg.NeedParty then
-		req.party = groupSizeOf(dg)
+		req.party = "1-" .. groupSizeOf(dg) -- solo allowed, a group up to this size
 	end
 
 	local loot = bossLootPanel(extra)
@@ -568,7 +570,7 @@ local function entryProblem(player, id, dg, difficulty)
 		return Chaos.t(player, baseMessage("MsgNeedLevel", "You need level %s."), levelOf(dg))
 	end
 	local storage = cooldownStorage()
-	if storage then
+	if storage and not (ChaosBetaMode and ChaosBetaMode.lifted("dungeon_cooldown")) then -- beta test mode: no cooldown
 		local remaining = player:getStorageValue(storage) - os.time()
 		if remaining > 0 then
 			return Chaos.t(player, "You are in cooldown for dungeons. Wait %d minute(s).", math.ceil(remaining / 60))
@@ -614,6 +616,7 @@ local function scaleMonster(run, monster)
 	scaledBy[mid] = run
 	local ex = extraOf(run.dungeonId)
 	local hp
+	local partyHp = DIFF.partyHealth(run.size or 1, cfg.party)
 	if ex.bossHealth and ex.bossName and monster:getName():lower() == ex.bossName:lower() then
 		hp = DIFF.bossHealth(monster:getMaxHealth(), run.difficulty, ex.bossHealth)
 	elseif ex.trashHealth then
@@ -622,6 +625,7 @@ local function scaleMonster(run, monster)
 	else
 		hp = DIFF.health(monster:getMaxHealth(), run.difficulty)
 	end
+	hp = math.max(1, math.floor(hp * partyHp + 0.5)) -- group size (solo = x1.0)
 	if hp ~= monster:getMaxHealth() then
 		local share = monster:getHealth() / math.max(1, monster:getMaxHealth())
 		monster:setMaxHealth(hp)
@@ -656,7 +660,7 @@ local function setCooldown(player, success)
 		return
 	end
 	local storage = cooldownStorage()
-	if storage then
+	if storage and not (ChaosBetaMode and ChaosBetaMode.lifted("dungeon_cooldown")) then -- beta test mode: none is set
 		player:setStorageValue(storage, os.time() + cooldownSeconds(success and true or false))
 	end
 end
@@ -796,12 +800,12 @@ local function dungeonIdAt(pos)
 end
 
 local function runAt(pos)
+	-- a cleared run stays in runs[] until its teardown (exitDelayMs after the boss died): the players are still inside, so
+	-- the map must not respawn the boss or the trash in that window either (runs[] is cleared by teardown / the tick)
 	for _, run in pairs(runs) do
-		if not run.ended then
-			local dg = baseDungeons()[run.dungeonId]
-			if dg and dg.FromPos and inBox(run.dungeonId, dg, pos) then
-				return run
-			end
+		local dg = baseDungeons()[run.dungeonId]
+		if dg and dg.FromPos and inBox(run.dungeonId, dg, pos) then
+			return run
 		end
 	end
 	return nil
@@ -867,7 +871,8 @@ local function startRun(dungeonId, difficulty, players)
 		lastPercent = -1,
 		total = 0,
 		missingTicks = 0,
-		bossSeen = false
+		bossSeen = false,
+		size = #players -- party size: the monsters' health and damage scale with it (cfg.party)
 	}
 	nextRunId = nextRunId + 1
 	runs[run.id] = run
@@ -974,6 +979,7 @@ local function tryMatch(id)
 	end
 
 	local size = groupSizeOf(dg)
+	local soloWait = (cfg.party and cfg.party.soloWaitSeconds) or 0
 	local byDifficulty = {}
 	for _, entry in ipairs(queues[id]) do
 		local bucket = byDifficulty[entry.difficulty] or {}
@@ -982,7 +988,9 @@ local function tryMatch(id)
 	end
 	local chosenDiff, chosen
 	for diff, bucket in pairs(byDifficulty) do
-		if #bucket >= size and (not chosen or bucket[1].joined < chosen[1].joined) then
+		-- a full group starts now; fewer (down to one player) once the first of them has waited soloWaitSeconds
+		local ready = #bucket >= size or os.time() - bucket[1].joined >= soloWait
+		if ready and (not chosen or bucket[1].joined < chosen[1].joined) then
 			chosenDiff, chosen = diff, bucket
 		end
 	end
@@ -997,7 +1005,7 @@ local function tryMatch(id)
 	end
 
 	local players = {}
-	for i = 1, size do
+	for i = 1, math.min(size, #chosen) do
 		players[#players + 1] = online(chosen[i].guid)
 	end
 	startRun(id, chosenDiff, players)
@@ -1136,8 +1144,9 @@ DeathEvent:register()
 local function scaleHit(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType)
 	local run = attacker and attacker:isMonster() and scaledBy[attacker:getId()]
 	if run and not run.ended and primaryType ~= COMBAT_HEALING then
-		primaryDamage = DIFF.damage(primaryDamage, run.difficulty)
-		secondaryDamage = DIFF.damage(secondaryDamage, run.difficulty)
+		local party = DIFF.partyDamage(run.size or 1, cfg.party)
+		primaryDamage = DIFF.damage(primaryDamage, run.difficulty, party)
+		secondaryDamage = DIFF.damage(secondaryDamage, run.difficulty, party)
 	end
 	return primaryDamage, primaryType, secondaryDamage, secondaryType
 end

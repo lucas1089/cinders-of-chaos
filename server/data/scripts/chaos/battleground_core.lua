@@ -697,6 +697,9 @@ function K.honorFor(cfg, r, w)
 	local total = (h[r.result] or 0) + min(h.killCap, h.perKill * (r.kills or 0)) +
 		min(h.captureCap, h.perCapture * (r.captures or 0))
 	local allowed = max(0, h.weeklyCap - (w.earned or 0))
+	if ChaosBetaMode and ChaosBetaMode.lifted("battleground_honor_cap") then
+		allowed = total -- beta test mode: no weekly cap
+	end
 	local gained = min(total, allowed)
 	local first = r.result == "win" and not w.firstWinDone
 	if first then

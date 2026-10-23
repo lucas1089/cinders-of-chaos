@@ -751,7 +751,10 @@ local function offerProblem(player, offer, gift)
 			return ChaosI18n.msg("Your account already bought %s.", nameOf(offer))
 		end
 	end
-	if offer.weeklyLimit and boughtCount(player:getAccountId(), offer.key, weekStart(now())) >= offer.weeklyLimit then
+	-- the store sells for Chaos Coins (real money): beta test mode lifts a weekly limit only for the offers the owner named in
+	-- beta_mode_config.lua storeOfferKeys (empty by default; beta_mode_core.lua)
+	local betaLifted = ChaosBetaMode and ChaosBetaMode.storeLifted(offer.key)
+	if offer.weeklyLimit and not betaLifted and boughtCount(player:getAccountId(), offer.key, weekStart(now())) >= offer.weeklyLimit then
 		return ChaosI18n.msg("You bought %s %s times this week; the limit resets on Monday.", nameOf(offer), offer.weeklyLimit)
 	end
 	return Shop.partsProblem(gift or player, offer, gift ~= nil)

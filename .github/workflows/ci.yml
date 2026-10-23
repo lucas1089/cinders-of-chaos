@@ -364,6 +364,9 @@ jobs:
       - name: The install report counts the map (install_all.py snapshot, towns step)
         run: python3 -I server/tools/install_all_snapshot_test.py
 
+      - name: An update keeps the beta test mode switch (install_all.py keep_switch)
+        run: python3 -I server/tools/install_all_keepswitch_test.py
+
       - name: Base monsters take their new looks (patch_base_looks.py, baselooks step)
         run: python3 -I server/tools/patch_base_looks_test.py
 

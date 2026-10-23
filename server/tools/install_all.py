@@ -358,6 +358,24 @@ COPY = [
     ('spells/chaos', None, True),
     ('patchnotes', lambda name: name.endswith('.md') or name == 'index.txt', False),
 ]
+# repo files whose `enabled = ...` line is the owner's switch on the server (chaos-ctl.sh beta-mode, the admin app): a copy
+# keeps the installed value instead of resetting it to the repo's (server/README.md "Beta test mode")
+KEEP_SWITCH = {
+    'scripts/chaos/beta_mode_config.lua': re.compile(r'^(\s*enabled\s*=\s*)(true|false)', re.M),
+}
+
+
+def keep_switch(rel_key, src_text, dst_text):
+    """src_text with the switch of dst_text (the installed file), when this file has one."""
+    pat = KEEP_SWITCH.get(rel_key)
+    if not pat or dst_text is None:
+        return src_text
+    old = pat.search(dst_text)
+    if not old:
+        return src_text
+    return pat.sub(lambda m: m.group(1) + old.group(2), src_text, count=1)
+
+
 # never copied, wherever they are (editor and Python leftovers)
 IGNORE = re.compile(r'(^|/)(__pycache__|\.DS_Store)(/|$)|\.pyc$|~$|\.swp$|\.orig$|\.rej$')
 
@@ -455,6 +473,17 @@ def step_files(server, data, ctx):
                 if IGNORE.search(rel) or (keep and not keep(name)):
                     continue
                 dst = os.path.join(dst_root, *rel.split('/'))
+                if sub + '/' + rel in KEEP_SWITCH:
+                    text = keep_switch(sub + '/' + rel, read(src), read(dst) if os.path.isfile(dst) else None)
+                    if os.path.isfile(dst) and read(dst) == text:
+                        same += 1
+                        continue
+                    n_upd += 1 if os.path.isfile(dst) else 0
+                    n_new += 0 if os.path.isfile(dst) else 1
+                    os.makedirs(os.path.dirname(dst), exist_ok=True)
+                    write(dst, text)
+                    copied += 1
+                    continue
                 if os.path.isfile(dst) and digest(dst) == digest(src):
                     same += 1
                     continue

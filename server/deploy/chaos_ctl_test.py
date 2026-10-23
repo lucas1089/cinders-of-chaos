@@ -631,6 +631,33 @@ def test_admin_commands():
                     ('xp-rate', 'set', '5', 'now'), ('xp-rate', 'bogus'), ('xp-rate', 'reset', 'x')):
             check(run(*bad).returncode != 0, 'xp-rate refuses %r' % (bad,))
 
+        # beta-mode: the `enabled` line of beta_mode_config.lua (sed --follow-symlinks, backup, checked), restart on request
+        sdir = os.path.join(server, 'data', 'scripts', 'chaos')
+        os.makedirs(sdir)
+        real = os.path.join(tmp, 'real_beta_mode_config.lua')
+        shutil.copy(os.path.join(repo_root, 'server', 'data', 'scripts', 'chaos', 'beta_mode_config.lua'), real)
+        bfile = os.path.join(sdir, 'beta_mode_config.lua')
+        os.symlink(real, bfile)  # a symlinked file keeps its link (sed --follow-symlinks)
+        open(os.path.join(stub, 'calls'), 'w').close()  # the restarts of the xp-rate checks are history
+        r = run('beta-mode')
+        check(r.returncode == 0 and 'beta_mode=off' in r.stdout, 'beta-mode: off by default: ' + r.stdout + r.stderr)
+        before = open(real).read()
+        r = run('beta-mode', 'on')
+        check(r.returncode == 0 and 'beta_mode=on' in r.stdout and 'next restart' in r.stdout, 'beta-mode on: ' + r.stdout + r.stderr)
+        check(os.path.islink(bfile), 'beta-mode on: the symlink is kept')
+        check('beta_mode=on' in run('beta-mode', 'status').stdout, 'beta-mode: on after on')
+        after = open(real).read()
+        check(after == before.replace('enabled = false,', 'enabled = true,', 1), 'beta-mode on: only the enabled line changed')
+        check(open(bfile + '.before-beta').read() == before, 'beta-mode on: a backup of the file before')
+        check('systemctl restart' not in calls(), 'beta-mode on without restart does not restart')
+        r = run('beta-mode', 'on')
+        check(r.returncode == 0 and 'unchanged' in r.stdout, 'beta-mode on twice is a no-op: ' + r.stdout)
+        r = run('beta-mode', 'off', 'restart')
+        check(r.returncode == 0 and 'systemctl restart chaos-server' in calls(), 'beta-mode off restart: ' + r.stderr)
+        check(open(real).read() == before, 'beta-mode off: back to the original text')
+        for bad in (('beta-mode', 'maybe'), ('beta-mode', 'on', 'now'), ('beta-mode', 'status', 'x'), ('beta-mode', 'off', 'restart', 'x')):
+            check(run(*bad).returncode != 0, 'beta-mode refuses %r' % (bad,))
+
         os.makedirs(os.path.join(bdir, 'db'))
         with open(os.path.join(bdir, 'db', 'chaos-db-chaos-1.sql.gz'), 'w') as f:
             f.write('x')
