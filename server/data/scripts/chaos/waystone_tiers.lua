@@ -164,6 +164,10 @@ function WT.startRun(area, serverId, mods)
 		return nil
 	end
 	WT.active[i] = t
+	-- the opener's Waystone Atlas first (waystone_atlas.lua): the modifiers' bonuses read it
+	if ChaosWaystoneAtlas and ChaosWaystoneAtlas.beginRun then
+		pcall(ChaosWaystoneAtlas.beginRun, i, t, type(mods) == "table" and mods or {})
+	end
 	if ChaosWaystoneMods and ChaosWaystoneMods.begin then
 		pcall(ChaosWaystoneMods.begin, i, t, type(mods) == "table" and mods or {})
 	end
@@ -195,7 +199,7 @@ local function addWaystone(corpse, t, monster, inside, extra)
 	local ok, item = pcall(function() return corpse:addItem(e.item, 1) end)
 	local WM = ChaosWaystoneMods
 	if ok and item and inside and WM and WM.rollDrop then
-		pcall(WM.rollDrop, item, t, true)
+		pcall(WM.rollDrop, item, t, true, monster)
 	end
 	if extra ~= false and inside and WM and WM.extraWaystone then
 		local okX, more = pcall(WM.extraWaystone, monster)
@@ -214,17 +218,30 @@ function WT.retierDrops(corpse, monster, isWaystone)
 	end
 	local e = WT.entryOf(monster)
 	local run = e and e.run or nil
+	-- the map opener's Waystone Atlas (waystone_atlas.lua): tier step / tierUp, lost drops, the boss's extra ones
+	local am
+	if e and ChaosWaystoneAtlas and ChaosWaystoneAtlas.fxOfMap then
+		local okA, fx = pcall(ChaosWaystoneAtlas.fxOfMap, e.map)
+		am = okA and fx or nil
+	end
+	local WC = ChaosWaystoneAtlasCore
+	local maxTier = #WT.config.tiers
 	local changed = 0
 	for slot = corpse:getSize() - 1, 0, -1 do
 		local item = corpse:getItem(slot)
 		if item and isWaystone(item) then
 			local t = K.dropTier(WT.config, run, math.random(100))
+			if am and t and WC then
+				t = WC.dropTier(am, t, maxTier, math.random(100))
+			end
 			local want = t and WT.config.tiers[t]
 			if want and (e or item:getId() ~= want.item) then
 				local count = item:getCount() or 1
 				item:remove()
 				for _ = 1, math.max(1, count) do
-					addWaystone(corpse, t, monster, e ~= nil)
+					if not (am and not e.boss and (am.dropLoss or 0) > 0 and math.random(100) <= am.dropLoss) then
+						addWaystone(corpse, t, monster, e ~= nil)
+					end
 				end
 				changed = changed + 1
 			end
@@ -232,9 +249,25 @@ function WT.retierDrops(corpse, monster, isWaystone)
 	end
 	if e and e.boss then
 		local next = K.bossDrop(WT.config, run)
-		if next then
-			addWaystone(corpse, next, monster, true)
-			changed = changed + 1
+		if next and am and WC then
+			next = WC.dropTier(am, next, maxTier, nil)
+		end
+		local n = next and 1 or 0
+		if am then
+			if am.noBossDrop then
+				n = 0
+			end
+			n = n + (am.bossExtraFlat or 0)
+			if (am.bossExtra or 0) > 0 and math.random(100) <= am.bossExtra then
+				n = n + 1
+			end
+			next = next or (run and math.min(run + 1, maxTier))
+		end
+		for _ = 1, n do
+			if next then
+				addWaystone(corpse, next, monster, true)
+				changed = changed + 1
+			end
 		end
 	end
 	return changed
@@ -321,6 +354,16 @@ if CreatureEvent then
 	local death = CreatureEvent(DEATH)
 	function death.onDeath(creature)
 		WT.applied[creature:getId()] = nil
+		-- a map's boss: the Waystone Atlas credits everyone inside (waystone_atlas.lua)
+		if ChaosWaystoneAtlas and ChaosWaystoneAtlas.onBossDeath then
+			local e = WT.entryOf(creature)
+			if e and e.boss then
+				local ok, err = pcall(ChaosWaystoneAtlas.onBossDeath, e)
+				if not ok then
+					print("[ChaosWaystoneTiers] atlas: " .. tostring(err))
+				end
+			end
+		end
 		return true
 	end
 	death:type("death")

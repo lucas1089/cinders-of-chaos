@@ -2509,6 +2509,7 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Rift"] = "Rift",
   ["Rift Atlas: seal the rift within this time for the tier's Swift cell. It grows with the tier and the size of the rift."] = "Rift Atlas: sele o rift dentro deste tempo para a célula Swift do tier. Ele cresce com o tier e o tamanho do rift.",
   ["Rift Atlas"] = "Rift Atlas",
+  ["Waystone Atlas"] = "Waystone Atlas",
   ["Open the Rift Atlas: your completion grid and the atlas tree."] = "Abrir o Rift Atlas: sua grade de conclusão e a árvore do atlas.",
   -- game_rift/riftmath.lua
   ["The guardian %s is coming..."] = "O guardião %s está vindo...",
@@ -2520,6 +2521,7 @@ ChaosLocaleStrings['pt-BR'] = {
   -- game_riftatlas/riftatlas.lua
   ["Completion grid: %d / %d"] = "Grade de conclusão: %d / %d",
   ["Nothing allocated yet. Seal rifts to earn points, then pick nodes on the map."] = "Nada alocado ainda. Sele rifts para ganhar pontos e escolha nós no mapa.",
+  ["Nothing allocated yet. Kill map bosses in waystone runs to earn points, then pick nodes on the map."] = "Nada alocado ainda. Mate os chefes dos mapas de waystone para ganhar pontos e escolha nós no mapa.",
   ["Refund this node for %d gold (carried first, then the bank)."] = "Devolver este nó por %d de ouro (primeiro o que você carrega, depois o banco).",
   ["Refund this node for %d %s."] = "Devolver este nó por %d %s.",
   ["No node selected"] = "Nenhum nó escolhido",
@@ -2548,6 +2550,7 @@ ChaosLocaleStrings['pt-BR'] = {
   -- game_riftatlas/riftatlasview.lua
   ["Start of the atlas"] = "Início do atlas",
   ["not yet"] = "ainda não",
+  ["done"] = "feito",
   ["Flawless tier %d (no death): %s (+%d)"] = "Flawless tier %d (sem morrer): %s (+%d)",
   ["Swift tier %d (sealed within %d:%02d): %s (+%d)"] = "Swift tier %d (selado em até %d:%02d): %s (+%d)",
   -- game_badgeslot/badgeslotlogic.lua

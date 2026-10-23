@@ -110,6 +110,8 @@ ChaosOpcodes = {
 }
 -- Rift Atlas window: completion grid, node map, allocate / refund (client game_riftatlas; atlas.lua, atlas_core.lua, atlas_config.lua)
 ChaosOpcodes.riftAtlas = 210
+-- Waystone Atlas: the same window in waystone mode (client game_riftatlas; waystone_atlas*.lua)
+ChaosOpcodes.waystoneAtlas = 159
 -- DPS meter and combat log: per-skill damage / healing / taken, fights, party totals (client game_dpsmeter; combatlog*.lua)
 ChaosOpcodes.combatLog = 204
 -- Display scale: the viewer's level and factor, server -> client (client game_chaosscale; display_scale*.lua)
@@ -307,6 +309,8 @@ Chaos.tables = {
 }
 -- Rift Atlas: one row per character, completed grid cells and allocated nodes (atlas.lua, sql/chaos_rift_atlas.sql)
 Chaos.tables.riftAtlas = "chaos_rift_atlas"
+-- Waystone Atlas: one row per character, completed map cells and allocated nodes (waystone_atlas.lua, sql/chaos_waystone_atlas.sql)
+Chaos.tables.waystoneAtlas = "chaos_waystone_atlas"
 -- the visual exclusives, one row per account and unlock (exclusives.lua, sql/chaos_exclusives.sql; "Wardrobe" above)
 Chaos.tables.exclusives = "chaos_exclusives"
 -- Seasonal Journey (season_journey.lua, season_journey_config.lua, sql/chaos_season_journey.sql): on the season opcode

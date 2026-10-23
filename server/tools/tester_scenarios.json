@@ -6,7 +6,7 @@
   "game_monkchi"
  ],
  "counts": {
-  "opcode": 57,
+  "opcode": 58,
   "out": 38,
   "passive": 64,
   "place": 13,
@@ -1906,13 +1906,12 @@
   },
   "riftAtlas": {
    "actions": [
+    "open",
     "alloc",
     "refund",
-    "open"
+    "clear"
    ],
-   "client": [
-    "game_riftatlas"
-   ],
+   "client": [],
    "dataKeys": [
     "id",
     "pay",
@@ -1924,7 +1923,8 @@
    "opcode": 210,
    "out": false,
    "skip": [
-    "reset"
+    "reset",
+    "grant"
    ],
    "systems": [
     "atlas"
@@ -2265,6 +2265,30 @@
    "out": false,
    "skip": [],
    "systems": []
+  },
+  "waystoneAtlas": {
+   "actions": [
+    "open",
+    "alloc",
+    "refund"
+   ],
+   "client": [],
+   "dataKeys": [
+    "id",
+    "pay",
+    "tree"
+   ],
+   "files": [
+    "waystone_atlas.lua"
+   ],
+   "opcode": 159,
+   "out": false,
+   "skip": [
+    "reset"
+   ],
+   "systems": [
+    "waystone_atlas"
+   ]
   }
  },
  "systems": {
@@ -4144,6 +4168,16 @@
    "opcodes": [],
    "talkactions": [],
    "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "waystone_atlas": {
+   "files": [
+    "waystone_atlas.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "waystoneAtlas"
+   ],
+   "talkactions": []
   },
   "waystone_mods": {
    "files": [

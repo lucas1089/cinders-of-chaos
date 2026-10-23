@@ -323,8 +323,9 @@ end
 
 -- a loaded state made valid against the current config: unknown nodes dropped, at most keystoneMax keystones (the
 -- first by id kept), only what stays connected, and no more than the points allow (the farthest nodes go first).
--- Returns the cleaned alloc and true when something changed.
-function A.sanitize(cfg, rcfg, alloc, done)
+-- Returns the cleaned alloc and true when something changed. budget: the points earned when the caller counts its own
+-- grid (waystone_atlas_core.lua); else the rift grid's points of `done`.
+function A.sanitize(cfg, rcfg, alloc, done, budget)
 	local clean, changed = {}, false
 	local ids = {}
 	for id, v in pairs(alloc or {}) do
@@ -377,7 +378,7 @@ function A.sanitize(cfg, rcfg, alloc, done)
 		changed = true
 	end
 	-- over budget: drop the nodes reached last (leaves of the walk) until it fits
-	local budget = A.earned(cfg, rcfg, done)
+	budget = budget or A.earned(cfg, rcfg, done)
 	local k = #order
 	while A.spent(cfg, kept) > budget and k > 0 do
 		local id = order[k]

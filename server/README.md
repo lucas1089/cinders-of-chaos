@@ -590,6 +590,7 @@ working directory, as with the rest of the base server libs).
 | game_energyshield | `data/lib/chaos_energy_shield.lua`, `item_mods.lua`; engine patch 0015 sends it | 224 (server -> client, from the engine) | Energy shield bar above the health bar of the character plate: plain text `es:<current>:<max>`, max 0 hides it. Tested in game (see "Energy shield"). |
 | game_bossspawns | `bossspawns.lua`, `bossspawns_core.lua`, `bossspawns_config.lua`, `sql/chaos_boss_spawns.sql` | **217**, Adventure > Boss Spawns | Every boss by category with place and respawn status, live alive state and last kills (see "Boss spawns"). Unit and mocked-engine tests; not run on a live server. |
 | game_riftatlas | `atlas.lua`, `atlas_core.lua`, `atlas_config.lua`, `sql/chaos_rift_atlas.sql` (hooks in `rift_core.lua`) | **210**, Adventure > Rift Atlas, the rift HUD | Rift Atlas: completion grid of first completions (theme x tier, flawless, swift, omens; 96 points), a map of 81 nodes in a core and four theme branches with 4 keystones, allocate / refund for gold or an orb; effects applied in `rift_core.lua` (see "Rift Atlas"). Unit and mocked-engine tests; not run on a live server. |
+| game_riftatlas (waystone mode) | `waystone_atlas.lua`, `waystone_atlas_core.lua`, `waystone_atlas_config.lua`, `sql/chaos_waystone_atlas.sql` (hooks in `waystone_mods.lua`, `waystone_tiers.lua`) | **159**, Adventure > Waystone Atlas | Waystone Atlas: map x tier cells and a Rare cell per tier (75 points) for a map of 81 nodes in a core and four branches (Low, Middle, High Maps, Cartography) with 4 keystones; the map opener's atlas shapes the run (see "Waystone Atlas"). Unit and mocked-engine tests; not run on a live server. |
 | game_partyfinder | `party_finder.lua`, `party_finder_core.lua`, `party_finder_config.lua` | **208**, Social > Party Finder | Party Finder (LFG): listings with activity, wanted tank / healer / DPS slots, minimum level, note, expiry; browse with filters, apply with a role, the leader accepts (engine party invite) or declines; "Join as" quick-join queue; realm and staff rules; in memory (see "Party Finder"). Unit and mocked-engine tests; not run on a live server. |
 | game_antibot | `antibot.lua`, `antibot_core.lua`, `antibot_config.lua`, `reports.lua`, `reports_core.lua`, `sql/chaos_reports.sql`, `tools/patch_report_chat.py` | **211**, right-click a player > Report Player, System > Report a Player, `/reports` (staff) | Behaviour detection (action rhythm, instant reactions, walked loops, loot timing, nonstop play) with a decaying suspicion score, the presence check modal (four pictures, one retry, 75 s, deferred in PvP and boss fights), player reports with public chat lines and limits, the staff log and command, an admin page on the website; never bans by itself (see "Anti-bot and player reports"). Unit, synthetic-trace and mocked-engine tests; not run on a live server. |
 | game_factions | `factions.lua`, `factions_core.lua`, `factions_config.lua`, `sql/chaos_factions.sql`, `tools/install_factions.py`, `data/npc/` (four NPCs) | **215**, Adventure > Factions, the faction NPCs | Four factions with reputation ranks (Hostile .. Exalted): daily / weekly contracts by seed, kills of their monster families, bounties, rift seals of their theme, invasions, world bosses and faction tokens; daily diminishing returns, weekly cap, rivals; quartermasters with fixed gear, orb bundles, a recipe, the tabard aura and a mount; rank titles, Exalted achievements, a weekly Reputation board (see "Factions"). Unit and mocked-engine tests; not run on a live server. |
@@ -635,6 +636,7 @@ collision check") and be added here.
 | 154 | `deathRecap` | `deathrecap.lua` (fed by `combatlog.lua`) | `game_deathrecap` | history and recaps through `Chaos.sendChunked` |
 | 156 | `tileBars` | `tilebars.lua` (bars set by `battleground.lua`, `professions.lua`, `invasion.lua`) | `game_tileoverlays` | server -> client bars over map positions, client -> server `hello` |
 | 157 | `displayScale` | `display_scale.lua`, `i18n.lua` | `game_chaosscale`, `client_chaos_locale` | server -> client `scale {level, f}`, client -> server `hello` (with `lang` from `client_chaos_locale`: the language of the server texts; see "Display scale" and "Server texts in pt-BR (Chaos.t)") |
+| 159 | `waystoneAtlas` | `waystone_atlas.lua` | `game_riftatlas` (waystone mode) | client -> server `open` / `alloc {id}` / `refund {id, pay}` / `reset {pay}`, server -> client `tree` through `Chaos.sendChunked`, `state`, `credit {cells, points}` (see "Waystone Atlas") |
 | 167 | `conquest` | `conquest.lua`, the Conquest vendor's NPC script | `game_conquest` | `state` through `Chaos.sendChunked`; client -> server `open` / `close` / `buy {k}` (see "Conquest Tokens, the Conquest vendor and bad-luck protection") |
 | 171 | `chronicle` | `chronicle.lua`, `memorial.lua` | `game_chronicle` | chronicle.lua: `open` / `close`, `state` through `Chaos.sendChunked`; memorial.lua: `mem` / `memset` |
 | 174 | `emberCache` | `embercache.lua` | `game_embercache` | client -> server `open` / `close` / `get`, server -> client `state` (see "Ember Cache, Daily Spark and the day book") |
@@ -13436,6 +13438,35 @@ rolls `dropRarity` (Normal 55, Magic 30, Rare 15); outside the maps it is Normal
 Tests: `tests/waystone_mods_test.lua` (core and mocked engine), `tools/patch_waystone_hideout_test.py`. Balance numbers
 are first guesses. Not run in game.
 
+## Waystone Atlas (`waystone_atlas.lua`, `waystone_atlas_core.lua`, `waystone_atlas_config.lua`, `sql/chaos_waystone_atlas.sql`, client `game_riftatlas` waystone mode)
+
+Owner 2026-10-23: the waystone maps get their own atlas, as the maps of the well-known action RPG. Opcode 159, table
+`chaos_waystone_atlas` (created by the script when missing, as the Rift Atlas's), no storages. Window: Adventure >
+Waystone Atlas.
+
+**Points.** Killing a map's boss during a waystone run credits every player inside the map rectangle with the map x tier
+cell (`m<map>.<tier>`, only the five tiers of the map's band: 12 maps x 5 = 60) and, when the run's waystone was Rare,
+the Rare cell of the tier (`r<tier>`, 15). 75 points; the tree costs 108, so it can never be filled. Each cell counts
+once per character.
+
+**The tree.** 81 nodes, the Rift Atlas's shape and rules (`atlas_core.lua`: allocate next to a held node, one keystone,
+refund 250k gold or an Orb of Upheaval per node, reset at 80%). Core nodes count everywhere; the north, east and south
+branches count only in Low (tiers I-V), Middle (VI-X) and High (XI-XV) maps; the west branch (Cartography) everywhere.
+
+**Effects** (`WC.resolve`, caps in the config): item quantity (20), rarity (25), experience (20), waystone chance
+(30), modifier rewards (25, multiplies the modifiers' bonuses), tier up of dropped waystones (15), fewer Normal drops
+(35), a second waystone from the boss (50). Keystones: Pure Stone (+40% quantity and experience on Normal waystones,
+modifier rewards halved), Hunter's Vow (the boss drops two more waystones, half the others are lost), Ascendant Path
+(dropped waystones one tier higher, the boss drops none), Rare Pursuit (no Normal drops, -20% quantity).
+
+**Whose atlas.** The player who used the waystone (`WM.take` stores `opener`); `WT.startRun` calls `WA.beginRun` before
+`WM.begin`, so a run without modifiers also gets the atlas. The effects last as long as the run (`runSeconds`).
+Hooks: `WM.lootMult`, `WM.rarityFind`, `WM.expMult`, `WM.extraWaystone`, `WM.rollDrop` (`WC.dropRows`) and
+`waystone_tiers.lua` `retierDrops` (`WC.dropTier`, keystones on the boss's drops).
+
+Tests: `tests/waystone_atlas_test.lua` (core, mocked engine and the hooks). Balance numbers are first guesses. Not run in
+game.
+
 ## Rifts (`rift.lua`, `rift_core.lua`, `rift_config.lua`, `rift_layout_core.lua`, client `game_rift`)
 
 **Limits** (`rift_config.lua` `limits`, "Instance limits"): 12 / 13 / 15 minutes a run by the size of its map (tiers 1-5 / 6-10 / 11-15, `layout.sizes`; was 10 for all; Omen arenas keep 10), warnings at 5 min, 1 min and 10 s; time up fails the rift (out to where the key was used, the key is spent); a run kept open only for fallen players who may come back closes after 3 minutes as a failed rift; at most 16 rifts and Omen arenas at once, a player who finds them busy (or none ready yet) hears the wait and waits in line.
@@ -20131,6 +20162,11 @@ Not run: `setup_gateway.sh` and `setup_backend_firewall.sh` for real (apt, syste
 which render and check every file, were run), a gateway on a real VPS with real DDoS filtering, the Windows build.
 
 ## Display scale (`display_scale.lua`, `display_scale_core.lua`, `display_scale_config.lua`, engine `src-patches/0037-display-scale.patch`, client `game_chaosscale`)
+
+**Off since 2026-10-23** (owner: "Tire, por favor, a inflação artificial de números que a gente colocou"): the curve is
+`{{1, 1}}`, x1 at every level, so every player sees the internal numbers. The code, the engine patch and the client
+module stay (a factor of 1 changes nothing and needs no new client build); the tests run it on the old curve and check
+that the shipped curve is x1. The rest of this section describes the scale as it was.
 
 Owner request (2026-10-13): end-game damage in the millions, as a **visual** scale. Every combat number a player sees is
 the internal number x a factor of a level; the internal numbers (health, damage, the balance of

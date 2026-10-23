@@ -187,6 +187,7 @@ function WM.take(player, sid)
 	if not pick:remove(1) then
 		return false, {}
 	end
+	ws.mods.opener = guid -- the map's opener (waystone_atlas.lua: their atlas shapes the run)
 	return true, ws.mods
 end
 
@@ -228,6 +229,14 @@ function WM.begin(i, t, mods)
 	local cfg = C()
 	local run = {map = i, tier = t, mods = mods, fx = W.effects(cfg, mods, t), bonus = W.bonuses(cfg, mods, t),
 		untilAt = os.time() + (cfg.runSeconds or 1860), players = {}, hazards = {}, breachAlive = 0}
+	-- the opener's Waystone Atlas (waystone_atlas.lua, begun before this): x its modifier reward bonus
+	local am = ChaosWaystoneAtlas and ChaosWaystoneAtlas.fxOfMap and ChaosWaystoneAtlas.fxOfMap(i)
+	local mult = am and tonumber(am.modRewardMult) or 1
+	if mult ~= 1 then
+		for _, k in ipairs({"quantity", "rarity", "experience", "waystone"}) do
+			run.bonus[k] = math.floor((run.bonus[k] or 0) * mult + 0.5)
+		end
+	end
 	WM.runs[i] = run
 	if not ticking then
 		ticking = true
@@ -627,37 +636,56 @@ local function runOfMonster(monster)
 end
 WM.runOfMonster = runOfMonster
 
--- loot_config.lua rateMult: the quantity bonus of the run the corpse's monster died in
-function WM.lootMult(ctx)
-	local run = ctx and runOfMonster(ctx.monster)
-	return run and (1 + (run.bonus.quantity or 0) / 100) or 1
+-- the map opener's Waystone Atlas where the monster died (waystone_atlas.lua): one stat, 0 without
+local function atlas(monster, key)
+	local WA = ChaosWaystoneAtlas
+	if not (WA and WA.stat and monster) then
+		return 0
+	end
+	local ok, v = pcall(WA.stat, monster, key)
+	return ok and tonumber(v) or 0
 end
 
--- loot.lua: rarity find (percent) of the run the monster died in
+-- loot_config.lua rateMult: the quantity bonus of the run the corpse's monster died in, x the atlas's
+function WM.lootMult(ctx)
+	local monster = ctx and ctx.monster
+	local run = monster and runOfMonster(monster)
+	local m = run and (1 + (run.bonus.quantity or 0) / 100) or 1
+	return m * math.max(0, 1 + atlas(monster, "quantity") / 100)
+end
+
+-- loot.lua: rarity find (percent) of the run the monster died in, + the atlas's
 function WM.rarityFind(monster)
 	local run = runOfMonster(monster)
-	return run and run.bonus.rarity or 0
+	return (run and run.bonus.rarity or 0) + atlas(monster, "rarity")
 end
 
--- waystone_tiers.lua: experience x this for a kill in the run's map
+-- waystone_tiers.lua: experience x this for a kill in the run's map (x the atlas's)
 function WM.expMult(monster)
 	local run = runOfMonster(monster)
-	return run and (1 + (run.bonus.experience or 0) / 100) or 1
+	return (run and (1 + (run.bonus.experience or 0) / 100) or 1) * (1 + atlas(monster, "experience") / 100)
 end
 
--- waystone_tiers.lua retierDrops: true when a dropped waystone brings one more (the waystone bonus as a chance)
+-- waystone_tiers.lua retierDrops: true when a dropped waystone brings one more (the waystone bonus as a chance, + the
+-- atlas's)
 function WM.extraWaystone(monster)
 	local run = runOfMonster(monster)
-	local c = run and run.bonus.waystone or 0
+	local c = (run and run.bonus.waystone or 0) + atlas(monster, "waystone")
 	return c > 0 and math.random(100) <= c
 end
 
--- a waystone that dropped in a run's map (tier t) gets its rarity and modifiers (dropRarity); outside: Normal
-function WM.rollDrop(item, t, inside)
+-- a waystone that dropped in a run's map (tier t) gets its rarity and modifiers (dropRarity, the Normal share cut by
+-- the atlas's `rarer`); outside: Normal
+function WM.rollDrop(item, t, inside, monster)
 	if not inside or C().enabled == false then
 		return item
 	end
-	local ws = W.rollDrop(C(), t, rand)
+	local cfg = C()
+	local rarer = atlas(monster, "rarer")
+	if rarer > 0 and ChaosWaystoneAtlasCore then
+		cfg = setmetatable({dropRarity = ChaosWaystoneAtlasCore.dropRows(cfg.dropRarity, rarer)}, {__index = cfg})
+	end
+	local ws = W.rollDrop(cfg, t, rand)
 	if #ws.mods > 0 then
 		WM.write(item, ws)
 	end
