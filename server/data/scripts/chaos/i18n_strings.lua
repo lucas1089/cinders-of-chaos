@@ -3058,6 +3058,21 @@ return {
 			"Bem-vindo, |PLAYERNAME|. O que você não consegue carregar, eu guardo. Abro seu {stash}?",
 		["Welcome, |PLAYERNAME|. Your gold is safe with me. Shall I {open} your account?"] =
 			"Bem-vindo, |PLAYERNAME|. Seu ouro está seguro comigo. Devo {open} sua conta?",
+		-- Veyra the Apothecary (hub supplies; apothecary_config.lua, data/npc/Veyra the Apothecary.xml)
+		["Welcome, |PLAYERNAME|. Draughts for the living, runes for the bold, rope for the deep. Ask for a {trade}."] =
+			"Bem-vindo, |PLAYERNAME|. Poções para os vivos, runas para os ousados, corda para as profundezas. Peça uma {trade}.",
+		["Drink before the dark does, |PLAYERNAME|."] = "Beba antes que a escuridão o faça, |PLAYERNAME|.",
+		["The shelves keep until you return."] = "As prateleiras esperam até você voltar.",
+		["Every potion is sold one at a time. The bulk packs are in the store."] =
+			"Cada poção é vendida uma de cada vez. Os pacotes grandes ficam na loja.",
+		["Veyra, apothecary. I sell potions of every tier one at a time, the runes hunters ask for most, and rope, shovel, torch and backpack. Ask for a {trade}."] =
+			"Veyra, boticária. Vendo poções de todos os níveis, uma de cada vez, as runas que os caçadores mais pedem, e corda, pá, tocha e mochila. Peça uma {trade}.",
+		["Health, mana and spirit draughts from the small to the supreme, each for a level. In bulk the store sells packs of one hundred for less. Ask for a {trade}."] =
+			"Poções de vida, mana e espírito, da pequena à suprema, cada uma para um nível. Em grande quantidade, a loja vende pacotes de cem por menos. Peça uma {trade}.",
+		["No potion leaves a flask now. Old empty ones I still buy, five gold each."] =
+			"Nenhuma poção deixa frasco agora. Os velhos frascos vazios eu ainda compro, cinco de ouro cada.",
+		["A %s is for level %d and up, and you are not there yet."] =
+			"Uma %s é para o nível %d ou mais, e você ainda não chegou lá.",
 		["Which house? Say {buy} and its name; ask for the {list} to hear the free ones."] =
 			"Qual casa? Diga {buy} e o nome dela; peça a {list} para ouvir as livres.",
 		["You already own a house. Leave it first."] =

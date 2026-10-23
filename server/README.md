@@ -6892,7 +6892,7 @@ tiles away. Mirewake had the Chaos anchors; those are configuration, so they mov
 - `tests/newplayer_test.lua` checks `homeTownFor` and that every temple anchor lists the main city first.
 
 **Slots for NPCs.** A Chaos NPC that serves every character gets a stall in the hub: name it in a free stall of
-`npc_booths_config.lua` (`npc = false`: 31666 and 31672, 32236, 7) and place it with `ChaosNpcPlace.place`
+`npc_booths_config.lua` (`npc = false`: 31672, 32236, 7) and place it with `ChaosNpcPlace.place`
 (`npc_place.lua`) for town 2; the stall is used instead of the temple.
 
 ## Hub NPC booths (`npc_booths.lua`, `npc_booths_core.lua`, `npc_booths_config.lua`, `tools/patch_hub_npcs.py`)
@@ -6913,10 +6913,10 @@ the stalls are 6 apart, so in front of a stall its own NPC is the nearest (`chao
 | 31642 | Loot Buyer | | 31642 | Ascendant Oracle |
 | 31654 | Cassian Auric | | 31653 | Pell Ashmere |
 | 31660 | Mordecai Ashwager | | 31660 | Vessa Hollowmark |
-| 31666 | Tavish Coldhand | | 31666 | (free) |
+| 31666 | Tavish Coldhand | | 31666 | Veyra the Apothecary |
 | 31672 | Halvard Deedkeeper | | 31672 | (free) |
 
-Trade and the bank on the north row, progression and the menu services on the south row; the busiest stand next to the
+Trade and the bank on the north row, progression and the menu services on the south row (the Apothecary, 2026-10-23, in the south row's first free stall); the busiest stand next to the
 gap in the middle of the walk (x 31646-31650), where players come in from the south. Every tile is the base NPC's own
 spawn tile (bare plank floor, checked on a copy of the installed map: walkable, nothing blocking; one has a sign, one a
 sparkle, neither blocks).
@@ -6940,7 +6940,7 @@ sparkle, neither blocks).
   server are harmless (`install_all.py` lists them, never deletes): `temple_npcs_config.lua` returns a table.
 - `tests/npc_booths_test.lua`: the config (16 stalls, two rows, each NPC once and an NPC of `data/npc`, nobody at the
   temple), the spots by town and temple, the retired halls, the login relocation (and an error caught), and
-  `ChaosNpcPlace.place` into the stall and next to another town's temple.
+  `ChaosNpcPlace.place` into the stall and next to another town's temple. Since 2026-10-23 one of the two empty stalls is the Apothecary's (15 NPCs, one stall free; "The Apothecary").
 
 Not seen in a client or on a live server: our NPCs in the stalls, the labels over them.
 
@@ -6995,6 +6995,47 @@ five has one.
 
 **Install:** step `servicenpcs` (`tools/install_service_npcs.py`, `tools/install_service_npcs_test.py`). **Texts:** English
 keys, pt-BR in `i18n_strings.lua` (`tests/service_npcs_test.lua` checks every line has one).
+
+## The Apothecary (`apothecary.lua`, `apothecary_config.lua`, `data/npc/Veyra the Apothecary.xml`, `data/npc/scripts/veyra_the_apothecary.lua`, `tools/install_apothecary.py`)
+
+Owner 2026-10-23: "no hub de npcs, nao tem nenhum que venda pots ou coisas do tipo. coloque por favor" (no NPC in the hub
+sells potions or the like). The base shop NPCs were cleared from the stalls ("Hub NPC booths"), and the progression and
+service NPCs that replaced them sell none. **Veyra the Apothecary** stands in the south row's free stall, 31666, 32236, 7
+(Cinderhold only, `towns = {2}`; else next to the temple, `offsets`). No opcode, no storage key, no table, no new item.
+
+| Goods | Price (gold, one unit) | Notes |
+|---|---|---|
+| small health 8704 / health 7618 / mana 7620 | 20 / 45 / 50 | level 0. The installer adds the two Everfull potions to her list, like every potion seller ("Potions") |
+| strong health 7588 / strong mana 7589 | 100 / 80 | level 50 |
+| great health 7591 / great mana 7590 / great spirit 8472 | 190 / 120 / 190 | level 80 |
+| ultimate health 8473 / ultimate mana 26029 / ultimate spirit 26030 | 310 / 350 / 350 | level 130 |
+| supreme health 26031 | 500 | level 200 |
+| antidote 8474 | 50 | level 0 |
+| ten runes: Mending, Grand Mending, Dispel, Greater Hexdart, Rockfall, Stormcall, Frostfall, Searing Orb, Reaper's, Shackle | the rune supply's price (95, 240, 30, 23, 70, 70, 84, 84, 220, 890) | the runes of the store's packs. The other runes and the unscribed rune stay with Raloth and Isora (`chaos_rune_supply.lua` `vendors`) |
+| rope 2120 / shovel 2554 / torch 2050 / backpack 1988 | 50 / 50 / 2 / 20 | |
+| buys: the old empty potion flasks 7634-7636 | 5 | the item price table's price; no potion leaves a flask any more ("Potions") |
+
+- **Prices.** The base server's lowest asking price per potion (`hunt_supplies.lua`), docs/PRICES.md. Great Spirit is 190
+  (the price the store's pack is built on) and not the cheapest base NPC's 120. The store's packs of 100 stay the bulk
+  way: 100 Great Mana Potions 15 coins, Great Spirit 15, Ultimate Health 20, Supreme Health 30; a pack is worth 800-1,667
+  gold a coin at her single prices, so coins never buy supplies below their gold value. No arbitrage: every price is at
+  least twice what any NPC pays for the item (`ChaosItemPrices`, `buyShare`) and `install_item_prices.py` changes none of her
+  entries (checked in `tools/install_apothecary_test.py`).
+- **Level gate.** The shop system has none, so her script (`CALLBACK_ONBUY`) refuses a buyer below the potion's level with a line
+  ("A <potion> is for level N and up, and you are not there yet."). The potion script still decides who may drink (vocations,
+  level). **Assumed, not read from the base items** (the base server is not in the repo): the levels of the stock potions
+  (50, 80, 130, 200) and that 8704 is the small health potion, 8474 the antidote and 26029 / 26030 / 26031 the ultimate mana,
+  ultimate spirit and supreme health potions (the store pack, the milestone gifts and `cooldown_channels_config.lua` agree with
+  these). Check the first live start: the trade window lists them under those names.
+- **Two lists.** The goods are in `apothecary_config.lua` (name, price, level) and in the XML's `shop_buyable` (what
+  `install_potions.py` and `install_rune_supply.py` read and extend); `tests/apothecary_test.lua` fails when they differ.
+- **Install:** step `apothecary` (`tools/install_apothecary.py`, right after `servicenpcs`, so `runes`, `potions` and `itemprices`
+  see her shop; idempotent). **Texts:** English keys, pt-BR in `i18n_strings.lua` (the i18n test checks her XML and script lines).
+- **Tests:** `tests/apothecary_test.lua` (XML against the config, prices against the rune supply, the item price table, the hunt
+  supplies and the store packs, her stall, the level gate and the talk on a mocked NPC library, the startup placement),
+  `tools/install_apothecary_test.py` (files, dry run, idempotence; the rune, potion and price steps on her XML), `tests/npc_booths_test.lua`.
+
+Not seen in a client or on a live server: her stall, the trade window, the level refusals.
 
 ## Tile labels (`tile_labels.lua`, `tile_labels_core.lua`, `tile_labels_config.lua`)
 

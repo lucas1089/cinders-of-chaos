@@ -89,6 +89,7 @@ jobs:
           python3 -I server/tools/gen_item_prices.py --check
           python3 -I server/tools/install_item_prices_test.py
           python3 -I server/tools/install_service_npcs_test.py  # the five service NPCs (hub stalls)
+          python3 -I server/tools/install_apothecary_test.py  # Veyra the Apothecary (hub supplies)
           python3 -I server/tools/patch_bank_payments_test.py  # every gold price of the base scripts pays from the bank too
           python3 -I server/tools/add_vocations_potion_text_test.py
           python3 -I server/tools/exercise_charges_patch_test.py

@@ -114,6 +114,8 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                (engine src-patch 0064, chaos-ctl.sh cast; README "Live spectator")
   servicenpcs  tools/install_service_npcs.py    the five service NPCs (stash keeper, pocket boss NPC, banker, house broker, services
                clerk) and their shared dialogue in data/npc (README "Service NPCs")
+  apothecary   tools/install_apothecary.py      Veyra the Apothecary, the hub's supplies seller (potions, runes, rope, shovel,
+               torch, backpack), in data/npc (README "The Apothecary"; before runes, potions and itemprices)
   conquest     tools/install_conquest.py         the Conquest vendor NPC in data/npc (README "Conquest Tokens, the Conquest
                vendor and bad-luck protection")
   supports     tools/install_supports.py         the spell support runes in items.otb / items.xml and the spell-library hook (scripts/chaos/SUPPORTS.md)
@@ -713,6 +715,13 @@ def step_servicenpcs(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('candlemarks') + 1, 'servicenpcs')  # the service NPCs (their stalls in the hub), after Osric
+
+
+def step_apothecary(server, data, ctx):
+    return tool_result(run_tool([tool('install_apothecary.py'), data], 'install_apothecary.py'))
+
+
+STEPS.insert(STEPS.index('servicenpcs') + 1, 'apothecary')  # Veyra the Apothecary (hub supplies), before runes / potions / itemprices read the shops
 
 
 def step_idlekick(server, data, ctx):
