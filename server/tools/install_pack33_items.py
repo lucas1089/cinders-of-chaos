@@ -105,6 +105,8 @@ NAMES = {
     'gibbet_empty': 'gibbet', 'gibbet_bones': 'gibbet', 'gibbet_swing': 'creaking gibbet',
     'altar_bare': 'offering altar', 'altar_offerings': 'offering altar', 'altar_burning': 'burning offering altar',
     'corn_wall_gap_h': 'gap in the corn', 'corn_wall_gap_v': 'gap in the corn',
+    # a stock item is "witch hat" (monster loot by name): a second one makes the loot name ambiguous
+    'witch_hat': 'crooked witch hat',
 }
 VARIANT = re.compile(r'(\s(n|s|e|w|ne|nw|se|sw|in \w+|h|v|h strip|v strip|l|mid|r|[hv][12])|\s\d+|\sstrip)+$')
 

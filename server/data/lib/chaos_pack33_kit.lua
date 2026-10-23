@@ -297,7 +297,7 @@ return {
 		coffin_open = {id = 41379, w = 2, h = 2, kind = "stump", block = true, light = 0, anim = false, family = "props", name = "open coffin"},
 		cauldron = {id = 41380, w = 1, h = 1, kind = "stump", block = true, light = 0, anim = true, family = "props", name = "cauldron"},
 		broom_leaning = {id = 41381, w = 1, h = 1, kind = "stump", block = true, light = 0, anim = false, family = "props", name = "leaning broom"},
-		witch_hat = {id = 41382, w = 1, h = 1, kind = "decor", block = false, light = 0, anim = false, family = "props", name = "witch hat"},
+		witch_hat = {id = 41382, w = 1, h = 1, kind = "decor", block = false, light = 0, anim = false, family = "props", name = "crooked witch hat"},
 		candles_cluster = {id = 41383, w = 1, h = 1, kind = "decor", block = false, light = 3, anim = true, family = "props", name = "candles"},
 		lantern_post = {id = 41384, w = 1, h = 1, kind = "stump", block = true, light = 3, anim = true, family = "props", name = "lantern post"},
 		candle_skull = {id = 41385, w = 1, h = 1, kind = "decor", block = false, light = 3, anim = false, family = "props", name = "candle skull"},

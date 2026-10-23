@@ -116,6 +116,8 @@ eq(H.directionTo(o, {x = 95, y = 101}), 3, "west")
 MESSAGE_INFO_DESCR, COMBAT_HEALING, COMBAT_PHYSICALDAMAGE = 22, 128, 1
 CONST_SLOT_BACKPACK, CONST_SLOT_LEFT, CONST_SLOT_RIGHT = 3, 6, 5
 TILESTATE_BLOCKSOLID = 1
+TILESTATE_FLOORCHANGE = 2
+TILESTATE_TELEPORT = 4
 ChaosTestKit = {kits = {knight = {slots = {[CONST_SLOT_LEFT] = 8209, [CONST_SLOT_RIGHT] = 10318}}},
 	kindFor = function() return "knight" end}
 
@@ -318,18 +320,33 @@ local realTile = Tile
 Tile = function() return {getGround = function() return true end, hasFlag = function() return false end,
 	getTopCreature = function() return nil end} end
 talks["!tester"].onSay(tester, "!tester", "enter boss 2")
-eq(tester.pos.x, 309, "enter boss 2: next to the second boss mark")
+eq(tester.pos.x, 310, "enter boss 2: next to the second boss mark")
+eq(tester.pos.y, 299, "enter boss 2: a straight neighbour first (north)")
 check(last(tester):find('"name":"Boss B"', 1, true) ~= nil, "enter: the answer names the place")
 talks["!tester"].onSay(tester, "!tester", "enter npc Keeper of Trials")
-eq(tester.pos.x, 69, "enter npc: next to the NPC")
+eq(tester.pos.x, 70, "enter npc: next to the NPC")
 check(last(tester):find('"npc":"Keeper of Trials"', 1, true) ~= nil, "enter npc: the answer")
 -- shop: a trader first (the NPC nearest the temple may only talk), the nearest NPC without one
 talks["!tester"].onSay(tester, "!tester", "shop")
 check(last(tester):find('shop {"err":"no NPC near the temple"}', 1, true) ~= nil, "shop: no trader, no NPC near: an error")
 npcs["Material Broker"] = {getName = function() return "Material Broker" end, isNpc = function() return true end,
-	getPosition = function() return {x = 80, y = 80, z = 7} end}
+	getPosition = function() return {x = 80, y = 80, z = 7} end, getId = function() return 9001 end}
 talks["!tester"].onSay(tester, "!tester", "shop")
-eq(tester.pos.x, 79, "shop: next to the trader")
+eq(tester.pos.x, 80, "shop: next to the trader")
+eq(tester.pos.y, 79, "shop: north of it first")
+-- another NPC as near the north tile: only the nearest NPC answers there (chaos_npc_focus.lua), so the tile east
+local stall = {isNpc = function() return true end, getId = function() return 9002 end,
+	getPosition = function() return {x = 80, y = 78, z = 7} end}
+spectators[#spectators + 1] = stall
+talks["!tester"].onSay(tester, "!tester", "shop")
+eq(tester.pos.x, 81, "shop: not where another NPC is as near")
+eq(tester.pos.y, 80, "shop: the east tile")
+spectators[#spectators] = nil
+-- no floor change or teleport tile
+Tile = function(p) return {getGround = function() return true end, getTopCreature = function() return nil end,
+	hasFlag = function(_, f) return p.y == 79 and f == TILESTATE_FLOORCHANGE end} end
+talks["!tester"].onSay(tester, "!tester", "shop")
+eq(tester.pos.x, 81, "shop: never onto a floor change (north is stairs)")
 check(last(tester):find('"npc":"Material Broker"', 1, true) ~= nil, "shop: the answer names the trader")
 npcs["Material Broker"] = nil
 local tps = #tester.log.teleports

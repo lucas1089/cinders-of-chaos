@@ -532,6 +532,10 @@ class Results:
 
 
 ONLINE = LT.ONLINE  # creature id -> bot in game (loadtest's party_step reads the same table)
+HEAL_SEEN = 3.0  # seconds: a heal or a potion counts ok when the health rises within them
+FLEE_AT = 20  # percent of health: under it, with the heal and the potion on cooldown, the bot leaves for the temple
+FLEE_REST = 15  # seconds in the temple after a flee, then back to the hunt
+SPEAK_RE = re.compile(rb'\xaa[\x00-\xff]{4}[\x00-\xff]{2}')  # a creature speaks: statement id, then its name
 
 
 class TesterBot(LT.Bot):
@@ -563,6 +567,9 @@ class TesterBot(LT.Bot):
         self.died = False
         self.after_death = False
         self.fails = 0
+        self.pending = {}  # 'heal_spell' / 'potion' -> until when a health rise counts it as ok
+        self.back_at = None  # after a flee: when to go back to the hunt
+        self.npc_spoke = False
 
     # ---------------------------------------------------------------- sessions until the end
     async def run(self, clock):
@@ -595,6 +602,7 @@ class TesterBot(LT.Bot):
         self.alive, self.died, self.health = True, False, 100
         ONLINE[self.cid] = self
         reader = asyncio.ensure_future(self.drain())
+        guard = asyncio.ensure_future(self.guard())
         self.conn.send(b'\xA0\x01\x01\x01\x00')  # offensive, chase on, secure mode on (never a player)
         self.say('!tester info')
         if self.after_death:  # a dead tester wakes in the temple: back to its hunt
@@ -607,6 +615,7 @@ class TesterBot(LT.Bot):
         finally:
             ONLINE.pop(self.cid, None)
             reader.cancel()
+            guard.cancel()
             if self.alive:
                 try:
                     self.conn.send(b'\x14')
@@ -657,6 +666,12 @@ class TesterBot(LT.Bot):
                 rule = TC.health_anomaly(before, self.health, False)
                 if rule:
                     self.results.anomaly(rule, self, health_before=before)
+                if self.health > before:
+                    for kind in self.pending:  # the heal or the potion worked
+                        self.results.behaviour(kind, 'ok', self)
+                    self.pending.clear()
+        if self.shop_npc and SPEAK_RE.search(plain) and self.shop_npc.encode('latin-1', 'replace') in plain:
+            self.npc_spoke = True
         if self.shop_npc and b'\x7a' in plain:
             items = parse_shop(plain, self.shop_npc)
             if items is not None:
@@ -743,7 +758,6 @@ class TesterBot(LT.Bot):
         next_ping = next_pick = time.monotonic()
         while self.alive and not self.died and time.monotonic() < clock['until'] and not clock['stop']:
             now = time.monotonic()
-            self.keep_alive(now)
             if now >= next_ping:
                 self.conn.send(b'\x1E')
                 next_ping = now + 2
@@ -766,13 +780,35 @@ class TesterBot(LT.Bot):
             await asyncio.sleep(3)
             self.results.d['relogs'] += 1
 
+    async def guard(self):
+        """keep_alive four times a second for the whole session, also while a behaviour waits (a shop visit, a coverage
+        scenario at the hunt): the bot heals in every fight, not only between behaviours"""
+        while self.alive and not self.died:
+            try:
+                self.keep_alive(time.monotonic())
+            except (ConnectionError, OSError):
+                return
+            await asyncio.sleep(0.25)
+
     def keep_alive(self, now):
-        """heal by spell under 60 %, by potion (hotkey: use with creature at 0xFFFF on its own id) under 40 %; cast the
-        rotation otherwise"""
-        if self.health < 60 and self.heal and self.ready.get('heal', 0) <= now:
+        """heal by spell under 60 %, by potion (hotkey: use with creature at 0xFFFF on its own id) under 40 %; under
+        FLEE_AT % with both on cooldown, back to the temple (as a player's town portal) and to the hunt FLEE_REST
+        seconds later; cast the rotation otherwise (not under 50 % with a heal: the mana is for the heal). A heal or a
+        potion counts ok when the health rises within HEAL_SEEN seconds, else failed"""
+        for kind, until in list(self.pending.items()):
+            if now > until:
+                del self.pending[kind]
+                self.results.behaviour(kind, 'failed', self)
+        if self.back_at and now >= self.back_at:
+            self.back_at = None
+            self.say('!tester hunt')
+        if self.health < 60 and self.heal and self.ready.get('heal', 0) <= now \
+                and self.ready.get(self.heal['group'], 0) <= now:
             self.say(self.heal['words'])
             self.ready['heal'] = now + max(1.0, self.heal['cooldown'] / 1000.0)
+            self.ready[self.heal['group']] = now + self.heal['groupcooldown'] / 1000.0 + 0.1
             self.results.behaviour('heal_spell', 'tried')
+            self.pending.setdefault('heal_spell', now + HEAL_SEEN)
         if self.health < 40 and self.ready.get('potion', 0) <= now and self.cid:
             pot = (self.helper.get('info') or {}).get('potions', {}).get('health')
             if pot:
@@ -780,7 +816,16 @@ class TesterBot(LT.Bot):
                                + struct.pack('<I', self.cid))
                 self.ready['potion'] = now + 1.1
                 self.results.behaviour('potion', 'tried')
-        if self.rotation:
+                self.pending.setdefault('potion', now + HEAL_SEEN)
+        if self.health <= FLEE_AT and not self.back_at and self.ready.get('flee', 0) <= now \
+                and self.ready.get('heal', 0) > now and self.ready.get('potion', 0) > now:
+            self.say('!tester town')
+            self.ready['flee'] = now + 60
+            self.back_at = now + FLEE_REST
+            self.results.behaviour('flee', 'tried')
+            self.results.log(self, 'do', 'flee at %d %% health' % self.health)
+            return
+        if self.rotation and not (self.health < 50 and self.heal):
             spell = LT.next_spell(self.rotation, self.ready, now)
             if spell:
                 self.say(spell['words'])
@@ -828,7 +873,7 @@ class TesterBot(LT.Bot):
         if not r or r.get('err') or 'locker' not in r:
             return self.failed('depot', r)
         p = r['locker']
-        self.conn.send(b'\x82' + struct.pack('<HHB', p['x'], p['y'], p['z']) + struct.pack('<HBB', r['clientId'], 1, 0))
+        self.conn.send(b'\x82' + struct.pack('<HHB', p['x'], p['y'], p['z']) + struct.pack('<HBB', r['clientId'], r.get('stackpos', 1), 0))
         await asyncio.sleep(3)
         self.conn.send(b'\x87\x00')  # close the container
         await self.helper_says('hunt', 'hunt')
@@ -838,7 +883,7 @@ class TesterBot(LT.Bot):
         r = await self.helper_says('shop', 'shop')
         if not r or r.get('err') or not r.get('npc'):
             return self.failed('shop', r)
-        self.shop_npc, self.shop = r['npc'], None
+        self.shop_npc, self.shop, self.npc_spoke = r['npc'], None, False
         for words in ('hi', 'trade'):
             self.conn.send(b'\x96\x01' + LT.string(words))
             await asyncio.sleep(1.5)
@@ -858,7 +903,8 @@ class TesterBot(LT.Bot):
             await asyncio.sleep(1)
             self.conn.send(b'\x7c')
         else:
-            self.results.count('failures', 'shop: no trade window from %s' % r['npc'], self)
+            self.results.count('failures', 'shop: no trade window from %s (%s)' % (
+                r['npc'], 'it answered' if self.npc_spoke else 'no answer to hi'), self)
         self.conn.send(b'\x96\x01' + LT.string('bye'))
         self.shop_npc = None
         await self.helper_says('hunt', 'hunt')

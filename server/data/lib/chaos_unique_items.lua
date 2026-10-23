@@ -9,6 +9,8 @@
 -- season = <id>: a season unique (season_config.lua): during that season it drops only for that season's characters,
 -- before it for nobody, after it for everyone (season.lua ChaosSeason.uniqueBlocked, asked by loot.lua).
 -- Edit freely, it is plain Lua.
+-- effect names the base scripts use and the engine lacks (chaos_effect_compat.lua): before any other script
+dofile("data/lib/chaos_effect_compat.lua")
 
 ChaosUniqueItems = {
 	{ name = "Nightfang Katana", id = 2412, minTier = "magic", chance = 4, level = 60, slot = "sword",
