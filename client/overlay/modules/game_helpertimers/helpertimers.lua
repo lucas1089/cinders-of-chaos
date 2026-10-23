@@ -1,5 +1,5 @@
 -- The helper's cooldown channels (pure Lua: no engine calls; tests: helpertimers_test.lua). Base patch 0062 calls it
--- from mods/game_helper (healing, magic shooter, potions, runes, special foods) as the global ChaosHelperTimers.
+-- from modules/game_helper (healing, magic shooter, potions, runes, special foods) as the global ChaosHelperTimers.
 --
 -- The server keeps a cooldown channel per kind of action (server/README.md "Cooldown channels", engine src-patch 0042):
 -- attack spells and attack runes share the attack group, healing spells and healing runes the healing group, potions

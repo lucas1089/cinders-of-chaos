@@ -1,6 +1,6 @@
 -- The helper's "Auto rotation" button (the glue; the choice is autorotation.lua, the data autorotation_data.lua).
 --
--- The helper (mods/game_helper, the base client) is not changed: this module finds its Targeting & Spell Rules panel
+-- The helper (modules/game_helper, the base client) is not changed: this module finds its Targeting & Spell Rules panel
 -- (magicShooterPanel) once the helper window exists, adds the button at its top right and fills the helper through the
 -- helper's own tables and functions (modules.game_helper: _Helper.getShooterProfile, magicShooter.updateRulesList,
 -- _Helper.MagicShooter.rebuildCache, _Helper.getHelperConfig, onLoadHelperData, _Helper.saveSettings).

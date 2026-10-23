@@ -1,0 +1,650 @@
+// The helper window (game_helper, client/MANIFEST.md "Helper"): four tabs (Healing, Combat, Support, Tools), the Auto setup
+// host row and the status line. Styles from client_chaos_theme. The rows are made by helper.lua; every text goes through
+// tr() (pt-BR in client_chaos_locale/pt_br.lua).
+//
+// The ids below are looked up by the other helper modules (game_helperrotation, game_helpersupport, game_helperhud):
+//   helperWindow, optionsTabBar, magicShooterPanel (the Auto rotation buttons go on its first row), presetsSection with
+//   renameButton, autoSetupHost (the Auto setup button), supportHost (the Support tab's panel), toolsPanelContainer.
+
+ChaosHelperHeading < ChaosLabel
+  height: 18
+  color: #e8b84a
+  text-align: left
+
+ChaosHelperHint < ChaosLabelDim
+  text-wrap: false
+  text-auto-resize: false
+  height: 16
+
+ChaosHelperIcon < UIWidget
+  size: 32 32
+  image-source: /images/game/spells/spell-icons-32x32
+  image-clip: 0 0 32 32
+  border-width: 1
+  border-color-top: #1b1b1b
+  border-color-left: #1b1b1b
+  border-color-right: #757575
+  border-color-bottom: #757575
+  focusable: false
+
+// one healing spell: icon, spell, the health percent it is cast at
+ChaosHelperHealRow < UIWidget
+  height: 36
+
+  ChaosHelperIcon
+    id: icon
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+
+  ChaosComboBox
+    id: spell
+    width: 220
+    height: 22
+    anchors.left: icon.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 8
+
+  ChaosLabel
+    id: label
+    anchors.left: spell.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 10
+    text-auto-resize: true
+    !text: tr('Health at or below')
+
+  ChaosComboBox
+    id: percent
+    width: 64
+    height: 22
+    anchors.left: label.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 6
+
+// one potion: the potion, the percent of health or mana it is drunk at
+ChaosHelperPotionRow < UIWidget
+  height: 28
+
+  ChaosComboBox
+    id: potion
+    width: 260
+    height: 22
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+
+  ChaosLabel
+    id: label
+    anchors.left: potion.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 10
+    text-auto-resize: true
+    !text: tr('at or below')
+
+  ChaosComboBox
+    id: percent
+    width: 64
+    height: 22
+    anchors.left: label.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 6
+
+  ChaosLabel
+    id: unit
+    anchors.left: percent.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 6
+    text-auto-resize: true
+    color: #8c8070
+
+// mana training and Auto Haste: a switch, an icon, a spell and one more setting
+ChaosHelperSupportRow < UIWidget
+  height: 36
+
+  ChaosCheckBox
+    id: enable
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+
+  ChaosHelperIcon
+    id: icon
+    anchors.left: enable.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 8
+
+  ChaosComboBox
+    id: spell
+    width: 200
+    height: 22
+    anchors.left: icon.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 8
+
+  ChaosLabel
+    id: label
+    anchors.left: spell.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 10
+    text-auto-resize: true
+
+  ChaosComboBox
+    id: percent
+    width: 64
+    height: 22
+    anchors.left: label.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 6
+
+  ChaosCheckBox
+    id: extra
+    anchors.left: spell.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 12
+    width: 190
+
+// one slot of the magic shooter. Columns at fixed offsets, so the heading row above lines up.
+ChaosHelperSlotRow < UIWidget
+  height: 36
+
+  ChaosHelperIcon
+    id: icon
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+
+  ChaosComboBox
+    id: spell
+    width: 170
+    height: 22
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 40
+
+  ChaosComboBox
+    id: percent
+    width: 58
+    height: 22
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 216
+
+  ChaosComboBox
+    id: creatures
+    width: 52
+    height: 22
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 280
+
+  ChaosCheckBox
+    id: force
+    width: 62
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 342
+    !text: tr('Force')
+    !tooltip: tr('Aim waves and beams at your target, not at the side with most monsters')
+
+  ChaosCheckBox
+    id: selfCast
+    width: 58
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 410
+    !text: tr('Self')
+    !tooltip: tr('Cast it on yourself, not on the target')
+
+ChaosHelperTab < ChaosTabButton
+  size: 116 26
+
+// ---------------------------------------------------------------- the window
+ChaosHelperWindow < ChaosMainWindow
+  id: helperWindow
+  size: 520 600
+  !text: tr('Helper')
+
+  Panel
+    id: topRow
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 26
+
+    ChaosCheckBox
+      id: helperEnabled
+      width: 190
+      anchors.left: parent.left
+      anchors.verticalCenter: parent.verticalCenter
+      !text: tr('Helper on')
+      !tooltip: tr('Switch the helper off to stop every automatic cast, potion and attack without losing the settings')
+
+    Panel
+      id: autoSetupHost
+      anchors.right: parent.right
+      anchors.top: parent.top
+      anchors.bottom: parent.bottom
+      anchors.left: helperEnabled.right
+
+  Panel
+    id: optionsTabBar
+    anchors.top: topRow.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 6
+    height: 26
+
+    ChaosHelperTab
+      id: healingMenu
+      anchors.top: parent.top
+      anchors.left: parent.left
+      !text: tr('Healing')
+
+    ChaosHelperTab
+      id: combatMenu
+      anchors.top: parent.top
+      anchors.left: healingMenu.right
+      margin-left: 4
+      !text: tr('Combat')
+
+    ChaosHelperTab
+      id: supportMenu
+      anchors.top: parent.top
+      anchors.left: combatMenu.right
+      margin-left: 4
+      !text: tr('Support')
+
+    ChaosHelperTab
+      id: toolsMenu
+      anchors.top: parent.top
+      anchors.left: supportMenu.right
+      margin-left: 4
+      !text: tr('Tools')
+
+  Panel
+    id: contentPanel
+    anchors.top: optionsTabBar.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: bottomRow.top
+    margin-top: 8
+    margin-bottom: 6
+
+    // ------------------------------------------------------------ Healing
+    ChaosPanelDark
+      id: healingPanel
+      anchors.fill: parent
+      visible: false
+
+      ChaosHelperHeading
+        id: healTitle
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        !text: tr('Healing spells')
+
+      Panel
+        id: healRows
+        anchors.top: healTitle.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: 108
+
+      ChaosHelperHeading
+        id: potionTitle
+        anchors.top: healRows.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin-top: 6
+        !text: tr('Potions')
+
+      Panel
+        id: potionRows
+        anchors.top: potionTitle.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: 84
+
+      ChaosHelperHint
+        id: potionHint
+        anchors.top: potionRows.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        !text: tr('Health potions go first. The Everfull flasks are never used up.')
+
+      ChaosHelperHeading
+        id: trainingTitle
+        anchors.top: potionHint.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin-top: 6
+        !text: tr('Mana training')
+
+      ChaosHelperSupportRow
+        id: trainingRow
+        anchors.top: trainingTitle.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+
+      ChaosHelperHeading
+        id: hasteTitle
+        anchors.top: trainingRow.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin-top: 4
+        !text: tr('Auto haste')
+
+      ChaosHelperSupportRow
+        id: hasteRow
+        anchors.top: hasteTitle.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+
+    // ------------------------------------------------------------ Combat
+    ChaosPanelDark
+      id: magicShooterPanel
+      anchors.fill: parent
+      visible: false
+
+      // the first row (26 px) is left free: Auto turn, Undo and Auto rotation go there (game_helperrotation)
+      Panel
+        id: presetsSection
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin-top: 28
+        height: 24
+
+        ChaosLabel
+          id: presetsLabel
+          anchors.left: parent.left
+          anchors.verticalCenter: parent.verticalCenter
+          text-auto-resize: true
+          !text: tr('Preset:')
+
+        ChaosButton
+          id: renameButton
+          size: 70 22
+          anchors.right: parent.right
+          anchors.verticalCenter: parent.verticalCenter
+          !text: tr('Rename')
+
+      Panel
+        id: presetRow
+        anchors.top: presetsSection.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin-top: 2
+        height: 26
+
+        ChaosComboBox
+          id: presetCombo
+          width: 170
+          height: 22
+          anchors.left: parent.left
+          anchors.verticalCenter: parent.verticalCenter
+
+        ChaosButton
+          id: newPresetButton
+          size: 64 22
+          anchors.left: presetCombo.right
+          anchors.verticalCenter: parent.verticalCenter
+          margin-left: 6
+          !text: tr('New')
+
+        ChaosButton
+          id: duplicateButton
+          size: 80 22
+          anchors.left: newPresetButton.right
+          anchors.verticalCenter: parent.verticalCenter
+          margin-left: 4
+          !text: tr('Duplicate')
+
+        ChaosButton
+          id: deleteButton
+          size: 64 22
+          anchors.left: duplicateButton.right
+          anchors.verticalCenter: parent.verticalCenter
+          margin-left: 4
+          !text: tr('Delete')
+
+      Panel
+        id: slotHeading
+        anchors.top: presetRow.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin-top: 4
+        height: 16
+
+        ChaosHelperHint
+          anchors.left: parent.left
+          anchors.top: parent.top
+          margin-left: 40
+          width: 170
+          !text: tr('Spell')
+
+        ChaosHelperHint
+          anchors.left: parent.left
+          anchors.top: parent.top
+          margin-left: 216
+          width: 62
+          !text: tr('Mana from')
+          !tooltip: tr('The spell is cast while your mana is at or above this percent')
+
+        ChaosHelperHint
+          anchors.left: parent.left
+          anchors.top: parent.top
+          margin-left: 280
+          width: 62
+          !text: tr('Monsters')
+          !tooltip: tr('The least number of monsters the spell must hit')
+
+      Panel
+        id: slotRows
+        anchors.top: slotHeading.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: 180
+
+      ChaosSeparator
+        id: targetSeparator
+        anchors.top: slotRows.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin-top: 4
+
+      Panel
+        id: enableButtons
+        anchors.top: targetSeparator.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin-top: 6
+        height: 24
+
+        ChaosCheckBox
+          id: enableMagicShooter
+          width: 150
+          anchors.left: parent.left
+          anchors.verticalCenter: parent.verticalCenter
+          !text: tr('Magic shooter')
+          !tooltip: tr('Cast the spells above by themselves while you fight')
+
+        ChaosCheckBox
+          id: enableAutoTarget
+          width: 120
+          anchors.left: enableMagicShooter.right
+          anchors.verticalCenter: parent.verticalCenter
+          margin-left: 10
+          !text: tr('Auto target')
+          !tooltip: tr('Pick and attack monsters by itself')
+
+        ChaosComboBox
+          id: autoTargetMode
+          width: 190
+          height: 22
+          anchors.right: parent.right
+          anchors.verticalCenter: parent.verticalCenter
+
+      Panel
+        id: targetOptions
+        anchors.top: enableButtons.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin-top: 2
+        height: 24
+
+        ChaosCheckBox
+          id: priorityTargets
+          width: 230
+          anchors.left: parent.left
+          anchors.verticalCenter: parent.verticalCenter
+          !text: tr('Priority targets first')
+          !tooltip: tr('Loot goblins, bosses and special monsters are attacked first')
+
+        ChaosCheckBox
+          id: onlyReachable
+          width: 230
+          anchors.left: priorityTargets.right
+          anchors.verticalCenter: parent.verticalCenter
+          margin-left: 10
+          !text: tr('Only reachable monsters')
+          !tooltip: tr('Skip monsters you cannot get to')
+
+    // ------------------------------------------------------------ Support (game_helpersupport builds its panel here)
+    Panel
+      id: supportHost
+      anchors.fill: parent
+      visible: false
+
+    // ------------------------------------------------------------ Tools
+    ChaosPanelDark
+      id: toolsPanelContainer
+      anchors.fill: parent
+      visible: false
+
+      ChaosCheckBox
+        id: autoEat
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        !text: tr('Eat food automatically')
+        !tooltip: tr('Eat the food in your backpack when you are hungry')
+
+      ChaosHelperHeading
+        id: exerciseTitle
+        anchors.top: autoEat.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin-top: 12
+        !text: tr('Exercise training')
+
+      Panel
+        id: exerciseRow
+        anchors.top: exerciseTitle.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: 30
+
+        ChaosCheckBox
+          id: exerciseEnable
+          anchors.left: parent.left
+          anchors.verticalCenter: parent.verticalCenter
+          !tooltip: tr('Use the exercise weapon on a training dummy next to you, again and again')
+
+        ChaosComboBox
+          id: exerciseWeapon
+          width: 240
+          height: 22
+          anchors.left: exerciseEnable.right
+          anchors.verticalCenter: parent.verticalCenter
+          margin-left: 8
+
+      ChaosHelperHeading
+        id: hudTitle
+        anchors.top: exerciseRow.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        margin-top: 12
+        !text: tr('Bot HUD')
+
+      Panel
+        id: hudRow
+        anchors.top: hudTitle.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: 30
+
+        ChaosCheckBox
+          id: hudEnable
+          width: 170
+          anchors.left: parent.left
+          anchors.verticalCenter: parent.verticalCenter
+          !text: tr('Show the Bot HUD')
+          !tooltip: tr('A small panel at the top of the game map that shows what the helper is doing')
+
+        ChaosComboBox
+          id: hudSize
+          width: 110
+          height: 22
+          anchors.left: hudEnable.right
+          anchors.verticalCenter: parent.verticalCenter
+          margin-left: 10
+
+      Panel
+        id: hudSections
+        anchors.top: hudRow.bottom
+        anchors.left: parent.left
+        anchors.right: parent.right
+        height: 56
+
+        ChaosCheckBox
+          id: hudTargeting
+          width: 220
+          anchors.top: parent.top
+          anchors.left: parent.left
+          !text: tr('Combat and targeting')
+
+        ChaosCheckBox
+          id: hudHaste
+          width: 220
+          anchors.top: parent.top
+          anchors.left: hudTargeting.right
+          margin-left: 10
+          !text: tr('Haste and training')
+
+        ChaosCheckBox
+          id: hudHealing
+          width: 220
+          anchors.top: hudTargeting.bottom
+          anchors.left: parent.left
+          margin-top: 6
+          !text: tr('Healing and potions')
+
+        ChaosCheckBox
+          id: hudPlayer
+          width: 220
+          anchors.top: hudTargeting.bottom
+          anchors.left: hudHealing.right
+          margin-top: 6
+          margin-left: 10
+          !text: tr('Player')
+
+  Panel
+    id: bottomRow
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 26
+
+    ChaosButton
+      id: closeButton
+      size: 90 24
+      anchors.right: parent.right
+      anchors.verticalCenter: parent.verticalCenter
+      !text: tr('Close')
+
+    ChaosLabel
+      id: statusLine
+      anchors.left: parent.left
+      anchors.right: closeButton.left
+      anchors.verticalCenter: parent.verticalCenter
+      margin-right: 8
+      text-wrap: false
+      text-auto-resize: false
+      color: #d7b46a

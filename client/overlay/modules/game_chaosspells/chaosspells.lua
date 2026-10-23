@@ -122,7 +122,7 @@ local function restoreStockVocations()
   oldVocations = {}
 end
 
--- The helper (mods/game_helper) only offers spells from its own per-vocation id lists (spelldata.json).
+-- The helper (modules/game_helper) only offers spells from its own per-vocation id lists (spelldata.json).
 -- Add the Chaos spells to them: attack spells to the shooter list, healing spells to the healing list, support
 -- spells to the support list. The helper keys its classes 1 warrior, 2 ranger, 3 mystic / elementalist, 4 illusionist
 -- (the druid's healing lists), 5 the old illusionist, 6 thief, 7 necromancer, 8 monk, 9 templar (its translateVocation

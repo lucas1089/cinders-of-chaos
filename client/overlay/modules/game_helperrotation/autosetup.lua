@@ -137,13 +137,9 @@ function S.timerRules(vocId, canCast, support)
   return out
 end
 
--- the Shooter tab's targeting, as the helper's config fields (helper.lua's defaults have both systems off)
-S.TARGETING = {
-  targetMonsterList = '*', autoTargetEnabled = true, alwaysChaseOpponent = false,
-  followFriendEnabled = false, followFriendName = '', magicShooterEnabled = true, disableInProtectZone = true,
-}
-S.TARGETING_KEYS = { 'targetMonsterList', 'autoTargetEnabled', 'alwaysChaseOpponent', 'followFriendEnabled',
-  'followFriendName', 'magicShooterEnabled', 'disableInProtectZone' }
+-- the Combat tab's targeting, as the helper's config fields (the helper's defaults have both systems off)
+S.TARGETING = { autoTargetEnabled = true, magicShooterEnabled = true }
+S.TARGETING_KEYS = { 'autoTargetEnabled', 'magicShooterEnabled' }
 
 function S.targeting()
   local out = {}

@@ -850,6 +850,9 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     heights grow by 44 px). Without the module nothing changes. Applies after `0001`-`0116` (`patch` clean on the base
     archive with the whole chain; the Lua loads in LuaJIT and Lua 5.3). Numbered 0117 because other branches use 0110,
     0111 and 0114. Not seen in a client.
+    Since 2026-10-23 `mods/game_helper` is removed at assembly (`assemble_client.sh`): the helper is the overlay's
+    `modules/game_helper`, which calls `ChaosAutoTargetEngine` itself. This patch still applies and is then dropped
+    with the folder. Do not edit it; a later patch must not depend on `mods/game_helper`.
 69o. `0122` (Lua `modules/game_containers/containers.lua`): **a full container packet keeps the slot widgets of an open
     window.** Owner report 2026-10-23: "o client dá uma travada rápida quando a janela do loot bag está aberta e o auto
     loot pega muita coisa de uma vez". Server patch 0054 ends every loot batch with one full container packet and the

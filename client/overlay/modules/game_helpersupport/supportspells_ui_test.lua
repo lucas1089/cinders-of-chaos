@@ -1,6 +1,6 @@
 -- luajit supportspells_ui_test.lua && lua5.3 supportspells_ui_test.lua (from the repository root or this folder)
--- The Support tab against a mock of the helper window (mods/game_helper/helper_window.otui ids, loadMenu's checks) and
--- of the engine's style table: owner beta 2026-10-20 "The helper's Support tab does not open".
+-- The Support panel against a mock of the helper window (modules/game_helper/styles/helper.otui: the supportHost panel of
+-- the Support tab) and of the engine's style table: owner beta 2026-10-20 "The helper's Support tab does not open".
 local dir = (arg and arg[0] or ''):match('^(.*[/\\])') or './'
 local fails = 0
 local function eq(a, b, what)
@@ -77,7 +77,7 @@ function W:click() if self.onClick then self.onClick(self) end end
 local styles = {}            -- defined styles; 'UI*' are defined by themselves
 local function defined(name) return name:sub(1, 2) == 'UI' or styles[name] end
 local otui = { -- supportspells.otui in file order: style <- base
-  { 'ChaosSupportTab', 'UIButton' }, { 'ChaosSupportRow', 'Panel' }, { 'ChaosSupportPanel', 'Panel' } }
+  { 'ChaosSupportRow', 'Panel' }, { 'ChaosSupportPanel', 'Panel' } }
 local function importStyle()
   -- UIManager::importStyleFromOTML stops at the first base style that is not defined yet
   for _, s in ipairs(otui) do
@@ -89,9 +89,7 @@ end
 local function build(style, parent)
   if not defined(style) then return nil end -- createWidget logs and gives nil
   local w = new(style, parent)
-  if style == 'ChaosSupportTab' then
-    new('Label', w, 'caption')
-  elseif style == 'ChaosSupportRow' then
+  if style == 'ChaosSupportRow' then
     new('CheckBox', w, 'enable') new('Label', w, 'number') new('ComboBox', w, 'spell') new('Label', w, 'status')
   elseif style == 'ChaosSupportPanel' then
     w.visible = false
@@ -107,28 +105,12 @@ end
 
 -- ---------------------------------------------------------------- the helper window and its loadMenu
 local root = new('Root')
-local win, content, bar
-local menus = { 'healingMenu', 'toolsMenu', 'shooterMenu', 'equipMenu', 'timerMenu', 'settingsFolderMenu' }
-local panelOf = { healingMenu = 'healingPanel', toolsMenu = 'toolsPanelContainer', shooterMenu = 'shooterPanel',
-  equipMenu = 'equipPanelContainer', timerMenu = 'timerPanelContainer', settingsFolderMenu = 'settingsPanel' }
-local function loadMenu(id)
-  for _, m in ipairs(menus) do bar:getChildById(m):setChecked(false) end
-  bar:getChildById(id):setChecked(true)
-  for _, m in ipairs(menus) do content:getChildById(panelOf[m]):hide() end
-  content:getChildById(panelOf[id]):show()
-end
-local fitted = 0
+local win, content, host
 local function makeHelperWindow()
   win = new('Window', root, 'helperWindow')
   content = new('Panel', win, 'contentPanel')
-  bar = new('Panel', content, 'optionsTabBar')
-  new('Panel', content, 'helperSidebar')
-  for _, m in ipairs(menus) do new('Panel', content, panelOf[m]).visible = false end
-  new('Panel', content, 'separator')
-  for _, m in ipairs(menus) do
-    local b = new('UIButton', bar, m)
-    b.onClick = function() loadMenu(m) end
-  end
+  host = new('Panel', content, 'supportHost')
+  host.visible = false -- the helper shows it with its Support tab
 end
 
 local scheduled = {}
@@ -155,12 +137,7 @@ connect = function() end
 disconnect = function() end
 LocalPlayer = {}
 AnchorLeft, AnchorRight, AnchorTop, AnchorBottom = 1, 2, 3, 4
-modules = { game_helper = { _Helper = {}, onHelperViewportChange = function()
-  -- fitHelperWindow: every button of the bar gets the same width
-  local n = #bar:getChildren()
-  for _, b in ipairs(bar:getChildren()) do b:setWidth(math.floor(933 / n) - 1) end
-  fitted = fitted + 1
-end } }
+modules = { game_helper = { _Helper = {} } }
 Spells = { getSpellList = function() return {} end }
 
 local function runPolls()
@@ -178,41 +155,29 @@ U.init()
 eq(styles.ChaosSupportPanel, nil, 'init imports no styles (Panel is not defined yet)')
 makeHelperWindow()
 runPolls()
-eq(bar:getChildById(U.TAB_ID), nil, 'no tab while the base styles are missing (no tab without its panel)')
+eq(root:recursiveGetChildById(U.PANEL_ID), nil, 'no panel while the base styles are missing')
 styles.Panel = true -- client_styles is loaded (with the `client` module, after the modules of priority 100-499)
 runPolls()
-local tab = bar:getChildById(U.TAB_ID)
-ok(tab, 'the tab once the base styles exist')
-ok(root:recursiveGetChildById(U.PANEL_ID), 'and its panel with it')
-eq(fitted, 1, 'the helper refits its tab buttons for the new one')
-eq(tab.width, bar:getChildById('healingMenu').width, 'the Support tab is as wide as the others (inside the bar)')
+local p = root:recursiveGetChildById(U.PANEL_ID)
+ok(p, 'the panel once the base styles exist')
+eq(p:getParent(), host, 'it sits in the Support tab host')
 eq(#logged, 0, 'nothing logged')
 
--- open and close
-loadMenu('toolsMenu')
-tab:click()
-local p = root:recursiveGetChildById(U.PANEL_ID)
-ok(p:isVisible(), 'a click on Support opens its panel')
-ok(not content:getChildById('toolsPanelContainer'):isVisible(), 'the helper panel goes')
-ok(tab:isChecked() and not bar:getChildById('toolsMenu'):isChecked(), 'Support is the checked tab')
-bar:getChildById('timerMenu'):click()
-ok(not p:isVisible(), 'another tab hides it')
-ok(content:getChildById('timerPanelContainer'):isVisible(), 'and shows its own panel')
-ok(not tab:isChecked(), 'Support unchecked')
-tab:click()
-ok(p:isVisible(), 'and Support opens it again')
+-- the helper opens and closes the host with its tab
+ok(not p:isVisible(), 'hidden while another tab shows')
+host:show()
+ok(p:isVisible(), 'shown with the Support tab')
+host:hide()
+ok(not p:isVisible(), 'hidden again')
 
--- an older build left a tab without its panel: the poll makes both again
+-- a panel lost (an older build): the poll makes it again, once
 p:destroy()
 runPolls()
-ok(root:recursiveGetChildById(U.PANEL_ID), 'a tab without its panel: the panel is made')
+ok(root:recursiveGetChildById(U.PANEL_ID), 'a lost panel is made again')
 local count = 0
-for _, c in ipairs(bar:getChildren()) do if c.id == U.TAB_ID then count = count + 1 end end
-eq(count, 1, 'one Support tab')
-bar:getChildById(U.TAB_ID):click()
-ok(root:recursiveGetChildById(U.PANEL_ID):isVisible(), 'and it opens')
-bar:getChildById('healingMenu'):click()
-ok(not root:recursiveGetChildById(U.PANEL_ID):isVisible(), 'the wrapped tabs still hide it (wrapped once)')
+for _, c in ipairs(host:getChildren()) do if c.id == U.PANEL_ID then count = count + 1 end end
+eq(count, 1, 'one panel')
+host:show()
 
 -- the rows: an empty row's box is unticked and greyed; a spell picked in an empty row starts ticked
 U.setSlots({ { id = 9101, enabled = true }, { id = 9102, enabled = false } }, true)

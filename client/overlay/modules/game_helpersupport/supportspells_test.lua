@@ -539,5 +539,10 @@ cfg = cfgOf({ 44 })
 eq(H.pick(st, cfg, w.ctx()), nil, 'Ward of the Mind: the bar names it Magic Shield')
 eq(st.status[44], 'active', 'status: active by the bar\'s name')
 
+-- utilities by their Chaos names (a client table whose ids and words differ)
+eq(H.isUtility({ id = 99991, name = 'Greater Lantern', words = 'zzz' }), true, 'a lantern by name is a utility')
+eq(H.isUtility({ id = 99992, name = 'Town Portal', words = 'zzz' }), true, 'the town portal by name is a utility')
+eq(H.isUtility({ id = 99993, name = 'Fire Wave', words = 'zzz' }), false, 'an attack is not a utility')
+
 if fails > 0 then error(fails .. ' failure(s)') end
 print('supportspells_test: OK')

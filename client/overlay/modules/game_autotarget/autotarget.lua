@@ -1,5 +1,5 @@
 -- game_autotarget: the engine side of ChaosAutoTarget (autotarget_core.lua holds the rules). Global
--- ChaosAutoTargetEngine; base patch 0117 calls it from mods/game_helper/classes/auto_target.lua. The only engine calls
+-- ChaosAutoTargetEngine; base patch 0117 calls it from modules/game_helper/classes/auto_target.lua. The only engine calls
 -- are here: g_map.findPath and g_map.isSightClear for the reach, the monster bar's cached tier for the class, and
 -- g_settings for the two options of the helper's Targeting panel (both on by default):
 --   chaosAutoTargetPriority  "Priority targets": loot goblins, bosses and special monsters first

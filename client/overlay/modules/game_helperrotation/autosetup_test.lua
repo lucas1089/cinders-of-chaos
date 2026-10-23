@@ -201,37 +201,23 @@ eq(#S.ownTabs({ support = { { id = sp.support[1] } } }, sp), 0, 'a row of the pl
 local own = S.ownTabs({ support = { { id = 12345 } } }, sp)
 eq(own[1], 'support', 'a row of the player\'s own is asked about')
 
--- targeting (owner 2026-10-22): every monster, Auto Target and the shooter on, chase and Follow Friend off, paused in
--- protection zones; written into the helper's config and put back by Undo
+-- targeting (owner 2026-10-22): Auto Target and the shooter on (the protection zone pause is the helper's own rule);
+-- written into the helper's config and put back by Undo
 local tp = planFor(13, 200).targeting
-eq(tp.targetMonsterList, '*', 'targeting: every monster')
 eq(tp.autoTargetEnabled, true, 'targeting: Auto Target on')
-eq(tp.alwaysChaseOpponent, false, 'targeting: Always Chase Opponent off')
-eq(tp.followFriendEnabled, false, 'targeting: Follow Friend off')
-eq(tp.followFriendName, '', 'targeting: no friend name')
 eq(tp.magicShooterEnabled, true, 'targeting: Enable Shooter on')
-eq(tp.disableInProtectZone, true, 'targeting: Disable in Protect Zone on')
 tp.autoTargetEnabled = false
 eq(S.targeting().autoTargetEnabled, true, 'targeting: each plan has its own copy')
--- the helper's defaults (helper.lua): both systems off, a friend followed, chase on
-local cfg = { targetMonsterList = 'rat', autoTargetEnabled = false, alwaysChaseOpponent = true,
-  followFriendEnabled = true, followFriendName = 'Someone', magicShooterEnabled = false, disableInProtectZone = false,
-  autoEatFood = true }
+-- the helper's defaults: both systems off
+local cfg = { autoTargetEnabled = false, magicShooterEnabled = false, autoEatFood = true }
 local before = S.targetingOf(cfg)
 S.applyTargeting(cfg, planFor(13, 200).targeting)
-eq(cfg.targetMonsterList, '*', 'applied: target list')
 eq(cfg.autoTargetEnabled, true, 'applied: Auto Target on')
-eq(cfg.alwaysChaseOpponent, false, 'applied: chase off')
-eq(cfg.followFriendEnabled, false, 'applied: Follow Friend off')
-eq(cfg.followFriendName, '', 'applied: friend name emptied')
 eq(cfg.magicShooterEnabled, true, 'applied: shooter on')
-eq(cfg.disableInProtectZone, true, 'applied: paused in protection zones')
 eq(cfg.autoEatFood, true, 'applied: other fields untouched')
 S.applyTargeting(cfg, before)
-eq(cfg.targetMonsterList, 'rat', 'undo: target list back')
 eq(cfg.autoTargetEnabled, false, 'undo: Auto Target back off')
-eq(cfg.followFriendName, 'Someone', 'undo: friend name back')
-eq(cfg.alwaysChaseOpponent, true, 'undo: chase back on')
+eq(cfg.magicShooterEnabled, false, 'undo: shooter back off')
 eq(S.applyTargeting(nil, before), nil, 'no config: nothing written')
 
 if fails > 0 then error(fails .. ' failure(s)') end

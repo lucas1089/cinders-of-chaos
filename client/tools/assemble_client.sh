@@ -25,6 +25,10 @@ rm -rf "$OUT/modules/game_task_hunt"
 rm -rf "$OUT/modules/game_bot"
 rm -f "$OUT/mods/game_helper/cavebot_panel.lua" "$OUT/mods/game_helper/scripting.lua" \
   "$OUT/mods/game_helper/scripting_actions.lua" "$OUT/mods/game_helper/scripting_compat.lua"
+# the base helper retires whole: the overlay's modules/game_helper is the helper (client/MANIFEST.md "Helper"). The base
+# patches above still apply to mods/game_helper first (earlier patches are never edited), then the folder goes.
+# game_interface loads "game_helper" by name from its load-later list and finds the overlay module.
+rm -rf "$OUT/mods/game_helper"
 # the base native splash picture (used only with init.lua ENABLE_NATIVE_SPLASH on; without it no splash is drawn) and
 # the browser build's emblem show the base client's name in the picture (client/BASE.md "Names check")
 rm -f "$OUT/data/images/splash.png" "$OUT"/data/images/*-client-emblem.png

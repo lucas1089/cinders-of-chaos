@@ -85,7 +85,7 @@ for _, n in ipairs({ 'light', 'great light', 'ultimate light', 'magic rope', 'fi
     'conjure piercing bolt', 'conjure spear', 'cancel invisibility', 'find fiend',
     'lantern', 'greater lantern', 'radiant lantern', 'ghost rope', 'conjure rations', 'wraith step', 'shroud of shadows',
     'call thrall', 'unveil', 'taunt of iron', "duelist's oath", "skinchanger's guise", 'hallow spear',
-    'warhorse rush' }) do
+    'warhorse rush', 'town portal' }) do
   H.NEVER_NAMES[n] = true
 end
 
@@ -221,6 +221,13 @@ function H.info(spell)
   }
 end
 
+-- a utility the helper never casts by itself (by id, words or name)
+function H.isUtility(spell)
+  if type(spell) ~= 'table' then return false end
+  if H.NEVER_IDS[spell.id] or H.NEVER_NAMES[lower(spell.name)] then return true end
+  return type(spell.words) == 'string' and isNeverWords(lower(spell.words))
+end
+
 -- may this spell stand in the section? Returns true, or false and the reason
 function H.eligible(spell)
   if type(spell) ~= 'table' or type(spell.id) ~= 'number' then return false, 'entry' end
@@ -228,8 +235,7 @@ function H.eligible(spell)
   if type(spell.words) ~= 'string' or spell.words == '' then return false, 'words' end
   if not H.isSupportGroup(spell.group) then return false, 'group' end
   if spell.parameter or spell.needTarget then return false, 'target' end
-  if H.NEVER_IDS[spell.id] or isNeverWords(lower(spell.words)) then return false, 'utility' end
-  if type(spell.name) == 'string' and H.NEVER_NAMES[lower(spell.name)] then return false, 'utility' end
+  if H.isUtility(spell) then return false, 'utility' end
   return true
 end
 

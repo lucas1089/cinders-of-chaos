@@ -1,6 +1,6 @@
 -- game_autotarget: which monster the helper's Auto Target picks (client/MANIFEST.md "Auto Target priority and reach").
 -- Global ChaosAutoTarget, pure (no engine calls), so autotarget_core_test.lua runs it under LuaJIT and Lua 5.3. The thin
--- engine glue is autotarget.lua; base patch 0117 calls it from mods/game_helper/classes/auto_target.lua.
+-- engine glue is autotarget.lua; base patch 0117 calls it from modules/game_helper/classes/auto_target.lua.
 --
 -- Before (the base client's check(), mode F "closest + lowest health", the default): every monster in the 7 x 5 reach
 -- window that is not ignored, with the straight distance; the nearest won, equal distance went to the lowest health.

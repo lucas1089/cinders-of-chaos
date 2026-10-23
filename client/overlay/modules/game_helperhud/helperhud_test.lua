@@ -13,29 +13,33 @@ eq(L.isEnabled({}), false, 'no botHud')
 eq(L.isEnabled({ botHud = { enabled = false } }), false, 'off')
 eq(L.isEnabled({ botHud = { enabled = true } }), true, 'on')
 
--- the default sections of tools_panel.lua's botHud
+-- the sections of the helper's botHud
 local cfg = {
-  botHud = { enabled = true, size = 'Normal', showTargeting = true, showEquipment = true, showTimers = true,
-    showHaste = true, showPlayer = true, showAutomation = false },
+  botHud = { enabled = true, size = 'Normal', showTargeting = true, showHealing = true,
+    showHaste = true, showPlayer = true },
   autoTargetEnabled = true,
   haste = { { enabled = true, id = 6 } },
+  spells = { { id = 11, percent = 80 }, { id = 0, percent = 50 } },
+  potions = { { id = 266, percent = 50 }, { id = 268, percent = 30 } },
 }
 local state = {
-  targetName = 'Ember Wraith', equipEnabled = true, equipRules = 2, timerEnabled = false, timerRules = 0,
+  targetName = 'Ember Wraith',
   spellName = function(id) return id == 6 and 'Swiftstep' or nil end,
   player = { health = 50, maxHealth = 200, mana = 30, maxMana = 60, level = 42 },
 }
 local rows = L.entries(cfg, state)
-eq(#rows, 5, 'five ticked sections (automation off)')
+eq(#rows, 4, 'four ticked sections')
 eq(rows[1].name, 'Combat', 'combat first')
 eq(rows[1].value, 'Auto  Ember Wraith', 'combat value')
 eq(rows[1].active, true, 'combat active')
-eq(rows[2].value, 'Default  2 rules', 'equip value')
-eq(rows[3].value, 'Off', 'timers off')
-eq(rows[3].active, false, 'timers dimmed')
-eq(rows[4].value, 'Haste Swiftstep', 'support value')
-eq(rows[5].value, 'HP 25%  MP 50%  Lv 42', 'player value')
+eq(rows[2].value, '1 spells  2 potions', 'healing value')
+eq(rows[2].active, true, 'healing active')
+eq(rows[3].value, 'Haste Swiftstep', 'support value')
+eq(rows[4].value, 'HP 25%  MP 50%  Lv 42', 'player value')
 eq(L.activeCount(rows), 4, 'active rows')
+local idle = L.entries({ botHud = { showHealing = true } }, {})
+eq(idle[1].value, 'Off', 'nothing set: healing off')
+eq(idle[1].active, false, 'and dimmed')
 
 -- nothing ticked: one hint row instead of an empty card
 local none = L.entries({ botHud = { enabled = true } }, {})
