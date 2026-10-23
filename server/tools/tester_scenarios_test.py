@@ -56,7 +56,11 @@ for o in ('market', 'guild', 'antibot'):
 staff = [n for n, s in table['systems'].items() if s['kind'] == 'staff']
 ok(staff and all(table['systems'][n]['talkactions'] for n in staff), 'staff systems: their talkactions are listed')
 inv = table['opcodes'].get('invasion', {})
-ok(inv and 'start' not in inv['actions'] and 'start' in inv['skip'], 'a bot never starts an invasion')
+ok(inv and 'start' not in inv['actions'], 'a bot never starts an invasion')
+# only what the client really sends: the item tooltip asks with "get" (its `kind == "slot"` is no action)
+eq(table['opcodes']['itemTooltip']['actions'], ['get'], 'the item tooltip: the action the client sends')
+eq(table['opcodes']['nemesis']['actions'], ['get'], 'nemesis: its guard `action ~= "get"` is read')
+ok('Open' in table['opcodes']['stash']['sub']['make'], 'the stash: its sub-actions (make)')
 for name, (sysname, place, op) in [(p[0], p) for p in sendable.places]:
     ok(table['systems'][sysname]['kind'] not in ('out', 'staff'), name + ': a place of an allowed system')
 
@@ -214,6 +218,12 @@ a2 = Args()
 a2.next_request, a2.scenarios_runner = None, None
 bot.args = a2
 eq(asyncio.run(bot.do_opcodes({'stop': False})), False, 'without --scenarios the behaviour does nothing')
+
+# a sub-action goes into the data (the stash: make)
+sub = TS.Scenarios({'opcodes': {'stash': {'opcode': 110, 'actions': ['Stash'], 'dataKeys': ['make'], 'out': False,
+                                          'sub': {'make': ['Open']}}}, 'systems': {}, 'npcs': []}, {}, random.Random(1))
+eq(json.loads(sub.payload(Bot('Tester S', 9), 110, 'Stash', {})), {'action': 'Stash', 'data': {'make': 'Open'}},
+   'a stash request names its make')
 
 for f in FAILS:
     print('FAIL ' + f)

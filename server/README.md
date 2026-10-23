@@ -6379,6 +6379,12 @@ neighbour first, never on a floor change or a teleport, next to an NPC only wher
 nearest answers, `chaos_npc_focus.lua`: a Material Broker in a row of stalls never heard the bot's "hi"), next to a
 locker only on an adjacent tile, with the locker's stack position, and looks for a locker 45 tiles round the temple on
 its floor and the ones above and below. A shop failure says whether the NPC answered at all.
+The coverage table (`gen_tester_scenarios.py`) sends only the actions the client module really sends on an opcode
+(a server comparison the client never sends, such as the item tooltip's `kind == "slot"`, is no request), reads a
+handler's guard `action ~= "get"` as well as `action == "get"`, and fills a sub-action in the data (the stash's
+`make`: Open, SendItems, ...). Before, 9 systems (charms, groundloot, item tooltip, loadouts, nemesis, pact, party
+markers, stash, veiled) were tried with requests their servers ignore and never counted ok. The report puts the
+systems that never answered, with no refusal and no log error, on one line "no answer, no error".
 
 ```
 sudo /opt/chaos/repo/server/deploy/chaos-ctl.sh testers start 100 60 --restart 300

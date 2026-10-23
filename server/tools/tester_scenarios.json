@@ -6,10 +6,10 @@
   "game_monkchi"
  ],
  "counts": {
-  "opcode": 54,
+  "opcode": 57,
   "out": 38,
-  "passive": 65,
-  "place": 14,
+  "passive": 63,
+  "place": 13,
   "staff": 10
  },
  "generated_by": "server/tools/gen_tester_scenarios.py",
@@ -155,8 +155,7 @@
    "actions": [
     "get",
     "open",
-    "title",
-    "add"
+    "title"
    ],
    "client": [
     "game_achievements"
@@ -169,11 +168,7 @@
    ],
    "opcode": 250,
    "out": false,
-   "skip": [
-    "grant",
-    "stat",
-    "reset"
-   ],
+   "skip": [],
    "systems": [
     "achievements"
    ]
@@ -194,11 +189,7 @@
    "out": true,
    "skip": [
     "answer",
-    "another",
-    "score",
-    "check_fail",
-    "temple",
-    "check"
+    "another"
    ],
    "systems": [
     "antibot"
@@ -228,10 +219,7 @@
    "skip": [
     "queue",
     "open",
-    "leave",
-    "join",
-    "stop",
-    "slots"
+    "leave"
    ],
    "systems": [
     "arena"
@@ -242,6 +230,7 @@
     "clear",
     "add",
     "remove",
+    "show",
     "open",
     "sync"
    ],
@@ -315,14 +304,7 @@
     "leave",
     "queue",
     "board",
-    "query",
-    "item",
-    "cosmetic",
-    "stop",
-    "slots",
-    "min",
-    "off",
-    "on"
+    "query"
    ],
    "systems": [
     "battleground"
@@ -339,9 +321,7 @@
     "list",
     "summary",
     "open",
-    "query",
-    "family",
-    "hunt"
+    "query"
    ],
    "client": [
     "game_bestiary"
@@ -379,7 +359,10 @@
    ]
   },
   "bossSpawns": {
-   "actions": [],
+   "actions": [
+    "refresh",
+    "open"
+   ],
    "client": [
     "game_bossspawns"
    ],
@@ -440,14 +423,7 @@
   "candlemarks": {
    "actions": [
     "buy",
-    "open",
-    "item",
-    "gem",
-    "cosmetic",
-    "pocketboss",
-    "call",
-    "take",
-    "refund"
+    "open"
    ],
    "client": [
     "game_candlemarks"
@@ -460,15 +436,15 @@
    ],
    "opcode": 176,
    "out": false,
-   "skip": [
-    "give"
-   ],
+   "skip": [],
    "systems": [
     "candlemarks"
    ]
   },
   "castbar": {
-   "actions": [],
+   "actions": [
+    "cancel"
+   ],
    "client": [
     "game_castbar"
    ],
@@ -483,6 +459,7 @@
   },
   "charms": {
    "actions": [
+    "container",
     "activate",
     "restore",
     "drop"
@@ -511,12 +488,9 @@
   },
   "chronicle": {
    "actions": [
+    "mem",
     "close",
-    "open",
-    "status",
-    "world",
-    "stone",
-    "refresh"
+    "open"
    ],
    "client": [
     "game_chronicle"
@@ -535,9 +509,7 @@
    "opcode": 171,
    "out": false,
    "skip": [
-    "memset",
-    "complete",
-    "reset"
+    "memset"
    ],
    "systems": [
     "chronicle",
@@ -606,10 +578,7 @@
    "skip": [
     "close",
     "open",
-    "donate",
-    "add",
-    "modifier",
-    "stage"
+    "donate"
    ],
    "systems": [
     "community"
@@ -631,17 +600,7 @@
    "skip": [
     "buy",
     "open",
-    "close",
-    "shards",
-    "relics",
-    "u",
-    "omen",
-    "attune",
-    "shard",
-    "conv",
-    "refine",
-    "give",
-    "pity"
+    "close"
    ],
    "systems": [
     "conquest"
@@ -654,20 +613,7 @@
     "select",
     "preview",
     "hello",
-    "wardrobe",
-    "footprint",
-    "outline",
-    "killfx",
-    "spellskin",
-    "lootbeam",
-    "chatcolor",
-    "fx",
-    "vfx",
-    "missile",
-    "vmissile",
-    "close",
-    "sync",
-    "all"
+    "wardrobe"
    ],
    "client": [
     "game_cosmetics",
@@ -695,8 +641,7 @@
     "apply",
     "select",
     "open",
-    "clear",
-    "remove"
+    "clear"
    ],
    "client": [
     "game_crafting"
@@ -774,9 +719,7 @@
   "depotTabs": {
    "actions": [
     "open",
-    "style",
-    "other",
-    "tab"
+    "style"
    ],
    "client": [
     "game_depottabs"
@@ -802,15 +745,7 @@
     "craft",
     "ready",
     "leave",
-    "query",
-    "buff",
-    "sigil",
-    "status",
-    "clear",
-    "skip",
-    "boon",
-    "offer",
-    "portal"
+    "query"
    ],
    "client": [
     "game_descent"
@@ -831,8 +766,7 @@
    "opcode": 205,
    "out": false,
    "skip": [
-    "start",
-    "reset"
+    "start"
    ],
    "systems": [
     "descent"
@@ -883,8 +817,7 @@
     "open",
     "close",
     "offer",
-    "offerQuote",
-    "get"
+    "offerQuote"
    ],
    "client": [
     "game_embercache"
@@ -905,13 +838,7 @@
     "deliver",
     "close",
     "open",
-    "turnin",
-    "gear",
-    "orbs",
-    "aura",
-    "mount",
-    "buy",
-    "craft"
+    "turnin"
    ],
    "client": [
     "game_factions"
@@ -938,8 +865,7 @@
     "buy",
     "open",
     "reroll",
-    "close",
-    "new"
+    "close"
    ],
    "client": [
     "game_gamble"
@@ -1074,10 +1000,7 @@
     "declare",
     "refresh",
     "close",
-    "open",
-    "end",
-    "expire",
-    "time"
+    "open"
    ],
    "systems": [
     "guildwar"
@@ -1097,8 +1020,7 @@
     "clear",
     "remove",
     "move",
-    "place",
-    "get"
+    "place"
    ],
    "client": [
     "game_hideout"
@@ -1136,11 +1058,9 @@
   "hunt": {
    "actions": [
     "restock",
+    "restockQuote",
     "close",
-    "open",
-    "pause",
-    "resume",
-    "get"
+    "open"
    ],
    "client": [
     "game_hunt"
@@ -1187,9 +1107,7 @@
     "buy",
     "store",
     "services",
-    "catalog",
-    "xml",
-    "rev"
+    "catalog"
    ],
    "client": [
     "game_chaosinfo"
@@ -1231,10 +1149,7 @@
   "invasion": {
    "actions": [
     "calendar",
-    "query",
-    "status",
-    "check",
-    "areas"
+    "query"
    ],
    "client": [
     "game_invasion"
@@ -1247,14 +1162,7 @@
    ],
    "opcode": 251,
    "out": false,
-   "skip": [
-    "start",
-    "stop",
-    "schedule",
-    "breach",
-    "wave",
-    "event"
-   ],
+   "skip": [],
    "systems": [
     "invasion"
    ]
@@ -1278,8 +1186,7 @@
   "itemLink": {
    "actions": [
     "register",
-    "get",
-    "slot"
+    "get"
    ],
    "client": [
     "game_chatlinks"
@@ -1302,8 +1209,7 @@
   },
   "itemTooltip": {
    "actions": [
-    "slot",
-    "container"
+    "get"
    ],
    "client": [
     "game_itemtooltip"
@@ -1365,11 +1271,7 @@
    ],
    "opcode": 229,
    "out": false,
-   "skip": [
-    "reset",
-    "shift",
-    "rebuild"
-   ],
+   "skip": [],
    "systems": [
     "leaderboard",
     "records"
@@ -1441,8 +1343,8 @@
   },
   "mapMarkers": {
    "actions": [
-    "set",
-    "all"
+    "hello",
+    "set"
    ],
    "client": [
     "game_mapmarkers"
@@ -1457,17 +1359,16 @@
    ],
    "opcode": 153,
    "out": false,
-   "skip": [
-    "reset",
-    "rescan"
-   ],
+   "skip": [],
    "systems": [
     "partymarkers",
     "poi"
    ]
   },
   "mapmarks": {
-   "actions": [],
+   "actions": [
+    "watch"
+   ],
    "client": [
     "game_mapoverlay"
    ],
@@ -1524,14 +1425,7 @@
     "sellable",
     "mine",
     "history",
-    "open",
-    "slot",
-    "container",
-    "item",
-    "gold",
-    "coins",
-    "activate",
-    "wallet"
+    "open"
    ],
    "systems": [
     "market"
@@ -1563,17 +1457,16 @@
    "opcode": 194,
    "out": true,
    "skip": [
-    "title",
-    "cosmetic",
-    "item",
-    "unlink"
+    "open"
    ],
    "systems": [
     "mentor"
    ]
   },
   "monsterbar": {
-   "actions": [],
+   "actions": [
+    "query"
+   ],
    "client": [
     "game_monsterbar"
    ],
@@ -1608,8 +1501,7 @@
   },
   "nemesis": {
    "actions": [
-    "avenge",
-    "hunt"
+    "get"
    ],
    "client": [
     "game_nemesis"
@@ -1671,8 +1563,7 @@
     "mine",
     "place",
     "wallet",
-    "open",
-    "activate"
+    "open"
    ],
    "systems": [
     "orbexchange"
@@ -1681,7 +1572,8 @@
   "pact": {
    "actions": [
     "days",
-    "extra"
+    "extra",
+    "info"
    ],
    "client": [
     "game_pact"
@@ -1730,10 +1622,7 @@
     "post",
     "unlist",
     "unqueue",
-    "queue",
-    "error",
-    "joined",
-    "inviteExpired"
+    "queue"
    ],
    "systems": [
     "party_finder"
@@ -1744,9 +1633,7 @@
     "open",
     "close",
     "kick",
-    "invite",
-    "state",
-    "lead"
+    "invite"
    ],
    "client": [
     "game_partyframes"
@@ -1773,8 +1660,7 @@
     "refund",
     "resetPreset",
     "masteryChoose",
-    "planApply",
-    "sendNodes"
+    "planApply"
    ],
    "client": [
     "game_passivetree"
@@ -1842,13 +1728,7 @@
    ],
    "opcode": 254,
    "out": false,
-   "skip": [
-    "give",
-    "xp",
-    "level",
-    "reset",
-    "species"
-   ],
+   "skip": [],
    "systems": [
     "pets"
    ]
@@ -1857,8 +1737,7 @@
    "actions": [
     "set",
     "open",
-    "sync",
-    "loot"
+    "sync"
    ],
    "client": [
     "game_pouches"
@@ -1937,21 +1816,7 @@
     "buy",
     "open",
     "enter",
-    "query",
-    "start",
-    "warden",
-    "captured",
-    "expired",
-    "cosmetic",
-    "item",
-    "embers",
-    "status",
-    "contest",
-    "window",
-    "hold",
-    "testip",
-    "nopz",
-    "cooldown"
+    "query"
    ],
    "systems": [
     "pvpzone"
@@ -1965,21 +1830,7 @@
     "buy",
     "open",
     "leave",
-    "query",
-    "add",
-    "totem",
-    "swap",
-    "trash",
-    "boss",
-    "gear",
-    "marks",
-    "status",
-    "kill",
-    "phase",
-    "mech",
-    "stacks",
-    "close",
-    "portal"
+    "query"
    ],
    "client": [
     "game_raid"
@@ -1998,8 +1849,7 @@
    "opcode": 213,
    "out": false,
    "skip": [
-    "start",
-    "reset"
+    "start"
    ],
    "systems": [
     "raid"
@@ -2029,8 +1879,7 @@
   },
   "rift": {
    "actions": [
-    "query",
-    "rimefloor"
+    "query"
    ],
    "client": [
     "game_rift"
@@ -2059,8 +1908,7 @@
    "actions": [
     "alloc",
     "refund",
-    "open",
-    "clear"
+    "open"
    ],
    "client": [
     "game_riftatlas"
@@ -2076,8 +1924,7 @@
    "opcode": 210,
    "out": false,
    "skip": [
-    "reset",
-    "grant"
+    "reset"
    ],
    "systems": [
     "atlas"
@@ -2106,17 +1953,7 @@
     "join",
     "beat",
     "open",
-    "sync",
-    "outfit",
-    "addon",
-    "mount",
-    "title",
-    "passxp",
-    "items",
-    "look",
-    "status",
-    "clear",
-    "set"
+    "sync"
    ],
    "client": [
     "game_season"
@@ -2141,12 +1978,7 @@
    ],
    "opcode": 246,
    "out": false,
-   "skip": [
-    "start",
-    "end",
-    "stat",
-    "reset"
-   ],
+   "skip": [],
    "systems": [
     "season",
     "season_journey",
@@ -2160,18 +1992,7 @@
     "frame",
     "tiers",
     "claimAll",
-    "open",
-    "daily",
-    "outfit",
-    "mount",
-    "shader",
-    "title",
-    "item",
-    "coins",
-    "tierskips",
-    "premium",
-    "unlock",
-    "transmog"
+    "open"
    ],
    "client": [
     "game_battlepass"
@@ -2197,8 +2018,7 @@
    "opcode": 227,
    "out": false,
    "skip": [
-    "giftPrice",
-    "xp"
+    "giftPrice"
    ],
    "systems": [
     "seasonpass"
@@ -2211,20 +2031,7 @@
     "search",
     "history",
     "preview",
-    "buy",
-    "bundle",
-    "wings",
-    "aura",
-    "shader",
-    "frame",
-    "outfit",
-    "addons",
-    "mount",
-    "unlock",
-    "pact",
-    "item",
-    "premium",
-    "service"
+    "buy"
    ],
    "client": [
     "game_shop"
@@ -2255,13 +2062,7 @@
    "opcode": 218,
    "out": false,
    "skip": [
-    "gift_coins",
-    "refuse",
-    "reuse",
-    "pay_packs",
-    "pay_create",
-    "pay_status",
-    "pay_cancel"
+    "gift_coins"
    ],
    "systems": [
     "shop",
@@ -2282,16 +2083,7 @@
    "skip": [
     "open",
     "join",
-    "leave",
-    "winner",
-    "start",
-    "match",
-    "end",
-    "stop",
-    "portal",
-    "arena",
-    "signup",
-    "clear"
+    "leave"
    ],
    "systems": [
     "siege"
@@ -2299,14 +2091,7 @@
   },
   "spellbook": {
    "actions": [
-    "open",
-    "conjure",
-    "summon",
-    "damage",
-    "heal",
-    "buff",
-    "utility",
-    "spellbook"
+    "open"
    ],
    "client": [
     "game_spellbook"
@@ -2326,8 +2111,7 @@
   },
   "stash": {
    "actions": [
-    "gems",
-    "locked"
+    "Stash"
    ],
    "client": [
     "game_stash"
@@ -2348,6 +2132,16 @@
    "opcode": 110,
    "out": false,
    "skip": [],
+   "sub": {
+    "make": [
+     "SendCategories",
+     "SendItems",
+     "Stash",
+     "ChangeStash",
+     "Open",
+     "StashAllRequest"
+    ]
+   },
    "systems": [
     "stash"
    ]
@@ -2403,9 +2197,7 @@
    "actions": [
     "open",
     "select",
-    "cast",
-    "field",
-    "get"
+    "cast"
    ],
    "client": [
     "game_townportal"
@@ -2428,9 +2220,7 @@
     "looks",
     "apply",
     "remove",
-    "open",
-    "close",
-    "all"
+    "open"
    ],
    "client": [
     "game_transmog"
@@ -2665,7 +2455,7 @@
    "files": [
     "bossspawns.lua"
    ],
-   "kind": "place",
+   "kind": "opcode",
    "opcodes": [
     "bossSpawns"
    ],
@@ -3425,23 +3215,21 @@
     "manashield.lua",
     "monster_tiers.lua"
    ],
-   "kind": "passive",
+   "kind": "opcode",
    "opcodes": [
     "monsterbar"
    ],
-   "talkactions": [],
-   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+   "talkactions": []
   },
   "map_marks": {
    "files": [
     "map_marks.lua"
    ],
-   "kind": "passive",
+   "kind": "opcode",
    "opcodes": [
     "mapmarks"
    ],
-   "talkactions": [],
-   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+   "talkactions": []
   },
   "market": {
    "files": [

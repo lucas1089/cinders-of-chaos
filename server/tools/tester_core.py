@@ -301,7 +301,7 @@ def build_report(run, log):
     if cov:
         # short enough to paste: only what needs a look; the fine, out of scope and passive systems are counted
         L.append('== System coverage, what needs a look (tried / ok / errors; never reached)')
-        fine, skipped = 0, {}
+        fine, skipped, silent = 0, {}, []
         for system, c in sorted(cov.items()):
             tried, okn, err, why = c.get('tried', 0), c.get('ok', 0), c.get('errors', 0), c.get('why') or ''
             if tried and okn and not err:
@@ -310,10 +310,17 @@ def build_report(run, log):
             if not tried and why.startswith(('out of scope', 'passive')):
                 skipped.setdefault(why, []).append(system)
                 continue
+            if tried and not okn and not err and not c.get('refused', 0):
+                silent.append(system)
+                continue
             L.append('  %-22s %5d %5d %5d%s' % (system, tried, okn, err,
                                                 '  never reached: ' + why if not tried and why else ''))
         # one line per reason: what bots cannot do stays visible, but short
         for why, names in sorted(skipped.items()):
             L.append('  never reached: %s: %s' % (why, ', '.join(names)))
+        if silent:
+            # sent, never answered and no log error: the request needs data the bot does not have (an item id, a
+            # choice); a bug shows as a log error or a refusal
+            L.append('  no answer, no error: %s' % ', '.join(silent))
         L.append('  (%d systems fine: not listed)' % fine)
     return '\n'.join(L) + '\n'

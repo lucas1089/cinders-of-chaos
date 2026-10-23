@@ -82,11 +82,14 @@ PLACES = {
     'service_npcs': 'shop', 'npc_booths': 'shop', 'npc_place': 'shop',
 }
 
-ACTION_RE = re.compile(r'\b(?:action|act|a|kind|cmd|what|op)\s*==\s*"([A-Za-z_][\w]*)"')
+# `x == "a"` and the guard `x ~= "a"` (a handler of one action returns on any other)
+ACTION_RE = re.compile(r'\b(?:action|act|a|kind|cmd|what|op)\s*[~=]=\s*"([A-Za-z_][\w]*)"')
 DATA_RE = re.compile(r'\b(?:data|d|msg\.data|payload)\.([a-z][A-Za-z0-9_]*)\b')
 LOCAL_OP_RE = re.compile(r'\blocal\s+(\w+)\s*=\s*\(?\s*(?:ChaosOpcodes\s+and\s+)?ChaosOpcodes\.(\w+)')
 COMPARE_RE = re.compile(r'\b(?:op|opcode|code)\s*[~=]=\s*([\w.]+)')
 TALK_RE = re.compile(r'TalkAction\(\s*"([^"]+)"')
+# a sub-action in the data (the stash: {action = "Stash", data = {make = "Open"}}): its values, sent as that data key
+SUB_RE = re.compile(r'\bdata\.(make)\s*==\s*"([A-Za-z_]\w*)"')
 CLIENT_ACTION_RES = [re.compile(r'\baction\s*=\s*["\']([A-Za-z_]\w*)["\']'),
                      re.compile(r'\b(?:send|sendAction|request|sendMessage|sendRequest)\(\s*["\']([A-Za-z_]\w*)["\']'),
                      re.compile(r'\\?"action\\?"\s*:\s*\\?"([A-Za-z_]\w*)')]
@@ -249,8 +252,17 @@ def build():
         ordered = []
         for _, acts in mods:
             ordered += [a for a in acts if a in t['actions'] and a not in ordered]
-        t['actions'] = ordered + [a for a in t['actions'] if a not in ordered]
+        # what the client really sends: a server comparison the client never sends is no request (the item tooltip's
+        # `kind == "slot"` is a position kind, not an action); no client actions found: every server one
+        t['actions'] = ordered if ordered else t['actions']
         t['client'] = [m for m, _ in mods]
+        sub = {}
+        for f in t['files']:
+            for k, v in SUB_RE.findall(clean[f]):
+                if v not in sub.setdefault(k, []) and v not in ADMIN and not DENY_RE.search(v):
+                    sub[k].append(v)
+        if sub:
+            t['sub'] = sub
     systems = {}
     for f in files:
         base = f.rsplit('/', 1)[-1]
