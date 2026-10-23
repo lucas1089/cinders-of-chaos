@@ -15,7 +15,9 @@
 --     drops the locked target and the attack;
 --   * the settings are saved per character (/characterdata/characters/<name>/helper.json) through ChaosHelperSave: no save
 --     before the file was read, a checked write with a backup, a save at once on death and logout.
--- There are no runes (the server removed them), no cavebot and no scripts.
+-- Runes (helper_runes.lua: healing runes on yourself, attack runes on the target), Auto sell (helper_sell.lua: asks the
+-- store's Auto Seller to sell the Loot Bag), Follow (helper_follow.lua) and the heals of the party and a list of friends
+-- (helper_ally.lua) were added back on 2026-10-23 (owner request). There is no cavebot and there are no scripts.
 _Helper = {}
 local H = _Helper
 H._suppressMessages = false
@@ -24,11 +26,15 @@ local Cfg = ChaosHelperCfg
 local Logic = ChaosHelperLogic
 local Spl = ChaosHelperSpells
 local Pot = ChaosHelperPotions
+local Runes = ChaosHelperRunes
+local Sell = ChaosHelperSell
+local Follow = ChaosHelperFollow
+local Ally = ChaosHelperAlly
 
 -- ---------------------------------------------------------------- numbers
 local TICK_MS = 50
 local EVERY = { heal = 250, mana = 100, routine = 1000, haste = 500, shooter = 100, target = 250, hud = 250, status = 500,
-  exercise = 10000 }
+  exercise = 10000, runes = 250, ally = 250, follow = 250, sell = 1000 }
 local AFK_SECONDS = 180        -- Auto Target switches itself off after this long without a key or click
 local FREEZE_MS = 2500         -- the server sent nothing for this long: wait until it is back
 local FREEZE_RESUME_MS = 1500
@@ -70,6 +76,7 @@ local frozenUntil = 0
 local errorsSeen = {}
 local lastLevel, lastVocation = nil, nil
 local noticeAt = {}
+local sellState, followState, allyState = Sell.newState(), Follow.newState(), Ally.newState()
 
 local function now() return g_clock.millis() end
 local function me() return g_game.getLocalPlayer() end
@@ -120,10 +127,10 @@ H.canUseByServerVoc = function(vocations, serverVocId)
   return serverVocId ~= nil and type(vocations) == 'table' and table.contains(vocations, serverVocId)
 end
 
-local function spellCtx(player)
+local function spellCtx(player, allowParameter)
   player = player or me()
   if not player then return nil end
-  return { vocation = player:getVocation(), level = player:getLevel(),
+  return { vocation = player:getVocation(), level = player:getLevel(), allowParameter = allowParameter == true,
     known = function(id) return playerHasSpell(player, id) end }
 end
 
@@ -180,9 +187,9 @@ end
 
 -- can this spell go out now: the character can cast it, the mana is there, it is off cooldown, the server's answer to its
 -- last cast is in (ChaosHelperRotation). Returns true or false and a short reason.
-local function ready(spell, player, holdGroups)
+local function ready(spell, player, holdGroups, allowParameter)
   if not spell then return false, 'unknown' end
-  local ctx = spellCtx(player)
+  local ctx = spellCtx(player, allowParameter)
   local ok, why = Spl.castable(spell, ctx)
   if not ok then return false, why end
   if ChaosHelperRotation and not ChaosHelperRotation.castable(spell, player:getLevel(), player:getMana()) then
@@ -194,15 +201,16 @@ local function ready(spell, player, holdGroups)
   return true
 end
 
--- say the spell's words, through the rate guard; true when they went out
-local function cast(spell, channel)
+-- say the spell's words (or `words`: the heal-others spells add a name), through the rate guard; true when they went out
+local function cast(spell, channel, words)
   local t = now()
   local timers = getTimers()
-  if timers and not ChaosHelperTimers.castAllowed(timers, channel or Spl.channel(spell), spell.words, t) then
+  words = words or spell.words
+  if timers and not ChaosHelperTimers.castAllowed(timers, channel or Spl.channel(spell), words, t) then
     return false
   end
   safeDoThing(false)
-  g_game.talk(spell.words)
+  g_game.talk(words)
   safeDoThing(true)
   local r = getRotation()
   if r then ChaosHelperRotation.cast(r, spell.id, spell.group, t) end
@@ -373,9 +381,9 @@ H.getHelperConfig = function() return helperConfig end
 getHelperConfig = H.getHelperConfig
 
 -- ---------------------------------------------------------------- the widgets
-local TAB_PANELS = { healingMenu = 'healingPanel', combatMenu = 'magicShooterPanel', supportMenu = 'supportHost',
-  toolsMenu = 'toolsPanelContainer' }
-local TAB_ORDER = { 'healingMenu', 'combatMenu', 'supportMenu', 'toolsMenu' }
+local TAB_PANELS = { healingMenu = 'healingPanel', combatMenu = 'magicShooterPanel', runesMenu = 'runesPanel',
+  alliesMenu = 'alliesPanel', supportMenu = 'supportHost', toolsMenu = 'toolsPanelContainer' }
+local TAB_ORDER = { 'healingMenu', 'combatMenu', 'runesMenu', 'alliesMenu', 'supportMenu', 'toolsMenu' }
 
 local MODE_NAMES = {
   [1] = tr('Closest'), [2] = tr('Farthest'), [3] = tr('Lowest health'), [4] = tr('Highest health'),
@@ -481,6 +489,91 @@ local function potionUnit(row)
   if kind == 'mana' then return tr('of mana') end
   if kind == 'health' then return tr('of health') end
   return ''
+end
+
+-- ---------------------------------------------------------------- runes (helper_runes.lua)
+-- does the character's class list the rune (only the runes the table knows a class for are limited)
+local function runeClassOk(rune, player)
+  if not rune.vocations then return true end
+  player = player or me()
+  if not player then return false end
+  return Spl.classOk({ vocations = rune.vocations }, player:getVocation())
+end
+
+local function runeCount(id, player)
+  return tonumber(player:getInventoryCount(id, 0)) or 0
+end
+
+-- can the rune go out now: its channel is ready and the client counts one, or the probe gate allows a try (a rune in a
+-- closed backpack is not counted)
+local function runeReady(id, player, channel)
+  local t = now()
+  local timers = getTimers()
+  if timers and not ChaosHelperTimers.useReady(timers, channel, t) then return false end
+  if runeCount(id, player) > 0 then return true end
+  local gate = ChaosPotionGate
+  return gate ~= nil and gate.canUse(id, 0, t)
+end
+
+-- use the rune on a creature (the player itself for a healing rune); true when the use went out
+local function useRune(id, creature, player, channel)
+  if not creature or not runeReady(id, player, channel) then return false end
+  local t = now()
+  local count = runeCount(id, player)
+  safeDoThing(false)
+  g_game.useInventoryItemWith(id, creature, 0, true)
+  safeDoThing(true)
+  local gate = ChaosPotionGate
+  if gate then gate.noteUse(id, count, t) end
+  local timers = getTimers()
+  if timers then ChaosHelperTimers.used(timers, channel, t) end
+  return true
+end
+
+local function runeOptions(kind, current)
+  local o = { { text = tr('(empty)'), data = 0 } }
+  local player = me()
+  local seen = {}
+  for _, r in ipairs(Runes.offered(kind, function(rune) return runeClassOk(rune, player) end)) do
+    o[#o + 1] = { text = tr(r.name), data = r.id }
+    seen[r.id] = true
+  end
+  current = tonumber(current) or 0
+  if current > 0 and not seen[current] then
+    local info = Runes.info(current)
+    o[#o + 1] = { text = info and tr(info.name) or tostring(current), data = current }
+  end
+  return o
+end
+
+-- the attack rune rows of the selected preset (older presets may lack them)
+local function runeRowsOf(profile)
+  if type(profile.runes) ~= 'table' then profile.runes = {} end
+  for i = 1, Cfg.RUNE_ROWS do
+    if type(profile.runes[i]) ~= 'table' then profile.runes[i] = Cfg.newRune(i) end
+  end
+  return profile.runes
+end
+
+-- the heal-others spells of the allies tab: { { name, spell, entry } } the class may cast (names allowed)
+local function allyOptions(list, current)
+  local o = { { text = tr('(empty)'), data = 0 } }
+  local player = me()
+  local seen = {}
+  if player then
+    local ctx = spellCtx(player, true)
+    local offered = Ally.offered(list, spellById, function(sp) return Spl.castable(sp, ctx) end, player:getVocation())
+    for _, e in ipairs(offered) do
+      o[#o + 1] = { text = e.name, data = e.spell.id }
+      seen[e.spell.id] = true
+    end
+  end
+  current = tonumber(current) or 0
+  if current > 0 and not seen[current] then
+    local sp = spellById(current)
+    o[#o + 1] = { text = sp and sp.name or tostring(current), data = current }
+  end
+  return o
 end
 
 local function changed()
@@ -631,6 +724,53 @@ local function buildRows()
   end
 end
 
+-- the rune rows and the allies' pickers (the Runes and Allies tabs)
+local function buildRuneRows()
+  ui.runeHeal, ui.rune = {}, {}
+  for i, row in ipairs(stack(W.runeHealRows, 'ChaosHelperPotionRow', Cfg.RUNE_HEAL_ROWS, 'runeHealRow')) do
+    local r = { potion = row:getChildById('potion'), percent = row:getChildById('percent'),
+      unit = row:getChildById('unit') }
+    r.unit:setText(tr('of health'))
+    r.potion.onOptionChange = function(_, _, data)
+      if building then return end
+      helperConfig.runeHeal[i].id = tonumber(data) or 0
+      changed()
+    end
+    r.percent.onOptionChange = function(_, _, data)
+      if building then return end
+      helperConfig.runeHeal[i].percent = tonumber(data) or 50
+      changed()
+    end
+    ui.runeHeal[i] = r
+  end
+  for i, row in ipairs(stack(W.runeAttackRows, 'ChaosHelperRuneRow', Cfg.RUNE_ROWS, 'runeRow')) do
+    local r = { rune = row:getChildById('rune'), creatures = row:getChildById('creatures'),
+      hpMin = row:getChildById('hpMin'), hpMax = row:getChildById('hpMax') }
+    local function cfgRow() return runeRowsOf(currentProfile())[i] end
+    r.rune.onOptionChange = function(_, _, data)
+      if building then return end
+      cfgRow().id = tonumber(data) or 0
+      changed()
+    end
+    r.creatures.onOptionChange = function(_, _, data)
+      if building then return end
+      cfgRow().creatures = tonumber(data) or 1
+      changed()
+    end
+    r.hpMin.onOptionChange = function(_, _, data)
+      if building then return end
+      cfgRow().hpMin = tonumber(data) or 0
+      changed()
+    end
+    r.hpMax.onOptionChange = function(_, _, data)
+      if building then return end
+      cfgRow().hpMax = tonumber(data) or 0
+      changed()
+    end
+    ui.rune[i] = r
+  end
+end
+
 -- the preset combo -----------------------------------------------------
 local function fillPresets()
   local names = Cfg.profileNames(helperConfig)
@@ -643,6 +783,69 @@ local function selectProfile(name)
   if not helperConfig.shooterProfiles[name] then return end
   helperConfig.selectedShooterProfile = name
   helperConfig.autoTargetMode = currentProfile().autoTargetMode or Cfg.MODE_DEFAULT
+end
+
+-- the Runes tab from the config
+local function refreshRunes()
+  if not ui.rune then return end
+  local was = building
+  building = true
+  local pcts = percentOptions(5, 95, 5)
+  for i, r in ipairs(ui.runeHeal) do
+    local e = helperConfig.runeHeal[i]
+    setOptions(r.potion, runeOptions('heal', e.id), e.id)
+    setOptions(r.percent, pcts, e.percent)
+  end
+  local rows = runeRowsOf(currentProfile())
+  local counts, mins, maxs = {}, {}, { { text = tr('Any'), data = 0 } }
+  for n = 1, Cfg.CREATURES_MAX do counts[#counts + 1] = { text = tostring(n), data = n } end
+  for v = 0, 90, 10 do mins[#mins + 1] = { text = v .. ' %', data = v } end
+  for v = 10, 100, 10 do maxs[#maxs + 1] = { text = v .. ' %', data = v } end
+  for i, r in ipairs(ui.rune) do
+    local e = rows[i]
+    setOptions(r.rune, runeOptions('attack', e.id), e.id)
+    setOptions(r.creatures, counts, e.creatures)
+    setOptions(r.hpMin, mins, e.hpMin)
+    setOptions(r.hpMax, maxs, e.hpMax)
+  end
+  building = was
+end
+
+-- the Allies tab from the config (party and friends heals, Follow)
+local function refreshAllies()
+  if not W.partyEnable then return end
+  local was = building
+  building = true
+  local a = helperConfig.allies
+  local pcts = percentOptions(5, 95, 5)
+  W.partyEnable:setChecked(a.party.enabled == true)
+  setOptions(W.partyPercent, pcts, a.party.percent)
+  W.friendsEnable:setChecked(a.friends.enabled == true)
+  setOptions(W.friendsPercent, pcts, a.friends.percent)
+  for i = 1, Cfg.ALLY_NAMES do
+    local w = W['friendName' .. i]
+    if w then w:setText(a.friends.names[i] or '') end
+  end
+  local single = ui.allySpell
+  setOptions(single.spell, allyOptions(Ally.SINGLE, a.spell), a.spell)
+  setIcon(single.icon, a.spell)
+  local group = ui.allyGroup
+  setOptions(group.spell, allyOptions(Ally.GROUP, a.group.id), a.group.id)
+  setIcon(group.icon, a.group.id)
+  local counts = {}
+  for n = 1, Cfg.GROUP_COUNT_MAX do counts[#counts + 1] = { text = tostring(n), data = n } end
+  setOptions(group.count, counts, a.group.count)
+  setOptions(ui.allyRune.spell, runeOptions('heal', a.rune.id), a.rune.id)
+  local f = helperConfig.follow
+  W.followEnable:setChecked(f.enabled == true)
+  setOptions(W.followMode, { { text = tr('A friend by name'), data = 'name' }, { text = tr('The party leader'), data = 'leader' } },
+    f.mode)
+  W.followName:setText(f.name or '')
+  W.followName:setEnabled(f.mode ~= 'leader')
+  local d = {}
+  for n = 1, Cfg.FOLLOW_DISTANCE_MAX do d[#d + 1] = { text = tostring(n), data = n } end
+  setOptions(W.followDistance, d, f.distance)
+  building = was
 end
 
 function H.refreshShooter()
@@ -672,6 +875,7 @@ function H.refreshShooter()
   W.priorityTargets:setEnabled(E ~= nil)
   W.onlyReachable:setEnabled(E ~= nil)
   building = false
+  refreshRunes()
 end
 
 local function refreshHealing()
@@ -712,6 +916,19 @@ local function refreshTools()
   setOptions(W.exerciseWeapon, o, ex.id)
   W.exerciseEnable:setChecked(ex.enabled == true)
   local hud = helperConfig.botHud
+  local sell = helperConfig.autoSell
+  W.sellEnable:setChecked(sell.enabled == true)
+  local mins = {}
+  for _, m in ipairs(Sell.MINUTES) do mins[#mins + 1] = { text = tr('Every %d minutes', m), data = m } end
+  setOptions(W.sellMinutes, mins, sell.minutes)
+  W.sellBelowCap:setChecked(sell.belowCap == true)
+  local caps, haveCap = {}, false
+  for _, v in ipairs({ 50, 100, 200, 300, 500, 1000 }) do
+    caps[#caps + 1] = { text = tr('At %d oz or less', v), data = v }
+    if v == sell.capacity then haveCap = true end
+  end
+  if not haveCap then caps[#caps + 1] = { text = tr('At %d oz or less', sell.capacity), data = sell.capacity } end
+  setOptions(W.sellCapacity, caps, sell.capacity)
   W.hudEnable:setChecked(hud.enabled == true)
   local sizes = {}
   for _, s in ipairs(Cfg.HUD_SIZES) do sizes[#sizes + 1] = { text = tr(s), data = s } end
@@ -729,6 +946,7 @@ function H.reloadUi()
   lists = nil
   refreshHealing()
   H.refreshShooter()
+  refreshAllies()
   refreshTools()
   building = true
   W.helperEnabled:setChecked(enabled())
@@ -782,6 +1000,118 @@ function H.setHelperEnabled(on, showMessage)
 end
 H.setHelperAutomaticFunctionsEnabled = H.setHelperEnabled
 
+-- the Allies tab: the pickers of the heal spells and the rune, and the switches of party, friends and Follow
+local function buildAllyRows()
+  local function pick(row)
+    return { icon = row:getChildById('icon'), spell = row:getChildById('spell'), label = row:getChildById('label'),
+      count = row:getChildById('count') }
+  end
+  local a = function() return helperConfig.allies end
+  ui.allySpell, ui.allyGroup, ui.allyRune = pick(W.allySpellRow), pick(W.allyGroupRow), pick(W.allyRuneRow)
+  ui.allySpell.icon:setId('allySpellIcon')
+  ui.allySpell.label:hide()
+  ui.allySpell.count:hide()
+  ui.allySpell.spell.onOptionChange = function(_, _, data)
+    if building then return end
+    a().spell = tonumber(data) or 0
+    setIcon(ui.allySpell.icon, a().spell)
+    changed()
+  end
+  ui.allyGroup.icon:setId('allyGroupIcon')
+  ui.allyGroup.label:setText(tr('when this many need it'))
+  ui.allyGroup.spell.onOptionChange = function(_, _, data)
+    if building then return end
+    a().group.id = tonumber(data) or 0
+    setIcon(ui.allyGroup.icon, a().group.id)
+    changed()
+  end
+  ui.allyGroup.count.onOptionChange = function(_, _, data)
+    if building then return end
+    a().group.count = tonumber(data) or 1
+    changed()
+  end
+  ui.allyRune.icon:hide()
+  ui.allyRune.label:hide()
+  ui.allyRune.count:hide()
+  ui.allyRune.spell.onOptionChange = function(_, _, data)
+    if building then return end
+    a().rune.id = tonumber(data) or 0
+    changed()
+  end
+  W.partyEnable.onCheckChange = function(_, checked)
+    if building then return end
+    a().party.enabled = checked
+    changed()
+  end
+  W.partyPercent.onOptionChange = function(_, _, data)
+    if building then return end
+    a().party.percent = tonumber(data) or 70
+    changed()
+  end
+  W.friendsEnable.onCheckChange = function(_, checked)
+    if building then return end
+    a().friends.enabled = checked
+    changed()
+  end
+  W.friendsPercent.onOptionChange = function(_, _, data)
+    if building then return end
+    a().friends.percent = tonumber(data) or 70
+    changed()
+  end
+  for i = 1, Cfg.ALLY_NAMES do
+    local w = W['friendName' .. i]
+    w.onTextChange = function(_, text)
+      if building then return end
+      -- only a clean name is kept (letters, spaces, ' and -): it goes into a chat line
+      a().friends.names[i] = Ally.cleanName(text) or ''
+      changed()
+    end
+  end
+  W.followEnable.onCheckChange = function(_, checked)
+    if building then return end
+    helperConfig.follow.enabled = checked
+    changed()
+  end
+  W.followMode.onOptionChange = function(_, _, data)
+    if building then return end
+    helperConfig.follow.mode = data == 'leader' and 'leader' or 'name'
+    W.followName:setEnabled(helperConfig.follow.mode ~= 'leader')
+    changed()
+  end
+  W.followName.onTextChange = function(_, text)
+    if building then return end
+    helperConfig.follow.name = Ally.cleanName(text) or ''
+    changed()
+  end
+  W.followDistance.onOptionChange = function(_, _, data)
+    if building then return end
+    helperConfig.follow.distance = tonumber(data) or 1
+    changed()
+  end
+  -- Auto sell (the Tools tab)
+  W.sellEnable.onCheckChange = function(_, checked)
+    if building then return end
+    helperConfig.autoSell.enabled = checked
+    sellState = Sell.newState()
+    changed()
+  end
+  W.sellMinutes.onOptionChange = function(_, _, data)
+    if building then return end
+    helperConfig.autoSell.minutes = tonumber(data) or Sell.DEFAULT_MINUTES
+    changed()
+  end
+  W.sellBelowCap.onCheckChange = function(_, checked)
+    if building then return end
+    helperConfig.autoSell.belowCap = checked
+    changed()
+  end
+  W.sellCapacity.onOptionChange = function(_, _, data)
+    if building then return end
+    helperConfig.autoSell.capacity = tonumber(data) or 100
+    changed()
+  end
+end
+
 local function buildWindow()
   g_ui.importStyle('styles/helper')
   helper = g_ui.createWidget('ChaosHelperWindow', g_ui.getRootWidget())
@@ -789,9 +1119,15 @@ local function buildWindow()
   local ids = { 'healRows', 'potionRows', 'slotRows', 'trainingRow', 'hasteRow', 'presetCombo', 'newPresetButton',
     'renameButton', 'duplicateButton', 'deleteButton', 'enableMagicShooter', 'enableAutoTarget', 'autoTargetMode',
     'priorityTargets', 'onlyReachable', 'autoEat', 'exerciseEnable', 'exerciseWeapon', 'hudEnable', 'hudSize',
-    'hudTargeting', 'hudHaste', 'hudHealing', 'hudPlayer', 'closeButton', 'statusLine', 'helperEnabled' }
+    'hudTargeting', 'hudHaste', 'hudHealing', 'hudPlayer', 'closeButton', 'statusLine', 'helperEnabled',
+    'runeHealRows', 'runeAttackRows', 'partyEnable', 'partyPercent', 'friendsEnable', 'friendsPercent', 'friendName1',
+    'friendName2', 'friendName3', 'friendName4', 'friendName5', 'allySpellRow', 'allyGroupRow', 'allyRuneRow',
+    'followEnable', 'followMode', 'followName', 'followDistance', 'sellEnable', 'sellMinutes', 'sellBelowCap',
+    'sellCapacity' }
   for _, id in ipairs(ids) do W[id] = helper:recursiveGetChildById(id) end
   buildRows()
+  buildRuneRows()
+  buildAllyRows()
 
   helper.onEscape = function() H.hide() end
   W.closeButton.onClick = function() H.hide() end
@@ -1012,6 +1348,11 @@ local function healTick(player)
   local potion = Pot.pick(helperConfig.potions, { healthPct = hpPct, manaPct = manaPct,
     available = function(pid) return potionAvailable(pid, player) end })
   if potion then usePotion(potion, player) end
+  -- a healing rune on yourself (a carried rune, or a probe for one in a closed backpack)
+  local rune = Runes.pickHeal(helperConfig.runeHeal, { healthPct = hpPct, available = function(rid)
+    return runeReady(rid, player, 'healRune')
+  end })
+  if rune then useRune(rune, player, player, 'healRune') end
 end
 
 local function trainingTick(player)
@@ -1078,6 +1419,107 @@ local function exerciseTick(player)
   safeDoThing(false)
   g_game.useInventoryItemWith(weapon, best)
   safeDoThing(true)
+end
+
+-- ---------------------------------------------------------------- allies, Follow, Auto sell, attack runes
+-- the players in view around `pos`, as { id, name, health, position, shield, isSelf, creature }
+local function playersAround(pos, multiFloor)
+  local out = {}
+  local selfId = me() and me():getId() or 0
+  for _, c in pairs(g_map.getSpectators(pos, multiFloor == true) or {}) do
+    if c:isPlayer() then
+      local p = c:getPosition()
+      if p then
+        out[#out + 1] = { id = c:getId(), name = c:getName(), health = c:getHealthPercent(), position = p,
+          shield = c.getShield and c:getShield() or 0, isSelf = c:getId() == selfId, creature = c }
+      end
+    end
+  end
+  return out
+end
+
+-- heal the party and the friends of the list (helper_ally.lua). Self comes first, a protection zone pauses it.
+local function allyTick(player, pz)
+  local cfg = helperConfig.allies
+  if pz or not (cfg.party.enabled or cfg.friends.enabled) then return end
+  local hpPct = percentOf(player:getHealth(), player:getMaxHealth())
+  if Ally.selfFirst(helperConfig, hpPct) then return end
+  local pos = player:getPosition()
+  local cands = Ally.candidates(cfg, playersAround(pos), pos, { sight = function(a, b) return g_map.isSightClear(a, b) end })
+  if #cands == 0 then return end
+  local vocation = player:getVocation()
+  local function spellFor(id)
+    local entry = Ally.single(id) or Ally.group(id)
+    if not entry then return nil end
+    for _, v in ipairs(entry.vocations or { vocation }) do
+      if v == vocation then return spellById(id) end
+    end
+    return nil
+  end
+  local pick = Ally.pick(cfg, { from = pos, cands = cands, selfFirst = false,
+    manaPct = percentOf(player:getMana(), player:getMaxMana()), spellOf = spellFor,
+    ready = function(spell) return ready(spell, player, false, true) == true end,
+    runeAvailable = function(id)
+      local info = Runes.info(id)
+      return info ~= nil and runeClassOk(info, player) and runeReady(id, player, 'healRune')
+    end })
+  if not pick then return end
+  local t = now()
+  local key = pick.target and pick.target.id or ('group' .. tostring(pick.spell and pick.spell.id))
+  if not Ally.allowed(allyState, key, t) then return end
+  local went = false
+  if pick.kind == 'rune' then
+    went = useRune(pick.id, g_map.getCreatureById(pick.target.id), player, 'healRune')
+  else
+    went = cast(pick.spell, Spl.channel(pick.spell), pick.words)
+  end
+  if went then Ally.noted(allyState, key, t) end
+end
+
+-- follow a friend or the party leader (helper_follow.lua)
+local function followTick(player, pz)
+  local cfg = helperConfig.follow
+  local pos = player:getPosition()
+  local players = cfg.enabled and playersAround(pos, true) or {}
+  local leader = Follow.leaderOf(cfg, players)
+  local followed = g_game.getFollowingCreature and g_game.getFollowingCreature() or nil
+  local act, why = Follow.decide(cfg, followState, { helperOn = enabled(), pz = pz, leader = leader, from = pos,
+    following = followed and followed:getId() or nil, now = now() })
+  status.follow = why
+  if act == 'follow' and leader and leader.creature then
+    g_game.follow(leader.creature)
+  elseif act == 'release' then
+    g_game.cancelFollow()
+  end
+end
+
+-- ask the Auto Seller to sell the Loot Bag (helper_sell.lua); the server decides what is sold
+local function sellTick(player)
+  local cfg = helperConfig.autoSell
+  if not cfg.enabled then return end
+  local pouches = modules.game_pouches
+  if not (pouches and pouches.getAutoSeller and pouches.sellAll and pouches.syncAutoSeller) then return end
+  local act = Sell.decide(cfg, sellState, pouches.getAutoSeller(), { now = now(),
+    freeCap = player.getFreeCapacity and player:getFreeCapacity() or nil, helperOn = enabled() })
+  if act == 'sync' then pouches.syncAutoSeller() elseif act == 'sell' then pouches.sellAll() end
+end
+
+-- an attack rune on the target (helper_runes.lua), while the Magic shooter is on
+local function runesTick(player)
+  if not helperConfig.magicShooterEnabled then return end
+  local target = g_game.getAttackingCreature()
+  if not target or not isTargetable(target) then return end
+  local pos = player:getPosition()
+  local entries = gather(pos)
+  for _, e in ipairs(entries) do e.health = e.creature:getHealthPercent() end
+  local row = Runes.pickAttack(runeRowsOf(currentProfile()), {
+    target = { position = target:getPosition(), health = target:getHealthPercent() }, from = pos, entries = entries,
+    inRange = function(p) return p.z == pos.z and Logic.inReach(pos, p) and g_map.isSightClear(pos, p) end,
+    available = function(id)
+      local info = Runes.info(id)
+      return info ~= nil and runeClassOk(info, player) and runeReady(id, player, 'attackRune')
+    end })
+  if row then useRune(row.id, target, player, 'attackRune') end
 end
 
 -- ---------------------------------------------------------------- Auto Target
@@ -1257,7 +1699,14 @@ local function tick()
     if g_game.getAttackingCreature() then g_game.cancelAttack() end
   end
   pzWas = pz
-  if why == 'helperoff' then return end
+  if why == 'helperoff' then
+    -- the follow the helper started is let go with the switch
+    if followState.ours and following() then
+      followState.ours = false
+      pcall(g_game.cancelFollow)
+    end
+    return
+  end
 
   local function due(key)
     if t - (lastRun[key] or 0) >= EVERY[key] then
@@ -1268,6 +1717,18 @@ local function tick()
   end
 
   if due('heal') then pcall(healTick, player) end
+  if due('ally') then
+    local ok, err = pcall(allyTick, player, pz)
+    if not ok then logOnce('ally heals', err) end
+  end
+  if due('follow') then
+    local ok, err = pcall(followTick, player, pz)
+    if not ok then logOnce('follow', err) end
+  end
+  if due('sell') then
+    local ok, err = pcall(sellTick, player)
+    if not ok then logOnce('auto sell', err) end
+  end
   if due('mana') then pcall(trainingTick, player) end
   if due('haste') then pcall(hasteTick, player, pz) end
   if due('routine') then
@@ -1282,6 +1743,10 @@ local function tick()
     if due('shooter') then
       local ok, err = pcall(shooterTick, player)
       if not ok then logOnce('shooter', err) end
+    end
+    if due('runes') then
+      local ok, err = pcall(runesTick, player)
+      if not ok then logOnce('attack runes', err) end
     end
   end
   if due('hud') and ChaosBotHud and ChaosBotHud.refreshBotHud then pcall(ChaosBotHud.refreshBotHud) end
@@ -1356,6 +1821,7 @@ local function online()
   rotation, castTimers = nil, nil
   spellsCooldown, groupsCooldown = {}, {}
   lastRun, lastHasteAt, lastFoodAt, frozenUntil, pzWas = {}, nil, nil, 0, false
+  sellState, followState, allyState = Sell.newState(), Follow.newState(), Ally.newState()
   local player = me()
   lastLevel = player and player:getLevel() or nil
   if ChaosPotionGate and ChaosPotionGate.reset then ChaosPotionGate.reset() end

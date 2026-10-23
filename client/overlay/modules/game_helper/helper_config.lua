@@ -6,9 +6,16 @@
 --   shooterProfiles[name] = { spells = 5 slots { id, percent, creatures, priority, forceCast, selfCast }, autoTargetMode }
 --   selectedShooterProfile, autoTargetMode (1..8 = A..H, default 6 = F), autoEatFood, magicShooterEnabled,
 --   autoTargetEnabled, helperAutomaticFunctionsEnabled, exercise { id, enabled }, botHud { enabled, size, show* }
+--   runeHeal  2 rows { id, percent }: healing runes on yourself (helper_runes.lua)
+--   shooterProfiles[name].runes  3 attack rune rows { id, creatures, hpMin, hpMax, priority } (helper_runes.lua)
+--   autoSell  { enabled, minutes, belowCap, capacity }: asks the Auto Seller to sell the Loot Bag (helper_sell.lua)
+--   follow    { enabled, mode = 'name' | 'leader', name, distance } (helper_follow.lua)
+--   allies    { party { enabled, percent }, friends { enabled, percent, names }, spell, group { id, count },
+--               rune { id } } (helper_ally.lua)
 -- A file written by the helper this one replaced (rules instead of slots, timers, equipment, ...) loads too: the shooter
--- rules become slots (at most 5 attack spells; the runes of that helper do not exist here), everything this helper does
--- not use stays in the file as it was, so nothing is lost on disk (C.migrate).
+-- rules become slots (at most 5 attack spells) and rune rows (at most 3), its follow friend, named Sio, party heals and
+-- Auto Sell Loot settings become the follow, allies and autoSell sections (once: only while the new section is missing),
+-- everything this helper does not use stays in the file as it was, so nothing is lost on disk (C.migrate).
 -- Every number is clamped and every wrong type falls back to its default (a hand-edited file cannot drive the casts out of
 -- range); ChaosHelperConfig.sanitizeHelper (game_helperrotation) runs first when the file is read.
 ChaosHelperCfg = ChaosHelperCfg or {}
@@ -18,6 +25,13 @@ C.VERSION = 1
 C.SPELL_ROWS = 3
 C.POTION_ROWS = 3
 C.SHOOTER_SLOTS = 5
+C.RUNE_ROWS = 3              -- attack rune rows of a preset
+C.RUNE_HEAL_ROWS = 2         -- healing rune rows (on yourself)
+C.ALLY_NAMES = 5             -- the friends list
+C.GROUP_COUNT_MAX = 8
+C.FOLLOW_DISTANCE_MAX = 5
+C.SELL_MINUTES = { 5, 10, 15, 30, 60 }
+C.CAPACITY_MAX = 100000
 C.CREATURES_MAX = 8          -- the "N+" options of a slot
 C.MODE_DEFAULT = 6           -- F: the closest monster, the lowest health first
 C.MODE_MAX = 8
@@ -58,10 +72,35 @@ function C.newSlot(priority)
   return { id = 0, percent = 0, creatures = 1, priority = priority or 1, forceCast = false, selfCast = false }
 end
 
+function C.newRune(priority)
+  return { id = 0, creatures = 1, hpMin = 0, hpMax = 0, priority = priority or 1 }
+end
+
 function C.newProfile()
-  local spells = {}
+  local spells, runes = {}, {}
   for i = 1, C.SHOOTER_SLOTS do spells[i] = C.newSlot(i) end
-  return { spells = spells, autoTargetMode = C.MODE_DEFAULT }
+  for i = 1, C.RUNE_ROWS do runes[i] = C.newRune(i) end
+  return { spells = spells, runes = runes, autoTargetMode = C.MODE_DEFAULT }
+end
+
+function C.defaultAutoSell()
+  return { enabled = false, minutes = 30, belowCap = false, capacity = 100 }
+end
+
+function C.defaultFollow()
+  return { enabled = false, mode = 'name', name = '', distance = 1 }
+end
+
+function C.defaultAllies()
+  local names = {}
+  for i = 1, C.ALLY_NAMES do names[i] = '' end
+  return {
+    party = { enabled = false, percent = 70 },
+    friends = { enabled = false, percent = 70, names = names },
+    spell = 0,
+    group = { id = 0, count = 2 },
+    rune = { id = 0 },
+  }
 end
 
 function C.defaults()
@@ -75,6 +114,10 @@ function C.defaults()
     training = { { id = 0, percent = 100, enabled = false } },
     haste = { { id = 0, enabled = false, safecast = false } },
     exercise = { id = 0, enabled = false },
+    runeHeal = { { id = 0, percent = 60 }, { id = 0, percent = 40 } },
+    autoSell = C.defaultAutoSell(),
+    follow = C.defaultFollow(),
+    allies = C.defaultAllies(),
     shooterProfiles = { Default = C.newProfile() },
     selectedShooterProfile = 'Default',
     autoEatFood = false,
@@ -164,6 +207,34 @@ function C.rulesToSlots(rules)
   return slots, dropped
 end
 
+-- the rune rules of the former helper ({ type = 'rune', itemId, creatures, hpMin, hpMax, enabled }) and its old rune list
+-- ({ id, creatures, priority }) -> the rune rows of a preset. Only the damage runes of helper_runes.lua are kept (the former
+-- helper also had fields, walls and the like). Returns the rows and how many entries were not carried.
+function C.rulesToRunes(rules, oldList)
+  local rows, dropped = {}, 0
+  local Runes = rawget(_G, 'ChaosHelperRunes')
+  local function add(id, creatures, hpMin, hpMax)
+    id = tonumber(id) or 0
+    if id <= 0 then return end
+    if Runes and Runes.isAttack(id) and #rows < C.RUNE_ROWS then
+      rows[#rows + 1] = { id = id, creatures = int(creatures, 1, C.CREATURES_MAX, 1), hpMin = int(hpMin, 0, 100, 0),
+        hpMax = int(hpMax, 0, 100, 0), priority = #rows + 1 }
+    else
+      dropped = dropped + 1
+    end
+  end
+  for _, r in ipairs(type(rules) == 'table' and rules or {}) do
+    if type(r) == 'table' and r.type == 'rune' and r.enabled ~= false and not r.countLowerThan then
+      add(r.itemId, r.creatures, r.hpMin, r.hpMax)
+    end
+  end
+  for _, r in ipairs(type(oldList) == 'table' and oldList or {}) do
+    if type(r) == 'table' then add(r.id, r.creatures, r.hpMin, r.hpMax) end
+  end
+  for i = #rows + 1, C.RUNE_ROWS do rows[i] = C.newRune(i) end
+  return rows, dropped
+end
+
 -- A shooter profile seen as { rules = ..., <marker> = ... } (the form autorotation_ui.lua works with): reading `rules`
 -- gives the slots as rules, writing `rules` sets the slots; any other key is the profile's own (the Auto rotation marker).
 function C.rotationView(profile, lookup)
@@ -217,19 +288,38 @@ function C.nextProfile(cfg, current)
 end
 
 -- ---------------------------------------------------------------- sanitize / migrate
+local function runeRow(e, i)
+  if type(e) ~= 'table' then e = {} end
+  local out = C.newRune(i)
+  for k, v in pairs(e) do out[k] = v end
+  out.id = int(e.id, 0, C.ID_MAX, 0)
+  out.creatures = int(e.creatures, 1, C.CREATURES_MAX, 1)
+  out.hpMin = int(e.hpMin, 0, 100, 0)
+  out.hpMax = int(e.hpMax, 0, 100, 0)
+  out.priority = int(e.priority, 1, C.RUNE_ROWS * 2, i)
+  return out
+end
+
 local function profile(p)
   if type(p) ~= 'table' then return C.newProfile() end
   -- the former helper kept rules: carry the spell rules into the slots (once), keep the original list aside
-  if type(p.rules) == 'table' and not p.spellsFromRules and not C.isSlotList(p.spells) then
+  local hadRules = type(p.rules) == 'table'
+  if hadRules and not p.spellsFromRules and not C.isSlotList(p.spells) then
     local slots = C.rulesToSlots(p.rules)
     p.legacyRules = p.legacyRules or p.rules
     p.spells = slots
     p.spellsFromRules = true
   end
+  -- its rune rules and its old rune list become the rune rows, once (runesVersion marks a list of this helper)
+  if p.runesVersion == nil and (hadRules or type(p.runes) == 'table') then
+    p.runes = (C.rulesToRunes(p.rules, p.runes))
+  end
+  p.runesVersion = 1
   p.rules = nil
-  p.runes = nil
   p.spells = rowsOf(p.spells, C.SHOOTER_SLOTS, function(e) return e end)
   for i = 1, C.SHOOTER_SLOTS do p.spells[i] = slot(p.spells[i], i) end
+  p.runes = rowsOf(p.runes, C.RUNE_ROWS, function(e) return e end)
+  for i = 1, C.RUNE_ROWS do p.runes[i] = runeRow(p.runes[i], i) end
   p.autoTargetMode = int(p.autoTargetMode, 1, C.MODE_MAX, C.MODE_DEFAULT)
   return p
 end
@@ -255,6 +345,150 @@ local function hud(h)
   -- the sections of the former HUD this helper has no rows for
   h.showEquipment, h.showTimers, h.showAutomation, h.showCavebot, h.showWaypoints = nil, nil, nil, nil, nil
   return h
+end
+
+-- ---------------------------------------------------------------- the four sections of the owner's 2026-10-23 request
+local function cleanName(v)
+  local A = rawget(_G, 'ChaosHelperAlly')
+  if A then return A.cleanName(v) end
+  return nil
+end
+
+local function minutesOf(v, default)
+  local n = tonumber(v)
+  for _, m in ipairs(C.SELL_MINUTES) do
+    if n == m then return m end
+  end
+  return default
+end
+
+local function sellSection(a)
+  local d = C.defaultAutoSell()
+  if type(a) ~= 'table' then return d end
+  a.enabled = bool(a.enabled, false)
+  a.minutes = minutesOf(a.minutes, d.minutes)
+  a.belowCap = bool(a.belowCap, false)
+  a.capacity = int(a.capacity, 0, C.CAPACITY_MAX, d.capacity)
+  return a
+end
+
+local function followSection(f)
+  local d = C.defaultFollow()
+  if type(f) ~= 'table' then return d end
+  f.enabled = bool(f.enabled, false)
+  if f.mode ~= 'name' and f.mode ~= 'leader' then f.mode = 'name' end
+  f.name = cleanName(f.name) or ''
+  f.distance = int(f.distance, 1, C.FOLLOW_DISTANCE_MAX, 1)
+  return f
+end
+
+local function runeHealSection(list)
+  local out = {}
+  if type(list) ~= 'table' then list = {} end
+  local defaults = { 60, 40 }
+  for i = 1, C.RUNE_HEAL_ROWS do
+    local e = type(list[i]) == 'table' and list[i] or {}
+    e.id = int(e.id, 0, C.ID_MAX, 0)
+    e.percent = int(e.percent, 1, 99, defaults[i])
+    out[i] = e
+  end
+  return out
+end
+
+local function alliesSection(a)
+  local d = C.defaultAllies()
+  if type(a) ~= 'table' then return d end
+  if type(a.party) ~= 'table' then a.party = d.party end
+  a.party.enabled = bool(a.party.enabled, false)
+  a.party.percent = int(a.party.percent, 1, 99, d.party.percent)
+  if type(a.friends) ~= 'table' then a.friends = d.friends end
+  a.friends.enabled = bool(a.friends.enabled, false)
+  a.friends.percent = int(a.friends.percent, 1, 99, d.friends.percent)
+  local names, seen = {}, {}
+  for i = 1, C.ALLY_NAMES do
+    local n = type(a.friends.names) == 'table' and cleanName(a.friends.names[i]) or nil
+    if n and not seen[n:lower()] then
+      seen[n:lower()] = true
+      names[i] = n
+    else
+      names[i] = ''
+    end
+  end
+  a.friends.names = names
+  a.spell = int(a.spell, 0, C.ID_MAX, 0)
+  if type(a.group) ~= 'table' then a.group = d.group end
+  a.group.id = int(a.group.id, 0, C.ID_MAX, 0)
+  a.group.count = int(a.group.count, 1, C.GROUP_COUNT_MAX, d.group.count)
+  if type(a.rune) ~= 'table' then a.rune = d.rune end
+  a.rune.id = int(a.rune.id, 0, C.ID_MAX, 0)
+  return a
+end
+
+-- the highest percent of the enabled vocations of an old per-vocation table (friendhealing, gransiohealing, masreshealing),
+-- or nil when none is on
+local function oldVocationPercent(t)
+  if type(t) ~= 'table' then return nil end
+  local best
+  for _, voc in ipairs({ 'knight', 'paladin', 'sorcerer', 'druid', 'monk' }) do
+    local v = t[voc]
+    if type(v) == 'table' and v.enabled == true then
+      local pct = int(v.percent, 1, 99, 90)
+      if not best or pct > best then best = pct end
+    end
+  end
+  return best
+end
+
+-- The settings of the former helper for these four features, read once: only while the new section is missing from the
+-- file. The old keys stay in the file. Returns the number of sections taken over.
+function C.migrateOld(c)
+  local n = 0
+  if c.autoSell == nil and (c.autoQuillSell ~= nil or c.autoQuillSellBelowCap ~= nil) then
+    -- "Auto Sell Loot" (the Summon Quill): the Auto Seller sells the Loot Bag every 30 minutes, and when the capacity is low
+    -- if that was the old option
+    c.autoSell = { enabled = c.autoQuillSell == true, minutes = 30, belowCap = c.autoQuillSellBelowCap == true,
+      capacity = c.autoQuillSellCapacity }
+    n = n + 1
+  end
+  if c.follow == nil and (c.followFriendEnabled ~= nil or c.followFriendName ~= nil) then
+    c.follow = { enabled = c.followFriendEnabled == true, mode = 'name', name = c.followFriendName, distance = 1 }
+    n = n + 1
+  end
+  if c.allies == nil then
+    local a = C.defaultAllies()
+    local took = false
+    local party = oldVocationPercent(c.friendhealing)
+    if party then
+      a.party.enabled, a.party.percent, took = true, party, true
+    end
+    local gran = oldVocationPercent(c.gransiohealing)
+    local mass = oldVocationPercent(c.masreshealing)
+    if gran or party then
+      -- Nature's Embrace first when it was on (its Chaos spell is Heartwood Embrace), else Heal Friend (Kindred Mend)
+      a.spell = gran and 101 or 84
+      took = true
+    end
+    if mass then
+      a.group = { id = 82, count = 1 }
+      if not party then a.party.enabled, a.party.percent = true, mass end
+      took = true
+    end
+    local named = c.namedSio
+    if type(named) == 'table' and (named.enabled == true or (type(named.name) == 'string' and named.name ~= '')) then
+      local Ally = rawget(_G, 'ChaosHelperAlly')
+      local names = Ally and Ally.parseNames(named.name, C.ALLY_NAMES) or {}
+      for i = 1, C.ALLY_NAMES do a.friends.names[i] = names[i] or '' end
+      a.friends.enabled = named.enabled == true
+      a.friends.percent = int(named.percent, 1, 99, 90)
+      if a.spell == 0 then a.spell = named.spell == 'gransio' and 101 or 84 end
+      took = true
+    end
+    if took then
+      c.allies = a
+      n = n + 1
+    end
+  end
+  return n
 end
 
 -- the config as decoded (any age): fixed in place and returned. Not a table: the defaults.
@@ -284,6 +518,11 @@ function C.sanitize(c)
     r.safecast = bool(r.safecast, false)
     return r
   end)
+  C.migrateOld(c)
+  c.runeHeal = runeHealSection(c.runeHeal)
+  c.autoSell = sellSection(c.autoSell)
+  c.follow = followSection(c.follow)
+  c.allies = alliesSection(c.allies)
   if type(c.exercise) ~= 'table' then c.exercise = d.exercise end
   c.exercise.id = int(c.exercise.id, 0, C.ID_MAX, 0)
   c.exercise.enabled = bool(c.exercise.enabled, false)

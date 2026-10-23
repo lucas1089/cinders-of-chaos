@@ -25,9 +25,11 @@ HC.ABSOLUTE_MAX = 10000000    -- an equip rule on HP / MP points
 HC.WORDS_MAX = 64             -- Auto setup's remembered timer words
 HC.TEXT_MAX = 128
 HC.VOCATIONS = { knight = 5, paladin = 4, sorcerer = 3, druid = 2, monk = 1 } -- the default priority of each
--- settings of helper options base patch 0105 removed, dropped on load: Cure Paralyze, Auto Sell Loot (a Summon Quill
--- or a summoned sell NPC, neither on this server), Quiver Refill (no quiver slot in 10.98, hidden since the start)
-HC.DROPPED = { 'paralyzeCure', 'autoQuillSell', 'autoQuillSellBelowCap', 'autoQuillSellCapacity', 'quiverRefill' }
+-- settings of helper options base patch 0105 removed, dropped on load: Cure Paralyze, Quiver Refill (no quiver slot in
+-- 10.98, hidden since the start). The old Auto Sell Loot settings (autoQuillSell*) are NOT dropped any more: the
+-- game_helper module reads them once into its autoSell section (helper_config.lua migrateOld, 2026-10-23), and this
+-- clean-up runs before that.
+HC.DROPPED = { 'paralyzeCure', 'quiverRefill' }
 -- fields inside a kept table: Exana Vita (no spell ends the ward here) and the bot HUD's cavebot rows (no cavebot)
 HC.DROPPED_FIELDS = { magicShield = { 'exanaEnabled', 'exanaHpPercent' }, botHud = { 'showCavebot', 'showWaypoints' } }
 

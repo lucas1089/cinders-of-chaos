@@ -83,14 +83,15 @@ function S.classOk(spell, vocation, translate)
 end
 
 -- the common rules. ctx = { vocation = server vocation id, level = n, translate = fn, known = fn(id) -> bool (optional:
--- the character has learnt it) }. Returns true, or false and the reason.
+-- the character has learnt it, allowParameter: a spell that takes a typed name is fine (the heal-others spells of
+-- helper_ally.lua, which put a cleaned name after the words)) }. Returns true, or false and the reason.
 function S.castable(spell, ctx)
   ctx = ctx or {}
   if type(spell) ~= 'table' or type(spell.id) ~= 'number' or spell.id <= 0 then return false, 'entry' end
   if spell.notOnServer then return false, 'server' end
   if type(spell.words) ~= 'string' or spell.words == '' then return false, 'words' end
   if spell.type ~= nil and spell.type ~= 'Instant' then return false, 'type' end -- no runes, no conjuring
-  if spell.parameter then return false, 'parameter' end
+  if spell.parameter and not ctx.allowParameter then return false, 'parameter' end
   if S.isUtility(spell) then return false, 'utility' end
   if not S.classOk(spell, ctx.vocation, ctx.translate) then return false, 'class' end
   if (tonumber(spell.level) or 0) > (tonumber(ctx.level) or 0) then return false, 'level' end
