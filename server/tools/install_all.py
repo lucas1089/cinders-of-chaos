@@ -298,6 +298,9 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                scripts that checked and took the carried coins only (NPC travel, horses, outfits, blessings, table shops,
                the crafting table, ...) use them (README "Gold payments: carried coins, then the bank"; late: after
                every step that writes a removeMoney into a script)
+  jsonguards   tools/patch_base_json_guards.py   the base extended opcode handlers (store, tasks, upgrades, inspect, character
+               stats, waystone device) accept only a JSON object: valid JSON that is not one was a Lua error per packet
+               (README "Engine hardening (sanitizers, fuzzing)"; late: after the steps that patch the same files)
   sql          server/sql/chaos.sql, then every other server/sql/*.sql (sorted), then the rename_spells UPDATEs, against
                the game database (CREATE TABLE IF NOT EXISTS / plain UPDATEs, safe to repeat)
 
@@ -1097,6 +1100,14 @@ def step_bankpayments(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('sql'), 'bankpayments')  # late, right before sql: after every step that writes a removeMoney
+
+
+def step_jsonguards(server, data, ctx):
+    args = [tool('patch_base_json_guards.py'), data] + (['--dry-run'] if ctx['dry'] else [])
+    return tool_result(run_tool(args, 'patch_base_json_guards.py'))
+
+
+STEPS.insert(STEPS.index('sql'), 'jsonguards')  # late: after events, waystonehideout and the other steps on those files
 
 
 def step_autoloot(server, data, ctx):

@@ -1,0 +1,25 @@
+# The scheduler's timers outlive their service at exit (server/README.md "Engine hardening (sanitizers, fuzzing)").
+# Found by the AddressSanitizer build (server/tools/build_sanitized.sh): a heap-use-after-free at every shutdown.
+# Scheduler (scheduler.h) declared its map of pending timers before its io_context; members are destroyed in the
+# reverse order, so ~io_context destroyed the timer service first and each timer still in the map then read the freed
+# service in its own destructor (any shutdown with a scheduled event pending: always, the game has hundreds). A
+# shutdown after the save (the daily restart) could crash or corrupt the heap on its way out; the sanitizer build
+# reports it every time. The map now comes after io_context, so the timers go first.
+# Apply in the server source root after 0001-0060: patch -p1 < 0061-scheduler-timers-before-service.patch.
+diff --git a/src/scheduler.h b/src/scheduler.h
+--- a/src/scheduler.h
++++ b/src/scheduler.h
+@@ -46,9 +46,12 @@
+ 		void threadMain() { io_context.run(); }
+ 	private:
+ 		std::atomic<uint32_t> lastEventId{0};
+-		std::unordered_map<uint32_t, boost::asio::steady_timer> eventIdTimerMap;
+ 		boost::asio::io_context io_context;
+ 		boost::asio::io_context::work work{io_context};
++		// Chaos (patch 0061): after io_context, so it is destroyed first. Members are destroyed in the reverse order;
++		// with the map first, ~io_context freed the timer service and the map's timers then read it at exit (a
++		// heap-use-after-free, AddressSanitizer at every shutdown with a timer still pending).
++		std::unordered_map<uint32_t, boost::asio::steady_timer> eventIdTimerMap;
+ };
+ 
+ extern Scheduler g_scheduler;
