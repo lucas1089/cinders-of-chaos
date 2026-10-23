@@ -195,6 +195,9 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                the ground, never an inventory slot: the roulettes (no retired item in their pools, nil guards), the
                task rewards, the crafting script, the ship NPC (README "Prizes into the backpack"; after badges and
                basecrafting)
+  roulette     tools/patch_roulette.py           the Boss Roulette's prize pool from chaos/boss_roulette_config.lua: crafting
+               orbs, sockets, gold scaled to the level, a unique chest, badges and catalysts, two cards; no deck, ship
+               or boat (README "Boss Roulette"; after prizes)
   jewelry      tools/patch_base_jewelry.py       rings and necklaces are permanent equipment: the worn id's stats on the
                unworn id, no transformation, duration or charges (items.xml), a DeEquip entry for each such ring
                (movements.xml); the consumables of data/lib/chaos_jewelry.lua stay as they are; the 29 loot bases
@@ -912,6 +915,14 @@ def step_prizes(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('badges') + 1, 'prizes')  # after badges (its retired ids) and basecrafting (CraftGuard)
+
+
+def step_roulette(server, data, ctx):
+    args = [tool('patch_roulette.py'), data] + (['--dry-run'] if ctx['dry'] else [])
+    return tool_result(run_tool(args, 'patch_roulette.py'))
+
+
+STEPS.insert(STEPS.index('prizes') + 1, 'roulette')  # the pool after the prizes hook (same roulette script)
 
 
 def step_jewelry(server, data, ctx):

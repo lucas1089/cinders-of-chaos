@@ -8,6 +8,7 @@
 --   ChaosPrizes.toInbox(player, item)   a worn item out of a slot no client shows: the store inbox, else the depot
 --        inbox. -> "store inbox" | "inbox" | nil (nothing moved)
 --   ChaosPrizes.rouletteReward(playerId, config, position, label)   the base roulettes' rewardPlayer
+--   ChaosPrizes.bossPrize(player, w)   the Boss Roulette's gold (scaled to the level) and unique chest (O148)
 -- Lua 5.1 / LuaJIT compatible.
 
 if not Chaos then
@@ -18,6 +19,10 @@ if not ChaosI18n then
 end
 if not ChaosPrizesCore or not ChaosPrizesCore.winner then
 	dofile("data/scripts/chaos/prizes_core.lua")
+end
+
+if not ChaosBossRouletteConfig then
+	ChaosBossRouletteConfig = dofile("data/scripts/chaos/boss_roulette_config.lua")
 end
 
 ChaosPrizes = ChaosPrizes or {}
@@ -154,6 +159,50 @@ local function readThing(thing)
 		showCharges = it and it:hasShowCharges() or false}
 end
 
+-- the Boss Roulette prizes that are not the tile's item (boss_roulette_config.lua): crystal coins on the tile are gold
+-- scaled to the winner's level, the chest is a unique of the winner's level. true when the prize was given.
+function P.bossPrize(player, w)
+	local cfg = ChaosBossRouletteConfig
+	local e = cfg and K.entryOf(cfg, w.id)
+	if not e then
+		return false
+	end
+	if e.kind == "gold" then
+		local gold = K.goldFor(cfg, w.count, player:getLevel())
+		for _, st in ipairs(K.coinStacks(gold)) do
+			if not P.give(player, st[1], st[2]) then
+				return false
+			end
+		end
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE or MESSAGE_INFO_DESCR,
+			text(player, K.TEXT_GOLD, tostring(gold)))
+		return true
+	elseif e.kind == "unique" then
+		if not (ChaosLoot and ChaosLoot.uniqueList and ChaosMakeUnique) then
+			return false
+		end
+		local choices = K.uniqueChoices(cfg, ChaosLoot.uniqueList(), player:getLevel())
+		if #choices == 0 then
+			return false
+		end
+		local pick = choices[math.random(#choices)]
+		local item = Game.createItem(pick.id, 1)
+		if not item then
+			return false
+		end
+		ChaosMakeUnique(item)
+		if not place(player, item) then
+			item:remove()
+			return false
+		end
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE or MESSAGE_INFO_DESCR, text(player, K.TEXT_UNIQUE, pick.name))
+		Game.broadcastMessage("The player " .. player:getName() .. " has won the unique " .. pick.name
+			.. " from the boss roulette!", MESSAGE_EVENT_ADVANCE)
+		return true
+	end
+	return false
+end
+
 -- the base rewardPlayer: the prize on the winning tile goes to the player (give), the free spin storage is cleared, a
 -- rare prize is broadcast as before. When the tile holds no prize any more, nothing is given and the storage stays, so
 -- the next spin is free (the base's own rule for a spin that went wrong).
@@ -171,7 +220,9 @@ function P.rouletteReward(playerId, config, position, label)
 		player:sendTextMessage(MESSAGE_EVENT_ADVANCE or MESSAGE_INFO_DESCR, text(player, K.TEXT_LOST_SPIN))
 		return false
 	end
-	if not P.give(player, w.id, w.count, w.charges) then
+	-- the Boss Roulette's gold and unique chest are worked out here (O148); anything else, or a failure, is the item itself
+	local done = tostring(label) == "boss" and P.bossPrize(player, w)
+	if not done and not P.give(player, w.id, w.count, w.charges) then
 		player:sendTextMessage(MESSAGE_EVENT_ADVANCE or MESSAGE_INFO_DESCR, text(player, K.TEXT_LOST_SPIN))
 		return false
 	end

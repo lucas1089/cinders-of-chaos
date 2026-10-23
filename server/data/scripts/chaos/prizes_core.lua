@@ -111,6 +111,111 @@ function K.odds(pool)
 	return out
 end
 
+-- ---------------------------------------------------------------------------------------------------------------------
+-- Boss Roulette prizes that are not a plain item (boss_roulette_config.lua, O148): gold that grows with the level and a
+-- unique of the winner's level. The tile shows an ordinary item (crystal coins, a chest); these functions say what the
+-- winner gets.
+-- ---------------------------------------------------------------------------------------------------------------------
+
+-- the roulette config entry of a won item id: the first pool entry with that id (nil when none)
+function K.entryOf(cfg, id)
+	id = tonumber(id)
+	for _, e in ipairs(cfg and cfg.pool or {}) do
+		if tonumber(e.id) == id then
+			return e
+		end
+	end
+	return nil
+end
+
+-- piecewise linear on {{x, y}, ...}, flat beyond the ends
+function K.curve(points, x)
+	if not points or #points == 0 then
+		return 0
+	end
+	x = tonumber(x) or 0
+	if x <= points[1][1] then
+		return points[1][2]
+	end
+	for i = 2, #points do
+		local a, b = points[i - 1], points[i]
+		if x <= b[1] then
+			return a[2] + (b[2] - a[2]) * (x - a[1]) / (b[1] - a[1])
+		end
+	end
+	return points[#points][2]
+end
+
+-- the gold of a gold prize: `units` (the crystal coins the tile showed) x gold.perUnit of an hour of hunting gold at the
+-- winner's level, rounded to whole crystal coins, at least one
+function K.goldFor(cfg, units, level)
+	local g = cfg and cfg.gold or {}
+	local perHour = K.curve(g.hunting, level)
+	local gold = (tonumber(units) or 1) * (tonumber(g.perUnit) or 0) * perHour
+	return math.max(10000, math.floor(gold / 10000 + 0.5) * 10000)
+end
+
+-- whole gold as coin stacks, largest first: list of {id, count}
+function K.coinStacks(gold)
+	gold = math.floor(tonumber(gold) or 0)
+	local out = {}
+	for _, c in ipairs({{2160, 10000}, {2152, 100}, {2148, 1}}) do
+		local n = math.floor(gold / c[2])
+		if n > 0 then
+			out[#out + 1] = {c[1], n}
+			gold = gold - n * c[2]
+		end
+	end
+	return out
+end
+
+-- the uniques a unique chest may hold for a winner of this level: no season unique, no Ascended one, no boss-only one,
+-- an item level in [level x low, level x high]; none in the band: those of the highest item level at most the level
+-- (the lowest ones when the level is below all). list = ChaosLoot.uniqueList() entries {id, name, level, ...}
+function K.uniqueChoices(cfg, list, level)
+	local u = cfg and cfg.unique or {}
+	local lo, hi = (tonumber(u.low) or 0.5) * level, (tonumber(u.high) or 1) * level
+	local band, below, best = {}, {}, nil
+	for _, e in ipairs(list or {}) do
+		if not e.season and not e.ascended and not e.bossOnly and tonumber(e.level) then
+			local lv = tonumber(e.level)
+			if lv >= lo and lv <= hi then
+				band[#band + 1] = e
+			elseif lv < lo then
+				if not best or lv > best then
+					best = lv
+					below = {}
+				end
+				if lv == best then
+					below[#below + 1] = e
+				end
+			end
+		end
+	end
+	if #band > 0 then
+		return band
+	end
+	if #below > 0 then
+		return below
+	end
+	local lowest, out = nil, {}
+	for _, e in ipairs(list or {}) do
+		if not e.season and not e.ascended and not e.bossOnly and tonumber(e.level) then
+			if not lowest or tonumber(e.level) < lowest then
+				lowest = tonumber(e.level)
+				out = {}
+			end
+			if tonumber(e.level) == lowest then
+				out[#out + 1] = e
+			end
+		end
+	end
+	return out
+end
+
+K.TEXT_GOLD = "Your roulette prize is %s gold, scaled to your level."
+K.TEXT_UNIQUE = "The chest held a unique: %s!"
+
 K.TEXT_INBOX = "Your prize %s is in your Purse (the store inbox): your backpack had no room."
 K.TEXT_GROUND = "Your prize %s is on the ground under you: your backpack and your Purse had no room."
 K.TEXT_LOST_SPIN = "The roulette could not find your prize. Your next spin is free."

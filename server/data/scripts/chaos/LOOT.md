@@ -83,7 +83,10 @@ ChaosUniqueItems = {
 * `id` (number > 0) is required; entries without it are ignored.
 * `minTier`: `normal|magic|rare|legendary|boss`, ranks 0..4 (`unique.tierRank`); a boss satisfies "legendary".
   If absent, the first element of an optional `tiers = {...}` list is used, else `"normal"`.
-* Optional extra: `minMonsterLevel` (checked against `Monster:getMonsterLevel()`).
+* Optional extra: `minMonsterLevel` (checked against `ChaosLoot.monsterLevel`, falling back on `Monster:getMonsterLevel()`). With
+  `unique.open.enabled` such an entry (not boss-only) ignores its `monsters` list on a monster of that level or more and drops at
+  `unique.open.mult` x its chance; the unique roll reads the pack's notable share, not the thin loot factor (README "Boss Roulette and
+  uniques in the hunts (O148)").
 * Effective chance = `chance * unique.tierMult[tier]` (normal 0, magic 1, rare 2, legendary 4, boss 6) `* itemFind`,
   clamped to `unique.maxChance`. `normal` kills never drop uniques (multiplier 0; change in config).
 * At most `unique.maxPerKill` (1) per kill; if several hit, one is picked at random.

@@ -674,6 +674,16 @@ function L.pityGroup(e)
 	return "monster"
 end
 
+-- the pack factor a unique roll reads: the loot factor of the kill (pace x a pocket's), at least the notable share of
+-- the corpse (L.corpseFactors: pace_config.lua `notable`, 1 from monster level 700; a pocket's factor included)
+function L.uniquePace(pace, corpseF)
+	pace = tonumber(pace) or 1
+	if corpseF and tonumber(corpseF.notable) then
+		return math.max(pace, tonumber(corpseF.notable))
+	end
+	return pace
+end
+
 -- returns list of unique entries that dropped (at most unique.maxPerKill, random among the hits)
 -- owner (optional): the Player the drop is for; season uniques only drop for that season's characters (season.lua).
 -- With an owner and Conquest Tokens loaded (conquest.lua) every eligible entry's chance is x the owner's bad-luck
@@ -702,11 +712,19 @@ function L.rollUniques(tier, monsterName, monsterLevel, itemFind, source, owner)
 		if ok and e.bossOnly and tier ~= "boss" then
 			ok = false
 		end
-		if ok and not monsterListed(e.monsters, monsterName) then
-			ok = false
-		end
 		if ok and e.minMonsterLevel and (monsterLevel or 0) < e.minMonsterLevel then
 			ok = false
+		end
+		-- O148: an entry with a minimum monster level is not held to its monster list on a monster of that level
+		-- (beta 2026-10-23: ~1000 Rare / Legendary kills in the level 1500 hunts, no unique: the endgame uniques listed
+		-- twelve waystone monsters, no hunt monster); such a drop gets u.open.mult on its chance
+		local open = false
+		if ok and not monsterListed(e.monsters, monsterName) then
+			if e.minMonsterLevel and u.open and u.open.enabled and not e.bossOnly then
+				open = true
+			else
+				ok = false
+			end
 		end
 		if ok and e.season and ChaosSeason and ChaosSeason.uniqueBlocked and ChaosSeason.uniqueBlocked(e.season, owner) then
 			ok = false
@@ -714,6 +732,9 @@ function L.rollUniques(tier, monsterName, monsterLevel, itemFind, source, owner)
 		if ok then
 			local group = pity and L.pityGroup(e)
 			local chance = e.chance * mult * (itemFind or 1) * (group and pity(group) or 1)
+			if open then
+				chance = chance * (tonumber(u.open.mult) or 1)
+			end
 			if chance > u.maxChance then
 				chance = u.maxChance
 			end
@@ -1286,7 +1307,13 @@ local function processKill(monster, corpse)
 
 	-- 4. uniques
 	local u = c.unique
-	for _, e in ipairs(L.rollUniques(tier, typeNameOf(monster), level, ctx.itemFind * pace, nil, owner)) do
+	-- the level is the monster's level as the orb and waystone gates read it (a waystone map's monster counts at its
+	-- run's level, a base monster at its hunting level), not only its own getMonsterLevel (0 for those)
+	local uniqueLevel = math.max(level, ctx.orbLevel or 0)
+	-- a unique is a notable drop: it keeps the notable share of the pack factor (pace_config.lua `notable`, 1 from
+	-- monster level 700), like a Rare piece of gear, not the thin per-kill loot factor (0.15-0.2 in the late sets)
+	local uniquePace = L.uniquePace(pace, corpseF)
+	for _, e in ipairs(L.rollUniques(tier, typeNameOf(monster), uniqueLevel, ctx.itemFind * uniquePace, nil, owner)) do
 		local item = (L.addToCorpse(corpse, e.id, 1))
 		if item then
 			if ChaosMakeUnique then

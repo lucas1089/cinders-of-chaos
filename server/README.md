@@ -12230,7 +12230,7 @@ inventory slot:
 No other base script hands out a deck, ship, belt or gloves (searched by id and by name). A badge prize lands in a
 visible slot at worst.
 
-**Boss roulette odds** (`ChaosPrizesCore.odds`: every entry rolls its chance in 10000, one of the hits is picked at
+**Boss roulette odds** (superseded by "Boss Roulette and uniques in the hunts (O148)" below; `ChaosPrizesCore.odds`: every entry rolls its chance in 10000, one of the hits is picked at
 random, no hit rolls again; exact). The three retired entries were 27.8% of the spins. Their chances are left out and
 the others keep theirs, so every remaining prize is about 1.35 times as likely: the Furious badges 15.7 / 14.9 / 13.8 /
 11.0 / 10.5 / 8.8 / 7.4 / 6.3 / 5.2% (were 11.2 / 10.6 / 9.9 / 7.9 / 7.6 / 6.4 / 5.4 / 4.6 / 3.8%), each of the four
@@ -12244,6 +12244,100 @@ decoration tile, no tile, a logged-out player, no room anywhere. `tools/patch_pr
 roulettes, one it can't read left alone, CRLF, the pool lines, the hook's tile and label, the guards, the task, crafting
 and NPC lines, a second run, `--check`, the patched Lua parses). On a copy of the base data: 8 files, a second run
 changes nothing, every patched file parses in Lua 5.3 and LuaJIT. Not run on a live server.
+
+## Boss Roulette and uniques in the hunts (O148)
+
+Beta feedback 2026-10-23, two reports: (1) "I spun the Boss Roulette twice. One reward was the golden deck, the other a boat. The
+roulette also shows lots of card rewards. Some rewards look useless on this server." (2) "I killed loads of Rare and Legendary
+monsters standing in hunts (~1000) and never got a Unique, only gear they already drop, more orbs and gold. I understood Rare
+monsters beyond some level had a chance at a Unique."
+
+### The Boss Roulette (`boss_roulette_config.lua`, `tools/patch_roulette.py`, `prizes.lua`/`prizes_core.lua`, `tests/boss_roulette_test.lua`)
+
+**What it was.** The base boss roulette (lever room, token 28033) had 16 prizes: three decks and a ship (27.8% of the spins, the
+golden deck and The Awakener ship the player saw), nine Furious badges and four legendary level 6 cards. The prizes step of
+2026-10-22 already took the decks and the ship out of the install, so a beta server that had not installed it still showed them;
+what was left was 93.6% Furious badges (the second of five tiers) and 6.4% cards, no orb, no gold, no unique. Nothing in it came
+from the loot models.
+
+**What it is.** The pool is `data/scripts/chaos/boss_roulette_config.lua` (one line per prize: id, count, chance, kind). The install
+step `roulette` (`tools/patch_roulette.py`, after `prizes`, idempotent, CRLF kept) writes those lines into the `prizePool` of the base
+boss roulette script (found by its "Boss Roulette requires" text) and sets the broadcast threshold to the config's `rareThreshold`
+(120: only the chase orbs are announced). The other four roulettes (exercise, premium, the two crystal token ones) are not touched.
+The base draw stays: every entry rolls its chance in 10000, one hit is picked at random (`ChaosPrizesCore.odds` is exact).
+
+| Kind | Prizes | Share of the spins |
+|---|---|---|
+| Crafting orbs | 16 of the orbs the loot layer drops (`loot_config.lua` `currency.entries`): Awakening, Whetstone, Upheaval, Tempering, Gilding, Unmaking, Erasure, Fate, Grafting, Reforging, Excision, Binding, Ember, Crown, Void, Ruin, in stacks of 1-3 | 63.0% |
+| Sockets | Orb of Sockets, 1-3 | 5.0% |
+| Gold | three purses (1, 2 or 5 crystal coins on the tile) | 20.7% |
+| Unique chest | one chest on the tile | 0.6% |
+| Badges | the nine Furious badges | 5.4% |
+| Amplifier catalysts | the first catalyst of each badge line | 4.3% |
+| Cards | 2 of the 4 legendary level 6 cards | 1.0% |
+| Decks, ships, belts, gloves, boats | none (the config's `retired` list and `patch_badges.py` are checked by the tests) | 0% |
+
+- **Gold scales with the level.** The tile shows N crystal coins; the prize is N x `gold.perUnit` (0.2) of an hour of hunting gold at
+  the winner's level (`gamble_config.lua` `balance.hunting`, the same curve, kept equal by a test), paid as coin stacks, at least one
+  crystal coin: 1 unit is 1 cc at level 8, 7 cc at 100, 190 cc at 1000. `ChaosPrizes.bossPrize` pays it and says the amount.
+- **The unique chest** gives a unique of the winner's item level (`unique.low` 0.5 to `high` 1.0 of the level; the nearest below when
+  the band is empty), never a season, Ascended or boss-only one, made with `ChaosMakeUnique` like a drop and announced. Without the
+  unique scripts loaded the chest is the plain chest.
+- **Expected value of one spin** (`tests/boss_roulette_test.lua` prints it): in kills of a level 100+ monster that the loot layer needs
+  for the same drops (`normal` chance of the orb; the Orb of Ruin by its magic chance / 3), gold in kills of the level 1000 hunt
+  (9.5M an hour, 870 kills an hour). Before (badges and cards only): 0 orbs, 0 gold, 6.4% cards, 93.6% badges. Base pool with the decks
+  and the ship: 27.8% useless. Now: 1.16 orbs and 717,000 gold at level 1000 per spin = 788 + 66 kills, 1.0% cards. Computed, not
+  measured on a server. The numbers are guesses against an unknown token drop rate (a token is a level 509+ monster drop): a spin is
+  worth about 40 minutes of orb hunting; `chance` in the config is the knob, `limits` in it what the test holds (cards at most 6%,
+  orbs, sockets and gold at least 40%, gold at least 12%, the unique chest between 0.3% and 2%).
+- **Tests.** `tests/boss_roulette_test.lua` (luajit and lua5.3): no retired id (decks, ships, belts, gloves), every id known to the
+  committed item lists and the Chaos configs (a dead id fails), no repeated prize, the odds add up to 1, the card share, the orbs are
+  the orbs the loot layer drops, the chase orbs stay under 1%, the gold curve equals `gamble_config.lua`, gold never falls with the
+  level, the coin stacks add up, the chest has a unique at every level, the value of a spin before and after.
+  `tests/prizes_test.lua`: gold and chest through `rouletteReward` on a mocked engine, other roulettes keep the plain item.
+  `tools/patch_roulette_test.py`: the real config, a small data folder (boss roulette changes, exercise roulette and an unreadable
+  one do not), the threshold, CRLF, a second run, a changed config, a retired id refused; with `CHAOS_ITEMS_XML=/path/items.xml` it
+  also checks every id against an installed base `items.xml`.
+- **Deploy.** `install_all.py SERVER_DIR --only files,roulette` and a server restart (the lever script reads the pool at load). The
+  other items on the tiles are existing items; no client change, no new text.
+
+### Uniques from Rare and Legendary monsters in the hunts (`loot.lua`, `loot_config.lua` `unique.open`, `tests/unique_hunt_test.lua`)
+
+**Not a crash, three real causes** (found by reading `L.rollUniques` and the `processKill` unique step; no code path was broken, the
+drop could not happen):
+1. **The monster list.** Every unique has a `monsters` name list; the endgame uniques (item level 900-2400,
+   `minMonsterLevel` 800-1000, the only ones for a level 1500 character) listed twelve waystone monsters and bosses and no hunt
+   monster, so no Azure Dragon, Golden Lord or other monster of the level-scaled hunts could drop one. The lower uniques list
+   stock monsters of level 20-150.
+2. **The pack factor.** The unique roll was `item find x pace`, the loot factor of the pack (0.163-0.204 at level 1500, the thin
+   per-kill factor that keeps gold per hour), while Rare gear keeps the `notable` share (1 from monster level 700). A unique was
+   thinned to a fifth.
+3. **The level.** The `minMonsterLevel` gate read `Monster:getMonsterLevel()`, which is 0 for a base monster and for a waystone
+   map's monster (their level comes from `ChaosLoot.monsterLevel` and the waystone run), so even listed waystone monsters failed it
+   where the engine level was 0.
+
+**The fix.** (a) `unique.open` in `loot_config.lua`: an entry with a `minMonsterLevel` (not boss-only) drops from any Rare or better
+monster of that level or more, whatever its name, at `mult` (0.5) x its chance (below the level nothing changes; the lists still
+rule the lower uniques). (b) `ChaosLoot.uniquePace`: the unique roll reads the notable share of the corpse (`L.corpseFactors`), at
+least the loot factor. (c) The roll gets `max(getMonsterLevel, ChaosLoot.monsterLevel)`. The Conquest bad-luck protection already
+covered these rolls (group `monster`: +1% per miss, up to x3); an open drop now counts as an eligible roll, so it works for the
+hunts too (`conquest_config.lua` `pity`, unchanged).
+
+**Numbers** (level 1500, the hunt monsters of `late_game_spawns.csv`, Rare : Legendary kills 150 : 25 as spawned, exact sums over the
+entries, sampled with `L.rollUniques`):
+
+| | Uniques per 1000 Rare / Legendary kills | One per |
+|---|---|---|
+| Before (computed / sampled) | 0.65 / 0.9 (all of it from four stock names; any other monster 0) | about 1,100-1,500 kills |
+| Open rule only, loot factor kept | 6.5 | 154 kills |
+| Now (open x0.5, notable share) | 17.4 computed / 17.8 sampled | 57 kills |
+
+A hunter in the late sets kills about 830 monsters an hour and about 17 of them are Rare or Legendary (spawn chance 1.5% and 0.25%),
+so the farmer sees one unique about every 3.4 hours, plus the pity. The drops are 21 uniques of item level 900-2200, 8 of them wearable at
+level 1500; the rest wait for a higher level or a trade. `tools/loot_model.lua --check`, `tools/gear_coverage.lua --check` and `tools/weapon_coverage.lua --check`
+stay green (uniques are not in the gold or item model; the coverage tool reads the entries' own chance, unchanged).
+`tests/unique_hunt_test.lua` (luajit and lua5.3) proves it: before below 1 per 1000, now 10-25, one every 2.5-6 hours, the level and
+list rules, boss-only entries keep their bosses, `open.enabled = false` brings the old behaviour back.
 
 ## Rings and necklaces as gear (`data/lib/chaos_jewelry.lua`, `chaos/jewelry.lua`, `tools/patch_base_jewelry.py`, `tests/jewelry_test.lua`)
 
