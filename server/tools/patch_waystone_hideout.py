@@ -32,7 +32,10 @@ base behaviour stays):
   * a tier opens one of the maps of its band (WT.optionsFor: the base mapping's entries of the band's base tiers);
   * the window rows carry the tier's monster level (WT.tierLevel);
   * when the pads open, WT.startRun(finalArea, serverTypeId) sets the map to the run's tier.
-and in data/items/items.xml the descriptions of the six Waystone Tier items ("... on waystone device at house ...")
+Part 4 (owner 2026-10-23: waystones with modifiers, the maps of Path of Exile; its own marker): the device takes the
+waystone that was used on it (data/scripts/chaos/waystone_mods.lua ChaosWaystoneMods.choose / take; else the one of that
+tier with the fewest modifiers) instead of any one of the id, and passes its modifiers to WT.startRun.
+And in data/items/items.xml the descriptions of the six Waystone Tier items ("... on waystone device at house ...")
 say "... on the waystone device in your hideout or house ...". The portal kit (29628) stays "in your house": building a
 device from a kit needs a house, the hideout has its own device built in. Every change is made once (a second run changes
 nothing). Refuses (exit 1), changing nothing, when tier_maps.lua or items.xml is missing or is not the text this patch
@@ -118,6 +121,24 @@ P3_USE_OLD = 'function chaosTierUse.onUse(player, item, fromPosition, target, to
 P3_IDS_OLD = 'chaosTierUse:id(%s)' % ', '.join(str(i) for i in TIER_IDS)
 P3_IDS_NEW = 'chaosTierUse:id(%s)' % ', '.join(str(i) for i in TIER_IDS + NEW_TIER_IDS)
 
+MARK4 = '-- Chaos: waystone modifiers, the used waystone is the one taken (patch_waystone_hideout.py part 4)'
+HELPER4 = [
+    MARK4,
+    'local function chaosWaystoneTake(player, serverId)',
+    '  if ChaosWaystoneMods and ChaosWaystoneMods.take then',
+    '    local ok, taken, mods = pcall(ChaosWaystoneMods.take, player, serverId)',
+    '    if ok then return taken, mods end',
+    '  end',
+    '  return player:removeItem(serverId, 1), {}',
+    'end',
+]
+P4_TIERUSE = 'local chaosTierUse = Action()'
+P4_REMOVE = re.compile(r'^([ \t]*)if not player:removeItem\(serverTypeId, 1\) then', re.M)
+P4_START_OLD = 'pcall(ChaosWaystoneTiers.startRun, finalArea, serverTypeId)'
+P4_START_NEW = 'pcall(ChaosWaystoneTiers.startRun, finalArea, serverTypeId, chaosMods)'
+P4_POS = re.compile(r'^([ \t]*)local pos = device:getPosition\(\)', re.M)
+P4_CHOOSE = 'if ChaosWaystoneMods and ChaosWaystoneMods.choose then pcall(ChaosWaystoneMods.choose, player, item) end'
+
 HELPER2 = [
     MARK2,
     '-- the tiers the player holds, for the window: {clientId, look, tier, count} by tier (look: the item\'s client id',
@@ -191,7 +212,30 @@ def patch_lua(text):
     new, changes3, err = patch_lua_part3(new)
     if err:
         return text, [], err
-    return new, changes + changes2 + changes3, None
+    new, changes4, err = patch_lua_part4(new)
+    if err:
+        return text, [], err
+    return new, changes + changes2 + changes3 + changes4, None
+
+
+def patch_lua_part4(text):
+    """-> (new text, changes, error): the waystone used is the one taken, its modifiers go to the run"""
+    done = ('chaosWaystoneTake(player, serverTypeId)', P4_START_NEW, P4_CHOOSE)
+    if MARK4 in text:
+        for need in done:
+            if need not in text:
+                return text, [], 'part 4 marker present but "%s" is missing' % need
+        return text, [], None
+    nl = nl_of(text)
+    if text.count(P4_TIERUSE) != 1 or len(P4_REMOVE.findall(text)) != 1 or text.count(P4_START_OLD) != 1 \
+            or len(P4_POS.findall(text)) != 1:
+        return text, [], 'the take, the run start or the tier items\' action not as expected (part 3 first)'
+    new = text.replace(P4_TIERUSE, nl.join(HELPER4) + nl + P4_TIERUSE, 1)
+    new = P4_REMOVE.sub(lambda m: '%slocal chaosTaken, chaosMods = chaosWaystoneTake(player, serverTypeId)%s%sif not chaosTaken then'
+                        % (m.group(1), nl, m.group(1)), new, count=1)
+    new = new.replace(P4_START_OLD, P4_START_NEW, 1)
+    new = P4_POS.sub(lambda m: '%s%s%s%s' % (m.group(1), P4_CHOOSE, nl, m.group(0)), new, count=1)
+    return new, ['the used waystone is taken', 'its modifiers go to the run'], None
 
 
 def patch_lua_part3(text):

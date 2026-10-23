@@ -79,6 +79,9 @@ local function handle(player, data)
         "There is no space in your house to spawn portals.")
       return true
     end
+    if not player:removeItem(serverTypeId, 1) then
+      return true
+    end
     player:sendExtendedOpcode(OPCODE, json.encode{ action = "teleport_done" })
   end
 end
@@ -155,6 +158,13 @@ def check_tree(d, label, lua, xml):
     ok(t.index('chaosWaystoneMerge()') < t.index('local serverTypeId = clientToServer[data.clientId]'), label + ': merged before the lookup')
     ok('local options = chaosWaystoneOptions(serverTypeId)' in t, label + ': the band\'s maps')
     ok(t.index('ChaosWaystoneTiers.startRun') > t.index('action = "teleport_done"'), label + ': the run\'s tier after the pads')
+    # part 4: the used waystone is taken, its modifiers go to the run
+    ok(t.count(P.MARK4) == 1, label + ': part 4 once')
+    ok('removeItem(serverTypeId' not in t and 'local chaosTaken, chaosMods = chaosWaystoneTake(player, serverTypeId)' in t,
+       label + ': the take')
+    ok(t.index('local function chaosWaystoneTake') < t.index('chaosWaystoneTake(player, serverTypeId)'), label + ': take helper first')
+    ok(P.P4_START_NEW in t and t.index('chaosWaystoneTake(player, serverTypeId)') < t.index(P.P4_START_NEW), label + ': mods to the run')
+    ok(t.index(P.P4_CHOOSE) < t.index('showTabletUI.onUse(player, device'), label + ': the used waystone chosen')
     return t
 
 

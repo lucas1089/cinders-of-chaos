@@ -13395,6 +13395,47 @@ Tests: `tests/waystone_tiers_test.lua`, `tools/install_waystone_items_test.py`, 
 `tools/patch_waystone_bosses_test.py`, client `waystonelogic_test.lua`. The website and codex levels still come from the
 bounty pool. Balance numbers are first guesses. Not run in game.
 
+Modifiers: see "Waystone modifiers". `retierDrops` also rolls a dropped waystone's rarity inside a run, and the
+experience callback multiplies by the run's experience bonus.
+
+## Waystone modifiers (`waystone_mods.lua`, `waystone_mods_core.lua`, `waystone_mods_config.lua`, `lib/chaos_crafting.lua`, `tools/patch_waystone_hideout.py` part 4)
+
+Owner 2026-10-23: waystones work like the maps of the well-known action RPG: they take modifiers, each a buff for the
+monsters or a debuff for the players, paid with experience and loot.
+
+**Rarity.** Normal: no modifier. Magic: at most one prefix and one suffix. Rare: at most three of each (six). The
+rarity follows the counts (`W.rarityOf`). Prefixes buff the monsters, suffixes debuff the players. The 25 modifiers are
+the rift keys' (`rift_config.lua` mods copied by key, with their ranges, tiers I-V, groups and conflicts); the rift-only
+ones (packs, goblin, coffer, twin guardians, double loot, time, lives) are left out. Modifier tiers follow the item's
+tier through `modTiers` (tiers 1-5 roll I-III, 6-10 I-IV, 11-15 II-V).
+
+**Storage.** Custom attribute `ws_mods` ("key:value,...", `R.encodeMods`). A waystone with modifiers gets its own name
+("Rare Waystone Tier IV") and a description with the level, the modifiers and the rewards. Waystones are stackable, so
+`WM.single` splits the crafted one off its stack; writing an empty list removes the attributes, so it stacks again.
+
+**Orbs** (`lib/chaos_crafting.lua`, the crafting window lists waystones): Awakening Normal -> Magic (one modifier),
+Gilding Normal -> Rare (4-6), Grafting +1 on an open side (a full Magic one needs Fate first), Fate Magic -> Rare (the new
+modifier on the filled side) or rerolls a Rare one's values, Upheaval rerolls within the rarity, Unmaking removes one,
+Erasure back to Normal. Sockets and the other orbs refuse with a reason (`ws*`).
+
+**The device.** `tools/patch_waystone_hideout.py` part 4 replaces the base `player:removeItem(id, 1)` with
+`ChaosWaystoneMods.take`: the waystone the player used on the device within `chosenSeconds` (300), else the carried one
+of that tier with the fewest modifiers. Its modifiers go to `WT.startRun(area, serverId, mods)` -> `WM.begin`.
+
+**The run.** `WM.runs[map] = {mods, fx, bonus, untilAt}` lasts `runSeconds` (31 min) or until the next waystone opens
+the map. Effects run through `rift_core.lua` (`R.effects` with a shim config, `R.monsterHit`, `R.monsterTaken`):
+monster health and speed are applied once and taken off when a run without modifiers starts; Elites raise the magic /
+rare roll; brands, keen, festering, cinder, breach, dread on the boss; withering, parched, blight, hexes, ground and
+storm on the players in the map (a 1 s tick).
+
+**Rewards.** Each modifier's own `reward` (quantity, rarity, experience) plus `perMod.waystone` 12% waystone chance,
+capped at `bonusCap` (120 / 110 / 80 / 72). Quantity: `loot_config.lua` rateMult; rarity: `loot.lua` rarityFind;
+experience: `waystone_tiers.lua`; waystone: a second waystone chance in `retierDrops`. A waystone dropped inside a run
+rolls `dropRarity` (Normal 55, Magic 30, Rare 15); outside the maps it is Normal.
+
+Tests: `tests/waystone_mods_test.lua` (core and mocked engine), `tools/patch_waystone_hideout_test.py`. Balance numbers
+are first guesses. Not run in game.
+
 ## Rifts (`rift.lua`, `rift_core.lua`, `rift_config.lua`, `rift_layout_core.lua`, client `game_rift`)
 
 **Limits** (`rift_config.lua` `limits`, "Instance limits"): 12 / 13 / 15 minutes a run by the size of its map (tiers 1-5 / 6-10 / 11-15, `layout.sizes`; was 10 for all; Omen arenas keep 10), warnings at 5 min, 1 min and 10 s; time up fails the rift (out to where the key was used, the key is spent); a run kept open only for fallen players who may come back closes after 3 minutes as a failed rift; at most 16 rifts and Omen arenas at once, a player who finds them busy (or none ready yet) hears the wait and waits in line.

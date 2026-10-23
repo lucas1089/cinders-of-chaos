@@ -3863,5 +3863,9 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Waystone Device"] = "Dispositivo de Waystone",
   ["Waystone Tier %s"] = "Waystone Nível %s",
   ["You carry no waystone of this tier."] = "Você não carrega nenhuma waystone desse nível.",
+  ["%s, tier %d (monster level %d)"] = "%s, nível %d (monstros nível %d)",
+  ["Normal Waystone"] = "Waystone Normal",
+  ["Magic Waystone"] = "Waystone Mágica",
+  ["Rare Waystone"] = "Waystone Rara",
 }
 return ChaosLocaleStrings['pt-BR']

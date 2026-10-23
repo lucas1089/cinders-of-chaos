@@ -16,7 +16,9 @@
 --   A monster: from its hunting level; a boss: from the level of its band's first tier (its base health), damage also
 --   x bossDamage of its base tier.
 -- * Drops: loot.lua calls WT.retierDrops: a dropped waystone becomes the tier of the run (or Tier I outside), the
---   run's boss adds one of the next tier.
+--   run's boss adds one of the next tier. Inside a run each gets a rarity and modifiers (waystone_mods.lua).
+-- * Modifiers: the waystone's (waystone_mods.lua) ride on the run: startRun passes them to ChaosWaystoneMods.begin,
+--   rescale is followed by ChaosWaystoneMods.applyMonster, experience x its bonus.
 -- * Pillar bosses: tools/patch_waystone_bosses.py makes their health event call ChaosWaystoneTiers.shielded.
 -- Without this file every waystone monster is as in the base. Assumed engine API (TFS 1.4.2): EventCallback onSpawn /
 -- onGainExperience, CreatureEvent think / death, GlobalEvent startup, Game.getSpectators, Tile:getItemById,
@@ -142,15 +144,29 @@ local function rescale(monster, e, target)
 	return true
 end
 
+-- the run's modifiers on a monster of its map (waystone_mods.lua): health, speed, Elites at the first think
+local function applyMods(monster, e, first)
+	if ChaosWaystoneMods and ChaosWaystoneMods.applyMonster then
+		local ok, err = pcall(ChaosWaystoneMods.applyMonster, monster, e, first)
+		if not ok then
+			print("[ChaosWaystoneTiers] modifiers: " .. tostring(err))
+		end
+	end
+end
+
 -- the pads of a run opened (tier_maps.lua, after the waystone was taken): the map of `area` counts at the waystone's
--- tier, the monsters standing in it get that level now. Returns the number rescaled (nil: not a waystone map)
-function WT.startRun(area, serverId)
+-- tier, the monsters standing in it get that level now; mods: the waystone's modifiers (patch part 4, waystone_mods.lua),
+-- the run carries them. Returns the number rescaled (nil: not a waystone map)
+function WT.startRun(area, serverId, mods)
 	local t = K.tierOfItem(WT.config, serverId)
 	local i = area and K.mapOfArea(WT.config, area.fromPos or area.from)
 	if not t or not i then
 		return nil
 	end
 	WT.active[i] = t
+	if ChaosWaystoneMods and ChaosWaystoneMods.begin then
+		pcall(ChaosWaystoneMods.begin, i, t, type(mods) == "table" and mods or {})
+	end
 	local m = WT.config.maps[i]
 	local cx, cy = math.floor((m.from.x + m.to.x) / 2), math.floor((m.from.y + m.to.y) / 2)
 	local hx, hy = math.ceil(math.abs(m.to.x - m.from.x) / 2), math.ceil(math.abs(m.to.y - m.from.y) / 2)
@@ -163,20 +179,35 @@ function WT.startRun(area, serverId)
 			if target and target ~= WT.applied[c:getId()] and rescale(c, e, target) then
 				n = n + 1
 			end
+			applyMods(c, e, false)
 		end
 	end
 	return n
 end
 
-local function addWaystone(corpse, t)
+-- one waystone of tier t into the corpse; inside a run it gets a rarity and modifiers (waystone_mods.lua), and the
+-- run's waystone bonus may bring one more of the same tier
+local function addWaystone(corpse, t, monster, inside, extra)
 	local e = WT.config.tiers[t]
-	if e then
-		pcall(function() corpse:addItem(e.item, 1) end)
+	if not e then
+		return
+	end
+	local ok, item = pcall(function() return corpse:addItem(e.item, 1) end)
+	local WM = ChaosWaystoneMods
+	if ok and item and inside and WM and WM.rollDrop then
+		pcall(WM.rollDrop, item, t, true)
+	end
+	if extra ~= false and inside and WM and WM.extraWaystone then
+		local okX, more = pcall(WM.extraWaystone, monster)
+		if okX and more then
+			addWaystone(corpse, t, monster, inside, false)
+		end
 	end
 end
 
 -- loot.lua, after the level gate: every waystone in the corpse becomes one of the run's tier (Tier I outside the
--- maps); the run's boss adds one of the next tier. isWaystone(item): loot.lua L.isWaystone. Returns the number changed.
+-- maps; inside, each with a rarity and modifiers); the run's boss adds one of the next tier. isWaystone(item): loot.lua
+-- L.isWaystone. Returns the number changed.
 function WT.retierDrops(corpse, monster, isWaystone)
 	if WT.config.enabled == false or not corpse or not isWaystone then
 		return 0
@@ -189,11 +220,11 @@ function WT.retierDrops(corpse, monster, isWaystone)
 		if item and isWaystone(item) then
 			local t = K.dropTier(WT.config, run, math.random(100))
 			local want = t and WT.config.tiers[t]
-			if want and item:getId() ~= want.item then
+			if want and (e or item:getId() ~= want.item) then
 				local count = item:getCount() or 1
 				item:remove()
 				for _ = 1, math.max(1, count) do
-					addWaystone(corpse, t)
+					addWaystone(corpse, t, monster, e ~= nil)
 				end
 				changed = changed + 1
 			end
@@ -202,7 +233,7 @@ function WT.retierDrops(corpse, monster, isWaystone)
 	if e and e.boss then
 		local next = K.bossDrop(WT.config, run)
 		if next then
-			addWaystone(corpse, next)
+			addWaystone(corpse, next, monster, true)
 			changed = changed + 1
 		end
 	end
@@ -254,8 +285,15 @@ if EventCallback then
 			local e = WT.entryOf(source)
 			if e then
 				local f = K.factors(WT.config, e, not e.boss and baseLevel(source) or nil)
-				if f and f.experience ~= 1 then
-					return math.floor(exp * f.experience + 1e-9)
+				-- x the run's experience bonus (waystone_mods.lua)
+				local WM = ChaosWaystoneMods
+				local okM, mult = true, 1
+				if WM and WM.expMult then
+					okM, mult = pcall(WM.expMult, source)
+				end
+				mult = (f and f.experience or 1) * (okM and tonumber(mult) or 1)
+				if mult ~= 1 then
+					return math.floor(exp * mult + 1e-9)
 				end
 			end
 		end
@@ -273,6 +311,7 @@ if CreatureEvent then
 		if target and not WT.applied[creature:getId()] then
 			if rescale(creature, e, target) then
 				pcall(function() creature:registerEvent(DEATH) end)
+				applyMods(creature, e, true)
 			end
 		end
 		return true

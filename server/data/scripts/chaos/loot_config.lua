@@ -30,7 +30,9 @@ return {
 		local marches = ChaosPvpZone and ChaosPvpZone.lootMult and ChaosPvpZone.lootMult(ctx) or 1
 		-- the Ember of Plenty blessing of the corpse owner (blessings.lua); 1 when none
 		local blessing = ChaosBlessings and ChaosBlessings.mult and ChaosBlessings.mult(ctx and ctx.player, "loot") or 1
-		return event * buff * rift * world * community * marches * blessing
+		-- the quantity bonus of the waystone run the monster died in (waystone_mods.lua); 1 outside
+		local waystone = ChaosWaystoneMods and ChaosWaystoneMods.lootMult and ChaosWaystoneMods.lootMult(ctx) or 1
+		return event * buff * rift * world * community * marches * blessing * waystone
 	end,
 	-- cap on the final rate (rateMult, guild perk wrapper included; loot.lua clamps it). The bonuses multiply: all at
 	-- once came to ~8-10x. The rift's own Quantity rules still apply, under this cap.

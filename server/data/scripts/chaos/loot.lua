@@ -1191,6 +1191,8 @@ local function processKill(monster, corpse)
 	rarityFind = rarityFind + (ChaosSeason and ChaosSeason.modesLootBonus and select(2, ChaosSeason.modesLootBonus(owner)) or 0)
 	-- and the Ember of Fortune blessing (blessings.lua)
 	rarityFind = rarityFind + (ChaosBlessings and ChaosBlessings.value and ChaosBlessings.value(owner, "rarity") or 0)
+	-- and the rarity bonus of the waystone run the monster died in (waystone_mods.lua)
+	rarityFind = rarityFind + (ChaosWaystoneMods and ChaosWaystoneMods.rarityFind and ChaosWaystoneMods.rarityFind(monster) or 0)
 	-- Only the "rarity" attribute is raised here, as the stock callback sets it: the engine rolls the stats of every
 	-- item that still carries one in the corpse after all onDropLoot callbacks (Monster::dropLoot), once. Rolling here
 	-- too (Game.createItemWithRarity) gave corpse items two sets of stats. Items that leave the corpse before the
