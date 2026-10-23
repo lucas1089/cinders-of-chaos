@@ -1,7 +1,8 @@
 -- Remote admin commands by file (server/README.md "Remote admin commands"). chaos-ctl.sh and the admin app append lines
 -- to `remote.cmd` in the server folder; every 2.5 s this takes the file and runs each whitelisted line: broadcast TEXT,
--- kick NAME, save, open, close, plus panel (any admin panel action, run as the online admin character) and catalog
--- (the panel's action list). Each command is logged with "[ChaosRemoteCmd]"; refused lines are logged and skipped.
+-- kick NAME, save, open, close, plus panel (any admin panel action, run as the online admin character), catalog
+-- (the panel's action list) and spectate NAME (the app's live view, spectate.lua; only a new watch is logged).
+-- Each command is logged with "[ChaosRemoteCmd]"; refused lines are logged and skipped.
 -- A leftover file at startup is removed, not obeyed. Pure part: remote_cmd_core.lua; numbers: remote_cmd_config.lua.
 -- Assumed engine API (TFS 1.4.2): GlobalEvent onStartup / onThink with interval, Game.broadcastMessage,
 -- Game.setGameState, Player(name), player:remove(), saveServer, json, and ChaosAdmin (chaos/admin/core.lua) for panel.
@@ -112,6 +113,17 @@ handlers.panel = function(c)
 	return c.action .. (res.ok and " ok" or " failed")
 end
 
+-- the admin app's live view (spectate.lua): false for a renewal of the same watch, which is not logged
+handlers.spectate = function(c)
+	if not (ChaosSpectate and ChaosSpectate.watch) then
+		return "the spectator script (spectate.lua) is not loaded"
+	end
+	if ChaosSpectate.watch(c.arg) then
+		return "watching " .. c.arg
+	end
+	return false
+end
+
 handlers.catalog = function(c)
 	local actor, why = actorFor(c.actor)
 	if not actor then
@@ -143,7 +155,9 @@ function RC.check()
 	local ran = 0
 	for _, c in ipairs(cmds) do
 		local ok, res = pcall(handlers[c.cmd], c)
-		log(c.cmd .. (c.arg and (" " .. c.arg) or "") .. (c.action and (" " .. c.action .. " as " .. c.actor) or "") .. ": " .. (ok and tostring(res) or ("error " .. tostring(res))))
+		if not (ok and res == false) then
+			log(c.cmd .. (c.arg and (" " .. c.arg) or "") .. (c.action and (" " .. c.action .. " as " .. c.actor) or "") .. ": " .. (ok and tostring(res) or ("error " .. tostring(res))))
+		end
 		ran = ran + 1
 	end
 	return ran

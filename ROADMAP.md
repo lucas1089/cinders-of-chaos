@@ -307,6 +307,13 @@ Estimated before items 4 and 5: ~155 h to level 1000 for a sorcerer, ~285 h for 
   in the admin app (android/): the real game view with sprites (the .dat/.spr on the device) fed by a server cast /
   spectator system (engine patch). The simpler options (a JSON map of the surroundings, a client screenshot with a
   notice to the player) were offered and not chosen.
+  In progress, phase 1 (2026-10-23, unit tested only): a Lua snapshot of the 15 x 11 view (no engine patch) drawn
+  into a PNG on the VPS with the real pair (`server/tools/spectate_render.py`, `chaos-ctl.sh spectate NAME`, the pair
+  fetched by `spectate-pair fetch`) and shown in the app's Comandos > Ações rápidas > Assistir jogador about once a
+  second (server/README.md "Live spectator", docs/ADMIN_APP.md). It differs from the chosen option: the sprites are
+  drawn on the VPS, not on the device, and there is no engine cast; no animation, light or effects. Not run on a real
+  server, with the real pair or on a phone. Open for the owner: keep phase 1, or go on to the engine cast with the pair
+  on the device.
 - Done (monster lint follow-up, server/README.md "Monster lint", `tools/tune_monsters.py`): Wild Boar and Giant
   Hornet renamed Gloomtusk Boar and Blightwing Hornet; donor boss experience in the world boss band; the 2,005,500
   hits and Vharok's dead bleed fixed; late-game gold, Garack's loot, Azure Dragon's elements; Orcaruz, Fenmaw,

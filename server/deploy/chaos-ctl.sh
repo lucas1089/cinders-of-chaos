@@ -23,6 +23,18 @@
 #   kick NAME | open | close    kick one character / let players log in / close the server for login
 #   catalog ACTOR               the admin panel's catalog (all actions and their parameters) for the admin character ACTOR
 #   panel ACTOR ACTION JSON     run one admin panel action as ACTOR (an admin character, online or not); prints the answer line (JSON)
+#   spectate NAME               the app's live view of a character (server/README.md "Live spectator"): queues "spectate
+#                               NAME" (again after 5 s; the engine keeps a watch 20 s and writes remote.spectate every
+#                               second), waits up to 8 s for a fresh snapshot of NAME and prints the one JSON line of
+#                               server/tools/spectate_render.py (the 15 x 11 view drawn with the client pair as a base64
+#                               PNG, name, level, health, mana, position; or ok false and an error). One at a time
+#                               (busy: exit 75), at most one view every 0.8 s, the drawing stopped after 25 s
+#   spectate-pair [status | fetch | fetch-now | log [N]]
+#                               the client pair spectate draws with (CHAOS_SPECTATE_PAIR, default CHAOS_ROOT/pair, the same
+#                               folder as the site's CHAOS_SPRITE_PAIR): status key=value lines; fetch takes the pair
+#                               archive of CHAOS_PAIR_BRANCH (windows-assets: things/things-1098.tar.xz.part*, checked
+#                               against SHA256SUMS.parts) in the background (fetch-now: in the foreground), unpacks only
+#                               Tibia.dat and Tibia.spr into a new folder and swaps it in; log: the fetch log
 #   update TAG now|at-save      chaos_update.sh --ref TAG (--now | --at-save) --yes, in the background (update-log)
 #   rollback now|at-save        chaos_update.sh --rollback, in the background
 #   update-log [N]              the last N lines of the update log
@@ -107,7 +119,9 @@
 # lucas1089/cinders-of-chaos, CHAOS_KIT_STATE /var/lib/chaos/kit-update, CHAOS_BOOT_TIMEOUT 900, CHAOS_DL_DIR
 # $CHAOS_SITE_DIR/dl, CHAOS_SITE_ENV /etc/chaos/site.env; CHAOS_SITE_LOG /var/log/chaos/site-install.log. For testers:
 # CHAOS_TESTER_KEY /etc/chaos/tester-client-key, CHAOS_TESTER_STATE /var/lib/chaos/testers, CHAOS_TESTER_LOG
-# /var/log/chaos/testers.log. For vps: CHAOS_VPS_LOG /var/log/chaos/vps-upgrade.log.
+# /var/log/chaos/testers.log. For vps: CHAOS_VPS_LOG /var/log/chaos/vps-upgrade.log. For spectate: CHAOS_SPECTATE_PAIR
+# $CHAOS_ROOT/pair, CHAOS_SPECTATE_STATE /var/lib/chaos/spectate (lock, renewal time, the dat index), CHAOS_PAIR_BRANCH
+# windows-assets, CHAOS_SPECTATE_LOG /var/log/chaos/spectate-pair.log.
 # They come from /etc/chaos/ctl.conf (server/deploy/ctl.conf.example): simple KEY=VALUE lines, only those keys, read
 # only when the file is owned by root (or by the user running the script) and not writable by group or others. It is
 # never sourced. The environment wins over the file, but sudo drops the environment, so the app (which runs this through
@@ -130,7 +144,8 @@ CONF_KEYS=" CHAOS_UNIT CHAOS_ROOT CHAOS_SERVER_DIR CHAOS_REPO CHAOS_ENV CHAOS_LO
 CHAOS_PID_FILE CHAOS_DB_SOCKET CHAOS_MYSQL CHAOS_BACKUP_DIR CHAOS_PUBLISH_LOG CHAOS_SITE_DIR CHAOS_UPDATE_KEY \
 CHAOS_UPDATE_PUBLIC CHAOS_UPDATE_REPO CHAOS_UPDATE_URL CHAOS_WORK_DIR CHAOS_KIT_DIR CHAOS_UPDATE_BRANCH \
 CHAOS_RELEASE_REPO CHAOS_KIT_STATE CHAOS_BOOT_TIMEOUT CHAOS_DL_DIR CHAOS_SITE_ENV CHAOS_SITE_LOG CHAOS_TESTER_KEY \
-CHAOS_TESTER_STATE CHAOS_TESTER_LOG CHAOS_VPS_LOG "
+CHAOS_TESTER_STATE CHAOS_TESTER_LOG CHAOS_VPS_LOG CHAOS_SPECTATE_PAIR CHAOS_SPECTATE_STATE CHAOS_PAIR_BRANCH \
+CHAOS_SPECTATE_LOG "
 declare -A CFG=()
 # KEY=VALUE, optional "" or '' around the value, # comments; a value is a path or a unit name (no spaces, no $ or `)
 read_conf() {
@@ -194,6 +209,10 @@ TKEY=$(setting CHAOS_TESTER_KEY /etc/chaos/tester-client-key)
 TSTATE=$(setting CHAOS_TESTER_STATE /var/lib/chaos/testers)
 TLOG=$(setting CHAOS_TESTER_LOG /var/log/chaos/testers.log)
 VLOG=$(setting CHAOS_VPS_LOG /var/log/chaos/vps-upgrade.log)
+SPPAIR=$(setting CHAOS_SPECTATE_PAIR "$ROOT/pair")
+SPSTATE=$(setting CHAOS_SPECTATE_STATE /var/lib/chaos/spectate)
+SPBRANCH=$(setting CHAOS_PAIR_BRANCH windows-assets)
+SPLOG=$(setting CHAOS_SPECTATE_LOG /var/log/chaos/spectate-pair.log)
 if [ -z "$MYSQL" ]; then
   for c in mysql mariadb "$ROOT/mariadb/bin/mariadb"; do
     command -v "$c" >/dev/null 2>&1 && { MYSQL=$c; break; }
@@ -393,6 +412,49 @@ testers_py() {
     set +a; exec python3 -I "$py" "$@" )
 }
 
+# ---- live spectator (server/README.md "Live spectator")
+SPTOOL="$REPO/server/tools/spectate_render.py"
+# one JSON answer line for the app, then exit
+sp_fail() { printf '{"ok":false,"error":"%s","message":"%s"}\n' "$1" "$2"; exit "${3:-1}"; }
+sp_log() { printf '[%s] %s\n' "$(date '+%F %T')" "$*"; }
+spg() { git -C "$REPO" -c safe.directory="$REPO" "$@"; }
+# the state folder (lock, renewal time, the dat index), root only
+sp_state() { { mkdir -p "$SPSTATE" && chmod 0700 "$SPSTATE"; } || die "cannot create $SPSTATE"; }
+# the pair archive of SPBRANCH into SPPAIR (fetch-now; the background fetch runs this too)
+pair_fetch() {
+  local work p parts=()
+  { [[ $SPBRANCH =~ ^[A-Za-z0-9][A-Za-z0-9._/-]{0,99}$ ]] && [[ $SPBRANCH != *..* ]]; } || die "bad CHAOS_PAIR_BRANCH"
+  [ -r "$SPTOOL" ] || die "no $SPTOOL (CHAOS_REPO)"
+  spg rev-parse --git-dir >/dev/null 2>&1 || die "no git checkout at $REPO (CHAOS_REPO)"
+  sp_state
+  exec 8> "$SPSTATE/fetch.lock"
+  flock -n 8 || die "a pair fetch is running (chaos-ctl.sh spectate-pair log)"
+  sp_log "fetching $SPBRANCH (shallow, without the contents of its other files)"
+  spg fetch --quiet --depth=1 --filter=blob:none origin "+refs/heads/$SPBRANCH:refs/remotes/origin/$SPBRANCH" \
+    || die "git fetch of $SPBRANCH failed (does the checkout's origin reach it?)"
+  work=$(mktemp -d "$WORKDIR/chaos-pair.XXXXXX") || die "no work folder in $WORKDIR"
+  spg cat-file blob "origin/$SPBRANCH:SHA256SUMS.parts" > "$work/SHA256SUMS.parts" \
+    || { rm -rf "$work"; die "$SPBRANCH has no SHA256SUMS.parts"; }
+  while IFS= read -r p; do
+    [[ $p =~ ^things/things-1098\.tar\.xz\.part[A-Za-z0-9]{1,8}$ ]] || continue
+    spg cat-file blob "origin/$SPBRANCH:$p" > "$work/${p#things/}" || { rm -rf "$work"; die "cannot read $p"; }
+    parts+=("$work/${p#things/}")
+  done < <(spg ls-tree --name-only "origin/$SPBRANCH" things/)
+  [ ${#parts[@]} -gt 0 ] || { rm -rf "$work"; die "no things/things-1098.tar.xz.part* on $SPBRANCH"; }
+  sp_log "${#parts[@]} part(s); checking the sums and unpacking Tibia.dat and Tibia.spr"
+  rm -rf "$SPPAIR.new"
+  if ! python3 -I "$SPTOOL" unpack-pair --sums "$work/SHA256SUMS.parts" --out "$SPPAIR.new" "${parts[@]}"; then
+    rm -rf "$work" "$SPPAIR.new"; die "the pair archive was refused: nothing changed"
+  fi
+  rm -rf "$work" "$SPPAIR.old"
+  if [ -d "$SPPAIR" ]; then mv "$SPPAIR" "$SPPAIR.old" || die "cannot move the old pair"; fi
+  mv "$SPPAIR.new" "$SPPAIR" || die "cannot move the new pair into $SPPAIR"
+  rm -rf "$SPPAIR.old"
+  sp_log "the pair is in $SPPAIR; building the sprite index"
+  python3 -I "$SPTOOL" index --dat "$SPPAIR/Tibia.dat" --cache-dir "$SPSTATE" || die "the index could not be built"
+  sp_log "RESULT ok"
+}
+
 cmd=${1:-}
 [ $# -gt 0 ] && shift
 case $cmd in
@@ -519,6 +581,83 @@ case $cmd in
       sleep 0.5
     done
     die "no answer in 15 s: is $actor an admin character, and is the server running the remote command script?"
+    ;;
+  spectate)
+    [ $# -eq 1 ] || die "spectate NAME"
+    name=$1
+    if ! [[ $name =~ ^[A-Za-z][A-Za-z\ \'-]{2,28}$ ]] || [[ $name == *' ' ]] || [[ $name == *'  '* ]]; then
+      die "spectate NAME: a character name (letters, spaces, ' and -, 3 to 29 characters)"
+    fi
+    [ -d "$SERVER" ] || die "no server folder $SERVER"
+    [ -r "$SPTOOL" ] || die "no $SPTOOL (CHAOS_REPO)"
+    sp_state
+    exec 9> "$SPSTATE/lock"
+    flock -n 9 || sp_fail busy "another view is being drawn" 75
+    # at most one view every 0.8 s
+    last=$(head -c 20 "$SPSTATE/last" 2>/dev/null | tr -dc 0-9)
+    now_ms=$(date +%s%3N)
+    if [ -n "$last" ] && [ $((now_ms - last)) -ge 0 ] && [ $((now_ms - last)) -lt 800 ]; then
+      sleep "0.$(printf '%03d' $((800 - (now_ms - last))))"
+    fi
+    date +%s%3N > "$SPSTATE/last"
+    # the watch: a new line for a new name, else every 5 s (the engine keeps it 20 s)
+    now=$(date +%s)
+    prev=$(head -c 100 "$SPSTATE/watch" 2>/dev/null)
+    pt=${prev%% *} pn=${prev#* }
+    if ! num "$pt" || [ "$pn" != "$name" ] || [ $((now - pt)) -ge 5 ] || [ $((now - pt)) -lt 0 ]; then
+      spool "spectate $name" >/dev/null
+      printf '%s %s' "$now" "$name" > "$SPSTATE/watch"
+    fi
+    snap="$SERVER/remote.spectate"
+    got=0
+    for _ in $(seq 1 32); do
+      if [ -r "$snap" ] && [ "$(stat -c %Y "$snap" 2>/dev/null || echo 0)" -ge $((now - 2)) ] \
+          && grep -qF "\"watch\":\"$name\"" "$snap"; then
+        got=1; break
+      fi
+      sleep 0.25
+    done
+    if [ "$got" = 0 ]; then
+      rm -f "$SPSTATE/watch"
+      sp_fail no-answer "no view in 8 s: is the server running (and spectate.lua loaded)?"
+    fi
+    timeout 25 python3 -I "$SPTOOL" render --dat "$SPPAIR/Tibia.dat" --spr "$SPPAIR/Tibia.spr" --snapshot "$snap" \
+      --watch "$name" --max-age 5 --cache-dir "$SPSTATE"
+    rc=$?
+    [ "$rc" = 124 ] && sp_fail timeout "the drawing took over 25 s (the first one builds the sprite index: try again)"
+    exit "$rc"
+    ;;
+  spectate-pair)
+    sub=${1:-status}
+    case $sub in
+      status)
+        [ $# -le 1 ] || die "spectate-pair status"
+        [ -r "$SPTOOL" ] || die "no $SPTOOL (CHAOS_REPO)"
+        echo "branch=$SPBRANCH"
+        if [ -f "$SPSTATE/fetch.lock" ] && ! flock -n "$SPSTATE/fetch.lock" true; then echo "fetching=yes"; else echo "fetching=no"; fi
+        python3 -I "$SPTOOL" info --dat "$SPPAIR/Tibia.dat" --spr "$SPPAIR/Tibia.spr" --cache-dir "$SPSTATE"
+        ;;
+      fetch)
+        [ $# -eq 1 ] || die "spectate-pair fetch"
+        [ -r "$SPTOOL" ] || die "no $SPTOOL (CHAOS_REPO)"
+        if [ -f "$SPSTATE/fetch.lock" ] && ! flock -n "$SPSTATE/fetch.lock" true; then
+          die "a pair fetch is running (chaos-ctl.sh spectate-pair log)"
+        fi
+        mkdir -p "$(dirname "$SPLOG")"
+        : > "$SPLOG"
+        setsid "$SELF" spectate-pair fetch-now >> "$SPLOG" 2>&1 < /dev/null &
+        echo "started (the client pair of $SPBRANCH into $SPPAIR); follow it with: chaos-ctl.sh spectate-pair log"
+        ;;
+      fetch-now)
+        [ $# -eq 1 ] || die "spectate-pair fetch-now"
+        pair_fetch
+        ;;
+      log)
+        [ $# -le 2 ] || die "spectate-pair log [N]"
+        tail -n "$(lines_arg "${2:-60}")" "$SPLOG" 2>&1
+        ;;
+      *) die "spectate-pair [status | fetch | fetch-now | log [N]]" ;;
+    esac
     ;;
   update|rollback)
     # the Linux kit updates from its branch and the newest release (update-apply); its rollback is update-rollback

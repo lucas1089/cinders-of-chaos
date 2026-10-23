@@ -186,6 +186,9 @@ public class MainActivity extends AppCompatActivity {
 
     void showTab(int idx, boolean syncNav) {
         current = idx;
+        if (idx != TAB_COMMANDS && commands != null) {
+            commands.stopSpectate();
+        }
         for (int i = 0; i < tabs.length; i++) {
             tabs[i].setVisibility(i == idx ? View.VISIBLE : View.GONE);
         }
@@ -236,6 +239,9 @@ public class MainActivity extends AppCompatActivity {
         resumed = false;
         main.removeCallbacks(panelTick);
         main.removeCallbacks(logTick);
+        if (commands != null) {
+            commands.stopSpectate();
+        }
     }
 
     @Override

@@ -36,6 +36,7 @@ OUT_OF_SCOPE = {
     'botreview': 'staff review of suspected bots; testers are exempt',
     'clientguard': 'the login handshake itself; every bot login runs it',
     'remote_cmd': 'console commands of the owner (chaos-ctl.sh), not a player action',
+    'spectate': "the owner's live view in the admin app (chaos-ctl.sh spectate), not a player action",
     'moderation_purge': 'staff moderation only',
     'shadow_mute': 'staff moderation only',
     'telemetry': 'client performance numbers; the bots send no client frames',
