@@ -3484,6 +3484,7 @@ season. Before 12 Oct 2026 no script paid it.
   ```
   python3 server/tools/clientservices.py <server>/data/chaos_clientservices.json --port 8090
   ```
+  A Rust port with the same behaviour is opt-in (`chaos-ctl.sh clientservices-impl rust`, see "Rust services (O153)").
   The client's `init.lua` (base patch 0001) points `clientServicesLink` and `Services.status` at `http://127.0.0.1:8090/clientservices`; change the host for a public server. A GET on the same URL returns everything, handy to check it from a browser.
 - **Runtime events:** `ChaosEvents.dynamic[key] = {id, name, description, bonus, untilTime}` adds an event with an end time to `ChaosEvents.active` (and so to the bonuses, Adventure > Events and the login lines) until `untilTime`: the invasion Victory buff and the world events use it (see "Invasions and world events"). Scheduled invasions are whole-day entries of `Chaos.events.list`.
 - `server/tests/events_schedule_test.lua` checks the weekday/month-day rules, the bonus product, the calendar ranges sent to the client and the experience callback.
@@ -22082,6 +22083,8 @@ server and checks that a seed sends the same bytes again.
 
 No suppression file is used: every report above was a real bug in our engine or scripts.
 
+**Rust for new services** (part 3): see "Rust services (O153)" at the end of this file.
+
 **Not run / not covered.** The Windows build; a sanitizer run with real players or on the VPS; MemorySanitizer and
 ThreadSanitizer (the dispatcher, scheduler and network threads were not checked for data races); the client; the
 `fuzz_netmsg` harness in CI (it needs the base engine source, not in git; `build_fuzz.sh --src` runs it locally). The
@@ -22089,3 +22092,72 @@ harness mirrors the engine's read sequences rather than calling `ProtocolLogin` 
 game), and `build_fuzz.sh` stops when those lines change. In-game packets were fuzzed through the network only, as
 full-engine handlers. The server never reassembles chunked extended opcodes (`Chaos.sendChunked` is server to client
 only), so there is no server-side chunk parser to fuzz.
+
+## Rust services (O153) (`services/clientservices-rs/`, `chaos-ctl.sh clientservices-impl`)
+
+ROADMAP "Open decisions and loose ends", engine hardening part (3), owner 2026-10-20: new services outside the engine
+may be written in Rust, one at a time. The first is the login-screen services endpoint, a port of
+`tools/clientservices.py`.
+
+**Which service, and why.** The three candidates in the roadmap text were checked in the repository:
+- the **login gateway** is HAProxy (`deploy/gateway/haproxy.cfg.template`) plus nftables, not a Python program: nothing
+  to port;
+- the **payment worker** is PHP (`website/overlay/plugins/chaos/pay/worker.php`, `deploy/chaos-payworker.service`), and
+  it only makes outgoing calls (the provider's webhook goes to the website): no listener of its own;
+- the **Help assistant** is Python (`tools/helpai.py`) but exchanges small files with the game server and calls the
+  Claude API: it never accepts a connection.
+
+The Python program with the largest untrusted network surface is therefore `tools/clientservices.py`: the only one that
+listens on a public port. `chaos-clientservices.service` binds `0.0.0.0:8090`, the nftables template opens that port to
+everyone (rate limited), and every client, scanner and bot can send it HTTP. It is small (one JSON file, three
+answers), which makes it a good first port. The cast relay (`tools/cast_relay.py`) listens only on 127.0.0.1 and reads
+the engine's own frames, so it has no outside surface.
+
+**The crate** (`server/services/clientservices-rs/`, `#![forbid(unsafe_code)]`, one runtime dependency: `serde_json`
+and its four small crates; `proptest` for tests only; `Cargo.lock` committed, built with `--locked`; credits in
+docs/CREDITS.md):
+- `src/lib.rs`: the protocol, no sockets. `read_head` (any `BufRead`), `plan` / `finish`, `render`. Same rules as
+  `http.server`: ISO-8859-1 head, `\n` or `\r\n` line ends, 65536-byte lines (414 / 431), at most 100 header lines
+  counting the empty one, the first `Content-Length` wins and a line that is not a header ends the headers, POST body
+  at most 64 KiB (413), bad JSON 400 `{"error": "invalid json"}`, unknown type 400 `{"error": "unknown type",
+  "types": [...]}`, GET with the last `type=` of the query (not percent-decoded) or all three parts, OPTIONS 204, other
+  methods 501, HTTP/2 505. The file is read on every request; a part that is not an object (Lua writes `[]` for an
+  empty table) becomes the empty answer. CORS headers on every answer; HTTP/1.0 style, one request per connection.
+- `src/main.rs`: sockets, threads and the clock. Same command line as the Python tool (`FILE --host --port`,
+  `--port=N`), same start line, same log prefix `[clientservices]`. One thread per connection.
+- `build.sh OUT`: `cargo build --release --locked` into a temporary target folder, the binary replaced by a rename.
+
+**Differences from the Python service, all stricter** (none changes an answer the client can get):
+the whole request must arrive in 30 s (Python: 10 s per read, so a trickle held a thread for ever); at most 256 open
+connections (more are closed at once); all header bytes together at most 128 KiB; a data file over 16 MiB is ignored;
+the request line `GET /` without a version (HTTP/0.9) is 400, not served; the 204 of OPTIONS has no body (Python sent
+`{}` with a 204) and the error answers of 414, 431, 501 and 505 are JSON, not an HTML page; the log line is cut at 200
+characters and its control characters escaped; the answer carries a `Date` header. JSON is compared as data, not as
+text (key order, `\u` escapes). Not reproduced: Python's `json` accepts `NaN` and `Infinity`, keeps integers beyond 64
+bits exact and accepts a BOM; `serde_json` does not (a data file the Lua writer produces has none of these).
+
+**Switch** (`chaos-ctl.sh clientservices-impl [status | rust | python]`, admin app: Comandos > Serviços da tela de
+login (Rust) > Ver / Ligar Rust / Voltar ao Python). Python stays the default. `rust` builds first (needs `cargo` on the
+VPS, rustup; a failed build changes nothing), installs `CHAOS_ROOT/bin/clientservices-rs`, writes the systemd drop-in
+`/etc/systemd/system/chaos-clientservices.service.d/10-rust.conf` (`ExecStart=` reset, then the binary with the data
+file, `--host 0.0.0.0 --port 8090`; same sandbox, user and log as the unit), reloads and restarts only that unit; a unit
+that is not active 2 seconds later is put back on python. `python` removes the drop-in. While the drop-in exists,
+`chaos_update.sh` (and so `update-apply`) rebuilds the binary after the questions and before the game stops, and
+restarts the unit; a failed build warns and keeps the old binary. The drop-in directory is `CHAOS_SYSTEMD_DIR` in
+`ctl.conf` (default `/etc/systemd/system`). The Linux kit (`start-server.sh`, no systemd unit) keeps the Python service.
+
+**Tests.**
+- `cargo test --locked` (CI): unit tests of the parser, the limits, the content-length rule, the query, the date and
+  the rendering, and proptest properties: `read_head` on arbitrary bytes and on request-shaped text never panics and
+  never reads past its input; `plan` stays inside the 64 KiB limit; `finish` on arbitrary bodies answers 200 or 400;
+  any data file gives objects. `cargo clippy --all-targets -- -D warnings` and `cargo fmt --check` are in CI too.
+- `compare_test.py` (CI): starts `tools/clientservices.py` and the binary on free ports and sends the same 50 raw requests
+  to both (well-formed and broken: every method, Content-Length padded, negative, huge, short, repeated, bare LF, 70 KB
+  lines, 100 and 101 headers, junk bytes, empty connections), against 10 shapes of the data file; status and JSON must
+  match. The stricter cases are checked on the Rust side alone. Also the command line and a half-sent request.
+- `chaos_ctl_test.py`: the switch (python by default, rust builds then writes the drop-in, a failed build changes
+  nothing, python removes it, rebuild only while on, no unit refused).
+
+**Not covered.** A real `cargo build` on the VPS (the script and the switch are tested with a stub build); a cargo-fuzz
+run (only proptest, 2000 cases per property in CI); the unit under systemd with the real sandbox; a load test of the
+thread-per-connection design against the Python server; IPv6 hosts; the Linux kit.

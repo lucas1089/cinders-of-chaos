@@ -91,6 +91,13 @@ instalada é desconhecida: o passo 2 baixa a mais nova e, se o `tfs` for igual a
   (dinheiro real, como a Poção de XP em dobro) não mudam. Edita a linha `enabled` de `beta_mode_config.lua` (backup
   `.before-beta`); vale no próximo reinício ou já com "e reiniciar". Atualizar servidor mantém a chave. Desligue no
   lançamento. O app precisa ser recompilado para ter o cartão; o comando funciona pelo SSH sem isso.
+- **Serviços da tela de login (Rust)** (`clientservices-impl status | rust | python`, aba Comandos > cartão Serviços da
+  tela de login (Rust) > Ver / Ligar Rust / Voltar ao Python): quem responde a porta 8090 da tela de login (criatura do
+  dia, eventos, jogadores online). Padrão: o Python (`server/tools/clientservices.py`). Ligar o Rust compila
+  `server/services/clientservices-rs` no servidor (precisa do `cargo`, `--locked`, alguns minutos), instala o binário em
+  `/opt/chaos/bin`, grava o drop-in `10-rust.conf` do systemd e reinicia só `chaos-clientservices` (o jogo não
+  reinicia). Compilação que falha não muda nada; serviço que não sobe volta sozinho para o Python. Atualizar servidor
+  recompila enquanto estiver ligado. O app precisa ser recompilado para ter o cartão; o comando funciona pelo SSH sem isso.
 - **Contas** (`account-create NOME`, `account-password NOME`): a senha vai pela entrada do comando (stdin do SSH),
   nunca na linha de comando nem em log, e vira hash PBKDF2 como o site grava. O personagem se cria no client ou no site.
 - **Saúde e espaço** (`health`, `cleanup [--yes]`, `backups`): servidor, banco, serviços web (nginx, apache, php-fpm),
@@ -176,7 +183,7 @@ terminal do app ser root de verdade (instalar pacotes, mexer no sistema), rode n
 `panel NOME ACAO JSON`, `update TAG now|at-save` e `rollback now|at-save` (layout padrão; no kit, `rollback now` é
 `update-rollback`), `update-check`, `update-apply [--no-client] [--no-downloads] [--no-site] [--no-map]`, `update-status`,
 `update-rollback`, `update-log`, `publish-update TAG` (atualização do cliente, docs/LAUNCH.md "Publishing a client
-update"), `publish-log`, `site-install`, `site-log`, `xp-rate`, `beta-mode [status | on | off] [restart]`, `health`, `cleanup [--yes]`, `account-create NOME`,
+update"), `publish-log`, `site-install`, `site-log`, `xp-rate`, `beta-mode [status | on | off] [restart]`, `clientservices-impl [status | rust | python]`, `health`, `cleanup [--yes]`, `account-create NOME`,
 `account-password NOME`, `install-admin`, `spectate NOME`, `spectate-pair [status | fetch | log [N]]`. Todos com argumentos conferidos (números, nomes, tags de release), nada de
 shell livre. Rode `chaos-ctl.sh help`. Aviso, expulsar, abrir, fechar e salvar passam pelo arquivo `remote.cmd`
 (`server/README.md`, "Remote admin commands"): o servidor do jogo precisa estar com os scripts novos.

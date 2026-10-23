@@ -553,6 +553,16 @@ jobs:
           server/tools/fuzz/build_fuzz.sh "$(mktemp -d)" --run
           python3 -I server/tools/netfuzz_test.py
 
+      - name: Rust login-screen services (O153; clientservices-rs, unit and property tests, same cases against the Python service)
+        run: |
+          cd server/services/clientservices-rs
+          shellcheck build.sh
+          cargo fmt --check
+          cargo clippy --locked --all-targets -- -D warnings
+          cargo test --locked
+          cargo build --locked
+          python3 -I compare_test.py
+
       - name: Base opcode handlers accept only a JSON object (patch_base_json_guards.py, synthetic copies)
         run: python3 -I server/tools/patch_base_json_guards_test.py
 

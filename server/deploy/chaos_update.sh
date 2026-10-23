@@ -460,6 +460,19 @@ if [ "$CHECK_ONLY" = 1 ]; then
 fi
 
 ask "Install $REF on $SERVER ($([ "$MODE" = now ] && echo "stop now" || echo "at the next stop: daily save or admin panel countdown"))?"
+# the Rust login-screen services (server/README.md "Rust services (O153)"), only when the owner switched them on
+# (chaos-ctl.sh clientservices-impl rust): build the new checkout's version while the game is still up; the old
+# binary stays if the build fails
+CSDROP="${CHAOS_SYSTEMD_DIR:-/etc/systemd/system}/chaos-clientservices.service.d/10-rust.conf"
+if [ -f "$CSDROP" ]; then
+	CSBIN="$(dirname "$SERVER")/bin/clientservices-rs"
+	log "Rust login-screen services are switched on: building $CSBIN"
+	if bash "$REPO/server/services/clientservices-rs/build.sh" "$CSBIN"; then
+		systemctl restart chaos-clientservices || log "warning: chaos-clientservices did not restart"
+	else
+		log "warning: the Rust build failed; the previous binary keeps running (chaos-ctl.sh clientservices-impl python goes back)"
+	fi
+fi
 stop_server
 stop_timers
 FINAL_DUMP=""

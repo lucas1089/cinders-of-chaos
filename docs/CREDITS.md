@@ -281,6 +281,12 @@ them are named by role, so they carry no Reserved Font Name.
   - Used for: Ember, the Help channel assistant (installed on the server by the owner, not shipped in the packages)
   - Source: https://github.com/anthropics/anthropic-sdk-python
 
+- **serde_json, serde_core, itoa, memchr, zmij (Rust crates) and the Rust standard library**
+  - Author: David Tolnay, Erick Tryzelaar and the serde contributors; Andrew Gallant; the Rust Project contributors
+  - Licence: MIT or Apache-2.0 (memchr: Unlicense or MIT; zmij: MIT)
+  - Used for: the Rust login-screen services (server/services/clientservices-rs), built on the server by the owner when switched on, not shipped in the packages
+  - Source: https://github.com/serde-rs/json and https://github.com/BurntSushi/memchr and https://www.rust-lang.org/
+
 - **Helper module**
   - Author: R!ck, ZLukSrT#8740, Christianlb, worthdavi
   - Licence: unknown; the owner supplied the file, no licence text came with it
