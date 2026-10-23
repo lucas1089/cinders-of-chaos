@@ -839,6 +839,17 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     limit 10 and below while `0116` draws them at every limit, draws the newest, and holds one copy of each aura.
     Applies after `0001`-`0115` (`patch` clean on the base archive with the whole chain); `tile.cpp` passes
     `g++ -std=c++20 -fsyntax-only`. Not seen in a client. Native code: players need a new Windows package.
+69n. `0117` (Lua and otui: `mods/game_helper/classes/auto_target.lua`, `styles/magic_shooter_panel.otui`,
+    `magic_shooter_panel.lua`): **the Auto Target only picks monsters it can reach, and takes loot goblins, bosses and
+    special monsters first.** Owner request 2026-10-23. Four calls from `check()` to `ChaosAutoTargetEngine` (overlay
+    `game_autotarget`, every one in a `pcall`): `keepLock` drops the lock when the monster cannot be reached or a
+    better class appears; `filter` cuts the monster list to the reachable ones (path for melee, line of sight too for
+    the ranged classes); `adjust` picks the best priority class (not in mode J) and, in mode F, orders by the way to
+    walk and then the lowest health; a lock dropped for reach with nothing else to hit cancels the attack. `loadToUI` sets
+    the two new boxes **Priority targets** and **Only reachable** (otui, under Always Chase Opponent; the panel's three
+    heights grow by 44 px). Without the module nothing changes. Applies after `0001`-`0116` (`patch` clean on the base
+    archive with the whole chain; the Lua loads in LuaJIT and Lua 5.3). Numbered 0117 because other branches use 0110,
+    0111 and 0114. Not seen in a client.
 70. `0088` (`src/client/outfit.cpp`): **a look without a mounted pattern still rides.** `Outfit::draw` took
     `zPattern = min(1, pattern Z - 1)` and drew the mount only when it was above 0, so a mounted character in a look
     with pattern Z 1 showed no mount. In pair 30 (dat 8156792438dabee3aa768663d57a1619) 43 wearable looks (base

@@ -1,0 +1,10 @@
+Module
+  name: game_autotarget
+  description: Which monster the helper's Auto Target picks - only monsters it can reach, loot goblins, bosses and special monsters first, then the nearest with the lowest health (ChaosAutoTarget, ChaosAutoTargetEngine; called by mods/game_helper through base patch 0117)
+  author: Cinders of Chaos
+  sandboxed: false
+  autoload: true
+  autoload-priority: 900
+  scripts: [ autotarget_core, autotarget ]
+  @onLoad: ChaosAutoTargetEngine.init()
+  @onUnload: ChaosAutoTargetEngine.terminate()

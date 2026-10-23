@@ -55,6 +55,7 @@ Protocol target is 10.98 on the base server (TFS 1.4.2). The sources are mostly 
 | game_shaderfx | none | base patch 0044 (`UIWidget:setUiShader` / `setUiShaderParams`, `u_Params` in the shader); without it every call is skipped and the images stay plain | UI widget shaders, all GLSL written for this client (`data/shaders/chaos_ui_*.frag`, compile-checked by `tools/check_shaders.py`). Liquid health and mana orbs (`chaos_ui_orb`: layered sine surface, own value noise for the swirl, round bubbles in a cell grid, a fake sphere normal for the shading, a foam line; the value change makes it slosh, eased back in about 2 s) at the bottom corners of the game window, option `liquidOrbs` (off by default); a light sweep across the rarity frame of Legendary-and-up and unique items in inventory and container slots (`chaos_ui_shine`, a slanted band every 3.5 s, each slot at its own phase; option `rarityFrameShine`); greyscale for items their player locked (custom attribute 3 = 1; `chaos_ui_grey` as the slot's item shader, and only our grey is taken back; a bound item such as the Everfull potions carries 2 and keeps its colours: with 1 the red and purple flasks showed as dark, empty-looking ones, live screenshot 2026-10-16) and `setGreyed(widget, on)` for any widget. Art from `tools/gen_orb_art.py` (`--check` in CI): per orb size a ring `images/orb_ring_<size>.png` and a mask `images/orb_mask_<liquid>.png` at twice the drawn size (`L.orbArt`, set by `applyOrbSize`). Owner screenshot 2026-10-21: the one 76 px ring and 64 px mask stretched to the 150 / 190 px orbs drew a blurred, stepped ring with square rivets, and the bubbles (the peaks of a 22 x 14 value noise) read as upright pixel blocks; now 2x art (round, soft-edged rivets), round bubbles in a square cell grid and the swirl's noise grid turned off the screen axes (before / after rendered with a numpy port of the shader, not seen in a client). Pure helpers `shaderfxlogic.lua` (fill, slosh, phase, shine rule, locked rule, `applyItemGrey`), tested by `shaderfx_test.lua`. Live test 2026-10-14: a container holding a locked item (the Loot Bag, the Everfull Ration) overflowed the Lua stack at every open: `setItemShader` calls the slot's onItemChange, `game_itemrarity` answers with `onSlotItem` and the slot was marked grey only after the call, so each re-entry greyed again; `L.applyItemGrey` marks it first (a re-entrant mock slot in the test). |
 | game_helperhud | none | base patch 0056 (the helper calls `ChaosBotHud` when its cavebot file is left out) | The helper's bot HUD (Tools > Bot HUD), see "Helper bot HUD" |
 | game_targetguard | none | base patch 0112 (the helper's locked target and the battle list's attack next call `ChaosTargetGuard`) | Which creatures the player's own targeting may pick, see "Target guard" |
+| game_autotarget | none of its own; asks the server for a creature's tier through `game_monsterbar` (opcode 125 `query`, answer `info`) | base patch 0117 (the helper's Auto Target calls `ChaosAutoTargetEngine`; two boxes in its Targeting panel); `g_map.findPath` / `g_map.isSightClear` of the base engine | Which monster the helper's Auto Target picks: only reachable ones, loot goblins / bosses / special monsters first, then the nearest with the lowest health, see "Auto Target priority and reach" |
 | game_helpersupport | none | none (overlay only: it uses the helper's `_Helper` functions and `game_buffbar`'s `activeBuffs`) | The helper's Support spells tab: a list of support spells the helper casts by itself whenever they are off cooldown, see "Helper Support spells" |
 | game_chatpanel | none | base patches 0056 (`game_console` reads `ChaosChatLogic.enterAction`; splitter minimum 96), 0065 (splitter drag, left margin) | Chat panel size and place (with the orbs) and the chat's Enter rule, see "Chat panel" |
 | game_chaoslayout | none | none (the base's miniwindow restore reads a node nothing writes) | Window layout per character, see "Window layout per character" |
@@ -3653,6 +3654,39 @@ Owner report 2026-10-21: the Necromancer's minions got targeted and then stood i
 decides for base patch 0112: the helper's locked target is dropped when it is the player's own summon (creature type 3)
 or when the server refused it 3 times within 3 s, and the battle list's attack next / previous skip own summons.
 Another player's summon stays a valid target (PvP). `targetguard.lua`, `targetguard_test.lua`; client/BASE.md `0112`.
+
+### Auto Target priority and reach (`game_autotarget`)
+Owner request 2026-10-23: the Auto Target only attacks monsters it can reach, by default the nearest and the one with the
+least health, with loot goblins, bosses and special monsters first. Before, mode F (the default) took the nearest by
+straight distance in the 7 x 5 window and kept the lock on it, even behind a wall or across water.
+- **Reach** (`ChaosAutoTargetEngine`, the only engine calls): melee needs a path (`g_map.findPath` with the
+  ignore-creatures flag, at most 16 steps, so a long detour does not count); a ranged class (Ranger, Mystic and
+  Necromancer lines, server vocation ids in `RANGED_VOCATIONS`) also takes a clear line of sight (`g_map.isSightClear`),
+  so it shoots across water. Another floor never counts. At most 4 new path searches per tick, nearest first; an answer
+  is reused for 0.6 s (3 s when the budget is spent); a monster not asked yet waits one tick.
+- **Order** (`ChaosAutoTarget`, pure): class (goblin, boss, special, normal), then the way to walk (steps for melee, the
+  straight distance for a ranged class with sight), then the lowest health percent, then the lowest id. Mode F takes
+  this order; the other modes A to I keep their own pick, from the reachable monsters, and the priority class replaces it
+  when it exists; mode J (the player's own list) only gets the reach rule.
+- **No flapping:** the lock stays while the monster is alive, in reach and reachable; it goes when the way is shut or a
+  reachable monster of a better class appears (a goblin while fighting a normal monster). When nothing else can be
+  reached the attack on the cut-off monster is cancelled.
+- **How the client knows the class.** Loot goblins by name (`GOBLINS`: Treasure, Gem and Shard Goblin, the variants of
+  `server/data/scripts/chaos/treasure_goblin_config.lua`, checked by the test; the stock "Goblin" is a normal monster).
+  Bosses and special monsters from the server's monster bar messages (`game_monsterbar`, opcode 125: `tier` normal,
+  magic, rare, legendary or boss; `role` guardian or omen for rift and Omen guardians), cached per creature id. The
+  server pushes them for tiered monsters every 15 s and answers a `query` for any monster within 15 tiles, so the engine
+  asks (3 per tick, a creature again after 5 s) for a creature nobody named yet. `game_monsterbar` got two small
+  functions for it, `tierInfo(cid)` and `requestInfo(cid)`. World, pocket and waystone bosses are bosses of the server
+  (`isBoss` flag), waystone elites get a magic or rare tier, so all of them arrive as tiers.
+- **Options** in the helper's Targeting panel, under Always Chase Opponent (base patch 0117; both on by default, kept in
+  `g_settings`): **Priority targets** (`chaosAutoTargetPriority`; pt-BR "Alvos prioritários") and **Only reachable**
+  (`chaosAutoTargetReachable`; "Só alcançáveis"). Off restores the old pick for that rule. The panel grew by two 22 px rows.
+- Tests: `autotarget_core_test.lua` (rules: unreachable skipped even when nearest, goblin / boss / special before a nearer
+  normal monster, nearest, equal distance lowest health, the lock kept until a better class shows up),
+  `autotarget_engine_test.lua` (a mocked map: paths, sight, floors, budgets, options, tier questions). Not run in a client.
+  To check live: a monster behind a wall or across a river is not attacked; a Treasure Goblin pulls the character off a
+  nearer rat; a rare monster before a normal one; the two boxes are visible and the panel fits at 936 x 540.
 
 ### Helper bot HUD (`game_helperhud`)
 `tools/assemble_client.sh` leaves the helper's cavebot file out, and the bot HUD lived there, so Tools > Bot HUD > "Show
