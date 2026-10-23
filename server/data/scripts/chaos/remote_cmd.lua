@@ -1,7 +1,8 @@
 -- Remote admin commands by file (server/README.md "Remote admin commands"). chaos-ctl.sh and the admin app append lines
 -- to `remote.cmd` in the server folder; every 2.5 s this takes the file and runs each whitelisted line: broadcast TEXT,
 -- kick NAME, save, open, close, plus panel (any admin panel action, run as the online admin character), catalog
--- (the panel's action list) and spectate NAME (the app's live view, spectate.lua; only a new watch is logged).
+-- (the panel's action list), spectate NAME (the app's live view, spectate.lua; only a new watch is logged) and
+-- cast NAME / caststop (the player the engine's cast port mirrors, src-patch 0064; Game.setCastTarget).
 -- Each command is logged with "[ChaosRemoteCmd]"; refused lines are logged and skipped.
 -- A leftover file at startup is removed, not obeyed. Pure part: remote_cmd_core.lua; numbers: remote_cmd_config.lua.
 -- Assumed engine API (TFS 1.4.2): GlobalEvent onStartup / onThink with interval, Game.broadcastMessage,
@@ -122,6 +123,24 @@ handlers.spectate = function(c)
 		return "watching " .. c.arg
 	end
 	return false
+end
+
+-- the live cast (engine patch 0064): the cast port mirrors this player's game view; chaos-ctl.sh cast runs the relay
+handlers.cast = function(c)
+	if not Game.setCastTarget then
+		return "this engine has no cast port (src-patch 0064)"
+	end
+	local open = Game.setCastTarget(c.arg)
+	local online = Player(c.arg) ~= nil
+	return "casting " .. c.arg .. (online and "" or " (not online now)") .. (open and "" or "; the cast port is closed (castPort)")
+end
+
+handlers.caststop = function()
+	if not Game.setCastTarget then
+		return "this engine has no cast port (src-patch 0064)"
+	end
+	Game.setCastTarget("")
+	return "cast stopped"
 end
 
 handlers.catalog = function(c)

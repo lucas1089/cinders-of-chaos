@@ -1,7 +1,7 @@
 -- Remote admin commands by file (remote_cmd.lua; server/README.md "Remote admin commands"): the pure part.
 -- chaos-ctl.sh (server/deploy) and the admin app append one command per line to `remote.cmd` in the server folder; the
 -- engine takes the file, runs the whitelisted commands and logs each. Nothing else is ever run: a line is one of
--- broadcast, kick, save, open, close, catalog, panel and spectate followed by an argument checked here.
+-- broadcast, kick, save, open, close, catalog, panel, spectate, cast and caststop followed by an argument checked here.
 -- Tested by tests/remote_cmd_test.lua.
 -- Lua 5.1 / LuaJIT and Lua 5.3 compatible.
 
@@ -33,6 +33,8 @@ end
 --                                 RID digits (the caller finds the answer by it), ACTION like players.kick, JSON an object
 --   catalog ACTOR                 writes the panel's catalog for ACTOR's group to the catalog file
 --   spectate NAME                 starts or renews the admin app's live view of NAME (spectate.lua), read only
+--   cast NAME                     the player the cast port mirrors (engine patch 0064, Game.setCastTarget), read only
+--   caststop                      no player is mirrored any more
 function K.parse(line)
 	if type(line) ~= "string" then
 		return nil, "not text"
@@ -52,7 +54,7 @@ function K.parse(line)
 	if cmd ~= "panel" and #line > K.MAX_LINE then
 		return nil, "line too long"
 	end
-	if cmd == "save" or cmd == "open" or cmd == "close" then
+	if cmd == "save" or cmd == "open" or cmd == "close" or cmd == "caststop" then
 		if arg ~= "" then
 			return nil, cmd .. " takes no argument"
 		end
@@ -72,7 +74,7 @@ function K.parse(line)
 			return nil, "not a character name"
 		end
 		return {cmd = cmd, arg = arg, actor = arg}
-	elseif cmd == "spectate" then
+	elseif cmd == "spectate" or cmd == "cast" then
 		if not isName(arg) then
 			return nil, "not a character name"
 		end
