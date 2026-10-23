@@ -5310,6 +5310,46 @@ No engine build, no install step: a reload of the scripts is enough. Numbers: `p
 (the engine does not give weapons.xml `min` / `max` to Lua), so nothing there changed; the "Estimated DPS" of melee and
 distance weapons already uses the skill.
 
+## Auto attack power (`weapon_power_core.lua`, `weapon_power_config.lua`, `weapon_styles.lua`)
+
+Owner 2026-10-23: "parece que auto attack nao esta escalando com a skill e lvl. ele esta muito fraco. reveja a formula dele
+por favor?" Audit (the base engine is TFS 1.4.2 and no src-patch touches `Weapons::getMaxWeaponDamage`):
+
+* **Old formula.** Melee and distance: max hit = `level / 5 + ((skill / 4 + 1) x (attack / 3) x 1.03) / stance factor`, the
+  hit a bell curve over `0 .. max` (a launcher `ceil(level / 5) .. max`), then the two-handed / launcher style factor of
+  `weapon_balance_config.lua` (launchers x1.6) and the best-melee-skill rule. Wand and rod: the flat `min .. max` of
+  weapons.xml x `(magic level + 20) / (typical magic level + 20)`. Nothing else is level based.
+* **Why it feels weak.** The level term is `level / 5`: 3% of the hit at level 1000. Everything else is skill x gear attack,
+  and both flatten out: the typical skill is 110 at level 300 and 140 from 1000, the gear's attack 55 at 300 and 65 at
+  1000 (`install_gear_sets.py` CURVES; ammunition no longer adds to a launcher). A class's spells keep growing with the level
+  (`rotation_sim.py`: a Ranger's rotation is x4 from level 300 to 2000, its crossbow auto attack x2.3). The skill term is
+  linear in the skill, so +10 skill at skill 140 is +5%: training the skill barely shows. Result in the model (single target,
+  typical skill, no class factor, no tree, no armour): melee 41-43% of a Warrior's spell rotation from level 300 to 2000 (it
+  was never the problem), a crossbow or bow 33% of a Ranger's at 300, 28% at 500, 24% at 1000, 19% at 2000, a wand 9-10% of
+  a Mystic's from level 100 on. Monster armour (25-100, the stock formula, taken off every physical hit) bites the small
+  hits of low levels hardest.
+* **New.** Two multipliers on top of the engine hit, applied in the `onHealthChange` of `weapon_styles.lua` to auto attacks
+  (a spell's scripted weapon strike, storage 7100028, is left out):
+  * level factor, `ChaosWeaponPower.levelFactor(kind, level)`: kind `melee` (sword, axe, club), `distance` (bow, crossbow) or
+    `wand` (wand, rod). Linear between the levels of `weapon_power_config.lua`, written by `python3 -I server/tools/weapon_sim.py
+    --power --write` (CI `--power --check`). It lifts the kind to **a share of the single-target spell rotation of its
+    reference class** and never cuts: melee 30% of a Warrior's (already 41-43%: factor 1 everywhere), distance 30% of a
+    Ranger's (1.00 up to level 400, 1.07 at 500, 1.28 at 1000, 1.60 at 2000), wand 15% of a Mystic's (1.00 at level 50, 1.69
+    from 100, 1.74 at 2000). Target used: 25-35% of the rotation for weapon classes (30%), 15% for the casters' wands (the
+    measured tables had them at 13-23% of a caster's total).
+  * skill factor, `ChaosWeaponPower.skillFactor(level, skill)` = `(skill / typical skill of the level) ^ 0.5`, clamped to
+    0.7 .. 1.6 (`weapon_power_config.lua` `skill`), for melee (the best melee skill) and launchers (distance skill). 1 at the
+    typical skill, so the balance numbers stand; +10 skill at level 1000 is now +9.3% instead of +5.6%, +28 skill +26.7%
+    instead of +15.7% (table in server/data/spells/README.md "Auto attack power"). A wand keeps the magic level factor of
+    "Weapon damage scales with skills".
+* Not touched: fists (the Monk line is at 58% of its rotation), spells, runes, conditions, procs. The tooltip's "Estimated
+  DPS" (`weapon_dps_core.lua`) includes both factors when `weapon_power_core.lua` is loaded (`item_tooltip.lua` loads it).
+* To retune: change `POWER_KINDS` (share, reference class) or `SKILL_POWER` in `tools/weapon_sim.py`, run `--power --write`.
+  A class or spell change moves the rotation numbers, `--power --check` (CI) then asks for a new config.
+* Live server: the `files` step and a restart (the scripts are read at start). No database or client change. Not run in game.
+  Tests: `tests/weapon_power_test.lua` (config shape, factors, a hit scales with skill and level, the tooltip estimate),
+  `tools/weapon_sim_test.py`, `tests/archery_test.lua` (the hit through `weapon_styles.lua`).
+
 ## Estimated DPS (`weapon_dps_core.lua`, `item_tooltip_core.lua` `T.dpsRow`)
 
 Owner item 79 (2026-10-18): "Faça um medidor de DPS pra cada arma. Pode ser estimado." The tooltip of a sword, axe, club or

@@ -29,6 +29,9 @@ end
 if not ChaosWeaponBalance then
 	dofile("data/scripts/chaos/weapon_balance_core.lua")
 end
+if not ChaosWeaponPower then
+	dofile("data/scripts/chaos/weapon_power_core.lua")
+end
 if not ChaosWeaponDps then
 	dofile("data/scripts/chaos/weapon_dps_core.lua")
 end

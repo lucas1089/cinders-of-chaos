@@ -113,6 +113,7 @@ jobs:
         run: |
           python3 -I server/tools/weapon_sim_test.py
           python3 -I server/tools/weapon_sim.py --check
+          python3 -I server/tools/weapon_sim.py --power --check  # weapon_power_config.lua (auto attack power)
           python3 -I server/tools/add_vocations_melee_test.py
           python3 -I server/tools/monster_fire_resist_test.py
 
