@@ -206,6 +206,28 @@ The layout `import_art_things.py` reads (its docstring is the reference; `compos
 - The 64 px owner monsters use 16 to 37 colours a frame and a dark rim (84-98% under luma 24) like the items; the
   two ice looks have a dark blue rim instead. The 4 x 4 lions are painted with thousands of colours; do not copy that for new pixel art.
 
+### Palette pass on donor creatures (pair 40)
+
+The donor creature looks and the looks made from them (rift rank variants, theme recolours) were painted with
+hundreds or thousands of colours and much single-pixel noise. `gen_creature_palette.py` (owner approved,
+2026-10-23) gives each one a cleaner palette, in place, without new pixels:
+
+- **One palette per look**, shared by every frame, direction, addon, mount and art layer (no flicker between frames):
+  32 colours by k-means in CIE Lab, fixed seed. Each palette colour is a real colour of the look. A look of 32 colours
+  or fewer keeps its own.
+- **Groups that never mix:** near-black (luma under 24: the outline stays exactly as dark as before), neutral greys
+  (no grey drifts into a hue), accents (small vivid hue families and colours used in small spots: eyes, runes, sparks;
+  their own entries) and the rest.
+- **Despeckle:** a body pixel that no neighbour shares takes the common neighbour colour when close in luma. Never on
+  the rim, never an accent, never across the near-black line.
+- Alpha is never changed. A colour mask layer and the base pixels under it are left exactly as they are.
+- **Not changed:** the outline (a tinted outline or rim light was not approved; the outline rule is open). A look
+  whose accents would suffer stays as it was; the auras (soft glow effects) are not part of the pass.
+- Not for import-only packs (cut, scale, turn and place only), the owner's own art or player outfits.
+
+The per-look numbers are in `client/tools/sprites/monster_looks/creature_palette.csv`; client/MANIFEST.md "Creature
+palette pass" has the pair.
+
 ## Effects and missiles
 
 Frame counts of our generated effects (`report`, last section):
