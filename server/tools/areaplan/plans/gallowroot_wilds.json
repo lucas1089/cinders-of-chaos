@@ -1,7 +1,7 @@
 {
   "schema": "chaos-area-plan/1",
   "id": "gallowroot_wilds",
-  "name": "Gallowroot Wilds",
+  "name": "Bramblegrave Reach",
   "biome": "forest",
   "size": [
     163,
@@ -9,8 +9,8 @@
   ],
   "floors": 1,
   "level": [
-    725,
-    840
+    630,
+    770
   ],
   "seed": 30295,
   "origin": {
@@ -212,221 +212,221 @@
   "spawns": [
     {
       "zone": "quiet_copse",
-      "monster": "Tundra Troll",
+      "monster": "Elite Spider",
       "count": 5,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "quiet_copse",
-      "monster": "Loricate Orger",
+      "monster": "Thornveil Wraith",
       "count": 6,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "quiet_copse",
-      "monster": "Ironmask Brander",
+      "monster": "Cursed Ape",
       "count": 4,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "gnarled_glen",
-      "monster": "Royal Man",
+      "monster": "Gallows Oak",
       "count": 5,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "gnarled_glen",
-      "monster": "Ironmask Brander",
+      "monster": "Cursed Ape",
       "count": 5,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "gnarled_glen",
-      "monster": "Tundra Troll",
+      "monster": "Elite Spider",
       "count": 5,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "hanging_trail",
-      "monster": "Loricate Orger",
+      "monster": "Thornveil Wraith",
       "count": 8,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "hanging_trail",
-      "monster": "Ironmask Taskmaster",
+      "monster": "Grove Keeper",
       "count": 8,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "hanging_trail",
-      "monster": "Royal Man",
+      "monster": "Gallows Oak",
       "count": 7,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "blighted_clearing",
-      "monster": "Ironmask Brander",
+      "monster": "Cursed Ape",
       "count": 4,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "blighted_clearing",
-      "monster": "Tundra Troll",
+      "monster": "Elite Spider",
       "count": 5,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "blighted_clearing",
-      "monster": "Loricate Orger",
+      "monster": "Thornveil Wraith",
       "count": 6,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "thorny_thicket",
-      "monster": "Ironmask Taskmaster",
+      "monster": "Grove Keeper",
       "count": 7,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "thorny_thicket",
-      "monster": "Royal Man",
+      "monster": "Gallows Oak",
       "count": 6,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "thorny_thicket",
-      "monster": "Ironmask Brander",
+      "monster": "Cursed Ape",
       "count": 6,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "dark_orchard",
-      "monster": "Tundra Troll",
+      "monster": "Elite Spider",
       "count": 6,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "dark_orchard",
-      "monster": "Loricate Orger",
+      "monster": "Thornveil Wraith",
       "count": 7,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "dark_orchard",
-      "monster": "Ironmask Taskmaster",
+      "monster": "Grove Keeper",
       "count": 7,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "withered_grove",
-      "monster": "Royal Man",
+      "monster": "Gallows Oak",
       "count": 6,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "withered_grove",
-      "monster": "Ironmask Brander",
+      "monster": "Cursed Ape",
       "count": 5,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "withered_grove",
-      "monster": "Tundra Troll",
+      "monster": "Elite Spider",
       "count": 6,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "fallen_hollow",
-      "monster": "Loricate Orger",
+      "monster": "Thornveil Wraith",
       "count": 4,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "fallen_hollow",
-      "monster": "Ironmask Taskmaster",
+      "monster": "Grove Keeper",
       "count": 4,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "crows_meadow",
-      "monster": "Ironmask Brander",
+      "monster": "Cursed Ape",
       "count": 4,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "crows_meadow",
-      "monster": "Tundra Troll",
+      "monster": "Elite Spider",
       "count": 4,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "old_ridge",
-      "monster": "Ironmask Taskmaster",
+      "monster": "Grove Keeper",
       "count": 5,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "old_ridge",
-      "monster": "Royal Man",
+      "monster": "Gallows Oak",
       "count": 5,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "old_ridge",
-      "monster": "Ironmask Brander",
+      "monster": "Cursed Ape",
       "count": 4,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "bramble_barrow",
-      "monster": "Tundra Troll",
+      "monster": "Elite Spider",
       "count": 9,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "bramble_barrow",
-      "monster": "Loricate Orger",
+      "monster": "Thornveil Wraith",
       "count": 10,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "bramble_barrow",
-      "monster": "Ironmask Taskmaster",
+      "monster": "Grove Keeper",
       "count": 10,
       "respawn": 75,
       "pack": 3
     }
   ],
-  "notes": "Content plan (hall fill, 2026-10-22): a forest hunt for levels 725-840 on floor 6 of the teleport hall (server/README.md \"Hall order\"). 11 hunting zones in loops; monsters Tundra Troll, Royal Man, Loricate Orger, Ironmask Brander, Ironmask Taskmaster. Display monster: Ironmask Brander."
+  "notes": "Content plan (O139 progression fill, 2026-10-23): a forest hunt for levels 630-770 on floor 6 of the teleport hall (server/README.md \"Hall order\", \"Progression smoothness (O135)\"). 11 hunting zones; monsters Grove Keeper, Thornveil Wraith, Elite Spider, Cursed Ape, Gallows Oak. Display monster: Cursed Ape."
 }

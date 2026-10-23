@@ -16,7 +16,12 @@ return {
 
 	-- teleport hall: a hall hunt (tools/hall_hunts.csv, tools/areaplan/plans) is within reach of level L when its level is
 	-- within [lo L, hi L]; every level from `fromLevel` needs minHunts of them ("next hunt far above" = nothing in range)
-	hall = {lo = 0.7, hi = 1.3, minHunts = 3},
+	hall = {lo = 0.7, hi = 1.3, minHunts = 3,
+		-- the narrow window where the hall was thin (O139): from the levels 160-240 (hunts for 200), 380-520 (450),
+		-- 630-770 (700), 900-1100 (1000), 1350-1650 (1500) and 1800-2200 (2000) every level needs minHunts hall hunts
+		-- within 0.8-1.1 x L, the pool's window. Elsewhere (levels 8-160, 240-380...) the wide window above holds.
+		tight = {lo = 0.8, hi = 1.1, minHunts = 3,
+			ranges = {{160, 240}, {380, 520}, {630, 770}, {900, 1100}, {1350, 1650}, {1800, 2200}}}},
 
 	limits = {
 		fromLevel = 8, -- characters start at level 8 (start_stats.lua)

@@ -24,7 +24,7 @@ local cfg = dofile("data/scripts/chaos/hunt_teleports_config.lua")
 
 -- ------------------------------------------------------------------ the config
 eq(#H.validate(cfg, nil), 0, "the shipped config is valid")
-eq(#cfg.plans, 58, "fifty-eight plans")
+eq(#cfg.plans, 66, "sixty-six plans")
 local shown = {}
 for _, p in ipairs(cfg.plans) do
 	local k = p.monster:lower()
@@ -189,7 +189,7 @@ do
 		fh:close()
 	end
 end
-ok(#csvAdded >= 10, "the CSV's hunts without a base teleport: " .. #csvAdded)
+ok(#csvAdded >= 7, --[[O139 took eight of the ten low_* rows away]]  "the CSV's hunts without a base teleport: " .. #csvAdded)
 local listed = {}
 for _, r in ipairs(cfg.returns.list) do
 	listed[r.id] = r

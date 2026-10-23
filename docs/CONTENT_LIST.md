@@ -561,7 +561,7 @@ Planned hunting areas (58, in `server/tools/areaplan/plans/`, docs/CONTENT.md; t
 | hollowmaw_grotto | 680-795 | cave |
 | leechwater_fen | 695-810 | swamp |
 | dreadmourn_crypt | 710-825 | crypt |
-| gallowroot_wilds | 725-840 | forest |
+| gallowroot_wilds | 630-770 | forest |
 | scorchpit_delve | 740-855 | lava |
 | glacierfang_shelf | 755-870 | ice |
 | bonewright_galleries | 770-885 | catacomb |
@@ -572,7 +572,7 @@ Planned hunting areas (58, in `server/tools/areaplan/plans/`, docs/CONTENT.md; t
 | mildewveil_sanctum | 845-960 | sanctum |
 | deepgrudge_warrens | 860-975 | cave |
 | sorrowfen_marsh | 875-990 | swamp |
-| shroudhallow_tomb | 890-1005 | crypt |
+| shroudhallow_tomb | 900-1100 | crypt |
 | hagthorn_weald | 905-1020 | forest |
 | pyreglass_chasm | 920-1035 | lava |
 | rimeblood_glacier | 935-1050 | ice |
@@ -582,11 +582,19 @@ Planned hunting areas (58, in `server/tools/areaplan/plans/`, docs/CONTENT.md; t
 | wormcoil_depths | 1250-1400 | cave |
 | shiverspine_ridge | 1350-1500 | ice |
 | hushbone_barrows | 1450-1600 | crypt, 2 floors |
-| carrionwood | 1550-1700 | forest |
+| carrionwood | 1350-1650 | forest |
 | dreadcoffer_vaults | 1625-1775 | vault, 2 floors |
 | paleflame_sanctum | 1700-1850 | sanctum, 2 floors |
-| blightmaw_bog | 1775-1925 | swamp |
+| blightmaw_bog | 1800-2200 | swamp |
 | worldscar_abyss | 1850-2000 | abyss, 2 floors |
+| ironhorn_slagworks | 155-185 | lava |
+| venomthread_fen | 165-195 | swamp |
+| azuregate_reliquary | 180-220 | sanctum |
+| drownbell_depths | 196-240 | abyss |
+| wanwick_cloister | 370-430 | crypt |
+| brinescar_strand | 390-450 | waste |
+| rustcog_warrens | 420-480 | cave |
+| mossgrave_tangle | 450-506 | forest |
 
 Each is four times the first draft (2026-10-14); the four 1000-1500 plans and the two 1500-2000 plans were added the
 same day. Placed, they lift 500-700 from 14 to about 50 parties at once, 700-1000 from 10 to about 46, 1000+ from 0 to

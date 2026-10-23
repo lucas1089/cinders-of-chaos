@@ -1,7 +1,7 @@
 {
   "schema": "chaos-area-plan/1",
   "id": "blightmaw_bog",
-  "name": "Blightmaw Bog",
+  "name": "Gloomsilt Mire",
   "biome": "swamp",
   "size": [
     184,
@@ -9,8 +9,8 @@
   ],
   "floors": 1,
   "level": [
-    1775,
-    1925
+    1800,
+    2200
   ],
   "seed": 30607,
   "origin": {
@@ -220,6 +220,13 @@
   "spawns": [
     {
       "zone": "stagnant_mudbank",
+      "monster": "Mirecoil Wyrm",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "stagnant_mudbank",
       "monster": "Gnarlback",
       "count": 5,
       "respawn": 75,
@@ -227,21 +234,21 @@
     },
     {
       "zone": "stagnant_mudbank",
-      "monster": "Gnawbone Swarm",
-      "count": 5,
-      "respawn": 75,
-      "pack": 3
-    },
-    {
-      "zone": "stagnant_mudbank",
-      "monster": "Wraithbone Stalker",
+      "monster": "Ironmask Warbreaker",
       "count": 5,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "leech_reeds",
-      "monster": "Ironmask Warbreaker",
+      "monster": "Pyrewing Tyrant",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "leech_reeds",
+      "monster": "Pyre Stork",
       "count": 8,
       "respawn": 75,
       "pack": 3
@@ -254,22 +261,8 @@
       "pack": 3
     },
     {
-      "zone": "leech_reeds",
+      "zone": "sunken_shallows",
       "monster": "Gnarlback",
-      "count": 8,
-      "respawn": 75,
-      "pack": 3
-    },
-    {
-      "zone": "sunken_shallows",
-      "monster": "Gnawbone Swarm",
-      "count": 7,
-      "respawn": 75,
-      "pack": 3
-    },
-    {
-      "zone": "sunken_shallows",
-      "monster": "Wraithbone Stalker",
       "count": 7,
       "respawn": 75,
       "pack": 3
@@ -278,6 +271,20 @@
       "zone": "sunken_shallows",
       "monster": "Ironmask Warbreaker",
       "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sunken_shallows",
+      "monster": "Pyrewing Tyrant",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "rotting_wallow",
+      "monster": "Pyre Stork",
+      "count": 5,
       "respawn": 75,
       "pack": 3
     },
@@ -296,20 +303,6 @@
       "pack": 3
     },
     {
-      "zone": "rotting_wallow",
-      "monster": "Gnawbone Swarm",
-      "count": 5,
-      "respawn": 75,
-      "pack": 3
-    },
-    {
-      "zone": "brackish_bank",
-      "monster": "Wraithbone Stalker",
-      "count": 6,
-      "respawn": 75,
-      "pack": 3
-    },
-    {
       "zone": "brackish_bank",
       "monster": "Ironmask Warbreaker",
       "count": 6,
@@ -318,8 +311,22 @@
     },
     {
       "zone": "brackish_bank",
-      "monster": "Mirecoil Wyrm",
+      "monster": "Pyrewing Tyrant",
       "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "brackish_bank",
+      "monster": "Pyre Stork",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sodden_mire",
+      "monster": "Mirecoil Wyrm",
+      "count": 5,
       "respawn": 75,
       "pack": 3
     },
@@ -332,20 +339,6 @@
     },
     {
       "zone": "sodden_mire",
-      "monster": "Gnawbone Swarm",
-      "count": 5,
-      "respawn": 75,
-      "pack": 3
-    },
-    {
-      "zone": "sodden_mire",
-      "monster": "Wraithbone Stalker",
-      "count": 5,
-      "respawn": 75,
-      "pack": 3
-    },
-    {
-      "zone": "bog_flats",
       "monster": "Ironmask Warbreaker",
       "count": 5,
       "respawn": 75,
@@ -353,29 +346,43 @@
     },
     {
       "zone": "bog_flats",
-      "monster": "Mirecoil Wyrm",
+      "monster": "Pyrewing Tyrant",
       "count": 5,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "bog_flats",
-      "monster": "Gnawbone Swarm",
+      "monster": "Pyre Stork",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "bog_flats",
+      "monster": "Gnarlback",
       "count": 5,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "reeking_pools",
-      "monster": "Gnawbone Swarm",
+      "monster": "Gnarlback",
       "count": 4,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "reeking_pools",
-      "monster": "Wraithbone Stalker",
+      "monster": "Ironmask Warbreaker",
       "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "murky_hollow",
+      "monster": "Pyre Stork",
+      "count": 6,
       "respawn": 75,
       "pack": 3
     },
@@ -387,23 +394,23 @@
       "pack": 3
     },
     {
-      "zone": "murky_hollow",
+      "zone": "peat_fen",
+      "monster": "Ironmask Warbreaker",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "peat_fen",
       "monster": "Gnarlback",
-      "count": 6,
-      "respawn": 75,
-      "pack": 3
-    },
-    {
-      "zone": "peat_fen",
-      "monster": "Wraithbone Stalker",
       "count": 4,
       "respawn": 75,
       "pack": 3
     },
     {
-      "zone": "peat_fen",
-      "monster": "Gnawbone Swarm",
-      "count": 4,
+      "zone": "fetid_roots",
+      "monster": "Mirecoil Wyrm",
+      "count": 11,
       "respawn": 75,
       "pack": 3
     },
@@ -416,14 +423,7 @@
     },
     {
       "zone": "fetid_roots",
-      "monster": "Gnawbone Swarm",
-      "count": 11,
-      "respawn": 75,
-      "pack": 3
-    },
-    {
-      "zone": "fetid_roots",
-      "monster": "Wraithbone Stalker",
+      "monster": "Ironmask Warbreaker",
       "count": 11,
       "respawn": 75,
       "pack": 3
@@ -441,10 +441,10 @@
             "count": 10
           }
         ],
-        "message": "A sealed jar, pulled dry from the mud."
+        "message": "Dredged from silt older than the realm."
       }
     }
   ],
   "chest_action": 47996,
-  "notes": "Content plan (hall fill, 2026-10-22): a swamp hunt for levels 1775-1925 on floor 5 of the teleport hall (server/README.md \"Hall order\"). 11 hunting zones in loops; monsters Gnarlback, Ironmask Warbreaker, Gnawbone Swarm, Mirecoil Wyrm, Wraithbone Stalker. Display monster: Gnawbone Swarm."
+  "notes": "Content plan (O139 progression fill, 2026-10-23): a swamp hunt for levels 1800-2200 on floor 5 of the teleport hall (server/README.md \"Hall order\", \"Progression smoothness (O135)\"). 11 hunting zones; monsters Gnarlback, Ironmask Warbreaker, Mirecoil Wyrm, Pyre Stork, Pyrewing Tyrant. Display monster: Gnarlback."
 }

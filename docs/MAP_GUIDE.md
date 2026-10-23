@@ -608,7 +608,7 @@ z 6 takes bands 500-615 up to 950-1050, 15 levels apart; z 5 1050-1200 up to 185
 | hollowmaw_grotto | 680-795 | cave | 164 x 137 | 16028, 14544, 9 | 16059, 14611, 9 |
 | leechwater_fen | 695-810 | swamp | 178 x 141 | 16232, 14544, 8 | 16320, 14655, 8 |
 | dreadmourn_crypt | 710-825 | crypt | 180 x 142 | 16436, 14544, 9 | 16525, 14571, 9 |
-| gallowroot_wilds | 725-840 | forest | 163 x 131 | 16640, 14544, 7 | 16769, 14608, 7 |
+| gallowroot_wilds | 630-770 | forest | 163 x 131 | 16640, 14544, 7 | 16769, 14608, 7 |
 | scorchpit_delve | 740-855 | lava | 167 x 130 | 16844, 14544, 10 | 16976, 14608, 10 |
 | glacierfang_shelf | 755-870 | ice | 174 x 138 | 17048, 14544, 7 | 17081, 14612, 7 |
 | bonewright_galleries | 770-885 | catacomb | 175 x 126 | 17252, 14544, 10 | 17286, 14606, 10 |
@@ -619,7 +619,7 @@ z 6 takes bands 500-615 up to 950-1050, 15 levels apart; z 5 1050-1200 up to 185
 | mildewveil_sanctum | 845-960 | sanctum | 178 x 126 | 16232, 14748, 9 | 16266, 14810, 9 |
 | deepgrudge_warrens | 860-975 | cave | 162 x 144 | 16436, 14748, 9 | 16516, 14862, 9 |
 | sorrowfen_marsh | 875-990 | swamp | 176 x 128 | 16640, 14748, 8 | 16674, 14811, 8 |
-| shroudhallow_tomb | 890-1005 | crypt | 160 x 127 | 16844, 14748, 9 | 16923, 14772, 9 |
+| shroudhallow_tomb | 900-1100 | crypt | 160 x 127 | 16844, 14748, 9 | 16923, 14772, 9 |
 | hagthorn_weald | 905-1020 | forest | 169 x 137 | 17048, 14748, 7 | 17131, 14856, 7 |
 | pyreglass_chasm | 920-1035 | lava | 166 x 133 | 17252, 14748, 10 | 17383, 14813, 10 |
 | rimeblood_glacier | 935-1050 | ice | 166 x 130 | 17456, 14748, 7 | 17488, 14812, 7 |
@@ -629,11 +629,19 @@ z 6 takes bands 500-615 up to 950-1050, 15 levels apart; z 5 1050-1200 up to 185
 | wormcoil_depths | 1250-1400 | cave | 181 x 153 | 16232, 14952, 9 | 16375, 15027, 9 |
 | shiverspine_ridge | 1350-1500 | ice | 182 x 143 | 16436, 14952, 7 | 16580, 15022, 7 |
 | hushbone_barrows | 1450-1600 | crypt | 189 x 166, 2 floors | 16640, 14952, 9 | 16676, 15034, 9 |
-| carrionwood | 1550-1700 | forest | 186 x 149 | 16844, 14952, 7 | 16936, 15070, 7 |
+| carrionwood | 1350-1650 | forest | 186 x 149 | 16844, 14952, 7 | 16936, 15070, 7 |
 | dreadcoffer_vaults | 1625-1775 | vault | 191 x 170, 2 floors | 17048, 14952, 9 | 17142, 15087, 9 |
 | paleflame_sanctum | 1700-1850 | sanctum | 184 x 166, 2 floors | 17252, 14952, 9 | 17343, 15083, 9 |
-| blightmaw_bog | 1775-1925 | swamp | 184 x 146 | 17456, 14952, 8 | 17547, 14980, 8 |
+| blightmaw_bog | 1800-2200 | swamp | 184 x 146 | 17456, 14952, 8 | 17547, 14980, 8 |
 | worldscar_abyss | 1850-2000 | abyss | 184 x 161, 2 floors | 15620, 15156, 11 | 15766, 15235, 11 |
+| ironhorn_slagworks | 155-185 | lava | 176 x 127 | 15824, 15156, 10 | 15963, 15218, 10 |
+| venomthread_fen | 165-195 | swamp | 176 x 128 | 16028, 15156, 8 | 16062, 15219, 8 |
+| azuregate_reliquary | 180-220 | sanctum | 178 x 126 | 16232, 15156, 9 | 16266, 15218, 9 |
+| drownbell_depths | 196-240 | abyss | 174 x 140 | 16436, 15156, 11 | 16469, 15225, 11 |
+| wanwick_cloister | 370-430 | crypt | 168 x 129 | 16640, 15156, 9 | 16723, 15258, 9 |
+| brinescar_strand | 390-450 | waste | 174 x 129 | 16844, 15156, 7 | 16930, 15258, 7 |
+| rustcog_warrens | 420-480 | cave | 161 x 144 | 17048, 15156, 9 | 17127, 15270, 9 |
+| mossgrave_tangle | 450-506 | forest | 180 x 125 | 17252, 15156, 7 | 17341, 15180, 7 |
 
 With these, 58 plans and the 45 base hunts take all 103 slots of the hall (48 on z 7, 37 on z 6, 18 on z 5). A next
 hunt needs a new slot first (`room.wings`) and a free cell: the grid's last row has 9 cells free east of

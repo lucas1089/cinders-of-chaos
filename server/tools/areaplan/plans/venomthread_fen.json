@@ -1,0 +1,429 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "venomthread_fen",
+  "name": "Venomthread Fen",
+  "biome": "swamp",
+  "size": [
+    176,
+    128
+  ],
+  "floors": 1,
+  "level": [
+    165,
+    195
+  ],
+  "seed": 39102,
+  "origin": {
+    "x": 16028,
+    "y": 15156,
+    "z": 8
+  },
+  "decoration": "dense",
+  "light": "dim",
+  "zones": [
+    {
+      "id": "stilt_camp",
+      "floor": 1,
+      "size": "small",
+      "place": "west",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "stagnant_wallow",
+      "floor": 1,
+      "size": "huge",
+      "place": "north"
+    },
+    {
+      "id": "sodden_channels",
+      "floor": 1,
+      "size": "huge",
+      "place": "northeast"
+    },
+    {
+      "id": "murky_pools",
+      "floor": 1,
+      "size": "huge",
+      "place": "east"
+    },
+    {
+      "id": "bog_flats",
+      "floor": 1,
+      "size": [
+        25,
+        20
+      ],
+      "place": "southeast"
+    },
+    {
+      "id": "peat_mudbank",
+      "floor": 1,
+      "size": "huge",
+      "place": "south"
+    },
+    {
+      "id": "drowned_fen",
+      "floor": 1,
+      "size": "huge",
+      "place": "southwest"
+    },
+    {
+      "id": "sunken_mire",
+      "floor": 1,
+      "size": "huge",
+      "place": "northwest"
+    },
+    {
+      "id": "leech_sink",
+      "floor": 1,
+      "size": [
+        27,
+        22
+      ],
+      "place": "center"
+    },
+    {
+      "id": "mossy_hollow",
+      "floor": 1,
+      "size": [
+        18,
+        16
+      ]
+    },
+    {
+      "id": "brackish_reeds",
+      "floor": 1,
+      "size": [
+        18,
+        15
+      ]
+    },
+    {
+      "id": "reeking_islet",
+      "floor": 1,
+      "size": [
+        21,
+        15
+      ]
+    }
+  ],
+  "paths": [
+    {
+      "from": "stagnant_wallow",
+      "to": "sodden_channels",
+      "width": 3
+    },
+    {
+      "from": "sodden_channels",
+      "to": "murky_pools",
+      "width": 3
+    },
+    {
+      "from": "murky_pools",
+      "to": "bog_flats",
+      "width": 3
+    },
+    {
+      "from": "bog_flats",
+      "to": "peat_mudbank",
+      "width": 3
+    },
+    {
+      "from": "peat_mudbank",
+      "to": "drowned_fen",
+      "width": 3
+    },
+    {
+      "from": "drowned_fen",
+      "to": "stilt_camp",
+      "width": 3
+    },
+    {
+      "from": "stilt_camp",
+      "to": "sunken_mire",
+      "width": 3
+    },
+    {
+      "from": "sunken_mire",
+      "to": "stagnant_wallow",
+      "width": 3
+    },
+    {
+      "from": "stagnant_wallow",
+      "to": "leech_sink",
+      "width": 3
+    },
+    {
+      "from": "murky_pools",
+      "to": "leech_sink",
+      "width": 3
+    },
+    {
+      "from": "peat_mudbank",
+      "to": "leech_sink",
+      "width": 3
+    },
+    {
+      "from": "stilt_camp",
+      "to": "leech_sink",
+      "width": 4
+    },
+    {
+      "from": "bog_flats",
+      "to": "mossy_hollow",
+      "width": 3
+    },
+    {
+      "from": "mossy_hollow",
+      "to": "peat_mudbank",
+      "width": 3
+    },
+    {
+      "from": "drowned_fen",
+      "to": "brackish_reeds",
+      "width": 3
+    },
+    {
+      "from": "brackish_reeds",
+      "to": "stilt_camp",
+      "width": 3
+    },
+    {
+      "from": "sunken_mire",
+      "to": "reeking_islet",
+      "width": 3
+    },
+    {
+      "from": "reeking_islet",
+      "to": "stagnant_wallow",
+      "width": 3
+    }
+  ],
+  "entry": {
+    "zone": "stilt_camp"
+  },
+  "exit": {
+    "zone": "stilt_camp"
+  },
+  "spawns": [
+    {
+      "zone": "stagnant_wallow",
+      "monster": "Venom Spider",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "stagnant_wallow",
+      "monster": "Cobra Vizier",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "stagnant_wallow",
+      "monster": "Reflect Spider",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sodden_channels",
+      "monster": "Grimeleech",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sodden_channels",
+      "monster": "Reflect Spider",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sodden_channels",
+      "monster": "Venom Spider",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "murky_pools",
+      "monster": "Cobra Vizier",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "murky_pools",
+      "monster": "Giant Hornet",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "murky_pools",
+      "monster": "Grimeleech",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "bog_flats",
+      "monster": "Reflect Spider",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "bog_flats",
+      "monster": "Venom Spider",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "bog_flats",
+      "monster": "Cobra Vizier",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "peat_mudbank",
+      "monster": "Giant Hornet",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "peat_mudbank",
+      "monster": "Grimeleech",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "peat_mudbank",
+      "monster": "Reflect Spider",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "drowned_fen",
+      "monster": "Venom Spider",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "drowned_fen",
+      "monster": "Cobra Vizier",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "drowned_fen",
+      "monster": "Giant Hornet",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sunken_mire",
+      "monster": "Grimeleech",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sunken_mire",
+      "monster": "Reflect Spider",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sunken_mire",
+      "monster": "Venom Spider",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "mossy_hollow",
+      "monster": "Cobra Vizier",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "mossy_hollow",
+      "monster": "Giant Hornet",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "brackish_reeds",
+      "monster": "Reflect Spider",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "brackish_reeds",
+      "monster": "Venom Spider",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "reeking_islet",
+      "monster": "Giant Hornet",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "reeking_islet",
+      "monster": "Grimeleech",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "reeking_islet",
+      "monster": "Reflect Spider",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "leech_sink",
+      "monster": "Venom Spider",
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "leech_sink",
+      "monster": "Cobra Vizier",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "leech_sink",
+      "monster": "Giant Hornet",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    }
+  ],
+  "notes": "Content plan (O139 progression fill, 2026-10-23): a swamp hunt for levels 165-195 on floor 7 of the teleport hall (server/README.md \"Hall order\", \"Progression smoothness (O135)\"). 11 hunting zones; monsters Venom Spider, Giant Hornet, Cobra Vizier, Reflect Spider, Grimeleech. Display monster: Cobra Vizier."
+}

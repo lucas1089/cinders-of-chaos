@@ -57,6 +57,24 @@ end
 ok(cliffStage, "the check names the x50 step at level 21")
 ok(cliffTime, "the check names the time per level cliff")
 
+-- O139: the narrow hall window (0.8-1.1 L) bites in the listed ranges: without the hunts for 200 and 450 it fails
+local savedBands = env.bands
+local without = {}
+for _, b in ipairs(savedBands) do
+	if not (b[4] > 150 and b[4] < 240 and b[3]:find("^[a-z_]+$")) and not (b[4] >= 395 and b[4] <= 480 and b[3]:find("^[a-z_]+$")) then
+		without[#without + 1] = b
+	end
+end
+env.bands = without
+local thin = M.problems(env)
+env.bands = savedBands
+local thinHall = false
+for _, p in ipairs(thin) do
+	if p:find("0.8x-1.1x", 1, true) then thinHall = true end
+end
+ok(thinHall, "no hunts for the levels 200 and 450: the narrow window names the gap")
+ok(env.cfg.hall.tight and #env.cfg.hall.tight.ranges == 6, "six ranges with the narrow window")
+
 -- the journey: a level never takes much longer or shorter than the ones around it, and the hours add up
 local curve = select(2, M.problems(env))
 local h = M.hours(curve, 8, 1000)
