@@ -350,7 +350,7 @@ def test_rates_tool():
         rc, out = rates('reset', cfg)
         rc, out = rates('show', cfg)
         check('xp=x1' in out, 'rates: reset to x1', out)
-        write(cfg, read(cfg).replace('multiplier = 50', 'multiplier = 51', 1))
+        write(cfg, read(cfg).replace('multiplier = %d' % late_game.STAGES[0][2], 'multiplier = %d' % (late_game.STAGES[0][2] + 1), 1))
         check('xp=custom' in rates('show', cfg)[1], 'rates: a hand-made table is custom')
     finally:
         shutil.rmtree(tmp, ignore_errors=True)

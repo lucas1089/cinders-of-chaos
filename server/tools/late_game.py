@@ -3,8 +3,8 @@
 
 usage: python3 -I late_game.py DATA_DIR [--config PATH] [--spawn PATH] [--csv PATH] [--dry-run] [--remove]
 
-1. config.lua (default DATA_DIR/../config.lua): replaces the experienceStages table with STAGES below. Up to level 700
-   nothing changes; after it the base server dropped by 3 every 50 levels to x3 from 851, now it goes 15, 15, 14, 14,
+1. config.lua (default DATA_DIR/../config.lua): replaces the experienceStages table with STAGES below. Levels 1-700 are
+   SMOOTH_STAGES (O135: steps of one multiplier, no cliff at level 21); after 700 the base server dropped by 3 every 50 levels to x3 from 851, now it goes 15, 15, 14, 14,
    13, 13 (x13 from 951). See server/README.md "Late game" for the leveling model behind it.
 2. The spawn file of the loaded map (default DATA_DIR/world/<mapName>-spawn.xml, mapName read from config.lua):
    every row of late_game_spawns.csv (next to this script) renames one existing spawn entry (spawn block centre +
@@ -27,7 +27,21 @@ OPEN_END = 999999
 BASE_STAGES = [(1, 20, 10), (21, 50, 50), (51, 100, 45), (101, 150, 43), (151, 200, 41), (201, 300, 39),
                (301, 350, 36), (351, 400, 33), (401, 450, 30), (451, 500, 27), (501, 550, 24), (551, 600, 21),
                (601, 650, 18), (651, 700, 15)]
-STAGES = BASE_STAGES + [(701, 750, 15), (751, 800, 15), (801, 850, 14), (851, 900, 14), (901, 950, 13), (951, OPEN_END, 13)]
+# O135 (smooth progression): levels 1-700 as steps of at most 1 multiplier (3% to 7%) instead of 3 per 50 levels (the
+# stock-derived table above fell 10-20% at every 50th level from 551), and no 5x cliff at level 21 (x10 up to 20, x50 from
+# 21 left levels 8-20 at 2 minutes a level and levels 21-50 at under half a minute). Piecewise linear through
+# (level, multiplier): 8:30  20:36  28:38  40:40  51:45  75:45  125:43  175:41  250:39  325:36  675:15 (the old table's
+# averages from 51 on). server/README.md "Progression smoothness (O135)"; tools/progression_model.lua --check keeps it smooth.
+SMOOTH_STAGES = [(1, 8, 30), (9, 10, 31), (11, 12, 32), (13, 14, 33), (15, 16, 34), (17, 18, 35), (19, 21, 36),
+                 (22, 25, 37), (26, 30, 38), (31, 36, 39), (37, 41, 40), (42, 43, 41), (44, 45, 42), (46, 47, 43),
+                 (48, 49, 44), (50, 87, 45), (88, 112, 44), (113, 137, 43), (138, 162, 42), (163, 193, 41),
+                 (194, 231, 40), (232, 304, 39), (305, 312, 38), (313, 320, 37), (321, 333, 36), (334, 350, 35),
+                 (351, 366, 34), (367, 383, 33), (384, 400, 32), (401, 416, 31), (417, 433, 30), (434, 450, 29),
+                 (451, 466, 28), (467, 483, 27), (484, 500, 26), (501, 516, 25), (517, 533, 24), (534, 550, 23),
+                 (551, 566, 22), (567, 583, 21), (584, 600, 20), (601, 616, 19), (617, 633, 18), (634, 650, 17),
+                 (651, 666, 16), (667, 700, 15)]
+LATE_STAGES = [(701, 750, 15), (751, 800, 15), (801, 850, 14), (851, 900, 14), (901, 950, 13), (951, OPEN_END, 13)]
+STAGES = SMOOTH_STAGES + LATE_STAGES
 STOCK_STAGES = BASE_STAGES + [(701, 750, 12), (751, 800, 9), (801, 850, 6), (851, None, 3)]
 
 

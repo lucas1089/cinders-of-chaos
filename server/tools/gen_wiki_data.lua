@@ -651,8 +651,10 @@ function W.treeEntries(D, T)
 		pts[#pts + 1] = {num(lv), num(floor((lv - P.startLevel) / P.levelsPerPoint))}
 	end
 	local pRows = {}
+	local pgMax = 0
 	for _, cat in ipairs(PG.categories) do
 		for _, s in ipairs(cat.stats) do
+			pgMax = pgMax + s.maxPoints
 			pRows[#pRows + 1] = {cat.name, s.name, "+" .. num(s.perPoint) .. "%", num(s.maxPoints),
 				"+" .. num(s.perPoint * s.maxPoints) .. "%"}
 		end
@@ -665,8 +667,9 @@ function W.treeEntries(D, T)
 				string.format("Up to %d presets. A full reset costs %s gold x your level; a single node can be refunded too.",
 					P.maxPresets, money(P.resetCostPerLevel))},
 				cols = {"Level", "Points (about)"}, w = {50, 50}, rows = pts},
-			{h = "Paragon", p = {string.format("After level %d: %d Paragon point per level, spent on small capped stats.",
-				PG.startLevel, PG.pointsPerLevel)},
+			{h = "Paragon", p = {string.format("After level %d: %d Paragon point per level up to level %d, then one every %d levels (all of the track by level %d), spent on small capped stats.",
+				PG.startLevel, PG.pointsPerLevel, PG.slowFrom, PG.levelsPerPointSlow,
+				PG.slowFrom + (pgMax - (PG.slowFrom - PG.startLevel) * PG.pointsPerLevel) * PG.levelsPerPointSlow)},
 				cols = {"Group", "Stat", "Per point", "Points", "At most"}, w = {18, 30, 16, 16, 20}, rows = pRows}
 		}}
 	for _, k in ipairs(T.keystones) do

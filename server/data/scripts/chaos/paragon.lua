@@ -1,7 +1,8 @@
 -- paragon.lua: the Paragon track, the long-term goal past the passive tree's point budget.
 --
 -- Rules (numbers in Chaos.paragon, chaos_constants.lua):
---   * points = (level - startLevel) x pointsPerLevel, so from level 1001 on (the tree budget ends at level 1000)
+--   * points = (level - startLevel) x pointsPerLevel up to slowFrom, then 1 per levelsPerPointSlow levels (O135), so from
+--     level 1001 on (the tree budget ends at level 1000)
 --   * four categories of two small stats each; a stat takes at most maxPoints, its cap is perPoint x maxPoints
 --   * allocations only go up; taking points back is a reset: level x Chaos.passive.resetCostPerLevel gold (the tree's
 --     rule), or the store's Passive Tree Reset service (shop_services.lua), which resets the tree and Paragon for free
@@ -51,7 +52,13 @@ end
 
 -- ---------------------------------------------------------------- pure part (server/tests/paragon_test.lua)
 function P.totalPoints(level)
-	return math.max(0, math.floor(((level or 0) - cfg.startLevel) * (cfg.pointsPerLevel or 1)))
+	level = level or 0
+	local first = math.max(0, math.min(level, cfg.slowFrom or math.huge) - cfg.startLevel) * (cfg.pointsPerLevel or 1)
+	local slow = 0
+	if cfg.slowFrom and level > cfg.slowFrom then
+		slow = (level - cfg.slowFrom) / (cfg.levelsPerPointSlow or 1)
+	end
+	return math.floor(first + slow)
 end
 
 function P.spent(alloc)

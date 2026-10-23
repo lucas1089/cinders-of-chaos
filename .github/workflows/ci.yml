@@ -140,6 +140,11 @@ jobs:
           python3 -I server/tools/survey_base_weapons_test.py
           cd server && luajit tools/weapon_coverage.lua --check && lua5.3 tools/weapon_coverage.lua --check
 
+      - name: The leveling journey is smooth (progression_model.lua; the experience stages of late_game.py)
+        run: |
+          python3 -I server/tools/late_game_test.py
+          cd server && luajit tools/progression_model.lua --check && lua5.3 tools/progression_model.lua --check
+
       - name: Painted icons are up to date with their source sheet (gen_painted_icons.py)
         run: python3 client/tools/gen_painted_icons.py --check  # not -I: Pillow from the user site (installed above)
 

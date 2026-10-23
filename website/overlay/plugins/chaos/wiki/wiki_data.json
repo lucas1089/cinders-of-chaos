@@ -5692,7 +5692,9 @@
 						},
 						{
 							"h": "Paragon",
-							"p": ["After level 1000: 1 Paragon point per level, spent on small capped stats."],
+							"p": [
+								"After level 1000: 1 Paragon point per level up to level 1100, then one every 6 levels (all of the track by level 2192), spent on small capped stats."
+							],
 							"cols": ["Group", "Stat", "Per point", "Points", "At most"],
 							"w": [18, 30, 16, 16, 20],
 							"rows": [

@@ -2408,7 +2408,7 @@ Points go into eight small stats in four categories; a stat takes at most `maxPo
 | Fortune | Gold Find (`goldFind`) | +1% | 20 | +20% | extra coins in the kill's corpse (onDropLoot index 2: after the stock loot and the Chaos loot layer, before autoloot) |
 | Fortune | Item Find (`itemFind`) | +0.5% | 40 | +20% | added to the Chaos loot layer's item-find storage (`loot_config.lua` `itemFindStorage`) |
 
-All maxed: 282 points (level 1282). Points past that are kept but have nowhere to go.
+All maxed: 282 points. Since O135 ("Progression smoothness") the points come one a level up to level 1100 and then one every 6 levels (`Chaos.paragon.slowFrom`, `levelsPerPointSlow`), so the track is full at level 2192, not 1282 (before: 900 levels with nothing to spend). Characters that already own more points than the new rate gives keep them (a request that adds points is refused until the level catches up).
 - **Stacking with the tree:** `ChaosPassiveTree.apply` (passivetree.lua) asks `ChaosParagon.addBonuses` to put the Paragon
   percentages into the tree's summed bonus table (keys `paragonDamage`, `paragonHealth`, ...), and `passivetree_effects.lua` applies
   the sum once. So the health and mana conditions (fixed sub ids 7220/7221), the crit condition, the absorb storages and the
@@ -15569,6 +15569,8 @@ below; it is idempotent and `--remove` restores the stock stage table and every 
 
 ### Experience stages (`config.lua`)
 
+Levels 1-700 are the smooth table since 2026-10-23 ("Progression smoothness (O135)"); the table below is the late game (701+), which did not change.
+
 | Level | 1-650 | 651-700 | 701-750 | 751-800 | 801-850 | 851-900 | 901-950 | 951+ |
 |---|---|---|---|---|---|---|---|---|
 | before (as written) | unchanged | 15 | 12 | 9 | 6 | 3 | 3 | 3 |
@@ -15750,6 +15752,78 @@ illusionists (earth/ice/death are resisted too).
 Pack combat (2026-10-14) multiplies these kills by its `scaled` experience curve on top. Its points must count the
 x0.03 L: the 2026-10-20 points did not and paid 5-10x this model per hour until O108 ("Pack combat (pace)", Scaled
 experience re-fit: 500 -> 1000 in 112 h for the median class again, the model's 111 h; it was 40 h).
+
+## Progression smoothness (O135, `tools/progression_model.lua`, `progression_config.lua`, `tools/late_game.py` `SMOOTH_STAGES`, 2026-10-23)
+
+Owner request (pt-BR): "Faça a progressão ser mais fluída". Read as the leveling journey from the start level (8) to 2200:
+find the walls, dead zones and spikes, measure them with the repo's own models, and smooth them.
+
+**The model (computed from the repo's data, not measured in game).** Minutes per level at level L = the experience to the
+next level (the engine's `50 L^2 - 150 L + 200`) / (the median experience per hour of the pool hunts whose hunting level is
+within 0.8-1.1 L, x the chain bonus 1.3, x the experience stage of L). A hunt pays its `pace_config.lua` experience per kill
+at the pack model's kills per hour (`spawn_tuning.json` `paceKillsPerHour`). `luajit tools/progression_model.lua` prints the
+table, `--check` is the CI gate, `--spells` lists the unlock gaps. Limits and windows: `progression_config.lua`. The absolute
+hours differ from "The leveling model and the hours" (that one is the fastest class with the best hunt; this is the median
+hunt, so it is slower); only the shape matters here, and the band hours of 100+ did not change.
+
+**What the measurement found.**
+
+| Finding | Where | Before | Fix |
+|---|---|---|---|
+| Cliff in the stage table | level 20 to 21 | x10 up to 20, x50 from 21: levels 8-20 took 1.1-2.7 minutes a level, levels 21-50 0.35-0.6 (a 5x jump, 10-level blocks fall to 0.37x) | `SMOOTH_STAGES`: x30 at level 8 rising to x36 at 20, x38 at 28, x40 at 40, x45 at 51 |
+| Steps of 3 every 50 levels | 301 to 700 | each 50th level paid 8-20% less per kill (x36, 33, 30, ... 15) | one multiplier per step, rows of 14-17 levels, the same averages (hours of 300-700 within 0.5%) |
+| Paragon track ends | level 1282 to 2200 | 282 points, one a level, all spent at 1282: 900 levels of level-ups with no new choice | one point a level up to 1100, then one every 6 levels: all 282 at level 2192; points already owned stay |
+| Hall hunt gaps | levels 163-233, 386-518 (by a window of 0.8-1.1 L) | 0-2 hall hunts, the nearest 22% above | not fixed (needs new hunts, see below); `--check` fails on fewer than 3 within 0.7-1.3 L, which holds today |
+| Gold per hour | 300 to 800 | 469k (300), 393k (500), 2.5M (800): a dip, then a 6x jump (`tools/loot_model.lua`) | not changed (loot tables are another owner's work); reported |
+| Spell unlock gaps | levels 130-380 | longest stretches without a new spell below 300: Ninja 180 to 360, Beastmaster 220 to 380, Berserker 130 to 260, Lich 170 to 300, Shadowfist 150 to 250 | not changed (`spells_chaos.xml` belongs to the spell work); `--spells` prints all 21 |
+
+Before and after (minutes a level, mean of 3 levels; stage):
+
+| Level | Before | After | Stage before / after |
+|---|---|---|---|
+| 8 | 1.88 | 0.61 | x10 / x30 |
+| 12 | 2.21 | 0.68 | x10 / x32 |
+| 16 | 2.74 | 0.79 | x10 / x34 |
+| 20 | 1.08 | 0.63 | x10 / x36 |
+| 21 | 0.44 | 0.61 | x50 / x36 |
+| 30 | 0.35 | 0.46 | x50 / x38 |
+| 50 | 0.59 | 0.61 | x50 / x45 |
+| 100 | 0.85 | 0.84 | x45 / x44 |
+| 300 | 2.90 | 2.75 | x39 / x39 |
+| 500 | 7.49 | 7.37 | x27 / x26 |
+| 650 | 13.17 | 12.81 | x18 / x17 |
+| 700 | 15.11 | 15.11 | x15 / x15 |
+| 1000 | 18.19 | 18.19 | x13 / x13 |
+| 2000 | 41.15 | 41.15 | x13 / x13 |
+
+Hours (model): 8-20 0.46 to 0.14; 20-50 0.25 to 0.28; 50-100 0.55 to 0.56; 100-300 5.87 to 5.85; 300-500 15.6 (same);
+500-700 35.9 to 35.7; 700-1000 80.9 (same); 8-1000 139.5 to 139.0. The worst 10-level change of the minutes a level over
+8-2200 went from 0.37x (a cliff) to 0.78x, and the worst rise from 1.26x to 1.18x. The largest step of the stage table went
+from 5x to 1.077x (15 to 14, 14 to 13 in the late game; unchanged). From 700 the curve is flat (15-18 minutes a level to 1000,
+19-21 to 1400) and rises 5% every 50 levels from 1500 to 2200 (23 to 50 minutes): smooth, and it matches the experience
+needed per level growing with L^2 against hunts that pay linearly.
+
+**`--check` (CI, `luajit` and `lua5.3`, `tests/progression_test.lua`).** Fails when: a stage row steps more than 8% from the
+one before or the table has a hole; the mean minutes a level of consecutive 10-level blocks change by less than 0.75x or more
+than 1.25x (25-level blocks 0.88x to 1.35x) between 8 and 2200; fewer than 4 pool hunts are in reach of a level; fewer than 3
+hall hunts are within 0.7-1.3 L of a level. The test also feeds it the table from before O135 and expects the x50 step at
+level 21 and the time cliff to be named.
+
+**Not fixed, and why.**
+- The hall (levels 163-233 and 386-518 with fewer than 3 hunts within 0.8-1.1 L; 200 and 450 have the nearest hunt 22% above,
+  levels 400-479 none with a band that contains them) needs new hunts: a plan (`tools/areaplan/plans/`) or a base-map hunt
+  row (`tools/hall_hunts.csv`, arrival tiles checked on the map). Neither can be made or checked without the map. Wider
+  gates (`minLevel` in `hunt_teleports_config.lua`) would send players into monsters that are 20-30% above them.
+- Class power dips at levels 30 / 60 / 100 and spikes at 200 (spells/README.md "Attack spell parity"): the damage factors
+  belong to the combat numbers; unlock levels of the attack kit are the cheapest lever and are listed by `--spells`.
+- Gold per hour (above) and the costs of potions per band: loot tables and prices are other work.
+- `catchup_config.lua` `model` and `rift_config.lua` `exp.model` keep their hours per band (the fastest class); levels
+  8-20 are 20 minutes faster in the model, which they do not show.
+
+**Install.** The stage table is written by `tools/late_game.py` (install step `lategame`, `install_all.py --only lategame`,
+which the kit update runs): config.lua is read at the engine's start, so restart the server. A table with the old rows is
+replaced; `chaos-ctl.sh xp-rate` keeps its factor (it scales the release table). Paragon needs only the script reload.
+No client update and no engine rebuild.
 
 ## Pack combat (pace) (`pace.lua`, `pace_core.lua`, `pace_config.lua`, 2026-10-14)
 
