@@ -221,6 +221,21 @@ InfinityTowerWindow < NewHeadlessWindow
       text-align: left
 
     Label
+      id: nextRewardLabel
+      anchors.top: prev.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 12
+      margin-left: 10
+      margin-right: 10
+      height: 64
+      text-wrap: true
+      !text: tr('Next reward: --')
+      font: $var-cip-font
+      color: $var-text-cip-color-highlight
+      text-align: left
+
+    Label
       id: towerPointsLabel
       anchors.bottom: parent.bottom
       anchors.left: parent.left

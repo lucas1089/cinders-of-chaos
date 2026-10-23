@@ -57,6 +57,14 @@
 #                               the XP multiplier of config.lua (experienceStages = the release's stages x N, N 1..100);
 #                               set / reset keep a backup and apply at the next restart, or at once with "restart".
 #                               update-apply keeps it.
+#   beta-mode [status | on | off] [restart]
+#                               beta test mode (server/README.md "Beta test mode"): the `enabled = ...` line of
+#                               SERVER/data/scripts/chaos/beta_mode_config.lua (sed --follow-symlinks, backup .before-beta,
+#                               checked afterwards). It lifts the weekly / daily gameplay limits (raid and guild boss
+#                               lockouts, kill tasks, Candlemarks and faction weekly offers, honor and community caps,
+#                               the dungeon cooldown); the store's weekly limits (real money) stay. Read at the start of the
+#                               scripts: applies at the next restart, or at once with "restart"; "/reload scripts" as a god
+#                               also works. update-apply keeps the switch. status prints beta_mode=on|off
 #   backups                     the newest database dumps and data archives (date, size, path)
 #   site-install                website/install_site.sh CHAOS_ENV CHAOS_SITE_ENV in the background (site-log)
 #   site-log [N]                the last N lines of the site install log
@@ -832,6 +840,51 @@ case $cmd in
       systemctl restart "$UNIT" && echo "restarted ($(systemctl is-active "$UNIT" 2>/dev/null))"
     else
       echo "applies at the next restart"
+    fi
+    ;;
+  beta-mode)
+    bcfg="$SERVER/data/scripts/chaos/beta_mode_config.lua"
+    [ -f "$bcfg" ] || die "no $bcfg (CHAOS_SERVER_DIR; run install_all.py)"
+    bpat='^([[:space:]]*enabled[[:space:]]*=[[:space:]]*)(true|false)'
+    beta_now() {
+      sed -n -E "s/$bpat.*/\2/p" "$bcfg" | head -n 1
+    }
+    sub=${1:-status}
+    again=0
+    case $sub in
+      status)
+        [ $# -le 1 ] || die "beta-mode status"
+        cur=$(beta_now)
+        [ -n "$cur" ] || die "no 'enabled = true|false' line in $bcfg"
+        if [ "$cur" = true ]; then echo "beta_mode=on"; else echo "beta_mode=off"; fi
+        echo "file=$bcfg"
+        exit 0
+        ;;
+      on|off)
+        case $#:${2:-} in 1:) ;; 2:restart) again=1 ;; *) die "beta-mode on|off [restart]" ;; esac
+        want=true
+        [ "$sub" = on ] || want=false
+        cur=$(beta_now)
+        [ -n "$cur" ] || die "no 'enabled = true|false' line in $bcfg"
+        if [ "$cur" = "$want" ]; then
+          echo "beta_mode=$sub (unchanged)"
+        else
+          cp -p "$bcfg" "$bcfg.before-beta" || die "cannot back up $bcfg"
+          sed --follow-symlinks -i -E "0,/$bpat/s//\1$want/" "$bcfg" || die "sed failed on $bcfg"
+          if [ "$(beta_now)" != "$want" ]; then
+            cp -p "$bcfg.before-beta" "$bcfg"
+            die "the edit did not take; $bcfg restored"
+          fi
+          echo "beta_mode=$sub"
+        fi
+        ;;
+      *) die "beta-mode [status | on | off] [restart]" ;;
+    esac
+    if [ "$again" = 1 ]; then
+      need_unit
+      systemctl restart "$UNIT" && echo "restarted ($(systemctl is-active "$UNIT" 2>/dev/null))"
+    else
+      echo "applies at the next restart (or /reload scripts as a god)"
     fi
     ;;
   backups)

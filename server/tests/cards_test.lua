@@ -133,7 +133,7 @@ eq(K.bonusText("en", 27482), "While on, Reaping Gyre deals Earth damage instead.
 eq(K.bonusText("pt-BR", 27482), "Ativa, Reaping Gyre causa dano de Terra no lugar. Com várias cartas desta magia ativas, vale a mais alta.", "convert text pt-BR")
 eq(K.bonusText("en", 27526), "While on, Grand Mending heals 10% more. With several cards of this spell on, the highest one counts.", "heal text")
 eq(K.bonusText("en", 27547),
-	"Needs a wand in your left hand. While on, a hit of 50 damage or more has a 7% chance to summon a monster that fights with you and gives you 3 more magic level for 25 seconds. Only one summon at a time.",
+	"Needs a wand or a rod in your left hand. While on, a hit of 50 damage or more has a 7% chance to summon a monster that fights with you and gives you 3 more magic level for 25 seconds. Only one summon at a time.",
 	"legendary text")
 ok(K.bonusText("pt-BR", 27547):find("nível mágico", 1, true) ~= nil, "legendary text pt-BR")
 eq(K.bonusText("en", 1), "", "not a card")
@@ -481,6 +481,266 @@ st[C.cards[27541].storage] = 1
 s1, p1 = C.buffBonus(135, sv)
 eq(s1, 8, "Powerful: 8 seconds") eq(p1, 8, "Powerful: 8 points")
 eq(C.buffBonus(220, sv), 0, "another spell has no buff bonus")
+
+
+-- ---------------------------------------------------------------- every card x every class (beta 2026-10-23)
+-- "A card I put in my deck does not work at all" (a Ninja): the Thief, Monk, Templar and Necromancer lines had no common
+-- card line at all, and the legendary cards asked for a left-hand item id out of four lists of stock ids. This walks the
+-- 21 classes (docs/CLASSES.md; cards_config.lua C.classes) against all 76 cards and proves that each card meant for a
+-- class can trigger for it.
+eq(#C.classes, 21, "21 classes")
+do
+	local ids21 = Chaos.classes.ids
+	local seenVoc = {}
+	for _, row in ipairs(C.classes) do
+		seenVoc[row.id] = row.name
+		ok(Chaos.classes.baseOf[row.id] ~= nil, row.name .. ": a Chaos class id")
+		local key = row.name:lower():gsub(" ", "")
+		eq(ids21[key], row.id, row.name .. ": the vocation id of Chaos.classes.ids")
+		eq(Chaos.classes.baseOf[row.id] == row.id, row.line == row.name, row.name .. ": base class flag")
+	end
+	local n = 0
+	for _ in pairs(seenVoc) do n = n + 1 end
+	eq(n, 21, "21 distinct vocation ids")
+end
+
+-- which classes cast a spell: the CAP table of patch_spell_cap.py (non-empty = the vocations it keeps), else the Chaos
+-- spell file, else stock_spells.csv. The Frostfall Rune is a rune item every class may use.
+local vocOf = {}
+do
+	local xml = slurp("data/spells/chaos/spells_chaos.xml"):gsub("<!%-%-.-%-%->", "")
+	for block in xml:gmatch("<instant(.-)</instant>") do
+		local id = tonumber(block:match('spellid="(%d+)"'))
+		if id then
+			local set = {}
+			for v in block:gmatch('<vocation name="([^"]+)"') do set[v] = true end
+			vocOf[id] = set
+		end
+	end
+	local firstLine = true
+	for line in slurp("data/spells/stock_spells.csv"):gmatch("[^\r\n]+") do
+		if firstLine then
+			firstLine = false
+		else
+			local id, voc = line:match("^(%d+),.*,([^,]*)$")
+			if id and not vocOf[tonumber(id)] then
+				local set = {}
+				for v in voc:gmatch("[^;]+") do set[v] = true end
+				vocOf[tonumber(id)] = set
+			end
+		end
+	end
+	for id, _, tuple in slurp("tools/patch_spell_cap.py"):gmatch("%((%d+), '([^']+)', (%b())") do
+		local set, any = {}, false
+		for v in tuple:gmatch("'([^']+)'") do set[v] = true any = true end
+		if any then vocOf[tonumber(id)] = set end
+	end
+end
+local function casts(class, spellId)
+	if spellId == 115 then return true end
+	local set = vocOf[spellId]
+	return set ~= nil and set[class.name] == true
+end
+
+-- every line has a spell some class can cast; a spell a line adds belongs to a whole class line (all three ascensions)
+local lineClasses = {}
+for f, fam in ipairs(C.families) do
+	local classes = {}
+	for _, row in ipairs(C.classes) do
+		for _, sp in ipairs(fam.spells) do
+			if casts(row, sp[2]) then classes[row.name] = true end
+		end
+	end
+	lineClasses[f] = classes
+	ok(next(classes) ~= nil, "line " .. f .. " (" .. fam.spell .. "): some class casts it")
+	for _, sp in ipairs(fam.also or {}) do
+		local line
+		for _, row in ipairs(C.classes) do
+			if casts(row, sp[2]) then
+				line = line or row.line
+				eq(row.line, line, sp[1] .. ": one class line only")
+			end
+		end
+		ok(line ~= nil, sp[1] .. ": cast by a class")
+		for _, row in ipairs(C.classes) do
+			if row.line == line then ok(casts(row, sp[2]), sp[1] .. " is cast by " .. row.name) end
+		end
+		ok(newNames[sp[1]:lower()] and ids[sp[1]:lower()] == sp[2], sp[1] .. " is a current spell with id " .. sp[2])
+		for t = 1, 4 do
+			ok(K.description("en", fam.ids[t]):find(sp[1], 1, true) ~= nil, "description names " .. sp[1])
+		end
+	end
+end
+
+-- every class has at least one common line (and the table is printed by `luajit tests/cards_test.lua --table`)
+local rows = {}
+for _, row in ipairs(C.classes) do
+	local lines = {}
+	for f, fam in ipairs(C.families) do
+		if lineClasses[f][row.name] then lines[#lines + 1] = fam.spell end
+	end
+	ok(#lines >= 1, row.name .. ": at least one common card line (" .. #lines .. ")")
+	rows[#rows + 1] = row.name .. ": " .. table.concat(lines, ", ")
+end
+if arg and arg[1] == "--table" then print(table.concat(rows, "\n")) end
+
+-- every common card triggers: a hit line moves a physical hit to the card's element (or heals more) for every spell of
+-- the line; a line with its stock script reads the card's storage (the storage is the base's, 37000 + id - 27482);
+-- the bow line is read by buffBonus. Run through the real hit function with the cast context of that spell.
+do
+	local tester = mkPlayer("Matrix")
+	local mon2 = {isMonster = function() return true end, getName = function() return "Rat" end,
+		getType = function() return {getElementList = function() return {} end} end}
+	local elementConst = {Fire = COMBAT_FIREDAMAGE, Earth = COMBAT_EARTHDAMAGE, Ice = COMBAT_ICEDAMAGE, Holy = COMBAT_HOLYDAMAGE,
+		Death = COMBAT_DEATHDAMAGE, Energy = COMBAT_ENERGYDAMAGE}
+	elementConst.Drown = rawget(_G, "COMBAT_DROWNDAMAGE")
+	COMBAT_DROWNDAMAGE = COMBAT_DROWNDAMAGE or 4096
+	elementConst.Drown = COMBAT_DROWNDAMAGE
+	local fired, total = 0, 0
+	for id, c in pairs(C.cards) do
+		if not c.legendary then
+			total = total + 1
+			eq(c.storage, 37000 + (id - 27482), "card " .. id .. " keeps the base storage")
+			for k in pairs(tester.storage) do tester.storage[k] = nil end
+			tester.storage[c.storage] = 1
+			if c.how == "hit" then
+				for _, sp in ipairs(c.spells) do
+					local pd, pt, sd, st
+					if c.kind == "heal" then
+						pd, pt, sd, st = M.applyHit(tester, mon2, sp[2], 200, COMBAT_HEALING, 0, 0)
+						ok(pd > 200 and pt == COMBAT_HEALING, "card " .. id .. " heals more on " .. sp[1])
+					else
+						pd, pt, sd, st = M.applyHit(tester, mon2, sp[2], -100, COMBAT_PHYSICALDAMAGE, 0, 0)
+						ok(elementConst[c.element] ~= nil and (st == elementConst[c.element] or pt == elementConst[c.element]),
+							"card " .. id .. " (" .. c.element .. ") converts the hit of " .. sp[1])
+					end
+					fired = fired + 1
+				end
+			elseif c.how == "bow" then
+				local secs = C.buffBonus(c.spellId, function(key) return tester.storage[key] or -1 end)
+				ok(secs > 0, "card " .. id .. " lengthens " .. c.spell)
+				fired = fired + 1
+			else
+				ok(c.how == "live", "card " .. id .. " is a stock-script line")
+				ok(vocOf[c.spellId] ~= nil or c.spellId == 115, "card " .. id .. ": the stock spell " .. c.spell .. " has vocations")
+				fired = fired + 1
+			end
+		end
+	end
+	eq(total, 60, "60 common cards walked") ok(fired >= 60, "every common card fired")
+end
+
+-- legendary cards: the weapon. A mocked engine with weapon types; real fist weapon ids from data/lib.
+WEAPON_NONE, WEAPON_SWORD, WEAPON_CLUB, WEAPON_AXE, WEAPON_SHIELD, WEAPON_DISTANCE, WEAPON_WAND, WEAPON_AMMO =
+	0, 1, 2, 3, 4, 5, 6, 7
+CONST_SLOT_RIGHT, CONST_SLOT_LEFT = 5, 6
+dofile("data/lib/chaos_fist_weapons.lua")
+local wtypes = {[2379] = WEAPON_SWORD, [40100] = WEAPON_SWORD, [40101] = WEAPON_CLUB, [40102] = WEAPON_AXE,
+	[40103] = WEAPON_DISTANCE, [40104] = WEAPON_WAND, [40105] = WEAPON_SHIELD, [40106] = WEAPON_AMMO,
+	[2408] = WEAPON_SWORD, [27197] = WEAPON_WAND}
+for fid in pairs(ChaosFistWeapons.items) do wtypes[fid] = WEAPON_SHIELD end
+local plainItemType = ItemType
+function ItemType(id)
+	local t = plainItemType(id)
+	t.getWeaponType = function() return wtypes[id] or WEAPON_NONE end
+	return t
+end
+local function weaponItem(id) local it = newItem(id) it.itemid = id return it end
+local sample = {sword = 40100, club = 40101, axe = 40102, distance = 40103, wand = 40104}
+local function fistId() for fid in pairs(ChaosFistWeapons.items) do return fid end end
+local function equip(p, weapon)
+	p.slots[CONST_SLOT_LEFT], p.slots[CONST_SLOT_RIGHT] = nil, nil
+	local left
+	if weapon == "fist" then
+		p.slots[CONST_SLOT_RIGHT] = weaponItem(fistId())
+	elseif weapon ~= "none" then
+		left = weaponItem(sample[weapon])
+		p.slots[CONST_SLOT_LEFT] = left
+	end
+	return left
+end
+local legendaryClasses = {"Sorcerer", "Druid", "Paladin", "Knight"}
+local covered = {}
+for _, row in ipairs(C.classes) do
+	local p = mkPlayer("L" .. row.name)
+	p.getVocation = function() return {getId = function() return row.id end} end
+	local firesAny = false
+	for _, weapon in ipairs(row.weapons) do
+		local left = equip(p, weapon)
+		local expect = K.legendaryFor(row, weapon)
+		ok(#expect > 0, row.name .. " with " .. weapon .. ": a legendary card fires")
+		for id, c in pairs(C.cards) do
+			if c.legendary then
+				local want = false
+				for _, e in ipairs(expect) do if e == id then want = true end end
+				eq(M.holds(p, c.class, left, nil), want, row.name .. "/" .. weapon .. ": card " .. id .. " (" .. c.class .. ")")
+				if want then covered[id] = true firesAny = true end
+			end
+		end
+	end
+	ok(firesAny, row.name .. ": some legendary card can fire")
+end
+for id, c in pairs(C.cards) do
+	if c.legendary then ok(covered[id], "legendary card " .. id .. " (" .. c.class .. ") can fire for some class") end
+end
+-- the classes the cards are for (by weapon): melee for the Knight cards, bow for the Paladin cards, wand or rod for both mage cards
+do
+	local melee = {Warrior = 1, Juggernaut = 1, Berserker = 1, Thief = 1, Ninja = 1, Samurai = 1, Monk = 1, Shadowfist = 1,
+		["Iron Sage"] = 1, Templar = 1, Inquisitor = 1, Sentinel = 1}
+	local p = mkPlayer("Spare")
+	p.getVocation = function() return {getId = function() return 4 end} end
+	for _, row in ipairs(C.classes) do
+		local knight = false
+		for _, w in ipairs(row.weapons) do
+			for _, id in ipairs(K.legendaryFor(row, w)) do if C.cards[id].class == "Knight" then knight = true end end
+		end
+		eq(knight, melee[row.name] == 1, row.name .. ": the Knight cards fire exactly for the melee classes")
+	end
+end
+-- a Chaos weapon (an id the base lists never had), a Ninja's dagger, a stock id with an unknown type, a shield, ammunition
+do
+	local p = mkPlayer("Ninja")
+	p.getVocation = function() return {getId = function() return 12 end} end
+	local dagger = equip(p, "sword")
+	ok(M.holds(p, "Knight", dagger, nil), "a Chaos dagger (not in the base lists) fires the Knight card")
+	ok(not M.holds(p, "Paladin", dagger, nil) and not M.holds(p, "Sorcerer", dagger, nil), "a dagger is not a bow or a wand")
+	local stock = weaponItem(7777)
+	ok(M.holds(p, "Knight", stock, {1, 7777}), "a stock id of the base list still fires")
+	ok(not M.holds(p, "Knight", stock, {1}), "an unknown item does not")
+	ok(not M.holds(p, "Knight", weaponItem(40105), nil), "a shield in the left hand does not")
+	ok(not M.holds(p, "Knight", weaponItem(40106), nil), "ammunition does not")
+	ok(not M.holds(p, "Knight", nil, {1}), "empty hands do not (not the Monk line)")
+	local monk = mkPlayer("Monk")
+	monk.getVocation = function() return {getId = function() return 18 end} end
+	ok(M.holds(monk, "Knight", nil, {1}), "empty hands fire the Knight card for the Monk line")
+	ok(not M.holds(monk, "Paladin", nil, {1}), "but never the bow card")
+	local rod = weaponItem(27197)
+	ok(M.holds(p, "Druid", rod, nil) and M.holds(p, "Sorcerer", rod, nil), "a rod or a wand fires either mage card")
+end
+
+-- the summon lock the base never released: a summon that died leaves no lock
+do
+	DeckSystem = {Legendary = {CanCreateSummon = 37090}}
+	local p = mkPlayer("Summoner")
+	p.summons = {}
+	p.getSummons = function(self) return self.summons end
+	p.storage[37090] = 1
+	p.summons = {{}}
+	eq(M.releaseSummon(p), false, "a living summon keeps the lock") eq(p.storage[37090], 1, "still locked")
+	p.summons = {}
+	eq(M.releaseSummon(p), true, "no summon: released") eq(p.storage[37090], 0, "unlocked")
+	eq(M.releaseSummon(p), false, "nothing to release the second time")
+	p.storage[37090] = 1
+	registered.ChaosCardsLogin.onLogin(p)
+	eq(p.storage[37090], 0, "login clears the lock")
+	ok(registered.ChaosCardsSummonRelease and registered.ChaosCardsSummonRelease.onThink, "the release think event")
+	eq(registered.ChaosCardsSummonRelease.ms, C.summonReleaseMs, "every few seconds")
+	DeckSystem = nil
+end
+
+-- the text of a line that acts on several spells
+eq(K.bonusText("en", 27502), "While on, Doomtide and Blade Flurry deal Fire damage instead. With several cards of these spells on, the highest one counts.", "two spells")
+eq(K.bonusText("pt-BR", 27502), "Ativa, Doomtide e Blade Flurry causam dano de Fogo no lugar. Com várias cartas destas magias ativas, vale a mais alta.", "two spells pt-BR")
 
 print(string.format("cards_test: %d checks, %d failures", checks, failures))
 os.exit(failures == 0 and 0 or 1)

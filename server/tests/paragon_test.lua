@@ -150,8 +150,8 @@ applyAll(p, {vitality = 25, paragonHealth = 0.5})
 eq(added[7220].p[CONDITION_PARAM_STAT_MAXHITPOINTSPERCENT], nil, "no percent param for 20.5%")
 eq(added[7220].p[CONDITION_PARAM_STAT_MAXHITPOINTS], 2050, "20.5% of 10000")
 -- the tree's own caps still apply to the tree share only
-applyAll(p, {vitality = 500, paragonHealth = 20})
-eq(added[7220].p[CONDITION_PARAM_STAT_MAXHITPOINTSPERCENT], 170, "tree vitality capped at 100 points (+50%), + Paragon 20")
+applyAll(p, {vitality = 100, paragonHealth = 20})
+eq(added[7220].p[CONDITION_PARAM_STAT_MAXHITPOINTSPERCENT], 170, "tree vitality at the 100 points cap (+50%), + Paragon 20")
 -- Paragon alone, then nothing (respec)
 applyAll(p, {paragonHealth = 2})
 eq(added[7220].p[CONDITION_PARAM_STAT_MAXHITPOINTSPERCENT], 102, "Paragon alone")
@@ -207,4 +207,107 @@ eq(next(rows[70]), nil, "over budget refunded")
 local young = mkPlayer(562)
 P.cache[7] = nil
 P.actions.paragonRequest(young); eq(sent[#sent].data.unlocked, false, "locked below 1000"); eq(sent[#sent].data.free, 0, "no points")
+
+-- ---------------------------------------------------------------- O146: Paragon Mastery, the endless sink
+local M = Chaos.paragon.mastery
+eq(#P.masteryOrder, 7, "seven masteries"); eq(M.maxRanks <= 65535, true, "ranks fit the smallint column")
+for _, key in ipairs(P.masteryOrder) do
+  local d = P.mastery[key]
+  assert(P.defs[d.bonus], key .. " adds to the category stat " .. tostring(d.bonus))
+  eq(P.defs[d.bonus].category, d.category, key .. " sits in its stat's category")
+  -- scale x ln(1 + ranks / h): zero at 0, strictly increasing, concave, never capped
+  near(P.masteryValue(key, 0), 0, key .. " zero ranks")
+  local prev, prevGain = 0, math.huge
+  for r = 1, 3000 do
+    local v = P.masteryValue(key, r)
+    local gain = v - prev
+    assert(gain > 0, key .. ": every rank adds something (" .. r .. ")")
+    assert(gain < prevGain, key .. ": each rank adds less than the one before (" .. r .. ")")
+    prev, prevGain = v, gain
+  end
+  assert(P.masteryValue(key, 60000) > P.masteryValue(key, 3000), key .. ": no maximum")
+  -- modest: 300 ranks stay under the whole category stat's cap, and the first rank is a fraction of a category point
+  assert(P.masteryValue(key, 300) <= P.cap(d.bonus) * 1.1, key .. ": 300 ranks about the category cap at most")
+  assert(P.masteryValue(key, 1) < P.defs[d.bonus].perPoint, key .. ": a rank is worth less than a category point")
+end
+near(P.masteryValue("mDamage", 300), 6 * math.log(7), "damage mastery 300 ranks"); assert(math.abs(P.masteryValue("mDamage", 300) - 11.67) < 0.01)
+eq(P.masteryValue("bogus", 5), 0, "unknown mastery"); eq(P.masteryValue("mDamage", -4), 0, "negative ranks")
+
+-- bonusesOf: masteries and category points add up under one key
+b = P.bonusesOf({damage = 40, mDamage = 300, mHealth = 50})
+near(b.paragonDamage, 20 + 6 * math.log(7), "category + mastery damage"); near(b.paragonHealth, 8 * math.log(2), "health mastery")
+
+-- validateMastery
+ok, err = P.validateMastery("mDamage", 5, {}, 10, 999); eq(ok, nil, "locked"); assert(err:find("1000"), "names the level")
+ok = P.validateMastery("mDamage", 5, {damage = 3}, 10, 1010); eq(ok.mDamage, 5, "ranks added"); eq(ok.damage, 3, "others kept")
+ok = P.validateMastery("mDamage", 5, {mDamage = 2}, 10, 1010); eq(ok.mDamage, 7, "ranks stack")
+ok, err = P.validateMastery("mDamage", 8, {damage = 3}, 10, 1010); eq(ok, nil, "over budget (3 spent + 8 > 10)")
+ok = P.validateMastery("mDamage", 7, {damage = 3}, 10, 1010); eq(ok.mDamage, 7, "exactly the free points")
+for _, bad in ipairs({0, -1, 1.5, "x", 1e9}) do ok = P.validateMastery("mDamage", bad, {}, 1e12, 1500); eq(ok, nil, "refused n " .. tostring(bad)) end
+ok = P.validateMastery("damage", 1, {}, 10, 1500); eq(ok, nil, "a category stat is no mastery"); ok = P.validateMastery({}, 1, {}, 10, 1500); eq(ok, nil, "table key")
+ok = P.validateMastery("mDamage", 2, {mDamage = M.maxRanks - 1}, 1e9, 1500); eq(ok, nil, "max ranks")
+
+-- the protocol: a level 2200 character (the whole track earned at 2192) with the categories bought and 100 exchanged tree
+-- points has points left to spend. (The beta report, "300 points at level 1500", was the pre-O135 pace: maxed at 1282.)
+rows[70] = {}; P.cache = {}
+local q, qst, qspeed = mkPlayer(2200, 2200 * 250)
+qst[Chaos.storage.paragonConverted] = 100
+local maxAll = 282
+P.actions.paragonApply(q, {alloc = {damage = 40, critDamage = 50, health = 40, reduction = 32, speed = 20, mana = 40, goldFind = 20, itemFind = 40}})
+P.actions.paragonRequest(q); s = sent[#sent]
+eq(s.data.total, P.totalPoints(2200) + 100, "total at 2200 with the exchange"); eq(s.data.free, P.totalPoints(2200) + 100 - maxAll, "free after the full track")
+assert(s.data.free > 100, "spare points after the whole track")
+eq(#s.data.mastery.rows, 7, "mastery rows sent"); eq(s.data.mastery.rows[1].key, "mDamage", "order")
+assert(s.data.mastery.rows[1].next > 0 and s.data.mastery.rows[1].ranks == 0, "first rank value")
+local free0 = s.data.free
+P.actions.paragonMastery(q, {key = "mDamage", n = 10})
+s = sent[#sent]; eq(s.action, "paragonState", "state after the mastery"); eq(s.data.free, free0 - 10, "ten points spent")
+eq(rows[70].mDamage, 10, "saved"); eq(s.data.mastery.rows[1].ranks, 10, "ranks shown")
+near(s.data.mastery.rows[1].value, 6 * math.log(1 + 10 / 50), "value shown")
+P.actions.paragonMastery(q, {key = "mDamage", n = free0})
+eq(sent[#sent - 1].action, "sendMessage", "more than the free points: refused with a message"); eq(rows[70].mDamage, 10, "nothing saved")
+P.actions.paragonMastery(q, {key = "nope", n = 1}); eq(rows[70].mDamage, 10, "unknown key refused")
+P.actions.paragonMastery(q, nil)
+-- spend everything: points earned later are not lost, they are one more rank away
+P.actions.paragonMastery(q, {key = "mItemFind", n = free0 - 10})
+eq(sent[#sent].data.free, 0, "all spent")
+-- a level up gives a point; it can go into a rank at once
+local grown = mkPlayer(2206, 0); P.cache[7] = rows[70]
+eq(P.pointsOf(grown), P.totalPoints(2206), "level 2206 total"); assert(P.pointsOf(grown) > P.totalPoints(2200), "a later level owns one more")
+-- masteries reach the bonus table the effects use
+local bonuses = {}; P.addBonuses(q, bonuses)
+near(bonuses.paragonDamage, 20 + P.masteryValue("mDamage", 10), "damage mastery is in the bonus table")
+near(bonuses.paragonItemFind, 20 + P.masteryValue("mItemFind", free0 - 10), "item find mastery is in the bonus table")
+-- the load keeps mastery rows and cuts a row above the max
+rows[70] = {mDamage = 70000, mMana = 4, bogus = 3}; P.cache = {}
+local loaded = P.load(70); eq(loaded.mDamage, M.maxRanks, "cut at max ranks"); eq(loaded.mMana, 4, "mastery loaded"); eq(loaded.bogus, nil, "unknown row dropped")
+
+-- the exchange: free tree points become Paragon points for good
+local treeSpent, treePoints, pointsSent = 3, 20, 0
+ChaosPassiveTree.internal = {
+  totalPoints = function(pl) return treePoints - pl:getStorageValue(Chaos.storage.paragonConverted) end,
+  loadPresets = function() return {{nodes = {1, 2, 3}}} end,
+  sendPoints = function() pointsSent = pointsSent + 1 end
+}
+rows[70] = {}; P.cache = {}
+local x, xst = mkPlayer(1500, 0)
+eq(P.treeFree(x), 17, "free tree points")
+P.actions.paragonConvert(x, {n = 5})
+eq(xst[Chaos.storage.paragonConverted], 5, "5 converted"); eq(P.converted(x), 5, "converted read back"); eq(pointsSent, 1, "tree points resent")
+eq(P.pointsOf(x), P.totalPoints(1500) + 5, "five more Paragon points"); eq(P.treeFree(x), 12, "five fewer tree points")
+eq(sent[#sent - 1].action, "paragonState", "state sent"); eq(sent[#sent - 1].data.exchange.converted, 5, "exchange block")
+eq(sent[#sent - 1].data.exchange.treeFree, 12, "tree free in the state"); eq(sent[#sent - 1].data.total, P.totalPoints(1500) + 5, "total in the state")
+P.actions.paragonConvert(x, {n = 13}); eq(xst[Chaos.storage.paragonConverted], 5, "more than the free tree points: refused")
+P.actions.paragonConvert(x, {n = 0}); P.actions.paragonConvert(x, {n = 1.5}); P.actions.paragonConvert(x, {n = "a"}); P.actions.paragonConvert(x, nil)
+eq(xst[Chaos.storage.paragonConverted], 5, "malformed refused")
+P.actions.paragonConvert(x, {n = 12}); eq(P.converted(x), 17, "all of them"); eq(P.treeFree(x), 0, "none left")
+local lowx, lowst = mkPlayer(900, 0); P.actions.paragonConvert(lowx, {n = 1}); eq(lowst[Chaos.storage.paragonConverted], nil, "locked below 1000")
+-- converted points are spendable and survive the login check
+P.actions.paragonMastery(x, {key = "mMana", n = 17})
+eq(rows[70].mMana, 17, "the exchanged points buy ranks")
+P.cache = {}; local xl = mkPlayer(1500, 0)
+registered["ChaosParagonLogin"].onLogin(setmetatable({registerEvent = function() end}, {__index = x}))
+eq(rows[70].mMana, 17, "no refund at login")
+ChaosPassiveTree.internal = nil
+
 print("paragon: all asserts passed")

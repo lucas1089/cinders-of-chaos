@@ -26,20 +26,17 @@ local function eq(a, b, label)
 	check(a == b, label .. ": " .. tostring(a) .. " ~= " .. tostring(b))
 end
 
--- the Infinity Tower boss list, read from infinitytower_run.lua's text (that file needs the engine to load)
+-- the Infinity Tower boss list, from infinitytower_balance_config.lua (a plain table: bosses = {{name, heal}, ...})
 local function towerBosses()
-	local f = assert(io.open("data/scripts/chaos/infinitytower_run.lua", "r"))
-	local text = f:read("*a")
-	f:close()
-	local body = text:match("bosses%s*=%s*(%b{})")
+	local tc = dofile("data/scripts/chaos/infinitytower_balance_config.lua")
 	local list = {}
-	for name in body:gmatch('"([^"]+)"') do
-		list[#list + 1] = name
+	for _, b in ipairs(tc.bosses) do
+		list[#list + 1] = b.name
 	end
-	return list, tonumber(text:match("bossEvery%s*=%s*(%d+)"))
+	return list, tc.bossEvery
 end
 local tNames, tEvery = towerBosses()
-check(#tNames >= 10, "tower bosses read from infinitytower_run.lua")
+check(#tNames >= 10, "tower bosses read from infinitytower_balance_config.lua")
 
 local sources = {worldBoss = Chaos.worldBoss, invasion = invCfg, towerBosses = tNames, towerEvery = tEvery,
 	trials = trialsCfg, ascension = true, ascensionLevel = Chaos.classes.ascension.minLevel,
@@ -84,7 +81,7 @@ eq(w1.level, Chaos.worldBoss.minLevel, "world boss level")
 local grashnak = idx.byKey.invasion_warchief_grashnak
 check(grashnak ~= nil and grashnak.monster == "Orc Warlord" and grashnak.shown == "Warchief Grashnak", "renamed invasion boss")
 -- tower floors
-eq(idx.byKey.tower_1.name, "The Grey Widow", "tower names in title case")
+eq(idx.byKey.tower_1.name, "The Ashen Count", "tower names in title case")
 check(idx.byKey.tower_1.rule.how:find("10, " .. (10 + #tNames * 10)) ~= nil, "tower floors repeat")
 eq(idx.byKey.tower_8.name, "Ssylvath the Corruptor", "small words stay small")
 -- trials

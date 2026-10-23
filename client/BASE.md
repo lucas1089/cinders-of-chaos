@@ -863,6 +863,13 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     `chaosSetSlotItem` of `0115`. Applies after `0001`-`0116` (`patch` clean on the assembled tree through `0116`).
     Model test `tools/slot_reuse_test.py` (CI, LuaJIT and Lua 5.3): 6 full packets for a 255-slot bag build 1530 widgets
     with the stock code and 255 with `0122`; another capacity or lock state rebuilds. Not seen in a client.
+69p. `0123` (Lua `modules/game_actionbar/actionbar.lua`): **the action bar clears the slots and hotkeys of retired spells.**
+    Slots and classic hotkeys are saved by the words they say (`Options.actionBarMappings`, `actionsetting.chatText`), so a
+    retired spell (Galeborne Stride, O145) stayed in the bar and did nothing. `online()` calls
+    `ChaosSpellFix.pruneRetiredSlots` (overlay `game_chaosspells/spellfix.lua`, tested in `spellfix_test.lua`; the retired
+    words come from `spelldata.lua`) and saves the options when it removed any. A slot says words, not an id, so the ids the
+    attack kit reused never moved a slot to another spell. Applies after `0001`-`0122` (the whole chain applied clean to a
+    base tree; the result equals the hand-edited file). Not seen in a client.
 70. `0088` (`src/client/outfit.cpp`): **a look without a mounted pattern still rides.** `Outfit::draw` took
     `zPattern = min(1, pattern Z - 1)` and drew the mount only when it was above 0, so a mounted character in a look
     with pattern Z 1 showed no mount. In pair 30 (dat 8156792438dabee3aa768663d57a1619) 43 wearable looks (base

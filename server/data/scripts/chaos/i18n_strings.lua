@@ -1558,6 +1558,14 @@ return {
 		["Welcome to the Infinity Tower. Floor 1 starts in %d seconds. Leave Tower (Adventure > Infinity Tower) takes you out."] =
 			"Bem-vindo à Infinity Tower. O andar 1 começa em %d segundos. Leave Tower (Adventure > Infinity Tower) te tira de lá.",
 		["You are not inside the tower."] = "Você não está dentro da torre.",
+		["Floor %d cleared! Next floor in %d seconds."] = "Andar %d concluído! O próximo andar começa em %d segundos.",
+		["Floor %d reward: %s."] = "Recompensa do andar %d: %s.",
+		["First clear of floor %d this season: %s."] = "Primeira conclusão do andar %d nesta temporada: %s.",
+		["Next reward: floor %d, %s (first clear this season: %s)."] =
+			"Próxima recompensa: andar %d, %s (primeira conclusão nesta temporada: %s).",
+		["Next reward: floor %d, first clear this season: %s."] =
+			"Próxima recompensa: andar %d, primeira conclusão nesta temporada: %s.",
+		["Next reward: floor %d, %s."] = "Próxima recompensa: andar %d, %s.",
 		["You are not in the arena queue."] = "Você não está na fila da arena.",
 		["Arena: FIGHT!"] = "Arena: LUTEM!",
 		["The fight starts in %d seconds."] = "A luta começa em %d segundos.",
@@ -2640,16 +2648,16 @@ return {
 			"Skill de lenhador",
 		["Herbalist skill"] =
 			"Skill de herbalista",
-		["Physical damage x (1 + value / 230). Value: 0.8 per point up to 60 points (+21%), then 0.2 per point up to 120 points (+26%)."] =
-			"Dano físico x (1 + valor / 230). Valor: 0,8 por ponto até 60 pontos (+21%), depois 0,2 por ponto até 120 pontos (+26%).",
-		["Damage of every type but physical, and healing, x (1 + value / 230). Value: 0.8 per point up to 60 points (+21%), then 0.2 per point up to 120 points (+26%)."] =
-			"Dano de todo tipo menos físico, e cura, x (1 + valor / 230). Valor: 0,8 por ponto até 60 pontos (+21%), depois 0,2 por ponto até 120 pontos (+26%).",
-		["Weapon hits (melee, distance, wand) deal 1 / (1 - value%) times the damage, like attacking faster. Value: 0.8 per point up to 20 points (+19%), then 1 per 15 points up to 80 points (+25%)."] =
-			"Golpes de arma (corpo a corpo, distância, varinha) causam 1 / (1 - valor%) vezes o dano, como atacar mais rápido. Valor: 0,8 por ponto até 20 pontos (+19%), depois 1 a cada 15 pontos até 80 pontos (+25%).",
-		["+0.8 percent maximum health per point up to 50 points (+40%), then +0.2 per point up to 100 points (+50%)."] =
-			"+0,8 percent de vida máxima por ponto até 50 pontos (+40%), depois +0,2 por ponto até 100 pontos (+50%).",
-		["+0.8 percent maximum mana per point up to 50 points (+40%), then +0.2 per point up to 100 points (+50%)."] =
-			"+0,8 percent de mana máxima por ponto até 50 pontos (+40%), depois +0,2 por ponto até 100 pontos (+50%).",
+		["Physical damage x (1 + value / 230). Value: 0.8 per point up to 60 points (+21%), then 0.2 per point up to 120 points (+26%). Past the cap the gain shrinks but never stops (soft cap)."] =
+			"Dano físico x (1 + valor / 230). Valor: 0,8 por ponto até 60 pontos (+21%), depois 0,2 por ponto até 120 pontos (+26%). Acima do limite o ganho diminui, mas nunca para (limite suave).",
+		["Damage of every type but physical, and healing, x (1 + value / 230). Value: 0.8 per point up to 60 points (+21%), then 0.2 per point up to 120 points (+26%). Past the cap the gain shrinks but never stops (soft cap)."] =
+			"Dano de todo tipo menos físico, e cura, x (1 + valor / 230). Valor: 0,8 por ponto até 60 pontos (+21%), depois 0,2 por ponto até 120 pontos (+26%). Acima do limite o ganho diminui, mas nunca para (limite suave).",
+		["Weapon hits (melee, distance, wand) deal 1 / (1 - value%) times the damage, like attacking faster. Value: 0.8 per point up to 20 points (+19%), then 1 per 15 points up to 80 points (+25%). Past the cap the gain shrinks but never stops (soft cap)."] =
+			"Golpes de arma (corpo a corpo, distância, varinha) causam 1 / (1 - valor%) vezes o dano, como atacar mais rápido. Valor: 0,8 por ponto até 20 pontos (+19%), depois 1 a cada 15 pontos até 80 pontos (+25%). Acima do limite o ganho diminui, mas nunca para (limite suave).",
+		["+0.8 percent maximum health per point up to 50 points (+40%), then +0.2 per point up to 100 points (+50%). Past the cap the gain shrinks but never stops (soft cap)."] =
+			"+0,8 percent de vida máxima por ponto até 50 pontos (+40%), depois +0,2 por ponto até 100 pontos (+50%). Acima do limite o ganho diminui, mas nunca para (limite suave).",
+		["+0.8 percent maximum mana per point up to 50 points (+40%), then +0.2 per point up to 100 points (+50%). Past the cap the gain shrinks but never stops (soft cap)."] =
+			"+0,8 percent de mana máxima por ponto até 50 pontos (+40%), depois +0,2 por ponto até 100 pontos (+50%). Acima do limite o ganho diminui, mas nunca para (limite suave).",
 		["No effect yet: the game gives wisdom no use."] =
 			"Sem efeito por enquanto: o jogo ainda não dá uso à sabedoria.",
 		["Walking speed. The tooltip shows the speed you gain; at most +80."] =
@@ -2686,24 +2694,24 @@ return {
 			"Um golpe com roubo de mana dá a você essa porcentagem do dano causado como mana.",
 		["+percent damage to every element at once (fire, ice, energy, earth, death, holy, water, arcane; not physical)."] =
 			"+porcentagem de dano em todos os elementos de uma vez (fogo, gelo, energia, terra, morte, sagrado, água, arcano; não físico).",
-		["+percent physical damage, up to +150 percent together with every other source of the type."] =
-			"+porcentagem de dano físico, até +150 percent junto com toda outra fonte do tipo.",
-		["+percent fire damage, up to +150 percent together with all elements."] =
-			"+porcentagem de dano de fogo, até +150 percent junto com todos os elementos.",
-		["+percent ice damage, up to +150 percent together with all elements."] =
-			"+porcentagem de dano de gelo, até +150 percent junto com todos os elementos.",
-		["+percent energy damage, up to +150 percent together with all elements."] =
-			"+porcentagem de dano de energia, até +150 percent junto com todos os elementos.",
-		["+percent earth damage, up to +150 percent together with all elements."] =
-			"+porcentagem de dano de terra, até +150 percent junto com todos os elementos.",
-		["+percent death damage, up to +150 percent together with all elements."] =
-			"+porcentagem de dano de morte, até +150 percent junto com todos os elementos.",
-		["+percent holy damage, up to +150 percent together with all elements."] =
-			"+porcentagem de dano sagrado, até +150 percent junto com todos os elementos.",
-		["+percent arcane damage, up to +150 percent together with all elements."] =
-			"+porcentagem de dano arcano, até +150 percent junto com todos os elementos.",
-		["+percent water damage, up to +150 percent together with all elements."] =
-			"+porcentagem de dano de água, até +150 percent junto com todos os elementos.",
+		["+percent physical damage, full value up to +150 percent together with every other source of the type, then smaller gains without limit."] =
+			"+porcentagem de dano físico, valor cheio até +150 percent junto com toda outra fonte do tipo, depois ganhos menores sem limite.",
+		["+percent fire damage, full value up to +150 percent together with all elements, then smaller gains without limit."] =
+			"+porcentagem de dano de fogo, valor cheio até +150 percent junto com todos os elementos, depois ganhos menores sem limite.",
+		["+percent ice damage, full value up to +150 percent together with all elements, then smaller gains without limit."] =
+			"+porcentagem de dano de gelo, valor cheio até +150 percent junto com todos os elementos, depois ganhos menores sem limite.",
+		["+percent energy damage, full value up to +150 percent together with all elements, then smaller gains without limit."] =
+			"+porcentagem de dano de energia, valor cheio até +150 percent junto com todos os elementos, depois ganhos menores sem limite.",
+		["+percent earth damage, full value up to +150 percent together with all elements, then smaller gains without limit."] =
+			"+porcentagem de dano de terra, valor cheio até +150 percent junto com todos os elementos, depois ganhos menores sem limite.",
+		["+percent death damage, full value up to +150 percent together with all elements, then smaller gains without limit."] =
+			"+porcentagem de dano de morte, valor cheio até +150 percent junto com todos os elementos, depois ganhos menores sem limite.",
+		["+percent holy damage, full value up to +150 percent together with all elements, then smaller gains without limit."] =
+			"+porcentagem de dano sagrado, valor cheio até +150 percent junto com todos os elementos, depois ganhos menores sem limite.",
+		["+percent arcane damage, full value up to +150 percent together with all elements, then smaller gains without limit."] =
+			"+porcentagem de dano arcano, valor cheio até +150 percent junto com todos os elementos, depois ganhos menores sem limite.",
+		["+percent water damage, full value up to +150 percent together with all elements, then smaller gains without limit."] =
+			"+porcentagem de dano de água, valor cheio até +150 percent junto com todos os elementos, depois ganhos menores sem limite.",
 		["+percent healing done by your heal spells and potions (mana potions too)."] =
 			"+porcentagem de cura feita pelas suas magias de cura e poções (as de mana também).",
 		["+percent life drain damage."] =
@@ -3216,6 +3224,8 @@ return {
 			"poderoso",
 		["While on, %s deals %s damage instead. With several cards of this spell on, the highest one counts."] =
 			"Ativa, %s causa dano de %s no lugar. Com várias cartas desta magia ativas, vale a mais alta.",
+		["While on, %s deal %s damage instead. With several cards of these spells on, the highest one counts."] =
+			"Ativa, %s causam dano de %s no lugar. Com várias cartas destas magias ativas, vale a mais alta.",
 		["While on, %s heals %d%% more. With several cards of this spell on, the highest one counts."] =
 			"Ativa, %s cura %d%% a mais. Com várias cartas desta magia ativas, vale a mais alta.",
 		["While on, %s lasts %d seconds longer and gives %d more percentage points of melee skill."] =
@@ -3224,8 +3234,8 @@ return {
 			"Ativa, %s alcança uma área maior (degrau %d de 4).",
 		["While on, %s lasts %d seconds longer and gives %d more percentage points of distance skill."] =
 			"Ativa, %s dura %d segundos a mais e dá %d pontos percentuais a mais de skill de distância.",
-		["Needs %s in your left hand. While on, a hit of %d damage or more has a %d%% chance to summon a monster that fights with you and gives you %d more %s for %d seconds. Only one summon at a time."] =
-			"Precisa de %s na mão esquerda. Ativa, um golpe de %d de dano ou mais tem %d%% de chance de invocar um monstro que luta com você e dá %d a mais de %s por %d segundos. Só uma invocação por vez.",
+		["Needs %s. While on, a hit of %d damage or more has a %d%% chance to summon a monster that fights with you and gives you %d more %s for %d seconds. Only one summon at a time."] =
+			"Precisa de %s. Ativa, um golpe de %d de dano ou mais tem %d%% de chance de invocar um monstro que luta com você e dá %d a mais de %s por %d segundos. Só uma invocação por vez.",
 		["Use it to put it in a deck you carry and turn it on, use it again to turn it off. Veyra the Apothecary sells decks."] =
 			"Use para colocá-la em um deck que você carrega e ativá-la, use de novo para desativá-la. Veyra the Apothecary vende decks.",
 		["magic level"] =
@@ -3234,14 +3244,12 @@ return {
 			"skill de distância",
 		["melee skill"] =
 			"skill corpo a corpo",
-		["a wand"] =
-			"uma varinha",
-		["a rod"] =
-			"um cajado",
-		["a bow or a crossbow"] =
-			"um arco ou uma besta",
-		["a melee weapon"] =
-			"uma arma corpo a corpo",
+		["a wand or a rod in your left hand"] =
+			"uma varinha ou um cajado na mão esquerda",
+		["a bow or a crossbow in your left hand"] =
+			"um arco ou uma besta na mão esquerda",
+		["a melee weapon in your left hand (the Monk line: a fist weapon or bare fists)"] =
+			"uma arma corpo a corpo na mão esquerda (a linha do Monk: uma arma de punho ou as mãos nuas)",
 		-- Prizes into the backpack (prizes_core.lua)
 		["Your prize %s is in your Purse (the store inbox): your backpack had no room."] =
 			"Seu prêmio %s está na sua Purse (a caixa da loja): sua mochila não tinha espaço.",
@@ -3249,5 +3257,11 @@ return {
 			"Seu prêmio %s está no chão embaixo de você: sua mochila e sua Purse não tinham espaço.",
 		["The roulette could not find your prize. Your next spin is free."] =
 			"A roleta não encontrou seu prêmio. Seu próximo giro é grátis.",
+		-- Retired spells (retired_spells_config.lua, O145)
+		["Galeborne Stride was retired. Fleetfoot and Vigil of Haste give the same haste and every class has them. Take it off your hotbar and helper."] =
+			"Galeborne Stride foi aposentada. Fleetfoot e Vigil of Haste dão a mesma velocidade e toda classe as tem. Tire-a da sua hotbar e do helper.",
+		["Your roulette prize is %s gold, scaled to your level."] =
+			"Seu prêmio da roleta é de %s de ouro, ajustado ao seu nível.",
+		["The chest held a unique: %s!"] = "O baú guardava um item único: %s!",
 	},
 }

@@ -52,7 +52,21 @@ local cfg = {
 	charStatKnee = {strength = 60, intelligence = 60, dexterity = 20, vitality = 50, spirit = 50, wisdom = 40},
 	charStatCap = {strength = 120, intelligence = 120, dexterity = 80, vitality = 100, spirit = 100, wisdom = 40},
 	charStatMax = {strength = 60, intelligence = 60, dexterity = 20, vitality = 50, spirit = 50, wisdom = 40},
-	charStatKneeShare = 0.8
+	charStatKneeShare = 0.8,
+	-- Soft caps (O146, beta feedback "everything over the cap is wasted"): the caps above and maxDamagePercent are where the
+	-- full value ends, not a wall. Past a cap the extra raw points go through ChaosSoftCap:
+	--   effective = cap + H x ln(1 + (raw - cap) / H)      (raw > cap; below the cap effective = raw)
+	-- It is continuous, never decreasing, has slope 1 at the cap (the first extra point is worth as much as the last point
+	-- below the cap would be in a straight line) and the slope falls to H / (H + extra): never zero, no upper limit.
+	-- charStat: H in points (= the cap, so twice the cap in points counts as 1.69 x the cap effective), then the value goes
+	-- on along the slope the curve had at the cap (strength 280 points: 120 + 120 ln(2.33) = 221 effective points). damagePercent: H in percent points; at +150 raw the full 150, at +300 raw
+	-- 150 + 60 ln(3.5) = 225, at +400 raw 150 + 60 ln(5.17) = 248, +1000 raw 150 + 60 ln(15.2) = 313.
+	-- dexterityValueCeiling: the dexterity value is a divisor (1 / (1 - value / 100)); it stays under this whatever the points
+	softCap = {
+		charStatH = {strength = 120, intelligence = 120, dexterity = 80, vitality = 100, spirit = 100, wisdom = 40},
+		damagePercentH = 60,
+		dexterityValueCeiling = 50
+	}
 }
 ChaosPassiveEffectsConfig = cfg
 
@@ -125,7 +139,17 @@ local function scale(v, m)
 end
 
 -- ---------------------------------------------------------------- pure part (testable)
-function ChaosPassiveDamagePercent(bonuses, combatType)
+-- Soft cap: full value up to `cap`, then cap + H ln(1 + (raw - cap) / H) (see cfg.softCap). Pure, monotonic, unbounded.
+function ChaosSoftCap(raw, cap, H)
+	raw = raw or 0
+	if raw <= cap then
+		return raw
+	end
+	return cap + H * math.log(1 + (raw - cap) / H)
+end
+
+-- the damage percent a combat type gets from the tree before the soft cap (the sum the stat window shows as raw)
+function ChaosPassiveDamageRaw(bonuses, combatType)
 	local stat = INCREMENT[combatType]
 	if not stat then
 		return 0
@@ -134,7 +158,11 @@ function ChaosPassiveDamagePercent(bonuses, combatType)
 	if IS_ELEMENT[combatType] then
 		pct = pct + (bonuses.multiIncrement or 0)
 	end
-	return clamp(pct, 0, cfg.maxDamagePercent)
+	return math.max(0, pct)
+end
+
+function ChaosPassiveDamagePercent(bonuses, combatType)
+	return ChaosSoftCap(ChaosPassiveDamageRaw(bonuses, combatType), cfg.maxDamagePercent, cfg.softCap.damagePercentH)
 end
 
 -- Paragon damage: every damage type, not healing (multiplies after the tree's own bonuses)
@@ -177,17 +205,26 @@ function ChaosParagonSpeed(bonuses, baseSpeed)
 end
 
 -- the effect value of a character stat from its tree points: charStatKneeShare of charStatMax spread evenly over the
--- points up to the knee, the rest over the points from the knee to the cap, nothing above (see cfg). Rounded to 1e-6
--- so the knee and the cap give exact numbers (60 x 0.8 = 48, not 47.99999999999999).
+-- points up to the knee, the rest over the points from the knee to the cap, and above the cap the soft cap (O146): the
+-- value goes on with the slope it had at the cap, shrinking as cap + H ln(1 + extra / H) (see cfg.softCap). Rounded to
+-- 1e-6 so the knee and the cap give exact numbers (60 x 0.8 = 48, not 47.99999999999999).
 function ChaosPassiveCharStat(points, stat)
 	local knee, cap, max = cfg.charStatKnee[stat], cfg.charStatCap[stat], cfg.charStatMax[stat]
 	local share = cfg.charStatKneeShare
-	local p = clamp(points or 0, 0, cap)
+	local raw = math.max(0, points or 0)
+	local p = math.min(raw, cap)
 	local v
 	if p <= knee then
 		v = max * share * p / knee
 	else
 		v = max * share + max * (1 - share) * (p - knee) / (cap - knee)
+	end
+	if raw > cap then
+		local slope = cap > knee and max * (1 - share) / (cap - knee) or 0
+		v = v + slope * (ChaosSoftCap(raw, cap, cfg.softCap.charStatH[stat]) - cap)
+		if stat == "dexterity" then
+			v = math.min(v, cfg.softCap.dexterityValueCeiling)
+		end
 	end
 	return math.floor(v * 1e6 + 0.5) / 1e6
 end

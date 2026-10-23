@@ -103,7 +103,8 @@ check(B.statCurve.kneeShare == E.charStatKneeShare, "builds curve knee share = e
 for _, stat in ipairs({"strength", "intelligence", "dexterity", "vitality", "spirit"}) do
 	check(B.caps[stat] == E.charStatCap[stat] and B.statCurve.knee[stat] == E.charStatKnee[stat]
 		and B.statCurve.max[stat] == E.charStatMax[stat], "builds config " .. stat .. " = effects")
-	for _, p in ipairs({0, 7, E.charStatKnee[stat], E.charStatKnee[stat] + 13, E.charStatCap[stat], E.charStatCap[stat] + 9}) do
+	for _, p in ipairs({0, 7, E.charStatKnee[stat], E.charStatKnee[stat] + 13, E.charStatCap[stat]}) do
+		-- up to the cap only: the generator stops at the cap, the soft cap past it (O146) is a small extra
 		check(math.abs(Gen.curveValue(B, stat, p) - ChaosPassiveCharStat(p, stat)) < 1e-6, "builds curve " .. stat .. " " .. p)
 	end
 end

@@ -547,7 +547,7 @@ working directory, as with the rest of the base server libs).
 | game_daily | `daily.lua`, `daily_core.lua`, `daily_config.lua` | 207 | 7-day reward cycle with claim, midnight rollover, Adventure > Daily Reward, open on login through the login window queue. Rewards: platinum coins, Orbs of Upheaval and Fate and a crystal coin, plus a week bonus on day 7 (all or nothing); edit `Chaos.daily` in `chaos_constants.lua`. Account-wide login streaks with milestones, titles and grace days (see "Daily reward and login streaks"). |
 | game_notifications | `notifications.lua` | 79 out, 151/152 in | `/gmnotify`, accept/decline of a standard TFS party invite, `ChaosNotify.*` sender API. Catacomb start / leave-queue are hooks only; nothing triggers party/catacomb/task/battle pass toasts automatically. |
 | game_passivetree | `passivetree.lua`, `passivetree_data.lua`, `passivetree_effects.lua`, `passivetree_keystones.lua`, `archetypes.lua` (with `archetypes_core.lua`, `archetypes_config.lua`), `paragon.lua` | 65 | Points, save with full validation (known ids, connected to root, point cap), preset storage, priced reset and single-node refund (see "Respec"), build codes (see "Build sharing"); the bonuses are applied (see "Passive tree effects"); the build archetype keystones (see "Build archetypes"). Paragon track past level 1000 on the same opcode (see "Paragon"). |
-| game_dungeons | `dungeons.lua` | 109 | Reads the base server `DUNGEON_SYSTEM` table. Queue, group formation, teleport in, timer, monster-count progress, boss kill, difficulty unlock, speed/flawless challenges, solo/group rankings, teleport out. Difficulty does not change monsters; loot panel is display only. A shutdown ends the queue runs without a cooldown (members back where they entered); the first login after a restart or a crash inside a dungeon box goes to the temple (also for runs of the base modal, whose exit timer dies with the server). Map spawns (owner 2026-10-17): every monster the map places at the server start inside a dungeon area is remembered; a run opens by clearing the area and creating all of them at once, and while it lasts the map's own respawn inside the area is refused (EventCallback `onSpawn`, `tests/dungeons_area_test.lua`), so nothing comes back uncounted; the area spawns again after the run (without a start-up record, such as after a script reload or in a generated dungeon, the monsters that stand there stay). A run lasts DungeonTime but at most 45 minutes (`Chaos.dungeons.maxTimeSeconds`) with warnings at 5 min, 1 min and 10 s; the queue shows the wait of the run inside; a relog inside the box while the server runs goes to the temple with the cooldown ("Instance limits"). |
+| game_dungeons | `dungeons.lua` | 109 | Reads the base server `DUNGEON_SYSTEM` table. Queue, group formation (one player may enter alone; the monsters scale with the group size: health x(1+0.6(n-1)), damage x(1+0.1(n-1)), O147), teleport in, timer, monster-count progress, boss kill, difficulty unlock, speed/flawless challenges, solo/group rankings, teleport out. Difficulty does not change monsters; loot panel is display only. A shutdown ends the queue runs without a cooldown (members back where they entered); the first login after a restart or a crash inside a dungeon box goes to the temple (also for runs of the base modal, whose exit timer dies with the server). Map spawns (owner 2026-10-17): every monster the map places at the server start inside a dungeon area is remembered; a run opens by clearing the area and creating all of them at once, and while it lasts the map's own respawn inside the area is refused (EventCallback `onSpawn`, `tests/dungeons_area_test.lua`), so nothing comes back uncounted; the area spawns again after the run (without a start-up record, such as after a script reload or in a generated dungeon, the monsters that stand there stay). A run lasts DungeonTime but at most 45 minutes (`Chaos.dungeons.maxTimeSeconds`) with warnings at 5 min, 1 min and 10 s; the queue shows the wait of the run inside; a relog inside the box while the server runs goes to the temple with the cooldown ("Instance limits"). |
 | game_infinitytower | `infinitytower.lua`, `infinitytower_run.lua` | 214 | Seasons, points, best floor/time, ranking, milestone claim, Adventure > Infinity Tower, `/towerrun` staff test helper. The tower gameplay is `infinitytower_run.lua` (runtime-built arenas, floors as waves, boss floors; results through `ChaosTower.recordRun`; see "Infinity Tower gameplay"). Season-end top 3 chests: "Infinity Tower season rewards"; `/towerseason` staff status. |
 | game_stash | `stash.lua`, `stash_core.lua`, `stash_config.lua`, `item_codec.lua`, `sql/chaos_stash.sql` | **110** (new), Economy > Supply Stash | The one item storage (the depot boxes retire into it): whole items with every attribute, deposit and withdraw in town, remote deposit as a paid unlock (store or the Chaos Pact), general and affinity tabs, Stow Everything, the never-stash list, the journal (no loss, no duplicate on a crash), the depot migration (see "Stash"). The tabs of before were tested in game; the whole-item stash is tested on a mocked engine only. |
 | game_spellbook | `spellbook.lua` | 219, Character > Spellbook / `/spells` | Spell list window: every player spell of `data/spells/spells.xml` with its data, a short description and its area of effect (see "Spellbook" below). |
@@ -806,11 +806,13 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7102720 - 7102739 | day book (`embercache_config.lua` `daybook`): +0 day, +1/+2 experience (hi x 1e9 + lo), +3 kills, +4/+5 loot gold, +6/+7 supplies gold, +8 orbs, +9 uniques, +10 rarity items, +11 deaths, +12 level at the day's start, +13 seconds played, +14 Ember points; +15..19 free |
 | 7102750 - 7102779 | tutorial reset (`Chaos.storage.tutorialSnapshot`, `newplayer_core.lua` `NP.SNAP`): +0 saved, +1 level, +2/+3 experience (hi x 1e9 + lo), +4 magic level, +5 mana spent, +6 max health, +7 max mana, +8 capacity, +9 leather armors, +10 orbs, +11..+17 skill levels, +18..+24 skill tries; +25..29 free |
 | 7102740 - 7102744 | gentle deaths (`gentledeath_config.lua` `storage`): +0 day of the last first-death-of-the-day discount, +1 Eternal Blessing owned; +2..4 free |
+| 7102500 - 7102509 | Paragon exchange (`Chaos.storage.paragonConverted`, "Soft caps, Paragon Mastery and totals (O146)"): +0 free passive tree points exchanged for Paragon points (subtracted from the tree's points, added to Paragon's); +1..9 free |
 | 7102400 - 7102409 | time-friendly progression (`catchup_config.lua` `storage`): +0 rested pool (centi-minutes), +1 day of the last low stamina notice, +2 the returning boost this character was welcomed for; +3 bounty rerolls held (`bounty_config.lua` `rerollStorage`), +4 kill task board rerolls held, +5 the task day of +6, +6 the board rerolls used that day (`bestiary_config.lua` `rerollStorage`); +7..9 free |
 | 7102460 - 7102469 | Candlemarks (`candlemarks_config.lua` `storage`): +0 the id of the last Candlemark purchase delivered to the character (the crash-safe delivery mark); +1..9 free |
 | 7102490 - 7102499 | rarity migration (`rarity_migrate.lua`): +0 the version of the walk this character had; +1..9 free |
 | 7102480 - 7102489 | potions (`potions_config.lua` `storage`): +0 the Everfull potions were given (kit or login grant); +1 the tree's Healing percent for the potion scripts; +2..9 free |
 | 7102800 - 7102810 | Haunted Harvest (`harvest_event_config.lua` `storage`): +0 the day, +1 hollow candy from pumpkins that day, +2 the day of the boss's first-kill candy; +3..9 free; 7102810 the GLOBAL forced state (0 window, 1 open, 2 shut) |
+| 7102820 | Infinity Tower first-clear floors (`infinitytower_balance_config.lua` `rewards.storage`): the tower season x 1000 + the highest milestone floor paid that season; 7102821 - 7102829 free |
 | 7109990 - 7109992 | spell supports: cast context and Reprisal (`data/lib/chaos_supports_config.lua`) |
 | 7110000 - 7111999 | spell supports: sockets per spell id (base + spell id * 4 + 0..3) |
 | 7112000 - 7127999 | loadouts: support runes parked per loadout (`loadouts_config.lua` `runeMirrorBase`) |
@@ -1134,7 +1136,8 @@ passivetree
 
 dungeons
 - Entry is by queue, not by the base server modal/PZ/party rules: no PZ requirement, no real party needed,
-  players are matched individually (same difficulty, group size = `AmountParty` when `NeedParty`, else 1).
+  players are matched individually (same difficulty). Solo and groups (beta feedback 2026-10-22, O147): the largest group
+  is `AmountParty` when `NeedParty`, else 1, and **one player may always enter alone**; see "Solo dungeons" below.
 - Bosses are assumed to exist inside the dungeon box (map spawns or `SpawnMonsters`). Boss names per
   dungeon id are in `Chaos.dungeons.extra` (guessed from the base server boss scripts) and must match the monster
   names on your server. Progress % = monsters that disappeared from the box / monsters at start (summons
@@ -1177,6 +1180,50 @@ dungeons
   this window instead of its modal window (`tools/patch_base_dungeon.py`, "Instance limits", "Base modal dungeon
   entry"), so its own `DungeonTime` timer never starts.
 - Ranking: solo = best time per player (party size 1), group = best runs with 2+ players. Times in ms.
+
+Solo dungeons (O147, beta feedback 2026-10-22: "dungeons need two players; my testing partners are often offline")
+- **Entry.** The base table's `NeedParty` / `AmountParty` (2 for the Bones Dungeon, Master of the Elements, Forbidden
+  Chevalier and Rootmaw) is now the largest group, not a minimum (`dungeons.lua` `groupSizeOf`). A queued player waits
+  `Chaos.dungeons.party.soloWaitSeconds` (5) for a partner of the same difficulty; a full group starts at once. The window's
+  "Party" requirement shows "1-2". The generated dungeons 5-9 (`party = 1`) were solo already.
+- **Scaling formula** (`dungeons_difficulty.lua` `D.partyHealth` / `D.partyDamage`, numbers in `Chaos.dungeons.party`),
+  n = the players that went in:
+  `health(n) = 1 + 0.6 (n - 1)` and `damage(n) = 1 + 0.1 (n - 1)` (the damage the run's monsters deal to its players).
+  The health and damage curves of every dungeon (`extra[id].bossHealth` / `trashHealth`, the difficulty table) are the
+  measured solo ones ("Solo kill times", "Pack combat (pace)"), so **1 player = x1.0**. Two players: monsters x1.6 health
+  and x1.1 damage; four: x2.8 and x1.3. Health grows slower than the group's damage output (n players deal about n times
+  one), so a group clears faster than a solo player (two players: about 20% faster) and takes slightly more per hit.
+  It multiplies with the difficulty step (`scaleMonster` for the health, `scaleHit` for the damage). The ranking keeps
+  solo and group apart already (party size 1 against 2+).
+- **Respawn and boss check (the old bug).** The map's own respawn inside a running dungeon is refused (`onSpawn`, owner
+  2026-10-17), the run's monsters are created once, and the unlock (generated dungeons: the boss) fires once. A gap was
+  found and closed: a won run stays in `runs[]` for `exitDelayMs` (10 s) with `ended` set, and `runAt` skipped ended runs,
+  so the map could respawn the boss and the trash beside the group while it walked out. `runAt` now holds until the
+  teardown. `tests/dungeons_area_test.lua` (blocks "solo entry and party scaling" and "the old bug") fails on the old code.
+
+Beta test mode (O147)
+- `Chaos.betaMode` = `data/scripts/chaos/beta_mode_config.lua` (`enabled`, default **false**), read when the scripts start
+  (`chaos_constants.lua`; a restart or `/reload scripts` reads it again), logic in `beta_mode_core.lua`
+  (`ChaosBetaMode.lifted(key)`). Each system asks at the one place it enforces a limit. Switch it with
+  `chaos-ctl.sh beta-mode on|off|status [restart]` (edits the `enabled` line with `sed --follow-symlinks`, keeps
+  `beta_mode_config.lua.before-beta`, checks the result, restores on a failed edit) or the admin app (Comandos tab >
+  card "Modo beta (testes)" > Ligar / Desligar, or Ligar / Desligar e reiniciar). `install_all.py` (`files` step,
+  `keep_switch`) keeps the installed value on an update.
+- **Lifted while on (eight):** `dungeon_cooldown` (the 15 minute cooldown after a clear and the 5 minute one after a failed
+  run, `dungeons.lua`), `raid_lockout` (the weekly lockout of each Ashen Sepulchre boss: loot from every kill,
+  `raid_core.lua`), `guildboss_weekly` (the guild boss's one kill and three summons a week, `guildboss_core.lua`),
+  `bestiary_tasks` (4 kill tasks a day and 20 a week, `bestiary_core.lua`), `candlemarks_weekly` (the weekly limit of every
+  Candlemarks offer, `candlemarks_core.lua`), `faction_offers_weekly` (the weekly limit of the quartermaster offers,
+  `factions_core.lua`), `battleground_honor_cap` (6,000 honor a week, `battleground_core.lua`), `community_daily_cap` (the
+  daily point caps of the community goal, `community_core.lua`).
+- **Never lifted:** everything bought with real money. The store's `weeklyLimit` offers (Double Experience Potion 4 + 2 packs,
+  Whetstones, Orb of Excision) stay capped. The one exception is opt-in: an offer key the owner writes in
+  `storeOfferKeys` is lifted while the mode is on. The owner lifted `"item:32252x1"` (Orb of Binding, 2026-10-23) while the
+  beta coins are free starter coins ("Beta starter coins", wiped at launch). Not lifted either: the Ember Descent free daily
+  and weekly runs, pocket boss daily charges, faction reputation caps, the store gift limit, anti-bot and rate limits.
+- Turn it off at launch (docs/LAUNCH.md). Tests: `tests/beta_mode_test.lua` (every limit on and off, the store stays),
+  `tests/dungeons_area_test.lua` (the dungeon cooldown), `tests/shop_test.lua`, `deploy/chaos_ctl_test.py`,
+  `tools/install_all_keepswitch_test.py`.
 
 infinitytower
 - The gameplay is `infinitytower_run.lua` ("Infinity Tower gameplay"); its engine calls are assumed from the engine
@@ -1620,9 +1667,9 @@ the area cure (Purifying Wellspring), because they are not cleanse spells of one
 lifted by the Font of Ash or a Lightward-type effect.
 
 New spells (ids reused, `spells_chaos.xml`, scripts in `data/spells/chaos/<class>/`, icon cells 301-307, sheets now 16 rows):
-Juggernaut Bastion Cry 29 (level 340, support: taunt, slow, Iron Will, heal) and Anvil Fall 58 (460); Deadeye Twin Verdict 144
-(400); Berserker Rampage Leap 145 (380); Elementalist Glacial Doom 146 (420, 2 s cast); Beastmaster Pack Frenzy 147 (380);
-Ninja Shuriken Tempest 164 (360). Not covered for lack of ids: Illusionist, Samurai, Lich, Bone Lord, Shadowfist, Iron Sage,
+Juggernaut Bastion Cry 29 (level 340, support: taunt, slow, Iron Will, heal) and Anvil Fall 58 (380); Deadeye Twin Verdict 144
+(400); Berserker Rampage Leap 145 (380); Elementalist Glacial Doom 146 (420, 2 s cast); Beastmaster Pack Frenzy 147 (320);
+Ninja Shuriken Tempest 164 (270). Not covered for lack of ids: Illusionist, Samurai, Lich, Bone Lord, Shadowfist, Iron Sage,
 Inquisitor, Sentinel (next free ids need another retired or merged spell). Numbers are computed with the rotation sim
 (`rotation_model.csv` rows), not measured in game; scripts not run in a live engine. `tests/class_spell_progression_test.lua`
 pins the own-spell counts (max 15) and the new rows; `tests/spell_ids_test.lua` knows the retired ids.
@@ -1797,6 +1844,31 @@ The spell cap is now 20 (`patch_spell_cap.py` `MAX_SPELLS`). The 37 ids are base
 runs after the cap and skips commented-out instants, so they are free at install. Opcodes and storage keys: none new.
 CI step "Attack spell parity": `tools/ci/check_attack_counts.py` (21 classes x 10) and its test. Not run on a live
 server.
+
+### Retired spells (O145, player beta report 2026-10-23: "some of my support spells disappeared")
+
+Audit of O133-O140: no Chaos spell changed its class list or level (`spells_chaos.xml` compared before and after); the attack
+kit only added spells and reused ids of retired stock spells; the only support retired in the last update is Galeborne
+Stride (O136, 11 classes; the replacements Fleetfoot and Vigil of Haste are universal). Every Chaos class spell is
+`needlearn="0"`, so nobody had a learned row to lose and the engine simply stopped listing the spell: the player had no way
+to learn what went. Fix, three parts:
+
+* `retired_spells.lua` (+ `_core`, `_config`): at login `forgetSpell` for every retired spell the character still has a
+  learned row of (`names`: the 69 stock spells `patch_spell_cap.py` retires plus Hawkeye, Bulwark, Windrunner; the test parses
+  `CAP` and fails when they drift, or when a live Chaos spell is on the list), and a one-time message to the classes that lost
+  a spell (`notices`; Galeborne Stride for level 20 and up of the 11 classes, pt-BR in `i18n_strings.lua`). The notice version
+  is storage 7100205 (`retired_spells_config.lua`, next to the classes' 7100200-7100204); a new retired support adds a notice
+  and raises `version`. Nothing is taught: the replacements need no row.
+* Client, `game_helpersupport` `deadReason`: a saved Support tab row of a retired spell (`notOnServer`) or of an id that is an
+  attack spell now leaves the list at load, like the utilities did.
+* Patch note bullet "Retired supports, and what replaces them" (`data/patchnotes/2026-10-22.md`).
+
+Action bar slots and hotkeys are saved by the words they say (not by id), so the attack kit's reused ids never moved a slot
+to another spell; a slot of a retired spell stayed and did nothing. Client base patch `0123` makes the action bar call
+`ChaosSpellFix.pruneRetiredSlots` (`game_chaosspells/spellfix.lua`) when the character enters the game: it removes the
+slots and hotkeys that say a retired spell (old stock words too) and saves the options. Tests: `tests/retired_spells_test.lua`,
+`game_helpersupport/supportspells_test.lua`, `game_chaosspells/spellfix_test.lua`. Needs a server restart (login script) and
+a client update (helper, action bar). Not run on a live server.
 
 ### Monster spells (owner report 2026-10-21: "Unknown spell name: arc bolt" / "dread" after the spell cap)
 
@@ -2459,6 +2531,53 @@ CREATE TABLE IF NOT EXISTS `chaos_paragon` (
   mana 1: hit 1579 (x1.20), crit 20, absorb 11, health 18078 x 1.325, mana 6060 x 1.125, taken 890. Gold find 20: the callback added
   207 gold to 1035 in 40 dragon corpses (20.0%). Reset (gold), the store reset, the forged requests, relog, restart and the login
   refund were checked too.
+
+## Soft caps, Paragon Mastery and totals (O146)
+Beta report (level 1500): strength about 280 against a cap of 120, physical damage 300-400 against 150, the Paragon track
+full at level 1100-1200 with about 300 points left, and the gear's critical chance (about 28%) and damage (about 40%) not
+shown in the tree window. All real: the caps were hard (`ChaosPassiveCharStat`, `ChaosPassiveDamagePercent` in
+`passivetree_effects.lua`), `Chaos.paragon` had no sink for points past its eight stats, and the window listed node sums only.
+No passive that needs a critical chance threshold exists in the repo, so there was none to change.
+
+**Soft cap** (`ChaosSoftCap(raw, cap, H)`, numbers in `passivetree_effects.lua` `softCap`): `eff = raw` up to the cap, then
+`cap + H x ln(1 + (raw - cap) / H)`. Continuous, never decreasing, slope 1 at the cap, no upper bound.
+- Damage percents (physical, the elements, all elements): cap 150, H 60. Raw 300 gives 225.2, 400 gives 248.5, 1000 gives 313.1.
+- Attributes: the points past the cap are soft capped with H = the cap (wisdom 40), then follow the curve's slope at the cap
+  (`max x (1 - knee share) / (cap - knee)`). 280 strength counts as 221.7 points, about +7% damage over 120. Dexterity is a
+  divisor and stays under a value of 50. Vitality 300 gives +72% max health (cap +50%).
+- Hard on purpose: absorb (75, engine patch 0049 ceiling) and speed (80).
+PvP stays bounded: three times the cap in points gives under +45% of the capped value (+35% dexterity). `tests/softcap_test.lua`
+checks the properties and numbers; `weapon_sim.py --power --check`, `rotation_sim` and the PvP balance tests are unchanged.
+
+**Paragon Mastery** (`Chaos.paragon.mastery`, `paragon.lua`): seven endless masteries, a rank costs 1 point, `n` ranks give
+`scale x ln(1 + n / h)` percent on the same bonus as the category stat (damage 6/50, crit damage 8/50, health 8/50,
+reduction 3/60, mana 8/50, gold find 10/50, item find 8/50). 300 damage ranks give +11.67%. At most 60000 ranks per mastery
+(`chaos_paragon` rows, smallint: no DB migration). No crit chance or speed mastery: crit chance is a PvP lever and speed is
+an integer condition. **Exchange** (`Chaos.paragon.exchange`, ratio 1): free passive tree points become Paragon points for
+good; the count is in storage 7102500, subtracted in `passivetree.lua totalPoints`, added in `ChaosParagon.pointsOf`.
+Points earned after the track is full stay free and are never lost.
+Protocol (opcode 65): `paragonMastery {key, n}`, `paragonConvert {n}` in; `paragonState` gains `mastery {maxRanks, rows[]}` and
+`exchange {ratio, treeFree, converted}`. Build codes carry the category stats only (`buildshare.lua`); loadouts check both.
+
+**Totals** (`passivetree_totals.lua`, rules `passivetree_totals_core.lua`): request `statTotals`, answer `statTotals
+{attributes[], damage[], crit {chance {total, tree, other}, amount {total, tree, paragon, other}}}` (rate limit 300 ms). The
+crit totals are the engine's own value (gear, gems, blessings, tree, Paragon). Client: `totals.lua`, `totalsview.lua`.
+
+**Critical reach** (`luajit tools/crit_reach.lua`, from the item mod, crafting, gem and tree tables). The T8 critical modifier
+(item level 140+) rolls amount 8-10 and gives chance 5-7 (9 at +30% quality) on each of 8 slots:
+
+| Source | Critical chance |
+|---|---|
+| Gear, 8 slots T8: lowest / average / highest roll | 40 / 48 / 56 (72 with quality) |
+| Gear, T7 only: average / highest | 40 / 48 |
+| Gems | 10 (damage 75) |
+| Tree crit nodes of a class: best / median / worst | 40 / 29 / 15 |
+| Trial node, Keen Edge mastery | 5, 2 (damage 30, 5) |
+| Ceiling / dedicated build / casual build | 129 / 68 / 30 |
+
+A gated passive should ask for at most 45% (halfway between the casual and the dedicated build); 70-80% needs the ceiling
+case. Critical damage ceiling 214 from gear, gems, trial and mastery, plus Paragon 15.
+Deploy: server `files` step and a restart, client update, no DB migration.
 
 ## Passive tree keystones (`passivetree_keystones.lua`)
 Two new paths at the edge of the tree, each two notables and a keystone (1 point per node, like every node): **Wrath**
@@ -3224,7 +3343,101 @@ What taking passive points back costs. Every number is in `respec_config.lua`.
 ## Infinity Tower gameplay (`infinitytower_run.lua`)
 The tower exists now. The Enter Tower button of the client window (action `enter`) takes you, or your party (leader only, members within 12 tiles, up to 4), into an arena that is built at runtime with `Game.createTile` in an empty part of the map (x from 2000, y 2000, z 7; sixteen arenas side by side), so no map editing is needed. Floors are waves: kill everything to open the next one (6 s pause, half of the missing health and mana restored, `floorGold` x floor gold); every 10th floor is a boss floor with its helpers (twice the floor time since 2026-10-13: 10 minutes). Pools get harder every 8 floors, and the chance of magic, rare and legendary monsters (with their modifiers and shaders) rises with the floor. A floor has a 300 s limit and a whole run 60 minutes (`runTimeLimit`, warnings at 5 min, 1 min and 10 s, the floor's at 1 min and 10 s; "Instance limits"); at most 16 arenas, the wait and the waiting line when all are busy. Dying, leaving (the Leave Tower button), logging out or running out of time ends your part of the run and records the cleared floors with `ChaosTower.recordRun` (points, best floor, ranking, milestones). Logging in inside an arena sends you to the temple. Milestone rewards now use item ids that exist (gold, Orbs of Upheaval and Fate, Soulreaper). Everything is configured at the top of the file (`ChaosTowerRunConfig`).
 - `server/tests/infinitytower_run_test.lua` covers the floor planner, entering, clearing floors, dying, leaving, the time limit, logout and login with a mocked engine; CI runs it with LuaJIT and Lua 5.3. The real `Game.createTile`, `Tile:addItem`, `Game.createMonster` and teleport calls are assumed from the engine sources, not run.
-- Not done: a visible ladder of floors in the client window, and per-floor loot beyond what the monsters drop. Check that x 2000..2700, y 2000..2020, z 7 is really empty in your map (it is in the map analysed: the content starts at x 18992).
+- Not done: a visible ladder of floors in the client window (since O144 it shows the next reward, see "Infinity Tower balance and floor rewards"). Check that x 2000..2700, y 2000..2020, z 7 is really empty in your map (it is in the map analysed: the content starts at x 18992).
+
+## Infinity Tower balance and floor rewards (O144: `infinitytower_balance_config.lua`, `infinitytower_balance_core.lua`, `tools/tower_model.py`)
+
+Beta feedback of 2026-10-22: tower monsters were much stronger than outside ones, a level 800 player was always stuck
+between floors 20 and 29, a level 500 friend needed a minute for one level-100 monster, the drops looked like outside
+and there was no reward per floor.
+
+**Root cause (computed; `tower_model.py --before` is the planner of 2026-10-22).**
+- The tower is excluded from `pace.lua`, so floors held the stock pool health, while a hunt pack is thinned to 0.36 - 0.21
+  of it. With 12-16 monsters and tier chances that rose every floor, a floor held 4x, 12x and 24x the health of an outside
+  pack of the same species at floors 15, 25 and 35.
+- A single legendary monster (health x6 plus modifiers such as Juggernaut x1.6 and Stoneskin) is the minute-per-monster report.
+- The wall at floor 29: floor 30 held Zeburoth, who heals 1,750 health a second. A median class below about level 1100
+  cannot out-damage that, so the fight never ended (`never` in the table). Ashvoran (floor 90) is the same.
+- Damage taken was the stock monster damage, not the pace curve of the hunts.
+
+**What changed.**
+- Health per floor is a curve by the floor's meant level (`level`) and the seconds a median class needs for the floor
+  (`clear`), times a sawtooth over each climb of five floors (0.75, 0.88, 1.00, 1.10, 1.22: the floor after a milestone
+  floor is a breather). `health`, `bossHealth` and `damage` are generated by `python3 -I server/tools/tower_model.py --derive`
+  (the unit test diffs them with the config).
+- 4 monsters on floor 1 up to 9 from floor 120 (was 12-16), two more for every player after the first. A boss floor has a third
+  as helpers.
+- Tiers: health x1.5 magic, x2.2 rare, x3.5 legendary in the tower (stock x2, x3.5, x6; `infinitytower_run.lua` sets the health
+  before the stock tier applies). The chances rise slowly (legendary 1% on floor 30, 4% on floor 120).
+- Bosses in a new order, the healers last: the Ashen Count, the Grey Widow, Massacre, Vharagoth, Moloveth, Vhalkareth,
+  Jungle's Revenge, Ssylvath the Corruptor, Pestrogh, Morgashal (floor 100), Zeburoth (110), Ashvoran (120).
+- Tower monsters hit x0.99 of the stock damage on floor 1, x0.67 on floor 44 and x0.72 from floor 52: the pace damage curve of the
+  pool's hunting level (`ChaosTowerRun.damageMultOf`, read by `monster_damage.lua`). Bosses hit as before.
+- Also fixed: a late timer of an earlier run in the same arena slot no longer starts or ends the next run.
+
+**Time to clear a floor, median class (computed, not measured in game; seconds for a solo player at the level in the column).**
+
+Before (planner of 2026-10-22):
+
+| Floor | L100 | L300 | L500 | L800 | L1000 |
+|---|---|---|---|---|---|
+| 1 | 4 | 3 | 3 | 3 | 3 |
+| 10 B | 23 | 9 | 7 | 5 | 5 |
+| 20 B | 236 | 81 | 54 | 36 | 30 |
+| 25 | 41 | 16 | 10 | 8 | 7 |
+| 30 B | never | never | never | never | 486 |
+| 35 | 111 | 39 | 24 | 16 | 13 |
+| 40 B | never | 250 | 135 | 81 | 64 |
+
+After:
+
+| Floor | Hunt pack | L100 | L300 | L500 | L800 | L1000 |
+|---|---|---|---|---|---|---|
+| 1 | 3.0 s at L100 | 6 | 4 | 4 | 3 | 3 |
+| 10 B | 3.8 s at L300 | 145 | 50 | 34 | 24 | 20 |
+| 20 B | 4.6 s at L540 | 307 | 92 | 60 | 40 | 33 |
+| 25 | 5.3 s at L640 | 53 | 20 | 13 | 9 | 8 |
+| 30 B | 10.6 s at L740 | 402 | 136 | 90 | 60 | 49 |
+| 35 | 10.4 s at L820 | 97 | 34 | 21 | 14 | 12 |
+| 40 B | 10.3 s at L900 | 673 | 186 | 119 | 78 | 63 |
+| 60 B | 9.9 s at L1250 | 1026 | 287 | 183 | 119 | 97 |
+
+A boss floor keeps the long time: a boss is one target with a heal. A player far under the floor's level (the L100 column
+on floor 40) is meant to be slow. `python3 -I server/tools/tower_model.py` prints the whole table, `--before` the old
+one, `--levels` and `--floors` pick columns and rows.
+
+**Where a player gets to** (floors cleared within 1.1 x the time of a hunt pack of the player's level, median class):
+level 100 floor 1, 300 floor 12, 500 floor 21, 800 floor 38 (was 29), 1000 floor 44 (was 29), 1500 floor 64, 2000 floor 93
+(was 40). The weakest class at level 800 reaches floor 34.
+
+**CI (`python3 -I server/tools/tower_model.py --check`, limits in `infinitytower_balance_config.lua` `limits`).** Bounds, per
+floor: the seconds a group of the meant level needs (1.5-24), the ratio to a base hunt pack of that level (0.6-1.7), the
+seconds of a boss (30-150) and the share of the class's damage its heal eats (at most 50%), the weakest class against a
+boss (300 s), the breather after a milestone floor, the step from floor to floor (at most x1.35), a player at 60% of the
+floor's level (at most 60 s), the reach of a level 800 median class (30-40) and of a weak class (20+), a single legendary
+monster's lifetime (30 s) and the damage curve against the pace curve (12%). `tower_model_test.py` covers the parser, the
+tier factor, the old planner reproducing the floor 29 wall and bad configs failing. Lua side:
+`tests/infinitytower_balance_test.lua` (the core) and `tests/infinitytower_run_test.lua` (the run on a mocked engine).
+
+**Floor rewards.**
+- First clear, once per character and tower season, on every 5th floor: Crystal Coins (the floor number: 5 on floor 5, 10 on floor 10);
+  on every 10th floor Orbs of Upheaval (2 on floor 10, plus 1 per 10 floors) and Orbs of Fate (at least 1, 1 per 20 floors); on floors
+  25, 50, 75, ... 2 more Orbs of Fate plus 1 per 25 floors. The rules are `rewards.firstClear`, all numbers in the config.
+- Repeatable, on every clear of a milestone floor: Crystal Coins (a quarter of the floor number, at least 1) and on every 10th
+  floor at least 1 Orb of Upheaval (`rewards.repeatable`).
+- Delivery: `Chaos.giveItem`, what does not fit goes to the inbox. Each player in a group is paid by their own storage.
+- Storage `rewards.storage` = 7102820: season x 1000 + the highest floor paid, so a new season pays again.
+- Tower drops (`drops`, in an `onDropLoot` callback): an Orb of Upheaval (0.25% a kill) and Crystal Coins (4%, 1-2) from every
+  monster, an Orb of Fate (0.12%) from floor 20; a magic monster x1.5, rare x3, legendary x6 the chance. The stock loot stays.
+- The next milestone reward is shown in the tower window ("Season Informations" panel, `nextRewardLabel`), after every milestone
+  floor and in the entry message, in English and Portuguese (`i18n_strings.lua`, `pt_br.lua`).
+
+**Experience.** Not changed: the pool monsters give far less experience than a hunt of the player's level, so an hour in the
+tower stays well under an hour of hunting (the tower is for points and rewards).
+
+**Deploy.** `files` step and a script reload or restart; the client needs the new build for the reward label (an old client
+shows no label, nothing else breaks). No SQL, no engine patch. New storage block 7102820. Not modeled: the player's armour and
+resistances, damage taken in the tower, and uptime beyond the factors in the config. Computed, not measured in game.
 
 ## Infinity Tower season rewards (`infinitytower.lua`, `infinitytower_core.lua`, `Chaos.tower` in `chaos_constants.lua`)
 
@@ -7262,9 +7475,38 @@ No opcode, no table, no storage key of its own: the base's card storages (37000-
   event, Tautstring's bonus, the stale-name scan), `tools/patch_badges_test.py` (hook once, descriptions, hint migration),
   `tests/apothecary_test.lua` (decks), `client/overlay/modules/game_chaosinfo/chaosinfoview_test.lua`.
 - **Not seen in a client or on a live server.** The base is not in the repo: the right-click menu "Use" entry depends on
-  the item's `.dat` usable flag (the base registered the action, so it is expected); the legendary summons check the base
-  weapon id lists (`itemidKnights` and the others), which may not hold the Chaos weapons, so a legendary card may never
-  fire with them (left, the base script is untouched); the nine moved lines are tested on a mocked engine only.
+  the item's `.dat` usable flag (the base registered the action, so it is expected); the nine moved lines are tested on a
+  mocked engine only. (The legendary weapon lists were left here once; fixed in O142 below.)
+
+### Cards that did not fire (O142, beta 2026-10-23)
+
+Beta: "a card in the deck does not work at all". Four root causes, all fixed; deploy: `badges` and `files` installer steps and
+a server restart, no client update.
+
+- **Legendary cards ignored most weapons.** The base `legendary_cards_system.lua` asks the left-hand item id against four
+  hard-coded lists of stock ids (38 of 134 swords, 31 of 126 clubs, 34 of 114 axes, 26 of 37 bows, 24 of 29 crossbows, 41 of
+  65 wands, 11 of 77 Chaos items matched). `patch_badges.py` step 9 rewrites the 16 checks to `chaosHolds(player, "<class>",
+  leftHand, config.<list>)`, a local helper that calls `ChaosCards.holds` (cards.lua) and falls back to the base check while
+  cards.lua is not loaded. `holds` decides by weapon type: Knight sword, club, axe or a fist weapon (the Monk line also
+  fights bare-handed), Paladin distance, Sorcerer and Druid wand (wands and rods share one type; either mage card works
+  with either). The stock ids still count. The fixture test is in `tools/patch_badges_test.py`.
+- **The summon lock stuck.** The base sets `DeckSystem.Legendary.CanCreateSummon` to 1 on a summon and never releases it
+  when the summon dies, so the card worked once and then never. `ChaosCards.releaseSummon` clears it when the player has no
+  summons (a global event every `summonReleaseMs` 5000, and at login).
+- **No card line for several classes.** Lines were tied to one spell. Thief, Ninja, Samurai, Monk line, Templar line and the
+  Necromancer line had no usable line (Frostfall Rune is a rune everyone can use but gives no class value). Four hit lines
+  now carry an `also` list of a second spell: Doomtide + Blade Flurry (Thief line), Earthbreaker + Consecration (Templar
+  line), Frozen Crypt + Sundering Palm (Monk line), Dawnpiercer + Bone Spear (Necromancer line). `C.byTarget` maps every
+  spell to its line; card texts name every spell ("these spells", "with several cards the highest one counts").
+  No existing line was removed, so nobody loses a card.
+- **Texts.** Legendary text now says what to hold ("Needs a melee weapon in your left hand (the Monk line: a fist weapon or
+  bare fists)"); `card_descriptions.csv` regenerated; pt-BR in `i18n_strings.lua`.
+
+`tests/cards_test.lua` now walks all 21 classes (`C.classes`) against all 60 common cards and the 16 legendary cards (about
+45,000 checks): every line is castable by some class, every class has a common line and a hit that fires, every legendary card
+fires for each class weapon, fist weapons, Chaos items, stock ids, bare fists for the Monk line, and the summon lock.
+`luajit tests/cards_test.lua --table` prints the lines per class. Limit: the base `elseif` chain checks only the first
+legendary storage that is on, so with two legendary classes on only the first can fire.
 
 ## Tile labels (`tile_labels.lua`, `tile_labels_core.lua`, `tile_labels_config.lua`)
 
@@ -12081,7 +12323,7 @@ inventory slot:
 No other base script hands out a deck, ship, belt or gloves (searched by id and by name). A badge prize lands in a
 visible slot at worst.
 
-**Boss roulette odds** (`ChaosPrizesCore.odds`: every entry rolls its chance in 10000, one of the hits is picked at
+**Boss roulette odds** (superseded by "Boss Roulette and uniques in the hunts (O148)" below; `ChaosPrizesCore.odds`: every entry rolls its chance in 10000, one of the hits is picked at
 random, no hit rolls again; exact). The three retired entries were 27.8% of the spins. Their chances are left out and
 the others keep theirs, so every remaining prize is about 1.35 times as likely: the Furious badges 15.7 / 14.9 / 13.8 /
 11.0 / 10.5 / 8.8 / 7.4 / 6.3 / 5.2% (were 11.2 / 10.6 / 9.9 / 7.9 / 7.6 / 6.4 / 5.4 / 4.6 / 3.8%), each of the four
@@ -12095,6 +12337,100 @@ decoration tile, no tile, a logged-out player, no room anywhere. `tools/patch_pr
 roulettes, one it can't read left alone, CRLF, the pool lines, the hook's tile and label, the guards, the task, crafting
 and NPC lines, a second run, `--check`, the patched Lua parses). On a copy of the base data: 8 files, a second run
 changes nothing, every patched file parses in Lua 5.3 and LuaJIT. Not run on a live server.
+
+## Boss Roulette and uniques in the hunts (O148)
+
+Beta feedback 2026-10-23, two reports: (1) "I spun the Boss Roulette twice. One reward was the golden deck, the other a boat. The
+roulette also shows lots of card rewards. Some rewards look useless on this server." (2) "I killed loads of Rare and Legendary
+monsters standing in hunts (~1000) and never got a Unique, only gear they already drop, more orbs and gold. I understood Rare
+monsters beyond some level had a chance at a Unique."
+
+### The Boss Roulette (`boss_roulette_config.lua`, `tools/patch_roulette.py`, `prizes.lua`/`prizes_core.lua`, `tests/boss_roulette_test.lua`)
+
+**What it was.** The base boss roulette (lever room, token 28033) had 16 prizes: three decks and a ship (27.8% of the spins, the
+golden deck and The Awakener ship the player saw), nine Furious badges and four legendary level 6 cards. The prizes step of
+2026-10-22 already took the decks and the ship out of the install, so a beta server that had not installed it still showed them;
+what was left was 93.6% Furious badges (the second of five tiers) and 6.4% cards, no orb, no gold, no unique. Nothing in it came
+from the loot models.
+
+**What it is.** The pool is `data/scripts/chaos/boss_roulette_config.lua` (one line per prize: id, count, chance, kind). The install
+step `roulette` (`tools/patch_roulette.py`, after `prizes`, idempotent, CRLF kept) writes those lines into the `prizePool` of the base
+boss roulette script (found by its "Boss Roulette requires" text) and sets the broadcast threshold to the config's `rareThreshold`
+(120: only the chase orbs are announced). The other four roulettes (exercise, premium, the two crystal token ones) are not touched.
+The base draw stays: every entry rolls its chance in 10000, one hit is picked at random (`ChaosPrizesCore.odds` is exact).
+
+| Kind | Prizes | Share of the spins |
+|---|---|---|
+| Crafting orbs | 16 of the orbs the loot layer drops (`loot_config.lua` `currency.entries`): Awakening, Whetstone, Upheaval, Tempering, Gilding, Unmaking, Erasure, Fate, Grafting, Reforging, Excision, Binding, Ember, Crown, Void, Ruin, in stacks of 1-3 | 63.0% |
+| Sockets | Orb of Sockets, 1-3 | 5.0% |
+| Gold | three purses (1, 2 or 5 crystal coins on the tile) | 20.7% |
+| Unique chest | one chest on the tile | 0.6% |
+| Badges | the nine Furious badges | 5.4% |
+| Amplifier catalysts | the first catalyst of each badge line | 4.3% |
+| Cards | 2 of the 4 legendary level 6 cards | 1.0% |
+| Decks, ships, belts, gloves, boats | none (the config's `retired` list and `patch_badges.py` are checked by the tests) | 0% |
+
+- **Gold scales with the level.** The tile shows N crystal coins; the prize is N x `gold.perUnit` (0.2) of an hour of hunting gold at
+  the winner's level (`gamble_config.lua` `balance.hunting`, the same curve, kept equal by a test), paid as coin stacks, at least one
+  crystal coin: 1 unit is 1 cc at level 8, 7 cc at 100, 190 cc at 1000. `ChaosPrizes.bossPrize` pays it and says the amount.
+- **The unique chest** gives a unique of the winner's item level (`unique.low` 0.5 to `high` 1.0 of the level; the nearest below when
+  the band is empty), never a season, Ascended or boss-only one, made with `ChaosMakeUnique` like a drop and announced. Without the
+  unique scripts loaded the chest is the plain chest.
+- **Expected value of one spin** (`tests/boss_roulette_test.lua` prints it): in kills of a level 100+ monster that the loot layer needs
+  for the same drops (`normal` chance of the orb; the Orb of Ruin by its magic chance / 3), gold in kills of the level 1000 hunt
+  (9.5M an hour, 870 kills an hour). Before (badges and cards only): 0 orbs, 0 gold, 6.4% cards, 93.6% badges. Base pool with the decks
+  and the ship: 27.8% useless. Now: 1.16 orbs and 717,000 gold at level 1000 per spin = 788 + 66 kills, 1.0% cards. Computed, not
+  measured on a server. The numbers are guesses against an unknown token drop rate (a token is a level 509+ monster drop): a spin is
+  worth about 40 minutes of orb hunting; `chance` in the config is the knob, `limits` in it what the test holds (cards at most 6%,
+  orbs, sockets and gold at least 40%, gold at least 12%, the unique chest between 0.3% and 2%).
+- **Tests.** `tests/boss_roulette_test.lua` (luajit and lua5.3): no retired id (decks, ships, belts, gloves), every id known to the
+  committed item lists and the Chaos configs (a dead id fails), no repeated prize, the odds add up to 1, the card share, the orbs are
+  the orbs the loot layer drops, the chase orbs stay under 1%, the gold curve equals `gamble_config.lua`, gold never falls with the
+  level, the coin stacks add up, the chest has a unique at every level, the value of a spin before and after.
+  `tests/prizes_test.lua`: gold and chest through `rouletteReward` on a mocked engine, other roulettes keep the plain item.
+  `tools/patch_roulette_test.py`: the real config, a small data folder (boss roulette changes, exercise roulette and an unreadable
+  one do not), the threshold, CRLF, a second run, a changed config, a retired id refused; with `CHAOS_ITEMS_XML=/path/items.xml` it
+  also checks every id against an installed base `items.xml`.
+- **Deploy.** `install_all.py SERVER_DIR --only files,roulette` and a server restart (the lever script reads the pool at load). The
+  other items on the tiles are existing items; no client change, no new text.
+
+### Uniques from Rare and Legendary monsters in the hunts (`loot.lua`, `loot_config.lua` `unique.open`, `tests/unique_hunt_test.lua`)
+
+**Not a crash, three real causes** (found by reading `L.rollUniques` and the `processKill` unique step; no code path was broken, the
+drop could not happen):
+1. **The monster list.** Every unique has a `monsters` name list; the endgame uniques (item level 900-2400,
+   `minMonsterLevel` 800-1000, the only ones for a level 1500 character) listed twelve waystone monsters and bosses and no hunt
+   monster, so no Azure Dragon, Golden Lord or other monster of the level-scaled hunts could drop one. The lower uniques list
+   stock monsters of level 20-150.
+2. **The pack factor.** The unique roll was `item find x pace`, the loot factor of the pack (0.163-0.204 at level 1500, the thin
+   per-kill factor that keeps gold per hour), while Rare gear keeps the `notable` share (1 from monster level 700). A unique was
+   thinned to a fifth.
+3. **The level.** The `minMonsterLevel` gate read `Monster:getMonsterLevel()`, which is 0 for a base monster and for a waystone
+   map's monster (their level comes from `ChaosLoot.monsterLevel` and the waystone run), so even listed waystone monsters failed it
+   where the engine level was 0.
+
+**The fix.** (a) `unique.open` in `loot_config.lua`: an entry with a `minMonsterLevel` (not boss-only) drops from any Rare or better
+monster of that level or more, whatever its name, at `mult` (0.5) x its chance (below the level nothing changes; the lists still
+rule the lower uniques). (b) `ChaosLoot.uniquePace`: the unique roll reads the notable share of the corpse (`L.corpseFactors`), at
+least the loot factor. (c) The roll gets `max(getMonsterLevel, ChaosLoot.monsterLevel)`. The Conquest bad-luck protection already
+covered these rolls (group `monster`: +1% per miss, up to x3); an open drop now counts as an eligible roll, so it works for the
+hunts too (`conquest_config.lua` `pity`, unchanged).
+
+**Numbers** (level 1500, the hunt monsters of `late_game_spawns.csv`, Rare : Legendary kills 150 : 25 as spawned, exact sums over the
+entries, sampled with `L.rollUniques`):
+
+| | Uniques per 1000 Rare / Legendary kills | One per |
+|---|---|---|
+| Before (computed / sampled) | 0.65 / 0.9 (all of it from four stock names; any other monster 0) | about 1,100-1,500 kills |
+| Open rule only, loot factor kept | 6.5 | 154 kills |
+| Now (open x0.5, notable share) | 17.4 computed / 17.8 sampled | 57 kills |
+
+A hunter in the late sets kills about 830 monsters an hour and about 17 of them are Rare or Legendary (spawn chance 1.5% and 0.25%),
+so the farmer sees one unique about every 3.4 hours, plus the pity. The drops are 21 uniques of item level 900-2200, 8 of them wearable at
+level 1500; the rest wait for a higher level or a trade. `tools/loot_model.lua --check`, `tools/gear_coverage.lua --check` and `tools/weapon_coverage.lua --check`
+stay green (uniques are not in the gold or item model; the coverage tool reads the entries' own chance, unchanged).
+`tests/unique_hunt_test.lua` (luajit and lua5.3) proves it: before below 1 per 1000, now 10-25, one every 2.5-6 hours, the level and
+list rules, boss-only entries keep their bosses, `open.enabled = false` brings the old behaviour back.
 
 ## Rings and necklaces as gear (`data/lib/chaos_jewelry.lua`, `chaos/jewelry.lua`, `tools/patch_base_jewelry.py`, `tests/jewelry_test.lua`)
 
@@ -13951,6 +14287,71 @@ Hooks: `WM.lootMult`, `WM.rarityFind`, `WM.expMult`, `WM.extraWaystone`, `WM.rol
 Tests: `tests/waystone_atlas_test.lua` (core, mocked engine and the hooks). Balance numbers are first guesses. Not run in
 game.
 
+## Content rewards (`content_rewards.lua`, `content_rewards_core.lua`, `content_rewards_config.lua`, `tools/content_reward_model.lua`, `tools/audit_waystone_maps.py`)
+
+Beta feedback 2026-10-23: inside a waystone "the monsters are the same as outside with the same drops", the boss dropped
+almost nothing, and nobody knew what the content was for. Owner: rifts and waystones need separate drops.
+
+**What each paid before (O143 audit).** Rift: the monsters' own loot x the key's quantity bonus (rateMult), the guardian's
+chest per finisher (gold, Upheaval / Fate, item rolls, gems), the next key. Waystone: the same monsters' own loot x the
+modifiers' quantity and rarity, one next-tier waystone from the boss. The base waystone monster files hold coins,
+potions, materials and orbs and **no gear and no waystone at all** (`data/monster/lua/waystone_portals`), and the corpse
+rule by monster level (`pace_core.lua`) thins a level 1100+ boss's table to a few coins. So the boss was worth less than
+a hunted pack and a waystone could not even pay for the next one.
+
+**Identity.** Rifts = crafting currency. Waystones = gear. Each keeps the other's reward out.
+
+| | Rift (key tier 1-15) | Waystone (tier 1-15) |
+|---|---|---|
+| Every kill | an orb: 1.5% (tier 1) to 5.7% (tier 15) of normal kills, x2.5 magic, x5 rare, x12 legendary; drawn Upheaval 30, Awakening 20, Fate 18, Gilding 12, Grafting 8, Unmaking 6, Erasure 6 | a set piece (Azure Vigil / Gildcrown, level 0.45-1.0 x the run's) on 2.5% (tier 1) to 6.7% (tier 15), same tier multipliers; always Rare or better (Legendary 29%, Divine 1% + 0.2% per tier); the loot layer then rolls item level, sockets, modifiers; smart loot may turn it into the killer's class |
+| Run bonus | the key's modifiers (unchanged) | quantity +10% + 1.5% per tier, rarity find +20% + 3.5% per tier, on top of the modifiers; 12% of the monsters are magic or rare (loot-tier name and look via `ChaosApplyTier`; `waystone_mods_config.lua` `elites.runBase`) |
+| Boss | the guardian's corpse: 4 + 0.8 x tier orbs (same draw) and 1 + 0.1 x tier unique rolls at 2x find; the chest as before | 3 + 0.25 x (tier - 1) Legendary (85%) or Divine pieces, 2 + 0.2 x (tier - 1) unique rolls at 3x find (boss tier), Awakening 2-4, Gilding 1-2, Grafting 35%, Fate 25%, one waystone of the run's tier plus the tier + 1 one; pieces x the quantity |
+| The loop | a sealed rift leaves a key (below) | 0.4% of the kills drop a waystone of the run's tier (x tier multiplier), the boss two |
+
+Everything scales with the modifiers' quantity (`ChaosWaystoneMods.lootMult`, `ChaosRift.contentOf`). `loot.lua` calls
+`ChaosContentRewards.onKill` after the extra rolls and before the gear quality step (a piece gets item level, sockets and
+modifiers like any drop). Summons pay nothing. Omen arenas keep their own chest. `enabled = false` turns it all off.
+
+**Key ladder (`rift_config.lua` `keyDrop.pity`, `R.keyGuarantee`).** Report: a level 800-1500 character ran Rift Level 1 six
+times and never got a Level 2 key. The old rule is pure RNG (55% a key, 70% of those tier + 1: 38% per run for a one
+modifier key, so six misses in a row happen to 6% of players). Now: (1) pity: `runs` = 2 sealed rifts in a row with no
+stronger key (counter on the receiver, storage `riftRun + 5`) make the third leave tier + 1; (2) fast step: a finisher at
+1.5x the tier's entry level or more always gets a key of the tier his level fits (`R.fitTier`), at least +1 and at most
++3 per run (level 1000 in tier 1: tier 4, then 7, 10). The Ashen Ascent keystone turns both off. Rift monsters stay at
+the key tier's level window (a tier 1 rift is level 80-180 whatever the player's level): scaling them to the party would
+make the low tiers a grind at a high level, so they are a quick step with a guaranteed key instead.
+
+**Layout audit.** `tools/audit_waystone_maps.py BASE_SERVER_DIR --check` walks each of the 12 maps of `tier_maps.lua` on
+the base `.otbm` (players walk onto fields; `clearPath` items taken off; the Frostreaver entrance moved): the arrival
+region, every lever tile, the boss entrance and boss tile, that the boss room is closed, that 85% of the spawn points
+are reachable and that at least four of the tier's five monster types spawn. Result 2026-10-23: all 12 pass; **maps 7
+(tier IV forest) and 8 (tier IV underground) fail on the raw map** (lever cut off: a small fir tree; rope railings),
+which `clearPath` fixes at each start (`waystone_tiers.lua` `clearPaths`; this was already in place). The monsters
+Nexlurith, Nightflare Dreadknight and Inferno Juggernaut spawn in only one of their tier's two maps, which is not a
+defect. `waystone_tiers_config.lua` `layouts` records the audit and `retired` lists maps `WT.optionsFor` must leave out
+(none today). The base map is not in the repository: CI runs `tools/audit_waystone_maps_test.py` (synthetic maps,
+parsers) and `tests/waystone_layouts_test.lua` (12 rows, rectangles, clearPath inside maps, a band keeps two maps); run
+the audit by hand after a map or `clearPath` change. The generated rift layouts (including the fungus forest theme
+"Forsaken Sanctum") are validated for every theme and size band by `tests/rift_layout_test.lua`.
+
+**The model (`tools/content_reward_model.lua --check`, both interpreters).** Per hour at the pack model's kills (x0.85
+waystone, x0.8 rift for the walking), against the richest stock hunting band (1000; the 1500 band's stock tables hold no
+gear):
+
+| Content | Tier 1 | Tier 15 | With +60% quantity |
+|---|---|---|---|
+| Waystone Rare+ gear/h (hunting 24.8) | 43.5 (x2.8) | 132.9 (x6.4) | x3.8 / x9.3 |
+| Rift orbs/h (hunting 69 / 51) | 47.8 (x1.7) | 135.1 (x3.7) | x2.1 / x5.2 |
+
+`bounds` in `content_rewards_config.lua`: waystone gear gain at least x2 with no modifiers and at most x14 with them, rift
+orbs at least x1.5 and at most x10. The gold and experience models are untouched (the contents add gear and orbs, no
+coins; `loot_model.lua --check` stays green). Computed, not measured in game; the pieces are Rare or better, so their NPC
+value is not in the gold model. Not done: waystone-exclusive or rift-exclusive items (new items need art and an
+`items.xml` install; the pools are the set pieces and the unique pool) and faction materials (none exist).
+
+Client: the device window, the Atlas window (under the map, per mode) and the rift HUD (label and tooltip) say what each
+pays. Tests: `tests/content_rewards_test.lua`, `tests/waystone_layouts_test.lua`, `tools/audit_waystone_maps_test.py`.
+
 ## Rifts (`rift.lua`, `rift_core.lua`, `rift_config.lua`, `rift_layout_core.lua`, client `game_rift`)
 
 **Limits** (`rift_config.lua` `limits`, "Instance limits"): 12 / 13 / 15 minutes a run by the size of its map (tiers 1-5 / 6-10 / 11-15, `layout.sizes`; was 10 for all; Omen arenas keep 10), warnings at 5 min, 1 min and 10 s; time up fails the rift (out to where the key was used, the key is spent); a run kept open only for fallen players who may come back closes after 3 minutes as a failed rift; at most 16 rifts and Omen arenas at once, a player who finds them busy (or none ready yet) hears the wait and waits in line.
@@ -14045,6 +14446,7 @@ storages 7100400-7100409, action ids 47401 (key), 47402 (reward chest) and 47403
   one life; the next login of that character puts it back at the rift's entrance with 5 s in which rift monsters do
   not hurt it. The death that takes the last life collapses the rift (everyone out, no chest, key spent). Fallen players
   who may still return keep a run open and share the chest. HUD shows "Lives: n / max". The Flawless Seal achievement now needs no deaths.
+- **Key ladder (2026-10-23).** A sealed rift's key is pity-backed: two rifts in a row without a stronger key make the third leave tier + 1, and a finisher at 1.5x the tier's entry level or more always gets a key of the tier his level fits (at most +3 a run). See "Content rewards".
 - **Omens.** Sealed rifts of tier 6+ add Omen Fragments (item 32071, copy of the red crystal fragment) to every finisher's
   chest: 2 + 1 per tier above 6, x quantity; rare / legendary monsters of those rifts carry one 8% / 25%. Using 60
   fragments binds an Omen Key (item 32072, copy of the eye of the storm; attribute omen_kind) of a random kind. The key
@@ -15862,8 +16264,8 @@ hunt, so it is slower); only the shape matters here, and the band hours of 100+ 
 | Steps of 3 every 50 levels | 301 to 700 | each 50th level paid 8-20% less per kill (x36, 33, 30, ... 15) | one multiplier per step, rows of 14-17 levels, the same averages (hours of 300-700 within 0.5%) |
 | Paragon track ends | level 1282 to 2200 | 282 points, one a level, all spent at 1282: 900 levels of level-ups with no new choice | one point a level up to 1100, then one every 6 levels: all 282 at level 2192; points already owned stay |
 | Hall hunt gaps | levels 163-233, 386-518 (by a window of 0.8-1.1 L) | 0-2 hall hunts, the nearest 22% above | fixed by O139 (below, "Hall coverage (O139)"): 8 new hunts, `--check` also fails on fewer than 3 within 0.8-1.1 L in the listed ranges |
-| Gold per hour | 300 to 800 | 469k (300), 393k (500), 2.5M (800): a dip, then a 6x jump (`tools/loot_model.lua`) | not changed (loot tables are another owner's work); reported |
-| Spell unlock gaps | levels 130-380 | longest stretches without a new spell below 300: Ninja 180 to 360, Beastmaster 220 to 380, Berserker 130 to 260, Lich 170 to 300, Shadowfist 150 to 250 | not changed (`spells_chaos.xml` belongs to the spell work); `--spells` prints all 21 |
+| Gold per hour | 300 to 800 | 469k (300), 393k (500), 2.5M (800): a dip, then a 6x jump (`tools/loot_model.lua`) | fixed by O141 ("Balance follow-ups (O141)"): 469k, 860k (500), 2.5M; reported at first |
+| Spell unlock gaps | levels 130-380 | longest stretches without a new spell below 300: Ninja 180 to 360, Beastmaster 220 to 380, Berserker 130 to 260, Lich 170 to 300, Shadowfist 150 to 250 | fixed by O141 for the attack spells (4 unlock levels moved); `--spells` prints all 21 and counts supports too |
 
 Before and after (minutes a level, mean of 3 levels; stage):
 
@@ -15911,6 +16313,26 @@ which the kit update runs): config.lua is read at the engine's start, so restart
 replaced; `chaos-ctl.sh xp-rate` keeps its factor (it scales the release table). Paragon needs only the script reload.
 No client update and no engine rebuild.
 
+
+## Balance follow-ups (O141, 2026-10-23)
+
+The open items noted after the O135-O140 balance pass, each checked with the repo's models before changing anything. All numbers are
+computed (`rotation_sim.py`, `loot_model.lua`, `progression_model.lua`), not measured in game.
+
+| # | Item | Real? | What changed |
+|---|---|---|---|
+| 1 | Long attack spell unlock gaps | yes for 4 classes. `progression_model.lua --spells` counts every spell (supports too), so Lich's 130 and Shadowfist's 100 are utility gaps; counting only attack spells (`group="attack"`, the rule of `check_attack_counts.py`) the stretches over 120 levels were Ninja 180 (180 to 360), Juggernaut 160 (300 to 460), Beastmaster 160 (220 to 380), Berserker 130 (130 to 260). Deadeye and Elementalist have exactly 120 and stay | Unlock levels in `spells_chaos.xml` (no spell added or removed, so `check_attack_counts.py` still says 10 for all 21): Shuriken Tempest 360 -> 270, Pack Frenzy 380 -> 320, Anvil Fall 460 -> 380, Skyfall Cleave 100 -> 190. Longest attack stretch now Ninja 90, Juggernaut 90, Beastmaster 100, Berserker 80 |
+| 2 | Templar about 10% short at level 50 | yes, but against the class's own value before the attack kit (the level curve target of O136, "the largest error left ... Templar 10% at level 50"), not against the median class: best-set score (1 target + 0.25 x pack) 109.3 against 121.4 before the kit (-10.0%; -14.9% at 55). Against the median of the 21 classes at level 50 it was -2.7% (the spread between classes is 0.46x to 2.0x at that level, so the median is not a target) | `spell_factor_config.lua` `byLevel[23]`: knots 45 / 50 / 55 / 59 (0.99 / 0.97 / 0.96 / 1.00) between 40 (1.01) and 60 (0.80). Score at 45 / 50 / 55 / 59: 107.1 / 117.2 / 128.9 / 145.6 against 109.0 / 121.4 / 134.6 / 145.7 before the kit (-1.7 / -3.5 / -4.2 / -0.1%), and +4.3% (50) and +3.6% (55) over the median class. The factor sits a little under the pre-kit value on purpose: at 1.00 Templar would be +8% over the median |
+| 3 | Gold per hour dips around 500, jumps at 800 | yes. Gold per hour by monster band (the 2026-10-20 economy, which the loot rule had to keep): 300 469k, 350 568k, 400 325k, 450 371k, 500 394k, 550 436k, 600 537k, 650 1.8M, 700 2.4M, 800 2.5M. The dip is the old rule's 0.30 coin plateau from 450 on, and the 3.4x jump is at 600 to 650 where the level-scaled hunts begin | `pace_config.lua` `base.coins` / `scaled.coins` points 400-600 (0.73 / 0.74 / 0.88 / 0.90 / 0.90 instead of 0.291 / 0.280 at 450 / 550) and `junkKeep` points 300-600 so that items per hour stay within 7% of the old rule. Gold per hour now 300 469k, 350 601k, 400 626k, 450 786k, 500 860k, 550 1.00M, 600 1.06M, 650 2.05M, 700 2.38M, 800 2.50M: it never falls and the biggest step is 1.9x (600 to 650, was 3.4x). The "Respec" model reference is 5.5M at 500, so the new values stay far under it. `lootLevel.goldPerHour` holds the targets of the bands 350-600; `loot_model.lua --check` holds them within 5%, the other bands within 5% of the 2026-10-20 rule as before, and fails a dip or a step over 2.3x between checked bands from level 300 (`M.MAX_STEP`; bands 350, 400 and 600 are checked now too) |
+| 4 | Legendary cards may never fire with Chaos weapons | not part of O141 (the cards files belong to another change). For that change: the base script `legendary_cards_system.lua` tests the left-hand item id against four lists of stock ids, which hold 38 of the base server's 134 swords, 31 of 126 clubs, 34 of 114 axes and 11 of the 77 weapon and shield items of `chaos_items.xml` (counted from `base_weapons.csv` and `chaos_items.xml` against the lists in a base copy found on the build machine) | Nothing |
+| 5 | No wand or rod unique per band | no: `weapon_coverage.lua --check` is green, every wand line has 3 or more options in every band (the lowest is 3, Elementalist at 700-1000, 1000-1500 and 1500+), and the table shows no `!` cell. A wand or rod unique keeps the damage of its base item and no tool sets it ("Wands and rods" in the gear audit above) | Nothing |
+
+Install: server `files` and `spells` steps and a restart (spell levels, factors and loot curves are read at start). Client update for
+`spelldata.lua` (Spellbook levels) and `autorotation_data.lua` (the helper's presets); the wiki data is regenerated. Characters that
+already passed a moved level just get the spell (a lower unlock level); a Berserker between level 100 and 189 loses Skyfall Cleave until
+190 (best-set score at 100 / 150 / 189: 272 / 317 / 354 -> 260 / 307 / 345, -4.6 / -3.1 / -2.5%).
+Tests: `tests/class_spell_progression_test.lua` (new levels), `tests/spell_factor_test.lua` (Templar at 50 and 59), `tests/loot_by_level_test.lua`
+(coins on the curve, gold per hour grows between bands).
 
 ## Hall coverage (O139, `tools/areaplan/plans/`, `progression_config.lua` `hall.tight`, 2026-10-23)
 
@@ -18660,6 +19082,15 @@ restart refund, the event blocking its pocket, the island boss's personal loot. 
 `pocket*` actions through the Boss Spawns handler. Client: `game_bossspawns/bossspawnsview_test.lua` (the button). Not
 run against a live server: the island and raid bosses' health and damage scaling are guesses until measured (their XML
 lives in the base data).
+
+**Island reward (O142, beta 2026-10-23: "the second section only gives the cards as reward, and the cards did not work").**
+The island bosses' corpse is the stock loot table x `lootMult` 0.6, where the sure items were cards. Now every player at an
+island kill also gets `islandReward` (`pocketboss_config.lua`, `K.islandReward`, `islandRewardOf` in `pocketboss.lua`):
+Orb of Upheaval x2 and Orb of Fate x1 (x0.6, rounded at random) and 2 picks of a weighted pool: a piece of the boss's own
+loot table gear (Magic or Rare, kill item level; skipped when the table has none), a deck card (tier 40/30/20/10), Mythic
+Essence, Legendary Abyssal or Ancestral Essence, Orb of Upheaval, crystal coins. Cards are about a sixth of the picks. A
+failure is logged and never blocks the kill. The Item Finder lists the items (`pocketisland`). Tests: `K.islandReward`
+weights and skips, an island pocket kill. Gear comes from the existing table, so `loot_model` and `gear_coverage` do not move.
 
 ## Map markers (`partymarkers.lua`, `poi.lua` and their `_core` / `_config` files, `tools/gen_poi.py`, `sql/chaos_poi.sql`, client `game_mapmarkers`)
 

@@ -73,11 +73,18 @@ local function context(T, player)
 		for key, def in pairs(P.defs) do
 			max[key] = def.maxPoints
 		end
-		local current = {}
-		for key, n in pairs(P.allocation(player)) do
-			current[key] = n
+		-- the build codes carry the category part only: the masteries (O146) stay as they are, and their ranks come off the
+		-- points a code can use
+		local current, mastery = {}, 0
+		if P.split then
+			current, mastery = P.split(P.allocation(player)), P.masterySpent(P.allocation(player))
+		else
+			for key, n in pairs(P.allocation(player)) do
+				current[key] = n
+			end
 		end
-		ctx.paragon = {unlocked = P.unlocked(player:getLevel()), total = P.totalPoints(player:getLevel()), current = current,
+		local owned = P.pointsOf and P.pointsOf(player) or P.totalPoints(player:getLevel())
+		ctx.paragon = {unlocked = P.unlocked(player:getLevel()), total = math.max(0, owned - mastery), current = current,
 			max = max}
 	end
 	return ctx
@@ -90,6 +97,9 @@ function B.exportCode(player)
 		masteries = active and T.core.cleanMasteries(T.getTree(), active.nodes, active.masteries) or nil}
 	if ChaosParagon and ChaosParagon.allocation then
 		local alloc = ChaosParagon.allocation(player)
+		if ChaosParagon.split then
+			alloc = ChaosParagon.split(alloc) -- the masteries are not part of a code
+		end
 		if ChaosParagon.spent(alloc) > 0 then
 			build.paragon = alloc
 		end
@@ -184,8 +194,17 @@ function B.apply(player, code, seenCost)
 	end
 	local P = ChaosParagon
 	if plan.paragon and plan.paragonChange and P then
-		P.save(guid, plan.paragon)
-		P.cache[player:getId()] = plan.paragon
+		local merged = {}
+		for key, n in pairs(plan.paragon) do
+			merged[key] = n
+		end
+		if P.split then
+			for key, n in pairs(select(2, P.split(P.allocation(player)))) do -- the masteries stay
+				merged[key] = n
+			end
+		end
+		P.save(guid, merged)
+		P.cache[player:getId()] = merged
 	end
 	ChaosPassiveTree.apply(player)
 	T.sendNodes(player)

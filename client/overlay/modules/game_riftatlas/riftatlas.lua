@@ -8,6 +8,13 @@
 
 local OPCODES = { rift = 210, waystone = 159 }
 local TITLES = { rift = 'Rift Atlas', waystone = 'Waystone Atlas' }
+-- what each content pays (server content_rewards_config.lua; the numbers are in the server README), shown under the map
+local function rewardText(m)
+  if m == 'waystone' then
+    return tr('Waystones pay in gear: Rare or better set pieces from the kills, a boss table of Legendary pieces, uniques, new waystones and the waystone orbs. A higher tier and more modifiers pay more.')
+  end
+  return tr('Rifts pay in crafting currency: orbs from the kills (Upheaval, Fate, the waystone orbs), a burst from the guardian, and a stronger key when you seal a rift. Low rifts are a fast step for a high level character.')
+end
 local V = RiftAtlasView
 
 local mode = 'rift'
@@ -451,7 +458,10 @@ end
 -- show the other atlas in the window: the current one goes to its stash, the other comes back with its map position
 local function switchMode(m)
   if not OPCODES[m] then return end
-  if window then window:setText(tr(TITLES[m])) end
+  if window then
+    window:setText(tr(TITLES[m]))
+    window.rewardNote:setText(rewardText(m))
+  end
   if m == mode then return end
   closeBox()
   stash[mode] = { tree = tree, ix = ix, world = world, state = state, alloc = alloc, done = done, selected = selected,
@@ -566,6 +576,7 @@ function init()
   if ok and ui then
     window = ui
     window:hide()
+    window.rewardNote:setText(rewardText(mode))
     setupDrag()
     updatePanel()
   else

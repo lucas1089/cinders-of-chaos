@@ -1,0 +1,19 @@
+# Chaos: the action bar clears the slots and hotkeys of retired spells when the character enters the game
+# (modules/game_actionbar/actionbar.lua online(); after 0001-0122). Owner beta report 2026-10-23 (O145): a slot is saved by the
+# words it says, so a retired spell (Galeborne Stride) stayed in the bar and did nothing. ChaosSpellFix.pruneRetiredSlots
+# (overlay game_chaosspells/spellfix.lua, tested there) removes the mappings that say a retired spell; the base keeps the
+# rest. Action bar slots and classic hotkeys share Options.actionBarMappings.
+--- a/modules/game_actionbar/actionbar.lua
++++ b/modules/game_actionbar/actionbar.lua
+@@ -596,6 +596,11 @@
+ 	hotkeyItemList = {}
+ 	spellGroupPressed = {}
+
++	-- Chaos: slots and hotkeys of retired spells are cleared (game_chaosspells spellfix.lua, O145)
++	if ChaosSpellFix and Options.actionBarMappings and ChaosSpellFix.pruneRetiredSlots(Options.actionBarMappings) > 0 then
++		Options.saveData()
++	end
++
+ 	for i = 1, #actionBars do
+ 		setupActionBar(i)
+ 	end

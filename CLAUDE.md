@@ -43,6 +43,7 @@ cd server && luajit tools/gear_coverage.lua --check && lua5.3 tools/gear_coverag
 python3 -I tools/ci/check_attack_counts.py   # every class and ascension has the same number of attack spells
 cd server && luajit tools/progression_model.lua --check && lua5.3 tools/progression_model.lua --check  # smooth leveling: stages, minutes per level 8-2200, hunts in reach (limits: data/scripts/chaos/progression_config.lua); no flag prints the table, --spells the unlock gaps
 python3 -I server/tools/pack_model.py --check   # level-scaled late packs (hunting level 670+) die in at most 3x a base hunt pack of the median class (O138; pace_config.lua scaled.health)
+python3 -I server/tools/tower_model.py --check && python3 -I server/tools/tower_model_test.py   # Infinity Tower: seconds per floor, boss heals, breather after milestone floors, level 800 reaches floor 30-40 (O144; limits: data/scripts/chaos/infinitytower_balance_config.lua; --derive prints the generated curves, no flag the table)
 cd server && luajit tools/store_model.lua --check && lua5.3 tools/store_model.lua --check  # store prices: coin packs, boost caps, gold per coin, no coin -> gold loop (limits: data/scripts/chaos/store_balance_config.lua; no flag prints the tables; docs/PRICES.md)
 cd server && luajit tools/gen_card_descriptions.lua --check   # -> data/items/card_descriptions.csv (card texts name current spells)
 python3 -I server/tools/survey_base_weapons_test.py   # base_weapons.csv: re-run server/tools/survey_base_weapons.py on an installed server when a base weapon changes

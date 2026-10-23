@@ -11,7 +11,16 @@
 --        (cards_config.lua families, how = "hit"): the hit of that spell changes its element (convert cards) or a heal of
 --        the spell heals more (heal cards). The spell is told by the cast context the spells state writes into the
 --        caster's storage (ChaosSupports.ctxDecode). The Tautstring line (how = "bow") is read by tautstring.lua.
---        The spells that keep their stock script need no code: the stock scripts read the same storages.
+--        The spells that keep their stock script need no code: the stock scripts read the same storages. A line can act on
+--        the spells of several classes (cards_config.lua `also`: the Thief, Monk, Templar and Necromancer lines).
+--   ChaosCards.holds(player, class, leftHand, stockIds)   the legendary cards: does the player hold the weapon the card of
+--        `class` ("Knight", "Paladin", "Sorcerer", "Druid") needs? The base script asked whether the left hand's item id was
+--        in four lists of stock ids, so a Chaos weapon, most stock weapons, a fist weapon, bare fists and the second
+--        dagger never fired a card; tools/patch_badges.py step 9 hands that check here, which classifies by weapon type
+--        (cards_core.lua K.holds). The stock ids still count.
+--   summon release   the base keeps "one summon at a time" in a storage it clears only when the summon times out alive: a
+--        summon killed first left the storage at 1 for good, so no card fired again. Cleared at login and every few seconds
+--        while the player has no summon.
 -- No opcode, no storage key of its own: the base's card storages (37000-37059, 37065-37080) and action id 37866.
 -- Lua 5.1 / LuaJIT. Assumed engine API (TFS 1.4): Player:getSlotItem, Container:getSize/getItem, Item:getId/getActionId/
 -- setActionId/moveTo/isContainer/getName.
@@ -215,6 +224,78 @@ local function sweep(player)
 end
 M.sweep = sweep
 
+-- ---------------------------------------------------------------- legendary cards: the weapon and the summon
+local KIND_OF_TYPE = {}
+local function kindOfType(wt)
+	if next(KIND_OF_TYPE) == nil then
+		KIND_OF_TYPE[WEAPON_SWORD or 1] = "sword"
+		KIND_OF_TYPE[WEAPON_CLUB or 2] = "club"
+		KIND_OF_TYPE[WEAPON_AXE or 3] = "axe"
+		KIND_OF_TYPE[WEAPON_DISTANCE or 5] = "distance"
+		KIND_OF_TYPE[WEAPON_WAND or 6] = "wand"
+	end
+	return KIND_OF_TYPE[wt]
+end
+
+-- the kind of an item in a hand (cards_core.lua K.kindOf); nil for nothing, a shield, ammunition, a quiver
+local function kindOfItem(item)
+	if not item then
+		return nil
+	end
+	local id = item.itemid or item:getId()
+	local fist = false
+	if ChaosFistWeapons == nil and not M.fistLoaded then
+		M.fistLoaded = true
+		pcall(dofile, "data/lib/chaos_fist_weapons.lua")
+	end
+	if ChaosFistWeapons and ChaosFistWeapons.items and ChaosFistWeapons.items[id] then
+		fist = true
+	end
+	local ok, wt = pcall(function() return ItemType(id):getWeaponType() end)
+	return K.kindOf(ok and kindOfType(wt) or nil, fist)
+end
+M.kindOfItem = kindOfItem
+
+local function inFistLine(player)
+	local ids = Chaos and Chaos.classes and Chaos.classes.ids
+	local base = Chaos and Chaos.classes and Chaos.classes.baseOf
+	local ok, voc = pcall(function() return player:getVocation():getId() end)
+	return ok and ids ~= nil and base ~= nil and base[voc] == ids.monk
+end
+
+-- true when the left hand's weapon (any type of weapon; the stock ids too) lets the card of `class` fire
+function M.holds(player, class, leftHand, stockIds)
+	if leftHand and stockIds then
+		local id = leftHand.itemid or leftHand:getId()
+		for _, v in ipairs(stockIds) do
+			if v == id then
+				return true
+			end
+		end
+	end
+	local hands = {left = kindOfItem(leftHand), fistLine = inFistLine(player)}
+	if player:getSlotItem(CONST_SLOT_RIGHT) then
+		hands.right = kindOfItem(player:getSlotItem(CONST_SLOT_RIGHT))
+	end
+	return K.holds(class, hands)
+end
+
+-- the base summon lock (see the header): released when the player has no summon any more
+local function releaseSummon(player)
+	local D = rawget(_G, "DeckSystem")
+	local key = D and D.Legendary and D.Legendary.CanCreateSummon
+	if not key or player:getStorageValue(key) ~= 1 then
+		return false
+	end
+	local ok, summons = pcall(function() return player:getSummons() end)
+	if ok and type(summons) == "table" and #summons == 0 then
+		player:setStorageValue(key, 0)
+		return true
+	end
+	return false
+end
+M.releaseSummon = releaseSummon
+
 -- ---------------------------------------------------------------- cards of a spell that was replaced
 local ELEMENT = {
 	Fire = "COMBAT_FIREDAMAGE", Earth = "COMBAT_EARTHDAMAGE", Ice = "COMBAT_ICEDAMAGE", Holy = "COMBAT_HOLYDAMAGE",
@@ -297,10 +378,25 @@ local login = CreatureEvent("ChaosCardsLogin")
 function login.onLogin(player)
 	player:registerEvent("ChaosCardsHit")
 	sweep(player)
+	-- the summon of an earlier session is gone (its timer died with the server or the logout)
+	local D = rawget(_G, "DeckSystem")
+	if D and D.Legendary and D.Legendary.CanCreateSummon then
+		player:setStorageValue(D.Legendary.CanCreateSummon, 0)
+	end
 	return true
 end
 login:type("login")
 login:register()
+
+local summonThink = GlobalEvent("ChaosCardsSummonRelease")
+function summonThink.onThink(interval)
+	for _, player in ipairs(Game.getPlayers()) do
+		pcall(releaseSummon, player)
+	end
+	return true
+end
+summonThink:interval(C.summonReleaseMs)
+summonThink:register()
 
 local think = GlobalEvent("ChaosCardsReconcile")
 function think.onThink(interval)

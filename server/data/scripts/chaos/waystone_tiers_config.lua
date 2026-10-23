@@ -100,6 +100,29 @@ return {
 	bosses = {"Vorgrun of the Jade Fangs", "Fractalis the Shardmaw", "Frostreaver the Glacialblade",
 		"Rhazgor the Crimson Slayer", "Morgrath the Umbral Archmage", "Nyxdrath the Midnight Terror"},
 
+	-- the layout audit (tools/audit_waystone_maps.py, run on an installed base server; tests/waystone_layouts_test.lua keeps
+	-- this table and the maps above in step). One row per entry of `maps`: status "ok" (arrival, levers, boss room and
+	-- spawns all reachable on the map as the server runs it, with `clearPath` applied) or "retired" (the map is left out
+	-- of the options of its band: add its `from` to `retired` below). Audited 2026-10-23 on the base map: all 12 ok; the
+	-- two tier IV maps (forest, underground) only with `clearPath` (the raw map fails: lever cut off).
+	layouts = {
+		{map = 1, name = "Water cave (tier I)", status = "ok"},
+		{map = 2, name = "Cave (tier I)", status = "ok"},
+		{map = 3, name = "Plain (tier II)", status = "ok"},
+		{map = 4, name = "Cave (tier II)", status = "ok"},
+		{map = 5, name = "Plain (tier III)", status = "ok"},
+		{map = 6, name = "Cave (tier III)", status = "ok"},
+		{map = 7, name = "Forest (tier IV)", status = "ok", needs = "clearPath"},
+		{map = 8, name = "Underground (tier IV)", status = "ok", needs = "clearPath"},
+		{map = 9, name = "Desert (tier V)", status = "ok"},
+		{map = 10, name = "Ice (tier V)", status = "ok"},
+		{map = 11, name = "Undead cave (tier VI)", status = "ok"},
+		{map = 12, name = "Forest and desert (tier VI)", status = "ok"}
+	},
+	-- maps the audit failed and nothing can fix: their `from` corner; WT.optionsFor leaves them out of the band's options
+	-- (a band always keeps at least two maps)
+	retired = {},
+
 	-- blocking items taken off the map at startup so a tier's boss lever can be reached on foot (player report
 	-- 2026-10-22: "one layout has no boss lever"). Found with the base map (tools/map/otbm.py): in both tier IV maps the
 	-- lever and the tiles its group stands on are cut off from the arrival.

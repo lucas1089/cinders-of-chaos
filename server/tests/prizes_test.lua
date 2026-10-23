@@ -363,6 +363,67 @@ eq(P.rouletteReward(24, roulette(), WIN, "boss"), false, "no room anywhere: fals
 eq(pl.storage[48550], 1, "no room anywhere: the next spin stays free")
 tiles[100].blocked = false
 
+
+-- ---------------------------------------------------------------- the Boss Roulette's gold and unique chest (O148)
+-- crystal coins on the tile are gold scaled to the winner's level; the chest is a unique of the winner's level
+do
+	local cfg = ChaosBossRouletteConfig
+	ok(cfg and cfg.gold and cfg.unique, "the roulette config is loaded by prizes.lua")
+	local function coins(player)
+		local n = 0
+		for _, it in ipairs(player.slots[CONST_SLOT_BACKPACK].items) do
+			n = n + (({[2160] = 10000, [2152] = 100, [2148] = 1})[it.id] or 0) * it.count
+		end
+		return n
+	end
+	pl = newPlayer(30, 20)
+	function pl:getLevel() return 1000 end
+	winTile.top = newItem(2160, 5)
+	broadcasts = {}
+	ok(P.rouletteReward(30, roulette(), WIN, "boss"), "a gold prize is given")
+	local want = K.goldFor(cfg, 5, 1000)
+	eq(coins(pl), want, "5 coins on the tile at level 1000: " .. want .. " gold")
+	ok(want >= 5 * 0.15 * 9000000, "level 1000: an hour of hunting gold is millions")
+	ok(pl.msgs[#pl.msgs]:find(tostring(want), 1, true) ~= nil, "the player is told the amount")
+
+	pl = newPlayer(31, 20)
+	function pl:getLevel() return 20 end
+	winTile.top = newItem(2160, 1)
+	ok(P.rouletteReward(31, roulette(), WIN, "boss"), "a gold prize at level 20")
+	ok(coins(pl) >= 10000 and coins(pl) < want / 100, "level 20: at least a crystal coin, far less than level 1000: " .. coins(pl))
+
+	-- another roulette (label) keeps the plain item
+	pl = newPlayer(32, 20)
+	function pl:getLevel() return 1000 end
+	winTile.top = newItem(2160, 5)
+	ok(P.rouletteReward(32, roulette(), WIN, "exercise"), "the exercise roulette")
+	eq(coins(pl), 50000, "5 crystal coins stay 5 crystal coins there")
+
+	-- the chest: a unique of the level, made like a drop
+	ChaosLoot = {uniqueList = function()
+		return {{id = 5001, name = "Low Blade", level = 100}, {id = 5002, name = "Mid Blade", level = 700},
+			{id = 5003, name = "Boss Crown", level = 800, bossOnly = true},
+			{id = 5004, name = "Season Ring", level = 700, season = 1}}
+	end}
+	local made2 = {}
+	ChaosMakeUnique = function(item) made2[#made2 + 1] = item.id end
+	pl = newPlayer(33, 20)
+	function pl:getLevel() return 1000 end
+	winTile.top = newItem(1740, 1)
+	broadcasts = {}
+	ok(P.rouletteReward(33, roulette(), WIN, "boss"), "a unique chest is opened")
+	eq(pl.slots[CONST_SLOT_BACKPACK].items[1].id, 5002, "the unique of the band (500-1000), no boss, no season one")
+	eq(made2[1], 5002, "ChaosMakeUnique ran on the copy")
+	ok(broadcasts[1] and broadcasts[1]:find("Mid Blade", 1, true), "a unique is announced")
+	-- without the unique tools the chest is the plain item
+	ChaosMakeUnique, ChaosLoot = nil, nil
+	pl = newPlayer(34, 20)
+	function pl:getLevel() return 1000 end
+	winTile.top = newItem(1740, 1)
+	ok(P.rouletteReward(34, roulette(), WIN, "boss"), "no unique tools: the chest itself")
+	eq(pl.slots[CONST_SLOT_BACKPACK].items[1].id, 1740, "a chest in the backpack")
+end
+
 _G.print = realPrint
 print(string.format("prizes_test: %d checks, %d failures", checks, failures))
 if failures > 0 then

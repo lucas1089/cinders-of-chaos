@@ -176,6 +176,11 @@ return {
 		tierMult = {normal = 0, magic = 1, rare = 2, legendary = 4, boss = 6},
 		tierRank = {normal = 0, magic = 1, rare = 2, legendary = 3, boss = 4},
 		maxPerKill = 1,
+		-- O148 (beta 2026-10-23: ~1000 Rare / Legendary kills in the level 1500 hunts, not one unique): an entry with a
+		-- minMonsterLevel (the endgame uniques) listed twelve waystone monsters and no hunt monster. With enabled, such an
+		-- entry drops from ANY monster of that level or more (the name list only matters below it), at mult x its chance
+		-- (the x tier multiplier and item find stay). Boss-only entries keep their bosses.
+		open = {enabled = true, mult = 0.5},
 		maxChance = 10000, -- clamp after multipliers
 		effect = "CONST_ME_FIREWORK_YELLOW", -- magic effect name looked up in _G at runtime (fallback 49)
 		fallbackEffect = 49,

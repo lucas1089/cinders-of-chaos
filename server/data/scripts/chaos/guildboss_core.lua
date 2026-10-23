@@ -115,13 +115,14 @@ function B.summonError(info, cfg)
 	if not info.inHall then
 		return "Stand in your guild hall to summon the guild boss."
 	end
-	if info.killed then
+	local beta = ChaosBetaMode and ChaosBetaMode.lifted("guildboss_weekly") -- beta test mode: no weekly limits
+	if info.killed and not beta then
 		return "Your guild already slew the guild boss this week."
 	end
 	if info.running then
 		return "Your guild is fighting the guild boss right now."
 	end
-	if (info.attempts or 0) >= (cfg.maxAttempts or 3) then
+	if (info.attempts or 0) >= (cfg.maxAttempts or 3) and not beta then
 		return string.format("Your guild used its %d summons this week.", cfg.maxAttempts or 3)
 	end
 	if (info.fuel or 0) < (info.need or 0) then

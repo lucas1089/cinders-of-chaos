@@ -291,7 +291,8 @@ function WM.applyMonster(monster, e, first)
 		st.speed = wantSpeed
 	end
 	if run and first and not e.boss and ChaosApplyTier then
-		local c = W.eliteChance(C(), run.fx.elite)
+		-- every run has magic and rare monsters (names and looks of the loot tiers), the Elites modifier adds more
+		local c = math.min(100, W.eliteChance(C(), run.fx.elite) + (C().elites.runBase or 0))
 		if c > 0 and math.random(10000) <= c * 100 then
 			pcall(ChaosApplyTier, monster, math.random(100) <= (C().elites.rareShare or 30) and "rare" or "magic")
 		end
@@ -651,13 +652,18 @@ function WM.lootMult(ctx)
 	local monster = ctx and ctx.monster
 	local run = monster and runOfMonster(monster)
 	local m = run and (1 + (run.bonus.quantity or 0) / 100) or 1
-	return m * math.max(0, 1 + atlas(monster, "quantity") / 100)
+	-- the run tier's own bonus (content_rewards_config.lua waystone.quantity)
+	local CR = ChaosContentRewards
+	local own = run and CR and CR.waystoneQuantity and CR.waystoneQuantity(monster) or 1
+	return m * own * math.max(0, 1 + atlas(monster, "quantity") / 100)
 end
 
 -- loot.lua: rarity find (percent) of the run the monster died in, + the atlas's
 function WM.rarityFind(monster)
 	local run = runOfMonster(monster)
-	return (run and run.bonus.rarity or 0) + atlas(monster, "rarity")
+	local CR = ChaosContentRewards
+	local own = run and CR and CR.waystoneRarityFind and CR.waystoneRarityFind(monster) or 0
+	return (run and run.bonus.rarity or 0) + own + atlas(monster, "rarity")
 end
 
 -- waystone_tiers.lua: experience x this for a kill in the run's map (x the atlas's)

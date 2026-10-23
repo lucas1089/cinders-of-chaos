@@ -88,7 +88,7 @@ return {
 	ground = rift.ground,
 	veilstorm = rift.veilstorm,
 	-- Elites: the chance a map monster comes as magic (else rare) is elite x (value / 100) on top of the natural roll
-	elites = {base = 8, rareShare = 30},
+	elites = {base = 8, rareShare = 30, runBase = 12}, -- runBase: the chance (percent) every map monster of a run comes as magic or rare, with no modifier
 
 	-- a run's modifiers stay while players are in its map; it ends this many seconds after the base's own timer (30
 	-- minutes) or when the next waystone opens the map

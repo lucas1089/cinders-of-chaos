@@ -115,7 +115,7 @@ All have `groupcooldown=2000`, `needlearn=0` (everyone of the vocation and level
 | 74 | Iaido Sweep | `drai gal kaen` | Sa | 200 | 450 | 12s | A wide draw cut towards the target (range 2), no charge, cooldown 8 s (12 s in the first pass): the target takes a melee weapon strike of (P x 0.10-0.16 + 30-60) x 0.8, about half an Iaijutsu, every monster in the 3 x 2 tiles in front of you (the 7 nearest of the quarter on a diagonal) 1.5x that. Other players only when they are the target, with the plain hit (2026-10-15). |
 | 136 | Fan of Knives | `drai vas nyx shur` | T | 80 | 150 | 6s | The Thief only (range 4): a Shuriken Toss of the Thief (x1.33) on the target and on the nearest 5 monsters within 4 sqm of you, ranged weapon strikes (2026-10-15, `_packtools.lua`). |
 | **berserker** (B) / **beastmaster** (BM) | | | | | | | |
-| 246 | Skyfall Cleave | `drai skai hrun` | B | 100 | 100 | 10s | Leap next to the target (range 5) and slam a 3x3 square around it: (level/5 + skill x attack x 0.060..0.105 + 20..40) physical (x0.7 until 2026-10-20), 30% slow 2 s. Needs a weapon. |
+| 246 | Skyfall Cleave | `drai skai hrun` | B | 190 | 100 | 10s | Leap next to the target (range 5) and slam a 3x3 square around it: (level/5 + skill x attack x 0.060..0.105 + 20..40) physical (x0.7 until 2026-10-20), 30% slow 2 s. Needs a weapon. |
 | 247 | Bloodrage | `vyr sang khar` | B | 120 | 200 | 30s | Costs 10% of the current health; 12 s: Rage +10% and every melee weapon hit also strikes up to 4 other enemies next to you for 40% of it. |
 | 248 | Wild Bond | `vael ferh` | BM | 100 | 300 | 10s | Calls the companion (a War Wolf; 2 from level 400): health 500 + 15 x level; companions already out come back to you and heal 50%. |
 | 249 | Feral Command | `kah ferh` | BM | 110 | 200 | 8s | Every companion leaps to the target (range 7) and mauls it for 1.5 bites. |
@@ -3061,7 +3061,7 @@ spells keep their base numbers, all flat). "all" = the whole line; the mana is t
 |  | Soulward | support | 80 | 40 s | 150 | all |
 |  | Butcher's Gyre | attack | 90 | 12 s | 100 | all |
 |  | Red Frenzy | support | 100 | 40 s | 300 | Warrior, Berserker |
-|  | Skyfall Cleave | attack | 100 | 10 s | 100 | Berserker |
+|  | Skyfall Cleave | attack | 190 | 10 s | 100 | Berserker |
 |  | Bloodrage | support | 120 | 30 s | 200 | Berserker |
 |  | Iron Bellow | support | 120 | 20 s | 200 | Warrior, Juggernaut |
 |  | Vaulting Cleave | attack | 170 | 8 s | 250 | Warrior |
@@ -3070,7 +3070,7 @@ spells keep their base numbers, all flat). "all" = the whole line; the mana is t
 |  | Iron Salve | healing | 300 | 1 s | 90 | all |
 |  | Bastion Cry | support | 340 | 40 s | 500 | Juggernaut |
 |  | Rampage Leap | attack | 380 | 14 s | 400 | Berserker |
-|  | Anvil Fall | attack | 460 | 12 s | 450 | Juggernaut |
+|  | Anvil Fall | attack | 380 | 12 s | 450 | Juggernaut |
 | Ranger line | Town Portal | support | 1 | 1 s | 0 | all |
 |  | Minor Mending | healing | 8 | 1 s | 20 | all |
 |  | Phantom Javelin | attack | 8 | 2 s | 20 | all |
@@ -3097,7 +3097,7 @@ spells keep their base numbers, all flat). "all" = the whole line; the mana is t
 |  | Final Verdict | attack | 200 | 14 s | 450 | Deadeye |
 |  | Hail of Dawn | attack | 280 | 16 s | 800 | Ranger, Deadeye |
 |  | Radiant Shard | attack | 300 | 12 s | 160 | Ranger |
-|  | Pack Frenzy | attack | 380 | 6 s | 450 | Beastmaster |
+|  | Pack Frenzy | attack | 320 | 6 s | 450 | Beastmaster |
 |  | Twin Verdict | attack | 400 | 16 s | 900 | Deadeye |
 | Mystic line | Town Portal | support | 1 | 1 s | 0 | all |
 |  | Kindling Spark | attack | 8 | 2 s | 6 | all |
@@ -3163,7 +3163,7 @@ spells keep their base numbers, all flat). "all" = the whole line; the mana is t
 |  | Bushido Focus | support | 150 | 30 s | 200 | Samurai |
 |  | Shuriken Barrage | attack | 180 | 8 s | 400 | Ninja |
 |  | Iaido Sweep | attack | 200 | 8 s | 450 | Samurai |
-|  | Shuriken Tempest | attack | 360 | 14 s | 600 | Ninja |
+|  | Shuriken Tempest | attack | 270 | 14 s | 600 | Ninja |
 | Necromancer line | Town Portal | support | 1 | 1 s | 0 | all |
 |  | Bone Spear | attack | 8 | 2 s | 30 | all |
 |  | Minor Mending | healing | 8 | 1 s | 20 | all |

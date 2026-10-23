@@ -244,7 +244,7 @@ function K.checkBuy(o, ctx, cfg)
 	if ctx.owned then
 		return false, "owned"
 	end
-	if int(o.weekly) > 0 and int(ctx.used) >= int(o.weekly) then
+	if int(o.weekly) > 0 and int(ctx.used) >= int(o.weekly) and not (ChaosBetaMode and ChaosBetaMode.lifted("candlemarks_weekly")) then
 		return false, "weekly"
 	end
 	if int(ctx.balance) < int(o.price) then

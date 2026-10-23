@@ -84,6 +84,13 @@ instalada é desconhecida: o passo 2 baixa a mais nova e, se o `tfs` for igual a
 
 - **Taxa de XP** (`xp-rate show | set N | reset [restart]`): x1 a x100 sobre os estágios da release, com backup do
   `config.lua` (`config.lua.before-xp-DATA`). Gravar vale no próximo reinício; Gravar e reiniciar reinicia já.
+- **Modo beta (testes)** (`beta-mode status | on | off [restart]`, aba Comandos > cartão Modo beta (testes) > Ver / Ligar /
+  Desligar / Ligar e reiniciar / Desligar e reiniciar): tira os limites semanais e diários do jogo para os testers
+  (trava semanal do raide e do chefe da guilda, tarefas de caça, ofertas semanais do Candlemarks e das facções, teto de
+  honra e da comunidade, espera das masmorras; lista em server/README.md "Beta test mode"). Os limites da loja
+  (dinheiro real, como a Poção de XP em dobro) não mudam. Edita a linha `enabled` de `beta_mode_config.lua` (backup
+  `.before-beta`); vale no próximo reinício ou já com "e reiniciar". Atualizar servidor mantém a chave. Desligue no
+  lançamento. O app precisa ser recompilado para ter o cartão; o comando funciona pelo SSH sem isso.
 - **Contas** (`account-create NOME`, `account-password NOME`): a senha vai pela entrada do comando (stdin do SSH),
   nunca na linha de comando nem em log, e vira hash PBKDF2 como o site grava. O personagem se cria no client ou no site.
 - **Saúde e espaço** (`health`, `cleanup [--yes]`, `backups`): servidor, banco, serviços web (nginx, apache, php-fpm),
@@ -169,7 +176,7 @@ terminal do app ser root de verdade (instalar pacotes, mexer no sistema), rode n
 `panel NOME ACAO JSON`, `update TAG now|at-save` e `rollback now|at-save` (layout padrão; no kit, `rollback now` é
 `update-rollback`), `update-check`, `update-apply [--no-client] [--no-downloads] [--no-site] [--no-map]`, `update-status`,
 `update-rollback`, `update-log`, `publish-update TAG` (atualização do cliente, docs/LAUNCH.md "Publishing a client
-update"), `publish-log`, `site-install`, `site-log`, `xp-rate`, `health`, `cleanup [--yes]`, `account-create NOME`,
+update"), `publish-log`, `site-install`, `site-log`, `xp-rate`, `beta-mode [status | on | off] [restart]`, `health`, `cleanup [--yes]`, `account-create NOME`,
 `account-password NOME`, `install-admin`, `spectate NOME`, `spectate-pair [status | fetch | log [N]]`. Todos com argumentos conferidos (números, nomes, tags de release), nada de
 shell livre. Rode `chaos-ctl.sh help`. Aviso, expulsar, abrir, fechar e salvar passam pelo arquivo `remote.cmd`
 (`server/README.md`, "Remote admin commands"): o servidor do jogo precisa estar com os scripts novos.

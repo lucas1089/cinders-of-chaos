@@ -161,9 +161,38 @@ function D.runSeconds(spec, difficulty)
 	return {trash = trash, boss = boss, walk = walk, total = trash + boss + walk, monsters = n}
 end
 
--- damage dealt by a monster (negative or positive, the sign is kept)
-function D.damage(value, difficulty)
-	local pct = D.of(difficulty).damage
+-- Party size (dungeons.lua, Chaos.dungeons.party; beta feedback 2026-10-22: every dungeon can be run solo). The monster
+-- numbers of a dungeon are the measured solo ones: 1 player = x1.0. Each further player adds a share:
+--   health(n) = 1 + healthPerExtra x (n - 1)     (default 0.6: 2 players x1.6, 3 x2.2)
+--   damage(n) = 1 + damagePerExtra x (n - 1)     (default 0.1: 2 players x1.1)  -- to the run's players
+-- Health grows slower than the group's damage output (n players deal about n x), so a group clears faster than a
+-- solo player and takes a little more per hit. Applied on top of the difficulty (D.health / D.damage).
+D.partyDefaults = {healthPerExtra = 0.6, damagePerExtra = 0.1}
+
+local function partyShare(n, key, party)
+	local p = party or D.partyDefaults
+	local per = tonumber(p[key])
+	if per == nil then
+		per = D.partyDefaults[key]
+	end
+	n = floor(tonumber(n) or 1)
+	if n < 1 then
+		n = 1
+	end
+	return 1 + per * (n - 1)
+end
+
+function D.partyHealth(n, party)
+	return partyShare(n, "healthPerExtra", party)
+end
+
+function D.partyDamage(n, party)
+	return partyShare(n, "damagePerExtra", party)
+end
+
+-- damage dealt by a monster (negative or positive, the sign is kept); partyMult = D.partyDamage of the run (optional)
+function D.damage(value, difficulty, partyMult)
+	local pct = D.of(difficulty).damage * (partyMult or 1)
 	if pct == 100 then
 		return value
 	end

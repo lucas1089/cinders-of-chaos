@@ -663,7 +663,8 @@ function K.offerState(cfg, idx, offer, ctx)
 	if have < need then
 		return "locked", T(ctx.lang, "Needs %s with %s.", cfg.ranks[need].name, idx.byKey[offer.faction].name)
 	end
-	if offer.weekly and ((ctx.weekly or {})[offer.key] or 0) >= offer.weekly then
+	if offer.weekly and ((ctx.weekly or {})[offer.key] or 0) >= offer.weekly
+		and not (ChaosBetaMode and ChaosBetaMode.lifted("faction_offers_weekly")) then
 		return "soldout", T(ctx.lang, "Bought %d of %d this week.", offer.weekly, offer.weekly)
 	end
 	return "ok", nil

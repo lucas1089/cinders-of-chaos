@@ -163,6 +163,9 @@ function C.credit(cfg, e, key, pts, day, now)
 	end
 	local room = num(cfg.goal.dailyCap, math.huge) - e.dayTotal
 	local srcRoom = num(s.dailyCap, math.huge) - num(e.daySrc[key])
+	if ChaosBetaMode and ChaosBetaMode.lifted("community_daily_cap") then
+		room, srcRoom = math.huge, math.huge -- beta test mode: no daily cap
+	end
 	local gained = max(0, min(pts, room, srcRoom))
 	if gained > 0 then
 		e.points = e.points + gained
@@ -182,6 +185,9 @@ function C.roomToday(cfg, e, key, day)
 	local total, src = 0, 0
 	if e and e.day == day then
 		total, src = e.dayTotal, num(e.daySrc[key])
+	end
+	if ChaosBetaMode and ChaosBetaMode.lifted("community_daily_cap") then
+		return math.huge
 	end
 	return max(0, min(num(cfg.goal.dailyCap, math.huge) - total, num(s.dailyCap, math.huge) - src))
 end

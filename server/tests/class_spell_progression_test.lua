@@ -4,8 +4,8 @@
 -- State pinned here so it cannot drift unnoticed:
 --   * every ascended class has at least one spell of its own and at most MAX_OWN (15);
 --   * the stock cure (status cleansing) spells are gone, their ids carry the late spells (tools/retire_cure_spells.py):
---     Juggernaut Bastion Cry 340 and Anvil Fall 460, Deadeye Twin Verdict 400, Berserker Rampage Leap 380, Beastmaster Pack
---     Frenzy 380, Elementalist Glacial Doom 420, Ninja Shuriken Tempest 360;
+--     Juggernaut Bastion Cry 340 and Anvil Fall 380 (460 until O141), Deadeye Twin Verdict 400, Berserker Rampage Leap 380, Beastmaster Pack
+--     Frenzy 320 (380 until O141), Elementalist Glacial Doom 420, Ninja Shuriken Tempest 270 (360 until O141);
 --   * not done (no free spell id left): Illusionist, Samurai, Lich, Bone Lord, Shadowfist, Iron Sage, Inquisitor, Sentinel have
 --     nothing above 300 (Illusionist 280 since the 15-spell cap, Samurai 200, Shadowfist / Iron Sage / Inquisitor /
 --     Sentinel 150). The 15-spell cap (2026-10-20, tools/patch_spell_cap.py) moved Elementalist and Illusionist rows:
@@ -21,8 +21,8 @@ local BASE_OF = {
 -- ascended class -> {spells of its own over its base class, highest level of any of its spells}
 -- (counts and top levels include the attack kit, 2026-10-23)
 local PINNED = {
-	Juggernaut = {2, 460}, Berserker = {3, 380}, Deadeye = {2, 400}, Beastmaster = {4, 380}, Elementalist = {7, 420},
-	Illusionist = {12, 280}, Ninja = {4, 360}, Samurai = {4, 230}, Lich = {3, 300}, ["Bone Lord"] = {4, 300},
+	Juggernaut = {2, 380}, Berserker = {3, 380}, Deadeye = {2, 400}, Beastmaster = {4, 320}, Elementalist = {7, 420},
+	Illusionist = {12, 280}, Ninja = {4, 270}, Samurai = {4, 230}, Lich = {3, 300}, ["Bone Lord"] = {4, 300},
 	Shadowfist = {3, 250}, ["Iron Sage"] = {4, 190}, Inquisitor = {5, 200}, Sentinel = {6, 230},
 }
 local MAX_OWN = 15 -- owner 2026-10-20: an ascended class has at most 15 spells of its own
@@ -69,17 +69,17 @@ for asc, base in pairs(BASE_OF) do
 	eq(own, PINNED[asc][1], asc .. ": spells over " .. base)
 	eq(top, PINNED[asc][2], asc .. ": highest spell level")
 end
--- the seven late spells: id of a retired cure spell, level 300-520, script on disk that starts with its description
+-- the seven late spells: id of a retired cure spell, level 250-520, script on disk that starts with its description
 local LATE = {
-	{"Bastion Cry", 29, 340}, {"Anvil Fall", 58, 460}, {"Twin Verdict", 144, 400}, {"Rampage Leap", 145, 380},
-	{"Glacial Doom", 146, 420}, {"Pack Frenzy", 147, 380}, {"Shuriken Tempest", 164, 360},
+	{"Bastion Cry", 29, 340}, {"Anvil Fall", 58, 380}, {"Twin Verdict", 144, 400}, {"Rampage Leap", 145, 380},
+	{"Glacial Doom", 146, 420}, {"Pack Frenzy", 147, 320}, {"Shuriken Tempest", 164, 270},
 }
 for _, e in ipairs(LATE) do
 	local block = xml:match('<instant [^>]*name="' .. e[1] .. '"[^>]*>')
 	eq(block ~= nil, true, e[1] .. " in spells_chaos.xml")
 	eq(tonumber(block:match('spellid="(%d+)"')), e[2], e[1] .. " spell id")
 	eq(tonumber(block:match('level="(%d+)"')), e[3], e[1] .. " level")
-	eq(e[3] > 300 and e[3] <= 520, true, e[1] .. " between 300 and 520")
+	eq(e[3] > 250 and e[3] <= 520, true, e[1] .. " between 250 and 520")
 	local f = io.open("data/spells/" .. block:match('script="([^"]+)"'))
 	eq(f ~= nil, true, e[1] .. " script file")
 	eq(f:read("*l"):find("^%-%- " .. e[1] .. ":") ~= nil, true, e[1] .. " script starts with its description")

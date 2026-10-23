@@ -130,6 +130,19 @@ ChaosMainWindow
     @onClick: modules.game_riftatlas.center()
 
   ChaosLabelDim
+    id: rewardNote
+    anchors.left: mapFrame.left
+    anchors.right: mapFrame.right
+    anchors.bottom: mapHint.top
+    margin-left: 10
+    margin-right: 10
+    margin-bottom: 4
+    height: 48
+    text-wrap: true
+    text-align: left
+    phantom: true
+
+  ChaosLabelDim
     id: mapHint
     anchors.left: mapFrame.left
     anchors.bottom: mapFrame.bottom

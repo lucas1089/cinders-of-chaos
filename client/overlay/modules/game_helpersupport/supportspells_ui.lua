@@ -69,7 +69,8 @@ local function load()
   cfgFor = name
   state = S.newState()
   userOffNote = false
-  -- a list made before the utility spells were left out (Lantern, Ghost Rope...): they leave it
+  -- rows that can never work again leave the list: utilities (Lantern, Ghost Rope...), retired spells (Galeborne Stride)
+  -- and ids that are attack spells now (S.deadReason)
   local slots, dropped = S.dropUtilities(cfg.slots, spellEntry)
   if dropped > 0 then
     cfg.slots = slots

@@ -98,6 +98,30 @@ DROP = '''	else
 	end
 '''
 
+# the base legendary cards script, cut down: its config lists, whenPlayerAttack with one branch per card (16, four
+# classes x four levels) and the events. Each branch asks the left hand's item id against one stock list.
+LEG_CLASSES = (('Knights', 'Kaiser'), ('Druid', 'Saydon'), ('Paladin', 'Vercruze'), ('Sorcerer', 'Ascalon'))
+LEG_LEVELS = ('Ancestral', 'Abyssal', 'Chaos', 'Exotic')
+
+
+def legendary_fixture(crlf=False):
+    out = ['local config = {\n    chance = 7,\n    itemidKnights = {2408, 2454},\n    itemidDruid = {27197},\n'
+           '    itemidSorcerer = {18390},\n    itemidPaladin = {8850}\n}\n\n\n',
+           'local function whenPlayerAttack(player, damage)\n    damage = math.abs(damage)\n'
+           '    local leftHand = player:getSlotItem(CONST_SLOT_LEFT)\n']
+    first = True
+    for lst, name in LEG_CLASSES:
+        for level in LEG_LEVELS:
+            out.append('    %s player:getStorageValue(DeckSystem.Legendary.Legendary%s%sLv6) == 1 then\n'
+                       '        if damage >= 50 and math.random(100) <= config.chance and leftHand and '
+                       'table.find(config.itemid%s, leftHand.itemid) then\n            summon()\n        end\n'
+                       % ('if' if first else 'elseif', level, name, lst))
+            first = False
+    out.append('    end\nend\n\nlocal creatureEvent = CreatureEvent("WhenPlayerAttackHealth")\ncreatureEvent:register()\n')
+    text = ''.join(out)
+    return text.replace('\n', '\r\n') if crlf else text
+
+
 RECIPES = ('Crafting.armorsmith = {\r\n'
            '    {\r\n        id = 2457,\r\n        name = "Steel Helmet",\r\n        materials = {\r\n'
            '            {id = 12435, count = 5},\r\n        }\r\n    },\r\n'
@@ -152,6 +176,7 @@ def main():
         put(data, 'scripts/customs/deck_system/deck_system.lua', DECK)
         put(data, 'scripts/customs/boat/boat_navigation.lua', SEA)
         put(data, 'scripts/chaos/mine.lua', DECK)  # our own scripts are never touched
+        put(data, 'scripts/customs/deck_system/legendary_cards_system.lua', legendary_fixture(crlf=True))
         put(data, 'npc/scripts/builder.lua', NPC)
         put(data, 'creaturescripts/scripts/droploot.lua', DROP)
         put(data, 'scripts/customs/crafting/armorsmith.lua', RECIPES)
@@ -159,7 +184,7 @@ def main():
         ok(P.main([data, '--check']) == 1, '--check before: work to do')
         ok(get(data, 'items/items.xml') == ITEMS, '--check changes nothing')
         report, changed = P.run(data)
-        ok(changed == 8, 'eight files change (%d): %s' % (changed, report))
+        ok(changed == 9, 'nine files change (%d): %s' % (changed, report))
 
         xml = get(data, 'items/items.xml')
         ok('value="badge"' in item_block(xml, 27811), 'a badge gets slot type "badge"')
@@ -210,6 +235,57 @@ def main():
            'the card action asks cards.lua first')
         ok(deck.count('ChaosCards.use(player, item)') == 1, 'the cards hook once')
         ok(get(data, 'scripts/chaos/mine.lua') == DECK, 'scripts/chaos is not touched')
+        leg = get(data, 'scripts/customs/deck_system/legendary_cards_system.lua')
+        ok('\n' not in leg.replace('\r\n', ''), 'the legendary script keeps CRLF')
+        leg = leg.replace('\r\n', '\n')
+        ok('table.find(config.itemid' not in leg.replace('return leftHand and table.find(stockIds, leftHand.itemid)', ''),
+           'no stock list check is left in the card branches')
+        ok(leg.count('chaosHolds(player, "') == 16, 'sixteen card checks ask chaosHolds (%d)' % leg.count('chaosHolds(player, "'))
+        for cls, lst in (('Knight', 'itemidKnights'), ('Druid', 'itemidDruid'), ('Paladin', 'itemidPaladin'),
+                         ('Sorcerer', 'itemidSorcerer')):
+            ok(leg.count('chaosHolds(player, "%s", leftHand, config.%s)' % (cls, lst)) == 4,
+               'four %s cards use the %s list' % (cls, lst))
+        ok(leg.index('local function chaosHolds') < leg.index('local function whenPlayerAttack'),
+           'the helper is defined before the function that calls it')
+        ok('ChaosCards.holds(player, class, leftHand, stockIds)' in leg, 'the helper asks cards.lua')
+        ok(leg.count('local function chaosHolds') == 1, 'the helper once')
+        lua = shutil.which('luajit') or shutil.which('lua5.3')
+        if lua:
+            # the patched script runs: with ChaosCards the weapon decides; without it the stock list does
+            script = os.path.join(tmp, 'leg.lua')
+            body = leg.replace('local creatureEvent = CreatureEvent("WhenPlayerAttackHealth")\ncreatureEvent:register()\n', '')
+            with open(script, 'w') as f:
+                f.write('DeckSystem = {Legendary = setmetatable({}, {__index = function() return 1 end})}\n'
+                        'CONST_SLOT_LEFT = 6\nlocal fired = 0\nfunction summon() fired = fired + 1 end\n'
+                        'function table.find(t, v) for _, x in ipairs(t) do if x == v then return true end end end\n'
+                        + body +
+                        'local function player(item) return {getSlotItem = function() return item end,\n'
+                        '  getStorageValue = function() return 1 end} end\n'
+                        'math.random = function() return 1 end\n'
+                        'whenPlayerAttack(player({itemid = 2408}), 100)\n'
+                        'io.write(fired, ";")\n'
+                        'whenPlayerAttack(player({itemid = 99999}), 100)\n'
+                        'io.write(fired, ";")\n'
+                        'ChaosCards = {holds = function(p, class, hand, ids) return class == "Knight" and hand ~= nil end}\n'
+                        'whenPlayerAttack(player({itemid = 99999}), 100)\n'
+                        'io.write(fired)\n')
+            res = subprocess.run([lua, script], capture_output=True, text=True)
+            ok(res.stdout.strip() == '1;1;2', 'the patched script fires by stock id, not by an unknown one, then by '
+               'the weapon: %r %r' % (res.stdout, res.stderr))
+        real = '/tmp/wk/srv/data/scripts/customs/deck_system/legendary_cards_system.lua'
+        if os.path.isfile(real):
+            # a copy of the real base script, when this machine has one: all 16 checks, still valid Lua
+            put(data, 'scripts/customs/deck_system/real.lua', open(real, encoding='utf-8', errors='surrogateescape').read())
+            P.run(data)
+            real_out = get(data, 'scripts/customs/deck_system/real.lua')
+            ok(real_out.count('chaosHolds(player, "') == 16 and 'leftHand and table.find(config.itemid' not in real_out,
+               'the real base script: all 16 checks (%d)' % real_out.count('chaosHolds(player, "'))
+            if lua:
+                chk = subprocess.run([lua, '-e', 'assert(loadfile(%r))' % os.path.join(data, 'scripts', 'customs',
+                                                                                     'deck_system', 'real.lua')],
+                                     capture_output=True, text=True)
+                ok(chk.returncode == 0, 'the patched real script parses: %s' % chk.stderr)
+            os.remove(os.path.join(data, 'scripts', 'customs', 'deck_system', 'real.lua'))
         sea = get(data, 'scripts/customs/boat/boat_navigation.lua')
         ok('ChaosBadges.boardShip(chaosSailor)' in sea and sea.index('boardShip') < sea.index('local player ='),
            'the sea tiles board a carried ship first')
@@ -244,6 +320,7 @@ def main():
                                                     'creaturescripts/scripts/droploot.lua',
                                                     'events/scripts/player.lua', 'npc/scripts/builder.lua',
                                                     'scripts/customs/deck_system/deck_system.lua',
+                                                    'scripts/customs/deck_system/legendary_cards_system.lua',
                                                     'scripts/customs/boat/boat_navigation.lua')}
         report, changed = P.run(data)
         ok(changed == 0, 'a second run changes nothing (%s)' % report)

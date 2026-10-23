@@ -42,7 +42,7 @@ WaystoneTierRow < ChaosPanelDark
 
 ChaosMainWindow
   id: waystoneWindow
-  size: 380 432
+  size: 380 506
   !text: tr('Waystone Device')
   @onEscape: modules.game_waystone.hide()
 
@@ -56,9 +56,20 @@ ChaosMainWindow
     text-align: left
     !text: tr('Pick a Waystone Tier you carry. Four portals open around the device for 60 seconds and lead to a random map whose monsters have the level shown.')
 
+  ChaosLabelDim
+    id: rewardLabel
+    anchors.top: helpLabel.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+    height: 70
+    text-wrap: true
+    text-align: left
+    !text: tr('Waystones pay in gear. Kills inside drop Rare or better set pieces, the map boss drops a table of Legendary pieces, uniques, new waystones and the waystone orbs. A higher tier and more modifiers pay more. Crafting orbs are the rifts\' reward.')
+
   UIScrollArea
     id: tierList
-    anchors.top: helpLabel.bottom
+    anchors.top: rewardLabel.bottom
     anchors.left: parent.left
     anchors.right: parent.right
     margin-top: 6

@@ -44,8 +44,11 @@ function Game.createItem(id, count, p) local t = tiles[key(p)]; if t then t:addI
 local created = {}
 function Game.createMonster(name, pos)
   nextId = nextId + 1
-  local m = {id = nextId, name = name, events = {}, removed = false}
+  local m = {id = nextId, name = name, events = {}, removed = false, hp = 1000, maxHp = 1000}
   function m:getId() return self.id end
+  function m:getMaxHealth() return self.maxHp end
+  function m:setMaxHealth(v) self.maxHp = v end
+  function m:setHealth(v) self.hp = v end
   function m:isMonster() return true end
   function m:registerEvent(e) self.events[e] = true end
   function m:remove() self.removed = true end
@@ -54,7 +57,9 @@ function Game.createMonster(name, pos)
   return m
 end
 function MonsterType(name) return name ~= "ghost-of-nothing" end
-ChaosApplyTier = function(m, tier) m.tier = tier; return true end
+-- the stock tier multiplies the health by its hp (monster_tiers.lua ChaosTiers)
+ChaosTiers = {magic = {hp = 2.0}, rare = {hp = 3.5}, legendary = {hp = 6.0}}
+ChaosApplyTier = function(m, tier) m.tier = tier; m.maxHp = math.floor(m.maxHp * ChaosTiers[tier].hp); m.hp = m.maxHp; return true end
 
 local recorded = {}
 ChaosTower = {canEnter = function() return true end, recordRun = function(p, floors, secs) recorded[#recorded + 1] = {name = p.name, floors = floors} end}
@@ -74,6 +79,9 @@ local function mkPlayer(id, name, level)
   function p:sendCancelMessage(t) self.cancel = t end
   function p:getCondition() return nil end
   function p:addMoney(m) self.money = self.money + m end
+  p.items, p.storage = {}, {}
+  function p:getStorageValue(k) return self.storage[k] or -1 end
+  function p:setStorageValue(k, v) self.storage[k] = v end
   -- this engine's addHealth: (damage type, amount); a one-argument call does nothing
   p.hp = 50
   function p:addHealth(t, v) if type(t) == "string" then self.hp = math.min(100, self.hp + v) end end
@@ -88,6 +96,12 @@ function Player(id) return players[id] end
 Chaos.decode = function() end
 -- the real Chaos.heal (chaos_constants.lua returns early while Chaos exists, so load it into a fresh table)
 do local stub = Chaos; Chaos = nil; dofile("data/scripts/chaos/chaos_constants.lua"); stub.heal = Chaos.heal; Chaos = stub end
+Chaos.giveItem = function(p, id, n) p.items[id] = (p.items[id] or 0) + n; return n end
+ChaosTower.currentSeason = function() return 7 end
+local lootCallbacks = {}
+EventCallback = setmetatable({}, {__index = function() return nil end})
+function EventCallback:register() lootCallbacks[#lootCallbacks + 1] = self.onDropLoot end
+ItemType = function() return {isStackable = function() return true end} end
 
 dofile("data/scripts/chaos/infinitytower_run.lua")
 local assertEq = function(a, b, m) if a ~= b then error((m or "") .. ": " .. tostring(a) .. " ~= " .. tostring(b), 2) end end
@@ -101,13 +115,16 @@ assertEq(p1.spawns[1].name, "troll", "band 1 pool")
 local p10 = ChaosTowerFloorPlan(10, 1, det)
 assertEq(p10.boss, true, "floor 10 boss")
 assertEq(p10.spawns[1].boss, true, "boss first")
-assertEq(p10.spawns[1].name, "the grey widow", "first boss")
-assertEq(ChaosTowerFloorPlan(20, 1, det).spawns[1].name, "the ashen count", "second boss")
+assertEq(p10.spawns[1].name, "the ashen count", "first boss (the order of infinitytower_balance_config.lua)")
+assertEq(ChaosTowerFloorPlan(20, 1, det).spawns[1].name, "the grey widow", "second boss")
+assertEq(p10.spawns[1].health, ChaosTowerBalance.bossHealth[10], "the boss has the health of its floor")
+assertEq(p1.spawns[1].health, math.floor(ChaosTowerBalance.health[1][2] * ChaosTowerBalance.sawtooth[1]), "floor 1 health: the curve x the sawtooth")
+assertEq(p1.spawns[1].tier, "magic", "floor 1: a roll of 1 is inside the 5% of magic")
 assertEq(ChaosTowerFloorLimit(9), 300, "a floor has floorTimeLimit")
 assertEq(ChaosTowerFloorLimit(10), 600, "a boss floor has twice the time")
 assertEq(ChaosTowerFloorLimit(90), 600, "the floor 90 boss too")
 assertEq(#ChaosTowerFloorPlan(1, 3, det).spawns, 8, "party size adds monsters")
-assertEq(#ChaosTowerFloorPlan(301, 1, det).spawns, 16, "count cap")
+assertEq(#ChaosTowerFloorPlan(301, 1, det).spawns, 9, "count cap (the last point of the count curve)")
 assertEq(ChaosTowerFloorPlan(100, 1, det).spawns[2].tier, "legendary", "high floors roll tiers")
 
 -- ---- a run
@@ -231,4 +248,77 @@ do
   cfg.runTimeLimit, cfg.limits.maxRuns = 3600, 16
   local _ = start
 end
+
+-- ---- O144: floor health, tier health, damage factor, floor rewards, tower drops
+do
+  local BC = ChaosTowerBalance
+  advance(30000) -- the events the blocks above left (a start delay of a closed run) fire with nobody inside
+  local first = #created
+  local alive = function() local out = {} for i = first + 1, #created do local m = created[i]; if not m.removed and not m.dead then out[#out + 1] = m end end return out end
+  local h = mkPlayer(8, "Hal", 300); players[8] = h
+  assertEq(ChaosTowerRun.start(h), true, "O144: start")
+  local joined = table.concat(h.msgs, "|")
+  assert(joined:find("Next reward: floor 5, ", 1, true), "O144: the entry message names the next reward: " .. joined)
+  assert(joined:find("first clear this season: 5 Crystal Coin", 1, true), "O144: and its first clear: " .. joined)
+  for floor = 1, 5 do
+    advance(floor == 1 and 6000 or 7000)
+    local list = alive()
+    assertEq(#list, ChaosTowerFloorPlan(floor, 1).boss and 0 or #ChaosTowerFloorPlan(floor, 1).spawns, "O144: floor " .. floor .. " monster count")
+    if floor == 1 then
+      -- the floor's health; a tier x the tower's tierHealth (not the stock x2 / x3.5 / x6)
+      for _, m in ipairs(list) do
+        local base = math.floor(ChaosTowerBalanceCore.health(BC, 1))
+        local expect = m.tier and math.floor(base * BC.tierHealth[m.tier]) or base
+        assert(math.abs(m.maxHp - expect) <= 2, "O144: floor 1 health " .. m.maxHp .. " vs " .. expect .. " tier " .. tostring(m.tier))
+      end
+    end
+    for _, m in ipairs(list) do m.dead = true; registry["ChaosTowerMonsterDeath"].onDeath(m) end
+  end
+  -- floor 5 is a milestone: 1 Crystal Coin every time and 5 more for the first clear this season
+  assertEq(h.items[2160], 6, "O144: floor 5 pays 1 (every time) + 5 (first clear) crystal coins")
+  assertEq(h.storage[BC.rewards.storage], 7005, "O144: the first clear is kept as season x 1000 + floor")
+  local said5 = table.concat(h.msgs, "|")
+  assert(said5:find("First clear of floor 5 this season: 5 Crystal Coin.", 1, true), "O144: first clear text")
+  assert(said5:find("Floor 5 reward: 1 Crystal Coin.", 1, true), "O144: repeatable text")
+  assert(said5:find("Next reward: floor 10, ", 1, true), "O144: the next reward after a milestone floor")
+  assert(said5:find("2 Orb of Upheaval", 1, true) or said5:find("Orb of Upheaval", 1, true), "O144: floor 10 pays orbs")
+  ChaosTowerRun.leave(h)
+  -- the second run: the repeatable reward only
+  h.items = {}
+  assertEq(ChaosTowerRun.start(h), true, "O144: second run")
+  for floor = 1, 5 do
+    advance(floor == 1 and 6000 or 7000)
+    for _, m in ipairs(alive()) do m.dead = true; registry["ChaosTowerMonsterDeath"].onDeath(m) end
+  end
+  assertEq(h.items[2160], 1, "O144: the second clear pays the repeatable reward only")
+  ChaosTowerRun.leave(h)
+  -- the damage factor and the drops
+  advance(1000)
+  local h2 = mkPlayer(9, "Ivy", 300); players[9] = h2
+  assertEq(ChaosTowerRun.start(h2), true, "O144: third run")
+  advance(6000)
+  local mon = alive()[1]
+  mon.isMonster = function() return true end
+  mon.getMaster = function() return nil end
+  assertEq(ChaosTowerRun.damageMultOf(mon), BC.damage[1][2], "O144: floor 1 damage factor")
+  assertEq(ChaosTowerRun.damageMultOf({isMonster = function() return false end, getId = function() return 1 end}), 1, "O144: players are never scaled")
+  local corpse = {added = {}}
+  function corpse:addItem(id, n) self.added[#self.added + 1] = {id, n} end
+  math.randomseed(1)
+  local old = math.random
+  math.random = function(a, b) if b then return a end return 1 end -- every drop rolls in
+  lootCallbacks[#lootCallbacks](mon, corpse)
+  math.random = old
+  assert(#corpse.added >= 2, "O144: tower drops are added to the corpse")
+  local sawOrb = false
+  for _, a in ipairs(corpse.added) do sawOrb = sawOrb or a[1] == 29856 end
+  assert(sawOrb, "O144: an Orb of Upheaval can drop")
+  local other = {isMonster = function() return true end, getId = function() return 99999 end, getMaster = function() return nil end}
+  local before = #corpse.added
+  lootCallbacks[#lootCallbacks](other, corpse)
+  assertEq(#corpse.added, before, "O144: other monsters get no tower drops")
+  ChaosTowerRun.leave(h2)
+  local _ = first
+end
+print("infinity tower run: O144 floor health, rewards and drops passed")
 print("infinity tower run: all asserts passed")

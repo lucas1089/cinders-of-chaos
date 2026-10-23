@@ -189,11 +189,15 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                holds the cards (using a card carried anywhere puts it in a deck and turns it on: README "Cards and decks"), a
                carried ship sails, the items.xml descriptions say so (a card: where it goes);
                the boss loot's Fury catalyst [3] typo is fixed; the death loss takes the badge slot; the armorsmith no
-               longer crafts belts and gloves (README "Badge slot"; after itemnames)
+               longer crafts belts and gloves; the 16 legendary card checks ask ChaosCards.holds (the weapon decides, not
+               four lists of stock item ids) (README "Badge slot", "Cards and decks"; after itemnames)
   prizes       tools/patch_prizes.py             the base scripts give prizes into the backpack, else the Purse, else
                the ground, never an inventory slot: the roulettes (no retired item in their pools, nil guards), the
                task rewards, the crafting script, the ship NPC (README "Prizes into the backpack"; after badges and
                basecrafting)
+  roulette     tools/patch_roulette.py           the Boss Roulette's prize pool from chaos/boss_roulette_config.lua: crafting
+               orbs, sockets, gold scaled to the level, a unique chest, badges and catalysts, two cards; no deck, ship
+               or boat (README "Boss Roulette"; after prizes)
   jewelry      tools/patch_base_jewelry.py       rings and necklaces are permanent equipment: the worn id's stats on the
                unworn id, no transformation, duration or charges (items.xml), a DeEquip entry for each such ring
                (movements.xml); the consumables of data/lib/chaos_jewelry.lua stay as they are; the 29 loot bases
@@ -354,6 +358,24 @@ COPY = [
     ('spells/chaos', None, True),
     ('patchnotes', lambda name: name.endswith('.md') or name == 'index.txt', False),
 ]
+# repo files whose `enabled = ...` line is the owner's switch on the server (chaos-ctl.sh beta-mode, the admin app): a copy
+# keeps the installed value instead of resetting it to the repo's (server/README.md "Beta test mode")
+KEEP_SWITCH = {
+    'scripts/chaos/beta_mode_config.lua': re.compile(r'^(\s*enabled\s*=\s*)(true|false)', re.M),
+}
+
+
+def keep_switch(rel_key, src_text, dst_text):
+    """src_text with the switch of dst_text (the installed file), when this file has one."""
+    pat = KEEP_SWITCH.get(rel_key)
+    if not pat or dst_text is None:
+        return src_text
+    old = pat.search(dst_text)
+    if not old:
+        return src_text
+    return pat.sub(lambda m: m.group(1) + old.group(2), src_text, count=1)
+
+
 # never copied, wherever they are (editor and Python leftovers)
 IGNORE = re.compile(r'(^|/)(__pycache__|\.DS_Store)(/|$)|\.pyc$|~$|\.swp$|\.orig$|\.rej$')
 
@@ -451,6 +473,17 @@ def step_files(server, data, ctx):
                 if IGNORE.search(rel) or (keep and not keep(name)):
                     continue
                 dst = os.path.join(dst_root, *rel.split('/'))
+                if sub + '/' + rel in KEEP_SWITCH:
+                    text = keep_switch(sub + '/' + rel, read(src), read(dst) if os.path.isfile(dst) else None)
+                    if os.path.isfile(dst) and read(dst) == text:
+                        same += 1
+                        continue
+                    n_upd += 1 if os.path.isfile(dst) else 0
+                    n_new += 0 if os.path.isfile(dst) else 1
+                    os.makedirs(os.path.dirname(dst), exist_ok=True)
+                    write(dst, text)
+                    copied += 1
+                    continue
                 if os.path.isfile(dst) and digest(dst) == digest(src):
                     same += 1
                     continue
@@ -911,6 +944,14 @@ def step_prizes(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('badges') + 1, 'prizes')  # after badges (its retired ids) and basecrafting (CraftGuard)
+
+
+def step_roulette(server, data, ctx):
+    args = [tool('patch_roulette.py'), data] + (['--dry-run'] if ctx['dry'] else [])
+    return tool_result(run_tool(args, 'patch_roulette.py'))
+
+
+STEPS.insert(STEPS.index('prizes') + 1, 'roulette')  # the pool after the prizes hook (same roulette script)
 
 
 def step_jewelry(server, data, ctx):

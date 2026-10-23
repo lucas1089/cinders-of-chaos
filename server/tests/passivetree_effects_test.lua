@@ -31,7 +31,7 @@ end
 function addEvent() end
 dofile("data/scripts/chaos/passivetree_effects.lua")
 local assertEq = function(a, b, m) if a ~= b then error((m or "") .. ": " .. tostring(a) .. " ~= " .. tostring(b), 2) end end
-local b = {strength = 200, vitality = 25, absorbFire = 10, absorbAllElements = 5, absorbPhysical = 90, swordSkill = 4,
+local b = {strength = 120, vitality = 25, absorbFire = 10, absorbAllElements = 5, absorbPhysical = 90, swordSkill = 4,
   incrementFire = 10, multiIncrement = 3, incrementPhysical = 7, experience = 100, loot = 50, rarityLoot = 4, speed = 2000, criticalHitChance = 5}
 assertEq(ChaosPassiveDamagePercent(b, COMBAT_FIREDAMAGE), 13, "fire")
 assertEq(ChaosPassiveDamagePercent(b, COMBAT_PHYSICALDAMAGE), 7, "phys")
@@ -65,13 +65,13 @@ assert(added[7220] == nil, "vitality condition removed")
 assertEq(speed(), 0, "speed removed")
 assert(added[7200] == nil, "condition removed")
 -- a Vocation Trial node's max health (Steelblood +8%) is not cut by the tree's own +50% cap
-applyAll(p, {vitality = 120, trialVitality = 8})
-assertEq(added[7220].p[CONDITION_PARAM_STAT_MAXHITPOINTSPERCENT], 158, "tree capped at 100 points (+50%), plus the trial's 8 unscaled")
+applyAll(p, {vitality = 108, trialVitality = 8})
+assertEq(added[7220].p[CONDITION_PARAM_STAT_MAXHITPOINTSPERCENT], 158, "tree at the 100 points cap (+50%), plus the trial's 8 unscaled")
 applyAll(p, {vitality = 38, trialVitality = 8})
 assertEq(added[7220].p[CONDITION_PARAM_STAT_MAXHITPOINTSPERCENT], 132, "under the knee: 30 tree points x 0.8 + the trial's 8")
 applyAll(p, {vitality = 83, trialVitality = 8})
 assertEq(added[7220].p[CONDITION_PARAM_STAT_MAXHITPOINTSPERCENT], 153, "past the knee: 40 + 25 x 0.2 + the trial's 8")
-applyAll(p, {vitality = 150})
+applyAll(p, {vitality = 100})
 assertEq(added[7220].p[CONDITION_PARAM_STAT_MAXHITPOINTSPERCENT], 150, "no trial node: the cap as before")
 applyAll(p, {vitality = 3})
 assertEq(added[7220].p[CONDITION_PARAM_STAT_MAXHITPOINTSPERCENT], nil, "2.4% is not a whole percent")
@@ -91,7 +91,7 @@ assertEq(ChaosPassiveStatMultiplier({intelligence = 60}, COMBAT_FIREDAMAGE, 0), 
 assertEq(ChaosPassiveStatMultiplier({dexterity = 80}, COMBAT_FIREDAMAGE, 0), 1, "dexterity ignores spells")
 assertEq(ChaosPassiveStatMultiplier({dexterity = 80}, COMBAT_PHYSICALDAMAGE, ORIGIN_MELEE), 1.25, "dexterity 80 (the cap: value 20) on a weapon hit")
 assertEq(ChaosPassiveStatMultiplier({dexterity = 20}, COMBAT_PHYSICALDAMAGE, ORIGIN_MELEE), 1 / (1 - 16 / 100), "dexterity 20 (the knee: value 16)")
-assertEq(ChaosPassiveStatMultiplier({dexterity = 300}, COMBAT_PHYSICALDAMAGE, ORIGIN_MELEE), 1.25, "dexterity capped at 80")
+assert(ChaosPassiveStatMultiplier({dexterity = 300}, COMBAT_PHYSICALDAMAGE, ORIGIN_MELEE) > 1.25, "dexterity past 80: the soft cap still adds")
 -- 2026-10-22 two-tier curve: up to the knee (the old cap) 80% of the old maximum, from the knee to the new cap the
 -- other 20%, nothing above; increasing all the way, each point past the knee worth less than one before it
 local E = ChaosPassiveEffectsConfig
@@ -103,13 +103,13 @@ for stat, t in pairs(OLD) do
   assertEq(E.charStatMax[stat], max, stat .. " max")
   assertEq(ChaosPassiveCharStat(knee, stat), max * 0.8, stat .. ": the knee gives 80% of the old maximum")
   assertEq(ChaosPassiveCharStat(cap, stat), max, stat .. ": the cap gives the old maximum")
-  assertEq(ChaosPassiveCharStat(cap + 50, stat), max, stat .. ": nothing above the cap")
+  assert(ChaosPassiveCharStat(cap + 50, stat) > max, stat .. ": past the cap the soft cap still adds (O146)")
   assert(math.abs(ChaosPassiveCharStat(knee / 2, stat) - max * 0.4) < 1e-6, stat .. ": linear before the knee")
   assert(math.abs(ChaosPassiveCharStat((knee + cap) / 2, stat) - max * 0.9) < 1e-6, stat .. ": linear after the knee")
   local prev = 0
-  for p = 1, cap + 10 do
+  for p = 1, cap * 6 do
     local v = ChaosPassiveCharStat(p, stat)
-    assert(v > prev or (p > cap and v == prev), stat .. ": increasing up to the cap, flat above (" .. p .. ")")
+    assert(v > prev, stat .. ": strictly increasing, also past the cap (" .. p .. ")")
     prev = v
   end
   assert(ChaosPassiveCharStat(1, stat) > ChaosPassiveCharStat(knee + 1, stat) - ChaosPassiveCharStat(knee, stat),

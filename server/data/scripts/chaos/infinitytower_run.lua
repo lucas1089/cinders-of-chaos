@@ -3,9 +3,11 @@
 -- A run happens in an arena that is BUILT AT RUNTIME with Game.createTile (dynamic tiles, never saved)
 -- in a part of the map that has no tiles, so no map editing is needed. Each running group gets one of
 -- `maxSlots` arenas side by side. Floors are waves: kill everything to open the next floor; every
--- `bossEvery`-th floor is a boss floor. Monsters get stronger pools and more tier/modifier chances
--- (monster_tiers.lua) as the floors rise. When a run ends each player's cleared floors are recorded with
--- ChaosTower.recordRun (points, best floor, ranking, milestones in infinitytower.lua).
+-- `bossEvery`-th floor is a boss floor. Monsters get the health of their floor (infinitytower_balance_config.lua:
+-- a curve with a sawtooth, derived with tools/tower_model.py so the floor dies in about what a base hunt pack of its
+-- level does), more tier/modifier chances (monster_tiers.lua) as the floors rise, and drop tower items. Every fifth
+-- floor pays a reward (first clear per character and tower season, and every time). When a run ends each player's cleared
+-- floors are recorded with ChaosTower.recordRun (points, best floor, ranking, milestones in infinitytower.lua).
 --
 -- Entry: "!tower start" or the Enter button of the client window (action "enter"); "!tower leave" leaves.
 -- A party leader takes the party members who are close; solo works too.
@@ -21,7 +23,22 @@ if not Chaos.t then
 	dofile("data/scripts/chaos/i18n_core.lua")
 end
 
+if not ChaosTowerBalanceCore then
+	dofile("data/scripts/chaos/infinitytower_balance_core.lua")
+end
+ChaosTowerBalance = dofile("data/scripts/chaos/infinitytower_balance_config.lua")
+local B = ChaosTowerBalanceCore
+local BC = ChaosTowerBalance
+
 ChaosTowerRun = ChaosTowerRun or {}
+
+local function bossNames()
+	local names = {}
+	for i, b in ipairs(BC.bosses) do
+		names[i] = b.name
+	end
+	return names
+end
 
 local cfg = {
 	arenaBase = {x = 2000, y = 2000, z = 7}, -- top-left corner of slot 0; this part of the map has no tiles
@@ -36,8 +53,8 @@ local cfg = {
 	maxPartySize = 4,
 	partyRange = 12, -- members farther than this from the leader stay out
 	floorTimeLimit = 300, -- seconds per floor
-	-- a boss floor gets floorTimeLimit x this (600 s): the floor 90 boss needs 5:18 alone at level 1000 (server/README.md
-	-- "Solo kill times")
+	-- a boss floor gets floorTimeLimit x this (600 s): a boss lives 45-90 s for the median class at its floor's level
+	-- (tools/tower_model.py), 5 minutes at most for the weakest class
 	bossFloorTimeMult = 2,
 	-- instance limits (instance_limits.lua, server/README.md "Instance limits"): a whole run lasts at most runTimeLimit
 	-- seconds (0 = no limit); then it ends like a lost floor: everyone back where they entered, the floors cleared so far
@@ -50,54 +67,19 @@ local cfg = {
 	startDelay = 5, -- seconds before floor 1
 	nextFloorDelay = 6, -- seconds between floors
 	healBetweenFloors = 0.5, -- fraction of missing health and mana restored
-	bossEvery = 10,
+	bossEvery = BC.bossEvery,
 	floorGold = 50, -- gold per floor per player (multiplied by the floor number), 0 = none
-	-- monster pools by band; the band is floor // 8 + 1, the last one repeats
-	pools = {
-		{"troll", "orc warrior", "skeleton", "ghoul", "dwarf soldier"},
-		{"minotaur", "cyclops", "giant spider", "gargoyle", "stone golem"},
-		{"dragon", "warlock", "banshee", "serpent spawn", "crystal spider"},
-		{"demon skeleton", "vampire", "werewolf", "lost soul", "hydra"},
-		{"behemoth", "dragon lord", "dark torturer", "fury", "phantasm"},
-		{"hellhound", "juggernaut", "plaguesmith", "undead dragon", "grim reaper"},
-		{"demon", "destroyer", "hellfire fighter", "massive fire elemental", "blightwalker"}
-	},
-	bosses = {"the grey widow", "the ashen count", "zeburoth", "pestrogh", "morgashal", "moloveth", "vharagoth",
-		"ssylvath the corruptor", "ashvoran", "massacre", "jungle's revenge", "vhalkareth"},
+	-- the species of a floor's band and the bosses of the boss floors: infinitytower_balance_config.lua (the floor's band is
+	-- floor // bandFloors + 1, the last one repeats)
+	pools = BC.pools,
+	bosses = bossNames(),
 	fallbackMonster = "demon"
 }
 ChaosTowerRunConfig = cfg
 
 -- ------------------------------------------------------------------ floor planner (pure)
 function ChaosTowerFloorPlan(floor, players, rng)
-	rng = rng or math.random
-	players = math.max(1, players or 1)
-	local band = math.min(#cfg.pools, math.floor(floor / 8) + 1)
-	local pool = cfg.pools[band]
-	local isBoss = floor % cfg.bossEvery == 0
-	local count = math.min(4 + math.floor(floor / 3), 16) + (players - 1) * 2
-	local plan = {floor = floor, boss = isBoss, spawns = {}}
-	if isBoss then
-		local boss = cfg.bosses[(math.floor(floor / cfg.bossEvery) - 1) % #cfg.bosses + 1]
-		plan.spawns[1] = {name = boss, boss = true}
-		count = math.floor(count / 3)
-	end
-	local magic = math.min(5 + floor, 60)
-	local rare = math.min(math.floor(floor / 2), 30)
-	local legendary = math.min(math.floor(floor / 10), 10)
-	for _ = 1, count do
-		local roll = rng(100)
-		local tier
-		if roll <= legendary then
-			tier = "legendary"
-		elseif roll <= legendary + rare then
-			tier = "rare"
-		elseif roll <= legendary + rare + magic then
-			tier = "magic"
-		end
-		plan.spawns[#plan.spawns + 1] = {name = pool[rng(#pool)], tier = tier}
-	end
-	return plan
+	return B.plan(BC, floor, players, rng)
 end
 
 -- seconds the group has for `floor` (a boss floor: bossFloorTimeMult times floorTimeLimit)
@@ -185,6 +167,7 @@ end
 local runs = {}        -- slot -> run
 local runOf = {}       -- player id -> run
 local monsterRun = {}  -- monster id -> run
+local monsterInfo = {} -- monster id -> {floor, tier, boss, damage}: kept until the corpse is dropped
 
 function ChaosTowerRun.activeRuns()
 	local n = 0
@@ -239,6 +222,7 @@ local function endRun(run, reason)
 	for mid, r in pairs(monsterRun) do
 		if r == run then
 			monsterRun[mid] = nil
+			monsterInfo[mid] = nil
 		end
 	end
 	clearArena(run.slot)
@@ -249,6 +233,77 @@ local function endRun(run, reason)
 end
 
 local startFloor
+
+-- ------------------------------------------------------------------ floor rewards (infinitytower_balance_config.lua)
+local function currentSeason()
+	if ChaosTower and ChaosTower.currentSeason then
+		return (ChaosTower.currentSeason())
+	end
+	return 1
+end
+
+-- into the bags; what does not fit goes to the inbox
+local function deliver(player, items)
+	for _, it in ipairs(items) do
+		local given = Chaos.giveItem(player, it.id, it.count) or 0
+		local rest = it.count - given
+		local inbox = rest > 0 and player.getInbox and player:getInbox() or nil
+		while inbox and rest > 0 do
+			local c = math.min(rest, 100)
+			inbox:addItem(it.id, c, INDEX_WHEREEVER or -1, FLAG_NOLIMIT)
+			rest = rest - c
+		end
+	end
+end
+
+local function storageValue(player)
+	local ok, value = pcall(player.getStorageValue, player, BC.rewards.storage)
+	return ok and tonumber(value) or 0
+end
+
+local function storedFloor(player)
+	return B.stored(storageValue(player), currentSeason())
+end
+
+-- the reward text of the next milestone floor above `floor` for this character: its repeatable items, and the first-clear
+-- items while the floor is not cleared yet this season. nil when there is none.
+function ChaosTowerRun.nextRewardText(player, floor)
+	local nm = B.nextMilestone(BC, floor)
+	if not nm then
+		return nil
+	end
+	local every = B.rewardItems(BC.rewards.repeatable, nm)
+	local first = nm > storedFloor(player) and B.rewardItems(BC.rewards.firstClear, nm) or {}
+	local text
+	if #first > 0 and #every > 0 then
+		text = Chaos.t(player, "Next reward: floor %d, %s (first clear this season: %s).", nm, B.itemsText(every), B.itemsText(first))
+	elseif #first > 0 then
+		text = Chaos.t(player, "Next reward: floor %d, first clear this season: %s.", nm, B.itemsText(first))
+	elseif #every > 0 then
+		text = Chaos.t(player, "Next reward: floor %d, %s.", nm, B.itemsText(every))
+	end
+	return text, nm
+end
+
+-- the rewards of a cleared milestone floor for one player: the repeatable ones and the first clear of the season
+local function floorRewards(player, floor)
+	if not B.isMilestone(BC, floor) then
+		return
+	end
+	local every = B.rewardItems(BC.rewards.repeatable, floor)
+	if #every > 0 then
+		deliver(player, every)
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "Floor %d reward: %s.", floor, B.itemsText(every)))
+	end
+	local items, value = B.firstClear(BC, storageValue(player), currentSeason(), floor)
+	if items then
+		player:setStorageValue(BC.rewards.storage, value) -- marked first: a failure below never pays twice
+		deliver(player, items)
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "First clear of floor %d this season: %s.", floor,
+			B.itemsText(items)))
+		pcall(function() player:getPosition():sendMagicEffect(CONST_ME_FIREWORK_YELLOW) end)
+	end
+end
 
 local function floorCleared(run)
 	run.cleared = run.floor
@@ -264,20 +319,33 @@ local function floorCleared(run)
 			end
 			Chaos.heal(player, (player:getMaxHealth() - player:getHealth()) * cfg.healBetweenFloors)
 			player:addMana(math.floor((player:getMaxMana() - player:getMana()) * cfg.healBetweenFloors))
+			floorRewards(player, run.floor)
 		end
 	end
-	say(run, string.format("Floor %d cleared! Next floor in %d seconds.", run.floor, cfg.nextFloorDelay))
-	run.nextEvent = addEvent(function(slot)
+	for _, p in pairs(run.players) do
+		local player = Player(p.id)
+		if player then
+			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "Floor %d cleared! Next floor in %d seconds.", run.floor, cfg.nextFloorDelay))
+			if B.isMilestone(BC, run.floor) then
+				local text = ChaosTowerRun.nextRewardText(player, run.floor)
+				if text then
+					player:sendTextMessage(MESSAGE_EVENT_ADVANCE, text)
+				end
+			end
+		end
+	end
+	run.nextEvent = addEvent(function(slot, owner)
 		local r = runs[slot]
-		if r and not r.ended then
+		if r and r == owner and not r.ended then -- not a later run in the same slot
 			startFloor(r)
 		end
-	end, cfg.nextFloorDelay * 1000, run.slot)
+	end, cfg.nextFloorDelay * 1000, run.slot, run)
 end
 
 local function onMonsterDead(monsterId)
 	local run = monsterRun[monsterId]
 	monsterRun[monsterId] = nil
+	monsterInfo[monsterId] = nil -- the corpse (onDropLoot) is made before the death event
 	if not run or run.ended then
 		return
 	end
@@ -287,6 +355,12 @@ local function onMonsterDead(monsterId)
 	end
 end
 ChaosTowerRun._onMonsterDead = onMonsterDead
+
+local function setHealth(monster, health)
+	health = math.max(1, math.floor(health))
+	monster:setMaxHealth(health)
+	monster:setHealth(health)
+end
 
 local function spawnPlan(run, plan, rng)
 	local spawned = 0
@@ -305,9 +379,20 @@ local function spawnPlan(run, plan, rng)
 		end
 		if monster then
 			monster:registerEvent("ChaosTowerMonsterDeath")
-			monsterRun[monster:getId()] = run
+			local id = monster:getId()
+			monsterRun[id] = run
+			monsterInfo[id] = {floor = plan.floor, tier = s.tier, boss = s.boss, damage = s.damage or 1}
+			-- the floor's health (infinitytower_balance_config.lua); a tier multiplies on top, by the tower's own
+			-- tierHealth (the stock tier would multiply by its x2 / x3.5 / x6 after it)
+			if s.health and monster.setMaxHealth then
+				local stock = ChaosTiers and s.tier and ChaosTiers[s.tier] and ChaosTiers[s.tier].hp
+				setHealth(monster, (s.tier and ChaosApplyTier and stock) and B.preTierHealth(BC, s.health, s.tier, stock) or s.health)
+			end
 			if s.tier and ChaosApplyTier then
-				ChaosApplyTier(monster, s.tier)
+				local applied = ChaosApplyTier(monster, s.tier)
+				if not applied and s.health and monster.setMaxHealth then
+					setHealth(monster, B.tierMaxHealth(BC, s.health, s.tier))
+				end
 			end
 			spawned = spawned + 1
 		end
@@ -331,12 +416,12 @@ startFloor = function(run)
 		floorCleared(run) -- nothing could be created: do not trap the group
 		return
 	end
-	run.floorEvent = addEvent(function(slot, floor)
+	run.floorEvent = addEvent(function(slot, floor, owner)
 		local r = runs[slot]
-		if r and not r.ended and r.floor == floor and r.remaining > 0 then
+		if r and r == owner and not r.ended and r.floor == floor and r.remaining > 0 then
 			endRun(r, "Time is up!")
 		end
-	end, run.floorLimit * 1000, run.slot, run.floor)
+	end, run.floorLimit * 1000, run.slot, run.floor, run)
 end
 
 -- ------------------------------------------------------------------ the run's clock (instance limits)
@@ -459,13 +544,17 @@ function ChaosTowerRun.start(player)
 		m:teleportTo(arenaPos(slot, center + (i - 1) % 2, center + math.floor((i - 1) / 2)))
 		m:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
 		m:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(m, "Welcome to the Infinity Tower. Floor 1 starts in %d seconds. Leave Tower (Adventure > Infinity Tower) takes you out.", cfg.startDelay))
+		local reward = ChaosTowerRun.nextRewardText(m, 0)
+		if reward then
+			m:sendTextMessage(MESSAGE_EVENT_ADVANCE, reward)
+		end
 	end
-	run.nextEvent = addEvent(function(s)
+	run.nextEvent = addEvent(function(s, owner)
 		local r = runs[s]
-		if r and not r.ended then
+		if r and r == owner and not r.ended then
 			startFloor(r)
 		end
-	end, cfg.startDelay * 1000, slot)
+	end, cfg.startDelay * 1000, slot, run)
 	addEvent(clockTick, 1000, slot, run.startTime)
 	return true
 end
@@ -508,6 +597,47 @@ function ChaosTowerRun.leave(player)
 		endRun(run, "Everyone left.")
 	end
 	return true
+end
+
+-- damage factor of a tower monster against players (infinitytower_balance_config.lua `damage`: the pace_config.lua curve
+-- at the pool's hunting level, so a species hits as hard as outside). monster_damage.lua multiplies it on top of the
+-- monster's own boost; 1 for anything that is not a tower monster, a boss included.
+function ChaosTowerRun.damageMultOf(attacker)
+	if not attacker or not attacker.isMonster or not attacker:isMonster() then
+		return 1
+	end
+	local info = monsterInfo[attacker:getId()]
+	if not info then
+		local master = attacker.getMaster and attacker:getMaster()
+		info = master and master.getId and monsterInfo[master:getId()]
+	end
+	return info and not info.boss and info.damage or 1
+end
+
+-- tower drops (infinitytower_balance_config.lua `drops`): orbs and crystal coins on top of the monster's own loot
+if EventCallback then
+	local lootCb = EventCallback
+	lootCb.onDropLoot = function(monster, corpse)
+		local info = monster and monster.getId and monsterInfo[monster:getId()]
+		if not info or info.boss or not corpse then
+			return
+		end
+		local ok, err = pcall(function()
+			for _, d in ipairs(B.dropRolls(BC, info.floor, info.tier, math.random)) do
+				local stackable = ItemType(d.id):isStackable()
+				local n = d.count
+				while n > 0 do
+					local k = stackable and math.min(n, 100) or 1
+					corpse:addItem(d.id, k, INDEX_WHEREEVER or -1, FLAG_NOLIMIT)
+					n = n - k
+				end
+			end
+		end)
+		if not ok then
+			print("[Chaos tower] drops failed: " .. tostring(err))
+		end
+	end
+	lootCb:register(1.7)
 end
 
 -- ------------------------------------------------------------------ events

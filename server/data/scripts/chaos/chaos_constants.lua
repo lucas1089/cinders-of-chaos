@@ -183,6 +183,7 @@ Chaos.storage = {
 	passiveStatsFixed = 7100021, -- 1 once the stats older passive tree versions wrote into the character are clamped
 	passiveClassFx = 7100022, -- the class nodes of the passive tree the character holds, a bit each (class_tree.lua)
 	passiveRework = 7100023, -- the last reworked-nodes version refunded (passivetree_config.lua reworked)
+	paragonConverted = 7102500, -- free passive tree points the character exchanged for Paragon points (paragon.lua, O146); 7102500 - 7102509 reserved
 	archetypeFlags = 7100024, -- the build archetype keystones held, a bit each (archetypes_config.lua storage)
 	vigils = 7100025, -- the vigils switched on, a bit each (vigils_config.lua storage)
 	snareElement = 7100026, -- the element the snares carry, chosen last (snares_config.lua storage.element)
@@ -190,7 +191,7 @@ Chaos.storage = {
 	weaponStrike = 7100028, -- 1 while a spell's scripted weapon strike is dealt (ChaosSpell.weaponStrike; weapon_styles.lua leaves it out of the melee skill rule)
 	dungeonQueueLock = 7100030, -- (os.time of the last queue join; anti spam)
 	bountyWeekBonus = 7100300, -- bounty board (bounty.lua): 7100300 - 7100309 reserved; week key of the last weekly bonus
-	riftRun = 7100400, -- rifts (rift.lua): 7100400 - 7100409 reserved; +0 tier of the key of a run in progress, +1..+3 its modifiers, +4 start
+	riftRun = 7100400, -- rifts (rift.lua): 7100400 - 7100409 reserved; +0 tier of the key of a run in progress, +1..+3 its modifiers, +4 start, +5 sealed rifts in a row without a stronger key (pity)
 	lootFilter = 7100500, -- loot filter settings of the character, packed in one value (lootfilter_core.lua F.pack); 7100500 - 7100509 reserved
 	newPlayer = 7100250, -- new-player kit, welcome, milestones and tutorial island (newplayer*.lua): 7100250 - 7100269 reserved
 	bestiary = 7100870, -- bestiary (bestiary_config.lua taskPointsStorage): 7100870 - 7100879 reserved; bestiary points from kill tasks
@@ -509,7 +510,39 @@ Chaos.paragon = {
 		{key = "fortune", name = "Fortune", stats = {
 			{key = "goldFind", name = "Gold Find", perPoint = 1.0, maxPoints = 20, desc = "More gold coins in your kills' corpses"},
 			{key = "itemFind", name = "Item Find", perPoint = 0.5, maxPoints = 40, desc = "Chaos loot: extra rolls, currency, uniques, rarity"}}}
-	}
+	},
+	-- O146 (beta feedback: "I filled all Paragon at level 1100-1200, at 1500 I have 300 points with nothing to spend them on"):
+	-- Paragon Mastery, an endless sink. A rank costs 1 point (so every point earned after the categories above are full
+	-- still counts). A mastery of `ranks` ranks gives  scale x ln(1 + ranks / h)  percent: the first ranks are worth
+	-- scale / h each, the gain per rank keeps falling (scale / (h + ranks)) but never reaches zero, and there is no
+	-- maximum. `bonus` is the Paragon bonus key it adds to (the same keys the categories above use, so one condition /
+	-- storage per effect); `category` is the group of the window. 300 ranks of damage (scale 6, h 50) are +11.7%, 1000
+	-- ranks +18.2%; the categories above give +20% at their 40 points. Critical chance and speed have no mastery on
+	-- purpose (a flat crit chance or movement speed is a PvP lever); the reductions apply in whole percent (the absorb
+	-- storage), like every Paragon reduction. maxRanks: the table column is a smallint.
+	mastery = {
+		maxRanks = 60000,
+		stats = {
+			{key = "mDamage", category = "offense", name = "Damage Mastery", bonus = "damage", scale = 6, h = 50,
+				desc = "Damage dealt (every damage type, not healing)"},
+			{key = "mCritDamage", category = "offense", name = "Critical Damage Mastery", bonus = "critDamage", scale = 8, h = 50,
+				desc = "Extra damage of critical hits"},
+			{key = "mHealth", category = "defense", name = "Health Mastery", bonus = "health", scale = 8, h = 50,
+				desc = "Maximum health"},
+			{key = "mReduction", category = "defense", name = "Reduction Mastery", bonus = "reduction", scale = 3, h = 60,
+				desc = "Less damage taken from every type (whole percent, under the 75% ceiling)"},
+			{key = "mMana", category = "utility", name = "Mana Mastery", bonus = "mana", scale = 8, h = 50,
+				desc = "Maximum mana"},
+			{key = "mGoldFind", category = "fortune", name = "Gold Mastery", bonus = "goldFind", scale = 10, h = 50,
+				desc = "More gold coins in your kills' corpses"},
+			{key = "mItemFind", category = "fortune", name = "Item Mastery", bonus = "itemFind", scale = 8, h = 50,
+				desc = "Chaos loot: extra rolls, currency, uniques, rarity"}
+		}
+	},
+	-- O146: free passive tree points have nothing to buy once the nodes the class cares about are taken, and they keep
+	-- coming (1 per 4 levels). The Paragon window exchanges them: `ratio` Paragon points for each tree point, for good
+	-- (paragonConverted storage; the tree's point total drops by the same count). From the Paragon unlock level.
+	exchange = {ratio = 1}
 }
 
 Chaos.stash = {
@@ -543,6 +576,13 @@ Chaos.dungeons = {
 	cooldownSeconds = 900,
 	failCooldownSeconds = 300,
 	queueTickMs = 3000,
+	-- party size (beta feedback 2026-10-22: dungeons must be doable solo). A base dungeon's NeedParty / AmountParty is now
+	-- only the MAXIMUM group; one player may enter alone. The monster numbers (curves, trashHealth, bossHealth) are the
+	-- measured solo ones, so 1 player = x1.0 and every further player adds: health x (1 + healthPerExtra (n-1)), damage
+	-- to the run's players x (1 + damagePerExtra (n-1)) (dungeons_difficulty.lua D.partyHealth / D.partyDamage). Health
+	-- grows slower than the group's damage, so a group clears faster than a solo player. A queue entry waits
+	-- soloWaitSeconds for a partner of the same difficulty, then the run starts with whoever is queued.
+	party = {healthPerExtra = 0.6, damagePerExtra = 0.1, soloWaitSeconds = 5},
 	maxDifficulty = 6, -- client has 6 difficulty buttons
 	-- percentage of the run's monsters that must die to unlock the boss (owner, 2026-10-14: 85, was 100): the members
 	-- get "Boss unlocked!", a generated dungeon (areagen.lua) opens its boss room gate and spawns its boss; a run is won
@@ -2004,4 +2044,13 @@ if type(Position) == "table" and Position.sendMagicEffect and not Chaos.magicEff
 		end
 		return rawSendMagicEffect(self, effect, ...)
 	end
+end
+
+-- Beta test mode (beta_mode_core.lua, beta_mode_config.lua; server/README.md "Beta test mode"): read at the start of the
+-- scripts, so a /reload or a restart picks up `chaos-ctl.sh beta-mode on|off`. Off unless the file says otherwise.
+if Chaos then
+	-- (a failed load, e.g. a client test that runs this file from the repo root, leaves the mode off)
+	pcall(dofile, "data/scripts/chaos/beta_mode_core.lua")
+	local okCfg, cfgBeta = pcall(dofile, "data/scripts/chaos/beta_mode_config.lua")
+	Chaos.betaMode = okCfg and type(cfgBeta) == "table" and cfgBeta or {enabled = false}
 end

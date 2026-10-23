@@ -221,6 +221,7 @@ final class CommandsTab {
         quick.addView(upCard, ui.gap(10));
 
         buildXp();
+        buildBeta();
         buildAccounts();
         buildHealth();
         buildVps();
@@ -281,6 +282,43 @@ final class CommandsTab {
         } else {
             ctl("XP x" + n, args, 30, null);
         }
+    }
+
+    // beta test mode: lifts the weekly / daily gameplay limits for testers, never the store's (chaos-ctl.sh beta-mode)
+    private void buildBeta() {
+        MaterialCardView c = ui.titledCard("Modo beta (testes)");
+        LinearLayout b = Ui.body(c);
+        TextView now = ui.text("Toque em Ver para ler o estado.");
+        b.addView(now);
+        b.addView(ui.hint("Ligado: sem os limites semanais e diários do jogo (trava do raide e do chefe da guilda, "
+                + "tarefas de caça, ofertas semanais do Candlemarks e das facções, teto de honra e da comunidade, "
+                + "espera das masmorras). Os limites da loja (dinheiro real, ex.: Poção de XP em dobro) continuam. "
+                + "Vale no próximo reinício, ou já com reiniciar."), ui.gap(4));
+        MaterialButton see = ui.secondary("Ver", R.drawable.ic_refresh);
+        see.setOnClickListener(v -> a.ctlAction("beta-mode status", 30, f -> {
+            if (!f.ok) {
+                result.show("Modo beta", f);
+                return;
+            }
+            String state = f.raw.contains("beta_mode=on") ? "LIGADO" : f.raw.contains("beta_mode=off") ? "desligado" : "?";
+            now.setText("Agora (arquivo do servidor): " + state);
+        }));
+        MaterialButton on = ui.secondary("Ligar (próximo reinício)", 0);
+        on.setOnClickListener(v -> ctl("Modo beta ligado", "beta-mode on", 30, null));
+        MaterialButton off = ui.secondary("Desligar (próximo reinício)", 0);
+        off.setOnClickListener(v -> ctl("Modo beta desligado", "beta-mode off", 30, null));
+        MaterialButton onNow = ui.danger("Ligar e reiniciar", 0);
+        onNow.setOnClickListener(v -> a.confirm("Ligar o modo beta e reiniciar?", "O servidor reinicia agora: os "
+                + "jogadores são desconectados (o jogo salva antes).", "Reiniciar", true,
+                () -> ctl("Modo beta ligado", "beta-mode on restart", 240, null)));
+        MaterialButton offNow = ui.danger("Desligar e reiniciar", 0);
+        offNow.setOnClickListener(v -> a.confirm("Desligar o modo beta e reiniciar?", "O servidor reinicia agora: os "
+                + "jogadores são desconectados (o jogo salva antes).", "Reiniciar", true,
+                () -> ctl("Modo beta desligado", "beta-mode off restart", 240, null)));
+        b.addView(see, ui.gap(6));
+        b.addView(ui.evenRow(on, off), ui.gap(4));
+        b.addView(ui.evenRow(onNow, offNow), ui.gap(4));
+        quick.addView(c, ui.gap(10));
     }
 
     // accounts: the password goes on stdin, never on the command line (chaos-ctl.sh account-create / account-password)

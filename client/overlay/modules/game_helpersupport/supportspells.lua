@@ -314,15 +314,25 @@ function H.sanitize(node)
   return c
 end
 
--- a saved list without the utility spells (a list made before they were left out). spellOf(id) -> the spell or nil (an
--- unknown spell stays). Returns the list and how many rows left it.
+-- why a saved row can never work again, or nil: a utility (a list made before they were left out), a spell the server
+-- no longer has (retired: Galeborne Stride, 2026-10-23, O145) or an id that is an attack spell now (the attack kit took the
+-- ids of retired stock spells). A spell with no group data stays: the table may simply be incomplete.
+function H.deadReason(spell)
+  if type(spell) ~= 'table' then return nil end
+  if spell.notOnServer then return 'server' end
+  local ok, why = H.eligible(spell)
+  if not ok and why == 'utility' then return 'utility' end
+  if type(spell.group) == 'table' and next(spell.group) ~= nil and not H.isSupportGroup(spell.group) then return 'group' end
+  return nil
+end
+
+-- a saved list without the rows that can never work again (H.deadReason). spellOf(id) -> the spell or nil (an unknown
+-- spell stays). Returns the list and how many rows left it.
 function H.dropUtilities(slots, spellOf)
   local out, dropped = {}, 0
   for _, s in ipairs(slots or {}) do
     local spell = spellOf and spellOf(s.id)
-    local ok, why = true, nil
-    if spell then ok, why = H.eligible(spell) end
-    if not ok and why == 'utility' then dropped = dropped + 1 else out[#out + 1] = s end
+    if spell and H.deadReason(spell) then dropped = dropped + 1 else out[#out + 1] = s end
   end
   return out, dropped
 end

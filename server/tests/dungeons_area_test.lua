@@ -363,6 +363,124 @@ do
 	ok(onSpawn(r, r.pos, false, false) == true, "map spawns: the respawn is back once the run is over")
 end
 
+-- ------------------------------------------------------------------ solo entry and party scaling (beta feedback 2026-10-22)
+do
+	local P0 = Chaos.dungeons.party
+	eq(P0.healthPerExtra, 0.6, "party scaling: +60% health per further player")
+	eq(P0.damagePerExtra, 0.1, "party scaling: +10% damage per further player")
+	-- clear the area of earlier blocks
+	for id, cr in pairs(creatures) do
+		if not cr:isPlayer() and id < 100000 then cr:remove() end
+	end
+	b.pos = P(temple.x, temple.y, temple.z) -- the dungeon 1 run of the block above is over
+	advance(3000)
+	local kill = events["ChaosDungeonKill:creature"]
+	local hit = events["ChaosDungeonHit:creature"]
+	local curve = (Chaos.dungeons.extra[1].trashHealth or {100})[1] / 100 -- the dungeon's own solo curve at difficulty 1
+	local temple0 = P(32369, 32241, 7)
+	local function soloRun(player, maxHp)
+		local m = newCreature(900 + player.id, "bone skeleton", P(31700, 32200, 8), false)
+		m.maxHp, m.hp = maxHp, maxHp
+		ext.onExtendedOpcode(player, ChaosOpcodes.dungeons, {action = "queue", data = {id = 1, difficulty = 1}})
+		return m
+	end
+	-- one player of a dungeon that asks for 2: waits soloWaitSeconds for a partner, then goes alone
+	local solo = newCreature(61, "Solo", temple0, true)
+	local mono = soloRun(solo, 1000)
+	advance(3000)
+	ok(not ChaosDungeonIsInside(solo), "solo: the first seconds wait for a partner")
+	advance(6000)
+	ok(ChaosDungeonIsInside(solo), "solo: a dungeon for 2 starts with one player after the wait")
+	eq(mono.maxHp, 1000 * curve, "solo: the monsters keep their solo health (x1.0)")
+	local dmg = hit.onHealthChange(solo, mono, -100, 1, 0, 0)
+	eq(dmg, -100, "solo: the monsters hit for their solo damage")
+	-- the run ends: out of the dungeon
+	solo.pos = P(temple.x, temple.y, temple.z)
+	advance(3000)
+	ok(not ChaosDungeonIsInside(solo), "solo: the run is over")
+	-- two players: a full group starts at once, health x1.6, damage x1.1
+	local p1 = newCreature(62, "Pair1", P(32369, 32241, 7), true)
+	local p2 = newCreature(63, "Pair2", P(32368, 32241, 7), true)
+	local mduo = newCreature(962, "bone skeleton", P(31700, 32200, 8), false)
+	ext.onExtendedOpcode(p1, ChaosOpcodes.dungeons, {action = "queue", data = {id = 1, difficulty = 1}})
+	ext.onExtendedOpcode(p2, ChaosOpcodes.dungeons, {action = "queue", data = {id = 1, difficulty = 1}})
+	ok(ChaosDungeonIsInside(p1) and ChaosDungeonIsInside(p2), "pair: a full group starts at once, no wait")
+	eq(mduo.maxHp, 1000 * curve * 1.6, "pair: monster health x1.6")
+	eq(hit.onHealthChange(p1, mduo, -100, 1, 0, 0), -110, "pair: monster damage x1.1")
+	-- difficulty and party multiply
+	local D2 = dofile("data/scripts/chaos/dungeons_difficulty.lua")
+	eq(D2.partyHealth(1), 1, "formula: 1 player x1.0")
+	eq(D2.partyHealth(2), 1.6, "formula: 2 players x1.6")
+	eq(D2.partyHealth(3), 2.2, "formula: 3 players x2.2")
+	eq(D2.partyDamage(1), 1, "formula: damage 1 player x1.0")
+	-- the group takes less health per player than a solo run would
+	ok(D2.partyHealth(2) / 2 < D2.partyHealth(1), "a group faces less health per player than a solo player")
+	p1.pos = P(temple.x, temple.y, temple.z)
+	p2.pos = P(temple.x, temple.y, temple.z)
+	advance(3000)
+end
+
+-- ------------------------------------------------------------------ the old bug: respawns and the boss coming back
+-- Nothing may come back inside a run (map respawn refused) nor in the exit delay after the boss died (the run is still
+-- in runs[] until its teardown), and the clean-up and the unlock happen once.
+do
+	local onSpawn = EventCallback.onSpawn
+	local kill = events["ChaosDungeonKill:creature"]
+	local x1 = Chaos.dungeons.extra[1]
+	local unlocked = 0
+	x1.unlock = function() unlocked = unlocked + 1 end
+	for id, cr in pairs(creatures) do
+		if not cr:isPlayer() and id < 100000 then cr:remove() end
+	end
+	b.pos = P(temple.x, temple.y, temple.z)
+	advance(3000)
+	local boss = newCreature(970, "prince skeletal", P(31896, 32217, 8), false) -- the base box misses its room
+	local q = newCreature(71, "Bran", P(32369, 32241, 7), true)
+	local made = 0
+	Game.createMonster = function(name, pos)
+		made = made + 1
+		return newCreature(980 + made, name, P(pos.x, pos.y, pos.z), false)
+	end
+	ext.onExtendedOpcode(q, ChaosOpcodes.dungeons, {action = "queue", data = {id = 1, difficulty = 1}})
+	advance(9000) -- the solo wait, then the run
+	ok(ChaosDungeonIsInside(q), "bug check: the solo run is on")
+	local madeAtStart = made
+	local bossMap = newCreature(990, "prince skeletal", P(31896, 32217, 8), false)
+	ok(onSpawn(bossMap, bossMap.pos, false, false) == false, "bug check: the boss does not respawn during the run")
+	advance(6000)
+	eq(unlocked, 1, "bug check: the boss is unlocked once")
+	advance(6000)
+	eq(unlocked, 1, "bug check: more ticks never unlock (or spawn) the boss again")
+	boss:remove()
+	kill.onKill(q, boss) -- no trash in the run (total 0): the boss ends it
+	-- the boss is dead and the group is still inside for exitDelayMs
+	ok(onSpawn(bossMap, bossMap.pos, false, false) == false, "bug check: no boss respawn in the exit delay of a won run")
+	local trash = newCreature(991, "bone minion", P(31700, 32200, 8), false)
+	ok(onSpawn(trash, trash.pos, false, false) == false, "bug check: no trash respawn in the exit delay of a won run")
+	advance(15000)
+	ok(not ChaosDungeonIsInside(q), "bug check: the group is out after the exit delay")
+	ok(onSpawn(bossMap, bossMap.pos, false, false) == true, "bug check: the area spawns again after the run")
+	eq(made, madeAtStart, "bug check: nothing was created after the run opened (no second boss)")
+	x1.unlock = nil
+end
+
+-- ------------------------------------------------------------------ beta test mode: no dungeon cooldown
+do
+	local before = Chaos.betaMode
+	local z = newCreature(81, "Cool", P(32369, 32241, 7), true)
+	z.storage[50203] = os.time() + 600 -- a cooldown from an earlier run
+	ext.onExtendedOpcode(z, ChaosOpcodes.dungeons, {action = "queue", data = {id = 4, difficulty = 1}})
+	ok(not ChaosDungeonIsInside(z), "cooldown: refused while the cooldown runs (mode off)")
+	Chaos.betaMode = {enabled = true, storeOfferKeys = {}}
+	ext.onExtendedOpcode(z, ChaosOpcodes.dungeons, {action = "queue", data = {id = 4, difficulty = 1}})
+	ok(ChaosDungeonIsInside(z), "cooldown: beta mode lets the character in during a cooldown")
+	z.storage[50203] = nil
+	z.pos = P(temple.x, temple.y, temple.z) -- leaving is a failed attempt: normally the 5 minute cooldown
+	advance(3000)
+	ok(not ChaosDungeonIsInside(z) and z.storage[50203] == nil, "cooldown: beta mode sets none after a failed run")
+	Chaos.betaMode = before
+end
+
 print(string.format("dungeons_area_test: %d checks, %d failed", checks, fails))
 if fails > 0 then
 	os.exit(1)

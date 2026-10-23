@@ -145,6 +145,20 @@ eq(D.chest(spec, 6).pieces, 3, "difficulty 6: three pieces")
 eq(D.chest(spec, 9).pieces, 3, "clamped to 6")
 eq(D.chest(nil, 1).gold, 0, "no chest spec: no gold")
 
+-- party size (solo entry, 2026-10-22): 1 player = x1.0, +60% health and +10% damage per further player
+eq(D.partyHealth(1), 1, "party: solo health x1.0")
+eq(D.partyHealth(2), 1.6, "party: 2 players health x1.6")
+eq(D.partyHealth(4), 2.8, "party: 4 players health x2.8")
+eq(D.partyDamage(1), 1, "party: solo damage x1.0")
+eq(D.partyDamage(2), 1.1, "party: 2 players damage x1.1")
+eq(D.partyHealth(0), 1, "party: 0 counts as solo")
+eq(D.partyHealth(3, {healthPerExtra = 0.5}), 2, "party: the config's number")
+eq(D.damage(-100, 1, D.partyDamage(2)), -110, "party x difficulty 1: damage -100 -> -110")
+eq(D.damage(-100, 2, D.partyDamage(1)), -130, "party solo x difficulty 2: damage 130%")
+eq(D.damage(-100, 2, D.partyDamage(2)), -143, "party 2 x difficulty 2: 130% x 1.1")
+eq(D.damage(-100, 1), -100, "no party multiplier: unchanged")
+eq(Chaos and Chaos.dungeons and Chaos.dungeons.party and Chaos.dungeons.party.healthPerExtra or 0.6, 0.6, "config health share")
+
 print(string.format("dungeons difficulty tests: %d checks, %d failed", checks, fails))
 if fails > 0 then
 	os.exit(1)

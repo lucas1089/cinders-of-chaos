@@ -58,6 +58,19 @@ function K.bandOf(cfg, t)
 	return nil
 end
 
+-- true when pos (x, y, z fields) is the `from` corner of a retired map (cfg.retired: layouts the audit failed)
+function K.isRetired(cfg, pos)
+	if not pos then
+		return false
+	end
+	for _, r in ipairs(cfg and cfg.retired or {}) do
+		if r.x == pos.x and r.y == pos.y and r.z == pos.z then
+			return true
+		end
+	end
+	return false
+end
+
 -- the index and entry of the map a position is in, or nil
 function K.mapAt(cfg, pos)
 	if not pos then

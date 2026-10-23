@@ -542,7 +542,7 @@ Done or decided since the first version of this list (ROADMAP "Open decisions an
 2. Engine built with the patches (section 1); server folder in `/opt/chaos/server` with the real map.
 3. `prod_config.py`, `/etc/chaos/chaos.env` (section 3).
 4. `install_all.py --dry-run`, then for real, then once more (0 changes) (section 4).
-5. Remove every test-only file and turn the beta switch off (`beta_config.lua` `enabled = false`; section 11). Also
+5. Remove every test-only file and turn the beta switch off (`beta_config.lua` `enabled = false`; section 11). Turn beta test mode off too (`chaos-ctl.sh beta-mode off`, Comandos > Modo beta; `beta_mode_config.lua` `enabled = false`, `storeOfferKeys` empty): it lifts the weekly and daily gameplay limits. Also
    remove the beta coin top-up cron, if the beta used one (`rm /etc/cron.d/chaos-beta-coins`; docs/BETA.md section 4):
    left in place it refills every account's coins every minute after the wipe.
 6. systemd units, logrotate, firewall (section 5); start; read the log: no `Lua Script Error`.

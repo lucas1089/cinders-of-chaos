@@ -1227,8 +1227,46 @@ function R.keyOdds(cfg, modCount, am)
 	return odds
 end
 
--- nil, or the new key {tier, mods}. am (optional): as R.keyOdds; betterMods rolls the modifier count as a next-tier key
-function R.rollKeyDrop(cfg, tier, modCount, rand, am)
+-- the highest key tier a character of this level may enter (tier 1 at least)
+function R.fitTier(cfg, level)
+	local fit = 1
+	for t = 1, cfg.maxTier do
+		if R.tierInfo(cfg, t).minLevel <= (level or 0) then
+			fit = t
+		end
+	end
+	return fit
+end
+
+-- the key a finished rift must leave (cfg.keyDrop.pity; player report 2026-10-23: a level 1000+ character ran tier 1 six
+-- times with no tier 2 key): nil, or the tier of the guaranteed key.
+--   outlevelled: the finisher's level is `outlevel` x the tier's entry level or more -> a key of the tier the level
+--                fits, at least +1 and at most +maxJump (the low tiers are a fast step, not a grind)
+--   pity: `runs` completions in a row without a stronger key -> tier + 1
+-- am.keyChanceMult (Ashen Ascent keystone) turns both off: that keystone trades key chance away on purpose
+function R.keyGuarantee(cfg, tier, level, pity, am)
+	local p = cfg.keyDrop.pity
+	if not p or tier >= cfg.maxTier or (am and am.keyChanceMult) then
+		return nil
+	end
+	if level and level >= R.tierInfo(cfg, tier).minLevel * p.outlevel then
+		return math.min(cfg.maxTier, tier + p.maxJump, math.max(tier + 1, R.fitTier(cfg, level)))
+	end
+	if (pity or 0) >= p.runs then
+		return tier + 1
+	end
+	return nil
+end
+
+-- nil, or the new key {tier, mods}. am (optional): as R.keyOdds; betterMods rolls the modifier count as a next-tier key.
+-- who (optional) {level, pity}: the key's receiver (R.keyGuarantee); the result's `guaranteed` says which rule fired
+function R.rollKeyDrop(cfg, tier, modCount, rand, am, who)
+	local g = who and R.keyGuarantee(cfg, tier, who.level, who.pity, am)
+	if g then
+		local key = R.rollKey(cfg, g, rand, true)
+		key.guaranteed = true
+		return key
+	end
 	local odds = R.keyOdds(cfg, modCount, am)
 	if not chance(odds.chance, rand) then
 		return nil

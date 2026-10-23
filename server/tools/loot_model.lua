@@ -31,6 +31,13 @@ M.RANGES = {[100] = {85, 115}, [300] = {255, 345}, [500] = {425, 575}, [800] = {
 M.OLD_GOLD = {base = {{250, 1.0}, {450, 0.30}, {1000, 0.30}}, scaled = {{100, 1.0}, {450, 0.30}, {2000, 0.30}}}
 -- tolerances of --check: gold per hour and items per hour of the new rule against the old, per band
 M.TOL = {gold = 0.05, items = 0.07}
+-- O141 (2026-10-23): the gold per hour must grow with the level (no dip) and by at most this factor from one checked
+-- band to the next one up to 150 levels higher, from level 300 on (before: 469k at 300, 325-537k at 400-600, 1.8M at
+-- 650, 2.5M at 800). The bands 350, 400 and 600 are checked on top of the table's and of `--derive`'s.
+M.MAX_STEP = 2.3
+M.SMOOTH_FROM = 300
+M.SMOOTH_SPAN = 150
+M.SMOOTH_BANDS = {350, 400, 600}
 M.WIDOWS = {"Nightfang Widow", "Shadowcrystal Widow"}
 
 local function readFile(path)
@@ -446,12 +453,35 @@ function M.main(args)
 				rows[#rows + 1] = M.band(ctx, b)
 			end
 		end
+		for _, b in ipairs(M.SMOOTH_BANDS) do
+			if not M.RANGES[b] then
+				M.RANGES[b] = {math.floor(b * 0.85), math.ceil(b * 1.15)}
+				rows[#rows + 1] = M.band(ctx, b)
+			end
+		end
+		-- the gold per hour a band is held to: the smooth curve of pace_config.lua lootLevel.goldPerHour {band = gold}
+		-- where it lists the band, else the 2026-10-20 rule's
+		local want = ctx.ll.goldPerHour or {}
 		for _, r in ipairs(rows) do
-			local dg, di = math.abs(r.newGold / r.oldGold - 1), math.abs(r.newItems / r.oldItems - 1)
+			local ref = want[r.band] or r.oldGold
+			local dg, di = math.abs(r.newGold / ref - 1), math.abs(r.newItems / r.oldItems - 1)
 			if dg > M.TOL.gold or di > M.TOL.items then
 				bad = bad + 1
-				print(string.format("band %d out of tolerance: gold %+.1f%%, items %+.1f%%", r.band, 100 * (r.newGold / r.oldGold - 1),
+				print(string.format("band %d out of tolerance: gold %+.1f%% (of %s), items %+.1f%%", r.band,
+					100 * (r.newGold / ref - 1), want[r.band] and "the goldPerHour target" or "the 2026-10-20 rule",
 					100 * (r.newItems / r.oldItems - 1)))
+			end
+		end
+		table.sort(rows, function(a, b) return a.band < b.band end)
+		for i = 2, #rows do
+			local a, b = rows[i - 1], rows[i]
+			if a.band >= M.SMOOTH_FROM and b.band - a.band <= M.SMOOTH_SPAN then
+				local step = b.newGold / a.newGold
+				if step < 1 or step > M.MAX_STEP then
+					bad = bad + 1
+					print(string.format("gold per hour from band %d to %d: x%.2f (%s to %s), allowed 1 to %.1f", a.band, b.band,
+						step, fmt(a.newGold), fmt(b.newGold), M.MAX_STEP))
+				end
 			end
 		end
 		print(bad == 0 and "loot model: every band within the tolerances" or "loot model: OUT OF TOLERANCE")
