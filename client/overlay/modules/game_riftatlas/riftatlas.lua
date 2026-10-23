@@ -3,9 +3,15 @@
 --   client -> server  open {tree} | alloc {id} | refund {id, pay = gold|orb} | reset {pay}
 --   server -> client  tree {...} (once per login) | state {...} | credit {cells, points}
 -- Payload fields: riftatlasview.lua. Opened from Adventure > Rift Atlas and from the button of the rift HUD (game_rift).
+-- Waystone mode: the same window shows the Waystone Atlas (server waystone_atlas.lua, extended opcode 159, the same
+-- protocol; the grid comes as rows). Each mode keeps its own tree and state; Adventure > Waystone Atlas opens it.
 
-local OPCODE = 210
+local OPCODES = { rift = 210, waystone = 159 }
+local TITLES = { rift = 'Rift Atlas', waystone = 'Waystone Atlas' }
 local V = RiftAtlasView
+
+local mode = 'rift'
+local stash = { rift = {}, waystone = {} }
 
 local window
 local tree, ix, world
@@ -37,7 +43,7 @@ end
 local function send(action, data)
   local protocol = g_game.getProtocolGame()
   if protocol then
-    protocol:sendExtendedOpcode(OPCODE, json.encode({ action = action, data = data or {} }))
+    protocol:sendExtendedOpcode(OPCODES[mode], json.encode({ action = action, data = data or {} }))
   end
 end
 
@@ -200,7 +206,7 @@ end
 -- ---------------------------------------------------------------- the side panel
 local function cellColor(row, cell)
   if not cell.done then return '#241e24' end
-  return row.color
+  return cell.color or row.color
 end
 
 local function buildGrid()
@@ -241,7 +247,7 @@ local function buildGrid()
         c:setFont('verdana-11px-antialised')
         c:setColor(cell.done and '#0d0b0e' or '#8c8070')
       else
-        c:setMarginLeft(x0 + (i - 1) * step)
+        c:setMarginLeft(x0 + ((cell.col or i) - 1) * step)
       end
       c:setBackgroundColor(cellColor(row, cell))
       c:setTooltip(cell.tip)
@@ -256,7 +262,9 @@ local function buildTotals()
   list:destroyChildren()
   local lines = state and state.totals or {}
   if #lines == 0 then
-    g_ui.createWidget('RiftAtlasTotal', list):setText(tr('Nothing allocated yet. Seal rifts to earn points, then pick nodes on the map.'))
+    g_ui.createWidget('RiftAtlasTotal', list):setText(mode == 'waystone'
+      and tr('Nothing allocated yet. Kill map bosses in waystone runs to earn points, then pick nodes on the map.')
+      or tr('Nothing allocated yet. Seal rifts to earn points, then pick nodes on the map.'))
     return
   end
   for _, text in ipairs(lines) do
@@ -394,8 +402,28 @@ local function onCredit(d)
   setStatus(tr('Completed: %s (+%d)', table.concat(cells, ', '), tonumber(d.points) or 0), '#7fd07f')
 end
 
+-- a message for the mode not on screen: kept for when that mode is shown
+local function stashMessage(m, msg)
+  local s = stash[m]
+  if msg.action == 'tree' then
+    s.tree = msg.data
+    s.ix = V.index(msg.data)
+    s.world = V.world(s.ix)
+    s.panX, s.panY = V.panTo(s.world, s.ix.byId[s.ix.start] or { x = 0, y = 0 }, zoomValue())
+  elseif msg.action == 'state' then
+    s.state = msg.data
+    s.alloc = V.allocSet(msg.data)
+    s.done = V.doneSet(msg.data)
+  end
+end
+
 local function onMessage(protocol, opcode, msg)
   if type(msg) ~= 'table' or type(msg.data) ~= 'table' then return end
+  local m = opcode == OPCODES.waystone and 'waystone' or 'rift'
+  if m ~= mode then
+    stashMessage(m, msg)
+    return
+  end
   if msg.action == 'tree' then
     onTree(msg.data)
   elseif msg.action == 'state' then
@@ -411,6 +439,38 @@ function hide()
   if window then window:hide() end
 end
 
+local function clearMap()
+  if not window then return end
+  window.map.canvas.links:destroyChildren()
+  window.map.canvas.nodes:destroyChildren()
+  window.grid:destroyChildren()
+  window.totals:destroyChildren()
+  nodeWidgets, linkWidgets, selectRing = {}, {}, nil
+end
+
+-- show the other atlas in the window: the current one goes to its stash, the other comes back with its map position
+local function switchMode(m)
+  if not OPCODES[m] then return end
+  if window then window:setText(tr(TITLES[m])) end
+  if m == mode then return end
+  closeBox()
+  stash[mode] = { tree = tree, ix = ix, world = world, state = state, alloc = alloc, done = done, selected = selected,
+    panX = panX, panY = panY }
+  mode = m
+  local s = stash[m] or {}
+  tree, ix, world, state = s.tree, s.ix, s.world, s.state
+  alloc, done, selected = s.alloc or {}, s.done or {}, s.selected
+  panX, panY = s.panX or 0, s.panY or 0
+  clearMap()
+  if window then window.gridTitle:setText('') window.earnedLabel:setText('') window.pointsPlate.pointsValue:setText('') end
+  if ix then
+    buildMap()
+    render()
+  else
+    updatePanel()
+  end
+end
+
 function show()
   if not window then return end
   window:show()
@@ -420,19 +480,31 @@ function show()
   send('open', { tree = tree == nil })
 end
 
-function toggle()
-  if window and window:isVisible() then hide() else show() end
+-- Adventure > Rift Atlas / Waystone Atlas: open that atlas, close the window when it already shows it
+local function toggleMode(m)
+  if window and window:isVisible() and mode == m then
+    hide()
+    return
+  end
+  switchMode(m)
+  show()
 end
+
+function toggle() toggleMode('rift') end
+function toggleWaystone() toggleMode('waystone') end
+function showRift() switchMode('rift') show() end
+function showWaystone() switchMode('waystone') show() end
+function getMode() return mode end
 
 -- for other modules and tests
 function getState()
   return { nodes = ix and #ix.list or 0, points = points(), visible = window and window:isVisible() or false,
-    zoom = zoomValue(), selected = selected }
+    zoom = zoomValue(), selected = selected, mode = mode }
 end
 
 -- offline renders and tests: feed a server message as if it came over the opcode
-function inject(msg)
-  onMessage(nil, OPCODE, msg)
+function inject(msg, m)
+  onMessage(nil, OPCODES[m or mode] or OPCODES.rift, msg)
 end
 
 -- select a node and bring it to the middle of the map
@@ -450,16 +522,15 @@ local function addMenu()
   if api and api.addEntry and not handlers.menu then
     handlers.menu = pcall(api.addEntry, 'adventure',
       { text = 'Rift Atlas', icon = 'dungeons', modules = { 'game_riftatlas' }, fns = { 'toggle' } })
+    pcall(api.addEntry, 'adventure',
+      { text = 'Waystone Atlas', icon = 'dungeons', modules = { 'game_riftatlas' }, fns = { 'toggleWaystone' } })
   end
 end
 
 local function onGameStart()
-  tree, ix, state, alloc, done, selected = nil, nil, nil, {}, {}, nil
-  if window then
-    window.map.canvas.links:destroyChildren()
-    window.map.canvas.nodes:destroyChildren()
-  end
-  nodeWidgets, linkWidgets, selectRing = {}, {}, nil
+  tree, ix, world, state, alloc, done, selected = nil, nil, nil, nil, {}, {}, nil
+  stash = { rift = {}, waystone = {} }
+  clearMap()
   addMenu()
 end
 
@@ -501,7 +572,9 @@ function init()
     g_logger.warning('[riftatlas] window not loaded: ' .. tostring(ui))
   end
   handlers.game = { onGameStart = safe('start', onGameStart), onGameEnd = safe('end', onGameEnd) }
-  ProtocolGame.registerExtendedJSONOpcode(OPCODE, safe('opcode', onMessage))
+  for _, op in pairs(OPCODES) do
+    ProtocolGame.registerExtendedJSONOpcode(op, safe('opcode', onMessage))
+  end
   connect(g_game, handlers.game)
   addMenu()
   if g_game.isOnline() then onGameStart() end
@@ -509,9 +582,12 @@ end
 
 function terminate()
   disconnect(g_game, handlers.game)
-  pcall(ProtocolGame.unregisterExtendedJSONOpcode, OPCODE)
+  for _, op in pairs(OPCODES) do
+    pcall(ProtocolGame.unregisterExtendedJSONOpcode, op)
+  end
   closeBox()
   if window then window:destroy() window = nil end
   tree, ix, state, handlers = nil, nil, nil, {}
+  stash = { rift = {}, waystone = {} }
   nodeWidgets, linkWidgets = {}, {}
 end

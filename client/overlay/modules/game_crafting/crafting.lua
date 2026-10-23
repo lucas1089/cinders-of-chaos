@@ -295,7 +295,13 @@ local function showItem(item)
   local rarity = tonumber(item.rarity) or 0
   window.itemName:setColor(rarity > 0 and rarityColor(rarity) or '#d6c9ae')
   window.itemRarity:removeTooltip()
-  if item.kind == 'riftkey' then
+  if item.kind == 'riftkey' and item.waystone then
+    window.itemName:setColor(KEY_COLOR)
+    window.itemRarity:setText(tr('%s, tier %d (monster level %d)', tr(item.rarityName or 'Normal Waystone'),
+      tonumber(item.tier) or 0, tonumber(item.level) or 0))
+    window.itemRarity:setColor(KEY_COLOR)
+    setTip(window.itemRarity, item.rewards and tr('Rewards: %s', item.rewards) or '')
+  elseif item.kind == 'riftkey' then
     window.itemName:setColor(KEY_COLOR)
     window.itemRarity:setText(tr('Rift Key, tier %d (level %d+)', tonumber(item.tier) or 0, tonumber(item.level) or 0))
     window.itemRarity:setColor(KEY_COLOR)
@@ -418,7 +424,7 @@ function updateOrbs()
       end
       -- what the orb would do to the item on the bench (the server's preview)
       local preview = why == '' and item and type(item.preview) == 'table' and item.preview[orb.key] or ''
-      local text = (item and item.kind == 'riftkey' and orb.keyText) or orb.text or ''
+      local text = (item and item.waystone and orb.wsText) or (item and item.kind == 'riftkey' and orb.keyText) or orb.text or ''
       local line, color, isText = why, '#a89074', false
       if preview ~= '' then
         line, color = preview, '#9fdc7f'

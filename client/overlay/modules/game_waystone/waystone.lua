@@ -1,7 +1,7 @@
 -- The waystone device window (the glue; the rules are waystonelogic.lua, tested there). The base server's waystone
 -- system sends "show" on extended opcode 202 when the device is used (or a Waystone Tier is used on it, or in the own
--- hideout: server/tools/patch_waystone_hideout.py part 2); this window lists the six tiers with the count the player
--- carries, opens the portals of the picked one and sets the portal look. Protocol: waystonelogic.lua.
+-- hideout: server/tools/patch_waystone_hideout.py part 2); this window lists the tiers (six, fifteen with part 3) with
+-- their monster level and the count the player carries, opens the portals of the picked one and sets the portal look. Protocol: waystonelogic.lua.
 local W = ChaosWaystone
 
 local window
@@ -43,7 +43,8 @@ local function showRows()
     local w = g_ui.createWidget('WaystoneTierRow', window.tierList)
     w.item:setItemId(r.look)
     w.name:setText(tr('Waystone Tier %s', r.roman))
-    w.count:setText(W.countText(r, tr))
+    local count, level = W.countText(r, tr), W.levelText(r, tr)
+    w.count:setText(level ~= '' and count ~= '' and (level .. '  ' .. count) or (level .. count))
     w:setOpacity(r.usable and 1 or 0.55)
     w.onFocusChange = function(self, focused)
       if focused then

@@ -436,6 +436,7 @@ eq(T.build(newItem(3975)).look, nil, "no look without a transmog")
 -- a built tooltip as sent: the factor of the item's level requirement, the flat health / mana / damage / heal rows only
 dofile("data/scripts/chaos/display_scale_core.lua")
 local DS = ChaosDisplayScale
+DS.configure({curve = {{100, 1}, {1000, 1000}, {1500, 10000}}}) -- the scale is off (x1); its code is tested on the old curve
 local flatItem = newItem(2400) -- magic sword, level 80
 ChaosItemMods.set(flatItem, "lifeonhit", 20, 4)
 ChaosItemMods.set(flatItem, "attackspeed", 5, 4)

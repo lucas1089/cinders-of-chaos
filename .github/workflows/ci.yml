@@ -234,6 +234,9 @@ jobs:
       - name: Waystone device in the hideout (patch_waystone_hideout.py on copies of the base tier_maps.lua lines and items.xml)
         run: python3 -I server/tools/patch_waystone_hideout_test.py
 
+      - name: Waystone Tier VII-XV items (install_waystone_items.py on a synthetic items.otb / items.xml)
+        run: python3 -I server/tools/install_waystone_items_test.py
+
       - name: Waystone tier bosses (patch_waystone_bosses.py on copies of the base boss room and pillar boss lines)
         run: python3 -I server/tools/patch_waystone_bosses_test.py
 

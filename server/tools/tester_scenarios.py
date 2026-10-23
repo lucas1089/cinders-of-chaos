@@ -105,7 +105,12 @@ class Scenarios:
         name, e = self.opcodes[num]
         seen = self.answers.get(bot.name, {}).get(num, [])
         data = {}
+        for key, values in sorted((e.get('sub') or {}).items()):  # a sub-action (the stash's make): one of them
+            if values:
+                data[key] = self.rand.choice(values)
         for key in e.get('dataKeys', []):
+            if key in data:
+                continue
             if key in NEVER_KEYS:
                 continue
             if key in NAME_KEYS:

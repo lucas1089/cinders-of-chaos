@@ -1,6 +1,6 @@
 Module
   name: game_riftatlas
-  description: Rift Atlas - the rift progression tree, its completion grid and the respec (server atlas.lua, extended opcode 210)
+  description: Rift Atlas - the rift progression tree, its completion grid and the respec (server atlas.lua, extended opcode 210), and the Waystone Atlas in the same window (server waystone_atlas.lua, extended opcode 159)
   author: Cinders of Chaos
   sandboxed: true
   scripts: [ riftatlasview, riftatlas ]

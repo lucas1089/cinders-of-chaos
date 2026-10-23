@@ -1583,6 +1583,7 @@ return {
 			"%sUse o %s num item: escolha \"Use with\" no orbe, depois clique num item ou numa Rift Key na sua mochila. A Crafting Bench (Economy > Crafting Bench) mostra uma prévia antes.",
 		["That cannot carry modifiers. "] = "Isso não pode ter modificadores. ",
 		["Rift Atlas: %s completed, +%d point%s."] = "Rift Atlas: %s completado, +%d ponto%s.",
+		["Waystone Atlas: %s completed, +%d point%s."] = "Waystone Atlas: %s completado, +%d ponto%s.",
 		["The way is sealed."] = "O caminho está selado.",
 		["%s is for level %d and above."] = "%s é para o nível %d ou mais.",
 		["%s. The portal beside you leads back to the temple."] = "%s. O portal ao seu lado leva de volta ao templo.",

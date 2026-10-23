@@ -590,6 +590,7 @@ working directory, as with the rest of the base server libs).
 | game_energyshield | `data/lib/chaos_energy_shield.lua`, `item_mods.lua`; engine patch 0015 sends it | 224 (server -> client, from the engine) | Energy shield bar above the health bar of the character plate: plain text `es:<current>:<max>`, max 0 hides it. Tested in game (see "Energy shield"). |
 | game_bossspawns | `bossspawns.lua`, `bossspawns_core.lua`, `bossspawns_config.lua`, `sql/chaos_boss_spawns.sql` | **217**, Adventure > Boss Spawns | Every boss by category with place and respawn status, live alive state and last kills (see "Boss spawns"). Unit and mocked-engine tests; not run on a live server. |
 | game_riftatlas | `atlas.lua`, `atlas_core.lua`, `atlas_config.lua`, `sql/chaos_rift_atlas.sql` (hooks in `rift_core.lua`) | **210**, Adventure > Rift Atlas, the rift HUD | Rift Atlas: completion grid of first completions (theme x tier, flawless, swift, omens; 96 points), a map of 81 nodes in a core and four theme branches with 4 keystones, allocate / refund for gold or an orb; effects applied in `rift_core.lua` (see "Rift Atlas"). Unit and mocked-engine tests; not run on a live server. |
+| game_riftatlas (waystone mode) | `waystone_atlas.lua`, `waystone_atlas_core.lua`, `waystone_atlas_config.lua`, `sql/chaos_waystone_atlas.sql` (hooks in `waystone_mods.lua`, `waystone_tiers.lua`) | **159**, Adventure > Waystone Atlas | Waystone Atlas: map x tier cells and a Rare cell per tier (75 points) for a map of 81 nodes in a core and four branches (Low, Middle, High Maps, Cartography) with 4 keystones; the map opener's atlas shapes the run (see "Waystone Atlas"). Unit and mocked-engine tests; not run on a live server. |
 | game_partyfinder | `party_finder.lua`, `party_finder_core.lua`, `party_finder_config.lua` | **208**, Social > Party Finder | Party Finder (LFG): listings with activity, wanted tank / healer / DPS slots, minimum level, note, expiry; browse with filters, apply with a role, the leader accepts (engine party invite) or declines; "Join as" quick-join queue; realm and staff rules; in memory (see "Party Finder"). Unit and mocked-engine tests; not run on a live server. |
 | game_antibot | `antibot.lua`, `antibot_core.lua`, `antibot_config.lua`, `reports.lua`, `reports_core.lua`, `sql/chaos_reports.sql`, `tools/patch_report_chat.py` | **211**, right-click a player > Report Player, System > Report a Player, `/reports` (staff) | Behaviour detection (action rhythm, instant reactions, walked loops, loot timing, nonstop play) with a decaying suspicion score, the presence check modal (four pictures, one retry, 75 s, deferred in PvP and boss fights), player reports with public chat lines and limits, the staff log and command, an admin page on the website; never bans by itself (see "Anti-bot and player reports"). Unit, synthetic-trace and mocked-engine tests; not run on a live server. |
 | game_factions | `factions.lua`, `factions_core.lua`, `factions_config.lua`, `sql/chaos_factions.sql`, `tools/install_factions.py`, `data/npc/` (four NPCs) | **215**, Adventure > Factions, the faction NPCs | Four factions with reputation ranks (Hostile .. Exalted): daily / weekly contracts by seed, kills of their monster families, bounties, rift seals of their theme, invasions, world bosses and faction tokens; daily diminishing returns, weekly cap, rivals; quartermasters with fixed gear, orb bundles, a recipe, the tabard aura and a mount; rank titles, Exalted achievements, a weekly Reputation board (see "Factions"). Unit and mocked-engine tests; not run on a live server. |
@@ -635,6 +636,7 @@ collision check") and be added here.
 | 154 | `deathRecap` | `deathrecap.lua` (fed by `combatlog.lua`) | `game_deathrecap` | history and recaps through `Chaos.sendChunked` |
 | 156 | `tileBars` | `tilebars.lua` (bars set by `battleground.lua`, `professions.lua`, `invasion.lua`) | `game_tileoverlays` | server -> client bars over map positions, client -> server `hello` |
 | 157 | `displayScale` | `display_scale.lua`, `i18n.lua` | `game_chaosscale`, `client_chaos_locale` | server -> client `scale {level, f}`, client -> server `hello` (with `lang` from `client_chaos_locale`: the language of the server texts; see "Display scale" and "Server texts in pt-BR (Chaos.t)") |
+| 159 | `waystoneAtlas` | `waystone_atlas.lua` | `game_riftatlas` (waystone mode) | client -> server `open` / `alloc {id}` / `refund {id, pay}` / `reset {pay}`, server -> client `tree` through `Chaos.sendChunked`, `state`, `credit {cells, points}` (see "Waystone Atlas") |
 | 167 | `conquest` | `conquest.lua`, the Conquest vendor's NPC script | `game_conquest` | `state` through `Chaos.sendChunked`; client -> server `open` / `close` / `buy {k}` (see "Conquest Tokens, the Conquest vendor and bad-luck protection") |
 | 171 | `chronicle` | `chronicle.lua`, `memorial.lua` | `game_chronicle` | chronicle.lua: `open` / `close`, `state` through `Chaos.sendChunked`; memorial.lua: `mem` / `memset` |
 | 174 | `emberCache` | `embercache.lua` | `game_embercache` | client -> server `open` / `close` / `get`, server -> client `state` (see "Ember Cache, Daily Spark and the day book") |
@@ -6379,6 +6381,12 @@ neighbour first, never on a floor change or a teleport, next to an NPC only wher
 nearest answers, `chaos_npc_focus.lua`: a Material Broker in a row of stalls never heard the bot's "hi"), next to a
 locker only on an adjacent tile, with the locker's stack position, and looks for a locker 45 tiles round the temple on
 its floor and the ones above and below. A shop failure says whether the NPC answered at all.
+The coverage table (`gen_tester_scenarios.py`) sends only the actions the client module really sends on an opcode
+(a server comparison the client never sends, such as the item tooltip's `kind == "slot"`, is no request), reads a
+handler's guard `action ~= "get"` as well as `action == "get"`, and fills a sub-action in the data (the stash's
+`make`: Open, SendItems, ...). Before, 9 systems (charms, groundloot, item tooltip, loadouts, nemesis, pact, party
+markers, stash, veiled) were tried with requests their servers ignore and never counted ok. The report puts the
+systems that never answered, with no refusal and no log error, on one line "no answer, no error".
 
 ```
 sudo /opt/chaos/repo/server/deploy/chaos-ctl.sh testers start 100 60 --restart 300
@@ -13346,24 +13354,118 @@ the queue runs the dungeon with its cap, a monster does nothing, the rate limit.
 siege got the same few lines (config, a warning call in the tick, the cap and the busy text, the registry) without an
 engine test of their own. Not run in game.
 
-## Waystone tiers (`waystone_tiers.lua`, `waystone_tiers_core.lua`, `waystone_tiers_config.lua`, `tools/patch_waystone_bosses.py`)
+## Waystone tiers (`waystone_tiers.lua`, `waystone_tiers_core.lua`, `waystone_tiers_config.lua`, `tools/patch_waystone_bosses.py`, `tools/install_waystone_items.py`)
 
 The base waystone system (`data/scripts/customs/waystone_system/tier_maps.lua`) has six tiers of two maps each. Its
-monster files have the same flat stats in every tier, so every tier showed the bounty pool level, about 468-612. Now a
-tier's own monster type inside a map of its tier counts at that level x `levelMult[tier]` (1.0, 1.2 ... 2.0):
-`ChaosWaystoneTiers.levelOf`, read by `loot.lua` `ChaosLoot.monsterLevel` (the old body is
-`ChaosLoot.baseMonsterLevel`). Shown level: `Chaos.spawnLevel` at onSpawn index 40. Max health x the engine's level
-factor at the first think. Experience x target / native level (onGainExperience). Damage to players x the engine's
-damage factor (`monster_damage.lua`). Summons, other monsters and a tier's type outside its maps are untouched.
-Bosses keep their own level and health, since the base files rise by tier; their damage is x `bossDamage[tier]`.
-Morgrath (tier V) took no damage away from a Katoi Pillar, and Nyxdrath (tier VI) took only the adjacent pillar's
-element. `tools/patch_waystone_bosses.py` (install step `waystonebosses`) makes their health events keep
+monster files have the same flat stats in every tier (hunting level about 468-612). Owner 2026-10-23: the first waystone
+at monster level 1100, the last at 2500, new waystones in between, a gradual rise, and 2-3 scenarios each for the low,
+middle and high levels. So:
+
+| Band | Tiers | Monster level | Scenarios (maps of the base tiers) |
+|---|---|---|---|
+| low | I-V | 1100-1500 | 4: the water cave and the cave (base I), the plain and the cave (base II) |
+| mid | VI-X | 1600-2000 | 4: the plain and the cave (base III), the forest and the underground (base IV) |
+| high | XI-XV | 2100-2500 | 4: the desert and the ice (base V), the undead cave and the forest & desert (base VI) |
+
+Each tier is +100 levels (`tiers` in the config). Tier I-VI are the base items (29845-29850); VII-XV are new items
+41951-41959 (`tools/install_waystone_items.py`, install step `waystoneitems`: copies of the base tablet nodes with their
+own server ids, looks of base III-VI, so no client pair is needed; a hotkey use of one picks the base item of the same
+look, so use them from the backpack or on the device). `tools/patch_waystone_hideout.py` part 3 lets the base device take
+them (`ChaosWaystoneTiers.tablets`), open a map of the tier's band (`optionsFor`), show each tier's level in the window
+(client `game_waystone`) and call `startRun` when the pads open.
+
+**Level.** A base tier's monster type (or boss) inside a map of that base tier counts at the level of the map's run: the
+tier of the last waystone that opened it, else the band's first tier. `ChaosWaystoneTiers.levelOf` is read by `loot.lua`
+`ChaosLoot.monsterLevel` (shown level, item level of drops, late-game damage boost, pack combat). Shown level:
+`Chaos.spawnLevel` at onSpawn index 40. Max health x the engine's level factor at the first think, from the monster's
+hunting level to the run's level (bosses: from the band's first tier level, their base health); experience x target /
+native; damage to players x the engine's damage factor (`monster_damage.lua`), bosses also x `bossDamage` of their base
+tier. `startRun` rescales the monsters already standing in the map (same health share, new shown level); respawns during
+the run spawn at its level. Summons, other monsters and a type outside its maps are untouched.
+
+**Drops.** After the level gate (`loot.lua` `gateWaystones`), `retierDrops` turns every waystone in a corpse into one of
+the run's tier: T 60%, T+1 30%, T+2 10% (`drops.inside`, capped at XV); outside the maps a waystone is a Tier I. The run's
+boss adds one waystone of tier T+1 (`drops.bossNext`).
+
+**Bosses.** Morgrath (base V) took no damage away from a Katoi Pillar, and Nyxdrath (base VI) took only the adjacent
+pillar's element. `tools/patch_waystone_bosses.py` (install step `waystonebosses`) makes their health events keep
 `shieldedShare` (0.25) of such a hit and hint the attacker every `hintSeconds`. The same tool moves the Waystone III
 Frostreaver entrance off a tar tile (32965 to 32964,33236,7). At startup `ChaosWaystoneTiers.clearPaths` removes the
-items that block both tier IV boss levers: a fir tree at 33217,33237,7 and nine rope railings on y 33412, floor 8.
-Both were found by a walk check on the base map. Tests: `tests/waystone_tiers_test.lua`,
-`tools/patch_waystone_bosses_test.py`. The website and codex levels still come from the bounty pool. Balance numbers
+items that block both base IV boss levers: a fir tree at 33217,33237,7 and nine rope railings on y 33412, floor 8.
+
+Tests: `tests/waystone_tiers_test.lua`, `tools/install_waystone_items_test.py`, `tools/patch_waystone_hideout_test.py`,
+`tools/patch_waystone_bosses_test.py`, client `waystonelogic_test.lua`. The website and codex levels still come from the
+bounty pool. Balance numbers are first guesses. Not run in game.
+
+Modifiers: see "Waystone modifiers". `retierDrops` also rolls a dropped waystone's rarity inside a run, and the
+experience callback multiplies by the run's experience bonus.
+
+## Waystone modifiers (`waystone_mods.lua`, `waystone_mods_core.lua`, `waystone_mods_config.lua`, `lib/chaos_crafting.lua`, `tools/patch_waystone_hideout.py` part 4)
+
+Owner 2026-10-23: waystones work like the maps of the well-known action RPG: they take modifiers, each a buff for the
+monsters or a debuff for the players, paid with experience and loot.
+
+**Rarity.** Normal: no modifier. Magic: at most one prefix and one suffix. Rare: at most three of each (six). The
+rarity follows the counts (`W.rarityOf`). Prefixes buff the monsters, suffixes debuff the players. The 25 modifiers are
+the rift keys' (`rift_config.lua` mods copied by key, with their ranges, tiers I-V, groups and conflicts); the rift-only
+ones (packs, goblin, coffer, twin guardians, double loot, time, lives) are left out. Modifier tiers follow the item's
+tier through `modTiers` (tiers 1-5 roll I-III, 6-10 I-IV, 11-15 II-V).
+
+**Storage.** Custom attribute `ws_mods` ("key:value,...", `R.encodeMods`). A waystone with modifiers gets its own name
+("Rare Waystone Tier IV") and a description with the level, the modifiers and the rewards. Waystones are stackable, so
+`WM.single` splits the crafted one off its stack; writing an empty list removes the attributes, so it stacks again.
+
+**Orbs** (`lib/chaos_crafting.lua`, the crafting window lists waystones): Awakening Normal -> Magic (one modifier),
+Gilding Normal -> Rare (4-6), Grafting +1 on an open side (a full Magic one needs Fate first), Fate Magic -> Rare (the new
+modifier on the filled side) or rerolls a Rare one's values, Upheaval rerolls within the rarity, Unmaking removes one,
+Erasure back to Normal. Sockets and the other orbs refuse with a reason (`ws*`).
+
+**The device.** `tools/patch_waystone_hideout.py` part 4 replaces the base `player:removeItem(id, 1)` with
+`ChaosWaystoneMods.take`: the waystone the player used on the device within `chosenSeconds` (300), else the carried one
+of that tier with the fewest modifiers. Its modifiers go to `WT.startRun(area, serverId, mods)` -> `WM.begin`.
+
+**The run.** `WM.runs[map] = {mods, fx, bonus, untilAt}` lasts `runSeconds` (31 min) or until the next waystone opens
+the map. Effects run through `rift_core.lua` (`R.effects` with a shim config, `R.monsterHit`, `R.monsterTaken`):
+monster health and speed are applied once and taken off when a run without modifiers starts; Elites raise the magic /
+rare roll; brands, keen, festering, cinder, breach, dread on the boss; withering, parched, blight, hexes, ground and
+storm on the players in the map (a 1 s tick).
+
+**Rewards.** Each modifier's own `reward` (quantity, rarity, experience) plus `perMod.waystone` 12% waystone chance,
+capped at `bonusCap` (120 / 110 / 80 / 72). Quantity: `loot_config.lua` rateMult; rarity: `loot.lua` rarityFind;
+experience: `waystone_tiers.lua`; waystone: a second waystone chance in `retierDrops`. A waystone dropped inside a run
+rolls `dropRarity` (Normal 55, Magic 30, Rare 15); outside the maps it is Normal.
+
+Tests: `tests/waystone_mods_test.lua` (core and mocked engine), `tools/patch_waystone_hideout_test.py`. Balance numbers
 are first guesses. Not run in game.
+
+## Waystone Atlas (`waystone_atlas.lua`, `waystone_atlas_core.lua`, `waystone_atlas_config.lua`, `sql/chaos_waystone_atlas.sql`, client `game_riftatlas` waystone mode)
+
+Owner 2026-10-23: the waystone maps get their own atlas, as the maps of the well-known action RPG. Opcode 159, table
+`chaos_waystone_atlas` (created by the script when missing, as the Rift Atlas's), no storages. Window: Adventure >
+Waystone Atlas.
+
+**Points.** Killing a map's boss during a waystone run credits every player inside the map rectangle with the map x tier
+cell (`m<map>.<tier>`, only the five tiers of the map's band: 12 maps x 5 = 60) and, when the run's waystone was Rare,
+the Rare cell of the tier (`r<tier>`, 15). 75 points; the tree costs 108, so it can never be filled. Each cell counts
+once per character.
+
+**The tree.** 81 nodes, the Rift Atlas's shape and rules (`atlas_core.lua`: allocate next to a held node, one keystone,
+refund 250k gold or an Orb of Upheaval per node, reset at 80%). Core nodes count everywhere; the north, east and south
+branches count only in Low (tiers I-V), Middle (VI-X) and High (XI-XV) maps; the west branch (Cartography) everywhere.
+
+**Effects** (`WC.resolve`, caps in the config): item quantity (20), rarity (25), experience (20), waystone chance
+(30), modifier rewards (25, multiplies the modifiers' bonuses), tier up of dropped waystones (15), fewer Normal drops
+(35), a second waystone from the boss (50). Keystones: Pure Stone (+40% quantity and experience on Normal waystones,
+modifier rewards halved), Hunter's Vow (the boss drops two more waystones, half the others are lost), Ascendant Path
+(dropped waystones one tier higher, the boss drops none), Rare Pursuit (no Normal drops, -20% quantity).
+
+**Whose atlas.** The player who used the waystone (`WM.take` stores `opener`); `WT.startRun` calls `WA.beginRun` before
+`WM.begin`, so a run without modifiers also gets the atlas. The effects last as long as the run (`runSeconds`).
+Hooks: `WM.lootMult`, `WM.rarityFind`, `WM.expMult`, `WM.extraWaystone`, `WM.rollDrop` (`WC.dropRows`) and
+`waystone_tiers.lua` `retierDrops` (`WC.dropTier`, keystones on the boss's drops).
+
+Tests: `tests/waystone_atlas_test.lua` (core, mocked engine and the hooks). Balance numbers are first guesses. Not run in
+game.
 
 ## Rifts (`rift.lua`, `rift_core.lua`, `rift_config.lua`, `rift_layout_core.lua`, client `game_rift`)
 
@@ -20060,6 +20162,11 @@ Not run: `setup_gateway.sh` and `setup_backend_firewall.sh` for real (apt, syste
 which render and check every file, were run), a gateway on a real VPS with real DDoS filtering, the Windows build.
 
 ## Display scale (`display_scale.lua`, `display_scale_core.lua`, `display_scale_config.lua`, engine `src-patches/0037-display-scale.patch`, client `game_chaosscale`)
+
+**Off since 2026-10-23** (owner: "Tire, por favor, a inflação artificial de números que a gente colocou"): the curve is
+`{{1, 1}}`, x1 at every level, so every player sees the internal numbers. The code, the engine patch and the client
+module stay (a factor of 1 changes nothing and needs no new client build); the tests run it on the old curve and check
+that the shipped curve is x1. The rest of this section describes the scale as it was.
 
 Owner request (2026-10-13): end-game damage in the millions, as a **visual** scale. Every combat number a player sees is
 the internal number x a factor of a level; the internal numbers (health, damage, the balance of

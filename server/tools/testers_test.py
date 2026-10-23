@@ -108,13 +108,16 @@ run = {'started': 'a', 'ended': 'b', 'bots': 3, 'logins': 4, 'deaths': 1,
                  'lua:x.lua:5: boom': {'bot': 'Tester Abe', 'did': 'opcodes'}},
        'coverage': {'autoloot': {'tried': 3, 'ok': 3, 'errors': 0}, 'arena': {'why': 'needs two parties'},
                     'bazaar': {'why': 'out of scope: trades with real players'},
-                    'charms': {'tried': 29, 'ok': 0, 'errors': 0}}}
+                    'charms': {'tried': 29, 'ok': 0, 'errors': 0},
+                    'veiled': {'tried': 4, 'ok': 0, 'errors': 0, 'refused': 2}}}
 r = TC.build_report(run, p)
 for want in ('2x Lua Script Error', 'Anomalies (2)', 'hit taken over 3x max health', '9x exhausted (expected in play)',
              '2x cannot use object (first: Tester Abd after depot)', '1x x.lua:5: boom (first: Tester Abe after opcodes)',
              '1x You have been idle', 'shop', 'never reached: needs two parties'):
     ok(want in r, 'the report has %r' % want)
 ok('autoloot' not in r, 'fine systems are not listed')
+ok('no answer, no error: charms' in r, 'sent but never answered: one line')
+ok('veiled' in r and 'veiled' not in r.split('no answer, no error:')[1], 'a refused system keeps its own line')
 ok('never reached: out of scope: trades with real players: bazaar' in r, 'out of scope systems share one line per reason')
 ok('charms' in r and '(1 systems fine: not listed)' in r, 'a system never ok is; the count')
 

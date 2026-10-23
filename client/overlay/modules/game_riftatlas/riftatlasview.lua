@@ -308,6 +308,7 @@ function V.gridRows(tree, done)
   local rows = {}
   local g = type(tree) == 'table' and tree.grid or nil
   if not g then return rows end
+  if type(g.rows) == 'table' then return V.listRows(g.rows, done) end
   local ix = V.index(tree)
   local P = g.points or {}
   local tiers = num(g.tiers)
@@ -340,6 +341,21 @@ function V.gridRows(tree, done)
       tip = string.format('%s: %s (+%d)', tostring(o.b or o.n), done[key] and 'slain' or 'not yet', num(P.omen)) }
   end
   rows[#rows + 1] = omen
+  return rows
+end
+
+-- a grid the server sends as rows (the Waystone Atlas: {label, color, cells {k, n, c = column, p = points, co = colour}})
+function V.listRows(list, done)
+  local rows = {}
+  for _, r in ipairs(list) do
+    local row = { label = tostring(r.label or ''), color = r.color or '#d6c9ae', kind = 'cell', cells = {} }
+    for _, c in ipairs(type(r.cells) == 'table' and r.cells or {}) do
+      local key = tostring(c.k)
+      row.cells[#row.cells + 1] = { key = key, done = done[key] == true, col = num(c.c), color = c.co,
+        tip = string.format('%s: %s (+%d)', tostring(c.n or key), done[key] and tr('done') or tr('not yet'), num(c.p)) }
+    end
+    rows[#rows + 1] = row
+  end
   return rows
 end
 

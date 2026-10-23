@@ -25,6 +25,22 @@ end
 dofile("data/scripts/chaos/display_scale_core.lua")
 local DS = ChaosDisplayScale
 local cfg = dofile("data/scripts/chaos/display_scale_config.lua")
+-- owner 2026-10-23: the scale is off, every level sees the internal numbers
+DS.configure(cfg)
+for _, level in ipairs({1, 100, 300, 1000, 1500, 2500}) do
+	if DS.factor(level) ~= 1 then
+		error("the shipped curve is not x1 at level " .. level)
+	end
+end
+-- the code stays: it is tested on the old curve (the engine glue display_scale.lua reads it from this file too)
+local realDofile = dofile
+dofile = function(path)
+	if path == "data/scripts/chaos/display_scale_config.lua" then
+		return cfg
+	end
+	return realDofile(path)
+end
+cfg.curve = {{100, 1}, {1000, 1000}, {1500, 10000}}
 DS.configure(cfg)
 
 -- ============================================================================ part 1: the curve and the numbers

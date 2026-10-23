@@ -65,29 +65,37 @@ C.config = {
 	orbs = {
 		{key = "transmutation", id = 29851, name = "Orb of Awakening",
 			text = "Turns a normal item into a Common or Uncommon one with random modifiers (tiers by its item level).",
-			keyText = "Gives a Rift Key without modifiers one modifier."},
+			keyText = "Gives a Rift Key without modifiers one modifier.",
+			wsText = "Turns a Normal waystone into a Magic one with one modifier."},
 		{key = "alchemy", id = 24691, name = "Orb of Gilding",
 			text = "Turns a normal item into a Magic, Rare or Legendary one with random modifiers (tiers by its item level).",
-			keyText = "Gives a Rift Key without modifiers two or three modifiers."},
+			keyText = "Gives a Rift Key without modifiers two or three modifiers.",
+			wsText = "Turns a Normal waystone into a Rare one with four to six modifiers."},
 		{key = "exalted", id = 29855, name = "Orb of Grafting",
 			text = "Adds one random modifier on an open prefix or suffix of an item with a rarity.",
-			keyText = "Adds one modifier to a Rift Key (three at most)."},
+			keyText = "Adds one modifier to a Rift Key (three at most).",
+			wsText = "Adds one modifier to a waystone (Magic: one prefix and one suffix; Rare: three of each)."},
 		{key = "annulment", id = 24697, name = "Orb of Unmaking",
 			text = "Removes one random modifier that is not bound.",
-			keyText = "Removes one random modifier of a Rift Key."},
+			keyText = "Removes one random modifier of a Rift Key.",
+			wsText = "Removes one random modifier of a waystone."},
 		{key = "scouring", id = 24688, name = "Orb of Erasure",
 			text = "Removes the rarity, every modifier and every bind: a normal item again (item level and quality stay).",
-			keyText = "Removes every modifier of a Rift Key."},
+			keyText = "Removes every modifier of a Rift Key.",
+			wsText = "Turns a waystone back into a Normal one."},
 		{key = "chaos", id = 29856, name = "Orb of Upheaval",
 			text = "Rerolls every modifier that is not bound (rarity, item level and quality stay).",
-			keyText = "Rerolls the modifiers of a Rift Key (one to three new ones)."},
+			keyText = "Rerolls the modifiers of a Rift Key (one to three new ones).",
+			wsText = "Rerolls the modifiers of a waystone, keeping it Magic or Rare."},
 		{key = "divine", id = 29857, name = "Orb of Fate",
 			text = "Raises the rarity one step with new modifiers (Legendary: a small chance of Divine); item level and quality stay. Not on an item with a bound modifier.",
-			keyText = "Rerolls the values of a Rift Key's modifiers inside their ranges."},
+			keyText = "Rerolls the values of a Rift Key's modifiers inside their ranges.",
+			wsText = "Turns a Magic waystone into a Rare one with one more modifier; on a Rare one rerolls the values."},
 		-- gems and sockets (chaos_gems_config.lua socketOrb; install_gems.py names the rune stone)
 		{key = "sockets", id = ChaosGems.config.socketOrb.id, name = ChaosGems.config.socketOrb.name,
 			text = ChaosGems.config.socketOrb.text,
-			keyText = "Rift Keys have no sockets."}
+			keyText = "Rift Keys have no sockets.",
+			wsText = "Waystones have no sockets."}
 	},
 
 	-- the rarities a craft can give, in order (ChaosRarity: Common, Uncommon, Magic, Rare, Legendary, Divine; Unique is
@@ -644,6 +652,12 @@ C.reasons = {
 	keyNothing = "There is no modifier left that this Rift Key could get.",
 	keySockets = "Rift Keys have no sockets.",
 	keyOrb = "This orb does not work on Rift Keys.",
+	wsNeedNormal = "This orb works only on a Normal waystone (no modifiers).",
+	wsNoMods = "This waystone has no modifiers.",
+	wsFull = "This waystone has every modifier a Rare waystone can carry.",
+	wsMagicFull = "A Magic waystone carries one prefix and one suffix: an Orb of Fate makes it Rare.",
+	wsSockets = "Waystones have no sockets.",
+	wsOrb = "This orb does not work on waystones.",
 	nothingToRaise = "No modifier of this item can rise: bound ones stay and the top tier is the limit.",
 	crownTop = "This item is at the highest rarity a Crown Orb can lift it to."
 }
@@ -657,6 +671,9 @@ function C.pickList(orbKey, item)
 	if C.isRiftKey(item) then
 		return orb.keyPick and orb.keyPick(item) or {}
 	end
+	if C.isWaystone(item) then
+		return {}
+	end
 	return orb.pick and orb.pick(item) or {}
 end
 
@@ -666,6 +683,10 @@ function C.check(orbKey, item, opts)
 	local orb = C.orbByKey[orbKey]
 	if not orb then
 		return false, "unknownOrb"
+	end
+	if item and C.isWaystone(item) then
+		local WM = ChaosWaystoneMods
+		return ChaosWaystoneModsCore.orbCheck(WM.config, orbKey, WM.read(item))
 	end
 	if item and C.isRiftKey(item) then
 		if orb.check and not orb.keyCheck then
@@ -1257,6 +1278,9 @@ function C.apply(orbKey, item, opts)
 		return false, C.reasons[reason] or reason
 	end
 	local orb = C.orbByKey[orbKey]
+	if C.isWaystone(item) then
+		return C.waystoneApply(orbKey, item)
+	end
 	if C.isRiftKey(item) then
 		if orb.keyApply then
 			return orb.keyApply(item, opts)
@@ -1490,6 +1514,10 @@ end
 C.tierSpan = tierSpan
 
 function C.preview(orbKey, item)
+	if C.isWaystone(item) then
+		local WM = ChaosWaystoneMods
+		return ChaosWaystoneModsCore.orbPreview(WM.config, orbKey, WM.read(item))
+	end
 	if C.isRiftKey(item) then
 		local key = C.readKey(item)
 		local n, max = #key.mods, C.keyMaxMods()
@@ -1568,6 +1596,10 @@ end
 
 -- a short signature of the item's rarity state (the bench refuses an orb when the item changed in between)
 function C.signature(item)
+	if C.isWaystone(item) then
+		local ok, mods = pcall(function() return item:getCustomAttribute(ChaosWaystoneMods.config.attribute) end)
+		return string.format("%d;ws;%s", item:getId(), tostring(ok and mods or ""))
+	end
 	if C.isRiftKey(item) then
 		return string.format("%d;key;%s;%s", item:getId(), tostring(custom(item, "rift_tier")), tostring(custom(item, "rift_mods")))
 	end
@@ -1588,6 +1620,9 @@ end
 -- everything the bench shows about an item. mods = [{group, text, tier, side, lo, hi}] (prefixes first),
 -- prefixes / suffixes = {n, max}
 function C.describe(item, opts)
+	if C.isWaystone(item) then
+		return C.describeWaystone(item, opts)
+	end
 	if C.isRiftKey(item) then
 		return C.describeKey(item, opts)
 	end
@@ -1696,6 +1731,81 @@ function C.describeKey(item, opts)
 		mods = list,
 		maxMods = C.keyMaxMods(),
 		rewards = string.format("+%d%% quantity, +%d%% rarity, +%d%% experience", b.quantity, b.rarity, b.experience),
+		unique = false,
+		orbs = orbs,
+		preview = preview,
+		sig = C.signature(item)
+	}
+end
+
+-- ---------------------------------------------------------------------------------------------------------------
+-- waystones (data/scripts/chaos/waystone_mods.lua): the maps of Path of Exile. The base orbs change a waystone's
+-- modifiers by waystone_mods_core.lua W.orbApply (Awakening Normal -> Magic, Gilding Normal -> Rare, Grafting one more,
+-- Fate Magic -> Rare or new values, Upheaval new ones, Unmaking one off, Erasure Normal); the other orbs refuse.
+-- A waystone of a stack comes off it first (ChaosWaystoneMods.single). Needs waystone_mods.lua loaded.
+-- ---------------------------------------------------------------------------------------------------------------
+function C.isWaystone(item)
+	local WM = ChaosWaystoneMods
+	if not WM or not WM.isWaystone or not ChaosWaystoneModsCore or not item then
+		return false
+	end
+	local ok, res = pcall(WM.isWaystone, item)
+	return ok and res or false
+end
+
+function C.waystoneApply(orbKey, item)
+	local WM, W = ChaosWaystoneMods, ChaosWaystoneModsCore
+	local cfg = WM.config
+	local ws = WM.read(item)
+	local ok, res = W.orbApply(cfg, orbKey, ws, C.random)
+	if not ok then
+		return false, C.reasons[res] or res
+	end
+	local okT, top = pcall(function() return item:getTopParent() end)
+	local player = okT and top and top.isPlayer and top:isPlayer() and top or nil
+	item = WM.single(item, player)
+	WM.write(item, res)
+	local b = W.bonuses(cfg, res.mods, res.tier)
+	local parts = {}
+	for _, m in ipairs(res.mods) do
+		parts[#parts + 1] = W.modText(cfg, m)
+	end
+	local text = string.format("%s: %s. Rewards: %s.", W.itemName(cfg, res),
+		#parts > 0 and table.concat(parts, "; ") or "no modifiers", W.rewardText(b))
+	return true, {item = item, text = text, waystone = res}
+end
+
+function C.describeWaystone(item, opts)
+	local WM, W = ChaosWaystoneMods, ChaosWaystoneModsCore
+	local cfg = WM.config
+	local ws = WM.read(item)
+	local R = ChaosRiftCore
+	local list = {}
+	for _, m in ipairs(ws.mods) do
+		local def = R.modDef(cfg, m.key)
+		list[#list + 1] = {group = "waystone", key = tostring(m.key), text = W.modText(cfg, m), side = def and def.side}
+	end
+	local orbs, preview = {}, {}
+	for _, orb in ipairs(C.config.orbs) do
+		local ok, reason = C.check(orb.key, item)
+		orbs[orb.key] = ok and "" or ((opts and opts.codes and C.reasons[reason]) and reason or (C.reasons[reason] or reason))
+		preview[orb.key] = ok and C.preview(orb.key, item) or ""
+	end
+	local r = W.rarityOf(cfg, ws.mods)
+	local level = ChaosWaystoneTiersCore.tierLevel(ChaosWaystoneTiers and ChaosWaystoneTiers.config or {}, ws.tier)
+	return {
+		id = item:getId(),
+		kind = "riftkey", -- the bench shows it as a key: a list of modifiers and the rewards
+		waystone = true,
+		pick = {},
+		name = W.itemName(cfg, ws),
+		tier = ws.tier,
+		rarity = 0,
+		rarityName = W.rarityName(cfg, r) .. " Waystone",
+		level = level or 0,
+		mods = list,
+		maxMods = cfg.key.maxMods,
+		rewards = W.rewardText(W.bonuses(cfg, ws.mods, ws.tier)),
 		unique = false,
 		orbs = orbs,
 		preview = preview,

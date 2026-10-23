@@ -24,7 +24,7 @@ local DS = ChaosDisplayScale
 local floor, exp, log = math.floor, math.exp, math.log
 
 local DEFAULTS = {
-	curve = {{100, 1}, {1000, 1000}, {1500, 10000}},
+	curve = {{1, 1}}, -- off (owner 2026-10-23): x1 at every level
 	jsonMax = 9007199254740992,
 	opcode = 157,
 	tableLevels = 1500,

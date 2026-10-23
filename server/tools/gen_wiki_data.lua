@@ -1932,18 +1932,6 @@ function W.facts(D, vocs, spells, T, typeCount)
 	f["arena.on"] = D.arena.enabled ~= false
 	f["arena.minLevel"] = D.arena.minLevel
 	f["multiclient.perIp"] = C0.multiClient.maxPerIp
-	-- the display scale (display_scale_config.lua, server/README.md "Display scale"): the wiki quotes the internal
-	-- numbers (what a character up to the first point's level sees); the FAQ gives the factor of a few levels
-	dofile("data/scripts/chaos/display_scale_core.lua")
-	local DSc = ChaosDisplayScale
-	DSc.configure(D.scale)
-	f["scale.from"] = D.scale.curve[1][1]
-	for _, level in ipairs({200, 300, 500, 700, 1000}) do
-		f["scale.l" .. level] = num(DSc.factor(level))
-	end
-	local capPoint = D.scale.curve[#D.scale.curve]
-	f["scale.capLevel"] = capPoint[1]
-	f["scale.cap"] = num(capPoint[2])
 	-- reports
 	f["reports.minLevel"] = D.antibot.reports.minLevel or 8
 	f["reports.perDay"] = D.antibot.reports.perDay

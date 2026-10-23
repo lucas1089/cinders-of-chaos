@@ -186,5 +186,48 @@ if ok1 then
   ok(real.grid.swiftTiers[15] > real.grid.swiftTiers[1], 'tier 15 gets more time than tier 1')
 end
 
+-- the Waystone Atlas: the grid comes as rows, each cell at its tier's column
+local wtree = { grid = { tiers = 15, rows = {
+  { label = 'Map I', color = '#d6c9ae', cells = { { k = 'm1.1', n = 'Drowned Grotto, Tier I', c = 1, p = 1, co = '#7fc86a' },
+    { k = 'm5.6', n = 'Thornfield, Tier VI', c = 6, p = 1, co = '#e8b84a' } } },
+  { label = 'Rare', color = '#f6cf72', cells = { { k = 'r1', n = 'Rare, Tier I', c = 1, p = 1 } } } } } }
+local wr = V.gridRows(wtree, { ['m5.6'] = true })
+eq(#wr, 2, 'waystone rows')
+eq(wr[1].cells[2].col, 6, 'cell column')
+eq(wr[1].cells[2].color, '#e8b84a', 'cell band colour')
+ok(wr[1].cells[2].done and not wr[1].cells[1].done, 'waystone cell done')
+ok(wr[1].cells[2].tip:find('Thornfield, Tier VI: done (+1)', 1, true), 'waystone tip')
+eq(select(2, V.gridCount(wr)), 3, 'waystone grid total')
+
+local okW = pcall(dofile, dir .. '../../../../server/data/scripts/chaos/waystone_atlas_config.lua')
+if okW then
+  local wcfg = dofile(dir .. '../../../../server/data/scripts/chaos/waystone_atlas_config.lua')
+  local tcfg = dofile(dir .. '../../../../server/data/scripts/chaos/waystone_tiers_config.lua')
+  local S = dir .. '../../../../server/data/scripts/chaos/'
+  if not (ChaosAtlasCore and ChaosAtlasCore.canAllocate) then dofile(S .. 'atlas_core.lua') end
+  local WC = dofile(S .. 'waystone_atlas_core.lua')
+  local real = WC.treePayload(wcfg, tcfg)
+  local wix = V.index(real)
+  eq(#wix.list, 81, 'waystone tree indexed')
+  local known = {}
+  for _, gl in ipairs(V.GLYPHS) do known[gl] = true end
+  for _, n in ipairs(wix.list) do
+    if n.k ~= 'start' then
+      ok(known[V.glyphOf(wix, n)] ~= nil, 'waystone glyph ' .. tostring(n.g) .. ' of ' .. n.n)
+    end
+  end
+  for _, b in ipairs(real.branches) do
+    ok(wix.setOf[b.th] ~= nil, 'waystone branch sheet ' .. b.k)
+  end
+  local rr = V.gridRows(real, {})
+  eq(#rr, 5, 'real waystone rows')
+  eq(select(2, V.gridCount(rr)), 75, 'real waystone cells')
+  for _, r in ipairs(rr) do
+    for _, c in ipairs(r.cells) do
+      ok(c.col >= 1 and c.col <= 15, 'column of ' .. c.key)
+    end
+  end
+end
+
 print(string.format('riftatlasview_test: %d checks, %d failed', checks, fails))
 if fails > 0 then os.exit(1) end

@@ -173,20 +173,24 @@ local function sendInfo(player)
 	local orbs = {}
 	for _, orb in ipairs(cfg.orbs) do
 		orbs[#orbs + 1] = {key = orb.key, id = orb.id, clientId = clientIdOf(orb.id), name = orb.name, text = orb.text,
-			keyText = orb.keyText}
+			keyText = orb.keyText, wsText = orb.wsText}
 	end
 	Chaos.send(player, OPCODE, "info", {orbs = orbs, reasons = C.reasons})
 end
 
--- gear and Rift Keys
+-- gear, Rift Keys and waystones
 local function craftable(item)
-	return C.isGear(item) or C.isRiftKey(item)
+	return C.isGear(item) or C.isRiftKey(item) or C.isWaystone(item)
 end
 
 local function itemList(player)
 	local out = {}
 	walk(player, function(item, path)
-		if #out < MAX_LIST and not item:isContainer() and C.isRiftKey(item) then
+		if #out < MAX_LIST and not item:isContainer() and C.isWaystone(item) then
+			local view = C.describeWaystone(item)
+			out[#out + 1] = {path = path, id = item:getId(), clientId = clientIdOf(item:getId()), name = view.name,
+				rarity = 0, rarityName = view.rarityName, key = true}
+		elseif #out < MAX_LIST and not item:isContainer() and C.isRiftKey(item) then
 			local view = C.describeKey(item)
 			out[#out + 1] = {path = path, id = item:getId(), clientId = clientIdOf(item:getId()), name = view.name,
 				rarity = 0, rarityName = "Rift Key", key = true}
