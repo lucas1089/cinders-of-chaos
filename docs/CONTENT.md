@@ -110,7 +110,7 @@ docs/MAP_GUIDE.md "Content plans"). Monsters by count, the most first; Parties h
 | hollowmaw_grotto | 680-795 | cave | Dreamgorger, Shroud Brood, Ironbound Troll, Blight Hound, Swamp Snapper | 11 | hollowmaw_warren |
 | leechwater_fen | 695-810 | swamp | Dreamgorger, Gallows Oak, Loricate Orger, Ironmask Taskmaster, Frost Maiden | 12 | - |
 | dreadmourn_crypt | 710-825 | crypt | Rootbound Pilgrim, Royal Man, Frost Maiden, Tundra Troll, Loricate Orger | 12 | dreadmourn_vault |
-| gallowroot_wilds | 725-840 | forest | Loricate Orger, Ironmask Taskmaster, Tundra Troll, Ironmask Brander, Royal Man | 11 | - |
+| gallowroot_wilds | 630-770 | forest | Grove Keeper, Thornveil Wraith, Elite Spider, Cursed Ape, Gallows Oak | 11 | - |
 | scorchpit_delve | 740-855 | lava | Gashrunner, Tundra Troll, Royal Man, Frost Maiden, Caged Convict | 11 | scorchpit_furnace |
 | glacierfang_shelf | 755-870 | ice | Rootbound Pilgrim, Gashrunner, Azure Dragon, Dark Sorcerer, Ironmask Bannerman | 11 | - |
 | bonewright_galleries | 770-885 | catacomb | Ironmask Brander, Azure Dragon, Rootbound Pilgrim, Chained Runt, Golden Lord | 12 | bonewright_ossuary_cache |
@@ -121,7 +121,7 @@ docs/MAP_GUIDE.md "Content plans"). Monsters by count, the most first; Parties h
 | mildewveil_sanctum | 845-960 | sanctum | Golden Lord, Reedgrave, Jungle Beasts, Blight Bloom, Lady bug | 11 | - |
 | deepgrudge_warrens | 860-975 | cave | Crypt Crab, Lacewing Moth, Bloom Husk, Reedgrave, Lady bug | 12 | deepgrudge_crawl |
 | sorrowfen_marsh | 875-990 | swamp | Crypt Crab, Leechwing, Deepforge Fiend, Bloom Husk, Blight Bloom | 11 | - |
-| shroudhallow_tomb | 890-1005 | crypt | Jungle Beasts, Geode Seer, Reedgrave, Deepforge Fiend, Rimecairn | 12 | shroudhallow_stair |
+| shroudhallow_tomb | 900-1100 | crypt | Ice Lich, Dawn Strayer, Acid Hydra, Crypt Crab, Geode Seer | 12 | shroudhallow_stair |
 | hagthorn_weald | 905-1020 | forest | Lady bug, Bloom Husk, Geode Seer, Elite Tidecrest Serpent, Elite Twisted Shaper | 12 | - |
 | pyreglass_chasm | 920-1035 | lava | Deepforge Fiend, Quicksilver Wraith, Elite Twisted Shaper, Rimecairn, Dawn Strayer | 12 | pyreglass_pools |
 | rimeblood_glacier | 935-1050 | ice | Geode Seer, Rustguard, Ice Lich, Rimecairn, Quicksilver Wraith | 12 | - |
@@ -131,11 +131,19 @@ docs/MAP_GUIDE.md "Content plans"). Monsters by count, the most first; Parties h
 | wormcoil_depths | 1250-1400 | cave | Nailcrown Regent, Maw Grub, Corpselight Lurker, Limb Hoarder, Gorebristle, Blightcrown Matron | 12 | wormcoil_burrow_hoard |
 | shiverspine_ridge | 1350-1500 | ice | Rimeshroud Revenant, Bonepicker, Gorebristle, Gloamfang Ravager, Cinderskull Reaver, Ashveil Hierarch | 11 | shiverspine_shelf |
 | hushbone_barrows | 1450-1600 | crypt, 2 floors | Bonepicker, Ashveil Hierarch, Hollowhorn, Cinderskull Reaver, Bloodantler Fiend, Rimeshroud Revenant | 24 | hushbone_chantry |
-| carrionwood | 1550-1700 | forest | Bloodantler Fiend, Bonepicker, Siege Behemoth, Hollowhorn, Oathbroken Colossus, Ashveil Hierarch | 12 | carrionwood_brake_hoard |
+| carrionwood | 1350-1650 | forest | Rimeshroud Revenant, Bonepicker, Ashveil Hierarch, Cinderskull Reaver, Bloodantler Fiend | 12 | carrionwood_brake_hoard |
 | dreadcoffer_vaults | 1625-1775 | vault, 2 floors | Oathbroken Colossus, Siege Behemoth, Cinderhorn Juggernaut, Gnawbone Swarm, Ironmask Warbreaker, Hollowhorn | 24 | dreadcoffer_counting |
 | paleflame_sanctum | 1700-1850 | sanctum, 2 floors | Gnawbone Swarm, Wraithbone Stalker, Oathbroken Colossus, Siege Behemoth, Ironmask Warbreaker, Cinderhorn Juggernaut | 24 | paleflame_altar |
-| blightmaw_bog | 1775-1925 | swamp | Gnawbone Swarm, Wraithbone Stalker, Gnarlback, Mirecoil Wyrm, Ironmask Warbreaker | 11 | blightmaw_sink_stash |
+| blightmaw_bog | 1800-2200 | swamp | Gnarlback, Ironmask Warbreaker, Mirecoil Wyrm, Pyre Stork, Pyrewing Tyrant | 11 | blightmaw_sink_stash |
 | worldscar_abyss | 1850-2000 | abyss, 2 floors | Mirecoil Wyrm, Gnarlback, Gnawbone Swarm, Ironmask Warbreaker, Pyrewing Tyrant, Pyre Stork | 24 | worldscar_terrace_cache |
+| ironhorn_slagworks | 155-185 | lava | Ironhorn Alchemist, Ironhorn Forgepriest, Ironhorn Brute, Lava Golem, Burning Gladiator | 12 | ironhorn_slag_strongbox |
+| venomthread_fen | 165-195 | swamp | Venom Spider, Giant Hornet, Cobra Vizier, Reflect Spider, Grimeleech | 11 | - |
+| azuregate_reliquary | 180-220 | sanctum | Azure Guard, Shadowreaper, Knowledge Elemental, Emerald Mage, Orcaruz | 11 | - |
+| drownbell_depths | 196-240 | abyss | Aberration of the Depths, Ink Blob, Frost Larva, Fenmaw, Ruby Archer | 11 | - |
+| wanwick_cloister | 370-430 | crypt | Distorted Phantom, Capricious Phantom, Vibrant Phantom, Mould Phantom, Infernal Phantom | 12 | wanwick_alms_box |
+| brinescar_strand | 390-450 | waste | Saltkin Raider, Saltkin Looter, Saltkin Plunderer, Bony Sea Devil | 12 | brinescar_wreck_cache |
+| rustcog_warrens | 420-480 | cave | Mountain Goblin, Enforced Mountain Goblin, Mechanic Goblin, Bat Goblin, Mounted Warrior Goblin | 11 | - |
+| mossgrave_tangle | 450-506 | forest | Rootling Amber Shaper, Rootling Bug Tracker, Rootling Nutshell, Mirethorn Hexer, Waterglow Conjurer | 11 | - |
 
 Since 2026-10-14 each is four times the first draft (owner: "Deixe-as 4x maior"; "Todas devem ser grandes e cheias de
 monstros"): about 3,900-6,800 walkable tiles and 130-220 monsters each, 3.2-3.5 monsters per 100 walkable tiles.

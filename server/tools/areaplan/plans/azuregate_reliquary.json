@@ -1,0 +1,432 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "azuregate_reliquary",
+  "name": "Azuregate Reliquary",
+  "biome": "sanctum",
+  "size": [
+    178,
+    126
+  ],
+  "floors": 1,
+  "level": [
+    180,
+    220
+  ],
+  "seed": 39103,
+  "origin": {
+    "x": 16232,
+    "y": 15156,
+    "z": 9
+  },
+  "decoration": "dense",
+  "light": "dim",
+  "zones": [
+    {
+      "id": "pilgrim_camp",
+      "floor": 1,
+      "size": "small",
+      "place": "west",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "rotting_sanctum",
+      "floor": 1,
+      "size": [
+        24,
+        17
+      ],
+      "place": "north"
+    },
+    {
+      "id": "blighted_cellar",
+      "floor": 1,
+      "size": [
+        24,
+        16
+      ],
+      "place": "northeast"
+    },
+    {
+      "id": "mossy_pool",
+      "floor": 1,
+      "size": "huge",
+      "place": "east"
+    },
+    {
+      "id": "sour_cloister",
+      "floor": 1,
+      "size": "huge",
+      "place": "southeast"
+    },
+    {
+      "id": "tainted_cell",
+      "floor": 1,
+      "size": [
+        26,
+        17
+      ],
+      "place": "south"
+    },
+    {
+      "id": "moldy_chapel",
+      "floor": 1,
+      "size": "huge",
+      "place": "southwest"
+    },
+    {
+      "id": "festering_grotto",
+      "floor": 1,
+      "size": "huge",
+      "place": "northwest"
+    },
+    {
+      "id": "creeping_well",
+      "floor": 1,
+      "size": [
+        32,
+        20
+      ],
+      "place": "center"
+    },
+    {
+      "id": "damp_shrine",
+      "floor": 1,
+      "size": [
+        20,
+        15
+      ]
+    },
+    {
+      "id": "spore_altar",
+      "floor": 1,
+      "size": [
+        21,
+        14
+      ]
+    },
+    {
+      "id": "withered_nave",
+      "floor": 1,
+      "size": "large"
+    }
+  ],
+  "paths": [
+    {
+      "from": "rotting_sanctum",
+      "to": "blighted_cellar",
+      "width": 3
+    },
+    {
+      "from": "blighted_cellar",
+      "to": "mossy_pool",
+      "width": 3
+    },
+    {
+      "from": "mossy_pool",
+      "to": "sour_cloister",
+      "width": 3
+    },
+    {
+      "from": "sour_cloister",
+      "to": "tainted_cell",
+      "width": 3
+    },
+    {
+      "from": "tainted_cell",
+      "to": "moldy_chapel",
+      "width": 3
+    },
+    {
+      "from": "moldy_chapel",
+      "to": "pilgrim_camp",
+      "width": 3
+    },
+    {
+      "from": "pilgrim_camp",
+      "to": "festering_grotto",
+      "width": 3
+    },
+    {
+      "from": "festering_grotto",
+      "to": "rotting_sanctum",
+      "width": 3
+    },
+    {
+      "from": "rotting_sanctum",
+      "to": "creeping_well",
+      "width": 3
+    },
+    {
+      "from": "mossy_pool",
+      "to": "creeping_well",
+      "width": 3
+    },
+    {
+      "from": "tainted_cell",
+      "to": "creeping_well",
+      "width": 3
+    },
+    {
+      "from": "pilgrim_camp",
+      "to": "creeping_well",
+      "width": 4
+    },
+    {
+      "from": "moldy_chapel",
+      "to": "damp_shrine",
+      "width": 3
+    },
+    {
+      "from": "damp_shrine",
+      "to": "pilgrim_camp",
+      "width": 3
+    },
+    {
+      "from": "pilgrim_camp",
+      "to": "spore_altar",
+      "width": 3
+    },
+    {
+      "from": "spore_altar",
+      "to": "festering_grotto",
+      "width": 3
+    },
+    {
+      "from": "blighted_cellar",
+      "to": "withered_nave",
+      "width": 3
+    },
+    {
+      "from": "withered_nave",
+      "to": "mossy_pool",
+      "width": 3
+    }
+  ],
+  "entry": {
+    "zone": "pilgrim_camp"
+  },
+  "exit": {
+    "zone": "pilgrim_camp"
+  },
+  "spawns": [
+    {
+      "zone": "rotting_sanctum",
+      "monster": "Azure Guard",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "rotting_sanctum",
+      "monster": "Orcaruz",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "rotting_sanctum",
+      "monster": "Shadowreaper",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "blighted_cellar",
+      "monster": "Shadowreaper",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "blighted_cellar",
+      "monster": "Emerald Mage",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "blighted_cellar",
+      "monster": "Azure Guard",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "mossy_pool",
+      "monster": "Orcaruz",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "mossy_pool",
+      "monster": "Knowledge Elemental",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "mossy_pool",
+      "monster": "Shadowreaper",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sour_cloister",
+      "monster": "Emerald Mage",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sour_cloister",
+      "monster": "Azure Guard",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sour_cloister",
+      "monster": "Shadowreaper",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "tainted_cell",
+      "monster": "Knowledge Elemental",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "tainted_cell",
+      "monster": "Shadowreaper",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "tainted_cell",
+      "monster": "Emerald Mage",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "moldy_chapel",
+      "monster": "Azure Guard",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "moldy_chapel",
+      "monster": "Orcaruz",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "moldy_chapel",
+      "monster": "Knowledge Elemental",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "festering_grotto",
+      "monster": "Shadowreaper",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "festering_grotto",
+      "monster": "Emerald Mage",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "festering_grotto",
+      "monster": "Azure Guard",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "damp_shrine",
+      "monster": "Orcaruz",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "damp_shrine",
+      "monster": "Knowledge Elemental",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "damp_shrine",
+      "monster": "Shadowreaper",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "spore_altar",
+      "monster": "Emerald Mage",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "spore_altar",
+      "monster": "Azure Guard",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "withered_nave",
+      "monster": "Knowledge Elemental",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "withered_nave",
+      "monster": "Shadowreaper",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "creeping_well",
+      "monster": "Azure Guard",
+      "count": 13,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "creeping_well",
+      "monster": "Orcaruz",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "creeping_well",
+      "monster": "Knowledge Elemental",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    }
+  ],
+  "notes": "Content plan (O139 progression fill, 2026-10-23): a sanctum hunt for levels 180-220 on floor 7 of the teleport hall (server/README.md \"Hall order\", \"Progression smoothness (O135)\"). 11 hunting zones; monsters Azure Guard, Shadowreaper, Knowledge Elemental, Emerald Mage, Orcaruz. Display monster: Azure Guard."
+}

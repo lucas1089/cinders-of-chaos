@@ -68,7 +68,7 @@ A step by step path for new players: where to hunt in each level bracket, which 
 
 ## Level 150-300: veteran
 
-- **Where to hunt.** Fleshcarver (145-155), Blackblade (150-300), Emerald Mage (180-270), Bonechoir Catacomb (200-290), Sulphur Gallery (215-299) and deathrattle (230-300).
+- **Where to hunt.** Fleshcarver (145-155), Ironhorn Slagworks (155-185), Venomthread Fen (165-195), Azuregate Reliquary (180-220), Drownbell Depths (196-240), Blackblade (150-300), Emerald Mage (180-270), Bonechoir Catacomb (200-290), Sulphur Gallery (215-299) and deathrattle (230-300).
 - **Rifts.** Tier 2 at level {{rift.level2}}, tier 3 at {{rift.level3}}. Bring a party: more players, more reward.
 ::: if pocket.on
 - **Pocket bosses.** Adventure > Boss Spawns, **Pocket** button: a private copy of a boss, {{pocket.charges}} charges a day. Raid bosses from level {{pocket.raidLevel}}, island bosses from {{pocket.islandLevel}}. Vessa Hollowmark in the market of the teleport room looks after them.
@@ -80,7 +80,7 @@ A step by step path for new players: where to hunt in each level bracket, which 
 
 ## Level 300-500: world bosses
 
-- **Where to hunt.** Aeliana (280-310), grothar (300-335), fangclaw (305-390), Hollow Crypt (300-400) and, close to 500, Widowmere (480-640).
+- **Where to hunt.** Aeliana (280-310), grothar (300-335), fangclaw (305-390), Hollow Crypt (300-400), Wanwick Cloister (370-430), Brinescar Strand (390-450), Rustcog Warrens (420-480), Mossgrave Tangle (450-506) and, close to 500, Widowmere (480-640).
 ::: if worldboss.on
 - **World bosses.** Level {{worldboss.minLevel}}. One at a time at {{worldboss.times}} (server time); the portals open beside the temples. See [Bosses](wiki:guide:bosses).
 ::: end
@@ -91,7 +91,7 @@ A step by step path for new players: where to hunt in each level bracket, which 
 
 ## Level 500-750: hardened
 
-- **Hall floor 6 (levels 500-1000).** Gloomtooth Caverns (500-615), Wyrmspine Hollows (500-640), Brackwater Sloughs (515-630), Pyrarch Crucible (520-690), Sablemourn Ossuary (530-645), Thornmantle Glade (545-660), Embergut Rift (560-675), Frostvein Reach (575-690), Graveknell Catacombs (590-705), Umbral Sink (605-720), Cinderscour Barrens (620-735), Grimlock Vaults (635-750) and Blackmarble Halls (650-765).
+- **Hall floor 6 (levels 500-1000).** Gloomtooth Caverns (500-615), Wyrmspine Hollows (500-640), Brackwater Sloughs (515-630), Pyrarch Crucible (520-690), Sablemourn Ossuary (530-645), Thornmantle Glade (545-660), Embergut Rift (560-675), Frostvein Reach (575-690), Graveknell Catacombs (590-705), Umbral Sink (605-720), Cinderscour Barrens (620-735), Bramblegrave Reach (630-770), Grimlock Vaults (635-750) and Blackmarble Halls (650-765).
 - **Rifts.** Tier 6 at level {{rift.level6}}, tier 7 at {{rift.level7}}, tier 8 at {{rift.level8}}.
 - **Level 500 goals:** 5 world bosses, an item with 5 modifiers, 25 Infinity Tower floors, 10 completed Bestiary creatures.
 - **Faction:** Revered at level 600.
@@ -99,7 +99,7 @@ A step by step path for new players: where to hunt in each level bracket, which 
 
 ## Level 750-1000: the road to 1000
 
-- **Where to hunt.** Hexwood Thicket (720-840), Scorchpit Delve (740-855), Bonewright Galleries (770-885), Corsairs' Reach (780-900), Sunderstone Wastes (800-915), Obsidian Colonnade (830-945), Sorrowfen Marsh (875-990), Mirefang Basin (880-999), Pyreglass Chasm (920-1035) and Lanternless Catacombs (950-1050).
+- **Where to hunt.** Hexwood Thicket (720-840), Scorchpit Delve (740-855), Bonewright Galleries (770-885), Corsairs' Reach (780-900), Sunderstone Wastes (800-915), Obsidian Colonnade (830-945), Sorrowfen Marsh (875-990), Mirefang Basin (880-999), Hollowbell Mausoleum (900-1100), Pyreglass Chasm (920-1035) and Lanternless Catacombs (950-1050).
 - **Rifts.** Tier 9 at level {{rift.level9}}, tier 10 at {{rift.level10}}. The highest is tier {{rift.maxTier}}.
 ::: if raid.on
 - **Raid.** {{raid.name}} at level {{raid.minLevel}}, for {{raid.minPlayers}} to {{raid.maxPlayers}} players, in Adventure > Raid: Ashen Sepulchre.

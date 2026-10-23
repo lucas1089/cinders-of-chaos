@@ -253,17 +253,17 @@ local cfg = {
 					description = "Once per account, up to level 50: Gale Ring aura, 100 Great Spirit Potions, 100 Supreme Health Potions.",
 					-- 100 Supreme Health Potions (30) replace the 5 Stamina Extensions (40) on 2026-10-15: no stamina for coins
 					parts = {"aura:17", "item:8472x100", "item:26031x100",
-						{kind = "pact", days = 3, cost = 60, name = "3 days of the Chaos Pact"}}},
+						{kind = "pact", days = 3, cost = 30, name = "3 days of the Chaos Pact"}}},
 				{kind = "bundle", key = "starter:adventurer", oncePerAccount = true, maxLevel = 150, gift = false, cost = 450,
 					name = "Adventurer Pack", icon = 1988,
 					description = "Once per account, up to level 150: Loot Bag, Armoured War Horse, 100 Ultimate Health and 100 Great Mana Potions.",
 					parts = {"service:pouch:loot", "mount:23", "item:8473x100", "item:7590x100",
-						{kind = "pact", days = 7, cost = 120, name = "7 days of the Chaos Pact"}}},
+						{kind = "pact", days = 7, cost = 70, name = "7 days of the Chaos Pact"}}},
 				{kind = "bundle", key = "starter:champion", oncePerAccount = true, maxLevel = 300, gift = false, cost = 750,
 					name = "Champion Pack", icon = 2160,
 					description = "Once per account, up to level 300: Auto Seller, Discoverer outfit with addons, 100 Supreme Health Potions.",
 					parts = {"unlock:autoSeller", "outfit:999", "item:26031x100",
-						{kind = "pact", days = 14, cost = 220, name = "14 days of the Chaos Pact"}}}
+						{kind = "pact", days = 14, cost = 140, name = "14 days of the Chaos Pact"}}}
 			}
 		},
 		{
@@ -320,7 +320,7 @@ local cfg = {
 					description = "Your character changes sex at once. Every outfit and addon you own comes along."},
 				{kind = "service", service = "skullRemover", icon = 2229, cost = 150, name = "Frag & Skull Remover",
 					description = "Clears your unjustified kills and removes a red or black skull. Not usable in combat."},
-				{kind = "service", service = "passiveReset", icon = 18559, cost = 60, name = "Passive Tree Reset",
+				{kind = "service", service = "passiveReset", icon = 18559, cost = 100, name = "Passive Tree Reset",
 					description = "Refunds every passive tree and Paragon point at once, without the gold cost of the normal resets."}
 			}
 		},
@@ -336,10 +336,12 @@ local cfg = {
 				-- zeroing it and regenerates x2 offline (catchup.lua).
 				-- the Stamina Extension (8 coins, +2 h) was removed on 2026-10-15 as well (owner rule "follow your
 				-- recommendations"); owned ones keep working, the level 100 kit (newplayer_config.lua) still gives two
-				{kind = "item", id = 28095, count = 1, cost = 50, seasonBlocked = true, name = "Double Experience Potion",
-					description = "1 hour of double experience per potion (Character > Character Info). Not for season characters."},
-				{kind = "item", id = 28095, count = 5, cost = 225, seasonBlocked = true, name = "5 Double Experience Potions",
-					description = "Five hours of double experience, one potion at a time."}
+				-- weekly limits (O140): 4 singles + 2 packs of 5 = at most 14 hours of x2 a week and account (the only experience
+				-- boost the store sells without a cap; docs/PRICES.md, tools/store_model.lua --check)
+				{kind = "item", id = 28095, count = 1, cost = 50, weeklyLimit = 4, seasonBlocked = true, name = "Double Experience Potion",
+					description = "1 hour of double experience per potion (Character > Character Info). Not for season characters. 4 per week."},
+				{kind = "item", id = 28095, count = 5, cost = 225, weeklyLimit = 2, seasonBlocked = true, name = "5 Double Experience Potions",
+					description = "Five hours of double experience, one potion at a time. 2 per week."}
 			}
 		},
 		{
@@ -533,35 +535,35 @@ local cfg = {
 			-- switches (commands_ui id "plateframe").
 			name = "Name Plates", parent = P_COSMETICS, icon = {item = 2153},
 			offers = {
-				{kind = "frame", frame = "violet", icon = 2153, cost = 300, name = "Violet Plate Frame",
+				{kind = "frame", frame = "violet", icon = 2153, cost = 200, name = "Violet Plate Frame",
 					description = "A violet frame round your name plate, for good. Switch frames in Info & Services > Services."},
-				{kind = "frame", frame = "frost", icon = 2154, cost = 300, name = "Frost Plate Frame",
+				{kind = "frame", frame = "frost", icon = 2154, cost = 200, name = "Frost Plate Frame",
 					description = "A frost-blue frame round your name plate, for good. Switch frames in Info & Services > Services."},
 				-- >>> Cosmetics: three more frames (client/tools/gen_nameplate_art.py; shop.lua FRAMES)
-				{kind = "frame", frame = "ember", icon = 2156, cost = 300, name = "Ember Plate Frame",
+				{kind = "frame", frame = "ember", icon = 2156, cost = 200, name = "Ember Plate Frame",
 					description = "A smouldering orange frame round your name plate, for good. Switch frames in Info & Services > Services."},
-				{kind = "frame", frame = "verdant", icon = 2155, cost = 300, name = "Verdant Plate Frame",
+				{kind = "frame", frame = "verdant", icon = 2155, cost = 200, name = "Verdant Plate Frame",
 					description = "A leaf-green frame round your name plate, for good. Switch frames in Info & Services > Services."},
-				{kind = "frame", frame = "bone", icon = 2230, cost = 300, name = "Bone Plate Frame",
+				{kind = "frame", frame = "bone", icon = 2230, cost = 200, name = "Bone Plate Frame",
 					description = "A pale bone frame round your name plate, for good. Switch frames in Info & Services > Services."},
 				-- <<< Cosmetics
 				-- >>> Wardrobe: eight more frames (client/tools/gen_nameplate_art.py; shop_core.lua FRAMES 6-13). Laurel,
 				-- Sepulchre and Infernal (14-16) are never sold: exclusives_config.lua
-				{kind = "frame", frame = "ashen", icon = 2229, cost = 300, name = "Ashen Plate Frame",
+				{kind = "frame", frame = "ashen", icon = 2229, cost = 200, name = "Ashen Plate Frame",
 					description = "A grey ash frame round your name plate, for good. Switch frames in Info & Services > Services."},
-				{kind = "frame", frame = "sapphire", icon = 2146, cost = 300, name = "Sapphire Plate Frame",
+				{kind = "frame", frame = "sapphire", icon = 2146, cost = 200, name = "Sapphire Plate Frame",
 					description = "A deep sapphire frame round your name plate, for good. Switch frames in Info & Services > Services."},
-				{kind = "frame", frame = "rose", icon = 2145, cost = 300, name = "Rose Plate Frame",
+				{kind = "frame", frame = "rose", icon = 2145, cost = 200, name = "Rose Plate Frame",
 					description = "A rose-pink frame round your name plate, for good. Switch frames in Info & Services > Services."},
-				{kind = "frame", frame = "jade", icon = 2155, cost = 300, name = "Jade Plate Frame",
+				{kind = "frame", frame = "jade", icon = 2155, cost = 200, name = "Jade Plate Frame",
 					description = "A jade-green frame round your name plate, for good. Switch frames in Info & Services > Services."},
-				{kind = "frame", frame = "copper", icon = 2148, cost = 300, name = "Copper Plate Frame",
+				{kind = "frame", frame = "copper", icon = 2148, cost = 200, name = "Copper Plate Frame",
 					description = "A burnished copper frame round your name plate, for good. Switch frames in Info & Services > Services."},
-				{kind = "frame", frame = "obsidian", icon = 2153, cost = 300, name = "Obsidian Plate Frame",
+				{kind = "frame", frame = "obsidian", icon = 2153, cost = 200, name = "Obsidian Plate Frame",
 					description = "A black obsidian frame with violet light round your name plate, for good. Switch frames in Info & Services > Services."},
-				{kind = "frame", frame = "amber", icon = 2154, cost = 300, name = "Amber Plate Frame",
+				{kind = "frame", frame = "amber", icon = 2154, cost = 200, name = "Amber Plate Frame",
 					description = "A warm amber frame round your name plate, for good. Switch frames in Info & Services > Services."},
-				{kind = "frame", frame = "storm", icon = 7759, cost = 300, name = "Storm Plate Frame",
+				{kind = "frame", frame = "storm", icon = 7759, cost = 200, name = "Storm Plate Frame",
 					description = "A storm-blue frame edged in white round your name plate, for good. Switch frames in Info & Services > Services."}
 				-- <<< Wardrobe
 			}

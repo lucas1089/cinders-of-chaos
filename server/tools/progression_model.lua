@@ -204,6 +204,22 @@ function M.problems(env)
 		out[#out + 1] = string.format("hall: levels %d-%d have fewer than %d hall hunts within %.1fx-%.1fx", r[1], r[2],
 			hall.minHunts, hall.lo, hall.hi)
 	end
+	-- the narrow window (O139): in the listed level ranges every level has `minHunts` hall hunts within lo-hi x L
+	local tight = hall.tight
+	if tight then
+		local inside = function(L)
+			for _, rg in ipairs(tight.ranges) do
+				if L >= rg[1] and L <= rg[2] then return true end
+			end
+			return false
+		end
+		for _, r in ipairs(M.runs(lim.fromLevel, lim.toLevel, function(L)
+			return inside(L) and M.hallCount(env.bands, L, tight) < tight.minHunts
+		end)) do
+			out[#out + 1] = string.format("hall: levels %d-%d have fewer than %d hall hunts within %.1fx-%.1fx", r[1], r[2],
+				tight.minHunts, tight.lo, tight.hi)
+		end
+	end
 	return out, curve
 end
 

@@ -1,7 +1,7 @@
 {
   "schema": "chaos-area-plan/1",
   "id": "shroudhallow_tomb",
-  "name": "Shroudhallow Tomb",
+  "name": "Hollowbell Mausoleum",
   "biome": "crypt",
   "size": [
     160,
@@ -9,8 +9,8 @@
   ],
   "floors": 1,
   "level": [
-    890,
-    1005
+    900,
+    1100
   ],
   "seed": 30438,
   "origin": {
@@ -244,21 +244,28 @@
   "spawns": [
     {
       "zone": "forgotten_niches",
-      "monster": "Jungle Beasts",
+      "monster": "Ice Lich",
       "count": 6,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "forgotten_niches",
-      "monster": "Deepforge Fiend",
+      "monster": "Crypt Crab",
       "count": 5,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "forgotten_niches",
-      "monster": "Geode Seer",
+      "monster": "Dawn Strayer",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "silent_crypts",
+      "monster": "Dawn Strayer",
       "count": 5,
       "respawn": 75,
       "pack": 3
@@ -266,223 +273,216 @@
     {
       "zone": "silent_crypts",
       "monster": "Geode Seer",
-      "count": 5,
-      "respawn": 75,
-      "pack": 3
-    },
-    {
-      "zone": "silent_crypts",
-      "monster": "Rimecairn",
       "count": 4,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "silent_crypts",
-      "monster": "Jungle Beasts",
+      "monster": "Ice Lich",
       "count": 7,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "sealed_ossuary",
-      "monster": "Deepforge Fiend",
+      "monster": "Crypt Crab",
       "count": 6,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "sealed_ossuary",
-      "monster": "Reedgrave",
+      "monster": "Acid Hydra",
       "count": 8,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "sealed_ossuary",
-      "monster": "Geode Seer",
+      "monster": "Dawn Strayer",
       "count": 6,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "candle_cells",
-      "monster": "Rimecairn",
+      "monster": "Geode Seer",
       "count": 4,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "candle_cells",
-      "monster": "Jungle Beasts",
+      "monster": "Ice Lich",
       "count": 7,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "candle_cells",
-      "monster": "Geode Seer",
+      "monster": "Dawn Strayer",
       "count": 5,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "mourning_cloister",
-      "monster": "Reedgrave",
+      "monster": "Acid Hydra",
       "count": 8,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "mourning_cloister",
-      "monster": "Geode Seer",
+      "monster": "Dawn Strayer",
       "count": 5,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "mourning_cloister",
-      "monster": "Rimecairn",
-      "count": 5,
-      "respawn": 75,
-      "pack": 3
-    },
-    {
-      "zone": "black_reliquary",
-      "monster": "Jungle Beasts",
-      "count": 7,
-      "respawn": 75,
-      "pack": 3
-    },
-    {
-      "zone": "black_reliquary",
-      "monster": "Deepforge Fiend",
-      "count": 6,
-      "respawn": 75,
-      "pack": 3
-    },
-    {
-      "zone": "black_reliquary",
-      "monster": "Reedgrave",
-      "count": 7,
-      "respawn": 75,
-      "pack": 3
-    },
-    {
-      "zone": "dusty_nave",
       "monster": "Geode Seer",
       "count": 5,
       "respawn": 75,
       "pack": 3
     },
     {
+      "zone": "black_reliquary",
+      "monster": "Ice Lich",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "black_reliquary",
+      "monster": "Crypt Crab",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "black_reliquary",
+      "monster": "Acid Hydra",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
       "zone": "dusty_nave",
-      "monster": "Rimecairn",
+      "monster": "Dawn Strayer",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "dusty_nave",
+      "monster": "Geode Seer",
       "count": 4,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "dusty_nave",
-      "monster": "Jungle Beasts",
+      "monster": "Ice Lich",
       "count": 7,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "tithe_chapel",
-      "monster": "Deepforge Fiend",
+      "monster": "Crypt Crab",
       "count": 5,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "tithe_chapel",
-      "monster": "Reedgrave",
+      "monster": "Acid Hydra",
       "count": 6,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "tithe_chapel",
-      "monster": "Geode Seer",
+      "monster": "Dawn Strayer",
       "count": 5,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "grave_shrine",
-      "monster": "Rimecairn",
+      "monster": "Geode Seer",
       "count": 4,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "grave_shrine",
-      "monster": "Jungle Beasts",
+      "monster": "Ice Lich",
       "count": 6,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "grave_shrine",
-      "monster": "Deepforge Fiend",
+      "monster": "Crypt Crab",
       "count": 5,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "vigil_vault",
-      "monster": "Reedgrave",
+      "monster": "Acid Hydra",
       "count": 6,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "vigil_vault",
-      "monster": "Geode Seer",
+      "monster": "Dawn Strayer",
       "count": 5,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "vigil_vault",
-      "monster": "Rimecairn",
+      "monster": "Geode Seer",
       "count": 4,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "hollow_tombs",
-      "monster": "Jungle Beasts",
+      "monster": "Ice Lich",
       "count": 7,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "hollow_tombs",
-      "monster": "Deepforge Fiend",
+      "monster": "Crypt Crab",
       "count": 5,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "whispering_aisle",
-      "monster": "Geode Seer",
+      "monster": "Dawn Strayer",
       "count": 8,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "whispering_aisle",
-      "monster": "Rimecairn",
+      "monster": "Geode Seer",
       "count": 7,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "whispering_aisle",
-      "monster": "Jungle Beasts",
+      "monster": "Ice Lich",
       "count": 11,
       "respawn": 75,
       "pack": 3
@@ -500,10 +500,10 @@
             "count": 3
           }
         ],
-        "message": "A tithe left for the dead, taken back."
+        "message": "Tithes of a bell that rang for the wrong dead."
       }
     }
   ],
   "chest_action": 47981,
-  "notes": "Content plan (hall fill, 2026-10-22): a crypt hunt for levels 890-1005 on floor 6 of the teleport hall (server/README.md \"Hall order\"). 12 hunting zones in loops; monsters Jungle Beasts, Geode Seer, Deepforge Fiend, Rimecairn, Reedgrave. Display monster: Geode Seer."
+  "notes": "Content plan (O139 progression fill, 2026-10-23): a crypt hunt for levels 900-1100 on floor 6 of the teleport hall (server/README.md \"Hall order\", \"Progression smoothness (O135)\"). 12 hunting zones; monsters Ice Lich, Dawn Strayer, Acid Hydra, Crypt Crab, Geode Seer. Display monster: Ice Lich."
 }

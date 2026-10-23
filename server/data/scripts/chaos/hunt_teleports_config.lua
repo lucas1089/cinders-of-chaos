@@ -137,7 +137,7 @@ return {
 	-- anyone (onTargetCombat). The base room's own display cells on floors 5 and 7 are covered too.
 	display = {x = {31594, 31706}, floors = {5, 7}},
 
-	-- 58 plans. With the base hunts they fill every slot of the hall since 2026-10-22 (server/README.md "Hall order":
+	-- 66 plans. With the base hunts they fill every slot of the hall since 2026-10-22 (server/README.md "Hall order":
 	-- 48 of 48 on z 7, 37 of 37 on z 6, 18 of 18 on z 5).
 	-- The order here does not count: install_content_areas.py gives the slots by level band ascending (the plan's
 	-- `level`), along the corridor from west to east, the north teleport of a column before the south one; a new
@@ -191,7 +191,7 @@ return {
 		{id = "hollowmaw_grotto", monster = "Blight Hound"},
 		{id = "leechwater_fen", monster = "Ironmask Taskmaster"},
 		{id = "dreadmourn_crypt", monster = "Royal Man"},
-		{id = "gallowroot_wilds", monster = "Ironmask Brander"},
+		{id = "gallowroot_wilds", monster = "Cursed Ape"},
 		{id = "scorchpit_delve", monster = "Tundra Troll"},
 		{id = "glacierfang_shelf", monster = "Azure Dragon"},
 		{id = "bonewright_galleries", monster = "Chained Runt"},
@@ -202,7 +202,7 @@ return {
 		{id = "mildewveil_sanctum", monster = "Reedgrave"},
 		{id = "deepgrudge_warrens", monster = "Bloom Husk"},
 		{id = "sorrowfen_marsh", monster = "Deepforge Fiend"},
-		{id = "shroudhallow_tomb", monster = "Geode Seer"},
+		{id = "shroudhallow_tomb", monster = "Ice Lich"},
 		{id = "hagthorn_weald", monster = "Lady bug"},
 		{id = "pyreglass_chasm", monster = "Elite Twisted Shaper"},
 		{id = "rimeblood_glacier", monster = "Rustguard"},
@@ -216,7 +216,20 @@ return {
 		{id = "dreadcoffer_vaults", monster = "Gnawbone Swarm"},
 		{id = "paleflame_sanctum", monster = "Wraithbone Stalker"},
 		{id = "blightmaw_bog", monster = "Gnarlback"},
-		{id = "worldscar_abyss", monster = "Ironmask Warbreaker"}
+		{id = "worldscar_abyss", monster = "Ironmask Warbreaker"},
+		-- O139 (owner, 2026-10-23: hunts for the levels 200, 450, 700, 1000, 1500 and 2000; server/README.md "Hall coverage
+		-- (O139)"): eight new plans in the free row y 15156 of the east block, display monsters 2x2 or smaller. Four plans
+		-- were rewritten in place (same id, origin, size and layout): gallowroot_wilds (Bramblegrave Reach, 700),
+		-- shroudhallow_tomb (Hollowbell Mausoleum, 1000), carrionwood (Antlerwight Brake, 1500), blightmaw_bog (Gloomsilt
+		-- Mire, 2000)
+		{id = "ironhorn_slagworks", monster = "Ironhorn Forgepriest"},
+		{id = "venomthread_fen", monster = "Cobra Vizier"},
+		{id = "azuregate_reliquary", monster = "Azure Guard"},
+		{id = "drownbell_depths", monster = "Frost Larva"},
+		{id = "wanwick_cloister", monster = "Distorted Phantom"},
+		{id = "brinescar_strand", monster = "Saltkin Raider"},
+		{id = "rustcog_warrens", monster = "Mechanic Goblin"},
+		{id = "mossgrave_tangle", monster = "Waterglow Conjurer"}
 	},
 
 	-- The ways back (owner, 2026-10-20: "many teleports to hunts have no teleport back"; server/README.md "Hall order",
@@ -234,16 +247,8 @@ return {
 	returns = {
 		radius = 4,
 		list = {
-			{id = "low_rat_warren", at = {x = 32367, y = 32213, z = 8}},
-			{id = "low_dworc_burrow", at = {x = 32700, y = 32932, z = 9}},
-			{id = "low_orc_stronghold", at = {x = 32310, y = 32124, z = 10}},
-			{id = "low_chakoya_caves", at = {x = 32461, y = 31089, z = 10}},
-			{id = "low_minotaur_hold", at = {x = 32415, y = 32168, z = 15}},
 			{id = "low_jungle_camp", at = {x = 32769, y = 32503, z = 9}},
-			{id = "low_tomb_vaults", at = {x = 33151, y = 32973, z = 14}},
-			{id = "low_dwarf_mines", at = {x = 32503, y = 31952, z = 14}},
 			{id = "low_quara_grotto", at = {x = 32073, y = 32769, z = 12}},
-			{id = "low_clay_hollow", at = {x = 32219, y = 32578, z = 12}},
 			-- base hunts whose destination moved to their monsters (beta report 2026-10-22: a dead end with no
 			-- monster, or a room the named monster cannot reach); the base way back stays at the old arrival
 			{id = "base_5_31630_32254", at = {x = 34148, y = 31339, z = 8}}, -- Freakish Lost Soul

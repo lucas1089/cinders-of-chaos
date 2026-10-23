@@ -1,0 +1,519 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "wanwick_cloister",
+  "name": "Wanwick Cloister",
+  "biome": "crypt",
+  "size": [
+    168,
+    129
+  ],
+  "floors": 1,
+  "level": [
+    370,
+    430
+  ],
+  "seed": 39105,
+  "origin": {
+    "x": 16640,
+    "y": 15156,
+    "z": 9
+  },
+  "decoration": "dense",
+  "light": "dim",
+  "zones": [
+    {
+      "id": "vigil_camp",
+      "floor": 1,
+      "size": "small",
+      "place": "south",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "dusty_chapel",
+      "floor": 1,
+      "size": "huge",
+      "place": "north"
+    },
+    {
+      "id": "grave_cells",
+      "floor": 1,
+      "size": "huge",
+      "place": "northeast"
+    },
+    {
+      "id": "black_cloister",
+      "floor": 1,
+      "size": [
+        26,
+        20
+      ],
+      "place": "east"
+    },
+    {
+      "id": "hollow_tombs",
+      "floor": 1,
+      "size": [
+        27,
+        16
+      ],
+      "place": "southeast"
+    },
+    {
+      "id": "vigil_vault",
+      "floor": 1,
+      "size": [
+        27,
+        18
+      ],
+      "place": "southwest"
+    },
+    {
+      "id": "silent_shrine",
+      "floor": 1,
+      "size": [
+        28,
+        17
+      ],
+      "place": "west"
+    },
+    {
+      "id": "tithe_charnel",
+      "floor": 1,
+      "size": "huge",
+      "place": "northwest"
+    },
+    {
+      "id": "whispering_reliquary",
+      "floor": 1,
+      "size": [
+        30,
+        22
+      ],
+      "place": "center"
+    },
+    {
+      "id": "cracked_nave",
+      "floor": 1,
+      "size": [
+        22,
+        15
+      ]
+    },
+    {
+      "id": "pale_stair",
+      "floor": 1,
+      "size": [
+        20,
+        15
+      ]
+    },
+    {
+      "id": "sealed_ossuary",
+      "floor": 1,
+      "size": [
+        20,
+        16
+      ]
+    },
+    {
+      "id": "candle_crypts",
+      "floor": 1,
+      "size": [
+        22,
+        15
+      ]
+    },
+    {
+      "id": "forgotten_aisle",
+      "floor": 1,
+      "size": "small",
+      "role": "treasure"
+    }
+  ],
+  "paths": [
+    {
+      "from": "dusty_chapel",
+      "to": "grave_cells",
+      "width": 3
+    },
+    {
+      "from": "grave_cells",
+      "to": "black_cloister",
+      "width": 3
+    },
+    {
+      "from": "black_cloister",
+      "to": "hollow_tombs",
+      "width": 3
+    },
+    {
+      "from": "hollow_tombs",
+      "to": "vigil_camp",
+      "width": 3
+    },
+    {
+      "from": "vigil_camp",
+      "to": "vigil_vault",
+      "width": 3
+    },
+    {
+      "from": "vigil_vault",
+      "to": "silent_shrine",
+      "width": 3
+    },
+    {
+      "from": "silent_shrine",
+      "to": "tithe_charnel",
+      "width": 3
+    },
+    {
+      "from": "tithe_charnel",
+      "to": "dusty_chapel",
+      "width": 3
+    },
+    {
+      "from": "dusty_chapel",
+      "to": "whispering_reliquary",
+      "width": 3
+    },
+    {
+      "from": "black_cloister",
+      "to": "whispering_reliquary",
+      "width": 3
+    },
+    {
+      "from": "vigil_camp",
+      "to": "whispering_reliquary",
+      "width": 4
+    },
+    {
+      "from": "silent_shrine",
+      "to": "whispering_reliquary",
+      "width": 3
+    },
+    {
+      "from": "grave_cells",
+      "to": "cracked_nave",
+      "width": 3
+    },
+    {
+      "from": "cracked_nave",
+      "to": "black_cloister",
+      "width": 3
+    },
+    {
+      "from": "dusty_chapel",
+      "to": "pale_stair",
+      "width": 3
+    },
+    {
+      "from": "pale_stair",
+      "to": "grave_cells",
+      "width": 3
+    },
+    {
+      "from": "black_cloister",
+      "to": "sealed_ossuary",
+      "width": 3
+    },
+    {
+      "from": "sealed_ossuary",
+      "to": "hollow_tombs",
+      "width": 3
+    },
+    {
+      "from": "vigil_camp",
+      "to": "candle_crypts",
+      "width": 3
+    },
+    {
+      "from": "candle_crypts",
+      "to": "vigil_vault",
+      "width": 3
+    },
+    {
+      "from": "tithe_charnel",
+      "to": "forgotten_aisle",
+      "width": 2
+    }
+  ],
+  "entry": {
+    "zone": "vigil_camp"
+  },
+  "exit": {
+    "zone": "vigil_camp"
+  },
+  "spawns": [
+    {
+      "zone": "dusty_chapel",
+      "monster": "Vibrant Phantom",
+      "count": 4,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "dusty_chapel",
+      "monster": "Mould Phantom",
+      "count": 5,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "dusty_chapel",
+      "monster": "Distorted Phantom",
+      "count": 6,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "grave_cells",
+      "monster": "Distorted Phantom",
+      "count": 6,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "grave_cells",
+      "monster": "Capricious Phantom",
+      "count": 5,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "grave_cells",
+      "monster": "Vibrant Phantom",
+      "count": 4,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "black_cloister",
+      "monster": "Mould Phantom",
+      "count": 8,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "black_cloister",
+      "monster": "Infernal Phantom",
+      "count": 7,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "black_cloister",
+      "monster": "Distorted Phantom",
+      "count": 9,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "hollow_tombs",
+      "monster": "Capricious Phantom",
+      "count": 7,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "hollow_tombs",
+      "monster": "Vibrant Phantom",
+      "count": 6,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "hollow_tombs",
+      "monster": "Distorted Phantom",
+      "count": 8,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "vigil_vault",
+      "monster": "Infernal Phantom",
+      "count": 7,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "vigil_vault",
+      "monster": "Distorted Phantom",
+      "count": 9,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "vigil_vault",
+      "monster": "Capricious Phantom",
+      "count": 7,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "silent_shrine",
+      "monster": "Vibrant Phantom",
+      "count": 7,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "silent_shrine",
+      "monster": "Mould Phantom",
+      "count": 9,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "silent_shrine",
+      "monster": "Infernal Phantom",
+      "count": 8,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "tithe_charnel",
+      "monster": "Distorted Phantom",
+      "count": 6,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "tithe_charnel",
+      "monster": "Capricious Phantom",
+      "count": 5,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "tithe_charnel",
+      "monster": "Vibrant Phantom",
+      "count": 4,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "cracked_nave",
+      "monster": "Mould Phantom",
+      "count": 5,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "cracked_nave",
+      "monster": "Infernal Phantom",
+      "count": 5,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "cracked_nave",
+      "monster": "Distorted Phantom",
+      "count": 6,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "pale_stair",
+      "monster": "Capricious Phantom",
+      "count": 5,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "pale_stair",
+      "monster": "Vibrant Phantom",
+      "count": 4,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "pale_stair",
+      "monster": "Mould Phantom",
+      "count": 5,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "sealed_ossuary",
+      "monster": "Infernal Phantom",
+      "count": 4,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "sealed_ossuary",
+      "monster": "Distorted Phantom",
+      "count": 6,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "sealed_ossuary",
+      "monster": "Capricious Phantom",
+      "count": 5,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "candle_crypts",
+      "monster": "Vibrant Phantom",
+      "count": 5,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "candle_crypts",
+      "monster": "Mould Phantom",
+      "count": 6,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "candle_crypts",
+      "monster": "Infernal Phantom",
+      "count": 5,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "whispering_reliquary",
+      "monster": "Distorted Phantom",
+      "count": 12,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "whispering_reliquary",
+      "monster": "Capricious Phantom",
+      "count": 11,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "whispering_reliquary",
+      "monster": "Vibrant Phantom",
+      "count": 8,
+      "respawn": 45,
+      "pack": 3
+    }
+  ],
+  "chests": [
+    {
+      "zone": "forgotten_aisle",
+      "quest": "wanwick_alms_box",
+      "reward": {
+        "gold": 280000,
+        "items": [
+          {
+            "name": "Orb of Upheaval",
+            "count": 2
+          }
+        ],
+        "message": "Alms the dead kept back from the living."
+      }
+    }
+  ],
+  "chest_action": 47993,
+  "notes": "Content plan (O139 progression fill, 2026-10-23): a crypt hunt for levels 370-430 on floor 7 of the teleport hall (server/README.md \"Hall order\", \"Progression smoothness (O135)\"). 12 hunting zones; monsters Distorted Phantom, Capricious Phantom, Vibrant Phantom, Mould Phantom, Infernal Phantom. Display monster: Distorted Phantom."
+}

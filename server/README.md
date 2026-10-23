@@ -3630,7 +3630,7 @@ client module needed no change.
 |---|---|---|---|
 | Boosts | ~~Stamina Refill~~ | - | removed 2026-10-15 ("Time-friendly progression": paying to farm at full loot); the `stamina` service handler stays, unused |
 | | ~~Stamina Extension~~ | - | removed 2026-10-15 (the base server's item 27990, +2 h; owned ones still work) |
-| | Double Experience Potion / 5 potions | 50 / 225 | the base server's item 28095: x2 experience for 1 h per potion (storage 6000, Character > Character Info) |
+| | Double Experience Potion / 5 potions | 50 / 225 | the base server's item 28095: x2 experience for 1 h per potion (storage 6000, Character > Character Info); `weeklyLimit` 4 / 2 per account (14 hours a week, O140) |
 | | All Blessings | 60 | blessings 1-5 (refused when all are owned) |
 | World Buffs | World Experience | 300 | +25% monster experience for everybody, 1 h, up to 3 h |
 | | World Loot | 300 | +25% Chaos loot (`rateMult`) and one extra loot roll on every monster, like the Loot Frenzy event, 1 h, up to 3 h |
@@ -3639,7 +3639,7 @@ client module needed no change.
 | | Vocation Change | 400 | a token for Character > Services |
 | | Sex Change | 100 | at once; every owned outfit and addon is copied to the other sex (pairs by name in `data/XML/outfits.xml`) |
 | | Frag & Skull Remover | 150 | skull time (the engine's unjustified-kill counter) to 0, red/black skull removed; not in combat |
-| | Passive Tree Reset | 60 | empties every preset for free (the in-window reset costs level x 250 gold) |
+| | Passive Tree Reset | 100 | empties every preset for free (the in-window reset costs level x 250 gold; 60 before O140, see "Store balance (O140)") |
 | Convenience | (the Temple Teleport Scroll is no longer sold) | | see below |
 | | Loot Bag / Orbs Pouch / Rift Key Pouch | 250 / 200 / 150 | store pouch items, one of each per character ("Store pouches" below) |
 | | Auto Seller | 400 | unlock (also lent by an active Chaos Pact), see below |
@@ -3647,6 +3647,19 @@ client module needed no change.
 | Training | 15 exercise weapon chests | 25 / 75 / 450 | the base server's chests: melee (the one sword / axe / club weapon since 2026-10-23), bow, rod, wand, shield with 500 / 1800 / 14400 charges ("Training weapons") |
 
 Premium (250 for 30 days) stays where it was.
+
+**Store balance (O140, 2026-10-23).** `cd server && luajit tools/store_model.lua` prints the price tables (coin packs, coins per hour of
+benefit of every time saver, gold per coin of the supply packs, services against their gold way, bundles); `--check` (also
+`lua5.3`) enforces the rules of `data/scripts/chaos/store_balance_config.lua` and CI runs it; `tests/store_model_test.lua` breaks each
+rule on purpose and expects the problem. Rules: coin packs have `usdCents` ending in .98 and round Pix prices, the packs without a
+bonus are within 1.5% of 10 coins per real, bonuses rise 0-20%, the Starter pack is at most 3.5x and the first donation at most 2.25x
+the base rate; a supply pack is worth 700-2,000 gold per coin (a coin is 1,000 gold, store at most 2x cheaper than gold) and no store
+item sells to an NPC for more than 500 gold per coin; the Double Experience Potion has weekly limits that add up to at most 14 hours,
+the world buffs stay at 25% (Hunt 50%) and 3 hours, the experience cap at 4; the Passive Tree Reset is within 2x of its gold way up to
+level 800; the Eternal Blessing is 8-15 All Blessings; a static plate frame costs no more than the cheapest wings; the Pact days of a
+starter pack are listed at the Pact's price per day. Prices, before and after, and the reasons: docs/PRICES.md "Store balance (O140)".
+Changed: Double Experience Potion weekly limit (new), Passive Tree Reset 60 -> 100, plate frames 300 -> 200. Server: `files` step and a
+restart; the website wiki data is regenerated (`tools/gen_wiki_data.lua`).
 
 **Temple Teleport Scroll (retired from the store).** Every character has the free Town Portal now ("Town Portal" below), so the store no longer offers the scroll or the 25-use scroll. Scrolls bought earlier keep working: the handler, `S.teleportBlocked` and the action id stay in `shop_services.lua`, and `shop_config.lua` keeps the `templeScroll` service kind. The old description: an ordinary "scroll" (item 6119, used by no other script) with action id 47301, the name
 "temple teleport scroll", a description and the uses left in the custom attribute `chaos_uses`; no new item id. Using it
@@ -15848,7 +15861,7 @@ hunt, so it is slower); only the shape matters here, and the band hours of 100+ 
 | Cliff in the stage table | level 20 to 21 | x10 up to 20, x50 from 21: levels 8-20 took 1.1-2.7 minutes a level, levels 21-50 0.35-0.6 (a 5x jump, 10-level blocks fall to 0.37x) | `SMOOTH_STAGES`: x30 at level 8 rising to x36 at 20, x38 at 28, x40 at 40, x45 at 51 |
 | Steps of 3 every 50 levels | 301 to 700 | each 50th level paid 8-20% less per kill (x36, 33, 30, ... 15) | one multiplier per step, rows of 14-17 levels, the same averages (hours of 300-700 within 0.5%) |
 | Paragon track ends | level 1282 to 2200 | 282 points, one a level, all spent at 1282: 900 levels of level-ups with no new choice | one point a level up to 1100, then one every 6 levels: all 282 at level 2192; points already owned stay |
-| Hall hunt gaps | levels 163-233, 386-518 (by a window of 0.8-1.1 L) | 0-2 hall hunts, the nearest 22% above | not fixed (needs new hunts, see below); `--check` fails on fewer than 3 within 0.7-1.3 L, which holds today |
+| Hall hunt gaps | levels 163-233, 386-518 (by a window of 0.8-1.1 L) | 0-2 hall hunts, the nearest 22% above | fixed by O139 (below, "Hall coverage (O139)"): 8 new hunts, `--check` also fails on fewer than 3 within 0.8-1.1 L in the listed ranges |
 | Gold per hour | 300 to 800 | 469k (300), 393k (500), 2.5M (800): a dip, then a 6x jump (`tools/loot_model.lua`) | not changed (loot tables are another owner's work); reported |
 | Spell unlock gaps | levels 130-380 | longest stretches without a new spell below 300: Ninja 180 to 360, Beastmaster 220 to 380, Berserker 130 to 260, Lich 170 to 300, Shadowfist 150 to 250 | not changed (`spells_chaos.xml` belongs to the spell work); `--spells` prints all 21 |
 
@@ -15885,10 +15898,8 @@ hall hunts are within 0.7-1.3 L of a level. The test also feeds it the table fro
 level 21 and the time cliff to be named.
 
 **Not fixed, and why.**
-- The hall (levels 163-233 and 386-518 with fewer than 3 hunts within 0.8-1.1 L; 200 and 450 have the nearest hunt 22% above,
-  levels 400-479 none with a band that contains them) needs new hunts: a plan (`tools/areaplan/plans/`) or a base-map hunt
-  row (`tools/hall_hunts.csv`, arrival tiles checked on the map). Neither can be made or checked without the map. Wider
-  gates (`minLevel` in `hunt_teleports_config.lua`) would send players into monsters that are 20-30% above them.
+- (Done in O139, "Hall coverage (O139)".) The hall had levels 163-233 and 386-518 with fewer than 3 hunts within 0.8-1.1 L;
+  200 and 450 had the nearest hunt 22% above.
 - Class power dips at levels 30 / 60 / 100 and spikes at 200 (spells/README.md "Attack spell parity"): the damage factors
   belong to the combat numbers; unlock levels of the attack kit are the cheapest lever and are listed by `--spells`.
 - Gold per hour (above) and the costs of potions per band: loot tables and prices are other work.
@@ -15899,6 +15910,83 @@ level 21 and the time cliff to be named.
 which the kit update runs): config.lua is read at the engine's start, so restart the server. A table with the old rows is
 replaced; `chaos-ctl.sh xp-rate` keeps its factor (it scales the release table). Paragon needs only the script reload.
 No client update and no engine rebuild.
+
+
+## Hall coverage (O139, `tools/areaplan/plans/`, `progression_config.lua` `hall.tight`, 2026-10-23)
+
+Owner (pt-BR): "faça as hunts que faltam nos níveis 200 e 450. Pode fazer teleportes sobrescrevendo alguns dos já existentes.
+Coloca esses teleportes dessa faixa de nível." Then, the same for 700, 1000, 1500 and 2000. The check of "Progression smoothness
+(O135)" found levels 163-233 and 386-518 with 0-2 hall hunts within 0.8-1.1 L (200 and 450: none; the nearest 22% above).
+
+**What was built.** Eight new generated areas (no new monster, no new sprite: monsters of the pool and the level-scaled
+sets, display monsters 2x2 or smaller and unique among the plans) in the free row y 15156 of the hall-fill block (x 15824 to
+17252, step 204; docs/MAP_GUIDE.md "Content plans"). Four more are old hunts rewritten in place (same id, origin, size,
+layout and seed, so the install re-lays them as "changed on the same footprint": new monsters in the spawn blocks, same
+tiles), because z 6 and z 5 had no free slot:
+
+| Plan | Name | Band (hunt level) | Floor | Biome | Monsters | Chest |
+|---|---|---|---|---|---|---|
+| ironhorn_slagworks | Ironhorn Slagworks | 155-185 (170) | 7 | lava | Ironhorn Alchemist, Forgepriest, Brute, Lava Golem, Burning Gladiator | yes |
+| venomthread_fen | Venomthread Fen | 165-195 (180) | 7 | swamp | Venom Spider, Giant Hornet, Cobra Vizier, Reflect Spider, Grimeleech | no |
+| azuregate_reliquary | Azuregate Reliquary | 180-220 (200) | 7 | sanctum | Azure Guard, Shadowreaper, Knowledge Elemental, Emerald Mage, Orcaruz | no |
+| drownbell_depths | Drownbell Depths | 196-240 (218) | 7 | abyss | Aberration of the Depths, Ink Blob, Frost Larva, Fenmaw, Ruby Archer | no |
+| wanwick_cloister | Wanwick Cloister | 370-430 (400) | 7 | crypt | five Phantoms (Distorted, Capricious, Vibrant, Mould, Infernal) | yes |
+| brinescar_strand | Brinescar Strand | 390-450 (420) | 7 | waste | Saltkin Raider, Looter, Plunderer, Bony Sea Devil | yes |
+| rustcog_warrens | Rustcog Warrens | 420-480 (450) | 7 | cave | Mountain Goblin, Enforced Mountain Goblin, Mechanic Goblin, Mounted Warrior Goblin, Bat Goblin | no |
+| mossgrave_tangle | Mossgrave Tangle | 450-506 (478) | 7 | forest | three Rootlings, Mirethorn Hexer, Waterglow Conjurer | no |
+| gallowroot_wilds | Bramblegrave Reach | 630-770 (700) | 6 | forest | Thornveil Wraith, Grove Keeper, Elite Spider, Cursed Ape, Gallows Oak | no |
+| shroudhallow_tomb | Hollowbell Mausoleum | 900-1100 (1000) | 6 | crypt | Ice Lich, Dawn Strayer, Acid Hydra, Crypt Crab, Geode Seer | yes (same quest) |
+| carrionwood | Antlerwight Brake | 1350-1650 (1500) | 5 | forest | Rimeshroud Revenant, Bonepicker, Ashveil Hierarch, Cinderskull Reaver, Bloodantler Fiend | yes (same quest) |
+| blightmaw_bog | Gloomsilt Mire | 1800-2200 (2000) | 5 | swamp | Gnarlback, Ironmask Warbreaker, Mirecoil Wyrm, Pyre Stork, Pyrewing Tyrant | yes (same quest) |
+
+The monsters of the new areas sit at the same level range their band asks for (the planner's tier check passes); the
+level-scaled late monsters come from the sets the hunts around them use (the stock pool ends near level 1314).
+
+**Teleport slots changed (the hall's slots go by hunt level, "Hall order").** There was no free slot on any floor
+(z 7 48 on 48, z 6 37 on 37, z 5 18 on 18), so slots were taken from over-served bands:
+- **z 7, eight slots (levels 4-34, where the base server already has many caves).** The CSV rows `low_rat_warren` (Rat warren, level 4),
+  `low_dworc_burrow` (Dworc burrow, 9), `low_orc_stronghold` (Orc stronghold, 10), `low_chakoya_caves` (Chakoya caves, 10),
+  `low_minotaur_hold` (Minotaur hold, 11), `low_tomb_vaults` (Tomb vaults, 18), `low_dwarf_mines` (Dwarf mines, 21) and
+  `low_clay_hollow` (Clay hollow, 34) are gone from `tools/hall_hunts.csv` and from the ways back in `hunt_teleports_config.lua`
+  `returns.list`. They had no teleport of their own (rows without a place take a slot by level), so the hall's 48 slots now
+  hold the eight new hunts in level order, among the other teleports of 150-510. The caves are still on the map, reachable
+  on foot; `low_jungle_camp` (17) and `low_quara_grotto` (32) stay so that levels 15-19 and 29 keep 3 hunts within 0.7-1.3 L.
+- **z 6 and z 5, four slots, by rewriting a hunt (counts unchanged: 37 and 18).** Gallowroot Wilds (725-840, hunt level 782,
+  next to Hexwood Thicket 780) became Bramblegrave Reach (700); Shroudhallow Tomb (890-1005, 947, next to Mirefang Basin 939)
+  became Hollowbell Mausoleum (1000); Carrionwood (1550-1700, 1625, twin of Gravehorn Deeps) became Antlerwight Brake (1500);
+  Blightmaw Bog (1775-1925, 1850, next to Duskmarrow Crater 1875) became Gloomsilt Mire (2000). Each lands in its level order, so
+  the teleports between its old and new place move by one slot (the display monsters follow). Their display monsters changed
+  (Ironmask Brander to Cursed Ape, Geode Seer to Ice Lich); the others kept theirs. The reward chests keep their action ids
+  and quest keys (a character that took the old chest has taken the new one); only the message of Hollowbell, Antlerwight
+  and Gloomsilt changed. Players keep nothing else from the old areas.
+
+**Hall coverage, hunts within 0.8-1.1 L (fewest and most over the range).**
+
+| Levels | Before | After |
+|---|---|---|
+| 160-240 | 0 to 3 (levels 190-200: 0) | 3 to 5 (level 200: 4) |
+| 380-520 | 0 to 4 (levels 440-500: 0; level 450: 0) | 3 to 6 (level 450: 4) |
+| 630-770 | 13 to 18 (level 700: 17) | 13 to 18 (level 700: 18) |
+| 900-1100 | 13 to 22 (level 1000: 18) | 13 to 21 (level 1000: 18) |
+| 1350-1650 | 7 to 10 (level 1500: 10) | 7 to 10 (level 1500: 10) |
+| 1800-2200 | 4 to 9 (level 2000: 7) | 4 to 8 (level 2000: 6) |
+
+The last four ranges were already served (by the model, 7-18 hunts); the new areas at 700, 1000, 1500 and 2000 replace a
+hunt of the same band, so the count there moves by at most one; they are for the owner's content and the check pins them.
+
+**The check.** `progression_config.lua` `hall.tight = {lo 0.8, hi 1.1, minHunts 3, ranges}`: for the levels 160-240, 380-520,
+630-770, 900-1100, 1350-1650 and 1800-2200 `--check` needs 3 hall hunts within 0.8-1.1 x L (the pool's window). The wide
+window (3 within 0.7-1.3 L from level 8) still holds everywhere. The narrow window does not hold everywhere, so it is
+not global: outside the six ranges levels 8-160 (the base server's caves) still have 0-2 hunts within 0.8-1.1 L in places
+(levels 8-9, 12-18, 21-23, 26-29, 32-35, 53-57, 61-66, 94-108). `tests/progression_test.lua` pins the rule.
+
+**Install** (`install_all.py` step `contentareas`, `install_content_areas.py`; idempotent): the eight new plans are placed with
+their frame, spawns, chest scripts and camp portals; the four rewritten plans are laid again on the same footprint (spawn
+blocks and decoration follow the new monsters); the hall is ordered again (CSV and plans), the places file, the signs and the
+display spawns follow. No new step, no new table. Needs a server restart (spawns, scripts, config); no client update, no
+engine rebuild. Not run on the real map: `tools/install_content_areas_test.py` (synthetic map) and the planner's compile and
+QA of the twelve plans pass; the dry run on the live map is the owner's first step (`install_all.py --only contentareas
+--dry-run`).
 
 ## Pack combat (pace) (`pace.lua`, `pace_core.lua`, `pace_config.lua`, 2026-10-14)
 
@@ -17064,7 +17152,7 @@ west to east (north before south in a column). A floor with too few slots is gro
   reference outside the base `data/scripts/customs`). Left over: the base server's floating texts "Daily Reward" and
   "Weekly Reward" over those tiles (base data, harmless; not patched). `--remove-hall` does not bring the chests back
   (restore the map backup for that).
-- **Low-level hunts** (10 rows `low_*` of the CSV, kind `hunt`, no place of their own): base-map caves of levels 4-34 that no
+- **Low-level hunts** (10 rows `low_*` of the CSV, kind `hunt`, no place of their own; since O139 only `low_jungle_camp` and `low_quara_grotto` remain, the other eight went to the hunts of levels 200 and 450): base-map caves of levels 4-34 that no
   hall teleport led to, each with a walkable arrival tile (not a house, not a protection zone, a region of 500 or more
   walkable tiles, no spawn within 3 tiles; checked on the base map) and the level band of the monsters around it
   (`hall_order.py band DATA_DIR X,Y,Z`): Rat warren (4), Dworc burrow (9), Orc stronghold (10), Chakoya caves (10),

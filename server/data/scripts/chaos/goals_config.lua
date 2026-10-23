@@ -130,7 +130,7 @@ C.hunts = {
 	{id = "hollowmaw_grotto", name = "Hollowmaw Grotto", level = {680, 795}},
 	{id = "leechwater_fen", name = "Leechwater Fen", level = {695, 810}},
 	{id = "dreadmourn_crypt", name = "Dreadmourn Crypt", level = {710, 825}},
-	{id = "gallowroot_wilds", name = "Gallowroot Wilds", level = {725, 840}},
+	{id = "gallowroot_wilds", name = "Bramblegrave Reach", level = {630, 770}},
 	{id = "scorchpit_delve", name = "Scorchpit Delve", level = {740, 855}},
 	{id = "glacierfang_shelf", name = "Glacierfang Shelf", level = {755, 870}},
 	{id = "bonewright_galleries", name = "Bonewright Galleries", level = {770, 885}},
@@ -141,7 +141,7 @@ C.hunts = {
 	{id = "mildewveil_sanctum", name = "Mildewveil Sanctum", level = {845, 960}},
 	{id = "deepgrudge_warrens", name = "Deepgrudge Warrens", level = {860, 975}},
 	{id = "sorrowfen_marsh", name = "Sorrowfen Marsh", level = {875, 990}},
-	{id = "shroudhallow_tomb", name = "Shroudhallow Tomb", level = {890, 1005}},
+	{id = "shroudhallow_tomb", name = "Hollowbell Mausoleum", level = {900, 1100}},
 	{id = "hagthorn_weald", name = "Hagthorn Weald", level = {905, 1020}},
 	{id = "pyreglass_chasm", name = "Pyreglass Chasm", level = {920, 1035}},
 	{id = "rimeblood_glacier", name = "Rimeblood Glacier", level = {935, 1050}},
@@ -151,11 +151,20 @@ C.hunts = {
 	{id = "wormcoil_depths", name = "Wormcoil Depths", level = {1250, 1400}},
 	{id = "shiverspine_ridge", name = "Shiverspine Ridge", level = {1350, 1500}},
 	{id = "hushbone_barrows", name = "Hushbone Barrows", level = {1450, 1600}},
-	{id = "carrionwood", name = "Carrionwood", level = {1550, 1700}},
+	{id = "carrionwood", name = "Antlerwight Brake", level = {1350, 1650}},
 	{id = "dreadcoffer_vaults", name = "Dreadcoffer Vaults", level = {1625, 1775}},
 	{id = "paleflame_sanctum", name = "Paleflame Sanctum", level = {1700, 1850}},
-	{id = "blightmaw_bog", name = "Blightmaw Bog", level = {1775, 1925}},
-	{id = "worldscar_abyss", name = "Worldscar Abyss", level = {1850, 2000}}
+	{id = "blightmaw_bog", name = "Gloomsilt Mire", level = {1800, 2200}},
+	{id = "worldscar_abyss", name = "Worldscar Abyss", level = {1850, 2000}},
+	-- O139: hunts for the thin bands of the hall (levels 200 and 450)
+	{id = "ironhorn_slagworks", name = "Ironhorn Slagworks", level = {155, 185}},
+	{id = "venomthread_fen", name = "Venomthread Fen", level = {165, 195}},
+	{id = "azuregate_reliquary", name = "Azuregate Reliquary", level = {180, 220}},
+	{id = "drownbell_depths", name = "Drownbell Depths", level = {196, 240}},
+	{id = "wanwick_cloister", name = "Wanwick Cloister", level = {370, 430}},
+	{id = "brinescar_strand", name = "Brinescar Strand", level = {390, 450}},
+	{id = "rustcog_warrens", name = "Rustcog Warrens", level = {420, 480}},
+	{id = "mossgrave_tangle", name = "Mossgrave Tangle", level = {450, 506}}
 }
 
 -- ------------------------------------------------------------------ bands

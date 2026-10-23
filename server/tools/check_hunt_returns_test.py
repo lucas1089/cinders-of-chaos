@@ -14,7 +14,7 @@ import install_content_areas as I  # noqa: E402
 # the CSV and the shipped config
 hunts = R.read_hunts()
 added = [h for h in hunts if not h['placed']]
-assert len(hunts) >= 45 and len(added) >= 10, (len(hunts), len(added))
+assert len(hunts) >= 37 and len(added) >= 2, (len(hunts), len(added))  # O139 took eight low_* hunts out
 cfg = I.load_config()
 listed = {r['id']: r for r in cfg['returns']['list']}
 for h in added:

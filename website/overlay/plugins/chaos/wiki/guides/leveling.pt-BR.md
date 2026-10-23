@@ -68,7 +68,7 @@ Um caminho passo a passo para quem está começando: onde caçar em cada faixa d
 
 ## Nível 150-300: veterano
 
-- **Onde caçar.** Fleshcarver (145-155), Blackblade (150-300), Emerald Mage (180-270), Bonechoir Catacomb (200-290), Sulphur Gallery (215-299) e deathrattle (230-300).
+- **Onde caçar.** Fleshcarver (145-155), Ironhorn Slagworks (155-185), Venomthread Fen (165-195), Azuregate Reliquary (180-220), Drownbell Depths (196-240), Blackblade (150-300), Emerald Mage (180-270), Bonechoir Catacomb (200-290), Sulphur Gallery (215-299) e deathrattle (230-300).
 - **Fendas.** Tier 2 no nível {{rift.level2}}, tier 3 no {{rift.level3}}. Leve um grupo: mais jogadores, mais recompensa.
 ::: if pocket.on
 - **Chefes de bolso.** Adventure > Boss Spawns, botão **Pocket**: uma cópia privada de um chefe, {{pocket.charges}} cargas por dia. Chefes de raide a partir do nível {{pocket.raidLevel}}, chefes de ilha a partir do {{pocket.islandLevel}}. Vessa Hollowmark, no mercado da sala de teleportes, cuida deles.
@@ -80,7 +80,7 @@ Um caminho passo a passo para quem está começando: onde caçar em cada faixa d
 
 ## Nível 300-500: chefes do mundo
 
-- **Onde caçar.** Aeliana (280-310), grothar (300-335), fangclaw (305-390), Hollow Crypt (300-400) e, perto de 500, Widowmere (480-640).
+- **Onde caçar.** Aeliana (280-310), grothar (300-335), fangclaw (305-390), Hollow Crypt (300-400), Wanwick Cloister (370-430), Brinescar Strand (390-450), Rustcog Warrens (420-480), Mossgrave Tangle (450-506) e, perto de 500, Widowmere (480-640).
 ::: if worldboss.on
 - **Chefes do mundo.** Nível {{worldboss.minLevel}}. Um por vez às {{worldboss.times}} (horário do servidor); os portais abrem ao lado dos templos. Veja [Chefes](wiki:guide:bosses).
 ::: end
@@ -91,7 +91,7 @@ Um caminho passo a passo para quem está começando: onde caçar em cada faixa d
 
 ## Nível 500-750: endurecido
 
-- **Andar 6 do salão (níveis 500-1000).** Gloomtooth Caverns (500-615), Wyrmspine Hollows (500-640), Brackwater Sloughs (515-630), Pyrarch Crucible (520-690), Sablemourn Ossuary (530-645), Thornmantle Glade (545-660), Embergut Rift (560-675), Frostvein Reach (575-690), Graveknell Catacombs (590-705), Umbral Sink (605-720), Cinderscour Barrens (620-735), Grimlock Vaults (635-750) e Blackmarble Halls (650-765).
+- **Andar 6 do salão (níveis 500-1000).** Gloomtooth Caverns (500-615), Wyrmspine Hollows (500-640), Brackwater Sloughs (515-630), Pyrarch Crucible (520-690), Sablemourn Ossuary (530-645), Thornmantle Glade (545-660), Embergut Rift (560-675), Frostvein Reach (575-690), Graveknell Catacombs (590-705), Umbral Sink (605-720), Cinderscour Barrens (620-735), Bramblegrave Reach (630-770), Grimlock Vaults (635-750) e Blackmarble Halls (650-765).
 - **Fendas.** Tier 6 no nível {{rift.level6}}, tier 7 no {{rift.level7}}, tier 8 no {{rift.level8}}.
 - **Objetivos do nível 500:** 5 chefes do mundo, um item com 5 modificadores, 25 andares da Infinity Tower, 10 criaturas completas no Bestiário.
 - **Facção:** Revered no nível 600.
@@ -99,7 +99,7 @@ Um caminho passo a passo para quem está começando: onde caçar em cada faixa d
 
 ## Nível 750-1000: rumo ao 1000
 
-- **Onde caçar.** Hexwood Thicket (720-840), Scorchpit Delve (740-855), Bonewright Galleries (770-885), Corsairs' Reach (780-900), Sunderstone Wastes (800-915), Obsidian Colonnade (830-945), Sorrowfen Marsh (875-990), Mirefang Basin (880-999), Pyreglass Chasm (920-1035) e Lanternless Catacombs (950-1050).
+- **Onde caçar.** Hexwood Thicket (720-840), Scorchpit Delve (740-855), Bonewright Galleries (770-885), Corsairs' Reach (780-900), Sunderstone Wastes (800-915), Obsidian Colonnade (830-945), Sorrowfen Marsh (875-990), Mirefang Basin (880-999), Hollowbell Mausoleum (900-1100), Pyreglass Chasm (920-1035) e Lanternless Catacombs (950-1050).
 - **Fendas.** Tier 9 no nível {{rift.level9}}, tier 10 no {{rift.level10}}. O máximo é o tier {{rift.maxTier}}.
 ::: if raid.on
 - **Raide.** {{raid.name}} no nível {{raid.minLevel}}, para {{raid.minPlayers}} a {{raid.maxPlayers}} jogadores, em Adventure > Raid: Ashen Sepulchre.

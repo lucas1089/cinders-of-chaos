@@ -1,7 +1,7 @@
 {
   "schema": "chaos-area-plan/1",
   "id": "carrionwood",
-  "name": "Carrionwood",
+  "name": "Antlerwight Brake",
   "biome": "forest",
   "size": [
     186,
@@ -9,8 +9,8 @@
   ],
   "floors": 1,
   "level": [
-    1550,
-    1700
+    1350,
+    1650
   ],
   "seed": 30568,
   "origin": {
@@ -241,14 +241,14 @@
   "spawns": [
     {
       "zone": "dark_copse",
-      "monster": "Hollowhorn",
+      "monster": "Cinderskull Reaver",
       "count": 9,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "dark_copse",
-      "monster": "Oathbroken Colossus",
+      "monster": "Bloodantler Fiend",
       "count": 7,
       "respawn": 75,
       "pack": 3
@@ -262,7 +262,7 @@
     },
     {
       "zone": "mossy_dell",
-      "monster": "Siege Behemoth",
+      "monster": "Ashveil Hierarch",
       "count": 5,
       "respawn": 75,
       "pack": 3
@@ -276,6 +276,13 @@
     },
     {
       "zone": "mossy_dell",
+      "monster": "Rimeshroud Revenant",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "withered_thicket",
       "monster": "Bloodantler Fiend",
       "count": 7,
       "respawn": 75,
@@ -283,21 +290,14 @@
     },
     {
       "zone": "withered_thicket",
-      "monster": "Oathbroken Colossus",
-      "count": 7,
-      "respawn": 75,
-      "pack": 3
-    },
-    {
-      "zone": "withered_thicket",
-      "monster": "Ashveil Hierarch",
+      "monster": "Rimeshroud Revenant",
       "count": 6,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "withered_thicket",
-      "monster": "Hollowhorn",
+      "monster": "Cinderskull Reaver",
       "count": 10,
       "respawn": 75,
       "pack": 3
@@ -311,49 +311,49 @@
     },
     {
       "zone": "gnarled_orchard",
-      "monster": "Bloodantler Fiend",
+      "monster": "Rimeshroud Revenant",
       "count": 7,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "gnarled_orchard",
-      "monster": "Siege Behemoth",
+      "monster": "Ashveil Hierarch",
       "count": 5,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "blighted_stand",
-      "monster": "Ashveil Hierarch",
+      "monster": "Rimeshroud Revenant",
       "count": 4,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "blighted_stand",
-      "monster": "Hollowhorn",
+      "monster": "Cinderskull Reaver",
       "count": 7,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "blighted_stand",
-      "monster": "Oathbroken Colossus",
+      "monster": "Bloodantler Fiend",
       "count": 5,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "fallen_meadow",
-      "monster": "Bloodantler Fiend",
+      "monster": "Rimeshroud Revenant",
       "count": 10,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "fallen_meadow",
-      "monster": "Siege Behemoth",
+      "monster": "Ashveil Hierarch",
       "count": 8,
       "respawn": 75,
       "pack": 3
@@ -367,14 +367,14 @@
     },
     {
       "zone": "quiet_hollow",
-      "monster": "Hollowhorn",
+      "monster": "Cinderskull Reaver",
       "count": 7,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "quiet_hollow",
-      "monster": "Oathbroken Colossus",
+      "monster": "Bloodantler Fiend",
       "count": 5,
       "respawn": 75,
       "pack": 3
@@ -388,7 +388,7 @@
     },
     {
       "zone": "foggy_trail",
-      "monster": "Siege Behemoth",
+      "monster": "Ashveil Hierarch",
       "count": 8,
       "respawn": 75,
       "pack": 3
@@ -402,14 +402,14 @@
     },
     {
       "zone": "shaded_ridge",
-      "monster": "Oathbroken Colossus",
+      "monster": "Bloodantler Fiend",
       "count": 8,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "shaded_ridge",
-      "monster": "Ashveil Hierarch",
+      "monster": "Rimeshroud Revenant",
       "count": 6,
       "respawn": 75,
       "pack": 3
@@ -423,42 +423,42 @@
     },
     {
       "zone": "old_clearing",
-      "monster": "Bloodantler Fiend",
+      "monster": "Rimeshroud Revenant",
       "count": 6,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "old_clearing",
-      "monster": "Siege Behemoth",
+      "monster": "Ashveil Hierarch",
       "count": 5,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "crows_glen",
-      "monster": "Ashveil Hierarch",
+      "monster": "Rimeshroud Revenant",
       "count": 3,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "crows_glen",
-      "monster": "Hollowhorn",
+      "monster": "Cinderskull Reaver",
       "count": 6,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "bramble_grove",
-      "monster": "Bloodantler Fiend",
+      "monster": "Rimeshroud Revenant",
       "count": 15,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "bramble_grove",
-      "monster": "Siege Behemoth",
+      "monster": "Ashveil Hierarch",
       "count": 11,
       "respawn": 75,
       "pack": 3
@@ -483,10 +483,10 @@
             "count": 9
           }
         ],
-        "message": "A satchel caught high in the roots."
+        "message": "Hung in the antlers, out of reach of the fires."
       }
     }
   ],
   "chest_action": 47989,
-  "notes": "Content plan (hall fill, 2026-10-22): a forest hunt for levels 1550-1700 on floor 5 of the teleport hall (server/README.md \"Hall order\"). 12 hunting zones in loops; monsters Hollowhorn, Siege Behemoth, Oathbroken Colossus, Bonepicker, Ashveil Hierarch, Bloodantler Fiend. Display monster: Bonepicker."
+  "notes": "Content plan (O139 progression fill, 2026-10-23): a forest hunt for levels 1350-1650 on floor 5 of the teleport hall (server/README.md \"Hall order\", \"Progression smoothness (O135)\"). 12 hunting zones; monsters Rimeshroud Revenant, Bonepicker, Ashveil Hierarch, Cinderskull Reaver, Bloodantler Fiend. Display monster: Bloodantler Fiend."
 }

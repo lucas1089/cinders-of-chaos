@@ -1,0 +1,486 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "ironhorn_slagworks",
+  "name": "Ironhorn Slagworks",
+  "biome": "lava",
+  "size": [
+    176,
+    127
+  ],
+  "floors": 1,
+  "level": [
+    155,
+    185
+  ],
+  "seed": 39101,
+  "origin": {
+    "x": 15824,
+    "y": 15156,
+    "z": 10
+  },
+  "decoration": "dense",
+  "light": "dim",
+  "zones": [
+    {
+      "id": "ash_camp",
+      "floor": 1,
+      "size": "small",
+      "place": "east",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "ember_terrace",
+      "floor": 1,
+      "size": "huge",
+      "place": "north"
+    },
+    {
+      "id": "ashen_chimney",
+      "floor": 1,
+      "size": "huge",
+      "place": "northeast"
+    },
+    {
+      "id": "searing_crucible",
+      "floor": 1,
+      "size": "huge",
+      "place": "southeast"
+    },
+    {
+      "id": "molten_vents",
+      "floor": 1,
+      "size": [
+        25,
+        20
+      ],
+      "place": "south"
+    },
+    {
+      "id": "cinder_crater",
+      "floor": 1,
+      "size": "huge",
+      "place": "southwest"
+    },
+    {
+      "id": "smoking_pit",
+      "floor": 1,
+      "size": "huge",
+      "place": "west"
+    },
+    {
+      "id": "slag_furnace",
+      "floor": 1,
+      "size": "huge",
+      "place": "northwest"
+    },
+    {
+      "id": "magma_forge",
+      "floor": 1,
+      "size": [
+        26,
+        21
+      ],
+      "place": "center"
+    },
+    {
+      "id": "blistered_flow",
+      "floor": 1,
+      "size": [
+        19,
+        14
+      ]
+    },
+    {
+      "id": "sulphur_channel",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "glowing_shelf",
+      "floor": 1,
+      "size": [
+        22,
+        14
+      ]
+    },
+    {
+      "id": "cracked_basin",
+      "floor": 1,
+      "size": [
+        18,
+        14
+      ]
+    },
+    {
+      "id": "scorched_pools",
+      "floor": 1,
+      "size": "small",
+      "role": "treasure"
+    }
+  ],
+  "paths": [
+    {
+      "from": "ember_terrace",
+      "to": "ashen_chimney",
+      "width": 3
+    },
+    {
+      "from": "ashen_chimney",
+      "to": "ash_camp",
+      "width": 3
+    },
+    {
+      "from": "ash_camp",
+      "to": "searing_crucible",
+      "width": 3
+    },
+    {
+      "from": "searing_crucible",
+      "to": "molten_vents",
+      "width": 3
+    },
+    {
+      "from": "molten_vents",
+      "to": "cinder_crater",
+      "width": 3
+    },
+    {
+      "from": "cinder_crater",
+      "to": "smoking_pit",
+      "width": 3
+    },
+    {
+      "from": "smoking_pit",
+      "to": "slag_furnace",
+      "width": 3
+    },
+    {
+      "from": "slag_furnace",
+      "to": "ember_terrace",
+      "width": 3
+    },
+    {
+      "from": "ember_terrace",
+      "to": "magma_forge",
+      "width": 3
+    },
+    {
+      "from": "ash_camp",
+      "to": "magma_forge",
+      "width": 4
+    },
+    {
+      "from": "molten_vents",
+      "to": "magma_forge",
+      "width": 3
+    },
+    {
+      "from": "smoking_pit",
+      "to": "magma_forge",
+      "width": 3
+    },
+    {
+      "from": "molten_vents",
+      "to": "blistered_flow",
+      "width": 3
+    },
+    {
+      "from": "blistered_flow",
+      "to": "cinder_crater",
+      "width": 3
+    },
+    {
+      "from": "smoking_pit",
+      "to": "sulphur_channel",
+      "width": 3
+    },
+    {
+      "from": "sulphur_channel",
+      "to": "slag_furnace",
+      "width": 3
+    },
+    {
+      "from": "ash_camp",
+      "to": "glowing_shelf",
+      "width": 3
+    },
+    {
+      "from": "glowing_shelf",
+      "to": "searing_crucible",
+      "width": 3
+    },
+    {
+      "from": "cinder_crater",
+      "to": "cracked_basin",
+      "width": 3
+    },
+    {
+      "from": "cracked_basin",
+      "to": "smoking_pit",
+      "width": 3
+    },
+    {
+      "from": "ember_terrace",
+      "to": "scorched_pools",
+      "width": 2
+    }
+  ],
+  "entry": {
+    "zone": "ash_camp"
+  },
+  "exit": {
+    "zone": "ash_camp"
+  },
+  "spawns": [
+    {
+      "zone": "ember_terrace",
+      "monster": "Ironhorn Alchemist",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "ember_terrace",
+      "monster": "Ironhorn Brute",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "ember_terrace",
+      "monster": "Lava Golem",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "ashen_chimney",
+      "monster": "Burning Gladiator",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "ashen_chimney",
+      "monster": "Ironhorn Forgepriest",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "ashen_chimney",
+      "monster": "Ironhorn Alchemist",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "searing_crucible",
+      "monster": "Ironhorn Brute",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "searing_crucible",
+      "monster": "Lava Golem",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "searing_crucible",
+      "monster": "Burning Gladiator",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "molten_vents",
+      "monster": "Ironhorn Forgepriest",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "molten_vents",
+      "monster": "Ironhorn Alchemist",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "molten_vents",
+      "monster": "Ironhorn Brute",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "cinder_crater",
+      "monster": "Lava Golem",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "cinder_crater",
+      "monster": "Burning Gladiator",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "cinder_crater",
+      "monster": "Ironhorn Forgepriest",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "smoking_pit",
+      "monster": "Ironhorn Alchemist",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "smoking_pit",
+      "monster": "Ironhorn Brute",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "smoking_pit",
+      "monster": "Lava Golem",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "slag_furnace",
+      "monster": "Burning Gladiator",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "slag_furnace",
+      "monster": "Ironhorn Forgepriest",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "slag_furnace",
+      "monster": "Ironhorn Alchemist",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "blistered_flow",
+      "monster": "Ironhorn Brute",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "blistered_flow",
+      "monster": "Lava Golem",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sulphur_channel",
+      "monster": "Ironhorn Forgepriest",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sulphur_channel",
+      "monster": "Ironhorn Alchemist",
+      "count": 3,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "glowing_shelf",
+      "monster": "Lava Golem",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "glowing_shelf",
+      "monster": "Burning Gladiator",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "glowing_shelf",
+      "monster": "Ironhorn Alchemist",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "cracked_basin",
+      "monster": "Ironhorn Alchemist",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "cracked_basin",
+      "monster": "Ironhorn Brute",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "magma_forge",
+      "monster": "Burning Gladiator",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "magma_forge",
+      "monster": "Ironhorn Forgepriest",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "magma_forge",
+      "monster": "Ironhorn Alchemist",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    }
+  ],
+  "chests": [
+    {
+      "zone": "scorched_pools",
+      "quest": "ironhorn_slag_strongbox",
+      "reward": {
+        "gold": 100000,
+        "items": [
+          {
+            "name": "Orb of Upheaval",
+            "count": 1
+          }
+        ],
+        "message": "Wages of a foundry that never closed."
+      }
+    }
+  ],
+  "chest_action": 47969,
+  "notes": "Content plan (O139 progression fill, 2026-10-23): a lava foundry hunt for levels 155-185 on floor 7 of the teleport hall (server/README.md \"Hall order\", \"Progression smoothness (O135)\"). 12 hunting zones; monsters Ironhorn Alchemist, Ironhorn Forgepriest, Ironhorn Brute, Lava Golem, Burning Gladiator. Display monster: Ironhorn Forgepriest."
+}
