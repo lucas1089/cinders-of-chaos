@@ -234,6 +234,9 @@ server/
   src-patches/0064-live-cast.patch   engine: the live cast port of one player on 127.0.0.1 (castPort, off by default;
                                       Game.setCastTarget; see "Live spectator", phase 2; header src/chaoscast.h,
                                       tools/chaoscast_test.cpp)
+  src-patches/0065-skill-message-names.patch   engine: "You advanced to melee level N." (sword, club, axe: melee;
+                                      distance: ranged) in the advance, downgrade and skill-changed messages
+                                      (see "Skill names in messages")
     remote_cmd.lua    remote_cmd_core.lua    remote_cmd_config.lua  (remote admin commands by file, see "Remote admin commands")
     spectate.lua      spectate_core.lua      spectate_config.lua    (the admin app's live view of a character, see "Live spectator")
     helpai.lua  helpai_core.lua  helpai_config.lua (Ember answers questions in the Help channel through the sidecar
@@ -5460,6 +5463,30 @@ change in `src/player.cpp` makes all of the above native and lets `weapon_styles
 Order: after 0047. The Lua rescale and the training callback then become no-ops and can be removed in the same change.
 A full rename (a fourth stored `SKILL_MELEE`, a new column, a client protocol change) is not worth it: the three stored
 skills cost nothing and the saves, the highscores and the exercise weapons keep working.
+
+### Skill names in messages (src-patch 0065, `tests/skill_message_names_patch_test.lua`)
+
+Owner report 2026-10-23 (a screenshot of "You advanced to axe fighting level 43."): the skills window shows one Melee row, the
+messages still named the stock skills. The text comes from the engine: `Player::addSkillAdvance` and `Player::addSkillTries`
+("You advanced to {skill} level {n}."), `Player::removeSkillTries` ("You were downgraded to ...") and `Player::setSkill*` ("Your
+{Skill} skill changed from level ...") all called `getSkillName` (`tools.cpp`). Src-patch 0065 adds `getSkillMessageName` and uses it
+in those four places only:
+
+| Skill (engine) | Message name | Skills window |
+|---|---|---|
+| sword, club, axe fighting | melee | Melee |
+| distance fighting | ranged | Ranged |
+| fist fighting (Monk, Shadowfist, Iron Sage) | fist fighting | Fist Fighting |
+| magic level | magic level | Magic / Wand |
+| shielding, fishing, crafting skills | unchanged | unchanged |
+
+The same names for every class: a Warrior, Thief, Templar or Monk with a staff advances "melee"; an unarmed Monk "fist fighting"; a
+Ranger "ranged". The training goes to the best of the three melee skills ("One melee skill"), so a level-up message names the one
+number the window shows. `getSkillName` itself is not changed: the item look texts read it, and `melee_skill_look.lua` rewrites
+"club fighting +2, sword fighting +2, axe fighting +2" to "melee +2" from those names. **A server rebuild is needed** (C++); the patch
+applies after 0064. The engine's messages are English only (the server has no translation of "You advanced to magic level N." or of
+"Regenerating Stamina."); the Lua messages that name a skill already use the Chaos names. Not touched: the quiver's "Distance Fighting"
+modifier label (`chaos_archery_config.lua`) and the passive tree's single-skill nodes.
 
 ### Melee and Ranged on equipment (`tools/patch_melee_skill.py`, `melee_skill_look.lua`, `tests/melee_skill_patch_test.lua`)
 

@@ -304,7 +304,7 @@ Dropped, per line (each spell left the classes named; "retired" = no class keeps
 The skills of the game are **Melee, Ranged, Magic (wands and rods use the magic level) and Shielding**; Fist Fighting is the Monk
 line's bare-hands skill. The engine still stores sword, club and axe, but a hit, a melee spell and the training use the best of
 the three (one melee skill: server/README.md "One melee skill"), the three train at the same speed in every vocation, and the
-skills window shows one "Melee" row (client `game_simpleskills`). **Melee items serve every melee class**: any sword, axe or club,
+skills window shows one "Melee" row (client `game_simpleskills`); the level-up messages say "melee" and "ranged" too (src-patch 0065, "Skill names in messages"). **Melee items serve every melee class**: any sword, axe or club,
 one- or two-handed, is open to the Warrior, Thief, Monk and Templar lines (the Berserker keeps two-handed weapons only, as its
 class rule); armour, shields, launchers, wands and rods keep their lists. Of the same tier, a two-handed melee weapon deals 1.07x the
 damage per second of one hand + shield at every level (it was +28% at level 8 and +13% from level 75); launchers and the Monk's
