@@ -225,6 +225,7 @@ server/
                                       table (Game.setFxSendOffsets); 0060-0069 reserved (see "Purchased effect packs
                                       (pair 36)"; header src/chaosfxoffsets.h, tools/chaosfxoffsets_test.cpp)
     remote_cmd.lua    remote_cmd_core.lua    remote_cmd_config.lua  (remote admin commands by file, see "Remote admin commands")
+    spectate.lua      spectate_core.lua      spectate_config.lua    (the admin app's live view of a character, see "Live spectator")
     helpai.lua  helpai_core.lua  helpai_config.lua (Ember answers questions in the Help channel through the sidecar
                                       tools/helpai.py, see "Help channel assistant")
     testers.lua  testers_core.lua      (tester bots: login safety, the TESTER tag, kept apart from players, see "Tester bots")
@@ -16800,7 +16801,8 @@ server folder (the engine's working folder), the same idea as the stop request f
 - Lines are a whitelist, nothing else is ever run: `broadcast TEXT` (1-200 characters, a warning message to everyone),
   `kick NAME` (a character name: letters, spaces, `'` and `-`, 3-29 characters; an offline name does nothing), `save`
   (`saveServer()`), `open` and `close` (`Game.setGameState` NORMAL / CLOSED: login open or closed; players online stay).
-  Control characters, long lines and every other word are refused and logged.
+  `spectate NAME` (same name rule) starts or renews the live view of a character (see "Live spectator"); a renewal is
+  not logged. Control characters, long lines and every other word are refused and logged.
 - The whole admin panel (`chaos/admin`, 179 actions) is reachable too, through two more lines: `catalog ACTOR` writes the
   catalog of the panel for ACTOR's group to `remote.catalog` (JSON, same as the in-game panel gets), and
   `panel RID ACTION|ACTOR|JSON` runs one action (`ChaosAdmin.execute`: group check, parameter validation, audit log) and
@@ -16819,6 +16821,52 @@ server folder (the engine's working folder), the same idea as the stop request f
 - Tests: `tests/remote_cmd_test.lua` (core and engine file against a mocked engine, a real file), and
   `server/deploy/chaos_ctl_test.py` for the script that writes the lines. Untested: the engine calls (`Player(name)`,
   `player:remove()`, `Game.setGameState`) have not run on a real server.
+
+## Live spectator (`spectate.lua`, `spectate_core.lua`, `spectate_config.lua`, `tools/spectate_render.py`)
+Owner, 2026-10-20 (ROADMAP "Open decisions": a live view of a player in the admin app). Phase 1: the owner watches one
+online character from the phone (docs/ADMIN_APP.md "Assistir jogador"), drawn with the real client sprites. Read only:
+the player is not told and nothing in the game changes. No engine patch: the snapshot comes from the Lua API.
+- **Engine side.** The remote command `spectate NAME` (see "Remote admin commands") starts a watch that lasts
+  `watchSeconds` (20 s); the same name again only renews it, another name replaces it (one watch at a time). While a
+  watch runs, the globalevent `ChaosSpectate` (every `intervalMs`, 1 s) writes `remote.spectate` in the server folder,
+  atomically (`.tmp` then rename): JSON `{v, watch, t, online, name, level, voc, hp, maxhp, mp, maxmp, cap, soul,
+  stamina, skull, pos, x0, y0, w, h, tiles, creatures}`. The area is the 15 x 11 client view plus a margin for tall
+  things (`area`: 8 left, 9 right, 6 up, 7 down: 18 x 14 tiles) on the character's floor only. Each tile lists client
+  item ids in draw order (ground, top items, down items oldest first; stackables, fluid containers and splashes as
+  `[id, subtype]`; at most `maxItemsPerTile`, the newest kept). Each creature: tile, name, outfit (look type or item
+  look, head / body / legs / feet, addons, mount), direction, health %, skull, kind, and `me` for the watched one;
+  invisible creatures and players in ghost mode are left out (the watched character always shows); at most
+  `maxCreatures`. An offline name writes `{watch, online:false}`.
+- **VPS side.** `chaos-ctl.sh spectate NAME` checks the name (letters, single spaces, `'` and `-`, 3-29), takes a lock
+  (another view running: `busy`, exit 75), keeps at most one view every 0.8 s, queues `spectate NAME` when the name
+  changed or 5 s passed, waits up to 8 s for a `remote.spectate` of that name at most 2 s old, then runs
+  `tools/spectate_render.py render` under `timeout 25`. The renderer reads the client pair with
+  `client/tools/sprites/datspr.py`, draws the 15 x 11 view around the character in the client's order (ground, bottom,
+  common items, creatures, top items, with elevation; outfits with colours, addons and mounts; health bars and names
+  in the client's colours) and prints one JSON line: `{ok, name, level, voc, hp, maxhp, mp, maxmp, cap, soul, pos, age,
+  w, h, png}` (480 x 352, base64, 256 colours). Errors: `{"ok":false,"error":"offline" | "stale" | "bad-snapshot" |
+  "no-pair" | "busy" | "no-answer" | "timeout","message"}`. The name is passed as one argument everywhere, never
+  through a shell string. The dat index (about a second to parse a real dat) is cached in
+  `CHAOS_SPECTATE_STATE/dat-index.json` (`/var/lib/chaos/spectate`, mode 0700), rebuilt when the dat changes.
+- **The pair.** The renderer reads `CHAOS_SPECTATE_PAIR` (default `$CHAOS_ROOT/pair`, `/opt/chaos/pair`: the same
+  folder as the site's `CHAOS_SPRITE_PAIR`). `chaos-ctl.sh spectate-pair fetch` (the app: Baixar sprites) fetches the
+  branch `CHAOS_PAIR_BRANCH` (`windows-assets`) shallow and without other files' contents, reads
+  `things/things-1098.tar.xz.part*` and `SHA256SUMS.parts`, checks every part's sum, unpacks only the regular files
+  `Tibia.dat` and `Tibia.spr` (no links, no paths) into `pair.new` and swaps it in; then builds the index. It runs in
+  the background (log `CHAOS_SPECTATE_LOG`, `/var/log/chaos/spectate-pair.log`; `spectate-pair log`), one at a time,
+  and needs about 2.3 GB of free disk while it runs. `spectate-pair status` prints `branch=`, `fetching=`, `pair=`,
+  `dat_md5=` and `index=`. The VPS needs `python3-numpy` and `python3-pil`.
+- **App.** Comandos > Ações rápidas > Assistir jogador (`android/.../SpectateCard.java`): name, Iniciar / Parar, the
+  picture scaled without smoothing, name, level, vocation, health, mana and position under it. It asks about once a
+  second over the open ssh session and stops on Parar, on leaving the tab or the app and after 6 failures in a row.
+- **Draws stock art.** Unlike the website (which never shows stock sprites), the view draws everything the pair has:
+  it is private to the owner's phone.
+- Tests: `tests/spectate_test.lua` (core and engine file against a mocked engine: names, watch, tile order, limits,
+  creatures, ghosts, snapshot, JSON shape, atomic write), `tests/remote_cmd_test.lua` (the `spectate` line),
+  `tools/spectate_render_test.py` (a synthetic pair: index cache, snapshot checks, draw order, elevation, outfits,
+  mounts, PNG, the pair archive with traversal, links and wrong sums), `server/deploy/chaos_ctl_test.py` (refusals,
+  quoting, lock, rate limit, renewal, no answer, pair status). Untested: the engine calls on a real server, a real
+  pair (pair 37's spr is over 1 GiB), the fetch from `windows-assets`, the app on a phone.
 
 **chaos-ctl.sh settings file (`/etc/chaos/ctl.conf`).** Owner, 2026-10-20: the app showed "service not found, codigo 5"
 on the beta VPS. The kit there runs from `/opt/chaos-trial` (`tools/linux/server/start-server.sh`) with no systemd

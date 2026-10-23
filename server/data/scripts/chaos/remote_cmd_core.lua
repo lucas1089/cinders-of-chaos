@@ -1,7 +1,8 @@
 -- Remote admin commands by file (remote_cmd.lua; server/README.md "Remote admin commands"): the pure part.
 -- chaos-ctl.sh (server/deploy) and the admin app append one command per line to `remote.cmd` in the server folder; the
 -- engine takes the file, runs the whitelisted commands and logs each. Nothing else is ever run: a line is one of
--- broadcast, kick, save, open, close followed by an argument checked here. Tested by tests/remote_cmd_test.lua.
+-- broadcast, kick, save, open, close, catalog, panel and spectate followed by an argument checked here.
+-- Tested by tests/remote_cmd_test.lua.
 -- Lua 5.1 / LuaJIT and Lua 5.3 compatible.
 
 ChaosRemoteCmdCore = ChaosRemoteCmdCore or {}
@@ -31,6 +32,7 @@ end
 --   panel RID ACTION|ACTOR|JSON   an admin panel action (chaos/admin) run as the online admin character ACTOR;
 --                                 RID digits (the caller finds the answer by it), ACTION like players.kick, JSON an object
 --   catalog ACTOR                 writes the panel's catalog for ACTOR's group to the catalog file
+--   spectate NAME                 starts or renews the admin app's live view of NAME (spectate.lua), read only
 function K.parse(line)
 	if type(line) ~= "string" then
 		return nil, "not text"
@@ -70,6 +72,11 @@ function K.parse(line)
 			return nil, "not a character name"
 		end
 		return {cmd = cmd, arg = arg, actor = arg}
+	elseif cmd == "spectate" then
+		if not isName(arg) then
+			return nil, "not a character name"
+		end
+		return {cmd = cmd, arg = arg}
 	elseif cmd == "panel" then
 		local rid, rest = arg:match("^(%d+)%s+(.+)$")
 		if not rid or #rid > 12 then

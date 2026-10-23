@@ -280,6 +280,36 @@ disk["remote.cmd"] = 'panel 90 players.kick|Gma|{"player":"Bob"}\n'
 RC.check()
 check(#disk["remote.result"] < 1000, "the result file starts again above maxResultBytes")
 
+-- ================================================================== spectate (the app's live view, spectate.lua)
+c = parsed("spectate Bad Player")
+eq(c and c.cmd, "spectate", "spectate parses")
+eq(c and c.arg, "Bad Player", "with the name")
+for _, bad in ipairs({"spectate", "spectate ab", "spectate x; rm -rf /", "spectate $(id)", "spectate 1abc", "spectate a|b"}) do
+	eq(parsed(bad), nil, "refused: " .. bad)
+end
+local watches, logged = {}, {}
+local realPrint = print
+print = function(s) logged[#logged + 1] = tostring(s) end
+disk["remote.cmd"] = "spectate Bob\n"
+ChaosSpectate = nil
+RC.check()
+check(logged[#logged] and logged[#logged]:find("not loaded", 1, true) ~= nil, "spectate without spectate.lua says so")
+ChaosSpectate = {watch = function(name)
+	watches[#watches + 1] = name
+	return #watches == 1
+end}
+logged = {}
+disk["remote.cmd"] = "spectate Bob\n"
+eq(RC.check(), 1, "spectate runs")
+eq(watches[1], "Bob", "the watch gets the name")
+check(logged[1] and logged[1]:find("spectate Bob: watching Bob", 1, true) ~= nil, "a new watch is logged")
+disk["remote.cmd"] = "spectate Bob\n"
+RC.check()
+eq(#watches, 2, "a renewal runs too")
+eq(#logged, 1, "but is not logged")
+print = realPrint
+ChaosSpectate = nil
+
 print(string.format("remote_cmd_test: %d checks, %d failures", count, failures))
 if failures > 0 then
 	os.exit(1)
