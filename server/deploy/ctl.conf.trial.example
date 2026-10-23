@@ -38,3 +38,10 @@ CHAOS_DL_DIR=/var/www/chaos/dl
 CHAOS_SITE_ENV=/etc/chaos/site.env
 # the private key of the client updates (docs/LAUNCH.md "Publishing a client update")
 CHAOS_UPDATE_KEY=/etc/chaos/update-key.hex
+# the admin app's live spectator (server/README.md "Live spectator"): the client pair it draws with (Tibia.dat and
+# Tibia.spr; the same folder as the site's CHAOS_SPRITE_PAIR is fine), its state folder, the branch whose pair archive
+# "chaos-ctl.sh spectate-pair fetch" takes, and that fetch's log
+#CHAOS_SPECTATE_PAIR=/opt/chaos-trial/pair
+#CHAOS_SPECTATE_STATE=/var/lib/chaos/spectate
+#CHAOS_PAIR_BRANCH=windows-assets
+#CHAOS_SPECTATE_LOG=/var/log/chaos/spectate-pair.log

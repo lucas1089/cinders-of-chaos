@@ -103,6 +103,17 @@ instalada é desconhecida: o passo 2 baixa a mais nova e, se o `tfs` for igual a
   ou não; depois de atualizar o PHP, reinicie o apache2 (ou o php-fpm) aqui; ver log, reiniciar, ligar, desligar.
 - **Site e update do client** (`site-install`, `site-log`, `publish-update TAG`, `publish-log`).
 - **Logs de GM** (aba Logs, GM; `gm-logs [N] [NOME]`).
+- **Assistir jogador** (Comandos > Ações rápidas > Assistir jogador > Iniciar; `spectate NOME`): a tela de um
+  personagem online, 15 x 11 quadrados como no client, desenhada na VPS com os sprites do jogo e atualizada mais ou
+  menos uma vez por segundo, com nome, nível, vocação, vida, mana e posição embaixo. Só leitura: o jogador não é
+  avisado e nada muda no jogo. Para no botão Parar, ao trocar de aba ou para Painel do jogo, ao sair do app e depois
+  de 6 falhas seguidas; offline tenta de novo a cada 4 s. Uma visão por vez na VPS, no máximo uma a cada 0,8 s.
+  Antes da primeira vez a VPS precisa do par de sprites do client: no mesmo card, **Baixar sprites** (confirmar;
+  `spectate-pair fetch`) baixa o arquivo do ramo `windows-assets`, confere as somas SHA-256 e troca a pasta
+  `/opt/chaos/pair` (a mesma do `CHAOS_SPRITE_PAIR` do site); acompanhe em **Log do download**
+  (`spectate-pair log`) e confira em **Sprites na VPS** (`spectate-pair status`). Leva alguns minutos e usa uns
+  2,3 GB de disco temporário. Sem o app, na VPS: `sudo /opt/chaos/repo/server/deploy/chaos-ctl.sh spectate-pair fetch`.
+  A VPS precisa de `python3-numpy` e `python3-pil` (`sudo apt-get install python3-numpy python3-pil`).
 
 ## Instalar o app
 
@@ -150,7 +161,7 @@ terminal do app ser root de verdade (instalar pacotes, mexer no sistema), rode n
 `update-rollback`), `update-check`, `update-apply [--no-client] [--no-downloads] [--no-site] [--no-map]`, `update-status`,
 `update-rollback`, `update-log`, `publish-update TAG` (atualização do cliente, docs/LAUNCH.md "Publishing a client
 update"), `publish-log`, `site-install`, `site-log`, `xp-rate`, `health`, `cleanup [--yes]`, `account-create NOME`,
-`account-password NOME`, `install-admin`. Todos com argumentos conferidos (números, nomes, tags de release), nada de
+`account-password NOME`, `install-admin`, `spectate NOME`, `spectate-pair [status | fetch | log [N]]`. Todos com argumentos conferidos (números, nomes, tags de release), nada de
 shell livre. Rode `chaos-ctl.sh help`. Aviso, expulsar, abrir, fechar e salvar passam pelo arquivo `remote.cmd`
 (`server/README.md`, "Remote admin commands"): o servidor do jogo precisa estar com os scripts novos.
 
@@ -160,6 +171,9 @@ shell livre. Rode `chaos-ctl.sh help`. Aviso, expulsar, abrir, fechar e salvar p
   atualização do kit (`chaos_kit_update_test.py`: repositório, releases, systemctl e banco falsos) e os comandos do
   jogo (`remote_cmd_test.lua`) com motor simulado. O app 2.1 foi compilado; as telas novas (Atualizar servidor, Taxa
   de XP, Contas, Saúde, Logs GM) não foram abertas num aparelho.
+- Assistir jogador foi testado com um motor simulado e sprites sintéticos (`spectate_test.lua`,
+  `spectate_render_test.py`, `chaos_ctl_test.py`); não rodou num servidor de verdade, com o par de verdade nem num
+  aparelho. O app compila; o card não foi aberto num celular.
 - O terminal executa um comando por vez (sem programas interativos como `nano` ou `top`). Use `top -bn1` no lugar de `top`.
 - O layout assumido é o de `docs/LAUNCH.md` (`/opt/chaos`, unidade `chaos-server`). Outro layout: veja abaixo.
 

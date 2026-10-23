@@ -47,6 +47,7 @@ final class CommandsTab {
     private final LinearLayout list;
     private JSONArray catalog = new JSONArray(); // flat list of {cat, id, name, description, params, confirm, dangerous}
     private final Set<String> open = new HashSet<>();
+    private SpectateCard spectate; // Ações rápidas > Assistir jogador (set in buildQuick)
 
     CommandsTab(MainActivity a) {
         this.a = a;
@@ -114,6 +115,9 @@ final class CommandsTab {
             if (checked) {
                 quick.setVisibility(id == bQuick.getId() ? View.VISIBLE : View.GONE);
                 catalogPage.setVisibility(id == bPanel.getId() ? View.VISIBLE : View.GONE);
+                if (id == bPanel.getId()) {
+                    stopSpectate();
+                }
             }
         });
         seg.check(bQuick.getId());
@@ -128,6 +132,13 @@ final class CommandsTab {
     }
 
     // ------------------------------------------------------------------------------------------------ quick actions
+
+    /** Stops the live view (the tab, the segment or the app was left). */
+    void stopSpectate() {
+        if (spectate != null) {
+            spectate.stop("Parado ao sair da tela.");
+        }
+    }
 
     private void buildQuick() {
         // message to everyone
@@ -168,6 +179,10 @@ final class CommandsTab {
         });
         kb.addView(kick, ui.gap(8));
         quick.addView(kickCard, ui.gap(10));
+
+        // live view of a character (server/README.md "Live spectator")
+        spectate = new SpectateCard(a);
+        quick.addView(spectate.card, ui.gap(10));
 
         // login
         MaterialCardView loginCard = ui.titledCard("Login");

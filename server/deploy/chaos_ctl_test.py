@@ -24,8 +24,14 @@ account-password (the password from stdin, a PBKDF2 hash to the database client 
 gm-logs (the command log of one staff member newest first, the audit rows, no link out of the folder, a quote
 escaped), and the kit's update-check / update-apply / update-status refusals and settings.
 
+The live spectator (2026-10-23): spectate NAME refuses bad names and queues nothing for them, queues "spectate NAME" once
+per 5 s, waits for a fresh snapshot of that name, runs the renderer (a stub) with the name as one argument, keeps one
+view at a time (busy, exit 75) and one every 0.8 s, answers no-answer for an old snapshot; spectate-pair status and its
+refusals (no git checkout, a bad branch).
+
 usage: python3 -I server/deploy/chaos_ctl_test.py
 """
+import json
 import os
 import shutil
 import re
@@ -254,6 +260,68 @@ def main():
                     ('panel', 'Gma', 'a.b', '[]'), ('panel', 'Gma', 'a.b', '{' + 'x' * 950 + '}'), ('panel', 'G', 'a.b', '{}')):
             check(run(*bad).returncode != 0, 'refused: %r' % (bad[:3],))
         check(spool() == before, 'refused panel commands queue nothing')
+
+        # spectate: the name checked, "spectate NAME" queued (again only after 5 s), a fresh snapshot of that name
+        # awaited, the renderer (a stub) run with the name as one argument; busy, no answer; spectate-pair
+        spstate = os.path.join(tmp, 'spstate')
+        tools = os.path.join(tmp, 'repo', 'server', 'tools')
+        os.makedirs(tools, exist_ok=True)
+        with open(os.path.join(tools, 'spectate_render.py'), 'w') as f:
+            f.write('import json, sys\nprint(json.dumps({"ok": True, "args": sys.argv[1:]}))\n')
+        spe = {'CHAOS_SPECTATE_STATE': spstate, 'CHAOS_SPECTATE_PAIR': os.path.join(tmp, 'pair')}
+        before = spool()
+        for bad in (('spectate',), ('spectate', 'ab'), ('spectate', 'Bob;ls'), ('spectate', '$(id)'), ('spectate', 'Bob '),
+                    ('spectate', 'Bo  b'), ('spectate', '1Bob'), ('spectate', 'Bob', 'Ann'), ('spectate', 'Bob\nsave')):
+            check(run(*bad, extra=spe).returncode != 0, 'spectate refuses %r' % (bad[1:],))
+        check(spool() == before, 'a refused spectate queues nothing')
+
+        def spect_engine(name):
+            def go():
+                for _ in range(60):
+                    time.sleep(0.1)
+                    if ('spectate %s\n' % name) in spool():
+                        with open(os.path.join(server, 'remote.spectate'), 'w') as f:
+                            f.write('{"v":1,"online":true,"watch":"%s","t":%d}' % (name, int(time.time())))
+                        return
+            t = threading.Thread(target=go)
+            t.start()
+            return t
+
+        t = spect_engine("Sir O'Neil")
+        r = run('spectate', "Sir O'Neil", extra=spe)
+        t.join()
+        check(r.returncode == 0 and r.stdout.startswith('{"ok": true'), 'spectate prints the answer: ' + r.stdout + r.stderr)
+        args = json.loads(r.stdout)['args'] if r.returncode == 0 else []
+        check(args[:1] == ['render'] and "Sir O'Neil" in args and '--watch' in args, 'the name is one argument: %r' % args)
+        check(os.path.join(server, 'remote.spectate') in args and os.path.join(tmp, 'pair', 'Tibia.spr') in args,
+              'the snapshot and the pair: %r' % args)
+        check(spool() == before + "spectate Sir O'Neil\n", 'spectate queues its line')
+        check(oct(os.stat(spstate).st_mode & 0o777) == oct(0o700), 'the state folder is private')
+        t0 = time.time()
+        r = run('spectate', "Sir O'Neil", extra=spe)
+        check(r.returncode == 0, 'a second view at once: ' + r.stderr)
+        check(spool() == before + "spectate Sir O'Neil\n", 'within 5 s the watch is not queued again')
+        check(time.time() - t0 >= 0.5, 'at most one view every 0.8 s')
+        import fcntl
+        with open(os.path.join(spstate, 'lock'), 'w') as lk:
+            fcntl.flock(lk, fcntl.LOCK_EX)
+            r = run('spectate', "Sir O'Neil", extra=spe)
+        check(r.returncode == 75 and '"busy"' in r.stdout, 'one view at a time: busy, exit 75: ' + r.stdout)
+        with open(os.path.join(server, 'remote.spectate'), 'w') as f:
+            f.write('{"v":1,"online":true,"watch":"Ann Other","t":1}')
+        os.utime(os.path.join(server, 'remote.spectate'), (1, 1))
+        r = run('spectate', 'Ann Other', extra=spe)
+        check(r.returncode == 1 and '"no-answer"' in r.stdout, 'an old snapshot is no answer: ' + r.stdout)
+        check(spool().endswith('spectate Ann Other\n'), 'another name is queued at once')
+        r = run('spectate-pair', 'status', extra=spe)
+        check(r.returncode == 0 and 'branch=windows-assets' in r.stdout and 'fetching=no' in r.stdout
+              and '"info"' in r.stdout, 'spectate-pair status: ' + r.stdout + r.stderr)
+        for bad in (('spectate-pair', 'nope'), ('spectate-pair', 'fetch', 'x'), ('spectate-pair', 'log', 'x')):
+            check(run(*bad, extra=spe).returncode != 0, 'spectate-pair refuses %r' % (bad[1:],))
+        r = run('spectate-pair', 'fetch-now', extra=spe)
+        check(r.returncode != 0 and 'no git checkout' in r.stderr, 'fetch-now needs the git checkout: ' + r.stderr)
+        r = run('spectate-pair', 'fetch-now', extra=dict(spe, CHAOS_PAIR_BRANCH='a..b'))
+        check(r.returncode != 0 and 'bad CHAOS_PAIR_BRANCH' in r.stderr, 'a bad branch is refused')
 
         for bad in ('not a key', 'ssh-rsa AAAA\nssh-rsa BBBB', 'ssh-rsa AAAA; rm -rf /', ''):
             r = run('install-admin', '-', stdin=bad)
