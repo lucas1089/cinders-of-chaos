@@ -5,11 +5,17 @@ movements.xml and the NPC shops.
 usage: python3 -I install_fist_weapons.py DATA_DIR [--dry-run] [--manifest CSV]
        python3 -I install_fist_weapons.py --lua [--manifest CSV]   (rewrites server/data/lib/chaos_fist_weapons.lua)
 
-The manifest (default server/data/items/fist_items.csv) is written by client/tools/sprites/import_art_things.py
-(--manifest-out) from client/tools/sprites/art_import/fist_weapons.csv: client ids 33654..33659 (appended after the
-store pouch looks), server id = client id + 3000 (36654..36659), name, and in `extra`: article, plural, weight,
-attack, defense, level, NPC prices (buy: NPCs sell it; sell: NPCs buy it), loot (monster:chance per 100000; ...),
-description, unique (the item is the base of a unique of data/items/chaos_items.xml and is in no shop or loot).
+The manifests (default server/data/items/fist_items.csv and fist_claws.csv; --manifest CSV reads that one alone):
+  fist_items.csv   written by client/tools/sprites/import_art_things.py (--manifest-out) from
+                   client/tools/sprites/art_import/fist_weapons.csv: mode `new`, client ids 33654..33659 (appended after the
+                   store pouch looks), server id = client id + 3000 (36654..36659)
+  fist_claws.csv   written by hand (owner 2026-10-23, "o monk nao tem armas"): mode `donor`, the 15 "claw" looks that the
+                   donor B import already put in the pair (client ids 28000.., server id = client id + 12000, 40000..;
+                   install_donor_items.py keeps their items.otb nodes and leaves their items.xml entries to this tool), so
+                   the Monk's claw weapons need no new sprites and no client update
+Both: name, and in `extra`: article, plural, weight, attack, defense, level, NPC prices (buy: NPCs sell it; sell: NPCs buy
+it), loot (monster:chance per 100000; ...), description, unique (the item is the base of a unique of
+data/items/chaos_items.xml and is in no shop or loot).
 Without the matching client pair (client/MANIFEST.md "Fist weapons and bone effects") the items show as nothing.
 
 A fist weapon is a hand item of weaponType "shield" with an attack (no stock shield has one): it goes in the shield
@@ -44,7 +50,10 @@ from install_pack_items import read_manifest, patch_otb, verify_otb  # noqa: E40
 from install_dark_tiles import xml_escape  # noqa: E402
 
 REPO_DATA = os.path.join(os.path.dirname(HERE), 'data')
-DEFAULT_MANIFEST = os.path.join(REPO_DATA, 'items', 'fist_items.csv')
+DEFAULT_MANIFESTS = [os.path.join(REPO_DATA, 'items', 'fist_items.csv'), os.path.join(REPO_DATA, 'items', 'fist_claws.csv')]
+DEFAULT_MANIFEST = DEFAULT_MANIFESTS[0]
+# server id = client id + this, by manifest mode (new: the pack importer's items; donor: the donor B looks of the pair)
+ID_OFFSET = {'new': 3000, 'donor': 12000}
 LUA_OUT = os.path.join(REPO_DATA, 'lib', 'chaos_fist_weapons.lua')
 XML_BEGIN = '\t<!-- Chaos fist weapons (server/tools/install_fist_weapons.py, do not edit by hand) -->\n'
 XML_END = '\t<!-- end of the Chaos fist weapons -->\n'
@@ -56,17 +65,27 @@ DEALER = re.compile(r'battle hammer\s*,\s*2417\s*,', re.I)
 TRADER = ('Grimgan', 'e1611e79c955724155c98b4d79dbc11406cd387773935da008cad6e854b36166')
 
 
-def rows_of(path):
-    rows = read_manifest(path)
+def rows_of(paths):
+    """the rows of one manifest or a list of them, each with its loot list, sorted by (level, server id)"""
+    if isinstance(paths, str):
+        paths = [paths]
+    rows = []
+    for path in paths:
+        if os.path.exists(path):
+            rows += read_manifest(path)
+    ids = [r['server_id'] for r in rows]
+    assert len(ids) == len(set(ids)), 'duplicate server ids in the fist weapon manifests'
     for r in rows:
-        assert r['mode'] == 'new' and r['kind'] == 'weapon', r['key']
-        assert r['server_id'] == r['client_id'] + 3000, 'server id must be client id + 3000 (%s)' % r['key']
+        assert r['mode'] in ID_OFFSET and r['kind'] == 'weapon', r['key']
+        assert r['server_id'] == r['client_id'] + ID_OFFSET[r['mode']], \
+            'server id must be client id + %d (%s)' % (ID_OFFSET[r['mode']], r['key'])
         for k in ('weight', 'attack', 'defense', 'level'):
             assert r['ex'].get(k, '').isdigit(), '%s: %s missing' % (r['key'], k)
         r['loot'] = []
         for part in filter(None, (r['ex'].get('loot') or '').split(';')):
             mon, chance = part.rsplit(':', 1)
             r['loot'].append((mon.strip(), int(chance)))
+    rows.sort(key=lambda r: (int(r['ex']['level']), r['server_id']))
     return rows
 
 
@@ -106,7 +125,17 @@ def replace_block(text, begin, end, block, root, ids, what):
     return text[:at] + block + text[at:], '%s: fist weapon block added' % what
 
 
+def drop_donor_entries(text, rows):
+    """the donor step's bare `<item id=".." name="claw N" />` entries of the claw rows leave the donor block (a server that
+    ran the donor step before this tool took them over); the donor step no longer writes them"""
+    for r in rows:
+        if r['mode'] == 'donor':
+            text = re.sub(r'[ \t]*<item id="%d" name="[^"]*" />\n' % r['server_id'], '', text)
+    return text
+
+
 def patch_xml(text, rows):
+    text = drop_donor_entries(text, rows)
     block = XML_BEGIN + ''.join(xml_item(r) for r in rows) + XML_END
     return replace_block(text, XML_BEGIN, XML_END, block, '</items>', [r['server_id'] for r in rows], 'items.xml')
 
@@ -186,10 +215,11 @@ def patch_npcs(npc_dir, rows, dry):
 
 # ------------------------------------------------------------------------------------------------ Lua data
 def lua_text(rows):
-    L = ['-- The Monk line\'s fist weapons (server/tools/install_fist_weapons.py --lua, from server/data/items/fist_items.csv).',
-         '-- Generated; do not edit by hand. The items exist after the "fistweapons" install step and need the matching',
-         '-- client pair (client/tools/sprites/import_art_things.py with art_import/fist_weapons.csv).',
-         '-- ids: the server ids (the same list as ChaosMonk.cfg.unarmed.fistWeapons); items[id]: key, name, attack,',
+    L = ['-- The Monk line\'s fist weapons (server/tools/install_fist_weapons.py --lua, from server/data/items/fist_items.csv and',
+         '-- fist_claws.csv). Generated; do not edit by hand. The items exist after the "fistweapons" install step and need',
+         '-- the matching client pair (client/tools/sprites/import_art_things.py with art_import/fist_weapons.csv for the',
+         '-- 3665x items; the 4000x claws use looks the pair has already: donor B claws 1-13).',
+         '-- ids: the server ids by level (the same list as ChaosMonk.cfg.unarmed.fistWeapons); items[id]: key, name, attack,',
          '-- defense, level; loot: {monster, item id, chance per 100000} added to the monster types at startup',
          '-- (data/scripts/chaos/fist_weapons.lua).', '', 'ChaosFistWeapons = {', '\tids = {%s},' % ', '.join(
              str(r['server_id']) for r in rows), '\titems = {']
@@ -208,7 +238,7 @@ def lua_text(rows):
 def main():
     args = sys.argv[1:]
     dry = '--dry-run' in args
-    manifest = DEFAULT_MANIFEST
+    manifest = DEFAULT_MANIFESTS
     if '--manifest' in args:
         i = args.index('--manifest'); manifest = args[i + 1]; del args[i:i + 2]
     rows = rows_of(manifest)

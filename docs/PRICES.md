@@ -84,6 +84,7 @@ Why these changes:
 | Creator hold | 14 days | same | Kept (refunds and chargebacks come first). |
 | Referral main reward (`referral_config.lua`, key `l250`) | level 250 | 150 | With pack combat level 150 takes 1.5-3 hours: too easy to farm with fresh accounts. Level 250 (about 3-6 hours) is a friend who stayed. |
 | `brlPerUsd` | 5 | same | Gives round Pix prices with the .98 USD prices. |
+| Monk fist weapons, gold (`data/items/fist_items.csv`, `fist_claws.csv`; `gen_item_prices.py` reads both) | dealers sell 150 / 400 / 2,800 / 7,000 / 12,000 gp (levels 1, 8, 35, 60, 100) and buy back at a fifth to a quarter; the rest only drops and sells for 4,500 up to 33,834 gp | 400 / 7,000 for two tiers | Owner 2026-10-23, the Monk had no weapons from level 100 on. NPC buy is at least twice the sell (no buy-below-sell loop), the gear cap 33,834 holds, a unique's base is in no shop. |
 
 ## What we looked at (2026-10-14)
 

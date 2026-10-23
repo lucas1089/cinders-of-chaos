@@ -40,7 +40,8 @@ function P.interp(levels, values, level)
 	return values[#values]
 end
 
--- kind: "melee" (a sword, axe or club), "distance" (a bow or crossbow) or "wand" (a wand or rod); anything else is 1
+-- kind: "melee" (a sword, axe or club), "distance" (a bow or crossbow), "wand" (a wand or rod) or "fist" (the Monk line's
+-- fists and fist weapons, monk_combat.lua); anything else is 1
 function P.levelFactor(kind, level)
 	local values = P.config[kind]
 	if not values or kind == "levels" or kind == "skill" then
@@ -66,7 +67,7 @@ function P.skillFactor(level, skill)
 	return f
 end
 
--- the multiplier of one weapon hit. A wand scales with the magic level through ChaosWeaponSkill.wandFactor already,
+-- the multiplier of one weapon hit (kinds: melee, distance, wand, fist). A wand scales with the magic level through ChaosWeaponSkill.wandFactor already,
 -- so it gets the level factor only
 function P.hitFactor(kind, level, skill)
 	local f = P.levelFactor(kind, level)

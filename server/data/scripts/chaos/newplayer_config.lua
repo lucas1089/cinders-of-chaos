@@ -77,8 +77,10 @@ return {
 			},
 			role = "ranged" -- the Royal Paladin's potions (add_vocations.py)
 		},
-		monk = { -- the Monk line fights unarmed: no weapon, the light armour the Ranger may wear (add_vocations.py)
+		monk = { -- the Monk line fights with its fists: the first fist weapon (a pair of splinter claws, level 1, worn in the
+			-- shield hand, install_fist_weapons.py), the light armour the Ranger may wear (add_vocations.py)
 			equip = {
+				{slot = "right", id = 40000}, -- pair of splinter claws (fist weapon, Monk line only)
 				{slot = "head", id = 2461}, -- leather helmet
 				{slot = "armor", id = 2467}, -- leather armor
 				{slot = "legs", id = 2468}, -- studded legs

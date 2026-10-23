@@ -2296,6 +2296,12 @@ with the level.
 | | 500 | 51 | 499 | 10% | 1.69 | 17% |
 | | 1000 | 59 | 657 | 9% | 1.69 | 15% |
 | | 2000 | 69 | 801 | 9% | 1.74 | 15% |
+| fists and fist weapons (Monk) | 50 | 61 | 114 | 53% | 1.00 | 53% |
+| | 100 | 109 | 193 | 56% | 1.00 | 56% |
+| | 300 | 175 | 299 | 58% | 1.00 | 58% |
+| | 500 | 220 | 370 | 59% | 1.00 | 59% |
+| | 1000 | 314 | 518 | 61% | 1.00 | 61% |
+| | 2000 | 381 | 614 | 62% | 1.00 | 62% |
 
 Other classes at the same levels (unchanged): the two-handed Berserker 44-46% of its rotation (3 s swing); Thief
 line 54-58% (1.6 s swing), Templar line about 50%, Monk line 58%. The factor never cuts, so below its share a kind is lifted and above

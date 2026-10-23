@@ -117,6 +117,10 @@ Columns: server id / client id, the stock item that was overridden, required lev
 | Widow's Last Vow | ring | 10510 / 9593 | broken wedding ring | 90 | rare | lifeLeechChance 4, lifeLeechAmount 5, manaLeechChance 4, manaLeechAmount 5, maxHitPoints 100 |
 | Veil of the Wraith | ring | 29868 / 27212 | Myst Regalia Ring | 120 | boss | Arm 4, skillShield 5, magicPoints 2, absorbPercentPhysical 5 |
 | Grasp of the Pyre Saint | fist | 36659 / 33659 | our own "pyre saint's grasp" (server/README.md "Fist weapons") | 650 | legendary | Atk 64, Def 24, skillFist 5, criticalHitChance 4, criticalHitAmount 15, absorbPercentFire 6 |
+| Vigil-Knot Wraps | fist | 40009 / 28009 | our "vigil-knot wraps" on donor B claw 10 (`fist_claws.csv`) | 14 | magic | Atk 43, Def 8, skillFist 2, mods dodge 4, lifeonkill 22 |
+| Chapel-Iron Knuckles | fist | 40010 / 28010 | our "chapel-iron knuckles" on donor B claw 11 | 26 | magic | Atk 44, Def 10, skillFist 2, mods shockchance 12, manaonkill 15 |
+| Gravewind Talons | fist | 40011 / 28011 | our "gravewind talons" on donor B claw 12 | 1400 | rare | Atk 68, Def 38, skillFist 4, criticalHitChance 6, criticalHitAmount 25, mods physpen 14, lifeonhit 45, bossdamage 16, bloodrush 5 |
+| Dawnless Gauntlets | fist | 40012 / 28012 | our "dawnless gauntlets" on donor B claw 13 | 2000 | rare | Atk 70, Def 42, skillFist 6, criticalHitChance 8, criticalHitAmount 30, absorbPercentPhysical 5, mods bossdamage 20, dot 30, regen 40, lastbreath 35 |
 
 Drop chances (per 10000 per kill before the tier multiplier x1/x2/x4/x6 for magic/rare/legendary/boss; normal tier never drops uniques)
 are 4-6 (magic), 4-6 (rare), 7-9 (legendary) and 20 (boss-only items) and are in `chaos_unique_items.lua`. Measured with the

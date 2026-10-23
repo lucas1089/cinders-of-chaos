@@ -445,6 +445,8 @@ return {
 		[37419] = 350, [37420] = 290, [37421] = 24000, [37422] = 20000, [37423] = 350, [37424] = 24000, [37425] = 350, [37426] = 24000,
 		[37427] = 230, [37428] = 4500, [37429] = 12000, [37430] = 16000, [37431] = 230, [37432] = 4500, [37433] = 12000, [37434] = 16000,
 		[37435] = 290, [37436] = 5600, [37437] = 15000, [37438] = 20000, [37439] = 290, [37440] = 5600, [37441] = 15000, [37442] = 20000,
+		[40000] = 30, [40001] = 700, [40002] = 3000, [40003] = 31000, [40004] = 32000, [40005] = 33834, [40006] = 33834, [40007] = 33834,
+		[40008] = 33834, [40009] = 60, [40010] = 90, [40011] = 33834, [40012] = 33834,
 	},
 	-- items whose price follows the rarity and item level of the copy (equipment and charms)
 	gear = {
@@ -568,9 +570,10 @@ return {
 		[37400] = true, [37401] = true, [37402] = true, [37403] = true, [37404] = true, [37405] = true, [37406] = true, [37407] = true, [37408] = true, [37409] = true, [37410] = true, [37411] = true,
 		[37412] = true, [37413] = true, [37414] = true, [37415] = true, [37416] = true, [37417] = true, [37418] = true, [37419] = true, [37420] = true, [37421] = true, [37422] = true, [37423] = true,
 		[37424] = true, [37425] = true, [37426] = true, [37427] = true, [37428] = true, [37429] = true, [37430] = true, [37431] = true, [37432] = true, [37433] = true, [37434] = true, [37435] = true,
-		[37436] = true, [37437] = true, [37438] = true, [37439] = true, [37440] = true, [37441] = true, [37442] = true,
+		[37436] = true, [37437] = true, [37438] = true, [37439] = true, [37440] = true, [37441] = true, [37442] = true, [40000] = true, [40001] = true, [40002] = true, [40003] = true, [40004] = true,
+		[40005] = true, [40006] = true, [40007] = true, [40008] = true, [40009] = true, [40010] = true, [40011] = true, [40012] = true,
 	},
-	-- a unique copy (custom attribute chaos_unique) is never sold to an NPC: reasons.unique (148 uniques)
+	-- a unique copy (custom attribute chaos_unique) is never sold to an NPC: reasons.unique (152 uniques)
 	-- [server id] = reason: never sold to an NPC (keys of reasons)
 	unsellable = {
 		[2148] = "currency", [2152] = "currency", [2159] = "currency", [2160] = "currency", [2320] = "quest", [2348] = "quest",

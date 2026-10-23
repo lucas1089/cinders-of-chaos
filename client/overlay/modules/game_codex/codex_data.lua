@@ -6687,6 +6687,51 @@ CodexData = {
 					items = {11374}
 				},
 				{
+					id = "unique:40010",
+					name = "Chapel-Iron Knuckles",
+					color = "#ff9c3a",
+					sub = "Fist weapon, level 26. Attack 44, Defense 10, Fist +2, Chance to Shock +12%, Mana on Kill +15",
+					f = {kind = {"weapon"}, level = 26, source = "monster"},
+					sections = {
+						{
+							h = "Description",
+							p = {"Knuckles cast from the hinges of a chapel door that would not stay shut. (Requires level 26, Monks only.)"}
+						},
+						{
+							h = "Stats",
+							p = {"Attack 44", "Defense 10", "Fist +2", "Chance to Shock +12%", "Mana on Kill +15"}
+						},
+						{
+							h = "Item",
+							cols = {"", ""},
+							w = {35, 65},
+							rows = {
+								{"Slot", "Fist weapon"},
+								{"Required level", "26"},
+								{"Drops from", "Magic monsters and stronger"}
+							}
+						},
+						{
+							h = "Sources",
+							cols = {"Source", "How"},
+							w = {28, 72},
+							rows = {
+								{"Monster drops", "Only magic or stronger monsters: per kill Magic 0.25%, Rare 0.5%, Legendary 1%, Boss 1.5% (x item find)."},
+								{"Monsters", "Ghoul, Scarab, Ghost, Tarantula, Demon Skeleton, Mummy, Crypt Shambler, Vampire, Dwarf Guard, Gargoyle, Cyclops, Fire Elemental, Bonelord, Orc Berserker, Zombie, Dragon Hatchling."},
+								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "640 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+							}
+						},
+						{
+							h = "Rules",
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 64 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
+						}
+					},
+					items = {40010}
+				},
+				{
 					id = "unique:22691",
 					name = "Choirless Pendant",
 					color = "#ff9c3a",
@@ -7248,6 +7293,51 @@ CodexData = {
 						}
 					},
 					items = {7462}
+				},
+				{
+					id = "unique:40012",
+					name = "Dawnless Gauntlets",
+					color = "#ff9c3a",
+					sub = "Fist weapon, level 2000. Attack 70, Defense 42, Critical Hit: chance +8%, damage +30%, Fist +6, Physical Absorb +5%, Damage to Elites and Bosses +20%, Damage over Time +30%, Health Regeneration +40 per Second, Last Breath: a lethal hit leaves you at 35% health (once per 5 minutes)",
+					f = {kind = {"weapon"}, level = 2000, source = "monster"},
+					sections = {
+						{
+							h = "Description",
+							p = {"Gauntlets from a morning that never came. They still reach for it. (Requires level 2000, Monks only.)"}
+						},
+						{
+							h = "Stats",
+							p = {"Attack 70", "Defense 42", "Critical Hit: chance +8%, damage +30%", "Fist +6", "Physical Absorb +5%", "Damage to Elites and Bosses +20%", "Damage over Time +30%", "Health Regeneration +40 per Second", "Last Breath: a lethal hit leaves you at 35% health (once per 5 minutes)"}
+						},
+						{
+							h = "Item",
+							cols = {"", ""},
+							w = {35, 65},
+							rows = {
+								{"Slot", "Fist weapon"},
+								{"Required level", "2000"},
+								{"Drops from", "Rare monsters and stronger"}
+							}
+						},
+						{
+							h = "Sources",
+							cols = {"Source", "How"},
+							w = {28, 72},
+							rows = {
+								{"Monster drops", "Only rare or stronger monsters: per kill Rare 0.12%, Legendary 0.24%, Boss 0.36% (x item find)."},
+								{"Monsters", "Frostreaver the Glacialblade, Rhazgor the Crimson Slayer, Ashfang Wrym, Bloodspark Adept, Glacial Hellcharger, Nightfang Widow, Shadowcrystal Widow, Bloodshade Reaper, Duskhorn Drake, Nightflare Dreadknight, Shadowvein Wrym, Umbral Arcanist."},
+								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "3600 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1950. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+							}
+						},
+						{
+							h = "Rules",
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 360 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
+						}
+					},
+					items = {40012}
 				},
 				{
 					id = "unique:24744",
@@ -8288,6 +8378,51 @@ CodexData = {
 						}
 					},
 					items = {36659}
+				},
+				{
+					id = "unique:40011",
+					name = "Gravewind Talons",
+					color = "#ff9c3a",
+					sub = "Fist weapon, level 1400. Attack 68, Defense 38, Critical Hit: chance +6%, damage +25%, Fist +4, Physical Penetration +14%, Health on Hit +45, Damage to Elites and Bosses +16%, Bloodrush: each kill adds 5% damage (5 stacks, 6 s)",
+					f = {kind = {"weapon"}, level = 1400, source = "monster"},
+					sections = {
+						{
+							h = "Description",
+							p = {"Talons that sing in the wind over a grave that is never filled. (Requires level 1400, Monks only.)"}
+						},
+						{
+							h = "Stats",
+							p = {"Attack 68", "Defense 38", "Critical Hit: chance +6%, damage +25%", "Fist +4", "Physical Penetration +14%", "Health on Hit +45", "Damage to Elites and Bosses +16%", "Bloodrush: each kill adds 5% damage (5 stacks, 6 s)"}
+						},
+						{
+							h = "Item",
+							cols = {"", ""},
+							w = {35, 65},
+							rows = {
+								{"Slot", "Fist weapon"},
+								{"Required level", "1400"},
+								{"Drops from", "Rare monsters and stronger"}
+							}
+						},
+						{
+							h = "Sources",
+							cols = {"Source", "How"},
+							w = {28, 72},
+							rows = {
+								{"Monster drops", "Only rare or stronger monsters: per kill Rare 0.12%, Legendary 0.24%, Boss 0.36% (x item find)."},
+								{"Monsters", "Vorgrun of the Jade Fangs, Fractalis the Shardmaw, Armorcoil, Blazefang, Gorgulith, Nexlurith, Voidwagner, Aegis Sentinel, Flarevein Wyrm, Gloomstinger, Pyroquill, Toxic Mauler."},
+								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "2700 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1350. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+							}
+						},
+						{
+							h = "Rules",
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 270 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
+						}
+					},
+					items = {40011}
 				},
 				{
 					id = "unique:2646",
@@ -11059,6 +11194,48 @@ CodexData = {
 						}
 					},
 					items = {2656}
+				},
+				{
+					id = "unique:40009",
+					name = "Vigil-Knot Wraps",
+					color = "#ff9c3a",
+					sub = "Fist weapon, level 14. Attack 43, Defense 8, Fist +2, Dodge +4%, Life on Kill +22",
+					f = {kind = {"weapon"}, level = 14, source = "monster"},
+					sections = {
+						{
+							h = "Description",
+							p = {"Wraps knotted by a monk who kept watch over a burning chapel. (Requires level 14, Monks only.)"}
+						},
+						{h = "Stats", p = {"Attack 43", "Defense 8", "Fist +2", "Dodge +4%", "Life on Kill +22"}},
+						{
+							h = "Item",
+							cols = {"", ""},
+							w = {35, 65},
+							rows = {
+								{"Slot", "Fist weapon"},
+								{"Required level", "14"},
+								{"Drops from", "Magic monsters and stronger"}
+							}
+						},
+						{
+							h = "Sources",
+							cols = {"Source", "How"},
+							w = {28, 72},
+							rows = {
+								{"Monster drops", "Only magic or stronger monsters: per kill Magic 0.25%, Rare 0.5%, Legendary 1%, Boss 1.5% (x item find)."},
+								{"Monsters", "Troll, Orc, Spider, Wolf, Skeleton, Poison Spider, Frost Troll, Wasp, Orc Spearman, Dwarf, Minotaur, Orc Warrior, Scorpion, Larva, Gutworm, Dwarf Soldier."},
+								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "620 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+							}
+						},
+						{
+							h = "Rules",
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 62 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
+						}
+					},
+					items = {40009}
 				},
 				{
 					id = "unique:27675",

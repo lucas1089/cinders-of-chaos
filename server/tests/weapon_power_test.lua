@@ -25,7 +25,7 @@ ok(#c.levels >= 2, "levels")
 for i = 2, #c.levels do
 	ok(c.levels[i] > c.levels[i - 1], "levels ascend")
 end
-for _, kind in ipairs({"melee", "distance", "wand"}) do
+for _, kind in ipairs({"melee", "distance", "wand", "fist"}) do
 	ok(#c[kind] == #c.levels, kind .. ": a factor per level")
 	for i, v in ipairs(c[kind]) do
 		ok(v >= 1 and v <= 3, kind .. ": factor " .. v .. " within 1 .. 3 (never a cut, never over x3)")
@@ -54,7 +54,7 @@ do
 	near(P.levelFactor("distance", (a + b) / 2), (fa + fb) / 2, 1e-9, "linear between two levels")
 end
 -- monotonic over the whole range
-for _, kind in ipairs({"melee", "distance", "wand"}) do
+for _, kind in ipairs({"melee", "distance", "wand", "fist"}) do
 	local last = 0
 	for lv = 1, 2500, 7 do
 		local f = P.levelFactor(kind, lv)
@@ -99,6 +99,13 @@ near(P.hitFactor("distance", 300, S.typical("skill", 300)), 1, 1e-9, "level 300 
 near(P.hitFactor("wand", 300, 999), P.levelFactor("wand", 300), 1e-9, "a wand ignores the skill argument")
 near(P.hitFactor("wand", 300), P.levelFactor("wand", 300), 1e-9, "a wand without a skill")
 near(P.hitFactor("melee", 500), 1, 1e-9, "melee without a skill: the level factor, 1")
+-- a Monk's fists: the fist kind scales with the fist skill like melee, 1 at the typical skill, and never cuts the level factor
+for _, lv in ipairs({50, 300, 1000, 2000}) do
+	near(P.hitFactor("fist", lv, S.typical("skill", lv)), P.levelFactor("fist", lv), 1e-9, "level " .. lv .. ": typical fist skill is the level factor")
+	ok(P.hitFactor("fist", lv, S.typical("skill", lv) * 1.2) > P.hitFactor("fist", lv, S.typical("skill", lv)), "level " .. lv .. ": more fist skill, more damage")
+end
+near(P.hitFactor("fist", 500), P.levelFactor("fist", 500), 1e-9, "fist without a skill: the level factor")
+ok(P.levelFactor("fist", 1) >= 1 and P.levelFactor("fist", 2400) >= 1, "fist factor never cuts")
 
 -- ------------------------------------------------------------------ the tooltip's estimated DPS includes it
 dofile("data/scripts/chaos/weapon_balance_core.lua")

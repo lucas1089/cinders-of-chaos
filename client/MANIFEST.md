@@ -808,6 +808,8 @@ and four shards rise from a violet ground ring, circle once, sink, 14 x 90 ms). 
 + (1, 1); nothing is repainted per frame (the pieces are moved, flipped and turned), alpha 0 / 255, last frame empty.
 - Client ids: items 33654..33659 (charred hand wraps, ashbound cestus, ember knuckles, ossuary gauntlet, cinderforged
   talons, pyre saint's grasp; server ids +3000, `server/data/items/fist_items.csv`, `server/tools/install_fist_weapons.py`);
+  the Monk's thirteen claw weapons (2026-10-23, `server/data/items/fist_claws.csv`) use donor B looks that the pair already
+  holds (client ids 28000..28012, "Donor art libraries"), so they need no new art and no client update;
   effects 583..585 (bone_spear, bone_burst, bone_aura), missile 153 (bone_spear); Lua names
   `server/data/lib/chaos_vfx_art.lua`, catalogue `server/data/spells/vfx_art_catalog.csv` (both written by the import).
 - Two steps, last in the rebuild chain (after the store pouch looks); `import_fx_art.py` is new (effects and missiles

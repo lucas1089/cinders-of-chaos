@@ -108,10 +108,11 @@ K.kits.thief = derive("paladin", {
 	quiver = false})
 -- the Ninja: a second blade in the shield hand (dual wield, server/src-patches/0002; without it it goes to the backpack)
 K.kits.ninja = derive("thief", {slots = {[CONST_SLOT_RIGHT] = 11395}}) -- Bloodmoon Edge (unique)
--- the Monk line fights unarmed in the Ranger's armour
+-- the Monk line fights with its fists in the Ranger's armour: the level 500 fist weapon in the shield hand (36658, pair of
+-- cinderforged talons; docs/CLASSES.md "Monk")
 K.kits.monk = derive("paladin", {
 	skills = {[SKILL_FIST] = 120, [SKILL_CLUB] = 110, [SKILL_SHIELD] = 90}, magic = 30,
-	slots = {[CONST_SLOT_LEFT] = false}, quiver = false})
+	slots = {[CONST_SLOT_LEFT] = false, [CONST_SLOT_RIGHT] = 36658}, quiver = false})
 -- the Necromancer line: wands, rods and the casters' gear (the mage kit with the wand)
 K.kits.necromancer = derive("mage", {druidWeapon = false})
 -- the Templar line: one-handed sword and shield in the Warrior's armour, some magic level for its holy spells

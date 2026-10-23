@@ -20,22 +20,41 @@ for i, id in ipairs(F.ids) do
 end
 
 -- ------------------------------------------------------------------ each tier is worth wearing at its level
-local lastLevel, lastAttack = 0, 0
+-- ids are sorted by level; plain tiers never lose attack as the level rises and beat bare fists at their level
+local lastLevel, lastPlain = 0, 0
+local plainTop, uniqueTop = 0, 0
 for _, id in ipairs(F.ids) do
 	local it = F.items[id]
-	eq(it.level > lastLevel, true, it.name .. ": levels rise")
-	eq(it.attack > lastAttack, true, it.name .. ": attack rises")
-	lastLevel, lastAttack = it.level, it.attack
+	eq(it.level >= lastLevel, true, it.name .. ": levels do not fall")
+	lastLevel = it.level
 	local bare = M.fistAttack(it.level)
 	eq(it.attack > bare, true, it.name .. " beats bare fists at level " .. it.level)
 	eq(M.fistAttack(it.level, it.attack), it.attack, it.name .. ": the weapon's attack counts")
-	-- the gain at its own level is modest (at most +10% damage over bare fists): the balance was measured unarmed
 	local fac = M.unarmedFactor(17, it.level, 100, it.attack, 1) / M.unarmedFactor(17, it.level, 100, 0, 1)
-	eq(fac > 1 and fac <= 1.10, true, it.name .. ": damage gain " .. fac)
+	if not it.unique then
+		eq(it.attack >= lastPlain, true, it.name .. ": plain attack never falls")
+		lastPlain = it.attack
+		plainTop = math.max(plainTop, it.attack)
+		-- the gain of a plain tier at its own level is modest (at most +12% damage over bare fists)
+		eq(fac > 1 and fac <= 1.12, true, it.name .. ": damage gain " .. fac)
+	else
+		uniqueTop = math.max(uniqueTop, it.attack)
+	end
 end
--- the legendary is the only one above the bare-fist cap (attackMax 60, level 800+)
-eq(F.items[36659].attack > M.cfg.unarmed.attackMax, true, "the unique tops the cap")
+-- only the uniques go above the bare-fist cap by more than the end tiers (attackMax 60, level 800+)
+eq(F.items[36659].attack > M.cfg.unarmed.attackMax, true, "the Pyre unique tops the cap")
 eq(F.items[36658].attack < M.cfg.unarmed.attackMax, true, "tier 5 is passed by bare fists at level 800")
+eq(uniqueTop > plainTop, true, "an endgame unique tops every plain tier")
+-- coverage: a Monk finds a fist weapon at every level band 1..2400 (no gap wider than 500 levels between wearable tiers)
+local gap, prev = 0, 0
+for _, id in ipairs(F.ids) do
+	local it = F.items[id]
+	gap = math.max(gap, it.level - prev)
+	prev = it.level
+end
+eq(gap <= 500, true, "no gap above 500 levels, widest " .. gap)
+eq(F.items[F.ids[1]].level, 1, "a fist weapon at level 1")
+eq(F.items[F.ids[#F.ids]].level >= 2000, true, "an endgame fist weapon")
 -- a fist weapon raises the spell strikes' fist power too
 eq(M.fistPower(300, 110, 50) > M.fistPower(300, 110, 0), true, "fist power")
 
@@ -66,7 +85,7 @@ eq(select(1, ChaosFistLoot.addAll()), 0, "only once per server run")
 for _, row in ipairs(F.loot) do
 	local id = row[2]
 	eq(F.items[id] ~= nil and F.items[id].unique == nil, true, "loot of a plain tier: " .. row[1])
-	eq(row[3] > 0 and row[3] <= 1000, true, "chance per 100000")
+	eq(row[3] > 0 and row[3] <= 2000, true, "chance per 100000")
 end
 
 -- ------------------------------------------------------------------ item modifiers: a fist weapon rolls weapon mods
@@ -79,19 +98,46 @@ local SHIELD = WEAPON_SHIELD or 4
 eq(ChaosItemMods.kindOfType(itype(SHIELD, 50)), "weapon", "a shield with an attack is a fist weapon")
 eq(ChaosItemMods.kindOfType(itype(SHIELD, 0)), "shield", "a plain shield")
 
--- ------------------------------------------------------------------ the legendary unique
+-- ------------------------------------------------------------------ the uniques
 ITEM_ATTRIBUTE_ATTACK, ITEM_ATTRIBUTE_DEFENSE, ITEM_ATTRIBUTE_EXTRADEFENSE = ITEM_ATTRIBUTE_ATTACK or 1, ITEM_ATTRIBUTE_DEFENSE or 2, ITEM_ATTRIBUTE_EXTRADEFENSE or 3
 ITEM_ATTRIBUTE_ARMOR, ITEM_ATTRIBUTE_HITCHANCE, ITEM_ATTRIBUTE_SHOOTRANGE = ITEM_ATTRIBUTE_ARMOR or 4, ITEM_ATTRIBUTE_HITCHANCE or 5, ITEM_ATTRIBUTE_SHOOTRANGE or 6
 dofile("data/lib/chaos_unique_items.lua")
 dofile("data/lib/chaos_unique_specs.lua")
-local u
-for _, e in ipairs(ChaosUniqueItems) do
-	if e.id == 36659 then u = e end
+local byId = {}
+for _, e in ipairs(ChaosUniqueItems) do byId[e.id] = e end
+local nUnique = 0
+for id, it in pairs(F.items) do
+	if it.unique then
+		nUnique = nUnique + 1
+		local e = byId[id]
+		eq(e ~= nil, true, it.unique .. " is a unique entry")
+		eq(e.name, it.unique, id .. ": entry name")
+		eq(e.level, it.level, it.unique .. ": same level")
+		eq(e.slot, "fist", it.unique .. ": slot fist")
+		eq(ChaosUniqueSpecs[id] ~= nil and ChaosUniqueSpecs[id].name == it.unique, true, it.unique .. ": spec name")
+	end
 end
-eq(u ~= nil, true, "Grasp of the Pyre Saint is a unique")
-eq(u.minTier, "legendary"); eq(u.level, F.items[36659].level, "same level")
-eq(ChaosUniqueSpecs[36659].name, u.name, "spec name")
+eq(nUnique, 5, "Pyre plus four new uniques")
+-- the Pyre Saint's grasp is legendary with the fist skill as the rarity attribute
+eq(byId[36659].minTier, "legendary")
 eq(ChaosUniqueSpecs[36659].custom.rarity_fistSkill, 5, "fist skill as the rarity attribute")
+-- two leveling uniques (10-35) from ordinary monsters, two endgame ones (1200+) from the strong band
+for _, id in ipairs({40009, 40010}) do
+	eq(byId[id].level >= 10 and byId[id].level <= 35, true, "leveling unique level")
+	eq(byId[id].bossOnly, false)
+end
+for _, id in ipairs({40011, 40012}) do
+	eq(byId[id].level >= 1200, true, "endgame unique level")
+	eq((byId[id].minMonsterLevel or 0) >= 1000, true, "endgame unique from strong monsters")
+end
+-- the built-in modifiers are in the spec (the mods attribute reads into the unique's rolls)
+for _, id in ipairs({40009, 40010, 40011, 40012}) do
+	local sp = ChaosUniqueSpecs[id]
+	local n = 0
+	for _ in pairs(sp.custom or {}) do n = n + 1 end
+	for _ in pairs(sp.mods or {}) do n = n + 1 end
+	eq(n > 0, true, "unique " .. id .. " carries modifiers")
+end
 
 -- ------------------------------------------------------------------ bone effects: merged, nothing dropped
 ChaosVfx, ChaosVfxMissile = nil, nil

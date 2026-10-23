@@ -183,6 +183,11 @@ ChaosUniqueItems = {
 	  bossOnly = false, monsters = {"Troll", "Orc", "Spider", "Wolf", "Skeleton", "Poison Spider", "Frost Troll", "Wasp", "Orc Spearman", "Dwarf", "Minotaur", "Orc Warrior", "Scorpion", "Larva", "Gutworm", "Dwarf Soldier"} },
 	{ name = "Lantern-Ward Buckler", id = 10294, minTier = "magic", chance = 25, level = 25, slot = "shield",
 	  bossOnly = false, monsters = {"Ghoul", "Scarab", "Ghost", "Tarantula", "Demon Skeleton", "Mummy", "Crypt Shambler", "Vampire", "Dwarf Guard", "Gargoyle", "Cyclops", "Fire Elemental", "Bonelord", "Orc Berserker", "Zombie", "Dragon Hatchling"} },
+	-- the Monk's leveling uniques (owner 2026-10-23, server/README.md "Fist weapons"): fist weapon bases of their own
+	{ name = "Vigil-Knot Wraps", id = 40009, minTier = "magic", chance = 25, level = 14, slot = "fist",
+	  bossOnly = false, monsters = {"Troll", "Orc", "Spider", "Wolf", "Skeleton", "Poison Spider", "Frost Troll", "Wasp", "Orc Spearman", "Dwarf", "Minotaur", "Orc Warrior", "Scorpion", "Larva", "Gutworm", "Dwarf Soldier"} },
+	{ name = "Chapel-Iron Knuckles", id = 40010, minTier = "magic", chance = 25, level = 26, slot = "fist",
+	  bossOnly = false, monsters = {"Ghoul", "Scarab", "Ghost", "Tarantula", "Demon Skeleton", "Mummy", "Crypt Shambler", "Vampire", "Dwarf Guard", "Gargoyle", "Cyclops", "Fire Elemental", "Bonelord", "Orc Berserker", "Zombie", "Dragon Hatchling"} },
 	-- endgame uniques (2026-10-23): the waystone bosses of the band (x6) and the band's waystone monsters (rare and up);
 	-- minMonsterLevel keeps them to waystone-level kills
 	{ name = "Ashfall Verdict", id = 8931, minTier = "rare", chance = 6, level = 1300, slot = "sword", minMonsterLevel = 1000,
@@ -209,6 +214,11 @@ ChaosUniqueItems = {
 	  bossOnly = false, monsters = {"Vorgrun of the Jade Fangs", "Fractalis the Shardmaw", "Armorcoil", "Blazefang", "Gorgulith", "Nexlurith", "Voidwagner", "Aegis Sentinel", "Flarevein Wyrm", "Gloomstinger", "Pyroquill", "Toxic Mauler"} },
 	{ name = "Choirless Pendant", id = 22691, minTier = "boss", chance = 8, level = 2400, slot = "necklace",
 	  bossOnly = true, monsters = {"Morgrath the Umbral Archmage", "Nyxdrath the Midnight Terror", "Ysgrath the Cinderheart"} },
+	-- the Monk's endgame uniques (same bands as the others): fist weapon bases of their own
+	{ name = "Gravewind Talons", id = 40011, minTier = "rare", chance = 6, level = 1400, slot = "fist", minMonsterLevel = 1000,
+	  bossOnly = false, monsters = {"Vorgrun of the Jade Fangs", "Fractalis the Shardmaw", "Armorcoil", "Blazefang", "Gorgulith", "Nexlurith", "Voidwagner", "Aegis Sentinel", "Flarevein Wyrm", "Gloomstinger", "Pyroquill", "Toxic Mauler"} },
+	{ name = "Dawnless Gauntlets", id = 40012, minTier = "rare", chance = 6, level = 2000, slot = "fist", minMonsterLevel = 1000,
+	  bossOnly = false, monsters = {"Frostreaver the Glacialblade", "Rhazgor the Crimson Slayer", "Ashfang Wrym", "Bloodspark Adept", "Glacial Hellcharger", "Nightfang Widow", "Shadowcrystal Widow", "Bloodshade Reaper", "Duskhorn Drake", "Nightflare Dreadknight", "Shadowvein Wrym", "Umbral Arcanist"} },
 	-- the Ascended uniques (uber.lua, server/README.md "Ascended Omens and the Cinderheart"): ascended = true keeps them
 	-- out of the Omen chest pool (rift.lua); corpse drops of the listed bosses (x6 boss tier) and the spoils' unique rolls
 	{ name = "Sanguine Crescent", id = 2408, minTier = "boss", chance = 10, level = 1000, slot = "sword",

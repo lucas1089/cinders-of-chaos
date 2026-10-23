@@ -3,7 +3,8 @@
 --
 --   * Unarmed: the engine hits with fists for attack 7 and leaves out the vocation's meleeDamage. A Monk's fist hit
 --     (melee origin, no weapon in hand) is scaled to a level-based fist attack (ChaosMonk.unarmedFactor), or to the
---     attack of a fist weapon in hand (ChaosMonk.cfg.unarmed.fistWeapons). Staves (clubs) are ordinary weapons.
+--     attack of a fist weapon in hand (ChaosMonk.cfg.unarmed.fistWeapons), then by the weapon power of the fist skill
+--     (ChaosWeaponPower kind "fist", server/README.md "Auto attack power"). Staves (clubs) are ordinary weapons.
 --   * Chi: a melee weapon or fist hit of a Monk gives a chi (at most one every weaponHitIcdMs). The spells give and
 --     spend the rest (data/spells/chaos/monk|shadowfist|ironsage). The HUD (client game_monkchi) is sent on login.
 --   * Monk strikes: the kit's damage comes with ORIGIN_SPELL from a Monk; melee origin from a Monk is its auto attack.
@@ -31,6 +32,10 @@ if not ChaosClassTree then
 	dofile("data/scripts/chaos/class_tree.lua") -- the class nodes of the passive tree
 end
 local CT = ChaosClassTree
+if not ChaosWeaponPower then
+	dofile("data/scripts/chaos/weapon_power_core.lua") -- the auto attack keeps up with the level and the skill
+end
+local WP = ChaosWeaponPower
 
 local function hasCond(creature, ctype, subId)
 	return creature:getCondition(ctype, CONDITIONID_COMBAT, subId) ~= nil
@@ -100,8 +105,12 @@ local function onOffence(creature, attacker, primaryDamage, secondaryDamage, pri
 	if isMelee then
 		local fist = fistWeaponAttack(player)
 		if fist then
-			mult = mult * M.unarmedFactor(voc, player:getLevel(), player:getEffectiveSkillLevel(SKILL_FIST), fist,
+			local skill = player:getEffectiveSkillLevel(SKILL_FIST)
+			mult = mult * M.unarmedFactor(voc, player:getLevel(), skill, fist,
 				M.attackFactor(player.getFightMode and player:getFightMode() or 1))
+			-- the same weapon power as every other weapon (weapon_power_core.lua, kind "fist"): the fist skill against the
+			-- typical skill of the level, ^ 0.5, clamped; 1 at the typical skill, so the measured balance stands
+			mult = mult * WP.hitFactor("fist", player:getLevel(), skill)
 		end
 		-- chi from the auto attack (one per weaponHitIcdMs)
 		local id, now = player:getId(), M.now()

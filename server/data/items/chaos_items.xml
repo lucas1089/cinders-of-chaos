@@ -587,6 +587,58 @@
 		<attribute key="description" value="A saint walked into the pyre and did not stop; only the hand came back out. (Requires level 650, Monks only.)" />
 		<attribute key="showattributes" value="1" />
 	</item>
+	<!-- The Monk's leveling and endgame uniques (owner 2026-10-23): fist weapon bases of our own on the claw looks of the pair
+	     (server/data/items/fist_claws.csv, donor B claws 10-13, client ids 28009-28012). Like the Grasp, the base entry of
+	     movements.xml holds the level and the Monk line; built-in Chaos modifiers by the `mods` attribute. -->
+	<!-- 40009: our "vigil-knot wraps", client id 28009 -->
+	<item id="40009" article="the" name="Vigil-Knot Wraps">
+		<attribute key="weight" value="600" />
+		<attribute key="weaponType" value="shield" />
+		<attribute key="attack" value="43" />
+		<attribute key="defense" value="8" />
+		<attribute key="skillFist" value="2" />
+		<attribute key="mods" value="dodge:4,lifeonkill:22" />
+		<attribute key="description" value="Wraps knotted by a monk who kept watch over a burning chapel. (Requires level 14, Monks only.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 40010: our "chapel-iron knuckles", client id 28010 -->
+	<item id="40010" article="the" name="Chapel-Iron Knuckles">
+		<attribute key="weight" value="1000" />
+		<attribute key="weaponType" value="shield" />
+		<attribute key="attack" value="44" />
+		<attribute key="defense" value="10" />
+		<attribute key="skillFist" value="2" />
+		<attribute key="mods" value="shockchance:12,manaonkill:15" />
+		<attribute key="description" value="Knuckles cast from the hinges of a chapel door that would not stay shut. (Requires level 26, Monks only.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 40011: our "gravewind talons", client id 28011 -->
+	<item id="40011" article="the" name="Gravewind Talons">
+		<attribute key="weight" value="3000" />
+		<attribute key="weaponType" value="shield" />
+		<attribute key="attack" value="68" />
+		<attribute key="defense" value="38" />
+		<attribute key="skillFist" value="4" />
+		<attribute key="criticalHitChance" value="6" />
+		<attribute key="criticalHitAmount" value="25" />
+		<attribute key="mods" value="physpen:14,lifeonhit:45,bossdamage:16,bloodrush:5" />
+		<attribute key="description" value="Talons that sing in the wind over a grave that is never filled. (Requires level 1400, Monks only.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 40012: our "dawnless gauntlets", client id 28012 -->
+	<item id="40012" article="the" name="Dawnless Gauntlets">
+		<attribute key="weight" value="3400" />
+		<attribute key="weaponType" value="shield" />
+		<attribute key="attack" value="70" />
+		<attribute key="defense" value="42" />
+		<attribute key="skillFist" value="6" />
+		<attribute key="criticalHitChance" value="8" />
+		<attribute key="criticalHitAmount" value="30" />
+		<attribute key="absorbPercentPhysical" value="5" />
+		<attribute key="mods" value="bossdamage:20,dot:30,regen:40,lastbreath:35" />
+		<attribute key="description" value="Gauntlets from a morning that never came. They still reach for it. (Requires level 2000, Monks only.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
 	<!-- The Ascended uniques (server/README.md "Ascended Omens and the Cinderheart"): they drop only from the Ascended Omens
 	     and the Cinderheart (chaos_unique_items.lua ascended = true; never in a rift or Omen chest). -->
 	<!-- 2408: stock "warlord sword", client id 3296 -->

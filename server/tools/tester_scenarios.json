@@ -4239,6 +4239,7 @@
   },
   "weapon_power": {
    "files": [
+    "monk_combat.lua",
     "weapon_styles.lua"
    ],
    "kind": "passive",

@@ -17,9 +17,12 @@ one: nothing to do (exit 0).
    The written file is parsed again and every node checked.
 2. data/items/items.xml: one <item id=.. name=..> per row inside a block between two marker comments, before
    </items>; rewritten when the manifest changed; an id with an entry outside the block stops the script.
+   Exception: the ids of data/items/fist_claws.csv (the Monk's claw weapons, server ids 40000..40012) get their items.otb
+   node here but no bare items.xml entry; install_fist_weapons.py writes their full entries (and drops an old bare one).
 
 Idempotent: a second run changes nothing.
 """
+import csv
 import os
 import re
 import sys
@@ -29,6 +32,7 @@ sys.path.insert(0, HERE)
 from install_dark_tiles import read_manifest, scan, node_bytes, verify_otb, xml_escape  # noqa: E402
 
 DEFAULT_MANIFEST = os.path.join(os.path.dirname(HERE), 'data', 'items', 'donor_items.csv')
+FIST_CLAWS = os.path.join(os.path.dirname(HERE), 'data', 'items', 'fist_claws.csv')
 XML_BEGIN = '\t<!-- Chaos donor item set (server/tools/install_donor_items.py, do not edit by hand) -->\n'
 XML_END = '\t<!-- end of the Chaos donor item set -->\n'
 
@@ -63,7 +67,18 @@ def patch_otb(data, rows):
     return bytes(out), notes
 
 
+def claimed_ids(path=FIST_CLAWS):
+    """server ids of the donor looks that install_fist_weapons.py turns into the Monk's claw weapons (data/items/
+    fist_claws.csv): their items.otb nodes stay with this tool, their items.xml entries are the fist weapons' own"""
+    if not os.path.exists(path):
+        return set()
+    with open(path, newline='') as f:
+        return {int(r['server_id']) for r in csv.DictReader(f)}
+
+
 def patch_xml(text, rows):
+    claimed = claimed_ids()
+    rows = [r for r in rows if r['server_id'] not in claimed]
     block = XML_BEGIN + ''.join('\t<item id="%d" name="%s" />\n' % (r['server_id'], xml_escape(r['name'])) for r in rows) \
         + XML_END
     s = text.find(XML_BEGIN)

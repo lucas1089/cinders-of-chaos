@@ -5356,7 +5356,9 @@ por favor?" Audit (the base engine is TFS 1.4.2 and no src-patch touches `Weapon
     typical skill, so the balance numbers stand; +10 skill at level 1000 is now +9.3% instead of +5.6%, +28 skill +26.7%
     instead of +15.7% (table in server/data/spells/README.md "Auto attack power"). A wand keeps the magic level factor of
     "Weapon damage scales with skills".
-* Not touched: fists (the Monk line is at 58% of its rotation), spells, runes, conditions, procs. The tooltip's "Estimated
+* Fists (kind `fist`: the Monk's bare hands and fist weapons, applied in `monk_combat.lua`): the level factor is 1.00 (the
+  Monk line is at 53-62% of its rotation already, target 30%); the skill factor applies with the fist skill. Not touched:
+  spells, runes, conditions, procs. The tooltip's "Estimated
   DPS" (`weapon_dps_core.lua`) includes both factors when `weapon_power_core.lua` is loaded (`item_tooltip.lua` loads it).
 * To retune: change `POWER_KINDS` (share, reference class) or `SKILL_POWER` in `tools/weapon_sim.py`, run `--power --write`.
   A class or spell change moves the rotation numbers, `--power --check` (CI) then asks for a new config.
@@ -17799,41 +17801,94 @@ Art from the October 2026 art sets, converted to our 32 px format once and kept 
   map has no valid town area; `tests/invasion_test.lua` passes with them), selling to Grimgan (he is not on the test map).
 
 ## Fist weapons (`tools/install_fist_weapons.py`, `data/lib/chaos_fist_weapons.lua`, `scripts/chaos/fist_weapons.lua`)
-The Monk line's fist weapons (docs/CLASSES.md "Monk"): six new items of our own art (client ids 33654..33659, server ids
-36654..36659; client/MANIFEST.md "Fist weapons and bone effects"). A fist weapon is a hand item of weaponType "shield"
-with an attack (no stock shield has one): on this server the left hand only takes real weapons, so it goes in the shield
-hand; the engine still hits with fists (`Weapon::useFist`), and `monk_combat.lua` and the Monk spells (`_monk.lua`) use its
-attack instead of the level value when it is higher (`ChaosMonk.cfg.unarmed.fistWeapons`). Its defense is a shield's.
+The Monk line's fist weapons (docs/CLASSES.md "Monk"). Owner 2026-10-23: "creio que o monk nao tem armas pra ele. se nao
+tiver, faca por favor".
 
-| item | level | attack | defense | where |
-|---|---|---|---|---|
-| pair of charred hand wraps | 8 | 42 | 4 | weapon dealers 400 gp (buy back 80); Monk 0.9%, Dark Monk 0.7% |
-| ashbound cestus | 60 | 44 | 8 | weapon dealers 7,000 gp (buy back 1,400); Undead Gladiator 0.4%, Renegade Knight 0.3% |
-| pair of ember knuckles | 150 | 46 | 12 | Burning Gladiator 0.35%, Hellfire Fighter 0.3%; Grimgan buys 4,500 |
-| ossuary gauntlet | 300 | 50 | 16 | Bonecleaver, Doombone, Bonelich, Grimbone, Bonecrusher 0.25%; Grimgan buys 12,000 |
-| pair of cinderforged talons | 500 | 55 | 20 | Inferno Juggernaut, Nightflare Dreadknight, Grindmaw the Mauler 0.15%, Orclops Ravager 0.12%; Grimgan buys 28,000 |
-| Grasp of the Pyre Saint (unique, base "pyre saint's grasp") | 650 | 64 | 24 | legendary unique only (`chaos_unique_items.lua`): fist skill +5, crit 4% / +15%, fire absorb 6% |
+* **The gap found.** The Monk did have six fist weapons (levels 8 to 650), but: nothing for levels 1 to 7 and 9 to 59 (the
+  kit was empty hands); one unique (level 650) and none to level up with; after level 650 nothing, so a Monk from level 650
+  to 2400+ wore the same talons or went bare (bare fists reach their cap of 60 at level 800 and nothing beat them); the
+  family was sold only from level 8 and dropped only to level 500; the fist skill did not scale the auto attack (melee got
+  the skill factor of "Auto attack power", fists did not); the Monk's starter kit had no weapon.
+* **Two item families, one list.** A fist weapon is a hand item of weaponType "shield" with an attack (no stock shield has
+  one): on this server the left hand only takes real weapons, so it goes in the shield hand; the engine still hits with
+  fists (`Weapon::useFist`), and `monk_combat.lua` and the Monk spells (`_monk.lua`) use its attack instead of the level
+  value when it is higher (`ChaosMonk.cfg.unarmed.fistWeapons`, kept in step with `ChaosFistWeapons.ids` by
+  `tests/fist_weapons_test.lua`). Its defense is a shield's.
+  * `data/items/fist_items.csv`: the six items of our own art (client ids 33654..33659, server ids 36654..36659;
+    client/MANIFEST.md "Fist weapons and bone effects").
+  * `data/items/fist_claws.csv` (new): thirteen "claws" (nine plain, four unique bases) on looks the pair already has (donor B "claw 1..13", client ids
+    28000..28012, server ids 40000..40012 = client id + 12000). **No new sprite and no client update.** The donor step
+    (`install_donor_items.py`) keeps their items.otb nodes (the same bytes as this tool writes; tested) and leaves their
+    items.xml entries to this tool, which writes the full entries and drops an old bare one.
 
-- Balance: bare fists are 40 + level x 0.025 (at most 60), so each tier is about 2 attack above them at its level: x1.04
-  .. x1.06 damage (level 300 with the ossuary gauntlet: x1.047 by formula; on the test server 979 against 933 per hit
-  over 64 / 76 hits on a dummy). The unique is the only fist weapon above the bare cap (60, level 800).
-- Rarities, item levels, modifiers: drops get the stock rarity roll and the chaos gear pass like any gear;
+| item | server id | level | attack | defense | where |
+|---|---|---|---|---|---|
+| pair of splinter claws | 40000 | 1 | 41 | 2 | weapon dealers 150 gp (buy back 30); the Monk's starter kit |
+| pair of charred hand wraps | 36654 | 8 | 42 | 4 | weapon dealers 400 gp (buy back 80); Monk 0.9%, Dark Monk 0.7% |
+| Vigil-Knot Wraps (unique) | 40009 | 14 | 43 | 8 | magic unique from 16 low-level monsters (Troll, Orc, Spider, Wolf, ...): dodge 4, life on kill 22, skill fist +2 |
+| Chapel-Iron Knuckles (unique) | 40010 | 26 | 44 | 10 | magic unique from 16 mid-level monsters (Ghoul, Mummy, Vampire, ...): shock chance 12, mana on kill 15, skill fist +2 |
+| pair of rustiron claws | 40001 | 35 | 43 | 6 | weapon dealers 2,800 gp (buy back 700) |
+| ashbound cestus | 36655 | 60 | 44 | 8 | weapon dealers 7,000 gp (buy back 1,400); Undead Gladiator 0.4%, Renegade Knight 0.3% |
+| pair of ashen steel claws | 40002 | 100 | 45 | 10 | weapon dealers 12,000 gp (buy back 3,000); Plaguesmith, Cobra Assassin, Wyrmblood Elite 0.25% |
+| pair of ember knuckles | 36656 | 150 | 46 | 12 | Burning Gladiator 0.35%, Hellfire Fighter 0.3%; Grimgan buys 4,500 |
+| ossuary gauntlet | 36657 | 300 | 50 | 16 | Bonecleaver, Doombone, Bonelich, Grimbone, Bonecrusher 0.25%; Grimgan buys 12,000 |
+| pair of cinderforged talons | 36658 | 500 | 55 | 20 | Inferno Juggernaut, Nightflare Dreadknight, Grindmaw the Mauler 0.15%, Orclops Ravager 0.12%; Grimgan buys 28,000 |
+| Grasp of the Pyre Saint (unique, base "pyre saint's grasp") | 36659 | 650 | 64 | 24 | legendary unique only (`chaos_unique_items.lua`): fist skill +5, crit 4% / +15%, fire absorb 6% |
+| pair of emberhide claws | 40003 | 800 | 62 | 26 | Frost Maiden, Glacial Hellcharger 0.15%, Plague Warbringer 0.12%; Grimgan buys 31,000 |
+| pair of voidglass claws | 40004 | 1000 | 63 | 28 | Dawn Strayer, Spirit of Purity, Celestial Wyrm 0.15%, Ossivane the Gravecage 1.5%; Grimgan buys 32,000 |
+| pair of stormforged claws | 40005 | 1250 | 64 | 30 | Golden Dragon, Winterstride 0.12%; Grimgan buys 33,834 |
+| Gravewind Talons (unique) | 40011 | 1400 | 68 | 38 | rare or better, monsters of level 1000+ (chance 6): physical penetration 14, life on hit 45, boss damage 16, blood rush 5, crit 6% / +25%, skill fist +4 |
+| pair of wyrmbone claws | 40006 | 1500 | 65 | 32 | Bloodantler Fiend 0.1%, Vaelith the Fallen Seraph 1.2%; Grimgan buys 33,834 |
+| pair of gravewrought claws | 40007 | 1800 | 66 | 34 | Mirecoil Wyrm 0.1%, Vaelith the Fallen Seraph 1.0%; Grimgan buys 33,834 |
+| Dawnless Gauntlets (unique) | 40012 | 2000 | 70 | 42 | rare or better, monsters of level 1000+ (chance 6): boss damage 20, DoT 30, regen 40, last breath 35, crit 8% / +30%, physical absorb 5%, skill fist +6 |
+| pair of last-dawn claws | 40008 | 2200 | 67 | 36 | Morgrath the Umbral Archmage, Nyxdrath the Midnight Terror 1.5%, Mirecoil Wyrm 0.1%; Grimgan buys 33,834 |
+
+(Attack and defense of a unique are those of its `chaos_items.xml` entry; the base item in the manifest has the same or a
+little lower attack. The Pyre Saint's base is 62 / 22.)
+
+* **Balance.** Bare fists are 40 + level x 0.025 (at most 60, from level 800). A plain tier is 1 to 7 attack above them at its
+  own level: **x1.00 .. x1.12 damage** (asserted in `fist_weapons_test.lua`: a gain over 1 and at most 1.12 at the level of
+  each plain tier; the old tiers measured x1.047 at level 300, 979 against 933 per hit on a dummy). The Monk's auto attack
+  is 53-62% of its single-target spell rotation (`weapon_sim.py --power`, below) and a plain claw adds at most 12% to it,
+  so the share stays where the other weapon classes are (30-60%). The family is an upgrade path and a gear slot, not a new
+  damage tier. The uniques go further on purpose (the Pyre Saint's grasp 64, Gravewind Talons 68, Dawnless Gauntlets 70,
+  up to +17% over the bare cap) and carry their value in modifiers.
+* **Fist skill scales the hit (new).** `weapon_power_config.lua` has a fourth kind `fist` (`POWER_KINDS['fist'] = (0.30,
+  'Monk', 1.5)` in `weapon_sim.py`: lifted to 30% of a Monk's rotation, a lift that never cuts; the Monk is already at
+  53-62%, so the level factor is **1.00 at every level**). The skill factor `(fist skill / typical skill)^0.5`, clamped to
+  0.7 .. 1.6, now applies to bare fists and fist weapons too (`monk_combat.lua`: `WP.hitFactor("fist", level, fist skill)`
+  after `unarmedFactor`). It is 1 at the typical skill (no balance number moves) and +10 skill at level 1000 is +9.3%
+  where the engine alone gave +5.6%. The Monk's attack speed is not touched.
+* Rarities, item levels, modifiers: drops get the stock rarity roll and the chaos gear pass like any gear;
   `chaos_item_mods.lua` treats a shield with an attack as a weapon, so they roll weapon modifiers (attack speed,
-  ailments, penetration, ...). The unique is a copy of its own base item with the attributes of `chaos_items.xml`
-  (`gen_unique_specs.py` now maps `skillFist` to the stock rarity attribute `rarity_fistSkill`).
-- Install: step `fistweapons` of `install_all.py` (`python3 -I server/tools/install_fist_weapons.py DATA_DIR [--dry-run]`):
+  ailments, penetration, ...). A unique is a copy of its own base item with the attributes of `chaos_items.xml`
+  (`gen_unique_specs.py` maps `skillFist` to the stock rarity attribute `rarity_fistSkill` and the `mods` attribute to
+  built-in Chaos modifiers, two to four per unique). Slot `"fist"` in `chaos_unique_items.lua`; the leveling pair drops
+  as magic from ordinary monsters (chance 25), the endgame pair as rare or better from monsters of level 1000+ (chance
+  6, `minMonsterLevel`). The base item of a unique is in no shop and no loot.
+* Prices: `gen_item_prices.py` reads both manifests (`fist_rows()`); the csv `sell` is the table price, the NPC buy is at
+  least twice the sell (no buy-below-sell loop) and the gear price cap (33,834) holds. The cheap tiers are sold by the 17
+  weapon dealers; the rest only drops, and Grimgan buys it.
+* Starter kit: the Monk's new-player kit (`newplayer_config.lua`) gets the pair of splinter claws in the right slot (the
+  shield hand), given at level 1 and worn from level 1. The admin test kit (`admin/testkit.lua`) gets the cinderforged
+  talons.
+* Install: step `fistweapons` of `install_all.py` (`python3 -I server/tools/install_fist_weapons.py DATA_DIR [--dry-run]`):
   items.otb nodes, an items.xml block, a movements.xml block (Equip / DeEquip, slot shield, the level, Monk / Shadowfist /
-  Iron Sage), and the NPC shops: every weapon dealer (an XML buy list with the battle hammer, 17 NPCs) sells the first two
-  and buys them back, Grimgan buys the rest. `install_fist_weapons.py --lua` rewrites `data/lib/chaos_fist_weapons.lua` from
-  `data/items/fist_items.csv` (the importer's manifest). `add_vocations.py` gives the Monk line any fist weapon equip entry
-  (rule `fist`), so a re-run never changes these entries.
-- Loot: `fist_weapons.lua` adds the rows of `ChaosFistWeapons.loot` to the monster types at startup
-  (`MonsterType:addLoot`, chance per 100,000); no monster file changes. The console prints `[Chaos fist weapons] 15 loot
+  Iron Sage), and the NPC shops: every weapon dealer (an XML buy list with the battle hammer, 17 NPCs) sells the cheap
+  tiers and buys them back, Grimgan buys the rest. `install_fist_weapons.py --lua` rewrites
+  `data/lib/chaos_fist_weapons.lua` from both manifests, sorted by level. `add_vocations.py` gives the Monk line any fist
+  weapon equip entry (rule `fist`), so a re-run never changes these entries. The `donoritems` step runs before
+  `fistweapons`; a server that ran the old donor step has bare claw entries, which this tool replaces.
+* Loot: `fist_weapons.lua` adds the rows of `ChaosFistWeapons.loot` to the monster types at startup
+  (`MonsterType:addLoot`, chance per 100,000); no monster file changes. The console prints `[Chaos fist weapons] 34 loot
   rows added to the monster types (0 skipped)`.
-- Tested (`tests/fist_weapons_test.lua`; in game on a test server with the pair `things_custom9_fx`): equip in the shield
-  hand, the look text ("It can only be wielded properly by monks of level 300 or higher"), the unique given with
-  `ChaosGiveUnique`, the loot rows, the damage with and without the gauntlet. Not tested: the NPC trade window (the test
-  map has no NPCs), a real drop.
+* Client: **no client update and no new sprites.** The claws use looks that the current pair already holds (donor B claws,
+  client/MANIFEST.md "Donor art libraries"); names and stats come from the server.
+* Tested (`tests/fist_weapons_test.lua`, `tests/weapon_power_test.lua`, `tests/newplayer_test.lua`,
+  `tools/install_fist_weapons_test.py`; earlier tiers in game on a test server with the pair `things_custom9_fx`): equip in
+  the shield hand, the look text ("It can only be wielded properly by monks of level 300 or higher"), the unique given with
+  `ChaosGiveUnique`, the loot rows, the damage with and without the gauntlet. Not tested live: the new claws and uniques,
+  the NPC trade window (the test map has no NPCs), a real drop.
 
 ## Iron Palm stun on players (`monk_combat.lua`, `monk_chi_core.lua`, spell `ironsage/iron_palm.lua`)
 

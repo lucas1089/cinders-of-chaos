@@ -611,18 +611,23 @@ Open for the Necromancer:
   Skills: fist fighting and the three melee skills (club, sword, axe) 1.1, distance 1.3, shielding 1.2 (Iron Sage 1.1), magic level 2.0. the Ascendant Oracle
   at level 100. All ids (vocations, client bytes, spells 63-72, storages 7100800-7100809, condition sub ids 71030-71044, opcode 247) are in
   `ChaosMonk.ids` (`server/data/scripts/chaos/monk_chi_core.lua`). Equipment (`add_vocations.py`): every sword, axe and club (staves too) and
-  whatever the Ranger may wear, and the fist weapons; the Royal Paladin's potions. New-player kit: light armour, no weapon.
+  whatever the Ranger may wear, and the fist weapons; the Royal Paladin's potions. New-player kit: light armour and a pair of splinter claws (fist weapon, level 1).
 - **Unarmed combat on this engine**: without a weapon the engine hits with fists (`Weapon::useFist`): fist fighting skill, a fixed attack
   value of 7, the vocation's attackspeed (minus the dexterity stat), the usual weapon formula and the fight mode factor, but **not** the
   vocation's meleeDamage multiplier, and there is no "fist" weapon type in the item types. So the Monk's unarmed damage is scripted on the
   weapon hook, without an engine patch: `monk_combat.lua` scales a Monk's fist hit (melee origin, nothing in the hands) by (formula with
   the Monk's fist attack x meleeDamage) / (formula with attack 7). The fist attack grows with level: 40 + level x 0.025, at most 60
-  (level 300: 47.5). Fist weapons (`ChaosMonk.cfg.unarmed.fistWeapons`, server/README.md "Fist weapons"): six hand items of weaponType
-  "shield" with an attack, worn in the shield hand by the Monk line only; their attack replaces the level value when higher
-  (charred hand wraps 42 at level 8, ashbound cestus 44 / 60, ember knuckles 46 / 150, ossuary gauntlet 50 / 300,
-  cinderforged talons 55 / 500, the legendary unique Grasp of the Pyre Saint 64 / 650, the only one above the bare cap 60).
-  About +5% damage over bare fists at each one's level (level 300: x1.047 by formula, 979 against 933 per hit measured
-  on a dummy). Staves are
+  (level 300: 47.5). Fist weapons (`ChaosMonk.cfg.unarmed.fistWeapons`, server/README.md "Fist weapons"): nineteen hand items of weaponType
+  "shield" with an attack, worn in the shield hand by the Monk line only, from level 1 to 2200; their attack replaces the level
+  value when higher. Plain tiers: splinter claws 41 / level 1 (the starter kit), charred hand wraps 42 / 8, rustiron claws 43 / 35,
+  ashbound cestus 44 / 60, ashen steel claws 45 / 100, ember knuckles 46 / 150, ossuary gauntlet 50 / 300, cinderforged talons 55 /
+  500, emberhide claws 62 / 800, voidglass claws 63 / 1000, stormforged claws 64 / 1250, wyrmbone claws 65 / 1500, gravewrought claws
+  66 / 1800, last-dawn claws 67 / 2200. Uniques: Vigil-Knot Wraps 43 / 14 and Chapel-Iron Knuckles 44 / 26 (leveling, magic), Grasp
+  of the Pyre Saint 64 / 650 (legendary), Gravewind Talons 68 / 1400 and Dawnless Gauntlets 70 / 2000 (endgame, rare or better,
+  strong monsters), each with Chaos modifiers built in. A plain tier is x1.00 .. x1.12 damage over bare fists (cap 60) at its
+  level; the auto attack stays at 53-62% of the Monk's rotation. The fist skill scales the hit like the melee skill does for the
+  other classes (`(skill / typical)^0.5`, 0.7 .. 1.6; 1 at the typical skill). The Monk's attack speed is not changed.
+  Staves are
   ordinary weapons (club skill, the two-handed factor of `weapon_styles.lua`, the attack speed patch 0002).
 - **Chi**: a player storage (shared by the spells' and the scripts' Lua states) with the time of its last change; gone after 12 s untouched.
   +1 per melee hit (at most one per 2 s), +2 Ashen Fist, +1 Pressure Points; a finisher needs 1 chi and spends all of it, x(0.30 + 0.14 per
