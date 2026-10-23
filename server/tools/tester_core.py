@@ -299,8 +299,18 @@ def build_report(run, log):
         L.append('  %-10s %6d %6d %6d' % (name, b.get('tried', 0), b.get('ok', 0), b.get('failed', 0)))
     cov = run.get('coverage')
     if cov:
-        L.append('== System coverage (tried / ok / errors; never reached)')
+        # short enough to paste: only what needs a look; the fine, out of scope and passive systems are counted
+        L.append('== System coverage, what needs a look (tried / ok / errors; never reached)')
+        fine = skipped = 0
         for system, c in sorted(cov.items()):
-            L.append('  %-22s %5d %5d %5d%s' % (system, c.get('tried', 0), c.get('ok', 0), c.get('errors', 0),
-                                                '  never reached: ' + c['why'] if not c.get('tried') and c.get('why') else ''))
+            tried, okn, err, why = c.get('tried', 0), c.get('ok', 0), c.get('errors', 0), c.get('why') or ''
+            if tried and okn and not err:
+                fine += 1
+                continue
+            if not tried and why.startswith(('out of scope', 'passive')):
+                skipped += 1
+                continue
+            L.append('  %-22s %5d %5d %5d%s' % (system, tried, okn, err,
+                                                '  never reached: ' + why if not tried and why else ''))
+        L.append('  (%d systems fine, %d out of scope or passive: not listed)' % (fine, skipped))
     return '\n'.join(L) + '\n'

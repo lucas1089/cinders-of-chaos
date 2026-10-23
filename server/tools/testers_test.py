@@ -106,12 +106,16 @@ run = {'started': 'a', 'ended': 'b', 'bots': 3, 'logins': 4, 'deaths': 1,
        'anomalies': [{'rule': 'death within one hit from full health', 'who': 'Tester Abd'}],
        'first': {'fail:cannot use object': {'bot': 'Tester Abd', 'did': 'depot'},
                  'lua:x.lua:5: boom': {'bot': 'Tester Abe', 'did': 'opcodes'}},
-       'coverage': {'autoloot': {'tried': 3, 'ok': 3, 'errors': 0}, 'arena': {'why': 'needs two parties'}}}
+       'coverage': {'autoloot': {'tried': 3, 'ok': 3, 'errors': 0}, 'arena': {'why': 'needs two parties'},
+                    'bazaar': {'why': 'out of scope: trades with real players'},
+                    'charms': {'tried': 29, 'ok': 0, 'errors': 0}}}
 r = TC.build_report(run, p)
 for want in ('2x Lua Script Error', 'Anomalies (2)', 'hit taken over 3x max health', '9x exhausted (expected in play)',
              '2x cannot use object (first: Tester Abd after depot)', '1x x.lua:5: boom (first: Tester Abe after opcodes)',
              '1x You have been idle', 'shop', 'never reached: needs two parties'):
     ok(want in r, 'the report has %r' % want)
+ok('autoloot' not in r and 'bazaar' not in r, 'fine and out of scope systems are not listed')
+ok('charms' in r and '(1 systems fine, 1 out of scope or passive: not listed)' in r, 'a system never ok is; the counts')
 
 # a monster named "Terror Bird" is no error; the bots' own records stay out of the error list; a guard warning keeps
 # its stack traceback; the deaths the server logged, by killer, beside the bots' own count
