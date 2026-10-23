@@ -2012,4 +2012,207 @@
 		<attribute key="description" value="Cut from the gallows beam of a village the moon forgot to leave. (Requires level 900.)" />
 		<attribute key="showattributes" value="1" />
 	</item>
+	<!-- Gear coverage round (2026-10-22, server/README.md "Gear coverage"): the gaps of tools/gear_coverage.lua. Quivers
+	     for the Ranger line at every band (the stock quivers stop at 1000 and start at 20), spellbooks at the first and
+	     the last band, a ring, two amulets, and the top-band helmets, armor and legs (the sets stop at 2000). Each is a
+	     copy of a stock base with its own equipLevel; the stock copy of the base keeps its own rule. -->
+	<!-- 28693: stock "ashwood quiver", unique at level 6 -->
+	<item id="28693" article="a" name="Fletcher's First Sheath">
+		<attribute key="weight" value="300" />
+		<attribute key="weaponType" value="shield" />
+		<attribute key="defense" value="3" />
+		<attribute key="mods" value="lifeonhit:6" />
+		<attribute key="description" value="Sewn the night before the first hunt. It smells of rain. (Requires level 6. Ranger line.)" />
+		<attribute key="equipLevel" value="6" />
+		<attribute key="equipLines" value="Ranger" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 27651: stock "thornhide quiver", unique at level 14 -->
+	<item id="27651" article="a" name="Hollow-Reed Quiver">
+		<attribute key="weight" value="300" />
+		<attribute key="weaponType" value="shield" />
+		<attribute key="defense" value="4" />
+		<attribute key="mods" value="lifeonhit:10,physpen:2" />
+		<attribute key="description" value="Light enough to run in. Loud enough to be followed. (Requires level 14. Ranger line.)" />
+		<attribute key="equipLevel" value="14" />
+		<attribute key="equipLines" value="Ranger" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 27694: stock "ravenfeather quiver", unique at level 38 -->
+	<item id="27694" article="a" name="Gravewind Quiver">
+		<attribute key="weight" value="350" />
+		<attribute key="weaponType" value="shield" />
+		<attribute key="defense" value="5" />
+		<attribute key="mods" value="lifeonhit:14,physpen:4" />
+		<attribute key="description" value="Every arrow leaves it with a sigh. (Requires level 38. Ranger line.)" />
+		<attribute key="equipLevel" value="38" />
+		<attribute key="equipLines" value="Ranger" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 27696: stock "splitwind quiver", unique at level 750 -->
+	<item id="27696" article="a" name="Quiver of Shattered Skies">
+		<attribute key="weight" value="400" />
+		<attribute key="weaponType" value="shield" />
+		<attribute key="defense" value="9" />
+		<attribute key="mods" value="lifeonhit:28,physpen:8" />
+		<attribute key="description" value="The sky broke once. This is where the pieces went. (Requires level 750. Ranger line.)" />
+		<attribute key="equipLevel" value="750" />
+		<attribute key="equipLines" value="Ranger" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 27663: stock "stormfletch quiver", unique at level 900 -->
+	<item id="27663" article="an" name="Ember-Lashed Quiver">
+		<attribute key="weight" value="400" />
+		<attribute key="weaponType" value="shield" />
+		<attribute key="defense" value="10" />
+		<attribute key="mods" value="lifeonhit:32,physpen:9" />
+		<attribute key="description" value="Bound with cord that still glows at the knots. (Requires level 900. Ranger line.)" />
+		<attribute key="equipLevel" value="900" />
+		<attribute key="equipLines" value="Ranger" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 27686: stock "blightroot quiver", unique at level 1200 -->
+	<item id="27686" article="a" name="Nightglass Quiver">
+		<attribute key="weight" value="450" />
+		<attribute key="weaponType" value="shield" />
+		<attribute key="defense" value="12" />
+		<attribute key="mods" value="lifeonhit:38,physpen:11" />
+		<attribute key="description" value="Black glass drawn into a sleeve. It never holds fewer than you need. (Requires level 1200. Ranger line.)" />
+		<attribute key="equipLevel" value="1200" />
+		<attribute key="equipLines" value="Ranger" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 27676: stock "bonewhisper quiver", unique at level 1600 -->
+	<item id="27676" article="a" name="Quiver of the Last Volley">
+		<attribute key="weight" value="450" />
+		<attribute key="weaponType" value="shield" />
+		<attribute key="defense" value="14" />
+		<attribute key="mods" value="physpen:13,bossdamage:12" />
+		<attribute key="description" value="There is always one more. That is the whole curse. (Requires level 1600. Ranger line.)" />
+		<attribute key="equipLevel" value="1600" />
+		<attribute key="equipLines" value="Ranger" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 28379: stock "rimeshard quiver", unique at level 1900 -->
+	<item id="28379" article="a" name="Hollow Sun Quiver">
+		<attribute key="weight" value="500" />
+		<attribute key="weaponType" value="shield" />
+		<attribute key="defense" value="16" />
+		<attribute key="mods" value="lifeonhit:48,physpen:14,bossdamage:16" />
+		<attribute key="description" value="A sun that burned out and kept its shape. (Requires level 1900. Ranger line.)" />
+		<attribute key="equipLevel" value="1900" />
+		<attribute key="equipLines" value="Ranger" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 8900: stock spellbook (level 30), unique at level 12 -->
+	<item id="8900" article="a" name="Primer of Small Fires">
+		<attribute key="weight" value="1000" />
+		<attribute key="weaponType" value="shield" />
+		<attribute key="defense" value="9" />
+		<attribute key="magicPoints" value="1" />
+		<attribute key="maxManaPoints" value="40" />
+		<attribute key="description" value="Every page is a different way to burn a finger. (Requires level 12. Mystic and Necromancer lines.)" />
+		<attribute key="equipLevel" value="12" />
+		<attribute key="equipLines" value="Mystic,Necromancer" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 29572: stock spellbook (level 400), unique at level 1650 -->
+	<item id="29572" article="a" name="Codex of the Unwritten End">
+		<attribute key="weight" value="1400" />
+		<attribute key="weaponType" value="shield" />
+		<attribute key="defense" value="33" />
+		<attribute key="magicPoints" value="9" />
+		<attribute key="absorbPercentDeath" value="12" />
+		<attribute key="maxManaPoints" value="1800" />
+		<attribute key="description" value="The last chapter has not been written. It is waiting for you to finish. (Requires level 1650. Mystic and Necromancer lines.)" />
+		<attribute key="equipLevel" value="1650" />
+		<attribute key="equipLines" value="Mystic,Necromancer" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 26185: stock ring (level 100), unique at level 30 -->
+	<item id="26185" article="a" name="Cinder Knuckle Band">
+		<attribute key="weight" value="60" />
+		<attribute key="slotType" value="ring" />
+		<attribute key="maxHitPoints" value="60" />
+		<attribute key="skillSword" value="1" />
+		<attribute key="skillAxe" value="1" />
+		<attribute key="skillClub" value="1" />
+		<attribute key="skillDist" value="1" />
+		<attribute key="description" value="Warm from a hand that was never quite taken off. (Requires level 30.)" />
+		<attribute key="equipLevel" value="30" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 26198: stock necklace (level 150), unique at level 450 -->
+	<item id="26198" article="a" name="Pilgrim's Reliquary">
+		<attribute key="weight" value="500" />
+		<attribute key="slotType" value="necklace" />
+		<attribute key="absorbPercentHoly" value="6" />
+		<attribute key="absorbPercentDeath" value="4" />
+		<attribute key="maxHitPoints" value="400" />
+		<attribute key="magicPoints" value="2" />
+		<attribute key="description" value="Carried by the ones who walked in, and by the ones who walked out. (Requires level 450.)" />
+		<attribute key="equipLevel" value="450" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 28690: stock necklace (level 220), unique at level 600 -->
+	<item id="28690" article="an" name="Emberwake Locket">
+		<attribute key="weight" value="500" />
+		<attribute key="slotType" value="necklace" />
+		<attribute key="absorbPercentFire" value="8" />
+		<attribute key="absorbPercentPhysical" value="4" />
+		<attribute key="maxManaPoints" value="500" />
+		<attribute key="criticalHitChance" value="3" />
+		<attribute key="criticalHitAmount" value="12" />
+		<attribute key="description" value="It opens onto a very small, very patient fire. (Requires level 600.)" />
+		<attribute key="equipLevel" value="600" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 15408: stock "talon circlet" (level 300), unique at level 1550; every class -->
+	<item id="15408" article="a" name="Crown of Ten Thousand Cinders">
+		<attribute key="weight" value="800" />
+		<attribute key="slotType" value="head" />
+		<attribute key="armor" value="17" />
+		<attribute key="magicPoints" value="3" />
+		<attribute key="maxHitPoints" value="900" />
+		<attribute key="absorbPercentFire" value="8" />
+		<attribute key="description" value="Each ember in it was a crown once. (Requires level 1550.)" />
+		<attribute key="equipLevel" value="1550" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 27196: stock "talon coif" (level 300), unique at level 1800; every class -->
+	<item id="27196" article="a" name="Veil of the Quiet Throne">
+		<attribute key="weight" value="800" />
+		<attribute key="slotType" value="head" />
+		<attribute key="armor" value="18" />
+		<attribute key="magicPoints" value="3" />
+		<attribute key="maxManaPoints" value="900" />
+		<attribute key="absorbPercentDeath" value="8" />
+		<attribute key="description" value="No one sits there. Everyone bows. (Requires level 1800.)" />
+		<attribute key="equipLevel" value="1800" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 25174: stock armor (level 200), unique at level 1600; every class -->
+	<item id="25174" article="a" name="Pyre-Sworn Cuirass">
+		<attribute key="weight" value="9000" />
+		<attribute key="slotType" value="body" />
+		<attribute key="armor" value="28" />
+		<attribute key="maxHitPoints" value="1800" />
+		<attribute key="absorbPercentFire" value="10" />
+		<attribute key="absorbPercentPhysical" value="5" />
+		<attribute key="description" value="The pyre went out. The oath did not. (Requires level 1600.)" />
+		<attribute key="equipLevel" value="1600" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 28708: stock "talon greaves" (level 300), unique at level 1650; every class -->
+	<item id="28708" article="a" name="Greaves of the Final Ash">
+		<attribute key="weight" value="2500" />
+		<attribute key="slotType" value="legs" />
+		<attribute key="armor" value="16" />
+		<attribute key="maxHitPoints" value="900" />
+		<attribute key="absorbPercentEarth" value="6" />
+		<attribute key="absorbPercentIce" value="6" />
+		<attribute key="description" value="Walk far enough and the road turns to ash behind you. (Requires level 1650.)" />
+		<attribute key="equipLevel" value="1650" />
+		<attribute key="showattributes" value="1" />
+	</item>
 </items>

@@ -76,9 +76,10 @@ ORDER = ['Warrior', 'Juggernaut', 'Berserker', 'Ranger', 'Deadeye', 'Beastmaster
          'Illusionist', 'Thief', 'Ninja', 'Samurai', 'Monk', 'Shadowfist', 'Iron Sage', 'Necromancer', 'Lich',
          'Bone Lord', 'Templar', 'Inquisitor', 'Sentinel']
 # spells of its own per class after the cap (docs/CLASSES.md "Spell cap")
+# O136 (2026-10-23): Galeborne Stride retired, minus one in the 11 classes that had it
 PINNED = {'Warrior': 17, 'Juggernaut': 17, 'Berserker': 16, 'Ranger': 17, 'Deadeye': 16, 'Beastmaster': 17,
-          'Mystic': 15, 'Elementalist': 14, 'Illusionist': 18, 'Thief': 15, 'Ninja': 16, 'Samurai': 17, 'Monk': 13,
-          'Shadowfist': 13, 'Iron Sage': 15, 'Necromancer': 18, 'Lich': 18, 'Bone Lord': 20, 'Templar': 11,
+          'Mystic': 14, 'Elementalist': 13, 'Illusionist': 18, 'Thief': 14, 'Ninja': 15, 'Samurai': 16, 'Monk': 12,
+          'Shadowfist': 12, 'Iron Sage': 14, 'Necromancer': 17, 'Lich': 17, 'Bone Lord': 19, 'Templar': 11,
           'Inquisitor': 12, 'Sentinel': 14}
 kit = {v: set() for v in ORDER}
 xml = re.sub(r'<!--.*?-->', '', open(os.path.join(SPELLS, 'chaos', 'spells_chaos.xml'), encoding='utf-8').read(), flags=re.S)
@@ -105,7 +106,7 @@ for v in ORDER:
 for name in C.UNIVERSAL:
     if any(name in kit[v] for v in ORDER):
         check(all(name in kit[v] for v in ORDER), name + ': every class has it')
-check(len(C.RETIRED_IDS) == 68, 'retired: %d' % len(C.RETIRED_IDS))
+check(len(C.RETIRED_IDS) == 69, 'retired: %d' % len(C.RETIRED_IDS))
 # Ward of the Mind, the classic mana shield (owner 2026-10-21): the Mystic, Necromancer and Ranger lines only, outside
 # the 15; add_vocations.py gives those nine the spell (the Necromancer through LINE_STOCK_SPELLS, not its conversion)
 import add_vocations as AV  # noqa: E402

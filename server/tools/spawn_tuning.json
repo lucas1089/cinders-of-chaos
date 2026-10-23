@@ -25,10 +25,10 @@
     "viewBlockFactor": 1.25,
     "tierHealth": 1.11,
     "levelHealthBonus": 0.0074,
-    "_pace": "pack combat (README 'Pack combat (pace)'): one hunter's kills per hour by hunting level, the pack-cycle model of the median class, in place of efficiency x DPS / health. Remove the key for the earlier model. scaled: with the level-scaled health curve of 2026-10-20 (pace_config.lua scaled.health; was 990 / 940 / 850 / 800 at 650 / 1000 / 1300 / 2000 with the 2026-10-14 curve): the 2026-10-14 numbers x the median class kills per hour of tools/pack_model.py with the new / old curve (O108)",
+    "_pace": "pack combat (README 'Pack combat (pace)'): one hunter's kills per hour by hunting level, the pack-cycle model of the median class, in place of efficiency x DPS / health. Remove the key for the earlier model. scaled: with the level-scaled health curve of 2026-10-20 (pace_config.lua scaled.health; was 990 / 940 / 850 / 800 at 650 / 1000 / 1300 / 2000 with the 2026-10-14 curve): the 2026-10-14 numbers x the median class kills per hour of tools/pack_model.py with the new / old curve (O108); O138 (2026-10-23): x1.72 / 2.05 / 2.69 / 3.22 / 3.50 / 3.74 for the faster late packs (485 / 412 / 323 / 254 / 232 / 211 before)",
     "paceKillsPerHour": {
       "base": [[20, 900], [30, 1600], [100, 1580], [225, 1320], [450, 1210], [800, 1210], [1250, 1200]],
-      "scaled": [[650, 485], [800, 412], [1000, 323], [1300, 254], [1600, 232], [2000, 211]]
+      "scaled": [[650, 836], [800, 846], [1000, 869], [1300, 819], [1600, 813], [2000, 789]]
     }
   },
   "_areas": "thin areas whose density was raised: H4 = the 300-600 band to 3.0 monsters per 100 walkable tiles (at most +50%), H5 = the top of the 600-1000 band (levels 900+, outdoors) to 1.5 (at most +60%). Measured 2026-10-11 on the loaded map: walkable tiles within 6 sqm of a spawn, no protection zone, no house",

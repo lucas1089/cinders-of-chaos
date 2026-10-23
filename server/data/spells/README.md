@@ -2707,6 +2707,144 @@ The best set of at most 5 (spell damage per second, 1 target and the 5-dummy pac
 - Not in the numbers: auto attacks, minions, the passive tree, conditions (burns, rots) and runes. On the server a rune a
   factored class uses takes the factor too (its hit is ORIGIN_SPELL); a burn or rot a spell leaves does not.
 
+### Combat pass (O136, 2026-10-23; owner: "balanceie o jogo para o combate ser mais rápido e fluido, com mais magias de ataque e menos de suporte ... healing, dano e tudo"; computed with rotation_sim.py and pack_model.py, not measured in game)
+
+Scope: combat only. Not touched (other agents): spell unlock levels, XP, stages, hunts, loot, items, uniques, gear sets.
+
+**1. Fight pace (measured with the repo's models, nothing changed in monster health).** The median class's one-target damage
+per second (`pack_model.py` C4 + kit: 91 at level 30, 304 at 100, 913 at 300, 2,598 at 1000) against the median paced
+monster of the hunting band (`pack_model.py` median health x the `pace_config.lua` curve x the tier 1.11), a pack of
+`P` (6-8) monsters (the model's lure rule) and the 5-target damage:
+
+| Level | Monster health | Normal alone | Magic (x2) | Rare (x3.5) | Pack clear (P) | Class range alone |
+|---|---|---|---|---|---|---|
+| 30 | 147 | 1.6 s | 2.9 s | 5.1 s | 3.9 s (7) | 1.1-2.0 s |
+| 100 | 500 | 1.6 s | 3.0 s | 5.2 s | 4.1 s (8) | 1.1-2.0 s |
+| 200 | 1,121 | 1.8 s | 3.3 s | 5.8 s | 4.6 s (8) | 1.3-2.3 s |
+| 300 | 1,911 | 2.1 s | 3.8 s | 6.6 s | 5.2 s (8) | 1.5-2.6 s |
+| 500 | 3,916 | 2.7 s | 4.9 s | 8.5 s | 6.8 s (8) | 1.7-3.6 s |
+| 800 | 6,527 | 3.0 s | 5.5 s | 9.6 s | 7.5 s (8) | 1.8-4.1 s |
+
+The base hunts are already fast: a normal pack dies in 4-8 s and a rare in 5-10 s at every level. Bosses are sized by
+their own models ("Solo kill times": dungeon bosses 2:30 solo, Ascended Omen 10 min). **The slog is the level-scaled late
+sets** (hunting level 650 and up, the `scaled` curves of `pace_config.lua`: file health x the engine's 1 + 0.0074 L x the
+curve): median class, `scratchpad` model of the same functions:
+
+| Level | Monster health | Normal alone | Pack of 8 | Kills per hour (model) |
+|---|---|---|---|---|
+| 670 | 31,100 | 16.8 s | 41.7 s | 955 |
+| 800 | 46,800 | 21.8 s | 53.9 s | 816 |
+| 1000 | 83,100 | 32.0 s | 78.1 s | 617 |
+| 1300 | 136,100 | 41.0 s | 102.2 s | 510 |
+
+That is 4-8 times slower than a base hunt of the same level. **Not changed here** (it needs the experience, loot and kill
+goal curves of the same set to move by the inverse of the kill-rate gain, and those belong to the XP agent). Proposal,
+computed with `pack_model.py` (`kills_per_hour`): health x0.5 of the `scaled.health` curve gives a pack of 8 in 21 / 27 /
+39 / 51 s at 670 / 800 / 1000 / 1300 and x1.53 / 1.59 / 1.65 / 1.70 kills per hour, so `scaled.xp`, `scaled.loot` and
+`scaled.goal` must go x0.65 / 0.63 / 0.61 / 0.59 (linear in between) for the same experience, loot and goals per hour; health
+x0.35 gives 15 / 19 / 27 / 36 s with x0.55 / 0.52 / 0.49 / 0.47.
+
+**1b. Late sets faster (O138, 2026-10-23, applied; computed with `pack_model.py`, not measured in game).** The proposal above, with the
+health points fitted so a pack of 8 dies in about 2.2 times a base hunt's pack (the owner's range x0.35-0.5 was not enough
+from level 1000: x0.5 still gave 5 times). `pace_config.lua` `scaled`: health x0.40 / 0.31 / 0.20 / 0.16 / 0.15 / 0.14 of the
+O108 curve at 650 / 800 / 1000 / 1300 / 1600 / 2000, experience and loot per kill divided by the kill rate gain, kill goals
+multiplied by it (the README above wrote x0.5-0.65 for the goals; a goal counts kills, so it follows the kill rate up: with
+x0.65 contracts would end 2.4 times faster at the same reward). Median class, `pack_model.py --check` (clear time of a pack of 8
+at the model's lure rule, cleave included; the numbers differ from the table above, which is another class pick and no cleave):
+
+| Hunting level | Base hunt pack | Late pack before | Late pack after | Kills per hour before -> after | Experience, gold, goals per hour |
+|---|---|---|---|---|---|
+| 670 | 5.1 s | 27.2 s (5.3x) | 10.5 s (2.1x) | 955 -> 1,661 (x1.72) | unchanged |
+| 800 | 4.7 s | 33.9 s (7.2x) | 10.4 s (2.2x) | 815 -> 1,674 (x2.05) | unchanged |
+| 1000 | 4.3 s | 47.6 s (11.1x) | 9.5 s (2.2x) | 617 -> 1,661 (x2.69) | unchanged |
+| 1300 | 4.3 s | 60.5 s (14.1x) | 9.8 s (2.3x) | 509 -> 1,642 (x3.22) | unchanged |
+| 1600 | 4.3 s | 67.4 s (15.8x) | 10.0 s (2.3x) | 465 -> 1,631 (x3.50) | unchanged |
+| 2000 | 4.3 s | 73.6 s (17.2x) | 10.2 s (2.4x) | 432 -> 1,616 (x3.74) | unchanged |
+
+Per kill, `scaled` at 650 / 1000 / 2000: health 0.35 / 0.40 / 0.42 -> 0.140 / 0.080 / 0.058, experience 0.086 / 0.087 / 0.087
+-> 0.0499 / 0.0323 / 0.0233, loot 0.83 / 0.62 / 0.55 -> 0.482 / 0.230 / 0.147, goals 9.8 / 9.6 / 9.8 -> 16.9 / 25.8 / 36.6
+(the 2026-10-14 model's 20-37 again). `spawn_tuning.json` `paceKillsPerHour.scaled` 485 / 412 / 323 / 254 / 232 / 211 -> 836 /
+846 / 869 / 819 / 813 / 789 (base hunts 1,200). `progression_model.lua --check` and `loot_model.lua --check` pass unchanged
+(gold per hour of the 800 band +1.5%, 1000 band +0.7%, as before). Monster damage is unchanged: a fight is 3-7 times
+shorter, so a pack deals 3-7 times less damage to a player before it dies, at the same damage per second (no change to
+healing needed; the burst is the same). If the late hunts turn out too easy in the beta, raise `pace_config.lua` `damage`
+(0.40 at 1000) before the health. CI: `pack_model.py --check` holds the late pack at 3 times a base pack at most. Bosses,
+rifts, waystones, invasions, the raid and the arena are not paced and are not affected (their fights stay as long as they
+were; the rift health budget is its own model).
+
+**2. Class curve (the early dips and the level 200 spikes).** One factor per class could not hold levels 30-200 and
+300-1000 together. `spell_factor_config.lua` now has `byLevel[vocation]`: {level, factor} points (flat below the first,
+linear between points, the last point's value above; `spell_factor_core.lua` `forVocation(voc, cfg, level)`, the event
+passes the attacker's level). 16 classes have a curve; `byVocation` is its end value (level 1000 and up). The points were
+fitted with `rotation_sim.py` so each class's best-set score (1 target + 0.25 x pack) equals its value before the attack
+kit (commit 5cd77f1f) at the knot levels 15 / 30 / 40 / 60 / 70 / 80 / 90 / 100 / 120 / 150 / 180 / 200 / 230 / 260 / 300 /
+450 / 600 / 1000; checked every 10 levels from 10 to 100 and at 120-1000 (largest error left 2%, Templar 10% at level 50 inside
+a ramp). The Thief line (weapon strikes: the factor never touches them) and the Mystic and Elementalist (already at 0) keep
+no curve. Best-set score against before the kit, before -> after (spells only; auto attacks and minions are not in it, so
+the change of the whole class is smaller):
+
+| Class | 30 | 60 | 100 | 150 | 200 | 300 | 600 | 1000 |
+|---|---|---|---|---|---|---|---|---|
+| Ranger | +6 -> 0 | +6 -> 0 | +8 -> 0 | +8 -> 0 | +27 -> 0 | +1 -> 0 | 0 | 0 |
+| Warrior | 0 | 0 | 0 | +10 -> 0 | +7 -> 0 | +2 -> 0 | +2 -> 0 | 0 |
+| Deadeye | +19 -> 0 | +19 -> 0 | +21 -> 0 | +22 -> 0 | +28 -> 0 | +8 -> 0 | -4 -> 0 | -4 -> 0 |
+| Juggernaut | 0 | 0 | 0 | +10 -> 0 | +10 -> 0 | +4 -> 0 | -3 -> 0 | -2 -> 0 |
+| Illusionist | +4 -> 0 | +4 -> 0 | +4 -> 0 | +17 -> +1 | +42 -> -1 | -1 -> 0 | -1 -> +1 | 0 |
+| Berserker | 0 | 0 | 0 | +9 -> -1 | +10 -> 0 | -2 -> 0 | -2 -> 0 | -2 -> 0 |
+| Beastmaster | -20 -> 0 | -20 -> 0 | -17 -> 0 | -10 -> 0 | +2 -> 0 | +14 -> 0 | -8 -> 0 | -9 -> 0 |
+| Monk | -19 -> 0 | -17 -> 0 | -16 -> 0 | -7 -> 0 | -7 -> 0 | 0 | 0 | 0 |
+| Shadowfist | -1 -> 0 | +1 -> 0 | -1 -> 0 | +15 -> +1 | +15 -> +1 | +15 -> +1 | -6 -> -1 | -7 -> 0 |
+| Iron Sage | -7 -> 0 | -4 -> 0 | -3 -> 0 | +1 | +1 | +1 | +1 | +1 |
+| Necromancer | -26 -> 0 | -36 -> 0 | -17 -> 0 | -2 -> 0 | +2 | +12 -> 0 | -1 -> +1 | -9 -> 0 |
+| Lich | +17 -> 0 | -19 -> 0 | +4 -> 0 | +12 -> 0 | +12 -> 0 | +9 -> 0 | -1 -> +1 | -8 -> 0 |
+| Bone Lord | -16 -> 0 | -33 -> 0 | +12 -> 0 | -3 -> 0 | -4 -> 0 | +12 -> -1 | 0 -> -1 | -11 -> -1 |
+| Templar | 0 | -25 -> 0 | -6 -> 0 | 0 | +7 -> -1 | +5 -> 0 | +1 | -2 -> 0 |
+| Inquisitor | +7 -> 0 | -36 -> 0 | -2 -> 0 | -9 -> -1 | +3 -> 0 | +2 -> 0 | 0 | -3 -> 0 |
+| Sentinel | -5 -> 0 | -43 -> 0 | -8 -> 0 | -6 -> 0 | +3 -> -1 | +5 -> 0 | +1 | -3 -> 0 |
+| Mystic, Elementalist | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 -> -2 (Mystic) |
+
+Not fixed: the Thief line (weapon strikes; Thief +5 to +12% from level 150, Ninja -9% from 600, Samurai -5 to -11%). The
+spells whose factor went up (Necromancer 0.59 -> 0.55-1.00 by level, Templar line 0.6 -> up to 1.0 at levels 40-70) are
+the ones the cooldown ladder had cut; at the end of the curves: Ranger 1.12, Deadeye 1.25, Beastmaster 1.17, Necromancer
+0.69, Lich 0.92, Bone Lord 0.71, Templar 0.63, Inquisitor 0.77, Sentinel 0.60, Shadowfist 0.80, Juggernaut 1.09, Berserker
+1.08. The distance weapon row of `weapon_power_config.lua` (reference: the Ranger rotation) was regenerated
+(`weapon_sim.py --power --write`): distance 1.05 / 1.11 / 1.15 / 1.20 / 1.25 at levels 500 / 600 / 700 / 850 / 1000
+(1 / 1.06 / 1.10 / 1.14 / 1.18), the wand row 1.71 / 1.74 -> 1.69 at 1500 / 2000.
+
+**3. No dead gaps in the helper's rotation.** The best set of 5 maximised the score and left 4-6 s gaps for Beastmaster,
+Illusionist, Necromancer, Lich, Bone Lord, Templar, Sentinel and also Mystic, Ranger, Warrior, Deadeye, Juggernaut,
+Berserker, Inquisitor at some levels. `rotation_sim.py` `search` now keeps the best set that casts on every attack group
+cooldown (gap 2 s) and takes it when it has at least `GAP_FREE` = 90% of the best set's score. Before -> after, the
+longest gap of the helper's set at levels 30 / 60 / 100 / 150 / 200 / 300 / 600 / 1000: every class is at 2 s at all of
+them except the Warrior at 1000 (4 s; the gap-free set would cost more than 10%). The score cost is at most 10%, and the
+curve above was fitted after it. Mana runway (`--mana --check`, unchanged costs): 0 class/level rows under 15 s; the lowest
+are the Templar line at levels 60-230 (17-27 s on a full pool), the pool covers 2-3 packs, then a mana potion.
+`--ladder --check` passes. The client's `autorotation_data.lua` is regenerated.
+
+**4. Fewer supports.** Retired: **Galeborne Stride** (the stock strong haste, a 22 s haste kept by 11 classes: Mystic,
+Elementalist, Thief, Ninja, Samurai, Monk, Shadowfist, Iron Sage, Necromancer, Lich, Bone Lord). Every character has
+Fleetfoot and Vigil of Haste (universal), so it was a third haste to juggle. `patch_spell_cap.py` `CAP` entry (39) has no
+class now, so the cap retires it like the other 68 stock spells (69 retired); characters that learned it keep the row,
+the engine refuses the cast, the spellbook and the client list drop it (`ChaosCappedSpells`). Kit sizes: minus one for those
+11 classes (Mystic 14, Elementalist 13, Thief 14, Ninja 15, Samurai 16, Monk 12, Shadowfist 12, Iron Sage 14, Necromancer 17,
+Lich 17, Bone Lord 19). Heals stay as they were. Candidates left alone (they carry class mechanics, ask first): Raise Bone
+Warrior / Archer / Mage and Raise Dead (four minion casts per Necromancer line class), Wildstride (a speed buff next to
+Vigil of Haste), Detonate Mines, Mistborne Step, Shadow Veil and Poison Blades (Thief line: five buffs for the Samurai).
+
+**5. Healing, checked and unchanged.** Incoming damage per monster per second from `armor_sim.py` ("Percent armour": caster
+120 / 208 / 830, tank 83 / 167 / 661 at levels 100 / 300 / 1000) x the pace damage curve (0.80 / 0.65 / 0.40) x 4 monsters in
+contact: caster 380 / 540 / 1,330 per second, tank 270 / 430 / 1,060. Against it (README "Healing" and "Potions"): self
+heals per second at 300 / 1000 Mystic 1,456 / 2,048, Ranger line 798 / 1,180, Thief 751 / 1,527, Warrior line 359 / 733,
+Sentinel 150 / 373; potions 1 a second (the 900 ms wait) of the fixed roll + 3% to 10% of max health (10% from level 700:
+1,800 per second on an 18,162 health Juggernaut). Every class can out-heal 4 monsters with spells and potions together at
+300 (the Warrior line with potions: about 800 against 430) and at 1000 the potion alone covers the pack (about 1,900
+against 1,060); a pack of 8 or a rare is what ends a fight, and mana and potion cost bound the rest (casters run
+one pool of 17-60 s). Not immortal: a lone 20%-health hit every 30 s from a rare still kills a pulled pack's tank without
+a heal. PvP: the 30% healing reduction is unchanged. No heal, potion or regeneration number was changed.
+
+Tests: `spell_factor_test.lua` (curve rules, table end values, the event at level 300), `rotation_sim_test.py` (factor
+curve read from the server's table), `patch_spell_cap_test.py` (pinned kit sizes, 69 retired).
+
 ### Attack spell parity (2026-10-23; owner: "veja quantas magias de ataque cada classe tem. devem ter a mesma quantidade"; computed, not measured in game)
 
 **Counting rule.** An attack spell is an `<instant group="attack">` of `spells_chaos.xml`, or a `stock_spells.csv` row of

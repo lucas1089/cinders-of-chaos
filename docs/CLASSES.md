@@ -54,7 +54,9 @@ Protector (the spell named Bulwark) it replaced was retired on 2026-10-20 becaus
 **Ranger** (base): today's Paladin kit. Bows and crossbows fire without ammunition; the off-hand holds a quiver beside the
 bow or crossbow (engine src-patch 0023; bows stay two-handed, so no shield; gear with implicit and rolled modifiers that work only while a bow or crossbow is held: distance fighting, attack speed,
 critical strike, extra projectiles, elemental shares; server/README.md "Infinite arrows and quivers"). The new-player kit has
-the bow and no arrows. Only the Ranger, Deadeye and Beastmaster may wear quivers (the launchers' vocations). Every class
+the bow and no arrows. Only the Ranger, Deadeye and Beastmaster may wear quivers (the launchers' vocations). Monsters drop
+bows, crossbows and quivers for them from level 1 on (server/README.md "Gear coverage"; casters get wands, rods and
+spellbooks the same way), and eight Ranger-line quiver uniques fill levels 6 to 1900. Every class
 wears one ring and one badge: the badge slot took the place of the second ring slot (server/README.md "Badge slot"). The line's fight buff is
 Tautstring (level 60, +25% distance skill for 12 s); the stock Sharpshooter / Hawkeye it replaced was retired on 2026-10-20
 because its slow kept the bow from firing (server/README.md "Hawkeye retired, Tautstring"). Its run buff is Wildstride
@@ -233,6 +235,10 @@ Elementalist 5, Mystic 4 -> rung 4 (8 s); Withering Curse Bone Lord 2, Lich 5, N
 attack kit gave every class and ascension **10 attack spells** (37 new spells, 77 class slots; list, levels and balance:
 server/data/spells/README.md "Attack spell parity"; CI: `tools/ci/check_attack_counts.py`). The Bone Lord reaches 20, so
 `MAX_SPELLS` is 20. The per-class counts in the tables below are from before the kit (15 cap): add the new spells.
+Combat pass (O136, 2026-10-23): **Galeborne Stride is retired** (Fleetfoot and Vigil of Haste are universal), so every
+class row below that lists it has one support less (Mystic, Elementalist, Thief, Ninja, Samurai, Monk, Shadowfist, Iron Sage,
+Necromancer, Lich, Bone Lord); `patch_spell_cap.py` retires 69 stock spells. Class spell damage follows a level curve
+(`spell_factor_config.lua` `byLevel`), see `server/data/spells/README.md` "Combat pass (O136)".
 Attack spells per class now: Warrior, Juggernaut, Berserker, Ranger, Deadeye, Beastmaster, Mystic, Elementalist,
 Illusionist, Thief, Ninja, Samurai, Monk, Shadowfist, Iron Sage, Necromancer, Lich, Bone Lord, Templar, Inquisitor and
 Sentinel: 10 each (before: 8, 8, 9, 8, 9, 7, 10, 10, 7, 5, 7, 6, 4, 7, 6, 4, 5, 3, 3, 4, 3). The cooldown ladder now has

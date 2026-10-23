@@ -68,6 +68,22 @@ local function near(a, b, m) if math.abs(a - b) > 1e-9 then error((m or "") .. "
 -- points
 eq(P.totalPoints(562), 0, "below start"); eq(P.totalPoints(1000), 0, "at start"); eq(P.totalPoints(1001), 1, "first point")
 eq(P.totalPoints(1050), 50, "1050")
+-- O135: 1 point a level to 1100, then 1 every 6 levels; the 282 points of the track are all earned at level 2192
+eq(P.totalPoints(1100), 100, "1100"); eq(P.totalPoints(1105), 100, "1105"); eq(P.totalPoints(1106), 101, "1106")
+eq(P.totalPoints(1282), 130, "1282 (it was 282)"); eq(P.totalPoints(2191), 281, "2191"); eq(P.totalPoints(2192), 282, "2192")
+do
+  local maxAll = 0
+  for _, key in ipairs(P.order) do maxAll = maxAll + P.defs[key].maxPoints end
+  eq(maxAll, 282, "points to max the track")
+  local last = 1000
+  for L = 1001, 2400 do
+    local t, before = P.totalPoints(L), P.totalPoints(L - 1)
+    assert(t >= before and t - before <= 1, "never more than one point a level, never fewer in total")
+    if t > before then last = L end
+    if t < maxAll then assert(L - last <= Chaos.paragon.levelsPerPointSlow, "a point at least every 6 levels until maxed (" .. L .. ")") end
+  end
+  assert(P.totalPoints(2200) >= maxAll and P.totalPoints(2185) < maxAll, "the track lasts to the end of the level range (2200)")
+end
 eq(P.unlocked(999), false, "locked 999"); eq(P.unlocked(1000), true, "unlocked 1000")
 
 -- definitions: four categories of two stats, modest caps, the strong ones lower

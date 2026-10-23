@@ -492,6 +492,10 @@ Chaos.passive = {
 Chaos.paragon = {
 	startLevel = 1000, -- the level where the tree budget (about 248 points) ends; points from level 1001 on
 	pointsPerLevel = 1,
+	-- O135 (smooth progression): the track used to be maxed at level 1282 (282 points), leaving 900 levels of nothing.
+	-- 1 point per level up to slowFrom, then 1 point every levelsPerPointSlow levels: maxed at level 2192
+	slowFrom = 1100,
+	levelsPerPointSlow = 6,
 	categories = {
 		{key = "offense", name = "Offense", stats = {
 			{key = "damage", name = "Damage", perPoint = 0.5, maxPoints = 40, desc = "Damage dealt (every damage type, not healing)"},

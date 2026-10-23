@@ -1856,11 +1856,16 @@ before and after and the retune proposals: `data/spells/README.md` "Cooldown lad
 
 ### Class spell factor (owner 2026-10-20: the cooldown ladder's retune proposals applied)
 
-One factor on a class's spell damage: `data/scripts/chaos/spell_factor_config.lua` (`ChaosSpellFactorConfig.byVocation`,
-by vocation id: Templar 23 and Sentinel 25 x0.6; Inquisitor 24, Elementalist 5, Illusionist 10, Lich 21, Bone Lord 22,
-Shadowfist 18 x0.7; Necromancer 20 x0.8; Beastmaster 15 x1.25; the rest 1). Rules in `spell_factor_core.lua`
-(`ChaosSpellFactor.factor`), tested by `tests/spell_factor_test.lua` (the table, the rule, the event on a mocked engine,
-the guards).
+One factor on a class's spell damage: `data/scripts/chaos/spell_factor_config.lua`. Since the combat pass (O136,
+2026-10-23) it is a level curve: `ChaosSpellFactorConfig.byLevel[vocation id]` is a list of {level, factor} points (flat
+below the first point, linear between points, the last value above) and `byVocation` is the end value (level 1000 and
+up; 1 for a class with no curve). End values: Templar 0.63, Sentinel 0.60, Inquisitor 0.77, Illusionist 0.73, Lich 0.92,
+Bone Lord 0.71, Shadowfist 0.80, Necromancer 0.69, Beastmaster 1.17, Ranger 1.12, Deadeye 1.25, Juggernaut 1.09,
+Berserker 1.08, Elementalist 0.70, the rest 1. The points keep each class's best-set rotation score at its value before the
+attack kit at levels 15-1000 (no early dips, no level 200 spikes); the table is in `data/spells/README.md` "Combat pass
+(O136)". Rules in `spell_factor_core.lua` (`ChaosSpellFactor.forVocation(voc, cfg, level)` and `.factor(..., cfg,
+level)`; the event passes the attacker's level), tested by `tests/spell_factor_test.lua` (the table, the curve, the rule,
+the event on a mocked engine, the guards).
 
 * Where: the `ChaosPassiveDealt` onHealthChange event of `passivetree_effects.lua`, the event every damage a player deals
   already passes (the passive tree, Paragon, the class tree's factor). The factor goes on damage with origin
@@ -2408,7 +2413,7 @@ Points go into eight small stats in four categories; a stat takes at most `maxPo
 | Fortune | Gold Find (`goldFind`) | +1% | 20 | +20% | extra coins in the kill's corpse (onDropLoot index 2: after the stock loot and the Chaos loot layer, before autoloot) |
 | Fortune | Item Find (`itemFind`) | +0.5% | 40 | +20% | added to the Chaos loot layer's item-find storage (`loot_config.lua` `itemFindStorage`) |
 
-All maxed: 282 points (level 1282). Points past that are kept but have nowhere to go.
+All maxed: 282 points. Since O135 ("Progression smoothness") the points come one a level up to level 1100 and then one every 6 levels (`Chaos.paragon.slowFrom`, `levelsPerPointSlow`), so the track is full at level 2192, not 1282 (before: 900 levels with nothing to spend). Characters that already own more points than the new rate gives keep them (a request that adds points is refused until the level catches up).
 - **Stacking with the tree:** `ChaosPassiveTree.apply` (passivetree.lua) asks `ChaosParagon.addBonuses` to put the Paragon
   percentages into the tree's summed bonus table (keys `paragonDamage`, `paragonHealth`, ...), and `passivetree_effects.lua` applies
   the sum once. So the health and mana conditions (fixed sub ids 7220/7221), the crit condition, the absorb storages and the
@@ -11668,7 +11673,8 @@ Owner question: does every class have enough weapons? The audit answers it from 
   its base item.
 - **Not touched.** The Thief line (dual daggers and daggers) and the Monk line (Monk weapons) are filled by other changes.
   They have no gap now, so they are not in `knownGaps`.
-- **Limits.** Quivers stop at level 1000 (`chaos_archery_config.lua`). A band can pass with 3 options of one kind.
+- **Limits.** Quivers stop at level 1000 (`chaos_archery_config.lua`); the gear audit below fills the rest with uniques. A
+  band can pass with 3 options of one kind.
 
 <!-- weapon-coverage:begin (luajit tools/weapon_coverage.lua --write) -->
 
@@ -11697,6 +11703,75 @@ Owner question: does every class have enough weapons? The audit answers it from 
 | Sentinel | 55/325 | 66/136 | 69/121 | 42/135 | 56/111 | 19/113 | 8/99 | 17/122 | 10/114 |
 
 <!-- weapon-coverage:end -->
+
+## Gear coverage (`tools/gear_coverage.lua`, `gear_coverage_config.lua`, `data/lib/chaos_class_loot.lua`, `chaos/class_loot.lua`, 2026-10-22)
+Owner request: review all the loot and make sure it is well distributed for every class, from level 1. The weapon audit
+above does the weapons. This audit does the rest of the slots and adds a fairness check of the weapon drops.
+- **What it counts.** Per class and level band (the weapon audit's 9 bands): helmet, armor, legs, boots, shield, spellbook,
+  quiver, amulet and ring. An item counts for a class when the class wears it (armor weight, shield and spellbook hand,
+  quiver for the launcher line, unique `equipLines`), when it has at least one way in (a shop, a monster drop of 0.01%
+  or more per kill, the Gambler, a recipe, a reward), and from the level it can be had at: its required level, or the level
+  of its easiest source when higher. A drop counts from the **hunting** level of its monster (twice the pool level for a
+  base monster, `pace_config.lua`). Power = armor or defense against the gear sets' curve of the class's weight. The
+  stock items carry no armor value, so their power is unknown and counts as full strength.
+- **Check (CI).** `cd server && luajit tools/gear_coverage.lua --check` (and `lua5.3`) fails when a class has fewer than
+  `min` options in a band (3; quivers 2), when the table below is out of date, or when a class finds fewer than 20% of the
+  usable weapons per kill of the median class (`--fairness`; the bands 100, 300, 500, 800 and 1000, a weapon counts from
+  60% of the curve). Allowances go in `gear_coverage_config.lua` `knownGaps`. Other commands: `--md`, `--list SLOT [Class]`,
+  `--fairness`, `--write`.
+- **What it found.** Before: no quiver at 1-20, 700-1000 and 1500+ (the stock quivers run 20 to 1000), one at 20-50 and
+  1000-1500; two spellbooks at 1-20 and 1500+; helmet, armor and legs at 1500+ one or two options (the sets stop
+  at 2000 and some pieces were out of reach); one amulet at 400-700; two rings at 20-50. The stock monsters never dropped
+  a bow, a crossbow or a quiver, so a Ranger found 0 usable weapons per 1000 kills in every band while a Warrior found 12
+  to 230. A caster found 1 to 54. Stock wands, rods and spellbooks dropped from few monsters.
+- **Fix 1: class loot** (`data/lib/chaos_class_loot.lua`, `data/scripts/chaos/class_loot.lua`, test
+  `tests/class_loot_test.lua`). The bounty pool monsters and bosses get bow, crossbow, wand and rod, quiver and spellbook
+  rows from the stock bases (`base_weapons.csv`, the archery quivers and the spellbook list), by hunting level, as
+  `jewelry.lua` does for rings. Per kill: bow 1.6%, crossbow 1.2%, wand and rod 2%, quiver and spellbook 0.8%, times
+  `1 + level / 400` up to 3, shared by the bases within 150 levels below and 20 above the monster (the three highest
+  below that). Bosses: 4%, 3%, 5%, 2%, 2%. The loot layer rolls rarity, item level and modifiers as for any gear drop. A
+  Ranger now finds 10 to 84 usable weapons per 1000 kills, a caster 10 to 112, a Warrior 12 to 229.
+- **Fix 2: 17 uniques** (`chaos_items.xml`, `chaos_unique_items.lua`). Quivers for the Ranger line at levels 6, 14, 38, 750,
+  900, 1200, 1600 and 1900 (built-in modifiers from the shared catalogue: life on hit, physical penetration, boss damage).
+  Spellbooks at 12 and 1650. A ring at 30. Amulets at 450 and 600. Helmets at 1550 and 1800, armor at 1600, legs at 1650,
+  all classes, 106 to 135% of the set curve. Each is a copy of a stock base with its own `equipLevel`. Magic and rare ones
+  drop from the monsters of the band; the 1500+ ones from legendary monsters of the top hunts and the boss Vhalkareth
+  Mortal Shell. Chance before the tier multiplier: 30 for levels up to 38 (0.3% per kill of a magic monster), 12 for 450
+  to 1200 (0.24% on a rare one), 6 above (0.24% on a legendary one). The bad-luck protection of `conquest_config.lua`
+  `pity` (monster uniques: +1% per miss, up to 3 times) already covers every unique, so none waits forever; it needed
+  no change.
+- **Wands and rods.** A unique keeps the damage of its base item and no tool sets it, so no wand or rod unique was added.
+  Wand and rod coverage comes from the class loot rows above and the weapon audit's sets.
+- **Limits.** Ammunition is not audited (bows fire without it). Amulets and rings are judged by count only. The table
+  counts a stock item as full strength.
+
+<!-- gear-coverage:begin (luajit tools/gear_coverage.lua --write) -->
+
+| Slot | Classes | 1-20 | 20-50 | 50-100 | 100-200 | 200-400 | 400-700 | 700-1000 | 1000-1500 | 1500-2400+ |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Helmet | Warrior, Juggernaut, Berserker | 19/100 | 12/187 | 19/243 | 15/215 | 25/133 | 10/114 | 7/100 | 14/114 | 4/103 |
+| Helmet | Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai | 19/100 | 12/207 | 19/255 | 15/250 | 24/150 | 10/127 | 7/100 | 14/123 | 4/116 |
+| Helmet | Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord | 19/100 | 12/255 | 18/295 | 14/255 | 25/171 | 10/149 | 5/100 | 14/145 | 3/135 |
+| Helmet | Monk, Shadowfist, Iron Sage | 19/100 | 12/207 | 19/255 | 15/250 | 26/150 | 10/127 | 7/100 | 14/123 | 4/116 |
+| Helmet | Templar, Inquisitor, Sentinel | 19/100 | 12/187 | 19/243 | 15/215 | 26/133 | 10/114 | 7/100 | 14/114 | 4/103 |
+| Armor | Warrior, Juggernaut, Berserker | 24/100 | 7/126 | 21/144 | 21/185 | 26/106 | 12/100 | 28/100 | 9/100 | 4/106 |
+| Armor | Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai | 24/100 | 7/141 | 21/160 | 21/209 | 26/119 | 12/100 | 28/100 | 9/100 | 3/108 |
+| Armor | Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord | 24/100 | 7/156 | 20/182 | 20/234 | 26/136 | 12/100 | 26/100 | 8/100 | 3/121 |
+| Armor | Monk, Shadowfist, Iron Sage | 24/100 | 7/141 | 21/160 | 21/209 | 27/119 | 12/100 | 28/100 | 9/100 | 3/108 |
+| Armor | Templar, Inquisitor, Sentinel | 24/100 | 7/126 | 21/144 | 21/185 | 27/106 | 12/100 | 28/100 | 9/100 | 4/106 |
+| Legs | Warrior, Juggernaut, Berserker, Templar, Inquisitor, Sentinel | 14/166 | 7/100 | 7/186 | 8/257 | 16/122 | 9/100 | 4/100 | 7/100 | 3/103 |
+| Legs | Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai, Monk, Shadowfist, Iron Sage | 14/166 | 7/100 | 7/217 | 8/257 | 16/138 | 9/104 | 3/100 | 6/100 | 3/107 |
+| Legs | Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord | 14/229 | 7/100 | 6/260 | 7/300 | 16/157 | 9/117 | 3/100 | 6/100 | 3/106 |
+| Boots | Warrior, Juggernaut, Berserker, Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord, Monk, Shadowfist, Iron Sage, Templar, Inquisitor, Sentinel | 3 | 8/150 | 9/200 | 9/200 | 10/100 | 11/100 | 9/100 | 10/105 | 5/100 |
+| Boots | Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai | 3 | 8/150 | 9/200 | 10/200 | 10/100 | 11/100 | 9/100 | 10/105 | 5/100 |
+| Shield | Warrior, Juggernaut, Templar, Inquisitor, Sentinel | 16/100 | 15/142 | 7/118 | 11/125 | 12/100 | 5/100 | 15/100 | 9/100 | 6/113 |
+| Spellbook | Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord | 3/107 | 3/100 | 5/100 | 8/125 | 7/125 | 3/100 | 7/100 | 4/100 | 3/106 |
+| Quiver | Ranger, Deadeye, Beastmaster | 2 | 2 | 2 | 2 | 4 | 2 | 2 | 2 | 2 |
+| Amulet | Warrior, Juggernaut, Berserker, Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord, Monk, Shadowfist, Iron Sage, Templar, Inquisitor, Sentinel | 14 | 5 | 17 | 15 | 10 | 3 | 9 | 8 | 4 |
+| Amulet | Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai | 14 | 5 | 17 | 16 | 10 | 3 | 9 | 8 | 4 |
+| Ring | all 21 | 21 | 4 | 6 | 11 | 10 | 4 | 9 | 7 | 4 |
+
+<!-- gear-coverage:end -->
 
 ## Item prices (`data/lib/chaos_item_prices.lua`, `tools/gen_item_prices.py`, `tools/install_item_prices.py`, the Loot Buyer)
 
@@ -15569,6 +15644,8 @@ below; it is idempotent and `--remove` restores the stock stage table and every 
 
 ### Experience stages (`config.lua`)
 
+Levels 1-700 are the smooth table since 2026-10-23 ("Progression smoothness (O135)"); the table below is the late game (701+), which did not change.
+
 | Level | 1-650 | 651-700 | 701-750 | 751-800 | 801-850 | 851-900 | 901-950 | 951+ |
 |---|---|---|---|---|---|---|---|---|
 | before (as written) | unchanged | 15 | 12 | 9 | 6 | 3 | 3 | 3 |
@@ -15751,6 +15828,78 @@ Pack combat (2026-10-14) multiplies these kills by its `scaled` experience curve
 x0.03 L: the 2026-10-20 points did not and paid 5-10x this model per hour until O108 ("Pack combat (pace)", Scaled
 experience re-fit: 500 -> 1000 in 112 h for the median class again, the model's 111 h; it was 40 h).
 
+## Progression smoothness (O135, `tools/progression_model.lua`, `progression_config.lua`, `tools/late_game.py` `SMOOTH_STAGES`, 2026-10-23)
+
+Owner request (pt-BR): "Faça a progressão ser mais fluída". Read as the leveling journey from the start level (8) to 2200:
+find the walls, dead zones and spikes, measure them with the repo's own models, and smooth them.
+
+**The model (computed from the repo's data, not measured in game).** Minutes per level at level L = the experience to the
+next level (the engine's `50 L^2 - 150 L + 200`) / (the median experience per hour of the pool hunts whose hunting level is
+within 0.8-1.1 L, x the chain bonus 1.3, x the experience stage of L). A hunt pays its `pace_config.lua` experience per kill
+at the pack model's kills per hour (`spawn_tuning.json` `paceKillsPerHour`). `luajit tools/progression_model.lua` prints the
+table, `--check` is the CI gate, `--spells` lists the unlock gaps. Limits and windows: `progression_config.lua`. The absolute
+hours differ from "The leveling model and the hours" (that one is the fastest class with the best hunt; this is the median
+hunt, so it is slower); only the shape matters here, and the band hours of 100+ did not change.
+
+**What the measurement found.**
+
+| Finding | Where | Before | Fix |
+|---|---|---|---|
+| Cliff in the stage table | level 20 to 21 | x10 up to 20, x50 from 21: levels 8-20 took 1.1-2.7 minutes a level, levels 21-50 0.35-0.6 (a 5x jump, 10-level blocks fall to 0.37x) | `SMOOTH_STAGES`: x30 at level 8 rising to x36 at 20, x38 at 28, x40 at 40, x45 at 51 |
+| Steps of 3 every 50 levels | 301 to 700 | each 50th level paid 8-20% less per kill (x36, 33, 30, ... 15) | one multiplier per step, rows of 14-17 levels, the same averages (hours of 300-700 within 0.5%) |
+| Paragon track ends | level 1282 to 2200 | 282 points, one a level, all spent at 1282: 900 levels of level-ups with no new choice | one point a level up to 1100, then one every 6 levels: all 282 at level 2192; points already owned stay |
+| Hall hunt gaps | levels 163-233, 386-518 (by a window of 0.8-1.1 L) | 0-2 hall hunts, the nearest 22% above | not fixed (needs new hunts, see below); `--check` fails on fewer than 3 within 0.7-1.3 L, which holds today |
+| Gold per hour | 300 to 800 | 469k (300), 393k (500), 2.5M (800): a dip, then a 6x jump (`tools/loot_model.lua`) | not changed (loot tables are another owner's work); reported |
+| Spell unlock gaps | levels 130-380 | longest stretches without a new spell below 300: Ninja 180 to 360, Beastmaster 220 to 380, Berserker 130 to 260, Lich 170 to 300, Shadowfist 150 to 250 | not changed (`spells_chaos.xml` belongs to the spell work); `--spells` prints all 21 |
+
+Before and after (minutes a level, mean of 3 levels; stage):
+
+| Level | Before | After | Stage before / after |
+|---|---|---|---|
+| 8 | 1.88 | 0.61 | x10 / x30 |
+| 12 | 2.21 | 0.68 | x10 / x32 |
+| 16 | 2.74 | 0.79 | x10 / x34 |
+| 20 | 1.08 | 0.63 | x10 / x36 |
+| 21 | 0.44 | 0.61 | x50 / x36 |
+| 30 | 0.35 | 0.46 | x50 / x38 |
+| 50 | 0.59 | 0.61 | x50 / x45 |
+| 100 | 0.85 | 0.84 | x45 / x44 |
+| 300 | 2.90 | 2.75 | x39 / x39 |
+| 500 | 7.49 | 7.37 | x27 / x26 |
+| 650 | 13.17 | 12.81 | x18 / x17 |
+| 700 | 15.11 | 15.11 | x15 / x15 |
+| 1000 | 18.19 | 18.19 | x13 / x13 |
+| 2000 | 41.15 | 41.15 | x13 / x13 |
+
+Hours (model): 8-20 0.46 to 0.14; 20-50 0.25 to 0.28; 50-100 0.55 to 0.56; 100-300 5.87 to 5.85; 300-500 15.6 (same);
+500-700 35.9 to 35.7; 700-1000 80.9 (same); 8-1000 139.5 to 139.0. The worst 10-level change of the minutes a level over
+8-2200 went from 0.37x (a cliff) to 0.78x, and the worst rise from 1.26x to 1.18x. The largest step of the stage table went
+from 5x to 1.077x (15 to 14, 14 to 13 in the late game; unchanged). From 700 the curve is flat (15-18 minutes a level to 1000,
+19-21 to 1400) and rises 5% every 50 levels from 1500 to 2200 (23 to 50 minutes): smooth, and it matches the experience
+needed per level growing with L^2 against hunts that pay linearly.
+
+**`--check` (CI, `luajit` and `lua5.3`, `tests/progression_test.lua`).** Fails when: a stage row steps more than 8% from the
+one before or the table has a hole; the mean minutes a level of consecutive 10-level blocks change by less than 0.75x or more
+than 1.25x (25-level blocks 0.88x to 1.35x) between 8 and 2200; fewer than 4 pool hunts are in reach of a level; fewer than 3
+hall hunts are within 0.7-1.3 L of a level. The test also feeds it the table from before O135 and expects the x50 step at
+level 21 and the time cliff to be named.
+
+**Not fixed, and why.**
+- The hall (levels 163-233 and 386-518 with fewer than 3 hunts within 0.8-1.1 L; 200 and 450 have the nearest hunt 22% above,
+  levels 400-479 none with a band that contains them) needs new hunts: a plan (`tools/areaplan/plans/`) or a base-map hunt
+  row (`tools/hall_hunts.csv`, arrival tiles checked on the map). Neither can be made or checked without the map. Wider
+  gates (`minLevel` in `hunt_teleports_config.lua`) would send players into monsters that are 20-30% above them.
+- Class power dips at levels 30 / 60 / 100 and spikes at 200 (spells/README.md "Attack spell parity"): the damage factors
+  belong to the combat numbers; unlock levels of the attack kit are the cheapest lever and are listed by `--spells`.
+- Gold per hour (above) and the costs of potions per band: loot tables and prices are other work.
+- `catchup_config.lua` `model` and `rift_config.lua` `exp.model` keep their hours per band (the fastest class); levels
+  8-20 are 20 minutes faster in the model, which they do not show.
+
+**Install.** The stage table is written by `tools/late_game.py` (install step `lategame`, `install_all.py --only lategame`,
+which the kit update runs): config.lua is read at the engine's start, so restart the server. A table with the old rows is
+replaced; `chaos-ctl.sh xp-rate` keeps its factor (it scales the release table). Paragon needs only the script reload.
+No client update and no engine rebuild.
+
 ## Pack combat (pace) (`pace.lua`, `pace_core.lua`, `pace_config.lua`, 2026-10-14)
 
 Owner request (pt-BR, paraphrased): players must feel strong and kill several monsters at once, not one by one, with
@@ -15848,6 +15997,14 @@ Basics page "Pack combat"):
 | Experience per kill x (generated points) | 0.042 | 0.036 | 0.030 | 0.026 | 0.024 | 0.023 |
 | Kill goals x (level-scaled, O108) | 9.8 | 10.2 | 9.6 | 9.6 | 9.8 | 9.8 |
 | Kill goals x (generated points) | 20 | 24 | 28 | 32 | 35 | 37 |
+
+**Late sets faster (O138, 2026-10-23).** The rows "level-scaled" above are the O108 values. Since O138 `scaled` is health
+0.140 / 0.110 / 0.080 / 0.068 / 0.062 / 0.058, experience 0.0499 / 0.0414 / 0.0323 / 0.0270 / 0.0245 / 0.0233, loot 0.482 /
+0.336 / 0.230 / 0.185 / 0.163 / 0.147 and kill goals 16.9 / 20.9 / 25.8 / 30.9 / 34.3 / 36.6 at 650 / 800 / 1000 / 1300 / 1600 /
+2000 (a pack of 8 in 10 s instead of 27-74 s for the median class, 2.1-2.4 times a base pack; `python3 -I tools/pack_model.py
+--check` fails above 3 times). `spawn_tuning.json` `model.paceKillsPerHour.scaled` is now 836 / 846 / 869 / 819 / 813 / 789.
+Experience, gold and goal pace per hour are the O108 ones (`progression_model.lua --check`, `loot_model.lua --check`).
+Generated area points and bosses are unchanged. Deploy: `files` and `spawns` install steps and a server restart; the client codex page (`codex_data.lua`) and the website wiki data were regenerated.
 
 These come on top of the engine's x(1 + 0.0074 L) health and x0.03 L experience of a monster with a level of its own.
 Loot: `pace_config.lua` (and "Loot by monster level").

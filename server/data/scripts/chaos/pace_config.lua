@@ -67,12 +67,20 @@ return {
 	-- (tools/spawn_tuning.json model.paceKillsPerHour, from tools/pack_model.py), so the goals are the old ones x that
 	-- ratio (O108): an 800+ contract or kill task takes the model's time again, and its reward (a share of its kills'
 	-- experience) is the model's too.
+	-- O138 (2026-10-23, owner: faster, fluid combat): the late sets were a slog, a pack of 8 took 28-74 s for the median class
+	-- (5-17x a base hunt's pack, 4-5 s). Health is now x0.40 / 0.31 / 0.20 / 0.16 / 0.15 / 0.14 of the O108 curve above
+	-- (0.35 .. 0.42) at 650 / 800 / 1000 / 1300 / 1600 / 2000: a pack of 8 dies in 10-11 s, 2.1-2.4x a base hunt's pack
+	-- (tools/pack_model.py --check bounds it at 3x). The median class kills x1.72 / 2.05 / 2.69 / 3.22 / 3.50 / 3.74 as many
+	-- an hour (pack_model.py), so xp and loot per kill are the O108 points divided by that and goal is multiplied by it (a
+	-- goal counts kills: the contract takes the same hours and pays the same experience; spawn_tuning.json
+	-- paceKillsPerHour scaled has the new kills per hour, 790-870, under the base hunts' 1200). Experience, gold and goal
+	-- pace per hour are unchanged (tools/progression_model.lua and tools/loot_model.lua --check).
 	-- Check with: luajit tools/pace_scan.lua
 	scaled = {
-		health = {{100, 0.10}, {650, 0.35}, {800, 0.36}, {1000, 0.40}, {1300, 0.42}, {1600, 0.42}, {2000, 0.42}},
-		xp = {{100, 0.044}, {650, 0.086}, {800, 0.085}, {1000, 0.087}, {1300, 0.087}, {1600, 0.086}, {2000, 0.087}},
-		loot = {{100, 0.137}, {650, 0.83}, {800, 0.69}, {1000, 0.62}, {1300, 0.595}, {1600, 0.57}, {2000, 0.55}},
-		goal = {{650, 9.8}, {800, 10.2}, {1000, 9.6}, {1300, 9.6}, {1600, 9.8}, {2000, 9.8}},
+		health = {{100, 0.10}, {650, 0.140}, {800, 0.110}, {1000, 0.080}, {1300, 0.068}, {1600, 0.062}, {2000, 0.058}},
+		xp = {{100, 0.044}, {650, 0.0499}, {800, 0.0414}, {1000, 0.0323}, {1300, 0.0270}, {1600, 0.0245}, {2000, 0.0233}},
+		loot = {{100, 0.137}, {650, 0.482}, {800, 0.336}, {1000, 0.230}, {1300, 0.185}, {1600, 0.163}, {2000, 0.147}},
+		goal = {{650, 16.9}, {800, 20.9}, {1000, 25.8}, {1300, 30.9}, {1600, 34.3}, {2000, 36.6}},
 		-- loot by monster level: the base points from 450 on (the old `gold` reached 0.30 at 450 in both sets); below,
 		-- the old ramp from 100 x the 0.963 the base curve carries there (the empty-corpse floor)
 		coins = {{100, 0.963}, {275, 0.626}, {450, 0.291}, {550, 0.280}, {650, 0.176}, {700, 0.179}, {800, 0.133},

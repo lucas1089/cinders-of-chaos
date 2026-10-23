@@ -82,7 +82,9 @@ end
 for _, L in ipairs({650, 800, 1000, 1300, 1600, 2000}) do
 	local f = P.factors(cfg, L, true)
 	local r = engineRatio(f, L)
-	ok(r >= 0.6 and r <= 1.0, "scaled xp per health with the engine factors at " .. L .. ": " .. r)
+	-- O138: the late sets lost most of their health (packs die in about 2x a base pack), so the kill pays more per health
+	-- point than a base kill (1.1-1.6), the experience per hour is unchanged (tools/progression_model.lua --check)
+	ok(r >= 1.0 and r <= 1.6, "scaled xp per health with the engine factors at " .. L .. ": " .. r)
 	ok(f.loot >= f.xp, "scaled loot >= xp at " .. L)
 	local g = P.factors(cfg, L, true, true)
 	local rg = engineRatio(g, L)
@@ -149,9 +151,9 @@ near(f.health, 0.21, 1e-9, "flat health past 250")
 near(f.xp, 0.17, 1e-9, "flat xp past 1000")
 near(f.damage, 0.40, 1e-9, "flat damage past 1000")
 f = P.factors(cfg, 1000, true)
-near(f.health, 0.40, 1e-9, "scaled 1000 health")
-near(f.xp, 0.087, 1e-9, "scaled 1000 xp (x0.03 L on top: O108)")
-near(f.goal, 9.6, 1e-9, "scaled 1000 goal (O108: sized on the kill rate of today's health)")
+near(f.health, 0.08, 1e-9, "scaled 1000 health (O138)")
+near(f.xp, 0.0323, 1e-9, "scaled 1000 xp (x0.03 L on top: O108, O138 divided by the kill rate gain)")
+near(f.goal, 25.8, 1e-9, "scaled 1000 goal (O108: sized on the kill rate of today's health, O138)")
 near(f.damage, 0.40, 1e-9, "scaled monsters share the damage curve")
 f = P.factors(cfg, 50, true)
 near(f.health, 0.10, 1e-9, "scaled flat below 100")
@@ -534,7 +536,7 @@ do
 	local sc = monster({max = 100000, native = 1000})
 	onSpawn(sc, {}, false, false)
 	think(sc)
-	eq(sc._max, 40000, "scaled 1000: x0.40")
+	eq(sc._max, 8000, "scaled 1000: x0.08")
 	-- a generated area point
 	local g = monster({max = 50000})
 	ChaosAreaGen.pointOf[g._id] = {level = 1300}
