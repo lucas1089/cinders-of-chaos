@@ -36,6 +36,8 @@ local SUPPLIES = {{7618, 100}, {7620, 100}} -- stock health / mana potion
 local GOLD = 20000 -- into the bank: NPC purchases pay from it (Chaos.pay)
 local LOCKERS = {2589, 2590, 2591, 2592} -- depot_config.lua lockerIds
 local SEARCH = 30 -- tiles around the temple for a locker / an NPC
+-- NPCs with a trade window, tried first by "shop": the NPC nearest the temple may only talk
+local TRADERS = {"Material Broker", "Loot Buyer", "Wandering Merchant"}
 
 TesterHelper = TesterHelper or {ids = {}, step = 0}
 local T = TesterHelper
@@ -176,8 +178,18 @@ function commands.depot(player)
 	tell(player, "depot", {pos = posOf(player:getPosition()), locker = posOf(locker.pos), clientId = it:getClientId()})
 end
 
+local function findTrader(origin)
+	for _, name in ipairs(TRADERS) do
+		local npc = Creature(name)
+		if npc and npc:isNpc() and freeNear(npc:getPosition()) then
+			return npc
+		end
+	end
+	return findNpc(origin)
+end
+
 function commands.shop(player)
-	local npc = findNpc(temple(player))
+	local npc = findTrader(temple(player))
 	local spot = npc and freeNear(npc:getPosition())
 	if not spot then
 		tell(player, "shop", {err = "no NPC near the temple"})

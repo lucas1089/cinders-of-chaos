@@ -292,12 +292,17 @@ Estimated before items 4 and 5: ~155 h to level 1000 for a sorcerer, ~285 h for 
 
 ## Open decisions and loose ends
 
-- TODO (owner 2026-10-20, later: "Coloque as suas recomendações ... de rust"): engine hardening instead of a Rust
-  rewrite (a rewrite would mean the whole base engine, the 52 src-patches and the Lua API at the same behaviour, for
-  little a player sees). (1) A debug build of the server with AddressSanitizer / UndefinedBehaviorSanitizer and a
-  bot load test, to find the memory bugs that become crashes. (2) Fuzzing of the packet parser (login and game
-  protocol), so a malformed packet is an error, never a crash. (3) New services outside the engine may be written in
-  Rust (the login gateway, the payment worker, the Help assistant; Python today), one at a time.
+- Parts (1) and (2) done 2026-10-23, part (3) open (owner 2026-10-20, later: "Coloque as suas recomendações ... de
+  rust"): engine hardening instead of a Rust rewrite (a rewrite would mean the whole base engine, the src-patches and
+  the Lua API at the same behaviour, for little a player sees). (1) Done: `server/tools/build_sanitized.sh`, a debug
+  build with AddressSanitizer / UndefinedBehaviorSanitizer, run on the full map under 100 and 50 load test bots.
+  (2) Done: libFuzzer harnesses of the PROXY protocol parser (0025), the client guard (0021), the failed-login limit
+  (0047) and the login / game packet reads (`server/tools/fuzz/`, seed corpus run in CI), and the network fuzzer
+  `server/tools/netfuzz.py` against the sanitizer build. Found and fixed: src-patches 0061 (shutdown use-after-free in
+  the scheduler), 0062 (Lua environment built before use), 0063 (the first packet read up to 8 bytes past its end),
+  install step `jsonguards` (base opcode handlers and non-object JSON). server/README.md "Engine hardening
+  (sanitizers, fuzzing)". Open: (3) new services outside the engine may be written in Rust (the login gateway, the
+  payment worker, the Help assistant; Python today), one at a time; a sanitizer run on the VPS with real players.
 - TODO (owner 2026-10-20, later; "Eu prefiro a 3. Coloque no TODO por enquanto"): a live spectator view of a player
   in the admin app (android/): the real game view with sprites (the .dat/.spr on the device) fed by a server cast /
   spectator system (engine patch). The simpler options (a JSON map of the surroundings, a client screenshot with a

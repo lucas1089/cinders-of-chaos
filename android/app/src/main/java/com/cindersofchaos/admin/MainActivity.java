@@ -24,6 +24,7 @@ import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.navigation.NavigationBarView;
@@ -355,10 +356,52 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /** Text over this many characters is too big for the clipboard or a share's text: copy keeps its end, share
+     *  sends it as a .txt file. */
+    static final int BIG_TEXT = 100_000;
+
     void copy(String text, String done) {
         ClipboardManager cm = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
-        cm.setPrimaryClip(ClipData.newPlainText("cinders", text));
-        snack(done, true);
+        boolean cut = text.length() > BIG_TEXT;
+        String clip = cut ? text.substring(text.length() - BIG_TEXT) : text;
+        try {
+            cm.setPrimaryClip(ClipData.newPlainText("cinders", clip));
+        } catch (RuntimeException e) { // a clip over the system's limit
+            snack("Grande demais para copiar: use Compartilhar.", false);
+            return;
+        }
+        snack(cut ? "Copiado só o fim (" + BIG_TEXT / 1000 + " mil caracteres): use Compartilhar para tudo." : done,
+                !cut);
+    }
+
+    /** Shares a command's output: as text when small, else as a .txt file (save it or attach it anywhere). */
+    void shareOutput(String subject, String text) {
+        if (text.length() <= BIG_TEXT) {
+            share(subject, text);
+            return;
+        }
+        try {
+            java.io.File dir = new java.io.File(getCacheDir(), "shared");
+            if (!dir.isDirectory() && !dir.mkdirs()) {
+                throw new java.io.IOException("no cache folder");
+            }
+            String name = subject.replaceAll("[^A-Za-z0-9]+", "-").replaceAll("^-|-$", "").toLowerCase(java.util.Locale.ROOT);
+            java.io.File f = new java.io.File(dir, (name.isEmpty() ? "saida" : name) + ".txt");
+            try (java.io.Writer w = new java.io.OutputStreamWriter(new java.io.FileOutputStream(f),
+                    java.nio.charset.StandardCharsets.UTF_8)) {
+                w.write(text);
+            }
+            android.net.Uri uri = androidx.core.content.FileProvider.getUriForFile(this,
+                    getPackageName() + ".files", f);
+            Intent i = new Intent(Intent.ACTION_SEND);
+            i.setType("text/plain");
+            i.putExtra(Intent.EXTRA_SUBJECT, subject);
+            i.putExtra(Intent.EXTRA_STREAM, uri);
+            i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            startActivity(Intent.createChooser(i, subject));
+        } catch (java.io.IOException | RuntimeException e) {
+            snack("Não deu para compartilhar: " + e.getMessage(), false);
+        }
     }
 
     void share(String subject, String text) {
@@ -376,6 +419,9 @@ public class MainActivity extends AppCompatActivity {
         private final TextView detail;
         private final TextView raw;
         private final TextView toggle;
+        private final LinearLayout actions;
+        private String what = "";
+        private String text = "";
 
         ResultCard() {
             card = ui.card();
@@ -393,6 +439,14 @@ public class MainActivity extends AppCompatActivity {
             raw.setBackgroundColor(ui.iron0);
             raw.setPadding(ui.dp(10), ui.dp(8), ui.dp(10), ui.dp(8));
             raw.setVisibility(View.GONE);
+            raw.setTextIsSelectable(true);
+            detail.setTextIsSelectable(true);
+            MaterialButton copyOut = ui.flat("Copiar", R.drawable.ic_copy);
+            copyOut.setOnClickListener(v -> copy(text, "Copiado (" + text.split("\n").length + " linhas)."));
+            MaterialButton shareOut = ui.flat("Compartilhar", R.drawable.ic_share);
+            shareOut.setOnClickListener(v -> shareOutput(what, text));
+            actions = ui.evenRow(copyOut, shareOut);
+            actions.setVisibility(View.GONE);
             toggle.setOnClickListener(v -> {
                 boolean show = raw.getVisibility() != View.VISIBLE;
                 raw.setVisibility(show ? View.VISIBLE : View.GONE);
@@ -402,6 +456,7 @@ public class MainActivity extends AppCompatActivity {
             b.addView(detail);
             b.addView(toggle);
             b.addView(raw, ui.gap(6));
+            b.addView(actions, ui.gap(4));
             card.setVisibility(View.GONE);
         }
 
@@ -413,6 +468,7 @@ public class MainActivity extends AppCompatActivity {
             detail.setText("Executando na VPS.");
             toggle.setVisibility(View.GONE);
             raw.setVisibility(View.GONE);
+            actions.setVisibility(View.GONE);
         }
 
         void show(String what, Friendly f) {
@@ -427,6 +483,9 @@ public class MainActivity extends AppCompatActivity {
             raw.setText(f.raw);
             raw.setVisibility(View.GONE);
             toggle.setText("Ver detalhes");
+            this.what = what;
+            this.text = !f.raw.isEmpty() ? f.raw : f.detail;
+            actions.setVisibility(this.text.isEmpty() ? View.GONE : View.VISIBLE);
         }
     }
 

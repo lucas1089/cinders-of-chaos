@@ -1,0 +1,28 @@
+# A short login packet reads zeros past its end, never old bytes (server/README.md "Engine hardening (sanitizers,
+# fuzzing)"). Found by the fuzz harness server/tools/fuzz/fuzz_netmsg.cpp (libFuzzer, in seconds).
+# NetworkMessage::canRead lets a read go up to info.length + 8 (INITIAL_BUFFER_POSITION). For a decrypted message that
+# is its end; for a connection's first, plain message (the login server's login packet, the game server's login
+# packet) info.length is the end of the bytes received, so a string or number read there could take up to 8 bytes
+# past the packet: the end of an earlier, longer packet of the same connection or, since patch 0032 took the buffer's
+# zeroing out, memory never written in this connection (whatever the allocator handed back: an older connection's
+# bytes). Nothing crashed and nothing was sent back, but a lying string length in a login packet took those bytes
+# into the account name, password or character name. Connection::parseHeader now zeroes the 8 bytes after each
+# packet's body before reading it (8 bytes per packet).
+# Regression: server/tools/fuzz/corpus/netmsg/regress-first-message-overread (CI is not able to build fuzz_netmsg:
+# it needs the base engine; build_fuzz.sh --src runs it locally).
+# Apply in the server source root after 0001-0062: patch -p1 < 0063-first-packet-reads-zeros.patch.
+diff --git a/src/connection.cpp b/src/connection.cpp
+--- a/src/connection.cpp
++++ b/src/connection.cpp
+@@ -159,6 +159,11 @@
+ 
+ 		// Read packet content
+ 		msg.setLength(size + NetworkMessage::HEADER_LENGTH);
++		// Chaos (patch 0063): NetworkMessage::canRead allows reads up to info.length + 8 (INITIAL_BUFFER_POSITION), right
++		// for a decrypted message but 8 bytes past the end of a first, plain one (the login packets): those 8 bytes held
++		// the end of an earlier packet of this connection, or memory never written since patch 0032 took the buffer's
++		// zeroing out. They are zero now, so a short or lying login packet reads zeros, never old bytes.
++		std::memset(msg.getBuffer() + NetworkMessage::HEADER_LENGTH + size, 0, NetworkMessage::INITIAL_BUFFER_POSITION);
+ 		boost::asio::async_read(socket, boost::asio::buffer(msg.getBodyBuffer(), size),
+ 		                        std::bind(&Connection::parsePacket, shared_from_this(), std::placeholders::_1));
+ 	} catch (boost::system::system_error& e) {

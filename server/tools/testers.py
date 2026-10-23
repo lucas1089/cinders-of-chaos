@@ -685,6 +685,13 @@ class TesterBot(LT.Bot):
             self.helper[hk] = data
             if hk == 'info':
                 self.level = data.get('level', self.level)
+                cid = data.get('cid')
+                if isinstance(cid, int) and cid > 0 and cid != self.cid:
+                    # the login answer may come after other messages (the client guard's challenge first): without
+                    # its own creature id a bot tracks no health, uses no potion and is no party or pm partner
+                    ONLINE.pop(self.cid, None)
+                    self.cid = cid
+                    ONLINE[cid] = self
             if hk == 'error':
                 self.results.count('failures', 'helper: ' + str(data.get('err'))[:80], self)
         elif kind == 'lua_error':
@@ -801,18 +808,25 @@ class TesterBot(LT.Bot):
         self.walk(random.randint(2, 5))
         return True
 
+    def failed(self, behaviour, r):
+        """False, and why in the failure list: no helper answer, or the helper's own err"""
+        why = r.get('err') if r else 'no helper answer'
+        self.results.count('failures', '%s: %s' % (behaviour, why or 'incomplete answer'), self)
+        return False
+
     async def do_town(self, clock):
         r = await self.helper_says('town', 'town')
         if not r or r.get('err'):
-            return False
+            return self.failed('town', r)
         self.walk(4)
         await asyncio.sleep(8)
-        return bool(await self.helper_says('hunt', 'hunt'))
+        r = await self.helper_says('hunt', 'hunt')
+        return True if r and not r.get('err') else self.failed('town back to the hunt', r)
 
     async def do_depot(self, clock):
         r = await self.helper_says('depot', 'depot')
         if not r or r.get('err') or 'locker' not in r:
-            return False
+            return self.failed('depot', r)
         p = r['locker']
         self.conn.send(b'\x82' + struct.pack('<HHB', p['x'], p['y'], p['z']) + struct.pack('<HBB', r['clientId'], 1, 0))
         await asyncio.sleep(3)
@@ -823,24 +837,28 @@ class TesterBot(LT.Bot):
     async def do_shop(self, clock):
         r = await self.helper_says('shop', 'shop')
         if not r or r.get('err') or not r.get('npc'):
-            return False
+            return self.failed('shop', r)
         self.shop_npc, self.shop = r['npc'], None
         for words in ('hi', 'trade'):
             self.conn.send(b'\x96\x01' + LT.string(words))
             await asyncio.sleep(1.5)
-        ok = False
+        ok = self.shop is not None  # the trade window opened: what the shop system must do
         if self.shop:
-            buy = [i for i in self.shop if i['buy'] > 0 and 'potion' in i['name'].lower()]
+            buy = [i for i in self.shop if i['buy'] > 0]
+            buy = [i for i in buy if 'potion' in i['name'].lower()] or buy
             if buy:
-                item = random.choice(buy)
-                self.conn.send(b'\x7a' + struct.pack('<HBBBB', item['id'], item['sub'], random.randint(1, 5), 0, 0))
-                ok = True
+                item = min(buy, key=lambda i: i['buy']) if random.random() < 0.5 else random.choice(buy)
+                # purchase: u16 id, u8 sub type, u16 amount, u8 ignore capacity, u8 in backpacks
+                self.conn.send(b'\x7a' + struct.pack('<HBHBB', item['id'], item['sub'], 1, 0, 0))
             sell = [i for i in self.shop if i['sell'] > 0]
             if sell and random.random() < 0.5:
                 item = random.choice(sell)
-                self.conn.send(b'\x7b' + struct.pack('<HBBB', item['id'], item['sub'], 1, 0))
+                # sale: u16 id, u8 sub type, u16 amount, u8 ignore equipped
+                self.conn.send(b'\x7b' + struct.pack('<HBHB', item['id'], item['sub'], 1, 1))
             await asyncio.sleep(1)
             self.conn.send(b'\x7c')
+        else:
+            self.results.count('failures', 'shop: no trade window from %s' % r['npc'], self)
         self.conn.send(b'\x96\x01' + LT.string('bye'))
         self.shop_npc = None
         await self.helper_says('hunt', 'hunt')
