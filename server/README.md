@@ -811,6 +811,7 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7102490 - 7102499 | rarity migration (`rarity_migrate.lua`): +0 the version of the walk this character had; +1..9 free |
 | 7102480 - 7102489 | potions (`potions_config.lua` `storage`): +0 the Everfull potions were given (kit or login grant); +1 the tree's Healing percent for the potion scripts; +2..9 free |
 | 7102800 - 7102810 | Haunted Harvest (`harvest_event_config.lua` `storage`): +0 the day, +1 hollow candy from pumpkins that day, +2 the day of the boss's first-kill candy; +3..9 free; 7102810 the GLOBAL forced state (0 window, 1 open, 2 shut) |
+| 7102820 | Infinity Tower first-clear floors (`infinitytower_balance_config.lua` `rewards.storage`): the tower season x 1000 + the highest milestone floor paid that season; 7102821 - 7102829 free |
 | 7109990 - 7109992 | spell supports: cast context and Reprisal (`data/lib/chaos_supports_config.lua`) |
 | 7110000 - 7111999 | spell supports: sockets per spell id (base + spell id * 4 + 0..3) |
 | 7112000 - 7127999 | loadouts: support runes parked per loadout (`loadouts_config.lua` `runeMirrorBase`) |
@@ -3249,7 +3250,101 @@ What taking passive points back costs. Every number is in `respec_config.lua`.
 ## Infinity Tower gameplay (`infinitytower_run.lua`)
 The tower exists now. The Enter Tower button of the client window (action `enter`) takes you, or your party (leader only, members within 12 tiles, up to 4), into an arena that is built at runtime with `Game.createTile` in an empty part of the map (x from 2000, y 2000, z 7; sixteen arenas side by side), so no map editing is needed. Floors are waves: kill everything to open the next one (6 s pause, half of the missing health and mana restored, `floorGold` x floor gold); every 10th floor is a boss floor with its helpers (twice the floor time since 2026-10-13: 10 minutes). Pools get harder every 8 floors, and the chance of magic, rare and legendary monsters (with their modifiers and shaders) rises with the floor. A floor has a 300 s limit and a whole run 60 minutes (`runTimeLimit`, warnings at 5 min, 1 min and 10 s, the floor's at 1 min and 10 s; "Instance limits"); at most 16 arenas, the wait and the waiting line when all are busy. Dying, leaving (the Leave Tower button), logging out or running out of time ends your part of the run and records the cleared floors with `ChaosTower.recordRun` (points, best floor, ranking, milestones). Logging in inside an arena sends you to the temple. Milestone rewards now use item ids that exist (gold, Orbs of Upheaval and Fate, Soulreaper). Everything is configured at the top of the file (`ChaosTowerRunConfig`).
 - `server/tests/infinitytower_run_test.lua` covers the floor planner, entering, clearing floors, dying, leaving, the time limit, logout and login with a mocked engine; CI runs it with LuaJIT and Lua 5.3. The real `Game.createTile`, `Tile:addItem`, `Game.createMonster` and teleport calls are assumed from the engine sources, not run.
-- Not done: a visible ladder of floors in the client window, and per-floor loot beyond what the monsters drop. Check that x 2000..2700, y 2000..2020, z 7 is really empty in your map (it is in the map analysed: the content starts at x 18992).
+- Not done: a visible ladder of floors in the client window (since O144 it shows the next reward, see "Infinity Tower balance and floor rewards"). Check that x 2000..2700, y 2000..2020, z 7 is really empty in your map (it is in the map analysed: the content starts at x 18992).
+
+## Infinity Tower balance and floor rewards (O144: `infinitytower_balance_config.lua`, `infinitytower_balance_core.lua`, `tools/tower_model.py`)
+
+Beta feedback of 2026-10-22: tower monsters were much stronger than outside ones, a level 800 player was always stuck
+between floors 20 and 29, a level 500 friend needed a minute for one level-100 monster, the drops looked like outside
+and there was no reward per floor.
+
+**Root cause (computed; `tower_model.py --before` is the planner of 2026-10-22).**
+- The tower is excluded from `pace.lua`, so floors held the stock pool health, while a hunt pack is thinned to 0.36 - 0.21
+  of it. With 12-16 monsters and tier chances that rose every floor, a floor held 4x, 12x and 24x the health of an outside
+  pack of the same species at floors 15, 25 and 35.
+- A single legendary monster (health x6 plus modifiers such as Juggernaut x1.6 and Stoneskin) is the minute-per-monster report.
+- The wall at floor 29: floor 30 held Zeburoth, who heals 1,750 health a second. A median class below about level 1100
+  cannot out-damage that, so the fight never ended (`never` in the table). Ashvoran (floor 90) is the same.
+- Damage taken was the stock monster damage, not the pace curve of the hunts.
+
+**What changed.**
+- Health per floor is a curve by the floor's meant level (`level`) and the seconds a median class needs for the floor
+  (`clear`), times a sawtooth over each climb of five floors (0.75, 0.88, 1.00, 1.10, 1.22: the floor after a milestone
+  floor is a breather). `health`, `bossHealth` and `damage` are generated by `python3 -I server/tools/tower_model.py --derive`
+  (the unit test diffs them with the config).
+- 4 monsters on floor 1 up to 9 from floor 120 (was 12-16), two more for every player after the first. A boss floor has a third
+  as helpers.
+- Tiers: health x1.5 magic, x2.2 rare, x3.5 legendary in the tower (stock x2, x3.5, x6; `infinitytower_run.lua` sets the health
+  before the stock tier applies). The chances rise slowly (legendary 1% on floor 30, 4% on floor 120).
+- Bosses in a new order, the healers last: the Ashen Count, the Grey Widow, Massacre, Vharagoth, Moloveth, Vhalkareth,
+  Jungle's Revenge, Ssylvath the Corruptor, Pestrogh, Morgashal (floor 100), Zeburoth (110), Ashvoran (120).
+- Tower monsters hit x0.99 of the stock damage on floor 1, x0.67 on floor 44 and x0.72 from floor 52: the pace damage curve of the
+  pool's hunting level (`ChaosTowerRun.damageMultOf`, read by `monster_damage.lua`). Bosses hit as before.
+- Also fixed: a late timer of an earlier run in the same arena slot no longer starts or ends the next run.
+
+**Time to clear a floor, median class (computed, not measured in game; seconds for a solo player at the level in the column).**
+
+Before (planner of 2026-10-22):
+
+| Floor | L100 | L300 | L500 | L800 | L1000 |
+|---|---|---|---|---|---|
+| 1 | 4 | 3 | 3 | 3 | 3 |
+| 10 B | 23 | 9 | 7 | 5 | 5 |
+| 20 B | 236 | 81 | 54 | 36 | 30 |
+| 25 | 41 | 16 | 10 | 8 | 7 |
+| 30 B | never | never | never | never | 486 |
+| 35 | 111 | 39 | 24 | 16 | 13 |
+| 40 B | never | 250 | 135 | 81 | 64 |
+
+After:
+
+| Floor | Hunt pack | L100 | L300 | L500 | L800 | L1000 |
+|---|---|---|---|---|---|---|
+| 1 | 3.0 s at L100 | 6 | 4 | 4 | 3 | 3 |
+| 10 B | 3.8 s at L300 | 145 | 50 | 34 | 24 | 20 |
+| 20 B | 4.6 s at L540 | 307 | 92 | 60 | 40 | 33 |
+| 25 | 5.3 s at L640 | 53 | 20 | 13 | 9 | 8 |
+| 30 B | 10.6 s at L740 | 402 | 136 | 90 | 60 | 49 |
+| 35 | 10.4 s at L820 | 97 | 34 | 21 | 14 | 12 |
+| 40 B | 10.3 s at L900 | 673 | 186 | 119 | 78 | 63 |
+| 60 B | 9.9 s at L1250 | 1026 | 287 | 183 | 119 | 97 |
+
+A boss floor keeps the long time: a boss is one target with a heal. A player far under the floor's level (the L100 column
+on floor 40) is meant to be slow. `python3 -I server/tools/tower_model.py` prints the whole table, `--before` the old
+one, `--levels` and `--floors` pick columns and rows.
+
+**Where a player gets to** (floors cleared within 1.1 x the time of a hunt pack of the player's level, median class):
+level 100 floor 1, 300 floor 12, 500 floor 21, 800 floor 38 (was 29), 1000 floor 44 (was 29), 1500 floor 64, 2000 floor 93
+(was 40). The weakest class at level 800 reaches floor 34.
+
+**CI (`python3 -I server/tools/tower_model.py --check`, limits in `infinitytower_balance_config.lua` `limits`).** Bounds, per
+floor: the seconds a group of the meant level needs (1.5-24), the ratio to a base hunt pack of that level (0.6-1.7), the
+seconds of a boss (30-150) and the share of the class's damage its heal eats (at most 50%), the weakest class against a
+boss (300 s), the breather after a milestone floor, the step from floor to floor (at most x1.35), a player at 60% of the
+floor's level (at most 60 s), the reach of a level 800 median class (30-40) and of a weak class (20+), a single legendary
+monster's lifetime (30 s) and the damage curve against the pace curve (12%). `tower_model_test.py` covers the parser, the
+tier factor, the old planner reproducing the floor 29 wall and bad configs failing. Lua side:
+`tests/infinitytower_balance_test.lua` (the core) and `tests/infinitytower_run_test.lua` (the run on a mocked engine).
+
+**Floor rewards.**
+- First clear, once per character and tower season, on every 5th floor: Crystal Coins (the floor number: 5 on floor 5, 10 on floor 10);
+  on every 10th floor Orbs of Upheaval (2 on floor 10, plus 1 per 10 floors) and Orbs of Fate (at least 1, 1 per 20 floors); on floors
+  25, 50, 75, ... 2 more Orbs of Fate plus 1 per 25 floors. The rules are `rewards.firstClear`, all numbers in the config.
+- Repeatable, on every clear of a milestone floor: Crystal Coins (a quarter of the floor number, at least 1) and on every 10th
+  floor at least 1 Orb of Upheaval (`rewards.repeatable`).
+- Delivery: `Chaos.giveItem`, what does not fit goes to the inbox. Each player in a group is paid by their own storage.
+- Storage `rewards.storage` = 7102820: season x 1000 + the highest floor paid, so a new season pays again.
+- Tower drops (`drops`, in an `onDropLoot` callback): an Orb of Upheaval (0.25% a kill) and Crystal Coins (4%, 1-2) from every
+  monster, an Orb of Fate (0.12%) from floor 20; a magic monster x1.5, rare x3, legendary x6 the chance. The stock loot stays.
+- The next milestone reward is shown in the tower window ("Season Informations" panel, `nextRewardLabel`), after every milestone
+  floor and in the entry message, in English and Portuguese (`i18n_strings.lua`, `pt_br.lua`).
+
+**Experience.** Not changed: the pool monsters give far less experience than a hunt of the player's level, so an hour in the
+tower stays well under an hour of hunting (the tower is for points and rewards).
+
+**Deploy.** `files` step and a script reload or restart; the client needs the new build for the reward label (an old client
+shows no label, nothing else breaks). No SQL, no engine patch. New storage block 7102820. Not modeled: the player's armour and
+resistances, damage taken in the tower, and uptime beyond the factors in the config. Computed, not measured in game.
 
 ## Infinity Tower season rewards (`infinitytower.lua`, `infinitytower_core.lua`, `Chaos.tower` in `chaos_constants.lua`)
 

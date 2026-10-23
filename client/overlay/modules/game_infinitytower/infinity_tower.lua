@@ -443,8 +443,39 @@ local function formatTimeRemaining(seconds)
     end
 end
 
+-- "5 Crystal Coin, 2 Orb of Upheaval" from the server's {count, name} list
+local function rewardItemsText(items)
+  local parts = {}
+  for _, it in ipairs(items or {}) do
+    parts[#parts + 1] = string.format('%d %s', it.count or 0, it.name or '?')
+  end
+  return table.concat(parts, ', ')
+end
+
+-- the next milestone floor of the tower and what it pays (floorRewards of the server payload, O144)
+function populateNextReward(floorRewards)
+  if not infinityTowerWindow then return end
+  local label = infinityTowerWindow:recursiveGetChildById('nextRewardLabel')
+  if not label then return end
+  if not floorRewards or not floorRewards.nextFloor then
+    label:setText(tr('Next reward: --'))
+    return
+  end
+  local lines = { tr('Next reward: floor %s', floorRewards.nextFloor) }
+  local first = rewardItemsText(floorRewards.first)
+  if first ~= '' then
+    lines[#lines + 1] = tr('First clear this season: %s', first)
+  end
+  local again = rewardItemsText(floorRewards.repeatable)
+  if again ~= '' then
+    lines[#lines + 1] = tr('Every clear: %s', again)
+  end
+  label:setText(table.concat(lines, '\n'))
+end
+
 function populateSeasonInfos(data)
   if not infinityTowerWindow then return end
+  populateNextReward(data.floorRewards)
   local seasonLabel = infinityTowerWindow:recursiveGetChildById('seasonLabel')
   local endLabel = infinityTowerWindow:recursiveGetChildById('seasonEndLabel')
   local tryLabel = infinityTowerWindow:recursiveGetChildById('nextTryLabel')

@@ -1558,6 +1558,14 @@ return {
 		["Welcome to the Infinity Tower. Floor 1 starts in %d seconds. Leave Tower (Adventure > Infinity Tower) takes you out."] =
 			"Bem-vindo à Infinity Tower. O andar 1 começa em %d segundos. Leave Tower (Adventure > Infinity Tower) te tira de lá.",
 		["You are not inside the tower."] = "Você não está dentro da torre.",
+		["Floor %d cleared! Next floor in %d seconds."] = "Andar %d concluído! O próximo andar começa em %d segundos.",
+		["Floor %d reward: %s."] = "Recompensa do andar %d: %s.",
+		["First clear of floor %d this season: %s."] = "Primeira conclusão do andar %d nesta temporada: %s.",
+		["Next reward: floor %d, %s (first clear this season: %s)."] =
+			"Próxima recompensa: andar %d, %s (primeira conclusão nesta temporada: %s).",
+		["Next reward: floor %d, first clear this season: %s."] =
+			"Próxima recompensa: andar %d, primeira conclusão nesta temporada: %s.",
+		["Next reward: floor %d, %s."] = "Próxima recompensa: andar %d, %s.",
 		["You are not in the arena queue."] = "Você não está na fila da arena.",
 		["Arena: FIGHT!"] = "Arena: LUTEM!",
 		["The fight starts in %d seconds."] = "A luta começa em %d segundos.",

@@ -124,6 +124,10 @@ local function boost(creature, attacker, primaryDamage, primaryType, secondaryDa
 	if ChaosWaystoneTiers and ChaosWaystoneTiers.damageMultOf then
 		pm = pm * (ChaosWaystoneTiers.damageMultOf(attacker) or 1)
 	end
+	-- the Infinity Tower (infinitytower_run.lua): a tower monster hits x its floor's damage factor, every element
+	if ChaosTowerRun and ChaosTowerRun.damageMultOf then
+		pm = pm * (ChaosTowerRun.damageMultOf(attacker) or 1)
+	end
 	if mult == 1 and pm == 1 then
 		return primaryDamage, secondaryDamage
 	end

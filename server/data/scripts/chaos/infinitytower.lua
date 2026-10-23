@@ -9,7 +9,11 @@
 --                                     "items":[{"id":clientId,"count":N,"name":".."}]}],
 --                      "rankings":[{"name":"..","floor":N,"time":seconds}],
 --                      "topRewards":[{"place":N,"name":"Gold Tower Chest","id":clientId,"text":"..",
---                                     "items":[{"name":"..","count":N}]}]}
+--                                     "items":[{"name":"..","count":N}]}],
+--                      "floorRewards":{"every":5,"paid":N,"nextFloor":N,"text":"Next reward: floor 15, ...",
+--                                      "first":[{"id":clientId,"count":N,"name":".."}],"repeatable":[..]}}
+--   floorRewards (O144): the next milestone floor above the highest one this character was paid this tower season, what
+--   its first clear pays (and what it pays every time), and the text in the player's language.
 --   "open" shows the window, "update" refreshes it if it is already open.
 --
 -- Implemented: seasons, per-season points / best floor / best time, ranking top 10, milestone
@@ -28,6 +32,10 @@ if not Chaos.t then
 end
 
 dofile("data/scripts/chaos/infinitytower_core.lua")
+if not ChaosTowerBalanceCore then
+	dofile("data/scripts/chaos/infinitytower_balance_core.lua")
+end
+ChaosTowerBalance = ChaosTowerBalance or dofile("data/scripts/chaos/infinitytower_balance_config.lua")
 
 local OPCODE = ChaosOpcodes.infinitytower
 local cfg = Chaos.tower
@@ -96,6 +104,30 @@ local function buildPayload(player)
 		rankings[i] = {name = rank.name, floor = rank.floor_n, time = rank.time_s}
 	end
 
+	local floorRewards
+	if ChaosTowerBalance and ChaosTowerBalanceCore then
+		local BC, B = ChaosTowerBalance, ChaosTowerBalanceCore
+		local okv, value = pcall(player.getStorageValue, player, BC.rewards.storage)
+		local paid = B.stored(okv and value or 0, season)
+		local nm = B.nextMilestone(BC, paid)
+		local function listOf(items)
+			local out = {}
+			for i, it in ipairs(items) do
+				out[i] = {id = clientIdOf(it.id), count = it.count, name = it.name}
+			end
+			return out
+		end
+		floorRewards = {every = BC.milestoneEvery, paid = paid, nextFloor = nm}
+		if nm then
+			floorRewards.first = listOf(B.rewardItems(BC.rewards.firstClear, nm))
+			floorRewards.repeatable = listOf(B.rewardItems(BC.rewards.repeatable, nm))
+			local okt, text = pcall(function()
+				return ChaosTowerRun and ChaosTowerRun.nextRewardText and ChaosTowerRun.nextRewardText(player, paid)
+			end)
+			floorRewards.text = okt and text or nil
+		end
+	end
+
 	local nextTry = 0
 	if cfg.tryCooldownSeconds > 0 and row.last_attempt > 0 then
 		nextTry = row.last_attempt + cfg.tryCooldownSeconds
@@ -108,7 +140,8 @@ local function buildPayload(player)
 		playerPoints = row.points,
 		milestones = milestones,
 		rankings = rankings,
-		topRewards = cfg.seasonEnd and K.topRewards(cfg.seasonEnd, clientIdOf) or nil
+		topRewards = cfg.seasonEnd and K.topRewards(cfg.seasonEnd, clientIdOf) or nil,
+		floorRewards = floorRewards
 	}
 end
 

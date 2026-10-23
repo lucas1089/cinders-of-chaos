@@ -1378,6 +1378,10 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Season Ends In: Finished"] = "A temporada termina em: encerrada",
   ["Next Try Available: %s"] = "Próxima tentativa: %s",
   ["Next Try Available: Ready Now!"] = "Próxima tentativa: pronta agora!",
+  ["Next reward: --"] = "Próxima recompensa: --",
+  ["Next reward: floor %s"] = "Próxima recompensa: andar %s",
+  ["First clear this season: %s"] = "Primeira conclusão nesta temporada: %s",
+  ["Every clear: %s"] = "A cada conclusão: %s",
   -- game_infinitytower/infinity_tower.otui
   ["Rank"] = "Rank",
   ["#"] = "#",
