@@ -119,12 +119,76 @@ computed numbers, not measured in game: nobody has played the store yet (payment
 
 ### Open
 
-- **Exercise weapons** (25 / 75 / 450 coins for 0.10 / 0.38 / 3.00 hours of dummy time, 240 / 200 / 150 coins per hour): the
-  dearest time saver per hour, and a skill is power, but the repository has no skill-training model to say how many hours of
-  hunting a dummy hour is worth. Left alone. The bulk discount (37% per charge from 500 to 14,400) is the only one over 20%.
+- **Exercise weapons**: closed in O150, see "Skill training (O150)" below. Kept as they are.
 - **Pets** (400 each, per character) sell small abilities (a heal of 4 to 8%, gold find +2 to 7%). The same pets and abilities come
   free from achievements and bosses, so it is a time saver, not a new power.
 - **World Loot** extra roll: `loot_model.lua` does not model it. Watch it in the beta.
+
+## Skill training (O150, 2026-10-23)
+
+Closes the open item of O140. `cd server && luajit tools/skill_model.lua` prints the tables (`--sensitivity` the assumptions,
+`--check` the sanity rules); inputs and limits in `skill_model_config.lua`. Computed from the vocation XML, the engine formulas
+(`Vocation::getReqSkillTries`, `getReqMana`) and `exercise_core.lua`, **not measured in game** (no engine here to run). Two inputs
+are assumptions: the hunting hour (70% of it swinging, 50% casting the 8,000 mana a minute rotation) and that the base server's
+stage script `skills_stages.lua` (x20 below skill 61 down to x4 from 150; magic x16 to x3) is installed as in the download. The
+install never touches it. If it is removed, every figure below shrinks by the same factor for hunting and the dummy alike, so
+the ratio of a dummy hour to a hunting hour does not change.
+
+**How skills grow.** A swing or a shot is 1 try x `rateSkill` 3 x the stage; a spell is its mana x `rateMagic` 2 x the stage. A dummy
+charge (every 750 ms, 4,800 an hour) is `7 x stage rate` tries (5 / 3 / 2 below 51 / 101 / 201) with no `rateSkill`, x the same
+stage. Offline training (a statue, Premium, up to 12 hours a login) is half the swings of the attack speed (a quarter for the bow),
+and for magic only the mana regeneration. A level needs `50 x m^(L-10)` tries (distance 30, shield 100), the magic level
+`1600 x manamultiplier^L`.
+
+**Skill levels in an hour at trained level 100 / 130** (base vocation of the line):
+
+| Line | Hunting | Dummy | Offline | A dummy hour = hunting hours |
+|---|---|---|---|---|
+| Warrior, Templar (melee) | 0.16 / 0.006 | 4.17 / 0.10 | 0.11 / 0.003 | 26.7 / 17.8 |
+| Thief, Monk (melee, fist) | 0.21 / 0.008 | 4.17 / 0.10 | 0.15 / 0.005 | 20.0 / 13.3 |
+| Ranger (distance) | 0.26 / 0.010 | 6.96 / 0.17 | 0.09 / 0.003 | 26.7 / 17.8 |
+| Mystic, Necromancer (magic level) | 0.17 / 0.006 | 2.61 / 0.06 | 0.00 / 0.00 | 15.0 / 10.0 |
+
+Sensitivity of the last column (Warrior 100 / 130, Mystic 100 / 130): hunting busy 50% / 30% of the hour 37 / 25, 25 / 17;
+90% / 70% gives 21 / 14, 11 / 7. A house dummy adds 10%.
+
+**Value of an exercise weapon, in hunting hours** (a dummy hour x the column above): the 450 coin Lasting weapon is 3 dummy
+hours, 30 to 80 hunting hours. Coins per hunting hour saved at skill 100 and 130, over every class that can use it:
+
+| Weapon (charges) | Coins | Dummy hours | Coins per hunting hour |
+|---|---|---|---|
+| Melee, bow (500 / 1800 / 14400) | 25 / 75 / 450 | 0.10 / 0.38 / 3.00 | 9-18 / 7.5-15 / 5.6-11 |
+| Rod, wand (500 / 1800 / 14400) | 25 / 75 / 450 | 0.10 / 0.38 / 3.00 | 16-24 / 13-20 / 10-15 |
+| Shield | 25 / 75 / 450 | same | not valued: blocked hits an hour have no model |
+
+Next to it: Premium 8.3 coins per hour of benefit, Double Experience 50. The exercise weapons sit between them (5.6 to 24), at the
+Premium rate for melee and bows and twice it for the caster rods and wands. **No price changes.** The earlier worry (150 to 240
+coins per dummy hour, "dearest time saver") was the wrong unit: a dummy hour is 10 to 27 hunting hours. The bound
+(`store_model.lua --check`, `skill_model.lua` `exerciseProblems`): coins per hunting hour of every weapon and class at skills 100 and
+130 between half of Premium's and the Double Experience Potion's (4.2 to 50), and a 14,400 charge weapon at most 40% cheaper per
+charge than the 500 one (it is 37%). A skill is also a small power: at skill 130 one level is about +0.6% weapon damage (the skill
+term is `skill / 4`), so a 450 coin weapon (0.3 levels there) buys about 0.2% damage.
+
+**Is skill progression a pain point for late classes?** Yes, by the numbers, and it is not changed here.
+
+| Warrior melee, hunting only | Hours for the level | Hours from 10 to the level |
+|---|---|---|
+| 80 | 0.7 | 7 |
+| 100 | 6.4 | 61 |
+| 115 | 37 | 320 |
+| 130 | 175 | 1,556 |
+| 140 | 454 | 4,348 |
+
+Hours for one level at skill 130: Mystic 160, Ranger 105, Warrior and Templar 175, Thief and Monk 131, Ninja and Shadowfist 114.
+Skill 100 to 130 is 900 to 1,500 hunting hours by class. Leveling from 8 to 1000 is about 139 hours (`progression_model.lua`), so a
+character that reaches level 1000 by hunting alone trains its main skill to about 105, and the C4 measurements assume 140 at level 1000
+(`weapon_skill_config.lua` `typical`; equipment skill and the tree make up the difference, how much is not modelled). Offline
+training is 0.7x the swings of an hour of hunting for melee (7 days from 10 to 100 at 12 hours a day), the bow 0.35x, and next to nothing for
+casters (the Mystic gets 1% of a hunting hour's mana). The exercise weapon is the way: 100 to 130 takes about 83 dummy hours for a
+Warrior, 28 Lasting weapons, 12,600 coins (R$ 1,260). Not changed because the stage multipliers are the base server's, every class
+and every damage figure rests on the same curve, the hit only loses `(skill/4+1)` about 12 to 23% against the typical 140 and the
+owner has not asked. **Owner decision:** to make 100 to 130 cost about the leveling time (139 hours) the stages from 101 up need about x11,
+by a `patch_*.py` that rewrites `skills_stages.lua` (not written); half of that (x5) puts it at about 300 hours.
 
 ## Other numbers
 

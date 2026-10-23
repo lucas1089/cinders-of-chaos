@@ -282,6 +282,19 @@ function M.problems(env)
 	end
 	if conv > R.perCharacterConvenienceMax then bad("per-character convenience adds up to %d coins (limit %d)", conv, R.perCharacterConvenienceMax) end
 
+	-- exercise weapons: coins per hunting hour saved (skill_model.lua) between half of Premium's and the Double Experience Potion's
+	do
+		ChaosSkillModelLib = true
+		local SM = dofile("tools/skill_model.lua")
+		local senv = SM.load()
+		local training = find(env, function(o) return o.kind == "item" and env.catOf[o] == "Training" end)
+		local p30 = find(env, function(o) return o.kind == "premium" and o.days == 30 end)[1]
+		local xp1 = find(env, function(o) return o.id == R.boosts.xpPotion.itemId and (o.count or 1) == 1 end)[1]
+		if p30 and xp1 then
+			for _, p in ipairs(SM.exerciseProblems(senv, training, p30.cost / 30, xp1.cost)) do bad("%s", p) end
+		end
+	end
+
 	-- season packs
 	for _, pass in pairs(env.season.passes) do
 		local last = 0
@@ -366,6 +379,18 @@ function M.report(env)
 		local ch = tonumber(o.name:match("%((%d+)%)")) or 0
 		local h = ch * 0.75 / 3600
 		line("| %s | %d | %s | %.2f h on a dummy (750 ms a charge) | %.0f |", o.name, o.cost, real(o.cost), h, o.cost / h)
+	end
+	do
+		ChaosSkillModelLib = true
+		local SM = dofile("tools/skill_model.lua")
+		local senv = SM.load()
+		local training = find(env, function(o) return o.kind == "item" and env.catOf[o] == "Training" end)
+		print("\nExercise weapons in hunting hours saved (skill_model.lua; coins per hunting hour at the reference skills, all classes that use it)")
+		print("| Offer | Coins | Dummy hours | Coins per hunting hour, lowest | highest |")
+		print("|---|---|---|---|---|")
+		for _, r in ipairs(SM.exerciseRows(senv, training)) do
+			if r.hi > 0 then line("| %s | %d | %.2f | %.1f | %.1f |", r.offer.name, r.cost, r.hours, r.lo, r.hi) end
+		end
 	end
 	if okP then
 		print("\nWhat one hour of x2 experience is worth by level (progression_model.lua)")

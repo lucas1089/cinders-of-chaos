@@ -84,6 +84,13 @@ for _, p in ipairs(novice.parts) do
 end
 breaks("Pact days at the wrong price", "of the Pact listed at", function() local v = pactPart.cost; pactPart.cost = 90; return function() pactPart.cost = v end end)
 
+-- exercise weapons (O150): coins per hunting hour saved
+local lasting = offer(function(o) return o.kind == "item" and o.name == "Lasting Exercise Melee Weapon (14400)" end)
+local small500 = offer(function(o) return o.kind == "item" and o.name == "Exercise Rod (500)" end)
+breaks("a lasting exercise weapon far too cheap", "coins per hunting hour", function() local v = lasting.cost; lasting.cost = 60; return function() lasting.cost = v end end)
+breaks("an exercise rod far too dear", "Double Experience Potion", function() local v = small500.cost; small500.cost = 300; return function() small500.cost = v end end)
+breaks("a deep tier discount", "cheaper per charge", function() local v = small500.cost; small500.cost = 40; return function() small500.cost = v end end)
+
 -- the real numbers of O140
 check(reset.cost == 100, "Passive Tree Reset is 100 coins")
 check(frame.cost == 200, "plate frames are 200 coins")

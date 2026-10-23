@@ -3874,6 +3874,8 @@ starter pack are listed at the Pact's price per day. Prices, before and after, a
 Changed: Double Experience Potion weekly limit (new), Passive Tree Reset 60 -> 100, plate frames 300 -> 200. Server: `files` step and a
 restart; the website wiki data is regenerated (`tools/gen_wiki_data.lua`).
 
+Exercise weapons (O150): valued with `tools/skill_model.lua` (`skill_model_config.lua`; `tests/skill_model_test.lua`; computed, not measured): a dummy hour is worth 10-27 hunting hours, 5.6-24 coins per hunting hour, so the prices stay; `store_model.lua --check` bounds them (half of Premium's coins per hour to the Double Experience Potion's, tier discount at most 40%). Assumes the base server's `skills_stages.lua` is installed and 70% of a hunting hour swinging. Skill 100 to 130 by hunting alone is 900-1,500 hours (docs/PRICES.md "Skill training (O150)").
+
 **Temple Teleport Scroll (retired from the store).** Every character has the free Town Portal now ("Town Portal" below), so the store no longer offers the scroll or the 25-use scroll. Scrolls bought earlier keep working: the handler, `S.teleportBlocked` and the action id stay in `shop_services.lua`, and `shop_config.lua` keeps the `templeScroll` service kind. The old description: an ordinary "scroll" (item 6119, used by no other script) with action id 47301, the name
 "temple teleport scroll", a description and the uses left in the custom attribute `chaos_uses`; no new item id. Using it
 takes you to your town's temple. Refused with a battle sign or PZ lock, inside a dungeon run (`ChaosDungeonIsInside`), the

@@ -151,6 +151,9 @@ jobs:
       - name: Store prices are consistent (store_model.lua; coin packs, boost caps, gold per coin, store_balance_config.lua)
         run: cd server && luajit tools/store_model.lua --check && lua5.3 tools/store_model.lua --check
 
+      - name: Skill training model is consistent (skill_model.lua; vocation XML, stage tables, exercise weapons worth more than a hunting hour; also bounds the exercise weapon prices in store_model.lua)
+        run: cd server && luajit tools/skill_model.lua --check && lua5.3 tools/skill_model.lua --check
+
       - name: Rifts pay orbs and waystones pay gear, per hour above hunting but inside bounds (content_reward_model.lua; content_rewards_config.lua bounds)
         run: cd server && luajit tools/content_reward_model.lua --check && lua5.3 tools/content_reward_model.lua --check
 
