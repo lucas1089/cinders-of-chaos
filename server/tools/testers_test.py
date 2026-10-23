@@ -114,8 +114,9 @@ for want in ('2x Lua Script Error', 'Anomalies (2)', 'hit taken over 3x max heal
              '2x cannot use object (first: Tester Abd after depot)', '1x x.lua:5: boom (first: Tester Abe after opcodes)',
              '1x You have been idle', 'shop', 'never reached: needs two parties'):
     ok(want in r, 'the report has %r' % want)
-ok('autoloot' not in r and 'bazaar' not in r, 'fine and out of scope systems are not listed')
-ok('charms' in r and '(1 systems fine, 1 out of scope or passive: not listed)' in r, 'a system never ok is; the counts')
+ok('autoloot' not in r, 'fine systems are not listed')
+ok('never reached: out of scope: trades with real players: bazaar' in r, 'out of scope systems share one line per reason')
+ok('charms' in r and '(1 systems fine: not listed)' in r, 'a system never ok is; the count')
 
 # a monster named "Terror Bird" is no error; the bots' own records stay out of the error list; a guard warning keeps
 # its stack traceback; the deaths the server logged, by killer, beside the bots' own count

@@ -301,16 +301,19 @@ def build_report(run, log):
     if cov:
         # short enough to paste: only what needs a look; the fine, out of scope and passive systems are counted
         L.append('== System coverage, what needs a look (tried / ok / errors; never reached)')
-        fine = skipped = 0
+        fine, skipped = 0, {}
         for system, c in sorted(cov.items()):
             tried, okn, err, why = c.get('tried', 0), c.get('ok', 0), c.get('errors', 0), c.get('why') or ''
             if tried and okn and not err:
                 fine += 1
                 continue
             if not tried and why.startswith(('out of scope', 'passive')):
-                skipped += 1
+                skipped.setdefault(why, []).append(system)
                 continue
             L.append('  %-22s %5d %5d %5d%s' % (system, tried, okn, err,
                                                 '  never reached: ' + why if not tried and why else ''))
-        L.append('  (%d systems fine, %d out of scope or passive: not listed)' % (fine, skipped))
+        # one line per reason: what bots cannot do stays visible, but short
+        for why, names in sorted(skipped.items()):
+            L.append('  never reached: %s: %s' % (why, ', '.join(names)))
+        L.append('  (%d systems fine: not listed)' % fine)
     return '\n'.join(L) + '\n'
