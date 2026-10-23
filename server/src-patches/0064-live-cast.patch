@@ -1,0 +1,854 @@
+# The live cast of one player for the admin app (server/README.md "Live spectator", phase 2; docs/ADMIN_APP.md
+# "Assistir jogador"). Owner, 2026-10-23: "Eu quero ver o gameplay em tempo real. Faça o patch na engine."
+#   * castPort (config.lua, default 0 = off; castMaxSpectators 3, castQueueKb 1024): a TCP port on 127.0.0.1 only,
+#     with its own thread (src/chaoscastserver.cpp). Game.setCastTarget(name) names the watched player ("" or nil
+#     clears it; Game.getCastTarget() -> name, spectators, port open). remote_cmd.lua sets it for the line
+#     "cast NAME" (chaos-ctl.sh cast NAME).
+#   * ProtocolGame::writeToOutputBuffer, the one place every game message of a player goes through, also hands the
+#     watched player's messages to the cast port. src/chaoscast.h keeps only the game view: map, tiles, creatures,
+#     moves, effects, missiles, animated text, health, light, the player's stats, speech on screen (say, yell,
+#     monster speech) and the damage / heal / experience numbers. Private and channel messages, the channel list,
+#     VIP, modal windows, store, market, trade, containers, inventory, the outfit window, extended opcodes and pings
+#     never leave the engine.
+#   * A frame is u16 length + one message body, plain (no checksum, no XTEA). A new spectator gets a hello frame
+#     (opcode 0x00: "CAST", version, player id, client marker, item / text flags, aware range, name), then the view
+#     a login sends (aware range, map, stats, light; ProtocolGame::writeCastView, which starts the connection's
+#     known creatures again so every creature in view goes out in full), then the live messages in order.
+#   * The game thread never waits: a spectator more than castQueueKb behind is dropped; everyone is dropped when the
+#     target changes, logs out or its connection is replaced (the relay connects again for a fresh view). At most
+#     castMaxSpectators (1-8) at once; more connections are closed at once.
+# server/tools/cast_relay.py reads the port and turns the frames into the app's JSON lines.
+# New headers src/chaoscast.h (pure; tests in server/tools/chaoscast_test.cpp, CI) and src/chaoscastserver.h.
+# Applies after 0001-0063.
+diff --git a/src/chaoscast.h b/src/chaoscast.h
+new file mode 100644
+--- /dev/null
++++ b/src/chaoscast.h
+@@ -0,0 +1,168 @@
++// Chaos (patch 0064): the live cast of one player for the admin app (server/README.md "Live spectator", phase 2).
++// The engine mirrors the game messages it sends to the watched player to the spectators of a local socket
++// (castPort, 127.0.0.1 only, src/chaoscastserver.cpp); server/tools/cast_relay.py reads them there. This header holds
++// the pure parts, no engine types, so server/tools/chaoscast_test.cpp tests them alone:
++//   * keepMessage: which messages go to a spectator. A list of what the game view needs (map, tiles, creatures,
++//     moves, effects, missiles, animated text, health, light, the player's stats, public speech on screen and the
++//     damage / heal / experience numbers); everything else stays private: private and channel messages, the channel
++//     list, VIP, modal windows, store, market, trade, containers, inventory, outfit window, extended opcodes, pings.
++//     The first byte of a message is its opcode; a message that starts with a listed opcode holds only map and
++//     creature data (the moves of the player add map slices after their first opcode).
++//   * frames: a frame is u16 length (little endian) + one message body as the client would read it, no checksum and
++//     no encryption. A spectator connection starts with the hello frame (opcode 0x00, below), then the view of the
++//     player as a login sends it, then the live messages.
++
++#ifndef FS_CHAOSCAST_H
++#define FS_CHAOSCAST_H
++
++#include <cstddef>
++#include <cstdint>
++#include <string>
++
++namespace ChaosCast {
++
++static constexpr uint8_t HELLO_OPCODE = 0x00; // never a server message
++static constexpr uint8_t HELLO_VERSION = 1;
++static constexpr size_t MAX_FRAME_BODY = 0xFFFF;
++
++// flags of the hello frame: how this player's client reads items and text messages
++static constexpr uint8_t HELLO_ITEM_ATTRIBUTES = 1; // u16 count + (u16 key, u64 value) after every item
++static constexpr uint8_t HELLO_IMPACT_TEXT = 2;     // u16 percent, u8 type, u32 creature id in damage text messages
++
++// speech kept: what everyone near the player sees over the speaker's head
++inline bool publicTalkType(uint8_t type)
++{
++	return type == 1 || type == 3 || type == 36 || type == 37; // say, yell, monster say, monster yell
++}
++
++// text messages kept: the numbers over the creatures (damage, heal, experience), which carry their tile
++inline bool publicTextType(uint8_t type)
++{
++	return type >= 23 && type <= 29; // MESSAGE_DAMAGE_DEALT .. MESSAGE_EXPERIENCE_OTHERS
++}
++
++// 0xAA creature speech on the map: u32 statement, string name, u16 level, u8 type, position, string text, nothing
++// after. A channel or private message has another layout (channel id or no position) and is refused here even with a
++// kept type.
++inline bool publicTalk(const uint8_t* body, size_t len)
++{
++	size_t p = 1 + 4;
++	if (len < p + 2) {
++		return false;
++	}
++	const size_t name = body[p] | (body[p + 1] << 8);
++	p += 2 + name + 2; // name, level
++	if (p + 1 > len || !publicTalkType(body[p])) {
++		return false;
++	}
++	p += 1 + 5; // type, position
++	if (p + 2 > len) {
++		return false;
++	}
++	const size_t text = body[p] | (body[p + 1] << 8);
++	return p + 2 + text == len;
++}
++
++// the messages a spectator gets (body: one message, its first byte the opcode)
++inline bool keepMessage(const uint8_t* body, size_t len)
++{
++	if (!body || len == 0) {
++		return false;
++	}
++	switch (body[0]) {
++		case 0x42: // aware range (the size of the map the client keeps)
++		case 0x4B: // one floor of the map
++		case 0x64: // the map around the player
++		case 0x65: case 0x66: case 0x67: case 0x68: // map slices after a step (north, east, south, west)
++		case 0x69: // one tile
++		case 0x6A: case 0x6B: case 0x6C: // add, change, remove a thing on a tile
++		case 0x6D: // a creature moves
++		case 0x82: // world light
++		case 0x83: // magic effect
++		case 0x84: // animated text
++		case 0x85: // missile
++		case 0x8C: // creature health
++		case 0x8D: // creature light
++		case 0x8E: // creature outfit
++		case 0x8F: // creature speed
++		case 0x90: // skull
++		case 0x91: // party shield
++		case 0x92: // walk-through
++		case 0x93: // square
++		case 0x95: // creature type
++		case 0xA0: // the player's stats
++		case 0xBE: case 0xBF: // floor change up / down
++			return true;
++		case 0xAA:
++			return publicTalk(body, len);
++		case 0xB4:
++			return len >= 2 && publicTextType(body[1]);
++		default:
++			return false;
++	}
++}
++
++// a frame: u16 length + body; false (nothing added) when the body does not fit a frame
++inline bool appendFrame(std::string& out, const uint8_t* body, size_t len)
++{
++	if (!body || len == 0 || len > MAX_FRAME_BODY) {
++		return false;
++	}
++	out.push_back(static_cast<char>(len & 0xFF));
++	out.push_back(static_cast<char>((len >> 8) & 0xFF));
++	out.append(reinterpret_cast<const char*>(body), len);
++	return true;
++}
++
++// the hello frame: opcode 0x00, "CAST", u8 version, u32 player id, u16 client version marker (0 for a plain 10.98
++// client; non-zero: floors come as 0x4B messages and outfits carry wings, aura and shader), u8 flags, u8 aware width,
++// u8 aware height, string name (u16 length + bytes)
++inline std::string helloFrame(uint32_t playerId, uint16_t clientMarker, uint8_t flags, uint8_t awareWidth,
++                              uint8_t awareHeight, const std::string& name)
++{
++	std::string body;
++	body.push_back(static_cast<char>(HELLO_OPCODE));
++	body.append("CAST");
++	body.push_back(static_cast<char>(HELLO_VERSION));
++	for (int i = 0; i < 4; ++i) {
++		body.push_back(static_cast<char>((playerId >> (8 * i)) & 0xFF));
++	}
++	body.push_back(static_cast<char>(clientMarker & 0xFF));
++	body.push_back(static_cast<char>((clientMarker >> 8) & 0xFF));
++	body.push_back(static_cast<char>(flags));
++	body.push_back(static_cast<char>(awareWidth));
++	body.push_back(static_cast<char>(awareHeight));
++	const size_t n = name.size() > 64 ? 64 : name.size();
++	body.push_back(static_cast<char>(n & 0xFF));
++	body.push_back(static_cast<char>((n >> 8) & 0xFF));
++	body.append(name, 0, n);
++	std::string frame;
++	appendFrame(frame, reinterpret_cast<const uint8_t*>(body.data()), body.size());
++	return frame;
++}
++
++// the most spectators at once and the bytes a spectator may have waiting, from config.lua, kept in sane bounds
++inline uint32_t clampSpectators(int64_t value)
++{
++	return value < 1 ? 1 : (value > 8 ? 8 : static_cast<uint32_t>(value));
++}
++
++inline size_t clampQueueBytes(int64_t kib)
++{
++	if (kib < 256) {
++		kib = 256;
++	} else if (kib > 16384) {
++		kib = 16384;
++	}
++	return static_cast<size_t>(kib) * 1024;
++}
++
++// a usable port: 1..65535 (0 or anything else: the cast is off)
++inline bool portOn(int64_t port)
++{
++	return port >= 1 && port <= 65535;
++}
++
++} // namespace ChaosCast
++
++#endif
+diff --git a/src/chaoscastserver.h b/src/chaoscastserver.h
+new file mode 100644
+--- /dev/null
++++ b/src/chaoscastserver.h
+@@ -0,0 +1,63 @@
++// Chaos (patch 0064): the cast port (server/README.md "Live spectator", phase 2). A small TCP server on 127.0.0.1
++// (config.lua castPort, 0 = off) with its own thread. Lua names the watched player (Game.setCastTarget); every game
++// message the engine sends that player and src/chaoscast.h keeps goes, as a frame, to each spectator connected to the
++// port. A new spectator first gets the hello frame and the player's view as a login sends it (built on the dispatcher,
++// ProtocolGame::writeCastView), then the live messages. The game thread never waits for a spectator: a spectator with
++// more than castQueueKb waiting is dropped, and so is everyone when the target changes or logs out (the relay
++// connects again and gets a fresh view). At most castMaxSpectators at once.
++
++#ifndef FS_CHAOSCASTSERVER_H
++#define FS_CHAOSCASTSERVER_H
++
++#include <atomic>
++#include <cstddef>
++#include <cstdint>
++#include <memory>
++#include <string>
++
++class ChaosCastServer
++{
++	public:
++		static ChaosCastServer& get();
++
++		// main loader: listens on 127.0.0.1:port with its own thread (false and a console line when it cannot)
++		bool start(uint16_t port, uint32_t maxSpectators, size_t maxQueueBytes);
++		// shutdown: closes every connection and joins the thread
++		void stop();
++		bool running() const {
++			return isRunning.load(std::memory_order_relaxed);
++		}
++
++		// dispatcher thread
++		void setTarget(const std::string& name); // "" clears it; a new name drops the spectators of the old one
++		const std::string& getTarget() const {
++			return targetName;
++		}
++		uint32_t spectators() const {
++			return live.load(std::memory_order_relaxed);
++		}
++		// cheap check for ProtocolGame::writeToOutputBuffer: is this player's output mirrored now?
++		bool watching(uint32_t playerId) const {
++			return targetId != 0 && playerId == targetId && live.load(std::memory_order_relaxed) > 0;
++		}
++		void mirror(const uint8_t* body, size_t len);
++		void targetGone(uint32_t playerId); // the target's connection is released (logout, lost, replaced)
++
++	private:
++		ChaosCastServer();
++		~ChaosCastServer();
++		ChaosCastServer(const ChaosCastServer&) = delete;
++		ChaosCastServer& operator=(const ChaosCastServer&) = delete;
++
++		void snapshotFor(uint64_t spectatorId); // dispatcher thread
++		void dropAll();
++
++		struct Impl;
++		std::unique_ptr<Impl> impl;
++		std::atomic<bool> isRunning{false};
++		std::atomic<uint32_t> live{0};
++		std::string targetName;   // dispatcher thread
++		uint32_t targetId = 0;    // dispatcher thread: the creature id of the target once a view was sent
++};
++
++#endif
+diff --git a/src/chaoscastserver.cpp b/src/chaoscastserver.cpp
+new file mode 100644
+--- /dev/null
++++ b/src/chaoscastserver.cpp
+@@ -0,0 +1,305 @@
++// Chaos (patch 0064): the cast port; see chaoscastserver.h and chaoscast.h.
++
++#include "otpch.h"
++
++#include "chaoscastserver.h"
++
++#include "chaoscast.h"
++#include "game.h"
++#include "player.h"
++#include "protocolgame.h"
++#include "tasks.h"
++
++#include <deque>
++#include <map>
++#include <thread>
++#include <vector>
++
++extern Game g_game;
++
++namespace {
++
++struct Spectator
++{
++	explicit Spectator(boost::asio::io_service& io, uint64_t id) : id(id), socket(io) {}
++
++	uint64_t id;
++	boost::asio::ip::tcp::socket socket;
++	std::deque<std::shared_ptr<const std::string>> queue;
++	size_t queued = 0;
++	bool writing = false;
++	bool ready = false;
++	bool closed = false;
++	uint8_t readByte = 0;
++};
++
++using Spectator_ptr = std::shared_ptr<Spectator>;
++
++} // namespace
++
++struct ChaosCastServer::Impl
++{
++	boost::asio::io_service io;
++	std::unique_ptr<boost::asio::io_service::work> work;
++	boost::asio::ip::tcp::acceptor acceptor{io};
++	std::thread thread;
++	std::map<uint64_t, Spectator_ptr> spectators; // io thread only
++	uint64_t nextId = 1;                           // io thread only
++	std::atomic<size_t> posted{0};                 // bytes handed to the io thread and not yet queued
++	uint32_t maxSpectators = 3;
++	size_t maxQueue = 1024 * 1024;
++
++	// io thread
++	void close(ChaosCastServer& owner, const Spectator_ptr& s) {
++		if (s->closed) {
++			return;
++		}
++		s->closed = true;
++		boost::system::error_code ec;
++		s->socket.shutdown(boost::asio::ip::tcp::socket::shutdown_both, ec);
++		s->socket.close(ec);
++		s->queue.clear();
++		s->queued = 0;
++		if (spectators.erase(s->id) != 0) {
++			owner.live.fetch_sub(1, std::memory_order_relaxed);
++		}
++	}
++
++	void closeAll(ChaosCastServer& owner) {
++		std::vector<Spectator_ptr> all;
++		for (auto& it : spectators) {
++			all.push_back(it.second);
++		}
++		for (auto& s : all) {
++			close(owner, s);
++		}
++	}
++
++	void write(ChaosCastServer& owner, const Spectator_ptr& s) {
++		if (s->closed || s->writing || s->queue.empty()) {
++			return;
++		}
++		s->writing = true;
++		auto frame = s->queue.front();
++		boost::asio::async_write(s->socket, boost::asio::buffer(*frame),
++		                         [this, &owner, s, frame](const boost::system::error_code& ec, size_t) {
++			s->writing = false;
++			if (ec || s->closed) {
++				close(owner, s);
++				return;
++			}
++			s->queue.pop_front();
++			s->queued -= std::min(s->queued, frame->size());
++			write(owner, s);
++		});
++	}
++
++	void enqueue(ChaosCastServer& owner, const Spectator_ptr& s, const std::shared_ptr<const std::string>& frame) {
++		if (s->closed) {
++			return;
++		}
++		if (s->queued + frame->size() > maxQueue) {
++			// too slow to follow the game: dropped (the relay connects again and gets a fresh view)
++			std::cout << "[Cast] a spectator fell " << (s->queued / 1024) << " KiB behind: dropped" << std::endl;
++			close(owner, s);
++			return;
++		}
++		s->queue.push_back(frame);
++		s->queued += frame->size();
++		write(owner, s);
++	}
++
++	// a spectator never sends anything; a read ends when it closes the connection
++	void readUntilClosed(ChaosCastServer& owner, const Spectator_ptr& s) {
++		s->socket.async_read_some(boost::asio::buffer(&s->readByte, 1),
++		                          [this, &owner, s](const boost::system::error_code& ec, size_t) {
++			if (ec || s->closed) {
++				close(owner, s);
++				return;
++			}
++			readUntilClosed(owner, s);
++		});
++	}
++
++	void accept(ChaosCastServer& owner) {
++		auto s = std::make_shared<Spectator>(io, nextId++);
++		acceptor.async_accept(s->socket, [this, &owner, s](const boost::system::error_code& ec) {
++			if (ec) {
++				if (ec != boost::asio::error::operation_aborted) {
++					accept(owner);
++				}
++				return;
++			}
++			if (spectators.size() >= maxSpectators) {
++				boost::system::error_code ignored;
++				s->socket.close(ignored);
++			} else {
++				boost::system::error_code ignored;
++				s->socket.set_option(boost::asio::ip::tcp::no_delay(true), ignored);
++				spectators[s->id] = s;
++				owner.live.fetch_add(1, std::memory_order_relaxed);
++				readUntilClosed(owner, s);
++				const uint64_t id = s->id;
++				g_dispatcher.addTask(createTask([&owner, id]() { owner.snapshotFor(id); }));
++			}
++			accept(owner);
++		});
++	}
++};
++
++ChaosCastServer& ChaosCastServer::get()
++{
++	static ChaosCastServer instance;
++	return instance;
++}
++
++ChaosCastServer::ChaosCastServer() : impl(new Impl) {}
++
++ChaosCastServer::~ChaosCastServer()
++{
++	stop();
++}
++
++bool ChaosCastServer::start(uint16_t port, uint32_t maxSpectators, size_t maxQueueBytes)
++{
++	if (isRunning.load()) {
++		return true;
++	}
++	impl->maxSpectators = maxSpectators;
++	impl->maxQueue = maxQueueBytes;
++	try {
++		const boost::asio::ip::tcp::endpoint at(boost::asio::ip::address_v4::loopback(), port);
++		impl->acceptor.open(at.protocol());
++		impl->acceptor.set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
++		impl->acceptor.bind(at);
++		impl->acceptor.listen(4);
++	} catch (const boost::system::system_error& e) {
++		std::cout << "> ERROR: the cast port 127.0.0.1:" << port << " cannot be opened (" << e.what()
++		          << "): the live cast is off" << std::endl;
++		boost::system::error_code ignored;
++		impl->acceptor.close(ignored);
++		return false;
++	}
++	impl->work.reset(new boost::asio::io_service::work(impl->io));
++	impl->accept(*this);
++	impl->thread = std::thread([this]() {
++		try {
++			impl->io.run();
++		} catch (const std::exception& e) {
++			std::cout << "[Cast] stopped: " << e.what() << std::endl;
++		}
++	});
++	isRunning = true;
++	std::cout << ">> Cast port 127.0.0.1:" << port << " (live spectator, at most " << maxSpectators << ")" << std::endl;
++	return true;
++}
++
++void ChaosCastServer::stop()
++{
++	if (!isRunning.exchange(false)) {
++		return;
++	}
++	impl->io.post([this]() {
++		boost::system::error_code ignored;
++		impl->acceptor.close(ignored);
++		impl->closeAll(*this);
++	});
++	impl->work.reset(); // run() ends once the closes above have finished every pending operation
++	if (impl->thread.joinable()) {
++		impl->thread.join();
++	}
++	live = 0;
++}
++
++void ChaosCastServer::dropAll()
++{
++	if (!isRunning.load()) {
++		return;
++	}
++	impl->io.post([this]() { impl->closeAll(*this); });
++}
++
++void ChaosCastServer::setTarget(const std::string& name)
++{
++	if (name == targetName) {
++		return;
++	}
++	targetName = name;
++	targetId = 0;
++	dropAll();
++}
++
++void ChaosCastServer::targetGone(uint32_t playerId)
++{
++	if (targetId == 0 || playerId != targetId) {
++		return;
++	}
++	targetId = 0;
++	dropAll();
++}
++
++void ChaosCastServer::mirror(const uint8_t* body, size_t len)
++{
++	if (!isRunning.load(std::memory_order_relaxed) || !ChaosCast::keepMessage(body, len)) {
++		return;
++	}
++	auto frame = std::make_shared<std::string>();
++	if (!ChaosCast::appendFrame(*frame, body, len)) {
++		// a message too big for a frame: the spectators would miss it, so they start again
++		targetId = 0;
++		dropAll();
++		return;
++	}
++	const size_t size = frame->size();
++	if (impl->posted.load(std::memory_order_relaxed) + size > impl->maxQueue) {
++		// the cast thread does not keep up at all: everyone starts again
++		targetId = 0;
++		dropAll();
++		return;
++	}
++	impl->posted += size;
++	std::shared_ptr<const std::string> shared = frame;
++	impl->io.post([this, shared, size]() {
++		impl->posted -= size;
++		std::vector<Spectator_ptr> ready;
++		for (auto& it : impl->spectators) {
++			if (it.second->ready) {
++				ready.push_back(it.second);
++			}
++		}
++		for (auto& s : ready) {
++			impl->enqueue(*this, s, shared);
++		}
++	});
++}
++
++void ChaosCastServer::snapshotFor(uint64_t spectatorId)
++{
++	std::vector<std::string> frames;
++	Player* player = targetName.empty() ? nullptr : g_game.getPlayerByName(targetName);
++	if (player && !player->isRemoved() && player->writeCastView(frames)) {
++		targetId = player->getID();
++	}
++	if (frames.empty()) {
++		// no target, or it is not online with a client: the relay tries again
++		impl->io.post([this, spectatorId]() {
++			auto it = impl->spectators.find(spectatorId);
++			if (it != impl->spectators.end()) {
++				impl->close(*this, it->second);
++			}
++		});
++		return;
++	}
++	auto shared = std::make_shared<std::vector<std::string>>(std::move(frames));
++	impl->io.post([this, spectatorId, shared]() {
++		auto it = impl->spectators.find(spectatorId);
++		if (it == impl->spectators.end()) {
++			return;
++		}
++		Spectator_ptr s = it->second;
++		for (auto& f : *shared) {
++			impl->enqueue(*this, s, std::make_shared<const std::string>(std::move(f)));
++		}
++		s->ready = !s->closed;
++	});
++}
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -5,6 +5,7 @@
+ 	${CMAKE_CURRENT_LIST_DIR}/ban.cpp
+ 	${CMAKE_CURRENT_LIST_DIR}/baseevents.cpp
+ 	${CMAKE_CURRENT_LIST_DIR}/bed.cpp
++	${CMAKE_CURRENT_LIST_DIR}/chaoscastserver.cpp
+ 	${CMAKE_CURRENT_LIST_DIR}/chat.cpp
+ 	${CMAKE_CURRENT_LIST_DIR}/clientguard.cpp
+ 	${CMAKE_CURRENT_LIST_DIR}/combat.cpp
+diff --git a/src/configmanager.cpp b/src/configmanager.cpp
+--- a/src/configmanager.cpp
++++ b/src/configmanager.cpp
+@@ -358,6 +358,12 @@
+ 	// Chaos (patch 0027): log every dispatcher task that takes this many ms or more, with its Lua calls and database
+ 	// queries (server/README.md "Slow task log"). 0: off
+ 	integer[SLOW_TASK_LOG_MS] = getGlobalNumber(L, "slowTaskLogMs", 0);
++	// Chaos (patch 0064): the live cast (src/chaoscastserver.h, server/README.md "Live spectator"): the port on
++	// 127.0.0.1 where the game messages of the watched player are mirrored (0: off), at most this many spectators, and
++	// the KiB a spectator may have waiting before it is dropped. Read at startup only.
++	integer[CAST_PORT] = getGlobalNumber(L, "castPort", 0);
++	integer[CAST_MAX_SPECTATORS] = getGlobalNumber(L, "castMaxSpectators", 3);
++	integer[CAST_QUEUE_KB] = getGlobalNumber(L, "castQueueKb", 1024);
+ 	// Chaos (patch 0041): a monster respawns while a player sees its spot (stock: never; the timer starts again), on a
+ 	// free tile (no creature, no blocking item, not a protection zone) at least spawnMinPlayerDistance sqm from every
+ 	// player, with a teleport effect (server/README.md "Respawn near players"). false: the stock rule
+diff --git a/src/configmanager.h b/src/configmanager.h
+--- a/src/configmanager.h
++++ b/src/configmanager.h
+@@ -160,6 +160,9 @@
+ 			LOGIN_FAIL_BLOCK,
+ 			SLOW_TASK_LOG_MS, // Chaos (patch 0027): slow task log
+ 			SPAWN_MIN_PLAYER_DISTANCE, // Chaos (patch 0041): no respawn this close to a player
++			CAST_PORT, // Chaos (patch 0064): the live cast for the admin app
++			CAST_MAX_SPECTATORS,
++			CAST_QUEUE_KB,
+ 
+ 			LAST_INTEGER_CONFIG /* this must be the last one */
+ 		};
+diff --git a/src/game.cpp b/src/game.cpp
+--- a/src/game.cpp
++++ b/src/game.cpp
+@@ -3,6 +3,8 @@
+ 
+ #include "otpch.h"
+ 
++#include "chaoscastserver.h"
++
+ #include "pugicast.h"
+ 
+ #include "actions.h"
+@@ -5253,6 +5255,8 @@
+ 		serviceManager->stop();
+ 	}
+ 
++	ChaosCastServer::get().stop(); // Chaos (patch 0064)
++
+ 	ConnectionManager::getInstance().closeAll();
+ 
+ 	std::cout << " done!" << std::endl;
+diff --git a/src/luascript.cpp b/src/luascript.cpp
+--- a/src/luascript.cpp
++++ b/src/luascript.cpp
+@@ -13,6 +13,7 @@
+ #include "outputmessage.h"
+ #include "chaosdisplay.h"
+ #include "chaosfxoffsets.h"
++#include "chaoscastserver.h"
+ #include "game.h"
+ #include "protocolstatus.h"
+ #include "spells.h"
+@@ -2156,6 +2157,9 @@
+ 	registerEnumIn("configKeys", ConfigManager::ARMOR_PERCENT) // Chaos (patch 0016)
+ 	registerEnumIn("configKeys", ConfigManager::SPAWN_NEAR_PLAYERS) // Chaos (patch 0041)
+ 	registerEnumIn("configKeys", ConfigManager::SPAWN_MIN_PLAYER_DISTANCE) // Chaos (patch 0041)
++	registerEnumIn("configKeys", ConfigManager::CAST_PORT) // Chaos (patch 0064)
++	registerEnumIn("configKeys", ConfigManager::CAST_MAX_SPECTATORS)
++	registerEnumIn("configKeys", ConfigManager::CAST_QUEUE_KB)
+ 
+ 	// os
+ 	registerMethod("os", "mtime", LuaScriptInterface::luaSystemTime);
+@@ -2177,6 +2181,8 @@
+ 	registerMethod("Game", "clearEffectOverrides", LuaScriptInterface::luaGameClearEffectOverrides);
+ 	registerMethod("Game", "setFxSendOffsets", LuaScriptInterface::luaGameSetFxSendOffsets); // Chaos (src-patch 0060)
+ 	registerMethod("Game", "getFxSendOffset", LuaScriptInterface::luaGameGetFxSendOffset);
++	registerMethod("Game", "setCastTarget", LuaScriptInterface::luaGameSetCastTarget); // Chaos (src-patch 0064)
++	registerMethod("Game", "getCastTarget", LuaScriptInterface::luaGameGetCastTarget);
+ 	registerMethod("Game", "getExperienceForLevel", LuaScriptInterface::luaGameGetExperienceForLevel);
+ 	registerMethod("Game", "getMonsterCount", LuaScriptInterface::luaGameGetMonsterCount);
+ 	registerMethod("Game", "getPlayerCount", LuaScriptInterface::luaGameGetPlayerCount);
+@@ -4568,6 +4574,34 @@
+ 	return 2;
+ }
+ 
++int LuaScriptInterface::luaGameSetCastTarget(lua_State* L)
++{
++	// Game.setCastTarget(name)  Chaos (src-patch 0064): the player whose game messages go to the cast port (castPort,
++	// server/README.md "Live spectator"); nil or "" clears it. A new name drops the spectators of the old one. Returns
++	// true when the cast port is open (false: castPort is 0 or could not be opened; the name is kept all the same).
++	std::string name = isString(L, 1) ? getString(L, 1) : "";
++	if (name.size() > 64) {
++		name.clear();
++	}
++	ChaosCastServer::get().setTarget(name);
++	pushBoolean(L, ChaosCastServer::get().running());
++	return 1;
++}
++
++int LuaScriptInterface::luaGameGetCastTarget(lua_State* L)
++{
++	// Game.getCastTarget()  Chaos (src-patch 0064): name (nil when none), spectators connected, port open
++	const ChaosCastServer& cast = ChaosCastServer::get();
++	if (cast.getTarget().empty()) {
++		lua_pushnil(L);
++	} else {
++		pushString(L, cast.getTarget());
++	}
++	lua_pushnumber(L, cast.spectators());
++	pushBoolean(L, cast.running());
++	return 3;
++}
++
+ int LuaScriptInterface::luaGameGetExperienceForLevel(lua_State* L)
+ {
+ 	// Game.getExperienceForLevel(level)
+diff --git a/src/luascript.h b/src/luascript.h
+--- a/src/luascript.h
++++ b/src/luascript.h
+@@ -556,6 +556,8 @@
+ 		static int luaGameClearEffectOverrides(lua_State* L);
+ 		static int luaGameSetFxSendOffsets(lua_State* L); // Chaos (src-patch 0060)
+ 		static int luaGameGetFxSendOffset(lua_State* L);
++		static int luaGameSetCastTarget(lua_State* L); // Chaos (src-patch 0064)
++		static int luaGameGetCastTarget(lua_State* L);
+ 		static int luaGameGetExperienceForLevel(lua_State* L);
+ 		static int luaGameGetMonsterCount(lua_State* L);
+ 		static int luaGameGetPlayerCount(lua_State* L);
+diff --git a/src/otserv.cpp b/src/otserv.cpp
+--- a/src/otserv.cpp
++++ b/src/otserv.cpp
+@@ -3,6 +3,9 @@
+ 
+ #include "otpch.h"
+ 
++#include "chaoscast.h"
++#include "chaoscastserver.h"
++
+ #include "server.h"
+ 
+ #include "game.h"
+@@ -322,6 +325,13 @@
+ 	// Legacy login protocol
+ 	services->add<ProtocolOld>(static_cast<uint16_t>(g_config.getNumber(ConfigManager::LOGIN_PORT)));
+ 
++	// Chaos (patch 0064): the live cast for the admin app, on 127.0.0.1 only (castPort, 0 = off)
++	if (ChaosCast::portOn(g_config.getNumber(ConfigManager::CAST_PORT))) {
++		ChaosCastServer::get().start(static_cast<uint16_t>(g_config.getNumber(ConfigManager::CAST_PORT)),
++		                             ChaosCast::clampSpectators(g_config.getNumber(ConfigManager::CAST_MAX_SPECTATORS)),
++		                             ChaosCast::clampQueueBytes(g_config.getNumber(ConfigManager::CAST_QUEUE_KB)));
++	}
++
+ 	RentPeriod_t rentPeriod;
+ 	std::string strRentPeriod = asLowerCaseString(g_config.getString(ConfigManager::HOUSE_RENT_PERIOD));
+ 
+diff --git a/src/player.h b/src/player.h
+--- a/src/player.h
++++ b/src/player.h
+@@ -1213,6 +1213,14 @@
+ 				client->writeToOutputBuffer(message);
+ 			}
+ 		}
++		// Chaos (patch 0064): this player's view as cast frames for a new spectator; false without a client
++		bool writeCastView(std::vector<std::string>& frames) {
++			if (!client) {
++				return false;
++			}
++			client->writeCastView(frames);
++			return true;
++		}
+ 
+ 		void sendTooltipData(const TooltipDataContainer& tooltipData) {
+ 			if (client) {
+diff --git a/src/protocolgame.cpp b/src/protocolgame.cpp
+--- a/src/protocolgame.cpp
++++ b/src/protocolgame.cpp
+@@ -23,6 +23,8 @@
+ #include "monster.h"
+ #include "chaosdisplay.h"
+ #include "chaosfxoffsets.h"
++#include "chaoscast.h"
++#include "chaoscastserver.h"
+ #include <fmt/format.h>
+ 
+ extern ConfigManager g_config;
+@@ -136,6 +138,7 @@
+ {
+ 	//dispatcher thread
+ 	if (player && player->client == shared_from_this()) {
++		ChaosCastServer::get().targetGone(player->getID()); // Chaos (patch 0064): its spectators start again
+ 		player->client.reset();
+ 		player->decrementReferenceCounter();
+ 		player = nullptr;
+@@ -702,10 +705,54 @@
+ 		return;
+ 	}
+ 
++	// Chaos (patch 0064): the live cast. writeCastView collects a new spectator's view instead of sending it; the
++	// watched player's messages also go to the spectators (src/chaoscast.h says which)
++	const uint8_t* body = msg.getBuffer() + NetworkMessage::INITIAL_BUFFER_POSITION;
++	if (castCapture) {
++		if (ChaosCast::keepMessage(body, msg.getLength())) {
++			std::string frame;
++			if (ChaosCast::appendFrame(frame, body, msg.getLength())) {
++				castCapture->push_back(std::move(frame));
++			}
++		}
++		return;
++	}
++	if (player && ChaosCastServer::get().watching(player->getID())) {
++		ChaosCastServer::get().mirror(body, msg.getLength());
++	}
++
+ 	auto out = getOutputBuffer(msg.getLength());
+ 	out->append(msg);
+ }
+ 
++// Chaos (patch 0064): see protocolgame.h. The hello frame, then what a login sends of the game view: the aware range
++// (our client), the map, the player's stats, the world light and the player's light.
++void ProtocolGame::writeCastView(std::vector<std::string>& frames)
++{
++	if (!player || castCapture) {
++		return;
++	}
++	uint8_t flags = 0;
++	if (chaosItemAttributes) {
++		flags |= ChaosCast::HELLO_ITEM_ATTRIBUTES;
++	}
++	if (chaosImpactText) {
++		flags |= ChaosCast::HELLO_IMPACT_TEXT;
++	}
++	frames.push_back(ChaosCast::helloFrame(player->getID(), otclientV8, flags, static_cast<uint8_t>(awareRange.width),
++	                                       static_cast<uint8_t>(awareRange.height), player->getName()));
++	// the spectator knows no creature yet; the player's client gets the ones it already knows in full again, which
++	// it takes as an update
++	knownCreatureSet.clear();
++	castCapture = &frames;
++	sendAwareRange();
++	sendMapDescription(player->getPosition());
++	sendStats();
++	sendWorldLight(g_game.getWorldLightInfo());
++	sendCreatureLight(player);
++	castCapture = nullptr;
++}
++
+ void ProtocolGame::parsePacket(NetworkMessage& msg)
+ {
+ 	if (!acceptPackets || g_game.getGameState() == GAME_STATE_SHUTDOWN || msg.getLength() == 0) {
+diff --git a/src/protocolgame.h b/src/protocolgame.h
+--- a/src/protocolgame.h
++++ b/src/protocolgame.h
+@@ -82,6 +82,11 @@
+ 		// a failed check: logged; in "enforce" the player gets the official-client message and is logged out (true)
+ 		bool clientGuardFail(const std::string& reason);
+ 
++		// Chaos (patch 0064): the view of this player as a login sends it, as cast frames for a new spectator (the hello
++		// frame first; only what src/chaoscast.h keeps). Starts this connection's known creatures again, so every
++		// creature in view goes out in full. Dispatcher thread.
++		void writeCastView(std::vector<std::string>& frames);
++
+ 	private:
+ 		ProtocolGame_ptr getThis() {
+ 			return std::static_pointer_cast<ProtocolGame>(shared_from_this());
+@@ -362,6 +367,7 @@
+ 		bool chaosItemAttributes = false; // GameItemCustomAttributes announced: every item carries its custom attributes
+ 		bool chaosImpactTextAsked = false; // patch 0051: the login capability byte of our client asked for typed numbers
+ 		bool chaosImpactText = false; // patch 0051: GameChaosImpactText announced: text messages carry the new fields
++		std::vector<std::string>* castCapture = nullptr; // Chaos (patch 0064): writeCastView collects here
+ 
+ 		// Chaos (patch 0021): the client guard: client version field, names as the client sent them, the nonce, the
+ 		// timeout event and the extended opcodes held back until the answer

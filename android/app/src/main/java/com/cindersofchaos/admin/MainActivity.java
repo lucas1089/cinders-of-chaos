@@ -312,18 +312,24 @@ public class MainActivity extends AppCompatActivity {
                     return;
                 }
                 done.done(fr, fe);
-                String fp = Ssh.newHostFingerprint;
-                if (!fp.isEmpty()) {
-                    Ssh.newHostFingerprint = "";
-                    config.refreshInfo();
-                    new MaterialAlertDialogBuilder(this).setTitle("Primeira conexão")
-                            .setMessage("Impressão digital do servidor (guardada agora):\n\n" + fp
-                                    + "\n\nConfira na VPS com:\nssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub\n\n"
-                                    + "Daqui em diante o app recusa outro servidor com o mesmo endereço.")
-                            .setPositiveButton("Ok", null).show();
-                }
+                newHostDialog();
             });
         });
+    }
+
+    /** After a connection that saw this host for the first time: the fingerprint to compare (main thread). */
+    void newHostDialog() {
+        String fp = Ssh.newHostFingerprint;
+        if (fp.isEmpty() || isFinishing() || isDestroyed()) {
+            return;
+        }
+        Ssh.newHostFingerprint = "";
+        config.refreshInfo();
+        new MaterialAlertDialogBuilder(this).setTitle("Primeira conexão")
+                .setMessage("Impressão digital do servidor (guardada agora):\n\n" + fp
+                        + "\n\nConfira na VPS com:\nssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub\n\n"
+                        + "Daqui em diante o app recusa outro servidor com o mesmo endereço.")
+                .setPositiveButton("Ok", null).show();
     }
 
     /** remote() for a chaos-ctl.sh command whose answer is shown as a Friendly outcome. */

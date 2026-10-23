@@ -222,6 +222,9 @@ jobs:
       - name: Idle kick patch (config.lua kickIdlePlayerAfterMinutes on a copy of the stock text)
         run: python3 -I server/tools/patch_base_idle_kick_test.py
 
+      - name: The live cast port in config.lua (patch_cast_port.py, install_all step castport)
+        run: python3 -I server/tools/patch_cast_port_test.py
+
       - name: Production config (prod_config.py idempotent; spawnNearPlayers of engine patch 0041)
         run: python3 -I server/tools/prod_config_test.py
 
@@ -387,6 +390,14 @@ jobs:
             server/src-patches/0060-fx-send-offsets.patch > "$d/chaosfxoffsets.h"
           g++ -std=c++17 -Wall -Wextra -I "$d" server/tools/chaosfxoffsets_test.cpp -o "$d/chaosfxoffsets_test"
           "$d/chaosfxoffsets_test"
+
+      - name: Live cast, pure parts (C++; header from server src-patch 0064)
+        run: |
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/chaoscast\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            server/src-patches/0064-live-cast.patch > "$d/chaoscast.h"
+          g++ -std=c++17 -Wall -Wextra -I "$d" server/tools/chaoscast_test.cpp -o "$d/chaoscast_test"
+          "$d/chaoscast_test"
 
       - name: Tester bots out of the base player lists (patch_tester_filters.py)
         run: python3 -I server/tools/patch_tester_filters_test.py
@@ -686,6 +697,9 @@ jobs:
 
       - name: Live spectator renderer (spectate_render_test.py; a synthetic pair, draw order, outfits, the pair archive)
         run: python3 -I server/tools/spectate_render_test.py
+
+      - name: Live cast relay (cast_relay_test.py; synthetic frames for every opcode, sheets, the loop, a fuzz)
+        run: python3 -I server/tools/cast_relay_test.py
 
       - name: PHP for the website tests (php-cli with PDO SQLite and mbstring)
         run: |

@@ -103,11 +103,20 @@ instalada é desconhecida: o passo 2 baixa a mais nova e, se o `tfs` for igual a
   ou não; depois de atualizar o PHP, reinicie o apache2 (ou o php-fpm) aqui; ver log, reiniciar, ligar, desligar.
 - **Site e update do client** (`site-install`, `site-log`, `publish-update TAG`, `publish-log`).
 - **Logs de GM** (aba Logs, GM; `gm-logs [N] [NOME]`).
-- **Assistir jogador** (Comandos > Ações rápidas > Assistir jogador > Iniciar; `spectate NOME`): a tela de um
-  personagem online, 15 x 11 quadrados como no client, desenhada na VPS com os sprites do jogo e atualizada mais ou
-  menos uma vez por segundo, com nome, nível, vocação, vida, mana e posição embaixo. Só leitura: o jogador não é
-  avisado e nada muda no jogo. Para no botão Parar, ao trocar de aba ou para Painel do jogo, ao sair do app e depois
-  de 6 falhas seguidas; offline tenta de novo a cada 4 s. Uma visão por vez na VPS, no máximo uma a cada 0,8 s.
+- **Assistir jogador** (Comandos > Ações rápidas > Assistir jogador). Só leitura: o jogador não é avisado e nada
+  muda no jogo.
+  - **Ao vivo** (`cast NOME`): o jogo como o jogador vê, em movimento, uns 30 quadros por segundo. Os 15 x 11
+    quadrados do andar dele, com itens animados, criaturas andando, magias, projéteis, barras de vida, nomes, falas e
+    números de dano. Nível, vida e mana embaixo. Para no botão Parar, ao trocar de aba, ao sair do app, num erro e
+    depois de 30 minutos. Uma visão ao vivo por vez. Não desenha outros andares nem a luz.
+  - **Ligar a porta de cast (uma vez):** o motor precisa do src-patch 0064 e de `castPort` no `config.lua` (porta só
+    em 127.0.0.1, desligada por padrão). No app: Painel > Atualizar servidor com uma versão que tenha o patch 0064. A
+    atualização roda o `install_all.py`, e o passo `castport` liga a porta (7179). Sem o app, na VPS:
+    `sudo python3 -I /opt/chaos/repo/server/tools/install_all.py /opt/chaos/server --only castport`, depois Painel >
+    Reiniciar (ou `chaos-ctl.sh restart`). Sem a porta o Ao vivo avisa "A porta de cast está desligada". Para ver as
+    linhas JSON na VPS: `sudo /opt/chaos/repo/server/deploy/chaos-ctl.sh cast NOME` (Ctrl+C para parar).
+  - **Foto** (`spectate NOME`): uma imagem só, desenhada na VPS, com nome, nível, vocação, vida, mana e posição
+    embaixo. Funciona sem a porta de cast. No máximo uma a cada 0,8 s.
   Antes da primeira vez a VPS precisa do par de sprites do client: no mesmo card, **Baixar sprites** (confirmar;
   `spectate-pair fetch`) baixa o arquivo do ramo `windows-assets`, confere as somas SHA-256 e troca a pasta
   `/opt/chaos/pair` (a mesma do `CHAOS_SPRITE_PAIR` do site); acompanhe em **Log do download**
@@ -171,9 +180,10 @@ shell livre. Rode `chaos-ctl.sh help`. Aviso, expulsar, abrir, fechar e salvar p
   atualização do kit (`chaos_kit_update_test.py`: repositório, releases, systemctl e banco falsos) e os comandos do
   jogo (`remote_cmd_test.lua`) com motor simulado. O app 2.1 foi compilado; as telas novas (Atualizar servidor, Taxa
   de XP, Contas, Saúde, Logs GM) não foram abertas num aparelho.
-- Assistir jogador foi testado com um motor simulado e sprites sintéticos (`spectate_test.lua`,
-  `spectate_render_test.py`, `chaos_ctl_test.py`); não rodou num servidor de verdade, com o par de verdade nem num
-  aparelho. O app compila; o card não foi aberto num celular.
+- Assistir jogador: a Foto foi testada com um motor simulado e sprites sintéticos (`spectate_test.lua`,
+  `spectate_render_test.py`, `chaos_ctl_test.py`). O Ao vivo tem testes do relay com quadros sintéticos
+  (`cast_relay_test.py`) e do motor (`chaoscast_test.cpp`); o motor com o patch 0064 compila. O app compila; o card
+  não foi aberto num celular.
 - O terminal executa um comando por vez (sem programas interativos como `nano` ou `top`). Use `top -bn1` no lugar de `top`.
 - O layout assumido é o de `docs/LAUNCH.md` (`/opt/chaos`, unidade `chaos-server`). Outro layout: veja abaixo.
 

@@ -312,8 +312,13 @@ Estimated before items 4 and 5: ~155 h to level 1000 for a sorcerer, ~285 h for 
   fetched by `spectate-pair fetch`) and shown in the app's Comandos > Ações rápidas > Assistir jogador about once a
   second (server/README.md "Live spectator", docs/ADMIN_APP.md). It differs from the chosen option: the sprites are
   drawn on the VPS, not on the device, and there is no engine cast; no animation, light or effects. Not run on a real
-  server, with the real pair or on a phone. Open for the owner: keep phase 1, or go on to the engine cast with the pair
-  on the device.
+  server, with the real pair or on a phone.
+  Phase 2 (owner 2026-10-23, "Eu quero ver o gameplay em tempo real. Faça o patch na engine."), done, not yet on a
+  phone: src-patch 0064 mirrors one player's game messages to a cast port on 127.0.0.1 (`castPort`, off by default;
+  install step `castport`), `server/tools/cast_relay.py` turns them into JSON lines with sprite sheets drawn on the VPS
+  from the real pair, `chaos-ctl.sh cast NAME` streams them over the app's ssh channel and the app draws them at
+  about 30 fps (Assistir jogador > Ao vivo; phase 1 stays as Foto). Not drawn: other floors, light. The sprites are
+  still drawn on the VPS, sent once per sheet, not read from a pair on the device. server/README.md "Live spectator".
 - Done (monster lint follow-up, server/README.md "Monster lint", `tools/tune_monsters.py`): Wild Boar and Giant
   Hornet renamed Gloomtusk Boar and Blightwing Hornet; donor boss experience in the world boss band; the 2,005,500
   hits and Vharok's dead bleed fixed; late-game gold, Garack's loot, Azure Dragon's elements; Orcaruz, Fenmaw,

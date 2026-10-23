@@ -231,6 +231,9 @@ server/
                                       whole (UBSan report at every start; see "Engine hardening")
   src-patches/0063-first-packet-reads-zeros.patch   engine: a read past the end of a connection's first, plain packet
                                       returns zeros, never old bytes (see "Engine hardening"; tools/fuzz/fuzz_netmsg.cpp)
+  src-patches/0064-live-cast.patch   engine: the live cast port of one player on 127.0.0.1 (castPort, off by default;
+                                      Game.setCastTarget; see "Live spectator", phase 2; header src/chaoscast.h,
+                                      tools/chaoscast_test.cpp)
     remote_cmd.lua    remote_cmd_core.lua    remote_cmd_config.lua  (remote admin commands by file, see "Remote admin commands")
     spectate.lua      spectate_core.lua      spectate_config.lua    (the admin app's live view of a character, see "Live spectator")
     helpai.lua  helpai_core.lua  helpai_config.lua (Ember answers questions in the Help channel through the sidecar
@@ -447,8 +450,11 @@ server/
 5i3. Idle kick: `python3 -I server/tools/patch_base_idle_kick.py <server> [--minutes N] [--dry-run]` (idempotent;
    `install_all.py` step `idlekick`, after `candlemarks`) sets `config.lua` `kickIdlePlayerAfterMinutes` to 1440 so idle
    characters stay online and earn Candlemarks (the stock 15 kicks them after 16 minutes). See "Candlemarks".
+5i3b. Cast port: `python3 -I server/tools/patch_cast_port.py <server> [--port N] [--dry-run]` (idempotent; `install_all.py`
+   step `castport`, after `idlekick`) sets `config.lua` `castPort` to 7179 (127.0.0.1 only; needs src-patch 0064 and a
+   restart). Without it the port stays off. See "Live spectator", phase 2.
 5i2b. Service NPCs: `python3 -I server/tools/install_service_npcs.py <server>/data [--dry-run]` (idempotent; `install_all.py`
-   step `servicenpcs`, after `idlekick`) copies the five NPCs of `service_npcs_config.lua` (`data/npc/<name>.xml`, their
+   step `servicenpcs`, after `castport`) copies the five NPCs of `service_npcs_config.lua` (`data/npc/<name>.xml`, their
    scripts and the shared `scripts/chaos_service_npc.lua`) into `data/npc`; `service_npcs.lua` places them at startup. No
    items, no tables, no opcode. See "Service NPCs".
 5j. Infinite arrows and quivers: `python3 -I server/tools/patch_base_archery.py <server>/data [--dry-run]` (idempotent;
@@ -16817,7 +16823,8 @@ server folder (the engine's working folder), the same idea as the stop request f
   `kick NAME` (a character name: letters, spaces, `'` and `-`, 3-29 characters; an offline name does nothing), `save`
   (`saveServer()`), `open` and `close` (`Game.setGameState` NORMAL / CLOSED: login open or closed; players online stay).
   `spectate NAME` (same name rule) starts or renews the live view of a character (see "Live spectator"); a renewal is
-  not logged. Control characters, long lines and every other word are refused and logged.
+  not logged. `cast NAME` (same name rule) names the player of the cast port and `caststop` clears it (src-patch 0064;
+  an engine without it answers "this engine has no cast port"). Control characters, long lines and every other word are refused and logged.
 - The whole admin panel (`chaos/admin`, 179 actions) is reachable too, through two more lines: `catalog ACTOR` writes the
   catalog of the panel for ACTOR's group to `remote.catalog` (JSON, same as the in-game panel gets), and
   `panel RID ACTION|ACTOR|JSON` runs one action (`ChaosAdmin.execute`: group check, parameter validation, audit log) and
@@ -16871,9 +16878,9 @@ the player is not told and nothing in the game changes. No engine patch: the sna
   the background (log `CHAOS_SPECTATE_LOG`, `/var/log/chaos/spectate-pair.log`; `spectate-pair log`), one at a time,
   and needs about 2.3 GB of free disk while it runs. `spectate-pair status` prints `branch=`, `fetching=`, `pair=`,
   `dat_md5=` and `index=`. The VPS needs `python3-numpy` and `python3-pil`.
-- **App.** Comandos > Ações rápidas > Assistir jogador (`android/.../SpectateCard.java`): name, Iniciar / Parar, the
-  picture scaled without smoothing, name, level, vocation, health, mana and position under it. It asks about once a
-  second over the open ssh session and stops on Parar, on leaving the tab or the app and after 6 failures in a row.
+- **App.** Comandos > Ações rápidas > Assistir jogador (`android/.../SpectateCard.java`): name, Ao vivo / Foto / Parar.
+  Foto asks for one picture (phase 1), scaled without smoothing, with name, level, vocation, health, mana and position
+  under it. Ao vivo is phase 2, below.
 - **Draws stock art.** Unlike the website (which never shows stock sprites), the view draws everything the pair has:
   it is private to the owner's phone.
 - Tests: `tests/spectate_test.lua` (core and engine file against a mocked engine: names, watch, tile order, limits,
@@ -16882,6 +16889,45 @@ the player is not told and nothing in the game changes. No engine patch: the sna
   mounts, PNG, the pair archive with traversal, links and wrong sums), `server/deploy/chaos_ctl_test.py` (refusals,
   quoting, lock, rate limit, renewal, no answer, pair status). Untested: the engine calls on a real server, a real
   pair (pair 37's spr is over 1 GiB), the fetch from `windows-assets`, the app on a phone.
+
+**Phase 2: the live cast (src-patch 0064, `tools/cast_relay.py`, `chaos-ctl.sh cast NAME`).** Owner, 2026-10-23: "Eu
+quero ver o gameplay em tempo real. Faça o patch na engine." The phone shows the game as the player sees it, moving.
+- **Engine (src-patch 0064).** `config.lua` keys: `castPort` (default 0: off), `castMaxSpectators` (3, 1-8),
+  `castQueueKb` (1024). With a port the engine listens on 127.0.0.1 only, on its own thread
+  (`src/chaoscastserver.cpp`). `Game.setCastTarget(name)` names the watched player ("" clears it);
+  `Game.getCastTarget()` returns the name, the spectators and whether the port is open. `ProtocolGame::writeToOutputBuffer`
+  hands the watched player's messages to the port. `src/chaoscast.h` keeps only the game view (map, tiles, creatures,
+  moves, effects, missiles, animated text, health, light, the player's stats, speech on screen, the typed numbers).
+  Private and channel messages, VIP, modal windows, store, market, trade, containers, inventory, extended opcodes and
+  pings never leave the engine. A frame is u16 length (little endian) + one message body, plain. A new spectator gets a
+  hello frame (opcode 0x00, "CAST", version 1, player id, client marker, item / text flags, aware range, name), then
+  the view a login sends (`Player::writeCastView`), then the live messages. The game thread never waits: a spectator
+  more than `castQueueKb` behind is dropped. Everyone is dropped when the target changes, logs out or reconnects.
+- **Enable.** `install_all.py` step `castport` (`tools/patch_cast_port.py`) sets `castPort = 7179`, then restart the
+  server. `chaos-ctl.sh` reads the port from `config.lua` (or `CHAOS_CAST_PORT` in `/etc/chaos/ctl.conf`).
+- **Relay.** `tools/cast_relay.py --port N --dat --spr [--otb] [--name] [--max-seconds]` reads the port and keeps the
+  world our client would keep (the same parse rules: floors, stack order, our item attributes, typed numbers, wings /
+  aura / shader). It writes JSON lines on stdout: `wait`, `hello`, `spr` (a sprite sheet PNG, once per run, at most
+  600), `full`, `d` (changes, at most about 20 a second), `hb`, `resync`, `end`. The docstring has the format. Broken
+  input never crashes it: a broken frame starts the view again. It stops when stdin closes, stdout breaks or after
+  `--max-seconds`.
+- **VPS.** `chaos-ctl.sh cast NAME` checks the name (same rule), the port (`cast-off`) and the pair (`no-pair`),
+  takes a lock (`busy`, exit 75), queues `cast NAME` and runs the relay for at most 30 minutes. On exit it queues
+  `caststop`. Errors are `{"ok":false,"error",...}` lines like `spectate`.
+- **App.** Ao vivo runs `chaos-ctl.sh cast NAME` on one ssh channel (`Ssh.stream`) and `CastView.java` draws the lines
+  at about 30 frames a second: the 15 x 11 tiles of the player's floor with item patterns and animation, elevation,
+  creatures walking between tiles with their walking frames, effects, missiles, health bars, names, numbers and
+  speech, scaled without smoothing. The camera follows the player's steps. Level, health and mana show under it. It
+  stops on Parar, on leaving the tab or the app, on an error and after 30 minutes. Not drawn: other floors, light,
+  the client's own interface.
+- Tests: `tools/chaoscast_test.cpp` (the message whitelist, frames, hello bytes; CI), `tools/cast_relay_test.py`
+  (synthetic frames for every opcode, both client markers, sheets, the loop with a local port, a fuzz; CI),
+  `tests/remote_cmd_test.lua` (`cast`, `caststop`), `server/deploy/chaos_ctl_test.py` (cast refusals, lock, quoting),
+  `tools/patch_cast_port_test.py`. The patched engine compiles (chain 0001-0064). The app compiles.
+  Live run (2026-10-23, the sanitizer build, the real pair, 3 load test bots walking, talking and hunting): the port
+  listened on 127.0.0.1 only, `cast Loadbot Aaa` through `remote.cmd`, and in 45 s the relay wrote hello, 170 sheets,
+  the full view and 76 changes (walks, effects, numbers, speech) with no resync and no sanitizer report. The full view
+  drawn from those lines matched the game. Untested: the app on a phone, `chaos-ctl.sh cast` on the VPS.
 
 **chaos-ctl.sh settings file (`/etc/chaos/ctl.conf`).** Owner, 2026-10-20: the app showed "service not found, codigo 5"
 on the beta VPS. The kit there runs from `/opt/chaos-trial` (`tools/linux/server/start-server.sh`) with no systemd
