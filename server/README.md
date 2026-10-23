@@ -1798,6 +1798,29 @@ runs after the cap and skips commented-out instants, so they are free at install
 CI step "Attack spell parity": `tools/ci/check_attack_counts.py` (21 classes x 10) and its test. Not run on a live
 server.
 
+### Retired spells (O145, player beta report 2026-10-23: "some of my support spells disappeared")
+
+Audit of O133-O140: no Chaos spell changed its class list or level (`spells_chaos.xml` compared before and after); the attack
+kit only added spells and reused ids of retired stock spells; the only support retired in the last update is Galeborne
+Stride (O136, 11 classes; the replacements Fleetfoot and Vigil of Haste are universal). Every Chaos class spell is
+`needlearn="0"`, so nobody had a learned row to lose and the engine simply stopped listing the spell: the player had no way
+to learn what went. Fix, three parts:
+
+* `retired_spells.lua` (+ `_core`, `_config`): at login `forgetSpell` for every retired spell the character still has a
+  learned row of (`names`: the 69 stock spells `patch_spell_cap.py` retires plus Hawkeye, Bulwark, Windrunner; the test parses
+  `CAP` and fails when they drift, or when a live Chaos spell is on the list), and a one-time message to the classes that lost
+  a spell (`notices`; Galeborne Stride for level 20 and up of the 11 classes, pt-BR in `i18n_strings.lua`). The notice version
+  is storage 7100205 (`retired_spells_config.lua`, next to the classes' 7100200-7100204); a new retired support adds a notice
+  and raises `version`. Nothing is taught: the replacements need no row.
+* Client, `game_helpersupport` `deadReason`: a saved Support tab row of a retired spell (`notOnServer`) or of an id that is an
+  attack spell now leaves the list at load, like the utilities did.
+* Patch note bullet "Retired supports, and what replaces them" (`data/patchnotes/2026-10-22.md`).
+
+Not fixed (base client code, `0017`/`0079`): action bar and hotkey slots keep the spell id they were saved with. A slot of a
+retired spell does nothing; a slot saved with an id the kit took (2, 9, 19, 22 ...) casts the kit spell now. Tests:
+`tests/retired_spells_test.lua`, `game_helpersupport/supportspells_test.lua`. Needs a server restart (login script) and a
+client update (helper). Not run on a live server.
+
 ### Monster spells (owner report 2026-10-21: "Unknown spell name: arc bolt" / "dread" after the spell cap)
 
 Monsters cast player spells by name: an `<attack name="arc bolt">` (XML) or `{name = "arc bolt"}` (Lua) without a

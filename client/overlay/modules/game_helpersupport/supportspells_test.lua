@@ -403,6 +403,20 @@ local kept, dropped = H.dropUtilities({ { id = 44, enabled = true }, { id = 75, 
 eq(dropped, 2, 'a saved list loses Lantern and Ghost Rope')
 eq(#kept .. ':' .. kept[1].id .. ':' .. kept[2].id, '2:44:999', 'the rest stays in order (an unknown id too)')
 
+-- rows that can never work again (O145): a retired spell, an id that is an attack spell now; a spell with no group data stays
+local retired = { id = 39, name = 'Galeborne Stride', words = 'ruan gal ul', group = { [3] = 2000 }, notOnServer = true }
+local nowAttack = { id = 127, name = "Martyr's Pyre", words = 'kah x', group = { [1] = 2000 }, level = 1, mana = 1 }
+local noGroup = { id = 500, name = 'Odd', words = 'odd', level = 1, mana = 1 }
+eq(H.deadReason(retired), 'server', 'a retired spell is dead')
+eq(H.deadReason(nowAttack), 'group', 'an id that is an attack spell now is dead')
+eq(H.deadReason(noGroup), nil, 'no group data: kept')
+eq(H.deadReason(spells[234]), nil, 'a live support spell is kept')
+local kept2, dropped2 = H.dropUtilities({ { id = 39, enabled = true }, { id = 234, enabled = true }, { id = 127, enabled = true },
+  { id = 500, enabled = true }, { id = 9999, enabled = true } },
+  function(id) return ({ [39] = retired, [127] = nowAttack, [234] = spells[234], [500] = noGroup })[id] end)
+eq(dropped2, 2, 'the retired and the attack rows leave')
+eq(#kept2 .. ':' .. kept2[1].id .. ':' .. kept2[2].id .. ':' .. kept2[3].id, '3:234:500:9999', 'the rest stays in order')
+
 -- the safeguards
 st, w = H.newState(), world({ bar = {}, inPz = true })
 cfg = cfgOf({ 234 })

@@ -3249,5 +3249,8 @@ return {
 			"Seu prêmio %s está no chão embaixo de você: sua mochila e sua Purse não tinham espaço.",
 		["The roulette could not find your prize. Your next spin is free."] =
 			"A roleta não encontrou seu prêmio. Seu próximo giro é grátis.",
+		-- Retired spells (retired_spells_config.lua, O145)
+		["Galeborne Stride was retired. Fleetfoot and Vigil of Haste give the same haste and every class has them. Take it off your hotbar and helper."] =
+			"Galeborne Stride foi aposentada. Fleetfoot e Vigil of Haste dão a mesma velocidade e toda classe as tem. Tire-a da sua hotbar e do helper.",
 	},
 }
