@@ -375,8 +375,9 @@ function dealt.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 		-- the class spell factor (server/README.md "Class spell factor"): spell damage only, never healing
 		local vocation = attacker.getVocation and attacker:getVocation()
 		local vocId = vocation and vocation:getId() or 0
-		local f1 = ChaosSpellFactor.factor(vocId, origin, primaryType, ORIGIN_SPELL, COMBAT_HEALING, procActive)
-		local f2 = ChaosSpellFactor.factor(vocId, origin, secondaryType, ORIGIN_SPELL, COMBAT_HEALING, procActive)
+		local level = attacker.getLevel and attacker:getLevel() or nil
+		local f1 = ChaosSpellFactor.factor(vocId, origin, primaryType, ORIGIN_SPELL, COMBAT_HEALING, procActive, nil, level)
+		local f2 = ChaosSpellFactor.factor(vocId, origin, secondaryType, ORIGIN_SPELL, COMBAT_HEALING, procActive, nil, level)
 		if f1 ~= 1 then
 			primaryDamage = scale(primaryDamage, f1)
 		end

@@ -1856,11 +1856,16 @@ before and after and the retune proposals: `data/spells/README.md` "Cooldown lad
 
 ### Class spell factor (owner 2026-10-20: the cooldown ladder's retune proposals applied)
 
-One factor on a class's spell damage: `data/scripts/chaos/spell_factor_config.lua` (`ChaosSpellFactorConfig.byVocation`,
-by vocation id: Templar 23 and Sentinel 25 x0.6; Inquisitor 24, Elementalist 5, Illusionist 10, Lich 21, Bone Lord 22,
-Shadowfist 18 x0.7; Necromancer 20 x0.8; Beastmaster 15 x1.25; the rest 1). Rules in `spell_factor_core.lua`
-(`ChaosSpellFactor.factor`), tested by `tests/spell_factor_test.lua` (the table, the rule, the event on a mocked engine,
-the guards).
+One factor on a class's spell damage: `data/scripts/chaos/spell_factor_config.lua`. Since the combat pass (O136,
+2026-10-23) it is a level curve: `ChaosSpellFactorConfig.byLevel[vocation id]` is a list of {level, factor} points (flat
+below the first point, linear between points, the last value above) and `byVocation` is the end value (level 1000 and
+up; 1 for a class with no curve). End values: Templar 0.63, Sentinel 0.60, Inquisitor 0.77, Illusionist 0.73, Lich 0.92,
+Bone Lord 0.71, Shadowfist 0.80, Necromancer 0.69, Beastmaster 1.17, Ranger 1.12, Deadeye 1.25, Juggernaut 1.09,
+Berserker 1.08, Elementalist 0.70, the rest 1. The points keep each class's best-set rotation score at its value before the
+attack kit at levels 15-1000 (no early dips, no level 200 spikes); the table is in `data/spells/README.md` "Combat pass
+(O136)". Rules in `spell_factor_core.lua` (`ChaosSpellFactor.forVocation(voc, cfg, level)` and `.factor(..., cfg,
+level)`; the event passes the attacker's level), tested by `tests/spell_factor_test.lua` (the table, the curve, the rule,
+the event on a mocked engine, the guards).
 
 * Where: the `ChaosPassiveDealt` onHealthChange event of `passivetree_effects.lua`, the event every damage a player deals
   already passes (the passive tree, Paragon, the class tree's factor). The factor goes on damage with origin

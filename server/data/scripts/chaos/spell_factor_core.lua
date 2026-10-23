@@ -18,23 +18,39 @@ ChaosSpellFactor = ChaosSpellFactor or {}
 local F = ChaosSpellFactor
 F.depth = F.depth or 0
 
--- the factor of vocation `vocId` (1 when not listed)
-function F.forVocation(vocId, cfg)
+-- the factor of vocation `vocId` (1 when not listed) for a player of `level`: a class with a byLevel curve (O136) gets
+-- the value on it (flat below the first point, linear between points, the last point's value above it) when the level is
+-- known, else the byVocation value (the end of the curve)
+function F.forVocation(vocId, cfg, level)
 	cfg = cfg or ChaosSpellFactorConfig
-	local v = cfg and cfg.byVocation and cfg.byVocation[tonumber(vocId) or -1]
+	local id = tonumber(vocId) or -1
+	local pts = level and cfg and cfg.byLevel and cfg.byLevel[id]
+	if pts and #pts > 0 then
+		if level <= pts[1][1] then
+			return pts[1][2]
+		end
+		for i = 2, #pts do
+			local a, b = pts[i - 1], pts[i]
+			if level <= b[1] then
+				return a[2] + (b[2] - a[2]) * (level - a[1]) / (b[1] - a[1])
+			end
+		end
+		return pts[#pts][2]
+	end
+	local v = cfg and cfg.byVocation and cfg.byVocation[id]
 	return v or 1
 end
 
 -- the factor on one damage value: the vocation, origin and combat type of the hit; spellOrigin / healingType are the
 -- engine's ORIGIN_SPELL and COMBAT_HEALING; procActive = a keystone proc is running
-function F.factor(vocId, origin, combatType, spellOrigin, healingType, procActive, cfg)
+function F.factor(vocId, origin, combatType, spellOrigin, healingType, procActive, cfg, level)
 	if procActive or F.depth > 0 then
 		return 1
 	end
 	if spellOrigin == nil or origin ~= spellOrigin or not combatType or combatType == 0 or combatType == healingType then
 		return 1
 	end
-	return F.forVocation(vocId, cfg)
+	return F.forVocation(vocId, cfg, level)
 end
 
 -- run fn(...) with the factor off (an ORIGIN_SPELL hit that is not the class's spell damage); returns pcall's results

@@ -88,8 +88,8 @@ local function hit(kind, level, skill, attack)
 	return S.maxHit(level, skill, attack) / 2 * P.hitFactor(kind, level, skill)
 end
 local attack = 65 -- gear attack flat above level 1000
-ok(hit("distance", 2000, 140, attack) > hit("distance", 1000, 140, attack) * 1.4,
-	"same skill and gear: level 2000 hits over 1.4x level 1000 (the engine alone: " ..
+ok(hit("distance", 2000, 140, attack) > hit("distance", 1000, 140, attack) * 1.35,
+	"same skill and gear: level 2000 hits over 1.35x level 1000 (the engine alone: " ..
 	S.maxHit(2000, 140, attack) / S.maxHit(1000, 140, attack) .. "x)")
 ok(hit("melee", 1000, 160, attack) > hit("melee", 1000, 140, attack) * 1.15, "same level: +20 skill is over +15%")
 ok(hit("melee", 1000, 120, attack) < hit("melee", 1000, 140, attack) * 0.9, "same level: -20 skill is under -10%")

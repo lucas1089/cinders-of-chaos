@@ -56,7 +56,7 @@ CAP = {
     'attack/divine_grenade.lua': (34, 'Radiant Shard', ('Ranger',)),
     'attack/grand_death_beam.lua': (35, 'Lance of the Grave', ()),
     'support/creature_illusion.lua': (38, "Skinchanger's Guise", ()),
-    'support/strong_haste.lua': (39, 'Galeborne Stride', ('Mystic', 'Elementalist', 'Thief', 'Ninja', 'Samurai', 'Monk', 'Shadowfist', 'Iron Sage', 'Necromancer', 'Lich', 'Bone Lord')),
+    'support/strong_haste.lua': (39, 'Galeborne Stride', ()),  # retired 2026-10-23 (O136): the universal Vigil of Haste and Fleetfoot do the same
     'attack/ice_burst.lua': (40, 'Shatterfrost', ()),
     'attack/terra_burst.lua': (41, 'Quakeburst', ()),
     'attack/strong_ice_wave.lua': (43, 'Greater Glacier Fan', ()),

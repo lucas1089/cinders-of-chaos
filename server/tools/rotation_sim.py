@@ -77,6 +77,7 @@ NO_PRESET = ('skip', 'utility')  # flags that keep a spell out of every rotation
 MIN_PLAYER_ATTACK_INTERVAL = 1.0  # config.lua minPlayerAttackInterval (src-patch 0011), seconds
 CHI_HIT_INTERVAL = 2.0            # one chi per melee hit, at most one per 2 s (ChaosMonk.cfg.chi)
 KEEP_SHARE = 0.95                 # a best set keeps 95% of the measured kit's damage when it can
+GAP_FREE = 0.90                   # a set with no gap over 2 s wins when it has 90% of the best set's score (O136)
 PACK_WEIGHT = 0.25                # score = 1 target + 0.25 x the 5-target total
 CANDIDATES = 10                   # the strongest spells per second a class's best set is searched among (+ below)
 
@@ -133,15 +134,32 @@ def stats(cls, level):
 
 @functools.lru_cache(maxsize=None)
 def spell_factors():
-    """{vocation id: factor} of ChaosSpellFactorConfig.byVocation (spell_factor_config.lua)"""
+    """{vocation id: factor} of ChaosSpellFactorConfig.byVocation (spell_factor_config.lua): the factor from the last
+    point of the class's byLevel curve up, and the whole factor of a class without a curve"""
     text = open(SPELL_FACTOR, encoding='utf-8').read()
     block = re.search(r'byVocation\s*=\s*\{(.*?)\n\t\}', text, re.S).group(1)
     return {int(v): float(f) for v, f in re.findall(r'\[(\d+)\]\s*=\s*([0-9.]+)', block)}
 
 
-def spell_factor(cls):
-    """the class spell factor of class `cls` (1 when not listed): every spell's damage of the model is x this"""
-    return spell_factors().get(VOC[cls], 1.0)
+@functools.lru_cache(maxsize=None)
+def spell_curves():
+    """{vocation id: [(level, factor), ...]} of ChaosSpellFactorConfig.byLevel: flat below the first point, linear
+    between points (the rule of spell_factor_core.lua)"""
+    text = open(SPELL_FACTOR, encoding='utf-8').read()
+    m = re.search(r'byLevel\s*=\s*\{(.*?)\n\t\}', text, re.S)
+    out = {}
+    for v, pts in re.findall(r'\[(\d+)\]\s*=\s*\{((?:\s*\{\d+,\s*[0-9.]+\},?)+)\s*\}', m.group(1) if m else ''):
+        out[int(v)] = [(int(a), float(b)) for a, b in re.findall(r'\{(\d+),\s*([0-9.]+)\}', pts)]
+    return out
+
+
+def spell_factor(cls, level=None):
+    """the class spell factor of class `cls` at `level` (1 when not listed): every spell's damage of the model is x this"""
+    v = VOC[cls]
+    pts = spell_curves().get(v)
+    if pts and level is not None:
+        return interp(pts, level)
+    return spell_factors().get(v, 1.0)
 
 
 def smite_for(cls, level):
@@ -355,7 +373,7 @@ def prepare(spells, model, cls, level):
         p.sec = s['secondarygroup']
         p.seccd = s['secondarygroupcooldown'] / 1000.0
         p.cast = s['cast'] / 1000.0
-        p.dmg = evaluate(m['dmg'], env) * spell_factor(cls)  # the class spell factor (spell_factor_config.lua)
+        p.dmg = evaluate(m['dmg'], env) * spell_factor(cls, level)  # the class spell factor (spell_factor_config.lua)
         p.dmg5 = p.dmg * m['t5']
         p.chi = 'chi' in m['flags']
         p.gain = 2 if 'chi2' in m['flags'] else (1 if 'chi1' in m['flags'] else 0)
@@ -458,6 +476,7 @@ def search(pool, ref, limit, by_rate, by_cast):
     keep = [s for s in pool if s.keep]
     cands = [s for s in cands if not s.keep]
     best = None
+    best_free = None  # the best set without a dead gap (GAP_FREE below)
     for k in range(max(1, len(keep)), min(limit, len(cands) + len(keep)) + 1):
         for combo in itertools.combinations(cands, k - len(keep)):
             rot = order(keep + list(combo))
@@ -467,6 +486,13 @@ def search(pool, ref, limit, by_rate, by_cast):
             key = (short, -round(share, 3) if short else 0, -score(d1, d5), k)
             if best is None or key < best[0]:
                 best = (key, rot, gap, d1, d5)
+            if gap <= GCD + 1e-9 and (best_free is None or key < best_free[0]):
+                best_free = (key, rot, gap, d1, d5)
+    # no dead gap (O136, owner 2026-10-22: no long gaps in a rotation): a set that casts on every attack group cooldown
+    # wins when it keeps GAP_FREE of the best set's score
+    if best_free is not None and best_free is not best and \
+            score(best_free[3], best_free[4]) >= GAP_FREE * score(best[3], best[4]):
+        best = best_free
     return best
 
 
