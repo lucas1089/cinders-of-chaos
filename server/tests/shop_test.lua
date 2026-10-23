@@ -977,4 +977,13 @@ ext = registry.ChaosShopExtended
 eq(#ChaosShop.view(A), keysBefore, "same categories after a reload")
 eq(buy(A, "outfit:1237"), "Not possible", "still owned after a reload")
 
+-- potion packs (2026-10-23): six potions in 100 / 250 / 500, the 100 packs keep their keys and coins, bigger packs
+-- cost less a potion
+for id, c100 in pairs({[7590] = 15, [8472] = 15, [8473] = 20, [26029] = 25, [26030] = 25, [26031] = 30}) do
+	local a, b, c = Shop.byKey["item:" .. id .. "x100"], Shop.byKey["item:" .. id .. "x250"], Shop.byKey["item:" .. id .. "x500"]
+	ok(a and b and c, "potion " .. id .. ": three packs")
+	eq(a.cost, c100, "potion " .. id .. ": 100 pack coins")
+	ok(b.cost / 250 < a.cost / 100 and c.cost / 500 < b.cost / 250, "potion " .. id .. ": bigger packs cost less a potion")
+end
+
 print("shop_test: ok")

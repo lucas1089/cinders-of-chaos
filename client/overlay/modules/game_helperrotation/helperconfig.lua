@@ -1,6 +1,6 @@
 -- ChaosHelperConfig: the helper's saved settings checked on load (pure: helperconfig_test.lua; client/MANIFEST.md
 -- "Helper settings checked on load").
--- Players can edit the files these come from by hand: the per-character helper.json of the helper (mods/game_helper,
+-- Players can edit the files these come from by hand: the per-character helper.json of the helper (modules/game_helper,
 -- read through ChaosHelperSave.read, base patch 0067) and the g_settings nodes of config.otml that the overlay keeps
 -- per character (Auto rotation's spell choices, Auto setup's timer words). Every number that drives the automation
 -- (thresholds, delays, counts, ids, priorities) is clamped to the range the helper's own controls allow, every value

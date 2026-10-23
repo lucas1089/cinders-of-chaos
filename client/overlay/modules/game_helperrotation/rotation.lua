@@ -1,5 +1,5 @@
 -- The helper's cast bookkeeping (pure Lua: no engine calls; tests: rotation_test.lua). Base patch 0052 calls it from
--- mods/game_helper (magic shooter, healing) as the global ChaosHelperRotation.
+-- modules/game_helper (magic shooter, healing) as the global ChaosHelperRotation.
 --
 -- The helper decided a spell was "cast" the moment it sent the words, put a 200 ms cooldown on the spell and its groups
 -- and moved on. Two things went wrong with that on our server:

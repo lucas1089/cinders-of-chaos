@@ -89,9 +89,11 @@ jobs:
           python3 -I server/tools/gen_item_prices.py --check
           python3 -I server/tools/install_item_prices_test.py
           python3 -I server/tools/install_service_npcs_test.py  # the five service NPCs (hub stalls)
+          python3 -I server/tools/install_apothecary_test.py  # Veyra the Apothecary (hub supplies)
           python3 -I server/tools/patch_bank_payments_test.py  # every gold price of the base scripts pays from the bank too
           python3 -I server/tools/add_vocations_potion_text_test.py
           python3 -I server/tools/exercise_charges_patch_test.py
+          python3 -I server/tools/patch_exercise_weapons_test.py  # one melee training weapon: stock lines, descriptions, NPC lists
           python3 -I server/tools/rarity_stock_patch_test.py  # the seven rarities: the stock roll of default_onDropLoot.lua
           python3 -I server/tools/patch_base_throwables_test.py  # stackable throwing weapons leave loot, shops and rewards
           python3 -I server/tools/retire_cure_spells_test.py  # the stock cure spells and Hawkeye leave spells.xml
@@ -113,6 +115,7 @@ jobs:
         run: |
           python3 -I server/tools/weapon_sim_test.py
           python3 -I server/tools/weapon_sim.py --check
+          python3 -I server/tools/weapon_sim.py --power --check  # weapon_power_config.lua (auto attack power)
           python3 -I server/tools/add_vocations_melee_test.py
           python3 -I server/tools/monster_fire_resist_test.py
 
@@ -144,6 +147,9 @@ jobs:
 
       - name: An emptied slot loses the marks of its item (model of base patch 0115, LuaJIT and Lua 5.3)
         run: python3 -I client/tools/slot_clear_test.py
+
+      - name: A full container packet keeps the slot widgets of an open window (model of base patch 0122)
+        run: python3 -I client/tools/slot_reuse_test.py
 
       - name: A busy tile draws its newest effects and the combat feedback (model of base patch 0116)
         run: python3 -I client/tools/effect_limit_test.py

@@ -281,6 +281,11 @@ them are named by role, so they carry no Reserved Font Name.
   - Used for: Ember, the Help channel assistant (installed on the server by the owner, not shipped in the packages)
   - Source: https://github.com/anthropics/anthropic-sdk-python
 
+- **Helper module**
+  - Author: R!ck, ZLukSrT#8740, Christianlb, worthdavi
+  - Licence: unknown; the owner supplied the file, no licence text came with it
+  - Used for: the helper window, healing and potion rows, spell rotation slots and presets (adapted to this game)
+
 ## Tools {pt-BR: Ferramentas}
 
 - **PixelLab**

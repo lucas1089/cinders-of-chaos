@@ -1,0 +1,87 @@
+# Skill messages use the names of the skills window (owner report 2026-10-23: "You advanced to axe fighting level 43." while the
+# window shows one Melee row; server/README.md "One melee skill", "Skill names in messages"). New getSkillMessageName() in
+# tools.cpp: sword, club and axe fighting are "melee", distance fighting is "ranged", every other skill keeps the engine's
+# name (fist fighting, shielding, fishing, the crafting skills, magic level). Player::addSkillAdvance ("You advanced to ..."),
+# Player::addSkillTries (the same line), Player::removeSkillTries ("You were downgraded to ...") and Player::setSkill*
+# ("Your Melee skill changed from level ...") use it. getSkillName itself stays: the item look texts read it and
+# data/scripts/chaos/melee_skill_look.lua rewrites "club fighting +2, sword fighting +2, axe fighting +2" to "melee +2".
+# A server rebuild is needed. Apply in the server source root after 0001-0064: patch -p1 < 0065-skill-message-names.patch.
+diff --git a/src/player.cpp b/src/player.cpp
+--- a/src/player.cpp
++++ b/src/player.cpp
+@@ -561,7 +561,7 @@
+ 		skills[skill].tries = 0;
+ 		skills[skill].percent = 0;
+ 
+-		sendTextMessage(MESSAGE_EVENT_ADVANCE, fmt::format("You advanced to {:s} level {:d}.", getSkillName(skill), skills[skill].level));
++		sendTextMessage(MESSAGE_EVENT_ADVANCE, fmt::format("You advanced to {:s} level {:d}.", getSkillMessageName(skill), skills[skill].level));
+ 
+ 		g_creatureEvents->playerAdvance(this, skill, (skills[skill].level - 1), skills[skill].level);
+ 
+@@ -618,7 +618,7 @@
+ 	if (notify) {
+ 		bool sendUpdateSkills = false;
+ 		if (oldLevel != skills[skill].level) {
+-			sendTextMessage(MESSAGE_EVENT_ADVANCE, fmt::format("You were downgraded to {:s} level {:d}.", getSkillName(skill), skills[skill].level));
++			sendTextMessage(MESSAGE_EVENT_ADVANCE, fmt::format("You were downgraded to {:s} level {:d}.", getSkillMessageName(skill), skills[skill].level));
+ 			sendUpdateSkills = true;
+ 		}
+ 
+@@ -5200,7 +5200,7 @@
+ 		skills[skill].tries += tries;
+ 
+ 		if (currSkillLevel != skills[skill].level) {
+-			sendTextMessage(MESSAGE_EVENT_ADVANCE, fmt::format("You advanced to {:s} level {:d}.", getSkillName(skill), skills[skill].level));
++			sendTextMessage(MESSAGE_EVENT_ADVANCE, fmt::format("You advanced to {:s} level {:d}.", getSkillMessageName(skill), skills[skill].level));
+ 		}
+ 
+ 		uint8_t newPercent;
+@@ -5224,7 +5224,7 @@
+ 		sendSkills();
+ 	}
+ 
+-	sendTextMessage(MESSAGE_EVENT_ADVANCE, fmt::format("Your {:s} skill changed from level {:d} (with {:.2f}% progress towards level {:d}) to level {:d} (with {:.2f}% progress towards level {:d})", ucwords(getSkillName(skill)), oldSkillValue, oldPercentToNextLevel, (oldSkillValue + 1), newSkillValue, newPercentToNextLevel, (newSkillValue + 1)));
++	sendTextMessage(MESSAGE_EVENT_ADVANCE, fmt::format("Your {:s} skill changed from level {:d} (with {:.2f}% progress towards level {:d}) to level {:d} (with {:.2f}% progress towards level {:d})", ucwords(getSkillMessageName(skill)), oldSkillValue, oldPercentToNextLevel, (oldSkillValue + 1), newSkillValue, newPercentToNextLevel, (newSkillValue + 1)));
+ 	return sendUpdate;
+ }
+ 
+diff --git a/src/tools.cpp b/src/tools.cpp
+--- a/src/tools.cpp
++++ b/src/tools.cpp
+@@ -835,6 +835,25 @@
+ 	}
+ }
+ 
++// Chaos (patch 0065): the skill as the player's messages call it ("You advanced to melee level 43."). The skills window
++// (client game_simpleskills) shows one Melee row for the sword, club and axe skills, Ranged for distance fighting. Only the
++// messages use this; getSkillName stays the engine's name (item look texts, the Lua rewrite in melee_skill_look.lua).
++std::string getSkillMessageName(uint8_t skillid)
++{
++	switch (skillid) {
++		case SKILL_CLUB:
++		case SKILL_SWORD:
++		case SKILL_AXE:
++			return "melee";
++
++		case SKILL_DISTANCE:
++			return "ranged";
++
++		default:
++			return getSkillName(skillid);
++	}
++}
++
+ uint32_t adlerChecksum(const uint8_t* data, size_t length)
+ {
+ 	if (length > NETWORKMESSAGE_MAXSIZE) {
+diff --git a/src/tools.h b/src/tools.h
+--- a/src/tools.h
++++ b/src/tools.h
+@@ -57,6 +57,7 @@
+ 
+ std::string getSpecialSkillName(uint8_t skillid);
+ std::string getSkillName(uint8_t skillid);
++std::string getSkillMessageName(uint8_t skillid);
+ 
+ uint32_t adlerChecksum(const uint8_t* data, size_t length);
+ 

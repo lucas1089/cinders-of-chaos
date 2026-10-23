@@ -915,6 +915,8 @@ local shooter = mkCreature(1, "player", 90)
 shooter.slots = {}
 function shooter:getSlotItem(s) return self.slots[s] end
 function shooter:getLevel() return 100 end -- the style factor is a function of the level (weapon_balance_core.lua)
+function shooter:getStorageValue() return 0 end -- not a spell's weapon strike
+function shooter:getEffectiveSkillLevel() return 80 end -- the typical distance skill of level 100: weapon_power_core.lua x1
 -- the factor of a launcher style at level 100, as the hit is scaled (rounded to a whole number)
 local W = ChaosWeaponBalance
 local function styled(n, style) return math.floor(n * W.factor(style, 100) + 0.5) end
@@ -936,6 +938,21 @@ math.random = function(a, b) return b or a end -- every roll fails (the highest 
 local d = hitEv.onHealthChange(mob, shooter, -100, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_RANGED)
 eq(d, -styled(100, "crossbow"), "crossbow: its style factor, no ammunition needed")
 ok(styled(100, "crossbow") > 0 and styled(100, "bow") > 0, "the launcher factors are set")
+do -- at level 1000 and the typical skill the launcher is lifted by the level factor (weapon_power_core.lua), then more with skill
+	local WP = ChaosWeaponPower
+	local lv, sk = 1000, 140
+	shooter.getLevel = function() return lv end
+	shooter.getEffectiveSkillLevel = function() return sk end
+	local base = math.floor(100 * W.factor("crossbow", 1000) + 0.5)
+	eq(hitEv.onHealthChange(mob, shooter, -100, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_RANGED),
+		-math.floor(base * WP.levelFactor("distance", 1000) + 0.5), "crossbow at level 1000: the level factor of the power")
+	ok(WP.levelFactor("distance", 1000) > 1.2, "(which lifts it by more than 20%)")
+	sk = 168
+	ok(-hitEv.onHealthChange(mob, shooter, -100, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_RANGED)
+		> base * WP.levelFactor("distance", 1000) * 1.08, "and a higher distance skill hits harder")
+	shooter.getLevel = function() return 100 end
+	shooter.getEffectiveSkillLevel = function() return 80 end
+end
 runTimers()
 eq(#area, 0, "crossbow: no splash")
 -- a bow: splash

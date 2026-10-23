@@ -190,26 +190,33 @@ local function swing(a, damage, origin)
 	return (hit.onHealthChange(victim, a, damage, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, origin or ORIGIN_MELEE))
 end
 
--- a sword with the best skill: untouched
+-- weapon_power_core.lua multiplies a melee hit by (skill / typical skill) ^ 0.5 after the rules under test; the best skill of
+-- these tests is 100 at level 100 (the typical skill there is 80)
+local WP = ChaosWeaponPower
+local function sc(v, f) return math.floor(v * f + 0.5) end
+local pw = WP.hitFactor("melee", 100, 100)
+ok(pw > 1.1 and pw < 1.13, "the power factor of skill 100 at level 100 (" .. pw .. ")")
+
+-- a sword with the best skill: the engine's hit, x the power factor of the skill
 local a = attacker(100, {[SKILL_SWORD] = 100, [SKILL_AXE] = 20, [SKILL_CLUB] = 10})
 a.slots[CONST_SLOT_LEFT] = newItem(1)
-eq(swing(a, -100), -100, "a one-handed sword with the best skill: the hit is the engine's")
+eq(swing(a, -100), -sc(100, pw), "a one-handed sword with the best skill: the hit is the engine's, x the power factor")
 -- an axe with a trained sword: the hit of the sword skill
 a.slots[CONST_SLOT_LEFT] = newItem(2)
 local want = M.hitMultiplier(100, 20, 100, 50, 1)
-eq(swing(a, -100), -math.floor(100 * want + 0.5), "a one-handed axe hits with the sword skill")
+eq(swing(a, -100), -sc(sc(100, want), pw), "a one-handed axe hits with the sword skill")
 ok(want > 3, "(by a lot: " .. string.format("%.2f", want) .. ")")
 -- the rolled attack counts
 a.slots[CONST_SLOT_LEFT] = newItem(2, 70)
-eq(swing(a, -100), -math.floor(100 * M.hitMultiplier(100, 20, 100, 70, 1) + 0.5), "a rolled attack attribute is the item's attack")
+eq(swing(a, -100), -sc(sc(100, M.hitMultiplier(100, 20, 100, 70, 1)), pw), "a rolled attack attribute is the item's attack")
 -- the stance counts
 a.slots[CONST_SLOT_LEFT] = newItem(4)
 a.mode = 3
-eq(swing(a, -100), -math.floor(100 * M.hitMultiplier(100, 10, 100, 50, 2.0) + 0.5), "the defensive stance factor")
+eq(swing(a, -100), -sc(sc(100, M.hitMultiplier(100, 10, 100, 50, 2.0)), pw), "the defensive stance factor")
 a.mode = 1
 -- melee skills of the best being the weapon's own after a skill item: effective levels count
 a.skills[SKILL_CLUB] = 100
-eq(swing(a, -100), -100, "an equal skill: untouched")
+eq(swing(a, -100), -sc(100, pw), "an equal skill: no skill rule, only the power factor")
 -- a spell's scripted weapon strike (ChaosSpell.weaponStrike sets storage 7100028 during the call) was worked out with the
 -- best skill already: no second multiplication
 a.skills[SKILL_CLUB] = 10
@@ -227,11 +234,11 @@ a.slots[CONST_SLOT_LEFT] = newItem(3)
 local W = ChaosWeaponBalance
 local f = W.factor("twoHanded", 100)
 local expect = math.floor(100 * M.hitMultiplier(100, 20, 100, 53, 1) + 0.5)
-expect = math.floor(expect * f + 0.5)
+expect = sc(sc(expect, f), pw)
 eq(swing(a, -100), -expect, "a two-handed axe: the best skill, then the style factor of the level")
 -- with the best skill: only the style factor
 a.skills[SKILL_AXE] = 100
-eq(swing(a, -100), -math.floor(100 * f + 0.5), "a two-handed axe with the best skill: the style factor alone")
+eq(swing(a, -100), -sc(sc(100, f), pw), "a two-handed axe with the best skill: the style factor, then the power factor")
 ok(f > 1.3 and f < 1.6, "the two-handed factor is below the old flat 1.6 (" .. string.format("%.3f", f) .. ")")
 -- no weapon: nothing
 local bare = attacker(100, {[SKILL_SWORD] = 100})
@@ -244,13 +251,17 @@ local mage = attacker(300, {})
 mage.ml = 100
 function mage:getMagicLevel() return self.ml end
 mage.slots[CONST_SLOT_LEFT] = newItem(6)
-eq(swing(mage, -100), -100, "a wand at the typical magic level of level 300: the engine's hit")
+-- (the level factor of the wand: weapon_power_core.lua, 1.69 at level 300, on top of the magic level factor)
+local lw = WP.levelFactor("wand", 300)
+ok(lw > 1.5, "the wand's level factor at level 300 (" .. lw .. ")")
+eq(swing(mage, -100), -sc(100, lw), "a wand at the typical magic level of level 300: the engine's hit x the level factor")
+local typical = swing(mage, -100)
 mage.ml = 140
-eq(swing(mage, -100), -math.floor(100 * WS.wandFactor(300, 140) + 0.5), "a higher magic level hits harder")
-ok(swing(mage, -100) < -110, "(by more than 10%)")
+eq(swing(mage, -100), -sc(100, WS.wandFactor(300, 140) * lw), "a higher magic level hits harder")
+ok(swing(mage, -100) < typical * 1.1, "(by more than 10%)")
 mage.ml = 60
-eq(swing(mage, -100), -math.floor(100 * WS.wandFactor(300, 60) + 0.5), "a lower magic level hits less")
-ok(swing(mage, -100) > -90, "(by more than 10%)")
+eq(swing(mage, -100), -sc(100, WS.wandFactor(300, 60) * lw), "a lower magic level hits less")
+ok(swing(mage, -100) > typical * 0.9, "(by more than 10%)")
 eq(swing(mage, -100, ORIGIN_SPELL), -100, "a spell with a wand in hand is untouched")
 mage.storage[7100028] = 1
 eq(swing(mage, -100), -100, "a scripted strike is untouched")

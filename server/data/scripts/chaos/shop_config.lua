@@ -128,6 +128,34 @@ local RUNE_PACKS = {
 	{2261, {100, 250}, "Removes a magic field."} -- Dispel
 }
 local okRunes, RUNES = pcall(dofile, "data/lib/chaos_rune_supply.lua")
+-- Potion packs (owner 2026-10-23: "coloque pots melhores a venda na store e packs maiores também"). The coins of a 100
+-- pack are kept as they were (15-30); the ultimate mana and spirit potions (level 130) join at 25. Bigger packs take
+-- the rune packs' discounts: 250 5% and 500 10% off the 100 pack, rounded up. The keys of the 100 packs stay
+-- "item:<id>x100". Delivery like every store item: stacks of 100 into the purse (server/README.md "Delivery to the purse").
+local POTION_PACKS = {
+	-- {potion id, coins for 100, plural name, what it does}
+	{7590, 15, "Great Mana Potions", "Restores a large amount of mana."},
+	{8472, 15, "Great Spirit Potions", "Restores health and mana."},
+	{8473, 20, "Ultimate Health Potions", "Restores a large amount of health."},
+	{26029, 25, "Ultimate Mana Potions", "Restores a huge amount of mana. Level 130."},
+	{26030, 25, "Ultimate Spirit Potions", "Restores a lot of health and mana. Level 130."},
+	{26031, 30, "Supreme Health Potions", "Restores a huge amount of health. Level 200."}
+}
+local POTION_SIZES = {100, 250, 500}
+
+local function potionOffers()
+	local out = {}
+	for _, p in ipairs(POTION_PACKS) do
+		for _, n in ipairs(POTION_SIZES) do
+			local pct = RUNE_DISCOUNT[n] or 0
+			local cost = math.ceil(p[2] * n / 100 * (100 - pct) / 100)
+			out[#out + 1] = {kind = "item", id = p[1], count = n, cost = cost,
+				name = n .. " " .. p[3], description = p[4] .. (pct > 0 and (" " .. pct .. "% off the 100 pack.") or "")}
+		end
+	end
+	return out
+end
+
 local function runeOffers()
 	local out = {}
 	if not okRunes or type(RUNES) ~= "table" then
@@ -348,41 +376,32 @@ local cfg = {
 		{
 			-- the Supplies category of before (the Backpack of Holding moved to Convenience)
 			name = "Potions", parent = P_CONSUMABLES, icon = {item = 7590, count = 100},
-			offers = {
-				{kind = "item", id = 7590, count = 100, cost = 15, name = "100 Great Mana Potions", description = "Restores a large amount of mana."},
-				{kind = "item", id = 8472, count = 100, cost = 15, name = "100 Great Spirit Potions", description = "Restores health and mana."},
-				{kind = "item", id = 8473, count = 100, cost = 20, name = "100 Ultimate Health Potions", description = "Restores a large amount of health."},
-				{kind = "item", id = 26031, count = 100, cost = 30, name = "100 Supreme Health Potions", description = "Restores a huge amount of health."}
-			}
+			offers = potionOffers()
 		},
 		{
 			-- rune packs (RUNE_PACKS above): the Reaper's, Searing Orb and Grand Mending 100s of Supplies moved here
 			name = "Runes", parent = P_CONSUMABLES, icon = {item = 2304, count = 100}, offers = runeOffers()
 		},
 		{
+			-- the exercise axe and club chests are gone (2026-10-23, owner: one melee training weapon; 27761 / 27768 / 27775
+			-- are the melee chests now); chests bought before still open (exercise_config.lua)
 			name = "Training", parent = P_CONSUMABLES, icon = {item = 27732},
 			offers = {
-				{kind = "item", id = 27761, count = 1, cost = 25, name = "Exercise Sword (500)", description = "Use the chest to get a sword with 500 training charges."},
-				{kind = "item", id = 27762, count = 1, cost = 25, name = "Exercise Axe (500)", description = "Use the chest to get an axe with 500 training charges."},
-				{kind = "item", id = 27763, count = 1, cost = 25, name = "Exercise Club (500)", description = "Use the chest to get a club with 500 training charges."},
-				{kind = "item", id = 27764, count = 1, cost = 25, name = "Exercise Bow (500)", description = "Use the chest to get a bow with 500 training charges."},
-				{kind = "item", id = 27765, count = 1, cost = 25, name = "Exercise Rod (500)", description = "Use the chest to get a rod with 500 training charges."},
-				{kind = "item", id = 27766, count = 1, cost = 25, name = "Exercise Wand (500)", description = "Use the chest to get a wand with 500 training charges."},
-				{kind = "item", id = 27767, count = 1, cost = 25, name = "Exercise Shield (500)", description = "Use the chest to get a shield with 500 training charges."},
-				{kind = "item", id = 27768, count = 1, cost = 75, name = "Durable Exercise Sword (1800)", description = "Use the chest to get a sword with 1800 training charges."},
-				{kind = "item", id = 27769, count = 1, cost = 75, name = "Durable Exercise Axe (1800)", description = "Use the chest to get an axe with 1800 training charges."},
-				{kind = "item", id = 27770, count = 1, cost = 75, name = "Durable Exercise Club (1800)", description = "Use the chest to get a club with 1800 training charges."},
-				{kind = "item", id = 27771, count = 1, cost = 75, name = "Durable Exercise Bow (1800)", description = "Use the chest to get a bow with 1800 training charges."},
-				{kind = "item", id = 27772, count = 1, cost = 75, name = "Durable Exercise Rod (1800)", description = "Use the chest to get a rod with 1800 training charges."},
-				{kind = "item", id = 27773, count = 1, cost = 75, name = "Durable Exercise Wand (1800)", description = "Use the chest to get a wand with 1800 training charges."},
-				{kind = "item", id = 27774, count = 1, cost = 75, name = "Durable Exercise Shield (1800)", description = "Use the chest to get a shield with 1800 training charges."},
-				{kind = "item", id = 27775, count = 1, cost = 450, name = "Lasting Exercise Sword (14400)", description = "Use the chest to get a sword with 14400 training charges."},
-				{kind = "item", id = 27776, count = 1, cost = 450, name = "Lasting Exercise Axe (14400)", description = "Use the chest to get an axe with 14400 training charges."},
-				{kind = "item", id = 27777, count = 1, cost = 450, name = "Lasting Exercise Club (14400)", description = "Use the chest to get a club with 14400 training charges."},
-				{kind = "item", id = 27778, count = 1, cost = 450, name = "Lasting Exercise Bow (14400)", description = "Use the chest to get a bow with 14400 training charges."},
-				{kind = "item", id = 27779, count = 1, cost = 450, name = "Lasting Exercise Rod (14400)", description = "Use the chest to get a rod with 14400 training charges."},
-				{kind = "item", id = 27780, count = 1, cost = 450, name = "Lasting Exercise Wand (14400)", description = "Use the chest to get a wand with 14400 training charges."},
-				{kind = "item", id = 27781, count = 1, cost = 450, name = "Lasting Exercise Shield (14400)", description = "Use the chest to get a shield with 14400 training charges."}
+				{kind = "item", id = 27761, count = 1, cost = 25, name = "Exercise Melee Weapon (500)", description = "Use the chest to get a melee training weapon with 500 charges. Trains melee (fist for the Monk line). Warrior, Thief, Monk and Templar lines."},
+				{kind = "item", id = 27764, count = 1, cost = 25, name = "Exercise Bow (500)", description = "Use the chest to get a bow with 500 charges. Trains distance. Ranger and Thief lines."},
+				{kind = "item", id = 27765, count = 1, cost = 25, name = "Exercise Rod (500)", description = "Use the chest to get a rod with 500 charges. Trains magic level. Mystic, Necromancer and Templar lines."},
+				{kind = "item", id = 27766, count = 1, cost = 25, name = "Exercise Wand (500)", description = "Use the chest to get a wand with 500 charges. Trains magic level. Mystic, Necromancer and Templar lines."},
+				{kind = "item", id = 27767, count = 1, cost = 25, name = "Exercise Shield (500)", description = "Use the chest to get a shield with 500 charges. Trains shielding. Every class."},
+				{kind = "item", id = 27768, count = 1, cost = 75, name = "Durable Exercise Melee Weapon (1800)", description = "Use the chest to get a melee training weapon with 1800 charges. Trains melee (fist for the Monk line). Warrior, Thief, Monk and Templar lines."},
+				{kind = "item", id = 27771, count = 1, cost = 75, name = "Durable Exercise Bow (1800)", description = "Use the chest to get a bow with 1800 charges. Trains distance. Ranger and Thief lines."},
+				{kind = "item", id = 27772, count = 1, cost = 75, name = "Durable Exercise Rod (1800)", description = "Use the chest to get a rod with 1800 charges. Trains magic level. Mystic, Necromancer and Templar lines."},
+				{kind = "item", id = 27773, count = 1, cost = 75, name = "Durable Exercise Wand (1800)", description = "Use the chest to get a wand with 1800 charges. Trains magic level. Mystic, Necromancer and Templar lines."},
+				{kind = "item", id = 27774, count = 1, cost = 75, name = "Durable Exercise Shield (1800)", description = "Use the chest to get a shield with 1800 charges. Trains shielding. Every class."},
+				{kind = "item", id = 27775, count = 1, cost = 450, name = "Lasting Exercise Melee Weapon (14400)", description = "Use the chest to get a melee training weapon with 14400 charges. Trains melee (fist for the Monk line). Warrior, Thief, Monk and Templar lines."},
+				{kind = "item", id = 27778, count = 1, cost = 450, name = "Lasting Exercise Bow (14400)", description = "Use the chest to get a bow with 14400 charges. Trains distance. Ranger and Thief lines."},
+				{kind = "item", id = 27779, count = 1, cost = 450, name = "Lasting Exercise Rod (14400)", description = "Use the chest to get a rod with 14400 charges. Trains magic level. Mystic, Necromancer and Templar lines."},
+				{kind = "item", id = 27780, count = 1, cost = 450, name = "Lasting Exercise Wand (14400)", description = "Use the chest to get a wand with 14400 charges. Trains magic level. Mystic, Necromancer and Templar lines."},
+				{kind = "item", id = 27781, count = 1, cost = 450, name = "Lasting Exercise Shield (14400)", description = "Use the chest to get a shield with 14400 charges. Trains shielding. Every class."}
 			}
 		},
 		{

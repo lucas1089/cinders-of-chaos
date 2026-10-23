@@ -2267,6 +2267,56 @@ flat before (the "before at 0.8x / 1.2x" column); now 0.8x the magic level is 12
 the melee slope (15-18%). A Mystic or Necromancer at level 8 with magic level 0 (a new character) hits as before. Not
 measured in game.
 
+### Auto attack power (2026-10-23; owner: "auto attack nao esta escalando com a skill e lvl, esta muito fraco"; computed, not measured)
+
+**What was wrong.** Auto attack damage per second against the single-target spell rotation of the same level
+(`python3 -I server/tools/weapon_sim.py --power`; auto attack = the engine formula at the typical skill and the gear's tier
+attack, style factor and hit chance, over the weapon's interval, no class factor, no tree, no crits, no armour; rotation =
+`rotation_sim.py` best set of at most 5 spells, spell factors included). Melee was never weak; the launchers and the wands fall
+behind from level 300 because skill and gear attack stop growing (skill 140 from level 1000, attack 65) while the spells grow
+with the level.
+
+| Kind (reference class) | Level | Auto attack per second | Rotation per second | Share before | Factor | Share after |
+|---|---|---|---|---|---|---|
+| melee, one hand (Warrior) | 50 | 44 | 34 | 129% | 1.00 | 129% |
+| | 100 | 88 | 134 | 66% | 1.00 | 66% |
+| | 300 | 140 | 336 | 42% | 1.00 | 42% |
+| | 500 | 170 | 405 | 42% | 1.00 | 42% |
+| | 1000 | 238 | 576 | 41% | 1.00 | 41% |
+| | 2000 | 313 | 737 | 42% | 1.00 | 42% |
+| bow / crossbow (Ranger) | 50 | 44 | 41 | 110% | 1.00 | 110% |
+| | 100 | 134 | 117 | 115% | 1.00 | 115% |
+| | 300 | 210 | 640 | 33% | 1.00 | 33% |
+| | 500 | 253 | 899 | 28% | 1.07 | 30% |
+| | 1000 | 356 | 1513 | 24% | 1.28 | 30% |
+| | 2000 | 484 | 2581 | 19% | 1.60 | 30% |
+| wand / rod (Mystic) | 50 | 20 | 105 | 19% | 1.00 | 19% |
+| | 100 | 31 | 349 | 9% | 1.69 | 15% |
+| | 300 | 46 | 437 | 10% | 1.69 | 18% |
+| | 500 | 51 | 499 | 10% | 1.69 | 17% |
+| | 1000 | 59 | 657 | 9% | 1.69 | 15% |
+| | 2000 | 69 | 801 | 9% | 1.74 | 15% |
+
+Other classes at the same levels (unchanged): the two-handed Berserker 44-46% of its rotation (3 s swing); Thief
+line 54-58% (1.6 s swing), Templar line about 50%, Monk line 58%. The factor never cuts, so below its share a kind is lifted and above
+it stays as it is. Target used: **30%** of the reference class's single-target rotation for the weapon classes (25-35%), **15%**
+for a caster's wand (the measured tables above had the wand at 13-23% of a caster's total). The Deadeye (rotation 2168 at level
+1000) ends at 21% and the Beastmaster (663; his companions are not in the model) at 69% with the Ranger's factor (54% before; 79% against 49% at
+level 2000): a known side effect of one factor per weapon kind, to watch in game.
+
+**The skill.** `(skill / typical skill of the level) ^ 0.5`, clamped 0.7 .. 1.6, on top of the engine's linear term (melee and
+launchers; a wand keeps the magic level factor). Effect at level 1000 (typical skill 140, melee, mean hit before: 477):
+
+| Skill | Engine alone | With the skill factor |
+|---|---|---|
+| 110 (-21%) | -16.7% | -26.1% |
+| 126 (-10%) | -7.8% | -12.5% |
+| 140 (typical) | 0 | 0 |
+| 150 (+7%) | +5.6% | +9.3% |
+| 168 (+20%) | +15.7% | +26.7% |
+
+Not measured in game; class factors, the passive tree, keystones and armour multiply or subtract on top as before.
+
 ### Area damage is uniform (2026-10-20; owner decision; computed with rotation_sim.py, not measured in game)
 
 Owner: "o dano de skills AoE deve ser IGUAL em toda a area e igual ao dano single-target (sem queda por alvo/distancia);

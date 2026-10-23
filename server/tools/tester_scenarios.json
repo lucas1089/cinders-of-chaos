@@ -8,7 +8,7 @@
  "counts": {
   "opcode": 58,
   "out": 38,
-  "passive": 64,
+  "passive": 67,
   "place": 13,
   "staff": 10
  },
@@ -127,6 +127,12 @@
     "charges"
    ],
    "npc": "Vessa Hollowmark"
+  },
+  {
+   "keywords": [
+    "trade"
+   ],
+   "npc": "Veyra the Apothecary"
   },
   {
    "keywords": [
@@ -2360,6 +2366,15 @@
     "/ascendset"
    ]
   },
+  "ascension_tracker": {
+   "files": [
+    "ascension_tracker.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
   "atlas": {
    "files": [
     "atlas.lua",
@@ -2855,6 +2870,15 @@
     "/exclusive"
    ],
    "why": "staff command only (/exclusive); testers are never staff"
+  },
+  "exercise": {
+   "files": [
+    "exercise_training.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
   },
   "factions": {
    "files": [
@@ -4208,6 +4232,15 @@
   },
   "weapon_dps": {
    "files": [],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "weapon_power": {
+   "files": [
+    "weapon_styles.lua"
+   ],
    "kind": "passive",
    "opcodes": [],
    "talkactions": [],

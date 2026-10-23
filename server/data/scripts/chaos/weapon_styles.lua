@@ -10,6 +10,10 @@
 --   * wands and rods scale with the magic level (weapon_skill_core.lua): the engine's flat min .. max of weapons.xml
 --     is multiplied by the magic level against the typical one of the wielder's level (owner 2026-10-20: "faça o dano
 --     das armas/auto attack escalar com as skills"); the other weapons scale with their skill in the engine already
+--   * the auto attack keeps up with the level and the skill (weapon_power_core.lua, owner 2026-10-23): a launcher and a
+--     wand or rod are lifted to their share of the class's spell rotation at high levels, and a melee or launcher hit
+--     also scales with (skill / typical skill) ^ 0.5 on top of the engine's skill term; a spell's weapon strike is not
+--     an auto attack and is left out
 --   * bows splash: the creatures around the target take arrowSplash of the hit (engine PvP rules apply)
 --   * crossbows hit only their target (no splash)
 --   * the quiver (data/lib/chaos_archery_core.lua), while it counts (a bow or crossbow in the hands): Critical Strike
@@ -40,6 +44,10 @@ if not ChaosWeaponSkill then
 	dofile("data/scripts/chaos/weapon_skill_core.lua")
 end
 local WS = ChaosWeaponSkill
+if not ChaosWeaponPower then
+	dofile("data/scripts/chaos/weapon_power_core.lua")
+end
+local WP = ChaosWeaponPower
 
 local splashArea = createCombatArea({
 	{1, 1, 1},
@@ -101,6 +109,16 @@ local function meleeSkillMultiplier(player, item, it, typeName)
 		return 1
 	end
 	return MS.hitMultiplier(player:getLevel(), own, best, itemAttack(item, it), attackFactor(player))
+end
+
+-- the best of the three melee skills (ONE melee skill), the skill a melee hit scales with
+local function bestMeleeSkill(player)
+	local levels = {}
+	for name, skill in pairs(MELEE_SKILL) do
+		levels[name] = player:getEffectiveSkillLevel(skill)
+	end
+	local _, best = MS.best(levels)
+	return best
 end
 
 local function isTwoHanded(it)
@@ -213,7 +231,7 @@ function hit.onHealthChange(creature, attacker, primaryDamage, primaryType, seco
 	-- a wand or rod: the flat hit of weapons.xml scaled by the magic level (weapon_skill_core.lua); nothing else applies
 	if weapon:getWeaponType() == WEAPON_WAND then
 		if origin == ORIGIN_MELEE and attacker:getStorageValue(STRIKE_KEY) ~= 1 then
-			local m = WS.wandFactor(attacker:getLevel(), attacker:getMagicLevel())
+			local m = WS.wandFactor(attacker:getLevel(), attacker:getMagicLevel()) * WP.levelFactor("wand", attacker:getLevel())
 			if m ~= 1 then
 				primaryDamage = scale(primaryDamage, m)
 				secondaryDamage = scale(secondaryDamage, m)
@@ -226,6 +244,19 @@ function hit.onHealthChange(creature, attacker, primaryDamage, primaryType, seco
 	if styleFactor ~= 1 then
 		primaryDamage = scale(primaryDamage, styleFactor)
 		secondaryDamage = scale(secondaryDamage, styleFactor)
+	end
+	-- the auto attack keeps up with the level and the skill (weapon_power_core.lua); a spell's weapon strike is not an auto attack
+	if attacker:getStorageValue(STRIKE_KEY) ~= 1 then
+		local power
+		if launcher and origin == ORIGIN_RANGED then
+			power = WP.hitFactor("distance", attacker:getLevel(), attacker:getEffectiveSkillLevel(SKILL_DISTANCE))
+		elseif typeName and origin == ORIGIN_MELEE then
+			power = WP.hitFactor("melee", attacker:getLevel(), bestMeleeSkill(attacker))
+		end
+		if power and power ~= 1 then
+			primaryDamage = scale(primaryDamage, power)
+			secondaryDamage = scale(secondaryDamage, power)
+		end
 	end
 	local kind = origin == ORIGIN_RANGED and launcher or nil
 	if not kind then

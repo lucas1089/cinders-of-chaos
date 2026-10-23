@@ -20,7 +20,8 @@ function E.allows(rule, level, vocationName)
 	if (level or 0) < (rule.level or 0) then
 		return false
 	end
-	if rule.vocations then
+	-- an empty list (equipLevel without equipLines) lets every class wear it, like nil
+	if rule.vocations and #rule.vocations > 0 then
 		for _, name in ipairs(rule.vocations) do
 			if name == vocationName then
 				return true

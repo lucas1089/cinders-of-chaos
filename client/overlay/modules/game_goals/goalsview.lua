@@ -1,11 +1,12 @@
 -- Next Goals: the pure parts of the panel and the tracker (no client API), tested by goalsview_test.lua.
--- Server: server/data/scripts/chaos/goals.lua, extended opcode 178 (JSON {action, data}):
+-- Server: server/data/scripts/chaos/goals.lua (and ascension_tracker.lua), extended opcode 178 (JSON {action, data}):
 --   goals {header = {level, done, total, season, more, next, nextName,
 --                    band = {key, name, text, from, to, index, count}},
 --          goals = [row], upcoming = [row], gear = [{text, where}], hunts = [{id, name, lo, hi, where}], hereWhere}
 --     row = {key, level, state = open | done | locked, title, why, effort, where, progress, target, reward}
 --     where = {k = window | info | tasks | finder | npc | temple | hunts | plan | room, m, f, page, q, id, pos, label}
 --   tracker {rows = [{key, title, progress, target}]}
+--   ascension {rows = [{key, title, progress, target, state}]}
 --   done {text}
 -- The window code (goals.lua) keeps one GoalsView state and draws from it.
 local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
@@ -30,7 +31,7 @@ local function num(v, d)
 end
 
 function V.new()
-  return { header = nil, goals = {}, upcoming = {}, gear = {}, hunts = {}, here = nil, tracker = {} }
+  return { header = nil, goals = {}, upcoming = {}, gear = {}, hunts = {}, here = nil, tracker = {}, ascension = {} }
 end
 
 function V.onGoals(st, data)
@@ -46,6 +47,13 @@ end
 
 function V.onTracker(st, data)
   st.tracker = list(type(data) == 'table' and data.rows or nil)
+  return st
+end
+
+-- ascension {rows = [{key, title, progress, target, state = open | done}]}: the steps of the ascension quest (server
+-- ascension_tracker.lua); no rows hides the section
+function V.onAscension(st, data)
+  st.ascension = list(type(data) == 'table' and data.rows or nil)
   return st
 end
 
@@ -146,6 +154,19 @@ function V.trackerLine(r)
   local p = math.max(0, math.min(target, num(r.progress)))
   local count = target == 1 and '' or string.format('  %d/%d', p, target)
   return tostring(r.title or '?') .. count, math.floor(p * 100 / target)
+end
+
+-- an ascension row for the tracker: text (the count is shown when there are several steps, "Done" once finished),
+-- the bar percent and the colour of the text
+function V.ascensionLine(r)
+  local target = math.max(1, num(r.target, 1))
+  local p = math.max(0, math.min(target, num(r.progress)))
+  local title = tostring(r.title or '?')
+  if r.state == 'done' or p >= target then
+    return title .. '  ' .. tr('Done'), 100, V.STATE_COLOR.done
+  end
+  local count = target == 1 and '' or string.format('  %d/%d', p, target)
+  return title .. count, math.floor(p * 100 / target), V.STATE_COLOR.open
 end
 
 -- a tracker line broken into lines of at most `width` characters at the spaces (a word longer than that gets its own

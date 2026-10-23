@@ -72,6 +72,28 @@ check(os.path.isfile(W.CONFIG) and open(W.CONFIG, encoding='utf-8').read() == te
       'weapon_balance_config.lua is up to date (python3 -I server/tools/weapon_sim.py --write)')
 check('typeFactor = {sword = 1, axe = 1, club = 1}' in text, 'typeFactor in the config')
 
+# the auto attack power (weapon_power_config.lua, owner 2026-10-23): up to date, never a cut, lifts the launcher and the
+# wand to their share of the reference class's rotation at high levels, leaves the melee weapon alone
+power = W.power_factors()
+check(os.path.isfile(W.POWER_CONFIG) and open(W.POWER_CONFIG, encoding='utf-8').read() == W.power_text(power),
+      'weapon_power_config.lua is up to date (python3 -I server/tools/weapon_sim.py --power --write)')
+for kind, row in power.items():
+    check(len(row) == len(W.POWER_LEVELS), kind + ': a factor per level')
+    check(all(1.0 <= v <= W.POWER_MAX for v in row), kind + ': never a cut, never over the cap: %s' % row)
+    check(row == sorted(row), kind + ': never drops with the level')
+    share = W.POWER_KINDS[kind][0]
+    for lv in (300, 500, 1000, 2000):
+        ref = W.reference_dps(W.POWER_KINDS[kind][1], lv)
+        got = W.own_dps(kind, lv) * W.interp(W.POWER_LEVELS, row, lv)
+        check(got >= min(share, W.own_dps(kind, lv) / ref) * ref * 0.97,
+              '%s at level %d: %.0f per second against %.0f%% of %.0f' % (kind, lv, got, share * 100, ref))
+check(W.interp(W.POWER_LEVELS, power['distance'], 2000) > W.interp(W.POWER_LEVELS, power['distance'], 1000) > 1.15,
+      'the launcher is lifted more and more with the level')
+check(W.interp(W.POWER_LEVELS, power['wand'], 300) > 1.5, 'the wand is lifted')
+check(all(v == 1.0 for v in power['melee']), 'melee is above its share at every level: left alone')
+check(W.own_dps('distance', 2000) / W.reference_dps('Ranger', 2000) < 0.25,
+      'the problem: a launcher is under 25% of a Ranger\'s rotation at level 2000 without the factor')
+
 # --audit on a synthetic server
 items = '''<items>
 	<item id="1" name="sabre"><attribute key="weaponType" value="sword" /><attribute key="attack" value="30" /></item>

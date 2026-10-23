@@ -76,6 +76,19 @@ for _, w in ipairs({ 'utevo lux', 'utevo gran lux', 'utevo vis lux', 'exani tera
   H.NEVER_STOCK[w] = true
 end
 
+-- the same utilities by name (owner 2026-10-23, screenshot: Greater Lantern, Ghost Rope and Lantern still in Support and
+-- cast by themselves): the words check needs ChaosSpellNames loaded first, a name check does not. The stock names and
+-- the Chaos ones (game_chaosspells/spelldata.lua ChaosSpellNames of every NEVER_STOCK words; the test checks the list)
+H.NEVER_NAMES = {}
+for _, n in ipairs({ 'light', 'great light', 'ultimate light', 'magic rope', 'find person', 'food',
+    'challenge', 'levitate', 'invisible', 'creature illusion', 'summon creature', 'conjure arrow', 'conjure explosive arrow',
+    'conjure piercing bolt', 'conjure spear', 'cancel invisibility', 'find fiend',
+    'lantern', 'greater lantern', 'radiant lantern', 'ghost rope', 'conjure rations', 'wraith step', 'shroud of shadows',
+    'call thrall', 'unveil', 'taunt of iron', "duelist's oath", "skinchanger's guise", 'hallow spear',
+    'warhorse rush', 'town portal' }) do
+  H.NEVER_NAMES[n] = true
+end
+
 -- the client says the Chaos words of the stock spells (game_chaosspells ChaosSpellNames: "utevo lux" -> "vael lyss"),
 -- so the stock words alone missed Lantern, Ghost Rope and the rest (owner 2026-10-22: "light and magic rope go into
 -- Support by themselves"). names: that table (the global when nil); its words join NEVER_WORDS once.
@@ -208,6 +221,13 @@ function H.info(spell)
   }
 end
 
+-- a utility the helper never casts by itself (by id, words or name)
+function H.isUtility(spell)
+  if type(spell) ~= 'table' then return false end
+  if H.NEVER_IDS[spell.id] or H.NEVER_NAMES[lower(spell.name)] then return true end
+  return type(spell.words) == 'string' and isNeverWords(lower(spell.words))
+end
+
 -- may this spell stand in the section? Returns true, or false and the reason
 function H.eligible(spell)
   if type(spell) ~= 'table' or type(spell.id) ~= 'number' then return false, 'entry' end
@@ -215,7 +235,7 @@ function H.eligible(spell)
   if type(spell.words) ~= 'string' or spell.words == '' then return false, 'words' end
   if not H.isSupportGroup(spell.group) then return false, 'group' end
   if spell.parameter or spell.needTarget then return false, 'target' end
-  if H.NEVER_IDS[spell.id] or isNeverWords(lower(spell.words)) then return false, 'utility' end
+  if H.isUtility(spell) then return false, 'utility' end
   return true
 end
 
@@ -392,6 +412,9 @@ function H.why(st, cfg, slot, ctx)
   local now = ctx.now
   local spell = ctx.spellOf(slot.id)
   if not spell then return 'unknown' end
+  -- a utility in a list saved before it was left out is never cast (the row leaves at the next load)
+  local okU, whyU = H.eligible(spell)
+  if not okU and whyU == 'utility' then return 'utility' end
   local info = H.info(spell)
   if not slot.enabled then return 'off' end
   if info.fight and not ctx.attacking then return 'nofight' end

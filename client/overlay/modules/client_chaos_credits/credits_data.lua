@@ -95,6 +95,7 @@ ChaosCreditsData = {
       { name = "Material Components for Android", author = "Google and the Material Components contributors", licence = "Apache-2.0", use = "the screens of the Cinders Admin phone app (cards, buttons, navigation, dialogs)", source = "https://github.com/material-components/material-components-android" },
       { name = "AndroidX libraries and the Kotlin standard library", author = "the Android Open Source Project; JetBrains and the Kotlin contributors", licence = "Apache-2.0", use = "AppCompat, SwipeRefreshLayout and the other support libraries the Cinders Admin phone app ships with", source = "https://developer.android.com/jetpack/androidx and https://github.com/JetBrains/kotlin" },
       { name = "Anthropic Python SDK and the Claude API", author = "Anthropic", licence = "MIT (the SDK); the API is a paid service under Anthropic's terms", use = "Ember, the Help channel assistant (installed on the server by the owner, not shipped in the packages)", source = "https://github.com/anthropics/anthropic-sdk-python" },
+      { name = "Helper module", author = "R!ck, ZLukSrT#8740, Christianlb, worthdavi", licence = "unknown; the owner supplied the file, no licence text came with it", use = "the helper window, healing and potion rows, spell rotation slots and presets (adapted to this game)" },
     },
   },
   {

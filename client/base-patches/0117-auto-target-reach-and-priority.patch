@@ -1,0 +1,152 @@
+# Chaos: the helper's Auto Target only picks monsters it can reach, and takes loot goblins, bosses and special monsters
+# first (after 0001-0116; numbered 0117 because other branches use 0110, 0111 and 0114). Owner request 2026-10-23: "make
+# the auto target only attack reachable monsters; by default the nearest and the one with the lowest health; priority for
+# loot goblins, bosses and special monsters". Before: mode F (the default) took the nearest by straight distance in the
+# 7 x 5 reach window, even behind a wall or across water, and kept the lock on it. Now check() asks ChaosAutoTargetEngine
+# (overlay game_autotarget, rules in ChaosAutoTarget, tested) at four points: the lock is dropped when the monster cannot be
+# reached or a better class appears; the monster list is cut to the reachable ones (g_map.findPath for melee, a clear line
+# of sight for the ranged classes); the pick goes to the best priority class (not in mode J, the player's own list) and
+# mode F orders by the way to walk, then the lowest health. Two boxes under Always Chase Opponent, "Priority targets" and
+# "Only reachable" (both on by default, g_settings chaosAutoTargetPriority / chaosAutoTargetReachable), switch the rules off;
+# the panel grows by two 22px rows. Without the module the base behaviour stays.
+--- a/mods/game_helper/classes/auto_target.lua
++++ b/mods/game_helper/classes/auto_target.lua
+@@ -352,6 +352,19 @@
+   if currentLockedTarget and targetGuard and not targetGuard.keepLock(currentLockedTarget) then
+     currentLockedTarget = nil
+   end
++  -- Chaos 0117: the lock goes when the character can no longer get to the monster, or when a loot goblin, boss or
++  -- special monster it can get to appears while it fights a normal one (ChaosAutoTargetEngine, overlay game_autotarget)
++  local chaosEngine = ChaosAutoTargetEngine
++  local chaosDropped = nil
++  if currentLockedTarget and chaosEngine and not currentLockedTarget:isDead()
++      and isWithinReach and isWithinReach(position, currentLockedTarget:getPosition()) then
++    local okChaos, keep = pcall(chaosEngine.keepLock, currentLockedTarget, position, helperConfig.autoTargetMode,
++      function(from) return (_Helper.AutoTarget.gatherMonsters(from)) end)
++    if okChaos and keep == false then
++      chaosDropped = currentLockedTarget:getId()
++      currentLockedTarget = nil
++    end
++  end
+   -- Validate current locked target: alive, in reach, not ignored, still on the
+   -- target list (the list can change while we are already attacking something)
+   if currentLockedTarget and not currentLockedTarget:isDead()
+@@ -415,6 +428,11 @@
+ 
+   -- Gather and filter monsters (shared function)
+   local monsters, creatureList = _Helper.AutoTarget.gatherMonsters(position)
++  -- Chaos 0117: only the monsters the character can get to (a path to walk; a ranged class also a clear line of sight)
++  if chaosEngine and chaosEngine.active(helperConfig.autoTargetMode) then
++    local okChaos, reachable = pcall(chaosEngine.filter, monsters, position)
++    if okChaos and reachable then monsters = reachable end
++  end
+ 
+   local area = SpellAreas.AREA_CIRCLE3X3
+   if myCharacter:isPaladin() then
+@@ -531,6 +549,18 @@
+     target = priorityListTarget
+   end
+ 
++  -- Chaos 0117: loot goblins, bosses and special monsters first (not in mode J, the player's own list); mode F, the
++  -- default, takes the nearest by the way to walk, equal distance the lowest health
++  if chaosEngine and chaosEngine.active(helperConfig.autoTargetMode) then
++    local okChaos, picked = pcall(chaosEngine.adjust, target, monsters, position, helperConfig.autoTargetMode)
++    if okChaos then target = picked end
++  end
++  -- the lock was dropped because the monster cannot be reached and nothing else can: stop trying to walk to it
++  if chaosDropped and not target then
++    local attacking = g_game.getAttackingCreature()
++    if attacking and attacking:getId() == chaosDropped then g_game.cancelAttack() end
++  end
++
+   if target and not (currentTarget and currentTarget:getId() == target:getId()) then
+     local safeDoThing = _Helper.safeDoThing
+     if safeDoThing then safeDoThing(false) end
+@@ -574,6 +604,14 @@
+     enableAutoTarget:setChecked(helperConfig.autoTargetEnabled or false)
+   end
+ 
++  -- Chaos 0117: the two options of the pick (ChaosAutoTargetEngine, kept in g_settings, both on by default)
++  if ChaosAutoTargetEngine then
++    local priorityBox = enableButtons:recursiveGetChildById("chaosTargetPriority")
++    if priorityBox then priorityBox:setChecked(ChaosAutoTargetEngine.priorityEnabled()) end
++    local reachableBox = enableButtons:recursiveGetChildById("chaosTargetReachable")
++    if reachableBox then reachableBox:setChecked(ChaosAutoTargetEngine.reachableEnabled()) end
++  end
++
+   local currentModeKey = "A"
+   local autoTargetMode = enableButtons:recursiveGetChildById("autoTargetMode")
+   if autoTargetMode then
+--- a/mods/game_helper/styles/magic_shooter_panel.otui
++++ b/mods/game_helper/styles/magic_shooter_panel.otui
+@@ -537,8 +537,9 @@
+       // Collapsed content measures ~204px (label+input+advanced button, three
+       // checkboxes, the Follow Friend row, the Set Key bar and the protect-zone
+       // box, plus 7px padding top and bottom). 165 clipped the last rows off the
+-      // panel; 182 predates the Follow Friend row.
+-      height: 204
++      // panel; 182 predates the Follow Friend row. Chaos 0117: 248 with the two
++      // rows under Always Chase Opponent (Priority targets, Only reachable).
++      height: 248
+       anchors.top: presetsSection.bottom
+       anchors.right: parent.right
+       margin: 0 10 5 10
+@@ -738,9 +739,41 @@
+           color: $var-text-cip-color
+ 
+       CheckBox
++        id: chaosTargetPriority
++        width: 250
++        anchors.top: alwaysChaseOpponent.bottom
++        anchors.left: parent.left
++        !text: tr('Priority targets')
++        margin-top: 5
++        font: $var-main-font
++        color: $var-text-color
++        text-offset: 13 0
++        !tooltip: tr('Loot goblins first, then bosses, then special monsters (magic, rare and legendary), before the nearest normal monster.\nOff: only the mode below decides. Not used in mode J.')
++        @onCheckChange: if ChaosAutoTargetEngine then ChaosAutoTargetEngine.setPriority(self:isChecked()) end
++        change-cursor-image: false
++        $hover !disabled:
++          color: $var-text-cip-color
++
++      CheckBox
++        id: chaosTargetReachable
++        width: 250
++        anchors.top: chaosTargetPriority.bottom
++        anchors.left: parent.left
++        !text: tr('Only reachable')
++        margin-top: 5
++        font: $var-main-font
++        color: $var-text-color
++        text-offset: 13 0
++        !tooltip: tr('Auto Target only picks monsters it can get to: a walkable way for melee, a clear line of sight for the ranged classes.\nOff: any monster in reach, even behind a wall or across water.')
++        @onCheckChange: if ChaosAutoTargetEngine then ChaosAutoTargetEngine.setReachable(self:isChecked()) end
++        change-cursor-image: false
++        $hover !disabled:
++          color: $var-text-cip-color
++
++      CheckBox
+         id: enableFollowFriend
+         width: 105
+-        anchors.top: alwaysChaseOpponent.bottom
++        anchors.top: chaosTargetReachable.bottom
+         anchors.left: parent.left
+         !text: tr('Follow Friend')
+         margin-top: 5
+--- a/mods/game_helper/magic_shooter_panel.lua
++++ b/mods/game_helper/magic_shooter_panel.lua
+@@ -1989,9 +1989,10 @@
+ -- list on top of that.
+ -- All three grew by one 22px row when Follow Friend (checkbox + name field) was
+ -- added between Always Chase Opponent and Enable Shooter.
+-local TARGETING_HEIGHT_SIMPLE = 204
+-local TARGETING_HEIGHT_ADVANCED = 262
+-local TARGETING_HEIGHT_ADVANCED_PRIORITY = 302
++-- Chaos 0117: all three grew by two more 22px rows (Priority targets, Only reachable) under Always Chase Opponent.
++local TARGETING_HEIGHT_SIMPLE = 248
++local TARGETING_HEIGHT_ADVANCED = 306
++local TARGETING_HEIGHT_ADVANCED_PRIORITY = 346
+ 
+ local function getAutoTargetModeKey()
+   if not magicShooterPanel then getMagicShooterPanel() end

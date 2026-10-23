@@ -318,6 +318,16 @@ local function onExtendedOpcode(protocol, opcode, buffer)
   end
 end
 
+-- what the server named for a creature id: tier ('normal' .. 'boss'), role ('guardian' | 'omen' | nil); the tier is nil
+-- until the answer arrives. game_autotarget (the helper's Auto Target priority) reads it and asks for the unnamed ones.
+function tierInfo(cid)
+  return tierOf[cid], roleOf[cid]
+end
+
+function requestInfo(cid)
+  send('query', { cid = cid })
+end
+
 local function onAppear(creature)
   local id = creature:getId()
   if tierOf[id] then

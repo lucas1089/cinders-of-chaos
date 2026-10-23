@@ -114,6 +114,8 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                (engine src-patch 0064, chaos-ctl.sh cast; README "Live spectator")
   servicenpcs  tools/install_service_npcs.py    the five service NPCs (stash keeper, pocket boss NPC, banker, house broker, services
                clerk) and their shared dialogue in data/npc (README "Service NPCs")
+  apothecary   tools/install_apothecary.py      Veyra the Apothecary, the hub's supplies seller (potions, runes, rope, shovel,
+               torch, backpack), in data/npc (README "The Apothecary"; before runes, potions and itemprices)
   conquest     tools/install_conquest.py         the Conquest vendor NPC in data/npc (README "Conquest Tokens, the Conquest
                vendor and bad-luck protection")
   supports     tools/install_supports.py         the spell support runes in items.otb / items.xml and the spell-library hook (scripts/chaos/SUPPORTS.md)
@@ -293,6 +295,11 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   waystonebosses tools/patch_waystone_bosses.py  the Waystone III Frostreaver room's entrance off its tar tile, and the
                tier V / VI pillar bosses keep a share of a hit away from their pillar instead of nothing (README
                "Waystone tiers")
+  exercise     tools/patch_exercise_weapons.py   the exercise (training) weapons: one melee weapon for every melee class
+                                                 (the Monk trains fist), data/scripts/chaos/exercise_training.lua owns the
+                                                 21 item ids (their stock lines in actions.xml are commented out), item
+                                                 descriptions, the exercise axe and club chests leave the NPC shop lists
+                                                 (README "Training weapons"; after runes, before itemprices)
   meleeskill   tools/patch_melee_skill.py        one melee skill on equipment: items.xml items with a sword, axe or club
                                                  number get all three at the highest, a rolled melee modifier raises all
                                                  three skills (base_rarity.lua; README "Melee and Ranged on equipment";
@@ -715,6 +722,13 @@ def step_servicenpcs(server, data, ctx):
 STEPS.insert(STEPS.index('candlemarks') + 1, 'servicenpcs')  # the service NPCs (their stalls in the hub), after Osric
 
 
+def step_apothecary(server, data, ctx):
+    return tool_result(run_tool([tool('install_apothecary.py'), data], 'install_apothecary.py'))
+
+
+STEPS.insert(STEPS.index('servicenpcs') + 1, 'apothecary')  # Veyra the Apothecary (hub supplies), before runes / potions / itemprices read the shops
+
+
 def step_idlekick(server, data, ctx):
     return tool_result(run_tool([tool('patch_base_idle_kick.py'), server], 'patch_base_idle_kick.py'))
 
@@ -953,6 +967,14 @@ def step_itemprices(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('runes') + 1, 'itemprices')  # after runes: every NPC shop entry is written by then
+
+
+def step_exercise(server, data, ctx):
+    args = [tool('patch_exercise_weapons.py'), data] + (['--dry-run'] if ctx['dry'] else [])
+    return tool_result(run_tool(args, 'patch_exercise_weapons.py'))
+
+
+STEPS.insert(STEPS.index('itemprices'), 'exercise')  # before itemprices: the NPC shop lists lose the retired chests first
 
 
 def step_potions(server, data, ctx):

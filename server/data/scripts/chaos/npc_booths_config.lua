@@ -35,7 +35,7 @@ return {
 		{x = 31642, y = 32236, z = 7, npc = "Ascendant Oracle"},
 		{x = 31653, y = 32236, z = 7, npc = "Pell Ashmere"},
 		{x = 31660, y = 32236, z = 7, npc = "Vessa Hollowmark"},
-		{x = 31666, y = 32236, z = 7, npc = false},
+		{x = 31666, y = 32236, z = 7, npc = "Veyra the Apothecary"},
 		{x = 31672, y = 32236, z = 7, npc = false}
 	},
 

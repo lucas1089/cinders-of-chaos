@@ -193,6 +193,21 @@ do
 	check(byKey.orb_tempering ~= nil, "item offers are always on sale")
 	check(byKey.gem_chipped ~= nil, "gem offers too")
 	check(byKey.rested_vial == nil, "a call offer is hidden while its API is missing")
+	-- better potions and bigger bundles (2026-10-23): tier IV and four crates, all under the one supplies limit
+	for _, k in ipairs({"supplies_4", "supplies_crate_1", "supplies_crate_2", "supplies_crate_3", "supplies_crate_4"}) do
+		check(byKey[k] ~= nil and K.limitKey(byKey[k]) == "supplies", k .. " on sale under the supplies limit")
+	end
+	local function total(o)
+		local n = 0
+		for _, it in ipairs(o and o.items or {}) do n = n + it[2] end
+		return n
+	end
+	for t = 1, 3 do
+		local b, c = byKey["supplies_" .. t], byKey["supplies_crate_" .. t]
+		check(b and c and total(c) == 4 * total(b) and c.price < 4 * b.price and c.minLevel == b.minLevel,
+			"crate " .. t .. " is four bundles for less, at the same level")
+	end
+	check(byKey.supplies_4 and byKey.supplies_4.minLevel == 200, "tier IV at level 200")
 	for _, o in ipairs(list) do
 		check(o.kind ~= "pocketboss", "no pocket boss offer without the API")
 		check(o.kind ~= "cosmetic", "cosmetic offers are hidden without the cosmetics API")

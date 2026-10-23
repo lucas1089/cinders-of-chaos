@@ -1310,6 +1310,40 @@ function Chaos.containerBatch(player, fn, ...)
 	return batchDone(player, pcall(fn, ...))
 end
 
+-- Chaos.containerBurst(player, fn, ...): Chaos.containerBatch, and the player's container updates stay held for
+-- Chaos.burstWindowMs after it (one outer batch, ended by a timer), so the kills of one burst (an area spell, a pack
+-- dying in one tick, each with its own auto loot) end in ONE full container packet per open window instead of one per
+-- corpse. The client answers every full packet for the open Loot Bag with a window refresh of up to 255 slots (owner
+-- 2026-10-23: "o client dá uma travada rápida quando a janela do loot bag está aberta e o auto loot pega muita coisa
+-- de uma vez"). Cost: a window shows the loot up to the window later (150 ms). The timer looks the player up again, so
+-- a player gone by then is skipped; without the engine patch (no batch methods) fn just runs.
+Chaos.burstWindowMs = 150
+local burstHeld = {} -- [creature id] = true while the outer batch of that player is held
+
+function Chaos.containerBurst(player, fn, ...)
+	if not player or type(player.beginContainerBatch) ~= "function" or type(player.endContainerBatch) ~= "function"
+		or type(addEvent) ~= "function" or type(Player) ~= "function" then
+		return Chaos.containerBatch(player, fn, ...)
+	end
+	local id = player:getId()
+	if not burstHeld[id] then
+		player:beginContainerBatch()
+		burstHeld[id] = true
+		local okTimer = pcall(addEvent, function()
+			burstHeld[id] = nil
+			local p = Player(id)
+			if p then
+				pcall(p.endContainerBatch, p)
+			end
+		end, Chaos.burstWindowMs)
+		if not okTimer then
+			burstHeld[id] = nil
+			pcall(player.endContainerBatch, player)
+		end
+	end
+	return Chaos.containerBatch(player, fn, ...)
+end
+
 -- An extended opcode message (0x32, u8 opcode, u16 length, bytes) carries its payload as one string, and the engine's
 -- NetworkMessage::addString silently refuses strings over 8192 bytes. The base Player.sendExtendedOpcode writes 0x32 and
 -- the opcode before the string, so a longer payload left those two bytes alone in the packet: the client read the next

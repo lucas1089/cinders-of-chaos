@@ -38,8 +38,7 @@ local function percent(value, max)
 end
 
 -- rows {icon, name, value, active} for the ticked sections. state:
---   targetName, equipEnabled, equipRules, timerEnabled, timerRules, spellName(id) -> name or nil,
---   player = {health, maxHealth, mana, maxMana, level} or nil
+--   targetName, spellName(id) -> name or nil, player = {health, maxHealth, mana, maxMana, level} or nil
 -- tr: the translation function (the identity in tests)
 function L.entries(helperConfig, state, tr)
   tr = tr or function(s, ...) return select('#', ...) > 0 and string.format(s, ...) or s end
@@ -60,14 +59,18 @@ function L.entries(helperConfig, state, tr)
   if state.targetName then parts[#parts + 1] = shorten(state.targetName, 14) end
   add(hud.showTargeting, combatActive, 'shooter', tr('Combat'), combatActive and table.concat(parts, '  ') or off)
 
-  local equipRules = tonumber(state.equipRules) or 0
-  local profile = shorten(cfg.selectedEquipProfile or tr('Default'), 12)
-  add(hud.showEquipment, state.equipEnabled and equipRules > 0, 'equip', tr('Equip'),
-    state.equipEnabled and (profile .. '  ' .. tr('%d rules', equipRules)) or off)
-
-  local timerRules = tonumber(state.timerRules) or 0
-  add(hud.showTimers, state.timerEnabled and timerRules > 0, 'timer', tr('Timers'),
-    state.timerEnabled and tr('%d rules', timerRules) or off)
+  -- healing: the heal spells and potions that are set
+  local heals, potions = 0, 0
+  for _, r in ipairs(type(cfg.spells) == 'table' and cfg.spells or {}) do
+    if (tonumber(r.id) or 0) > 0 then heals = heals + 1 end
+  end
+  for _, r in ipairs(type(cfg.potions) == 'table' and cfg.potions or {}) do
+    if (tonumber(r.id) or 0) > 0 then potions = potions + 1 end
+  end
+  local healing = {}
+  if heals > 0 then healing[#healing + 1] = tr('%d spells', heals) end
+  if potions > 0 then healing[#healing + 1] = tr('%d potions', potions) end
+  add(hud.showHealing, #healing > 0, 'healing', tr('Healing'), #healing > 0 and table.concat(healing, '  ') or off)
 
   local haste = type(cfg.haste) == 'table' and cfg.haste[1] or {}
   local training = type(cfg.training) == 'table' and cfg.training[1] or {}
@@ -85,13 +88,6 @@ function L.entries(helperConfig, state, tr)
     add(hud.showPlayer, true, 'healing', tr('Player'), tr('HP %d%%  MP %d%%  Lv %d',
       percent(p.health, p.maxHealth), percent(p.mana, p.maxMana), tonumber(p.level) or 0))
   end
-
-  local party = type(cfg.autoParty) == 'table' and cfg.autoParty or {}
-  local auto = {}
-  if cfg.antiIdle then auto[#auto + 1] = tr('Anti idle') end
-  if party.enabled then auto[#auto + 1] = tr('Invite') end
-  if party.acceptEnabled then auto[#auto + 1] = tr('Accept') end
-  add(hud.showAutomation, #auto > 0, 'tools', tr('Auto'), #auto > 0 and table.concat(auto, '  ') or off)
 
   if #rows == 0 then
     rows[1] = { icon = 'tools', name = tr('Bot HUD'), value = tr('Pick sections in Tools > Bot HUD'), active = false }

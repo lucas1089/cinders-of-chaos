@@ -96,5 +96,23 @@ eq((V.wrapLine('', 28)), '', 'empty text')
 eq(select(2, V.wrapLine('', 28)), 1, 'empty text still one line')
 eq((V.wrapLine('Averyveryverylongwordwithoutspaces x', 10)), 'Averyveryverylongwordwithoutspaces\nx', 'a long word on its own line')
 
+-- the ascension section (server ascension_tracker.lua)
+V.onAscension(st, { rows = {
+  { key = 'calling', title = 'Hear the Calling', progress = 1, target = 1, state = 'done' },
+  { key = 'proof', title = 'Slay rare beasts', progress = 4, target = 10, state = 'open' },
+  { key = 'trial', title = 'Win the Trial', progress = 0, target = 1, state = 'open' }, 'junk' } })
+eq(#st.ascension, 3, 'ascension rows')
+local at, ap, ac = V.ascensionLine(st.ascension[1])
+eq(at, 'Hear the Calling  Done', 'done row'); eq(ap, 100, 'done percent'); eq(ac, V.STATE_COLOR.done, 'done colour')
+at, ap, ac = V.ascensionLine(st.ascension[2])
+eq(at, 'Slay rare beasts  4/10', 'count'); eq(ap, 40, 'percent'); eq(ac, V.STATE_COLOR.open, 'open colour')
+eq((V.ascensionLine(st.ascension[3])), 'Win the Trial', 'single step: no count')
+eq((V.ascensionLine({ title = 'x', target = 5, progress = 99 })), 'x  Done', 'full is done')
+V.onAscension(st, { rows = {} })
+eq(#st.ascension, 0, 'no rows hides')
+V.onAscension(st, nil)
+eq(#st.ascension, 0, 'nil payload')
+eq(#V.new().ascension, 0, 'new state')
+
 if fails > 0 then print('goalsview_test: ' .. fails .. ' failure(s)'); os.exit(1) end
 print('goalsview_test: ' .. checks .. ' checks OK')

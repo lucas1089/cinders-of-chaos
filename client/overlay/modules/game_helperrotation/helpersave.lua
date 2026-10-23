@@ -1,4 +1,4 @@
--- ChaosHelperSave: how the helper (mods/game_helper, base patch 0067) reads and writes its per-character
+-- ChaosHelperSave: how the helper (modules/game_helper, base patch 0067) reads and writes its per-character
 -- helper.json (pure: helpersave_test.lua; client/MANIFEST.md "Helper settings survive death").
 -- Owner: the helper's settings reset when the character died. The helper unblocked its saves at the end of every UI
 -- reload (onLoadHelperData), whether or not the file had been read, and a file it could not read (missing, cut short

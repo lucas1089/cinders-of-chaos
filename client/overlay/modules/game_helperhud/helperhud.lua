@@ -1,7 +1,6 @@
 -- game_helperhud: the helper's bot HUD (client/MANIFEST.md "Helper bot HUD"). Global ChaosBotHud, not sandboxed:
--- mods/game_helper calls ChaosBotHud.refreshBotHud() every 250 ms while online and ChaosBotHud.applyBotHudConfig()
--- when Tools > Bot HUD changes (base patch 0056; the base drew the HUD from its cavebot file, which this client
--- leaves out). The on/off state and the sections live in the helper's character save (botHud), so the HUD comes
+-- modules/game_helper calls ChaosBotHud.refreshBotHud() every 250 ms while online and ChaosBotHud.applyBotHudConfig()
+-- when Tools > Bot HUD changes. The on/off state and the sections live in the helper's character save (botHud), so the HUD comes
 -- back after a relog. Rows and layout: helperhud_logic.lua (helperhud_test.lua).
 ChaosBotHud = ChaosBotHud or {}
 local M = ChaosBotHud
@@ -15,9 +14,7 @@ local lastMarginTop = nil
 local ICONS = {
   healing = { x = 0, y = 204, width = 34, height = 34 },
   tools = { x = 34, y = 204, width = 34, height = 34 },
-  shooter = { x = 68, y = 204, width = 34, height = 34 },
-  equip = { x = 102, y = 204, width = 34, height = 34 },
-  timer = { x = 34, y = 272, width = 34, height = 34 }
+  shooter = { x = 68, y = 204, width = 34, height = 34 }
 }
 local NAME_COLOR = { [true] = '#e8e8e8', [false] = '#7c736f' }
 local VALUE_COLOR = { [true] = '#d8c7a8', [false] = '#6e6560' }
@@ -124,17 +121,9 @@ end
 
 local function gatherState(cfg)
   local env = helperEnv() or {}
-  local helper = env._Helper or {}
   local state = {}
   local target = g_game.getAttackingCreature and g_game.getAttackingCreature() or nil
   state.targetName = target and target:getName() or nil
-  local equip = env.equip
-  state.equipEnabled = equip and (not equip.isEnabled or equip.isEnabled()) or false
-  local profile = cfg.equipProfiles and cfg.equipProfiles[cfg.selectedEquipProfile or 'Default']
-  state.equipRules = profile and profile.rules and #profile.rules or 0
-  local timer = helper.Timer
-  state.timerEnabled = timer and timer.isEnabled and timer.isEnabled() or false
-  state.timerRules = timer and timer.getRules and #(timer.getRules() or {}) or 0
   local spells = rawget(_G, 'Spells') or env.Spells
   state.spellName = function(id)
     local spell = id and id > 0 and spells and spells.getSpellDataById and spells.getSpellDataById(id) or nil

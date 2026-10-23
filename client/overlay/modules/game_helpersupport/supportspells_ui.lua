@@ -1,22 +1,17 @@
 -- The helper's Support spells tab and its cast cycle (the glue; the rules are supportspells.lua, tested there).
 --
--- The helper (mods/game_helper, the base client) is not changed: this module adds a tab button to its tab bar and a
--- panel beside its own panels (found once the helper window exists, polled like the Auto setup button), and casts with
--- g_game.talk through the helper's own checks (modules.game_helper: _Helper.isHelperAutomaticFunctionsEnabled,
--- getSpellDataById, isSpellOnCooldown, getRotation, safeDoThing, canUseByServerVoc, playerHasSpell). The rows are saved
--- per character in the g_settings node SETTINGS_NODE. Auto setup (game_helperrotation/autosetup_ui.lua) fills the rows
--- through U.setSlots / U.slots / U.plan.
+-- The helper (modules/game_helper) has a Support tab with an empty host panel (supportHost). This module builds its panel
+-- into that host (found once the helper window exists, polled), and casts with g_game.talk through the helper's own checks
+-- (modules.game_helper: _Helper.isHelperAutomaticFunctionsEnabled, getSpellDataById, isSpellOnCooldown, getRotation,
+-- safeDoThing, canUseByServerVoc, playerHasSpell). The rows are saved per character in the g_settings node SETTINGS_NODE.
+-- Auto setup (game_helperrotation/autosetup_ui.lua) fills the rows through U.setSlots / U.slots / U.plan.
 ChaosHelperSupportUI = ChaosHelperSupportUI or {}
 local U = ChaosHelperSupportUI
 local S = ChaosHelperSupport
 
-U.TAB_ID = 'chaosSupportTab'
+U.HOST_ID = 'supportHost'
 U.PANEL_ID = 'chaosSupportPanel'
 local SETTINGS_NODE = 'chaos_helper_support' -- [character] = { enabled, reserve, slots = { {id, enabled}, ... } }
-local PANEL_IDS = { 'healingPanel', 'toolsPanelContainer', 'shooterPanel', 'equipPanelContainer', 'cavebotPanel',
-  'timerPanelContainer', 'scriptingPanel', 'settingsPanel' }
-local TAB_IDS = { 'healingMenu', 'toolsMenu', 'shooterMenu', 'equipMenu', 'timerMenu', 'settingsFolderMenu' }
-
 local cfg = S.defaultConfig()
 local cfgFor = nil           -- the character the config was loaded for
 local state = S.newState()
@@ -259,7 +254,7 @@ end
 
 -- ---------------------------------------------------------------- the panel
 local function panel() local r = root() return r and r:recursiveGetChildById(U.PANEL_ID) end
-local function tab() local r = root() return r and r:recursiveGetChildById(U.TAB_ID) end
+local function host() local r = root() return r and r:recursiveGetChildById(U.HOST_ID) end
 
 local function rowsOf(p)
   local rows = p:recursiveGetChildById('rows')
@@ -399,36 +394,6 @@ function U.fillForClass()
   U.rebuild()
 end
 
-local function showPanel()
-  local r = root()
-  local p, t = panel(), tab()
-  if not (r and p and t) then return end
-  for _, id in ipairs(PANEL_IDS) do
-    local w = r:recursiveGetChildById(id)
-    if w then w:hide() end
-  end
-  local bar = t:getParent()
-  for _, id in ipairs(TAB_IDS) do
-    local b = bar:getChildById(id)
-    if b then b:setChecked(false) end
-  end
-  t:setChecked(true)
-  -- the panel opens even when filling the rows fails (logged once)
-  local ok, err = pcall(U.rebuild)
-  if not ok and not U.loggedRebuildError then
-    U.loggedRebuildError = true
-    g_logger.error('[helper support] ' .. tostring(err))
-  end
-  p:show(true)
-  p:raise()
-end
-
-local function hidePanel()
-  local p, t = panel(), tab()
-  if p then p:hide() end
-  if t then t:setChecked(false) end
-end
-
 -- Owner beta, 2026-10-20: "The helper's Support tab does not open." The styles were imported in U.init, and this
 -- module loads at autoload priority 100, before client_styles (loaded with the `client` module after the 100-499
 -- modules) defines Panel, Label, CheckBox, ComboBox and Button. The import stopped at ChaosSupportRow < Panel ("base
@@ -449,57 +414,19 @@ local function importStyles()
 end
 U.importStyles = importStyles
 
--- the helper sizes its tab buttons to fill the bar (fitHelperWindow, on show and on a resize); a tab added later is
--- refitted at once, else it can lie past the bar's right edge, where no click reaches it
-local function refit()
-  local m = modules.game_helper
-  if m and m.onHelperViewportChange then pcall(m.onHelperViewportChange) end
-end
-
--- the tab button after the helper's last tab, the panel where the Timer panel is; any other tab hides ours
+-- the panel fills the Support tab's host; the helper shows or hides the host with its tab
 function U.addTab()
-  local r = root()
-  local win = r and r:recursiveGetChildById('helperWindow')
-  local bar = win and win:recursiveGetChildById('optionsTabBar')
-  local anchorTab = bar and bar:getChildById('settingsFolderMenu')
-  local timerPanel = win and win:recursiveGetChildById('timerPanelContainer')
-  if not (bar and anchorTab and timerPanel) then return false end
-  local oldTab = bar:getChildById(U.TAB_ID)
-  if oldTab and panel() then return true end
-  if oldTab then oldTab:destroy() end -- a tab without its panel (an earlier try that failed half way)
+  local h = host()
+  if not h then return false end
+  if panel() then return true end
   if not importStyles() then return false end
-  local parent = timerPanel:getParent()
-  local p = buildPanel(parent)
+  local p = buildPanel(h)
   if not p then return false end
-  local t = g_ui.createWidget('ChaosSupportTab', bar)
-  if not t then
-    p:destroy()
-    return false
-  end
-  t:setId(U.TAB_ID)
-  t:addAnchor(AnchorLeft, 'settingsFolderMenu', AnchorRight)
-  t:getChildById('caption'):setText(tr('Support'))
-  t:setTooltip(tr('Support spells: the helper casts them by itself when they are off cooldown'))
-  t.onClick = function() showPanel() end
-  p:addAnchor(AnchorTop, 'optionsTabBar', AnchorBottom)
-  p:addAnchor(AnchorLeft, 'helperSidebar', AnchorRight)
+  p:addAnchor(AnchorTop, 'parent', AnchorTop)
+  p:addAnchor(AnchorLeft, 'parent', AnchorLeft)
   p:addAnchor(AnchorRight, 'parent', AnchorRight)
-  p:addAnchor(AnchorBottom, 'separator', AnchorTop)
-  p:setMarginLeft(8)
-  p:setMarginTop(8)
-  p:setMarginBottom(8)
-  for _, id in ipairs(TAB_IDS) do
-    local b = bar:getChildById(id)
-    if b and not b.chaosSupportWrapped then
-      b.chaosSupportWrapped = true
-      local old = b.onCheckChange
-      b.onCheckChange = function(self, checked, ...)
-        if checked then hidePanel() end
-        if old then return old(self, checked, ...) end
-      end
-    end
-  end
-  refit()
+  p:addAnchor(AnchorBottom, 'parent', AnchorBottom)
+  p:show()
   U.rebuild()
   return true
 end
@@ -551,7 +478,6 @@ function U.terminate()
   disconnect(LocalPlayer, { onLevelChange = onLevelChange })
   if cycle then removeEvent(cycle) cycle = nil end
   if pollEvent then removeEvent(pollEvent) pollEvent = nil end
-  local p, t = panel(), tab()
+  local p = panel()
   if p then p:destroy() end
-  if t then t:destroy() end
 end

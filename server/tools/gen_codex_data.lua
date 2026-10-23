@@ -1180,6 +1180,10 @@ local function uniqueStats(D, spec)
 			end
 		end
 	end
+	-- built-in Chaos modifiers and legendary powers (spec.mods, tools/gen_unique_specs.py)
+	for _, m in ipairs(spec.mods or {}) do
+		out[#out + 1] = D.M.text(m[1], m[2])
+	end
 	return out
 end
 

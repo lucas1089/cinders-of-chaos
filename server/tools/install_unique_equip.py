@@ -35,7 +35,7 @@ END = '\t<!-- end of the Chaos unique equip rules -->\n'
 SCRIPT = 'chaos_unique_equip.lua'
 # items.xml slotType / weaponType -> movements.xml slot, for a base id without a stock Equip entry
 SLOT = {'head': 'head', 'body': 'armor', 'legs': 'legs', 'feet': 'feet', 'necklace': 'necklace', 'ring': 'ring',
-        'shield': 'shield'}
+        'shield': 'shield', 'sword': 'hand', 'axe': 'hand', 'club': 'hand', 'distance': 'hand', 'wand': 'hand'}
 STOCK_RE = re.compile(r'\t<!-- stock (\d+): (.*?) -->\n')
 
 

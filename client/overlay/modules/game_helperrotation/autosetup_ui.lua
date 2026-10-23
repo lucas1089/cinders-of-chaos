@@ -114,21 +114,9 @@ local function refresh(H, M, cfg)
   U.save()
 end
 
--- the Shooter tab after its targeting changed (Auto setup or Undo). The loader in refresh redraws the Auto Target,
--- shooter, chase, protection zone and Follow Friend boxes from the config (their callbacks follow the change: a
--- follow the helper started stops); the target list input and the shortcut buttons are redrawn here.
+-- the Combat tab after its targeting changed (Auto setup or Undo): the loader in refresh redraws the Auto Target and
+-- shooter boxes from the config
 local function syncTargeting(H, M, cfg)
-  if cfg.autoTargetEnabled and H.setAutoTargetOnHold then pcall(H.setAutoTargetOnHold, false) end
-  if H.AutoTarget and H.AutoTarget.loadToUI then pcall(H.AutoTarget.loadToUI) end
-  if H.FollowFriend and H.FollowFriend.loadToUI then pcall(H.FollowFriend.loadToUI) end
-  local ms = M.magicShooter
-  if ms and ms.loadTargetMonsterList then pcall(ms.loadTargetMonsterList) end
-  local sc = H.Shortcut
-  if sc and sc.syncButton then
-    pcall(sc.syncButton, 'shortcutAutoTarget', cfg.autoTargetEnabled == true)
-    pcall(sc.syncButton, 'shortcutShooter', cfg.magicShooterEnabled == true)
-    pcall(sc.syncButton, 'shortcutAlwaysChase', cfg.alwaysChaseOpponent == true)
-  end
   U.save()
 end
 
@@ -283,12 +271,11 @@ function W.run()
   return true
 end
 
--- the button, right after Helper Status (and its Set Key button) at the bottom of the helper window
+-- the button, in the helper window's top row (autoSetupHost)
 function W.addButton()
   local root = g_ui.getRootWidget()
   local win = root and root:recursiveGetChildById('helperWindow')
-  local key = win and win:recursiveGetChildById('setKeyHelperButton')
-  local parent = key and key:getParent()
+  local parent = win and win:recursiveGetChildById('autoSetupHost')
   if not parent then return false end
   if parent:getChildById(W.BUTTON_ID) then return true end
   local b = g_ui.createWidget('Button', parent)
@@ -296,11 +283,10 @@ function W.addButton()
   b:setText(tr('Auto setup'))
   b:setTooltip(tr('Set up healing, tools, shooter, timers and support spells for your class and level in one click\n' ..
     '(only spells you can cast and potions you may drink). Right-click: undo the last Auto setup.'))
-  b:setHeight(17)
+  b:setHeight(20)
   b:setTextHorizontalAutoResize(true)
-  b:addAnchor(AnchorVerticalCenter, 'setKeyHelperButton', AnchorVerticalCenter)
-  b:addAnchor(AnchorLeft, 'setKeyHelperButton', AnchorRight)
-  b:setMarginLeft(10)
+  b:addAnchor(AnchorVerticalCenter, 'parent', AnchorVerticalCenter)
+  b:addAnchor(AnchorRight, 'parent', AnchorRight)
   b.onClick = function() W.run() end
   b.onMouseRelease = function(self, pos, button)
     if button == MouseRightButton then

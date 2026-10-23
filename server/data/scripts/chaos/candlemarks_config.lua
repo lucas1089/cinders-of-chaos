@@ -105,6 +105,20 @@ C.offers = {
 		limit = "supplies", name = "Hunting Supplies II", desc = "25 great health and 25 great mana potions."},
 	{key = "supplies_3", kind = "item", items = {{8473, 25}, {8472, 25}}, price = 8, weekly = 5, minLevel = 130,
 		limit = "supplies", name = "Hunting Supplies III", desc = "25 ultimate health and 25 great spirit potions."},
+	-- better potions and bigger bundles (owner 2026-10-23: "coloque pots melhores a venda ... e packs maiores
+	-- também"): tier IV for level 200 (supreme health 500 and ultimate mana 350 gold at the NPC: 21,250, about 1,770 a
+	-- mark like tier I); a crate is four bundles of its tier for three bundles' price. Same weekly limit of 5.
+	{key = "supplies_4", kind = "item", items = {{26031, 25}, {26029, 25}}, price = 12, weekly = 5, minLevel = 200,
+		limit = "supplies", name = "Hunting Supplies IV", desc = "25 supreme health and 25 ultimate mana potions."},
+	{key = "supplies_crate_1", kind = "item", items = {{7618, 100}, {7618, 100}, {7620, 100}, {7620, 100}}, price = 9, weekly = 5, minLevel = 8,
+		limit = "supplies", name = "Supply Crate I", desc = "200 health and 200 mana potions."},
+	{key = "supplies_crate_2", kind = "item", items = {{7591, 100}, {7590, 100}}, price = 15, weekly = 5, minLevel = 80,
+		limit = "supplies", name = "Supply Crate II", desc = "100 great health and 100 great mana potions."},
+	{key = "supplies_crate_3", kind = "item", items = {{8473, 100}, {8472, 100}}, price = 24, weekly = 5, minLevel = 130,
+		limit = "supplies", name = "Supply Crate III", desc = "100 ultimate health and 100 great spirit potions."},
+	{key = "supplies_crate_4", kind = "item", items = {{26031, 100}, {26029, 100}}, price = 36, weekly = 5,
+		minLevel = 200, limit = "supplies", name = "Supply Crate IV",
+		desc = "100 supreme health and 100 ultimate mana potions."},
 	-- other systems' help, shown once their API exists
 	{key = "rested_vial", kind = "call", call = {"ChaosRested", "addVials", 1}, price = 10, weekly = 3, minLevel = 20,
 		icon = 7440, name = "Rested Vial", desc = "Stored rested experience for your next hunt."},

@@ -14,7 +14,7 @@
 --   * the numbers the helper decides with (mana, level, groups, target, range, the server vocation ids) where the stock
 --     entry differs;
 --   * the rune table's groups where the server puts the rune in another group.
--- The helper's own id lists (mods/game_helper/spelldata.json, keyed by the stock ids) follow through remapHelper.
+-- The helper's own id lists (modules/game_helper/spelldata.json, keyed by the stock ids) follow through remapHelper.
 
 ChaosSpellFix = {}
 local F = ChaosSpellFix
@@ -288,7 +288,7 @@ local function remapKeys(map, idMap)
   end
 end
 
--- data: the helper's HelperSpellData (mods/game_helper/spelldata.lua). Its lists are keyed by the stock ids: the
+-- data: the helper's HelperSpellData (modules/game_helper/spelldata.lua). Its lists are keyed by the stock ids: the
 -- arrays and sets it hands out are rewritten in place, the lookups of its private sets (ranged monster, expose
 -- weakness, sap strength spells, buff durations) are wrapped to ask with the stock id.
 function F.remapHelper(data, idMap, removedIds)

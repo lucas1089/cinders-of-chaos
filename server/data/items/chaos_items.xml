@@ -601,6 +601,7 @@
 		<attribute key="criticalHitAmount" value="30" />
 		<attribute key="lifeLeechChance" value="10" />
 		<attribute key="lifeLeechAmount" value="8" />
+		<attribute key="mods" value="attackspeed:12,lifeonhit:60,bossdamage:18,crimsonburst:20" />
 		<attribute key="description" value="The red moon's last crescent, cut down and given an edge. It drinks before you do. (Requires level 1000.)" />
 		<attribute key="showattributes" value="1" />
 	</item>
@@ -614,6 +615,7 @@
 		<attribute key="absorbPercentPhysical" value="6" />
 		<attribute key="manaLeechChance" value="6" />
 		<attribute key="manaLeechAmount" value="6" />
+		<attribute key="mods" value="cdr:14,manacost:14,dot:40,lastbreath:40" />
 		<attribute key="description" value="A crown with nothing inside it. Wear it and it is still empty. (Requires level 1000.)" />
 		<attribute key="showattributes" value="1" />
 	</item>
@@ -627,6 +629,7 @@
 		<attribute key="skillDist" value="5" />
 		<attribute key="criticalHitChance" value="4" />
 		<attribute key="criticalHitAmount" value="15" />
+		<attribute key="mods" value="shockchance:22,elepen:18,experience:6,arclightning:22" />
 		<attribute key="description" value="The seer saw every death but her own. The eye still watches for it. (Requires level 1000.)" />
 		<attribute key="showattributes" value="1" />
 	</item>
@@ -646,6 +649,7 @@
 		<attribute key="skillDist" value="3" />
 		<attribute key="skillFist" value="3" />
 		<attribute key="magicPoints" value="3" />
+		<attribute key="mods" value="bossdamage:20,ignitechance:22,lifeonkill:200,deathblast:20" />
 		<attribute key="description" value="The last coal of a dead sovereign, set in a ring. It is never cold. (Requires level 1000.)" />
 		<attribute key="showattributes" value="1" />
 	</item>
@@ -724,6 +728,7 @@
 		<attribute key="skillClub" value="5" />
 		<attribute key="skillShield" value="3" />
 		<attribute key="absorbPercentPhysical" value="5" />
+		<attribute key="mods" value="execute:7,physpen:16,lifeonhit:45,bloodrush:4" />
 		<attribute key="description" value="The warden's flail broke every shield brought to the first gate. Now it answers you. (Requires level 800.)" />
 		<attribute key="showattributes" value="1" />
 	</item>
@@ -737,6 +742,7 @@
 		<attribute key="absorbPercentDeath" value="6" />
 		<attribute key="manaLeechChance" value="6" />
 		<attribute key="manaLeechAmount" value="6" />
+		<attribute key="mods" value="regen:55,dot:36,manaonkill:120,smolderaura:28" />
 		<attribute key="description" value="Woven from the ash of every lullaby she sang. It is warm, and it should not be. (Requires level 800.)" />
 		<attribute key="showattributes" value="1" />
 	</item>
@@ -748,6 +754,7 @@
 		<attribute key="absorbPercentPhysical" value="8" />
 		<attribute key="absorbPercentDeath" value="6" />
 		<attribute key="skillShield" value="3" />
+		<attribute key="mods" value="monsterreduction:6,thorns:150,regen:45,emberstep:20" />
 		<attribute key="description" value="Plated with the Colossus's own bones. They creak when you stand still. (Requires level 800.)" />
 		<attribute key="showattributes" value="1" />
 	</item>
@@ -760,6 +767,7 @@
 		<attribute key="skillDist" value="3" />
 		<attribute key="criticalHitChance" value="5" />
 		<attribute key="criticalHitAmount" value="20" />
+		<attribute key="mods" value="poisonchance:20,dot:36,manaonhit:40,critecho:18" />
 		<attribute key="description" value="An effigy's eye, set in crystal. Every curse you hear, it hears first. (Requires level 800.)" />
 		<attribute key="showattributes" value="1" />
 	</item>
@@ -777,6 +785,7 @@
 		<attribute key="absorbPercentDeath" value="6" />
 		<attribute key="lifeLeechChance" value="6" />
 		<attribute key="lifeLeechAmount" value="6" />
+		<attribute key="mods" value="experience:8,rarityfind:20,regen:45,crimsonburst:18" />
 		<attribute key="description" value="Varkhul wore it to the end of the world and back. It still expects a throne. (Requires level 800.)" />
 		<attribute key="showattributes" value="1" />
 	</item>
@@ -846,6 +855,7 @@
 		<attribute key="skillShield" value="3" />
 		<attribute key="absorbPercentPhysical" value="3" />
 		<attribute key="set" value="ashwarden" />
+		<attribute key="mods" value="monsterreduction:5,regen:40" />
 		<attribute key="description" value="The visor of a warden who swore the dead would stay down. They did. (Ashen Sepulchre.) (Requires level 800.)" />
 		<attribute key="showattributes" value="1" />
 	</item>
@@ -857,6 +867,7 @@
 		<attribute key="skillShield" value="2" />
 		<attribute key="absorbPercentDeath" value="5" />
 		<attribute key="set" value="ashwarden" />
+		<attribute key="mods" value="reflect:8,lifeonkill:160" />
 		<attribute key="description" value="Ash fills its seams and never falls out. (Ashen Sepulchre.) (Requires level 800.)" />
 		<attribute key="showattributes" value="1" />
 	</item>
@@ -868,6 +879,7 @@
 		<attribute key="skillShield" value="4" />
 		<attribute key="absorbPercentFire" value="5" />
 		<attribute key="set" value="ashwarden" />
+		<attribute key="mods" value="block:10,frostward:20" />
 		<attribute key="description" value="Scorched black on the front, untouched on the back: everything behind it lived. (Ashen Sepulchre.) (Requires level 800.)" />
 		<attribute key="showattributes" value="1" />
 	</item>
@@ -879,6 +891,7 @@
 		<attribute key="skillShield" value="2" />
 		<attribute key="absorbPercentPhysical" value="4" />
 		<attribute key="set" value="ashwarden" />
+		<attribute key="mods" value="thorns:120,lastbreath:35" />
 		<attribute key="description" value="The oath is cut into the stone; the stone is still warm. (Ashen Sepulchre.) (Requires level 800.)" />
 		<attribute key="showattributes" value="1" />
 	</item>
@@ -1468,6 +1481,308 @@
 		<attribute key="description" value="Woven for a body that no longer bleeds. Hollow Vessel: the items' energy shield counts 40% more. (Requires level 300. Mystic, Necromancer, Monk and Templar lines.)" />
 		<attribute key="equipLevel" value="300" />
 		<attribute key="equipLines" value="Mystic,Necromancer,Monk,Templar" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- leveling uniques (2026-10-23): level 10-35, strong early, faded by level 100-150; built-in Chaos modifiers -->
+	<!-- 10292: stock "pointed rabbitslayer" -->
+	<item id="10292" article="an" name="Ashen Pilgrim's Blade">
+		<attribute key="weight" value="3500" />
+		<attribute key="weaponType" value="sword" />
+		<attribute key="attack" value="30" />
+		<attribute key="defense" value="14" />
+		<attribute key="skillSword" value="2" />
+		<attribute key="mods" value="lifeonkill:25,attackspeed:8" />
+		<attribute key="equipLevel" value="12" />
+		<attribute key="description" value="A pilgrim carried it from the burnt chapel to the first town and never sheathed it again. (Requires level 12.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 8601: stock "steel axe" -->
+	<item id="8601" article="a" name="Hatchet of the First Winter">
+		<attribute key="weight" value="4500" />
+		<attribute key="weaponType" value="axe" />
+		<attribute key="attack" value="32" />
+		<attribute key="defense" value="12" />
+		<attribute key="skillAxe" value="2" />
+		<attribute key="mods" value="chillchance:12,lifeonhit:6" />
+		<attribute key="equipLevel" value="15" />
+		<attribute key="description" value="Frost still sleeps in the bite of it, a winter older than the cinders. (Requires level 15.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 10302: stock "club of the fury" -->
+	<item id="10302" article="a" name="Tallow-Bell Mace">
+		<attribute key="weight" value="5000" />
+		<attribute key="weaponType" value="club" />
+		<attribute key="attack" value="31" />
+		<attribute key="defense" value="14" />
+		<attribute key="skillClub" value="2" />
+		<attribute key="mods" value="shockchance:12,lifeonkill:25" />
+		<attribute key="equipLevel" value="15" />
+		<attribute key="description" value="Its head was cast from a chapel bell; it still rings when it lands. (Requires level 15.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 7438: stock "elvish bow" -->
+	<item id="7438" article="a" name="Fenwatch Longbow">
+		<attribute key="weight" value="3200" />
+		<attribute key="weaponType" value="distance" />
+		<attribute key="attack" value="36" />
+		<attribute key="hitChance" value="92" />
+		<attribute key="range" value="6" />
+		<attribute key="skillDist" value="2" />
+		<attribute key="mods" value="attackspeed:8,lifeonkill:20" />
+		<attribute key="equipLevel" value="12" />
+		<attribute key="description" value="Strung by the marsh wardens, who never let a light cross the fen unseen. (Requires level 12.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 23719: stock "scorcher" -->
+	<item id="23719" article="a" name="Cinder-Wick Wand">
+		<attribute key="weight" value="1500" />
+		<attribute key="weaponType" value="wand" />
+		<attribute key="magicPoints" value="2" />
+		<attribute key="mods" value="ignitechance:12,manaonkill:15" />
+		<attribute key="equipLevel" value="10" />
+		<attribute key="description" value="A candle wick that never burns down, bound in iron and old prayers. (Requires level 10.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 10291: stock "odd hat" -->
+	<item id="10291" article="a" name="Hood of the Roaming Pyre">
+		<attribute key="weight" value="2500" />
+		<attribute key="slotType" value="head" />
+		<attribute key="armor" value="7" />
+		<attribute key="mods" value="experience:8,regen:8" />
+		<attribute key="equipLevel" value="20" />
+		<attribute key="description" value="Pilgrims of the pyre wore these on the road; the ash on it is still warm. (Requires level 20.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 25412: stock "treader of torment" -->
+	<item id="25412" article="a" name="Pathfinder's Treads">
+		<attribute key="weight" value="1500" />
+		<attribute key="slotType" value="feet" />
+		<attribute key="armor" value="3" />
+		<attribute key="mods" value="movespeed:10,dodge:4" />
+		<attribute key="equipLevel" value="20" />
+		<attribute key="description" value="They know every short way home, and most of the long ones. (Requires level 20.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 10502: stock "engraved wedding ring" -->
+	<item id="10502" article="a" name="Band of the Second Dawn">
+		<attribute key="weight" value="100" />
+		<attribute key="slotType" value="ring" />
+		<attribute key="mods" value="experience:5,lifeonkill:20,goldfind:10" />
+		<attribute key="equipLevel" value="25" />
+		<attribute key="description" value="A vow made after the first dawn burned; it keeps its wearer for the second. (Requires level 25.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 11393: stock "lucky clover amulet" -->
+	<item id="11393" article="a" name="Moth-Lantern Pendant">
+		<attribute key="weight" value="400" />
+		<attribute key="slotType" value="necklace" />
+		<attribute key="armor" value="2" />
+		<attribute key="mods" value="manaonkill:15,regen:8,itemfind:8" />
+		<attribute key="equipLevel" value="30" />
+		<attribute key="description" value="A tiny lantern with a moth inside that never stops beating its wings. (Requires level 30.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 21692: stock "albino plate" -->
+	<item id="21692" article="a" name="Gutter-Saint's Mail">
+		<attribute key="weight" value="7000" />
+		<attribute key="slotType" value="body" />
+		<attribute key="armor" value="12" />
+		<attribute key="mods" value="monsterreduction:6,lifeonhit:6,regen:6" />
+		<attribute key="equipLevel" value="35" />
+		<attribute key="description" value="The gutter saint gave his mail away twice; it found its way back both times. (Requires level 35.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 2648: stock "chain legs" -->
+	<item id="2648" article="a" name="Wanderer's Leggings">
+		<attribute key="weight" value="4500" />
+		<attribute key="slotType" value="legs" />
+		<attribute key="armor" value="6" />
+		<attribute key="mods" value="regen:8,lifeonkill:20" />
+		<attribute key="equipLevel" value="18" />
+		<attribute key="description" value="Patched at every inn between the coast and the cinder fields. (Requires level 18.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 10294: stock "shield of the white knight" -->
+	<item id="10294" article="a" name="Lantern-Ward Buckler">
+		<attribute key="weight" value="5000" />
+		<attribute key="weaponType" value="shield" />
+		<attribute key="defense" value="26" />
+		<attribute key="skillShield" value="2" />
+		<attribute key="mods" value="block:6,thorns:30" />
+		<attribute key="equipLevel" value="25" />
+		<attribute key="description" value="A lantern hook is still bolted to its rim, for nights on the road. (Requires level 25.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- endgame uniques (2026-10-23): level 1200-2400, waystone bosses and monsters; a legendary power each -->
+	<!-- 8931: stock "the epiphany" -->
+	<item id="8931" article="an" name="Ashfall Verdict">
+		<attribute key="weight" value="3500" />
+		<attribute key="weaponType" value="sword" />
+		<attribute key="attack" value="72" />
+		<attribute key="defense" value="36" />
+		<attribute key="extraDef" value="3" />
+		<attribute key="skillSword" value="6" />
+		<attribute key="criticalHitChance" value="7" />
+		<attribute key="criticalHitAmount" value="30" />
+		<attribute key="mods" value="attackspeed:15,bossdamage:20,physpen:20,critecho:22" />
+		<attribute key="equipLevel" value="1300" />
+		<attribute key="equipLines" value="Warrior,Thief,Monk,Templar" />
+		<attribute key="description" value="The sentence of the ash judges, passed once and never appealed. (Requires level 1300.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 25881: stock "axe of mayhem" -->
+	<item id="25881" article="a" name="Wyrmgrave Cleaver">
+		<attribute key="weight" value="4500" />
+		<attribute key="weaponType" value="axe" />
+		<attribute key="attack" value="74" />
+		<attribute key="defense" value="33" />
+		<attribute key="skillAxe" value="6" />
+		<attribute key="lifeLeechChance" value="10" />
+		<attribute key="lifeLeechAmount" value="8" />
+		<attribute key="mods" value="bleedchance:25,dot:44,lifeonhit:55,bloodrush:4" />
+		<attribute key="equipLevel" value="1500" />
+		<attribute key="equipLines" value="Warrior,Thief,Monk,Templar" />
+		<attribute key="description" value="Forged in the grave of a wyrm, quenched in what was left of it. (Requires level 1500.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 14334: stock "giant smithhammer" -->
+	<item id="14334" article="a" name="Maul of the Sunken Choir">
+		<attribute key="weight" value="5000" />
+		<attribute key="weaponType" value="club" />
+		<attribute key="attack" value="76" />
+		<attribute key="defense" value="34" />
+		<attribute key="skillClub" value="7" />
+		<attribute key="mods" value="shockchance:24,execute:8,monsterreduction:6,arclightning:22" />
+		<attribute key="equipLevel" value="1800" />
+		<attribute key="equipLines" value="Warrior,Thief,Monk,Templar" />
+		<attribute key="description" value="The drowned choir still sings through it, one note per blow. (Requires level 1800.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 22417: stock "umbral bow" -->
+	<item id="22417" article="a" name="Stormherald's Recurve">
+		<attribute key="weight" value="3200" />
+		<attribute key="weaponType" value="distance" />
+		<attribute key="attack" value="88" />
+		<attribute key="hitChance" value="97" />
+		<attribute key="range" value="7" />
+		<attribute key="skillDist" value="7" />
+		<attribute key="criticalHitChance" value="8" />
+		<attribute key="criticalHitAmount" value="30" />
+		<attribute key="mods" value="attackspeed:14,elepen:20,chillchance:20,echoshot:22" />
+		<attribute key="equipLevel" value="1600" />
+		<attribute key="equipLines" value="Ranger" />
+		<attribute key="description" value="Its string is a strand of the storm that drowned the herald. (Requires level 1600.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 24744: stock "enchanted werewolf helmet" -->
+	<item id="24744" article="a" name="Diadem of the Ninth Pyre">
+		<attribute key="weight" value="2500" />
+		<attribute key="slotType" value="head" />
+		<attribute key="armor" value="16" />
+		<attribute key="magicPoints" value="8" />
+		<attribute key="absorbPercentFire" value="8" />
+		<attribute key="mods" value="cdr:15,manacost:15,ignitechance:20,crimsonburst:20" />
+		<attribute key="equipLevel" value="1400" />
+		<attribute key="equipLines" value="Mystic,Necromancer" />
+		<attribute key="description" value="Eight pyres burned out before this one. It does not mean to. (Requires level 1400.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 2656: stock "blue robe" -->
+	<item id="2656" article="a" name="Vestments of the Hollow Choir">
+		<attribute key="weight" value="7000" />
+		<attribute key="slotType" value="body" />
+		<attribute key="armor" value="28" />
+		<attribute key="magicPoints" value="10" />
+		<attribute key="absorbPercentDeath" value="10" />
+		<attribute key="absorbPercentPhysical" value="6" />
+		<attribute key="mods" value="dot:45,regen:65,manaonhit:45,smolderaura:30" />
+		<attribute key="equipLevel" value="2000" />
+		<attribute key="equipLines" value="Mystic,Necromancer" />
+		<attribute key="description" value="Worn by a choir that sang on after its voices were gone. (Requires level 2000.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 2472: stock "magic plate armor" -->
+	<item id="2472" article="a" name="Bastion of the Last Dawn">
+		<attribute key="weight" value="7000" />
+		<attribute key="slotType" value="body" />
+		<attribute key="armor" value="33" />
+		<attribute key="skillShield" value="6" />
+		<attribute key="absorbPercentPhysical" value="10" />
+		<attribute key="absorbPercentFire" value="6" />
+		<attribute key="mods" value="monsterreduction:8,reflect:10,thorns:220,lastbreath:45" />
+		<attribute key="equipLevel" value="2200" />
+		<attribute key="equipLines" value="Warrior,Templar" />
+		<attribute key="description" value="The last dawn broke on this plate and went no further. (Requires level 2200.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 2646: stock "golden boots" -->
+	<item id="2646" article="a" name="Greaves of the Endless Road">
+		<attribute key="weight" value="1500" />
+		<attribute key="slotType" value="feet" />
+		<attribute key="armor" value="6" />
+		<attribute key="mods" value="movespeed:12,dodge:7,lifeonkill:220,hunterrush:24" />
+		<attribute key="equipLevel" value="1200" />
+		<attribute key="description" value="Every road ends somewhere. These have not found where. (Requires level 1200.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 2495: stock "demon legs" -->
+	<item id="2495" article="a" name="Legguards of Unmaking">
+		<attribute key="weight" value="4500" />
+		<attribute key="slotType" value="legs" />
+		<attribute key="armor" value="16" />
+		<attribute key="absorbPercentPhysical" value="6" />
+		<attribute key="absorbPercentDeath" value="6" />
+		<attribute key="mods" value="regen:60,lifeonhit:50,monsterreduction:5,frostward:24" />
+		<attribute key="equipLevel" value="1700" />
+		<attribute key="description" value="Plated with what the void spat back out. (Requires level 1700.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 22516: stock "ring of ending" -->
+	<item id="22516" article="a" name="Band of the Severed Star">
+		<attribute key="weight" value="100" />
+		<attribute key="slotType" value="ring" />
+		<attribute key="criticalHitChance" value="6" />
+		<attribute key="criticalHitAmount" value="30" />
+		<attribute key="skillSword" value="4" />
+		<attribute key="skillAxe" value="4" />
+		<attribute key="skillClub" value="4" />
+		<attribute key="skillDist" value="4" />
+		<attribute key="skillFist" value="4" />
+		<attribute key="magicPoints" value="4" />
+		<attribute key="mods" value="bossdamage:22,execute:8,itemfind:15,deathblast:22" />
+		<attribute key="equipLevel" value="1900" />
+		<attribute key="description" value="A shard of a star that fell and was cut loose from the sky. (Requires level 1900.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 6391: stock "nightmare shield" -->
+	<item id="6391" article="a" name="Rampart of Grey Tides">
+		<attribute key="weight" value="5000" />
+		<attribute key="weaponType" value="shield" />
+		<attribute key="defense" value="58" />
+		<attribute key="skillShield" value="7" />
+		<attribute key="absorbPercentIce" value="8" />
+		<attribute key="absorbPercentPhysical" value="4" />
+		<attribute key="mods" value="block:15,reflect:12,regen:50,frostward:26" />
+		<attribute key="equipLevel" value="1500" />
+		<attribute key="equipLines" value="Warrior,Templar" />
+		<attribute key="description" value="The grey tide broke on it for a hundred years and left only salt. (Requires level 1500.)" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 22691: stock "jade amulet" -->
+	<item id="22691" article="a" name="Choirless Pendant">
+		<attribute key="weight" value="400" />
+		<attribute key="slotType" value="necklace" />
+		<attribute key="armor" value="6" />
+		<attribute key="magicPoints" value="5" />
+		<attribute key="skillSword" value="5" />
+		<attribute key="skillAxe" value="5" />
+		<attribute key="skillClub" value="5" />
+		<attribute key="skillDist" value="5" />
+		<attribute key="skillFist" value="5" />
+		<attribute key="absorbPercentPhysical" value="6" />
+		<attribute key="mods" value="experience:10,rarityfind:30,cdr:10,bloodrush:5" />
+		<attribute key="equipLevel" value="2400" />
+		<attribute key="description" value="The choir is gone. The silence it left hangs on this chain. (Requires level 2400.)" />
 		<attribute key="showattributes" value="1" />
 	</item>
 </items>

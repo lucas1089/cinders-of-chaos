@@ -370,6 +370,12 @@
      "licence": "MIT (the SDK); the API is a paid service under Anthropic's terms",
      "use": "Ember, the Help channel assistant (installed on the server by the owner, not shipped in the packages)",
      "source": "https://github.com/anthropics/anthropic-sdk-python"
+    },
+    {
+     "name": "Helper module",
+     "author": "R!ck, ZLukSrT#8740, Christianlb, worthdavi",
+     "licence": "unknown; the owner supplied the file, no licence text came with it",
+     "use": "the helper window, healing and potion rows, spell rotation slots and presets (adapted to this game)"
     }
    ]
   },

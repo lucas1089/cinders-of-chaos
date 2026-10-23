@@ -1,6 +1,6 @@
 -- game_targetguard: who the player's own targeting may pick (client/MANIFEST.md "Target guard"). Global
 -- ChaosTargetGuard, pure (no UI, no engine calls beyond the creature passed in), so base patch 0112 can call it from
--- mods/game_helper/classes/auto_target.lua and modules/game_battle/battle.lua. Tests: targetguard_test.lua.
+-- modules/game_helper/classes/auto_target.lua and modules/game_battle/battle.lua. Tests: targetguard_test.lua.
 --
 -- Owner report 2026-10-21: "the Necromancer's risen warriors do not attack, they get targeted and block the way".
 -- The 10.98 creature packet sends no master id, so the helper's `getMasterId() ~= 0` test never matched a summon.

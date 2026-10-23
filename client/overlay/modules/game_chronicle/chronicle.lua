@@ -272,9 +272,9 @@ end
 -- ---------------------------------------------------------------- the window
 function render()
   if not window or not window:isVisible() then return end
-  window.tabChapters:setChecked(tab == 'chapters')
-  window.tabRecord:setChecked(tab == 'record')
-  window.tabMemorial:setChecked(tab == 'memorial')
+  window.tabBar.tabChapters:setChecked(tab == 'chapters')
+  window.tabBar.tabRecord:setChecked(tab == 'record')
+  window.tabBar.tabMemorial:setChecked(tab == 'memorial')
   if tab == 'record' then
     renderRecord()
   elseif tab == 'memorial' then

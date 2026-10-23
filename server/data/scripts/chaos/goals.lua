@@ -611,6 +611,9 @@ if CreatureEvent then
 			G.viewing[guid] = nil
 		elseif msg.action == "tracker" then
 			G.sendTracker(player)
+			if ChaosAscensionTracker and ChaosAscensionTracker.sent then
+				ChaosAscensionTracker.sent[player:getId()] = nil -- the next sweep sends the ascension rows too
+			end
 		end
 	end
 	ext:type("extendedopcode")

@@ -1,0 +1,8 @@
+Module
+  name: game_helper
+  description: The helper window and its loop. Heals, drinks potions, trains mana, hastes, runs the five-slot spell rotation (magic shooter) and Auto Target. The other helper modules plug into it.
+  author: R!ck, ZLukSrT#8740, Christianlb, worthdavi; adapted for Cinders of Chaos
+  sandboxed: true
+  scripts: [ helper_cycle, helper_spells, helper_potions, helper_config, helper_logic, helper ]
+  @onLoad: init()
+  @onUnload: terminate()

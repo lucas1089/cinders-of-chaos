@@ -20,6 +20,19 @@ return {
 			"Você está parado na cidade: em %d segundos será levado ao Idle Hall. Dê um passo para ficar.",
 		["You stood idle in town for %d minutes and were moved to the Idle Hall. Its portal leads back to your temple."] =
 			"Você ficou parado na cidade por %d minutos e foi levado ao Idle Hall. O portal dele leva de volta ao seu templo.",
+		-- Exercise (training) weapons (exercise_training.lua, exercise_core.lua)
+		["Your vocation cannot use this item."] = "Sua vocação não pode usar este item.",
+		["Your class cannot train with this item. It is for: %s."] =
+			"Sua classe não pode treinar com este item. Ele é para: %s.",
+		["Use it on a training dummy."] = "Use no boneco de treino.",
+		["Your class is locked: nothing is trained."] = "Sua classe está bloqueada: nada é treinado.",
+		["The dummy is on another floor."] = "O boneco está em outro andar.",
+		["Get closer to the dummy."] = "Chegue mais perto do boneco.",
+		["You can only train in a protection zone."] = "Você só pode treinar em uma zona de proteção.",
+		["Your training weapon vanished."] = "Sua arma de treino sumiu.",
+		["You are already training."] = "Você já está treinando.",
+		["You started training."] = "Você começou a treinar.",
+		["Your training has stopped."] = "Seu treino parou.",
 		-- Time-friendly progression (catchup.lua)
 		["Rested Vial: +%d minutes of rested hunting (%d in all)."] =
 			"Frasco de Descanso: +%d minutos de caça descansada (%d no total).",
@@ -787,6 +800,11 @@ return {
 		["Proof of Strength: complete. Return to the %s and ask for the trial."] =
 			"Proof of Strength: completa. Volte ao %s e peça o trial.",
 		["Proof of Strength complete: the Trial awaits."] = "Proof of Strength completa: o Trial espera.",
+		-- Ascension tracker (ascension_tracker_core.lua)
+		["Hear the Calling of the Ascendant Oracle"] = "Ouça o Chamado do Ascendant Oracle",
+		["Slay rare and legendary beasts of your level"] = "Derrote feras raras e lendárias do seu nível",
+		["Win the Ascension Trial"] = "Vença a Prova de Ascensão",
+		["Choose your ascended class"] = "Escolha sua classe ascendida",
 		["Proof of Strength: %d / %d."] = "Proof of Strength: %d / %d.",
 		["The %s falls. You have passed the Trial. The Oracle calls you back in %d seconds: make your choice."] =
 			"O %s cai. Você passou no Trial. O Oracle te chama de volta em %d segundos: faça sua escolha.",
@@ -2444,7 +2462,17 @@ return {
 		["Hunting Supplies III"] = "Suprimentos de Caça III",
 		["50 health and 50 mana potions."] = "50 poções de vida e 50 de mana.",
 		["25 great health and 25 great mana potions."] = "25 grandes poções de vida e 25 grandes de mana.",
-		["25 ultimate health and 25 great spirit potions."] = "25 poções de vida supremas e 25 grandes poções de espírito.",
+		["25 ultimate health and 25 great spirit potions."] = "25 poções de vida definitivas e 25 grandes poções de espírito.",
+		["Hunting Supplies IV"] = "Suprimentos de Caça IV",
+		["25 supreme health and 25 ultimate mana potions."] = "25 poções de vida supremas e 25 poções de mana definitivas.",
+		["Supply Crate I"] = "Caixa de Suprimentos I",
+		["Supply Crate II"] = "Caixa de Suprimentos II",
+		["Supply Crate III"] = "Caixa de Suprimentos III",
+		["Supply Crate IV"] = "Caixa de Suprimentos IV",
+		["200 health and 200 mana potions."] = "200 poções de vida e 200 de mana.",
+		["100 great health and 100 great mana potions."] = "100 grandes poções de vida e 100 grandes de mana.",
+		["100 ultimate health and 100 great spirit potions."] = "100 poções de vida definitivas e 100 grandes poções de espírito.",
+		["100 supreme health and 100 ultimate mana potions."] = "100 poções de vida supremas e 100 poções de mana definitivas.",
 		["Rested Vial"] = "Frasco de Descanso",
 		["Stored rested experience for your next hunt."] = "Experiência de descanso guardada para a sua próxima caçada.",
 		["Bounty Reroll"] = "Novo sorteio de Bounty",
@@ -3043,6 +3071,21 @@ return {
 			"Bem-vindo, |PLAYERNAME|. O que você não consegue carregar, eu guardo. Abro seu {stash}?",
 		["Welcome, |PLAYERNAME|. Your gold is safe with me. Shall I {open} your account?"] =
 			"Bem-vindo, |PLAYERNAME|. Seu ouro está seguro comigo. Devo {open} sua conta?",
+		-- Veyra the Apothecary (hub supplies; apothecary_config.lua, data/npc/Veyra the Apothecary.xml)
+		["Welcome, |PLAYERNAME|. Draughts for the living, runes for the bold, rope for the deep. Ask for a {trade}."] =
+			"Bem-vindo, |PLAYERNAME|. Poções para os vivos, runas para os ousados, corda para as profundezas. Peça uma {trade}.",
+		["Drink before the dark does, |PLAYERNAME|."] = "Beba antes que a escuridão o faça, |PLAYERNAME|.",
+		["The shelves keep until you return."] = "As prateleiras esperam até você voltar.",
+		["Every potion is sold one at a time. The bulk packs are in the store."] =
+			"Cada poção é vendida uma de cada vez. Os pacotes grandes ficam na loja.",
+		["Veyra, apothecary. I sell potions of every tier one at a time, the runes hunters ask for most, and rope, shovel, torch and backpack. Ask for a {trade}."] =
+			"Veyra, boticária. Vendo poções de todos os níveis, uma de cada vez, as runas que os caçadores mais pedem, e corda, pá, tocha e mochila. Peça uma {trade}.",
+		["Health, mana and spirit draughts from the small to the supreme, each for a level. In bulk the store sells packs of one hundred for less. Ask for a {trade}."] =
+			"Poções de vida, mana e espírito, da pequena à suprema, cada uma para um nível. Em grande quantidade, a loja vende pacotes de cem por menos. Peça uma {trade}.",
+		["No potion leaves a flask now. Old empty ones I still buy, five gold each."] =
+			"Nenhuma poção deixa frasco agora. Os velhos frascos vazios eu ainda compro, cinco de ouro cada.",
+		["A %s is for level %d and up, and you are not there yet."] =
+			"Uma %s é para o nível %d ou mais, e você ainda não chegou lá.",
 		["Which house? Say {buy} and its name; ask for the {list} to hear the free ones."] =
 			"Qual casa? Diga {buy} e o nome dela; peça a {list} para ouvir as livres.",
 		["You already own a house. Leave it first."] =

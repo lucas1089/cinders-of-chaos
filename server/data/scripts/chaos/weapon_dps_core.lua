@@ -5,6 +5,7 @@
 --   max hit  = round(level / 5 (integer) + ((skill / 4 + 1) * (attack / 3) * 1.03) / attack factor)     engine, Weapons::getMaxWeaponDamage
 --   mean hit = (min + max) / 2, min 0 for melee and a fifth of the level (rounded up) for a launcher    the hit is a bell curve
 --   hit      = mean hit x the style factor of weapon_styles.lua (two-handed melee, bow, crossbow: weapon_balance_core.lua)
+--              x the auto attack power (level and skill: weapon_power_core.lua) when that script is loaded
 --   DPS      = hit x hit chance (launchers) / interval in seconds
 -- The attack is the item's own (a rarity roll writes it as an attribute), the skill is the character's best melee skill
 -- (one melee skill) or distance skill, the interval is "Your Attack Interval" of the tooltip. Left out: critical hits, the
@@ -52,7 +53,17 @@ function D.estimate(p)
 		local WB = ChaosWeaponBalance
 		style = WB and WB.hitFactor and WB.hitFactor(level, p.twoHanded, p.launcher, p.weaponType) or 1
 	end
-	return (low + top) / 2 * style * chance / (interval / 1000)
+	-- the auto attack power of weapon_power_core.lua (level and skill), when the script is loaded; an explicit styleFactor
+	-- (a test, a caller that works the style out itself) stands for the whole multiplier
+	local power = 1
+	local WP = ChaosWeaponPower
+	if WP and WP.hitFactor and p.styleFactor == nil then
+		local kind = p.launcher and "distance" or (p.weaponType and "melee") or nil
+		if kind then
+			power = WP.hitFactor(kind, level, p.skill)
+		end
+	end
+	return (low + top) / 2 * style * power * chance / (interval / 1000)
 end
 
 -- the number the tooltip shows: a whole number, nil when there is nothing to show

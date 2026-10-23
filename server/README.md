@@ -234,6 +234,9 @@ server/
   src-patches/0064-live-cast.patch   engine: the live cast port of one player on 127.0.0.1 (castPort, off by default;
                                       Game.setCastTarget; see "Live spectator", phase 2; header src/chaoscast.h,
                                       tools/chaoscast_test.cpp)
+  src-patches/0065-skill-message-names.patch   engine: "You advanced to melee level N." (sword, club, axe: melee;
+                                      distance: ranged) in the advance, downgrade and skill-changed messages
+                                      (see "Skill names in messages")
     remote_cmd.lua    remote_cmd_core.lua    remote_cmd_config.lua  (remote admin commands by file, see "Remote admin commands")
     spectate.lua      spectate_core.lua      spectate_config.lua    (the admin app's live view of a character, see "Live spectator")
     helpai.lua  helpai_core.lua  helpai_config.lua (Ember answers questions in the Help channel through the sidecar
@@ -2934,6 +2937,32 @@ into `chaos_unique_specs.lua` as `equip = {level, lines, vocations}`.
   Charm, 230 for the Diadem, where the unique asks more); the unique's description says its own level and lines.
 - Tests: `tests/unique_equip_test.lua` (every round-two unique can be worn by the classes its archetype names and not
   below its level; unique and stock copies; the tool on a small movements.xml, idempotent; the generated script).
+- **No lines, every class** (2026-10-23): `equipLevel` without `equipLines` writes an empty class list; that lets every
+  class wear it from the level (before, an empty list let nobody). A weapon base without a stock entry gets a `hand`
+  entry. The leveling and endgame uniques below use both.
+
+## Leveling and endgame uniques (`chaos_items.xml` `mods`, `chaos_unique_items.lua`, 2026-10-23)
+Before this the uniques stopped at level 1000 with flat stats, and the first one dropped at level 40.
+- **Built-in modifiers.** `<attribute key="mods" value="key:value,..." />` names modifiers of `chaos_item_mods.lua` and
+  legendary powers of `chaos_powers.lua`. `tools/gen_unique_specs.py` checks the keys and writes `mods = {{key, value}}`
+  into the spec; `ChaosMakeUnique` stores them as T8 modifiers (`ChaosItemMods.set`). They count in the equipped totals
+  like rolled ones, under the same caps. The tooltip shows them (a power in the power colour), the Codex and the wiki
+  list them. No orb touches a unique, so they never change.
+- **Leveling, 12 uniques, level 10-35**, one per weapon kind and slot (sword, axe, club, bow, wand, helmet, boots, ring,
+  amulet, body, legs, shield): life / mana on kill, health on hit, regeneration, experience +5-8%, movement speed +10%,
+  attack speed +8%, ailment chances. Flat numbers that carry a character to about level 100-150 and then fade. They drop
+  from magic monsters and up of the level 5-40 hunts at chance 25 (the other uniques 4-10, x the tier multiplier).
+- **Endgame, 12 uniques, level 1200-2400**, each with near-cap modifiers and one legendary power (Critical Echo,
+  Bloodrush, Arc Lightning, Echo Shot, Crimson Burst, Smoldering Aura, Last Breath, Hunter's Rush, Glacial Ward, Death
+  Blast). They drop from the waystone bosses of their band (x6) and the band's waystone monsters (rare and up,
+  `minMonsterLevel = 1000`) at chance 6; the Choirless Pendant (2400) from the high band bosses and Ysgrath only.
+  Weapons and class armour have `equipLines`.
+- **Reworked**: the 13 uniques of level 800 and 1000 got built-in modifiers, a legendary power on 11 of them.
+- Every new unique has `equipLevel`, so a copy traded to a low character cannot be worn. The bases have no abilities of
+  their own (a unique keeps its base item type's abilities) and no stock equip script; none is a transmog set look.
+- Lists: `data/items/README.md` "Leveling and endgame uniques". Tests: `tests/unique_mods_test.lua` (every spec.mods key
+  and cap, ChaosMakeUnique writes T8 modifiers the totals count, levels, rules, one power per endgame unique, drop
+  sources), `tests/unique_equip_test.lua` (an empty class list).
 
 ## Build sharing (`buildshare.lua`, `buildshare_core.lua`)
 A build can be exported as a short text code and imported on another character (or after a reset). The server encodes, decodes,
@@ -3503,6 +3532,11 @@ convenience only, never power. Every price was decided on 2026-10-14 (owner dele
   `chaos_coin_payments`, and the coins taken back up to the balance, "Donations"), so a reversed donation never makes the
   next one "first" again; a refund before crediting gives no bonus at all. Shown on the Donate page and in the client's
   donation tab ("double Chaos Coins (+100%, up to 1000 extra)"); the voluntary donation wording before and after payment is unchanged.
+- **Potion packs** (owner 2026-10-23: "coloque pots melhores a venda na store e packs maiores também"). The "Potions"
+  category is built in `shop_config.lua` from `POTION_PACKS`: Great Mana, Great Spirit, Ultimate Health, Ultimate Mana,
+  Ultimate Spirit and Supreme Health in 100 / 250 / 500. The 100 packs keep their keys and coins (15, 15, 20, 30; the
+  two new ultimate potions 25); the 250 and 500 packs take the rune discounts (5% and 10%, rounded up: 500 Supreme
+  Health 135). Delivery to the purse like every store item. Tests: `tests/shop_test.lua`.
 - **Runes** (owner approval 2026-10-13: "Pode colocar packs de runas na loja"; rune conjuring is gone, "Rune supply"). A
   "Runes" category built in `shop_config.lua` from `RUNE_PACKS` and the vendor price per rune of
   `data/lib/chaos_rune_supply.lua`: 100 / 250 / 500 of Searing Orb, Rockfall, Stormcall, Frostfall, Reaper's Rune,
@@ -3556,7 +3590,7 @@ client module needed no change.
 | | Loot Bag / Orbs Pouch / Rift Key Pouch | 250 / 200 / 150 | store pouch items, one of each per character ("Store pouches" below) |
 | | Auto Seller | 400 | unlock (also lent by an active Chaos Pact), see below |
 | | Rarity Autoloot / Everfull Ration | 300 / 100 | per character, see "Store pouches and the Everfull Ration" |
-| Training | 21 exercise weapon chests | 25 / 75 / 450 | the base server's chests: sword, axe, club, bow, rod, wand, shield with 500 / 1800 / 14400 charges |
+| Training | 15 exercise weapon chests | 25 / 75 / 450 | the base server's chests: melee (the one sword / axe / club weapon since 2026-10-23), bow, rod, wand, shield with 500 / 1800 / 14400 charges ("Training weapons") |
 
 Premium (250 for 30 days) stays where it was.
 
@@ -3675,6 +3709,17 @@ same batch wraps the stow and sort of one kill (`pouches.lua` `collect`), click-
 bag opens. A sale stays one chat line and one window state. Measured on the mocked engine (`tests/autosell_test.lua`): a
 sale of 255 items, unpatched 255 container + 255 stats packets, patched 1 + 1; gold identical. The client side is cheap
 on its own too (client base patch 0109, `game_lootfilter`, `game_depottabs`: one redraw per container per frame).
+
+**Loot burst: one update** (owner 2026-10-23: "o client dá uma travada rápida quando a janela do loot bag está aberta e o auto
+loot pega muita coisa de uma vez"). The stow of one kill was already one held batch (`Chaos.containerBatch`, engine patch 0054),
+but every kill ended its batch with its own full container packet for the open Loot Bag, and the client answers a full packet
+for an open window by refreshing up to 255 slots (before client base patch 0122, by rebuilding all of them). An area spell
+that kills ten monsters in one tick was ten such packets. `pouches.lua` `collect` now runs inside
+`Chaos.containerBurst(player, fn)` (`chaos_constants.lua`): the first kill of a burst begins an outer batch for the player and
+a 150 ms timer (`Chaos.burstWindowMs`) ends it, so every kill in that window shares one packet per open window and one stats
+packet. Cost: the Loot Bag window shows the loot up to 150 ms later. The timer looks the player up again (a player gone by
+then is skipped); without engine patch 0054 `fn` just runs. Checked in `tests/pouches_test.lua`: four kills in one tick, one
+hold and one release timer, balanced afterwards; a later kill holds again. Client side: `client/BASE.md` 69n.
 
 **Sell every X minutes** (owner 2026-10-17: "Auto seller: opção de vender a cada X minutos"; `autosell.lua`, `autosell_core.lua`
 `INTERVALS`, window dropdown "Sell the Loot Bag automatically every" in `autoseller.otui`). Off by default; choices 5, 10,
@@ -5279,6 +5324,46 @@ No engine build, no install step: a reload of the scripts is enough. Numbers: `p
 (the engine does not give weapons.xml `min` / `max` to Lua), so nothing there changed; the "Estimated DPS" of melee and
 distance weapons already uses the skill.
 
+## Auto attack power (`weapon_power_core.lua`, `weapon_power_config.lua`, `weapon_styles.lua`)
+
+Owner 2026-10-23: "parece que auto attack nao esta escalando com a skill e lvl. ele esta muito fraco. reveja a formula dele
+por favor?" Audit (the base engine is TFS 1.4.2 and no src-patch touches `Weapons::getMaxWeaponDamage`):
+
+* **Old formula.** Melee and distance: max hit = `level / 5 + ((skill / 4 + 1) x (attack / 3) x 1.03) / stance factor`, the
+  hit a bell curve over `0 .. max` (a launcher `ceil(level / 5) .. max`), then the two-handed / launcher style factor of
+  `weapon_balance_config.lua` (launchers x1.6) and the best-melee-skill rule. Wand and rod: the flat `min .. max` of
+  weapons.xml x `(magic level + 20) / (typical magic level + 20)`. Nothing else is level based.
+* **Why it feels weak.** The level term is `level / 5`: 3% of the hit at level 1000. Everything else is skill x gear attack,
+  and both flatten out: the typical skill is 110 at level 300 and 140 from 1000, the gear's attack 55 at 300 and 65 at
+  1000 (`install_gear_sets.py` CURVES; ammunition no longer adds to a launcher). A class's spells keep growing with the level
+  (`rotation_sim.py`: a Ranger's rotation is x4 from level 300 to 2000, its crossbow auto attack x2.3). The skill term is
+  linear in the skill, so +10 skill at skill 140 is +5%: training the skill barely shows. Result in the model (single target,
+  typical skill, no class factor, no tree, no armour): melee 41-43% of a Warrior's spell rotation from level 300 to 2000 (it
+  was never the problem), a crossbow or bow 33% of a Ranger's at 300, 28% at 500, 24% at 1000, 19% at 2000, a wand 9-10% of
+  a Mystic's from level 100 on. Monster armour (25-100, the stock formula, taken off every physical hit) bites the small
+  hits of low levels hardest.
+* **New.** Two multipliers on top of the engine hit, applied in the `onHealthChange` of `weapon_styles.lua` to auto attacks
+  (a spell's scripted weapon strike, storage 7100028, is left out):
+  * level factor, `ChaosWeaponPower.levelFactor(kind, level)`: kind `melee` (sword, axe, club), `distance` (bow, crossbow) or
+    `wand` (wand, rod). Linear between the levels of `weapon_power_config.lua`, written by `python3 -I server/tools/weapon_sim.py
+    --power --write` (CI `--power --check`). It lifts the kind to **a share of the single-target spell rotation of its
+    reference class** and never cuts: melee 30% of a Warrior's (already 41-43%: factor 1 everywhere), distance 30% of a
+    Ranger's (1.00 up to level 400, 1.07 at 500, 1.28 at 1000, 1.60 at 2000), wand 15% of a Mystic's (1.00 at level 50, 1.69
+    from 100, 1.74 at 2000). Target used: 25-35% of the rotation for weapon classes (30%), 15% for the casters' wands (the
+    measured tables had them at 13-23% of a caster's total).
+  * skill factor, `ChaosWeaponPower.skillFactor(level, skill)` = `(skill / typical skill of the level) ^ 0.5`, clamped to
+    0.7 .. 1.6 (`weapon_power_config.lua` `skill`), for melee (the best melee skill) and launchers (distance skill). 1 at the
+    typical skill, so the balance numbers stand; +10 skill at level 1000 is now +9.3% instead of +5.6%, +28 skill +26.7%
+    instead of +15.7% (table in server/data/spells/README.md "Auto attack power"). A wand keeps the magic level factor of
+    "Weapon damage scales with skills".
+* Not touched: fists (the Monk line is at 58% of its rotation), spells, runes, conditions, procs. The tooltip's "Estimated
+  DPS" (`weapon_dps_core.lua`) includes both factors when `weapon_power_core.lua` is loaded (`item_tooltip.lua` loads it).
+* To retune: change `POWER_KINDS` (share, reference class) or `SKILL_POWER` in `tools/weapon_sim.py`, run `--power --write`.
+  A class or spell change moves the rotation numbers, `--power --check` (CI) then asks for a new config.
+* Live server: the `files` step and a restart (the scripts are read at start). No database or client change. Not run in game.
+  Tests: `tests/weapon_power_test.lua` (config shape, factors, a hit scales with skill and level, the tooltip estimate),
+  `tools/weapon_sim_test.py`, `tests/archery_test.lua` (the hit through `weapon_styles.lua`).
+
 ## Estimated DPS (`weapon_dps_core.lua`, `item_tooltip_core.lua` `T.dpsRow`)
 
 Owner item 79 (2026-10-18): "Faça um medidor de DPS pra cada arma. Pode ser estimado." The tooltip of a sword, axe, club or
@@ -5349,8 +5434,8 @@ for the Monk line). What is done without an engine patch, and what is not:
   (`ChaosMeleeSkill.routeTarget`); a tie keeps them where they are. The vocations' three multipliers are equal now
   (`chaos_vocations*.xml`: the Thief line sword 1.1, club and axe 1.3 -> 1.1; the Monk line sword and axe 1.3 -> 1.1; the Templar
   line axe 1.2 -> 1.1), so no skill is slower to level. **Saved characters lose nothing**: the three skills keep their stored
-  values and tries, only the weaker two stop growing; the best one is what counts. The exercise weapons (sword, axe, club) keep
-  their class lists (`patch_base_classes.py`): every melee class can train with at least one.
+  values and tries, only the weaker two stop growing; the best one is what counts. The exercise weapons (sword, axe, club) are one
+  melee weapon since 2026-10-23, for every melee class ("Training weapons").
 - **Items by group, not by type** (`add_vocations.py` step 3, run by `install_all.py` and safe to run again on an installed
   server; `install_gear_sets.py` FITS the same): every sword, axe and club, one- or two-handed, that lists vocations is open to
   the Warrior, Thief, Monk and Templar lines (the weapon lists and the hand equip events); the Berserker stays two-handed only
@@ -5379,6 +5464,30 @@ Order: after 0047. The Lua rescale and the training callback then become no-ops 
 A full rename (a fourth stored `SKILL_MELEE`, a new column, a client protocol change) is not worth it: the three stored
 skills cost nothing and the saves, the highscores and the exercise weapons keep working.
 
+### Skill names in messages (src-patch 0065, `tests/skill_message_names_patch_test.lua`)
+
+Owner report 2026-10-23 (a screenshot of "You advanced to axe fighting level 43."): the skills window shows one Melee row, the
+messages still named the stock skills. The text comes from the engine: `Player::addSkillAdvance` and `Player::addSkillTries`
+("You advanced to {skill} level {n}."), `Player::removeSkillTries` ("You were downgraded to ...") and `Player::setSkill*` ("Your
+{Skill} skill changed from level ...") all called `getSkillName` (`tools.cpp`). Src-patch 0065 adds `getSkillMessageName` and uses it
+in those four places only:
+
+| Skill (engine) | Message name | Skills window |
+|---|---|---|
+| sword, club, axe fighting | melee | Melee |
+| distance fighting | ranged | Ranged |
+| fist fighting (Monk, Shadowfist, Iron Sage) | fist fighting | Fist Fighting |
+| magic level | magic level | Magic / Wand |
+| shielding, fishing, crafting skills | unchanged | unchanged |
+
+The same names for every class: a Warrior, Thief, Templar or Monk with a staff advances "melee"; an unarmed Monk "fist fighting"; a
+Ranger "ranged". The training goes to the best of the three melee skills ("One melee skill"), so a level-up message names the one
+number the window shows. `getSkillName` itself is not changed: the item look texts read it, and `melee_skill_look.lua` rewrites
+"club fighting +2, sword fighting +2, axe fighting +2" to "melee +2" from those names. **A server rebuild is needed** (C++); the patch
+applies after 0064. The engine's messages are English only (the server has no translation of "You advanced to magic level N." or of
+"Regenerating Stamina."); the Lua messages that name a skill already use the Chaos names. Not touched: the quiver's "Distance Fighting"
+modifier label (`chaos_archery_config.lua`) and the passive tree's single-skill nodes.
+
 ### Melee and Ranged on equipment (`tools/patch_melee_skill.py`, `melee_skill_look.lua`, `tests/melee_skill_patch_test.lua`)
 
 Beta report 2026-10-22: equipment still said and gave "+2 Club", "+2 Axe", "+2 Sword" or "Distance". The engine keeps
@@ -5400,6 +5509,65 @@ Now a melee bonus raises all three, so it raises the best one, the player's Mele
 
 Not changed: the passive tree's single-skill nodes (`passivetree_data.lua`, sword or club nodes) still raise their own
 skill; the market's modifier filter still names the sword, axe and club keys apart.
+
+## Training weapons (`exercise_core.lua`, `exercise_config.lua`, `exercise_training.lua`, `tools/patch_exercise_weapons.py`, `tests/exercise_test.lua`)
+
+Owner 2026-10-23 ("reveja os itens de training. o monk não pode usar nenhum. axe, sword e club podem ser trocados por um de
+melee"; ROADMAP O125).
+
+**What was wrong.** The base server has 21 exercise weapons (sword, axe, club, bow, rod, wand, shield in three charge tiers: 500,
+1800 and 14400), used on an exercise dummy. Its script `actions/scripts/other/exercise_weapons.lua` lists the vocations of each
+weapon, and `patch_base_classes.py` had given the classes lists of those. The Monk got only the club one, which trains the club
+skill; but a Monk hits and casts with **fist fighting** (`monk_combat.lua`, `kindled_breath.lua`, `chi_ward.lua`, `mantra_of_stone.lua`
+all read `SKILL_FIST`), so nothing a Monk could use trained anything it uses (and the melee reroute of `melee_skill.lua` sent the
+club tries to the best of sword / club / axe, not to fist). The Monk could not train its shielding either. The Templar (magic
+level: Radiant Rebuke, Thorns, Penitent's Wrath) had no rod or wand, and shielding was open to the Warrior and Templar lines only
+(the Ranger, Mystic, Thief, Monk and Necromancer lines have a shielding multiplier too). The Monk's spells use fist fighting, never
+the magic level, so it gets no rod or wand. The
+sword, axe and club weapons were three items for one skill (since "One melee skill").
+
+**The weapons now** (`exercise_config.lua`: `kinds`, `items`, `lines`):
+
+| Kind | Items (500 / 1800 / 14400) | Classes | Trains |
+|---|---|---|---|
+| melee | sword 27732 / 27738 / 27744 (axe 27733 / 27739 / 27745 and club 27734 / 27740 / 27746 work the same) | Warrior, Thief, Monk, Templar lines | the best of sword / club / axe (one melee skill); **fist fighting for the Monk line** |
+| ranged | bow 27735 / 27741 / 27747 | Ranger, Thief lines | distance |
+| rod, wand | 27736 / 27742 / 27748 and 27737 / 27743 / 27749 | Mystic, Necromancer, Templar lines | magic level |
+| shield | 27758 / 27759 / 27760 | every class | shielding |
+
+Every class line has a weapon for every skill it uses (`tests/exercise_test.lua` walks the 21 vocations). The melee weapon
+trains the **best** melee skill, not the skill of its own look: the stage rate (x5 below 51, x3 to 100, x2 to 200, then the server
+rate) is that of the skill that gets the tries, so a character with a weak sword and a strong axe is not trained at the weak
+skill's fast rate (the old script did that for any weapon whose skill was low). `melee_skill.lua` would have rerouted the tries to
+the best skill anyway, but after the wrong multiplier. A Monk who wields a staff still trains fist: fist is the skill its spells use.
+**Old items.** The store, the NPCs and the Ancestral Store no longer sell the axe and club chests (27762, 27763, 27769, 27770,
+27776, 27777); chests bought before still open (they give an axe or club weapon), and the roulette prizes still hand them out.
+An axe or club weapon turns into the sword (melee) one of the same tier **the first time it is used, charges kept** (`E.convertTo`,
+`Item:transform(id, charges)`); if the transform fails the weapon is used as it is. The sword weapons and chests are renamed
+"exercise melee weapon" / "Exercise Melee Chest" (`data/items/base_item_names.csv`, step `itemnames`; NPC lists follow). The axe and
+club chests are `store` in `item_price_rules.csv` (never sold to an NPC: without it they would have had a 7700 and a 120 gold price).
+
+**The script** (`exercise_training.lua`) replaces the base one: `tools/patch_exercise_weapons.py` (install step `exercise`, after
+`runes`, before `potions` and `itemprices`) comments the 21 `<action ... script="other/exercise_weapons.lua">` lines out of
+`actions.xml`, so the revscript owns the item ids (an id registered twice would keep the XML one); it also writes the item
+descriptions (what it trains, who may use it) and takes the six retired chests out of the 17 NPC shop lists that sell them. The
+stock script and the edits of `patch_base_classes.py` / `patch_base_events.py` stay in the folder, unused. Review of the old script
+(each fixed in the new one):
+- **A charge was taken before the vocation check**, so a refused class lost a charge per click. Now a step checks the class, the
+  class lock (`ChaosClassUnlocks.isRestricted`: a locked class gains nothing), the dummy, the position and the protection zone first.
+- **One click, one chain.** The "already training" branch reset the flag that the running chain keeps setting, so the next click
+  started a second chain: N pairs of clicks trained N times as fast for the same charges. `E.beginChain` allows one live chain per
+  player (alive while its last step is newer than 2 s; a stalled one is replaced and its old events stop by their generation number).
+- **Range.** The bow, rod and wand had `allowfaruse` and no range check, so a modified client could use one on any dummy of its
+  floor, house dummies included. Now a ranged weapon reaches 7 tiles, a melee or shield weapon the next tile, another floor never.
+- **The flag `Exercise_Training.isTraining` (37100)**, which the Idle Hall reads, was left at 1 after a logout, a restart or a
+  chain that ended silently, which kept the character out of the Idle Hall for good. It is cleared whenever a chain ends and at login
+  and logout.
+- Texts in English and pt-BR (`Chaos.t`; the stock script's were English only); no charge for a missing dummy.
+Charges are shown live as before (`item:sendUpdate()`, engine patch 0003; fallback: a transform to the same id). The 10% of the
+hall's and the houses' dummies and the free dummies (5787, 27750, 27757) are as in the base script. Not run on a live engine (the
+tests mock it): check a Monk with the melee weapon (fist row in the skills window), a Ranger refused with the class list, an old
+exercise axe turning into the melee weapon, a bow from 8 tiles refused.
 
 ## Attack delay after changing floor (owner debug item 50: "Demora para começar a atacar depois de subir ou descer escada"; analysed, not fixed)
 
@@ -6810,7 +6978,7 @@ tiles away. Mirewake had the Chaos anchors; those are configuration, so they mov
 - `tests/newplayer_test.lua` checks `homeTownFor` and that every temple anchor lists the main city first.
 
 **Slots for NPCs.** A Chaos NPC that serves every character gets a stall in the hub: name it in a free stall of
-`npc_booths_config.lua` (`npc = false`: 31666 and 31672, 32236, 7) and place it with `ChaosNpcPlace.place`
+`npc_booths_config.lua` (`npc = false`: 31672, 32236, 7) and place it with `ChaosNpcPlace.place`
 (`npc_place.lua`) for town 2; the stall is used instead of the temple.
 
 ## Hub NPC booths (`npc_booths.lua`, `npc_booths_core.lua`, `npc_booths_config.lua`, `tools/patch_hub_npcs.py`)
@@ -6831,10 +6999,10 @@ the stalls are 6 apart, so in front of a stall its own NPC is the nearest (`chao
 | 31642 | Loot Buyer | | 31642 | Ascendant Oracle |
 | 31654 | Cassian Auric | | 31653 | Pell Ashmere |
 | 31660 | Mordecai Ashwager | | 31660 | Vessa Hollowmark |
-| 31666 | Tavish Coldhand | | 31666 | (free) |
+| 31666 | Tavish Coldhand | | 31666 | Veyra the Apothecary |
 | 31672 | Halvard Deedkeeper | | 31672 | (free) |
 
-Trade and the bank on the north row, progression and the menu services on the south row; the busiest stand next to the
+Trade and the bank on the north row, progression and the menu services on the south row (the Apothecary, 2026-10-23, in the south row's first free stall); the busiest stand next to the
 gap in the middle of the walk (x 31646-31650), where players come in from the south. Every tile is the base NPC's own
 spawn tile (bare plank floor, checked on a copy of the installed map: walkable, nothing blocking; one has a sign, one a
 sparkle, neither blocks).
@@ -6858,7 +7026,7 @@ sparkle, neither blocks).
   server are harmless (`install_all.py` lists them, never deletes): `temple_npcs_config.lua` returns a table.
 - `tests/npc_booths_test.lua`: the config (16 stalls, two rows, each NPC once and an NPC of `data/npc`, nobody at the
   temple), the spots by town and temple, the retired halls, the login relocation (and an error caught), and
-  `ChaosNpcPlace.place` into the stall and next to another town's temple.
+  `ChaosNpcPlace.place` into the stall and next to another town's temple. Since 2026-10-23 one of the two empty stalls is the Apothecary's (15 NPCs, one stall free; "The Apothecary").
 
 Not seen in a client or on a live server: our NPCs in the stalls, the labels over them.
 
@@ -6913,6 +7081,47 @@ five has one.
 
 **Install:** step `servicenpcs` (`tools/install_service_npcs.py`, `tools/install_service_npcs_test.py`). **Texts:** English
 keys, pt-BR in `i18n_strings.lua` (`tests/service_npcs_test.lua` checks every line has one).
+
+## The Apothecary (`apothecary.lua`, `apothecary_config.lua`, `data/npc/Veyra the Apothecary.xml`, `data/npc/scripts/veyra_the_apothecary.lua`, `tools/install_apothecary.py`)
+
+Owner 2026-10-23: "no hub de npcs, nao tem nenhum que venda pots ou coisas do tipo. coloque por favor" (no NPC in the hub
+sells potions or the like). The base shop NPCs were cleared from the stalls ("Hub NPC booths"), and the progression and
+service NPCs that replaced them sell none. **Veyra the Apothecary** stands in the south row's free stall, 31666, 32236, 7
+(Cinderhold only, `towns = {2}`; else next to the temple, `offsets`). No opcode, no storage key, no table, no new item.
+
+| Goods | Price (gold, one unit) | Notes |
+|---|---|---|
+| small health 8704 / health 7618 / mana 7620 | 20 / 45 / 50 | level 0. The installer adds the two Everfull potions to her list, like every potion seller ("Potions") |
+| strong health 7588 / strong mana 7589 | 100 / 80 | level 50 |
+| great health 7591 / great mana 7590 / great spirit 8472 | 190 / 120 / 190 | level 80 |
+| ultimate health 8473 / ultimate mana 26029 / ultimate spirit 26030 | 310 / 350 / 350 | level 130 |
+| supreme health 26031 | 500 | level 200 |
+| antidote 8474 | 50 | level 0 |
+| ten runes: Mending, Grand Mending, Dispel, Greater Hexdart, Rockfall, Stormcall, Frostfall, Searing Orb, Reaper's, Shackle | the rune supply's price (95, 240, 30, 23, 70, 70, 84, 84, 220, 890) | the runes of the store's packs. The other runes and the unscribed rune stay with Raloth and Isora (`chaos_rune_supply.lua` `vendors`) |
+| rope 2120 / shovel 2554 / torch 2050 / backpack 1988 | 50 / 50 / 2 / 20 | |
+| buys: the old empty potion flasks 7634-7636 | 5 | the item price table's price; no potion leaves a flask any more ("Potions") |
+
+- **Prices.** The base server's lowest asking price per potion (`hunt_supplies.lua`), docs/PRICES.md. Great Spirit is 190
+  (the price the store's pack is built on) and not the cheapest base NPC's 120. The store's packs of 100 stay the bulk
+  way: 100 Great Mana Potions 15 coins, Great Spirit 15, Ultimate Health 20, Supreme Health 30; a pack is worth 800-1,667
+  gold a coin at her single prices, so coins never buy supplies below their gold value. No arbitrage: every price is at
+  least twice what any NPC pays for the item (`ChaosItemPrices`, `buyShare`) and `install_item_prices.py` changes none of her
+  entries (checked in `tools/install_apothecary_test.py`).
+- **Level gate.** The shop system has none, so her script (`CALLBACK_ONBUY`) refuses a buyer below the potion's level with a line
+  ("A <potion> is for level N and up, and you are not there yet."). The potion script still decides who may drink (vocations,
+  level). **Assumed, not read from the base items** (the base server is not in the repo): the levels of the stock potions
+  (50, 80, 130, 200) and that 8704 is the small health potion, 8474 the antidote and 26029 / 26030 / 26031 the ultimate mana,
+  ultimate spirit and supreme health potions (the store pack, the milestone gifts and `cooldown_channels_config.lua` agree with
+  these). Check the first live start: the trade window lists them under those names.
+- **Two lists.** The goods are in `apothecary_config.lua` (name, price, level) and in the XML's `shop_buyable` (what
+  `install_potions.py` and `install_rune_supply.py` read and extend); `tests/apothecary_test.lua` fails when they differ.
+- **Install:** step `apothecary` (`tools/install_apothecary.py`, right after `servicenpcs`, so `runes`, `potions` and `itemprices`
+  see her shop; idempotent). **Texts:** English keys, pt-BR in `i18n_strings.lua` (the i18n test checks her XML and script lines).
+- **Tests:** `tests/apothecary_test.lua` (XML against the config, prices against the rune supply, the item price table, the hunt
+  supplies and the store packs, her stall, the level gate and the talk on a mocked NPC library, the startup placement),
+  `tools/install_apothecary_test.py` (files, dry run, idempotence; the rune, potion and price steps on her XML), `tests/npc_booths_test.lua`.
+
+Not seen in a client or on a live server: her stall, the trade window, the level refusals.
 
 ## Tile labels (`tile_labels.lua`, `tile_labels_core.lua`, `tile_labels_config.lua`)
 
@@ -14527,6 +14736,25 @@ of every line are read at run time from `Chaos.classes.ascension`, so a new clas
   (dual-wield storage set); a locked Templar was refused at the confirmation; the Ascendant Oracle and `/ascendset` as documented.
   Not measured: the guardian's balance against geared characters (the numbers are first estimates).
 
+## Ascension tracker (`ascension_tracker.lua`, `ascension_tracker_core.lua`, client `game_goals`)
+
+The twin of the Next Goals tracker for the ascension quest (owner 2026-10-23, ROADMAP O123). Rows, in order: Hear the Calling
+(0/1, stage 1+), Proof of Strength (points / `proof.needed`, full from stage 2), Win the Ascension Trial (0/1, stage 3+) and
+Choose your ascended class (0/1). The quest's stages and storages (7101000 block) are read as they are; nothing new is stored.
+
+- **Rule.** Shown for a base class whose line has an ascension, from `Chaos.classes.ascension.minLevel` until the character has
+  ascended. Ascended classes, lines without an ascension and characters below the level get no rows, so the client hides the
+  section. A character the store's Vocation Change took back to a base class sees the finished steps and the Choice again.
+- **Protocol.** No new opcode: the goals opcode 178 carries `ascension {rows = [{key, title, progress, target, state}]}`
+  (empty rows hide the section). Titles are sent in the player's language (pt-BR entries in `i18n_strings.lua`).
+- **Refresh.** At login, when the client asks for `tracker`, and whenever the rows change: a 3 s sweep compares a signature
+  per online character, so the Oracle NPC's own Lua state, the quest script, level ups, a Vocation Change and `/ascendset`
+  all reach it without hooks. Nothing is sent while nothing changed.
+- **Client.** The section sits below the goals in the same panel, with the same rows, wrapping and bars (done rows are green
+  with "Done"). It shares the fold and the Goal Tracker switch (Adventure > Goal Tracker); with no open goals the panel is
+  titled "Ascension".
+- Tests: `tests/ascension_tracker_test.lua` (rules, languages, signature, mocked engine), client `goalsview_test.lua`.
+
 ## Base scripts and the classes (`tools/patch_base_classes.py`)
 
 The base server's scripts test the stock vocation ids (1-10) by number or with `Player.isSorcerer / isDruid / isKnight /
@@ -14556,7 +14784,9 @@ class count as one stock vocation:
 - NPC spell teachers (`KeywordHandler:addSpellKeyword`): the spell's own list in `spells.xml` decides (the NPC's stock
   vocation only when the spell is unknown). All player spells are `needlearn="0"`, so this is about the offer only.
 - Exercise weapons: sword Warrior / Thief / Templar lines, axe and shield Warrior / Templar, club Warrior / Monk / Templar,
-  bow Ranger / Thief, rod and wand Mystic / Necromancer (the Berserker was refused before).
+  bow Ranger / Thief, rod and wand Mystic / Necromancer (the Berserker was refused before). Superseded on 2026-10-23: the
+  revscript `exercise_training.lua` runs all 21 weapons with its own class lists ("Training weapons"); these stock-script
+  edits stay but the script is switched off in `actions.xml`.
 - Party shared experience: the bonus for different vocations counts the class lines, at most 5 (the stock x2.5).
   Why it can look dead, and what tells the leader: see "Party shared experience: why it is off" (`party_xp.lua`).
 - The vocation Oracles (The Oracle, The Oracle3, Captain Ironwake): Warrior, Ranger, Mystic, Thief (the old words choose
@@ -19580,8 +19810,9 @@ already (the Vigils auras, `vigils*.lua`, `ChaosVigils`, buff keys `vigil_*`; an
   (one offer per boss of `ChaosPocketBoss.bosses()`, sharing one weekly limit, the boss's own level counts; delivered with
   `ChaosPocketBoss.addCharges`, 0 added = refunded with its reason), the common orbs (Awakening, Ember, Tempering,
   Unmaking, Grafting once a week; the chase orbs Echoes, Fate, Dawn and the Orb of Ruin are refused by
-  `K.validate`), Whetstones, Chipped and Flawed gems of a random type, Rune Shards, three supply bundles sharing one
-  limit, and offers for other systems' APIs that show only while the API exists (`kind = "call"`: a rested vial
+  `K.validate`), Whetstones, Chipped and Flawed gems of a random type, Rune Shards, four supply bundles and four Supply
+  Crates sharing one limit (a crate is four bundles of its tier for three bundles' price; tier IV at level 200: supreme
+  health and ultimate mana potions; 2026-10-23), and offers for other systems' APIs that show only while the API exists (`kind = "call"`: a rested vial
   `ChaosRested.addVials`, bounty and kill task rerolls `ChaosBounty.addRerolls` / `ChaosBestiary.addRerolls`; none exist
   yet), and three cosmetics of our own, once per account (`ChaosCosmetics.grant`, source `"candlemarks"` in
   `cosmetics_config.lua`: never sold for Chaos Coins, no exclusive): Candle Seal (kill effect, 150), Candlelight Name
@@ -19612,6 +19843,10 @@ already (the Vigils auras, `vigils*.lua`, `ChaosVigils`, buff keys `vigil_*`; an
   account, progress across a relog, purchases, weekly limits, the inbox, the transaction order, both crash cases,
   the guarded offers, refunds, staff), `opcode_fuzz_test.lua`, client `candlemarksview_test.lua` and the client
   fuzz test. Not run on a live server or in a client yet.
+- **Empty list fixed (2026-10-23).** The window's offer list sits inside `listFrame`, and `render()` read `window.list`,
+  which is nil (the engine sets only direct children as fields): the header showed, the list stayed empty and the
+  error was swallowed by `safe()`. It now reads `window.listFrame.list`. `tools/ci/check_modules.py` refuses a
+  `window.<id>` whose id is only nested in the module's `.otui` (it also found the Chronicle's tab buttons).
 
 ## Conquest Tokens, the Conquest vendor and bad-luck protection (`conquest.lua`, `conquest_core.lua`, `conquest_config.lua`, `sql/chaos_conquest.sql`, `tools/install_conquest.py`, NPC `data/npc/Iselde Varrow.xml`, client `game_conquest`)
 
