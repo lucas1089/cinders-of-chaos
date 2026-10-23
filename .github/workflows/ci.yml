@@ -144,6 +144,8 @@ jobs:
         run: |
           python3 -I server/tools/late_game_test.py
           cd server && luajit tools/progression_model.lua --check && lua5.3 tools/progression_model.lua --check
+      - name: Every class has gear in every slot and level band, and finds weapons fairly (gear_coverage.lua)
+        run: cd server && luajit tools/gear_coverage.lua --check && lua5.3 tools/gear_coverage.lua --check
 
       - name: Painted icons are up to date with their source sheet (gen_painted_icons.py)
         run: python3 client/tools/gen_painted_icons.py --check  # not -I: Pillow from the user site (installed above)

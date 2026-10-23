@@ -11673,7 +11673,8 @@ Owner question: does every class have enough weapons? The audit answers it from 
   its base item.
 - **Not touched.** The Thief line (dual daggers and daggers) and the Monk line (Monk weapons) are filled by other changes.
   They have no gap now, so they are not in `knownGaps`.
-- **Limits.** Quivers stop at level 1000 (`chaos_archery_config.lua`). A band can pass with 3 options of one kind.
+- **Limits.** Quivers stop at level 1000 (`chaos_archery_config.lua`); the gear audit below fills the rest with uniques. A
+  band can pass with 3 options of one kind.
 
 <!-- weapon-coverage:begin (luajit tools/weapon_coverage.lua --write) -->
 
@@ -11702,6 +11703,75 @@ Owner question: does every class have enough weapons? The audit answers it from 
 | Sentinel | 55/325 | 66/136 | 69/121 | 42/135 | 56/111 | 19/113 | 8/99 | 17/122 | 10/114 |
 
 <!-- weapon-coverage:end -->
+
+## Gear coverage (`tools/gear_coverage.lua`, `gear_coverage_config.lua`, `data/lib/chaos_class_loot.lua`, `chaos/class_loot.lua`, 2026-10-22)
+Owner request: review all the loot and make sure it is well distributed for every class, from level 1. The weapon audit
+above does the weapons. This audit does the rest of the slots and adds a fairness check of the weapon drops.
+- **What it counts.** Per class and level band (the weapon audit's 9 bands): helmet, armor, legs, boots, shield, spellbook,
+  quiver, amulet and ring. An item counts for a class when the class wears it (armor weight, shield and spellbook hand,
+  quiver for the launcher line, unique `equipLines`), when it has at least one way in (a shop, a monster drop of 0.01%
+  or more per kill, the Gambler, a recipe, a reward), and from the level it can be had at: its required level, or the level
+  of its easiest source when higher. A drop counts from the **hunting** level of its monster (twice the pool level for a
+  base monster, `pace_config.lua`). Power = armor or defense against the gear sets' curve of the class's weight. The
+  stock items carry no armor value, so their power is unknown and counts as full strength.
+- **Check (CI).** `cd server && luajit tools/gear_coverage.lua --check` (and `lua5.3`) fails when a class has fewer than
+  `min` options in a band (3; quivers 2), when the table below is out of date, or when a class finds fewer than 20% of the
+  usable weapons per kill of the median class (`--fairness`; the bands 100, 300, 500, 800 and 1000, a weapon counts from
+  60% of the curve). Allowances go in `gear_coverage_config.lua` `knownGaps`. Other commands: `--md`, `--list SLOT [Class]`,
+  `--fairness`, `--write`.
+- **What it found.** Before: no quiver at 1-20, 700-1000 and 1500+ (the stock quivers run 20 to 1000), one at 20-50 and
+  1000-1500; two spellbooks at 1-20 and 1500+; helmet, armor and legs at 1500+ one or two options (the sets stop
+  at 2000 and some pieces were out of reach); one amulet at 400-700; two rings at 20-50. The stock monsters never dropped
+  a bow, a crossbow or a quiver, so a Ranger found 0 usable weapons per 1000 kills in every band while a Warrior found 12
+  to 230. A caster found 1 to 54. Stock wands, rods and spellbooks dropped from few monsters.
+- **Fix 1: class loot** (`data/lib/chaos_class_loot.lua`, `data/scripts/chaos/class_loot.lua`, test
+  `tests/class_loot_test.lua`). The bounty pool monsters and bosses get bow, crossbow, wand and rod, quiver and spellbook
+  rows from the stock bases (`base_weapons.csv`, the archery quivers and the spellbook list), by hunting level, as
+  `jewelry.lua` does for rings. Per kill: bow 1.6%, crossbow 1.2%, wand and rod 2%, quiver and spellbook 0.8%, times
+  `1 + level / 400` up to 3, shared by the bases within 150 levels below and 20 above the monster (the three highest
+  below that). Bosses: 4%, 3%, 5%, 2%, 2%. The loot layer rolls rarity, item level and modifiers as for any gear drop. A
+  Ranger now finds 10 to 84 usable weapons per 1000 kills, a caster 10 to 112, a Warrior 12 to 229.
+- **Fix 2: 17 uniques** (`chaos_items.xml`, `chaos_unique_items.lua`). Quivers for the Ranger line at levels 6, 14, 38, 750,
+  900, 1200, 1600 and 1900 (built-in modifiers from the shared catalogue: life on hit, physical penetration, boss damage).
+  Spellbooks at 12 and 1650. A ring at 30. Amulets at 450 and 600. Helmets at 1550 and 1800, armor at 1600, legs at 1650,
+  all classes, 106 to 135% of the set curve. Each is a copy of a stock base with its own `equipLevel`. Magic and rare ones
+  drop from the monsters of the band; the 1500+ ones from legendary monsters of the top hunts and the boss Vhalkareth
+  Mortal Shell. Chance before the tier multiplier: 30 for levels up to 38 (0.3% per kill of a magic monster), 12 for 450
+  to 1200 (0.24% on a rare one), 6 above (0.24% on a legendary one). The bad-luck protection of `conquest_config.lua`
+  `pity` (monster uniques: +1% per miss, up to 3 times) already covers every unique, so none waits forever; it needed
+  no change.
+- **Wands and rods.** A unique keeps the damage of its base item and no tool sets it, so no wand or rod unique was added.
+  Wand and rod coverage comes from the class loot rows above and the weapon audit's sets.
+- **Limits.** Ammunition is not audited (bows fire without it). Amulets and rings are judged by count only. The table
+  counts a stock item as full strength.
+
+<!-- gear-coverage:begin (luajit tools/gear_coverage.lua --write) -->
+
+| Slot | Classes | 1-20 | 20-50 | 50-100 | 100-200 | 200-400 | 400-700 | 700-1000 | 1000-1500 | 1500-2400+ |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Helmet | Warrior, Juggernaut, Berserker | 19/100 | 12/187 | 19/243 | 15/215 | 25/133 | 10/114 | 7/100 | 14/114 | 4/103 |
+| Helmet | Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai | 19/100 | 12/207 | 19/255 | 15/250 | 24/150 | 10/127 | 7/100 | 14/123 | 4/116 |
+| Helmet | Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord | 19/100 | 12/255 | 18/295 | 14/255 | 25/171 | 10/149 | 5/100 | 14/145 | 3/135 |
+| Helmet | Monk, Shadowfist, Iron Sage | 19/100 | 12/207 | 19/255 | 15/250 | 26/150 | 10/127 | 7/100 | 14/123 | 4/116 |
+| Helmet | Templar, Inquisitor, Sentinel | 19/100 | 12/187 | 19/243 | 15/215 | 26/133 | 10/114 | 7/100 | 14/114 | 4/103 |
+| Armor | Warrior, Juggernaut, Berserker | 24/100 | 7/126 | 21/144 | 21/185 | 26/106 | 12/100 | 28/100 | 9/100 | 4/106 |
+| Armor | Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai | 24/100 | 7/141 | 21/160 | 21/209 | 26/119 | 12/100 | 28/100 | 9/100 | 3/108 |
+| Armor | Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord | 24/100 | 7/156 | 20/182 | 20/234 | 26/136 | 12/100 | 26/100 | 8/100 | 3/121 |
+| Armor | Monk, Shadowfist, Iron Sage | 24/100 | 7/141 | 21/160 | 21/209 | 27/119 | 12/100 | 28/100 | 9/100 | 3/108 |
+| Armor | Templar, Inquisitor, Sentinel | 24/100 | 7/126 | 21/144 | 21/185 | 27/106 | 12/100 | 28/100 | 9/100 | 4/106 |
+| Legs | Warrior, Juggernaut, Berserker, Templar, Inquisitor, Sentinel | 14/166 | 7/100 | 7/186 | 8/257 | 16/122 | 9/100 | 4/100 | 7/100 | 3/103 |
+| Legs | Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai, Monk, Shadowfist, Iron Sage | 14/166 | 7/100 | 7/217 | 8/257 | 16/138 | 9/104 | 3/100 | 6/100 | 3/107 |
+| Legs | Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord | 14/229 | 7/100 | 6/260 | 7/300 | 16/157 | 9/117 | 3/100 | 6/100 | 3/106 |
+| Boots | Warrior, Juggernaut, Berserker, Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord, Monk, Shadowfist, Iron Sage, Templar, Inquisitor, Sentinel | 3 | 8/150 | 9/200 | 9/200 | 10/100 | 11/100 | 9/100 | 10/105 | 5/100 |
+| Boots | Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai | 3 | 8/150 | 9/200 | 10/200 | 10/100 | 11/100 | 9/100 | 10/105 | 5/100 |
+| Shield | Warrior, Juggernaut, Templar, Inquisitor, Sentinel | 16/100 | 15/142 | 7/118 | 11/125 | 12/100 | 5/100 | 15/100 | 9/100 | 6/113 |
+| Spellbook | Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord | 3/107 | 3/100 | 5/100 | 8/125 | 7/125 | 3/100 | 7/100 | 4/100 | 3/106 |
+| Quiver | Ranger, Deadeye, Beastmaster | 2 | 2 | 2 | 2 | 4 | 2 | 2 | 2 | 2 |
+| Amulet | Warrior, Juggernaut, Berserker, Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord, Monk, Shadowfist, Iron Sage, Templar, Inquisitor, Sentinel | 14 | 5 | 17 | 15 | 10 | 3 | 9 | 8 | 4 |
+| Amulet | Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai | 14 | 5 | 17 | 16 | 10 | 3 | 9 | 8 | 4 |
+| Ring | all 21 | 21 | 4 | 6 | 11 | 10 | 4 | 9 | 7 | 4 |
+
+<!-- gear-coverage:end -->
 
 ## Item prices (`data/lib/chaos_item_prices.lua`, `tools/gen_item_prices.py`, `tools/install_item_prices.py`, the Loot Buyer)
 

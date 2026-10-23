@@ -39,6 +39,7 @@ python3 -I tools/ci/check_locales.py   # every client tr() key has pt-BR; no har
 python3 -I tools/ci/check_credits.py   # every pack of the art *sources.csv files is in docs/CREDITS.md; pt-BR headings
 python3 -I tools/ci/check_credits_test.py && python3 -I client/tools/gen_credits_test.py
 cd server && luajit tools/weapon_coverage.lua --check && lua5.3 tools/weapon_coverage.lua --check  # every class has 3+ weapons per level band (thresholds: tools/weapon_coverage_config.lua); table in server/README.md (--write)
+cd server && luajit tools/gear_coverage.lua --check && lua5.3 tools/gear_coverage.lua --check  # every class has 3+ pieces per slot and level band, weapon drops are fair (thresholds: tools/gear_coverage_config.lua); table in server/README.md (--write)
 python3 -I tools/ci/check_attack_counts.py   # every class and ascension has the same number of attack spells
 cd server && luajit tools/progression_model.lua --check && lua5.3 tools/progression_model.lua --check  # smooth leveling: stages, minutes per level 8-2200, hunts in reach (limits: data/scripts/chaos/progression_config.lua); no flag prints the table, --spells the unlock gaps
 cd server && luajit tools/gen_card_descriptions.lua --check   # -> data/items/card_descriptions.csv (card texts name current spells)

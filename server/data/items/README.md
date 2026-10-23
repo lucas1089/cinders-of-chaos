@@ -21,6 +21,12 @@ level, critical hit, leech and absorbs as the custom attributes the stock rarity
 max mana, speed, regeneration, element damage and attack speed cannot be stored per item in this engine, so they were
 dropped (listed as `skipped` in `chaos_unique_specs.lua`).
 
+Gear coverage uniques (2026-10-23, server/README.md "Gear coverage"): 17 uniques fill the gaps of `tools/gear_coverage.lua`. Eight quivers
+of the Ranger line (levels 6 to 1900) with built-in modifiers from the shared catalogue, two spellbooks (12 and 1650), a ring (30),
+two amulets (450, 600) and a helmet pair, an armor and legs for every class at 1550 to 1800. Each has its own `equipLevel` on a stock
+base, so the stock copy of the base keeps its rule. A wand or rod unique would keep the damage of its base, so none was added; the wand
+and rod coverage comes from the class loot rows (`data/lib/chaos_class_loot.lua`).
+
 Built-in Chaos modifiers (2026-10-23): `<attribute key="mods" value="lifeonkill:25,attackspeed:8" />` gives a unique
 modifiers of `data/lib/chaos_item_mods.lua` and legendary powers of `data/lib/chaos_powers.lua` (key:value, each key
 once; the generator stops on an unknown key). `ChaosMakeUnique` writes them as T8 modifiers; they count like rolled ones

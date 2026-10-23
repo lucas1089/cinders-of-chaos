@@ -54,7 +54,9 @@ Protector (the spell named Bulwark) it replaced was retired on 2026-10-20 becaus
 **Ranger** (base): today's Paladin kit. Bows and crossbows fire without ammunition; the off-hand holds a quiver beside the
 bow or crossbow (engine src-patch 0023; bows stay two-handed, so no shield; gear with implicit and rolled modifiers that work only while a bow or crossbow is held: distance fighting, attack speed,
 critical strike, extra projectiles, elemental shares; server/README.md "Infinite arrows and quivers"). The new-player kit has
-the bow and no arrows. Only the Ranger, Deadeye and Beastmaster may wear quivers (the launchers' vocations). Every class
+the bow and no arrows. Only the Ranger, Deadeye and Beastmaster may wear quivers (the launchers' vocations). Monsters drop
+bows, crossbows and quivers for them from level 1 on (server/README.md "Gear coverage"; casters get wands, rods and
+spellbooks the same way), and eight Ranger-line quiver uniques fill levels 6 to 1900. Every class
 wears one ring and one badge: the badge slot took the place of the second ring slot (server/README.md "Badge slot"). The line's fight buff is
 Tautstring (level 60, +25% distance skill for 12 s); the stock Sharpshooter / Hawkeye it replaced was retired on 2026-10-20
 because its slow kept the bow from firing (server/README.md "Hawkeye retired, Tautstring"). Its run buff is Wildstride
