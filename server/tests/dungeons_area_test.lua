@@ -473,6 +473,98 @@ do
 	x1.unlock = nil
 end
 
+-- ------------------------------------------------------------------ O179: every monster at once at the entry, nothing later
+-- Owner 2026-10-24: "make them all spawn at once when the player enters". All monsters of the run are made in the entry
+-- tick, before the players are teleported in; no spawn event is queued; the counter's total is fixed and never grows
+-- (a script-made monster later is no part of it); nothing respawns while the run is on; the next run starts clean.
+do
+	local onSpawn = EventCallback.onSpawn
+	for id, cr in pairs(creatures) do
+		if not cr:isPlayer() and id < 100000 then cr:remove() end
+	end
+	advance(3000)
+	-- 40 more map monsters of dungeon 4 at the server start (the record: name and tile)
+	for i = 1, 40 do
+		local m = newCreature(2000 + i, "cave rat " .. i, P(31540 + i, 31560, 8), false)
+		onSpawn(m, m.pos, true, false)
+		m:remove()
+	end
+	local recorded = #ChaosDungeonMapSpawns[4]
+	ok(recorded >= 40, "O179: the start-up record holds the dungeon's map monsters (" .. recorded .. ")")
+	-- the base dungeon's own list (SpawnMonsters) must survive the clean-up
+	local dg4 = DUNGEON_SYSTEM.Dungeons[4]
+	dg4.SpawnMonsters, dg4.Monsters = true, {["base guard"] = P(31575, 31617, 8)}
+	-- a stray monster of an earlier run stands in the area: the clean-up removes it
+	local stray = newCreature(2100, "stray", P(31600, 31560, 8), false)
+	local madeAt, order = {}, {}
+	local nextId = 3000
+	local q = newCreature(91, "Eve", P(32369, 32241, 7), true)
+	Game.createMonster = function(name, pos)
+		nextId = nextId + 1
+		madeAt[#madeAt + 1] = name
+		order[#order + 1] = ChaosDungeonIsInside(q) and "after" or "before"
+		return newCreature(nextId, name, P(pos.x, pos.y, pos.z), false)
+	end
+	local sentFrom = #sent
+	ext.onExtendedOpcode(q, ChaosOpcodes.dungeons, {action = "queue", data = {id = 4, difficulty = 1}})
+	ok(ChaosDungeonIsInside(q), "O179: the run is on")
+	eq(#madeAt, recorded + 1, "O179: the map's monsters and the base list are all made at the entry")
+	local late = 0
+	for _, o in ipairs(order) do
+		if o == "after" then late = late + 1 end
+	end
+	eq(late, 0, "O179: every monster is placed before the player is teleported in")
+	ok(creatures[2100] == nil, "O179: a leftover monster is cleared at the entry")
+	local base = 0
+	for _, name in ipairs(madeAt) do
+		if name == "base guard" then base = base + 1 end
+	end
+	eq(base, 1, "O179: the base list's monster survives the clean-up")
+	local startMsg
+	for i = sentFrom + 1, #sent do
+		if sent[i].action == "start" then startMsg = sent[i].data end
+	end
+	eq(startMsg and startMsg.left, recorded + 1, "O179: the counter's total is known from the start")
+	-- nothing is queued to spawn later: no event creates a monster during the run
+	local madeNow = #madeAt
+	local mons = {}
+	for _, cr in pairs(creatures) do
+		if cr:isMonster() then mons[#mons + 1] = cr end
+	end
+	advance(60000)
+	eq(#madeAt, madeNow, "O179: no monster is made after the entry")
+	-- a monster killed does not come back; a script-made one (an add) does not join the count
+	mons[1]:remove()
+	mons[2]:remove()
+	local add = newCreature(9100, "boss add", P(31580, 31560, 8), false)
+	advance(7000)
+	local killedMsgs = {}
+	for i = sentFrom + 1, #sent do
+		if sent[i].action == "killed" then killedMsgs[#killedMsgs + 1] = sent[i].data.left end
+	end
+	eq(killedMsgs[#killedMsgs], recorded + 1 - 2, "O179: an add of a script is not counted")
+	local rising = false
+	for i = 2, #killedMsgs do
+		if killedMsgs[i] > killedMsgs[i - 1] then rising = true end
+	end
+	ok(not rising and killedMsgs[1] <= recorded + 1, "O179: Monsters Alive only goes down, from the fixed total")
+	add:remove()
+	local respawn = newCreature(9101, "cave rat 1", P(31541, 31560, 8), false)
+	ok(onSpawn(respawn, respawn.pos, false, false) == false, "O179: the map's respawn is refused during the run")
+	ok(D.runAt(P(31541, 31560, 8)) ~= nil, "O179: runAt tells the other scripts (ambush, goblin) the dungeon is running")
+	ok(D.runAt(P(30000, 30000, 7)) == nil, "O179: runAt is nil outside")
+	-- the run ends: the area is cleared, the next run starts clean
+	q.pos = P(temple.x, temple.y, temple.z)
+	advance(3000)
+	local left = 0
+	for _, cr in pairs(creatures) do
+		if cr:isMonster() and D.inside(4, cr.pos) then left = left + 1 end
+	end
+	eq(left, 0, "O179: the run's monsters are removed at its end")
+	ok(D.runAt(P(31541, 31560, 8)) == nil, "O179: runAt is nil after the run")
+	dg4.SpawnMonsters, dg4.Monsters = nil, nil
+end
+
 -- ------------------------------------------------------------------ beta test mode: no dungeon cooldown
 do
 	local before = Chaos.betaMode

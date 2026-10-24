@@ -1204,6 +1204,20 @@ Solo dungeons (O147, beta feedback 2026-10-22: "dungeons need two players; my te
   found and closed: a won run stays in `runs[]` for `exitDelayMs` (10 s) with `ended` set, and `runAt` skipped ended runs,
   so the map could respawn the boss and the trash beside the group while it walked out. `runAt` now holds until the
   teardown. `tests/dungeons_area_test.lua` (blocks "solo entry and party scaling" and "the old bug") fails on the old code.
+- **All monsters at the entry (O179, owner 2026-10-24: "make them all spawn at once when the player enters").** A run
+  places every monster in the entry tick, before the players are teleported in: `startRun` clears the area, makes the
+  map's monsters from the start-up record (`ChaosDungeonMapSpawns`, now a global, so a `/reload` of the scripts keeps it),
+  then the base list (`SpawnMonsters`; it used to be made before the clean-up, which removed it again), then a generated
+  dungeon's points (`areagen.lua populate`). No `addEvent` spawns anything later. The run counts only that **roster**
+  (`run.roster`, monster ids at the start): `run.total` is fixed, "Monsters Alive" (`left`) only goes down, and a monster
+  that appears later (a boss fight's add) is not counted. Other mid-run paths closed: the Treasure Goblin replacing a
+  respawn (`treasure_goblin.lua` `onSpawn`) and the tier ambush copy (`monster_tiers.lua`, at the kill and again after its
+  600 ms delay) ask `ChaosDungeons.runAt(pos)` and do nothing inside a running dungeon. Boss rules are unchanged (base
+  dungeons: the boss stands there from the start; generated: it appears at the 85% unlock). Teardown still clears the
+  area. Most monsters at once: 119 (Bones Dungeon, `keep` in `tools/spawn_tuning.json`); the generated dungeons place
+  fewer. Estimate, not measured live: 0.1-0.3 ms per `Game.createMonster` with its `onSpawn` callbacks, so 120 monsters
+  take about 12-40 ms in one tick (one dropped frame of the 50 ms loop at worst), plus the health scaling (about 2 ms).
+  No install step: scripts only (`files` step and a restart).
 
 Beta test mode (O147)
 - `Chaos.betaMode` = `data/scripts/chaos/beta_mode_config.lua` (`enabled`, default **false**), read when the scripts start

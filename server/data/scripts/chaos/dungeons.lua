@@ -788,7 +788,12 @@ end
 -- start inside a dungeon area is remembered (name and tile); (2) a run starts by clearing its area and creating all of
 -- them at once; (3) while a run lasts, the map's own respawn inside its area is refused (EventCallback onSpawn: a
 -- spawn that is neither the server start nor made by a script). The area spawns again when the run is over.
-local mapSpawns = {} -- [dungeonId] = { {name = , pos = }, ... }
+-- O179 (owner 2026-10-24: "all monsters spawn at once when the player enters"): the record survives a /reload of the
+-- scripts (a global), the base list (SpawnMonsters) is created after the clean-up instead of before it, the run counts
+-- only the monsters that stood there at the start (roster), and the other scripts that create monsters on a kill or a
+-- respawn (ambush copy, Treasure Goblin) ask ChaosDungeons.runAt(pos) and stay out of a running dungeon.
+ChaosDungeonMapSpawns = ChaosDungeonMapSpawns or {}
+local mapSpawns = ChaosDungeonMapSpawns -- [dungeonId] = { {name = , pos = }, ... }
 
 local function dungeonIdAt(pos)
 	for id, dg in pairs(baseDungeons()) do
@@ -811,7 +816,9 @@ local function runAt(pos)
 	return nil
 end
 
--- the base dungeon's own spawn list (dg.Monsters, SpawnMonsters) is created by startRun already; the map's are these
+ChaosDungeons.runAt = runAt -- the run whose area holds pos (also in the exit delay of a won run), else nil
+
+-- the map's monsters (the base dungeon's own SpawnMonsters list is made by startRun after this); all in one tick
 local function fillFromMap(dungeonId, dg, bossName)
 	local list = mapSpawns[dungeonId]
 	if not list or #list == 0 then
@@ -855,6 +862,20 @@ spawnCb.onSpawn = function(self, position, startup, artificial)
 end
 spawnCb:register(5)
 
+-- how many of the run's own monsters are alive: the roster ids among the scanned monsters (the boss is not one)
+local function rosterAlive(run, monsterList, bossName)
+	if not run.roster then
+		return #monsterList
+	end
+	local n = 0
+	for _, m in ipairs(monsterList) do
+		if run.roster[m:getId()] and not (bossName and m:getName():lower() == bossName) then
+			n = n + 1
+		end
+	end
+	return n
+end
+
 local function startRun(dungeonId, difficulty, players)
 	local dg = baseDungeons()[dungeonId]
 	local extra = extraOf(dungeonId)
@@ -878,6 +899,9 @@ local function startRun(dungeonId, difficulty, players)
 	runs[run.id] = run
 	runOfDungeon[dungeonId] = run
 
+	-- the map's monsters all stand there from the first second (see "map spawns"): the area is cleared first, then every
+	-- monster of the run is placed in this tick, before the players are teleported in (O179)
+	fillFromMap(dungeonId, dg, bossName)
 	if dg.SpawnMonsters and dg.Monsters then
 		for monsterName, position in pairs(dg.Monsters) do
 			local m = Game.createMonster(monsterName, position)
@@ -887,8 +911,6 @@ local function startRun(dungeonId, difficulty, players)
 			end
 		end
 	end
-	-- the map's monsters all stand there from the first second (see "map spawns")
-	fillFromMap(dungeonId, dg, bossName)
 	-- a generated dungeon (areagen.lua) fills its spawn points and its boss for every run
 	if extra.populate then
 		pcall(extra.populate, dungeonId)
@@ -912,6 +934,14 @@ local function startRun(dungeonId, difficulty, players)
 	local monsters, bosses, _, monsterList = scanArea(dungeonId, dg, bossName)
 	run.total = monsters
 	run.bossSeen = bosses > 0
+	-- the roster: the monsters of this run. Nothing that appears later (a boss fight's adds, a stray summon) joins the
+	-- count, so the total is known from the start and "Monsters Alive" never grows (O179)
+	run.roster = {}
+	for _, m in ipairs(monsterList) do
+		if not (bossName and m:getName():lower() == bossName) then
+			run.roster[m:getId()] = true
+		end
+	end
 	scaleList(run, monsterList)
 
 	local durationMs = durationOf(dg)
@@ -1047,6 +1077,7 @@ tick = function()
 			local bossName = extra.bossName and extra.bossName:lower() or nil
 			local monsters, bosses, playersInside, monsterList = scanArea(run.dungeonId, dg, bossName)
 			scaleList(run, monsterList) -- respawns inside the box get the difficulty too
+			monsters = rosterAlive(run, monsterList, bossName) -- only the run's own monsters count (O179)
 
 			if bosses > 0 then
 				run.bossSeen = true
