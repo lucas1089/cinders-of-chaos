@@ -1992,14 +1992,14 @@ return {
 		["Appearance set unlocked: %s."] = "Conjunto de aparência desbloqueado: %s.",
 
 		-- Progression: Paragon, the passive tree, boss points, gems, salvage, archery, Ember Blessings (paragon.lua, passivetree.lua, bosspoints.lua, gems.lua, salvage.lua, archery.lua, blessings.lua)
-		["Your Paragon points were refunded for free: you had spent more than your %d points."] =
-			"Seus pontos Paragon foram devolvidos de graça: você tinha gastado mais do que seus %d pontos.",
+		["Your Paragon allocation holds %d more points than the %d you own (you lost levels). Nothing was removed; you get new points when your level is back."] =
+			"Sua distribuição Paragon tem %d pontos a mais do que os %d que você possui (você perdeu níveis). Nada foi removido; você ganha novos pontos quando seu nível voltar.",
 		["%d Paragon points came back: the points the track change of 2026-10-23 took. Open the passive tree and press Paragon."] =
 			"%d pontos Paragon voltaram: os pontos que a mudança do Paragon de 23/10/2026 tirou. Abra a árvore passiva e aperte Paragon.",
 		["You have %d unspent Paragon point%s. Open the passive tree and press Paragon."] =
 			"Você tem %d ponto%s Paragon sem gastar. Abra a árvore passiva e aperte Paragon.",
-		["Your passive tree was refunded for free: it held more nodes than your %d passive points. Please allocate them again."] =
-			"Sua árvore passiva foi devolvida de graça: ela tinha mais nós do que seus %d pontos passivos. Distribua os pontos de novo.",
+		["Your passive tree holds %d more nodes than your %d passive points (you lost levels). Nothing was removed; you get new points when your level is back."] =
+			"Sua árvore passiva tem %d nós a mais do que seus %d pontos passivos (você perdeu níveis). Nada foi removido; você ganha novos pontos quando seu nível voltar.",
 		["Your passive tree: %d node your class cannot hold (or that left the tree) was refunded for free."] =
 			"Sua árvore passiva: %d nó que sua classe não pode ter (ou que saiu da árvore) foi devolvido de graça.",
 		["Your passive tree: %d nodes your class cannot hold (or that left the tree) were refunded for free."] =
@@ -3888,5 +3888,10 @@ return {
 		["You cannot open a town portal right after fighting other players."] = "Você não pode abrir um town portal logo após lutar com outros jogadores.",
 		["You cannot open a town portal while you carry a skull."] = "Você não pode abrir um town portal com skull.",
 		["You are already in a protection zone."] = "Você já está numa zona de proteção.",
+		-- NPCs that trade for something other than gold: the azure NPC's reply (data/lib/chaos_npc_currency.lua)
+		["Stuff for every class: %s and %s for Warriors, %s for Mystics and %s for Rangers."] =
+			"Equipamento para todas as classes: %s e %s para Warriors, %s para Mystics e %s para Rangers.",
+		["Azure Coins drop from the boss of the Azure portals and the Forbidden Chevalier, and some hunting tasks pay them."] =
+			"Azure Coins caem do chefe dos portais Azure e do Forbidden Chevalier, e algumas tarefas de caça pagam com elas.",
 	},
 }

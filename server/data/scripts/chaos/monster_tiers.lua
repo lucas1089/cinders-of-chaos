@@ -204,6 +204,10 @@ local function eligible(monster, position)
 	if isSkipped(typeNameOf(monster)) or isBoss(monster) then
 		return false
 	end
+	-- a monster of a running Vocation Trial (O187): the trial counts its kills, no tier and no ambush copy of it
+	if ChaosTrials and ChaosTrials.isTrialMonster and ChaosTrials.isTrialMonster(monster) then
+		return false
+	end
 	return monster:getMaxHealth() >= cfg.minMaxHealth
 end
 
@@ -512,9 +516,16 @@ function death.onDeath(creature, corpse, killer, mostDamageKiller, lastHitUnjust
 	if ChaosDungeons and ChaosDungeons.runAt and ChaosDungeons.runAt(pos) then
 		return true
 	end
+	-- nor inside a running Vocation Trial chamber (O187: "the Marked Cutthroat keeps reviving")
+	if ChaosTrials and ChaosTrials.runAt and ChaosTrials.runAt(pos) then
+		return true
+	end
 	addEvent(function(typeName, shown, position, nt, d, look, wasPaced)
 		if ChaosDungeons and ChaosDungeons.runAt and ChaosDungeons.runAt(position) then
 			return -- the 600 ms delay: the position lies in a dungeon that opened meanwhile
+		end
+		if ChaosTrials and ChaosTrials.runAt and ChaosTrials.runAt(position) then
+			return
 		end
 		pendingTier = nt
 		local create = Chaos.createMonsterNamed or function(t, p, e, f) return Game.createMonster(t, p, e, f) end

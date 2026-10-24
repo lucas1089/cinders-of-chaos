@@ -632,6 +632,7 @@ collision check") and be added here.
 | 109 | `dungeons` | `dungeons.lua` | `game_dungeons` | `dungeon` may carry `health = {monsters = {6 %}, boss = {6 %}}` (a dungeon with its own health curves, `dungeons_difficulty.lua` `D.healthCurves`); without it the client shows the table |
 | 110 | `stash` | `stash.lua` | `game_stash` | |
 | 111 | `depotTabs` | `depot.lua` | `game_depottabs` | |
+| 113 | `npcCurrency` | `data/lib/chaos_npc_currency.lua` (run by the base NPC scripts of a custom currency, `tools/patch_npc_currency.py`) | `game_npctradewindow` | server -> client, JSON `{action = "currency", data = {code, name, item?, amount, again?}}`: the currency of the shop that opens next, and its balance after each purchase and sale ("NPC currencies") |
 | 120 | none (`CHAOS_ADMIN_OPCODE`) | `admin/core.lua` | `game_admin` | big payloads through `Chaos.sendChunked` |
 | 125 | `monsterbar` | `monster_tiers.lua`, `worldboss.lua` | `game_monsterbar` | server -> client |
 | 151 | `notificationsAction` | `notifications.lua` | `game_chaosnotify` | client -> server: party invite answer, catacomb start |
@@ -763,8 +764,10 @@ reset, storages and the free-respec rule are untouched. `tests/class_spells_test
 ### Opcode collision check
 Searched the reference server for every `onExtendedOpcode`, `sendExtendedOpcode(` and opcode
 constant. Opcodes in use there: 1, 67, 73, 89, 91, 92, 99, 106, 107, 136, 181, 201, 202. (The
-`ServerOpcodes` 125/126 in `global.lua` are game-protocol opcodes, a different number space.)
-None of the Chaos opcodes collide; no adjustment was needed. Hideouts (192) also checked the reference client's own opcodes (`gamelib`
+`ServerOpcodes` 125/126 in `global.lua` were first read as game-protocol opcodes, a different number space. They are not:
+the base NPC scripts send them with `player:sendExtendedOpcode`, and 125 is the monster bar's. O189 moved them to 126 / 127
+and gave the custom currencies their own opcode 113, see "NPC currencies".)
+No other Chaos opcode collides. Hideouts (192) also checked the reference client's own opcodes (`gamelib`
 `ExtendedIds` 144-146, 210, 212, 213, 230, 246 and 0x8C = 140): 145 was taken there by the skill wheel. 110 was chosen for the stash because
 the client has no fixed value and 110 is free. Storage keys (see "Storage keys" below) and DB tables
 `chaos_*` are new; the one deliberate overlap is autoloot's storage base 80000 (shared on purpose).
@@ -2479,10 +2482,22 @@ or a random raid.
   "Boss points 3/10 (+3 passive points)" (translated in the client, no longer the server's English text) and the tooltip's
   second line says they are already in the points counter. If a live character still sees no free point after a first
   kill, check the kill was credited (damage map or party within 30 tiles) and the message "First kill of ..." appeared.
-- Removing a boss from the list takes its point back at the next login (a tree with more nodes than points is refunded for
-  free); never reuse an id.
+- Removing a boss from the list takes its point back at the next login (a tree with more nodes than points keeps them and
+  cannot grow until the level or points are back, O190); never reuse an id.
 - `server/tests/bosspoints_test.lua`: the list (the five world bosses of `Chaos.worldBoss`, the Trial guardian type and stage
   storage), counting, damage-map and party credit, first kill only, the Trial Warden, the tree budget, the old kills once.
+
+### Death and the point budget (O190)
+
+- Beta 2026-10-24: the tree reset after a death. Cause: the login emptied every preset with more nodes than `totalPoints`
+  (`refundOverBudget`), and the Paragon login saved an empty allocation when `spent > total`; a death takes levels, so a
+  character with every point spent lost everything when a death crossed a point threshold (one point per 4 levels; Paragon
+  per level to 1100, then per 6). Not class specific.
+- Now an allocation over budget is kept at login (`noteOverBudget`, `ChaosParagon.debt`): the player gets a message with the
+  number over, free points read 0, saves that grow the tree are refused until the points are back, nothing is written.
+  `refundForeignNodes` skips a login whose vocation cannot be read (every class node would look foreign).
+- `server/tests/passivetree_death_test.lua`: all classes and ascensions, levels around the thresholds and past 1100, losses of
+  1 to 150 levels, a Thief tree on a Ninja, transient states. A tree emptied by the old login is not stored anywhere.
 
 ## Passive tree effects (`passivetree_effects.lua`)
 The tree now has an effect: after every save, reset and login the summed node stats are applied.
@@ -2549,7 +2564,7 @@ All maxed: 282 points. Since O135 ("Progression smoothness") the points come one
   was level x 250 gold, still the fallback in `paragon.lua` without `respec.lua`). **Decision:** the store's Passive Tree Reset service resets the tree *and* Paragon for free (one paid
   respec for every passive point; its description says so). The vocation change resets only the tree: Paragon stats do not depend on
   the vocation.
-- A character whose level fell below the points it spent is refunded for free at login (like the tree). On every level above 1000
+- A character whose level fell below the points it spent keeps its allocation (O190; before, the login saved an empty one, so a death above level 1000 wiped it). The login tells it how many points are over (`P.debt`); spending waits for the level. On every level above 1000
   the player is told how many points are unspent, and the speed share follows the new base speed.
 - Protocol (opcode 65, documented at the top of `passivetree.lua` and `paragon.lua`): `paragonRequest` -> `paragonState`
   `{unlocked, level, startLevel, total, spent, free, resetCost, categories = [{key, name, stats = [{key, name, desc, perPoint,
@@ -2571,7 +2586,7 @@ CREATE TABLE IF NOT EXISTS `chaos_paragon` (
 - Client: the Paragon button next to Apply Plan / Reset in the passive tree window (`game_passivetree/paragon.lua`,
   `paragon.otui`, maths in `paragonmath.lua`). Below level 1000 it shows "Unlocks at level 1000". The "Info & Bonuses" list has a
   Paragon section.
-- `server/tests/paragon_test.lua`: points, caps, validation, the handlers against a mocked db, gold find maths, the login refund and
+- `server/tests/paragon_test.lua`: points, caps, validation, the handlers against a mocked db, gold find maths, the death -> relogin keeps the allocation matrix (O190) and
   the stacking with the tree in `passivetree_effects.lua`. `client/.../paragonmath_test.lua`: the panel's +/- maths.
 - Measured on the test server (Elite Knight, 120 tree nodes with vitality 22, spirit 12, absorb physical 3, item find 3, crit 5):
   tree only max health 22055 / mana 6787 / speed base+80 / 1000 fire hit on the dummy 1316 / 1000 physical taken 970. With
@@ -7558,6 +7573,15 @@ service NPCs that replaced them sell none. **Veyra the Apothecary** stands in th
   (50, 80, 130, 200) and that 8704 is the small health potion, 8474 the antidote and 26029 / 26030 / 26031 the ultimate mana,
   ultimate spirit and supreme health potions (the store pack, the milestone gifts and `cooldown_channels_config.lua` agree with
   these). Check the first live start: the trade window lists them under those names.
+- **Trade window (O188).** Beta 2026-10-24: "trade" got "Sorry, I'm not offering anything." (`MESSAGE_NOSHOP`, base
+  `npchandler.lua`, sent by `ShopModule.requestTrade` in `modules.lua` when `npcHandler.shopItems` is empty). The base reads
+  `shop_buyable` / `shop_sellable` only in the module that `NpcSystem.parseParameters` builds for an XML with
+  `<parameter key="module_shop" value="1" />`; her XML lacked it and her script made `ShopModule:new()` by hand, which never
+  parses the lists, so the window was empty for every class and level. Now the XML has `module_shop` and the script makes no
+  module of its own. A level too low still refuses only that item (`CALLBACK_ONBUY`). Install step `apothecary` copies both files.
+  `tests/apothecary_test.lua` runs her script against a copy of the base parse and fails for a shop list without `module_shop`
+  in any NPC XML, and for a hand-made module with no items.
+  **Names on one line.** The lists are written on one line: pugixml turns the tabs and newlines of an attribute into spaces and keeps them, so with one entry per line each name started with spaces and the typed "buy <name>" (keywords made of the parsed name, base `ShopModule:parseBuyable`, assumed from the base, not in the repo) never matched while the window worked. The test fails for any NPC XML whose shop list has a name with leading or trailing whitespace.
 - **Two lists.** The goods are in `apothecary_config.lua` (name, price, level) and in the XML's `shop_buyable` (what
   `install_potions.py` and `install_rune_supply.py` read and extend); `tests/apothecary_test.lua` fails when they differ.
 - **Install:** step `apothecary` (`tools/install_apothecary.py`, right after `servicenpcs`, so `runes`, `potions` and `itemprices`
@@ -8001,6 +8025,73 @@ copy of the stock lines with made-up names and says every listed name four ways.
 same checks on a real installed server's scripts and task lists. On the beta base copy all 15 normal and 11 daily
 names register and every normal task counts its first monster. Left as they are: two normal tasks share one name (the
 first one starts), and one listed monster of the base lists does not exist on the server.
+
+## NPC currencies (`tools/patch_npc_currency.py`, `data/lib/chaos_npc_currency.lua`, `tests/npc_currency_test.lua`, client `game_npctradewindow`)
+
+Owner beta 2026-10-24 (O189), a screenshot of the azure NPC's trade window: "broken window. Where do players get azure
+coins?" The window said "Currency: Gold Coin", priced the Blightwoven / Ironwrath / Netherwave / Ashborne set pieces and
+bows "Price 30, 85.00 ..." and showed the player's 30.4M gold; names were cut ("blightwoven arm..."); and the NPC's
+reply to "azure" talked about "knights", "sorcerers and druids" and "paladins".
+
+**What azure coins are.** Item 26780, "Azure Coin" (weight 5, "Mystic Coin used to trade valuables things"), the
+currency of the azure NPC (`data/npc/scripts/`, the script of the NPC the NPC list names Lanath): 30 coins for a
+helmet, armor, legs or boots, 50 for a sword, bow, wand or rod; selling a piece back pays half. The NPC checks
+`player:removeItem(26780, ...)`, so the coins are real items in the backpack, not a storage. They are also an ingredient of
+the base crafting recipes (`data/items/base_recipes.csv`: 30 per armor, 50 per weapon, 15 per jewel of the base smiths).
+`data/items/base_item_values.csv` lists them as `currency` (not sellable to the Loot Buyer).
+
+**Where players get them (no new source was needed; the base's own, all still in the installed data).** Read from the
+base server's data on 2026-10-24:
+- the boss of the Azure portals (`data/monster/lua/azure_portals/boss/azure.lua`, the lever fight of
+  `data/scripts/customs/portals/azure.lua`: level 200, four players, one try per player every 4 h): 65% for 1-22 coins.
+  The base's Enhanced Loot script (`data/scripts/customs/enhanced_loot/`) gives the same boss a 50% chance of a bag with
+  one of these set pieces directly, so the sets also drop where the NPC sells them;
+- the Forbidden Chevalier (`data/monster/lua/dungeons/forbidden/`, a dungeon boss): 25% for 1-3 coins;
+- the base tasks (`data/scripts/customs/tasks/tasks.lua`): the Azure Catacombs task pays 8 coins, three more pay 2, 3 and 3;
+  the ancestral tasks (`data/lib/custom/ancestral_task.lua`) pay 10 for killing the Azure boss once, and 4 each for the
+  150-kill depths task and the 300-kill portal task.
+Our loot layer (`loot.lua`) runs after the stock drop and never removes a line of a base table, so none of this changed.
+The Master of the Elements does not drop them (its table has none of these items), and nothing of ours (`scripts/chaos`,
+`chaos_item_prices_data.lua`, the loot bands, the store, the roulette) names item 26780. Not checked in a live client:
+that the portal lever and the dungeon work on the installed map. The Enhanced Loot and task rewards were not changed, so
+no store, roulette, gold or loot model moved (store_model, roulette_model, loot_model and gen_item_prices pass unchanged).
+The NPC says it now: "Azure Coins drop from the boss of the Azure portals and the Forbidden Chevalier, and some hunting
+tasks pay them."
+
+**Cause of the window.** The 10.98 shop packet (0x7A) has no currency, so the base client window always shows gold. Eight
+base NPC scripts that trade for something else (the azure NPC; five mining-crafting NPCs that pay in town coins kept in a
+storage, 48076-48080; the sweets NPC, dark chocolate coins, item 28697; the token NPC, silver tokens, item 25172) told the
+old client by two extended opcodes, `ServerOpcodes.currencyType` 125 (a code such as "AZ") and `ServerOpcodes.coinAmount`
+126, which no module of ours read. 125 is also the monster bar's opcode (`ChaosOpcodes.monsterbar`), so the code arrived
+there as a broken JSON. The rows were cut by the base's `short_text(name, 15)` and `short_text(info, 16)`.
+
+**Fix.**
+- Server, step `npccurrency` (after `worldtexts`; `patch_npc_currency.py`, marker `Chaos: npc currency (patch_npc_currency.py)`):
+  in those scripts the three opcode lines become `ChaosNpcCurrency.announce(player, {code, item | storage, name})`, which
+  sends JSON on the new opcode 113 (`ChaosOpcodes.npcCurrency`): the currency's name (the item type's, or the script's own
+  "... coins" text for a storage currency, so the world renames apply), the item for the icon, the balance. The two shop
+  callbacks are wrapped so the balance is sent again (`again = true`) after every purchase and sale. The azure NPC's
+  sell message named another currency ("... Coins"): it names the item's plural. Its reply to "azure" is now
+  "Stuff for every class: Blightwoven and Ironwrath for Warriors, Netherwave for Mystics and Ashborne for Rangers." plus the
+  source line, in the player's language (`ChaosNpcCurrency.setsReply`, keys in `i18n_strings.lua`; the set names are the
+  renamed words found in the script; the Warrior line wears the first two sets, the Mystic line the third, the Ranger line the
+  fourth, by the lists `add_vocations.py` rewrote). `data/global.lua`: `ServerOpcodes` 125 / 126 become 126 / 127, so a
+  script the tool does not know stops writing to the monster bar. Files are found by their stock lines (any NPC name); a
+  file without them is reported and left alone; CRLF and every other byte are kept.
+- Client, `game_npctradewindow` (client/MANIFEST.md): opcode 113. The window shows the currency's name and icon (no icon
+  for a storage currency), "Balance:" and the player's amount of it in place of the gold (the base's `getPlayerMoney`, so
+  the buy button, the amount and the grey rows follow it); the gold comes back when the window closes. Every row (gold
+  shops too) is rewritten to the whole item name and "Price 30, 85.00 oz" with a full tooltip. New texts "Balance:" and
+  "Price %s" have pt-BR entries.
+- Install: `python3 -I server/tools/install_all.py SERVER_DIR --only files,npccurrency` (or the admin app: Painel > Atualizar
+  servidor > Aplicar e reiniciar, which runs the whole install), then a server restart. The client needs its Lua overlay
+  published (the same update, box "publicar o update do client"), no engine build: no C++ and no base patch changed.
+- Tests: `tests/npc_currency_test.lua` (balance, payload, JSON, announce, wrapped callbacks, the reply in English and pt-BR,
+  opcode free), `tools/patch_npc_currency_test.py` (the patch on synthetic stock lines, CRLF, dry run, second run, both
+  Lua dialects parse), `tradewindowlogic_test.lua` and `tradewindow_test.lua` (the currency life, the rows, the glue
+  against a mocked client). Not run in a live client or on the installed server: the other seven NPCs' storage names are
+  read from their own messages and were not looked at in game; Quick Sell and Sell All still say "gold" in their
+  messages (they were not changed).
 
 ## Base world texts (`tools/patch_base_texts.py`, `tools/base_rename_lib.py`, `data/npc/base_world_names.csv`)
 
@@ -11311,6 +11402,20 @@ engine patch 0008. Crash recovery: a marker storage moves the character out at t
 runs, life loss, first clear, choose / refuse / switch, tree reset, crash recovery). Not exercised in game: the seal,
 mark and fire mechanics and the evade / reflect / mana shield nodes. Balance: boss health (`hp` per tier) and the thrall
 hit rate are first guesses.
+
+**Marks and kill counts (O187, 2026-10-24).** Beta report: "In the Ninja's Merciless trial, the Marked Cutthroat keeps
+reviving, so it is impossible to count the kills". A mark (the thief family's fast target) used to be removed after
+`markSeconds` (16 / 13 / 10) whether or not it was being fought, and came back at full health for 20 s of the clock, without
+a limit; its health is a share of the boss health (Merciless level 400: 7020 health, so 700 damage a second to kill it in
+10 s). Now `ChaosTrialsCore.markStep` runs the clock: a tick that finds the mark lower than the last one starts the clock
+again, an untouched mark flees at most `markMaxFlees` (3) times in a run and then stays until it dies. A mark that
+vanishes without its death event is counted as a kill, `stageKills` fills the counter when the marks are done, a spawn
+that fails does not use up a mark number, and a necromancer thrall that stood up again is not counted a second time.
+`ChaosTrials.runAt(pos)` / `isTrialMonster(creature)` (like `ChaosDungeons.runAt`) keep the ambush copy
+(`monster_tiers.lua`, also one queued before the trial opened), the tier roll and the Treasure Goblin out of a running
+chamber, and the map's own respawn is refused there. Not on a live server: the thralls were already skipped by the tier
+script (`skipTiers`), so an ambush was not the cause; the clock rule is. Tests: `tests/trials_test.lua` (block O187
+reproduces the old rule with the numbers above), `trials_flow_test.lua`, `monster_tiers_test.lua`.
 
 ## Salvage (`salvage.lua`, `salvage_core.lua`, `salvage_config.lua`, `tools/install_salvage.py`, client `game_crafting`)
 

@@ -240,6 +240,10 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   worldtexts   tools/patch_base_texts.py         the old world's names in NPC dialogue and keywords, travel, the quest log,
                raids, achievements, item descriptions, script messages and the map's signs and books
                (data/npc/base_world_names.csv + the NPC and monster lists; README "Base world texts"; after npcnames)
+  npccurrency  tools/patch_npc_currency.py       the NPCs that trade for something other than gold (the azure NPC, the town
+               coin NPCs, the sweets and token NPCs) announce their currency to the trade window on opcode 113, the
+               azure NPC names our classes and where the coins drop, ServerOpcodes move off the monster bar's 125
+               (README "NPC currencies"; after worldtexts)
   servername   tools/patch_base_server_name.py   the base server's own name in whole strings of its data: the welcome text
                over the first temple, the web login service's console banner, config.lua's serverName while it is
                the base value (tools/base_server_texts.csv, keyed by the sha256 of the old string; README "Server
@@ -1007,6 +1011,14 @@ def step_runes(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('npcnames') + 1, 'runes')  # after npcnames: the vendors by their Chaos names (hash before it)
+
+
+def step_npccurrency(server, data, ctx):
+    args = [tool('patch_npc_currency.py'), data] + (['--dry-run'] if ctx['dry'] else [])
+    return tool_result(run_tool(args, 'patch_npc_currency.py'))
+
+
+STEPS.insert(STEPS.index('worldtexts') + 1, 'npccurrency')  # after the world names: the set names read as they are shown
 
 
 def step_tasknpc(server, data, ctx):

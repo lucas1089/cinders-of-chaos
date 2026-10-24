@@ -10,6 +10,7 @@
 --   ChaosPassiveTreeCore.validatePlan(tree, current, currentMasteries, plan, ctx)   a whole planned allocation, see there
 --   ChaosPassiveTreeCore.checkMasteryChange(tree, current, masteries, id, choice)  changing the effect of a saved mastery
 --   ChaosPassiveTreeCore.reworkedSince(list, seen, tree, variantKey) / dropNodes(tree, ids, drop)   the free refund of reworked nodes
+--   ChaosPassiveTreeCore.debt(held, total)           nodes held above the points owned (0 or more); never a reason to remove any
 --
 -- Saved allocation text (the `nodes` column of chaos_passive_tree and the `tree` column of chaos_loadouts):
 --   "2,3,9"              node ids (root excluded), as before
@@ -33,6 +34,11 @@ local function int(value)
 		return nil
 	end
 	return n
+end
+
+-- nodes held above the points owned (O190: a lost level makes this positive; the allocation stays, see passivetree.lua)
+function M.debt(held, total)
+	return math.max(0, (tonumber(held) or 0) - math.max(0, tonumber(total) or 0))
 end
 
 -- ------------------------------------------------------------------------------------------------ saved text

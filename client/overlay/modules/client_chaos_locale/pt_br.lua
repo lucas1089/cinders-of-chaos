@@ -4669,5 +4669,8 @@ ChaosLocaleStrings['pt-BR'] = {
   ["gear"] = "equipamento",
   [" (T%s) to "] = " (T%s) a ",
   ["The Ashen Chronicle: Season of Ash"] = "The Ashen Chronicle: Season of Ash",
+  -- client/overlay/modules/game_npctradewindow/tradewindow.lua
+  ["Balance:"] = "Saldo:",
+  ["Price %s"] = "Preço %s",
 }
 return ChaosLocaleStrings['pt-BR']

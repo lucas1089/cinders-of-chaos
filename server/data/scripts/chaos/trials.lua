@@ -530,6 +530,8 @@ local function startStage(tr)
 	elseif stage.kind == "marks" then
 		tr.markIdx = 0
 		tr.markId = nil
+		tr.markFlees = 0
+		tr.killBase = tr.killed -- the kills before this stage (M.stageKills)
 		say(tr, "Marked targets come one after another. Kill each before it slips away.")
 	elseif stage.kind == "boss" then
 		local scale = tr.scale
@@ -574,14 +576,16 @@ local function spawnMark(tr)
 	if not player then
 		return
 	end
-	tr.markIdx = tr.markIdx + 1
 	local at = randomFar(tr, player:getPosition(), 5, 6)
 	local m = spawnThrall(tr, at, math.max(50, math.floor(tr.scale.addHp * 0.6)), {fast = true})
-	if m then
-		tr.markId = m:getId()
-		tr.markDeadline = mnow() + tr.tierDef.markSeconds * 1000
-		m:getPosition():sendMagicEffect(CONST_ME_MAGIC_RED)
+	if not m then
+		return -- not made (no room for it): the same mark is tried again at the next tick, the count does not move
 	end
+	tr.markIdx = tr.markIdx + 1
+	tr.markId = m:getId()
+	tr.markDeadline = mnow() + tr.tierDef.markSeconds * 1000
+	tr.markHp = m:getHealth()
+	m:getPosition():sendMagicEffect(CONST_ME_MAGIC_RED)
 	tr.notes = {string.format("Mark %d of %d: %d s.", tr.markIdx, tr.stage.count, tr.tierDef.markSeconds)}
 end
 
@@ -720,6 +724,7 @@ local function tickMarks(tr, player, ms)
 	if not tr.markId and tr.markIdx >= tr.stage.count then
 		if not tr.stage.done then
 			tr.stage.done = true
+			tr.killed = M.stageKills(tr.killed, tr.killBase, tr.stage.count) -- every mark is down: the counter is full
 			local stage = tr.stage
 			addEvent(function()
 				if T.runs[tr.pid] == tr and not tr.over and tr.stage == stage then
@@ -737,21 +742,35 @@ local function tickMarks(tr, player, ms)
 	if tr.markId then
 		local m = Monster(tr.markId)
 		if not m then
+			-- gone without its death event (removed by something else): it was a kill, never a stuck counter
+			T.monsterRun[tr.markId] = nil
+			tr.adds[tr.markId] = nil
 			tr.markId = nil
-		elseif ms >= tr.markDeadline then
+			tr.killed = tr.killed + 1
+			sendHud(tr, "update")
+			return
+		end
+		local act, deadline, hp = M.markStep(ms, tr.markDeadline, tr.markHp, m:getHealth(), tr.markFlees or 0, tr.tierDef.markSeconds)
+		tr.markDeadline, tr.markHp = deadline, hp
+		if act == "flee" then
 			m:getPosition():sendMagicEffect(CONST_ME_POFF)
 			T.monsterRun[tr.markId] = nil
 			tr.adds[tr.markId] = nil
 			m:remove()
 			tr.markId = nil
+			tr.markFlees = (tr.markFlees or 0) + 1
 			tr.deadline = tr.deadline - M.cfg().markPenaltySeconds * 1000
-			tr.markIdx = tr.markIdx - 1 -- it comes back
+			tr.markIdx = tr.markIdx - 1 -- the same mark comes back, at full health (nobody had touched it)
 			say(tr, "The mark got away! %d seconds are lost.", C().markPenaltySeconds)
 			spawnMark(tr)
 			sendHud(tr, "update")
 		else
-			local left = math.ceil((tr.markDeadline - ms) / 1000)
-			tr.notes = {string.format("Mark %d of %d: %d s.", tr.markIdx, tr.stage.count, left)}
+			local left = math.max(0, math.ceil((tr.markDeadline - ms) / 1000))
+			if (tr.markFlees or 0) >= (C().markMaxFlees or 0) then
+				tr.notes = {string.format("Mark %d of %d.", tr.markIdx, tr.stage.count)}
+			else
+				tr.notes = {string.format("Mark %d of %d: %d s.", tr.markIdx, tr.stage.count, left)}
+			end
 		end
 	end
 end
@@ -1077,8 +1096,8 @@ function deathEvent.onDeath(creature, corpse, killer, mostDamageKiller)
 			tr.killed = tr.killed + 1
 			tr.notes = {string.format("Mark %d of %d down.", tr.markIdx, tr.stage and tr.stage.count or 0)}
 			sendHud(tr, "update")
-		elseif tr.stage and tr.stage.kind == "wave" then
-			tr.killed = tr.killed + 1
+		elseif tr.stage and tr.stage.kind == "wave" and not tr.risen[id] then
+			tr.killed = tr.killed + 1 -- a thrall that stood up again was counted when it fell the first time
 		end
 		if M.hasMech(tr.famKey, "rise") and not tr.risen[id] and M.roll(C().riseChance) and tr.bossState ~= "dead" then
 			tr.pendingRise = (tr.pendingRise or 0) + 1
@@ -1472,6 +1491,38 @@ function T.placeKeepers()
 	end
 	return placed
 end
+
+-- the run whose room holds pos (ChaosTrials.runAt), as ChaosDungeons.runAt does for dungeons (O187): the scripts that make
+-- monsters on a kill or a respawn (ambush copy, Treasure Goblin) stay out of a running trial
+function T.runAt(pos)
+	if not pos then
+		return nil
+	end
+	for _, tr in pairs(T.runs) do
+		if not tr.over and tr.L and M.inRoom(tr.L, pos) then
+			return tr
+		end
+	end
+	return nil
+end
+
+-- a monster of a running trial (its thralls and its warden)
+function T.isTrialMonster(creature)
+	local id = creature and creature.getId and creature:getId()
+	return id ~= nil and id ~= 0 and T.monsterRun[id] ~= nil
+end
+
+-- the map's own respawn (neither the server start nor made by a script) is refused inside a running chamber, as in a running
+-- dungeon (dungeons.lua). The trial makes its monsters with Game.createMonster (artificial) and tracks them; the other
+-- scripts that make monsters (ambush copy, Treasure Goblin) ask T.runAt themselves.
+local spawnGuard = EventCallback
+spawnGuard.onSpawn = function(self, position, startup, artificial)
+	if not startup and not artificial and T.runAt(position) then
+		return false
+	end
+	return true
+end
+spawnGuard:register(5)
 
 local function skipTiers()
 	if ChaosTierConfig and ChaosTierConfig.skip then

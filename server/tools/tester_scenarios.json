@@ -3,7 +3,8 @@
   "game_chaosnotify",
   "game_energyshield",
   "game_levelwings",
-  "game_monkchi"
+  "game_monkchi",
+  "game_npctradewindow"
  ],
  "counts": {
   "opcode": 59,

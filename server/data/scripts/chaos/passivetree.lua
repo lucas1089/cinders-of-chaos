@@ -478,22 +478,24 @@ ChaosPassiveTree.extraActions = ChaosPassiveTree.extraActions or {}
 
 local LoginEvent = CreatureEvent("ChaosPassiveTreeLogin")
 
--- presets that hold more nodes than the character owns points (the point rate went down, or the level dropped)
--- are emptied for free, so no allocation is ever larger than the points behind it
-local function refundOverBudget(player)
+-- A preset that holds more nodes than the character owns points (a death took levels, the point rate went down) keeps
+-- every node: the points owned only fall short for a while (debt), new points come back as the level does. Before O190
+-- this emptied the preset at login, so one death at level 1000 with all points spent wiped the whole tree (beta
+-- 2026-10-24). The player is told how many nodes are over; nothing is removed or written.
+local function noteOverBudget(player)
 	local total = totalPoints(player)
-	local refunded = 0
+	local over = 0
 	for _, row in ipairs(loadPresets(player:getGuid())) do
-		if #row.nodes > total then
-			db.query("UPDATE `" .. T .. "` SET `nodes` = '' WHERE `player_id` = " .. player:getGuid() .. " AND `preset` = " .. row.preset)
-			refunded = refunded + 1
-		end
+		over = math.max(over, Core.debt(#row.nodes, total))
 	end
-	if refunded > 0 then
+	if over > 0 then
 		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player,
-			"Your passive tree was refunded for free: it held more nodes than your %d passive points. Please allocate them again.", total))
+			"Your passive tree holds %d more nodes than your %d passive points (you lost levels). Nothing was removed; you get new points when your level is back.",
+			over, total))
 	end
+	return over
 end
+ChaosPassiveTree.noteOverBudget = noteOverBudget
 
 -- presets that hold nodes the class may not hold (another class's section after a class change, the keystones 621 /
 -- 624 for a class without a variant there) or nodes the tree no longer has: those nodes, and the ones that only
@@ -501,6 +503,9 @@ end
 local function refundForeignNodes(player)
 	local tree = getTree()
 	local classKey = ChaosPassiveTree.classKey(player)
+	if not classKey then
+		return 0 -- vocation not readable now: every class node would look foreign, so remove nothing
+	end
 	local total = 0
 	for _, row in ipairs(loadPresets(player:getGuid())) do
 		local kept, removed = ChaosClassTree.sanitize(tree, row.nodes, classKey)
@@ -566,7 +571,7 @@ function LoginEvent.onLogin(player)
 	player:registerEvent("ChaosPassiveTreeExtended")
 	refundReworked(player)
 	refundForeignNodes(player)
-	refundOverBudget(player)
+	noteOverBudget(player)
 	applyBonuses(player)
 	return true
 end
