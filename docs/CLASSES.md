@@ -558,6 +558,9 @@ Limits of phase 1:
   weapons and hand items and never to shields; the Beastmaster only to bows and arrows among weapons, hand items and ammunition.
   (Since "Infinite arrows and quivers", server/README.md, launchers have no ammo type: the tool counts a two-handed distance
   weapon as a bow or crossbow by its missile, and arrows and bolts are gone.)
+  Since O175 (2026-10-24) every class drinks every health, mana and spirit potion: `patch_open_potions.py` (install step
+  `openpotions`, after this one) removes their vocation lists; only the level gates stay. The berserk and mastermind potions
+  keep the lists below. Before O175, in
   `potions.lua`: a potion of the Elite Knight (8) also lists the Berserker (14), one of the Royal Paladin (7) the Beastmaster (15),
   the Thief line (11-13) and the Monk line (17-19), one of either the Templar line (23-25), one of the Elementalist (5) the
   Necromancer line (20-22); the refusal texts name our classes ("Only Warriors and Templars of level 80 or above may drink this
