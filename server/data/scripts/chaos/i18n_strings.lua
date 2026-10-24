@@ -1992,14 +1992,14 @@ return {
 		["Appearance set unlocked: %s."] = "Conjunto de aparência desbloqueado: %s.",
 
 		-- Progression: Paragon, the passive tree, boss points, gems, salvage, archery, Ember Blessings (paragon.lua, passivetree.lua, bosspoints.lua, gems.lua, salvage.lua, archery.lua, blessings.lua)
-		["Your Paragon points were refunded for free: you had spent more than your %d points."] =
-			"Seus pontos Paragon foram devolvidos de graça: você tinha gastado mais do que seus %d pontos.",
+		["Your Paragon allocation holds %d more points than the %d you own (you lost levels). Nothing was removed; you get new points when your level is back."] =
+			"Sua distribuição Paragon tem %d pontos a mais do que os %d que você possui (você perdeu níveis). Nada foi removido; você ganha novos pontos quando seu nível voltar.",
 		["%d Paragon points came back: the points the track change of 2026-10-23 took. Open the passive tree and press Paragon."] =
 			"%d pontos Paragon voltaram: os pontos que a mudança do Paragon de 23/10/2026 tirou. Abra a árvore passiva e aperte Paragon.",
 		["You have %d unspent Paragon point%s. Open the passive tree and press Paragon."] =
 			"Você tem %d ponto%s Paragon sem gastar. Abra a árvore passiva e aperte Paragon.",
-		["Your passive tree was refunded for free: it held more nodes than your %d passive points. Please allocate them again."] =
-			"Sua árvore passiva foi devolvida de graça: ela tinha mais nós do que seus %d pontos passivos. Distribua os pontos de novo.",
+		["Your passive tree holds %d more nodes than your %d passive points (you lost levels). Nothing was removed; you get new points when your level is back."] =
+			"Sua árvore passiva tem %d nós a mais do que seus %d pontos passivos (você perdeu níveis). Nada foi removido; você ganha novos pontos quando seu nível voltar.",
 		["Your passive tree: %d node your class cannot hold (or that left the tree) was refunded for free."] =
 			"Sua árvore passiva: %d nó que sua classe não pode ter (ou que saiu da árvore) foi devolvido de graça.",
 		["Your passive tree: %d nodes your class cannot hold (or that left the tree) were refunded for free."] =

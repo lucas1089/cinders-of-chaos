@@ -197,13 +197,14 @@ P.actions.paragonReset(p); eq(rows[70].damage, 1, "no gold, no reset")
 -- the store service resets for free
 P.resetAll(p, true); eq(next(rows[70]), nil, "store reset")
 
--- level dropped below what was spent: refunded at login
+-- level dropped below what was spent (O190): the allocation stays, login never wipes it
 rows[70] = {damage = 30}
 P.cache[7] = nil
 local low = mkPlayer(1010)
 registered["ChaosParagonLogin"].onLogin(setmetatable({registerEvent = function() end}, {__index = low}))
-eq(next(rows[70]), nil, "over budget refunded")
+eq(rows[70].damage, 30, "over budget keeps the allocation (O190)")
 -- the locked state is sent below level 1000
+rows[70] = {}
 local young = mkPlayer(562)
 P.cache[7] = nil
 P.actions.paragonRequest(young); eq(sent[#sent].data.unlocked, false, "locked below 1000"); eq(sent[#sent].data.free, 0, "no points")
@@ -329,5 +330,44 @@ eq(oldst[LEG], 500 - P.totalPoints(1500), "granted once"); eq(rows[70].mDamage, 
 local mid, midst = mkPlayer(1050, 0); midst[LEG] = -1; P.cache = {}
 registered["ChaosParagonLogin"].onLogin(setmetatable({registerEvent = function() end}, {__index = mid}))
 eq(midst[LEG], 0, "nothing below slowFrom"); eq(P.pointsOf(mid), 50, "new track only")
+
+-- O190 (beta 2026-10-24: "the tree keeps resetting when the player dies"): death -> level loss -> relogin keeps the
+-- allocation, at every level around the point thresholds and past 1100. Spending is capped by the points owned.
+do
+  local levels = {}
+  for _, base in ipairs({1000, 1001, 1099, 1100, 1101, 1105, 1106, 1112, 1500, 2192}) do
+    for d = -1, 1 do levels[#levels + 1] = base + d end
+  end
+  local checks = 0
+  for _, L in ipairs(levels) do
+    local own = P.totalPoints(L)
+    for _, loss in ipairs({1, 2, 5, 6, 50, 400}) do
+      local after = L - loss
+      local alloc = {}
+      local left = own
+      for _, key in ipairs(P.order) do
+        local n = math.min(left, P.defs[key].maxPoints)
+        if n > 0 then alloc[key] = n; left = left - n end
+      end
+      if left > 0 then alloc.mDamage = left end
+      rows[70] = {}; for k, v in pairs(alloc) do rows[70][k] = v end
+      -- death: the level falls, the character logs in again (a fresh cache)
+      local dead = mkPlayer(after, 0)
+      P.cache = {}
+      registered["ChaosParagonLogin"].onLogin(setmetatable({registerEvent = function() end, getLevel = function() return after end,
+        getStorageValue = function(_, k) if k == LEG then return 0 end return 0 end}, {__index = dead}))
+      for k, v in pairs(alloc) do eq(rows[70][k], v, "kept " .. k .. " at " .. L .. " -> " .. after) end
+      eq(P.debt(alloc, P.totalPoints(after)), math.max(0, own - P.totalPoints(after)), "debt")
+      -- over budget: nothing more can be spent until the points are back
+      if P.totalPoints(after) < own then
+        local more = P.validate({damage = (alloc.damage or 0) + 1}, alloc, P.totalPoints(after), after)
+        eq(more, nil, "no new spending in debt")
+      end
+      checks = checks + 1
+    end
+  end
+  assert(checks > 100)
+end
+eq(Chaos.paragon.slowFrom, 1100, "death test thresholds follow the config")
 
 print("paragon: all asserts passed")

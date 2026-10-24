@@ -2479,10 +2479,22 @@ or a random raid.
   "Boss points 3/10 (+3 passive points)" (translated in the client, no longer the server's English text) and the tooltip's
   second line says they are already in the points counter. If a live character still sees no free point after a first
   kill, check the kill was credited (damage map or party within 30 tiles) and the message "First kill of ..." appeared.
-- Removing a boss from the list takes its point back at the next login (a tree with more nodes than points is refunded for
-  free); never reuse an id.
+- Removing a boss from the list takes its point back at the next login (a tree with more nodes than points keeps them and
+  cannot grow until the level or points are back, O190); never reuse an id.
 - `server/tests/bosspoints_test.lua`: the list (the five world bosses of `Chaos.worldBoss`, the Trial guardian type and stage
   storage), counting, damage-map and party credit, first kill only, the Trial Warden, the tree budget, the old kills once.
+
+### Death and the point budget (O190)
+
+- Beta 2026-10-24: the tree reset after a death. Cause: the login emptied every preset with more nodes than `totalPoints`
+  (`refundOverBudget`), and the Paragon login saved an empty allocation when `spent > total`; a death takes levels, so a
+  character with every point spent lost everything when a death crossed a point threshold (one point per 4 levels; Paragon
+  per level to 1100, then per 6). Not class specific.
+- Now an allocation over budget is kept at login (`noteOverBudget`, `ChaosParagon.debt`): the player gets a message with the
+  number over, free points read 0, saves that grow the tree are refused until the points are back, nothing is written.
+  `refundForeignNodes` skips a login whose vocation cannot be read (every class node would look foreign).
+- `server/tests/passivetree_death_test.lua`: all classes and ascensions, levels around the thresholds and past 1100, losses of
+  1 to 150 levels, a Thief tree on a Ninja, transient states. A tree emptied by the old login is not stored anywhere.
 
 ## Passive tree effects (`passivetree_effects.lua`)
 The tree now has an effect: after every save, reset and login the summed node stats are applied.
@@ -2549,7 +2561,7 @@ All maxed: 282 points. Since O135 ("Progression smoothness") the points come one
   was level x 250 gold, still the fallback in `paragon.lua` without `respec.lua`). **Decision:** the store's Passive Tree Reset service resets the tree *and* Paragon for free (one paid
   respec for every passive point; its description says so). The vocation change resets only the tree: Paragon stats do not depend on
   the vocation.
-- A character whose level fell below the points it spent is refunded for free at login (like the tree). On every level above 1000
+- A character whose level fell below the points it spent keeps its allocation (O190; before, the login saved an empty one, so a death above level 1000 wiped it). The login tells it how many points are over (`P.debt`); spending waits for the level. On every level above 1000
   the player is told how many points are unspent, and the speed share follows the new base speed.
 - Protocol (opcode 65, documented at the top of `passivetree.lua` and `paragon.lua`): `paragonRequest` -> `paragonState`
   `{unlocked, level, startLevel, total, spent, free, resetCost, categories = [{key, name, stats = [{key, name, desc, perPoint,
@@ -2571,7 +2583,7 @@ CREATE TABLE IF NOT EXISTS `chaos_paragon` (
 - Client: the Paragon button next to Apply Plan / Reset in the passive tree window (`game_passivetree/paragon.lua`,
   `paragon.otui`, maths in `paragonmath.lua`). Below level 1000 it shows "Unlocks at level 1000". The "Info & Bonuses" list has a
   Paragon section.
-- `server/tests/paragon_test.lua`: points, caps, validation, the handlers against a mocked db, gold find maths, the login refund and
+- `server/tests/paragon_test.lua`: points, caps, validation, the handlers against a mocked db, gold find maths, the death -> relogin keeps the allocation matrix (O190) and
   the stacking with the tree in `passivetree_effects.lua`. `client/.../paragonmath_test.lua`: the panel's +/- maths.
 - Measured on the test server (Elite Knight, 120 tree nodes with vitality 22, spirit 12, absorb physical 3, item find 3, crit 5):
   tree only max health 22055 / mana 6787 / speed base+80 / 1000 fire hit on the dummy 1316 / 1000 physical taken 970. With

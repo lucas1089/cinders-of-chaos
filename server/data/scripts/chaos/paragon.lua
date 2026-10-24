@@ -6,7 +6,7 @@
 --   * four categories of two small stats each; a stat takes at most maxPoints, its cap is perPoint x maxPoints
 --   * allocations only go up; taking points back is a reset: level x Chaos.passive.resetCostPerLevel gold (the tree's
 --     rule), or the store's Passive Tree Reset service (shop_services.lua), which resets the tree and Paragon for free
---   * a character whose level fell below what it has spent is refunded for free at login (like the tree)
+--   * a character whose level fell below what it has spent keeps its allocation (O190); it only cannot spend more
 --
 -- O146 (beta: "300 Paragon points with nothing to spend them on"):
 --   * Paragon Mastery (Chaos.paragon.mastery): an endless sink. A rank costs 1 point, `ranks` ranks of a mastery give
@@ -120,6 +120,11 @@ end
 function P.legacyPoints(level)
 	local old = math.max(0, (level or 0) - cfg.startLevel) * (cfg.pointsPerLevel or 1)
 	return math.max(0, math.floor(old) - P.totalPoints(level))
+end
+
+-- points spent above the points owned (0 or more); never a reason to take anything back (O190)
+function P.debt(alloc, total)
+	return math.max(0, P.spent(alloc) - math.max(0, total or 0))
 end
 
 function P.spent(alloc)
@@ -528,8 +533,6 @@ local login = CreatureEvent("ChaosParagonLogin")
 function login.onLogin(player)
 	player:registerEvent("ChaosParagonAdvance")
 	player:registerEvent("ChaosParagonLogout")
-	-- refund over budget (the level dropped below what was spent); runs before or after the tree's login, either way
-	-- the tree's apply reads the allocation from the cache
 	local granted = P.grantLegacy(player)
 	if granted > 0 then
 		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player,
@@ -538,12 +541,13 @@ function login.onLogin(player)
 	end
 	local alloc = P.allocation(player)
 	local total = P.pointsOf(player)
-	if P.spent(alloc) > total then
-		P.save(player:getGuid(), {})
-		P.cache[player:getId()] = {}
-		reapply(player)
+	-- O190: over budget (a death took levels) keeps the allocation; only new spending waits for the level. It used to
+	-- save an empty allocation here, so one death above level 1000 wiped the Paragon points (beta 2026-10-24).
+	local debt = P.debt(alloc, total)
+	if debt > 0 then
 		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player,
-			"Your Paragon points were refunded for free: you had spent more than your %d points.", total))
+			"Your Paragon allocation holds %d more points than the %d you own (you lost levels). Nothing was removed; you get new points when your level is back.",
+			debt, total))
 	end
 	return true
 end
