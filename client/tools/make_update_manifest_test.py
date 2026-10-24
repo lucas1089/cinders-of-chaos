@@ -708,7 +708,7 @@ class Workflow(unittest.TestCase):
         self.assertEqual(text.count('spr_shards.py verify'), 2)
         # the map editor gets the single file, not the shards
         self.assertNotIn('cp "$P/client/data/things/1098/"Tibia.*', text)
-        self.assertIn('"$P/mapeditor/data/1098/"', text)
+        self.assertIn('"$P/mapeditor/client/"', text)
 
 
 if __name__ == '__main__':

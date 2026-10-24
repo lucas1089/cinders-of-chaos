@@ -2958,7 +2958,7 @@ by one (client/BASE.md 0048; docs/LAUNCH.md "Client updates").
   (`updater_core.lua` `M.MAX_FILE_SIZE`, the same in `make_update_manifest.py`) refuses a whole manifest that lists a
   bigger file, so that limit can never grow for the builds already out. The workflow unpacks the pair beside the
   client tree, copies the dat, splits and verifies the spr into the tree, and moves the single `Tibia.spr` (with the
-  dat) to the map editor only (`mapeditor\data\1098`): it cannot read shards. This replaces the owner decision of
+  dat) to the map editor only (`mapeditor\client`): it cannot read shards. This replaces the owner decision of
   2026-10-13 (single file in the Windows package for the map editor), whose reason the editor's own copy now covers.
   Shards inside the pack load like loose ones: 0048 opens them by PhysFS path, and the pack is a PhysFS memory mount
   (base patch 0102); the Linux start test of the workflow starts a packed, sharded client.
