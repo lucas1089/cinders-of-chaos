@@ -486,6 +486,69 @@ do
 	ok(plain(M.clientState({voc = 24, level = 800, tier = 3, picks = {2, 1, 2}, tokens = 0, now = 0, cooldown = 0}), 0), "plain data")
 end
 
+-- O187 (owner beta 2026-10-24: "in the Ninja's Merciless trial the Marked Cutthroat keeps reviving, so it is impossible to
+-- count the kills"). A mark fled after markSeconds whether or not it was being fought and came back at full health; the mark
+-- of a Merciless level 400 character (7020 health, 10 s) needs 700 damage a second to die in time.
+do
+	local sc = M.scale(3, 400, 12)
+	local markHp = math.max(50, math.floor(sc.addHp * 0.6))
+	local secs = M.cfg().tiers[3].markSeconds
+	eq(markHp, 7020, "Merciless level 400 mark health")
+	-- a player who deals `dps` a second, one tick every 500 ms
+	local function run(markStep, dps)
+		local now, flees, kills, hpNow, deadline, last = 0, 0, 0, markHp, 10000, markHp
+		for _ = 1, 4000 do -- 2000 s of 500 ms ticks
+			now = now + 500
+			hpNow = hpNow - dps * 0.5
+			if hpNow <= 0 then
+				kills = kills + 1
+				if kills >= 5 then return kills, flees end
+				hpNow, deadline, last = markHp, now + secs * 1000, markHp
+			else
+				local act, d, l = markStep(now, deadline, last, hpNow, flees, secs)
+				deadline, last = d, l
+				if act == "flee" then
+					flees = flees + 1
+					hpNow, deadline, last = markHp, now + secs * 1000, markHp -- it comes back at full health
+				end
+			end
+		end
+		return kills, flees
+	end
+	-- the old rule: flee whenever the clock ran out
+	local function legacy(now, deadline, last, hp, flees)
+		if now >= deadline then return "flee", deadline, hp end
+		return "wait", deadline, hp
+	end
+	local kills, flees = run(legacy, 500)
+	eq(kills, 0, "bug reproduced: with the old rule a 500 dps character never kills a Merciless mark")
+	ok(flees > 100, "bug reproduced: the mark fled and came back again and again (" .. flees .. ")")
+	kills, flees = run(M.markStep, 500)
+	eq(kills, 5, "markStep: all five marks die")
+	eq(flees, 0, "markStep: a mark that is being fought never flees")
+	-- an untouched mark flees at most markMaxFlees times, then it stays
+	local f = 0
+	local deadline, last = 10000, 100
+	for t = 1, 400 do
+		local act, d, l = M.markStep(t * 500, deadline, last, 100, f, 10)
+		deadline, last = d, l
+		if act == "flee" then f = f + 1; deadline = t * 500 + 10000 end
+	end
+	eq(f, M.cfg().markMaxFlees, "an untouched mark flees markMaxFlees times, no more")
+	eq((M.markStep(1e9, 0, 100, 100, M.cfg().markMaxFlees, 10)), "wait", "after that it waits for its killer")
+	local act, d = M.markStep(5000, 3000, 100, 90, 0, 10)
+	eq(act, "hit", "a wound is a hit")
+	eq(d, 15000, "and starts the clock again")
+	-- health coming back (regeneration) is not a wound
+	act = M.markStep(5000, 20000, 90, 100, 0, 10)
+	eq(act, "wait", "healing is not progress")
+	-- the counter after a stage of kills
+	eq(M.stageKills(3, 0, 5), 5, "stage kills: a short counter is filled")
+	eq(M.stageKills(9, 4, 5), 9, "stage kills: never lowered")
+	eq(M.stageKills(nil, nil, 5), 5, "stage kills: defaults")
+	ok((M.cfg().markMaxFlees or 0) >= 1, "markMaxFlees is configured")
+end
+
 print(string.format("trials_test: %d checks, %d failures", checks, fails))
 if fails > 0 then
 	os.exit(1)

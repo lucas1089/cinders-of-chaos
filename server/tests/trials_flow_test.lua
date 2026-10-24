@@ -26,7 +26,9 @@ local function eventMock(kind)
 end
 CreatureEvent, GlobalEvent, TalkAction = eventMock("creature"), eventMock("global"), eventMock("talk")
 EventCallback = setmetatable({}, {__index = function() return function() end end})
-function EventCallback.register() end
+local spawnCallbacks = {}
+function EventCallback.register(self, index) spawnCallbacks[#spawnCallbacks + 1] = rawget(self, "onSpawn") end
+ChaosTierConfig = {skip = {}} -- monster_tiers.lua's table (the trial's monsters are never tiered)
 Game = {}
 dofile("data/lib/chaos_spell_events.lua")
 
@@ -252,6 +254,65 @@ do
 		"the next hit is")
 	T.runs[501], T.runs[502], T.monsterRun[9001] = nil, nil, nil
 	ChaosArchetypes, math.random = savedA, savedRandom
+end
+
+-- O187: the Marked Cutthroat and the other trial monsters. Kills are credited, nothing else stands in a running chamber.
+do
+	eq(ChaosTierConfig.skip["trial thrall"], true, "the thralls get no tier (so no ambush copy)")
+	eq(ChaosTierConfig.skip["trial warden"], true, "the warden gets no tier")
+	local L = M.layout(3)
+	local inside = {x = L.center.x, y = L.center.y, z = L.z}
+	local outside = {x = 100, y = 100, z = 7}
+	local savedPlayer = Player
+	Player = function() return nil end
+	local tr = {pid = 4401, L = L, famKey = "thief", fam = {}, tier = 3, tierDef = Chaos.trials.tiers[3], stage = {kind = "marks", count = 5},
+		stages = {}, adds = {}, risen = {}, killed = 0, total = 6, markIdx = 1, markFlees = 0, killBase = 0, scale = {addHp = 100}}
+	T.runs[4401] = tr
+	eq(T.runAt(inside), tr, "runAt: the chamber of a running trial")
+	eq(T.runAt(outside), nil, "runAt: nil outside")
+	tr.over = true
+	eq(T.runAt(inside), nil, "runAt: nil once the trial is over")
+	tr.over = nil
+	local function creature(id)
+		return {getId = function() return id end, getPosition = function() return inside end}
+	end
+	eq(T.isTrialMonster(creature(8801)), false, "isTrialMonster: unknown id")
+	T.monsterRun[8801] = 4401
+	eq(T.isTrialMonster(creature(8801)), true, "isTrialMonster: a trial monster")
+	T.monsterRun[8801] = nil
+	-- the map's own respawn is refused in the chamber; a monster made by a script (the trial's own) is not
+	local guard
+	for _, cb in ipairs(spawnCallbacks) do
+		if cb(nil, outside, false, false) == true and cb(nil, inside, false, false) == false then guard = cb end
+	end
+	ok(guard ~= nil, "a spawn callback refuses the map respawn inside a running trial")
+	if guard then
+		eq(guard(nil, inside, false, true), true, "a script-made monster (the trial's own) is allowed")
+		eq(guard(nil, inside, true, false), true, "the server start is allowed")
+		eq(guard(nil, outside, false, false), true, "outside: allowed")
+	end
+	-- the death event credits a mark
+	local death
+	for _, e in ipairs(registered) do
+		if e.name == "ChaosTrialMonsterDeath" then death = e end
+	end
+	ok(death ~= nil, "death event registered")
+	T.monsterRun[8802], tr.adds[8802], tr.markId = 4401, true, 8802
+	death.onDeath(creature(8802), nil, nil, nil)
+	eq(tr.killed, 1, "a mark kill is credited")
+	eq(tr.markId, nil, "the mark is cleared")
+	eq(tr.adds[8802], nil, "and no longer an add")
+	eq(T.monsterRun[8802], nil, "and no longer a trial monster")
+	-- a wave thrall counts; one that stood up again (necromancer) does not count a second time
+	tr.famKey, tr.stage, tr.killed = "warrior", {kind = "wave"}, 0
+	T.monsterRun[8803], tr.adds[8803] = 4401, true
+	death.onDeath(creature(8803), nil, nil, nil)
+	eq(tr.killed, 1, "a wave thrall is credited")
+	T.monsterRun[8804], tr.adds[8804], tr.risen[8804] = 4401, true, true
+	death.onDeath(creature(8804), nil, nil, nil)
+	eq(tr.killed, 1, "a risen thrall was counted when it fell the first time")
+	T.runs[4401] = nil
+	Player = savedPlayer
 end
 
 print(string.format("trials_flow_test: %d checks, %d failures", checks, fails))

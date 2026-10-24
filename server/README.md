@@ -11312,6 +11312,20 @@ runs, life loss, first clear, choose / refuse / switch, tree reset, crash recove
 mark and fire mechanics and the evade / reflect / mana shield nodes. Balance: boss health (`hp` per tier) and the thrall
 hit rate are first guesses.
 
+**Marks and kill counts (O187, 2026-10-24).** Beta report: "In the Ninja's Merciless trial, the Marked Cutthroat keeps
+reviving, so it is impossible to count the kills". A mark (the thief family's fast target) used to be removed after
+`markSeconds` (16 / 13 / 10) whether or not it was being fought, and came back at full health for 20 s of the clock, without
+a limit; its health is a share of the boss health (Merciless level 400: 7020 health, so 700 damage a second to kill it in
+10 s). Now `ChaosTrialsCore.markStep` runs the clock: a tick that finds the mark lower than the last one starts the clock
+again, an untouched mark flees at most `markMaxFlees` (3) times in a run and then stays until it dies. A mark that
+vanishes without its death event is counted as a kill, `stageKills` fills the counter when the marks are done, a spawn
+that fails does not use up a mark number, and a necromancer thrall that stood up again is not counted a second time.
+`ChaosTrials.runAt(pos)` / `isTrialMonster(creature)` (like `ChaosDungeons.runAt`) keep the ambush copy
+(`monster_tiers.lua`, also one queued before the trial opened), the tier roll and the Treasure Goblin out of a running
+chamber, and the map's own respawn is refused there. Not on a live server: the thralls were already skipped by the tier
+script (`skipTiers`), so an ambush was not the cause; the clock rule is. Tests: `tests/trials_test.lua` (block O187
+reproduces the old rule with the numbers above), `trials_flow_test.lua`, `monster_tiers_test.lua`.
+
 ## Salvage (`salvage.lua`, `salvage_core.lua`, `salvage_config.lua`, `tools/install_salvage.py`, client `game_crafting`)
 
 

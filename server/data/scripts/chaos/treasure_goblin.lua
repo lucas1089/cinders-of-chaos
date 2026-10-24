@@ -668,6 +668,10 @@ spawnCb.onSpawn = function(self, position, startup, artificial)
 	if ChaosDungeons and ChaosDungeons.runAt and ChaosDungeons.runAt(position) then
 		return true
 	end
+	-- nor in a running Vocation Trial chamber (O187)
+	if ChaosTrials and ChaosTrials.runAt and ChaosTrials.runAt(position) then
+		return true
+	end
 	-- a display monster of the hunt teleport room (hunt_teleports.lua) is never replaced
 	local HT = ChaosHuntTeleports
 	if HT and HT.isDisplaySpot and HT.isDisplaySpot(position) then

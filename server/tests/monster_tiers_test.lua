@@ -292,6 +292,47 @@ eq(stateCount(), before + 1, "ambush: one new tier state")
 think(copy)
 eq(state[copy:getId()], cs, "ambush: no natural roll on top of the copy's tier")
 
+-- O187 ("the Marked Cutthroat keeps reviving"): no ambush copy inside a running Vocation Trial chamber, and no tier for one of
+-- its monsters (the trial counts its own kills; an uncounted copy of the mark stood next to the corpse)
+do
+	local chamber = position(9100, 9100, 7)
+	ChaosTrials = {
+		runAt = function(pos) return pos.x == 9100 and {} or nil end,
+		isTrialMonster = function(m) return m.trialMonster == true end
+	}
+	cfg.ambush.normal = 10000
+	local inTrial = Game.createMonster("Dragon", chamber, true, false)
+	think(inTrial)
+	events = {}
+	local made = nextId
+	creatureEvents.ChaosTierDeath.onDeath(inTrial, nil, player, player)
+	runEvents()
+	eq(nextId, made, "O187: a kill inside a running trial brings no ambush copy")
+	-- the same kill outside a trial still does
+	local outside = Game.createMonster("Dragon", position(9200, 9100, 7), true, false)
+	think(outside)
+	events = {}
+	creatureEvents.ChaosTierDeath.onDeath(outside, nil, player, player)
+	runEvents()
+	check(nextId > made, "O187: a kill outside a trial still brings an ambush")
+	-- a copy queued before a trial opened on that tile is dropped at its 600 ms delay
+	local early = Game.createMonster("Dragon", position(9200, 9300, 7), true, false)
+	think(early)
+	events = {}
+	creatureEvents.ChaosTierDeath.onDeath(early, nil, player, player)
+	made = nextId
+	ChaosTrials.runAt = function() return {} end -- the trial opens before the delay is over
+	runEvents()
+	eq(nextId, made, "O187: an ambush queued before the trial opened is dropped at its delay")
+	-- a monster the trial made is not eligible for a tier
+	local thrall = Game.createMonster("Dragon", position(9300, 9100, 7), true, false)
+	thrall.trialMonster = true
+	think(thrall)
+	eq(state[thrall:getId()], nil, "O187: a trial monster never gets a tier")
+	ChaosTrials = nil
+	cfg.ambush.normal = 400
+end
+
 -- pack combat (pace.lua): the ambush chance of a paced monster x its loot factor, and its copy is marked for the layer
 do
 	local marked = {}
