@@ -276,6 +276,23 @@ eq(created[1] and created[1].name, "Loot Buyer", "the NPC name")
 eq(created[2] and created[2].pos.x, 304, "a blocked tile is skipped (next offset)")
 check(ChaosItemPrices.sellPrice ~= nil, "the revscript keeps the API")
 
+-- every base the chaos loot layer drops (data/lib/chaos_class_loot.lua: bows, crossbows, wands, rods, quivers,
+-- spellbooks) has a price, or the Auto Seller keeps it as "noPrice" (gen_item_prices.py --check does the same for the
+-- Gambler's pool and the gear coverage books)
+do
+	local CL = dofile("data/lib/chaos_class_loot.lua")
+	local flat = dofile("data/scripts/chaos/sell_prices.lua")
+	local n = 0
+	for kind, list in pairs(CL.bases) do
+		for _, b in ipairs(list) do
+			n = n + 1
+			check(P.basePrice(b[1]) > 0, "class loot " .. kind .. " " .. b[1] .. " (level " .. b[2] .. ") has a price")
+			check(flat[b[1]] == P.basePrice(b[1]), "class loot " .. kind .. " " .. b[1] .. " is in the Auto Seller's table")
+		end
+	end
+	check(n > 100, "class loot bases read (" .. n .. ")")
+end
+
 print(string.format("item_prices_test: %d checks, %d failures", count, failures))
 if failures > 0 then
 	os.exit(1)

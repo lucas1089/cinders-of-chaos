@@ -12124,7 +12124,12 @@ NPC sell and buy prices of the NPCs in the game, and its loot sources as counts,
 `data/items/base_recipes.csv` (the base crafting recipes), `data/items/item_price_rules.csv` (overrides: the quest items,
 the base upgrade runes) and the Chaos sources (creature products and food of `art_items.csv`, `fist_items.csv`, gems,
 supports, charms, uniques, orbs, omens, Ascended items, faction tokens, pouches, the Everfull Ration, the store's items
-in `shop_config.lua`, every Chaos monster's loot). `gen_item_prices.py survey BASE_DATA` rewrites the snapshot from a
+in `shop_config.lua`, every Chaos monster's loot, and the wearable bases the Chaos layers drop or give on top of the
+stock tables: `data/lib/chaos_class_loot.lua` (bows, crossbows, wands, rods, quivers, spellbooks), the Gambler's pool in
+`gamble_config.lua` and the spellbook list of `tools/gear_coverage_config.lua`; the snapshot only knows what stock monsters
+drop, so these are priced as equipment by their level requirement and slot, under the same caps; a quiver counts as a
+backpack; `--check` and `tests/item_prices_test.lua` fail when one of them has no price, because the Auto Seller keeps an
+unpriced item as "noPrice" and never sells it, 2026-10-24). `gen_item_prices.py survey BASE_DATA` rewrites the snapshot from a
 base server (2,840 items, 275 recipes); `report` prints the problem counts and the bands below; `income BASE_DATA`
 the gold per hour.
 
