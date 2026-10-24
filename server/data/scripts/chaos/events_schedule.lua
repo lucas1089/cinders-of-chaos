@@ -153,7 +153,7 @@ local login = CreatureEvent("ChaosEventsLogin")
 function login.onLogin(player)
 	if cfg().announceOnLogin then
 		for _, line in ipairs(E.describeActive()) do
-			player:sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, "Event active - " .. line)
+			player:sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, Chaos.t(player, "Event active - %s", line))
 		end
 	end
 	return true
@@ -166,7 +166,7 @@ function talk.onSay(player, words, param)
 	if #lines == 0 then
 		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "No event is active today. Check the calendar on the login screen."))
 	else
-		player:sendTextMessage(MESSAGE_INFO_DESCR, "Active events:\n" .. table.concat(lines, "\n"))
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Active events:\n%s", table.concat(lines, "\n")))
 	end
 	return false
 end

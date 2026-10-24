@@ -1516,7 +1516,7 @@ function A.useRelic(player)
 		for _, k in ipairs(list) do
 			names[#names + 1] = U.kind(cfg, k).name
 		end
-		player:sendCancelMessage("The Cinderheart needs one relic of each Ascended Omen. Missing: " .. table.concat(names, ", ") .. ".")
+		player:sendCancelMessage(Chaos.t(player, "The Cinderheart needs one relic of each Ascended Omen. Missing: %s.", table.concat(names, ", ")))
 		return false
 	end
 	local final = U.finalKind(cfg)

@@ -23,6 +23,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 
 -- the type behind a shown name (chaos_constants.lua "Monster names"; a renamed rift monster or invader is still its type)
 local function typeNameOf(creature)
@@ -364,7 +367,7 @@ local function applyTier(monster, tier, depth)
 	end
 	if tier == "legendary" and cfg.announceLegendary then
 		for _, p in ipairs(Game.getSpectators(monster:getPosition(), false, true, 9, 9, 7, 7)) do
-			p:sendTextMessage(MESSAGE_EVENT_ADVANCE, "A legendary " .. monster:getName() .. " appears!")
+			p:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(p, "A legendary %s appears!", monster:getName()))
 		end
 	end
 end

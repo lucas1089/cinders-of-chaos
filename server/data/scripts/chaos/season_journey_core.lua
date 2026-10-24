@@ -6,10 +6,10 @@
 --   K.applies(obj, flags)               flags = {ssf, hc} of the character's season mode
 --   K.merge(stats, mode, stat, value)   "add" / "max"; true when the stat changed
 --   K.value(stats, stat, level)         the current value of an objective's stat
---   K.chapterOpen(journey, i, ctx)      -> true or false, reason ("Finish ..." / "Reach level ...")
+--   K.chapterOpen(journey, i, ctx, lang) -> true or false, reason ("Finish ..." / "Reach level ...")
 --   K.evaluate(journey, ctx)            -> objectives done now [{chapter, obj}], chapters completed now [{index, chapter}]
 --                                          (marks them in ctx.done / ctx.claimed; a chapter is returned once, ever)
---   K.view(journey, ctx, opts)          -> {header, chapters = [{key, name, ..., objectives}]} for the window
+--   K.view(journey, ctx, opts)          (opts.lang: the player's language) -> {header, chapters = [{key, name, ..., objectives}]} for the window
 --   K.rewardText(reward), K.rewardsText(list)
 --   K.pieces(journey, claimed)          -> pieces of the set owned, pieces in total
 -- ctx = {level, stats = {stat = n}, flags = {ssf, hc}, done = {objKey = at}, claimed = {chapterKey = at}, now}
@@ -17,6 +17,18 @@
 
 ChaosSeasonJourneyCore = ChaosSeasonJourneyCore or {}
 local K = ChaosSeasonJourneyCore
+
+-- a text in the player's language (a key of i18n_strings.lua: the English text itself; English when `lang` is nil)
+local function T(lang, key, ...)
+	if ChaosI18n and ChaosI18n.text then
+		return ChaosI18n.text(lang, key, ...)
+	end
+	if select("#", ...) == 0 then
+		return key
+	end
+	return string.format(key, ...)
+end
+K.T = T
 
 K.ONLY = {hc = true, ssf = true, nossf = true, nohc = true}
 K.REWARDS = {passxp = true, items = true, look = true, outfit = true, mount = true, title = true}
@@ -167,17 +179,17 @@ local function chapterComplete(chapter, ctx)
 	return true
 end
 
-function K.chapterOpen(journey, i, ctx)
+function K.chapterOpen(journey, i, ctx, lang)
 	local ch = journey.chapters[i]
 	if not ch then
-		return false, "Unknown chapter."
+		return false, T(lang, "Unknown chapter.")
 	end
 	local prev = journey.chapters[i - 1]
 	if prev and not (ctx.claimed or {})[prev.key] then
-		return false, "Finish " .. prev.name .. " first."
+		return false, T(lang, "Finish %s first.", T(lang, prev.name))
 	end
 	if (tonumber(ctx.level) or 0) < (tonumber(ch.level) or 0) then
-		return false, "Reach level " .. ch.level .. "."
+		return false, T(lang, "Reach level %d.", tonumber(ch.level) or 0)
 	end
 	return true
 end
@@ -209,24 +221,25 @@ function K.evaluate(journey, ctx)
 end
 
 -- ---------------------------------------------------------------- texts
-function K.rewardText(r)
+-- item names stay English (as everywhere in the game); the appearance, outfit and mount lines are keys
+function K.rewardText(r, lang)
 	if type(r) ~= "table" then
 		return ""
 	end
 	if r.kind == "passxp" then
-		return string.format("%d pass XP", r.amount or 0)
+		return T(lang, "%d pass XP", r.amount or 0)
 	elseif r.kind == "items" then
 		return string.format("%d %s", r.count or 1, r.name or ("item " .. tostring(r.id)))
 	elseif r.kind == "title" then
-		return "Title: " .. tostring(r.title)
+		return T(lang, "Title: %s", tostring(r.title))
 	end
-	return tostring(r.name or r.kind)
+	return r.name and T(lang, r.name) or tostring(r.kind)
 end
 
-function K.rewardsText(list)
+function K.rewardsText(list, lang)
 	local parts = {}
 	for _, r in ipairs(list or {}) do
-		parts[#parts + 1] = K.rewardText(r)
+		parts[#parts + 1] = K.rewardText(r, lang)
 	end
 	return table.concat(parts, ", ")
 end
@@ -257,7 +270,8 @@ function K.view(journey, ctx, opts)
 	local chapters = {}
 	local current
 	for i, ch in ipairs(journey.chapters) do
-		local open, why = K.chapterOpen(journey, i, ctx)
+		local lang = opts.lang
+		local open, why = K.chapterOpen(journey, i, ctx, lang)
 		local list = K.objectivesOf(ch, opts.preview and {} or ctx.flags)
 		if opts.preview then
 			-- a preview shows what every mode would see: the mode objectives marked as such
@@ -277,14 +291,14 @@ function K.view(journey, ctx, opts)
 				target = 1
 				progress = progress and (progress >= o.target and 1 or 0) or nil
 			end
-			rows[#rows + 1] = {key = o.key, text = o.text, target = target, progress = progress, done = done,
+			rows[#rows + 1] = {key = o.key, text = T(lang, o.text), target = target, progress = progress, done = done,
 				only = o.only}
 		end
 		local rewards = {}
 		for _, r in ipairs(ch.rewards or {}) do
 			local cid = (r.kind == "items" or r.kind == "look") and opts.clientId and opts.clientId(r.id) or nil
 			local look = r.kind == "outfit" and (opts.female and r.female or r.male) or (r.kind == "mount" and r.clientid) or nil
-			rewards[#rewards + 1] = {kind = r.kind, text = K.rewardText(r), piece = r.piece or nil, clientId = cid,
+			rewards[#rewards + 1] = {kind = r.kind, text = K.rewardText(r, lang), piece = r.piece or nil, clientId = cid,
 				count = r.kind == "items" and r.count or nil, look = look}
 		end
 		local state
@@ -298,7 +312,7 @@ function K.view(journey, ctx, opts)
 		else
 			state = "locked"
 		end
-		chapters[i] = {key = ch.key, name = ch.name, text = ch.text, level = ch.level or 0, state = state,
+		chapters[i] = {key = ch.key, name = T(lang, ch.name), text = ch.text and T(lang, ch.text), level = ch.level or 0, state = state,
 			lockedWhy = (state == "locked") and why or nil, done = doneCount, total = #rows, objectives = rows,
 			rewards = rewards}
 	end
@@ -309,7 +323,7 @@ function K.view(journey, ctx, opts)
 			finished = finished + 1
 		end
 	end
-	return {name = journey.name, set = journey.set, pieces = have, piecesTotal = total, finished = finished,
+	return {name = T(opts.lang, journey.name), set = journey.set, pieces = have, piecesTotal = total, finished = finished,
 		current = current, preview = opts.preview or nil}, chapters
 end
 

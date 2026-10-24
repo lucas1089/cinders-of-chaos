@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 """Converts a purchased painted UI pack into the game-ready images of the Chaos skin (docs/CREDITS.md, "Art packs").
 
-usage: python3 -I client/tools/import_hud_kit.py <pack-dir> [--list]
+usage: python3 -I client/tools/import_hud_kit.py <pack-dir> [--list] [--full]
+
+By default only the orb rings are written: the owner kept the pack's health and mana orbs and asked for the rest of
+the UI back as it was (O155 rolled back). --full also writes the plate, action bar, window and control images below.
 
 <pack-dir> holds the pack's own folders (HUD, Popup, Settings ..., see SRC below for the paths read). Nothing of
 the pack is copied: every output is cropped, resized to the size the client style expects, 9-sliced or recoloured
@@ -409,10 +412,11 @@ def main(argv):
         sys.exit(__doc__)
     kit = args[0]
     gen_orbs(kit)
-    gen_plate(kit)
-    gen_slots(kit)
-    gen_windows(kit)
-    gen_controls(kit)
+    if '--full' in argv:
+        gen_plate(kit)
+        gen_slots(kit)
+        gen_windows(kit)
+        gen_controls(kit)
     untrack_reskin()
     print('%d images written' % len(WRITTEN))
 

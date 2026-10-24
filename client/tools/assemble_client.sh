@@ -29,11 +29,19 @@ rm -f "$OUT/mods/game_helper/cavebot_panel.lua" "$OUT/mods/game_helper/scripting
 # patches above still apply to mods/game_helper first (earlier patches are never edited), then the folder goes.
 # game_interface loads "game_helper" by name from its load-later list and finds the overlay module.
 rm -rf "$OUT/mods/game_helper"
+# An install updated over a package that still had the base helper keeps it inside its chaos.pack (the updater adds and
+# replaces files, it never hides one). A retired stub at the base helper's own .otmod path replaces it there: another
+# name, no scripts, so the engine never merges it into our game_helper (tools/ci/check_assembled.py RETIRED_STUB).
+mkdir -p "$OUT/mods/game_helper"
+printf 'Module\n  name: game_helper_base_retired\n  description: the base helper, retired (Cinders of Chaos uses modules/game_helper)\n  autoload: false\n' > "$OUT/mods/game_helper/helper.otmod"
 # the base native splash picture (used only with init.lua ENABLE_NATIVE_SPLASH on; without it no splash is drawn) and
 # the browser build's emblem show the base client's name in the picture (client/BASE.md "Names check")
 rm -f "$OUT/data/images/splash.png" "$OUT"/data/images/*-client-emblem.png
 cp -a "$HERE"/overlay/modules/. "$OUT/modules/"
 cp -a "$HERE"/overlay/data/. "$OUT/data/"
+# one game_helper, ours, and no two modules of one name (tools/ci/check_assembled.py): a base helper left next to ours
+# is merged into it by the engine and wins, and the helper loses its Auto setup and Support tab
+if command -v python3 >/dev/null 2>&1; then python3 -I "$HERE/../tools/ci/check_assembled.py" "$OUT"; fi
 # our executable icon (src/otcicon.rc names otcicon.ico; the window icon data/images/clienticon.png came with the overlay data);
 # made by tools/gen_client_icon.py from docs/brand/cinders_logo_icon.png
 if [ -d "$HERE/overlay/src" ]; then mkdir -p "$OUT/src" && cp -a "$HERE"/overlay/src/. "$OUT/src/"; fi

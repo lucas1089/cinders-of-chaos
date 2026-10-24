@@ -1712,7 +1712,7 @@ function Chaos.sweepIntruders(inArea, isMember, text)
 				if to.sendMagicEffect then
 					to:sendMagicEffect(CONST_ME_TELEPORT)
 				end
-				p:sendTextMessage(MESSAGE_EVENT_ADVANCE, text or "You do not belong to the group in there: you were sent to your temple.")
+				p:sendTextMessage(MESSAGE_EVENT_ADVANCE, text or (Chaos.t and Chaos.t(p, "You do not belong to the group in there: you were sent to your temple.")) or "You do not belong to the group in there: you were sent to your temple.")
 				n = n + 1
 			end
 		end

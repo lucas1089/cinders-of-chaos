@@ -492,14 +492,14 @@ function login.onLogin(player)
 	local now = os.time()
 	if Core.active(st, now) then
 		local left = Core.daysLeft(st.pactEnds, now)
-		local text = string.format("Your Chaos Pact runs for %d more day%s.", left, left == 1 and "" or "s")
+		local text = Chaos.t(player, left == 1 and "Your Chaos Pact runs for %d more day." or "Your Chaos Pact runs for %d more days.", left)
 		if Core.claim(cfg, st, now, Chaos.dayKey(now)) then
-			text = text .. string.format(" Today's %d Chaos Coins wait in Character > Chaos Pact.", cfg.pact.dailyCoins)
+			text = text .. " " .. Chaos.t(player, "Today's %d Chaos Coins wait in Character > Chaos Pact.", cfg.pact.dailyCoins)
 		end
 		player:sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, text)
 	elseif st.pactEnds > 0 and now - st.pactEnds < 14 * 86400 then
-		player:sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, "Your Chaos Pact has ended. Nothing is lost: extra stash and depot tabs are " ..
-			"withdraw-only, extra market offers run until they end, extra saved builds can be loaded or deleted.")
+		player:sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, Chaos.t(player,
+			"Your Chaos Pact has ended. Nothing is lost: extra stash and depot tabs are withdraw-only, extra market offers run until they end, extra saved builds can be loaded or deleted."))
 	end
 	return true
 end

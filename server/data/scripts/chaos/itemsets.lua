@@ -618,7 +618,7 @@ if not ChaosCommands then
 	dofile("data/scripts/chaos/commands_ui_core.lua")
 end
 ChaosCommands.register("sets", function(player)
-	player:sendTextMessage(MESSAGE_INFO_DESCR, "Item sets: " .. table.concat(S.summaryLines(S.stateOf(player)), "; "))
+	player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Item sets: %s", table.concat(S.summaryLines(S.stateOf(player)), "; ")))
 	return false
 end)
 

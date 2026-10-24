@@ -215,7 +215,7 @@ local function endRun(run, reason)
 	for id in pairs(run.players) do
 		local player = Player(id)
 		if player then
-			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, reason .. string.format(" You cleared %d floor(s).", run.cleared))
+			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, reason) .. " " .. Chaos.t(player, "You cleared %d floor(s).", run.cleared))
 		end
 		removePlayer(run, id, true)
 	end
@@ -498,15 +498,15 @@ function ChaosTowerRun.start(player)
 	local group = groupOf(player)
 	for _, m in ipairs(group) do
 		if runOf[m:getId()] then
-			player:sendCancelMessage(m:getName() .. " is already inside the tower.")
+			player:sendCancelMessage(Chaos.t(player, "%s is already inside the tower.", m:getName()))
 			return false
 		end
 		if m:getLevel() < cfg.minLevel then
-			player:sendCancelMessage(m:getName() .. " does not have the required level.")
+			player:sendCancelMessage(Chaos.t(player, "%s does not have the required level.", m:getName()))
 			return false
 		end
 		if ChaosTower and ChaosTower.canEnter and not ChaosTower.canEnter(m) then
-			player:sendCancelMessage(m:getName() .. " has to wait before trying the tower again.")
+			player:sendCancelMessage(Chaos.t(player, "%s has to wait before trying the tower again.", m:getName()))
 			return false
 		end
 		if Chaos and Chaos.isMultiClient and Chaos.isMultiClient(m) then

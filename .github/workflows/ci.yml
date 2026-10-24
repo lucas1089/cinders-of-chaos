@@ -63,7 +63,9 @@ jobs:
           done
 
       - name: Client modules (otmod name, scripts)
-        run: python3 -I tools/ci/check_modules.py
+        run: |
+          python3 -I tools/ci/check_modules.py
+          python3 -I tools/ci/check_assembled_test.py
       - name: Client localization (every tr() key has pt-BR, no hard-coded UI text)
         run: python3 -I tools/ci/check_locales.py
 

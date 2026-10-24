@@ -12,7 +12,7 @@
 --   K.maxPoints(index)
 --   K.categorySummary(index, unlocked)    -> [{key, name, done, total, points, max}]
 --   K.view(index, stats, unlocked)        -> the window's rows (hidden + locked -> "???", no progress)
---   K.recent(index, unlocked, n)          -> the newest n unlocks [{id, name, points, at}]
+--   K.recent(index, unlocked, n, lang)    -> the newest n unlocks [{id, name, points, at}]
 --   K.titlesOf(index, unlocked)           -> titles for ChaosTitles (source "achievement")
 --   K.rewardText(reward, nameOf)          -> "3 Orb of Upheaval, mount Doombringer" (nameOf(itemId) -> name)
 --   K.toast(def, rewardText)              -> title, text of the unlock toast ("Blooded", "+5 points. Reward: ...")
@@ -37,6 +37,11 @@ local function T(lang, key, ...)
 		return key
 	end
 	return string.format(key, ...)
+end
+
+-- the name of an achievement in the player's language (names are keys of i18n_strings.lua; titles stay English)
+function K.nameOf(def, lang)
+	return def.name and T(lang, def.name) or def.id
 end
 
 local function validKey(s)
@@ -251,7 +256,7 @@ function K.view(index, stats, unlocked, nameOf, lang)
 			row.d = T(lang, "A hidden achievement. Keep playing to find it.")
 			row.v, row.t = 0, 0
 		else
-			row.n = def.name
+			row.n = K.nameOf(def, lang)
 			row.d = def.desc and T(lang, def.desc) or ""
 			row.v, row.t = K.progressOf(def, stats or {}, points)
 			if def.hidden then
@@ -267,12 +272,12 @@ function K.view(index, stats, unlocked, nameOf, lang)
 	return rows
 end
 
-function K.recent(index, unlocked, n)
+function K.recent(index, unlocked, n, lang)
 	local out = {}
 	for id, at in pairs(unlocked or {}) do
 		local def = index.byId[id]
 		if def then
-			out[#out + 1] = {id = id, name = def.name, points = def.points, at = at, order = def.order}
+			out[#out + 1] = {id = id, name = K.nameOf(def, lang), points = def.points, at = at, order = def.order}
 		end
 	end
 	table.sort(out, function(a, b)
@@ -345,7 +350,7 @@ function K.toast(def, rewardText, lang)
 	if rewardText and rewardText ~= "" then
 		parts[#parts + 1] = T(lang, "Reward: %s.", rewardText)
 	end
-	return tostring(def.name or def.id or "Achievement"), table.concat(parts, " ")
+	return tostring(def.name and K.nameOf(def, lang) or def.id or "Achievement"), table.concat(parts, " ")
 end
 
 -- several unlocks at once (the quiet login check): one toast. rewards = {[id] = reward text}
@@ -361,7 +366,7 @@ function K.summaryToast(list, rewards, lang)
 	for _, def in ipairs(list) do
 		points = points + (def.points or 0)
 		if #names < 3 then
-			names[#names + 1] = def.name
+			names[#names + 1] = K.nameOf(def, lang)
 		end
 		local r = rewards[def.id]
 		if r and r ~= "" then

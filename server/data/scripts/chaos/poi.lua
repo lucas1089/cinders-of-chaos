@@ -20,6 +20,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 dofile("data/scripts/chaos/poi_core.lua")
 
 local I = ChaosPoi
@@ -217,8 +220,8 @@ function think.onThink(interval)
 			for i = 1, math.min(#found, 3) do
 				names[i] = found[i].n
 			end
-			player:sendTextMessage(MESSAGE_STATUS_SMALL, "Discovered on your map: " .. table.concat(names, "; ") ..
-				(#found > 3 and string.format(" and %d more", #found - 3) or ""))
+			player:sendTextMessage(MESSAGE_STATUS_SMALL, Chaos.t(player, "Discovered on your map: %s", table.concat(names, "; ")) ..
+				(#found > 3 and Chaos.t(player, " and %d more", #found - 3) or ""))
 		end
 	end
 	I.stats.checks, I.stats.checkMs = I.stats.checks + 1, I.stats.checkMs + ((os.mtime and os.mtime() or os.clock() * 1000) - t0)

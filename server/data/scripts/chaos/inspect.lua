@@ -22,6 +22,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 if not ChaosCrafting then
 	dofile("data/lib/chaos_crafting.lua")
 end
@@ -181,8 +184,8 @@ local function privacy(player, data)
 			return
 		end
 		player:setStorageValue(OFF, data.allow == true and -1 or 1)
-		player:sendTextMessage(MESSAGE_INFO_DESCR, data.allow == true and "Others can inspect you again." or
-			"Others can no longer inspect you.")
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, data.allow == true and "Others can inspect you again." or
+			"Others can no longer inspect you."))
 	end
 	reply(player, "privacy", {allow = player:getStorageValue(OFF) ~= 1})
 end

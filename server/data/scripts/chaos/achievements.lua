@@ -279,7 +279,7 @@ local function unlock(player, def, quiet)
 		acc.ids[def.id] = true
 		acc.points = acc.points + def.points
 	end
-	local parts = {Chaos.t(player, "Achievement unlocked: %s (+%d points).", def.name, def.points)}
+	local parts = {Chaos.t(player, "Achievement unlocked: %s (+%d points).", K.nameOf(def, Chaos.lang(player)), def.points)}
 	if def.title then
 		parts[#parts + 1] = Chaos.t(player, "Title: %s (pick it in the Achievements window).", def.title)
 	end
@@ -302,7 +302,7 @@ local function unlock(player, def, quiet)
 			player:getPosition():sendMagicEffect(CONST_ME_FIREWORK_YELLOW or CONST_ME_MAGIC_GREEN)
 		end
 	end
-	Chaos.send(player, OPCODE, "unlock", {id = def.id, name = def.name, points = def.points, title = def.title})
+	Chaos.send(player, OPCODE, "unlock", {id = def.id, name = K.nameOf(def, Chaos.lang(player)), points = def.points, title = def.title})
 	if def.title and ChaosNameplate and ChaosNameplate.refresh then
 		pcall(ChaosNameplate.refresh, player)
 	end
@@ -554,7 +554,7 @@ function A.sendState(player, open)
 		points = points, accountPoints = accPoints, maxPoints = K.maxPoints(index),
 		unlocked = count, total = #index.list,
 		categories = K.categorySummary(index, unlocked, Chaos.lang(player)),
-		recent = K.recent(index, unlocked, 5),
+		recent = K.recent(index, unlocked, 5, Chaos.lang(player)),
 		titles = K.titlesOf(index, unlocked),
 		titlesOn = titlesOn, activeTitle = active or "", heldTitles = held or {}
 	})

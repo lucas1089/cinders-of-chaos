@@ -237,6 +237,8 @@ server/
   src-patches/0065-skill-message-names.patch   engine: "You advanced to melee level N." (sword, club, axe: melee;
                                       distance: ranged) in the advance, downgrade and skill-changed messages
                                       (see "Skill names in messages")
+  src-patches/0066-attack-at-once.patch   engine: the first swing at a new target (a pull, a switch, after a stair) no longer
+                                      waits for the 1 s creature think (see "Attack delay after changing floor")
     remote_cmd.lua    remote_cmd_core.lua    remote_cmd_config.lua  (remote admin commands by file, see "Remote admin commands")
     spectate.lua      spectate_core.lua      spectate_config.lua    (the admin app's live view of a character, see "Live spectator")
     helpai.lua  helpai_core.lua  helpai_config.lua (Ember answers questions in the Help channel through the sidecar
@@ -5868,7 +5870,7 @@ hall's and the houses' dummies and the free dummies (5787, 27750, 27757) are as 
 tests mock it): check a Monk with the melee weapon (fist row in the skills window), a Ranger refused with the class list, an old
 exercise axe turning into the melee weapon, a bow from 8 tiles refused.
 
-## Attack delay after changing floor (owner debug item 50: "Demora para começar a atacar depois de subir ou descer escada"; analysed, not fixed)
+## Attack delay after changing floor (owner debug item 50: "Demora para começar a atacar depois de subir ou descer escada"; fixed by src-patch 0066, not measured in game)
 
 What happens, from the repository's own engine notes (`src-patches/0028`, `0042`; the stock source is not here): taking a
 stair is a step (`Player::onWalk`), then the floor change moves the player (`Game::internalMoveCreature`) and
@@ -5884,15 +5886,21 @@ Three delays add up after a stair:
 3. **The helper's own wait** (base `mods/game_helper`, Auto Target and the magic shooter): not readable here (the base client
    is not in the repository); the overlay and base patches around it (0052, 0062, 0067, 0074) do not touch the target choice.
 No server setting changes 2 (`prod_config.py` has no key for it: the think interval is a compile-time constant and
-`classicAttackSpeed` only decides which task slot the swings use). The fix is **engine patch "attack-at-once" (proposal, no number yet,
-not written)**: in `Game::playerSetAttackedCreature` queue `Game::checkCreatureAttack(player id)` through the dispatcher after
-`setAttackedCreature` (the same call `Player::doAttacking` schedules), so the first swing waits only for the attack interval
-it was already owing (`lastAttack`, `Player::getAttackSpeed`), not for the think. It helps every new target (monsters
-switched, the first hit of a pull, stairs), spells and runes are not affected. Keeping the target across a floor change
-(only when the creature is still visible) is not proposed: in the game a target on another floor is not attackable.
-Not done: nothing in this change touches 2 or 3, and a client-side guess of a new target after a stair was left out on
-purpose (it would attack a monster the player did not pick when running away upstairs). Needs the owner's call: write the patch
-(a few lines, tested on the test server with a stair pull before and after), and measure item 3 with the helper on and off.
+`classicAttackSpeed` only decides which task slot the swings use). **Implemented: engine src-patch `0066-attack-at-once.patch`**
+(the proposal was called 0048; that number was taken by another patch). In `Game::playerSetAttackedCreature`, when the target is
+a new one (not the one already set), the new `Player::getAttackReadyIn()` says how long the previous swing still owes (attack
+speed minus the time since `lastAttack`; 0 when the player never swung). Ready: `Game::checkCreatureAttack(player id)` is queued
+through the dispatcher, the same call `Player::doAttacking` schedules, so the first swing happens at once. Not ready, with the
+cooldown channels on and `classicAttackSpeed` off: the player's own attack task (`setNextAttackTask`, patch 0042) is replaced by
+one at the moment the cooldown ends, so it is never faster than the normal attack interval (`Player::doAttacking` still checks
+it). Otherwise the creature think picks it up as before. It helps every new target (monsters switched, the first hit of a pull,
+the target picked again after a stair); spells and runes are not affected. Re-selecting the same target does nothing new.
+Keeping the target across a floor change (only when the creature is still visible) is not done: in the game a target on another
+floor is not attackable.
+Not done: item 3 (the helper's own wait) is unchanged, and a client-side guess of a new target after a stair was left out on
+purpose (it would attack a monster the player did not pick when running away upstairs). Checked: the whole chain 0001-0065 plus
+0066 applies on a copy of the installed server source and `game.cpp` compiles (`g++ -fsyntax-only`); not measured in game. To do
+on the test server: a stair pull before and after, and the helper with Auto Target on and off for item 3.
 
 ## Infinite arrows and quivers (`data/lib/chaos_archery_core.lua`, `chaos_archery_config.lua`, `archery.lua`, `weapon_styles.lua`, `tools/patch_base_archery.py`, `sql/chaos_archery.sql`, `src-patches/0023-quiver-off-hand.patch`)
 
@@ -9964,8 +9972,19 @@ The bands overlap, so a character always has a set running and the next one star
 - **Prices.** `tools/gen_item_prices.py` prices every piece as plain equipment by its level and slot (the equipment
   formula and the gear scale: a level 8 helmet 140 gold, a level 120 one 8,400, from about level 1000 up 30,252, the
   Wandering Merchant's orb cap), so the Loot Buyer and the Auto Seller take them like other gear.
-- Open (owner): publish pair 28 and switch on; the Gambler's pool, crafting recipes if wanted. Not run in a client or
-  on a live server.
+- **The Gambler** (`gamble_config.lua` `sets`, `K.setEntries` / `K.setCandidates` in `gamble_core.lua`, `P.setEntries` in
+  `gamble.lua`; tests in `tests/gamble_test.lua`). While `ChaosGearSets.PAIR28` is on and `sets.enabled` is true, all 448
+  pieces can appear in a stock (weapon kinds sword / axe / club / bow / crossbow / wand / rod into the weapon slot,
+  spellbook and shield into the shield slot, the rest by kind; no quiver piece exists). The pieces are not in `pool`: each
+  pick of a slot that has a usable set piece is one with `sets.share` percent (20, so about 3 of 14 pieces; a slot without
+  a usable piece is as before), else a base type as before. The piece is one of the `sets.choices` (4) usable pieces with
+  the highest level at or under the character's level (class and level by the installed movements.xml / weapons.xml, like
+  the pool), so it is always inside the set's band, drawn with `sets.weight` of its set (10 each, 0 leaves a set out). Item
+  level, price and rarity roll are those of any piece. Switch off or `enabled = false`: the stock is exactly the old one
+  (the recorded stock of the test did not change). The Item Finder does not list the set pieces under the Gambler.
+- **Recipes: none.** The crafting system (`crafting.lua`, `salvage_config.lua` recipes) works on orbs, shards and runes
+  only; there is no recipe table that makes an item, so a set piece recipe has nothing to join. Not added.
+- Open (owner): publish pair 28 with the regenerated `outfit_anchors.lua`. Not run in a client or on a live server.
 
 ## Pack art (pair 30) (`data/lib/chaos_pack30_art.lua`, `data/lib/chaos_pack30_items.lua`, `tools/install_pack30_items.py`, switch `ChaosPack30Art.PAIR30`, off)
 Items of the third-party art packs imported into the client pair 30 (import-only; plan: weapons icons, flasks, corpses,
@@ -20853,6 +20872,8 @@ restart (the test pins one stock). Five player storages (7101900 - 7101904) hold
 and vocation it was made for (frozen at the first look in a window, so a level up does not reshuffle it), the sold slots (a
 bit mask) and the early refreshes. No database rows.
 
+**Equipment set pieces** (pair 28, `sets` in the config): see "Equipment sets (pair 28)", The Gambler.
+
 **What is offered.** Each piece draws a slot (weights weapon 3, armour / helmet / legs / boots 2, shield / amulet / ring /
 quiver 1) and a base type from `gamble_config.lua` `pool` (246 stock bases of the base server, each with the level it
 belongs to; the 12 quiver bases of "Infinite arrows and quivers" since that change, priced like a helmet, offered only to the
@@ -21912,7 +21933,7 @@ its services (tokens, world buffs, the Temple Teleport Scroll, name and vocation
 Broker, Mordecai Ashwager, the four faction NPCs and their lore, Keeper of Trials and its window, Wandering Merchant,
 the Ascendant Oracle); the ascension quest (Calling, Proof, Trial, Choice, windows, guardian hints, paths); the Vocation
 Trials (stories, waves, rewards, node choices); achievements (category names, all descriptions, the window's hidden
-text, rewards and toasts; names and titles stay English); the daily reward; new players (welcome window, starter kit,
+text, rewards and toasts, and their 174 names (window, toasts, messages); titles stay English); the Seasonal Journey (journey, chapter and objective texts, reasons, appearance / outfit / mount reward lines, toasts and messages; item names and titles stay English); the Conquest Tokens labels (sources, pity and vendor groups); the daily reward; new players (welcome window, starter kit,
 level gifts, the five tutorial stations); instance limits (time warnings, busy instances, the waiting line, boss rooms);
 mentors and referrals (every config message); and the chat lines of stash, bank, town portal, pouches, Everfull Ration,
 Chaos Pact and builds, hideout, autoloot, party invites, class unlocks, professions, charms, pets, guild hall, Infinity
@@ -21926,6 +21947,8 @@ the "stays behind" lines of rifts, Ascended arenas, the Descent and the raid, an
 guardians, fallen players, packs, the atlas line). Measured with `sendTextMessage` / `sendCancelMessage` / `popupFYI`
 / `npcHandler:say` sites: 430 of 785 go through the helpers (8 before the first batch, 395 before this one; broadcasts
 not counted).
+
+Also converted in the last batch: the store's coin take-back line and Everfull Ration refusals, the Infinity Tower run end and group refusals, inspect privacy, Monk stun lines, legendary monster alerts, multi-client refusal, party invitation and removal lines, map discoveries, report receipts, season rewards, siege obelisk, Cinderheart refusal, rarity autoloot, guild portal, guild boss spoils, area portals, new outfits, Chaos Pact status, event login lines and item set summary.
 
 Left: item descriptions and mail texts built in cores (one text for every viewer), party loot lines
 (`broadcastPartyLoot` sends one text to the party: English), monster speech, reasons that game logic reads as text

@@ -1,0 +1,48 @@
+# Attack at once (owner debug item 50, "attack delay after a stair"; server/README.md "Attack delay after changing floor").
+# The first swing at a newly set target waited for the next creature think (0 to 1000 ms, 500 ms on average), also after a
+# floor change drops the target and the player or the helper picks a new one. Game::playerSetAttackedCreature now checks, when
+# the target is a new one, how long the previous swing still owes (new Player::getAttackReadyIn: attack speed minus the time
+# since lastAttack): ready, the Game::checkCreatureAttack task is queued at once; not ready (cooldown channels on, classic
+# speed off), the player's own attack task is rescheduled for the moment the cooldown ends. Never faster than the normal attack
+# interval: Player::doAttacking still checks it. Spells and runes are not affected. A server rebuild is needed.
+# Apply in the server source root after 0001-0065: patch -p1 < 0066-attack-at-once.patch.
+diff --git a/src/game.cpp b/src/game.cpp
+--- a/src/game.cpp
++++ b/src/game.cpp
+@@ -3666,8 +3666,22 @@
+ 		return;
+ 	}
+ 
++	const bool newTarget = player->getAttackedCreature() != attackCreature;
+ 	player->setAttackedCreature(attackCreature);
+ 	g_dispatcher.addTask(createTask(std::bind(&Game::updateCreatureWalk, this, player->getID())));
++
++	// Chaos (src-patch 0066): the first swing at a new target (a pull, a switch, the target picked again after a stair)
++	// no longer waits for the 1 s creature think (0 to 1000 ms). If the attack is ready it is queued now; if the
++	// previous swing is still on cooldown the check is scheduled for the moment it ends, so it is never faster than
++	// the normal attack interval. Spells and runes are not affected.
++	if (newTarget) {
++		const int64_t remaining = player->getAttackReadyIn();
++		if (remaining <= 0) {
++			g_dispatcher.addTask(createTask(std::bind(&Game::checkCreatureAttack, this, player->getID())));
++		} else if (!g_config.getBoolean(ConfigManager::CLASSIC_ATTACK_SPEED) && g_config.getBoolean(ConfigManager::COOLDOWN_CHANNELS)) {
++			player->setNextAttackTask(createSchedulerTask(std::max<int64_t>(SCHEDULER_MINTICKS, remaining), std::bind(&Game::checkCreatureAttack, this, player->getID())));
++		}
++	}
+ }
+ 
+ void Game::playerFollowCreature(uint32_t playerId, uint32_t creatureId)
+diff --git a/src/player.h b/src/player.h
+--- a/src/player.h
++++ b/src/player.h
+@@ -1282,6 +1282,10 @@
+ 		void setNextActionTask(SchedulerTask* task, bool resetIdleTime = true);
+ 		void setNextActionTask(SchedulerTask* task, bool resetIdleTime, CooldownChannel_t channel); // Chaos (0042)
+ 		void setNextAttackTask(SchedulerTask* task); // Chaos (0042): the auto attack's own queued check
++		// Chaos (0066): milliseconds until the next auto attack swing is allowed (0 or less: ready now)
++		int64_t getAttackReadyIn() const {
++			return lastAttack == 0 ? 0 : static_cast<int64_t>(getAttackSpeed()) - (OTSYS_TIME() - static_cast<int64_t>(lastAttack));
++		}
+ 
+ 		void death(Creature* lastHitCreature) override;
+ 		bool dropCorpse(Creature* lastHitCreature, Creature* mostDamageCreature, bool lastHitUnjustified, bool mostDamageUnjustified) override;

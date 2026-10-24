@@ -23,6 +23,12 @@
 --     are condition timers on the victim (subId.stunImmune, subId.stunDr); the buff bar shows "Stunned".
 -- Scripted damage is not dealt here, so there is no recursion guard; the scaled values are returned to the engine.
 
+if not Chaos then
+	dofile("data/scripts/chaos/chaos_constants.lua")
+end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 if not ChaosMonk then
 	dofile("data/scripts/chaos/monk_chi_core.lua")
 end
@@ -265,7 +271,7 @@ local function stunPlayer(victim, monk, chi)
 	local ms = M.pvpStunFor(chi, immune, hasCond(victim, CONDITION_ATTRIBUTES, ID.subId.stunDr))
 	if ms <= 0 then
 		if immune then
-			monk:sendTextMessage(MESSAGE_STATUS_SMALL, victim:getName() .. " cannot be stunned again yet.")
+			monk:sendTextMessage(MESSAGE_STATUS_SMALL, Chaos.t(monk, "%s cannot be stunned again yet.", victim:getName()))
 		end
 		return
 	end
@@ -303,8 +309,8 @@ local function stunPlayer(victim, monk, chi)
 		pcall(ChaosPack29Vfx.hold, victim, "stunned", ms)
 	end
 	victim:say("Stunned!", TALKTYPE_MONSTER_SAY)
-	victim:sendTextMessage(MESSAGE_STATUS_SMALL, "You are stunned for " .. secs .. " s by " .. monk:getName() .. ".")
-	monk:sendTextMessage(MESSAGE_STATUS_SMALL, victim:getName() .. " is stunned for " .. secs .. " s.")
+	victim:sendTextMessage(MESSAGE_STATUS_SMALL, Chaos.t(victim, "You are stunned for %s s by %s.", secs, monk:getName()))
+	monk:sendTextMessage(MESSAGE_STATUS_SMALL, Chaos.t(monk, "%s is stunned for %s s.", victim:getName(), secs))
 	pushBuffBar(victim)
 end
 

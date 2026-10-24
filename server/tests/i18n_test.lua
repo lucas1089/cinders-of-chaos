@@ -353,6 +353,28 @@ end
 local ach = dofile("data/scripts/chaos/achievements_data.lua")
 for _, c in ipairs(ach.categories) do check(pt[c.name] ~= nil, "achievement category without pt-BR: " .. tostring(c.name)) end
 for _, a in ipairs(ach.list) do check(pt[a.desc] ~= nil, "achievement description without pt-BR: " .. tostring(a.desc)) end
+for _, a in ipairs(ach.list) do check(pt[a.name] ~= nil, "achievement name without pt-BR: " .. tostring(a.name)) end
+-- Conquest Tokens: the labels of the sources, the pity groups and the vendor groups
+do
+	local cq = dofile("data/scripts/chaos/conquest_config.lua")
+	for _, tbl in ipairs({cq.sources, cq.pity, cq.vendor.groups}) do
+		for _, e in pairs(tbl) do check(pt[e.label] ~= nil, "conquest label without pt-BR: " .. tostring(e.label)) end
+	end
+end
+-- the Seasonal Journey: journey, chapter and objective texts, the appearance / outfit / mount reward lines
+for _, j in pairs(dofile("data/scripts/chaos/season_journey_config.lua").journeys) do
+	check(pt[j.name] ~= nil, "journey name without pt-BR: " .. j.name)
+	for _, ch in ipairs(j.chapters) do
+		check(pt[ch.name] ~= nil, "journey chapter without pt-BR: " .. ch.name)
+		check(pt[ch.text] ~= nil, "journey chapter text without pt-BR: " .. tostring(ch.text))
+		for _, o in ipairs(ch.objectives) do check(pt[o.text] ~= nil, "journey objective without pt-BR: " .. o.text) end
+		for _, r in ipairs(ch.rewards or {}) do
+			if r.kind ~= "items" and r.kind ~= "passxp" and r.kind ~= "title" then
+				check(pt[r.name] ~= nil, "journey reward without pt-BR: " .. tostring(r.name))
+			end
+		end
+	end
+end
 for _, f in ipairs(dofile("data/scripts/chaos/factions_config.lua").factions) do
 	check(pt[f.lore] ~= nil, "faction lore without pt-BR: " .. f.name)
 end
@@ -456,6 +478,27 @@ eq(select(2, ChaosBestiaryCore.canAccept(nil, {}, {}, "pt-BR")), "Essa task não
 dofile("data/scripts/chaos/rift_core.lua")
 eq(ChaosRiftCore.atlasNote({density = 12, lives = 1}, "pt-BR"), "Atlas: +12% packs, +1 vida", "the atlas HUD note in pt-BR")
 eq(ChaosRiftCore.atlasNote({density = 12, lives = 2}), "Atlas: +12% packs, +2 lives", "and in English")
+dofile("data/scripts/chaos/achievements_core.lua")
+eq(ChaosAchievementsCore.nameOf({name = "Blooded"}, "pt-BR"), "Batizado em Sangue", "an achievement name in pt-BR")
+eq(ChaosAchievementsCore.nameOf({name = "Blooded"}), "Blooded", "and in English")
+eq(select(1, ChaosAchievementsCore.toast({name = "Hardened", points = 10}, "", "pt-BR")), "Calejado", "the unlock toast title in pt-BR")
+dofile("data/scripts/chaos/season_journey_core.lua")
+do
+	local JK = ChaosSeasonJourneyCore
+	local jj = {chapters = {{key = "a", name = "First Embers", level = 0, text = "Face the heart of the fire.", objectives = {
+		{key = "o1", text = "Reach level 100", stat = "level", target = 100}}, rewards = {{kind = "passxp", amount = 5},
+		{kind = "look", id = 1, slot = "x", name = "Magma Monocle appearance"}}},
+		{key = "b", name = "Ash and Iron", level = 150, objectives = {}}}, name = "The Ashen Pilgrimage"}
+	local header, chapters = JK.view(jj, {level = 10, stats = {}, flags = {}, done = {}, claimed = {}}, {lang = "pt-BR"})
+	eq(header.name, "A Peregrinação das Cinzas", "journey name in pt-BR")
+	eq(chapters[1].name, "Primeiras Brasas", "chapter name in pt-BR")
+	eq(chapters[1].objectives[1].text, "Chegue ao nível 100", "objective in pt-BR")
+	eq(chapters[1].rewards[1].text, "5 de XP do passe", "pass XP reward in pt-BR")
+	eq(chapters[1].rewards[2].text, "Aparência Magma Monocle", "appearance reward in pt-BR")
+	eq(chapters[2].lockedWhy, "Termine Primeiras Brasas primeiro.", "locked reason in pt-BR")
+	local h2, c2 = JK.view(jj, {level = 10, stats = {}, flags = {}, done = {}, claimed = {}}, {})
+	eq(c2[2].lockedWhy, "Finish First Embers first.", "and in English")
+end
 
 print(string.format("i18n_test: %d checks, %d failures", checks, failures))
 if failures > 0 then

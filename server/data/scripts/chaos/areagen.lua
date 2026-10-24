@@ -24,6 +24,9 @@ end
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 dofile("data/scripts/chaos/areagen_core.lua")
 if not ChaosCityPortals then
 	dofile("data/scripts/chaos/cityportals.lua")
@@ -714,12 +717,12 @@ function step.onStepIn(creature, item, position, fromPosition)
 		local need = entry.def.minLevel or 1
 		if player:getLevel() < need then
 			player:teleportTo(fromPosition, true)
-			player:sendCancelMessage(string.format("%s is for level %d and above.", entry.def.name, need))
+			player:sendCancelMessage(Chaos.t(player, "%s is for level %d and above.", entry.def.name, need))
 			return true
 		end
 		player:teleportTo(P(entry.model.arrival))
 		player:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("%s: monsters of level %d-%d. The portal beside you leads back.",
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "%s: monsters of level %d-%d. The portal beside you leads back.",
 			entry.def.name, entry.def.spawns.level[1], entry.def.spawns.level[2]))
 		return true
 	end

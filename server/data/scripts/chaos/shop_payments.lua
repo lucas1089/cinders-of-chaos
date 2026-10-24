@@ -22,6 +22,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 dofile("data/scripts/chaos/shop_core.lua")
 dofile("data/scripts/chaos/shop_payments_core.lua")
 
@@ -368,7 +371,7 @@ function Pay.processReversals()
 			for _, p in ipairs(Game.getPlayers()) do
 				local got = receivers[p:getAccountId()]
 				if got then
-					p:sendTextMessage(MESSAGE_EVENT_ADVANCE, string.format("%d gifted Chaos Coins were taken back: the donation that paid for them was refunded or charged back.", got))
+					p:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(p, "%d gifted Chaos Coins were taken back: the donation that paid for them was refunded or charged back.", got))
 				end
 			end
 			for _, p in ipairs(Game.getPlayers()) do

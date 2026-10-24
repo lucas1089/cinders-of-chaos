@@ -119,7 +119,7 @@ function C.giveClassOutfits(player, wear)
 			look.lookType = list[1].lookType
 			player:setOutfit(look)
 		end
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "New outfits: " .. table.concat(names, ", ") .. ".")
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "New outfits: %s.", table.concat(names, ", ")))
 	end
 	local look = player:getOutfit()
 	local swap = C.outfitSwap(vocId, look.lookType, sex)
@@ -189,7 +189,7 @@ function talk.onSay(player, words, param)
 	if ChaosClassUnlocks and ChaosClassUnlocks.canUseVocation then
 		local allowed, lockMessage = ChaosClassUnlocks.canUseVocation(player, newId)
 		if not allowed then
-			player:sendTextMessage(MESSAGE_INFO_DESCR, lockMessage or "That class is locked. Unlock it in the store.")
+			player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, lockMessage or "That class is locked. Unlock it in the store."))
 			return false
 		end
 	end

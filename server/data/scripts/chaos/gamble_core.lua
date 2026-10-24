@@ -79,6 +79,20 @@ function K.validate(cfg)
 			seen[e[1]] = true
 		end
 	end
+	if cfg.sets then
+		local sc = cfg.sets
+		if type(sc.share) ~= "number" or sc.share < 0 or sc.share > 100 then
+			bad("sets.share must be 0..100")
+		end
+		if type(sc.choices) ~= "number" or sc.choices < 1 then
+			bad("sets.choices must be >= 1")
+		end
+		for key, w in pairs(sc.weight or {}) do
+			if type(w) ~= "number" or w < 0 or w % 1 ~= 0 then
+				bad("sets.weight of " .. tostring(key) .. " must be a whole number >= 0")
+			end
+		end
+	end
 	for slot, w in pairs(cfg.stock.slots) do
 		if not K.SLOT_NAMES[slot] or type(w) ~= "number" or w < 0 then
 			bad("bad slot weight " .. tostring(slot))
@@ -200,6 +214,49 @@ function K.candidates(cfg, slot, level, canUse)
 	return list
 end
 
+-- ---------------------------------------------------------------- the equipment sets of pair 28
+-- gear set piece kind -> the Gambler's slot (quivers are not part of the sets)
+K.SET_SLOT = {helmet = "helmet", armor = "armor", legs = "legs", boots = "boots", amulet = "amulet", ring = "ring",
+	shield = "shield", spellbook = "shield", sword = "weapon", axe = "weapon", club = "weapon", bow = "weapon",
+	crossbow = "weapon", wand = "weapon", rod = "weapon"}
+
+-- the set pieces on offer as {id, slot, lv, set}, from ChaosGearSets (data/lib/chaos_gear_sets.lua); empty while
+-- cfg.sets.enabled is off or the pair switch (G.PAIR28) is off
+function K.setEntries(cfg, G)
+	local out = {}
+	if not (cfg.sets and cfg.sets.enabled and G and G.PAIR28 and G.items and G.items.pieces) then
+		return out
+	end
+	for _, p in ipairs(G.items.pieces) do
+		local slot = K.SET_SLOT[p.kind]
+		if slot and (cfg.sets.weight[p.set] or 0) > 0 then
+			out[#out + 1] = {id = p.id, slot = slot, lv = p.level, set = p.set}
+		end
+	end
+	return out
+end
+
+-- the set pieces of a slot a character may get: lv <= level, canUse(id, slot), the cfg.sets.choices with the highest lv
+function K.setCandidates(cfg, slot, level, canUse, entries)
+	local list = {}
+	for _, e in ipairs(entries or {}) do
+		if e.slot == slot and e.lv <= level and (not canUse or canUse(e.id, slot)) then
+			list[#list + 1] = e
+		end
+	end
+	table.sort(list, function(a, b)
+		if a.lv ~= b.lv then
+			return a.lv > b.lv
+		end
+		return a.id < b.id
+	end)
+	local n = cfg.sets and cfg.sets.choices or 4
+	while #list > n do
+		table.remove(list)
+	end
+	return list
+end
+
 local function pickSlot(cfg, rand, skip)
 	local total = 0
 	for _, slot in ipairs(cfg.stock.order) do
@@ -236,6 +293,10 @@ function K.stock(cfg, ctx)
 			empty[slot] = true
 		end
 	end
+	local setCands = {}
+	for _, slot in ipairs(cfg.stock.order) do
+		setCands[slot] = K.setCandidates(cfg, slot, level, ctx.canUse, ctx.sets)
+	end
 	local used, out = {}, {}
 	local spread = max(0, floor(cfg.itemLevel.spread or 0))
 	for _ = 1, cfg.stock.size do
@@ -245,7 +306,22 @@ function K.stock(cfg, ctx)
 		end
 		local list = cands[slot]
 		local pick = list[rand(1, #list)]
-		if cfg.base.dedupe and used[pick.id] then
+		local sets = setCands[slot]
+		if #sets > 0 and rand(1, 100) <= cfg.sets.share then
+			-- a piece of an equipment set instead of a base type, weighted by cfg.sets.weight
+			local total = 0
+			for _, e in ipairs(sets) do
+				total = total + cfg.sets.weight[e.set]
+			end
+			local roll, acc = rand(1, total), 0
+			for _, e in ipairs(sets) do
+				acc = acc + cfg.sets.weight[e.set]
+				if roll <= acc then
+					pick = e
+					break
+				end
+			end
+		elseif cfg.base.dedupe and used[pick.id] then
 			-- another base of the slot when one is left that this stock does not have yet (two tries)
 			for _ = 1, 2 do
 				local again = list[rand(1, #list)]

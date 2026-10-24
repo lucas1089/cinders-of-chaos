@@ -185,7 +185,7 @@ function X.grant(player, key, amount, detail)
 		local note = player:getGuid() .. ":" .. key .. ":" .. now
 		if amount > 0 and not X.capNoted[note] then
 			X.capNoted[note] = true
-			notify(player, Chaos.t(player, "Conquest Tokens: today's limit for %s is reached (%d).", s.label or key, s.cap))
+			notify(player, Chaos.t(player, "Conquest Tokens: today's limit for %s is reached (%d).", Chaos.t(player, s.label or key), s.cap))
 		end
 		return 0
 	end
@@ -195,7 +195,7 @@ function X.grant(player, key, amount, detail)
 	credit(guid, plan.give)
 	X.bal[guid] = bal
 	logRow(guid, key, plan.give, bal, detail)
-	notify(player, Chaos.t(player, "+%d Conquest Tokens (%s). Balance: %d.", plan.give, s.label or key, bal))
+	notify(player, Chaos.t(player, "+%d Conquest Tokens (%s). Balance: %d.", plan.give, Chaos.t(player, s.label or key), bal))
 	if X.open[guid] then
 		try("send", X.send, player)
 	end
@@ -437,18 +437,18 @@ function X.state(player)
 	local pity = {}
 	for _, g in ipairs(cfg.pityOrder) do
 		local misses = X.pityMisses(player, g)
-		pity[#pity + 1] = {g = g, n = cfg.pity[g].label, m = misses, x = K.pityMult(cfg, g, misses)}
+		pity[#pity + 1] = {g = g, n = Chaos.t(player, cfg.pity[g].label), m = misses, x = K.pityMult(cfg, g, misses)}
 	end
 	local day = player:getStorageValue(ST + cfg.daySlot)
 	local todayRows = {}
 	for key, s in pairs(cfg.sources) do
 		local used = day == today() and math.max(0, player:getStorageValue(ST + s.slot)) or 0
-		todayRows[#todayRows + 1] = {k = key, n = s.label or key, got = used, cap = s.cap}
+		todayRows[#todayRows + 1] = {k = key, n = Chaos.t(player, s.label or key), got = used, cap = s.cap}
 	end
 	table.sort(todayRows, function(a, b) return cfg.sources[a.k].slot < cfg.sources[b.k].slot end)
 	local groups = {}
 	for _, g in ipairs(cfg.vendor.groupOrder) do
-		groups[#groups + 1] = {g = g, n = cfg.vendor.groups[g].label}
+		groups[#groups + 1] = {g = g, n = Chaos.t(player, cfg.vendor.groups[g].label)}
 	end
 	local c = cfg.cinder
 	local shards = shardsOf(player)

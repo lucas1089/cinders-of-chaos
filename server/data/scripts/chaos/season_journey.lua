@@ -257,6 +257,7 @@ local function giveStack(player, id, count)
 end
 
 local function giveReward(player, r, seasonId, chapterKey)
+	local lang = Chaos.lang(player)
 	if r.kind == "passxp" then
 		local SP = ChaosSeasonPass
 		local s = SP and SP.active and SP.active()
@@ -264,18 +265,18 @@ local function giveReward(player, r, seasonId, chapterKey)
 			local acc = SP.account(player:getAccountId())
 			if acc.season == seasonId then
 				SP.addXp(acc, r.amount, "journey " .. chapterKey)
-				return K.rewardText(r)
+				return K.rewardText(r, lang)
 			end
 		end
 		return nil -- no pass of this season runs
 	elseif r.kind == "items" then
 		local inbox = giveStack(player, r.id, r.count or 1)
-		return K.rewardText(r) .. (inbox and " (inbox)" or "")
+		return K.rewardText(r, lang) .. (inbox and Chaos.t(player, " (inbox)") or "")
 	elseif r.kind == "look" then
 		if ChaosTransmog and ChaosTransmog.unlockLook then
 			ChaosTransmog.unlockLook(player:getAccountId(), r.id)
 		end
-		return K.rewardText(r)
+		return K.rewardText(r, lang)
 	elseif r.kind == "outfit" then
 		for _, look in ipairs({r.male, r.female}) do
 			if (r.addons or 0) > 0 then
@@ -284,12 +285,12 @@ local function giveReward(player, r, seasonId, chapterKey)
 				player:addOutfit(look)
 			end
 		end
-		return K.rewardText(r)
+		return K.rewardText(r, lang)
 	elseif r.kind == "mount" then
 		player:addMount(r.id)
-		return K.rewardText(r)
+		return K.rewardText(r, lang)
 	elseif r.kind == "title" then
-		return K.rewardText(r)
+		return K.rewardText(r, lang)
 	end
 	return nil
 end
@@ -332,14 +333,15 @@ function J.send(player, only)
 	else
 		ctx = {level = player:getLevel(), stats = {}, flags = {}, done = {}, claimed = {}}
 	end
-	local opts = {preview = st == nil, clientId = clientIdOf, female = player:getSex() == PLAYERSEX_FEMALE}
+	local opts = {preview = st == nil, lang = Chaos.lang(player), clientId = clientIdOf, female = player:getSex() == PLAYERSEX_FEMALE}
 	local header, chapters = K.view(journey, ctx, opts)
 	if st then
 		local f = ctx.flags
-		header.mode = f.hc and f.ssf and "Hardcore Self-Found" or (f.hc and "Hardcore") or (f.ssf and "Self-Found") or nil
+		header.mode = f.hc and f.ssf and Chaos.t(player, "Hardcore Self-Found") or (f.hc and Chaos.t(player, "Hardcore"))
+			or (f.ssf and Chaos.t(player, "Self-Found")) or nil
 	else
-		header.why = season and string.format("Preview: only %s characters walk this journey. Join with a fresh character.",
-			season.name) or "Preview."
+		header.why = season and Chaos.t(player, "Preview: only %s characters walk this journey. Join with a fresh character.",
+			season.name) or Chaos.t(player, "Preview.")
 	end
 	local summaries = {}
 	for i, c in ipairs(chapters) do
@@ -402,10 +404,10 @@ function J.check(player)
 	end
 	for _, e in ipairs(objs) do
 		writeEntry(st.season, guid, K.entryKey("objective", e.obj.key), ctx.now)
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "Journey objective done: %s (%s).", e.obj.text,
-			e.chapter.name))
-		toast(player, "Objective done: " .. e.obj.text)
-		Chaos.send(player, OPCODE, "journeyDone", {text = e.obj.text})
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "Journey objective done: %s (%s).", Chaos.t(player, e.obj.text),
+			Chaos.t(player, e.chapter.name)))
+		toast(player, Chaos.t(player, "Objective done: %s", Chaos.t(player, e.obj.text)))
+		Chaos.send(player, OPCODE, "journeyDone", {text = Chaos.t(player, e.obj.text)})
 	end
 	for _, c in ipairs(chapters) do
 		local ch = c.chapter
@@ -421,9 +423,9 @@ function J.check(player)
 			end
 		end
 		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "%s: chapter %d, %s, complete! Rewards: %s.",
-			journey.name, c.index, ch.name, #got > 0 and table.concat(got, ", ") or Chaos.t(player, "none")))
-		toast(player, string.format("Chapter complete: %s", ch.name))
-		Chaos.send(player, OPCODE, "journeyDone", {text = ch.name, chapter = c.index})
+			Chaos.t(player, journey.name), c.index, Chaos.t(player, ch.name), #got > 0 and table.concat(got, ", ") or Chaos.t(player, "none")))
+		toast(player, Chaos.t(player, "Chapter complete: %s", Chaos.t(player, ch.name)))
+		Chaos.send(player, OPCODE, "journeyDone", {text = Chaos.t(player, ch.name), chapter = c.index})
 		player:getPosition():sendMagicEffect(CONST_ME_FIREWORK_YELLOW or CONST_ME_MAGIC_BLUE)
 		for _, r in ipairs(ch.rewards or {}) do
 			if r.kind == "title" then

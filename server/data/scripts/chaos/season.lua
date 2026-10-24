@@ -381,7 +381,7 @@ S.transferBlockedText = iso.messages.bank
 function S.npcTransferBlocked(player, targetGuid)
 	local ok, blocked = pcall(S.transferBlocked, player, tonumber(targetGuid) or 0)
 	if ok and blocked then
-		player:sendCancelMessage(S.transferBlockedText or "You cannot transfer gold to that character.")
+		player:sendCancelMessage(Chaos.t(player, S.transferBlockedText or "You cannot transfer gold to that character."))
 		return true
 	end
 	return false
@@ -568,7 +568,7 @@ function S.deliverRewards(player)
 		end
 	end
 	if #added > 0 then
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "Season rewards of your account: " .. table.concat(added, ", ") .. ".")
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "Season rewards of your account: %s.", table.concat(added, ", ")))
 	end
 	return added
 end

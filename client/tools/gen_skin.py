@@ -15,8 +15,7 @@ It writes
   overlay/data/images/<stock path>      stock images redrawn in place with the same size and layout
                                         (listed in STOCK below); they are removed from
                                         RESKIN_FILES.txt so tools/gen_ui_reskin.py leaves them alone.
-Run gen_ui_reskin.py first (if at all), then this script, then import_hud_kit.py (it replaces the plate, window, panel,
-button, tab, text field, tooltip, orb ring and action bar slot images with the purchased pack's art at the same sizes). The 'stock' group needs --base (the assembled
+Run gen_ui_reskin.py first (if at all), then this script. The 'stock' group needs --base (the assembled
 base client source) for the layouts and silhouettes of the stock images it redraws.
 nine_slice() renders a frame the way the engine stretches it (tiled edges), handy for previews.
 Needs Pillow and numpy.
