@@ -21,7 +21,7 @@ local F, C = ChaosSpellFactor, ChaosSpellFactorConfig
 
 -- the table: the factor at the end of each class's curve (level 1000 and up; the whole factor of a class without a curve),
 -- by vocation id (docs/CLASSES.md ids). O136 (2026-10-23): a level curve per class (byLevel), the end values changed.
-local want = {[3] = 1.12, [4] = 1.0, [5] = 0.7, [7] = 1.25, [8] = 1.09, [10] = 0.73, [14] = 1.08, [15] = 1.17, [17] = 0.87,
+local want = {[3] = 1.12, [4] = 1.0, [5] = 0.7, [7] = 1.25, [8] = 1.09, [10] = 0.73, [11] = 0.91, [12] = 1.09, [13] = 1.05, [14] = 1.08, [15] = 1.17, [17] = 0.87,
 	[18] = 0.8, [19] = 0.99, [20] = 0.69, [21] = 0.92, [22] = 0.71, [23] = 0.63, [24] = 0.77, [25] = 0.6}
 local count = 0
 for id, v in pairs(C.byVocation) do
@@ -36,8 +36,8 @@ for id, v in pairs(C.byVocation) do
 		eq(pts[#pts][1], 1000, "curve " .. id .. " ends at level 1000")
 	end
 end
-eq(count, 17, "seventeen classes listed")
-for _, id in ipairs({1, 11, 12, 13}) do
+eq(count, 20, "twenty classes listed (C2: the Thief line since 2026-10-24)")
+for _, id in ipairs({1}) do
 	eq(F.forVocation(id), 1, "vocation " .. id .. " keeps 1")
 	eq(F.forVocation(id, nil, 300), 1, "vocation " .. id .. " keeps 1 at level 300")
 end
@@ -69,7 +69,10 @@ eq(F.factor(23, SPELL, HEAL, SPELL, HEAL, false), 1, "healing")
 eq(F.factor(23, SPELL, 0, SPELL, HEAL, false), 1, "no secondary damage")
 eq(F.factor(23, SPELL, FIRE, SPELL, HEAL, true), 1, "a keystone proc")
 eq(F.factor(4, SPELL, FIRE, SPELL, HEAL, false), 1, "a Warrior spell hit")
-eq(F.factor(11, SPELL, FIRE, SPELL, HEAL, false, nil, 300), 1, "a Thief spell hit")
+eq(F.factor(11, SPELL, FIRE, SPELL, HEAL, false, nil, 300), 0.89, "a level 300 Thief spell hit (C2)")
+eq(F.factor(12, SPELL, FIRE, SPELL, HEAL, false, nil, 300), 0.84, "a level 300 Ninja spell hit (C2)")
+eq(F.factor(13, SPELL, FIRE, SPELL, HEAL, false, nil, 1000), 1.05, "a level 1000 Samurai spell hit (C2)")
+eq(F.factor(11, MELEE, FIRE, SPELL, HEAL, false, nil, 300), 1, "a Thief auto attack stays unscaled")
 local inside
 local ok, r = F.guard(function(x)
 	inside = F.factor(23, SPELL, FIRE, SPELL, HEAL, false)
@@ -129,6 +132,36 @@ local templarSrc = read("data/scripts/chaos/templar_combat.lua")
 eq(templarSrc:find("SF.depth = (SF.depth or 0) + 1", 1, true) ~= nil, true, "templar_combat.lua guards the holy strike")
 local necroSrc = read("data/scripts/chaos/necro_minions.lua")
 eq(necroSrc:find("SF.depth = (SF.depth or 0) + 1", 1, true) ~= nil, true, "necro_minions.lua guards the minion hits")
+
+-- the Thief line's spell strikes take the curve inside ChaosSpell.weaponStrike (C2, 2026-10-24)
+local commonSrc = read("data/spells/chaos/_common.lua")
+eq(commonSrc:find("SF.forVocation(voc and voc:getId() or 0, nil, caster:getLevel())", 1, true) ~= nil, true,
+	"_common.lua weaponStrike applies the class spell factor")
+do
+	-- run the real function on a mocked engine: a level 300 Ninja strike is x0.84
+	local env = setmetatable({}, {__index = _G})
+	local got
+	env.ChaosSpell = {canAttack = function() return true end}
+	env.Chaos = {classes = {}, storage = {}}
+	env.doTargetCombat = function(c, t, ct, lo, hi) got = {lo, hi}; return true end
+	env.COMBAT_PHYSICALDAMAGE, env.ORIGIN_MELEE = 1, 2
+	local src = commonSrc:match("(function ChaosSpell%.thiefLevelScale.-\nend\n)")
+	local src2 = commonSrc:match("(function ChaosSpell%.weaponStrike.-\nend\n)")
+	assert(src and src2, "weaponStrike source found")
+	local chunk = assert((loadstring or load)(src .. "\n" .. src2, "weaponStrike", "t", env))
+	if setfenv then setfenv(chunk, env) end
+	chunk()
+	local caster = {setStorageValue = function() end, getLevel = function() return 300 end,
+		getVocation = function() return {getId = function() return 12 end} end}
+	env.ChaosSpell.thiefLevelScale = env.ChaosSpell.thiefLevelScale
+	env.ChaosSpell.weaponStrike(caster, {}, 100, 200, 0, 2)
+	eq(got and got[1], -84, "a level 300 Ninja strike minimum x0.84")
+	eq(got and got[2], -168, "and its maximum")
+	F.depth = 1
+	env.ChaosSpell.weaponStrike(caster, {}, 100, 200, 0, 2)
+	F.depth = 0
+	eq(got and got[1], -100, "inside the guard the strike is unscaled")
+end
 
 if fails > 0 then
 	error("spell_factor_test: " .. fails .. " failure(s)")

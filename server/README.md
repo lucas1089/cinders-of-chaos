@@ -1949,7 +1949,7 @@ One factor on a class's spell damage: `data/scripts/chaos/spell_factor_config.lu
 below the first point, linear between points, the last value above) and `byVocation` is the end value (level 1000 and
 up; 1 for a class with no curve). End values: Templar 0.63, Sentinel 0.60, Inquisitor 0.77, Illusionist 0.73, Lich 0.92,
 Bone Lord 0.71, Shadowfist 0.80, Necromancer 0.69, Beastmaster 1.17, Ranger 1.12, Deadeye 1.25, Juggernaut 1.09,
-Berserker 1.08, Elementalist 0.70, the rest 1. The points keep each class's best-set rotation score at its value before the
+Berserker 1.08, Elementalist 0.70, Thief 0.91, Ninja 1.09, Samurai 1.05 (C2, 2026-10-24), the rest 1. The points keep each class's best-set rotation score at its value before the
 attack kit at levels 15-1000 (no early dips, no level 200 spikes); the table is in `data/spells/README.md` "Combat pass
 (O136)". Rules in `spell_factor_core.lua` (`ChaosSpellFactor.forVocation(voc, cfg, level)` and `.factor(..., cfg,
 level)`; the event passes the attacker's level), tested by `tests/spell_factor_test.lua` (the table, the curve, the rule,
@@ -1959,7 +1959,11 @@ the event on a mocked engine, the guards).
   already passes (the passive tree, Paragon, the class tree's factor). The factor goes on damage with origin
   `ORIGIN_SPELL` from a player of a listed class, before the tree's bonuses (they multiply, so the order does not
   matter), also for a player without tree data.
-* Not on: weapon and auto-attack hits (`ORIGIN_MELEE`, `ORIGIN_RANGED`, `ORIGIN_WAND`), conditions (`ORIGIN_CONDITION`:
+* The Thief line (C2, 2026-10-24): a spell's weapon strike is dealt by `ChaosSpell.weaponStrike` (`spells/chaos/_common.lua`),
+  which multiplies it by `ChaosSpellFactor.forVocation(voc, nil, level)` itself, because the event never sees a weapon
+  origin; the guard (`ChaosSpellFactor.depth`) turns it off there as well. The line's auto attacks stay unscaled.
+* Not on: weapon and auto-attack hits (`ORIGIN_MELEE`, `ORIGIN_RANGED`, `ORIGIN_WAND`; a Thief-line spell strike is the
+  exception above), conditions (`ORIGIN_CONDITION`:
   a burn or rot a spell leaves ticks unscaled), healing, keystone / support / archetype procs (`ChaosKeystones.depth`:
   a share of a hit that had the factor already), and hits inside the factor's guard (`ChaosSpellFactor.depth`): the
   Templar line's holy strike on a weapon hit (`templar_combat.lua` radiantStrike) and every Necromancer minion hit

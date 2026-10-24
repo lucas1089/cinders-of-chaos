@@ -217,6 +217,10 @@ and Shadowfist x0.7, Necromancer x0.8, Beastmaster x1.25 (it lost most to the la
 `server/data/scripts/chaos/spell_factor_config.lua`; spell hits only (not weapon hits, healing, minions, the Templar
 line's holy strike on a weapon hit, conditions); numbers: server/data/spells/README.md "Class spell factor". The
 balance targets hold: the Deadeye has the best single target, the Elementalist the best area damage.
+Since 2026-10-24 (C2 / C3 close-out) the Thief, Ninja and Samurai have a curve too (end values 0.91 / 1.09 / 1.05), applied to
+their spell strikes inside `ChaosSpell.weaponStrike` (auto attacks stay unscaled), so every one of the 21 classes keeps its
+best-set spell score within about 1% of its value before the attack kit at levels 100-1000 (the Thief line was +12% to -11%
+off); numbers: server/data/spells/README.md "Thief line curve and C2 / C3 close-out".
 
 Shared spells, one cooldown (the rung per class -> the rung taken):
 Arcane Ripple Illusionist 2, Mystic 6 -> rung 2 (4 s); Bewitching Hex Illusionist 3, Mystic 8 -> rung 3 (6 s); Blade

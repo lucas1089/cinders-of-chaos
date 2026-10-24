@@ -140,10 +140,12 @@ for cls, rows in per_class.items():
     check(all(rows[i][2] <= rows[i + 1][2] for i in range(1, len(rows) - 1)), '%s: weakest to strongest' % cls)
 
 # the class spell factor (spell_factor_config.lua): read from the server's table, applied to every spell of the class
-check(R.spell_factors() == {3: 1.12, 4: 1.0, 5: 0.7, 7: 1.25, 8: 1.09, 10: 0.73, 14: 1.08, 15: 1.17, 17: 0.87, 18: 0.8, 19: 0.99,
+check(R.spell_factors() == {3: 1.12, 4: 1.0, 5: 0.7, 7: 1.25, 8: 1.09, 10: 0.73, 11: 0.91, 12: 1.09, 13: 1.05, 14: 1.08, 15: 1.17, 17: 0.87, 18: 0.8, 19: 0.99,
                             20: 0.69, 21: 0.92, 22: 0.71, 23: 0.63, 24: 0.77, 25: 0.6},
       'the class spell factors (the end of each curve) of spell_factor_config.lua')
-check(R.spell_factor('Thief') == 1.0 and R.spell_factor('Templar') == 0.63, 'a class not listed keeps 1')
+check(R.spell_factor('Mystic') == 1.0 and R.spell_factor('Templar') == 0.63, 'a class not listed keeps 1')
+check(R.spell_factor('Thief', 300) == 0.89 and R.spell_factor('Ninja', 300) == 0.84 and R.spell_factor('Samurai', 1000) == 1.05,
+      'the Thief line has a curve since C2 (2026-10-24)')
 check(R.spell_factor('Templar', 300) == 0.57 and R.spell_factor('Templar', 5000) == 0.63, 'the level curve (O136)')
 check(abs(R.spell_factor('Templar', 35) - 0.805) < 1e-9 and R.spell_factor('Templar', 1) == 0.6, 'the curve is linear between points')
 smite = [s for s in spells if s['name'] == 'Radiant Smite']
