@@ -251,6 +251,53 @@ function K.activeCount(plan)
 	return n
 end
 
+-- ---------------------------------------------------------------- card borders
+-- The client draws a border on the cards inside a deck window (client game_cardborder): gold-green when the card is on, dim
+-- when it is off. It cannot see action ids, so the server sends the card ids that are on (extended opcode 172, action
+-- "state", data {on = {ids}}). A card is told by its id, not by its copy: the client only decorates cards that sit in a
+-- deck container, and a second copy in a deck beside the one that is on shows as on too (the server counts one copy).
+-- ids of the cards that are on after a reconcile, ascending
+function K.activeIds(plan)
+	local ids = {}
+	for id in pairs((plan and plan.active) or {}) do
+		ids[#ids + 1] = id
+	end
+	table.sort(ids)
+	return ids
+end
+
+-- the text two equal sets share, to send only when the set changes
+function K.stateKey(ids)
+	local parts = {}
+	for i, id in ipairs(ids or {}) do
+		parts[i] = tostring(id)
+	end
+	return table.concat(parts, ",")
+end
+
+-- the payload of the "state" message, in the ids the client draws (clientId(serverId); the same number when nil):
+--   on     the cards that are on, ascending by server id
+--   cards  every card, decks  every deck: the client decorates only cards inside a deck container
+function K.statePayload(plan, clientId)
+	local conv = clientId or function(id) return id end
+	local out = {on = {}, cards = {}, decks = {}}
+	for _, id in ipairs(K.activeIds(plan)) do
+		out.on[#out.on + 1] = conv(id)
+	end
+	local ids = {}
+	for id in pairs(C.cards) do
+		ids[#ids + 1] = id
+	end
+	table.sort(ids)
+	for _, id in ipairs(ids) do
+		out.cards[#out.cards + 1] = conv(id)
+	end
+	for _, d in ipairs(C.decks) do
+		out.decks[#out.decks + 1] = conv(d.id)
+	end
+	return out
+end
+
 -- ---------------------------------------------------------------- use
 -- s = {id, inDeck (the used copy sits in a deck carried), isOn (this copy is the one that is on), storageOn (the card is on,
 -- after reconcile), count (cards on), decks = {{used, size}}}. Returns the action and, for "move", the index in s.decks

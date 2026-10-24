@@ -644,6 +644,7 @@ collision check") and be added here.
 | 159 | `waystoneAtlas` | `waystone_atlas.lua` | `game_riftatlas` (waystone mode) | client -> server `open` / `alloc {id}` / `refund {id, pay}` / `reset {pay}`, server -> client `tree` through `Chaos.sendChunked`, `state`, `credit {cells, points}` (see "Waystone Atlas") |
 | 167 | `conquest` | `conquest.lua`, the Conquest vendor's NPC script | `game_conquest` | `state` through `Chaos.sendChunked`; client -> server `open` / `close` / `buy {k}` (see "Conquest Tokens, the Conquest vendor and bad-luck protection") |
 | 171 | `chronicle` | `chronicle.lua`, `memorial.lua` | `game_chronicle` | chronicle.lua: `open` / `close`, `state` through `Chaos.sendChunked`; memorial.lua: `mem` / `memset` |
+| 172 | `cardState` | `cards.lua` | `game_cardborder` | server -> client `state {on, cards, decks}` (the cards that are on); client -> server `sync` (see "Cards and decks") |
 | 174 | `emberCache` | `embercache.lua` | `game_embercache` | client -> server `open` / `close` / `get`, server -> client `state` (see "Ember Cache, Daily Spark and the day book") |
 | 176 | `candlemarks` | `candlemarks.lua`, Osric the Chandler's NPC script | `game_candlemarks` | client -> server `open` / `buy {k}`; server -> client `hud` (every minute), `state` through `Chaos.sendChunked`, `result`, `npc` (see "Candlemarks") |
 | 178 | `goals` | `goals.lua` | `game_goals` | client -> server `open` / `close` / `tracker`; server -> client `goals` through `Chaos.sendChunked`, `tracker`, `done` (see "Next Goals") |
@@ -7436,7 +7437,8 @@ Not seen in a client or on a live server: her stall, the trade window, the level
 Owner 2026-10-23 (pt-BR): "como alguém pega um deck pra colocar as cartas? usar elas não funciona e no character info só diz
 se ela está ativada ou desativada", then "as cartas ainda referenciam as magias antigas" (a card said "convert Exori Mas
 Spell to Earth damage"). The base deck system (76 cards, 3 decks) stays; Chaos fixes how it is reached, read and named.
-No opcode, no table, no storage key of its own: the base's card storages (37000-37059, 37065-37080) and action id 37866.
+No table, no storage key of its own: the base's card storages (37000-37059, 37065-37080) and action id 37866. One opcode, 172
+(`ChaosOpcodes.cardState`), for the card borders below.
 
 - **Root cause of "use does nothing".** The base registers a use action for every card (`deckSystem:id(cardId)`), but it
   only does something for a card that is already inside a deck: it looks for the card with `container:getItemsById` in the
@@ -7495,9 +7497,26 @@ No opcode, no table, no storage key of its own: the base's card storages (37000-
   the config and the item types, so no stock name is in the repo. `tests/cards_test.lua` scans every description (en and
   pt-BR) for the old stock names and words of `data/spells/spell_names.csv`, requires every line's spell to be a current
   spell with the right id (`stock_spells.csv`, `spells_chaos.xml`, `patch_spell_cap.py`), and checks the hint matches the tool.
+- **Card borders** (owner 2026-10-24, pt-BR: "coloque uma borda pra mostrar se a carta está ligada ou não"). A card in a deck
+  window gets a border: green when the card is on, a dim red-grey when it is off. The client cannot see action ids, so the
+  server tells it which cards are on: extended opcode **172** (`ChaosOpcodes.cardState`, free in the reference server, the
+  base client's `ExtendedIds` and every Chaos module; see "Opcode collision check"), JSON `{action = "state", data = {on, cards,
+  decks}}`: `on` the card ids that are on, `cards` all 76, `decks` the three deck ids, all as client ids
+  (`ItemType(id):getClientId()`; the server id when unknown). `ChaosCardsCore.statePayload` builds it (pure, tested).
+  `ChaosCards.push(player, plan, force)` sends it at login (always), when the client asks (`sync`, one second after login, in
+  case the module loaded late; limited to one per 500 ms), after a card is turned on or off, and whenever the 60 s sweep, the
+  `deck` command or a use finds the set changed (`reconcile` plan.active); an unchanged set is not sent again (last key per
+  player in memory, forgotten at logout). The payload is about 600 bytes, far under `maxTextBytes` and the 8192 limit.
+  Client `game_cardborder` (`cardborderlogic.lua` rules, `cardborder.lua` widgets): hooks the `Container` signals like the loot
+  filter, and draws a border child (`setBorderWidth` 2, `setBorderColor`) on the slot widgets of a container whose item is a
+  deck; one redraw per container per frame, no per-frame loop. Cards outside a deck get no border, and nothing is drawn until
+  the server's first message (an older server never sends one). **A card is told by its id, not by its copy:** a second copy
+  of an on card inside a deck shows as on too, although the server counts one copy (a second copy can only sit in a deck
+  by being moved there by hand; the action id sits on the first). No UI text, so no new `tr()` key.
 - **Install:** step `badges` (`patch_badges.py`, idempotent; the hook and the descriptions). The Lua files are scripts.
 - **Tests:** `tests/cards_test.lua` (data, reconcile and decide, the glue on a mocked engine, texts in en and pt-BR, the hit
-  event, Tautstring's bonus, the stale-name scan), `tools/patch_badges_test.py` (hook once, descriptions, hint migration),
+  event, Tautstring's bonus, the stale-name scan, the card state messages: login, on, off, unchanged, sync, logout, opcode
+  172 unique), client `game_cardborder/cardborder_test.lua` (rules and the real server payload), `tools/patch_badges_test.py` (hook once, descriptions, hint migration),
   `tests/apothecary_test.lua` (decks), `client/overlay/modules/game_chaosinfo/chaosinfoview_test.lua`.
 - **Not seen in a client or on a live server.** The base is not in the repo: the right-click menu "Use" entry depends on
   the item's `.dat` usable flag (the base registered the action, so it is expected); the nine moved lines are tested on a

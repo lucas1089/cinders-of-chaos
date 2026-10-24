@@ -1,0 +1,12 @@
+Module
+  name: game_cardborder
+  description: Border on the cards inside a deck window, lit when the card is on and dim when it is off (server cards.lua, extended opcode 172)
+  author: Cinders of Chaos
+  sandboxed: true
+  scripts: [ cardborderlogic, cardborder ]
+  dependencies:
+    - game_interface
+  autoload: true
+  autoload-priority: 1001
+  @onLoad: init()
+  @onUnload: terminate()

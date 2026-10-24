@@ -6,9 +6,9 @@
   "game_monkchi"
  ],
  "counts": {
-  "opcode": 58,
+  "opcode": 59,
   "out": 38,
-  "passive": 74,
+  "passive": 73,
   "place": 13,
   "staff": 10
  },
@@ -445,6 +445,28 @@
    "skip": [],
    "systems": [
     "candlemarks"
+   ]
+  },
+  "cardState": {
+   "actions": [
+    "sync"
+   ],
+   "client": [
+    "game_cardborder"
+   ],
+   "dataKeys": [
+    "cards",
+    "size",
+    "used"
+   ],
+   "files": [
+    "cards.lua"
+   ],
+   "opcode": 172,
+   "out": false,
+   "skip": [],
+   "systems": [
+    "cards"
    ]
   },
   "castbar": {
@@ -2563,12 +2585,14 @@
   },
   "cards": {
    "files": [
-    "cards.lua"
+    "cards.lua",
+    "chaos_constants.lua"
    ],
-   "kind": "passive",
-   "opcodes": [],
-   "talkactions": [],
-   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+   "kind": "opcode",
+   "opcodes": [
+    "cardState"
+   ],
+   "talkactions": []
   },
   "catchup": {
    "files": [

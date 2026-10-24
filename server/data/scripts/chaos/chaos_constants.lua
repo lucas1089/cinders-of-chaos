@@ -1028,6 +1028,10 @@ Chaos.storage.nemesis = 7102300
 ChaosOpcodes.goals = 178
 Chaos.tables.goals = "chaos_goals"
 
+-- Card borders: the cards that are ON, server -> client (client game_cardborder; cards.lua, cards_core.lua K.state; server/README.md
+-- "Cards and decks"). 172 is free in the reference server, the base client and every Chaos module. No storage, no table.
+ChaosOpcodes.cardState = 172
+
 -- Ember Cache, Daily Spark and the day book: points from every activity, a daily Spark, three weekly milestones, what
 -- the character did today (client game_embercache; embercache.lua, embercache_core.lua, daybook_core.lua,
 -- embercache_config.lua). 174 is free in the reference server, the base client and every Chaos module. Storages
