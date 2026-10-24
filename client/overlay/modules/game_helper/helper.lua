@@ -91,8 +91,12 @@ end
 -- ---------------------------------------------------------------- the spell table
 local function buildSpellCache()
   spellCache = {}
-  for _, s in pairs(SpellInfo and SpellInfo.Default or {}) do
-    if type(s) == 'table' and type(s.id) == 'number' then spellCache[s.id] = s end
+  for k, s in pairs(SpellInfo and SpellInfo.Default or {}) do
+    if type(s) == 'table' and type(s.id) == 'number' then
+      -- the table's key is the spell's name; many entries have none of their own (the utility check needs it)
+      if type(s.name) ~= 'string' and type(k) == 'string' then s.name = k end
+      spellCache[s.id] = s
+    end
   end
 end
 

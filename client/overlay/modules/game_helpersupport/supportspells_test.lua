@@ -558,5 +558,33 @@ eq(H.isUtility({ id = 99991, name = 'Greater Lantern', words = 'zzz' }), true, '
 eq(H.isUtility({ id = 99992, name = 'Town Portal', words = 'zzz' }), true, 'the town portal by name is a utility')
 eq(H.isUtility({ id = 99993, name = 'Fire Wave', words = 'zzz' }), false, 'an attack is not a utility')
 
+-- O155 (owner 2026-10-24, live screenshot): Auto setup still filled Greater Lantern, Ghost Rope and Lantern. The client's
+-- table is a map name -> entry and the entries carry no name of their own, so the name check saw '' and the unknown
+-- spells were planned as cheap support spells. Auto setup, the dropdown and the cast share one classifier now.
+do
+  local function e(id, words) return { id = id, words = words, group = { [3] = 2000 }, level = 9, mana = 20, exhaustion = 2000 } end
+  local tbl = { -- the client's shape: key = name, no name field, stock words
+    ['Greater Lantern'] = e(11, 'zzz gal'), ['Ghost Rope'] = e(9, 'zzz rope'), ['  Lantern '] = e(10, 'zzz lan'),
+    ['Great Light'] = e(12, 'zzz gl'), ['Find Person'] = e(13, 'zzz fp'), ['Levitate'] = e(14, 'zzz lev'),
+    ['Odd Boon'] = e(15, 'zzz boon'),
+  }
+  local plan = H.autoPlan(tbl, function() return true end)
+  local bad = {}
+  for _, id in ipairs(plan.support) do if id ~= 15 then bad[#bad + 1] = id end end
+  eq(#bad, 0, 'Auto setup plans no utility from a name-keyed table')
+  for _, c in ipairs(H.candidates(tbl, nil)) do
+    eq(c.spell.id, 15, 'the dropdown offers no utility: ' .. tostring(c.spell.name))
+  end
+  -- a list entry with no name at all is not planned
+  eq(#H.autoPlan({ e(77, 'zzz un') }, function() return true end).support, 0, 'an entry with no name is not planned')
+  eq(H.isUtility({ id = 5, name = '  Ghost   ROPE ', words = 'x' }), true, 'name: case and spaces do not matter')
+  local byId = {}
+  for _, en in ipairs(H.entries(tbl)) do byId[en.id] = en end
+  local kept, dropped = H.dropUtilities({ { id = 11, enabled = true }, { id = 9, enabled = true }, { id = 10, enabled = true },
+    { id = 15, enabled = true } }, function(id) return byId[id] end)
+  eq(dropped, 3, 'a saved Greater Lantern, Ghost Rope and Lantern leave')
+  eq(#kept, 1, 'the real support spell stays')
+end
+
 if fails > 0 then error(fails .. ' failure(s)') end
 print('supportspells_test: OK')

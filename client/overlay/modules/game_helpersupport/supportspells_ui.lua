@@ -103,6 +103,7 @@ function U.enabled() load() return cfg.enabled end
 -- Auto setup: the rows and (nil: unchanged) the switch
 function U.setSlots(slots, enabled)
   load()
+  slots = S.dropUtilities(slots, spellEntry) -- a utility never gets in, whoever asks (Auto setup, 'add' mode)
   cfg = S.sanitize({ enabled = enabled == nil and cfg.enabled or enabled, reserve = cfg.reserve, slots = slots })
   state = S.newState()
   save()
@@ -111,8 +112,10 @@ end
 
 -- ---------------------------------------------------------------- the spell table
 local function spellList()
-  if Spells and Spells.getSpellList then return Spells.getSpellList() end
-  return {}
+  -- the client's table is a map name -> entry; S.entries gives every entry its name (the key) and drops nothing
+  local list = Spells and Spells.getSpellList and Spells.getSpellList() or nil
+  if type(list) ~= 'table' or next(list) == nil then list = SpellInfo and SpellInfo.Default or {} end
+  return S.entries(list)
 end
 
 

@@ -221,11 +221,38 @@ function H.info(spell)
   }
 end
 
--- a utility the helper never casts by itself (by id, words or name)
+-- a name as the lists compare it: lower case, one space between words, no edge spaces
+local function cleanName(s)
+  return (lower(s):gsub('%s+', ' '):gsub('^ ', ''):gsub(' $', ''))
+end
+H.cleanName = cleanName
+
+-- the client's spell table is a map name -> entry whose entries often carry no name of their own (the key is the name):
+-- a list of entries that all have one. A list stays as it is. (O155: a utility with no name field slipped past the name check)
+function H.entries(spells)
+  local out = {}
+  if type(spells) ~= 'table' then return out end
+  for k, v in pairs(spells) do
+    if type(v) == 'table' then
+      if type(k) == 'string' and (type(v.name) ~= 'string' or v.name == '') then
+        local copy = {}
+        for kk, vv in pairs(v) do copy[kk] = vv end
+        copy.name = k
+        v = copy
+      end
+      out[#out + 1] = v
+    end
+  end
+  table.sort(out, function(a, b) return (tonumber(a.id) or 0) < (tonumber(b.id) or 0) end)
+  return out
+end
+
+-- THE classifier: a utility the helper never casts by itself (by id, words or name). Every path asks this one: the
+-- auto setup, the dropdown, the cast, the saved list at load, the helper's own pickers (ChaosHelperSpells.isUtility)
 function H.isUtility(spell)
   if type(spell) ~= 'table' then return false end
-  if H.NEVER_IDS[spell.id] or H.NEVER_NAMES[lower(spell.name)] then return true end
-  return type(spell.words) == 'string' and isNeverWords(lower(spell.words))
+  if H.NEVER_IDS[spell.id] or H.NEVER_NAMES[cleanName(spell.name)] then return true end
+  return type(spell.words) == 'string' and isNeverWords(cleanName(spell.words))
 end
 
 -- may this spell stand in the section? Returns true, or false and the reason
@@ -249,7 +276,7 @@ end
 -- the eligible spells the character can cast: a list of { spell, info }, in the order of the section
 function H.candidates(spells, canCast)
   local out = {}
-  for _, s in ipairs(spells or {}) do
+  for _, s in ipairs(H.entries(spells)) do
     if H.eligible(s) and (not canCast or canCast(s.id)) then
       out[#out + 1] = { spell = s, info = H.info(s) }
     end
@@ -260,8 +287,11 @@ end
 
 -- unknown support spells (added to the data later) are set up when they are cheap to keep up: not a long cooldown
 local function autoSlot(c)
+  if H.isUtility(c.spell) then return false end
   local a = c.info.auto
   if a ~= nil then return a end
+  -- Auto setup never plans a spell it cannot name (no utility check is possible) or a utility
+  if H.isUtility(c.spell) or cleanName(c.spell.name) == '' then return false end
   local cd = H.cooldownMs(c.spell)
   if c.spell.special or cd > H.MAX_AUTO_COOLDOWN_MS then return false end
   return 'support'

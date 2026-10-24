@@ -3497,6 +3497,10 @@ window exists (polled every second, like the Auto setup button), and any other h
   `RECAST_MIN_MS` (60 s) or its cooldown if longer. A vigil is a switch (a second cast turns it off) and needs bar
   data, else it is not cast; one the bar has not shown after our cast is not cast again within that gap. Only one
   vigil is set up by Auto setup (Clarity).
+- Fix of 2026-10-24 (owner, O156): Auto setup still planned Greater Lantern, Ghost Rope and Lantern. The client's spell
+  table is a map name -> entry whose entries often have no `name`, so the name check saw nothing. `S.entries` gives
+  every entry its name (the key), `S.isUtility` is the one classifier of Auto setup, the dropdown, the cast and the
+  helper's pickers, Auto setup plans no utility and no unnamed spell, and `setSlots` drops utilities.
 - Fixes of 2026-10-22 (owner): (1) light, rope and the other stock utilities went into Support by themselves: the
   client says them in their Chaos words, which the stock word list missed (above). (2) "after dying the list is gone":
   every buff drops at death, which read as the player switching the vigils off, so their rows were unticked and
