@@ -310,4 +310,24 @@ registered["ChaosParagonLogin"].onLogin(setmetatable({registerEvent = function()
 eq(rows[70].mMana, 17, "no refund at login")
 ChaosPassiveTree.internal = nil
 
+-- beta 2026-10-24: the O135 cut (1 point every 6 levels past 1100) took points, and the login refund wiped the
+-- allocation. The first login after the fix gives the old track's points back, once.
+eq(P.legacyPoints(1000), 0, "no legacy at the start"); eq(P.legacyPoints(1100), 0, "none up to slowFrom")
+eq(P.legacyPoints(1500), 500 - P.totalPoints(1500), "level 1500: the old 500 minus the new total")
+eq(P.totalPoints(1500) + P.legacyPoints(1500), 500, "level 1500 owns the old 500 again")
+for L = 1000, 2400, 7 do assert(P.legacyPoints(L) >= 0, "never negative " .. L) end
+local LEG = Chaos.storage.paragonLegacy; assert(LEG, "legacy storage key")
+P.cache = {}; rows[70] = {}
+local old1500, oldst = mkPlayer(1500, 0); oldst[LEG] = -1
+registered["ChaosParagonLogin"].onLogin(setmetatable({registerEvent = function() end}, {__index = old1500}))
+eq(oldst[LEG], 500 - P.totalPoints(1500), "granted at login")
+eq(P.pointsOf(old1500), 500, "the old total is back")
+P.actions.paragonMastery(old1500, {key = "mDamage", n = 400}); eq(rows[70].mDamage, 400, "the points back are spendable")
+registered["ChaosParagonLogin"].onLogin(setmetatable({registerEvent = function() end}, {__index = old1500}))
+eq(oldst[LEG], 500 - P.totalPoints(1500), "granted once"); eq(rows[70].mDamage, 400, "no refund at the next login")
+-- a character at 1050 at the fix gets nothing, and later levels follow the new track
+local mid, midst = mkPlayer(1050, 0); midst[LEG] = -1; P.cache = {}
+registered["ChaosParagonLogin"].onLogin(setmetatable({registerEvent = function() end}, {__index = mid}))
+eq(midst[LEG], 0, "nothing below slowFrom"); eq(P.pointsOf(mid), 50, "new track only")
+
 print("paragon: all asserts passed")

@@ -183,6 +183,9 @@ Chaos.storage = {
 	passiveStatsFixed = 7100021, -- 1 once the stats older passive tree versions wrote into the character are clamped
 	passiveClassFx = 7100022, -- the class nodes of the passive tree the character holds, a bit each (class_tree.lua)
 	passiveRework = 7100023, -- the last reworked-nodes version refunded (passivetree_config.lua reworked)
+	-- Paragon points kept from the track before O135 (1 point per level above 1000): set once at the first login after
+	-- the fix (paragon.lua P.grantLegacy), -1 = not yet; the O135 cut wiped allocations through the login refund
+	paragonLegacy = 7102501,
 	paragonConverted = 7102500, -- free passive tree points the character exchanged for Paragon points (paragon.lua, O146); 7102500 - 7102509 reserved
 	archetypeFlags = 7100024, -- the build archetype keystones held, a bit each (archetypes_config.lua storage)
 	vigils = 7100025, -- the vigils switched on, a bit each (vigils_config.lua storage)

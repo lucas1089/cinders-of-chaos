@@ -1988,6 +1988,8 @@ return {
 		-- Progression: Paragon, the passive tree, boss points, gems, salvage, archery, Ember Blessings (paragon.lua, passivetree.lua, bosspoints.lua, gems.lua, salvage.lua, archery.lua, blessings.lua)
 		["Your Paragon points were refunded for free: you had spent more than your %d points."] =
 			"Seus pontos Paragon foram devolvidos de graça: você tinha gastado mais do que seus %d pontos.",
+		["%d Paragon points came back: the points the track change of 2026-10-23 took. Open the passive tree and press Paragon."] =
+			"%d pontos Paragon voltaram: os pontos que a mudança do Paragon de 23/10/2026 tirou. Abra a árvore passiva e aperte Paragon.",
 		["You have %d unspent Paragon point%s. Open the passive tree and press Paragon."] =
 			"Você tem %d ponto%s Paragon sem gastar. Abra a árvore passiva e aperte Paragon.",
 		["Your passive tree was refunded for free: it held more nodes than your %d passive points. Please allocate them again."] =

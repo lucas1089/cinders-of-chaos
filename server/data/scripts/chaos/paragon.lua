@@ -102,7 +102,8 @@ end
 
 -- ---------------------------------------------------------------- pure part (server/tests/paragon_test.lua)
 -- `converted`: free passive tree points exchanged for Paragon points (Chaos.storage.paragonConverted, cfg.exchange.ratio each)
-function P.totalPoints(level, converted)
+-- `legacy`: points kept from the old 1-per-level track (Chaos.storage.paragonLegacy, P.legacyPoints)
+function P.totalPoints(level, converted, legacy)
 	level = level or 0
 	local first = math.max(0, math.min(level, cfg.slowFrom or math.huge) - cfg.startLevel) * (cfg.pointsPerLevel or 1)
 	local slow = 0
@@ -110,6 +111,15 @@ function P.totalPoints(level, converted)
 		slow = (level - cfg.slowFrom) / (cfg.levelsPerPointSlow or 1)
 	end
 	return math.floor(first + slow) + math.max(0, math.floor(converted or 0)) * ((cfg.exchange or {}).ratio or 1)
+		+ math.max(0, math.floor(legacy or 0))
+end
+
+-- Before O135 (2026-10-23) the track gave 1 point per level above startLevel without the slow part. The cut took points
+-- from every character above slowFrom, and the login refund then wiped their allocation (beta 2026-10-24: "the reset did
+-- not give all points back"). A character keeps the difference at its level of the first login after the fix, for good.
+function P.legacyPoints(level)
+	local old = math.max(0, (level or 0) - cfg.startLevel) * (cfg.pointsPerLevel or 1)
+	return math.max(0, math.floor(old) - P.totalPoints(level))
 end
 
 function P.spent(alloc)
@@ -263,9 +273,26 @@ function P.converted(player)
 	return key and math.max(0, player:getStorageValue(key)) or 0
 end
 
--- the Paragon points a player owns (levels + exchanged tree points); `level` defaults to the player's
+-- Paragon points kept from the old track (0 before P.grantLegacy ran)
+function P.legacy(player)
+	local key = Chaos.storage.paragonLegacy
+	return key and math.max(0, player:getStorageValue(key)) or 0
+end
+
+-- once per character: store the points the O135 cut took (0 for a character at or below slowFrom). Returns the grant.
+function P.grantLegacy(player)
+	local key = Chaos.storage.paragonLegacy
+	if not key or player:getStorageValue(key) >= 0 then
+		return 0
+	end
+	local n = P.legacyPoints(player:getLevel())
+	player:setStorageValue(key, n)
+	return n
+end
+
+-- the Paragon points a player owns (levels + exchanged tree points + the old track's points); `level` defaults to the player's
 function P.pointsOf(player, level)
-	return P.totalPoints(level or player:getLevel(), P.converted(player))
+	return P.totalPoints(level or player:getLevel(), P.converted(player), P.legacy(player))
 end
 
 -- free passive tree points (owned minus the nodes of the active preset), 0 without the tree module
@@ -503,6 +530,12 @@ function login.onLogin(player)
 	player:registerEvent("ChaosParagonLogout")
 	-- refund over budget (the level dropped below what was spent); runs before or after the tree's login, either way
 	-- the tree's apply reads the allocation from the cache
+	local granted = P.grantLegacy(player)
+	if granted > 0 then
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player,
+			"%d Paragon points came back: the points the track change of 2026-10-23 took. Open the passive tree and press Paragon.",
+			granted))
+	end
 	local alloc = P.allocation(player)
 	local total = P.pointsOf(player)
 	if P.spent(alloc) > total then
