@@ -1,6 +1,7 @@
 -- Paragon panel maths (no client API, tested by paragonmath_test.lua).
 -- `state` is the server's paragonState: {unlocked, total, spent, free, categories = [{stats = [{key, perPoint,
 -- maxPoints, points}]}]}; `pending` is {statKey = points added in the panel and not applied yet}.
+local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 ParagonMath = {}
 
 function ParagonMath.pendingSum(pending)
@@ -86,7 +87,7 @@ function ParagonMath.bonusLines(state)
   for _, category in ipairs((state and state.categories) or {}) do
     for _, stat in ipairs(category.stats or {}) do
       if (stat.points or 0) > 0 then
-        table.insert(lines, string.format("+%s%% %s (Paragon).", ParagonMath.fmt(ParagonMath.value(stat, stat.points)), stat.name))
+        table.insert(lines, tr("+%s%% %s (Paragon).", ParagonMath.fmt(ParagonMath.value(stat, stat.points)), stat.name))
       end
     end
   end

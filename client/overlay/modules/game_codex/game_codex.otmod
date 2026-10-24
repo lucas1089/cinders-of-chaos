@@ -3,7 +3,7 @@ Module
   description: Codex (encyclopedia of modifiers, powers, orbs, gems, uniques, rift modifiers and supports; static data, no opcode)
   author: Cinders of Chaos
   sandboxed: true
-  scripts: [ codex_data, codexview, codex ]
+  scripts: [ codex_data, codextext, codexview, codex ]
   dependencies:
     - client_chaos_theme
     - game_interface

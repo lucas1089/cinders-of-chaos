@@ -98,7 +98,7 @@ local function addTable(section, entry, level)
     local labels = {}
     for i, text in ipairs(cells) do
       local cell = g_ui.createWidget('CodexCell', row)
-      cell:setText(text)
+      cell:setText(CodexText.t(text))
       if kind == 'head' then
         cell:setColor('#c8a85a')
       elseif i == 1 and link then
@@ -171,12 +171,12 @@ local function showEntry(entry)
       if s.h and s.h ~= '' then
         local head = g_ui.createWidget('CodexHeading', page)
         if theme then theme.applyFont(head, 'heading') end
-        head:setText(s.h)
+        head:setText(CodexText.t(s.h))
       end
       for _, p in ipairs(s.p or {}) do
         local label = g_ui.createWidget('CodexParagraph', page)
         if theme then theme.applyFont(label, 'body') end
-        label:setText(p)
+        label:setText(CodexText.t(p))
       end
       if s.rows then
         addTable(s, entry, level)
@@ -269,10 +269,10 @@ local function buildFilters()
   for _, f in ipairs(tab.filters) do
     local combo = g_ui.createWidget('ChaosComboBox', bar)
     combo:setWidth(width)
-    combo:setTooltip(tipText(f.label))
+    combo:setTooltip(tipText(CodexText.t(f.label)))
     local current = 1
     for i, o in ipairs(f.options) do
-      combo:addOption(o[2], o[1])
+      combo:addOption(CodexText.t(o[2]), o[1])
       if o[1] == (values[tab.id][f.key] or '') then current = i end
     end
     combo:setCurrentIndex(current)
@@ -385,7 +385,7 @@ function init()
     local b = g_ui.createWidget('ChaosTabButton', window.tabBar)
     -- eleven tabs (Lore last) share the bar: no wider than the theme's 96, all of them inside the window
     b:setWidth(math.min(96, math.floor((window:getWidth() - 40 - 4 * (#data.tabs - 1)) / #data.tabs)))
-    b:setText(tab.name)
+    b:setText(CodexText.t(tab.name))
     b:setTooltip(tipText(tr('%d entries', #tab.entries)))
     b.onClick = function() history = {}; showTab(i) end
     tabButtons[i] = b
