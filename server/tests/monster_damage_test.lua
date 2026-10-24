@@ -141,6 +141,7 @@ eq(C.isBoosted(withElem, K, COMBAT_MANADRAIN, ORIGIN_SPELL), false, "elemental o
 -- ---------------------------------------------------------------- the event: monster -> player
 local pct300 = C.percentFor(cfg, 300)
 local pct1000 = C.percentFor(cfg, 1000)
+local pct650 = C.percentFor(cfg, 650)
 ok(pct300 >= 8 and pct300 <= 20, "level 300 boost in range: " .. pct300)
 ok(pct1000 >= pct300, "level 1000 boost at least the level 300 one")
 
@@ -218,6 +219,19 @@ ChaosInvasion.invaders[lowArea:getId()] = {areaLevel = 100}
 p = hit(pl, lowArea, 1000, COMBAT_PHYSICALDAMAGE)
 eq(p, math.floor(1000 * (1 + pct1000 / 100) + 0.5), "an invader keeps its own higher level")
 ChaosInvasion = nil
+
+-- Infinity Tower (O168): a tower monster counts at least at the level of its floor, a higher own level stays
+local towerLevels = {}
+ChaosTowerRun = {levelOf = function(mon) return towerLevels[mon:getId()] end}
+local towerTroll = monster(20, {name = "Troll"})
+towerLevels[towerTroll:getId()] = 650
+p = hit(pl, towerTroll, 1000, COMBAT_PHYSICALDAMAGE)
+eq(p, math.floor(1000 * (1 + pct650 / 100) + 0.5), "a level 20 troll on a level 650 tower floor counts at 650")
+local towerHigh = monster(1000)
+towerLevels[towerHigh:getId()] = 300
+p = hit(pl, towerHigh, 1000, COMBAT_PHYSICALDAMAGE)
+eq(p, math.floor(1000 * (1 + pct1000 / 100) + 0.5), "a tower monster keeps its own higher level")
+ChaosTowerRun = nil
 
 -- ---------------------------------------------------------------- mana shield
 local mp = player({mana = 5000})

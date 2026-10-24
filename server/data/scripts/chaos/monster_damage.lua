@@ -87,6 +87,11 @@ function MD.levelOf(monster)
 	if inv and tonumber(inv.areaLevel) then
 		lvl = math.max(lvl, tonumber(inv.areaLevel))
 	end
+	-- an Infinity Tower monster counts at least at the level of its floor (infinitytower_run.lua, ChaosTowerRun.levelOf)
+	local tower = ChaosTowerRun and ChaosTowerRun.levelOf and select(2, pcall(ChaosTowerRun.levelOf, monster))
+	if tonumber(tower) then
+		lvl = math.max(lvl, tonumber(tower))
+	end
 	levelCache.put(id, lvl)
 	return lvl
 end

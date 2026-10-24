@@ -3475,6 +3475,28 @@ each monster with `Chaos.createMonsterNamed(..., nil, level)`, so `Chaos.spawnLe
 creature packet (engine patch 0044 lets it win over a level of the monster's own). The level is the floor's, not the
 players'. Tests: `infinitytower_run_test.lua`, `infinitytower_balance_test.lua`. Server restart, no client change.
 
+**Second report, same day: floors 1 to 130 felt the same, the bosses "just walked in circles".** Checked against the TFS
+1.4.2 Lua API instead of trusting the first analysis:
+- Health: `Creature:setMaxHealth` is a stock method (it works on monsters) and `Creature:setHealth` is clamped to the maximum,
+  so the order matters; `spawnPlan` sets the maximum first, then the health, so the health curve held. The new
+  `tests/infinitytower_floor_test.lua` has a mock that clamps `setHealth` like the engine and checks floors 1 to 42 (every
+  monster above its species' own health, the boss floors' `bossHealth`, `levelOf`, the damage factor).
+- Damage was the gap. `monster_damage.lua` boosts a monster's physical hit by its level (`ChaosLoot.monsterLevel`, the species'
+  own level for a tower monster), so a floor 100 troll hit like a level 20 one. `ChaosTowerRun.levelOf(monster)` returns the
+  level of its floor (summons too) and `MD.levelOf` takes at least that, the way it does for invaders. The floor's own
+  factor (`damage`, the pace curve) stays on top. Bosses get the level boost as well, but not the factor.
+- The natural tier roll of `monster_tiers.lua` (registered in `onSpawn` for every eligible monster, and 4-5 modifiers for a boss)
+  ran at the first think of tower monsters too: a boss got Juggernaut (health x1.6), Regenerating or Stoneskin on top of
+  the tuned `bossHealth` (the world bosses skip it for the same reason). `spawnPlan` now unregisters the four roll events
+  (`ChaosTierRoll...`); the planned tier of the floor is applied by `ChaosApplyTier` as before.
+- Walking in circles: a monster without a target only takes random steps. A 2 second tick per floor (`engageTick`) gives every
+  tower monster without a target the nearest living player of the run (`Monster:selectTarget`), like `trials.lua` and
+  `nemesis.lua`. The base boss XMLs are not in the repo and the tower bosses have no profile in `boss_mechanics_config.lua`,
+  so a cause inside a boss file or the engine (for example a ranged boss that keeps its distance without a path) cannot be
+  proven here. Owner check on the live server: the flags of the boss XMLs in the installed base (`targetdistance`,
+  `staticattack`, `runonhealth`) and whether the build has 8d286bf7 and this commit (the first report matches a build without the display level: "level 80-100 from floor 20" is the dragon pool).
+- Tests: `infinitytower_floor_test.lua`, `monster_damage_test.lua`. Server restart, no client change, no engine patch.
+
 ## Infinity Tower season rewards (`infinitytower.lua`, `infinitytower_core.lua`, `Chaos.tower` in `chaos_constants.lua`)
 
 The client window's "Top Rank Rewards" podium (Gold, Silver and Copper Tower Chest) is paid at the end of every tower
