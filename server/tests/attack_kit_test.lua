@@ -126,7 +126,8 @@ for _, key in ipairs(keys) do
 		eq(tonumber(t:match('mana="(%d+)"')), s.mana, key .. " mana")
 		eq(tonumber(t:match('groupcooldown="(%d+)"')), 2000, key .. " group cooldown")
 		local cd = tonumber(t:match('%scooldown="(%d+)"'))
-		ok(cd and cd >= 2000 and cd <= 20000 and cd % 2000 == 0, key .. " cooldown on the 2 s ladder")
+		-- 2, 4, 6 s, then one second a rung up to 13 s (O176, rotation_sim.py LADDER_COOLDOWNS)
+		ok(cd and cd >= 2000 and cd <= 13000 and cd % 1000 == 0 and (cd > 6000 or cd % 2000 == 0), key .. " cooldown on the ladder")
 		eq(t:match('needlearn="(%d)"'), "0", key .. " needlearn")
 		if s.shape == "around" then
 			eq(t:match('selftarget="1"') ~= nil, true, key .. " is self-targeted")

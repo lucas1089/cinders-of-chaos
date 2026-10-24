@@ -173,42 +173,61 @@ cooldown: the rung most of them give it, a tie the lower (listed below). The sna
 are attack spells and take their rung too; the cast-time spells (Colossus Fall, Doomtide, Glacial Doom, Primordial
 Squall, Tear in the Weave, Hail of Dawn) as well. `server/tools/rotation_sim.py --ladder [--check]` computes it and CI
 checks it. Damage per cast unchanged; what it does to the damage per second: server/data/spells/README.md "Cooldown
-ladder". The ladders ("rung n": the class's own rung when a shared spell took another):
-- **Warrior**: Bonebreaker 2 s < Scything Arc 4 s < Reaping Gyre 6 s < Vaulting Cleave 8 s < Earthbreaker 8 s (rung 5) <
-  Butcher's Gyre 12 s < Colossus Fall 14 s < Headsman's Hurl 16 s.
-- **Juggernaut**: Bonebreaker 2 s < Scything Arc 4 s < Reaping Gyre 6 s < Earthbreaker 8 s < Butcher's Gyre 12 s (rung
-  5) < Anvil Fall 12 s < Colossus Fall 14 s < Headsman's Hurl 16 s.
-- **Berserker**: Bonebreaker 2 s < Scything Arc 4 s < Reaping Gyre 6 s < Earthbreaker 8 s < Skyfall Cleave 10 s <
-  Butcher's Gyre 12 s < Rampage Leap 14 s < Colossus Fall 14 s (rung 8) < Headsman's Hurl 16 s (rung 9).
-- **Ranger**: Phantom Javelin 2 s < Snare Trap 4 s < Dawnpiercer 6 s < Sanctum Burst 8 s < Skewering Line 10 s < Radiant
-  Shard 12 s < Blessed Earth 14 s < Hail of Dawn 16 s.
-- **Deadeye**: Phantom Javelin 2 s < Snare Trap 4 s < Dawnpiercer 6 s < Sanctum Burst 8 s < Skewering Line 10 s <
-  Blessed Earth 14 s (rung 6) < Final Verdict 14 s < Twin Verdict 16 s < Hail of Dawn 16 s (rung 9).
-- **Beastmaster**: Phantom Javelin 2 s < Feral Command 4 s < Pack Frenzy 6 s < Snare Trap 4 s (rung 4) < Dawnpiercer 6 s
-  (rung 5) < Sanctum Burst 8 s (rung 6) < Blessed Earth 14 s.
-- **Mystic**: Kindling Spark 2 s < Rime Bloom 4 s < Blightswarm 6 s < Witchfire Bolt 8 s < Briar Prison 10 s < Arcane
-  Ripple 4 s (rung 6) < Umbral Stride 14 s < Bewitching Hex 6 s (rung 8) < Shattered Psyche 12 s (rung 9) < Falling Pyre
-  14 s (rung 10).
-- **Elementalist**: Kindling Spark 2 s < Pyre Torrent 4 s < Rime Bloom 4 s (rung 3) < Forked Storm 8 s < Witchfire Bolt
-  8 s (rung 5) < Tempest Fan 12 s < Falling Pyre 14 s < Frozen Crypt 16 s < Doomtide 18 s < Glacial Doom 20 s.
-- **Illusionist**: Kindling Spark 2 s < Arcane Ripple 4 s < Bewitching Hex 6 s < Primordial Squall 8 s < Nightburst 10 s
-  < Shattered Psyche 12 s < Tear in the Weave 14 s.
-- **Thief**: Shuriken Toss 2 s < Snare Trap 4 s < Seeker Mine 6 s < Blade Flurry 10 s (rung 4) < Fan of Knives 10 s.
-- **Ninja**: Shuriken Toss 2 s < Snare Trap 4 s < Seeker Mine 6 s < Shuriken Barrage 8 s < Blade Flurry 10 s < Shadow
-  Step 12 s < Shuriken Tempest 14 s.
-- **Samurai**: Shuriken Toss 2 s < Snare Trap 4 s < Seeker Mine 6 s < Iaido Sweep 8 s < Blade Flurry 10 s < Iaijutsu 12
+ladder".
+
+**Shorter cooldowns for the strongest spells (O176, 2026-10-24, owner: "lower the cooldown of the strongest spells, to
+raise the DPS of every class")**: the ladder is now 2, 4, 6, 7, 8, 9, 10, 11, 12, 13 s for rung 1 to 10 (it was 2 s per
+rung, up to 20 s). The first three rungs are unchanged, the top rungs lose 25 to 35%. Group cooldown 2 s, no rung below
+it. Damage per second of every class rises by about 19% from level 300 (class spell factor curves keep the classes
+level with each other): server/data/spells/README.md "Shorter cooldowns for the strongest spells (O176)". The ladders
+below are the current ones ("rung n": the class's own rung when a shared spell took another):
+- **Warrior**: Bonebreaker 2 s < Scything Arc 4 s < Reaping Gyre 6 s < Vaulting Cleave 7 s < Earthbreaker 7 s (rung 5)
+  < Butcher's Gyre 9 s < Colossus Fall 10 s < Rift Cleaver 11 s < Gorehook 12 s < Headsman's Hurl 13 s.
+- **Juggernaut**: Bonebreaker 2 s < Scything Arc 4 s < Reaping Gyre 6 s < Earthbreaker 7 s < Butcher's Gyre 9 s (rung
+  5) < Anvil Fall 9 s < Colossus Fall 10 s < Rift Cleaver 11 s < Gorehook 12 s < Headsman's Hurl 13 s.
+- **Berserker**: Bonebreaker 2 s < Scything Arc 4 s < Reaping Gyre 6 s < Earthbreaker 7 s < Skyfall Cleave 8 s <
+  Butcher's Gyre 9 s < Rampage Leap 10 s < Colossus Fall 10 s (rung 8) < Gorehook 12 s < Headsman's Hurl 13 s.
+- **Ranger**: Phantom Javelin 2 s < Snare Trap 4 s < Dawnpiercer 6 s < Sanctum Burst 7 s < Skewering Line 8 s <
+  Radiant Shard 9 s < Arrowstorm 10 s < Blessed Earth 9 s (rung 8) < Sunspear 10 s (rung 9) < Hail of Dawn 13 s.
+- **Deadeye**: Phantom Javelin 2 s < Snare Trap 4 s < Dawnpiercer 6 s < Sanctum Burst 7 s < Skewering Line 8 s <
+  Blessed Earth 9 s < Sunspear 10 s < Final Verdict 11 s < Twin Verdict 12 s < Hail of Dawn 13 s.
+- **Beastmaster**: Phantom Javelin 2 s < Feral Command 4 s < Pack Frenzy 6 s < Snare Trap 4 s (rung 4) < Dawnpiercer 6
+  s (rung 5) < Sanctum Burst 7 s (rung 6) < Packhunter's Dart 10 s < Arrowstorm 10 s (rung 8) < Blessed Earth 9 s
+  (rung 9) < Sunspear 10 s (rung 10).
+- **Mystic**: Kindling Spark 2 s < Rime Bloom 4 s < Blightswarm 6 s < Witchfire Bolt 7 s < Briar Prison 8 s < Arcane
+  Ripple 4 s (rung 6) < Umbral Stride 10 s < Bewitching Hex 6 s (rung 8) < Shattered Psyche 9 s (rung 9) < Falling
+  Pyre 10 s (rung 10).
+- **Elementalist**: Kindling Spark 2 s < Pyre Torrent 4 s < Rime Bloom 4 s (rung 3) < Forked Storm 7 s < Witchfire Bolt
+  7 s (rung 5) < Tempest Fan 9 s < Falling Pyre 10 s < Frozen Crypt 11 s < Doomtide 12 s < Glacial Doom 13 s.
+- **Illusionist**: Kindling Spark 2 s < Arcane Ripple 4 s < Bewitching Hex 6 s < Primordial Squall 7 s < Nightburst 8
+  s < Shattered Psyche 9 s < Phantom Needles 10 s < Mirror Shards 11 s < Tear in the Weave 12 s < Dreamrot 13 s.
+- **Thief**: Shuriken Toss 2 s < Snare Trap 4 s < Seeker Mine 6 s < Gutting Slash 7 s < Razor Rain 8 s < Blade Flurry
+  9 s < Fan of Knives 10 s < Crescent Cut 9 s (rung 8) < Venom Spiral 10 s (rung 9) < Last Breath 12 s (rung 10).
+- **Ninja**: Shuriken Toss 2 s < Snare Trap 4 s < Seeker Mine 6 s < Shuriken Barrage 7 s < Razor Rain 8 s < Blade
+  Flurry 9 s < Venom Spiral 10 s < Gutting Slash 7 s (rung 8) < Shadow Step 12 s < Shuriken Tempest 13 s.
+- **Samurai**: Shuriken Toss 2 s < Snare Trap 4 s < Seeker Mine 6 s < Gutting Slash 7 s < Razor Rain 8 s < Crescent
+  Cut 9 s < Iaido Sweep 10 s < Blade Flurry 9 s (rung 8) < Last Breath 12 s < Iaijutsu 13 s.
+- **Necromancer**: Bone Spear 2 s < Bone Shrapnel 4 s < Grave Nova 6 s < Marrow Bolt 7 s < Wraithwind 8 s < Withering
+  Curse 7 s (rung 6) < Gravewail 8 s (rung 7) < Soulrend Beam 9 s (rung 8) < Blightbrand 12 s < Crypt Collapse 13 s.
+- **Lich**: Bone Spear 2 s < Corpse Explosion 4 s < Life Siphon 6 s < Marrow Bolt 7 s < Wraithwind 8 s < Gravewail 8 s
+  (rung 6) < Soulrend Beam 9 s (rung 7) < Soul Rot 11 s < Withering Curse 7 s (rung 9) < Blightbrand 12 s (rung 10).
+- **Bone Lord**: Bone Spear 2 s < Marrow Bolt 7 s (rung 2) < Wraithwind 8 s (rung 3) < Withering Curse 7 s < Gravewail
+  8 s < Soulrend Beam 9 s < Bone Offering 10 s < Ossuary Surge 11 s < Blightbrand 12 s < Crypt Collapse 13 s.
+- **Monk**: Ashen Fist 2 s < Palm Shockwave 4 s < Hollow Knuckle 6 s < Quaking Stomp 7 s < Cleaving Heel 8 s < Tidal
+  Palm 9 s < Whirling Heel 9 s (rung 7) < Chi Lance 10 s (rung 8) < Sundering Palm 11 s (rung 9) < Skysplitter Fist 13
   s.
-- **Necromancer**: Bone Spear 2 s < Bone Shrapnel 4 s < Grave Nova 6 s < Withering Curse 4 s (rung 4).
-- **Lich**: Bone Spear 2 s < Corpse Explosion 4 s < Life Siphon 6 s < Soul Rot 8 s < Withering Curse 4 s (rung 5).
-- **Bone Lord**: Bone Spear 2 s < Withering Curse 4 s < Bone Offering 6 s.
-- **Monk**: Ashen Fist 2 s < Palm Shockwave 4 s < Whirling Heel 6 s < Sundering Palm 12 s (rung 4).
-- **Shadowfist**: Ashen Fist 2 s < Palm Shockwave 4 s < Shadow Ricochet 6 s < Pressure Points 8 s < Whirling Heel 6 s
-  (rung 5) < Sundering Palm 12 s < Shadowfist Flurry 14 s.
-- **Iron Sage**: Ashen Fist 2 s < Palm Shockwave 4 s < Iron Chain 6 s < Whirling Heel 6 s (rung 4) < Iron Palm 10 s <
-  Sundering Palm 12 s.
-- **Templar**: Radiant Smite 2 s < Sanctified Ground 4 s < Consecration 6 s.
-- **Inquisitor**: Radiant Smite 2 s < Judgement 4 s < Purging Nova 6 s < Consecration 6 s (rung 4).
-- **Sentinel**: Radiant Smite 2 s < Shield Wave 4 s < Consecration 6 s.
+- **Shadowfist**: Ashen Fist 2 s < Palm Shockwave 4 s < Shadow Ricochet 6 s < Pressure Points 7 s < Hollow Knuckle 6 s
+  (rung 5) < Whirling Heel 9 s < Chi Lance 10 s < Sundering Palm 11 s < Shadowfist Flurry 12 s < Skysplitter Fist 13
+  s.
+- **Iron Sage**: Ashen Fist 2 s < Palm Shockwave 4 s < Iron Chain 6 s < Hollow Knuckle 6 s (rung 4) < Quaking Stomp 7
+  s (rung 5) < Cleaving Heel 8 s (rung 6) < Tidal Palm 9 s (rung 7) < Whirling Heel 9 s (rung 8) < Iron Palm 12 s <
+  Sundering Palm 11 s (rung 10).
+- **Templar**: Radiant Smite 2 s < Sanctified Ground 4 s < Censer Swing 6 s < Hallowed Cut 7 s < Penitent Lash 8 s <
+  Bell of Reckoning 9 s < Martyr's Pyre 10 s < Lance of Vigil 11 s < Consecration 12 s < Sanctum Verdict 13 s.
+- **Inquisitor**: Radiant Smite 2 s < Judgement 4 s < Purging Nova 6 s < Hallowed Cut 7 s < Penitent Lash 8 s < Bell
+  of Reckoning 9 s < Zealot's Wrath 10 s < Lance of Vigil 11 s < Consecration 12 s < Heretic's Brand 13 s.
+- **Sentinel**: Radiant Smite 2 s < Shield Wave 4 s < Censer Swing 6 s < Hallowed Cut 7 s < Bulwark Slam 8 s < Bell of
+  Reckoning 9 s < Rampart Quake 10 s < Martyr's Pyre 10 s (rung 8) < Consecration 12 s < Sanctum Verdict 13 s.
 
 **Class spell factor (2026-10-20, the owner's decision on the ladder's proposals)**: the ladder raised the damage per
 second of the classes built on long-cooldown spells; one factor on all of a class's spell damage brings them back

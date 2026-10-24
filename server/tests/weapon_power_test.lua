@@ -93,8 +93,10 @@ ok(hit("distance", 2000, 140, attack) > hit("distance", 1000, 140, attack) * 1.3
 	S.maxHit(2000, 140, attack) / S.maxHit(1000, 140, attack) .. "x)")
 ok(hit("melee", 1000, 160, attack) > hit("melee", 1000, 140, attack) * 1.15, "same level: +20 skill is over +15%")
 ok(hit("melee", 1000, 120, attack) < hit("melee", 1000, 140, attack) * 0.9, "same level: -20 skill is under -10%")
--- the typical character: a launcher at 300 is the engine's hit as before (no balance jump below the lift)
-near(P.hitFactor("distance", 300, S.typical("skill", 300)), 1, 1e-9, "level 300 typical launcher: unchanged")
+-- the typical character: a launcher at 200 is the engine's hit as before (no balance jump below the lift); at 300 it is
+-- lifted 8% since O176 (the Ranger line's rotation is 20% stronger, weapon_power_config.lua)
+near(P.hitFactor("distance", 200, S.typical("skill", 200)), 1, 1e-9, "level 200 typical launcher: unchanged")
+near(P.hitFactor("distance", 300, S.typical("skill", 300)), 1.08, 1e-9, "level 300 typical launcher: lifted 8% (O176)")
 -- a wand: no skill factor (the magic level's own factor in weapon_skill_core), only the level
 near(P.hitFactor("wand", 300, 999), P.levelFactor("wand", 300), 1e-9, "a wand ignores the skill argument")
 near(P.hitFactor("wand", 300), P.levelFactor("wand", 300), 1e-9, "a wand without a skill")

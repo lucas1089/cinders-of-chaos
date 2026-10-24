@@ -44,7 +44,7 @@ level (cost_fits).
 line and the Illusionist (server/data/spells/README.md "Healing"): the formula of chaos_constants.lua, the cooldown and the
 fixed mana cost of spells_chaos.xml, the base health of the data.
 --ladder [--check]: the cooldown ladder per class (owner, 2026-10-20: the attack spells at 2, 4, 6 s ... from the
-first to the strongest; ladder() below, server/data/spells/README.md "Cooldown ladder"); --check exits 1 when a spell's
+first to the strongest; O176, 2026-10-24: 2, 4, 6, 7 ... 13 s, LADDER_COOLDOWNS; ladder() below, server/data/spells/README.md "Cooldown ladder"); --check exits 1 when a spell's
 cooldown or group cooldown is off it.
 --write / --check: client/overlay/modules/game_helperrotation/autorotation_data.lua (the helper's "Auto rotation"
 button: the best set for every level where the class gets a new attack spell, and its heals).
@@ -847,7 +847,16 @@ def report(spells, model, only_cls=None, only_level=None):
 
 
 LADDER_LEVEL = 300   # the damage per cast the cooldown ladder ranks by (the C4 measurement level)
-LADDER_STEP = 2000   # ms between two rungs
+LADDER_STEP = 2000   # ms between two rungs of the first LADDER_FLAT rungs
+# the cooldown of rung 1, 2, 3 ... 10 (ms). O176 (owner 2026-10-24: "diminua o cooldown das magias mais fortes, para aumentar
+# a DPS de todas as classes"): 2, 4, 6 s as before (O94), then one second a rung instead of two: 7, 8 ... 13 s. The strongest
+# rungs lose 25 to 35% (was 12, 14, 16, 18, 20 s: 9, 10, 11, 12, 13 s); a rung stays above the one below it.
+LADDER_COOLDOWNS = (2000, 4000, 6000, 7000, 8000, 9000, 10000, 11000, 12000, 13000)
+
+
+def rung_cooldown(rung):
+    """the cooldown (ms) of rung `rung` (1 = the first spell); a class has at most 10 attack spells (O133)"""
+    return LADDER_COOLDOWNS[min(rung, len(LADDER_COOLDOWNS)) - 1]
 
 
 def ladder(spells, model, level=LADDER_LEVEL):
@@ -856,7 +865,7 @@ def ladder(spells, model, level=LADDER_LEVEL):
     attack spell (the lowest level, the class's level 8 spell) is rung 1, the others follow from the weakest to the
     strongest by the damage of one cast on one target at `level` (rotation_model.csv with the class's stats; an area
     spell by its main-target hit). A spell several classes share has one cooldown: the rung most of them give it (a tie:
-    the lower). Returns ({name: cooldown ms}, {class: [(name, rung, damage)]}, [(name, {class: rung}, rung)])."""
+    the lower). The cooldown of a rung is LADDER_COOLDOWNS (O176). Returns ({name: cooldown ms}, {class: [(name, rung, damage)]}, [(name, {class: rung}, rung)])."""
     attack = [s for s in spells if s['group'] == 'attack']
     rungs, per_class = {}, {}
     for cls, _, _ in CLASSES:
@@ -875,7 +884,7 @@ def ladder(spells, model, level=LADDER_LEVEL):
         for r in by.values():
             counts[r] = counts.get(r, 0) + 1
         rung = sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))[0][0]
-        final[n] = rung * LADDER_STEP
+        final[n] = rung_cooldown(rung)
         if len(counts) > 1:
             conflicts.append((n, by, rung))
     return final, per_class, sorted(conflicts)
@@ -886,11 +895,11 @@ def ladder_report(spells, model, check=False):
     cd = {s['name']: s['cooldown'] for s in spells if s['group'] == 'attack'}
     gcd = {s['name']: s['groupcooldown'] for s in spells if s['group'] == 'attack'}
     for cls, rows in per_class.items():
-        print('%-12s %s' % (cls, ' < '.join('%s %d s%s' % (n, final[n] // 1000, '' if final[n] == rung * LADDER_STEP
+        print('%-12s %s' % (cls, ' < '.join('%s %d s%s' % (n, final[n] // 1000, '' if final[n] == rung_cooldown(rung)
                                                           else ' (rung %d)' % rung) for n, rung, _ in rows)))
     for n, by, rung in conflicts:
         print('shared: %s %s -> rung %d (%d s)' % (n, ', '.join('%s %d' % kv for kv in sorted(by.items())), rung,
-                                                    rung * LADDER_STEP // 1000))
+                                                    rung_cooldown(rung) // 1000))
     wrong = ['%s: cooldown %d, the ladder %d' % (n, cd[n], c) for n, c in sorted(final.items()) if cd[n] != c]
     wrong += ['%s: group cooldown %d, not %d' % (n, g, int(GCD * 1000)) for n, g in sorted(gcd.items())
               if g != int(GCD * 1000)]

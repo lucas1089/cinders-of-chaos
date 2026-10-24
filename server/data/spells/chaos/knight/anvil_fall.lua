@@ -1,6 +1,6 @@
 -- Anvil Fall: the Juggernaut brings its weapon down on the target (range 3): one crushing blow to everything in a 5x5
 -- square around it, from weapon attack and skill; every enemy hit is stunned (90% slow) for 2.5 s.
--- 12 s cooldown (the cooldown ladder, 2026-10-20; was 20 s).
+-- 9 s cooldown (the cooldown ladder, 2026-10-20: 12 s, was 20 s; O176, 2026-10-24: 9 s).
 -- About 0.8 of Colossus Fall's damage on a smaller area, in one hit (docs/CLASSES.md "Spells by level").
 dofile('data/spells/scripts/chaos/_common.lua')
 
