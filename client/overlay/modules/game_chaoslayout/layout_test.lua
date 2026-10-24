@@ -64,12 +64,47 @@ local st = L.newSession()
 L.begin(st)
 eq(L.canSave(st, 'w/Alice'), false, 'no save before the restore')
 L.restored(st, 'w/Alice', merged)
-eq(L.canSave(st, 'w/Alice'), true, 'saves after the restore')
-eq(L.canSave(st, 'w/Bob'), false, 'not into another character')
+eq(L.canSave(st, 'w/Alice', 1000), false, 'no save while the restore passes run')
+L.release(st)
+eq(L.canSave(st, 'w/Alice', 1000), true, 'saves after the restore passes')
+eq(L.canSave(st, 'w/Bob', 1000), false, 'not into another character')
 eq(L.changed(st, merged), false, 'the restored layout is not a change')
 local moved = L.merge(merged, { mini = { skillWindow = { panel = 'panel1', side = 'right', index = 3, height = 220 } } })
 eq(L.changed(st, moved), true, 'a moved window is a change')
 eq(L.changed(st, moved), false, 'written once')
+
+-- settle: a new layout is written only when two checks in a row agree
+L.restored(st, 'w/Alice', merged)
+L.release(st)
+eq(L.settle(st, merged), false, 'the restored layout is not a change')
+eq(L.settle(st, moved), false, 'first sight of a change is not written')
+eq(L.settle(st, moved), true, 'second sight is written')
+eq(L.settle(st, moved), false, 'and once')
+-- windows the base client closes during a death or logout: seen once, then the game ends, never written
+local closing = L.merge(moved, { mini = { skillWindow = { panel = 'panel1', side = 'right', index = 3, closed = true },
+  battleWindow = { panel = 'panel1', side = 'right', index = 2, closed = true } } })
+eq(L.settle(st, closing), false, 'a layout in motion is not committed')
+eq(L.settle(st, moved), false, 'back to the written layout: nothing to write')
+eq(L.settle(st, closing), false, 'and the candidate starts over')
+
+-- freeze: a death stops saving for a while
+L.freeze(st, 5000)
+eq(L.canSave(st, 'w/Alice', 5000 + L.FREEZE_MS - 1), false, 'frozen after a death')
+eq(L.canSave(st, 'w/Alice', 5000 + L.FREEZE_MS), true, 'saving again after the freeze')
+L.begin(st)
+L.restored(st, 'w/Alice', moved)
+L.release(st)
+eq(L.canSave(st, 'w/Alice', 0), true, 'the next game start clears the freeze')
+
+-- reopen passes: saved open, there now, hidden -> opened again; saved closed, gone or shown -> left alone
+local savedOpen = { mini = { skillWindow = { closed = false }, battleWindow = { closed = true },
+  vipWindow = { closed = false }, goneWindow = { closed = false }, container1 = { closed = false },
+  partyWindow = { closed = false } } }
+local vis = { skillWindow = false, battleWindow = false, vipWindow = true, container1 = false, partyWindow = false }
+eq(table.concat(L.reopenIds(savedOpen, vis), ','), 'partyWindow,skillWindow', 'only open-saved windows now hidden')
+eq(#L.reopenIds(nil, vis), 0, 'no saved layout, nothing to reopen')
+eq(#L.reopenIds(savedOpen, nil), 0, 'no windows, nothing to reopen')
+eq(#L.PASSES >= 2 and L.PASSES[1] < L.PASSES[2], true, 'passes in order')
 
 -- death -> relogin: the logout ends the session; the next login restores the saved layout before any save
 local store = {}
