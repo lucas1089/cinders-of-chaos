@@ -92,6 +92,7 @@ def balance(text=None):
         'count': curve(t, 'count'), 'magic': curve(t, 'magic'), 'rare': curve(t, 'rare'), 'legendary': curve(t, 'legendary'),
         'level': curve(t, 'level'), 'clear': curve(t, 'clear'), 'health': curve(t, 'health'), 'damage': curve(t, 'damage'),
         'bossSeconds': curve(t, 'bossSeconds'), 'sawtooth': saw, 'limits': limits,
+        'beyond': dict((k, float(v)) for k, v in re.findall(r'\t\t(\w+) = ([-0-9.]+)', re.search(r'(?m)^\tbeyond = \{(.*?)\n\t\}', t, re.S).group(1))),
         'tierHealth': dict((k, float(v)) for k, v in re.findall(r'(magic|rare|legendary) = ([0-9.]+)',
                                                                 re.search(r'(?m)^\ttierHealth = \{(.*?)\}', t).group(1)))}
     for k in ('bossEvery', 'milestoneEvery', 'bandFloors', 'bossHelperDivisor', 'perPlayer', 'maxFloor', 'packUptime', 'bossUptime', 'engageSeconds'):
@@ -124,6 +125,64 @@ def tier_factor(mix, info):
 
 
 # ------------------------------------------------------------------------------------------------ schemes
+def growth(cfg, rate, accel, f):
+    """exp(rate x d + accel x d^2 / 2), d = f - maxFloor; 1 up to maxFloor (B.growth of infinitytower_balance_core.lua)"""
+    d = f - cfg['maxFloor']
+    return 1.0 if d <= 0 else math.exp(min(60.0, rate * d + accel * d * d / 2))
+
+
+def growth_floor(cfg, rate, accel, factor):
+    """the first whole floor where the growth is at least `factor` (B.growthFloor)"""
+    want, lo, hi = math.log(factor), 0.0, 1e9
+    while hi - lo > 0.5:
+        mid = (lo + hi) / 2
+        lo, hi = (lo, mid) if rate * mid + accel * mid * mid / 2 >= want else (mid, hi)
+    return int(cfg['maxFloor'] + math.ceil(hi))
+
+
+def trend_hp(cfg, f):
+    """the health of a normal monster of floor f before the sawtooth and the cap: the curve, then the growth"""
+    b = cfg['beyond']
+    return lin(cfg['health'], f) * growth(cfg, b['healthRate'], b['healthAccel'], f)
+
+
+def hp_at(cfg, f):
+    """B.health: the trend x the sawtooth, capped (int32 health with room for the legendary tier)"""
+    v = trend_hp(cfg, f) * cfg['sawtooth'][(int(f) - 1) % len(cfg['sawtooth'])]
+    return math.floor(min(cfg['beyond']['healthMax'], v)) if f > cfg['maxFloor'] else v
+
+
+def boss_hp_at(cfg, f):
+    """B.bossHealth: the table up to maxFloor (the boss floor at or below f), then the last x the growth, capped"""
+    b = cfg['beyond']
+    keys = sorted(cfg['bossHealth'])
+    best = max([k for k in keys if k <= f] or [keys[0]])
+    v = cfg['bossHealth'][best]
+    if f > keys[-1]:
+        v *= growth(cfg, b['bossHealthRate'], b['bossHealthAccel'], f)
+    return math.floor(min(b['bossHealthMax'], v))
+
+
+def dmg_at(cfg, f):
+    """B.damage: the curve, then x the growth, capped"""
+    b = cfg['beyond']
+    v = lin(cfg['damage'], f)
+    return min(b['damageMax'], v * growth(cfg, b['damageRate'], b['damageAccel'], f)) if f > cfg['maxFloor'] else v
+
+
+def boss_dmg_at(cfg, f):
+    """B.bossDamage: 1 up to maxFloor, then the growth, capped"""
+    b = cfg['beyond']
+    return min(b['damageMax'], growth(cfg, b['damageRate'], b['damageAccel'], f))
+
+
+def level_at(cfg, f):
+    """B.level (not rounded): the curve, then levelPerFloor a floor, capped"""
+    b = cfg['beyond']
+    v = lin(cfg['level'], f)
+    return min(b['levelMax'], v + b['levelPerFloor'] * (f - cfg['maxFloor'])) if f > cfg['maxFloor'] else v
+
+
 def new_scheme(cfg):
     n = len(cfg['sawtooth'])
 
@@ -134,14 +193,14 @@ def new_scheme(cfg):
         return tuple(lin(cfg[k], f) / 100.0 for k in ('magic', 'rare', 'legendary'))
 
     def hp(f):
-        return lin(cfg['health'], f) * cfg['sawtooth'][(int(f) - 1) % n]
+        return hp_at(cfg, f)
 
     def boss(f):
         b = cfg['bosses'][(int(f // cfg['bossEvery']) - 1) % len(cfg['bosses'])]
-        return cfg['bossHealth'].get(int(f), cfg['bossHealth'][max(cfg['bossHealth'])]), b[1]
+        return boss_hp_at(cfg, int(f)), b[1]
 
     return {'name': 'now', 'count': count, 'mix': mix, 'hp': hp, 'boss': boss, 'every': int(cfg['bossEvery']),
-            'divisor': int(cfg['bossHelperDivisor']), 'dmg': lambda f: lin(cfg['damage'], f)}
+            'divisor': int(cfg['bossHelperDivisor']), 'dmg': lambda f: dmg_at(cfg, f)}
 
 
 def legacy_scheme():
@@ -258,6 +317,8 @@ def legendary_alone(sc, cfg, f, L, info, cls=None):
 
 
 # ------------------------------------------------------------------------------------------------ derive
+MIN_STEP = 1.005  # --derive: the least rise of a point over the one before
+DAMAGE_RISE = 0.06  # --derive: the damage factor at maxFloor over the last band's
 DERIVE_FLOORS = (1, 4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 50, 60, 70, 80, 90, 100, 110, 120)
 
 
@@ -282,22 +343,31 @@ def derive(cfg, info):
         w = raw[max(0, i - 3):i + 4]
         best = max(best, sum(w) / len(w))
         smooth.append(best)
-    pts = [(f, sig(smooth[f - 1])) for f in DERIVE_FLOORS]
-    pts.append((400, sig(pts[-1][1] * 3)))
+    pts = []
+    for f in DERIVE_FLOORS:
+        v = sig(smooth[f - 1])
+        if pts and v < pts[-1][1] * MIN_STEP:  # strictly rising: every floor is stronger than the one before (O172)
+            v = sig(pts[-1][1] * MIN_STEP)
+        pts.append((f, v))
     health = '\thealth = {%s},' % ', '.join('{%d, %s}' % (f, ('%d' % v)) for f, v in pts)
     out = []
+    boss_prev = 0
     for k in range(1, int(cfg['maxFloor'] // cfg['bossEvery']) + 1):
         f = k * int(cfg['bossEvery'])
         L = lin(cfg['level'], f)
         d1 = player_dps(None, L, 1)[1] * cfg['bossUptime']
         heal = cfg['bosses'][(k - 1) % len(cfg['bosses'])][1]
-        out.append('[%d] = %d' % (f, sig(lin(cfg['bossSeconds'], f) * (d1 - heal))))
+        v = sig(lin(cfg['bossSeconds'], f) * (d1 - heal))
+        if boss_prev and v < boss_prev * MIN_STEP:  # a later boss floor never has less health than an earlier one (O172)
+            v = sig(boss_prev * MIN_STEP)
+        boss_prev = v
+        out.append('[%d] = %d' % (f, v))
     dmg = []
     for band, names in enumerate(cfg['pools']):
         dmg.append((band * int(cfg['bandFloors']) + int(cfg['bandFloors']) // 2,
                     round(lin(_PACE_DAMAGE(), _pool_level(names)), 2)))
     dmg[0] = (1, dmg[0][1])
-    dmg[-1:] = [dmg[-1], (400, dmg[-1][1])]
+    dmg.append((int(cfg['maxFloor']), round(dmg[-1][1] + DAMAGE_RISE, 2)))  # past the last band the factor rises (O172)
     return health, '\tbossHealth = {%s},' % ', '.join(out), '\tdamage = {%s},' % ', '.join('{%d, %s}' % d for d in dmg)
 
 
@@ -354,6 +424,7 @@ def check(cfg, info, out=print):
         slow = floor_time(sc, cfg, f, [(None, L * lim['underLevel'])], info)
         if (not is_boss(sc, f) and slow[1] > lim['underMax']) or math.isinf(slow[0]):
             bad.append('floor %d: %.0f s at %d%% of the floor level (limit %g)' % (f, slow[0], 100 * lim['underLevel'], lim['underMax']))
+    bad += endless(cfg, info)
     reachL = int(lim['reachLevel'])
     r = reach(sc, cfg, reachL, info)
     weak = reach(sc, cfg, reachL, info, cls=ranked(reachL, 7)[0])
@@ -387,12 +458,95 @@ def check(cfg, info, out=print):
     if '--quiet' not in sys.argv:
         out('\n'.join(rows))
         out('')
+        endless(cfg, info, out=out)
+        out('')
         out('reach (every floor within %g x the hunt pack of the player\'s level), median class: %s; weakest class at %d: floor %d' % (
             lim['reachRatio'], ', '.join('L%d floor %d' % x for x in reaches), reachL, weak))
     for b in bad:
         out('FAIL ' + b)
     out('tower check: %s' % ('FAIL (%d)' % len(bad) if bad else 'ok'))
     return 1 if bad else 0
+
+
+def endless(cfg, info, floors=None, out=None):
+    """the checks of O172 (the tower never stops getting stronger), floors 1..N (limits.endless, 1000):
+    - the health trend (before the sawtooth), the level and the damage factor (from the floor where its curve is lowest,
+      the pace curve falls up to there) rise strictly, boss floor to boss floor the boss health and (above maxFloor) the
+      boss damage too;
+    - the health of a floor is above the floor a climb (milestoneEvery) before it and only the breather is easier than
+      the floor before it (the sawtooth stays); above maxFloor no climb starts more than stepMax over the one before;
+    - no value is above its cap or not finite; the caps start past limits.capMin; the health cap leaves room for the
+      legendary tier and every cap is under the engine's int32;
+    - the clear time of the median class at the floor's own level climbs steadily above maxFloor (a soft wall, no cliff).
+    Returns the failures; out(line) gets the table of selected floors"""
+    lim, b = cfg['limits'], cfg['beyond']
+    top = int(floors or lim['endless'])
+    m, bad = int(cfg['milestoneEvery']), []
+    start, be = int(cfg['maxFloor']), int(cfg['bossEvery'])
+    low = min(cfg['damage'], key=lambda p: p[1])[0]
+    caps = {'health': b['healthMax'], 'boss health': b['bossHealthMax'], 'damage': b['damageMax'], 'level': b['levelMax']}
+    for f in range(1, top + 1):
+        if f > 1:
+            if trend_hp(cfg, f) <= trend_hp(cfg, f - 1) and hp_at(cfg, f) < b['healthMax']:
+                bad.append('floor %d: the health trend does not rise (%.0f)' % (f, trend_hp(cfg, f)))
+            if int(round(level_at(cfg, f))) <= int(round(level_at(cfg, f - 1))):
+                bad.append('floor %d: the level does not rise' % f)
+            if f > low and dmg_at(cfg, f) <= dmg_at(cfg, f - 1) and dmg_at(cfg, f) < b['damageMax']:
+                bad.append('floor %d: the damage factor does not rise (%.3f)' % (f, dmg_at(cfg, f)))
+        if f > m and hp_at(cfg, f) <= hp_at(cfg, f - m) and hp_at(cfg, f) < b['healthMax']:
+            bad.append('floor %d: no more health than floor %d' % (f, f - m))
+        if f > m and f % m != 1 and hp_at(cfg, f) < hp_at(cfg, f - 1):
+            bad.append('floor %d: less health than floor %d (only the breather may be easier)' % (f, f - 1))
+        if f > start and f % m == 1 and hp_at(cfg, f) > hp_at(cfg, f - 1) * lim['stepMax']:
+            bad.append('floor %d: a cliff, %.2f x the floor before' % (f, hp_at(cfg, f) / hp_at(cfg, f - 1)))
+        if f % be == 0 and f > be:
+            if boss_hp_at(cfg, f) <= boss_hp_at(cfg, f - be) and boss_hp_at(cfg, f) < b['bossHealthMax']:
+                bad.append('boss floor %d: no more health than floor %d' % (f, f - be))
+            if f > start and boss_dmg_at(cfg, f) <= boss_dmg_at(cfg, f - be) and boss_dmg_at(cfg, f) < b['damageMax']:
+                bad.append('boss floor %d: the boss damage does not rise' % f)
+        for name, v in (('health', hp_at(cfg, f)), ('boss health', boss_hp_at(cfg, f)), ('damage', dmg_at(cfg, f)),
+                        ('level', level_at(cfg, f))):
+            if not (v == v and abs(v) != float('inf')) or v > caps[name] or v < 0:
+                bad.append('floor %d: %s %r is not finite or above its cap' % (f, name, v))
+    if b['healthMax'] * max(cfg['tierHealth'].values()) > b['engineMaxHealth'] or b['engineMaxHealth'] > 2 ** 31 - 1:
+        bad.append('the health cap x the legendary tier is above the engine limit')
+    if b['bossHealthMax'] > b['engineMaxHealth'] or b['levelMax'] > 2 ** 31 - 1:
+        bad.append('a boss health or level cap is above the engine limit')
+    starts = {'health': growth_floor(cfg, b['healthRate'], b['healthAccel'],
+                                     b['healthMax'] / (lin(cfg['health'], start) * max(cfg['sawtooth']))),
+              'boss health': growth_floor(cfg, b['bossHealthRate'], b['bossHealthAccel'],
+                                          b['bossHealthMax'] / cfg['bossHealth'][max(cfg['bossHealth'])]),
+              'damage': growth_floor(cfg, b['damageRate'], b['damageAccel'], b['damageMax'] / lin(cfg['damage'], start))}
+    for name, f in starts.items():
+        if f <= lim['capMin']:
+            bad.append('the %s cap starts at floor %d, wanted past %g' % (name, f, lim['capMin']))
+    # the soft wall: seconds the median class needs for a milestone floor at the floor's own level
+    prev, times = None, {}
+    for f in range(start, top + 1, m):
+        L = level_at(cfg, f)
+        n = int(cfg['count'][-1][1])
+        mix = tuple(lin(cfg[k], f) / 100.0 for k in ('magic', 'rare', 'legendary'))
+        t = trend_hp(cfg, f) * cfg['sawtooth'][-1] * tier_factor(mix, info) * n / (player_dps(None, L, n)[0] * cfg['packUptime'])
+        if f > start and hp_at(cfg, f) < b['healthMax']:
+            if t <= prev:
+                bad.append('floor %d: the clear time at its own level does not climb (%.1f s after %.1f s)' % (f, t, prev))
+            if t > prev * lim['stepMax']:
+                bad.append('floor %d: the clear time jumps %.2f x over the milestone before' % (f, t / prev))
+        prev = t
+        times[f] = t
+    if out:
+        rows = ['| Floor | Level | Monster health | Boss health | Damage x | Boss damage x | Clear at own level |',
+                '|---|---|---|---|---|---|---|']
+        for f in (1, 10, 50, 120, 130, 200, 300, 500, 750, 1000):
+            if f > top:
+                continue
+            rows.append('| %d | %d | %d | %d | %.2f | %.2f | %s |' % (
+                f, int(round(level_at(cfg, f))), hp_at(cfg, f), boss_hp_at(cfg, f // be * be or be), dmg_at(cfg, f),
+                boss_dmg_at(cfg, f), '%.1f s' % times[f] if f in times else '-'))
+        out('\n'.join(rows))
+        out('caps: normal monster health %d from floor %d, boss health %d from floor %d, damage factor %g from floor %d (floors 1-%d checked)' % (
+            b['healthMax'], starts['health'], b['bossHealthMax'], starts['boss health'], b['damageMax'], starts['damage'], top))
+    return bad
 
 
 def _PACE_DAMAGE():

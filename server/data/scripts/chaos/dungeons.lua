@@ -1143,7 +1143,9 @@ DeathEvent:register()
 -- difficulty: damage of the run's monsters to its players
 local function scaleHit(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType)
 	local run = attacker and attacker:isMonster() and scaledBy[attacker:getId()]
-	if run and not run.ended and primaryType ~= COMBAT_HEALING then
+	if run and not run.ended and primaryType ~= COMBAT_HEALING
+		and not (ChaosBossMech and ChaosBossMech.scriptedHit and ChaosBossMech.scriptedHit(attacker)) then
+		-- (a boss mechanic's hit is a share of the victim's max health: not scaled again, boss_mechanics.lua)
 		local party = DIFF.partyDamage(run.size or 1, cfg.party)
 		primaryDamage = DIFF.damage(primaryDamage, run.difficulty, party)
 		secondaryDamage = DIFF.damage(secondaryDamage, run.difficulty, party)

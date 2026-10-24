@@ -1133,7 +1133,10 @@ local function spawnBoss(token)
 				end
 			end
 		end
-		pcall(ChaosBossMech.attach, boss, nil, {tiles = floor, players = playersInside, pillars = L.pillars})
+		-- one player alone at the start fights without the group-only mechanics (Event Horizon, the Chorus), like the
+		-- pocket boss copy (owner 2026-10-24: every piece of content can be done solo)
+		pcall(ChaosBossMech.attach, boss, nil, {tiles = floor, players = playersInside, pillars = L.pillars,
+			solo = #playersInside() <= 1})
 	end
 	state.bossId = boss:getId()
 	state.maxHealth = boss:getMaxHealth()
@@ -1646,12 +1649,12 @@ function gm.onSay(player, words, param)
 		-- builds the arena if needed (check the footprint without starting an event) and takes you to the lobby
 		local ok, err = W.buildArena()
 		if not ok then
-			player:sendCancelMessage("Arena not built: " .. tostring(err))
+			player:sendCancelMessage(Chaos.t(player, "Arena not built: %s", tostring(err)))
 			return false
 		end
 		player:teleportTo(P(W.layout().lobbyArrival))
 	else
-		player:sendTextMessage(MESSAGE_INFO_DESCR, W.status() .. "\nUsage: /worldboss start [name|number|random], /worldboss stop, /worldboss arena")
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "%s\nUsage: /worldboss start [name|number|random], /worldboss stop, /worldboss arena", W.status()))
 	end
 	return false
 end

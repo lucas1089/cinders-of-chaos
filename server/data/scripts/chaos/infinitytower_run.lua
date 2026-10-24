@@ -272,8 +272,8 @@ function ChaosTowerRun.nextRewardText(player, floor)
 	if not nm then
 		return nil
 	end
-	local every = B.rewardItems(BC.rewards.repeatable, nm)
-	local first = nm > storedFloor(player) and B.rewardItems(BC.rewards.firstClear, nm) or {}
+	local every = B.rewardItems(BC.rewards.repeatable, nm, BC.maxFloor)
+	local first = nm > storedFloor(player) and B.rewardItems(BC.rewards.firstClear, nm, BC.maxFloor) or {}
 	local text
 	if #first > 0 and #every > 0 then
 		text = Chaos.t(player, "Next reward: floor %d, %s (first clear this season: %s).", nm, B.itemsText(every), B.itemsText(first))
@@ -290,7 +290,7 @@ local function floorRewards(player, floor)
 	if not B.isMilestone(BC, floor) then
 		return
 	end
-	local every = B.rewardItems(BC.rewards.repeatable, floor)
+	local every = B.rewardItems(BC.rewards.repeatable, floor, BC.maxFloor)
 	if #every > 0 then
 		deliver(player, every)
 		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "Floor %d reward: %s.", floor, B.itemsText(every)))
@@ -356,10 +356,22 @@ local function onMonsterDead(monsterId)
 end
 ChaosTowerRun._onMonsterDead = onMonsterDead
 
+-- Creature:setHealth is clamped to the maximum health in the engine, so the maximum goes first (monsters keep the health
+-- of their species otherwise). The stock Creature:setMaxHealth exists for monsters (luascript.cpp luaCreatureSetMaxHealth).
 local function setHealth(monster, health)
 	health = math.max(1, math.floor(health))
 	monster:setMaxHealth(health)
 	monster:setHealth(health)
+end
+
+-- A tower monster has its tier from the plan only: the natural roll that monster_tiers.lua registers in onSpawn (magic /
+-- rare / legendary, and for a boss 4-5 modifiers such as Juggernaut x1.6 health and Regenerating) would apply at its first
+-- think on top of the floor's health curve and the boss's tuned seconds (tools/tower_model.py), so it is taken off.
+local NATURAL_ROLLS = {"ChaosTierRollMagic", "ChaosTierRollRare", "ChaosTierRollLegendary", "ChaosTierRollBoss"}
+local function dropNaturalRoll(monster)
+	for _, name in ipairs(NATURAL_ROLLS) do
+		pcall(monster.unregisterEvent, monster, name)
+	end
 end
 
 local function spawnPlan(run, plan, rng)
@@ -372,7 +384,13 @@ local function spawnPlan(run, plan, rng)
 		end
 		local monster
 		for _ = 1, 6 do
-			monster = Game.createMonster(name, randomInnerPos(run.slot, rng), false, true)
+			-- O168: the floor's level goes to monster_levels.lua (Chaos.spawnLevel) so "[level]" follows the floor; a plain
+			-- Game.createMonster showed the species' own level whatever the floor
+			if Chaos.createMonsterNamed then
+				monster = Chaos.createMonsterNamed(name, randomInnerPos(run.slot, rng), false, true, nil, s.level)
+			else
+				monster = Game.createMonster(name, randomInnerPos(run.slot, rng), false, true)
+			end
 			if monster then
 				break
 			end
@@ -381,7 +399,8 @@ local function spawnPlan(run, plan, rng)
 			monster:registerEvent("ChaosTowerMonsterDeath")
 			local id = monster:getId()
 			monsterRun[id] = run
-			monsterInfo[id] = {floor = plan.floor, tier = s.tier, boss = s.boss, damage = s.damage or 1}
+			monsterInfo[id] = {floor = plan.floor, tier = s.tier, boss = s.boss, damage = s.damage or 1, level = s.level}
+			dropNaturalRoll(monster)
 			-- the floor's health (infinitytower_balance_config.lua); a tier multiplies on top, by the tower's own
 			-- tierHealth (the stock tier would multiply by its x2 / x3.5 / x6 after it)
 			if s.health and monster.setMaxHealth then
@@ -399,6 +418,53 @@ local function spawnPlan(run, plan, rng)
 	end
 	return spawned
 end
+
+-- A tower monster that has no target (a boss that was placed before the group stood still, a monster whose target was
+-- lost) picks the nearest living player of the run; the other scripted fights do the same (trials.lua, nemesis.lua).
+-- Without it a monster without a target only takes random steps.
+local ENGAGE_MS = 2000
+local function nearestPlayer(run, monster)
+	local mpos = monster:getPosition()
+	local best, bestDist
+	for _, entry in pairs(run.players) do
+		local player = Player(entry.id)
+		if player and player:getHealth() > 0 then
+			local ppos = player:getPosition()
+			if ppos and ppos.z == mpos.z then
+				local d = mpos:getDistance(ppos)
+				if not bestDist or d < bestDist then
+					best, bestDist = player, d
+				end
+			end
+		end
+	end
+	return best
+end
+
+local function engageTick(slot, floor, owner)
+	local run = runs[slot]
+	if not run or run ~= owner or run.ended or run.floor ~= floor or run.remaining <= 0 then
+		return
+	end
+	for id, r in pairs(monsterRun) do
+		if r == run then
+			local ok = pcall(function()
+				local monster = Monster(id)
+				if monster and monster.selectTarget and not monster:getTarget() then
+					local player = nearestPlayer(run, monster)
+					if player then
+						monster:selectTarget(player)
+					end
+				end
+			end)
+			if not ok then
+				break -- the engine has no Monster:selectTarget / getTarget: nothing to do
+			end
+		end
+	end
+	run.engageEvent = addEvent(engageTick, ENGAGE_MS, slot, floor, owner)
+end
+ChaosTowerRun._engageTick = engageTick
 
 startFloor = function(run)
 	run.floor = run.floor + 1
@@ -422,6 +488,7 @@ startFloor = function(run)
 			endRun(r, "Time is up!")
 		end
 	end, run.floorLimit * 1000, run.slot, run.floor, run)
+	run.engageEvent = addEvent(engageTick, 1000, run.slot, run.floor, run)
 end
 
 -- ------------------------------------------------------------------ the run's clock (instance limits)
@@ -612,6 +679,21 @@ function ChaosTowerRun.damageMultOf(attacker)
 		info = master and master.getId and monsterInfo[master:getId()]
 	end
 	return info and not info.boss and info.damage or 1
+end
+
+-- the level the floor is meant for (infinitytower_balance_config.lua `level`) of a tower monster or its summon, nil for
+-- anything else. monster_damage.lua takes it as the monster's level (the physical damage boost by level): a tower monster
+-- kept the level of its species there, so a floor 100 troll hit like a level 20 one.
+function ChaosTowerRun.levelOf(monster)
+	if not monster or not monster.getId then
+		return nil
+	end
+	local info = monsterInfo[monster:getId()]
+	if not info then
+		local master = monster.getMaster and monster:getMaster()
+		info = master and master.getId and monsterInfo[master:getId()]
+	end
+	return info and info.level or nil
 end
 
 -- tower drops (infinitytower_balance_config.lua `drops`): orbs and crystal coins on top of the monster's own loot

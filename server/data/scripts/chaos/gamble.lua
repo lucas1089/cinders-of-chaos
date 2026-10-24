@@ -599,7 +599,7 @@ function talk.onSay(player, words, param)
 				parts[#parts + 1] = string.format("%s %.2f%%", rarityNames()[r], o[r] * 100)
 			end
 		end
-		player:sendTextMessage(MESSAGE_INFO_DESCR, "Gamble odds: " .. table.concat(parts, ", "))
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Gamble odds: %s", table.concat(parts, ", ")))
 		return false
 	end
 	local name, what = param:match("^%s*([^,]+),%s*(%a+)%s*$")

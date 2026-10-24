@@ -119,8 +119,8 @@ local function buildPayload(player)
 		end
 		floorRewards = {every = BC.milestoneEvery, paid = paid, nextFloor = nm}
 		if nm then
-			floorRewards.first = listOf(B.rewardItems(BC.rewards.firstClear, nm))
-			floorRewards.repeatable = listOf(B.rewardItems(BC.rewards.repeatable, nm))
+			floorRewards.first = listOf(B.rewardItems(BC.rewards.firstClear, nm, BC.maxFloor))
+			floorRewards.repeatable = listOf(B.rewardItems(BC.rewards.repeatable, nm, BC.maxFloor))
 			local okt, text = pcall(function()
 				return ChaosTowerRun and ChaosTowerRun.nextRewardText and ChaosTowerRun.nextRewardText(player, paid)
 			end)
@@ -445,7 +445,7 @@ function testTalk.onSay(player, words, param)
 	end
 	local floors, seconds = param:match("^%s*(%d+)%s*,%s*(%d+)%s*$")
 	if not floors then
-		player:sendCancelMessage("Usage: /towerrun <floors>,<seconds>")
+		player:sendCancelMessage(Chaos.t(player, "Usage: /towerrun <floors>,<seconds>"))
 		return false
 	end
 	ChaosTower.recordRun(player, tonumber(floors), tonumber(seconds))
@@ -466,7 +466,7 @@ function seasonTalk.onSay(player, words, param)
 	param = (param or ""):lower():gsub("^%s+", ""):gsub("%s+$", "")
 	if param == "pay" then
 		local n = ChaosTower.checkSeasons(false)
-		player:sendTextMessage(MESSAGE_INFO_DESCR, n > 0 and (n .. " ended season(s) paid out.") or "No ended season to pay out.")
+		player:sendTextMessage(MESSAGE_INFO_DESCR, n > 0 and Chaos.t(player, "%d ended season(s) paid out.", n) or Chaos.t(player, "No ended season to pay out."))
 	else
 		local season, finish = currentSeason()
 		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Tower Season %d ends %s. Last season paid out: %s.",

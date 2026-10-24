@@ -733,6 +733,13 @@ function ChaosSpell.weaponStrike(caster, target, min, max, effect, origin)
 		return false
 	end
 	local k = ChaosSpell.thiefLevelScale(caster)
+	-- the class spell factor (spell_factor_config.lua, C2): a spell's strike is not ORIGIN_SPELL, so the damage event
+	-- never sees it; the same curve as the rest of the class's spells is applied here, not on the auto attack
+	local SF = ChaosSpellFactor
+	if SF and SF.forVocation and (SF.depth or 0) == 0 and caster.getVocation and caster.getLevel then
+		local voc = caster:getVocation()
+		k = k * SF.forVocation(voc and voc:getId() or 0, nil, caster:getLevel())
+	end
 	min, max = min * k, max * k
 	-- the strike's numbers come from ChaosSpell.meleeSkillLevel already: weapon_styles.lua must not apply the melee skill
 	-- rule (the ratio of the best skill to the weapon's own) to it a second time; it reads this storage during the call

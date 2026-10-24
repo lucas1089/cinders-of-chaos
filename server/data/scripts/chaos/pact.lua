@@ -559,7 +559,7 @@ function talk.onSay(player, words, param)
 	local name, rest = param:match("^%s*(.-)%s*,%s*(.-)%s*$")
 	local guid, realName = Chaos.findPlayer(name or "")
 	if not guid then
-		player:sendCancelMessage("Usage: /pact <player>, info | days <n> | end | extra <key> <amount> | claimreset")
+		player:sendCancelMessage(Chaos.t(player, "Usage: /pact <player>, info | days <n> | end | extra <key> <amount> | claimreset"))
 		return false
 	end
 	local accountId = Chaos.select("SELECT `account_id` FROM `players` WHERE `id` = " .. guid, {{"account_id", "n"}})[1].account_id
@@ -582,7 +582,7 @@ function talk.onSay(player, words, param)
 	elseif cmd == "claimreset" then
 		db.query(string.format("UPDATE `%s` SET `last_claim` = 0 WHERE `account_id` = %d", T.pact, accountId))
 	elseif cmd ~= "info" then
-		player:sendCancelMessage("Usage: /pact <player>, info | days <n> | end | extra <key> <amount> | claimreset")
+		player:sendCancelMessage(Chaos.t(player, "Usage: /pact <player>, info | days <n> | end | extra <key> <amount> | claimreset"))
 		return false
 	end
 	st = Pact.load(accountId)

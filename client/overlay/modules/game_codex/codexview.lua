@@ -147,7 +147,7 @@ function V.levelOf(values, filters)
 end
 
 function V.subline(entry, level, data)
-  if not level or not entry.tv or not data then return entry.sub or '' end
+  if not level or not entry.tv or not data then return CodexText and CodexText.sub(entry.sub or '') or entry.sub or '' end
   local rows = V.tierRows(level, data)
   local hi, lo = rows[1][1], rows[#rows][1]
   local range = lo == hi and string.format('T%d %s', hi, entry.tv[hi])

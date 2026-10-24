@@ -136,6 +136,9 @@ end
 
 -- ---------------------------------------------------------------- scaling
 function B.healthMult(cfg, players)
+	if (tonumber(players) or 1) <= 1 and cfg.boss.soloHealthMult then
+		return cfg.boss.soloHealthMult -- a member alone (owner 2026-10-24)
+	end
 	return 1 + (cfg.boss.healthPerExtraPlayer or 0) * (math.max(1, tonumber(players) or 1) - 1)
 end
 

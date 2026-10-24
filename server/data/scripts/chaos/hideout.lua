@@ -698,6 +698,7 @@ local function enterFacts(player)
 end
 
 local function result(player, ok, text)
+	text = Chaos.t(player, text) -- the core's refusals are English keys
 	Chaos.send(player, OPCODE, "result", {ok = ok, text = text})
 	if not ok then
 		player:sendCancelMessage(text)
@@ -810,7 +811,7 @@ function M.leave(player, text)
 		ChaosTownPortal.restoreSpellCooldown(player) -- the action bar shows what is left of the portal's cooldown again
 	end
 	if text then
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, text)
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, text))
 	end
 	return true
 end
@@ -1273,7 +1274,7 @@ function enterStep.onStepIn(creature, item, position, fromPosition)
 	end
 	local ok, text = M.enter(player, player:getGuid(), back)
 	if not ok then
-		player:sendCancelMessage(text)
+		player:sendCancelMessage(Chaos.t(player, text))
 		player:teleportTo(fromPosition, true)
 		fromPosition:sendMagicEffect(CONST_ME_POFF)
 	end
@@ -1404,7 +1405,7 @@ function staff.onSay(player, words, param)
 	end
 	local ok, text = M.enter(player, guid)
 	if not ok then
-		player:sendCancelMessage(text)
+		player:sendCancelMessage(Chaos.t(player, text))
 	end
 	return false
 end

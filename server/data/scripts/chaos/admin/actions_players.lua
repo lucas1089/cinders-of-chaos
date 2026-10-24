@@ -1,4 +1,10 @@
 -- Players category. Registers into ChaosAdminPending (see core.lua).
+if not (Chaos and Chaos.t) then
+	if not Chaos then
+		dofile("data/scripts/chaos/chaos_constants.lua")
+	end
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 ChaosAdminPending = ChaosAdminPending or {}
 local function reg(def) def.category = "players"; ChaosAdminPending["players." .. def.id] = def; def.id = "players." .. def.id end
 
@@ -95,7 +101,7 @@ reg{id = "mute", name = "Mute", description = "Mute a player for N minutes (COND
 		local cond = Condition(CONDITION_MUTED)
 		cond:setParameter(CONDITION_PARAM_TICKS, p.minutes * 60 * 1000)
 		t:addCondition(cond)
-		t:sendTextMessage(MESSAGE_STATUS_WARNING, "You have been muted for " .. p.minutes .. " minute(s).")
+		t:sendTextMessage(MESSAGE_STATUS_WARNING, Chaos.t(t, "You have been muted for %s minute(s).", p.minutes))
 		return true, t:getName() .. " muted for " .. p.minutes .. " min."
 	end}
 

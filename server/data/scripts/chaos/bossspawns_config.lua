@@ -65,7 +65,7 @@ return {
 		{key = "descent", name = "The Ember Descent", color = "#ff7a2a",
 			text = "A roguelike trial: 8-12 rooms, the boss in the last."},
 		{key = "sepulchre", name = "The Ashen Sepulchre (Raid)", color = "#c8503a",
-			text = "Weekly raid for 5-15: each boss's loot once a week per character."},
+			text = "Weekly raid, alone or up to 15: each boss's loot once a week per character."},
 		{key = "guild", name = "Guild Boss", color = "#d89a3a",
 			text = "Summoned in the guild hall with the guild's fuel: one kill per guild and week."}
 	},
@@ -240,7 +240,7 @@ return {
 		-- 7100441 + boss index - 1: the time of the reset while the boss is looted this week)
 		{key = "raid_ulthar", category = "sepulchre", name = "Gravewarden Ulthar", monster = "Gravewarden Ulthar", anywhere = true,
 			loc = "Ashen Sepulchre (raid)", level = 800, rule = {type = "ondemand",
-			how = "The raid portal at the temple, a party of 5-15; loot once a week", short = "Raid, weekly loot",
+			how = "The raid portal at the temple, alone or a party of up to 15; loot once a week", short = "Raid, weekly loot",
 			cooldown = 7100441}},
 		{key = "raid_morwen", category = "sepulchre", name = "Morwen the Ash-Sister", monster = "Morwen the Ash-Sister",
 			anywhere = true, loc = "Ashen Sepulchre (raid)", level = 800, rule = {type = "ondemand",

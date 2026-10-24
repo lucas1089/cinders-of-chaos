@@ -1173,8 +1173,9 @@ dungeons
   z 8-12). No other spawn lies in the added boxes. The generated dungeons 5-9 (The Hollow Vault and the deep dungeons
   6-9, `areagen.lua`) get the whole generated grid of every floor as their box: entry, exit, boss and spawns inside. Tests: `tests/dungeons_area_test.lua`,
   `tests/areagen_test.lua`.
-- Cooldown (2026-10-15, "Time-friendly progression"): a cleared run starts `Chaos.dungeons.cooldownSeconds` (900 s,
-  15 min; it replaces the base `DUNGEON_SYSTEM.CooldownTime` of 1 h after every run). A failed run, a time-out, a member
+- Cooldown (2026-10-15, "Time-friendly progression"; owner 2026-10-24: none after a clear): a cleared run starts no
+  cooldown (`cooldownOnSuccess` false, `cooldownSeconds` 0; it was 15 min, and the base `DUNGEON_SYSTEM.CooldownTime`
+  of 1 h after every run stays replaced), the next run can start at once. A failed run, a time-out, a member
   who leaves or dies, and a member who logged out inside and logs in again while the server runs (sent to the temple)
   start the short `failCooldownSeconds` (300 s, `cooldownOnFail`): farming 85% of the monsters and leaving does not pay
   (owner rule "follow your recommendations"). A restart sets none. Tests: `tests/dungeons_area_test.lua` (a cleared run
@@ -1347,7 +1348,7 @@ otherwise). Season characters get none of the three bonuses (a fresh race); the 
 
 **Also for limited time** (each in its own system's section): the faction weekly cap rolls over (3 weeks at most), the
 season pass daily caps bank over 3 days, the bounty weekly chest needs 4 contracts (was 7), the Vocation Trials' repeat
-rewards bank (15 at most), a dungeon cooldown of 15 minutes after a clear and 5 after a failed run (was 1 h after every run), the Ember
+rewards bank (15 at most), no dungeon cooldown after a clear and 5 minutes after a failed run (was 1 h after every run, then 15 minutes after a clear), the Ember
 Descent's free daily runs bank up to 3, the Necromancer, Monk and Templar unlock free at account level 200 (was 500) and
 are no longer sold.
 
@@ -1948,7 +1949,7 @@ One factor on a class's spell damage: `data/scripts/chaos/spell_factor_config.lu
 below the first point, linear between points, the last value above) and `byVocation` is the end value (level 1000 and
 up; 1 for a class with no curve). End values: Templar 0.63, Sentinel 0.60, Inquisitor 0.77, Illusionist 0.73, Lich 0.92,
 Bone Lord 0.71, Shadowfist 0.80, Necromancer 0.69, Beastmaster 1.17, Ranger 1.12, Deadeye 1.25, Juggernaut 1.09,
-Berserker 1.08, Elementalist 0.70, the rest 1. The points keep each class's best-set rotation score at its value before the
+Berserker 1.08, Elementalist 0.70, Thief 0.91, Ninja 1.09, Samurai 1.05 (C2, 2026-10-24), the rest 1. The points keep each class's best-set rotation score at its value before the
 attack kit at levels 15-1000 (no early dips, no level 200 spikes); the table is in `data/spells/README.md` "Combat pass
 (O136)". Rules in `spell_factor_core.lua` (`ChaosSpellFactor.forVocation(voc, cfg, level)` and `.factor(..., cfg,
 level)`; the event passes the attacker's level), tested by `tests/spell_factor_test.lua` (the table, the curve, the rule,
@@ -1958,7 +1959,11 @@ the event on a mocked engine, the guards).
   already passes (the passive tree, Paragon, the class tree's factor). The factor goes on damage with origin
   `ORIGIN_SPELL` from a player of a listed class, before the tree's bonuses (they multiply, so the order does not
   matter), also for a player without tree data.
-* Not on: weapon and auto-attack hits (`ORIGIN_MELEE`, `ORIGIN_RANGED`, `ORIGIN_WAND`), conditions (`ORIGIN_CONDITION`:
+* The Thief line (C2, 2026-10-24): a spell's weapon strike is dealt by `ChaosSpell.weaponStrike` (`spells/chaos/_common.lua`),
+  which multiplies it by `ChaosSpellFactor.forVocation(voc, nil, level)` itself, because the event never sees a weapon
+  origin; the guard (`ChaosSpellFactor.depth`) turns it off there as well. The line's auto attacks stay unscaled.
+* Not on: weapon and auto-attack hits (`ORIGIN_MELEE`, `ORIGIN_RANGED`, `ORIGIN_WAND`; a Thief-line spell strike is the
+  exception above), conditions (`ORIGIN_CONDITION`:
   a burn or rot a spell leaves ticks unscaled), healing, keystone / support / archetype procs (`ChaosKeystones.depth`:
   a share of a hit that had the factor already), and hits inside the factor's guard (`ChaosSpellFactor.depth`): the
   Templar line's holy strike on a weapon hit (`templar_combat.lua` radiantStrike) and every Necromancer minion hit
@@ -3460,6 +3465,96 @@ tower stays well under an hour of hunting (the tower is for points and rewards).
 **Deploy.** `files` step and a script reload or restart; the client needs the new build for the reward label (an old client
 shows no label, nothing else breaks). No SQL, no engine patch. New storage block 7102820. Not modeled: the player's armour and
 resistances, damage taken in the tower, and uptime beyond the factors in the config. Computed, not measured in game.
+
+
+**Monster level follows the floor (O168, beta 2026-10-24: "level does not scale").** The tower made its monsters with a
+plain `Game.createMonster`, so `monster_levels.lua` showed the species' own level (the same on floor 1 and floor 100),
+although health, damage and drops already followed the floor. `B.level` (the `level` curve, the level the floor is
+meant for, the one the health is derived from) is now in every spawn of `B.plan`, and `infinitytower_run.lua` creates
+each monster with `Chaos.createMonsterNamed(..., nil, level)`, so `Chaos.spawnLevel` shows "[level]" in the first
+creature packet (engine patch 0044 lets it win over a level of the monster's own). The level is the floor's, not the
+players'. Tests: `infinitytower_run_test.lua`, `infinitytower_balance_test.lua`. Server restart, no client change.
+
+**Second report, same day: floors 1 to 130 felt the same, the bosses "just walked in circles".** Checked against the TFS
+1.4.2 Lua API instead of trusting the first analysis:
+- Health: `Creature:setMaxHealth` is a stock method (it works on monsters) and `Creature:setHealth` is clamped to the maximum,
+  so the order matters; `spawnPlan` sets the maximum first, then the health, so the health curve held. The new
+  `tests/infinitytower_floor_test.lua` has a mock that clamps `setHealth` like the engine and checks floors 1 to 42 (every
+  monster above its species' own health, the boss floors' `bossHealth`, `levelOf`, the damage factor).
+- Damage was the gap. `monster_damage.lua` boosts a monster's physical hit by its level (`ChaosLoot.monsterLevel`, the species'
+  own level for a tower monster), so a floor 100 troll hit like a level 20 one. `ChaosTowerRun.levelOf(monster)` returns the
+  level of its floor (summons too) and `MD.levelOf` takes at least that, the way it does for invaders. The floor's own
+  factor (`damage`, the pace curve) stays on top. Bosses get the level boost as well, but not the factor.
+- The natural tier roll of `monster_tiers.lua` (registered in `onSpawn` for every eligible monster, and 4-5 modifiers for a boss)
+  ran at the first think of tower monsters too: a boss got Juggernaut (health x1.6), Regenerating or Stoneskin on top of
+  the tuned `bossHealth` (the world bosses skip it for the same reason). `spawnPlan` now unregisters the four roll events
+  (`ChaosTierRoll...`); the planned tier of the floor is applied by `ChaosApplyTier` as before.
+- Walking in circles: a monster without a target only takes random steps. A 2 second tick per floor (`engageTick`) gives every
+  tower monster without a target the nearest living player of the run (`Monster:selectTarget`), like `trials.lua` and
+  `nemesis.lua`. The base boss XMLs are not in the repo and the tower bosses have no profile in `boss_mechanics_config.lua`,
+  so a cause inside a boss file or the engine (for example a ranged boss that keeps its distance without a path) cannot be
+  proven here. Owner check on the live server: the flags of the boss XMLs in the installed base (`targetdistance`,
+  `staticattack`, `runonhealth`) and whether the build has 8d286bf7 and this commit (the first report matches a build without the display level: "level 80-100 from floor 20" is the dragon pool).
+- Tests: `infinitytower_floor_test.lua`, `monster_damage_test.lua`. Server restart, no client change, no engine patch.
+
+**Endless floors (O172, owner 2026-10-24: "the higher the floor, the stronger the monsters, without end").** Every curve was flat
+above its last point: `level` and `health` above floor 120, `damage` from floor 52, the boss table repeated (and floor 110
+had 187000 against 277000 on floor 100). Now `infinitytower_balance_config.lua` `beyond` takes over above `maxFloor` (120), d =
+floor - 120:
+- level = curve + 12.5 x d (the slope of the last segment); capped at 2e9.
+- normal monster health = curve x growth x sawtooth, boss health = the floor 120 boss x growth, monster damage factor = curve x growth.
+  growth = exp(rate x d + accel x d^2 / 2): health and boss health rate 0.007 and accel 0.000002, damage rate 0.002 and accel 0.000004.
+  The step from a floor to the next is rate + accel x d, so it climbs (0.7% a floor at 121, 0.84% at 800): a soft wall, not a
+  cliff. The first step is above the level's own growth (12.5 of 2200 is 0.57%), so the time a floor takes the player of its
+  level rises from floor 121 on. Boss names still repeat in the order of the list; their health does not.
+- a boss hits x1 up to floor 120 (its own attacks) and x the damage growth above it (`B.bossDamage`; `damageMultOf` no longer
+  skips bosses, it stays 1 for them up to 120).
+- Floors 1-120 changed only where they were flat or dipped: health at floor 100 19500 to 19600 (it equalled floor 90),
+  bosses 110 and 120 187000 and 216000 to 278000 and 279000 (non-decreasing; `--derive` keeps a boss at least 0.5% over the
+  one before; the floor 110 boss now takes the median class 128 s against 86 s and floor 120 116 s against 90 s, inside bossMax 150), monster damage rises from 0.72 at floor 52 to
+  0.78 at 120 (`--derive`: last band + 0.06). Floors 1-51 still follow the pace curve down (0.99 to 0.67), which the level boost of
+  `monster_damage.lua` (+30% at level 650) offsets, so strictly rising damage is checked from floor 52.
+- "Stronger" with the sawtooth: the health trend (before the sawtooth), the level, the damage factor from floor 52 and the
+  boss health of every boss floor rise on every floor; the health of a floor is above the floor five before it; inside a climb
+  each floor is above the one before; only the breather after a milestone floor is easier than the floor before it.
+
+| Floor | Level | Monster health | Boss health | Damage x | Boss damage x | Clear at its own level (median class, milestone floors) |
+|---|---|---|---|---|---|---|
+| 1 | 100 | 474 | 31,300 (floor 10) | 0.99 | 1 | - |
+| 10 | 300 | 1,958 | 31,300 | 0.92 | 1 | - |
+| 50 | 1,075 | 15,128 | 126,000 | 0.71 | 1 | - |
+| 120 | 2,200 | 26,230 | 279,000 | 0.78 | 1 | 13.3 s |
+| 200 | 3,200 | 46,214 | 491,573 | 0.93 | 1.19 | 16.2 s |
+| 500 | 6,950 | 433,245 | 4,608,288 | 2.23 | 2.85 | 70.4 s |
+| 1000 | 13,200 | 26,938,285 | 286,533,799 | 21.33 | 27.35 | 2,311 s |
+
+(Monster health is the floor's value with the sawtooth of that floor, 0.75 to 1.22 of the trend; floors 1 to 120 as before.)
+
+**Clamps (engine limits).** TFS creature health is int32. The tier multiplies after: `healthMax` 580,000,000 x 3.5 (legendary)
+= 2.03e9 < 2^31 - 1, `bossHealthMax` 2,000,000,000 (a boss has no tier), and `engineMaxHealth` 2,147,000,000 is the last guard in
+`preTierHealth` / `tierMaxHealth` and in `setHealth` of `infinitytower_run.lua`. The damage factor is capped at 1000
+(`damageMax`; a hit is scaled with `floor(hit x factor + 0.5)`, so no inf or nan; `damageMultOf` also turns a nan or negative factor
+into 1). The shown level is the engine's display level (patch 0040/0044: `int32`, sent as the text "Name [level]" in the creature
+packet, not a uint16), capped at 2e9 (`levelMax`; a level climbs 12.5 a floor, never in reach). The floor argument is made finite and
+at least 1 (`B.sane`: nan, text, infinity), and the growth exponent is capped at 60, so a floor of 1e300 still gives finite numbers.
+The caps start at floor 1338 (normal health, at a milestone floor), 1217 (boss health) and 1577 (damage factor);
+`tower_model.py --check` requires every cap past floor 1000 and prints the floors. From the cap on, values stay at the cap
+(no longer strictly rising: past that point a floor is not stronger than the one before; the checks stop at the cap).
+
+**Rewards do not follow the climb.** First-clear and repeatable counts and the tower drop counts use `min(floor, maxFloor)`: a
+floor above 120 pays the counts of floor 120 (`rewardItems(rules, floor, capFloor)`, `dropRolls`), so the economy does not
+inflate (a linear `perFloor` of 1 Crystal Coin would pay 1,000 on floor 1000, and a season pays each milestone floor once, up to
+floor 999: the storage value is season x 1000 + floor). The rewards of floors 125, 130, ... are therefore paid at the amount of 120. The
+store, roulette, skill and progression checks stay green. Not changed: `nextMilestone` stops at 120 (the window shows no next
+reward past it).
+
+**CI.** `tower_model.py --check` runs `endless()` over floors 1-1000 (`limits.endless`; every cap past `limits.capMin` 1000):
+strictly rising health trend, level, damage (from floor 52) and boss health and boss damage per boss floor, the climb rule above,
+no climb above maxFloor more than `stepMax` over the one before (no cliff), no value above its cap, the caps under int32 (the health
+cap with the legendary tier), and the clear time at the floor's own level rising from floor 125 on at most `stepMax` per climb. The
+unit test (`tower_model_test.py`) breaks each of them. Lua: `tests/infinitytower_balance_test.lua` (floors 1-1200 strictly, caps,
+floors up to 1e12, nan, rewards) and `tests/infinitytower_floor_test.lua` (plans at floors 121 to 100000 fit int32 with every tier).
+Not measured live; a level 2000 median class gets about 93 floors deep (unchanged), so floors above 120 are for the future.
 
 ## Infinity Tower season rewards (`infinitytower.lua`, `infinitytower_core.lua`, `Chaos.tower` in `chaos_constants.lua`)
 
@@ -8242,6 +8337,15 @@ donor bosses) is attached at its first think after the spawn (an `onSpawn` Event
 monster_tiers.lua does), with a box of radius 8 round it as the arena (walkable tiles only). The Ascended bosses, the
 Cinderheart and the guild boss keep their own telegraphs, hazards, adds and enrage (`ownTelegraphs`); the profile adds
 the mechanics below on top, and while one of those runs (`ChaosBossMech.busy`) they draw no telegraph of their own.
+
+**Dungeon difficulty does not scale the mechanics (beta 2026-10-24).** The mechanics' hits are a share of the victim's
+max health (telegraph `share`, soak `total` / `missShare`, channel and blast `share`), so they are already tuned to the
+player. `dungeons.lua` multiplies the damage of a run's monsters by the difficulty (130% to 600%) and the party factor,
+and used to do it to these hits too: a lone soaker in the Last Hymn circle (60%) died at difficulty 3 and up. Now
+`ChaosBossMech.scriptedHit(attacker)` is true while the mechanic deals its hit and `scaleHit` leaves it unchanged; the
+boss's ordinary attacks are still scaled. The soak circle (radius from the profile, Euclidean distance from the centre
+tile, so a radius 2 circle is 13 tiles) is one tile list: the green tiles drawn, the tiles that count and the tiles
+checked at the hit are the same set, on the same floor (`f.soakCircle`).
 
 **The kit** (all per profile, all in the core):
 - Telegraphs: circle, cone, line (beam), ring (donut), cross, puddles (on players and at random), follow (a circle that
@@ -13373,7 +13477,7 @@ the weekly reset is gone; after the kill the stone takes nothing more.
 
 **Summon.** The leader or a vice-leader, standing in the guild hall with the stone full and the rent paid: one conditional
 UPDATE takes the need (fuel >= need, not killed this week, fewer than 3 summons). Every member of the guild in the same
-hall, level 150+, comes along (2 to 20). A failed attempt (wipe, time, everyone left) gives back half of the need as fuel;
+hall, level 150+, comes along (1 to 20; one member may summon alone, owner 2026-10-24: all content solo). Health: the XML's x (1 + 0.6 (n-1)); alone x `boss.soloHealthMult` = 0.8 (a solo kill takes 495 s like two, the unscaled 619 s would pass the enrage at 600). Lives, adds and hazards already scaled from one player; the gold pool is 250,000 per rewarded member, so a solo member gets the average share of a group, never more. A failed attempt (wipe, time, everyone left) gives back half of the need as fuel;
 a server restart during a fight returns the whole need and the summon.
 
 **The fight** reuses the Ascended arenas (`uber_core.lua`: layout, telegraph shapes and marks, phase machine, enrage,
@@ -20210,7 +20314,7 @@ the Boss Spawns cooldown). Monsters: `data/monster/monsters/chaos/raid/` (regist
 **Entry.** A portal (magic forcefield 1387, action id 47801) for each town of `portal.townIds` (Cinderhold, the main city, and Mirewake): Cinderhold's at its fixed tile in the temple's portal gallery (`portal.positions` 32375, 32245, 7), Mirewake's (and a taken fixed tile) next to the temple, the first free tile of
 `portal.offsets`) and Adventure > Raid: Ashen Sepulchre open the raid window. "Open New Raid" (or "Continue" on a saved
 raid of this week) in a protection zone, out of combat, level 800+, not multi-clienting: the opener's party within 12 sqm
-comes along, 5 to 15 of them (fewer are refused; staff may open with any number: `/raid open[, id]`). Each member's own
+comes along, 1 to 15 of them (owner 2026-10-24: all content solo; `minPlayers` 1, `basePlayers` 5 is the group the boss numbers were measured for; staff may still open with `/raid open[, id]`). **Solo scaling** (`raid_core.lua`): under 5 raiders the boss, trash and add health is x (the group's damage / five raiders' damage) from the balance model (`K.smallMult`; solo x0.217, 2 x0.43, 3 x0.65, 4 x0.87), so one raider takes the same time as five and the enrage fits; from 5 up the old +18% / +12% / +10% per raider. Mechanics for one: Ember Brand needs `min(need, raiders)` inside and its total scales with that need (solo: one circle on you, 50% of max health, stand in it), Sundering Blows fades the stacks instead of a Crushing Verdict when nobody else is in the room (`sunderDecide(..., alone)`), packs are 3 monsters alone. Loot is personal and the weekly lockout per character as before, so a solo run pays what one member of a group gets. A lethal hit still throws the player to the hall; alone that is a wipe (the boss resets). Each member's own
 problem (level, a fight, another instance) leaves only that member behind. "Join" puts a member of a raid that is open
 right now (or the party of someone inside) into it, up to 15.
 
@@ -22024,6 +22128,16 @@ guardians, fallen players, packs, the atlas line). Measured with `sendTextMessag
 not counted).
 
 Also converted in the last batch: the store's coin take-back line and Everfull Ration refusals, the Infinity Tower run end and group refusals, inspect privacy, Monk stun lines, legendary monster alerts, multi-client refusal, party invitation and removal lines, map discoveries, report receipts, season rewards, siege obelisk, Cinderheart refusal, rarity autoloot, guild portal, guild boss spoils, area portals, new outfits, Chaos Pact status, event login lines and item set summary.
+
+Staff command replies (O147): the sentence replies and "Usage:" lines of the talkactions (`/achievements`, `/atlas`, `/charm`,
+`/cosmetic`, `/exclusive`, `/faction`, `/professions`, `/season`, `/journey`, `/coins`, `/transmog`, `/instances`, `/pact`,
+`/mentor`, `/referral`, `/orbx`, `/worldboss`, the mute line and more) go through `Chaos.t`. Still English on purpose: the
+"/command ..." syntax lines and the raw status dumps (daily, gamble stock, rift slots, market orders, candlemarks, pact,
+season pass, leaderboard, records, patch notes, arena and battleground status, telemetry, poi, itemfinder, spellbook,
+supports, antibot, areagen). Cores that return a refusal text: `party_finder_core.lua` (`K.reasons`, `K.closeText`:
+`party_finder.lua` translates on display, a notice may be `{key, args...}`), `hideout_core.lua` (`hideout.lua` translates
+when it sends) and `townportal_core.lua` (`K.blockReason(f, T)` takes the translator); other cores (guild, market, shop
+payments, buildshare, reports, salvage, conquest and more) still return English.
 
 Left: item descriptions and mail texts built in cores (one text for every viewer), party loot lines
 (`broadcastPartyLoot` sends one text to the party: English), monster speech, reasons that game logic reads as text

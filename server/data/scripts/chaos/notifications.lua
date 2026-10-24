@@ -196,7 +196,7 @@ function talk.onSay(player, words, param)
 		return true
 	end
 	if param == "" then
-		player:sendCancelMessage("Usage: /gmnotify <message>")
+		player:sendCancelMessage(Chaos.t(player, "Usage: /gmnotify <message>"))
 		return false
 	end
 	ChaosNotify.gmBroadcast(nil, param)

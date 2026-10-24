@@ -2845,6 +2845,92 @@ a heal. PvP: the 30% healing reduction is unchanged. No heal, potion or regenera
 Tests: `spell_factor_test.lua` (curve rules, table end values, the event at level 300), `rotation_sim_test.py` (factor
 curve read from the server's table), `patch_spell_cap_test.py` (pinned kit sizes, 69 retired).
 
+### Thief line curve and C2 / C3 close-out (2026-10-24; owner direction: combat fast and fluid, more attack spells and fewer support ones, loot fair for every class; computed with rotation_sim.py and pack_model.py, not measured in game)
+
+**What was left.** The C2 and C3 rows asked for the full rebalance of the Thief line (Thief, Ninja, Samurai) and of the
+Juggernaut / Berserker, Deadeye / Beastmaster, Elementalist / Illusionist pairs. Everything but one hole was already in:
+10 attack spells for all 21 classes, icons for all 148 spells in the 3 sheets, every attack spell in the helper's
+rotation data, starting kits and test kits, the class looks, the starting gear (Samurai katana, Berserker two-handed),
+loot fair by band (`weapon_coverage.lua`, `gear_coverage.lua`), the passive trees. The hole: the class spell factor of the
+O136 pass (best-set score back to its value before the attack kit, commit 5cd77f1f) never reached the Thief line, because
+its spells are weapon strikes (`ChaosSpell.weaponStrike`, ORIGIN_MELEE / ORIGIN_RANGED), which the damage event skips. Its
+sets drifted away from the other 18 classes (best-set score, 1 target + 0.25 x 5 targets, against before the kit):
+
+| Class | Level 100 | 150 | 200 | 300 | 450 | 600 | 1000 | Mean error, levels 10-1000 |
+|---|---|---|---|---|---|---|---|---|
+| Thief | -7.0% | +4.9% | +7.6% | +12.1% | +11.5% | +11.1% | +10.2% | 9.7% |
+| Ninja | +2.4% | +10.0% | +1.0% | +19.3% | -8.7% | -8.7% | -8.6% | 8.2% |
+| Samurai | -3.5% | -5.9% | -10.7% | -5.5% | -5.3% | -5.2% | -5.0% | 4.9% |
+
+The other 18 classes were within 1.3% at the knots 150-1000 and the checked levels, except Berserker (-4.6% at level 100,
+-3.5% at 150), Warrior (-3.1% at 800) and Mystic (-2.0% at 1000; both not in these rows).
+
+**Fix.** `spell_factor_config.lua` lists vocations 11, 12 and 13 now (end values 0.91 / 1.09 / 1.05) with a level curve each,
+fitted with the same loop as O136 (each knot level: factor x (score before the kit / score now), 12 rounds, so the
+best set is re-chosen each time). The engine side is one line in `ChaosSpell.weaponStrike` (`spells/chaos/_common.lua`): a
+spell's strike takes `ChaosSpellFactor.forVocation(voc, nil, level)` before it is dealt, unless the factor's guard is up.
+Auto attacks (ORIGIN_MELEE and ORIGIN_RANGED outside a spell) stay unscaled, so the dual wield and attack speed work of
+2026-10-23 is untouched. The Thief line's ORIGIN_SPELL hits (Venom Spiral's hit, pack tools) take the same curve through the
+damage event. `rotation_sim.py` reads the same table, so its numbers match. The Berserker knots at levels 100-200 were
+refitted too (the 4.6% dip). Thief knots: 1.00 up to level 40, 1.02-1.08 at 60-120, 0.95 at 150, 0.89 at 230-300, 0.91 at
+1000. Ninja: 1.02 at 60-90, 0.98 at 100-120, 0.91 at 150, 0.99 at 180-260, 0.88 at 270 (Shuriken Tempest's unlock), 0.84 at
+300-350, 1.10 at 360-600, 1.09 at 1000. Samurai: 1.02 at 60-90, 1.04-1.12 at 100-200, 1.06 at 230-600, 1.05 at 1000.
+
+**After**, same table (best-set score against before the kit; 100 levels checked, every 10 from 10 to 1000):
+
+| Class | Level 100 | 150 | 200 | 300 | 450 | 600 | 1000 | Mean error | Worst level |
+|---|---|---|---|---|---|---|---|---|---|
+| Thief | -0.5% | -0.4% | +0.1% | -0.2% | +0.4% | 0.0% | +0.3% | 0.3% | +4.9% at 130 |
+| Ninja | +0.4% | +0.1% | 0.0% | +0.2% | +0.4% | +0.4% | -0.4% | 0.5% | +5.9% at 170 |
+| Samurai | +0.4% | -0.3% | 0.0% | +0.2% | +0.3% | +0.5% | -0.2% | 0.5% | +6.2% at 190 |
+| Berserker | +0.1% | -0.4% | -0.3% | 0.0% | 0.0% | +0.2% | -0.2% | 0.5% | +6.4% at 250 |
+
+1 target / 5 targets of the best set of 5 (spells only: no auto attack, no tree, no minions), before the kit -> at the
+head of this change -> now:
+
+| Class | Level | Before the kit | Head | Now |
+|---|---|---|---|---|
+| Thief | 300 | 321 / 836 | 362 / 929 | 322 / 827 |
+| Thief | 1000 | 546 / 1420 | 604 / 1561 | 549 / 1420 |
+| Ninja | 300 | 381 / 887 | 366 / 1415 | 307 / 1188 |
+| Ninja | 1000 | 678 / 2623 | 620 / 2395 | 675 / 2610 |
+| Samurai | 300 | 432 / 1149 | 399 / 1119 | 423 / 1187 |
+| Samurai | 1000 | 707 / 1885 | 659 / 1844 | 692 / 1936 |
+| Berserker | 300 | 326 / 1302 | 337 / 1257 | 337 / 1257 |
+| Berserker | 1000 | 575 / 2335 | 546 / 2446 | 546 / 2446 |
+| Juggernaut | 300 | 329 / 1176 | 321 / 1199 | 321 / 1199 |
+| Juggernaut | 1000 | 567 / 2292 | 597 / 2161 | 597 / 2161 |
+| Deadeye | 300 | 711 / 952 | 703 / 974 | 703 / 974 |
+| Deadeye | 1000 | 2168 / 2666 | 2127 / 2820 | 2127 / 2820 |
+| Beastmaster | 300 | 242 / 791 | 238 / 802 | 238 / 802 |
+| Beastmaster | 1000 | 663 / 1823 | 694 / 1687 | 694 / 1687 |
+| Elementalist | 300 | 380 / 1900 | 380 / 1900 | 380 / 1900 |
+| Elementalist | 1000 | 687 / 3436 | 687 / 3436 | 687 / 3436 |
+| Illusionist | 300 | 427 / 1791 | 477 / 1592 | 477 / 1592 |
+| Illusionist | 1000 | 648 / 2723 | 724 / 2399 | 724 / 2399 |
+
+Reading it: the C3 classes were already inside 0.6% of their score before the kit at 300 and 1000 (Deadeye -0.3% / -0.1%,
+Beastmaster -0.5% / -0.3%, Illusionist 0.0% / -0.3%, Juggernaut -0.3% / -0.2%, Elementalist 0.0%); their 1 target and 5
+target splits moved with the new spells (Illusionist 300: 1 target +12%, 5 targets -11%, the same score). Roles hold in
+the model: the Deadeye leads single target (level 300 / 1000: 703 / 2127 against the Ranger's 630 / 1478), the Elementalist leads
+area (5 targets 1900 / 3436 against the Mystic's 1760 / 2714 and the Berserker's 1257 / 2446). **Known and accepted:** (1) the Ninja at
+level 300 moved from 1 target 366 to 307 and 5 targets 1415 to 1188 (the score equals before the kit; the kit gave it
+area spells, so the same score is more area and less single target than before). The Ninja stays the line's burst class
+through its auto attack (the dual wield, 609 against the Samurai's 309 at level 300 in "Thief line"). The first live
+check should look at the Ninja's single target at levels 300-350 against the Shadowfist (C4 1181) and the Lich (1164).
+(2) Between knots the error is up to 6% at a spell's unlock level (the factor is linear between knots).
+
+**Pack model.** `pack_model.py` is unchanged and still reads 0.98-1.08 of the median class in every row (Elementalist the
+top at 1.06-1.08, as the owner wants): its Thief line KIT numbers were computed from the kit of 2026-10-15, which is the
+state this fit restores. Not changed: monster health, XP, loot, potions, heals, mana costs, cooldowns.
+
+**Not measured.** All numbers here are the rotation model's. The measured C4 table (2026-10-11, old attribute caps) is not
+re-run: it needs the test server with the harness (`zz_c4.lua`) and a client. A live pass should re-measure the 9 classes
+of C2 and C3 at levels 300 and 1000 (1 target, 5 targets) and update the C4 and KIT numbers of `pack_model.py` with them.
+
+Tests: `spell_factor_test.lua` (the Thief line's end values, three curve points, auto attacks unscaled, the strike run on a
+mocked engine: a level 300 Ninja strike x0.84, unscaled inside the guard), `rotation_sim_test.py` (the line's table).
+
 ### Necromancer minions (O160, 2026-10-24; owner report: "the Necromancer's minions are still weak"; computed with minion_model.py, not measured in game)
 
 **Why they felt weak.** On a dummy the class was fine: the C4 table above puts it at 1.0 to 1.1 of the median class, and

@@ -191,6 +191,7 @@ end
 local COMMON = {"Chaos%.t%([^,]+,%s*", "ChaosI18n%.msg%(%s*", "Chaos%.broadcast%([%w_.]+,%s*", "ChaosI18n%.text%(%s*lang,%s*"}
 local RUN = {"fail%(run,%s*", "say%(run,%s*", "alert%(run,%s*"}
 local CORE_T = {"[^%w_.]T%(%s*lang,%s*", "[^%w_.:]T%(%s*"}
+local TR = {"[^%w_.]tr%([^,]+,%s*"} -- lib and spell files: a local tr() that calls Chaos.t when it is loaded
 local SITES = {
 	["autosell.lua"] = {}, ["autosell_core.lua"] = CORE_T, ["boss_mechanics.lua"] = {}, ["records.lua"] = {},
 	["records_core.lua"] = CORE_T, ["leaderboard_core.lua"] = CORE_T, ["worldboss.lua"] = {"pushBack%(player, fromPosition,%s*"},
@@ -225,7 +226,15 @@ local SITES = {
 	["treasure_goblin.lua"] = {}, ["loot.lua"] = {}, ["rift_core.lua"] = CORE_T, ["infinitytower_run.lua"] = {},
 	["conquest.lua"] = {"result%(player,%s*%a+,%s*"}, ["harvest_event.lua"] = {"tell%(player,%s*"},
 	["waystone_tiers.lua"] = {},
-	["exercise_training.lua"] = {"say%(player,%s*", "stop%(pid,%s*gen,%s*"}
+	["exercise_training.lua"] = {"say%(player,%s*", "stop%(pid,%s*gen,%s*"},
+	-- staff command replies (O147) and the small lines of spells and the casting lib
+	["achievements.lua"] = {}, ["admin/actions_pack30_gallery.lua"] = {}, ["admin/testkit.lua"] = {},
+	["creator_codes.lua"] = {}, ["exclusives.lua"] = {}, ["orbexchange.lua"] = {}, ["patchnotes.lua"] = {},
+	["treestats.lua"] = {}, ["reports.lua"] = {},
+	["../../lib/chaos_casting.lua"] = TR, ["../../spells/chaos/_snares.lua"] = TR,
+	["../../spells/chaos/ironsage/chi_ward.lua"] = TR, ["../../spells/chaos/sentinel/aegis_of_faith.lua"] = TR,
+	["../../spells/chaos/shared/sense_prey.lua"] = TR, ["prizes.lua"] = {}, ["respec.lua"] = {}, ["vigils.lua"] = {},
+	["admin/actions_players.lua"] = {}, ["../../lib/chaos_unique_items.lua"] = TR,
 }
 local used = 0
 for f, extra in pairs(SITES) do
@@ -498,6 +507,54 @@ do
 	eq(chapters[2].lockedWhy, "Termine Primeiras Brasas primeiro.", "locked reason in pt-BR")
 	local h2, c2 = JK.view(jj, {level = 10, stats = {}, flags = {}, done = {}, claimed = {}}, {})
 	eq(c2[2].lockedWhy, "Finish First Embers first.", "and in English")
+end
+
+-- Party Finder: the refusals of the core are keys the engine translates on display (O147)
+dofile("data/scripts/chaos/party_finder_core.lua")
+do
+	local PK = ChaosPartyFinderCore or Chaos.partyFinderCore
+	check(PK ~= nil and PK.reasons ~= nil, "party finder core is loaded")
+	for k, text in pairs(PK and PK.reasons or {}) do
+		check(pt[text] ~= nil, "party finder reason " .. k .. " has a pt-BR text")
+	end
+	for k, text in pairs(PK and PK.closeText or {}) do
+		check(pt[text] ~= nil, "party finder close text " .. k .. " has a pt-BR text")
+	end
+	eq(I.text("pt-BR", "Leave your party first."), "Saia do seu grupo primeiro.", "a refusal in pt-BR")
+	eq(I.text("en", "Leave your party first."), "Leave your party first.", "and in English")
+end
+
+-- Hideout: the refusals of hideout_core.lua are English keys hideout.lua translates when it sends them (O147)
+do
+	local fh = io.open("data/scripts/chaos/hideout_core.lua", "r")
+	local src = fh:read("*a")
+	fh:close()
+	local n = 0
+	for lit in src:gmatch('return [%w, ]-"([%u][^"\n]-%.)"') do
+		if not lit:find("%.%.") and not lit:find("^%u%l+ %l+$") then
+			n = n + 1
+			check(pt[lit] ~= nil, "hideout_core refusal has a pt-BR text: " .. lit)
+		end
+	end
+	check(n >= 15, "hideout_core refusals found (" .. n .. ")")
+end
+
+-- Town Portal: K.blockReason takes the translator (townportal.lua passes Chaos.t); the keys are in the table (O147)
+dofile("data/scripts/chaos/townportal_core.lua")
+do
+	local TK = ChaosTownPortalCore
+	local function T(key, ...) return I.text("pt-BR", key, ...) end
+	eq(TK.blockReason({skull = true}, T), "Você não pode abrir um town portal com skull.", "portal refusal in pt-BR")
+	eq(TK.blockReason({skull = true}), "You cannot open a town portal while you carry a skull.", "and in English")
+	eq(TK.blockReason({cooldownLeft = 1}, T), "Seu Town Portal estará pronto de novo em 1 segundo.", "one second in pt-BR")
+	eq(TK.blockReason({cooldownLeft = 7}, T), "Seu Town Portal estará pronto de novo em 7 segundos.", "seconds in pt-BR")
+	eq(TK.blockReason({cooldownLeft = 7}), "Your Town Portal is ready again in 7 seconds.", "seconds in English")
+	eq(TK.blockReason({instance = "a raid"}, T), "Você não pode abrir um town portal em a raid: saia pela saída própria.", "instance label")
+	for _, f in ipairs({"casting", "tutorial", "noTown", "arena", "worldBoss", "siege", "rift", "dungeon", "tower", "hideout",
+		"marches", "pzLocked", "skull", "pz"}) do
+		local text = TK.blockReason({[f] = true})
+		check(text ~= nil and pt[text] ~= nil, "town portal refusal " .. f .. " has a pt-BR text")
+	end
 end
 
 print(string.format("i18n_test: %d checks, %d failures", checks, failures))

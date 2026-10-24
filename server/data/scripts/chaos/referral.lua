@@ -745,7 +745,7 @@ function talk.onSay(player, words, param)
 	local name, action = param:match("^%s*([^,]+)%s*,?%s*(%a*)")
 	local guid = name and Chaos.findPlayer(name:gsub("%s+$", ""))
 	if not guid then
-		player:sendCancelMessage("Usage: /referral <player>[, unlink]")
+		player:sendCancelMessage(Chaos.t(player, "Usage: /referral <player>[, unlink]"))
 		return false
 	end
 	local accountId = Chaos.select(string.format("SELECT `account_id` FROM `players` WHERE `id` = %d", guid), {{"account_id", "n"}})[1].account_id
@@ -754,7 +754,7 @@ function talk.onSay(player, words, param)
 		db.query(string.format("DELETE FROM `%s` WHERE `referred_account_id` = %d AND `state` <> 'paid'", T.rewards, accountId))
 		log(accountId, 0, guid, "unlink", "by " .. player:getName())
 		refreshAccount(accountId)
-		player:sendTextMessage(MESSAGE_INFO_DESCR, "Referral link of account " .. accountId .. " removed.")
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Referral link of account %s removed.", accountId))
 		return false
 	end
 	local link = linkOf(accountId)

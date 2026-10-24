@@ -29,6 +29,20 @@ for _, name in ipairs({"count", "magic", "rare", "legendary", "level", "clear", 
 	end
 end
 
+-- ---- O168: the level shown after the name follows the floor's level curve
+eq(B.level(C, 1), 100, "floor 1: level 100")
+eq(B.level(C, 15), 420, "floor 15: between 300 and 540")
+eq(B.level(C, 120), 2200, "the last point of the curve")
+eq(B.level(C, 500), 2200 + 380 * C.beyond.levelPerFloor, "past the curve: it keeps climbing (O172)")
+for f = 2, 120 do
+	ok(B.level(C, f) >= B.level(C, f - 1), "the level never falls with the floor " .. f)
+end
+for _, f in ipairs({1, 10, 25, 50}) do
+	for _, s in ipairs(B.plan(C, f, 2, function() return 1 end).spawns) do
+		eq(s.level, B.level(C, f), "every spawn of floor " .. f .. " carries the floor's level")
+	end
+end
+
 -- ---- floors
 eq(B.count(C, 1, 1), 4, "floor 1 has 4 monsters")
 eq(B.count(C, 1, 3), 8, "two more players add perPlayer each")
@@ -120,6 +134,107 @@ for _ in pairs(seen) do
 	nseen = nseen + 1
 end
 ok(nseen >= 4, "a floor shows several species of its pool")
+
+-- ---- O172: the tower never stops getting stronger
+local be = C.beyond
+eq(C.maxFloor, 120, "the curves end at floor 120")
+ok(#C.health > 0 and C.health[#C.health][1] == C.maxFloor, "the health curve ends at maxFloor, the growth takes over")
+ok(C.damage[#C.damage][1] == C.maxFloor, "so does the damage curve")
+local lastBoss = 0
+for k in pairs(C.bossHealth) do lastBoss = math.max(lastBoss, k) end
+eq(lastBoss, C.maxFloor, "the boss table ends at maxFloor")
+for f = 2 * C.bossEvery, C.maxFloor, C.bossEvery do
+	ok(C.bossHealth[f] > C.bossHealth[f - C.bossEvery], "boss health rises from boss floor to boss floor (no dip at " .. f .. ")")
+end
+eq(B.growth(C, be.healthRate, be.healthAccel, 120), 1, "no growth at maxFloor")
+eq(B.growth(C, be.healthRate, be.healthAccel, 1), 1, "none below it")
+ok(B.growth(C, be.healthRate, be.healthAccel, 121) > 1, "growth from floor 121")
+local function trend(f)
+	return B.curve(C.health, f) * B.growth(C, be.healthRate, be.healthAccel, f)
+end
+local stepFirst = B.growth(C, be.healthRate, be.healthAccel, 121) - 1
+local stepLate = B.growth(C, be.healthRate, be.healthAccel, 801) / B.growth(C, be.healthRate, be.healthAccel, 800) - 1
+ok(stepLate > stepFirst * 1.15, "the step from one floor to the next climbs: a soft wall, not a flat rate")
+ok(stepFirst < 0.01, "the first step above maxFloor is below 1% (no cliff)")
+local capHealth, capBoss, capDamage = nil, nil, nil
+local lvl = B.level(C, 1)
+for f = 2, 1200 do
+	ok(trend(f) > trend(f - 1), "the health trend rises with floor " .. f)
+	ok(B.level(C, f) > B.level(C, f - 1), "the level rises with floor " .. f)
+	ok(B.health(C, f) <= be.healthMax, "health under its cap at " .. f)
+	if f % C.milestoneEvery == 0 or f > C.milestoneEvery then
+		if f > C.milestoneEvery and B.health(C, f) < be.healthMax then
+			ok(B.health(C, f) > B.health(C, f - C.milestoneEvery), "floor " .. f .. " has more health than the floor a climb before")
+		end
+	end
+	if f > C.milestoneEvery and f % C.milestoneEvery ~= 1 and B.health(C, f) < be.healthMax then
+		ok(B.health(C, f) > B.health(C, f - 1), "inside a climb floor " .. f .. " is above the one before")
+	end
+	if f > 52 and B.damage(C, f) < be.damageMax then
+		ok(B.damage(C, f) > B.damage(C, f - 1), "damage factor rises from floor 52 (" .. f .. ")")
+	end
+	if f % C.bossEvery == 0 and f > C.bossEvery then
+		if B.bossHealth(C, f) < be.bossHealthMax then
+			ok(B.bossHealth(C, f) > B.bossHealth(C, f - C.bossEvery), "boss floor " .. f .. " has more health than the boss before")
+		end
+		if f > C.maxFloor and B.bossDamage(C, f) < be.damageMax then
+			ok(B.bossDamage(C, f) > B.bossDamage(C, f - C.bossEvery), "boss damage rises above maxFloor (" .. f .. ")")
+		end
+	end
+end
+eq(B.bossDamage(C, 10), 1, "a boss up to maxFloor hits with its own damage")
+eq(B.bossDamage(C, 120), 1, "a boss on maxFloor too")
+ok(B.bossDamage(C, 130) > 1, "a boss above maxFloor hits harder")
+ok(B.damage(C, 121) > B.damage(C, 120), "monsters above maxFloor hit harder than on 120")
+ok(B.health(C, 125) > B.health(C, 120), "floor 125 over floor 120")
+ok(B.bossHealth(C, 130) > B.bossHealth(C, 120), "the boss of floor 130 is stronger than the last tabled one")
+ok(B.bossHealth(C, 130) > C.bossHealth[100], "bosses past the table do not repeat old health")
+eq(B.bossAt(C, 130).name, "the ashen count", "the names still repeat")
+-- the caps: start floors and extreme floors
+local hc = B.growthFloor(C, be.healthRate, be.healthAccel, be.healthMax / (B.curve(C.health, 120) * C.sawtooth[#C.sawtooth]))
+local bc = B.growthFloor(C, be.bossHealthRate, be.bossHealthAccel, be.bossHealthMax / C.bossHealth[120])
+local dc = B.growthFloor(C, be.damageRate, be.damageAccel, be.damageMax / B.curve(C.damage, 120))
+ok(hc > 1000 and bc > 1000 and dc > 1000, "no cap starts before floor 1000 (" .. hc .. ", " .. bc .. ", " .. dc .. ")")
+eq(B.bossHealth(C, bc - 1) < be.bossHealthMax and B.bossHealth(C, bc + 10) == be.bossHealthMax, true, "the boss health cap starts at floor " .. bc)
+eq(B.damage(C, dc + 1), be.damageMax, "the damage cap starts at floor " .. dc)
+local INT32 = 2147483647
+for _, f in ipairs({1500, 2000, 5000, 100000, 10 ^ 7, 10 ^ 9, 10 ^ 12, 1e300, math.huge}) do
+	local h, bh, d, bd, lv = B.health(C, f), B.bossHealth(C, f), B.damage(C, f), B.bossDamage(C, f), B.level(C, f)
+	for name, v in pairs({health = h, bossHealth = bh, damage = d, bossDamage = bd, level = lv}) do
+		ok(v == v and v ~= math.huge and v >= 0, name .. " is finite at floor " .. tostring(f))
+	end
+	ok(h <= be.healthMax and bh <= be.bossHealthMax and d <= be.damageMax and bd <= be.damageMax and lv <= be.levelMax, "everything under its cap at floor " .. tostring(f))
+	ok(B.tierMaxHealth(C, h, "legendary") <= INT32 and B.preTierHealth(C, h, "legendary", 6.0) * 6 <= INT32, "the legendary monster fits int32 at floor " .. tostring(f))
+	ok(bh <= INT32 and lv <= INT32, "boss health and level fit int32 at floor " .. tostring(f))
+end
+eq(B.health(C, 100000), be.healthMax, "floor 100000: the normal health cap (the sawtooth is under it)")
+eq(B.bossHealth(C, 100000), be.bossHealthMax, "floor 100000: the boss health cap")
+eq(B.damage(C, 100000), be.damageMax, "floor 100000: the damage cap")
+eq(B.level(C, 100000), 2200 + (100000 - 120) * be.levelPerFloor, "floor 100000: the level")
+eq(B.level(C, 1e12), math.min(be.levelMax, 2200 + (1e12 - 120) * be.levelPerFloor), "an absurd floor: the level cap")
+eq(B.level(C, 0 / 0), B.level(C, 1), "a nan floor counts as floor 1")
+eq(B.health(C, "x"), B.health(C, 1), "a text floor counts as floor 1")
+ok(be.healthMax * C.tierHealth.legendary <= be.engineMaxHealth and be.engineMaxHealth <= INT32, "health cap x the legendary tier fits the engine limit")
+ok(be.bossHealthMax <= be.engineMaxHealth and be.levelMax <= INT32, "boss health and level caps fit int32")
+eq(B.tierMaxHealth(C, 1e12, "legendary"), be.engineMaxHealth, "the last guard before setMaxHealth")
+local plan = B.plan(C, 501, 1, function() return 1 end)
+ok(plan.spawns[1].damage == B.damage(C, 501) and plan.spawns[1].damage > 1 and plan.spawns[1].health == B.health(C, 501), "floor 501 plan: monsters carry the growth")
+eq(plan.spawns[1].level, B.level(C, 501), "and the level")
+local bp2 = B.plan(C, 500, 1, function() return 1 end)
+ok(bp2.boss and bp2.spawns[1].damage == B.bossDamage(C, 500) and bp2.spawns[1].damage > 1, "the boss of floor 500 carries its damage factor")
+eq(bp2.spawns[1].health, B.bossHealth(C, 500), "and its health")
+eq(bp2.spawns[1].level, B.level(C, 500), "and its level")
+-- rewards do not follow the growth
+eq(B.itemsText(B.rewardItems(C.rewards.firstClear, 460, C.maxFloor)), B.itemsText(B.rewardItems(C.rewards.firstClear, 120, C.maxFloor)), "first-clear rewards above maxFloor are those of maxFloor (floor 460, no rule of 25)")
+eq(B.itemsText(B.rewardItems(C.rewards.repeatable, 910, C.maxFloor)), B.itemsText(B.rewardItems(C.rewards.repeatable, 120, C.maxFloor)), "repeatable rewards too")
+local it500 = B.firstClear(C, -1, 7, 460)
+eq(B.itemsText(it500), B.itemsText(B.rewardItems(C.rewards.firstClear, 120, C.maxFloor)), "firstClear of floor 460 pays the capped reward")
+eq(B.firstClear(C, -1, 7, 1000), nil, "the storage value holds floors below 1000 only")
+local dropMax = 0
+for _ = 1, 50 do
+	for _, x in ipairs(B.dropRolls(C, 100000, "legendary", function(a, b) return b or 1 end)) do dropMax = math.max(dropMax, x.count) end
+end
+eq(dropMax, 2 + math.floor(0.05 * C.maxFloor), "drop counts stop growing at maxFloor")
 
 -- ---- rewards
 local function items(rules, floor)

@@ -1335,7 +1335,7 @@ function talk.onSay(player, words, param)
 	local guid, realName = Chaos.findPlayer(name or "")
 	amount = tonumber(amount)
 	if not guid or not amount then
-		player:sendCancelMessage("Usage: /coins <player>, <amount>")
+		player:sendCancelMessage(Chaos.t(player, "Usage: /coins <player>, <amount>"))
 		return false
 	end
 	local rows = Chaos.select("SELECT `account_id` FROM `players` WHERE `id` = " .. guid, {{"account_id", "n"}})
@@ -1343,7 +1343,7 @@ function talk.onSay(player, words, param)
 		return false
 	end
 	Shop.addCoins(rows[1].account_id, amount)
-	player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("%s now has %d Chaos Coins.", realName, Shop.getCoins(rows[1].account_id)))
+	player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "%s now has %d Chaos Coins.", realName, Shop.getCoins(rows[1].account_id)))
 	return false
 end
 talk:separator(" ")

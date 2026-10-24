@@ -725,7 +725,7 @@ function talk.onSay(player, words, param)
 		if row and row.account_id == pl.account then
 			refund(pl, n, K.int(row.price))
 		else
-			player:sendTextMessage(MESSAGE_INFO_DESCR, "No such purchase of that account (or already refunded).")
+			player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "No such purchase of that account (or already refunded)."))
 			return false
 		end
 	end

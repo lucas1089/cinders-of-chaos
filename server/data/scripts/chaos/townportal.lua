@@ -204,7 +204,7 @@ local function blockFacts(player)
 end
 
 function T.blockReason(player)
-	return K.blockReason(blockFacts(player))
+	return K.blockReason(blockFacts(player), function(k, ...) return Chaos.t(player, k, ...) end)
 end
 
 -- ---------------------------------------------------------------- portals
@@ -300,7 +300,7 @@ end
 
 -- the channel finished: open the pair. Returns true or an error text (nothing spent then)
 local function openPair(player)
-	local reason = K.blockReason(blockFacts(player))
+	local reason = K.blockReason(blockFacts(player), function(k, ...) return Chaos.t(player, k, ...) end)
 	if reason then
 		return reason
 	end
@@ -394,7 +394,7 @@ function T.cast(player, source)
 		end
 		return ok == true
 	end
-	local reason = K.blockReason(bf)
+	local reason = K.blockReason(bf, function(k, ...) return Chaos.t(player, k, ...) end)
 	if reason then
 		player:sendCancelMessage(reason)
 		Chaos.send(player, OPCODE, "castEnd", {result = "refused"})
@@ -552,7 +552,7 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 		local s = K.style(cfg, Chaos.toInt(data.id, 0) or tonumber(data.id))
 		if s and s.id == tonumber(data.id) and K.owns(s, facts(player)) then
 			player:setStorageValue(ST.style, s.id)
-			player:sendTextMessage(MESSAGE_STATUS_SMALL, "Portal style: " .. s.name .. ".")
+			player:sendTextMessage(MESSAGE_STATUS_SMALL, Chaos.t(player, "Portal style: %s.", s.name))
 		else
 			player:sendCancelMessage(Chaos.t(player, "You do not own that portal style."))
 		end

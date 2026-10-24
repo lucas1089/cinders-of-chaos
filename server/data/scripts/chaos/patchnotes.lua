@@ -28,6 +28,12 @@
 -- "Last seen" and the "Don't show automatically" setting are per account (table chaos_patchnotes, created here if
 -- missing; also in sql/chaos_patchnotes.sql), so a new week opens once per account, not once per character.
 
+if not (Chaos and Chaos.t) then
+	if not Chaos then
+		dofile("data/scripts/chaos/chaos_constants.lua")
+	end
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
@@ -401,12 +407,11 @@ local function onCommand(player, words, param)
 		if param == "reload" then
 			PN.scan(true)
 			PN.loadChangelog(true)
-			player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("Patch notes reloaded: %d file(s), newest %s; " ..
-				"changelog %d entries.", #PN.notes, PN.notes[1] and PN.notes[1].id or "-", changelog.count))
+			player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Patch notes reloaded: %d file(s), newest %s; changelog %d entries.", #PN.notes, PN.notes[1] and PN.notes[1].id or "-", changelog.count))
 		elseif param == "unseen" then
 			local _, autoEnabled = PN.state(player)
 			save(player, "", autoEnabled)
-			player:sendTextMessage(MESSAGE_INFO_DESCR, "Patch notes: this account has seen nothing now.")
+			player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Patch notes: this account has seen nothing now."))
 		else
 			local seenKey, autoEnabled = PN.state(player)
 			player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("Patch notes: %d file(s), newest %s; this account " ..

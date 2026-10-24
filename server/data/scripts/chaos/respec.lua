@@ -17,6 +17,12 @@
 --   server -> client  {"action":"respecInfo","data":{level, full, paragon, node, free ("level" / "vocation" / nil),
 --                      freeBelowLevel}}
 
+if not (Chaos and Chaos.t) then
+	if not Chaos then
+		dofile("data/scripts/chaos/chaos_constants.lua")
+	end
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
@@ -220,8 +226,8 @@ actions.refundNode = function(player, data)
 	ChaosPassiveTree.apply(player)
 	R.sendInfo(player)
 	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, cost > 0 and
-		string.format("Passive node refunded for %s gold coins. The point is free to spend again.", Core.formatGold(cost)) or
-		"Passive node refunded for free. The point is free to spend again.")
+		Chaos.t(player, "Passive node refunded for %s gold coins. The point is free to spend again.", Core.formatGold(cost)) or
+		Chaos.t(player, "Passive node refunded for free. The point is free to spend again."))
 	return true
 end
 

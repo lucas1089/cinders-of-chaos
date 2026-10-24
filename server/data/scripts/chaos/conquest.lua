@@ -940,7 +940,7 @@ function talk.onSay(player, words, param)
 	for _, g in ipairs(cfg.pityOrder) do
 		parts[#parts + 1] = string.format("%s %d (x%.2f)", g, X.pityMisses(target, g), X.pityMult(target, g))
 	end
-	player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("%s: %d Conquest Tokens; misses %s.", target:getName(),
+	player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "%s: %d Conquest Tokens; misses %s.", target:getName(),
 		X.balance(target), table.concat(parts, ", ")))
 	return false
 end

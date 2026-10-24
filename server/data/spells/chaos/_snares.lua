@@ -12,6 +12,16 @@
 -- combatlog.lua): Snare Trap, Seeker Mine, Detonate Mines for the mines it sets off.
 -- Targets: monsters that are not a player's summon (ChaosSpell.isEnemy), never players.
 
+-- the text in the player's language (Chaos.t, i18n_core.lua); English where the helper is not loaded (unit tests)
+local function tr(player, key, ...)
+	if Chaos and Chaos.t then
+		return Chaos.t(player, key, ...)
+	end
+	if select("#", ...) > 0 then
+		return string.format(key, ...)
+	end
+	return key
+end
 if ChaosSnares then
 	return
 end
@@ -348,7 +358,7 @@ function M.cast(creature, kind, variant)
 		from:sendDistanceEffect(pos, const(SHOT[element], CONST_ANI_SMALLSTONE or 1))
 	end
 	pos:sendMagicEffect(kind == "trap" and (CONST_ME_BLOCKHIT or CONST_ME_POFF) or (CONST_ME_FIREATTACK or CONST_ME_POFF))
-	player:sendTextMessage(MESSAGE_STATUS_SMALL or MESSAGE_INFO_DESCR or 1, string.format("%s %s (%s): %d of %d.",
+	player:sendTextMessage(MESSAGE_STATUS_SMALL or MESSAGE_INFO_DESCR or 1, tr(player, "%s %s (%s): %d of %d.",
 		kind == "trap" and "Trap" or "Mine", "set", element, S.count(M.state, player:getId(), kind), S.cap(kind, mods)))
 	schedule()
 	return true

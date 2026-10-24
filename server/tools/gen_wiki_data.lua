@@ -511,7 +511,15 @@ end
 local VARIANT_CLASSES = {knight = {"warrior"}, paladin = {"ranger"}, sorcerer = {"mystic", "elementalist"}}
 
 function W.tree(D, vocs)
-	local saved = {getTreeNodes = getTreeNodes, getCustomStatString = getCustomStatString}
+	local saved = {getTreeNodes = getTreeNodes, getCustomStatString = getCustomStatString, tr = rawget(_G, "tr")}
+	if not saved.tr then -- the client's tr() (client_chaos_locale): the wiki text is English
+		tr = function(text, ...)
+			if select("#", ...) > 0 then
+				return string.format(text, ...)
+			end
+			return text
+		end
+	end
 	dofile(TREE_DIR .. "treedata/nodes.lua")
 	dofile(TREE_DIR .. "passivetree.lua")
 	local nodes = getTreeNodes()
@@ -628,6 +636,7 @@ function W.tree(D, vocs)
 		end
 	end
 	getTreeNodes, getCustomStatString = saved.getTreeNodes, saved.getCustomStatString
+	tr = saved.tr
 	local byName = function(a, b)
 		if a.name == b.name then
 			return a.id < b.id

@@ -1323,17 +1323,17 @@ local function onAdmin(player, param)
 	local t = now()
 	if cmd == "start" then
 		if S.current() then
-			player:sendTextMessage(MESSAGE_INFO_DESCR, S.current().name .. " is already running.")
+			player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "%s is already running.", S.current().name))
 			return
 		end
 		local s = tonumber(arg) and S.byId(seasons(), tonumber(arg)) or S.upcoming(seasons(), t, S.ov)
 		if not s then
-			player:sendTextMessage(MESSAGE_INFO_DESCR, "No upcoming season in season_config.lua (add one, or give its id).")
+			player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "No upcoming season in season_config.lua (add one, or give its id)."))
 			return
 		end
 		local _, finish = S.times(s, S.ov)
 		if not finish or finish <= t then
-			player:sendTextMessage(MESSAGE_INFO_DESCR, s.name .. "'s end date has passed: change it in season_config.lua.")
+			player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "%s's end date has passed: change it in season_config.lua.", s.name))
 			return
 		end
 		setConfig(cfg.configPrefix .. s.id .. "_start", t)
@@ -1344,8 +1344,7 @@ local function onAdmin(player, param)
 	elseif cmd == "end" then
 		local s = S.current()
 		if not s then
-			player:sendTextMessage(MESSAGE_INFO_DESCR, "No season is running. Migration check: " .. S.migrateAll("admin") ..
-				" character(s) migrated.")
+			player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "No season is running. Migration check: %s character(s) migrated.", S.migrateAll("admin")))
 			return
 		end
 		setConfig(cfg.configPrefix .. s.id .. "_end", t)

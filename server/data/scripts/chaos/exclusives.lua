@@ -22,6 +22,12 @@
 -- Staff: /exclusive <character>, <key | all>[, revoke]    /exclusive <character>, roll <kill key>   (group 4+)
 -- Lua 5.1 / LuaJIT compatible.
 
+if not (Chaos and Chaos.t) then
+	if not Chaos then
+		dofile("data/scripts/chaos/chaos_constants.lua")
+	end
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
@@ -346,8 +352,7 @@ function gm.onSay(player, words, param)
 	end
 	local name, what, mode = param:match("^%s*([^,]+)%s*,%s*([%w_]+)%s*,?%s*([%w_]*)%s*$")
 	if not name then
-		player:sendTextMessage(MESSAGE_INFO_DESCR, "Usage: /exclusive <character>, <key | all>[, revoke]  or  " ..
-			"/exclusive <character>, roll, <kill key>")
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Usage: /exclusive <character>, <key | all>[, revoke]  or  /exclusive <character>, roll, <kill key>"))
 		return false
 	end
 	-- staff never give value (docs/GM_HANDBOOK.md section 2): a grant or a roll needs an administrator, a revoke does not
@@ -357,11 +362,11 @@ function gm.onSay(player, words, param)
 	local target = Player(name)
 	if what == "roll" then
 		if not target then
-			player:sendTextMessage(MESSAGE_INFO_DESCR, name .. " is not online.")
+			player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "%s is not online.", name))
 			return false
 		end
 		local key = M.bossKill(target, mode)
-		player:sendTextMessage(MESSAGE_INFO_DESCR, key and ("Rolled " .. key .. ".") or "No drop (missed, owned or no group).")
+		player:sendTextMessage(MESSAGE_INFO_DESCR, key and Chaos.t(player, "Rolled %s.", key) or Chaos.t(player, "No drop (missed, owned or no group)."))
 		return false
 	end
 	local accountId
@@ -371,7 +376,7 @@ function gm.onSay(player, words, param)
 		result.free(id)
 	end
 	if not accountId then
-		player:sendTextMessage(MESSAGE_INFO_DESCR, "No character named " .. name .. ".")
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "No character named %s.", name))
 		return false
 	end
 	local keys = {}
@@ -393,8 +398,8 @@ function gm.onSay(player, words, param)
 		n = n + (ok and 1 or 0)
 		last = err or last
 	end
-	player:sendTextMessage(MESSAGE_INFO_DESCR, n > 0 and string.format("%s %d exclusive(s) for the account of %s.",
-		mode == "revoke" and "Removed" or "Granted", n, name) or (last or "Nothing changed."))
+	player:sendTextMessage(MESSAGE_INFO_DESCR, n > 0 and (mode == "revoke" and Chaos.t(player, "Removed %d exclusive(s) for the account of %s.", n, name)
+		or Chaos.t(player, "Granted %d exclusive(s) for the account of %s.", n, name)) or Chaos.t(player, last or "Nothing changed."))
 	return false
 end
 gm:separator(" ")

@@ -195,55 +195,66 @@ end
 -- f: {tutorial, pz, pzLocked, skull, arena, worldBoss, siege, rift, dungeon, tower, cooldownLeft, casting, noTown}
 -- (true / a number for the ones that apply). Order: the most useful message first. A hideout is handled before this
 -- (K.hideoutExit); its line below only answers when the hideout system is not loaded.
-function K.blockReason(f)
+function K.blockReason(f, T)
+	-- T(key, ...): the text in the player's language (townportal.lua passes Chaos.t); English without it
+	local function tx(key, ...)
+		if T then
+			return T(key, ...)
+		end
+		if select("#", ...) > 0 then
+			return string.format(key, ...)
+		end
+		return key
+	end
 	if f.casting then
-		return "You are already opening a portal."
+		return tx("You are already opening a portal.")
 	end
 	if (f.cooldownLeft or 0) > 0 then
-		return string.format("Your Town Portal is ready again in %d second%s.", f.cooldownLeft, f.cooldownLeft == 1 and "" or "s")
+		return f.cooldownLeft == 1 and tx("Your Town Portal is ready again in 1 second.")
+			or tx("Your Town Portal is ready again in %d seconds.", f.cooldownLeft)
 	end
 	if f.tutorial then
-		return "There is no town portal on the island yet: finish or skip the tutorial first."
+		return tx("There is no town portal on the island yet: finish or skip the tutorial first.")
 	end
 	if f.noTown then
-		return "You have no home town to open a portal to."
+		return tx("You have no home town to open a portal to.")
 	end
 	if f.arena then
-		return "You cannot open a town portal in an arena match."
+		return tx("You cannot open a town portal in an arena match.")
 	end
 	if f.worldBoss then
-		return "You cannot open a town portal in the world boss arena."
+		return tx("You cannot open a town portal in the world boss arena.")
 	end
 	if f.siege then
-		return "You cannot open a town portal during a guild siege."
+		return tx("You cannot open a town portal during a guild siege.")
 	end
 	if f.rift then
-		return "A rift holds you: leave it through its own exit or finish it."
+		return tx("A rift holds you: leave it through its own exit or finish it.")
 	end
 	if f.dungeon then
-		return "A dungeon holds you: leave it through its own exit or finish it."
+		return tx("A dungeon holds you: leave it through its own exit or finish it.")
 	end
 	if f.tower then
-		return "The Infinity Tower holds you: leave it through its own exit."
+		return tx("The Infinity Tower holds you: leave it through its own exit.")
 	end
 	if f.hideout then -- Hideouts (hideout.lua)
-		return "Leave your hideout through its exit portal or Leave in the Hideout window."
+		return tx("Leave your hideout through its exit portal or Leave in the Hideout window.")
 	end
 	if f.marches then -- the Scorched Marches (pvpzone.lua)
-		return "The Marches hold you: leave through a safe exit (your embers are banked there)."
+		return tx("The Marches hold you: leave through a safe exit (your embers are banked there).")
 	end
 	if f.instance then -- any other registered instance (Chaos.inAnyInstance): its label, e.g. "a raid"
-		return string.format("You cannot open a town portal in %s: leave it through its own exit.",
+		return tx("You cannot open a town portal in %s: leave it through its own exit.",
 			type(f.instance) == "string" and f.instance or "this place")
 	end
 	if f.pzLocked then
-		return "You cannot open a town portal right after fighting other players."
+		return tx("You cannot open a town portal right after fighting other players.")
 	end
 	if f.skull then
-		return "You cannot open a town portal while you carry a skull."
+		return tx("You cannot open a town portal while you carry a skull.")
 	end
 	if f.pz then
-		return "You are already in a protection zone."
+		return tx("You are already in a protection zone.")
 	end
 	return nil
 end

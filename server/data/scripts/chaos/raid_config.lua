@@ -18,7 +18,10 @@ return {
 		-- (temple_portals_config.lua `portals`; tests/cityportals_test.lua checks it); a town without one uses `offsets`
 		positions = {{town = 2, x = 32375, y = 32245, z = 7}}},
 	minLevel = 800,
-	minPlayers = 5, -- the raid opens for a party of 5 to 15 inside partyRange of the opener
+	minPlayers = 1, -- the raid opens for one player alone up to a party of 15 inside partyRange of the opener
+	-- (owner 2026-10-24: all content solo). basePlayers = the group the boss numbers below were measured for (5, the old
+	-- minimum): the XML health, packs and the soak need are theirs; fewer raiders scale down, more scale up (scaling)
+	basePlayers = 5,
 	maxPlayers = 15,
 	partyRange = 12, -- party members within this many sqm (same floor) of the opener come along
 	needProtectionZone = true,
@@ -65,8 +68,11 @@ return {
 	pullDelay = 2, -- seconds between the first step into a room and the boss's first mechanic
 
 	-- ------------------------------------------------------------------ scaling
-	-- boss health = the XML's (set for minPlayers) x (1 + healthPerPlayer x (players - minPlayers)); trash, adds and
-	-- totems the same with their own factor. players = the raid members inside the instance at the pull.
+	-- boss health = the XML's (set for basePlayers) x (1 + healthPerPlayer x (players - basePlayers)); trash, adds and
+	-- totems the same with their own factor. players = the raid members inside the instance at the pull. Under
+	-- basePlayers the health follows the group's damage instead (raid_core.lua K.smallMult, the balance model below): one
+	-- raider kills in the time five do, so solo is as long as the base fight, not 30% longer. Sundered fades when the
+	-- tank is alone, and a soak circle asks for as many raiders as there are (its total scales with them).
 	healthPerPlayer = 0.18,
 	trashPerPlayer = 0.12,
 	addPerPlayer = 0.10,

@@ -12,9 +12,10 @@
 -- parity"). The 37 new spells move every class's cooldown ladder (a class with more spells has more rungs, so its old
 -- spells wait longer), and the kit adds damage of its own. The factors below put the best-set score of each class back
 -- to its value before the kit at levels 300, 600 and 1000 (within 4% except where the README table says otherwise). The
--- Warrior, Juggernaut, Berserker, Iron Sage and Beastmaster came out within 3% of 1, so they are not listed (the Beastmaster
--- was 1.25: its ladder gained a rung that its minion-less spells now fill). The Thief line is not listed either: its
--- blade and shuriken strikes are weapon hits, which the factor never touches (the kit's strengths are set per spell).
+-- Warrior, Juggernaut, Berserker, Iron Sage and Beastmaster came out within 3% of 1 on the first pass (O136 gave them a curve).
+-- The Thief line was left out then: its blade and shuriken strikes are weapon hits, which the event never touches. C2
+-- (2026-10-24) lists it: ChaosSpell.weaponStrike (spells/chaos/_common.lua) multiplies a spell's strike by the same curve
+-- (ChaosSpellFactor.forVocation) before it is dealt; auto attacks (ORIGIN_MELEE / ORIGIN_RANGED outside a spell) stay unscaled.
 
 -- Level curve (O136, 2026-10-23; owner: "balanceie o jogo ..."; server/data/spells/README.md "Combat pass (O136)"). One factor
 -- per class could not hold the levels 30-200 and 300-1000 together: the parity pass left dips of -16 to -43% at levels 30-100
@@ -34,6 +35,9 @@ ChaosSpellFactorConfig = {
 		[7] = 1.25,   -- Deadeye
 		[8] = 1.09,   -- Juggernaut
 		[10] = 0.73,   -- Illusionist
+		[11] = 0.91,   -- Thief (C2, 2026-10-24: weapon strikes too, ChaosSpell.weaponStrike)
+		[12] = 1.09,   -- Ninja
+		[13] = 1.05,   -- Samurai
 		[14] = 1.08,   -- Berserker
 		[15] = 1.17,   -- Beastmaster
 		[17] = 0.87,   -- Monk
@@ -53,7 +57,10 @@ ChaosSpellFactorConfig = {
 		[7] = {{15, 1.00}, {30, 1.00}, {40, 1.00}, {60, 1.00}, {70, 1.00}, {80, 1.00}, {90, 1.00}, {100, 0.98}, {120, 0.98}, {150, 0.98}, {180, 0.89}, {200, 0.98}, {230, 0.98}, {260, 0.98}, {300, 1.14}, {450, 1.26}, {600, 1.26}, {1000, 1.25}},  -- Deadeye
 		[8] = {{15, 1.00}, {30, 1.00}, {40, 1.00}, {60, 1.00}, {70, 1.00}, {80, 1.00}, {90, 1.00}, {100, 1.00}, {120, 1.00}, {150, 0.91}, {180, 0.91}, {200, 0.91}, {230, 0.89}, {260, 0.92}, {300, 1.02}, {450, 1.03}, {600, 1.11}, {1000, 1.09}},  -- Juggernaut
 		[10] = {{15, 0.70}, {30, 0.70}, {40, 0.70}, {60, 0.70}, {70, 0.70}, {80, 0.70}, {90, 0.70}, {100, 0.70}, {120, 0.70}, {150, 0.63}, {180, 0.52}, {200, 0.51}, {230, 0.64}, {260, 0.63}, {300, 0.74}, {450, 0.74}, {600, 0.74}, {1000, 0.73}},  -- Illusionist
-		[14] = {{15, 1.00}, {30, 1.00}, {40, 1.00}, {60, 1.00}, {70, 1.00}, {80, 1.00}, {90, 1.00}, {100, 1.00}, {120, 1.00}, {150, 0.91}, {180, 0.91}, {200, 0.91}, {230, 0.91}, {260, 1.00}, {300, 1.07}, {450, 1.09}, {600, 1.09}, {1000, 1.08}},  -- Berserker
+		[11] = {{15, 1.00}, {30, 1.00}, {40, 1.00}, {60, 1.02}, {70, 1.02}, {80, 1.06}, {90, 1.06}, {100, 1.07}, {120, 1.08}, {150, 0.95}, {180, 0.93}, {200, 0.93}, {230, 0.89}, {260, 0.89}, {300, 0.89}, {450, 0.90}, {600, 0.90}, {1000, 0.91}},  -- Thief
+		[12] = {{15, 1.00}, {30, 1.00}, {40, 1.00}, {60, 1.02}, {70, 1.02}, {80, 1.02}, {90, 1.02}, {100, 0.98}, {120, 0.98}, {150, 0.91}, {180, 0.99}, {200, 0.99}, {230, 0.99}, {260, 0.99}, {270, 0.88}, {300, 0.84}, {350, 0.84}, {360, 1.10}, {450, 1.10}, {600, 1.10}, {1000, 1.09}},  -- Ninja
+		[13] = {{15, 1.00}, {30, 1.00}, {40, 1.00}, {60, 1.02}, {70, 1.02}, {80, 1.02}, {90, 1.02}, {100, 1.04}, {120, 1.12}, {150, 1.06}, {180, 1.00}, {200, 1.12}, {230, 1.06}, {260, 1.06}, {300, 1.06}, {450, 1.06}, {600, 1.06}, {1000, 1.05}},  -- Samurai
+		[14] = {{15, 1.00}, {30, 1.00}, {40, 1.00}, {60, 1.00}, {70, 1.00}, {80, 1.00}, {90, 1.00}, {100, 1.05}, {120, 1.04}, {150, 0.94}, {180, 0.94}, {200, 0.91}, {230, 0.91}, {260, 1.00}, {300, 1.07}, {450, 1.09}, {600, 1.09}, {1000, 1.08}},  -- Berserker
 		[15] = {{15, 1.25}, {30, 1.25}, {40, 1.25}, {60, 1.25}, {70, 1.25}, {80, 1.25}, {90, 1.25}, {100, 1.21}, {120, 1.21}, {150, 1.11}, {180, 0.98}, {200, 0.98}, {230, 0.93}, {260, 0.93}, {300, 0.93}, {450, 1.12}, {600, 1.14}, {1000, 1.17}},  -- Beastmaster
 		[17] = {{15, 1.00}, {30, 1.07}, {40, 1.07}, {60, 1.05}, {70, 1.03}, {80, 1.03}, {90, 1.03}, {100, 1.03}, {120, 0.93}, {150, 0.93}, {180, 0.93}, {200, 0.93}, {230, 0.93}, {260, 0.88}, {300, 0.87}, {450, 0.87}, {600, 0.87}, {1000, 0.87}},  -- Monk
 		[18] = {{15, 0.70}, {30, 0.75}, {40, 0.75}, {60, 0.73}, {70, 0.72}, {80, 0.72}, {90, 0.72}, {100, 0.75}, {120, 0.67}, {150, 0.65}, {180, 0.65}, {200, 0.65}, {230, 0.65}, {260, 0.65}, {300, 0.65}, {450, 0.78}, {600, 0.78}, {1000, 0.80}},  -- Shadowfist

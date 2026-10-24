@@ -155,20 +155,43 @@ function K.damageMult(cfg, enraged)
 end
 
 -- ===================================================================== scaling
+-- the group the numbers were measured for (owner 2026-10-24: any content solo, so minPlayers is 1 and this is 5)
+function K.basePlayers(cfg)
+	return cfg.basePlayers or cfg.minPlayers
+end
+
 local function extra(cfg, players)
-	return math.max(0, (math.max(1, tonumber(players) or 1)) - cfg.minPlayers)
+	return math.max(0, (math.max(1, tonumber(players) or 1)) - K.basePlayers(cfg))
+end
+
+-- the group's damage per second in the balance model (a fifth of them support at supportShare)
+local function groupDps(cfg, players)
+	local m = cfg.model
+	players = math.max(1, floor(tonumber(players) or 1))
+	local support = floor(players / m.supportEvery)
+	return (players - support) * m.refDps + support * m.refDps * m.supportShare
+end
+
+-- below the base group: health x (the group's damage / the base group's), so the fight takes the base group's time
+function K.smallMult(cfg, players)
+	players = math.max(1, floor(tonumber(players) or 1))
+	local base = K.basePlayers(cfg)
+	if players >= base then
+		return 1
+	end
+	return groupDps(cfg, players) / groupDps(cfg, base)
 end
 
 function K.healthMult(cfg, players)
-	return 1 + cfg.healthPerPlayer * extra(cfg, players)
+	return K.smallMult(cfg, players) * (1 + cfg.healthPerPlayer * extra(cfg, players))
 end
 
 function K.trashMult(cfg, players)
-	return 1 + cfg.trashPerPlayer * extra(cfg, players)
+	return K.smallMult(cfg, players) * (1 + cfg.trashPerPlayer * extra(cfg, players))
 end
 
 function K.addMult(cfg, players)
-	return 1 + cfg.addPerPlayer * extra(cfg, players)
+	return K.smallMult(cfg, players) * (1 + cfg.addPerPlayer * extra(cfg, players))
 end
 
 -- monsters of one trash pack
@@ -597,10 +620,13 @@ end
 -- after a hit on `target`: candidates = {{id, dist}} (other players, distance to the boss in sqm). Returns
 -- {action = "swap", to = id} when someone fresh stands in melee range, {action = "verdict"} when nobody does, or nil
 -- while the target is below swapAt.
-function K.sunderDecide(st, cfg, target, candidates)
+function K.sunderDecide(st, cfg, target, candidates, alone)
 	local m = cfg.mechanics.sunder
 	if K.sunderStacks(st, target) < m.swapAt then
 		return nil
+	end
+	if alone then
+		return {action = "shed"} -- nobody to swap with: the stacks fade (a solo raider has no second tank)
 	end
 	local best, bestStacks
 	for _, c in ipairs(candidates or {}) do
@@ -622,9 +648,13 @@ function K.verdictShare(cfg, stacks)
 end
 
 -- ---- soak (split damage)
+-- raiders a circle asks for: the base need (+1 per needPerPlayers over the base group), never more than the raiders
+-- there are (a solo raider soaks alone)
 function K.soakNeed(cfg, players)
 	local m = cfg.mechanics.soak
-	return m.need + floor(math.max(0, (players or 1) - cfg.minPlayers) / m.needPerPlayers)
+	players = math.max(1, floor(tonumber(players) or 1))
+	local need = m.need + floor(math.max(0, players - K.basePlayers(cfg)) / m.needPerPlayers)
+	return math.max(1, math.min(need, players))
 end
 
 function K.soakCount(cfg, players)
@@ -651,10 +681,13 @@ end
 function K.soakResolve(cfg, inside, need)
 	local m = cfg.mechanics.soak
 	inside = inside or 0
+	-- a circle that asks for fewer raiders than the base need (a small group) carries a smaller total, so each soaker
+	-- still takes the base share and a solo raider is not hit for the whole circle
+	local total = m.totalShare * math.min(1, math.max(1, need or m.need) / m.need)
 	if inside <= 0 then
-		return 0, m.overflowShare + m.totalShare / math.max(1, need) * 0.25
+		return 0, m.overflowShare + total / math.max(1, need) * 0.25
 	end
-	local each = m.totalShare / inside
+	local each = total / inside
 	if inside < need then
 		return each, m.overflowShare
 	end
@@ -882,7 +915,7 @@ function K.mechText(cfg, mech, b)
 	elseif mech == "soak" then
 		return string.format("Ember Brand: circles fall near players (one more per %d raiders). Each circle's %s of max " ..
 			"health is split among those inside; fewer than %d inside (+1 per %d raiders over %d) and everyone else takes %s.",
-			m.perCircle, pct(m.totalShare), m.need, m.needPerPlayers, cfg.minPlayers, pct(m.overflowShare))
+			m.perCircle, pct(m.totalShare), m.need, m.needPerPlayers, K.basePlayers(cfg), pct(m.overflowShare))
 	elseif mech == "adds" then
 		return string.format("%s: adds every %d s; each one alive makes the boss take %d%% less damage (up to %d%%) and " ..
 			"heals it %d%% every 5 s. Kill them first.", b and b.add or "Adds", floor(m.every / 1000), m.reducePct, m.maxReduce,

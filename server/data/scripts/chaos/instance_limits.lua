@@ -201,7 +201,7 @@ local function onInstances(player, words, param)
 	local sub = (args[1] or "list"):lower()
 	if sub == "close" then
 		if not args[2] or not args[3] then
-			player:sendTextMessage(MESSAGE_INFO_DESCR, "Usage: /instances close <type> <id>   (ids from /instances)")
+			player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Usage: /instances close <type> <id>   (ids from /instances)"))
 			return false
 		end
 		local id = tonumber(args[3]) or args[3]
@@ -219,12 +219,12 @@ local function onInstances(player, words, param)
 				for _, e in ipairs(list) do
 					names[#names + 1] = e.name or tostring(e.id)
 				end
-				player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("%s line: %s", key, table.concat(names, ", ")))
+				player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "%s line: %s", key, table.concat(names, ", ")))
 				n = n + 1
 			end
 		end
 		if n == 0 then
-			player:sendTextMessage(MESSAGE_INFO_DESCR, "Nobody is waiting.")
+			player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Nobody is waiting."))
 		end
 		return false
 	end
@@ -237,8 +237,7 @@ local function onInstances(player, words, param)
 			shown = shown + 1
 		end
 	end
-	player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("%d instance(s) running%s. /instances close <type> <id> ends one " ..
-		"(everyone out, no reward, the system's failure rule); /instances line shows who waits.", shown,
+	player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "%d instance(s) running%s. /instances close <type> <id> ends one (everyone out, no reward, the system's failure rule); /instances line shows who waits.", shown,
 		filter and (" of " .. filter) or ""))
 	return false
 end

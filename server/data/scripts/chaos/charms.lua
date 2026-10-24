@@ -1025,13 +1025,13 @@ function talk.onSay(player, words, param)
 	elseif cfg.shapes[args[2]] then
 		opts.shape, opts.rarity = args[2], tonumber(args[3]) or 3
 	else
-		player:sendCancelMessage("Unknown charm " .. args[2])
+		player:sendCancelMessage(Chaos.t(player, "Unknown charm %s", args[2]))
 		return false
 	end
 	local item = CH.makeItem(Core.rollCharm(cfg, opts))
 	if item then
 		giveItem(player, item)
-		player:sendTextMessage(MESSAGE_INFO_DESCR or MESSAGE_EVENT_ADVANCE, "Charm given.")
+		player:sendTextMessage(MESSAGE_INFO_DESCR or MESSAGE_EVENT_ADVANCE, Chaos.t(player, "Charm given."))
 	end
 	return false
 end

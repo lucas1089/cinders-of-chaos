@@ -2,6 +2,7 @@
 -- The endless sink for Paragon points: `state.mastery = {maxRanks, rows = [{key, name, desc, ranks, value, next}]}`,
 -- `state.exchange = {ratio, treeFree, converted}` (server/data/scripts/chaos/paragon.lua). A rank costs one free Paragon
 -- point; the server owns the rules and validates every request.
+local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 ParagonMath = ParagonMath or {}
 local M = ParagonMath
 
@@ -48,7 +49,7 @@ function M.masteryLines(state)
   local lines = {}
   for _, row in ipairs((state and state.mastery and state.mastery.rows) or {}) do
     if (row.ranks or 0) > 0 then
-      table.insert(lines, string.format("+%s%% %s (%d ranks).", M.fmt(row.value), row.name, row.ranks))
+      table.insert(lines, tr("+%s%% %s (%d ranks).", M.fmt(row.value), row.name, row.ranks))
     end
   end
   return lines

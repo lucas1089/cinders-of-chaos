@@ -301,14 +301,14 @@ function talk.onSay(player, words, param)
 		end
 		local new, pts = A.credit(cfg, RC(), st.done, keys)
 		saveRow(player:getGuid(), st)
-		player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("Atlas: %d cell(s), +%d point(s).", #new, pts))
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Atlas: %d cell(s), +%d point(s).", #new, pts))
 	elseif cmd == "clear" then
 		st.done, st.alloc = {}, {}
 		saveRow(player:getGuid(), st)
-		player:sendTextMessage(MESSAGE_INFO_DESCR, "Atlas cleared.")
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Atlas cleared."))
 	else
 		local p = A.statePayload(cfg, RC(), st)
-		player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("Atlas: %d / %d points earned, %d spent, %d nodes.",
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Atlas: %d / %d points earned, %d spent, %d nodes.",
 			p.earned, p.max, p.spent, #p.alloc))
 	end
 	if S.treeSent[player:getId()] then

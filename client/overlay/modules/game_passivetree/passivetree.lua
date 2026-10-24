@@ -531,12 +531,12 @@ function setNodeTooltip(widget, node)
 	local texts
 	if node.isMastery then
 		texts = {}
-		for _, line in ipairs(node.stats or {}) do
+		for _, line in ipairs(TreeText.lines(node.stats or {})) do
 			table.insert(texts, line)
 		end
 		local chosen = getChosenMastery(node.id)
 		for i, effect in ipairs(node.masteries or {}) do
-			table.insert(texts, string.format("%d. %s%s: %s", i, effect.name or "", chosen == i and " (chosen)" or "",
+			table.insert(texts, string.format("%d. %s%s: %s", i, effect.name or "", chosen == i and tr(" (chosen)") or "",
 				table.concat(getCustomStatString(effect.customStats or {}), " ")))
 		end
 		if node.locked then
@@ -544,12 +544,12 @@ function setNodeTooltip(widget, node)
 			for _, key in ipairs(node.classes or {}) do
 				table.insert(names, CLASS_NAMES[key] or key)
 			end
-			table.insert(texts, "Requires: " .. table.concat(names, ", ") .. ".")
+			table.insert(texts, tr("Requires: %s.", table.concat(names, ", ")))
 		end
 	elseif customStats then
 		texts = getCustomStatString(customStats)
 		-- keystones: the class's own description lines under the stats (a class node: its own lines)
-		for _, line in ipairs((vocationNode and vocationNode.stats) or ((node.classes or node.isKeystone) and node.stats) or {}) do
+		for _, line in ipairs(TreeText.lines((vocationNode and vocationNode.stats) or ((node.classes or node.isKeystone) and node.stats) or {})) do
 			table.insert(texts, line)
 		end
 		if node.locked then
@@ -557,15 +557,15 @@ function setNodeTooltip(widget, node)
 			for _, key in ipairs(node.classes) do
 				table.insert(names, CLASS_NAMES[key] or key)
 			end
-			table.insert(texts, "Requires: " .. table.concat(names, ", ") .. ".")
+			table.insert(texts, tr("Requires: %s.", table.concat(names, ", ")))
 		end
 	elseif node.stats then
 		texts = {}
-		for _, line in ipairs(node.stats) do
+		for _, line in ipairs(TreeText.lines(node.stats)) do
 			table.insert(texts, line)
 		end
 		if node.locked then
-			table.insert(texts, "Your class has no keystone here.")
+			table.insert(texts, tr("Your class has no keystone here."))
 		end
 	end
 	if texts then
@@ -1515,7 +1515,7 @@ function updateNodes(data)
 	local slotsText = #data.presetsTable .. "/6"
 
 	window.presets.presetSlots:setColoredText({
-		"Slots: ",
+		tr("Slots: "),
 		"#ffffff",
 		slotsText,
 		"#d47b06"
@@ -1548,13 +1548,13 @@ end
 
 function canAllocate(node)
 	if node.locked then
-		sendMessageBox("Error Allocating node", "This node belongs to another class.")
+		sendMessageBox(tr("Error Allocating node"), tr("This node belongs to another class."))
 
 		return false
 	end
 
 	if allocNodes[node.exclude] then
-		sendMessageBox("Error Allocating node", "You can not allocate 2 big nodes of the same path")
+		sendMessageBox(tr("Error Allocating node"), tr("You can not allocate 2 big nodes of the same path"))
 
 		return false
 	end
@@ -1834,7 +1834,11 @@ end
 -- the class text at the top of "Info & Bonuses" (by class key, the server's sendNodes `cls`): what the class plays as and
 -- where its keystones are (short lines: the panel is narrow)
 local function special(title, color, lines)
-	return { { { title .. ":", color, "\n" .. table.concat(lines, "\n"), "#f8f8f8" }, height = 14 * (#lines + 1) + 4 } }
+	-- built when the panel opens (the language may have changed since the module loaded): TreeText.lines translates
+	return function()
+		local shown = TreeText.lines(lines)
+		return { { { title .. ":", color, "\n" .. table.concat(shown, "\n"), "#f8f8f8" }, height = 14 * (#shown + 1) + 4 } }
+	end
 end
 
 local vocationSpecials = {
@@ -1870,7 +1874,7 @@ function calculateStats()
 	labels.destroyChildren(labels)
 
 	if vocationSpecials[getPlayerClass() or ""] then
-		for _, sp in pairs(vocationSpecials[getPlayerClass()]) do
+		for _, sp in pairs(vocationSpecials[getPlayerClass()]()) do
 			local label = g_ui.createWidget("InfoLabel", labels)
 
 			label.setColoredText(label, sp[1])
@@ -1907,11 +1911,11 @@ function calculateStats()
 		label:setText(tr("---------------- PARAGON ----------------"))
 		local lines = ParagonMath.bonusLines(paragon)
 		if not paragon.unlocked then
-			lines = {string.format("Unlocks at level %d.", paragon.startLevel or 1000)}
+			lines = {tr("Unlocks at level %d.", paragon.startLevel or 1000)}
 		elseif #lines == 0 then
-			lines = {string.format("%d Paragon points to spend (Paragon button).", paragon.free or 0)}
+			lines = {tr("%d Paragon points to spend (Paragon button).", paragon.free or 0)}
 		elseif (paragon.free or 0) > 0 then
-			table.insert(lines, string.format("%d unspent Paragon points.", paragon.free))
+			table.insert(lines, tr("%d unspent Paragon points.", paragon.free))
 		end
 		for _, line in ipairs(ParagonMath.masteryLines(paragon)) do
 			table.insert(lines, line)
@@ -2163,10 +2167,8 @@ function reset()
 	local level  = player and player:getLevel() or 1
 	local cost   = level * 250
   
-	local text = string.format(
-	  "You are about to reset your passive tree for %d gold coins (Level: %d x 250 gold per level). Proceed?",
-	  cost, level
-	)
+	local text = tr("You are about to reset your passive tree for %d gold coins (Level: %d x 250 gold per level). Proceed?",
+	  cost, level)
 	if respecResetText then
 	  text = respecResetText() -- respec.lua: the server's price (respecInfo)
 	end
@@ -2271,7 +2273,7 @@ function getCustomStatString(t, withKeystones)
 		end
 		table.sort(names)
 		for _, name in ipairs(names) do
-			table.insert(texts, "Keystone: " .. name)
+			table.insert(texts, tr("Keystone: %s", name))
 		end
 		names = {}
 		for key, name in pairs(CLASS_NOTABLE_NAMES) do
@@ -2281,232 +2283,232 @@ function getCustomStatString(t, withKeystones)
 		end
 		table.sort(names)
 		for _, name in ipairs(names) do
-			table.insert(texts, "Class: " .. name)
+			table.insert(texts, tr("Class: %s", name))
 		end
 	end
 
 	if t.strength then
-		table.insert(texts, string.format("+%.1f strength.", t.strength/1))
+		table.insert(texts, tr("+%.1f strength.", t.strength/1))
 	end
 
 	if t.dexterity then
-		table.insert(texts, string.format("+%.1f dexterity.", t.dexterity/1))
+		table.insert(texts, tr("+%.1f dexterity.", t.dexterity/1))
 	end
 
 	if t.spirit then
-		table.insert(texts, string.format("+%.1f spirit.", t.spirit/1))
+		table.insert(texts, tr("+%.1f spirit.", t.spirit/1))
 	end
 
 	if t.wisdom then
-		table.insert(texts, string.format("+%.1f wisdom.", t.wisdom/1))
+		table.insert(texts, tr("+%.1f wisdom.", t.wisdom/1))
 	end
 
 	if t.vitality then
-		table.insert(texts, string.format("+%.1f vitality.", t.vitality/1))
+		table.insert(texts, tr("+%.1f vitality.", t.vitality/1))
 	end
 
 	if t.intelligence then
-		table.insert(texts, string.format("+%.1f intelligence.", t.intelligence/1))
+		table.insert(texts, tr("+%.1f intelligence.", t.intelligence/1))
 	end
 
 	if t.incrementWater then
-		table.insert(texts, string.format("+%.1f Water Damage.", t.incrementWater/1))
+		table.insert(texts, tr("+%.1f Water Damage.", t.incrementWater/1))
 	end
 
 	if t.incrementHoly then
-		table.insert(texts, string.format("+%.1f Holy Damage.", t.incrementHoly/1))
+		table.insert(texts, tr("+%.1f Holy Damage.", t.incrementHoly/1))
 	end
 
 	if t.incrementPhysical then
-		table.insert(texts, string.format("+%.1f Physical Damage.", t.incrementPhysical/1))
+		table.insert(texts, tr("+%.1f Physical Damage.", t.incrementPhysical/1))
 	end
 
 	if t.incrementEarth then
-		table.insert(texts, string.format("+%.1f Earth Damage.", t.incrementEarth/1))
+		table.insert(texts, tr("+%.1f Earth Damage.", t.incrementEarth/1))
 	end
 
 	if t.incrementFire then
-		table.insert(texts, string.format("+%.1f Fire Damage.", t.incrementFire/1))
+		table.insert(texts, tr("+%.1f Fire Damage.", t.incrementFire/1))
 	end
 
 	if t.incrementDeath then
-		table.insert(texts, string.format("+%.1f Death Damage.", t.incrementDeath/1))
+		table.insert(texts, tr("+%.1f Death Damage.", t.incrementDeath/1))
 	end
 
 	if t.incrementHealth then
-		table.insert(texts, string.format("+%.1f Health Spells.", t.incrementHealth/1))
+		table.insert(texts, tr("+%.1f Health Spells.", t.incrementHealth/1))
 	end
 
 	if t.incrementIce then
-		table.insert(texts, string.format("+%.1f Ice Damage.", t.incrementIce/1))
+		table.insert(texts, tr("+%.1f Ice Damage.", t.incrementIce/1))
 	end
 
 	if t.incrementEnergy then
-		table.insert(texts, string.format("+%.1f Energy Damage.", t.incrementEnergy/1))
+		table.insert(texts, tr("+%.1f Energy Damage.", t.incrementEnergy/1))
 	end
 
 	if t.incrementArcane then
-		table.insert(texts, string.format("+%.1f Arcane Damage.", t.incrementArcane/1))
+		table.insert(texts, tr("+%.1f Arcane Damage.", t.incrementArcane/1))
 	end
 
 	if t.incrementLifeDrain then
-		table.insert(texts, string.format("+%.1f Life Drain Damage.", t.incrementLifeDrain/1))
+		table.insert(texts, tr("+%.1f Life Drain Damage.", t.incrementLifeDrain/1))
 	end
 
 	if t.incrementManaDrain then
-		table.insert(texts, string.format("+%.1f Mana Drain Damage.", t.incrementManaDrain/1))
+		table.insert(texts, tr("+%.1f Mana Drain Damage.", t.incrementManaDrain/1))
 	end
 
 	if t.incrementDrown then
-		table.insert(texts, string.format("+%.1f Drown Damage.", t.incrementDrown/1))
+		table.insert(texts, tr("+%.1f Drown Damage.", t.incrementDrown/1))
 	end
 
 	if t.absorbFire then
-		table.insert(texts, string.format("+%.1f Fire Absorption.", t.absorbFire/1))
+		table.insert(texts, tr("+%.1f Fire Absorption.", t.absorbFire/1))
 	end
 
 	if t.absorbDeath then
-		table.insert(texts, string.format("+%.1f Death Absorption.", t.absorbDeath/1))
+		table.insert(texts, tr("+%.1f Death Absorption.", t.absorbDeath/1))
 	end
 
 	if t.absorbEnergy then
-		table.insert(texts, string.format("+%.1f Energy Absorption.", t.absorbEnergy/1))
+		table.insert(texts, tr("+%.1f Energy Absorption.", t.absorbEnergy/1))
 	end
 
 	if t.absorbIce then
-		table.insert(texts, string.format("+%.1f Ice Absorption.", t.absorbIce/1))
+		table.insert(texts, tr("+%.1f Ice Absorption.", t.absorbIce/1))
 	end
 
 	if t.absorbArcane then
-		table.insert(texts, string.format("+%.1f Arcane Absorption.", t.absorbArcane/1))
+		table.insert(texts, tr("+%.1f Arcane Absorption.", t.absorbArcane/1))
 	end
 
 	if t.absorbWater then
-		table.insert(texts, string.format("+%.1f Water Absorption.", t.absorbWater/1))
+		table.insert(texts, tr("+%.1f Water Absorption.", t.absorbWater/1))
 	end
 
 	if t.absorbPhysical then
-		table.insert(texts, string.format("+%.1f Physical Absorption.", t.absorbPhysical/1))
+		table.insert(texts, tr("+%.1f Physical Absorption.", t.absorbPhysical/1))
 	end
 
 	if t.absorbDrown then
-		table.insert(texts, string.format("+%.1f Drown Absorption.", t.absorbDrown/1))
+		table.insert(texts, tr("+%.1f Drown Absorption.", t.absorbDrown/1))
 	end
 
 	if t.absorbLife then
-		table.insert(texts, string.format("+%.1f Life Drain Absorption.", t.absorbLife/1))
+		table.insert(texts, tr("+%.1f Life Drain Absorption.", t.absorbLife/1))
 	end
 
 	if t.absorbMana then
-		table.insert(texts, string.format("+%.1f Mana Drain Absorption.", t.absorbMana/1))
+		table.insert(texts, tr("+%.1f Mana Drain Absorption.", t.absorbMana/1))
 	end
 
 	if t.absorbHoly then
-		table.insert(texts, string.format("+%.1f Holy Absorption.", t.absorbHoly/1))
+		table.insert(texts, tr("+%.1f Holy Absorption.", t.absorbHoly/1))
 	end
 
 	if t.absorbEarth then
-		table.insert(texts, string.format("+%.1f Earth Absorption.", t.absorbEarth/1))
+		table.insert(texts, tr("+%.1f Earth Absorption.", t.absorbEarth/1))
 	end
 
 	if t.experience then
-		table.insert(texts, string.format("+%.1f%% Experience Gained.", t.experience * 0.1))
+		table.insert(texts, tr("+%.1f%% Experience Gained.", t.experience * 0.1))
 	end
 
 	if t.loot then
-		table.insert(texts, string.format("+%.1f%% Loot Increased.", t.loot * 0.2))
+		table.insert(texts, tr("+%.1f%% Loot Increased.", t.loot * 0.2))
 	end
 
 	if t.rarityLoot then
-		table.insert(texts, string.format("+%.1f%% Rarity Loot Increased.", t.rarityLoot * 1.0))
+		table.insert(texts, tr("+%.1f%% Rarity Loot Increased.", t.rarityLoot * 1.0))
 	end
 
 	if t.speed then
-		table.insert(texts, string.format("+%.1f Increased Speed.", t.speed / 10))
+		table.insert(texts, tr("+%.1f Increased Speed.", t.speed / 10))
 	end
 
 	if t.swordSkill then
-		table.insert(texts, string.format("+%.1f Sword Skill.", t.swordSkill/1))
+		table.insert(texts, tr("+%.1f Sword Skill.", t.swordSkill/1))
 	end
 
 	if t.axeSkill then
-		table.insert(texts, string.format("+%.1f Axe Skill.", t.axeSkill/1))
+		table.insert(texts, tr("+%.1f Axe Skill.", t.axeSkill/1))
 	end
 
 	if t.clubSkill then
-		table.insert(texts, string.format("+%.1f Club Skill.", t.clubSkill/1))
+		table.insert(texts, tr("+%.1f Club Skill.", t.clubSkill/1))
 	end
 
 	if t.distanceSkill then
-		table.insert(texts, string.format("+%.1f Distance Skill.", t.distanceSkill/1))
+		table.insert(texts, tr("+%.1f Distance Skill.", t.distanceSkill/1))
 	end
 
 	if t.magicSkill then
-		table.insert(texts, string.format("+%.1f Magic Level.", t.magicSkill/1))
+		table.insert(texts, tr("+%.1f Magic Level.", t.magicSkill/1))
 	end
 
 	if t.shieldingSkill then
-		table.insert(texts, string.format("+%.1f Shielding Skill.", t.shieldingSkill/1))
+		table.insert(texts, tr("+%.1f Shielding Skill.", t.shieldingSkill/1))
 	end
 
 	if t.craftingSkill then
-		table.insert(texts, string.format("+%.1f Crafting Skill.", t.craftingSkill/1))
+		table.insert(texts, tr("+%.1f Crafting Skill.", t.craftingSkill/1))
 	end
 
 	if t.herbalistSkill then
-		table.insert(texts, string.format("+%.1f Herbalist Skill.", t.herbalistSkill/1))
+		table.insert(texts, tr("+%.1f Herbalist Skill.", t.herbalistSkill/1))
 	end
 
 	if t.woodcuttingSkill then
-		table.insert(texts, string.format("+%.1f Woodcutting Skill.", t.woodcuttingSkill/1))
+		table.insert(texts, tr("+%.1f Woodcutting Skill.", t.woodcuttingSkill/1))
 	end
 
 	if t.miningSkill then
-		table.insert(texts, string.format("+%.1f Mining Skill.", t.miningSkill/1))
+		table.insert(texts, tr("+%.1f Mining Skill.", t.miningSkill/1))
 	end
 
 	if t.armorsmithSkill then
-		table.insert(texts, string.format("+%.1f Armorsmith Skill.", t.armorsmithSkill/1))
+		table.insert(texts, tr("+%.1f Armorsmith Skill.", t.armorsmithSkill/1))
 	end
 
 	if t.jewelsmithSkill then
-		table.insert(texts, string.format("+%.1f Jewelsmith Skill.", t.jewelsmithSkill/1))
+		table.insert(texts, tr("+%.1f Jewelsmith Skill.", t.jewelsmithSkill/1))
 	end
 
 	if t.weaponsmithSkill then
-		table.insert(texts, string.format("+%.1f Weaponsmith Skill.", t.weaponsmithSkill/1))
+		table.insert(texts, tr("+%.1f Weaponsmith Skill.", t.weaponsmithSkill/1))
 	end
 
 	if t.criticalHitChance then
-		table.insert(texts, string.format("+%.1f Critical Hit Chance.", t.criticalHitChance/1))
+		table.insert(texts, tr("+%.1f Critical Hit Chance.", t.criticalHitChance/1))
 	end
 
 	if t.criticalHitAmount then
-		table.insert(texts, string.format("+%.1f Critical Hit Amount.", t.criticalHitAmount/1))
+		table.insert(texts, tr("+%.1f Critical Hit Amount.", t.criticalHitAmount/1))
 	end
 
 	if t.lifeLeechChance then
-		table.insert(texts, string.format("+%.1f Life Leech Chance.", t.lifeLeechChance/1))
+		table.insert(texts, tr("+%.1f Life Leech Chance.", t.lifeLeechChance/1))
 	end
 
 	if t.lifeLeechAmount then
-		table.insert(texts, string.format("+%.1f Life Leech Amount.", t.lifeLeechAmount/1))
+		table.insert(texts, tr("+%.1f Life Leech Amount.", t.lifeLeechAmount/1))
 	end
 
 	if t.manaLeechChance then
-		table.insert(texts, string.format("+%.1f Mana Leech Chance.", t.manaLeechChance/1))
+		table.insert(texts, tr("+%.1f Mana Leech Chance.", t.manaLeechChance/1))
 	end
 
 	if t.manaLeechAmount then
-		table.insert(texts, string.format("+%.1f Mana Leech Amount.", t.manaLeechAmount/1))
+		table.insert(texts, tr("+%.1f Mana Leech Amount.", t.manaLeechAmount/1))
 	end
 
 	if t.multiIncrement then
-		table.insert(texts, string.format("+%.1f Increase all damage elements.", t.multiIncrement/1))
+		table.insert(texts, tr("+%.1f Increase all damage elements.", t.multiIncrement/1))
 	end
 
 	if t.absorbAllElements then
-		table.insert(texts, string.format("+%.1f Absorb all Elements.", t.absorbAllElements/1))
+		table.insert(texts, tr("+%.1f Absorb all Elements.", t.absorbAllElements/1))
 	end
 
 

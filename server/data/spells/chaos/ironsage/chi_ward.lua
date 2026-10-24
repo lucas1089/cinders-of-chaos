@@ -4,6 +4,17 @@
 -- within 5 sqm; without a name it shields the party member within 5 sqm with the lowest health share (you when you
 -- have no party). The shield is a timer condition on the recipient (ChaosMonk.ids.subId.ward) and the amount left a
 -- storage on it (ChaosMonk.ids.storage.wardAmount); monk_combat.lua absorbs from it. A new ward replaces the old one.
+
+-- the text in the player's language (Chaos.t, i18n_core.lua); English where the helper is not loaded (unit tests)
+local function tr(player, key, ...)
+	if Chaos and Chaos.t then
+		return Chaos.t(player, key, ...)
+	end
+	if select("#", ...) > 0 then
+		return string.format(key, ...)
+	end
+	return key
+end
 dofile('data/spells/scripts/chaos/_monk.lua')
 
 local function inReach(player, other)
@@ -63,7 +74,7 @@ function onCastSpell(creature, variant, isHotkey)
 	ChaosSpell.vfxOr(target:getPosition(), "shield_bubble", "reflect_aegis", CONST_ME_MAGIC_BLUE)
 	if target ~= player then
 		player:getPosition():sendDistanceEffect(target:getPosition(), CONST_ANI_SMALLHOLY)
-		target:sendTextMessage(MESSAGE_STATUS_SMALL, string.format("%s wards you with chi (%d).", player:getName(), amount))
+		target:sendTextMessage(MESSAGE_STATUS_SMALL, tr(target, "%s wards you with chi (%d).", player:getName(), amount))
 	end
 	return true
 end

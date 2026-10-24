@@ -245,7 +245,7 @@ ok(not ChaosDungeonIsInside(a), "dungeon 4: out of the area: the run is over")
 ok(a.storage[50203] and a.storage[50203] > os.time() and a.storage[50203] - os.time() <= Chaos.dungeons.failCooldownSeconds,
 	"dungeon 4: leaving is a failed attempt: the 5 minute fail cooldown")
 eq(Chaos.dungeons.failCooldownSeconds, 300, "fail cooldown 5 minutes")
-eq(Chaos.dungeons.cooldownSeconds, 900, "clear cooldown 15 minutes")
+eq(Chaos.dungeons.cooldownOnSuccess, false, "no cooldown after a clear (owner 2026-10-24)")
 ok(creatures[101] == nil and creatures[102] == nil and creatures[103] == nil, "dungeon 4: the clean-up reaches every floor")
 ok(creatures[104] == outsider, "dungeon 4: a monster outside the area stays")
 
@@ -314,10 +314,8 @@ do
 	kill.onKill(e, boss)
 	advance(15000)
 	ok(not ChaosDungeonIsInside(e) and not ChaosDungeonIsInside(f), "the boss after the unlock: the run is won")
-	local cd = Chaos.dungeons.cooldownSeconds
-	ok(e.storage[50203] and e.storage[50203] > os.time() + cd - 60 and e.storage[50203] <= os.time() + cd,
-		"a cleared run: the short cooldown (" .. tostring(e.storage[50203] and e.storage[50203] - os.time()) .. " s)")
-	ok(f.storage[50203] and f.storage[50203] > os.time(), "a cleared run: every member gets it")
+	ok(not (e.storage[50203] and e.storage[50203] > os.time()), "a cleared run: no cooldown, the next run can start at once")
+	ok(not (f.storage[50203] and f.storage[50203] > os.time()), "a cleared run: no cooldown for any member")
 	x2.unlock = nil
 end
 
@@ -407,6 +405,17 @@ do
 	ok(ChaosDungeonIsInside(p1) and ChaosDungeonIsInside(p2), "pair: a full group starts at once, no wait")
 	eq(mduo.maxHp, 1000 * curve * 1.6, "pair: monster health x1.6")
 	eq(hit.onHealthChange(p1, mduo, -100, 1, 0, 0), -110, "pair: monster damage x1.1")
+	-- a boss mechanic's hit is a share of the victim's max health: the difficulty does not scale it again (beta
+	-- 2026-10-24: the Last Hymn took 60% x 1.3..6.0 of a player who stood in its circle)
+	do
+		local oldMech = ChaosBossMech
+		local scripted = true
+		ChaosBossMech = {scriptedHit = function(a) return scripted and a == mduo end}
+		eq(hit.onHealthChange(p1, mduo, -600, 1, 0, 0), -600, "mechanic hit: left as it is (not x1.1)")
+		scripted = false
+		eq(hit.onHealthChange(p1, mduo, -100, 1, 0, 0), -110, "mechanic hit: the monster's other hits are still scaled")
+		ChaosBossMech = oldMech
+	end
 	-- difficulty and party multiply
 	local D2 = dofile("data/scripts/chaos/dungeons_difficulty.lua")
 	eq(D2.partyHealth(1), 1, "formula: 1 player x1.0")

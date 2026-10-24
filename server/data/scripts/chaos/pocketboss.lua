@@ -1607,7 +1607,7 @@ local function onCommand(player, param)
 		local target = Player(args[2] or "")
 		if target then
 			local n, why = PB.addCharges(target, args[3], tonumber(args[4]) or 1)
-			player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("%s: +%d bonus charge(s) of %s. %s", target:getName(), n,
+			player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "%s: +%d bonus charge(s) of %s. %s", target:getName(), n,
 				tostring(args[3]), why or ""))
 		end
 	elseif cmd == "reset" then
@@ -1618,7 +1618,7 @@ local function onCommand(player, param)
 				row.used = 0
 				saveRow(guid, key, row)
 			end
-			player:sendTextMessage(MESSAGE_INFO_DESCR, target:getName() .. ": today's pocket charges are back.")
+			player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "%s: today's pocket charges are back.", target:getName()))
 		end
 	elseif cmd == "end" then
 		local run = PB.runOf[player:getId()]

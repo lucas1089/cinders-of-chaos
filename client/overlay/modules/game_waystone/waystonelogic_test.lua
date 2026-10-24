@@ -95,5 +95,30 @@ eq(W.classify({ action = 'what' }), nil, 'unknown')
 eq(W.classify('x'), nil, 'not a table')
 eq(W.classify({ action = 5 }), nil, 'no action string')
 
+-- all fifteen tiers come through, none dropped at six (beta 2026-10-24)
+do
+  local list = {}
+  for i = 1, 15 do list[i] = { clientId = i <= 6 and W.TIER_CLIENT_IDS[i] or 41944 + i, tier = i, count = i == 9 and 2 or 0, level = 1000 + 100 * i } end
+  local r15 = W.rows({ tiers = list })
+  eq(#r15, 15, 'fifteen rows')
+  eq(r15[15].roman, 'XV', 'last row XV')
+  eq(r15[15].level, 2500, 'last level')
+  ok(r15[9].usable and not r15[8].usable, 'only the held tier usable')
+  eq(W.firstRow(r15), 9, 'lowest held tier first')
+  eq(W.sourceText(r15[9]), '', 'held: no source')
+  eq(W.sourceText(r15[1]), 'None held. Tier I drops from monsters anywhere.', 'tier I source')
+  eq(W.sourceText(r15[8]), 'None held. Drops in waystone maps of tier VI to VIII; the boss of tier VII drops one.', 'tier VIII source')
+  eq(W.sourceText(r15[2]), 'None held. Drops in waystone maps of tier I to II; the boss of tier I drops one.', 'tier II source')
+  eq(W.sourceText(W.rows({})[3]), '', 'unknown count: no source')
+end
+-- the window's list scrolls (a fixed height shows 6 rows of 43)
+do
+  local f = io.open('client/overlay/modules/game_waystone/waystone.otui') or io.open('waystone.otui')
+  local txt = f and f:read('*a') or ''
+  if f then f:close() end
+  ok(txt:find('vertical%-scrollbar: tierScroll', 1) ~= nil, 'tier list has a scrollbar')
+  ok(txt:find('id: tierScroll', 1, true) ~= nil, 'scrollbar defined')
+end
+
 if fails > 0 then error(fails .. ' failure(s)') end
 print('waystonelogic_test: OK')

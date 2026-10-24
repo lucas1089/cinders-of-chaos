@@ -1397,7 +1397,7 @@ function talk.onSay(player, words, param)
 		end
 		local acc = SP.account(target:getAccountId())
 		if not SP.active() or not acc.season then
-			player:sendTextMessage(MESSAGE_INFO_DESCR, "No season pass is running.")
+			player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "No season pass is running."))
 			return false
 		end
 		SP.addXp(acc, tonumber(amount), "admin " .. player:getName())

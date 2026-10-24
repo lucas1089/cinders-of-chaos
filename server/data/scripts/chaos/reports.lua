@@ -227,8 +227,8 @@ function RP.onReportBug(player, message, position, category)
 		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Thank you. Your bug report #%d was sent to the staff%s.",
 			row.id, row.shortened and Chaos.t(player, " (shortened to %d characters)", rcfg.bugs.textMax) or ""))
 	else
-		player:sendTextMessage(MESSAGE_STATUS_SMALL, R.errors[err] or
-			"Your bug report could not be stored. Please report the bug on our Discord.")
+		player:sendTextMessage(MESSAGE_STATUS_SMALL, Chaos.t(player, R.errors[err] or
+			"Your bug report could not be stored. Please report the bug on our Discord."))
 	end
 	return true
 end
@@ -414,7 +414,7 @@ function staffTalk.onSay(player, words, param)
 	elseif cmd == "clear" then
 		local guid, canonical = Chaos.findPlayer(arg)
 		if not guid or not ChaosAntibot then
-			player:sendTextMessage(MESSAGE_INFO_DESCR, "No character " .. arg .. ".")
+			player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "No character %s.", arg))
 		else
 			local acc = Chaos.select("SELECT `account_id` FROM `players` WHERE `id` = " .. guid, {{"account_id", "n"}})[1]
 			local cleared = acc and ChaosAntibot.clearHold(acc.account_id, player:getName())
@@ -423,7 +423,7 @@ function staffTalk.onSay(player, words, param)
 				st.score = 0
 			end
 			ChaosAntibot.writeLog(guid, acc and acc.account_id or 0, canonical, "hold_cleared", 0, "by " .. player:getName())
-			player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("%s: score reset%s.", canonical,
+			player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "%s: score reset%s.", canonical,
 				cleared and ", leaderboard hold cleared" or ""))
 		end
 	else

@@ -234,6 +234,15 @@ local function hit(f, player, share)
 	f.scripted = false
 end
 
+-- true while the boss's own scripted hit (a share of the player's max health: telegraph, soak, channel, blast) is
+-- being dealt. Other systems that scale a monster's damage (dungeons.lua difficulty) leave that hit as it is: it is
+-- already a percentage of the victim's health, and a x1.3 to x6 on top made the Last Hymn kill a player who stood in
+-- the circle (beta 2026-10-24).
+function M.scriptedHit(attacker)
+	local f = attacker and M.fights[attacker:getId()]
+	return f ~= nil and f.scripted == true
+end
+
 -- ======================================================================== adds and totems
 local function liveAdds(f)
 	local n = 0
@@ -437,6 +446,8 @@ local function soak(f, spec, warnMs)
 	local c = {x = centre.x, y = centre.y, z = centre.z}
 	local tiles = G.shape({kind = "circle", radius = spec.radius or 2, at = "target"}, {grid = f.grid, target = c})
 	local set = G.tileSet(tiles)
+	-- the drawn circle and the check below are this one set
+	f.soakCircle = {x = c.x, y = c.y, z = c.z, set = set, tiles = tiles}
 	sendCast(f, spec.label, warnMs, "soak")
 	local id, token = f.id, f.token
 	for _, pulse in ipairs(G.pulses(warnMs, C().pulseMs, C().fillMs)) do
@@ -460,7 +471,7 @@ local function soak(f, spec, warnMs)
 		local inside = {}
 		for _, p in ipairs(players) do
 			local pp = p:getPosition()
-			if set[G.key(pp.x, pp.y)] then
+			if pp.z == c.z and set[G.key(pp.x, pp.y)] then
 				inside[#inside + 1] = p
 			end
 		end

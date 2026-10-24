@@ -8,6 +8,12 @@
 -- itself after 30 minutes. At most 150 objects per call. No opcode and no storage key: it rides on the admin opcode.
 -- Pure layout: ../pack30_gallery_core.lua (tests/pack30_gallery_test.lua). Data: data/lib/chaos_pack30_items.lua
 -- (generated, may be missing) and data/lib/chaos_pack30_fx_ids.lua (ChaosVfx / ChaosVfxMissile entries, may be missing).
+if not (Chaos and Chaos.t) then
+	if not Chaos then
+		dofile("data/scripts/chaos/chaos_constants.lua")
+	end
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 ChaosAdminPending = ChaosAdminPending or {}
 local function reg(def) def.category = "tools"; def.id = "tools." .. def.id; ChaosAdminPending[def.id] = def end
 
@@ -83,7 +89,7 @@ local function scheduleExpiry(player)
 				local p = Player(M.names[key] or "")
 				if p then
 					M.clear(p)
-					p:sendTextMessage(MESSAGE_INFO_DESCR, "Pair 30 gallery: cleared after 30 minutes.")
+					p:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(p, "Pair 30 gallery: cleared after 30 minutes."))
 				else
 					-- the admin left: drop the records the same way, the engine objects still exist
 					local fake = {getGuid = function() return key end}
@@ -269,7 +275,7 @@ function talk.onSay(player, words, param)
 	local ok, msg, lines = M.run(player, param, "")
 	player:sendTextMessage(MESSAGE_INFO_DESCR, msg or "")
 	for i, l in ipairs(lines or {}) do
-		if i > 40 then player:sendTextMessage(MESSAGE_INFO_DESCR, "... " .. (#lines - 40) .. " more (use the panel for the full list)"); break end
+		if i > 40 then player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "... %s more (use the panel for the full list)", (#lines - 40))); break end
 		player:sendTextMessage(MESSAGE_INFO_DESCR, l)
 	end
 	return false

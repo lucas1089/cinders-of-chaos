@@ -8,6 +8,12 @@
 -- Item bonuses of rarity/unique items are applied by the stock rarity script on login or when the
 -- player moves the item, so the target is asked to relog after receiving the kit.
 
+if not (Chaos and Chaos.t) then
+	if not Chaos then
+		dofile("data/scripts/chaos/chaos_constants.lua")
+	end
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
@@ -273,8 +279,7 @@ function K.give(player, kind)
 	Chaos.heal(player, player:getMaxHealth())
 	player:addMana(player:getMaxMana())
 	player:getPosition():sendMagicEffect(CONST_ME_HOLYAREA)
-	player:sendTextMessage(MESSAGE_EVENT_ADVANCE,
-		string.format("Test kit (%s): %d items equipped, %d in the backpack, skills raised. Relog to apply item bonuses.", kind, equipped, packed))
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE,Chaos.t(player, "Test kit (%s): %d items equipped, %d in the backpack, skills raised. Relog to apply item bonuses.", kind, equipped, packed))
 	return kind
 end
 
@@ -288,13 +293,13 @@ function talk.onSay(player, words, param)
 	if name and name ~= "" then
 		target = Player(name)
 		if not target then
-			player:sendCancelMessage("Player " .. name .. " is not online.")
+			player:sendCancelMessage(Chaos.t(player, "Player %s is not online.", name))
 			return false
 		end
 	end
 	local given = K.give(target, kind ~= "" and kind:lower() or nil)
 	if target ~= player then
-		player:sendTextMessage(MESSAGE_INFO_DESCR, "Test kit (" .. given .. ") given to " .. target:getName() .. ".")
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Test kit (%s) given to %s.", given, target:getName()))
 	end
 	return false
 end

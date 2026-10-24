@@ -3156,7 +3156,7 @@ local function onRift(player, words, param)
 		local n = math.max(1, math.min(1000, tonumber(args[2]) or cfg.omen.keyCost))
 		if omenItemReady(cfg.omen.fragment.id) then
 			giveStack(player, cfg.omen.fragment.id, n)
-			player:sendTextMessage(MESSAGE_INFO_DESCR, n .. " omen fragments.")
+			player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "%s omen fragments.", n))
 		end
 		return false
 	elseif gm and args[1] == "lives" then

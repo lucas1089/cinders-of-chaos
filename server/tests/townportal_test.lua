@@ -125,7 +125,7 @@ do -- townportal.lua: the hideout case comes before every refusal and goes throu
 	h:close()
 	local cast = src:find("function T.cast", 1, true)
 	local exit = src:find("K.hideoutExit(bf) and ChaosHideout and ChaosHideout.leave", cast, true)
-	local block = src:find("K.blockReason(bf)", cast, true)
+	local block = src:find("K.blockReason(bf", cast, true)
 	assert(exit and block and exit < block, "T.cast: the hideout way out before the refusals")
 	assert(src:find("ChaosHideout.leave(player,", cast, true), "T.cast: through the hideout's exit logic")
 	-- the hideout lifts the spell's cooldown condition at the entry (the engine would answer "You are exhausted."

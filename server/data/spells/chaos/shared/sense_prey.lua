@@ -1,4 +1,15 @@
 -- Hunter's Instinct: pings every monster within 12 sqm on the caster's floor (max 15 marked) and reports the nearest.
+
+-- the text in the player's language (Chaos.t, i18n_core.lua); English where the helper is not loaded (unit tests)
+local function tr(player, key, ...)
+	if Chaos and Chaos.t then
+		return Chaos.t(player, key, ...)
+	end
+	if select("#", ...) > 0 then
+		return string.format(key, ...)
+	end
+	return key
+end
 dofile('data/spells/scripts/chaos/_common.lua')
 
 local RADIUS = 12
@@ -36,11 +47,10 @@ function onCastSpell(creature, variant, isHotkey)
 
 	ChaosSpell.vfxOr(pos, "gale_ring", "frost_ripple", CONST_ME_MAGIC_BLUE)
 	if found == 0 then
-		player:sendTextMessage(MESSAGE_INFO_DESCR, "Hunter's Instinct: nothing stirs nearby.")
+		player:sendTextMessage(MESSAGE_INFO_DESCR, tr(player, "Hunter's Instinct: nothing stirs nearby."))
 	else
 		local np = nearest:getPosition()
-		player:sendTextMessage(MESSAGE_INFO_DESCR, string.format(
-			"Hunter's Instinct: %d creature%s nearby. Nearest: %s, %d sqm %s.",
+		player:sendTextMessage(MESSAGE_INFO_DESCR, tr(player, "Hunter's Instinct: %d creature%s nearby. Nearest: %s, %d sqm %s.",
 			found, found == 1 and "" or "s", nearest:getName(), nearestDist, compass(np.x - pos.x, np.y - pos.y)))
 	end
 	return true
