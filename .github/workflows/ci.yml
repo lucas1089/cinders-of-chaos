@@ -151,6 +151,11 @@ jobs:
       - name: Store prices are consistent (store_model.lua; coin packs, boost caps, gold per coin, store_balance_config.lua)
         run: cd server && luajit tools/store_model.lua --check && lua5.3 tools/store_model.lua --check
 
+      - name: Skill training model is consistent (skill_model.lua; vocation XML, stage tables, exercise weapons worth more than a hunting hour; also bounds the exercise weapon prices in store_model.lua)
+        run: cd server && luajit tools/skill_model.lua --check && lua5.3 tools/skill_model.lua --check
+      - name: A roulette spin is worth its token in hunting minutes (roulette_model.lua; roulette_value_config.lua band, O151)
+        run: cd server && luajit tools/roulette_model.lua --check && lua5.3 tools/roulette_model.lua --check
+
       - name: Rifts pay orbs and waystones pay gear, per hour above hunting but inside bounds (content_reward_model.lua; content_rewards_config.lua bounds)
         run: cd server && luajit tools/content_reward_model.lua --check && lua5.3 tools/content_reward_model.lua --check
 
@@ -549,6 +554,16 @@ jobs:
           python3 -I server/tools/fuzz/gen_corpus.py --check
           server/tools/fuzz/build_fuzz.sh "$(mktemp -d)" --run
           python3 -I server/tools/netfuzz_test.py
+
+      - name: Rust login-screen services (O153; clientservices-rs, unit and property tests, same cases against the Python service)
+        run: |
+          cd server/services/clientservices-rs
+          shellcheck build.sh
+          cargo fmt --check
+          cargo clippy --locked --all-targets -- -D warnings
+          cargo test --locked
+          cargo build --locked
+          python3 -I compare_test.py
 
       - name: Base opcode handlers accept only a JSON object (patch_base_json_guards.py, synthetic copies)
         run: python3 -I server/tools/patch_base_json_guards_test.py

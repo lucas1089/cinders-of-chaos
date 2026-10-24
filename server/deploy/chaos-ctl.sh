@@ -65,6 +65,15 @@
 #                               the dungeon cooldown); the store's weekly limits (real money) stay. Read at the start of the
 #                               scripts: applies at the next restart, or at once with "restart"; "/reload scripts" as a god
 #                               also works. update-apply keeps the switch. status prints beta_mode=on|off
+#   clientservices-impl [status | rust | python]
+#                               which program serves the login-screen services (chaos-clientservices, port 8090;
+#                               server/README.md "Rust services (O153)"). python (default): server/tools/clientservices.py.
+#                               rust: builds server/services/clientservices-rs with cargo (--locked, a temporary target
+#                               folder) into CHAOS_ROOT/bin/clientservices-rs, adds the systemd drop-in 10-rust.conf and
+#                               restarts the unit; a failed build changes nothing, a unit that does not stay up is put
+#                               back on python. python: removes the drop-in and restarts. update-apply / chaos_update.sh
+#                               rebuild the binary while the switch is on. status prints clientservices_impl=rust|python,
+#                               binary=present|missing, unit=ACTIVE
 #   backups                     the newest database dumps and data archives (date, size, path)
 #   site-install                website/install_site.sh CHAOS_ENV CHAOS_SITE_ENV in the background (site-log)
 #   site-log [N]                the last N lines of the site install log
@@ -136,7 +145,7 @@
 # /var/log/chaos/testers.log. For vps: CHAOS_VPS_LOG /var/log/chaos/vps-upgrade.log. For spectate: CHAOS_SPECTATE_PAIR
 # $CHAOS_ROOT/pair, CHAOS_SPECTATE_STATE /var/lib/chaos/spectate (lock, renewal time, the dat index), CHAOS_PAIR_BRANCH
 # windows-assets, CHAOS_SPECTATE_LOG /var/log/chaos/spectate-pair.log. For cast: CHAOS_CAST_PORT (else castPort of
-# the server's config.lua).
+# the server's config.lua). For clientservices-impl: CHAOS_SYSTEMD_DIR /etc/systemd/system.
 # They come from /etc/chaos/ctl.conf (server/deploy/ctl.conf.example): simple KEY=VALUE lines, only those keys, read
 # only when the file is owned by root (or by the user running the script) and not writable by group or others. It is
 # never sourced. The environment wins over the file, but sudo drops the environment, so the app (which runs this through
@@ -160,7 +169,7 @@ CHAOS_PID_FILE CHAOS_DB_SOCKET CHAOS_MYSQL CHAOS_BACKUP_DIR CHAOS_PUBLISH_LOG CH
 CHAOS_UPDATE_PUBLIC CHAOS_UPDATE_REPO CHAOS_UPDATE_URL CHAOS_WORK_DIR CHAOS_KIT_DIR CHAOS_UPDATE_BRANCH \
 CHAOS_RELEASE_REPO CHAOS_KIT_STATE CHAOS_BOOT_TIMEOUT CHAOS_DL_DIR CHAOS_SITE_ENV CHAOS_SITE_LOG CHAOS_TESTER_KEY \
 CHAOS_TESTER_STATE CHAOS_TESTER_LOG CHAOS_VPS_LOG CHAOS_SPECTATE_PAIR CHAOS_SPECTATE_STATE CHAOS_PAIR_BRANCH \
-CHAOS_SPECTATE_LOG CHAOS_CAST_PORT "
+CHAOS_SPECTATE_LOG CHAOS_CAST_PORT CHAOS_SYSTEMD_DIR "
 declare -A CFG=()
 # KEY=VALUE, optional "" or '' around the value, # comments; a value is a path or a unit name (no spaces, no $ or `)
 read_conf() {
@@ -228,6 +237,7 @@ SPPAIR=$(setting CHAOS_SPECTATE_PAIR "$ROOT/pair")
 SPSTATE=$(setting CHAOS_SPECTATE_STATE /var/lib/chaos/spectate)
 SPBRANCH=$(setting CHAOS_PAIR_BRANCH windows-assets)
 SPLOG=$(setting CHAOS_SPECTATE_LOG /var/log/chaos/spectate-pair.log)
+SYSD=$(setting CHAOS_SYSTEMD_DIR /etc/systemd/system)
 if [ -z "$MYSQL" ]; then
   for c in mysql mariadb "$ROOT/mariadb/bin/mariadb"; do
     command -v "$c" >/dev/null 2>&1 && { MYSQL=$c; break; }
@@ -886,6 +896,65 @@ case $cmd in
     else
       echo "applies at the next restart (or /reload scripts as a god)"
     fi
+    ;;
+  clientservices-impl)
+    csunit=chaos-clientservices
+    csdrop="$SYSD/$csunit.service.d/10-rust.conf"
+    csbin="$ROOT/bin/clientservices-rs"
+    csbuild="$REPO/server/services/clientservices-rs/build.sh"
+    cs_restart() {
+      systemctl daemon-reload && systemctl restart "$csunit"
+    }
+    cs_back() {  # remove the drop-in, back on python
+      rm -f "$csdrop"
+      rmdir "$SYSD/$csunit.service.d" 2>/dev/null || true
+    }
+    sub=${1:-status}
+    [ $# -le 1 ] || die "clientservices-impl [status | rust | python]"
+    case $sub in
+      status)
+        if [ -f "$csdrop" ]; then echo "clientservices_impl=rust"; else echo "clientservices_impl=python"; fi
+        if [ -x "$csbin" ]; then echo "binary=present"; else echo "binary=missing"; fi
+        echo "unit=$(systemctl is-active "$csunit" 2>/dev/null || true)"
+        exit 0
+        ;;
+      rust|rebuild)
+        [ "$(systemctl show "$csunit" -p LoadState --value 2>/dev/null)" = loaded ] ||
+          die "unit-not-found: $csunit is not installed (server/deploy/chaos-clientservices.service)"
+        [ -f "$csbuild" ] || die "no $csbuild (CHAOS_REPO; the checkout must be at a release with the Rust crate)"
+        if [ "$sub" = rebuild ]; then
+          [ -f "$csdrop" ] || { echo "clientservices_impl=python (nothing to rebuild)"; exit 0; }
+        fi
+        # build first: a failed build changes nothing and the unit keeps running on python
+        bash "$csbuild" "$csbin" || die "the Rust build failed (cargo needed on this machine); nothing changed"
+        if [ ! -f "$csdrop" ]; then
+          mkdir -p "$SYSD/$csunit.service.d" || die "cannot create $SYSD/$csunit.service.d"
+          if ! printf '%s\n' \
+            "# written by chaos-ctl.sh clientservices-impl rust; clientservices-impl python removes it" \
+            "[Service]" "ExecStart=" \
+            "ExecStart=$csbin $SERVER/data/chaos_clientservices.json --host 0.0.0.0 --port 8090" > "$csdrop.new"; then
+            die "cannot write $csdrop"
+          fi
+          mv -f "$csdrop.new" "$csdrop" || die "cannot write $csdrop"
+        fi
+        cs_restart || { cs_back; cs_restart || true; die "the unit did not restart on the Rust binary; back on python"; }
+        sleep "${CHAOS_CS_SETTLE:-2}"
+        if ! systemctl is-active --quiet "$csunit"; then
+          cs_back
+          cs_restart || true
+          die "the Rust binary did not stay up; back on python (see: chaos-ctl.sh service-log $csunit)"
+        fi
+        echo "clientservices_impl=rust"
+        ;;
+      python)
+        if [ -f "$csdrop" ]; then
+          cs_back
+          if [ "$(systemctl show "$csunit" -p LoadState --value 2>/dev/null)" = loaded ]; then cs_restart || die "restart failed"; fi
+        fi
+        echo "clientservices_impl=python"
+        ;;
+      *) die "clientservices-impl [status | rust | python]" ;;
+    esac
     ;;
   backups)
     [ $# -eq 0 ] || die "backups takes no arguments"

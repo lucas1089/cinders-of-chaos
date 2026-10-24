@@ -8,7 +8,8 @@
 --   ChaosPrizes.toInbox(player, item)   a worn item out of a slot no client shows: the store inbox, else the depot
 --        inbox. -> "store inbox" | "inbox" | nil (nothing moved)
 --   ChaosPrizes.rouletteReward(playerId, config, position, label)   the base roulettes' rewardPlayer
---   ChaosPrizes.bossPrize(player, w)   the Boss Roulette's gold (scaled to the level) and unique chest (O148)
+--   ChaosPrizes.bossPrize(player, w[, cfg])   the roulettes' gold (scaled to the level), unique chest (O148) and the
+--        exercise chest of the winner's class (O151); cfg = the roulette's config (default: the Boss Roulette's)
 -- Lua 5.1 / LuaJIT compatible.
 
 if not Chaos then
@@ -23,6 +24,19 @@ end
 
 if not ChaosBossRouletteConfig then
 	ChaosBossRouletteConfig = dofile("data/scripts/chaos/boss_roulette_config.lua")
+end
+-- the other four roulettes (O151); ChaosRoulettePools is read by the script's actionId (K.configFor)
+if not ChaosRoulettePools then
+	ChaosRoulettePools = {boss = ChaosBossRouletteConfig}
+	local list = {ChaosBossRouletteConfig}
+	for _, name in ipairs({"exercise", "premium", "crystal"}) do
+		list[#list + 1] = dofile("data/scripts/chaos/roulette_" .. name .. "_config.lua")
+	end
+	for _, cfg in ipairs(list) do
+		for _, aid in ipairs(cfg.actionIds or {}) do
+			ChaosRoulettePools[aid] = cfg
+		end
+	end
 end
 
 ChaosPrizes = ChaosPrizes or {}
@@ -159,10 +173,11 @@ local function readThing(thing)
 		showCharges = it and it:hasShowCharges() or false}
 end
 
--- the Boss Roulette prizes that are not the tile's item (boss_roulette_config.lua): crystal coins on the tile are gold
--- scaled to the winner's level, the chest is a unique of the winner's level. true when the prize was given.
-function P.bossPrize(player, w)
-	local cfg = ChaosBossRouletteConfig
+-- the roulette prizes that are not the tile's item (boss_roulette_config.lua, roulette_*_config.lua): crystal coins on the
+-- tile are gold scaled to the winner's level, the chest is a unique of the winner's level, an exercise chest becomes the
+-- one of the winner's class. true when the prize was given.
+function P.bossPrize(player, w, cfg)
+	cfg = cfg or ChaosBossRouletteConfig
 	local e = cfg and K.entryOf(cfg, w.id)
 	if not e then
 		return false
@@ -197,7 +212,24 @@ function P.bossPrize(player, w)
 		end
 		player:sendTextMessage(MESSAGE_EVENT_ADVANCE or MESSAGE_INFO_DESCR, text(player, K.TEXT_UNIQUE, pick.name))
 		Game.broadcastMessage("The player " .. player:getName() .. " has won the unique " .. pick.name
-			.. " from the boss roulette!", MESSAGE_EVENT_ADVANCE)
+			.. " from the " .. tostring(cfg.title or "boss") .. " roulette!", MESSAGE_EVENT_ADVANCE)
+		return true
+	elseif e.kind == "chest" and cfg.chests then
+		if not ChaosExercise then
+			dofile("data/scripts/chaos/exercise_core.lua")
+		end
+		local vocation = player.getVocation and player:getVocation()
+		local vocId = vocation and vocation:getId()
+		local id, changed = K.classChest(cfg, w.id, vocId and function(kind)
+			return ChaosExercise.allowed(kind, vocId)
+		end or nil, math.random)
+		if not P.give(player, id, 1) then
+			return false
+		end
+		if changed then
+			player:sendTextMessage(MESSAGE_EVENT_ADVANCE or MESSAGE_INFO_DESCR,
+				text(player, K.TEXT_CHEST, ItemType(id):getName()))
+		end
 		return true
 	end
 	return false
@@ -220,8 +252,10 @@ function P.rouletteReward(playerId, config, position, label)
 		player:sendTextMessage(MESSAGE_EVENT_ADVANCE or MESSAGE_INFO_DESCR, text(player, K.TEXT_LOST_SPIN))
 		return false
 	end
-	-- the Boss Roulette's gold and unique chest are worked out here (O148); anything else, or a failure, is the item itself
-	local done = tostring(label) == "boss" and P.bossPrize(player, w)
+	-- the gold, the unique chest and the exercise chest are worked out here (O148, O151); anything else, or a failure, is
+	-- the item itself
+	local poolCfg = K.configFor(ChaosRoulettePools, config, label)
+	local done = poolCfg and P.bossPrize(player, w, poolCfg)
 	if not done and not P.give(player, w.id, w.count, w.charges) then
 		player:sendTextMessage(MESSAGE_EVENT_ADVANCE or MESSAGE_INFO_DESCR, text(player, K.TEXT_LOST_SPIN))
 		return false

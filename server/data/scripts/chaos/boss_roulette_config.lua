@@ -14,8 +14,13 @@
 -- One line per entry, in this exact shape: tools/patch_roulette.py reads the lines with a pattern.
 -- Lua 5.1 / LuaJIT and Lua 5.3 compatible.
 return {
+	-- the roulette script's config.actionId (prizes.lua finds the config by it) and the name in its broadcasts
+	actionIds = {18562},
+	title = "boss",
+
 	-- the token that pays a spin (the base script's playItem)
 	token = 28033,
+	tokenCount = 1,
 
 	-- the base broadcasts a prize whose chance is at most this (rouletteOptions.rareItemChance_broadcastThreshold)
 	rareThreshold = 120,

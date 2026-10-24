@@ -91,6 +91,13 @@ instalada é desconhecida: o passo 2 baixa a mais nova e, se o `tfs` for igual a
   (dinheiro real, como a Poção de XP em dobro) não mudam. Edita a linha `enabled` de `beta_mode_config.lua` (backup
   `.before-beta`); vale no próximo reinício ou já com "e reiniciar". Atualizar servidor mantém a chave. Desligue no
   lançamento. O app precisa ser recompilado para ter o cartão; o comando funciona pelo SSH sem isso.
+- **Serviços da tela de login (Rust)** (`clientservices-impl status | rust | python`, aba Comandos > cartão Serviços da
+  tela de login (Rust) > Ver / Ligar Rust / Voltar ao Python): quem responde a porta 8090 da tela de login (criatura do
+  dia, eventos, jogadores online). Padrão: o Python (`server/tools/clientservices.py`). Ligar o Rust compila
+  `server/services/clientservices-rs` no servidor (precisa do `cargo`, `--locked`, alguns minutos), instala o binário em
+  `/opt/chaos/bin`, grava o drop-in `10-rust.conf` do systemd e reinicia só `chaos-clientservices` (o jogo não
+  reinicia). Compilação que falha não muda nada; serviço que não sobe volta sozinho para o Python. Atualizar servidor
+  recompila enquanto estiver ligado. O app precisa ser recompilado para ter o cartão; o comando funciona pelo SSH sem isso.
 - **Contas** (`account-create NOME`, `account-password NOME`): a senha vai pela entrada do comando (stdin do SSH),
   nunca na linha de comando nem em log, e vira hash PBKDF2 como o site grava. O personagem se cria no client ou no site.
 - **Saúde e espaço** (`health`, `cleanup [--yes]`, `backups`): servidor, banco, serviços web (nginx, apache, php-fpm),
@@ -114,8 +121,11 @@ instalada é desconhecida: o passo 2 baixa a mais nova e, se o `tfs` for igual a
   muda no jogo.
   - **Ao vivo** (`cast NOME`): o jogo como o jogador vê, em movimento, uns 30 quadros por segundo. Os 15 x 11
     quadrados do andar dele, com itens animados, criaturas andando, magias, projéteis, barras de vida, nomes, falas e
-    números de dano. Nível, vida e mana embaixo. Para no botão Parar, ao trocar de aba, ao sair do app, num erro e
-    depois de 30 minutos. Uma visão ao vivo por vez. Não desenha outros andares nem a luz.
+    números de dano. Desenha também os outros andares que o jogo mostra (o de cima some quando há telhado ou teto
+    sobre o jogador, como no jogo) e a luz: o escuro da noite e das cavernas, com um brilho redondo em volta de
+    tochas, criaturas e magias que brilham. Nível, vida e mana embaixo. Para no botão Parar, ao trocar de aba, ao sair
+    do app, num erro e depois de 30 minutos. Uma visão ao vivo por vez. Não desenha a interface do jogo. Precisa do app
+    novo e do relay novo juntos para ver andares e luz; um dos dois antigos ainda mostra o andar do jogador.
   - **Ligar a porta de cast (uma vez):** o motor precisa do src-patch 0064 e de `castPort` no `config.lua` (porta só
     em 127.0.0.1, desligada por padrão). No app: Painel > Atualizar servidor com uma versão que tenha o patch 0064. A
     atualização roda o `install_all.py`, e o passo `castport` liga a porta (7179). Sem o app, na VPS:
@@ -176,7 +186,7 @@ terminal do app ser root de verdade (instalar pacotes, mexer no sistema), rode n
 `panel NOME ACAO JSON`, `update TAG now|at-save` e `rollback now|at-save` (layout padrão; no kit, `rollback now` é
 `update-rollback`), `update-check`, `update-apply [--no-client] [--no-downloads] [--no-site] [--no-map]`, `update-status`,
 `update-rollback`, `update-log`, `publish-update TAG` (atualização do cliente, docs/LAUNCH.md "Publishing a client
-update"), `publish-log`, `site-install`, `site-log`, `xp-rate`, `beta-mode [status | on | off] [restart]`, `health`, `cleanup [--yes]`, `account-create NOME`,
+update"), `publish-log`, `site-install`, `site-log`, `xp-rate`, `beta-mode [status | on | off] [restart]`, `clientservices-impl [status | rust | python]`, `health`, `cleanup [--yes]`, `account-create NOME`,
 `account-password NOME`, `install-admin`, `spectate NOME`, `spectate-pair [status | fetch | log [N]]`. Todos com argumentos conferidos (números, nomes, tags de release), nada de
 shell livre. Rode `chaos-ctl.sh help`. Aviso, expulsar, abrir, fechar e salvar passam pelo arquivo `remote.cmd`
 (`server/README.md`, "Remote admin commands"): o servidor do jogo precisa estar com os scripts novos.
@@ -189,8 +199,10 @@ shell livre. Rode `chaos-ctl.sh help`. Aviso, expulsar, abrir, fechar e salvar p
   de XP, Contas, Saúde, Logs GM) não foram abertas num aparelho.
 - Assistir jogador: a Foto foi testada com um motor simulado e sprites sintéticos (`spectate_test.lua`,
   `spectate_render_test.py`, `chaos_ctl_test.py`). O Ao vivo tem testes do relay com quadros sintéticos
-  (`cast_relay_test.py`) e do motor (`chaoscast_test.cpp`); o motor com o patch 0064 compila. O app compila; o card
-  não foi aberto num celular.
+  (`cast_relay_test.py`, agora também andares, regra do telhado, luz e efeitos de outros andares) e do motor
+  (`chaoscast_test.cpp`); o motor com o patch 0064 compila. O app compila só contra o `android.jar` com o `javac` (a
+  máquina de build não tem o Android SDK, então o gradle não rodou); a conta de andares e luz (`CastMath`) rodou numa
+  JVM. O card não foi aberto num celular: andares, luz e a regra do telhado nunca foram vistos na tela.
 - O terminal executa um comando por vez (sem programas interativos como `nano` ou `top`). Use `top -bn1` no lugar de `top`.
 - O layout assumido é o de `docs/LAUNCH.md` (`/opt/chaos`, unidade `chaos-server`). Outro layout: veja abaixo.
 

@@ -372,6 +372,13 @@
      "source": "https://github.com/anthropics/anthropic-sdk-python"
     },
     {
+     "name": "serde_json, serde_core, itoa, memchr, zmij (Rust crates) and the Rust standard library",
+     "author": "David Tolnay, Erick Tryzelaar and the serde contributors; Andrew Gallant; the Rust Project contributors",
+     "licence": "MIT or Apache-2.0 (memchr: Unlicense or MIT; zmij: MIT)",
+     "use": "the Rust login-screen services (server/services/clientservices-rs), built on the server by the owner when switched on, not shipped in the packages",
+     "source": "https://github.com/serde-rs/json and https://github.com/BurntSushi/memchr and https://www.rust-lang.org/"
+    },
+    {
      "name": "Helper module",
      "author": "R!ck, ZLukSrT#8740, Christianlb, worthdavi",
      "licence": "unknown; the owner supplied the file, no licence text came with it",

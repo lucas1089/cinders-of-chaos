@@ -3484,6 +3484,7 @@ season. Before 12 Oct 2026 no script paid it.
   ```
   python3 server/tools/clientservices.py <server>/data/chaos_clientservices.json --port 8090
   ```
+  A Rust port with the same behaviour is opt-in (`chaos-ctl.sh clientservices-impl rust`, see "Rust services (O153)").
   The client's `init.lua` (base patch 0001) points `clientServicesLink` and `Services.status` at `http://127.0.0.1:8090/clientservices`; change the host for a public server. A GET on the same URL returns everything, handy to check it from a browser.
 - **Runtime events:** `ChaosEvents.dynamic[key] = {id, name, description, bonus, untilTime}` adds an event with an end time to `ChaosEvents.active` (and so to the bonuses, Adventure > Events and the login lines) until `untilTime`: the invasion Victory buff and the world events use it (see "Invasions and world events"). Scheduled invasions are whole-day entries of `Chaos.events.list`.
 - `server/tests/events_schedule_test.lua` checks the weekday/month-day rules, the bonus product, the calendar ranges sent to the client and the experience callback.
@@ -3873,6 +3874,8 @@ level 800; the Eternal Blessing is 8-15 All Blessings; a static plate frame cost
 starter pack are listed at the Pact's price per day. Prices, before and after, and the reasons: docs/PRICES.md "Store balance (O140)".
 Changed: Double Experience Potion weekly limit (new), Passive Tree Reset 60 -> 100, plate frames 300 -> 200. Server: `files` step and a
 restart; the website wiki data is regenerated (`tools/gen_wiki_data.lua`).
+
+Exercise weapons (O150): valued with `tools/skill_model.lua` (`skill_model_config.lua`; `tests/skill_model_test.lua`; computed, not measured): a dummy hour is worth 10-27 hunting hours, 5.6-24 coins per hunting hour, so the prices stay; `store_model.lua --check` bounds them (half of Premium's coins per hour to the Double Experience Potion's, tier discount at most 40%). Assumes the base server's `skills_stages.lua` is installed and 70% of a hunting hour swinging. Skill 100 to 130 by hunting alone is 900-1,500 hours (docs/PRICES.md "Skill training (O150)").
 
 **Temple Teleport Scroll (retired from the store).** Every character has the free Town Portal now ("Town Portal" below), so the store no longer offers the scroll or the 25-use scroll. Scrolls bought earlier keep working: the handler, `S.teleportBlocked` and the action id stay in `shop_services.lua`, and `shop_config.lua` keeps the `templeScroll` service kind. The old description: an ordinary "scroll" (item 6119, used by no other script) with action id 47301, the name
 "temple teleport scroll", a description and the uses left in the custom attribute `chaos_uses`; no new item id. Using it
@@ -7505,8 +7508,33 @@ a server restart, no client update.
 `tests/cards_test.lua` now walks all 21 classes (`C.classes`) against all 60 common cards and the 16 legendary cards (about
 45,000 checks): every line is castable by some class, every class has a common line and a hit that fires, every legendary card
 fires for each class weapon, fist weapons, Chaos items, stock ids, bare fists for the Monk line, and the summon lock.
-`luajit tests/cards_test.lua --table` prints the lines per class. Limit: the base `elseif` chain checks only the first
-legendary storage that is on, so with two legendary classes on only the first can fire.
+`luajit tests/cards_test.lua --table` prints the lines per class. The `elseif` limit is fixed in O149 below.
+
+### Cards: two legendaries, class lines, wands and rods (O149)
+
+Follow-ups of O142. Deploy: `badges` and `files` installer steps and a server restart; no client update.
+
+- **Every active legendary card fires.** The base script was `if A then .. elseif B then .. end` over 16 storages, so only the
+  first legendary card that is on was checked. `patch_badges.py` step 9 now also turns the 15 `elseif player:getStorageValue(
+  DeckSystem.Legendary.Legendary..Lv6) == 1 then` into `end` + `if`, so each card rolls on its own hit (up to 5 cards are on
+  at once). The base `CanCreateSummon` lock stays: only one summon at a time, so a second summon card rolls but its summon
+  waits for the first to end; the stat bonus of a card that does not summon is not given either (it is inside the same
+  branch). A script patched by O142 (helper there, `elseif` still in the chain) is upgraded by a second run; CRLF is kept;
+  a second run changes nothing. Test: `tools/patch_badges_test.py` (fixture, an O142-style script, the real base copy when
+  the machine has one, two cards on both fire under luajit or lua5.3).
+- **Usable common cards per class** (`luajit tests/cards_test.lua --table`; the Frostfall Rune counts for everyone). Before: Warrior
+  line, Ranger line 4 each, Mystic 3, Elementalist 7, Illusionist 2, Thief line 2, Necromancer line 3, Monk line 2, Templar line
+  2 (median 3). After: all at least 3, Mystic 4 (gained Frozen Crypt), Necromancer line 4, Illusionist, Thief line, Monk
+  line, Templar line 3. New `also` spells (`cards_config.lua`): Marrow Bolt and Soulrend Beam on Rime Bloom (Necromancer line),
+  Radiant Smite on Dawnpiercer (Templar line), Shattered Psyche on Frozen Crypt (Mystic, Illusionist), Shuriken Toss on
+  Primordial Squall (Thief line), Palm Shockwave on Earthbreaker (Monk line). No line was removed. The test asserts at least
+  3 lines per class, a median of 3 and 4 for the Necromancer line; an `also` spell must belong to one class line (Shattered
+  Psyche is the one exception: Mystic and Illusionist cast it, the Elementalist does not).
+- **Wands and rods stay one type.** The engine has one weapon type for both and the items have no wand or rod flag, so the
+  Sorcerer and Druid legendary cards fire with either. Decided as fine: cards belong to the weapon in the hand, not to a
+  vocation, and a wand or rod user wants a mage card either way. No item id lists to keep in step with `chaos_items.xml`.
+- `card_descriptions.csv`, the codex and wiki data, tester scenarios and wiki art are regenerated; pt-BR texts are built
+  from the same spell lists.
 
 ## Tile labels (`tile_labels.lua`, `tile_labels_core.lua`, `tile_labels_config.lua`)
 
@@ -12356,7 +12384,7 @@ from the loot models.
 **What it is.** The pool is `data/scripts/chaos/boss_roulette_config.lua` (one line per prize: id, count, chance, kind). The install
 step `roulette` (`tools/patch_roulette.py`, after `prizes`, idempotent, CRLF kept) writes those lines into the `prizePool` of the base
 boss roulette script (found by its "Boss Roulette requires" text) and sets the broadcast threshold to the config's `rareThreshold`
-(120: only the chase orbs are announced). The other four roulettes (exercise, premium, the two crystal token ones) are not touched.
+(120: only the chase orbs are announced). The other four roulettes got their own pools in O151 (next section).
 The base draw stays: every entry rolls its chance in 10000, one hit is picked at random (`ChaosPrizesCore.odds` is exact).
 
 | Kind | Prizes | Share of the spins |
@@ -12431,6 +12459,134 @@ level 1500; the rest wait for a higher level or a trade. `tools/loot_model.lua -
 stay green (uniques are not in the gold or item model; the coverage tool reads the entries' own chance, unchanged).
 `tests/unique_hunt_test.lua` (luajit and lua5.3) proves it: before below 1 per 1000, now 10-25, one every 2.5-6 hours, the level and
 list rules, boss-only entries keep their bosses, `open.enabled = false` brings the old behaviour back.
+
+## Roulette prizes against token drops (O151)
+
+Follow-up of O148, which rebuilt the Boss Roulette and left "the other four roulettes untouched" and "Open: the roulette value against the
+token drop rate". This section audits the four others the same way (stale prizes, decks and boats, too many of one kind, items that do not
+scale with the level), puts them through the same config and idempotent patch route, and works out what one spin of each of the five is
+worth against how long its token takes to earn. Computed from the configs, not run on a server.
+
+### The five roulettes (`actionId` of the base script, token, spin cost)
+
+| Roulette | Script | actionId | Token (one spin) | Where the token comes from |
+|---|---|---|---|---|
+| Boss | `customs/roulette/roulette.lua` | 18562 | Boss Token (28033), 1 | 43 base bosses of level 509+, mean chance 8.4%, 1-2 per drop |
+| Exercise | `customs/roulette/roulette2.lua` | 18563 | Exercise Token (28058), 1 | the same 43 bosses, mean chance 6.3% |
+| Premium | `customs/roulette/roulette3.lua` | 18564 | Ticket Roulette (28057), 1 | 22 bosses of level 1018+, mean chance 5.4% |
+| Crystal (two) | `customs/tower_defense/roulette_crystal_token.lua` and `_2.lua` | 18565, 18566 | Crystal Token (28372), 15 | 5 per completed Tower Defense run (the base script's reward) |
+
+The token sources were read from the base monster files (the survey in `data/items/base_item_values.csv` counts the monsters and the first
+level; the mean chances come from the same files, `roulette_value_config.lua` `tokens`). `tests/roulette_pools_test.lua` checks the counts
+and the levels against the snapshot.
+
+### What the four others were
+
+- **Exercise** (21 prizes, 7 chests of each of three charge tiers). All exercise weapon chests. Six of the 21 are the sword, axe and club
+  kinds that are one melee weapon since 2026-10-23 (the axe and club chests left the shop lists), and a class can train with only the kinds
+  of its line: a Ranger could use 29% of the spins, a Mystic or Necromancer 43%, a Warrior or Monk 57%, a Templar 86%. The chests are worth
+  100,000 / 360,000 / 2.8M gold at a vendor. The token is the second rarest: about 84 minutes of boss hunting. A spin was worth 2.6 minutes of
+  hunting at level 1000.
+- **Premium** (14 prizes): 5 auras and 9 wings, each a one-time unlock (a second copy says "you already have this" and sells for 65,000-98,000
+  gold). Every spin was broadcast (threshold 10000). The token is the rarest: about 99 minutes. Nothing in the pool came from the loot models.
+- **Crystal**, both scripts (23 prizes, the same pool in both): 21 "Moist" gear pieces (a sword with 56 attack, an armor of 25: fixed base
+  items that do not scale with the level, most of them for a class the winner is not, one of them listed twice) and the two best Tower Defense
+  units. The scripts were copies of the premium and exercise ones: they said "Premium Roulette requires" and "Exercise Roulette requires", and
+  announced "from the premium roulette!" / "from the exercise roulette!" and passed that label to `ChaosPrizes`. The token cost is 3 Tower
+  Defense runs.
+
+### What they are now
+
+The pools are `roulette_exercise_config.lua`, `roulette_premium_config.lua` and `roulette_crystal_config.lua` (the same shape as
+`boss_roulette_config.lua`: one line per prize, `limits` for the tests, the gold and unique rules shared with the boss config).
+`patch_roulette.py` (install step `roulette`) now writes all four pools, matching each base script to its config by the `actionId` of its
+`config` table (the boss script also by its "Boss Roulette requires" text); a script whose `playItem` is not the config's token, or whose
+`actionId` is unknown, is left alone; a pool with a retired id or one of the fixed base gear 28373-28393 is refused. The two crystal scripts
+are named the Crystal Roulette (messages, broadcast, the label passed on). `prizes.lua` finds the config of a roulette by `config.actionId`
+(`ChaosPrizesCore.configFor`; `ChaosRoulettePools`), so gold and the unique chest work on all five.
+
+| Roulette | Entries | Spins | Theme kept |
+|---|---|---|---|
+| Exercise | 32 | orbs 43.1%, gold 36.4%, sockets 6.0%, chests 13.9%, unique chest 0.6% | the 15 exercise chests (melee, bow, rod, wand, shield x 3 tiers; no retired axe or club chest) |
+| Premium | 36 | orbs 48.4%, gold 25.5%, sockets 6.3%, cosmetics 18.7%, unique chest 1.2% | all 14 auras and wings; chase orbs (Crown 0.5%, Void 0.3%, Ruin 0.08%) |
+| Crystal (both) | 17 | orbs 55.3%, gold 30.0%, sockets 7.1%, units 7.0%, unique chest 0.5% | the Grimnir Slashbaiter and King Aldor Goldcrusher units (1-2 and 1) |
+
+- **Orbs and sockets** are the loot layer's orbs (`loot_config.lua` `currency.entries`), in stacks that grow with the price of the token
+  (exercise 1-5, premium 1-5). **Gold** is the crystal coins on the tile, each unit `gold.perUnit` (0.2) of an hour of hunting gold at the
+  winner's level (the Boss Roulette's rule, `ChaosPrizes.bossPrize`): exercise 1 / 2 / 5 / 10 units, premium 2 / 5 / 10 / 20, crystal 1 / 2 / 5.
+  **The unique chest** gives a unique of the winner's level.
+- **The exercise chest is never dead.** The chest on the tile is a prize of its kind; when the winner's class cannot train with that kind, the
+  chest becomes the chest of the same tier of a kind it can (`ChaosPrizesCore.classChest`, `ChaosExercise.allowed`; picked at random among the
+  usable ones) and the player is told ("Your class cannot train with that weapon: the chest became ..."; pt-BR in `i18n_strings.lua`). The test
+  walks every vocation, every chest and every pick.
+- **Broadcasts.** Premium announces the chase orbs and the lasting exercise chests, the crystal one the Orb of Reforging; the gold, the unique
+  chest, the cosmetics and the units never (the unique chest announces itself).
+- **Nothing a spin can win is a deck, ship, boat, belt, gloves, a retired chest, or Moist gear.**
+
+### The value of a spin against its token (`tools/roulette_model.lua`, `data/scripts/chaos/roulette_value_config.lua`)
+
+`cd server && luajit tools/roulette_model.lua` prints the table; `--check` (luajit and lua5.3, in CI) fails when a spin leaves the band
+0.80 - 1.35 of its token's cost at any of the levels 650 / 1000 / 1500 / 2000. Both sides are minutes of hunting at the winner's level.
+
+**Cost of the token.** Boss, exercise and premium tokens drop from bosses: tokens per spin / (mean chance x mean count 1.5) boss kills, each
+`minutesPerBossKill` = 8 minutes (walk in, fight, loot, walk out; the lever rooms stop a fight at 30 minutes; **a guess**, the one number to
+measure on the beta). Crystal tokens: 15 / 5 per run = 3 Tower Defense runs of `minutesPerRun` = 15 minutes (the session lasts 20).
+
+| Roulette | Token drops | Cost of a spin |
+|---|---|---|
+| Boss | 0.126 per boss kill (1 token = 8.0 kills) | 63.7 min |
+| Exercise | 0.095 per kill (10.5 kills) | 84.0 min |
+| Premium | 0.081 per kill (12.3 kills) | 98.6 min |
+| Crystal | 5 per run (3.0 runs for 15) | 45.0 min |
+
+**Value of the prizes.** Counted: crafting orbs and sockets in kills of a level 100+ monster that the loot layer needs for the same drops (the
+O148 rule), divided by the hunter's kills per hour (`paceKillsPerHour.scaled` of `spawn_tuning.json`: 836 at level 650, 869 at 1000, 813 at
+1600, 789 at 2000); gold in hours of hunting gold (0.2 h per unit, a minute count that does not depend on the level); an exercise chest as its
+vendor price against the hunting gold per hour; a unique chest as 200 minutes (about one unique per 3.4 hours of Rare and Legendary kills at
+level 1500, O148). Not counted: cards, badges, catalysts, cosmetics and units (they are not a time), so the figures are a floor.
+
+| Roulette | Before (level 1000) | Now: 650 / 1000 / 1500 / 2000 | Value / cost at 1000 |
+|---|---|---|---|
+| Boss (O148, unchanged) | 60.1 min of 63.7 | 62.3 / 60.1 / 63.7 / 65.7 min | 0.94 |
+| Exercise | 2.6 min of 84.0 (x0.03) | 81.8 / 79.4 / 83.1 / 85.1 min | 0.95 |
+| Premium | 0 counted of 98.6 (14 cosmetics) | 99.8 / 96.8 / 101.9 / 104.6 min | 0.98 |
+| Crystal | 0 counted of 45.0 (21 Moist pieces, 2 units) | 46.2 / 44.8 / 47.2 / 48.5 min | 0.99 |
+
+At level 1000 one spin now pays on average: boss 1.16 orbs + 717,000 gold; exercise 1.32 orbs + 3.3M gold (and 2-5 sockets in 6% of the
+spins); premium 1.44 orbs + 2.8M gold; crystal 0.96 orbs + 1.1M gold. The Boss Roulette needed no change: at 8 minutes per boss kill its
+spin is 0.94 of its token, the value the others now match; the O148 note "a spin is worth about 40 minutes of orb hunting" is the orb half
+of the 60 here (46 min of orbs, 9 of sockets, 4.5 of gold, 1.2 of the unique chest).
+
+**Sensitivity.** The cost side scales with `minutesPerBossKill`: at 6 minutes the boss spin is worth 1.25 tokens' time and the premium one 1.3;
+at 10 it is 0.75 and 0.8 (the band's floor; the figures stay inside the band for 7 to 10 minutes except the boss at 10). A measured value
+replaces the guess in one place (`roulette_value_config.lua`) and `chance` / `count` in the three configs are the knobs; the Tower Defense
+side is less uncertain (the reward and the 20 minute session are in the base script).
+
+### Tests
+
+- `tests/roulette_pools_test.lua` (luajit and lua5.3): per roulette no retired id (decks, ships, belts, gloves, retired chests, Moist gear),
+  every id a known item, no repeated prize, a kind of that roulette, the odds add up, the shares in `limits`, the orbs are the ones the loot layer
+  drops, the broadcast rules, the actionIds are the base roulettes' once each; exercise: chests are at most 18% and at least 5%, every chest of the
+  table is in the pool, **every vocation of every class line gets a chest of the same tier it can train with for every chest and every pick**;
+  premium: 14 auras and wings, at most 25% of the spins, the chase orbs at most 1% each; crystal: the units at most 12%, 15 tokens a spin; the value
+  config equals what it copies (the pace of `spawn_tuning.json`, the gold curve of `gamble_config.lua`, the token sources of the snapshot); every
+  roulette in the band at every level; the numbers before and after printed.
+- `tests/prizes_test.lua`: `configFor` (by actionId, the boss label as fallback), `classChest` (every rule), the glue on a mocked engine: an
+  exercise chest for a Ranger becomes a bow or shield chest and the player is told, a Warrior keeps the melee chest, gold on all four
+  actionIds, the unique chest announced as the premium roulette's, an unknown actionId keeps the plain item.
+- `tools/patch_roulette_test.py`: the three new configs parse and are clean, every id is known (and in an installed `items.xml` when
+  `CHAOS_ITEMS_XML` points at it), a data folder with all five scripts (each gets its own pool, mark and threshold; the crystal ones lose the
+  copied names; a wrong token, an unknown actionId and a script of another roulette's text are left alone), a second run, a changed config, CRLF,
+  a retired or Moist id refused.
+- `tools/roulette_model.lua --check` in CI; on a copy of the five installed base scripts: 5 files changed, a second run changes nothing, all
+  five parse in Lua 5.3.
+
+### Deploy
+
+`install_all.py SERVER_DIR --only files,roulette` and a server restart (the scripts read the pools at load; `files` copies the new configs and
+`prizes.lua`). No client change. Players see the Crystal Roulette named in the two Tower Defense rooms and the new prizes on the tiles.
+Not run on a live server. To measure: kill a few boss rooms and time them (`minutesPerBossKill`), count the tokens per kill, and time a Tower
+Defense run, then edit `roulette_value_config.lua` and rerun the model.
 
 ## Rings and necklaces as gear (`data/lib/chaos_jewelry.lua`, `chaos/jewelry.lua`, `tools/patch_base_jewelry.py`, `tests/jewelry_test.lua`)
 
@@ -18152,8 +18308,8 @@ quero ver o gameplay em tempo real. Faça o patch na engine." The phone shows th
   at about 30 frames a second: the 15 x 11 tiles of the player's floor with item patterns and animation, elevation,
   creatures walking between tiles with their walking frames, effects, missiles, health bars, names, numbers and
   speech, scaled without smoothing. The camera follows the player's steps. Level, health and mana show under it. It
-  stops on Parar, on leaving the tab or the app, on an error and after 30 minutes. Not drawn: other floors, light,
-  the client's own interface.
+  stops on Parar, on leaving the tab or the app, on an error and after 30 minutes. Phase 3 (below) adds the other
+  floors and the light. Not drawn: the client's own interface.
 - Tests: `tools/chaoscast_test.cpp` (the message whitelist, frames, hello bytes; CI), `tools/cast_relay_test.py`
   (synthetic frames for every opcode, both client markers, sheets, the loop with a local port, a fuzz; CI),
   `tests/remote_cmd_test.lua` (`cast`, `caststop`), `server/deploy/chaos_ctl_test.py` (cast refusals, lock, quoting),
@@ -18162,6 +18318,51 @@ quero ver o gameplay em tempo real. Faça o patch na engine." The phone shows th
   listened on 127.0.0.1 only, `cast Loadbot Aaa` through `remote.cmd`, and in 45 s the relay wrote hello, 170 sheets,
   the full view and 76 changes (walks, effects, numbers, speech) with no resync and no sanitizer report. The full view
   drawn from those lines matched the game. Untested: the app on a phone, `chaos-ctl.sh cast` on the VPS.
+
+**Phase 3: the other floors and the light (O152, `cast_relay.py` protocol 3, `CastView.java`, `CastMath.java`).**
+Owner, 2026-10-23, same request as phase 2: the view should be what the client shows. No engine change: src-patch 0064
+already mirrors the floors (map, `0x4B`, floor changes), world light (`0x82`), creature light (`0x8D`), magic effects
+(`0x83`) and distance missiles (`0x85`); phase 2 drew effects and missiles of the camera floor only and dropped the rest.
+- **Version.** The hello line carries `"v":3` (phase 2 had no `v`, read as 2). Every addition is a new key or a new
+  field after the old ones; `tiles`, `fx`, `mi` and `cr` keep their meaning (the camera floor). An older app ignores the
+  new keys and shows the camera floor as before; a newer app on an older relay (no `v`, no `fl`) draws one floor, unlit.
+- **Floors the client draws.** `World.floors()` = `[first, last]`: `last` is 7 above ground (the camera floor + 2
+  underground, at most 15); `first` is 0 above ground (camera - 2 underground), raised for every floor a roof or
+  ceiling closes over the camera. The rule is the client's `calcFirstVisibleFloor` as remembered: for the camera tile
+  and the open (look-possible, nothing that blocks a missile) tiles north, south, east and west of it, walk up one floor
+  at a time; the tile straight above and the tile one east and one south per floor (the geometric cover) end the walk
+  when a tile limits the view (`limitsFloorsView`: a ground, or for a tile seen from an open one also a bottom item such
+  as a wall; things with the don't-hide flag never do). The base client tree is not in the repo, so this is an
+  approximation of the real rule; a wrong floor shows as a roof drawn or hidden by mistake.
+- **Lines.** `full` has `fl` and `ft`; `d` has `fl` when the range changed, `fc` (floors that came into view whole:
+  the app drops their old tiles first) and `ft`. `ft` is a list of `[z, x, y, under, over, elevation]` (the tile format
+  of `tiles` with the floor first; an empty tile clears the app's). Only floors in `fl` and tiles in the window the app
+  can show (floor f is drawn `camera z - f` tiles up and left, so tile x sits at cell x - (camera z - f)) are sent;
+  a change on a hidden floor is not sent, the floor comes back whole (`fc`) when it is shown again. `fxf` is
+  `[x, y, sheet key, pattern, z]` and `mif` `[fx, fy, tx, ty, key, pattern, ms, z]` for floors other than the camera's
+  (dropped when their floor is not drawn). Numbers and speech stay on the camera floor, as in the client.
+- **Light data.** The `spr` line of an item sheet has `gr` (a ground) and `lt` `[intensity, colour]` when the dat thing
+  shines; effect and missile sheets have `lt` likewise; a creature in `cr` has `lt` when its light is on (the key is
+  absent when off); the `light` key (`[intensity, colour]`) was already in phase 2. Item lights need no tile change:
+  the app looks the sheet of each drawn entry up.
+- **App.** `CastView.java` keeps tiles of every floor, draws the floors from the lowest to the highest (a floor above
+  over the ones under it, creatures, effects and missiles of a floor in that floor's pass; health bars and names for the
+  camera floor only), skips the cells a ground on a floor above covers (the client does this too, and it keeps 8 floors
+  cheap), and then lights the frame as the client's light view does: a quarter-size bitmap filled with the ambient
+  light (the world light's colour at intensity / 255; underground 0, the sun does not reach), a round glow added for
+  every source (creatures, item entries of the drawn floors, effects and missiles that shine; radius intensity x 32 px
+  capped at 8 tiles, brighter the stronger), multiplied over the frame and smoothed up. The player gets a light of 2 of
+  his own in the dark (world light under 64) and underground, as the client does. Full daylight (every channel of the
+  ambient at 94% or more) draws nothing. `CastMath.java` holds the arithmetic (cells of other floors, 8-bit colours, the
+  light numbers) without Android classes.
+- Tests: `cast_relay_test.py` now also covers the visible-floor rule (open sky, roof above, geometric roof, a roof that
+  is not above, don't-hide ground, wall, open and blocked neighbour tiles, underground, the lowest floor), the full and
+  delta lines of other floors (window, empty tile, roof appears and goes, hidden floor silent, whole floors again with
+  `fc`), effects and missiles on other floors (and their cap, and dropped when hidden), creature, item and effect light,
+  the `v` field. The app compiles against the Android API jar with `javac` (there is no Android SDK on the build
+  machine, so no gradle build was run); `CastMath` was run on a JVM. Untested: the drawing itself (the floors, the
+  light overlay and its speed) on any device, the cover rule against the real client, a live run of the new lines on a
+  server.
 
 **chaos-ctl.sh settings file (`/etc/chaos/ctl.conf`).** Owner, 2026-10-20: the app showed "service not found, codigo 5"
 on the beta VPS. The kit there runs from `/opt/chaos-trial` (`tools/linux/server/start-server.sh`) with no systemd
@@ -22055,6 +22256,8 @@ server and checks that a seed sends the same bytes again.
 
 No suppression file is used: every report above was a real bug in our engine or scripts.
 
+**Rust for new services** (part 3): see "Rust services (O153)" at the end of this file.
+
 **Not run / not covered.** The Windows build; a sanitizer run with real players or on the VPS; MemorySanitizer and
 ThreadSanitizer (the dispatcher, scheduler and network threads were not checked for data races); the client; the
 `fuzz_netmsg` harness in CI (it needs the base engine source, not in git; `build_fuzz.sh --src` runs it locally). The
@@ -22062,3 +22265,72 @@ harness mirrors the engine's read sequences rather than calling `ProtocolLogin` 
 game), and `build_fuzz.sh` stops when those lines change. In-game packets were fuzzed through the network only, as
 full-engine handlers. The server never reassembles chunked extended opcodes (`Chaos.sendChunked` is server to client
 only), so there is no server-side chunk parser to fuzz.
+
+## Rust services (O153) (`services/clientservices-rs/`, `chaos-ctl.sh clientservices-impl`)
+
+ROADMAP "Open decisions and loose ends", engine hardening part (3), owner 2026-10-20: new services outside the engine
+may be written in Rust, one at a time. The first is the login-screen services endpoint, a port of
+`tools/clientservices.py`.
+
+**Which service, and why.** The three candidates in the roadmap text were checked in the repository:
+- the **login gateway** is HAProxy (`deploy/gateway/haproxy.cfg.template`) plus nftables, not a Python program: nothing
+  to port;
+- the **payment worker** is PHP (`website/overlay/plugins/chaos/pay/worker.php`, `deploy/chaos-payworker.service`), and
+  it only makes outgoing calls (the provider's webhook goes to the website): no listener of its own;
+- the **Help assistant** is Python (`tools/helpai.py`) but exchanges small files with the game server and calls the
+  Claude API: it never accepts a connection.
+
+The Python program with the largest untrusted network surface is therefore `tools/clientservices.py`: the only one that
+listens on a public port. `chaos-clientservices.service` binds `0.0.0.0:8090`, the nftables template opens that port to
+everyone (rate limited), and every client, scanner and bot can send it HTTP. It is small (one JSON file, three
+answers), which makes it a good first port. The cast relay (`tools/cast_relay.py`) listens only on 127.0.0.1 and reads
+the engine's own frames, so it has no outside surface.
+
+**The crate** (`server/services/clientservices-rs/`, `#![forbid(unsafe_code)]`, one runtime dependency: `serde_json`
+and its four small crates; `proptest` for tests only; `Cargo.lock` committed, built with `--locked`; credits in
+docs/CREDITS.md):
+- `src/lib.rs`: the protocol, no sockets. `read_head` (any `BufRead`), `plan` / `finish`, `render`. Same rules as
+  `http.server`: ISO-8859-1 head, `\n` or `\r\n` line ends, 65536-byte lines (414 / 431), at most 100 header lines
+  counting the empty one, the first `Content-Length` wins and a line that is not a header ends the headers, POST body
+  at most 64 KiB (413), bad JSON 400 `{"error": "invalid json"}`, unknown type 400 `{"error": "unknown type",
+  "types": [...]}`, GET with the last `type=` of the query (not percent-decoded) or all three parts, OPTIONS 204, other
+  methods 501, HTTP/2 505. The file is read on every request; a part that is not an object (Lua writes `[]` for an
+  empty table) becomes the empty answer. CORS headers on every answer; HTTP/1.0 style, one request per connection.
+- `src/main.rs`: sockets, threads and the clock. Same command line as the Python tool (`FILE --host --port`,
+  `--port=N`), same start line, same log prefix `[clientservices]`. One thread per connection.
+- `build.sh OUT`: `cargo build --release --locked` into a temporary target folder, the binary replaced by a rename.
+
+**Differences from the Python service, all stricter** (none changes an answer the client can get):
+the whole request must arrive in 30 s (Python: 10 s per read, so a trickle held a thread for ever); at most 256 open
+connections (more are closed at once); all header bytes together at most 128 KiB; a data file over 16 MiB is ignored;
+the request line `GET /` without a version (HTTP/0.9) is 400, not served; the 204 of OPTIONS has no body (Python sent
+`{}` with a 204) and the error answers of 414, 431, 501 and 505 are JSON, not an HTML page; the log line is cut at 200
+characters and its control characters escaped; the answer carries a `Date` header. JSON is compared as data, not as
+text (key order, `\u` escapes). Not reproduced: Python's `json` accepts `NaN` and `Infinity`, keeps integers beyond 64
+bits exact and accepts a BOM; `serde_json` does not (a data file the Lua writer produces has none of these).
+
+**Switch** (`chaos-ctl.sh clientservices-impl [status | rust | python]`, admin app: Comandos > Serviços da tela de
+login (Rust) > Ver / Ligar Rust / Voltar ao Python). Python stays the default. `rust` builds first (needs `cargo` on the
+VPS, rustup; a failed build changes nothing), installs `CHAOS_ROOT/bin/clientservices-rs`, writes the systemd drop-in
+`/etc/systemd/system/chaos-clientservices.service.d/10-rust.conf` (`ExecStart=` reset, then the binary with the data
+file, `--host 0.0.0.0 --port 8090`; same sandbox, user and log as the unit), reloads and restarts only that unit; a unit
+that is not active 2 seconds later is put back on python. `python` removes the drop-in. While the drop-in exists,
+`chaos_update.sh` (and so `update-apply`) rebuilds the binary after the questions and before the game stops, and
+restarts the unit; a failed build warns and keeps the old binary. The drop-in directory is `CHAOS_SYSTEMD_DIR` in
+`ctl.conf` (default `/etc/systemd/system`). The Linux kit (`start-server.sh`, no systemd unit) keeps the Python service.
+
+**Tests.**
+- `cargo test --locked` (CI): unit tests of the parser, the limits, the content-length rule, the query, the date and
+  the rendering, and proptest properties: `read_head` on arbitrary bytes and on request-shaped text never panics and
+  never reads past its input; `plan` stays inside the 64 KiB limit; `finish` on arbitrary bodies answers 200 or 400;
+  any data file gives objects. `cargo clippy --all-targets -- -D warnings` and `cargo fmt --check` are in CI too.
+- `compare_test.py` (CI): starts `tools/clientservices.py` and the binary on free ports and sends the same 50 raw requests
+  to both (well-formed and broken: every method, Content-Length padded, negative, huge, short, repeated, bare LF, 70 KB
+  lines, 100 and 101 headers, junk bytes, empty connections), against 10 shapes of the data file; status and JSON must
+  match. The stricter cases are checked on the Rust side alone. Also the command line and a half-sent request.
+- `chaos_ctl_test.py`: the switch (python by default, rust builds then writes the drop-in, a failed build changes
+  nothing, python removes it, rebuild only while on, no unit refused).
+
+**Not covered.** A real `cargo build` on the VPS (the script and the switch are tested with a stub build); a cargo-fuzz
+run (only proptest, 2000 cases per property in CI); the unit under systemd with the real sandbox; a load test of the
+thread-per-connection design against the Python server; IPv6 hosts; the Linux kit.

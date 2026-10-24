@@ -222,6 +222,7 @@ final class CommandsTab {
 
         buildXp();
         buildBeta();
+        buildClientServicesImpl();
         buildAccounts();
         buildHealth();
         buildVps();
@@ -318,6 +319,39 @@ final class CommandsTab {
         b.addView(see, ui.gap(6));
         b.addView(ui.evenRow(on, off), ui.gap(4));
         b.addView(ui.evenRow(onNow, offNow), ui.gap(4));
+        quick.addView(c, ui.gap(10));
+    }
+
+    // the login-screen services (port 8090): the Python program (default) or the Rust port, opt-in
+    // (chaos-ctl.sh clientservices-impl; server/README.md "Rust services (O153)")
+    private void buildClientServicesImpl() {
+        MaterialCardView c = ui.titledCard("Serviços da tela de login (Rust)");
+        LinearLayout b = Ui.body(c);
+        TextView now = ui.text("Toque em Ver para ler o estado.");
+        b.addView(now);
+        b.addView(ui.hint("Quem responde a porta 8090 da tela de login (criatura do dia, eventos, jogadores online): "
+                + "o programa em Python (padrão) ou a versão em Rust. Ligar o Rust compila no servidor (precisa do "
+                + "cargo; leva alguns minutos), troca o serviço e reinicia só ele; se a compilação falhar nada muda, "
+                + "e se o serviço não subir volta sozinho para o Python. O jogo não reinicia. Atualizar servidor "
+                + "recompila enquanto o Rust estiver ligado."), ui.gap(4));
+        MaterialButton see = ui.secondary("Ver", R.drawable.ic_refresh);
+        see.setOnClickListener(v -> a.ctlAction("clientservices-impl status", 30, f -> {
+            if (!f.ok) {
+                result.show("Serviços da tela de login", f);
+                return;
+            }
+            String state = f.raw.contains("clientservices_impl=rust") ? "RUST" : f.raw.contains(
+                    "clientservices_impl=python") ? "Python (padrão)" : "?";
+            now.setText("Agora: " + state + (f.raw.contains("binary=present") ? " (binário instalado)" : ""));
+        }));
+        MaterialButton rust = ui.secondary("Ligar Rust", 0);
+        rust.setOnClickListener(v -> a.confirm("Ligar o Rust?", "Compila no servidor e reinicia o serviço da tela de "
+                + "login (alguns segundos fora do ar). O jogo não reinicia.", "Ligar", false,
+                () -> ctl("Rust ligado", "clientservices-impl rust", 900, null)));
+        MaterialButton py = ui.secondary("Voltar ao Python", 0);
+        py.setOnClickListener(v -> ctl("Python ligado", "clientservices-impl python", 60, null));
+        b.addView(see, ui.gap(6));
+        b.addView(ui.evenRow(rust, py), ui.gap(4));
         quick.addView(c, ui.gap(10));
     }
 

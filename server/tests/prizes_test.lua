@@ -11,7 +11,7 @@ local function ok(cond, label)
 	checks = checks + 1
 	if not cond then
 		failures = failures + 1
-		print("FAIL " .. label)
+		io.stderr:write("FAIL " .. label .. "\n")
 	end
 end
 local function eq(a, b, label)
@@ -422,6 +422,118 @@ do
 	winTile.top = newItem(1740, 1)
 	ok(P.rouletteReward(34, roulette(), WIN, "boss"), "no unique tools: the chest itself")
 	eq(pl.slots[CONST_SLOT_BACKPACK].items[1].id, 1740, "a chest in the backpack")
+end
+
+-- ---------------------------------------------------------------- the other four roulettes (O151)
+-- found by the script's actionId; gold, the unique chest and the exercise chest of the winner's class
+do
+	local pools = ChaosRoulettePools
+	ok(pools and pools.boss and pools[18562] == pools.boss, "the boss config is registered by its actionId")
+	ok(pools[18563] and pools[18563].title == "exercise", "18563 is the exercise roulette")
+	ok(pools[18564] and pools[18564].title == "premium", "18564 is the premium roulette")
+	ok(pools[18565] and pools[18565] == pools[18566] and pools[18565].title == "crystal", "18565 and 18566 are the crystal one")
+	eq(K.configFor(pools, {actionId = 18563}, "premium"), pools[18563], "the actionId decides, not the label")
+	eq(K.configFor(pools, {}, "boss"), pools.boss, "a script without an actionId: the label boss")
+	eq(K.configFor(pools, {}, "exercise"), nil, "a script without an actionId: no config for another label")
+	eq(K.configFor(pools, {actionId = 99999}, "boss"), pools.boss, "an unknown actionId with the boss label: the boss one")
+	eq(K.configFor(pools, {actionId = 99999}, "exercise"), nil, "an unknown actionId: nothing")
+	eq(K.configFor(nil, {actionId = 18563}, "exercise"), nil, "no pools: nothing")
+
+	-- classChest: a chest of a kind the class cannot use becomes one of the same tier it can use
+	local ex = pools[18563]
+	local function allow(set) return function(kind) return set[kind] or false end end
+	local ranger = allow({ranged = true, shield = true})
+	local id, changed = K.classChest(ex, 27761, ranger, function(n) return 1 end)
+	eq(id, 27764, "a melee chest (500) for a Ranger: the bow chest") ok(changed, "and it changed")
+	id, changed = K.classChest(ex, 27775, ranger, function(n) return n end)
+	eq(id, 27781, "a lasting melee chest for a Ranger, last pick: the lasting shield chest") ok(changed, "changed")
+	id, changed = K.classChest(ex, 27764, ranger, nil)
+	eq(id, 27764, "a bow chest for a Ranger stays") ok(not changed, "unchanged")
+	id, changed = K.classChest(ex, 27774, allow({}), nil)
+	eq(id, 27774, "a class that can use nothing keeps the chest") ok(not changed, "unchanged")
+	id, changed = K.classChest(ex, 2160, ranger, nil)
+	eq(id, 2160, "an item that is no chest stays") ok(not changed, "unchanged")
+	id = K.classChest(ex, 27768, nil, nil)
+	eq(id, 27768, "no rule: the chest stays")
+	id = K.classChest(ex, 27771, allow({melee = true}), function(n) return 99 end)
+	eq(id, 27768, "the pick is clamped to the usable chests")
+	id = K.classChest(nil, 27761, ranger, nil)
+	eq(id, 27761, "no config: the chest stays")
+	for t, tier in ipairs(ex.chests.tiers) do
+		for _, kind in ipairs(ex.chests.kinds) do
+			ok(tier[kind], "chest of tier " .. t .. " " .. kind)
+		end
+	end
+
+	-- the glue: an exercise roulette (actionId 18563)
+	local function exRoulette(action)
+		local c = roulette()
+		c.actionId = action or 18563
+		return c
+	end
+	local function coins2(player)
+		local n = 0
+		for _, it in ipairs(player.slots[CONST_SLOT_BACKPACK].items) do
+			n = n + (({[2160] = 10000, [2152] = 100, [2148] = 1})[it.id] or 0) * it.count
+		end
+		return n
+	end
+	pl = newPlayer(40, 20)
+	function pl:getLevel() return 1000 end
+	function pl:getVocation() return {getId = function() return 3 end} end -- Ranger
+	winTile.top = newItem(27761)
+	ok(P.rouletteReward(40, exRoulette(), WIN, "exercise"), "an exercise chest is given")
+	local got = pl.slots[CONST_SLOT_BACKPACK].items[1].id
+	ok(got == 27764 or got == 27767, "a melee chest for a Ranger became a bow or a shield chest: " .. tostring(got))
+	ok(pl.msgs[#pl.msgs] and pl.msgs[#pl.msgs]:find("became"), "the player is told: " .. tostring(pl.msgs[#pl.msgs]))
+
+	pl = newPlayer(41, 20)
+	function pl:getLevel() return 1000 end
+	function pl:getVocation() return {getId = function() return 4 end} end -- Warrior
+	winTile.top = newItem(27768)
+	ok(P.rouletteReward(41, exRoulette(), WIN, "exercise"), "a chest a Warrior can use")
+	eq(pl.slots[CONST_SLOT_BACKPACK].items[1].id, 27768, "the melee chest stays")
+	eq(#pl.msgs, 0, "no message")
+
+	pl = newPlayer(42, 20) -- no vocation: the chest as it is
+	function pl:getLevel() return 1000 end
+	winTile.top = newItem(27761)
+	ok(P.rouletteReward(42, exRoulette(), WIN, "exercise"), "a player without a vocation")
+	eq(pl.slots[CONST_SLOT_BACKPACK].items[1].id, 27761, "the chest as it is")
+
+	-- gold on the exercise, premium and crystal roulettes, scaled like the boss one
+	for _, aid in ipairs({18563, 18564, 18565, 18566}) do
+		pl = newPlayer(43, 20)
+		function pl:getLevel() return 1000 end
+		winTile.top = newItem(2160, 5)
+		ok(P.rouletteReward(43, exRoulette(aid), WIN, "x"), "gold prize on " .. aid)
+		eq(coins2(pl), K.goldFor(pools[aid], 5, 1000), "5 coins on " .. aid .. " are the scaled gold")
+		ok(coins2(pl) > 50000, "more than 5 crystal coins at level 1000 on " .. aid)
+	end
+
+	-- the unique chest of the premium roulette is announced as the premium roulette's
+	ChaosLoot = {uniqueList = function() return {{id = 5002, name = "Mid Blade", level = 700}} end}
+	ChaosMakeUnique = function() end
+	pl = newPlayer(44, 20)
+	function pl:getLevel() return 1000 end
+	winTile.top = newItem(1740, 1)
+	broadcasts = {}
+	ok(P.rouletteReward(44, exRoulette(18564), WIN, "premium"), "a unique chest on the premium roulette")
+	ok(broadcasts[1] and broadcasts[1]:find("from the premium roulette!", 1, true), "announced as the premium roulette's: "
+		.. tostring(broadcasts[1]))
+	ChaosMakeUnique, ChaosLoot = nil, nil
+
+	-- an orb on another roulette is just the item; a script that is none of ours keeps the plain item
+	pl = newPlayer(45, 20)
+	function pl:getLevel() return 1000 end
+	winTile.top = newItem(29851, 3)
+	ok(P.rouletteReward(45, exRoulette(), WIN, "exercise"), "an orb")
+	eq(#pl.slots[CONST_SLOT_BACKPACK].items, 3, "3 orbs (not stackable in the mock)")
+	pl = newPlayer(46, 20)
+	function pl:getLevel() return 1000 end
+	winTile.top = newItem(2160, 5)
+	ok(P.rouletteReward(46, exRoulette(77777), WIN, "exercise"), "a script of no known actionId")
+	eq(coins2(pl), 50000, "5 crystal coins stay 5 crystal coins there")
 end
 
 _G.print = realPrint

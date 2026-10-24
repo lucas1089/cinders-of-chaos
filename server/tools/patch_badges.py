@@ -40,6 +40,9 @@ four take nothing. The rules are data/scripts/chaos/badges_core.lua; this tool c
    chaosHolds(player, "<class>", leftHand, config.<list>), a local function put before whenPlayerAttack that asks
    ChaosCards.holds (cards.lua: the weapon type decides, the stock ids still count) and falls back to the base check
    while cards.lua is not loaded. cards.lua also frees the base's "one summon at a time" lock when the summon died.
+   The branches were an `if .. elseif ..` chain, so only the first legendary storage that is on could fire; the 15
+   `elseif` become `end` + `if`, so with two legendary cards in the deck both are checked (O149). The base's summon
+   lock still allows one summon at a time.
 
 Nothing is taken out of a drop: the decks and ships keep their uses (the monster loot, the task reward and the first
 ship stay); the belts and gloves drop nowhere and step 8 takes them out of the armorsmith. A second run changes nothing. --check changes nothing and exits 1 when something is still to
@@ -179,17 +182,25 @@ LEGENDARY_HELPER = ('-- {mark}: the weapon decides, not a list of stock item ids
                     'end\n\n').format(mark=MARK)
 
 
+LEGENDARY_ELSEIF = re.compile(r'^([ \t]*)elseif (player:getStorageValue\(DeckSystem\.Legendary\.Legendary\w+Lv6\) == 1 then)',
+                              re.M)
+
+
 def legendary(text):
-    """the 16 left-hand item id checks of the legendary cards ask chaosHolds (ChaosCards.holds) instead"""
-    if 'chaosHolds(' in text:
-        return text, 0
-    m = LEGENDARY_FUNC.search(text)
-    if not m or not LEGENDARY_CHECK.search(text):
-        return text, 0
-    new, n = LEGENDARY_CHECK.subn(
-        lambda c: 'chaosHolds(player, "%s", leftHand, config.%s)' % (LEGENDARY_CLASS[c.group(2)], c.group(1)), text)
-    m = LEGENDARY_FUNC.search(new)
-    return new[:m.start()] + LEGENDARY_HELPER + new[m.start():], n + 1
+    """the 16 left-hand item id checks of the legendary cards ask chaosHolds (ChaosCards.holds) instead; the 15
+    `elseif` of the chain become their own `if`, so every active legendary card is checked (O149)"""
+    n = 0
+    if 'chaosHolds(' not in text:
+        m = LEGENDARY_FUNC.search(text)
+        if m and LEGENDARY_CHECK.search(text):
+            text, n = LEGENDARY_CHECK.subn(
+                lambda c: 'chaosHolds(player, "%s", leftHand, config.%s)' % (LEGENDARY_CLASS[c.group(2)], c.group(1)),
+                text)
+            m = LEGENDARY_FUNC.search(text)
+            text, n = text[:m.start()] + LEGENDARY_HELPER + text[m.start():], n + 1
+    # `if A then .. elseif B then .. end` -> `if A then .. end  if B then .. end`: the chain's last `end` closes B
+    text, k = LEGENDARY_ELSEIF.subn(lambda c: '%send\n%sif %s' % (c.group(1), c.group(1), c.group(2)), text)
+    return text, n + k
 
 
 def droploot(text):

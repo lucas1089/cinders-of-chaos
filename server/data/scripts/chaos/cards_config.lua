@@ -43,24 +43,31 @@ C.tiers = {"Minor", "Major", "Intense", "Powerful"}
 -- Necromancer lines had no card line at all (beta 2026-10-23: "a card I put in my deck does not work", a Ninja): each now
 -- has one spell on a line whose stock spell was retired, so nobody who had the line lost it. Every class of the 21 has
 -- at least one line (tests/cards_test.lua walks every card x every class).
+-- O149 (parity): the median class had 3 usable common lines (the rune everyone casts counts), the Illusionist, Thief, Monk
+-- and Templar lines only 2 and the Necromancer line 3 of the 4 the martial lines have. More `also` spells bring every class
+-- to at least 3 and the Necromancer line to 4: Marrow Bolt and Soulrend Beam on Rime Bloom, Shattered Psyche (Mystic and
+-- Illusionist) on Frozen Crypt, Shuriken Toss on Primordial Squall, Radiant Smite on Dawnpiercer and Palm Shockwave on
+-- Earthbreaker. tests/cards_test.lua keeps the floor (MIN_LINES).
 local families = {
 	{kind = "convert", spell = "Reaping Gyre", id = 220, how = "hit", elements = {"Earth", "Ice", "Death", "Energy"}},
-	{kind = "convert", spell = "Rime Bloom", id = 200, how = "hit", elements = {"Fire", "Holy", "Death", "Energy"}},
+	{kind = "convert", spell = "Rime Bloom", id = 200, how = "hit", elements = {"Fire", "Holy", "Death", "Energy"},
+		also = {{"Marrow Bolt", 106}, {"Soulrend Beam", 118}}},
 	{kind = "convert", spell = "Tempest Fan", id = 13, how = "live", elements = {"Holy", "Ice", "Drown", "Death"}},
 	{kind = "convert", spell = "Sanctum Burst", id = 124, how = "live", elements = {"Fire", "Ice", "Earth", "Death"}},
 	{kind = "convert", spell = "Frostfall Rune", id = 115, how = "live", elements = {"Fire", "Earth", "Energy", "Death"}},
 	{kind = "convert", spell = "Doomtide", id = 206, how = "hit", elements = {"Fire", "Holy", "Death", "Energy"},
 		also = {{"Blade Flurry", 73}}},
-	{kind = "convert", spell = "Primordial Squall", id = 213, how = "hit", elements = {"Holy", "Earth", "Death", "Ice"}},
+	{kind = "convert", spell = "Primordial Squall", id = 213, how = "hit", elements = {"Holy", "Earth", "Death", "Ice"},
+		also = {{"Shuriken Toss", 236}}},
 	{kind = "convert", spell = "Earthbreaker", id = 221, how = "hit", elements = {"Fire", "Earth", "Ice", "Death"},
-		also = {{"Consecration", 190}}},
+		also = {{"Consecration", 190}, {"Palm Shockwave", 194}}},
 	{kind = "melee", spell = "Bloodlust", id = 133, how = "live", secs = {2, 4, 6, 10}, pct = {2, 4, 6, 7}},
 	{kind = "convert", spell = "Pyre Torrent", id = 163, how = "live", elements = {"Ice", "Holy", "Death", "Energy"}},
 	{kind = "convert", spell = "Frozen Crypt", id = 205, how = "hit", elements = {"Fire", "Holy", "Death", "Energy"},
-		also = {{"Sundering Palm", 64}}},
+		also = {{"Sundering Palm", 64}, {"Shattered Psyche", 228}}},
 	{kind = "heal", spell = "Grand Mending", id = 3, how = "hit", pct = {10, 20, 30, 40}},
 	{kind = "convert", spell = "Dawnpiercer", id = 214, how = "hit", elements = {"Fire", "Earth", "Death", "Energy"},
-		also = {{"Bone Spear", 181}}},
+		also = {{"Bone Spear", 181}, {"Radiant Smite", 189}}},
 	{kind = "widen", spell = "Taunt of Iron", id = 93, how = "live"},
 	{kind = "bow", spell = "Tautstring", id = 135, how = "bow", secs = {2, 4, 6, 8}, pct = {2, 4, 6, 8}},
 }

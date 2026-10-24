@@ -658,6 +658,51 @@ def test_admin_commands():
         for bad in (('beta-mode', 'maybe'), ('beta-mode', 'on', 'now'), ('beta-mode', 'status', 'x'), ('beta-mode', 'off', 'restart', 'x')):
             check(run(*bad).returncode != 0, 'beta-mode refuses %r' % (bad,))
 
+        # clientservices-impl: python by default; rust builds first (a failed build changes nothing), adds the systemd
+        # drop-in and restarts; python removes it; rebuild only while on
+        csroot = os.path.join(tmp, 'csroot')
+        sysd = os.path.join(tmp, 'sysd')
+        cbuild_dir = os.path.join(repo, 'server', 'services', 'clientservices-rs')
+        os.makedirs(cbuild_dir, exist_ok=True)
+        with open(os.path.join(cbuild_dir, 'build.sh'), 'w') as f:
+            f.write('#!/bin/sh\n[ ! -f "$0.fail" ] || { echo cargo failed >&2; exit 3; }\nmkdir -p "$(dirname "$1")"\n'
+                    'echo "$(cat "$1" 2>/dev/null)x" > "$1"; chmod 755 "$1"\n')
+        csx = {'CHAOS_ROOT': csroot, 'CHAOS_SYSTEMD_DIR': sysd, 'CHAOS_CS_SETTLE': '0'}
+        drop = os.path.join(sysd, 'chaos-clientservices.service.d', '10-rust.conf')
+        r = run('clientservices-impl', extra=csx)
+        check(r.returncode == 0 and 'clientservices_impl=python' in r.stdout and 'binary=missing' in r.stdout,
+              'clientservices-impl: python by default: ' + r.stdout + r.stderr)
+        open(os.path.join(stub, 'calls'), 'w').close()
+        r = run('clientservices-impl', 'rust', extra=csx)
+        check(r.returncode == 0 and 'clientservices_impl=rust' in r.stdout, 'clientservices-impl rust: ' + r.stdout + r.stderr)
+        dtext = open(drop).read() if os.path.exists(drop) else ''
+        check('ExecStart=\n' in dtext and 'ExecStart=%s/bin/clientservices-rs %s/data/chaos_clientservices.json --host 0.0.0.0 --port 8090\n'
+              % (csroot, server) in dtext, 'clientservices-impl rust: the drop-in resets and sets ExecStart: ' + dtext)
+        check(os.access(os.path.join(csroot, 'bin', 'clientservices-rs'), os.X_OK), 'clientservices-impl rust: the binary is installed')
+        check('systemctl daemon-reload' in calls() and 'systemctl restart chaos-clientservices' in calls(),
+              'clientservices-impl rust: reload and restart')
+        check('clientservices_impl=rust' in run('clientservices-impl', 'status', extra=csx).stdout and
+              'binary=present' in run('clientservices-impl', extra=csx).stdout, 'clientservices-impl: status says rust')
+        r = run('clientservices-impl', 'rebuild', extra=csx)
+        check(r.returncode == 0 and open(os.path.join(csroot, 'bin', 'clientservices-rs')).read().count('x') == 2,
+              'clientservices-impl rebuild: builds again while on: ' + r.stderr)
+        open(os.path.join(cbuild_dir, 'build.sh.fail'), 'w').close()
+        r = run('clientservices-impl', 'rebuild', extra=csx)
+        check(r.returncode != 0 and os.path.exists(drop), 'clientservices-impl: a failed build leaves the switch as it was')
+        r = run('clientservices-impl', 'python', extra=csx)
+        check(r.returncode == 0 and 'clientservices_impl=python' in r.stdout and not os.path.exists(drop),
+              'clientservices-impl python: the drop-in is removed: ' + r.stdout + r.stderr)
+        r = run('clientservices-impl', 'rust', extra=csx)
+        check(r.returncode != 0 and not os.path.exists(drop), 'clientservices-impl rust: a failed build writes no drop-in')
+        os.remove(os.path.join(cbuild_dir, 'build.sh.fail'))
+        r = run('clientservices-impl', 'rebuild', extra=csx)
+        check(r.returncode == 0 and 'nothing to rebuild' in r.stdout, 'clientservices-impl rebuild: nothing while python')
+        r = run('clientservices-impl', 'rust', extra=dict(csx, STUB_NOUNIT='1'))
+        check(r.returncode != 0 and 'unit-not-found' in r.stderr and not os.path.exists(drop),
+              'clientservices-impl rust: no unit installed is refused')
+        for bad in (('clientservices-impl', 'go'), ('clientservices-impl', 'rust', 'x'), ('clientservices-impl', 'status', 'x')):
+            check(run(*bad, extra=csx).returncode != 0, 'clientservices-impl refuses %r' % (bad,))
+
         os.makedirs(os.path.join(bdir, 'db'))
         with open(os.path.join(bdir, 'db', 'chaos-db-chaos-1.sql.gz'), 'w') as f:
             f.write('x')

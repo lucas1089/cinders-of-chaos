@@ -1,0 +1,26 @@
+[package]
+name = "clientservices-rs"
+version = "1.0.0"
+edition = "2021"
+description = "Cinders of Chaos login-screen services (HTTP): Rust port of server/tools/clientservices.py"
+publish = false
+
+[lib]
+name = "clientservices"
+path = "src/lib.rs"
+
+[[bin]]
+name = "clientservices-rs"
+path = "src/main.rs"
+
+[dependencies]
+serde_json = "1.0"
+
+[dev-dependencies]
+proptest = { version = "1.5", default-features = false, features = ["std"] }
+
+[profile.release]
+opt-level = 2
+lto = true
+codegen-units = 1
+strip = true
