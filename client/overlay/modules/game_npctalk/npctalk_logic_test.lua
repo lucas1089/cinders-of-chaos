@@ -163,5 +163,45 @@ eq(L.inRange({ x = 1, y = 1, z = 7 }, { x = 5, y = 1, z = 7 }), false, 'four awa
 eq(L.inRange({ x = 1, y = 1, z = 7 }, { x = 1, y = 1, z = 6 }), false, 'other floor')
 eq(L.distance({ x = 1, y = 1, z = 7 }, { x = 3, y = 4, z = 7 }), 3, 'chebyshev')
 
+-- which window gets an NPC line (O160: the reply never reached the bubble, which stayed at "...")
+local modes = { npcFrom = 11, npcFromStartBlock = 51 }
+local function route(line, st)
+  st.modes = modes
+  if st.enabled == nil then st.enabled = true end
+  return L.routeNpcLine(line, st)
+end
+local lootPos = { x = 100, y = 100, z = 7 }
+local open = { name = 'Loot Buyer', pos = lootPos }
+eq(route({ mode = 51, name = 'Loot Buyer', text = 'Welcome.' }, { conv = open }), 'conv', 'reply of the NPC in the bubble')
+eq(route({ mode = 11, name = 'Loot Buyer', text = 'Welcome.' }, { conv = open }), 'conv', 'both NPC modes')
+eq(route({ mode = 51, name = 'loot  buyer ', text = 'Welcome.' }, { conv = open }), 'conv', 'case and spacing of the name')
+eq(route({ mode = 51, name = 'Loot Buyer:', text = 'Welcome.' }, { conv = open }), 'conv', 'edge punctuation of the name')
+eq(route({ mode = 51, name = 'Mr Buyer', text = 'Welcome.', pos = { x = 100, y = 100, z = 7 } }, { conv = open }), 'conv',
+  'another name from the tile of the NPC in the bubble')
+eq(route({ mode = 51, name = 'Gambler', text = 'Hello.', pos = { x = 103, y = 100, z = 7 } }, { conv = open }), 'console',
+  'another NPC stays in the console')
+eq(route({ mode = 51, name = 'Gambler', text = 'Hello.' }, { conv = open }), 'console', 'another NPC, no tile')
+eq(route({ mode = 1, name = 'Loot Buyer', text = 'Welcome.' }, { conv = open }), 'ignore', 'public talk is no NPC line')
+eq(route({ mode = nil, name = 'Loot Buyer', text = 'x' }, { conv = open }), 'ignore', 'no mode')
+eq(route({ mode = 51, name = 'Loot Buyer', text = 'Welcome.' }, { conv = open, enabled = false }), 'console', 'window off')
+eq(route({ mode = 51, name = '', text = 'Welcome.' }, { conv = open }), 'console', 'no name')
+eq(route({ mode = 51, name = 'Loot Buyer', text = '  ' }, { conv = open }), 'console', 'no words')
+eq(route({ mode = 51, name = 'Loot Buyer', text = 'Welcome.' }, {}), 'open', 'no conversation: the bubble opens')
+eq(route({ mode = 51, name = 'Loot Buyer', text = 'Your loss.' }, { suppressed = true }), 'console', 'farewell after bye')
+eq(L.sameName('Loot Buyer', 'Loot Buyers'), false, 'different names')
+eq(L.sameName('', ''), false, 'empty names never match')
+eq(L.samePos(lootPos, { x = 100, y = 100, z = 7 }), true, 'same tile')
+eq(L.samePos(lootPos, { x = 100, y = 100, z = 6 }), false, 'other floor')
+eq(L.samePos(nil, lootPos), false, 'no tile')
+
+-- the hook and the talk signal bring the same line
+local last = { name = 'Loot Buyer', text = 'Welcome.', at = 1000 }
+eq(L.isDuplicate(last, 'Loot Buyer', 'Welcome.', 1000), true, 'same instant')
+eq(L.isDuplicate(last, 'Loot Buyer', 'Welcome.', 1040), true, 'within the window')
+eq(L.isDuplicate(last, 'Loot Buyer', 'Welcome.', 1400), false, 'a later repeat is a new line')
+eq(L.isDuplicate(last, 'Loot Buyer', 'Anything else?', 1000), false, 'other words')
+eq(L.isDuplicate(last, 'Gambler', 'Welcome.', 1000), false, 'other speaker')
+eq(L.isDuplicate(nil, 'Loot Buyer', 'Welcome.', 1000), false, 'no line before')
+
 print(string.format('npctalk_logic: %d checks, %d failures', checks, fails))
 if fails > 0 then os.exit(1) end
