@@ -8,6 +8,7 @@ local L = ChaosHelperLogic
 
 L.DIR = { North = 0, East = 1, South = 2, West = 3, NorthEast = 4, SouthEast = 5, SouthWest = 6, NorthWest = 7 }
 L.HASTE_GAP_MS = 2500        -- a haste cast waits at least this long after the last one (the buff shows a moment late)
+L.HASTE_MAX_GAP_MS = 120000 -- the wait doubles per cast in a row that gave no haste, up to this (a spell the server no longer has)
 L.REACH_X, L.REACH_Y = 7, 5  -- the shooter and Auto Target look this far (half width, half height) around the player
 
 -- ---------------------------------------------------------------- areas
@@ -175,12 +176,30 @@ function L.trainingDue(row, manaPct)
   return (tonumber(manaPct) or 0) >= (tonumber(row.percent) or 100)
 end
 
--- Auto Haste: st = { hasted, now, last (ms of the last cast, or nil), inProtectionZone }
+-- the wait after the last Auto Haste cast: HASTE_GAP_MS, doubled per cast in a row that gave no haste, up to HASTE_MAX_GAP_MS
+function L.hasteGap(misses)
+  local n = math.max(tonumber(misses) or 0, 0)
+  return math.min(L.HASTE_GAP_MS * 2 ^ n, L.HASTE_MAX_GAP_MS)
+end
+
+-- Auto Haste bookkeeping. hs = { last, misses, seen }: observe(hs, hasted) every tick, cast(hs, now) when a cast went out.
+-- A cast that is not followed by the Haste state counts as a miss (owner beta, 2026-10-24: a retired haste was said twice a
+-- second for minutes); the haste showing resets it.
+function L.hasteObserve(hs, hasted)
+  if hasted then hs.misses, hs.seen = 0, true end
+end
+
+function L.hasteCast(hs, now)
+  if hs.last and not hs.seen then hs.misses = (hs.misses or 0) + 1 end
+  hs.last, hs.seen = now, false
+end
+
+-- Auto Haste: st = { hasted, now, last (ms of the last cast, or nil), misses (casts in a row without haste), inProtectionZone }
 function L.hasteDue(row, st)
   if type(row) ~= 'table' or row.enabled ~= true or (tonumber(row.id) or 0) <= 0 then return false end
   if st.hasted then return false end
   if st.inProtectionZone and row.safecast ~= true then return false end
-  if st.last and (st.now or 0) - st.last < L.HASTE_GAP_MS then return false end
+  if st.last and (st.now or 0) - st.last < L.hasteGap(st.misses) then return false end
   return true
 end
 

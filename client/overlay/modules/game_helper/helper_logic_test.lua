@@ -8,6 +8,8 @@ local function eq(a, b, what)
   if a ~= b then print('FAIL ' .. what .. ': ' .. tostring(a) .. ' ~= ' .. tostring(b)); fails = fails + 1 end
 end
 
+local function ok(c, what) eq(not not c, true, what) end
+
 -- a beam two long to the north (the caster at the bottom)
 local beam = { { 0, 1, 0 }, { 0, 1, 0 }, { 0, 3, 0 } }
 local from = { x = 10, y = 10, z = 7 }
@@ -65,6 +67,29 @@ eq(L.hasteDue(h, { hasted = false, now = 10000, last = 9000 }), false, 'too soon
 eq(L.hasteDue(h, { hasted = false, now = 12600, last = 10000 }), true, 'after the gap')
 eq(L.hasteDue(h, { hasted = false, now = 10000, inProtectionZone = true }), false, 'not in a protection zone')
 eq(L.hasteDue({ id = 6, enabled = true, safecast = true }, { now = 10000, inProtectionZone = true }), true, 'safe cast')
+
+-- a haste that never shows (a spell the server no longer has) backs off instead of being said twice a second
+eq(L.hasteGap(0), 2500, 'gap: no miss')
+eq(L.hasteGap(1), 5000, 'gap: doubles per miss')
+eq(L.hasteGap(50), L.HASTE_MAX_GAP_MS, 'gap: capped')
+do
+  local hs, t, casts = { misses = 0 }, 0, 0
+  while t < 600000 do -- ten minutes of 500 ms ticks, never hasted
+    L.hasteObserve(hs, false)
+    if L.hasteDue(h, { hasted = false, now = t, last = hs.last, misses = hs.misses }) then
+      L.hasteCast(hs, t)
+      casts = casts + 1
+    end
+    t = t + 500
+  end
+  ok(casts <= 12, 'never hasted: at most 12 casts in 10 minutes, got ' .. casts)
+  eq(L.hasteDue(h, { hasted = false, now = hs.last + 2500, last = hs.last, misses = hs.misses }), false, 'still backed off')
+  L.hasteObserve(hs, true)
+  eq(hs.misses, 0, 'the haste showing clears the misses')
+  L.hasteObserve(hs, false)
+  L.hasteCast(hs, 700000)
+  eq(hs.misses, 0, 'a cast after a seen haste is no miss')
+end
 
 -- slots
 eq(L.slotDue({ id = 1, percent = 50, creatures = 3 }, 60, 2), false, 'too few creatures')

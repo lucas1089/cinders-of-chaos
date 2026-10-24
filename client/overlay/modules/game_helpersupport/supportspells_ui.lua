@@ -182,6 +182,11 @@ local function castChecks()
       for _, n in ipairs(names) do if set[n] then return true end end
       return false
     end,
+    -- the player's own haste state (PlayerStates.Haste); nil when the client cannot tell
+    hasted = function()
+      if not (PlayerStates and PlayerStates.Haste and player.hasState) then return nil end
+      return player:hasState(PlayerStates.Haste) == true
+    end,
     blocked = function(spell)
       if not (rotation and R) then return nil end
       return R.blockedWhy(rotation, spell.id, spell.group, now)

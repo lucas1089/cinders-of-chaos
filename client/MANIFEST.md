@@ -3432,7 +3432,7 @@ for the character's class and level (`ChaosAutoSetup.plan`, tested per class in 
   best health potion at 50 % and mana potion at 40 % (Mystic and Necromancer lines) or 30 %. A potion counts when the
   class may drink it at its level (the server's potion lists, docs/CLASSES.md) and the character carries it; else
   the Health / Mana Potion, the look of the Everfull potions every character has.
-- Tools: eat food on (the Everfull Ration counts), the best haste it can cast kept up (Strong Haste, else Haste).
+- Tools: eat food on (the Everfull Ration counts), the best haste it can cast kept up (Haste; Strong Haste was retired).
   The helper has no auto-loot switch (the loot list is `game_autoloot`, per item), so Auto setup leaves loot alone.
 - Shooter: the class rotation, the same as Auto rotation (which stays on the Targeting tab), and the targeting
   (owner 2026-10-22, `ChaosAutoSetup.TARGETING`): Target Monsters "*", Auto Target on, Always Chase Opponent off,

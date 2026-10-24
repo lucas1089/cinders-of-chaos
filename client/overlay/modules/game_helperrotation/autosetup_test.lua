@@ -100,7 +100,7 @@ eq(planFor(23, 250, ALL_POTIONS).healing.potions[2].id, 237, 'Templar: strong ma
 eq(planFor(5, 49, ALL_POTIONS).healing.potions[2].id, 268, 'level 49: no strong potions yet')
 
 -- haste: Strong Haste for the Mystic line, Haste for the others from level 14
-eq(planFor(1, 30).tools.haste, 39, 'Mystic: strong haste')
+eq(planFor(1, 30).tools.haste, 6, 'Mystic: Haste (Galeborne Stride is retired)')
 eq(planFor(4, 30).tools.haste, 6, 'Warrior: haste')
 eq(planFor(4, 10).tools.haste, nil, 'level 10: no haste yet')
 

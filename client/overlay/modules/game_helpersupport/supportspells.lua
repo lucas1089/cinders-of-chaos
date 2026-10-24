@@ -49,6 +49,10 @@ H.SUMMON_GAP_MS = 10000      -- a summon is not cast again sooner than this (a r
 H.RECAST_MIN_MS = 60000
 H.REFUSE_LIMIT = 3
 H.REFUSED_HOLD_MS = 30000
+-- Owner beta, 2026-10-24: a haste the server no longer answered to (Galeborne Stride, retired) was said twice a second for
+-- minutes, because the buff never showed. A spell whose buff the bar or the player state is expected to show (info.expectBar)
+-- and that did not show it after our last cast(s) waits RECAST_MIN_MS, doubling per unanswered cast up to NOBUFF_MAX_MS.
+H.NOBUFF_MAX_MS = 600000
 H.SUMMON_CAP = 3             -- the most summons of a capped kind of spell (below) the helper keeps out when the class is unknown
 -- The Necromancer line's summons are capped: at the limit the next summon kills the OLDEST one (server/data/scripts/chaos/
 -- necro_config.lua minions.classes[].total). A summon spell marked `capped` below is therefore cast only while the character
@@ -138,8 +142,8 @@ H.KINDS = {
   [132] = { auto = 'timer', dur = 12 },  -- Ironhold (the Chaos id 132 of the retired stock Bulwark, 2026-10-20)
   [135] = { auto = 'timer', dur = 12 },  -- Tautstring (the Chaos id 135 of the retired stock Hawkeye, 2026-10-20)
   -- the hastes: offered, but the Tools tab keeps them up (Auto setup sets that), so Auto setup leaves them out here
-  [6] = { auto = false, kind = 'buff', dur = 33, bar = { 'haste' } },
-  [39] = { auto = false, kind = 'buff', dur = 22, bar = { 'haste' } },
+  [6] = { auto = false, kind = 'buff', dur = 33, bar = { 'haste' }, haste = true },
+  [39] = { auto = false, kind = 'buff', dur = 22, bar = { 'haste' }, haste = true },
   [134] = { auto = false, kind = 'buff', dur = 12 },  -- Wildstride (the Chaos id 134 of the retired stock Windrunner)
   -- the support section
   [234] = { auto = 'support', kind = 'shield', dur = 15, rank = 2 },        -- Soulward
@@ -216,6 +220,7 @@ function H.info(spell)
   bar[#bar + 1] = lower(spell.name)
   return {
     kind = kind, auto = k.auto, fight = k.fight == true, dur = k.dur, bar = bar,
+    haste = k.haste == true, expectBar = k.bar ~= nil,
     capped = k.capped == true, minion = k.minion, minions = k.minions, keep = k.keep,
     rank = k.rank or DEFAULT_RANK[kind] or 5, known = H.KINDS[spell.id] ~= nil,
   }
@@ -391,7 +396,7 @@ end
 
 -- ---------------------------------------------------------------- the cycle
 function H.newState()
-  return { castAt = {}, settleUntil = {}, status = {}, seen = {}, barOn = {}, userOff = {}, casts = 0 }
+  return { castAt = {}, settleUntil = {}, status = {}, seen = {}, barOn = {}, userOff = {}, misses = {}, sawSince = {}, casts = 0 }
 end
 
 -- how many of an uncapped summon the character keeps out at this level (info.keep: { {level, count}, ... })
@@ -434,8 +439,17 @@ local function active(st, info, spell, ctx, now)
       st.userOff[spell.id] = nil -- on again (the player's cast): the helper may keep it up once its row is ticked
     end
   end
+  -- a haste shows in the player's own state (PlayerStates.Haste) even where the bar has no entry for it
+  if info.haste and ctx.hasted then
+    local h = ctx.hasted()
+    if h == true then fromBar = true end
+  end
   if fromBar == true then
     seen[spell.id] = true
+    st.sawSince = st.sawSince or {}
+    st.sawSince[spell.id] = true
+    st.misses = st.misses or {}
+    st.misses[spell.id] = 0
     return true
   end
   if info.kind == 'switch' and fromBar == nil then return nil end -- a vigil is never cast blind
@@ -491,6 +505,14 @@ function H.why(st, cfg, slot, ctx)
     if isActive == true then return 'active' end
     if info.kind == 'switch' and st.userOff and st.userOff[spell.id] then return 'useroff' end
     if info.kind == 'switch' and isActive == nil then return 'nobar' end
+  end
+  -- the buff did not show after our last cast(s): wait longer each time
+  if info.expectBar and st.castAt[spell.id] then
+    local n = H.unanswered(st, spell.id)
+    if n >= 1 then
+      local hold = math.min(H.RECAST_MIN_MS * 2 ^ (n - 1), H.NOBUFF_MAX_MS)
+      if now - st.castAt[spell.id] < hold then return 'backoff' end
+    end
   end
   -- refused again and again (no cooldown answer from the server): rest after the last try
   local refused = ctx.refusals and ctx.refusals(spell) or 0
@@ -558,9 +580,21 @@ function H.takeUserOff(st, cfg, now)
   return out
 end
 
+-- how many casts of this spell in a row were not followed by its buff (the last one counts once the wait is over)
+function H.unanswered(st, id)
+  local n = (st.misses or {})[id] or 0
+  if st.castAt[id] and not (st.sawSince or {})[id] then n = n + 1 end
+  return n
+end
+
 -- the cast went out
 function H.noteCast(st, spell, now)
   local info = H.info(spell)
+  st.misses, st.sawSince = st.misses or {}, st.sawSince or {}
+  if info.expectBar then
+    st.misses[spell.id] = st.castAt[spell.id] and H.unanswered(st, spell.id) or 0
+    st.sawSince[spell.id] = false
+  end
   st.castAt[spell.id] = now
   st.settleUntil[spell.id] = now + (info.kind == 'switch' and H.SWITCH_SETTLE_MS or H.SETTLE_MS)
   st.casts = st.casts + 1
@@ -569,6 +603,7 @@ end
 function H.reset(st)
   st.castAt, st.settleUntil, st.status, st.seen, st.casts = {}, {}, {}, {}, 0
   st.barOn, st.userOff = {}, {}
+  st.misses, st.sawSince = {}, {}
 end
 
 return ChaosHelperSupport

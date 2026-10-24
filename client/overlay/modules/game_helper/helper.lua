@@ -70,7 +70,8 @@ local saveEvent = nil
 local loaded = false         -- this character's file was read
 local status = { reason = nil }
 local pzWas = false
-local lastHasteAt, lastFoodAt = nil, nil
+local hasteState = { misses = 0 }
+local lastFoodAt = nil
 local lastPos, lastMovedAt = nil, 0
 local frozenUntil = 0
 local errorsSeen = {}
@@ -1371,10 +1372,19 @@ local function hasteTick(player, pz)
   local row = helperConfig.haste[1]
   if not row.enabled or (tonumber(row.id) or 0) <= 0 then return end
   local hasted = PlayerStates and PlayerStates.Haste and player:hasState(PlayerStates.Haste) or false
-  if not Logic.hasteDue(row, { hasted = hasted, now = now(), last = lastHasteAt, inProtectionZone = pz }) then return end
+  Logic.hasteObserve(hasteState, hasted)
+  if not Logic.hasteDue(row, { hasted = hasted, now = now(), last = hasteState.last, misses = hasteState.misses,
+      inProtectionZone = pz }) then return end
   if casting() then return end
   local s = spellById(row.id)
-  if s and ready(s, player) and cast(s, 'support') then lastHasteAt = now() end
+  -- a saved haste the character cannot cast any more (Galeborne Stride, retired 2026-10-23): the best one it has
+  if not (s and Spl.eligible('haste', s, spellCtx(player))) then
+    local id = Spl.bestHaste(spellById, spellCtx(player))
+    if not id then return end
+    row.id = id
+    s = spellById(id)
+  end
+  if s and ready(s, player) and cast(s, 'support') then Logic.hasteCast(hasteState, now()) end
 end
 
 local function foodTick(player)
@@ -1824,7 +1834,7 @@ local function online()
   lists, spellCache = nil, nil
   rotation, castTimers = nil, nil
   spellsCooldown, groupsCooldown = {}, {}
-  lastRun, lastHasteAt, lastFoodAt, frozenUntil, pzWas = {}, nil, nil, 0, false
+  lastRun, hasteState, lastFoodAt, frozenUntil, pzWas = {}, { misses = 0 }, nil, 0, false
   sellState, followState, allyState = Sell.newState(), Follow.newState(), Ally.newState()
   local player = me()
   lastLevel = player and player:getLevel() or nil

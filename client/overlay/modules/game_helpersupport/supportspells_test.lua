@@ -586,5 +586,41 @@ do
   eq(#kept, 1, 'the real support spell stays')
 end
 
+-- a haste (Fleetfoot, id 6): no recast while the player is hasted, a backoff when the cast gives no haste
+-- (owner report 2026-10-24: the retired haste was said twice a second for minutes)
+do
+  local fleet = byId[6] or { id = 6, name = 'Fleetfoot', words = 'ruan ul', level = 1, mana = 20, group = { [3] = 2000 },
+    exhaustion = 2000, vocations = { 1 } }
+  byId[6] = fleet
+  local hasted = false
+  local function hctx(w) local c = w.ctx() c.hasted = function() return hasted end return c end
+  local st, w = H.newState(), world({ bar = {} })
+  local cfg = cfgOf({ 6 })
+  hasted = true
+  eq(H.pick(st, cfg, hctx(w)), nil, 'hasted: no cast')
+  eq(st.status[6], 'active', 'status: active (player state)')
+  H.noteCast(st, fleet, now)
+  now = now + 120000
+  eq(H.pick(st, cfg, hctx(w)), nil, 'hasted for minutes: still no recast')
+  hasted = false
+  eq((H.pick(st, cfg, hctx(w)) or {}).id, 6, 'the haste ran out: cast')
+
+  -- the cast gives no haste: casts a minute, two minutes, four minutes apart, not every settle
+  st, w = H.newState(), world({ bar = {} })
+  local t0, casts = now, 0
+  while now < t0 + 600000 do
+    local s = H.pick(st, cfg, hctx(w))
+    if s then H.noteCast(st, s, now) casts = casts + 1 end
+    now = now + 500
+  end
+  ok(casts >= 3 and casts <= 5, 'no haste for ten minutes: 3 to 5 casts, got ' .. casts)
+  eq(H.unanswered(st, 6) >= 3, true, 'the misses are counted')
+  -- the haste shows once: the count starts again
+  hasted = true
+  H.pick(st, cfg, hctx(w))
+  hasted = false
+  eq(H.unanswered(st, 6), 0, 'a seen haste clears the misses')
+end
+
 if fails > 0 then error(fails .. ' failure(s)') end
 print('supportspells_test: OK')
