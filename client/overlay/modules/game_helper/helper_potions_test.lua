@@ -33,17 +33,15 @@ eq(P.expected(266, 1000), 180, 'everfull health at 1000 max')
 eq(P.expected(268, 1000), 130, 'everfull mana at 1000 max')
 eq(P.expected(99999, 1000), nil, 'unknown item')
 
--- classes
+-- classes: none (owner 2026-10-24); the level still gates
 eq(P.canDrink(266, 'mystic', 1), true, 'the everfull flask: everyone')
 eq(P.canDrink(23375, 'warrior', 200), true, 'supreme for a warrior at 200')
 eq(P.canDrink(23375, 'warrior', 199), false, 'supreme below its level')
-eq(P.canDrink(23375, 'mystic', 300), false, 'supreme is not for mages')
-eq(P.canDrink(23373, 'mystic', 130), true, 'ultimate mana for a mystic')
-local offered = P.offered('mystic', 1)
-eq(#offered, 3, 'a level 1 mystic: the small, the health and the mana potion') -- 7876, 266, 268
-local have = {}
-for _, p in ipairs(offered) do have[p.id] = true end
-eq(have[266] and have[268] and have[7876], true, 'level 1 offer')
+eq(P.canDrink(23375, 'mystic', 300), true, 'supreme for a mystic: no class limit')
+eq(P.canDrink(7642, 'warrior', 80), true, 'spirit for a warrior')
+eq(P.canDrink(238, 'warrior', 300), true, 'great mana for a warrior')
+for _, p in ipairs(P.LIST) do eq(p.lines, nil, p.name .. ' has no class list') end
+eq(#P.offered('mystic', 1), #P.LIST, 'every potion is offered to everyone')
 
 -- rowKind
 eq(P.rowKind({ id = 266 }), 'health', 'row kind health')
@@ -80,6 +78,48 @@ eq(P.healthDue(rows, 100), false, 'health not due')
 -- a priority tie
 local tie = { { id = 266, percent = 50, priority = 2 }, { id = 236, percent = 50, priority = 1 } }
 eq(P.pick(tie, { healthPct = 10, manaPct = 100 }), 236, 'priority breaks a tie')
+
+-- the list against the server: every potion the Apothecary sells (server/data/scripts/chaos/apothecary_config.lua, the
+-- tiers of the stock potions.lua) is in the list under its server id, with the same name and level; none is left out
+local okLoad, shop = pcall(dofile, dir .. '../../../../server/data/scripts/chaos/apothecary_config.lua')
+eq(okLoad and type(shop) == 'table', true, 'apothecary_config.lua loads')
+if okLoad and type(shop) == 'table' then
+  local bySrv, n = {}, 0
+  for _, p in ipairs(P.LIST) do
+    eq(type(p.server), 'number', p.name .. ' has a server id')
+    eq(bySrv[p.server], nil, p.name .. ' server id is unique')
+    bySrv[p.server] = p
+  end
+  for _, sp in ipairs(shop.potions) do
+    if sp.id ~= 8474 then -- the antidote is no health or mana potion
+      n = n + 1
+      local p = bySrv[sp.id]
+      eq(p ~= nil, true, 'server potion ' .. sp.id .. ' (' .. sp.name .. ') is in the helper list')
+      if p then
+        eq(p.name:lower(), sp.name, 'name of ' .. sp.id)
+        eq(p.level, math.max(sp.level, 1), 'level of ' .. sp.id)
+      end
+      bySrv[sp.id] = nil
+    end
+  end
+  -- what is left is the Everfull look (7618 is sold as the health potion; the Everfull flasks wear its look)
+  eq(next(bySrv), nil, 'every helper potion is sold by the Apothecary')
+  eq(n, #P.LIST, 'the same number of potions')
+end
+
+-- the dropdown: health, then mana, then spirit (health and mana entries), the strongest first
+local function keys()
+  local t = {}
+  for _, e in ipairs(P.options()) do t[#t + 1] = e.key end
+  return table.concat(t, ',')
+end
+eq(keys(), '23375,7643,239,236,266,7876,23373,238,237,268,23374:1,23374:2,7642:1,7642:2', 'the dropdown order')
+local seenKey = {}
+for _, e in ipairs(P.options()) do
+  eq(seenKey[e.key], nil, 'no double entry ' .. e.key)
+  seenKey[e.key] = true
+end
+eq(#P.options(), 14, '10 plain potions and two spirit potions with two entries each')
 
 if fails > 0 then os.exit(1) end
 print('helper_potions_test: ok')

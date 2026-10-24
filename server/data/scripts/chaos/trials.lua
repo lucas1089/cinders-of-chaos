@@ -533,7 +533,8 @@ local function startStage(tr)
 		say(tr, "Marked targets come one after another. Kill each before it slips away.")
 	elseif stage.kind == "boss" then
 		local scale = tr.scale
-		local m = Game.createMonster("Trial Warden", P(tr.L.bossStart), false, true)
+		-- O177: the warden shows the level its numbers were scaled to (M.scale: the player's level within the tier)
+		local m = Chaos.createMonsterNamed("Trial Warden", P(tr.L.bossStart), false, true, nil, scale.level)
 		if not m then
 			log("cannot create Trial Warden (is data/monster/monsters/chaos/trials registered?)")
 			finish(tr.pid, "error", "The guardian did not answer the call. Nothing is lost; please tell the staff.")

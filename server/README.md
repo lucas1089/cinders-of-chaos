@@ -809,7 +809,7 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7102720 - 7102739 | day book (`embercache_config.lua` `daybook`): +0 day, +1/+2 experience (hi x 1e9 + lo), +3 kills, +4/+5 loot gold, +6/+7 supplies gold, +8 orbs, +9 uniques, +10 rarity items, +11 deaths, +12 level at the day's start, +13 seconds played, +14 Ember points; +15..19 free |
 | 7102750 - 7102779 | tutorial reset (`Chaos.storage.tutorialSnapshot`, `newplayer_core.lua` `NP.SNAP`): +0 saved, +1 level, +2/+3 experience (hi x 1e9 + lo), +4 magic level, +5 mana spent, +6 max health, +7 max mana, +8 capacity, +9 leather armors, +10 orbs, +11..+17 skill levels, +18..+24 skill tries; +25..29 free |
 | 7102740 - 7102744 | gentle deaths (`gentledeath_config.lua` `storage`): +0 day of the last first-death-of-the-day discount, +1 Eternal Blessing owned; +2..4 free |
-| 7102500 - 7102509 | Paragon exchange (`Chaos.storage.paragonConverted`, "Soft caps, Paragon Mastery and totals (O146)"): +0 free passive tree points exchanged for Paragon points (subtracted from the tree's points, added to Paragon's); +1..9 free |
+| 7102500 - 7102509 | Paragon exchange (`Chaos.storage.paragonConverted`, "Soft caps, Paragon Mastery and totals (O146)"): +0 free passive tree points exchanged for Paragon points (subtracted from the tree's points, added to Paragon's); +1 `paragonLegacy`: the Paragon points the O135 track change took, given back once at the first login after the fix (-1 = not yet, O174); +2..9 free |
 | 7102400 - 7102409 | time-friendly progression (`catchup_config.lua` `storage`): +0 rested pool (centi-minutes), +1 day of the last low stamina notice, +2 the returning boost this character was welcomed for; +3 bounty rerolls held (`bounty_config.lua` `rerollStorage`), +4 kill task board rerolls held, +5 the task day of +6, +6 the board rerolls used that day (`bestiary_config.lua` `rerollStorage`); +7..9 free |
 | 7102460 - 7102469 | Candlemarks (`candlemarks_config.lua` `storage`): +0 the id of the last Candlemark purchase delivered to the character (the crash-safe delivery mark); +1..9 free |
 | 7102490 - 7102499 | rarity migration (`rarity_migrate.lua`): +0 the version of the walk this character had; +1..9 free |
@@ -1204,6 +1204,27 @@ Solo dungeons (O147, beta feedback 2026-10-22: "dungeons need two players; my te
   found and closed: a won run stays in `runs[]` for `exitDelayMs` (10 s) with `ended` set, and `runAt` skipped ended runs,
   so the map could respawn the boss and the trash beside the group while it walked out. `runAt` now holds until the
   teardown. `tests/dungeons_area_test.lua` (blocks "solo entry and party scaling" and "the old bug") fails on the old code.
+- **All monsters at the entry (O179, owner 2026-10-24: "make them all spawn at once when the player enters").** A run
+  places every monster in the entry tick, before the players are teleported in: `startRun` clears the area, makes the
+  map's monsters from the start-up record (`ChaosDungeonMapSpawns`, now a global, so a `/reload` of the scripts keeps it),
+  then the base list (`SpawnMonsters`; it used to be made before the clean-up, which removed it again), then a generated
+  dungeon's points (`areagen.lua populate`). No `addEvent` spawns anything later. The run counts only that **roster**
+  (`run.roster`, monster ids at the start): `run.total` is fixed, "Monsters Alive" (`left`) only goes down, and a monster
+  that appears later (a boss fight's add) is not counted. Other mid-run paths closed: the Treasure Goblin replacing a
+  respawn (`treasure_goblin.lua` `onSpawn`) and the tier ambush copy (`monster_tiers.lua`, at the kill and again after its
+  600 ms delay) ask `ChaosDungeons.runAt(pos)` and do nothing inside a running dungeon. Boss rules are unchanged (base
+  dungeons: the boss stands there from the start; generated: it appears at the 85% unlock). Teardown still clears the
+  area. Most monsters at once: 119 (Bones Dungeon, `keep` in `tools/spawn_tuning.json`); the generated dungeons place
+  fewer. Estimate, not measured live: 0.1-0.3 ms per `Game.createMonster` with its `onSpawn` callbacks, so 120 monsters
+  take about 12-40 ms in one tick (one dropped frame of the 50 ms loop at worst), plus the health scaling (about 2 ms).
+  No install step: scripts only (`files` step and a restart).
+- **Stuck safety (O180, owner: "stuck at 83% with 20 monsters alive").** The percent is a scan of the area, so an alive
+  monster nobody can reach (a map spawn behind a wall or in a closed room of dungeon 1's widened boxes) keeps it below 85%.
+  `Chaos.dungeons.stall` (`seconds` 150, `minPercent` 60, `hintEveryMs` 30000, `hintMax` 5): with no progress for that
+  long the members get "N monsters are left. Nearest: x,y,z ..." and an effect on those tiles, and from `minPercent` on
+  the boss is unlocked anyway (`stallCheck`). Kill credit is not involved; summons are not counted; a monster removed
+  without a death is gone from the scan. The real cause on the live map is not confirmed: run dungeon 1 and read the hint
+  coordinates, they are the unreachable spawns (fix them with a `patch_*.py`, never by hand).
 
 Beta test mode (O147)
 - `Chaos.betaMode` = `data/scripts/chaos/beta_mode_config.lua` (`enabled`, default **false**), read when the scripts start
@@ -4797,6 +4818,17 @@ Owner request 2026-10-16: "Remove the potion flasks and make the first pots infi
   `{id = ..., buy = ...}` row removed). A text about a flask deposit (it says "deposit" and names a flask, vial or potion:
   NPC dialogue, keyword replies, script messages, the flask descriptions in items.xml) loses its deposit and flask
   sentences, or becomes `flaskText` ("Potions no longer leave an empty flask. A potion store still buys old flasks.").
+- **Open potions** (owner 2026-10-24: "let every class use any type of potion", ROADMAP O175). `tools/patch_open_potions.py`
+  (install step `openpotions`, after `vocations`) removes the `vocations = {...}` list of every health, mana and spirit
+  entry of the base `data/actions/scripts/other/potions.lua`, so no class is refused; the refusal text of the entry becomes
+  "Only characters of level N or above may drink this fluid." and the Look text in `items.xml` "This potion can be consumed by
+  characters of level N or higher." **The level gates stay** (50 strong, 80 great and great spirit, 130 ultimate, 200
+  supreme; the base file has its own for the later tiers): they keep a low character off the strongest potions, and the
+  Apothecary refuses a buyer below them too. The buff potions (berserk, mastermind, bullseye: a condition, no heal) keep their
+  lists, as does `strengthening_potions.lua`. `add_vocations.py` only appends to a list that exists, so its re-run brings
+  nothing back. Tests: `tools/patch_open_potions_test.py`; `tests/potions_patch_test.lua` runs the patched script on a mock
+  engine and checks that every vocation id (0-25: the stock ones, Thief, Ninja, Samurai, Necromancer, Lich, Templar and the
+  rest) drinks every healing potion. The helper client lists all of them (`helper_potions.lua`).
 - **Old flasks keep their value.** Nothing removes the flasks players hold. The NPCs' `shop_sellable` entries stay and
   the Loot Buyer and the Auto Seller still pay the old 5 gold each (`sell_prices.lua`), so nobody loses gold. No source
   creates new ones.
@@ -18295,6 +18327,19 @@ type in a rift showed its rolled "[777]"). Display only, as above.
 - Base dungeons (`dungeons.lua`) are not level-scaled: a difficulty multiplies health and damage by percents after the
   placement, so their monsters keep their level.
 
+**Level of a scripted boss (O177, beta 2026-10-24: Kaelgor showed "Lv 10182" in its pocket).** The estimate of a world
+boss species' experience and health is only meant to rank monsters and is far above any level. Two guards, both
+display only (health, loot, pace and monster damage read other values: `MD.levelOf` uses the engine level, which a
+display level does not change):
+- The estimate is shown at most at the top hunting level, `ChaosMonsterLevelsCore.maxEstimate` = 2200
+  (`progression_config.lua` `limits.toLevel`; the test keeps them equal). A level a system passes
+  (`Chaos.spawnLevel`, the Infinity Tower's floors, which may be higher) is not clamped.
+- The scripted boss spawns pass the level of their fight through `Chaos.createMonsterNamed(..., level)`: pocket boss
+  (below), world boss and raid boss (their `minLevel`: 300 and 800), guild boss (`minLevel`), Ascended / uber bosses
+  (`def.minLevel`), Trial Warden (`scale.level`, the player's level within the tier). Left to the clamp: dungeon and
+  map monsters, nemesis, treasure goblins, the ascension quest guardian, adds and totems (stock monsters, no huge
+  estimate).
+
 Tests: `tests/monster_levels_test.lua`.
 
 ## Stop request file (`stop_request.lua`, `stop_request_core.lua`, `stop_request_config.lua`)
@@ -19484,6 +19529,14 @@ decides `K.needsFallbackLoot`, and a corpse that is no container is taken away a
 (`requestMs`, `ChaosRateLimit` key `pocketboss`) and take only a string key of at most 48 bytes; the pockets are
 instances (no Town Portal or hideout way in, intruders swept out); the re-entry cooldown; no stacking with the event
 hour; logout and death never refund.
+
+**Level of the boss (O177).** The boss is created with an explicit level (`K.bossLevel`, `Chaos.spawnLevel`), shown after
+its name; without it the bar showed the estimate of the species ("Lv 10182" for Kaelgor). World pocket: the world boss
+entry level (`Chaos.worldBoss.minLevel`, 300; the corpse is fixed at the world boss item level, so the monster level
+does not move the drop). Island and raid pockets: the level the drops already use (`ChaosLoot.typeLevel`: the bounty
+pool's hunting level, else the estimate), at least the pocket's entry level and at most 2200, so the number shown is
+the one the item level is rolled at. Display only: health (the pocket's factor), damage and loot are unchanged; the
+monster damage layer reads the engine level (`MD.levelOf`), not the display level.
 
 **Tests.** `tests/pocketboss_test.lua` (luajit and lua5.3): the list from the real configs, charges and the reset, bonus
 caps, refunds, the entry and party checks, scaling, the world reward rates over 20,000 rolls, no stacking, personal loot

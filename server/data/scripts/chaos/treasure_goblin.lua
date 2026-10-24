@@ -664,6 +664,10 @@ spawnCb.onSpawn = function(self, position, startup, artificial)
 	if artificial or TG.isGoblinName(self:getName()) then
 		return true
 	end
+	-- a running dungeon gets no new monster (O179): the dungeon's own callback refuses this respawn, no goblin in its place
+	if ChaosDungeons and ChaosDungeons.runAt and ChaosDungeons.runAt(position) then
+		return true
+	end
 	-- a display monster of the hunt teleport room (hunt_teleports.lua) is never replaced
 	local HT = ChaosHuntTeleports
 	if HT and HT.isDisplaySpot and HT.isDisplaySpot(position) then

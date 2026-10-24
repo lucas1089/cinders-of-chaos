@@ -1148,7 +1148,8 @@ end
 local function spawnBoss(run)
 	local cfg = C()
 	local def = cfg.boss
-	local m = Game.createMonster(def.boss, P(run.L.bossSpawn), false, true)
+	-- O177: the boss shows the level the fight is for (minLevel), not the species' experience / health estimate
+	local m = Chaos.createMonsterNamed(def.boss, P(run.L.bossSpawn), false, true, nil, cfg.minLevel)
 	if not m then
 		log("cannot create " .. def.boss .. " (is data/monster/monsters/chaos/guildboss registered?); the fuel is returned")
 		db.query(string.format("UPDATE `%s` SET `fuel` = `fuel` + %d, `attempts` = GREATEST(`attempts`, 1) - 1 WHERE `guild_id` = %d AND `week` = %d",

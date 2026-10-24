@@ -208,6 +208,10 @@ return {
 		-- the queue dungeons (dungeons.lua unlockBoss)
 		["Boss unlocked! %d%% of the monsters are dead: %s awaits you."] =
 			"Boss liberado! %d%% dos monstros estão mortos: %s espera por você.",
+		-- stuck safety (dungeons.lua, O180)
+		["%d monsters are left. Nearest: %s"] = "Restam %d monstros. Mais perto: %s",
+		["The last %d monsters could not be found. Boss unlocked: %s awaits you."] =
+			"Os últimos %d monstros não foram encontrados. Boss liberado: %s espera por você.",
 		-- the boss chest of a generated dungeon (areagen.lua AG.giveChest)
 		["Boss chest of %s: %d gold to your bank%s%s.%s"] = "Baú do chefe de %s: %d de ouro no seu banco%s%s.%s",
 		[" Your backpack was full: the rest is in your inbox."] = " Sua mochila estava cheia: o resto está na sua caixa de entrada.",
@@ -1988,6 +1992,8 @@ return {
 		-- Progression: Paragon, the passive tree, boss points, gems, salvage, archery, Ember Blessings (paragon.lua, passivetree.lua, bosspoints.lua, gems.lua, salvage.lua, archery.lua, blessings.lua)
 		["Your Paragon points were refunded for free: you had spent more than your %d points."] =
 			"Seus pontos Paragon foram devolvidos de graça: você tinha gastado mais do que seus %d pontos.",
+		["%d Paragon points came back: the points the track change of 2026-10-23 took. Open the passive tree and press Paragon."] =
+			"%d pontos Paragon voltaram: os pontos que a mudança do Paragon de 23/10/2026 tirou. Abra a árvore passiva e aperte Paragon.",
 		["You have %d unspent Paragon point%s. Open the passive tree and press Paragon."] =
 			"Você tem %d ponto%s Paragon sem gastar. Abra a árvore passiva e aperte Paragon.",
 		["Your passive tree was refunded for free: it held more nodes than your %d passive points. Please allocate them again."] =

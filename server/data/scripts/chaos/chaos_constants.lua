@@ -183,6 +183,9 @@ Chaos.storage = {
 	passiveStatsFixed = 7100021, -- 1 once the stats older passive tree versions wrote into the character are clamped
 	passiveClassFx = 7100022, -- the class nodes of the passive tree the character holds, a bit each (class_tree.lua)
 	passiveRework = 7100023, -- the last reworked-nodes version refunded (passivetree_config.lua reworked)
+	-- Paragon points kept from the track before O135 (1 point per level above 1000): set once at the first login after
+	-- the fix (paragon.lua P.grantLegacy), -1 = not yet; the O135 cut wiped allocations through the login refund
+	paragonLegacy = 7102501,
 	paragonConverted = 7102500, -- free passive tree points the character exchanged for Paragon points (paragon.lua, O146); 7102500 - 7102509 reserved
 	archetypeFlags = 7100024, -- the build archetype keystones held, a bit each (archetypes_config.lua storage)
 	vigils = 7100025, -- the vigils switched on, a bit each (vigils_config.lua storage)
@@ -589,6 +592,11 @@ Chaos.dungeons = {
 	-- get "Boss unlocked!", a generated dungeon (areagen.lua) opens its boss room gate and spawns its boss; a run is won
 	-- when the boss dies after that (dungeons.lua unlockBoss)
 	progressNeeded = 85,
+	-- stuck safety (O180, owner 2026-10-24: "stuck at 83% with 20 monsters alive, can't find them"): when the kill percent
+	-- has not moved for `seconds`, the members are told where the nearest remaining monsters stand (a text line and an
+	-- effect on their tiles, every `hintEveryMs`, at most `hintMax`); once the percent is at least `minPercent` the boss is
+	-- unlocked anyway (the rest may stand where nobody can reach them), so a map flaw never blocks a run
+	stall = {seconds = 150, minPercent = 60, hintEveryMs = 30000, hintMax = 5},
 	-- area = {{from, to}, ...}: boxes that belong to the dungeon next to the base FromPos/ToPos box (dungeons.lua areaOf),
 	-- for the parts that box misses: measured on the base map and its boss scripts (server/README.md "dungeons")
 	extra = {

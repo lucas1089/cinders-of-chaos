@@ -444,6 +444,7 @@ Game = {
 	end,
 	createMonster = function(name, p)
 		local m = newMonster(name, p)
+		m.spawnLevel = Chaos.spawnLevel -- O177: what Chaos.createMonsterNamed handed monster_levels.lua
 		for _, cb in ipairs(callbacks.onSpawn or {}) do
 			cb.fn(m, p, false, true)
 		end
@@ -778,6 +779,10 @@ local function pocketKill(key, corpseOf)
 	local r = PB.runOf[a:getId()]
 	advance(pcfg.startDelay + 1)
 	local boss = Monster(r.bossId)
+	-- O177: the boss is created with an explicit level (never the species' estimate): the entry level of its pocket
+	-- for a world boss, else the level its drops use, within the pocket's entry level and the top hunting level
+	ok(boss.spawnLevel ~= nil and boss.spawnLevel >= r.boss.minLevel and boss.spawnLevel <= 2200,
+		key .. ": the boss carries a sane level (" .. tostring(boss.spawnLevel) .. ")")
 	function boss:getType()
 		return {isRewardBoss = function() return false end,
 			getLoot = function() return {{itemId = 2152, chance = 100000, maxCount = 8}, {itemId = 7778, chance = 100000}} end}
@@ -938,5 +943,17 @@ eq(#zero.items, 1, "base orbs x0.6 rounded up on a high roll")
 eq(zero.items[1].count, 1, "2 x 0.6 = 1.2 rounds to 1")
 local noPicks = K.islandReward({base = {}, picks = 3, pool = {}}, 1, {1}, cardsT, lcg)
 eq(#noPicks.items + #noPicks.gear + #noPicks.cards, 0, "an empty pool gives nothing")
+
+-- O177: the level a pocket boss is spawned with (K.bossLevel)
+eq(K.bossLevel({category = "world", minLevel = 300}, 10182, 2200), 300, "a world pocket: the world boss entry level")
+eq(K.bossLevel({category = "world", minLevel = 300}, nil, 2200), 300, "a world pocket without a loot level")
+eq(K.bossLevel({category = "island", minLevel = 250}, 700, 2200), 700, "an island pocket: the level its drops use")
+eq(K.bossLevel({category = "island", minLevel = 250}, 10182, 2200), 2200, "a huge loot level: the top hunting level")
+eq(K.bossLevel({category = "raid", minLevel = 150}, 40, 2200), 150, "below the entry level: the entry level")
+eq(K.bossLevel({category = "raid", minLevel = 150}, nil, 2200), 150, "unknown loot level: the entry level")
+eq(K.bossLevel({category = "raid", minLevel = 150}, 0 / 0, 2200), 150, "NaN loot level: the entry level")
+eq(K.bossLevel({category = "raid"}, nil, 2200), 1, "no entry level: 1")
+eq(K.bossLevel(index.byKey.world_1, 10182, 2200), Chaos.worldBoss.minLevel,
+	"world_1 (Kaelgor's pocket): the entry level, not 10182")
 
 print(string.format("pocketboss_test: %d checks passed", checks))

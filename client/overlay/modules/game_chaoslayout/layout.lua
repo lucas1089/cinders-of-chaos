@@ -23,6 +23,10 @@ local saved = nil       -- this character's layout (as restored, then as saved)
 local pending = {}      -- saved miniwindows not found at the restore: placed when they appear
 local big = {}          -- [id] = { widget, restored }
 local tickEvent, startEvent = nil, nil
+local passEvents = {}   -- the later restore passes (L.PASSES)
+local memory = {}       -- [key] = the layout last written this run (the settings file is the other copy)
+
+local function nowMs() return g_clock and g_clock.millis and g_clock.millis() or 0 end
 
 local function gameRoot()
   local gi = modules.game_interface
@@ -79,8 +83,9 @@ end
 
 local function write(layout)
   local key = charKey()
-  if not L.canSave(st, key) then return end
-  if not L.changed(st, layout) then return end
+  if not L.canSave(st, key, nowMs()) then return end
+  if not L.settle(st, layout) then return end
+  memory[key] = layout
   local node = g_settings.getNode(L.NODE) or {}
   node[key] = layout
   g_settings.setNode(L.NODE, node)
@@ -171,6 +176,28 @@ local function restoreMini()
   end
 end
 
+-- a later pass: whatever the base client (or a module) closed after the restore and the layout has open goes back
+local function reopenPass()
+  if not g_game.isOnline() or not saved or not saved.mini then return end
+  local windows = windowsById()
+  local visible = {}
+  for id, w in pairs(windows) do visible[id] = w:isExplicitlyVisible() end
+  local want = {}
+  for _, id in ipairs(L.reopenIds(saved, visible)) do want[id] = true end
+  if not next(want) then return end
+  local existing, first, byId = panelsMaps()
+  for panelId, list in pairs(L.placement(saved, existing, first)) do
+    local target = byId[panelId]
+    for i, e in ipairs(list) do
+      if want[e.id] and windows[e.id] and target then
+        pcall(applyOne, windows[e.id], target, i, e)
+        if g_logger and g_logger.info then g_logger.info('[chaoslayout] window ' .. e.id .. ' was closed after login, opened again') end
+      end
+    end
+    if target and target.fitAll then pcall(target.fitAll, target) end
+  end
+end
+
 local function placeLate()
   if not next(pending) then return end
   local _, _, byId = panelsMaps()
@@ -242,11 +269,17 @@ local function tick()
   tickEvent = scheduleEvent(tick, TICK)
 end
 
+local function clearPasses()
+  for _, e in ipairs(passEvents) do removeEvent(e) end
+  passEvents = {}
+end
+
 local function onGameStart()
   L.begin(st)
   saved, pending = nil, {}
   for _, b in pairs(big) do b.restored, b.rect = false, nil end
   if startEvent then removeEvent(startEvent) end
+  clearPasses()
   -- after game_interface and the panel modules have set up their windows
   startEvent = scheduleEvent(function()
     startEvent = nil
@@ -254,11 +287,26 @@ local function onGameStart()
     local key = charKey()
     local node = g_settings.getNode(L.NODE) or {}
     saved = type(node[key]) == 'table' and node[key] or nil
+    if not saved then saved = memory[key] end
     pcall(restoreMini)
     L.restored(st, key, saved)
     watchBig()
     if not tickEvent then tickEvent = scheduleEvent(tick, TICK) end
-  end, 800)
+    -- the passes after the first: the base client and some modules close or move windows a little later
+    local passes = L.PASSES
+    for i = 2, #passes do
+      passEvents[#passEvents + 1] = scheduleEvent(function()
+        pcall(reopenPass)
+        if i == #passes then L.release(st) end
+      end, passes[i] - passes[1])
+    end
+    if #passes < 2 then L.release(st) end
+  end, L.PASSES[1])
+end
+
+-- a death closes windows (and the fast relog follows): what is open now is not the layout to keep
+local function onDeath()
+  L.freeze(st, nowMs())
 end
 
 local function onGameEnd()
@@ -266,14 +314,15 @@ local function onGameEnd()
   L.begin(st)
   if startEvent then removeEvent(startEvent) startEvent = nil end
   if tickEvent then removeEvent(tickEvent) tickEvent = nil end
+  clearPasses()
 end
 
 function M.init()
-  connect(g_game, { onGameStart = onGameStart, onGameEnd = onGameEnd })
+  connect(g_game, { onGameStart = onGameStart, onGameEnd = onGameEnd, onDeath = onDeath })
   if g_game.isOnline() then onGameStart() end
 end
 
 function M.terminate()
-  disconnect(g_game, { onGameStart = onGameStart, onGameEnd = onGameEnd })
+  disconnect(g_game, { onGameStart = onGameStart, onGameEnd = onGameEnd, onDeath = onDeath })
   onGameEnd()
 end

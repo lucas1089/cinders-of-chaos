@@ -1,5 +1,5 @@
 -- Twin Verdict: two heavy holy strikes at the target 0.6 s apart, each 1.3 times Final Verdict's; +50% against a
--- target below 25% health, checked for each strike. 16 s cooldown (the cooldown ladder, 2026-10-20; was 24 s).
+-- target below 25% health, checked for each strike. 12 s cooldown (the cooldown ladder, 2026-10-20: 16 s, was 24 s; O176, 2026-10-24: 12 s).
 dofile('data/spells/scripts/chaos/_common.lua')
 
 local SCALE = 1.3

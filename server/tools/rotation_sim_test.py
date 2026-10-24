@@ -127,8 +127,12 @@ for cls, _, _ in R.CLASSES:
             check(len(best['spells']) <= R.MAX_SPELLS, '%s %d: at most 5 spells' % (cls, lv))
             check(not {s.words for s in best['spells']} & utility, '%s %d: no snare in the set' % (cls, lv))
 
-# the cooldown ladder (owner 2026-10-20): every attack spell's cooldown is its rung x 2 s, the group cooldown 2 s, and
-# every class's first (level 8) spell is 2 s
+# the cooldown ladder (owner 2026-10-20; O176, owner 2026-10-24: the strongest rungs one second apart instead of two): every
+# attack spell's cooldown is the cooldown of its rung (2, 4, 6, 7 ... 13 s), the group cooldown 2 s, and every class's
+# first (level 8) spell is 2 s; a class's cooldowns rise with the rung and none is under the 2 s attack group cooldown
+check(R.LADDER_COOLDOWNS == (2000, 4000, 6000, 7000, 8000, 9000, 10000, 11000, 12000, 13000), 'the ladder: 2, 4, 6, 7 ... 13 s')
+check(all(a < b for a, b in zip(R.LADDER_COOLDOWNS, R.LADDER_COOLDOWNS[1:])) and R.LADDER_COOLDOWNS[0] >= int(R.GCD * 1000),
+      'the ladder rises and starts at the attack group cooldown')
 final, per_class, _ = R.ladder(spells, model)
 for s in spells:
     if s['group'] == 'attack':
@@ -140,18 +144,18 @@ for cls, rows in per_class.items():
     check(all(rows[i][2] <= rows[i + 1][2] for i in range(1, len(rows) - 1)), '%s: weakest to strongest' % cls)
 
 # the class spell factor (spell_factor_config.lua): read from the server's table, applied to every spell of the class
-check(R.spell_factors() == {3: 1.12, 4: 1.0, 5: 0.7, 7: 1.25, 8: 1.09, 10: 0.73, 11: 0.91, 12: 1.09, 13: 1.05, 14: 1.08, 15: 1.17, 17: 0.87, 18: 0.8, 19: 0.99,
-                            20: 0.69, 21: 0.92, 22: 0.71, 23: 0.63, 24: 0.77, 25: 0.6},
+check(R.spell_factors() == {1: 1.07, 3: 1.03, 4: 1.03, 5: 0.64, 7: 1.01, 8: 1.05, 10: 0.74, 11: 0.94, 12: 1.17, 13: 1.15, 14: 1.04, 15: 1.07, 17: 0.96,
+                            18: 0.79, 19: 1.16, 20: 0.67, 21: 0.92, 22: 0.66, 23: 0.64, 24: 0.76, 25: 0.64},
       'the class spell factors (the end of each curve) of spell_factor_config.lua')
-check(R.spell_factor('Mystic') == 1.0 and R.spell_factor('Templar') == 0.63, 'a class not listed keeps 1')
-check(R.spell_factor('Thief', 300) == 0.89 and R.spell_factor('Ninja', 300) == 0.84 and R.spell_factor('Samurai', 1000) == 1.05,
+check(R.spell_factor('Mystic') == 1.07 and R.spell_factor('Templar') == 0.64, 'every class has a factor since O176 (the Mystic and the Elementalist got a curve)')
+check(R.spell_factor('Thief', 300) == 0.96 and R.spell_factor('Ninja', 300) == 0.9 and R.spell_factor('Samurai', 1000) == 1.15,
       'the Thief line has a curve since C2 (2026-10-24)')
-check(R.spell_factor('Templar', 300) == 0.57 and R.spell_factor('Templar', 5000) == 0.63, 'the level curve (O136)')
-check(abs(R.spell_factor('Templar', 35) - 0.805) < 1e-9 and R.spell_factor('Templar', 1) == 0.6, 'the curve is linear between points')
+check(R.spell_factor('Templar', 300) == 0.61 and R.spell_factor('Templar', 5000) == 0.64, 'the level curve (O136)')
+check(abs(R.spell_factor('Templar', 35) - 0.8055555555555556) < 1e-9 and R.spell_factor('Templar', 1) == 0.6, 'the curve is linear between points')
 smite = [s for s in spells if s['name'] == 'Radiant Smite']
 t = R.prepare(smite, model, 'Templar', 300)[0].dmg
 w = R.evaluate(model[smite[0]['words']]['dmg'], R.stats('Templar', 300))
-check(abs(t - 0.57 * w) < 1e-6, 'Templar 300: Radiant Smite x0.57 in the simulation (%.1f, %.1f)' % (t, w))
+check(abs(t - 0.61 * w) < 1e-6, 'Templar 300: Radiant Smite x0.61 in the simulation (%.1f, %.1f)' % (t, w))
 
 # the client data is up to date
 text = R.client_data(spells, model)

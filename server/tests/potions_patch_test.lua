@@ -259,6 +259,59 @@ _, text = drink(12, 26735, 100)
 eq(text, "Only Warriors, Rangers, Thieves, Monks and Templars of level 200 or above may drink this fluid.",
 	"the stock text that named knights only now matches its list")
 
+-- ---------------------------------------------------------------- open potions (patch_open_potions.py)
+-- Owner 2026-10-24: every class drinks every health, mana and spirit potion; the level gates stay. The tool runs after
+-- add_vocations.py on the patched script; every vocation id of docs/CLASSES.md (and the stock ones) must drink them all.
+local function runOpen(text)
+	local path = os.tmpname()
+	local f = assert(io.open(path, "wb"))
+	f:write(text)
+	f:close()
+	local cmd = "python3 -I -c \"import sys; sys.path.insert(0, 'tools'); import patch_open_potions as o; "
+		.. "t = open(sys.argv[1], newline='').read().replace(chr(13)+chr(10), chr(10)); n, c = o.patch_potions(t); "
+		.. "open(sys.argv[1], 'w', newline='').write(n.replace(chr(10), chr(13)+chr(10))); print(c)\" " .. path
+	local h = assert(io.popen(cmd))
+	local count = tonumber((h:read("*a") or ""):match("%d+"))
+	h:close()
+	f = assert(io.open(path, "rb"))
+	local out = f:read("*a")
+	f:close()
+	os.remove(path)
+	return out, count
+end
+local opened, on = runOpen(patched)
+eq(on, 7, "every healing potion with a vocation list opened")
+local openedAgain, on2 = runOpen(opened)
+eq(on2, 0, "open potions: second run does nothing")
+eq(openedAgain, opened, "open potions: second run changes nothing")
+eq((runOpen((runPatch(STOCK)))), opened, "stock and patched give the same result")
+local oenv = setmetatable({}, {__index = _G})
+local ochunk = assert((loadstring or load)(opened, "potions.lua", "t", oenv))
+if setfenv then
+	setfenv(ochunk, oenv)
+end
+ochunk()
+local allVocations = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25}
+local healing = {7588, 7590, 7591, 7618, 8472, 26735, 26736, 26737}
+for _, voc in ipairs(allVocations) do
+	for _, id in ipairs(healing) do
+		drank, said = {}, nil
+		local p = makePlayer(voc, 300)
+		oenv.onUse(p, {getId = function() return id end}, {}, p, {}, false)
+		ok(#drank > 0, "vocation " .. voc .. " drinks potion " .. id)
+	end
+end
+-- the level gate stays, for everyone, with a text that names no class
+drank, said = {}, nil
+local low = makePlayer(12, 79)
+oenv.onUse(low, {getId = function() return 8472 end}, {}, low, {}, false)
+eq(#drank, 0, "great spirit below level 80 is refused")
+eq(said, "Only characters of level 80 or above may drink this fluid.", "level refusal names no class")
+local _, lists = opened:gsub("vocations = {", "")
+eq(lists, 2, "only the berserk and the mastermind potion keep a class list")
+-- the buff potions keep their lists
+eq((drink(1, 7439)), false, "berserk potion stays for the knights' lines")
+
 -- ---------------------------------------------------------------- the mastermind potion (strengthening_potions.lua)
 -- the stock check, Player.isMage, knows 1, 2, 5 and 6 only: the Illusionist and the Necromancer line were refused
 local STRENGTH = table.concat({

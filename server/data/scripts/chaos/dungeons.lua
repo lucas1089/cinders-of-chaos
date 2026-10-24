@@ -788,7 +788,12 @@ end
 -- start inside a dungeon area is remembered (name and tile); (2) a run starts by clearing its area and creating all of
 -- them at once; (3) while a run lasts, the map's own respawn inside its area is refused (EventCallback onSpawn: a
 -- spawn that is neither the server start nor made by a script). The area spawns again when the run is over.
-local mapSpawns = {} -- [dungeonId] = { {name = , pos = }, ... }
+-- O179 (owner 2026-10-24: "all monsters spawn at once when the player enters"): the record survives a /reload of the
+-- scripts (a global), the base list (SpawnMonsters) is created after the clean-up instead of before it, the run counts
+-- only the monsters that stood there at the start (roster), and the other scripts that create monsters on a kill or a
+-- respawn (ambush copy, Treasure Goblin) ask ChaosDungeons.runAt(pos) and stay out of a running dungeon.
+ChaosDungeonMapSpawns = ChaosDungeonMapSpawns or {}
+local mapSpawns = ChaosDungeonMapSpawns -- [dungeonId] = { {name = , pos = }, ... }
 
 local function dungeonIdAt(pos)
 	for id, dg in pairs(baseDungeons()) do
@@ -811,7 +816,9 @@ local function runAt(pos)
 	return nil
 end
 
--- the base dungeon's own spawn list (dg.Monsters, SpawnMonsters) is created by startRun already; the map's are these
+ChaosDungeons.runAt = runAt -- the run whose area holds pos (also in the exit delay of a won run), else nil
+
+-- the map's monsters (the base dungeon's own SpawnMonsters list is made by startRun after this); all in one tick
 local function fillFromMap(dungeonId, dg, bossName)
 	local list = mapSpawns[dungeonId]
 	if not list or #list == 0 then
@@ -855,6 +862,20 @@ spawnCb.onSpawn = function(self, position, startup, artificial)
 end
 spawnCb:register(5)
 
+-- how many of the run's own monsters are alive: the roster ids among the scanned monsters (the boss is not one)
+local function rosterAlive(run, monsterList, bossName)
+	if not run.roster then
+		return #monsterList
+	end
+	local n = 0
+	for _, m in ipairs(monsterList) do
+		if run.roster[m:getId()] and not (bossName and m:getName():lower() == bossName) then
+			n = n + 1
+		end
+	end
+	return n
+end
+
 local function startRun(dungeonId, difficulty, players)
 	local dg = baseDungeons()[dungeonId]
 	local extra = extraOf(dungeonId)
@@ -878,6 +899,9 @@ local function startRun(dungeonId, difficulty, players)
 	runs[run.id] = run
 	runOfDungeon[dungeonId] = run
 
+	-- the map's monsters all stand there from the first second (see "map spawns"): the area is cleared first, then every
+	-- monster of the run is placed in this tick, before the players are teleported in (O179)
+	fillFromMap(dungeonId, dg, bossName)
 	if dg.SpawnMonsters and dg.Monsters then
 		for monsterName, position in pairs(dg.Monsters) do
 			local m = Game.createMonster(monsterName, position)
@@ -887,8 +911,6 @@ local function startRun(dungeonId, difficulty, players)
 			end
 		end
 	end
-	-- the map's monsters all stand there from the first second (see "map spawns")
-	fillFromMap(dungeonId, dg, bossName)
 	-- a generated dungeon (areagen.lua) fills its spawn points and its boss for every run
 	if extra.populate then
 		pcall(extra.populate, dungeonId)
@@ -912,6 +934,14 @@ local function startRun(dungeonId, difficulty, players)
 	local monsters, bosses, _, monsterList = scanArea(dungeonId, dg, bossName)
 	run.total = monsters
 	run.bossSeen = bosses > 0
+	-- the roster: the monsters of this run. Nothing that appears later (a boss fight's adds, a stray summon) joins the
+	-- count, so the total is known from the start and "Monsters Alive" never grows (O179)
+	run.roster = {}
+	for _, m in ipairs(monsterList) do
+		if not (bossName and m:getName():lower() == bossName) then
+			run.roster[m:getId()] = true
+		end
+	end
 	scaleList(run, monsterList)
 
 	local durationMs = durationOf(dg)
@@ -953,6 +983,53 @@ local function unlockBoss(run, extra, percent, left)
 	end
 	if extra.unlock then
 		pcall(extra.unlock, run.dungeonId)
+	end
+end
+
+-- stuck safety (O180): the percent has not moved for cfg.stall.seconds. Tell the members where the nearest remaining
+-- monsters stand, and past minPercent unlock the boss (the rest are written off, e.g. on tiles nobody reaches).
+local function stallCheck(run, extra, percent, left, monsterList, bossName)
+	local st = cfg.stall
+	local now = nowMs()
+	run.progressAt = run.progressAt or run.startedAt
+	if not st or left <= 0 or now - run.progressAt < st.seconds * 1000 then
+		return
+	end
+	if percent >= st.minPercent then
+		run.unlocked = true
+		local boss = tostring(extra.bossName or "the boss"):gsub("(%a)([%w'%-]*)", function(a, b) return a:upper() .. b end)
+		for _, p in ipairs(memberPlayers(run)) do
+			send(p, "killed", {unlocked = true, percent = percent, left = left})
+			p:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(p, "The last %d monsters could not be found. Boss unlocked: %s awaits you.", left, boss))
+		end
+		if extra.unlock then
+			pcall(extra.unlock, run.dungeonId)
+		end
+		return
+	end
+	if run.hintAt and now - run.hintAt < st.hintEveryMs then
+		return
+	end
+	run.hintAt = now
+	local alive = {}
+	for _, m in ipairs(monsterList) do
+		if run.roster and run.roster[m:getId()] and not (bossName and m:getName():lower() == bossName) then
+			alive[#alive + 1] = m
+		end
+	end
+	for _, p in ipairs(memberPlayers(run)) do
+		local pp = p:getPosition()
+		table.sort(alive, function(a, b)
+			local pa, pb = a:getPosition(), b:getPosition()
+			return math.abs(pa.x - pp.x) + math.abs(pa.y - pp.y) < math.abs(pb.x - pp.x) + math.abs(pb.y - pp.y)
+		end)
+		local parts = {}
+		for i = 1, math.min(st.hintMax or 5, #alive) do
+			local q = alive[i]:getPosition()
+			parts[#parts + 1] = string.format("%d,%d,%d", q.x, q.y, q.z)
+			q:sendMagicEffect(CONST_ME_TELEPORT or 11)
+		end
+		p:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(p, "%d monsters are left. Nearest: %s", #alive, table.concat(parts, "  ")))
 	end
 end
 
@@ -1047,6 +1124,7 @@ tick = function()
 			local bossName = extra.bossName and extra.bossName:lower() or nil
 			local monsters, bosses, playersInside, monsterList = scanArea(run.dungeonId, dg, bossName)
 			scaleList(run, monsterList) -- respawns inside the box get the difficulty too
+			monsters = rosterAlive(run, monsterList, bossName) -- only the run's own monsters count (O179)
 
 			if bosses > 0 then
 				run.bossSeen = true
@@ -1079,12 +1157,16 @@ tick = function()
 				percent = math.max(percent, run.lastPercent)
 				if percent ~= run.lastPercent then
 					run.lastPercent = percent
+					run.progressAt = nowMs()
 					for _, p in ipairs(memberPlayers(run)) do
 						send(p, "killed", {percent = percent, left = monsters})
 					end
 				end
 				if not run.unlocked and percent >= cfg.progressNeeded then
 					unlockBoss(run, extra, percent, monsters)
+				end
+				if not run.unlocked and not run.ended then
+					stallCheck(run, extra, percent, monsters, monsterList, bossName)
 				end
 				-- boss seen earlier and gone now (killed by someone onKill did not credit)
 				if run.bossSeen and bosses == 0 and run.unlocked then

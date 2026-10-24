@@ -917,7 +917,12 @@ end
 
 local function spawnBoss(run)
 	PB.creating = true
-	local ok, m = pcall(Game.createMonster, run.boss.monster, P(run.L.bossSpawn), false, true)
+	-- O177: created with the level the pocket is tuned for / its drops use (Chaos.spawnLevel, shown after the name), not
+	-- the experience / health estimate of the species ("Lv 10182" on a world boss type)
+	local level = K.bossLevel(run.boss, ChaosLoot and ChaosLoot.typeLevel and ChaosLoot.typeLevel(run.boss.monster),
+		ChaosMonsterLevelsCore and ChaosMonsterLevelsCore.maxEstimate)
+	local create = Chaos.createMonsterNamed or function(t, p, e, f) return Game.createMonster(t, p, e, f) end
+	local ok, m = pcall(create, run.boss.monster, P(run.L.bossSpawn), false, true, nil, level)
 	PB.creating = false
 	if not ok or not m then
 		log("cannot create " .. tostring(run.boss.monster) .. ": " .. tostring(m))

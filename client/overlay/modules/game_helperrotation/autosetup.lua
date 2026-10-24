@@ -32,28 +32,24 @@ function S.lineOf(vocId)
 end
 
 -- potions by client item id: the server's potions.lua lists (knight: Warrior line and Templar; paladin: Ranger,
--- Thief, Monk and Templar lines; sorcerer / druid: Mystic and Necromancer lines), strongest first per kind.
+-- Thief, Monk and Templar lines; sorcerer / druid: Mystic and Necromancer lines; the mana potions: both), strongest first per kind.
 -- 266 / 268: the Health / Mana Potion, also the look of the Everfull potions.
-local KNIGHT = { warrior = true, templar = true }
-local PALADIN = { ranger = true, thief = true, monk = true, templar = true }
-local MAGE = { mystic = true, necro = true }
-local ANY = nil
+local ANY = nil -- every class drinks every potion (owner 2026-10-24); only the level gates stay
 S.POTIONS = {
   health = {
-    { id = 23375, level = 200, lines = KNIGHT },  -- Supreme Health Potion
-    { id = 23374, level = 130, lines = PALADIN }, -- Ultimate Spirit Potion (health and mana)
-    { id = 7643, level = 130, lines = KNIGHT },   -- Ultimate Health Potion
-    { id = 7642, level = 80, lines = PALADIN },   -- Great Spirit Potion
-    { id = 239, level = 80, lines = KNIGHT },     -- Great Health Potion
-    { id = 236, level = 50, lines = { warrior = true, ranger = true, thief = true, monk = true, templar = true } },
+    { id = 23375, level = 200, lines = ANY },  -- Supreme Health Potion
+    { id = 23374, level = 130, lines = ANY }, -- Ultimate Spirit Potion (health and mana)
+    { id = 7643, level = 130, lines = ANY },   -- Ultimate Health Potion
+    { id = 7642, level = 80, lines = ANY },   -- Great Spirit Potion
+    { id = 239, level = 80, lines = ANY },     -- Great Health Potion
+    { id = 236, level = 50, lines = ANY },
     { id = 266, level = 1, lines = ANY },         -- Health Potion / Everfull Health Potion
     { id = 7876, level = 1, lines = ANY },        -- Small Health Potion
   },
   mana = {
-    { id = 23373, level = 130, lines = MAGE },    -- Ultimate Mana Potion
-    { id = 238, level = 80, lines = MAGE },       -- Great Mana Potion
-    { id = 237, level = 50, lines = { mystic = true, necro = true, ranger = true, thief = true, monk = true,
-      templar = true } },                         -- Strong Mana Potion
+    { id = 23373, level = 130, lines = ANY },    -- Ultimate Mana Potion
+    { id = 238, level = 80, lines = ANY },       -- Great Mana Potion
+    { id = 237, level = 50, lines = ANY },       -- Strong Mana Potion
     { id = 268, level = 1, lines = ANY },         -- Mana Potion / Everfull Mana Potion
   },
 }

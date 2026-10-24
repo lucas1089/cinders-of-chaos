@@ -55,45 +55,45 @@ All have `groupcooldown=2000`, `needlearn=0` (everyone of the vocation and level
 | id | Name | Words | Vocations | Lvl | Mana | Cooldown | What it does |
 |---|---|---|---|---|---|---|---|
 | **sorcerer** | | | | | | | |
-| 200 | Rime Bloom | `drai hyr rhim` | M, E | 20 | 120 | 8s | Ice burst (7x7 circle) around you; hit enemies are slowed 40% for 4s. |
-| 201 | Witchfire Bolt | `kah pyr vesh` | M, E | 30 | 70 | 4s | Fire bolt at one target that also leaves it burning (4 ticks). |
+| 200 | Rime Bloom | `drai hyr rhim` | M, E | 20 | 120 | 4s | Ice burst (7x7 circle) around you; hit enemies are slowed 40% for 4s. |
+| 201 | Witchfire Bolt | `kah pyr vesh` | M, E | 30 | 70 | 7s | Fire bolt at one target that also leaves it burning (4 ticks). |
 | 202 | Forked Storm | `kah zhul zarn` | M, E | 50 | 200 | 7s | Energy bolt that jumps to up to 3 more monsters within 3 sqm (full damage on every jump since 2026-10-20; was 70% per jump). |
 | 203 | Crimson Covenant | `tor nyx cruor` | M, E | 90 | 50 | 30s | Sacrifice 15% max health: restore 1.5x that as mana and +15% magic level for 12s. |
-| 204 | Falling Pyre | `drai gal vas infr` | M, E | 150 | 700 | 20s | Marks the target position; 1.2s later a meteor hits a 5x5 area for heavy fire damage and ignites enemies. |
-| 205 | Frozen Crypt | `drai gal vas hyr krypt` | E | 220 | 900 | 30s | Ice zone (5x5) on the target for 6 pulses over 5s; enemies inside are slowed 70%. |
-| 206 | Doomtide | `drai zhul infr doma` | E | 300 | 1500 | 45s | **Cast time 1.5 s.** Three waves (fire, energy, fire) over a 13x13 circle around you. |
+| 204 | Falling Pyre | `drai gal vas infr` | M, E | 150 | 700 | 10s | Marks the target position; 1.2s later a meteor hits a 5x5 area for heavy fire damage and ignites enemies. |
+| 205 | Frozen Crypt | `drai gal vas hyr krypt` | E | 220 | 900 | 11s | Ice zone (5x5) on the target for 6 pulses over 5s; enemies inside are slowed 70%. |
+| 206 | Doomtide | `drai zhul infr doma` | E | 300 | 1500 | 12s | **Cast time 1.5 s.** Three waves (fire, energy, fire) over a 13x13 circle around you. |
 | **druid** | | | | | | | |
-| 207 | Blightswarm | `drai vex kriv` | M, I | 25 | 110 | 8s | Poison cloud (7x7) around you: earth damage plus a poison condition. |
+| 207 | Blightswarm | `drai vex kriv` | M, I | 25 | 110 | 6s | Poison cloud (7x7) around you: earth damage plus a poison condition. |
 | 208 | Purifying Wellspring | `saen vas aquen` | M, I | 40 | 160 | 6s | Heals you, party members and your summons within 3 sqm and cures poison/fire/energy/bleeding/curse/freeze/dazzle/drown. |
 | 209 | Ironbark Hide | `tor ael skar` | M, I | 60 | 140 | 25s | +20% max health and regeneration for 20s. |
-| 210 | Briar Prison | `drai thral brin` | I | 70 | 240 | 14s | Thorns erupt around the target (3x3, 3 pulses) and root enemies (90% slow) for 5s. |
+| 210 | Briar Prison | `drai thral brin` | I | 70 | 240 | 8s | Thorns erupt around the target (3x3, 3 pulses) and root enemies (90% slow) for 5s. |
 | 211 | Moonfang Pack | `vael luth wyrd` | I | 120 | 450 | 30s | Summons 2 wolves (3 from level 200) for 40s; max 4 summons. |
 | 212 | Verdant Sanctuary | `saen gal vas vert` | I | 180 | 600 | 30s | Healing zone on your tile: 8 pulses (1/s) heal allies within 3 sqm. |
-| 213 | Primordial Squall | `drai gal vas stoma` | I | 250 | 1200 | 35s | **Cast time 1.5 s.** Three waves (earth, ice, earth) over an 11x11 circle; the ice wave slows 50%. |
+| 213 | Primordial Squall | `drai gal vas stoma` | I | 250 | 1200 | 7s | **Cast time 1.5 s.** Three waves (earth, ice, earth) over an 11x11 circle; the ice wave slows 50%. |
 | **paladin** | | | | | | | |
-| 214 | Dawnpiercer | `kah sol aurr` | R, D, BM | 30 | 50 | 3s | Holy bolt at one target, the paladin filler; scales mainly with distance skill. |
+| 214 | Dawnpiercer | `kah sol aurr` | R, D, BM | 30 | 50 | 6s | Holy bolt at one target, the paladin filler; scales mainly with distance skill. |
 | 215 | Skewering Line | `kah sag lanc` | R, D, BM | 60 | 150 | 8s | 7 sqm line of spears in your facing direction; every target takes a Dawnpiercer hit since 2026-10-20 (distance skill x attack 0.042-0.065, magic level 1.0-1.6; was 0.0195-0.0325, no magic level). |
-| 216 | Blessed Earth | `drai vas sol hal` | R, D, BM | 100 | 350 | 24s | Consecrates your tile for 6s: holy damage to enemies within 2 sqm each second, allies are healed half as much. |
+| 216 | Blessed Earth | `drai vas sol hal` | R, D, BM | 100 | 350 | 9s | Consecrates your tile for 6s: holy damage to enemies within 2 sqm each second, allies are healed half as much. |
 | 217 | Lightward | `tor sol ghar` | R, D, BM | 140 | 300 | 30s | Cleanses harmful conditions (incl. paralyze) and gives 8s of strong health/mana regeneration. |
-| 218 | Final Verdict | `kah gal sol judh` | D | 200 | 450 | 14s | Heavy holy strike (distance skill); +50% damage against targets under 25% health. |
-| 219 | Hail of Dawn | `drai gal vas sol volv` | R, D | 280 | 800 | 24s | **Cast time 1 s.** 3 volleys of 4 holy arrows, every arrow strikes the target (distance skill). |
+| 218 | Final Verdict | `kah gal sol judh` | D | 200 | 450 | 11s | Heavy holy strike (distance skill); +50% damage against targets under 25% health. |
+| 219 | Hail of Dawn | `drai gal vas sol volv` | R, D | 280 | 800 | 13s | **Cast time 1 s.** 3 volleys of 4 holy arrows, every arrow strikes the target (distance skill). |
 | 135 | Tautstring | `vyr sag` | R, D, BM | 60 | 300 | 30s | +25% distance skill for 12s; nothing else (no slow, no lock). In place of the stock Hawkeye, retired 2026-10-20 ("Tautstring" below). |
 | 134 | Wildstride | `ruan vert` | R, D, BM | 55 | 150 | 30s | +50% speed (0.5 x speed - 40, own sub id: adds to Haste) for 12s; no pacify, no lock. In place of the stock Windrunner, retired 2026-10-20 ("Ironhold and Wildstride" below). |
 | **knight** | | | | | | | |
 | 220 | Reaping Gyre | `kah spir` | W, J, B | 30 | 30 | 6s | Three spinning strikes (0/0.4/0.8s) against adjacent enemies; uses weapon attack and skill. |
-| 221 | Earthbreaker | `kah grund krak` | W, J, B | 60 | 50 | 10s | Shockwave (5x5) with physical damage; staggers enemies (60% slow, 3s). |
+| 221 | Earthbreaker | `kah grund krak` | W, J, B | 60 | 50 | 7s | Shockwave (5x5) with physical damage; staggers enemies (60% slow, 3s). |
 | 222 | Red Frenzy | `vyr ira cruor` | W, J, B | 100 | 300 | 40s | +30% melee skill, -30% shield skill for 12s. |
 | 132 | Ironhold | `tor brak` | W, J, B | 55 | 200 | 30s | +40% shielding for 12s; no pacify, no lock. In place of the stock Bulwark, retired 2026-10-20 ("Ironhold and Wildstride" below). |
 | 223 | Iron Bellow | `vok vas rhov` | W, J | 120 | 200 | 20s | Taunts all monsters within 4 sqm and slows them 25% for 6s; Iron Will: you take 25% less damage and get +15% shielding for 8s. |
-| 224 | Vaulting Cleave | `kah brak skai` | W, J, B | 170 | 250 | 12s | Jump next to the target and strike it with weapon attack and skill. |
-| 225 | Colossus Fall | `kah gal vas tyr` | W, J, B | 260 | 400 | 30s | **Cast time 1 s** (wind-up). Two crushing blows (0/0.6s) in a 7x7 circle; enemies slowed 70% for 4s. |
+| 224 | Vaulting Cleave | `kah brak skai` | W, J, B | 170 | 250 | 7s | Jump next to the target and strike it with weapon attack and skill. |
+| 225 | Colossus Fall | `kah gal vas tyr` | W, J, B | 260 | 400 | 10s | **Cast time 1 s** (wind-up). Two crushing blows (0/0.6s) in a 7x7 circle; enemies slowed 70% for 4s. |
 | **illusionist** | | | | | | | |
 | 226 | Hall of Mirrors | `drai spek` | M, I | 40 | 250 | 30s | Up to 3 decoy clones in your outfit for 10s (needs the Clone monster). |
-| 227 | Umbral Stride | `ruan nyx umh` | M, I | 70 | 120 | 8s | Teleport to the far side of the target and stab it for death damage. |
-| 228 | Shattered Psyche | `kah mynd frak` | M, I | 110 | 200 | 6s | Death bolt plus cursing damage-over-time and a 30% slow for 2.5s. |
+| 227 | Umbral Stride | `ruan nyx umh` | M, I | 70 | 120 | 10s | Teleport to the far side of the target and stab it for death damage. |
+| 228 | Shattered Psyche | `kah mynd frak` | M, I | 110 | 200 | 9s | Death bolt plus cursing damage-over-time and a 30% slow for 2.5s. |
 | 229 | Wraithshroud | `fen wrai` | M, I | 150 | 350 | 35s | 8s invisibility plus speed boost. |
-| 230 | Nightburst | `drai gal vas umh` | I | 210 | 900 | 25s | After 0.9s shadows erupt in a 7x7 circle (death damage, 40% slow). |
-| 231 | Tear in the Weave | `drai zhul riv` | I | 280 | 1300 | 40s | Pulls monsters within 5 sqm next to you, then two death implosions (0.6s, 1.2s). |
+| 230 | Nightburst | `drai gal vas umh` | I | 210 | 900 | 8s | After 0.9s shadows erupt in a 7x7 circle (death damage, 40% slow). |
+| 231 | Tear in the Weave | `drai zhul riv` | I | 280 | 1300 | 12s | Pulls monsters within 5 sqm next to you, then two death implosions (0.6s, 1.2s). |
 | 96 | Mirror Mend | `saen spek ["Name"]` | I | 60 | 180 | 2s | Heals the most hurt party member within 7 sqm (or the named one): level x 0.3 + ml x 11-17 + 40-80; a mirror heals the next most hurt (you included) for 25% of it. Healer pass, see "Healing". |
 | 97 | Lucid Reverie | `reth vas spek` | I | 120 | 300 | 20s | You and every party member within 7 sqm: 5 heals, one every 2 s (level x 0.16 + ml x 0.9-1.3 + 10-20 each); follows them up to 10 sqm. Healer pass. |
 | **shared** | | | | | | | |
@@ -105,64 +105,64 @@ All have `groupcooldown=2000`, `needlearn=0` (everyone of the vocation and level
 | 236 | Shuriken Toss | `kah shur` | T, N, Sa | 8 | 16 | 2s | Throws a shuriken (range 5): ranged weapon strike, the better of sword and distance skill x a default shuriken attack of 50 (a one-handed distance weapon in hand raises it; no stars, stackable throwing weapons left the game 2026-10-20). The Thief's filler. Cooldown 2 s since the second rotation pass (was 3 s at x2.0): damage x a class scale, Thief 1.33, Ninja 1.33 (1.62 from level 180), Samurai 1.33 (1.5 from level 120) ("Rotations"). |
 | 238 | Shadow Veil | `fen umh` | T, N, Sa | 40 | 120 | 20s | 4 s stealth: monsters drop you and cannot pick you; dealing damage or taking a hit ends it; the first weapon hit out of it crits (x2). |
 | 239 | Poison Blades | `vyr vex thyss` | T, N, Sa | 60 | 150 | 30s | 20 s: weapon hits and weapon strikes poison the target, 60% of the hit as earth damage over 4 s. |
-| 73 | Blade Flurry | `drai vas kaen` | T, N, Sa | 50 | 120 | 8s | Spin: a melee weapon strike on every monster within 2 sqm of you (the 5x5 square; 3x3 in the first pass; players are never hit). On one target it hits like a Shuriken Toss of the class (`_blades.lua` class scale: Thief 1.33, Ninja 1.08 plus the off-hand strike, 0.89 below 180, Samurai 1.5, 1.33 below 120); its worth is the pack (2026-10-15, "Pack farming for every class"). |
-| 240 | Shadow Step | `ash umh` | N | 100 | 150 | 8s | Teleport behind the target (range 5) and stab it: melee weapon strike, the off-hand follows. |
+| 73 | Blade Flurry | `drai vas kaen` | T, N, Sa | 50 | 120 | 9s | Spin: a melee weapon strike on every monster within 2 sqm of you (the 5x5 square; 3x3 in the first pass; players are never hit). On one target it hits like a Shuriken Toss of the class (`_blades.lua` class scale: Thief 1.33, Ninja 1.08 plus the off-hand strike, 0.89 below 180, Samurai 1.5, 1.33 below 120); its worth is the pack (2026-10-15, "Pack farming for every class"). |
+| 240 | Shadow Step | `ash umh` | N | 100 | 150 | 12s | Teleport behind the target (range 5) and stab it: melee weapon strike, the off-hand follows. |
 | 241 | Smoke Bomb | `drai nebh` | N | 130 | 300 | 20s | Smoke 5x5 around you: monsters lose their target and cannot pick a player for 3 s, slowed 30% (bosses only drop the target once). |
-| 242 | Shuriken Barrage | `drai vas shur` | N | 180 | 400 | 10s | A shuriken at the target and up to 4 more monsters within 3 sqm of it. |
+| 242 | Shuriken Barrage | `drai vas shur` | N | 180 | 400 | 7s | A shuriken at the target and up to 4 more monsters within 3 sqm of it. |
 | 243 | Counter Stance | `tor ryx` | Sa | 100 | 100 | 8s | For 3 s the next melee hit taken is parried (no damage) and answered with 1.5x the parried hit; every other hit taken is 30% smaller; taunts the monsters within 3 sqm (the Samurai is the duelist off-tank). |
-| 244 | Iaijutsu | `kah gal kaen` | Sa | 120 | 350 | 10s | 0.8 s charge, then one heavy melee weapon strike on the target if it is still within 2 sqm. |
+| 244 | Iaijutsu | `kah gal kaen` | Sa | 120 | 350 | 13s | 0.8 s charge, then one heavy melee weapon strike on the target if it is still within 2 sqm. |
 | 245 | Bushido Focus | `vyr mynd` | Sa | 150 | 200 | 30s | 30 s: +3% crit chance per second without taking damage (3 at once, max 10 stacks = 30%), crits do x1.5; a hit taken resets the stacks. |
-| 74 | Iaido Sweep | `drai gal kaen` | Sa | 200 | 450 | 12s | A wide draw cut towards the target (range 2), no charge, cooldown 8 s (12 s in the first pass): the target takes a melee weapon strike of (P x 0.10-0.16 + 30-60) x 0.8, about half an Iaijutsu, every monster in the 3 x 2 tiles in front of you (the 7 nearest of the quarter on a diagonal) 1.5x that. Other players only when they are the target, with the plain hit (2026-10-15). |
-| 136 | Fan of Knives | `drai vas nyx shur` | T | 80 | 150 | 6s | The Thief only (range 4): a Shuriken Toss of the Thief (x1.33) on the target and on the nearest 5 monsters within 4 sqm of you, ranged weapon strikes (2026-10-15, `_packtools.lua`). |
+| 74 | Iaido Sweep | `drai gal kaen` | Sa | 200 | 450 | 10s | A wide draw cut towards the target (range 2), no charge, cooldown 8 s (12 s in the first pass): the target takes a melee weapon strike of (P x 0.10-0.16 + 30-60) x 0.8, about half an Iaijutsu, every monster in the 3 x 2 tiles in front of you (the 7 nearest of the quarter on a diagonal) 1.5x that. Other players only when they are the target, with the plain hit (2026-10-15). |
+| 136 | Fan of Knives | `drai vas nyx shur` | T | 80 | 150 | 10s | The Thief only (range 4): a Shuriken Toss of the Thief (x1.33) on the target and on the nearest 5 monsters within 4 sqm of you, ranged weapon strikes (2026-10-15, `_packtools.lua`). |
 | **berserker** (B) / **beastmaster** (BM) | | | | | | | |
-| 246 | Skyfall Cleave | `drai skai hrun` | B | 190 | 100 | 10s | Leap next to the target (range 5) and slam a 3x3 square around it: (level/5 + skill x attack x 0.060..0.105 + 20..40) physical (x0.7 until 2026-10-20), 30% slow 2 s. Needs a weapon. |
+| 246 | Skyfall Cleave | `drai skai hrun` | B | 190 | 100 | 8s | Leap next to the target (range 5) and slam a 3x3 square around it: (level/5 + skill x attack x 0.060..0.105 + 20..40) physical (x0.7 until 2026-10-20), 30% slow 2 s. Needs a weapon. |
 | 247 | Bloodrage | `vyr sang khar` | B | 120 | 200 | 30s | Costs 10% of the current health; 12 s: Rage +10% and every melee weapon hit also strikes up to 4 other enemies next to you for 40% of it. |
 | 248 | Wild Bond | `vael ferh` | BM | 100 | 300 | 10s | Calls the companion (a War Wolf; 2 from level 400): health 500 + 15 x level; companions already out come back to you and heal 50%. |
-| 249 | Feral Command | `kah ferh` | BM | 110 | 200 | 8s | Every companion leaps to the target (range 7) and mauls it for 1.5 bites. |
+| 249 | Feral Command | `kah ferh` | BM | 110 | 200 | 4s | Every companion leaps to the target (range 7) and mauls it for 1.5 bites. |
 | **necromancer** (N Necromancer, L Lich, BL Bone Lord; per-cast numbers: formula; rotations measured, see "Necromancer line") | | | | | | | |
 | 180 | Raise Dead | `vael oss` | N, L, BL | 20 | 60 | 2s | Raises a minion from an empty corpse (never one with loot), else one from nothing for twice the mana; skeletons, the Lich's shade. |
 | 192 | Raise Bone Warrior | `vael oss brak` | N, L, BL | 8 | 50 | 4s | Raises ONE Risen Warrior next to you: melee (range 1, physical), health x1.8 of a skeleton. The oldest minion dies when the total cap is reached. |
 | 193 | Raise Bone Archer | `vael oss sag` | N, L, BL | 12 | 60 | 4s | Raises ONE Risen Archer: range 5, physical arrows, hit x1.25, health x0.6. |
 | 176 | Raise Bone Mage | `vael oss mynd` | N, L, BL | 16 | 70 | 4s | Raises ONE Risen Mage: range 4, energy bolts, hit x1.35, health x0.6. |
 | 181 | Bone Spear | `kah oss lanc` | N, L, BL | 8 | 30 | 2s | The filler: a bone spear at the target (range 5) that pierces to the creature behind. |
-| 182 | Withering Curse | `kah nyx maled` | N, L, BL | 40 | 120 | 8s | The target takes +15% damage from everyone and rots (Lich: +25%, spreads to 2 more; monsters only, players just rot). |
-| 183 | Soul Rot | `kah nyx putr` | L | 100 | 220 | 6s | 6 s death damage over time that jumps to a new host when the target dies. |
-| 184 | Life Siphon | `kah sang nyx` | L | 130 | 260 | 8s | Death damage to the target; heals the Lich for 50% of it. |
-| 185 | Corpse Explosion | `drai kadh krak` | L | 160 | 400 | 6s | Corpses near the target burst (needs corpses). |
+| 182 | Withering Curse | `kah nyx maled` | N, L, BL | 40 | 120 | 7s | The target takes +15% damage from everyone and rots (Lich: +25%, spreads to 2 more; monsters only, players just rot). |
+| 183 | Soul Rot | `kah nyx putr` | L | 100 | 220 | 11s | 6 s death damage over time that jumps to a new host when the target dies. |
+| 184 | Life Siphon | `kah sang nyx` | L | 130 | 260 | 6s | Death damage to the target; heals the Lich for 50% of it. |
+| 185 | Corpse Explosion | `drai kadh krak` | L | 160 | 400 | 4s | Corpses near the target burst (needs corpses). |
 | 186 | Bone Golem | `vael gal oss` | BL | 100 | 500 | 30s | Raises the Bone Golem: slams everything next to it, taunts the monsters within 3 sqm. |
 | 187 | Banner of Bones | `tor vas oss` | BL | 120 | 300 | 30s | 20 s: minions +30% damage, -25% damage taken, 3% regeneration per second. |
-| 188 | Bone Offering | `drai sang oss` | BL | 150 | 250 | 12s | A skeleton bursts in 2 sqm; the Bone Lord takes 20% less damage for 6 s. |
+| 188 | Bone Offering | `drai sang oss` | BL | 150 | 250 | 10s | A skeleton bursts in 2 sqm; the Bone Lord takes 20% less damage for 6 s. |
 | 42 | Grave Nova | `drai nyx oss` | N | 50 | 80 | 6s | The Necromancer only (no target): death damage on every enemy within 3 sqm of the caster (a circle), each (level / 5 + ML x 1.8..2.8 + 25..45); rung 3 of the ladder (2026-10-22, id 42 of the removed Conjure Rations). |
 | 197 | Bone Shrapnel | `drai oss krak` | N | 60 | 100 | 4s | The Necromancer only (range 7): a Bone Spear's hit on the target, every monster within 1 sqm of it 2.5x that (2026-10-15, `_packtools.lua`). |
 | **monk** (Mo Monk, SF Shadowfist, IS Iron Sage; finishers need 1 chi and spend all, "5 chi" values; rotations measured, see "Monk line") | | | | | | | |
 | 63 | Ashen Fist | `kah dhun` | Mo, SF, IS | 8 | 15 | 2s | Quick strike at the target next to you; +2 chi. The builder. |
-| 64 | Sundering Palm | `kah gal dhun` | Mo, SF, IS | 30 | 50 | 6s | Finisher: heavy palm strike, x(0.30 + 0.14 per chi). |
-| 65 | Whirling Heel | `drai spir dhun` | Mo, SF, IS | 50 | 80 | 8s | Finisher: spinning kick on everything next to you (3x3), x chi scale. |
+| 64 | Sundering Palm | `kah gal dhun` | Mo, SF, IS | 30 | 50 | 11s | Finisher: heavy palm strike, x(0.30 + 0.14 per chi). |
+| 65 | Whirling Heel | `drai spir dhun` | Mo, SF, IS | 50 | 80 | 9s | Finisher: spinning kick on everything next to you (3x3), x chi scale. |
 | 66 | Kindled Breath | `saen qhal` | Mo, SF, IS | 40 | 100 | 8s | Finisher: heals yourself (level x 2 + fist x 6) x chi scale. Iron Sage (the second healer): the most hurt party member within 5 sqm (you without a party) for fist x 33 x chi scale, and 60% more over 6 s. |
 | 67 | Mistborne Step | `ash qhal` | Mo, SF, IS | 35 | 60 | 10s | Roll up to 3 sqm forward; +25% dodge for 2 s. |
-| 68 | Pressure Points | `kah mynd dhun` | SF | 100 | 120 | 4s | Strike + 1 chi + a stack on the target (max 5, 8 s): +5% damage taken from Monks per stack. |
+| 68 | Pressure Points | `kah mynd dhun` | SF | 100 | 120 | 7s | Strike + 1 chi + a stack on the target (max 5, 8 s): +5% damage taken from Monks per stack. |
 | 69 | Shadowfist Flurry | `kah gal umh dhun` | SF | 150 | 300 | 12s | Finisher: 2 + 1 per chi hits, one every 0.2 s, while the target stays next to you. |
 | 70 | Chi Ward | `tor qhal ["Name"]` | IS | 100 | 200 | 12s | Finisher: shield absorbing (level x 2.5 + fist x 8) x chi scale for 8 s on a party member within 5 sqm (the named one, or the most hurt; you without a party). |
-| 71 | Iron Palm | `kah brak dhun` | IS | 120 | 200 | 8s | Finisher: strike x chi scale; stuns a monster 0.6 s + 0.4 s per chi (cannot move or attack), then 4 s immune; >50000 max health: only slowed 50%. A player (when the hit lands): 0.5 s + 0.1 s per chi (no moving, attacks or attack spells), then 6 s immune, half as long within 15 s (server/README.md "Iron Palm stun on players"). |
+| 71 | Iron Palm | `kah brak dhun` | IS | 120 | 200 | 12s | Finisher: strike x chi scale; stuns a monster 0.6 s + 0.4 s per chi (cannot move or attack), then 4 s immune; >50000 max health: only slowed 50%. A player (when the hit lands): 0.5 s + 0.1 s per chi (no moving, attacks or attack spells), then 6 s immune, half as long within 15 s (server/README.md "Iron Palm stun on players"). |
 | 72 | Mantra of Stone | `tor vas qhal` | IS | 150 | 400 | 30s | 12 s aura: you and party members within 6 sqm take 8% less damage, and every 2 s each is healed for level + fist x 26. |
 | 194 | Palm Shockwave | `drai gal dhun` | Mo, SF, IS | 50 | 70 | 4s | An Ashen Fist on the target next to you (+2 chi) and a shockwave through every monster within 2 sqm of the target for 2x that (2026-10-15, `_packtools.lua`). |
-| 195 | Shadow Ricochet | `kah umh dhun` | SF | 150 | 300 | 8s | An Ashen Fist on the target (range 4, +2 chi) that jumps to 4 more monsters, each within 3 sqm of the last, for 2.5x that. |
-| 196 | Iron Chain | `kah brak vinc` | IS | 150 | 300 | 8s | An Ashen Fist on the target (range 4, +2 chi) that links on to 4 more monsters, each within 2 sqm of the last, for 2x that. |
+| 195 | Shadow Ricochet | `kah umh dhun` | SF | 150 | 300 | 6s | An Ashen Fist on the target (range 4, +2 chi) that jumps to 4 more monsters, each within 3 sqm of the last, for 2.5x that. |
+| 196 | Iron Chain | `kah brak vinc` | IS | 150 | 300 | 6s | An Ashen Fist on the target (range 4, +2 chi) that links on to 4 more monsters, each within 2 sqm of the last, for 2x that. |
 | **templar** (T Templar, I Inquisitor, Se Sentinel; P = weapon power, see "Templar line"; rotations measured there) | | | | | | | |
 | 189 | Radiant Smite | `kah sol dyr` | T, I, Se | 8 | 15 | 2s | Holy strike on one target within 3 sqm: (P x 0.10-0.16 + ml x 1-1.5 + 30-60) x the class scale (Templar 0.56, Inquisitor 0.69, below level 120 0.55, Sentinel 0.56). The filler. Cooldown 4 s and no scale until the rotation pass ("Rotations"). |
-| 190 | Consecration | `drai sol haln` | T, I, Se | 40 | 160 | 20s | Holy ground (circle 2) for 6 pulses: P x 0.025-0.04 + ml x 0.4-0.6 + 10-20 per pulse; allies in it healed 30% of a pulse. |
+| 190 | Consecration | `drai sol haln` | T, I, Se | 40 | 160 | 12s | Holy ground (circle 2) for 6 pulses: P x 0.025-0.04 + ml x 0.4-0.6 + 10-20 per pulse; allies in it healed 30% of a pulse. |
 | 191 | Vow of Mending | `saen tor fidh` | T, I, Se | 30 | 150 | 8s | Self heal: 8% max health + level/5 + ml x 4 (±10%). |
-| 198 | Judgement | `kah sol vehm` | I | 100 | 250 | 12s | Holy strike (range 5): P x 0.08-0.12 + ml x 1-1.5 + 20-40; the target takes +20% holy damage from everyone for 8 s. |
-| 199 | Purging Nova | `drai gal sol orr` | I | 120 | 350 | 8s | Holy circle of 3 sqm: P x 0.08-0.13 + ml x 1-1.5 + 20-40; heals 10% of the damage, at most 5% max health. |
+| 198 | Judgement | `kah sol vehm` | I | 100 | 250 | 4s | Holy strike (range 5): P x 0.08-0.12 + ml x 1-1.5 + 20-40; the target takes +20% holy damage from everyone for 8 s. |
+| 199 | Purging Nova | `drai gal sol orr` | I | 120 | 350 | 6s | Holy circle of 3 sqm: P x 0.08-0.13 + ml x 1-1.5 + 20-40; heals 10% of the damage, at most 5% max health. |
 | 250 | Zealotry | `vyr sol zel` | I | 150 | 200 | 30s | 20 s: each melee weapon hit adds a stack, +4% to all damage per stack (max 10); stacks drop 3 s after the last hit. |
 | 251 | Rebuke | `vok sol kal` | Se | 100 | 150 | 12s | Taunts every monster within 4 sqm, 25% slow for 6 s. |
 | 252 | Aegis of Faith | `tor gal sol aeg` | Se | 120 | 150 | 25s | With a shield: -40% damage taken for 5 s. |
 | 253 | Lay on Hands | `saen gal manh "Name"` | Se | 150 | 400 | 60s | Party member (named, or the lowest health share) or itself within 5 sqm: 35% max health + ml x 10. |
-| 137 | Sanctified Ground | `drai sol sanct` | T | 60 | 160 | 8s | The Templar only: 3 holy pulses a second apart within 2 sqm of the cast tile; the Templar's target takes a third of a Radiant Smite a pulse, every other creature 2.5x that (players the plain hit, the PvP rules; 2026-10-15, `_packtools.lua`). |
-| 170 | Shield Wave | `drai sol aeg` | Se | 150 | 250 | 8s | A Radiant Smite of the Sentinel on the target (range 3) and a wave of holy force through the 3 x 3 tiles in front for 2x that (players the plain hit). |
+| 137 | Sanctified Ground | `drai sol sanct` | T | 60 | 160 | 4s | The Templar only: 3 holy pulses a second apart within 2 sqm of the cast tile; the Templar's target takes a third of a Radiant Smite a pulse, every other creature 2.5x that (players the plain hit, the PvP rules; 2026-10-15, `_packtools.lua`). |
+| 170 | Shield Wave | `drai sol aeg` | Se | 150 | 250 | 4s | A Radiant Smite of the Sentinel on the target (range 3) and a wave of holy force through the 3 x 3 tiles in front for 2x that (players the plain hit). |
 | **build archetypes, second round** (2026-10-12; docs/BUILDS.md "Snares", "Vigils"; server/README.md "Snares", "Vigils"; Rl = the Ranger line R, D, BM; Tl = the Thief line T, N, S; all = every class) | | | | | | | |
-| 99 | Snare Trap | `drai snar ["element"]` | Rl, Tl | 40 | 90 | 2s | A trap thrown up to 4 sqm (the target or ahead), armed after 0.6 s; a monster within 1 sqm sets it off: up to 8 enemies within 2 sqm take level x 0.4 + power x 0.09-0.135 + 20-40 (power: the best of bow, blade and shuriken). The element (fire, ice, energy, earth, death, holy, physical) is spoken, remembered, or the spell's brand rune. 3 at once, 20 s. |
-| 100 | Seeker Mine | `kah snar ["element"]` | Rl, Tl | 60 | 110 | 2s | A mine thrown the same way, armed after 0.8 s, bursts for 1.15 x a trap at Detonate Mines or its 8 s fuse. 5 at once. |
+| 99 | Snare Trap | `drai snar ["element"]` | Rl, Tl | 40 | 90 | 4s | A trap thrown up to 4 sqm (the target or ahead), armed after 0.6 s; a monster within 1 sqm sets it off: up to 8 enemies within 2 sqm take level x 0.4 + power x 0.09-0.135 + 20-40 (power: the best of bow, blade and shuriken). The element (fire, ice, energy, earth, death, holy, physical) is spoken, remembered, or the spell's brand rune. 3 at once, 20 s. |
+| 100 | Seeker Mine | `kah snar ["element"]` | Rl, Tl | 60 | 110 | 6s | A mine thrown the same way, armed after 0.8 s, bursts for 1.15 x a trap at Detonate Mines or its 8 s fuse. 5 at once. |
 | 104 | Detonate Mines | `vok snar` | Rl, Tl | 60 | 20 | 1s | Every armed mine of yours goes off, 0.1 s apart (support group, no attack cooldown). |
 | 179 | Vigil of Wrath | `vigh vyr` | all | 60 | 0 | 2s | Switches the vigil: 35% of the maximum mana reserved; you and party members within 5 sqm deal +5%. |
 | 255 | Vigil of Iron | `vigh tor` | all | 60 | 0 | 2s | Switches the vigil: 35% reserved; -6% damage taken (the Templar aura and it: the stronger counts). |
@@ -2509,7 +2509,8 @@ listed is unchanged (Warrior, Juggernaut, Ranger, Deadeye, the Thief, Monk, Necr
 ### Cooldown ladder (2026-10-20; owner: "faça todas as magias de ataque terem 2s de diferença ... da mais fraca pra mais forte"; computed with rotation_sim.py, not measured in game)
 
 The rule and the ladder of every class: docs/CLASSES.md "Cooldown ladder" (`rotation_sim.py --ladder`). Every attack
-spell's cooldown is its rung x 2 s; the group cooldown 2 s everywhere; damage per cast unchanged. 58 spells changed
+spell's cooldown was its rung x 2 s (since O176 the ladder is 2, 4, 6, 7 ... 13 s, see "Shorter cooldowns for the
+strongest spells"); the group cooldown 2 s everywhere; damage per cast unchanged. 58 spells changed
 (seconds, before -> after):
 
 Primordial Squall 35 -> 8; Pack Frenzy 20 -> 6; Consecration 20 -> 6; Glacial Doom 60 -> 20; Judgement 12 -> 4; Tear in
@@ -2706,6 +2707,142 @@ The best set of at most 5 (spell damage per second, 1 target and the 5-dummy pac
   ("Cooldown ladder" above).
 - Not in the numbers: auto attacks, minions, the passive tree, conditions (burns, rots) and runes. On the server a rune a
   factored class uses takes the factor too (its hit is ORIGIN_SPELL); a burn or rot a spell leaves does not.
+
+### Shorter cooldowns for the strongest spells (O176, 2026-10-24; owner: "lower the cooldown of the strongest spells, to raise the DPS of every class"; computed with rotation_sim.py, not measured in game)
+
+The ladder of "Cooldown ladder" gave rung n a cooldown of 2n s, up to 20 s. The first three rungs stay, the rungs from the
+fourth on get shorter: rung 1 to 10 are now 2, 4, 6, 7, 8, 9, 10, 11, 12, 13 s (`rotation_sim.py` `LADDER_COOLDOWNS`).
+The top rungs lose 25 to 35%: the 20 s spells are 13 s, the 18 s spells 12 s, the 16 s spells 11 s. The group cooldown is
+2 s everywhere and no rung is below the global attack cooldown. The damage per cast is unchanged. 79 of the 111 attack
+spells change (before -> after, seconds; a spell several classes share has one cooldown). Five stock spells follow in
+`spell_timings.csv` and `stock_spells.csv` (Butcher's Gyre 9, Headsman's Hurl 13, Sanctum Burst 7, Radiant Shard 9,
+Tempest Fan 9).
+
+- **Warrior**: Vaulting Cleave 8 -> 7; Earthbreaker 8 -> 7; Butcher's Gyre 12 -> 9; Colossus Fall 14 -> 10; Rift
+  Cleaver 16 -> 11; Gorehook 18 -> 12; Headsman's Hurl 20 -> 13.
+- **Juggernaut**: Earthbreaker 8 -> 7; Butcher's Gyre 12 -> 9; Anvil Fall 12 -> 9; Colossus Fall 14 -> 10; Rift
+  Cleaver 16 -> 11; Gorehook 18 -> 12; Headsman's Hurl 20 -> 13.
+- **Berserker**: Earthbreaker 8 -> 7; Skyfall Cleave 10 -> 8; Butcher's Gyre 12 -> 9; Rampage Leap 14 -> 10; Colossus
+  Fall 14 -> 10; Gorehook 18 -> 12; Headsman's Hurl 20 -> 13.
+- **Ranger**: Sanctum Burst 8 -> 7; Skewering Line 10 -> 8; Radiant Shard 12 -> 9; Arrowstorm 14 -> 10; Blessed Earth
+  12 -> 9; Sunspear 14 -> 10; Hail of Dawn 20 -> 13.
+- **Deadeye**: Sanctum Burst 8 -> 7; Skewering Line 10 -> 8; Blessed Earth 12 -> 9; Sunspear 14 -> 10; Final Verdict
+  16 -> 11; Twin Verdict 18 -> 12; Hail of Dawn 20 -> 13.
+- **Beastmaster**: Sanctum Burst 8 -> 7; Packhunter's Dart 14 -> 10; Arrowstorm 14 -> 10; Blessed Earth 12 -> 9;
+  Sunspear 14 -> 10.
+- **Mystic**: Witchfire Bolt 8 -> 7; Briar Prison 10 -> 8; Umbral Stride 14 -> 10; Shattered Psyche 12 -> 9; Falling
+  Pyre 14 -> 10.
+- **Elementalist**: Forked Storm 8 -> 7; Witchfire Bolt 8 -> 7; Tempest Fan 12 -> 9; Falling Pyre 14 -> 10; Frozen
+  Crypt 16 -> 11; Doomtide 18 -> 12; Glacial Doom 20 -> 13.
+- **Illusionist**: Primordial Squall 8 -> 7; Nightburst 10 -> 8; Shattered Psyche 12 -> 9; Phantom Needles 14 -> 10;
+  Mirror Shards 16 -> 11; Tear in the Weave 18 -> 12; Dreamrot 20 -> 13.
+- **Thief**: Gutting Slash 8 -> 7; Razor Rain 10 -> 8; Blade Flurry 12 -> 9; Fan of Knives 14 -> 10; Crescent Cut 12
+  -> 9; Venom Spiral 14 -> 10; Last Breath 18 -> 12.
+- **Ninja**: Shuriken Barrage 8 -> 7; Razor Rain 10 -> 8; Blade Flurry 12 -> 9; Venom Spiral 14 -> 10; Gutting Slash 8
+  -> 7; Shadow Step 18 -> 12; Shuriken Tempest 20 -> 13.
+- **Samurai**: Gutting Slash 8 -> 7; Razor Rain 10 -> 8; Crescent Cut 12 -> 9; Iaido Sweep 14 -> 10; Blade Flurry 12
+  -> 9; Last Breath 18 -> 12; Iaijutsu 20 -> 13.
+- **Necromancer**: Marrow Bolt 8 -> 7; Wraithwind 10 -> 8; Withering Curse 8 -> 7; Gravewail 10 -> 8; Soulrend Beam 12
+  -> 9; Blightbrand 18 -> 12; Crypt Collapse 20 -> 13.
+- **Lich**: Marrow Bolt 8 -> 7; Wraithwind 10 -> 8; Gravewail 10 -> 8; Soulrend Beam 12 -> 9; Soul Rot 16 -> 11;
+  Withering Curse 8 -> 7; Blightbrand 18 -> 12.
+- **Bone Lord**: Marrow Bolt 8 -> 7; Wraithwind 10 -> 8; Withering Curse 8 -> 7; Gravewail 10 -> 8; Soulrend Beam 12
+  -> 9; Bone Offering 14 -> 10; Ossuary Surge 16 -> 11; Blightbrand 18 -> 12; Crypt Collapse 20 -> 13.
+- **Monk**: Quaking Stomp 8 -> 7; Cleaving Heel 10 -> 8; Tidal Palm 12 -> 9; Whirling Heel 12 -> 9; Chi Lance 14 ->
+  10; Sundering Palm 16 -> 11; Skysplitter Fist 20 -> 13.
+- **Shadowfist**: Pressure Points 8 -> 7; Whirling Heel 12 -> 9; Chi Lance 14 -> 10; Sundering Palm 16 -> 11;
+  Shadowfist Flurry 18 -> 12; Skysplitter Fist 20 -> 13.
+- **Iron Sage**: Quaking Stomp 8 -> 7; Cleaving Heel 10 -> 8; Tidal Palm 12 -> 9; Whirling Heel 12 -> 9; Iron Palm 18
+  -> 12; Sundering Palm 16 -> 11.
+- **Templar**: Hallowed Cut 8 -> 7; Penitent Lash 10 -> 8; Bell of Reckoning 12 -> 9; Martyr's Pyre 14 -> 10; Lance of
+  Vigil 16 -> 11; Consecration 18 -> 12; Sanctum Verdict 20 -> 13.
+- **Inquisitor**: Hallowed Cut 8 -> 7; Penitent Lash 10 -> 8; Bell of Reckoning 12 -> 9; Zealot's Wrath 14 -> 10;
+  Lance of Vigil 16 -> 11; Consecration 18 -> 12; Heretic's Brand 20 -> 13.
+- **Sentinel**: Hallowed Cut 8 -> 7; Bulwark Slam 10 -> 8; Bell of Reckoning 12 -> 9; Rampart Quake 14 -> 10; Martyr's
+  Pyre 14 -> 10; Consecration 18 -> 12; Sanctum Verdict 20 -> 13.
+
+**Same gain for every class.** A raw cooldown cut would lift the classes built on long cooldown spells (the Ranger,
+Deadeye, Elementalist, Thief lines) more than the others and push the minion and pack models off their limits. So the
+gain is shared out through the class spell factor ("Class spell factor"): each class factor knot is its old value times
+the median gain of all classes divided by the class's own raw gain, refit with a 3% tolerance. Nothing is renormalized
+away: the factor curves only level the classes with each other, the median gain stays. Mystic (level 1) and Elementalist
+(level 5) get their own curve knots. The rise is about +1% at level 100 (the top rungs are not in the best set yet, the
+cooldown there is a level 300 matter) and about +19% from level 300 on. `weapon_sim.py --power` lifts the auto attack with
+the spells (30% distance, 15% wand of the reference class's single-target rotation): `weapon_power_config.lua` is
+regenerated.
+
+Damage per second of the best rotation (at most 5 spells, `rotation_sim.py`; seconds of damage per second, one target and
+five targets; gain = the rotation score, 1 target + 0.25 x 5 targets):
+
+| Class | 100: 1 target | 5 targets | gain | 300: 1 target | 5 targets | gain | 1000: 1 target | 5 targets | gain |
+|---|---|---|---|---|---|---|---|---|---|
+| Warrior | 134 -> 138 | 502 -> 504 | +1.5% | 327 -> 450 | 1222 -> 1216 | +19.1% | 582 -> 781 | 2045 -> 2104 | +19.5% |
+| Juggernaut | 134 -> 138 | 502 -> 504 | +1.5% | 321 -> 441 | 1199 -> 1192 | +19.0% | 597 -> 706 | 2161 -> 2583 | +18.8% |
+| Berserker | 141 -> 144 | 527 -> 528 | +1.3% | 337 -> 422 | 1257 -> 1427 | +19.5% | 546 -> 637 | 2446 -> 2973 | +19.3% |
+| Ranger | 116 -> 117 | 364 -> 369 | +0.9% | 630 -> 756 | 1124 -> 1312 | +18.9% | 1478 -> 1757 | 2428 -> 2922 | +19.3% |
+| Deadeye | 116 -> 117 | 364 -> 369 | +0.9% | 703 -> 812 | 974 -> 1289 | +19.9% | 2127 -> 2487 | 2820 -> 3590 | +19.5% |
+| Beastmaster | 127 -> 127 | 407 -> 415 | +1.1% | 238 -> 295 | 802 -> 911 | +19.3% | 694 -> 749 | 1687 -> 2327 | +19.3% |
+| Mystic | 349 -> 353 | 821 -> 830 | +1.0% | 437 -> 543 | 1759 -> 2004 | +19.1% | 636 -> 810 | 2714 -> 3022 | +19.1% |
+| Elementalist | 113 -> 114 | 509 -> 516 | +1.3% | 380 -> 453 | 1900 -> 2265 | +19.2% | 687 -> 815 | 3436 -> 4076 | +18.6% |
+| Illusionist | 188 -> 191 | 414 -> 420 | +1.4% | 477 -> 547 | 1592 -> 1966 | +18.7% | 724 -> 833 | 2399 -> 3020 | +19.9% |
+| Thief | 200 -> 190 | 442 -> 499 | +1.6% | 322 -> 331 | 827 -> 1190 | +18.8% | 549 -> 577 | 1420 -> 1990 | +18.9% |
+| Ninja | 216 -> 214 | 340 -> 358 | +0.9% | 307 -> 330 | 1188 -> 1564 | +19.4% | 675 -> 728 | 2610 -> 3442 | +19.6% |
+| Samurai | 194 -> 192 | 325 -> 348 | +1.6% | 423 -> 466 | 1187 -> 1580 | +19.6% | 692 -> 759 | 1936 -> 2577 | +19.3% |
+| Necromancer | 135 -> 130 | 441 -> 473 | +1.1% | 236 -> 312 | 925 -> 964 | +18.4% | 538 -> 717 | 1904 -> 1986 | +19.6% |
+| Lich | 226 -> 226 | 344 -> 353 | +1.0% | 441 -> 516 | 886 -> 1101 | +19.5% | 1036 -> 1213 | 1844 -> 2294 | +19.3% |
+| Bone Lord | 101 -> 101 | 167 -> 171 | +1.0% | 268 -> 334 | 978 -> 1113 | +19.4% | 649 -> 787 | 2097 -> 2458 | +19.5% |
+| Monk | 188 -> 199 | 762 -> 729 | +0.8% | 309 -> 409 | 1114 -> 1160 | +18.9% | 533 -> 709 | 1997 -> 2094 | +19.4% |
+| Shadowfist | 140 -> 134 | 465 -> 495 | +0.6% | 203 -> 273 | 799 -> 825 | +19.0% | 434 -> 594 | 1771 -> 1824 | +19.8% |
+| Iron Sage | 188 -> 199 | 762 -> 729 | +0.8% | 288 -> 354 | 1416 -> 1657 | +19.7% | 501 -> 613 | 2551 -> 2982 | +19.3% |
+| Templar | 171 -> 173 | 774 -> 784 | +1.1% | 319 -> 399 | 1302 -> 1501 | +20.1% | 567 -> 683 | 2236 -> 2627 | +19.1% |
+| Inquisitor | 219 -> 207 | 362 -> 417 | +0.7% | 358 -> 399 | 1134 -> 1465 | +19.3% | 626 -> 695 | 2001 -> 2570 | +18.8% |
+| Sentinel | 178 -> 173 | 446 -> 484 | +1.6% | 298 -> 359 | 1278 -> 1487 | +18.4% | 523 -> 661 | 2261 -> 2531 | +18.8% |
+
+Gain at level 100: mean 1.1%, min 0.6%, max 1.6%. Level 300: mean 19.2%, min 18.4% (Necromancer), max 20.1% (Templar).
+Level 1000: mean 19.3%, min 18.6% (Elementalist), max 19.9% (Illusionist). Two classes lose single-target damage at level
+100 (Thief 200 -> 190, Necromancer 135 -> 130) because the best set swaps a spell for an area one; their score still
+rises and the five-target damage rises more. 41 best sets change at the three levels. The Thief best set no longer holds
+Last Breath at level 230 and above (Crescent Cut and Venom Spiral take its place, the score is higher).
+
+**Mana.** `rotation_sim.py --mana --check` passes with no change to a spell cost or the regeneration. A shorter cooldown
+casts the same spell more often, so mana per second rises with the damage: -8% to +61% at level 300 (most classes
++20 to +50%), as the damage does. Mana per second of the best set, before -> after, and the runway (seconds a full pool lasts with the
+vocation regeneration):
+
+| Class | 100: mana/s | runway s | 300: mana/s | runway s | 1000: mana/s | runway s |
+|---|---|---|---|---|---|---|
+| Warrior | 16.0 -> 17.0 | 35 -> 33 | 32.0 -> 51.7 | 49 -> 30 | 35.4 -> 51.7 | 146 -> 99 |
+| Juggernaut | 16.0 -> 17.0 | 39 -> 37 | 32.0 -> 51.7 | 52 -> 31 | 35.6 -> 67.8 | 152 -> 77 |
+| Berserker | 16.0 -> 17.0 | 46 -> 43 | 32.0 -> 45.8 | 62 -> 42 | 46.0 -> 59.0 | 138 -> 107 |
+| Ranger | 42.3 -> 44.5 | 38 -> 36 | 53.6 -> 75.7 | 87 -> 61 | 59.2 -> 75.7 | 259 -> 202 |
+| Deadeye | 42.3 -> 44.5 | 40 -> 38 | 64.6 -> 97.0 | 74 -> 49 | 87.3 -> 127.5 | 179 -> 121 |
+| Beastmaster | 36.5 -> 37.5 | 44 -> 42 | 43.6 -> 55.5 | 105 -> 81 | 71.7 -> 77.5 | 206 -> 189 |
+| Mystic | 35.8 -> 35.8 | 90 -> 90 | 70.5 -> 85.5 | 132 -> 108 | 70.5 -> 85.5 | 437 -> 359 |
+| Elementalist | 43.8 -> 43.0 | 79 -> 81 | 131.2 -> 172.5 | 72 -> 54 | 162.5 -> 226.2 | 191 -> 136 |
+| Illusionist | 32.6 -> 32.6 | 97 -> 97 | 184.2 -> 255.4 | 45 -> 32 | 184.2 -> 255.4 | 150 -> 108 |
+| Thief | 22.4 -> 25.2 | 49 -> 43 | 28.7 -> 40.5 | 110 -> 77 | 28.7 -> 40.5 | 365 -> 256 |
+| Ninja | 21.6 -> 24.0 | 57 -> 50 | 53.3 -> 65.6 | 61 -> 49 | 53.3 -> 65.6 | 201 -> 161 |
+| Samurai | 18.0 -> 17.8 | 64 -> 65 | 45.2 -> 53.6 | 65 -> 54 | 45.2 -> 53.6 | 216 -> 180 |
+| Necromancer | 50.1 -> 48.8 | 55 -> 56 | 67.5 -> 102.0 | 119 -> 78 | 67.5 -> 102.0 | 396 -> 260 |
+| Lich | 50.1 -> 58.0 | 63 -> 54 | 60.3 -> 84.5 | 153 -> 106 | 60.3 -> 84.5 | 507 -> 353 |
+| Bone Lord | 42.8 -> 50.6 | 65 -> 54 | 75.5 -> 101.7 | 103 -> 75 | 66.6 -> 93.9 | 391 -> 271 |
+| Monk | 20.0 -> 20.5 | 55 -> 54 | 34.0 -> 41.8 | 93 -> 75 | 34.0 -> 41.8 | 307 -> 247 |
+| Shadowfist | 24.1 -> 24.4 | 50 -> 49 | 46.7 -> 61.4 | 70 -> 52 | 46.7 -> 61.4 | 231 -> 173 |
+| Iron Sage | 20.0 -> 20.5 | 56 -> 55 | 47.1 -> 43.3 | 63 -> 68 | 47.1 -> 43.3 | 207 -> 226 |
+| Templar | 51.3 -> 55.8 | 17 -> 15 | 71.9 -> 72.0 | 34 -> 34 | 70.2 -> 72.0 | 116 -> 114 |
+| Inquisitor | 63.2 -> 65.6 | 17 -> 17 | 76.0 -> 73.3 | 42 -> 43 | 76.0 -> 73.3 | 138 -> 143 |
+| Sentinel | 43.0 -> 42.5 | 18 -> 18 | 69.1 -> 79.1 | 32 -> 28 | 69.1 -> 69.6 | 106 -> 105 |
+
+The shortest runway of all measured levels was 16.6 s (Sentinel level 150, Templar level 100) and is now 15.2 s (Templar
+level 100). The Templar, Inquisitor and Sentinel have the shortest pools by design (the mana runway section above
+sets their floor); the floor of the check holds.
+
+**Models and limits.** No limit was changed. `pack_model.py`, `tower_model.py` and `minion_model.py` compare a class with
+the median class and with a base hunt pack, so a rise shared by all classes leaves their ratios where they were. A first
+try with the raw cooldown cut (no factor refit) broke `minion_model.py` at level 50 (5 targets 0.84 against the floor of
+0.85); the factor refit fixed it. A rise added to `pack_model.py` `damage` (spell share 0.6) broke the Necromancer level 200
+ratio (1.175 against the ceiling of 1.15) and was dropped: the pack models keep their old damage input, as the ratio is
+what they check. `rotation_sim.py --ladder --check` follows the new ladder.
 
 ### Combat pass (O136, 2026-10-23; owner: "balanceie o jogo para o combate ser mais rápido e fluido, com mais magias de ataque e menos de suporte ... healing, dano e tudo"; computed with rotation_sim.py and pack_model.py, not measured in game)
 

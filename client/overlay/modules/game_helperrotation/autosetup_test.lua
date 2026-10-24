@@ -78,25 +78,25 @@ for voc, name in pairs(names) do
   end
 end
 
--- potions: the best the class may drink and carries, else the Everfull look
+-- potions: the best the character carries (every class drinks every potion, owner 2026-10-24), else the Everfull look
 eq(planFor(4, 300, ALL_POTIONS).healing.potions[1].id, 23375, 'Warrior 300: supreme health')
-eq(planFor(4, 300, ALL_POTIONS).healing.potions[2].id, 268, 'Warrior: only the plain mana potion')
+eq(planFor(4, 300, ALL_POTIONS).healing.potions[2].id, 23373, 'Warrior 300: ultimate mana')
 eq(planFor(4, 300, ALL_POTIONS).healing.potions[2].percent, 30, 'Warrior: mana potion at 30 %')
-eq(planFor(4, 100, ALL_POTIONS).healing.potions[1].id, 239, 'Warrior 100: great health')
+eq(planFor(4, 100, ALL_POTIONS).healing.potions[1].id, 7642, 'Warrior 100: great spirit')
 eq(planFor(4, 100, { 236 }).healing.potions[1].id, 236, 'Warrior carrying strong health only')
 eq(planFor(4, 100, {}).healing.potions[1].id, 266, 'nothing carried: the Everfull health potion')
 eq(planFor(4, 100, {}).healing.potions[1].percent, 50, 'health potion at 50 %')
 eq(planFor(3, 150, ALL_POTIONS).healing.potions[1].id, 23374, 'Ranger 150: ultimate spirit')
-eq(planFor(3, 150, ALL_POTIONS).healing.potions[2].id, 237, 'Ranger: strong mana')
+eq(planFor(3, 150, ALL_POTIONS).healing.potions[2].id, 23373, 'Ranger 150: ultimate mana')
 eq(planFor(1, 150, ALL_POTIONS).healing.potions[2].id, 23373, 'Mystic 150: ultimate mana')
 eq(planFor(1, 150, ALL_POTIONS).healing.potions[2].percent, 40, 'Mystic: mana potion at 40 %')
-eq(planFor(1, 150, ALL_POTIONS).healing.potions[1].id, 266, 'Mystic: the plain health potion')
+eq(planFor(1, 250, ALL_POTIONS).healing.potions[1].id, 23375, 'Mystic 250: supreme health (no class limit)')
 eq(planFor(20, 90, ALL_POTIONS).healing.potions[2].id, 238, 'Necromancer 90: great mana')
 eq(planFor(20, 90, ALL_POTIONS).healing.potions[2].percent, 40, 'Necromancer: a caster')
-eq(planFor(12, 90, ALL_POTIONS).healing.potions[1].id, 7642, 'Ninja 90: great spirit (paladin list)')
+eq(planFor(12, 90, ALL_POTIONS).healing.potions[1].id, 7642, 'Ninja 90: great spirit')
 eq(planFor(18, 60, ALL_POTIONS).healing.potions[1].id, 236, 'Monk line 60: strong health')
-eq(planFor(23, 250, ALL_POTIONS).healing.potions[1].id, 23375, 'Templar 250: supreme health (knight list)')
-eq(planFor(23, 250, ALL_POTIONS).healing.potions[2].id, 237, 'Templar: strong mana (paladin list)')
+eq(planFor(23, 250, ALL_POTIONS).healing.potions[1].id, 23375, 'Templar 250: supreme health')
+eq(planFor(23, 250, ALL_POTIONS).healing.potions[2].id, 23373, 'Templar 250: ultimate mana')
 eq(planFor(5, 49, ALL_POTIONS).healing.potions[2].id, 268, 'level 49: no strong potions yet')
 
 -- haste: Strong Haste for the Mystic line, Haste for the others from level 14
@@ -219,6 +219,26 @@ S.applyTargeting(cfg, before)
 eq(cfg.autoTargetEnabled, false, 'undo: Auto Target back off')
 eq(cfg.magicShooterEnabled, false, 'undo: shooter back off')
 eq(S.applyTargeting(nil, before), nil, 'no config: nothing written')
+
+
+-- the autosetup potion table and the helper's potion list (helper_potions.lua) say the same: ids, levels, class lines
+dofile(dir .. '../game_helper/helper_potions.lua')
+do
+  local P = ChaosHelperPotions
+  local seen = 0
+  for _, list in pairs(S.POTIONS) do
+    for _, e in ipairs(list) do
+      seen = seen + 1
+      local p = P.info(e.id)
+      ok(p, 'autosetup potion ' .. e.id .. ' is in the helper list')
+      if p then
+        eq(e.level, p.level, 'level of ' .. e.id)
+        eq(e.lines, nil, 'no class limit on ' .. e.id)
+      end
+    end
+  end
+  eq(seen, #P.LIST, 'autosetup lists every potion once')
+end
 
 if fails > 0 then error(fails .. ' failure(s)') end
 print('autosetup_test: OK')

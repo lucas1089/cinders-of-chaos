@@ -508,7 +508,14 @@ function death.onDeath(creature, corpse, killer, mostDamageKiller, lastHitUnjust
 	end
 	local newTier = pickWeighted(cfg.ambushTier)
 	local pos = creature:getPosition()
+	-- no ambush copy inside a running dungeon: every monster of the run stands there from the start (O179)
+	if ChaosDungeons and ChaosDungeons.runAt and ChaosDungeons.runAt(pos) then
+		return true
+	end
 	addEvent(function(typeName, shown, position, nt, d, look, wasPaced)
+		if ChaosDungeons and ChaosDungeons.runAt and ChaosDungeons.runAt(position) then
+			return -- the 600 ms delay: the position lies in a dungeon that opened meanwhile
+		end
 		pendingTier = nt
 		local create = Chaos.createMonsterNamed or function(t, p, e, f) return Game.createMonster(t, p, e, f) end
 		local copy = create(typeName, position, true, false, shown) -- a rift name carries over

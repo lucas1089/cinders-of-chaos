@@ -468,18 +468,14 @@ end
 
 local function potionOptions(current)
   local o = { { text = tr('(empty)'), data = 0 } }
-  local player = me()
-  local line = player and lineOf(player)
   local seen = {}
-  for _, p in ipairs(player and Pot.offered(line, player:getLevel()) or {}) do
-    if p.kind == 'both' then
-      o[#o + 1] = { text = tr('%s (health)', tr(p.name)), data = p.id .. ':1' }
-      o[#o + 1] = { text = tr('%s (mana)', tr(p.name)), data = p.id .. ':2' }
-      seen[p.id .. ':1'], seen[p.id .. ':2'] = true, true
-    else
-      o[#o + 1] = { text = tr(p.name), data = tostring(p.id) }
-      seen[tostring(p.id)] = true
+  for _, e in ipairs(Pot.options() or {}) do
+    local text = tr(e.name)
+    if Pot.isBoth(e.potion.id) then
+      text = e.kind == 'mana' and tr('%s (mana)', text) or tr('%s (health)', text)
     end
+    o[#o + 1] = { text = text, data = e.key }
+    seen[e.key] = true
   end
   if current ~= 0 and not seen[current] then
     local id = tonumber(tostring(current):match('^(%d+)'))

@@ -241,6 +241,35 @@ end
 
 -- ======================================================================== the fight
 
+-- O177 (beta 2026-10-24: Kaelgor showed "Lv 10182" in its pocket): the level a pocket boss is spawned with (shown after
+-- its name through Chaos.spawnLevel; display only, health / damage / loot do not read it). The estimate of a boss
+-- species' experience and health is far above any level, so the pocket tells its own:
+--   world pocket   the world boss's entry level (Chaos.worldBoss.minLevel: the level the pocket is tuned for; its
+--                  drops are fixed at the world boss item level whatever the monster level)
+--   other pockets  the level its drops already use (ChaosLoot.typeLevel: the item level follows it), but at least the
+--                  pocket's entry level and at most `maxLevel` (the top hunting level), so the number on the bar is
+--                  the one the loot is rolled at
+-- lootLevel: nil when the loot level of the type is unknown. Returns an integer >= 1.
+function K.bossLevel(boss, lootLevel, maxLevel)
+	local function whole(v, default)
+		v = tonumber(v)
+		if not v or v ~= v or v == math.huge or v == -math.huge then
+			return default
+		end
+		return floor(v)
+	end
+	local entry = max(1, whole(boss and boss.minLevel, 0))
+	maxLevel = max(entry, whole(maxLevel, 2200))
+	if boss and boss.category == "world" then
+		return min(entry, maxLevel)
+	end
+	local lv = whole(lootLevel, 0)
+	if lv <= 0 then
+		return entry
+	end
+	return min(maxLevel, max(entry, lv))
+end
+
 -- curve = {solo, perExtra, max}: solo + perExtra x (players - 1), at most max
 function K.scale(curve, players)
 	if type(curve) ~= "table" then

@@ -98,11 +98,24 @@ function L.serialize(t)
   return '{' .. table.concat(out, ',') .. '}'
 end
 
--- the session: nothing is saved until this character's layout was restored (never defaults over the saved one)
-function L.newSession() return { key = nil, ready = false, last = nil } end
-function L.begin(st) st.key, st.ready, st.last = nil, false, nil end
-function L.restored(st, key, saved) st.key, st.ready, st.last = key, key ~= nil, L.serialize(saved or {}) end
-function L.canSave(st, key) return st.ready and key ~= nil and st.key == key end
+-- the session: nothing is saved until this character's layout was restored (never defaults over the saved one).
+-- hold: the restore passes are still running (a late close by the base client must not be saved as the player's);
+-- frozen: no save until this clock time (a death or a logout closes windows before the game ends); cand: the layout
+-- seen at the last check, saved only when the next check finds it unchanged (a layout in motion is not committed).
+L.PASSES = { 800, 2000, 4500 }     -- ms after the game start: restore, then two more passes over the open windows
+L.FREEZE_MS = 15000                -- a death freezes saving for this long (the relog comes first and resets it)
+function L.newSession() return { key = nil, ready = false, last = nil, cand = nil, hold = false, frozenUntil = nil } end
+function L.begin(st) st.key, st.ready, st.last, st.cand, st.hold, st.frozenUntil = nil, false, nil, nil, false, nil end
+function L.restored(st, key, saved)
+  st.key, st.ready, st.last, st.cand, st.hold, st.frozenUntil = key, key ~= nil, L.serialize(saved or {}), nil, true, nil
+end
+function L.release(st) st.hold = false end
+function L.freeze(st, nowMs, ms) st.frozenUntil = (nowMs or 0) + (ms or L.FREEZE_MS) end
+function L.canSave(st, key, nowMs)
+  if not st.ready or st.hold or key == nil or st.key ~= key then return false end
+  if st.frozenUntil and (nowMs or 0) < st.frozenUntil then return false end
+  return true
+end
 
 -- whether the layout should be written now (it changed since the last write or restore)
 function L.changed(st, layout)
@@ -110,6 +123,27 @@ function L.changed(st, layout)
   if text == st.last then return false end
   st.last = text
   return true
+end
+
+-- like changed, but only once the same new layout is seen at two checks in a row (a second apart): the windows the
+-- base client closes while the game ends are never the layout that gets written
+function L.settle(st, layout)
+  local text = L.serialize(layout)
+  if text == st.last then st.cand = nil return false end
+  if st.cand ~= text then st.cand = text return false end
+  st.cand = nil
+  st.last = text
+  return true
+end
+
+-- the windows to open again: saved as open, there now, and not shown. visible: { [windowId] = isShown }
+function L.reopenIds(saved, visible)
+  local out = {}
+  for id, e in pairs(saved and saved.mini or {}) do
+    if L.remembered(id) and not e.closed and visible and visible[id] == false then out[#out + 1] = id end
+  end
+  table.sort(out)
+  return out
 end
 
 return ChaosLayoutLogic

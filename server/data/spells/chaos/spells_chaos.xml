@@ -6,24 +6,24 @@
 		<vocation name="Mystic" />
 		<vocation name="Elementalist" />
 	</instant>
-	<instant group="attack" spellid="201" name="Witchfire Bolt" words="kah pyr vesh" level="30" mana="40" premium="0" range="5" needtarget="1" blockwalls="1" cooldown="8000" groupcooldown="2000" needlearn="0" script="chaos/sorcerer/hexfire_bolt.lua">
+	<instant group="attack" spellid="201" name="Witchfire Bolt" words="kah pyr vesh" level="30" mana="40" premium="0" range="5" needtarget="1" blockwalls="1" cooldown="7000" groupcooldown="2000" needlearn="0" script="chaos/sorcerer/hexfire_bolt.lua">
 		<vocation name="Mystic" />
 		<vocation name="Elementalist" />
 	</instant>
-	<instant group="attack" spellid="202" name="Forked Storm" words="kah zhul zarn" level="50" mana="120" premium="0" range="6" needtarget="1" blockwalls="1" cooldown="8000" groupcooldown="2000" needlearn="0" script="chaos/sorcerer/chain_lightning.lua">
+	<instant group="attack" spellid="202" name="Forked Storm" words="kah zhul zarn" level="50" mana="120" premium="0" range="6" needtarget="1" blockwalls="1" cooldown="7000" groupcooldown="2000" needlearn="0" script="chaos/sorcerer/chain_lightning.lua">
 		<vocation name="Elementalist" />
 	</instant>
 	<instant group="support" spellid="203" name="Crimson Covenant" words="tor nyx cruor" level="90" mana="30" premium="0" aggressive="0" selftarget="1" cooldown="30000" groupcooldown="2000" needlearn="0" script="chaos/sorcerer/blood_pact.lua">
 		<vocation name="Elementalist" />
 	</instant>
-	<instant group="attack" spellid="204" name="Falling Pyre" words="drai gal vas infr" level="150" mana="420" premium="0" range="7" needtarget="1" blockwalls="1" cooldown="14000" groupcooldown="2000" needlearn="0" script="chaos/sorcerer/meteor_strike.lua">
+	<instant group="attack" spellid="204" name="Falling Pyre" words="drai gal vas infr" level="150" mana="420" premium="0" range="7" needtarget="1" blockwalls="1" cooldown="10000" groupcooldown="2000" needlearn="0" script="chaos/sorcerer/meteor_strike.lua">
 		<vocation name="Mystic" />
 		<vocation name="Elementalist" />
 	</instant>
-	<instant group="attack" spellid="205" name="Frozen Crypt" words="drai gal vas hyr krypt" level="220" mana="540" premium="0" range="7" needtarget="1" blockwalls="1" cooldown="16000" groupcooldown="2000" needlearn="0" script="chaos/sorcerer/glacial_tomb.lua">
+	<instant group="attack" spellid="205" name="Frozen Crypt" words="drai gal vas hyr krypt" level="220" mana="540" premium="0" range="7" needtarget="1" blockwalls="1" cooldown="11000" groupcooldown="2000" needlearn="0" script="chaos/sorcerer/glacial_tomb.lua">
 		<vocation name="Elementalist" />
 	</instant>
-	<instant group="attack" spellid="206" name="Doomtide" words="drai zhul infr doma" level="300" mana="900" premium="0" selftarget="1" cooldown="18000" groupcooldown="2000" needlearn="0" script="chaos/sorcerer/cataclysm.lua">
+	<instant group="attack" spellid="206" name="Doomtide" words="drai zhul infr doma" level="300" mana="900" premium="0" selftarget="1" cooldown="12000" groupcooldown="2000" needlearn="0" script="chaos/sorcerer/cataclysm.lua">
 		<vocation name="Elementalist" />
 	</instant>
 	<!-- druid kit: the Illusionist (support); the first three also the Mystic -->
@@ -37,7 +37,7 @@
 	<instant group="support" spellid="209" name="Ironbark Hide" words="tor ael skar" level="60" mana="85" premium="0" aggressive="0" selftarget="1" cooldown="25000" groupcooldown="2000" needlearn="0" script="chaos/druid/barkskin.lua">
 		<vocation name="Mystic" />
 	</instant>
-	<instant group="attack" spellid="210" name="Briar Prison" words="drai thral brin" level="70" mana="145" premium="0" range="6" needtarget="1" blockwalls="1" cooldown="10000" groupcooldown="2000" needlearn="0" script="chaos/druid/thorn_cage.lua">
+	<instant group="attack" spellid="210" name="Briar Prison" words="drai thral brin" level="70" mana="145" premium="0" range="6" needtarget="1" blockwalls="1" cooldown="8000" groupcooldown="2000" needlearn="0" script="chaos/druid/thorn_cage.lua">
 		<vocation name="Mystic" />
 	</instant>
 	<instant group="support" spellid="211" name="Moonfang Pack" words="vael luth wyrd" level="120" mana="270" premium="0" aggressive="0" selftarget="1" cooldown="30000" groupcooldown="2000" needlearn="0" script="chaos/druid/spirit_wolves.lua">
@@ -46,7 +46,7 @@
 	<instant group="healing" spellid="212" name="Verdant Sanctuary" words="saen gal vas vert" level="180" mana="360" premium="0" aggressive="0" selftarget="1" cooldown="30000" groupcooldown="2000" needlearn="0" script="chaos/druid/rejuvenating_grove.lua">
 		<vocation name="Illusionist" />
 	</instant>
-	<instant group="attack" spellid="213" name="Primordial Squall" words="drai gal vas stoma" level="250" mana="720" premium="0" selftarget="1" cooldown="8000" groupcooldown="2000" needlearn="0" script="chaos/druid/ancient_tempest.lua">
+	<instant group="attack" spellid="213" name="Primordial Squall" words="drai gal vas stoma" level="250" mana="720" premium="0" selftarget="1" cooldown="7000" groupcooldown="2000" needlearn="0" script="chaos/druid/ancient_tempest.lua">
 		<vocation name="Illusionist" />
 	</instant>
 	<!-- paladin kit: Ranger (base), Deadeye and Beastmaster; Final Verdict only the Deadeye, Hail of Dawn not the Beastmaster -->
@@ -55,11 +55,11 @@
 		<vocation name="Deadeye" />
 		<vocation name="Beastmaster" />
 	</instant>
-	<instant group="attack" spellid="215" name="Skewering Line" words="kah sag lanc" level="60" mana="90" premium="0" direction="1" cooldown="10000" groupcooldown="2000" needlearn="0" script="chaos/paladin/piercing_volley.lua">
+	<instant group="attack" spellid="215" name="Skewering Line" words="kah sag lanc" level="60" mana="90" premium="0" direction="1" cooldown="8000" groupcooldown="2000" needlearn="0" script="chaos/paladin/piercing_volley.lua">
 		<vocation name="Ranger" />
 		<vocation name="Deadeye" />
 	</instant>
-	<instant group="attack" spellid="216" name="Blessed Earth" words="drai vas sol hal" level="100" mana="210" premium="0" selftarget="1" cooldown="12000" groupcooldown="2000" needlearn="0" script="chaos/paladin/consecration.lua">
+	<instant group="attack" spellid="216" name="Blessed Earth" words="drai vas sol hal" level="100" mana="210" premium="0" selftarget="1" cooldown="9000" groupcooldown="2000" needlearn="0" script="chaos/paladin/consecration.lua">
 		<vocation name="Ranger" />
 		<vocation name="Deadeye" />
 		<vocation name="Beastmaster" />
@@ -69,10 +69,10 @@
 		<vocation name="Deadeye" />
 		<vocation name="Beastmaster" />
 	</instant>
-	<instant group="attack" spellid="218" name="Final Verdict" words="kah gal sol judh" level="200" mana="270" premium="0" range="6" needtarget="1" blockwalls="1" cooldown="16000" groupcooldown="2000" needlearn="0" script="chaos/paladin/judgement.lua">
+	<instant group="attack" spellid="218" name="Final Verdict" words="kah gal sol judh" level="200" mana="270" premium="0" range="6" needtarget="1" blockwalls="1" cooldown="11000" groupcooldown="2000" needlearn="0" script="chaos/paladin/judgement.lua">
 		<vocation name="Deadeye" />
 	</instant>
-	<instant group="attack" spellid="219" name="Hail of Dawn" words="drai gal vas sol volv" level="280" mana="480" premium="0" range="7" needtarget="1" blockwalls="1" cooldown="20000" groupcooldown="2000" needlearn="0" script="chaos/paladin/sanctified_barrage.lua">
+	<instant group="attack" spellid="219" name="Hail of Dawn" words="drai gal vas sol volv" level="280" mana="480" premium="0" range="7" needtarget="1" blockwalls="1" cooldown="13000" groupcooldown="2000" needlearn="0" script="chaos/paladin/sanctified_barrage.lua">
 		<vocation name="Ranger" />
 		<vocation name="Deadeye" />
 	</instant>
@@ -82,7 +82,7 @@
 		<vocation name="Juggernaut" />
 		<vocation name="Berserker" />
 	</instant>
-	<instant group="attack" spellid="221" name="Earthbreaker" words="kah grund krak" level="60" mana="30" premium="0" selftarget="1" needweapon="1" cooldown="8000" groupcooldown="2000" needlearn="0" script="chaos/knight/ground_slam.lua">
+	<instant group="attack" spellid="221" name="Earthbreaker" words="kah grund krak" level="60" mana="30" premium="0" selftarget="1" needweapon="1" cooldown="7000" groupcooldown="2000" needlearn="0" script="chaos/knight/ground_slam.lua">
 		<vocation name="Warrior" />
 		<vocation name="Juggernaut" />
 		<vocation name="Berserker" />
@@ -95,10 +95,10 @@
 		<vocation name="Warrior" />
 		<vocation name="Juggernaut" />
 	</instant>
-	<instant group="attack" spellid="224" name="Vaulting Cleave" words="kah brak skai" level="170" mana="150" premium="0" range="5" needweapon="1" needtarget="1" blockwalls="1" cooldown="8000" groupcooldown="2000" needlearn="0" script="chaos/knight/leaping_strike.lua">
+	<instant group="attack" spellid="224" name="Vaulting Cleave" words="kah brak skai" level="170" mana="150" premium="0" range="5" needweapon="1" needtarget="1" blockwalls="1" cooldown="7000" groupcooldown="2000" needlearn="0" script="chaos/knight/leaping_strike.lua">
 		<vocation name="Warrior" />
 	</instant>
-	<instant group="attack" spellid="225" name="Colossus Fall" words="kah gal vas tyr" level="260" mana="240" premium="0" selftarget="1" needweapon="1" cooldown="14000" groupcooldown="2000" needlearn="0" script="chaos/knight/titans_wrath.lua">
+	<instant group="attack" spellid="225" name="Colossus Fall" words="kah gal vas tyr" level="260" mana="240" premium="0" selftarget="1" needweapon="1" cooldown="10000" groupcooldown="2000" needlearn="0" script="chaos/knight/titans_wrath.lua">
 		<vocation name="Warrior" />
 		<vocation name="Juggernaut" />
 		<vocation name="Berserker" />
@@ -107,20 +107,20 @@
 	<instant group="support" spellid="226" name="Hall of Mirrors" words="drai spek" level="40" mana="150" premium="0" aggressive="0" selftarget="1" cooldown="30000" groupcooldown="2000" needlearn="0" script="chaos/illusionist/mirror_image.lua">
 		<vocation name="Illusionist" />
 	</instant>
-	<instant group="attack" spellid="227" name="Umbral Stride" words="ruan nyx umh" level="70" mana="70" premium="0" range="5" needtarget="1" blockwalls="1" cooldown="14000" groupcooldown="2000" needlearn="0" script="chaos/illusionist/shadow_step.lua">
+	<instant group="attack" spellid="227" name="Umbral Stride" words="ruan nyx umh" level="70" mana="70" premium="0" range="5" needtarget="1" blockwalls="1" cooldown="10000" groupcooldown="2000" needlearn="0" script="chaos/illusionist/shadow_step.lua">
 		<vocation name="Mystic" />
 	</instant>
-	<instant group="attack" spellid="228" name="Shattered Psyche" words="kah mynd frak" level="110" mana="120" premium="0" range="4" needtarget="1" blockwalls="1" cooldown="12000" groupcooldown="2000" needlearn="0" script="chaos/illusionist/mind_fracture.lua">
+	<instant group="attack" spellid="228" name="Shattered Psyche" words="kah mynd frak" level="110" mana="120" premium="0" range="4" needtarget="1" blockwalls="1" cooldown="9000" groupcooldown="2000" needlearn="0" script="chaos/illusionist/mind_fracture.lua">
 		<vocation name="Mystic" />
 		<vocation name="Illusionist" />
 	</instant>
 	<instant group="support" spellid="229" name="Wraithshroud" words="fen wrai" level="150" mana="210" premium="0" aggressive="0" selftarget="1" cooldown="35000" groupcooldown="2000" needlearn="0" script="chaos/illusionist/phantom_veil.lua">
 		<vocation name="Illusionist" />
 	</instant>
-	<instant group="attack" spellid="230" name="Nightburst" words="drai gal vas umh" level="210" mana="540" premium="0" selftarget="1" cooldown="10000" groupcooldown="2000" needlearn="0" script="chaos/illusionist/umbral_eruption.lua">
+	<instant group="attack" spellid="230" name="Nightburst" words="drai gal vas umh" level="210" mana="540" premium="0" selftarget="1" cooldown="8000" groupcooldown="2000" needlearn="0" script="chaos/illusionist/umbral_eruption.lua">
 		<vocation name="Illusionist" />
 	</instant>
-	<instant group="attack" spellid="231" name="Tear in the Weave" words="drai zhul riv" level="280" mana="780" premium="0" selftarget="1" cooldown="18000" groupcooldown="2000" needlearn="0" script="chaos/illusionist/reality_rift.lua">
+	<instant group="attack" spellid="231" name="Tear in the Weave" words="drai zhul riv" level="280" mana="780" premium="0" selftarget="1" cooldown="12000" groupcooldown="2000" needlearn="0" script="chaos/illusionist/reality_rift.lua">
 		<vocation name="Illusionist" />
 	</instant>
 	<!-- shared: every class -->
@@ -262,39 +262,39 @@
 		<vocation name="Samurai" />
 	</instant>
 	<!-- the line's area strike (2026-10-15, pack farming; _blades.lua) -->
-	<instant group="attack" spellid="73" name="Blade Flurry" words="drai vas kaen" level="50" mana="70" premium="0" selftarget="1" cooldown="12000" groupcooldown="2000" needlearn="0" script="chaos/thief/blade_flurry.lua">
+	<instant group="attack" spellid="73" name="Blade Flurry" words="drai vas kaen" level="50" mana="70" premium="0" selftarget="1" cooldown="9000" groupcooldown="2000" needlearn="0" script="chaos/thief/blade_flurry.lua">
 		<vocation name="Thief" />
 		<vocation name="Ninja" />
 		<vocation name="Samurai" />
 	</instant>
-	<instant group="attack" spellid="136" name="Fan of Knives" words="drai vas nyx shur" level="80" mana="90" premium="0" range="4" needtarget="1" blockwalls="1" cooldown="14000" groupcooldown="2000" needlearn="0" script="chaos/thief/fan_of_knives.lua">
+	<instant group="attack" spellid="136" name="Fan of Knives" words="drai vas nyx shur" level="80" mana="90" premium="0" range="4" needtarget="1" blockwalls="1" cooldown="10000" groupcooldown="2000" needlearn="0" script="chaos/thief/fan_of_knives.lua">
 		<vocation name="Thief" />
 	</instant>
 	<!-- ninja -->
-	<instant group="attack" spellid="240" name="Shadow Step" words="ash umh" level="100" mana="90" premium="0" range="5" needtarget="1" blockwalls="1" cooldown="18000" groupcooldown="2000" needlearn="0" script="chaos/ninja/shadow_step.lua">
+	<instant group="attack" spellid="240" name="Shadow Step" words="ash umh" level="100" mana="90" premium="0" range="5" needtarget="1" blockwalls="1" cooldown="12000" groupcooldown="2000" needlearn="0" script="chaos/ninja/shadow_step.lua">
 		<vocation name="Ninja" />
 	</instant>
 	<instant group="support" spellid="241" name="Smoke Bomb" words="drai nebh" level="130" mana="180" premium="0" aggressive="0" selftarget="1" cooldown="20000" groupcooldown="2000" needlearn="0" script="chaos/ninja/smoke_bomb.lua">
 		<vocation name="Ninja" />
 	</instant>
-	<instant group="attack" spellid="242" name="Shuriken Barrage" words="drai vas shur" level="180" mana="240" premium="0" range="5" needtarget="1" blockwalls="1" cooldown="8000" groupcooldown="2000" needlearn="0" script="chaos/ninja/shuriken_barrage.lua">
+	<instant group="attack" spellid="242" name="Shuriken Barrage" words="drai vas shur" level="180" mana="240" premium="0" range="5" needtarget="1" blockwalls="1" cooldown="7000" groupcooldown="2000" needlearn="0" script="chaos/ninja/shuriken_barrage.lua">
 		<vocation name="Ninja" />
 	</instant>
 	<!-- samurai -->
 	<instant group="support" spellid="243" name="Counter Stance" words="tor ryx" level="100" mana="60" premium="0" aggressive="0" selftarget="1" cooldown="8000" groupcooldown="2000" needlearn="0" script="chaos/samurai/counter_stance.lua">
 		<vocation name="Samurai" />
 	</instant>
-	<instant group="attack" spellid="244" name="Iaijutsu" words="kah gal kaen" level="120" mana="210" premium="0" range="2" needtarget="1" blockwalls="1" cooldown="20000" groupcooldown="2000" needlearn="0" script="chaos/samurai/iaijutsu.lua">
+	<instant group="attack" spellid="244" name="Iaijutsu" words="kah gal kaen" level="120" mana="210" premium="0" range="2" needtarget="1" blockwalls="1" cooldown="13000" groupcooldown="2000" needlearn="0" script="chaos/samurai/iaijutsu.lua">
 		<vocation name="Samurai" />
 	</instant>
 	<instant group="support" spellid="245" name="Bushido Focus" words="vyr mynd" level="150" mana="120" premium="0" aggressive="0" selftarget="1" cooldown="30000" groupcooldown="2000" needlearn="0" script="chaos/samurai/bushido_focus.lua">
 		<vocation name="Samurai" />
 	</instant>
-	<instant group="attack" spellid="74" name="Iaido Sweep" words="drai gal kaen" level="200" mana="270" premium="0" range="2" needtarget="1" blockwalls="1" cooldown="14000" groupcooldown="2000" needlearn="0" script="chaos/samurai/iaido_sweep.lua">
+	<instant group="attack" spellid="74" name="Iaido Sweep" words="drai gal kaen" level="200" mana="270" premium="0" range="2" needtarget="1" blockwalls="1" cooldown="10000" groupcooldown="2000" needlearn="0" script="chaos/samurai/iaido_sweep.lua">
 		<vocation name="Samurai" />
 	</instant>
 	<!-- berserker -->
-	<instant group="attack" spellid="246" name="Skyfall Cleave" words="drai skai hrun" level="190" mana="60" premium="0" range="5" needweapon="1" needtarget="1" blockwalls="1" cooldown="10000" groupcooldown="2000" needlearn="0" script="chaos/berserker/skyfall_cleave.lua">
+	<instant group="attack" spellid="246" name="Skyfall Cleave" words="drai skai hrun" level="190" mana="60" premium="0" range="5" needweapon="1" needtarget="1" blockwalls="1" cooldown="8000" groupcooldown="2000" needlearn="0" script="chaos/berserker/skyfall_cleave.lua">
 		<vocation name="Berserker" />
 	</instant>
 	<instant group="support" spellid="247" name="Bloodrage" words="vyr sang khar" level="120" mana="120" premium="0" aggressive="0" selftarget="1" cooldown="30000" groupcooldown="2000" needlearn="0" script="chaos/berserker/bloodrage.lua">
@@ -333,7 +333,7 @@
 		<vocation name="Lich" />
 		<vocation name="Bone Lord" />
 	</instant>
-	<instant group="attack" spellid="182" name="Withering Curse" words="kah nyx maled" level="40" mana="70" premium="0" range="6" needtarget="1" blockwalls="1" cooldown="8000" groupcooldown="2000" needlearn="0" script="chaos/necromancer/withering_curse.lua">
+	<instant group="attack" spellid="182" name="Withering Curse" words="kah nyx maled" level="40" mana="70" premium="0" range="6" needtarget="1" blockwalls="1" cooldown="7000" groupcooldown="2000" needlearn="0" script="chaos/necromancer/withering_curse.lua">
 		<vocation name="Necromancer" />
 		<vocation name="Lich" />
 		<vocation name="Bone Lord" />
@@ -347,7 +347,7 @@
 	<instant group="attack" spellid="197" name="Bone Shrapnel" words="drai oss krak" level="60" mana="60" premium="0" range="7" needtarget="1" blockwalls="1" cooldown="4000" groupcooldown="2000" needlearn="0" script="chaos/necromancer/bone_shrapnel.lua">
 		<vocation name="Necromancer" />
 	</instant>
-	<instant group="attack" spellid="183" name="Soul Rot" words="kah nyx putr" level="100" mana="130" premium="0" range="6" needtarget="1" blockwalls="1" cooldown="16000" groupcooldown="2000" needlearn="0" script="chaos/lich/soul_rot.lua">
+	<instant group="attack" spellid="183" name="Soul Rot" words="kah nyx putr" level="100" mana="130" premium="0" range="6" needtarget="1" blockwalls="1" cooldown="11000" groupcooldown="2000" needlearn="0" script="chaos/lich/soul_rot.lua">
 		<vocation name="Lich" />
 	</instant>
 	<instant group="attack" spellid="184" name="Life Siphon" words="kah sang nyx" level="130" mana="155" premium="0" range="5" needtarget="1" blockwalls="1" cooldown="6000" groupcooldown="2000" needlearn="0" script="chaos/lich/life_siphon.lua">
@@ -362,7 +362,7 @@
 	<instant group="support" spellid="187" name="Banner of Bones" words="tor vas oss" level="120" mana="180" premium="0" aggressive="0" selftarget="1" cooldown="30000" groupcooldown="2000" needlearn="0" script="chaos/bonelord/banner_of_bones.lua">
 		<vocation name="Bone Lord" />
 	</instant>
-	<instant group="attack" spellid="188" name="Bone Offering" words="drai sang oss" level="150" mana="150" premium="0" range="7" needtarget="1" blockwalls="1" cooldown="14000" groupcooldown="2000" needlearn="0" script="chaos/bonelord/bone_offering.lua">
+	<instant group="attack" spellid="188" name="Bone Offering" words="drai sang oss" level="150" mana="150" premium="0" range="7" needtarget="1" blockwalls="1" cooldown="10000" groupcooldown="2000" needlearn="0" script="chaos/bonelord/bone_offering.lua">
 		<vocation name="Bone Lord" />
 	</instant>
 	<!-- monk (Monk, and its ascended classes Shadowfist and Iron Sage) -->
@@ -376,12 +376,12 @@
 		<vocation name="Shadowfist" />
 		<vocation name="Iron Sage" />
 	</instant>
-	<instant group="attack" spellid="64" name="Sundering Palm" words="kah gal dhun" level="30" mana="30" premium="0" range="1" needtarget="1" blockwalls="1" cooldown="16000" groupcooldown="2000" needlearn="0" script="chaos/monk/sundering_palm.lua">
+	<instant group="attack" spellid="64" name="Sundering Palm" words="kah gal dhun" level="30" mana="30" premium="0" range="1" needtarget="1" blockwalls="1" cooldown="11000" groupcooldown="2000" needlearn="0" script="chaos/monk/sundering_palm.lua">
 		<vocation name="Monk" />
 		<vocation name="Shadowfist" />
 		<vocation name="Iron Sage" />
 	</instant>
-	<instant group="attack" spellid="65" name="Whirling Heel" words="drai spir dhun" level="50" mana="50" premium="0" selftarget="1" cooldown="12000" groupcooldown="2000" needlearn="0" script="chaos/monk/whirling_heel.lua">
+	<instant group="attack" spellid="65" name="Whirling Heel" words="drai spir dhun" level="50" mana="50" premium="0" selftarget="1" cooldown="9000" groupcooldown="2000" needlearn="0" script="chaos/monk/whirling_heel.lua">
 		<vocation name="Monk" />
 		<vocation name="Shadowfist" />
 		<vocation name="Iron Sage" />
@@ -397,10 +397,10 @@
 		<vocation name="Iron Sage" />
 	</instant>
 	<!-- shadowfist -->
-	<instant group="attack" spellid="68" name="Pressure Points" words="kah mynd dhun" level="100" mana="70" premium="0" range="1" needtarget="1" blockwalls="1" cooldown="8000" groupcooldown="2000" needlearn="0" script="chaos/shadowfist/pressure_points.lua">
+	<instant group="attack" spellid="68" name="Pressure Points" words="kah mynd dhun" level="100" mana="70" premium="0" range="1" needtarget="1" blockwalls="1" cooldown="7000" groupcooldown="2000" needlearn="0" script="chaos/shadowfist/pressure_points.lua">
 		<vocation name="Shadowfist" />
 	</instant>
-	<instant group="attack" spellid="69" name="Shadowfist Flurry" words="kah gal umh dhun" level="150" mana="180" premium="0" range="1" needtarget="1" blockwalls="1" cooldown="18000" groupcooldown="2000" needlearn="0" script="chaos/shadowfist/shadowfist_flurry.lua">
+	<instant group="attack" spellid="69" name="Shadowfist Flurry" words="kah gal umh dhun" level="150" mana="180" premium="0" range="1" needtarget="1" blockwalls="1" cooldown="12000" groupcooldown="2000" needlearn="0" script="chaos/shadowfist/shadowfist_flurry.lua">
 		<vocation name="Shadowfist" />
 	</instant>
 	<instant group="attack" spellid="195" name="Shadow Ricochet" words="kah umh dhun" level="150" mana="180" premium="0" range="4" needtarget="1" blockwalls="1" cooldown="6000" groupcooldown="2000" needlearn="0" script="chaos/shadowfist/shadow_ricochet.lua">
@@ -410,7 +410,7 @@
 	<instant group="support" spellid="70" name="Chi Ward" words="tor qhal" level="100" mana="120" premium="0" aggressive="0" params="1" cooldown="12000" groupcooldown="2000" needlearn="0" script="chaos/ironsage/chi_ward.lua">
 		<vocation name="Iron Sage" />
 	</instant>
-	<instant group="attack" spellid="71" name="Iron Palm" words="kah brak dhun" level="120" mana="120" premium="0" range="1" needtarget="1" blockwalls="1" cooldown="18000" groupcooldown="2000" needlearn="0" script="chaos/ironsage/iron_palm.lua">
+	<instant group="attack" spellid="71" name="Iron Palm" words="kah brak dhun" level="120" mana="120" premium="0" range="1" needtarget="1" blockwalls="1" cooldown="12000" groupcooldown="2000" needlearn="0" script="chaos/ironsage/iron_palm.lua">
 		<vocation name="Iron Sage" />
 	</instant>
 	<instant group="attack" spellid="196" name="Iron Chain" words="kah brak vinc" level="150" mana="180" premium="0" range="4" needtarget="1" blockwalls="1" cooldown="6000" groupcooldown="2000" needlearn="0" script="chaos/ironsage/iron_chain.lua">
@@ -425,7 +425,7 @@
 		<vocation name="Inquisitor" />
 		<vocation name="Sentinel" />
 	</instant>
-	<instant group="attack" spellid="190" name="Consecration" words="drai sol haln" level="40" mana="95" premium="0" selftarget="1" cooldown="18000" groupcooldown="2000" needlearn="0" script="chaos/templar/consecration.lua">
+	<instant group="attack" spellid="190" name="Consecration" words="drai sol haln" level="40" mana="95" premium="0" selftarget="1" cooldown="12000" groupcooldown="2000" needlearn="0" script="chaos/templar/consecration.lua">
 		<vocation name="Templar" />
 		<vocation name="Inquisitor" />
 		<vocation name="Sentinel" />
@@ -585,22 +585,22 @@
 	<instant group="support" spellid="29" name="Bastion Cry" words="vok gal rhov kor" level="340" mana="300" premium="0" aggressive="0" selftarget="1" cooldown="40000" groupcooldown="2000" needlearn="0" script="chaos/knight/bastion_cry.lua">
 		<vocation name="Juggernaut" />
 	</instant>
-	<instant group="attack" spellid="58" name="Anvil Fall" words="kah gal brak thun" level="380" mana="270" premium="0" range="3" needweapon="1" needtarget="1" blockwalls="1" cooldown="12000" groupcooldown="2000" needlearn="0" script="chaos/knight/anvil_fall.lua">
+	<instant group="attack" spellid="58" name="Anvil Fall" words="kah gal brak thun" level="380" mana="270" premium="0" range="3" needweapon="1" needtarget="1" blockwalls="1" cooldown="9000" groupcooldown="2000" needlearn="0" script="chaos/knight/anvil_fall.lua">
 		<vocation name="Juggernaut" />
 	</instant>
-	<instant group="attack" spellid="144" name="Twin Verdict" words="kah gal sol judh vael" level="400" mana="540" premium="0" range="6" needtarget="1" blockwalls="1" cooldown="18000" groupcooldown="2000" needlearn="0" script="chaos/paladin/twin_verdict.lua">
+	<instant group="attack" spellid="144" name="Twin Verdict" words="kah gal sol judh vael" level="400" mana="540" premium="0" range="6" needtarget="1" blockwalls="1" cooldown="12000" groupcooldown="2000" needlearn="0" script="chaos/paladin/twin_verdict.lua">
 		<vocation name="Deadeye" />
 	</instant>
-	<instant group="attack" spellid="145" name="Rampage Leap" words="drai skai hrun vas" level="380" mana="240" premium="0" range="6" needweapon="1" needtarget="1" blockwalls="1" cooldown="14000" groupcooldown="2000" needlearn="0" script="chaos/berserker/rampage_leap.lua">
+	<instant group="attack" spellid="145" name="Rampage Leap" words="drai skai hrun vas" level="380" mana="240" premium="0" range="6" needweapon="1" needtarget="1" blockwalls="1" cooldown="10000" groupcooldown="2000" needlearn="0" script="chaos/berserker/rampage_leap.lua">
 		<vocation name="Berserker" />
 	</instant>
-	<instant group="attack" spellid="146" name="Glacial Doom" words="drai hyr infr doma" level="420" mana="1320" premium="0" selftarget="1" cooldown="20000" groupcooldown="2000" needlearn="0" script="chaos/sorcerer/glacial_doom.lua">
+	<instant group="attack" spellid="146" name="Glacial Doom" words="drai hyr infr doma" level="420" mana="1320" premium="0" selftarget="1" cooldown="13000" groupcooldown="2000" needlearn="0" script="chaos/sorcerer/glacial_doom.lua">
 		<vocation name="Elementalist" />
 	</instant>
 	<instant group="attack" spellid="147" name="Pack Frenzy" words="kah ferh vas" level="320" mana="270" premium="0" range="7" needtarget="1" blockwalls="1" cooldown="6000" groupcooldown="2000" needlearn="0" script="chaos/beastmaster/pack_frenzy.lua">
 		<vocation name="Beastmaster" />
 	</instant>
-	<instant group="attack" spellid="164" name="Shuriken Tempest" words="kah sai vas hyr" level="270" mana="360" premium="0" range="5" needtarget="1" blockwalls="1" cooldown="20000" groupcooldown="2000" needlearn="0" script="chaos/ninja/shuriken_tempest.lua">
+	<instant group="attack" spellid="164" name="Shuriken Tempest" words="kah sai vas hyr" level="270" mana="360" premium="0" range="5" needtarget="1" blockwalls="1" cooldown="13000" groupcooldown="2000" needlearn="0" script="chaos/ninja/shuriken_tempest.lua">
 		<vocation name="Ninja" />
 	</instant>
 	<!-- the Ranger line's fight buff in place of the stock Sharpshooter / Hawkeye (owner 2026-10-20: its slow stopped the
@@ -624,55 +624,55 @@
 		<vocation name="Beastmaster" />
 	</instant>
 <!-- BEGIN attack kit (owner 2026-10-23: every class has the same number of attack spells; numbers: data/scripts/chaos/attack_kit_config.lua) -->
-	<instant group="attack" spellid="2" name="Gorehook" words="kah sang hrak" level="130" mana="115" premium="0" range="1" needtarget="1" blockwalls="1" cooldown="18000" groupcooldown="2000" needlearn="0" script="chaos/knight/gorehook.lua">
+	<instant group="attack" spellid="2" name="Gorehook" words="kah sang hrak" level="130" mana="115" premium="0" range="1" needtarget="1" blockwalls="1" cooldown="12000" groupcooldown="2000" needlearn="0" script="chaos/knight/gorehook.lua">
 		<vocation name="Warrior" />
 		<vocation name="Juggernaut" />
 		<vocation name="Berserker" />
 	</instant>
-	<instant group="attack" spellid="9" name="Rift Cleaver" words="kah rhim brak" level="220" mana="135" premium="0" range="4" needtarget="1" blockwalls="1" cooldown="16000" groupcooldown="2000" needlearn="0" script="chaos/knight/rift_cleaver.lua">
+	<instant group="attack" spellid="9" name="Rift Cleaver" words="kah rhim brak" level="220" mana="135" premium="0" range="4" needtarget="1" blockwalls="1" cooldown="11000" groupcooldown="2000" needlearn="0" script="chaos/knight/rift_cleaver.lua">
 		<vocation name="Warrior" />
 		<vocation name="Juggernaut" />
 	</instant>
-	<instant group="attack" spellid="19" name="Sunspear" words="kah aur lanc" level="160" mana="115" premium="0" range="7" needtarget="1" blockwalls="1" cooldown="14000" groupcooldown="2000" needlearn="0" script="chaos/paladin/sunspear.lua">
+	<instant group="attack" spellid="19" name="Sunspear" words="kah aur lanc" level="160" mana="115" premium="0" range="7" needtarget="1" blockwalls="1" cooldown="10000" groupcooldown="2000" needlearn="0" script="chaos/paladin/sunspear.lua">
 		<vocation name="Ranger" />
 		<vocation name="Deadeye" />
 		<vocation name="Beastmaster" />
 	</instant>
-	<instant group="attack" spellid="22" name="Arrowstorm" words="drai sag vex" level="220" mana="85" premium="0" range="7" needtarget="1" blockwalls="1" cooldown="14000" groupcooldown="2000" needlearn="0" script="chaos/paladin/arrowstorm.lua">
+	<instant group="attack" spellid="22" name="Arrowstorm" words="drai sag vex" level="220" mana="85" premium="0" range="7" needtarget="1" blockwalls="1" cooldown="10000" groupcooldown="2000" needlearn="0" script="chaos/paladin/arrowstorm.lua">
 		<vocation name="Ranger" />
 		<vocation name="Beastmaster" />
 	</instant>
-	<instant group="attack" spellid="23" name="Packhunter's Dart" words="kah ferh sag" level="140" mana="50" premium="0" range="7" needtarget="1" blockwalls="1" cooldown="14000" groupcooldown="2000" needlearn="0" script="chaos/beastmaster/packhunters_dart.lua">
+	<instant group="attack" spellid="23" name="Packhunter's Dart" words="kah ferh sag" level="140" mana="50" premium="0" range="7" needtarget="1" blockwalls="1" cooldown="10000" groupcooldown="2000" needlearn="0" script="chaos/beastmaster/packhunters_dart.lua">
 		<vocation name="Beastmaster" />
 	</instant>
-	<instant group="attack" spellid="24" name="Phantom Needles" words="kah mynd sag" level="130" mana="275" premium="0" range="5" needtarget="1" blockwalls="1" cooldown="14000" groupcooldown="2000" needlearn="0" script="chaos/illusionist/phantom_needles.lua">
+	<instant group="attack" spellid="24" name="Phantom Needles" words="kah mynd sag" level="130" mana="275" premium="0" range="5" needtarget="1" blockwalls="1" cooldown="10000" groupcooldown="2000" needlearn="0" script="chaos/illusionist/phantom_needles.lua">
 		<vocation name="Illusionist" />
 	</instant>
-	<instant group="attack" spellid="38" name="Mirror Shards" words="drai umh krak" level="170" mana="345" premium="0" selftarget="1" cooldown="16000" groupcooldown="2000" needlearn="0" script="chaos/illusionist/mirror_shards.lua">
+	<instant group="attack" spellid="38" name="Mirror Shards" words="drai umh krak" level="170" mana="345" premium="0" selftarget="1" cooldown="11000" groupcooldown="2000" needlearn="0" script="chaos/illusionist/mirror_shards.lua">
 		<vocation name="Illusionist" />
 	</instant>
-	<instant group="attack" spellid="43" name="Dreamrot" words="kah mynd putr" level="230" mana="470" premium="0" range="5" needtarget="1" blockwalls="1" cooldown="20000" groupcooldown="2000" needlearn="0" script="chaos/illusionist/dreamrot.lua">
+	<instant group="attack" spellid="43" name="Dreamrot" words="kah mynd putr" level="230" mana="470" premium="0" range="5" needtarget="1" blockwalls="1" cooldown="13000" groupcooldown="2000" needlearn="0" script="chaos/illusionist/dreamrot.lua">
 		<vocation name="Illusionist" />
 	</instant>
-	<instant group="attack" spellid="45" name="Gutting Slash" words="kah vorn kaen" level="100" mana="60" premium="0" range="1" needtarget="1" blockwalls="1" cooldown="8000" groupcooldown="2000" needlearn="0" script="chaos/thief/gutting_slash.lua">
+	<instant group="attack" spellid="45" name="Gutting Slash" words="kah vorn kaen" level="100" mana="60" premium="0" range="1" needtarget="1" blockwalls="1" cooldown="7000" groupcooldown="2000" needlearn="0" script="chaos/thief/gutting_slash.lua">
 		<vocation name="Thief" />
 		<vocation name="Ninja" />
 		<vocation name="Samurai" />
 	</instant>
-	<instant group="attack" spellid="56" name="Razor Rain" words="drai shur vex" level="130" mana="75" premium="0" range="5" needtarget="1" blockwalls="1" cooldown="10000" groupcooldown="2000" needlearn="0" script="chaos/thief/razor_rain.lua">
+	<instant group="attack" spellid="56" name="Razor Rain" words="drai shur vex" level="130" mana="75" premium="0" range="5" needtarget="1" blockwalls="1" cooldown="8000" groupcooldown="2000" needlearn="0" script="chaos/thief/razor_rain.lua">
 		<vocation name="Thief" />
 		<vocation name="Ninja" />
 		<vocation name="Samurai" />
 	</instant>
-	<instant group="attack" spellid="57" name="Venom Spiral" words="kah shur putr" level="150" mana="85" premium="0" range="5" needtarget="1" blockwalls="1" cooldown="14000" groupcooldown="2000" needlearn="0" script="chaos/thief/venom_spiral.lua">
+	<instant group="attack" spellid="57" name="Venom Spiral" words="kah shur putr" level="150" mana="85" premium="0" range="5" needtarget="1" blockwalls="1" cooldown="10000" groupcooldown="2000" needlearn="0" script="chaos/thief/venom_spiral.lua">
 		<vocation name="Thief" />
 		<vocation name="Ninja" />
 	</instant>
-	<instant group="attack" spellid="62" name="Crescent Cut" words="drai kaen sol" level="170" mana="85" premium="0" range="2" needtarget="1" blockwalls="1" cooldown="12000" groupcooldown="2000" needlearn="0" script="chaos/thief/crescent_cut.lua">
+	<instant group="attack" spellid="62" name="Crescent Cut" words="drai kaen sol" level="170" mana="85" premium="0" range="2" needtarget="1" blockwalls="1" cooldown="9000" groupcooldown="2000" needlearn="0" script="chaos/thief/crescent_cut.lua">
 		<vocation name="Thief" />
 		<vocation name="Samurai" />
 	</instant>
-	<instant group="attack" spellid="80" name="Last Breath" words="kah nyx kaen" level="230" mana="150" premium="0" range="1" needtarget="1" blockwalls="1" cooldown="18000" groupcooldown="2000" needlearn="0" script="chaos/thief/last_breath.lua">
+	<instant group="attack" spellid="80" name="Last Breath" words="kah nyx kaen" level="230" mana="150" premium="0" range="1" needtarget="1" blockwalls="1" cooldown="12000" groupcooldown="2000" needlearn="0" script="chaos/thief/last_breath.lua">
 		<vocation name="Thief" />
 		<vocation name="Samurai" />
 	</instant>
@@ -681,59 +681,59 @@
 		<vocation name="Shadowfist" />
 		<vocation name="Iron Sage" />
 	</instant>
-	<instant group="attack" spellid="84" name="Quaking Stomp" words="drai krak dhun" level="90" mana="60" premium="0" selftarget="1" cooldown="8000" groupcooldown="2000" needlearn="0" script="chaos/monk/quaking_stomp.lua">
+	<instant group="attack" spellid="84" name="Quaking Stomp" words="drai krak dhun" level="90" mana="60" premium="0" selftarget="1" cooldown="7000" groupcooldown="2000" needlearn="0" script="chaos/monk/quaking_stomp.lua">
 		<vocation name="Monk" />
 		<vocation name="Iron Sage" />
 	</instant>
-	<instant group="attack" spellid="87" name="Chi Lance" words="kah lanc dhun" level="120" mana="145" premium="0" range="4" needtarget="1" blockwalls="1" cooldown="14000" groupcooldown="2000" needlearn="0" script="chaos/monk/chi_lance.lua">
+	<instant group="attack" spellid="87" name="Chi Lance" words="kah lanc dhun" level="120" mana="145" premium="0" range="4" needtarget="1" blockwalls="1" cooldown="10000" groupcooldown="2000" needlearn="0" script="chaos/monk/chi_lance.lua">
 		<vocation name="Monk" />
 		<vocation name="Shadowfist" />
 	</instant>
-	<instant group="attack" spellid="88" name="Cleaving Heel" words="kah rhim dhun" level="150" mana="60" premium="0" range="1" needtarget="1" blockwalls="1" cooldown="10000" groupcooldown="2000" needlearn="0" script="chaos/monk/cleaving_heel.lua">
+	<instant group="attack" spellid="88" name="Cleaving Heel" words="kah rhim dhun" level="150" mana="60" premium="0" range="1" needtarget="1" blockwalls="1" cooldown="8000" groupcooldown="2000" needlearn="0" script="chaos/monk/cleaving_heel.lua">
 		<vocation name="Monk" />
 		<vocation name="Iron Sage" />
 	</instant>
-	<instant group="attack" spellid="89" name="Tidal Palm" words="drai hyr dhun" level="190" mana="75" premium="0" range="2" needtarget="1" blockwalls="1" cooldown="12000" groupcooldown="2000" needlearn="0" script="chaos/monk/tidal_palm.lua">
+	<instant group="attack" spellid="89" name="Tidal Palm" words="drai hyr dhun" level="190" mana="75" premium="0" range="2" needtarget="1" blockwalls="1" cooldown="9000" groupcooldown="2000" needlearn="0" script="chaos/monk/tidal_palm.lua">
 		<vocation name="Monk" />
 		<vocation name="Iron Sage" />
 	</instant>
-	<instant group="attack" spellid="90" name="Skysplitter Fist" words="kah gal sol dhun" level="250" mana="220" premium="0" range="1" needtarget="1" blockwalls="1" cooldown="20000" groupcooldown="2000" needlearn="0" script="chaos/monk/skysplitter_fist.lua">
+	<instant group="attack" spellid="90" name="Skysplitter Fist" words="kah gal sol dhun" level="250" mana="220" premium="0" range="1" needtarget="1" blockwalls="1" cooldown="13000" groupcooldown="2000" needlearn="0" script="chaos/monk/skysplitter_fist.lua">
 		<vocation name="Monk" />
 		<vocation name="Shadowfist" />
 	</instant>
-	<instant group="attack" spellid="106" name="Marrow Bolt" words="kah oss sag" level="70" mana="135" premium="0" range="7" needtarget="1" blockwalls="1" cooldown="8000" groupcooldown="2000" needlearn="0" script="chaos/necromancer/marrow_bolt.lua">
+	<instant group="attack" spellid="106" name="Marrow Bolt" words="kah oss sag" level="70" mana="135" premium="0" range="7" needtarget="1" blockwalls="1" cooldown="7000" groupcooldown="2000" needlearn="0" script="chaos/necromancer/marrow_bolt.lua">
 		<vocation name="Necromancer" />
 		<vocation name="Lich" />
 		<vocation name="Bone Lord" />
 	</instant>
-	<instant group="attack" spellid="107" name="Wraithwind" words="drai nyx vael" level="90" mana="180" premium="0" range="3" needtarget="1" blockwalls="1" cooldown="10000" groupcooldown="2000" needlearn="0" script="chaos/necromancer/wraithwind.lua">
+	<instant group="attack" spellid="107" name="Wraithwind" words="drai nyx vael" level="90" mana="180" premium="0" range="3" needtarget="1" blockwalls="1" cooldown="8000" groupcooldown="2000" needlearn="0" script="chaos/necromancer/wraithwind.lua">
 		<vocation name="Necromancer" />
 		<vocation name="Lich" />
 		<vocation name="Bone Lord" />
 	</instant>
-	<instant group="attack" spellid="112" name="Gravewail" words="drai oss ul" level="110" mana="200" premium="0" range="7" needtarget="1" blockwalls="1" cooldown="10000" groupcooldown="2000" needlearn="0" script="chaos/necromancer/gravewail.lua">
+	<instant group="attack" spellid="112" name="Gravewail" words="drai oss ul" level="110" mana="200" premium="0" range="7" needtarget="1" blockwalls="1" cooldown="8000" groupcooldown="2000" needlearn="0" script="chaos/necromancer/gravewail.lua">
 		<vocation name="Necromancer" />
 		<vocation name="Lich" />
 		<vocation name="Bone Lord" />
 	</instant>
-	<instant group="attack" spellid="113" name="Blightbrand" words="kah putr brak" level="135" mana="310" premium="0" range="7" needtarget="1" blockwalls="1" cooldown="18000" groupcooldown="2000" needlearn="0" script="chaos/necromancer/blightbrand.lua">
+	<instant group="attack" spellid="113" name="Blightbrand" words="kah putr brak" level="135" mana="310" premium="0" range="7" needtarget="1" blockwalls="1" cooldown="12000" groupcooldown="2000" needlearn="0" script="chaos/necromancer/blightbrand.lua">
 		<vocation name="Necromancer" />
 		<vocation name="Lich" />
 		<vocation name="Bone Lord" />
 	</instant>
-	<instant group="attack" spellid="118" name="Soulrend Beam" words="kah nyx lanc" level="170" mana="270" premium="0" range="6" needtarget="1" blockwalls="1" cooldown="12000" groupcooldown="2000" needlearn="0" script="chaos/necromancer/soulrend_beam.lua">
+	<instant group="attack" spellid="118" name="Soulrend Beam" words="kah nyx lanc" level="170" mana="270" premium="0" range="6" needtarget="1" blockwalls="1" cooldown="9000" groupcooldown="2000" needlearn="0" script="chaos/necromancer/soulrend_beam.lua">
 		<vocation name="Necromancer" />
 		<vocation name="Lich" />
 		<vocation name="Bone Lord" />
 	</instant>
-	<instant group="attack" spellid="119" name="Crypt Collapse" words="drai gal oss" level="210" mana="415" premium="0" range="7" needtarget="1" blockwalls="1" cooldown="20000" groupcooldown="2000" needlearn="0" script="chaos/necromancer/crypt_collapse.lua">
+	<instant group="attack" spellid="119" name="Crypt Collapse" words="drai gal oss" level="210" mana="415" premium="0" range="7" needtarget="1" blockwalls="1" cooldown="13000" groupcooldown="2000" needlearn="0" script="chaos/necromancer/crypt_collapse.lua">
 		<vocation name="Necromancer" />
 		<vocation name="Bone Lord" />
 	</instant>
-	<instant group="attack" spellid="120" name="Ossuary Surge" words="drai oss vael" level="250" mana="365" premium="0" selftarget="1" cooldown="16000" groupcooldown="2000" needlearn="0" script="chaos/bonelord/ossuary_surge.lua">
+	<instant group="attack" spellid="120" name="Ossuary Surge" words="drai oss vael" level="250" mana="365" premium="0" selftarget="1" cooldown="11000" groupcooldown="2000" needlearn="0" script="chaos/bonelord/ossuary_surge.lua">
 		<vocation name="Bone Lord" />
 	</instant>
-	<instant group="attack" spellid="121" name="Hallowed Cut" words="kah sol brak" level="80" mana="115" premium="0" range="1" needtarget="1" blockwalls="1" cooldown="8000" groupcooldown="2000" needlearn="0" script="chaos/templar/hallowed_cut.lua">
+	<instant group="attack" spellid="121" name="Hallowed Cut" words="kah sol brak" level="80" mana="115" premium="0" range="1" needtarget="1" blockwalls="1" cooldown="7000" groupcooldown="2000" needlearn="0" script="chaos/templar/hallowed_cut.lua">
 		<vocation name="Templar" />
 		<vocation name="Inquisitor" />
 		<vocation name="Sentinel" />
@@ -742,37 +742,37 @@
 		<vocation name="Templar" />
 		<vocation name="Sentinel" />
 	</instant>
-	<instant group="attack" spellid="126" name="Penitent Lash" words="kah sol vael" level="120" mana="145" premium="0" range="2" needtarget="1" blockwalls="1" cooldown="10000" groupcooldown="2000" needlearn="0" script="chaos/templar/penitent_lash.lua">
+	<instant group="attack" spellid="126" name="Penitent Lash" words="kah sol vael" level="120" mana="145" premium="0" range="2" needtarget="1" blockwalls="1" cooldown="8000" groupcooldown="2000" needlearn="0" script="chaos/templar/penitent_lash.lua">
 		<vocation name="Templar" />
 		<vocation name="Inquisitor" />
 	</instant>
-	<instant group="attack" spellid="127" name="Martyr's Pyre" words="kah sol pyr" level="140" mana="145" premium="0" range="3" needtarget="1" blockwalls="1" cooldown="14000" groupcooldown="2000" needlearn="0" script="chaos/templar/martyrs_pyre.lua">
-		<vocation name="Templar" />
-		<vocation name="Sentinel" />
-	</instant>
-	<instant group="attack" spellid="128" name="Bell of Reckoning" words="drai sol krak" level="160" mana="165" premium="0" range="5" needtarget="1" blockwalls="1" cooldown="12000" groupcooldown="2000" needlearn="0" script="chaos/templar/bell_of_reckoning.lua">
-		<vocation name="Templar" />
-		<vocation name="Inquisitor" />
-		<vocation name="Sentinel" />
-	</instant>
-	<instant group="attack" spellid="129" name="Lance of Vigil" words="kah sol sag lanc" level="190" mana="185" premium="0" range="5" needtarget="1" blockwalls="1" cooldown="16000" groupcooldown="2000" needlearn="0" script="chaos/templar/lance_of_vigil.lua">
-		<vocation name="Templar" />
-		<vocation name="Inquisitor" />
-	</instant>
-	<instant group="attack" spellid="131" name="Sanctum Verdict" words="kah sol judh brak" level="230" mana="290" premium="0" range="3" needtarget="1" blockwalls="1" cooldown="20000" groupcooldown="2000" needlearn="0" script="chaos/templar/sanctum_verdict.lua">
+	<instant group="attack" spellid="127" name="Martyr's Pyre" words="kah sol pyr" level="140" mana="145" premium="0" range="3" needtarget="1" blockwalls="1" cooldown="10000" groupcooldown="2000" needlearn="0" script="chaos/templar/martyrs_pyre.lua">
 		<vocation name="Templar" />
 		<vocation name="Sentinel" />
 	</instant>
-	<instant group="attack" spellid="138" name="Heretic's Brand" words="kah sol putr" level="90" mana="175" premium="0" range="3" needtarget="1" blockwalls="1" cooldown="20000" groupcooldown="2000" needlearn="0" script="chaos/inquisitor/heretics_brand.lua">
+	<instant group="attack" spellid="128" name="Bell of Reckoning" words="drai sol krak" level="160" mana="165" premium="0" range="5" needtarget="1" blockwalls="1" cooldown="9000" groupcooldown="2000" needlearn="0" script="chaos/templar/bell_of_reckoning.lua">
+		<vocation name="Templar" />
 		<vocation name="Inquisitor" />
-	</instant>
-	<instant group="attack" spellid="139" name="Zealot's Wrath" words="drai sol vael" level="200" mana="170" premium="0" selftarget="1" cooldown="14000" groupcooldown="2000" needlearn="0" script="chaos/inquisitor/zealots_wrath.lua">
-		<vocation name="Inquisitor" />
-	</instant>
-	<instant group="attack" spellid="140" name="Bulwark Slam" words="kah sol aeg" level="110" mana="125" premium="0" range="1" needtarget="1" blockwalls="1" cooldown="10000" groupcooldown="2000" needlearn="0" script="chaos/sentinel/bulwark_slam.lua">
 		<vocation name="Sentinel" />
 	</instant>
-	<instant group="attack" spellid="141" name="Rampart Quake" words="drai sol aeg krak" level="210" mana="175" premium="0" selftarget="1" cooldown="14000" groupcooldown="2000" needlearn="0" script="chaos/sentinel/rampart_quake.lua">
+	<instant group="attack" spellid="129" name="Lance of Vigil" words="kah sol sag lanc" level="190" mana="185" premium="0" range="5" needtarget="1" blockwalls="1" cooldown="11000" groupcooldown="2000" needlearn="0" script="chaos/templar/lance_of_vigil.lua">
+		<vocation name="Templar" />
+		<vocation name="Inquisitor" />
+	</instant>
+	<instant group="attack" spellid="131" name="Sanctum Verdict" words="kah sol judh brak" level="230" mana="290" premium="0" range="3" needtarget="1" blockwalls="1" cooldown="13000" groupcooldown="2000" needlearn="0" script="chaos/templar/sanctum_verdict.lua">
+		<vocation name="Templar" />
+		<vocation name="Sentinel" />
+	</instant>
+	<instant group="attack" spellid="138" name="Heretic's Brand" words="kah sol putr" level="90" mana="175" premium="0" range="3" needtarget="1" blockwalls="1" cooldown="13000" groupcooldown="2000" needlearn="0" script="chaos/inquisitor/heretics_brand.lua">
+		<vocation name="Inquisitor" />
+	</instant>
+	<instant group="attack" spellid="139" name="Zealot's Wrath" words="drai sol vael" level="200" mana="170" premium="0" selftarget="1" cooldown="10000" groupcooldown="2000" needlearn="0" script="chaos/inquisitor/zealots_wrath.lua">
+		<vocation name="Inquisitor" />
+	</instant>
+	<instant group="attack" spellid="140" name="Bulwark Slam" words="kah sol aeg" level="110" mana="125" premium="0" range="1" needtarget="1" blockwalls="1" cooldown="8000" groupcooldown="2000" needlearn="0" script="chaos/sentinel/bulwark_slam.lua">
+		<vocation name="Sentinel" />
+	</instant>
+	<instant group="attack" spellid="141" name="Rampart Quake" words="drai sol aeg krak" level="210" mana="175" premium="0" selftarget="1" cooldown="10000" groupcooldown="2000" needlearn="0" script="chaos/sentinel/rampart_quake.lua">
 		<vocation name="Sentinel" />
 	</instant>
 <!-- END attack kit -->

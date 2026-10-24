@@ -3656,7 +3656,12 @@ side panel miniwindows (panel and side, order, height, collapsed, open, locked) 
 position of Spellbook, Cosmetics, Info & Services, Leaderboards, Bank, Loot Bag, Loot Filter and Auto Seller (the size
 too for a window with a resize border; these are fixed-size), clamped to the game window. Restored 0.8 s after login;
 a window created later is placed when it appears. Saved within a second of a change, never before the restore (a
-fresh login's defaults never replace it); logout and death need no save of their own. Container windows are not kept
+fresh login's defaults never replace it); logout and death need no save of their own. Owner beta 2026-10-24 (panels closed after a death, only the minimap and the
+equipment stayed; O173): a layout is written only when two 1 s checks agree (`L.settle`), saving freezes 15 s from
+`g_game.onDeath` (`L.freeze`), two more passes at 2.0 s and 4.5 s after login open again every window saved as open
+that is hidden (`L.reopenIds`; a window the player closes in the first 4.5 s is opened once more), saving waits for the
+last pass (`L.hold` / `L.release`), and the last layout written is also kept in memory. The cause in the stock client
+is assumed, not seen (base tree not in the repo). Container windows are not kept
 (their ids are slots). The chat panel's size and place are kept by `game_chatpanel`; the orb size is a client option
 (all characters). `layout_logic.lua`, `layout_test.lua`. Not tried in a client run.
 
@@ -3682,7 +3687,7 @@ owner supplied the file). `assemble_client.sh` applies the base patches to `mods
 `game_helper`, so `game_interface`'s load-later list, the key bindings and the battle list reach it unchanged.
 - **Pure files, each with a test.** `helper_config.lua` (the settings, `sanitize`, the rotation view), `helper_logic.lua`
   (areas, hits, target modes A to H, heal, training, haste, slots), `helper_spells.lua` (which spells each picker offers,
-  from `SpellInfo.Default`, vocation ids 1 to 25), `helper_potions.lua` (the potions per class line, the Everfull flasks
+  from `SpellInfo.Default`, vocation ids 1 to 25), `helper_potions.lua` (all 12 stock potions with client and server ids and levels, offered to every class: health, then mana, then the spirit potions as a health and a mana entry, the strongest first; saved rows keep their key `id` or `id:1` / `id:2`; the test compares the list with the Apothecary's table in `apothecary_config.lua` so it cannot drift; the Everfull flasks
   266 and 268 with their fixed roll plus a percent), `helper_cycle.lua` (the 50 ms tick without replay), and the four of "Runes, Auto sell, Follow and ally heals". `helper.lua` is
   the engine glue; `helper_test.lua` runs it against a mock engine.
 - **Window.** Six tabs, 640 px wide. Healing (3 heal rows, 3 potion rows, mana training, Auto Haste), Combat (presets,
