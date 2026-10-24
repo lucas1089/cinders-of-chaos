@@ -276,6 +276,12 @@ ChaosUniqueItems = {
 	  bossOnly = false, monsters = {"Embermaw Archon", "Flarevein Wyrm", "Glacial Hellcharger", "Inferno Juggernaut", "Nightflare Dreadknight", "Plague Warbringer", "Pyrrhaxis Master", "Aegis Sentinel", "Stonebark Titan", "Charged Mechanic Goblin"} },
 	{ name = "Hollow Sun Quiver", id = 28379, minTier = "legendary", chance = 6, level = 1900, slot = "shield",
 	  bossOnly = false, monsters = {"Embermaw Archon", "Flarevein Wyrm", "Glacial Hellcharger", "Inferno Juggernaut", "Nightflare Dreadknight", "Plague Warbringer", "Pyrrhaxis Master", "Aegis Sentinel", "Stonebark Titan", "Vhalkareth Mortal Shell"} },
+	-- gear beyond level 1000 (2026-10-24): the quiver gaps of the finer bands 1300-1700 and 1700-2400+. minMonsterLevel: any
+	-- monster hunted at that level or more can drop them (the hunts of the teleport hall are not on these lists)
+	{ name = "Sleeve of Ashen Gales", id = 27695, minTier = "rare", chance = 12, level = 1400, slot = "shield", minMonsterLevel = 1400,
+	  bossOnly = false, monsters = {"Pyrrhaxis Master", "Aegis Sentinel", "Stonebark Titan", "Plague Warbringer", "Nightflare Dreadknight", "Inferno Juggernaut", "Glacial Hellcharger", "Flarevein Wyrm"} },
+	{ name = "Quiver of Fallen Constellations", id = 28050, minTier = "legendary", chance = 6, level = 2100, slot = "shield", minMonsterLevel = 2100,
+	  bossOnly = false, monsters = {"Embermaw Archon", "Flarevein Wyrm", "Glacial Hellcharger", "Inferno Juggernaut", "Nightflare Dreadknight", "Plague Warbringer", "Pyrrhaxis Master", "Aegis Sentinel", "Stonebark Titan", "Vhalkareth Mortal Shell"} },
 	{ name = "Primer of Small Fires", id = 8900, minTier = "magic", chance = 30, level = 12, slot = "shield",
 	  bossOnly = false, monsters = {"Goblin", "Orc", "Dwarf", "Skeleton", "Elf", "Troll", "Minotaur", "Orc Spearman", "Dark Apprentice", "Crazed Dwarf", "Larva", "Swampling"} },
 	{ name = "Codex of the Unwritten End", id = 29572, minTier = "legendary", chance = 6, level = 1650, slot = "shield",

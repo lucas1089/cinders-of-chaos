@@ -289,8 +289,18 @@ function C.load(cfg)
 			end
 			local w = newWeapon({id = p.id, name = p.name, kind = fam, rodOrWand = kind, family = FAMILY[fam], hands = hands,
 				level = p.level, power = power, classes = set(p.classes), origin = "set:" .. p.set})
-			if dropOf[p.id] then
-				w.sources.drop = dropOf[p.id]
+			local drop = dropOf[p.id]
+			-- level gear (chaos_gear_sets.lua M.levelDrop): any monster hunted near the piece's level may drop it
+			local ld = D.gearOn and G.levelDrop and G.levelDrop(p)
+			if ld then
+				if not drop then
+					drop = {level = ld.level, chance = ld.chance}
+				else
+					drop = {level = math.min(drop.level, ld.level), chance = math.max(drop.chance, ld.chance)}
+				end
+			end
+			if drop then
+				w.sources.drop = drop
 			end
 			D.weapons[#D.weapons + 1] = w
 		end

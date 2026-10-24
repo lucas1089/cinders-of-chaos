@@ -46,7 +46,7 @@ return {
 	-- fairness of the weapon drops (--fairness): the hunting bands that are compared (a band is +-15% around the number),
 	-- the least share of the mean usable weapons per kill any class may have, and the power a weapon needs to count as
 	-- usable (a share of the weapon audit's curve; the audit's own minimum is 0.80)
-	fairEdges = {100, 300, 500, 800, 1000},
+	fairEdges = {100, 300, 500, 800, 1000, 1200},
 	fairShare = 0.20,
 	fairPower = 0.60,
 

@@ -309,7 +309,7 @@ local ids, set = B.chaosItemIds(), {}
 for _, id in ipairs(ids) do set[id] = true end
 assert(set[37023] and set[36675], "gear and themed spellbooks")
 assert(not set[2175], "stock spellbook left to the stock script")
-eq(#ids, 37, "27 gear + 10 themed spellbooks")
+eq(#ids, 48, "38 gear (11 of the three later-tier sets) + 10 themed spellbooks")
 -- the fallback text
 function fresh:getInstantSpells()
 	return {{level = 8, words = "exura", name = "Minor Mending", mana = 20, manapercent = 0, params = 0},

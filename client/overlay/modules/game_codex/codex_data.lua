@@ -11189,6 +11189,52 @@ CodexData = {
 					items = {8881}
 				},
 				{
+					id = "unique:28050",
+					name = "Quiver of Fallen Constellations",
+					color = "#ff9c3a",
+					sub = "Shield, level 2100. Defense 17, Health on Hit +52, Physical Penetration +15%, Damage to Elites and Bosses +18%",
+					f = {kind = {"shield"}, level = 2100, source = "monster"},
+					sections = {
+						{
+							h = "Description",
+							p = {"Every shaft is a star that was not allowed to set. (Requires level 2100. Ranger line.)"}
+						},
+						{
+							h = "Stats",
+							p = {"Defense 17", "Health on Hit +52", "Physical Penetration +15%", "Damage to Elites and Bosses +18%"}
+						},
+						{
+							h = "Item",
+							cols = {"", ""},
+							w = {35, 65},
+							rows = {
+								{"Slot", "Shield"},
+								{"Required level", "2100"},
+								{"Worn by", "Ranger lines"},
+								{"Drops from", "Legendary monsters and stronger"}
+							}
+						},
+						{
+							h = "Sources",
+							cols = {"Source", "How"},
+							w = {28, 72},
+							rows = {
+								{"Monster drops", "Only legendary or stronger monsters: per kill Legendary 0.24%, Boss 0.36% (x item find)."},
+								{"Monsters", "Embermaw Archon, Flarevein Wyrm, Glacial Hellcharger, Inferno Juggernaut, Nightflare Dreadknight, Plague Warbringer, Pyrrhaxis Master, Aegis Sentinel, Stonebark Titan, Vhalkareth Mortal Shell."},
+								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "3750 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 2050. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+							}
+						},
+						{
+							h = "Rules",
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 375 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
+						}
+					},
+					items = {28050}
+				},
+				{
 					id = "unique:27696",
 					name = "Quiver of Shattered Skies",
 					color = "#ff9c3a",
@@ -11614,6 +11660,49 @@ CodexData = {
 						}
 					},
 					items = {27228}
+				},
+				{
+					id = "unique:27695",
+					name = "Sleeve of Ashen Gales",
+					color = "#ff9c3a",
+					sub = "Shield, level 1400. Defense 13, Health on Hit +42, Physical Penetration +12%",
+					f = {kind = {"shield"}, level = 1400, source = "monster"},
+					sections = {
+						{
+							h = "Description",
+							p = {"Cut from a coat that outlived its owner and every wind he rode. (Requires level 1400. Ranger line.)"}
+						},
+						{h = "Stats", p = {"Defense 13", "Health on Hit +42", "Physical Penetration +12%"}},
+						{
+							h = "Item",
+							cols = {"", ""},
+							w = {35, 65},
+							rows = {
+								{"Slot", "Shield"},
+								{"Required level", "1400"},
+								{"Worn by", "Ranger lines"},
+								{"Drops from", "Rare monsters and stronger"}
+							}
+						},
+						{
+							h = "Sources",
+							cols = {"Source", "How"},
+							w = {28, 72},
+							rows = {
+								{"Monster drops", "Only rare or stronger monsters: per kill Rare 0.24%, Legendary 0.48%, Boss 0.72% (x item find)."},
+								{"Monsters", "Pyrrhaxis Master, Aegis Sentinel, Stonebark Titan, Plague Warbringer, Nightflare Dreadknight, Inferno Juggernaut, Glacial Hellcharger, Flarevein Wyrm."},
+								{"Rift chest", "One unique roll at the loot tier of the rift (tiers 1-3 magic, 4-6 rare, 7-10 legendary, 11+ boss)."},
+								{"Omen guardian chest", "2 unique rolls at the boss tier over every unique, x2 find."},
+								{"Conquest vendor", "2700 Conquest Tokens (Iselde Varrow or Economy > Conquest Vendor): once it dropped for you, once you slew a monster that drops it, or from level 1350. Bought pieces are made like a drop."},
+								{"Bad-luck protection", "Monster uniques: every miss gives +1% of the base chance on your next roll (at most x3); a drop starts again."}
+							}
+						},
+						{
+							h = "Rules",
+							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 270 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
+						}
+					},
+					items = {27695}
 				},
 				{
 					id = "unique:28115",
@@ -13790,6 +13879,111 @@ CodexData = {
 					}
 				},
 				{
+					id = "set:lumenhallow",
+					name = "Lumenhallow",
+					color = "#58c878",
+					sub = "gear, level 1300, 6 pieces. every class.",
+					f = {family = "gear", level = 1300},
+					sections = {
+						{h = "Description", p = {}},
+						{
+							h = "Pieces",
+							cols = {"Piece", "Slot", "Level"},
+							w = {40, 45, 15},
+							rows = {
+								{"lumenhallow hood", "Helmet", "1300"},
+								{"lumenhallow greathelm", "Helmet", "1300"},
+								{"lumenhallow helm", "Helmet", "1300"},
+								{"lumenhallow cowl", "Helmet", "1750"},
+								{"lumenhallow warhelm", "Helmet", "1525"},
+								{"lumenhallow horned helm", "Helmet", "1750"},
+								{"lumenhallow coif", "Helmet", "1525"},
+								{"lumenhallow casque", "Helmet", "1750"},
+								{"lumenhallow mail", "Body armour", "1300"},
+								{"lumenhallow robe", "Body armour", "1300"},
+								{"lumenhallow plate", "Body armour", "1300"},
+								{"lumenhallow vestment", "Body armour", "1750"},
+								{"lumenhallow cuirass", "Body armour", "1525"},
+								{"lumenhallow hauberk", "Body armour", "1525"},
+								{"lumenhallow warplate", "Body armour", "1750"},
+								{"lumenhallow brigandine", "Body armour", "1750"},
+								{"lumenhallow legplates", "Legs", "1300"},
+								{"lumenhallow leggings", "Legs", "1415"},
+								{"lumenhallow kilt", "Legs", "1525"},
+								{"lumenhallow boots", "Boots", "1300"},
+								{"lumenhallow tassets", "Legs", "1640"},
+								{"lumenhallow chausses", "Legs", "1750"},
+								{"lumenhallow sabatons", "Boots", "1525"},
+								{"lumenhallow treads", "Boots", "1750"},
+								{"lumenhallow shield", "Shield", "1300"},
+								{"lumenhallow aegis", "Shield", "1450"},
+								{"lumenhallow bulwark", "Shield", "1600"},
+								{"lumenhallow kite shield", "Shield", "1750"},
+								{"lumenhallow grimoire", "Shield", "1300"},
+								{"lumenhallow tome", "Shield", "1450"},
+								{"lumenhallow codex", "Shield", "1600"},
+								{"lumenhallow folio", "Shield", "1750"},
+								{"lumenhallow blade", "Weapon", "1300"},
+								{"lumenhallow greatsword", "Weapon (two-handed: 2 pieces)", "1300"},
+								{"lumenhallow sabre", "Weapon", "1750"},
+								{"lumenhallow claymore", "Weapon (two-handed: 2 pieces)", "1750"},
+								{"lumenhallow axe", "Weapon", "1300"},
+								{"lumenhallow greataxe", "Weapon (two-handed: 2 pieces)", "1300"},
+								{"lumenhallow hatchet", "Weapon", "1750"},
+								{"lumenhallow battle axe", "Weapon (two-handed: 2 pieces)", "1750"},
+								{"lumenhallow mace", "Weapon", "1300"},
+								{"lumenhallow maul", "Weapon (two-handed: 2 pieces)", "1300"},
+								{"lumenhallow hammer", "Weapon", "1750"},
+								{"lumenhallow bow", "Weapon (two-handed: 2 pieces)", "1300"},
+								{"lumenhallow longbow", "Weapon (two-handed: 2 pieces)", "1525"},
+								{"lumenhallow recurve bow", "Weapon (two-handed: 2 pieces)", "1750"},
+								{"lumenhallow crossbow", "Weapon (two-handed: 2 pieces)", "1300"},
+								{"lumenhallow arbalest", "Weapon (two-handed: 2 pieces)", "1750"},
+								{"lumenhallow amulet", "Amulet", "1300"},
+								{"lumenhallow pendant", "Amulet", "1450"},
+								{"lumenhallow talisman", "Amulet", "1600"},
+								{"lumenhallow necklace", "Amulet", "1750"},
+								{"lumenhallow ring", "Ring", "1300"},
+								{"lumenhallow band", "Ring", "1450"},
+								{"lumenhallow signet", "Ring", "1600"},
+								{"lumenhallow seal", "Ring", "1750"},
+								{"lumenhallow wand", "Weapon", "1300"},
+								{"lumenhallow scepter", "Weapon", "1450"},
+								{"lumenhallow spire", "Weapon", "1600"},
+								{"lumenhallow focus", "Weapon", "1750"},
+								{"lumenhallow rod", "Weapon", "1300"},
+								{"lumenhallow staff", "Weapon", "1450"},
+								{"lumenhallow branch", "Weapon", "1600"},
+								{"lumenhallow crook", "Weapon", "1750"}
+							},
+							links = {"", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""}
+						},
+						{
+							h = "Bonuses",
+							cols = {"Worn", "Bonus"},
+							w = {18, 82},
+							rows = {
+								{"2 pieces", "Death Resistance +10%"},
+								{"4 pieces", "Damage Taken from Monsters -4%, Healing Done +5%"},
+								{"6 pieces", "Maximum Health +5%, Damage Taken from Monsters -3%"}
+							}
+						},
+						{
+							h = "Sources",
+							cols = {"Source", "How"},
+							w = {28, 72},
+							rows = {
+								{"Conquest vendor", "Any piece you choose: 2460-3000 Conquest Tokens, once it dropped for you or from level 1250."},
+								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
+							}
+						},
+						{
+							h = "Rules",
+							p = {"A piece counts when it is worn in its slot and you have its level; the same piece twice counts once.", "A two-handed weapon counts as two pieces.", "Number bonuses add to your gear's modifiers under the same caps; a set never lifts a cap.", "Pieces are uniques: no orb changes them, they keep one socket; salvage gives 8 rune shards; a transmog look keeps the bonus."}
+						}
+					}
+				},
+				{
 					id = "set:mirrorweave",
 					name = "Mirrorweave Raiment",
 					color = "#58c878",
@@ -13997,6 +14191,111 @@ CodexData = {
 					}
 				},
 				{
+					id = "set:sunderthrone",
+					name = "Sunderthrone",
+					color = "#58c878",
+					sub = "gear, level 1700, 6 pieces. every class.",
+					f = {family = "gear", level = 1700},
+					sections = {
+						{h = "Description", p = {}},
+						{
+							h = "Pieces",
+							cols = {"Piece", "Slot", "Level"},
+							w = {40, 45, 15},
+							rows = {
+								{"sunderthrone greathelm", "Helmet", "1700"},
+								{"sunderthrone helm", "Helmet", "1700"},
+								{"sunderthrone coif", "Helmet", "1875"},
+								{"sunderthrone hood", "Helmet", "1700"},
+								{"sunderthrone warhelm", "Helmet", "1875"},
+								{"sunderthrone horned helm", "Helmet", "2050"},
+								{"sunderthrone casque", "Helmet", "2050"},
+								{"sunderthrone cowl", "Helmet", "2050"},
+								{"sunderthrone plate", "Body armour", "1700"},
+								{"sunderthrone cuirass", "Body armour", "1875"},
+								{"sunderthrone robe", "Body armour", "1700"},
+								{"sunderthrone mail", "Body armour", "1700"},
+								{"sunderthrone warplate", "Body armour", "2050"},
+								{"sunderthrone hauberk", "Body armour", "1875"},
+								{"sunderthrone brigandine", "Body armour", "2050"},
+								{"sunderthrone vestment", "Body armour", "2050"},
+								{"sunderthrone legplates", "Legs", "1700"},
+								{"sunderthrone leggings", "Legs", "2050"},
+								{"sunderthrone boots", "Boots", "1700"},
+								{"sunderthrone sabatons", "Boots", "1770"},
+								{"sunderthrone treads", "Boots", "1840"},
+								{"sunderthrone striders", "Boots", "1910"},
+								{"sunderthrone sollerets", "Boots", "1980"},
+								{"sunderthrone walkers", "Boots", "2050"},
+								{"sunderthrone shield", "Shield", "1700"},
+								{"sunderthrone aegis", "Shield", "1790"},
+								{"sunderthrone bulwark", "Shield", "1875"},
+								{"sunderthrone kite shield", "Shield", "1965"},
+								{"sunderthrone buckler", "Shield", "2050"},
+								{"sunderthrone grimoire", "Shield", "1700"},
+								{"sunderthrone tome", "Shield", "1875"},
+								{"sunderthrone codex", "Shield", "2050"},
+								{"sunderthrone greatsword", "Weapon (two-handed: 2 pieces)", "1700"},
+								{"sunderthrone blade", "Weapon", "1700"},
+								{"sunderthrone sabre", "Weapon", "2050"},
+								{"sunderthrone axe", "Weapon", "1700"},
+								{"sunderthrone greataxe", "Weapon (two-handed: 2 pieces)", "1700"},
+								{"sunderthrone hatchet", "Weapon", "1875"},
+								{"sunderthrone battle axe", "Weapon (two-handed: 2 pieces)", "2050"},
+								{"sunderthrone cleaver", "Weapon", "2050"},
+								{"sunderthrone mace", "Weapon", "1700"},
+								{"sunderthrone hammer", "Weapon", "2050"},
+								{"sunderthrone maul", "Weapon (two-handed: 2 pieces)", "1700"},
+								{"sunderthrone bow", "Weapon (two-handed: 2 pieces)", "1700"},
+								{"sunderthrone longbow", "Weapon (two-handed: 2 pieces)", "1875"},
+								{"sunderthrone recurve bow", "Weapon (two-handed: 2 pieces)", "2050"},
+								{"sunderthrone crossbow", "Weapon (two-handed: 2 pieces)", "1700"},
+								{"sunderthrone arbalest", "Weapon (two-handed: 2 pieces)", "2050"},
+								{"sunderthrone amulet", "Amulet", "1700"},
+								{"sunderthrone pendant", "Amulet", "1815"},
+								{"sunderthrone talisman", "Amulet", "1935"},
+								{"sunderthrone ring", "Ring", "1700"},
+								{"sunderthrone necklace", "Amulet", "2050"},
+								{"sunderthrone band", "Ring", "1815"},
+								{"sunderthrone signet", "Ring", "1935"},
+								{"sunderthrone seal", "Ring", "2050"},
+								{"sunderthrone wand", "Weapon", "1700"},
+								{"sunderthrone scepter", "Weapon", "1815"},
+								{"sunderthrone spire", "Weapon", "1935"},
+								{"sunderthrone focus", "Weapon", "2050"},
+								{"sunderthrone rod", "Weapon", "1700"},
+								{"sunderthrone staff", "Weapon", "1815"},
+								{"sunderthrone branch", "Weapon", "1935"},
+								{"sunderthrone crook", "Weapon", "2050"}
+							},
+							links = {"", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""}
+						},
+						{
+							h = "Bonuses",
+							cols = {"Worn", "Bonus"},
+							w = {18, 82},
+							rows = {
+								{"2 pieces", "Gold Find +14%"},
+								{"4 pieces", "Item Find +7%, Rarity Find +10%"},
+								{"6 pieces", "Damage to Elites and Bosses +8%"}
+							}
+						},
+						{
+							h = "Sources",
+							cols = {"Source", "How"},
+							w = {28, 72},
+							rows = {
+								{"Conquest vendor", "Any piece you choose: 2940-3360 Conquest Tokens, once it dropped for you or from level 1650."},
+								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
+							}
+						},
+						{
+							h = "Rules",
+							p = {"A piece counts when it is worn in its slot and you have its level; the same piece twice counts once.", "A two-handed weapon counts as two pieces.", "Number bonuses add to your gear's modifiers under the same caps; a set never lifts a cap.", "Pieces are uniques: no orb changes them, they keep one socket; salvage gives 8 rune shards; a transmog look keeps the bonus."}
+						}
+					}
+				},
+				{
 					id = "set:thornwake",
 					name = "Thornwake Volley",
 					color = "#58c878",
@@ -14038,6 +14337,111 @@ CodexData = {
 								{"Dungeons", "Every clear: 1.5%, +0.5% per difficulty step, at most 6%."},
 								{"Who", "Characters of level 100 or more (the set's level - 50); item find raises the chances."},
 								{"Conquest vendor", "Any piece you choose: 1080 Conquest Tokens, once it dropped for you or from level 100."},
+								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
+							}
+						},
+						{
+							h = "Rules",
+							p = {"A piece counts when it is worn in its slot and you have its level; the same piece twice counts once.", "A two-handed weapon counts as two pieces.", "Number bonuses add to your gear's modifiers under the same caps; a set never lifts a cap.", "Pieces are uniques: no orb changes them, they keep one socket; salvage gives 8 rune shards; a transmog look keeps the bonus."}
+						}
+					}
+				},
+				{
+					id = "set:wintermourn",
+					name = "Wintermourn",
+					color = "#58c878",
+					sub = "gear, level 1000, 6 pieces. every class.",
+					f = {family = "gear", level = 1000},
+					sections = {
+						{h = "Description", p = {}},
+						{
+							h = "Pieces",
+							cols = {"Piece", "Slot", "Level"},
+							w = {40, 45, 15},
+							rows = {
+								{"wintermourn greathelm", "Helmet", "1000"},
+								{"wintermourn helm", "Helmet", "1000"},
+								{"wintermourn warhelm", "Helmet", "1175"},
+								{"wintermourn coif", "Helmet", "1175"},
+								{"wintermourn casque", "Helmet", "1350"},
+								{"wintermourn horned helm", "Helmet", "1350"},
+								{"wintermourn hood", "Helmet", "1000"},
+								{"wintermourn cowl", "Helmet", "1350"},
+								{"wintermourn plate", "Body armour", "1000"},
+								{"wintermourn robe", "Body armour", "1000"},
+								{"wintermourn mail", "Body armour", "1000"},
+								{"wintermourn hauberk", "Body armour", "1175"},
+								{"wintermourn cuirass", "Body armour", "1175"},
+								{"wintermourn vestment", "Body armour", "1350"},
+								{"wintermourn warplate", "Body armour", "1350"},
+								{"wintermourn brigandine", "Body armour", "1350"},
+								{"wintermourn legplates", "Legs", "1000"},
+								{"wintermourn leggings", "Legs", "1115"},
+								{"wintermourn boots", "Boots", "1000"},
+								{"wintermourn sabatons", "Boots", "1115"},
+								{"wintermourn kilt", "Legs", "1235"},
+								{"wintermourn tassets", "Legs", "1350"},
+								{"wintermourn treads", "Boots", "1235"},
+								{"wintermourn striders", "Boots", "1350"},
+								{"wintermourn shield", "Shield", "1000"},
+								{"wintermourn aegis", "Shield", "1115"},
+								{"wintermourn bulwark", "Shield", "1235"},
+								{"wintermourn kite shield", "Shield", "1350"},
+								{"wintermourn grimoire", "Shield", "1000"},
+								{"wintermourn tome", "Shield", "1115"},
+								{"wintermourn codex", "Shield", "1235"},
+								{"wintermourn folio", "Shield", "1350"},
+								{"wintermourn greatsword", "Weapon (two-handed: 2 pieces)", "1000"},
+								{"wintermourn blade", "Weapon", "1000"},
+								{"wintermourn claymore", "Weapon (two-handed: 2 pieces)", "1175"},
+								{"wintermourn sabre", "Weapon", "1175"},
+								{"wintermourn longsword", "Weapon", "1350"},
+								{"wintermourn axe", "Weapon", "1000"},
+								{"wintermourn great blade", "Weapon (two-handed: 2 pieces)", "1350"},
+								{"wintermourn hatchet", "Weapon", "1350"},
+								{"wintermourn maul", "Weapon (two-handed: 2 pieces)", "1000"},
+								{"wintermourn mace", "Weapon", "1000"},
+								{"wintermourn bow", "Weapon (two-handed: 2 pieces)", "1000"},
+								{"wintermourn longbow", "Weapon (two-handed: 2 pieces)", "1175"},
+								{"wintermourn greataxe", "Weapon (two-handed: 2 pieces)", "1000"},
+								{"wintermourn recurve bow", "Weapon (two-handed: 2 pieces)", "1350"},
+								{"wintermourn crossbow", "Weapon (two-handed: 2 pieces)", "1000"},
+								{"wintermourn arbalest", "Weapon (two-handed: 2 pieces)", "1350"},
+								{"wintermourn amulet", "Amulet", "1000"},
+								{"wintermourn pendant", "Amulet", "1175"},
+								{"wintermourn talisman", "Amulet", "1350"},
+								{"wintermourn ring", "Ring", "1000"},
+								{"wintermourn band", "Ring", "1090"},
+								{"wintermourn signet", "Ring", "1175"},
+								{"wintermourn seal", "Ring", "1265"},
+								{"wintermourn loop", "Ring", "1350"},
+								{"wintermourn wand", "Weapon", "1000"},
+								{"wintermourn scepter", "Weapon", "1115"},
+								{"wintermourn spire", "Weapon", "1235"},
+								{"wintermourn focus", "Weapon", "1350"},
+								{"wintermourn rod", "Weapon", "1000"},
+								{"wintermourn staff", "Weapon", "1115"},
+								{"wintermourn branch", "Weapon", "1235"},
+								{"wintermourn crook", "Weapon", "1350"}
+							},
+							links = {"", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""}
+						},
+						{
+							h = "Bonuses",
+							cols = {"Worn", "Bonus"},
+							w = {18, 82},
+							rows = {
+								{"2 pieces", "Chance to Chill +10%"},
+								{"4 pieces", "Dodge +3%"},
+								{"6 pieces", "Ice Resistance +10%, Dodge +2%"}
+							}
+						},
+						{
+							h = "Sources",
+							cols = {"Source", "How"},
+							w = {28, 72},
+							rows = {
+								{"Conquest vendor", "Any piece you choose: 2100-2520 Conquest Tokens, once it dropped for you or from level 950."},
 								{"Bad-luck protection", "Set pieces: every miss gives +5% of the base chance on your next roll (at most x4); a drop starts again."}
 							}
 						},

@@ -69,9 +69,19 @@ eq(ids(L.eligible("wand", 8)), "23719,23721,2182,2190,2186,2191,2185,2188,8911,8
 for _, b in ipairs(L.eligible("bow", 200)) do
 	eq(b[2] >= 50 and b[2] <= 220, true, "bow window at 200: " .. b[1])
 end
--- above every base the highest three
-eq(#L.eligible("bow", 5000), 3, "the three highest bows at 5000")
-eq(L.eligible("bow", 5000)[3][1], 29874, "the highest bow")
+-- above every base the highest three, but only those within fallbackSpan of the highest (2026-10-24: a hunt of level
+-- 2000 no longer drops the level 400 bows a hunt of 800 does; the sets' level gear carries the levels above 1000)
+eq(#L.eligible("bow", 800), 3, "the three highest bows at 800: 400, 400, 600")
+eq(ids(L.eligible("bow", 800)), "27383,28052,27471", "the bows at 800")
+eq(#L.eligible("bow", 5000), 1, "the best bow only at 5000")
+eq(L.eligible("bow", 5000)[1][1], 29874, "the highest bow")
+eq(ids(L.eligible("bow", 1100)), "29874", "the bows at 1100")
+eq(L.config.fallbackSpan, 200, "the span of the fallback")
+for _, kind in ipairs(L.KINDS) do
+	for _, level in ipairs({1200, 2000, 5000}) do
+		eq(ids(L.eligible(kind, level)), tostring(L.bases[kind][#L.bases[kind]][1]), kind .. " at " .. level .. ": the best base only")
+	end
+end
 eq(#L.eligible("nothing", 100), 0, "unknown kind")
 
 -- ---------------------------------------------------------------- rows

@@ -2104,6 +2104,28 @@
 		<attribute key="equipLines" value="Ranger" />
 		<attribute key="showattributes" value="1" />
 	</item>
+	<!-- 27695: stock quiver of the 350 band, unique at level 1400 (gear beyond level 1000, 2026-10-24) -->
+	<item id="27695" article="a" name="Sleeve of Ashen Gales">
+		<attribute key="weight" value="450" />
+		<attribute key="weaponType" value="shield" />
+		<attribute key="defense" value="13" />
+		<attribute key="mods" value="lifeonhit:42,physpen:12" />
+		<attribute key="description" value="Cut from a coat that outlived its owner and every wind he rode. (Requires level 1400. Ranger line.)" />
+		<attribute key="equipLevel" value="1400" />
+		<attribute key="equipLines" value="Ranger" />
+		<attribute key="showattributes" value="1" />
+	</item>
+	<!-- 28050: stock quiver of the 500 band, unique at level 2100 (gear beyond level 1000, 2026-10-24) -->
+	<item id="28050" article="a" name="Quiver of Fallen Constellations">
+		<attribute key="weight" value="500" />
+		<attribute key="weaponType" value="shield" />
+		<attribute key="defense" value="17" />
+		<attribute key="mods" value="lifeonhit:52,physpen:15,bossdamage:18" />
+		<attribute key="description" value="Every shaft is a star that was not allowed to set. (Requires level 2100. Ranger line.)" />
+		<attribute key="equipLevel" value="2100" />
+		<attribute key="equipLines" value="Ranger" />
+		<attribute key="showattributes" value="1" />
+	</item>
 	<!-- 8900: stock spellbook (level 30), unique at level 12 -->
 	<item id="8900" article="a" name="Primer of Small Fires">
 		<attribute key="weight" value="1000" />

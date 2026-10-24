@@ -116,7 +116,7 @@ C.pool = {
 }
 
 -- the equipment sets of client pair 28 (data/lib/chaos_gear_sets.lua, server/README.md "Equipment sets (pair 28)"):
--- 448 pieces over 15 kinds, kept out of the pool above so the base types keep their place. While ChaosGearSets.PAIR28 is on
+-- 640 pieces over 15 kinds (the last three sets copy the looks of three others), kept out of the pool above so the base types keep their place. While ChaosGearSets.PAIR28 is on
 -- (and `enabled` here), each pick of a stock whose slot has a set piece the character can use (level and class by the
 -- installed movements.xml / weapons.xml, like the pool) is a set piece with `share` percent, else a base type as before.
 -- The piece is one of the `choices` usable ones with the highest level (the same rule as the base types, so the band of
@@ -124,7 +124,7 @@ C.pool = {
 C.sets = {
 	enabled = true, share = 20, choices = 4,
 	weight = {blightfang = 10, wyrmscale = 10, cinderwrought = 10, bloodmoon = 10, rimewraith = 10, azurevigil = 10,
-		gildcrown = 10}
+		gildcrown = 10, wintermourn = 10, lumenhallow = 10, sunderthrone = 10}
 }
 
 -- ------------------------------------------------------------------ prices

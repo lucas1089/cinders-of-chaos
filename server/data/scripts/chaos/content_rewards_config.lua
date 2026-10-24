@@ -9,7 +9,7 @@
 -- nearly nothing. So:
 --   * Rifts pay in CRAFTING CURRENCY: an orb trickle on every kill (Upheaval, Fate and the waystone orbs), a burst from
 --     the guardian, the key ladder (rift_config.lua keyDrop), the chest. No bonus gear.
---   * Waystones pay in GEAR: a piece of the top set bases (Azure Vigil, Gildcrown, level-matched) on a share of the kills,
+--   * Waystones pay in GEAR: a piece of the top set bases (Azure Vigil, Gildcrown and their later tiers Lumenhallow and Sunderthrone, level-matched) on a share of the kills,
 --     always Rare or better, a boss table (guaranteed Legendary+ pieces, unique rolls, waystones and the waystone
 --     orbs), and waystone drops that keep the map loop going. Rarity find and quantity of the run's tier come on top.
 -- All of it scales with the run's tier (rift 1-15, waystone 1-15) and the modifiers' quantity bonus.
@@ -27,7 +27,7 @@ return {
 		gear = {base = 250, perTier = 30, maxChance = 6000},
 		-- the piece: a set base (data/lib/chaos_gear_sets_items.lua) of these sets whose level is at most the run's level
 		-- and at least `floorShare` x it; none: the highest pieces of the sets
-		sets = {"azurevigil", "gildcrown"},
+		sets = {"azurevigil", "gildcrown", "lumenhallow", "sunderthrone"},
 		floorShare = 0.45,
 		-- rarity of a trickle piece {stored id, weight}: the item level and modifiers come from the loot layer after.
 		-- Always Rare or better. The Divine weight rises by rarityPerTier.divine per tier
