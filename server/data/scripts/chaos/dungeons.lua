@@ -818,24 +818,120 @@ end
 
 ChaosDungeons.runAt = runAt -- the run whose area holds pos (also in the exit delay of a won run), else nil
 
--- the map's monsters (the base dungeon's own SpawnMonsters list is made by startRun after this); all in one tick
-local function fillFromMap(dungeonId, dg, bossName)
+-- O183 (owner 2026-10-24, beta: "I killed every monster that appeared and the bar did not fill. 2 bosses. Level 2"):
+-- every monster of a run is placed on a tile a monster can stand on, inside the dungeon's area, one per tile; a spot that
+-- is blocked, taken or outside gets the nearest free tile of the same floor (cfg.placement.radius), else the monster is
+-- not made and is not counted. Never the forced placement (it puts a monster on a blocked or occupied tile). The
+-- boss is never part of the entry placement: it is made once per run (run.bossSpawned) by placeBoss, with the
+-- dungeon's level shown in its name.
+local function tileOf(pos)
+	if not Tile then
+		return nil
+	end
+	local ok, t = pcall(Tile, Position(pos.x, pos.y, pos.z))
+	return ok and t or nil
+end
+
+-- a tile a monster can stand on: it exists, has a ground and nothing solid on it. Without the Tile API (tests) true.
+local function walkable(pos)
+	if not Tile then
+		return true
+	end
+	local t = tileOf(pos)
+	if not t then
+		return false
+	end
+	if t.getGround and not t:getGround() then
+		return false
+	end
+	if t.hasFlag and TILESTATE_BLOCKSOLID and t:hasFlag(TILESTATE_BLOCKSOLID) then
+		return false
+	end
+	return true
+end
+
+local function keyOf(pos)
+	return pos.x .. "," .. pos.y .. "," .. pos.z
+end
+
+-- the tile for a monster wanted at pos: pos itself, else the nearest free one of the same floor inside the area.
+-- taken = {[key] = true} of the tiles used so far; returns a position table or nil
+local function freeTile(id, dg, pos, taken)
+	local radius = (cfg.placement and cfg.placement.radius) or 4
+	for r = 0, radius do
+		for dy = -r, r do
+			for dx = -r, r do
+				if math.max(math.abs(dx), math.abs(dy)) == r then
+					local q = {x = pos.x + dx, y = pos.y + dy, z = pos.z}
+					if not taken[keyOf(q)] and inBox(id, dg, q) and walkable(q) then
+						return q
+					end
+				end
+			end
+		end
+	end
+	return nil
+end
+
+local function isBoss(name, bossName)
+	return bossName ~= nil and tostring(name):lower() == bossName
+end
+
+-- one monster at (or beside) pos; level: shown after its name. Returns the monster or nil (nothing made)
+local function placeMonster(id, dg, name, pos, taken, level)
+	local q = freeTile(id, dg, pos, taken)
+	if not q then
+		return nil
+	end
+	local create = Chaos.createMonsterNamed or function(t, p, e, f) return Game.createMonster(t, p, e, f) end
+	local m = create(name, Position(q.x, q.y, q.z), false, false, nil, level)
+	if not m then
+		return nil
+	end
+	local at = m:getPosition()
+	if not inBox(id, dg, at) then
+		m:remove() -- the engine put it outside the area (nobody counts or finds it)
+		return nil
+	end
+	taken[keyOf(at)] = true
+	return m
+end
+
+-- the map's monsters (the base dungeon's own SpawnMonsters list is made by startRun after this); all in one tick.
+-- The boss is not placed here: its record is returned for placeBoss. Returns made, the boss record or nil
+local function fillFromMap(dungeonId, dg, bossName, taken)
 	local list = mapSpawns[dungeonId]
 	if not list or #list == 0 then
 		return 0 -- no start-up record (scripts reloaded, or a generated dungeon): the monsters that stand there stay
 	end
 	cleanArea(dungeonId, dg, bossName)
-	local made = 0
+	local made, bossRecord = 0, nil
 	for _, e in ipairs(list) do
-		local m = Game.createMonster(e.name, Position(e.pos.x, e.pos.y, e.pos.z), false, true)
-		if m then
-			made = made + 1
-			if ChaosPace and ChaosPace.mark then
-				ChaosPace.mark(m)
+		if isBoss(e.name, bossName) then
+			bossRecord = bossRecord or e
+		else
+			local m = placeMonster(dungeonId, dg, e.name, e.pos, taken)
+			if m then
+				made = made + 1
+				if ChaosPace and ChaosPace.mark then
+					ChaosPace.mark(m)
+				end
 			end
 		end
 	end
-	return made
+	return made, bossRecord
+end
+
+-- the boss of a base dungeon: once per run, at its map tile (or beside it), shown at the dungeon's level (without a
+-- level it showed the experience / health estimate of its type: "Level 2"). Its health follows the run's difficulty
+-- (scaleList after the placement, like every monster of the run). Returns the boss or nil.
+local function placeBoss(run, dungeonId, dg, bossName, pos, taken, name)
+	if run.bossSpawned or not bossName or not pos then
+		return nil
+	end
+	run.bossSpawned = true
+	local ex = extraOf(dungeonId)
+	return placeMonster(dungeonId, dg, name or ex.bossType or ex.bossName or bossName, pos, taken, levelOf(dg))
 end
 
 local spawnCb = EventCallback
@@ -876,6 +972,39 @@ local function rosterAlive(run, monsterList, bossName)
 	return n
 end
 
+-- O183: the monsters standing in the area at the start. Moves (or removes) the ones on a blocked tile or sharing a tile,
+-- removes every boss beyond the first. Returns the kept list and the number of bosses in it.
+local function settleMonsters(id, dg, bossName, monsterList, taken)
+	local kept, bosses, seen = {}, 0, {}
+	for _, m in ipairs(monsterList) do
+		if isBoss(m:getName(), bossName) then
+			if bosses == 0 then
+				bosses = 1
+				kept[#kept + 1] = m
+			else
+				m:remove() -- exactly one boss per run
+			end
+		else
+			local at = m:getPosition()
+			local key = keyOf(at)
+			if walkable(at) and not seen[key] then
+				seen[key] = true
+				kept[#kept + 1] = m
+			else
+				local q = freeTile(id, dg, at, setmetatable({}, {__index = function(_, k) return seen[k] or taken[k] end}))
+				if q then
+					m:teleportTo(Position(q.x, q.y, q.z))
+					seen[keyOf(q)] = true
+					kept[#kept + 1] = m
+				else
+					m:remove()
+				end
+			end
+		end
+	end
+	return kept, bosses
+end
+
 local function startRun(dungeonId, difficulty, players)
 	local dg = baseDungeons()[dungeonId]
 	local extra = extraOf(dungeonId)
@@ -900,16 +1029,30 @@ local function startRun(dungeonId, difficulty, players)
 	runOfDungeon[dungeonId] = run
 
 	-- the map's monsters all stand there from the first second (see "map spawns"): the area is cleared first, then every
-	-- monster of the run is placed in this tick, before the players are teleported in (O179)
-	fillFromMap(dungeonId, dg, bossName)
-	if dg.SpawnMonsters and dg.Monsters then
+	-- monster of the run is placed in this tick, before the players are teleported in (O179), each on a free walkable
+	-- tile (O183). The boss is made once, apart from them.
+	local taken = {}
+	local made, bossRecord = fillFromMap(dungeonId, dg, bossName, taken)
+	local bossPos, bossTypeName = bossRecord and bossRecord.pos or nil, bossRecord and bossRecord.name or nil
+	-- the base dungeon's own list (SpawnMonsters: one entry per species, at a base table position) is only the fallback
+	-- of a dungeon without a start-up record. With a record it is the same dungeon's monsters a second time: since O179
+	-- it came after the clean-up and added about 58 monsters to dungeon 2 (168 against its thinned 110) that nobody found,
+	-- and its boss entry was a second boss (O183)
+	if made == 0 and not bossRecord and dg.SpawnMonsters and dg.Monsters then
 		for monsterName, position in pairs(dg.Monsters) do
-			local m = Game.createMonster(monsterName, position)
-			-- pack combat (pace.lua): a base dungeon's monsters are paced like the map's (bosses never)
-			if m and ChaosPace and ChaosPace.mark then
-				ChaosPace.mark(m)
+			if isBoss(monsterName, bossName) then
+				bossPos, bossTypeName = bossPos or position, bossTypeName or monsterName
+			else
+				local m = placeMonster(dungeonId, dg, monsterName, position, taken)
+				-- pack combat (pace.lua): a base dungeon's monsters are paced like the map's (bosses never)
+				if m and ChaosPace and ChaosPace.mark then
+					ChaosPace.mark(m)
+				end
 			end
 		end
+	end
+	if not extra.populate then
+		placeBoss(run, dungeonId, dg, bossName, bossPos, taken, bossTypeName)
 	end
 	-- a generated dungeon (areagen.lua) fills its spawn points and its boss for every run
 	if extra.populate then
@@ -932,6 +1075,11 @@ local function startRun(dungeonId, difficulty, players)
 	end
 
 	local monsters, bosses, _, monsterList = scanArea(dungeonId, dg, bossName)
+	-- what stands there is checked once more (also monsters that were not made here: a generated dungeon's points, the
+	-- ones left standing without a start-up record): a monster on a blocked tile or on a tile of another one is moved to a
+	-- free tile, else removed; a second boss is removed. Only what is left counts (O183)
+	monsterList, bosses = settleMonsters(dungeonId, dg, bossName, monsterList, taken)
+	monsters = #monsterList - bosses
 	run.total = monsters
 	run.bossSeen = bosses > 0
 	-- the roster: the monsters of this run. Nothing that appears later (a boss fight's adds, a stray summon) joins the
@@ -970,6 +1118,18 @@ local function startRun(dungeonId, difficulty, players)
 	broadcastQueue(dungeonId)
 end
 
+-- a generated dungeon's boss appears at the unlock (extra.unlock). The normal unlock (85%) and the stall unlock (O180)
+-- both end here, and the boss is asked for once per run (O183: never twice)
+local function fireUnlock(run, extra)
+	if run.unlockFired then
+		return
+	end
+	run.unlockFired = true
+	if extra.unlock then
+		pcall(extra.unlock, run.dungeonId)
+	end
+end
+
 -- the run reached Chaos.dungeons.progressNeeded (85% of its monsters dead): the boss is unlocked. Every member gets
 -- the line and the kill counter's "Boss unlocked!"; a generated dungeon (areagen.lua) opens its boss room gate and
 -- spawns its boss now. Once unlocked, a run is won when the boss dies (adds of the boss fight do not lock it again).
@@ -981,9 +1141,7 @@ local function unlockBoss(run, extra, percent, left)
 		p:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(p, "Boss unlocked! %d%% of the monsters are dead: %s awaits you.",
 			percent, boss))
 	end
-	if extra.unlock then
-		pcall(extra.unlock, run.dungeonId)
-	end
+	fireUnlock(run, extra)
 end
 
 -- stuck safety (O180): the percent has not moved for cfg.stall.seconds. Tell the members where the nearest remaining
@@ -1002,9 +1160,7 @@ local function stallCheck(run, extra, percent, left, monsterList, bossName)
 			send(p, "killed", {unlocked = true, percent = percent, left = left})
 			p:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(p, "The last %d monsters could not be found. Boss unlocked: %s awaits you.", left, boss))
 		end
-		if extra.unlock then
-			pcall(extra.unlock, run.dungeonId)
-		end
+		fireUnlock(run, extra)
 		return
 	end
 	if run.hintAt and now - run.hintAt < st.hintEveryMs then
@@ -1123,6 +1279,24 @@ tick = function()
 			local extra = extraOf(run.dungeonId)
 			local bossName = extra.bossName and extra.bossName:lower() or nil
 			local monsters, bosses, playersInside, monsterList = scanArea(run.dungeonId, dg, bossName)
+			if bosses > 1 and not extra.populate then
+				-- one boss per run: a second one (a script of the base server, an old respawn) is removed (O183)
+				local firstBoss = false
+				local rest = {}
+				for _, m in ipairs(monsterList) do
+					if isBoss(m:getName(), bossName) then
+						if firstBoss then
+							m:remove()
+						else
+							firstBoss = true
+							rest[#rest + 1] = m
+						end
+					else
+						rest[#rest + 1] = m
+					end
+				end
+				monsterList, bosses = rest, 1
+			end
 			scaleList(run, monsterList) -- respawns inside the box get the difficulty too
 			monsters = rosterAlive(run, monsterList, bossName) -- only the run's own monsters count (O179)
 

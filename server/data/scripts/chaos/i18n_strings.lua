@@ -33,6 +33,8 @@ return {
 		["You are already training."] = "Você já está treinando.",
 		["You started training."] = "Você começou a treinar.",
 		["Your training has stopped."] = "Seu treino parou.",
+		-- Star inlay stones and the Star Extractor on a worn piece (star_inlay_core.lua, O181)
+		["Take it off first: its stars change what it gives."] = "Tire o item primeiro: as estrelas mudam o que ele dá.",
 		-- Time-friendly progression (catchup.lua)
 		["Rested Vial: +%d minutes of rested hunting (%d in all)."] =
 			"Frasco de Descanso: +%d minutos de caça descansada (%d no total).",

@@ -110,8 +110,8 @@ return {
 
 	-- ------------------------------------------------------------------ behaviour
 	behaviour = {
-		escapeSeconds = 18, -- after the first hit: escape (portal, "Ha ha!", despawn, no loot) unless killed
-		lifetimeSeconds = 900, -- never hit: vanishes quietly after this long
+		escapeSeconds = 30, -- after the first hit: escape (portal, "Ha ha!", despawn, no loot) unless killed
+		lifetimeSeconds = 1800, -- never hit: vanishes quietly after this long
 		tickMs = 500, -- think step of the script (announce, blink, escape check)
 		-- flee speed: the attacker's speed x this (at least the goblin's own speed + minBoost); a bit under 1 so a
 		-- chaser can close in on foot, the blinks win the distance back

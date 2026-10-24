@@ -1,5 +1,5 @@
 -- Treasure goblins: a cowardly, very rare monster that replaces a natural respawn, never attacks, flees and blinks
--- once hit, escapes through a portal after ~18 s, and drops a hoard (gold, Orbs of Upheaval, a chance of an Orb of Fate,
+-- once hit, escapes through a portal after ~30 s, and drops a hoard (gold, Orbs of Upheaval, a chance of an Orb of Fate,
 -- 2-4 rarity-rolled gear items through the Chaos loot layer, a raised unique chance) when killed in time.
 --
 -- * Spawn: own EventCallback.onSpawn (registered first, index -10). A natural map respawn (not a script's

@@ -57,9 +57,26 @@ def read_names(path=CSV_PATH):
     return rows
 
 
+def _near(a, b):
+    """the same name up to one letter more, less or changed (a typo of the base file)"""
+    if a == b:
+        return True
+    if abs(len(a) - len(b)) > 1:
+        return False
+    i = 0
+    while i < min(len(a), len(b)) and a[i] == b[i]:
+        i += 1
+    if len(a) == len(b):
+        return a[i + 1:] == b[i + 1:]
+    if len(a) > len(b):
+        a, b = b, a
+    return a[i:] == b[i + 1:]
+
+
 def check_shared_names(text, rows):
     """two CSV rows may share a new name only when items.xml gave both ids the same old name (one item kind with
-    several ids, such as a corpse in two looks) or already has the new name; anything else stops the tool"""
+    several ids, such as a corpse in two looks; a one-letter typo of the base file in one of them counts as the
+    same, O181) or already has the new name; anything else stops the tool"""
     old = {}
     for m in re.finditer(r'<item\s+(?:id="(\d+)"|fromid="(\d+)")[^>]*?\sname="([^"]*)"', text):
         old.setdefault(int(m.group(1) or m.group(2)), m.group(3).lower())
@@ -70,8 +87,8 @@ def check_shared_names(text, rows):
     for new, ids in sorted(by_new.items()):
         if len(ids) < 2:
             continue
-        olds = {old.get(i, new) for i in ids} - {new}
-        if len(olds) > 1:
+        olds = sorted({old.get(i, new) for i in ids} - {new})
+        if any(not _near(x, y) for x in olds for y in olds):
             bad.append('%s (ids %s)' % (new, ', '.join(map(str, sorted(ids)))))
     if bad:
         raise SystemExit('two items of different old names would get the same new name: ' + '; '.join(bad))

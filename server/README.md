@@ -1225,6 +1225,7 @@ Solo dungeons (O147, beta feedback 2026-10-22: "dungeons need two players; my te
   the boss is unlocked anyway (`stallCheck`). Kill credit is not involved; summons are not counted; a monster removed
   without a death is gone from the scan. The real cause on the live map is not confirmed: run dungeon 1 and read the hint
   coordinates, they are the unreachable spawns (fix them with a `patch_*.py`, never by hand).
+- **Placement, one boss, boss level (O183, beta 2026-10-24: "I killed every monster that appeared and the bar did not fill. 2 bosses. Level 2.").** Cause, from the numbers of the screenshot (bar 66% with 57 alive = a total of 168; dungeon 2 keeps 110 after `patch_base_spawns.py`): since O179 `startRun` made the base list (`dg.Monsters`, one entry per species) after the clean-up, on top of the map's record; before, the clean-up always removed it. It was the dungeon a second time (about 58 monsters, unthinned, at base table positions that can be a line of tiles or out of reach) and its boss entry made a second boss next to the map record's boss. The map record's `fillFromMap` also made the boss with every other entry, and every placement was forced (`createMonster` force), which puts a monster on a wall or on another monster. The boss was made without a level, so `monster_levels.lua` showed the estimate of its type (2, 8): display only (`MD.levelOf` reads the engine level; health follows `extra[id].bossHealth` through `scaleMonster`, unchanged). Now: (1) the base list is made only when the dungeon has no start-up record (the old behaviour of every normal start); (2) `placeMonster` makes a monster unforced on its tile if that is walkable and free, else on the nearest such tile of the same floor inside the area within `Chaos.dungeons.placement.radius` (4), else not at all, and a monster not made or placed outside the area is not counted; (3) `settleMonsters` does the same for what stands there at the start (a generated dungeon's points, monsters left standing without a record): moved, or removed; (4) the boss is never in the entry placement or the roster: `placeBoss` makes it once per run (`run.bossSpawned`) at its record tile with `Chaos.createMonsterNamed(..., level)`, the dungeon's `Level`, and the tick removes a second one (`bosses > 1`, base dungeons); (5) the unlock is asked once per run (`fireUnlock`), also when the stall unlock (O180) and the 85% unlock meet; the stall hint lists only roster monsters still standing in the area. **Reachability** is approximated by the tile (ground, no solid item, one monster per tile, inside the boxes of "the area of a run"); a path check from the entry (`Creature:getPathTo`) is not used, because the engine's path search is bounded and would refuse far rooms of the 61,325-tile dungeon 2 (engine behaviour recalled, not measured here). A closed room or a one-way floor that passes that test is still caught by the O180 hint and unlock. Not run live: install `files` and restart, run dungeon 2 and compare the start total with 110. Tests: `tests/dungeons_area_test.lua` block O183.
 
 Beta test mode (O147)
 - `Chaos.betaMode` = `data/scripts/chaos/beta_mode_config.lua` (`enabled`, default **false**), read when the scripts start
@@ -5695,6 +5696,7 @@ Character > Spellbook in the client menu opens the client window `game_spellbook
 - Spellbook items: using a stock spellbook (the base action `data/scripts/actions/others/spellbook.lua`, hooked by `tools/patch_base_spellbook.py`, install_all step `events`) or a Chaos set spellbook (27 gear-set and 10 themed ids, registered by `spellbook.lua`) sends `show` to a client that has spoken opcode 219 this login (its background fetch after login, `open {prefetch = true}`, which the new-player tutorial does not count); the client opens the window. A client without the window keeps the stock "Spells for Level n" text (`ChaosSpellbook.spellText`). Test: `tools/patch_base_spellbook_test.py`.
 - The client window has a second drop-down All types / Attack / Support and an "AoE" tag (pt-BR "Área") on attack spells that hit an area, derived from the spell's `type` (damage = attack; healing, buffs, summons, conjures, utility = support; no type: the XML `group`), `target` (`area` / `front`) and `area` matrix (more than one hit tile): `spellbook_core.lua`, `spellbook_core_test.lua`.
 - `server/tests/spellbook_test.lua` (fixtures in `tests/fixtures/spellbook/`) covers the XML parsing, named, inline and local areas, refusal of unsafe or malformed inline tables, the classification and descriptions, the chunking and the talkaction/opcode flow. Not run on a server.
+- Chaos attack spells (O184, O185, 2026-10-24): a spell of the attack group with a `chaos/` script is always typed damage (the text scan misses helpers such as `ChaosSpell.weaponStrike`, and a spell typed Utility fell out of the client's Attack filter). A scripted pack hit with no `createCombatArea` takes its area from `data/scripts/chaos/spellbook_areas_config.lua` (shape and radius per spell name) or, for the attack kit, from `attack_kit_config.lua`, so its target, centre, grid and AoE tag show the pack. `tests/spellbook_areas_test.lua` checks all 99 Chaos attack spells against `rotation_model.csv` (2+ targets of the pack: an area; one target: none). Client: `game_spellbook/spellbook_classes_test.lua`, Learned + Attack gives each of the 21 classes its 10 attack spells.
 
 ## Multi-client (`multiclient.lua`)
 
@@ -7853,6 +7855,56 @@ apostrophe is escaped for the quote style of its Lua string, and a movements.xml
 an item's old name no longer changes. Fresh install: 1,200 ids (711 old names), 806 loot entries by name turned into
 ids, 387 other mentions; a second run changes nothing.
 
+## Star inlay stones (`tools/patch_star_inlay.py`, `data/scripts/chaos/star_inlay_core.lua`, `tests/star_inlay_test.lua`, O181)
+
+Beta 2026-10-24 (screenshots): "are these items working?" The Star Extractor (golden hammer) and the Common Three Stars
+Inlay Stone (green stone with three stars) looked like leftovers of the base server. **They work.** It is a base system
+(`data/scripts/customs/tier_system`: `inlay_stars.lua`, `upgrade_system_tiers.lua`, `star_extractor.lua`, each an
+`Action()` registered by item id), and nothing in our code replaces, disables or duplicates it (no Chaos script uses
+these ids except the price tables, `sell_prices.lua` and `chaos_item_prices_data.lua`).
+- **What it does.** 20 base set pieces have twins with stars: Skeletal (26708-26711), Netherwave (26761-26764),
+  Ironwrath (26766-26769), Blightwoven (26770-26773) and Ashborne (26774-26777) helmet, armor, legs and boots. A Star
+  Inlay Stone (27133) turns a plain piece into its empty-star twin (27113-27132). A Common, Rare, Very Rare, Epic or
+  Legendary stone of 1, 2 or 3 stars (27134-27148) turns the empty-star twin into one of 15 star variants (26813-27112,
+  300 items: "Tier I ( 1 Star )" to "Tier V ( 3 Star )"; the variants differ in items.xml armor, absorbs, skills and speed,
+  for example boots +35 speed at Tier I and +65 at Tier V). The Star Extractor (27149) turns a star variant back into
+  the empty twin and gives the stone back. One stone per piece; a piece is never lost.
+- **Where they drop.** The base monster loot, by item name (so the Chaos item finder shows it): the Master of the
+  Elements (Star Inlay Stone 81% for up to 5, the 15 stones 5-57%, the Extractor 14% for up to 3) and the seven monsters
+  of its cave (Herk, Alchemist, Brute, Forgepriest, Wardragon, Mega Dragon, Mitmah Vanguard; some also spawn in
+  open hunts such as the Ironhorn Slagworks): the Common and Rare stones 3-9%, the Extractor 4%. The base boss bag
+  script (`customs/enhanced_loot`) and the base task of the Master of the Elements list the same items, and the weekly
+  chest the plaza had (unique id 34804, "Hall order") gave 2 + 2. The drop tooltip numbers (Herk 6% and Alchemist 6% for
+  the Common Three Stars stone) are the base chances. The price tables sell the stones to the Loot Buyer and the Auto
+  Seller (660 gold for a Common stone, 5,600 for 27133, 11,000 for the high ones).
+- **How it fits the Chaos item system.** The stock scripts swap the item id with `item:transform`, which keeps every
+  custom attribute: item level, rarity, modifiers, sockets and gems stay. The star variants have their own equip
+  entries in `movements.xml` (the class lists of the vocations step cover them like any equipment), and the Chaos
+  names are in `base_item_names.csv`. Stars add a few points of base stats, orbs and gems add modifiers: different
+  layers, no conflict, no redundancy worth retiring a working system for.
+- **Fixes** (`patch_star_inlay.py`, install step `starinlay`, after `itemnames`; idempotent; `--check`, `--dry-run`):
+  1. The stone wrote the type's description over the item's own description attribute, which holds the Chaos crafting
+     text ("Item Level: N. modifiers", sockets). Now `StarInlay.refineItem` keeps the text and adds one
+     "Refined by <name>." line; a piece with no own text still gets the tier line, as before. The extractor removes
+     the stale "Refined by" line from the empty twin.
+  2. The stone and the extractor change the item type of a **worn** piece. The equip event had added the old type's
+     speed and skills, so taking the piece off took the new type's away (boots: 30 speed of drift per change). Both now
+     refuse a worn piece ("Take it off first: its stars change what it gives.", pt-BR in `i18n_strings.lua`;
+     `StarInlay.isWorn(toPosition)`: x 65535 and y 1-63).
+  3. The items.xml descriptions of 27133-27149 said "certain equipment"; they name the five sets and "not worn".
+  4. `base_item_names.csv`: the typo "Epice" of one star variant (27048) is "Epic" (the tool now lets a one-letter typo of
+     the base file share the new name of its kind, `_near`), and the four "Netherwave Bots" (26894, 26954, 27014, 27074)
+     are "Boots".
+- **Not changed.** Drops, chances, ids and what a character holds. Nothing is retired: the system is small (20 pieces) but
+  complete, and the stones sell. If the owner wants it gone, the loot lines of the stones in the base monsters, the boss
+  bag and the task reward are the only sources (`patch_base_throwables.py` shows the pattern); the stones keep selling.
+- **Tests.** `tests/star_inlay_test.lua` (64 checks): the core, the patch on fixtures of the stock scripts (applies, idempotent,
+  parses, `--check` / `--dry-run`, a changed base script is reported) and the patched stone and extractor scripts on a
+  mocked engine (a piece with a rolled description keeps it, a piece without gets the tier line, the extractor returns the
+  stone, a worn piece is refused and nothing is used up, the stock refusals stay, pt-BR). `tests/base_item_names_patch_test.lua`
+  covers the typo rule. Run on a real base copy 2026-10-24: both scripts patched, parse in Lua 5.3 and LuaJIT, a second run
+  changes nothing. Not run live.
+
 ## Base monster names (`tools/patch_base_monster_names.py`, `data/monster/base_monster_names.csv`, `tests/base_monster_names_patch_test.lua`)
 
 Owner decision: the base monsters that carried names of the other world (its named bosses, races, factions, cults,
@@ -8926,9 +8978,9 @@ scavenger with its sack, drawn with the golden outfit shader 12). It never attac
   script keeps the goblin's health above it (shown as 100%) until the first hit, which drops it to the real health:
   from then on the engine's flee logic runs it away from its target. The first hit also gives it the attacker's
   speed x 0.95 (min +80, max 1500), a taunt, and a blink every 2.5-4.5 s (70%): a teleport 3-5 tiles to the free,
-  visible tile farthest from the attackers. Taunts on further hits (60%, 2.5 s cooldown). 18 s after the first hit it
+  visible tile farthest from the attackers. Taunts on further hits (60%, 2.5 s cooldown). 30 s after the first hit (18 s before O182) it
   escapes: portal effect, "Ha ha!", a message to players within 10 tiles, removed with no corpse and no loot. Never
-  hit for 15 minutes: it vanishes quietly. `/goblin [level]` (god accounts) spawns one in front of you.
+  hit for 30 minutes: it vanishes quietly. `/goblin [level]` (god accounts) spawns one in front of you.
 - **Loot** (added to the corpse in the death event, so the stock loot message and autoloot see it; owner = most
   damage): gold worth (2000 + 400 x level) x 80-130% in crystal/platinum/gold coins; 2-4 Orbs of Upheaval + 1 per 150
   levels (max 10); an Orb of Fate at 25% x item find; 2-4 gear items from the replaced monster's loot table (fallback:

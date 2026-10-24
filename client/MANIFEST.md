@@ -277,7 +277,7 @@ is the same, and the rows (built once per list, layout updates off while buildin
 their state: the right-hand label shows the level (red when too low, dim for other vocations), "Learn" for a needlearn
 spell not learned, or the cooldown left. Before, every open waited for the 14 packets (one per 50 ms tick) and then
 destroyed and rebuilt 234 rows, each scanning the painted-icon data and the disk. The filter (`spellbook_core.lua`,
-global `ChaosSpellCore`, `spellbook_core_test.lua`): Learned (castable now: vocation, level, magic level, learned),
+global `ChaosSpellCore`, `spellbook_core_test.lua`, `spellbook_classes_test.lua`: Learned + Attack gives each of the 21 classes its 10 attack spells): Learned (castable now: vocation, level, magic level, learned),
 Available soon (the next 10 levels), My vocation, All (spells only; the count counts spells), Runes (the rune
 entries, kept out of the other filters and of the spell pickers; conjure spells stay spells); default Learned, saved per character (g_settings
 `chaosSpellbook`). The selected row has a soft gold tint and frame (hover a faint lift); Up / Down move the selection. Long names are cut with "..." (full name in the row tooltip). A single-target spell's area shows the
