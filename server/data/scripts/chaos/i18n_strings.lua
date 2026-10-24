@@ -804,7 +804,7 @@ return {
 		["Proof of Strength complete: the Trial awaits."] = "Proof of Strength completa: o Trial espera.",
 		-- Ascension tracker (ascension_tracker_core.lua)
 		["Hear the Calling of the Ascendant Oracle"] = "Ouça o Chamado do Ascendant Oracle",
-		["Slay rare and legendary beasts of your level"] = "Derrote feras raras e lendárias do seu nível",
+		["Slay rare and legendary beasts of level %d or higher"] = "Derrote feras raras e lendárias de nível %d ou mais",
 		["Win the Ascension Trial"] = "Vença a Prova de Ascensão",
 		["Choose your ascended class"] = "Escolha sua classe ascendida",
 		["Proof of Strength: %d / %d."] = "Proof of Strength: %d / %d.",

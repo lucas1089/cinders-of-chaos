@@ -42,6 +42,12 @@ local pt = K.rows({vocId = 4, level = 200, stage = 0, proof = 0}, "pt-BR")
 local en = K.rows({vocId = 4, level = 200, stage = 0, proof = 0}, "en")
 for i = 1, 4 do assert(pt[i].title ~= en[i].title, "pt-BR title " .. i) end
 eq(pt[3].title, "Vença a Prova de Ascensão")
+-- the lowest monster level that counts is in the proof row (0.6 x 200 = 120) and in the sig, so a level-up resends it
+eq(en[2].title, "Slay rare and legendary beasts of level 120 or higher")
+eq(pt[2].title, "Derrote feras raras e lendárias de nível 120 ou mais")
+eq(K.rows({vocId = 4, level = min, stage = 0, proof = 0}, "en")[2].title:match("%d+"),
+	tostring(math.max(40, math.floor(0.6 * min))), "at the quest level")
+assert(K.sig(en, "en") ~= K.sig(K.rows({vocId = 4, level = 210, stage = 0, proof = 0}, "en"), "en"), "sig moves with the level")
 
 -- signature
 assert(K.sig(en, "en") ~= K.sig(pt, "pt-BR"), "language in the signature")
