@@ -3,7 +3,8 @@
 -- table, loaded with
 --     ChaosTowerBalance = dofile("data/scripts/chaos/infinitytower_balance_config.lua")
 -- Lua 5.1 / LuaJIT and Lua 5.3 compatible. Edit here, then restart (or /reload scripts). The curves are linear between
--- their points and flat beyond the ends. tools/tower_model.py reads this file with regular expressions: keep each curve
+-- their points up to maxFloor; above it the `beyond` growth takes over (the tower never stops getting stronger, O172).
+-- tools/tower_model.py reads this file with regular expressions: keep each curve
 -- as `name = {{floor, value}, ...}` and the other numbers as `name = number`.
 --
 -- Why (beta report 2026-10-22, "Infinity Tower": level 800 stuck at floor 20-29, a level 100 monster takes a minute for a
@@ -26,7 +27,7 @@ return {
 	bandFloors = 8, -- the pool changes every 8 floors; the last pool repeats
 	bossHelperDivisor = 3,
 	perPlayer = 2, -- monsters added for every player of the group after the first
-	maxFloor = 120, -- the model checks the floors 1 to this; beyond it the last points hold (bosses repeat)
+	maxFloor = 120, -- the last point of the curves; the model times the floors 1 to this, `beyond` grows every value above it
 
 	-- the species of a floor's band (looks and attacks; their stock health is not used)
 	pools = {
@@ -86,13 +87,37 @@ return {
 	clear = {{1, 2.5}, {12, 3.5}, {24, 5}, {28, 8.5}, {40, 9.5}, {60, 10.5}, {120, 11}},
 
 	-- maximum health of a normal monster by floor (tower_model.py --derive)
-	health = {{1, 633}, {4, 804}, {8, 1310}, {12, 1900}, {16, 2610}, {20, 3430}, {24, 4800}, {28, 7250}, {32, 8780}, {36, 9670}, {40, 10600}, {50, 12400}, {60, 14300}, {70, 16200}, {80, 18000}, {90, 19500}, {100, 19500}, {110, 20600}, {120, 21500}, {400, 64500}},
+	health = {{1, 633}, {4, 804}, {8, 1310}, {12, 1900}, {16, 2610}, {20, 3430}, {24, 4800}, {28, 7250}, {32, 8780}, {36, 9670}, {40, 10600}, {50, 12400}, {60, 14300}, {70, 16200}, {80, 18000}, {90, 19500}, {100, 19600}, {110, 20600}, {120, 21500}},
 	-- maximum health of the boss by boss floor (tower_model.py --derive)
-	bossHealth = {[10] = 31300, [20] = 53400, [30] = 79400, [40] = 99000, [50] = 126000, [60] = 155000, [70] = 177000, [80] = 207000, [90] = 239000, [100] = 277000, [110] = 187000, [120] = 216000},
+	bossHealth = {[10] = 31300, [20] = 53400, [30] = 79400, [40] = 99000, [50] = 126000, [60] = 155000, [70] = 177000, [80] = 207000, [90] = 239000, [100] = 277000, [110] = 278000, [120] = 279000},
 	-- damage of a floor's monsters to players (the pace_config.lua damage curve at the pool's hunting level)
-	damage = {{1, 0.99}, {12, 0.9}, {20, 0.8}, {28, 0.76}, {36, 0.71}, {44, 0.67}, {52, 0.72}, {400, 0.72}},
+	damage = {{1, 0.99}, {12, 0.9}, {20, 0.8}, {28, 0.76}, {36, 0.71}, {44, 0.67}, {52, 0.72}, {120, 0.78}},
 
-	-- Floor rewards (server/README.md "Infinity Tower balance and floor rewards"). Items are existing ones: crystal coins
+	-- Above maxFloor (O172, owner 2026-10-24: "the higher the floor, the stronger the monsters, without end"): every value
+	-- keeps rising with the floor, never flat and never a repeat of an old boss. d = floor - maxFloor. `level` grows linearly
+	-- (levelPerFloor a floor); health, bossHealth and damage are the value at maxFloor times exp(rate x d + accel x d^2 / 2),
+	-- so a floor is rate + accel x d (as a fraction) harder than the one before and that step itself climbs: a soft wall, no
+	-- cliff. rate starts above the level's own growth (12.5 of 2200 is 0.57% a floor), so the time a floor takes the player of its level rises from the first floor above maxFloor (tower_model.py checks it). The bosses' damage factor is 1 up
+	-- to maxFloor and the same growth above it. The caps keep the engine's integers whole (TFS health is int32): the
+	-- normal monster's cap leaves room for the legendary tier (x3.5 = 2.03e9 < 2^31 - 1 = 2147483647). A value at its cap
+	-- stays there; tools/tower_model.py --check prints the floors where each cap starts and requires them past 1000.
+	beyond = {
+		levelPerFloor = 12.5, -- the slope of the curve's last segment (floor 100 to 120)
+		healthRate = 0.007, -- 0.7% a floor at first: above the level (12.5 of 2200 = 0.57%), so a floor at its own level takes longer and longer
+		healthAccel = 0.000002,
+		bossHealthRate = 0.007,
+		bossHealthAccel = 0.000002,
+		damageRate = 0.002,
+		damageAccel = 0.000004,
+		levelMax = 2000000000, -- the shown level (engine patch 0044: int32 display level, drawn as text)
+		healthMax = 580000000, -- a normal monster; x3.5 (legendary) stays under 2^31 - 1
+		bossHealthMax = 2000000000, -- a boss has no tier
+		damageMax = 1000, -- factor on a hit: monster hits are int32 and scaled through floor(hit x factor + 0.5)
+		engineMaxHealth = 2147000000 -- whatever the tier makes of it: the last guard before setMaxHealth
+	},
+
+	-- Floor rewards (server/README.md "Infinity Tower balance and floor rewards"). Above maxFloor the counts of the rules
+	-- (and the count of the drops) are those of maxFloor: the monsters keep growing, the economy does not (O172). Items are existing ones: crystal coins
 	-- (2160) and the orbs of install_orbs.py. A rule gives its item on the milestone floors (`every`: floor % every == 0)
 	-- a count of max(min, floor(base + perFloor x floor)); rules of one item add up on a floor.
 	rewards = {
@@ -151,6 +176,8 @@ return {
 		weakReach = 20, -- the weakest class of the same level gets at least this deep
 		pairMax = 25, -- seconds: two players of level 500 and 800 on a normal floor up to floor 30
 		singleMax = 30, -- seconds: one legendary monster (the average modifiers) alone, for the median class at the floor's level
-		damageTol = 0.12 -- the damage curve against the pace curve at the pool's hunting level
+		damageTol = 0.12, -- the damage curve against the pace curve at the pool's hunting level
+		endless = 1000, -- floors whose growth is checked strictly (health trend, boss health, damage, level; O172)
+		capMin = 1000 -- the floor where a cap (int32 health, damage factor) may start at the earliest
 	}
 }

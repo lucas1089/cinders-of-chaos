@@ -2,11 +2,15 @@
 -- tests/infinitytower_balance_test.lua checks it. Numbers: infinitytower_balance_config.lua. Overview: server/README.md
 -- "Infinity Tower balance and floor rewards" (O144).
 --   B.curve(points, x)                 linear between {x, y} points, flat beyond the ends
+--   B.growth(cfg, rate, accel, floor)  exp(rate x d + accel x d^2 / 2), d = floor - maxFloor (1 up to maxFloor; O172)
+--   B.growthFloor(cfg, rate, accel, factor)   the first floor where the growth reaches `factor` (cap floors for tools)
 --   B.count(cfg, floor, players)       monsters of a floor (rounded; + perPlayer for every player after the first)
 --   B.sawtooth(cfg, floor)             the health factor of the floor in its climb of milestoneEvery floors
 --   B.health(cfg, floor)               maximum health of a normal monster of the floor (curve x sawtooth)
 --   B.bossHealth(cfg, floor)           maximum health of the floor's boss
---   B.damage(cfg, floor)               damage factor of the floor's monsters (never a boss)
+--   B.damage(cfg, floor)               damage factor of the floor's monsters (curve, then growing past maxFloor, capped)
+--   B.bossDamage(cfg, floor)           damage factor of the floor's boss: 1 up to maxFloor, then growing, capped
+--   B.level(cfg, floor)                the level shown and counted for the floor (linear past maxFloor, capped)
 --   B.bossAt(cfg, floor)               the boss of a boss floor: {name, heal}
 --   B.poolAt(cfg, floor)               the species of the floor's band
 --   B.tierRoll(cfg, floor, roll)       "legendary" | "rare" | "magic" | nil for a roll of 1..100
@@ -43,6 +47,49 @@ function B.curve(points, x)
 	return points[#points][2]
 end
 
+-- the floor as a finite whole number >= 1 (a nan, an infinity or a text from a damaged caller cannot reach the maths)
+local function sane(floor)
+	floor = tonumber(floor)
+	if not floor or floor ~= floor then
+		return 1
+	end
+	if floor < 1 then
+		return 1
+	end
+	if floor > 1e9 then
+		return 1e9
+	end
+	return floor
+end
+B.sane = sane
+
+local EXP_MAX = 60 -- exp(60) = 1.1e26: far above every cap, still a finite double
+
+-- Above cfg.maxFloor every value grows by exp(rate x d + accel x d^2 / 2): the step from one floor to the next is
+-- rate + accel x d, so the climb gets steadily harder. 1 up to maxFloor.
+function B.growth(cfg, rate, accel, floor)
+	local d = sane(floor) - cfg.maxFloor
+	if d <= 0 then
+		return 1
+	end
+	return math.exp(math.min(EXP_MAX, rate * d + accel * d * d / 2))
+end
+
+-- the first floor (a whole number above maxFloor) where the growth is at least `factor`; used for the cap floors
+function B.growthFloor(cfg, rate, accel, factor)
+	local want = math.log(factor)
+	local lo, hi = 0, 1e9
+	while hi - lo > 0.5 do
+		local mid = (lo + hi) / 2
+		if rate * mid + accel * mid * mid / 2 >= want then
+			hi = mid
+		else
+			lo = mid
+		end
+	end
+	return cfg.maxFloor + math.ceil(hi)
+end
+
 function B.count(cfg, floor, players)
 	players = math.max(1, players or 1)
 	return floorNum(B.curve(cfg.count, floor) + 0.5) + (players - 1) * cfg.perPlayer
@@ -61,12 +108,21 @@ function B.isBoss(cfg, floor)
 	return floor > 0 and floor % cfg.bossEvery == 0
 end
 
+-- the curve up to maxFloor, then x the growth; the sawtooth on top; never above the cap (int32 health, tier room)
 function B.health(cfg, floor)
-	return math.max(1, floorNum(B.curve(cfg.health, floor) * B.sawtooth(cfg, floor)))
+	floor = sane(floor)
+	local b = cfg.beyond
+	local value = B.curve(cfg.health, floor) * B.sawtooth(cfg, floor)
+	if b and floor > cfg.maxFloor then
+		value = math.min(b.healthMax, value * B.growth(cfg, b.healthRate, b.healthAccel, floor))
+	end
+	return math.max(1, floorNum(value))
 end
 
--- the boss floors of cfg.bossHealth in order; above the last one the boss grows 8% for every boss floor more
+-- the boss floors of cfg.bossHealth in order; above the last one (maxFloor) the boss has the health of the last one x the
+-- growth of the floor (O172: a boss is stronger than the one before, whatever its name), never above bossHealthMax
 function B.bossHealth(cfg, floor)
+	floor = sane(floor)
 	local keys = {}
 	for k in pairs(cfg.bossHealth) do
 		keys[#keys + 1] = k
@@ -79,8 +135,15 @@ function B.bossHealth(cfg, floor)
 		end
 	end
 	local value = cfg.bossHealth[best]
+	local b = cfg.beyond
 	if floor > keys[#keys] then
-		value = value * (1 + 0.08 * (floor - keys[#keys]) / cfg.bossEvery)
+		value = value * (b and B.growth(cfg, b.bossHealthRate, b.bossHealthAccel, floor) or 1)
+		if not b then
+			value = value * (1 + 0.08 * (floor - keys[#keys]) / cfg.bossEvery)
+		end
+	end
+	if b then
+		value = math.min(b.bossHealthMax, value)
 	end
 	return floorNum(value)
 end
@@ -91,11 +154,33 @@ function B.level(cfg, floor)
 	if not cfg.level then
 		return nil
 	end
-	return math.max(1, floorNum(B.curve(cfg.level, floor) + 0.5))
+	floor = sane(floor)
+	local value = B.curve(cfg.level, floor)
+	local b = cfg.beyond
+	if b and floor > cfg.maxFloor then
+		value = math.min(b.levelMax, value + b.levelPerFloor * (floor - cfg.maxFloor))
+	end
+	return math.max(1, floorNum(value + 0.5))
 end
 
 function B.damage(cfg, floor)
-	return B.curve(cfg.damage, floor)
+	floor = sane(floor)
+	local value = B.curve(cfg.damage, floor)
+	local b = cfg.beyond
+	if b and floor > cfg.maxFloor then
+		value = math.min(b.damageMax, value * B.growth(cfg, b.damageRate, b.damageAccel, floor))
+	end
+	return value
+end
+
+-- a boss hits x1 up to maxFloor (its own attacks), then x the same growth as the monsters, capped
+function B.bossDamage(cfg, floor)
+	floor = sane(floor)
+	local b = cfg.beyond
+	if not b or floor <= cfg.maxFloor then
+		return 1
+	end
+	return math.min(b.damageMax, B.growth(cfg, b.damageRate, b.damageAccel, floor))
 end
 
 function B.bossAt(cfg, floor)
@@ -128,11 +213,18 @@ end
 -- health x cfg.tierHealth[tier]
 function B.preTierHealth(cfg, health, tier, stockHp)
 	local want = health * (cfg.tierHealth[tier] or 1)
+	if cfg.beyond then
+		want = math.min(want, cfg.beyond.engineMaxHealth)
+	end
 	return math.max(1, floorNum(want / (stockHp or 1)))
 end
 
 function B.tierMaxHealth(cfg, health, tier)
-	return math.max(1, floorNum(health * (cfg.tierHealth[tier] or 1)))
+	local want = health * (cfg.tierHealth[tier] or 1)
+	if cfg.beyond then
+		want = math.min(want, cfg.beyond.engineMaxHealth)
+	end
+	return math.max(1, floorNum(want))
 end
 
 function B.plan(cfg, floor, players, rng)
@@ -143,7 +235,7 @@ function B.plan(cfg, floor, players, rng)
 	local boss = B.isBoss(cfg, floor)
 	local plan = {floor = floor, boss = boss, spawns = {}}
 	if boss then
-		plan.spawns[1] = {name = B.bossAt(cfg, floor).name, boss = true, health = B.bossHealth(cfg, floor), damage = 1,
+		plan.spawns[1] = {name = B.bossAt(cfg, floor).name, boss = true, health = B.bossHealth(cfg, floor), damage = B.bossDamage(cfg, floor),
 			level = B.level(cfg, floor)}
 		count = floorNum(count / cfg.bossHelperDivisor)
 	end
@@ -157,11 +249,14 @@ function B.plan(cfg, floor, players, rng)
 end
 
 -- ------------------------------------------------------------------------------------------------ rewards
-function B.rewardItems(rules, floor)
+-- capFloor (cfg.maxFloor): the counts of a floor above it are those of capFloor, the monsters keep growing and the
+-- rewards do not (O172, no inflation)
+function B.rewardItems(rules, floor, capFloor)
 	local out, byId = {}, {}
+	local counted = capFloor and math.min(floor, capFloor) or floor
 	for _, r in ipairs(rules) do
 		if floor > 0 and floor % r.every == 0 then
-			local n = math.max(r.min or 0, floorNum((r.base or 0) + (r.perFloor or 0) * floor))
+			local n = math.max(r.min or 0, floorNum((r.base or 0) + (r.perFloor or 0) * counted))
 			if n > 0 then
 				local at = byId[r.id]
 				if at then
@@ -217,7 +312,7 @@ function B.firstClear(cfg, value, season, floor)
 	if floor <= B.stored(value, season) then
 		return nil
 	end
-	local items = B.rewardItems(cfg.rewards.firstClear, floor)
+	local items = B.rewardItems(cfg.rewards.firstClear, floor, cfg.maxFloor)
 	if #items == 0 then
 		return nil
 	end
@@ -231,7 +326,7 @@ function B.dropRolls(cfg, floor, tier, rng)
 	local out = {}
 	for _, d in ipairs(cfg.drops.items) do
 		if floor >= (d.from or 1) and rng(10000) <= d.chance * mult then
-			local top = d.max + floorNum((d.perFloor or 0) * floor)
+			local top = d.max + floorNum((d.perFloor or 0) * math.min(floor, cfg.maxFloor))
 			out[#out + 1] = {id = d.id, name = d.name, count = rng(d.min, math.max(d.min, top))}
 		end
 	end

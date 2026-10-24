@@ -10,6 +10,8 @@ usage: python3 -I server/tools/tower_model_test.py
 - the committed config passes --check, and its `health` / `bossHealth` / `damage` lines are what --derive prints;
 - a floor with the health doubled, a boss that heals more than the class deals, a missing breather and a wrong damage
   curve each fail --check;
+- O172: floors 1-1000 rise strictly (health trend, boss health, damage from floor 52, level), floor 100000 sits on the caps,
+  the caps stay under int32, and a flat tower, a repeating boss, a boss dip or a cap past int32 fails --check;
 - a group adds damage, a boss floor takes the boss time on top of its helpers, a stronger class clears faster.
 """
 import os
@@ -95,6 +97,41 @@ check(code == 1 and 'heals' in out, 'a boss that heals more than the class deals
 dmg = T.balance(re.sub(r'(?m)^\tdamage = \{\{.*$', '\tdamage = {{1, 1.0}, {400, 1.0}},', text))
 code, out = run_check(dmg, T.tier_info(dmg))
 check(code == 1 and 'pace curve' in out, 'monsters that hit like no hunt monster fail')
+
+# ---- O172: the tower never stops getting stronger
+b = cfg['beyond']
+check(b['healthMax'] * cfg['tierHealth']['legendary'] <= b['engineMaxHealth'] <= 2 ** 31 - 1, 'the health cap leaves room for the legendary tier under int32')
+check(b['bossHealthMax'] <= b['engineMaxHealth'] and b['levelMax'] <= 2 ** 31 - 1, 'the boss health and level caps are under int32')
+check(T.endless(cfg, info) == [], 'the committed config grows strictly to floor %d: %s' % (cfg['limits']['endless'], T.endless(cfg, info)[:3]))
+check(T.growth(cfg, 0.007, 0.000002, 120) == 1.0 and T.growth(cfg, 0.007, 0.000002, 1) == 1.0, 'no growth up to maxFloor')
+check(T.growth(cfg, 0.007, 0.000002, 10 ** 9) < float('inf'), 'the growth never overflows')
+for f in range(1, 1001):
+    check(T.hp_at(cfg, f) == T.hp_at(cfg, f) and T.boss_hp_at(cfg, f) <= b['bossHealthMax'], 'floor %d: a finite health under its cap' % f)
+check(T.hp_at(cfg, 10 ** 5) == b['healthMax'] and T.boss_hp_at(cfg, 10 ** 5) == b['bossHealthMax'], 'floor 100000: both at their caps')
+check(T.dmg_at(cfg, 10 ** 5) == b['damageMax'] and T.boss_dmg_at(cfg, 10 ** 5) == b['damageMax'], 'floor 100000: the damage factor at its cap')
+check(T.level_at(cfg, 10 ** 5) == 2200 + b['levelPerFloor'] * (10 ** 5 - 120), 'floor 100000: the level is still linear')
+for f in range(121, 1001):
+    check(T.trend_hp(cfg, f) > T.trend_hp(cfg, f - 1), 'floor %d: stronger than the floor before' % f)
+starts = [T.growth_floor(cfg, b['healthRate'], b['healthAccel'], b['healthMax'] / (T.lin(cfg['health'], 120) * max(cfg['sawtooth'])))]
+check(T.hp_at(cfg, starts[0] - 1) < b["healthMax"] == T.hp_at(cfg, (starts[0] + 4) // 5 * 5), 'the health cap starts at floor %d' % starts[0])
+flat = T.balance(text.replace('healthRate = 0.007', 'healthRate = 0.0').replace('healthAccel = 0.000002', 'healthAccel = 0.0'))
+code, out = run_check(flat, T.tier_info(flat))
+check(code == 1 and 'does not rise' in out, 'a tower that stops growing above maxFloor fails')
+nodmg = T.balance(text.replace('damageRate = 0.002', 'damageRate = 0.0').replace('damageAccel = 0.000004', 'damageAccel = 0.0'))
+code, out = run_check(nodmg, T.tier_info(nodmg))
+check(code == 1 and 'damage factor does not rise' in out, 'a damage factor that stops growing fails')
+big = T.balance(text.replace('healthMax = 580000000', 'healthMax = 900000000'))
+code, out = run_check(big, T.tier_info(big))
+check(code == 1 and 'engine limit' in out, 'a health cap that the legendary tier pushes past int32 fails')
+early = T.balance(text.replace('healthRate = 0.007', 'healthRate = 0.03'))
+code, out = run_check(early, T.tier_info(early))
+check(code == 1 and ('cap starts' in out or 'cliff' in out or 'jumps' in out), 'a climb that hits the cap before floor 1000 fails')
+repeat = T.balance(text.replace('bossHealthRate = 0.007', 'bossHealthRate = 0.0').replace('bossHealthAccel = 0.000002', 'bossHealthAccel = 0.0'))
+code, out = run_check(repeat, T.tier_info(repeat))
+check(code == 1 and 'boss floor' in out, 'bosses that repeat their health above maxFloor fail')
+dip = T.balance(text.replace('[110] = 278000', '[110] = 187000'))
+code, out = run_check(dip, T.tier_info(dip))
+check(code == 1 and 'boss floor 110' in out, 'a boss with less health than the one 10 floors before fails (the old 110 dip)')
 
 # ---- the model
 solo = T.floor_time(new, cfg, 20, [(None, 540)], info)

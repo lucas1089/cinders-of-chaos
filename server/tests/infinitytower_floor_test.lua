@@ -185,6 +185,34 @@ do
   assertEq(ChaosTowerRun.levelOf({getId = function() return 99999 end}), nil, "other monsters have no tower level")
 end
 
+-- ---- O172: endless floors. The plan of a floor far above maxFloor fits the engine: int32 health (also of a legendary
+-- monster after the stock tier multiplies), a finite damage factor and level, and a boss that hits harder than on 120
+do
+  local INT32 = 2147483647
+  local det = function() return 1 end
+  local prevBoss, prevMon
+  for _, floor in ipairs({120, 121, 130, 500, 1000, 5000, 100000}) do
+    local boss = floor % 10 == 0
+    for _, s in ipairs(ChaosTowerFloorPlan(floor, 1, det).spawns) do
+      assert(s.health >= 1 and s.health <= INT32, "floor " .. floor .. ": health fits int32 (" .. tostring(s.health) .. ")")
+      assert(s.damage == s.damage and s.damage < math.huge and s.damage >= 1 or s.damage > 0.5, "floor " .. floor .. ": a finite damage factor")
+      assert(s.damage <= BCn.beyond.damageMax, "floor " .. floor .. ": damage under its cap")
+      assert(s.level >= 2200 and s.level <= INT32, "floor " .. floor .. ": level " .. tostring(s.level))
+      for _, tier in ipairs({"magic", "rare", "legendary"}) do
+        local stock = ({magic = 2, rare = 3.5, legendary = 6})[tier]
+        assert(B.preTierHealth(BCn, s.health, tier, stock) * stock <= INT32, "floor " .. floor .. ": the " .. tier .. " health after the stock tier fits int32")
+      end
+      if s.boss then
+        assert(floor == 120 and s.damage == 1 or s.damage > 1, "floor " .. floor .. ": a boss hits x1 up to 120 and harder above")
+      end
+    end
+  end
+  local b130, b200 = ChaosTowerFloorPlan(130, 1, det).spawns[1], ChaosTowerFloorPlan(200, 1, det).spawns[1]
+  assert(b200.health > b130.health and b200.damage > b130.damage and b200.level > b130.level, "a boss of floor 200 is stronger than 130")
+  local m121, m131 = ChaosTowerFloorPlan(121, 1, det).spawns[1], ChaosTowerFloorPlan(131, 1, det).spawns[1]
+  assert(m131.health > m121.health and m131.damage > m121.damage and m131.level > m121.level, "monsters of floor 131 are stronger than 121")
+end
+
 -- ---- engage: a monster without a target gets the nearest living player, also a boss
 killAll(); advance(6000)
 for _, m in ipairs(alive()) do assert(m.target == nil, "monsters start without a target in the mock") end

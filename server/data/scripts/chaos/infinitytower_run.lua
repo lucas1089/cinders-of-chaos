@@ -272,8 +272,8 @@ function ChaosTowerRun.nextRewardText(player, floor)
 	if not nm then
 		return nil
 	end
-	local every = B.rewardItems(BC.rewards.repeatable, nm)
-	local first = nm > storedFloor(player) and B.rewardItems(BC.rewards.firstClear, nm) or {}
+	local every = B.rewardItems(BC.rewards.repeatable, nm, BC.maxFloor)
+	local first = nm > storedFloor(player) and B.rewardItems(BC.rewards.firstClear, nm, BC.maxFloor) or {}
 	local text
 	if #first > 0 and #every > 0 then
 		text = Chaos.t(player, "Next reward: floor %d, %s (first clear this season: %s).", nm, B.itemsText(every), B.itemsText(first))
@@ -290,7 +290,7 @@ local function floorRewards(player, floor)
 	if not B.isMilestone(BC, floor) then
 		return
 	end
-	local every = B.rewardItems(BC.rewards.repeatable, floor)
+	local every = B.rewardItems(BC.rewards.repeatable, floor, BC.maxFloor)
 	if #every > 0 then
 		deliver(player, every)
 		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "Floor %d reward: %s.", floor, B.itemsText(every)))

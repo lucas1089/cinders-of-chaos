@@ -3497,6 +3497,65 @@ players'. Tests: `infinitytower_run_test.lua`, `infinitytower_balance_test.lua`.
   `staticattack`, `runonhealth`) and whether the build has 8d286bf7 and this commit (the first report matches a build without the display level: "level 80-100 from floor 20" is the dragon pool).
 - Tests: `infinitytower_floor_test.lua`, `monster_damage_test.lua`. Server restart, no client change, no engine patch.
 
+**Endless floors (O172, owner 2026-10-24: "the higher the floor, the stronger the monsters, without end").** Every curve was flat
+above its last point: `level` and `health` above floor 120, `damage` from floor 52, the boss table repeated (and floor 110
+had 187000 against 277000 on floor 100). Now `infinitytower_balance_config.lua` `beyond` takes over above `maxFloor` (120), d =
+floor - 120:
+- level = curve + 12.5 x d (the slope of the last segment); capped at 2e9.
+- normal monster health = curve x growth x sawtooth, boss health = the floor 120 boss x growth, monster damage factor = curve x growth.
+  growth = exp(rate x d + accel x d^2 / 2): health and boss health rate 0.007 and accel 0.000002, damage rate 0.002 and accel 0.000004.
+  The step from a floor to the next is rate + accel x d, so it climbs (0.7% a floor at 121, 0.84% at 800): a soft wall, not a
+  cliff. The first step is above the level's own growth (12.5 of 2200 is 0.57%), so the time a floor takes the player of its
+  level rises from floor 121 on. Boss names still repeat in the order of the list; their health does not.
+- a boss hits x1 up to floor 120 (its own attacks) and x the damage growth above it (`B.bossDamage`; `damageMultOf` no longer
+  skips bosses, it stays 1 for them up to 120).
+- Floors 1-120 changed only where they were flat or dipped: health at floor 100 19500 to 19600 (it equalled floor 90),
+  bosses 110 and 120 187000 and 216000 to 278000 and 279000 (non-decreasing; `--derive` keeps a boss at least 0.5% over the
+  one before; the floor 110 boss now takes the median class 128 s against 86 s and floor 120 116 s against 90 s, inside bossMax 150), monster damage rises from 0.72 at floor 52 to
+  0.78 at 120 (`--derive`: last band + 0.06). Floors 1-51 still follow the pace curve down (0.99 to 0.67), which the level boost of
+  `monster_damage.lua` (+30% at level 650) offsets, so strictly rising damage is checked from floor 52.
+- "Stronger" with the sawtooth: the health trend (before the sawtooth), the level, the damage factor from floor 52 and the
+  boss health of every boss floor rise on every floor; the health of a floor is above the floor five before it; inside a climb
+  each floor is above the one before; only the breather after a milestone floor is easier than the floor before it.
+
+| Floor | Level | Monster health | Boss health | Damage x | Boss damage x | Clear at its own level (median class, milestone floors) |
+|---|---|---|---|---|---|---|
+| 1 | 100 | 474 | 31,300 (floor 10) | 0.99 | 1 | - |
+| 10 | 300 | 1,958 | 31,300 | 0.92 | 1 | - |
+| 50 | 1,075 | 15,128 | 126,000 | 0.71 | 1 | - |
+| 120 | 2,200 | 26,230 | 279,000 | 0.78 | 1 | 13.3 s |
+| 200 | 3,200 | 46,214 | 491,573 | 0.93 | 1.19 | 16.2 s |
+| 500 | 6,950 | 433,245 | 4,608,288 | 2.23 | 2.85 | 70.4 s |
+| 1000 | 13,200 | 26,938,285 | 286,533,799 | 21.33 | 27.35 | 2,311 s |
+
+(Monster health is the floor's value with the sawtooth of that floor, 0.75 to 1.22 of the trend; floors 1 to 120 as before.)
+
+**Clamps (engine limits).** TFS creature health is int32. The tier multiplies after: `healthMax` 580,000,000 x 3.5 (legendary)
+= 2.03e9 < 2^31 - 1, `bossHealthMax` 2,000,000,000 (a boss has no tier), and `engineMaxHealth` 2,147,000,000 is the last guard in
+`preTierHealth` / `tierMaxHealth` and in `setHealth` of `infinitytower_run.lua`. The damage factor is capped at 1000
+(`damageMax`; a hit is scaled with `floor(hit x factor + 0.5)`, so no inf or nan; `damageMultOf` also turns a nan or negative factor
+into 1). The shown level is the engine's display level (patch 0040/0044: `int32`, sent as the text "Name [level]" in the creature
+packet, not a uint16), capped at 2e9 (`levelMax`; a level climbs 12.5 a floor, never in reach). The floor argument is made finite and
+at least 1 (`B.sane`: nan, text, infinity), and the growth exponent is capped at 60, so a floor of 1e300 still gives finite numbers.
+The caps start at floor 1338 (normal health, at a milestone floor), 1217 (boss health) and 1577 (damage factor);
+`tower_model.py --check` requires every cap past floor 1000 and prints the floors. From the cap on, values stay at the cap
+(no longer strictly rising: past that point a floor is not stronger than the one before; the checks stop at the cap).
+
+**Rewards do not follow the climb.** First-clear and repeatable counts and the tower drop counts use `min(floor, maxFloor)`: a
+floor above 120 pays the counts of floor 120 (`rewardItems(rules, floor, capFloor)`, `dropRolls`), so the economy does not
+inflate (a linear `perFloor` of 1 Crystal Coin would pay 1,000 on floor 1000, and a season pays each milestone floor once, up to
+floor 999: the storage value is season x 1000 + floor). The rewards of floors 125, 130, ... are therefore paid at the amount of 120. The
+store, roulette, skill and progression checks stay green. Not changed: `nextMilestone` stops at 120 (the window shows no next
+reward past it).
+
+**CI.** `tower_model.py --check` runs `endless()` over floors 1-1000 (`limits.endless`; every cap past `limits.capMin` 1000):
+strictly rising health trend, level, damage (from floor 52) and boss health and boss damage per boss floor, the climb rule above,
+no climb above maxFloor more than `stepMax` over the one before (no cliff), no value above its cap, the caps under int32 (the health
+cap with the legendary tier), and the clear time at the floor's own level rising from floor 125 on at most `stepMax` per climb. The
+unit test (`tower_model_test.py`) breaks each of them. Lua: `tests/infinitytower_balance_test.lua` (floors 1-1200 strictly, caps,
+floors up to 1e12, nan, rewards) and `tests/infinitytower_floor_test.lua` (plans at floors 121 to 100000 fit int32 with every tier).
+Not measured live; a level 2000 median class gets about 93 floors deep (unchanged), so floors above 120 are for the future.
+
 ## Infinity Tower season rewards (`infinitytower.lua`, `infinitytower_core.lua`, `Chaos.tower` in `chaos_constants.lua`)
 
 The client window's "Top Rank Rewards" podium (Gold, Silver and Copper Tower Chest) is paid at the end of every tower

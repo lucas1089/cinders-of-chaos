@@ -119,8 +119,8 @@ local function buildPayload(player)
 		end
 		floorRewards = {every = BC.milestoneEvery, paid = paid, nextFloor = nm}
 		if nm then
-			floorRewards.first = listOf(B.rewardItems(BC.rewards.firstClear, nm))
-			floorRewards.repeatable = listOf(B.rewardItems(BC.rewards.repeatable, nm))
+			floorRewards.first = listOf(B.rewardItems(BC.rewards.firstClear, nm, BC.maxFloor))
+			floorRewards.repeatable = listOf(B.rewardItems(BC.rewards.repeatable, nm, BC.maxFloor))
 			local okt, text = pcall(function()
 				return ChaosTowerRun and ChaosTowerRun.nextRewardText and ChaosTowerRun.nextRewardText(player, paid)
 			end)
