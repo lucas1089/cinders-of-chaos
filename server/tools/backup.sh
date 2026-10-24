@@ -116,7 +116,24 @@ if [ "$DATA" = 1 ] && [ -n "$SERVER" ]; then
 		log "server data unchanged since the last archive"
 	else
 		TARTMP="$DIR/data/chaos-data-$STAMP.tar.gz.partial"
-		tar -C "$SERVER" --exclude='*.otbm' --exclude='data/logs' --exclude='data/reports' -czf "$TARTMP" config.lua data
+		# The server is up: a file it writes (or a folder it adds a file to) can change while tar reads it. GNU tar then
+		# exits 1 with a whole, readable archive; 2 is a real error. Three tries 2 s apart, then the last archive stays
+		# with a warning (the changed file is a runtime one, the scripts under data/ do not change while the server runs).
+		try=1
+		while :; do
+			rc=0
+			tar -C "$SERVER" --exclude='*.otbm' --exclude='data/logs' --exclude='data/reports' -czf "$TARTMP" config.lua data || rc=$?
+			[ "$rc" = 0 ] && break
+			[ "$rc" = 1 ] || die "tar failed (status $rc)"
+			gzip -t "$TARTMP" || die "the data archive is not a valid gzip file"
+			if [ "$try" -ge 3 ]; then
+				log "warning: files under data/ changed while they were archived (3 tries); the archive is kept"
+				break
+			fi
+			log "files under data/ changed while they were archived; try $((try + 1)) of 3 in 2 s"
+			try=$((try + 1))
+			sleep 2
+		done
 		mv "$TARTMP" "$DIR/data/chaos-data-$STAMP.tar.gz"
 		echo "$SUMS" > "$DIR/data/.last"
 		log "server data: $DIR/data/chaos-data-$STAMP.tar.gz ($(du -h "$DIR/data/chaos-data-$STAMP.tar.gz" | cut -f1))"
