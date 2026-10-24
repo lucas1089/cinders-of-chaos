@@ -741,6 +741,105 @@ creatures[b.id] = nil
 runTo(T + 500)
 check(M.fights[b.id] == nil, "the fight ends with the boss")
 
+-- the soak circle (beta 2026-10-24, a dungeon boss: "stand in the circle" and the player died standing in it). The drawn
+-- tiles, the tiles that count and the hit are one set (centre and edge in, one tile past the edge out), and the hit is
+-- the boss's scripted one (ChaosBossMech.scriptedHit: dungeons.lua leaves it out of its damage multiplier).
+do
+	cfg.profiles["soak boss"] = {label = "Soaker", size = 1, element = "holy", difficulty = 0, every = 9000, firstMs = 500,
+		compensate = false,
+		telegraphs = {{key = "slam", label = "Slam", kind = "circle", radius = 1, share = 0.1, hit = "x", fallback = 1,
+			firstMs = 900000}},
+		timed = {{key = "hymn", label = "Hymn", kind = "soak", radius = 2, total = 0.6, min = 1, missShare = 0.45,
+			every = 900000, firstMs = 500, below = 1, hit = "x", fallback = 1, text = "%s sings!"}}}
+	for _, c in pairs(creatures) do
+		if c.player then c.pos = {x = 300, y = 300, z = 7} end
+	end
+	hits = {}
+	effects = {}
+	local seen = {}
+	local realHit = doTargetCombat
+	doTargetCombat = function(cid, target, ctype, mn, ...)
+		seen[#seen + 1] = M.scriptedHit(Monster(cid))
+		return realHit(cid, target, ctype, mn, ...)
+	end
+	local sb = make({name = "Soak Boss", pos = {x = 200, y = 200, z = 7}, hp = 100000})
+	local mid = make({name = "Mid", player = true, pos = {x = 200, y = 195, z = 7}, hp = 10000})
+	local edge = make({name = "Edge", player = true, pos = {x = 200, y = 195, z = 7}, hp = 10000})
+	local past = make({name = "Past", player = true, pos = {x = 200, y = 195, z = 7}, hp = 10000})
+	local far = make({name = "Far", player = true, pos = {x = 200, y = 195, z = 7}, hp = 10000})
+	local sf = M.attach(sb, nil, {center = {x = 200, y = 200, z = 7}, radius = 8})
+	check(sf ~= nil, "soak: attached")
+	check(not M.scriptedHit(sb), "soak: not scripted outside a hit")
+	runTo(T + 1500)
+	local sc = sf.soakCircle
+	check(sc ~= nil, "soak: the circle is planned")
+	if sc then
+		-- the drawn tiles are the checked tiles
+		local drawn, nDrawn = {}, 0
+		for _, e in ipairs(effects) do
+			if e.id == CONST_ME_MAGIC_GREEN then
+				drawn[e.x .. "," .. e.y] = true
+			end
+		end
+		for _, t in ipairs(sc.tiles) do
+			nDrawn = nDrawn + 1
+			check(drawn[t.x .. "," .. t.y], "soak: tile " .. t.x .. "," .. t.y .. " is drawn")
+		end
+		check(nDrawn >= 13, "soak: a radius 2 circle has 13 tiles in the open (" .. nDrawn .. ")")
+		for k in pairs(drawn) do
+			local x, y = k:match("(%d+),(%d+)")
+			check(sc.set[G.key(tonumber(x), tonumber(y))], "soak: nothing is drawn outside the checked set " .. k)
+		end
+		check(sc.set[G.key(sc.x, sc.y)], "soak: the centre is in the set")
+		check(sc.set[G.key(sc.x + 2, sc.y)] and sc.set[G.key(sc.x - 2, sc.y)] and sc.set[G.key(sc.x, sc.y + 2)]
+			and sc.set[G.key(sc.x, sc.y - 2)], "soak: the four edge tiles are in")
+		check(sc.set[G.key(sc.x + 1, sc.y + 1)], "soak: the diagonal at 1.41 is in")
+		check(not sc.set[G.key(sc.x + 2, sc.y + 1)], "soak: 2.24 away is out")
+		check(not sc.set[G.key(sc.x + 3, sc.y)], "soak: one tile past the edge is out")
+		mid.pos = {x = sc.x, y = sc.y, z = 7}
+		edge.pos = {x = sc.x + 2, y = sc.y, z = 7}
+		past.pos = {x = sc.x + 3, y = sc.y, z = 7}
+		far.pos = {x = sc.x, y = sc.y, z = 8}
+		for _, p in ipairs({mid, edge, past, far}) do p.hp = 10000 end
+		hits = {}
+		runTo(T + 15000)
+		local took = {}
+		for _, h in ipairs(hits) do
+			took[h.target] = (took[h.target] or 0) + h.dmg
+		end
+		-- two soakers split the total: 0.6 / 2 of 10000 each; the others take nothing
+		eq(took[mid.id], 3000, "soak: the player in the centre takes his half")
+		eq(took[edge.id], 3000, "soak: the player on the edge takes his half")
+		eq(took[past.id], nil, "soak: the player one tile past the edge is not hit")
+		eq(took[far.id], nil, "soak: the player on another floor is not hit")
+		check(#seen > 0, "soak: the hits were dealt")
+		for _, v in ipairs(seen) do
+			check(v == true, "soak: every hit of the mechanic is flagged scripted for the damage multipliers")
+		end
+		-- alone inside: the lone soaker takes 60% of his health, once, and survives
+		local solo = make({name = "Solo", player = true, pos = {x = 300, y = 300, z = 7}, hp = 10000})
+		for _, p in ipairs({mid, edge, past, far}) do p.pos = {x = 300, y = 300, z = 7} end
+		sf.st.nextTimed[1] = T
+		sf.st.busyUntil = nil
+		effects, hits = {}, {}
+		runTo(T + 1000)
+		local sc2 = sf.soakCircle
+		solo.pos = {x = sc2.x + 2, y = sc2.y, z = 7} -- on the edge
+		runTo(T + 15000)
+		local n, total = 0, 0
+		for _, h in ipairs(hits) do
+			if h.target == solo.id then n = n + 1; total = total + h.dmg end
+		end
+		eq(n, 1, "soak: one hit on the lone soaker")
+		eq(total, 6000, "soak: the lone soaker on the edge takes 60% and lives")
+		creatures[solo.id] = nil
+	end
+	doTargetCombat = realHit
+	creatures[sb.id] = nil
+	for _, p in ipairs({mid, edge, past, far}) do creatures[p.id] = nil end
+	runTo(T + 500)
+end
+
 -- a protection zone is never part of a fight (owner's bug, 2026-10-16: a display Mirecoil Wyrm in its closed cell
 -- of the Cinderhold teleport room killed a level 8 player on the PZ carpet with Mire Spit, 20% of max health = 58)
 local pzTiles = {}

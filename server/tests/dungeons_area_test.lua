@@ -405,6 +405,17 @@ do
 	ok(ChaosDungeonIsInside(p1) and ChaosDungeonIsInside(p2), "pair: a full group starts at once, no wait")
 	eq(mduo.maxHp, 1000 * curve * 1.6, "pair: monster health x1.6")
 	eq(hit.onHealthChange(p1, mduo, -100, 1, 0, 0), -110, "pair: monster damage x1.1")
+	-- a boss mechanic's hit is a share of the victim's max health: the difficulty does not scale it again (beta
+	-- 2026-10-24: the Last Hymn took 60% x 1.3..6.0 of a player who stood in its circle)
+	do
+		local oldMech = ChaosBossMech
+		local scripted = true
+		ChaosBossMech = {scriptedHit = function(a) return scripted and a == mduo end}
+		eq(hit.onHealthChange(p1, mduo, -600, 1, 0, 0), -600, "mechanic hit: left as it is (not x1.1)")
+		scripted = false
+		eq(hit.onHealthChange(p1, mduo, -100, 1, 0, 0), -110, "mechanic hit: the monster's other hits are still scaled")
+		ChaosBossMech = oldMech
+	end
 	-- difficulty and party multiply
 	local D2 = dofile("data/scripts/chaos/dungeons_difficulty.lua")
 	eq(D2.partyHealth(1), 1, "formula: 1 player x1.0")

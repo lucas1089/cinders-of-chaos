@@ -8253,6 +8253,15 @@ monster_tiers.lua does), with a box of radius 8 round it as the arena (walkable 
 Cinderheart and the guild boss keep their own telegraphs, hazards, adds and enrage (`ownTelegraphs`); the profile adds
 the mechanics below on top, and while one of those runs (`ChaosBossMech.busy`) they draw no telegraph of their own.
 
+**Dungeon difficulty does not scale the mechanics (beta 2026-10-24).** The mechanics' hits are a share of the victim's
+max health (telegraph `share`, soak `total` / `missShare`, channel and blast `share`), so they are already tuned to the
+player. `dungeons.lua` multiplies the damage of a run's monsters by the difficulty (130% to 600%) and the party factor,
+and used to do it to these hits too: a lone soaker in the Last Hymn circle (60%) died at difficulty 3 and up. Now
+`ChaosBossMech.scriptedHit(attacker)` is true while the mechanic deals its hit and `scaleHit` leaves it unchanged; the
+boss's ordinary attacks are still scaled. The soak circle (radius from the profile, Euclidean distance from the centre
+tile, so a radius 2 circle is 13 tiles) is one tile list: the green tiles drawn, the tiles that count and the tiles
+checked at the hit are the same set, on the same floor (`f.soakCircle`).
+
 **The kit** (all per profile, all in the core):
 - Telegraphs: circle, cone, line (beam), ring (donut), cross, puddles (on players and at random), follow (a circle that
   tracks the target for 1.5 s, then locks; the last 1.5 s+ count as the warning), plus uber's marks, half, lines, eye. A
