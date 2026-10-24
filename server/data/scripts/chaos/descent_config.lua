@@ -74,6 +74,10 @@ return {
 	waves = {base = 2, perDepth = 0.25, max = 4},
 	size = {base = 4, perDepth = 0.34, perExtraPlayer = 2, max = 14},
 	types = 3, -- monster types of a room
+	-- a wave that made no monster at all (no type could be created) is tried again this many times, `retrySeconds`
+	-- apart, with the types picked again; after that the run ends with an error line in the log. It never counts as a
+	-- cleared room (beta report 2026-10-24).
+	spawn = {retries = 3, retrySeconds = 2},
 	spread = 3, -- a wave lands around a random point of the hub, this far
 	-- elite room: one wave of base + floor(depth x perDepth) monsters, every one rare or legendary, health x healthMult
 	elite = {base = 2, perDepth = 0.25, perExtraPlayer = 1, healthMult = 1.5, legendaryBase = 25, legendaryPerDepth = 5},

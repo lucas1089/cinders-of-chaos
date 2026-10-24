@@ -10,6 +10,9 @@
 --   ChaosDescentCore.roomRng(seed, room, salt)       the generator of one room (spawns, offers)
 --   ChaosDescentCore.escalation(cfg, depth, level)   level window, health / damage scaling, tier mix of a depth
 --   ChaosDescentCore.rollTier(esc, r) / eliteTier(cfg, depth, r)
+--   ChaosDescentCore.pickTypes(cfg, pool, window, known, r)          the monster types of a room (never empty while the
+--                                                    pool has one valid monster, whatever the level window)
+--   ChaosDescentCore.spawnSet(types, n, make)        n monsters over the types; a type that fails gives way to the others
 --   ChaosDescentCore.roomPlan(cfg, kind, depth, players, swarmPct)   waves and monsters per wave
 --   ChaosDescentCore.rollOffer(cfg, r, held, depth, opts)            three boons (and maybe a curse)
 --   ChaosDescentCore.newState() / applyPick(cfg, st, offer, index, takeCurse) / cleanse(cfg, st)
@@ -193,6 +196,91 @@ end
 function D.eliteTier(cfg, depth, r)
 	local el = cfg.elite
 	return r:chance(min(100, el.legendaryBase + el.legendaryPerDepth * depth)) and "legendary" or "rare"
+end
+
+-- The monster types of a room: `cfg.types` picks of the pool inside the level window (widened `escalation.widen` per
+-- step, at most 5 steps, when too few). pool: {{name, level, health}} (bounty_pool.lua hunt), known(name) -> true for a
+-- type the engine can create. When the widened window still holds fewer than `cfg.types`, the nearest levels of the whole
+-- pool fill up (beta report 2026-10-24: a level 1500+ party has a window of 900-1800 and a pool that ends at level 980,
+-- the room had no monster type and counted as cleared at once). Draws from r exactly as before when the window has enough.
+function D.pickTypes(cfg, pool, window, known, r)
+	local e = cfg.escalation
+	local want = cfg.types
+	local function inWindow(w)
+		local list = {}
+		for _, m in ipairs(pool or {}) do
+			if m.level >= w[1] and m.level <= w[2] and (m.health or 0) >= e.minPoolHealth and (not known or known(m.name)) then
+				list[#list + 1] = m
+			end
+		end
+		return list
+	end
+	local w = {window[1], window[2]}
+	local list = inWindow(w)
+	local widen = 0
+	while #list < want and widen < 5 do
+		widen = widen + 1
+		w = {w[1] - e.widen, w[2] + e.widen}
+		list = inWindow(w)
+	end
+	local picked = {}
+	for _ = 1, min(want, #list) do
+		picked[#picked + 1] = table.remove(list, r:int(1, #list))
+	end
+	if #picked < want then
+		local taken = {}
+		for _, m in ipairs(picked) do
+			taken[m.name:lower()] = true
+		end
+		local rest = {}
+		for _, m in ipairs(pool or {}) do
+			if not taken[m.name:lower()] and (m.health or 0) >= e.minPoolHealth and (not known or known(m.name)) then
+				local gap = m.level < window[1] and window[1] - m.level or (m.level > window[2] and m.level - window[2] or 0)
+				rest[#rest + 1] = {m = m, gap = gap}
+			end
+		end
+		table.sort(rest, function(a, b)
+			if a.gap ~= b.gap then
+				return a.gap < b.gap
+			end
+			return a.m.name < b.m.name
+		end)
+		for i = 1, min(want - #picked, #rest) do
+			picked[#picked + 1] = rest[i].m
+		end
+	end
+	table.sort(picked, function(a, b)
+		if a.level == b.level then
+			return a.name < b.name
+		end
+		return a.level < b.level
+	end)
+	return picked
+end
+
+-- n monsters over the types (type k rotates through them); make(type, k) -> the creature or nil. A type the engine
+-- cannot create gives way to the next ones for that monster. Returns the number made and the names that failed (each
+-- once), so the caller can log one line; 0 made is never a cleared room.
+function D.spawnSet(types, n, make)
+	local made, failed, seen = 0, {}, {}
+	local count = #types
+	if count == 0 then
+		return 0, failed
+	end
+	for k = 1, n do
+		for step = 0, count - 1 do
+			local t = types[((k - 1 + step) % count) + 1]
+			if make(t, k) then
+				made = made + 1
+				break
+			end
+			if not seen[t.name] then
+				seen[t.name] = true
+				failed[#failed + 1] = t.name
+			end
+		end
+	end
+	return made, failed
 end
 
 -- waves and monsters per wave of a room; swarmPct: the Swarm curses of the party
@@ -624,6 +712,9 @@ function D.validate(cfg)
 	end
 	if cfg.rooms.min < 3 or cfg.rooms.max < cfg.rooms.min then
 		bad("rooms")
+	end
+	if not cfg.spawn or (cfg.spawn.retries or -1) < 0 or (cfg.spawn.retrySeconds or 0) <= 0 then
+		bad("spawn: retries, retrySeconds")
 	end
 	for _, u in ipairs(cfg.rewards.uniques) do
 		if not tonumber(u.id) or not u.name then

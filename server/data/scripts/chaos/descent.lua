@@ -494,29 +494,10 @@ local function known(name)
 	return knownCache[k]
 end
 
--- the monster types of a room: `types` picks of the depth's level window (widened when too few)
+-- the monster types of a room: `types` picks of the depth's level window (widened when too few, then the nearest levels
+-- of the pool, descent_core.lua D.pickTypes: a window above the pool's levels must not leave a room without monsters)
 local function pickTypes(run, esc, r)
-	local e = C().escalation
-	local want = C().types
-	local window = {esc.window[1], esc.window[2]}
-	local list = R.candidates({minPoolHealth = e.minPoolHealth}, rawPool.hunt, window, known)
-	local widen = 0
-	while #list < want and widen < 5 do
-		widen = widen + 1
-		window = {window[1] - e.widen, window[2] + e.widen}
-		list = R.candidates({minPoolHealth = e.minPoolHealth}, rawPool.hunt, window, known)
-	end
-	local picked = {}
-	for _ = 1, math.min(want, #list) do
-		picked[#picked + 1] = table.remove(list, r:int(1, #list))
-	end
-	table.sort(picked, function(a, b)
-		if a.level == b.level then
-			return a.name < b.name
-		end
-		return a.level < b.level
-	end)
-	return picked
+	return DC.pickTypes(C(), rawPool.hunt, esc.window, known, r)
 end
 
 -- ======================================================================== the run's players
@@ -761,25 +742,33 @@ local function spawnOne(run, name, pos, tier, opts)
 	return m
 end
 
+-- one line in the log and the end of the run: a room that made no monster is never a cleared room
+local function abortRun(run, why)
+	log(string.format("ERROR run %d room %d (%s): %s; the run ends, the room is not counted as cleared", run.id, run.idx,
+		roomOf(run).type, why))
+	say(run, "The embers will not rise here: your descent ends.")
+	finish(run, "error")
+end
+
 local function spawnWave(run)
 	local room = roomOf(run)
 	local L = run.L
 	local r = DC.roomRng(run.seed, run.idx, "wave:" .. run.wave)
-	local spawned = 0
 	local center = randomIn(L, 3)
 	local spread = C().spread
-	for k = 1, run.roomPlan.size do
-		local e = run.types[((k - 1) % #run.types) + 1]
-		local tier = run.roomPlan.elite and DC.eliteTier(C(), run.idx, r) or DC.rollTier(run.esc, r)
-		local pos = {x = math.max(L.rect.x1 + 1, math.min(L.rect.x2 - 1, center.x + math.random(-spread, spread))),
-			y = math.max(L.rect.y1 + 1, math.min(L.rect.y2 - 4, center.y + math.random(-spread, spread))), z = L.z}
-		if spawnOne(run, e.name, pos, tier, {healthMult = run.roomPlan.elite and C().elite.healthMult or 1}) then
-			spawned = spawned + 1
+	local elite = run.roomPlan.elite
+	local per = {} -- the position and tier of monster k, rolled once even when its type has to change
+	local spawned, failed = DC.spawnSet(run.types, run.roomPlan.size, function(e, k)
+		if not per[k] then
+			per[k] = {tier = elite and DC.eliteTier(C(), run.idx, r) or DC.rollTier(run.esc, r),
+				pos = {x = math.max(L.rect.x1 + 1, math.min(L.rect.x2 - 1, center.x + math.random(-spread, spread))),
+					y = math.max(L.rect.y1 + 1, math.min(L.rect.y2 - 4, center.y + math.random(-spread, spread))), z = L.z}}
 		end
-	end
+		return spawnOne(run, e.name, per[k].pos, per[k].tier, {healthMult = elite and C().elite.healthMult or 1})
+	end)
 	P(center):sendMagicEffect(CONST_ME_MORTAREA)
-	if spawned == 0 then
-		log(string.format("run %d room %d (%s): no monster could be created", run.id, run.idx, room.type))
+	if #failed > 0 then
+		log(string.format("run %d room %d (%s): could not create %s", run.id, run.idx, room.type, table.concat(failed, ", ")))
 	end
 	return spawned
 end
@@ -787,18 +776,21 @@ end
 local function spawnBoss(run)
 	local th = themeOf(run)
 	local b = C().boss
-	local strongest = run.types[#run.types]
 	local name = b.names[th.name] or b.defaultName
-	local m = spawnOne(run, strongest.name, run.L.center, b.tier,
-		{shown = name, look = b.looks[th.name], healthMult = DC.bossHealth(C(), aliveCount(run))})
-	if m then
-		run.bossId = m:getId()
-		run.bossName = name
-		P(run.L.center):sendMagicEffect(CONST_ME_MORTAREA)
-		say(run, string.format("%s rises from the embers!", name))
-		return 1
+	-- the strongest type first, then the weaker ones
+	for i = #run.types, 1, -1 do
+		local e = run.types[i]
+		local m = spawnOne(run, e.name, run.L.center, b.tier,
+			{shown = name, look = b.looks[th.name], healthMult = DC.bossHealth(C(), aliveCount(run))})
+		if m then
+			run.bossId = m:getId()
+			run.bossName = name
+			P(run.L.center):sendMagicEffect(CONST_ME_MORTAREA)
+			say(run, string.format("%s rises from the embers!", name))
+			return 1
+		end
+		log(string.format("run %d: the boss (%s) could not be created", run.id, e.name))
 	end
-	log(string.format("run %d: the boss (%s) could not be created", run.id, strongest.name))
 	return 0
 end
 
@@ -859,9 +851,27 @@ local function nextWave(run)
 	run.wave = run.wave + 1
 	local n = spawnWave(run)
 	sendHud(run)
-	if n == 0 and run.alive <= 0 then
-		roomCleared(run)
+	if n > 0 or run.alive > 0 then
+		run.spawnTries = 0
+		return
 	end
+	-- nothing could be created and nothing lives: try again with the types picked again, never "cleared"
+	run.spawnTries = (run.spawnTries or 0) + 1
+	local sp = C().spawn
+	if run.spawnTries > sp.retries then
+		abortRun(run, string.format("no monster could be created in %d tries", run.spawnTries))
+		return
+	end
+	log(string.format("run %d room %d: wave %d made no monster, try %d of %d", run.id, run.idx, run.wave, run.spawnTries, sp.retries))
+	run.wave = run.wave - 1
+	local rid, slot = run.id, run.slot
+	addEvent(function()
+		local r = X.runs[slot]
+		if r and r.id == rid and not r.ended and r.state == "fight" and r.alive <= 0 then
+			r.types = pickTypes(r, r.esc, DC.roomRng(r.seed, r.idx, "types:retry" .. r.spawnTries))
+			nextWave(r)
+		end
+	end, sp.retrySeconds * 1000)
 end
 
 startRoom = function(run)
@@ -896,9 +906,6 @@ startRoom = function(run)
 		end
 	end
 	local name = DC.ROOM_NAMES[room.type] or room.type
-	if (room.type == "combat" or room.type == "elite" or room.type == "treasure" or room.type == "boss") and #run.types == 0 then
-		log(string.format("run %d room %d: no monsters in the window %d-%d", run.id, run.idx, run.esc.window[1], run.esc.window[2]))
-	end
 	if room.type == "shrine" or room.type == "merchant" then
 		run.state = "rest"
 		run.restUntil = os.time() + cfg.readySeconds
@@ -922,8 +929,12 @@ startRoom = function(run)
 		run.waves = 1
 		run.wave = 1
 		say(run, string.format("Room %d of %d: the last hall.", run.idx, run.plan.count))
-		if #run.types == 0 or spawnBoss(run) == 0 then
-			roomCleared(run)
+		if #run.types == 0 then
+			abortRun(run, string.format("no monster type in the window %d-%d", run.esc.window[1], run.esc.window[2]))
+			return
+		end
+		if spawnBoss(run) == 0 then
+			abortRun(run, "the boss could not be created")
 			return
 		end
 		sendHud(run)
@@ -932,9 +943,10 @@ startRoom = function(run)
 	say(run, string.format("Room %d of %d: %s (%s), %d wave%s.", run.idx, run.plan.count, name, th.name, run.waves,
 		run.waves == 1 and "" or "s"))
 	if #run.types == 0 then
-		roomCleared(run)
+		abortRun(run, string.format("no monster type in the window %d-%d", run.esc.window[1], run.esc.window[2]))
 		return
 	end
+	run.spawnTries = 0
 	local rid, slot = run.id, run.slot
 	addEvent(function()
 		local r = X.runs[slot]
@@ -1147,7 +1159,7 @@ end
 
 local RESULT_TEXT = {
 	cleared = "The Descent is conquered!", fallen = "You fell in the Descent.", time = "The embers burned out.",
-	left = "You left the Descent.", logout = "You left the Descent.", shutdown = "The Descent closes for a restart."
+	error = "The embers would not rise.", left = "You left the Descent.", logout = "You left the Descent.", shutdown = "The Descent closes for a restart."
 }
 
 removePlayer = function(run, pid, result)

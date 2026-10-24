@@ -20159,6 +20159,12 @@ runs to the boss and to a fall, the shrine, the merchant (Boon Cache), curses, t
 summary, the database rows, the weekly board and the Boss Spawns row. Not tested in game: a party of 2-4, the
 crash marker, a clean shutdown during a run.
 
+
+**Empty rooms (2026-10-24).** `descent_core.lua` `pickTypes` picks the room's monsters from the bounty pool; when the level window
+(clamped to `escalation.maxLevel`) lies above the pool (it ends at level 980) it takes the nearest levels, so a room always has
+monster types while the pool has one valid monster. `spawnSet` lets a type the engine cannot create give way to the others. A wave that
+made 0 monsters is retried (`spawn.retries`, `spawn.retrySeconds`) with the types picked again and is never a cleared room; after the
+retries the run ends with result `error` (depth rewards) and one `[Chaos descent] ERROR` line in the log.
 ## The Ashen Sepulchre, the weekly raid (`raid.lua`, `raid_core.lua`, `raid_config.lua`, `sql/chaos_raid.sql`, client `game_raid`)
 
 **Limits** (`raid_config.lua` `sessionMinutes`, `idleMinutes`, `limits`, "Instance limits"): one opening lasts at most 150 minutes, warnings at 10, 5 and 1 minute and 10 s; then everyone goes back where they came from, the slot closes and the progress stays saved for the week (a fight still going ends as a wipe). An empty raid closes after 5 minutes (was 10). At most 4 raids, the wait and the waiting line when every wing is taken.

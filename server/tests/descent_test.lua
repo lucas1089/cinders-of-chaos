@@ -398,6 +398,115 @@ eq(row.freeDay, 20261007, "all three spent: the clock is today")
 ok(not D.freeState(cfg, row, now).daily, "nothing left today")
 eq(D.spendDaily(cfg, {}, now), 20261005, "a new character spends from a full bank")
 
+-- ====================================================================== monster types and spawning (beta report 2026-10-24)
+-- A room whose window lies above the monster pool had no type and counted as cleared at once ("a room bonus right after
+-- entering"). The bounty pool ends at level 980, the window of a level 1500+ party is 900-1800 and more.
+do
+	local pool = dofile("data/scripts/chaos/bounty_pool.lua").hunt
+	local top = 0
+	for _, m in ipairs(pool) do
+		top = math.max(top, m.level)
+	end
+	local anyKnown = function() return true end
+	-- the old pick (widen the window five times, nothing else) as the reproduction
+	local function oldPick(window)
+		local e = cfg.escalation
+		local w = {window[1], window[2]}
+		local function count()
+			local n = 0
+			for _, m in ipairs(pool) do
+				if m.level >= w[1] and m.level <= w[2] and m.health >= e.minPoolHealth then
+					n = n + 1
+				end
+			end
+			return n
+		end
+		local n, widen = count(), 0
+		while n < cfg.types and widen < 5 do
+			widen = widen + 1
+			w = {w[1] - e.widen, w[2] + e.widen}
+			n = count()
+		end
+		return n
+	end
+	local seen = 0
+	for _, level in ipairs({100, 300, 800, 1000, 1500, 2000, 2200}) do
+		for depth = 1, 12 do
+			local esc = D.escalation(cfg, depth, level)
+			local types = D.pickTypes(cfg, pool, esc.window, anyKnown, D.roomRng(7, depth, "types"))
+			ok(#types == cfg.types, string.format("level %d depth %d: %d monster types (window %d-%d)", level, depth, #types,
+				esc.window[1], esc.window[2]))
+			for _, m in ipairs(types) do
+				ok(m.health >= cfg.escalation.minPoolHealth, "a fallback type is no weakling: " .. m.name)
+			end
+			if oldPick(esc.window) == 0 then
+				seen = seen + 1
+				ok(#types > 0, "the old pick found nothing at level " .. level .. " depth " .. depth .. ", the new one does")
+			end
+		end
+	end
+	ok(seen > 0, "the old pick really left rooms empty (pool tops at " .. top .. ")")
+	-- the fallback takes the nearest levels: above the pool that is the strongest monsters
+	local hi = D.pickTypes(cfg, pool, {1500, 1800}, anyKnown, D.roomRng(7, 12, "types"))
+	for _, m in ipairs(hi) do
+		ok(m.level >= top - 150, "above the pool: the strongest, got " .. m.name .. " level " .. m.level)
+	end
+	-- same draws as before when the window holds enough
+	local esc = D.escalation(cfg, 3, 400)
+	local a1 = D.pickTypes(cfg, pool, esc.window, anyKnown, D.roomRng(5, 3, "types"))
+	local a2 = D.pickTypes(cfg, pool, esc.window, anyKnown, D.roomRng(5, 3, "types"))
+	eq(#a1, cfg.types, "a normal window gives all types")
+	for i = 1, #a1 do
+		eq(a1[i].name, a2[i].name, "one seed, one pick")
+		ok(a1[i].level >= esc.window[1] and a1[i].level <= esc.window[2], "inside the window: " .. a1[i].name)
+	end
+	-- a pool without one valid monster: no types (the engine file ends the run, it never clears the room)
+	eq(#D.pickTypes(cfg, pool, esc.window, function() return false end, D.roomRng(5, 3, "types")), 0, "nothing known, nothing picked")
+	eq(#D.pickTypes(cfg, {}, esc.window, anyKnown, D.roomRng(5, 3, "types")), 0, "an empty pool")
+end
+
+do
+	local types = {{name = "Alpha", level = 10}, {name = "Beta", level = 20}, {name = "Gamma", level = 30}}
+	-- a mocked engine that cannot create one name
+	local made = {}
+	local n, failed = D.spawnSet(types, 6, function(t, k)
+		if t.name == "Beta" then
+			return nil
+		end
+		made[#made + 1] = t.name
+		return {k = k}
+	end)
+	eq(n, 6, "a failing type gives way: every monster is made")
+	eq(#failed, 1, "one failed name in the report")
+	eq(failed[1], "Beta", "the failed name")
+	for _, name in ipairs(made) do
+		ok(name ~= "Beta", "no Beta was made")
+	end
+	-- the engine creates nothing at all: 0 made, never a clearable wave
+	local calls = 0
+	n, failed = D.spawnSet(types, 4, function() calls = calls + 1 return nil end)
+	eq(n, 0, "nothing could be created: 0 made")
+	eq(#failed, 3, "all three names reported once")
+	eq(calls, 12, "every monster tried every type")
+	-- no types at all
+	n = D.spawnSet({}, 4, function() return {} end)
+	eq(n, 0, "no types: 0 made")
+	-- everything works
+	n, failed = D.spawnSet(types, 5, function() return {} end)
+	eq(n, 5, "all made")
+	eq(#failed, 0, "nothing failed")
+end
+
+eq(#D.validate(cfg), 0, "the config still validates")
+do
+	local bad = {}
+	for k, v in pairs(cfg) do
+		bad[k] = v
+	end
+	bad.spawn = nil
+	ok(#D.validate(bad) > 0, "a config without the spawn retry numbers is refused")
+end
+
 -- ====================================================================== wiring
 dofile("data/scripts/chaos/chaos_constants.lua")
 eq(ChaosOpcodes.descent, 205, "opcode 205")

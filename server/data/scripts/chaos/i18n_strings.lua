@@ -1698,6 +1698,7 @@ return {
 		["The Descent is conquered!"] = "A Descent foi conquistada!",
 		["You fell in the Descent."] = "Você caiu na Descent.",
 		["The embers burned out."] = "As brasas se apagaram.",
+		["The embers would not rise."] = "As brasas não quiseram acender.",
 		["You left the Descent."] = "Você saiu da Descent.",
 		["The Descent closes for a restart."] = "A Descent se fecha para um reinício.",
 		["The Phoenix Ember flares: you rise again."] = "A Phoenix Ember se acende: você se levanta de novo.",
