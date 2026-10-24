@@ -597,6 +597,8 @@ Chaos.dungeons = {
 	-- effect on their tiles, every `hintEveryMs`, at most `hintMax`); once the percent is at least `minPercent` the boss is
 	-- unlocked anyway (the rest may stand where nobody can reach them), so a map flaw never blocks a run
 	stall = {seconds = 150, minPercent = 60, hintEveryMs = 30000, hintMax = 5},
+	-- O183: a monster of a run is placed on its tile or the nearest free walkable tile of the same floor within radius tiles
+	placement = {radius = 4},
 	-- area = {{from, to}, ...}: boxes that belong to the dungeon next to the base FromPos/ToPos box (dungeons.lua areaOf),
 	-- for the parts that box misses: measured on the base map and its boss scripts (server/README.md "dungeons")
 	extra = {

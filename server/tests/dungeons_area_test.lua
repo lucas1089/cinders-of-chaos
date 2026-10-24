@@ -491,7 +491,7 @@ do
 	end
 	local recorded = #ChaosDungeonMapSpawns[4]
 	ok(recorded >= 40, "O179: the start-up record holds the dungeon's map monsters (" .. recorded .. ")")
-	-- the base dungeon's own list (SpawnMonsters) must survive the clean-up
+	-- the base dungeon's own list (SpawnMonsters) is the same dungeon a second time when a record exists (O183): not made
 	local dg4 = DUNGEON_SYSTEM.Dungeons[4]
 	dg4.SpawnMonsters, dg4.Monsters = true, {["base guard"] = P(31575, 31617, 8)}
 	-- a stray monster of an earlier run stands in the area: the clean-up removes it
@@ -508,7 +508,7 @@ do
 	local sentFrom = #sent
 	ext.onExtendedOpcode(q, ChaosOpcodes.dungeons, {action = "queue", data = {id = 4, difficulty = 1}})
 	ok(ChaosDungeonIsInside(q), "O179: the run is on")
-	eq(#madeAt, recorded + 1, "O179: the map's monsters and the base list are all made at the entry")
+	eq(#madeAt, recorded, "O179: the map's monsters are all made at the entry (O183: not the base list on top)")
 	local late = 0
 	for _, o in ipairs(order) do
 		if o == "after" then late = late + 1 end
@@ -519,12 +519,12 @@ do
 	for _, name in ipairs(madeAt) do
 		if name == "base guard" then base = base + 1 end
 	end
-	eq(base, 1, "O179: the base list's monster survives the clean-up")
+	eq(base, 0, "O183: with a start-up record the base list is not made a second time")
 	local startMsg
 	for i = sentFrom + 1, #sent do
 		if sent[i].action == "start" then startMsg = sent[i].data end
 	end
-	eq(startMsg and startMsg.left, recorded + 1, "O179: the counter's total is known from the start")
+	eq(startMsg and startMsg.left, recorded, "O179: the counter's total is known from the start")
 	-- nothing is queued to spawn later: no event creates a monster during the run
 	local madeNow = #madeAt
 	local mons = {}
@@ -542,12 +542,12 @@ do
 	for i = sentFrom + 1, #sent do
 		if sent[i].action == "killed" then killedMsgs[#killedMsgs + 1] = sent[i].data.left end
 	end
-	eq(killedMsgs[#killedMsgs], recorded + 1 - 2, "O179: an add of a script is not counted")
+	eq(killedMsgs[#killedMsgs], recorded - 2, "O179: an add of a script is not counted")
 	local rising = false
 	for i = 2, #killedMsgs do
 		if killedMsgs[i] > killedMsgs[i - 1] then rising = true end
 	end
-	ok(not rising and killedMsgs[1] <= recorded + 1, "O179: Monsters Alive only goes down, from the fixed total")
+	ok(not rising and killedMsgs[1] <= recorded, "O179: Monsters Alive only goes down, from the fixed total")
 	add:remove()
 	local respawn = newCreature(9101, "cave rat 1", P(31541, 31560, 8), false)
 	ok(onSpawn(respawn, respawn.pos, false, false) == false, "O179: the map's respawn is refused during the run")
@@ -622,6 +622,199 @@ do
 	advance(30000)
 	eq(unlocked, 1, "O180: once")
 	q.pos = P(temple.x, temple.y, temple.z)
+	advance(4000)
+	x4.unlock = nil
+end
+
+-- ------------------------------------------------------------------ O183: monsters nobody can reach, two bosses, level 2
+-- Owner 2026-10-24 (beta, the Master of the Elements dungeon): "I killed every monster that appeared and the bar did not
+-- fill. 2 bosses. Level 2." Causes: (1) since O179 the base list (SpawnMonsters, one entry per species) came after the
+-- clean-up and was made on top of the map's record, with a boss entry of its own, so the dungeon held about 58 extra
+-- monsters and a second boss; (2) a forced placement puts a monster on a blocked or taken tile; (3) the boss was
+-- made without a level, so it showed the estimate of its type.
+do
+	for id, cr in pairs(creatures) do
+		if not cr:isPlayer() and id < 100000 then cr:remove() end
+	end
+	advance(3000)
+	local dg2 = DUNGEON_SYSTEM.Dungeons[2]
+	local blocked, noGround = {}, {}
+	local function key(q) return q.x .. "," .. q.y .. "," .. q.z end
+	Tile = function(q)
+		local k = key(q)
+		return {
+			getGround = function() return not noGround[k] end,
+			hasFlag = function(_, f) return f == TILESTATE_BLOCKSOLID and blocked[k] == true end
+		}
+	end
+	local function wall(x1, y1, x2_, y2)
+		for x = x1, x2_ do for y = y1, y2 do blocked[x .. "," .. y .. ",8"] = true end end
+	end
+	-- the record of dungeon 2: 6 normal spawns, 3 on a wall, 3 on one tile, 1 in a sealed block, the boss twice
+	local rec = {}
+	ChaosDungeonMapSpawns[2] = rec
+	local function add(name, x, y) rec[#rec + 1] = {name = name, pos = {x = x, y = y, z = 8}} end
+	for i = 1, 6 do add("rat " .. i, 31700 + i, 32350) end
+	wall(31720, 32360, 31722, 32362)
+	add("wall rat 1", 31720, 32360)
+	add("wall rat 2", 31721, 32361)
+	add("wall rat 3", 31722, 32362)
+	for i = 1, 3 do add("stack rat " .. i, 31740, 32370) end
+	wall(31800, 32400, 31820, 32420) -- a sealed block bigger than the search radius: nothing free inside it
+	add("sealed rat", 31810, 32410)
+	add("master of the elements", 31716, 32563)
+	add("Master of the Elements", 31716, 32570)
+	dg2.SpawnMonsters = true
+	dg2.Monsters = {["base wardragon"] = P(31701, 32345, 8), ["Master of the Elements"] = P(31705, 32345, 8)}
+	local calls, nextId, forcedCalls = {}, 6000, 0
+	local levels = {}
+	Game.createMonster = function(name, pos, extended, force)
+		calls[#calls + 1] = name
+		if force then forcedCalls = forcedCalls + 1 end
+		if blocked[key(pos)] then return nil end -- the engine refuses a blocked tile when it is not forced
+		nextId = nextId + 1
+		local m = newCreature(nextId, name, P(pos.x, pos.y, pos.z), false)
+		levels[m.id] = Chaos.spawnLevel
+		return m
+	end
+	local q = newCreature(201, "Mara", P(32369, 32241, 7), true)
+	local from = #sent
+	ext.onExtendedOpcode(q, ChaosOpcodes.dungeons, {action = "queue", data = {id = 2, difficulty = 1}})
+	advance(9000) -- the solo wait, then the run
+	ok(ChaosDungeonIsInside(q), "O183: the run is on")
+	local bosses, trash, perTile, onWall = {}, {}, {}, 0
+	for _, cr in pairs(creatures) do
+		if cr:isMonster() and D.inside(2, cr.pos) then
+			if cr.name:lower() == "master of the elements" then bosses[#bosses + 1] = cr else trash[#trash + 1] = cr end
+			perTile[key(cr.pos)] = (perTile[key(cr.pos)] or 0) + 1
+			if blocked[key(cr.pos)] then onWall = onWall + 1 end
+		end
+	end
+	eq(#bosses, 1, "O183: exactly one boss per run (two map entries and a base list entry)")
+	eq(bosses[1] and levels[bosses[1].id], 200, "O183: the boss is made with the dungeon's level, not the estimate of its type")
+	eq(forcedCalls, 0, "O183: no placement is forced")
+	eq(onWall, 0, "O183: no monster stands on a blocked tile")
+	local stacked = 0
+	for _, c in pairs(perTile) do if c > 1 then stacked = stacked + 1 end end
+	eq(stacked, 0, "O183: no two monsters share a tile")
+	eq(#trash, 12, "O183: 6 + 3 moved off the wall + 3 off one tile; the sealed one and the base list are not made")
+	local sealedMade, baseMade = false, false
+	for _, cr in ipairs(trash) do
+		if cr.name == "sealed rat" then sealedMade = true end
+		if cr.name == "base wardragon" then baseMade = true end
+	end
+	ok(not sealedMade, "O183: a monster with no free tile near it is not made")
+	ok(not baseMade, "O183: the base list is not made on top of the map's record")
+	local st
+	for i = from + 1, #sent do
+		if sent[i].action == "start" then st = sent[i].data end
+	end
+	eq(st and st.left, 12, "O183: the total counts only the monsters placed where players can reach (no boss, no sealed)")
+	-- the boss's health follows the dungeon's curve, not the display level
+	ok(bosses[1].maxHp ~= 1000, "O183: the boss health is scaled by the dungeon's boss curve (" .. bosses[1].maxHp .. ")")
+	ok(trash[1].maxHp ~= 1000, "O183: the trash health is scaled by the dungeon's trash curve")
+	-- all trash killed: the bar fills and the boss is unlocked (the boss alone does not hold it)
+	for _, cr in ipairs(trash) do cr:remove() end
+	advance(4000)
+	local last
+	for i = from + 1, #sent do
+		if sent[i].action == "killed" then last = sent[i].data end
+	end
+	ok(last and last.unlocked and last.percent == 100, "O183: every placed monster dead = 100% and the boss unlocked")
+	-- a second boss made by a script is removed in the next tick
+	newCreature(7001, "Master of the Elements", P(31716, 32560, 8), false)
+	advance(4000)
+	local alive = 0
+	for _, cr in pairs(creatures) do
+		if cr:isMonster() and cr.name:lower() == "master of the elements" then alive = alive + 1 end
+	end
+	eq(alive, 1, "O183: a second boss of the run is removed")
+	q.pos = P(temple.x, temple.y, temple.z)
+	advance(4000)
+
+	-- a dungeon without a start-up record: the base list is the fallback, its boss entry makes the one boss
+	ChaosDungeonMapSpawns[2] = nil
+	for id, cr in pairs(creatures) do
+		if not cr:isPlayer() and id < 100000 then cr:remove() end
+	end
+	calls = {}
+	q = newCreature(203, "Mara2", P(32369, 32241, 7), true) -- a fresh player: leaving set the fail cooldown
+	ext.onExtendedOpcode(q, ChaosOpcodes.dungeons, {action = "queue", data = {id = 2, difficulty = 1}})
+	advance(9000)
+	local nBase, nBoss = 0, 0
+	for _, name in ipairs(calls) do
+		if name == "base wardragon" then nBase = nBase + 1 end
+		if name == "Master of the Elements" then nBoss = nBoss + 1 end
+	end
+	eq(nBase, 1, "O183: without a record the base list is made")
+	eq(nBoss, 1, "O183: and its boss entry is the run's one boss")
+	q.pos = P(temple.x, temple.y, temple.z)
+	advance(4000)
+
+	-- monsters that already stand there (no record, a generated dungeon's points) on a wall or on one tile are settled
+	for id, cr in pairs(creatures) do
+		if not cr:isPlayer() and id < 100000 then cr:remove() end
+	end
+	dg2.SpawnMonsters, dg2.Monsters = nil, nil
+	local w1 = newCreature(7101, "wall dweller", P(31720, 32360, 8), false)
+	local s1 = newCreature(7102, "stacked a", P(31750, 32380, 8), false)
+	local s2 = newCreature(7103, "stacked b", P(31750, 32380, 8), false)
+	newCreature(7104, "sealed dweller", P(31810, 32410, 8), false)
+	q = newCreature(204, "Mara3", P(32369, 32241, 7), true)
+	from = #sent
+	ext.onExtendedOpcode(q, ChaosOpcodes.dungeons, {action = "queue", data = {id = 2, difficulty = 1}})
+	advance(9000)
+	ok(not blocked[key(w1.pos)], "O183: a monster standing on a wall is moved to a free tile")
+	ok(key(s1.pos) ~= key(s2.pos), "O183: two monsters on one tile are separated")
+	ok(creatures[7104] == nil, "O183: a monster with no free tile is removed, not counted")
+	st = nil
+	for i = from + 1, #sent do
+		if sent[i].action == "start" then st = sent[i].data end
+	end
+	eq(st and st.left, 3, "O183: the total is the three that can be reached")
+
+	-- the stall hint names only monsters that stand there and are counted
+	advance(160000)
+	local hint
+	for _, m in ipairs(q.msgs) do
+		if m:find("monsters are left", 1, true) then hint = m end
+	end
+	ok(hint ~= nil, "O183: the hint is sent")
+	local listed = {}
+	for x, y, z in (hint or ""):gmatch("(%d+),(%d+),(%d+)") do listed[#listed + 1] = x .. "," .. y .. "," .. z end
+	eq(#listed, 3, "O183: the hint lists the 3 counted monsters")
+	for _, k in ipairs(listed) do
+		ok(k == key(w1.pos) or k == key(s1.pos) or k == key(s2.pos), "O183: hint " .. k .. " is a real monster's tile")
+	end
+	q.pos = P(temple.x, temple.y, temple.z)
+	advance(4000)
+	Tile = nil
+	ChaosDungeonMapSpawns[2] = nil
+	dg2.SpawnMonsters, dg2.Monsters = nil, nil
+
+	-- the unlock (the generated dungeon's boss) is asked once even when both unlock paths fire
+	local x4 = Chaos.dungeons.extra[4]
+	local calls4 = 0
+	x4.unlock = function() calls4 = calls4 + 1 end
+	for id, cr in pairs(creatures) do
+		if not cr:isPlayer() and id < 100000 then cr:remove() end
+	end
+	local rec4 = ChaosDungeonMapSpawns[4]
+	for i = #rec4, 1, -1 do rec4[i] = nil end
+	for i = 1, 4 do rec4[#rec4 + 1] = {name = "gen rat " .. i, pos = {x = 31540 + i, y = 31561, z = 8}} end
+	Game.createMonster = function(name, pos)
+		nextId = nextId + 1
+		return newCreature(nextId, name, P(pos.x, pos.y, pos.z), false)
+	end
+	local p4 = newCreature(202, "Gen", P(32369, 32241, 7), true)
+	ext.onExtendedOpcode(p4, ChaosOpcodes.dungeons, {action = "queue", data = {id = 4, difficulty = 1}})
+	for _, cr in pairs(creatures) do
+		if cr:isMonster() and cr.name:find("gen rat", 1, true) then cr:remove() end
+	end
+	advance(4000)
+	advance(400000)
+	eq(calls4, 1, "O183: the boss is unlocked once (85% and the stall rule together)")
+	p4.pos = P(temple.x, temple.y, temple.z)
 	advance(4000)
 	x4.unlock = nil
 end
