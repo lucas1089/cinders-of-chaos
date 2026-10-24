@@ -78,6 +78,17 @@ function W.levelText(row, tr)
   return tr('level %d', row.level)
 end
 
+-- where a tier not held comes from ('' when held or the count is unknown): the drop rule of
+-- waystone_tiers_config.lua drops (outside the maps a Tier I; inside a run of tier T: T, T+1 or T+2; the boss of T: T+1)
+function W.sourceText(row, tr)
+  tr = tr or function(s, ...) return select('#', ...) > 0 and string.format(s, ...) or s end
+  if type(row) ~= 'table' or row.count == nil or row.count > 0 or not row.tier then return '' end
+  if row.tier <= 1 then return tr('None held. Tier I drops from monsters anywhere.') end
+  local lo = math.max(1, row.tier - 2)
+  return tr('None held. Drops in waystone maps of tier %s to %s; the boss of tier %s drops one.',
+    W.ROMAN[lo], W.ROMAN[row.tier], W.ROMAN[row.tier - 1])
+end
+
 -- the row to select first: the server's pick (a tier used on the device), else the lowest tier the player holds,
 -- else the first row
 function W.firstRow(rows, pick)

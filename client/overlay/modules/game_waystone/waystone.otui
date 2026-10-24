@@ -71,12 +71,22 @@ ChaosMainWindow
     id: tierList
     anchors.top: rewardLabel.bottom
     anchors.left: parent.left
-    anchors.right: parent.right
+    anchors.right: tierScroll.left
     margin-top: 6
+    margin-right: 4
     height: 258
     layout:
       type: verticalBox
+    vertical-scrollbar: tierScroll
     auto-focus: none
+
+  ChaosScrollBar
+    id: tierScroll
+    anchors.top: tierList.top
+    anchors.right: parent.right
+    anchors.bottom: tierList.bottom
+    step: 43
+    pixels-scroll: true
 
   ChaosComboBox
     id: lookBox

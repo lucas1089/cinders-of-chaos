@@ -1,6 +1,6 @@
 -- The waystone device window (the glue; the rules are waystonelogic.lua, tested there). The base server's waystone
 -- system sends "show" on extended opcode 202 when the device is used (or a Waystone Tier is used on it, or in the own
--- hideout: server/tools/patch_waystone_hideout.py part 2); this window lists the tiers (six, fifteen with part 3) with
+-- hideout: server/tools/patch_waystone_hideout.py part 2); this window lists the tiers (all fifteen with part 3, in a scroll list: it showed six rows and no scrollbar, beta 2026-10-24) with
 -- their monster level and the count the player carries, opens the portals of the picked one and sets the portal look. Protocol: waystonelogic.lua.
 local W = ChaosWaystone
 
@@ -26,6 +26,8 @@ local function refreshButtons()
   if not window then return end
   local row = rows[selected]
   window.openButton:setEnabled(W.teleportRequest(row) ~= nil)
+  local source = W.sourceText(row, tr)
+  if source ~= '' then setStatus(source) end
 end
 
 local function pick(i)
