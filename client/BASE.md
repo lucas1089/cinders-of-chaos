@@ -870,6 +870,18 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     words come from `spelldata.lua`) and saves the options when it removed any. A slot says words, not an id, so the ids the
     attack kit reused never moved a slot to another spell. Applies after `0001`-`0122` (the whole chain applied clean to a
     base tree; the result equals the hand-edited file). Not seen in a client.
+69q. `0124` (C++ `src/framework/ui/uitextedit.*`): **a restored text edit only places its glyphs.** Owner log 2026-10-23:
+    "ATTENTION the event list is not getting empty" every frame from startup, before login (`UILayout::updateLater` <-
+    `UIWidget::setRect`), about 340 times in one session. Cause: `0110` made the geometry event call
+    `onGeometryRestored()` when the rect is back where it was, and `UITextEdit` ran the whole `update(true)`, auto resize
+    included. A text edit with `text-auto-resize: true` and anchors on both sides (the hotkey search box `searchText` of
+    the options: `left: prev.right`, `right: parent.right`) is sized to its text by `update()` and back to its slot by the
+    layout; each pass sent the next restored event, for ever, and the dispatcher ran its 100 loops every poll. Fix:
+    `onGeometryRestored()` sets `m_glyphsOnly` around `update(true)` and the auto resize is skipped then; the size stays
+    the layout's, as before `0110`. Console lines are unaffected (their glyphs are placed as in `0110`). Model test
+    `tools/textedit_restored_test.py` (CI): stock rule 101 loops, `0124` 1. Applies after `0001`-`0123`. A headless run of
+    the assembled client (software GL, login scene): 23 errors in 14 s before, none after. The "attempt to destroy
+    widget two times" line at logout was not reproduced and is not traced to a Chaos module.
 70. `0088` (`src/client/outfit.cpp`): **a look without a mounted pattern still rides.** `Outfit::draw` took
     `zPattern = min(1, pattern Z - 1)` and drew the mount only when it was above 0, so a mounted character in a look
     with pattern Z 1 showed no mount. In pair 30 (dat 8156792438dabee3aa768663d57a1619) 43 wearable looks (base

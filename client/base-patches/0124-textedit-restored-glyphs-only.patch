@@ -1,0 +1,46 @@
+# Chaos: a text edit placed again by onGeometryRestored does not auto resize (src/framework/ui; after 0001-0123).
+# Owner log 2026-10-23: "ATTENTION the event list is not getting empty" every frame, from startup (UILayout::updateLater
+# <- UIWidget::setRect). Cause: 0110 made UIWidget::setRect call onGeometryRestored() when the rect is back where it was,
+# and UITextEdit answered with update(true), which also runs the auto resize. A text edit with text-auto-resize plus
+# anchors on both sides (the hotkey search box of the options: left prev.right, right parent.right) is sized to its text
+# by update() and back to its slot by the layout. Each pass sends the next restored event, for ever.
+# Now onGeometryRestored() only places the glyphs (m_glyphsOnly): the size is the layout's, as before 0110.
+# Model: client/tools/textedit_restored_test.py.
+--- a/src/framework/ui/uitextedit.cpp
++++ b/src/framework/ui/uitextedit.cpp
+@@ -186,8 +186,8 @@
+     const Size *glyphsSize = m_font->getGlyphsSize();
+     int glyph;
+ 
+-    // update rect size
+-    if(!m_rect.isValid() || m_textHorizontalAutoResize || m_textVerticalAutoResize) {
++    // update rect size (not when only the glyphs are placed again: onGeometryRestored)
++    if(!m_glyphsOnly && (!m_rect.isValid() || m_textHorizontalAutoResize || m_textVerticalAutoResize)) {
+         textBoxSize += Size(m_padding.left + m_padding.right, m_padding.top + m_padding.bottom) + m_textOffset.toSize();
+         Size size = getSize();
+         if(size.width() <= 0 || (m_textHorizontalAutoResize && !m_textWrap))
+@@ -745,8 +745,13 @@
+ {
+     // e.g. a console line: text set at the top of the buffer, then moved back to its old slot in the same frame;
+     // the glyphs stayed where the text was set and were drawn over another line
+-    if(m_glyphsRect != m_rect)
++    // Only the glyphs: the auto resize would size the widget to its text again and the layout (anchors on both sides,
++    // e.g. the options' hotkey search box) back to its slot, and each pass would send this event again, for ever
++    if(m_glyphsRect != m_rect) {
++        m_glyphsOnly = true;
+         update(true);
++        m_glyphsOnly = false;
++    }
+ }
+ 
+ void UITextEdit::onFocusChange(bool focused, Fw::FocusReason reason)
+--- a/src/framework/ui/uitextedit.h
++++ b/src/framework/ui/uitextedit.h
+@@ -116,6 +116,7 @@
+ 
+     Rect m_drawArea;
+     Rect m_glyphsRect; // m_rect when update() placed the glyphs (screen coordinates)
++    stdext::boolean<false> m_glyphsOnly; // update() places the glyphs again but does not auto resize
+     int m_cursorPos;
+     Point m_textVirtualOffset;
+     Size m_textVirtualSize;
