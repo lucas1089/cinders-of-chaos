@@ -492,6 +492,83 @@ local function joinList(list, max)
 	return table.concat(words, ", ") .. " and " .. last
 end
 
+-- the tiles of a shape (spellbook_areas_config.lua row or attack_kit_config.lua spell) as an area matrix: 1 hit, 3 centre
+-- and hit; a wave or line faces north with you in the bottom row. Second result: where the area is centred.
+local function disc(radius)
+	local m = {}
+	for dy = -radius, radius do
+		local row = {}
+		for dx = -radius, radius do
+			local inside = dx * dx + dy * dy <= radius * radius + radius
+			row[#row + 1] = (dx == 0 and dy == 0) and 3 or (inside and 1 or 0)
+		end
+		m[#m + 1] = row
+	end
+	return m
+end
+
+function Book.shapeArea(spec)
+	if type(spec) ~= "table" then
+		return nil
+	end
+	local shape = spec.shape
+	if shape == "circle" or shape == "around" then
+		return disc(spec.radius or 1), shape == "circle" and "target" or "caster"
+	elseif shape == "line" then
+		local m = {}
+		for i = 1, spec.length or 1 do
+			m[i] = {1}
+		end
+		m[#m + 1] = {3}
+		return m, "caster"
+	elseif shape == "wave" then
+		local depth, half = spec.depth or 2, spec.halfWidth or 1
+		local m = {}
+		for d = depth, 1, -1 do
+			local w = math.min(half, d - 1)
+			local row = {}
+			for c = -half, half do
+				row[#row + 1] = math.abs(c) <= w and 1 or 0
+			end
+			m[#m + 1] = row
+		end
+		local row = {}
+		for c = -half, half do
+			row[#row + 1] = c == 0 and 3 or 0
+		end
+		m[#m + 1] = row
+		return m, "caster"
+	end
+	return nil
+end
+
+-- the area hint of a Chaos spell by name: its row of the areas config, else its attack kit shape
+function Book.areaHint(name)
+	if ChaosSpellbookAreas == nil then
+		pcall(dofile, "data/scripts/chaos/spellbook_areas_config.lua")
+	end
+	if ChaosAttackKit == nil then
+		pcall(dofile, "data/scripts/chaos/attack_kit_config.lua")
+	end
+	local spec = ChaosSpellbookAreas and ChaosSpellbookAreas[name]
+	if not spec and ChaosAttackKit and ChaosAttackKit.cfg then
+		for _, s in pairs(ChaosAttackKit.cfg.spells) do
+			if s.name == name then
+				spec = s
+				break
+			end
+		end
+	end
+	if not spec then
+		return nil
+	end
+	local matrix, center = Book.shapeArea(spec)
+	if matrix and #matrix > Book.maxAreaSize then
+		return nil
+	end
+	return matrix, center, spec.shape
+end
+
 -- type, target, center for a parsed entry + script info
 function Book.classify(entry, info)
 	local a = entry.attrs
@@ -504,7 +581,9 @@ function Book.classify(entry, info)
 		kind = "conjure"
 	elseif info.summon or script:find("summon") then
 		kind = "summon"
-	elseif #info.damage > 0 then
+	elseif #info.damage > 0 or (a.group == "attack" and script:find("^chaos/")) then
+		-- a Chaos attack spell is damage even when its script deals it through a helper the text scan does not know
+		-- (ChaosSpell.weaponStrike and the like): it was typed Utility, which the Attack filter then dropped
 		kind = "damage"
 	elseif info.heals then
 		kind = "heal"
@@ -753,6 +832,20 @@ function Book.buildSpell(entry, scriptCache)
 		needLearn = truthy(a.needlearn) or nil -- castable only once learned (the open header lists the learned ones)
 	}
 	local kind, target, center = Book.classify(entry, info)
+	if kind == "damage" and not info.area and (script or ""):lower():find("^chaos/") then
+		-- a scripted pack hit (no createCombatArea in the script): the area of the config shows it
+		local matrix, hintCenter, shape = Book.areaHint(a.name)
+		if matrix then
+			info = setmetatable({area = matrix}, {__index = info}) -- the script's info is cached, keep it as it is
+			if hintCenter == "target" then
+				target, center = "area", "target"
+			elseif shape == "around" then
+				target, center = "area", "caster"
+			else
+				target, center = "front", "caster"
+			end
+		end
+	end
 	spell.type, spell.target, spell.center = kind, target, center
 	if info.area and (target == "area" or target == "front") then
 		spell.area = info.area
