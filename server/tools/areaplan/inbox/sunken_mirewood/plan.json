@@ -62,6 +62,20 @@
       "role": "hunt"
     },
     {
+      "id": "heart",
+      "floor": 1,
+      "shape": "cave",
+      "size": [
+        22,
+        34
+      ],
+      "at": [
+        43,
+        42
+      ],
+      "role": "hunt"
+    },
+    {
       "id": "lair",
       "floor": 1,
       "shape": "arena",
@@ -98,6 +112,16 @@
       "from": "bog",
       "to": "lair",
       "width": 5
+    },
+    {
+      "from": "camp",
+      "to": "heart",
+      "width": 5
+    },
+    {
+      "from": "heart",
+      "to": "bog",
+      "width": 5
     }
   ],
   "entry": {
@@ -133,6 +157,26 @@
       "count": 20,
       "pack": 2,
       "respawn": 120
+    },
+    {
+      "zone": "heart",
+      "monster": "Lochtag",
+      "count": 8,
+      "pack": 2,
+      "respawn": 90
+    },
+    {
+      "zone": "heart",
+      "monster": "Hodag",
+      "count": 6,
+      "pack": 2,
+      "respawn": 90
+    },
+    {
+      "zone": "heart",
+      "monster": "Babayaga",
+      "count": 3,
+      "respawn": 120
     }
   ],
   "boss": {
@@ -145,5 +189,5 @@
       "name": "Wandering Merchant"
     }
   ],
-  "notes": "A swamp hunt for level 500 with three hunting rooms and a boss at the end. Round 2: twice the size, wide paths, the open marsh biome."
+  "notes": "A swamp hunt for level 500 with three hunting rooms and a boss at the end. Round 2: twice the size, wide paths, the open marsh biome. Round 3: a thicket instead of rock. Round 4: a big hunting room in the middle (heart)."
 }
