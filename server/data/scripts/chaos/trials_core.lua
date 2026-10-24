@@ -768,6 +768,30 @@ function M.markEscaped(secondsLeft)
 	return max(0, secondsLeft - M.cfg().markPenaltySeconds)
 end
 
+-- marks (O187): what one tick does with the live mark. The clock of a mark (markSeconds) only runs while nobody hurts it:
+-- every tick that finds it lower than the last one starts the clock again, so a mark that is being fought never slips
+-- away (a Merciless mark of a level 400 character needs more than 10 s of damage: it fled at 90% health, came back at
+-- full health and the run could not be won). A mark nobody touches still flees, at most markMaxFlees times in a run;
+-- after that it stays until it dies, so the trial can always be completed.
+-- Returns action ("wait" | "hit" | "flee"), the deadline (ms) and the health to compare with next tick.
+function M.markStep(now, deadline, lastHp, hp, flees, markSeconds)
+	local c = M.cfg()
+	if lastHp and hp < lastHp then
+		return "hit", now + markSeconds * 1000, hp
+	end
+	local keep = lastHp and min(lastHp, hp) or hp
+	if now < deadline or flees >= (c.markMaxFlees or 0) then
+		return "wait", deadline, keep
+	end
+	return "flee", deadline, keep
+end
+
+-- the kills the HUD shows after a stage that counts kills ended: never fewer than the stage's own count (a mark that
+-- vanished without a death event, or a kill the death event missed, must not leave the counter short)
+function M.stageKills(killed, base, count)
+	return max(killed or 0, (base or 0) + (count or 0))
+end
+
 -- ------------------------------------------------------------------------------------------------ the room
 function M.layout(slot)
 	local r = M.cfg().room

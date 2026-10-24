@@ -38,7 +38,7 @@ dressed per family at run time (`trials_config.lua families`), like the ascensio
 composed from a small set: **waves** of thralls (4 / 5 / 6 per wave, one extra wave per tier above Normal), **stillness**
 (standing on one tile for 3 s with the guardian alive is punished by a slam), **zones** (marked tiles burst after 1.5 s),
 **adds** (the guardian calls thralls), **enrage** (+50% hits below 30% health), **seals** (stand on the named seal for
-2.5 s), **marks** (fast targets that must die in 16 / 13 / 10 s or they escape and cost 20 s of the clock), **pyre** (every
+2.5 s), **marks** (fast targets that must die in 16 / 13 / 10 s of not being hurt or they escape and cost 20 s of the clock; at most 3 escapes per run, then a mark stays until it dies), **pyre** (every
 11 s the fire sweeps the room; a sanctuary light protects those within one tile), **rise** (a dead thrall stands up once
 with 60% health, 60% of the time). Stillness, zones, adds and enrage only run in the guardian fight.
 

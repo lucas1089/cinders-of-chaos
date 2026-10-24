@@ -44,6 +44,7 @@ return {
 	pyreEvery = 11000, pyreWarn = 2600, pyreSafe = 3, -- "pyre": the fire sweeps the room except next to the safe tiles
 	sealChargeMs = 2500, sealPenaltyShare = 0.25, -- "seals": time to stand on the right seal; a wrong one hurts
 	markPenaltySeconds = 20, -- "marks": a mark that got away costs this much of the clock
+	markMaxFlees = 3, -- "marks": an untouched mark flees at most this often in a run, then it stays until it dies (O187)
 	riseChance = 60, riseDelayMs = 2500, riseHp = 0.6, -- "rise": the dead stand up once
 	shieldSeconds = 4, -- after a lost life: monsters cannot hurt the player
 	tickMs = 500,
