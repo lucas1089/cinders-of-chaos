@@ -372,7 +372,13 @@ local function spawnPlan(run, plan, rng)
 		end
 		local monster
 		for _ = 1, 6 do
-			monster = Game.createMonster(name, randomInnerPos(run.slot, rng), false, true)
+			-- O168: the floor's level goes to monster_levels.lua (Chaos.spawnLevel) so "[level]" follows the floor; a plain
+			-- Game.createMonster showed the species' own level whatever the floor
+			if Chaos.createMonsterNamed then
+				monster = Chaos.createMonsterNamed(name, randomInnerPos(run.slot, rng), false, true, nil, s.level)
+			else
+				monster = Game.createMonster(name, randomInnerPos(run.slot, rng), false, true)
+			end
 			if monster then
 				break
 			end

@@ -3461,6 +3461,15 @@ tower stays well under an hour of hunting (the tower is for points and rewards).
 shows no label, nothing else breaks). No SQL, no engine patch. New storage block 7102820. Not modeled: the player's armour and
 resistances, damage taken in the tower, and uptime beyond the factors in the config. Computed, not measured in game.
 
+
+**Monster level follows the floor (O168, beta 2026-10-24: "level does not scale").** The tower made its monsters with a
+plain `Game.createMonster`, so `monster_levels.lua` showed the species' own level (the same on floor 1 and floor 100),
+although health, damage and drops already followed the floor. `B.level` (the `level` curve, the level the floor is
+meant for, the one the health is derived from) is now in every spawn of `B.plan`, and `infinitytower_run.lua` creates
+each monster with `Chaos.createMonsterNamed(..., nil, level)`, so `Chaos.spawnLevel` shows "[level]" in the first
+creature packet (engine patch 0044 lets it win over a level of the monster's own). The level is the floor's, not the
+players'. Tests: `infinitytower_run_test.lua`, `infinitytower_balance_test.lua`. Server restart, no client change.
+
 ## Infinity Tower season rewards (`infinitytower.lua`, `infinitytower_core.lua`, `Chaos.tower` in `chaos_constants.lua`)
 
 The client window's "Top Rank Rewards" podium (Gold, Silver and Copper Tower Chest) is paid at the end of every tower

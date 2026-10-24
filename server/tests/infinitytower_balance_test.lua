@@ -29,6 +29,19 @@ for _, name in ipairs({"count", "magic", "rare", "legendary", "level", "clear", 
 	end
 end
 
+-- ---- O168: the level shown after the name follows the floor's level curve
+eq(B.level(C, 1), 100, "floor 1: level 100")
+eq(B.level(C, 15), 420, "floor 15: between 300 and 540")
+eq(B.level(C, 500), 2200, "past the curve: its last level")
+for f = 2, 120 do
+	ok(B.level(C, f) >= B.level(C, f - 1), "the level never falls with the floor " .. f)
+end
+for _, f in ipairs({1, 10, 25, 50}) do
+	for _, s in ipairs(B.plan(C, f, 2, function() return 1 end).spawns) do
+		eq(s.level, B.level(C, f), "every spawn of floor " .. f .. " carries the floor's level")
+	end
+end
+
 -- ---- floors
 eq(B.count(C, 1, 1), 4, "floor 1 has 4 monsters")
 eq(B.count(C, 1, 3), 8, "two more players add perPlayer each")

@@ -85,6 +85,15 @@ function B.bossHealth(cfg, floor)
 	return floorNum(value)
 end
 
+-- the level shown after the name of a monster of the floor ("[level]"): the level the floor is meant for (cfg.level),
+-- the one the health curve is derived from; monster_levels.lua shows it through Chaos.spawnLevel (O168)
+function B.level(cfg, floor)
+	if not cfg.level then
+		return nil
+	end
+	return math.max(1, floorNum(B.curve(cfg.level, floor) + 0.5))
+end
+
 function B.damage(cfg, floor)
 	return B.curve(cfg.damage, floor)
 end
@@ -134,13 +143,15 @@ function B.plan(cfg, floor, players, rng)
 	local boss = B.isBoss(cfg, floor)
 	local plan = {floor = floor, boss = boss, spawns = {}}
 	if boss then
-		plan.spawns[1] = {name = B.bossAt(cfg, floor).name, boss = true, health = B.bossHealth(cfg, floor), damage = 1}
+		plan.spawns[1] = {name = B.bossAt(cfg, floor).name, boss = true, health = B.bossHealth(cfg, floor), damage = 1,
+			level = B.level(cfg, floor)}
 		count = floorNum(count / cfg.bossHelperDivisor)
 	end
-	local health, damage = B.health(cfg, floor), B.damage(cfg, floor)
+	local health, damage, level = B.health(cfg, floor), B.damage(cfg, floor), B.level(cfg, floor)
 	for _ = 1, count do
 		local tier = B.tierRoll(cfg, floor, rng(100))
-		plan.spawns[#plan.spawns + 1] = {name = pool[rng(#pool)], tier = tier, health = health, damage = damage}
+		plan.spawns[#plan.spawns + 1] = {name = pool[rng(#pool)], tier = tier, health = health, damage = damage,
+			level = level}
 	end
 	return plan
 end

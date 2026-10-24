@@ -44,7 +44,7 @@ function Game.createItem(id, count, p) local t = tiles[key(p)]; if t then t:addI
 local created = {}
 function Game.createMonster(name, pos)
   nextId = nextId + 1
-  local m = {id = nextId, name = name, events = {}, removed = false, hp = 1000, maxHp = 1000}
+  local m = {spawnLevel = Chaos.spawnLevel, id = nextId, name = name, events = {}, removed = false, hp = 1000, maxHp = 1000}
   function m:getId() return self.id end
   function m:getMaxHealth() return self.maxHp end
   function m:setMaxHealth(v) self.maxHp = v end
