@@ -565,6 +565,67 @@ do
 	dg4.SpawnMonsters, dg4.Monsters = nil, nil
 end
 
+-- ------------------------------------------------------------------ O180: stuck at 83% with monsters nobody finds
+-- Owner 2026-10-24: "the first dungeon: stuck at 83% with 20 monsters alive, I can't find any more". The total is what
+-- actually stood in the area (a failed Game.createMonster is not counted); when the percent stops moving the members get
+-- the positions of the nearest remaining monsters, and past Chaos.dungeons.stall.minPercent the boss is unlocked anyway.
+do
+	local onSpawn = EventCallback.onSpawn
+	for id, cr in pairs(creatures) do
+		if not cr:isPlayer() and id < 100000 then cr:remove() end
+	end
+	advance(3000)
+	local rec = ChaosDungeonMapSpawns[4]
+	for i = #rec, 1, -1 do rec[i] = nil end
+	for i = 1, 10 do
+		rec[#rec + 1] = {name = "cave rat " .. i, pos = {x = 31540 + i, y = 31561, z = 8}}
+	end
+	local calls, nextId = 0, 5000
+	Game.createMonster = function(name, pos)
+		calls = calls + 1
+		if calls <= 2 then return nil end -- two spawns fail (blocked)
+		nextId = nextId + 1
+		return newCreature(nextId, name, P(pos.x, pos.y, pos.z), false)
+	end
+	local x4 = Chaos.dungeons.extra[4]
+	local unlocked = 0
+	x4.unlock = function() unlocked = unlocked + 1 end
+	local q = newCreature(95, "Stuck", P(32369, 32241, 7), true)
+	local from = #sent
+	ext.onExtendedOpcode(q, ChaosOpcodes.dungeons, {action = "queue", data = {id = 4, difficulty = 1}})
+	ok(ChaosDungeonIsInside(q), "O180: the run is on")
+	local st
+	for i = from + 1, #sent do
+		if sent[i].action == "start" then st = sent[i].data end
+	end
+	eq(st and st.left, 8, "O180: the total is what really stood there (2 failed spawns are not counted)")
+	local mons = {}
+	for _, cr in pairs(creatures) do
+		if cr:isMonster() then mons[#mons + 1] = cr end
+	end
+	table.sort(mons, function(a, b) return a.id < b.id end)
+	-- 3 of 8 killed: 37%, below the stall threshold (60%): a hint, no unlock
+	for i = 1, 3 do mons[i]:remove() end
+	advance(160000)
+	eq(unlocked, 0, "O180: below minPercent the boss stays locked")
+	local hinted = false
+	for _, m in ipairs(q.msgs) do
+		if m:find("monsters are left", 1, true) then hinted = true end
+	end
+	ok(hinted, "O180: the members are told where the nearest remaining monsters stand")
+	-- 3 more killed: 75%, then it stalls: the last 2 are written off
+	for i = 4, 6 do mons[i]:remove() end
+	advance(4000)
+	eq(unlocked, 0, "O180: 75% is not enough by itself")
+	advance(160000)
+	eq(unlocked, 1, "O180: a stalled run past minPercent unlocks the boss")
+	advance(30000)
+	eq(unlocked, 1, "O180: once")
+	q.pos = P(temple.x, temple.y, temple.z)
+	advance(4000)
+	x4.unlock = nil
+end
+
 -- ------------------------------------------------------------------ beta test mode: no dungeon cooldown
 do
 	local before = Chaos.betaMode

@@ -986,6 +986,53 @@ local function unlockBoss(run, extra, percent, left)
 	end
 end
 
+-- stuck safety (O180): the percent has not moved for cfg.stall.seconds. Tell the members where the nearest remaining
+-- monsters stand, and past minPercent unlock the boss (the rest are written off, e.g. on tiles nobody reaches).
+local function stallCheck(run, extra, percent, left, monsterList, bossName)
+	local st = cfg.stall
+	local now = nowMs()
+	run.progressAt = run.progressAt or run.startedAt
+	if not st or left <= 0 or now - run.progressAt < st.seconds * 1000 then
+		return
+	end
+	if percent >= st.minPercent then
+		run.unlocked = true
+		local boss = tostring(extra.bossName or "the boss"):gsub("(%a)([%w'%-]*)", function(a, b) return a:upper() .. b end)
+		for _, p in ipairs(memberPlayers(run)) do
+			send(p, "killed", {unlocked = true, percent = percent, left = left})
+			p:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(p, "The last %d monsters could not be found. Boss unlocked: %s awaits you.", left, boss))
+		end
+		if extra.unlock then
+			pcall(extra.unlock, run.dungeonId)
+		end
+		return
+	end
+	if run.hintAt and now - run.hintAt < st.hintEveryMs then
+		return
+	end
+	run.hintAt = now
+	local alive = {}
+	for _, m in ipairs(monsterList) do
+		if run.roster and run.roster[m:getId()] and not (bossName and m:getName():lower() == bossName) then
+			alive[#alive + 1] = m
+		end
+	end
+	for _, p in ipairs(memberPlayers(run)) do
+		local pp = p:getPosition()
+		table.sort(alive, function(a, b)
+			local pa, pb = a:getPosition(), b:getPosition()
+			return math.abs(pa.x - pp.x) + math.abs(pa.y - pp.y) < math.abs(pb.x - pp.x) + math.abs(pb.y - pp.y)
+		end)
+		local parts = {}
+		for i = 1, math.min(st.hintMax or 5, #alive) do
+			local q = alive[i]:getPosition()
+			parts[#parts + 1] = string.format("%d,%d,%d", q.x, q.y, q.z)
+			q:sendMagicEffect(CONST_ME_TELEPORT or 11)
+		end
+		p:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(p, "%d monsters are left. Nearest: %s", #alive, table.concat(parts, "  ")))
+	end
+end
+
 local function tryMatch(id)
 	local dg = baseDungeons()[id]
 	local list = queues[id]
@@ -1110,12 +1157,16 @@ tick = function()
 				percent = math.max(percent, run.lastPercent)
 				if percent ~= run.lastPercent then
 					run.lastPercent = percent
+					run.progressAt = nowMs()
 					for _, p in ipairs(memberPlayers(run)) do
 						send(p, "killed", {percent = percent, left = monsters})
 					end
 				end
 				if not run.unlocked and percent >= cfg.progressNeeded then
 					unlockBoss(run, extra, percent, monsters)
+				end
+				if not run.unlocked and not run.ended then
+					stallCheck(run, extra, percent, monsters, monsterList, bossName)
 				end
 				-- boss seen earlier and gone now (killed by someone onKill did not credit)
 				if run.bossSeen and bosses == 0 and run.unlocked then

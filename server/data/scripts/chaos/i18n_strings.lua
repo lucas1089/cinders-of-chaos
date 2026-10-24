@@ -208,6 +208,10 @@ return {
 		-- the queue dungeons (dungeons.lua unlockBoss)
 		["Boss unlocked! %d%% of the monsters are dead: %s awaits you."] =
 			"Boss liberado! %d%% dos monstros estão mortos: %s espera por você.",
+		-- stuck safety (dungeons.lua, O180)
+		["%d monsters are left. Nearest: %s"] = "Restam %d monstros. Mais perto: %s",
+		["The last %d monsters could not be found. Boss unlocked: %s awaits you."] =
+			"Os últimos %d monstros não foram encontrados. Boss liberado: %s espera por você.",
 		-- the boss chest of a generated dungeon (areagen.lua AG.giveChest)
 		["Boss chest of %s: %d gold to your bank%s%s.%s"] = "Baú do chefe de %s: %d de ouro no seu banco%s%s.%s",
 		[" Your backpack was full: the rest is in your inbox."] = " Sua mochila estava cheia: o resto está na sua caixa de entrada.",

@@ -592,6 +592,11 @@ Chaos.dungeons = {
 	-- get "Boss unlocked!", a generated dungeon (areagen.lua) opens its boss room gate and spawns its boss; a run is won
 	-- when the boss dies after that (dungeons.lua unlockBoss)
 	progressNeeded = 85,
+	-- stuck safety (O180, owner 2026-10-24: "stuck at 83% with 20 monsters alive, can't find them"): when the kill percent
+	-- has not moved for `seconds`, the members are told where the nearest remaining monsters stand (a text line and an
+	-- effect on their tiles, every `hintEveryMs`, at most `hintMax`); once the percent is at least `minPercent` the boss is
+	-- unlocked anyway (the rest may stand where nobody can reach them), so a map flaw never blocks a run
+	stall = {seconds = 150, minPercent = 60, hintEveryMs = 30000, hintMax = 5},
 	-- area = {{from, to}, ...}: boxes that belong to the dungeon next to the base FromPos/ToPos box (dungeons.lua areaOf),
 	-- for the parts that box misses: measured on the base map and its boss scripts (server/README.md "dungeons")
 	extra = {

@@ -1218,6 +1218,13 @@ Solo dungeons (O147, beta feedback 2026-10-22: "dungeons need two players; my te
   fewer. Estimate, not measured live: 0.1-0.3 ms per `Game.createMonster` with its `onSpawn` callbacks, so 120 monsters
   take about 12-40 ms in one tick (one dropped frame of the 50 ms loop at worst), plus the health scaling (about 2 ms).
   No install step: scripts only (`files` step and a restart).
+- **Stuck safety (O180, owner: "stuck at 83% with 20 monsters alive").** The percent is a scan of the area, so an alive
+  monster nobody can reach (a map spawn behind a wall or in a closed room of dungeon 1's widened boxes) keeps it below 85%.
+  `Chaos.dungeons.stall` (`seconds` 150, `minPercent` 60, `hintEveryMs` 30000, `hintMax` 5): with no progress for that
+  long the members get "N monsters are left. Nearest: x,y,z ..." and an effect on those tiles, and from `minPercent` on
+  the boss is unlocked anyway (`stallCheck`). Kill credit is not involved; summons are not counted; a monster removed
+  without a death is gone from the scan. The real cause on the live map is not confirmed: run dungeon 1 and read the hint
+  coordinates, they are the unreachable spawns (fix them with a `patch_*.py`, never by hand).
 
 Beta test mode (O147)
 - `Chaos.betaMode` = `data/scripts/chaos/beta_mode_config.lua` (`enabled`, default **false**), read when the scripts start
