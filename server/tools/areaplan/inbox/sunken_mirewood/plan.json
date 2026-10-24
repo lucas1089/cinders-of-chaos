@@ -1,0 +1,134 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "sunken_mirewood",
+  "name": "Sunken Mirewood",
+  "biome": "swamp",
+  "size": [
+    84,
+    64
+  ],
+  "floors": 1,
+  "level": [
+    480,
+    540
+  ],
+  "seed": 50031,
+  "decoration": "normal",
+  "light": "dim",
+  "zones": [
+    {
+      "id": "camp",
+      "floor": 1,
+      "shape": "room",
+      "size": "small",
+      "place": "west",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "reeds",
+      "floor": 1,
+      "shape": "cave",
+      "size": "large",
+      "place": "northwest",
+      "role": "hunt"
+    },
+    {
+      "id": "bog",
+      "floor": 1,
+      "shape": "cave",
+      "size": "large",
+      "place": "center",
+      "role": "hunt"
+    },
+    {
+      "id": "drowned",
+      "floor": 1,
+      "shape": "room",
+      "size": "medium",
+      "place": "south",
+      "role": "hunt"
+    },
+    {
+      "id": "lair",
+      "floor": 1,
+      "shape": "arena",
+      "size": "medium",
+      "place": "east",
+      "role": "boss"
+    }
+  ],
+  "paths": [
+    {
+      "from": "camp",
+      "to": "reeds",
+      "width": 3
+    },
+    {
+      "from": "reeds",
+      "to": "bog",
+      "width": 3
+    },
+    {
+      "from": "bog",
+      "to": "drowned",
+      "width": 3
+    },
+    {
+      "from": "camp",
+      "to": "drowned",
+      "width": 2
+    },
+    {
+      "from": "bog",
+      "to": "lair",
+      "width": 3
+    }
+  ],
+  "entry": {
+    "zone": "camp"
+  },
+  "exit": {
+    "zone": "camp"
+  },
+  "spawns": [
+    {
+      "zone": "reeds",
+      "monster": "Lochtag",
+      "count": 6,
+      "pack": 2,
+      "respawn": 90
+    },
+    {
+      "zone": "bog",
+      "monster": "Hodag",
+      "count": 6,
+      "pack": 2,
+      "respawn": 90
+    },
+    {
+      "zone": "bog",
+      "monster": "Babayaga",
+      "count": 3,
+      "respawn": 120
+    },
+    {
+      "zone": "drowned",
+      "monster": "Nightfang Widow",
+      "count": 5,
+      "pack": 2,
+      "respawn": 120
+    }
+  ],
+  "boss": {
+    "zone": "lair",
+    "monster": "Malvorn the Hollow King"
+  },
+  "npcs": [
+    {
+      "zone": "camp",
+      "name": "Wandering Merchant"
+    }
+  ],
+  "notes": "Smoke plan of the map inbox: a swamp hunt for level 500 with three hunting rooms and a boss at the end."
+}

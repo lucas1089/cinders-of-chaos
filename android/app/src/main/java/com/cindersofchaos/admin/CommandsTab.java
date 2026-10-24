@@ -229,6 +229,7 @@ final class CommandsTab {
         buildServices();
         buildTesters();
         buildSiteClient();
+        buildMapInbox();
     }
 
     // XP rate: config.lua experienceStages = the release's stages x N (chaos-ctl.sh xp-rate)
@@ -734,6 +735,27 @@ final class CommandsTab {
         b.addView(ui.hint("A versão publicada, a release mais nova e a release dos downloads aparecem em Painel > "
                 + "Atualizar servidor > Verificar. Quem baixou o pacote do site e vê um update por cima dele precisa "
                 + "deste botão: o pacote do site é o que ele baixa."), ui.gap(6));
+        quick.addView(c, ui.gap(10));
+    }
+
+    // the map inbox: areas asked for in chat, published for the map editor on the owner's PC (docs/MAP_GUIDE.md "Map inbox")
+    private void buildMapInbox() {
+        MaterialCardView c = ui.titledCard("Mapas pedidos");
+        LinearLayout b = Ui.body(c);
+        MaterialButton pub = ui.primary("Publicar áreas", R.drawable.ic_send);
+        pub.setOnClickListener(v -> a.confirm("Publicar as áreas pedidas?", "Monta os arquivos do editor de mapas (as áreas "
+                + "pendentes e aprovadas da pasta inbox do repositório na VPS) e mostra o endereço para o fetch-areas.bat "
+                + "do Windows. Não reinicia nada e não mexe no mapa do jogo.", "Publicar", false,
+                () -> ctl("Publicar áreas", "areas-publish", 120, null)));
+        MaterialButton rot = ui.secondary("Novo endereço", 0);
+        rot.setOnClickListener(v -> a.confirm("Trocar o endereço das áreas?", "Cria um endereço novo e apaga a pasta do "
+                + "antigo. Depois disso o fetch-areas.bat precisa do endereço novo.", "Trocar", false,
+                () -> ctl("Novo endereço das áreas", "areas-publish --rotate", 120, null)));
+        b.addView(ui.evenRow(pub, rot));
+        b.addView(ui.hint("Fluxo: peça a área no chat, o Claude gera e manda para o repositório; depois de unir na main e "
+                + "atualizar o servidor (Painel > Atualizar servidor), toque em Publicar áreas, copie a linha url= "
+                + "(toque em copiar no resultado) e rode fetch-areas.bat no Windows. O endereço é secreto: quem o tem "
+                + "baixa as áreas, que não têm nada sigiloso."), ui.gap(6));
         quick.addView(c, ui.gap(10));
     }
 

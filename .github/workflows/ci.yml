@@ -589,6 +589,8 @@ jobs:
           # system numpy: place reads maps with tools/map/otbm.py (python3 -I does not see pip's user site)
           sudo apt-get install -y -qq python3-numpy
           python3 -I server/tools/area_planner_test.py
+          python3 -I server/tools/area_inbox_test.py   # the map inbox (O192): new, build (deterministic), publish, promote
+          python3 -I server/tools/area_inbox.py check  # every inbox entry validates and compiles
           python3 -I server/tools/gen_spawn_density_test.py   # the hunt fill (tools/spawn_density.json); same numpy
           d=$(mktemp -d)
           for p in server/tools/areaplan/examples/*.json server/tools/areaplan/plans/*.json server/tools/areaplan/events/*.json; do

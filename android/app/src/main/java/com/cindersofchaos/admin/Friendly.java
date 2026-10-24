@@ -165,6 +165,11 @@ final class Friendly {
         if (t.startsWith("started (publish-update")) {
             return "Começou a publicar o update do client. Acompanhe em Logs, Atualização, log da publicação.";
         }
+        if (t.startsWith("areas-published") || t.contains("\nareas-published")) {
+            Matcher u = Pattern.compile("(?m)^url=(\\S+)").matcher(t);
+            return "Áreas publicadas. Endereço para o fetch-areas.bat: " + (u.find() ? u.group(1) : "veja os detalhes")
+                    + "  (copie pelo botão de copiar do resultado)";
+        }
         if (t.startsWith("kit-not-found")) {
             return "Essa função é do kit Linux (/opt/chaos-trial). Escreva CHAOS_KIT_DIR=/opt/chaos-trial em "
                     + "/etc/chaos/ctl.conf.";
