@@ -13,6 +13,359 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # server-tests, art and native split out of the one serial job so the run takes the longest of them, not the sum;
+  # steps are moved verbatim, only the two unit test loops run in parallel (every test is its own process and
+  # writes only under its own os.tmpname)
+  server-tests:
+    name: Server and client unit tests (Lua 5.3 and LuaJIT, parallel)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Lua 5.3 and LuaJIT
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq lua5.3 luajit
+
+      - name: Server unit tests (mocked engine API)
+        run: |
+          cd server
+          log=$(mktemp -d)
+          set -- tests/*_test.lua
+          # shellcheck disable=SC2016
+          printf '%s\n' "$@" | xargs -P "$(nproc)" -I{} sh -c '
+            t="$1"; l="$2/$(echo "$t" | tr / _).log"
+            { echo "== luajit $t"; luajit "$t" && echo "== lua5.3 $t" && lua5.3 "$t"; } > "$l" 2>&1 \
+              && rm -f "$l" || echo "$t" >> "$2/FAILED"
+          ' _ {} "$log"
+          if [ -s "$log/FAILED" ]; then
+            sort "$log/FAILED" | while IFS= read -r t; do
+              echo "::group::FAILED $t"
+              cat "$log/$(echo "$t" | tr / _).log"
+              echo "::endgroup::"
+            done
+            echo "FAILED: $(wc -l < "$log/FAILED") of $# server tests (output above)"
+            exit 1
+          fi
+
+      - name: Client unit tests (modules without client API)
+        run: |
+          log=$(mktemp -d)
+          set -- client/overlay/modules/*/*_test.lua
+          # shellcheck disable=SC2016
+          printf '%s\n' "$@" | xargs -P "$(nproc)" -I{} sh -c '
+            t="$1"; l="$2/$(echo "$t" | tr / _).log"
+            { echo "== luajit $t"; luajit "$t" && echo "== lua5.3 $t" && lua5.3 "$t"; } > "$l" 2>&1 \
+              && rm -f "$l" || echo "$t" >> "$2/FAILED"
+          ' _ {} "$log"
+          if [ -s "$log/FAILED" ]; then
+            sort "$log/FAILED" | while IFS= read -r t; do
+              echo "::group::FAILED $t"
+              cat "$log/$(echo "$t" | tr / _).log"
+              echo "::endgroup::"
+            done
+            echo "FAILED: $(wc -l < "$log/FAILED") of $# client tests (output above)"
+            exit 1
+          fi
+
+  art:
+    name: Sprite and art generators (pinned Pillow and numpy, wiki art, spectator, cast relay)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Lua 5.3 and LuaJIT
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq lua5.3 luajit
+
+      - name: Outfit layer composer (compose_outfit.py on synthetic things, import round trip), outfit anchors
+        run: |
+          # system packages: python3 -I does not see pip's user site
+          sudo apt-get install -y -qq python3-numpy python3-pil
+          python3 -I client/tools/sprites/compose_outfit_test.py
+          # the character select's anchors: centre, ground row, floating looks (synthetic figures)
+          python3 -I client/tools/sprites/gen_outfit_anchors_test.py
+          # names over tall looks: body top, gap and lift (synthetic figures)
+          python3 -I client/tools/sprites/gen_info_lift_test.py
+          # class effect strips and spec match the generator; Pillow's polygon fill differs between versions, so the
+          # check runs on the versions the strips were made with (gen_class_fx.py docstring)
+          python3 -m venv /tmp/fxenv
+          /tmp/fxenv/bin/pip install --quiet pillow==12.3.0 numpy==2.5.3
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_class_fx.py build --check
+          # pair 36 effects: specs, sources and sums agree, names free, missiles uint8 (the pack art is never in git)
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack36_fx.py build --check
+          # send offsets of the pair 36 effects redrawn in place (server/data/lib/chaos_fx_send_offsets.lua)
+          python3 -I client/tools/sprites/gen_fx_send_offsets.py --check
+          python3 -I client/tools/sprites/gen_fx_send_offsets_test.py
+          # themed sets, auras, wings and grounds of things_custom24: atlases and spec match the generator (same pins)
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_theme_art.py build --check
+          python3 -I server/tools/install_theme_items.py --lua --check
+          # pack effect cuts: spec and sums match gen_pack_fx.py's table (the art set and the strips are not in git)
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack_fx.py build --check
+          # pack farming spell effects (pair 27 trial): spec and sums match gen_pack27_fx.py's table (sets not in git)
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack27_fx.py build --check
+          # Mystic line effects, Tier B (pair 29): spec, sums and sources match gen_pack29_fx.py's table (sets not in git)
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack29_fx.py build --check
+          # condition auras, blasts, missiles, fireworks and hit splashes of pair 29 (the VFX packs, not in git)
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack29_vfx.py build --check
+          # third-party art of pair 30 (set30 packs, import-only, not in git): spec, sums and sources match each generator's tables
+          python3 -I client/tools/sprites/pack30lib_test.py
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack30_looks.py build --check
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack30_looks_test.py
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack30_strips.py build --check
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack30_strips_test.py
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack30_grounds.py build --check
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack30_grounds_test.py
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack30_decor.py build --check
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack30_decor_test.py
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack30_bldg.py build --check
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack30_bldg_test.py
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack30_anim.py build --check
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack30_anim_test.py
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack30_items.py build --check
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack30_items_test.py
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack30_fx.py build --check
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack30_fx_test.py
+          # the pair 33 packs (import-only, sheets not in git): the committed tables agree with each other, and the
+          # server's generated wings / head accessories / capes (ids, prices, aura manifest) match them
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack33.py build --check
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack33_test.py
+          python3 -I server/tools/gen_pack33_cosmetics.py --check
+          # the owner's outfits of pair 37 (.obd files, source pack unnamed; sheets not in git): things file, sums,
+          # sources and the server's look list agree; the .obd reader and the sheet layout on synthetic files
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack37_looks.py build --check
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack37_looks_test.py
+          # the creature palette pass of pair 40 (pair not in git): the report lists the target looks with their
+          # status; the palette, accent guard, despeckle and mask rules on synthetic sprites
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_creature_palette.py build --check
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_creature_palette_test.py
+          # the Archmage of pair 29 (our own rig art): things file and sheet sums match class_art.py (no render)
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_archmage_art.py build --check
+          # large soft effects: a full render (about 2 minutes) against the spec and the pixel sums (strips not in git)
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_big_fx.py build --check
+          # gem looks (the owner's gem set): atlas, things spec and the Codex strips match the generator (same pins)
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_gem_art.py build --check
+          # status words (the owner's text effect set): the spec matches the strips and the PICKS table
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_status_fx.py build --check
+          # the store item looks of pair 34 (our pouch and ration art snapped to theme palettes): atlas and things file
+          # match the generator, and each look passes style_check against its theme
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_store_items_art.py build --check
+          # the orb looks of pair 38 (orbs drawn in code, no rune sprite): atlas and things file match the generator,
+          # and each look passes style_check against its theme
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_orb_items_art.py build --check
+          # the jewelry looks of pair 35 (icon set picks): things file, atlas size and chaos_jewelry.lua bases agree
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_jewelry_art.py build --check
+          # the owner's art of pair 26 (monster looks, wings, decoration): sheets, things file and picks match the spec
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_owner_art.py build --check
+          python3 -I client/tools/sprites/gen_owner_art_test.py
+          python3 -I server/tools/install_owner_decor.py --lua --check
+          python3 -I server/tools/install_owner_decor_test.py
+          # catacomb kit (pair 27 trial): spec, sources and picks match gen_assets_art.py's tables (kit files not in git)
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_assets_art.py build --check
+          python3 -I client/tools/sprites/gen_assets_art_test.py
+          python3 -I server/tools/install_assets_decor.py --lua --check
+          python3 -I server/tools/install_assets_decor_test.py
+          # equipment sets of pair 28 (the owner's sheets): atlases, things file and the generated pieces match the spec
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_gear_sets_art.py build --check
+          python3 -I client/tools/sprites/gen_gear_sets_art_test.py
+          python3 -I server/tools/install_gear_sets.py --lua --check
+          python3 -I server/tools/install_gear_sets_test.py
+          # pack art of pair 30 (import-only): item installer, generated item Lua and Hideout list match the manifests (none yet: empty)
+          python3 -I server/tools/install_pack30_items.py --lua --check
+          python3 -I server/tools/install_pack30_items.py --hideout-lua --check
+          python3 -I server/tools/install_pack30_items_test.py
+          # harvest kit of pair 33 (import-only) and the Haunted Harvest's items: the server manifest and the kit Lua
+          # follow the things file; installer and event items on a synthetic items.otb
+          python3 -I server/tools/install_pack33_items.py --manifest --check
+          python3 -I server/tools/install_pack33_items.py --lua --check
+          python3 -I server/tools/install_pack33_items_test.py
+          python3 -I server/tools/install_orbs_test.py  # renamed orb names; base names that hold one are kept
+          # sprite style checker (docs/SPRITE_STYLE.md): palettes and thresholds match the owner's gear sheets,
+          # synthetic sprites pass or fail for the right reason, the seven sheets pass their own themes
+          /tmp/fxenv/bin/python -I client/tools/sprites/style_check.py build-palettes --check
+          /tmp/fxenv/bin/python -I client/tools/sprites/style_check_test.py
+          python3 -I client/tools/sprites/donor_pick_test.py
+
+      - name: Website wiki art is up to date with the wiki data (gen_wiki_art.py)
+        # icons, guide heroes and tab banners; the same pinned Pillow and numpy as the art checks above (WebP bytes)
+        run: /tmp/fxenv/bin/python -I website/tools/gen_wiki_art.py --check
+
+      - name: Dungeon banners match their plan and the dungeon maps (gen_dungeon_banners.py, no pair)
+        # the plan's tiles, boss and monsters against a fresh areagen dump (LuaJIT), the banners' pixels against the plan
+        run: /tmp/fxenv/bin/python -I client/tools/gen_dungeon_banners.py --check
+
+      - name: Class look art (class_art.py sheets read back by the importer, quick renders, import round trip)
+        run: python3 -I client/tools/outfit_art/class_art_test.py
+
+      - name: Website sprite images (gen_sprite_images_test.py; outfit colours on hand-made masks, a synthetic pair)
+        run: python3 -I website/tools/gen_sprite_images_test.py
+
+      - name: Live spectator renderer (spectate_render_test.py; a synthetic pair, draw order, outfits, the pair archive)
+        run: python3 -I server/tools/spectate_render_test.py
+
+      - name: Live cast relay (cast_relay_test.py; synthetic frames for every opcode, sheets, the loop, a fuzz)
+        run: python3 -I server/tools/cast_relay_test.py
+
+  native:
+    name: Native checks (C++ vectors, OpenSSL, fuzz harnesses, Rust services)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Refresh the apt index (the steps below install -dev packages)
+        run: sudo apt-get update -qq
+
+      - name: Display scale, pure parts (C++; header from server src-patch 0037)
+        run: |
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/chaosdisplay\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            server/src-patches/0037-display-scale.patch > "$d/chaosdisplay.h"
+          g++ -std=c++17 -Wall -Wextra -I "$d" server/tools/chaosdisplay_test.cpp -o "$d/chaosdisplay_test"
+          "$d/chaosdisplay_test"
+
+      - name: Incremental save, pure parts (C++; header from server src-patch 0026)
+        run: |
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/chaossave\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            server/src-patches/0026-incremental-save.patch > "$d/chaossave.h"
+          g++ -std=c++17 -Wall -Wextra -I "$d" server/tools/chaossave_test.cpp -o "$d/chaossave_test"
+          "$d/chaossave_test"
+
+      - name: Respawn zones index (C++; header from server src-patch 0027)
+        run: |
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/chaoszones\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            server/src-patches/0027-game-loop-stalls.patch > "$d/chaoszones.h"
+          g++ -std=c++17 -Wall -Wextra -I "$d" server/tools/chaoszones_test.cpp -o "$d/chaoszones_test"
+          "$d/chaoszones_test"
+
+      - name: Login reads prefetch (C++; header from server src-patch 0031)
+        run: |
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/chaosprefetch\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            server/src-patches/0031-login-reads-prefetch.patch > "$d/chaosprefetch.h"
+          g++ -std=c++17 -Wall -Wextra -I "$d" server/tools/chaosprefetch_test.cpp -o "$d/chaosprefetch_test"
+          "$d/chaosprefetch_test"
+
+      - name: Tester bots never counted online (C++; header from server src-patch 0059)
+        run: |
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/chaostesters\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            server/src-patches/0059-tester-bots-not-counted.patch > "$d/chaostesters.h"
+          g++ -std=c++17 -Wall -Wextra -I "$d" server/tools/chaostesters_test.cpp -o "$d/chaostesters_test"
+          "$d/chaostesters_test"
+
+      - name: Send offsets of the in-place effects in the engine (C++; header from server src-patch 0060)
+        run: |
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/chaosfxoffsets\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            server/src-patches/0060-fx-send-offsets.patch > "$d/chaosfxoffsets.h"
+          g++ -std=c++17 -Wall -Wextra -I "$d" server/tools/chaosfxoffsets_test.cpp -o "$d/chaosfxoffsets_test"
+          "$d/chaosfxoffsets_test"
+
+      - name: Live cast, pure parts (C++; header from server src-patch 0064)
+        run: |
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/chaoscast\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            server/src-patches/0064-live-cast.patch > "$d/chaoscast.h"
+          g++ -std=c++17 -Wall -Wextra -I "$d" server/tools/chaoscast_test.cpp -o "$d/chaoscast_test"
+          "$d/chaoscast_test"
+
+      - name: Client updater signature vectors (C++, OpenSSL; header from base patch 0031)
+        run: |
+          d=$(mktemp -d)
+          awk '/^--- a\/src\/framework\/util\/chaosupdate\.h/{p=1} p&&/^--- a\//&&!/chaosupdate\.h/{p=0} p' \
+            client/base-patches/0031-signed-updater.patch > "$d/h.patch"
+          patch -p1 -d "$d" < "$d/h.patch"
+          g++ -std=c++17 -I "$d/src" client/tools/chaosupdate_test.cpp -lcrypto -o "$d/chaosupdate_test"
+          "$d/chaosupdate_test"
+
+      - name: Client guard handshake vectors (C++, OpenSSL; header from base patch 0035)
+        run: |
+          d=$(mktemp -d)
+          awk '/^--- a\/src\/client\/chaosguard\.h/{p=1} p&&/^--- a\//&&!/chaosguard\.h/{p=0} p' \
+            client/base-patches/0035-client-guard.patch > "$d/h.patch"
+          patch -p1 -d "$d" < "$d/h.patch"
+          g++ -std=c++17 -I "$d/src/client" client/tools/chaosguard_test.cpp -lcrypto -o "$d/chaosguard_test"
+          "$d/chaosguard_test"
+
+      - name: Client pack vectors (C++, OpenSSL, zlib; header from base patch 0102, same bytes as pack_client.py)
+        run: |
+          sudo apt-get install -y -qq zlib1g-dev
+          d=$(mktemp -d)
+          awk '/^--- a\/src\/framework\/util\/chaospack\.h/{p=1} p&&/^--- a\//&&!/chaospack\.h/{p=0} p' \
+            client/base-patches/0102-client-encrypted-pack.patch > "$d/h.patch"
+          patch -p1 -d "$d" < "$d/h.patch"
+          g++ -std=c++17 -I "$d/src" client/tools/chaospack_test.cpp -lcrypto -lz -o "$d/chaospack_test"
+          "$d/chaospack_test"
+
+      - name: Encrypted update blobs (C++, OpenSSL, PhysFS; header from base patch 0103, same bytes as update_crypt.py)
+        run: |
+          sudo apt-get install -y -qq libphysfs-dev zlib1g-dev
+          d=$(mktemp -d)
+          awk '/^--- a\/src\/framework\/util\/chaospack\.h/{p=1} p&&/^--- a\//&&!/chaospack\.h/{p=0} p' \
+            client/base-patches/0102-client-encrypted-pack.patch > "$d/h.patch"
+          awk '/^--- a\/src\/framework\/util\/chaosblob\.h/{p=1} p&&/^--- a\//&&!/chaosblob\.h/{p=0} p' \
+            client/base-patches/0103-encrypted-updates.patch >> "$d/h.patch"
+          patch -p1 -d "$d" < "$d/h.patch"
+          g++ -std=c++17 -Wall -Wextra -I "$d/src" client/tools/chaosblob_test.cpp -lcrypto -lz -o "$d/chaosblob_test"
+          "$d/chaosblob_test" "$d/overlay.zip"
+          python3 -I -c 'import sys, zipfile; z = zipfile.ZipFile(sys.argv[1]); assert z.testzip() is None; assert z.read("modules/game_x/x.lua") == b"print(1)\n"; print("store zip ok:", z.namelist())' "$d/overlay.zip"
+          mkdir -p "$d/pack/modules/game_x"
+          printf 'print("pack")\n' > "$d/pack/modules/game_x/x.lua"
+          printf 'print("other")\n' > "$d/pack/modules/game_x/other.lua"
+          g++ -std=c++17 -Wall -Wextra -I "$d/src" client/tools/chaosblob_mount_test.cpp -lcrypto -lphysfs -lz -o "$d/chaosblob_mount_test"
+          "$d/chaosblob_mount_test" "$d/pack"
+
+      - name: Big creature click maths (C++; header from base patch 0051)
+        run: |
+          d=$(mktemp -d)
+          awk '/^--- a\/src\/client\/creaturehit\.h/{p=1} p&&/^--- a\//&&!/creaturehit\.h/{p=0} p' \
+            client/base-patches/0051-big-creature-click.patch > "$d/h.patch"
+          patch -p1 -d "$d" < "$d/h.patch"
+          g++ -std=c++17 -Wall -Wextra -I "$d/src/client" client/tools/creaturehit_test.cpp -o "$d/creaturehit_test"
+          "$d/creaturehit_test"
+
+      - name: PROXY protocol parser (C++; source from server src-patch 0025)
+        run: |
+          d=$(mktemp -d)
+          awk '/^--- a\/src\/proxyprotocol\.(cpp|h)/{p=1} p&&/^--- a\//&&!/proxyprotocol\./{p=0} p' \
+            server/src-patches/0025-proxy-protocol.patch > "$d/h.patch"
+          patch -p1 -d "$d" < "$d/h.patch"
+          g++ -std=c++17 -Wall -I server/tools/proxyprotocol_stubs -I "$d/src" "$d/src/proxyprotocol.cpp" \
+            server/tools/proxyprotocol_test.cpp -o "$d/proxyprotocol_test"
+          "$d/proxyprotocol_test"
+
+      - name: Login security (RSA key tools, failed-login limits of server src-patch 0047, VPS hardening dry run)
+        run: |
+          python3 -I server/tools/rsa_key_test.py
+          python3 -I client/tools/set_rsa_key_test.py
+          d=$(mktemp -d)
+          awk '/^--- \/dev\/null/{getline n; if (n ~ /loginlimit\.h/) {p=1; print; print n; next}} p&&/^--- a\//{p=0} p' \
+            server/src-patches/0047-login-failure-limit.patch > "$d/h.patch"
+          patch -p1 -d "$d" < "$d/h.patch"
+          g++ -std=c++17 -Wall -Wextra -I "$d/src" server/tools/loginlimit_test.cpp -o "$d/loginlimit_test"
+          "$d/loginlimit_test"
+          shellcheck tools/linux/harden_vps.sh
+          python3 -I tools/linux/harden_vps_test.py
+
+      - name: Fuzz harnesses on their seed corpus (ASan + UBSan; PROXY protocol, client guard, login limit; netfuzz.py on a stand-in server)
+        run: |
+          sudo apt-get install -y -qq libcrypto++-dev libfmt-dev
+          python3 -I server/tools/fuzz/gen_corpus.py --check
+          server/tools/fuzz/build_fuzz.sh "$(mktemp -d)" --run
+          python3 -I server/tools/netfuzz_test.py
+
+      - name: Rust login-screen services (O153; clientservices-rs, unit and property tests, same cases against the Python service)
+        run: |
+          cd server/services/clientservices-rs
+          shellcheck build.sh
+          cargo fmt --check
+          cargo clippy --locked --all-targets -- -D warnings
+          cargo test --locked
+          cargo build --locked
+          python3 -I compare_test.py
+
   checks:
     runs-on: ubuntu-latest
     timeout-minutes: 25
@@ -21,6 +374,8 @@ jobs:
 
       - name: Install Lua 5.3 and LuaJIT
         run: sudo apt-get update -qq && sudo apt-get install -y -qq lua5.3 luajit
+
+      - uses: actions/checkout@v4
 
       - name: Lua syntax (Lua 5.3 and LuaJIT, the engine's interpreter)
         run: |
@@ -47,25 +402,11 @@ jobs:
           done < <(git ls-files '*.sh')
           exit $status
 
-      - name: Server unit tests (mocked engine API)
-        run: |
-          cd server
-          for t in tests/*_test.lua; do
-            luajit "$t"
-            lua5.3 "$t"
-          done
-
-      - name: Client unit tests (modules without client API)
-        run: |
-          for t in client/overlay/modules/*/*_test.lua; do
-            luajit "$t"
-            lua5.3 "$t"
-          done
-
       - name: Client modules (otmod name, scripts)
         run: |
           python3 -I tools/ci/check_modules.py
           python3 -I tools/ci/check_assembled_test.py
+
       - name: Client localization (every tr() key has pt-BR, no hard-coded UI text)
         run: python3 -I tools/ci/check_locales.py
 
@@ -154,6 +495,7 @@ jobs:
         run: |
           python3 -I server/tools/late_game_test.py
           cd server && luajit tools/progression_model.lua --check && lua5.3 tools/progression_model.lua --check
+
       - name: Every class has gear in every slot and level band, and finds weapons fairly (gear_coverage.lua)
         run: cd server && luajit tools/gear_coverage.lua --check && lua5.3 tools/gear_coverage.lua --check
 
@@ -162,6 +504,7 @@ jobs:
 
       - name: Skill training model is consistent (skill_model.lua; vocation XML, stage tables, exercise weapons worth more than a hunting hour; also bounds the exercise weapon prices in store_model.lua)
         run: cd server && luajit tools/skill_model.lua --check && lua5.3 tools/skill_model.lua --check
+
       - name: A roulette spin is worth its token in hunting minutes (roulette_model.lua; roulette_value_config.lua band, O151)
         run: cd server && luajit tools/roulette_model.lua --check && lua5.3 tools/roulette_model.lua --check
 
@@ -315,10 +658,13 @@ jobs:
 
       - name: Base monster load warnings (patch_base_monsters.py on made-up monsters)
         run: python3 -I server/tools/patch_base_monsters_test.py
+
       - name: Gnome city teleports open to everyone (patch_gnome_teleports.py on made-up scripts)
         run: python3 -I server/tools/patch_gnome_teleports_test.py
+
       - name: Annihilator soloable (patch_annihilator_solo.py on made-up scripts)
         run: python3 -I server/tools/patch_annihilator_solo_test.py
+
       - name: Absorb ceiling (patch_absorb_ceiling.py on made-up scripts)
         run: python3 -I server/tools/patch_absorb_ceiling_test.py
 
@@ -405,62 +751,6 @@ jobs:
       - name: Combat numbers in the viewer's display scale (server src-patch 0037, guard)
         run: python3 -I server/tools/display_scale_patch_test.py
 
-      - name: Display scale, pure parts (C++; header from server src-patch 0037)
-        run: |
-          d=$(mktemp -d)
-          awk '/^\+\+\+ b\/src\/chaosdisplay\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
-            server/src-patches/0037-display-scale.patch > "$d/chaosdisplay.h"
-          g++ -std=c++17 -Wall -Wextra -I "$d" server/tools/chaosdisplay_test.cpp -o "$d/chaosdisplay_test"
-          "$d/chaosdisplay_test"
-
-      - name: Incremental save, pure parts (C++; header from server src-patch 0026)
-        run: |
-          d=$(mktemp -d)
-          awk '/^\+\+\+ b\/src\/chaossave\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
-            server/src-patches/0026-incremental-save.patch > "$d/chaossave.h"
-          g++ -std=c++17 -Wall -Wextra -I "$d" server/tools/chaossave_test.cpp -o "$d/chaossave_test"
-          "$d/chaossave_test"
-
-      - name: Respawn zones index (C++; header from server src-patch 0027)
-        run: |
-          d=$(mktemp -d)
-          awk '/^\+\+\+ b\/src\/chaoszones\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
-            server/src-patches/0027-game-loop-stalls.patch > "$d/chaoszones.h"
-          g++ -std=c++17 -Wall -Wextra -I "$d" server/tools/chaoszones_test.cpp -o "$d/chaoszones_test"
-          "$d/chaoszones_test"
-
-      - name: Login reads prefetch (C++; header from server src-patch 0031)
-        run: |
-          d=$(mktemp -d)
-          awk '/^\+\+\+ b\/src\/chaosprefetch\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
-            server/src-patches/0031-login-reads-prefetch.patch > "$d/chaosprefetch.h"
-          g++ -std=c++17 -Wall -Wextra -I "$d" server/tools/chaosprefetch_test.cpp -o "$d/chaosprefetch_test"
-          "$d/chaosprefetch_test"
-
-      - name: Tester bots never counted online (C++; header from server src-patch 0059)
-        run: |
-          d=$(mktemp -d)
-          awk '/^\+\+\+ b\/src\/chaostesters\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
-            server/src-patches/0059-tester-bots-not-counted.patch > "$d/chaostesters.h"
-          g++ -std=c++17 -Wall -Wextra -I "$d" server/tools/chaostesters_test.cpp -o "$d/chaostesters_test"
-          "$d/chaostesters_test"
-
-      - name: Send offsets of the in-place effects in the engine (C++; header from server src-patch 0060)
-        run: |
-          d=$(mktemp -d)
-          awk '/^\+\+\+ b\/src\/chaosfxoffsets\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
-            server/src-patches/0060-fx-send-offsets.patch > "$d/chaosfxoffsets.h"
-          g++ -std=c++17 -Wall -Wextra -I "$d" server/tools/chaosfxoffsets_test.cpp -o "$d/chaosfxoffsets_test"
-          "$d/chaosfxoffsets_test"
-
-      - name: Live cast, pure parts (C++; header from server src-patch 0064)
-        run: |
-          d=$(mktemp -d)
-          awk '/^\+\+\+ b\/src\/chaoscast\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
-            server/src-patches/0064-live-cast.patch > "$d/chaoscast.h"
-          g++ -std=c++17 -Wall -Wextra -I "$d" server/tools/chaoscast_test.cpp -o "$d/chaoscast_test"
-          "$d/chaoscast_test"
-
       - name: Tester bots out of the base player lists (patch_tester_filters.py)
         run: python3 -I server/tools/patch_tester_filters_test.py
 
@@ -481,101 +771,6 @@ jobs:
         run: |
           sudo apt-get install -y -qq glslang-tools
           python3 -I client/tools/check_shaders.py --require-glslang
-
-      - name: Client updater signature vectors (C++, OpenSSL; header from base patch 0031)
-        run: |
-          d=$(mktemp -d)
-          awk '/^--- a\/src\/framework\/util\/chaosupdate\.h/{p=1} p&&/^--- a\//&&!/chaosupdate\.h/{p=0} p' \
-            client/base-patches/0031-signed-updater.patch > "$d/h.patch"
-          patch -p1 -d "$d" < "$d/h.patch"
-          g++ -std=c++17 -I "$d/src" client/tools/chaosupdate_test.cpp -lcrypto -o "$d/chaosupdate_test"
-          "$d/chaosupdate_test"
-
-      - name: Client guard handshake vectors (C++, OpenSSL; header from base patch 0035)
-        run: |
-          d=$(mktemp -d)
-          awk '/^--- a\/src\/client\/chaosguard\.h/{p=1} p&&/^--- a\//&&!/chaosguard\.h/{p=0} p' \
-            client/base-patches/0035-client-guard.patch > "$d/h.patch"
-          patch -p1 -d "$d" < "$d/h.patch"
-          g++ -std=c++17 -I "$d/src/client" client/tools/chaosguard_test.cpp -lcrypto -o "$d/chaosguard_test"
-          "$d/chaosguard_test"
-
-      - name: Client pack vectors (C++, OpenSSL, zlib; header from base patch 0102, same bytes as pack_client.py)
-        run: |
-          sudo apt-get install -y -qq zlib1g-dev
-          d=$(mktemp -d)
-          awk '/^--- a\/src\/framework\/util\/chaospack\.h/{p=1} p&&/^--- a\//&&!/chaospack\.h/{p=0} p' \
-            client/base-patches/0102-client-encrypted-pack.patch > "$d/h.patch"
-          patch -p1 -d "$d" < "$d/h.patch"
-          g++ -std=c++17 -I "$d/src" client/tools/chaospack_test.cpp -lcrypto -lz -o "$d/chaospack_test"
-          "$d/chaospack_test"
-
-      - name: Encrypted update blobs (C++, OpenSSL, PhysFS; header from base patch 0103, same bytes as update_crypt.py)
-        run: |
-          sudo apt-get install -y -qq libphysfs-dev zlib1g-dev
-          d=$(mktemp -d)
-          awk '/^--- a\/src\/framework\/util\/chaospack\.h/{p=1} p&&/^--- a\//&&!/chaospack\.h/{p=0} p' \
-            client/base-patches/0102-client-encrypted-pack.patch > "$d/h.patch"
-          awk '/^--- a\/src\/framework\/util\/chaosblob\.h/{p=1} p&&/^--- a\//&&!/chaosblob\.h/{p=0} p' \
-            client/base-patches/0103-encrypted-updates.patch >> "$d/h.patch"
-          patch -p1 -d "$d" < "$d/h.patch"
-          g++ -std=c++17 -Wall -Wextra -I "$d/src" client/tools/chaosblob_test.cpp -lcrypto -lz -o "$d/chaosblob_test"
-          "$d/chaosblob_test" "$d/overlay.zip"
-          python3 -I -c 'import sys, zipfile; z = zipfile.ZipFile(sys.argv[1]); assert z.testzip() is None; assert z.read("modules/game_x/x.lua") == b"print(1)\n"; print("store zip ok:", z.namelist())' "$d/overlay.zip"
-          mkdir -p "$d/pack/modules/game_x"
-          printf 'print("pack")\n' > "$d/pack/modules/game_x/x.lua"
-          printf 'print("other")\n' > "$d/pack/modules/game_x/other.lua"
-          g++ -std=c++17 -Wall -Wextra -I "$d/src" client/tools/chaosblob_mount_test.cpp -lcrypto -lphysfs -lz -o "$d/chaosblob_mount_test"
-          "$d/chaosblob_mount_test" "$d/pack"
-
-      - name: Big creature click maths (C++; header from base patch 0051)
-        run: |
-          d=$(mktemp -d)
-          awk '/^--- a\/src\/client\/creaturehit\.h/{p=1} p&&/^--- a\//&&!/creaturehit\.h/{p=0} p' \
-            client/base-patches/0051-big-creature-click.patch > "$d/h.patch"
-          patch -p1 -d "$d" < "$d/h.patch"
-          g++ -std=c++17 -Wall -Wextra -I "$d/src/client" client/tools/creaturehit_test.cpp -o "$d/creaturehit_test"
-          "$d/creaturehit_test"
-
-      - name: PROXY protocol parser (C++; source from server src-patch 0025)
-        run: |
-          d=$(mktemp -d)
-          awk '/^--- a\/src\/proxyprotocol\.(cpp|h)/{p=1} p&&/^--- a\//&&!/proxyprotocol\./{p=0} p' \
-            server/src-patches/0025-proxy-protocol.patch > "$d/h.patch"
-          patch -p1 -d "$d" < "$d/h.patch"
-          g++ -std=c++17 -Wall -I server/tools/proxyprotocol_stubs -I "$d/src" "$d/src/proxyprotocol.cpp" \
-            server/tools/proxyprotocol_test.cpp -o "$d/proxyprotocol_test"
-          "$d/proxyprotocol_test"
-
-      - name: Login security (RSA key tools, failed-login limits of server src-patch 0047, VPS hardening dry run)
-        run: |
-          python3 -I server/tools/rsa_key_test.py
-          python3 -I client/tools/set_rsa_key_test.py
-          d=$(mktemp -d)
-          awk '/^--- \/dev\/null/{getline n; if (n ~ /loginlimit\.h/) {p=1; print; print n; next}} p&&/^--- a\//{p=0} p' \
-            server/src-patches/0047-login-failure-limit.patch > "$d/h.patch"
-          patch -p1 -d "$d" < "$d/h.patch"
-          g++ -std=c++17 -Wall -Wextra -I "$d/src" server/tools/loginlimit_test.cpp -o "$d/loginlimit_test"
-          "$d/loginlimit_test"
-          shellcheck tools/linux/harden_vps.sh
-          python3 -I tools/linux/harden_vps_test.py
-
-      - name: Fuzz harnesses on their seed corpus (ASan + UBSan; PROXY protocol, client guard, login limit; netfuzz.py on a stand-in server)
-        run: |
-          sudo apt-get install -y -qq libcrypto++-dev libfmt-dev
-          python3 -I server/tools/fuzz/gen_corpus.py --check
-          server/tools/fuzz/build_fuzz.sh "$(mktemp -d)" --run
-          python3 -I server/tools/netfuzz_test.py
-
-      - name: Rust login-screen services (O153; clientservices-rs, unit and property tests, same cases against the Python service)
-        run: |
-          cd server/services/clientservices-rs
-          shellcheck build.sh
-          cargo fmt --check
-          cargo clippy --locked --all-targets -- -D warnings
-          cargo test --locked
-          cargo build --locked
-          python3 -I compare_test.py
 
       - name: Base opcode handlers accept only a JSON object (patch_base_json_guards.py, synthetic copies)
         run: python3 -I server/tools/patch_base_json_guards_test.py
@@ -651,134 +846,6 @@ jobs:
 
       - name: Pair warning fixes (fix_pair_warnings.py on a synthetic pair)
         run: python3 -I client/tools/sprites/fix_pair_warnings_test.py
-
-      - name: Outfit layer composer (compose_outfit.py on synthetic things, import round trip), outfit anchors
-        run: |
-          # system packages: python3 -I does not see pip's user site
-          sudo apt-get install -y -qq python3-numpy python3-pil
-          python3 -I client/tools/sprites/compose_outfit_test.py
-          # the character select's anchors: centre, ground row, floating looks (synthetic figures)
-          python3 -I client/tools/sprites/gen_outfit_anchors_test.py
-          # names over tall looks: body top, gap and lift (synthetic figures)
-          python3 -I client/tools/sprites/gen_info_lift_test.py
-          # class effect strips and spec match the generator; Pillow's polygon fill differs between versions, so the
-          # check runs on the versions the strips were made with (gen_class_fx.py docstring)
-          python3 -m venv /tmp/fxenv
-          /tmp/fxenv/bin/pip install --quiet pillow==12.3.0 numpy==2.5.3
-          /tmp/fxenv/bin/python -I client/tools/sprites/gen_class_fx.py build --check
-          # pair 36 effects: specs, sources and sums agree, names free, missiles uint8 (the pack art is never in git)
-          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack36_fx.py build --check
-          # send offsets of the pair 36 effects redrawn in place (server/data/lib/chaos_fx_send_offsets.lua)
-          python3 -I client/tools/sprites/gen_fx_send_offsets.py --check
-          python3 -I client/tools/sprites/gen_fx_send_offsets_test.py
-          # themed sets, auras, wings and grounds of things_custom24: atlases and spec match the generator (same pins)
-          /tmp/fxenv/bin/python -I client/tools/sprites/gen_theme_art.py build --check
-          python3 -I server/tools/install_theme_items.py --lua --check
-          # pack effect cuts: spec and sums match gen_pack_fx.py's table (the art set and the strips are not in git)
-          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack_fx.py build --check
-          # pack farming spell effects (pair 27 trial): spec and sums match gen_pack27_fx.py's table (sets not in git)
-          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack27_fx.py build --check
-          # Mystic line effects, Tier B (pair 29): spec, sums and sources match gen_pack29_fx.py's table (sets not in git)
-          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack29_fx.py build --check
-          # condition auras, blasts, missiles, fireworks and hit splashes of pair 29 (the VFX packs, not in git)
-          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack29_vfx.py build --check
-          # third-party art of pair 30 (set30 packs, import-only, not in git): spec, sums and sources match each generator's tables
-          python3 -I client/tools/sprites/pack30lib_test.py
-          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack30_looks.py build --check
-          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack30_looks_test.py
-          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack30_strips.py build --check
-          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack30_strips_test.py
-          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack30_grounds.py build --check
-          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack30_grounds_test.py
-          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack30_decor.py build --check
-          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack30_decor_test.py
-          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack30_bldg.py build --check
-          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack30_bldg_test.py
-          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack30_anim.py build --check
-          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack30_anim_test.py
-          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack30_items.py build --check
-          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack30_items_test.py
-          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack30_fx.py build --check
-          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack30_fx_test.py
-          # the pair 33 packs (import-only, sheets not in git): the committed tables agree with each other, and the
-          # server's generated wings / head accessories / capes (ids, prices, aura manifest) match them
-          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack33.py build --check
-          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack33_test.py
-          python3 -I server/tools/gen_pack33_cosmetics.py --check
-          # the owner's outfits of pair 37 (.obd files, source pack unnamed; sheets not in git): things file, sums,
-          # sources and the server's look list agree; the .obd reader and the sheet layout on synthetic files
-          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack37_looks.py build --check
-          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack37_looks_test.py
-          # the creature palette pass of pair 40 (pair not in git): the report lists the target looks with their
-          # status; the palette, accent guard, despeckle and mask rules on synthetic sprites
-          /tmp/fxenv/bin/python -I client/tools/sprites/gen_creature_palette.py build --check
-          /tmp/fxenv/bin/python -I client/tools/sprites/gen_creature_palette_test.py
-          # the Archmage of pair 29 (our own rig art): things file and sheet sums match class_art.py (no render)
-          /tmp/fxenv/bin/python -I client/tools/sprites/gen_archmage_art.py build --check
-          # large soft effects: a full render (about 2 minutes) against the spec and the pixel sums (strips not in git)
-          /tmp/fxenv/bin/python -I client/tools/sprites/gen_big_fx.py build --check
-          # gem looks (the owner's gem set): atlas, things spec and the Codex strips match the generator (same pins)
-          /tmp/fxenv/bin/python -I client/tools/sprites/gen_gem_art.py build --check
-          # status words (the owner's text effect set): the spec matches the strips and the PICKS table
-          /tmp/fxenv/bin/python -I client/tools/sprites/gen_status_fx.py build --check
-          # the store item looks of pair 34 (our pouch and ration art snapped to theme palettes): atlas and things file
-          # match the generator, and each look passes style_check against its theme
-          /tmp/fxenv/bin/python -I client/tools/sprites/gen_store_items_art.py build --check
-          # the orb looks of pair 38 (orbs drawn in code, no rune sprite): atlas and things file match the generator,
-          # and each look passes style_check against its theme
-          /tmp/fxenv/bin/python -I client/tools/sprites/gen_orb_items_art.py build --check
-          # the jewelry looks of pair 35 (icon set picks): things file, atlas size and chaos_jewelry.lua bases agree
-          /tmp/fxenv/bin/python -I client/tools/sprites/gen_jewelry_art.py build --check
-          # the owner's art of pair 26 (monster looks, wings, decoration): sheets, things file and picks match the spec
-          /tmp/fxenv/bin/python -I client/tools/sprites/gen_owner_art.py build --check
-          python3 -I client/tools/sprites/gen_owner_art_test.py
-          python3 -I server/tools/install_owner_decor.py --lua --check
-          python3 -I server/tools/install_owner_decor_test.py
-          # catacomb kit (pair 27 trial): spec, sources and picks match gen_assets_art.py's tables (kit files not in git)
-          /tmp/fxenv/bin/python -I client/tools/sprites/gen_assets_art.py build --check
-          python3 -I client/tools/sprites/gen_assets_art_test.py
-          python3 -I server/tools/install_assets_decor.py --lua --check
-          python3 -I server/tools/install_assets_decor_test.py
-          # equipment sets of pair 28 (the owner's sheets): atlases, things file and the generated pieces match the spec
-          /tmp/fxenv/bin/python -I client/tools/sprites/gen_gear_sets_art.py build --check
-          python3 -I client/tools/sprites/gen_gear_sets_art_test.py
-          python3 -I server/tools/install_gear_sets.py --lua --check
-          python3 -I server/tools/install_gear_sets_test.py
-          # pack art of pair 30 (import-only): item installer, generated item Lua and Hideout list match the manifests (none yet: empty)
-          python3 -I server/tools/install_pack30_items.py --lua --check
-          python3 -I server/tools/install_pack30_items.py --hideout-lua --check
-          python3 -I server/tools/install_pack30_items_test.py
-          # harvest kit of pair 33 (import-only) and the Haunted Harvest's items: the server manifest and the kit Lua
-          # follow the things file; installer and event items on a synthetic items.otb
-          python3 -I server/tools/install_pack33_items.py --manifest --check
-          python3 -I server/tools/install_pack33_items.py --lua --check
-          python3 -I server/tools/install_pack33_items_test.py
-          python3 -I server/tools/install_orbs_test.py  # renamed orb names; base names that hold one are kept
-          # sprite style checker (docs/SPRITE_STYLE.md): palettes and thresholds match the owner's gear sheets,
-          # synthetic sprites pass or fail for the right reason, the seven sheets pass their own themes
-          /tmp/fxenv/bin/python -I client/tools/sprites/style_check.py build-palettes --check
-          /tmp/fxenv/bin/python -I client/tools/sprites/style_check_test.py
-          python3 -I client/tools/sprites/donor_pick_test.py
-
-      - name: Website wiki art is up to date with the wiki data (gen_wiki_art.py)
-        # icons, guide heroes and tab banners; the same pinned Pillow and numpy as the art checks above (WebP bytes)
-        run: /tmp/fxenv/bin/python -I website/tools/gen_wiki_art.py --check
-
-      - name: Dungeon banners match their plan and the dungeon maps (gen_dungeon_banners.py, no pair)
-        # the plan's tiles, boss and monsters against a fresh areagen dump (LuaJIT), the banners' pixels against the plan
-        run: /tmp/fxenv/bin/python -I client/tools/gen_dungeon_banners.py --check
-
-      - name: Class look art (class_art.py sheets read back by the importer, quick renders, import round trip)
-        run: python3 -I client/tools/outfit_art/class_art_test.py
-
-      - name: Website sprite images (gen_sprite_images_test.py; outfit colours on hand-made masks, a synthetic pair)
-        run: python3 -I website/tools/gen_sprite_images_test.py
-
-      - name: Live spectator renderer (spectate_render_test.py; a synthetic pair, draw order, outfits, the pair archive)
-        run: python3 -I server/tools/spectate_render_test.py
-
-      - name: Live cast relay (cast_relay_test.py; synthetic frames for every opcode, sheets, the loop, a fuzz)
-        run: python3 -I server/tools/cast_relay_test.py
 
       - name: PHP for the website tests (php-cli with PDO SQLite and mbstring)
         run: |
