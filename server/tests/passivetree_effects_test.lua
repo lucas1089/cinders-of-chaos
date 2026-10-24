@@ -136,3 +136,20 @@ assertEq(stats[CHARSTAT_STRENGTH], 30, "only once")
 local xp = registered["onGainExperience"]
 assertEq(xp(p, {}, 1000, 1000), 1100, "xp")
 print("passive effects: all asserts passed")
+
+-- a huge maximum (billions of mana) with a fractional percent stays inside int32 (live error 2026-10-24)
+assertEq(ChaosPassiveFlatMax(1000, 2.5), 25, "flat max")
+assertEq(ChaosPassiveFlatMax(536000000, 1500), 2147483647, "flat max clamped")
+assertEq(ChaosPassiveFlatMax(1/0, 5), 2147483647, "flat max inf clamped")
+assertEq(ChaosPassiveFlatMax(0/0, 5), 0, "flat max nan")
+assertEq(ChaosPassiveFlatMax(nil, 5), 0, "flat max nil")
+do
+  local p2 = mkPlayer()
+  function p2:getMaxMana() return 6000000000 end
+  ChaosPassiveTree.listeners[1](p2, {spirit = 100.5})
+  local c = added[7221]
+  assert(c, "spirit condition set")
+  local v = c.p[CONDITION_PARAM_STAT_MAXMANAPOINTS]
+  assert(v and v <= 2147483647 and v > 0, "mana flat value fits int32")
+  assert(v == 2147483647, "clamped at the int32 maximum (6e9 mana x 50%)")
+end

@@ -240,6 +240,54 @@ function NP.statsFix(vocId, level, cur, gains, S)
 	return {maxHealth = math.max(h, want.health), maxMana = math.max(m, want.mana), cap = math.max(c, want.cap * 100)}
 end
 
+-- A maximum health or mana far above the class's value for the level (an earlier number inflation left 536 million
+-- mana, and max x percent then overflowed an int32 in the passive tree) is reset to the class's value. Acts only above
+-- BOTH cfg.inflated.floor and cfg.inflated.factor x the formula, so it never touches a legitimate value and a
+-- repaired character is left alone at the next login (no flag needed). Returns nil or {maxHealth, maxMana}; the one
+-- that was fine keeps its value.
+function NP.inflatedFix(vocId, level, cur, gains, S, c)
+	c = (c or NP.cfg()).inflated
+	if not c then
+		return nil
+	end
+	local want = NP.statsFor(vocId, tonumber(level) or 1, gains, S)
+	local h, m = tonumber(cur.maxHealth) or 0, tonumber(cur.maxMana) or 0
+	local badH = h > c.floor and h > c.factor * want.health
+	local badM = m > c.floor and m > c.factor * want.mana
+	if not badH and not badM then
+		return nil
+	end
+	return {maxHealth = badH and want.health or h, maxMana = badM and want.mana or m}
+end
+
+-- every login: an inflated base maximum health / mana is reset to the class's value (NP.inflatedFix), the current
+-- health and mana come down with it. Returns true when something was repaired.
+function NP.repairInflated(player)
+	local voc = player:getVocation()
+	local gains = {hp = voc:getHealthGain(), mana = voc:getManaGain(), cap = voc:getCapacityGain()}
+	local fix = NP.inflatedFix(voc:getId(), player:getLevel(),
+		{maxHealth = player:getMaxHealth(), maxMana = player:getMaxMana()}, gains)
+	if not fix then
+		return false
+	end
+	local oldH, oldM = player:getMaxHealth(), player:getMaxMana()
+	if fix.maxHealth ~= oldH then
+		player:setMaxHealth(fix.maxHealth)
+		if player:getHealth() > player:getMaxHealth() then
+			player:setHealth(player:getMaxHealth())
+		end
+	end
+	if fix.maxMana ~= oldM then
+		player:setMaxMana(fix.maxMana)
+		if player:getMana() > player:getMaxMana() then
+			player:setMana(player:getMaxMana())
+		end
+	end
+	print(string.format("[newplayer] %s: level %d inflated maximums reset, health %d -> %d, mana %d -> %d",
+		player:getName(), player:getLevel(), oldH, fix.maxHealth, oldM, fix.maxMana))
+	return true
+end
+
 -- ------------------------------------------------------------------------------------------------ flags
 function NP.key(name, c)
 	c = c or NP.cfg()
