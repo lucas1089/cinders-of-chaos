@@ -46,7 +46,7 @@ function login.onLogin(player)
 	for _, other in ipairs(siblings) do
 		if insideInstance(other) then
 			print(string.format("[ChaosMC] %s refused: %s (same IP) is in a dungeon or the tower", player:getName(), other:getName()))
-			player:popupFYI(other:getName() .. " (same connection) is in a dungeon or the Infinity Tower. Log in again when they are out.")
+			player:popupFYI(Chaos.t(player, "%s (same connection) is in a dungeon or the Infinity Tower. Log in again when they are out.", other:getName()))
 			return false
 		end
 	end

@@ -475,7 +475,7 @@ function hub.onStepIn(creature, item, position, fromPosition)
 	end
 	player:teleportTo(to)
 	to:sendMagicEffect(CONST_ME_TELEPORT)
-	player:sendTextMessage(MESSAGE_INFO_DESCR, "The guild portal takes you to " .. dest.name .. ".")
+	player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "The guild portal takes you to %s.", dest.name))
 	return true
 end
 hub:type("stepin")

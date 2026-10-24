@@ -160,7 +160,7 @@ function eat.onUse(player, item, fromPosition, target, toPosition, isHotkey)
 		owner = tonumber(customAttr(item, c.attr.owner)), guid = player:getGuid()})
 	if not r.ok then
 		if r.text then
-			player:sendTextMessage(MESSAGE_STATUS_SMALL, r.text)
+			player:sendTextMessage(MESSAGE_STATUS_SMALL, Chaos.t(player, r.text))
 		end
 		return true
 	end

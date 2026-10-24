@@ -135,7 +135,7 @@ local function handleInvite(player, accept, inviterName)
 		end
 	end
 	if not invited then
-		player:sendCancelMessage("You have no pending invitation from " .. inviter:getName() .. ".")
+		player:sendCancelMessage(Chaos.t(player, "You have no pending invitation from %s.", inviter:getName()))
 		return
 	end
 
@@ -149,7 +149,7 @@ local function handleInvite(player, accept, inviterName)
 		end
 	else
 		party:removeInvite(player)
-		inviter:sendTextMessage(MESSAGE_INFO_DESCR, player:getName() .. " has declined your party invitation.")
+		inviter:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(inviter, "%s has declined your party invitation.", player:getName()))
 	end
 end
 

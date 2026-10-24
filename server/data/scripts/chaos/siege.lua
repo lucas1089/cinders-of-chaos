@@ -757,7 +757,7 @@ local function tick(token)
 				for _, q in pairs(state.players) do
 					local pl = q.bracket == b and q.inside and Player(q.name)
 					if pl then
-						pl:sendTextMessage(MESSAGE_STATUS_WARNING, t.name .. " took the Chaos Obelisk!")
+						pl:sendTextMessage(MESSAGE_STATUS_WARNING, Chaos.t(pl, "%s took the Chaos Obelisk!", t.name))
 					end
 				end
 				P(layoutOf(b).center):sendMagicEffect(CONST_ME_MAGIC_RED)

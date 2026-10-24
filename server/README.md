@@ -21935,6 +21935,8 @@ guardians, fallen players, packs, the atlas line). Measured with `sendTextMessag
 / `npcHandler:say` sites: 430 of 785 go through the helpers (8 before the first batch, 395 before this one; broadcasts
 not counted).
 
+Also converted in the last batch: the store's coin take-back line and Everfull Ration refusals, the Infinity Tower run end and group refusals, inspect privacy, Monk stun lines, legendary monster alerts, multi-client refusal, party invitation and removal lines, map discoveries, report receipts, season rewards, siege obelisk, Cinderheart refusal, rarity autoloot, guild portal, guild boss spoils, area portals, new outfits, Chaos Pact status, event login lines and item set summary.
+
 Left: item descriptions and mail texts built in cores (one text for every viewer), party loot lines
 (`broadcastPartyLoot` sends one text to the party: English), monster speech, reasons that game logic reads as text
 (the season pass's "no room" claim refusal, the raid's party size refusal: English), the season pass window's reward

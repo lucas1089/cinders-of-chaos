@@ -883,8 +883,8 @@ local function success(run)
 						parts[#parts + 1] = string.format("%d %s", o.count, o.count == 1 and it:getName() or it:getPluralName())
 					end
 				end
-				p:sendTextMessage(MESSAGE_EVENT_ADVANCE, "Spoils of the guild boss: " .. table.concat(parts, ", ") .. "." ..
-					(inbox and " Your backpack was full: the rest is in your inbox." or ""))
+				p:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(p, "Spoils of the guild boss: %s.", table.concat(parts, ", ")) ..
+					(inbox and " " .. Chaos.t(p, "Your backpack was full: the rest is in your inbox.") or ""))
 				if ChaosPack29Vfx then -- pair 29 (switch off: the stock firework)
 					ChaosPack29Vfx.celebrate(p:getPosition(), "boss", CONST_ME_FIREWORK_YELLOW)
 				else

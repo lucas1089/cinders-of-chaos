@@ -17,6 +17,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 dofile("data/scripts/chaos/reports_core.lua")
 
 Chaos.antibotConfig = Chaos.antibotConfig or dofile("data/scripts/chaos/antibot_config.lua")
@@ -221,8 +224,8 @@ function RP.onReportBug(player, message, position, category)
 		row, err = nil, nil
 	end
 	if row then
-		player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("Thank you. Your bug report #%d was sent to the staff%s.",
-			row.id, row.shortened and " (shortened to " .. rcfg.bugs.textMax .. " characters)" or ""))
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Thank you. Your bug report #%d was sent to the staff%s.",
+			row.id, row.shortened and Chaos.t(player, " (shortened to %d characters)", rcfg.bugs.textMax) or ""))
 	else
 		player:sendTextMessage(MESSAGE_STATUS_SMALL, R.errors[err] or
 			"Your bug report could not be stored. Please report the bug on our Discord.")
@@ -263,7 +266,7 @@ violation.onReportRuleViolation = function(player, targetName, reportType, repor
 	local row = RP.submit(player, {name = targetName, reason = "other",
 		note = string.format("(client report %s/%s) %s", tostring(reportType), tostring(reportReason), tostring(comment or ""))})
 	if row then
-		player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("Your report about %s was sent to the staff.", row.target_name))
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Your report about %s was sent to the staff.", row.target_name))
 	end
 end
 violation:register()

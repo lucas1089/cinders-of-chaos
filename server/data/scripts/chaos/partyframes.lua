@@ -19,6 +19,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 if not ChaosPartyFrames or not ChaosPartyFrames.state then
 	dofile("data/scripts/chaos/partyframes_core.lua")
 end
@@ -177,11 +180,11 @@ local function kick(player, id)
 	end
 	local target = Player(id)
 	if not target or not sameParty(party, target) then
-		return note(player, "That player is not in your party.")
+		return note(player, Chaos.t(player, "That player is not in your party."))
 	end
 	party:removeMember(target)
-	note(player, target:getName() .. " was removed from the party.")
-	target:sendTextMessage(MESSAGE_STATUS_WARNING, "You were removed from the party by " .. player:getName() .. ".")
+	note(player, Chaos.t(player, "%s was removed from the party.", target:getName()))
+	target:sendTextMessage(MESSAGE_STATUS_WARNING, Chaos.t(target, "You were removed from the party by %s.", player:getName()))
 end
 
 local function lead(player, id)
@@ -195,7 +198,7 @@ local function lead(player, id)
 	end
 	local target = Player(id)
 	if not target or not sameParty(party, target) then
-		return note(player, "That player is not in your party.")
+		return note(player, Chaos.t(player, "That player is not in your party."))
 	end
 	party:setLeader(target)
 end

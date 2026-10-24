@@ -688,7 +688,7 @@ local function pickup(monster, corpse)
 		end
 	end
 	if #taken > 0 then
-		owner:sendTextMessage(MESSAGE_INFO_DESCR, "Rarity autoloot: " .. table.concat(taken, ", ") .. ".")
+		owner:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(owner, "Rarity autoloot: %s.", table.concat(taken, ", ")))
 	end
 	if failed > 0 then
 		owner:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(owner, "Rarity autoloot: no room or capacity, left in the corpse."))

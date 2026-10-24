@@ -3265,5 +3265,99 @@ return {
 		["The chest held a unique: %s!"] = "O baú guardava um item único: %s!",
 		["Your class cannot train with that weapon: the chest became %s."] =
 			"Sua classe não treina com essa arma: o baú virou %s.",
+		-- Store, gifts and services (batch 2)
+		["%d gifted Chaos Coins were taken back: the donation that paid for them was refunded or charged back."] =
+			"%d Chaos Coins presenteados foram devolvidos: a doação que os pagou foi estornada ou contestada.",
+		["This ration belongs to someone else."] =
+			"Esta ração pertence a outra pessoa.",
+		-- Infinity Tower runs and party chat
+		["You cleared %d floor(s)."] =
+			"Você limpou %d andar(es).",
+		["Time is up: your tower run ends here."] =
+			"O tempo acabou: sua subida na torre termina aqui.",
+		["A gamemaster closed the tower run."] =
+			"Um gamemaster encerrou a subida na torre.",
+		["Everyone left."] =
+			"Todos saíram.",
+		["Your group has fallen."] =
+			"Seu grupo caiu.",
+		["%s is already inside the tower."] =
+			"%s já está dentro da torre.",
+		["%s does not have the required level."] =
+			"%s não tem o nível necessário.",
+		["%s has to wait before trying the tower again."] =
+			"%s precisa esperar antes de tentar a torre de novo.",
+		["Others can inspect you again."] =
+			"Outros jogadores podem inspecionar você de novo.",
+		["Others can no longer inspect you."] =
+			"Outros jogadores não podem mais inspecionar você.",
+		["%s cannot be stunned again yet."] =
+			"%s ainda não pode ser atordoado de novo.",
+		["You are stunned for %s s by %s."] =
+			"Você está atordoado por %s s por %s.",
+		["%s is stunned for %s s."] =
+			"%s está atordoado por %s s.",
+		["A legendary %s appears!"] =
+			"Um %s lendário aparece!",
+		["%s (same connection) is in a dungeon or the Infinity Tower. Log in again when they are out."] =
+			"%s (mesma conexão) está em uma dungeon ou na Infinity Tower. Entre de novo quando sair.",
+		["You have no pending invitation from %s."] =
+			"Você não tem convite pendente de %s.",
+		["%s has declined your party invitation."] =
+			"%s recusou o seu convite para o grupo.",
+		["You were removed from the party by %s."] =
+			"Você foi removido do grupo por %s.",
+		["That player is not in your party."] =
+			"Esse jogador não está no seu grupo.",
+		["%s was removed from the party."] =
+			"%s foi removido do grupo.",
+		["Discovered on your map: %s"] =
+			"Descoberto no seu mapa: %s",
+		["Thank you. Your bug report #%d was sent to the staff%s."] =
+			"Obrigado. Seu relatório de bug #%d foi enviado à equipe%s.",
+		[" (shortened to %d characters)"] =
+			" (reduzido a %d caracteres)",
+		["Your report about %s was sent to the staff."] =
+			"Sua denúncia sobre %s foi enviada à equipe.",
+		["You cannot transfer gold to that character."] =
+			"Você não pode transferir ouro para esse personagem.",
+		["Season characters can only transfer gold to characters of the same season."] =
+			"Personagens de temporada só podem transferir ouro para personagens da mesma temporada.",
+		["Self-Found characters cannot send or receive gold."] =
+			"Personagens Self-Found não podem enviar nem receber ouro.",
+		["Season rewards of your account: %s."] =
+			"Recompensas de temporada da sua conta: %s.",
+		["%s took the Chaos Obelisk!"] =
+			"%s tomou o Chaos Obelisk!",
+		["The Cinderheart needs one relic of each Ascended Omen. Missing: %s."] =
+			"O Cinderheart precisa de uma relíquia de cada Ascended Omen. Faltam: %s.",
+		["Rarity autoloot: %s."] =
+			"Autoloot de raridade: %s.",
+		["The guild portal takes you to %s."] =
+			"O portal da guild leva você a %s.",
+		["Spoils of the guild boss: %s."] =
+			"Espólios do guild boss: %s.",
+		["Your backpack was full: the rest is in your inbox."] =
+			"Sua mochila estava cheia: o resto está na sua caixa de entrada.",
+		["%s: monsters of level %d-%d. The portal beside you leads back."] =
+			"%s: monstros de nível %d-%d. O portal ao seu lado leva de volta.",
+		["New outfits: %s."] =
+			"Novos outfits: %s.",
+		["Your Chaos Pact runs for %d more day."] =
+			"Seu Chaos Pact dura mais %d dia.",
+		["Your Chaos Pact runs for %d more days."] =
+			"Seu Chaos Pact dura mais %d dias.",
+		["Today's %d Chaos Coins wait in Character > Chaos Pact."] =
+			"Os %d Chaos Coins de hoje esperam em Character > Chaos Pact.",
+		["Your Chaos Pact has ended. Nothing is lost: extra stash and depot tabs are withdraw-only, extra market offers run until they end, extra saved builds can be loaded or deleted."] =
+			"Seu Chaos Pact acabou. Nada se perde: as abas extras de stash e depot só permitem retirar, as ofertas extras do mercado correm até terminar e as builds extras salvas podem ser carregadas ou apagadas.",
+		["Event active - %s"] =
+			"Evento ativo - %s",
+		["Active events:\n%s"] =
+			"Eventos ativos:\n%s",
+		["Item sets: %s"] =
+			"Conjuntos de itens: %s",
+		["You do not belong to the group in there: you were sent to your temple."] =
+			"Você não pertence ao grupo lá dentro: foi enviado ao seu templo.",
 	},
 }
