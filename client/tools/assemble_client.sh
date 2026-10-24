@@ -34,6 +34,9 @@ rm -rf "$OUT/mods/game_helper"
 rm -f "$OUT/data/images/splash.png" "$OUT"/data/images/*-client-emblem.png
 cp -a "$HERE"/overlay/modules/. "$OUT/modules/"
 cp -a "$HERE"/overlay/data/. "$OUT/data/"
+# one game_helper, ours, and no two modules of one name (tools/ci/check_assembled.py): a base helper left next to ours
+# is merged into it by the engine and wins, and the helper loses its Auto setup and Support tab
+if command -v python3 >/dev/null 2>&1; then python3 -I "$HERE/../tools/ci/check_assembled.py" "$OUT"; fi
 # our executable icon (src/otcicon.rc names otcicon.ico; the window icon data/images/clienticon.png came with the overlay data);
 # made by tools/gen_client_icon.py from docs/brand/cinders_logo_icon.png
 if [ -d "$HERE/overlay/src" ]; then mkdir -p "$OUT/src" && cp -a "$HERE"/overlay/src/. "$OUT/src/"; fi

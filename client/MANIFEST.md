@@ -3460,6 +3460,9 @@ right-click on the button, puts every tab back. The timer rules it wrote are rem
 node `chaos_helper_autosetup`), so a later Auto setup replaces them without asking. No base patch: the helper's own
 tables and functions are used.
 
+### Helper assembly check (`tools/ci/check_assembled.py`, 2026-10-24)
+`assemble_client.sh` ends with `check_assembled.py <out>`: no two modules of one name (the engine merges them and `/mods`, read last, overwrites `/modules`) and `game_helper` is only `modules/game_helper/game_helper.otmod`, the overlay's. A fresh assembly passes. An installed client updated over an old pack keeps the pack's `mods/game_helper` (the updater cannot hide pack files): install a full new package. Test: `check_assembled_test.py` (CI).
+
 ### Helper Support spells (`game_helpersupport`: `supportspells.lua`, `supportspells_ui.lua`, `supportspells.otui`)
 Owner, 2026-10-18: "O auto setup coloca poucas magias no timer. Acho que seria bom a gente ter um espaço no helper só
 pra spells de suporte pra serem castadas off the CD." The helper's Timer is blind (it sends the words when a fixed time
