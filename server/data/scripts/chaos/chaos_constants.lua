@@ -571,9 +571,10 @@ Chaos.dungeons = {
 	-- run's length; runs take 10-15), it replaces the base server's DUNGEON_SYSTEM.CooldownTime (3600, after every run).
 	-- A failed run, a time-out, leaving or dying inside: a short failCooldownSeconds, 5 minutes, so farming 85% of the
 	-- monsters and leaving does not pay (owner rule "follow your recommendations", 2026-10-15).
-	cooldownOnSuccess = true,
+	-- Owner 2026-10-24: no cooldown after a cleared run any more (cooldownOnSuccess false); the short fail cooldown stays.
+	cooldownOnSuccess = false,
 	cooldownOnFail = true,
-	cooldownSeconds = 900,
+	cooldownSeconds = 0,
 	failCooldownSeconds = 300,
 	queueTickMs = 3000,
 	-- party size (beta feedback 2026-10-22: dungeons must be doable solo). A base dungeon's NeedParty / AmountParty is now

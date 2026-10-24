@@ -1173,8 +1173,9 @@ dungeons
   z 8-12). No other spawn lies in the added boxes. The generated dungeons 5-9 (The Hollow Vault and the deep dungeons
   6-9, `areagen.lua`) get the whole generated grid of every floor as their box: entry, exit, boss and spawns inside. Tests: `tests/dungeons_area_test.lua`,
   `tests/areagen_test.lua`.
-- Cooldown (2026-10-15, "Time-friendly progression"): a cleared run starts `Chaos.dungeons.cooldownSeconds` (900 s,
-  15 min; it replaces the base `DUNGEON_SYSTEM.CooldownTime` of 1 h after every run). A failed run, a time-out, a member
+- Cooldown (2026-10-15, "Time-friendly progression"; owner 2026-10-24: none after a clear): a cleared run starts no
+  cooldown (`cooldownOnSuccess` false, `cooldownSeconds` 0; it was 15 min, and the base `DUNGEON_SYSTEM.CooldownTime`
+  of 1 h after every run stays replaced), the next run can start at once. A failed run, a time-out, a member
   who leaves or dies, and a member who logged out inside and logs in again while the server runs (sent to the temple)
   start the short `failCooldownSeconds` (300 s, `cooldownOnFail`): farming 85% of the monsters and leaving does not pay
   (owner rule "follow your recommendations"). A restart sets none. Tests: `tests/dungeons_area_test.lua` (a cleared run
@@ -1347,7 +1348,7 @@ otherwise). Season characters get none of the three bonuses (a fresh race); the 
 
 **Also for limited time** (each in its own system's section): the faction weekly cap rolls over (3 weeks at most), the
 season pass daily caps bank over 3 days, the bounty weekly chest needs 4 contracts (was 7), the Vocation Trials' repeat
-rewards bank (15 at most), a dungeon cooldown of 15 minutes after a clear and 5 after a failed run (was 1 h after every run), the Ember
+rewards bank (15 at most), no dungeon cooldown after a clear and 5 minutes after a failed run (was 1 h after every run, then 15 minutes after a clear), the Ember
 Descent's free daily runs bank up to 3, the Necromancer, Monk and Templar unlock free at account level 200 (was 500) and
 are no longer sold.
 
