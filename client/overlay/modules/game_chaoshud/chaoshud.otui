@@ -1,5 +1,5 @@
-// Character plate (art: client/tools/gen_skin.py, group "hud"). Positions match the plate image:
-// portrait centre 47,48 (opening radius 30), bars at x 96, width 166.
+// Character plate (art: client/tools/import_hud_kit.py; the procedural version is gen_skin.py, group "hud").
+// Positions match the plate image: portrait centre 47,48 (opening radius 24), bars at x 96, width 166.
 ChaosHudText < UILabel
   font: verdana-11px-rounded
   color: #f4ead6
@@ -25,11 +25,11 @@ UIWidget
 
   UIWidget
     id: portraitClip
-    size: 62 62
+    size: 48 48
     anchors.left: parent.left
     anchors.top: parent.top
-    margin-left: 16
-    margin-top: 17
+    margin-left: 23
+    margin-top: 24
     clipping: true
     phantom: true
 
@@ -38,8 +38,8 @@ UIWidget
       size: 88 88
       anchors.left: parent.left
       anchors.top: parent.top
-      margin-left: -24
-      margin-top: -26
+      margin-left: -31
+      margin-top: -33
       phantom: true
 
   UIWidget

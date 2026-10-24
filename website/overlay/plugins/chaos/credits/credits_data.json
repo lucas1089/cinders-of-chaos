@@ -176,6 +176,12 @@
      "use": "harvest farmland and catacomb tiles, decoration, event props and monsters (planned)"
     },
     {
+     "name": "Dark Fantasy RPG UI Kit Full Pack",
+     "author": "ZSS Game Lab (itch.io)",
+     "licence": "purchased; personal and commercial use, resized, recoloured and modified; no resale, redistribution or repackaging of the files as standalone assets (credit appreciated); made with AI-assisted workflows and refined by hand",
+     "use": "the liquid orb rings, the character plate, the action bar slots, window, panel, button, tab, text field, tooltip and minimap frames (cropped, resized and recoloured by client/tools/import_hud_kit.py; the original files are not in the repository)"
+    },
+    {
      "name": "A freely shared potion-throwing pack",
      "licence": "shared freely by its maker; no licence text",
      "use": "throwable potion flasks, projectiles and bursts"

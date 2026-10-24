@@ -23,7 +23,7 @@ L.SLOSH_DECAY_PER_SECOND = 0.12 -- what is left of the slosh after one second
 L.SLOSH_MIN = 0.01
 
 -- orb sizes (Options > Graphics > Orb size, option liquidOrbSize): 1 small (the first size, 76 px), 2 medium (the
--- default, about 2x), 3 large (about 2.5x). The liquid keeps the ring's proportion (64 of 76) and the number a
+-- default, about 2x), 3 large (about 2.5x). The liquid keeps the ring opening's proportion (50 of 76) and the number a
 -- font that reads at that size (the beta found the 11 px number of the medium orb too small).
 L.ORB_SIZES = {
   { size = 76, font = 'chaos-outline-11px' },
@@ -36,7 +36,7 @@ L.ORB_EDGE = 6    -- from the window's corner when there is no chat panel to sit
 function L.orbSize(option)
   local i = math.floor(tonumber(option) or 0)
   local entry = L.ORB_SIZES[i] or L.ORB_SIZES[L.ORB_DEFAULT_SIZE]
-  return entry.size, math.floor(entry.size * 64 / 76 + 0.5), entry.font
+  return entry.size, math.floor(entry.size * 50 / 76 + 0.5), entry.font
 end
 
 -- the ring and mask images of an orb size: one pair per size, each at twice the size it is drawn
