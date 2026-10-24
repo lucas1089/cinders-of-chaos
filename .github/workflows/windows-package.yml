@@ -1,11 +1,12 @@
 # Windows package and release downloads: every run publishes a prerelease winpkg-<run number> (Releases; the run's
-# Summary links each file) with five ready-to-use downloads:
+# Summary links each file) with six ready-to-use downloads:
 #   CindersOfChaos-Windows.zip         the whole game for one Windows PC: server, client, portable MariaDB, map editor;
 #                                      extract it and run start-server.bat, then start-client.bat
 #                                      (tools/windows/package/README.txt is in the zip)
 #   CindersOfChaos-Client-Windows.zip  the Windows client alone (Chaos.exe and chaos.pack: modules, data with the 10.98
 #                                      dat and the spr as sprite shards),
 #                                      pointed at the input server_host (tools/windows/client-README.txt)
+#   CindersOfChaos-MapFiles.zip        the map files alone for a 10.98 map editor (world/ and data/1098/, no editor)
 #   CindersOfChaos-Server-Windows.zip  the Windows server alone: ChaosServer.exe + DLLs, portable MariaDB, the start /
 #                                      stop .bat files (tools/windows/server-README.txt)
 #   CindersOfChaos-Server-Linux.tar.gz the engine built on Ubuntu 22.04 with its libraries in server/lib (RUNPATH
@@ -766,13 +767,26 @@ jobs:
           PY
           crlf chaos/tools/windows/server-README.txt "$S/README.txt"
           info "server host: $SERVER_HOST" "mariadb: $MARIADB_VERSION" > "$S/BUILD_INFO.txt"
+          # the map files alone, for any 10.98 map editor: the loaded map and the editor's client data (hard links)
+          M=CindersOfChaos-MapFiles
+          mkdir -p "$M/data"
+          cp -al "$P/server/data/world" "$M/world"
+          cp -al "$P/mapeditor/data/1098" "$M/data/1098"
+          # the editor's client versions list (10.98: otb, otbm 3, dat 0x42A3, spr 0x57BBD603), for editors that need it
+          cp -al "$P/mapeditor/data/clients.xml" "$M/data/clients.xml"
+          for f in 1098/Tibia.dat 1098/Tibia.spr 1098/items.otb 1098/items.xml 1098/creatures.xml 1098/tibia.otfi clients.xml; do
+            test -s "$M/data/$f" || { echo "::error::map files: no data/$f"; exit 1; }
+          done
+          ls "$M"/world/*.otbm >/dev/null || { echo "::error::map files: no .otbm in world/"; exit 1; }
+          crlf chaos/tools/windows/mapfiles-README.txt "$M/README.txt"
+          info > "$M/BUILD_INFO.txt"
           wait "$client_pid"  # fails the step (set -e) when the client folder failed
-          du -sh "$C" "$S"
+          du -sh "$C" "$S" "$M"
 
       - name: Publish the Windows downloads on the release
         run: |
           set -euo pipefail
-          # The three zips are made side by side, each uploaded as soon as it is done. Level 1 (the files inside are the
+          # The zips are made side by side, each uploaded as soon as it is done. Level 1 (the files inside are the
           # same at any level): the encrypted chaos.pack and archives do not compress, the rest barely gains from -9.
           pack() {  # zip name, folder
             zip -qr -1 -n .pack:.zip:.gz:.xz:.7z "$1" "$2"
@@ -785,6 +799,8 @@ jobs:
           pack CindersOfChaos-Client-Windows.zip CindersOfChaos-Client &
           pids+=($!)
           pack CindersOfChaos-Server-Windows.zip CindersOfChaos-Server &
+          pids+=($!)
+          pack CindersOfChaos-MapFiles.zip CindersOfChaos-MapFiles &
           pids+=($!)
           rc=0
           for pid in "${pids[@]}"; do wait "$pid" || rc=1; done
@@ -1192,6 +1208,7 @@ jobs:
             line CindersOfChaos-Windows.zip "the whole game on one Windows PC: server, client, portable MariaDB, map editor; start-server.bat, then start-client.bat (test accounts, local play)."
             line CindersOfChaos-Client-Windows.zip "the Windows client alone (Chaos.exe), connects to $SERVER_HOST."
             line CindersOfChaos-Server-Windows.zip "the Windows server alone: ChaosServer.exe, portable MariaDB, start-server.bat / stop-server.bat."
+            line CindersOfChaos-MapFiles.zip "the map files alone for a 10.98 map editor: the .otbm with its spawns and houses, Tibia.dat / Tibia.spr, items.otb / items.xml, creatures.xml, tibia.otfi, clients.xml (no editor)."
             line CindersOfChaos-Server-Linux.tar.gz "the Linux server (Ubuntu 22.04+, Debian 12+) with its own MariaDB: ./start-server.sh."
             line CindersOfChaos-Client-Linux.tar.gz "the Linux client (Ubuntu 22.04+, Debian 12+): ./run-client.sh, connects to $SERVER_HOST."
             echo
