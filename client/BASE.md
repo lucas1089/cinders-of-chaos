@@ -1145,6 +1145,9 @@ obfuscation, not protection: whoever has the binary can recover the key with a d
   in the logs) and take the input `client_build` (`windows-package.yml` also writes it into `Services.update.package`).
   Raise it for every new exe. Without the secret `windows-package.yml` fails, unless its input `allow_dev_key` is
   ticked (a test build: then a warning and the development key); `windows-client.yml` still only warns.
+  `windows-package.yml` caches the compiled exe (Windows and Linux client jobs) by a hash of the assembled tree without
+  `data/ modules/ mods/ layouts/ init.lua`, the toolchain, `client_build` and a sha256 of the secret (never the secret): a
+  run that changed only Lua or data reuses the exe; the Lua and data always come fresh. Bump `-v1` in the cache keys to bust it.
 - **Linux / local:** `CHAOS_CLIENT_KEY=$(cat ~/chaos-keys/client.key) cmake <game-dir> ... -DCHAOS_CLIENT_BUILD=N`
   (`LINUX.md`); a build without it is a development client.
 

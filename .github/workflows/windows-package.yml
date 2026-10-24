@@ -54,6 +54,13 @@
 # The start test runs with CHAOS_UPDATE_OFF=1: no request to the live update server, so a package never depends on
 # what is published (winpkg-47 applied the older live winpkg-46 files and restarted, base patch 0101).
 # The first run builds the vcpkg ports of both exes (about an hour); later runs reuse the vcpkg binary caches.
+# Compiled-output caches (engine, client, engine-linux, client-linux): each compile job caches only its binary (exe plus
+# DLLs, or the ELF) under a key made from exactly what the compiler reads: the C++ side of the assembled source tree
+# (never modules/, mods/, data/, layouts/, init.lua, the Lua and data of the client or the server folder), the
+# vcpkg manifest and triplet or the apt versions of the libraries, the compiler version, the build recipe and every value
+# baked into the binary (CHAOS_CLIENT_BUILD, a sha256 of CHAOS_CLIENT_KEY). A run that changed only Lua, data or the
+# overlay hits the cache and skips vcpkg, CMake and the compiler; the Lua, data and overlay still come fresh from
+# the checkout (the assemble steps always run). Bump the -v1 in the keys to throw the old binaries away.
 name: Windows package
 
 on:
@@ -249,10 +256,42 @@ jobs:
           set(VCPKG_PLATFORM_TOOLSET_VERSION 14.29)
           EOF
 
+      # Compiled engine cache: out/ holds ChaosServer.exe and the DLLs only, nothing of the server folder.
+      # The key is one sha256 of: the engine source exactly as the Build step reads it (src/, cmake/, CMakeLists.txt after
+      # the base archive, server/src-patches and the CMake edit above; vcpkg.json with ENGINE_VCPKG_BASELINE; the
+      # triplet), the Visual Studio version of the image, and the build recipe (keep it equal to the Build step: flags,
+      # triplet, image label; bump v1 when the step changes in a way the recipe does not show). Nothing secret or
+      # input-driven is compiled into the engine: SERVER_HOST and the rest only reach the server folder.
+      - name: Key of the compiled engine
+        id: ekey
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd server
+          files=$(find src cmake CMakeLists.txt vcpkg.json triplets -type f 2>/dev/null | LC_ALL=C sort || true)
+          grep -q '^src/' <<<"$files" || { echo "::error::no engine source found for the cache key"; exit 1; }
+          grep -qx 'CMakeLists.txt' <<<"$files" || { echo "::error::no CMakeLists.txt found for the cache key"; exit 1; }
+          vswhere="/c/Program Files (x86)/Microsoft Visual Studio/Installer/vswhere.exe"
+          vs=$("$vswhere" -latest -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationVersion 2>/dev/null | tr -d '\r' || true)
+          vs=${vs:-image-${ImageVersion:-unknown}}
+          recipe="engine-win-v1 windows-2022 x64-windows-v142 Release Ninja SKIP_GIT=ON CXXFLAGS=/D_CRT_SECURE_NO_WARNINGS,/bigobj baseline=$ENGINE_VCPKG_BASELINE"
+          hash=$({ echo "$recipe"; echo "vs=$vs"; printf '%s\n' "$files" | xargs -d '\n' sha256sum; } | sha256sum | cut -d' ' -f1)
+          echo "recipe: $recipe"; echo "visual studio: $vs"; echo "source files: $(wc -l <<<"$files")"; echo "key hash: $hash"
+          echo "hash=$hash" >> "$GITHUB_OUTPUT"
+
+      - name: Restore the compiled engine
+        id: ecache
+        uses: actions/cache/restore@v4
+        with:
+          path: out
+          key: engine-win-bin-v1-${{ steps.ekey.outputs.hash }}
+
       - name: Get CMake and Ninja
+        if: steps.ecache.outputs.cache-hit != 'true'
         uses: lukka/get-cmake@latest
 
       - name: Restore the vcpkg binary cache
+        if: steps.ecache.outputs.cache-hit != 'true'
         uses: actions/cache/restore@v4
         with:
           path: ${{ github.workspace }}\vcpkg_cache
@@ -261,6 +300,7 @@ jobs:
             vcpkg-chaos-engine-v142-${{ env.ENGINE_VCPKG_BASELINE }}-
 
       - name: Build
+        if: steps.ecache.outputs.cache-hit != 'true'
         shell: cmd
         working-directory: server
         env:
@@ -282,19 +322,34 @@ jobs:
 
       # saved even when the build fails: the ports are built before the engine, so the next run starts there
       - name: Save the vcpkg binary cache
-        if: always()
+        if: always() && steps.ecache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
           path: ${{ github.workspace }}\vcpkg_cache
           key: vcpkg-chaos-engine-v142-${{ env.ENGINE_VCPKG_BASELINE }}-${{ github.run_id }}
 
       - name: Collect the exe and its DLLs
+        if: steps.ecache.outputs.cache-hit != 'true'
         shell: bash
         run: |
           mkdir -p out
           cp server/build/tfs.exe out/ChaosServer.exe
           cp server/build/*.dll out/
           ls -la out
+
+      # on a hit out/ came from the cache; either way it must hold the exe before it is cached or handed over
+      - name: Check the compiled engine
+        shell: bash
+        run: |
+          test -s out/ChaosServer.exe || { echo "::error::out/ChaosServer.exe is missing"; exit 1; }
+          ls -la out
+
+      - name: Save the compiled engine
+        if: steps.ecache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: out
+          key: engine-win-bin-v1-${{ steps.ekey.outputs.hash }}
 
       # a full vcpkg cache hit builds the engine before the server job has made the release (run 66)
       - name: Release of this run (created by whichever job gets here first)
@@ -354,7 +409,7 @@ jobs:
         run: |
           (cd assets && sha256sum --ignore-missing -c SHA256SUMS.parts)
           mkdir base
-          cat assets/client/base-client.tar.xz.part* | xz -d | tar -xf - -C base
+          cat assets/client/base-client.tar.xz.part* | xz -d -T0 | tar -xf - -C base
           mv base/*/ base-client  # the archive holds one folder: the base client
           patch --version | head -n 1
           bash chaos/client/tools/assemble_client.sh "$GITHUB_WORKSPACE/base-client" "$GITHUB_WORKSPACE/game"
@@ -389,10 +444,48 @@ jobs:
           fi
           echo "Client build $CLIENT_BUILD"
 
+      # Compiled client cache: built/ holds the exe, its DLLs and build/data (when CMake makes any), never the Lua, data,
+      # modules, layouts or init.lua of game/ (the next steps always copy those fresh from the assembled tree).
+      # The key is one sha256 of: every file of the assembled game/ tree except data/ modules/ mods/ layouts/ init.lua
+      # (so src/ with the overlay's src/, the base patches' C++ and CMake changes, CMakeLists.txt, cmake/, vcpkg.json),
+      # the Visual Studio version of the image, the build recipe (keep it equal to the Build step) and the values baked
+      # into the exe: CHAOS_CLIENT_BUILD and a sha256 of CHAOS_CLIENT_KEY (never the key; empty key = the dev key).
+      # UPDATE_PUBLIC_KEY, SERVER_HOST, SITE_URL and CHAOS_RSA_PUBLIC are not compiled in: they are written into init.lua
+      # in the Package job. Runs after "Client guard inputs", so a bad key never reaches the key.
+      - name: Key of the compiled client
+        id: ckey
+        shell: bash
+        env:
+          CHAOS_CLIENT_KEY: ${{ secrets.CHAOS_CLIENT_KEY }}
+        run: |
+          set -euo pipefail
+          cd game
+          files=$(find . -type f ! -path './data/*' ! -path './modules/*' ! -path './mods/*' ! -path './layouts/*' \
+            ! -path './init.lua' ! -path './vcpkg/*' ! -path './build/*' | LC_ALL=C sort)
+          grep -q '^\./src/' <<<"$files" || { echo "::error::no client source found for the cache key"; exit 1; }
+          grep -qx './CMakeLists.txt' <<<"$files" || { echo "::error::no CMakeLists.txt found for the cache key"; exit 1; }
+          vswhere="/c/Program Files (x86)/Microsoft Visual Studio/Installer/vswhere.exe"
+          vs=$("$vswhere" -latest -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationVersion 2>/dev/null | tr -d '\r' || true)
+          vs=${vs:-image-${ImageVersion:-unknown}}
+          keyhash=$(printf '%s' "$CHAOS_CLIENT_KEY" | sha256sum | cut -d' ' -f1)
+          recipe="client-win-v1 windows-2025 x64-windows-static Release Ninja build=$CLIENT_BUILD"
+          hash=$({ echo "$recipe"; echo "vs=$vs"; echo "key=$keyhash"; printf '%s\n' "$files" | xargs -d '\n' sha256sum; } | sha256sum | cut -d' ' -f1)
+          echo "recipe: $recipe"; echo "visual studio: $vs"; echo "source files: $(wc -l <<<"$files")"; echo "key hash: $hash"
+          echo "hash=$hash" >> "$GITHUB_OUTPUT"
+
+      - name: Restore the compiled client
+        id: ccache
+        uses: actions/cache/restore@v4
+        with:
+          path: built
+          key: client-win-bin-v1-${{ steps.ckey.outputs.hash }}
+
       - name: Get CMake and Ninja
+        if: steps.ccache.outputs.cache-hit != 'true'
         uses: lukka/get-cmake@latest
 
       - name: Restore the vcpkg binary cache
+        if: steps.ccache.outputs.cache-hit != 'true'
         uses: actions/cache/restore@v4
         with:
           path: ${{ github.workspace }}\vcpkg_cache
@@ -405,6 +498,7 @@ jobs:
       # the key reaches CMake only as this step's environment variable (src/client/CMakeLists.txt reads
       # $ENV{CHAOS_CLIENT_KEY} at configure time, never caches it and writes it, masked, into build/chaosguard/ only)
       - name: Build
+        if: steps.ccache.outputs.cache-hit != 'true'
         shell: cmd
         working-directory: game
         env:
@@ -423,13 +517,15 @@ jobs:
           if errorlevel 1 exit /b 1
 
       - name: Save the vcpkg binary cache
-        if: always()
+        if: always() && steps.ccache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
           path: ${{ github.workspace }}\vcpkg_cache
           key: vcpkg-chaos-client-${{ hashFiles('game/vcpkg.json') }}-${{ github.run_id }}
 
-      - name: Put the client folder together
+      # the compiled files only, in built/ (the cache path): the exe as Chaos.exe, the DLLs, build/data
+      - name: Keep the compiled client
+        if: steps.ccache.outputs.cache-hit != 'true'
         shell: bash
         run: |
           shopt -s nullglob
@@ -438,13 +534,32 @@ jobs:
             echo "::error::expected one exe in game/build, found: ${exes[*]:-none}"
             exit 1
           fi
+          mkdir -p built
+          cp "${exes[0]}" built/Chaos.exe
+          cp game/build/*.dll built/ 2>/dev/null || true
+          if [ -d game/build/data ]; then cp -r game/build/data built/data; fi
+          ls -la built
+
+      - name: Save the compiled client
+        if: steps.ccache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: built
+          key: client-win-bin-v1-${{ steps.ckey.outputs.hash }}
+
+      # the exe and DLLs come from built/ (build or cache); init.lua, data, modules, mods and layouts always from game/
+      - name: Put the client folder together
+        shell: bash
+        run: |
+          shopt -s nullglob
+          test -s built/Chaos.exe || { echo "::error::built/Chaos.exe is missing"; exit 1; }
           mkdir -p out/client
-          cp "${exes[0]}" out/client/Chaos.exe
-          cp game/build/*.dll out/client/ 2>/dev/null || true
+          cp built/Chaos.exe out/client/Chaos.exe
+          cp built/*.dll out/client/ 2>/dev/null || true
           for p in init.lua data modules mods layouts; do
             if [ -e "game/$p" ]; then cp -r "game/$p" out/client/; fi
           done
-          if [ -d game/build/data ]; then cp -r game/build/data/. out/client/data/; fi
+          if [ -d built/data ]; then cp -r built/data/. out/client/data/; fi
           tar -cf client.tar -C out client
 
       - name: Release of this run (created by whichever job gets here first)
@@ -714,7 +829,36 @@ jobs:
           tar -xf server.tar -C work
           rm server.tar
 
+      # Compiled engine cache: the one file work/server/build/tfs. The key is one sha256 of: src/, cmake/ and
+      # CMakeLists.txt of the server folder from the server job (base source + src-patches), the apt versions of the
+      # build packages (APT_PACKAGES, libc6, libstdc++6), the g++ version, and the build recipe (keep it equal to the
+      # Build step). The data, Lua and SQL of the server folder never come from the cache. Nothing from the inputs is
+      # compiled in. The apt step above runs on a hit too: package_server.sh bundles the libraries installed here.
+      - name: Key of the compiled engine
+        id: key
+        run: |
+          set -euo pipefail
+          cd work/server
+          files=$(find src cmake CMakeLists.txt -type f 2>/dev/null | LC_ALL=C sort || true)
+          grep -q '^src/' <<<"$files" || { echo "::error::no engine source found for the cache key"; exit 1; }
+          grep -qx 'CMakeLists.txt' <<<"$files" || { echo "::error::no CMakeLists.txt found for the cache key"; exit 1; }
+          # shellcheck disable=SC2086 # APT_PACKAGES is a list of package names
+          debs=$(dpkg-query -W -f='${Package} ${Version} ${Architecture}\n' $APT_PACKAGES libc6 libstdc++6 | LC_ALL=C sort)
+          gcc=$(g++ -dumpfullversion -dumpmachine | tr '\n' ' ')
+          recipe="engine-linux-v1 ubuntu-22.04 Release Ninja SKIP_GIT=ON no-Werror"
+          hash=$({ echo "$recipe"; echo "g++ $gcc"; echo "$debs"; printf '%s\n' "$files" | xargs -d '\n' sha256sum; } | sha256sum | cut -d' ' -f1)
+          echo "recipe: $recipe"; echo "g++ $gcc"; echo "source files: $(wc -l <<<"$files")"; echo "key hash: $hash"
+          echo "hash=$hash" >> "$GITHUB_OUTPUT"
+
+      - name: Restore the compiled engine
+        id: cache
+        uses: actions/cache/restore@v4
+        with:
+          path: work/server/build/tfs
+          key: engine-linux-bin-v1-${{ steps.key.outputs.hash }}
+
       - name: Build the engine
+        if: steps.cache.outputs.cache-hit != 'true'
         working-directory: work/server
         run: |
           set -euo pipefail
@@ -725,6 +869,16 @@ jobs:
           cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DSKIP_GIT=ON
           cmake --build build --parallel "$(nproc)"
           ls -la build/tfs
+
+      - name: Save the compiled engine
+        if: steps.cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: work/server/build/tfs
+          key: engine-linux-bin-v1-${{ steps.key.outputs.hash }}
+
+      - name: Check the compiled engine
+        run: test -x work/server/build/tfs && ls -la work/server/build/tfs
 
       - name: Portable MariaDB (official Linux build)
         run: bash chaos/tools/linux/fetch_mariadb.sh "$MARIADB_VERSION" mariadb-linux
@@ -827,7 +981,7 @@ jobs:
         run: |
           (cd assets && sha256sum --ignore-missing -c SHA256SUMS.parts)
           mkdir base
-          cat assets/client/base-client.tar.xz.part* | xz -d | tar -xf - -C base
+          cat assets/client/base-client.tar.xz.part* | xz -d -T0 | tar -xf - -C base
           mv base/*/ base-client  # the archive holds one folder: the base client
           patch --version | head -n 1
           bash chaos/client/tools/assemble_client.sh "$GITHUB_WORKSPACE/base-client" "$GITHUB_WORKSPACE/game"
@@ -862,8 +1016,43 @@ jobs:
           fi
           echo "Client build $CLIENT_BUILD"
 
+      # Compiled client cache: built/ holds the ELF executable (and build/data when CMake makes any), never the Lua,
+      # data, modules, layouts or init.lua of game/ (package_client.sh copies those fresh from the assembled tree).
+      # The key is one sha256 of: every file of the assembled game/ tree except data/ modules/ mods/ layouts/ init.lua,
+      # the apt versions of the build packages and of libc6 / libstdc++6, the g++ version, the build recipe (keep it
+      # equal to the Build step) and the values baked into the binary: CHAOS_CLIENT_BUILD and a sha256 of
+      # CHAOS_CLIENT_KEY (never the key; empty key = the dev key). UPDATE_PUBLIC_KEY, SERVER_HOST, SITE_URL and
+      # CHAOS_RSA_PUBLIC are not compiled in: "Put the Linux client together" writes them into init.lua.
+      - name: Key of the compiled client
+        id: key
+        env:
+          CHAOS_CLIENT_KEY: ${{ secrets.CHAOS_CLIENT_KEY }}
+        run: |
+          set -euo pipefail
+          cd game
+          files=$(find . -type f ! -path './data/*' ! -path './modules/*' ! -path './mods/*' ! -path './layouts/*' \
+            ! -path './init.lua' | LC_ALL=C sort)
+          grep -q '^\./src/' <<<"$files" || { echo "::error::no client source found for the cache key"; exit 1; }
+          grep -qx './CMakeLists.txt' <<<"$files" || { echo "::error::no CMakeLists.txt found for the cache key"; exit 1; }
+          # shellcheck disable=SC2086 # APT_PACKAGES is a list of package names
+          debs=$(dpkg-query -W -f='${Package} ${Version} ${Architecture}\n' $APT_PACKAGES libc6 libstdc++6 | LC_ALL=C sort)
+          gcc=$(g++ -dumpfullversion -dumpmachine | tr '\n' ' ')
+          keyhash=$(printf '%s' "$CHAOS_CLIENT_KEY" | sha256sum | cut -d' ' -f1)
+          recipe="client-linux-v1 ubuntu-22.04 Release make LUAJIT=ON PHYSFS=libphysfs.so OPENAL=libopenal.so build=$CLIENT_BUILD"
+          hash=$({ echo "$recipe"; echo "g++ $gcc"; echo "$debs"; echo "key=$keyhash"; printf '%s\n' "$files" | xargs -d '\n' sha256sum; } | sha256sum | cut -d' ' -f1)
+          echo "recipe: $recipe"; echo "g++ $gcc"; echo "source files: $(wc -l <<<"$files")"; echo "key hash: $hash"
+          echo "hash=$hash" >> "$GITHUB_OUTPUT"
+
+      - name: Restore the compiled client
+        id: cache
+        uses: actions/cache/restore@v4
+        with:
+          path: built
+          key: client-linux-bin-v1-${{ steps.key.outputs.hash }}
+
       # client/LINUX.md "Build"; the key reaches CMake only as this step's environment variable (base patch 0035)
       - name: Build
+        if: steps.cache.outputs.cache-hit != 'true'
         env:
           CHAOS_CLIENT_KEY: ${{ secrets.CHAOS_CLIENT_KEY }}
         run: |
@@ -875,6 +1064,27 @@ jobs:
             -DCHAOS_CLIENT_BUILD="$CLIENT_BUILD"
           make -j"$(nproc)"
 
+      # the compiled files only, in built/ (the cache path); package_client.sh wants exactly one ELF executable there
+      - name: Keep the compiled client
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          mkdir built
+          n=0
+          while IFS= read -r -d '' f; do
+            if file -b "$f" | grep -q '^ELF 64-bit.*executable'; then cp -p "$f" built/; n=$((n + 1)); fi
+          done < <(find build -maxdepth 1 -type f -perm -u+x -print0)
+          [ "$n" -eq 1 ] || { echo "::error::expected one executable in build, found $n"; exit 1; }
+          if [ -d build/data ]; then cp -r build/data built/data; fi
+          ls -la built
+
+      - name: Save the compiled client
+        if: steps.cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: built
+          key: client-linux-bin-v1-${{ steps.key.outputs.hash }}
+
       - name: Put the Linux client together
         env:
           CHAOS_RSA_PUBLIC: ${{ secrets.CHAOS_RSA_PUBLIC || vars.CHAOS_RSA_PUBLIC }}
@@ -882,10 +1092,10 @@ jobs:
         run: |
           set -euo pipefail
           P=CindersOfChaos-Client-Linux
-          bash chaos/tools/linux/package_client.sh game build "$P"
+          bash chaos/tools/linux/package_client.sh game built "$P"
           (cd assets && sha256sum --ignore-missing -c SHA256SUMS.parts)
           mkdir -p things "$P/data/things/1098"
-          cat assets/things/things-1098.tar.xz.part* | xz -d | tar -xf - -C things
+          cat assets/things/things-1098.tar.xz.part* | xz -d -T0 | tar -xf - -C things
           test -f things/Tibia.dat && test -f things/Tibia.spr || { echo "::error::the pair archive has no Tibia.dat / Tibia.spr"; exit 1; }
           # the dat and the spr as sprite shards, as in the Windows client (the single spr is over the updater's 1 GiB)
           find things -maxdepth 1 -type f ! -name Tibia.spr -exec cp -t "$P/data/things/1098/" {} +
@@ -912,7 +1122,7 @@ jobs:
           ls -la "$P"
           tar -czf "$P.tar.gz" "$P"
           ls -la "$P.tar.gz"
-          rm -rf "$P" game build
+          rm -rf "$P" game build built
 
       # the archive as a player gets it, on a virtual display with software OpenGL and no sound card: the client must
       # still be running after 30 seconds (it waits at the login screen). CHAOS_UPDATE_OFF=1: the updater makes no
