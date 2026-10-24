@@ -598,12 +598,17 @@ cmd_apply() {
   else
     say "STEP 4/10 backup"
     [ -x "$REPO/server/tools/backup.sh" ] || finish failed "no $REPO/server/tools/backup.sh: nothing changed" 1
+    # the target commit's backup.sh when it has one, so a backup fix works in the update that brings it
+    local bscript="$REPO/server/tools/backup.sh"
+    if g show "$remote:server/tools/backup.sh" > "$work/backup.sh" 2>/dev/null && [ -s "$work/backup.sh" ]; then
+      chmod 700 "$work/backup.sh" && bscript="$work/backup.sh"
+    fi
     local save=() bdir pid
     pid=$(head -c 20 "$KIT/run/server.pid" 2>/dev/null | tr -dc 0-9)
     if [ -n "$pid" ] && [ "$(cat "/proc/$pid/comm" 2>/dev/null)" = tfs ]; then save=(--save-pid "$pid"); fi
     bdir=${CHAOS_BACKUP_DIR:-$( . "$ENVFILE" 2>/dev/null; echo "${CHAOS_BACKUP_DIR:-/var/backups/chaos}" )}
     ( set -a; . "$ENVFILE"; CHAOS_BACKUP_DIR=$bdir; set +a; PATH="$PATH:$KIT/mariadb/bin"
-      "$REPO/server/tools/backup.sh" "${save[@]}" --server-dir "$SERVER" 2>&1 | tail -n 15; exit "${PIPESTATUS[0]}" ) \
+      "$bscript" "${save[@]}" --server-dir "$SERVER" 2>&1 | tail -n 15; exit "${PIPESTATUS[0]}" ) \
       || finish failed "the backup failed: nothing changed" 1
     local archive
     # shellcheck disable=SC2012 # plain backup names
