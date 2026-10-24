@@ -82,9 +82,10 @@ ChaosMainWindow
 
   ChaosScrollBar
     id: tierScroll
-    anchors.top: tierList.top
+    anchors.top: rewardLabel.bottom
     anchors.right: parent.right
-    anchors.bottom: tierList.bottom
+    margin-top: 6
+    height: 258
     step: 43
     pixels-scroll: true
 
