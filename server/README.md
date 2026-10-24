@@ -632,6 +632,7 @@ collision check") and be added here.
 | 109 | `dungeons` | `dungeons.lua` | `game_dungeons` | `dungeon` may carry `health = {monsters = {6 %}, boss = {6 %}}` (a dungeon with its own health curves, `dungeons_difficulty.lua` `D.healthCurves`); without it the client shows the table |
 | 110 | `stash` | `stash.lua` | `game_stash` | |
 | 111 | `depotTabs` | `depot.lua` | `game_depottabs` | |
+| 113 | `npcCurrency` | `data/lib/chaos_npc_currency.lua` (run by the base NPC scripts of a custom currency, `tools/patch_npc_currency.py`) | `game_npctradewindow` | server -> client, JSON `{action = "currency", data = {code, name, item?, amount, again?}}`: the currency of the shop that opens next, and its balance after each purchase and sale ("NPC currencies") |
 | 120 | none (`CHAOS_ADMIN_OPCODE`) | `admin/core.lua` | `game_admin` | big payloads through `Chaos.sendChunked` |
 | 125 | `monsterbar` | `monster_tiers.lua`, `worldboss.lua` | `game_monsterbar` | server -> client |
 | 151 | `notificationsAction` | `notifications.lua` | `game_chaosnotify` | client -> server: party invite answer, catacomb start |
@@ -763,8 +764,10 @@ reset, storages and the free-respec rule are untouched. `tests/class_spells_test
 ### Opcode collision check
 Searched the reference server for every `onExtendedOpcode`, `sendExtendedOpcode(` and opcode
 constant. Opcodes in use there: 1, 67, 73, 89, 91, 92, 99, 106, 107, 136, 181, 201, 202. (The
-`ServerOpcodes` 125/126 in `global.lua` are game-protocol opcodes, a different number space.)
-None of the Chaos opcodes collide; no adjustment was needed. Hideouts (192) also checked the reference client's own opcodes (`gamelib`
+`ServerOpcodes` 125/126 in `global.lua` were first read as game-protocol opcodes, a different number space. They are not:
+the base NPC scripts send them with `player:sendExtendedOpcode`, and 125 is the monster bar's. O189 moved them to 126 / 127
+and gave the custom currencies their own opcode 113, see "NPC currencies".)
+No other Chaos opcode collides. Hideouts (192) also checked the reference client's own opcodes (`gamelib`
 `ExtendedIds` 144-146, 210, 212, 213, 230, 246 and 0x8C = 140): 145 was taken there by the skill wheel. 110 was chosen for the stash because
 the client has no fixed value and 110 is free. Storage keys (see "Storage keys" below) and DB tables
 `chaos_*` are new; the one deliberate overlap is autoloot's storage base 80000 (shared on purpose).
@@ -8021,6 +8024,73 @@ copy of the stock lines with made-up names and says every listed name four ways.
 same checks on a real installed server's scripts and task lists. On the beta base copy all 15 normal and 11 daily
 names register and every normal task counts its first monster. Left as they are: two normal tasks share one name (the
 first one starts), and one listed monster of the base lists does not exist on the server.
+
+## NPC currencies (`tools/patch_npc_currency.py`, `data/lib/chaos_npc_currency.lua`, `tests/npc_currency_test.lua`, client `game_npctradewindow`)
+
+Owner beta 2026-10-24 (O189), a screenshot of the azure NPC's trade window: "broken window. Where do players get azure
+coins?" The window said "Currency: Gold Coin", priced the Blightwoven / Ironwrath / Netherwave / Ashborne set pieces and
+bows "Price 30, 85.00 ..." and showed the player's 30.4M gold; names were cut ("blightwoven arm..."); and the NPC's
+reply to "azure" talked about "knights", "sorcerers and druids" and "paladins".
+
+**What azure coins are.** Item 26780, "Azure Coin" (weight 5, "Mystic Coin used to trade valuables things"), the
+currency of the azure NPC (`data/npc/scripts/`, the script of the NPC the NPC list names Lanath): 30 coins for a
+helmet, armor, legs or boots, 50 for a sword, bow, wand or rod; selling a piece back pays half. The NPC checks
+`player:removeItem(26780, ...)`, so the coins are real items in the backpack, not a storage. They are also an ingredient of
+the base crafting recipes (`data/items/base_recipes.csv`: 30 per armor, 50 per weapon, 15 per jewel of the base smiths).
+`data/items/base_item_values.csv` lists them as `currency` (not sellable to the Loot Buyer).
+
+**Where players get them (no new source was needed; the base's own, all still in the installed data).** Read from the
+base server's data on 2026-10-24:
+- the boss of the Azure portals (`data/monster/lua/azure_portals/boss/azure.lua`, the lever fight of
+  `data/scripts/customs/portals/azure.lua`: level 200, four players, one try per player every 4 h): 65% for 1-22 coins.
+  The base's Enhanced Loot script (`data/scripts/customs/enhanced_loot/`) gives the same boss a 50% chance of a bag with
+  one of these set pieces directly, so the sets also drop where the NPC sells them;
+- the Forbidden Chevalier (`data/monster/lua/dungeons/forbidden/`, a dungeon boss): 25% for 1-3 coins;
+- the base tasks (`data/scripts/customs/tasks/tasks.lua`): the Azure Catacombs task pays 8 coins, three more pay 2, 3 and 3;
+  the ancestral tasks (`data/lib/custom/ancestral_task.lua`) pay 10 for killing the Azure boss once, and 4 each for the
+  150-kill depths task and the 300-kill portal task.
+Our loot layer (`loot.lua`) runs after the stock drop and never removes a line of a base table, so none of this changed.
+The Master of the Elements does not drop them (its table has none of these items), and nothing of ours (`scripts/chaos`,
+`chaos_item_prices_data.lua`, the loot bands, the store, the roulette) names item 26780. Not checked in a live client:
+that the portal lever and the dungeon work on the installed map. The Enhanced Loot and task rewards were not changed, so
+no store, roulette, gold or loot model moved (store_model, roulette_model, loot_model and gen_item_prices pass unchanged).
+The NPC says it now: "Azure Coins drop from the boss of the Azure portals and the Forbidden Chevalier, and some hunting
+tasks pay them."
+
+**Cause of the window.** The 10.98 shop packet (0x7A) has no currency, so the base client window always shows gold. Eight
+base NPC scripts that trade for something else (the azure NPC; five mining-crafting NPCs that pay in town coins kept in a
+storage, 48076-48080; the sweets NPC, dark chocolate coins, item 28697; the token NPC, silver tokens, item 25172) told the
+old client by two extended opcodes, `ServerOpcodes.currencyType` 125 (a code such as "AZ") and `ServerOpcodes.coinAmount`
+126, which no module of ours read. 125 is also the monster bar's opcode (`ChaosOpcodes.monsterbar`), so the code arrived
+there as a broken JSON. The rows were cut by the base's `short_text(name, 15)` and `short_text(info, 16)`.
+
+**Fix.**
+- Server, step `npccurrency` (after `worldtexts`; `patch_npc_currency.py`, marker `Chaos: npc currency (patch_npc_currency.py)`):
+  in those scripts the three opcode lines become `ChaosNpcCurrency.announce(player, {code, item | storage, name})`, which
+  sends JSON on the new opcode 113 (`ChaosOpcodes.npcCurrency`): the currency's name (the item type's, or the script's own
+  "... coins" text for a storage currency, so the world renames apply), the item for the icon, the balance. The two shop
+  callbacks are wrapped so the balance is sent again (`again = true`) after every purchase and sale. The azure NPC's
+  sell message named another currency ("... Coins"): it names the item's plural. Its reply to "azure" is now
+  "Stuff for every class: Blightwoven and Ironwrath for Warriors, Netherwave for Mystics and Ashborne for Rangers." plus the
+  source line, in the player's language (`ChaosNpcCurrency.setsReply`, keys in `i18n_strings.lua`; the set names are the
+  renamed words found in the script; the Warrior line wears the first two sets, the Mystic line the third, the Ranger line the
+  fourth, by the lists `add_vocations.py` rewrote). `data/global.lua`: `ServerOpcodes` 125 / 126 become 126 / 127, so a
+  script the tool does not know stops writing to the monster bar. Files are found by their stock lines (any NPC name); a
+  file without them is reported and left alone; CRLF and every other byte are kept.
+- Client, `game_npctradewindow` (client/MANIFEST.md): opcode 113. The window shows the currency's name and icon (no icon
+  for a storage currency), "Balance:" and the player's amount of it in place of the gold (the base's `getPlayerMoney`, so
+  the buy button, the amount and the grey rows follow it); the gold comes back when the window closes. Every row (gold
+  shops too) is rewritten to the whole item name and "Price 30, 85.00 oz" with a full tooltip. New texts "Balance:" and
+  "Price %s" have pt-BR entries.
+- Install: `python3 -I server/tools/install_all.py SERVER_DIR --only files,npccurrency` (or the admin app: Painel > Atualizar
+  servidor > Aplicar e reiniciar, which runs the whole install), then a server restart. The client needs its Lua overlay
+  published (the same update, box "publicar o update do client"), no engine build: no C++ and no base patch changed.
+- Tests: `tests/npc_currency_test.lua` (balance, payload, JSON, announce, wrapped callbacks, the reply in English and pt-BR,
+  opcode free), `tools/patch_npc_currency_test.py` (the patch on synthetic stock lines, CRLF, dry run, second run, both
+  Lua dialects parse), `tradewindowlogic_test.lua` and `tradewindow_test.lua` (the currency life, the rows, the glue
+  against a mocked client). Not run in a live client or on the installed server: the other seven NPCs' storage names are
+  read from their own messages and were not looked at in game; Quick Sell and Sell All still say "gold" in their
+  messages (they were not changed).
 
 ## Base world texts (`tools/patch_base_texts.py`, `tools/base_rename_lib.py`, `data/npc/base_world_names.csv`)
 

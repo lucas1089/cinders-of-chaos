@@ -127,6 +127,9 @@ ChaosOpcodes.chronicle = 171
 -- Candlemarks: the currency for time online, its counter and shop window (client game_candlemarks; candlemarks.lua,
 -- candlemarks_core.lua, candlemarks_config.lua; server/README.md "Candlemarks"). Storages 7102460 - 7102469.
 ChaosOpcodes.candlemarks = 176
+-- NPCs that trade for something other than gold: the currency's name, icon and the player's balance in the NPC trade
+-- window (client game_npctradewindow; data/lib/chaos_npc_currency.lua, tools/patch_npc_currency.py; README "NPC currencies")
+ChaosOpcodes.npcCurrency = 113
 Chaos.candlemarksTables = {accounts = "chaos_candlemarks", progress = "chaos_candlemark_progress",
 	purchases = "chaos_candlemark_purchases"}
 

@@ -3888,5 +3888,10 @@ return {
 		["You cannot open a town portal right after fighting other players."] = "Você não pode abrir um town portal logo após lutar com outros jogadores.",
 		["You cannot open a town portal while you carry a skull."] = "Você não pode abrir um town portal com skull.",
 		["You are already in a protection zone."] = "Você já está numa zona de proteção.",
+		-- NPCs that trade for something other than gold: the azure NPC's reply (data/lib/chaos_npc_currency.lua)
+		["Stuff for every class: %s and %s for Warriors, %s for Mystics and %s for Rangers."] =
+			"Equipamento para todas as classes: %s e %s para Warriors, %s para Mystics e %s para Rangers.",
+		["Azure Coins drop from the boss of the Azure portals and the Forbidden Chevalier, and some hunting tasks pay them."] =
+			"Azure Coins caem do chefe dos portais Azure e do Forbidden Chevalier, e algumas tarefas de caça pagam com elas.",
 	},
 }
