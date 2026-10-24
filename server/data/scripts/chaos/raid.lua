@@ -597,7 +597,8 @@ end
 
 local function spawn(run, name, pos, kind, opts)
 	opts = opts or {}
-	local m = Game.createMonster(name, P(pos), true, true)
+	-- O177: the boss shows the raid's entry level (a species' experience / health estimate is far above any level)
+	local m = Chaos.createMonsterNamed(name, P(pos), true, true, nil, kind == "boss" and C().minLevel or nil)
 	if not m then
 		log(string.format("cannot create %s (is data/monster/monsters/chaos/raid registered?)", name))
 		return nil

@@ -30,6 +30,19 @@ eq(K.displayLevel(0, 40, true, 100), nil, "a player's summon: none even when sca
 eq(K.displayLevel(0, 257, false, 0), 257, "scaled 0: the estimate")
 eq(K.displayLevel(777, nil, false, 0 / 0), nil, "scaled NaN, own level: none set")
 
+-- O177: an estimate is shown at most at the top hunting level (a world boss species estimated at 10182); a level a
+-- system passes itself (the Infinity Tower's floors) is not clamped
+eq(K.displayLevel(0, 10182), 2200, "a huge estimate is clamped to the top hunting level")
+eq(K.displayLevel(0, 2200), 2200, "the top level itself is kept")
+eq(K.displayLevel(0, 2201), 2200, "one above is clamped")
+eq(K.displayLevel(0, 1e9), 2200, "a huge number is clamped")
+eq(K.displayLevel(0, 10182, false, 3500), 3500, "a system's own level (tower floor) is not clamped")
+do
+	local prog = dofile("data/scripts/chaos/progression_config.lua")
+	local lim = prog.limits or (prog.progression and prog.progression.limits)
+	eq(K.maxEstimate, lim and lim.toLevel, "the clamp is the top level of progression_config.lua")
+end
+
 -- ================================================================== the engine file
 Chaos = {}
 local registered
@@ -53,6 +66,20 @@ check(type(registered) == "function", "onSpawn registered")
 local hellflayer = mon({pool = 257})
 registered(hellflayer, {x = 1, y = 1, z = 7}, false, false)
 eq(hellflayer.shown, 257, "Hellflayer [257]: a stock monster gets a level in its name")
+-- O177: a world boss species whose estimate is 10182 shows the top hunting level at most (display only)
+local kaelgor = mon({pool = 10182})
+registered(kaelgor, {x = 1, y = 1, z = 7}, false, false)
+eq(kaelgor.shown, 2200, "Kaelgor's estimate 10182 is shown as 2200")
+-- a system's own level (Chaos.spawnLevel: a pocket boss, a tower floor) is shown as given, over the estimate
+Chaos.spawnLevel = 300
+local pocketBoss = mon({pool = 10182})
+registered(pocketBoss, {x = 1, y = 1, z = 7}, false, false)
+eq(pocketBoss.shown, 300, "a pocket boss shows the level it was spawned with")
+Chaos.spawnLevel = 3500
+local floorBoss = mon({pool = 10182})
+registered(floorBoss, {x = 1, y = 1, z = 7}, false, false)
+eq(floorBoss.shown, 3500, "a tower floor level above 2200 is kept")
+Chaos.spawnLevel = nil
 local stag = mon({own = 777, pool = 790})
 registered(stag, {x = 1, y = 1, z = 7}, false, false)
 eq(stag.shown, nil, "Black Stag keeps the engine's own [777]")
@@ -153,6 +180,15 @@ local function src(path)
 	end
 	return t
 end
+-- O177: the scripted boss spawns pass the level of their fight
+check(src("data/scripts/chaos/pocketboss.lua"):find("pcall(create, run.boss.monster, P(run.L.bossSpawn), false, true, nil, level)", 1,
+	true) ~= nil, "pocketboss.lua spawns the boss with its level")
+check(src("data/scripts/chaos/worldboss.lua"):find("Chaos.createMonsterNamed(b.name, P(L.bossSpawn), false, true, nil, C().minLevel)", 1,
+	true) ~= nil, "worldboss.lua spawns the boss with the entry level")
+check(src("data/scripts/chaos/raid.lua"):find('kind == "boss" and C().minLevel', 1, true) ~= nil, "raid.lua: the boss's level")
+check(src("data/scripts/chaos/guildboss.lua"):find("false, true, nil, cfg.minLevel)", 1, true) ~= nil, "guildboss.lua: the boss's level")
+check(src("data/scripts/chaos/uber.lua"):find("false, true, nil, def.minLevel)", 1, true) ~= nil, "uber.lua: the boss's level")
+check(src("data/scripts/chaos/trials.lua"):find("false, true, nil, scale.level)", 1, true) ~= nil, "trials.lua: the warden's level")
 check(src("data/scripts/chaos/rift.lua"):find("create(name, P(pos), true, false, shown, level)", 1, true) ~= nil,
 	"rift.lua passes the run's level at the spawn")
 check(src("data/scripts/chaos/invasion.lua"):find("Chaos.spawnLevel = I.displayLevel(state.area and state.area.level)",

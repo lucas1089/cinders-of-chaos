@@ -18306,6 +18306,19 @@ type in a rift showed its rolled "[777]"). Display only, as above.
 - Base dungeons (`dungeons.lua`) are not level-scaled: a difficulty multiplies health and damage by percents after the
   placement, so their monsters keep their level.
 
+**Level of a scripted boss (O177, beta 2026-10-24: Kaelgor showed "Lv 10182" in its pocket).** The estimate of a world
+boss species' experience and health is only meant to rank monsters and is far above any level. Two guards, both
+display only (health, loot, pace and monster damage read other values: `MD.levelOf` uses the engine level, which a
+display level does not change):
+- The estimate is shown at most at the top hunting level, `ChaosMonsterLevelsCore.maxEstimate` = 2200
+  (`progression_config.lua` `limits.toLevel`; the test keeps them equal). A level a system passes
+  (`Chaos.spawnLevel`, the Infinity Tower's floors, which may be higher) is not clamped.
+- The scripted boss spawns pass the level of their fight through `Chaos.createMonsterNamed(..., level)`: pocket boss
+  (below), world boss and raid boss (their `minLevel`: 300 and 800), guild boss (`minLevel`), Ascended / uber bosses
+  (`def.minLevel`), Trial Warden (`scale.level`, the player's level within the tier). Left to the clamp: dungeon and
+  map monsters, nemesis, treasure goblins, the ascension quest guardian, adds and totems (stock monsters, no huge
+  estimate).
+
 Tests: `tests/monster_levels_test.lua`.
 
 ## Stop request file (`stop_request.lua`, `stop_request_core.lua`, `stop_request_config.lua`)
@@ -19495,6 +19508,14 @@ decides `K.needsFallbackLoot`, and a corpse that is no container is taken away a
 (`requestMs`, `ChaosRateLimit` key `pocketboss`) and take only a string key of at most 48 bytes; the pockets are
 instances (no Town Portal or hideout way in, intruders swept out); the re-entry cooldown; no stacking with the event
 hour; logout and death never refund.
+
+**Level of the boss (O177).** The boss is created with an explicit level (`K.bossLevel`, `Chaos.spawnLevel`), shown after
+its name; without it the bar showed the estimate of the species ("Lv 10182" for Kaelgor). World pocket: the world boss
+entry level (`Chaos.worldBoss.minLevel`, 300; the corpse is fixed at the world boss item level, so the monster level
+does not move the drop). Island and raid pockets: the level the drops already use (`ChaosLoot.typeLevel`: the bounty
+pool's hunting level, else the estimate), at least the pocket's entry level and at most 2200, so the number shown is
+the one the item level is rolled at. Display only: health (the pocket's factor), damage and loot are unchanged; the
+monster damage layer reads the engine level (`MD.levelOf`), not the display level.
 
 **Tests.** `tests/pocketboss_test.lua` (luajit and lua5.3): the list from the real configs, charges and the reset, bonus
 caps, refunds, the entry and party checks, scaling, the world reward rates over 20,000 rolls, no stacking, personal loot

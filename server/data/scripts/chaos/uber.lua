@@ -1050,7 +1050,8 @@ end
 local function spawnBoss(run)
 	local def = run.def
 	local L = run.L
-	local m = Game.createMonster(def.boss, P(L.bossSpawn), false, true)
+	-- O177: the boss shows the level the fight is for (def.minLevel), not the species' experience / health estimate
+	local m = Chaos.createMonsterNamed(def.boss, P(L.bossSpawn), false, true, nil, def.minLevel)
 	if not m then
 		log("cannot create " .. def.boss .. " (is data/monster/monsters/chaos/ascended registered?); the sigil is returned")
 		for id, e in pairs(run.players) do

@@ -1017,6 +1017,22 @@ function L.baseMonsterLevel(monster)
 	return ChaosItemMods.estimateMonsterLevel(okE and exp or 0, okH and hp or 0)
 end
 
+-- the same level for a monster type that is not spawned yet (O177: a pocket boss is created with the level its drops
+-- use): the bounty pool's hunting level, else the experience / health estimate; nil when the type is unknown
+function L.typeLevel(typeName)
+	local pl = poolLevel(typeName)
+	if pl and pl > 0 then
+		return pl
+	end
+	local okT, mt = pcall(MonsterType, typeName)
+	if not okT or not mt or not ChaosItemMods or not ChaosItemMods.estimateMonsterLevel then
+		return nil
+	end
+	local okE, exp = pcall(function() return mt:getExperience() end)
+	local okH, hp = pcall(function() return mt:getMaxHealth() end)
+	return ChaosItemMods.estimateMonsterLevel(okE and exp or 0, okH and hp or 0)
+end
+
 -- the monster's level: its own level (L.baseMonsterLevel); a waystone map's monster counts at its run's tier level
 -- (waystone_tiers.lua)
 function L.monsterLevel(monster)

@@ -1109,7 +1109,8 @@ local function spawnBoss(token)
 	end
 	local b = bossCfg()
 	local L = W.layout()
-	local boss = Game.createMonster(b.name, P(L.bossSpawn), false, true)
+	-- O177: the level of the entry (Chaos.worldBoss.minLevel) is shown, not the species' experience / health estimate
+	local boss = Chaos.createMonsterNamed(b.name, P(L.bossSpawn), false, true, nil, C().minLevel)
 	if not boss then
 		announce("The world boss could not appear. The event is cancelled.", true)
 		finish(false, "spawn failed")
