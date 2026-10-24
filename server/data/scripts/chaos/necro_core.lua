@@ -205,6 +205,49 @@ function N.minionDamageTaken(cfg, damage, aura)
 	return damage < 0 and -v or v
 end
 
+-- Damage a minion takes from a MONSTER (necro_config.lua minions.incoming): the monster's hit x factor, x the monster's
+-- pace damage curve (pace_config.lua damage, `paceMult`: what ChaosPace.damageMultOf gives for the attacker; 1 for a
+-- monster that is not paced: a boss, a rift or tower monster) when `pace` is on. The same curve softens the monsters'
+-- hits on the owner; a minion took them whole, at 1000 about 2.5 times what its owner took (O160). No `incoming` entry:
+-- the hit as it is. A hit that lands never rounds down to nothing. Sign kept (the engine's damage may be negative).
+function N.minionTaken(cfg, damage, paceMult)
+	local inc = cfg.minions.incoming
+	if not inc or damage == 0 then
+		return damage
+	end
+	local f = (inc.factor or 1) * (inc.pace and (paceMult or 1) or 1)
+	if f == 1 then
+		return damage
+	end
+	local v = max(1, floor(abs(damage) * f + 0.5))
+	return damage < 0 and -v or v
+end
+
+-- The health a minion gets back in dtMs (necro_config.lua minions.regen: a share of its maximum health per second,
+-- `combat` while the fight goes on, `idle` once nothing hit a minion and the owner had no target for idleMs): idle is
+-- true then. At least 1 when the share is above 0; 0 without the config.
+function N.minionRegen(cfg, maxHealth, idle, dtMs)
+	local r = cfg.minions.regen
+	if not r then
+		return 0
+	end
+	local share = idle and r.idle or r.combat
+	if not share or share <= 0 or (maxHealth or 0) <= 0 or (dtMs or 0) <= 0 then
+		return 0
+	end
+	return max(1, floor(maxHealth * share * dtMs / 1000 + 0.5))
+end
+
+-- Is the fight over for a minion's regeneration? `sinceMs`: the time since a minion was last hit or the owner last had a
+-- target (nil: never in this session); idle once it is at least minions.regen.idleAfterMs.
+function N.minionIdle(cfg, sinceMs)
+	local r = cfg.minions.regen
+	if not r then
+		return false
+	end
+	return sinceMs == nil or sinceMs >= (r.idleAfterMs or 0)
+end
+
 -- How a Raise Dead cast goes: classKey, level, have = minions of the raised kind out, corpses = usable corpses in
 -- reach. Returns {raise = n minions, fromCorpses = n corpses used, fromNothing = bool, extraMana = n} or nil, reason.
 function N.raisePlan(cfg, classKey, level, have, corpses, bonus)

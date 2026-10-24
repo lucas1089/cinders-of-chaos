@@ -81,6 +81,8 @@ pacified the caster for 10 s.
 (level 50, the Necromancer only: death damage on every enemy within 3 sqm of the caster, 2026-10-22). Minions hit as
 their owner, so their damage counts for it. Every minion has two spells, one single target and one area (beta
 2026-10-22; table in server/README.md "Necromancer summons"), and the summoned Risen Warrior taunts like the golem.
+Monsters hit a minion as they hit its owner (the pace damage curve), and minions regenerate, slowly in a fight and fast
+after it (2026-10-24, server/README.md "Necromancer summons"). The Necromancer minion hit factor is 0.92.
 - **Lich**: Soul Rot (a DoT that jumps when the host dies), Life Siphon (heals half the damage), Corpse Explosion; the
   curse is stronger (+25%) and spreads to 2 more. One Lich Shade (ranged death bolts) instead of skeletons, and Soul Hoard:
   +25% spell damage while the shade slot is empty.

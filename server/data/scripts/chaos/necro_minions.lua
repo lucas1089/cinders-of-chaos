@@ -43,6 +43,7 @@ local M = ChaosNecroMinions
 M.nextHit = M.nextHit or {} -- minion id -> os.mtime of its next hit
 M.nextTaunt = M.nextTaunt or {} -- golem / warrior id -> os.mtime of its next taunt
 M.spellAt = M.spellAt or {} -- minion id -> {single = ms, area = ms}: when each spell is ready again
+M.lastFight = M.lastFight or {} -- player id -> os.mtime a monster last hit one of its minions (regeneration, O160)
 M.nextRegen = M.nextRegen or {} -- player id -> os.mtime of the next Banner of Bones regeneration
 M.rest = M.rest or {} -- player id -> {at, list = {{kind, ratio}}} (necro_core restPut / restTake)
 
@@ -255,6 +256,10 @@ local function think(player, t)
 	end
 	local opos = player:getPosition()
 	local ownerTarget = info(player:getTarget())
+	-- regeneration (O160): idle once no monster hit a minion for a while and the owner has no target
+	local sinceHit = M.lastFight[player:getId()] and (t - M.lastFight[player:getId()]) or nil
+	local idle = not ownerTarget and N.minionIdle(cfg(), sinceHit)
+	local healSec = cfg().minions.regen and 1 or 0
 	for _, m in ipairs(list) do
 		local c, kind = m.creature, m.kind
 		local id = c:getId()
@@ -270,6 +275,9 @@ local function think(player, t)
 		L.refresh(player, classKey, c, kind)
 		if regen then
 			Chaos.heal(c, math.floor(c:getMaxHealth() * cfg().bannerOfBones.regen))
+		end
+		if healSec > 0 then
+			Chaos.heal(c, N.minionRegen(cfg(), c:getMaxHealth(), idle, cfg().minions.thinkMs))
 		end
 		local k = cfg().minions[kind]
 		if k.tauntMs and (M.nextTaunt[id] or 0) <= t and ownerTarget then
@@ -308,6 +316,13 @@ function guard.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 	if attacker and (attacker == owner or attacker:getMaster() == owner) then
 		return 0, primaryType, 0, secondaryType
 	end
+	-- a monster hits a minion as it would hit the owner (O160): x its pace damage curve; a summon of a player is no monster here
+	if attacker and attacker:isMonster() and not attacker:getMaster() and owner:isPlayer() then
+		local pm = ChaosPace and ChaosPace.damageMultOf and ChaosPace.damageMultOf(attacker) or 1
+		primaryDamage = N.minionTaken(cfg(), primaryDamage, pm)
+		secondaryDamage = N.minionTaken(cfg(), secondaryDamage, pm)
+		M.lastFight[owner:getId()] = now()
+	end
 	if owner:isPlayer() and L.hasCond(owner, cfg().subId.boneAura) then
 		primaryDamage = N.minionDamageTaken(cfg(), primaryDamage, true)
 		secondaryDamage = N.minionDamageTaken(cfg(), secondaryDamage, true)
@@ -328,7 +343,7 @@ function tick.onThink(interval)
 		end
 	end
 	-- forget minions and players that are gone
-	for _, map in ipairs({M.nextHit, M.nextTaunt, M.nextRegen, M.spellAt}) do
+	for _, map in ipairs({M.nextHit, M.nextTaunt, M.nextRegen, M.spellAt, M.lastFight}) do
 		for id in pairs(map) do
 			if not Creature(id) then
 				map[id] = nil
@@ -344,6 +359,7 @@ tick:register()
 local function forget(player)
 	M.rest[player:getId()] = nil
 	M.nextRegen[player:getId()] = nil
+	M.lastFight[player:getId()] = nil
 end
 
 local login = CreatureEvent("ChaosNecroMinionsLogin")

@@ -2017,6 +2017,13 @@ target). Engine side: `necro_minions.lua` `act` / `cast`; timers in `ChaosNecroM
 `tests/necro_test.lua` "minion spells". Needs a live check: the effects of each spell, the warrior pulling monsters off
 the caster.
 
+**Minions in a hunt (O160, 2026-10-24).** A paced monster's hit on a minion is x the monster's pace damage curve (what it
+deals to the owner), and minions regenerate (`minions.incoming`, `minions.regen` in `necro_config.lua`; `N.minionTaken`,
+`N.minionRegen`, `N.minionIdle` in `necro_core.lua`; applied in `necro_minions.lua`: the guard and `think`). Regeneration
+is 0.5% of maximum health per second in a fight, 10% per second once no minion was hit for 2 s and the owner has no
+target. The Necromancer's class hit is 0.92. Balance model: `server/tools/minion_model.py --check`; method and numbers in
+`data/spells/README.md` "Necromancer minions (O160)". Assumption: the model is computed, not measured in game.
+
 ## Summons: targets, walk-through, levels (2026-10-21)
 
 Owner report: "the Necromancer's risen warriors do not attack, they get targeted and they block the way", and "the risen

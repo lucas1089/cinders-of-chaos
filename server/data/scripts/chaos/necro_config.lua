@@ -98,7 +98,8 @@ return {
 		-- The passive tree's Legion (+skeletons) raises the total by the same number.
 		classes = {
 			necromancer = {kind = "skeleton", caps = {{0, 1}, {40, 2}, {80, 3}, {200, 4}}, total = {{0, 3}},
-				hit = 1.0, health = 1.0},
+				-- hit 0.92 (was 1.0, O160): the minions now live through the packs, so the class lands at the median, not above it
+				hit = 0.92, health = 1.0},
 			lich = {kind = "shade", caps = {{0, 1}}, total = {{0, 1}}, hit = 2.4, health = 2.5},
 			bonelord = {kind = "skeleton", caps = {{0, 5}, {400, 6}}, total = {{0, 6}, {400, 7}}, hit = 0.6, health = 1.2,
 				-- Bone Lord skeletons: shards of each hit strike the other enemies next to the target for this share
@@ -106,6 +107,16 @@ return {
 		},
 		-- the Bone Golem (Bone Lord spell): one at a time, on top of the skeleton cap
 		golemClass = {count = 1, hit = 1.8, health = 4.0},
+		-- What the monsters do to the minions (O160, 2026-10-24; owner report: "the Necromancer's minions are still weak").
+		-- incoming: a monster's hit on a minion is x factor, and x the monster's pace damage curve (pace_config.lua damage,
+		-- 0.85 at level 50 .. 0.40 at 1000: what the monster deals to the OWNER) when `pace` is on. Before, a minion took the
+		-- hit whole: about 2.5 times what its owner took at level 1000, with an owner's armour, evasion and potions none of
+		-- which a minion has. A monster that is not paced (a boss, a rift or tower monster) hits as before.
+		-- regen: the share of its maximum health a minion gets back per second, `combat` while the fight goes on, `idle` once
+		-- no minion was hit and the owner had no target for idleAfterMs (necro_core.lua N.minionRegen / N.minionIdle).
+		-- Before, only the Bone Lord's banner healed them, so a minion went into every pack with what the last pack left.
+		incoming = {pace = true, factor = 1.0},
+		regen = {combat = 0.005, idle = 0.10, idleAfterMs = 2000},
 		-- leash: a minion farther than this from its owner, or on another floor, is brought next to it
 		leashRange = 7,
 		thinkMs = 500,

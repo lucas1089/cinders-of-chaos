@@ -2845,6 +2845,66 @@ a heal. PvP: the 30% healing reduction is unchanged. No heal, potion or regenera
 Tests: `spell_factor_test.lua` (curve rules, table end values, the event at level 300), `rotation_sim_test.py` (factor
 curve read from the server's table), `patch_spell_cap_test.py` (pinned kit sizes, 69 retired).
 
+### Necromancer minions (O160, 2026-10-24; owner report: "the Necromancer's minions are still weak"; computed with minion_model.py, not measured in game)
+
+**Why they felt weak.** On a dummy the class was fine: the C4 table above puts it at 1.0 to 1.1 of the median class, and
+the minions are about half of it. In a hunt two things took the minions away.
+1. A monster hit a minion whole. A monster's damage to a player goes through the pace damage curve
+   (`pace_config.lua damage`, 0.85 at level 50 down to 0.40 at 1000), but a minion is no player, so it took the raw hit:
+   about 2.5 times what its owner took at level 1000, with 20 armour and no evasion or potions (`necro_minions.lua`, the
+   guard, only handled the owner's Banner of Bones).
+2. Nothing healed a minion outside the Bone Lord's banner. A minion went into each pack with what the last one left, and
+   a dead one came back only by a new cast.
+Also: the total cap fell from 4 to 3 on 2026-10-18, after the C4 run, so a build with spells has fewer bodies than the
+table was measured with.
+
+**Fix.** `necro_config.lua minions`:
+- `incoming = {pace = true, factor = 1.0}`: a paced monster's hit on a minion is x its pace damage curve, like the hit on
+  the owner (`N.minionTaken`, applied in the guard). Bosses, rift and tower monsters are not paced and hit as before.
+- `regen = {combat = 0.005, idle = 0.10, idleAfterMs = 2000}`: share of maximum health per second. Idle once no monster
+  hit a minion for 2 s and the owner has no target (`N.minionRegen`, `N.minionIdle`, `necro_minions.lua think`).
+- Necromancer class hit 1.0 -> 0.92: the minions now live, so the nominal hit comes down to keep the class at the median.
+  The Lich and the Bone Lord keep their class factors and gain the two rules above.
+
+**Model.** `server/tools/minion_model.py` (inputs and limits `necro_balance_config.lua`, numbers from
+`tools/minion_numbers.lua`, the real config and core). Total = k(level) x (owner spells + wand + tree x minion damage x
+share alive). The spells come from `rotation_sim.py`, the wand is 15% of the Mystic rotation, the minions run their
+real action cycle with the two minion spells. k is solved at the C4 anchors (levels 300 and 1000, linear from 1.0 at
+level 1) and the minion tree factor is 1.1, fitted to the C4 share of 49% and 50%. The hunt: `pack_model.py` packs, 40
+pack cycles, 70% of the monsters' attacks land on the minions (aggro weights: warrior 2.0, skeleton 1.5, shade 0.8,
+archer and mage 0.6), a monster is alive 55% of the clear time, a dead minion is raised at the next pack, the rest heal
+between packs. Monster damage per minion: `armor_sim.py` stock column, 116 / 228 / 983 per second at 100 / 300 / 1000.
+Build: warrior, archer, mage (the three summon spells). Uncertainty is about +-20%: the aggro split and the alive share
+are assumptions, no hunt was measured.
+
+**Before and after, Necromancer, trio, vs the median class (pack_model.py damage).**
+
+| Level | Alive before | Alive after | Deaths per pack before | After | Total 1 target before | After | 5 targets before | After | Exp/h before | After |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 8 | 98% | 100% | 0.30 | 0.00 | 1.03 | 1.00 | 0.69 | 0.66 | 0.66 | 0.64 |
+| 50 | 82% | 100% | 0.75 | 0.00 | 1.04 | 1.10 | 0.82 | 0.86 | 0.78 | 0.78 |
+| 200 | 96% | 100% | 0.75 | 0.00 | 1.13 | 1.14 | 1.24 | 1.24 | 1.00 | 1.00 |
+| 500 | 71% | 100% | 1.05 | 0.00 | 0.88 | 1.04 | 1.10 | 1.22 | 0.99 | 1.02 |
+| 1000 | 73% | 100% | 3.00 | 0.00 | 0.94 | 1.11 | 1.07 | 1.19 | 1.05 | 1.09 |
+
+One minion now (class hit 0.92 included), damage per second with both spells on 1 / 5 targets:
+
+| Level | Kind | Hit | Health | Plain dps | 1 target | 5 targets |
+|---|---|---|---|---|---|---|
+| 50 | warrior | 24 | 1490 | 12.0 | 16.1 | 27.0 |
+| 200 | mage | 109 | 1488 | 54.5 | 73.5 | 123.2 |
+| 500 | archer | 202 | 3227 | 101.2 | 136.7 | 221.1 |
+| 1000 | mage | 385 | 6024 | 192.5 | 259.9 | 436.1 |
+
+The 5 target ratio sits
+at 1.2 from level 200: the minion area spells. Level 50 on 5 targets (0.86) and level 8 are the known low gap: the
+median class has its area spells and the Necromancer has not. A nominal raise would run ahead at 200.
+
+**CI limits** (`necro_balance_config.lua limits`, `minion_model.py --check`, `minion_model_test.py`): trio alive at
+least 90% of the fight, a full set survives 1.5 packs at 1000, minion share 35-60%, 1 target 0.95-1.15 of the median,
+5 targets 0.85-1.25, experience per hour 0.75-1.15. Unit tests: `necro_test.lua` (`N.minionTaken`, `N.minionRegen`,
+`N.minionIdle`).
+
 ### Attack spell parity (2026-10-23; owner: "veja quantas magias de ataque cada classe tem. devem ter a mesma quantidade"; computed, not measured in game)
 
 **Counting rule.** An attack spell is an `<instant group="attack">` of `spells_chaos.xml`, or a `stock_spells.csv` row of
