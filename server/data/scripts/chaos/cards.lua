@@ -21,7 +21,10 @@
 --   summon release   the base keeps "one summon at a time" in a storage it clears only when the summon times out alive: a
 --        summon killed first left the storage at 1 for good, so no card fired again. Cleared at login and every few seconds
 --        while the player has no summon.
--- No opcode, no storage key of its own: the base's card storages (37000-37059, 37065-37080) and action id 37866.
+--   ChaosCards.push(player, plan, force)   card borders: the card ids that are on go to the client (extended opcode 172
+--        ChaosOpcodes.cardState, action "state", client game_cardborder) at login, when the client asks ("sync") and whenever
+--        the set changes (a card turned on or off, a reconcile that turned one off); an unchanged set is not sent again.
+-- No storage key of its own: the base's card storages (37000-37059, 37065-37080) and action id 37866. One opcode, 172.
 -- Lua 5.1 / LuaJIT. Assumed engine API (TFS 1.4): Player:getSlotItem, Container:getSize/getItem, Item:getId/getActionId/
 -- setActionId/moveTo/isContainer/getName.
 
@@ -117,6 +120,32 @@ function M.reconcile(player, st, quiet)
 	return plan
 end
 
+-- ---------------------------------------------------------------- card borders (client game_cardborder)
+local OPCODE = ChaosOpcodes.cardState
+local lastSent = {} -- player id -> K.stateKey of the set the client was last told
+
+-- the id the client draws for an item (the item type's client id; the server id when it is unknown)
+local function clientIdOf(id)
+	local ok, cid = pcall(function() return ItemType(id):getClientId() end)
+	return ok and tonumber(cid) and cid > 0 and cid or id
+end
+
+-- tell the client which cards are on; only when the set changed since the last message (or force). true when sent.
+function M.push(player, plan, force)
+	local ids = K.activeIds(plan)
+	local key = K.stateKey(ids)
+	local pid = player:getId()
+	if not force and lastSent[pid] == key then
+		return false
+	end
+	lastSent[pid] = key
+	local ok, err = pcall(Chaos.send, player, OPCODE, "state", K.statePayload(plan, clientIdOf))
+	if not ok then
+		log("card state " .. tostring(player:getName()) .. ": " .. tostring(err))
+	end
+	return ok
+end
+
 local function sound(player)
 	if playSound then
 		pcall(playSound, player, "deck_card.ogg")
@@ -203,20 +232,24 @@ function M.use(player, item)
 		msg(K.TEXT.on, name, K.bonusText(langOf(player), id))
 		sound(player)
 	end
+	-- the set of cards on may have changed: the client redraws its borders
+	if action == "on" or action == "move" or action == "off" then
+		M.push(player, M.reconcile(player, M.scan(player), true))
+	end
 	return true
 end
 
 -- Character > Character Info: the `deck` command
 ChaosCommands.register("deck", function(player)
 	local st = M.scan(player)
-	M.reconcile(player, st, true)
+	M.push(player, M.reconcile(player, st, true))
 	st.sellers = nil
 	player:sendTextMessage(MESSAGE_INFO_DESCR, K.statusText(langOf(player), st))
 end)
 
-local function sweep(player)
+local function sweep(player, force)
 	local ok, err = pcall(function()
-		M.reconcile(player, M.scan(player), false)
+		M.push(player, M.reconcile(player, M.scan(player), false), force)
 	end)
 	if not ok then
 		log("reconcile " .. tostring(player:getName()) .. ": " .. tostring(err))
@@ -377,7 +410,9 @@ targetCb:register(1)
 local login = CreatureEvent("ChaosCardsLogin")
 function login.onLogin(player)
 	player:registerEvent("ChaosCardsHit")
-	sweep(player)
+	player:registerEvent("ChaosCardsExtended")
+	player:registerEvent("ChaosCardsLogout")
+	sweep(player, true)
 	-- the summon of an earlier session is gone (its timer died with the server or the logout)
 	local D = rawget(_G, "DeckSystem")
 	if D and D.Legendary and D.Legendary.CanCreateSummon then
@@ -387,6 +422,32 @@ function login.onLogin(player)
 end
 login:type("login")
 login:register()
+
+local logout = CreatureEvent("ChaosCardsLogout")
+function logout.onLogout(player)
+	lastSent[player:getId()] = nil
+	return true
+end
+logout:type("logout")
+logout:register()
+
+-- the client asks for the set when it starts (it may have loaded after the login message)
+local ext = CreatureEvent("ChaosCardsExtended")
+function ext.onExtendedOpcode(player, opcode, buffer)
+	if opcode ~= OPCODE then
+		return
+	end
+	local msg = Chaos.decode(buffer)
+	if type(msg) ~= "table" or msg.action ~= "sync" then
+		return
+	end
+	if Chaos.limited and Chaos.limited(player, "cards.sync", 500) then
+		return
+	end
+	sweep(player, true)
+end
+ext:type("extendedopcode")
+ext:register()
 
 local summonThink = GlobalEvent("ChaosCardsSummonRelease")
 function summonThink.onThink(interval)

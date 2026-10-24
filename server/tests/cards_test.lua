@@ -81,12 +81,16 @@ local function newPlayer(name)
 	function p:getStorageValue(k) return self.storage[k] or -1 end
 	function p:setStorageValue(k, v) self.storage[k] = v end
 	function p:sendTextMessage(_, text) self.messages[#self.messages + 1] = text end
+	p.ext = {}
+	function p:sendExtendedOpcode(op, buf) self.ext[#self.ext + 1] = {op = op, buf = buf} return true end
 	players[#players + 1] = p
 	return p
 end
 Game = {getPlayers = function() return players end}
 EventCallback = {register = function() end}
 
+-- the JSON of the card state message is kept as a table so the test reads it back
+json = {encode = function(t) return t end, decode = function(t) return {action = t} end}
 dofile("data/scripts/chaos/chaos_constants.lua")
 dofile("data/scripts/chaos/i18n_core.lua")
 dofile("data/scripts/chaos/cards.lua")
@@ -288,6 +292,70 @@ put(u.backpack, newItem(27632, {}, 5))
 local lc = put(u.backpack, newItem(27547))
 M.use(u, lc)
 eq(u.storage[37065], 1, "legendary on") eq(u.storage[110017], 1, "the base's first-time flag (110017 + id - 27547)")
+
+-- ---------------------------------------------------------------- card borders (client game_cardborder)
+do
+	eq(ChaosOpcodes.cardState, 172, "the card state opcode")
+	eq(K.stateKey(K.activeIds({active = {[27483] = {}, [27482] = {}}})), "27482,27483", "the key is sorted")
+	eq(K.stateKey(K.activeIds({active = {}})), "", "no card on: empty key")
+	eq(#K.statePayload(nil).on, 0, "no plan: no card on")
+	do
+		local pl = K.statePayload({active = {[27483] = {}, [27482] = {}}}, function(id) return id + 1000 end)
+		eq(table.concat(pl.on, ","), "28482,28483", "the cards on in client ids")
+		eq(#pl.cards, 76, "every card") eq(#pl.decks, 3, "every deck") eq(pl.decks[1], 28632, "deck ids in client ids")
+		eq(K.statePayload({active = {}}).decks[3], 27634, "no conversion: server ids")
+	end
+	-- no other Chaos system uses the opcode
+	for name, v in pairs(ChaosOpcodes) do
+		ok(name == "cardState" or v ~= 172, "opcode 172 is only cardState, not " .. name)
+	end
+	local b = mkPlayer("Gus")
+	local bdeck = put(b.backpack, newItem(27632, {}, 5))
+	local bc1 = put(bdeck, newItem(27482))
+	local bc2 = put(bdeck, newItem(27483))
+	local function last(pl) return pl.ext[#pl.ext] end
+	eq(#b.ext, 0, "nothing sent before anything happens")
+	-- login: always sent, even with no card on
+	registered.ChaosCardsLogin.onLogin(b)
+	eq(#b.ext, 1, "login sends the set") eq(last(b).op, 172, "on opcode 172")
+	eq(last(b).buf.action, "state", "action state") eq(#last(b).buf.data.on, 0, "no card on at login")
+	ok(b.events.ChaosCardsExtended and b.events.ChaosCardsLogout, "login registers the opcode and logout events")
+	-- turning a card on sends the new set
+	M.use(b, bc1)
+	eq(#b.ext, 2, "on: sent") eq(table.concat(last(b).buf.data.on, ","), "27482", "set after on")
+	M.use(b, bc2)
+	eq(table.concat(last(b).buf.data.on, ","), "27482,27483", "two cards on")
+	-- the periodic sweep sends nothing when the set is the same
+	local sent = #b.ext
+	M.sweep(b)
+	registered.ChaosCardsReconcile.onThink(1)
+	eq(#b.ext, sent, "an unchanged set is not sent again")
+	-- off
+	M.use(b, bc1)
+	eq(table.concat(last(b).buf.data.on, ","), "27483", "set after off")
+	-- a refused use (a second copy) changes nothing and sends nothing
+	local bcopy = put(b.backpack, newItem(27483))
+	sent = #b.ext
+	M.use(b, bcopy)
+	eq(#b.ext, sent, "a refused use sends nothing")
+	-- the card leaves the deck (dropped on death): the sweep turns it off and tells the client
+	bc2.parent = nil
+	bdeck.kids = {bc1}
+	M.sweep(b)
+	eq(#last(b).buf.data.on, 0, "card gone: the set is empty") eq(#b.ext, sent + 1, "one message for the change")
+	-- the client asks: sent again whatever the set
+	local ask = registered.ChaosCardsExtended
+	sent = #b.ext
+	ask.onExtendedOpcode(b, 172, "sync")
+	eq(#b.ext, sent + 1, "sync answers")
+	ask.onExtendedOpcode(b, 173, "sync")
+	ask.onExtendedOpcode(b, 172, "other")
+	eq(#b.ext, sent + 1, "another opcode or action is ignored")
+	-- logout forgets the player's last set
+	registered.ChaosCardsLogout.onLogout(b)
+	registered.ChaosCardsLogin.onLogin(b)
+	eq(#b.ext, sent + 2, "login after logout sends")
+end
 
 -- ---------------------------------------------------------------- Character Info
 local function status(player, lang)
