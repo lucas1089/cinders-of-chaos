@@ -929,11 +929,13 @@ case $cmd in
         bash "$csbuild" "$csbin" || die "the Rust build failed (cargo needed on this machine); nothing changed"
         if [ ! -f "$csdrop" ]; then
           mkdir -p "$SYSD/$csunit.service.d" || die "cannot create $SYSD/$csunit.service.d"
-          printf '%s\n' \
+          if ! printf '%s\n' \
             "# written by chaos-ctl.sh clientservices-impl rust; clientservices-impl python removes it" \
             "[Service]" "ExecStart=" \
-            "ExecStart=$csbin $SERVER/data/chaos_clientservices.json --host 0.0.0.0 --port 8090" > "$csdrop.new" &&
-            mv -f "$csdrop.new" "$csdrop" || die "cannot write $csdrop"
+            "ExecStart=$csbin $SERVER/data/chaos_clientservices.json --host 0.0.0.0 --port 8090" > "$csdrop.new"; then
+            die "cannot write $csdrop"
+          fi
+          mv -f "$csdrop.new" "$csdrop" || die "cannot write $csdrop"
         fi
         cs_restart || { cs_back; cs_restart || true; die "the unit did not restart on the Rust binary; back on python"; }
         sleep "${CHAOS_CS_SETTLE:-2}"
