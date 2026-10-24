@@ -1133,7 +1133,10 @@ local function spawnBoss(token)
 				end
 			end
 		end
-		pcall(ChaosBossMech.attach, boss, nil, {tiles = floor, players = playersInside, pillars = L.pillars})
+		-- one player alone at the start fights without the group-only mechanics (Event Horizon, the Chorus), like the
+		-- pocket boss copy (owner 2026-10-24: every piece of content can be done solo)
+		pcall(ChaosBossMech.attach, boss, nil, {tiles = floor, players = playersInside, pillars = L.pillars,
+			solo = #playersInside() <= 1})
 	end
 	state.bossId = boss:getId()
 	state.maxHealth = boss:getMaxHealth()
