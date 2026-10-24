@@ -12384,7 +12384,7 @@ from the loot models.
 **What it is.** The pool is `data/scripts/chaos/boss_roulette_config.lua` (one line per prize: id, count, chance, kind). The install
 step `roulette` (`tools/patch_roulette.py`, after `prizes`, idempotent, CRLF kept) writes those lines into the `prizePool` of the base
 boss roulette script (found by its "Boss Roulette requires" text) and sets the broadcast threshold to the config's `rareThreshold`
-(120: only the chase orbs are announced). The other four roulettes (exercise, premium, the two crystal token ones) are not touched.
+(120: only the chase orbs are announced). The other four roulettes got their own pools in O151 (next section).
 The base draw stays: every entry rolls its chance in 10000, one hit is picked at random (`ChaosPrizesCore.odds` is exact).
 
 | Kind | Prizes | Share of the spins |
@@ -12459,6 +12459,134 @@ level 1500; the rest wait for a higher level or a trade. `tools/loot_model.lua -
 stay green (uniques are not in the gold or item model; the coverage tool reads the entries' own chance, unchanged).
 `tests/unique_hunt_test.lua` (luajit and lua5.3) proves it: before below 1 per 1000, now 10-25, one every 2.5-6 hours, the level and
 list rules, boss-only entries keep their bosses, `open.enabled = false` brings the old behaviour back.
+
+## Roulette prizes against token drops (O151)
+
+Follow-up of O148, which rebuilt the Boss Roulette and left "the other four roulettes untouched" and "Open: the roulette value against the
+token drop rate". This section audits the four others the same way (stale prizes, decks and boats, too many of one kind, items that do not
+scale with the level), puts them through the same config and idempotent patch route, and works out what one spin of each of the five is
+worth against how long its token takes to earn. Computed from the configs, not run on a server.
+
+### The five roulettes (`actionId` of the base script, token, spin cost)
+
+| Roulette | Script | actionId | Token (one spin) | Where the token comes from |
+|---|---|---|---|---|
+| Boss | `customs/roulette/roulette.lua` | 18562 | Boss Token (28033), 1 | 43 base bosses of level 509+, mean chance 8.4%, 1-2 per drop |
+| Exercise | `customs/roulette/roulette2.lua` | 18563 | Exercise Token (28058), 1 | the same 43 bosses, mean chance 6.3% |
+| Premium | `customs/roulette/roulette3.lua` | 18564 | Ticket Roulette (28057), 1 | 22 bosses of level 1018+, mean chance 5.4% |
+| Crystal (two) | `customs/tower_defense/roulette_crystal_token.lua` and `_2.lua` | 18565, 18566 | Crystal Token (28372), 15 | 5 per completed Tower Defense run (the base script's reward) |
+
+The token sources were read from the base monster files (the survey in `data/items/base_item_values.csv` counts the monsters and the first
+level; the mean chances come from the same files, `roulette_value_config.lua` `tokens`). `tests/roulette_pools_test.lua` checks the counts
+and the levels against the snapshot.
+
+### What the four others were
+
+- **Exercise** (21 prizes, 7 chests of each of three charge tiers). All exercise weapon chests. Six of the 21 are the sword, axe and club
+  kinds that are one melee weapon since 2026-10-23 (the axe and club chests left the shop lists), and a class can train with only the kinds
+  of its line: a Ranger could use 29% of the spins, a Mystic or Necromancer 43%, a Warrior or Monk 57%, a Templar 86%. The chests are worth
+  100,000 / 360,000 / 2.8M gold at a vendor. The token is the second rarest: about 84 minutes of boss hunting. A spin was worth 2.6 minutes of
+  hunting at level 1000.
+- **Premium** (14 prizes): 5 auras and 9 wings, each a one-time unlock (a second copy says "you already have this" and sells for 65,000-98,000
+  gold). Every spin was broadcast (threshold 10000). The token is the rarest: about 99 minutes. Nothing in the pool came from the loot models.
+- **Crystal**, both scripts (23 prizes, the same pool in both): 21 "Moist" gear pieces (a sword with 56 attack, an armor of 25: fixed base
+  items that do not scale with the level, most of them for a class the winner is not, one of them listed twice) and the two best Tower Defense
+  units. The scripts were copies of the premium and exercise ones: they said "Premium Roulette requires" and "Exercise Roulette requires", and
+  announced "from the premium roulette!" / "from the exercise roulette!" and passed that label to `ChaosPrizes`. The token cost is 3 Tower
+  Defense runs.
+
+### What they are now
+
+The pools are `roulette_exercise_config.lua`, `roulette_premium_config.lua` and `roulette_crystal_config.lua` (the same shape as
+`boss_roulette_config.lua`: one line per prize, `limits` for the tests, the gold and unique rules shared with the boss config).
+`patch_roulette.py` (install step `roulette`) now writes all four pools, matching each base script to its config by the `actionId` of its
+`config` table (the boss script also by its "Boss Roulette requires" text); a script whose `playItem` is not the config's token, or whose
+`actionId` is unknown, is left alone; a pool with a retired id or one of the fixed base gear 28373-28393 is refused. The two crystal scripts
+are named the Crystal Roulette (messages, broadcast, the label passed on). `prizes.lua` finds the config of a roulette by `config.actionId`
+(`ChaosPrizesCore.configFor`; `ChaosRoulettePools`), so gold and the unique chest work on all five.
+
+| Roulette | Entries | Spins | Theme kept |
+|---|---|---|---|
+| Exercise | 32 | orbs 43.1%, gold 36.4%, sockets 6.0%, chests 13.9%, unique chest 0.6% | the 15 exercise chests (melee, bow, rod, wand, shield x 3 tiers; no retired axe or club chest) |
+| Premium | 36 | orbs 48.4%, gold 25.5%, sockets 6.3%, cosmetics 18.7%, unique chest 1.2% | all 14 auras and wings; chase orbs (Crown 0.5%, Void 0.3%, Ruin 0.08%) |
+| Crystal (both) | 17 | orbs 55.3%, gold 30.0%, sockets 7.1%, units 7.0%, unique chest 0.5% | the Grimnir Slashbaiter and King Aldor Goldcrusher units (1-2 and 1) |
+
+- **Orbs and sockets** are the loot layer's orbs (`loot_config.lua` `currency.entries`), in stacks that grow with the price of the token
+  (exercise 1-5, premium 1-5). **Gold** is the crystal coins on the tile, each unit `gold.perUnit` (0.2) of an hour of hunting gold at the
+  winner's level (the Boss Roulette's rule, `ChaosPrizes.bossPrize`): exercise 1 / 2 / 5 / 10 units, premium 2 / 5 / 10 / 20, crystal 1 / 2 / 5.
+  **The unique chest** gives a unique of the winner's level.
+- **The exercise chest is never dead.** The chest on the tile is a prize of its kind; when the winner's class cannot train with that kind, the
+  chest becomes the chest of the same tier of a kind it can (`ChaosPrizesCore.classChest`, `ChaosExercise.allowed`; picked at random among the
+  usable ones) and the player is told ("Your class cannot train with that weapon: the chest became ..."; pt-BR in `i18n_strings.lua`). The test
+  walks every vocation, every chest and every pick.
+- **Broadcasts.** Premium announces the chase orbs and the lasting exercise chests, the crystal one the Orb of Reforging; the gold, the unique
+  chest, the cosmetics and the units never (the unique chest announces itself).
+- **Nothing a spin can win is a deck, ship, boat, belt, gloves, a retired chest, or Moist gear.**
+
+### The value of a spin against its token (`tools/roulette_model.lua`, `data/scripts/chaos/roulette_value_config.lua`)
+
+`cd server && luajit tools/roulette_model.lua` prints the table; `--check` (luajit and lua5.3, in CI) fails when a spin leaves the band
+0.80 - 1.35 of its token's cost at any of the levels 650 / 1000 / 1500 / 2000. Both sides are minutes of hunting at the winner's level.
+
+**Cost of the token.** Boss, exercise and premium tokens drop from bosses: tokens per spin / (mean chance x mean count 1.5) boss kills, each
+`minutesPerBossKill` = 8 minutes (walk in, fight, loot, walk out; the lever rooms stop a fight at 30 minutes; **a guess**, the one number to
+measure on the beta). Crystal tokens: 15 / 5 per run = 3 Tower Defense runs of `minutesPerRun` = 15 minutes (the session lasts 20).
+
+| Roulette | Token drops | Cost of a spin |
+|---|---|---|
+| Boss | 0.126 per boss kill (1 token = 8.0 kills) | 63.7 min |
+| Exercise | 0.095 per kill (10.5 kills) | 84.0 min |
+| Premium | 0.081 per kill (12.3 kills) | 98.6 min |
+| Crystal | 5 per run (3.0 runs for 15) | 45.0 min |
+
+**Value of the prizes.** Counted: crafting orbs and sockets in kills of a level 100+ monster that the loot layer needs for the same drops (the
+O148 rule), divided by the hunter's kills per hour (`paceKillsPerHour.scaled` of `spawn_tuning.json`: 836 at level 650, 869 at 1000, 813 at
+1600, 789 at 2000); gold in hours of hunting gold (0.2 h per unit, a minute count that does not depend on the level); an exercise chest as its
+vendor price against the hunting gold per hour; a unique chest as 200 minutes (about one unique per 3.4 hours of Rare and Legendary kills at
+level 1500, O148). Not counted: cards, badges, catalysts, cosmetics and units (they are not a time), so the figures are a floor.
+
+| Roulette | Before (level 1000) | Now: 650 / 1000 / 1500 / 2000 | Value / cost at 1000 |
+|---|---|---|---|
+| Boss (O148, unchanged) | 60.1 min of 63.7 | 62.3 / 60.1 / 63.7 / 65.7 min | 0.94 |
+| Exercise | 2.6 min of 84.0 (x0.03) | 81.8 / 79.4 / 83.1 / 85.1 min | 0.95 |
+| Premium | 0 counted of 98.6 (14 cosmetics) | 99.8 / 96.8 / 101.9 / 104.6 min | 0.98 |
+| Crystal | 0 counted of 45.0 (21 Moist pieces, 2 units) | 46.2 / 44.8 / 47.2 / 48.5 min | 0.99 |
+
+At level 1000 one spin now pays on average: boss 1.16 orbs + 717,000 gold; exercise 1.32 orbs + 3.3M gold (and 2-5 sockets in 6% of the
+spins); premium 1.44 orbs + 2.8M gold; crystal 0.96 orbs + 1.1M gold. The Boss Roulette needed no change: at 8 minutes per boss kill its
+spin is 0.94 of its token, the value the others now match; the O148 note "a spin is worth about 40 minutes of orb hunting" is the orb half
+of the 60 here (46 min of orbs, 9 of sockets, 4.5 of gold, 1.2 of the unique chest).
+
+**Sensitivity.** The cost side scales with `minutesPerBossKill`: at 6 minutes the boss spin is worth 1.25 tokens' time and the premium one 1.3;
+at 10 it is 0.75 and 0.8 (the band's floor; the figures stay inside the band for 7 to 10 minutes except the boss at 10). A measured value
+replaces the guess in one place (`roulette_value_config.lua`) and `chance` / `count` in the three configs are the knobs; the Tower Defense
+side is less uncertain (the reward and the 20 minute session are in the base script).
+
+### Tests
+
+- `tests/roulette_pools_test.lua` (luajit and lua5.3): per roulette no retired id (decks, ships, belts, gloves, retired chests, Moist gear),
+  every id a known item, no repeated prize, a kind of that roulette, the odds add up, the shares in `limits`, the orbs are the ones the loot layer
+  drops, the broadcast rules, the actionIds are the base roulettes' once each; exercise: chests are at most 18% and at least 5%, every chest of the
+  table is in the pool, **every vocation of every class line gets a chest of the same tier it can train with for every chest and every pick**;
+  premium: 14 auras and wings, at most 25% of the spins, the chase orbs at most 1% each; crystal: the units at most 12%, 15 tokens a spin; the value
+  config equals what it copies (the pace of `spawn_tuning.json`, the gold curve of `gamble_config.lua`, the token sources of the snapshot); every
+  roulette in the band at every level; the numbers before and after printed.
+- `tests/prizes_test.lua`: `configFor` (by actionId, the boss label as fallback), `classChest` (every rule), the glue on a mocked engine: an
+  exercise chest for a Ranger becomes a bow or shield chest and the player is told, a Warrior keeps the melee chest, gold on all four
+  actionIds, the unique chest announced as the premium roulette's, an unknown actionId keeps the plain item.
+- `tools/patch_roulette_test.py`: the three new configs parse and are clean, every id is known (and in an installed `items.xml` when
+  `CHAOS_ITEMS_XML` points at it), a data folder with all five scripts (each gets its own pool, mark and threshold; the crystal ones lose the
+  copied names; a wrong token, an unknown actionId and a script of another roulette's text are left alone), a second run, a changed config, CRLF,
+  a retired or Moist id refused.
+- `tools/roulette_model.lua --check` in CI; on a copy of the five installed base scripts: 5 files changed, a second run changes nothing, all
+  five parse in Lua 5.3.
+
+### Deploy
+
+`install_all.py SERVER_DIR --only files,roulette` and a server restart (the scripts read the pools at load; `files` copies the new configs and
+`prizes.lua`). No client change. Players see the Crystal Roulette named in the two Tower Defense rooms and the new prizes on the tiles.
+Not run on a live server. To measure: kill a few boss rooms and time them (`minutesPerBossKill`), count the tokens per kill, and time a Tower
+Defense run, then edit `roulette_value_config.lua` and rerun the model.
 
 ## Rings and necklaces as gear (`data/lib/chaos_jewelry.lua`, `chaos/jewelry.lua`, `tools/patch_base_jewelry.py`, `tests/jewelry_test.lua`)
 

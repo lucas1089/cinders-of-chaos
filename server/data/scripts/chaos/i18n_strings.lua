@@ -3263,5 +3263,7 @@ return {
 		["Your roulette prize is %s gold, scaled to your level."] =
 			"Seu prêmio da roleta é de %s de ouro, ajustado ao seu nível.",
 		["The chest held a unique: %s!"] = "O baú guardava um item único: %s!",
+		["Your class cannot train with that weapon: the chest became %s."] =
+			"Sua classe não treina com essa arma: o baú virou %s.",
 	},
 }

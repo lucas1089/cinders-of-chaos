@@ -213,8 +213,60 @@ function K.uniqueChoices(cfg, list, level)
 	return out
 end
 
+-- ---------------------------------------------------------------------------------------------------------------------
+-- The other four roulettes (exercise, premium, the two crystal token ones; O151, roulette_*_config.lua) share the gold and
+-- the unique chest above. Their configs are found by the roulette script's actionId.
+-- ---------------------------------------------------------------------------------------------------------------------
+
+-- the config of a roulette: by the script's config.actionId, else (a script without one) the Boss Roulette's for the label
+-- "boss". pools = {[actionId] = config, boss = config}
+function K.configFor(pools, config, label)
+	local id = tonumber(config and config.actionId)
+	if id and pools and pools[id] then
+		return pools[id]
+	end
+	if tostring(label) == "boss" and pools then
+		return pools.boss
+	end
+	return nil
+end
+
+-- the exercise chest a class can use. cfg.chests = {kinds = {"melee", ...}, tiers = {{melee = id, ...}, ...}}: the chest on
+-- the tile is one of a tier; when the winner's class cannot use its kind (allowed(kind) false) it becomes the chest of
+-- the same tier of a kind it can use, picked by pick(n) -> 1..n. Returns the id to give and whether it changed; an id that
+-- is no chest of the table is returned as it is.
+function K.classChest(cfg, id, allowed, pick)
+	id = tonumber(id)
+	local chests = cfg and cfg.chests
+	if not chests then
+		return id, false
+	end
+	for _, tier in ipairs(chests.tiers or {}) do
+		for _, kind in ipairs(chests.kinds or {}) do
+			if tonumber(tier[kind]) == id then
+				if not allowed or allowed(kind) then
+					return id, false
+				end
+				local ok = {}
+				for _, k2 in ipairs(chests.kinds) do
+					if tier[k2] and allowed(k2) then
+						ok[#ok + 1] = tier[k2]
+					end
+				end
+				if #ok == 0 then
+					return id, false
+				end
+				return ok[math.max(1, math.min(#ok, pick and pick(#ok) or 1))], true
+			end
+		end
+	end
+	return id, false
+end
+
 K.TEXT_GOLD = "Your roulette prize is %s gold, scaled to your level."
 K.TEXT_UNIQUE = "The chest held a unique: %s!"
+K.TEXT_CHEST = "Your class cannot train with that weapon: the chest became %s."
+
 
 K.TEXT_INBOX = "Your prize %s is in your Purse (the store inbox): your backpack had no room."
 K.TEXT_GROUND = "Your prize %s is on the ground under you: your backpack and your Purse had no room."
