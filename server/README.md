@@ -237,6 +237,8 @@ server/
   src-patches/0065-skill-message-names.patch   engine: "You advanced to melee level N." (sword, club, axe: melee;
                                       distance: ranged) in the advance, downgrade and skill-changed messages
                                       (see "Skill names in messages")
+  src-patches/0066-attack-at-once.patch   engine: the first swing at a new target (a pull, a switch, after a stair) no longer
+                                      waits for the 1 s creature think (see "Attack delay after changing floor")
     remote_cmd.lua    remote_cmd_core.lua    remote_cmd_config.lua  (remote admin commands by file, see "Remote admin commands")
     spectate.lua      spectate_core.lua      spectate_config.lua    (the admin app's live view of a character, see "Live spectator")
     helpai.lua  helpai_core.lua  helpai_config.lua (Ember answers questions in the Help channel through the sidecar
@@ -5868,7 +5870,7 @@ hall's and the houses' dummies and the free dummies (5787, 27750, 27757) are as 
 tests mock it): check a Monk with the melee weapon (fist row in the skills window), a Ranger refused with the class list, an old
 exercise axe turning into the melee weapon, a bow from 8 tiles refused.
 
-## Attack delay after changing floor (owner debug item 50: "Demora para começar a atacar depois de subir ou descer escada"; analysed, not fixed)
+## Attack delay after changing floor (owner debug item 50: "Demora para começar a atacar depois de subir ou descer escada"; fixed by src-patch 0066, not measured in game)
 
 What happens, from the repository's own engine notes (`src-patches/0028`, `0042`; the stock source is not here): taking a
 stair is a step (`Player::onWalk`), then the floor change moves the player (`Game::internalMoveCreature`) and
@@ -5884,15 +5886,21 @@ Three delays add up after a stair:
 3. **The helper's own wait** (base `mods/game_helper`, Auto Target and the magic shooter): not readable here (the base client
    is not in the repository); the overlay and base patches around it (0052, 0062, 0067, 0074) do not touch the target choice.
 No server setting changes 2 (`prod_config.py` has no key for it: the think interval is a compile-time constant and
-`classicAttackSpeed` only decides which task slot the swings use). The fix is **engine patch "attack-at-once" (proposal, no number yet,
-not written)**: in `Game::playerSetAttackedCreature` queue `Game::checkCreatureAttack(player id)` through the dispatcher after
-`setAttackedCreature` (the same call `Player::doAttacking` schedules), so the first swing waits only for the attack interval
-it was already owing (`lastAttack`, `Player::getAttackSpeed`), not for the think. It helps every new target (monsters
-switched, the first hit of a pull, stairs), spells and runes are not affected. Keeping the target across a floor change
-(only when the creature is still visible) is not proposed: in the game a target on another floor is not attackable.
-Not done: nothing in this change touches 2 or 3, and a client-side guess of a new target after a stair was left out on
-purpose (it would attack a monster the player did not pick when running away upstairs). Needs the owner's call: write the patch
-(a few lines, tested on the test server with a stair pull before and after), and measure item 3 with the helper on and off.
+`classicAttackSpeed` only decides which task slot the swings use). **Implemented: engine src-patch `0066-attack-at-once.patch`**
+(the proposal was called 0048; that number was taken by another patch). In `Game::playerSetAttackedCreature`, when the target is
+a new one (not the one already set), the new `Player::getAttackReadyIn()` says how long the previous swing still owes (attack
+speed minus the time since `lastAttack`; 0 when the player never swung). Ready: `Game::checkCreatureAttack(player id)` is queued
+through the dispatcher, the same call `Player::doAttacking` schedules, so the first swing happens at once. Not ready, with the
+cooldown channels on and `classicAttackSpeed` off: the player's own attack task (`setNextAttackTask`, patch 0042) is replaced by
+one at the moment the cooldown ends, so it is never faster than the normal attack interval (`Player::doAttacking` still checks
+it). Otherwise the creature think picks it up as before. It helps every new target (monsters switched, the first hit of a pull,
+the target picked again after a stair); spells and runes are not affected. Re-selecting the same target does nothing new.
+Keeping the target across a floor change (only when the creature is still visible) is not done: in the game a target on another
+floor is not attackable.
+Not done: item 3 (the helper's own wait) is unchanged, and a client-side guess of a new target after a stair was left out on
+purpose (it would attack a monster the player did not pick when running away upstairs). Checked: the whole chain 0001-0065 plus
+0066 applies on a copy of the installed server source and `game.cpp` compiles (`g++ -fsyntax-only`); not measured in game. To do
+on the test server: a stair pull before and after, and the helper with Auto Target on and off for item 3.
 
 ## Infinite arrows and quivers (`data/lib/chaos_archery_core.lua`, `chaos_archery_config.lua`, `archery.lua`, `weapon_styles.lua`, `tools/patch_base_archery.py`, `sql/chaos_archery.sql`, `src-patches/0023-quiver-off-hand.patch`)
 
