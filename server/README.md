@@ -17961,7 +17961,26 @@ docs/MAP_GUIDE.md "Content plans"). CI validates and compiles them with the exam
   install on synthetic maps, pair 24 switch, knowledge base, AI fix loop on a fake endpoint). Previews of the examples
   were rendered with things_custom23 for review only.
 
-## Hunt teleports (`hunt_teleports.lua`, `hunt_teleports_core.lua`, `hunt_teleports_config.lua`, `tools/install_content_areas.py`)
+## Map inbox (`tools/area_inbox.py`, `tools/areaplan/inbox/`, `chaos-ctl.sh areas-publish`, O192)
+
+Areas the owner asks for in chat wait here as plans until they are approved (docs/MAP_GUIDE.md "Map inbox").
+- `tools/areaplan/inbox/<id>/plan.json` + `meta.json` (status pending / approved / installed). No binaries in git: the compile
+  is deterministic, `area_inbox.py build ID OUT_DIR` makes the `.otbm`, frame, spawn xml, manifest and (with render inputs)
+  pictures again. Commands: `new`, `list`, `check`, `approve`, `build`, `publish`, `promote`, `remove`. Test:
+  `python3 -I tools/area_inbox_test.py` (CI step "Area planner"; `area_inbox.py check` validates every entry).
+- `promote` moves an approved plan to `tools/areaplan/plans/` (needs an `origin`; refuses a box that meets another plan's).
+  It wires nothing else: `hunt_teleports_config.lua` `plans` is optional (it names the display monster; an unlisted plan
+  gets its most frequent monster), the slots come from the level band. Remaining: `install_content_areas.py` on the live
+  map (`install_all.py --only contentareas`), `progression_model.lua --check`, `tests/hunt_teleports_test.lua`.
+- `chaos-ctl.sh areas-publish [--pictures] [--rotate]` (admin app: Comandos > Mapas pedidos > Publicar áreas / Novo
+  endereço): needs `CHAOS_REPO` to hold the entries (update-apply), python3 and LuaJIT (as the content install). Writes
+  `CHAOS_DL_DIR/areas-<TOKEN>/`, the token in `CHAOS_AREAS_STATE` (default `/var/lib/chaos/areas/token`, mode 600), prints
+  `areas-published: N area(s)` and `url=<CHAOS_SITE_URL>/dl/areas-<TOKEN>/`. Nothing runs on the game server and the map
+  is not touched. `tools/windows/package/fetch-areas.bat` fetches from that url.
+- Assumption: the web server serves files of `dl/` as they are (the downloads page already relies on it) and does not list
+  the folder. The site has no login for static files, hence the secret path.
+
+, `hunt_teleports_core.lua`, `hunt_teleports_config.lua`, `tools/install_content_areas.py`)
 The way into the ten planned content hunts (`tools/areaplan/plans/`, docs/MAP_GUIDE.md "Content plans"): new teleports
 in the base server's teleport room. Owner: "Coloque um teleporte pra elas na sala de teleports"; "Aumente a sala de
 teleports mantendo o mesmo design dela. O teleport na frente de um monstro dela".

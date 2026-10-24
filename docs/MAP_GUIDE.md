@@ -733,3 +733,54 @@ in x 15295-15510, y 14330-15120 on any floor, checked with `tools/map/otbm.py`; 
 - Review pictures: `area_planner.py render` needs a client pair with the kit (pair 33, not built yet); until then a
   schematic of the compiled tiles (ground families, blocking pieces, set pieces, mechanics and spawns in flat colours)
   is what can be drawn. The kit's own art is never given to an AI tool (docs/SPRITE_STYLE.md, import-only).
+
+## Map inbox
+
+How the owner gets a new area: they describe it in chat, Claude makes the plan, and the owner looks at it in the map
+editor on their Windows PC before anything goes onto the server. `server/tools/area_inbox.py` keeps the entries
+(`server/tools/areaplan/inbox/<id>/`), `chaos-ctl.sh areas-publish` serves them, `fetch-areas.bat` fetches them.
+
+### The flow
+1. The owner asks in chat ("a swamp hunt for level 500, three rooms, a boss at the end").
+2. Claude, in a cloud session, writes the plan (the planner's AI adapter when an endpoint is set, else by hand from the
+   examples and the validator's fixes) and runs `python3 -I server/tools/area_inbox.py new --plan PLAN.json --prompt
+   "THE WORDS" [--level LO HI] [--id ID]` (or `new --from-prompt "TEXT"`, which needs the endpoint of `area_plan_ai.py`
+   and exits 2 with the set-up text without one). The helper validates, compiles and prints the stats; an error writes
+   nothing. Claude commits the entry on a branch.
+3. The owner merges it into main and updates the server (admin app: Painel > Atualizar servidor). Then the admin app,
+   Comandos tab > card "Mapas pedidos" > "Publicar áreas" (`chaos-ctl.sh areas-publish`) builds the files and shows
+   `url=...`. On the PC, `fetch-areas.bat` (in the package folder) asks for that address once, downloads every pending
+   and approved area into `mapeditor\inbox\<id>\` (each file checked against its sha256), lists them and opens the
+   one picked in the map editor (`open-map-editor.bat PATH`).
+4. The owner says what to change or "approve". Claude runs `area_inbox.py approve ID` (pending -> approved) or edits the
+   plan and publishes again.
+5. `area_inbox.py promote ID [--origin X Y Z]` (approved -> installed) moves the plan to `server/tools/areaplan/plans/`,
+   the folder `install_content_areas.py` reads (server/README.md "Hunt teleports"). It needs an `origin` and refuses one
+   that lands on another plan's box (same z, 4 tiles apart; `--force` overrides). It does not touch the map: the install
+   (`install_all.py`, step `contentareas`, or `install_content_areas.py DATA_DIR --dry-run` first) and the tests it prints
+   are the remaining steps. A new hunt also changes the progression model (`progression_model.lua --check`) and the
+   hunt teleport room (more plans than slots is refused: raise `modules` in `hunt_teleports_config.lua`).
+
+### What is in git
+Only `plan.json` and `meta.json` (status, the owner's words, a note, level band, size, stats, and the sha256 of each compiled
+file). The `.otbm`, the frame, the spawn xml, the manifest and the pictures are made again from the plan by `build ID
+OUT_DIR`: the compile is deterministic (same plan, same bytes, in `area_inbox_test.py`), so a binary in git would only
+add weight (about 35 KB an area, more with pictures) and drift when the generator changes. `build` says when the bytes
+differ from the hashes of the day the entry was made. Pictures (`ID_z<z>.png`, `ID_map.png`) need the render inputs
+(`--assets DIR` or `$AREAINBOX_ASSETS` with `items.otb`, `items.xml`, `Tibia.dat`, `Tibia.spr`, plus numpy and Pillow);
+without them `build` and `publish` skip the pictures with a message. `chaos-ctl.sh areas-publish --pictures` passes the
+server's items and the spectator pair.
+
+### Commands
+`new`, `list [--json]`, `check [ID...]` (CI: every entry validates and compiles), `approve`, `build`, `publish OUT_DIR`,
+`promote`, `remove` (a pending or approved entry). Statuses: `pending`, `approved`, `installed` (the plan is in `plans/`;
+the entry keeps only its `meta.json`).
+
+### Where the files are served
+`areas-publish` builds into `CHAOS_DL_DIR/areas-<TOKEN>/` (the site's `dl/` folder, default `/var/www/chaos/dl`): `list.txt`
+(`id|status|lo-hi|name`), `index.json` and one folder per area with `ID.otbm`, `ID-frame.otbm`, `ID-spawn.xml`, `ID.json`,
+`plan.json`, `NOTE.txt` and `files.txt`. The site has no login for static files, so the folder is protected by its name:
+TOKEN is 32 random hex digits (`/var/lib/chaos/areas/token`, mode 600). Map pieces hold no secret and no account data.
+`areas-publish --rotate` makes a new TOKEN and deletes the old folder. The folder is built beside the old one and swapped in,
+so a failed build leaves the published one as it was. Nothing is written into the game server's map.
+

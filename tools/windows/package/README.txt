@@ -30,6 +30,13 @@ Map editor
        (mapeditor\client: the Chaos Tibia.dat and Tibia.spr) and the server folder (server\: items.otb and items.xml
        with every Chaos item, the map in server\data\world) already chosen. The Chaos monsters are in the creature
        list (mapeditor\data\user\data\1098\creatures.xml).
+  Areas asked for in chat (the map inbox, docs/MAP_GUIDE.md "Map inbox"): the owner publishes them in the admin app
+  (Comandos > Mapas pedidos > Publicar areas), which shows an address (the url= line). Double-click fetch-areas.bat, paste
+  that address once (it is kept in mapeditor\inbox\source.txt), and it downloads the areas into mapeditor\inbox\<id>\
+  (every file checked against its sha256), lists them and opens the one you pick in the map editor. It needs curl.exe and
+  certutil (Windows 10 and later). The area is a separate small map, not the server's: look at it, say in the chat what to
+  change or "approve"; do not save it over the server's map. The editor may ask about the file's item version: it was written
+  for it (OTBM 2, items 3.57).
   If the editor opens empty or asks for folders (Client + Server Workspace), choose mapeditor\client as the client
   folder and the server folder of this package as the server folder, then open the .otbm in server\data\world.
   The server's map is that .otbm (the only one there). Stop the game server before saving over it, keep a copy of the

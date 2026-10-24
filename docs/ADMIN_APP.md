@@ -116,6 +116,7 @@ instalada é desconhecida: o passo 2 baixa a mais nova e, se o `tfs` for igual a
   (servidor, backup, ajuda, Discord, pagamentos, saúde, watchdog) e o servidor web (apache2, nginx, php-fpm), ligada
   ou não; depois de atualizar o PHP, reinicie o apache2 (ou o php-fpm) aqui; ver log, reiniciar, ligar, desligar.
 - **Site e update do client** (`site-install`, `site-log`, `publish-update TAG`, `publish-log`). "Trocar os downloads do site" (`update-downloads`, O165) põe o pacote completo mais novo (Windows e Linux) na pasta `dl/` do site sem reiniciar o servidor; "Log da atualização" mostra o andamento. `publish-update` publica só a atualização assinada, não os pacotes.
+- **Mapas pedidos** (`areas-publish [--pictures] [--rotate]`, O192; Comandos > card "Mapas pedidos"). "Publicar áreas" monta, a partir das áreas pendentes e aprovadas da pasta `server/tools/areaplan/inbox/` do repositório na VPS (traga com Painel > Atualizar servidor depois de unir na main), os arquivos do editor de mapas em `dl/areas-TOKEN/` do site e mostra a linha `url=`; copie-a (botão de copiar do resultado) e rode `fetch-areas.bat` no Windows. "Novo endereço" (`--rotate`) cria outro TOKEN e apaga a pasta antiga. O site não tem login para arquivos estáticos: o TOKEN (32 dígitos hexa, `/var/lib/chaos/areas/token`) é a proteção. Não reinicia nem altera o mapa do jogo. docs/MAP_GUIDE.md "Map inbox".
 - **Logs de GM** (aba Logs, GM; `gm-logs [N] [NOME]`).
 - **Assistir jogador** (Comandos > Ações rápidas > Assistir jogador). Só leitura: o jogador não é avisado e nada
   muda no jogo.
@@ -186,7 +187,7 @@ terminal do app ser root de verdade (instalar pacotes, mexer no sistema), rode n
 `panel NOME ACAO JSON`, `update TAG now|at-save` e `rollback now|at-save` (layout padrão; no kit, `rollback now` é
 `update-rollback`), `update-check`, `update-apply [--no-client] [--no-downloads] [--no-site] [--no-map]`, `update-status`,
 `update-rollback`, `update-log`, `publish-update TAG` (atualização do cliente, docs/LAUNCH.md "Publishing a client
-update"), `publish-log`, `site-install`, `site-log`, `xp-rate`, `beta-mode [status | on | off] [restart]`, `clientservices-impl [status | rust | python]`, `health`, `cleanup [--yes]`, `account-create NOME`,
+update"), `publish-log`, `site-install`, `site-log`, `areas-publish [--pictures] [--rotate]`, `xp-rate`, `beta-mode [status | on | off] [restart]`, `clientservices-impl [status | rust | python]`, `health`, `cleanup [--yes]`, `account-create NOME`,
 `account-password NOME`, `install-admin`, `spectate NOME`, `spectate-pair [status | fetch | log [N]]`. Todos com argumentos conferidos (números, nomes, tags de release), nada de
 shell livre. Rode `chaos-ctl.sh help`. Aviso, expulsar, abrir, fechar e salvar passam pelo arquivo `remote.cmd`
 (`server/README.md`, "Remote admin commands"): o servidor do jogo precisa estar com os scripts novos.

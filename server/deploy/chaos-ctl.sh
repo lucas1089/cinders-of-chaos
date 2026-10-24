@@ -80,6 +80,15 @@
 #                               binary=present|missing, unit=ACTIVE
 #   backups                     the newest database dumps and data archives (date, size, path)
 #   site-install                website/install_site.sh CHAOS_ENV CHAOS_SITE_ENV in the background (site-log)
+#   areas-publish [--pictures] [--rotate]
+#                               the map inbox (docs/MAP_GUIDE.md "Map inbox"): builds the editor files (.otbm, spawn xml,
+#                               manifest) of every pending and approved entry of server/tools/areaplan/inbox/ with
+#                               server/tools/area_inbox.py into CHAOS_DL_DIR/areas-TOKEN/ (list.txt and one folder per
+#                               area) and prints url=... for the Windows fetch-areas.bat. TOKEN is 32 random hex digits
+#                               kept in CHAOS_AREAS_STATE (mode 600): the folder is only reachable by that address (the
+#                               site has no login for static files; map pieces hold no secret). --pictures adds the
+#                               previews (needs numpy, Pillow and the sprite pair). --rotate makes a new TOKEN and
+#                               deletes the old folder. The repo (CHAOS_REPO) must hold the entries: update-apply first
 #   site-log [N]                the last N lines of the site install log
 #   health                      key=value lines: the unit, the engine, the database, the web server units, disk,
 #                               memory and what "cleanup" would remove
@@ -144,7 +153,8 @@
 # encrypted with its CHAOS_CLIENT_KEY, which publish_client_update.sh reads from there). For the kit's update-*:
 # CHAOS_KIT_DIR (else CHAOS_ROOT when it holds start-server.sh), CHAOS_UPDATE_BRANCH main, CHAOS_RELEASE_REPO
 # lucas1089/cinders-of-chaos, CHAOS_KIT_STATE /var/lib/chaos/kit-update, CHAOS_BOOT_TIMEOUT 900, CHAOS_DL_DIR
-# $CHAOS_SITE_DIR/dl, CHAOS_SITE_ENV /etc/chaos/site.env; CHAOS_SITE_LOG /var/log/chaos/site-install.log. For testers:
+# $CHAOS_SITE_DIR/dl, CHAOS_SITE_ENV /etc/chaos/site.env; CHAOS_SITE_LOG /var/log/chaos/site-install.log. For areas-publish:
+# CHAOS_AREAS_STATE /var/lib/chaos/areas (the token file), CHAOS_DL_DIR, CHAOS_SITE_ENV (CHAOS_SITE_URL). For testers:
 # CHAOS_TESTER_KEY /etc/chaos/tester-client-key, CHAOS_TESTER_STATE /var/lib/chaos/testers, CHAOS_TESTER_LOG
 # /var/log/chaos/testers.log. For vps: CHAOS_VPS_LOG /var/log/chaos/vps-upgrade.log. For spectate: CHAOS_SPECTATE_PAIR
 # $CHAOS_ROOT/pair, CHAOS_SPECTATE_STATE /var/lib/chaos/spectate (lock, renewal time, the dat index), CHAOS_PAIR_BRANCH
@@ -173,7 +183,7 @@ CHAOS_PID_FILE CHAOS_DB_SOCKET CHAOS_MYSQL CHAOS_BACKUP_DIR CHAOS_PUBLISH_LOG CH
 CHAOS_UPDATE_PUBLIC CHAOS_UPDATE_REPO CHAOS_UPDATE_URL CHAOS_WORK_DIR CHAOS_KIT_DIR CHAOS_UPDATE_BRANCH \
 CHAOS_RELEASE_REPO CHAOS_KIT_STATE CHAOS_BOOT_TIMEOUT CHAOS_DL_DIR CHAOS_SITE_ENV CHAOS_SITE_LOG CHAOS_TESTER_KEY \
 CHAOS_TESTER_STATE CHAOS_TESTER_LOG CHAOS_VPS_LOG CHAOS_SPECTATE_PAIR CHAOS_SPECTATE_STATE CHAOS_PAIR_BRANCH \
-CHAOS_SPECTATE_LOG CHAOS_CAST_PORT CHAOS_SYSTEMD_DIR "
+CHAOS_SPECTATE_LOG CHAOS_CAST_PORT CHAOS_SYSTEMD_DIR CHAOS_AREAS_STATE "
 declare -A CFG=()
 # KEY=VALUE, optional "" or '' around the value, # comments; a value is a path or a unit name (no spaces, no $ or `)
 read_conf() {
@@ -988,6 +998,63 @@ case $cmd in
     : > "$SITELOG"
     setsid "$inst" "$ENVFILE" "$senv" >> "$SITELOG" 2>&1 < /dev/null &
     echo "started (site-install); follow it with: chaos-ctl.sh site-log"
+    ;;
+  areas-publish)
+    apics=0 arot=0
+    for a in "$@"; do
+      case $a in
+        --pictures) apics=1 ;;
+        --rotate) arot=1 ;;
+        *) die "areas-publish [--pictures] [--rotate]" ;;
+      esac
+    done
+    atool="$REPO/server/tools/area_inbox.py"
+    [ -f "$atool" ] || die "no $atool (CHAOS_REPO): update the server's repo first (update-apply)"
+    command -v python3 >/dev/null 2>&1 || die "python3-not-found"
+    adl=$(setting CHAOS_DL_DIR "$(setting CHAOS_SITE_DIR /var/www/chaos)/dl")
+    [ -d "$adl" ] || die "no download folder $adl (CHAOS_DL_DIR)"
+    astate=$(setting CHAOS_AREAS_STATE /var/lib/chaos/areas)
+    mkdir -p "$astate" || die "cannot create $astate"
+    chmod 0700 "$astate" 2>/dev/null || true
+    atok=""
+    [ -r "$astate/token" ] && atok=$(tr -dc 'a-f0-9' < "$astate/token" | head -c 32)
+    aold=$atok
+    if [ "${#atok}" -ne 32 ] || [ "$arot" -eq 1 ]; then
+      atok=$(head -c 16 /dev/urandom | od -An -tx1 | tr -d ' \n')
+      [ "${#atok}" -eq 32 ] || die "no random bytes for the token"
+      ( umask 077; printf '%s\n' "$atok" > "$astate/token" ) || die "cannot write $astate/token"
+    fi
+    atmp=$(mktemp -d "$adl/.areas-new.XXXXXX") || die "cannot write in $adl"
+    aargs=()
+    if [ "$apics" -eq 1 ]; then
+      aass=$(mktemp -d "$WORKDIR/chaos-areas-assets.XXXXXX") || die "no work folder $WORKDIR"
+      for f in items.otb items.xml; do ln -s "$SERVER/data/items/$f" "$aass/$f"; done
+      for f in Tibia.dat Tibia.spr; do ln -s "$SPPAIR/$f" "$aass/$f"; done
+      aargs+=(--assets "$aass")
+    fi
+    aout=$(python3 -I "$atool" publish "$atmp" "${aargs[@]}" 2>&1); arc=$?
+    [ -z "${aass:-}" ] || rm -rf "$aass"
+    printf '%s\n' "$aout"
+    if [ "$arc" -ne 0 ]; then
+      rm -rf "$atmp"
+      die "areas-publish: area_inbox.py failed (exit $arc); the published folder is unchanged"
+    fi
+    chmod 0755 "$atmp"
+    find "$atmp" -type d -exec chmod 0755 {} + 2>/dev/null
+    find "$atmp" -type f -exec chmod 0644 {} + 2>/dev/null
+    adest="$adl/areas-$atok"
+    if [ -d "$adest" ]; then mv "$adest" "$atmp.old" && rm -rf "$atmp.old"; fi
+    mv "$atmp" "$adest" || die "cannot move the folder into place"
+    if [ "$arot" -eq 1 ] && [ "${#aold}" -eq 32 ] && [ "$aold" != "$atok" ]; then rm -rf "$adl/areas-$aold"; fi
+    asite=""
+    asenv=$(setting CHAOS_SITE_ENV /etc/chaos/site.env)
+    [ -r "$asenv" ] && asite=$(sed -n 's/^CHAOS_SITE_URL=\([^ #]*\).*/\1/p' "$asenv" | head -n 1)
+    echo "areas-published: $(grep -c . "$adest/list.txt" 2>/dev/null || echo 0) area(s)"
+    if [ -n "$asite" ]; then
+      echo "url=${asite%/}/dl/areas-$atok/"
+    else
+      echo "url=(CHAOS_SITE_URL is not in $asenv) the folder is $adest: the site's address + /dl/areas-$atok/"
+    fi
     ;;
   site-log)
     tail -n "$(lines_arg "${1:-60}")" "$SITELOG" 2>&1

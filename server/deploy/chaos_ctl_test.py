@@ -812,6 +812,51 @@ def test_admin_commands():
         r = run('site-install', extra={'CHAOS_SITE_ENV': os.path.join(tmp, 'nope.env')})
         check(r.returncode != 0, 'site-install without a site settings file is refused')
 
+        # areas-publish: the map inbox into CHAOS_DL_DIR/areas-TOKEN (a stub area_inbox.py), a token kept in a 600 file
+        atool = os.path.join(repo, 'server', 'tools')
+        os.makedirs(atool, exist_ok=True)
+        dl = os.path.join(tmp, 'dl')
+        os.makedirs(dl)
+        asite = os.path.join(tmp, 'site.env')
+        with open(asite, 'w') as f:
+            f.write('CHAOS_SITE_URL=https://www.example.org   # the site\n')
+        astate = os.path.join(tmp, 'astate')
+        aextra = {'CHAOS_DL_DIR': dl, 'CHAOS_SITE_ENV': asite, 'CHAOS_AREAS_STATE': astate}
+        r = run('areas-publish', extra=aextra)
+        check(r.returncode != 0 and 'area_inbox.py' in r.stderr, 'areas-publish without the tool is refused: ' + r.stderr)
+        with open(os.path.join(atool, 'area_inbox.py'), 'w') as f:
+            f.write('import os, sys\n'
+                    'with open(os.environ["STUB"] + "/acalls", "a") as c: c.write(" ".join(sys.argv[1:]) + "\\n")\n'
+                    'if os.environ.get("STUB_AFAIL"): print("boom"); sys.exit(1)\n'
+                    'out = sys.argv[2]\nos.makedirs(out + "/mire")\n'
+                    'open(out + "/list.txt", "w").write("mire|pending|50-140|Mire\\n")\n'
+                    'open(out + "/mire/mire.otbm", "w").write("x")\n')
+        for bad in (('areas-publish', '--yes'), ('areas-publish', ';reboot'), ('areas-publish', '../x')):
+            check(run(*bad, extra=aextra).returncode != 0, 'areas-publish refuses %r' % (bad,))
+        r = run('areas-publish', extra=aextra)
+        check(r.returncode == 0 and 'areas-published: 1 area(s)' in r.stdout, 'areas-publish runs: ' + r.stdout + r.stderr)
+        tok = open(os.path.join(astate, 'token')).read().strip()
+        check(re.fullmatch(r'[0-9a-f]{32}', tok) is not None, 'the token is 32 hex digits: ' + tok)
+        check(stat.S_IMODE(os.stat(os.path.join(astate, 'token')).st_mode) == 0o600, 'the token file is mode 600')
+        check('url=https://www.example.org/dl/areas-%s/' % tok in r.stdout, 'the url is printed: ' + r.stdout)
+        check(os.path.isfile(os.path.join(dl, 'areas-' + tok, 'mire', 'mire.otbm')) and
+              os.path.isfile(os.path.join(dl, 'areas-' + tok, 'list.txt')), 'the files are in dl/areas-TOKEN')
+        check(stat.S_IMODE(os.stat(os.path.join(dl, 'areas-' + tok)).st_mode) == 0o755, 'the folder is readable by the web server')
+        check([n for n in os.listdir(dl) if n.startswith('.areas')] == [], 'no temporary folder is left')
+        acalls = open(os.path.join(stub, 'acalls')).read()
+        check('--assets' not in acalls, 'no pictures unless asked')
+        r = run('areas-publish', extra=aextra)
+        check(open(os.path.join(astate, 'token')).read().strip() == tok, 'a second run keeps the token')
+        r = run('areas-publish', '--pictures', extra=aextra)
+        check('--assets' in open(os.path.join(stub, 'acalls')).read(), '--pictures passes the render inputs')
+        r = run('areas-publish', extra=dict(aextra, STUB_AFAIL='1'))
+        check(r.returncode != 0 and os.path.isfile(os.path.join(dl, 'areas-' + tok, 'list.txt')) and
+              [n for n in os.listdir(dl) if n.startswith('.areas')] == [], 'a failed build leaves the published folder as it was')
+        r = run('areas-publish', '--rotate', extra=aextra)
+        tok2 = open(os.path.join(astate, 'token')).read().strip()
+        check(r.returncode == 0 and tok2 != tok and os.path.isdir(os.path.join(dl, 'areas-' + tok2)) and
+              not os.path.exists(os.path.join(dl, 'areas-' + tok)), '--rotate: a new token, the old folder is gone')
+
 
 TESTERS_STUB = """import os, sys, time
 with open(os.path.join(os.environ['STUB'], 'testers_calls'), 'a') as f:
