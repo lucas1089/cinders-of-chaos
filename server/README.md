@@ -7558,6 +7558,14 @@ service NPCs that replaced them sell none. **Veyra the Apothecary** stands in th
   (50, 80, 130, 200) and that 8704 is the small health potion, 8474 the antidote and 26029 / 26030 / 26031 the ultimate mana,
   ultimate spirit and supreme health potions (the store pack, the milestone gifts and `cooldown_channels_config.lua` agree with
   these). Check the first live start: the trade window lists them under those names.
+- **Trade window (O188).** Beta 2026-10-24: "trade" got "Sorry, I'm not offering anything." (`MESSAGE_NOSHOP`, base
+  `npchandler.lua`, sent by `ShopModule.requestTrade` in `modules.lua` when `npcHandler.shopItems` is empty). The base reads
+  `shop_buyable` / `shop_sellable` only in the module that `NpcSystem.parseParameters` builds for an XML with
+  `<parameter key="module_shop" value="1" />`; her XML lacked it and her script made `ShopModule:new()` by hand, which never
+  parses the lists, so the window was empty for every class and level. Now the XML has `module_shop` and the script makes no
+  module of its own. A level too low still refuses only that item (`CALLBACK_ONBUY`). Install step `apothecary` copies both files.
+  `tests/apothecary_test.lua` runs her script against a copy of the base parse and fails for a shop list without `module_shop`
+  in any NPC XML, and for a hand-made module with no items.
 - **Two lists.** The goods are in `apothecary_config.lua` (name, price, level) and in the XML's `shop_buyable` (what
   `install_potions.py` and `install_rune_supply.py` read and extend); `tests/apothecary_test.lua` fails when they differ.
 - **Install:** step `apothecary` (`tools/install_apothecary.py`, right after `servicenpcs`, so `runes`, `potions` and `itemprices`

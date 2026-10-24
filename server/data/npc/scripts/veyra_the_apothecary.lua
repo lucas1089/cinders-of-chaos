@@ -88,7 +88,7 @@ npcHandler:setCallback(CALLBACK_ONBUY, function(cid, itemId, subType, amount, ig
 end)
 
 npcHandler:setCallback(CALLBACK_MESSAGE_DEFAULT, creatureSayCallback)
-local shopModule = ShopModule:new()
-npcHandler:addModule(shopModule)
+-- no ShopModule:new() here: the XML's module_shop parameter makes NpcSystem.parseParameters (line 7) build the shop module
+-- and read shop_buyable / shop_sellable into it. A module made by hand never reads them (O188: empty trade window).
 ChaosI18n.npcMessages(npcHandler) -- the XML's greet / farewell / walk away / trade lines in the player's language
 npcHandler:addModule(FocusModule:new())
