@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
 """python3 -I tools/ci/check_assembled.py <assembled-client-dir>: the assembled client (client/tools/assemble_client.sh)
 has no two modules of one name (the engine merges them into one, and the /mods copy, discovered last, overwrites the
-/modules one) and its game_helper is ours: modules/game_helper with the overlay's .otmod, no mods/game_helper.
+/modules one) and its game_helper is ours: modules/game_helper with the overlay's .otmod, no mods/game_helper but the retired stub
+(an update over an older package replaces the pack's base helper.otmod with it).
 Owner report 2026-10-24: the helper had no general Auto setup and no Support tab, as if the base helper still ran."""
 import os
 import re
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+RETIRED_STUB = ('Module\n  name: game_helper_base_retired\n'
+                '  description: the base helper, retired (Cinders of Chaos uses modules/game_helper)\n  autoload: false\n')
 OVERLAY_OTMOD = os.path.join(HERE, '..', '..', 'client', 'overlay', 'modules', 'game_helper', 'game_helper.otmod')
 
 
@@ -46,8 +49,12 @@ def check(root, overlay_otmod=OVERLAY_OTMOD):
         live = open(os.path.join(root, helper[0]), encoding='utf-8').read()
         if ours != live:
             errors.append('assembled game_helper.otmod is not the overlay one')
-    if os.path.isdir(os.path.join(root, 'mods', 'game_helper')):
-        errors.append('mods/game_helper (the base helper) is still in the tree')
+    base = os.path.join(root, 'mods', 'game_helper')
+    if os.path.isdir(base):
+        names = sorted(os.listdir(base))
+        stub = os.path.join(base, 'helper.otmod')
+        if names != ['helper.otmod'] or open(stub, encoding='utf-8').read() != RETIRED_STUB:
+            errors.append('mods/game_helper (the base helper) is still in the tree; only the retired stub may be there')
     return errors
 
 

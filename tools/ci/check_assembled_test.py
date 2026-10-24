@@ -43,6 +43,11 @@ with tempfile.TemporaryDirectory() as tmp:
        'ours alone passes')
     e = run('both', {'modules/game_helper/game_helper.otmod': OURS, 'mods/game_helper/helper.otmod': BASE})
     ok(any('defined 2 times' in x for x in e) and any('still in the tree' in x for x in e), 'the base helper next to ours fails')
+    ok(run('stub', {'modules/game_helper/game_helper.otmod': OURS,
+                    'mods/game_helper/helper.otmod': C.RETIRED_STUB}) == [], 'the retired stub passes')
+    ok(run('stubplus', {'modules/game_helper/game_helper.otmod': OURS,
+                        'mods/game_helper/helper.otmod': C.RETIRED_STUB,
+                        'mods/game_helper/helper.lua': '--'}) != [], 'the stub with base files next to it fails')
     ok(run('base', {'mods/game_helper/helper.otmod': BASE}) != [], 'the base helper alone fails')
     ok(run('none', {'modules/game_x/x.otmod': 'Module\n  name: game_x\n'}) != [], 'no helper fails')
     ok(any('not the overlay' in x for x in run('other', {'modules/game_helper/game_helper.otmod': BASE})),

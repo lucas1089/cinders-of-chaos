@@ -29,6 +29,11 @@ rm -f "$OUT/mods/game_helper/cavebot_panel.lua" "$OUT/mods/game_helper/scripting
 # patches above still apply to mods/game_helper first (earlier patches are never edited), then the folder goes.
 # game_interface loads "game_helper" by name from its load-later list and finds the overlay module.
 rm -rf "$OUT/mods/game_helper"
+# An install updated over a package that still had the base helper keeps it inside its chaos.pack (the updater adds and
+# replaces files, it never hides one). A retired stub at the base helper's own .otmod path replaces it there: another
+# name, no scripts, so the engine never merges it into our game_helper (tools/ci/check_assembled.py RETIRED_STUB).
+mkdir -p "$OUT/mods/game_helper"
+printf 'Module\n  name: game_helper_base_retired\n  description: the base helper, retired (Cinders of Chaos uses modules/game_helper)\n  autoload: false\n' > "$OUT/mods/game_helper/helper.otmod"
 # the base native splash picture (used only with init.lua ENABLE_NATIVE_SPLASH on; without it no splash is drawn) and
 # the browser build's emblem show the base client's name in the picture (client/BASE.md "Names check")
 rm -f "$OUT/data/images/splash.png" "$OUT"/data/images/*-client-emblem.png
