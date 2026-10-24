@@ -19,8 +19,9 @@
 --     Iron Parry (Counter Stance answers +50%, the window in the spell), Way of the Blade (Samurai keystone: the stance
 --     parries every melee hit while it lasts, a hit keeps half of the Bushido stacks).
 --   * Samurai, the duelist off-tank: Counter Stance also takes the guard off every hit it does not parry and taunts.
---   * Blackblood Creed (the line's keystone in the main tree, node 383): every weapon hit poisons as Poison Blades does,
---     with or without the buff, the poison +60%; evasion halved.
+--   * Blackblood Creed (the line's keystone in the main tree, node 383): EVERY attack poisons as Poison Blades does
+--     (auto attacks and all attack spells, single target and area), with or without the buff, the poison +30%; evasion
+--     halved. One poison per target per hit, from this same onHealthChange hook; the poison's own ticks never poison.
 -- Scripted strikes (off-hand, counter) are dealt with origin ORIGIN_NONE inside a guard flag, so they never trigger
 -- the weapon-hit rules again (no off-hand from an off-hand, no poison, no second ambush).
 
@@ -117,6 +118,13 @@ local function poison(attacker, target, hit, bonus)
 	target:addCondition(c)
 end
 
+-- origins that count as an attack for Blackblood Creed: weapon, spell, wand. Never ORIGIN_CONDITION (the poison's own
+-- ticks and every other damage over time), ORIGIN_NONE (scripted strikes, reflected damage) or healing.
+local ATTACK_ORIGIN = {[ORIGIN_MELEE] = true, [ORIGIN_RANGED] = true, [ORIGIN_SPELL] = true}
+if ORIGIN_WAND then
+	ATTACK_ORIGIN[ORIGIN_WAND] = true
+end
+
 local function onOffence(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin)
 	local player = attacker and attacker:getPlayer()
 	if not player or scripted or primaryType == COMBAT_HEALING or creature == player then
@@ -168,9 +176,10 @@ local function onOffence(creature, attacker, primaryDamage, primaryType, seconda
 		ChaosCombatFx.crit(creature:getPosition(), player:getId())
 	end
 
-	-- Poison Blades; Blackblood Creed (the line keystone): every weapon hit, and a stronger poison
+	-- Poison Blades: weapon hits with the buff; Blackblood Creed (the line keystone): every attack, and a stronger poison
 	local creed = CT.has(player, "ksBlackbloodCreed")
-	if C.weaponPoisons(isWeapon, hasCond(player, CONDITION_ATTRIBUTES, cfg().subId.poisonBlades), creed) then
+	if C.weaponPoisons(isWeapon, hasCond(player, CONDITION_ATTRIBUTES, cfg().subId.poisonBlades), creed)
+			or C.creedPoisons(ATTACK_ORIGIN[origin] == true, creed) then
 		poison(player, creature, amount, creed and CT.fx.ksBlackbloodCreed.poisonBonus or 0)
 	end
 

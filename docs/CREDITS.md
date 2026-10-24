@@ -149,6 +149,10 @@ ask for credit (appreciated, not required). Listed here as thanks.
   - Author: WsT
   - Licence: purchased; personal and commercial use, modified or not; no attribution needed (credit appreciated); no resale, redistribution or sharing of the assets, even modified; never machine-learning training data
   - Used for: harvest farmland and catacomb tiles, decoration, event props and monsters (planned)
+- **Dark Fantasy RPG UI Kit Full Pack**
+  - Author: ZSS Game Lab (itch.io)
+  - Licence: purchased; personal and commercial use, resized, recoloured and modified; no resale, redistribution or repackaging of the files as standalone assets (credit appreciated); made with AI-assisted workflows and refined by hand
+  - Used for: the liquid orb rings, the character plate, the action bar slots, window, panel, button, tab, text field, tooltip and minimap frames (cropped, resized and recoloured by client/tools/import_hud_kit.py; the original files are not in the repository)
 - **A freely shared potion-throwing pack**
   - Licence: shared freely by its maker; no licence text
   - Used for: throwable potion flasks, projectiles and bursts

@@ -29,23 +29,35 @@ near(M.need(env, war, "distance", 100), 30 * 1.4 ^ 90, 1e-9, "Warrior distance u
 near(M.need(env, mys, "magic", 0), 1600, 1e-9, "magic level 0 -> 1 is 1600 mana")
 near(M.need(env, mys, "magic", 100), 1600 * 1.1 ^ 100, 1e-9, "magic level 100 -> 101")
 
--- stage multipliers
-check(M.stageMult(env.cfg.stages.skill, 1) == 20 and M.stageMult(env.cfg.stages.skill, 100) == 11 and M.stageMult(env.cfg.stages.skill, 101) == 9, "skill stages")
-check(M.stageMult(env.cfg.stages.skill, 149) == 7 and M.stageMult(env.cfg.stages.skill, 150) == 4 and M.stageMult(env.cfg.stages.skill, 400) == 4, "skill stages, last row open")
-check(M.stageMult(env.cfg.stages.magic, 100) == 8 and M.stageMult(env.cfg.stages.magic, 130) == 5, "magic stages")
+-- stage multipliers: the base server's rows (stockStages) and the install's (stages), x5 from 101 (O154, skill_stages_config.lua)
+check(env.stages.fromLevel == 101 and env.stages.factor == 5, "the stage config is x5 from 101")
+local stock, sk, mg = env.cfg.stockStages, env.cfg.stages.skill, env.cfg.stages.magic
+check(M.stageMult(stock.skill, 1) == 20 and M.stageMult(stock.skill, 100) == 11 and M.stageMult(stock.skill, 101) == 9, "stock skill stages")
+check(M.stageMult(stock.skill, 149) == 7 and M.stageMult(stock.skill, 150) == 4 and M.stageMult(stock.skill, 400) == 4, "stock skill stages, last row open")
+check(M.stageMult(stock.magic, 100) == 8 and M.stageMult(stock.magic, 130) == 5, "stock magic stages")
+check(M.stageMult(sk, 1) == 20 and M.stageMult(sk, 60) == 20 and M.stageMult(sk, 100) == 11, "skill stages up to 100 stay")
+check(M.stageMult(sk, 101) == 45 and M.stageMult(sk, 110) == 45 and M.stageMult(sk, 111) == 40 and M.stageMult(sk, 149) == 35, "skill stages x5 from 101")
+check(M.stageMult(sk, 150) == 20 and M.stageMult(sk, 400) == 20, "skill stages x5, last row open")
+check(M.stageMult(mg, 100) == 8 and M.stageMult(mg, 101) == 35 and M.stageMult(mg, 130) == 25 and M.stageMult(mg, 150) == 15, "magic stages x5 from 101")
+-- a row that spans 100 / 101 is split; levels below stay
+local split = M.applyFactor({{1, 60, 20}, {61, 130, 10}, {131, nil, 4}}, 101, 5)
+check(#split == 4 and split[2][2] == 100 and split[2][3] == 10 and split[3][1] == 101 and split[3][3] == 50 and split[4][3] == 20, "applyFactor splits at 101")
+check(M.stageMult(M.applyFactor(stock.skill, 101, 1), 130) == 7, "factor 1 is the stock table")
 
 -- hunting: swings an hour x attackShare x rateSkill x stage
 near(M.hunting(env, war, "melee", 100), 1800 * 0.7 * 3 * 11, 1e-9, "Warrior hunting tries at 100")
+near(M.hunting(env, war, "melee", 130), 1800 * 0.7 * 3 * 7 * 5, 1e-9, "Warrior hunting tries at 130 (stage 7 x5)")
 near(M.hunting(env, nin, "melee", 100), 3600000 / 1300 * 0.7 * 3 * 11, 1e-9, "a faster attack speed trains faster")
 near(M.hunting(env, mys, "magic", 100), 8000 * 60 * 0.5 * 2 * 8, 1e-9, "Mystic mana spent at 100")
 check(M.hunting(env, war, "magic", 100) == nil, "no magic hunting figure for a class without a rotation figure")
 
 -- exercise: 4800 charges an hour, E.step tries, then the stage
 near(M.exercise(env, "melee", "melee", 100), 4800 * 21 * 11, 1e-9, "melee dummy tries at 100 (7 x rate 3, stage 11)")
-near(M.exercise(env, "melee", "melee", 130), 4800 * 14 * 7, 1e-9, "melee dummy tries at 130 (7 x rate 2, stage 7)")
+near(M.exercise(env, "melee", "melee", 130), 4800 * 14 * 7 * 5, 1e-9, "melee dummy tries at 130 (7 x rate 2, stage 7 x5)")
 near(M.exercise(env, "rod", "magic", 100), 4800 * 1500 * 8, 1e-9, "rod dummy mana at 100 (500 x rate 3, stage 8)")
 check(M.exercise(env, "melee", "melee", 100, 0, true) > M.exercise(env, "melee", "melee", 100), "a house dummy gives more")
 near(M.ratio(env, war, "melee", 100), 4800 * 21 * 11 / (1800 * 0.7 * 3 * 11), 1e-9, "a dummy hour in hunting hours")
+near(M.ratio(env, war, "melee", 130), 4800 * 14 / (1800 * 0.7 * 3), 1e-9, "the factor cancels: a dummy hour is worth the same hunting hours")
 check(M.ratio(env, mys, "magic", 130) > 5 and M.ratio(env, war, "melee", 130) > 10, "a dummy hour is worth many hunting hours")
 
 -- offline: no uptime share; casters get almost nothing
@@ -56,6 +68,9 @@ check(M.offline(env, mys, "magic", 100) < M.hunting(env, mys, "magic", 100) / 20
 -- hours
 local h = M.hours(env, war, "melee", 100, 101, function(L) return M.hunting(env, war, "melee", L) end)
 near(h, M.need(env, war, "melee", 100) / M.hunting(env, war, "melee", 100), 1e-9, "hours of one level")
+-- O154: 100 -> 130 by hunting is about 300 hours for a Warrior (was 1,556 - 61 = about 1,500)
+local h130 = M.hours(env, war, "melee", 100, 130, function(L) return M.hunting(env, war, "melee", L) end)
+check(h130 > 280 and h130 < 330, "Warrior 100 -> 130 is about 300 hunting hours (" .. h130 .. ")")
 check(M.hours(env, war, "melee", 10, 11, function() return 0 end) == math.huge, "no tries, no end")
 
 -- the exercise weapon price bound

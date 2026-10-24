@@ -78,6 +78,7 @@ MIN_PLAYER_ATTACK_INTERVAL = 1.0  # config.lua minPlayerAttackInterval (src-patc
 CHI_HIT_INTERVAL = 2.0            # one chi per melee hit, at most one per 2 s (ChaosMonk.cfg.chi)
 KEEP_SHARE = 0.95                 # a best set keeps 95% of the measured kit's damage when it can
 GAP_FREE = 0.90                   # a set with no gap over 2 s wins when it has 90% of the best set's score (O136)
+FILL_KEEP = 0.97                  # a free slot takes a spell when the set keeps 97% of its score (fill_slots, O157)
 PACK_WEIGHT = 0.25                # score = 1 target + 0.25 x the 5-target total
 CANDIDATES = 10                   # the strongest spells per second a class's best set is searched among (+ below)
 
@@ -458,7 +459,32 @@ def best_set(pool, limit=MAX_SPELLS):
         if wider[0] < best[0]:
             best = wider
     _, rot, gap, d1, d5 = best
+    rot, gap, d1, d5 = fill_slots(pool, rot, gap, d1, d5, limit)
     return {'spells': rot, 'gap': gap, 'dps1': d1, 'dps5': d5}
+
+
+def fill_slots(pool, rot, gap, d1, d5, limit):
+    """free slots (O157, owner 2026-10-24: the Thief's Gutting Slash, Razor Rain, Venom Spiral, Crescent Cut and Last
+    Breath were missing from Auto setup): while the set has fewer than `limit` spells, the spell of the pool that keeps
+    the gap and FILL_KEEP of the score joins it (the one with the best score first). A class always uses its five slots
+    when a spell fits; a slot is left empty only when every spell left would cost more than FILL_LOSS of the damage."""
+    base = score(d1, d5)
+    while len(rot) < limit:
+        pick = None
+        for s in pool:
+            if s in rot or s.keep:
+                continue
+            alt = order(rot + [s])
+            _, g, a1, a5 = simulate(alt)
+            if g > max(gap, GCD) + 1e-9 or score(a1, a5) < FILL_KEEP * base:
+                continue
+            if pick is None or score(a1, a5) > score(pick[2], pick[3]):
+                pick = (alt, g, a1, a5)
+        if pick is None:
+            break
+        rot, gap, d1, d5 = pick
+        base = score(d1, d5)
+    return rot, gap, d1, d5
 
 
 def search(pool, ref, limit, by_rate, by_cast):
@@ -553,13 +579,14 @@ def client_data(spells, model):
            '-- server/data/spells/rotation_model.csv. Do not edit.',
            '-- ChaosAutoRotationData.classes[serverVocationId] = { name, presets = { { level, gap, spells = { id, ... },',
            '--   creatures = { n, ... } } },',
+           '--   extras = { id, ... } (the attack spells no preset holds, newest first; the helper tops up with them last),',
            '--   heals = { { id, level }, ... } }; a preset is the best rotation of at most 5 attack spells from its level on',
-           '-- (the first spell first), gap = its longest time between two casts in seconds. spells[id] = the spell numbers.',
+           '-- (the first spell first), gap = its longest time between two casts in seconds. spells[id] = the spell numbers of every attack spell.',
            'ChaosAutoRotationData = {', '  gcd = %.1f,' % GCD, '  classes = {']
     used = {}
     for cls, _, _ in CLASSES:
         out.append('    [%d] = { name = %s, presets = {' % (VOC[cls], lua_str(cls)))
-        last = None
+        last, held = None, set()
         for lv in breakpoints(spells, model, cls):
             r = best_set(prepare(class_spells(spells, cls, lv), model, cls, lv))
             if not r:
@@ -568,29 +595,38 @@ def client_data(spells, model):
             if ids == last:
                 continue
             last = ids
+            held.update(ids)
             for s in r['spells']:
                 used[s.id] = s
             crowd = creatures(r['spells'], model)
             out.append('      { level = %d, gap = %.2f, spells = { %s }, creatures = { %s } },' % (
                 lv, r['gap'], ', '.join(map(str, ids)), ', '.join(map(str, crowd))))
-        out.append('    }, heals = {')
+        # attack spells of the class no preset holds (a weaker single hit, a chi builder): the helper's top-up takes them
+        # last, newest first, so every attack spell can be in Auto setup's rotation (O157)
+        extra = sorted((x for x in spells if x['group'] == 'attack' and cls in x['vocations'] and x['id'] not in held and
+                        not model[x['words']]['flags'] & set(NO_PRESET)), key=lambda x: (-x['level'], x['id']))
+        out.append('    }, extras = { %s }, heals = {' % ', '.join(str(x['id']) for x in extra) if extra
+                   else '    }, heals = {')
         for h in heals(spells, cls)[:3]:
             out.append('      { id = %d, level = %d },' % (h['id'], h['level']))
         out.append('    } },')
     out.append('  },')
     out.append('  spells = {')
+    # every attack spell the rotation can take is in the table, used by a preset or not (O157): the helper's top-up and
+    # Auto setup look a spell up here, and a kit spell that is in no preset (Tidal Palm, Rampart Quake) was unknown
     byid = {}
     for s in spells:
-        if s['id'] in used:
+        if s['group'] == 'attack' and not model[s['words']]['flags'] & set(NO_PRESET):
             byid[s['id']] = s
     for sid in sorted(byid):
         s = byid[sid]
-        p = used[sid]
+        p = used.get(sid)
+        chi = p.chi if p else 'chi' in model[s['words']]['flags']
         out.append('    [%d] = { name = %s, words = %s, cooldown = %d, groupCooldown = %d, secondaryGroup = %s, '
                    'secondaryCooldown = %d, cast = %d, area = %s, chi = %s },' % (
                        sid, lua_str(s['name']), lua_str(s['words']), s['cooldown'], s['groupcooldown'],
                        lua_str(s['secondarygroup']), s['secondarygroupcooldown'], s['cast'],
-                       'true' if model[s['words']]['t5'] >= 3 else 'false', 'true' if p.chi else 'false'))
+                       'true' if model[s['words']]['t5'] >= 3 else 'false', 'true' if chi else 'false'))
     out.append('  },')
     out.append('}')
     return '\n'.join(out) + '\n'

@@ -110,7 +110,7 @@ end
 -- the strongest haste the class can cast
 local hastes = { [39] = entry(39, 'Strong Haste', 'utani gran hur', 3, { 4 }, { level = 20 }), [6] = table_.Haste }
 local function spellOf(id) return hastes[id] end
-eq(S.bestHaste(spellOf, { vocation = 4, level = 20 }), 39, 'strong haste at its level')
+eq(S.bestHaste(spellOf, { vocation = 4, level = 20 }), 6, 'Haste: the retired strong haste (39) is never offered')
 eq(S.bestHaste(spellOf, { vocation = 4, level = 10 }), 6, 'haste below it')
 eq(S.bestHaste(spellOf, { vocation = 17, level = 100 }), nil, 'a class without the haste')
 

@@ -1,5 +1,7 @@
-// Character plate (art: client/tools/gen_skin.py, group "hud"). Positions match the plate image:
-// portrait centre 47,48 (opening radius 30), bars at x 96, width 166.
+// Character plate (art: client/tools/import_hud_kit.py; the procedural version is gen_skin.py, group "hud").
+// Positions match the plate image: portrait centre 47,48 (opening radius 24), fills at x 107, width 166 (BAR_W in
+// chaoshud.lua), each in a track 14 wider at both ends that spans the trough (x 93 to 287); name line y 17 to 32, tracks
+// y 34-51, 53-68, 70-79 (2 px apart); level badge centred under the ring (x 27 to 67, y 79 to 96).
 ChaosHudText < UILabel
   font: verdana-11px-rounded
   color: #f4ead6
@@ -10,7 +12,7 @@ ChaosHudFill < UIWidget
   phantom: true
   anchors.left: parent.left
   anchors.top: parent.top
-  margin-left: 96
+  margin-left: 107
 
 UIWidget
   id: chaosHud
@@ -25,11 +27,11 @@ UIWidget
 
   UIWidget
     id: portraitClip
-    size: 62 62
+    size: 48 48
     anchors.left: parent.left
     anchors.top: parent.top
-    margin-left: 16
-    margin-top: 17
+    margin-left: 23
+    margin-top: 24
     clipping: true
     phantom: true
 
@@ -38,8 +40,8 @@ UIWidget
       size: 88 88
       anchors.left: parent.left
       anchors.top: parent.top
-      margin-left: -24
-      margin-top: -26
+      margin-left: -31
+      margin-top: -33
       phantom: true
 
   UIWidget
@@ -52,17 +54,16 @@ UIWidget
 
   UILabel
     id: level
-    size: 40 18
+    size: 40 17
     anchors.left: parent.left
     anchors.top: parent.top
     margin-left: 27
-    margin-top: 78
+    margin-top: 79
     image-source: /images/chaos/skin/hud_level
-    image-border: 4
     font: verdana-11px-rounded
     color: #ffe7a6
     text-align: center
-    text-offset: 0 1
+    text-offset: 0 2
     phantom: false
     focusable: false
 
@@ -70,9 +71,9 @@ UIWidget
     id: name
     anchors.left: parent.left
     anchors.top: parent.top
-    margin-left: 98
-    margin-top: 19
-    size: 160 14
+    margin-left: 109
+    margin-top: 17
+    size: 160 15
     font: verdana-11px-rounded
     color: #e8c477
     text-align: left
@@ -88,7 +89,7 @@ UIWidget
     id: hpText
     anchors.left: parent.left
     anchors.top: parent.top
-    margin-left: 96
+    margin-left: 107
     margin-top: 35
     size: 166 15
     text-offset: 0 1
@@ -103,29 +104,29 @@ UIWidget
     id: mpText
     anchors.left: parent.left
     anchors.top: parent.top
-    margin-left: 96
+    margin-left: 107
     margin-top: 54
     size: 166 13
 
   ChaosHudFill
     id: xpFill
     margin-top: 71
-    size: 166 5
+    size: 166 7
     image-source: /images/chaos/skin/hud_xp_fill
 
   UIWidget
     id: xpHover
     anchors.left: parent.left
     anchors.top: parent.top
-    margin-left: 94
-    margin-top: 68
+    margin-left: 105
+    margin-top: 69
     size: 170 11
 
   UIWidget
     id: barsHover
     anchors.left: parent.left
     anchors.top: parent.top
-    margin-left: 94
+    margin-left: 105
     margin-top: 33
     size: 170 36
     focusable: false

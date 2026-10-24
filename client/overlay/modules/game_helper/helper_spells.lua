@@ -14,7 +14,7 @@
 ChaosHelperSpells = ChaosHelperSpells or {}
 local S = ChaosHelperSpells
 
-S.HASTE_IDS = { 39, 6 }              -- Strong Haste, Haste (the strongest first; ChaosAutoSetup.HASTES)
+S.HASTE_IDS = { 6 }                 -- Haste (Fleetfoot); Strong Haste (39, Galeborne Stride) was retired 2026-10-23 (O136)
 S.TOGGLE_IDS = { [179] = true, [255] = true, [161] = true, [162] = true } -- the vigils: the Support tab
 S.DASH_IDS = { [254] = true, [232] = true }                               -- Town Portal, Flickerdash
 S.MAX_LEVEL = 100000
@@ -132,6 +132,8 @@ function S.list(kind, spells, ctx)
   local out = {}
   local seen = {}
   local function add(name, spell)
+    -- the table's key is the name of an entry that has none (the utility check by name needs it)
+    if type(spell) == 'table' and type(spell.name) ~= 'string' and type(name) == 'string' then spell.name = name end
     if type(spell) == 'table' and not seen[spell.id] and S.eligible(kind, spell, ctx) then
       seen[spell.id] = true
       out[#out + 1] = { name = spell.name or name, spell = spell }

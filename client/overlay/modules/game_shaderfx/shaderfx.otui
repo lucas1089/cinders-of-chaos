@@ -5,10 +5,10 @@ ChaosOrb < UIWidget
 
   UIWidget
     id: liquid
-    size: 64 64
+    size: 50 50
     anchors.centerIn: parent
     phantom: true
-    image-source: /modules/game_shaderfx/images/orb_mask_64
+    image-source: /modules/game_shaderfx/images/orb_mask_50
     image-smooth: true
 
   UIWidget

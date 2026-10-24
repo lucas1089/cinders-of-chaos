@@ -84,9 +84,9 @@ function S.healSlots(heals)
   return out
 end
 
--- haste kept up: Strong Haste (utani gran hur), else Haste (utani hur). Wildstride (12 s of 30, on top of Haste) and
+-- haste kept up: Haste (utani hur, Fleetfoot). Strong Haste (Galeborne Stride) is retired. Wildstride (12 s of 30, on top of Haste) and
 -- Charge (a 5 s dash) are left out.
-S.HASTES = { 39, 6 }
+S.HASTES = { 6 }
 
 function S.haste(canCast)
   for _, id in ipairs(S.HASTES) do

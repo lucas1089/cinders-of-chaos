@@ -40,9 +40,34 @@ function M.vocations(lines)
 	return out
 end
 
+-- the stage rows with the O154 speed-up: every multiplier from `from` up times `factor` (data/scripts/chaos/skill_stages_config.lua,
+-- which tools/patch_skill_stages.py applies to the base server's skills_stages.lua); a row that spans from - 1 and from is split
+function M.applyFactor(rows, from, factor)
+	local out = {}
+	for _, r in ipairs(rows) do
+		local a, b, m = r[1], r[2], r[3]
+		if b ~= nil and b < from then
+			out[#out + 1] = {a, b, m}
+		elseif a >= from then
+			out[#out + 1] = {a, b, m * factor}
+		else
+			out[#out + 1] = {a, from - 1, m}
+			out[#out + 1] = {from, b, m * factor}
+		end
+	end
+	return out
+end
+
 function M.load()
 	local env = {}
 	env.cfg = dofile("data/scripts/chaos/skill_model_config.lua")
+	env.stages = dofile("data/scripts/chaos/skill_stages_config.lua")
+	-- cfg.stockStages: the base server's rows as downloaded; cfg.stages: what the install leaves (patch_skill_stages.py)
+	env.cfg.stockStages = env.cfg.stages
+	env.cfg.stages = {
+		skill = M.applyFactor(env.cfg.stockStages.skill, env.stages.fromLevel, env.stages.factor),
+		magic = M.applyFactor(env.cfg.stockStages.magic, env.stages.fromLevel, env.stages.factor)
+	}
 	env.exercise = dofile("data/scripts/chaos/exercise_config.lua")
 	dofile("data/scripts/chaos/exercise_core.lua")
 	env.E = ChaosExercise
@@ -265,6 +290,8 @@ function M.report(env)
 	local head = {}
 	for _, L in ipairs(lv) do head[#head + 1] = tostring(L) end
 
+	print(string.format("Stage multipliers: the base server's x%s from level %d up (skill_stages_config.lua, patch_skill_stages.py)\n",
+		tostring(env.stages.factor), env.stages.fromLevel))
 	print("Hunting hours for one skill level, by trained level (main skill of each vocation)")
 	print("| Vocation | Skill | " .. table.concat(head, " | ") .. " | Hours 100 -> 130 |")
 	print("|---|---|" .. string.rep("---|", #lv + 1))
@@ -303,6 +330,20 @@ function M.report(env)
 			table.concat(cells[3], " / "), table.concat(cells[4], " / "), table.concat(cells[5], " / "))
 	end
 
+	print(string.format("\nMain skill after %d hours of hunting (leveling 8 to 1000), by line (base vocation)", c.levelingHours))
+	print("| Line | Skill | Now | Stock stages |")
+	print("|---|---|---|---|")
+	local stock = {skill = env.cfg.stages.skill, magic = env.cfg.stages.magic}
+	for _, name in ipairs({"warrior", "ranger", "mystic", "thief", "monk", "necromancer", "templar"}) do
+		local v = env.vocs[env.exercise.lines[name][1]]
+		local skill = c.main[name]
+		local now = M.reached(env, v, skill, c.levelingHours)
+		env.cfg.stages = c.stockStages
+		local was = M.reached(env, v, skill, c.levelingHours)
+		env.cfg.stages = stock
+		line("| %s | %s | %d | %d |", v.name, skill, now, was)
+	end
+
 	print("\nHours (Warrior melee, Mystic magic level) to reach a trained level from 10 (0 for magic), hunting / offline days at 12 h / dummy hours")
 	print("| Class | To level | Hunting hours | Offline training days | Dummy hours |")
 	print("|---|---|---|---|---|")
@@ -316,6 +357,19 @@ function M.report(env)
 			local eh = M.hours(env, v, skill, from, to, function(L) return M.exercise(env, KIND_OF[skill], skill, L) end)
 			line("| %s %s | %d | %s | %s | %s |", v.name, skill, to, fmt(hh), fmt(oh / c.offline.poolHours), fmt(eh))
 		end
+	end
+end
+
+-- the main skill a character has when it reaches the level where it has hunted `hours` hours (from 10, magic level from 0)
+function M.reached(env, voc, skill, hours)
+	local from = skill == "magic" and 0 or env.cfg.minSkill
+	local h, L = 0, from
+	while true do
+		local t = M.hunting(env, voc, skill, L)
+		if not t then return nil end
+		h = h + M.need(env, voc, skill, L) / t
+		if h > hours then return L end
+		L = L + 1
 	end
 end
 

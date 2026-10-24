@@ -163,6 +163,21 @@ function A.select(vocId, level, canCast, opts)
       end
     end
   end
+  -- the class's attack spells no preset holds (c.extras, newest first: a weaker single hit, a chi builder; O157, owner
+  -- 2026-10-24) come last, so Auto setup can use every attack spell the character can cast
+  if not (opts and opts.topUp == false) then
+    for _, id in ipairs(c.extras or {}) do
+      if #ids >= A.MAX_SPELLS then
+        break
+      end
+      if not seen[id] and canCast(id) then
+        ids[#ids + 1] = id
+        creatures[#creatures + 1] = (spells[id] and spells[id].area) and 2 or 1
+        seen[id] = true
+        added = true
+      end
+    end
+  end
   if #ids == 0 then
     return nil, 'spells'
   end

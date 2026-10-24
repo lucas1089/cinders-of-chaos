@@ -303,4 +303,43 @@ function L.inRange(a, b, range)
   return d ~= nil and d <= (range or L.TALK_RANGE)
 end
 
+-- ---------------------------------------------------------------- which window gets an NPC line
+-- The names of two NPC lines compare equal when they differ only in case, spacing or edge punctuation.
+function L.sameName(a, b)
+  local function key(x) return (trim(x):lower():gsub('%s+', ' '):gsub('^%p+', ''):gsub('%p+$', '')) end
+  local ka, kb = key(a), key(b)
+  return ka ~= '' and ka == kb
+end
+
+local function samePos(a, b)
+  return a ~= nil and b ~= nil and a.x == b.x and a.y == b.y and a.z == b.z
+end
+L.samePos = samePos
+
+-- Where one line of an NPC goes. `line` = {mode, name, text, pos (where the speaker stands, when the engine says)};
+-- `st` = {modes = {npcFrom, npcFromStartBlock}, enabled, suppressed, conv = {name, pos} | nil}.
+--   'ignore'   not an NPC line at all (public talk, a player): the console alone
+--   'console'  an NPC line the bubble does not take (the dialogue is off, another NPC's line, a farewell right after a
+--              goodbye): the console as before
+--   'conv'     a line of the NPC of the open conversation
+--   'open'     a line of an NPC with no conversation open: the bubble opens for it when it stands in range
+-- The speaker of the open conversation is known by its name or, when the name differs in some way, by its tile.
+function L.routeNpcLine(line, st)
+  local m = line.mode
+  if m == nil or (m ~= st.modes.npcFrom and m ~= st.modes.npcFromStartBlock) then return 'ignore' end
+  if not st.enabled or trim(line.name) == '' or trim(line.text) == '' then return 'console' end
+  if st.conv then
+    if L.sameName(st.conv.name, line.name) or samePos(st.conv.pos, line.pos) then return 'conv' end
+    return 'console'
+  end
+  if st.suppressed then return 'console' end
+  return 'open'
+end
+
+-- The console hook and the game's own talk signal both hand over every line; the second copy of a line (same speaker,
+-- same words, within `window` ms of the first) is the same line.
+function L.isDuplicate(last, name, text, at, window)
+  return last ~= nil and last.name == name and last.text == text and at - last.at <= (window or 50)
+end
+
 return L

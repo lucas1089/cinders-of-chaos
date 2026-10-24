@@ -312,6 +312,10 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                                                  number get all three at the highest, a rolled melee modifier raises all
                                                  three skills (base_rarity.lua; README "Melee and Ranged on equipment";
                                                  runs right before sql, after every step that adds items)
+  skillstages  tools/patch_skill_stages.py       skill and magic level training x5 from level 101: the stage multipliers
+                                                 of the base scripts/customs/skills/skills_stages.lua from 101 up times
+                                                 the factor of data/scripts/chaos/skill_stages_config.lua (owner
+                                                 2026-10-24; README "Skill stages x5"; right after meleeskill)
   bankpayments tools/patch_bank_payments.py      every gold price is paid from the carried coins and then the bank:
                lib.lua and npc/lib/npc.lua load data/lib/chaos_pay.lua (Player.getTotalMoney / removeTotalMoney), the
                scripts that checked and took the carried coins only (NPC travel, horses, outfits, blessings, table shops,
@@ -1005,6 +1009,14 @@ def step_meleeskill(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('sql'), 'meleeskill')  # late: after every step that adds items with skills to items.xml
+
+
+def step_skillstages(server, data, ctx):
+    args = [tool('patch_skill_stages.py'), data] + (['--dry-run'] if ctx['dry'] else [])
+    return tool_result(run_tool(args, 'patch_skill_stages.py'))
+
+
+STEPS.insert(STEPS.index('meleeskill') + 1, 'skillstages')  # independent of the others: one base script, no items
 
 
 def step_itemprices(server, data, ctx):

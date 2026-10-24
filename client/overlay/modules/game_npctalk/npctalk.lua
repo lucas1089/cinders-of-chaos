@@ -6,7 +6,8 @@
 --
 -- Every NPC works unchanged: nothing on the server. The 10.98 server sends an NPC's answers as private NPC speech
 -- (MessageModes.NpcFrom / NpcFromStartBlock, the console's "NPCs" tab); the console hands those to
--- game_npctrade.tryHandleNpcDialogMessage first (the base client's own NPC dialog window). This module replaces that
+-- game_npctrade.tryHandleNpcDialogMessage first (the base client's own NPC dialog window); the game's own onTalk signal
+-- brings the same line too (O160: the bubble does not depend on the console). This module replaces that
 -- function and its companions (onNpcPlayerTalk, onNpcConversationAttempt, endNpcConversation,
 -- setNpcDialogWindowEnabled), game_interface.talkToNpc (the menu's Talk), g_game.use on an NPC and g_map.addThing
 -- (the conversation NPC's words over its head) while it is loaded and puts it all back on unload: lines of the NPC we
@@ -639,21 +640,38 @@ stopTicking = function()
 end
 
 -- ---------------------------------------------------------------- the console hooks (game_npctrade's functions)
--- an NPC line: true when the bubble took it (the console then leaves it out unless it keeps a copy)
-local function onNpcLine(name, _, mode, text)
-  if mode ~= MessageModes.NpcFrom and mode ~= MessageModes.NpcFromStartBlock then return false end
-  if not enabled() or not name or name == '' or not text or text == '' then return false end
-  local lname = name:lower()
-  if conv and conv.name:lower() ~= lname then return false end -- another NPC: console
-  if not conv then
-    if suppressAllUntil > now() then return false end
-    local creature = (approach and approach.creature:getName():lower() == lname and approach.creature) or findNpc(name)
+-- the NPC standing on `pos`, among the creatures on screen
+local function findNpcAt(pos)
+  local p = player()
+  if not p or not pos then return nil end
+  for _, c in ipairs(g_map.getSpectators(p:getPosition(), false) or {}) do
+    if c:isNpc() and L.samePos(c:getPosition(), pos) then return c end
+  end
+  return nil
+end
+
+local lastLine -- {name, text, at, handled}: the line the bubble saw last (the hook and the talk signal both bring it)
+
+-- one line of an NPC: true when the bubble took it (the console then leaves it out unless it keeps a copy)
+local function onNpcLine(name, _, mode, text, pos)
+  local route = L.routeNpcLine({ mode = mode, name = name, text = text, pos = pos }, {
+    modes = { npcFrom = MessageModes.NpcFrom, npcFromStartBlock = MessageModes.NpcFromStartBlock },
+    enabled = enabled(),
+    suppressed = suppressAllUntil > now(),
+    conv = conv and { name = conv.name, pos = conv.creature:getPosition() } or nil,
+  })
+  if route == 'open' then
+    local lname = name:lower()
+    local creature = (approach and approach.creature:getName():lower() == lname and approach.creature) or
+      findNpcAt(pos) or findNpc(name)
     local p = player()
     if not creature or not p or not L.inRange(p:getPosition(), creature:getPosition(), L.TALK_RANGE + 1) then
       return false
     end
     openConversation(creature)
+    route = 'conv'
   end
+  if route ~= 'conv' then return false end
   if not alive(bubble) then return false end
   if not bubble:isVisible() then showBubble() end
   table.insert(conv.turn, text)
@@ -664,6 +682,22 @@ local function onNpcLine(name, _, mode, text)
   conv.lastActivity = now()
   refreshText()
   return not settings.consoleCopy
+end
+
+-- Every NPC line comes in twice: through the console (its hook, which also keeps the line out of the console) and
+-- through the game's talk signal below, which does not depend on the console at all (a console that stops short, or a
+-- hook that is not in place, no longer leaves the bubble at "..."). The second copy answers as the first did.
+local function deliverNpcLine(name, mode, text, pos)
+  local at = now()
+  if L.isDuplicate(lastLine, name, text, at) then return lastLine.handled end
+  local handled = onNpcLine(name, nil, mode, text, pos)
+  lastLine = { name = name, text = text, at = at, handled = handled }
+  return handled
+end
+
+local function onTalkSignal(name, _, mode, text, _, pos)
+  local ok, err = pcall(deliverNpcLine, name, mode, text, pos)
+  if not ok then warn('onTalk', err) end
 end
 
 -- the player typed in the console's NPCs tab (the console has sent it already and leaves showing it to us)
@@ -702,7 +736,7 @@ local function onDialogWindowEnabled(on)
 end
 
 local HOOKS = {
-  tryHandleNpcDialogMessage = function(...) return onNpcLine(...) end,
+  tryHandleNpcDialogMessage = function(name, _, mode, text) return deliverNpcLine(name, mode, text, nil) end,
   onNpcPlayerTalk = function(...) return onConsoleNpcTalk(...) end,
   onNpcConversationAttempt = function(...) return onConsoleLocalTalk(...) end,
   endNpcConversation = function(...) return onEndNpcConversation(...) end,
@@ -867,11 +901,11 @@ function init()
   g_keyboard.bindKeyDown('Escape', onRootEscape, root)
   escapeBound = true
   installHooks()
-  connect(g_game, { onGameEnd = onGameEnd })
+  connect(g_game, { onGameEnd = onGameEnd, onTalk = onTalkSignal })
 end
 
 function terminate()
-  disconnect(g_game, { onGameEnd = onGameEnd })
+  disconnect(g_game, { onGameEnd = onGameEnd, onTalk = onTalkSignal })
   stopTicking()
   approach, conv = nil, nil
   removeHooks()

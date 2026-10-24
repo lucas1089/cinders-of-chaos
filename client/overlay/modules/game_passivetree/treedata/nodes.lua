@@ -7374,9 +7374,10 @@ function getTreeNodes()
 				ksBlackbloodCreed = 1
 			},
 			stats = {
-				"Thief line: every weapon hit poisons the target",
-				"as Poison Blades does, with or without the buff,",
-				"and your poison deals +30% damage.",
+				"Thief line: every attack poisons the target as",
+				"Poison Blades does, with or without the buff:",
+				"auto attacks and all attack spells, single",
+				"target and area. Your poison deals +30% damage.",
 				"Your evasion is halved."
 			},
 			classes = {"thief", "ninja", "samurai"},

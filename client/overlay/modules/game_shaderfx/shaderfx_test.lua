@@ -91,7 +91,7 @@ end
 do
   local size, liquid, font = L.orbSize(nil)
   eq(size, 150, 'default orb size is medium')
-  eq(liquid, 126, 'liquid keeps 64/76')
+  eq(liquid, 99, 'liquid keeps 50/76')
   eq(font ~= nil, true, 'a font for the number')
   eq(L.orbSize(1), 76, 'small')
   eq(L.orbSize(3), 190, 'large')

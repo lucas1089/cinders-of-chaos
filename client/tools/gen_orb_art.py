@@ -1,25 +1,25 @@
 #!/usr/bin/env python3
-"""Art of the liquid orbs (client/MANIFEST.md "game_shaderfx"): the round mask the orb shader fills and the bronze
-ring drawn over it. Drawn here from plain geometry (no source images).
+"""Art of the liquid orbs (client/MANIFEST.md "game_shaderfx"): the round mask the orb shader fills. Drawn here from
+plain geometry (no source images). The ring drawn over the mask comes from import_hud_kit.py (the purchased painted
+pack, docs/CREDITS.md); this tool only checks that every orb size has its ring at 2x.
 
-One mask and one ring per orb size (shaderfxlogic.lua ORB_SIZES: 76, 150, 190 px; the liquid 64 of 76 of that),
-each at twice the size it is drawn. The first art was one 64 px mask and one 76 px ring for every size, so the
-medium and large orbs (150 and 190 px, medium the default) drew them stretched about 2x and 2.5x: a blurred, stepped
-ring and square rivets (owner screenshot 2026-10-21). At 2x a drawn pixel is the plain average of 2x2 texels (the
+One mask and one ring per orb size (shaderfxlogic.lua ORB_SIZES: 76, 150, 190 px; the liquid 50 of 76 of that, the
+opening of the ring), each at twice the size it is drawn. At 2x a drawn pixel is the plain average of 2x2 texels (the
 widget draws with image-smooth), and a UI scaled 2x draws it 1:1.
 
   orb_mask_<L>.png  2L x 2L  white disc, a soft edge of one drawn pixel (the shader cuts the orb by its alpha)
-  orb_ring_<S>.png  2S x 2S  dark bronze ring around the liquid, lit from the upper left, four small rivets
-  (S the orb size, L its liquid: round(S * 64 / 76))
+  orb_ring_<S>.png  2S x 2S  made by import_hud_kit.py (S the orb size, L its liquid: round(S * 50 / 76))
 
 Usage: python3 client/tools/gen_orb_art.py [--check]   (Pillow; writes into overlay/modules/game_shaderfx/images/)
-  --check: the committed images have the pixels the generator draws (exit 1 when not, or when a stray orb image is
-  left); nothing is written.
+  --check: the committed masks have the pixels the generator draws, every ring exists at 2S x 2S, the opening of each
+  ring is centred on its canvas (1 texel) and as wide as the mask (1 drawn pixel; exit 1 when not, or when a stray orb
+  image is left); nothing is written.
 """
 import math
 import os
 import re
 import sys
+from collections import deque
 
 from PIL import Image
 
@@ -29,13 +29,6 @@ OUT = os.path.join(MODULE, 'images')
 LOGIC = os.path.join(MODULE, 'shaderfxlogic.lua')
 SCALE = 2  # texels per drawn pixel
 
-# the ring of the first 76 px orb, in drawn pixels of that size; every size scales it
-BASE_SIZE = 76
-BASE_INNER = 31.5
-BASE_OUTER = 37.5
-BASE_RIVET = 1.8
-BASE_LINE = 0.8
-
 
 def orb_sizes(text):
     """the orb sizes of shaderfxlogic.lua's ORB_SIZES"""
@@ -44,8 +37,8 @@ def orb_sizes(text):
 
 
 def liquid_size(size):
-    """as shaderfxlogic.lua L.orbSize: math.floor(size * 64 / 76 + 0.5)"""
-    return int(math.floor(size * 64 / 76 + 0.5))
+    """as shaderfxlogic.lua L.orbSize: math.floor(size * 50 / 76 + 0.5)"""
+    return int(math.floor(size * 50 / 76 + 0.5))
 
 
 def coverage(dist, radius, ramp=1.0):
@@ -67,43 +60,6 @@ def mask(size):
     return img
 
 
-def ring(size):
-    """the ring, `size` texels (a drawn orb of size / SCALE)"""
-    k = size / float(BASE_SIZE)
-    inner, outer = BASE_INNER * k, BASE_OUTER * k
-    rivet, line = BASE_RIVET * k, BASE_LINE * k
-    ramp = SCALE  # one drawn pixel
-    img = Image.new('RGBA', (size, size), (0, 0, 0, 0))
-    c = (size - 1) / 2.0
-    px = img.load()
-    rivets = [(c + math.cos(a) * (inner + outer) / 2, c + math.sin(a) * (inner + outer) / 2)
-              for a in (math.pi * 0.25, math.pi * 0.75, math.pi * 1.25, math.pi * 1.75)]
-    for y in range(size):
-        for x in range(size):
-            d = math.hypot(x - c, y - c)
-            a = coverage(d, outer, ramp) * (1.0 - coverage(d, inner - k, ramp))
-            if a <= 0:
-                continue
-            # light from the upper left on a rounded band: the band's profile and the angle to the light
-            t = (d - inner) / (outer - inner)
-            bulge = math.sin(max(0.0, min(1.0, t)) * math.pi)
-            ang = math.atan2(y - c, x - c)
-            light = 0.5 + 0.5 * math.cos(ang - math.radians(-135))
-            kk = 0.35 + 0.45 * bulge * (0.4 + 0.6 * light)
-            col = [min(255.0, v * kk) for v in (176, 120, 62)]
-            # rivets: round, with a soft edge (they were hard 3x3 blocks, stretched to squares)
-            for rx, ry in rivets:
-                rc = coverage(math.hypot(x - rx, y - ry), rivet, ramp)
-                if rc > 0:
-                    head = [min(255.0, v * (0.9 + 0.5 * light)) for v in (214, 170, 100)]
-                    col = [b + (h - b) * rc for b, h in zip(col, head)]
-            # a thin dark line at the inner edge so the liquid reads as behind glass
-            dark = coverage(d, inner + line, ramp)
-            col = [v * (1.0 - 0.55 * dark) for v in col]
-            px[x, y] = (int(col[0]), int(col[1]), int(col[2]), int(round(a * 255)))
-    return img
-
-
 def art():
     """file name -> image, for every orb size"""
     sizes = orb_sizes(open(LOGIC, encoding='utf-8').read())
@@ -111,13 +67,67 @@ def art():
         raise SystemExit('gen_orb_art: no ORB_SIZES in ' + LOGIC)
     out = {}
     for s in sizes:
-        out['orb_ring_%d.png' % s] = ring(s * SCALE)
         out['orb_mask_%d.png' % liquid_size(s)] = mask(liquid_size(s) * SCALE)
     return out
 
 
+def opening(img):
+    """(centre x, centre y, radius) of the transparent opening around the middle of a ring image, in texels (pixel
+    centres at index + 0.5): its alpha < 128 region as flooded from the middle; the radius is the circle of equal area"""
+    w, h = img.size
+    alpha = img.getchannel('A').load()
+    start = (w // 2, h // 2)
+    if alpha[start] >= 128:
+        return None
+    seen = {start}
+    todo = deque([start])
+    while todo:
+        x, y = todo.popleft()
+        for nx, ny in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
+            if 0 <= nx < w and 0 <= ny < h and (nx, ny) not in seen and alpha[nx, ny] < 128:
+                seen.add((nx, ny))
+                todo.append((nx, ny))
+    n = float(len(seen))
+    return (sum(x for x, y in seen) / n + 0.5, sum(y for x, y in seen) / n + 0.5, math.sqrt(n / math.pi))
+
+
+def check_concentric(images):
+    """the ring's opening is centred on its canvas (within 1 texel) and as wide as the liquid's mask (within 1 drawn
+    pixel = SCALE texels, the rim overlapping the liquid by a little): the liquid fills the opening and nothing else"""
+    bad = []
+    for s in orb_sizes(open(LOGIC, encoding='utf-8').read()):
+        name = 'orb_ring_%d.png' % s
+        path = os.path.join(OUT, name)
+        if not os.path.exists(path) or Image.open(path).size != (s * SCALE, s * SCALE):
+            continue   # reported by check()
+        hole = opening(Image.open(path).convert('RGBA'))
+        if hole is None:
+            bad.append(name + ': no opening in the middle of the ring')
+            continue
+        c = s * SCALE / 2.0
+        if abs(hole[0] - c) > 1 or abs(hole[1] - c) > 1:
+            bad.append('%s: the opening is centred on %.2f, %.2f, the canvas on %.2f (max 1 texel off)' % (name, hole[0], hole[1], c))
+        mask_name = 'orb_mask_%d.png' % liquid_size(s)
+        mask = images.get(mask_name)
+        if mask is None:
+            continue
+        mr = math.sqrt(sum(1 for a in mask.getchannel('A').tobytes() if a >= 128) / math.pi)
+        if abs(hole[2] - mr) > SCALE:
+            bad.append('%s: the opening has radius %.2f texels, the mask %s %.2f (max %d apart)' % (name, hole[2], mask_name, mr, SCALE))
+    return bad
+
+
 def check(images):
     bad = []
+    rings = set()
+    for s in orb_sizes(open(LOGIC, encoding='utf-8').read()):
+        name = 'orb_ring_%d.png' % s
+        rings.add(name)
+        path = os.path.join(OUT, name)
+        if not os.path.exists(path):
+            bad.append(name + ': missing (python3 -I client/tools/import_hud_kit.py <pack-dir>)')
+        elif Image.open(path).size != (s * SCALE, s * SCALE):
+            bad.append(name + ': not %d x %d' % (s * SCALE, s * SCALE))
     for name, img in sorted(images.items()):
         path = os.path.join(OUT, name)
         if not os.path.exists(path):
@@ -127,9 +137,9 @@ def check(images):
         if have.size != img.size or have.tobytes() != img.tobytes():
             bad.append(name + ': differs from the generator')
     for name in sorted(os.listdir(OUT)):
-        if name.startswith('orb_') and name.endswith('.png') and name not in images:
+        if name.startswith('orb_') and name.endswith('.png') and name not in images and name not in rings:
             bad.append(name + ': not made by the generator (left over)')
-    return bad
+    return bad + check_concentric(images)
 
 
 def main(argv):
