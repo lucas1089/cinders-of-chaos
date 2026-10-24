@@ -565,10 +565,19 @@ end
 -- switch them on again, now or after a relog, until the player ticks the row again. Returns the ids it unticked.
 -- now: only a switch-off at least USEROFF_CONFIRM_MS old (a death drops every buff a moment before the health packet;
 -- the caller stops and resets on death, so a drop that close to it is never saved); nil: every mark.
+-- Not a hand switch, so the marks go (the helper casts the vigils again): two or more vigils dropping in the same tick
+-- (a death, a prevented death in an arena or a raid, a cleanse; one cast switches one vigil), and a drop within
+-- USEROFF_CONFIRM_MS of st.clearAt (H.noteClear: a death or a teleport, owner 2026-10-24 "it still clears the list").
 H.USEROFF_CONFIRM_MS = 2000
 function H.takeUserOff(st, cfg, now)
   local out = {}
   if not (st and st.userOff and cfg and cfg.slots) then return out end
+  local sameTick = {}
+  for _, at in pairs(st.userOff) do sameTick[at] = (sameTick[at] or 0) + 1 end
+  for id, at in pairs(st.userOff) do
+    local near = type(at) == 'number' and st.clearAt and math.abs(at - st.clearAt) <= H.USEROFF_CONFIRM_MS
+    if sameTick[at] > 1 or near then st.userOff[id] = nil end
+  end
   for _, slot in ipairs(cfg.slots) do
     local at = st.userOff[slot.id]
     local due = at and (now == nil or type(at) ~= 'number' or now - at >= H.USEROFF_CONFIRM_MS)
@@ -598,6 +607,11 @@ function H.noteCast(st, spell, now)
   st.castAt[spell.id] = now
   st.settleUntil[spell.id] = now + (info.kind == 'switch' and H.SWITCH_SETTLE_MS or H.SETTLE_MS)
   st.casts = st.casts + 1
+end
+
+-- a death or a teleport now: a vigil drop close to it is not the player's (H.takeUserOff)
+function H.noteClear(st, now)
+  st.clearAt = now
 end
 
 function H.reset(st)

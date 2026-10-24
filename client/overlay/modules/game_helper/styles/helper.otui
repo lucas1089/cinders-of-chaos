@@ -16,6 +16,8 @@ ChaosHelperHint < ChaosLabelDim
   text-auto-resize: false
   height: 16
 
+// helper.lua renames every icon (spellButtonN, hasteButton... for the spell list's drag and drop), so nothing anchors
+// to an icon by id: a lost anchor put the combo over the icon and over the switch. Fixed offsets from parent.left.
 ChaosHelperIcon < UIWidget
   size: 32 32
   image-source: /images/game/spells/spell-icons-32x32
@@ -40,9 +42,9 @@ ChaosHelperHealRow < UIWidget
     id: spell
     width: 220
     height: 22
-    anchors.left: icon.right
+    anchors.left: parent.left
     anchors.verticalCenter: parent.verticalCenter
-    margin-left: 8
+    margin-left: 40
 
   ChaosLabel
     id: label
@@ -106,17 +108,17 @@ ChaosHelperSupportRow < UIWidget
 
   ChaosHelperIcon
     id: icon
-    anchors.left: enable.right
+    anchors.left: parent.left
     anchors.verticalCenter: parent.verticalCenter
-    margin-left: 8
+    margin-left: 24
 
   ChaosComboBox
     id: spell
     width: 200
     height: 22
-    anchors.left: icon.right
+    anchors.left: parent.left
     anchors.verticalCenter: parent.verticalCenter
-    margin-left: 8
+    margin-left: 64
 
   ChaosLabel
     id: label
@@ -204,9 +206,9 @@ ChaosHelperPickRow < UIWidget
     id: spell
     width: 260
     height: 22
-    anchors.left: icon.right
+    anchors.left: parent.left
     anchors.verticalCenter: parent.verticalCenter
-    margin-left: 8
+    margin-left: 40
 
   ChaosLabel
     id: label

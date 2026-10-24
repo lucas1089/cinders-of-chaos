@@ -1036,6 +1036,7 @@ local function buildAllyRows()
     changed()
   end
   ui.allyRune.icon:hide()
+  ui.allyRune.spell:setMarginLeft(0) -- no icon: the rune combo starts at the left edge
   ui.allyRune.label:hide()
   ui.allyRune.count:hide()
   ui.allyRune.spell.onOptionChange = function(_, _, data)

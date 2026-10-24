@@ -50,7 +50,9 @@ function M.rows(ctx, lang)
 	end
 	return {
 		row("calling", "Hear the Calling of the Ascendant Oracle", stage >= S.PROOF and 1 or 0, 1),
-		row("proof", "Slay rare and legendary beasts of your level", proof, need),
+		-- the lowest monster level that counts, in the title (owner 2026-10-24): it moves with the player's level
+		row("proof", string.format(T(lang, "Slay rare and legendary beasts of level %d or higher"),
+			Q.minMonsterLevel(ctx.level)), proof, need),
 		row("trial", "Win the Ascension Trial", stage >= S.CHOICE and 1 or 0, 1),
 		-- the Choice is never done while the rows show: ascending hides them
 		row("choice", "Choose your ascended class", 0, 1)
@@ -61,7 +63,7 @@ end
 function M.sig(rows, lang)
 	local parts = {tostring(lang or "")}
 	for _, r in ipairs(rows or {}) do
-		parts[#parts + 1] = string.format("%s:%d/%d", r.key, r.progress, r.target)
+		parts[#parts + 1] = string.format("%s:%d/%d:%s", r.key, r.progress, r.target, tostring(r.title))
 	end
 	return table.concat(parts, ";")
 end

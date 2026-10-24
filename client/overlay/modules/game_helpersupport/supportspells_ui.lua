@@ -14,6 +14,7 @@ U.PANEL_ID = 'chaosSupportPanel'
 local SETTINGS_NODE = 'chaos_helper_support' -- [character] = { enabled, reserve, slots = { {id, enabled}, ... } }
 local cfg = S.defaultConfig()
 local cfgFor = nil           -- the character the config was loaded for
+local lastPos = nil          -- the player's position at the last tick (a jump is a teleport)
 local state = S.newState()
 local timers = nil           -- the support channel's rate guard (ChaosHelperTimers)
 local cycle, pollEvent = nil, nil
@@ -234,9 +235,16 @@ local function tick()
   local me = g_game.getLocalPlayer()
   if not me or (me.isDead and me:isDead()) or (tonumber(me:getHealth()) or 1) <= 0 then
     S.reset(state)
+    S.noteClear(state, g_clock.millis())
     overall = ''
     return
   end
+  -- a teleport (a prevented death sends the player to the temple with every buff gone, a town return, a portal)
+  local pos = me.getPosition and me:getPosition() or nil
+  if pos and lastPos and (pos.z ~= lastPos.z or math.abs(pos.x - lastPos.x) > 2 or math.abs(pos.y - lastPos.y) > 2) then
+    S.noteClear(state, g_clock.millis())
+  end
+  lastPos = pos
   if #cfg.slots == 0 or not cfg.enabled then
     state.status = {}
     overall = cfg.enabled and '' or 'disabled'
@@ -462,7 +470,14 @@ local function onGameStart()
   U.rebuild()
 end
 
+-- the death packet: every buff goes, none of it is the player's switch
+local function onDeath()
+  S.reset(state)
+  S.noteClear(state, g_clock.millis())
+end
+
 local function onGameEnd()
+  lastPos = nil
   cfgFor = nil
   state = S.newState()
   overall = ''
@@ -475,7 +490,7 @@ end
 
 function U.init()
   -- the styles: importStyles(), from the first poll that finds the helper window (see there)
-  connect(g_game, { onGameStart = onGameStart, onGameEnd = onGameEnd })
+  connect(g_game, { onGameStart = onGameStart, onGameEnd = onGameEnd, onDeath = onDeath })
   connect(LocalPlayer, { onLevelChange = onLevelChange })
   cycle = cycleEvent(tick, S.CYCLE_MS)
   if g_game.isOnline() then onGameStart() end
@@ -483,7 +498,7 @@ function U.init()
 end
 
 function U.terminate()
-  disconnect(g_game, { onGameStart = onGameStart, onGameEnd = onGameEnd })
+  disconnect(g_game, { onGameStart = onGameStart, onGameEnd = onGameEnd, onDeath = onDeath })
   disconnect(LocalPlayer, { onLevelChange = onLevelChange })
   if cycle then removeEvent(cycle) cycle = nil end
   if pollEvent then removeEvent(pollEvent) pollEvent = nil end
