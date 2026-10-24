@@ -6,6 +6,7 @@
 -- The model is computed from the repository and the engine source, not measured in game. What it follows:
 --   * tries needed from skill L to L+1 = skillBase x multiplier^(L - 10)  (Vocation::getReqSkillTries; the multipliers are the
 --     <skill id=.../> rows of chaos_vocations*.xml); magic level L to L+1 = 1600 x manamultiplier^L (Vocation::getReqMana)
+--   * the stage multiplier of the base server's own script is x5 from level 101 since O154 (skill_stages_config.lua)
 --   * hunting: a weapon use is 1 try (Weapon::onUsedWeapon, one per swing or shot at the vocation's attack speed), a spell is
 --     its mana cost as mana spent; the engine multiplies by rateSkill / rateMagic (data/events/scripts/player.lua), then the
 --     stage multiplier of the base server's own script (data/scripts/customs/skills/skills_stages.lua), which the Chaos
@@ -23,8 +24,10 @@ return {
 	magicBase = 1600,
 	minSkill = 10,
 
-	-- the stage multipliers of the base server's skills_stages.lua: {first level, last level or nil, multiplier}, picked by the
-	-- trained (not the equipment) level; the last row has no end
+	-- the stage multipliers of the base server's skills_stages.lua AS DOWNLOADED: {first level, last level or nil, multiplier},
+	-- picked by the trained (not the equipment) level; the last row has no end. Since O154 the install multiplies them from level
+	-- 101 up (tools/patch_skill_stages.py, factor in skill_stages_config.lua); tools/skill_model.lua M.load() does the same and
+	-- keeps these rows as cfg.stockStages, the result as cfg.stages
 	stages = {
 		skill = {{1, 60, 20}, {61, 80, 15}, {81, 100, 11}, {101, 110, 9}, {111, 125, 8}, {126, 149, 7}, {150, nil, 4}},
 		magic = {{1, 60, 16}, {61, 80, 12}, {81, 100, 8}, {101, 110, 7}, {111, 125, 6}, {126, 149, 5}, {150, nil, 3}}
@@ -46,6 +49,10 @@ return {
 		-- the share of a hunting hour the rotation runs at that rate (the rest: pulling, walking, drinking, the pool running dry)
 		castShare = 0.5
 	},
+
+	-- hours of hunting from level 8 to 1000 (tools/progression_model.lua, docs/PRICES.md "Skill training (O150)"): the main skill
+	-- a character has trained by hunting alone when it gets there
+	levelingHours = 139,
 
 	offline = {
 		poolHours = 12, -- most one login can train (Player::addOfflineTrainingTime), refilled by every hour online or logged out

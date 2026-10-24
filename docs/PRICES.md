@@ -130,9 +130,10 @@ Closes the open item of O140. `cd server && luajit tools/skill_model.lua` prints
 `--check` the sanity rules); inputs and limits in `skill_model_config.lua`. Computed from the vocation XML, the engine formulas
 (`Vocation::getReqSkillTries`, `getReqMana`) and `exercise_core.lua`, **not measured in game** (no engine here to run). Two inputs
 are assumptions: the hunting hour (70% of it swinging, 50% casting the 8,000 mana a minute rotation) and that the base server's
-stage script `skills_stages.lua` (x20 below skill 61 down to x4 from 150; magic x16 to x3) is installed as in the download. The
-install never touches it. If it is removed, every figure below shrinks by the same factor for hunting and the dummy alike, so
-the ratio of a dummy hour to a hunting hour does not change.
+stage script `skills_stages.lua` (x20 below skill 61 down to x4 from 150; magic x16 to x3) is installed as in the download.
+**Since O154 (2026-10-24) the install multiplies every stage from level 101 up by 5** (`patch_skill_stages.py`, "Skill stages x5"
+below); the tables here are with it. If the script is removed, every figure shrinks by the same factor for hunting and the dummy
+alike, so the ratio of a dummy hour to a hunting hour does not change.
 
 **How skills grow.** A swing or a shot is 1 try x `rateSkill` 3 x the stage; a spell is its mana x `rateMagic` 2 x the stage. A dummy
 charge (every 750 ms, 4,800 an hour) is `7 x stage rate` tries (5 / 3 / 2 below 51 / 101 / 201) with no `rateSkill`, x the same
@@ -144,10 +145,10 @@ and for magic only the mana regeneration. A level needs `50 x m^(L-10)` tries (d
 
 | Line | Hunting | Dummy | Offline | A dummy hour = hunting hours |
 |---|---|---|---|---|
-| Warrior, Templar (melee) | 0.16 / 0.006 | 4.17 / 0.10 | 0.11 / 0.003 | 26.7 / 17.8 |
-| Thief, Monk (melee, fist) | 0.21 / 0.008 | 4.17 / 0.10 | 0.15 / 0.005 | 20.0 / 13.3 |
-| Ranger (distance) | 0.26 / 0.010 | 6.96 / 0.17 | 0.09 / 0.003 | 26.7 / 17.8 |
-| Mystic, Necromancer (magic level) | 0.17 / 0.006 | 2.61 / 0.06 | 0.00 / 0.00 | 15.0 / 10.0 |
+| Warrior, Templar (melee) | 0.16 / 0.03 | 4.17 / 0.51 | 0.11 / 0.02 | 26.7 / 17.8 |
+| Thief, Monk (melee, fist) | 0.21 / 0.04 | 4.17 / 0.51 | 0.15 / 0.03 | 20.0 / 13.3 |
+| Ranger (distance) | 0.26 / 0.05 | 6.96 / 0.85 | 0.09 / 0.02 | 26.7 / 17.8 |
+| Mystic, Necromancer (magic level) | 0.17 / 0.03 | 2.61 / 0.31 | 0.00 / 0.00 | 15.0 / 10.0 |
 
 Sensitivity of the last column (Warrior 100 / 130, Mystic 100 / 130): hunting busy 50% / 30% of the hour 37 / 25, 25 / 17;
 90% / 70% gives 21 / 14, 11 / 7. A house dummy adds 10%.
@@ -169,7 +170,9 @@ coins per dummy hour, "dearest time saver") was the wrong unit: a dummy hour is 
 charge than the 500 one (it is 37%). A skill is also a small power: at skill 130 one level is about +0.6% weapon damage (the skill
 term is `skill / 4`), so a 450 coin weapon (0.3 levels there) buys about 0.2% damage.
 
-**Is skill progression a pain point for late classes?** Yes, by the numbers, and it is not changed here.
+**Is skill progression a pain point for late classes?** Yes, by the numbers (O150, with the stock stages). O154 answers it, see
+"Skill stages x5" below. The first table is with the stock stages, the second with x5 (the tables above and the commands print
+the second).
 
 | Warrior melee, hunting only | Hours for the level | Hours from 10 to the level |
 |---|---|---|
@@ -185,10 +188,42 @@ character that reaches level 1000 by hunting alone trains its main skill to abou
 (`weapon_skill_config.lua` `typical`; equipment skill and the tree make up the difference, how much is not modelled). Offline
 training is 0.7x the swings of an hour of hunting for melee (7 days from 10 to 100 at 12 hours a day), the bow 0.35x, and next to nothing for
 casters (the Mystic gets 1% of a hunting hour's mana). The exercise weapon is the way: 100 to 130 takes about 83 dummy hours for a
-Warrior, 28 Lasting weapons, 12,600 coins (R$ 1,260). Not changed because the stage multipliers are the base server's, every class
+Warrior, 28 Lasting weapons, 12,600 coins (R$ 1,260). Not changed in O150: the stage multipliers are the base server's, every class
 and every damage figure rests on the same curve, the hit only loses `(skill/4+1)` about 12 to 23% against the typical 140 and the
-owner has not asked. **Owner decision:** to make 100 to 130 cost about the leveling time (139 hours) the stages from 101 up need about x11,
-by a `patch_*.py` that rewrites `skills_stages.lua` (not written); half of that (x5) puts it at about 300 hours.
+owner had not asked. To make 100 to 130 cost about the leveling time (139 hours) the stages from 101 up needed about x11, by a
+`patch_*.py` that rewrites `skills_stages.lua`; half of that (x5) put it at about 300 hours. The owner chose x5 (O154):
+
+### Skill stages x5 (O154, 2026-10-24)
+
+Owner: "pode acelerar 5x o treino de skill". `tools/patch_skill_stages.py` (install step `skillstages`, config
+`data/scripts/chaos/skill_stages_config.lua`: `fromLevel 101`, `factor 5`) multiplies the stage multiplier of **every skill and
+the magic level** from trained level 101 up by 5 in the base server's `scripts/customs/skills/skills_stages.lua`: skills x45, x40,
+x35, x20 (stock 9, 8, 7, 4), magic x35, x30, x25, x15 (stock 7, 6, 5, 3). Stages up to 100 stay (x20 to x11, magic x16 to x8).
+Hunting, the exercise dummy and offline training all pass that script, so all three get x5 above 100. The tool is idempotent
+(each changed row keeps `-- Chaos: was N`, a changed factor derives from those, a second run changes nothing), keeps CRLF and
+refuses a file of another shape.
+
+| What (hunting only, base vocation) | Stock stages | x5 from 101 |
+|---|---|---|
+| Warrior melee, hours 100 to 130 | 1,495 | 304 |
+| Ranger distance, hours 100 to 130 | 897 | 182 |
+| Mystic magic level, hours 100 to 130 | 1,323 | 269 |
+| Thief and Monk, hours 100 to 130 | 1,121 | 228 |
+| Warrior, hours for one level at 130 / 140 | 175 / 454 | 35 / 91 |
+| Mystic, hours for one level at 130 | 160 | 32 |
+| Main skill after the 139 hours of leveling 8 to 1000 (Warrior / Ranger / Mystic / Thief, Monk) | 107 / 112 / 108 / 110 | 117 / 124 / 119 / 121 |
+| Warrior, dummy hours 100 to 130 (Lasting weapons, 3 hours each) | 84 (28) | 17 (6) |
+
+- **Exercise weapons.** A dummy hour is worth the same hunting hours (the factor is in both), so the coins per hunting hour
+  (5.6 to 24) and `store_model.lua --check` do not move and **no price changes**. What shrinks is the coins a player spends to
+  get from 100 to 130: about 2,700 coins (R$ 270) for a Warrior, was 12,600. Skill levels above 100 are a smaller coin sink
+  now; expect fewer exercise weapons sold at the top. Not retuned, watch it in the beta.
+- **Still short of 140.** Hunting alone reaches 117 to 124 at level 1000, not the 140 `weapon_skill_config.lua` `typical` assumes
+  (and the C4 measurements). The gap went from about 30 to about 20; equipment skill, the tree and exercise weapons close it. The
+  hit loses `(skill/4+1)` about 7 to 14% against 140 where it lost 12 to 23%. **No damage figure was retuned** (no `--check` fails;
+  `typical` is a level-to-skill anchor of the measurements, not of the training speed).
+- **Deploy.** `install_all.py` step `skillstages` (the admin app's Update does it) and a server restart; no client change.
+- **Not measured in game.** Computed from the repository and the base script's text, like the rest of O150.
 
 ## Other numbers
 
