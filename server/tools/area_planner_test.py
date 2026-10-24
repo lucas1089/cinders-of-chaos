@@ -214,8 +214,13 @@ def frame_ok(name, res):
     allt = set(res['tiles']) | set(fr)
     ok(not C.view_frame(res['walk'], allt), name + ': no void in view of a walkable tile')
     ok(not set(fr) & set(res['tiles']) and not set(fr) & res['walk'], name + ': the frame is off the area and its floor')
-    ok(man['tiles'] == len(fr) and {t['ground'] for t in fr.values()} <= {man['ground']}
-       and all(not t['items'] and not t['flags'] for t in fr.values()), name + ': the frame is bare %s' % man['family'])
+    if man.get('thicket'):
+        # a thicket biome: the whole plan rectangle, one blocking tree or bush on every tile
+        ok(man['tiles'] == len(fr) and all(len(t['items']) == 1 and not t['flags'] for t in fr.values()),
+           name + ': the frame is a thicket')
+    else:
+        ok(man['tiles'] == len(fr) and {t['ground'] for t in fr.values()} <= {man['ground']}
+           and all(not t['items'] and not t['flags'] for t in fr.values()), name + ': the frame is bare %s' % man['family'])
     _h, back, problems = PC.read_otbm_full(res['frame_otbm'])
     ok(not problems and set(back) == set(fr), name + ': the frame OTBM reads back')
 

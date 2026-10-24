@@ -320,7 +320,10 @@ local BIOMES = {
 			lights = {per100 = 1, spacing = 8, items = "ids:17750,17751,17749"}},
 		pair24 = {floor = "p24_swamp", patches = {{family = "st_grass", share = 0.10, radius = {2, 4}}, {family = "mud",
 			share = 0.04, radius = {2, 3}}}, pools = {{family = "p24_water", share = 0.04, radius = {2, 4}},
-			{family = "p24_acid", share = 0.01, radius = {1, 2}}}}},
+			{family = "p24_acid", share = 0.01, radius = {1, 2}}}},
+		-- the rock around the floor and the view frame become a thicket: the floor's ground under trees and bushes, all
+		-- blocking, green ones only (ground: the theme's floor unless named)
+		thicket = {items = {"ids:2700,2701,2702,2703,2707,2708,2712,2767,2785,36252"}}},
 	crypt = {kind = "dungeon", theme = "ossuary", z = 9, light = "dim",
 		desc = "crypt: rooms of slate, marble and flagstone in old stone walls, rubble, bones, coffins and shelves"},
 	vault = {kind = "dungeon", theme = "vault", z = 9, light = "normal",
@@ -677,13 +680,29 @@ for id in pairs(A.allowedIds(cfg, def, opts)) do
 end
 table.sort(allowed)
 local fams, borders, sets = materials(theme)
+-- a biome's thicket (area_plan_compile.py): grounds and blocking items that replace the rock and fill the frame
+local thicket
+if biomeDef.thicket then
+	local th = biomeDef.thicket
+	local grounds, items = {}, {}
+	for _, row in ipairs(cfg.families[th.ground or theme.floor].grounds) do
+		grounds[#grounds + 1] = idOf(row[1])
+	end
+	for _, spec in ipairs(th.items) do
+		for _, row in ipairs(rows(spec)) do
+			items[#items + 1] = row[1]
+		end
+	end
+	table.sort(items)
+	thicket = {grounds = grounds, items = items}
+end
 -- the view frame's ground (area_plan_compile.py): bare rock past the rim; in a dungeon earth behind the walls
 local frameFam = def.kind == "dungeon" and "earth" or theme.rock
 local frameDef = frameFam and cfg.families[frameFam]
 local frame = frameDef and {family = frameFam, ground = idOf(frameDef.grounds[1][1]), walk = frameDef.walk ~= false} or nil
 put("J " .. json({allowed = allowed, families = fams, borders = borders, sets = sets, chest = riftCfg.chest.itemId,
 	portal = cfg.items.portal, hole = cfg.items.hole, ladder = cfg.items.ladder, exitAction = cfg.aid.exit,
-	kind = def.kind, theme = b.theme, frame = frame, walls = theme.wall and cfg.walls[theme.wall] and (function()
+	kind = def.kind, theme = b.theme, frame = frame, thicket = thicket, walls = theme.wall and cfg.walls[theme.wall] and (function()
 		local w = {}
 		for kind, rws in pairs(cfg.walls[theme.wall]) do
 			w[kind] = {}

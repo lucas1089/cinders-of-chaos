@@ -436,7 +436,8 @@ temple with a nave, chapels and a boss throne room).
 Biomes map to our areagen themes (`python3 -I server/tools/area_planner.py catalogue`): cave (emberdeep), lava and
 waste (cinderfall), swamp (emberdeep with wide mud, swamp trees and glowing mushrooms; with the pair 24 switch on, the
 pair 24 swamp ground and water and acid pools), marsh (the open-air swamp on z7: the pair 24 swamp ground as the
-floor with grass and mud patches, water and acid pools, swamp trees, reeds; stock grass and mud without pair 24), crypt (ossuary), vault, catacomb, hall, abyss, sanctum (the rift
+floor with grass and mud patches, water and acid pools, swamp trees, reeds; stock grass and mud without pair 24; no rock: a thicket of green trees
+and bushes on the floor ground walls the paths and fills the whole plan rectangle as its view frame), crypt (ossuary), vault, catacomb, hall, abyss, sanctum (the rift
 themes), forest (16 stock grass ids, dirt patches, the grass border set, stock trees) and ice (27 stock snow ids, ice
 sheets and grey rock with the snow and ice border sets, snowy trees). `forest_pack` and `ice_pack` use the pack
 grounds and need the packitems step. `harvest` (a farmland at night: autumn grass, tilled soil, corn stubble, mud

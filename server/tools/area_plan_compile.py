@@ -577,6 +577,35 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
         if fr['walk']:
             E('the view frame family %s is walkable; it needs a blocking ground' % fr['family'])
         frame = {p: dict(ground=fr['ground'], items=[], flags=0) for p in C.view_frame(walk, tiles)}
+    # a thicket biome (meta['thicket']): the rock around the floor and its edge pieces become grass under a tree or a
+    # bush on every tile, and the frame grows to the whole rectangle of the plan on each floor, all of it thicket
+    th = meta.get('thicket')
+    if th and fr:
+        rock = fr['family']
+        rgrounds = set(meta['families'].get(rock, {}).get('grounds', []))
+        rpieces = set()
+        for b in meta['borders']:
+            if b['over'] == rock:
+                rpieces |= set(meta['sets'].get(b['set'], []))
+        trng = random.Random(seed * 7 + 3)
+
+        def thick():
+            return dict(ground=trng.choice(th['grounds']), items=[(trng.choice(th['items']), {})], flags=0)
+        for k in sorted(tiles):
+            t = tiles[k]
+            if k in walk:
+                continue
+            if t['ground'] in rgrounds:
+                tiles[k] = thick()
+            elif any(i in rpieces for i, _a in t['items']):
+                t['items'] = [it for it in t['items'] if it[0] not in rpieces] + [(trng.choice(th['items']), {})]
+        for f in range(1, plan['floors'] + 1):
+            for x in range(plan['size'][0]):
+                for y in range(plan['size'][1]):
+                    p = absp(x + 1, y + 1, f)
+                    if p not in tiles:
+                        frame[p] = None
+        frame = {p: thick() for p in sorted(frame)}
     # ---------------------------------------------------------------------------------------- OTBM and QA
     spawn_name, house_name = plan['id'] + '-spawn.xml', plan['id'] + '-house.xml'
     data = otbm_bytes(plan['name'], plan['id'], 'seed %d' % seed, tiles, spawn_name, house_name)
@@ -597,6 +626,8 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
     if len(back_area) != len(tiles):
         E('OTBM: %d tiles written, %d read back' % (len(tiles), len(back_area)))
     allowed = set(meta['allowed']) | {meta['chest'], meta['portal'], meta['hole'], meta['ladder']} | D.all_ids()
+    if th:
+        allowed |= set(th['grounds']) | set(th['items'])
     if fr:
         allowed.add(fr['ground'])
     unknown = {}
@@ -729,7 +760,8 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
                     pair24=bool(pair24), dark=bool(dark),
                     zones={zid: dict(rect=list(r[:4]), z=r[4], role=zones[zid].get('role', 'hunt'), pz=bool(zones[zid].get('pz')))
                            for zid, r in sorted(zrect.items())},
-                    frame=dict(tiles=len(frame), family=fr and fr['family'], ground=fr and fr['ground'], view=list(C.VIEW), file=plan['id'] + '-frame.otbm'),
+                    frame=dict(tiles=len(frame), family=fr and fr['family'], ground=fr and fr['ground'], view=list(C.VIEW), file=plan['id'] + '-frame.otbm',
+                               thicket=bool(th and fr)),
                     arrival=list(arrival), exit=exit_out, links=link_out, teleports=tele_out, chests=chest_out,
                     npcs=npc_out, boss=boss_out, spawns=len(spawn_out), entry_from_world=plan['entry'].get('from_world'),
                     stats=stats, qa=[dict(level=l, message=m) for l, m in qa],
@@ -800,7 +832,8 @@ def render_floors(result, out_dir, items_otb, items_xml, dat, spr_path, scale=0.
     os.makedirs(out_dir, exist_ok=True)
     db = ItemDB(items_otb, items_xml, dat)
     spr = Spr(spr_path)
-    m = _Map(result['tiles'])
+    # the area with its view frame, as the map holds them once installed
+    m = _Map({**(result.get('frame') or {}), **result['tiles']})
     pid = result['manifest']['id']
     ox, oy, oz = result['origin']
     w, h = result['manifest']['size']
