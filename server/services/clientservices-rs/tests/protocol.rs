@@ -70,6 +70,7 @@ fn content_length() {
     assert_eq!(parse_content_length(Some("  12 ")), 12);
     assert_eq!(parse_content_length(Some("+12")), 12);
     assert_eq!(parse_content_length(Some("-3")), -3);
+    assert_eq!(parse_content_length(Some("-0")), -1);
     assert_eq!(parse_content_length(Some("abc")), -1);
     assert_eq!(parse_content_length(Some("1 2")), -1);
     assert_eq!(parse_content_length(Some("-")), -1);

@@ -87,7 +87,8 @@ pub fn query_type(target: &str) -> Option<&str> {
 }
 
 /// `Content-Length` as Python's `int(value or 0)` then `< 0 or > 64 KiB` reads it: absent or empty is 0, a value that
-/// is not a number is -1. Numbers too big for an i64 count as huge.
+/// is not a number is -1. Numbers too big for an i64 count as huge. A minus sign always reads below 0, "-0" too: the
+/// header is digits only, so a signed zero is refused rather than taken as an empty body.
 pub fn parse_content_length(value: Option<&str>) -> i64 {
     let v = match value {
         Some(v) if !v.trim().is_empty() => v.trim(),
@@ -102,7 +103,7 @@ pub fn parse_content_length(value: Option<&str>) -> i64 {
         return -1;
     }
     match digits.parse::<i64>() {
-        Ok(n) if neg => -n,
+        Ok(n) if neg => -n.max(1),
         Ok(n) => n,
         Err(_) if neg => -1,
         Err(_) => i64::MAX,
