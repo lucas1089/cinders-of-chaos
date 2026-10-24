@@ -376,6 +376,35 @@ w.bar = {}
 H.pick(st, cfg, w.ctx())
 eq(#H.takeUserOff(st, cfg, now + H.USEROFF_CONFIRM_MS), 1, 'switched off 2 s ago, still alive: unticked')
 
+-- two vigils dropping in the same tick: a death or a prevented death, not the player (owner 2026-10-24)
+st, w = H.newState(), world({ bar = { ['vigil of clarity'] = true, ['vigil of wrath'] = true } })
+cfg = cfgOf({ 162, 179 })
+H.pick(st, cfg, w.ctx())
+now = now + 20000
+w.bar = {}
+H.pick(st, cfg, w.ctx())
+eq(#H.takeUserOff(st, cfg, now + 5000), 0, 'two vigils at once: nothing unticked')
+ok(cfg.slots[1].enabled and cfg.slots[2].enabled, 'both rows stay ticked')
+ok(next(st.userOff) == nil, 'the marks are gone, the helper casts them again')
+-- one vigil dropping next to a teleport (the temple after a prevented death)
+st, w = H.newState(), world({ bar = { ['vigil of clarity'] = true } })
+cfg = cfgOf({ 162 })
+H.pick(st, cfg, w.ctx())
+now = now + 20000
+w.bar = {}
+H.pick(st, cfg, w.ctx())
+H.noteClear(st, now + 300)
+eq(#H.takeUserOff(st, cfg, now + 5000), 0, 'a drop next to a teleport: not unticked')
+eq(cfg.slots[1].enabled, true, 'the row stays ticked')
+-- a teleport long before the drop does not hide a real switch-off
+st, w = H.newState(), world({ bar = { ['vigil of clarity'] = true } })
+H.noteClear(st, now)
+H.pick(st, cfg, w.ctx())
+now = now + 20000
+w.bar = {}
+H.pick(st, cfg, w.ctx())
+eq(#H.takeUserOff(st, cfg, now + 5000), 1, 'a teleport 20 s before: unticked')
+
 -- the utility spells under their Chaos words (owner 2026-10-22: Lantern and Ghost Rope went into Support)
 H.addRenamedWords({ ['utevo vis lux'] = { name = 'Radiant Lantern', words = 'vael zhul lyss' },
   ['exani tera'] = { name = 'Ghost Rope', words = 'ash gor' }, ['utamo vita'] = { name = 'Ward', words = 'tor ael' } })
