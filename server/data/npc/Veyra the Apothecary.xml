@@ -7,6 +7,8 @@
      (npc_booths_config.lua); installed by server/tools/install_apothecary.py.
      module_shop is what makes the base library read the two shop lists: without it the trade window is empty and she
      answers "Sorry, I'm not offering anything." (O188). -->
+<!-- Keep each shop list on ONE line: the base reads tabs and newlines of an attribute as spaces and keeps them, so a name of a
+     list over several lines starts with spaces and "buy <name>" never matches (O188; tests/apothecary_test.lua). -->
 <npc name="Veyra the Apothecary" script="veyra_the_apothecary.lua" walkinterval="0" floorchange="0">
 	<health now="100" max="100" />
 	<look type="136" head="78" body="94" legs="113" feet="115" addons="3" />
@@ -16,40 +18,7 @@
 		<parameter key="message_farewell" value="Drink before the dark does, |PLAYERNAME|." />
 		<parameter key="message_walkaway" value="The shelves keep until you return." />
 		<parameter key="message_sendtrade" value="Every potion is sold one at a time. The bulk packs are in the store." />
-		<parameter key="shop_buyable" value="
-			small health potion,8704,20;
-			health potion,7618,45;
-			mana potion,7620,50;
-			strong health potion,7588,100;
-			strong mana potion,7589,80;
-			great health potion,7591,190;
-			great mana potion,7590,120;
-			great spirit potion,8472,190;
-			ultimate health potion,8473,310;
-			ultimate mana potion,26029,350;
-			ultimate spirit potion,26030,350;
-			supreme health potion,26031,500;
-			antidote potion,8474,50;
-			Mending Rune,2265,95;
-			Grand Mending Rune,2273,240;
-			Dispel Rune,2261,30;
-			Greater Hexdart Rune,2311,23;
-			Rockfall Rune,2288,70;
-			Stormcall Rune,2315,70;
-			Frostfall Rune,2274,84;
-			Searing Orb Rune,2304,84;
-			Reaper's Rune,2268,220;
-			Shackle Rune,2278,890;
-			rope,2120,50;
-			shovel,2554,50;
-			torch,2050,2;
-			backpack,1988,20;
-			bronze deck,27632,1000;
-			silver deck,27633,6000;
-			golden deck,27634,30000" />
-		<parameter key="shop_sellable" value="
-			empty potion flask,7634,5;
-			empty potion flask,7635,5;
-			empty potion flask,7636,5" />
+		<parameter key="shop_buyable" value="small health potion,8704,20;health potion,7618,45;mana potion,7620,50;strong health potion,7588,100;strong mana potion,7589,80;great health potion,7591,190;great mana potion,7590,120;great spirit potion,8472,190;ultimate health potion,8473,310;ultimate mana potion,26029,350;ultimate spirit potion,26030,350;supreme health potion,26031,500;antidote potion,8474,50;Mending Rune,2265,95;Grand Mending Rune,2273,240;Dispel Rune,2261,30;Greater Hexdart Rune,2311,23;Rockfall Rune,2288,70;Stormcall Rune,2315,70;Frostfall Rune,2274,84;Searing Orb Rune,2304,84;Reaper's Rune,2268,220;Shackle Rune,2278,890;rope,2120,50;shovel,2554,50;torch,2050,2;backpack,1988,20;bronze deck,27632,1000;silver deck,27633,6000;golden deck,27634,30000" />
+		<parameter key="shop_sellable" value="empty potion flask,7634,5;empty potion flask,7635,5;empty potion flask,7636,5" />
 	</parameters>
 </npc>

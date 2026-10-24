@@ -7581,6 +7581,7 @@ service NPCs that replaced them sell none. **Veyra the Apothecary** stands in th
   module of its own. A level too low still refuses only that item (`CALLBACK_ONBUY`). Install step `apothecary` copies both files.
   `tests/apothecary_test.lua` runs her script against a copy of the base parse and fails for a shop list without `module_shop`
   in any NPC XML, and for a hand-made module with no items.
+  **Names on one line.** The lists are written on one line: pugixml turns the tabs and newlines of an attribute into spaces and keeps them, so with one entry per line each name started with spaces and the typed "buy <name>" (keywords made of the parsed name, base `ShopModule:parseBuyable`, assumed from the base, not in the repo) never matched while the window worked. The test fails for any NPC XML whose shop list has a name with leading or trailing whitespace.
 - **Two lists.** The goods are in `apothecary_config.lua` (name, price, level) and in the XML's `shop_buyable` (what
   `install_potions.py` and `install_rune_supply.py` read and extend); `tests/apothecary_test.lua` fails when they differ.
 - **Install:** step `apothecary` (`tools/install_apothecary.py`, right after `servicenpcs`, so `runes`, `potions` and `itemprices`

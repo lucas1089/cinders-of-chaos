@@ -209,21 +209,27 @@ end}
 -- shop_buyable only for an XML with module_shop; ShopModule:parseBuyable; ShopModule.requestTrade says MESSAGE_NOSHOP when
 -- the item list is empty). The parameters are the NPC's XML.
 local params = {}
+-- pugixml (parse_wconv_attribute, the default) turns every tab and newline of an attribute value into a space, and does not
+-- trim: a list written over several lines gives names that start with spaces
+local function pugiAttr(value)
+	return (value:gsub("[\t\r\n]", " "))
+end
 for key, value in xml:gmatch('<parameter key="([%w_]+)" value="([^"]*)"') do
-	params[key] = value
+	params[key] = pugiAttr(value)
 end
 local shopItems, noShop, windows = {}, 0, {}
 local function newShopModule()
 	local m = {}
 	function m:parseParameters()
 		for item in string.gmatch(params.shop_buyable or "", "[^;]+") do
-			local i, id, cost = 1, nil, nil
+			local i, name, id, cost = 1, nil, nil, nil
 			for temp in string.gmatch(item, "[^,]+") do
-				if i == 2 then id = tonumber(temp) elseif i == 3 then cost = tonumber(temp) end
+				if i == 1 then name = temp elseif i == 2 then id = tonumber(temp) elseif i == 3 then cost = tonumber(temp) end
 				i = i + 1
 			end
 			if id and cost then
-				shopItems[#shopItems + 1] = {id = id, buy = cost}
+				-- the name is kept as written: the base makes the keywords {"buy", name} of it, matched word for word
+				shopItems[#shopItems + 1] = {id = id, buy = cost, name = name}
 			end
 		end
 	end
@@ -259,6 +265,15 @@ dofile("data/npc/scripts/veyra_the_apothecary.lua")
 eq(#modules, 2, "the shop module of module_shop and the focus module")
 check(params.module_shop == "1", "the XML switches the shop module on (module_shop): without it the lists are never read (O188)")
 eq(#shopItems, #buyable, "the shop module read every shop_buyable entry of the XML")
+-- the typed "buy <name>" path: the keyword is the name as parsed, so it must match exactly what a player types
+local keywords = {}
+for _, it in ipairs(shopItems) do
+	check(it.name ~= nil and it.name == it.name:match("^%s*(.-)%s*$"), "no leading or trailing whitespace in the parsed name: [" .. tostring(it.name) .. "]")
+	keywords["buy " .. tostring(it.name):lower()] = it.id
+end
+eq(keywords["buy small health potion"], 8704, '"buy small health potion" resolves to the small health potion')
+eq(keywords["buy great mana potion"], 7590, '"buy great mana potion" resolves')
+eq(keywords["buy golden deck"], 27634, '"buy golden deck" resolves (the last entry)')
 modules[1].requestTrade()
 eq(noShop, 0, "'trade' does not answer 'Sorry, I'm not offering anything.'")
 eq(windows[1], #buyable, "'trade' opens the window with every good, for any class and level")
@@ -295,12 +310,20 @@ eq(say(1, 1, "empty flask"), true, "and about flasks")
 eq(say(1, 1, "weather"), false, "anything else is for the library")
 eq(#said, 3, "three answers")
 
--- no NPC XML of the repo has a shop list without module_shop, and a script that makes a ShopModule by hand fills it (addBuyableItem, or the list the Loot Buyer sets at each request)
+-- no NPC XML of the repo has a shop list without module_shop or with names that keep whitespace, and a script that makes a ShopModule by hand fills it (addBuyableItem, or the list the Loot Buyer sets at each request)
 local ls = io.popen('ls data/npc/*.xml')
 for path in ls:lines() do
 	local text = fileText(path) or ""
 	if text:find('key="shop_buyable"', 1, true) or text:find('key="shop_sellable"', 1, true) then
 		check(text:find('key="module_shop"%s+value="1"') ~= nil, path .. ": a shop list needs module_shop (empty trade window otherwise)")
+	end
+	-- every name of every shop list is clean after the attribute normalisation (a list over several lines is not)
+	for key, value in text:gmatch('key="(shop_%w+)"%s+value="([^"]*)"') do
+		for entry in pugiAttr(value):gmatch("[^;]+") do
+			local name = entry:match("^([^,]*)")
+			check(name ~= nil and name ~= "" and name == name:match("^%s*(.-)%s*$"),
+				path .. " " .. key .. ": a name with leading or trailing whitespace (write the list on one line): [" .. tostring(name) .. "]")
+		end
 	end
 	local script = text:match('script="([^"]+)"')
 	local code = script and fileText("data/npc/scripts/" .. script) or ""
