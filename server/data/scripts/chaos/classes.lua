@@ -435,6 +435,13 @@ function M.weaponPoisons(isWeapon, bladesBuff, creed)
 	return isWeapon == true and (bladesBuff == true or creed == true)
 end
 
+-- Blackblood Creed poisons EVERY attack, not only weapon hits: a spell hit (single target or area) and a wand hit too.
+-- isAttack: the hit is an attack (weapon, spell or wand origin). The poison's own ticks (ORIGIN_CONDITION), scripted
+-- strikes (ORIGIN_NONE) and healing are never attacks, so the poison cannot proc itself.
+function M.creedPoisons(isAttack, creed)
+	return isAttack == true and creed == true
+end
+
 -- scale: Blackblood Creed's evasionScale (nil = 1)
 function M.dodgeChance(vocId, extra, scale)
 	local base = cfg().evasion[vocId]

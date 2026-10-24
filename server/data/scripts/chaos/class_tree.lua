@@ -96,7 +96,7 @@ M.fx = {
 	-- Sentinel notable: the aura's regeneration +regen of the maximum health per second (0.4% -> 0.5%)
 	ctSanctuary = {regen = 0.001},
 	-- The line keystones (one per line, for the base class and both ascended classes; each has a price):
-	-- Thief line (383): every weapon hit poisons as Poison Blades does (buff or not), the poison x (1 + poisonBonus);
+	-- Thief line (383): every attack (auto attack, attack spell, single target or area) poisons as Poison Blades does (buff or not), the poison x (1 + poisonBonus);
 	-- evasion x evasionScale. poisonBonus was 0.60 until 2026-10-12: measured, the gain at level 1000 was twice the
 	-- computed one and put the Ninja level with the Deadeye (server/data/spells/README.md "Line keystones, masteries
 	-- and weapons measured in game")

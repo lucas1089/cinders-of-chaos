@@ -883,7 +883,7 @@ Decided defaults (numbers in `server/data/scripts/chaos/ascension_quest_config.l
 
   | Line | Keystone (node) | Play style | Gain | Price |
   |---|---|---|---|---|
-  | Thief | **Blackblood Creed** (383) | poisoner | every weapon hit poisons (Poison Blades without the buff), the poison +30% (+60% until 2026-10-12) | evasion halved |
+  | Thief | **Blackblood Creed** (383) | poisoner | every attack poisons, auto attacks and spells (Poison Blades without the buff), the poison +30% (+60% until 2026-10-12) | evasion halved |
   | Necromancer | **Covenant of the Grave** (369) | minion master | minions +50% damage (Bone Lord +20% since 2026-10-12) and +50% health | the own spells -25% |
   | Monk | **Scarred Discipline** (390) | brawler who takes the hits | a hit taken gives a chi (one every 2 s); -10% damage taken at 3+ chi | no evasion at all |
   | Templar | **Penitent's Wrath** (376) | retaliation | a melee / ranged hit taken is answered with a holy strike: 40% of it + 4 x magic level (one every 0.5 s) | the defence aura's reduction halved, for the party too |

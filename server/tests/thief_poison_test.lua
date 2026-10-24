@@ -74,4 +74,47 @@ eq(poisons(thief, ORIGIN_RANGED), 0, "buff ended")
 local real = ChaosClasses.weaponPoisons
 eq(real(true, false, true), true) eq(real(false, true, true), false, "a spell hit never")
 
+-- Blackblood Creed: EVERY attack poisons (auto attack, single target spell, area spell), once per target per hit
+local ct = ChaosClassTree
+local realHas = ct.has
+local function withCreed(on, fn)
+	ct.has = function(pl, key) if key == "ksBlackbloodCreed" then return on end return realHas(pl, key) end
+	local ok, err = pcall(fn)
+	ct.has = realHas
+	if not ok then error(err, 0) end
+end
+local creedThief = mk{id = 7, voc = 11, player = true} -- no Poison Blades buff
+withCreed(true, function()
+	eq(poisons(creedThief, ORIGIN_MELEE), 1, "creed: auto attack")
+	eq(poisons(creedThief, ORIGIN_RANGED), 1, "creed: ranged auto attack")
+	eq(poisons(creedThief, ORIGIN_SPELL, 120, COMBAT_PHYSICALDAMAGE), 1, "creed: single target spell")
+	eq(poisons(creedThief, ORIGIN_SPELL, 120, COMBAT_FIREDAMAGE), 1, "creed: elemental spell")
+	-- an area spell hits three monsters: one poison on each
+	added = {}
+	for id = 60, 62 do
+		ev.onHealthChange(mk{id = id}, creedThief, -80, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL)
+	end
+	eq(#added, 3, "creed: area spell, one poison per target")
+	eq(added[1][1] ~= added[2][1], true, "different targets")
+	eq(added[1][2].dmg[3], -ChaosClasses.poisonTick(80, ct.fx.ksBlackbloodCreed.poisonBonus, 11), "creed tick")
+	-- no self-proc: the poison's tick, other damage over time, scripted strikes, healing, zero damage, self damage
+	eq(poisons(creedThief, ORIGIN_CONDITION, 30, COMBAT_EARTHDAMAGE), 0, "the poison tick never poisons")
+	eq(poisons(creedThief, ORIGIN_CONDITION, 30, COMBAT_FIREDAMAGE), 0, "another DoT never poisons")
+	eq(poisons(creedThief, ORIGIN_NONE, 30), 0, "scripted / reflected damage never poisons")
+	eq(poisons(creedThief, ORIGIN_SPELL, 50, COMBAT_HEALING), 0, "healing")
+	eq(poisons(creedThief, ORIGIN_SPELL, 0), 0, "zero damage")
+	added = {}
+	ev.onHealthChange(creedThief, creedThief, -50, COMBAT_FIREDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL)
+	eq(#added, 0, "own damage")
+	eq(poisons(knight, ORIGIN_SPELL, 100), 0, "a non-thief never")
+end)
+withCreed(false, function()
+	eq(poisons(creedThief, ORIGIN_SPELL, 120), 0, "without the keystone a spell does not poison")
+	thief.conds[sub] = true
+	eq(poisons(thief, ORIGIN_SPELL, 120), 0, "the Poison Blades buff alone: weapon hits only")
+	thief.conds[sub] = nil
+end)
+local cp = ChaosClasses.creedPoisons
+eq(cp(true, true), true) eq(cp(false, true), false) eq(cp(true, false), false)
+
 print("thief_poison_test: OK")
