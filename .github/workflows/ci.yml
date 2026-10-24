@@ -110,6 +110,7 @@ jobs:
           # third-party art of pair 30 (set30 packs, import-only, not in git): spec, sums and sources match each generator's tables
           python3 -I client/tools/sprites/pack30lib_test.py
           python3 -I tools/windows/editor_versions_test.py
+          python3 -I tools/windows/editor_creatures_test.py
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack30_looks.py build --check
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack30_looks_test.py
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack30_strips.py build --check

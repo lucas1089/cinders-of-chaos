@@ -184,7 +184,7 @@ per 50x50 area as safe spots. Put 1 monster per spawn point every 4-7 tiles. Giv
 
 ## Pack items in the map editor (palette)
 
-The map editor reads our items.otb / items.xml, so the pack items (server/README.md "Pack items and monsters") are in
+The map editor reads the server's items.otb / items.xml, so the pack items (server/README.md "Pack items and monsters") are in
 its item list by id and name. Each ground is followed by its 12 border pieces in this order: north, south, east and west
 edge, north-west, north-east, south-west and south-east corner, then the four inner corners (named after where the higher
 ground lies: the "north edge" goes on a tile with the ground to its north). A border piece goes on the
@@ -210,7 +210,7 @@ mountain shallows; animated, the four shallows walkable), shores 36464-36577 (bo
 land: grass, sand, rock, snow, stone rim, mud; pieces named after the land sides, `in_` pieces for two or more sides,
 straight pieces vary along the shore by themselves), lake objects 36578-36626 (reeds, lilies, rocks, logs, buoys: use them
 like rule 5), dock props 36627-36650, trees 36100-36298 (even ids) with their stumps one id higher (36101-36299). Monsters:
-goblins and forest creatures in the editor's creature list (tools/windows/rme_creatures.py reads monsters/chaos).
+goblins and forest creatures in the editor's creature list (tools/windows/editor_creatures.py writes it from monsters/chaos).
 
 ## Pictures
 
@@ -285,7 +285,10 @@ For the owner:
 1. Download the newest `CindersOfChaos-Windows.zip` from the GitHub releases (the newest `winpkg-N`). Always start
    from the newest one: it holds the current map with every install step and every earlier master in it. An edit
    made on an older zip would bring old content back.
-2. Extract it, run `open-map-editor.bat` and open the `.otbm` in `server\data\world` (the only `.otbm` there).
+2. Extract it. The map editor is a separate download (its licence does not let us pass it on in our zip; the source is
+   in `docs/CREDITS.md`, steps in the package `README.txt`, "Map editor"): unpack it once into the zip's `mapeditor`
+   folder. Then run `open-map-editor.bat`: it opens the editor on the `.otbm` in `server\data\world` (the only `.otbm`
+   there) with the client and server folders already set (`mapeditor\client`, `server\`).
 3. Edit and save. Keep the file name. Test it locally if you like: `start-server.bat` loads the saved map.
 4. Send us that one `.otbm` file (zip it if the channel limits the size), with a line on what you changed.
 

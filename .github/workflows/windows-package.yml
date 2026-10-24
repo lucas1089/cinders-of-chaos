@@ -1,12 +1,12 @@
 # Windows package and release downloads: every run publishes a prerelease winpkg-<run number> (Releases; the run's
 # Summary links each file) with six ready-to-use downloads:
-#   CindersOfChaos-Windows.zip         the whole game for one Windows PC: server, client, portable MariaDB, map editor;
+#   CindersOfChaos-Windows.zip         the whole game for one Windows PC: server, client, portable MariaDB, the map editor's client and creature files (the editor is a separate download);
 #                                      extract it and run start-server.bat, then start-client.bat
 #                                      (tools/windows/package/README.txt is in the zip)
 #   CindersOfChaos-Client-Windows.zip  the Windows client alone (Chaos.exe and chaos.pack: modules, data with the 10.98
 #                                      dat and the spr as sprite shards),
 #                                      pointed at the input server_host (tools/windows/client-README.txt)
-#   CindersOfChaos-MapFiles.zip        the map files alone for a 10.98 map editor (world/, data/1098/, clients.xml, versions.xml; no editor)
+#   CindersOfChaos-MapFiles.zip        the map files alone for a 10.98 map editor (world/, data/1098/, versions.xml; no editor)
 #   CindersOfChaos-Server-Windows.zip  the Windows server alone: ChaosServer.exe + DLLs, portable MariaDB, the start /
 #                                      stop .bat files (tools/windows/server-README.txt)
 #   CindersOfChaos-Server-Linux.tar.gz the engine built on Ubuntu 22.04 with its libraries in server/lib (RUNPATH
@@ -21,7 +21,7 @@
 # the merged Chaos Tibia.dat / Tibia.spr (one archive cut in parts, things/things-1098.tar.xz.partNN) and, when present, the map master
 # (world/: the owner's edited map, server/README.md "Map master"); large files are cut into parts under GitHub's 100 MB
 # file limit. Both clients get the spr as sprite shards (client/tools/sprites/spr_shards.py, client/MANIFEST.md
-# "Sharded sprites"): since pair 37 the single Tibia.spr is over 1 GiB, which the updater refuses; only the map editor
+# "Sharded sprites"): since pair 37 the single Tibia.spr is over 1 GiB, which the updater refuses; only the map editor's client folder
 # keeps the single file.
 #   server        Linux job: tools/windows/prepare_server.sh (engine patches, config.lua, the map master over the base
 #                 map, install_all.py, sql-setup/)
@@ -603,7 +603,6 @@ jobs:
           path: assets
           sparse-checkout: |
             things
-            mapeditor
             SHA256SUMS.parts
           sparse-checkout-cone-mode: true
 
@@ -663,14 +662,14 @@ jobs:
           fi
           python3 -I chaos/client/tools/make_update_manifest.py build "$P/client" --dry-run --min-package "$CLIENT_BUILD"
 
-          # the map editor (10.98): our items.otb / items.xml (with every Chaos item the installers added) and our
-          # monsters in its creature list; it reads the single Tibia.dat / Tibia.spr from mapeditor\data\1098 (README.txt)
-          mkdir mapx
-          tar -xJf assets/mapeditor/map-editor.tar.xz -C mapx
-          mv mapx/*/ "$P/mapeditor"
-          mv "$P"/mapeditor/*.exe "$P/mapeditor/MapEditor.exe"
-          cp "$P/server/data/items/items.otb" "$P/server/data/items/items.xml" "$P/mapeditor/data/1098/"
-          python3 -I chaos/tools/windows/rme_creatures.py "$P/mapeditor/data/1098/creatures.xml" \
+          # the map editor (10.98) is NOT in the package: its licence (docs/CREDITS.md) lets a copy be passed on only
+          # unmodified and with its licence text, which a build of ours with our files beside it does not clearly
+          # meet, so the owner downloads it from its source (README.txt) and unpacks it into mapeditor\. The package
+          # holds what the editor reads from us: the creature list of our XML monsters (the editor reads Lua monsters
+          # itself) here, the single Tibia.dat / Tibia.spr in mapeditor\client below. open-map-editor.bat points the
+          # editor's workspace at server\ (items.otb, items.xml, the map) and mapeditor\client; nothing is set by hand.
+          mkdir -p "$P/mapeditor/client" "$P/mapeditor/data/user/data/1098"
+          python3 -I chaos/tools/windows/editor_creatures.py "$P/mapeditor/data/user/data/1098/creatures.xml" \
             chaos/server/data/monster/monsters/chaos
 
           wait "$curl_pid"
@@ -698,8 +697,8 @@ jobs:
           # The shipped client folder is just the exe and one encrypted pack. The map editor keeps its own copy of the
           # pair, the single Tibia.spr (it cannot read shards), since the client no longer ships data/things loose.
           wait "$verify_pid"  # fails the step (set -e) when the shards differ from the single spr
-          find things -maxdepth 1 -type f -name 'Tibia.*' -exec mv -t "$P/mapeditor/data/1098/" {} +
-          test -f "$P/mapeditor/data/1098/Tibia.spr"
+          find things -maxdepth 1 -type f -name 'Tibia.*' -exec mv -t "$P/mapeditor/client/" {} +
+          test -f "$P/mapeditor/client/Tibia.dat" && test -f "$P/mapeditor/client/Tibia.spr"
           rm -rf things
           # keep the configured, unpacked tree (updater settings already written) for the separate client download,
           # which sets the server host and RSA key into init.lua before packing
@@ -767,16 +766,16 @@ jobs:
           PY
           crlf chaos/tools/windows/server-README.txt "$S/README.txt"
           info "server host: $SERVER_HOST" "mariadb: $MARIADB_VERSION" > "$S/BUILD_INFO.txt"
-          # the map files alone, for any 10.98 map editor: the loaded map and the editor's client data (hard links)
+          # the map files alone, for any 10.98 map editor: the loaded map and the client data (hard links)
           M=CindersOfChaos-MapFiles
           mkdir -p "$M/data"
           cp -al "$P/server/data/world" "$M/world"
-          cp -al "$P/mapeditor/data/1098" "$M/data/1098"
-          # the editor's client versions list (10.98: otb, otbm 3, dat 0x42A3, spr 0x57BBD603), for editors that need it
-          cp -al "$P/mapeditor/data/clients.xml" "$M/data/clients.xml"
+          cp -al "$P/mapeditor/client" "$M/data/1098"
+          cp -al "$P/server/data/items/items.otb" "$P/server/data/items/items.xml" \
+            "$P/mapeditor/data/user/data/1098/creatures.xml" "$M/data/1098/"
           # the sprite editors' versions list, read from the shipped dat, spr and otb so it never goes stale
           python3 -I chaos/tools/windows/editor_versions.py "$M/data/1098" "$M/data/versions.xml"
-          for f in 1098/Tibia.dat 1098/Tibia.spr 1098/items.otb 1098/items.xml 1098/creatures.xml 1098/tibia.otfi clients.xml versions.xml; do
+          for f in 1098/Tibia.dat 1098/Tibia.spr 1098/items.otb 1098/items.xml 1098/creatures.xml versions.xml; do
             test -s "$M/data/$f" || { echo "::error::map files: no data/$f"; exit 1; }
           done
           ls "$M"/world/*.otbm >/dev/null || { echo "::error::map files: no .otbm in world/"; exit 1; }
@@ -1207,10 +1206,10 @@ jobs:
           {
             echo "Cinders of Chaos packages built by run [$GITHUB_RUN_ID]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) from $GITHUB_SHA (assets: $ASSETS_REF)."
             echo
-            line CindersOfChaos-Windows.zip "the whole game on one Windows PC: server, client, portable MariaDB, map editor; start-server.bat, then start-client.bat (test accounts, local play)."
+            line CindersOfChaos-Windows.zip "the whole game on one Windows PC: server, client, portable MariaDB, the map editor's client and creature files (the editor itself is a separate download, README.txt); start-server.bat, then start-client.bat (test accounts, local play)."
             line CindersOfChaos-Client-Windows.zip "the Windows client alone (Chaos.exe), connects to $SERVER_HOST."
             line CindersOfChaos-Server-Windows.zip "the Windows server alone: ChaosServer.exe, portable MariaDB, start-server.bat / stop-server.bat."
-            line CindersOfChaos-MapFiles.zip "the map files alone for a 10.98 map editor: the .otbm with its spawns and houses, Tibia.dat / Tibia.spr, items.otb / items.xml, creatures.xml, tibia.otfi, clients.xml, versions.xml (no editor)."
+            line CindersOfChaos-MapFiles.zip "the map files alone for a 10.98 map editor: the .otbm with its spawns and houses, Tibia.dat / Tibia.spr, items.otb / items.xml, creatures.xml, versions.xml (no editor)."
             line CindersOfChaos-Server-Linux.tar.gz "the Linux server (Ubuntu 22.04+, Debian 12+) with its own MariaDB: ./start-server.sh."
             line CindersOfChaos-Client-Linux.tar.gz "the Linux client (Ubuntu 22.04+, Debian 12+): ./run-client.sh, connects to $SERVER_HOST."
             echo

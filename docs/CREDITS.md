@@ -301,6 +301,11 @@ them are named by role, so they carry no Reserved Font Name.
 - **PixelLab**
   - Licence: paid subscription
   - Used for: painting the themed item sets
+- **NexaMap Editor**
+  - Author: Mateuzkl, Skyyzyy and SoyFabi
+  - Licence: freeware end-user licence in the source's LICENSE.rtf: free to use; copies may be passed on only unmodified, with that licence text and without a fee. Not part of our downloads: the owner downloads it from its source
+  - Source: https://github.com/Mateuzkl/NexaMap-Editor
+  - Used for: editing the game map (the Windows package sets its client and server folders)
 
 <!-- credits:end -->
 

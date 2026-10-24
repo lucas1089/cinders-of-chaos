@@ -106,6 +106,7 @@ ChaosCreditsData = {
     note = "",
     entries = {
       { name = "PixelLab", licence = "paid subscription", use = "painting the themed item sets" },
+      { name = "NexaMap Editor", author = "Mateuzkl, Skyyzyy and SoyFabi", licence = "freeware end-user licence in the source's LICENSE.rtf: free to use; copies may be passed on only unmodified, with that licence text and without a fee. Not part of our downloads: the owner downloads it from its source", use = "editing the game map (the Windows package sets its client and server folders)", source = "https://github.com/Mateuzkl/NexaMap-Editor" },
     },
   },
 }

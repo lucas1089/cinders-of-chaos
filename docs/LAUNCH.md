@@ -18,7 +18,8 @@ To play it first without any of this: run the **Windows package** workflow (Acti
 workflow). Its prerelease `winpkg-<run number>` (Releases; the run's Summary links each file; the newest 3 are kept) has
 five ready-to-use downloads, listed in the release notes:
 - `CindersOfChaos-Windows.zip`: the whole game for one Windows PC. The patched engine (`ChaosServer.exe`), the client,
-  the merged dat/spr, a portable MariaDB, the map editor and `start-server.bat` / `start-client.bat`
+  the merged dat/spr, a portable MariaDB, the client files and creature list for the map editor (the editor itself is a separate download,
+  its licence does not let us pass it on) and `start-server.bat` / `start-client.bat`
   (`tools/windows/package/README.txt`). Test accounts with known passwords: local play only.
 - `CindersOfChaos-Client-Windows.zip` and `CindersOfChaos-Client-Linux.tar.gz`: the client alone (`Chaos.exe`, or
   `run-client.sh` with its libraries in `lib/`), pointed at the workflow input `server_host` (default 127.0.0.1;
@@ -996,7 +997,7 @@ re-sends the index, the dat and the last shard or two, not 600 MB. Rules the bui
   (the build warns when it publishes a single spr with no shard set).
 - No file over 1 GiB, ever (refused): the updater of every client build out refuses a whole manifest that lists one.
   Since pair 37 (2026-10-22, its `Tibia.spr` is over 1 GiB) `windows-package.yml` ships the shards inside both
-  clients' `chaos.pack`; only the map editor keeps the single `Tibia.spr` (`mapeditor\data\1098`).
+  clients' `chaos.pack`; only the map editor's client folder keeps the single `Tibia.spr` (`mapeditor\client`).
   `server/deploy/publish_client_update.sh` splits a single spr it finds in a package, so the live update is always
   sharded.
 
