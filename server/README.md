@@ -8926,9 +8926,9 @@ scavenger with its sack, drawn with the golden outfit shader 12). It never attac
   script keeps the goblin's health above it (shown as 100%) until the first hit, which drops it to the real health:
   from then on the engine's flee logic runs it away from its target. The first hit also gives it the attacker's
   speed x 0.95 (min +80, max 1500), a taunt, and a blink every 2.5-4.5 s (70%): a teleport 3-5 tiles to the free,
-  visible tile farthest from the attackers. Taunts on further hits (60%, 2.5 s cooldown). 18 s after the first hit it
+  visible tile farthest from the attackers. Taunts on further hits (60%, 2.5 s cooldown). 30 s after the first hit (18 s before O182) it
   escapes: portal effect, "Ha ha!", a message to players within 10 tiles, removed with no corpse and no loot. Never
-  hit for 15 minutes: it vanishes quietly. `/goblin [level]` (god accounts) spawns one in front of you.
+  hit for 30 minutes: it vanishes quietly. `/goblin [level]` (god accounts) spawns one in front of you.
 - **Loot** (added to the corpse in the death event, so the stock loot message and autoloot see it; owner = most
   damage): gold worth (2000 + 400 x level) x 80-130% in crystal/platinum/gold coins; 2-4 Orbs of Upheaval + 1 per 150
   levels (max 10); an Orb of Fate at 25% x item find; 2-4 gear items from the replaced monster's loot table (fallback:

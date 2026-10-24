@@ -144,7 +144,7 @@ do
 	ok(G.onHit(cfg, st, 5000), "first hit")
 	ok(not G.onHit(cfg, st, 6000), "second hit is not first")
 	eq(st.escapeAt, 5000 + b.escapeSeconds * 1000, "escape scheduled from the first hit")
-	ok(b.escapeSeconds >= 15 and b.escapeSeconds <= 20, "escape window 15-20 s")
+	ok(b.escapeSeconds >= 25 and b.escapeSeconds <= 40, "escape window 25-40 s (O182)")
 	eq(G.due(cfg, st, 5000 + b.escapeSeconds * 1000 - 1), nil, "not yet")
 	eq(G.due(cfg, st, 5000 + b.escapeSeconds * 1000), "escape", "escapes on time")
 	eq(G.due(cfg, st, b.lifetimeSeconds * 1000 + 1), "escape", "a hit goblin escapes, it does not expire")
