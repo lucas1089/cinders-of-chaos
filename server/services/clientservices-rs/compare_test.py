@@ -10,6 +10,7 @@ The binary: --bin, else $CLIENTSERVICES_RS_BIN, else target/release|debug/client
 Standard library only."""
 import json
 import os
+import re
 import shutil
 import socket
 import subprocess
@@ -86,6 +87,11 @@ def talk(port, raw, timeout=5):
     s.close()
     if not buf:
         return None, {}, b''
+    if not buf.startswith(b'HTTP/'):
+        # Python before 3.13 answers a request line it cannot parse in HTTP/0.9 style: the bare error page, no
+        # status line and no headers; the code is in the page
+        m = re.search(rb'Error code: (\d{3})', buf)
+        return (int(m.group(1)) if m else -1), {}, buf
     head, _, body = buf.partition(b'\r\n\r\n')
     lines = head.decode('latin-1').split('\r\n')
     status = int(lines[0].split()[1])
