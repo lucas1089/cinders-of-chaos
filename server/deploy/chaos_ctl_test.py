@@ -798,8 +798,10 @@ def test_admin_commands():
         check(r.returncode == 0 and 'kit check branch=beta server=' + server in r.stdout,
               'update-check runs the kit script: ' + r.stdout + r.stderr)
         for bad in (('update-apply', '--yes'), ('update-apply', ';reboot'), ('update-check', 'x'),
-                    ('update-rollback', 'x')):
+                    ('update-rollback', 'x'), ('update-downloads', '--yes'), ('update-downloads', ';reboot')):
             check(run(*bad, extra=kit).returncode != 0, 'refused: %r' % (bad,))
+        r = run('update-downloads', '--force', extra=kit)
+        check(r.returncode == 0 and 'started' in r.stdout, 'update-downloads --force starts: ' + r.stdout + r.stderr)
         r = run('update', 'v1', 'now', extra=kit)
         check(r.returncode != 0 and 'kit-layout' in r.stderr, 'update TAG on the kit points to update-apply')
         r = run('rollback', 'at-save', extra=kit)

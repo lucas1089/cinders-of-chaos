@@ -1230,6 +1230,7 @@ hand, as root:
 /opt/chaos/repo/server/deploy/chaos-ctl.sh update-apply            # in the background; --no-client --no-downloads --no-site --no-map
 /opt/chaos/repo/server/deploy/chaos-ctl.sh update-log 100          # progress: STEP n/10 lines, the last line RESULT ...
 /opt/chaos/repo/server/deploy/chaos-ctl.sh update-rollback         # back to before the last apply
+/opt/chaos/repo/server/deploy/chaos-ctl.sh update-downloads        # only the site's dl/ packages (newest release), no restart; --force
 ```
 
 It does what was done by hand before: fetch and check out the branch; when a newer release exists, download

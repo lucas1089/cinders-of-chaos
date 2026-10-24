@@ -18456,7 +18456,9 @@ script re-runs itself with `sudo -n`, which drops the environment.
   picked, the web server check against a local HTTP server).
 - Kit update from GitHub (owner, 2026-10-21: "fetch GitHub and, if newer, apply the update and restart; also the client
   and the site's downloads"): `update-check`, `update-apply [--no-client] [--no-downloads] [--no-site]`,
-  `update-status`, `update-rollback` run `server/deploy/chaos_kit_update.sh` (check / apply / rollback; apply and
+  `update-status`, `update-rollback`, `update-downloads [--force]` (O165: only step 9, the site's `dl/` packages, when
+  the release is newer than `downloads.json` or with `--force`; no stop, no restart, no signed update) run
+  `server/deploy/chaos_kit_update.sh` (check / apply / downloads / rollback; apply and
   rollback in the background into `update-log`, one at a time by a lock in `CHAOS_KIT_STATE`). On the kit
   (`CHAOS_KIT_DIR`, or `CHAOS_ROOT` holding `start-server.sh`) the old `update TAG` is refused and `rollback now` runs
   `update-rollback`. Order: backup with the server up, `install_all.py --no-sql` with it stopped, start (the kit's

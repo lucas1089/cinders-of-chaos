@@ -720,8 +720,20 @@ final class CommandsTab {
             a.logs.openUpdate("publish-log");
         });
         b.addView(ui.evenRow(pub, pubLog), ui.gap(6));
-        b.addView(ui.hint("A versão publicada e a release mais nova aparecem em Painel > Atualizar servidor > Verificar."),
-                ui.gap(6));
+        MaterialButton dl = ui.secondary("Trocar os downloads do site", 0);
+        dl.setOnClickListener(v -> a.confirm("Trocar os downloads do site?", "Baixa o pacote Windows e o Linux da release "
+                + "mais nova para a página de downloads. Não reinicia o servidor e não mexe no update do client. "
+                + "Os arquivos de antes ficam como .prev.", "Trocar", false,
+                () -> ctl("Trocar os downloads", "update-downloads", 30, null)));
+        MaterialButton dlLog = ui.flat("Log da atualização", R.drawable.ic_nav_logs);
+        dlLog.setOnClickListener(v -> {
+            a.showTab(MainActivity.TAB_LOGS, true);
+            a.logs.openUpdate("update-log");
+        });
+        b.addView(ui.evenRow(dl, dlLog), ui.gap(6));
+        b.addView(ui.hint("A versão publicada, a release mais nova e a release dos downloads aparecem em Painel > "
+                + "Atualizar servidor > Verificar. Quem baixou o pacote do site e vê um update por cima dele precisa "
+                + "deste botão: o pacote do site é o que ele baixa."), ui.gap(6));
         quick.addView(c, ui.gap(10));
     }
 

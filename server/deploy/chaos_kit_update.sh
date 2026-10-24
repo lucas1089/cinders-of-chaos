@@ -6,6 +6,7 @@
 #
 # usage: chaos_kit_update.sh check
 #        chaos_kit_update.sh apply [--no-client] [--no-downloads] [--no-site] [--no-map]
+#        chaos_kit_update.sh downloads [--force]
 #        chaos_kit_update.sh rollback
 #
 # check     key=value lines: branch, local_commit, remote_commit, behind, ahead, commit (one per new commit, newest
@@ -49,6 +50,11 @@
 #                         site_commit; else since this update's start) and CHAOS_SITE_ENV exists
 #                         (--no-site skips it)
 #           Steps 8-10 never undo the server update: a failure there ends with RESULT warn.
+# downloads only step 9, on its own (no server restart, no code change): the newest release's Windows zip and Linux
+#           tar.gz into CHAOS_DL_DIR, the same checks, NAME.prev, NAME.sha256 and downloads.json. For the case where the
+#           signed client update was published (publish-update) but the site's download link still serves an older
+#           package: a client from that older zip mounts the update over it. Nothing to do when the downloads are the
+#           newest release's already (--force replaces them anyway). Exit: 0 ok, 1 failed.
 # rollback  back to the state before the last apply: engine, config.lua and data/, the map (when that apply replaced
 #           it), the previous commit, the download files (NAME.prev); started and verified.
 #
@@ -796,10 +802,40 @@ cmd_rollback() {
   finish ok "rolled back; the server is online (the database and the client update were not changed)" 0
 }
 
+# ------------------------------------------------------------------------------------------------ downloads
+cmd_downloads() {
+  local force=0 a work have
+  for a in "$@"; do
+    case $a in
+      --force) force=1 ;;
+      *) die "downloads [--force]" ;;
+    esac
+  done
+  lock
+  state_set "status=running" "result=" "time=$(date '+%F %T')"
+  say "STEP 1/1 downloads"
+  for tool in python3 curl sha256sum; do
+    command -v "$tool" >/dev/null || finish failed "$tool is missing" 1
+  done
+  [ -d "$DL" ] || finish failed "no download folder $DL (CHAOS_DL_DIR)" 1
+  work=$(mktemp -d "$WORKBASE/chaos-kit-update.XXXXXX") || finish failed "no work folder in $WORKBASE" 1
+  trap 'rm -rf "$work"; rm -f "$CHAOS_KIT_COPY"' EXIT
+  REL=$(releases "$work/rel.json") || finish failed "cannot read the releases of $GHREPO" 1
+  LATEST=$(sed -n 's/^latest=//p' <<< "$REL")
+  have=$(dl_release)
+  log "downloads: the site has release $have, newest winpkg-$LATEST"
+  if [ "$have" -ge "$LATEST" ] && [ "$force" = 0 ]; then
+    finish ok "the site's downloads are release $have already (nothing changed; --force replaces them)" 0
+  fi
+  update_downloads || finish failed "the downloads were not replaced (the old files stay)" 1
+  finish ok "the site's downloads are release $LATEST now" 0
+}
+
 case ${1:-} in
   check) shift; [ $# -eq 0 ] || die "check takes no arguments"; cmd_check ;;
   apply) shift; cmd_apply "$@" ;;
+  downloads) shift; cmd_downloads "$@" ;;
   rollback) shift; [ $# -eq 0 ] || die "rollback takes no arguments"; cmd_rollback ;;
   -h|--help|'') sed -n '3,/^set -uo/p' "$0" | sed '$d; s/^# \{0,1\}//' ;;
-  *) die "unknown command $1 (check, apply, rollback)" ;;
+  *) die "unknown command $1 (check, apply, downloads, rollback)" ;;
 esac

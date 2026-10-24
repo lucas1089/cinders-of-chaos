@@ -115,7 +115,7 @@ instalada é desconhecida: o passo 2 baixa a mais nova e, se o `tfs` for igual a
 - **Serviços** (`services`, `service NOME start|stop|restart`, `service-log NOME 200`): cada unidade `chaos-*`
   (servidor, backup, ajuda, Discord, pagamentos, saúde, watchdog) e o servidor web (apache2, nginx, php-fpm), ligada
   ou não; depois de atualizar o PHP, reinicie o apache2 (ou o php-fpm) aqui; ver log, reiniciar, ligar, desligar.
-- **Site e update do client** (`site-install`, `site-log`, `publish-update TAG`, `publish-log`).
+- **Site e update do client** (`site-install`, `site-log`, `publish-update TAG`, `publish-log`). "Trocar os downloads do site" (`update-downloads`, O165) põe o pacote completo mais novo (Windows e Linux) na pasta `dl/` do site sem reiniciar o servidor; "Log da atualização" mostra o andamento. `publish-update` publica só a atualização assinada, não os pacotes.
 - **Logs de GM** (aba Logs, GM; `gm-logs [N] [NOME]`).
 - **Assistir jogador** (Comandos > Ações rápidas > Assistir jogador). Só leitura: o jogador não é avisado e nada
   muda no jogo.

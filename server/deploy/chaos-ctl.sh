@@ -51,6 +51,10 @@
 #                               CHAOS_UPDATE_BRANCH, the newest release's engine, the newest map master (CHAOS_MAP_BRANCH,
 #                               server/README.md "Map master"), install_all.py, restart, checks, rollback on failure; then
 #                               the client update, the site's download files and the site itself
+#   update-downloads [--force]  the kit: only the site's client downloads (CHAOS_DL_DIR) from the newest release, in the
+#                               background (update-log): no restart, no code change (chaos_kit_update.sh downloads).
+#                               For a site whose download link still serves an older package than the published client
+#                               update; nothing changes when the downloads are the newest release's (--force replaces)
 #   update-status               the kit: running, status, result and time of the last update-apply / update-rollback
 #   update-rollback             the kit: chaos_kit_update.sh rollback in the background (update-log)
 #   xp-rate [show | set N | reset] [restart]
@@ -776,7 +780,7 @@ case $cmd in
   publish-log)
     tail -n "$(lines_arg "${1:-60}")" "$PLOG" 2>&1
     ;;
-  update-check|update-apply|update-rollback)
+  update-check|update-apply|update-rollback|update-downloads)
     [ -n "$KIT" ] || die "kit-not-found: update-check / update-apply are for the Linux kit (set CHAOS_KIT_DIR in $CONF)"
     kup="$REPO/server/deploy/chaos_kit_update.sh"
     [ -x "$kup" ] || die "no $kup (CHAOS_REPO)"
@@ -786,6 +790,13 @@ case $cmd in
         case $a in
           --no-client|--no-downloads|--no-site|--no-map) kargs+=("$a") ;;
           *) die "update-apply [--no-client] [--no-downloads] [--no-site] [--no-map]" ;;
+        esac
+      done
+    elif [ "$cmd" = update-downloads ]; then
+      for a in "$@"; do
+        case $a in
+          --force) kargs+=("$a") ;;
+          *) die "update-downloads [--force]" ;;
         esac
       done
     else
@@ -811,6 +822,7 @@ case $cmd in
     : > "$ULOG"
     sub=apply
     [ "$cmd" = update-rollback ] && sub=rollback
+    [ "$cmd" = update-downloads ] && sub=downloads
     setsid env "${kenv[@]}" "$kup" "$sub" "${kargs[@]}" >> "$ULOG" 2>&1 < /dev/null &
     echo "started ($cmd ${kargs[*]}); follow it with: chaos-ctl.sh update-log"
     ;;

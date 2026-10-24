@@ -504,6 +504,33 @@ def test_flow():
         check(w.git('-C', w.repo, 'rev-parse', 'HEAD') == good_commit, 'manual rollback: commit')
         dj = json.load(open(os.path.join(w.dl, 'downloads.json')))
         check(dj.get('release') == 47, 'manual rollback: downloads of 47 back')
+        # downloads on their own: the site serves 47 while 49 is out (the signed client update was published by hand)
+        rc = w.run('downloads', '--bogus')
+        check(rc != 0, 'downloads refuses an unknown option', w.out)
+        installed_before = w.state_value('installed_release')
+        rc = w.run('downloads')
+        check(rc == 0 and 'RESULT ok: the site' in w.out and 'release 49 now' in w.out, 'downloads: replaced by 49', w.out)
+        dj = json.load(open(os.path.join(w.dl, 'downloads.json')))
+        check(dj.get('release') == 49, 'downloads: downloads.json says 49', dj)
+        check(sha(win) == sha(os.path.join(w.stub, 'assets', 'CindersOfChaos-Client-Windows.zip')),
+              'downloads: the newest zip is in place')
+        check(not any(c.startswith(('systemctl', 'publish', 'site')) for c in w.calls) ,
+              'downloads: no restart, no client update, no site install', '\n'.join(w.calls))
+        check(w.state_value('installed_release') == installed_before, 'downloads: the installed server release is untouched')
+        rc = w.run('downloads')
+        check(rc == 0 and 'already' in w.out and 'RESULT ok' in w.out, 'downloads: nothing to do when current', w.out)
+        before = sha(win)
+        rc = w.run('downloads', '--force')
+        check(rc == 0 and 'release 49 now' in w.out and sha(win) == before, 'downloads --force replaces the same release', w.out)
+        rc = w.run('update-downloads', ctl=True)
+        check(rc == 0 and 'started' in w.out, 'chaos-ctl update-downloads starts', w.out)
+        for _ in range(200):
+            if 'RESULT' in read(os.path.join(w.root, 'update.log')):
+                break
+            subprocess.run(['sleep', '0.1'])
+        check('RESULT ok' in read(os.path.join(w.root, 'update.log')), 'chaos-ctl update-downloads: ok')
+        rc = w.run('update-downloads', ';reboot', ctl=True)
+        check(rc != 0, 'chaos-ctl update-downloads refuses other arguments', w.out)
         rc = w.run('rollback')
         check(rc != 0 and 'nothing recorded' in w.out, 'a second rollback has nothing to go back to', w.out)
         rc = w.run('update-status', ctl=True)
