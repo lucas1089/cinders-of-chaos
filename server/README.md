@@ -21933,7 +21933,7 @@ its services (tokens, world buffs, the Temple Teleport Scroll, name and vocation
 Broker, Mordecai Ashwager, the four faction NPCs and their lore, Keeper of Trials and its window, Wandering Merchant,
 the Ascendant Oracle); the ascension quest (Calling, Proof, Trial, Choice, windows, guardian hints, paths); the Vocation
 Trials (stories, waves, rewards, node choices); achievements (category names, all descriptions, the window's hidden
-text, rewards and toasts; names and titles stay English); the daily reward; new players (welcome window, starter kit,
+text, rewards and toasts, and their 174 names (window, toasts, messages); titles stay English); the Seasonal Journey (journey, chapter and objective texts, reasons, appearance / outfit / mount reward lines, toasts and messages; item names and titles stay English); the Conquest Tokens labels (sources, pity and vendor groups); the daily reward; new players (welcome window, starter kit,
 level gifts, the five tutorial stations); instance limits (time warnings, busy instances, the waiting line, boss rooms);
 mentors and referrals (every config message); and the chat lines of stash, bank, town portal, pouches, Everfull Ration,
 Chaos Pact and builds, hideout, autoloot, party invites, class unlocks, professions, charms, pets, guild hall, Infinity
