@@ -33,7 +33,7 @@ return {
 
 	-- ------------------------------------------------------------------ the summon
 	summonRank = 2, -- the leader and the vice-leaders
-	minPlayers = 2, -- members in the hall that come along (with the summoner)
+	minPlayers = 1, -- members in the hall that come along (with the summoner); one member may summon alone (owner 2026-10-24: all content solo)
 	maxPlayers = 20,
 	minLevel = 150, -- members below stay behind
 	startDelay = 10, -- seconds between the arrival and the boss
@@ -82,9 +82,10 @@ return {
 	},
 
 	-- ------------------------------------------------------------------ the boss
-	-- health = the XML health x (1 + healthPerExtraPlayer x (players - 1)); enrage / limit in seconds after it appears
+	-- health = the XML health x (1 + healthPerExtraPlayer x (players - 1)), alone x soloHealthMult (one member kills in
+	-- about the time two do: 619 s would pass the enrage at 600); enrage / limit in seconds after it appears
 	boss = {key = "gorvath", name = "Gorvath", boss = "Gorvath the Banner-Eater", add = "Banner Wraith",
-		healthPerExtraPlayer = 0.6, enrageAt = 600, limit = 780, element = "death", hitEffect = "shadow_eruption",
+		healthPerExtraPlayer = 0.6, soloHealthMult = 0.8, enrageAt = 600, limit = 780, element = "death", hitEffect = "shadow_eruption",
 		phases = {
 			{at = 1.0, name = "The Gnawed Standard", every = 9000, patterns = {"cone", "ring", "marks"},
 				yell = "YOUR BANNER WILL HANG IN MY GULLET!"},
@@ -119,7 +120,7 @@ return {
 
 	-- the balance model (like uber_config.lua): a level 600 character deals refDps; uptime = time on the boss
 	model = {refDps = 1400, uptime = 0.75},
-	targets = {party2 = 495, party5 = 420, party10 = 395}, -- seconds the health was set for (tests/guildboss_test.lua)
+	targets = {party1 = 495, party2 = 495, party5 = 420, party10 = 395}, -- seconds the health was set for (tests/guildboss_test.lua)
 	bossHealth = 650000, -- must match the XML (tests/guildboss_test.lua checks it)
 
 	board = {rows = 10},

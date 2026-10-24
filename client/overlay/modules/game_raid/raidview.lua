@@ -96,8 +96,8 @@ function RaidView.startState(info)
     return { text = 'Open New Raid', can = false, why = string.format('Level %d needed.', num(info.minLevel) or 0) }
   end
   return { text = 'Open New Raid', can = true,
-    why = tr('Your party of %d-%d within range comes along (protection zone, out of combat).',
-      num(info.minPlayers) or 5, num(info.maxPlayers) or 15) }
+    why = tr('Alone, or your party of up to %d within range comes along (protection zone, out of combat).',
+      num(info.maxPlayers) or 15) }
 end
 
 function RaidView.recordLine(info)

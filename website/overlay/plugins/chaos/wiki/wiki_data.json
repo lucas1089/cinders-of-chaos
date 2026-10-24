@@ -353,7 +353,7 @@
 		"raid.bosses": 5,
 		"raid.maxPlayers": 15,
 		"raid.minLevel": 800,
-		"raid.minPlayers": 5,
+		"raid.minPlayers": 1,
 		"raid.name": "The Ashen Sepulchre",
 		"raid.on": true,
 		"raid.reset": "Monday 06:00",
@@ -38447,14 +38447,14 @@
 				{
 					"id": "boss:raid",
 					"name": "The Ashen Sepulchre",
-					"sub": "Weekly raid, 5-15 players, level 800+.",
+					"sub": "Weekly raid, 1-15 players, level 800+.",
 					"color": "#ff7050",
 					"group": "raid",
 					"sections": [
 						{
 							"h": "The raid",
 							"p": [
-								"A weekly raid for 5 to 15 players of level 800 or more: 5 bosses behind trash in a sealed zone. The week resets on Monday at 06:00.",
+								"A weekly raid for 1 to 15 players of level 800 or more: 5 bosses behind trash in a sealed zone. The week resets on Monday at 06:00.",
 								"Loot is personal, once a week per boss and character. A raid can be left and continued later the same week.",
 								"A lethal hit is caught: you land in the entry hall, healed, and wait for the fight to end. No real death."
 							]
@@ -38697,7 +38697,7 @@
 				{
 					"id": "boss:guild",
 					"name": "Gorvath the Banner-Eater",
-					"sub": "The weekly guild boss, 2-20 players of level 150+.",
+					"sub": "The weekly guild boss, 1-20 players of level 150+.",
 					"color": "#ff7050",
 					"group": "guild",
 					"sections": [
@@ -38705,7 +38705,7 @@
 							"h": "The fight",
 							"p": [
 								"Guild members feed the Summoning Stone in the guild hall with materials, then summon the boss into an instanced arena.",
-								"2 to 20 players of level 150 or more; 3 attempts a week. It enrages after 10 min."
+								"1 to 20 players of level 150 or more; 3 attempts a week. It enrages after 10 min."
 							]
 						},
 						{

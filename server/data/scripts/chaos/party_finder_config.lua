@@ -50,7 +50,7 @@ return {
 			fallback = {"Sangrith the Bloodmoon Herald", "Morvane the Hollow Crown", "Thalcyra the Stormbound Seer"}},
 		{key = "tower", name = "Infinity Tower", range = {min = 1, max = 200, label = "Floor", short = "F"}},
 		{key = "raid", name = "Raid", targets = "raids", fallback = {"The Ashen Sepulchre"}, -- raid_config.lua name
-			-- one engine party of 5-15 (raid_config.lua minPlayers / maxPlayers; TFS parties have no size cap)
+			-- one engine party of up to 15 (raid_config.lua maxPlayers; the raid also opens solo; TFS parties have no size cap)
 			maxParty = 15, perRole = {tank = 3, healer = 4, dps = 12}, suggest = {tank = 2, healer = 3, dps = 9}},
 		{key = "trial", name = "Trial", targets = "trials", fallback = {"Normal", "Cruel", "Merciless"}},
 		{key = "battleground", name = "Battleground", maxParty = 5}, -- Ember Wells (battleground.lua): the leader queues the party

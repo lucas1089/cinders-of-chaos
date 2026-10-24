@@ -13382,7 +13382,7 @@ the weekly reset is gone; after the kill the stone takes nothing more.
 
 **Summon.** The leader or a vice-leader, standing in the guild hall with the stone full and the rent paid: one conditional
 UPDATE takes the need (fuel >= need, not killed this week, fewer than 3 summons). Every member of the guild in the same
-hall, level 150+, comes along (2 to 20). A failed attempt (wipe, time, everyone left) gives back half of the need as fuel;
+hall, level 150+, comes along (1 to 20; one member may summon alone, owner 2026-10-24: all content solo). Health: the XML's x (1 + 0.6 (n-1)); alone x `boss.soloHealthMult` = 0.8 (a solo kill takes 495 s like two, the unscaled 619 s would pass the enrage at 600). Lives, adds and hazards already scaled from one player; the gold pool is 250,000 per rewarded member, so a solo member gets the average share of a group, never more. A failed attempt (wipe, time, everyone left) gives back half of the need as fuel;
 a server restart during a fight returns the whole need and the summon.
 
 **The fight** reuses the Ascended arenas (`uber_core.lua`: layout, telegraph shapes and marks, phase machine, enrage,
@@ -20219,7 +20219,7 @@ the Boss Spawns cooldown). Monsters: `data/monster/monsters/chaos/raid/` (regist
 **Entry.** A portal (magic forcefield 1387, action id 47801) for each town of `portal.townIds` (Cinderhold, the main city, and Mirewake): Cinderhold's at its fixed tile in the temple's portal gallery (`portal.positions` 32375, 32245, 7), Mirewake's (and a taken fixed tile) next to the temple, the first free tile of
 `portal.offsets`) and Adventure > Raid: Ashen Sepulchre open the raid window. "Open New Raid" (or "Continue" on a saved
 raid of this week) in a protection zone, out of combat, level 800+, not multi-clienting: the opener's party within 12 sqm
-comes along, 5 to 15 of them (fewer are refused; staff may open with any number: `/raid open[, id]`). Each member's own
+comes along, 1 to 15 of them (owner 2026-10-24: all content solo; `minPlayers` 1, `basePlayers` 5 is the group the boss numbers were measured for; staff may still open with `/raid open[, id]`). **Solo scaling** (`raid_core.lua`): under 5 raiders the boss, trash and add health is x (the group's damage / five raiders' damage) from the balance model (`K.smallMult`; solo x0.217, 2 x0.43, 3 x0.65, 4 x0.87), so one raider takes the same time as five and the enrage fits; from 5 up the old +18% / +12% / +10% per raider. Mechanics for one: Ember Brand needs `min(need, raiders)` inside and its total scales with that need (solo: one circle on you, 50% of max health, stand in it), Sundering Blows fades the stacks instead of a Crushing Verdict when nobody else is in the room (`sunderDecide(..., alone)`), packs are 3 monsters alone. Loot is personal and the weekly lockout per character as before, so a solo run pays what one member of a group gets. A lethal hit still throws the player to the hall; alone that is a wipe (the boss resets). Each member's own
 problem (level, a fight, another instance) leaves only that member behind. "Join" puts a member of a raid that is open
 right now (or the party of someone inside) into it, up to 15.
 

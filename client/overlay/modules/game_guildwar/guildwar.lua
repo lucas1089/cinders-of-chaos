@@ -239,8 +239,8 @@ local function fillBoss(d)
     summon.button:setEnabled(b.canSummon == true)
     summon.button.onClick = function() send('bossSummon') end
     summon.label:setText(tr('%d in the hall now', tonumber(b.players) or 0))
-    text(tr('The leader or a vice-leader summons it in the guild hall: every member in the hall (level %d+, %d to %d) comes along.',
-      tonumber(b.minLevel) or 0, tonumber(b.minPlayers) or 0, tonumber(b.maxPlayers) or 0), '#8c8070')
+    text(tr('The leader or a vice-leader summons it in the guild hall: you alone or every member in the hall (level %d+, up to %d) comes along.',
+      tonumber(b.minLevel) or 0, tonumber(b.maxPlayers) or 0), '#8c8070')
     section(tr('Feed the Summoning Stone'))
     local gold = g_ui.createWidget('GuildWarGoldRow', rows())
     local per = b.gold and b.gold.perEmber or 0

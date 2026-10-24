@@ -86,7 +86,7 @@ local function renderLock(list)
     if type(s) == 'table' then saved[#saved + 1] = s end
   end
   if #saved == 0 then
-    addLabel(list, 'RaidWrap', tr('No raid of yours this week. Open a new one with a party of 5 to 15.'), '#8c8070')
+    addLabel(list, 'RaidWrap', tr('No raid of yours this week. Open a new one alone or with a party of up to 15.'), '#8c8070')
   end
   for _, s in ipairs(saved) do
     local r = V.savedRow(s)

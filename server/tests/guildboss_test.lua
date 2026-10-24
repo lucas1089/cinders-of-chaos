@@ -83,7 +83,10 @@ ok(B.summonError(info({players = cfg.minPlayers - 1}), cfg):find("members"), "to
 ok(B.summonError(info(), {enabled = false}), "disabled")
 
 -- ---------------------------------------------------------------- scaling and the balance targets
-eq(B.healthMult(cfg, 1), 1, "one player")
+eq(B.healthMult(cfg, 1), cfg.boss.soloHealthMult, "one player: the solo health")
+ok(B.healthMult(cfg, 1) < B.healthMult(cfg, 2), "a second member makes it harder")
+eq(cfg.minPlayers, 1, "a member summons alone")
+ok(B.summonError(info({players = 1}), cfg) == nil, "one member in the hall may summon")
 eq(B.healthMult(cfg, 5), 1 + cfg.boss.healthPerExtraPlayer * 4, "five players")
 eq(B.livesFor(cfg, 1), cfg.lives.base, "lives alone")
 eq(B.livesFor(cfg, 4), cfg.lives.base + 1, "one more life per 3 more players")
@@ -508,6 +511,21 @@ GB._fail(run, "Test.")
 eq(WEEK[key].fuel, 50 + 375, "half of the need back")
 eq(GB.guildRun[4], nil, "the run is over")
 ok(not GB.isInside(leader), "everyone left")
+
+-- alone (owner 2026-10-24): the only member in the hall summons; the boss has the solo health
+local m2hall = m2.pos.hall
+m2.pos.hall = nil
+WEEK[key].fuel = 800
+NOW = NOW + 2
+okd, text = GB.handle(leader, "bossSummon", {})
+eq(okd, true, "solo summon: " .. tostring(text))
+run = GB.guildRun[4]
+eq(run.size, 1, "one player")
+ok(GB.isInside(leader) and not GB.isInside(m2), "only the summoner is inside")
+eq(run.lives, B.livesFor(cfg, 1), "lives alone")
+GB._fail(run, "Test.")
+m2.pos.hall = m2hall
+WEEK[key].fuel = 425
 
 -- a kill: one gold pool, split by contribution, to each rewarded member's bank; orbs each; the split persisted
 WEEK[key].fuel = 800

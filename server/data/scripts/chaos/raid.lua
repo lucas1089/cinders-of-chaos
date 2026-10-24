@@ -1,11 +1,11 @@
--- The Ashen Sepulchre: the weekly raid for organised groups (5-15 players). Numbers: raid_config.lua. Pure logic
+-- The Ashen Sepulchre: the weekly raid for one player or a group (1-15 players). Numbers: raid_config.lua. Pure logic
 -- (tests/raid_test.lua): raid_core.lua. Monsters: data/monster/monsters/chaos/raid/. Overview: server/README.md
 -- "The Ashen Sepulchre (weekly raid)".
 --
 -- Flow
 --   the city portal (a forcefield next to the temple) or Adventure > Raid opens the raid window -> "start" (a new raid
 --   of this week) or "continue" (a saved raid of this week the character belongs to) in a protection zone, out of
---   combat: the party within partyRange (5-15) comes along -> a slot of the raid grid is built (Game.createTile, the
+--   combat: the party within partyRange (up to 15; alone works) comes along -> a slot of the raid grid is built (Game.createTile, the
 --   rift slot functions of rift_core.lua): the entry hall, then per boss a corridor with its trash and the boss room.
 --   Doors open as the trash is cleared and the bosses fall. Stepping close to a boss pulls it: the room seals, the boss
 --   takes the raid's size into its health and runs its phases and mechanics (raid_config.lua mechanics: tank swap,
@@ -1099,8 +1099,13 @@ local function sunderAfterHit(run, target)
 		local q = posOf(p)
 		cands[#cands + 1] = {id = p:getId(), dist = math.max(math.abs(q.x - bp.x), math.abs(q.y - bp.y))}
 	end
-	local d = K.sunderDecide(f.sunder, cfg, target:getId(), cands)
+	local d = K.sunderDecide(f.sunder, cfg, target:getId(), cands, #cands <= 1)
 	if not d then
+		return
+	end
+	if d.action == "shed" then -- a lone raider: no second tank to swap with, the stacks fade (owner 2026-10-24: solo)
+		f.sunder.stacks[target:getId()], f.sunder.at[target:getId()] = nil, nil
+		alert(run, ChaosI18n.msg("%s shrugs off the Sundered stacks.", target:getName()), "swap")
 		return
 	end
 	if d.action == "swap" then
@@ -1650,7 +1655,7 @@ function X.open(player, id, force)
 	end
 	if #group < cfg.minPlayers and not force then
 		return false, string.format("The Sepulchre opens for a party of %d to %d (within %d sqm). You have %d.",
-			cfg.minPlayers, cfg.maxPlayers, cfg.partyRange, #group)
+			cfg.minPlayers, cfg.maxPlayers, cfg.partyRange, #group) -- only with minPlayers above 1
 	end
 	local IL = ChaosInstanceLimits
 	local running = 0

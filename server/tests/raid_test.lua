@@ -45,7 +45,8 @@ local K = ChaosRaidCore
 -- ================================================================== the config and its place
 eq(#K.validate(cfg), 0, "the config is valid: " .. table.concat(K.validate(cfg), "; "))
 eq(#cfg.bosses, 5, "five bosses")
-eq(cfg.minPlayers, 5, "5 to ...")
+eq(cfg.minPlayers, 1, "owner 2026-10-24: solo works")
+eq(cfg.basePlayers, 5, "... the numbers are measured for five")
 eq(cfg.maxPlayers, 15, "... 15 players")
 eq(ChaosOpcodes.raid, 213, "opcode 213")
 local seen = {}
@@ -192,7 +193,17 @@ eq(iv.done, 2, "view: slain"); eq(iv.next, "The Marrow Colossus", "view: next");
 
 -- ================================================================== scaling and balance
 eq(K.healthMult(cfg, 5), 1, "health x1 at five"); check(math.abs(K.healthMult(cfg, 15) - 2.8) < 1e-9, "x2.8 at fifteen")
-eq(K.healthMult(cfg, 3), 1, "never below the five-player health")
+-- under the base group the health follows the group's damage: one raider takes the five-player time (O169 solo)
+check(K.healthMult(cfg, 3) < 1 and K.healthMult(cfg, 1) < K.healthMult(cfg, 2) and K.healthMult(cfg, 2) < K.healthMult(cfg, 3)
+	and K.healthMult(cfg, 4) < 1, "health falls under five and grows with the group")
+check(math.abs(K.healthMult(cfg, 1) - 3000 / 13800) < 1e-9, "solo: one raider's damage over five's")
+check(K.trashMult(cfg, 1) < 1 and K.addMult(cfg, 1) < 1 and K.trashMult(cfg, 5) == 1 and K.addMult(cfg, 5) == 1, "trash and adds follow")
+eq(K.packSize(cfg, 1), 3, "solo packs of 3")
+for _, b in ipairs(cfg.bosses) do
+	local hp = 1000000
+	local t1, t5 = K.killTime(cfg, hp, 1), K.killTime(cfg, hp, 5)
+	check(math.abs(t1 - t5) < 1e-6, "solo takes the five-player time: " .. t1 .. " vs " .. t5)
+end
 eq(K.packSize(cfg, 5), 4, "packs of 4 at five"); eq(K.packSize(cfg, 15), 8, "8 at fifteen")
 eq(K.waveCount(cfg.mechanics.adds, 5), 2, "adds at five"); eq(K.waveCount(cfg.mechanics.adds, 15), 4, "adds at fifteen")
 eq(K.waveCount(cfg.mechanics.totem, 15), 2, "effigies at fifteen")
@@ -308,6 +319,8 @@ local d = K.sunderDecide(st, cfg, 1, {{id = 1, dist = 1}, {id = 2, dist = 1}, {i
 check(d and d.action == "swap" and d.to == 2, "a fresh tank in melee takes over")
 d = K.sunderDecide(st, cfg, 1, {{id = 3, dist = 4}})
 check(d and d.action == "verdict", "nobody in melee: the verdict")
+d = K.sunderDecide(st, cfg, 1, {{id = 1, dist = 1}}, true)
+check(d and d.action == "shed", "a lone raider: the stacks fade, no verdict")
 K.sunderHit(st, cfg, 2, 4000)
 K.sunderHit(st, cfg, 2, 4000)
 d = K.sunderDecide(st, cfg, 1, {{id = 2, dist = 1}, {id = 5, dist = 1}})
@@ -322,6 +335,7 @@ end
 eq(K.sunderStacks(st, 9), cfg.mechanics.sunder.maxStacks, "at most maxStacks")
 -- soak
 eq(K.soakNeed(cfg, 5), 3, "3 to soak at five"); eq(K.soakNeed(cfg, 15), 5, "5 at fifteen")
+eq(K.soakNeed(cfg, 1), 1, "solo: one soaks"); eq(K.soakNeed(cfg, 2), 2, "two: both"); eq(K.soakNeed(cfg, 4), 3, "four: three")
 eq(K.soakCount(cfg, 5), 1, "one circle at five"); eq(K.soakCount(cfg, 15), 3, "three at fifteen")
 local each_, over = K.soakResolve(cfg, 3, 3)
 check(math.abs(each_ - 0.5) < 1e-9 and over == 0, "three soak: half each, no overflow")
@@ -329,6 +343,10 @@ each_, over = K.soakResolve(cfg, 6, 3)
 check(math.abs(each_ - 0.25) < 1e-9, "more soakers, less each")
 each_, over = K.soakResolve(cfg, 1, 3)
 check(each_ == 1.5 and over == cfg.mechanics.soak.overflowShare, "one alone: the whole hit and the overflow")
+each_, over = K.soakResolve(cfg, 1, 1)
+check(math.abs(each_ - 0.5) < 1e-9 and over == 0, "solo: the circle asks for one and costs half, like three soakers' share")
+each_, over = K.soakResolve(cfg, 2, 2)
+check(math.abs(each_ - 0.5) < 1e-9 and over == 0, "two of two: half each")
 each_, over = K.soakResolve(cfg, 0, 3)
 check(each_ == 0 and over > cfg.mechanics.soak.overflowShare, "nobody: a bigger overflow on the room")
 local centers = K.soakCenters(cfg, {{x = 1, y = 1, z = 7}, {x = 2, y = 2, z = 7}, {x = 3, y = 3, z = 7}},
@@ -895,11 +913,8 @@ local function partyOf(list)
 		p.party = party
 	end
 end
-partyOf({raiders[1], raiders[2], raiders[3], raiders[4]})
-local okOpen, whyOpen = X.open(lead)
-check(not okOpen and whyOpen:find("party of 5", 1, true) ~= nil, "four are too few: " .. tostring(whyOpen))
 partyOf({raiders[1], raiders[2], raiders[3], raiders[4], raiders[5]})
-okOpen, whyOpen = X.open(lead)
+local okOpen, whyOpen = X.open(lead)
 check(okOpen, "five open the raid: " .. tostring(whyOpen))
 local run = X.runOf[lead.id]
 check(run ~= nil, "the run")
@@ -1369,6 +1384,19 @@ do
 	local okC = Chaos.instances.raid.close(run.inst.id)
 	check(okC and next(X.runs) == nil, "limits: staff close")
 	eq(lead.pos.x, 1000, "limits: a staff close sends to the temple")
+	-- owner 2026-10-24: one player opens the raid alone
+	for i = 1, 6 do
+		raiders[i].party = nil
+	end
+	lead.pos = Position(100, 100, 7)
+	local okS, whyS = X.open(lead)
+	check(okS, "solo: one raider opens the raid: " .. tostring(whyS))
+	run = X.runOf[lead.id]
+	check(run ~= nil and X.runOf[raiders[2].id] == nil, "solo: only the opener is inside")
+	local n = 0
+	for _ in pairs(run.players) do n = n + 1 end
+	eq(n, 1, "solo: one player in the run")
+	check(Chaos.instances.raid.close(run.inst.id) and next(X.runs) == nil, "solo: closed again")
 end
 
 print(string.format("raid_test: %d checks, %d failures", count, failures))

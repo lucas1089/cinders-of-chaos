@@ -224,6 +224,7 @@ return {
 		["Withering Hex on %s: cleanse it!"] = "Withering Hex em %s: purifiquem!",
 		["The hex on %s bursts!"] = "O hex em %s explode!",
 		["%s turns to %s."] = "%s se volta para %s.",
+		["%s shrugs off the Sundered stacks."] = "%s se livra das cargas de Sundered.",
 		["%s: phase %d of %d, %s."] = "%s: fase %d de %d, %s.",
 		["%s awakens! The doors seal. Enrage in %s."] = "%s desperta! As portas se fecham. Enrage em %s.",
 		["The raid falls before %s. The doors open again."] = "A raid cai diante de %s. As portas se abrem de novo.",
@@ -1463,8 +1464,8 @@ return {
 		["Step in to open the Ember Descent: a roguelike trial for level 100+, alone or with up to three party members."] =
 			"Entre para abrir a Ember Descent: um desafio roguelike para level 100+, sozinho ou com até três membros da party.",
 		["Raid Portal"] = "Portal da Raid",
-		["Step in to open the raid window: the Ashen Sepulchre for a party of 5 to 15, level 800+."] =
-			"Entre para abrir a janela da raid: o Ashen Sepulchre para uma party de 5 a 15, level 800+.",
+		["Step in to open the raid window: the Ashen Sepulchre alone or with a party of up to 15, level 800+."] =
+			"Entre para abrir a janela da raid: o Ashen Sepulchre sozinho ou com uma party de até 15, level 800+.",
 		["Step in to reach a chapter area of the Ashen Chronicle that the story has opened. Its exit portal leads to your temple."] =
 			"Entre para chegar a uma área de capítulo da Ashen Chronicle que a história abriu. O portal de saída dela leva ao seu templo.",
 		["Open while a world boss is awake: step in to join the fight in its arena. The arena's exit portal leads to your temple."] =

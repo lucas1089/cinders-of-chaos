@@ -36,7 +36,7 @@ return {
 		descent = {name = "Ember Descent Portal", effect = "CONST_ME_FIREAREA", label = "Ember Descent",
 			text = "Step in to open the Ember Descent: a roguelike trial for level 100+, alone or with up to three party members."},
 		raid = {name = "Raid Portal", effect = "CONST_ME_MORTAREA", label = "Raid: Ashen Sepulchre",
-			text = "Step in to open the raid window: the Ashen Sepulchre for a party of 5 to 15, level 800+."},
+			text = "Step in to open the raid window: the Ashen Sepulchre alone or with a party of up to 15, level 800+."},
 		hunt = {name = "Hunting Area Portal", effect = "CONST_ME_MAGIC_GREEN",
 			text = "Step in to enter this hunting area; the portal refuses characters below its level. Its exit portal leads back here."},
 		idlehall = {name = "Idle Hall Exit", effect = "CONST_ME_MAGIC_BLUE",
