@@ -12,6 +12,8 @@ data\1098\   the client data the editor reads:
                tibia.otfi             the dat/spr format flags (extended, transparency, frame durations and groups)
                the editor's brush, border and tileset lists for 10.98
 data\clients.xml   the client versions list: 10.98 = otb 10.98, otbm version 3, dat 0x42A3, spr 0x57BBD603
+data\versions.xml  the versions list sprite and item editors read: dat and spr signatures, otb version,
+                   read from the files above at build time
 
 In the editor, point the 10.98 client data folder at data\1098 and open world\<map>.otbm.
 Keep the -spawn.xml and -house.xml next to the .otbm: the editor reads and saves them with it.
