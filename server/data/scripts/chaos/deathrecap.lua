@@ -111,6 +111,9 @@ function R.onTaken(creature, attacker, src, amount, el, critical, now, mana)
 		R.logs[pid] = log
 	end
 	local kind, name, master, pv = describe(creature, attacker, src)
+	if kind == "s" and (el == "manadrain" or el == "healing") then
+		return -- a mana restore or a cost the character paid itself is no damage, never "Yourself" (O159)
+	end
 	local key = R.key(kind, name, master)
 	if attacker and kind ~= "h" and kind ~= "e" and R.wantLook(log, key) then
 		local ok, outfit = pcall(function() return attacker:getOutfit() end)

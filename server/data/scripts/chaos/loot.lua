@@ -956,28 +956,54 @@ end
 -- ---------------------------------------------------------------------------
 -- item level of a kill's drops
 -- ---------------------------------------------------------------------------
-local poolLevels
-local function poolLevel(name)
-	if not poolLevels then
-		poolLevels = {}
+local poolEntries
+local function poolEntry(name)
+	if not poolEntries then
+		poolEntries = {}
 		local ok, pool = pcall(dofile, "data/scripts/chaos/bounty_pool.lua")
 		if ok and type(pool) == "table" then
 			for _, list in ipairs({pool.hunt or {}, pool.bosses or {}}) do
 				for _, e in ipairs(list) do
-					poolLevels[tostring(e.name):lower()] = tonumber(e.level)
+					poolEntries[tostring(e.name):lower()] = e
 				end
 			end
 		end
 	end
-	return poolLevels[tostring(name):lower()]
+	return poolEntries[tostring(name):lower()]
+end
+local function poolLevel(name)
+	local e = poolEntry(name)
+	return e and tonumber(e.level) or nil
+end
+
+-- O163: a type written in Lua can carry a stock level range (getLevel {minLevel = 1, maxLevel = 10}) next to the
+-- stats of a level 150+ monster (Giant Hornet, Reflect Spider, Venom Spider ...). The engine rolls a level of 1-10 for
+-- it, which then showed in its name and fed the pace, loot and damage layers as "level 3". The bounty pool tells them
+-- apart (tools/gen_bounty_pool.py): a pool level that equals the estimate of the type's experience and health is the
+-- level of a type that is NOT level-scaled; a real level-scaled type has the middle of its range there.
+-- Returns the engine level of the monster when it is its real level, else 0.
+function L.ownLevel(monster)
+	local ok, lvl = pcall(function() return monster:getMonsterLevel() end)
+	lvl = ok and tonumber(lvl) or 0
+	if lvl <= 0 then
+		return 0
+	end
+	local okN, name = pcall(typeNameOf, monster)
+	local e = okN and poolEntry(name)
+	if e and tonumber(e.exp) and tonumber(e.health) and tonumber(e.level) and ChaosItemMods
+		and ChaosItemMods.estimateMonsterLevel
+		and ChaosItemMods.estimateMonsterLevel(e.exp, e.health) == tonumber(e.level) then
+		return 0
+	end
+	return lvl
 end
 
 -- the monster's own level: Monster:getMonsterLevel (level-scaled monsters), else its hunting level from
 -- bounty_pool.lua, else the same estimate from its experience and health
 function L.baseMonsterLevel(monster)
-	local ok, lvl = pcall(function() return monster:getMonsterLevel() end)
-	if ok and tonumber(lvl) and tonumber(lvl) > 0 then
-		return tonumber(lvl)
+	local own = L.ownLevel(monster)
+	if own > 0 then
+		return own
 	end
 	local okN, name = pcall(function() return typeNameOf(monster) end)
 	local pl = okN and poolLevel(name)

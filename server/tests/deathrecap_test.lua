@@ -486,6 +486,10 @@ hook(hero, dragon, src(dragon), 0, "fire", false, clock) -- nothing
 clock = clock + 200
 hook(hero, dragon, src(dragon), 260, "fire", false, clock)
 eq(E.logs[hero.id].n, 9, "nine hits logged")
+-- O159: a mana potion (a restore) or a cost the character paid itself is no damage: never "Yourself, mana drain"
+hook(hero, hero, src(hero), 1748, "manadrain", false, clock, true)
+hook(hero, hero, src(hero), 300, "healing", false, clock)
+eq(E.logs[hero.id].n, 9, "own mana drain / restore not logged")
 
 -- the death (onDeath runs before the engine takes the experience)
 registry.ChaosDeathRecapDeath.onDeath(hero, nil, dragon, foe)

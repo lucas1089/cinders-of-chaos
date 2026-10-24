@@ -1826,6 +1826,18 @@ split (`Game::combatChangeHealth`); no Chaos patch changes it.
 * **Live server (install step):** run the `vocations` and `spells` steps (or the whole `install_all.py`) and restart.
   An install the cap already cut gets the nine classes back (tested from the Elementalist-only list and from the
   casters' list with the Necromancer line). No database change.
+* **Soulward shielded nothing (O162, owner report: "You lose 1.55k hitpoints due to an attack by orcaruz" with the shield up).**
+  `data/spells/chaos/shared/soul_aegis.lua` added `CONDITION_MANASHIELD` with sub id 71006 (the buff bar's marker). The
+  engine (`Game::combatChangeHealth`) and `manashield.lua` ask `hasCondition(CONDITION_MANASHIELD)` with sub id 0, so the
+  hit went to the health whole. Now the spell adds the sub id 0 shield (15 s; a longer Ward of the Mind keeps its time)
+  and the marker beside it; the buff bar hides the plain row while it ends with the marker. Test:
+  `tests/soulward_shield_test.lua`. No engine change; reload spells (or restart), no client change.
+* **Orcaruz (O162).** An imported level 200 monster (Azuregate Reliquary, hunt 180-220) never got the hit rule: strongest
+  hit 2,500 (78% of a level 200 knight's 3,185 health; Fenmaw, same level, 1,100). A level 230 Mystic line character has
+  about 1,295 health (150 + 5 per level). With the engine level bonus (x1.30), the late boost (+4.7%) and the pack curve
+  (x0.72) the old hits reached 2,400. `tools/tune_monsters.py` now sets the strongest hit to 650 (20% of the knight's
+  health, the late-set rule), the other attacks follow by the same factor: about 635 at the player. Health and
+  experience of Orcaruz unchanged.
 * Tests: `tests/manashield_test.lua` (split, classes against the tools and the client data, providers, marks, the glue
   on a mocked engine flow), the mana shield checks of `monster_tiers_test`, `boss_mechanics_test`, `raid_test`,
   `pocketboss_test`, `invasion_test`, `trials_flow_test`, `archetypes_test`, `class_keystones_test`,
@@ -13822,6 +13834,10 @@ Client `game_deathrecap`, extended opcode 154 (`ChaosOpcodes.deathRecap`), Hunt 
 the block 7101830 - 7101839 offered for it stays free. The pure logic is `deathrecap_core.lua`, tested by
 `tests/deathrecap_test.lua`.
 
+Self hits (O159): a mana potion is `doTargetCombat(player, who, COMBAT_MANADRAIN, +v)`, a restore. The combat log feeds the recap
+only a negative (draining) mana change, and `R.onTaken` drops a manadrain or healing hit the character dealt itself, so
+"Yourself" never lists a potion or a mana cost. Pay mana costs with `player:addMana(-x)`, never through combat.
+
 **What it shows.** After a death the window opens by itself. It names the killer and the killing blow (attacker,
 amount, element, critical). It lists every attacker of the last seconds with its look (`UICreature`), total damage,
 share, health and mana part, hits, crit rate, max hit and the split by element. A bar shows the elements of all damage
@@ -22336,3 +22352,15 @@ restarts the unit; a failed build warns and keeps the old binary. The drop-in di
 **Not covered.** A real `cargo build` on the VPS (the script and the switch are tested with a stub build); a cargo-fuzz
 run (only proptest, 2000 cases per property in CI); the unit under systemd with the real sandbox; a load test of the
 thread-per-connection design against the Python server; IPv6 hosts; the Linux kit.
+
+
+## Stock level ranges on Lua monsters (O163) (`loot.lua` `L.ownLevel`, `tests/stock_level_range_test.lua`)
+
+Owner 2026-10-24 (live screenshot, Sorcerer hunting): "Grimeleech [158]" next to "Giant Hornet [3]", "[4]", "[6]", "[7]" and "Reflect Spider [9]", all as strong as the others.
+
+**Root cause.** The base server's Lua monster types of `data/monster/lua/azure_portals/` (20 types with `getLevel {minLevel = 1, maxLevel = 10}`, 8 with 1-50) carry the stats of a level 150+ monster (Giant Hornet 11,500 health, 8,250 experience). The engine rolls a level between the two numbers, `monster_levels.lua` keeps an own level (`displayLevel(own > 0)` returns nil), and `loot.lua` `L.baseMonsterLevel` and `pace.lua` `PC.levelOf` read `Monster:getMonsterLevel()` first. So the name showed the roll, and the loot item level, orb gate, waystone and nemesis levels, monster damage curve and the pace layer (scaled curve at level 3 instead of the base curve at 2 x pool level) used it too. In generated areas `areagen.lua` scaled health by (1 + 0.0074 T) / (1 + 0.0074 x 3) and experience by T / 3 (measured in the mock: health x8.4, experience x340 at T about 1000), and treasure goblins took 3 as the area level. The bounty pool had the right level (192) all along: `gen_bounty_pool.py` reads no Lua level.
+
+**Fix.** `ChaosLoot.ownLevel(monster)` returns the engine level only when it is real. The bounty pool level of a type that is not level-scaled equals the estimate of its experience and health (`ChaosItemMods.estimateMonsterLevel`, the rule of `P.entryLevel`); a level-scaled type has the middle of its range there. When they are equal the engine level is a stock roll and counts as 0. Read through it: `L.baseMonsterLevel` (so `monsterLevel`, loot, orbs, waystones, damage, nemesis), `PC.levelOf`, the display level (`monster_levels.lua` sets the pool level, which wins over the own level with patch 0044), `areagen.lua` `spawnPoint`, `treasure_goblin.lua`. Not changed on purpose: `xpcap.lua` and the rift cap mirror the engine's own experience factor (x0.03 L only above 1, so none at 1-10). The engine keeps its tiny health, damage and speed bonus of the rolled level (under 8% at level 10). Rift, invasion and generated area spawns still show the level their system scaled them to.
+
+Install: server files and a restart. No client change, no engine rebuild.
+Tests: `tests/stock_level_range_test.lua` (name at the spawn, loot / orb / waystone level, pace level), `tests/areagen_test.lua` (generated area scaling).
