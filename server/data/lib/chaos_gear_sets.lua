@@ -16,8 +16,17 @@
 --   Blightfang 8-150 (venom), Wyrmscale 40-220 (green dragon), Cinderwrought 120-450 (fire), Bloodmoon 300-650
 --   (blood), Rimewraith 450-1000 (frost and spectral), Azure Vigil 800-1350 (holy), Gildcrown 1250-2000 (gold).
 --
+-- Three later-tier sets (2026-10-24, server/README.md "Gear beyond level 1000"): Wintermourn 1000-1350, Lumenhallow
+-- 1300-1750 and Sunderthrone 1700-2050 are copies of the pieces of Rimewraith, Azure Vigil and Gildcrown (same client
+-- ids, so the same looks; server ids 52000..52191, items.tier2First / tier2Last) with a name, a level band and set
+-- bonuses of their own. The stock gear stops at level 1000 and the art sets at 2000, and a monster type has one loot
+-- table whatever level it is spawned at, so the hunts of 1000 to 2000 dropped the same bases as a hunt of 800.
+--
 -- How players get them: loot of the monsters of the set's theme (sources below), every piece whose level is near the
--- monster's (window), a small total chance per kill shared by those pieces; the themed bosses more. The chaos loot
+-- monster's (window), a small total chance per kill shared by those pieces; the themed bosses more. On top, level
+-- gear (M.rollLevelGear, called by the chaos loot layer, loot.lua step 1d): a kill of a monster hunted at level
+-- `open.minLevel` or more, whatever its type, may drop one piece of ANY set near the level it is hunted at (a spawned
+-- monster's own level, else its hunting level), so a hunt of level 2000 drops other bases than a hunt of 800. The chaos loot
 -- layer then rolls rarity, item level and modifiers as for any gear drop, and smart loot favours the killer's class
 -- (the equip rules of movements.xml name it). The base stats are fixed by level: the roll decides only how far above
 -- them a copy goes. No talkaction, no shop. Set bonuses at 2, 4 and 6 pieces (M.bonuses) through the item set system.
@@ -36,7 +45,12 @@ M.config = {
 	-- no single entry below this (a monster with many eligible pieces)
 	minChance = 10,
 	-- a piece is eligible when its level is at most the monster's level + above and at least its level - below
-	window = {below = 300, above = 50}
+	window = {below = 300, above = 50},
+	-- level gear (M.rollLevelGear): a kill at a hunting level of `minLevel` or more, of any monster type, rolls one
+	-- piece of any set whose level is in [level - below, level + above]: the chance per kill (per 100000, by monster
+	-- tier; a boss `boss`), a piece that the killer's class wears weighs `classWeight` times as much
+	open = {minLevel = 700, below = 200, above = 50, classWeight = 3, maxScale = 3,
+		chance = {normal = 1600, magic = 2400, rare = 3200, legendary = 4800, boss = 15000}}
 }
 
 -- set key -> the monsters of its theme as {name, hunting level} (the installed names; levels of
@@ -102,6 +116,94 @@ function M.eligible(setKey, level, cfg)
 		end
 	end
 	return out
+end
+
+-- the pieces a kill at hunting level `level` may drop as level gear (all sets), in id order
+function M.levelPieces(level, cfg)
+	local o = (cfg or M.config).open
+	local out = {}
+	level = tonumber(level) or 0
+	if not o or level < o.minLevel then
+		return out
+	end
+	-- above the highest piece the window stays at the top: a monster of 2400 drops what a monster of 2050 does
+	local top = 0
+	for _, p in ipairs(M.items.pieces or {}) do
+		top = math.max(top, p.level)
+	end
+	local from = math.min(level, top) - o.below
+	for _, p in ipairs(M.items.pieces or {}) do
+		if p.level <= level + o.above and p.level >= from then
+			out[#out + 1] = p
+		end
+	end
+	return out
+end
+
+-- chance per 100000 that a kill of this monster tier drops a piece of level gear (before the scale of the caller)
+function M.levelChance(tier, cfg)
+	local o = (cfg or M.config).open
+	return o and (o.chance[tier or "normal"] or o.chance.normal) or 0
+end
+
+local function wears(p, class)
+	if #p.classes == 0 then
+		return true
+	end
+	for _, c in ipairs(p.classes) do
+		if c == class then
+			return true
+		end
+	end
+	return false
+end
+
+-- one kill: the piece of level gear it drops or nil. scale multiplies the chance (rate, item find, pack factor; at most
+-- open.maxScale), rnd(a, b) -> integer in [a, b], className = the killer's class (a piece that class wears weighs
+-- open.classWeight times as much)
+function M.rollLevelGear(level, tier, scale, rnd, className, cfg)
+	cfg = cfg or M.config
+	if not M.PAIR28 then
+		return nil
+	end
+	local list = M.levelPieces(level, cfg)
+	if #list == 0 then
+		return nil
+	end
+	scale = math.min(cfg.open.maxScale, math.max(0, tonumber(scale) or 1))
+	if rnd(1, 100000) > M.levelChance(tier, cfg) * scale then
+		return nil
+	end
+	local weights, total = {}, 0
+	for i, p in ipairs(list) do
+		local w = (className and wears(p, className)) and cfg.open.classWeight or 1
+		weights[i] = w
+		total = total + w
+	end
+	local pick = rnd(1, total)
+	for i, p in ipairs(list) do
+		pick = pick - weights[i]
+		if pick <= 0 then
+			return p
+		end
+	end
+	return list[#list]
+end
+
+-- what the audits (tools/weapon_coverage.lua, tools/gear_coverage.lua) count as the level-gear source of a piece: the
+-- lowest hunting level it drops at and the chance per kill of a normal monster there, shared by the pieces of the window
+function M.levelDrop(p, cfg)
+	cfg = cfg or M.config
+	local o = cfg.open
+	if not o or not M.PAIR28 then
+		return nil
+	end
+	local access = math.max(o.minLevel, p.level - o.above)
+	local n = #M.levelPieces(access, cfg)
+	if n == 0 then
+		return nil
+	end
+	return {level = access, chance = math.floor(M.levelChance("normal", cfg) / n)}
 end
 
 -- the loot rows {monster, item id, chance per 100000} of every source (the switch is the caller's business)
@@ -175,6 +277,22 @@ M.bonuses = {
 		{n = 2, stats = {goldfind = 10}},
 		{n = 4, stats = {rarityfind = 8, itemfind = 5}},
 		{n = 6, stats = {bossdamage = 6}}
+	},
+	-- the later tiers (2026-10-24): one step above the art set whose looks they wear, in the same line of play
+	wintermourn = { -- ice and the spectral step, the second rank (1000-1350)
+		{n = 2, stats = {chillchance = 10}},
+		{n = 4, stats = {dodge = 3}},
+		{n = 6, stats = {res_ice = 10, dodge = 2}}
+	},
+	lumenhallow = { -- holy protection, the second rank (1300-1750)
+		{n = 2, stats = {res_death = 10}},
+		{n = 4, stats = {monsterreduction = 4, healing = 5}},
+		{n = 6, stats = {monsterreduction = 3, maxhealthpct = 5}}
+	},
+	sunderthrone = { -- gold and loot, the second rank (1700-2050)
+		{n = 2, stats = {goldfind = 14}},
+		{n = 4, stats = {rarityfind = 10, itemfind = 7}},
+		{n = 6, stats = {bossdamage = 8}}
 	}
 }
 
@@ -217,6 +335,11 @@ function M.addTransmog(cfg)
 	if not M.PAIR28 then
 		cfg.excludeRanges = cfg.excludeRanges or {}
 		cfg.excludeRanges[#cfg.excludeRanges + 1] = {M.items.first, M.items.last}
+	end
+	-- the later-tier sets wear the looks of the art sets: their ids are not looks of their own, on or off
+	if M.items.tier2First then
+		cfg.excludeRanges = cfg.excludeRanges or {}
+		cfg.excludeRanges[#cfg.excludeRanges + 1] = {M.items.tier2First, M.items.tier2Last}
 	end
 	return cfg
 end

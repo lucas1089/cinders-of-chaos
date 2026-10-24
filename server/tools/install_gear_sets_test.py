@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """python3 -I server/tools/install_gear_sets_test.py : install_gear_sets.py on a synthetic items.otb / items.xml /
-movements.xml / weapons.xml (the shipped manifest: 448 rows and ids; levels spread over each band; the curves and a
+movements.xml / weapons.xml (the shipped manifest: 448 rows and ids, plus 192 pieces of the later-tier sets that copy the looks of three art sets; levels spread over each band; the curves and a
 few stats; the nodes added and verified, idempotent; each block added once, kept, refused when an id is taken outside
 it; equip slots and class lists; the generated Lua up to date; the switch off). No base server needed."""
 import os, struct, sys, tempfile
@@ -33,8 +33,23 @@ def otb(nodes):
 
 rows = T.rows_of(T.DEFAULT_MANIFEST)
 by = {r['key']: r for r in rows}
-check(len(rows) == 448, 'manifest: 448 pieces')
-check([r['server_id'] for r in rows] == list(range(36995, 37443)), 'manifest: server ids 36995..37442 in order')
+check(len(rows) == 640, 'manifest: 448 art pieces + 192 later-tier pieces')
+check([r['server_id'] for r in rows[:448]] == list(range(36995, 37443)), 'manifest: server ids 36995..37442 in order')
+check([r['server_id'] for r in rows[448:]] == list(range(52000, 52192)), 'later tiers: server ids 52000..52191 in order')
+orig = {r['server_id']: r for r in rows[:448]}
+by_cid = {}
+for r in rows:
+    by_cid.setdefault(r['client_id'], []).append(r)
+for key, name, _band, *_x, source, first in T.TIER2:
+    own = [r for r in rows if r['ex']['set'] == key]
+    src = [r for r in rows[:448] if r['ex']['set'] == source]
+    check(len(own) == 64 and [r['client_id'] for r in own] == [r['client_id'] for r in src],
+          key + ': 64 pieces with the client ids (the looks) of ' + source)
+    check(all(r['server_id'] != r['client_id'] + 3000 for r in own), key + ': ids of their own, not client id + 3000')
+    check(all(r['name'].startswith(name.lower() + ' ') for r in own), key + ': named for the set')
+    check(all(r['ex']['fit'] == 'A' for r in own if r['kind'] == 'legs'), key + ': legs fit anyone')
+check(all(len(v) in (1, 2) for v in by_cid.values()), 'a look is worn by at most one copy')
+check(len({r['key'] for r in rows}) == 640, 'keys are unique')
 check(T.pair28_on(), 'switch ChaosGearSets.PAIR28 is on as shipped (pair 28 is live)')
 with tempfile.TemporaryDirectory() as td:
     off = os.path.join(td, 'chaos_gear_sets.lua')
@@ -75,14 +90,14 @@ check(voc.count('showInDescription="0"') == 4, 'ascended classes hidden next to 
 # items.otb
 base = otb([item_node(2671, 3582)])
 new, c = patch_otb(base, rows)
-check(c['new'] == 448 and verify_otb(new, rows) >= 448, 'otb: 448 nodes added and verified')
+check(c['new'] == 640 and verify_otb(new, rows) >= 640, 'otb: 640 nodes added and verified')
 again, c2 = patch_otb(new, rows)
 check(again == new and c2['new'] == 0, 'otb: a second run changes nothing')
 
 # items.xml, movements.xml, weapons.xml
 xml = '<?xml version="1.0"?>\n<items>\n\t<item id="2671" name="a ham" />\n</items>\n'
 x1, note = T.patch_xml(xml, rows)
-check('added' in note and x1.count('<item id="3') == 448, 'xml: block added')
+check('added' in note and x1.count('<item id="3') == 448 and x1.count('<item id="52') == 192, 'xml: block added')
 check(T.patch_xml(x1, rows) == (x1, 'items.xml: equipment set block up to date'), 'xml: a second run keeps it')
 check('<item id="37011" name="cinderwrought legplates">' in x1, 'xml: no article for a plural noun')
 try:
@@ -92,7 +107,7 @@ except SystemExit as e:
     check('equipment set block' in str(e), 'xml: the refusal names the block')
 mv = '<?xml version="1.0"?>\n<movements>\n</movements>\n'
 m1, _n = T.patch_moves(mv, rows)
-check(m1.count('event="Equip"') == 448 and m1.count('event="DeEquip"') == 448, 'movements: a pair per piece')
+check(m1.count('event="Equip"') == 640 and m1.count('event="DeEquip"') == 640, 'movements: a pair per piece')
 check('itemid="36995" slot="head" level="120"' in m1, 'movements: slot and level')
 wp = '<?xml version="1.0"?>\n<weapons>\n</weapons>\n'
 w1, _n = T.patch_weapons(wp, rows)

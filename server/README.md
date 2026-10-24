@@ -9910,7 +9910,8 @@ nothing for client items 33660-33903 and outfits 2185-2193. Rollback: set the li
 
 ## Equipment sets (pair 28) (`data/lib/chaos_gear_sets.lua`, `data/lib/chaos_gear_sets_items.lua`, `tools/install_gear_sets.py`, `chaos/gear_sets.lua`, switch `ChaosGearSets.PAIR28`, on)
 
-Seven themed equipment sets from the owner's own item sheets (client/MANIFEST.md "Equipment sets (pair 28)"): 448
+Seven themed equipment sets from the owner's own item sheets (client/MANIFEST.md "Equipment sets (pair 28)"), plus three
+later-tier sets for level 1000 and up (see "Gear beyond level 1000"): 448
 pieces, 64 a set, client ids 33995-34442, server ids 36995-37442 (client id + 3000). Unlike the themed sets of pair 24
 these are real gear with stats. **Switch `ChaosGearSets.PAIR28`, ON as shipped**: pair 28 is live on windows-assets b37b983c
 (2026-10-15). Off, installed pieces exist but nothing drops them and the transmog catalogue skips their
@@ -10011,6 +10012,34 @@ The bands overlap, so a character always has a set running and the next one star
 - **Recipes: none.** The crafting system (`crafting.lua`, `salvage_config.lua` recipes) works on orbs, shards and runes
   only; there is no recipe table that makes an item, so a set piece recipe has nothing to join. Not added.
 - Open (owner): publish pair 28 with the regenerated `outfit_anchors.lua`. Not run in a client or on a live server.
+
+### Gear beyond level 1000 (later-tier sets, level gear)
+
+Beta 2026-10-24: "the monsters of the highest teleport hall spots (level 2000) drop the same equipment as level 800".
+Cause: the seven art sets end at level 2000 but a monster type has one static loot table (`addLoot` at startup), and the
+hall monsters share the base types, so their drops did not follow the spawn level. The weapon and gear tables thinned out
+above level 800, and `chaos_class_loot.lua` fell back to the three highest bases whatever their level.
+
+Fix, three parts:
+
+- **Three later-tier sets** (`tools/install_gear_sets.py` `TIER2`, ids 52000-52191, 64 pieces each). They reuse the
+  client ids (the looks) of three art sets, so no new sprites. Same stat curve as the other sets. Not in the transmog catalogue.
+
+| Set | Levels | Elements | Looks of | Server ids |
+|---|---|---|---|---|
+| Wintermourn | 1000-1350 | ice | Rimewraith | 52000-52063 |
+| Lumenhallow | 1300-1750 | holy, death, earth | Azurevigil | 52064-52127 |
+| Sunderthrone | 1700-2050 | energy | Gildcrown | 52128-52191 |
+
+- **Level gear** (`loot.lua` step 1d, `ChaosGearSets.rollLevelGear`). Every kill at hunting level 700 or more may add one
+  piece of a set whose level is within 200 below and 50 above that level. A boss rolls more often. The class's own pieces
+  weigh 3x. Config: `ChaosGearSets.config.open`. The window has a top cap, so level 2400 still drops the highest pieces.
+  A hunt of 2000 and a hunt of 800 share no piece (`tests/loot_level_gear_test.lua`, `tests/gear_sets_test.lua`).
+- **Class loot fallback** keeps only bases within `fallbackSpan = 200` levels of the highest one.
+
+Audits: `weapon_coverage.lua` bands are now 800-1000, 1000-1300, 1300-1700, 1700-2400+ and `gear_coverage.lua` has
+`fairEdges` up to 1200. Both count the level gear through `ChaosGearSets.levelDrop`. Two quiver uniques (levels 1400 and
+2100) fill the quiver slot. Prices, unique specs, codex, wiki and card texts are regenerated.
 
 ## Pack art (pair 30) (`data/lib/chaos_pack30_art.lua`, `data/lib/chaos_pack30_items.lua`, `tools/install_pack30_items.py`, switch `ChaosPack30Art.PAIR30`, off)
 Items of the third-party art packs imported into the client pair 30 (import-only; plan: weapons icons, flasks, corpses,
@@ -12020,29 +12049,29 @@ Owner question: does every class have enough weapons? The audit answers it from 
 
 <!-- weapon-coverage:begin (luajit tools/weapon_coverage.lua --write) -->
 
-| Class | 1-20 | 20-50 | 50-100 | 100-200 | 200-400 | 400-700 | 700-1000 | 1000-1500 | 1500-2400+ |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Warrior | 55/325 | 66/136 | 69/121 | 42/135 | 56/111 | 19/113 | 8/99 | 17/122 | 10/114 |
-| Juggernaut | 55/325 | 66/136 | 69/121 | 42/135 | 56/111 | 19/113 | 8/99 | 17/122 | 10/114 |
-| Berserker | 8/147 | 29/136 | 34/121 | 18/135 | 22/111 | 8/101 | 4/99 | 8/122 | 4/108 |
-| Ranger | 6/114 | 4/110 | 12/111 | 16/121 | 24/101 | 10/101 | 4/106 | 7/101 | 6/107 |
-| Deadeye | 6/114 | 4/110 | 12/111 | 16/121 | 24/101 | 10/101 | 4/106 | 7/101 | 6/107 |
-| Beastmaster | 4/114 | 3/110 | 5/108 | 9/110 | 15/101 | 5/101 | 3/106 | 4/101 | 4/107 |
-| Mystic | 9/135 | 13/215 | 6/182 | 16/253 | 30/131 | 14/145 | 6/100 | 5/153 | 6/100 |
-| Elementalist | 5/135 | 6/215 | 4/182 | 10/253 | 16/131 | 8/145 | 3/100 | 3/153 | 3/100 |
-| Illusionist | 8/135 | 11/215 | 4/182 | 11/253 | 26/131 | 9/145 | 3/100 | 3/153 | 3/100 |
-| Thief * | 60/325 | 68/140 | 73/149 | 43/142 | 56/111 | 20/113 | 8/99 | 18/122 | 7/114 |
-| Ninja * | 60/325 | 68/140 | 73/149 | 43/142 | 56/111 | 20/113 | 8/99 | 18/122 | 7/114 |
-| Samurai * | 55/325 | 66/136 | 69/121 | 42/135 | 56/111 | 20/113 | 8/99 | 18/122 | 7/114 |
-| Necromancer | 9/135 | 13/215 | 6/182 | 16/253 | 30/131 | 14/145 | 6/100 | 5/153 | 6/100 |
-| Lich | 9/135 | 13/215 | 6/182 | 16/253 | 30/131 | 14/145 | 6/100 | 5/153 | 6/100 |
-| Bone Lord | 9/135 | 13/215 | 6/182 | 16/253 | 30/131 | 14/145 | 6/100 | 5/153 | 6/100 |
-| Monk * | 57/325 | 67/167 | 70/121 | 44/135 | 57/111 | 21/113 | 9/106 | 20/122 | 11/114 |
-| Shadowfist * | 57/325 | 67/167 | 70/121 | 44/135 | 57/111 | 21/113 | 9/106 | 20/122 | 11/114 |
-| Iron Sage * | 57/325 | 67/167 | 70/121 | 44/135 | 57/111 | 21/113 | 9/106 | 20/122 | 11/114 |
-| Templar | 55/325 | 66/136 | 69/121 | 42/135 | 56/111 | 19/113 | 8/99 | 17/122 | 10/114 |
-| Inquisitor | 55/325 | 66/136 | 69/121 | 42/135 | 56/111 | 19/113 | 8/99 | 17/122 | 10/114 |
-| Sentinel | 55/325 | 66/136 | 69/121 | 42/135 | 56/111 | 19/113 | 8/99 | 17/122 | 10/114 |
+| Class | 1-20 | 20-50 | 50-100 | 100-200 | 200-400 | 400-700 | 700-1000 | 1000-1300 | 1300-1700 | 1700-2400+ |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Warrior | 55/325 | 66/136 | 69/121 | 42/135 | 56/111 | 24/113 | 8/99 | 24/122 | 18/114 | 23/113 |
+| Juggernaut | 55/325 | 66/136 | 69/121 | 42/135 | 56/111 | 24/113 | 8/99 | 24/122 | 18/114 | 23/113 |
+| Berserker | 8/147 | 29/136 | 34/121 | 18/135 | 22/111 | 10/101 | 4/99 | 12/122 | 7/107 | 9/108 |
+| Ranger | 6/114 | 4/110 | 12/111 | 16/121 | 24/101 | 12/101 | 4/106 | 10/101 | 9/107 | 11/107 |
+| Deadeye | 6/114 | 4/110 | 12/111 | 16/121 | 24/101 | 12/101 | 4/106 | 10/101 | 9/107 | 11/107 |
+| Beastmaster | 4/114 | 3/110 | 5/108 | 9/110 | 15/101 | 6/101 | 3/106 | 6/101 | 6/107 | 6/107 |
+| Mystic | 9/135 | 13/215 | 6/182 | 16/253 | 30/131 | 16/145 | 6/100 | 13/153 | 12/100 | 14/100 |
+| Elementalist | 5/135 | 6/215 | 4/182 | 10/253 | 16/131 | 9/145 | 3/100 | 7/153 | 6/100 | 7/100 |
+| Illusionist | 8/135 | 11/215 | 4/182 | 11/253 | 26/131 | 10/145 | 3/100 | 7/153 | 6/100 | 7/100 |
+| Thief * | 60/325 | 68/140 | 73/149 | 43/142 | 56/111 | 25/113 | 8/99 | 25/122 | 17/114 | 21/113 |
+| Ninja * | 60/325 | 68/140 | 73/149 | 43/142 | 56/111 | 25/113 | 8/99 | 25/122 | 17/114 | 21/113 |
+| Samurai * | 55/325 | 66/136 | 69/121 | 42/135 | 56/111 | 25/113 | 8/99 | 25/122 | 17/114 | 21/113 |
+| Necromancer | 9/135 | 13/215 | 6/182 | 16/253 | 30/131 | 16/145 | 6/100 | 13/153 | 12/100 | 14/100 |
+| Lich | 9/135 | 13/215 | 6/182 | 16/253 | 30/131 | 16/145 | 6/100 | 13/153 | 12/100 | 14/100 |
+| Bone Lord | 9/135 | 13/215 | 6/182 | 16/253 | 30/131 | 16/145 | 6/100 | 13/153 | 12/100 | 14/100 |
+| Monk * | 57/325 | 67/167 | 70/121 | 44/135 | 57/111 | 26/113 | 9/106 | 26/122 | 19/114 | 24/113 |
+| Shadowfist * | 57/325 | 67/167 | 70/121 | 44/135 | 57/111 | 26/113 | 9/106 | 26/122 | 19/114 | 24/113 |
+| Iron Sage * | 57/325 | 67/167 | 70/121 | 44/135 | 57/111 | 26/113 | 9/106 | 26/122 | 19/114 | 24/113 |
+| Templar | 55/325 | 66/136 | 69/121 | 42/135 | 56/111 | 24/113 | 8/99 | 24/122 | 18/114 | 23/113 |
+| Inquisitor | 55/325 | 66/136 | 69/121 | 42/135 | 56/111 | 24/113 | 8/99 | 24/122 | 18/114 | 23/113 |
+| Sentinel | 55/325 | 66/136 | 69/121 | 42/135 | 56/111 | 24/113 | 8/99 | 24/122 | 18/114 | 23/113 |
 
 <!-- weapon-coverage:end -->
 
@@ -12089,29 +12118,29 @@ above does the weapons. This audit does the rest of the slots and adds a fairnes
 
 <!-- gear-coverage:begin (luajit tools/gear_coverage.lua --write) -->
 
-| Slot | Classes | 1-20 | 20-50 | 50-100 | 100-200 | 200-400 | 400-700 | 700-1000 | 1000-1500 | 1500-2400+ |
-|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Helmet | Warrior, Juggernaut, Berserker | 19/100 | 12/187 | 19/243 | 15/215 | 25/133 | 10/114 | 7/100 | 14/114 | 4/103 |
-| Helmet | Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai | 19/100 | 12/207 | 19/255 | 15/250 | 24/150 | 10/127 | 7/100 | 14/123 | 4/116 |
-| Helmet | Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord | 19/100 | 12/255 | 18/295 | 14/255 | 25/171 | 10/149 | 5/100 | 14/145 | 3/135 |
-| Helmet | Monk, Shadowfist, Iron Sage | 19/100 | 12/207 | 19/255 | 15/250 | 26/150 | 10/127 | 7/100 | 14/123 | 4/116 |
-| Helmet | Templar, Inquisitor, Sentinel | 19/100 | 12/187 | 19/243 | 15/215 | 26/133 | 10/114 | 7/100 | 14/114 | 4/103 |
-| Armor | Warrior, Juggernaut, Berserker | 24/100 | 7/126 | 21/144 | 21/185 | 26/106 | 12/100 | 28/100 | 9/100 | 4/106 |
-| Armor | Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai | 24/100 | 7/141 | 21/160 | 21/209 | 26/119 | 12/100 | 28/100 | 9/100 | 3/108 |
-| Armor | Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord | 24/100 | 7/156 | 20/182 | 20/234 | 26/136 | 12/100 | 26/100 | 8/100 | 3/121 |
-| Armor | Monk, Shadowfist, Iron Sage | 24/100 | 7/141 | 21/160 | 21/209 | 27/119 | 12/100 | 28/100 | 9/100 | 3/108 |
-| Armor | Templar, Inquisitor, Sentinel | 24/100 | 7/126 | 21/144 | 21/185 | 27/106 | 12/100 | 28/100 | 9/100 | 4/106 |
-| Legs | Warrior, Juggernaut, Berserker, Templar, Inquisitor, Sentinel | 14/166 | 7/100 | 7/186 | 8/257 | 16/122 | 9/100 | 4/100 | 7/100 | 3/103 |
-| Legs | Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai, Monk, Shadowfist, Iron Sage | 14/166 | 7/100 | 7/217 | 8/257 | 16/138 | 9/104 | 3/100 | 6/100 | 3/107 |
-| Legs | Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord | 14/229 | 7/100 | 6/260 | 7/300 | 16/157 | 9/117 | 3/100 | 6/100 | 3/106 |
-| Boots | Warrior, Juggernaut, Berserker, Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord, Monk, Shadowfist, Iron Sage, Templar, Inquisitor, Sentinel | 3 | 8/150 | 9/200 | 9/200 | 10/100 | 11/100 | 9/100 | 10/105 | 5/100 |
-| Boots | Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai | 3 | 8/150 | 9/200 | 10/200 | 10/100 | 11/100 | 9/100 | 10/105 | 5/100 |
-| Shield | Warrior, Juggernaut, Templar, Inquisitor, Sentinel | 16/100 | 15/142 | 7/118 | 11/125 | 12/100 | 5/100 | 15/100 | 9/100 | 6/113 |
-| Spellbook | Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord | 3/107 | 3/100 | 5/100 | 8/125 | 7/125 | 3/100 | 7/100 | 4/100 | 3/106 |
-| Quiver | Ranger, Deadeye, Beastmaster | 2 | 2 | 2 | 2 | 4 | 2 | 2 | 2 | 2 |
-| Amulet | Warrior, Juggernaut, Berserker, Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord, Monk, Shadowfist, Iron Sage, Templar, Inquisitor, Sentinel | 14 | 5 | 17 | 15 | 10 | 3 | 9 | 8 | 4 |
-| Amulet | Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai | 14 | 5 | 17 | 16 | 10 | 3 | 9 | 8 | 4 |
-| Ring | all 21 | 21 | 4 | 6 | 11 | 10 | 4 | 9 | 7 | 4 |
+| Slot | Classes | 1-20 | 20-50 | 50-100 | 100-200 | 200-400 | 400-700 | 700-1000 | 1000-1300 | 1300-1700 | 1700-2400+ |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Helmet | Warrior, Juggernaut, Berserker | 19/100 | 12/187 | 19/243 | 15/215 | 25/133 | 10/114 | 8/100 | 16/114 | 6/105 | 6/103 |
+| Helmet | Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai | 19/100 | 12/207 | 19/255 | 15/250 | 24/150 | 10/127 | 8/100 | 16/123 | 6/119 | 6/117 |
+| Helmet | Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord | 19/100 | 12/255 | 18/295 | 14/255 | 25/171 | 10/149 | 6/100 | 14/145 | 5/135 | 5/129 |
+| Helmet | Monk, Shadowfist, Iron Sage | 19/100 | 12/207 | 19/255 | 15/250 | 26/150 | 10/127 | 8/100 | 16/123 | 6/119 | 6/117 |
+| Helmet | Templar, Inquisitor, Sentinel | 19/100 | 12/187 | 19/243 | 15/215 | 26/133 | 10/114 | 8/100 | 16/114 | 6/105 | 6/103 |
+| Armor | Warrior, Juggernaut, Berserker | 24/100 | 7/126 | 21/144 | 21/185 | 26/106 | 12/100 | 29/100 | 10/100 | 7/100 | 6/106 |
+| Armor | Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai | 24/100 | 7/141 | 21/160 | 21/209 | 26/119 | 12/100 | 29/100 | 10/100 | 7/109 | 5/100 |
+| Armor | Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord | 24/100 | 7/156 | 20/182 | 20/234 | 26/136 | 12/100 | 27/100 | 8/100 | 5/123 | 5/112 |
+| Armor | Monk, Shadowfist, Iron Sage | 24/100 | 7/141 | 21/160 | 21/209 | 27/119 | 12/100 | 29/100 | 10/100 | 7/109 | 5/100 |
+| Armor | Templar, Inquisitor, Sentinel | 24/100 | 7/126 | 21/144 | 21/185 | 27/106 | 12/100 | 29/100 | 10/100 | 7/100 | 6/106 |
+| Legs | Warrior, Juggernaut, Berserker, Templar, Inquisitor, Sentinel | 14/166 | 7/100 | 7/186 | 8/257 | 16/122 | 9/100 | 5/100 | 10/100 | 7/107 | 5/107 |
+| Legs | Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai, Monk, Shadowfist, Iron Sage | 14/166 | 7/100 | 7/217 | 8/257 | 16/138 | 9/104 | 3/100 | 9/100 | 7/107 | 5/107 |
+| Legs | Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord | 14/229 | 7/100 | 6/260 | 7/300 | 16/157 | 9/117 | 3/100 | 9/100 | 6/107 | 5/107 |
+| Boots | Warrior, Juggernaut, Berserker, Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord, Monk, Shadowfist, Iron Sage, Templar, Inquisitor, Sentinel | 3 | 8/150 | 9/200 | 9/200 | 10/100 | 11/100 | 11/100 | 12/120 | 6/100 | 10/100 |
+| Boots | Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai | 3 | 8/150 | 9/200 | 10/200 | 10/100 | 11/100 | 11/100 | 12/120 | 6/100 | 10/100 |
+| Shield | Warrior, Juggernaut, Templar, Inquisitor, Sentinel | 16/100 | 15/142 | 7/118 | 11/125 | 12/100 | 5/100 | 17/100 | 12/100 | 8/113 | 9/100 |
+| Spellbook | Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord | 3/107 | 3/100 | 5/100 | 8/125 | 7/125 | 3/100 | 9/100 | 7/100 | 7/106 | 5/100 |
+| Quiver | Ranger, Deadeye, Beastmaster | 2 | 2 | 2 | 2 | 4 | 2 | 2 | 2 | 2 | 2 |
+| Amulet | Warrior, Juggernaut, Berserker, Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord, Monk, Shadowfist, Iron Sage, Templar, Inquisitor, Sentinel | 14 | 5 | 17 | 15 | 10 | 3 | 11 | 10 | 6 | 8 |
+| Amulet | Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai | 14 | 5 | 17 | 16 | 10 | 3 | 11 | 10 | 6 | 8 |
+| Ring | all 21 | 21 | 4 | 6 | 11 | 10 | 4 | 11 | 11 | 6 | 8 |
 
 <!-- gear-coverage:end -->
 

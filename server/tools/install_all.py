@@ -72,9 +72,10 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   assetsdecor  tools/install_assets_decor.py     the catacomb kit items of the pair 27 trial (sarcophagi, hatches, portal ring)
                in items.otb / items.xml (server ids 36986..36994; used only once ChaosAssetsArt.PAIR27 is on)
   gearsets     tools/install_gear_sets.py        the seven equipment sets of client pair 28 (448 pieces, server ids
-               36995..37442) in items.otb / items.xml, their equip entries in movements.xml and weapon entries in
-               weapons.xml (levels, classes, stats; after vocations, whose class names the lists use); dropped only
-               once ChaosGearSets.PAIR28 is on (README "Equipment sets (pair 28)")
+               36995..37442) and three later-tier sets that copy the looks of three of them (192 pieces, server ids
+               52000..52191, gear beyond level 1000) in items.otb / items.xml, their equip entries in movements.xml and
+               weapon entries in weapons.xml (levels, classes, stats; after vocations, whose class names the lists use);
+               dropped only once ChaosGearSets.PAIR28 is on (README "Equipment sets (pair 28)", "Gear beyond level 1000")
   pack30items  tools/install_pack30_items.py     the third-party pack art items of client pair 30 (weapons, flasks, corpses,
                grounds, decoration, buildings, animated objects; server ids 37443..39999, overflow 40113..) from
                data/items/pack30_*.csv in items.otb / items.xml (nothing while no manifest exists; used only once

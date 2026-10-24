@@ -50,6 +50,8 @@ DEFAULT_MANIFEST = os.path.join(REPO_DATA, 'items', 'gear_sets.csv')
 LUA_OUT = os.path.join(REPO_DATA, 'lib', 'chaos_gear_sets_items.lua')
 SWITCH = os.path.join(REPO_DATA, 'lib', 'chaos_gear_sets.lua')
 FIRST, LAST = 36995, 37442
+# the three later-tier sets (2026-10-24): copies of a set above with their own ids, names, level band and stats
+TIER2_FIRST, TIER2_LAST = 52000, 52191
 BEGIN = {'xml': '\t<!-- Chaos equipment sets of pair 28 (server/tools/install_gear_sets.py, do not edit by hand) -->\n'}
 END = '\t<!-- end of the Chaos equipment sets of pair 28 -->\n'
 for _k in ('moves', 'weapons'):
@@ -66,7 +68,20 @@ SETS = [
     ('gildcrown', 'Gildcrown', (1250, 2000), 'energy', 'energy', 'earth', 'energy', 'crystallinearrow', 'vortexbolt'),
     ('blightfang', 'Blightfang', (8, 150), 'earth', 'earth', 'fire', 'poison', 'poisonarrow', 'drillbolt'),
 ]
+# Tier-2 sets: the 64 pieces of an art set again, new server ids (the same client ids: same look), another name,
+# another band. key, name, band, damage element, resisted element, weak element, wand missile, bow missile, crossbow
+# missile, the set whose pieces it copies, its first server id (64 ids each).
+TIER2 = [
+    ('wintermourn', 'Wintermourn', (1000, 1350), 'ice', 'ice', 'fire', 'smallice', 'shiverarrow', 'prismaticbolt',
+     'rimewraith', 52000),
+    ('lumenhallow', 'Lumenhallow', (1300, 1750), 'holy', 'death', 'earth', 'smallholy', 'crystallinearrow',
+     'prismaticbolt', 'azurevigil', 52064),
+    ('sunderthrone', 'Sunderthrone', (1700, 2050), 'energy', 'energy', 'earth', 'energy', 'crystallinearrow',
+     'vortexbolt', 'gildcrown', 52128),
+]
+SETS += [t[:9] for t in TIER2]
 SET_BY_KEY = {s[0]: s for s in SETS}
+TIER2_BY_KEY = {t[0]: t for t in TIER2}
 ELEMENT_KEY = {'fire': 'Fire', 'ice': 'Ice', 'earth': 'Earth', 'energy': 'Energy', 'death': 'Death', 'holy': 'Holy'}
 
 # ------------------------------------------------------------------------------------------------ classes
@@ -186,11 +201,33 @@ def rows_of(path):
         assert r['server_id'] == r['client_id'] + 3000, 'server id must be client id + 3000 (%s)' % r['key']
         assert FIRST <= r['server_id'] <= LAST, '%s: server id %d outside %d..%d' % (r['key'], r['server_id'], FIRST, LAST)
         assert r['ex']['set'] in SET_BY_KEY and r['kind'] == r['ex']['kind'], r['key']
+    rows = rows + tier2_rows(rows)
     assign_levels(rows)
     for r in rows:
         r['stats'] = stats_of(r)
         r['classes'] = classes_of(r)
     return rows
+
+
+def tier2_rows(rows):
+    """the pieces of the tier-2 sets: each copies a piece of its source set (same client id, so the same look), with a
+    server id of its own, a key and a name of the new set; the legs fit anyone (a track of one or two legs is too few)"""
+    out = []
+    for key, name, _band, *_x, source, first in TIER2:
+        src = [r for r in rows if r['ex']['set'] == source]
+        assert len(src) == 64 and first + 63 <= TIER2_LAST and first >= TIER2_FIRST, key
+        old = SET_BY_KEY[source][1].lower() + ' '
+        for i, r in enumerate(src):
+            assert r['name'].startswith(old), r['key']
+            n = dict(r)
+            n['ex'] = dict(r['ex'], set=key)
+            if r['kind'] == 'legs':
+                n['ex']['fit'] = 'A'   # legs for everyone: the art sets have one or two of a weight, a band needs three
+            n['server_id'] = first + i
+            n['key'] = key + r['key'][len(source):]
+            n['name'] = name.lower() + ' ' + r['name'][len(old):]
+            out.append(n)
+    return out
 
 
 def stats_of(r):
@@ -386,9 +423,14 @@ def lua_text(rows):
          '-- server/data/items/gear_sets.csv). Generated; do not edit by hand. Read by data/lib/chaos_gear_sets.lua.',
          '-- sets: key -> {name, band = {from, to}, element, resist}; pieces in id order: id, key, set, kind, fit (H / M /',
          '-- C / A armour, 1 / 2 hands), level, name, classes ({} = everyone), stats (the items.xml numbers).',
-         '', 'return {', '\tfirst = %d,' % FIRST, '\tlast = %d,' % LAST, '\tsets = {']
+         '-- first / last: the art sets\' ids; tier2First / tier2Last: the three later-tier sets, which copy the pieces (and so',
+         '-- the looks) of an art set: a set with `looks` is one of them.',
+         '', 'return {', '\tfirst = %d,' % FIRST, '\tlast = %d,' % LAST, '\ttier2First = %d,' % TIER2_FIRST,
+         '\ttier2Last = %d,' % TIER2_LAST, '\tsets = {']
     for key, name, (lo, hi), dmg, res, *_r in SETS:
-        L.append('\t\t%s = {name = "%s", band = {%d, %d}, element = "%s", resist = "%s"},' % (key, name, lo, hi, dmg, res))
+        looks = ', looks = "%s"' % TIER2_BY_KEY[key][9] if key in TIER2_BY_KEY else ''
+        L.append('\t\t%s = {name = "%s", band = {%d, %d}, element = "%s", resist = "%s"%s},' % (
+            key, name, lo, hi, dmg, res, looks))
     L += ['\t},', '\tpieces = {']
     for r in rows:
         st = ', '.join('%s = %s' % (k, lua_value(v)) for k, v in r['stats'])

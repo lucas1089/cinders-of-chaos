@@ -4,10 +4,12 @@
 
 return {
 	-- level bands (from, to): a weapon sits in the band that holds its required level (from <= level < to); the last
-	-- band is open ended. The labels are the owner's (2026-10-23).
+	-- band is open ended. The labels are the owner's (2026-10-23); the top two bands were split into 1000-1300, 1300-1700
+	-- and 1700-2400+ on 2026-10-24 (gear beyond level 1000, server/README.md).
 	bands = {
 		{1, 20, "1-20"}, {20, 50, "20-50"}, {50, 100, "50-100"}, {100, 200, "100-200"}, {200, 400, "200-400"},
-		{400, 700, "400-700"}, {700, 1000, "700-1000"}, {1000, 1500, "1000-1500"}, {1500, 100000, "1500-2400+"}
+		{400, 700, "400-700"}, {700, 1000, "700-1000"}, {1000, 1300, "1000-1300"}, {1300, 1700, "1300-1700"},
+		{1700, 100000, "1700-2400+"}
 	},
 	-- the level a band's power is judged at: the band's top (the last band: this level)
 	lastBandTop = 2400,

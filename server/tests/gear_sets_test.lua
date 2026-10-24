@@ -30,9 +30,11 @@ for line in f:lines() do
 end
 f:close()
 eq(#rows, 448, "448 pieces in the manifest")
-eq(#P.pieces, 448, "448 pieces in chaos_gear_sets_items.lua")
+eq(#P.pieces, 640, "640 pieces in chaos_gear_sets_items.lua: 448 of the art sets and 192 of the later tiers")
 eq(P.first, 36995, "first server id")
 eq(P.last, 37442, "last server id")
+eq(P.tier2First, 52000, "first server id of the later tiers")
+eq(P.tier2Last, 52191, "last server id of the later tiers")
 for i, r in ipairs(rows) do
 	local p = P.pieces[i]
 	eq(r.sid, r.cid + 3000, r.key .. ": server id = client id + 3000")
@@ -92,9 +94,111 @@ for key, s in pairs(P.sets) do
 		eq(not has.boots or got.boots, true, key .. ": " .. class .. " finds boots")
 	end
 end
-eq(nSets, 7, "seven sets")
+eq(nSets, 10, "ten sets: seven art sets and three later tiers")
 eq(P.sets.blightfang.band[1], 8, "the first set starts at level 8 (noob friendly)")
-eq(P.sets.gildcrown.band[2], 2000, "the last set reaches level 2000")
+eq(P.sets.gildcrown.band[2], 2000, "the last art set reaches level 2000")
+eq(P.sets.sunderthrone.band[2] >= 2000, true, "the last later tier reaches level 2000 and more")
+
+-- ---------------------------------------------------------------- the later tiers (gear beyond level 1000)
+-- each copies the pieces of an art set: same number, kind and order, a name, a key and an id block of its own, and a
+-- level band that follows the one before
+local TIER = {wintermourn = "rimewraith", lumenhallow = "azurevigil", sunderthrone = "gildcrown"}
+local prevLow = 0
+for _, key in ipairs({"wintermourn", "lumenhallow", "sunderthrone"}) do
+	local s = P.sets[key]
+	eq(s.looks, TIER[key], key .. ": wears the looks of " .. TIER[key])
+	eq(s.band[1] > prevLow and s.band[2] > s.band[1], true, key .. ": a band above the one before")
+	prevLow = s.band[1]
+	local copy, orig = {}, {}
+	for _, p in ipairs(P.pieces) do
+		if p.set == key then
+			copy[#copy + 1] = p
+		elseif p.set == TIER[key] then
+			orig[#orig + 1] = p
+		end
+	end
+	eq(#copy, 64, key .. ": 64 pieces")
+	for i, p in ipairs(copy) do
+		eq(p.id >= P.tier2First and p.id <= P.tier2Last, true, p.key .. ": id in the later tiers' block")
+		eq(p.kind, orig[i].kind, p.key .. ": same kind as the piece it copies")
+		eq(p.key:sub(1, #key + 1), key .. "_", p.key .. ": key of the set")
+		eq(p.name:find(s.name:lower(), 1, true), 1, p.key .. ": named for the set")
+		eq(p.name:find(P.sets[TIER[key]].name:lower(), 1, true), nil, p.key .. ": not the name of the original")
+		if p.kind == "legs" then
+			eq(#p.classes, 0, p.key .. ": legs fit anyone")
+		end
+	end
+end
+eq(M.piece(52000).set, "wintermourn", "piece by id in the later block")
+
+-- ---------------------------------------------------------------- level gear (loot.lua step 1d)
+local open = M.config.open
+eq(#M.levelPieces(open.minLevel - 1), 0, "no level gear below the minimum level")
+eq(M.rollLevelGear(open.minLevel - 1, "boss", 3, function() return 1 end), nil, "no roll below the minimum level")
+for _, lv in ipairs({800, 1000, 1300, 1700, 2000, 2400}) do
+	local list = M.levelPieces(lv)
+	eq(#list >= 10, true, "level " .. lv .. ": a pool of " .. #list .. " pieces")
+	for _, p in ipairs(list) do
+		eq(p.level <= lv + open.above and p.level >= math.min(lv, 2050) - open.below, true, "window at " .. lv .. ": " .. p.key)
+	end
+end
+-- a hunt of 2000 and a hunt of 800 have no piece in common (the beta report: the same gear from 800 to 2000)
+local at800 = {}
+for _, p in ipairs(M.levelPieces(800)) do
+	at800[p.id] = true
+end
+local lowest = 1e9
+for _, p in ipairs(M.levelPieces(2000)) do
+	eq(at800[p.id], nil, "2000 and 800 share no piece: " .. p.key)
+	lowest = math.min(lowest, p.level)
+end
+eq(lowest >= 1800, true, "a hunt of 2000 drops pieces of 1800 and up")
+-- the roll: chance, scale, class weight
+local function seq(...)
+	local v, i = {...}, 0
+	return function(a)
+		i = i + 1
+		return v[i] or a
+	end
+end
+eq(M.levelChance("boss") > M.levelChance("normal"), true, "a boss drops more often")
+eq(M.rollLevelGear(2000, "normal", 1, seq(M.levelChance("normal") + 1)), nil, "above the chance: nothing")
+eq(M.rollLevelGear(2000, "normal", 0, seq(1)), nil, "scale 0: nothing")
+local hit = M.rollLevelGear(2000, "normal", 1, seq(1, 1))
+eq(hit ~= nil and hit.id == M.levelPieces(2000)[1].id, true, "a hit picks from the window")
+local top = math.floor(M.levelChance("normal") * open.maxScale)
+eq(M.rollLevelGear(2000, "normal", 100, seq(top, 1)) ~= nil, true, "the scale is capped at maxScale: a roll at the cap hits")
+eq(M.rollLevelGear(2000, "normal", 100, seq(top + 1, 1)), nil, "... and one over it misses")
+local wanted
+for _, p in ipairs(M.levelPieces(2000)) do
+	if #p.classes > 0 and wears(p, "Mystic") and not wears(p, "Warrior") then
+		wanted = p
+		break
+	end
+end
+eq(wanted ~= nil, true, "a piece only a Mystic wears is in the window")
+M.PAIR28 = false
+eq(M.rollLevelGear(2000, "boss", 3, seq(1, 1)), nil, "switch off: no level gear")
+eq(M.levelDrop(wanted), nil, "switch off: no level drop for the audits")
+M.PAIR28 = true
+local ld = M.levelDrop(wanted)
+eq(ld.level, math.max(open.minLevel, wanted.level - open.above), "the audit's access level of a piece")
+eq(ld.chance >= 20, true, "the audit's chance per piece clears the weapon audit's minimum (" .. ld.chance .. ")")
+-- the class weight: the last draw lands on the last piece, and a class's own pieces carry the larger share
+local list = M.levelPieces(2000)
+local mine, total = 0, 0
+for _, p in ipairs(list) do
+	local w = wears(p, "Mystic") and open.classWeight or 1
+	total = total + w
+	if wears(p, "Mystic") then
+		mine = mine + w
+	end
+end
+local got = M.rollLevelGear(2000, "normal", 1, function(a, b)
+	return a == 1 and b == 100000 and 1 or b
+end, "Mystic")
+eq(got ~= nil and got.id == list[#list].id, true, "the highest draw is the last piece")
+eq(mine > total / 2, true, "a class's own pieces carry the larger share (" .. mine .. " of " .. total .. ")")
 
 -- ---------------------------------------------------------------- loot rows
 local known = {}
@@ -147,10 +251,11 @@ for _, r in ipairs(shipped.excludeRanges) do
 end
 eq(found, false, "shipped (on): the pieces are in the transmog catalogue")
 M.PAIR28 = false
-eq(#M.addTransmog({excludeRanges = {}}).excludeRanges, 1, "off: the pieces are out of the catalogue")
+eq(#M.addTransmog({excludeRanges = {}}).excludeRanges, 2, "off: the pieces are out of the catalogue, with the later tiers")
 M.PAIR28 = true
 local c = M.addTransmog({excludeRanges = {}})
-eq(#c.excludeRanges, 0, "on: nothing excluded")
+eq(#c.excludeRanges, 1, "on: only the later tiers (they wear the art sets' looks) are excluded")
+eq(c.excludeRanges[1][1], 52000, "the excluded range is the later tiers'")
 
 -- ---------------------------------------------------------------- the startup script on mocks
 local added = {}

@@ -70,10 +70,15 @@ L.config = {
 	-- a base is eligible when its level is at most the monster's hunting level + above and at least its level - below;
 	-- a monster above every window drops the `fallback` highest bases
 	window = {below = 150, above = 20},
-	fallback = 3
+	fallback = 3,
+	-- ... but only those within `fallbackSpan` levels of the highest one: above the last base (the stock gear stops at level
+	-- 1000) a hunt of level 2000 dropped the three highest bases, a level 400 bow among them, as a hunt of 800 did. Now it
+	-- drops the best base only, and the equipment sets' level gear (data/lib/chaos_gear_sets.lua) carries the levels above
+	fallbackSpan = 200
 }
 
--- the bases of one family a monster of hunting level `level` may drop (by level, then id)
+-- the bases of one family a monster of hunting level `level` may drop (by level, then id): those in the window, else the
+-- `fallback` highest below it that are within `fallbackSpan` of the highest
 function L.eligible(kind, level, cfg)
 	cfg = cfg or L.config
 	level = tonumber(level) or 0
@@ -91,8 +96,11 @@ function L.eligible(kind, level, cfg)
 		return inWindow
 	end
 	local out = {}
+	local top = #below > 0 and below[#below][2] or 0
 	for i = math.max(1, #below - cfg.fallback + 1), #below do
-		out[#out + 1] = below[i]
+		if not cfg.fallbackSpan or below[i][2] >= top - cfg.fallbackSpan then
+			out[#out + 1] = below[i]
+		end
 	end
 	return out
 end

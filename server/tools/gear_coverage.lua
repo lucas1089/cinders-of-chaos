@@ -348,6 +348,15 @@ function C.load(cfg, wcfg)
 				it.weight = weight
 			end
 			local d = dropOf[p.id]
+			-- level gear (chaos_gear_sets.lua M.levelDrop): any monster hunted near the piece's level may drop it
+			local ld = D.gearOn and G.levelDrop and G.levelDrop(p)
+			if ld then
+				if not d then
+					d = {access = ld.level, chance = ld.chance}
+				else
+					d = {access = math.min(d.access, ld.level), chance = math.max(d.chance, ld.chance)}
+				end
+			end
 			if d and d.chance >= cfg.minDropChance then
 				it.sources.drop = d
 			end
@@ -690,11 +699,47 @@ function C.fairness(cfg, wcfg)
 	for _, e in ipairs(edges) do
 		agg[e] = {w = 0, all = 0, rate = {}}
 	end
+	-- level gear (data/lib/chaos_gear_sets.lua M.rollLevelGear): a kill at the monster's level drops one weapon of the
+	-- sets near it with the chance per piece below (the classes of the piece, its power against the tier of the edge)
+	local G = dofile("data/lib/chaos_gear_sets.lua")
+	local SET_FAMILY = {sword = "melee", axe = "melee", club = "melee", bow = "launcher", crossbow = "launcher",
+		wand = "wand", rod = "wand"}
 	for _, m in ipairs(bands) do
 		local edge = edgeOf(m.level)
 		if edge then
 			local a = agg[edge]
 			a.w = a.w + m.spawns
+			local near = G.PAIR28 and G.levelPieces(m.level) or {}
+			for _, piece in ipairs(near) do
+				local fam = SET_FAMILY[piece.kind]
+				if fam then
+					local p = G.levelChance("normal") / #near / 100000 * m.spawns
+					local hands = (piece.fit == "2" or piece.kind == "bow" or piece.kind == "crossbow") and 2 or 1
+					local power
+					if fam == "wand" then
+						power = W.curve(wcfg, "wand", piece.level)
+					else
+						power = 0
+						for k, v in pairs(piece.stats) do
+							if k == "attack" or k:match("^element") then
+								power = power + v
+							end
+						end
+					end
+					local tier = W.tier(wcfg, piece.kind == "rod" and "wand" or piece.kind, hands, edge)
+					local cs = {}
+					for _, c in ipairs(piece.classes) do
+						cs[c] = true
+					end
+					a.all = a.all + p
+					for _, class in ipairs(classes) do
+						if W.suits(class, {family = fam, kind = piece.kind == "rod" and "wand" or piece.kind, hands = hands,
+							classes = #piece.classes > 0 and cs or nil}) and power >= cfg.fairPower * tier then
+							a.rate[class.name] = (a.rate[class.name] or 0) + p
+						end
+					end
+				end
+			end
 			for _, list in ipairs({m.loot, extra[m.name] or {}}) do
 				for _, entry in ipairs(list) do
 					local r = weapons[entry[1]]

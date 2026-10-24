@@ -3,6 +3,7 @@
 --
 --   1. extra loot rolls from the monster's own loot table by tier (magic x1, rare x2, legendary x3, boss x2)
 --   1c. charged items (amulets with charges, exercise weapons) get the item type's full charges (L.restoreCharges)
+--   1d. level gear: a piece of an equipment set near the level of this kill (L.levelGear, ChaosGearSets.rollLevelGear)
 --   2. gear quality: floor + bonus rarity per tier (the "rarity" attribute)
 --   2b. item level and modifiers: every gear drop gets the item level of this kill (L.dropLevel: the monster's level,
 --       its tier, boss, rift tier, Omen guardian, world boss; chaos_item_mods.lua M.sourceLevel); drops with a rarity
@@ -1067,6 +1068,25 @@ function L.dropLevel(monster, owner, tier)
 	return M.sourceLevel(src)
 end
 
+-- level gear (data/lib/chaos_gear_sets.lua M.rollLevelGear; server/README.md "Gear beyond level 1000"): a monster type has
+-- one loot table whatever level it is spawned at, so a kill at a hunting level of 700 or more may also drop one piece
+-- of any equipment set near that level. ctx.huntLevel is the level it is hunted at (a spawned monster's own level);
+-- rate, item find and the pack factor scale the chance as for the gems. Returns the piece (a gear set entry) or nil.
+function L.levelGear(monster, owner, tier, ctx)
+	local G = ChaosGearSets
+	if not (G and G.rollLevelGear) then
+		return nil
+	end
+	local okB, boss = pcall(function() return monster:getType():isBoss() end)
+	if okB and boss then
+		tier = "boss"
+	end
+	local okV, className = pcall(function() return owner:getVocation():getName() end)
+	local scale = rateMult(ctx) * (ctx.itemFind or 1) * (ctx.pace or 1)
+	local ok, piece = pcall(G.rollLevelGear, ctx.huntLevel or 0, tier, scale, rnd, okV and className or nil)
+	return ok and piece or nil
+end
+
 -- text, nearMessage: deferred texts (ChaosI18n.msg), each player reads them in their own language
 local function announce(owner, corpsePos, text, nearMessage)
 	local u = cfg().unique
@@ -1228,6 +1248,21 @@ local function processKill(monster, corpse)
 	-- 1c. charged items (amulets, exercise weapons) drop with the item type's full charges, not with the 1 of the
 	-- loot entry's count (L.restoreCharges)
 	L.restoreCharges(corpse)
+
+	-- 1d. level gear: a piece of an equipment set near the level this monster is hunted at (L.levelGear)
+	do
+		local piece = L.levelGear(monster, owner, tier, ctx)
+		if piece then
+			local item = L.addToCorpse(corpse, piece.id, 1)
+			if item then
+				local r = L.stockRarity()
+				if r > 0 then
+					item:setCustomAttribute("rarity", r)
+				end
+				bonus[#bonus + 1] = itemName(piece.id)
+			end
+		end
+	end
 
 	-- 2. gear quality over everything in the corpse
 	local items = {}

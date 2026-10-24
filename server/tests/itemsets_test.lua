@@ -728,7 +728,7 @@ for _, set in ipairs(S.sets) do
 		end
 	end
 end
-eq(open, 7, "seven open sets")
+eq(open, 10, "ten open sets (seven art sets and three later tiers)")
 -- the engine's view of the pieces used below
 local SLOTP = {helmet = SLOTP_HEAD, armor = SLOTP_ARMOR, legs = SLOTP_LEGS, boots = SLOTP_FEET, amulet = SLOTP_NECKLACE,
 	ring = SLOTP_RING, shield = 48}
