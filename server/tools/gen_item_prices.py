@@ -336,6 +336,55 @@ def chaos_monsters():
     return out
 
 
+CLASS_LOOT_SLOT = {'bow': 'two-handed', 'crossbow': 'two-handed', 'wand': 'weapon', 'quiver': 'backpack', 'book': 'shield'}
+GAMBLE_SLOT = {'weapon': 'weapon', 'shield': 'shield', 'helmet': 'head', 'armor': 'body', 'legs': 'legs', 'boots': 'feet',
+               'amulet': 'necklace', 'ring': 'ring', 'quiver': 'backpack'}
+
+
+def class_loot_bases():
+    """{id: (slot, level)} of the bows, crossbows, wands, rods, quivers and spellbooks the chaos loot layer drops on top of
+    the stock tables (data/lib/chaos_class_loot.lua L.bases = {kind = {{id, required level}, ...}})"""
+    text = read(os.path.join(DATA, 'lib', 'chaos_class_loot.lua'))
+    m = re.search(r'L\.bases\s*=\s*\{(.*?)\n\}', text, re.S)
+    out = {}
+    for kind, body in re.findall(r'\n\t(\w+) = \{(.*?)\n\t\}', m.group(1) if m else '', re.S):
+        for iid, lv in re.findall(r'\{(\d+),\s*(\d+)\}', body):
+            out[int(iid)] = (CLASS_LOOT_SLOT.get(kind, 'weapon'), int(lv))
+    return out
+
+
+def gamble_bases():
+    """{id: (slot, level)} of the Gambler's pool (gamble_config.lua C.pool: bases sold sealed in crates)"""
+    g = read(os.path.join(DATA, 'scripts', 'chaos', 'gamble_config.lua'))
+    pool = re.search(r'C\.pool = \{(.*)\n\}', g, re.S).group(1)
+    out = {}
+    for slot, body in re.findall(r'\n\t(\w+) = \{(.*?)\n\t\}', pool, re.S):
+        for iid, lv in re.findall(r'\{(\d+),\s*(\d+)\}', body):
+            out.setdefault(int(iid), (GAMBLE_SLOT.get(slot, 'equip'), int(lv)))
+    return out
+
+
+def gear_coverage_bases():
+    """{id: (slot, level)} of the spellbook list of tools/gear_coverage_config.lua (books = {...}, no levels there)"""
+    text = read(os.path.join(SERVER, 'tools', 'gear_coverage_config.lua'))
+    m = re.search(r'\bbooks\s*=\s*\{(.*?)\}', text, re.S)
+    return {int(i): ('shield', None) for i in re.findall(r'\d+', m.group(1))} if m else {}
+
+
+def drop_sources():
+    """every wearable base the Chaos layers drop or hand out beyond the stock monster tables, with where it comes from:
+    {id: (slot, level or None, source)}"""
+    out = {}
+    for src, rows in (('chaos_class_loot.lua', class_loot_bases()), ('gamble_config.lua pool', gamble_bases()),
+                      ('gear_coverage_config.lua books', gear_coverage_bases())):
+        for iid, (slot, lv) in rows.items():
+            if iid not in out:
+                out[iid] = (slot, lv, src)
+            elif out[iid][1] is None and lv is not None:
+                out[iid] = (out[iid][0], lv, out[iid][2])
+    return out
+
+
 def store_ids():
     text = read(os.path.join(DATA, 'scripts', 'chaos', 'shop_config.lua'))
     ids = {int(x) for x in re.findall(r'kind\s*=\s*"item"\s*,\s*id\s*=\s*(\d+)', text)}
@@ -493,6 +542,19 @@ def build():
             e['fixed'] = o['price']
         if o['cat'] in ('gem', 'support', 'charm', 'currency', 'key', 'bound', 'broker', 'unique'):
             e['lootable'] = True  # Chaos loot layer, rewards and pouches: in scope for coverage
+    # wearable bases the Chaos layers drop or give (the class loot rows, the Gambler's crates): the snapshot is of the
+    # stock monsters' loot, so these have no row; they are priced as equipment by their level requirement, and the
+    # lootable flag puts them under the coverage rule (check(): lootable and no price fails)
+    for iid, (slot, lv, src) in drop_sources().items():
+        e = entry(iid)
+        e['lootable'] = True
+        if e['src'] == '' and e['cat'] == 'material':
+            e.update(cat='equip', slot=slot, level=lv or 0, src=src)
+        elif e['cat'] == 'equip':
+            if not e['slot']:
+                e['slot'] = slot
+            if not e['level'] and lv:
+                e['level'] = lv
     for iid in store:
         entry(iid)['cat'] = 'store'
     for iid in COINS:
@@ -848,6 +910,15 @@ def check(table, uq, recipes):
         e = table.get(int(r['server_id']))
         if ex.get('sell') and e and e['price'] != int(ex['sell']):
             bad.append('item %s: the csv sells it for %s, the table for %d (change the csv)' % (r['server_id'], ex['sell'], e['price']))
+    # every wearable base the Chaos layers drop or give must have a price (the Auto Seller keeps an unpriced item as
+    # "noPrice"): the class loot rows, the Gambler's pool, the spellbook list of the gear coverage; a unique is exempt
+    # (never sold to an NPC), so is anything in an unsellable category
+    for iid, (slot, lv, src) in sorted(drop_sources().items()):
+        e = table.get(iid)
+        if e is None:
+            bad.append('item %d (%s): not in the price table' % (iid, src))
+        elif e['cat'] not in UNSELLABLE and e['price'] <= 0:
+            bad.append('item %d (%s): drops or is given by the Chaos layers and has no price' % (iid, src))
     # the Auto Seller's flat table must be this table
     if os.path.exists(OUT_SELL):
         flat = {int(k): int(v) for k, v in re.findall(r'\[(\d+)\]\s*=\s*(\d+)', read(OUT_SELL))}
