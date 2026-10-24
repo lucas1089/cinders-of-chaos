@@ -772,8 +772,10 @@ jobs:
           mkdir -p "$M/data"
           cp -al "$P/server/data/world" "$M/world"
           cp -al "$P/mapeditor/data/1098" "$M/data/1098"
-          for f in Tibia.dat Tibia.spr items.otb items.xml creatures.xml; do
-            test -s "$M/data/1098/$f" || { echo "::error::map files: no data/1098/$f"; exit 1; }
+          # the editor's client versions list (10.98: otb, otbm 3, dat 0x42A3, spr 0x57BBD603), for editors that need it
+          cp -al "$P/mapeditor/data/clients.xml" "$M/data/clients.xml"
+          for f in 1098/Tibia.dat 1098/Tibia.spr 1098/items.otb 1098/items.xml 1098/creatures.xml 1098/tibia.otfi clients.xml; do
+            test -s "$M/data/$f" || { echo "::error::map files: no data/$f"; exit 1; }
           done
           ls "$M"/world/*.otbm >/dev/null || { echo "::error::map files: no .otbm in world/"; exit 1; }
           crlf chaos/tools/windows/mapfiles-README.txt "$M/README.txt"
@@ -1206,7 +1208,7 @@ jobs:
             line CindersOfChaos-Windows.zip "the whole game on one Windows PC: server, client, portable MariaDB, map editor; start-server.bat, then start-client.bat (test accounts, local play)."
             line CindersOfChaos-Client-Windows.zip "the Windows client alone (Chaos.exe), connects to $SERVER_HOST."
             line CindersOfChaos-Server-Windows.zip "the Windows server alone: ChaosServer.exe, portable MariaDB, start-server.bat / stop-server.bat."
-            line CindersOfChaos-MapFiles.zip "the map files alone for a 10.98 map editor: the .otbm with its spawns and houses, Tibia.dat / Tibia.spr, items.otb / items.xml, creatures.xml (no editor)."
+            line CindersOfChaos-MapFiles.zip "the map files alone for a 10.98 map editor: the .otbm with its spawns and houses, Tibia.dat / Tibia.spr, items.otb / items.xml, creatures.xml, tibia.otfi, clients.xml (no editor)."
             line CindersOfChaos-Server-Linux.tar.gz "the Linux server (Ubuntu 22.04+, Debian 12+) with its own MariaDB: ./start-server.sh."
             line CindersOfChaos-Client-Linux.tar.gz "the Linux client (Ubuntu 22.04+, Debian 12+): ./run-client.sh, connects to $SERVER_HOST."
             echo
