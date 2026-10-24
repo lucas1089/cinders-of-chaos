@@ -25,7 +25,8 @@
 #   server        Linux job: tools/windows/prepare_server.sh (engine patches, config.lua, the map master over the base
 #                 map, install_all.py, sql-setup/)
 #   engine        Windows job: the patched engine built with MSVC + vcpkg (x64-windows, the libraries the Linux build was
-#                 checked with: Boost 1.83, fmt 9.1) -> ChaosServer.exe + DLLs
+#                 checked with: Boost 1.83, fmt 9.1) -> ChaosServer.exe + DLLs; it makes the patched source itself
+#                 (base src/ + tools/windows/apply_engine_patches.sh), so it runs beside the server job
 #   client        Windows job: base client + client/base-patches + client/overlay (client/tools/assemble_client.sh), built
 #                 like windows-client.yml -> Chaos.exe
 #   package       Linux job: everything above + portable MariaDB + the .bat files -> the three Windows downloads
@@ -162,7 +163,8 @@ jobs:
 
   engine:
     name: Engine (MSVC, vcpkg x64-windows, v142 libraries)
-    needs: server
+    # no needs: server. It makes the patched engine source itself (base server src/ + server/src-patches/, the same
+    # tools/windows/apply_engine_patches.sh the server job runs), so it starts at once and not after the server folder
     # Visual Studio 2022 image: it also carries the VS 2019 toolset (v142) the library builds use (see the triplet below)
     runs-on: windows-2022
     timeout-minutes: 150
@@ -170,14 +172,45 @@ jobs:
       VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}\vcpkg_cache
       VCPKG_BINARY_SOURCES: "clear;files,${{ github.workspace }}\\vcpkg_cache,readwrite"
     steps:
-      - name: Get the server folder
+      # the patches are plain unified diffs with LF line endings; a CRLF checkout would make them fail to apply
+      - name: Keep line endings as they are
         shell: bash
-        run: gh release download "$PKG_TAG" -R "$GITHUB_REPOSITORY" -p server.tar --clobber
+        run: git config --global core.autocrlf false
 
-      - name: Unpack the engine source
+      - name: Check out Cinders of Chaos
+        uses: actions/checkout@v4
+        with:
+          path: chaos
+
+      - name: Check out the assets
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.ASSETS_REF }}
+          path: assets
+          sparse-checkout: |
+            server
+            SHA256SUMS.parts
+          sparse-checkout-cone-mode: true
+
+      - name: Make the engine source (base server src + server/src-patches)
         shell: bash
         run: |
-          tar -xf server.tar server/CMakeLists.txt server/cmake server/src
+          (cd assets && sha256sum --ignore-missing -c SHA256SUMS.parts)
+          mkdir base
+          # only what the build reads; when the archive's layout does not match the patterns, unpack all of it
+          tar -xJf assets/server/base-server.tar.xz -C base --wildcards --no-wildcards-match-slash \
+            '*/CMakeLists.txt' '*/cmake' '*/src' || true
+          if ! compgen -G 'base/*/src' > /dev/null || ! compgen -G 'base/*/CMakeLists.txt' > /dev/null; then
+            rm -rf base && mkdir base
+            tar -xJf assets/server/base-server.tar.xz -C base
+          fi
+          mv base/*/ server  # the archive holds one folder: the base server
+          # the same patches, in the same order, as the server job (prepare_server.sh); they touch src/ only
+          bash chaos/tools/windows/apply_engine_patches.sh server
+
+      - name: Add the vcpkg manifest, triplet and CMake changes
+        shell: bash
+        run: |
           cat > server/vcpkg.json <<EOF
           {
             "name": "chaos-server",
@@ -451,8 +484,16 @@ jobs:
       - name: Get the parts
         run: |
           mkdir -p parts
-          gh release download "$PKG_TAG" -R "$GITHUB_REPOSITORY" -D parts \
-            -p server.tar -p server-exe.tar -p client.tar --clobber
+          # one download per file, side by side (gh fetches the patterns of one call one after the other)
+          pids=()
+          for f in server.tar server-exe.tar client.tar; do
+            gh release download "$PKG_TAG" -R "$GITHUB_REPOSITORY" -D parts -p "$f" --clobber &
+            pids+=($!)
+          done
+          rc=0
+          for pid in "${pids[@]}"; do wait "$pid" || rc=1; done
+          [ "$rc" -eq 0 ] || { echo "::error::a download from the release failed"; exit 1; }
+          for f in server.tar server-exe.tar client.tar; do test -s "parts/$f"; done
 
       - name: Put the package together
         env:
@@ -460,6 +501,10 @@ jobs:
         run: |
           set -euo pipefail
           P=CindersOfChaos
+          # the MariaDB download runs while the rest is put together; it is waited for where it is unpacked
+          curl -fsSL --retry 3 -o mariadb.zip \
+            "https://archive.mariadb.org/mariadb-${MARIADB_VERSION}/winx64-packages/mariadb-${MARIADB_VERSION}-winx64.zip" &
+          curl_pid=$!
           mkdir -p "$P"
           tar -xf parts/server.tar -C "$P"
           tar -xf parts/client.tar -C "$P"
@@ -470,14 +515,17 @@ jobs:
           (cd assets && sha256sum --ignore-missing -c SHA256SUMS.parts)
           mkdir -p things "$P/client/data/things/1098"
           # the pair is one archive cut in 95 MB parts since pair 36 (GitHub refuses files over 100 MB)
-          cat assets/things/things-1098.tar.xz.part* | xz -d | tar -xf - -C things
+          cat assets/things/things-1098.tar.xz.part* | xz -d -T0 | tar -xf - -C things
           test -f things/Tibia.dat && test -f things/Tibia.spr || { echo "::error::the pair archive has no Tibia.dat / Tibia.spr"; exit 1; }
           # the client gets the dat and the spr as sprite shards (client/MANIFEST.md "Sharded sprites"): the single spr
           # is over 1 GiB since pair 37, which the updater of every client build refuses; the shards are byte-checked
           # against it. The single Tibia.spr goes to the map editor only (below).
           find things -maxdepth 1 -type f ! -name Tibia.spr -exec cp -t "$P/client/data/things/1098/" {} +
           python3 -I chaos/client/tools/sprites/spr_shards.py split things/Tibia.spr "$P/client/data/things/1098"
-          python3 -I chaos/client/tools/sprites/spr_shards.py verify things/Tibia.spr "$P/client/data/things/1098"
+          # the byte check reads the single spr and every shard; it runs beside the next steps and is waited for before
+          # the single spr moves to the map editor (below)
+          python3 -I chaos/client/tools/sprites/spr_shards.py verify things/Tibia.spr "$P/client/data/things/1098" &
+          verify_pid=$!
 
           # signed updater (client/MANIFEST.md "Signed updater"): turn it on when both inputs are set, and check that
           # make_update_manifest.py accepts this exact client folder, dat and shards included (unsigned dry run; a
@@ -499,8 +547,7 @@ jobs:
           python3 -I chaos/tools/windows/rme_creatures.py "$P/mapeditor/data/1098/creatures.xml" \
             chaos/server/data/monster/monsters/chaos
 
-          curl -fsSL --retry 3 -o mariadb.zip \
-            "https://archive.mariadb.org/mariadb-${MARIADB_VERSION}/winx64-packages/mariadb-${MARIADB_VERSION}-winx64.zip"
+          wait "$curl_pid"
           unzip -q mariadb.zip
           mv "mariadb-${MARIADB_VERSION}-winx64" "$P/mariadb"
           # the zip's test suite, debug symbols and static libraries are not needed to run it
@@ -524,6 +571,7 @@ jobs:
           # ---- Cinders of Chaos client packs (client/BASE.md "Client packs") ----
           # The shipped client folder is just the exe and one encrypted pack. The map editor keeps its own copy of the
           # pair, the single Tibia.spr (it cannot read shards), since the client no longer ships data/things loose.
+          wait "$verify_pid"  # fails the step (set -e) when the shards differ from the single spr
           find things -maxdepth 1 -type f -name 'Tibia.*' -exec mv -t "$P/mapeditor/data/1098/" {} +
           test -f "$P/mapeditor/data/1098/Tibia.spr"
           rm -rf things
@@ -559,20 +607,28 @@ jobs:
           # The separate client download is the exe and one encrypted pack (client/BASE.md "Client packs"): configure
           # the unpacked tree (server host, RSA key) kept by the package step, then pack it and strip the loose files.
           # No README.txt / BUILD_INFO.txt in the client folder.
+          # the client folder (the long part: hashing and encrypting the pack) is made beside the server folder
           C=CindersOfChaos-Client
-          cp -a clienttree "$C"
-          python3 -I chaos/client/tools/set_server_host.py "$C" "$SERVER_HOST" --site-url "$SITE_URL"
-          python3 -I chaos/client/tools/set_rsa_key.py "$C" --from-env CHAOS_RSA_PUBLIC \
-            $([ "$ALLOW_DEV_KEY" = true ] && echo --allow-default)
-          python3 -I chaos/client/tools/make_update_manifest.py build "$C" --dry-run --min-package "$CLIENT_BUILD"
-          python3 -I chaos/client/tools/pack_client.py build "$C" "$C.pack"
-          rm -rf "$C/init.lua" "$C/data" "$C/modules" "$C/mods" "$C/layouts"
-          mv "$C.pack" "$C/chaos.pack"
-          ls -la "$C"
+          (
+            set -euo pipefail
+            cp -a clienttree "$C"
+            python3 -I chaos/client/tools/set_server_host.py "$C" "$SERVER_HOST" --site-url "$SITE_URL"
+            python3 -I chaos/client/tools/set_rsa_key.py "$C" --from-env CHAOS_RSA_PUBLIC \
+              $([ "$ALLOW_DEV_KEY" = true ] && echo --allow-default)
+            python3 -I chaos/client/tools/make_update_manifest.py build "$C" --dry-run --min-package "$CLIENT_BUILD"
+            python3 -I chaos/client/tools/pack_client.py build "$C" "$C.pack"
+            rm -rf "$C/init.lua" "$C/data" "$C/modules" "$C/mods" "$C/layouts"
+            mv "$C.pack" "$C/chaos.pack"
+            ls -la "$C"
+          ) &
+          client_pid=$!
 
           S=CindersOfChaos-Server
           mkdir "$S"
-          cp -a "$P/server" "$P/mariadb" "$P/start-server.bat" "$P/stop-server.bat" "$S/"
+          # hard links instead of copies (same files, same disk); config.lua is edited below, so it gets a real copy
+          # and the full package keeps its own
+          cp -al "$P/server" "$P/mariadb" "$P/start-server.bat" "$P/stop-server.bat" "$S/"
+          cp --remove-destination "$P/server/config.lua" "$S/server/config.lua"
           python3 -I - "$S/server/config.lua" "$SERVER_HOST" <<'PY'
           import re, sys
           path, host = sys.argv[1], sys.argv[2]
@@ -585,17 +641,29 @@ jobs:
           PY
           crlf chaos/tools/windows/server-README.txt "$S/README.txt"
           info "server host: $SERVER_HOST" "mariadb: $MARIADB_VERSION" > "$S/BUILD_INFO.txt"
+          wait "$client_pid"  # fails the step (set -e) when the client folder failed
           du -sh "$C" "$S"
 
       - name: Publish the Windows downloads on the release
         run: |
           set -euo pipefail
-          zip -qr -9 CindersOfChaos-Windows.zip CindersOfChaos
-          zip -qr -9 CindersOfChaos-Client-Windows.zip CindersOfChaos-Client
-          zip -qr -9 CindersOfChaos-Server-Windows.zip CindersOfChaos-Server
-          ls -la CindersOfChaos-*.zip
-          gh release upload "$PKG_TAG" CindersOfChaos-Windows.zip CindersOfChaos-Client-Windows.zip \
-            CindersOfChaos-Server-Windows.zip -R "$GITHUB_REPOSITORY" --clobber
+          # The three zips are made side by side, each uploaded as soon as it is done. Level 1 (the files inside are the
+          # same at any level): the encrypted chaos.pack and archives do not compress, the rest barely gains from -9.
+          pack() {  # zip name, folder
+            zip -qr -1 -n .pack:.zip:.gz:.xz:.7z "$1" "$2"
+            ls -la "$1"
+            gh release upload "$PKG_TAG" "$1" -R "$GITHUB_REPOSITORY" --clobber
+          }
+          pids=()
+          pack CindersOfChaos-Windows.zip CindersOfChaos &
+          pids+=($!)
+          pack CindersOfChaos-Client-Windows.zip CindersOfChaos-Client &
+          pids+=($!)
+          pack CindersOfChaos-Server-Windows.zip CindersOfChaos-Server &
+          pids+=($!)
+          rc=0
+          for pid in "${pids[@]}"; do wait "$pid" || rc=1; done
+          [ "$rc" -eq 0 ] || { echo "::error::a Windows download failed to zip or upload"; exit 1; }
 
   engine-linux:
     name: Linux server (engine on Ubuntu 22.04, portable MariaDB)

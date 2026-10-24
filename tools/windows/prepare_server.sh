@@ -23,14 +23,7 @@ WIN="$REPO/tools/windows"
 [ -f "$SERVER/config.lua" ] && [ -d "$SERVER/src" ] || { echo "not a base server folder: $SERVER" >&2; exit 1; }
 
 echo "== engine patches"
-for p in "$REPO"/server/src-patches/*.patch; do
-  if patch -d "$SERVER" -p1 -R --dry-run -s -f < "$p" > /dev/null 2>&1; then
-    echo "  $(basename "$p") (already applied)"
-  else
-    patch -d "$SERVER" -p1 -s -f --no-backup-if-mismatch < "$p"
-    echo "  $(basename "$p")"
-  fi
-done
+bash "$WIN/apply_engine_patches.sh" "$SERVER"
 
 echo "== config.lua"
 python3 -I - "$SERVER/config.lua" <<'PY'
