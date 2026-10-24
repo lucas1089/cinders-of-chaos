@@ -218,9 +218,9 @@ do
   local at = firstLevel(m)
   local castAt = function(level) return function(id) return at[id] ~= nil and at[id] <= level end end
   -- the level-up check keeps the preset: no top-up
-  local bare = A.select(1, 150, castAt(150), { topUp = false })
-  eq(#bare.ids, #A.presetFor(1, 150).spells, 'level-up check: preset only, no top-up')
-  local clicked = A.select(1, 150, castAt(150))
+  local bare = A.select(1, 60, castAt(60), { topUp = false })
+  eq(#bare.ids, #A.presetFor(1, 60).spells, 'level-up check: preset only, no top-up')
+  local clicked = A.select(1, 60, castAt(60))
   ok(#clicked.ids > #bare.ids, 'a click tops up')
   -- a rotation the button wrote at 18, the player reaches 20 (a new spell, 200)
   local sel18 = A.select(1, 18, castAt(18), { topUp = false })
@@ -280,6 +280,45 @@ do
   eq(A.dropForeignHeals(slots, classOk), 1, 'one heal slot emptied')
   eq(slots[1].id .. ',' .. slots[2].id .. ',' .. slots[2].percent, '10,0,65', 'the slot is emptied, its percent kept')
   eq(A.dropForeignHeals(slots, classOk), 0, 'idempotent')
+end
+
+-- the Thief line's attack spells of the O133 kit (owner 2026-10-24: Auto setup did not add Gutting Slash, Razor Rain,
+-- Venom Spiral, Crescent Cut and Last Breath): the data knows each with its area rule, and a Thief who can cast
+-- everything gets them, up to the five slots
+do
+  local rules = { [45] = false, [56] = true, [57] = false, [62] = true, [80] = false }
+  for id, area in pairs(rules) do
+    ok(D.spells[id], 'spell ' .. id .. ' is in the rotation data')
+    eq(D.spells[id] and D.spells[id].area, area, 'spell ' .. id .. ': area rule')
+  end
+  eq(D.spells[45].words, 'kah vorn kaen', 'Gutting Slash words')
+  for _, c in pairs(D.classes) do
+    for _, id in ipairs(c.extras or {}) do ok(D.spells[id], c.name .. ': extra ' .. id .. ' known') end
+  end
+  local thief = D.classes[11]
+  local thiefSpells = {}
+  for _, p in ipairs(thief.presets) do for _, id in ipairs(p.spells) do thiefSpells[id] = true end end
+  for _, id in ipairs(thief.extras or {}) do thiefSpells[id] = true end
+  for _, id in ipairs({ 45, 56, 57, 62, 80 }) do
+    ok(thiefSpells[id], 'the Thief reaches ' .. id)
+  end
+  local all = function(id) return thiefSpells[id] == true end
+  local sel = A.select(11, 230, all)
+  eq(#sel.ids, A.MAX_SPELLS, 'a level 230 Thief gets five spells')
+  local got = {}
+  for _, id in ipairs(sel.ids) do got[id] = true end
+  ok(got[80] and got[56], 'Last Breath and Razor Rain are in the level 230 Thief rotation')
+  -- level 100: Gutting Slash (unlocked at 100) is in the preset, the Thief is not left with three spells
+  local at100 = A.select(11, 100, function(id) return thiefSpells[id] and (D.spells[id] and id ~= 56 and id ~= 57 and id ~= 62 and id ~= 80) end)
+  local g100 = {}
+  for _, id in ipairs(at100.ids) do g100[id] = true end
+  ok(g100[45], 'Gutting Slash is in the level 100 Thief rotation')
+  ok(#at100.ids >= 4, 'a level 100 Thief has four spells or more')
+  -- the area spells sit above the single hits
+  local seenSingle = false
+  for _, id in ipairs(sel.ids) do
+    if D.spells[id].area then ok(not seenSingle, 'area spells first') else seenSingle = true end
+  end
 end
 
 if fails > 0 then

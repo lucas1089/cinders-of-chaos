@@ -117,6 +117,9 @@ jobs:
           pip install --quiet pillow
           python3 client/tools/gen_spell_data.py  # not -I: isolated mode ignores the user site where pip put Pillow
           git diff --exit-code client/overlay/modules/game_chaosspells/spelldata.lua
+          # every spell of the data has a drawn cell in the three spell icon sheets (O157)
+          python3 -I tools/ci/check_spell_icons.py
+          python3 -I tools/ci/check_spell_icons_test.py
 
       - name: Weapon damage per second across styles (weapon_sim.py; the generated weapon_balance_config.lua) and melee items for every melee class
         run: |
@@ -131,6 +134,9 @@ jobs:
           python3 -I server/tools/rotation_sim_test.py
           python3 -I server/tools/rotation_sim.py --check
           python3 -I server/tools/rotation_sim.py --ladder --check  # attack cooldowns 2, 4, 6 s ... per class
+          # every attack spell of the kit and of every class is known to Auto setup, area / single rule from its shape (O157)
+          python3 -I tools/ci/check_rotation_kit.py
+          python3 -I tools/ci/check_rotation_kit_test.py
 
       - name: Loot by monster level keeps gold and items per hour of every band (loot_model.lua; loot_bands.py)
         run: |

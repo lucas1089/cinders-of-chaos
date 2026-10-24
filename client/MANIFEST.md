@@ -206,6 +206,8 @@ use them), are marked `notOnServer` and leave the spell list (`hideRemovedSpells
 own id lists (`spelldata.json`) are remapped to the server ids, and vigils (toggles), Town Portal and Flickerdash are not
 offered to the helper. Base patch 0052 (`BASE.md`) uses both.
 
+Auto setup's rotation (`autorotation_data.lua`, written by `server/tools/rotation_sim.py --write`, O157): `spells` lists every attack spell the rotation can use (name, words, `area`), each class has its presets (free slots filled up to five by `fill_slots`) and `extras`, the attack spells no preset holds; `ChaosAutoRotation.select` tops a short preset up from the other presets, then the extras. `tools/ci/check_rotation_kit.py` fails when a kit spell is unknown or has the wrong area rule, `tools/ci/check_spell_icons.py` when a spell has no drawn icon cell in the three spell sheets.
+
 ## Helper cooldown channels (new, `game_helpertimers`, base patch 0062)
 
 `game_helpertimers` (`helpertimers.lua`, global `ChaosHelperTimers`, not sandboxed; `helpertimers_test.lua`) keeps the
