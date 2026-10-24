@@ -543,7 +543,7 @@ function gm.onSay(player, words, param)
 	end
 	local name, what, mode = param:match("^%s*([^,]+)%s*,%s*([%w_]+)%s*,?%s*(%w*)%s*$")
 	if not name then
-		player:sendTextMessage(MESSAGE_INFO_DESCR, "Usage: /transmog <character>, <set key | all | look id>[, revoke]")
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Usage: /transmog <character>, <set key | all | look id>[, revoke]"))
 		return false
 	end
 	-- staff never give value (docs/GM_HANDBOOK.md section 2): an unlock needs an administrator, revoking a set does not
@@ -558,7 +558,7 @@ function gm.onSay(player, words, param)
 		result.free(id)
 	end
 	if not accountId then
-		player:sendTextMessage(MESSAGE_INFO_DESCR, "No character named " .. name .. ".")
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "No character named %s.", name))
 		return false
 	end
 	local text

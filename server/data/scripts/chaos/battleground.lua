@@ -1637,7 +1637,7 @@ function talk.onSay(player, words, param)
 	elseif cmd == "min" then
 		local n = tonumber(arg)
 		B.minOverride = (n and n >= 1 and n < C().teamMin) and math.floor(n) or nil
-		player:sendTextMessage(MESSAGE_INFO_DESCR, "Battleground: smallest team now " .. MC().teamMin .. " (TEST ONLY, memory).")
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Battleground: smallest team now %s (TEST ONLY, memory).", MC().teamMin))
 	elseif cmd == "off" or cmd == "on" then
 		C().enabled = cmd == "on"
 		player:sendTextMessage(MESSAGE_INFO_DESCR, "Battleground queue " .. (C().enabled and "open." or "closed."))

@@ -309,7 +309,7 @@ end
 function S.join(player, mode)
 	local cfg = C()
 	if not cfg.modes[mode] then
-		player:sendCancelMessage("Arena modes: " .. table.concat(cfg.modeOrder, ", ") .. ".")
+		player:sendCancelMessage(Chaos.t(player, "Arena modes: %s.", table.concat(cfg.modeOrder, ", ")))
 		return false
 	end
 	local members = {player}

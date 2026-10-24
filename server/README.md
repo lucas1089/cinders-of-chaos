@@ -22044,6 +22044,16 @@ not counted).
 
 Also converted in the last batch: the store's coin take-back line and Everfull Ration refusals, the Infinity Tower run end and group refusals, inspect privacy, Monk stun lines, legendary monster alerts, multi-client refusal, party invitation and removal lines, map discoveries, report receipts, season rewards, siege obelisk, Cinderheart refusal, rarity autoloot, guild portal, guild boss spoils, area portals, new outfits, Chaos Pact status, event login lines and item set summary.
 
+Staff command replies (O147): the sentence replies and "Usage:" lines of the talkactions (`/achievements`, `/atlas`, `/charm`,
+`/cosmetic`, `/exclusive`, `/faction`, `/professions`, `/season`, `/journey`, `/coins`, `/transmog`, `/instances`, `/pact`,
+`/mentor`, `/referral`, `/orbx`, `/worldboss`, the mute line and more) go through `Chaos.t`. Still English on purpose: the
+"/command ..." syntax lines and the raw status dumps (daily, gamble stock, rift slots, market orders, candlemarks, pact,
+season pass, leaderboard, records, patch notes, arena and battleground status, telemetry, poi, itemfinder, spellbook,
+supports, antibot, areagen). Cores that return a refusal text: `party_finder_core.lua` (`K.reasons`, `K.closeText`:
+`party_finder.lua` translates on display, a notice may be `{key, args...}`), `hideout_core.lua` (`hideout.lua` translates
+when it sends) and `townportal_core.lua` (`K.blockReason(f, T)` takes the translator); other cores (guild, market, shop
+payments, buildshare, reports, salvage, conquest and more) still return English.
+
 Left: item descriptions and mail texts built in cores (one text for every viewer), party loot lines
 (`broadcastPartyLoot` sends one text to the party: English), monster speech, reasons that game logic reads as text
 (the season pass's "no room" claim refusal, the raid's party size refusal: English), the season pass window's reward

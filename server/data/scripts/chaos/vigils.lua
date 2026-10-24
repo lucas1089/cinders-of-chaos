@@ -11,6 +11,12 @@
 --   * ChaosVigils.buffItem: the buff bar rows (data/lib/chaos_buffs.lua source "vigils", texts in vigils_core.lua).
 -- Vigils that no longer fit (a unique taken off) are switched off, the last first, with a message.
 
+if not (Chaos and Chaos.t) then
+	if not Chaos then
+		dofile("data/scripts/chaos/chaos_constants.lua")
+	end
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
@@ -147,8 +153,8 @@ local function holderOf(player, t)
 		player:setStorageValue(storage, fitted)
 		for _, key in ipairs(V.keys(mask)) do
 			if not V.has(fitted, key) then
-				player:sendTextMessage(MESSAGE_INFO_DESCR or 1, V.byKey[key].def.name ..
-					" ends: your vigils would reserve more than all of your " .. (mods.tithe and "health." or "mana."))
+				player:sendTextMessage(MESSAGE_INFO_DESCR or 1, Chaos.t(player, "%s ends: your vigils would reserve more than all of your %s",
+					V.byKey[key].def.name, mods.tithe and Chaos.t(player, "health.") or Chaos.t(player, "mana.")))
 			end
 		end
 		mask = fitted

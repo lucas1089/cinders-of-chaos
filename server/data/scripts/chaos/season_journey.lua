@@ -697,7 +697,7 @@ function talk.onSay(player, words, param)
 		if not p then
 			player:sendTextMessage(MESSAGE_INFO_DESCR, why)
 		elseif not cfg.stats[args[2]] then
-			player:sendTextMessage(MESSAGE_INFO_DESCR, "Unknown journey stat " .. args[2] .. ".")
+			player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Unknown journey stat %s.", args[2]))
 		else
 			local st = J.st[p:getGuid()]
 			if st then
@@ -718,7 +718,7 @@ function talk.onSay(player, words, param)
 			db.query(string.format("DELETE FROM `%s` WHERE `season` = %d AND `player_id` = %d", T.entries, st.season, p:getGuid()))
 			J.st[p:getGuid()] = nil
 			J.load(p)
-			player:sendTextMessage(MESSAGE_INFO_DESCR, "Journey reset (rewards already given stay): " .. status(player, p))
+			player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Journey reset (rewards already given stay): %s", status(player, p)))
 		end
 	else
 		player:sendTextMessage(MESSAGE_INFO_DESCR, "/journey status [name] | stat name, stat, value | reset name")

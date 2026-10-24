@@ -380,8 +380,7 @@ function gmTalk.onSay(player, words, param)
 	end
 	local name, key, mode = param:match("^%s*([^,]+)%s*,%s*([%w_]+)%s*,?%s*(%w*)%s*$")
 	if not name or not cfg().classes[key or ""] then
-		player:sendTextMessage(MESSAGE_INFO_DESCR, "Usage: /classunlock <character>, <" .. table.concat(K.lockedClasses(), "|")
-			.. ">[, revoke]")
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Usage: /classunlock <character>, <%s>[, revoke]", table.concat(K.lockedClasses(), "|")))
 		return false
 	end
 	local accountId
@@ -391,7 +390,7 @@ function gmTalk.onSay(player, words, param)
 		result.free(id)
 	end
 	if not accountId then
-		player:sendTextMessage(MESSAGE_INFO_DESCR, "No character named " .. name .. ".")
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "No character named %s.", name))
 		return false
 	end
 	-- staff never give value (docs/GM_HANDBOOK.md section 2): an unlock needs an administrator, a revoke does not
@@ -404,8 +403,8 @@ function gmTalk.onSay(player, words, param)
 	else
 		ok, err = U.grant(accountId, key, "gm")
 	end
-	player:sendTextMessage(MESSAGE_INFO_DESCR, ok and string.format("%s %s for the account of %s.",
-		mode == "revoke" and "Removed" or "Unlocked", cfg().classes[key].name, name) or err)
+	player:sendTextMessage(MESSAGE_INFO_DESCR, ok and (mode == "revoke" and Chaos.t(player, "Removed %s for the account of %s.", cfg().classes[key].name, name)
+		or Chaos.t(player, "Unlocked %s for the account of %s.", cfg().classes[key].name, name)) or err)
 	return false
 end
 gmTalk:separator(" ")

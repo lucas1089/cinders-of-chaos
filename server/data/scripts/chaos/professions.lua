@@ -1024,7 +1024,7 @@ function talk.onSay(player, words, param)
 		return false
 	end
 	if param:match("^%s*nodes%s*$") then
-		player:sendTextMessage(MESSAGE_INFO_DESCR, P.placeNodes() .. " gathering nodes on the map.")
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "%s gathering nodes on the map.", P.placeNodes()))
 		return false
 	end
 	local name, key, value = param:match("^%s*([^,]+),%s*(%w+),%s*(%d+)%s*$")
@@ -1037,7 +1037,7 @@ function talk.onSay(player, words, param)
 	if key then
 		local e = S.levels[key]
 		if not e then
-			player:sendTextMessage(MESSAGE_INFO_DESCR, "Unknown profession " .. key .. ".")
+			player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Unknown profession %s.", key))
 			return false
 		end
 		e.level, e.xp, e.dirty = math.max(1, math.min(cfg.maxLevel, tonumber(value))), 0, true

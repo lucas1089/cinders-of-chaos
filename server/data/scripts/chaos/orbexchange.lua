@@ -27,6 +27,12 @@
 --                     ...} | mine {open, closed, fills, owed} | wallet {gold, have} | done {what, text} | error {text}
 -- Lua 5.1 / LuaJIT compatible.
 
+if not (Chaos and Chaos.t) then
+	if not Chaos then
+		dofile("data/scripts/chaos/chaos_constants.lua")
+	end
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
@@ -1109,7 +1115,7 @@ function staffCmd.onSay(player, words, param)
 	end
 	local p = tostring(param or ""):gsub("^%s+", "")
 	if p == "sweep" then
-		player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("Orb Exchange sweep: %d orders expired, %d orders of ended seasons merged.", X.sweep(),
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Orb Exchange sweep: %d orders expired, %d orders of ended seasons merged.", X.sweep(),
 			X.mergeEndedSeasons()))
 	elseif p:match("^info") then
 		local o = orderById(C.int(p:match("(%d+)")) or 0)
@@ -1118,7 +1124,7 @@ function staffCmd.onSay(player, words, param)
 			o.expires - now()) or "No such order.")
 	elseif p == "escrow" then
 		for _, r in ipairs(X.escrowReport()) do
-			player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("%s: %s in %d orders", r.give_asset, C.money(r.n), r.c))
+			player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "%s: %s in %d orders", r.give_asset, C.money(r.n), r.c))
 		end
 	else
 		player:sendTextMessage(MESSAGE_INFO_DESCR, "/orbx sweep | info <order id> | escrow")

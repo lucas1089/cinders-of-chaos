@@ -533,8 +533,8 @@ local function pullToTemple(player, reason)
 	player:teleportTo(pos)
 	pos:sendMagicEffect(CONST_ME_TELEPORT or CONST_ME_MAGIC_BLUE)
 	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, reason == "pingloss" and
-		"Hardcore: your connection stalled, you were pulled to the temple." or
-		"Hardcore: your connection was lost, you were pulled to the temple.")
+		Chaos.t(player, "Hardcore: your connection stalled, you were pulled to the temple.") or
+		Chaos.t(player, "Hardcore: your connection was lost, you were pulled to the temple."))
 	log(string.format("%s pulled to the temple (%s)", player:getName(), reason))
 end
 

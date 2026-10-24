@@ -24,6 +24,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 dofile("data/scripts/chaos/party_finder_core.lua")
 
 Chaos.partyFinderConfig = Chaos.partyFinderConfig or dofile("data/scripts/chaos/party_finder_config.lua")
@@ -167,6 +170,11 @@ local function notice(player, text, kind, console)
 	if not player then
 		return
 	end
+	if type(text) == "table" then
+		text = Chaos.t(player, (table.unpack or unpack)(text))
+	else
+		text = Chaos.t(player, text)
+	end
 	send(player, "notice", {text = text, kind = kind or "info"})
 	if console ~= false then
 		player:sendTextMessage(kind == "error" and MESSAGE_STATUS_SMALL or MESSAGE_INFO_DESCR, text)
@@ -217,11 +225,13 @@ function PF.notifyClosed(L)
 	end
 	local why = K.closeText[L.closed] or L.closed
 	if L.closed ~= "closed" and L.closed ~= "offline" then
-		notice(online(L.leader), string.format("Your Party Finder listing (%s) closed: %s.", titleOf(L), why))
+		local lp = online(L.leader)
+		notice(lp, {"Your Party Finder listing (%s) closed: %s.", titleOf(L), Chaos.t(lp, why)})
 	end
 	for _, guid in ipairs(L.appOrder) do
 		local app = L.apps[guid]
-		notice(online(app), string.format("The group of %s (%s) closed: %s.", L.leader.name, titleOf(L), why), "info", false)
+		local ap = online(app)
+		notice(ap, {"The group of %s (%s) closed: %s.", L.leader.name, titleOf(L), Chaos.t(ap, why)}, "info", false)
 	end
 	PF.dirty = true
 end
@@ -241,9 +251,9 @@ function PF.accept(leader, id, guid)
 	local problem
 	local party = leader:getParty()
 	if not target then
-		problem = app.name .. " is not online."
+		problem = {"%s is not online.", app.name}
 	elseif target:getParty() then
-		problem = app.name .. " joined another party."
+		problem = {"%s joined another party.", app.name}
 	elseif party and party:getLeader() ~= leader then
 		problem = "You are no longer the party leader."
 	end
@@ -254,15 +264,15 @@ function PF.accept(leader, id, guid)
 		end
 	end
 	if not problem and not party:addInvite(target) then
-		problem = app.name .. " cannot be invited now."
+		problem = {"%s cannot be invited now.", app.name}
 	end
 	if problem then
 		K.inviteFailed(state, L.id, app.guid)
 		notice(leader, problem, "error")
 	else
-		notice(leader, string.format("%s was invited to your party as %s.", app.name, roleName(app.role)))
-		notice(target, string.format("%s accepted you as %s for %s: accept the party invitation.", leader:getName(),
-			roleName(app.role), titleOf(L)), "accepted")
+		notice(leader, {"%s was invited to your party as %s.", app.name, roleName(app.role)})
+		notice(target, {"%s accepted you as %s for %s: accept the party invitation.", leader:getName(),
+			roleName(app.role), titleOf(L)}, "accepted")
 	end
 	badge(L)
 	PF.dirty = true
@@ -306,11 +316,11 @@ function PF.tick()
 		for _, e in ipairs(events) do
 			PF.dirty = true
 			if e.kind == "joined" then
-				notice(leader, string.format("%s joined your group as %s.", e.member.name, roleName(e.member.role)), "info", false)
+				notice(leader, {"%s joined your group as %s.", e.member.name, roleName(e.member.role)}, "info", false)
 			elseif e.kind == "inviteExpired" then
-				notice(leader, string.format("%s did not join in time; the %s slot is open again.", e.member.name,
-					roleName(e.member.role)))
-				notice(online(e.member), "The party invitation from " .. L.leader.name .. " ran out.", "info", false)
+				notice(leader, {"%s did not join in time; the %s slot is open again.", e.member.name,
+					roleName(e.member.role)})
+				notice(online(e.member), {"The party invitation from %s ran out.", L.leader.name}, "info", false)
 			end
 		end
 		if closed then
@@ -332,13 +342,13 @@ function PF.tick()
 			notice(online(m.who), "You left the Party Finder queue: no group was found in time.")
 		elseif L then
 			local leader = online(L.leader)
-			notice(online(m.app), string.format("Quick join: you applied to %s's group (%s) as %s.", L.leader.name,
-				titleOf(L), roleName(m.app.role)))
+			notice(online(m.app), {"Quick join: you applied to %s's group (%s) as %s.", L.leader.name,
+				titleOf(L), roleName(m.app.role)})
 			if m.auto and leader then
 				PF.accept(leader, L.id, m.guid)
 			else
-				notice(leader, string.format("Quick join: %s (level %d %s) wants to join as %s.", m.app.name, m.app.level,
-					m.app.vocName or "", roleName(m.app.role)), "apply")
+				notice(leader, {"Quick join: %s (level %d %s) wants to join as %s.", m.app.name, m.app.level,
+					m.app.vocName or "", roleName(m.app.role)}, "apply")
 				badge(L)
 			end
 		end
@@ -390,11 +400,11 @@ local function handle(player, action, d)
 			return refuse(player, st)
 		end
 		local L = state.listings[tonumber(d.id)]
-		notice(player, string.format("You applied to %s's group as %s.", L.leader.name, roleName(app.role)), "info", false)
+		notice(player, {"You applied to %s's group as %s.", L.leader.name, roleName(app.role)}, "info", false)
 		local leader = online(L.leader)
 		if st == "applied" then
-			notice(leader, string.format("%s (level %d %s) applied to your group as %s.", app.name, app.level,
-				app.vocName or "", roleName(app.role)), "apply")
+			notice(leader, {"%s (level %d %s) applied to your group as %s.", app.name, app.level,
+				app.vocName or "", roleName(app.role)}, "apply")
 		end
 		badge(L)
 	elseif action == "withdraw" then
@@ -408,15 +418,15 @@ local function handle(player, action, d)
 		if not ok then
 			return refuse(player, why)
 		end
-		notice(online(app), string.format("%s declined your application.", player:getName()), "info")
+		notice(online(app), {"%s declined your application.", player:getName()}, "info")
 		badgeOf(tonumber(d.id))
 	elseif action == "queue" then
 		local q, why = K.queueJoin(state, cfg, PF.acts(), who, d.role, d.a, now)
 		if not q then
 			return refuse(player, why)
 		end
-		notice(player, string.format("Queued as %s. You will be matched with the first group that needs one.",
-			roleName(q.role)), "info", false)
+		notice(player, {"Queued as %s. You will be matched with the first group that needs one.",
+			roleName(q.role)}, "info", false)
 	elseif action == "unqueue" then
 		K.queueLeave(state, who.guid)
 	else

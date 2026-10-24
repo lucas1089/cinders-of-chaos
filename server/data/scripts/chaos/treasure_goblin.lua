@@ -716,7 +716,7 @@ function talk.onSay(player, words, param)
 		name, n = name or roll, math.min(tonumber(n) or 1, 100000)
 		local mt = MonsterType(name)
 		if not mt then
-			player:sendTextMessage(MESSAGE_INFO_DESCR, "No monster type " .. name .. ".")
+			player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "No monster type %s.", name))
 			return false
 		end
 		local hp = call(function() return mt:getMaxHealth() end) or 1000

@@ -211,8 +211,8 @@ function P.bossPrize(player, w, cfg)
 			return false
 		end
 		player:sendTextMessage(MESSAGE_EVENT_ADVANCE or MESSAGE_INFO_DESCR, text(player, K.TEXT_UNIQUE, pick.name))
-		Game.broadcastMessage("The player " .. player:getName() .. " has won the unique " .. pick.name
-			.. " from the " .. tostring(cfg.title or "boss") .. " roulette!", MESSAGE_EVENT_ADVANCE)
+		Chaos.broadcast(MESSAGE_EVENT_ADVANCE, "The player %s has won the unique %s from the %s roulette!",
+			player:getName(), pick.name, tostring(cfg.title or "boss"))
 		return true
 	elseif e.kind == "chest" and cfg.chests then
 		if not ChaosExercise then
@@ -264,8 +264,8 @@ function P.rouletteReward(playerId, config, position, label)
 		player:setStorageValue(opts.rouletteStorage, -1)
 	end
 	if K.isRare(config.prizePool, w.id, opts.rareItemChance_broadcastThreshold) then
-		Game.broadcastMessage("The player " .. player:getName() .. " has won " .. ItemType(w.id):getName() .. " from the "
-			.. tostring(label) .. " roulette!", MESSAGE_EVENT_ADVANCE)
+		Chaos.broadcast(MESSAGE_EVENT_ADVANCE, "The player %s has won %s from the %s roulette!",
+			player:getName(), ItemType(w.id):getName(), tostring(label))
 	end
 	return true
 end

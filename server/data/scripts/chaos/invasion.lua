@@ -1074,8 +1074,8 @@ giveRewards = function(mult, contrib, liberation)
 		local player = Player(e.name)
 		if player and player:getGuid() == guid and not got[guid] then
 			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, excluded[guid]
-				and "No invasion reward: another character from your connection was online during the fight."
-				or "No invasion reward: your part in the defence was too small.")
+				and Chaos.t(player, "No invasion reward: another character from your connection was online during the fight.")
+				or Chaos.t(player, "No invasion reward: your part in the defence was too small."))
 		end
 	end
 	return list

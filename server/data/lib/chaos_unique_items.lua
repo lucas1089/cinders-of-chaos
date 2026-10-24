@@ -10,6 +10,17 @@
 -- before it for nobody, after it for everyone (season.lua ChaosSeason.uniqueBlocked, asked by loot.lua).
 -- Edit freely, it is plain Lua.
 -- effect names the base scripts use and the engine lacks (chaos_effect_compat.lua): before any other script
+
+-- the text in the player's language (Chaos.t, i18n_core.lua); English where the helper is not loaded (unit tests)
+local function tr(player, key, ...)
+	if Chaos and Chaos.t then
+		return Chaos.t(player, key, ...)
+	end
+	if select("#", ...) > 0 then
+		return string.format(key, ...)
+	end
+	return key
+end
 dofile("data/lib/chaos_effect_compat.lua")
 
 ChaosUniqueItems = {
@@ -374,7 +385,7 @@ function ChaosGiveUnique(player, name)
 	end
 	ChaosMakeUnique(item)
 	if player.sendTextMessage then
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE or MESSAGE_INFO_DESCR, "You received " .. e.name .. ".")
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE or MESSAGE_INFO_DESCR, tr(player, "You received %s.", e.name))
 	end
 	return item
 end

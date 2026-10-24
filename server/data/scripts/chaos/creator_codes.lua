@@ -14,6 +14,12 @@
 -- Gods: /creatorcodes status | run   (inspect, or run a round now). See server/README.md "Creator codes".
 -- Lua 5.1 / LuaJIT compatible.
 
+if not (Chaos and Chaos.t) then
+	if not Chaos then
+		dofile("data/scripts/chaos/chaos_constants.lua")
+	end
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
@@ -252,7 +258,7 @@ function talk.onSay(player, words, param)
 	param = (param or ""):lower():gsub("^%s+", ""):gsub("%s+$", "")
 	if param == "run" then
 		local m, p = CC.round("by " .. player:getName())
-		player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("Creator codes: %d matched, %d paid.", m, p))
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Creator codes: %d matched, %d paid.", m, p))
 		return false
 	end
 	local lines = {string.format("Creator codes: %s, %d%% of the coins, hold %d days, caps %d / donation, %d / month.",

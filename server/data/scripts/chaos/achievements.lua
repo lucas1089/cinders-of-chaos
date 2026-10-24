@@ -1032,7 +1032,7 @@ function gm.onSay(player, words, param)
 		return false
 	end
 	if cmd == "grant" and index.byId[a] then
-		player:sendTextMessage(MESSAGE_INFO_DESCR, A.grant(player, a) and ("Granted " .. a .. ".") or "Already unlocked.")
+		player:sendTextMessage(MESSAGE_INFO_DESCR, A.grant(player, a) and Chaos.t(player, "Granted %s.", a) or Chaos.t(player, "Already unlocked."))
 	elseif (cmd == "stat" or cmd == "add") and K.validKey(a) and tonumber(b) then
 		if cmd == "stat" then
 			A.set(player, a, tonumber(b))
@@ -1045,9 +1045,9 @@ function gm.onSay(player, words, param)
 		db.query("DELETE FROM `" .. K.TABLE_STATS .. "` WHERE `player_id` = " .. guid)
 		A.stats[guid], A.unlocked[guid], A.dirty[guid] = {}, {}, {}
 		A.accounts[player:getAccountId()] = nil
-		player:sendTextMessage(MESSAGE_INFO_DESCR, "Achievements and counters of this character cleared (relog for the retroactive check).")
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Achievements and counters of this character cleared (relog for the retroactive check)."))
 	else
-		player:sendTextMessage(MESSAGE_INFO_DESCR, "Usage: /achievements grant <id> | stat <key> <value> | add <key> <n> | reset")
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Usage: /achievements grant <id> | stat <key> <value> | add <key> <n> | reset"))
 	end
 	return false
 end

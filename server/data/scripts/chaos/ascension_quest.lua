@@ -934,21 +934,21 @@ function set.onSay(player, words, param)
 	end
 	local target = Player(name)
 	if not target then
-		player:sendTextMessage(MESSAGE_INFO_DESCR, "Player " .. name .. " is not online.")
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Player %s is not online.", name))
 		return false
 	end
 	local base = Q.baseOf(target:getVocation():getId())
 	if base ~= Q.baseOf(id) then
-		player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("%s is %s; %s belongs to another line (use the store's Vocation Change).",
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "%s is %s; %s belongs to another line (use the store's Vocation Change).",
 			target:getName(), target:getVocation():getName(), vocName(id)))
 		return false
 	end
 	local ok, text = ChaosAscension.ascend(target, nil, {staff = true, vocId = id, quiet = true})
 	if not ok then
-		player:sendTextMessage(MESSAGE_INFO_DESCR, "Not changed: " .. tostring(text))
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Not changed: %s", tostring(text)))
 		return false
 	end
-	player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("%s is now %s.", target:getName(), vocName(id)))
+	player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "%s is now %s.", target:getName(), vocName(id)))
 	log(string.format("%s set %s to %s", player:getName(), target:getName(), vocName(id)))
 	return false
 end

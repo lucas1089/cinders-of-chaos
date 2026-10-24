@@ -1688,13 +1688,13 @@ local function onCommand(player, param)
 		if gid then
 			GB.weekRow(gid)
 			addFuel(gid, math.max(0, math.floor(tonumber(args[3]) or 0)))
-			player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("%s: %d embers.", args[2], GB.weekRow(gid).fuel))
+			player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "%s: %d embers.", args[2], GB.weekRow(gid).fuel))
 		end
 	elseif cmd == "reset" then
 		local gid = guildId(args[2])
 		if gid then
 			db.query(string.format("DELETE FROM `%s` WHERE `guild_id` = %d AND `week` = %d", T().week, gid, weekNow()))
-			player:sendTextMessage(MESSAGE_INFO_DESCR, args[2] .. ": this week's guild boss row reset.")
+			player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "%s: this week's guild boss row reset.", args[2]))
 		end
 	elseif cmd == "phase" and run and bossOf(run) then
 		local ph = C().boss.phases[tonumber(args[2]) or 2]

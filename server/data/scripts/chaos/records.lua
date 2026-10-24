@@ -857,11 +857,11 @@ function talk.onSay(player, words, param)
 	local cmd, arg = tostring(param or ""):lower():match("^%s*(%S*)%s*(.-)%s*$")
 	if cmd == "reset" then
 		local _, prev, awards = R.checkReset(true)
-		player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("Records: week %s awarded, %d placings.", tostring(prev),
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Records: week %s awarded, %d placings.", tostring(prev),
 			awards and #awards or 0))
 	elseif cmd == "shift" then
 		R.offset = math.floor((tonumber(arg) or 0) * 86400)
-		player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("Records clock shifted %s day(s); runs do not count while shifted.", arg))
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Records clock shifted %s day(s); runs do not count while shifted.", arg))
 	elseif cmd == "rebuild" then
 		R.build()
 		publishBoards()

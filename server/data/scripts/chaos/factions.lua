@@ -1162,7 +1162,7 @@ function talk.onSay(player, words, param)
 	local P = stateOf(target)
 	if key then
 		if not idx.byKey[key] then
-			player:sendTextMessage(MESSAGE_INFO_DESCR, "Unknown faction " .. key .. ".")
+			player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Unknown faction %s.", key))
 			return false
 		end
 		K.set(cfg, P.st, key, tonumber(value), now())

@@ -9,6 +9,12 @@
 -- out; a line and band with fewer than minCharacters characters is not written to the CSV.
 -- Rules: treestats_core.lua, numbers: treestats_config.lua, tests: server/tests/treestats_test.lua.
 
+if not (Chaos and Chaos.t) then
+	if not Chaos then
+		dofile("data/scripts/chaos/chaos_constants.lua")
+	end
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 if not ChaosTreeStatsCore then
 	dofile("data/scripts/chaos/treestats_core.lua")
 end
@@ -163,7 +169,7 @@ function talk.onSay(player, words, param)
 		return not staff
 	end
 	if ChaosRateLimit and not ChaosRateLimit.allow(player, "treestats", cfg().rateMs) then
-		player:sendCancelMessage("Wait a moment: /treestats reads every saved tree.")
+		player:sendCancelMessage(Chaos.t(player, "Wait a moment: /treestats reads every saved tree."))
 		return false
 	end
 	local ok, out = pcall(TS.command, param)

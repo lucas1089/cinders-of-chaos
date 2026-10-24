@@ -1167,7 +1167,7 @@ function talk.onSay(player, words, param)
 	local name, action = param:match("^%s*([^,]+)%s*,?%s*(%a*)")
 	local guid = name and Chaos.findPlayer(name:gsub("%s+$", ""))
 	if not guid then
-		player:sendCancelMessage("Usage: /mentor <player>[, unlink]")
+		player:sendCancelMessage(Chaos.t(player, "Usage: /mentor <player>[, unlink]"))
 		return false
 	end
 	local link = activeLinkOf(guid)
@@ -1176,7 +1176,7 @@ function talk.onSay(player, words, param)
 			endLink(link, "released")
 			log(guid, link.mentor_id, "unlink", "by " .. player:getName())
 		end
-		player:sendTextMessage(MESSAGE_INFO_DESCR, link and "Mentor link removed." or "No active mentor link.")
+		player:sendTextMessage(MESSAGE_INFO_DESCR, link and Chaos.t(player, "Mentor link removed.") or Chaos.t(player, "No active mentor link."))
 		return false
 	end
 	local lines = {}

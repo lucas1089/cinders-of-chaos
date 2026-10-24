@@ -460,12 +460,12 @@ function admin.onSay(player, words, param)
 	name = (name or param):gsub("^%s+", ""):gsub("%s+$", "")
 	what = (what or ""):lower()
 	if name == "" then
-		player:sendCancelMessage("Usage: /newplayerkit <player>[, welcome | milestone <n> | reset | tutorial]")
+		player:sendCancelMessage(Chaos.t(player, "Usage: /newplayerkit <player>[, welcome | milestone <n> | reset | tutorial]"))
 		return false
 	end
 	local target = Player(name)
 	if not target then
-		player:sendCancelMessage("Player " .. name .. " is not online.")
+		player:sendCancelMessage(Chaos.t(player, "Player %s is not online.", name))
 		return false
 	end
 	-- staff never give value (docs/GM_HANDBOOK.md section 2): the kit, a milestone and a reset (the kit and the

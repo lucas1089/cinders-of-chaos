@@ -19,6 +19,16 @@
 -- client game_castbar) and can ask to cancel. A cast is refunded at most once (cast.refunded).
 -- Pure parts (C.step, C.refundOnce) are tested in tests/casting_test.lua with a mocked engine. Lua 5.1 / 5.3.
 
+-- the text in the player's language (Chaos.t, i18n_core.lua); English where the helper is not loaded (unit tests)
+local function tr(player, key, ...)
+	if Chaos and Chaos.t then
+		return Chaos.t(player, key, ...)
+	end
+	if select("#", ...) > 0 then
+		return string.format(key, ...)
+	end
+	return key
+end
 ChaosCasting = ChaosCasting or {}
 local C = ChaosCasting
 
@@ -322,7 +332,7 @@ end
 function C.begin(player, spec, ctx)
 	local pid = player:getId()
 	if ChaosTownPortal and ChaosTownPortal.casts and ChaosTownPortal.casts[pid] then
-		player:sendCancelMessage("You are opening a town portal.")
+		player:sendCancelMessage(tr(player, "You are opening a town portal."))
 		return false
 	end
 	if C.active[pid] then

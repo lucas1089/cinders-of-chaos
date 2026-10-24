@@ -571,12 +571,12 @@ local function onCommand(player, words, param)
 		local cmd, arg = param:match("^(%S+)%s*(.*)$")
 		if cmd == "reset" then
 			local done, prev, awards = LB.checkReset(true)
-			player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("Leaderboard reset: week %s scored, %d title(s).",
+			player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Leaderboard reset: week %s scored, %d title(s).",
 				tostring(prev), awards and #awards or 0))
 		elseif cmd == "shift" then
 			LB.offset = math.floor((tonumber(arg) or 0) * 86400)
 			local done = LB.refresh()
-			player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("Leaderboard clock shifted %s day(s): week %d%s.",
+			player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Leaderboard clock shifted %s day(s): week %d%s.",
 				arg, LB.current.week, done and ", weekly reset processed" or ""))
 		else
 			player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("Leaderboard: week %d, next reset in %d s, %d title(s) " ..

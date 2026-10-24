@@ -1723,7 +1723,7 @@ local function onCommand(player, param)
 	if cmd == "sigil" or cmd == "relic" or cmd == "shards" then
 		local def = U.kind(cfg, (args[2] or ""):lower())
 		if not def then
-			player:sendCancelMessage("Kinds: bloodmoon, hollow, storm, cinder.")
+			player:sendCancelMessage(Chaos.t(player, "Kinds: bloodmoon, hollow, storm, cinder."))
 			return
 		end
 		if cmd == "sigil" then

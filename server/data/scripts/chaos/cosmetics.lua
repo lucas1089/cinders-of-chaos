@@ -626,7 +626,7 @@ function gm.onSay(player, words, param)
 	end
 	local name, what, mode = param:match("^%s*([^,]+)%s*,%s*([%w_]+)%s*,?%s*(%w*)%s*$")
 	if not name then
-		player:sendTextMessage(MESSAGE_INFO_DESCR, "Usage: /cosmetic <character>, <key | all | sync>[, revoke]")
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Usage: /cosmetic <character>, <key | all | sync>[, revoke]"))
 		return false
 	end
 	local accountId
@@ -636,7 +636,7 @@ function gm.onSay(player, words, param)
 		result.free(id)
 	end
 	if not accountId then
-		player:sendTextMessage(MESSAGE_INFO_DESCR, "No character named " .. name .. ".")
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "No character named %s.", name))
 		return false
 	end
 	-- staff never give value (docs/GM_HANDBOOK.md section 2): a grant needs an administrator; sync and revoke do not
@@ -651,8 +651,8 @@ function gm.onSay(player, words, param)
 			refresh(target, true)
 			M.sendState(target, false)
 		end
-		player:sendTextMessage(MESSAGE_INFO_DESCR, #granted > 0 and string.format("Synced the account of %s: %s.", name,
-			table.concat(granted, ", ")) or ("The account of " .. name .. " has every cosmetic it earned."))
+		player:sendTextMessage(MESSAGE_INFO_DESCR, #granted > 0 and Chaos.t(player, "Synced the account of %s: %s.", name,
+			table.concat(granted, ", ")) or Chaos.t(player, "The account of %s has every cosmetic it earned.", name))
 		return false
 	end
 	local keys = {}
@@ -679,8 +679,8 @@ function gm.onSay(player, words, param)
 		refresh(target, true)
 		M.sendState(target, false)
 	end
-	player:sendTextMessage(MESSAGE_INFO_DESCR, n > 0 and string.format("%s %d cosmetic(s) for the account of %s.",
-		mode == "revoke" and "Removed" or "Granted", n, name) or (last or "Nothing changed."))
+	player:sendTextMessage(MESSAGE_INFO_DESCR, n > 0 and (mode == "revoke" and Chaos.t(player, "Removed %d cosmetic(s) for the account of %s.", n, name)
+		or Chaos.t(player, "Granted %d cosmetic(s) for the account of %s.", n, name)) or Chaos.t(player, last or "Nothing changed."))
 	return false
 end
 gm:separator(" ")
