@@ -1,10 +1,14 @@
 ObjectiveCheckBox < UICheckBox
   anchors.left: parent.left
   anchors.right: parent.right
-  size: 21 20
+  height: 20
   font: verdana-11px-rounded
-  text-align: left
-  text-offset: 24 2
+  text-align: topLeft
+  // the text wraps inside the padding and the row grows with it (a long objective was cut off at a fixed 20 px)
+  padding-left: 24
+  padding-top: 3
+  padding-bottom: 3
+  text-vertical-auto-resize: true
   color: #dfdfdf
   image-color: #dfdfdfff
   image-rect: 0 0 21 20
