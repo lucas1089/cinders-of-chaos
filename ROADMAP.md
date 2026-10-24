@@ -344,6 +344,13 @@ Estimated before items 4 and 5: ~155 h to level 1000 for a sorcerer, ~285 h for 
   (sanitizers, fuzzing)". (3) First service done 2026-10-23 (O153): the login-screen services endpoint
   (`clientservices-rs`, opt-in switch). The login gateway is HAProxy and the payment worker is PHP, so they are not Python
   ports. Open: the other services one at a time if wanted (Help assistant); a sanitizer run on the VPS with real players.
+- TODO (owner 2026-10-24, later; "Coloque o client em Godot no TODO"): a new game client in Godot 4 next to the
+  current one, the server unchanged (C++, protocol 10.98 plus the JSON extended opcodes). Plan when started: (1) a
+  prototype that logs in (RSA, XTEA, checksum), walks and draws the map, floors and creatures from our .dat/.spr or a
+  converted atlas; (2) run it beside the current client on the same server; (3) port the modules one by one only if
+  the prototype is kept. Gains: shaders, light and particles, Android and web builds, simpler UI than .otui. Costs:
+  the login security and the encrypted client pack redone, the base patches and every client module rewritten, two
+  clients kept in step for a while. Not started.
 - TODO (owner 2026-10-20, later; "Eu prefiro a 3. Coloque no TODO por enquanto"): a live spectator view of a player
   in the admin app (android/): the real game view with sprites (the .dat/.spr on the device) fed by a server cast /
   spectator system (engine patch). The simpler options (a JSON map of the surroundings, a client screenshot with a
