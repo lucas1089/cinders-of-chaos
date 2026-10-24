@@ -18,18 +18,18 @@
         <flag runonhealth="0"/>
     </flags>
     <attacks>
-        <attack name="melee" interval="2000" min="-1300" max="-1900"/>
-        <attack name="lifedrain" interval="2000" chance="19" radius="6" target="0" min="-1400" max="-2300">
+        <attack name="melee" interval="2000" min="-340" max="-490"/>
+        <attack name="lifedrain" interval="2000" chance="19" radius="6" target="0" min="-360" max="-600">
             <attribute key="areaEffect" value="redshimmer"/>
         </attack>
-        <attack name="dazzlecondition" interval="2000" chance="9" radius="8" target="0" min="-500" max="-1800">
+        <attack name="dazzlecondition" interval="2000" chance="9" radius="8" target="0" min="-130" max="-470">
             <attribute key="areaEffect" value="greenspark"/>
         </attack>
-        <attack name="physical" interval="2000" chance="8" range="7" target="1" radius="6" min="-1000" max="-2500">
+        <attack name="physical" interval="2000" chance="8" range="7" target="1" radius="6" min="-260" max="-650">
             <attribute key="shootEffect" value="largerock"/>
             <attribute key="areaEffect" value="stones"/>
         </attack>
-        <attack name="physical" interval="2000" chance="13" range="7" target="1" radius="4" min="-1000" max="-1600">
+        <attack name="physical" interval="2000" chance="13" range="7" target="1" radius="4" min="-260" max="-420">
             <attribute key="shootEffect" value="whirlwindclub"/>
             <attribute key="areaEffect" value="explosion"/>
         </attack>

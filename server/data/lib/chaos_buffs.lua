@@ -641,6 +641,21 @@ function B.collect(player, nowMs)
 			end
 		end
 	end
+	-- Soulward casts the engine's shield (sub id 0) beside its own marker row (soul_aegis.lua): that shield is no second
+	-- Magic Shield while it ends with the marker; a longer Ward of the Mind still shows
+	if seen.soul_aegis and seen.manashield then
+		local soul, plain, at
+		for i, it in ipairs(out) do
+			if it.key == "soul_aegis" then
+				soul = it
+			elseif it.key == "manashield" then
+				plain, at = it, i
+			end
+		end
+		if soul and plain and plain.leftMs and soul.leftMs and plain.leftMs <= soul.leftMs + 1500 then
+			table.remove(out, at)
+		end
+	end
 	table.sort(out, function(a, b)
 		if a.kind ~= b.kind then
 			return a.kind == "buff"

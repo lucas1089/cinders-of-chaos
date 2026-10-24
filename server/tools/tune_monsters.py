@@ -154,7 +154,7 @@ TUNING = {
     'vorathrax.xml': {'attack': {3: {'min': '-26000', 'max': '-32000'}}},
     'world_bosses/vharok_the_blood_colossus.xml': {'drop_melee': ['bleed']},
     # 3. the late-game gold for its level (~1.25 gold per level: ~250)
-    'orcaruz.xml': {'coins': 5},
+    'orcaruz.xml': {'coins': 5, 'hit': 650},
     # 4. the late-game set
     # (Lady bug has no earthPercent on purpose: it is immune to earth, which beats the +20)
     'azure_dragon.xml': {'elements': LATE_ELEMENTS, 'coins': 25},

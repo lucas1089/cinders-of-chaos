@@ -1826,6 +1826,18 @@ split (`Game::combatChangeHealth`); no Chaos patch changes it.
 * **Live server (install step):** run the `vocations` and `spells` steps (or the whole `install_all.py`) and restart.
   An install the cap already cut gets the nine classes back (tested from the Elementalist-only list and from the
   casters' list with the Necromancer line). No database change.
+* **Soulward shielded nothing (O162, owner report: "You lose 1.55k hitpoints due to an attack by orcaruz" with the shield up).**
+  `data/spells/chaos/shared/soul_aegis.lua` added `CONDITION_MANASHIELD` with sub id 71006 (the buff bar's marker). The
+  engine (`Game::combatChangeHealth`) and `manashield.lua` ask `hasCondition(CONDITION_MANASHIELD)` with sub id 0, so the
+  hit went to the health whole. Now the spell adds the sub id 0 shield (15 s; a longer Ward of the Mind keeps its time)
+  and the marker beside it; the buff bar hides the plain row while it ends with the marker. Test:
+  `tests/soulward_shield_test.lua`. No engine change; reload spells (or restart), no client change.
+* **Orcaruz (O162).** An imported level 200 monster (Azuregate Reliquary, hunt 180-220) never got the hit rule: strongest
+  hit 2,500 (78% of a level 200 knight's 3,185 health; Fenmaw, same level, 1,100). A level 230 Mystic line character has
+  about 1,295 health (150 + 5 per level). With the engine level bonus (x1.30), the late boost (+4.7%) and the pack curve
+  (x0.72) the old hits reached 2,400. `tools/tune_monsters.py` now sets the strongest hit to 650 (20% of the knight's
+  health, the late-set rule), the other attacks follow by the same factor: about 635 at the player. Health and
+  experience of Orcaruz unchanged.
 * Tests: `tests/manashield_test.lua` (split, classes against the tools and the client data, providers, marks, the glue
   on a mocked engine flow), the mana shield checks of `monster_tiers_test`, `boss_mechanics_test`, `raid_test`,
   `pocketboss_test`, `invasion_test`, `trials_flow_test`, `archetypes_test`, `class_keystones_test`,
