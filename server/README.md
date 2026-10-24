@@ -2017,6 +2017,13 @@ target). Engine side: `necro_minions.lua` `act` / `cast`; timers in `ChaosNecroM
 `tests/necro_test.lua` "minion spells". Needs a live check: the effects of each spell, the warrior pulling monsters off
 the caster.
 
+**Minions in a hunt (O160, 2026-10-24).** A paced monster's hit on a minion is x the monster's pace damage curve (what it
+deals to the owner), and minions regenerate (`minions.incoming`, `minions.regen` in `necro_config.lua`; `N.minionTaken`,
+`N.minionRegen`, `N.minionIdle` in `necro_core.lua`; applied in `necro_minions.lua`: the guard and `think`). Regeneration
+is 0.5% of maximum health per second in a fight, 10% per second once no minion was hit for 2 s and the owner has no
+target. The Necromancer's class hit is 0.92. Balance model: `server/tools/minion_model.py --check`; method and numbers in
+`data/spells/README.md` "Necromancer minions (O160)". Assumption: the model is computed, not measured in game.
+
 ## Summons: targets, walk-through, levels (2026-10-21)
 
 Owner report: "the Necromancer's risen warriors do not attack, they get targeted and they block the way", and "the risen
@@ -15156,6 +15163,13 @@ milestones, island layout, station state machine) in `newplayer_core.lua`, teste
   the start level, gets exactly level 8's experience (`NP.raiseToStart`; an old character without a kit row keeps its
   level); then a character up to `fixUpToLevel` (8) below its class's values for its level is raised to them (never
   lowered) and filled up (an island snapshot gets the new values, `NP.snapshotSetStats`).
+- **Inflated maximums** (live error 2026-10-24, `getNumber(). Argument 3 has out-of-range value` in the passive
+  tree's `applyCharStats`): the flat max health / mana parameter of a fractional percent is clamped into int32
+  (`ChaosPassiveFlatMax`, `passivetree_effects.lua`). Every login `NP.repairInflated` (`newplayer_core.lua`) resets a
+  base maximum health or mana to the class's value for the level (`NP.statsFor`) when it is above both
+  `inflated.floor` (1 000 000) and `inflated.factor` (20) x that value (`newplayer_config.lua`), and brings current
+  health and mana down to the new maximum. No flag: a repaired character is under the margin, and a legitimate one
+  is nowhere near it (tests: `start_stats_test.lua`, `passivetree_effects_test.lua`).
 - **Start look** (owner report 2026-10-16, a website Ranger "Jokr" that looked like a mage in a blue robe and a
   headband): every path gave the right look type (the Ranger's hooded archer, 2163 / 2164; the website, the client API,
   `add-account.sh` and the first login all read `class_looks_core.lua`, and the classes' donor outfits are not worn at

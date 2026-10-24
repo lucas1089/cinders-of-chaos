@@ -133,6 +133,38 @@ eq(fix.maxHealth, 185 + gains[4].hp, "level 2: one level of gains on top")
 eq(NP.statsFix(1, 1, {maxHealth = 150, maxMana = 90, cap = 40000}, gains[1]), nil, "right values: nothing to do")
 eq(NP.statsFix(1, 1, {maxHealth = 400, maxMana = 500, cap = 90000}, gains[1]), nil, "more than the class's: never lowered")
 eq(NP.statsFix(1, 9, {maxHealth = 150, maxMana = 0, cap = 40000}, gains[1]), nil, "level 9: left alone")
+
+-- inflated maximums (536 million mana seen live, 2026-10-24): reset to the class's value, nothing else touched
+local want = NP.statsFor(1, 300, gains[1])
+local inf = NP.inflatedFix(1, 300, {maxHealth = want.health, maxMana = 536000000}, gains[1])
+ok(inf ~= nil, "536M mana is repaired")
+eq(inf.maxMana, want.mana, "mana back to the formula") eq(inf.maxHealth, want.health, "healthy health kept")
+inf = NP.inflatedFix(1, 300, {maxHealth = 3000000000, maxMana = want.mana}, gains[1])
+eq(inf.maxHealth, want.health, "inflated health back to the formula") eq(inf.maxMana, want.mana, "mana kept")
+eq(NP.inflatedFix(1, 300, {maxHealth = want.health * 5, maxMana = want.mana * 10}, gains[1]), nil, "generous but real: untouched")
+eq(NP.inflatedFix(1, 300, {maxHealth = 900000, maxMana = 900000}, gains[1]), nil, "under the floor: untouched")
+eq(NP.inflatedFix(1, 300, {maxHealth = want.health, maxMana = inf.maxMana}, gains[1]), nil, "a repaired character: idempotent")
+
+-- the login repair on a mocked player: maximums reset, current health and mana come down, a second login does nothing
+do
+  local st = {mh = want.health, mm = 536000000, h = want.health, mn = 500000000}
+  local pl = {}
+  function pl:getVocation() return {getId = function() return 1 end, getHealthGain = function() return gains[1].hp end,
+    getManaGain = function() return gains[1].mana end, getCapacityGain = function() return gains[1].cap end} end
+  function pl:getLevel() return 300 end
+  function pl:getName() return "Test" end
+  function pl:getMaxHealth() return st.mh end
+  function pl:getMaxMana() return st.mm end
+  function pl:setMaxHealth(v) st.mh = v; if st.h > v then st.h = v end end
+  function pl:setMaxMana(v) st.mm = v; if st.mn > v then st.mn = v end end
+  function pl:getHealth() return st.h end
+  function pl:getMana() return st.mn end
+  function pl:setHealth(v) st.h = math.min(v, st.mh) end
+  function pl:setMana(v) st.mn = math.min(v, st.mm) end
+  ok(NP.repairInflated(pl), "login repair acts on 536M mana")
+  eq(st.mm, want.mana, "max mana reset") eq(st.mn, want.mana, "current mana comes down") eq(st.mh, want.health, "health untouched")
+  ok(not NP.repairInflated(pl), "second login: nothing to do")
+end
 -- the owner's island Mystic raised to level 8 by the engine (gains from 150 / 0 / 400): mana below the class's
 fix = NP.statsFix(1, 8, {maxHealth = 185, maxMana = 210, cap = 47000}, gains[1])
 eq(fix.maxMana, 300, "level 8 Mystic mana raised to the class's") eq(fix.maxHealth, 185, "its health was right")

@@ -255,6 +255,10 @@ return {
 		statsFixed = 9, -- 1 once the login checked the start level and stats (NP.fixStats, start_stats.lua)
 		milestone = 10 -- + index into milestones (10 .. 19)
 	},
+	-- the login repair of inflated maximums (NP.inflatedFix / NP.repairInflated): a base maximum health or mana above BOTH
+	-- `floor` and `factor` x the class's value for the level is reset to the class's value. A legitimate character is
+	-- nowhere near (level 800: some 25 000 mana); the one it was made for had 536 million mana.
+	inflated = {floor = 1000000, factor = 20},
 	stageDone = 100,
 	stageSkipped = 101,
 

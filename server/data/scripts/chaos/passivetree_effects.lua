@@ -269,6 +269,18 @@ local PERCENT = {
 	spirit = {CONDITION_PARAM_STAT_MAXMANAPOINTSPERCENT, 7221, CONDITION_PARAM_STAT_MAXMANAPOINTS, "getMaxMana"},
 }
 
+-- the flat parameter is an int32 in the engine (getNumber<int32_t>): a character whose maximum was inflated earlier
+-- (536 million mana seen live, 2026-10-24) made max x percent pass 2^31 and the whole opcode died in setParameter.
+-- Clamped into the range; a non-number or NaN maximum gives 0.
+local INT32_MAX = 2147483647
+function ChaosPassiveFlatMax(base, percent)
+	local v = math.floor((tonumber(base) or 0) * (tonumber(percent) or 0) / 100)
+	if v ~= v then
+		return 0
+	end
+	return math.max(0, math.min(INT32_MAX, v))
+end
+
 local function applyCharStats(player, bonuses)
 	for stat, info in pairs(PERCENT) do
 		local value = ChaosPassiveMaxPercent(bonuses, stat)
@@ -281,7 +293,7 @@ local function applyCharStats(player, bonuses)
 			if math.abs(value - whole) < 1e-6 then
 				c:setParameter(info[1], 100 + whole)
 			else
-				c:setParameter(info[3], math.floor(player[info[4]](player) * value / 100))
+				c:setParameter(info[3], ChaosPassiveFlatMax(player[info[4]](player), value))
 			end
 			player:addCondition(c)
 		end

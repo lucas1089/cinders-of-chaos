@@ -403,6 +403,10 @@ local login = CreatureEvent("ChaosNewPlayerLogin")
 function login.onLogin(player)
 	player:registerEvent("ChaosNewPlayerAdvance")
 	local first = player:getLastLoginSaved() <= 0
+	local okR, errR = pcall(NP.repairInflated, player)
+	if not okR then
+		print("[newplayer] inflated maximum check of " .. player:getName() .. " failed: " .. tostring(errR))
+	end
 	local function fix()
 		local okF, errF = pcall(NP.fixStats, player)
 		if not okF then
