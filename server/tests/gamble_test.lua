@@ -264,6 +264,143 @@ end
 eq(table.concat(sig, ","), "27197@67,27197@65,27198@67,28111@61,22424@62,27653@61,29471@64,27227@64,28113@65,28100@63," ..
 	"27692@61,28109@67,28115@67,27211@64", "the stock of a fixed character and window")
 
+-- ---------------------------------------------------------------- the equipment sets of pair 28
+do
+	local G = dofile("data/lib/chaos_gear_sets.lua")
+	eq(G.PAIR28, true, "sets: the pair switch is on as shipped")
+	check(cfg.sets and cfg.sets.enabled, "sets: on in the config as shipped")
+	eq(cfg.sets.share, 20, "sets: 20% of the picks")
+	for key in pairs(G.items.sets) do
+		check(type(cfg.sets.weight[key]) == "number" and cfg.sets.weight[key] > 0, "sets: a weight for " .. key)
+	end
+	for key in pairs(cfg.sets.weight) do
+		check(G.items.sets[key] ~= nil, "sets: the weight of " .. key .. " names a real set")
+	end
+	-- the config check
+	local bad = dofile("data/scripts/chaos/gamble_config.lua")
+	bad.sets.share = 101
+	bad.sets.weight.gildcrown = 1.5
+	check(#K.validate(bad) >= 2, "sets: a broken sets block is reported")
+
+	-- the entries: every piece, in the slot of its kind, inside its set's band, none while a switch is off
+	local entries = K.setEntries(cfg, G)
+	eq(#entries, 448, "sets: all 448 pieces are on offer")
+	local slots = {}
+	for _, e in ipairs(entries) do
+		local piece = G.piece(e.id)
+		local band = G.items.sets[e.set].band
+		check(piece ~= nil and piece.set == e.set and piece.level == e.lv, "sets: the entry is the piece " .. e.id)
+		check(e.lv >= band[1] and e.lv <= band[2], "sets: piece " .. e.id .. " level " .. e.lv .. " is inside the band of " .. e.set)
+		check(K.SET_SLOT[piece.kind] == e.slot, "sets: slot of " .. piece.kind)
+		check(cfg.stock.slots[e.slot] ~= nil and e.slot ~= "quiver", "sets: a slot of the stock " .. e.slot)
+		slots[e.slot] = (slots[e.slot] or 0) + 1
+	end
+	for _, slot in ipairs({"weapon", "shield", "helmet", "armor", "legs", "boots", "amulet", "ring"}) do
+		check((slots[slot] or 0) > 0, "sets: pieces for " .. slot)
+	end
+	eq(slots.quiver, nil, "sets: no quiver piece")
+	G.PAIR28 = false
+	eq(#K.setEntries(cfg, G), 0, "sets: none while the pair switch is off")
+	G.PAIR28 = true
+	cfg.sets.enabled = false
+	eq(#K.setEntries(cfg, G), 0, "sets: none while the config is off")
+	cfg.sets.enabled = true
+	eq(#K.setEntries(cfg, nil), 0, "sets: none without the library")
+	local half = cfg.sets.weight.gildcrown
+	cfg.sets.weight.gildcrown = 0
+	eq(#K.setEntries(cfg, G), 448 - 64, "sets: weight 0 leaves a set out")
+	cfg.sets.weight.gildcrown = half
+
+	-- candidates: the character's level and class, the highest levels first
+	local function classOf(name)
+		return function(id)
+			local piece = G.piece(id)
+			if not piece or #piece.classes == 0 then
+				return true
+			end
+			for _, c in ipairs(piece.classes) do
+				if c == name then
+					return true
+				end
+			end
+			return false
+		end
+	end
+	local c = K.setCandidates(cfg, "armor", 1000, classOf("Warrior"), entries)
+	eq(#c, cfg.sets.choices, "sets: four armour choices at 1000")
+	for i, e in ipairs(c) do
+		check(e.lv <= 1000 and G.piece(e.id).fit == "H", "sets: heavy armour of the level for a Warrior " .. e.id)
+		check(i == 1 or c[i - 1].lv >= e.lv, "sets: the best first")
+	end
+	for _, level in ipairs({8, 40, 120, 300, 450, 800, 1250, 2000}) do
+		for _, slot in ipairs(cfg.stock.order) do
+			for _, e in ipairs(K.setCandidates(cfg, slot, level, classOf("Mystic"), entries)) do
+				check(e.lv <= level, "sets: level " .. level .. " never gets " .. e.id .. " of level " .. e.lv)
+				check(classOf("Mystic")(e.id), "sets: a Mystic can wear " .. e.id)
+			end
+		end
+	end
+	eq(#K.setCandidates(cfg, "armor", 7, classOf("Warrior"), entries), 0, "sets: nothing under level 8")
+	eq(#K.setCandidates(cfg, "quiver", 2000, classOf("Ranger"), entries), 0, "sets: no quiver")
+
+	-- stocks: set pieces come in at about the share, never above the level, none when switched off
+	local function run(ctxSets, share, level, line)
+		local n, sets, total = 0, 0, 0
+		local c2 = dofile("data/scripts/chaos/gamble_config.lua")
+		c2.sets.share = share
+		for window = 1, 300 do
+			for _, e in ipairs(K.stock(c2, {guid = 31, window = window, rerolls = 0, level = level, gate = gate(level),
+					sets = ctxSets, canUse = line})) do
+				total = total + 1
+				if G.piece(e.id) then
+					sets = sets + 1
+					check(e.lv <= level, "sets: stock piece " .. e.id .. " of level " .. e.lv .. " for level " .. level)
+					check(e.lv >= G.items.sets[G.piece(e.id).set].band[1], "sets: inside the band")
+					check(line(e.id), "sets: usable by the class " .. e.id)
+				end
+			end
+		end
+		return sets, total
+	end
+	local withSets, total = run(entries, 20, 1000, classOf("Warrior"))
+	check(withSets / total > 0.12 and withSets / total < 0.27,
+		string.format("sets: about 20%% of the pieces are set pieces (%.1f%%)", 100 * withSets / total))
+	local none = run(entries, 0, 1000, classOf("Warrior"))
+	eq(none, 0, "sets: share 0 offers none")
+	local nothing = run(nil, 20, 1000, classOf("Warrior"))
+	eq(nothing, 0, "sets: no entries (a switch off) offers none")
+	local low = run(entries, 100, 7, classOf("Warrior"))
+	eq(low, 0, "sets: a level 7 character is offered none")
+	local all = run(entries, 100, 400, classOf("Ranger"))
+	check(all > 0, "sets: a level 400 ranger is offered some")
+	-- the stock is the same for the same character and window, with and without the engine asking twice
+	local ctx = {guid = 5, window = 99, rerolls = 0, level = 600, gate = gate(600), sets = entries, canUse = classOf("Thief")}
+	local a, b = K.stock(cfg, ctx), K.stock(cfg, ctx)
+	local sa, sb = {}, {}
+	for i = 1, #a do
+		sa[i], sb[i] = a[i].id .. "@" .. a[i].ilvl, b[i].id .. "@" .. b[i].ilvl
+	end
+	eq(table.concat(sa, ","), table.concat(sb, ","), "sets: deterministic")
+	-- the weights: a set with weight 0 never shows, the only one left always does when a set piece is picked
+	local c3 = dofile("data/scripts/chaos/gamble_config.lua")
+	c3.sets.share = 100
+	for key in pairs(c3.sets.weight) do
+		c3.sets.weight[key] = key == "wyrmscale" and 10 or 0
+	end
+	local only = K.setEntries(c3, G)
+	eq(#only, 64, "sets: one set left")
+	for window = 1, 40 do
+		for _, e in ipairs(K.stock(c3, {guid = 8, window = window, rerolls = 0, level = 220, gate = gate(220), sets = only,
+				canUse = classOf("Warrior")})) do
+			local piece = G.piece(e.id)
+			check(piece == nil or piece.set == "wyrmscale", "sets: only wyrmscale at weight 0 for the others")
+		end
+	end
+	-- prices follow the item level and slot like any piece
+	local e1 = K.stock(c3, {guid = 8, window = 1, rerolls = 0, level = 220, gate = gate(220), sets = only, canUse = classOf("Warrior")})[1]
+	eq(e1.price, K.price(c3, e1.ilvl, e1.slot), "sets: priced by item level and slot")
+end
+
 -- ---------------------------------------------------------------- sold slots
 local mask = 0
 check(not K.isSold(mask, 1), "nothing sold")
@@ -816,6 +953,15 @@ eq(res.state, nil, "unknown action ignored")
 sent = {}
 events.ChaosGambleExtended.onExtendedOpcode(hero, 198, json.encode({action = "open"}))
 eq(#sent, 0, "another opcode ignored")
+
+-- the engine part reads the library itself: the entries follow the switch
+do
+	ChaosGearSets = nil
+	eq(#P.setEntries(), 448, "engine: set pieces on offer with the switch on")
+	ChaosGearSets.PAIR28 = false
+	eq(#P.setEntries(), 0, "engine: none with the switch off")
+	ChaosGearSets.PAIR28 = true
+end
 
 print(string.format("gamble_test: %d checks, %d failures", count, failures))
 if failures > 0 then

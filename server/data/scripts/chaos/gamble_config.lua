@@ -115,6 +115,18 @@ C.pool = {
 	}
 }
 
+-- the equipment sets of client pair 28 (data/lib/chaos_gear_sets.lua, server/README.md "Equipment sets (pair 28)"):
+-- 448 pieces over 15 kinds, kept out of the pool above so the base types keep their place. While ChaosGearSets.PAIR28 is on
+-- (and `enabled` here), each pick of a stock whose slot has a set piece the character can use (level and class by the
+-- installed movements.xml / weapons.xml, like the pool) is a set piece with `share` percent, else a base type as before.
+-- The piece is one of the `choices` usable ones with the highest level (the same rule as the base types, so the band of
+-- the character's level), drawn with the weight of its set. weight 0 leaves a set out. Quivers have no set piece.
+C.sets = {
+	enabled = true, share = 20, choices = 4,
+	weight = {blightfang = 10, wyrmscale = 10, cinderwrought = 10, bloodmoon = 10, rimewraith = 10, azurevigil = 10,
+		gildcrown = 10}
+}
+
 -- ------------------------------------------------------------------ prices
 -- gold for a piece of item level L: straight lines between these {item level, gold} points, x the slot's multiplier,
 -- rounded down to `round`. An armour piece costs about 18% of an hour of hunting at the character level whose kills

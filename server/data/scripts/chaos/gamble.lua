@@ -226,6 +226,15 @@ local function typeOk(id)
 	return v
 end
 
+-- the equipment set pieces on offer (none while ChaosGearSets.PAIR28 or cfg.sets.enabled is off)
+function P.setEntries()
+	if not ChaosGearSets then
+		local ok, G = pcall(dofile, "data/lib/chaos_gear_sets.lua")
+		ChaosGearSets = ok and G or nil
+	end
+	return K.setEntries(cfg, ChaosGearSets)
+end
+
 -- canUse(id, slot) for a character of this level and vocation name
 function P.canUseFor(level, vocName)
 	local rules = P.rules()
@@ -301,7 +310,7 @@ function P.stockOf(player, S)
 		return c.stock, S
 	end
 	local stock = K.stock(cfg, {guid = guid, window = S.window, rerolls = S.rerolls, level = S.level, gate = S.gate,
-		canUse = P.canUseFor(S.level, vocationName(S.voc))})
+		sets = P.setEntries(), canUse = P.canUseFor(S.level, vocationName(S.voc))})
 	P.cache[guid] = {key = key, stock = stock}
 	return stock, S
 end

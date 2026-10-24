@@ -9972,8 +9972,19 @@ The bands overlap, so a character always has a set running and the next one star
 - **Prices.** `tools/gen_item_prices.py` prices every piece as plain equipment by its level and slot (the equipment
   formula and the gear scale: a level 8 helmet 140 gold, a level 120 one 8,400, from about level 1000 up 30,252, the
   Wandering Merchant's orb cap), so the Loot Buyer and the Auto Seller take them like other gear.
-- Open (owner): publish pair 28 and switch on; the Gambler's pool, crafting recipes if wanted. Not run in a client or
-  on a live server.
+- **The Gambler** (`gamble_config.lua` `sets`, `K.setEntries` / `K.setCandidates` in `gamble_core.lua`, `P.setEntries` in
+  `gamble.lua`; tests in `tests/gamble_test.lua`). While `ChaosGearSets.PAIR28` is on and `sets.enabled` is true, all 448
+  pieces can appear in a stock (weapon kinds sword / axe / club / bow / crossbow / wand / rod into the weapon slot,
+  spellbook and shield into the shield slot, the rest by kind; no quiver piece exists). The pieces are not in `pool`: each
+  pick of a slot that has a usable set piece is one with `sets.share` percent (20, so about 3 of 14 pieces; a slot without
+  a usable piece is as before), else a base type as before. The piece is one of the `sets.choices` (4) usable pieces with
+  the highest level at or under the character's level (class and level by the installed movements.xml / weapons.xml, like
+  the pool), so it is always inside the set's band, drawn with `sets.weight` of its set (10 each, 0 leaves a set out). Item
+  level, price and rarity roll are those of any piece. Switch off or `enabled = false`: the stock is exactly the old one
+  (the recorded stock of the test did not change). The Item Finder does not list the set pieces under the Gambler.
+- **Recipes: none.** The crafting system (`crafting.lua`, `salvage_config.lua` recipes) works on orbs, shards and runes
+  only; there is no recipe table that makes an item, so a set piece recipe has nothing to join. Not added.
+- Open (owner): publish pair 28 with the regenerated `outfit_anchors.lua`. Not run in a client or on a live server.
 
 ## Pack art (pair 30) (`data/lib/chaos_pack30_art.lua`, `data/lib/chaos_pack30_items.lua`, `tools/install_pack30_items.py`, switch `ChaosPack30Art.PAIR30`, off)
 Items of the third-party art packs imported into the client pair 30 (import-only; plan: weapons icons, flasks, corpses,
@@ -20860,6 +20871,8 @@ window number and the early refreshes bought in it (`K.seed`), the same under Lu
 restart (the test pins one stock). Five player storages (7101900 - 7101904) hold the window the stock belongs to, the level
 and vocation it was made for (frozen at the first look in a window, so a level up does not reshuffle it), the sold slots (a
 bit mask) and the early refreshes. No database rows.
+
+**Equipment set pieces** (pair 28, `sets` in the config): see "Equipment sets (pair 28)", The Gambler.
 
 **What is offered.** Each piece draws a slot (weights weapon 3, armour / helmet / legs / boots 2, shield / amulet / ring /
 quiver 1) and a base type from `gamble_config.lua` `pool` (246 stock bases of the base server, each with the level it
