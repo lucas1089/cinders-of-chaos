@@ -531,8 +531,10 @@ function mana.onManaChange(creature, attacker, pd, pt, sd, st, origin)
 		if total > 0 then
 			dealt(creature, attacker, total, pt, origin, false, nowMs(), true)
 		end
-	elseif cfg.enabled and pt == COMBAT_MANADRAIN and CL.takenHook and creature:isPlayer() then
-		-- mana drain is no damage taken for the meter, but the death recap lists it as mana damage
+	elseif cfg.enabled and pt == COMBAT_MANADRAIN and CL.takenHook and creature:isPlayer()
+			and (pd or 0) + (sd or 0) < 0 then
+		-- mana drain is no damage taken for the meter, but the death recap lists it as mana damage. Only a negative
+		-- value drains: a mana potion is doTargetCombat(player, who, COMBAT_MANADRAIN, +v), a restore (O159)
 		local total = min(abs(pd or 0) + abs(sd or 0), creature:getMana())
 		if total > 0 then
 			pcall(CL.takenHook, creature, attacker, takenSource(attacker), total, "manadrain", false, nowMs(), true)

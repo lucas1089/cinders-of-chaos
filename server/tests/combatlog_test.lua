@@ -591,7 +591,18 @@ engineHit(nil, hero, COMBAT_FIREDAMAGE, 20, ORIGIN_CONDITION)
 hero.conds[CONDITION_MANASHIELD] = true
 events.ChaosCombatLogMana.onManaChange(hero, dragon, 40, COMBAT_ICEDAMAGE, 0, 0, ORIGIN_SPELL)
 hero.conds[CONDITION_MANASHIELD] = nil
-events.ChaosCombatLogMana.onManaChange(hero, dragon, 40, COMBAT_MANADRAIN, 0, 0, ORIGIN_SPELL)
+events.ChaosCombatLogMana.onManaChange(hero, dragon, -40, COMBAT_MANADRAIN, 0, 0, ORIGIN_SPELL)
+-- O159: a mana potion is doTargetCombat(player, who, COMBAT_MANADRAIN, +v): a restore, no hit taken, not "Yourself"
+do
+	local fed = {}
+	local old = ChaosCombatLog.takenHook
+	ChaosCombatLog.takenHook = function(...) fed[#fed + 1] = {...} end
+	events.ChaosCombatLogMana.onManaChange(hero, hero, 500, COMBAT_MANADRAIN, 500, COMBAT_MANADRAIN, ORIGIN_NONE)
+	eq(#fed, 0, "a mana restore is no hit taken")
+	events.ChaosCombatLogMana.onManaChange(hero, dragon, -40, COMBAT_MANADRAIN, 0, 0, ORIGIN_SPELL)
+	eq(#fed, 1, "a real mana drain is still fed to the recap")
+	ChaosCombatLog.takenHook = old
+end
 local tr, seg = heroRows(TAKEN)
 eq(tr["Dragon"].total, 240, "taken by monster, the mana shield part included")
 eq(tr["Environment"].total, 20, "no attacker")

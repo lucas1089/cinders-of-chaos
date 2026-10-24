@@ -13822,6 +13822,10 @@ Client `game_deathrecap`, extended opcode 154 (`ChaosOpcodes.deathRecap`), Hunt 
 the block 7101830 - 7101839 offered for it stays free. The pure logic is `deathrecap_core.lua`, tested by
 `tests/deathrecap_test.lua`.
 
+Self hits (O159): a mana potion is `doTargetCombat(player, who, COMBAT_MANADRAIN, +v)`, a restore. The combat log feeds the recap
+only a negative (draining) mana change, and `R.onTaken` drops a manadrain or healing hit the character dealt itself, so
+"Yourself" never lists a potion or a mana cost. Pay mana costs with `player:addMana(-x)`, never through combat.
+
 **What it shows.** After a death the window opens by itself. It names the killer and the killing blow (attacker,
 amount, element, critical). It lists every attacker of the last seconds with its look (`UICreature`), total damage,
 share, health and mana part, hits, crit rate, max hit and the split by element. A bar shows the elements of all damage
