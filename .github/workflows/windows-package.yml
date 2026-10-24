@@ -296,6 +296,16 @@ jobs:
           cp server/build/*.dll out/
           ls -la out
 
+      # a full vcpkg cache hit builds the engine before the server job has made the release (run 66)
+      - name: Release of this run (created by whichever job gets here first)
+        shell: bash
+        run: |
+          gh release view "$PKG_TAG" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
+            gh release create "$PKG_TAG" -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease \
+              --title "Windows package ${{ github.run_number }}" \
+              --notes "Windows test package built by run ${{ github.run_id }} from $GITHUB_SHA (assets: $ASSETS_REF)." || \
+            gh release view "$PKG_TAG" -R "$GITHUB_REPOSITORY" >/dev/null
+
       - name: Hand the engine over
         shell: bash
         run: |
