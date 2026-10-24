@@ -74,6 +74,13 @@ function PC.levelOf(m)
 	local point = ChaosAreaGen and ChaosAreaGen.pointOf and ChaosAreaGen.pointOf[id]
 	local native = 0
 	pcall(function() native = tonumber(m:getMonsterLevel()) or 0 end)
+	-- a stock level range on a type with the stats of a much higher one is no level (loot.lua L.ownLevel, O163)
+	if native > 0 and ChaosLoot and ChaosLoot.ownLevel then
+		local okO, own = pcall(ChaosLoot.ownLevel, m)
+		if okO and tonumber(own) then
+			native = tonumber(own)
+		end
+	end
 	local pool = 0
 	if native <= 0 and not point and ChaosLoot and ChaosLoot.monsterLevel then
 		local ok, lvl = pcall(ChaosLoot.monsterLevel, m)

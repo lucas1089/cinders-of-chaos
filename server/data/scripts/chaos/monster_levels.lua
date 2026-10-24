@@ -50,6 +50,11 @@ function ML.apply(monster, scaled)
 		return nil
 	end
 	local own = try(function() return monster:getMonsterLevel() end) or 0
+	-- O163: a stock level range (1-10) on a type with the stats of level 150+ is not its level: show the hunting level
+	-- (the display level wins over the engine's own level, patch 0044)
+	if own > 0 and ChaosLoot and ChaosLoot.ownLevel then
+		own = try(function() return ChaosLoot.ownLevel(monster) end) or own
+	end
 	local master = try(function() return monster:getMaster() end)
 	local playerSummon = master ~= nil and try(function() return master:isPlayer() end) == true
 	local lv = K.displayLevel(own, (own > 0 or playerSummon or scaled) and nil or ML.estimate(monster), playerSummon,

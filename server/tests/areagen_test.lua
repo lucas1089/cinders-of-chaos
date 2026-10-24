@@ -632,6 +632,27 @@ do
 	nowT = p1.spawntime * 2000 + 1
 	tick()
 	eq(#p1.alive, p1.count, "respawned after the second wait")
+	-- O163: a type written in Lua with a stock level range (rolled level 3, stats of a level 150+ monster: Giant Hornet)
+	-- is not scaled from that 3: ChaosLoot.ownLevel says it has no real level, so health and experience stay as set
+	do
+		local realCreate = Game.createMonster
+		Game.createMonster = function(name, p, ...)
+			local m = realCreate(name, p, ...)
+			function m:getMonsterLevel() return 3 end
+			return m
+		end
+		ChaosLoot = {ownLevel = function() return 0 end}
+		local victim = monsters[p1.alive[1]]
+		find("ChaosAreaGenDeath").onDeath(victim)
+		monsters[victim.id] = nil
+		nowT = p1.spawntime * 4000
+		tick()
+		local hornet = monsters[p1.alive[#p1.alive]]
+		eq(hornet.hp, 100000, "stock level range: health not multiplied by (1 + 0.0074 T) / (1 + 0.0074 x 3)")
+		eq(AG.scaled[hornet.id].experience, 1, "stock level range: experience not multiplied by T / 3")
+		Game.createMonster = realCreate
+		ChaosLoot = nil
+	end
 	-- respawn near players (engine patch 0041, config spawnNearPlayers): the map spawns' rule, read from configKeys
 	do
 		local settings = {[1] = true, [2] = 2}

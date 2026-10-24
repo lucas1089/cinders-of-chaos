@@ -680,6 +680,9 @@ spawnCb.onSpawn = function(self, position, startup, artificial)
 		return true
 	end
 	local level = call(function() return self:getMonsterLevel() end) or 0
+	if level > 0 and ChaosLoot and ChaosLoot.ownLevel then
+		level = call(function() return ChaosLoot.ownLevel(self) end) or level -- O163: a stock level range is no level
+	end
 	replaceSpawn(position, {
 		level = G.areaLevel(c, level, nearbyPlayerLevels(position, c.level.playerRadius), info.maxHealth),
 		maxHealth = info.maxHealth, name = info.name, gear = gearOf(mt), spoor = spoorPct,

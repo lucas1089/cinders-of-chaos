@@ -22352,3 +22352,15 @@ restarts the unit; a failed build warns and keeps the old binary. The drop-in di
 **Not covered.** A real `cargo build` on the VPS (the script and the switch are tested with a stub build); a cargo-fuzz
 run (only proptest, 2000 cases per property in CI); the unit under systemd with the real sandbox; a load test of the
 thread-per-connection design against the Python server; IPv6 hosts; the Linux kit.
+
+
+## Stock level ranges on Lua monsters (O163) (`loot.lua` `L.ownLevel`, `tests/stock_level_range_test.lua`)
+
+Owner 2026-10-24 (live screenshot, Sorcerer hunting): "Grimeleech [158]" next to "Giant Hornet [3]", "[4]", "[6]", "[7]" and "Reflect Spider [9]", all as strong as the others.
+
+**Root cause.** The base server's Lua monster types of `data/monster/lua/azure_portals/` (20 types with `getLevel {minLevel = 1, maxLevel = 10}`, 8 with 1-50) carry the stats of a level 150+ monster (Giant Hornet 11,500 health, 8,250 experience). The engine rolls a level between the two numbers, `monster_levels.lua` keeps an own level (`displayLevel(own > 0)` returns nil), and `loot.lua` `L.baseMonsterLevel` and `pace.lua` `PC.levelOf` read `Monster:getMonsterLevel()` first. So the name showed the roll, and the loot item level, orb gate, waystone and nemesis levels, monster damage curve and the pace layer (scaled curve at level 3 instead of the base curve at 2 x pool level) used it too. In generated areas `areagen.lua` scaled health by (1 + 0.0074 T) / (1 + 0.0074 x 3) and experience by T / 3 (measured in the mock: health x8.4, experience x340 at T about 1000), and treasure goblins took 3 as the area level. The bounty pool had the right level (192) all along: `gen_bounty_pool.py` reads no Lua level.
+
+**Fix.** `ChaosLoot.ownLevel(monster)` returns the engine level only when it is real. The bounty pool level of a type that is not level-scaled equals the estimate of its experience and health (`ChaosItemMods.estimateMonsterLevel`, the rule of `P.entryLevel`); a level-scaled type has the middle of its range there. When they are equal the engine level is a stock roll and counts as 0. Read through it: `L.baseMonsterLevel` (so `monsterLevel`, loot, orbs, waystones, damage, nemesis), `PC.levelOf`, the display level (`monster_levels.lua` sets the pool level, which wins over the own level with patch 0044), `areagen.lua` `spawnPoint`, `treasure_goblin.lua`. Not changed on purpose: `xpcap.lua` and the rift cap mirror the engine's own experience factor (x0.03 L only above 1, so none at 1-10). The engine keeps its tiny health, damage and speed bonus of the rolled level (under 8% at level 10). Rift, invasion and generated area spawns still show the level their system scaled them to.
+
+Install: server files and a restart. No client change, no engine rebuild.
+Tests: `tests/stock_level_range_test.lua` (name at the spawn, loot / orb / waystone level, pace level), `tests/areagen_test.lua` (generated area scaling).

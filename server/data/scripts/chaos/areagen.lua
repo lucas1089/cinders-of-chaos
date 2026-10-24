@@ -237,6 +237,12 @@ local function spawnPoint(point, noForce)
 	end
 	local native = 0
 	pcall(function() native = m:getMonsterLevel() end)
+	if native > 0 and ChaosLoot and ChaosLoot.ownLevel then
+		-- a stock level range (1-10) next to the stats of a much higher type is no level (O163): scaling from it would
+		-- multiply the experience by target / 3
+		local okO, own = pcall(ChaosLoot.ownLevel, m)
+		native = okO and tonumber(own) or native
+	end
 	local sc = A.levelScale(native > 0 and native or point.level, point.level)
 	local hp = math.floor(m:getMaxHealth() * sc.health * (point.healthMult or 1))
 	if hp > 0 and hp ~= m:getMaxHealth() then
