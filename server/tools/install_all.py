@@ -176,6 +176,10 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   itemnames    tools/patch_base_item_names.py    Chaos names of the base items with names of another world, by id
                (data/items/base_item_names.csv): items.xml, the monsters' loot by old name becomes loot by
                id, other mentions in the base data renamed (README "Base item names"; after archery)
+  starinlay    tools/patch_star_inlay.py         the base star stones (Star Inlay Stone, Common .. Legendary stones, Star Extractor):
+               the stone keeps the rolled Chaos text of the piece, a worn piece is refused, the extractor removes
+               the "Refined by" line, the descriptions in items.xml name the five sets (README "Star inlay stones";
+               after itemnames)
   basemonsters tools/patch_base_monsters.py      load warnings of the base monsters: speed spells below -1000 clamped, loot
                names with their article by item id, unknown races mapped (README "Base server start warnings"; after
                itemnames)
@@ -1207,6 +1211,14 @@ def step_bankpayments(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('sql'), 'bankpayments')  # late, right before sql: after every step that writes a removeMoney
+
+
+def step_starinlay(server, data, ctx):
+    args = [tool('patch_star_inlay.py'), data] + (['--dry-run'] if ctx['dry'] else [])
+    return tool_result(run_tool(args, 'patch_star_inlay.py'))
+
+
+STEPS.insert(STEPS.index('itemnames') + 1, 'starinlay')  # after itemnames (the sets' new names); the core comes with `files`
 
 
 def step_jsonguards(server, data, ctx):

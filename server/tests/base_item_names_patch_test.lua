@@ -176,6 +176,26 @@ ok(leftover:find('<item id="30003" chance="300" />', 1, true) ~= nil, "doubled i
 local out4 = run()
 ok(out4:find("0 file(s) written", 1, true) ~= nil, "fourth run: nothing written (" .. out4 .. ")")
 
+-- O181: a one-letter typo of the base file in one of the items of a kind ("Epice ...") may share the new name; two
+-- different old names may not
+writeFile(data .. "/items/items.xml", [[
+<items>
+	<item id="31001" name="Epic Thing Legs" />
+	<item id="31002" name="Epice Thing Legs" />
+	<item id="31003" name="Epic Thing Legs" />
+	<item id="31004" name="Rare Other Legs" />
+</items>
+]])
+writeFile(root .. "/names.csv", "id,article,name,plural\n31001,,Epic New Legs,\n31002,,Epic New Legs,\n31003,,Epic New Legs,\n")
+local typo = run()
+ok(typo:find("different old names", 1, true) == nil, "a typo of the base file shares the new name: " .. typo)
+local typoItems = readFile(data .. "/items/items.xml")
+ok(select(2, typoItems:gsub('name="Epic New Legs"', "")) == 3, "all three items got the name: " .. typoItems)
+writeFile(data .. "/items/items.xml", "<items>\n\t<item id=\"31001\" name=\"Epic Thing Legs\" />\n"
+	.. "\t<item id=\"31004\" name=\"Rare Other Legs\" />\n</items>\n")
+writeFile(root .. "/names.csv", "id,article,name,plural\n31001,,Epic New Legs,\n31004,,Epic New Legs,\n")
+ok(run():find("different old names", 1, true) ~= nil, "two different old names still stop the tool")
+
 os.execute("rm -rf '" .. root .. "'")
 print(string.format("base_item_names_patch_test: %d checks, %d failures", checks, fails))
 if fails > 0 then

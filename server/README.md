@@ -7853,6 +7853,56 @@ apostrophe is escaped for the quote style of its Lua string, and a movements.xml
 an item's old name no longer changes. Fresh install: 1,200 ids (711 old names), 806 loot entries by name turned into
 ids, 387 other mentions; a second run changes nothing.
 
+## Star inlay stones (`tools/patch_star_inlay.py`, `data/scripts/chaos/star_inlay_core.lua`, `tests/star_inlay_test.lua`, O181)
+
+Beta 2026-10-24 (screenshots): "are these items working?" The Star Extractor (golden hammer) and the Common Three Stars
+Inlay Stone (green stone with three stars) looked like leftovers of the base server. **They work.** It is a base system
+(`data/scripts/customs/tier_system`: `inlay_stars.lua`, `upgrade_system_tiers.lua`, `star_extractor.lua`, each an
+`Action()` registered by item id), and nothing in our code replaces, disables or duplicates it (no Chaos script uses
+these ids except the price tables, `sell_prices.lua` and `chaos_item_prices_data.lua`).
+- **What it does.** 20 base set pieces have twins with stars: Skeletal (26708-26711), Netherwave (26761-26764),
+  Ironwrath (26766-26769), Blightwoven (26770-26773) and Ashborne (26774-26777) helmet, armor, legs and boots. A Star
+  Inlay Stone (27133) turns a plain piece into its empty-star twin (27113-27132). A Common, Rare, Very Rare, Epic or
+  Legendary stone of 1, 2 or 3 stars (27134-27148) turns the empty-star twin into one of 15 star variants (26813-27112,
+  300 items: "Tier I ( 1 Star )" to "Tier V ( 3 Star )"; the variants differ in items.xml armor, absorbs, skills and speed,
+  for example boots +35 speed at Tier I and +65 at Tier V). The Star Extractor (27149) turns a star variant back into
+  the empty twin and gives the stone back. One stone per piece; a piece is never lost.
+- **Where they drop.** The base monster loot, by item name (so the Chaos item finder shows it): the Master of the
+  Elements (Star Inlay Stone 81% for up to 5, the 15 stones 5-57%, the Extractor 14% for up to 3) and the seven monsters
+  of its cave (Herk, Alchemist, Brute, Forgepriest, Wardragon, Mega Dragon, Mitmah Vanguard; some also spawn in
+  open hunts such as the Ironhorn Slagworks): the Common and Rare stones 3-9%, the Extractor 4%. The base boss bag
+  script (`customs/enhanced_loot`) and the base task of the Master of the Elements list the same items, and the weekly
+  chest the plaza had (unique id 34804, "Hall order") gave 2 + 2. The drop tooltip numbers (Herk 6% and Alchemist 6% for
+  the Common Three Stars stone) are the base chances. The price tables sell the stones to the Loot Buyer and the Auto
+  Seller (660 gold for a Common stone, 5,600 for 27133, 11,000 for the high ones).
+- **How it fits the Chaos item system.** The stock scripts swap the item id with `item:transform`, which keeps every
+  custom attribute: item level, rarity, modifiers, sockets and gems stay. The star variants have their own equip
+  entries in `movements.xml` (the class lists of the vocations step cover them like any equipment), and the Chaos
+  names are in `base_item_names.csv`. Stars add a few points of base stats, orbs and gems add modifiers: different
+  layers, no conflict, no redundancy worth retiring a working system for.
+- **Fixes** (`patch_star_inlay.py`, install step `starinlay`, after `itemnames`; idempotent; `--check`, `--dry-run`):
+  1. The stone wrote the type's description over the item's own description attribute, which holds the Chaos crafting
+     text ("Item Level: N. modifiers", sockets). Now `StarInlay.refineItem` keeps the text and adds one
+     "Refined by <name>." line; a piece with no own text still gets the tier line, as before. The extractor removes
+     the stale "Refined by" line from the empty twin.
+  2. The stone and the extractor change the item type of a **worn** piece. The equip event had added the old type's
+     speed and skills, so taking the piece off took the new type's away (boots: 30 speed of drift per change). Both now
+     refuse a worn piece ("Take it off first: its stars change what it gives.", pt-BR in `i18n_strings.lua`;
+     `StarInlay.isWorn(toPosition)`: x 65535 and y 1-63).
+  3. The items.xml descriptions of 27133-27149 said "certain equipment"; they name the five sets and "not worn".
+  4. `base_item_names.csv`: the typo "Epice" of one star variant (27048) is "Epic" (the tool now lets a one-letter typo of
+     the base file share the new name of its kind, `_near`), and the four "Netherwave Bots" (26894, 26954, 27014, 27074)
+     are "Boots".
+- **Not changed.** Drops, chances, ids and what a character holds. Nothing is retired: the system is small (20 pieces) but
+  complete, and the stones sell. If the owner wants it gone, the loot lines of the stones in the base monsters, the boss
+  bag and the task reward are the only sources (`patch_base_throwables.py` shows the pattern); the stones keep selling.
+- **Tests.** `tests/star_inlay_test.lua` (64 checks): the core, the patch on fixtures of the stock scripts (applies, idempotent,
+  parses, `--check` / `--dry-run`, a changed base script is reported) and the patched stone and extractor scripts on a
+  mocked engine (a piece with a rolled description keeps it, a piece without gets the tier line, the extractor returns the
+  stone, a worn piece is refused and nothing is used up, the stock refusals stay, pt-BR). `tests/base_item_names_patch_test.lua`
+  covers the typo rule. Run on a real base copy 2026-10-24: both scripts patched, parse in Lua 5.3 and LuaJIT, a second run
+  changes nothing. Not run live.
+
 ## Base monster names (`tools/patch_base_monster_names.py`, `data/monster/base_monster_names.csv`, `tests/base_monster_names_patch_test.lua`)
 
 Owner decision: the base monsters that carried names of the other world (its named bosses, races, factions, cults,
