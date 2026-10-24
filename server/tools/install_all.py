@@ -185,6 +185,9 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   annihilatorsolo tools/patch_annihilator_solo.py  the Annihilator lever lets one to four players in (demons scale with the team)
   absorbceiling tools/patch_absorb_ceiling.py    the base absorb event limits the summed absorb storages to 75 percent per
                type (README "Absorb ceiling"; matches engine patch 0049)
+  openpotions  tools/patch_open_potions.py       every class drinks every health, mana and spirit potion: the vocation lists
+               of the base potions.lua and the class words of the Look texts go, the level gates stay (README "Open
+               potions"; after the vocations step)
   badges       tools/patch_badges.py             the badge slot (engine 0058, client 0113): the badges get slot type "badge";
                the deck, ship, belt and gloves slots are retired: Player:onMoveItem refuses them, a carried deck
                holds the cards (using a card carried anywhere puts it in a deck and turns it on: README "Cards and decks"), a
@@ -943,6 +946,12 @@ def step_badges(server, data, ctx):
     return tool_result(run_tool(args, 'patch_badges.py'))
 
 
+def step_openpotions(server, data, ctx):
+    args = [tool('patch_open_potions.py'), data] + (['--dry-run'] if ctx['dry'] else [])
+    return tool_result(run_tool(args, 'patch_open_potions.py'))
+
+
+STEPS.insert(STEPS.index('vocations') + 1, 'openpotions')  # every class drinks every potion, after the class lists are added
 STEPS.insert(STEPS.index('absorbceiling') + 1, 'badges')  # the badge slot: after itemnames (loot by name)
 
 

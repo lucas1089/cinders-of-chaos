@@ -3687,7 +3687,7 @@ owner supplied the file). `assemble_client.sh` applies the base patches to `mods
 `game_helper`, so `game_interface`'s load-later list, the key bindings and the battle list reach it unchanged.
 - **Pure files, each with a test.** `helper_config.lua` (the settings, `sanitize`, the rotation view), `helper_logic.lua`
   (areas, hits, target modes A to H, heal, training, haste, slots), `helper_spells.lua` (which spells each picker offers,
-  from `SpellInfo.Default`, vocation ids 1 to 25), `helper_potions.lua` (the potions per class line, the Everfull flasks
+  from `SpellInfo.Default`, vocation ids 1 to 25), `helper_potions.lua` (all 12 stock potions with client and server ids and levels, offered to every class: health, then mana, then the spirit potions as a health and a mana entry, the strongest first; saved rows keep their key `id` or `id:1` / `id:2`; the test compares the list with the Apothecary's table in `apothecary_config.lua` so it cannot drift; the Everfull flasks
   266 and 268 with their fixed roll plus a percent), `helper_cycle.lua` (the 50 ms tick without replay), and the four of "Runes, Auto sell, Follow and ally heals". `helper.lua` is
   the engine glue; `helper_test.lua` runs it against a mock engine.
 - **Window.** Six tabs, 640 px wide. Healing (3 heal rows, 3 potion rows, mana training, Auto Haste), Combat (presets,

@@ -441,6 +441,7 @@ jobs:
           python3 -I server/tools/install_apothecary_test.py  # Veyra the Apothecary (hub supplies)
           python3 -I server/tools/patch_bank_payments_test.py  # every gold price of the base scripts pays from the bank too
           python3 -I server/tools/add_vocations_potion_text_test.py
+          python3 -I server/tools/patch_open_potions_test.py  # every class drinks every health, mana and spirit potion
           python3 -I server/tools/exercise_charges_patch_test.py
           python3 -I server/tools/patch_exercise_weapons_test.py  # one melee training weapon: stock lines, descriptions, NPC lists
           python3 -I server/tools/patch_skill_stages_test.py  # skill and magic level stages x5 from 101: synthetic copies, idempotent, CRLF, refusals

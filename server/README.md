@@ -4797,6 +4797,17 @@ Owner request 2026-10-16: "Remove the potion flasks and make the first pots infi
   `{id = ..., buy = ...}` row removed). A text about a flask deposit (it says "deposit" and names a flask, vial or potion:
   NPC dialogue, keyword replies, script messages, the flask descriptions in items.xml) loses its deposit and flask
   sentences, or becomes `flaskText` ("Potions no longer leave an empty flask. A potion store still buys old flasks.").
+- **Open potions** (owner 2026-10-24: "let every class use any type of potion", ROADMAP O175). `tools/patch_open_potions.py`
+  (install step `openpotions`, after `vocations`) removes the `vocations = {...}` list of every health, mana and spirit
+  entry of the base `data/actions/scripts/other/potions.lua`, so no class is refused; the refusal text of the entry becomes
+  "Only characters of level N or above may drink this fluid." and the Look text in `items.xml` "This potion can be consumed by
+  characters of level N or higher." **The level gates stay** (50 strong, 80 great and great spirit, 130 ultimate, 200
+  supreme; the base file has its own for the later tiers): they keep a low character off the strongest potions, and the
+  Apothecary refuses a buyer below them too. The buff potions (berserk, mastermind, bullseye: a condition, no heal) keep their
+  lists, as does `strengthening_potions.lua`. `add_vocations.py` only appends to a list that exists, so its re-run brings
+  nothing back. Tests: `tools/patch_open_potions_test.py`; `tests/potions_patch_test.lua` runs the patched script on a mock
+  engine and checks that every vocation id (0-25: the stock ones, Thief, Ninja, Samurai, Necromancer, Lich, Templar and the
+  rest) drinks every healing potion. The helper client lists all of them (`helper_potions.lua`).
 - **Old flasks keep their value.** Nothing removes the flasks players hold. The NPCs' `shop_sellable` entries stay and
   the Loot Buyer and the Auto Seller still pay the old 5 gold each (`sell_prices.lua`), so nobody loses gold. No source
   creates new ones.
