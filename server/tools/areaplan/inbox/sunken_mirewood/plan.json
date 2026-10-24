@@ -2,10 +2,10 @@
   "schema": "chaos-area-plan/1",
   "id": "sunken_mirewood",
   "name": "Sunken Mirewood",
-  "biome": "swamp",
+  "biome": "marsh",
   "size": [
-    84,
-    64
+    168,
+    128
   ],
   "floors": 1,
   "level": [
@@ -20,7 +20,10 @@
       "id": "camp",
       "floor": 1,
       "shape": "room",
-      "size": "small",
+      "size": [
+        14,
+        12
+      ],
       "place": "west",
       "role": "camp",
       "pz": true
@@ -29,7 +32,10 @@
       "id": "reeds",
       "floor": 1,
       "shape": "cave",
-      "size": "large",
+      "size": [
+        30,
+        24
+      ],
       "place": "northwest",
       "role": "hunt"
     },
@@ -37,7 +43,10 @@
       "id": "bog",
       "floor": 1,
       "shape": "cave",
-      "size": "large",
+      "size": [
+        36,
+        28
+      ],
       "place": "center",
       "role": "hunt"
     },
@@ -45,7 +54,10 @@
       "id": "drowned",
       "floor": 1,
       "shape": "room",
-      "size": "medium",
+      "size": [
+        26,
+        20
+      ],
       "place": "south",
       "role": "hunt"
     },
@@ -53,7 +65,10 @@
       "id": "lair",
       "floor": 1,
       "shape": "arena",
-      "size": "medium",
+      "size": [
+        24,
+        22
+      ],
       "place": "east",
       "role": "boss"
     }
@@ -62,27 +77,27 @@
     {
       "from": "camp",
       "to": "reeds",
-      "width": 3
+      "width": 5
     },
     {
       "from": "reeds",
       "to": "bog",
-      "width": 3
+      "width": 5
     },
     {
       "from": "bog",
       "to": "drowned",
-      "width": 3
+      "width": 5
     },
     {
       "from": "camp",
       "to": "drowned",
-      "width": 2
+      "width": 5
     },
     {
       "from": "bog",
       "to": "lair",
-      "width": 3
+      "width": 5
     }
   ],
   "entry": {
@@ -95,27 +110,27 @@
     {
       "zone": "reeds",
       "monster": "Lochtag",
-      "count": 6,
+      "count": 24,
       "pack": 2,
       "respawn": 90
     },
     {
       "zone": "bog",
       "monster": "Hodag",
-      "count": 6,
+      "count": 24,
       "pack": 2,
       "respawn": 90
     },
     {
       "zone": "bog",
       "monster": "Babayaga",
-      "count": 3,
+      "count": 12,
       "respawn": 120
     },
     {
       "zone": "drowned",
       "monster": "Nightfang Widow",
-      "count": 5,
+      "count": 20,
       "pack": 2,
       "respawn": 120
     }
@@ -130,5 +145,5 @@
       "name": "Wandering Merchant"
     }
   ],
-  "notes": "Smoke plan of the map inbox: a swamp hunt for level 500 with three hunting rooms and a boss at the end."
+  "notes": "A swamp hunt for level 500 with three hunting rooms and a boss at the end. Round 2: twice the size, wide paths, the open marsh biome."
 }

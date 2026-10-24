@@ -32,7 +32,7 @@
     },
     "biome": {
       "type": "string",
-      "description": "one of the biomes of `area_planner.py catalogue` (swamp, crypt, lava, forest, ice, cave, waste, vault, catacomb, hall, abyss, sanctum; forest_pack and ice_pack need the pack items)"
+      "description": "one of the biomes of `area_planner.py catalogue` (swamp, marsh, crypt, lava, forest, ice, cave, waste, vault, catacomb, hall, abyss, sanctum; forest_pack and ice_pack need the pack items)"
     },
     "size": {
       "type": "array",
