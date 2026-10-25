@@ -21893,6 +21893,42 @@ has its own limit, website/README.md "Passwords"). Each guess also costs a PBKDF
   a good login, limits off, bounded memory). The chain 0001-0047 applied; `protocollogin.cpp`, `protocolgame.cpp` and
   `configmanager.cpp` compile. Not run in a full server build.
 
+## Pre-auth connection limits (O200) (engine `src-patches/0067-preauth-limits.patch`, `src/chaospreauth.h`)
+
+Hardening against connection floods before login. The stock engine accepts any number of connections and holds each for
+up to 30 s before it has said a word; its only throttle stops 6 connections of one IP within 500 ms. Now a connection
+that has not logged in yet is counted, and the count is limited. All keys are read at start (`config.lua`; 0 turns a
+limit off; not written by the install tools, the defaults hold):
+
+| Key | Default | Meaning |
+|---|---|---|
+| `preAuthMaxPerIp` | 5 | connections of one IP that have not finished their login |
+| `preAuthMaxTotal` | 200 | the same over all IPs |
+| `preAuthDeadline` | 15 | seconds; a connection not logged in by then is closed (0: no deadline) |
+| `preAuthRateMax`, `preAuthRateWindow` | 10, 10 | new connections one IP may open within the window (seconds) |
+| `preAuthCooldown` | 30 | seconds an IP over the rate is refused |
+| `preAuthExemptLoopback` | true | 127.0.0.0/8 is not counted (admin tools, watchdog, health check) |
+
+- A refused connection is closed at once, before a packet is read. The check runs in `ServicePort::onConnectionReady`,
+  before the old ban-list throttle. One console line per kind per 10 s: `[Pre-auth limit] ... : a.b.c.d (N more
+  refused since the last line)`.
+- Counted: every connection of the login (7171), game (7172) and status ports. A login or status connection ends by
+  closing; a game connection ends its pre-auth state when its login went through (`ProtocolGame::login` / `connect`).
+  The count is given back exactly once per connection, on every close path and in the destructor, behind the
+  connection's lock and a flag; the limiter itself is one mutex over a bounded table (100,000 IPs, expired
+  ones swept; a table full of live entries refuses new IPs).
+- Not counted: loopback (above) and the trusted gateways of patch 0025 (their clients are counted by their own address
+  from the PROXY header, as the old throttle does). The live cast port has its own acceptor and is not covered.
+- **Trade-offs:** several players behind one address (a family, an event, carrier NAT) share the per-IP and rate
+  limits: one login is 2 connections (login server, then game) plus status checks, so 5 open and 10 per 10 s allow
+  about 4 players logging in at the same moment from one address. Raise `preAuthMaxPerIp` / `preAuthRateMax` for an
+  event, or set them to 0. A load test with many bots from one non-loopback IP needs the same. The 15 s deadline
+  must stay above the slowest login (PBKDF2 queue on the login worker) under load.
+- Test: `tools/chaospreauth_test.cpp` (CI takes `chaospreauth.h` out of the patch: per-IP and global caps, release
+  without leaks, loopback, rate and cooldown, limits off, bounded table, log throttling, 8 threads; also clean under
+  ThreadSanitizer). The chain 0001-0067 applies to the base; `configmanager.cpp`, `connection.cpp`, `server.cpp` and
+  `protocolgame.cpp` compile with the build flags. Not run in a full server build or against a live flood.
+
 ## Leech from real damage (engine `src-patches/0048-leech-real-damage.patch`)
 
 Report C1 (2026-10-20): "mana leech does not work on the Templar (item / buff)". Life and mana leech (patches 0004, 0011, 0015)
