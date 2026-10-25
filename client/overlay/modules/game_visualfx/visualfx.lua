@@ -58,13 +58,15 @@ local function now()
   return g_clock.millis()
 end
 
-local function optionValue(name)
+-- read from the settings once per option and kept (O235); onOption below refreshes an entry, game start clears them all
+local optionCache = L.newOptionCache(function(name)
   local cs = modules.client_settings
-  if cs and cs.getOption then
-    local ok, value = pcall(cs.getOption, name)
-    if ok then return L.optionOn(name, value) end
-  end
-  return L.DEFAULTS[name] == true
+  if cs and cs.getOption then return pcall(cs.getOption, name) end
+  return false
+end)
+
+local function optionValue(name)
+  return optionCache.get(name)
 end
 
 local function mapPanel()
@@ -495,6 +497,7 @@ end
 
 -- from the options' apply (client_settings dataset.lua) and after the base's enableShaders clears the map shader
 function onOption(name, value)
+  optionCache.set(name, value)
   if name == 'creatureShadow' then
     applyShadow()
   elseif name == 'screenGrade' then
@@ -550,6 +553,7 @@ end
 
 -- ---------------------------------------------------------------- lifecycle
 local function onGameStart()
+  optionCache.clear()
   flasher = L.newFlasher()
   stopShake()
   sceneFadeStart()

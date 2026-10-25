@@ -393,6 +393,73 @@ do
   eq(src:find('L.ARC_MISSILES', 1, true) ~= nil, true, 'the arc list is sent')
 end
 
+do -- O235: option values are read once and refreshed by the options' apply
+  local reads, store, up = 0, { hitFlash = false, bloom = true }, true
+  local C = L.newOptionCache(function(name)
+    reads = reads + 1
+    if not up then return false end
+    return true, store[name]
+  end)
+  eq(C.get('hitFlash'), false, 'cache: stored false')
+  eq(C.get('hitFlash'), false, 'cache: second read')
+  eq(C.get('bloom'), true, 'cache: stored true')
+  eq(reads, 2, 'cache: one settings read per option')
+  for _ = 1, 50 do C.get('hitFlash'); C.get('bloom') end
+  eq(reads, 2, 'cache: hits do not read the settings')
+  C.set('hitFlash', true)
+  eq(C.get('hitFlash'), true, 'cache: set by the option change')
+  C.set('bloom', 'junk')
+  eq(C.get('bloom'), false, 'cache: junk is the default (bloom off)')
+  eq(reads, 2, 'cache: set does not read')
+  store.screenGrade = nil
+  eq(C.get('screenGrade'), false, 'cache: nil screenGrade is the default, off')
+  eq(C.get('sceneFade'), true, 'cache: nil sceneFade is the default, on')
+  C.clear()
+  store.hitFlash = false
+  eq(C.get('hitFlash'), false, 'cache: clear reads again')
+  up = false
+  local C2 = L.newOptionCache(function() return false end)
+  eq(C2.get('hoverOutline'), false, 'cache: no settings, default off')
+  eq(C2.get('deathFade'), true, 'cache: no settings, default on')
+  up = true
+  local seen = 0
+  local C3 = L.newOptionCache(function() seen = seen + 1; return seen > 1, true end)
+  eq(C3.get('bloom'), false, 'cache: settings not ready, default')
+  eq(C3.get('bloom'), true, 'cache: a failed read is not kept')
+  local f = io.open(dir .. 'visualfx.lua', 'r')
+  local src = f and f:read('*a') or ''
+  if f then f:close() end
+  eq(src:find('optionCache.set(name, value)', 1, true) ~= nil, true, 'onOption refreshes the cache')
+  eq(src:find('optionCache.clear()', 1, true) ~= nil, true, 'game start clears the cache')
+  local _, direct = src:gsub('pcall%(cs%.getOption', '')
+  eq(direct, 1, 'getOption is called in one place only')
+end
+
+do -- O235: DEFAULTS match the value of each option in the base patches' dataset.lua entries (so a checkbox that shows a missing value matches)
+  local root = dir .. '../../../base-patches/'
+  local want = {}
+  for _, n in ipairs(L.OPTIONS) do want[n] = true end
+  local found = 0
+  local ok = io.open(root .. '0126-visual-effects.patch', 'r')
+  if ok then
+    ok:close()
+    for _, pf in ipairs({ '0126-visual-effects', '0127-spell-light', '0128-living-liquids', '0130-weather-option', '0132-map-bloom',
+      '0134-soft-damage-numbers', '0136-target-outline-options', '0138-scene-fade-option', '0139-death-fade',
+      '0144-ambient-particles-option', '0146-smooth-bars', '0147-missile-trails', '0149-light-flicker' }) do
+      local h = io.open(root .. pf .. '.patch', 'r')
+      local text = h and h:read('*a') or ''
+      if h then h:close() end
+      for name, val in text:gmatch('\n%+  (%w+) = {\n%+    value = (%a+),') do
+        if want[name] then
+          found = found + 1
+          eq(L.DEFAULTS[name], val == 'true', 'DEFAULTS.' .. name .. ' matches the dataset value')
+        end
+      end
+    end
+    eq(found, #L.OPTIONS, 'every visualfx option has a dataset default in the base patches')
+  end
+end
+
 if fails > 0 then
   print(fails .. ' of ' .. checks .. ' checks failed')
   os.exit(1)

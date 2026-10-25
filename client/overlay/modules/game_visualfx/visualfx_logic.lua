@@ -47,6 +47,26 @@ function L.optionOn(name, value)
   return L.DEFAULTS[name] == true
 end
 
+-- O235: the option values, read from the settings once and kept. read(name) returns ok, value (ok false: the settings are not
+-- there yet, the default is answered and nothing is kept). The options' apply tells set(name, value) on every change (and
+-- game start clears it), so a hit, a mouse move or an outline refresh costs a table lookup instead of a settings call.
+function L.newOptionCache(read)
+  local vals = {}
+  local C = {}
+  function C.get(name)
+    local v = vals[name]
+    if v ~= nil then return v end
+    local ok, raw = read(name)
+    if not ok then return L.DEFAULTS[name] == true end
+    v = L.optionOn(name, raw)
+    vals[name] = v
+    return v
+  end
+  function C.set(name, value) vals[name] = L.optionOn(name, value) end
+  function C.clear() vals = {} end
+  return C
+end
+
 -- ---------------------------------------------------------------- hit flash
 -- Otc::MessageMode of this client as g_map.onImpactText gets it (same as game_damagescatter's L.MODE)
 L.MODE = { DAMAGE_DEALT = 21, DAMAGE_RECEIVED = 22, DAMAGE_OTHERS = 25 }
