@@ -344,6 +344,17 @@ local tb = K.tracker(cfg, {level = 20, stats = {}, done = {lvl8 = 1, passive1 = 
 	"en", 3)
 eq(#tb, 3, "level 20: the next band's goals fill the tracker")
 check(not row(tb, "bounty1") and row(tb, "task1"), "bounty1 replaced by task1")
+-- O240: a next step between level 12 and 20 that is not the level 20 goal alone
+local t14 = K.tracker(cfg, {level = 14, stats = {}, done = {lvl8 = 1, passive1 = 1, magic1 = 1, bounty1 = 1}}, "en", 3)
+check(row(t14, "lvl20") and row(t14, "spells25"), "level 14: level 20 and the level 25 spells on the tracker")
+eq(row(t14, "spells25").progress, 14, "spells25 progress is the level")
+local sp = K.evaluate(cfg, {level = 24, stats = {}, done = {}, now = 1})
+check(#sp > 0, "level 24 completes goals")
+for _, g in ipairs(sp) do check(g.key ~= "spells25", "spells25 waits for level 25") end
+local sp25 = K.evaluate(cfg, {level = 25, stats = {}, done = {lvl20 = 1}, now = 1})
+local got25 = false
+for _, g in ipairs(sp25) do got25 = got25 or g.key == "spells25" end
+check(got25, "spells25 at level 25")
 -- a paced kill can count a fraction: whole numbers on the wire
 eq(row(K.tracker(cfg, {level = 20, stats = {kills_tiered = 12.5}, done = {}}, "en", 9), "tiered50").progress, 12,
 	"fractional counter floored")

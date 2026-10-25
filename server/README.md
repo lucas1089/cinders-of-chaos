@@ -22480,6 +22480,20 @@ silently. Hints and reveals are bits by index: new ones go at the end of the lis
 silently, at its next login (`M.sync`); the rest come at their level. Storages 7101550 - 7101559 (+0 hints, +1 reveals,
 +2 hints known, +3 reveals known). Tests: `tests/firsthour_test.lua`.
 
+**O240, the first hour walked to level 30.** A character starts at level 8 (no tutorial island), wearing its kit. The model
+(`tools/progression_model.lua`) puts levels 8 to 20 at 0.70 - 0.74 minutes a level, so level 25 comes about 12 minutes in.
+`--spells` shows the gap: every class has spells at 1 and 8, then nothing until 25 (Mystic and Elementalist 20; the Necromancer
+line 12, 16 and 20). Weapon coverage has 4 or more weapons in the 1-20 band for every class, so the upgrade exists; what was
+missing was telling the player. Changes: (1) the hints came together (a new character had three due at its first login, level 8,
+beside the welcome and the Helper): `F.run` now says one per run (`cfg.pace.perRun`) and `F.later` schedules the next after
+`cfg.pace.gapMs` (75 s); a hint with hunt names reads them from the map (`F.peekMarks`) when the reveal came in an earlier run;
+(2) `dueHints` orders by level, so hints added at the end of the list can sit at a lower level: `upgrade` (10, the town shops
+and the Item Finder) and `nextspells` (16, the next spells at about level 25); (3) Next Goals `spells25` (unlocks at 12, "Reach
+level 25: new spells", opens the Spellbook), so the tracker has a next step between the passive point and level 20; (4) the
+Portuguese hints used `Aventura >`, `Economia >` and an English `Next Goals`: they now use the menu names the client shows.
+Left alone on purpose: spell unlock levels (spells_chaos.xml, rotation data, icons and tests change together), the top menu
+(shows every system from the start), and the milestone gifts (10 of 10 storages used).
+
 ## Next Goals (`goals.lua`, `goals_core.lua`, `goals_config.lua`, `sql/chaos_goals.sql`, client `game_goals`)
 
 Owner goal (2026-10-15): item acquisition and progression must be clear: how to evolve, what the goal is, what to do

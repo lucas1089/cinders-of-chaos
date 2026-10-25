@@ -25,6 +25,10 @@ return {
 	-- hunts) are named with the hunts near the temple: up to `count` whose band starts at most `slack` above the level
 	plans = {count = 3, slack = 40},
 
+	-- staggering (O240): one hint per run, the next after gapMs while hints are still due. A character starts at level 8
+	-- with three hints due; they used to come at once, beside the welcome and the Helper
+	pace = {perRun = 1, gapMs = 75000},
+
 	-- the toast and the message after the welcome (newplayer.lua shows it 2.5 s after the kit)
 	delayMs = 9000,
 
@@ -40,21 +44,21 @@ return {
 			en = "Better gear: the shops in town sell weapons and armour for gold, and the Loot Buyer in the teleport room's market buys what you find. "
 				.. "Economy > Item Finder tells where any item drops or who sells it.",
 			pt = "Equipamento melhor: as lojas da cidade vendem armas e armaduras por ouro, e o Comprador de Saque no mercado "
-				.. "da sala de teleportes compra o que você encontrar. Economia > Localizador de Itens mostra onde cada item cai ou quem o vende."},
+				.. "da sala de teleportes compra o que você encontrar. Economy > Item Finder mostra onde cada item cai ou quem o vende."},
 		{key = "bounty", level = 8,
 			en = "The Bounty Board is open to you (Adventure > Bounty Board): daily contracts at your level for gold and orbs. "
 				.. "Archivist Maelis, in the teleport room's market, has her first tale for you: ask her for \"tales\". New hunts: %s.",
-			pt = "O Quadro de Recompensas está aberto (Aventura > Quadro de Recompensas): contratos diários do seu nível por ouro e orbes. "
+			pt = "O Bounty Board está aberto (Adventure > Bounty Board): contratos diários do seu nível por ouro e orbes. "
 				.. "A Arquivista Maelis, no mercado da sala de teleportes, tem a primeira história para você: peça \"histórias\". Novas caçadas: %s."},
 		{key = "passive", level = 12,
 			en = "Your first passive point: Character > Passive Tree. Start next to the centre and press Apply Plan.",
 			pt = "Seu primeiro ponto passivo: Personagem > Árvore Passiva. Comece perto do centro e clique em Aplicar Plano."},
 		{key = "twenty", level = 20,
 			en = "Level 20: a milestone gift is in your backpack. Hunts for your level: %s. The Bestiary (Hunt > Bestiary) shows where every creature lives.",
-			pt = "Nível 20: um presente de marco está na sua mochila. Caçadas do seu nível: %s. O Bestiário (Caça > Bestiário) mostra onde cada criatura vive."},
+			pt = "Nível 20: um presente de marco está na sua mochila. Caçadas do seu nível: %s. O Bestiário (Hunt > Bestiário) mostra onde cada criatura vive."},
 		{key = "invasion", level = 30,
 			en = "From now on you can defend the towns in invasions and earn their rewards. Party Finder (Social) helps you find a group.",
-			pt = "A partir de agora você pode defender as cidades nas invasões e ganhar as recompensas. O Localizador de Grupo (Social) ajuda a achar um grupo."},
+			pt = "A partir de agora você pode defender as cidades nas invasões e ganhar as recompensas. O Party Finder (Social) ajuda a achar um grupo."},
 		{key = "arena", level = 50,
 			en = "The Arena is open from level 50. Hunts for your level: %s.",
 			pt = "A Arena abre a partir do nível 50. Caçadas do seu nível: %s."},
@@ -67,7 +71,7 @@ return {
 		{key = "goals", level = 120,
 			en = "Lost? Adventure > Next Goals shows what to do at your level, why, where, and the gear path of your band. "
 				.. "Hunts for your level: %s.",
-			pt = "Perdido? Adventure > Next Goals mostra o que fazer no seu nível, por quê, onde, e o caminho de equipamento "
+			pt = "Perdido? Adventure > Próximos objetivos mostra o que fazer no seu nível, por quê, onde, e o caminho de equipamento "
 				.. "da sua faixa. Caçadas do seu nível: %s."},
 		{key = "pocket", level = 150,
 			en = "Level 150: pocket bosses open in the Boss Spawns window (Adventure menu): a private copy of a boss with daily charges. "
@@ -114,7 +118,20 @@ return {
 			pt = "Nível 1600: o Fallen Sanctum está aberto. Caçadas do seu nível: %s."},
 		{key = "throne", level = 2000,
 			en = "Level 2000: The Pyre Throne, the last dungeon, is open. Its best chest is at difficulty 6.",
-			pt = "Nível 2000: o Pyre Throne, a última masmorra, está aberto. O melhor baú é na dificuldade 6."}
+			pt = "Nível 2000: o Pyre Throne, a última masmorra, está aberto. O melhor baú é na dificuldade 6."},
+		-- O240: the first levels had no next step between the bounty (8) and the passive point (12), and no new spell
+		-- between level 8 and 25. These two sit at lower levels than the entries before them (the bits are by index);
+		-- dueHints orders by level
+		{key = "upgrade", level = 10,
+			en = "Time for a weapon upgrade: the town shops sell a stronger weapon for your class, and the Loot Buyer pays for "
+				.. "what you found. Economy > Item Finder shows who sells any item. Hunts for your level: %s.",
+			pt = "Hora de melhorar a arma: as lojas da cidade vendem uma arma mais forte para a sua classe, e o Comprador de "
+				.. "Saque paga pelo que você achou. Economy > Item Finder mostra quem vende cada item. Caçadas do seu nível: %s."},
+		{key = "nextspells", level = 16,
+			en = "Your next class spells unlock around level 25 (a few classes at 20): Character > Spellbook lists every spell with its level. Until then, "
+				.. "spend the passive points (levels 12, 16 and 20) and take a bounty: Adventure > Next Goals shows the next step.",
+			pt = "As próximas magias da sua classe se abrem por volta do nível 25 (algumas classes no 20): Personagem > Spellbook lista cada magia com o seu nível. "
+				.. "Até lá, gaste os pontos passivos (níveis 12, 16 e 20) e aceite uma recompensa: Adventure > Próximos objetivos mostra o próximo passo."}
 	},
 
 	none = {en = "none near your temple yet, ask the Bestiary", pt = "nenhuma perto do seu templo ainda, consulte o Bestiário"}

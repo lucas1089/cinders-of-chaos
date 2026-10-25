@@ -35,16 +35,31 @@ function M.all(n)
 	return floor(2 ^ n - 1)
 end
 
--- the hints due at a level (hint level <= level) and not given yet: list of indexes. A hint missed (a level gained
--- before the kit, on the tutorial island) comes at the next chance.
+-- the hints due at a level (hint level <= level) and not given yet: list of indexes, lowest level first (ties by index;
+-- hints added later at the end of the list can sit at a lower level than the ones before them). A hint missed (a level
+-- gained before the kit, on the tutorial island) comes at the next chance.
 function M.dueHints(mask, level)
 	local out = {}
-	for i, h in ipairs(M.cfg().hints) do
+	local hints = M.cfg().hints
+	for i, h in ipairs(hints) do
 		if h.level <= (tonumber(level) or 0) and not M.has(mask, i) then
 			out[#out + 1] = i
 		end
 	end
+	table.sort(out, function(a, b)
+		if hints[a].level ~= hints[b].level then
+			return hints[a].level < hints[b].level
+		end
+		return a < b
+	end)
 	return out
+end
+
+-- how many hints one run may say and how long the rest waits (cfg.pace): a new character starts at level 8 with three
+-- hints due, which used to arrive together with the welcome and the Helper. Returns perRun, gapMs.
+function M.pace()
+	local p = M.cfg().pace or {}
+	return math.max(1, math.floor(tonumber(p.perRun) or 1)), math.max(1000, math.floor(tonumber(p.gapMs) or 60000))
 end
 
 -- the reveals due at a level: one pick covers them all (the hunts of the current level)
