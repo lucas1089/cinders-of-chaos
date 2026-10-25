@@ -20,7 +20,9 @@ assert(cfg.storage.last <= 7101559)
 local last = 0
 for i, h in ipairs(cfg.hints) do
 	assert(h.en and h.pt and h.key, "hint " .. i .. " in both languages")
-	assert(h.level >= last, "hints sorted by level"); last = h.level
+	if i <= 22 then -- the hints of 2026-10-15; O240 added two at lower levels at the end (dueHints orders by level)
+		assert(h.level >= last, "hints sorted by level"); last = h.level
+	end
 	local a = select(2, h.en:gsub("%%s", "")); local b = select(2, h.pt:gsub("%%s", ""))
 	eq(a, b, "same placeholders in both languages: " .. h.key); assert(a <= 1)
 	assert(not h.en:find("\226\128\148") and not h.pt:find("\226\128\148"), "no em dash")
@@ -33,7 +35,11 @@ eq(M.set(-1, 2), 2); eq(M.set(2, 2), 2); eq(M.set(2, 1), 3); eq(M.all(3), 7); eq
 
 -- ------------------------------------------------------------------ due
 local due = M.dueHints(0, 1); eq(#due, 1); eq(cfg.hints[due[1]].key, "start")
-due = M.dueHints(M.set(0, 1), 12); eq(#due, 3, "gear, bounty, passive")
+due = M.dueHints(M.set(0, 1), 12); eq(#due, 4, "gear, bounty, upgrade, passive")
+eq(cfg.hints[due[1]].key, "gear"); eq(cfg.hints[due[2]].key, "bounty"); eq(cfg.hints[due[3]].key, "upgrade", "by level, not by index")
+eq(cfg.hints[due[4]].key, "passive")
+due = M.dueHints(M.all(#cfg.hints) - 2 ^ 23, 20); eq(#due, 1); eq(cfg.hints[due[1]].key, "nextspells")
+do local perRun, gap = M.pace(); eq(perRun, 1); assert(gap >= 30000 and gap <= 300000, "a gap between hints") end
 due = M.dueHints(M.all(#cfg.hints), 500); eq(#due, 0)
 eq(#M.dueReveals(0, 1), 1); eq(#M.dueReveals(1, 25), 2, "8 and 20"); eq(#M.dueReveals(0, 0), 0)
 
@@ -120,16 +126,25 @@ new.st[7100250] = os.time()
 ChaosPoi.watch[new:getId()] = true
 ChaosNewPlayer.showWelcome(new); flush()
 eq(#new.msgs, 1); assert(new.msgs[1]:find("Rat, Snake (level 2-8)", 1, true), "the hunts named")
+eq(F.pending[new:getId()], nil, "level 1: nothing else due")
 assert(ChaosPoi.seen[new:getGuid()][key(marks[1])], "revealed in the discoveries"); assert(ChaosPoi.dirty[new:getGuid()])
 eq(sent[1][2], "reveal"); eq(sent[1][1], 153)
 -- level 9: the gear and bounty hints; the reveal at 8 finds a new hunt
 marks[#marks + 1] = {k = "hunt", x = 150, y = 120, z = 7, n = "Hunting: Orc (level 9-15)"}
 new.level = 9
 events.ChaosFirstHourAdvance.onAdvance(new, SKILL_LEVEL, 8, 9)
-eq(#new.msgs, 3); assert(new.msgs[3]:find("Orc (level 9-15)", 1, true), "new hunts in the bounty hint")
-assert(not new.msgs[3]:find("Troll", 1, true), "a revealed hunt is not named again")
+eq(#new.msgs, 2, "one hint per run (O240): the gear hint"); assert(new.msgs[2]:find("Item Finder", 1, true))
+assert(F.pending[new:getId()], "the next hint waits")
+new.level = 10
 events.ChaosFirstHourAdvance.onAdvance(new, SKILL_LEVEL, 9, 10)
-eq(#new.msgs, 3, "nothing twice")
+eq(#new.msgs, 3, "the next level says the next hint (bounty) and does not start a second timer")
+assert(new.msgs[3]:find("Orc (level 9-15)", 1, true), "new hunts in the bounty hint")
+flush()
+eq(#new.msgs, 4, "the timer says the next one: upgrade"); assert(new.msgs[4]:find("weapon upgrade", 1, true))
+assert(new.msgs[4]:find("Orc (level 9-15)", 1, true), "the names come from the map, also after the reveal")
+eq(F.pending[new:getId()], nil, "nothing left waiting")
+events.ChaosFirstHourAdvance.onAdvance(new, SKILL_LEVEL, 10, 11)
+eq(#new.msgs, 4, "nothing twice")
 -- Portuguese through the tales' language storage
 dofile("data/scripts/chaos/tales_core.lua")
 new:setStorageValue(ChaosTalesCore.langKey(), 2)
@@ -140,6 +155,9 @@ assert(new.msgs[#new.msgs]:find("Árvore Passiva", 1, true), "pt hint")
 ChaosPoi = nil
 new.level = 20
 events.ChaosFirstHourAdvance.onAdvance(new, SKILL_LEVEL, 19, 20)
+assert(new.msgs[#new.msgs]:find("nível 25", 1, true), "the level 16 hint first (lowest level), in Portuguese")
+assert(not new.msgs[#new.msgs]:find("Next Goals", 1, true), "no English menu name in the Portuguese hint")
+flush()
 assert(new.msgs[#new.msgs]:find("Bestiário", 1, true))
 
 -- ------------------------------------------------------------------ beyond level 100 (2026-10-15)
@@ -164,6 +182,11 @@ for i, h in ipairs(cfg.hints) do
 	eq(M.has(mask, i), h.level <= 450, "sync hint " .. h.key)
 end
 eq(M.sync(5, 3, 3, function() return 1 end, 10), 5, "nothing new")
+-- no Portuguese hint keeps the English name of a menu the client translates (O240)
+for _, h in ipairs(cfg.hints) do
+	assert(not h.pt:find("Next Goals", 1, true) and not h.pt:find("Aventura >", 1, true) and not h.pt:find("Economia >", 1, true),
+		"pt menu names: " .. h.key)
+end
 -- the teleport room hunts
 local plans = {{name = "B", level = {200, 290}}, {name = "A", level = {215, 299}}, {name = "W", level = {480, 640}}}
 local names = M.pickPlans(plans, 210, {count = 3, slack = 40})

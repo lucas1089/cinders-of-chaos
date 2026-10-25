@@ -238,6 +238,7 @@ Walked from the tutorial, the welcome and the new-player scripts. Dead ends foun
 | Invasions at 30, the arena at 50, ascension and rifts at 100 are found by chance | low | hints at 30, 50 and 100 |
 | No signposts by the start temple | low | owner, below |
 | The tutorial and the welcome are English only | medium | the localization work |
+| Three hints at once at the first login (level 8), and no next step between level 12 and 25 | medium | O240: one hint per run, 75 s apart; hints at 10 (weapon upgrade) and 16 (next spells), goal `spells25` |
 | The Thief line's tutorial stations 3-5 were never walked in game | low | owner test |
 
 The hints come once each, as a message and a toast, in English or Brazilian Portuguese. Characters above level 20 when

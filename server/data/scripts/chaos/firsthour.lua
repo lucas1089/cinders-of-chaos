@@ -105,7 +105,46 @@ local function tell(player, text)
 	end
 end
 
--- give what is due at the character's level (once each)
+-- the hunting marks of the player's level nearest its temple, without marking them seen: the names for a hint that
+-- comes after the reveal (the hints are spread out, so the reveal's own names are not at hand)
+function F.peekMarks(player)
+	local P = ChaosPoi
+	if not P or not P.all or not P.key then
+		return {}
+	end
+	local town = player:getTown()
+	local center = town and town:getTemplePosition() or player:getPosition()
+	local names = {}
+	for _, m in ipairs(M.pickHunts(P.all, {}, P.key, center, player:getLevel())) do
+		names[#names + 1] = M.shortName(m)
+	end
+	for _, n in ipairs(F.planNames(player:getLevel())) do
+		names[#names + 1] = n
+	end
+	return names
+end
+
+F.pending = F.pending or {} -- player id -> true while the next hint waits
+
+-- the next hint comes after the gap (once per character: a second call while one waits does nothing)
+function F.later(player)
+	local pid = player:getId()
+	if F.pending[pid] then
+		return
+	end
+	F.pending[pid] = true
+	local _, gapMs = M.pace()
+	addEvent(function()
+		F.pending[pid] = nil
+		local p = Player(pid)
+		if p and kitGiven(p) and C() and C().enabled then
+			pcall(F.run, p)
+		end
+	end, gapMs)
+end
+
+-- give what is due at the character's level (once each). The reveals come at once; the hints one per run (cfg.pace),
+-- the rest after the gap, so a new character at level 8 is not given three hints beside the welcome and the Helper.
 function F.run(player)
 	local level = player:getLevel()
 	local names = {}
@@ -120,11 +159,22 @@ function F.run(player)
 	end
 	local hmask = player:getStorageValue(key("hints"))
 	local lang = F.langOf(player)
-	for _, i in ipairs(M.dueHints(hmask, level)) do
-		tell(player, M.text(i, lang, names))
+	local perRun = M.pace()
+	local list = M.dueHints(hmask, level)
+	for n, i in ipairs(list) do
+		if n > perRun then
+			F.later(player)
+			break
+		end
+		local shown = names
+		if #shown == 0 and M.cfg().hints[i][lang] and M.cfg().hints[i][lang]:find("%s", 1, true) then
+			shown = F.peekMarks(player)
+		end
+		-- the bit first: a failed message is not repeated
 		hmask = M.set(hmask, i)
+		player:setStorageValue(key("hints"), hmask)
+		tell(player, M.text(i, lang, shown))
 	end
-	player:setStorageValue(key("hints"), hmask)
 end
 
 -- hints and reveals added to the config since the character's last login: the ones of levels it already passed are

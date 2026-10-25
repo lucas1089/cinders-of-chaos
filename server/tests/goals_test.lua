@@ -344,6 +344,17 @@ local tb = K.tracker(cfg, {level = 20, stats = {}, done = {lvl8 = 1, passive1 = 
 	"en", 3)
 eq(#tb, 3, "level 20: the next band's goals fill the tracker")
 check(not row(tb, "bounty1") and row(tb, "task1"), "bounty1 replaced by task1")
+-- O240: a next step between level 12 and 20 that is not the level 20 goal alone
+local t14 = K.tracker(cfg, {level = 14, stats = {}, done = {lvl8 = 1, passive1 = 1, magic1 = 1, bounty1 = 1}}, "en", 3)
+check(row(t14, "lvl20") and row(t14, "spells25"), "level 14: level 20 and the level 25 spells on the tracker")
+eq(row(t14, "spells25").progress, 14, "spells25 progress is the level")
+local sp = K.evaluate(cfg, {level = 24, stats = {}, done = {}, now = 1})
+check(#sp > 0, "level 24 completes goals")
+for _, g in ipairs(sp) do check(g.key ~= "spells25", "spells25 waits for level 25") end
+local sp25 = K.evaluate(cfg, {level = 25, stats = {}, done = {lvl20 = 1}, now = 1})
+local got25 = false
+for _, g in ipairs(sp25) do got25 = got25 or g.key == "spells25" end
+check(got25, "spells25 at level 25")
 -- a paced kill can count a fraction: whole numbers on the wire
 eq(row(K.tracker(cfg, {level = 20, stats = {kills_tiered = 12.5}, done = {}}, "en", 9), "tiered50").progress, 12,
 	"fractional counter floored")
@@ -408,7 +419,12 @@ Chaos.send = function(player, op, action, data) sent[#sent + 1] = {op = op, acti
 Chaos.sendChunked = function(player, op, payload) chunked[#chunked + 1] = {op = op, payload = payload} end
 Chaos.decode = function(b) return b end
 Chaos.limited = function() return false end
-Chaos.select = function() return {} end
+local selectFails = false
+Chaos.select = function(q)
+	if selectFails then return {} end
+	if q:find("COUNT%(%*%)") then return {{c = 0}} end
+	return {}
+end
 db = {query = function(q) queries[#queries + 1] = q; return true end, escapeString = function(x) return "'" .. x .. "'" end}
 local events, globals = {}, {}
 function CreatureEvent(name)
@@ -504,6 +520,19 @@ dofile("data/scripts/chaos/goals.lua")
 local Gs = ChaosGoals
 globals.ChaosGoalsStartup.onStartup()
 check(queries[1] and queries[1]:find("CREATE TABLE IF NOT EXISTS `chaos_goals`", 1, true) ~= nil, "table created")
+
+-- a failed select (DB error) is not a fresh player: no state, no rewards
+do
+	selectFails = true
+	local q = newPlayer(9, 109, 160)
+	ChaosAchievements.stats[109] = {kills_magic = 20}
+	events.ChaosGoalsLogin.onLogin(q)
+	runTimers()
+	check(Gs.st[109] == nil, "DB error at load: no state")
+	eq(q.exp, 0, "DB error at load: no xp paid")
+	eq(q.bank, 0, "DB error at load: no gold paid")
+	selectFails = false
+end
 
 local p = newPlayer(1, 101, 160)
 ChaosAchievements.stats[101] = {kills_magic = 20, bounty_done = 2, ascended = 1, rift_tier = 1, kills_legendary = 1,
