@@ -19,6 +19,9 @@
 --   liquids        water and lava ground sprites shimmer (O206, base patch 0128): this file creates the two shaders
 --                  chaos_liquid_water / chaos_liquid_lava and sends the ground id table to Item.addLiquidId once; the engine draws
 --                  those grounds with the shader while the option is on (no per-tile Lua).
+--   numbers        floating damage and heal numbers pop, rise with an ease-out, fade smoothly and spread sideways (O215, base patch
+--                  0134): this file only calls AnimatedText.setSoftMotion; the maths is in the engine (chaostextmotion.h). The random
+--                  shift and speed of game_damagescatter are a separate layer and stay as they are.
 -- A client without base patch 0126 has none of the C++ functions: the flash, shake and shadow do nothing, the grade (shader
 -- only) still works. Every engine call is guarded.
 local L = VisualFxLogic
@@ -172,6 +175,11 @@ local function applyBloom()
   pcall(g_app.setMapBloom, on, L.bloomStrength(on))
 end
 
+-- ---------------------------------------------------------------- floating numbers
+local function applyNumberMotion()
+  if AnimatedText and AnimatedText.setSoftMotion then pcall(AnimatedText.setSoftMotion, optionValue('numberMotion')) end
+end
+
 -- ---------------------------------------------------------------- shadow and grade
 local function applyShadow()
   if Creature and Creature.setSoftShadow then pcall(Creature.setSoftShadow, optionValue('creatureShadow')) end
@@ -211,6 +219,8 @@ function onOption(name, value)
     applyWeather()
   elseif name == 'bloom' then
     applyBloom()
+  elseif name == 'numberMotion' then
+    applyNumberMotion()
   elseif name == 'screenShake' and value == false then
     stopShake()
   end
@@ -223,6 +233,7 @@ function reapply()
   applyLiquid()
   applyWeather()
   applyBloom()
+  applyNumberMotion()
 end
 
 -- ---------------------------------------------------------------- lifecycle
@@ -263,6 +274,7 @@ function terminate()
   if g_map and g_map.setSpellLightConfig then pcall(g_map.setSpellLightConfig, false, 0, 0, 0, 0, 0) end
   if Item and Item.setLiquidShimmer then pcall(Item.setLiquidShimmer, false) end
   if g_app and g_app.setMapBloom then pcall(g_app.setMapBloom, false, 0) end
+  if AnimatedText and AnimatedText.setSoftMotion then pcall(AnimatedText.setSoftMotion, false) end
   local panel = mapPanel()
   if panel and panel.getShader and panel:getShader() == GRADE then panel:setShader('') end
   handlers = {}
