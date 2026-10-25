@@ -1,0 +1,33 @@
+# Chaos: inflated packets are capped and an overflow is a protocol error (client/BASE.md 0131; server src-patch 0069
+# sends deflated packets, server/README.md "Packet compression (O209)"). The engine inflates a server packet whose
+# checksum word is 0 (and every packet with GamePacketCompression, which we do not set). The stock code gave inflate
+# the whole 320 KB input buffer as output space and took a full buffer for success, cutting the packet short. Now the
+# output space is one packet plus one byte (65536 + 1; with 4 byte lengths the input buffer), and a result over the
+# cap, or input left over, closes the connection with the usual error line. No new feature, nothing is sent to the server.
+# Apply after 0001-0130: patch -p1 < 0131-inflate-size-cap.patch
+--- a/src/framework/net/protocol.cpp
++++ b/src/framework/net/protocol.cpp
+@@ -301,14 +301,19 @@
+         m_zstream.next_in = m_inputMessage->getDataBuffer();
+         m_zstream.next_out = m_zstreamBuffer.data();
+         m_zstream.avail_in = m_inputMessage->getUnreadSize();
+-        m_zstream.avail_out = m_zstreamBuffer.size();
+-        if (inflate(&m_zstream, Z_SYNC_FLUSH) != Z_OK) {
++        // Chaos (base patch 0131): one packet inflates to at most the size of a packet (the length word has 16 bits; 4 byte
++        // lengths: the whole input buffer). The output space is that cap plus one byte, so a stream that wants more
++        // stops at the cap (no decompression bomb) and is then refused below instead of being cut short silently.
++        const uint32 maxInflated = m_bigPackets ? static_cast<uint32>(m_zstreamBuffer.size()) - 1 : 65536u;
++        m_zstream.avail_out = std::min<uint32>(maxInflated + 1, static_cast<uint32>(m_zstreamBuffer.size()));
++        const uint32 inflateSpace = m_zstream.avail_out;
++        if (inflate(&m_zstream, Z_SYNC_FLUSH) != Z_OK || m_zstream.avail_in != 0) {
+             g_logger.traceError("failed to decompress message");
+             disconnect();
+             return;
+         }
+-        int decryptedSize = m_zstreamBuffer.size() - m_zstream.avail_out;
+-        if (decryptedSize == 0) {
++        int decryptedSize = inflateSpace - m_zstream.avail_out;
++        if (decryptedSize == 0 || static_cast<uint32>(decryptedSize) > maxInflated) {
+             g_logger.traceError(stdext::format("invalid size of decompressed message - %i", (int)decryptedSize));
+             disconnect();
+             return;
