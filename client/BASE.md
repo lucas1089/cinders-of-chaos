@@ -916,10 +916,10 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     loot beam pools of 0069 use) before its light section; strength rises over 15% of the 320 ms life and falls smoothly, the
     colour levels and the radius scale with it (maths mirrored in `L.fade`, `L.dim`, `L.radiusAt`, unit tested). The light view
     only adds light: in full ambient light nothing shows; with "Show light effects" off there is no light view. Options >
-    Graphics gets a fifth checkbox `spellLight` (on; the panel grows from 86 to 105 px). Applies after `0001`-`0126`. Not built or
-    run, and the hunks were written without the base tree: every context line was checked to occur in 0069, 0116 or 0126, but
-    the line numbers are approximate and the exact call `addLight(Point, uint8_t, uint8_t)` is inferred from 0069. Uncertain:
-    the `mapview.cpp` hunk (anchored on the `// light` line that 0069 context shows) and that `drawFloor` runs once per floor per frame.
+    Graphics gets a fifth checkbox `spellLight` (on; the panel grows from 86 to 105 px). Applies after `0001`-`0126`; checked to apply cleanly
+    (no fuzz) to the base client tree, and the four C++ files pass a syntax-only compile against its headers. `addLight(Point,
+    color, intensity)` is the light view's own call; `drawFloor` runs once per floor and the hunk adds only on the camera floor.
+    Not run in a client: colours, the look in a cave and the frame cost are unchecked.
 70. `0088` (`src/client/outfit.cpp`): **a look without a mounted pattern still rides.** `Outfit::draw` took
     `zPattern = min(1, pattern Z - 1)` and drew the mount only when it was above 0, so a mounted character in a look
     with pattern Z 1 showed no mount. In pair 30 (dat 8156792438dabee3aa768663d57a1619) 43 wearable looks (base
