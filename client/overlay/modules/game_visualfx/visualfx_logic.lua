@@ -284,11 +284,12 @@ end
 -- ---------------------------------------------------------------- living water and lava
 -- Ground sprites that shimmer (base patch 0128, Item.addLiquidId): client ids of the water and lava grounds. The pack
 -- grounds are the rows of kind `water` in server/data/items/*.csv (client_id column: deep lake and shallows 33456-33463,
--- the lava of the lava islands 35059 and 35070-35073, sewer water 35101); the stock 10.98 water is 4608-4625. Lava
+-- the lava of the lava islands 35059 and 35070-35073, sewer water 35101). The stock 10.98 grounds are the client ids items.otb gives the
+-- items.xml "shallow water" grounds 4608-4625 (629-634, 4597-4602, 4609-4614) and "lava" grounds 599-601 (728-730). Lava
 -- borders, bubbles and the magma-veined floor are not liquids and stay as they are. A new liquid ground is one line here.
 L.LIQUID = {
-  water = { { 4608, 4625 }, { 33456, 33463 }, { 35101, 35101 } },
-  lava = { { 35059, 35059 }, { 35070, 35073 } },
+  water = { { 629, 634 }, { 4597, 4602 }, { 4609, 4614 }, { 33456, 33463 }, { 35101, 35101 } },
+  lava = { { 728, 730 }, { 35059, 35059 }, { 35070, 35073 } },
   kind = { water = 1, lava = 2 },      -- the kind numbers Item.addLiquidId takes
   waterShader = 'chaos_liquid_water',  -- data/shaders, vertex stage chaos_liquid_vertex
   lavaShader = 'chaos_liquid_lava',

@@ -199,7 +199,7 @@ lava shaders, hit flash, screen shake, creature shadow and post-process did not 
   biome keeps its colours. Option `liquidShimmer` (Options > Graphics, on). Shaders `chaos_liquid_water.frag`,
   `chaos_liquid_lava.frag` (vertex stage `chaos_liquid_vertex.frag`). Base patch `0128`: `Item::draw` looks the item's client id up
   in a byte table and draws a liquid ground through the existing shader item path; no extra pass, no Lua per tile. The module
-  sends the table (`L.LIQUID`: stock water 4608-4625, pack water 33456-33463 and 35101, lava 35059 and 35070-35073; borders, bubbles
+  sends the table (`L.LIQUID`: stock water 629-634, 4597-4602 and 4609-4614, stock lava 728-730, pack water 33456-33463 and 35101, lava 35059 and 35070-35073; borders, bubbles
   and the magma floor are not liquids) at game start. Without 0128 the calls are missing and nothing happens. Tested: the id
   sets, the list, option off (`visualfx_test.lua`); the shaders compile (`check_shaders.py`). Not run in a client.
 Skipped, with the reason: floor fading and ambient light already exist; weather and the UI scale are

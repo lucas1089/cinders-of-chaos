@@ -933,8 +933,8 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     percent brightness; lava: about 12% brightness swell; colour ratios and alpha are the sprite's own, so each biome keeps its
     colours (docs/MAP_GUIDE.md "The owner's taste"). Options > Graphics gets a sixth checkbox `liquidShimmer` (on; the panel grows
     from 105 to 124 px). Applies after `0001`-`0127`; checked to apply cleanly (no fuzz) to the base client tree, and
-    `item.cpp` and `luafunctions_client.cpp` pass a syntax-only compile. The stock water ids (4608-4625) are from memory of the
-    10.98 data and the stock lava ids are not listed. Not run in a client: the look, the frame rate on a screen of water
+    `item.cpp` and `luafunctions_client.cpp` pass a syntax-only compile. The stock ids are the client ids items.otb gives the base
+    items.xml water and lava grounds (water 629-634, 4597-4602, 4609-4614; lava 728-730). Not run in a client: the look, the frame rate on a screen of water
     (every liquid tile breaks the draw batch), and whether a zoomed view draws the shader quads at the same size are unchecked.
 70. `0088` (`src/client/outfit.cpp`): **a look without a mounted pattern still rides.** `Outfit::draw` took
     `zPattern = min(1, pattern Z - 1)` and drew the mount only when it was above 0, so a mounted character in a look
