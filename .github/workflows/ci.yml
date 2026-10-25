@@ -470,6 +470,16 @@ jobs:
           g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" client/tools/chaosmissile_test.cpp -o "$d/chaosmissile_asan"
           "$d/chaosmissile_asan"
 
+      - name: Glowing spell effects bookkeeping (C++; header from base patch 0152)
+        run: |
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/client\/chaosglow\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            client/base-patches/0152-additive-spell-effects.patch > "$d/chaosglow.h"
+          g++ -std=c++17 -O1 -Wall -Wextra -I "$d" client/tools/chaosglow_test.cpp -o "$d/chaosglow_test"
+          "$d/chaosglow_test"
+          g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" client/tools/chaosglow_test.cpp -o "$d/chaosglow_asan"
+          "$d/chaosglow_asan"
+
       - name: Light map fill, same bytes, soft light properties and benchmark check (C++; headers from base patches 0140 and 0149)
         run: |
           d=$(mktemp -d)

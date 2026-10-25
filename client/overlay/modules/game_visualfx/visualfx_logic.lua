@@ -253,6 +253,35 @@ function L.lightFor(effectId)
   return L.THEME_COLOR[theme], L.LIGHT.radius
 end
 
+-- ---------------------------------------------------------------- glowing spell effects (O233)
+-- An effect of a bright, energetic theme is drawn added onto what is under it instead of covering it (base patch 0152,
+-- Map::deferGlowEffect; the engine holds them and draws them in one additive batch per floor). It rides on the spell light
+-- option, so it adds nothing new to the panel. Fire, energy, holy and arcane effects glow; blood, water, poison, frost,
+-- physical, death, shadow, earth and healing keep the normal blend (they are dark, soft or solid, and added they would
+-- turn to haze or white). Effects of no theme (smoke, puffs, buffs, portals, loot beams, combat feedback) keep it too.
+L.GLOW_THEMES = { fire = true, energy = true, holy = true, arcane = true }
+-- ids of a glowing theme that still keep the normal blend: the stock explosion area and hit (5, 6) carry dark smoke
+L.GLOW_SKIP = { [5] = true, [6] = true }
+
+-- does this effect id glow
+function L.glows(effectId)
+  local id = tonumber(effectId)
+  if not id or id ~= math.floor(id) or id <= 0 or id >= 65536 then return false end
+  if L.GLOW_SKIP[id] then return false end
+  local theme = L.EFFECT_THEME[id]
+  return theme ~= nil and L.GLOW_THEMES[theme] == true
+end
+
+-- the glowing ids, ascending (sent to g_map.addGlowEffect once)
+function L.glowIds()
+  local list = {}
+  for id in pairs(L.EFFECT_THEME) do
+    if L.glows(id) then list[#list + 1] = id end
+  end
+  table.sort(list)
+  return list
+end
+
 -- strength 0..1 at an age in ms: a short rise, then a smooth fall to nothing; 0 outside the life
 function L.fade(age)
   local A = L.LIGHT

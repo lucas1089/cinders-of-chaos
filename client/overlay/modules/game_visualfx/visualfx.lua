@@ -13,6 +13,8 @@
 --   spell light    a magic effect that plays lights the tiles around it for ~320 ms in a colour that matches it (O205, base patch
 --                  0127): this file sends the colour table and the limits to g_map.setSpellLight*, the engine keeps at most 12
 --                  live lights and adds them to the map light view (nothing shows in full light).
+--                  The same option makes the fire, energy, holy and arcane effects glow (O233, base patch 0152): they are drawn
+--                  with an additive blend, in one batch per floor; the id list comes from L.glowIds().
 --   weather        the rain game_chaosweather draws when the server says it rains (O208, base patch 0130): this file passes the
 --                  option on (modules.game_chaosweather.setEnabled); nothing is drawn here.
 --   ambient        slow embers, motes or dust over the game window by the mood of the place (O226, base patch 0144 has the
@@ -125,6 +127,7 @@ end
 
 -- ---------------------------------------------------------------- spell colour light
 local lightTableSent = false
+local glowIdsSent = false
 
 local function applySpellLight()
   if not (g_map and g_map.setSpellLightConfig) then return end
@@ -139,6 +142,15 @@ local function applySpellLight()
   end
   local A = L.LIGHT
   pcall(g_map.setSpellLightConfig, on, A.max, A.ms, A.attack, A.minGap, A.minFade)
+  -- glowing spell effects (O233, base patch 0152) ride on the same option
+  if g_map.setGlowEffects then
+    if on and not glowIdsSent and g_map.addGlowEffect then
+      if g_map.clearGlowEffects then pcall(g_map.clearGlowEffects) end
+      for _, id in ipairs(L.glowIds()) do pcall(g_map.addGlowEffect, id) end
+      glowIdsSent = true
+    end
+    pcall(g_map.setGlowEffects, on)
+  end
 end
 
 -- ---------------------------------------------------------------- living water and lava
@@ -600,6 +612,7 @@ function terminate()
   unhookMouse()
   if Creature and Creature.setSoftShadow then pcall(Creature.setSoftShadow, false) end
   if g_map and g_map.setSpellLightConfig then pcall(g_map.setSpellLightConfig, false, 0, 0, 0, 0, 0) end
+  if g_map and g_map.setGlowEffects then pcall(g_map.setGlowEffects, false) end
   if g_map and g_map.setLightFlicker then pcall(g_map.setLightFlicker, false) end
   if Item and Item.setLiquidShimmer then pcall(Item.setLiquidShimmer, false) end
   if g_app and g_app.setMapBloom then pcall(g_app.setMapBloom, false, 0) end
