@@ -112,6 +112,10 @@ function C.live()
 			pcall(dofile, "data/lib/chaos_pack36_fx_ids.lua")
 		end
 		C.loaded = ChaosVfx ~= nil and ChaosVfx.w_impact_holy_strike ~= nil
+		-- pair 41: the three missiles appended after pair 36's (ids 251-253), named for later spells; nothing sends them yet
+		if C.loaded and ChaosVfxMissile and not ChaosVfxMissile.proj_arrow_fire and dofile then
+			pcall(dofile, "data/lib/chaos_pack41_fx_ids.lua")
+		end
 	end
 	return C.loaded
 end

@@ -2742,6 +2742,68 @@ identical md5s and report.
 - A client on pair 39 or older keeps the old art; nothing breaks. Before / after sheets: scratchpad only. Not run in a
   client.
 
+## Projectile pack, native 32 px (pair 41: 50 missiles redrawn in place, 3 appended: 251-253; `tools/sprites/gen_pack41_missiles.py`, `art_import/pack41_missiles.csv`; built 2026-10-25)
+Owner allowed new pairs without asking. Pair 36 built its projectile missiles from the 64 px renders of the purchased
+projectile pack, halved. The pack also ships hand-tuned renders made at 32 px (frames of 64 x 64, pivot at the centre,
+8 frames at 12 fps, rows E SE S SW W NW N NE); pair 41 redraws the same ids from those, nothing halved. **Licence: the
+art may reach players only inside the pair** (docs/CREDITS.md "Projectiles"). No strip, frame or sheet is committed:
+`art_import/pack41_fx/` is git-ignored; the repo holds the tool, `pack41_missiles.csv` (the spec),
+`pack41_fx_sources.csv`, `pack41_fx.sums` and the Lua / catalog tables.
+- **Redrawn (50 ids, 49 variants; ice_lance/frost twice):** stock and procedural 4 5 11 12 13 15 25 28 29 30 31 32 33
+  36 37 38 39 41 56 57 60 84 85 86 104 116-125, and pair 36's appended 189-203. Same pattern layout as pair 36: the
+  rows map to the client's 3 x 3 cells as the engine's `Missile::draw` reads them (NW 0,0; N 1,0; NE 2,0; W 0,1; E 2,1;
+  SW 0,2; S 1,2; SE 2,2; the centre cell repeats S); the pivot lands on (13, 13) of the tile; alpha 0 / 255 with the 4x4
+  dither (the cut pairs 27 and 29 used on the same native renders); 8 frames, 83 ms. The stock ids keep send offset
+  0, 0 and the art is moved up and left as a whole when it reaches past the bottom-right tile (pair 36's rule, at most
+  2 x 2 tiles; 26 ids moved 1 to 9 px, none cut); ids 189-203 keep their `dx`, `dy` of `chaos_pack36_fx_ids.lua`. Row order checked on the
+  art (every variant's mass trails opposite to its row's direction) and by the synthetic test.
+- **Does the art fit the centre 32 px?** `gen_pack41_missiles.py measure`: of 76 variants only 4 lie wholly inside the
+  centre 32 x 32 of their frame (energy_disc x2, frost_shard x2); by pixels 0-11 % lies outside it (arrows, spears and
+  the piercing arrow 6-11 %, the orbs 0-1 %). So the whole 64 x 64 frame is placed (nothing is cropped) and the tile
+  canvas follows the art: 1x1 (ids 13, 37), 2x2, 3x3 as before; id 37 shrinks from 1x2 to 1x1.
+- **Not redrawn:** the 12 projectile missiles of pairs 27 and 29 (ids 154-165) were already cut from these native
+  32 px renders: rebuilt from the pack they match `pack27_fx.sums` / `pack29_fx.sums` byte for byte, so they stay.
+  The 47 missiles of the other effect set (204-250) are native already.
+- **Appended:** 251 `proj_arrow_fire`, 252 `proj_arrow_frost`, 253 `proj_piercing_arrow_holy` (3x3, send offset 1, 1),
+  `server/data/lib/chaos_pack41_fx_ids.lua`, `server/data/spells/pack41_fx_catalog.csv`. No spell is wired. 254 is
+  the server's `CONST_ANI_WEAPONTYPE` (a combat's "use the weapon's missile", never sent) and `check_pair.py` warns above
+  254, so 254 and 255 stay free.
+- **Proposed swaps, none made** (remaining 19 unused variants). In use, so only on the owner's word: id 1 spear <-
+  spear/steel; 22 sniper arrow <- piercing_arrow/steel; 34 flaming arrow <- arrow/fire and 35 shiver arrow <-
+  arrow/frost (251 and 252 are the same art, appended); 7 burst arrow <- split_arrow/fire; 6 poison arrow <-
+  split_arrow/poison. Not sent by anything in the repo (ids 62-76 are stock ids with no engine name and no script
+  or monster of the repo sending them; base data is not in the repo, so check the installed server first): 62
+  ball_lightning/thunder, 63 blood_spike/necrotic, 64 boulder/magma, 65 flame_lance/spirit, 66 poison_dart/necrotic,
+  67 razor_leaf/sakura, 68 shadow_bolt/blood, 69 soul_skull/spirit, 70 spirit_arrow/blood, 71 spirit_arrow/gold, 72
+  spirit_wisp/arcane, 73 venom_glob/necrotic, 74 void_orb/abyss, 75 water_bolt/abyss, 76 wind_blade/storm.
+
+```
+python3 -I client/tools/sprites/gen_pack41_missiles.py build --src PACK_DIR      # strips + spec; --check compares
+python3 -I client/tools/sprites/gen_pack41_missiles.py build --check             # CI, no pack
+python3 -I client/tools/sprites/gen_pack41_missiles.py measure --src PACK_DIR
+python3 -I client/tools/sprites/import_fx_art.py --ours-dat pair40/Tibia.dat --ours-spr pair40/Tibia.spr --out-dir pair41 \
+    --expect-first-effect 4102 --expect-first-missile 251 --spec client/tools/sprites/art_import/pack41_missiles.csv \
+    --lua-out server/data/lib/chaos_pack41_fx_ids.lua --catalog-out server/data/spells/pack41_fx_catalog.csv
+python3 -I client/tools/sprites/check_pair.py pair41/Tibia.dat pair41/Tibia.spr --old pair40/Tibia.dat pair40/Tibia.spr \
+    --allow-changed 'missile:4,5,11,12,13,15,25,28-33,36-39,41,56,57,60,84-86,104,116-125,189-203' [--new-only]
+python3 -I client/tools/sprites/gen_outfit_anchors.py pair41/Tibia.dat pair41/Tibia.spr
+python3 -I client/tools/sprites/gen_info_lift.py pair41/Tibia.dat pair41/Tibia.spr
+```
+Input pair 40 (dat 5f9edac3d6424155a96c95bef6691d18, spr 2b157338e1664c58d3c07b8899ed5938).
+Output **pair 41**: dat 6a8e1a8db5144459d2544a0e2070fb3b (11,225,440 bytes), spr 78c5fec6822a288c780f53a893d94de4
+(1,539,762,967 bytes, 1,355,354 sprites: 5,837 appended), 38,641 items, 2,681 outfits, 4101 effects, 253 missiles.
+- `check_pair.py --old --allow-changed` (the 50 ids): `--new-only` 0 errors, 0 warnings; full check 0 errors, 216
+  warnings (pair 40's). `gen_fx_send_offsets.py --check` and `--pair` agree (no effect changed);
+  `outfit_anchors.lua`, `info_lifts.lua`: only the dat md5 changes. `gen_theme_art.py recolour --check`,
+  `gen_dungeon_banners.py --check` and `gen_sprite_images.py` pass on pair 41; the importer verified 3,816 frames
+  pixel-identical and every other thing byte-identical.
+- Archive (the pair 37 recipe, `--mtime='2026-10-22 00:00:00Z'`, xz 5.4.5, `split -b 95M -d -a 2`): 146,911,036 bytes,
+  sha256 de164c17618445c3bf6caf6ae24650ca79eee2ecadefb08bfc10283af0c85624; parts `things-1098.tar.xz.part00` (99,614,720
+  bytes, sha256 7b666eeb48ed01947eee5604e01cd4710582af65ae8d3e29b9202111ca9f64cc) and `.part01` (47,296,316 bytes,
+  sha256 cdcb8241462dd6261436adebc9cb7b9f720bb904b2ad11149868b3db4a61d74b). Not pushed: the owner reviews first.
+- A client on pair 40 or older keeps the halved art; ids 251-253 are sent by nothing. Previews: scratchpad only. Not
+  run in a client.
+
 ## Owner art (things_custom26: outfits 2213-2233, items 33940-33985, `tools/sprites/gen_owner_art.py`, `art_import/owner_art.csv`; on windows-assets 50645056, switch on since 2026-10-15)
 **Source and licence.** The owner's Google Drive folder "ots", files added 2026-10-15. The owner confirmed the art is
 their own or commissioned and free to use for monsters and variants, outfits and wings as cosmetics, decoration and map
