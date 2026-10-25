@@ -1,0 +1,93 @@
+# Chaos: target, follow and hover outline options (O216; client/BASE.md "0136"; mods/client_settings/classes/dataset.lua,
+# options/graphics.otui; after 0001-0135). Lua and OTUI only, no engine code: the overlay module game_visualfx draws the
+# outlines with Creature:setOutline of patch 0038 and reads these two options.
+#  * dataset.lua: `targetOutline` (default on: red around the attacked creature, green around the followed one) and
+#    `hoverOutline` (default off: faint white around the creature under the mouse); their apply tells game_visualfx
+#    (`onOption(name, value)`).
+#  * options/graphics.otui: two checkboxes under "Soft damage numbers" (the visual effects panel grows from 181 to 219 px).
+# Not run in a client; goes live with the next client build.
+--- a/mods/client_settings/classes/dataset.lua
++++ b/mods/client_settings/classes/dataset.lua
+@@ -2125,6 +2125,26 @@
+     end,
+   },
+ 
++  -- Chaos (base patch 0136): red outline on the attacked creature, green on the followed one (game_visualfx)
++  targetOutline = {
++    value = true,
++    apply = function(value)
++      local m = modules.game_visualfx
++      if m and m.onOption then m.onOption('targetOutline', value) end
++      return true
++    end,
++  },
++
++  -- Chaos (base patch 0136): faint white outline on the creature under the mouse (game_visualfx)
++  hoverOutline = {
++    value = false,
++    apply = function(value)
++      local m = modules.game_visualfx
++      if m and m.onOption then m.onOption('hoverOutline', value) end
++      return true
++    end,
++  },
++
+   enableShaders = {
+     value = true,
+     apply = function(value)
+--- a/mods/client_settings/options/graphics.otui
++++ b/mods/client_settings/options/graphics.otui
+@@ -452,7 +452,7 @@
+ 
+   FlatPanel
+     // Chaos (base patch 0126, overlay module game_visualfx): the dark-fantasy look of the map, one switch per effect
+-    size: 505 181
++    size: 505 219
+     anchors.top: prev.bottom
+     anchors.right: parent.right
+     anchors.left: parent.left
+@@ -627,6 +627,44 @@
+         local value = modules.client_settings.getOption('numberMotion')
+         self:setChecked(value ~= false)
+ 
++    SettingsCheckBox
++      id: targetOutline
++      size: 12 12
++      !text: tr('Target and follow outline')
++      font: $var-cip-font
++      text-auto-resize: true
++      color: $var-text-cip-color
++      text-offset: 14 -2
++      anchors.left: parent.left
++      anchors.top: numberMotion.bottom
++      margin-top: 7
++      margin-left: 16
++      image-source: /images/ui/checkbox
++      image-clip: 0 0 12 12
++      !tooltip: tr('A soft red outline with a gentle pulse around the creature you attack and a green one around\nthe creature you follow, so you see your target in a crowd. The stock square stays.')
++      @onSetup: |
++        local value = modules.client_settings.getOption('targetOutline')
++        self:setChecked(value ~= false)
++
++    SettingsCheckBox
++      id: hoverOutline
++      size: 12 12
++      !text: tr('Outline under the mouse')
++      font: $var-cip-font
++      text-auto-resize: true
++      color: $var-text-cip-color
++      text-offset: 14 -2
++      anchors.left: parent.left
++      anchors.top: targetOutline.bottom
++      margin-top: 7
++      margin-left: 16
++      image-source: /images/ui/checkbox
++      image-clip: 0 0 12 12
++      !tooltip: tr('A faint white outline around the creature under the mouse, so you see what a click will hit.')
++      @onSetup: |
++        local value = modules.client_settings.getOption('hoverOutline')
++        self:setChecked(value == true)
++
+     UIWidget
+       size: 12 12
+       anchors.top: parent.top

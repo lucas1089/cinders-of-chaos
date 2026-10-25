@@ -23138,6 +23138,12 @@ Security:
   before this patch: a plain packet whose adler is exactly 0 (about 1 in 4 billion) would be read as compressed by the
   client and close that connection; unchanged and not fixed here.
 - A deflate error switches compression off on that connection (later packets plain); nothing is lost.
+- Hardening, `src-patches/0073-compression-hardening.patch` (review findings in 0069): if the deflated block does not fit
+  `replaceBody`, the stream had advanced for a block the client never gets, so the deflater is dropped as on a deflate
+  error (that packet and later ones plain). And compression is switched on after the password check, not on the first
+  packet, so a connection that never logs in holds no zlib state (about 130 KB). The client needs no signal for it (a zero
+  checksum word means inflate). The reset path lives in `protocol.cpp`, which cannot be built standalone: not covered by
+  `packet_compress_test.cpp`; checked with `g++ -fsyntax-only` only. Client side: base patch `0135` (footer bound).
 - A body that was deflated is sent deflated even if it did not shrink (the client's stream must see every block). The
   expansion is a few bytes at most; `tools/packet_compress_test.cpp` checks it, the round trip against the client's way
   of inflating, 4000 packets including a 60000 byte one and noise.

@@ -1,0 +1,54 @@
+# Chaos: the zlib footer guard counts the header offset (client/BASE.md 0135; after 0001-0134). InputMessage::addZlibFooter
+# wrote at m_headerPos + m_messageSize but checked m_messageSize + 4 against BUFFER_MAXSIZE, so a packet near the end of the
+# buffer could write up to m_headerPos bytes past it, and an overflow was skipped silently (the inflate then ran on a packet
+# without its footer). The guard now includes m_headerPos, the function returns false, and Protocol::internalRecvData logs
+# the error line and disconnects, the same as the size cap of 0131.
+# Apply after 0001-0134: patch -p1 < 0135-zlib-footer-bound.patch
+--- a/src/framework/net/inputmessage.cpp
++++ b/src/framework/net/inputmessage.cpp
+@@ -221,13 +221,16 @@
+         throw stdext::exception("InputMessage max buffer size reached");
+ }
+ 
+-void InputMessage::addZlibFooter()
++// Chaos (base patch 0135): false when the four footer bytes would not fit behind the data (the write index is
++// m_headerPos + m_messageSize); the caller treats that as a protocol error and closes the connection.
++bool InputMessage::addZlibFooter()
+ {
+-    if (m_messageSize + 4 > BUFFER_MAXSIZE)
+-        return;
++    if (static_cast<uint32>(m_headerPos) + m_messageSize + 4 > BUFFER_MAXSIZE)
++        return false;
+     m_buffer[m_messageSize + m_headerPos] = 0x00;
+     m_buffer[m_messageSize + m_headerPos + 1] = 0x00;
+     m_buffer[m_messageSize + m_headerPos + 2] = 0xFF;
+     m_buffer[m_messageSize + m_headerPos + 3] = 0xFF;
+     m_messageSize += 4;
++    return true;
+ }
+--- a/src/framework/net/inputmessage.h
++++ b/src/framework/net/inputmessage.h
+@@ -80,7 +80,7 @@
+     uint32 readSize(bool bigSize) { return bigSize ? getU32() : getU16(); }
+     bool readChecksum();
+ 
+-    void addZlibFooter();
++    bool addZlibFooter();
+ 
+     friend class Protocol;
+ 
+--- a/src/framework/net/protocol.cpp
++++ b/src/framework/net/protocol.cpp
+@@ -297,7 +297,11 @@
+     }
+ 
+     if (decompress || m_compression) {
+-        m_inputMessage->addZlibFooter();
++        if (!m_inputMessage->addZlibFooter()) { // Chaos (base patch 0135): no room for the footer: protocol error
++            g_logger.traceError("failed to decompress message: no room for the footer");
++            disconnect();
++            return;
++        }
+         m_zstream.next_in = m_inputMessage->getDataBuffer();
+         m_zstream.next_out = m_zstreamBuffer.data();
+         m_zstream.avail_in = m_inputMessage->getUnreadSize();

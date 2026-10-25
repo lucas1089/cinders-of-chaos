@@ -7,8 +7,8 @@ local L = VisualFxLogic
 -- the options (client_settings dataset.lua, Options > Graphics "Visual effects"); on by default except the grade,
 -- which changes the biome colours and waits for the owner's look at the first build, and the soft glow (bloom, O210), which
 -- costs fill rate and waits for the same look
-L.OPTIONS = { 'hitFlash', 'screenShake', 'creatureShadow', 'screenGrade', 'spellLight', 'liquidShimmer', 'weather', 'bloom', 'numberMotion' }
-L.DEFAULTS = { hitFlash = true, screenShake = true, creatureShadow = true, screenGrade = false, spellLight = true, liquidShimmer = true, weather = true, bloom = false, numberMotion = true }
+L.OPTIONS = { 'hitFlash', 'screenShake', 'creatureShadow', 'screenGrade', 'spellLight', 'liquidShimmer', 'weather', 'bloom', 'numberMotion', 'targetOutline', 'hoverOutline' }
+L.DEFAULTS = { hitFlash = true, screenShake = true, creatureShadow = true, screenGrade = false, spellLight = true, liquidShimmer = true, weather = true, bloom = false, numberMotion = true, targetOutline = true, hoverOutline = false }
 
 -- an option value from the settings: a boolean is kept, anything else (nil, junk, an older settings file) is the default
 function L.optionOn(name, value)
@@ -342,4 +342,65 @@ function L.bloomStrength(enabled)
   local s = tonumber(B.strength) or 0
   if s < 0 then s = 0 elseif s > B.maxStrength then s = B.maxStrength end
   return s
+end
+
+-- ---------------------------------------------------------------- target, follow and hover outline (O216)
+-- Creature:setOutline (base patch 0038) draws a silhouette line under the outfit. Kinds, strongest first: the creature the
+-- player attacks (red, a gentle pulse), the one followed (green), the one under the mouse (faint white). One creature has one
+-- kind: the strongest that applies. Option targetOutline covers target and follow, hoverOutline the mouse.
+L.OUTLINE = {
+  target = { 235, 45, 40, 235, 2, 1600 },   -- r, g, b, a, width px, pulse ms (0: steady)
+  follow = { 70, 220, 95, 225, 2, 0 },
+  hover = { 255, 255, 255, 110, 1, 0 },
+  order = { 'target', 'follow', 'hover' },
+  mouseGapMs = 33,                          -- mouse moves closer than this are not looked at (a lookup is not free)
+  sweepMs = 500,                            -- the lost-outline check; the timer runs only while an outline is up
+}
+
+-- which creature id has which kind. `st` = {targetId, followId, hoverId, meId}; `opts` = {target = bool, hover = bool}.
+-- Returns a table id -> kind. The local player never gets one.
+function L.outlineWanted(st, opts)
+  local out = {}
+  local function put(id, kind)
+    id = tonumber(id)
+    if not id or id == 0 or id == tonumber(st.meId) or out[id] then return end
+    out[id] = kind
+  end
+  if opts.target then
+    put(st.targetId, 'target')
+    put(st.followId, 'follow')
+  end
+  if opts.hover then put(st.hoverId, 'hover') end
+  return out
+end
+
+-- what to do to go from `applied` (id -> kind) to `wanted`: clears first, then sets, only for what changed. Nothing is
+-- listed when nothing changed, so a mouse move over the same creature costs no engine call.
+function L.outlineDiff(applied, wanted)
+  local ops = {}
+  for id, kind in pairs(applied) do
+    if wanted[id] == nil then ops[#ops + 1] = { op = 'clear', id = id } end
+  end
+  for id, kind in pairs(wanted) do
+    if applied[id] ~= kind then ops[#ops + 1] = { op = 'set', id = id, kind = kind } end
+  end
+  table.sort(ops, function(a, b)
+    if a.op ~= b.op then return a.op == 'clear' end
+    return a.id < b.id
+  end)
+  return ops
+end
+
+-- the engine arguments of a kind, or nil
+function L.outlineArgs(kind)
+  local o = L.OUTLINE[kind]
+  if kind == 'order' or type(o) ~= 'table' then return nil end
+  return o
+end
+
+-- whether a mouse move is looked at: true when at least mouseGapMs passed since the last one looked at
+function L.mouseGate(state, now)
+  if now - (state.last or -1e9) < L.OUTLINE.mouseGapMs then return false end
+  state.last = now
+  return true
 end
