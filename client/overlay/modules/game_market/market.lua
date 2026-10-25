@@ -368,6 +368,8 @@ end
 
 local function catalog()
   if not modCatalog or #modCatalog.list == 0 then
+    -- game_codex loads on first use (autoload: false)
+    if not modules.game_codex and g_modules and g_modules.ensureModuleLoaded then pcall(g_modules.ensureModuleLoaded, 'game_codex') end
     local codex = modules.game_codex
     modCatalog = V.modCatalog(codex and codex.CodexData or CodexData)
   end

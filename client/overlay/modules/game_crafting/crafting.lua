@@ -353,7 +353,9 @@ local function showItem(item)
     row.text:setColor(m.implicit and '#d04040' or (m.power and POWER_COLOR or GROUP_COLOR[m.group] or '#d6c9ae'))
     row.mark:setText(m.bound and tr('bound') or '')
     row.modKey = m.key
-    local codexTip = (modules.game_codex and modules.game_codex.openModifier) and tr('Right-click: its page in the Codex.') or nil
+    -- game_codex loads on first use (autoload: false): a known module is enough for the tip
+    local codexKnown = modules.game_codex or (g_modules and g_modules.getModule and g_modules.getModule('game_codex'))
+    local codexTip = codexKnown and tr('Right-click: its page in the Codex.') or nil
     if m.power then
       setTip(row, (m.text or '') .. '\n' .. tr('Legendary power: it changes what your character does.') .. (codexTip and '\n' .. codexTip or ''))
     elseif m.bound then
@@ -367,6 +369,7 @@ local function showItem(item)
     row.onMouseRelease = function(self, mousePos, button)
       -- right-click: the modifier's page in the Codex (game_codex)
       if button == MouseRightButton and self:containsPoint(mousePos) and self.modKey then
+        if not modules.game_codex and g_modules and g_modules.ensureModuleLoaded then pcall(g_modules.ensureModuleLoaded, 'game_codex') end
         local codex = modules.game_codex
         return codex and codex.openModifier and codex.openModifier(self.modKey, self.modGroup) or false
       end

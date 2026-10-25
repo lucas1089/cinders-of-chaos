@@ -36,6 +36,21 @@ local function getModule(name)
   return m
 end
 
+-- Modules that load on first use (autoload: false; client/MANIFEST.md "Lazy modules"). Their menu entry stays and
+-- loads the module when it is used; nothing here loads one just to draw the menu.
+local LAZY_MODULES = { game_codex = true, client_chaos_credits = true }
+
+local function loadLazy(name)
+  if not LAZY_MODULES[name] then return nil end
+  if g_modules and g_modules.ensureModuleLoaded then pcall(g_modules.ensureModuleLoaded, name) end
+  return getModule(name)
+end
+
+local function lazyKnown(name)
+  if not LAZY_MODULES[name] or not g_modules or not g_modules.getModule then return false end
+  return g_modules.getModule(name) ~= nil
+end
+
 local function resolvePath(root, path)
   local cur = root
   for key in string.gmatch(path, '[^%.]+') do
@@ -65,6 +80,15 @@ local function findAction(entry)
   end
   for _, modName in ipairs(entry.modules or {}) do
     local m = getModule(modName)
+    if not m and lazyKnown(modName) then
+      -- not loaded yet: the action loads it, then runs the entry again against the loaded module
+      return function()
+        if loadLazy(modName) then
+          local action = findAction(entry)
+          if action then action() end
+        end
+      end
+    end
     if m then
       for _, path in ipairs(entry.fns or {}) do
         local fn = resolvePath(m, path)

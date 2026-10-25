@@ -1,0 +1,186 @@
+# Chaos: a cap on the memory of thing textures (src/client/thingtype.h/.cpp, thingtypemanager.h/.cpp, luafunctions_client.cpp; after 0001-0124).
+# The base frees a thing texture only after 60 s without use (ThingTypeManager::check, 100 types per category per second),
+# so a long walk over many different outfits, items and effects (HD scale 3-4 makes every texture 9-16 times larger) kept
+# all of them until the minute passed. The sprite pixel cache (SpriteManager) was already capped; the textures were not.
+# Now ThingType counts the bytes of the textures it builds (width x height x 4, per animation phase) and ThingTypeManager::check
+# (once a second) calls enforceTextureCap(): over the cap, the loaded types are unloaded oldest use first until the total is
+# at 90% of the cap. A type used in the last 5 s is never unloaded, so what the next frames draw is not thrown away (no thrash).
+# The cap is the setting textureCacheMB (g_settings.set('textureCacheMB', n); default 256, 0 = no cap, below 64 raised to 64),
+# read at each check, so it takes effect without a restart. Lua: g_things.getTextureCacheBytes / getTextureCacheLimitBytes /
+# getTextureCacheEvictions. Unload and rebuild are the base's own path (ThingType::unload, getTexture), nothing else changes.
+# Not run in a full build or measured in play; touched files pass g++ -fsyntax-only with the patch chain applied.
+diff --git a/src/client/luafunctions_client.cpp b/src/client/luafunctions_client.cpp
+index 40450ee..0568877 100644
+--- a/src/client/luafunctions_client.cpp
++++ b/src/client/luafunctions_client.cpp
+@@ -97,6 +97,9 @@ void Client::registerLuaFunctions()
+     g_lua.bindSingletonFunction("g_things", "dumpTextures", &ThingTypeManager::dumpTextures, &g_things);
+     g_lua.bindSingletonFunction("g_things", "replaceTextures", &ThingTypeManager::replaceTextures, &g_things);
+ #endif
++    g_lua.bindSingletonFunction("g_things", "getTextureCacheBytes", &ThingTypeManager::getTextureCacheBytes, &g_things);
++    g_lua.bindSingletonFunction("g_things", "getTextureCacheLimitBytes", &ThingTypeManager::getTextureCacheLimitBytes, &g_things);
++    g_lua.bindSingletonFunction("g_things", "getTextureCacheEvictions", &ThingTypeManager::getTextureCacheEvictions, &g_things);
+     g_lua.bindSingletonFunction("g_things", "loadOtb", &ThingTypeManager::loadOtb, &g_things);
+     g_lua.bindSingletonFunction("g_things", "loadXml", &ThingTypeManager::loadXml, &g_things);
+     g_lua.bindSingletonFunction("g_things", "loadOtml", &ThingTypeManager::loadOtml, &g_things);
+diff --git a/src/client/thingtype.cpp b/src/client/thingtype.cpp
+index 3b36298..61de242 100644
+--- a/src/client/thingtype.cpp
++++ b/src/client/thingtype.cpp
+@@ -585,8 +585,12 @@ void ThingType::unserializeOtml(const OTMLNodePtr& node)
+     }
+ }
+ 
++size_t ThingType::s_textureBytes = 0;
++
+ void ThingType::unload()
+ {
++    s_textureBytes -= std::min(s_textureBytes, m_textureBytes);
++    m_textureBytes = 0;
+     m_textures.clear();
+     m_texturesFramesRects.clear();
+     m_texturesFramesOriginRects.clear();
+@@ -924,6 +928,11 @@ const TexturePtr& ThingType::getTexture(int animationPhase)
+             }
+         }
+         animationPhaseTexture = std::make_shared<Texture>(fullImage, true, false, false);
++        {
++            const size_t bytes = static_cast<size_t>(animationPhaseTexture->getWidth()) * animationPhaseTexture->getHeight() * 4;
++            m_textureBytes += bytes;
++            s_textureBytes += bytes;
++        }
+         if (animationPhase < (int)m_texturesAlphaMasks.size())
+             m_texturesAlphaMasks[animationPhase] = alphaMask;
+         m_loaded = true;
+diff --git a/src/client/thingtype.h b/src/client/thingtype.h
+index e9ec5b2..4a427ee 100644
+--- a/src/client/thingtype.h
++++ b/src/client/thingtype.h
+@@ -253,6 +253,10 @@ public:
+     bool hasAttr(ThingAttr attr) { return m_attribs.has(attr); }
+     bool isLoaded() { return m_loaded; }
+     ticks_t getLastUsage() { return m_lastUsage; }
++    // Chaos (base patch 0125): bytes of the textures this type holds, and of all of them (ThingTypeManager::check caps it)
++    size_t getTextureBytes() const { return m_textureBytes; }
++    static size_t getAllTextureBytes() { return s_textureBytes; }
++    static void resetAllTextureBytes() { s_textureBytes = 0; }
+ 
+     Size getSize() { return m_size; }
+     int getWidth() { return m_size.width(); }
+@@ -391,6 +395,8 @@ private:
+ 
+     bool m_loaded = false;
+     time_t m_lastUsage;
++    size_t m_textureBytes = 0;
++    static size_t s_textureBytes;
+ };
+ 
+ struct DrawQueueItemThingWithShader : public DrawQueueItemTexturedRect {
+diff --git a/src/client/thingtypemanager.cpp b/src/client/thingtypemanager.cpp
+index 3e40c69..603caf4 100644
+--- a/src/client/thingtypemanager.cpp
++++ b/src/client/thingtypemanager.cpp
+@@ -32,6 +32,10 @@
+ #include "negativeoffset.h"
+ 
+ #include <framework/core/resourcemanager.h>
++#include <framework/core/configmanager.h>
++#include <framework/core/clock.h>
++#include <algorithm>
++#include <vector>
+ #include <framework/core/filestream.h>
+ #ifdef __EMSCRIPTEN__
+ #include <framework/core/startuptimer.h>
+@@ -156,6 +160,7 @@ void ThingTypeManager::terminate()
+ {
+     for(int i = 0; i < ThingLastCategory; ++i)
+         m_thingTypes[i].clear();
++    ThingType::resetAllTextureBytes();
+     m_itemTypes.clear();
+     m_reverseItemTypes.clear();
+     m_marketCategories.clear();
+@@ -178,10 +183,59 @@ void ThingTypeManager::unloadTextures()
+     }
+ }
+ 
++namespace {
++constexpr size_t DefaultTextureCacheMB = 256;
++constexpr time_t CapGraceSeconds = 5;
++}
++
++size_t ThingTypeManager::getTextureCacheLimitBytes() const
++{
++    size_t mb = DefaultTextureCacheMB;
++    const auto settings = g_configs.getSettings();
++    if (settings) {
++        const std::string value = settings->getValue("textureCacheMB");
++        if (!value.empty()) {
++            char* end = nullptr;
++            const long parsed = std::strtol(value.c_str(), &end, 10);
++            if (end != value.c_str() && parsed >= 0)
++                mb = static_cast<size_t>(parsed);
++        }
++    }
++    // 0 = no cap; a cap under 64 MB would thrash a single screen, so it is raised to that
++    if (mb == 0)
++        return 0;
++    return std::max<size_t>(mb, 64) * 1024 * 1024;
++}
++
++void ThingTypeManager::enforceTextureCap()
++{
++    const size_t limit = getTextureCacheLimitBytes();
++    if (limit == 0 || ThingType::getAllTextureBytes() <= limit)
++        return;
++    // oldest use first; what was drawn in the last seconds stays (the next frames need it)
++    const time_t now = g_clock.seconds();
++    std::vector<ThingType*> loaded;
++    for (int category = 0; category < ThingLastCategory; ++category) {
++        for (const ThingTypePtr& thingType : m_thingTypes[category]) {
++            if (thingType && thingType->isLoaded() && thingType->getLastUsage() + CapGraceSeconds < now)
++                loaded.push_back(thingType.get());
++        }
++    }
++    std::sort(loaded.begin(), loaded.end(), [](ThingType* a, ThingType* b) { return a->getLastUsage() < b->getLastUsage(); });
++    const size_t target = limit - limit / 10; // leave room, so the next check does not start again at once
++    for (ThingType* thingType : loaded) {
++        if (ThingType::getAllTextureBytes() <= target)
++            break;
++        thingType->unload();
++        ++m_textureEvictions;
++    }
++}
++
+ void ThingTypeManager::check()
+ {    
+     // removes unused textures from memory after 60s, 500 checks / s
+     m_checkEvent = g_dispatcher.scheduleEvent(std::bind(&ThingTypeManager::check, &g_things), 1000);
++    enforceTextureCap();
+ 
+     for (size_t i = 0; i < ThingLastCategory; ++i) {
+         size_t limit = std::min<size_t>(m_checkIndex[i] + 100, m_thingTypes[i].size());
+diff --git a/src/client/thingtypemanager.h b/src/client/thingtypemanager.h
+index 996ef54..a91ba9b 100644
+--- a/src/client/thingtypemanager.h
++++ b/src/client/thingtypemanager.h
+@@ -37,6 +37,12 @@ public:
+     void terminate();
+     void check();
+     void unloadTextures();
++    // Chaos (base patch 0125): cap on the bytes of thing textures kept. The oldest ones go first, never one used in
++    // the last CapGraceSeconds. The cap is the setting textureCacheMB (default 256, 0 = no cap).
++    size_t getTextureCacheBytes() const { return ThingType::getAllTextureBytes(); }
++    size_t getTextureCacheLimitBytes() const;
++    int getTextureCacheEvictions() const { return m_textureEvictions; }
++    void enforceTextureCap();
+ 
+     bool loadDat(std::string file);
+     bool loadOtml(std::string file);
+@@ -123,6 +129,7 @@ private:
+ 
+     ScheduledEventPtr m_checkEvent;
+     size_t m_checkIndex[ThingLastCategory];
++    int m_textureEvictions = 0;
+ };
+ 
+ extern ThingTypeManager g_things;

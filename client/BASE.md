@@ -882,6 +882,19 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     `tools/textedit_restored_test.py` (CI): stock rule 101 loops, `0124` 1. Applies after `0001`-`0123`. A headless run of
     the assembled client (software GL, login scene): 23 errors in 14 s before, none after. The "attempt to destroy
     widget two times" line at logout was not reproduced and is not traced to a Chaos module.
+69r. `0125` (C++ `src/client/thingtype.h/.cpp`, `thingtypemanager.h/.cpp`, `luafunctions_client.cpp`): **a cap on the memory of thing
+    textures (O202).** The base frees a thing texture only after 60 s without use (`ThingTypeManager::check`), so a long
+    walk over many outfits, items and effects kept them all until the minute passed (at HD scale 3-4 each texture is 9-16
+    times larger); the sprite pixel cache (`SpriteManager`, 2000 entries / 32 MB) was already capped, the textures were not.
+    `ThingType` counts the bytes of the textures it builds (width x height x 4 per animation phase) and `check` (once a
+    second) calls `enforceTextureCap()`: over the cap, loaded types are unloaded oldest use first down to 90% of it, and a
+    type used in the last 5 s is never unloaded (what the next frames draw stays, so a full screen does not thrash). The
+    cap is the setting `textureCacheMB` (`g_settings.set('textureCacheMB', n)`; default 256, 0 = no cap, below 64 raised
+    to 64), read at every check. Lua: `g_things.getTextureCacheBytes / getTextureCacheLimitBytes / getTextureCacheEvictions`.
+    Unload and rebuild are the base's own path. Applies after `0001`-`0124`; the touched files pass `g++ -std=c++17
+    -fsyntax-only` on the patched tree. Not built, run or measured in play: confirm in the first build that
+    `g_things.getTextureCacheBytes()` stays under the cap in a busy hunt and `getTextureCacheEvictions()` stays near 0 in
+    normal play (raise `textureCacheMB` if it climbs).
 70. `0088` (`src/client/outfit.cpp`): **a look without a mounted pattern still rides.** `Outfit::draw` took
     `zPattern = min(1, pattern Z - 1)` and drew the mount only when it was above 0, so a mounted character in a look
     with pattern Z 1 showed no mount. In pair 30 (dat 8156792438dabee3aa768663d57a1619) 43 wearable looks (base
