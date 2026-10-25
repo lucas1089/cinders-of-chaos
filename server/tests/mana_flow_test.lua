@@ -119,5 +119,31 @@ eq(added[6], nil, "dead: nothing")
 eq(costFn, nil, "no spell cost handler: a cost is the spell's fixed number")
 eq(removed, "cost:manaflow", "the old cap handler is dropped (it survives a /reload otherwise)")
 
+-- thinkPlayer (O199): the same amount as regenAmount for every level, mana, dead and Parched Veins case, cached per level
+do
+	local function fake(level, mana, maxMana, hp)
+		return {getLevel = function() return level end, getMana = function() return mana end,
+			getMaxMana = function() return maxMana end, getHealth = function() return hp end, getId = function() return 7 end}
+	end
+	for _, lv in ipairs({1, 99, 100, 150, 200, 799, 800, 1000, 1500}) do
+		for _, st in ipairs({{0, 4000}, {3990, 4000}, {4000, 4000}, {10, 5}}) do
+			for _, hp in ipairs({100, 0}) do
+				for _, nm in ipairs({false, true}) do
+					for pass = 1, 2 do -- the second pass answers from the cache
+						eq(F.thinkPlayer(fake(lv, st[1], st[2], hp), function() return nm end),
+							F.regenAmount(lv, st[1], st[2], nm, hp <= 0), "thinkPlayer " .. lv .. "/" .. st[1] .. "/" .. hp .. "/" .. tostring(nm))
+					end
+				end
+			end
+		end
+	end
+	eq(F.thinkPlayer(fake(800, 0, 4000, 100)), 53, "no Parched lookup given")
+	local looked = false
+	eq(F.thinkPlayer(fake(800, 4000, 4000, 100), function() looked = true end), 0, "full pool")
+	eq(looked, false, "a full pool reads nothing else")
+	F.clearCache()
+	eq(F.thinkPlayer(fake(800, 0, 4000, 100)), 53, "after clearCache")
+end
+
 print(string.format("mana_flow_test: %d checks, %d failures", count, failures))
 if failures > 0 then os.exit(1) end

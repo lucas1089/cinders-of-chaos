@@ -19,9 +19,7 @@ end
 
 function F.think()
 	for _, player in ipairs(Game.getPlayers()) do
-		local pid = player:getId()
-		local give = F.regenAmount(player:getLevel(), player:getMana(), player:getMaxMana(), parched(pid),
-			player:getHealth() <= 0)
+		local give = F.thinkPlayer(player, parched)
 		if give > 0 then
 			player:addMana(give)
 		end
