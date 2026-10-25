@@ -111,6 +111,8 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   candlemarks  tools/install_candlemarks.py      Osric the Chandler (the Candlemark shop NPC) in data/npc (README "Candlemarks")
   idlekick     tools/patch_base_idle_kick.py     config.lua kickIdlePlayerAfterMinutes = 1440: idle characters stay online and earn
                Candlemarks (the stock 15 kicks them after 16 minutes; README "Candlemarks")
+  baserain     tools/patch_base_rain.py          config.lua weatherRain = false: the base weather's rain (an effect per player every 100 ms) is
+               off; the Chaos weather (weather.lua, client game_chaosweather) replaces it (README "Weather on the client (O208)")
   castport     tools/patch_cast_port.py          config.lua castPort = 7179: the live cast for the admin app on 127.0.0.1 only
                (engine src-patch 0064, chaos-ctl.sh cast; README "Live spectator")
   servicenpcs  tools/install_service_npcs.py    the five service NPCs (stash keeper, pocket boss NPC, banker, house broker, services
@@ -826,11 +828,18 @@ def step_idlekick(server, data, ctx):
 STEPS.insert(STEPS.index('candlemarks') + 1, 'idlekick')  # config.lua: idle characters stay online (Candlemarks)
 
 
+def step_baserain(server, data, ctx):
+    return tool_result(run_tool([tool('patch_base_rain.py'), server], 'patch_base_rain.py'))
+
+
+STEPS.insert(STEPS.index('idlekick') + 1, 'baserain')  # config.lua: the base weather's rain off (the Chaos weather replaces it)
+
+
 def step_castport(server, data, ctx):
     return tool_result(run_tool([tool('patch_cast_port.py'), server], 'patch_cast_port.py'))
 
 
-STEPS.insert(STEPS.index('idlekick') + 1, 'castport')  # config.lua: the live cast port (127.0.0.1 only)
+STEPS.insert(STEPS.index('baserain') + 1, 'castport')  # config.lua: the live cast port (127.0.0.1 only)
 
 
 def step_supports(server, data, ctx):
