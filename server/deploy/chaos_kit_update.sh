@@ -25,22 +25,36 @@
 #                         blobs; git takes only world/), every part checked against SHA256SUMS and the whole map
 #                         decompressed and checked against MAP_MASTER.json. No branch or no master: skipped
 #                         (--no-map skips it)
-#            4 backup     server/tools/backup.sh with the server up (save first, database dump, config.lua + data/)
-#            5 install    the XP rates saved (chaos_config_rates.py), git checkout of the branch, the server stopped, the
-#                         engine replaced (the old one kept as tfs.antes-N), the new map master in place of the map
+#            4 backup     server/tools/backup.sh with the server up (save first, waiting for the engine's "Saved in steps"
+#                         line instead of a fixed 15 s; database dump, config.lua + data/)
+#            5 install    the XP rates saved (chaos_config_rates.py), git checkout of the branch, then the install on a
+#                         STAGING COPY of the server folder (SERVER.new, same file system, cp -a --reflink=auto; the
+#                         game keeps running; install and copy run at low CPU / disk priority): the engine replaced in
+#                         the copy (the old one kept as tfs.antes-N), the new map master in place of the copy's map
 #                         (map_master.py install: the old map kept as CHAOS_MAP_BACKUP_DIR/<map>.otbm.<timestamp>, the
-#                         newest 3 stay), install_all.py --no-sql (its map steps find their work in place), the rates put
-#                         back, the kit's helper files (clientservices.py, helpai, start / stop scripts) brought up to
-#                         date, the players' changelog (data/changelog/changelog.json, server/tools/gen_changelog.py;
-#                         a shallow checkout gets about 100 days of history first; never fails the update; also run
-#                         when nothing else changed and after a client update is published), the server folder owned
-#                         by the unit's user
-#            6 database   the server started (the kit's MariaDB runs inside the unit), the database waited for,
+#                         newest 3 stay), install_all.py --no-sql (its map steps find their work in place; the plan
+#                         compile cache lives in CHAOS_CACHE_DIR), the rates put back, the copy owned by the unit's user.
+#                         A failure here ends with RESULT failed, the live server never stopped, the checkout put back.
+#                         Without room for the copy (or CHAOS_STAGING=0, or SERVER a mount point, or no
+#                         server/deploy/chaos_stage_sync.py in the checkout) the install runs as it did before: the
+#                         server stopped first, in the live folder, a failure rolled back from the backup.
+#            6 database   the server stopped (it saves everyone), what the running game changed in the live folder meanwhile
+#                         carried into the copy (chaos_stage_sync.py: new, changed and removed files; a file the game and
+#                         the install both changed refuses the swap: RESULT failed, the server started again, nothing
+#                         changed; the XP rates set meanwhile are kept), the copy swapped in by two renames (the old
+#                         folder stays as SERVER.old for the rollback; data/logs and data/reports move along), the kit's
+#                         helper files (clientservices.py, helpai, start / stop scripts) brought up to date, the players'
+#                         changelog (data/changelog/changelog.json, server/tools/gen_changelog.py; a shallow checkout
+#                         gets about 100 days of history first; never fails the update; also run when nothing else
+#                         changed and after a client update is published), the server folder owned by the unit's user,
+#                         the server started (the kit's MariaDB runs inside the unit), the database waited for,
 #                         install_all.py --only sql, then a restart so the engine starts on the new tables (and map)
 #            7 verify     the unit active and "Server Online" in the log within CHAOS_BOOT_TIMEOUT seconds
-#                         A failure in steps 5-7 rolls the server back: engine, config.lua and data/ from the backup,
-#                         the map from its backup, the previous commit, started and verified again (RESULT rolled-back).
-#                         The database keeps the new tables (the SQL files only add; a full restore is the runbook's).
+#                         A failure in steps 6-7 rolls the server back: with a swap SERVER.old is renamed back (seconds;
+#                         the new folder stays aside as SERVER.failed-<time> until the next update removes it), else
+#                         engine, config.lua and data/ from the backup and the map from its backup; the previous commit,
+#                         started and verified again (RESULT rolled-back). The database keeps the new tables (the SQL
+#                         files only add; a full restore is the runbook's).
 #            8 client     publish_client_update.sh winpkg-N when the release is newer than the live client update
 #                         (--no-client skips it)
 #            9 downloads  the release's Windows zip and Linux tar.gz into CHAOS_DL_DIR: temporary name, size and
@@ -55,14 +69,17 @@
 #           signed client update was published (publish-update) but the site's download link still serves an older
 #           package: a client from that older zip mounts the update over it. Nothing to do when the downloads are the
 #           newest release's already (--force replaces them anyway). Exit: 0 ok, 1 failed.
-# rollback  back to the state before the last apply: engine, config.lua and data/, the map (when that apply replaced
-#           it), the previous commit, the download files (NAME.prev); started and verified.
+# rollback  back to the state before the last apply: the folder the swap replaced (SERVER.old), or engine, config.lua and
+#           data/, the map (when that apply replaced it); the previous commit, the download files (NAME.prev); started and
+#           verified.
 #
 # Settings (environment; chaos-ctl.sh passes its /etc/chaos/ctl.conf keys of the same names):
 #   CHAOS_REPO /opt/chaos/repo         CHAOS_UPDATE_BRANCH main         CHAOS_RELEASE_REPO lucas1089/cinders-of-chaos
 #   CHAOS_KIT_DIR /opt/chaos-trial     CHAOS_SERVER_DIR $KIT/server     CHAOS_ENV $KIT/chaos.env (CHAOS_DB_*)
 #   CHAOS_UNIT chaos-server            CHAOS_LOG $KIT/logs/server.log   CHAOS_MYSQL $KIT/mariadb/bin/mariadb
 #   CHAOS_KIT_STATE /var/lib/chaos/kit-update   CHAOS_WORK_DIR /var/tmp   CHAOS_BOOT_TIMEOUT 900
+#   CHAOS_STAGING 1 (0: install with the server stopped, as before)   CHAOS_CACHE_DIR $KIT_STATE/cache (install_all.py's
+#   plan compile cache; set it to an empty folder name of your own to move it)
 #   CHAOS_SITE_DIR /var/www/chaos      CHAOS_DL_DIR $SITE/dl            CHAOS_SITE_ENV /etc/chaos/site.env
 #   CHAOS_MAP_BRANCH windows-assets    CHAOS_MAP_BACKUP_DIR $KIT/map-backups
 #   CHAOS_BACKUP_DIR (else the env file's, else /var/backups/chaos); publish_client_update.sh reads its own
@@ -90,6 +107,8 @@ MYSQL=${CHAOS_MYSQL:-$KIT/mariadb/bin/mariadb}
 STATE_DIR=${CHAOS_KIT_STATE:-/var/lib/chaos/kit-update}
 WORKBASE=${CHAOS_WORK_DIR:-/var/tmp}
 BOOT_TIMEOUT=${CHAOS_BOOT_TIMEOUT:-900}
+STAGING=${CHAOS_STAGING:-1}
+CACHE_DIR=${CHAOS_CACHE_DIR:-$STATE_DIR/cache}
 SITE=${CHAOS_SITE_DIR:-/var/www/chaos}
 DL=${CHAOS_DL_DIR:-$SITE/dl}
 SITE_ENV=${CHAOS_SITE_ENV:-/etc/chaos/site.env}
@@ -107,7 +126,17 @@ die() { printf 'chaos_kit_update: %s\n' "$*" >&2; exit 1; }
 [[ $BRANCH =~ ^[A-Za-z0-9][A-Za-z0-9._/-]{0,99}$ ]] && [[ $BRANCH != *..* ]] || die "bad CHAOS_UPDATE_BRANCH"
 [[ $MAP_BRANCH =~ ^[A-Za-z0-9][A-Za-z0-9._/-]{0,99}$ ]] && [[ $MAP_BRANCH != *..* ]] || die "bad CHAOS_MAP_BRANCH"
 [[ $BOOT_TIMEOUT =~ ^[0-9]+$ ]] || die "CHAOS_BOOT_TIMEOUT must be a number of seconds"
+[[ $STAGING =~ ^[01]$ ]] || die "CHAOS_STAGING must be 0 or 1"
+SERVER_REAL=$(readlink -f "$SERVER" 2>/dev/null || echo "$SERVER")
+STAGE="$SERVER_REAL.new"      # the staging copy of the server folder (same file system: the swap is a rename)
+OLD="$SERVER_REAL.old"        # the folder the swap replaced, kept for the rollback until the next update
 g() { git -C "$REPO" -c safe.directory="$REPO" "$@"; }
+# the install on the staging copy runs beside the live game: low CPU and disk priority
+LOWPRIO=""
+if command -v nice >/dev/null; then
+  LOWPRIO="nice -n 10"
+  command -v ionice >/dev/null && LOWPRIO="ionice -c2 -n7 nice -n 10"
+fi
 
 state_get() { [ -f "$STATE" ] && sed -n "s/^$1=//p" "$STATE" | tail -n 1; }
 # state_set KEY=VALUE...: changes those keys, keeps the others
@@ -409,8 +438,8 @@ wait_online() {
       tail -c +"$((from + 1))" "$SLOG" 2>/dev/null | tail -n 15
       return 1
     fi
-    sleep 5
-    waited=$((waited + 5))
+    sleep 1
+    waited=$((waited + 1))
   done
 }
 # the game database answers (the kit starts it inside the unit)
@@ -421,45 +450,193 @@ wait_db() {
   ( set -a; . "$ENVFILE"; set +a
     printf '[client]\nhost=%s\nport=%s\nuser=%s\npassword="%s"\n' "${CHAOS_DB_HOST:-127.0.0.1}" "${CHAOS_DB_PORT:-3306}" \
       "${CHAOS_DB_USER:-chaos}" "${CHAOS_DB_PASS:-}" ) > "$cnf"
-  for i in $(seq 1 60); do
+  for i in $(seq 1 120); do
     if "$MYSQL" --defaults-extra-file="$cnf" -N -B -e 'SELECT 1' >/dev/null 2>&1; then
       rm -f "$cnf"; log "the database answers"; return 0
     fi
     active || break
-    sleep 2
+    sleep 1
     : "$i"
   done
   rm -f "$cnf"
   log "FAIL: the database did not answer in 120 s"
   return 1
 }
-own_server() {
-  local user group
+own_server() {  # [DIR]: the server folder owned by the unit's user (DIR default: the live folder)
+  local dir=${1:-$SERVER} user group
   user=$(systemctl show -p User --value "$UNIT" 2>/dev/null || true)
   group=$(systemctl show -p Group --value "$UNIT" 2>/dev/null || true)
   [ -n "$user" ] && [ "$user" != root ] || return 0
-  chown -R "$user:${group:-$user}" "$SERVER" && log "ownership of $SERVER: $user:${group:-$user}"
+  chown -R "$user:${group:-$user}" "$dir" && log "ownership of $dir: $user:${group:-$user}"
 }
-install_all() {  # extra arguments for install_all.py; the database settings of the env file
+install_all() {  # DIR, then extra arguments for install_all.py; the database settings of the env file
+  local dir=$1; shift
   ( set -a; . "$ENVFILE"; set +a
-    python3 -I "$REPO/server/tools/install_all.py" "$SERVER" --mysql "$MYSQL" --quiet "$@" )
+    export CHAOS_CACHE_DIR="$CACHE_DIR"
+    $LOWPRIO python3 -I "$REPO/server/tools/install_all.py" "$dir" --mysql "$MYSQL" --quiet "$@" )
+}
+
+# ------------------------------------------------------------------------------------------------ the staging copy
+# The install (install_all.py, minutes) runs on a copy of the server folder while the game keeps running; the game is
+# stopped only for the swap of the two folders, the database step and the boot. server/README.md "Updating the kit server".
+STAGE_SYNC_REL=server/deploy/chaos_stage_sync.py
+# can_stage: 0 when the install can run on a copy beside the folder (CHAOS_STAGING=1, the helper in this checkout, the
+# folder on the same file system as its parent so the swap is a rename, room for a second copy); else the reason is
+# logged and the install runs with the server stopped, as before
+can_stage() {
+  local par need free
+  [ "$STAGING" = 1 ] || { log "staging copy off (CHAOS_STAGING=0): the install runs with the server stopped"; return 1; }
+  [ -f "$REPO/$STAGE_SYNC_REL" ] || { log "no $STAGE_SYNC_REL in this checkout: the install runs with the server stopped"; return 1; }
+  par=$(dirname "$SERVER_REAL")
+  [ -w "$par" ] || { log "no staging copy: $par is not writable; the install runs with the server stopped"; return 1; }
+  if [ "$(stat -c %d "$SERVER_REAL")" != "$(stat -c %d "$par")" ]; then
+    log "no staging copy: $SERVER_REAL is a mount point; the install runs with the server stopped"; return 1
+  fi
+  need=$(du -sk --exclude=logs --exclude=reports "$SERVER_REAL" 2>/dev/null | cut -f1)
+  free=$(df -Pk "$par" 2>/dev/null | awk 'NR==2 {print $4}')
+  need=${need:-0} free=${free:-0}
+  if [ "$free" -lt "$((need + need / 10 + 102400))" ] && [ -d "$OLD" ]; then
+    log "freeing room: $OLD (the folder the last update replaced) goes"
+    rm -rf "$OLD"
+    free=$(df -Pk "$par" 2>/dev/null | awk 'NR==2 {print $4}'); free=${free:-0}
+  fi
+  if [ "$free" -lt "$((need + need / 10 + 102400))" ]; then
+    log "no staging copy: $((free / 1024)) MB free in $par, about $((need / 1024)) MB needed; the install runs with the server stopped"
+    return 1
+  fi
+  return 0
+}
+# stage_prepare: $STAGE is a copy of the live folder (without data/logs and data/reports, which the install does not
+# read); $work/manifest.json says what the files were, so the swap can tell what the game changed meanwhile
+stage_prepare() {
+  rm -rf "$STAGE" "$OLD.gone" "$SERVER_REAL".failed-*
+  python3 -I "$REPO/$STAGE_SYNC_REL" manifest "$SERVER_REAL" "$work/manifest.json" || return 1
+  cp -p "$SERVER_REAL/config.lua" "$work/config0.lua" || return 1
+  mkdir "$STAGE" || return 1
+  # shellcheck disable=SC2086 # LOWPRIO is a command prefix of several words
+  find "$SERVER_REAL" -mindepth 1 -maxdepth 1 ! -name data -print0 \
+    | xargs -0 -r $LOWPRIO cp -a --reflink=auto -t "$STAGE" || return 1
+  mkdir "$STAGE/data" && chmod --reference="$SERVER_REAL/data" "$STAGE/data" \
+    && chown --reference="$SERVER_REAL/data" "$STAGE/data" && touch -r "$SERVER_REAL/data" "$STAGE/data" || return 1
+  # shellcheck disable=SC2086
+  find "$SERVER_REAL/data" -mindepth 1 -maxdepth 1 ! -name logs ! -name reports -print0 \
+    | xargs -0 -r $LOWPRIO cp -a --reflink=auto -t "$STAGE/data" || return 1
+  log "staging copy: $STAGE ($(du -sh "$STAGE" 2>/dev/null | cut -f1))"
+}
+# install_into DIR: the engine, the map master and install_all.py (every step but sql) into the server folder DIR, then
+# the saved XP rates back. Sets ENGINE_BK_REL (the old engine, relative to the folder) and MAP_BK (the old map's backup).
+# Reads cmd_apply's variables: engine_new, map_new, work, LATEST, stamp, rates.
+install_into() {
+  local dir=$1 a mout bk
+  if [ -n "$engine_new" ]; then
+    bk="$dir/tfs.antes-$LATEST"
+    [ -e "$bk" ] && bk="$bk.$stamp"
+    if cp -p "$dir/tfs" "$bk" && { [ ! -d "$dir/lib" ] || cp -a "$dir/lib" "$bk.lib"; } \
+      && install -m 0755 "$engine_new/tfs" "$dir/tfs" && rm -rf "$dir/lib.new" \
+      && cp -a "$engine_new/lib" "$dir/lib.new" && rm -rf "${dir:?}/lib" && mv "$dir/lib.new" "$dir/lib"; then
+      ENGINE_BK_REL=${bk#"$dir"/}
+      log "engine of winpkg-$LATEST installed (the old one: $ENGINE_BK_REL)"
+    else
+      log "FAIL: could not replace the engine"; return 1
+    fi
+  fi
+  if [ -n "$map_new" ]; then
+    log "map master version $map_new in place of the map:"
+    mout=$(python3 -I "$work/map/map_master.py" install "$work/map/world" "$dir" --backup-dir "$MAP_BACKUPS" \
+      --stamp "$stamp" 2>&1); a=$?
+    say "$mout" | tail -n 12
+    MAP_BK=$(sed -n 's/^backup=//p' <<< "$mout" | tail -n 1)
+    [ "$a" = 0 ] || { log "FAIL: the map master was not installed"; return 1; }
+  fi
+  log "install_all.py (every step but sql${STAGED:+; on the staging copy, the game keeps running}):"
+  install_all "$dir" --no-sql 2>&1 | tail -n 60
+  [ "${PIPESTATUS[0]}" = 0 ] || { log "FAIL: install_all.py failed"; return 1; }
+  python3 -I "$REPO/server/deploy/chaos_config_rates.py" restore "$dir/config.lua" "$rates" || return 1
+}
+# the checkout back where it was before this update (a failed staging install, a refused swap)
+revert_checkout() {
+  if [ -n "$orig_branch" ]; then g checkout --quiet -B "$orig_branch" "$cur"; else g checkout --quiet --detach "$cur"; fi
+  log "checkout back at $(g rev-parse --short "$cur")"
+}
+# stage_abort REASON [restart]: nothing was changed in the live folder; the staging copy goes, the checkout goes back,
+# the server is started again when it was stopped; ends the update with RESULT failed (the state of the update before is
+# untouched: it is recorded only after the swap)
+stage_abort() {
+  local why=$1 from
+  rm -rf "$STAGE"
+  revert_checkout
+  if [ "${2:-}" = restart ]; then
+    from=$(log_size)
+    systemctl start "$UNIT" || true
+    wait_online "$from" || finish failed "$why; the server did not come back up: docs/LAUNCH.md \"Incident runbook\"" 1
+  fi
+  finish failed "$why: the live server folder was not changed and the server runs the previous version" 1
+}
+# swap_in: the server is stopped. What the game changed in the live folder since the copy (chaos_stage_sync.py) goes
+# into the copy, then the copy takes the folder's place and the folder stays as $OLD. 0 ok; 1: nothing swapped, the live
+# folder is as it was
+swap_in() {
+  local out rc live_rates="$work/rates-live.json"
+  out=$(python3 -I "$REPO/$STAGE_SYNC_REL" sync "$SERVER_REAL" "$STAGE" "$work/manifest.json" --ignore config.lua 2>&1); rc=$?
+  say "$out" | tail -n 8
+  [ "$rc" = 0 ] || { log "FAIL: the game changed files the install changed too (above) or the sync failed"; return 1; }
+  # config.lua: the XP rates (chaos-ctl.sh xp-rate) may have changed since the copy; anything else is a conflict
+  if ! cmp -s "$SERVER_REAL/config.lua" "$work/config0.lua"; then
+    python3 -I "$REPO/server/deploy/chaos_config_rates.py" save "$SERVER_REAL/config.lua" "$live_rates" >/dev/null \
+      && cp "$work/config0.lua" "$work/config1.lua" \
+      && python3 -I "$REPO/server/deploy/chaos_config_rates.py" restore "$work/config1.lua" "$live_rates" >/dev/null \
+      && cmp -s "$work/config1.lua" "$SERVER_REAL/config.lua" \
+      || { log "FAIL: config.lua changed since the copy in more than the XP rates"; return 1; }
+    python3 -I "$REPO/server/deploy/chaos_config_rates.py" restore "$STAGE/config.lua" "$live_rates" || return 1
+  fi
+  mv "$SERVER_REAL" "$OLD" || return 1
+  if ! mv "$STAGE" "$SERVER_REAL"; then
+    mv "$OLD" "$SERVER_REAL"; log "FAIL: could not move the staging copy into place"; return 1
+  fi
+  local d
+  for d in logs reports; do
+    if [ -d "$OLD/data/$d" ]; then rm -rf "${SERVER_REAL:?}/data/$d"; mv "$OLD/data/$d" "$SERVER_REAL/data/$d"; fi
+  done
+  log "the staging copy is the server folder now (the folder it replaced: $OLD)"
+}
+# swap_back OLDDIR: the rollback of a swapped update: the new folder aside ($SERVER_REAL.failed-STAMP, removed by the
+# next update), OLDDIR in its place, the logs carried over; 0 ok
+swap_back() {
+  local old=$1 d aside
+  aside="$SERVER_REAL.failed-$(date '+%Y%m%d-%H%M%S')"
+  mv "$SERVER_REAL" "$aside" || return 1
+  if ! mv "$old" "$SERVER_REAL"; then mv "$aside" "$SERVER_REAL"; return 1; fi
+  for d in logs reports; do
+    if [ -d "$aside/data/$d" ]; then rm -rf "${SERVER_REAL:?}/data/$d"; mv "$aside/data/$d" "$SERVER_REAL/data/$d"; fi
+  done
+  log "rollback: the folder before the update is back ($old -> $SERVER_REAL; the new one: $aside)"
 }
 
 # the server back to the recorded state before the update: engine, config.lua + data/, commit; started and verified
 restore_server() {
-  local prev engine_bk archive aside stamp from
+  local prev engine_bk archive aside stamp from old swapped=0
   prev=$(state_get prev_commit) engine_bk=$(state_get engine_backup) archive=$(state_get data_archive)
+  old=$(state_get old_server)
   [ -f "$SERVER/config.lua" ] && [ -d "$SERVER/data" ] || { log "FAIL: $SERVER is not a server folder"; return 1; }
   stamp=$(date '+%Y%m%d-%H%M%S')
   log "rollback: stopping $UNIT"
   systemctl stop "$UNIT" || true
-  if [ -n "$engine_bk" ] && [ -f "$engine_bk" ]; then
+  # an update that swapped folders: the folder it replaced is renamed back (seconds, the archive is the fallback)
+  if [ -n "$old" ] && [ -d "$old" ] && swap_back "$old"; then
+    swapped=1
+    state_set "old_server="
+  fi
+  if [ "$swapped" = 1 ]; then
+    :
+  elif [ -n "$engine_bk" ] && [ -f "$engine_bk" ]; then
     install -m 0755 "$engine_bk" "$SERVER/tfs" && log "engine put back from $engine_bk"
     if [ -d "$engine_bk.lib" ]; then
       rm -rf "${SERVER:?}/lib" && cp -a "$engine_bk.lib" "$SERVER/lib" && log "engine libraries put back from $engine_bk.lib"
     fi
   fi
-  if [ -n "$archive" ] && [ -f "$archive" ]; then
+  if [ "$swapped" = 1 ]; then
+    :
+  elif [ -n "$archive" ] && [ -f "$archive" ]; then
     aside="$SERVER/data.before-rollback-$stamp"
     mv "$SERVER/data" "$aside"
     cp -p "$SERVER/config.lua" "$SERVER/config.lua.before-rollback-$stamp"
@@ -483,7 +660,7 @@ restore_server() {
   fi
   local map_bk target
   map_bk=$(state_get map_backup)
-  if [ -n "$map_bk" ] && [ -f "$map_bk" ] && target=$(map_path); then
+  if [ "$swapped" = 0 ] && [ -n "$map_bk" ] && [ -f "$map_bk" ] && target=$(map_path); then
     if cp -p "$map_bk" "$target.rollback-new" && mv -f "$target.rollback-new" "$target"; then
       log "map put back from $map_bk"
     else
@@ -527,7 +704,7 @@ cmd_apply() {
     esac
   done
   lock
-  local work warn="" cur remote installed prev_release engine_new="" map_new="" stamp from dirty rates
+  local work warn="" cur remote installed prev_release engine_new="" map_new="" stamp from dirty rates orig_branch="" ok=1
   stamp=$(date '+%Y%m%d-%H%M%S')
   state_set "status=running" "result=" "time=$(date '+%F %T')"
   say "STEP 1/10 check"
@@ -605,7 +782,11 @@ cmd_apply() {
     fi
     local save=() bdir pid
     pid=$(head -c 20 "$KIT/run/server.pid" 2>/dev/null | tr -dc 0-9)
-    if [ -n "$pid" ] && [ "$(cat "/proc/$pid/comm" 2>/dev/null)" = tfs ]; then save=(--save-pid "$pid"); fi
+    if [ -n "$pid" ] && [ "$(cat "/proc/$pid/comm" 2>/dev/null)" = tfs ]; then
+      save=(--save-pid "$pid")
+      # the wait for the save ends at the engine's "Saved in steps" line (an older backup.sh waits the fixed 15 s)
+      grep -q -- '--save-log' "$bscript" && save+=(--save-log "$SLOG")
+    fi
     bdir=${CHAOS_BACKUP_DIR:-$( . "$ENVFILE" 2>/dev/null; echo "${CHAOS_BACKUP_DIR:-/var/backups/chaos}" )}
     ( set -a; . "$ENVFILE"; CHAOS_BACKUP_DIR=$bdir; set +a; PATH="$PATH:$KIT/mariadb/bin"
       "$bscript" "${save[@]}" --server-dir "$SERVER" 2>&1 | tail -n 15; exit "${PIPESTATUS[0]}" ) \
@@ -621,52 +802,54 @@ cmd_apply() {
     python3 -I "$REPO/server/deploy/chaos_config_rates.py" save "$SERVER/config.lua" "$rates" \
       || finish failed "cannot read the rates of config.lua: nothing changed" 1
     prev_release=$installed
-    state_set "prev_commit=$cur" "prev_release=$installed" "data_archive=$archive" "engine_backup=" "target_commit=$remote" \
-      "target_release=$LATEST" "map_backup="
+    orig_branch=$(g symbolic-ref -q --short HEAD 2>/dev/null || true)
     g checkout --quiet -B "$BRANCH" "origin/$BRANCH" || finish failed "git checkout $BRANCH failed: nothing changed" 1
     log "checkout at $(g rev-parse --short HEAD) ($BRANCH)"
-    log "stopping $UNIT (the game saves everyone; players are disconnected)"
-    systemctl stop "$UNIT"
-    local ok=1
-    if [ -n "$engine_new" ]; then
-      local bk="$SERVER/tfs.antes-$LATEST"
-      [ -e "$bk" ] && bk="$bk.$stamp"
-      if cp -p "$SERVER/tfs" "$bk" && { [ ! -d "$SERVER/lib" ] || cp -a "$SERVER/lib" "$bk.lib"; } \
-        && install -m 0755 "$engine_new/tfs" "$SERVER/tfs" && rm -rf "$SERVER/lib.new" \
-        && cp -a "$engine_new/lib" "$SERVER/lib.new" && rm -rf "${SERVER:?}/lib" && mv "$SERVER/lib.new" "$SERVER/lib"; then
-        state_set "engine_backup=$bk"
-        log "engine of winpkg-$LATEST installed (the old one: $bk)"
-      else
-        ok=0; log "FAIL: could not replace the engine"
+    ENGINE_BK_REL="" MAP_BK="" STAGED=""
+    local record_state=(prev_commit="$cur" prev_release="$installed" data_archive="$archive" engine_backup= target_commit="$remote"
+      target_release="$LATEST" map_backup= old_server=)
+    if can_stage; then
+      STAGED=1
+      log "installing on a copy of the server folder: the game keeps running until the copy is ready"
+      stage_prepare || stage_abort "could not copy the server folder to $STAGE"
+      install_into "$STAGE" || stage_abort "the install failed on the staging copy (above)"
+      own_server "$STAGE"
+      log "the staging copy is installed; the game is stopped only for the swap"
+    else
+      state_set "${record_state[@]}"
+      log "stopping $UNIT (the game saves everyone; players are disconnected)"
+      systemctl stop "$UNIT"
+      install_into "$SERVER" || ok=0
+      [ -n "$ENGINE_BK_REL" ] && state_set "engine_backup=$SERVER/$ENGINE_BK_REL"
+      [ -n "$MAP_BK" ] && state_set "map_backup=$MAP_BK"
+      if [ "$ok" = 1 ]; then
+        sync_sidecars
+        changelog
+        own_server
       fi
-    fi
-    if [ "$ok" = 1 ] && [ -n "$map_new" ]; then
-      local mout map_bk
-      log "map master version $map_new in place of the map:"
-      mout=$(python3 -I "$work/map/map_master.py" install "$work/map/world" "$SERVER" --backup-dir "$MAP_BACKUPS" \
-        --stamp "$stamp" 2>&1); a=$?
-      say "$mout" | tail -n 12
-      map_bk=$(sed -n 's/^backup=//p' <<< "$mout" | tail -n 1)
-      [ -n "$map_bk" ] && state_set "map_backup=$map_bk"
-      [ "$a" = 0 ] || { ok=0; log "FAIL: the map master was not installed"; }
-    fi
-    if [ "$ok" = 1 ]; then
-      log "install_all.py (every step but sql; the database is down with the server):"
-      install_all --no-sql 2>&1 | tail -n 60
-      [ "${PIPESTATUS[0]}" = 0 ] || { ok=0; log "FAIL: install_all.py failed"; }
-    fi
-    if [ "$ok" = 1 ]; then
-      python3 -I "$REPO/server/deploy/chaos_config_rates.py" restore "$SERVER/config.lua" "$rates" || ok=0
-      sync_sidecars
-      changelog
-      own_server
     fi
     if [ "$ok" = 1 ]; then
       say "STEP 6/10 database"
+      if [ -n "$STAGED" ]; then
+        [ -d "$OLD" ] && mv "$OLD" "$OLD.gone"
+        log "stopping $UNIT (the game saves everyone; players are disconnected)"
+        systemctl stop "$UNIT"
+        if ! swap_in; then
+          [ -d "$OLD.gone" ] && mv "$OLD.gone" "$OLD"
+          stage_abort "the swap was refused" restart
+        fi
+        # recorded only now: a refused swap leaves the state of the update before as it was
+        state_set "${record_state[@]}" "old_server=$OLD"
+        [ -n "$ENGINE_BK_REL" ] && state_set "engine_backup=$SERVER/$ENGINE_BK_REL"
+        [ -n "$MAP_BK" ] && state_set "map_backup=$MAP_BK"
+        sync_sidecars
+        changelog
+        own_server
+      fi
       systemctl start "$UNIT" || true
       if wait_db; then
         log "install_all.py --only sql:"
-        install_all --only sql 2>&1 | tail -n 30
+        install_all "$SERVER" --only sql 2>&1 | tail -n 30
         [ "${PIPESTATUS[0]}" = 0 ] || { ok=0; log "FAIL: the sql step failed"; }
       else
         ok=0
@@ -686,6 +869,7 @@ cmd_apply() {
       fi
       finish failed "the update failed and the rollback did not bring the server up: docs/LAUNCH.md \"Incident runbook\"" 1
     fi
+    rm -rf "$OLD.gone"
     state_set "installed_release=$LATEST" "deployed_commit=$remote"
     [ -n "$map_new" ] && state_set "map_version=$map_new"
     log "server updated: $(g rev-parse --short HEAD), winpkg-$LATEST${map_new:+, map master $map_new}"

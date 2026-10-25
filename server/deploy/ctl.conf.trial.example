@@ -31,6 +31,12 @@ CHAOS_RELEASE_REPO=lucas1089/cinders-of-chaos
 # the replaced maps are kept in CHAOS_MAP_BACKUP_DIR (the newest 3, each as large as the map)
 #CHAOS_MAP_BRANCH=windows-assets
 #CHAOS_MAP_BACKUP_DIR=/opt/chaos-trial/map-backups
+# the update installs on a copy of the server folder (CHAOS_SERVER_DIR + ".new") while the game runs and stops it only
+# for the swap; the replaced folder stays as CHAOS_SERVER_DIR + ".old" (the rollback renames it back). Needs room for
+# one more copy of the folder on the same disk; without it the update installs with the server stopped, as before.
+# 0 turns the copy off. The compile cache of install_all.py (default CHAOS_KIT_STATE/cache) makes a rerun faster.
+#CHAOS_STAGING=1
+#CHAOS_CACHE_DIR=/var/lib/chaos/kit-update/cache
 # the website: the signed client update goes to CHAOS_SITE_DIR/updates/live, the client downloads to CHAOS_DL_DIR
 # (a symlink is fine: the files are written next to its target), install_site.sh reads CHAOS_SITE_ENV
 CHAOS_SITE_DIR=/var/www/chaos

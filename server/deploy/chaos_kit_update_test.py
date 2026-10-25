@@ -36,6 +36,7 @@ REPO_ROOT = os.path.dirname(os.path.dirname(HERE))
 SCRIPT = os.path.join(HERE, 'chaos_kit_update.sh')
 CTL = os.path.join(HERE, 'chaos-ctl.sh')
 RATES = os.path.join(HERE, 'chaos_config_rates.py')
+STAGE_SYNC = os.path.join(HERE, 'chaos_stage_sync.py')
 LATE_GAME = os.path.join(REPO_ROOT, 'server', 'tools', 'late_game.py')
 MAP_MASTER = os.path.join(REPO_ROOT, 'server', 'tools', 'map_master.py')
 CHANGELOG = os.path.join(REPO_ROOT, 'server', 'tools', 'gen_changelog.py')
@@ -107,12 +108,35 @@ with open(os.path.join(stub, 'calls'), 'a') as f:
 server = sys.argv[1]
 if '--only' in sys.argv:
     sys.exit(0)
+live = os.environ.get('STUB_LIVE')
+if live and os.path.realpath(live) != os.path.realpath(server):
+    # the running game writes while the install runs on the copy
+    if os.environ.get('STUB_LIVE_WRITE'):
+        with open(os.path.join(live, 'data', 'runtime.json'), 'w') as f:
+            f.write('written by the game\n')
+        os.remove(os.path.join(live, 'data', 'gone.txt'))
+    if os.environ.get('STUB_LIVE_CONFLICT'):
+        with open(os.path.join(live, 'data', 'shared.txt'), 'w') as f:
+            f.write('the game\n')
+    if os.environ.get('STUB_RATE_CHANGE'):
+        import subprocess
+        subprocess.run([sys.executable, '-I', os.environ['STUB_RATES'], 'set', os.path.join(live, 'config.lua'),
+                        os.environ['STUB_RATE_CHANGE']], check=True, stdout=subprocess.DEVNULL)
+if os.environ.get('STUB_INSTALL_FAIL'):
+    print('[FAILED] files')
+    sys.exit(1)
+if os.environ.get('STUB_LIVE_CONFLICT'):
+    with open(os.path.join(server, 'data', 'shared.txt'), 'w') as f:
+        f.write('the install\n')
 cfg = os.path.join(server, 'config.lua')
 text = open(cfg).read()
 text, _ = late_game.patch_config(text, False)
 text = re.sub(r'(?m)^rateExp = .*$', 'rateExp = 1', text)
 open(cfg, 'w').write(text)
 open(os.path.join(server, 'data', 'installed.txt'), 'w').write(open(os.path.join(here, 'version.txt')).read())
+if os.environ.get('STUB_SEEN_SERVER'):
+    # the folder this install ran on
+    open(os.environ['STUB_SEEN_SERVER'], 'w').write(os.path.realpath(server) + '\n')
 print('[ok] files')
 '''
 PUBLISH = '#!/usr/bin/env bash\necho "publish $* site=${CHAOS_SITE_DIR:-}" >> "$STUB/calls"\n'
@@ -179,6 +203,7 @@ class World:
         shutil.copy(NAMES, os.path.join(o, 'tools/ci/check_names.py'))
         os.makedirs(os.path.join(o, 'server/deploy'))
         shutil.copy(RATES, os.path.join(o, 'server/deploy/chaos_config_rates.py'))
+        shutil.copy(STAGE_SYNC, os.path.join(o, 'server/deploy/chaos_stage_sync.py'))
         shutil.copy(SCRIPT, os.path.join(o, 'server/deploy/chaos_kit_update.sh'))
         write(os.path.join(o, 'server/deploy/publish_client_update.sh'), PUBLISH, 0o755)
         write(os.path.join(o, 'website/install_site.sh'), SITE, 0o755)
@@ -194,6 +219,9 @@ class World:
         write(os.path.join(self.server, 'config.lua'),
               'serverName = "test"\nrateExp = 10\nrateLoot = 2\n' + stages + '\nmapName = "map"\n')
         write(os.path.join(self.server, 'data/world/map.otbm'), 'map\n')
+        write(os.path.join(self.server, 'data/gone.txt'), 'the game removes this\n')
+        write(os.path.join(self.server, 'data/shared.txt'), 'before\n')
+        write(os.path.join(self.server, 'data/logs/server.log'), 'a log line\n')
         write(os.path.join(self.server, 'tfs'), 'engine 46\n', 0o755)
         os.makedirs(os.path.join(self.kit, 'logs'))
         write(os.path.join(self.kit, 'logs/server.log'), 'Server Online (an old start)\n')
@@ -403,11 +431,17 @@ def test_flow():
         steps = [l.split()[1] for l in out.splitlines() if l.startswith('STEP ')]
         check(steps == ['%d/10' % i for i in range(1, 11)], 'apply: ten steps %r' % steps, out)
         check('no map master' in out, 'apply: no map master, the map stays', out)
-        order = [w.pos('backup'), w.pos('systemctl stop chaos-server'), w.pos('install --no-sql'),
+        order = [w.pos('backup'), w.pos('install --no-sql'), w.pos('systemctl stop chaos-server'),
                  w.pos('systemctl start chaos-server'), w.pos('install --only sql'), w.pos('systemctl restart chaos-server'),
                  w.pos('publish'), w.pos('site')]
-        check(all(i >= 0 for i in order) and order == sorted(order), 'apply: order backup, stop, install, start, sql, '
-              'restart, publish, site %r' % order, '\n'.join(w.calls))
+        check(all(i >= 0 for i in order) and order == sorted(order), 'apply: order backup, install (on the copy, the '
+              'server running), stop, start, sql, restart, publish, site %r' % order, '\n'.join(w.calls))
+        check(os.path.isdir(w.server + '.old') and not os.path.exists(w.server + '.new'),
+              'apply: the replaced folder kept as server.old, no staging folder left')
+        check(read(os.path.join(w.server + '.old', 'tfs')) == old_engine, 'apply: server.old is the folder before')
+        check(read(os.path.join(w.server, 'data/logs/server.log')) == 'a log line\n',
+              'apply: the logs carried into the new folder')
+        check(w.state_value('old_server') == w.server + '.old', 'state: old_server')
         check(any('--mysql mariadb' in c for c in w.calls if c.startswith('install')), 'install_all gets --mysql')
         check(all('--proto =https' in c for c in w.calls if c.startswith('curl')), 'curl: https only')
         check(read(os.path.join(w.server, 'tfs')) == 'engine 47\n', 'apply: new engine installed')
@@ -584,12 +618,12 @@ def test_map():
         backups = os.listdir(os.path.join(w.kit, 'map-backups'))
         check(len(backups) == 1 and backups[0].startswith('map.otbm.')
               and read(os.path.join(w.kit, 'map-backups', backups[0])) == old_map, 'map: the old map kept %r' % backups)
-        order = [w.pos('backup'), w.pos('systemctl stop chaos-server'), w.pos('install --no-sql'),
+        order = [w.pos('backup'), w.pos('install --no-sql'), w.pos('systemctl stop chaos-server'),
                  w.pos('systemctl restart chaos-server')]
-        check(all(i >= 0 for i in order) and order == sorted(order), 'map: backup, stop, install, restart %r' % order)
+        check(all(i >= 0 for i in order) and order == sorted(order), 'map: backup, install, stop, restart %r' % order)
         i_map = out.find('map master version 1 in place')
-        check(0 <= out.find('stopping chaos-server') < i_map < out.find('install_all.py (every step'),
-              'map: replaced after the stop and before install_all', out)
+        check(0 <= i_map < out.find('install_all.py (every step') < out.find('stopping chaos-server'),
+              'map: replaced on the staging copy before install_all and before the stop', out)
         check(w.state_value('map_version') == '1', 'map: state map_version')
         rc = w.run('check')
         check(w.kv().get('needs_map') == 'no' and w.kv().get('installed_map') == '1', 'map: check after apply', w.out)
@@ -613,7 +647,7 @@ def test_map():
         w.map_master(m3)
         w.release(48, 'BROKEN engine 48\n')
         rc = w.run('apply', '--no-client', '--no-downloads', '--no-site')
-        check(rc == 2 and 'map put back' in w.out, 'map: rolled back with the engine', w.out)
+        check(rc == 2 and 'the folder before the update is back' in w.out, 'map: rolled back with the engine', w.out)
         check(open(target, 'rb').read() == new, 'map: version 1 back after the rollback')
         check(json.load(open(target + '.master.json'))['version'] == 1, 'map: the marker of version 1 back')
 
@@ -630,9 +664,114 @@ def test_map():
         shutil.rmtree(w.root, ignore_errors=True)
 
 
+def test_staging():
+    """the install on the staging copy: what the game writes meanwhile, a conflict, a failing install, the legacy path"""
+    w = World()
+    try:
+        w.release(47, 'engine 47\n')
+        w.push('Staging', {'server/tools/version.txt': 'v2\n'})
+        live = w.server
+        old_engine = read(os.path.join(live, 'tfs'))
+        start_commit = w.git('-C', w.repo, 'rev-parse', 'HEAD')
+
+        # the install fails on the copy: the server is never stopped, the checkout goes back, nothing is left over
+        rc = w.run('apply', '--no-client', '--no-downloads', '--no-site', extra={'STUB_INSTALL_FAIL': '1'})
+        check(rc == 1 and 'RESULT failed' in w.out and 'staging copy' in w.out, 'staging: a failing install refused', w.out)
+        check(not any(c.startswith('systemctl stop') or c.startswith('systemctl restart') for c in w.calls),
+              'staging: a failing install never stops the server', '\n'.join(w.calls))
+        check(w.git('-C', w.repo, 'rev-parse', 'HEAD') == start_commit
+              and w.git('-C', w.repo, 'rev-parse', '--abbrev-ref', 'HEAD') == 'main', 'staging: the checkout is back')
+        check(not os.path.exists(live + '.new') and not os.path.exists(live + '.old'), 'staging: no copy left')
+        check(read(os.path.join(live, 'tfs')) == old_engine and os.path.exists(os.path.join(w.stub, 'active', 'chaos-server')),
+              'staging: the live server is as it was and runs')
+        check(w.run('rollback') != 0 and 'nothing recorded' in w.out, 'staging: a refused update leaves nothing to roll back')
+
+        # the game changes a file the install does not touch, removes one, and the owner changes the XP rate meanwhile
+        seen = os.path.join(w.root, 'seen')
+        rc = w.run('apply', '--no-client', '--no-downloads', '--no-site',
+                   extra={'STUB_LIVE': live, 'STUB_LIVE_WRITE': '1', 'STUB_RATE_CHANGE': '5', 'STUB_RATES': RATES,
+                          'STUB_SEEN_SERVER': seen})
+        check(rc == 0 and 'RESULT ok' in w.out, 'staging: apply ok', w.out)
+        check(read(seen).strip() == os.path.realpath(live + '.new'), 'staging: install_all ran on the copy', read(seen))
+        check(read(os.path.join(live, 'data/runtime.json')) == 'written by the game\n',
+              'staging: a file the game wrote meanwhile is in the new folder', w.out)
+        check(not os.path.exists(os.path.join(live, 'data/gone.txt')), 'staging: a file the game removed stays removed')
+        cfg = read(os.path.join(live, 'config.lua'))
+        check('Chaos XP rate x5' in cfg and 'rateExp = 10' in cfg, 'staging: the XP rate set meanwhile is kept', cfg)
+        check(any(n.startswith('config.lua.before-xp-') for n in os.listdir(live)),
+              'staging: the backup the rate change wrote is in the new folder')
+        check(read(os.path.join(live, 'data/installed.txt')) == 'v2\n' and read(os.path.join(live, 'tfs')) == 'engine 47\n',
+              'staging: the install is in the new folder')
+        check(read(os.path.join(live + '.old', 'tfs')) == old_engine, 'staging: server.old holds the old engine')
+
+        # a later update that fails on the copy leaves the rollback point of this one alone
+        w.push('Another change', {'server/tools/version.txt': 'v2b\n'})
+        rc = w.run('apply', '--no-client', '--no-downloads', '--no-site', extra={'STUB_INSTALL_FAIL': '1'})
+        check(rc == 1 and w.state_value('old_server') == live + '.old' and os.path.isdir(live + '.old'),
+              'staging: a failed copy keeps the earlier rollback point', w.out)
+        w.git('-C', w.repo, 'reset', '--quiet', '--hard', 'HEAD')
+
+        # the manual rollback renames the old folder back
+        rc = w.run('rollback')
+        check(rc == 0 and 'the folder before the update is back' in w.out, 'staging: rollback swaps back', w.out)
+        check(read(os.path.join(live, 'tfs')) == old_engine and not os.path.exists(live + '.old'),
+              'staging: rollback: the old folder is the live one')
+        check(read(os.path.join(live, 'data/logs/server.log')) == 'a log line\n', 'staging: rollback: logs carried back')
+        check(w.state_value('old_server') == '', 'staging: rollback clears old_server')
+        w.git('-C', w.repo, 'reset', '--quiet', '--hard', 'HEAD')
+
+        # both the game and the install change the same file: refused, the server started again, nothing changed
+        before = w.git('-C', w.repo, 'rev-parse', 'HEAD')
+        rc = w.run('apply', '--no-client', '--no-downloads', '--no-site',
+                   extra={'STUB_LIVE': live, 'STUB_LIVE_CONFLICT': '1'})
+        check(rc == 1 and 'RESULT failed' in w.out and 'conflict data/shared.txt' in w.out, 'staging: a conflict is refused', w.out)
+        check(read(os.path.join(live, 'data/shared.txt')) == 'the game\n' and read(os.path.join(live, 'tfs')) == old_engine,
+              'staging: a conflict leaves the live folder as the game has it')
+        check(w.pos('systemctl stop') >= 0 and w.pos('systemctl start') > w.pos('systemctl stop'),
+              'staging: a conflict stops and starts the server again', '\n'.join(w.calls))
+        check(os.path.exists(os.path.join(w.stub, 'active', 'chaos-server')), 'staging: the server runs after a conflict')
+        check(not os.path.exists(live + '.new') and not os.path.exists(live + '.old'), 'staging: no folders left after a conflict')
+        check(w.git('-C', w.repo, 'rev-parse', 'HEAD') == before, 'staging: the checkout is back after a conflict')
+
+        # CHAOS_STAGING=0: the install with the server stopped, as before; the rollback from the archive
+        rc = w.run('apply', '--no-client', '--no-downloads', '--no-site', extra={'CHAOS_STAGING': '0'})
+        check(rc == 0 and 'RESULT ok' in w.out, 'staging off: apply ok', w.out)
+        order = [w.pos('backup'), w.pos('systemctl stop chaos-server'), w.pos('install --no-sql'),
+                 w.pos('systemctl start chaos-server'), w.pos('install --only sql'), w.pos('systemctl restart chaos-server')]
+        check(all(i >= 0 for i in order) and order == sorted(order), 'staging off: backup, stop, install, start, sql, restart '
+              '%r' % order, '\n'.join(w.calls))
+        check(not os.path.exists(live + '.old') and read(os.path.join(live, 'tfs')) == 'engine 47\n',
+              'staging off: no second folder, the engine replaced in place')
+        w.release(48, 'BROKEN engine 48\n')
+        w.push('Break it', {'server/tools/version.txt': 'v3\n'})
+        rc = w.run('apply', '--no-client', '--no-downloads', '--no-site', extra={'CHAOS_STAGING': '0'})
+        check(rc == 2 and 'RESULT rolled-back' in w.out and 'restored from' in w.out, 'staging off: rolled back from the archive', w.out)
+        check(read(os.path.join(live, 'tfs')) == 'engine 47\n', 'staging off: the engine back')
+
+        # staging on, a broken engine: the swap is undone by renaming the folders
+        rc = w.run('apply', '--no-client', '--no-downloads', '--no-site')
+        check(rc == 2 and 'RESULT rolled-back' in w.out and 'the folder before the update is back' in w.out,
+              'staging: a broken engine rolls back by swapping the folders', w.out)
+        check(read(os.path.join(live, 'tfs')) == 'engine 47\n' and read(os.path.join(live, 'data/installed.txt')) == 'v2b\n',
+              'staging: the old folder runs again')
+        failed = [n for n in os.listdir(w.kit) if n.startswith('server.failed-')]
+        check(len(failed) == 1, 'staging: the failed folder is kept for the next update to remove %r' % failed)
+        # the next update removes it, and the old folder of the update before
+        w.release(49, 'engine 49\n')
+        w.push('Fix it', {'server/tools/version.txt': 'v4\n'})
+        rc = w.run('apply', '--no-client', '--no-downloads', '--no-site')
+        check(rc == 0 and not [n for n in os.listdir(w.kit) if n.startswith('server.failed-')],
+              'staging: the next update removes the failed folder', w.out)
+        check(not os.path.exists(live + '.old.gone') and read(os.path.join(live + '.old', 'tfs')) == 'engine 47\n',
+              'staging: one old folder, no .gone left')
+    finally:
+        shutil.rmtree(w.root, ignore_errors=True)
+
+
 def main():
     test_rates_tool()
     test_flow()
+    test_staging()
     test_map()
     print('chaos_kit_update_test: %d failures' % len(FAILS))
     return 1 if FAILS else 0

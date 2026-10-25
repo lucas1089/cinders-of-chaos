@@ -3,7 +3,7 @@
 
 usage: python3 -I server/tools/install_content_areas.py DATA_DIR [--dry-run] [--only ID,...] [--no-room]
                                                         [--plans DIR] [--config FILE] [--map FILE] [--no-fixed]
-                                                        [--remove-hall]
+                                                        [--remove-hall] [--cache-dir DIR]
 
 DATA_DIR is the server's data folder. Read at run time, never hard-coded: every plan of server/tools/areaplan/plans/
 (size, origin, arrival) and server/data/scripts/chaos/hunt_teleports_config.lua (the room, the order of the plans and
@@ -52,10 +52,11 @@ is written before the first change when missing, and run the whole install again
 <map>.otbm.tmp and checked (tile count) before it replaces the old one.
 --dry-run computes and checks everything and writes nothing. --only places only these plans (the room and the places
 file still cover every placed plan). --no-room leaves the room alone (no slots: no teleports, no display spawns).
-Exit 0 on success, 1 on a refusal.
+--cache-dir DIR (default $CHAOS_CACHE_DIR, else none): the plan compile cache, see "compile cache" below; a miss is
+the compile as before. Exit 0 on success, 1 on a refusal.
 Python 3 standard library and numpy (tools/map/otbm.py reads the world).
 """
-import json, os, re, shutil, struct, subprocess, sys, tempfile
+import glob, hashlib, json, os, re, shutil, struct, subprocess, sys, tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SERVER = os.path.dirname(HERE)
@@ -113,6 +114,137 @@ def compile_plan(path, out_dir):
                           stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
     if proc.returncode != 0:
         raise InstallError('compile %s failed:\n%s' % (os.path.basename(path), proc.stdout.strip()[-2000:]))
+
+
+
+# ------------------------------------------------------------------------------------------------ compile cache
+# Every run compiled every plan (area_planner.py compile: ~0.8 s each, a minute for ~70 plans) only to find the area
+# "placed already". With a cache folder (--cache-dir, else $CHAOS_CACHE_DIR; none: as before) the compiled output of a
+# plan is kept under a key of everything the compile reads: the plan file, the planner and generator sources, the
+# catalogues it looks up (items, our libs, the monsters and NPCs it names) and the interpreters' identity. The same key
+# is the same output (the compile is deterministic: tools/install_content_areas_test.py compiles one plan twice). A miss
+# compiles exactly as before and stores the result; a stored entry is checked against its file list (names, sizes,
+# SHA-256) before it is used, a damaged one is dropped and compiled again. Entries no run of the whole set used are
+# removed at the end of a full run. server/README.md "Updating the kit server", "Plan compile cache".
+CACHE_FORMAT = 'plan-compile-cache-1'
+CACHE_OK = 'CACHE_OK.json'
+COMPILE_INPUTS = (  # relative to server/: globs of the files a compile reads (tools/install_content_areas_test.py traces it)
+    'tools/area_plan*.py', 'tools/area_planner.py', 'tools/areagen_export.py', 'tools/areaplan_build.lua',
+    'tools/areagen_dump.lua', 'tools/areaplan/*.json',
+    'data/items/art_items.csv', 'data/items/base_item_names.csv', 'data/items/chaos_items.xml',
+    'data/lib/chaos_*.lua', 'data/scripts/chaos/areagen_*.lua', 'data/scripts/chaos/rift_config.lua',
+    'data/scripts/chaos/bounty_config.lua', 'data/scripts/chaos/bounty_pool.lua',
+    'data/monster/monsters/chaos/**/*.xml', 'data/npc/**',
+)
+_fingerprint = {}
+
+
+def compile_fingerprint(server=SERVER, inputs=COMPILE_INPUTS):
+    """SHA-256 over the names and contents of every file the compile reads (once per process and folder)"""
+    key = (server, inputs)
+    if key not in _fingerprint:
+        h = hashlib.sha256(CACHE_FORMAT.encode())
+        names = set()
+        for pat in inputs:
+            for p in glob.glob(os.path.join(server, pat), recursive=True):
+                if os.path.isfile(p):
+                    names.add(os.path.relpath(p, server).replace(os.sep, '/'))
+        for rel in sorted(names):
+            h.update(b'\0' + rel.encode() + b'\0')
+            with open(os.path.join(server, rel), 'rb') as f:
+                for block in iter(lambda: f.read(1 << 20), b''):
+                    h.update(block)
+        h.update(('\0py%d.%d\0%s' % (sys.version_info[0], sys.version_info[1], os.environ.get('LUAJIT', 'luajit'))).encode())
+        _fingerprint[key] = h.hexdigest()
+    return _fingerprint[key]
+
+
+def plan_key(plan_path, server=SERVER, inputs=COMPILE_INPUTS):
+    h = hashlib.sha256(compile_fingerprint(server, inputs).encode())
+    with open(plan_path, 'rb') as f:
+        h.update(b'\0plan\0' + f.read())
+    return h.hexdigest()
+
+
+def _file_list(folder):
+    out = {}
+    for base, _dirs, files in os.walk(folder):
+        for name in files:
+            p = os.path.join(base, name)
+            rel = os.path.relpath(p, folder).replace(os.sep, '/')
+            if rel == CACHE_OK:
+                continue
+            with open(p, 'rb') as f:
+                data = f.read()
+            out[rel] = [len(data), hashlib.sha256(data).hexdigest()]
+    return out
+
+
+def cache_valid(entry):
+    """the stored compile output is whole: every file of its list there with its size and SHA-256"""
+    try:
+        with open(os.path.join(entry, CACHE_OK), encoding='utf-8') as f:
+            listed = json.load(f)
+        if listed.get('format') != CACHE_FORMAT or not listed.get('files'):
+            return False
+        return _file_list(entry) == listed['files']
+    except (OSError, ValueError, AttributeError):
+        return False
+
+
+def cache_store(entry, out_dir):
+    """out_dir (a finished compile) as the cache entry, through a folder of its own renamed into place"""
+    part = '%s.partial-%d' % (entry, os.getpid())
+    try:
+        shutil.rmtree(part, ignore_errors=True)
+        shutil.copytree(out_dir, part)
+        with open(os.path.join(part, CACHE_OK), 'w', encoding='utf-8') as f:
+            json.dump({'format': CACHE_FORMAT, 'files': _file_list(part)}, f, sort_keys=True)
+        os.rename(part, entry)
+        return True
+    except OSError:
+        shutil.rmtree(part, ignore_errors=True)  # another run stored it first, or no room: the compile output stays in use
+        return False
+
+
+def compiled_area(path, out_dir, cache_dir=None, used=None, log=None):
+    """the folder holding the compiled plan: out_dir after a compile, or the cache entry of an equal compile (read only)"""
+    if not cache_dir:
+        compile_plan(path, out_dir)
+        return out_dir
+    key = plan_key(path)
+    entry = os.path.join(cache_dir, key)
+    if used is not None:
+        used.add(key)
+    if os.path.isdir(entry):
+        if cache_valid(entry):
+            return entry
+        if log:
+            log('plan compile cache: %s is damaged; compiled again' % key[:12])
+        shutil.rmtree(entry, ignore_errors=True)
+    compile_plan(path, out_dir)
+    try:
+        os.makedirs(cache_dir, exist_ok=True)
+    except OSError:
+        return out_dir
+    return entry if cache_store(entry, out_dir) and cache_valid(entry) else out_dir
+
+
+def cache_prune(cache_dir, used):
+    """the entries (and left-over partial folders) a full run did not use go"""
+    gone = 0
+    try:
+        names = os.listdir(cache_dir)
+    except OSError:
+        return 0
+    for name in names:
+        if name in used:
+            continue
+        p = os.path.join(cache_dir, name)
+        if os.path.isdir(p) and (re.fullmatch(r'[0-9a-f]{64}', name) or '.partial-' in name):
+            shutil.rmtree(p, ignore_errors=True)
+            gone += 1
+    return gone
 
 
 def read_area(out_dir, pid):
@@ -1167,7 +1299,8 @@ def hall_edit(world, map_path, cfg, rows, hl, hall_on, new_tiles, log, wing_lays
 
 
 def run(data_dir, dry=False, only=None, room_on=True, plans_dir=PLANS_DIR, config=CONFIG, map_path=None,
-        compiled=None, world=None, log=print, fixed_dirs=FIXED_DIRS, hall_csv=None, hall_on=None, kinds=None):
+        compiled=None, world=None, log=print, fixed_dirs=FIXED_DIRS, hall_csv=None, hall_on=None, kinds=None,
+        cache_dir=None):
     """compiled: {id: out_dir} already compiled (tests); world: a World (tests); fixed_dirs: the folders of the fixed
     areas (placed at their origin, no teleport); hall_csv: the base hunts of the hall (default tools/hall_hunts.csv;
     without it the hall is left as it is); hall_on: False puts the base hunts back where they were (--remove-hall),
@@ -1201,13 +1334,23 @@ def run(data_dir, dry=False, only=None, room_on=True, plans_dir=PLANS_DIR, confi
     tmp = tempfile.mkdtemp(prefix='chaos_content_')
     try:
         areas = {}
+        if cache_dir is None:
+            cache_dir = os.environ.get('CHAOS_CACHE_DIR') or None
+        if cache_dir:
+            cache_dir = os.path.join(cache_dir, 'areaplan')
+        used, hits = set(), 0
         for pid, (path, plan) in list(plans.items()) + list(fixed.items()):
             out = (compiled or {}).get(pid)
             if not out:
                 out = os.path.join(tmp, pid)
-                compile_plan(path, out)
+                out = compiled_area(path, out, cache_dir, used, log)
+                hits += out != os.path.join(tmp, pid)
             tiles, man, frame = read_area(out, pid)
             areas[pid] = dict(out=out, tiles=tiles, man=man, plan=plan, frame=frame)
+        if cache_dir and not compiled:
+            gone = cache_prune(cache_dir, used) if not only else 0
+            log('plan compile cache: %d of %d plan(s) from the cache, %d compiled%s' % (
+                hits, len(areas), len(areas) - hits, ', %d old entr%s removed' % (gone, 'y' if gone == 1 else 'ies') if gone else ''))
         grounds, tele_ids = kinds if kinds is not None else item_kinds(data_dir, log)
         if world is None:
             log('reading %s ...' % map_path)
@@ -1423,7 +1566,7 @@ def main(argv):
         a = argv[i]
         if a in ('--dry-run', '--no-room', '--no-fixed', '--remove-hall'):
             args[a] = True
-        elif a in ('--only', '--plans', '--config', '--map'):
+        elif a in ('--only', '--plans', '--config', '--map', '--cache-dir'):
             if i + 1 >= len(argv):
                 sys.exit('%s needs a value' % a)
             args[a] = argv[i + 1]
@@ -1443,7 +1586,8 @@ def main(argv):
     try:
         run(pos[0], dry=bool(args.get('--dry-run')), only=only, room_on=not args.get('--no-room'),
             plans_dir=args.get('--plans', PLANS_DIR), config=args.get('--config', CONFIG), map_path=args.get('--map'),
-            fixed_dirs=() if args.get('--no-fixed') else FIXED_DIRS, hall_on=False if args.get('--remove-hall') else None)
+            fixed_dirs=() if args.get('--no-fixed') else FIXED_DIRS, hall_on=False if args.get('--remove-hall') else None,
+            cache_dir=args.get('--cache-dir'))
     except InstallError as e:
         print('refused: %s' % e)
         return 1

@@ -6,7 +6,7 @@ destination, places the area, adds its spawns and two display monsters per slot,
 changes nothing; a taken target tile, an area on map tiles and a changed plan are refused; a fixed area (the
 chronicle folder) is placed at its origin with its spawns but gets no teleport and no places line; a fixed plan without
 an origin is left out; two areas on one tile are refused. No base server needed."""
-import glob, hashlib, json, os, shutil, struct, sys, tempfile
+import glob, hashlib, json, os, re, shutil, struct, sys, tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -822,6 +822,138 @@ def frame_checks(root):
     check(res['areas'].get('late_hunt') == 'done' and res['frame'] == 0, 'frame: the later area then done')
 
 
+
+def cache_checks():
+    """the plan compile cache: hit, miss, key, damaged entry, prune, and that the key covers what a compile reads"""
+    import subprocess
+    root = tempfile.mkdtemp(prefix='chaos_plancache_test_')
+    try:
+        plan = os.path.join(T.PLANS_DIR, 'azuregate_reliquary.json')
+        calls = []
+        real = T.compile_plan
+
+        def counting(path, out):
+            calls.append(path)
+            return real(path, out)
+        T.compile_plan = counting
+        try:
+            cache = os.path.join(root, 'cache')
+            used = set()
+            out1 = T.compiled_area(plan, os.path.join(root, 'o1'), cache, used)
+            check(len(calls) == 1 and out1.startswith(cache) and len(used) == 1, 'cache: a miss compiles and stores: %s' % out1)
+            out2 = T.compiled_area(plan, os.path.join(root, 'o2'), cache, used)
+            check(len(calls) == 1 and out2 == out1 and not os.path.exists(os.path.join(root, 'o2')),
+                  'cache: the second run does not compile')
+            # the cached output is the compile's output, byte for byte (the compile is deterministic)
+            real(plan, os.path.join(root, 'direct'))
+            same = sorted(os.listdir(os.path.join(root, 'direct'))) == sorted(n for n in os.listdir(out1) if n != T.CACHE_OK)
+            same = same and all(open(os.path.join(root, 'direct', n), 'rb').read() == open(os.path.join(out1, n), 'rb').read()
+                                for n in os.listdir(os.path.join(root, 'direct')))
+            check(same, 'cache: the stored output equals a fresh compile')
+            tiles, man, _f = T.read_area(out1, 'azuregate_reliquary')
+            check(len(tiles) > 100 and man['id'] == 'azuregate_reliquary', 'cache: the entry reads as an area')
+            # a damaged file: dropped and compiled again
+            victim = os.path.join(out1, 'azuregate_reliquary.otbm')
+            with open(victim, 'ab') as f:
+                f.write(b'x')
+            logs = []
+            out3 = T.compiled_area(plan, os.path.join(root, 'o3'), cache, used, logs.append)
+            check(len(calls) == 2 and out3 == out1 and T.cache_valid(out1) and logs, 'cache: a damaged entry is compiled again')
+            # an entry without its list is no entry
+            os.remove(os.path.join(out1, T.CACHE_OK))
+            check(not T.cache_valid(out1), 'cache: no list, no entry')
+            T.compiled_area(plan, os.path.join(root, 'o4'), cache, used)
+            check(len(calls) == 3 and T.cache_valid(out1), 'cache: and compiled again')
+            # another plan file (one value changed) has another key
+            other = os.path.join(root, 'azuregate_reliquary.json')
+            text = open(plan, encoding='utf-8').read()
+            open(other, 'w', encoding='utf-8').write(text + ' ')
+            check(T.plan_key(other) != T.plan_key(plan), 'cache: the key follows the plan file')
+            check(T.plan_key(plan) == T.plan_key(plan), 'cache: the key is stable')
+            # prune: an entry no plan used goes, a partial folder goes, a stranger stays
+            os.makedirs(os.path.join(cache, 'f' * 64))
+            os.makedirs(os.path.join(cache, 'a' * 64 + '.partial-1'))
+            os.makedirs(os.path.join(cache, 'notes'))
+            gone = T.cache_prune(cache, used)
+            check(gone == 2 and os.path.isdir(out1) and os.path.isdir(os.path.join(cache, 'notes'))
+                  and not os.path.exists(os.path.join(cache, 'f' * 64)), 'cache: prune removes unused entries only (%d)' % gone)
+            # no cache folder: as before (compiled into the folder asked for)
+            n = len(calls)
+            out5 = T.compiled_area(plan, os.path.join(root, 'o5'), None)
+            check(len(calls) == n + 1 and out5 == os.path.join(root, 'o5') and os.path.isdir(out5), 'cache: off compiles as before')
+            # a cache folder that cannot be made: the compile output is used
+            blocker = os.path.join(root, 'file')
+            open(blocker, 'w').write('x')
+            out6 = T.compiled_area(plan, os.path.join(root, 'o6'), os.path.join(blocker, 'sub'))
+            check(out6 == os.path.join(root, 'o6') and os.path.isdir(out6), 'cache: an unusable folder falls back to the compile')
+        finally:
+            T.compile_plan = real
+
+        # the fingerprint: any input file changes it, an unrelated file does not
+        srv = os.path.join(root, 'srv')
+        for rel, text in (('tools/area_planner.py', 'a'), ('tools/area_plan_core.py', 'b'), ('tools/areaplan_build.lua', 'c'),
+                          ('data/items/chaos_items.xml', 'd'), ('data/monster/monsters/chaos/sub/m.xml', 'e'),
+                          ('data/npc/Some One.xml', 'f'), ('data/lib/chaos_orbs_config.lua', 'g'), ('tools/unrelated.py', 'u'),
+                          ('data/scripts/chaos/bank.lua', 'u')):
+            os.makedirs(os.path.dirname(os.path.join(srv, rel)), exist_ok=True)
+            open(os.path.join(srv, rel), 'w').write(text)
+        T._fingerprint.clear()
+        base = T.compile_fingerprint(srv)
+        for rel in ('tools/area_planner.py', 'data/items/chaos_items.xml', 'data/monster/monsters/chaos/sub/m.xml',
+                    'data/npc/Some One.xml', 'data/lib/chaos_orbs_config.lua', 'tools/areaplan_build.lua'):
+            T._fingerprint.clear()
+            open(os.path.join(srv, rel), 'a').write('!')
+            check(T.compile_fingerprint(srv) != base, 'fingerprint follows %s' % rel)
+            T._fingerprint.clear()
+            with open(os.path.join(srv, rel), 'r+') as f:
+                f.truncate(1)
+            check(T.compile_fingerprint(srv) == base, 'fingerprint back for %s' % rel)
+        for rel in ('tools/unrelated.py', 'data/scripts/chaos/bank.lua'):
+            T._fingerprint.clear()
+            open(os.path.join(srv, rel), 'a').write('!')
+            check(T.compile_fingerprint(srv) == base, 'fingerprint ignores %s' % rel)
+        T._fingerprint.clear()
+        os.makedirs(os.path.join(srv, 'data/monster/monsters/chaos/new'))
+        open(os.path.join(srv, 'data/monster/monsters/chaos/new/x.xml'), 'w').write('x')
+        check(T.compile_fingerprint(srv) != base, 'fingerprint follows a new monster file')
+        T._fingerprint.clear()
+
+        # the inputs list covers every file a real compile opens (strace; skipped where it is missing)
+        strace = shutil.which('strace')
+        if strace:
+            trace = os.path.join(root, 'trace.txt')
+            outd = os.path.join(root, 'traced')
+            subprocess.run([strace, '-f', '-e', 'trace=openat,open', '-o', trace, sys.executable, '-I',
+                            os.path.join(HERE, 'area_planner.py'), 'compile', plan, outd], stdout=subprocess.DEVNULL,
+                           stderr=subprocess.DEVNULL)
+            covered = set()
+            for pat in T.COMPILE_INPUTS:
+                for p in glob.glob(os.path.join(T.SERVER, pat), recursive=True):
+                    covered.add(os.path.realpath(p))
+            opened, missed = 0, []
+            for line in open(trace, encoding='utf-8', errors='replace'):
+                m = re.search(r'open(?:at)?\((?:AT_FDCWD, )?"([^"]+)", [^)]*\)\s*=\s*(\d+)', line)
+                if not m or 'O_RDONLY' not in line:
+                    continue
+                path = m.group(1)
+                if not os.path.isabs(path):
+                    path = os.path.join(T.SERVER, path)  # the generator runs with its working folder at server/
+                path = os.path.realpath(path)
+                if not path.startswith(T.SERVER + os.sep) or '__pycache__' in path or os.path.isdir(path):
+                    continue
+                if path == os.path.realpath(plan) or path.startswith(os.path.realpath(outd)):
+                    continue
+                opened += 1
+                if path not in covered:
+                    missed.append(os.path.relpath(path, T.SERVER))
+            check(opened > 100, 'inputs: the trace saw the compile open files (%d)' % opened)
+            check(not missed, 'inputs: files a compile reads that COMPILE_INPUTS does not cover: %s' % missed[:10])
+        else:
+            print('(strace is not installed: the inputs trace was skipped)')
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
 def main():
     root = tempfile.mkdtemp(prefix='content_areas_test_')
     try:
@@ -1063,6 +1195,7 @@ def main():
         shutil.rmtree(root, ignore_errors=True)
     csv_name_checks()
     display_monster_checks()
+    cache_checks()
     print('install_content_areas_test: %s' % ('ok' if not failed else '%d failed' % failed))
     return 1 if failed else 0
 
