@@ -596,6 +596,17 @@ Chaos.t = function(player, key, ...)
 	return key
 end
 
+-- the module reads os.time() + clockShift: freeze the wall clock so a second
+-- passing on a busy runner cannot add 1 to the progress (601 ~= 600)
+local realTime = os.time
+local frozenNow = realTime()
+os.time = function(t)
+	if t then
+		return realTime(t)
+	end
+	return frozenNow
+end
+
 dofile("data/scripts/chaos/candlemarks.lua")
 local M = ChaosCandlemarks
 eq(ChaosOpcodes.candlemarks, 176, "opcode constant")

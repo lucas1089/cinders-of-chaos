@@ -1,0 +1,261 @@
+# Chaos: hit flash tint (O224; client/BASE.md "0142"; src/client/chaoshitflash.h (new, pure), creature.h/.cpp,
+# luafunctions_client.cpp, mods/client_settings/classes/dataset.lua; after 0001-0141).
+# The shader flash of base patch 0126 (80 ms, hard, started by the damage number) stays. This adds a soft tint that follows
+# the health instead: when the health percent of a creature on the map goes down, its drawn pieces are queued once more as
+# a white silhouette with a falling alpha for 120 ms (ease-out, (1 - u)^2), then it is normal again.
+#  * Creature::setHealthPercent calls startHitTint(old, new) before the value is stored. It starts a flash only when
+#    chaos::hitflash::wantsFlash allows it: option on, creature on a map tile, health went down, new health above 0 (a
+#    dying creature has the death fade of 0139), and the creature was already shown: m_removed is true until a creature is
+#    on the map, so the health that comes with its appearance, or with its return into view, is a starting value and never a
+#    hit. Heals do not flash.
+#  * Strength: 35% white for a 1% hit up to 75% for a 25% hit or more (peakForDrop). Per creature a flash cannot restart
+#    inside 100 ms, and over all creatures at most 16 are alive at once (Budget, a fixed array); an area spell on a big pack
+#    flashes the first 16 and skips the rest.
+#  * Creature::draw: after the outfit is queued, one Color(255, 255, 255, alpha) DrawQueue::setMark over the items queued
+#    since the outfit started, the same call the creature mark (m_marked) uses: it redraws the textured rects (the outfit and
+#    mount pieces) with the solid-colour-on-texture program, so the outline (0136), the hover outline, the shadow and the
+#    names are not touched, and the death fade ghost (0139) is a copy that has no tint. While the shader flash of 0126 runs
+#    the tint waits for it, so the two never stack.
+#  * Creature.setHitTint(bool) / isHitTint() (static, one switch; off in the engine, the overlay module game_visualfx turns
+#    it on from the existing option `hitFlash`).
+#  * dataset.lua: the existing option `hitFlash` (default on, checkbox "Flash creatures that take damage" since 0126) gets
+#    an apply that tells game_visualfx (`onOption('hitFlash', value)`). No new option, no new text, the panel keeps 276 px.
+# Cost with no flash: one int compare per drawn creature and one flag test per health change. With a flash: one extra pass
+# over the pieces of that creature's outfit for 120 ms, at most 16 creatures.
+# Known: a damage-over-time tick that lowers the percent flashes too (the shader flash skips ticks; this one cannot tell).
+# A hit smaller than the 1% step of the health bar is not seen at all. Layered outfits (colour templates) are redrawn through
+# the atlas silhouette like a marked creature.
+# Checked: applies after 0001-0141 on the base tree; the touched .cpp files pass g++ -fsyntax-only; the header passes its test.
+# Not built, linked or run in a client; goes live with the next client build.
+--- a/src/client/creature.h
++++ b/src/client/creature.h
+@@ -127,6 +127,11 @@
+     static bool isDeathFade() { return s_deathFade; }
+     bool takeDeathGhost(DeathGhost& out);
+     static void drawDeathGhost(DeathGhost& ghost, const Point& dest, float alpha);
++    // Chaos (base patch 0142): a creature whose health percent goes down is drawn once more in white with a falling alpha
++    // for about 120 ms (Options > Graphics "Flash creatures that take damage"; the overlay module game_visualfx sets it).
++    // See chaoshitflash.h; the state is one start time and one strength per creature.
++    static void setHitTint(bool enabled) { s_hitTint = enabled; }
++    static bool isHitTint() { return s_hitTint; }
+     // Chaos (base patch 0111): the name and bars lifted over a look taller than the stock ones, in sprite pixels at
+     // 1x, per look type (client_chaos_infolift sets the table generated from the pair). Players and NPCs only.
+     static void setInformationLift(int lookType, int pixels);
+@@ -327,6 +332,11 @@
+     ticks_t m_hitFlashEnd = 0;
+     static bool s_softShadow;
+     static bool s_deathFade;
++    static bool s_hitTint; // base patch 0142
++    void startHitTint(int oldPercent, int newPercent);
++    ticks_t m_hitTintStart = 0;
++    float m_hitTintPeak = 0.0f;
++    bool m_healthShown = false;
+     OutfitOutline m_outline;
+     Color m_outfitColor;
+     ScheduledEventPtr m_outfitColorUpdateEvent;
+--- a/src/client/creature.cpp
++++ b/src/client/creature.cpp
+@@ -35,6 +35,7 @@
+ #include "mapview.h"
+ #include "creaturehit.h"
+ #include "chaosdeathfade.h"
++#include "chaoshitflash.h"
+ 
+ #include <framework/graphics/graphics.h>
+ #include <framework/core/eventdispatcher.h>
+@@ -184,6 +185,9 @@
+ // (built once; Texture uploads on first draw), and the shadow option
+ bool Creature::s_softShadow = false;
+ bool Creature::s_deathFade = false;
++// Chaos (base patch 0142): the hit flash tint (chaoshitflash.h); the budget caps the flashes alive at once
++bool Creature::s_hitTint = false;
++static chaos::hitflash::Budget s_hitTintBudget;
+ 
+ static TexturePtr softShadowTexture()
+ {
+@@ -205,6 +209,21 @@
+     return texture;
+ }
+ 
++// Chaos (base patch 0142): called from setHealthPercent with the old and the new percent
++void Creature::startHitTint(int oldPercent, int newPercent)
++{
++    // m_removed is true until the creature is on the map (a new creature, or one that comes back into view), so the
++    // health that arrives with it never counts as a hit
++    const bool shown = m_healthShown && !m_removed;
++    if (!chaos::hitflash::wantsFlash(s_hitTint, m_position.isMapPosition(), shown, oldPercent, newPercent))
++        return;
++    const ticks_t now = g_clock.millis();
++    if (!chaos::hitflash::gapPassed(m_hitTintStart, now) || !s_hitTintBudget.tryAcquire(now))
++        return;
++    m_hitTintStart = now == 0 ? 1 : now;
++    m_hitTintPeak = chaos::hitflash::peakForDrop(oldPercent - newPercent);
++}
++
+ void Creature::flashHit(const std::string& shader, int ms)
+ {
+     m_hitShader = shader;
+@@ -316,6 +335,21 @@
+         drawn.z = m_position.z;
+         hitView->recordCreatureHit(std::move(drawn));
+     }
++    // Chaos (base patch 0142): the hit flash tint, the outfit's drawn pieces once more in white with the alpha of the
++    // ease-out (the same mark as below; the outline and the hover outline are not touched). The shader flash of base
++    // patch 0126 runs its first frames on its own, so the tint waits for it. One compare per creature when idle.
++    if (m_hitTintStart != 0) {
++        if (animate && !flashing) {
++            const ticks_t tintElapsed = g_clock.millis() - m_hitTintStart;
++            const float strength = chaos::hitflash::strengthAt(tintElapsed, m_hitTintPeak);
++            if (strength > 0.0f)
++                g_drawQueue->setMark(drawQueueSize, Color(255, 255, 255, chaos::hitflash::alphaByte(strength)));
++            else
++                m_hitTintStart = 0;
++        } else if (!animate && g_clock.millis() - m_hitTintStart >= chaos::hitflash::kDurationMs) {
++            m_hitTintStart = 0;
++        }
++    }
+     if (m_marked) {
+         g_drawQueue->setMark(drawQueueSize, updatedMarkedColor());
+     }
+@@ -1070,6 +1104,9 @@
+     }
+ 
+     bool changed = m_healthPercent != healthPercent;
++    if (changed)
++        startHitTint(m_healthPercent, healthPercent); // Chaos (base patch 0142): before the new value is stored
++    m_healthShown = true;
+     m_healthPercent = healthPercent;
+     if (changed) {
+         callLuaField("onHealthPercentChange", healthPercent);
+--- a/src/client/luafunctions_client.cpp
++++ b/src/client/luafunctions_client.cpp
+@@ -692,6 +692,8 @@
+     g_lua.bindClassStaticFunction<Creature>("isSoftShadow", &Creature::isSoftShadow);
+     g_lua.bindClassStaticFunction<Creature>("setDeathFade", &Creature::setDeathFade); // base patch 0139
+     g_lua.bindClassStaticFunction<Creature>("isDeathFade", &Creature::isDeathFade);
++    g_lua.bindClassStaticFunction<Creature>("setHitTint", &Creature::setHitTint); // base patch 0142
++    g_lua.bindClassStaticFunction<Creature>("isHitTint", &Creature::isHitTint);
+     g_lua.bindClassStaticFunction<Creature>("setInformationLift", &Creature::setInformationLift);
+     g_lua.bindClassStaticFunction<Creature>("clearInformationLifts", &Creature::clearInformationLifts);
+     g_lua.bindClassStaticFunction<Creature>("getLookInformationLift", &Creature::getLookInformationLift);
+--- a/mods/client_settings/classes/dataset.lua
++++ b/mods/client_settings/classes/dataset.lua
+@@ -2046,6 +2046,12 @@
+   -- colour grade over the map
+   hitFlash = {
+     value = true,
++    -- Chaos (base patch 0142): also the soft white tint of a creature whose health goes down (Creature.setHitTint)
++    apply = function(value)
++      local m = modules.game_visualfx
++      if m and m.onOption then m.onOption('hitFlash', value) end
++      return true
++    end,
+   },
+ 
+   screenShake = {
+--- a/src/client/chaoshitflash.h
++++ b/src/client/chaoshitflash.h
+@@ -0,0 +1,103 @@
++// Cinders of Chaos (base patch 0142): the hit flash tint of a creature, pure and header-only so
++// client/tools/chaoshitflash_test.cpp can run it without the engine. When the health percent of a creature on the map goes
++// down, its sprite is drawn once more in white with a falling alpha for kDurationMs (ease-out). Nothing is kept per frame
++// but one start time and one strength per creature; a small budget caps how many flashes are alive at once.
++#ifndef CHAOSHITFLASH_H
++#define CHAOSHITFLASH_H
++
++#include <algorithm>
++#include <array>
++#include <cstddef>
++#include <cstdint>
++
++namespace chaos {
++namespace hitflash {
++
++constexpr int kDurationMs = 120;     // from the hit to a normal sprite
++constexpr int kMinGapMs = 100;       // one creature does not restart its flash faster than this
++constexpr size_t kMaxActive = 16;    // flashes alive at once over all creatures; more are skipped
++constexpr float kPeakMin = 0.35f;    // white share for a 1% hit
++constexpr float kPeakMax = 0.75f;    // white share for a hit of kBigDrop% or more
++constexpr int kBigDrop = 25;
++
++// the white share at the first frame, from how many percent of the health the hit took (bigger hit, brighter flash)
++inline float peakForDrop(int dropPercent)
++{
++    const int d = std::max(1, std::min(kBigDrop, dropPercent));
++    return kPeakMin + (kPeakMax - kPeakMin) * static_cast<float>(d - 1) / static_cast<float>(kBigDrop - 1);
++}
++
++// the white share `elapsedMs` after the hit: the peak at the start, then (1 - u)^2 (fast first, slow tail), 0 from
++// kDurationMs on; never outside 0..peak
++inline float strengthAt(int64_t elapsedMs, float peak)
++{
++    if (elapsedMs >= kDurationMs)
++        return 0.0f;
++    if (elapsedMs <= 0)
++        return peak;
++    const float u = static_cast<float>(elapsedMs) / static_cast<float>(kDurationMs);
++    const float r = 1.0f - u;
++    return peak * r * r;
++}
++
++// the alpha byte for the painter colour
++inline int alphaByte(float strength)
++{
++    const int a = static_cast<int>(strength * 255.0f + 0.5f);
++    return std::max(0, std::min(255, a));
++}
++
++// the one decision whether a health change starts a flash: the option is on, the creature stands on a map tile and was
++// already shown (the first update after it appears is the starting value, not a hit), the health went down and it is not
++// 0 (a dying creature is removed at once; the death fade has its own copy)
++inline bool wantsFlash(bool optionOn, bool onMap, bool shown, int oldPercent, int newPercent)
++{
++    return optionOn && onMap && shown && newPercent > 0 && newPercent < oldPercent;
++}
++
++// per creature: whether the last flash started long enough ago (0 = never flashed)
++inline bool gapPassed(int64_t lastStart, int64_t now)
++{
++    return lastStart == 0 || now < lastStart || now - lastStart >= kMinGapMs;
++}
++
++// how many flashes may be alive at once; a fixed array, no allocation
++class Budget
++{
++public:
++    // true and the flash is counted until now + kDurationMs; false when kMaxActive are alive
++    bool tryAcquire(int64_t now)
++    {
++        size_t freeSlot = kMaxActive;
++        for (size_t i = 0; i < kMaxActive; ++i) {
++            // a slot is free when its flash is over (or the clock ran backwards, so it can never block for long)
++            if (m_ends[i] <= now || m_ends[i] > now + kDurationMs) {
++                freeSlot = i;
++                break;
++            }
++        }
++        if (freeSlot == kMaxActive)
++            return false;
++        m_ends[freeSlot] = now + kDurationMs;
++        return true;
++    }
++
++    size_t active(int64_t now) const
++    {
++        size_t n = 0;
++        for (int64_t e : m_ends)
++            if (e > now && e <= now + kDurationMs)
++                ++n;
++        return n;
++    }
++
++    void clear() { m_ends.fill(0); }
++
++private:
++    std::array<int64_t, kMaxActive> m_ends{};
++};
++
++} // namespace hitflash
++} // namespace chaos
++
++#endif

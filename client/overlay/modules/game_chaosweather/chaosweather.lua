@@ -8,6 +8,7 @@
 --   * Capped: three layers, a fixed number of streaks in their tiles, a fixed number of rectangles (L.maxQuads).
 --   * Under a roof the rain fades out: the player's tile is checked for a covering floor every 400 ms (g_map.isCovered).
 --   * The option `weather` (Options > Graphics, base patch 0130) comes through game_visualfx (onOption -> setEnabled).
+-- Ambient particles (O226) ride on the same message (a = 'embers' | 'motes' | 'dust'): chaosambient.lua draws them.
 -- No engine patch: the base client's native weather manager can be driven only by a game-protocol packet and has no Lua
 -- binding, so it is not used. Every engine call is guarded; a failure is logged once and the rain stays off.
 local L = ChaosWeatherLogic
@@ -127,10 +128,17 @@ local function stopTick()
   end
 end
 
+-- O227: a minimized window draws nothing, so the rain does not scroll and the roof is not checked (the timers stay, they only
+-- return at once); when the window is back the next tick goes on from there
+local function windowHidden()
+  return g_window ~= nil and g_window.isVisible ~= nil and not g_window.isVisible()
+end
+
 local function tick()
   local t = now()
   local dt = t - lastTick
   lastTick = t
+  if windowHidden() then return end
   local tgt = target()
   L.stepAll(cur, tgt, dt, L.fadeMs(weather, covered))
   draw()
@@ -156,6 +164,7 @@ end
 
 -- ---------------------------------------------------------------- roof check
 local function checkCover()
+  if windowHidden() then return end
   local player = g_game.getLocalPlayer()
   if not player then return end
   local pos = player:getPosition()
@@ -187,6 +196,8 @@ end
 local function onMessage(protocol, opcode, msg)
   local w = L.parse(msg)
   if not w then return end
+  -- ambient particles (O226, chaosambient.lua): the same message names the mood of the place in `a`; none when it is absent
+  ChaosAmbient.setKind(ChaosAmbientLogic.parseKind(msg), ChaosAmbientLogic.parseFade(msg))
   weather = w
   updateCover()
   if w.kind == 'rain' then checkCover() end
@@ -219,12 +230,31 @@ function isEnabled()
   return enabled
 end
 
+-- from game_visualfx (the option `ambientParticles`, base patch 0144): the ambient particles on or off
+function setAmbientEnabled(on)
+  ChaosAmbient.setEnabled(on)
+end
+
+function ambientState()
+  return ChaosAmbient.state()
+end
+
 -- the state, for the terminal: modules.game_chaosweather.state()
 function state()
   return { kind = weather.kind, level = weather.level, enabled = enabled, covered = covered, opacity = cur }
 end
 
+local function ambientOptionFromSettings()
+  local cs = modules.client_settings
+  if cs and cs.getOption then
+    local ok, value = pcall(cs.getOption, 'ambientParticles')
+    if ok then return value end
+  end
+  return nil
+end
+
 local function onGameStart()
+  ChaosAmbient.reset(ambientOptionFromSettings())
   weather = { kind = 'none', level = 0, fadeMs = L.DEFAULT_FADE_MS }
   cur = L.newOpacities()
   covered = false
@@ -235,6 +265,7 @@ local function onGameStart()
 end
 
 local function onGameEnd()
+  ChaosAmbient.reset(nil)
   weather = { kind = 'none', level = 0, fadeMs = L.DEFAULT_FADE_MS }
   cur = L.newOpacities()
   stopTick()
@@ -245,6 +276,8 @@ end
 function init()
   g_ui.importStyle('chaosweather')
   enabled = optionFromSettings()
+  local ambientOption = ambientOptionFromSettings()
+  if ambientOption ~= nil then ChaosAmbient.setEnabled(ambientOption) end
   handlers.opcode = safe('opcode', onMessage)
   handlers.game = { onGameStart = safe('start', onGameStart), onGameEnd = safe('end', onGameEnd) }
   ProtocolGame.registerExtendedJSONOpcode(L.OPCODE, handlers.opcode)
@@ -258,5 +291,6 @@ function terminate()
   stopTick()
   stopCover()
   destroyWidgets()
+  ChaosAmbient.terminate()
   handlers = {}
 end

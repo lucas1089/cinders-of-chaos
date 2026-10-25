@@ -1,0 +1,18 @@
+# Chaos: the death fade tooltip on one OTML line (client/BASE.md "0145"; mods/client_settings/options/graphics.otui;
+# after 0001-0144). Base patch 0139 wrote the `deathFade` tooltip with a real line break inside tr('...'), so the
+# second line started at column 0. OTML rejects that ("invalid indentation depth" at the line), the GraphicsWindow
+# style is never defined and client_settings fails to load: the client stops at start. The break is now the
+# escape \n inside the string, as every other two-line tooltip writes it; the text and its pt-BR key are unchanged.
+# client/tools/check_otui_lines.py (CI) rejects such a line in any patch or overlay .otui from now on.
+--- a/mods/client_settings/options/graphics.otui
++++ b/mods/client_settings/options/graphics.otui
+@@ -698,8 +698,7 @@
+       margin-left: 16
+       image-source: /images/ui/checkbox
+       image-clip: 0 0 12 12
+-      !tooltip: tr('A creature that dies fades away in about a third of a second instead of vanishing in one frame.
+-The corpse still appears at once and nothing is delayed. It costs almost nothing.')
++      !tooltip: tr('A creature that dies fades away in about a third of a second instead of vanishing in one frame.\nThe corpse still appears at once and nothing is delayed. It costs almost nothing.')
+       @onSetup: |
+         local value = modules.client_settings.getOption('deathFade')
+         self:setChecked(value ~= false)

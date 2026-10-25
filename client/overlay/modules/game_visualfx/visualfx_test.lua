@@ -9,7 +9,7 @@ local function eq(a, b, what)
 end
 
 -- options: the grade is off by default (it shifts the biome colours), the rest on; a boolean wins, junk is the default
-local wantDefault = { hitFlash = true, screenShake = true, creatureShadow = true, screenGrade = false, spellLight = true, liquidShimmer = true, weather = true, bloom = false, numberMotion = true, targetOutline = true, hoverOutline = false, sceneFade = true, deathFade = true }
+local wantDefault = { hitFlash = true, screenShake = true, creatureShadow = true, screenGrade = false, spellLight = true, liquidShimmer = true, weather = true, bloom = false, numberMotion = true, targetOutline = true, hoverOutline = false, sceneFade = true, deathFade = true, ambientParticles = true }
 for _, name in ipairs(L.OPTIONS) do
   local d = wantDefault[name]
   eq(L.optionOn(name, nil), d, name .. ' default')
@@ -18,7 +18,7 @@ for _, name in ipairs(L.OPTIONS) do
   eq(L.optionOn(name, 'no'), d, name .. ' junk -> default')
   eq(L.optionOn(name, 0), d, name .. ' number -> default')
 end
-eq(#L.OPTIONS, 13, 'thirteen options')
+eq(#L.OPTIONS, 14, 'fourteen options')
 eq(L.optionOn('nothing', nil), false, 'an unknown option is off')
 eq(L.DEFAULTS.numberMotion, true, 'soft damage numbers are on by default (purely visual, a few float operations per text)')
 do
@@ -43,6 +43,19 @@ do
   eq(src:find("name == 'deathFade'", 1, true) ~= nil, true, 'onOption handles deathFade')
   eq(src:find("optionValue('deathFade')", 1, true) ~= nil, true, 'the option value is read')
   eq(src:find('applyDeathFade()', 1, true) ~= nil, true, 'reapply sets it at game start')
+end
+
+do
+  -- the hit flash tint (O224, base patch 0142): the existing option hitFlash drives the engine switch too
+  eq(L.DEFAULTS.hitFlash, true, 'the hit flash is on by default')
+  local f = io.open(dir .. 'visualfx.lua', 'r')
+  local src = f and f:read('*a') or ''
+  if f then f:close() end
+  local _, calls = src:gsub('Creature%.setHitTint', '')
+  eq(calls >= 3, true, 'setHitTint is checked, called with the option and switched off at terminate')
+  eq(src:find("name == 'hitFlash'", 1, true) ~= nil, true, 'onOption handles hitFlash')
+  eq(src:find("optionValue('hitFlash')", 1, true) ~= nil, true, 'the option value is read')
+  eq(src:find('applyHitTint()', 1, true) ~= nil, true, 'reapply sets it at game start')
 end
 
 -- hit flash

@@ -1,0 +1,202 @@
+# Chaos: no work while the window is minimized, honest limit while it is not in front (O227; client/BASE.md "0143";
+# src/framework/core/chaosidle.h (new, pure), graphicalapplication.cpp; after 0001-0142).
+# Audit of the base (graphicalapplication.cpp run(), platform windows): X11 sets m_visible on Map/UnmapNotify and m_focused on
+# FocusIn/Out, Win32 on WM_SIZE (SIZE_MINIMIZED) and WM_ACTIVATE. Neither reports a window that other windows cover, so a
+# covered window is "unfocused" (the player clicked the other window) and gets that path. What the base did:
+#  * hidden: the graphics thread drew nothing, but woke up to 500 times a second (2 ms sleeps), and the logic thread kept
+#    building the three draw queues (g_ui.render) at 10 Hz for a frame nobody draws, and polled every millisecond;
+#  * unfocused: a fixed 30 fps cap, even when the frame limit of the options was lower (the option that the settings call
+#    backgroundFrameRate is the plain frame limit of the window; the base has no separate background value).
+# This patch:
+#  * hidden: the logic thread builds no draw queue and sleeps kHiddenPollUs (4 ms) between polls. It still runs
+#    Application::poll (sockets, dispatcher, scheduled events, so packets, the ping, chat and a disconnect are handled; at most
+#    10 ms later than before, asserted in the test). The graphics thread wakes 50 times a second (window events are read every
+#    10 ms by the base) and still calls g_adaptiveRenderer.refresh() so the quality level does not sink.
+#  * shown again: the logic thread sees the hidden to shown change once (chaos::idle::Tracker), resets its build clocks and asks
+#    for a repaint, so the first frame is a new one and input works at once (the input events came through the window poll).
+#  * unfocused: min(30, option) instead of 30.
+# Not changed: the shown and focused path, vsync, unlimited fps, the browser build (runBrowser).
+# Checked: applies after 0001-0142 on the base tree with 0 fuzz; graphicalapplication.cpp passes g++ -fsyntax-only with no
+# new error; the header passes client/tools/chaosidle_test.cpp (CI step "Idle state of the window").
+# Not built, linked or run in a client; the saving is not measured (see ROADMAP O227).
+--- a/src/framework/core/chaosidle.h
++++ b/src/framework/core/chaosidle.h
+@@ -0,0 +1,70 @@
++// Chaos (O227): what the client does when the player is not looking at it. Pure, no engine types, so a test can run it.
++//  * Active    : visible and focused. Nothing changes.
++//  * Unfocused : visible, another window has the focus (also the usual state of a window that another one covers: neither
++//                X11 nor Windows tell a client that it is covered). Renders at most kUnfocusedFps, and never more than the
++//                frame limit of the options (a player who set 20 gets 20, not 30).
++//  * Hidden    : minimized or unmapped. No frame is drawn and no draw queue is built (the base built them at 10 Hz and
++//                nobody drew them). Network and dispatcher polling go on at kHiddenPollUs, so packets, pings, chat and a
++//                disconnect are handled as before, at most a few milliseconds later.
++#ifndef CHAOSIDLE_H
++#define CHAOSIDLE_H
++
++#include <algorithm>
++#include <cstdint>
++
++namespace chaos {
++namespace idle {
++
++enum class State { Active, Unfocused, Hidden };
++
++constexpr int kUnfocusedFps = 30;
++constexpr int64_t kActivePollUs = 1000;        // logic poll interval while the window is shown
++constexpr int64_t kHiddenPollUs = 4000;        // logic poll interval while hidden (limit: kMaxHiddenPollUs)
++constexpr int64_t kMaxHiddenPollUs = 10000;    // a ping or a packet waits at most this long more than before
++constexpr int64_t kHiddenMainSleepUs = 20000;  // the graphics thread wakes 50 times a second when hidden, not 500
++constexpr int64_t kMaxMainSleepUs = 2000;      // the base cap between two frames of a shown window
++
++inline State classify(bool visible, bool focused)
++{
++    if (!visible)
++        return State::Hidden;
++    return focused ? State::Active : State::Unfocused;
++}
++
++// Frame limit of the render loop for a shown window. userCap is the option (0 or less: none). The caller handles the
++// Active case (vsync, unlimited); this is the limit for Unfocused: the lower of the two.
++inline int unfocusedCap(int userCap)
++{
++    return userCap > 0 ? std::min(userCap, kUnfocusedFps) : kUnfocusedFps;
++}
++
++inline bool rendersFrames(State s) { return s != State::Hidden; }
++inline bool buildsDrawQueues(State s) { return s != State::Hidden; }
++
++inline int64_t logicPollIntervalUs(State s) { return s == State::Hidden ? kHiddenPollUs : kActivePollUs; }
++
++// Longest sleep of the graphics thread in one go: a window that is not drawn needs no quick wake-up (events are read
++// every 10 ms at most anyway, the base polls the window only that often).
++inline int64_t mainSleepUs(State s) { return s == State::Hidden ? kHiddenMainSleepUs : kMaxMainSleepUs; }
++
++// Remembers the last state. update() returns true once when a window that was hidden is shown again: the caller asks for a
++// full repaint at once, because the draw queues are stale (or missing) and the player must not wait for the next change.
++class Tracker
++{
++public:
++    bool update(State now)
++    {
++        const bool resumed = m_last == State::Hidden && now != State::Hidden;
++        m_last = now;
++        return resumed;
++    }
++    State last() const { return m_last; }
++
++private:
++    State m_last = State::Active;
++};
++
++} // namespace idle
++} // namespace chaos
++
++#endif
+--- a/src/framework/core/graphicalapplication.cpp
++++ b/src/framework/core/graphicalapplication.cpp
+@@ -22,6 +22,7 @@
+ 
+ 
+ #include "graphicalapplication.h"
++#include <framework/core/chaosidle.h>
+ #include <framework/core/adaptiverenderer.h>
+ #include <framework/core/clock.h>
+ #include <framework/core/eventdispatcher.h>
+@@ -91,8 +92,7 @@
+     // Fallback FPS used when VSync is requested but could not be applied by the driver.
+     // This prevents an unbounded render loop when swapBuffers() does not block.
+     constexpr int VSYNC_FALLBACK_FPS = 100;
+-    // Target FPS when the window is visible but does not have focus.
+-    constexpr int UNFOCUSED_FPS = 30;
++    // Target FPS when the window is visible but does not have focus: chaos::idle::unfocusedCap (chaosidle.h).
+     // Target FPS when the window is minimized or hidden.
+     constexpr int HIDDEN_FPS = 10;
+     // Maximum extra sleep between frames to keep latency low.
+@@ -105,7 +105,7 @@
+         if (!visible)
+             return HIDDEN_FPS;
+         if (!focused)
+-            return UNFOCUSED_FPS;
++            return chaos::idle::unfocusedCap(app.getMaxFps()); // Chaos (O227): never above the option
+         if (app.isUnlimitedFps())
+             return 0;
+         const int maxFps = app.getMaxFps();
+@@ -117,7 +117,7 @@
+         if (!g_window.isVisible())
+             return HIDDEN_FPS;
+         if (!g_window.hasFocus())
+-            return UNFOCUSED_FPS;
++            return chaos::idle::unfocusedCap(app.getMaxFps()); // Chaos (O227): never above the option
+         if (app.isUnlimitedFps())
+             return 0;
+         if (app.isVerticalSyncRequested()) {
+@@ -611,23 +611,39 @@
+         ticks_t uiBuildLast = startTime;
+         ticks_t mapBuildLast = startTime;
+         ticks_t logicPollLast = 0;
++        chaos::idle::Tracker idleTracker;
+ 
+         while (!m_stopping) {
+             m_processingFrames.addFrame();
+ 
+             // Logic/network polling should continue at a steady rate independent of rendering.
+             const ticks_t now = stdext::micros();
+-            if (now - logicPollLast >= 1000) {
++            const bool visible = g_window.isVisible();
++            const bool focused = g_window.hasFocus();
++            // Chaos (O227): the state of the window decides the poll rate and whether anything is built
++            const chaos::idle::State idleState = chaos::idle::classify(visible, focused);
++            if (now - logicPollLast >= chaos::idle::logicPollIntervalUs(idleState)) {
+                 g_clock.update();
+                 poll();
+                 g_clock.update();
+                 logicPollLast = now;
+             }
+ 
+-            const bool visible = g_window.isVisible();
+-            const bool focused = g_window.hasFocus();
++            // Chaos (O227): shown again after being minimized: the old draw queues are stale, build new ones at once
++            if (idleTracker.update(idleState)) {
++                uiBuildLast = 0;
++                mapBuildLast = 0;
++                m_mustRepaint = true;
++            }
++            // Chaos (O227): a minimized window draws nothing, so build nothing. The loop keeps polling (network,
++            // dispatcher, timers) every kHiddenPollUs.
++            if (!chaos::idle::buildsDrawQueues(idleState)) {
++                AutoStat s(STATS_MAIN, "Sleep");
++                stdext::microsleep(chaos::idle::kHiddenPollUs);
++                continue;
++            }
+ 
+-            // Throttle visual work when hidden or unfocused, but never stop logic polling.
++            // Throttle visual work when unfocused, but never stop logic polling.
+             const int visualCap = visualBuildFpsCap(*this, visible, focused);
+             const ticks_t visualDelay = frameDelayForCap(visualCap);
+             if (visualDelay > 0 && now - uiBuildLast < visualDelay && now - mapBuildLast < visualDelay && !m_mustRepaint.load()) {
+@@ -720,21 +736,12 @@
+         g_clock.update();
+         pollGraphics();
+ 
+-        const bool visible = g_window.isVisible();
+-        const bool focused = g_window.hasFocus();
+-
+         // Even when invisible we need to keep processing graphics events and avoid busy waiting.
+-        if (!visible) {
++        // Chaos (O227): nothing is drawn while hidden; wake 50 times a second (window events), not 500.
++        if (!chaos::idle::rendersFrames(chaos::idle::classify(g_window.isVisible(), g_window.hasFocus()))) {
+             AutoStat s(STATS_RENDER, "Sleep");
+-            const int cap = HIDDEN_FPS;
+-            const ticks_t delay = frameDelayForCap(cap);
+-            const ticks_t now = stdext::micros();
+-            if (shouldThrottleFrame(lastRender, delay, now)) {
+-                stdext::microsleep(sleepUntilRender(lastRender, delay, now));
+-            } else {
+-                g_adaptiveRenderer.refresh();
+-                lastRender = now;
+-            }
++            g_adaptiveRenderer.refresh();
++            stdext::microsleep(chaos::idle::mainSleepUs(chaos::idle::State::Hidden));
+             continue;
+         }
+ 

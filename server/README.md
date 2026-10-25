@@ -252,6 +252,10 @@ server/
                                       header src/chaosmapdesc.h, tools/chaosmapdesc_test.cpp, tools/mapdesc_bench.cpp)
   src-patches/0074-cheaper-line-of-sight.patch   engine: Map::checkSightLine (behind Game::isSightClear) resolves the Floor once
   src-patches/0075-extended-opcode-size-cap.patch   engine: parseExtendedOpcode drops a request over 16384 bytes before the task, the copy and the Lua decode (O220)
+  src-patches/0076-cheaper-walk-map-refresh.patch   engine: a walking monster refreshes the edge of its walk map (a row of 33 or a
+                                      column of 25 tiles per step) with one quad tree walk per 8x8 block, not per tile; same
+                                      tiles (see "Cheaper walk map refresh (O225)"; header src/chaosstrip.h,
+                                      tools/chaosstrip_test.cpp, tools/strip_bench.cpp)
                                       per 8x8 block the line crosses, not once per tile; same answers (see "Cheaper line of
                                       sight (O218)"; header src/chaossight.h, tools/chaossight_test.cpp, tools/sight_bench.cpp)
     remote_cmd.lua    remote_cmd_core.lua    remote_cmd_config.lua  (remote admin commands by file, see "Remote admin commands")
@@ -649,7 +653,7 @@ collision check") and be added here.
 | 110 | `stash` | `stash.lua` | `game_stash` | |
 | 111 | `depotTabs` | `depot.lua` | `game_depottabs` | |
 | 113 | `npcCurrency` | `data/lib/chaos_npc_currency.lua` (run by the base NPC scripts of a custom currency, `tools/patch_npc_currency.py`) | `game_npctradewindow` | server -> client, JSON `{action = "currency", data = {code, name, item?, amount, again?}}`: the currency of the shop that opens next, and its balance after each purchase and sale ("NPC currencies") |
-| 114 | `weather` | `weather.lua`, `weather_core.lua` | `game_chaosweather` | server -> client `set {k = "rain" / "none", i = 1..3, f = fade ms}`, client -> server `hello` (see "Weather on the client (O208)") |
+| 114 | `weather` | `weather.lua`, `weather_core.lua` | `game_chaosweather` | server -> client `set {k = "rain" / "none", i = 1..3, f = fade ms, a = "embers" / "motes" / "dust" (optional, O226)}`, client -> server `hello` (see "Weather on the client (O208)", "Ambient particles (O226)") |
 | 120 | none (`CHAOS_ADMIN_OPCODE`) | `admin/core.lua` | `game_admin` | big payloads through `Chaos.sendChunked` |
 | 125 | `monsterbar` | `monster_tiers.lua`, `worldboss.lua` | `game_monsterbar` | server -> client |
 | 151 | `notificationsAction` | `notifications.lua` | `game_chaosnotify` | client -> server: party invite answer, catacomb start |
@@ -893,6 +897,32 @@ floors 0-7 get `set` within 3 s (`/weather info` says how many), a cave player n
 or watch the console for `[ChaosWeather]` lines. In a client: the rain fades in, goes under a roof, returns, and the
 checkbox switches it. Not run yet: the glue's engine calls (`Game.getPlayers`, `GlobalEvent`, `addEvent`, `TalkAction`) are the ones other
 scripts here already use, but this file has only run against the mock.
+
+### Ambient particles (O226) (`weather_core.lua`, `weather_config.lua`, `weather.lua`, client `game_chaosweather`)
+
+The client draws slow embers, motes or dust over the game window (client/MANIFEST.md "Ambient particles (O226)"). The mood of a
+place is decided here, as the weather is (option 1 of the brief: the weather code made it a small step).
+- **Config:** `weather_config.lua` `ambient = {enabled, areas}`; an area is `{name, kind, minZ, maxZ, box}` like the rain areas, `kind` is
+  `embers`, `motes` or `dust`, the first area that holds the player's tile wins, a tile in none has no mood. It is independent of the
+  rain (a mood stands in rain or dry weather). `W.ambientAt(cfg, pos)` in `weather_core.lua` looks it up; a kind that is not in
+  `W.AMBIENT_KINDS` (a typo) is dropped, never sent.
+- **Protocol:** opcode 114 (no new opcode), server -> client `set {k, i?, f, a?}`: `a` is added only in a region with a mood. A player in no
+  region gets the old message byte for byte, an older client ignores `a`. The per-player signature is `k:i:a`, so crossing between
+  moods or into a cave is one message and walking inside one is none (the same 3 s tick and one `getPosition` per player as before).
+  A cave floor (8-15) now sends a first message to a player of a dry world (`none` + `dust`), once.
+- **Opcode budget and JSON guard:** nothing new to guard. The message is server -> client (about 60 bytes); the only inbound message of the
+  opcode is still `hello`, which goes through `Chaos.opcodeDispatch` (`Chaos.opcodeBudget`, the 16 KB request cap) and `Chaos.decode`
+  (`Chaos.guardJson`), and is rate limited to one a second as before.
+- **Places in the default config:** Emberdeep Hollows (z 9-10) and Cinderfall Wastes (z 7), exact from `areagen_config.lua`: `embers`;
+  every floor 8-15: `dust`. The surface swamp, jungle village, river forest and the jungle cave (`motes`) are boxes of 100 x 100
+  or less around the sample sites of `docs/MAP_GUIDE.md` (swamp town 32935,32055; jungle village 32578,32728; forest by the river
+  32602,32222; jungle cave 32666,32846 z 9). **They are guesses, the map is not in the repository: widen or move each box to the real
+  swamp and forest** (one line each, the map editor shows the tile), and add the other forests. Order matters: put a small box before a
+  wide one.
+- **Staff:** `/weather ambient` says the mood of your tile.
+- **Tests:** `tests/weather_test.lua` (the moods and boxes, an unknown kind, the signature rule, byte-for-byte old payload outside a region,
+  the cave payload, `/weather ambient`).
+- **Not run on a live server or in a client.**
 
 ### Extended opcode size limit (`extended_opcode.lua`, `Chaos.sendChunked`)
 One extended opcode message carries at most 8192 bytes (`NetworkMessage::addString` refuses longer strings without an
@@ -23494,3 +23524,61 @@ Not done: no element-count limit beyond the byte cap (it would add a scan per re
 
 Tests: `tests/opcode_dispatch_test.lua` (budget: burst, refill, per player, backwards clock, logout, flood through the dispatcher; JSON depth: limit, strings, escapes, unterminated text, the wrapper) under luajit and Lua 5.3. Patch: 0001-0075 applied in order to the base with 0 FAILED and 0 fuzz; `g++ -std=c++17 -fsyntax-only` on the patched `protocolgame.cpp`. Not built or run in an engine.
 
+## Cheaper walk map refresh (O225) (engine `src-patches/0076-cheaper-walk-map-refresh.patch`, `src/chaosstrip.h`, `tools/strip_bench.cpp`, `tools/chaosstrip_test.cpp`)
+
+Audit of the monster think and target code by reading, for the hottest waste that can be proved and keeps behaviour
+exactly. Weighed:
+
+- `Monster::searchTarget` collects its candidates in a `std::list` (a heap node each). Replaced by a stack array in a
+  trial and tested for identical choices (same checks, same random draw): the whole search got only 1.04-1.12x faster
+  against the engine's own attack test (distance, then the sight line of O218), because the sight lines are the cost.
+  Under the 1.1x bar for a real gain, so dropped, not shipped.
+- `Monster::updateTargetList` calls `updateIdleStatus` after every spectator. Looks redundant but is not: while the
+  target list is still empty it sets the monster idle, which clears the friend list, so skipping calls would change
+  which friends a monster ends with. Left alone.
+- `getDanceStep` (a `std::vector` of directions, up to five sight lines), `isTarget`, `selectTarget` (a `std::find` in a
+  short list), `onCreatureFound`: small, and dominated by the sight lines or the item list walks.
+
+**Found.** Every step of a monster that walks (`Monster::useCacheMap`, anything that is not a random stepper) runs
+`Creature::onCreatureMove` for the mover, which shifts its 33 x 25 grid `localMapCache` and fills the new edge: a row of
+33 or a column of 25 tiles, each with `Map::getTile`, a walk down the quad tree from the root (13 pointer hops) although
+neighbouring tiles of an 8 x 8 block share one leaf and one `Floor`. `Creature::updateMapCache` (first think of every
+monster, teleport, floor change) does it for all 825 tiles. A hunting pack steps about once a second per monster.
+
+**Changed (patch 0076, same tiles).** `src/chaosstrip.h`, header only: `ChaosStrip::TileReader::at(x, y, z)` is
+`Map::getTile` (the ints are narrowed to 16, 16 and 8 bits the same way, a missing leaf, floor or z out of range gives
+`nullptr`) with the `Floor` of the last 8 x 8 block kept in two words (block key and z), so a column or a row walks the
+tree 4 to 5 times instead of 25 or 33. `creature.cpp`: the four edge loops of `onCreatureMove` and the loop of
+`updateMapCache` read through a reader over `Map::getFloorAt` (patch 0072); `updateTileCache` and its `queryAdd` are
+untouched. The reader lives on the stack of one refresh: nothing is kept between calls and nothing is allocated, so a
+tile or floor created later is always seen.
+
+**Left alone on purpose.** `Tile::queryAdd` (it walks the items and creatures of the tile, needed work), the shift of the
+grid, and the refresh for other creatures' moves (they update two tiles with the tiles they were given).
+
+**Measured** (`strip_bench.cpp`; this sandbox, g++ 13.3 -O2, one core, best of 7 rounds of 3000 random places on a
+400 x 400 city and cave, both versions on the same places, interleaved, every cache compared byte for byte).
+
+| Refresh | stock | new | |
+|---|---|---|---|
+| city, step north (row of 33) | 1.8 us | 0.97 us | 1.87x |
+| city, step east (column of 25) | 0.93-1.0 us | 0.55-0.59 us | 1.70-1.73x |
+| cave, step south (row of 33) | 1.6 us | 0.85-0.87 us | 1.84-1.91x |
+| cave, step west (column of 25) | 0.95 us | 0.52-0.53 us | 1.79-1.82x |
+| city, whole grid (825 tiles) | 33 us | 17-18 us | 1.83-1.88x |
+| sea, step north (almost all empty) | 0.2 us | 0.11-0.13 us | 1.67-1.73x |
+
+The tile test of the benchmark is a stand-in (a flag table lookup for the ground and each item), lighter than
+`Tile::queryAdd`, which is the same work before and after, so the share saved in the engine is smaller than the table,
+not measured. The map of the benchmark (400 x 400) fits the cache better than a real one, which favours the stock walk
+less than the engine would. Absolute: about 0.5 to 0.9 us per step of a walking monster, 15 us per full refresh.
+
+The tiles are identical: `chaosstrip_test.cpp` compares `Map::getTile` with the reader for 3.5 million reads (60
+synthetic maps: dense, sparse, empty, floors that do not exist, z out of range, the edges of the 16 bit coordinates where
+`x - 16` and `x + 16` wrap; every edge of a step, the full grid, random reads that change block in any order; ASan and
+UBSan too), checks the walk count (4 for a column of 25, 5 for a row of 33, stock 25 and 33), that a tile or floor
+created after a read is seen by the next reader, and that two floors with the same block do not share a cached floor.
+`strip_bench.cpp --check` compares every cache it times and fails when a step in the city or the cave is not at least
+1.15x faster (CI "Native checks"). It reuses `tools/sight_world.h`. The patch chain 0001-0076 applies to the base source
+with 0 FAILED and 0 fuzz; `creature.cpp` passes `g++ -fsyntax-only` on the patched source. Not built or linked, not run
+on a live server.

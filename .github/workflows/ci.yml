@@ -283,6 +283,18 @@ jobs:
           g++ -std=c++17 -O2 -Wall -Wextra -I "$d" -I server/tools server/tools/sight_bench.cpp -o "$d/sight_bench"
           "$d/sight_bench" --check
 
+      - name: Walk map refresh, tile equality and benchmark check (C++; header from server src-patch 0076)
+        run: |
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/chaosstrip\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            server/src-patches/0076-cheaper-walk-map-refresh.patch > "$d/chaosstrip.h"
+          g++ -std=c++17 -O1 -Wall -Wextra -I "$d" -I server/tools server/tools/chaosstrip_test.cpp -o "$d/chaosstrip_test"
+          "$d/chaosstrip_test"
+          g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" -I server/tools server/tools/chaosstrip_test.cpp -o "$d/chaosstrip_asan"
+          "$d/chaosstrip_asan"
+          g++ -std=c++17 -O2 -Wall -Wextra -I "$d" -I server/tools server/tools/strip_bench.cpp -o "$d/strip_bench"
+          "$d/strip_bench" --check
+
       - name: Incremental save, pure parts (C++; header from server src-patch 0026)
         run: |
           d=$(mktemp -d)
@@ -408,6 +420,26 @@ jobs:
           "$d/chaosdeathfade_test"
           g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" client/tools/chaosdeathfade_test.cpp -o "$d/chaosdeathfade_asan"
           "$d/chaosdeathfade_asan"
+
+      - name: Idle state of the window (C++; header from base patch 0143)
+        run: |
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/framework\/core\/chaosidle\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            client/base-patches/0143-idle-when-hidden.patch > "$d/chaosidle.h"
+          g++ -std=c++17 -O1 -Wall -Wextra -I "$d" client/tools/chaosidle_test.cpp -o "$d/chaosidle_test"
+          "$d/chaosidle_test"
+          g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" client/tools/chaosidle_test.cpp -o "$d/chaosidle_asan"
+          "$d/chaosidle_asan"
+
+      - name: Hit flash bookkeeping (C++; header from base patch 0142)
+        run: |
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/client\/chaoshitflash\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            client/base-patches/0142-hit-flash.patch > "$d/chaoshitflash.h"
+          g++ -std=c++17 -O1 -Wall -Wextra -I "$d" client/tools/chaoshitflash_test.cpp -o "$d/chaoshitflash_test"
+          "$d/chaoshitflash_test"
+          g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" client/tools/chaoshitflash_test.cpp -o "$d/chaoshitflash_asan"
+          "$d/chaoshitflash_asan"
 
       - name: Light map fill, same bytes and benchmark check (C++; header from base patch 0140)
         run: |
@@ -644,6 +676,9 @@ jobs:
       - name: Rain art is up to date (gen_rain_art.py, three seamless tiles of game_chaosweather)
         run: python3 client/tools/gen_rain_art.py --check  # not -I: Pillow from the user site (installed above)
 
+      - name: Ambient particle art is up to date (gen_ambient_art.py, six seamless tiles of game_chaosweather)
+        run: python3 client/tools/gen_ambient_art.py --check  # not -I: Pillow from the user site (installed above)
+
       - name: Liquid orb art is up to date (gen_orb_art.py, one ring and mask per orb size at 2x)
         run: python3 client/tools/gen_orb_art.py --check  # not -I: Pillow from the user site (installed above)
 
@@ -652,6 +687,8 @@ jobs:
           python3 client/tools/make_fonts_test.py  # not -I: Pillow from the user site (installed above)
           python3 client/tools/check_text_fit.py  # options menu sub-entries, English and pt-BR (base patch 0104)
           python3 client/tools/check_text_fit_test.py
+          python3 -I client/tools/check_otui_lines.py  # no OTML line at column 0 inside a style (base patch 0145)
+          python3 -I client/tools/check_win_macros.py  # no Windows SDK macro names as identifiers in base patch C++ (base patch 0150)
           python3 -I client/tools/check_pe_hardening_test.py  # PE header flags checker of the Windows package (O204)
 
       - name: Console lines drawn where their labels are (model of base patch 0110)

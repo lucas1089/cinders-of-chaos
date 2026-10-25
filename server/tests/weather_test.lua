@@ -152,6 +152,58 @@ eq(W.areaAt(boxed, {x = 10, y = 20, z = 7}).name, "marsh", "box edge counts")
 eq(W.areaAt(boxed, {x = 21, y = 20, z = 7}).name, "rest", "outside the box falls to the next area")
 eq(W.areaAt(boxed, {x = 15, y = 15, z = 6}).name, "rest", "box is for floor 7 only")
 
+-- ------------------------------------------------------------------ ambient particles (O226)
+local amb = cfg.ambient
+ok(type(amb) == "table" and amb.enabled == true and #amb.areas >= 3, "ambient config exists")
+local kindsUsed = {}
+for _, a in ipairs(amb.areas) do
+	ok(W.AMBIENT_KINDS[a.kind] == true, "known ambient kind: " .. tostring(a.kind))
+	kindsUsed[a.kind] = true
+	ok(a.minZ and a.maxZ and a.minZ <= a.maxZ, "floors of " .. a.name)
+	if a.box then ok(a.box[1] <= a.box[3] and a.box[2] <= a.box[4], "box of " .. a.name .. " is ordered") end
+end
+ok(kindsUsed.embers and kindsUsed.motes and kindsUsed.dust, "all three moods are placed")
+eq(W.ambientAt(cfg, {x = 14450, y = 14420, z = 9}), "embers", "Emberdeep Hollows: embers")
+eq(W.ambientAt(cfg, {x = 14450, y = 14620, z = 7}), "embers", "Cinderfall Wastes: embers")
+eq(W.ambientAt(cfg, {x = 14450, y = 14620, z = 6}), nil, "Cinderfall is floor 7 only")
+eq(W.ambientAt(cfg, {x = 100, y = 100, z = 12}), "dust", "a cave floor: dust")
+eq(W.ambientAt(cfg, {x = 100, y = 100, z = 7}), nil, "open ground with no region: no mood")
+eq(W.ambientAt(cfg, {x = 32940, y = 32050, z = 7}), "motes", "swamp: motes")
+eq(W.ambientAt(cfg, {x = 32940, y = 32050, z = 9}), "dust", "under the swamp: dust")
+eq(W.ambientAt(cfg, nil), nil, "no position"); eq(W.ambientAt(cfg, {x = 1, y = 1}), nil, "no floor")
+eq(W.ambientAt({}, {x = 1, y = 1, z = 9}), nil, "no ambient table")
+eq(W.ambientAt({ambient = {enabled = false, areas = amb.areas}}, {x = 1, y = 1, z = 9}), nil, "switched off")
+eq(W.ambientAt({ambient = {areas = {{name = "x", kind = "snow", minZ = 0, maxZ = 15}}}}, {x = 1, y = 1, z = 9}), nil,
+	"an unknown kind never reaches a client")
+do
+	local rainNow = W.newState()
+	W.set(rainNow, cfg, true, function() return 1 end, 3, 0)
+	local m1 = W.message(rainNow, cfg, {x = 14450, y = 14620, z = 7})
+	eq(m1.k, "rain", "rain and a mood together"); eq(m1.a, "embers", "embers in the rain"); eq(m1.i, 3, "strength kept")
+	local keys1 = 0
+	for _ in pairs(m1) do keys1 = keys1 + 1 end
+	eq(keys1, 4, "four fields at most")
+	local m2 = W.message(rainNow, cfg, {x = 100, y = 100, z = 7})
+	eq(m2.a, nil, "no mood, no field: the old message")
+	-- the signature knows the mood: entering a cave from a dry plain is a message, walking inside it is not
+	local s2 = {}
+	W.set(rainNow, cfg, false, function() return 1 end, nil, 0)
+	eq(W.decide(s2, 1, rainNow, cfg, {x = 100, y = 100, z = 7}), nil, "dry plain: nothing")
+	local into = W.decide(s2, 1, rainNow, cfg, {x = 100, y = 100, z = 9})
+	ok(into and into.k == "none" and into.a == "dust", "into a cave: none and dust")
+	eq(W.decide(s2, 1, rainNow, cfg, {x = 101, y = 100, z = 10}), nil, "deeper in the cave: nothing")
+	local fire = W.decide(s2, 1, rainNow, cfg, {x = 14450, y = 14420, z = 9})
+	ok(fire and fire.a == "embers", "dust to embers is a change")
+	local out = W.decide(s2, 1, rainNow, cfg, {x = 100, y = 100, z = 7})
+	ok(out and out.a == nil and out.k == "none", "out of every region: the old none, without a mood")
+end
+-- the same walk with the option left off in the config: nothing new ever goes out
+do
+	local off = {areas = cfg.areas, fadeMs = cfg.fadeMs}
+	local s3, st3 = {}, W.newState()
+	eq(W.decide(s3, 1, st3, off, {x = 1, y = 1, z = 12}), nil, "no ambient config: a cave player of a dry world gets nothing")
+end
+
 -- ------------------------------------------------------------------ messages and the per-player rule
 st = W.newState()
 W.set(st, cfg, true, seq(), 2, 0)
@@ -273,10 +325,14 @@ math.random = real
 eq(ChaosWeather.state.raining, true, "startup rains")
 sentOps = {}
 events.ChaosWeatherThink.onThink(cfg.tickMs)
-eq(#sentOps, 2, "two players on the surface told")
+eq(#sentOps, 3, "two players on the surface told rain, the one in the cave told its dust (O226)")
 for _, o in ipairs(sentOps) do
 	eq(o.op, 114, "opcode 114")
-	eq(o.buffer, '{"action":"set","data":{"f":' .. cfg.fadeMs .. ',"i":2,"k":"rain"}}', "payload")
+	if o.to == 3 then
+		eq(o.buffer, '{"action":"set","data":{"a":"dust","f":' .. cfg.fadeMs .. ',"k":"none"}}', "cave payload")
+	else
+		eq(o.buffer, '{"action":"set","data":{"f":' .. cfg.fadeMs .. ',"i":2,"k":"rain"}}', "old payload, byte for byte")
+	end
 end
 sentOps = {}
 for i = 1, 20 do events.ChaosWeatherThink.onThink(cfg.tickMs) end
@@ -290,6 +346,7 @@ local by = {}
 for _, o in ipairs(sentOps) do by[o.to] = o.buffer end
 ok(by[3] and by[3]:find('"rain"', 1, true), "the one who came out gets rain")
 ok(by[1] and by[1]:find('"none"', 1, true), "the one who went in gets none")
+ok(by[1] and by[1]:find('"a":"dust"', 1, true), "and the dust of the cave")
 -- login: registers events, a try after 1.5 s that forces the state
 sentOps = {}
 local d = newPlayer(4, 6)
@@ -345,6 +402,8 @@ talkAction.onSay(a, "/weather", "clear")
 eq(ChaosWeather.state.raining, false, "/weather clear")
 talkAction.onSay(a, "/weather", "info")
 ok(a.texts[#a.texts]:find("clear", 1, true) ~= nil, "/weather info")
+talkAction.onSay(a, "/weather", "ambient")
+ok(a.texts[#a.texts]:find("Ambient here: dust", 1, true) ~= nil, "/weather ambient names the mood of the staff's tile (a is on floor 12)")
 
 -- a player below the staff group changes nothing and sees nothing
 local plain = newPlayer(9, 7)

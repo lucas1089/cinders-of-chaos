@@ -150,7 +150,7 @@ if gen then
 end
 local otmod = readFile(dir .. 'game_chaosweather.otmod')
 eq(otmod:find('name: game_chaosweather', 1, true) ~= nil, true, 'module name')
-eq(otmod:find('scripts: [ chaosweather_logic, chaosweather ]', 1, true) ~= nil, true, 'module scripts')
+eq(otmod:find('scripts: [ chaosweather_logic, chaosambient_logic, chaosambient, chaosweather ]', 1, true) ~= nil, true, 'module scripts')
 local lua = readFile(dir .. 'chaosweather.lua')
 eq(lua:find('L.OPCODE', 1, true) ~= nil and lua:find('114', 1, true) ~= nil, true, 'the module names the opcode')
 eq(lua:find("g_ui.importStyle('chaosweather')", 1, true) ~= nil and readFile(dir .. 'chaosweather.otui') ~= nil, true, 'style imported')
