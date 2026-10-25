@@ -31,6 +31,9 @@
 --   scene fade     a short dip to black that eases out when the player changes floor or is moved four tiles or more in one step
 --                  (O219, base patch 0138 has the checkbox): Lua and OTUI only. One black widget on the map panel, hidden unless
 --                  a fade runs; one 33 ms timer runs only while it fades; the position hook is connected only while the option is on.
+--   death fade    a creature that dies fades out over about 350 ms (O221, base patch 0139): this file only calls
+--                  Creature.setDeathFade; the engine keeps a copy of the last frame (at most 32, none for the local player) and
+--                  draws it with falling alpha. The corpse and the game are not delayed.
 -- A client without base patch 0126 has none of the C++ functions: the flash, shake and shadow do nothing, the grade (shader
 -- only) still works. Every engine call is guarded.
 local L = VisualFxLogic
@@ -187,6 +190,11 @@ end
 -- ---------------------------------------------------------------- floating numbers
 local function applyNumberMotion()
   if AnimatedText and AnimatedText.setSoftMotion then pcall(AnimatedText.setSoftMotion, optionValue('numberMotion')) end
+end
+
+-- ---------------------------------------------------------------- death fade (O221)
+local function applyDeathFade()
+  if Creature and Creature.setDeathFade then pcall(Creature.setDeathFade, optionValue('deathFade')) end
 end
 
 -- ---------------------------------------------------------------- target, follow and hover outline (O216)
@@ -462,6 +470,8 @@ function onOption(name, value)
     applyOutlines()
   elseif name == 'sceneFade' then
     applySceneFade()
+  elseif name == 'deathFade' then
+    applyDeathFade()
   elseif name == 'screenShake' and value == false then
     stopShake()
   end
@@ -477,6 +487,7 @@ function reapply()
   applyNumberMotion()
   applyOutlines()
   applySceneFade()
+  applyDeathFade()
 end
 
 -- ---------------------------------------------------------------- lifecycle
@@ -530,6 +541,7 @@ function terminate()
   if Item and Item.setLiquidShimmer then pcall(Item.setLiquidShimmer, false) end
   if g_app and g_app.setMapBloom then pcall(g_app.setMapBloom, false, 0) end
   if AnimatedText and AnimatedText.setSoftMotion then pcall(AnimatedText.setSoftMotion, false) end
+  if Creature and Creature.setDeathFade then pcall(Creature.setDeathFade, false) end
   local panel = mapPanel()
   if panel and panel.getShader and panel:getShader() == GRADE then panel:setShader('') end
   handlers = {}
