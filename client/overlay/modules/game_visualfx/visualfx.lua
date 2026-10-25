@@ -22,6 +22,12 @@
 --   numbers        floating damage and heal numbers pop, rise with an ease-out, fade smoothly and spread sideways (O215, base patch
 --                  0134): this file only calls AnimatedText.setSoftMotion; the maths is in the engine (chaostextmotion.h). The random
 --                  shift and speed of game_damagescatter are a separate layer and stay as they are.
+--   outlines       the creature the player attacks gets a soft red silhouette outline with a gentle pulse, the one followed a green one,
+--                  and (option hoverOutline) the one under the mouse a faint white one (O216): Creature:setOutline of base patch 0038,
+--                  nothing new in the engine. Event driven: the attack and follow events and the map's mouse move (at most every
+--                  33 ms, and the engine call only when the creature under the mouse changed); no per-frame Lua. A creature that
+--                  wears a bought cosmetic outline (game_cosmeticfx) keeps it: game_cosmeticfx.setHighlight(id, true) makes it leave
+--                  that creature alone while ours is up, and setHighlight(id, false) puts it back. The stock target square stays.
 -- A client without base patch 0126 has none of the C++ functions: the flash, shake and shadow do nothing, the grade (shader
 -- only) still works. Every engine call is guarded.
 local L = VisualFxLogic
@@ -180,6 +186,147 @@ local function applyNumberMotion()
   if AnimatedText and AnimatedText.setSoftMotion then pcall(AnimatedText.setSoftMotion, optionValue('numberMotion')) end
 end
 
+-- ---------------------------------------------------------------- target, follow and hover outline (O216)
+local hl = { applied = {}, target = nil, follow = nil, hover = nil, panel = nil, mouseOn = false, gate = {}, sweep = nil }
+
+local function alive(c)
+  if c == nil then return false end
+  local ok, removed = pcall(c.isRemoved, c)
+  return ok and not removed
+end
+
+-- tells game_cosmeticfx to leave this creature's outline alone (on) or to put the bought one back (off)
+local function cosmeticHold(id, on)
+  local m = modules.game_cosmeticfx
+  if m and m.setHighlight then pcall(m.setHighlight, id, on) end
+end
+
+local function outlineApply(creature, kind)
+  local a = L.outlineArgs(kind)
+  if not a or not creature.setOutline then return false end
+  pcall(creature.clearOutline, creature) -- a cosmetic gradient must not stay under our colour
+  pcall(creature.setOutline, creature, a[1], a[2], a[3], a[4], a[5], a[6])
+  return true
+end
+
+local function outlineSweep()
+  local id = next(hl.applied)
+  if not id then
+    if hl.sweep then removeEvent(hl.sweep); hl.sweep = nil end
+    return
+  end
+  local changed = false
+  for cid, a in pairs(hl.applied) do
+    if not alive(a.creature) then
+      hl.applied[cid] = nil
+      cosmeticHold(cid, false)
+      if hl.target == a.creature then hl.target = nil end
+      if hl.follow == a.creature then hl.follow = nil end
+      if hl.hover == a.creature then hl.hover = nil end
+      changed = true
+    elseif a.creature.hasOutline and not a.creature:hasOutline() then
+      outlineApply(a.creature, a.kind) -- something cleared it
+    end
+  end
+  if changed and not next(hl.applied) and hl.sweep then removeEvent(hl.sweep); hl.sweep = nil end
+end
+
+-- brings the engine in line with the target / follow / hover creatures and the two options; calls only for what changed
+local function outlineRefresh()
+  local opts = { target = optionValue('targetOutline'), hover = optionValue('hoverOutline') }
+  if not next(hl.applied) and not opts.target and not opts.hover then return end
+  local me = g_game.getLocalPlayer()
+  local byId, st = {}, { meId = me and me:getId() or nil }
+  for _, k in ipairs({ 'target', 'follow', 'hover' }) do
+    local c = hl[k]
+    if c and alive(c) then
+      local id = c:getId()
+      byId[id] = c
+      st[k .. 'Id'] = id
+    end
+  end
+  local kinds = {}
+  for id, a in pairs(hl.applied) do kinds[id] = a.kind end
+  for _, op in ipairs(L.outlineDiff(kinds, L.outlineWanted(st, opts))) do
+    if op.op == 'clear' then
+      local a = hl.applied[op.id]
+      hl.applied[op.id] = nil
+      if a and alive(a.creature) and a.creature.clearOutline then pcall(a.creature.clearOutline, a.creature) end
+      cosmeticHold(op.id, false)
+    else
+      local c = byId[op.id]
+      if c then
+        cosmeticHold(op.id, true)
+        if outlineApply(c, op.kind) then
+          hl.applied[op.id] = { kind = op.kind, creature = c }
+        else
+          cosmeticHold(op.id, false)
+        end
+      end
+    end
+  end
+  if next(hl.applied) and not hl.sweep then hl.sweep = cycleEvent(outlineSweep, L.OUTLINE.sweepMs) end
+end
+
+local function outlineClearAll()
+  hl.target, hl.follow, hl.hover = nil, nil, nil
+  outlineRefresh()
+  if hl.sweep then removeEvent(hl.sweep); hl.sweep = nil end
+end
+
+local function onMapMouseMove(widget, mousePos)
+  if not L.mouseGate(hl.gate, now()) then return end
+  local c = nil
+  if widget.getCreatureAt then
+    local ok, res = pcall(widget.getCreatureAt, widget, mousePos)
+    if ok then c = res end
+  end
+  if c == hl.hover then return end -- the usual case: still the same creature (or still none)
+  hl.hover = c
+  outlineRefresh()
+end
+
+local function onMapHoverChange(widget, hovered)
+  if not hovered and hl.hover then
+    hl.hover = nil
+    outlineRefresh()
+  end
+end
+
+local mouseHooks = { onMouseMove = onMapMouseMove, onHoverChange = onMapHoverChange }
+
+local function unhookMouse()
+  if hl.mouseOn and hl.panel then pcall(disconnect, hl.panel, mouseHooks) end
+  hl.mouseOn = false
+end
+
+local function applyOutlines()
+  if optionValue('hoverOutline') then
+    if not hl.mouseOn then
+      local panel = mapPanel()
+      if panel then
+        hl.panel = panel
+        connect(panel, mouseHooks)
+        hl.mouseOn = true
+      end
+    end
+  else
+    unhookMouse()
+    hl.hover = nil
+  end
+  outlineRefresh()
+end
+
+local function onAttackingChange(creature)
+  hl.target = creature
+  outlineRefresh()
+end
+
+local function onFollowingChange(creature)
+  hl.follow = creature
+  outlineRefresh()
+end
+
 -- ---------------------------------------------------------------- shadow and grade
 local function applyShadow()
   if Creature and Creature.setSoftShadow then pcall(Creature.setSoftShadow, optionValue('creatureShadow')) end
@@ -221,6 +368,8 @@ function onOption(name, value)
     applyBloom()
   elseif name == 'numberMotion' then
     applyNumberMotion()
+  elseif name == 'targetOutline' or name == 'hoverOutline' then
+    applyOutlines()
   elseif name == 'screenShake' and value == false then
     stopShake()
   end
@@ -234,17 +383,22 @@ function reapply()
   applyWeather()
   applyBloom()
   applyNumberMotion()
+  applyOutlines()
 end
 
 -- ---------------------------------------------------------------- lifecycle
 local function onGameStart()
   flasher = L.newFlasher()
   stopShake()
+  hl.target = g_game.getAttackingCreature and g_game.getAttackingCreature() or nil
+  hl.follow = g_game.getFollowingCreature and g_game.getFollowingCreature() or nil
   reapply()
 end
 
 local function onGameEnd()
   stopShake()
+  outlineClearAll()
+  unhookMouse()
   flasher = L.newFlasher()
 end
 
@@ -259,7 +413,8 @@ end
 
 function init()
   createFlashShaders()
-  handlers.game = { onGameStart = onGameStart, onGameEnd = onGameEnd }
+  handlers.game = { onGameStart = onGameStart, onGameEnd = onGameEnd,
+                    onAttackingCreatureChange = onAttackingChange, onFollowingCreatureChange = onFollowingChange }
   connect(g_game, handlers.game)
   handlers.map = { onImpactText = onImpactText }
   connect(g_map, handlers.map)
@@ -270,6 +425,8 @@ function terminate()
   if handlers.game then disconnect(g_game, handlers.game) end
   if handlers.map then disconnect(g_map, handlers.map) end
   stopShake()
+  outlineClearAll()
+  unhookMouse()
   if Creature and Creature.setSoftShadow then pcall(Creature.setSoftShadow, false) end
   if g_map and g_map.setSpellLightConfig then pcall(g_map.setSpellLightConfig, false, 0, 0, 0, 0, 0) end
   if Item and Item.setLiquidShimmer then pcall(Item.setLiquidShimmer, false) end

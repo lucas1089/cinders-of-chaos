@@ -24,6 +24,7 @@ local looks = {}          -- character name -> {f, o, p}
 local preview             -- {look, untilMs}: the local player's store / window preview
 local prints = {}         -- oldest first: {widget, tile, owner, born}
 local glows = {}          -- creature id -> {art, pulse, creature, line = true | widget}
+local held = {}            -- creature id -> true: game_visualfx draws its target / follow / hover outline there (setHighlight)
 local engineLine          -- nil: not checked yet; true: Creature:setOutline exists (base patch 0038)
 local events = {}
 local handlers = {}
@@ -160,6 +161,7 @@ local function dropGlow(cid)
   local g = glows[cid]
   glows[cid] = nil
   if g and g.line then
+    if held[cid] then return end -- the highlight owns the engine line now and clears it itself
     pcall(function() g.creature:clearOutline() end)
     return
   end
@@ -177,6 +179,7 @@ end
 -- the engine line (base patch 0038)
 local function setLine(creature, look)
   local cid = creature:getId()
+  if held[cid] then return end -- a highlight is up: nothing is recorded, so the line comes back when it ends
   local g = glows[cid]
   if g and g.line and g.art == look.o and g.pulse == look.p and g.creature == creature then return end
   if g and not g.line then dropGlow(cid) end
@@ -290,6 +293,22 @@ function showPreview(kind, art, pulse)
   if handlers.sweepSafe then handlers.sweepSafe() end
 end
 
+-- game_visualfx (O216): its target / follow / hover outline wins on a creature while it is up. on = true: leave this
+-- creature's line alone; on = false: the highlight has cleared its line, forget ours and draw the bought one again if
+-- the creature still wears it (the sweep runs at once, not in 400 ms)
+function setHighlight(creatureId, on)
+  if not creatureId then return end
+  if on then
+    held[creatureId] = true
+    return
+  end
+  if not held[creatureId] then return end
+  held[creatureId] = nil
+  local g = glows[creatureId]
+  if g and g.line then glows[creatureId] = nil end
+  if handlers.sweepSafe then handlers.sweepSafe() end
+end
+
 function getLooks()
   return looks
 end
@@ -312,6 +331,7 @@ local function onGameStart()
 end
 
 local function onGameEnd()
+  held = {}
   clearPrints()
   clearGlows()
   looks, preview = {}, nil
@@ -336,6 +356,7 @@ function terminate()
   disconnect(g_game, { onGameStart = onGameStart, onGameEnd = onGameEnd })
   for _, e in pairs(events) do removeEvent(e) end
   events = {}
+  held = {}
   clearPrints()
   clearGlows()
 end

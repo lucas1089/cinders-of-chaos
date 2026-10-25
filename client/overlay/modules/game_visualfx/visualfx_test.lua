@@ -9,7 +9,7 @@ local function eq(a, b, what)
 end
 
 -- options: the grade is off by default (it shifts the biome colours), the rest on; a boolean wins, junk is the default
-local wantDefault = { hitFlash = true, screenShake = true, creatureShadow = true, screenGrade = false, spellLight = true, liquidShimmer = true, weather = true, bloom = false, numberMotion = true }
+local wantDefault = { hitFlash = true, screenShake = true, creatureShadow = true, screenGrade = false, spellLight = true, liquidShimmer = true, weather = true, bloom = false, numberMotion = true, targetOutline = true, hoverOutline = false }
 for _, name in ipairs(L.OPTIONS) do
   local d = wantDefault[name]
   eq(L.optionOn(name, nil), d, name .. ' default')
@@ -18,7 +18,7 @@ for _, name in ipairs(L.OPTIONS) do
   eq(L.optionOn(name, 'no'), d, name .. ' junk -> default')
   eq(L.optionOn(name, 0), d, name .. ' number -> default')
 end
-eq(#L.OPTIONS, 9, 'nine options')
+eq(#L.OPTIONS, 11, 'eleven options')
 eq(L.optionOn('nothing', nil), false, 'an unknown option is off')
 eq(L.DEFAULTS.numberMotion, true, 'soft damage numbers are on by default (purely visual, a few float operations per text)')
 do
@@ -259,6 +259,57 @@ do
     eq(tonumber(lo), L.BLOOM.threshold, 'the shader threshold is L.BLOOM.threshold')
     eq(tonumber(hi), L.BLOOM.full, 'the shader ramp end is L.BLOOM.full')
   end
+end
+
+-- target / follow / hover outline (O216)
+eq(L.DEFAULTS.targetOutline, true, 'target outline is on by default')
+eq(L.DEFAULTS.hoverOutline, false, 'hover outline is off by default')
+do
+  local both = { target = true, hover = true }
+  local w = L.outlineWanted({ targetId = 5, followId = 6, hoverId = 7, meId = 1 }, both)
+  eq(w[5], 'target', 'target kind'); eq(w[6], 'follow', 'follow kind'); eq(w[7], 'hover', 'hover kind')
+  w = L.outlineWanted({ targetId = 5, followId = 5, hoverId = 5, meId = 1 }, both)
+  eq(w[5], 'target', 'one creature has the strongest kind only')
+  w = L.outlineWanted({ targetId = 5, followId = 6, hoverId = 6, meId = 1 }, both)
+  eq(w[6], 'follow', 'follow beats hover')
+  w = L.outlineWanted({ targetId = 5, followId = 6, hoverId = 7, meId = 1 }, { target = false, hover = true })
+  eq(w[5], nil, 'target option off: no target outline'); eq(w[6], nil, 'and no follow outline'); eq(w[7], 'hover', 'hover still on')
+  w = L.outlineWanted({ targetId = 5, hoverId = 7, meId = 1 }, { target = true, hover = false })
+  eq(w[7], nil, 'hover option off'); eq(w[5], 'target', 'target on')
+  w = L.outlineWanted({ hoverId = 1, targetId = 0, meId = 1 }, both)
+  eq(next(w), nil, 'the local player and id 0 get nothing')
+  eq(next(L.outlineWanted({}, both)), nil, 'empty state')
+  -- diff
+  eq(#L.outlineDiff({}, {}), 0, 'nothing to do')
+  eq(#L.outlineDiff({ [5] = 'target' }, { [5] = 'target' }), 0, 'same hover creature again: no engine call')
+  local ops = L.outlineDiff({ [5] = 'target', [7] = 'hover' }, { [5] = 'follow', [8] = 'hover' })
+  eq(#ops, 3, 'clear 7, set 5 and 8')
+  eq(ops[1].op == 'clear' and ops[1].id == 7, true, 'clears come first')
+  eq(ops[2].op == 'set' and ops[2].id == 5 and ops[2].kind == 'follow', true, 'a kind change is a set')
+  eq(ops[3].id, 8, 'new creature')
+  -- args
+  for _, k in ipairs({ 'target', 'follow', 'hover' }) do
+    local a = L.outlineArgs(k)
+    eq(type(a), 'table', k .. ' has args')
+    for i = 1, 4 do eq(a[i] >= 0 and a[i] <= 255, true, k .. ' colour channel ' .. i) end
+    eq(a[5] >= 1 and a[5] <= 3, true, k .. ' width 1-3')
+  end
+  eq(L.outlineArgs('order'), nil, 'order is not a kind'); eq(L.outlineArgs('x'), nil, 'unknown kind')
+  eq(L.OUTLINE.target[6] > 0, true, 'the target outline pulses'); eq(L.OUTLINE.hover[4] < L.OUTLINE.target[4], true, 'hover is fainter')
+  -- mouse gate
+  local g = {}
+  eq(L.mouseGate(g, 1000), true, 'first move looked at')
+  eq(L.mouseGate(g, 1010), false, 'next one too soon')
+  eq(L.mouseGate(g, 1033), true, 'after the gap')
+  -- wiring
+  local f = io.open(dir .. 'visualfx.lua', 'r')
+  local src = f and f:read('*a') or ''
+  if f then f:close() end
+  eq(src:find("name == 'targetOutline'", 1, true) ~= nil, true, 'onOption handles targetOutline')
+  eq(src:find("name == 'hoverOutline'", 1, true) ~= nil, true, 'onOption handles hoverOutline')
+  eq(src:find('onAttackingCreatureChange', 1, true) ~= nil, true, 'target change is listened to')
+  eq(src:find('onFollowingCreatureChange', 1, true) ~= nil, true, 'follow change is listened to')
+  eq(src:find('setHighlight', 1, true) ~= nil, true, 'cosmetic outlines are coordinated')
 end
 
 if fails > 0 then
