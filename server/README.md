@@ -18856,15 +18856,17 @@ script re-runs itself with `sudo -n`, which drops the environment.
   `server/deploy/chaos_kit_update.sh` (check / apply / downloads / rollback; apply and
   rollback in the background into `update-log`, one at a time by a lock in `CHAOS_KIT_STATE`). On the kit
   (`CHAOS_KIT_DIR`, or `CHAOS_ROOT` holding `start-server.sh`) the old `update TAG` is refused and `rollback now` runs
-  `update-rollback`. Order: backup with the server up, `install_all.py --no-sql` with it stopped, start (the kit's
-  MariaDB runs inside the unit), `install_all.py --only sql`, restart, `Server Online` within `CHAOS_BOOT_TIMEOUT`, else
-  an automatic rollback (engine `tfs.antes-N`, `config.lua` and `data/` from the backup's archive, previous commit). The
+  `update-rollback`. Order (O198, "Faster server update"): backup with the server up, `install_all.py --no-sql` on a copy
+  of the server folder while the game runs, stop, swap the folders, start (the kit's MariaDB runs inside the unit),
+  `install_all.py --only sql`, restart, `Server Online` within `CHAOS_BOOT_TIMEOUT`, else an automatic rollback (the old
+  folder renamed back; without a swap: engine `tfs.antes-N`, `config.lua` and `data/` from the backup's archive, previous
+  commit). The
   XP rates survive `install_all.py` (`server/deploy/chaos_config_rates.py save` / `restore`: the `experienceStages`
   table and `rateExp`, `rateSkill`, `rateLoot`, `rateMagic`, `rateSpawn`). Then the client update, the client
   downloads of the site (`CHAOS_DL_DIR`: `.prev`, `.sha256`, `downloads.json` read by the downloads page) and
   `website/install_site.sh`. Details: docs/ADMIN_APP.md "Atualizar servidor", docs/LAUNCH.md "Updating the kit server".
   New ctl.conf keys: `CHAOS_KIT_DIR`, `CHAOS_UPDATE_BRANCH` (main), `CHAOS_RELEASE_REPO`, `CHAOS_KIT_STATE`,
-  `CHAOS_BOOT_TIMEOUT`, `CHAOS_DL_DIR`, `CHAOS_SITE_ENV`, `CHAOS_SITE_LOG`. With `CHAOS_KIT_DIR` set, `CHAOS_ROOT`,
+  `CHAOS_BOOT_TIMEOUT`, `CHAOS_STAGING`, `CHAOS_CACHE_DIR`, `CHAOS_DL_DIR`, `CHAOS_SITE_ENV`, `CHAOS_SITE_LOG`. With `CHAOS_KIT_DIR` set, `CHAOS_ROOT`,
   `CHAOS_ENV` and `CHAOS_LOG` default to the kit's (`KIT`, `KIT/chaos.env`, `KIT/logs/server.log`).
 - Frequent commands (2026-10-21): `xp-rate [show | set N | reset] [restart]` (the release's stages x N, 1..100, backup
   `config.lua.before-xp-<time>`), `backups` (the newest dumps and data archives), `site-install` / `site-log`, `health`
@@ -22894,3 +22896,31 @@ Owner 2026-10-24 (live screenshot, Sorcerer hunting): "Grimeleech [158]" next to
 
 Install: server files and a restart. No client change, no engine rebuild.
 Tests: `tests/stock_level_range_test.lua` (name at the spawn, loot / orb / waystone level, pace level), `tests/areagen_test.lua` (generated area scaling).
+
+## Faster server update: staging copy, step times, plan compile cache (O198)
+
+Problem (2026-10-24): `chaos-ctl.sh update-apply` took over 5 minutes with the game down for most of it, because
+`install_all.py` ran with the server stopped.
+
+Flow of `chaos_kit_update.sh apply` (step names and `RESULT` lines unchanged):
+
+1. Backup with the game up. The save wait ends at the engine log line `> Saved in steps:` (patch 0026), `--save-wait` is only the maximum. New option `--save-log FILE` of `tools/backup.sh`.
+2. A manifest of the live folder (`deploy/chaos_stage_sync.py manifest`), then `cp -a --reflink=auto` of the server folder to `SERVER.new` (not `data/logs`, `data/reports`), same filesystem.
+3. `install_all.py --no-sql` into `SERVER.new` with the game running, at low priority. A failing install removes the copy and never stops the game.
+4. Stop. `chaos_stage_sync.py sync` brings what the game wrote since the manifest into the copy. A file that the install and the game both changed is a conflict: the swap is refused, the game keeps running from the live folder. `config.lua` is handled by `chaos_config_rates.py` (rates only; any other change is a conflict).
+5. Swap by rename: `SERVER` becomes `SERVER.old`, `SERVER.new` becomes `SERVER`. Rollback state (`prev_commit`, `old_server`, ...) is written only after the swap.
+6. Start, `install_all.py --only sql`, restart, `Server Online` check within `CHAOS_BOOT_TIMEOUT` (polls every 1 s now). On failure the rollback renames `SERVER.old` back. The next update removes old failed folders.
+
+Downtime is stop + sync + swap + start + sql + restart, no longer the install. Fallback to the old flow (stop first, install in place, archive rollback) when `CHAOS_STAGING=0`, there is no room for a copy, `SERVER` is a mount point or the sync helper is missing.
+
+Step times: `install_all.py` prints `(x.x s)` per step, a `Time:` line and `Slowest steps:`. Snapshot digests are cached per (size, mtime_ns) with a 2 s racy window.
+
+Plan compile cache (`install_content_areas.py --cache-dir`, `CHAOS_CACHE_DIR`, default `CHAOS_KIT_STATE/cache`, outside the repo):
+- Key: sha256 of the cache format, the contents and names of the compile inputs (`COMPILE_INPUTS` globs), the Python version, the `LUAJIT` env and the plan file bytes.
+- A change in any input gives a new key, so stale entries are never used. Entries carry `CACHE_OK.json` (file list, sha256, size), are written through a `.partial-PID` folder and an atomic rename, and are checked on read. Full runs prune old keys.
+- A strace-based test checks that `COMPILE_INPUTS` covers every file a real compile opens.
+
+Measured on a copy of the real server (197 MB map), `--no-sql --quiet`: fresh 554 s, steady state without cache 410 s, cold cache 424 s, warm cache 339 s (`contentareas` 173 s to 98 s). Left: map load and area state of `contentareas` (about 98 s), `gearsets` 65 s, `mapfixes` 46 s. These now run while the game is up.
+
+Tests: `deploy/chaos_kit_update_test.py` (`test_staging`), `deploy/chaos_stage_sync_test.py`, `deploy/backup_save_wait_test.py`, `tools/install_content_areas_test.py` (cache), `tools/install_all_snapshot_test.py`. Live not run here.
+VPS: no action. The first update that brings this still runs the old script. Needs free disk for one more copy of the server folder.

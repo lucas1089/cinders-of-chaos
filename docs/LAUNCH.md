@@ -1251,9 +1251,21 @@ It does what was done by hand before: fetch and check out the branch; when a new
 `CindersOfChaos-Server-Linux.tar.gz` (https, size and SHA-256 against GitHub's), take out `server/tfs`, `ldd` it, back
 up the old one as `tfs.antes-N`; when the map master (the owner's edited map on `windows-assets`, server/README.md
 "Map master") is newer than the installed map, fetch and check it and put it in place of the map with the server
-stopped (the old map kept in `map-backups`); a backup first (`backup.sh`, server up); `install_all.py --no-sql` with the server
-stopped; then the server started (that starts the kit's database), `install_all.py --only sql`, a restart, and the
-wait for `Server Online`. A failed start rolls back the engine, `config.lua`, `data/` and the commit by itself. The
+stopped (the old map kept in `map-backups`); a backup first (`backup.sh`, server up; it waits for the engine's
+"Saved in steps" line, 15 s at most); then `install_all.py --no-sql` on a **copy** of the server folder
+(`/opt/chaos-trial/server.new`) **while the game keeps running** (the minutes of the install; low CPU and disk priority).
+A failure there ends the update with "failed", the server never stopped and the checkout back where it was. Only then
+the server is stopped (it saves everyone), the files the running game changed meanwhile are carried into the copy
+(`chaos_stage_sync.py`; a file both the game and the install changed refuses the swap, the server starts again and
+nothing changes), the two folders are swapped by rename (the old one stays as `server.old`, the logs move along), the
+server started (that starts the kit's database), `install_all.py --only sql`, a restart, and the wait for `Server
+Online`. A failed start rolls back by renaming `server.old` back (seconds). The copy needs room for one more server
+folder on the same disk (a hard-linking `cp --reflink=auto` is used where the disk supports it); without room,
+`CHAOS_STAGING=0` or a mount-point folder the update installs with the server stopped, as before. Expected downtime:
+the stop, the swap, the database step and two boots (about a minute, not the install). The first update that brings
+this feature still runs the old script of the checkout it starts from (5 minutes); the next ones use the copy.
+The plan compile cache of `install_all.py` (`/var/lib/chaos/kit-update/cache`, `CHAOS_CACHE_DIR`) makes a rerun
+faster; the summary of `install_all.py` ends with the time of the steps. The
 XP rates of `config.lua` (the `experienceStages` table and the `rate*` lines) are kept across `install_all.py`, whose
 lategame step would put the release's table back. After the server: the signed client update of the release
 (`publish_client_update.sh`, when newer than the live one), the site's client downloads (`CHAOS_DL_DIR`, with
