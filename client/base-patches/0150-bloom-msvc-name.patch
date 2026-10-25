@@ -1,0 +1,54 @@
+# Chaos: Windows build fix of the map bloom (client/BASE.md "0150"; graphicalapplication.cpp; after 0001-0145).
+# Base patch 0132 named a local Size `small`. The Windows SDK header rpcndr.h has `#define small char`, so MSVC read
+# `const Size char(...)` and the Windows client of build 19 did not compile (error C2628 at the bloom code). The
+# variable is now `quarter`; nothing else changes. CI guard: client/tools/check_win_macros.py rejects Windows SDK
+# macro names (small, near, far, hyper, interface, ...) used as identifiers in the C++ lines of the base patches.
+--- a/src/framework/core/graphicalapplication.cpp
++++ b/src/framework/core/graphicalapplication.cpp
+@@ -1074,22 +1074,22 @@
+     PainterShaderProgramPtr blur = g_shaders.getShader("chaos_bloom_blur");
+     if (!extract || !blur || !m_mapFramebuffer || dest.isEmpty() || src.isEmpty())
+         return;
+-    const Size small(std::max(1, dest.width() / 4), std::max(1, dest.height() / 4));
++    const Size quarter(std::max(1, dest.width() / 4), std::max(1, dest.height() / 4));
+     const Size full = m_mapFramebuffer->getSize();
+     if (!m_bloomA) {
+         m_bloomA = g_framebuffers.createFrameBuffer();
+         m_bloomB = g_framebuffers.createFrameBuffer();
+     }
+-    m_bloomA->resize(small);
+-    m_bloomB->resize(small);
+-    const Rect smallRect(0, 0, small);
+-    const Rect smallSrc(0, 0, small);
++    m_bloomA->resize(quarter);
++    m_bloomB->resize(quarter);
++    const Rect smallRect(0, 0, quarter);
++    const Rect smallSrc(0, 0, quarter);
+ 
+     // 1. bright pass, 4 taps a quarter of a small pixel off the middle of each small pixel
+     m_bloomA->bind();
+     g_painter->clear(Color::black);
+     g_painter->setShaderProgram(extract);
+-    extract->setParams(0.5f * src.width() / small.width() / full.width(), 0.5f * src.height() / small.height() / full.height(), 0, 0);
++    extract->setParams(0.5f * src.width() / quarter.width() / full.width(), 0.5f * src.height() / quarter.height() / full.height(), 0, 0);
+     m_mapFramebuffer->draw(smallRect, src);
+     g_painter->resetShaderProgram();
+     m_bloomA->release();
+@@ -1098,7 +1098,7 @@
+     m_bloomB->bind();
+     g_painter->clear(Color::black);
+     g_painter->setShaderProgram(blur);
+-    blur->setParams(1.f / small.width(), 0, 0, 0);
++    blur->setParams(1.f / quarter.width(), 0, 0, 0);
+     m_bloomA->draw(smallRect, smallSrc);
+     g_painter->resetShaderProgram();
+     m_bloomB->release();
+@@ -1106,7 +1106,7 @@
+     m_bloomA->bind();
+     g_painter->clear(Color::black);
+     g_painter->setShaderProgram(blur);
+-    blur->setParams(0, 1.f / small.height(), 0, 0);
++    blur->setParams(0, 1.f / quarter.height(), 0, 0);
+     m_bloomB->draw(smallRect, smallSrc);
+     g_painter->resetShaderProgram();
+     m_bloomA->release();
