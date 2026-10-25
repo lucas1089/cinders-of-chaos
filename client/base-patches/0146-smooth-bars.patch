@@ -1,0 +1,354 @@
+# Chaos: eased health and mana bars with a chip trail (O229; client/BASE.md "0146"; src/client/chaosbars.h (new, pure),
+# creature.h/.cpp, luafunctions_client.cpp, mods/client_settings/classes/dataset.lua, options/graphics.otui; after 0001-0145).
+# The bar over a creature (Creature::drawInformation) set the width of the health rect from the percent at once, so every hit
+# was a jump. With the option on the bar is drawn at a displayed percent that eases to the real one and a hit leaves a pale
+# segment behind it (the "chip"):
+#  * chaos::bars::Track (chaosbars.h): the value last shown, the value it goes to and two start times. Everything is computed
+#    from g_clock at draw time (the pattern of 0142): no timer, no event, no per-frame state to update. A bar eases to a new
+#    value in 150 ms (ease-out) and reaches it exactly. A fall leaves a chip from where the bar stood (or, when a chip is on
+#    screen, from where that chip is) to the new value: it holds 250 ms, then slides down in 300 ms (smoothstep). A rise eases
+#    up and has no chip; an open chip is dropped.
+#  * Creature::drawInformation calls m_healthBar.observe(m_healthPercent, now) when it draws the bar (and m_manaBar.observe
+#    for the mana bar, local player and others), then draws the same filled rects as before: black background, the pale chip
+#    rect (only when it is at least one pixel wide), the health rect at the eased width. Filled rects only: no setMark,
+#    setScale, setRotation or clip, so the draw cache is not flushed.
+#  * A bar that has no value yet, or was not drawn for 1 s, takes its value at once. Creature::onAppear (m_removed: a new
+#    creature or one that comes back into view) and Creature::setHealthPercent (the first health, or any health while
+#    m_removed) reset both tracks, so a creature never slides in from 100.
+#  * Creature.setSmoothBars(bool) / isSmoothBars() (static, one switch; off in the engine, the overlay module game_visualfx
+#    turns it on from the option `smoothBars`). Option off: the stock lines run, the new tracks are neither touched nor read.
+#  * dataset.lua: option `smoothBars` (default on); its apply tells game_visualfx and game_chaoshud (the character plate eases
+#    the same way in Lua). graphics.otui: one checkbox "Smooth health bars" under "Ambient particles"; the visual
+#    effects panel grows from 295 to 314 px (19 px per row).
+# Cost with the option on: one clock read and a few float operations per drawn bar, one extra filled rect while a chip shows.
+# Known: bars of at most 25 px move in whole pixels, so a 1% hit is a chip of 0 or 1 px. The percent has a 1% step, so the
+# ease runs between two steps of the server, not between two exact hit points.
+# Checked: applies after 0001-0145 on the base tree with 0 fuzz; creature.cpp and luafunctions_client.cpp pass
+# g++ -fsyntax-only with no new error (creature.cpp keeps the 3 base errors); the header passes client/tools/chaosbars_test.cpp.
+# Not built, linked or run in a client; goes live with the next client build.
+--- a/src/client/creature.h
++++ b/src/client/creature.h
+@@ -27,6 +27,7 @@
+ #include "outfit.h"
+ #include "tile.h"
+ #include "mapview.h"
++#include "chaosbars.h"
+ #include <framework/core/scheduledevent.h>
+ #include <framework/core/declarations.h>
+ #include <framework/core/timer.h>
+@@ -132,6 +133,11 @@
+     // See chaoshitflash.h; the state is one start time and one strength per creature.
+     static void setHitTint(bool enabled) { s_hitTint = enabled; }
+     static bool isHitTint() { return s_hitTint; }
++    // Chaos (base patch 0146): the health and mana bars over a creature ease to a new value in about 150 ms, and a hit leaves
++    // a pale chip segment that holds 250 ms and slides down in 300 ms (Options > Graphics "Smooth health bars"; the overlay
++    // module game_visualfx sets it). See chaosbars.h; computed from the clock at draw time, filled rects only.
++    static void setSmoothBars(bool enabled) { s_smoothBars = enabled; }
++    static bool isSmoothBars() { return s_smoothBars; }
+     // Chaos (base patch 0111): the name and bars lifted over a look taller than the stock ones, in sprite pixels at
+     // 1x, per look type (client_chaos_infolift sets the table generated from the pair). Players and NPCs only.
+     static void setInformationLift(int lookType, int pixels);
+@@ -337,6 +343,9 @@
+     ticks_t m_hitTintStart = 0;
+     float m_hitTintPeak = 0.0f;
+     bool m_healthShown = false;
++    static bool s_smoothBars; // base patch 0146
++    chaos::bars::Track m_healthBar;
++    chaos::bars::Track m_manaBar;
+     OutfitOutline m_outline;
+     Color m_outfitColor;
+     ScheduledEventPtr m_outfitColorUpdateEvent;
+--- a/src/client/creature.cpp
++++ b/src/client/creature.cpp
+@@ -36,6 +36,7 @@
+ #include "creaturehit.h"
+ #include "chaosdeathfade.h"
+ #include "chaoshitflash.h"
++#include "chaosbars.h"
+ 
+ #include <framework/graphics/graphics.h>
+ #include <framework/core/eventdispatcher.h>
+@@ -188,6 +189,9 @@
+ // Chaos (base patch 0142): the hit flash tint (chaoshitflash.h); the budget caps the flashes alive at once
+ bool Creature::s_hitTint = false;
+ static chaos::hitflash::Budget s_hitTintBudget;
++// Chaos (base patch 0146): eased health and mana bars (chaosbars.h) and the pale chip colour
++bool Creature::s_smoothBars = false;
++static const Color s_barChipColor(236, 224, 200);
+ 
+ static TexturePtr softShadowTexture()
+ {
+@@ -526,7 +530,20 @@
+ 
+     // health rect is based on background rect, so no worries
+     Rect healthRect = backgroundRect.expanded(-1);
+-    healthRect.setWidth((m_healthPercent / 100.0) * 25);
++    // Chaos (base patch 0146): with the option on the bar is drawn at the eased percent and a hit leaves a chip behind it;
++    // with it off nothing below differs from the stock lines
++    Rect healthChipRect;
++    if (s_smoothBars) {
++        const int64_t barNow = g_clock.millis();
++        m_healthBar.observe(static_cast<float>(m_healthPercent), barNow);
++        const int shownWidth = chaos::bars::widthPx(m_healthBar.shown(barNow), 25);
++        const int chipWidth = chaos::bars::widthPx(m_healthBar.chipAt(barNow), 25);
++        healthRect.setWidth(shownWidth);
++        if (chipWidth > shownWidth)
++            healthChipRect = Rect(healthRect.left() + shownWidth, healthRect.top(), chipWidth - shownWidth, healthRect.height());
++    } else {
++        healthRect.setWidth((m_healthPercent / 100.0) * 25);
++    }
+ 
+     // draw
+     if (g_game.getFeature(Otc::GameBlueNpcNameColor) && isNpc() && m_healthPercent == 100 && !useGray)
+@@ -541,6 +558,8 @@
+             g_drawQueue->addTexturedRect(barRect, barTexture, Rect(0, 0, barTexture->getSize()));
+         }
+         g_drawQueue->addFilledRect(backgroundRect, Color::black);
++        if (healthChipRect.isValid())
++            g_drawQueue->addFilledRect(healthChipRect, s_barChipColor); // Chaos (base patch 0146)
+         g_drawQueue->addFilledRect(healthRect, fillColor);
+ 
+         if (getProgressBarPercent()) {
+@@ -590,7 +609,18 @@
+             g_drawQueue->addFilledRect(manaBg, Color::black);
+ 
+             Rect manaRect = manaBg.expanded(-1);
+-            manaRect.setWidth(((float)manaPercent / 100.f) * 25);
++            if (s_smoothBars) {
++                // Chaos (base patch 0146): the same ease and chip as the health bar
++                const int64_t barNow = g_clock.millis();
++                m_manaBar.observe(static_cast<float>(manaPercent), barNow);
++                const int shownWidth = chaos::bars::widthPxF(m_manaBar.shown(barNow), 25);
++                const int chipWidth = chaos::bars::widthPxF(m_manaBar.chipAt(barNow), 25);
++                manaRect.setWidth(shownWidth);
++                if (chipWidth > shownWidth)
++                    g_drawQueue->addFilledRect(Rect(manaRect.left() + shownWidth, manaRect.top(), chipWidth - shownWidth, manaRect.height()), s_barChipColor);
++            } else {
++                manaRect.setWidth(((float)manaPercent / 100.f) * 25);
++            }
+             g_drawQueue->addFilledRect(manaRect, Color::blue);
+         }
+     }
+@@ -822,6 +852,8 @@
+     if (m_removed) {
+         stopWalk();
+         m_removed = false;
++        m_healthBar.reset(); // Chaos (base patch 0146): a creature that returns into view shows its health, it does not slide
++        m_manaBar.reset();
+         callLuaField("onAppear");
+         // walk
+     } else if (m_oldPosition != m_position && m_oldPosition.isInRange(m_position, 1, 1) && m_allowAppearWalk) {
+@@ -1106,6 +1138,8 @@
+     bool changed = m_healthPercent != healthPercent;
+     if (changed)
+         startHitTint(m_healthPercent, healthPercent); // Chaos (base patch 0142): before the new value is stored
++    if (!m_healthShown || m_removed)
++        m_healthBar.reset(); // Chaos (base patch 0146): the health that comes with an appearance is a starting value
+     m_healthShown = true;
+     m_healthPercent = healthPercent;
+     if (changed) {
+--- a/src/client/luafunctions_client.cpp
++++ b/src/client/luafunctions_client.cpp
+@@ -694,6 +694,8 @@
+     g_lua.bindClassStaticFunction<Creature>("isDeathFade", &Creature::isDeathFade);
+     g_lua.bindClassStaticFunction<Creature>("setHitTint", &Creature::setHitTint); // base patch 0142
+     g_lua.bindClassStaticFunction<Creature>("isHitTint", &Creature::isHitTint);
++    g_lua.bindClassStaticFunction<Creature>("setSmoothBars", &Creature::setSmoothBars); // base patch 0146
++    g_lua.bindClassStaticFunction<Creature>("isSmoothBars", &Creature::isSmoothBars);
+     g_lua.bindClassStaticFunction<Creature>("setInformationLift", &Creature::setInformationLift);
+     g_lua.bindClassStaticFunction<Creature>("clearInformationLifts", &Creature::clearInformationLifts);
+     g_lua.bindClassStaticFunction<Creature>("getLookInformationLift", &Creature::getLookInformationLift);
+--- a/mods/client_settings/classes/dataset.lua
++++ b/mods/client_settings/classes/dataset.lua
+@@ -2191,6 +2191,18 @@
+     end,
+   },
+ 
++  -- Chaos (base patch 0146): health and mana bars ease and leave a chip (game_visualfx -> Creature.setSmoothBars, game_chaoshud)
++  smoothBars = {
++    value = true,
++    apply = function(value)
++      local m = modules.game_visualfx
++      if m and m.onOption then m.onOption('smoothBars', value) end
++      local hud = modules.game_chaoshud
++      if hud and hud.onOption then hud.onOption('smoothBars', value) end
++      return true
++    end,
++  },
++
+   enableShaders = {
+     value = true,
+     apply = function(value)
+--- a/mods/client_settings/options/graphics.otui
++++ b/mods/client_settings/options/graphics.otui
+@@ -452,7 +452,7 @@
+ 
+   FlatPanel
+     // Chaos (base patch 0126, overlay module game_visualfx): the dark-fantasy look of the map, one switch per effect
+-    size: 505 295
++    size: 505 314
+     anchors.top: prev.bottom
+     anchors.right: parent.right
+     anchors.left: parent.left
+@@ -741,6 +741,25 @@
+         local value = modules.client_settings.getOption('ambientParticles')
+         self:setChecked(value ~= false)
+ 
++    SettingsCheckBox
++      id: smoothBars
++      size: 12 12
++      !text: tr('Smooth health bars')
++      font: $var-cip-font
++      text-auto-resize: true
++      color: $var-text-cip-color
++      text-offset: 14 -2
++      anchors.left: parent.left
++      anchors.top: ambientParticles.bottom
++      margin-top: 7
++      margin-left: 16
++      image-source: /images/ui/checkbox
++      image-clip: 0 0 12 12
++      !tooltip: tr('Health and mana bars over creatures and on your own plate move smoothly to a new value in about a seventh of a second.\nWhen you lose health, a pale piece stays for a moment and then slides down. It costs almost nothing.')
++      @onSetup: |
++        local value = modules.client_settings.getOption('smoothBars')
++        self:setChecked(value ~= false)
++
+     UIWidget
+       size: 12 12
+       anchors.top: parent.top
+--- a/src/client/chaosbars.h
++++ b/src/client/chaosbars.h
+@@ -0,0 +1,133 @@
++// Cinders of Chaos (base patch 0146): the eased health and mana bars over creatures, pure and header-only so
++// client/tools/chaosbars_test.cpp can run it without the engine. A bar keeps the value it was last shown at, the value it
++// is going to and two start times. Everything the bar draws is computed from the clock at draw time (no timer, no event):
++//  * the bar eases to a new value in kEaseMs (ease-out);
++//  * a hit leaves a pale "chip" segment between the new value and where the bar stood. It holds for kHoldMs, then slides
++//    down to the bar in kSlideMs. A second hit while it shows starts from the chip level that is on screen;
++//  * a heal eases up and has no chip (an open chip is dropped);
++//  * a bar that was not drawn for kStaleMs, or that has no value yet, takes the value at once: a creature that appears or
++//    returns into view never slides in from 100.
++#ifndef CHAOSBARS_H
++#define CHAOSBARS_H
++
++#include <algorithm>
++#include <cstdint>
++
++namespace chaos {
++namespace bars {
++
++constexpr int kEaseMs = 150;    // a bar reaches a new value
++constexpr int kHoldMs = 250;    // the chip stands still after the hit
++constexpr int kSlideMs = 300;   // then it slides down to the bar
++constexpr int kStaleMs = 1000;  // not drawn for this long: the next value is taken at once
++
++// the pixel width of a bar of `span` pixels at `percent`; the same truncation the stock bars use (the health bar does it
++// in double, the mana bar in float), so a bar at rest is exactly as wide as it was without the option
++inline int widthPx(double percent, int span)
++{
++    return static_cast<int>((percent / 100.0) * span);
++}
++
++inline int widthPxF(float percent, int span)
++{
++    return static_cast<int>((percent / 100.f) * static_cast<float>(span));
++}
++
++// 0..1 in, 0..1 out; fast first, slow end
++inline float easeOut(float u)
++{
++    u = std::max(0.0f, std::min(1.0f, u));
++    const float r = 1.0f - u;
++    return 1.0f - r * r;
++}
++
++// 0..1 in, 0..1 out; soft start and end
++inline float smoothStep(float u)
++{
++    u = std::max(0.0f, std::min(1.0f, u));
++    return u * u * (3.0f - 2.0f * u);
++}
++
++class Track
++{
++public:
++    // forget everything: the next observe() takes its value as it is (a creature that appears or returns into view)
++    void reset() { m_valid = false; }
++
++    // call with the real value (a percent, 0..100) every time the bar is drawn
++    void observe(float value, int64_t now)
++    {
++        if (!m_valid || now < m_lastSeen || now - m_lastSeen > kStaleMs) {
++            m_valid = true;
++            m_from = m_target = m_chip = value;
++            m_easeStart = m_chipStart = now;
++            m_lastSeen = now;
++            return;
++        }
++        m_lastSeen = now;
++        if (value == m_target)
++            return;
++        const float cur = shown(now);
++        const float chip = chipAt(now);
++        m_from = cur;
++        m_target = value;
++        m_easeStart = now;
++        if (value < cur) {
++            m_chip = std::max(chip, cur); // the chip starts where the bar (or the chip still on screen) stood
++            m_chipStart = now;
++        } else {
++            m_chip = cur; // a heal has no chip: the top of the chip never rises above the bar
++            m_chipStart = now;
++        }
++    }
++
++    // the value the bar is drawn at; exactly the real value once the ease is over
++    float shown(int64_t now) const
++    {
++        if (!m_valid)
++            return m_target;
++        const int64_t el = now - m_easeStart;
++        if (el >= kEaseMs)
++            return m_target;
++        if (el <= 0)
++            return m_from;
++        return m_from + (m_target - m_from) * easeOut(static_cast<float>(el) / static_cast<float>(kEaseMs));
++    }
++
++    // the top of the chip; never below the bar, equal to it when there is no chip
++    float chipAt(int64_t now) const
++    {
++        const float s = shown(now);
++        if (!m_valid)
++            return s;
++        const int64_t el = now - m_chipStart;
++        float c;
++        if (el <= kHoldMs)
++            c = m_chip;
++        else if (el >= kHoldMs + kSlideMs)
++            c = m_target;
++        else
++            c = m_chip + (m_target - m_chip) * smoothStep(static_cast<float>(el - kHoldMs) / static_cast<float>(kSlideMs));
++        return std::max(c, s);
++    }
++
++    // true when the bar is at its value and no chip shows (nothing more to draw than the plain bar)
++    bool settled(int64_t now) const { return shown(now) == m_target && chipAt(now) == m_target; }
++
++    bool valid() const { return m_valid; }
++    float target() const { return m_target; }
++
++private:
++    bool m_valid = false;
++    float m_from = 0.0f;
++    float m_target = 0.0f;
++    float m_chip = 0.0f;
++    int64_t m_easeStart = 0;
++    int64_t m_chipStart = 0;
++    int64_t m_lastSeen = 0;
++};
++
++} // namespace bars
++} // namespace chaos
++
++#endif

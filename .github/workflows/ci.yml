@@ -441,6 +441,16 @@ jobs:
           g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" client/tools/chaoshitflash_test.cpp -o "$d/chaoshitflash_asan"
           "$d/chaoshitflash_asan"
 
+      - name: Eased bars bookkeeping (C++; header from base patch 0146)
+        run: |
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/client\/chaosbars\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            client/base-patches/0146-smooth-bars.patch > "$d/chaosbars.h"
+          g++ -std=c++17 -O1 -Wall -Wextra -I "$d" client/tools/chaosbars_test.cpp -o "$d/chaosbars_test"
+          "$d/chaosbars_test"
+          g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" client/tools/chaosbars_test.cpp -o "$d/chaosbars_asan"
+          "$d/chaosbars_asan"
+
       - name: Light map fill, same bytes and benchmark check (C++; header from base patch 0140)
         run: |
           d=$(mktemp -d)

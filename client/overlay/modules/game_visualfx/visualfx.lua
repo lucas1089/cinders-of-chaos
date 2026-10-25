@@ -38,6 +38,10 @@
 --   death fade    a creature that dies fades out over about 350 ms (O221, base patch 0139): this file only calls
 --                  Creature.setDeathFade; the engine keeps a copy of the last frame (at most 32, none for the local player) and
 --                  draws it with falling alpha. The corpse and the game are not delayed.
+--   smooth bars    the health and mana bars over creatures ease to a new value in 150 ms and a hit leaves a pale chip that holds 250
+--                  ms and slides down in 300 ms (O229, base patch 0146): this file only calls Creature.setSmoothBars; the maths is
+--                  in the engine (chaosbars.h), computed from the clock at draw time. The character plate does the same in Lua
+--                  (game_chaoshud, hudbars_logic.lua), told by the settings option's apply.
 -- A client without base patch 0126 has none of the C++ functions: the flash, shake and shadow do nothing, the grade (shader
 -- only) still works. Every engine call is guarded.
 local L = VisualFxLogic
@@ -210,6 +214,11 @@ end
 -- ---------------------------------------------------------------- hit flash tint (O224)
 local function applyHitTint()
   if Creature and Creature.setHitTint then pcall(Creature.setHitTint, optionValue('hitFlash')) end
+end
+
+-- ---------------------------------------------------------------- smooth health bars (O229)
+local function applySmoothBars()
+  if Creature and Creature.setSmoothBars then pcall(Creature.setSmoothBars, optionValue('smoothBars')) end
 end
 
 -- ---------------------------------------------------------------- target, follow and hover outline (O216)
@@ -491,6 +500,8 @@ function onOption(name, value)
     applyDeathFade()
   elseif name == 'hitFlash' then
     applyHitTint()
+  elseif name == 'smoothBars' then
+    applySmoothBars()
   elseif name == 'screenShake' and value == false then
     stopShake()
   end
@@ -509,6 +520,7 @@ function reapply()
   applySceneFade()
   applyDeathFade()
   applyHitTint()
+  applySmoothBars()
 end
 
 -- ---------------------------------------------------------------- lifecycle
@@ -564,6 +576,7 @@ function terminate()
   if AnimatedText and AnimatedText.setSoftMotion then pcall(AnimatedText.setSoftMotion, false) end
   if Creature and Creature.setDeathFade then pcall(Creature.setDeathFade, false) end
   if Creature and Creature.setHitTint then pcall(Creature.setHitTint, false) end
+  if Creature and Creature.setSmoothBars then pcall(Creature.setSmoothBars, false) end
   local panel = mapPanel()
   if panel and panel.getShader and panel:getShader() == GRADE then panel:setShader('') end
   handlers = {}
