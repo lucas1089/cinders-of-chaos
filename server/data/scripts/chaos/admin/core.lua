@@ -119,6 +119,15 @@ function ChaosAdmin.targetOnline(actor, name, allowSelfOnly)
 	return t
 end
 
+-- SQL defence in depth: a number for a query as a plain integer string ("42"), or nil when it is not a finite whole
+-- number (a string that is not one, NaN, infinity, 1.5, nil). Floor first: "7.0" and 1e3 style values are accepted as 7 and 1000.
+-- Callers refuse on nil; ids and addresses never reach a query through ".." unchecked.
+function ChaosAdmin.sqlInt(x)
+	x = tonumber(x)
+	if not x or x ~= x or x == math.huge or x == -math.huge or math.floor(x) ~= x then return nil end
+	return string.format("%d", x)
+end
+
 -- Offline lookup in the DB. Returns {id=, account_id=, name=, group_id=} or nil.
 function ChaosAdmin.dbPlayer(name)
 	local rid = db.storeQuery("SELECT `id`, `account_id`, `name`, `group_id` FROM `players` WHERE `name` = " .. db.escapeString(name))

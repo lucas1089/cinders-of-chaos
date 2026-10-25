@@ -33,7 +33,12 @@ RestartSec=5
 # after an unclean stop (crash, signal, kill): keep the last 200 log lines in /var/log/chaos/crashes/ and post an alert
 # when CHAOS_ALERT_WEBHOOK is set; "+" runs it as root so it can write there. A clean stop (daily server save,
 # systemctl stop) records nothing. A hang (alive but stuck) is caught by chaos-watchdog.timer.
-ExecStopPost=+/opt/chaos/repo/server/tools/chaos_crashlog.sh
+# Root runs a file of the repository checkout here, so the checkout must not be writable by the service user (that would
+# be a root escalation: crash the engine after planting a script). The inline guard below skips the script, and says so
+# in the journal, when find fails (no such path, user or group) or the script or one of its directories belongs to "chaos", has group "chaos" or is writable by group
+# or others. Keep /opt/chaos/repo owned by root with mode 0755 (the docs/LAUNCH.md checkout steps; git as root). "$$" is
+# systemd's escape for a literal "$".
+ExecStopPost=+/bin/sh -c 'S=/opt/chaos/repo/server/tools/chaos_crashlog.sh; if ! O=$$(find -L /opt/chaos/repo /opt/chaos/repo/server /opt/chaos/repo/server/tools "$$S" -maxdepth 0 -user chaos -print -o -group chaos -print -o -perm /022 -print 2>/dev/null) || [ -n "$$O" ]; then echo "chaos-server: $$S is writable by the service user or by group/others, crash record skipped" >&2; exit 0; fi; exec "$$S"'
 # a full save of a busy server can take a while; do not SIGKILL it halfway
 TimeoutStopSec=180
 KillSignal=SIGTERM
@@ -41,14 +46,44 @@ KillSignal=SIGTERM
 StandardOutput=append:/var/log/chaos/server.log
 StandardError=append:/var/log/chaos/server.log
 LimitNOFILE=65536
-LimitCORE=infinity
-# hardening that leaves the server folder writable (saves, data/chaos_clientservices.json, data/logs)
+# no core dumps. A core of the engine holds its whole memory: the database password (config.lua / chaos.env), the RSA
+# private key, the client guard key, session keys and every online player's data, and systemd-coredump or a core file in
+# the working directory (/opt/chaos/server, owned by "chaos") would keep it on disk. The crash record
+# (chaos_crashlog.sh: result, exit status, the last 200 console lines) is what the operations guide uses; nothing in the
+# repository needs a core. To debug one crash, switch cores on for that run only (docs/LAUNCH.md "Crash loop").
+LimitCORE=0
+# hardening that leaves the server folder writable (saves, data/chaos_clientservices.json, data/logs).
+# ProtectSystem=full (not strict) on purpose: /usr, /boot and /etc are read only, the rest stays writable. strict needs a
+# complete list of what the engine writes. The Lua side was audited (data/chaos_clientservices.json,
+# data/chaos_tree_picks_*.csv, helpai.queue / .answers / .alive and data/logs/clientguard.log in /opt/chaos/server;
+# os.tmpname files in PrivateTmp; the console log is opened by systemd) but the base engine's C++ is not in the repository,
+# so nobody can prove it writes nowhere else. A wrong guess stops saves on the live server. Not proven, so not done.
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=full
 ProtectHome=true
+ProtectProc=invisible
 ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
 ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+PrivateDevices=true
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+LockPersonality=true
+# AF_NETLINK: the resolver (getaddrinfo) and interface lookups use it. AF_UNIX: the database socket when mysqlHost is
+# "localhost", and /dev/log. Not MemoryDenyWriteExecute (LuaJIT needs writable + executable pages) and no SystemCallFilter.
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK
+SystemCallArchitectures=native
+# the ports are 7171, 7172 and the cast on 127.0.0.1:7179 (all above 1024) and the unit runs as "chaos", not root: no
+# capability is needed. (curl and ls, started by Lua with os.execute / io.popen, need none either.)
+CapabilityBoundingSet=
+AmbientCapabilities=
+# no UMask= here: the website (www-data) reads files under /opt/chaos/server/data and chaos-ctl / the admin app read the
+# logs, so the default 0022 stays.
 
 [Install]
 WantedBy=multi-user.target

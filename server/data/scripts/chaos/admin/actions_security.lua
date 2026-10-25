@@ -7,13 +7,16 @@ reg{id = "account_lookup", name = "Account lookup", description = "Look up an ac
 	handler = function(actor, p)
 		local q
 		if tonumber(p.account) then
-			q = "SELECT `id`,`name`,`type` FROM `accounts` WHERE `id` = " .. math.floor(tonumber(p.account))
+			local aid = ChaosAdmin.sqlInt(math.floor(tonumber(p.account)))
+			if not aid then return false, "Not a valid account id." end
+			q = "SELECT `id`,`name`,`type` FROM `accounts` WHERE `id` = " .. aid
 		else
 			q = "SELECT `id`,`name`,`type` FROM `accounts` WHERE `name` = " .. db.escapeString(p.account)
 		end
 		local rid = db.storeQuery(q)
 		if not rid then return false, "Account not found." end
-		local id = result.getNumber(rid, "id")
+		local id = ChaosAdmin.sqlInt(result.getNumber(rid, "id"))
+		if not id then result.free(rid); return false, "Account not found." end
 		local lines = {"Account #" .. id .. " '" .. result.getString(rid, "name") .. "'  type " .. result.getNumber(rid, "type")}
 		result.free(rid)
 		local ban = db.storeQuery("SELECT `reason`,`expires_at` FROM `account_bans` WHERE `account_id` = " .. id)
@@ -62,7 +65,9 @@ reg{id = "ip_ban", name = "IP ban", description = "Ban an IP address (or the cur
 			ip = victim:getIp()
 		end
 		if ip == 0 or ip == actor:getIp() then return false, "Refusing to ban that IP." end
-		local rid = db.storeQuery("SELECT 1 FROM `ip_bans` WHERE `ip` = " .. ip)
+		local ipSql = ChaosAdmin.sqlInt(ip)
+		if not ipSql then return false, "Not a valid IP." end
+		local rid = db.storeQuery("SELECT 1 FROM `ip_bans` WHERE `ip` = " .. ipSql)
 		if rid then result.free(rid); return false, "IP is already banned." end
 		local now = os.time()
 		db.query(string.format("INSERT INTO `ip_bans` (`ip`,`reason`,`banned_at`,`expires_at`,`banned_by`) VALUES (%d,%s,%d,%d,%d)",
@@ -74,7 +79,8 @@ reg{id = "ip_ban", name = "IP ban", description = "Ban an IP address (or the cur
 reg{id = "ip_unban", name = "IP unban", description = "Remove an IP ban.",
 	params = {{name = "ip", label = "IP a.b.c.d", type = "ip"}},
 	handler = function(actor, p)
-		local ip = ChaosAdmin.stringToIp(p.ip)
+		local ip = ChaosAdmin.sqlInt(ChaosAdmin.stringToIp(p.ip))
+		if not ip then return false, "Not a valid IP." end
 		db.query("DELETE FROM `ip_bans` WHERE `ip` = " .. ip)
 		return true, "IP ban removed (if any) for " .. p.ip .. "."
 	end}

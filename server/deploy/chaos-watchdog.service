@@ -8,3 +8,21 @@ After=chaos-server.service
 [Service]
 Type=oneshot
 ExecStart=/usr/bin/python3 -I /opt/chaos/repo/server/tools/chaos_watchdog.py --unit chaos-server --port 7171
+# runs as root (systemctl restart). It writes /var/lib/chaos/watchdog.json and /var/log/chaos/crashes/watchdog.log, so
+# /var stays writable (ProtectSystem=full); it needs no home, no devices and no kernel interfaces.
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=full
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+ProtectKernelLogs=true
+ProtectClock=true
+ProtectHostname=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+LockPersonality=true
+SystemCallArchitectures=native
+LimitCORE=0
