@@ -1,0 +1,240 @@
+# Chaos: soft glow (bloom) on bright light only (O210; src/framework/core/graphicalapplication.h/.cpp, graphics/painter.h/.cpp,
+# luafunctions.cpp, and Lua: mods/client_settings/classes/dataset.lua, options/graphics.otui; after 0001-0131). Owner overlay
+# module game_visualfx (client/MANIFEST.md "Visual effects") owns the option and the shaders. The owner's rule: the biome's own
+# colours stay; only what is already bright gets a halo.
+#  * g_app.setMapBloom(enabled, strength) / g_app.isMapBloom(): GraphicalApplication::drawMapBloom runs on the graphics thread
+#    right after the map picture is drawn to the screen (both render loops). Off (the default) = one atomic read, no buffers.
+#    On: the map framebuffer source rect is drawn at 1/4 size into bloom buffer A with the shader chaos_bloom_extract (only a
+#    luma above 0.80, smooth to 0.96, passes; everything else is black), blurred A -> B -> A by chaos_bloom_blur (one horizontal
+#    and one vertical pass, 5 bilinear taps each), and A is drawn once over the map rect at the strength with the new
+#    Painter::CompositionMode_Screen (src + dst * (1 - src)). Black adds nothing, white cannot get whiter, so no pixel far from a
+#    bright one changes and the picture is never washed out; only dark pixels next to a bright one pick up the halo.
+#  * The two shaders are created by game_visualfx (data/shaders/chaos_bloom_*.frag); a missing shader skips the glow.
+#  * dataset.lua: option `bloom` (default off); options/graphics.otui: an eighth checkbox "Soft glow" under "Rain and weather"
+#    (the panel grows from 143 to 162 px).
+# Cost in client/BASE.md. Checked: applies cleanly after 0001-0131 (no fuzz); the touched .cpp files pass g++ -fsyntax-only (the
+# only errors are the base's own g_app / g_atlas declarations of a build without the framework defines); not run in a client.
+--- a/src/framework/core/graphicalapplication.h
++++ b/src/framework/core/graphicalapplication.h
+@@ -87,6 +87,14 @@
+     void scaleDown();
+     void scale(float value);
+     void setSmooth(bool value);
++    // Chaos (base patch 0132): the soft glow of bright light on the map picture (Options > Graphics "Soft glow"; the overlay
++    // module game_visualfx sets it). Off = no work at all. strength 0..1 is the weight of the halo; see client/BASE.md.
++    void setMapBloom(bool enabled, float strength)
++    {
++        m_mapBloom = enabled;
++        m_mapBloomStrength = std::max(0.f, std::min(1.f, strength));
++    }
++    bool isMapBloom() const { return m_mapBloom.load(); }
+ 
+     void doMapScreenshot(std::string fileName);
+ 
+@@ -109,6 +117,10 @@
+   std::atomic_bool m_vsyncRequested = false;
+   std::atomic_bool m_unlimitedFps = false;
+   std::atomic_bool m_mapSmooth = true;
++  std::atomic_bool m_mapBloom = false;
++  std::atomic<float> m_mapBloomStrength = 0.35f;
++  FrameBufferPtr m_bloomA, m_bloomB;
++  void drawMapBloom(const Rect& dest, const Rect& src);
+   std::atomic_bool m_cacheUI = true;
+   std::atomic_bool m_mustRepaint = false;
+   stdext::boolean<false> m_onInputEvent;
+--- a/src/framework/core/graphicalapplication.cpp
++++ b/src/framework/core/graphicalapplication.cpp
+@@ -309,6 +309,7 @@
+         g_graphicsDispatcher.poll();
+         m_framebuffer = nullptr;
+         m_mapFramebuffer = nullptr;
++        m_bloomA = m_bloomB = nullptr; // Chaos (base patch 0132)
+         m_uiFramebuffer = nullptr;
+         g_drawQueue = nullptr;
+         browserRunState.reset();
+@@ -458,6 +459,7 @@
+         m_mapFramebuffer->draw(state.toDrawMapQueue->getFrameBufferDest(), state.toDrawMapQueue->getFrameBufferSrc());
+         if (shader)
+             g_painter->resetShaderProgram();
++        drawMapBloom(state.toDrawMapQueue->getFrameBufferDest(), state.toDrawMapQueue->getFrameBufferSrc());
+     }
+     {
+         AutoStat stat(STATS_RENDER, "DrawMapForeground");
+@@ -828,6 +830,7 @@
+                 if (shader) {
+                     g_painter->resetShaderProgram();
+                 }
++                drawMapBloom(toDrawMapQueue->getFrameBufferDest(), toDrawMapQueue->getFrameBufferSrc());
+             }
+             if(toDrawMapForegroundQueue) {
+                 AutoStat s(STATS_RENDER, "DrawMapForeground");
+@@ -901,6 +904,7 @@
+ 
+     m_framebuffer = nullptr;
+     m_mapFramebuffer = nullptr;
++    m_bloomA = m_bloomB = nullptr; // Chaos (base patch 0132)
+     m_uiFramebuffer = nullptr;
+     g_drawQueue = nullptr;
+     m_stopping = false;
+@@ -1045,6 +1049,70 @@
+     });
+ }
+ 
++// Chaos (base patch 0132): the soft glow. Graphics thread, right after the map picture is on the screen. Four small draws:
++//  1. chaos_bloom_extract: the map picture (source rect) at 1/4 size into bloom A, keeping only what is bright (luma over 0.80,
++//     smooth up to 0.96); everything else becomes black, so the biome's own colours are never in the glow;
++//  2. chaos_bloom_blur horizontal, A -> B; 3. chaos_bloom_blur vertical, B -> A (5 bilinear taps each, about 13 screen pixels);
++//  4. A is drawn over the map rect with the screen blend (src + dst * (1 - src)) at the option's strength: black adds nothing,
++//     and a pixel that is already white cannot get whiter, so only the dark pixels next to a bright one pick up a halo.
++// Off, or a missing shader: no buffers and no draws. Cost in client/BASE.md.
++void GraphicalApplication::drawMapBloom(const Rect& dest, const Rect& src)
++{
++    if (!m_mapBloom.load()) {
++        if (m_bloomA || m_bloomB) // memory goes back when the option is turned off
++            m_bloomA = m_bloomB = nullptr;
++        return;
++    }
++    PainterShaderProgramPtr extract = g_shaders.getShader("chaos_bloom_extract");
++    PainterShaderProgramPtr blur = g_shaders.getShader("chaos_bloom_blur");
++    if (!extract || !blur || !m_mapFramebuffer || dest.isEmpty() || src.isEmpty())
++        return;
++    const Size small(std::max(1, dest.width() / 4), std::max(1, dest.height() / 4));
++    const Size full = m_mapFramebuffer->getSize();
++    if (!m_bloomA) {
++        m_bloomA = g_framebuffers.createFrameBuffer();
++        m_bloomB = g_framebuffers.createFrameBuffer();
++    }
++    m_bloomA->resize(small);
++    m_bloomB->resize(small);
++    const Rect smallRect(0, 0, small);
++    const Rect smallSrc(0, 0, small);
++
++    // 1. bright pass, 4 taps a quarter of a small pixel off the middle of each small pixel
++    m_bloomA->bind();
++    g_painter->clear(Color::black);
++    g_painter->setShaderProgram(extract);
++    extract->setParams(0.5f * src.width() / small.width() / full.width(), 0.5f * src.height() / small.height() / full.height(), 0, 0);
++    m_mapFramebuffer->draw(smallRect, src);
++    g_painter->resetShaderProgram();
++    m_bloomA->release();
++
++    // 2 and 3. the separable blur
++    m_bloomB->bind();
++    g_painter->clear(Color::black);
++    g_painter->setShaderProgram(blur);
++    blur->setParams(1.f / small.width(), 0, 0, 0);
++    m_bloomA->draw(smallRect, smallSrc);
++    g_painter->resetShaderProgram();
++    m_bloomB->release();
++
++    m_bloomA->bind();
++    g_painter->clear(Color::black);
++    g_painter->setShaderProgram(blur);
++    blur->setParams(0, 1.f / small.height(), 0, 0);
++    m_bloomB->draw(smallRect, smallSrc);
++    g_painter->resetShaderProgram();
++    m_bloomA->release();
++
++    // 4. the one additive composite over the map rect
++    const float s = m_mapBloomStrength.load();
++    g_painter->setCompositionMode(Painter::CompositionMode_Screen);
++    g_painter->setColor(Color(s, s, s, 1.f));
++    m_bloomA->draw(dest, smallRect);
++    g_painter->resetColor();
++    g_painter->resetCompositionMode();
++}
++
+ void GraphicalApplication::doMapScreenshot(std::string fileName)
+ {
+     if (!m_mapFramebuffer) return;
+--- a/src/framework/graphics/painter.h
++++ b/src/framework/graphics/painter.h
+@@ -46,7 +46,8 @@
+         CompositionMode_Light,
+         CompositionMode_AlphaZeroing,
+         CompositionMode_AlphaRestoring,
+-        CompositionMode_ZeroAlphaOverrite
++        CompositionMode_ZeroAlphaOverrite,
++        CompositionMode_Screen // Chaos (base patch 0132): src + dst * (1 - src), never above 1; the soft glow
+ 
+     };
+     enum DepthFunc {
+--- a/src/framework/graphics/painter.cpp
++++ b/src/framework/graphics/painter.cpp
+@@ -378,6 +378,9 @@
+     case CompositionMode_ZeroAlphaOverrite:
+         glBlendFuncSeparate(GL_ONE_MINUS_DST_ALPHA, GL_DST_ALPHA, GL_ONE, GL_ONE);
+         break;
++    case CompositionMode_Screen: // Chaos (base patch 0132)
++        glBlendFunc(GL_ONE_MINUS_DST_COLOR, GL_ONE);
++        break;
+     }
+ }
+ 
+--- a/src/framework/luafunctions.cpp
++++ b/src/framework/luafunctions.cpp
+@@ -370,6 +370,8 @@
+     g_lua.bindSingletonFunction("g_app", "scaleUp", &GraphicalApplication::scaleUp, &g_app);
+     g_lua.bindSingletonFunction("g_app", "scale", &GraphicalApplication::scale, &g_app);
+     g_lua.bindSingletonFunction("g_app", "setSmooth", &GraphicalApplication::setSmooth, &g_app);
++    g_lua.bindSingletonFunction("g_app", "setMapBloom", &GraphicalApplication::setMapBloom, &g_app);
++    g_lua.bindSingletonFunction("g_app", "isMapBloom", &GraphicalApplication::isMapBloom, &g_app);
+     g_lua.bindSingletonFunction("g_app", "doMapScreenshot", &GraphicalApplication::doMapScreenshot, &g_app);
+ 
+     // AdaptiveRenderer
+--- a/mods/client_settings/classes/dataset.lua
++++ b/mods/client_settings/classes/dataset.lua
+@@ -2105,6 +2105,16 @@
+     end,
+   },
+ 
++  -- Chaos (base patch 0132): a soft glow around bright light on the map (off by default; game_visualfx -> g_app.setMapBloom)
++  bloom = {
++    value = false,
++    apply = function(value)
++      local m = modules.game_visualfx
++      if m and m.onOption then m.onOption('bloom', value) end
++      return true
++    end,
++  },
++
+   enableShaders = {
+     value = true,
+     apply = function(value)
+--- a/mods/client_settings/options/graphics.otui
++++ b/mods/client_settings/options/graphics.otui
+@@ -452,7 +452,7 @@
+ 
+   FlatPanel
+     // Chaos (base patch 0126, overlay module game_visualfx): the dark-fantasy look of the map, one switch per effect
+-    size: 505 143
++    size: 505 162
+     anchors.top: prev.bottom
+     anchors.right: parent.right
+     anchors.left: parent.left
+@@ -589,6 +589,25 @@
+         local value = modules.client_settings.getOption('weather')
+         self:setChecked(value ~= false)
+ 
++    SettingsCheckBox
++      id: bloom
++      size: 12 12
++      !text: tr('Soft glow')
++      font: $var-cip-font
++      text-auto-resize: true
++      color: $var-text-cip-color
++      text-offset: 14 -2
++      anchors.left: parent.left
++      anchors.top: weather.bottom
++      margin-top: 7
++      margin-left: 16
++      image-source: /images/ui/checkbox
++      image-clip: 0 0 12 12
++      !tooltip: tr('A soft halo around very bright light: spell effects, missiles, fire and lava. Only what is\nalready bright glows; the colours of the ground and the biome stay as they are. It costs a\nlittle on a weak computer and is off until you turn it on.')
++      @onSetup: |
++        local value = modules.client_settings.getOption('bloom')
++        self:setChecked(value == true)
++
+     UIWidget
+       size: 12 12
+       anchors.top: parent.top
