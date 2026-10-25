@@ -235,6 +235,18 @@ jobs:
           g++ -std=c++17 -O1 -Wall -Wextra -I "$d" server/tools/packet_compress_test.cpp -lz -o "$d/packet_compress_test"
           "$d/packet_compress_test"
 
+      - name: Pathfinding node store and benchmark (C++; header from server src-patch 0070)
+        run: |
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/chaospathing\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            server/src-patches/0070-cheaper-pathfinding.patch > "$d/chaospathing.h"
+          g++ -std=c++17 -O1 -Wall -Wextra -I "$d" server/tools/chaospathing_test.cpp -o "$d/chaospathing_test"
+          "$d/chaospathing_test"
+          g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" server/tools/chaospathing_test.cpp -o "$d/chaospathing_asan"
+          "$d/chaospathing_asan"
+          g++ -std=c++17 -O2 -Wall -Wextra -I "$d" server/tools/path_bench.cpp -o "$d/path_bench"
+          "$d/path_bench" --check
+
       - name: Incremental save, pure parts (C++; header from server src-patch 0026)
         run: |
           d=$(mktemp -d)

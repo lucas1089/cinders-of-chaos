@@ -1,0 +1,347 @@
+# Cheaper monster pathfinding (O211; server/README.md "Cheaper monster pathfinding (O211)").
+# Every path a creature walks to a target comes out of Map::getPathMatching (monsters chasing, summons following, a
+# player's auto-walk, the Lua getPathTo calls). The search itself was most of its cost, not the tile tests: the stock
+# AStarNodes zeroed 12 KB of arrays per search, put every node into a std::unordered_map (one heap allocation per
+# node and per search), and found the next node to expand by scanning every node ever created. Now:
+#   * src/chaospathing.h (new, header only, no engine types; server/tools/chaospathing_test.cpp and
+#     server/tools/path_bench.cpp build it alone): ChaosPath::NodeStore keeps the nodes in arrays that are not cleared,
+#     the node table as open addressing with a generation stamp, and the open list as a binary heap with lazy deletion
+#     ordered by (f, node index), which is exactly the node the old scan picked (the lowest f, the lowest index among
+#     equals). So every path, every search that fails and every node count is the same as before; the test compares the
+#     two stores on 16000 random searches. One store per thread is reused (ChaosPath::Lease); a search that starts while
+#     another one holds it gets a store of its own.
+#   * map.h / map.cpp: AStarNodes keeps its interface and forwards to the store. Map::getPathMatching is untouched.
+# Same behaviour on purpose: nothing that decides when a creature searches (Creature::onThink, goToFollowCreature,
+# the 2 s refresh) or what it does with the answer changed. A search memo that skipped repeated searches was measured and
+# left out (it saved 3-20% of the searches and changed how a pack reroutes; README).
+--- a/src/map.h
++++ b/src/map.h
+@@ -8,6 +8,7 @@
+ #include "item.h"
+ #include "fileloader.h"
+ 
++#include "chaospathing.h"
+ #include "tools.h"
+ #include "tile.h"
+ #include "town.h"
+@@ -34,6 +35,8 @@
+ static constexpr int32_t MAP_NORMALWALKCOST = 10;
+ static constexpr int32_t MAP_DIAGONALWALKCOST = 25;
+ 
++// Chaos (patch 0070): the nodes live in ChaosPath::NodeStore (src/chaospathing.h), one reused store per thread: same
++// answers as the stock class, no 12 KB zeroing, no heap allocation per node, no scan of every node per expansion.
+ class AStarNodes
+ {
+ 	public:
+@@ -50,11 +53,7 @@
+ 		static int_fast32_t getTileWalkCost(const Creature& creature, const Tile* tile);
+ 
+ 	private:
+-		AStarNode nodes[MAX_NODES];
+-		bool openNodes[MAX_NODES];
+-		std::unordered_map<uint32_t, AStarNode*> nodeTable;
+-		size_t curNode;
+-		int_fast32_t closedNodes;
++		ChaosPath::Lease<ChaosPath::NodeStore<AStarNode, MAX_NODES>> store;
+ };
+ 
+ using SpectatorCache = std::map<Position, SpectatorVec>;
+--- a/src/map.cpp
++++ b/src/map.cpp
+@@ -811,89 +811,38 @@
+ // AStarNodes
+ 
+ AStarNodes::AStarNodes(uint32_t x, uint32_t y)
+-	: nodes(), openNodes()
+ {
+-	curNode = 1;
+-	closedNodes = 0;
+-	openNodes[0] = true;
+-
+-	AStarNode& startNode = nodes[0];
+-	startNode.parent = nullptr;
+-	startNode.x = x;
+-	startNode.y = y;
+-	startNode.f = 0;
+-	nodeTable[(x << 16) | y] = nodes;
++	store->reset(x, y);
+ }
+ 
+ AStarNode* AStarNodes::createOpenNode(AStarNode* parent, uint32_t x, uint32_t y, int_fast32_t f)
+ {
+-	if (curNode >= MAX_NODES) {
+-		return nullptr;
+-	}
+-
+-	size_t retNode = curNode++;
+-	openNodes[retNode] = true;
+-
+-	AStarNode* node = nodes + retNode;
+-	nodeTable[(x << 16) | y] = node;
+-	node->parent = parent;
+-	node->x = x;
+-	node->y = y;
+-	node->f = f;
+-	return node;
++	return store->createOpenNode(parent, x, y, f);
+ }
+ 
+ AStarNode* AStarNodes::getBestNode()
+ {
+-	if (curNode == 0) {
+-		return nullptr;
+-	}
+-
+-	int32_t best_node_f = std::numeric_limits<int32_t>::max();
+-	int32_t best_node = -1;
+-	for (size_t i = 0; i < curNode; i++) {
+-		if (openNodes[i] && nodes[i].f < best_node_f) {
+-			best_node_f = nodes[i].f;
+-			best_node = i;
+-		}
+-	}
+-
+-	if (best_node >= 0) {
+-		return nodes + best_node;
+-	}
+-	return nullptr;
++	return store->getBestNode();
+ }
+ 
+ void AStarNodes::closeNode(AStarNode* node)
+ {
+-	size_t index = node - nodes;
+-	assert(index < MAX_NODES);
+-	openNodes[index] = false;
+-	++closedNodes;
++	store->closeNode(node);
+ }
+ 
+ void AStarNodes::openNode(AStarNode* node)
+ {
+-	size_t index = node - nodes;
+-	assert(index < MAX_NODES);
+-	if (!openNodes[index]) {
+-		openNodes[index] = true;
+-		--closedNodes;
+-	}
++	store->openNode(node);
+ }
+ 
+ int_fast32_t AStarNodes::getClosedNodes() const
+ {
+-	return closedNodes;
++	return store->getClosedNodes();
+ }
+ 
+ AStarNode* AStarNodes::getNodeByPosition(uint32_t x, uint32_t y)
+ {
+-	auto it = nodeTable.find((x << 16) | y);
+-	if (it == nodeTable.end()) {
+-		return nullptr;
+-	}
+-	return it->second;
++	return store->getNodeByPosition(x, y);
+ }
+ 
+ int_fast32_t AStarNodes::getMapWalkCost(AStarNode* node, const Position& neighborPos)
+--- /dev/null
++++ b/src/chaospathing.h
+@@ -0,0 +1,197 @@
++// Copyright 2022 The Forgotten Server Authors. All rights reserved.
++// Use of this source code is governed by the GPL-2.0 License that can be found in the LICENSE file.
++
++// Chaos (patch 0070): the pure part of cheaper monster pathfinding (server/README.md "Cheaper monster pathfinding
++// (O211)"). No engine types: server/tools/chaospathing_test.cpp and server/tools/path_bench.cpp build this header alone.
++//   * NodeStore: the A* node store of Map::getPathMatching. Same answers as the stock AStarNodes (the node with the
++//     lowest f, the lowest index among equals, is expanded first), without the stock costs: no zeroing of 12 KB per
++//     search, no heap allocation per node (an unordered_map), no linear scan of every node per expansion (a binary heap
++//     with lazy deletion). One store per thread is reused; a search that starts while another one runs gets its own.
++#ifndef FS_CHAOSPATHING_H
++#define FS_CHAOSPATHING_H
++
++#include <algorithm>
++#include <cstddef>
++#include <cstdint>
++#include <memory>
++#include <vector>
++
++namespace ChaosPath {
++
++// ---------------------------------------------------------------------------------------------------- node store
++template<typename Node, int32_t MaxNodes>
++class NodeStore
++{
++	static_assert(MaxNodes > 0 && MaxNodes <= 32768, "node indexes must fit 16 bits");
++
++	public:
++		NodeStore() { heap.reserve(4096); }
++
++		void reset(uint32_t x, uint32_t y)
++		{
++			if (++generation == 0) { // the stamps wrapped: forget every slot
++				std::fill(std::begin(slotStamp), std::end(slotStamp), 0u);
++				generation = 1;
++			}
++			heap.clear();
++			curNode = 1;
++			closedNodes = 0;
++			isOpen[0] = true;
++
++			Node& startNode = nodes[0];
++			startNode.parent = nullptr;
++			startNode.x = static_cast<uint16_t>(x);
++			startNode.y = static_cast<uint16_t>(y);
++			startNode.f = 0;
++			put(key(x, y), 0);
++			push(0, 0);
++		}
++
++		Node* createOpenNode(Node* parent, uint32_t x, uint32_t y, int_fast32_t f)
++		{
++			if (curNode >= static_cast<size_t>(MaxNodes)) {
++				return nullptr;
++			}
++
++			const size_t index = curNode++;
++			isOpen[index] = true;
++
++			Node* node = nodes + index;
++			put(key(x, y), static_cast<uint16_t>(index));
++			node->parent = parent;
++			node->x = static_cast<uint16_t>(x);
++			node->y = static_cast<uint16_t>(y);
++			node->f = f;
++			push(f, static_cast<uint32_t>(index));
++			return node;
++		}
++
++		// the open node with the lowest f, the lowest index among equals; it leaves the heap, the caller closes it
++		Node* getBestNode()
++		{
++			while (!heap.empty()) {
++				std::pop_heap(heap.begin(), heap.end(), later);
++				const Entry e = heap.back();
++				heap.pop_back();
++				if (isOpen[e.index] && nodes[e.index].f == e.f) {
++					return nodes + e.index;
++				}
++			}
++			return nullptr;
++		}
++
++		void closeNode(Node* node)
++		{
++			isOpen[node - nodes] = false;
++			++closedNodes;
++		}
++
++		// the caller has lowered node->f: it competes again (a closed node is reopened)
++		void openNode(Node* node)
++		{
++			const size_t index = node - nodes;
++			if (!isOpen[index]) {
++				isOpen[index] = true;
++				--closedNodes;
++			}
++			push(node->f, static_cast<uint32_t>(index));
++		}
++
++		int_fast32_t getClosedNodes() const { return closedNodes; }
++
++		Node* getNodeByPosition(uint32_t x, uint32_t y)
++		{
++			const uint32_t k = key(x, y);
++			for (size_t s = slotOf(k);; s = (s + 1) & (TableSize - 1)) {
++				if (slotStamp[s] != generation) {
++					return nullptr;
++				}
++				if (slotKey[s] == k) {
++					return nodes + slotIndex[s];
++				}
++			}
++		}
++
++		size_t created() const { return curNode; }
++
++	private:
++		struct Entry {
++			int_fast32_t f;
++			uint32_t index;
++		};
++
++		// std heap functions build a max-heap: "later" is true when a comes after b, so the front is the lowest (f, index)
++		static bool later(const Entry& a, const Entry& b) { return a.f != b.f ? a.f > b.f : a.index > b.index; }
++
++		static constexpr size_t TableSize = 2048 > static_cast<size_t>(MaxNodes) * 2 ? 2048 : 4096;
++		static_assert(TableSize >= static_cast<size_t>(MaxNodes) * 2, "load factor above one half");
++
++		static uint32_t key(uint32_t x, uint32_t y) { return (x << 16) | (y & 0xFFFFu); }
++		static size_t slotOf(uint32_t k) { return static_cast<size_t>((k * 2654435761u) >> 16) & (TableSize - 1); }
++
++		void put(uint32_t k, uint16_t index)
++		{
++			size_t s = slotOf(k);
++			while (slotStamp[s] == generation && slotKey[s] != k) {
++				s = (s + 1) & (TableSize - 1);
++			}
++			slotStamp[s] = generation;
++			slotKey[s] = k;
++			slotIndex[s] = index;
++		}
++
++		void push(int_fast32_t f, uint32_t index)
++		{
++			heap.push_back(Entry{f, index});
++			std::push_heap(heap.begin(), heap.end(), later);
++		}
++
++		Node nodes[MaxNodes];
++		bool isOpen[MaxNodes];
++		uint32_t slotStamp[TableSize] = {};
++		uint32_t slotKey[TableSize];
++		uint16_t slotIndex[TableSize];
++		std::vector<Entry> heap;
++		uint32_t generation = 0;
++		size_t curNode = 0;
++		int_fast32_t closedNodes = 0;
++};
++
++// One store per thread, reused by every search; nested use (not expected) gets a store of its own.
++template<typename Store>
++class Lease
++{
++	public:
++		Lease()
++		{
++			if (!busy()) {
++				busy() = true;
++				store = &shared();
++			} else {
++				own = std::make_unique<Store>();
++				store = own.get();
++			}
++		}
++		~Lease()
++		{
++			if (!own) {
++				busy() = false;
++			}
++		}
++		Lease(const Lease&) = delete;
++		Lease& operator=(const Lease&) = delete;
++
++		Store* operator->() const { return store; }
++		Store& operator*() const { return *store; }
++
++	private:
++		static Store& shared() { static thread_local Store s; return s; }
++		static bool& busy() { static thread_local bool b = false; return b; }
++
++		Store* store;
++		std::unique_ptr<Store> own;
++};
++
++} // namespace ChaosPath
++
++#endif
