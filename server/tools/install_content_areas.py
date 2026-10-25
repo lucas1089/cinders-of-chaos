@@ -224,18 +224,20 @@ def stack_of(tile):
 
 
 # ------------------------------------------------------------------------------------------------ the room
-def room_layout(world, room, portal, portal_at=None, wing=None):
+def room_layout(world, room, portal, portal_at=None, wing=None, grown=None):
     """the grown room: {'tiles': {pos: tile}, 'module': set(pos), 'caps': set(pos) (new place of the ends),
     'old': set(pos) (tiles of the old ends, replaced), 'swept': set(pos) (open ground of a wing's floor that the new
     tiles replace), 'slots': [...]}. portal_at: the places that hold a teleport in the base room (the hall order moves
     them; hall_hunts.csv keeps where they were), else the map says it.
     wing: grow another floor the same way ({z, from, east: {modules}, west: {modules}, sweep}): the alcoves are
     copied from floor `from` (the room's own, bare of rewards and signs), the ends are that floor's own; with `sweep`
-    the new tiles may replace open ground (no house, nothing but decoration) where the floor has the town's lawn"""
+    the new tiles may replace open ground (no house, nothing but decoration) where the floor has the town's lawn.
+    grown ({side: modules}): the map has that side grown by fewer modules already (the config raised `modules`
+    since): only the missing modules are new, the ends move on from where they stand now; the slots are the whole room's"""
     z = wing['z'] if wing else room['z']
     src_z = (wing.get('from') or z) if wing else z
     r0, r1 = room['rows']
-    tiles, module, caps, old, swept, cols = {}, set(), set(), set(), set(), []
+    tiles, copies, module, caps, old, swept, cols = {}, {}, set(), set(), set(), set(), []
     for side in ('east', 'west'):
         s = room.get(side)
         n_mod = (wing.get(side) or {}).get('modules', 0) if wing else (s or {}).get('modules', 0)
@@ -245,15 +247,16 @@ def room_layout(world, room, portal, portal_at=None, wing=None):
         c0, c1 = s['cap']
         per = b - a + 1
         n = n_mod * per
+        have = min((grown or {}).get(side, 0), n_mod) * per  # columns the map has grown already
         if side == 'east':
             new = list(range(c0, c0 + n))
             src = lambda x: a + (x - c0) % per
-            shift = n
+            shift, now = n, have
         else:
             new = list(range(c1, c1 - n, -1))  # from the stairs outward
             src = lambda x: b - (c1 - x) % per
-            shift = -n
-        for x in new:
+            shift, now = -n, -have
+        for col, x in enumerate(new):
             sx = src(x)
             for y in range(r0, r1 + 1):
                 st = world.stack((sx, y, src_z))
@@ -262,12 +265,14 @@ def room_layout(world, room, portal, portal_at=None, wing=None):
                 if world.house((sx, y, src_z)):
                     raise InstallError('room: the module tile %d,%d,%d belongs to a house' % (sx, y, src_z))
                 items = [(i, {}) for i in st if i != portal]
-                tiles[(x, y, z)] = dict(ground=None, items=items, flags=world.flags((sx, y, src_z)))
-                module.add((x, y, z))
+                copies[(x, y, z)] = dict(ground=None, items=items, flags=world.flags((sx, y, src_z)))
+                if col >= have:
+                    tiles[(x, y, z)] = copies[(x, y, z)]
+                    module.add((x, y, z))
             cols.append((side, x, sx))
         for x in range(c0, c1 + 1):
             for y in range(r0, r1 + 1):
-                p = (x, y, z)
+                p = (x + now, y, z)  # where the end stands on the map
                 st = world.stack(p)
                 if st is None:
                     continue
@@ -294,7 +299,7 @@ def room_layout(world, room, portal, portal_at=None, wing=None):
         for row, cell, sign in ((tn, room['cellRows'][0], room['signRows'][0]), (ts, room['cellRows'][1], room['signRows'][1])):
             cells = []
             for cx in (x - 1, x + 1):
-                t = tiles.get((cx, cell, z))
+                t = copies.get((cx, cell, z))
                 if t and not t['flags'] & 1 and len(t['items']) == 1:
                     cells.append((cx, cell, z))
             slots.append(dict(teleport=(x, row, z), sign=(x, sign, z), cells=cells, side=side))
@@ -355,6 +360,45 @@ def room_state(world, lay, portal=None, grounds=None, keep_edited=False):
         if world.house(p):
             raise InstallError('room: the tile %d,%d,%d belongs to a house; not replaced' % p)
     return 'todo'
+
+
+def with_modules(room, wing, mods):
+    """room and wing with `mods` ({side: modules}) alcove modules a side; a side not named has none"""
+    room = dict(room)
+    if wing:
+        wing = dict(wing, **{side: {'modules': mods.get(side, 0)} for side in ('east', 'west')})
+    else:
+        for side in ('east', 'west'):
+            if room.get(side):
+                room[side] = dict(room[side], modules=mods.get(side, 0))
+    return room, wing
+
+
+def room_grow(world, room, portal, portal_at=None, wing=None, skip=(), keep_edited=False):
+    """(layout, state) of a floor: the config's room_layout when the map has it or still has the base ends; a room
+    grown before by fewer modules a side (the config raised `modules` since, 2026-10-25) grows on from the ends where
+    they stand now (room_layout `grown`). Raises with room_state's reason when neither fits."""
+    lay = room_layout(world, room, portal, portal_at, wing)
+    try:
+        return lay, room_state(world, lay, portal, skip, keep_edited)
+    except InstallError as e:
+        refused = e
+    grown = {}
+    for side in ('east', 'west'):
+        n = ((wing or {}).get(side) or {}).get('modules', 0) if wing else (room.get(side) or {}).get('modules', 0)
+        for k in range(n - 1, 0, -1):
+            r, w = with_modules(room, wing, {side: k})
+            try:
+                if room_state(world, room_layout(world, r, portal, portal_at, w), portal, skip, keep_edited) == 'done':
+                    grown[side] = k
+                    break
+            except InstallError:
+                pass
+    if not grown:
+        raise refused
+    lay = room_layout(world, room, portal, portal_at, wing, grown=grown)
+    lay['grown'] = grown
+    return lay, room_state(world, lay, portal, skip, keep_edited)
 
 
 def top_monster(plan):
@@ -1177,13 +1221,17 @@ def run(data_dir, dry=False, only=None, room_on=True, plans_dir=PLANS_DIR, confi
         base_at = {(r['x'], r['y'], r['z']) for r in rows if r['x'] is not None} if rows else None
         # the room: floor 6 and, with the hall order, the other floors' wings (hall_order.assign names a floor's missing slots)
         lays, rstates, wing_lays = [], [], []
+        skip = set(grounds or ()) | closed_ids(cfg)
         if room_on:
-            lays.append(room_layout(world, cfg['room'], portal, base_at))
-            for w in (cfg['room'].get('wings') or []) if rows else []:
-                wing_lays.append(room_layout(world, cfg['room'], portal, base_at, wing=w))
-                lays.append(wing_lays[-1])
-        for l in lays:
-            rstates.append(room_state(world, l, portal, set(grounds or ()) | closed_ids(cfg), keep_edited))
+            for w in [None] + (list(cfg['room'].get('wings') or []) if rows else []):
+                l, st = room_grow(world, cfg['room'], portal, base_at, w, skip, keep_edited)
+                if l.get('grown'):
+                    log('room: floor %d is grown by %s modules already; grows on from its ends' % (
+                        l['z'], ' / '.join('%s %d' % kv for kv in sorted(l['grown'].items()))))
+                lays.append(l)
+                rstates.append(st)
+                if w is not None:
+                    wing_lays.append(l)
         todo_lays = [l for l, st in zip(lays, rstates) if st == 'todo']
         rstate = 'todo' if todo_lays else 'done'
         lay = dict(tiles={}, module=set(), caps=set(), old=set(), swept=set(), slots=[])

@@ -6,7 +6,7 @@ destination, places the area, adds its spawns and two display monsters per slot,
 changes nothing; a taken target tile, an area on map tiles and a changed plan are refused; a fixed area (the
 chronicle folder) is placed at its origin with its spawns but gets no teleport and no places line; a fixed plan without
 an origin is left out; two areas on one tile are refused. No base server needed."""
-import hashlib, json, os, shutil, struct, sys, tempfile
+import glob, hashlib, json, os, shutil, struct, sys, tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -365,6 +365,26 @@ def floor_rule_checks():
         check(False, 'a floor with too few slots refused')
     except H.HallError as e:
         check('floor 7' in str(e) and 'grow' in str(e), 'refused, names the floor: %s' % e)
+
+
+def capacity_checks():
+    """every floor of the live hall has a slot for each hunt that belongs on it (hall.capacity, the base hunts of
+    hall_hunts.csv and every plan of areaplan/plans by hall.levels): a new plan that overfills a floor fails here, not
+    in the server's update (2026-10-24: the 38th hunt of floor 6 rolled an update back)"""
+    import hall_order as H
+    cfg = T.load_config()
+    hall = cfg['hall']
+    rows = H.hunts_of(H.read_csv())
+    hunts = [dict(id=r['id'], lo=r['lo'], hi=r['hi'], level=r['level']) for r in rows]
+    for f in sorted(glob.glob(os.path.join(HERE, 'areaplan', 'plans', '*.json'))):
+        p = json.load(open(f))
+        hunts.append(dict(id=p['id'], lo=p['level'][0], hi=p['level'][1], level=None))
+    cap = {c['z']: c['slots'] for c in hall['capacity']}
+    check(sorted(cap) == sorted(hall['floors']), 'hall.capacity names every floor: %s' % cap)
+    for z in hall['floors']:
+        n = sum(1 for h in hunts if H.floor_for(hall, H.level_of(h)) == z)
+        check(n <= cap.get(z, 0), 'floor %d: %d hunts for %d slots: grow the room (room.east / west modules or '
+              'room.wings) and raise hall.capacity' % (z, n, cap.get(z, 0)))
 
 
 def quest_hall_checks(root):
@@ -844,6 +864,29 @@ def main():
         res, _log = run(srv, plans, comp)
         check(digest(srv) == once, 'a second run changes nothing')
         check(res['room'] == 'done' and set(res['areas'].values()) == {'done'}, 'second run: all done')
+        # a room grown before by 1 module, the config raised to 2 since: grows on from its ends (2026-10-25)
+        cfg_one = json.loads(json.dumps(CFG))
+        cfg_one['room']['east']['modules'] = 1
+        srv2, plans2, comp2 = setup(os.path.join(root, 'grow'))
+        T.run(os.path.join(srv2, 'data'), plans_dir=plans2, config=cfg_one, compiled=comp2, log=lambda s: None, fixed_dirs=())
+        m1 = otbm.load_otbm(os.path.join(srv2, 'data', 'world', 'w.otbm'))
+        check(m1.find(18, 13, Z) >= 0 and m1.find(22, 13, Z) < 0, 'one module: the end at 18')
+        log2 = []
+        res2 = T.run(os.path.join(srv2, 'data'), plans_dir=plans2, config=CFG, compiled=comp2, log=log2.append, fixed_dirs=())
+        check(res2['room'] == 'todo' and any('grown by east 1 modules already' in l for l in log2), 'regrow: %s' % res2['room'])
+        m2 = otbm.load_otbm(os.path.join(srv2, 'data', 'world', 'w.otbm'))
+
+        def stack2(p):
+            i = m2.find(*p)
+            return None if i < 0 else [int(a) for a in m2.stack(i)]
+        check(stack2((20, 11, Z)) == [G, STONE] and stack2((18, 13, Z)) == [G], 'regrow: second module where the end was')
+        check(stack2((22, 13, Z)) == [G, PORTAL], 'regrow: the end moved on to 22: %s' % stack2((22, 13, Z)))
+        tele2 = {(int(m2.tiles['x'][i]), int(m2.tiles['y'][i])): d for i, _iid, d in otbm.teleports(m2, [PORTAL])}
+        check(tele2.get((22, 13)) == (500, 500, 7), 'regrow: the end teleport keeps its destination')
+        check(len(m2.tiles['x']) == len(m.tiles['x']), 'regrow: same tile count as growing at once')
+        once2 = digest(srv2)
+        res2 = T.run(os.path.join(srv2, 'data'), plans_dir=plans2, config=CFG, compiled=comp2, log=lambda s: None, fixed_dirs=())
+        check(res2['room'] == 'done' and digest(srv2) == once2, 'regrow: a second run changes nothing')
         make_area(comp['tiny_hunt'], 'tiny_hunt', (1000, 1000, 7), ground=101)
         # the same map as a map master (tools/map_master.py's marker): the area differs from its plan as if the owner
         # had edited it by hand; it is kept, nothing written
@@ -987,6 +1030,7 @@ def main():
         # the hall order: the base hunts (a hall_hunts.csv) and the content hunts in one band order over every slot
         hall_order_checks(root)
         floor_rule_checks()
+        capacity_checks()
         quest_hall_checks(root)
         wing_ground_checks(root)
         shared_cell_checks(root)
