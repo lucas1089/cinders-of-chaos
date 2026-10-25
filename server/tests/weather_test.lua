@@ -182,7 +182,8 @@ do
 	eq(m1.k, "rain", "rain and a mood together"); eq(m1.a, "embers", "embers in the rain"); eq(m1.i, 3, "strength kept")
 	local keys1 = 0
 	for _ in pairs(m1) do keys1 = keys1 + 1 end
-	eq(keys1, 4, "four fields at most")
+	eq(keys1, 5, "five fields at most (k, i, f, a, m)")
+	eq(m1.m, "fire", "Cinderfall also has the fire colour mood")
 	local m2 = W.message(rainNow, cfg, {x = 100, y = 100, z = 7})
 	eq(m2.a, nil, "no mood, no field: the old message")
 	-- the signature knows the mood: entering a cave from a dry plain is a message, walking inside it is not
@@ -202,6 +203,61 @@ do
 	local off = {areas = cfg.areas, fadeMs = cfg.fadeMs}
 	local s3, st3 = {}, W.newState()
 	eq(W.decide(s3, 1, st3, off, {x = 1, y = 1, z = 12}), nil, "no ambient config: a cave player of a dry world gets nothing")
+end
+
+-- ------------------------------------------------------------------ colour moods (O234)
+do
+	local md = cfg.mood
+	ok(type(md) == "table" and md.enabled == true and #md.areas >= 5, "mood config exists")
+	local used = {}
+	for _, a in ipairs(md.areas) do
+		ok(W.MOOD_KINDS[a.kind] == true, "known mood kind: " .. tostring(a.kind))
+		used[a.kind] = true
+		ok(a.minZ and a.maxZ and a.minZ <= a.maxZ, "floors of " .. a.name)
+		ok(a.box and a.box[1] <= a.box[3] and a.box[2] <= a.box[4], "box of " .. a.name .. " is ordered")
+	end
+	ok(used.ice and used.swamp and used.desert and used.fire and used.crypt, "all five moods are placed")
+	eq(W.moodAt(cfg, {x = 14450, y = 14420, z = 9}), "fire", "Emberdeep Hollows: fire")
+	eq(W.moodAt(cfg, {x = 14600, y = 14420, z = 9}), "crypt", "Ossuary: crypt")
+	eq(W.moodAt(cfg, {x = 24600, y = 24600, z = 9}), "crypt", "Marrow Crypts: crypt")
+	eq(W.moodAt(cfg, {x = 32940, y = 32050, z = 7}), "swamp", "swamp town: swamp")
+	eq(W.moodAt(cfg, {x = 33050, y = 31374, z = 7}), "desert", "desert sample site: desert")
+	eq(W.moodAt(cfg, {x = 31994, y = 31358, z = 7}), "ice", "ice sample site: ice")
+	eq(W.moodAt(cfg, {x = 31994, y = 31358, z = 6}), "ice", "ice reaches floor 6")
+	eq(W.moodAt(cfg, {x = 31994, y = 31358, z = 8}), nil, "not under the ice field")
+	eq(W.moodAt(cfg, {x = 100, y = 100, z = 7}), nil, "open ground with no region: no colour mood")
+	eq(W.moodAt(cfg, {x = 100, y = 100, z = 12}), nil, "a plain cave has dust, not a colour mood")
+	-- box edges are inclusive, the first area wins
+	eq(W.moodAt(cfg, {x = 32880, y = 32010, z = 7}), "swamp", "box corner counts")
+	eq(W.moodAt(cfg, {x = 32879, y = 32010, z = 7}), nil, "one tile outside the box")
+	eq(W.moodAt(cfg, nil), nil, "no position"); eq(W.moodAt(cfg, {x = 1, y = 1}), nil, "no floor")
+	eq(W.moodAt({}, {x = 1, y = 1, z = 9}), nil, "no mood table")
+	eq(W.moodAt({mood = {enabled = false, areas = md.areas}}, {x = 32940, y = 32050, z = 7}), nil, "switched off")
+	eq(W.moodAt({mood = {areas = {{name = "x", kind = "neon", minZ = 0, maxZ = 15}}}}, {x = 1, y = 1, z = 9}), nil,
+		"an unknown kind never reaches a client")
+	local first = {mood = {areas = {{name = "a", kind = "ice", minZ = 0, maxZ = 15, box = {0, 0, 10, 10}},
+		{name = "b", kind = "fire", minZ = 0, maxZ = 15}}}}
+	eq(W.moodAt(first, {x = 5, y = 5, z = 7}), "ice", "the first area wins")
+	eq(W.moodAt(first, {x = 50, y = 5, z = 7}), "fire", "a later, unboxed area takes the rest")
+	-- the message: field m beside a, nothing for a tile with no mood
+	local dry = W.newState()
+	local mm = W.message(dry, cfg, {x = 32940, y = 32050, z = 7})
+	eq(mm.m, "swamp", "the message carries the mood"); eq(mm.a, "motes", "and the ambient mood still"); eq(mm.k, "none", "dry")
+	eq(W.message(dry, cfg, {x = 100, y = 100, z = 7}).m, nil, "no field outside every colour region")
+	-- a payload of the biggest message stays tiny (the limit is 8192 bytes)
+	local json = '{"k":"rain","i":3,"f":2000,"a":"embers","m":"desert"}'
+	ok(#json < 100, "the payload is small")
+	-- the signature knows the mood: crossing from swamp to a plain tile is a message, walking inside is not
+	local sg = {}
+	local into = W.decide(sg, 7, dry, cfg, {x = 32940, y = 32050, z = 7})
+	ok(into and into.m == "swamp", "into the swamp: a message with the mood")
+	eq(W.decide(sg, 7, dry, cfg, {x = 32941, y = 32051, z = 7}), nil, "walking inside the swamp: nothing")
+	local away = W.decide(sg, 7, dry, cfg, {x = 100, y = 100, z = 7})
+	ok(away and away.m == nil and away.a == nil and away.k == "none", "out of it: the old none, so the client eases back")
+	-- ice to desert with the same ambient (none): m alone changes the signature
+	local a1 = W.decide(sg, 8, dry, cfg, {x = 31994, y = 31358, z = 7})
+	local a2 = W.decide(sg, 8, dry, cfg, {x = 33050, y = 31374, z = 7})
+	ok(a1 and a1.m == "ice" and a2 and a2.m == "desert", "ice to desert is a change")
 end
 
 -- ------------------------------------------------------------------ messages and the per-player rule

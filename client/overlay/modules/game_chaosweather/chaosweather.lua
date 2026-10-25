@@ -8,7 +8,8 @@
 --   * Capped: three layers, a fixed number of streaks in their tiles, a fixed number of rectangles (L.maxQuads).
 --   * Under a roof the rain fades out: the player's tile is checked for a covering floor every 400 ms (g_map.isCovered).
 --   * The option `weather` (Options > Graphics, base patch 0130) comes through game_visualfx (onOption -> setEnabled).
--- Ambient particles (O226) ride on the same message (a = 'embers' | 'motes' | 'dust'): chaosambient.lua draws them.
+-- Ambient particles (O226) ride on the same message (a = 'embers' | 'motes' | 'dust'): chaosambient.lua draws them. The colour
+-- mood of the area (O234, m = 'ice' | 'swamp' | 'desert' | 'fire' | 'crypt') goes to game_visualfx.setMood.
 -- No engine patch: the base client's native weather manager can be driven only by a game-protocol packet and has no Lua
 -- binding, so it is not used. Every engine call is guarded; a failure is logged once and the rain stays off.
 local L = ChaosWeatherLogic
@@ -198,6 +199,13 @@ local function onMessage(protocol, opcode, msg)
   if not w then return end
   -- ambient particles (O226, chaosambient.lua): the same message names the mood of the place in `a`; none when it is absent
   ChaosAmbient.setKind(ChaosAmbientLogic.parseKind(msg), ChaosAmbientLogic.parseFade(msg))
+  -- area colour mood (O234, game_visualfx grademood_logic.lua): the same message names it in `m`; none when it is absent, which
+  -- eases the map picture back to the plain grade. game_visualfx checks the name and follows its option screenGrade.
+  local vfx = modules.game_visualfx
+  if vfx and vfx.setMood then
+    local m = type(msg) == 'table' and type(msg.data) == 'table' and msg.data.m or nil
+    pcall(vfx.setMood, type(m) == 'string' and m or nil)
+  end
   weather = w
   updateCover()
   if w.kind == 'rain' then checkCover() end

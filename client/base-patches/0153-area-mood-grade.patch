@@ -1,0 +1,138 @@
+# Chaos: area colour mood of the map picture (O234; client/BASE.md "0153"; src/framework/graphics/shadermanager.h/.cpp,
+# paintershaderprogram.h/.cpp, src/framework/core/graphicalapplication.cpp, src/framework/luafunctions.cpp; after 0001-0150).
+# The map grade shader (0126, data/shaders/chaos_map_grade.frag) had no values to change. This adds five numbers the Lua
+# module game_visualfx eases when the player crosses into another area (server weather opcode, field `m`):
+#  * Lua: g_shaders.setMapGrade(tintR, tintG, tintB, saturation, contrast). Tint is added to the colour (0..1 scale),
+#    saturation and contrast are added to the factors the shader already uses. All five 0 = the picture as before.
+#    Each value is clamped (tint +-0.15, saturation and contrast +-0.35) and a NaN counts as 0.
+#  * The values are atomics of ShaderManager (Lua thread writes, graphics thread reads); applyMapGrade() hands them to the
+#    map shader as u_Params (0044) and a new u_Params2 (uniform id 18) right after the shader is bound, at the two map draw
+#    sites. A map shader that does not declare them (the base's heat haze) simply ignores them.
+#  * Nothing runs per frame beyond two uniform uploads when a map shader is set; with the grade option off no map shader
+#    is set and nothing is uploaded.
+--- a/src/framework/core/graphicalapplication.cpp
++++ b/src/framework/core/graphicalapplication.cpp
+@@ -455,6 +455,7 @@
+             shader->bindMultiTextures();
+             shader->setCenter(state.toDrawMapQueue->getFrameBufferDest().center());
+             shader->setOffset(state.toDrawMapQueue->getFrameBufferSrc().topLeft());
++            g_shaders.applyMapGrade(shader);
+         }
+         m_mapFramebuffer->draw(state.toDrawMapQueue->getFrameBufferDest(), state.toDrawMapQueue->getFrameBufferSrc());
+         if (shader)
+@@ -832,6 +833,7 @@
+                     shader->bindMultiTextures();
+                     shader->setCenter(toDrawMapQueue->getFrameBufferDest().center());
+                     shader->setOffset(toDrawMapQueue->getFrameBufferSrc().topLeft());
++                    g_shaders.applyMapGrade(shader);
+                 }
+                 m_mapFramebuffer->draw(toDrawMapQueue->getFrameBufferDest(), toDrawMapQueue->getFrameBufferSrc());
+                 if (shader) {
+--- a/src/framework/graphics/paintershaderprogram.cpp
++++ b/src/framework/graphics/paintershaderprogram.cpp
+@@ -60,6 +60,7 @@
+ 
+     bindUniformLocation(MAP_WALKOFFSET_UNIFORM, "u_WalkOffset");
+     bindUniformLocation(PARAMS_UNIFORM, "u_Params");
++    bindUniformLocation(PARAMS2_UNIFORM, "u_Params2");
+ 
+     // VALUES
+     setUniformValue(TRANSFORM_MATRIX_UNIFORM, m_transformMatrix);
+@@ -224,6 +225,13 @@
+     setUniformValue(PARAMS_UNIFORM, a, b, c, d);
+ }
+ 
++// Chaos (base patch 0153): the second set of values of the map grade
++void PainterShaderProgram::setParams2(float a, float b, float c, float d)
++{
++    bind();
++    setUniformValue(PARAMS2_UNIFORM, a, b, c, d);
++}
++
+ void PainterShaderProgram::addMultiTexture(const std::string& file)
+ {
+     if (m_multiTextures.size() > 3)
+--- a/src/framework/graphics/paintershaderprogram.h
++++ b/src/framework/graphics/paintershaderprogram.h
+@@ -55,7 +55,8 @@
+         OFFSET_UNIFORM = 14,
+         CENTER_UNIFORM = 15,
+         MAP_WALKOFFSET_UNIFORM = 16,
+-        PARAMS_UNIFORM = 17 // Chaos (base patch 0044): u_Params, a widget's own values (UIWidget:setUiShaderParams)
++        PARAMS_UNIFORM = 17, // Chaos (base patch 0044): u_Params, a widget's own values (UIWidget:setUiShaderParams)
++        PARAMS2_UNIFORM = 18 // Chaos (base patch 0153): u_Params2, the map grade's second set of values
+     };
+ 
+     friend class Painter;
+@@ -79,6 +80,7 @@
+     void updateTime();
+     void updateWalkOffset(const PointF& offset);
+     void setParams(float a, float b, float c, float d);
++    void setParams2(float a, float b, float c, float d); // Chaos (base patch 0153)
+ 
+     void addMultiTexture(const std::string& file);
+     void bindMultiTextures();
+--- a/src/framework/graphics/shadermanager.cpp
++++ b/src/framework/graphics/shadermanager.cpp
+@@ -73,3 +73,24 @@
+         return it->second;
+     return nullptr;
+ }
++
++// Chaos (base patch 0153): see shadermanager.h. The values are clamped here so a bad Lua call cannot blow the picture out.
++void ShaderManager::setMapGrade(float tintR, float tintG, float tintB, float saturation, float contrast)
++{
++    const float v[5] = {tintR, tintG, tintB, saturation, contrast};
++    for (int i = 0; i < 5; ++i) {
++        float x = v[i];
++        if (!(x == x)) // not a number
++            x = 0.f;
++        const float lim = i < 3 ? 0.15f : 0.35f;
++        m_mapGrade[i].store(x < -lim ? -lim : (x > lim ? lim : x));
++    }
++}
++
++void ShaderManager::applyMapGrade(const PainterShaderProgramPtr& shader)
++{
++    if (!shader)
++        return;
++    shader->setParams(m_mapGrade[0].load(), m_mapGrade[1].load(), m_mapGrade[2].load(), m_mapGrade[3].load());
++    shader->setParams2(m_mapGrade[4].load(), 0.f, 0.f, 0.f);
++}
+--- a/src/framework/graphics/shadermanager.h
++++ b/src/framework/graphics/shadermanager.h
+@@ -24,6 +24,8 @@
+ #define SHADERMANAGER_H
+ 
+ #include "declarations.h"
++#include <array>
++#include <atomic>
+ #include <framework/graphics/paintershaderprogram.h>
+ 
+ //@bindsingleton g_shaders
+@@ -41,8 +43,15 @@
+     void addTexture(const std::string& name, const std::string& file);
+     PainterShaderProgramPtr getShader(const std::string& name);
+ 
++    // Chaos (base patch 0153): the area colour mood of the map picture (game_visualfx). Five values the Lua side eases
++    // (tint red, green, blue added to the colour; saturation and contrast added to the factor), all 0 = no change.
++    // Written from the Lua thread, read by the draw; a float that is a little stale for a frame does no harm.
++    void setMapGrade(float tintR, float tintG, float tintB, float saturation, float contrast);
++    void applyMapGrade(const PainterShaderProgramPtr& shader); // graphics thread, after the map shader is bound
++
+ private:
+     std::unordered_map<std::string, PainterShaderProgramPtr> m_shaders;
++    std::array<std::atomic<float>, 5> m_mapGrade{};
+ };
+ 
+ 
+--- a/src/framework/luafunctions.cpp
++++ b/src/framework/luafunctions.cpp
+@@ -457,6 +457,7 @@
+     g_lua.bindSingletonFunction("g_shaders", "createShader", &ShaderManager::createShader, &g_shaders);
+     g_lua.bindSingletonFunction("g_shaders", "createOutfitShader", &ShaderManager::createOutfitShader, &g_shaders);
+     g_lua.bindSingletonFunction("g_shaders", "addTexture", &ShaderManager::addTexture, &g_shaders);
++    g_lua.bindSingletonFunction("g_shaders", "setMapGrade", &ShaderManager::setMapGrade, &g_shaders);
+ 
+     // UI
+     g_lua.registerSingletonClass("g_ui");

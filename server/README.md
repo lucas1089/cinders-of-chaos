@@ -653,7 +653,7 @@ collision check") and be added here.
 | 110 | `stash` | `stash.lua` | `game_stash` | |
 | 111 | `depotTabs` | `depot.lua` | `game_depottabs` | |
 | 113 | `npcCurrency` | `data/lib/chaos_npc_currency.lua` (run by the base NPC scripts of a custom currency, `tools/patch_npc_currency.py`) | `game_npctradewindow` | server -> client, JSON `{action = "currency", data = {code, name, item?, amount, again?}}`: the currency of the shop that opens next, and its balance after each purchase and sale ("NPC currencies") |
-| 114 | `weather` | `weather.lua`, `weather_core.lua` | `game_chaosweather` | server -> client `set {k = "rain" / "none", i = 1..3, f = fade ms, a = "embers" / "motes" / "dust" (optional, O226)}`, client -> server `hello` (see "Weather on the client (O208)", "Ambient particles (O226)") |
+| 114 | `weather` | `weather.lua`, `weather_core.lua` | `game_chaosweather` | server -> client `set {k = "rain" / "none", i = 1..3, f = fade ms, a = "embers" / "motes" / "dust" (optional, O226), m = "ice" / "swamp" / "desert" / "fire" / "crypt" (optional, O234)}`, client -> server `hello` (see "Weather on the client (O208)", "Ambient particles (O226)", "Area colour mood (O234)") |
 | 120 | none (`CHAOS_ADMIN_OPCODE`) | `admin/core.lua` | `game_admin` | big payloads through `Chaos.sendChunked` |
 | 125 | `monsterbar` | `monster_tiers.lua`, `worldboss.lua` | `game_monsterbar` | server -> client |
 | 151 | `notificationsAction` | `notifications.lua` | `game_chaosnotify` | client -> server: party invite answer, catacomb start |
@@ -923,6 +923,35 @@ place is decided here, as the weather is (option 1 of the brief: the weather cod
 - **Tests:** `tests/weather_test.lua` (the moods and boxes, an unknown kind, the signature rule, byte-for-byte old payload outside a region,
   the cave payload, `/weather ambient`).
 - **Not run on a live server or in a client.**
+
+### Area colour mood (O234) (`weather_core.lua`, `weather_config.lua`, `weather.lua`, client `game_visualfx`)
+
+A gentle colour grade of the map picture by area (client/MANIFEST.md "Visual effects", "Area colour mood (O234)"). The server only
+names the mood; the numbers are on the client (`grademood_logic.lua`), which eases to a new mood over about 2 s.
+- **Config:** `weather_config.lua` `mood = {enabled, areas}`, next to `ambient`. An area is `{name, kind, minZ, maxZ, box}`, the same
+  shape and the same lookup as `ambient.areas` (`areaIn` in `weather_core.lua`; first area that holds the tile wins, boxes inclusive,
+  a tile in none has no mood). `kind` is `ice`, `swamp`, `desert`, `fire` or `crypt` (`W.MOOD_KINDS`; a typo is dropped, never sent).
+  `W.moodAt(cfg, pos)` looks it up. It is independent of rain and of the ambient particles.
+- **Protocol:** opcode 114 (no new opcode), server -> client `set {k, i?, f, a?, m?}`: `m` is a short string, added only in a region
+  with a colour mood (about 12 bytes more; far below the 8192 limit). A player in no mood region gets the old message byte for byte, an
+  older client ignores `m`. The per-player signature is `k:i:a:m`, so crossing between moods is one message and walking inside one is
+  none (same 3 s tick and one `getPosition` per player as before). Leaving a region sends the message without `m`, which eases the
+  client back to the plain grade.
+- **Places in the default config:** exact from `areagen_config.lua` (origin and size): Emberdeep Hollows z 9-10 and Cinderfall Wastes z 7
+  `fire`, the Iron Crucible and the Pyre Throne z 9 `fire`, the Ossuary z 9-10, the Hollow Vault and the Marrow Crypts z 9 `crypt`.
+  The Fallen Sanctum has none. **Marked for the owner to fit (guesses; the map is not in the repository):** `swamp town` (swamp,
+  32880,32010-33000,32110 z 7), `desert west` (33000,31330-33100,31420 z 7) and `desert east` (33200,31310-33300,31410 z 7),
+  `ice settlement` (31950,31310-32040,31400 z 6-7) and `ice field` (32000,31060-32100,31150 z 6-7) are boxes of about 100 x 100 around
+  the sample sites of `docs/MAP_GUIDE.md` (swamp 32935,32055; deserts 33050,31374 and 33248,31360; ice 31994,31358 and 32048,31104).
+  Widen or move each box to the real swamp, desert and ice land (one line each, the map editor shows the tile) and add the other
+  ones; a small box goes before a wide one. Plain caves have no colour mood, only the dust.
+- **Client numbers** (added on top of the grade of `0126`, `grademood_logic.lua`): `ice` tint r -0.020 g +0.004 b +0.034, colour -0.02;
+  `swamp` -0.012 / +0.026 / -0.018, colour -0.03, contrast +0.01; `desert` +0.032 / +0.016 / -0.022, colour +0.02, contrast +0.01;
+  `fire` +0.036 / +0.004 / -0.030, colour +0.02, contrast +0.03; `crypt` -0.006 / -0.002 / +0.004, colour -0.10, contrast +0.02.
+- **Staff:** `/weather ambient` also says the colour mood of your tile.
+- **Tests:** `tests/weather_test.lua` (config sanity, the sample sites, floors, box edges, first area wins, off switch, unknown kind, the
+  message field, the signature rule). Client: `grademood_test.lua`.
+- **Not run on a live server or in a client.** The client needs base patch `0153` and the option `screenGrade` (off by default).
 
 ### Extended opcode size limit (`extended_opcode.lua`, `Chaos.sendChunked`)
 One extended opcode message carries at most 8192 bytes (`NetworkMessage::addString` refuses longer strings without an
