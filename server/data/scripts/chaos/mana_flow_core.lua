@@ -43,4 +43,33 @@ function F.regenAmount(level, mana, maxMana, noMana, dead, cfg)
 	return math.max(0, math.min(give, maxMana - mana))
 end
 
+-- One think for one player (mana_flow.lua calls it every regen.thinkMs for everyone online). Same result as
+-- regenAmount(player:getLevel(), ...) but the cheap checks come first: most players sit at a full pool, so the level,
+-- the health and the Parched Veins lookup are only read when mana is missing; the rounded amount of a level is cached
+-- (F.clearCache() after the config changes). Returns the mana to add (0 when none).
+local giveCache, giveCacheCfg = {}, nil
+function F.clearCache()
+	giveCache, giveCacheCfg = {}, nil
+end
+
+function F.thinkPlayer(player, noManaOf)
+	local mana, maxMana = player:getMana(), player:getMaxMana()
+	if mana >= maxMana then
+		return 0
+	end
+	if player:getHealth() <= 0 or (noManaOf and noManaOf(player:getId())) then
+		return 0
+	end
+	if giveCacheCfg ~= F.cfg then
+		giveCache, giveCacheCfg = {}, F.cfg
+	end
+	local level = player:getLevel()
+	local give = giveCache[level]
+	if give == nil then
+		give = floor(F.regenPerSecond(level) + 0.5)
+		giveCache[level] = give
+	end
+	return math.max(0, math.min(give, maxMana - mana))
+end
+
 return F

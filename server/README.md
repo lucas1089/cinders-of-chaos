@@ -22924,3 +22924,25 @@ Measured on a copy of the real server (197 MB map), `--no-sql --quiet`: fresh 55
 
 Tests: `deploy/chaos_kit_update_test.py` (`test_staging`), `deploy/chaos_stage_sync_test.py`, `deploy/backup_save_wait_test.py`, `tools/install_content_areas_test.py` (cache), `tools/install_all_snapshot_test.py`. Live not run here.
 VPS: no action. The first update that brings this still runs the old script. Needs free disk for one more copy of the server folder.
+
+
+## Combat hot paths (O199) (`tools/hotpath_bench.lua`, `tests/pack29_scan_test.lua`)
+
+Audit of the callbacks that run per hit, per step or per tick in `data/scripts/chaos`.
+
+- Creature events put on a target from `onTargetCombat`: already registered once per monster through `Chaos.registerOnce` and `Chaos.eventKnown` (chaos_constants.lua). Every callback that registers uses it. Players are registered at every call on purpose (events do not survive a login). No change.
+- `mana_flow.lua`: the think read level, mana, maximum, health and the Parched Veins run for every player each second. `ChaosManaFlow.thinkPlayer` (core, tested against `regenAmount`) reads mana and maximum first, returns at once on a full pool, and caches the rounded regen per level (`clearCache()` after a config change).
+- `pack29_vfx.lua`: the aura scan did up to 5 `_G[...]` lookups per player per second. The condition constants are resolved once per `V.scan` table.
+- `gems.lua`: `ChaosGemsDealt` and `ChaosGemsTaken` built `"dmg_" .. name` strings at every hit. Prebuilt key tables now.
+- Looked at, left: `pocketboss.lua` contest health (spectator scan already throttled to every 3 s), `weapon_styles.lua` `_G[element.combat]` (only on a bow hit with an element), `reward_sparkle.lua` (one `_G` lookup per 2.5 s), `supports.lua`/`cards.lua` context storage reads (one read, the value is needed), `charms.lua`/`item_powers.lua` storage reads (behind a cheap guard).
+
+Measured with `luajit tools/hotpath_bench.lua` and `lua5.3 tools/hotpath_bench.lua` (mocked engine; ns per call, old / new). Engine calls cost more than the mock, so the real gain of the mana think is larger (5 engine calls per full-pool player become 2).
+
+| Case | LuaJIT 2.1 | Lua 5.3 |
+|---|---|---|
+| mana think, full pool | 13.5 / 7.5 | 333 / 128 |
+| mana think, mana missing | 59.5 / 50.5 | 686 / 358 |
+| pack29 scan of one player | 100 / 57 | 420 / 256 |
+| gems hit, two lookups | 3.1 / 2.4 | 133 / 62 |
+
+VPS: no action. A normal update brings it.
