@@ -64,14 +64,14 @@
     {
       "id": "heart",
       "floor": 1,
-      "shape": "cave",
+      "shape": "room",
       "size": [
-        22,
-        34
+        38,
+        24
       ],
       "at": [
-        43,
-        42
+        39,
+        71
       ],
       "role": "hunt"
     },
@@ -122,6 +122,11 @@
       "from": "heart",
       "to": "bog",
       "width": 5
+    },
+    {
+      "from": "heart",
+      "to": "drowned",
+      "width": 5
     }
   ],
   "entry": {
@@ -161,21 +166,21 @@
     {
       "zone": "heart",
       "monster": "Lochtag",
-      "count": 8,
+      "count": 12,
       "pack": 2,
       "respawn": 90
     },
     {
       "zone": "heart",
       "monster": "Hodag",
-      "count": 6,
+      "count": 10,
       "pack": 2,
       "respawn": 90
     },
     {
       "zone": "heart",
       "monster": "Babayaga",
-      "count": 3,
+      "count": 4,
       "respawn": 120
     }
   ],
