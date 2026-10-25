@@ -78,6 +78,14 @@ UIWidget
     text-align: left
     phantom: true
 
+  // the chip of a fall (O229): a pale bar behind the fill that is as wide as the bar was; hidden unless a chip shows
+  ChaosHudFill
+    id: hpChip
+    margin-top: 35
+    size: 166 15
+    background-color: #ecdfc8
+    visible: false
+
   ChaosHudFill
     id: hpFill
     margin-top: 35
@@ -92,6 +100,13 @@ UIWidget
     margin-top: 35
     size: 166 15
     text-offset: 0 1
+
+  ChaosHudFill
+    id: mpChip
+    margin-top: 54
+    size: 166 13
+    background-color: #ecdfc8
+    visible: false
 
   ChaosHudFill
     id: mpFill

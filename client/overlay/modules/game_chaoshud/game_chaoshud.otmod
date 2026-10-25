@@ -1,11 +1,11 @@
 Module
   name: game_chaoshud
-  description: Character plate over the top-left of the map: portrait, level, health, mana and experience
+  description: Character plate over the top-left of the map: portrait, level, health, mana and experience; the health and mana bars ease and leave a pale chip when you lose health (option Smooth health bars)
   author: Cinders of Chaos
   sandboxed: true
   autoload: true
   autoload-priority: 900
   dependencies: [ game_interface ]
-  scripts: [ hudmath, chaoshud ]
+  scripts: [ hudmath, hudbars_logic, chaoshud ]
   @onLoad: init()
   @onUnload: terminate()

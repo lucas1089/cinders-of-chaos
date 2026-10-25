@@ -9,7 +9,8 @@ local function eq(a, b, what)
 end
 
 -- options: the grade is off by default (it shifts the biome colours), the rest on; a boolean wins, junk is the default
-local wantDefault = { hitFlash = true, screenShake = true, creatureShadow = true, screenGrade = false, spellLight = true, liquidShimmer = true, weather = true, bloom = false, numberMotion = true, targetOutline = true, hoverOutline = false, sceneFade = true, deathFade = true, ambientParticles = true }
+local wantDefault = { hitFlash = true, screenShake = true, creatureShadow = true, screenGrade = false, spellLight = true, liquidShimmer = true, weather = true, bloom = false, numberMotion = true, targetOutline = true, hoverOutline = false, sceneFade = true, deathFade = true, ambientParticles = true, smoothBars = true, missileTrails = true }
+
 for _, name in ipairs(L.OPTIONS) do
   local d = wantDefault[name]
   eq(L.optionOn(name, nil), d, name .. ' default')
@@ -18,7 +19,7 @@ for _, name in ipairs(L.OPTIONS) do
   eq(L.optionOn(name, 'no'), d, name .. ' junk -> default')
   eq(L.optionOn(name, 0), d, name .. ' number -> default')
 end
-eq(#L.OPTIONS, 14, 'fourteen options')
+eq(#L.OPTIONS, 16, 'sixteen options')
 eq(L.optionOn('nothing', nil), false, 'an unknown option is off')
 eq(L.DEFAULTS.numberMotion, true, 'soft damage numbers are on by default (purely visual, a few float operations per text)')
 do
@@ -43,6 +44,19 @@ do
   eq(src:find("name == 'deathFade'", 1, true) ~= nil, true, 'onOption handles deathFade')
   eq(src:find("optionValue('deathFade')", 1, true) ~= nil, true, 'the option value is read')
   eq(src:find('applyDeathFade()', 1, true) ~= nil, true, 'reapply sets it at game start')
+end
+
+do
+  -- the smooth bars (O229, base patch 0146): on by default, the engine switch is called on a change, at game start and off at terminate
+  eq(L.DEFAULTS.smoothBars, true, 'smooth bars are on by default')
+  local f = io.open(dir .. 'visualfx.lua', 'r')
+  local src = f and f:read('*a') or ''
+  if f then f:close() end
+  local _, calls = src:gsub('Creature%.setSmoothBars', '')
+  eq(calls >= 3, true, 'setSmoothBars is checked, called with the option and switched off at terminate')
+  eq(src:find("name == 'smoothBars'", 1, true) ~= nil, true, 'onOption handles smoothBars')
+  eq(src:find("optionValue('smoothBars')", 1, true) ~= nil, true, 'the option value is read')
+  eq(src:find('applySmoothBars()', 1, true) ~= nil, true, 'reapply sets it at game start')
 end
 
 do
@@ -336,6 +350,32 @@ do
   eq(src:find('onAttackingCreatureChange', 1, true) ~= nil, true, 'target change is listened to')
   eq(src:find('onFollowingCreatureChange', 1, true) ~= nil, true, 'follow change is listened to')
   eq(src:find('setHighlight', 1, true) ~= nil, true, 'cosmetic outlines are coordinated')
+end
+
+do
+  -- missile trails and arcs (O230, base patch 0147): on by default, the arc list is sane, the engine switch is wired
+  eq(L.DEFAULTS.missileTrails, true, 'missile trails are on by default')
+  local seen, sorted = {}, true
+  local prev = 0
+  for _, id in ipairs(L.ARC_MISSILES) do
+    eq(type(id) == 'number' and id == math.floor(id) and id > 0 and id < 65536, true, 'arc id ' .. tostring(id) .. ' is a missile id')
+    eq(seen[id], nil, 'arc id ' .. tostring(id) .. ' is listed once')
+    seen[id] = true
+    if id <= prev then sorted = false end
+    prev = id
+  end
+  eq(sorted, true, 'the arc ids are ascending')
+  eq(seen[2] and seen[3] and seen[1], true, 'bolt, arrow and spear arc')
+  for _, spell in ipairs({ 4, 5, 11, 29, 30, 31 }) do eq(seen[spell], nil, 'spell missile ' .. spell .. ' stays straight') end
+  local f = io.open(dir .. 'visualfx.lua', 'r')
+  local src = f and f:read('*a') or ''
+  if f then f:close() end
+  local _, calls = src:gsub('Missile%.setTrails', '')
+  eq(calls >= 3, true, 'setTrails is checked, called with the option and switched off at terminate')
+  eq(src:find("name == 'missileTrails'", 1, true) ~= nil, true, 'onOption handles missileTrails')
+  eq(src:find("optionValue('missileTrails')", 1, true) ~= nil, true, 'the option value is read')
+  eq(src:find('applyMissileTrails()', 1, true) ~= nil, true, 'reapply sets it at game start')
+  eq(src:find('L.ARC_MISSILES', 1, true) ~= nil, true, 'the arc list is sent')
 end
 
 if fails > 0 then

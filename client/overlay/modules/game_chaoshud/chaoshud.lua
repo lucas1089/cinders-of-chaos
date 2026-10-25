@@ -7,20 +7,105 @@ local BAR_W = 166
 local SETTINGS_NODE = 'chaosHud'
 local asPercent = false
 local lastHp, lastMp = { 0, 0 }, { 0, 0 }
+-- Eased health and mana bars with a chip trail (O229, option smoothBars; timing in hudbars_logic.lua, the same as the bars
+-- over creatures). The experience line is not eased: it wraps to 0 at a level up.
+local SMOOTH_STALE = nil -- the plate is observed only when a stat changes, so no stale limit
+local bars = { hpFill = { track = HudBars.new(), chip = 'hpChip', last = { 0, 0 } }, mpFill = { track = HudBars.new(), chip = 'mpChip', last = { 0, 0 } } }
+local smooth = true
+local barEvent
 
 local function child(id)
   return hud and hud:getChildById(id)
 end
 
-local function setFill(id, value, max)
+local function paintFill(id, px)
   local w = child(id)
   if not w then return end
-  local px = HudMath.fillWidth(value, max, BAR_W)
   w:setVisible(px > 0)
   if px > 0 then
     w:setWidth(px)
     w:setImageClip({ x = 0, y = 0, width = px, height = w:getHeight() })
   end
+end
+
+local function paintChip(id, px, fillPx)
+  local c = child(id)
+  if not c then return end
+  c:setVisible(px > fillPx)
+  if px > fillPx then c:setWidth(px) end
+end
+
+local function stopBarEvent()
+  if barEvent then removeEvent(barEvent) barEvent = nil end
+end
+
+-- draws one eased bar at the current clock; true while it still moves
+local function paintBar(id)
+  local b = bars[id]
+  local fillPx, chipPx, rest = HudBars.widths(b.track, b.last[1], b.last[2], BAR_W, g_clock.millis(), HudMath.fillWidth)
+  paintFill(id, fillPx)
+  paintChip(b.chip, chipPx, fillPx)
+  return not rest
+end
+
+local function barTick()
+  local moving = false
+  for id in pairs(bars) do
+    if paintBar(id) then moving = true end
+  end
+  if not moving then stopBarEvent() end
+end
+
+-- the plain bar, as before the option: the fill at its real width and no chip
+local function paintPlain(id)
+  local b = bars[id]
+  paintFill(id, HudMath.fillWidth(b.last[1], b.last[2], BAR_W))
+  paintChip(b.chip, 0, 0)
+end
+
+local function setFill(id, value, max)
+  local b = bars[id]
+  if not b then
+    -- the experience line (and any bar without a track): instant
+    paintFill(id, HudMath.fillWidth(value, max, BAR_W))
+    return
+  end
+  b.last[1], b.last[2] = value, max
+  if not smooth then
+    stopBarEvent()
+    HudBars.reset(b.track)
+    paintPlain(id)
+    return
+  end
+  HudBars.observe(b.track, HudBars.percent(value, max), g_clock.millis(), SMOOTH_STALE)
+  if paintBar(id) and not barEvent then barEvent = cycleEvent(barTick, 16) end
+end
+
+-- the option, from the settings (default on); the apply of the option in client_settings calls onOption
+local function readSmooth()
+  local cs = modules.client_settings
+  if cs and cs.getOption then
+    local ok, v = pcall(cs.getOption, 'smoothBars')
+    if ok then return v ~= false end
+  end
+  return true
+end
+
+function onOption(name, value)
+  if name ~= 'smoothBars' then return end
+  smooth = value ~= false
+  if not smooth then
+    stopBarEvent()
+    for id, b in pairs(bars) do
+      HudBars.reset(b.track)
+      paintPlain(id)
+    end
+  end
+end
+
+local function resetBars()
+  stopBarEvent()
+  for _, b in pairs(bars) do HudBars.reset(b.track) end
 end
 
 local ensureFresh
@@ -158,6 +243,8 @@ local fresh = false
 
 local function online()
   fresh = true
+  smooth = readSmooth()
+  resetBars() -- the plate shows the real health at login, it does not slide in from empty
   refresh()
   scheduleEvent(refresh, 500)
   -- after the stock modules (and the Helper's own 1 s start) have built their panels
@@ -167,6 +254,7 @@ end
 
 local function offline()
   fresh = false
+  resetBars()
 end
 
 ensureFresh = function()
@@ -177,6 +265,7 @@ ensureFresh = function()
 end
 
 function init()
+  smooth = readSmooth()
   -- in the game root panel next to the map (the map panel itself reaches above the visible area)
   hud = g_ui.loadUI('chaoshud', modules.game_interface.getRootPanel())
   local bars = child('barsHover')
@@ -190,6 +279,7 @@ function init()
 end
 
 function terminate()
+  stopBarEvent()
   disconnect(LocalPlayer, { onHealthChange = onHealthChange, onManaChange = onManaChange, onLevelChange = onLevelChange,
     onOutfitChange = onOutfitChange })
   disconnect(g_game, { onGameStart = online, onGameEnd = offline })

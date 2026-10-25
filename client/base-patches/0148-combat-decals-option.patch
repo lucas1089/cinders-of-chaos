@@ -1,0 +1,62 @@
+# Chaos: combat decals option (O231; client/BASE.md "0148"; mods/client_settings/classes/dataset.lua, options/graphics.otui;
+# after 0001-0147). Lua and OTUI only, no engine code: the overlay module game_combatdecals puts
+# blood, scorch, frost and poison stains on the floor tiles (Tile:setFloorWidget, patch 0078) and reads this option.
+#  * dataset.lua: `combatDecals` (default on); its apply tells game_combatdecals (`onOption(name, value)`).
+#  * options/graphics.otui: one checkbox under "Trails and arcs on missiles" (the visual effects panel grows from 333 to 352 px).
+# Not run in a client; goes live with the next client build.
+--- a/mods/client_settings/classes/dataset.lua
++++ b/mods/client_settings/classes/dataset.lua
+@@ -2214,6 +2214,16 @@
+     end,
+   },
+ 
++  -- Chaos (base patch 0148): stains on the ground after combat, fading out in 20-30 s (game_combatdecals)
++  combatDecals = {
++    value = true,
++    apply = function(value)
++      local m = modules.game_combatdecals
++      if m and m.onOption then m.onOption('combatDecals', value) end
++      return true
++    end,
++  },
++
+   enableShaders = {
+     value = true,
+     apply = function(value)
+--- a/mods/client_settings/options/graphics.otui
++++ b/mods/client_settings/options/graphics.otui
+@@ -452,7 +452,7 @@
+ 
+   FlatPanel
+     // Chaos (base patch 0126, overlay module game_visualfx): the dark-fantasy look of the map, one switch per effect
+-    size: 505 333
++    size: 505 352
+     anchors.top: prev.bottom
+     anchors.right: parent.right
+     anchors.left: parent.left
+@@ -779,6 +779,25 @@
+         local value = modules.client_settings.getOption('missileTrails')
+         self:setChecked(value ~= false)
+ 
++    SettingsCheckBox
++      id: combatDecals
++      size: 12 12
++      !text: tr('Stains on the ground')
++      font: $var-cip-font
++      text-auto-resize: true
++      color: $var-text-cip-color
++      text-offset: 14 -2
++      anchors.left: parent.left
++      anchors.top: missileTrails.bottom
++      margin-top: 7
++      margin-left: 16
++      image-source: /images/ui/checkbox
++      image-clip: 0 0 12 12
++      !tooltip: tr('Blood where a creature dies, a scorch mark under fire, frost cracks under ice and a green stain under poison.\nThey fade away in 20 to 30 seconds, at most 24 at a time, and only on the screen. It costs almost nothing.')
++      @onSetup: |
++        local value = modules.client_settings.getOption('combatDecals')
++        self:setChecked(value ~= false)
++
+     UIWidget
+       size: 12 12
+       anchors.top: parent.top

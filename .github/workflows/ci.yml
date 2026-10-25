@@ -441,6 +441,25 @@ jobs:
           g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" client/tools/chaoshitflash_test.cpp -o "$d/chaoshitflash_asan"
           "$d/chaoshitflash_asan"
 
+      - name: Eased bars bookkeeping (C++; header from base patch 0146)
+        run: |
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/client\/chaosbars\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            client/base-patches/0146-smooth-bars.patch > "$d/chaosbars.h"
+          g++ -std=c++17 -O1 -Wall -Wextra -I "$d" client/tools/chaosbars_test.cpp -o "$d/chaosbars_test"
+          "$d/chaosbars_test"
+          g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" client/tools/chaosbars_test.cpp -o "$d/chaosbars_asan"
+          "$d/chaosbars_asan"
+      - name: Missile trail and arc maths (C++; header from base patch 0147)
+        run: |
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/client\/chaosmissile\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            client/base-patches/0147-missile-trails.patch > "$d/chaosmissile.h"
+          g++ -std=c++17 -O1 -Wall -Wextra -I "$d" client/tools/chaosmissile_test.cpp -o "$d/chaosmissile_test"
+          "$d/chaosmissile_test"
+          g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" client/tools/chaosmissile_test.cpp -o "$d/chaosmissile_asan"
+          "$d/chaosmissile_asan"
+
       - name: Light map fill, same bytes and benchmark check (C++; header from base patch 0140)
         run: |
           d=$(mktemp -d)
@@ -678,6 +697,9 @@ jobs:
 
       - name: Ambient particle art is up to date (gen_ambient_art.py, six seamless tiles of game_chaosweather)
         run: python3 client/tools/gen_ambient_art.py --check  # not -I: Pillow from the user site (installed above)
+
+      - name: Combat decal art is up to date (gen_decal_art.py, blood / scorch / frost / stain of game_combatdecals)
+        run: python3 client/tools/gen_decal_art.py --check  # not -I: Pillow from the user site (installed above)
 
       - name: Liquid orb art is up to date (gen_orb_art.py, one ring and mask per orb size at 2x)
         run: python3 client/tools/gen_orb_art.py --check  # not -I: Pillow from the user site (installed above)
