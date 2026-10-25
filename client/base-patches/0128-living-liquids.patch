@@ -1,0 +1,142 @@
+# Chaos: living water and lava (O206; src/client/item.h/.cpp, luafunctions_client.cpp and Lua:
+# mods/client_settings/classes/dataset.lua, options/graphics.otui; after 0001-0127). Owner overlay module game_visualfx
+# (client/MANIFEST.md "Visual effects", "Living water and lava (O206)") does the rest. Water and lava ground sprites get a
+# subtle animated shimmer through two fragment shaders (data/shaders/chaos_liquid_*.frag), so the map looks more modern; the
+# sprite's own colours and alpha are kept, so every biome keeps its water and lava.
+#  * Item keeps a table client id -> kind (1 water, 2 lava; Item.clearLiquidIds, Item.addLiquidId, sent once by the module
+#    from visualfx_logic.lua L.LIQUID) and the switch (Item.setLiquidShimmer).
+#  * Item::draw (the map one): an item with no shader of its own whose client id is in the table draws through the existing
+#    ThingType::drawWithShader / DrawQueueItemThingWithShader path (the one items with setShader use) with chaos_liquid_water
+#    or chaos_liquid_lava. The cost is one byte lookup per drawn item and, for a liquid tile, one shader draw instead of a
+#    batched textured rect. Option off, table empty or shader missing -> the plain draw, as before. No extra pass, no Lua per tile.
+#  * The ripple is under one texture pixel and fades to nothing at the tile edge (v_Norm, as chaos_map_vertex.frag), so a
+#    sprite never reads the next frame of its sheet; the wave phases are whole multiples of pi across the tile, so they run on
+#    over the seam between two tiles.
+#  * Option liquidShimmer (default on), Options > Graphics under the five visual effects of 0126/0127 (the panel grows
+#    from 105 to 124 px).
+# Checked: applies cleanly after 0001-0127 to the base client tree (no fuzz) and item.cpp and luafunctions_client.cpp pass a
+# syntax-only compile; not run in a client.
+--- a/src/client/item.h
++++ b/src/client/item.h
+@@ -250,6 +250,11 @@
+     int getRarityOutlinePulseMs(); // > 0 when this item's outline breathes
+     static void setRarityOutlineColor(int rarity, int r, int g, int b, int a);
+     static void setRarityOutlineEnabled(bool onMap, bool inSlots);
++    // Chaos (base patch 0128): living water and lava. Ground items whose client id Lua listed (kind 1 water, 2 lava) draw
++    // with the liquid shader of their kind while the option is on (client/BASE.md 0128); no per-tile Lua, no extra pass.
++    static void setLiquidShimmer(bool enabled);
++    static void clearLiquidIds();
++    static void addLiquidId(int clientId, int kind);
+     static void setRarityOutlineStyle(int width, int minRarity, int pulseFromRarity, int pulseMs);
+     static bool isRarityOutlineOnMap();
+     static bool isRarityOutlineInSlots();
+--- a/src/client/item.cpp
++++ b/src/client/item.cpp
+@@ -113,6 +113,22 @@
+     }
+ }
+ 
++// Chaos (base patch 0128): the liquid ground ids (one byte per client id: 0 none, 1 water, 2 lava) and the option
++static std::vector<uint8_t> s_liquidKind;
++static bool s_liquidShimmer = false;
++static const std::string s_liquidShaders[3] = { "", "chaos_liquid_water", "chaos_liquid_lava" };
++
++void Item::setLiquidShimmer(bool enabled) { s_liquidShimmer = enabled; }
++void Item::clearLiquidIds() { s_liquidKind.clear(); }
++void Item::addLiquidId(int clientId, int kind)
++{
++    if (clientId <= 0 || clientId > 0xFFFF || kind < 1 || kind > 2)
++        return;
++    if (s_liquidKind.size() <= (size_t)clientId)
++        s_liquidKind.resize((size_t)clientId + 1, 0);
++    s_liquidKind[clientId] = (uint8_t)kind;
++}
++
+ // Chaos (base patch 0044): the rarity outline style (set from Lua) and the queue item that starts an outline
+ static ItemRarityOutlineStyle s_rarityOutline;
+ 
+@@ -149,7 +165,15 @@
+     }
+     // Chaos (base patch 0044): a dropped item of a rarity gets its soft outline under the sprite
+     DrawQueueItemItemOutline* outline = s_rarityOutline.onMap ? queueRarityOutline(getRarityOutlineColor()) : nullptr;
+-    if (!m_shader.empty()) {
++    // Chaos (base patch 0128): a water or lava ground with no shader of its own draws with the liquid shader
++    // (a ground id table lookup; the shader missing falls back to the plain draw in DrawQueueItemThingWithShader)
++    const std::string* liquidShader = nullptr;
++    if (s_liquidShimmer && m_shader.empty() && (size_t)m_clientId < s_liquidKind.size() && s_liquidKind[m_clientId] != 0)
++        liquidShader = &s_liquidShaders[s_liquidKind[m_clientId]];
++    if (liquidShader) {
++        type->drawWithShader(dest, 0, xPattern, yPattern, zPattern, animationPhase, *liquidShader, color, lightView);
++    }
++    else if (!m_shader.empty()) {
+         type->drawWithShader(dest, 0, xPattern, yPattern, zPattern, animationPhase, m_shader, color, lightView);
+     }
+     else {
+--- a/src/client/luafunctions_client.cpp
++++ b/src/client/luafunctions_client.cpp
+@@ -825,6 +825,9 @@
+     g_lua.registerClass<Item, Thing>();
+     g_lua.bindClassStaticFunction<Item>("create", &Item::create);
+     g_lua.bindClassStaticFunction<Item>("createOtb", &Item::createFromOtb);
++    g_lua.bindClassStaticFunction<Item>("setLiquidShimmer", &Item::setLiquidShimmer); // Chaos (base patch 0128)
++    g_lua.bindClassStaticFunction<Item>("clearLiquidIds", &Item::clearLiquidIds);
++    g_lua.bindClassStaticFunction<Item>("addLiquidId", &Item::addLiquidId);
+     g_lua.bindClassMemberFunction<Item>("clone", &Item::clone);
+     g_lua.bindClassMemberFunction<Item>("getContainerItems", &Item::getContainerItems);
+     g_lua.bindClassMemberFunction<Item>("getContainerItem", &Item::getContainerItem);
+--- a/mods/client_settings/classes/dataset.lua
++++ b/mods/client_settings/classes/dataset.lua
+@@ -2066,6 +2066,16 @@
+     end,
+   },
+ 
++  -- Chaos (base patch 0128): a subtle shimmer on water and lava ground (game_visualfx)
++  liquidShimmer = {
++    value = true,
++    apply = function(value)
++      local m = modules.game_visualfx
++      if m and m.onOption then m.onOption('liquidShimmer', value) end
++      return true
++    end,
++  },
++
+   enableShaders = {
+     value = true,
+     apply = function(value)
+--- a/mods/client_settings/options/graphics.otui
++++ b/mods/client_settings/options/graphics.otui
+@@ -452,7 +452,7 @@
+ 
+   FlatPanel
+     // Chaos (base patch 0126, overlay module game_visualfx): the dark-fantasy look of the map, one switch per effect
+-    size: 505 105
++    size: 505 124
+     anchors.top: prev.bottom
+     anchors.right: parent.right
+     anchors.left: parent.left
+@@ -551,6 +551,25 @@
+         local value = modules.client_settings.getOption('spellLight')
+         self:setChecked(value ~= false)
+ 
++    SettingsCheckBox
++      id: liquidShimmer
++      size: 12 12
++      !text: tr('Living water and lava')
++      font: $var-cip-font
++      text-auto-resize: true
++      color: $var-text-cip-color
++      text-offset: 14 -2
++      anchors.left: parent.left
++      anchors.top: spellLight.bottom
++      margin-top: 7
++      margin-left: 16
++      image-source: /images/ui/checkbox
++      image-clip: 0 0 12 12
++      !tooltip: tr('Water and lava ground ripple and shimmer a little. The colours stay the same;\nit costs a little on a weak computer.')
++      @onSetup: |
++        local value = modules.client_settings.getOption('liquidShimmer')
++        self:setChecked(value ~= false)
++
+     UIWidget
+       size: 12 12
+       anchors.top: parent.top
