@@ -1,0 +1,295 @@
+# Packet compression, server to client (O209; server/README.md "Packet compression (O209)"). The client engine already
+# inflates: with the checksum on, a zero where the u32 checksum goes marks a body that is a raw deflate stream (one
+# stream per connection, Z_SYNC_FLUSH per packet, the 00 00 FF FF tail cut off and added back by the client), inside the
+# XTEA layer. This patch makes the server send such packets.
+#   * order: body -> deflate -> u16 length -> XTEA (padded to 8) -> u32 0 instead of the adler word -> u16 length. The
+#     XTEA layer, the length words and the checksum rule of plain packets are exactly as before.
+#   * who: only a connection whose login carried the markers of the official client ("OTCv8TierByte" + "A"), only with
+#     config.lua packetCompression = true (default false). Any other client, the login protocol, the status protocol and
+#     the live cast keep plain packets. A client of an older release of ours inflates too (the code is the engine's).
+#   * what: bodies of packetCompressionMin (default 128, at least 16) to 60000 bytes; level packetCompressionLevel
+#     (default 3, 1-9). Smaller and larger bodies are sent plain (the client inflates only flagged packets). Once a
+#     body is deflated it is sent deflated even if it did not shrink, because the client's stream must see every block.
+#   * nothing is compressed from the client to the server and the server never inflates, so there is no decompression
+#     bomb on this side. The client side limit is client base patch 0131.
+#   * cost: z_stream per compressing connection, 2^14 window and memLevel 7: about 128 KB. CPU: server/tools/packet_compress_bench.py.
+#   * a deflate error stops compression on that connection (later packets plain), nothing is dropped.
+#   * build: links zlib (find_package(ZLIB) in CMakeLists.txt; a Visual Studio project needs zlib added by hand).
+# New src/chaospacketcompress.h (header only). tools/packet_compress_test.cpp checks the stream against the client's way of inflating.
+# Apply in the server source root after 0001-0068: patch -p1 < 0069-packet-compression.patch, then rebuild.
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -42,6 +42,7 @@
+ endif ()
+ 
+ find_package(Threads REQUIRED)
++find_package(ZLIB REQUIRED) # Chaos (patch 0069): packet compression
+ find_package(PugiXML REQUIRED)
+ 
+ # Selects LuaJIT if user defines or auto-detected
+@@ -70,6 +71,7 @@
+         Boost::filesystem
+         Boost::iostreams
+         fmt::fmt
++        ZLIB::ZLIB
+         ${CMAKE_THREAD_LIBS_INIT}
+         ${Crypto++_LIBRARIES}
+         ${LUA_LIBRARIES}
+--- /dev/null
++++ b/src/chaospacketcompress.h
+@@ -0,0 +1,88 @@
++// Chaos (patch 0069): raw deflate of server-to-client game packets (server/README.md "Packet compression (O209)").
++//
++// The client engine already inflates: when the u32 where the checksum goes is 0, the XTEA-decrypted body is a raw
++// deflate stream that continues the stream of the earlier flagged packets (inflateInit2 -15, Z_SYNC_FLUSH, the four
++// bytes 00 00 FF FF added back by the client). So the server keeps ONE z_stream per connection, ends every packet
++// with Z_SYNC_FLUSH and cuts those four bytes. Nothing is compressed in the other direction: the server never
++// inflates anything a client sent.
++#ifndef FS_CHAOSPACKETCOMPRESS_H_CHAOS
++#define FS_CHAOSPACKETCOMPRESS_H_CHAOS
++
++#include <zlib.h>
++
++#include <cstddef>
++#include <cstdint>
++#include <cstring>
++#include <vector>
++
++namespace ChaosPacketCompress {
++
++// smaller bodies are never worth a deflate call (the config value cannot go below this)
++static constexpr size_t MIN_BODY = 16;
++// larger bodies stay plain: deflate may add a few bytes to data it cannot shrink, and the length word has 16 bits
++// (NetworkMessage::MAX_PROTOCOL_BODY_LENGTH is 65522)
++static constexpr size_t MAX_BODY = 60000;
++// 2^14 byte window, memLevel 7: 64 KB + 64 KB of zlib state per connection (the client inflates with 2^15, so any
++// smaller window decodes). Measured against 2^15 / memLevel 8 in tools/packet_compress_bench.py: under 1% apart.
++static constexpr int WINDOW_BITS = 14;
++static constexpr int MEM_LEVEL = 7;
++
++class Deflater
++{
++	public:
++		Deflater() { std::memset(&stream, 0, sizeof(stream)); }
++		~Deflater() {
++			if (ready) {
++				deflateEnd(&stream);
++			}
++		}
++
++		Deflater(const Deflater&) = delete;
++		Deflater& operator=(const Deflater&) = delete;
++
++		bool init(int level) {
++			if (level < 1 || level > 9) {
++				level = 3;
++			}
++			ready = deflateInit2(&stream, level, Z_DEFLATED, -WINDOW_BITS, MEM_LEVEL, Z_DEFAULT_STRATEGY) == Z_OK;
++			return ready;
++		}
++
++		// Deflates one packet body and ends it with a sync flush. out points into this object and stays valid until
++		// the next call. False: the stream is broken and must not be used again.
++		bool compress(const uint8_t* in, size_t length, const uint8_t*& out, size_t& outLength) {
++			if (!ready) {
++				return false;
++			}
++			const uLong bound = deflateBound(&stream, static_cast<uLong>(length)) + 16;
++			if (buffer.size() < bound) {
++				buffer.resize(bound);
++			}
++			stream.next_in = const_cast<Bytef*>(in);
++			stream.avail_in = static_cast<uInt>(length);
++			stream.next_out = buffer.data();
++			stream.avail_out = static_cast<uInt>(buffer.size());
++			if (deflate(&stream, Z_SYNC_FLUSH) != Z_OK || stream.avail_in != 0 || stream.avail_out == 0) {
++				return false;
++			}
++			size_t produced = buffer.size() - stream.avail_out;
++			// the sync flush ends with an empty stored block: 00 00 FF FF. The client appends it again.
++			if (produced < 5 || buffer[produced - 4] != 0x00 || buffer[produced - 3] != 0x00 ||
++			        buffer[produced - 2] != 0xFF || buffer[produced - 1] != 0xFF) {
++				return false;
++			}
++			produced -= 4;
++			out = buffer.data();
++			outLength = produced;
++			return true;
++		}
++
++	private:
++		z_stream stream;
++		bool ready = false;
++		std::vector<uint8_t> buffer;
++};
++
++} // namespace ChaosPacketCompress
++
++#endif
+--- a/src/configmanager.cpp
++++ b/src/configmanager.cpp
+@@ -353,6 +353,11 @@
+ 	integer[PRE_AUTH_RATE_WINDOW] = getGlobalNumber(L, "preAuthRateWindow", 10);
+ 	integer[PRE_AUTH_COOLDOWN] = getGlobalNumber(L, "preAuthCooldown", 30);
+ 	boolean[PRE_AUTH_EXEMPT_LOOPBACK] = getGlobalBoolean(L, "preAuthExemptLoopback", true);
++	// Chaos (patch 0069): deflate for server-to-client packets of the official client (src/chaospacketcompress.h,
++	// server/README.md "Packet compression (O209)"). Off by default; bodies below packetCompressionMin bytes stay plain.
++	boolean[PACKET_COMPRESSION] = getGlobalBoolean(L, "packetCompression", false);
++	integer[PACKET_COMPRESSION_MIN] = getGlobalNumber(L, "packetCompressionMin", 128);
++	integer[PACKET_COMPRESSION_LEVEL] = getGlobalNumber(L, "packetCompressionLevel", 3);
+ 	boolean[CLIENT_GUARD_ALLOW_DEV_KEY] = getGlobalBoolean(L, "clientGuardAllowDevKey", false);
+ 	// Chaos (patch 0025): the gateways in front of the server (src/proxyprotocol.h, server/README.md "Gateways and the PROXY
+ 	// protocol"). proxyProtocolTrusted: their addresses (a.b.c.d or a.b.c.d/nn, comma separated); a connection from one
+--- a/src/configmanager.h
++++ b/src/configmanager.h
+@@ -57,6 +57,7 @@
+ 			PLAYER_CONSOLE_LOGS,
+ 			ARMOR_PERCENT, // Chaos (patch 0016): percent armour for players
+ 			CLIENT_GUARD_ALLOW_DEV_KEY, // Chaos (patch 0021): client guard
++			PACKET_COMPRESSION, // Chaos (patch 0069): deflate for the official client
+ 			PRE_AUTH_EXEMPT_LOOPBACK, // Chaos (patch 0067): pre-auth connection limits
+ 			PROXY_PROTOCOL_REQUIRED, // Chaos (patch 0025): PROXY protocol from the gateways
+ 			LOGIN_PREFETCH, // Chaos (patch 0031): login reads on the login worker
+@@ -159,6 +160,8 @@
+ 			LOGIN_FAIL_MAX_PER_ACCOUNT,
+ 			LOGIN_FAIL_WINDOW,
+ 			LOGIN_FAIL_BLOCK,
++			PACKET_COMPRESSION_MIN, // Chaos (patch 0069): smallest body that is compressed
++			PACKET_COMPRESSION_LEVEL, // Chaos (patch 0069): zlib level 1-9
+ 			PRE_AUTH_MAX_PER_IP, // Chaos (patch 0067): pre-auth connection limits
+ 			PRE_AUTH_MAX_TOTAL,
+ 			PRE_AUTH_DEADLINE,
+--- a/src/outputmessage.h
++++ b/src/outputmessage.h
+@@ -30,14 +30,28 @@
+ 			add_header(info.length);
+ 		}
+ 
+-		void addCryptoHeader(bool addChecksum) {
+-			if (addChecksum) {
++		void addCryptoHeader(bool addChecksum, bool compressed = false) {
++			if (compressed) {
++				// Chaos (patch 0069): a zero where the checksum goes tells the client the body is deflated
++				add_header(static_cast<uint32_t>(0));
++			} else if (addChecksum) {
+ 				add_header(adlerChecksum(buffer + outputBufferStart, info.length));
+ 			}
+ 
+ 			writeMessageLength();
+ 		}
+ 
++		// Chaos (patch 0069): replaces the body (before writeMessageLength) by len bytes; false if they do not fit
++		bool replaceBody(const uint8_t* data, size_t len) {
++			if (outputBufferStart != INITIAL_BUFFER_POSITION || len > static_cast<size_t>(MAX_BODY_LENGTH)) {
++				return false;
++			}
++			memcpy(buffer + outputBufferStart, data, len);
++			info.length = static_cast<MsgSize_t>(len);
++			info.position = static_cast<MsgSize_t>(outputBufferStart + len);
++			return true;
++		}
++
+ 		void append(const NetworkMessage& msg) {
+ 			auto msgLen = msg.getLength();
+ 			memcpy(buffer + info.position, msg.getBuffer() + 8, msgLen);
+--- a/src/protocol.cpp
++++ b/src/protocol.cpp
+@@ -47,15 +47,35 @@
+ void Protocol::onSendMessage(const OutputMessage_ptr& msg) const
+ {
+ 	if (!rawMessages) {
++		// Chaos (patch 0069): deflate the body first; the length word, the XTEA padding and the zero flag follow
++		const bool compressed = deflater && encryptionEnabled && checksumEnabled && compressBody(*msg);
+ 		msg->writeMessageLength();
+ 
+ 		if (encryptionEnabled) {
+ 			XTEA_encrypt(*msg, key);
+-			msg->addCryptoHeader(checksumEnabled);
++			msg->addCryptoHeader(checksumEnabled, compressed);
+ 		}
+ 	}
+ }
+ 
++bool Protocol::compressBody(OutputMessage& msg) const
++{
++	const size_t length = msg.getLength();
++	if (length < compressMin || length > ChaosPacketCompress::MAX_BODY) {
++		return false;
++	}
++
++	const uint8_t* out = nullptr;
++	size_t outLength = 0;
++	if (!deflater->compress(msg.getOutputBuffer(), length, out, outLength)) {
++		// the stream is unusable now: this and every later packet stays plain (the client only inflates the flagged ones)
++		deflater.reset();
++		return false;
++	}
++	// a deflated body is sent even when it is not smaller: the client's stream must see every block the server's saw
++	return msg.replaceBody(out, outLength);
++}
++
+ void Protocol::onRecvMessage(NetworkMessage& msg)
+ {
+ 	if (encryptionEnabled && !XTEA_decrypt(msg, key)) {
+--- a/src/protocol.h
++++ b/src/protocol.h
+@@ -6,6 +6,10 @@
+ 
+ #include "connection.h"
+ #include "xtea.h"
++#include "chaospacketcompress.h"
++
++#include <algorithm>
++#include <memory>
+ 
+ class Protocol : public std::enable_shared_from_this<Protocol>
+ {
+@@ -62,6 +66,19 @@
+ 			checksumEnabled = false;
+ 		}
+ 
++		// Chaos (patch 0069): from now on bodies of at least minBytes are deflated (one stream per connection). Only for a
++		// client that announced it can inflate (ProtocolGame::onRecvFirstMessage); needs XTEA and the checksum word.
++		void enablePacketCompression(int level, size_t minBytes) {
++			if (!deflater) {
++				deflater = std::make_unique<ChaosPacketCompress::Deflater>();
++				if (!deflater->init(level)) {
++					deflater.reset();
++					return;
++				}
++			}
++			compressMin = std::max<size_t>(minBytes, ChaosPacketCompress::MIN_BODY);
++		}
++
+ 		static bool RSA_decrypt(NetworkMessage& msg);
+ 
+ 		void setRawMessages(bool value) {
+@@ -80,6 +97,12 @@
+ 		bool encryptionEnabled = false;
+ 		bool checksumEnabled = true;
+ 		bool rawMessages = false;
++		// Chaos (patch 0069): the deflate stream of this connection; onSendMessage runs in send order under the
++		// connection lock (Connection::send / onWriteOperation), so the stream sees the packets in the order the client
++		// reads them
++		mutable std::unique_ptr<ChaosPacketCompress::Deflater> deflater;
++		size_t compressMin = 128;
++		bool compressBody(OutputMessage& msg) const;
+ };
+ 
+ #endif
+--- a/src/protocolgame.cpp
++++ b/src/protocolgame.cpp
+@@ -611,6 +611,13 @@
+ 		}
+ 	}
+ 
++	// Chaos (patch 0069): packet compression for the official client (it has the inflate code of the engine it is built
++	// on, and sends the markers above); other clients keep plain packets. Off unless config.lua packetCompression = true.
++	if (chaosClient && g_config.getBoolean(ConfigManager::PACKET_COMPRESSION)) {
++		enablePacketCompression(g_config.getNumber(ConfigManager::PACKET_COMPRESSION_LEVEL),
++		                        static_cast<size_t>(std::max<int32_t>(0, g_config.getNumber(ConfigManager::PACKET_COMPRESSION_MIN))));
++	}
++
+ 	if (version < CLIENT_VERSION_MIN || version > CLIENT_VERSION_MAX) {
+ 		// Chaos (patch 0021): with the client guard on, another protocol is another client: the official-client message
+ 		if (ClientGuard::mode() != ClientGuard::Mode::Off) {

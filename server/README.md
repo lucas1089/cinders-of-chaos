@@ -23088,3 +23088,80 @@ and the engine finds it through an rpath (bundle `lib/` with `tools/linux/bundle
 secure build is accepted. Not measured on a live server.
 
 VPS: no action. A normal update brings it.
+
+## Packet compression (O209) (engine `src-patches/0069-packet-compression.patch`, `src/chaospacketcompress.h`, client base patch `0131`, `tools/packet_compress_bench.py`, `tools/packet_compress_test.cpp`)
+
+Fewer bytes per second to the player. The server deflates its game packets. **Off by default**: `config.lua`
+`packetCompression = true` turns it on (read at start; restart or reload the config as for the other engine keys).
+
+What the client engine already had (read in the base client source, `framework/net/protocol.cpp`, `inputmessage.cpp`):
+with the checksum on, a server packet whose checksum word is `0` is "compressed". The client XTEA-decrypts it, appends
+`00 00 FF FF` and runs `inflate(Z_SYNC_FLUSH)` on ONE stream per connection (`inflateInit2(-15)`), so the stream carries
+its dictionary from packet to packet. The feature flag `GamePacketCompression` (compress every packet) is not used.
+No client change is needed to receive it; a client of an older release of ours inflates too.
+
+What the server does (`Protocol::onSendMessage`): body -> raw deflate with `Z_SYNC_FLUSH`, last 4 bytes cut -> u16 length
+-> XTEA (padded to 8) -> u32 `0` instead of the adler word -> u16 length. One `z_stream` per connection, fed in send
+order (the call runs under the connection lock). Window 2^14 and memLevel 7: about 128 KB per compressing connection
+(25 MB at 200 online).
+
+| Key | Default | Meaning |
+|---|---|---|
+| `packetCompression` | false | switch |
+| `packetCompressionMin` | 128 | smallest body (bytes) that is deflated; never below 16; bodies over 60000 stay plain |
+| `packetCompressionLevel` | 3 | zlib level 1-9 |
+
+Who gets it: only a connection whose login packet carries the markers of our client (`OTCv8TierByte` + `A`, the same test
+as `chaosClient`). Other clients, the login and status protocols, and the live cast keep plain packets. Not an explicit
+capability bit: the capability byte of the login block is full (bits 0-7 are used) and the RSA block is a fixed 128
+bytes, so one more byte could overflow it for long account + password + name.
+
+Security:
+- Server to client only. The server never inflates anything, so there is no decompression bomb on the server. The
+  client's packet reader is unchanged for what the client sends.
+- The client inflates into a buffer: stock code gave inflate 320 KB and took a full buffer for success (silent cut).
+  Base patch `0131` caps one packet at 65536 bytes (output space cap + 1) and closes the connection with an error line
+  when the result is over the cap or input is left over. Worst case before: 320 KB of output from a 320 byte packet.
+- XTEA stays outermost, so the order the client expects is kept: checksum word, XTEA, inflate.
+- The adler word is not sent on compressed packets (0 replaces it). It was never a security check (no key). Known, from
+  before this patch: a plain packet whose adler is exactly 0 (about 1 in 4 billion) would be read as compressed by the
+  client and close that connection; unchanged and not fixed here.
+- A deflate error switches compression off on that connection (later packets plain); nothing is lost.
+- A body that was deflated is sent deflated even if it did not shrink (the client's stream must see every block). The
+  expansion is a few bytes at most; `tools/packet_compress_test.cpp` checks it, the round trip against the client's way
+  of inflating, 4000 packets including a 60000 byte one and noise.
+
+Measured (`python3 -I server/tools/packet_compress_bench.py`, this sandbox's CPU, Python's zlib 1.x; bytes are wire
+bytes: length word, checksum word, XTEA padding; TCP/IP headers not counted). The packets are built with the byte layouts
+of `protocolgame.cpp` (tile, item with the Chaos attribute word, creature, floor, step, effect, shot, text message,
+extended opcode JSON). With `--map` the tiles are the real tiles of the base server's world map (.otbm) (236,916
+tiles of sampled areas, items through `items.otb` client ids). Creatures, effects, damage values and the JSON are
+generated. **It is not a capture of a live session.** Level 3, min 128:
+
+| Traffic | Real map | Synthetic map | us per compressed packet |
+|---|---|---|---|
+| login / teleport: 8 floors of one view | 81.4% saved | 74.5% | 56 / 129 |
+| walking: one step per packet (row or column + move) | 70.1% | 67.2% | 8 / 17 |
+| fighting: effects, shots, health, damage text, stats, one 10 ms flush per packet | 26.2% | 26.4% | 12 |
+| module JSON on extended opcodes | 76.3% | 77.4% | 11 |
+| mixed hunt minute (1 view, 200 steps, 3000 fight flushes, 120 JSON; assumed mix) | 35.7% | 37.0% | 12 |
+
+Sensitivity of the mixed minute (synthetic): level 1 34.9%, level 3 37.0%, level 6 38.9% (CPU per packet 12 / 13 / 18
+us); min 64: 50.2% (more packets compressed, 2939 instead of 1669 per minute); min 256: 16.8%; window 2^15 + memLevel 8:
+37.3%; window 2^12 + memLevel 5: 35.4%. The small fight packets are the weak part: most are under 128 bytes and stay
+plain. Level 3 and min 128 are the default; min 64 is the next step if the owner wants more and has CPU for it.
+
+CPU: about 12 us per compressed packet. The mixed minute holds about 1700 of them: roughly 20 ms of CPU per hunting
+player per minute (0.03% of one core), about 7% of one core at 200 hunting players. The call runs on the thread that
+calls `Connection::send` (the game loop when the connection is idle), so it counts against the 20 ms task class of "Game
+loop stalls". Not measured on a live server.
+
+Verified: the patch applies after 0001-0068 with no fuzz; `protocol.cpp`, `outputmessage.cpp`, `connection.cpp`,
+`protocolgame.cpp`, `configmanager.cpp` pass `g++ -std=c++17 -fsyntax-only` with the boost, fmt, crypto++ and LuaJIT
+headers of this sandbox; the `Deflater` round trip test passes. Not run: a full engine build and link, a real client
+against the patched server, a live load test.
+
+Install: apply the patch with the others, add zlib to a Visual Studio project by hand (CMake finds it), build the new
+client with base patch `0131` (optional for the feature: the stock client inflates already, only the size cap is new).
+Then `packetCompression = true` in `config.lua`. Check in a client: map loads, walking, a hunt, relog; if anything is
+wrong set it back to false. VPS: the admin app (`android/`) has no key editor for it; edit `config.lua` and restart.
