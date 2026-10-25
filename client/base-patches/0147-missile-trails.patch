@@ -1,0 +1,281 @@
+# Chaos: missile trails and arcs (O230; client/BASE.md "0147"; src/client/chaosmissile.h (new, pure), missile.h/.cpp,
+# luafunctions_client.cpp, mods/client_settings/classes/dataset.lua, options/graphics.otui; after 0001-0146).
+# Missile::draw stays the stock single draw. With the option `missileTrails` (default on) and a shot of 2 tiles or more:
+#  * Trail: the same missile frame is queued 3 more times at the path fractions f - k * 0.05 (k = 1..3, oldest first, so the
+#    missile is on top) with opacities 0.50, 0.32, 0.18 (chaos::missile::trailOpacity). The opacity is DrawQueue::setOpacity
+#    over the items queued since the copy started: it only changes their colour (no draw condition, no cache flush). A copy
+#    that would lie before the start of the path is left out, so a missile that just left has none. The copies carry no light.
+#  * Arc: a missile whose id is in the arc list is lifted by 4 * h * f * (1 - f) pixels (0 at both ends, h in the middle);
+#    h = min(14, 1.6 * tiles) pixels of a 32 px sprite, scaled by the sprite size. The trail copies follow the same arc. Missiles
+#    outside the list (spell missiles) stay on the straight line. The list is Lua's: game_visualfx sends the stock ids of arrows,
+#    bolts, spears and stones with Missile.addArcId, one call per id, like the spell light colours of 0127.
+#  * Missile.setTrails(bool) / isTrails() / clearArcIds() / addArcId(id) (static). setTrails is off in the engine, so an engine
+#    without the module draws exactly the stock call. With the option off the draw is that stock statement and nothing else.
+#  * Not done: the exact angle of single-direction missiles (setRotation is a draw condition; capping it at about 8 and
+#    knowing which art has one direction needs the dat, not done blind).
+#  * dataset.lua: option `missileTrails` (default on); its apply tells game_visualfx (`onOption('missileTrails', value)`).
+#  * options/graphics.otui: one checkbox "Trails and arcs on missiles" under "Smooth health bars"; the visual effects panel
+#    grows from 314 to 333 px (one row is 19 px).
+# Cost: with the option on, at most 3 extra textured rects per missile of 2 tiles or more while it flies. Off: one bool test.
+# Checked: applies after 0001-0146 on the base client tree (no fuzz); missile.cpp and luafunctions_client.cpp pass g++
+# -fsyntax-only; the header passes client/tools/chaosmissile_test.cpp. Not built, linked or run in a client.
+--- a/src/client/missile.h
++++ b/src/client/missile.h
+@@ -53,7 +53,17 @@
+ 
+     void setEffectSource(Otc::MagicEffectSources source) { m_effectSource = source; }
+ 
++    // Chaos (base patch 0147): a short fading trail behind every missile and a slight arc for the ids in a list
++    // (arrows, bolts, spears, stones; the overlay module game_visualfx sends it). Off in the engine: the draw is then the
++    // stock one. See chaosmissile.h.
++    static void setTrails(bool enabled) { s_trails = enabled; }
++    static bool isTrails() { return s_trails; }
++    static void clearArcIds();
++    static void addArcId(int id);
++
+ private:
++    static bool s_trails;
++    float m_tiles = 0.0f; // length of the path in tiles
+     Timer m_animationTimer;
+     Point m_delta;
+     float m_duration;
+--- a/src/client/missile.cpp
++++ b/src/client/missile.cpp
+@@ -27,8 +27,24 @@
+ #include "spritemanager.h"
+ #include "client.h"
+ #include "game.h"
++#include "chaosmissile.h"
+ #include <framework/core/clock.h>
+ #include <framework/core/eventdispatcher.h>
++#include <framework/graphics/drawqueue.h>
++
++// Chaos (base patch 0147): see chaosmissile.h
++bool Missile::s_trails = false;
++static chaos::missile::IdSet s_arcIds;
++
++void Missile::clearArcIds()
++{
++    s_arcIds.clear();
++}
++
++void Missile::addArcId(int id)
++{
++    s_arcIds.add(id);
++}
+ 
+ void Missile::draw(const Point& dest, bool animate, LightView* lightView)
+ {
+@@ -71,7 +87,24 @@
+         source = Otc::ME_SOURCE_OWN;
+     float alpha = g_client.getEffectAlpha(source);
+     Color color(255, 255, 255, (int)(alpha * 255));
+-    rawGetThingType()->draw(dest + m_delta * fraction, 0, xPattern, yPattern, 0, 0, color, lightView);
++    if (!s_trails || !chaos::missile::wantsEffect(m_tiles)) {
++        rawGetThingType()->draw(dest + m_delta * fraction, 0, xPattern, yPattern, 0, 0, color, lightView);
++        return;
++    }
++
++    // Chaos (base patch 0147): the same frame again at earlier path fractions with a falling opacity (DrawQueue::setOpacity
++    // only changes the colour of the items queued since `start`, it is no draw condition), oldest first so the missile
++    // itself is on top; the copies have no light. Missiles of the arc list are lifted by 4 * h * f * (1 - f).
++    ThingType* type = rawGetThingType();
++    const float f = chaos::missile::clampFraction(fraction);
++    const float h = chaos::missile::arcHeight(m_tiles, s_arcIds.contains(m_id)) * (g_sprites.spriteSize() / 32.0f);
++    for (int k = chaos::missile::trailCount(f); k >= 1; --k) {
++        const float tf = chaos::missile::trailFraction(f, k);
++        const size_t start = g_drawQueue->size();
++        type->draw(dest + m_delta * tf - Point(0, (int)std::lround(chaos::missile::arcLift(tf, h))), 0, xPattern, yPattern, 0, 0, color, nullptr);
++        g_drawQueue->setOpacity(start, chaos::missile::trailOpacity(k));
++    }
++    type->draw(dest + m_delta * f - Point(0, (int)std::lround(chaos::missile::arcLift(f, h))), 0, xPattern, yPattern, 0, 0, color, lightView);
+ }
+ 
+ void Missile::setPath(const Position& fromPosition, const Position& toPosition)
+@@ -83,6 +116,7 @@
+ 
+     m_position = fromPosition;
+     m_delta = Point(toPosition.x - fromPosition.x, toPosition.y - fromPosition.y);
++    m_tiles = m_delta.length(); // Chaos (base patch 0147)
+     m_duration = 150 * std::sqrt(m_delta.length());
+     m_delta *= g_sprites.spriteSize();
+     m_animationTimer.restart();
+--- a/src/client/luafunctions_client.cpp
++++ b/src/client/luafunctions_client.cpp
+@@ -921,6 +921,10 @@
+     g_lua.bindClassMemberFunction<Missile>("getSource", &Missile::getSource);
+     g_lua.bindClassMemberFunction<Missile>("getDestination", &Missile::getDestination);
+     g_lua.bindClassMemberFunction<Missile>("setPath", &Missile::setPath);
++    g_lua.bindClassStaticFunction<Missile>("setTrails", &Missile::setTrails); // base patch 0147
++    g_lua.bindClassStaticFunction<Missile>("isTrails", &Missile::isTrails);
++    g_lua.bindClassStaticFunction<Missile>("clearArcIds", &Missile::clearArcIds);
++    g_lua.bindClassStaticFunction<Missile>("addArcId", &Missile::addArcId);
+ 
+     g_lua.registerClass<StaticText, Thing>();
+     g_lua.bindClassStaticFunction<StaticText>("create", []{ return std::make_shared<StaticText>(); });
+--- a/mods/client_settings/classes/dataset.lua
++++ b/mods/client_settings/classes/dataset.lua
+@@ -2203,6 +2203,17 @@
+     end,
+   },
+ 
++  -- Chaos (base patch 0147): a short fading trail behind missiles and a slight arc for arrows, bolts, spears and stones
++  -- (game_visualfx -> Missile.setTrails)
++  missileTrails = {
++    value = true,
++    apply = function(value)
++      local m = modules.game_visualfx
++      if m and m.onOption then m.onOption('missileTrails', value) end
++      return true
++    end,
++  },
++
+   enableShaders = {
+     value = true,
+     apply = function(value)
+--- a/mods/client_settings/options/graphics.otui
++++ b/mods/client_settings/options/graphics.otui
+@@ -452,7 +452,7 @@
+ 
+   FlatPanel
+     // Chaos (base patch 0126, overlay module game_visualfx): the dark-fantasy look of the map, one switch per effect
+-    size: 505 314
++    size: 505 333
+     anchors.top: prev.bottom
+     anchors.right: parent.right
+     anchors.left: parent.left
+@@ -760,6 +760,25 @@
+         local value = modules.client_settings.getOption('smoothBars')
+         self:setChecked(value ~= false)
+ 
++    SettingsCheckBox
++      id: missileTrails
++      size: 12 12
++      !text: tr('Trails and arcs on missiles')
++      font: $var-cip-font
++      text-auto-resize: true
++      color: $var-text-cip-color
++      text-offset: 14 -2
++      anchors.left: parent.left
++      anchors.top: smoothBars.bottom
++      margin-top: 7
++      margin-left: 16
++      image-source: /images/ui/checkbox
++      image-clip: 0 0 12 12
++      !tooltip: tr('Arrows, bolts and spell missiles leave a short fading trail, and arrows, bolts, spears and stones\nfly in a slight arc. Spell missiles stay straight. It costs a few extra sprites per missile.')
++      @onSetup: |
++        local value = modules.client_settings.getOption('missileTrails')
++        self:setChecked(value ~= false)
++
+     UIWidget
+       size: 12 12
+       anchors.top: parent.top
+--- a/src/client/chaosmissile.h
++++ b/src/client/chaosmissile.h
+@@ -0,0 +1,106 @@
++// Cinders of Chaos (base patch 0147): trail and arc of missiles, pure and header-only so client/tools/chaosmissile_test.cpp
++// can run it without the engine. A missile is drawn at a path fraction f (0 at the shooter, 1 at the target). With the
++// option on it gets a short fading trail (the same frame again at f - k * kTrailStep with a falling opacity) and, when its
++// id is in the arc list (arrows, bolts, spears, stones: the list comes from Lua), a slight arc: a lift of 4 * h * f * (1 - f)
++// pixels, h growing with the distance up to a cap. Nothing is kept per missile.
++#ifndef CHAOSMISSILE_H
++#define CHAOSMISSILE_H
++
++#include <algorithm>
++#include <bitset>
++#include <cstddef>
++#include <cstdint>
++
++namespace chaos {
++namespace missile {
++
++constexpr int kMaxTrail = 4;           // most extra draws per missile
++constexpr int kTrailCount = 3;         // as shipped
++constexpr float kTrailStep = 0.05f;    // path fraction between two trail copies
++constexpr float kMinTiles = 2.0f;      // a shorter shot gets no trail and no arc
++constexpr float kArcPerTile = 1.6f;    // h in pixels (of a 32 px sprite) per tile of distance
++constexpr float kArcMax = 14.0f;       // cap of h; the lift at the top of the arc is h
++
++// opacity of the k-th trail copy (k = 1 is the one right behind the missile): falls with k, always inside (0, 1)
++inline float trailOpacity(int k)
++{
++    static const float table[kMaxTrail] = { 0.50f, 0.32f, 0.18f, 0.08f };
++    if (k < 1)
++        return table[0];
++    if (k > kMaxTrail)
++        return table[kMaxTrail - 1];
++    return table[k - 1];
++}
++
++inline float clampFraction(float f)
++{
++    if (!(f > 0.0f)) // also NaN
++        return 0.0f;
++    return f > 1.0f ? 1.0f : f;
++}
++
++// fraction of the k-th trail copy; negative when it would lie before the start of the path (not drawn)
++inline float trailFraction(float f, int k)
++{
++    return clampFraction(f) - static_cast<float>(k) * kTrailStep;
++}
++
++// how many trail copies are drawn at fraction f: copies before the start of the path are left out, so a missile that just
++// left the shooter has none
++inline int trailCount(float f)
++{
++    int n = 0;
++    for (int k = 1; k <= kTrailCount && k <= kMaxTrail; ++k) {
++        if (trailFraction(f, k) >= 0.0f)
++            ++n;
++    }
++    return n;
++}
++
++// trail and arc only for a shot of at least kMinTiles tiles (path length in tiles, a finite number)
++inline bool wantsEffect(float tiles)
++{
++    return tiles >= kMinTiles;
++}
++
++// the height of the arc in pixels of a 32 px sprite (scale it by the sprite size / 32): 0 for a missile that is not in the
++// arc list, otherwise grows with the distance and stops at kArcMax
++inline float arcHeight(float tiles, bool arcs)
++{
++    if (!arcs || !(tiles > 0.0f))
++        return 0.0f;
++    return std::min(kArcMax, tiles * kArcPerTile);
++}
++
++// the lift (pixels upward, to subtract from y) at fraction f of an arc of height h: 0 at both ends, h in the middle
++inline float arcLift(float f, float h)
++{
++    const float x = clampFraction(f);
++    return 4.0f * h * x * (1.0f - x);
++}
++
++// the set of missile ids that arc, filled from Lua (game_visualfx sends the list, one call per id, like the spell light table)
++class IdSet
++{
++public:
++    void clear() { m_bits.reset(); }
++    void add(int id)
++    {
++        if (id > 0 && id < static_cast<int>(kIds))
++            m_bits.set(static_cast<size_t>(id));
++    }
++    bool contains(int id) const
++    {
++        return id > 0 && id < static_cast<int>(kIds) && m_bits.test(static_cast<size_t>(id));
++    }
++    size_t size() const { return m_bits.count(); }
++
++private:
++    static constexpr size_t kIds = 65536;
++    std::bitset<kIds> m_bits;
++};
++
++} // namespace missile
++} // namespace chaos
++
++#endif

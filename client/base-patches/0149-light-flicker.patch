@@ -1,0 +1,364 @@
+# Chaos: a warmer, more alive light map (O228; client/BASE.md "0149"; src/client/chaoslightsoft.h (new, pure), lightview.h/.cpp,
+# map.h, mapview.cpp, luafunctions_client.cpp, mods/client_settings/classes/dataset.lua, options/graphics.otui; after 0001-0148).
+# 0140 made the light map fill cheap and left its output byte for byte the stock one. This changes the output on purpose
+# (0140 and its header chaoslightfill.h stay as they are; the new header includes it for the reach box):
+#  * Falloff: smoothstep of the stock ramp x = (intensity - distance) * 0.2 (clamped 0..1) instead of x itself. Same radius
+#    (0 at `intensity` tiles), soft round edge, monotonic.
+#  * Overlap: lights add up per channel as a screen blend, p + c - ceil(p * c / 255), instead of the per-channel maximum.
+#    Never above 255, never below the larger of the two, equal to c over black. The global light is the first term.
+#  * Flicker (option lightFlicker, default on, this item only): a warm light (8-bit colour with red level 3+, at least 2
+#    above blue, not below green: fire, torch, lava, warm spell lights) changes its radius by up to +-12% with a two
+#    octave value noise of time (110 ms and 37 ms lattice steps, smoothstep between them). The seed is the light's world
+#    tile and colour (the camera tile is added to the view tile, so a fire keeps its phase while the player walks), the
+#    time is g_clock.millis() taken when MapView builds the LightView on the logic thread; the render thread reads copies.
+#    Same time and place give the same value; with the option off no time is used and the picture is steady. Only the
+#    colour level of the map changes, the colours stay warm because only warm lights flicker, and only their size moves.
+#  * LightView::draw uploads with glTexSubImage2D when the texture is the one uploaded last time and the size is the same
+#    (storage already allocated by Texture::update), and with glTexImage2D otherwise (first upload, new size or new id).
+#  * g_map.setLightFlicker(bool) / isLightFlicker() (Map keeps one bool; engine default off, game_visualfx sets it).
+#  * dataset.lua: option `lightFlicker` (default on), apply tells game_visualfx. graphics.otui: a checkbox "Flickering fire
+#    light" under "Stains on the ground"; the visual effects panel grows 352 -> 371 px.
+# Cost: one warm test, two noise octaves (4 hashes) per light per frame when on; the tile loop is the 0140 loop with a
+# smoothstep and an integer blend instead of a max (offline bench: not slower than 1.2x the stock loop, in practice faster).
+# Known: the look is not seen in a client; a creature that carries a warm light flickers with a new phase each time it
+# crosses a tile; the spell lights of 0127 that are warm flicker too.
+# Checked: applies after 0001-0148 with 0 FAILED / fuzz; the touched .cpp files pass g++ -std=c++20 -fsyntax-only -w -Isrc
+# -DFRAMEWORK_GRAPHICS with the base's own errors only; the header passes client/tools/chaoslightsoft_test.cpp (CI, also
+# ASan/UBSan). Not built, linked or run in a client.
+--- a/src/client/chaoslightsoft.h
++++ b/src/client/chaoslightsoft.h
+@@ -0,0 +1,144 @@
++// Chaos (base patch 0149, O228): the warmer light map, pure, no engine types. Builds on chaoslightfill.h (0140): the same
++// reach boxes and floor starts, but a different tile maths on purpose:
++//  * falloff: smoothstep of the old linear ramp x = (intensity - distance) * 0.2 (clamped 0..1), so a light has a soft
++//    round edge instead of a straight one; the radius is unchanged (x reaches 0 at `intensity` tiles);
++//  * overlap: lights add up as a "screen" blend per channel, p + c - ceil(p * c / 255), which is never above 255, never
++//    below the larger of the two and equals c when p is 0 (a single light on black shows its own colour); the global light
++//    is the first term;
++//  * flicker (option lightFlicker): a warm light (fire, torch, lava: red level 3+ and clearly above blue) changes its
++//    radius by up to +-12% (kAmplitude) with a two octave value noise of time, seeded from the light's world tile and
++//    colour. Same time and place give the same value; flicker off uses no time at all.
++#ifndef CHAOSLIGHTSOFT_H
++#define CHAOSLIGHTSOFT_H
++
++#include "chaoslightfill.h"
++
++namespace chaoslight {
++
++constexpr float kAmplitude = 0.12f; // radius change of a flickering light, +- (10-15% asked)
++constexpr uint32_t kSlowMs = 110;   // lattice step of the slow octave
++constexpr uint32_t kFastMs = 37;    // lattice step of the fast octave
++
++struct Flicker {
++    bool on = false;
++    uint32_t timeMs = 0;
++    int originX = 0, originY = 0; // world tile of view tile (0, 0): the seed uses world tiles, so a step of the player
++                                  // does not re-phase every fire
++};
++
++// 8-bit light colour 1..215 (r, g, b levels 0..5): warm = red high and clearly above blue and not below green
++inline bool isWarm(int color)
++{
++    if (color <= 0 || color >= 216)
++        return false;
++    const int r = (color / 36) % 6, g = (color / 6) % 6, b = color % 6;
++    return r >= 3 && r - b >= 2 && r >= g;
++}
++
++inline uint32_t mix(uint32_t h)
++{
++    h ^= h >> 16; h *= 0x7feb352dU;
++    h ^= h >> 15; h *= 0x846ca68bU;
++    h ^= h >> 16;
++    return h;
++}
++
++inline float lattice(uint32_t seed, uint32_t i) // -1..1
++{
++    return float(mix(seed ^ mix(i + 0x9e3779b9U)) & 0xffffU) * (2.0f / 65535.0f) - 1.0f;
++}
++
++inline float octave(uint32_t seed, uint32_t t, uint32_t stepMs)
++{
++    const uint32_t i = t / stepMs;
++    float u = float(t % stepMs) / float(stepMs);
++    u = u * u * (3.0f - 2.0f * u);
++    const float a = lattice(seed, i), b = lattice(seed, i + 1);
++    return a + (b - a) * u;
++}
++
++// -1..1, smooth in time, deterministic for (seed, t)
++inline float noise(uint32_t seed, uint32_t t)
++{
++    return 0.65f * octave(seed, t, kSlowMs) + 0.35f * octave(seed ^ 0x5bd1e995U, t, kFastMs);
++}
++
++inline uint32_t seedOf(int worldTileX, int worldTileY, int color)
++{
++    return mix(uint32_t(worldTileX) * 73856093U ^ uint32_t(worldTileY) * 19349663U ^ uint32_t(color) * 83492791U);
++}
++
++// smoothstep of the clamped linear ramp; 0 at x <= 0, 1 at x >= 1, monotonic
++inline float soften(float x)
++{
++    if (x <= 0.0f) return 0.0f;
++    if (x >= 1.0f) return 1.0f;
++    return x * x * (3.0f - 2.0f * x);
++}
++
++// soft clamp of two 8 bit channel values: never above 255, never below max(p, c), p when c is 0, c when p is 0
++inline int addSoft(int p, int c)
++{
++    const int v = p + c - (p * c + 254) / 255;
++    return v > 255 ? 255 : v;
++}
++
++// Same arguments as chaoslight::fill plus the flicker. The radius of a light (limit in the reach box) uses the largest
++// radius the flicker can make, so the box never misses a tile.
++template <class L, class T, class Base, class Shade>
++void fillSoft(uint8_t* buffer, int w, int h, int spriteSize, uint8_t gr, uint8_t gg, uint8_t gb,
++              const L* lights, size_t count, const T* tiles, const Flicker& flicker, Base base, Shade shade)
++{
++    const size_t area = size_t(w) * size_t(h);
++    for (size_t i = 0; i < area; ++i) {
++        buffer[i * 4] = gr;
++        buffer[i * 4 + 1] = gg;
++        buffer[i * 4 + 2] = gb;
++        buffer[i * 4 + 3] = 255;
++    }
++    for (size_t i = 0; i < count; ++i) {
++        const L& light = lights[i];
++        if (light.intensity == 0)
++            continue;
++        float radius = float(light.intensity); // tiles, after the flicker
++        int maxRadius = light.intensity;
++        if (flicker.on && isWarm(light.color)) {
++            const uint32_t seed = seedOf(floorDiv(light.pos.x, spriteSize) + flicker.originX,
++                                         floorDiv(light.pos.y, spriteSize) + flicker.originY, light.color);
++            radius *= 1.0f + kAmplitude * noise(seed, flicker.timeMs);
++            maxRadius = int(std::ceil(float(light.intensity) * (1.0f + kAmplitude)));
++        }
++        const Box b = reach(light.pos.x, light.pos.y, maxRadius, spriteSize, w, h);
++        if (b.empty())
++            continue;
++        const float limit = radius * float(spriteSize); // at or beyond this distance x <= 0
++        const float limit2 = limit * limit;
++        const auto prepared = base(light);
++        for (int y = b.y0; y <= b.y1; ++y) {
++            for (int x = b.x0; x <= b.x1; ++x) {
++                const size_t index = size_t(y) * size_t(w) + size_t(x);
++                if (tiles[index].start > i)
++                    continue;
++                const int dx = x * spriteSize + spriteSize / 2 - light.pos.x;
++                const int dy = y * spriteSize + spriteSize / 2 - light.pos.y;
++                const float d2 = float(int64_t(dx) * dx + int64_t(dy) * dy);
++                if (d2 >= limit2)
++                    continue;
++                const float distance = std::sqrt(d2) / float(spriteSize);
++                const float k = soften((radius - distance) * 0.2f);
++                if (k <= 0.0f)
++                    continue;
++                int rgb[3];
++                shade(prepared, k, rgb);
++                uint8_t* p = buffer + index * 4;
++                p[0] = uint8_t(addSoft(p[0], rgb[0]));
++                p[1] = uint8_t(addSoft(p[1], rgb[1]));
++                p[2] = uint8_t(addSoft(p[2], rgb[2]));
++            }
++        }
++    }
++}
++
++} // namespace chaoslight
++
++#endif
+--- a/src/client/lightview.h
++++ b/src/client/lightview.h
+@@ -51,6 +51,10 @@
+     void setFieldBrightness(const Point& pos, size_t start, uint8_t color);
+     size_t size() { return m_lights.size(); }
+ 
++    // Chaos (base patch 0149): flicker of warm lights (option lightFlicker); the time and the world tile of view tile 0,0
++    // are taken on the logic thread when the view is built, the render thread only reads them
++    void setFlicker(bool on, uint32_t timeMs, int originX, int originY) { m_flicker = on; m_flickerTime = timeMs; m_originX = originX; m_originY = originY; }
++
+     void draw() override;
+ 
+ private:
+@@ -60,6 +64,9 @@
+     Color m_globalLight;
+     std::vector<Light> m_lights;
+     std::vector<TileLight> m_tiles;
++    bool m_flicker = false;
++    uint32_t m_flickerTime = 0;
++    int m_originX = 0, m_originY = 0;
+ };
+ 
+ #endif
+--- a/src/client/lightview.cpp
++++ b/src/client/lightview.cpp
+@@ -21,7 +21,7 @@
+  */
+ 
+ #include "lightview.h"
+-#include "chaoslightfill.h"
++#include "chaoslightsoft.h"
+ #include "spritemanager.h"
+ #include <framework/graphics/painter.h>
+ 
+@@ -47,26 +47,43 @@
+ 
+ void LightView::draw() // render thread
+ {
+-    // Chaos (base patch 0140): the same light map, filled light by light over the tiles each light reaches instead of
+-    // every tile against every light (chaoslightfill.h); the buffer is the same byte for byte
++    // Chaos (base patch 0140, changed by 0149): the light map filled light by light over the tiles each light reaches
++    // (chaoslightfill.h), with a smoothstep falloff, a soft clamp where lights overlap and the flicker of warm lights
++    // (chaoslightsoft.h)
+     static std::vector<uint8_t> buffer;
+     if (buffer.size() < 4u * m_mapSize.area())
+         buffer.resize(m_mapSize.area() * 4);
+ 
+-    chaoslight::fill(buffer.data(), m_mapSize.width(), m_mapSize.height(), g_sprites.spriteSize(),
+-                     m_globalLight.r(), m_globalLight.g(), m_globalLight.b(),
+-                     m_lights.data(), m_lights.size(), m_tiles.data(),
+-                     [](const Light& light) { return Color::from8bit(light.color); },
+-                     [](const Color& base, float k, int* rgb) {
+-                         const Color lightColor = base * k;
+-                         rgb[0] = lightColor.r();
+-                         rgb[1] = lightColor.g();
+-                         rgb[2] = lightColor.b();
+-                     });
++    chaoslight::Flicker flicker;
++    flicker.on = m_flicker;
++    flicker.timeMs = m_flickerTime;
++    flicker.originX = m_originX;
++    flicker.originY = m_originY;
++    chaoslight::fillSoft(buffer.data(), m_mapSize.width(), m_mapSize.height(), g_sprites.spriteSize(),
++                         m_globalLight.r(), m_globalLight.g(), m_globalLight.b(),
++                         m_lights.data(), m_lights.size(), m_tiles.data(), flicker,
++                         [](const Light& light) { return Color::from8bit(light.color); },
++                         [](const Color& base, float k, int* rgb) {
++                             const Color lightColor = base * k;
++                             rgb[0] = lightColor.r();
++                             rgb[1] = lightColor.g();
++                             rgb[2] = lightColor.b();
++                         });
+ 
+     m_lightTexture->update();
+     glBindTexture(GL_TEXTURE_2D, m_lightTexture->getId());
+-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_mapSize.width(), m_mapSize.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, buffer.data());
++    // Chaos (base patch 0149): the texture keeps its storage while its size stays; only the pixels are replaced. The
++    // first upload of a texture (or of a new size or id) still allocates with glTexImage2D.
++    static uint32_t uploadedTexture = 0;
++    static int uploadedW = 0, uploadedH = 0;
++    if (uploadedTexture == m_lightTexture->getId() && uploadedW == m_mapSize.width() && uploadedH == m_mapSize.height()) {
++        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, m_mapSize.width(), m_mapSize.height(), GL_RGBA, GL_UNSIGNED_BYTE, buffer.data());
++    } else {
++        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_mapSize.width(), m_mapSize.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, buffer.data());
++        uploadedTexture = m_lightTexture->getId();
++        uploadedW = m_mapSize.width();
++        uploadedH = m_mapSize.height();
++    }
+ 
+     Point offset = m_src.topLeft();
+     Size size = m_src.size();
+--- a/src/client/map.h
++++ b/src/client/map.h
+@@ -316,6 +316,9 @@
+     void clearSpellLightColors() { m_spellLightColors.clear(); m_spellLights.clear(); }
+     void setSpellLightConfig(bool enabled, int maxLights, int ms, float attack, int minGapMs, float minFade);
+     void spellLightEffect(const Position& pos, int effectId);
++    // Chaos (base patch 0149): flicker of warm lights in the light map (option lightFlicker; game_visualfx sets it)
++    void setLightFlicker(bool on) { m_lightFlicker = on; }
++    bool isLightFlicker() const { return m_lightFlicker; }
+     bool hasSpellLights() { return m_spellLightOn && !m_spellLights.empty(); }
+     void collectSpellLights(std::vector<SpellLightDraw>& out);
+ 
+@@ -348,6 +351,7 @@
+     std::unordered_map<int, std::pair<uint8_t, uint8_t>> m_spellLightColors;
+     std::vector<SpellLight> m_spellLights;
+     bool m_spellLightOn = false;
++    bool m_lightFlicker = false;
+     int m_spellLightMax = 12;
+     int m_spellLightMs = 320;
+     int m_spellLightGap = 90;
+--- a/src/client/mapview.cpp
++++ b/src/client/mapview.cpp
+@@ -210,6 +210,9 @@
+             m_lightTexture = std::make_shared<Texture>(m_drawDimension, false, true);
+         m_lightView = std::make_unique<LightView>(m_lightTexture, m_drawDimension, rect, srcRect, ambientLight.color,
+                                                   std::max<int>(m_minimumAmbientLight * 255, ambientLight.intensity));
++        // Chaos (base patch 0149): flicker of warm lights. A light's view tile moves one tile when the camera does, so the
++        // camera tile is added to it to seed from the world tile; a fire then keeps its phase while the player walks
++        m_lightView->setFlicker(g_map.isLightFlicker(), (uint32_t)g_clock.millis(), cameraPosition.x, cameraPosition.y);
+     }
+ 
+     // Chaos (base patch 0051): the creatures this frame queues, for clicks on what is drawn of them
+--- a/src/client/luafunctions_client.cpp
++++ b/src/client/luafunctions_client.cpp
+@@ -185,6 +185,8 @@
+     g_lua.bindSingletonFunction("g_map", "setSpellLightColor", &Map::setSpellLightColor, &g_map);
+     g_lua.bindSingletonFunction("g_map", "clearSpellLightColors", &Map::clearSpellLightColors, &g_map);
+     g_lua.bindSingletonFunction("g_map", "setSpellLightConfig", &Map::setSpellLightConfig, &g_map);
++    g_lua.bindSingletonFunction("g_map", "setLightFlicker", &Map::setLightFlicker, &g_map); // base patch 0149
++    g_lua.bindSingletonFunction("g_map", "isLightFlicker", &Map::isLightFlicker, &g_map);
+     g_lua.bindSingletonFunction("g_map", "getOrCreateTile", &Map::getOrCreateTile, &g_map);
+     g_lua.bindSingletonFunction("g_map", "getTiles", &Map::getTiles, &g_map);
+     g_lua.bindSingletonFunction("g_map", "setCentralPosition", &Map::setCentralPosition, &g_map);
+--- a/mods/client_settings/classes/dataset.lua
++++ b/mods/client_settings/classes/dataset.lua
+@@ -2224,6 +2224,16 @@
+     end,
+   },
+ 
++  -- Chaos (base patch 0149): warm lights (fire, torch, lava) flicker gently in the light map (game_visualfx -> g_map.setLightFlicker)
++  lightFlicker = {
++    value = true,
++    apply = function(value)
++      local m = modules.game_visualfx
++      if m and m.onOption then m.onOption('lightFlicker', value) end
++      return true
++    end,
++  },
++
+   enableShaders = {
+     value = true,
+     apply = function(value)
+--- a/mods/client_settings/options/graphics.otui
++++ b/mods/client_settings/options/graphics.otui
+@@ -452,7 +452,7 @@
+ 
+   FlatPanel
+     // Chaos (base patch 0126, overlay module game_visualfx): the dark-fantasy look of the map, one switch per effect
+-    size: 505 352
++    size: 505 371
+     anchors.top: prev.bottom
+     anchors.right: parent.right
+     anchors.left: parent.left
+@@ -798,6 +798,25 @@
+         local value = modules.client_settings.getOption('combatDecals')
+         self:setChecked(value ~= false)
+ 
++    SettingsCheckBox
++      id: lightFlicker
++      size: 12 12
++      !text: tr('Flickering fire light')
++      font: $var-cip-font
++      text-auto-resize: true
++      color: $var-text-cip-color
++      text-offset: 14 -2
++      anchors.left: parent.left
++      anchors.top: combatDecals.bottom
++      margin-top: 7
++      margin-left: 16
++      image-source: /images/ui/checkbox
++      image-clip: 0 0 12 12
++      !tooltip: tr('Fire, torch and lava light flicker gently, by about a tenth. Only the glow on the map\nchanges, not the pictures. Soft round light edges and soft mixing of overlapping\nlights are always on.')
++      @onSetup: |
++        local value = modules.client_settings.getOption('lightFlicker')
++        self:setChecked(value ~= false)
++
+     UIWidget
+       size: 12 12
+       anchors.top: parent.top
