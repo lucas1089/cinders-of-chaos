@@ -419,7 +419,12 @@ Chaos.send = function(player, op, action, data) sent[#sent + 1] = {op = op, acti
 Chaos.sendChunked = function(player, op, payload) chunked[#chunked + 1] = {op = op, payload = payload} end
 Chaos.decode = function(b) return b end
 Chaos.limited = function() return false end
-Chaos.select = function() return {} end
+local selectFails = false
+Chaos.select = function(q)
+	if selectFails then return {} end
+	if q:find("COUNT%(%*%)") then return {{c = 0}} end
+	return {}
+end
 db = {query = function(q) queries[#queries + 1] = q; return true end, escapeString = function(x) return "'" .. x .. "'" end}
 local events, globals = {}, {}
 function CreatureEvent(name)
@@ -515,6 +520,19 @@ dofile("data/scripts/chaos/goals.lua")
 local Gs = ChaosGoals
 globals.ChaosGoalsStartup.onStartup()
 check(queries[1] and queries[1]:find("CREATE TABLE IF NOT EXISTS `chaos_goals`", 1, true) ~= nil, "table created")
+
+-- a failed select (DB error) is not a fresh player: no state, no rewards
+do
+	selectFails = true
+	local q = newPlayer(9, 109, 160)
+	ChaosAchievements.stats[109] = {kills_magic = 20}
+	events.ChaosGoalsLogin.onLogin(q)
+	runTimers()
+	check(Gs.st[109] == nil, "DB error at load: no state")
+	eq(q.exp, 0, "DB error at load: no xp paid")
+	eq(q.bank, 0, "DB error at load: no gold paid")
+	selectFails = false
+end
 
 local p = newPlayer(1, 101, 160)
 ChaosAchievements.stats[101] = {kills_magic = 20, bounty_done = 2, ascended = 1, rift_tier = 1, kills_legendary = 1,

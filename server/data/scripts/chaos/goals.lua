@@ -252,6 +252,15 @@ function G.load(player)
 	end
 	local rows = Chaos.select(string.format("SELECT `entry`, `value`, `at` FROM `%s` WHERE `player_id` = %d", TABLE, guid),
 		{{"entry", "s"}, {"value", "n"}, {"at", "n"}})
+	-- no rows and a failed query look the same: a COUNT always returns one row, so it tells a fresh player from a
+	-- DB error (a "fresh" state on a DB error would pay the own-band goals again)
+	if #rows == 0 then
+		local cnt = Chaos.select(string.format("SELECT COUNT(*) AS `c` FROM `%s` WHERE `player_id` = %d", TABLE, guid),
+			{{"c", "n"}})
+		if #cnt ~= 1 or (tonumber(cnt[1].c) or 1) ~= 0 then
+			return nil
+		end
+	end
 	local done, stats = K.rowsToState(rows)
 	local st = {done = done, stats = stats, dirty = {}, fresh = next(done) == nil}
 	G.st[guid] = st
