@@ -7,8 +7,39 @@ local L = VisualFxLogic
 -- the options (client_settings dataset.lua, Options > Graphics "Visual effects"); on by default except the grade,
 -- which changes the biome colours and waits for the owner's look at the first build, and the soft glow (bloom, O210), which
 -- costs fill rate and waits for the same look
-L.OPTIONS = { 'hitFlash', 'screenShake', 'creatureShadow', 'screenGrade', 'spellLight', 'liquidShimmer', 'weather', 'bloom', 'numberMotion', 'targetOutline', 'hoverOutline', 'sceneFade', 'deathFade', 'ambientParticles', 'smoothBars' }
-L.DEFAULTS = { hitFlash = true, screenShake = true, creatureShadow = true, screenGrade = false, spellLight = true, liquidShimmer = true, weather = true, bloom = false, numberMotion = true, targetOutline = true, hoverOutline = false, sceneFade = true, deathFade = true, ambientParticles = true, smoothBars = true }
+L.OPTIONS = { 'hitFlash', 'screenShake', 'creatureShadow', 'screenGrade', 'spellLight', 'liquidShimmer', 'weather', 'bloom', 'numberMotion', 'targetOutline', 'hoverOutline', 'sceneFade', 'deathFade', 'ambientParticles', 'smoothBars', 'missileTrails' }
+L.DEFAULTS = { hitFlash = true, screenShake = true, creatureShadow = true, screenGrade = false, spellLight = true, liquidShimmer = true, weather = true, bloom = false, numberMotion = true, targetOutline = true, hoverOutline = false, sceneFade = true, deathFade = true, ambientParticles = true, smoothBars = true, missileTrails = true }
+
+-- ---------------------------------------------------------------- missile arcs (O230, base patch 0147)
+-- Distance effect ids (missiles) that fly in a slight arc: the thrown and shot ones, which are physical. The ids are the
+-- ShootType numbers of the base server (TFS 1.4.2 const.h, the dat's missile ids of protocol 10.98; the server tests pin
+-- bolt = 2 and arrow = 3, server/tests/archery_test.lua). Spell missiles (fire 4, energy 5, death 11, ice 29, earth 30, holy
+-- 31, the whirlwind blades, the Chaos art missiles from id 100 up, ...) are not listed and stay straight. An id that the dat
+-- does not have is never drawn, so a longer list costs nothing.
+L.ARC_MISSILES = {
+  1,  -- spear
+  2,  -- bolt
+  3,  -- arrow
+  6,  -- poison arrow
+  7,  -- burst arrow
+  8,  -- throwing star
+  9,  -- throwing knife
+  10, -- small stone
+  14, -- power bolt
+  16, -- infernal bolt
+  17, -- hunting spear
+  18, -- enchanted spear
+  21, -- royal spear
+  22, -- sniper arrow
+  23, -- onyx arrow
+  24, -- piercing bolt
+  28, -- ethereal spear
+  33, -- flash arrow
+  34, -- flaming arrow
+  35, -- shiver arrow
+  40, -- earth arrow
+  53, -- simple arrow (exercise bow, server/data/scripts/chaos/exercise_config.lua)
+}
 
 -- an option value from the settings: a boolean is kept, anything else (nil, junk, an older settings file) is the default
 function L.optionOn(name, value)

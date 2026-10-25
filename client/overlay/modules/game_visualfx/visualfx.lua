@@ -211,6 +211,20 @@ local function applyDeathFade()
   if Creature and Creature.setDeathFade then pcall(Creature.setDeathFade, optionValue('deathFade')) end
 end
 
+-- ---------------------------------------------------------------- missile trails and arcs (O230)
+local arcIdsSent = false
+
+local function applyMissileTrails()
+  if not (Missile and Missile.setTrails) then return end
+  local on = optionValue('missileTrails')
+  if on and not arcIdsSent and Missile.addArcId then
+    if Missile.clearArcIds then pcall(Missile.clearArcIds) end
+    for _, id in ipairs(L.ARC_MISSILES) do pcall(Missile.addArcId, id) end
+    arcIdsSent = true
+  end
+  pcall(Missile.setTrails, on)
+end
+
 -- ---------------------------------------------------------------- hit flash tint (O224)
 local function applyHitTint()
   if Creature and Creature.setHitTint then pcall(Creature.setHitTint, optionValue('hitFlash')) end
@@ -498,6 +512,8 @@ function onOption(name, value)
     applySceneFade()
   elseif name == 'deathFade' then
     applyDeathFade()
+  elseif name == 'missileTrails' then
+    applyMissileTrails()
   elseif name == 'hitFlash' then
     applyHitTint()
   elseif name == 'smoothBars' then
@@ -521,6 +537,7 @@ function reapply()
   applyDeathFade()
   applyHitTint()
   applySmoothBars()
+  applyMissileTrails()
 end
 
 -- ---------------------------------------------------------------- lifecycle
@@ -575,6 +592,7 @@ function terminate()
   if g_app and g_app.setMapBloom then pcall(g_app.setMapBloom, false, 0) end
   if AnimatedText and AnimatedText.setSoftMotion then pcall(AnimatedText.setSoftMotion, false) end
   if Creature and Creature.setDeathFade then pcall(Creature.setDeathFade, false) end
+  if Missile and Missile.setTrails then pcall(Missile.setTrails, false) end
   if Creature and Creature.setHitTint then pcall(Creature.setHitTint, false) end
   if Creature and Creature.setSmoothBars then pcall(Creature.setSmoothBars, false) end
   local panel = mapPanel()
