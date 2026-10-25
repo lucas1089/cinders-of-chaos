@@ -46,6 +46,7 @@ show".
 | Convenience | Rarity Autoloot (per character) | 300 | R$ 30 | was 400 |
 | Convenience | Orbs Pouch / Rift Key Pouch (per character) | 200 / 150 | R$ 20 / 15 | was 300 / 250 |
 | Convenience | Everfull Ration (per character) | 100 | R$ 10 | was 150 |
+| Convenience | Everfull potion tiers (per character, once per tier): great health / mana / spirit 30, ultimate health / mana / spirit 50, supreme health 70 | 30 / 50 / 70 | R$ 3 / 5 / 7 | new (O245). The same swap Veyra the Apothecary does for 40 stock potions of the tier (4,800-20,000 gold at her prices) and the previous flask; a whole line costs 150 coins |
 | Convenience | depot tab 150, 4 tabs 500, stash tabs 150-200, character slot 250, build slot 100 | | | kept |
 | VIP | Chaos Pact, 30 days | 300 | R$ 30 | kept |
 | Premium | 30 / 90 / 180 days | 250 / 650 / 1200 | | kept |
@@ -74,6 +75,30 @@ Why these changes:
   280 coins net (R$ 28) for a player who finishes it. The packs follow the same discount.
 - **Runes stay at 1000 gold a coin.** That keeps the store rate of supplies equal to the potion packs; coins never buy
   supplies far below their gold value.
+
+## Everfull potion tiers (O245, 2026-10-25)
+
+Owner: "Podemos vender everfull potion na store ou em quests também." The Everfull health and mana potions have higher tiers
+(great, ultimate, supreme; health, mana and spirit lines, `potions_config.lua`). Two ways to the same item, the same swap:
+
+- **Quest (the main way):** Veyra the Apothecary swaps the flask for the next tier against 40 stock potions of that tier, from the
+  level of the stock potion (80 / 130 / 200). That is 4,800 gold (great mana) to 20,000 gold (supreme health) at her single prices.
+- **Store (pay to skip the hunt for the potions):** 30 / 50 / 70 coins by tier (R$ 3 / 5 / 7). The same level gate, previous
+  tier and once per tier; the store gives nothing the quest does not (no better roll, no charges). `store_model.lua --check`
+  keeps it at most 2x cheaper than the quest's gold at 1,000 gold a coin (it is 3.5-6.3x dearer, a convenience), a whole line
+  (health 30 + 50 + 70, mana 30 + 50, spirit 30 + 50) at most 200 coins, one store offer per tier at the config's price, and no
+  NPC paying for the item (it is bound: no coin -> gold loop).
+
+| Tier | Level | Coins | Quest gold | Coins / quest coins |
+|---|---|---|---|---|
+| great health / spirit | 80 | 30 | 7,600 | 3.9 |
+| great mana | 80 | 30 | 4,800 | 6.3 |
+| ultimate health | 130 | 50 | 12,400 | 4.0 |
+| ultimate mana / spirit | 130 | 50 | 14,000 | 3.6 |
+| supreme health | 200 | 70 | 20,000 | 3.5 |
+
+A tier replaces the flask of its slot and the charges are shared, so what it sells is the hotter roll per drink, not more drinks:
+the health pool still holds 5 charges and the mana pool 8. A lost flask is given back by Veyra for the quest's gold (not coins).
 
 ## Store balance (O140, 2026-10-23)
 

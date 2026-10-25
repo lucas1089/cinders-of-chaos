@@ -691,7 +691,7 @@ do
 		for _, cat in ipairs(shopCfg.categories) do
 			for _, o in ipairs(cat.offers or {}) do
 				scan(o, "store " .. tostring(cat.name), {}, false, false)
-				local sid = o.kind == "service" and S.serviceItem(o.service, o.pouch, storeCtx)
+				local sid = o.kind == "service" and S.serviceItem(o.service, o.pouch or o.upgrade, storeCtx)
 				if sid then
 					give(sid, "store service " .. o.service)
 				end

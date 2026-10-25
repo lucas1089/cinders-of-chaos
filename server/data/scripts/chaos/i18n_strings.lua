@@ -1425,6 +1425,41 @@ return {
 		["Your mana flask is empty: you drank a mana potion from your backpack."] =
 			"Seu frasco de mana está vazio: você bebeu uma poção de mana da mochila.",
 		["Charges: %s"] = "Cargas: %s",
+		-- Everfull potion tiers (potions.lua, data/lib/chaos_potions.lua, Veyra the Apothecary; O245)
+		["Spirit flask: %s"] = "Frasco de espírito: %s",
+		["Your spirit flask is empty: you drank a spirit potion from your backpack."] =
+			"Seu frasco de espírito está vazio: você bebeu uma poção de espírito da mochila.",
+		["Only characters of level %d or above may drink this fluid."] =
+			"Só personagens de nível %d ou mais podem beber este líquido.",
+		["You already have this upgrade."] = "Você já tem este upgrade.",
+		["Carry your Everfull potion in your backpack, your inbox or a depot: the upgrade replaces it."] =
+			"Leve sua poção Everfull na mochila, na caixa de entrada ou no depot: o upgrade a substitui.",
+		["You hold more than one Everfull potion of this kind. Keep only one."] =
+			"Você tem mais de uma poção Everfull deste tipo. Fique com só uma.",
+		["This upgrade needs a different flask than the one you hold."] =
+			"Este upgrade precisa de outro frasco, diferente do que você tem.",
+		["This flask is for level %d and up, and you are not there yet."] =
+			"Este frasco é para nível %d ou mais, e você ainda não chegou lá.",
+		["Bring me %d %s and your flask."] = "Traga-me %d %s e o seu frasco.",
+		["You earned a better flask than that. Ask Veyra the Apothecary to give it back."] =
+			"Você ganhou um frasco melhor que esse. Peça à Veyra the Apothecary para devolvê-lo.",
+		["Something went wrong. Nothing was taken."] = "Algo deu errado. Nada foi levado.",
+		["I have nothing to give back."] = "Não tenho nada para devolver.",
+		["%s Your coins were refunded."] = "%s Suas moedas foram devolvidas.",
+		["Your Everfull potion is now an %s."] = "Sua poção Everfull agora é uma %s.",
+		["Done. Your flask is now an %s. Its charges are as you left them."] =
+			"Pronto. Seu frasco agora é uma %s. As cargas estão como você as deixou.",
+		["Here is your %s again. Keep it safe."] = "Aqui está sua %s de novo. Guarde bem.",
+		["I have no upgrade for your flask now. Carry your Everfull potion, and come at level 80, 130 or 200 for the next one."] =
+			"Não tenho upgrade para o seu frasco agora. Leve sua poção Everfull e volte no nível 80, 130 ou 200 para o próximo.",
+		["I can turn your flask into an %s, level %d. Bring me %d %s and keep your flask in your backpack, inbox or depot. Say {yes}."] =
+			"Posso transformar seu frasco em uma %s, nível %d. Traga-me %d %s e deixe o frasco na mochila, na caixa de entrada ou no depot. Diga {yes}.",
+		["Your flask can go two ways, level %d: %s. Each needs %d potions of its kind and your flask. Which one?"] =
+			"Seu frasco pode seguir dois caminhos, nível %d: %s. Cada um pede %d poções do seu tipo e o seu frasco. Qual?",
+		["You have lost nothing I can give back."] = "Você não perdeu nada que eu possa devolver.",
+		["I can give you back your %s for %d gold. Say {yes}."] = "Posso devolver sua %s por %d de ouro. Diga {yes}.",
+		["I can give back your {health} or your {mana} flask. Which one?"] =
+			"Posso devolver seu frasco de {health} ou de {mana}. Qual?",
 		["Your flasks are full again."] = "Seus frascos estão cheios de novo.",
 		["You do not have enough money."] = "Você não tem dinheiro suficiente.",
 		["You have no room for it."] = "Você não tem espaço para ela.",

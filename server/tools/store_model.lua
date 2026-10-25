@@ -29,6 +29,7 @@ function M.load()
 	env.xpcap = dofile("data/scripts/chaos/xpcap_config.lua")
 	env.apo = dofile("data/scripts/chaos/apothecary_config.lua")
 	env.runes = dofile("data/lib/chaos_rune_supply.lua")
+	env.potions = dofile("data/scripts/chaos/potions_config.lua")
 	dofile("data/lib/chaos_item_prices.lua")
 	env.prices = ChaosItemPrices
 	-- chaos_constants.lua needs the engine; read the two tables the model uses out of its text
@@ -282,6 +283,45 @@ function M.problems(env)
 	end
 	if conv > R.perCharacterConvenienceMax then bad("per-character convenience adds up to %d coins (limit %d)", conv, R.perCharacterConvenienceMax) end
 
+	-- Everfull potion tiers (O245): one store offer per tier at the config's price, never more than 2x cheaper than the
+	-- task's gold way, a line costs at most maxLineCoins, nothing sells to an NPC
+	do
+		local PC, ev = env.potions, R.everfull
+		local lineCoins = {}
+		for _, e in ipairs(PC.everfull) do
+			if (e.tier or 1) >= 2 then
+				local offers = find(env, function(o) return o.service == "everfullUpgrade" and o.upgrade == e.id end)
+				local coins = PC.upgrade.coins[e.tier]
+				if #offers ~= 1 then
+					bad("%s: %d store offers (want 1)", e.name, #offers)
+				else
+					local o = offers[1]
+					if o.cost ~= coins then bad("%s: the store asks %s coins, potions_config.lua upgrade.coins[%d] is %s", e.name, tostring(o.cost), e.tier, tostring(coins)) end
+					if o.kind ~= "service" or env.catOf[o] ~= "Convenience" then bad("%s: not a Convenience service", e.name) end
+					local ask = M.askOf(env, e.sourceId)
+					if not ask then
+						bad("%s: Veyra has no price for the stock potion %d", e.name, e.sourceId)
+					else
+						local goldWay = PC.upgrade.materials * ask
+						if o.cost * R.goldPerCoin * R.maxCheaperThanGold < goldWay then
+							bad("%s: %d coins is more than %dx cheaper than the %d gold of the task", e.name, o.cost, R.maxCheaperThanGold, goldWay)
+						end
+					end
+				end
+				if (env.prices.basePrice(e.id) or 0) > 0 then bad("%s: an NPC pays %d gold for it (coin -> gold loop)", e.name, env.prices.basePrice(e.id)) end
+				lineCoins[e.line] = (lineCoins[e.line] or 0) + (coins or 0)
+			end
+		end
+		for line, coins in pairs(lineCoins) do
+			if coins > ev.maxLineCoins then bad("Everfull %s line costs %d coins in all (limit %d)", line, coins, ev.maxLineCoins) end
+		end
+		local last = 0
+		for t = 2, 4 do
+			local c = PC.upgrade.coins[t]
+			if not c or c < last then bad("Everfull upgrade coins do not grow with the tier (tier %d)", t) else last = c end
+		end
+	end
+
 	-- exercise weapons: coins per hunting hour saved (skill_model.lua) between half of Premium's and the Double Experience Potion's
 	do
 		ChaosSkillModelLib = true
@@ -408,6 +448,17 @@ function M.report(env)
 	for _, o in ipairs(env.offers) do
 		if o.kind == "item" and o.count and M.askOf(env, o.id) and (o.count == 100 or o.count == 500 or o.count == 25) then
 			line("| %s | %d | %.0f |", o.name, o.cost, M.askOf(env, o.id) * o.count / o.cost)
+		end
+	end
+
+	print("\nEverfull potion tiers: the store's swap against the task's gold way (materials x Veyra's price)")
+	print("| Tier | Level | Coins | About | Task gold | Task gold in coins | Coins / task coins |")
+	print("|---|---|---|---|---|---|---|")
+	for _, e in ipairs(env.potions.everfull) do
+		if (e.tier or 1) >= 2 then
+			local coins = env.potions.upgrade.coins[e.tier]
+			local gold = env.potions.upgrade.materials * (M.askOf(env, e.sourceId) or 0)
+			line("| %s | %d | %d | %s | %d | %.1f | %.1f |", e.name, e.level, coins, real(coins), gold, gold / R.goldPerCoin, coins / (gold / R.goldPerCoin))
 		end
 	end
 

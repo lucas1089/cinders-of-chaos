@@ -23,7 +23,8 @@ local K = ChaosPotionsCore
 local HEALTH, MANA = cfg.everfull[1], cfg.everfull[2]
 eq(HEALTH.sourceId, 7618, "the first health potion (level 1) is the Everfull one")
 eq(MANA.sourceId, 7620, "the first mana potion (level 1) is the Everfull one")
-eq(#cfg.everfull, 2, "no spirit potion: the first one is the great spirit potion (level 80)")
+eq(#cfg.everfull, 9, "two starting potions and seven upgrade tiers (O245)")
+eq(K.poolsOf(cfg, HEALTH)[1], "health", "a tier spends its key's pool")
 check(HEALTH.id > 32084 and HEALTH.id <= 32090 and MANA.id > 32084 and MANA.id <= 32090,
 	"server ids in the free range after the Everfull Ration, before the faction tokens")
 check(HEALTH.id ~= MANA.id, "two ids")
@@ -31,7 +32,11 @@ check(HEALTH.description:find("^A flask") ~= nil and MANA.description:find("^A f
 	"the descriptions say they are flasks")
 check(HEALTH.price > 0 and HEALTH.price <= 200 and MANA.price > 0 and MANA.price <= 200, "a cheap replacement")
 for k, v in pairs(cfg.storage) do
-	check(v >= 7102480 and v <= 7102489, "storage " .. k .. " in its block")
+	if k == "upgradeBase" then
+		check(v == 7102510 and v + #K.upgradeTargets(cfg) - 1 <= 7102519, "the upgrade flags in their own block 7102510 - 7102519")
+	else
+		check(v >= 7102480 and v <= 7102489, "storage " .. k .. " in its block")
+	end
 end
 eq(cfg.attr.storebound, "chaos_storebound", "store-bound like the Everfull Ration")
 eq(cfg.attr.lock, "chaos_locked", "locked: no NPC buys it (engine patch 0009)")
@@ -96,10 +101,20 @@ local function mkItem(id, count, kids)
 	function it:getItems() return self.kids or {} end
 	function it:getCustomAttribute(k) return self.attrs[k] end
 	function it:setCustomAttribute(k, v) self.attrs[k] = v end
-	function it:remove(n) self.removed = self.removed + (n or self.count) return true end
+	function it:remove(n)
+		self.removed = self.removed + (n or self.count)
+		if (n == nil or n >= self.count) and self.parent then -- a whole item leaves its container
+			for i, k in ipairs(self.parent.kids) do
+				if k == self then table.remove(self.parent.kids, i) break end
+			end
+			self.parent = nil
+		end
+		return true
+	end
 	function it:addItemEx(item)
 		if not self.kids or #self.kids >= (self.cap or 20) then return RETURNVALUE_NOTENOUGHROOM end
 		self.kids[#self.kids + 1] = item
+		item.parent = self
 		return RETURNVALUE_NOERROR
 	end
 	return it
@@ -126,6 +141,7 @@ local function mkPlayer(id, lastLogin)
 	function p:isCreature() return true end
 	function p:isPlayer() return true end
 	function p:getStorageValue(k) return self.st[k] or -1 end
+	function p:getLevel() return self.level or 1 end
 	function p:setStorageValue(k, v) self.st[k] = v end
 	function p:getLastLoginSaved() return self.last end
 	function p:getMaxHealth() return 1000 end
@@ -622,6 +638,283 @@ do
 	os.mtime = nil
 end
 
+-- ---------------------------------------------------------------- higher tiers (O245)
+do
+	local apo = dofile("data/scripts/chaos/apothecary_config.lua")
+	local askOf, levelOf = {}, {}
+	for _, x in ipairs(apo.potions) do askOf[x.id], levelOf[x.id] = x.price, x.level end
+	local up = K.upgradeTargets(cfg)
+	eq(#up, 7, "seven upgrade tiers") eq(#K.upgradeTargets({everfull = {}}), 0, "none without entries")
+	local seenId, seenSrc = {}, {}
+	for _, e in ipairs(up) do
+		check(e.id >= 32261 and e.id <= 32280, e.name .. ": server id in the reserved range 32261..32280")
+		check(not seenId[e.id] and not seenSrc[e.sourceId], e.name .. ": own id and own source")
+		seenId[e.id], seenSrc[e.sourceId] = true, true
+		eq(e.level, levelOf[e.sourceId], e.name .. ": the stock potion's level (apothecary_config.lua)")
+		eq(e.price, cfg.upgrade.materials * askOf[e.sourceId], e.name .. ": a lost flask costs the materials' worth")
+		check(e.description:find("^A flask") ~= nil and e.description:find("level " .. e.level, 1, true) ~= nil, e.name .. ": description")
+		check(e.name:find("^everfull ") ~= nil and e.plural == e.name .. "s", e.name .. ": name and plural")
+		check(K.upgradeStorage(cfg, e.id) >= 7102510 and K.upgradeStorage(cfg, e.id) <= 7102519, e.name .. ": its flag in the block")
+		check(cfg.upgrade.coins[e.tier] ~= nil and K.upgradeCoins(cfg, e.id) == cfg.upgrade.coins[e.tier], e.name .. ": a store price")
+		local pools = K.poolsOf(cfg, e)
+		eq(#pools, e.line == "spirit" and 2 or 1, e.name .. ": pools")
+		check(e.from ~= nil and K.everfull(cfg, e.from[1]) ~= nil and K.everfull(cfg, e.from[1]).tier == e.tier - 1, e.name .. ": made from the previous tier")
+	end
+	local byId = {}
+	for _, e in ipairs(cfg.everfull) do byId[e.id] = e end
+	eq(byId[32261].health[1], 425, "great health roll") eq(byId[32264].health[2], 850, "ultimate health roll")
+	eq(byId[32267].level, 200, "supreme health level") eq(byId[32265].mana[1], 425, "ultimate mana roll")
+	eq(byId[32263].mana[2], 200, "great spirit mana roll") eq(byId[32266].health[1], 420, "ultimate spirit health roll")
+	eq(K.upgradeStorage(cfg, 32085), nil, "a starting potion has no flag") eq(K.upgradeCoins(cfg, 32086), nil, "and no price")
+	check(cfg.upgrade.coins[2] < cfg.upgrade.coins[3] and cfg.upgrade.coins[3] < cfg.upgrade.coins[4], "the price grows by tier")
+
+	-- the drink core
+	r = K.drink(cfg, {id = 32261, target = "self", level = 79, charges = 500})
+	eq(r.why, "level", "below the stock potion's level: refused") eq(r.args[1], 80, "with its level")
+	eq(K.drink(cfg, {id = 32261, target = "self", level = 80, charges = 500}).ok, true, "at the level")
+	eq(K.drink(cfg, {id = 32261, target = "self", charges = 500}).ok, true, "no level given: not checked (the old callers)")
+	r = K.drink(cfg, {id = 32263, target = "self", level = 100, charges = {health = 500, mana = 50}})
+	eq(r.why, "empty", "a spirit drink needs a charge in BOTH pools") eq(r.kind, "mana", "and says which pool is short")
+	r = K.drink(cfg, {id = 32263, target = "self", level = 100, charges = {health = 500, mana = 100}})
+	check(r.ok and #r.pools == 2 and r.health ~= nil and r.mana ~= nil, "a spirit potion heals and restores mana, two pools")
+
+	-- the check
+	local function chk(over)
+		local s = {id = 32261, installed = true, level = 100, held = {32085}, mode = "quest", materials = 40, materialName = "great health potions"}
+		for k, v in pairs(over or {}) do s[k] = v end
+		return K.upgradeCheck(cfg, s)
+	end
+	eq(chk().ok, true, "the happy path") eq(chk().from, 32085, "from the starting potion") eq(chk().materials, 40, "40 stock potions")
+	eq(chk({mode = "store", materials = 0}).ok, true, "the store needs no materials") eq(chk({mode = "store"}).materials, 0, "and takes none")
+	eq(chk({id = 32085}).why, "unknown", "a starting potion is not an upgrade") eq(chk({id = 7591}).why, "unknown", "nor a stock one")
+	eq(chk({installed = false}).why, "installed", "not installed") eq(chk({level = 79}).why, "level", "the level")
+	eq(chk({done = true}).why, "done", "once per tier") eq(chk({held = {}}).why, "missing", "no flask")
+	eq(chk({held = {32086}}).why, "missing", "the other slot's flask does not count")
+	eq(chk({held = {32085, 32085}}).why, "duplicate", "two flasks of the slot")
+	eq(chk({held = {32085, 32261}}).why, "duplicate", "two tiers of the slot")
+	eq(chk({id = 32264, level = 200, held = {32085}}).why, "tier", "a tier cannot be skipped")
+	eq(chk({id = 32264, level = 200, held = {32263}}).why, "tier", "the spirit line does not turn into the health line")
+	eq(chk({id = 32266, level = 200, held = {32261}}).why, "tier", "nor the health line into the spirit line")
+	eq(chk({id = 32263, held = {32085}}).ok, true, "the spirit line starts from the health flask")
+	eq(chk({materials = 39}).why, "materials", "one short") eq(chk({materials = 39}).args[1], 40, "says how many")
+	eq(chk({materials = false}).why, "materials", "unknown count: refused")
+	eq(chk({level = "x"}).why, "level", "a bad level is not trusted") eq(chk({held = {99999}}).why, "missing", "unknown ids are not flasks")
+
+	-- the restore rule
+	local earned = {byId[32261], byId[32264], byId[32262]}
+	eq(K.restoreFor(cfg, "health", {}, earned).id, 32264, "the highest earned tier of the slot comes back")
+	eq(K.restoreFor(cfg, "mana", {}, earned).id, 32262, "per slot")
+	eq(K.restoreFor(cfg, "health", {32261}, earned), nil, "nothing while the slot holds a flask")
+	eq(K.restoreFor(cfg, "mana", {}, {}), nil, "nothing earned: nothing back")
+	eq(K.npcBuy(cfg, {id = 32261, owned = false, money = 1e9}).why, "unknown", "a seller never sells a higher tier")
+	eq(K.npcBuy(cfg, {id = HEALTH.id, owned = false, better = true, money = 1000}).why, "better", "nor the starting one over an earned tier")
+
+	-- the engine side
+	local function bound(id, lock) local it = mkItem(id) it.attrs.chaos_storebound, it.attrs.chaos_locked = 1, lock or cfg.bindLock return it end
+	local function stockStack(player, n) local st = mkItem(7591, n) player.bp.kids[#player.bp.kids + 1] = st st.parent = player.bp return st end
+	local function ext(pl)
+		function pl:getName() return "P" .. self.id end
+		function pl:getItemCount(id) local n = 0 for _, k in ipairs(self.bp.kids) do if k.id == id then n = n + k.count end end return n end
+		function pl:removeItem(id, n)
+			if self:getItemCount(id) < n then return false end
+			local snapshot = {}
+			for i, k in ipairs(self.bp.kids) do snapshot[i] = k end
+			for _, k in ipairs(snapshot) do
+				if k.id == id and n > 0 then
+					local take = math.min(n, k.count)
+					k.count = k.count - take n = n - take
+					if k.count == 0 then k:remove() end
+				end
+			end
+			return true
+		end
+		function pl:addItem(id, n) local it = mkItem(id, n) self.bp:addItemEx(it) return it end
+		return pl
+	end
+	local function holder(id, level, lockv, ...)
+		local pl = ext(mkPlayer(id)) pl.level = level or 100
+		local fl = bound(HEALTH.id, lockv) pl.bp.kids[1] = fl fl.parent = pl.bp
+		return pl, fl
+	end
+	local flagH = K.upgradeStorage(cfg, 32261)
+
+	-- Veyra's task: the swap, atomic, the attributes and the charges kept
+	local pl, fl = holder(60, 100, 5)
+	pl.st[cfg.storage.healthCharges] = 230 pl.st[cfg.storage.manaCharges] = 40
+	local st = stockStack(pl, 45)
+	eq(PT.upgradeCheck(pl, 32261, "quest").ok, true, "check: ready")
+	local ok, why, args = PT.upgrade(pl, 32261, "quest")
+	eq(ok, true, "the quest swap")
+	local ids = {}
+	for _, k in ipairs(pl.bp.kids) do ids[#ids + 1] = k.id end
+	check(#ids == 2 and ids[1] == 7591 and ids[2] == 32261, "the old flask is gone, the new one is there (and the leftover stock)")
+	eq(fl.removed, 1, "the old item was removed") eq(st.count, 5, "40 of the 45 stock potions were taken")
+	local new = pl.bp.kids[2]
+	eq(new.attrs.chaos_storebound, 1, "bound kept") eq(new.attrs.chaos_locked, 5, "the lock value kept")
+	eq(pl.st[flagH], 1, "the tier is marked done")
+	eq(pl.st[cfg.storage.healthCharges], 230, "the health charges are untouched") eq(pl.st[cfg.storage.manaCharges], 40, "and the mana ones")
+	ok, why = PT.upgrade(pl, 32261, "quest")
+	eq(ok, false, "a second time: refused") eq(why, "You already have this upgrade.", "because it is done")
+	ok, why = PT.upgrade(pl, 32261, "store")
+	eq(ok, false, "not by the store either")
+	eq(PT.ownedSlot(pl, "health"), true, "the slot holds the new tier") eq(PT.owned(pl, 32085), false, "and not the old")
+	-- the next tier needs its level and its materials
+	pl.level = 100
+	ok, why = PT.upgrade(pl, 32264, "quest")
+	eq(ok, false, "ultimate at level 100: refused") eq(why, "This flask is for level %d and up, and you are not there yet.", "the level")
+	pl.level = 130
+	ok, why, args = PT.upgrade(pl, 32264, "quest")
+	eq(ok, false, "ultimate without materials: refused") eq(args[1], 40, "needs 40") eq(args[2], "ultimate health potions", "of its own tier")
+	eq(#pl.bp.kids, 2, "nothing changed")
+	-- the store does the same swap without the materials
+	ok = PT.upgrade(pl, 32264, "store")
+	eq(ok, true, "the store swap") eq(pl.bp.kids[2].id, 32264, "the new tier") eq(pl.bp.kids[2].attrs.chaos_locked, 5, "attributes kept again")
+	eq(pl.st[K.upgradeStorage(cfg, 32264)], 1, "marked") eq(st.count, 5, "no materials taken by the store")
+
+	-- refusals change nothing
+	local function untouched(pl2, label, id, mode)
+		local before = #pl2.bp.kids
+		local ok2 = PT.upgrade(pl2, id or 32261, mode or "quest")
+		eq(ok2, false, label) eq(#pl2.bp.kids, before, label .. ": nothing moved")
+		eq(pl2.st[K.upgradeStorage(cfg, id or 32261)], nil, label .. ": no flag")
+	end
+	local lo = holder(61, 79) stockStack(lo, 40) untouched(lo, "level 79")
+	local poor = holder(62, 100) stockStack(poor, 39) untouched(poor, "39 materials")
+	eq(poor.bp.kids[2].count, 39, "the 39 are still there")
+	local none = ext(mkPlayer(63)) none.level = 100 stockStack(none, 40) untouched(none, "no flask at all")
+	local twin = holder(64, 100) twin.bp.kids[2] = bound(HEALTH.id) twin.bp.kids[2].parent = twin.bp stockStack(twin, 40) untouched(twin, "two flasks")
+	local wrongTier = holder(65, 200) stockStack(wrongTier, 40) untouched(wrongTier, "skipping a tier", 32264)
+
+	-- no room: the new flask finds no place, nothing is taken
+	local full = holder(66, 100) stockStack(full, 40)
+	full.bp.cap, full.inbox.cap = #full.bp.kids, 0
+	local nOk, nWhy = PT.upgrade(full, 32261, "quest")
+	eq(nOk, false, "no room: refused") eq(nWhy, "You have no room for it.", "says so")
+	eq(full.bp.kids[1].id, HEALTH.id, "the old flask is still there") eq(full.bp.kids[2].count, 40, "the materials are still there")
+	eq(full.st[flagH], nil, "no flag")
+
+	-- the flask in the inbox is found and swapped in place of the search (it must not be lost)
+	local inb = ext(mkPlayer(67)) inb.level = 100
+	local boxed = bound(HEALTH.id) inb.inbox.kids[1] = boxed boxed.parent = inb.inbox
+	eq(PT.upgrade(inb, 32261, "store"), true, "a flask in the inbox is found")
+	eq(#inb.inbox.kids, 0, "the old one left the inbox") eq(inb.bp.kids[1].id, 32261, "the new one is in the backpack")
+
+	-- an error in the middle undoes everything (the old flask stays, no flag, materials back)
+	local boom = holder(68, 100) stockStack(boom, 40)
+	local realSet = boom.setStorageValue
+	boom.setStorageValue = function(self, k, v) if k == flagH and v == 1 then error("boom") end return realSet(self, k, v) end
+	local silent = print print = function() end
+	local bOk = PT.upgrade(boom, 32261, "quest")
+	print = silent
+	eq(bOk, false, "an error: refused") eq(boom.bp.kids[1].id, HEALTH.id, "the old flask is kept")
+	eq(boom:getItemCount(7591), 40, "the materials are given back") eq(boom:getItemCount(32261), 0, "no new flask is left")
+	boom.setStorageValue = realSet
+	eq(boom.st[flagH], nil, "no flag")
+	-- the old flask cannot be removed: undone as well
+	local stuck = holder(69, 100) stockStack(stuck, 40)
+	stuck.bp.kids[1].remove = function() return false end
+	eq(PT.upgrade(stuck, 32261, "quest"), false, "a flask that will not go: refused")
+	eq(stuck:getItemCount(7591), 40, "materials back") eq(stuck.st[flagH], 0, "flag back") eq(#stuck.bp.kids, 2, "no new flask left")
+
+	-- two clicks: the second finds the swap done
+	local dbl = holder(70, 100)
+	eq(PT.upgrade(dbl, 32261, "store"), true, "first click") eq(PT.upgrade(dbl, 32261, "store"), false, "second click")
+	eq(PT.owned(dbl, 32261), true, "one new flask") eq(#dbl.bp.kids, 1, "and only one item")
+
+	-- the spirit line: from the health flask, spends both pools
+	local sp = holder(71, 100)
+	eq(PT.upgrade(sp, 32263, "store"), true, "health flask -> great spirit")
+	eq(PT.upgrade(sp, 32261, "store"), false, "then the health line is closed to it (no health flask)")
+	sp.level = 130
+	eq(PT.upgrade(sp, 32266, "store"), true, "great spirit -> ultimate spirit")
+	eq(sp.bp.kids[1].id, 32266, "one item in the slot")
+	local heal = {}
+	local action = actions[32266]
+	check(action ~= nil, "the new ids have the drink action")
+	sp.st[cfg.storage.healthCharges], sp.st[cfg.storage.manaCharges] = 300, 300
+	heals = {}
+	eq(action.onUse(sp, sp.bp.kids[1], {}, sp, {}, false), true, "a spirit drink")
+	eq(#heals, 2, "health and mana") eq(PT.charges(sp, "health"), 200, "one health charge") eq(PT.charges(sp, "mana"), 200, "and one mana charge")
+	eq(PT.labelOf(sp, byId[32266]), "2/5 + 2/8", "the label shows both pools")
+	sp.st[cfg.storage.manaCharges] = 50
+	heals = {}
+	action.onUse(sp, sp.bp.kids[1], {}, sp, {}, false)
+	eq(#heals, 0, "no mana charge: no drink") eq(PT.charges(sp, "health"), 200, "and the health charge is not spent either")
+	-- a drink below the potion's level
+	local young = holder(72, 100)
+	PT.upgrade(young, 32261, "store")
+	young.level = 79
+	heals = {}
+	action.onUse(young, young.bp.kids[1], {}, young, {}, false)
+	eq(#heals, 0, "below the stock potion's level: no drink") eq(young.msgs[#young.msgs], "Only characters of level 80 or above may drink this fluid.", "told")
+
+	-- charges are per pool: one kill refills each pool once, whatever flasks are held
+	local kill = holder(73, 100)
+	kill.st[cfg.storage.healthCharges], kill.st[cfg.storage.manaCharges] = 0, 0
+	PT.upgrade(kill, 32263, "store")
+	local gained, any = PT.addKill(kill, "normal", 200)
+	eq(PT.charges(kill, "health"), 8, "one kill refill for the health pool") eq(PT.charges(kill, "mana"), 12, "and the mana pool")
+	eq(any, true, "refilled")
+
+	-- the seller and the starter kit never make a second flask
+	local up2 = holder(74, 100)
+	PT.upgrade(up2, 32261, "store")
+	up2.money, up2.bank = 500, 0
+	eq(PT.npcBuy(up2.id, HEALTH.id), false, "the seller will not sell a second health flask") eq(up2.money, 500, "no gold taken")
+	eq(PT.giveAll(up2), 1, "giveAll only fills the mana slot") eq(PT.ownedSlot(up2, "mana"), true, "the mana flask came") 
+	eq(PT.owned(up2, HEALTH.id), false, "and no starting health flask beside the great one")
+
+	-- a lost flask: the highest earned tier comes back for its price, once
+	local lost = holder(75, 130)
+	PT.upgrade(lost, 32261, "store") PT.upgrade(lost, 32264, "store")
+	for i = #lost.bp.kids, 1, -1 do lost.bp.kids[i]:remove() end
+	eq(PT.ownedSlot(lost, "health"), false, "the flask is gone")
+	lost.money, lost.bank = 100, 0
+	lost.msgs = {}
+	eq(PT.npcBuy(lost.id, HEALTH.id), false, "the seller refuses the starting one") eq(lost.msgs[#lost.msgs],
+		"You earned a better flask than that. Ask Veyra the Apothecary to give it back.", "and points to Veyra")
+	local rOk, rWhy = PT.restore(lost.id, "health")
+	eq(rOk, false, "too poor") eq(rWhy, "You do not have enough money.", "says so")
+	lost.money, lost.bank = 10000, 5000
+	rOk, rWhy = PT.restore(lost.id, "health")
+	eq(rOk, true, "restored") eq(rWhy.id, 32264, "the ultimate flask") eq(lost.money + lost.bank, 15000 - byId[32264].price, "for its price")
+	eq(lost.bp.kids[1].attrs.chaos_storebound, 1, "bound")
+	eq(PT.restore(lost.id, "health"), false, "not again while it holds one")
+	eq(select(2, PT.restore(lost.id, "mana")), "I have nothing to give back.", "nothing earned for the mana slot")
+
+	-- the store service
+	ChaosShopServices = {services = {}}
+	PT.registerService()
+	local svc = ChaosShopServices.services.everfullUpgrade
+	check(svc ~= nil, "registered into the store's services")
+	local offer = {kind = "service", service = "everfullUpgrade", upgrade = 32262, cost = cfg.upgrade.coins[2]}
+	local buyer = ext(mkPlayer(80)) buyer.level = 100
+	local mana = bound(MANA.id) buyer.bp.kids[1] = mana mana.parent = buyer.bp
+	eq(svc.check(buyer, offer), nil, "check: can buy")
+	eq(svc.check(buyer, {upgrade = 32262, cost = 1}), "This offer cannot be bought.", "a price that is not the config's: refused")
+	eq(svc.check(buyer, {upgrade = 32085, cost = 30}), "This offer cannot be bought.", "not a tier")
+	eq(svc.check(buyer, {upgrade = "32262; drop", cost = 30}), "This offer cannot be bought.", "garbage")
+	eq(svc.check(buyer, {cost = 30}), "This offer cannot be bought.", "no tier")
+	eq(svc.check(buyer, {upgrade = 32264, cost = 50}) ~= nil, true, "ultimate: not yet (wrong tier)")
+	eq(svc.apply(buyer, offer), true, "apply") eq(buyer.bp.kids[1].id, 32262, "swapped")
+	check(svc.check(buyer, offer) ~= nil, "check: already done")
+	local refused = svc.apply(buyer, offer)
+	check(type(refused) == "string" and refused:find("Your coins were refunded.", 1, true) ~= nil, "a failed apply says the coins come back")
+	eq(#buyer.bp.kids, 1, "still one flask")
+	-- the upgrade reaches the shop's offer key and every offer has its price
+	local shopCfg = dofile("data/scripts/chaos/shop_config.lua")
+	local n = 0
+	for _, cat in ipairs(shopCfg.categories) do
+		for _, o in ipairs(cat.offers or {}) do
+			if o.service == "everfullUpgrade" then
+				n = n + 1
+				eq(o.cost, K.upgradeCoins(cfg, o.upgrade), "store price of " .. o.name .. " is the config's")
+				eq(o.icon, o.upgrade, "its icon is the item")
+			end
+		end
+	end
+	eq(n, 7, "one store offer per tier")
+end
 print(string.format("potions_test: %d checks, %d failures", count, failures))
 if failures > 0 then
 	os.exit(1)

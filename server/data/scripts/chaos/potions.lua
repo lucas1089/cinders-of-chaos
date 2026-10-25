@@ -25,6 +25,7 @@ dofile("data/lib/chaos_potions.lua")
 
 local PT = ChaosPotions
 local K = ChaosPotionsCore
+local unpack = table.unpack or unpack
 
 local function exhaustMs()
 	local ok, ms = pcall(function()
@@ -45,15 +46,6 @@ local function nowMs()
 	return os.time() * 1000
 end
 
-local function kindOf(id)
-	for _, e in ipairs(PT.cfg().everfull) do
-		if e.id == id then
-			return e.key
-		end
-	end
-	return "health"
-end
-
 local function targetKind(player, target)
 	if type(target) ~= "userdata" and type(target) ~= "table" then
 		return "self", player
@@ -72,26 +64,51 @@ end
 -- The Everfull potions are flasks with charges (README "Flask charges"): a drink costs one, an empty flask cannot be
 -- drunk (a carried stock potion of the same kind is drunk instead, used up), kills and the temple refill them
 -- (potion_flasks.lua). The charges are the character's storage, not the item's.
-local function flaskStatus(player, kind)
-	if kind == "mana" then
-		player:sendTextMessage(MESSAGE_STATUS_SMALL, Chaos.t(player, "Mana flask: %s", PT.label(player, kind)))
+local function flaskStatus(player, e)
+	if e.line == "spirit" then
+		player:sendTextMessage(MESSAGE_STATUS_SMALL, Chaos.t(player, "Spirit flask: %s", PT.labelOf(player, e)))
+	elseif e.key == "mana" then
+		player:sendTextMessage(MESSAGE_STATUS_SMALL, Chaos.t(player, "Mana flask: %s", PT.label(player, "mana")))
 	else
-		player:sendTextMessage(MESSAGE_STATUS_SMALL, Chaos.t(player, "Health flask: %s", PT.label(player, kind)))
+		player:sendTextMessage(MESSAGE_STATUS_SMALL, Chaos.t(player, "Health flask: %s", PT.label(player, "health")))
 	end
+end
+
+-- the charges of every pool a drink of this entry spends: pool -> hundredths of a charge
+local function chargesOf(player, e)
+	local out = {}
+	for _, pool in ipairs(K.poolsOf(PT.cfg(), e)) do
+		out[pool] = PT.charges(player, pool)
+	end
+	return out
 end
 
 local drink = Action()
 function drink.onUse(player, item, fromPosition, target, toPosition, isHotkey)
 	local kind, who = targetKind(player, target)
-	local flask = kindOf(item:getId())
-	local slot = player:getId() .. ":" .. flask
-	local waiting = lastDrink[slot] ~= nil and nowMs() - lastDrink[slot] < exhaustMs()
+	local e = PT.everfull(item:getId())
+	if not e then
+		return false
+	end
+	local pools = K.poolsOf(PT.cfg(), e)
+	-- the wait: a drink waits on every pool it spends (a spirit drink is no faster than a health and a mana drink)
+	local waiting = false
+	for _, pool in ipairs(pools) do
+		local last = lastDrink[player:getId() .. ":" .. pool]
+		if last ~= nil and nowMs() - last < exhaustMs() then
+			waiting = true
+		end
+	end
 	local r = K.drink(PT.cfg(), {id = item:getId(), exhausted = waiting, target = kind,
-		charges = PT.charges(player, flask)})
+		charges = chargesOf(player, e), level = player:getLevel()})
 	local stock
 	if not r.ok then
 		if r.why == "exhausted" then
 			player:sendTextMessage(MESSAGE_STATUS_SMALL, Game.getReturnMessage(RETURNVALUE_YOUAREEXHAUSTED))
+			return true
+		end
+		if r.why == "level" then
+			player:sendTextMessage(MESSAGE_STATUS_SMALL, Chaos.t(player, r.text, unpack(r.args)))
 			return true
 		end
 		if r.why ~= "empty" then
@@ -101,10 +118,9 @@ function drink.onUse(player, item, fromPosition, target, toPosition, isHotkey)
 			player:sendTextMessage(MESSAGE_STATUS_SMALL, Game.getReturnMessage(RETURNVALUE_YOUAREEXHAUSTED))
 			return true
 		end
-		local e = PT.everfull(item:getId())
 		stock = PT.cfg().flask.stockFallback and PT.findStock(player, e.sourceId) or nil
 		if not stock then
-			if flask == "mana" then
+			if r.kind == "mana" then
 				player:sendTextMessage(MESSAGE_STATUS_SMALL,
 					Chaos.t(player, "Your mana flask is empty. Kill monsters or visit a temple to refill it."))
 			else
@@ -117,21 +133,26 @@ function drink.onUse(player, item, fromPosition, target, toPosition, isHotkey)
 	end
 	if stock then
 		stock:remove(1) -- the empty flask drinks a stock potion of its kind from the backpack
-	elseif not PT.spend(player, flask) then
+	elseif not PT.spendPools(player, pools) then -- every pool pays one charge or nothing is spent
 		return true
 	end
 	if r.health then
-		local v = ChaosPotions.amount(player, who, "health", r.health, 0)
+		local v = ChaosPotions.amount(player, who, "health", r.health, e.level or 0)
 		doTargetCombat(player, who, COMBAT_HEALING, v, v)
 	end
 	if r.mana then
-		local v = ChaosPotions.amount(player, who, "mana", r.mana, 0)
+		local v = ChaosPotions.amount(player, who, "mana", r.mana, e.level or 0)
 		doTargetCombat(player, who, COMBAT_MANADRAIN, v, v)
 	end
 	who:say(PT.cfg().sound, TALKTYPE_MONSTER_SAY)
-	lastDrink[slot] = nowMs()
+	for _, pool in ipairs(pools) do
+		lastDrink[player:getId() .. ":" .. pool] = nowMs()
+	end
 	if stock then
-		if flask == "mana" then
+		if e.line == "spirit" then
+			player:sendTextMessage(MESSAGE_STATUS_SMALL,
+				Chaos.t(player, "Your spirit flask is empty: you drank a spirit potion from your backpack."))
+		elseif e.key == "mana" then
 			player:sendTextMessage(MESSAGE_STATUS_SMALL,
 				Chaos.t(player, "Your mana flask is empty: you drank a mana potion from your backpack."))
 		else
@@ -139,7 +160,7 @@ function drink.onUse(player, item, fromPosition, target, toPosition, isHotkey)
 				Chaos.t(player, "Your health flask is empty: you drank a health potion from your backpack."))
 		end
 	else
-		flaskStatus(player, flask)
+		flaskStatus(player, e)
 	end
 	return true -- the flask is never used up
 end
@@ -174,3 +195,60 @@ function login.onLogin(player)
 end
 login:type("login")
 login:register()
+
+-- ---------------------------------------------------------------- the store sells the same upgrade (O245)
+-- {kind = "service", service = "everfullUpgrade", upgrade = <server id of the tier>, cost = coins} (shop_config.lua,
+-- Consumables > Convenience). Registered into ChaosShopServices.services here (no edit of shop_services.lua). The swap is
+-- ChaosPotions.upgrade(player, id, "store"), the code Veyra's task runs; the store takes the coins before apply and gives
+-- them back on any result but true, apply changes nothing unless it returns true. Services are not giftable.
+local function upgradeId(offer)
+	local id = tonumber(offer and offer.upgrade)
+	if not id or K.upgradeCoins(PT.cfg(), id) ~= tonumber(offer.cost) then -- a price that differs from the config: refused
+		return nil
+	end
+	return id
+end
+
+local function problem(player, text, args)
+	return Chaos.t(player, text, unpack(args or {}))
+end
+
+function PT.registerService()
+	local S = ChaosShopServices
+	if S and S.services and not S.services.everfullUpgrade then
+		S.services.everfullUpgrade = {
+			check = function(player, offer)
+				local id = upgradeId(offer)
+				if not id then
+					return Chaos.t(player, "This offer cannot be bought.")
+				end
+				local r = PT.upgradeCheck(player, id, "store")
+				if not r.ok then
+					return problem(player, r.text, r.args)
+				end
+				return nil
+			end,
+			apply = function(player, offer)
+				local id = upgradeId(offer)
+				if not id then
+					return Chaos.t(player, "This offer cannot be bought.")
+				end
+				local ok, text, args = PT.upgrade(player, id, "store")
+				if not ok then
+					return Chaos.t(player, "%s Your coins were refunded.", problem(player, text, args))
+				end
+				player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "Your Everfull potion is now an %s.",
+					PT.everfull(id).name))
+				return true
+			end
+		}
+	end
+end
+PT.registerService()
+
+local svcStartup = GlobalEvent("ChaosPotionUpgradeStartup")
+function svcStartup.onStartup()
+	PT.registerService()
+	return true
+end
+svcStartup:register()

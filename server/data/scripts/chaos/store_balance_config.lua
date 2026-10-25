@@ -42,6 +42,11 @@ return {
 	premium = {minDiscountPct90 = 5, maxDiscountPct90 = 20, maxDiscountPct180 = 25},
 	pactDayTolerancePct = 10,           -- the Pact days of a starter pack at the Pact's own price per day
 	bundles = {maxStarterDiscountPct = 55, maxSetDiscountPct = 25},
+	-- Everfull potion tiers (O245, potions_config.lua upgrade): the store sells the swap Veyra's task does. The task's gold
+	-- way is `materials` stock potions at Veyra's price; the store may be at most maxCheaperThanGold times cheaper than
+	-- it (checked with goldPerCoin), and a whole line (health, mana or spirit) costs at most maxLineCoins in all.
+	-- Nothing a tier gives is for sale to an NPC (no coin -> gold loop).
+	everfull = {maxLineCoins = 200},
 	perCharacterConvenienceMax = 1400,  -- Loot Bag + Auto Seller + Rarity Autoloot + pouches + Ration for one character
 	cosmetics = {min = 80, max = 800}  -- every cosmetic offer; a static plate frame costs no more than the cheapest wings
 }

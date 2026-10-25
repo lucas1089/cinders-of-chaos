@@ -289,6 +289,8 @@ function S.serviceItem(service, arg, ctx)
 	elseif service == "storeFood" then
 		local it = ctx.storeFood and ctx.storeFood.item
 		return it and tonumber(it.id) or nil
+	elseif service == "everfullUpgrade" then -- an Everfull potion tier (potions.lua): arg is its server id
+		return tonumber(arg)
 	end
 	return nil
 end
@@ -309,7 +311,7 @@ local function storeItem(part, ctx)
 	elseif type(part) == "table" and part.kind == "item" then
 		return tonumber(part.id), tonumber(part.count) or 1
 	elseif type(part) == "table" and part.kind == "service" then
-		return S.serviceItem(part.service, part.pouch, ctx), 1
+		return S.serviceItem(part.service, part.pouch or part.upgrade, ctx), 1
 	end
 	return nil
 end
@@ -1085,9 +1087,14 @@ S.REWARDS[#S.REWARDS + 1] = {key = "newplayer", fn = function(D, emit)
 	end
 	items(np.common and np.common.items, function(id, n) reward(emit, id, n, "Starter kit", "every new character", 0) end)
 	-- the Everfull potions (potions_config.lua everfull): the kit, and a one-time grant at login for older characters
-	items(D.potions and D.potions.everfull, function(id)
-		reward(emit, id, 1, "Starter kit", "every character, once (new characters in their kit)", 0)
-	end)
+	for _, e in ipairs(D.potions and D.potions.everfull or {}) do
+		if (e.tier or 1) <= 1 then
+			reward(emit, e.id, 1, "Starter kit", "every character, once (new characters in their kit)", 0)
+		else -- O245: the upgrades (the store sells the same swap)
+			reward(emit, e.id, 1, "Veyra the Apothecary", "upgrade of your Everfull potion, level " .. (e.level or 0) ..
+				": " .. ((D.potions.upgrade or {}).materials or 0) .. " " .. tostring(e.name):gsub("^everfull ", "") .. "s", e.level or 0)
+		end
+	end
 	for _, m in ipairs(np.milestones or {}) do
 		local d = "level " .. (m.level or 0) .. " gift (once per character)"
 		if (tonumber(m.orbs) or 0) > 0 and np.orbId then

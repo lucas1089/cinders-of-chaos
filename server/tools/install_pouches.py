@@ -18,7 +18,7 @@ weight, article, name, plural, description), the same file the Lua side uses.
    replaced, and a server id that belongs to any other client id stops the script (nothing is written).
    items.otb.bak keeps the original the first time; the written file is parsed again and the nodes checked.
    Ranges in use: gems 32001..32035, salvage 32051, omens 32071..32072, pouches 32081..32083, supports 32101..32200,
-   orbs v2 32251..32256, dark tiles 30484..30557, art 33000.., pack items 36000.., donor items 40000...
+   orbs v2 32251..32256, Everfull tiers 32261..32267, dark tiles 30484..30557, art 33000.., pack items 36000.., donor items 40000...
 2. data/items/items.xml: the entries (name, plural, description, weight, containerSize = capacity) between two marker
    comments before </items>, rewritten when the config changed. An id that already has an entry outside the block
    stops the script.

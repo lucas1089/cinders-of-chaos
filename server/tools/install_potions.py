@@ -6,8 +6,13 @@ usage: python3 -I install_potions.py DATA_DIR [--dry-run]
 Everything is read from server/data/scripts/chaos/potions_config.lua (`everfull`, `flasks`, `flaskText`), the file the
 Lua side (potions.lua, data/lib/chaos_potions.lua) uses too.
 
+Ranges in use: Everfull 32085..32086 (tier 1) and 32261..32267 (tiers 2 and up, O245), gems 32001..32035, salvage 32051,
+omens 32071..32072, pouches 32081..32083, supports 32101..32200, orbs v2 32251..32256; see install_omens.py for the rest.
+Only the tier 1 potions are sold by the potion sellers (steps 4 and 5): the higher tiers are earned from Veyra the
+Apothecary or bought in the store (ChaosPotions.upgrade), they replace the flask of their slot.
+
 1. data/items/items.otb: per Everfull potion a copy of the stock node `sourceId` (7618 health potion, 7620 mana
-   potion: group, flags, every attribute, the stock look) with the server id `id` (32085, 32086), stackable like the
+   potion; the tiers 2+ copy the great / ultimate / supreme potion nodes 7591, 7590, 8472, 8473, 26029, 26030, 26031: group, flags, every attribute, the stock look) with the server id `id` (32085, 32086), stackable like the
    stock node (the 10.98 client reads a count for a stackable look; see install_store_food.py). A node already there
    with the same bytes is left alone, one with other bytes is replaced; a server id that belongs to another client id
    stops the script (nothing is written). items.otb.bak keeps the original the first time.
@@ -69,13 +74,15 @@ def read_config(path=CONFIG):
     for chunk in re.findall(r'\n\t\t\{(.*?)\}(?=,?\n\t\t\{|\s*$)', body + '\n', re.S):
         def num(key):
             return int(re.search(r'\b%s\s*=\s*(\d+)' % key, chunk).group(1))
+        tier = re.search(r'\btier\s*=\s*(\d+)', chunk)
         rows.append({'key': lua_string(chunk, 'key'), 'id': num('id'), 'sourceId': num('sourceId'),
+                     'tier': int(tier.group(1)) if tier else 1,
                      'weight': num('weight'), 'price': num('price'), 'article': lua_string(chunk, 'article'),
                      'name': lua_string(chunk, 'name'), 'plural': lua_string(chunk, 'plural'),
                      'description': lua_string(chunk, 'description')})
     flasks = [int(x) for x in re.findall(r'\d+', re.search(r'\n\tflasks = \{([^}]*)\}', text).group(1))]
     cfg = {'everfull': rows, 'flasks': flasks, 'flaskText': lua_string(text, 'flaskText')}
-    assert len(rows) >= 2 and all(r['id'] and r['sourceId'] and r['name'] and r['price'] for r in rows), \
+    assert len(rows) >= 2 and len({r['id'] for r in rows}) == len(rows) and all(r['id'] and r['sourceId'] and r['name'] and r['price'] for r in rows), \
         'potions_config.lua: everfull incomplete'
     assert flasks and cfg['flaskText'], 'potions_config.lua: flasks or flaskText missing'
     return cfg
@@ -282,7 +289,7 @@ def patch_shop_list(value, cfg):
     removed = len(entries) - len(keep)
     seller = any(i in SELLER_IDS for i in ids)
     have = {i for i in ids if i is not None}
-    new = ['%s,%d,%d' % (r['name'], r['id'], r['price']) for r in cfg['everfull'] if seller and r['id'] not in have]
+    new = ['%s,%d,%d' % (r['name'], r['id'], r['price']) for r in cfg['everfull'] if seller and r['tier'] == 1 and r['id'] not in have]
     if not removed and not new:
         return value, 0, 0, seller
     tail = ''
@@ -350,7 +357,7 @@ def patch_npc_lua(text, cfg):
         indent = LUA_ADD_LINE.match(lines[last_seller]).group(1)
         new = ['%s%s:addBuyableItem({\'%s\'}, %d, %d, 1, \'%s\') %s' % (indent, var, r['name'], r['id'], r['price'],
                                                                          r['name'], SELL_MARK)
-               for r in cfg['everfull'] if r['id'] not in have]
+               for r in cfg['everfull'] if r['tier'] == 1 and r['id'] not in have]
         lines[last_seller + 1:last_seller + 1] = new
         added = len(new)
     text = nl.join(lines)

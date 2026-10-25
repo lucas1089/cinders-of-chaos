@@ -88,6 +88,8 @@ def make_base(root):
     for d in ('items', 'npc/scripts', 'npc/lib/npcsystem', 'actions/scripts/other', 'scripts/chaos'):
         os.makedirs(os.path.join(data, d), exist_ok=True)
     nodes = [item_node(7618, 7477), item_node(7620, 7478), item_node(7636, 7479), item_node(2376, 3264, 0)]
+    # the stock great / ultimate / supreme potions the higher Everfull tiers copy (O245)
+    nodes += [item_node(sid, 8000 + i) for i, sid in enumerate((7590, 7591, 8472, 8473, 26029, 26030, 26031))]
     open(os.path.join(data, 'items', 'items.otb'), 'wb').write(otb(nodes))
     files = {'items/items.xml': ITEMS_XML, 'npc/Morora.xml': SELLER_XML, 'npc/Smith.xml': DEALER_XML,
              'npc/scripts/potions.lua': SELLER_LUA, 'npc/lib/npcsystem/modules.lua': MODULES,
@@ -108,8 +110,11 @@ def snapshot(data):
 
 
 cfg = T.read_config()
-check([r['id'] for r in cfg['everfull']] == [32085, 32086], 'config: the Everfull ids')
-check([r['sourceId'] for r in cfg['everfull']] == [7618, 7620], 'config: the first health and mana potions')
+check([r['id'] for r in cfg['everfull']] == [32085, 32086] + list(range(32261, 32268)), 'config: the Everfull ids')
+check([r['sourceId'] for r in cfg['everfull']][:2] == [7618, 7620], 'config: the first health and mana potions')
+check([r['sourceId'] for r in cfg['everfull']][2:] == [7591, 7590, 8472, 8473, 26029, 26030, 26031],
+      'config: the great, ultimate and supreme potions')
+check([r['tier'] for r in cfg['everfull']] == [1, 1, 2, 2, 2, 3, 3, 3, 4], 'config: tiers')
 
 tmp = tempfile.mkdtemp()
 try:
@@ -132,11 +137,20 @@ try:
     check(32085 in by and by[32085][3] == 7477, 'everfull health potion: the stock look')
     check(32086 in by and by[32086][3] == 7478, 'everfull mana potion: the stock look')
     check(bool(by[32085][5] & FLAG_STACKABLE), 'stackable like the stock node (the client reads a count)')
+    for r in cfg['everfull'][2:]:
+        stock = [k for k in kids if k[2] == r['sourceId']][0]
+        check(r['id'] in by and by[r['id']][3] == stock[3], '%s: the stock look of %d' % (r['name'], r['sourceId']))
+        check(bool(by[r['id']][5] & FLAG_STACKABLE), '%s: stackable' % r['name'])
     check(os.path.exists(os.path.join(data, 'items', 'items.otb.bak')), 'items.otb.bak kept')
 
     xml = first['items/items.xml'].decode()
     check(xml.count(T.XML_BEGIN) == 1 and 'name="everfull health potion"' in xml, 'items.xml block')
     check('value="A flask: kills' in xml, 'the description')
+    check('name="everfull supreme health potion"' in xml and 'Heals like a supreme health potion (level 200)' in xml,
+          'items.xml: the supreme tier, its name and description')
+    check('Heals and restores mana like an ultimate spirit potion (level 130); a drink costs one health charge and one '
+          'mana charge' in xml, 'items.xml: the spirit description says it spends two charges')
+    check(xml.count('<item id="32') == 9, 'items.xml: nine Everfull entries')
     check('deposit' not in xml.lower(), 'no flask deposit text in items.xml')
     check(cfg['flaskText'] in xml, 'the flask text')
 
@@ -146,11 +160,13 @@ try:
     check('shop_sellable" value="empty potion flask,7636,5;' in morora, 'old flasks still bought')
     check('deposit' not in morora.lower() and 'Hello |PLAYERNAME|. Potions!' in morora, 'the greeting loses its deposit')
     check('everfull' not in first['npc/Smith.xml'].decode(), 'a weapon dealer sells no Everfull potion')
+    check('3226' not in morora and 'great' not in morora, 'no seller sells a higher tier (they are earned or bought in the store)')
 
     lua = first['npc/scripts/potions.lua'].decode()
     check("shopModule:addBuyableItem({'everfull health potion'}, 32085, 100, 1, 'everfull health potion')" in lua,
           'the Lua seller sells the health one')
     check("32086, 100, 1, 'everfull mana potion')" in lua, 'and the mana one')
+    check('3226' not in lua, 'the Lua seller sells no higher tier')
     check(lua.index('32086') > lua.index("7620, 50"), 'after its mana potion line')
     check('-- ' + T.FLASK_MARK + "shopModule:addBuyableItem({'flask'}, 7636" in lua, 'no flask for sale (Lua)')
     check("shopModule:addSellableItem({'flask'}, 7636, 5" in lua, 'old flasks still bought (Lua)')

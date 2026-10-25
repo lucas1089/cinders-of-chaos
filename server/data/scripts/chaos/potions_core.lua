@@ -19,6 +19,15 @@
 --   ChaosPotionsCore.safeRefill(cfg, s)                    s = {safe, fighting} -> bool
 --   ChaosPotionsCore.treeValues(cfg, bonuses)              the tree's extra charges and gain percent (capped)
 --   ChaosPotionsCore.noticeDue(cfg, last, now)             at most one refill notice per noticeMs
+--   O245 tiers (README "Potions", "Higher tiers"): an entry has tier, level, line (health | mana | spirit), from (the
+--   server ids it is made from) and pools (the charge pools a drink spends, default its key).
+--   ChaosPotionsCore.poolsOf(cfg, entry)          the pools a drink of this entry spends
+--   ChaosPotionsCore.upgradeTargets(cfg)           the entries of tier 2 and up, in config order
+--   ChaosPotionsCore.upgradeStorage(cfg, id)       the player storage key that says "this tier was earned"
+--   ChaosPotionsCore.upgradeCoins(cfg, id)         the store price of a tier
+--   ChaosPotionsCore.upgradeCheck(cfg, s)          s = {id, level, installed, done, held = {ids}, mode, materials}
+--                                                  -> {ok, from, materials} | {ok = false, why, text, args}
+--   ChaosPotionsCore.restoreFor(cfg, slot, held, earned)  the entry a character that lost its flask gets back, or nil
 -- Lua 5.1 / LuaJIT and Lua 5.3 compatible.
 ChaosPotionsCore = ChaosPotionsCore or {}
 local K = ChaosPotionsCore
@@ -44,6 +53,18 @@ end
 -- one drink of an Everfull potion. target: "self" (no target, an item, the drinker), "player" (another player) or
 -- "creature" (a monster or an NPC: refused like the stock potion, the use goes on to the engine). The potion is never
 -- consumed and never leaves a flask; the exhaust is the stock potions' one.
+function K.poolsOf(cfg, e)
+	return e.pools or {e.key}
+end
+
+-- s.charges: hundredths of a charge, one number for every pool of the entry, or a table pool -> hundredths
+local function chargeOf(s, pool)
+	if type(s.charges) == "table" then
+		return s.charges[pool]
+	end
+	return s.charges
+end
+
 function K.drink(cfg, s)
 	local e = K.everfull(cfg, s.id)
 	if not e then
@@ -52,13 +73,22 @@ function K.drink(cfg, s)
 	if s.target == "creature" then
 		return {ok = false, why = "target"}
 	end
-	if s.charges ~= nil and not K.canDrink(cfg, s.charges) then
-		return {ok = false, why = "empty", kind = e.key}
+	-- the stock potion's level (a tier of O245): the drinker's, whoever is healed
+	if (e.level or 0) > 0 and s.level ~= nil and (tonumber(s.level) or 0) < e.level then
+		return {ok = false, why = "level", level = e.level,
+			text = "Only characters of level %d or above may drink this fluid.", args = {e.level}}
+	end
+	-- every pool the drink spends needs a whole charge (a spirit potion spends one of each)
+	for _, pool in ipairs(K.poolsOf(cfg, e)) do
+		local have = chargeOf(s, pool)
+		if have ~= nil and not K.canDrink(cfg, have) then
+			return {ok = false, why = "empty", kind = pool}
+		end
 	end
 	if s.exhausted then
 		return {ok = false, why = "exhausted", text = "You are exhausted."}
 	end
-	return {ok = true, kind = e.key, health = e.health, mana = e.mana, consume = false, flask = nil}
+	return {ok = true, kind = e.key, pools = K.poolsOf(cfg, e), health = e.health, mana = e.mana, consume = false, flask = nil}
 end
 
 -- the amount of one potion drink: a roll inside range (the fixed part) + percent(level) of max, then x (1 + bonusPct)
@@ -74,14 +104,20 @@ function K.amount(cfg, range, level, max, bonusPct, rand)
 	return math.floor(v * (1 + math.max(0, bonusPct or 0) / 100) + 0.5)
 end
 
--- a potion seller's replacement: one at a time, refused while the character has one (backpack, inbox or depot)
+-- a potion seller's replacement: tier 1 only, one at a time, refused while the character has an Everfull potion of the
+-- same slot in any tier (backpack, inbox or depot: s.owned) and while it earned a better one (s.better: Veyra gives
+-- that one back, K.restoreFor)
 function K.npcBuy(cfg, s)
 	local e = K.everfull(cfg, s.id)
-	if not e then
+	if not e or (e.tier or 1) > 1 then
 		return {ok = false, why = "unknown"}
 	end
 	if s.owned then
 		return {ok = false, why = "owned", text = "You already have one. It refills as you kill monsters."}
+	end
+	if s.better then
+		return {ok = false, why = "better",
+			text = "You earned a better flask than that. Ask Veyra the Apothecary to give it back."}
 	end
 	if (s.money or 0) < e.price then
 		return {ok = false, why = "money", text = "You do not have enough money."}
@@ -209,4 +245,102 @@ end
 
 function K.noticeDue(cfg, last, now)
 	return last == nil or now - last >= (cfg.flask.noticeMs or 0)
+end
+
+-- ---------------------------------------------------------------- higher tiers (README "Potions", "Higher tiers", O245)
+function K.upgradeTargets(cfg)
+	local out = {}
+	for _, e in ipairs(cfg.everfull or {}) do
+		if (e.tier or 1) >= 2 then
+			out[#out + 1] = e
+		end
+	end
+	return out
+end
+
+-- the storage key of a tier 2+ entry (its place among the tiers 2+), nil for any other id
+function K.upgradeStorage(cfg, id)
+	for i, e in ipairs(K.upgradeTargets(cfg)) do
+		if e.id == id then
+			return cfg.storage.upgradeBase + i - 1
+		end
+	end
+	return nil
+end
+
+function K.upgradeCoins(cfg, id)
+	local e = K.everfull(cfg, id)
+	return e and (e.tier or 1) >= 2 and ((cfg.upgrade or {}).coins or {})[e.tier] or nil
+end
+
+local function isFrom(e, id)
+	for _, f in ipairs(e.from or {}) do
+		if f == id then
+			return true
+		end
+	end
+	return false
+end
+
+-- Whether a character may swap its flask for the tier s.id. mode "quest" (Veyra: needs s.materials stock potions, the
+-- count the character carries) or "store" (coins). Same level gate, same previous tier, same once per tier in both.
+-- s.held: the server ids of every Everfull item the character has (a tier it holds twice is listed twice); only the
+-- ones of the same slot count. The previous tier must be the ONLY item of the slot: none (lost, or not carried in
+-- the backpack, inbox or a depot) and more than one are refused. Nothing is taken here.
+function K.upgradeCheck(cfg, s)
+	local e = K.everfull(cfg, s.id)
+	if not e or (e.tier or 1) < 2 then
+		return {ok = false, why = "unknown", text = "This offer cannot be bought."}
+	end
+	if not s.installed then
+		return {ok = false, why = "installed", text = "This offer is not available."}
+	end
+	if s.done then
+		return {ok = false, why = "done", text = "You already have this upgrade."}
+	end
+	local count, heldId = 0, nil
+	for _, id in ipairs(s.held or {}) do
+		local x = K.everfull(cfg, id)
+		if x and x.key == e.key then
+			count = count + 1
+			heldId = id
+		end
+	end
+	if count == 0 then
+		return {ok = false, why = "missing",
+			text = "Carry your Everfull potion in your backpack, your inbox or a depot: the upgrade replaces it."}
+	end
+	if count > 1 then
+		return {ok = false, why = "duplicate", text = "You hold more than one Everfull potion of this kind. Keep only one."}
+	end
+	if not isFrom(e, heldId) then
+		return {ok = false, why = "tier", text = "This upgrade needs a different flask than the one you hold."}
+	end
+	if (tonumber(s.level) or 0) < (e.level or 0) then
+		return {ok = false, why = "level", text = "This flask is for level %d and up, and you are not there yet.", args = {e.level}}
+	end
+	local need = s.mode == "quest" and ((cfg.upgrade or {}).materials or 0) or 0
+	if need > 0 and (tonumber(s.materials) or 0) < need then
+		return {ok = false, why = "materials", need = need,
+			text = "Bring me %d %s and your flask.", args = {need, tostring(s.materialName or "potions")}}
+	end
+	return {ok = true, from = heldId, materials = need}
+end
+
+-- A character that has earned a tier (earned: the entries whose storage flag is set) and no longer has any Everfull
+-- item of that slot gets the highest tier it earned back. held: the server ids of every Everfull item it has.
+function K.restoreFor(cfg, slot, held, earned)
+	for _, id in ipairs(held or {}) do
+		local x = K.everfull(cfg, id)
+		if x and x.key == slot then
+			return nil
+		end
+	end
+	local best
+	for _, e in ipairs(earned or {}) do
+		if e.key == slot and (not best or (e.tier or 1) > (best.tier or 1)) then
+			best = e
+		end
+	end
+	return best
 end
