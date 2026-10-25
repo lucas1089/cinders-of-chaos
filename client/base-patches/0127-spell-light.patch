@@ -1,0 +1,246 @@
+# Chaos: spell colour light (O205; src/client/map.h/.cpp, tile.cpp, mapview.cpp, luafunctions_client.cpp and Lua:
+# mods/client_settings/classes/dataset.lua, options/graphics.otui; after 0001-0126). Owner overlay module game_visualfx
+# (client/MANIFEST.md "Visual effects", "Spell colour light (O205)") does the rest. A magic effect that plays on the map
+# lights the tiles around it for about 320 ms in a colour that matches it, so spells glow in caves and at night.
+#  * Map keeps a table effect id -> {8-bit light colour, radius} (g_map.setSpellLightColor, sent by the module from
+#    visualfx_logic.lua), the limits (g_map.setSpellLightConfig(enabled, max, ms, attack, minGap, minFade)) and the live
+#    lights (at most `max`, 12 as shipped; a new effect finds the table full -> no light).
+#  * Tile::addThing (the effect branch of 0116) calls Map::spellLightEffect(position, effectId); an unknown effect, the
+#    option off, the same effect on the same tile again inside minGap ms, or a full table add nothing. No Lua callback.
+#  * MapView::drawFloor adds the live lights of the camera floor to the map light view (the same addLight call the loot beam
+#    pools of 0069 use) before the light section, strength rising over `attack` of the life and then falling smoothly; the
+#    colour levels (each of red, green, blue 0..5 of the 8-bit colour) and the radius scale with it (visualfx_logic.lua
+#    L.fade / L.dim / L.radiusAt are the same maths and are unit tested). The light view only adds light, so the surface in
+#    full ambient light does not get brighter; with "Show light effects" off there is no light view and nothing is drawn.
+#  * Option spellLight (default on), Options > Graphics under the other four visual effects of 0126.
+# Checked: applies cleanly after 0001-0126 to the base client tree (no fuzz) and the C++ passes a syntax-only compile;
+# not run in a client.
+--- a/src/client/map.h
++++ b/src/client/map.h
+@@ -300,6 +300,20 @@
+     }
+     const std::unordered_map<Position, LootBeam, PositionHasher>& getLootBeams() { return m_lootBeams; }
+ 
++    // Chaos (base patch 0127): spell colour light, see client/BASE.md 0127. The module game_visualfx sends the colour
++    // table and the limits; Tile::addThing calls spellLightEffect for every effect; MapView::drawFloor draws the lights.
++    struct SpellLightDraw {
++        Position pos;
++        uint8_t color;  // 8-bit, already faded
++        uint8_t radius; // tiles, already faded
++    };
++    void setSpellLightColor(int effectId, int color, int radius);
++    void clearSpellLightColors() { m_spellLightColors.clear(); m_spellLights.clear(); }
++    void setSpellLightConfig(bool enabled, int maxLights, int ms, float attack, int minGapMs, float minFade);
++    void spellLightEffect(const Position& pos, int effectId);
++    bool hasSpellLights() { return m_spellLightOn && !m_spellLights.empty(); }
++    void collectSpellLights(std::vector<SpellLightDraw>& out);
++
+     const std::vector<AnimatedTextPtr>& getAnimatedTexts() const { return m_animatedTexts; }
+     const std::vector<StaticTextPtr>& getStaticTexts() const { return m_staticTexts; }
+ 
+@@ -325,6 +339,15 @@
+     std::vector<std::vector<MissilePtr>> m_floorMissiles;
+     std::unordered_set<int> m_groundEffects;
+     std::unordered_map<Position, LootBeam, PositionHasher> m_lootBeams;
++    struct SpellLight { Position pos; uint8_t color; uint8_t radius; ticks_t start; int effectId; };
++    std::unordered_map<int, std::pair<uint8_t, uint8_t>> m_spellLightColors;
++    std::vector<SpellLight> m_spellLights;
++    bool m_spellLightOn = false;
++    int m_spellLightMax = 12;
++    int m_spellLightMs = 320;
++    int m_spellLightGap = 90;
++    float m_spellLightAttack = 0.15f;
++    float m_spellLightMinFade = 0.12f;
+     std::vector<AnimatedTextPtr> m_animatedTexts;
+     std::vector<StaticTextPtr> m_staticTexts;
+     std::vector<MapViewPtr> m_mapViews;
+--- a/src/client/map.cpp
++++ b/src/client/map.cpp
+@@ -100,6 +100,7 @@
+ 
+     m_waypoints.clear();
+     m_lootBeams.clear();
++    m_spellLights.clear(); // Chaos 0127
+ 
+     g_towns.clear();
+     g_houses.clear();
+@@ -120,6 +121,76 @@
+     return true;
+ }
+ 
++// Chaos (base patch 0127): spell colour light. The numbers and the maths mirror visualfx_logic.lua (L.LIGHT, L.fade,
++// L.dim, L.radiusAt, L.lightAdd), which is unit tested.
++void Map::setSpellLightColor(int effectId, int color, int radius)
++{
++    if (color <= 0 || color > 215)
++        return;
++    m_spellLightColors[effectId] = std::make_pair((uint8_t)color, (uint8_t)std::min(3, std::max(1, radius)));
++}
++
++void Map::setSpellLightConfig(bool enabled, int maxLights, int ms, float attack, int minGapMs, float minFade)
++{
++    m_spellLightOn = enabled && ms > 0 && maxLights > 0;
++    m_spellLightMax = std::min(32, std::max(0, maxLights));
++    m_spellLightMs = std::min(1000, std::max(0, ms));
++    m_spellLightAttack = std::min(0.9f, std::max(0.01f, attack));
++    m_spellLightGap = std::max(0, minGapMs);
++    m_spellLightMinFade = std::min(0.9f, std::max(0.f, minFade));
++    if (!m_spellLightOn)
++        m_spellLights.clear();
++}
++
++void Map::spellLightEffect(const Position& pos, int effectId)
++{
++    if (!m_spellLightOn)
++        return;
++    auto it = m_spellLightColors.find(effectId);
++    if (it == m_spellLightColors.end())
++        return;
++    const ticks_t now = g_clock.millis();
++    // drop the ended lights, then the duplicate and the cap
++    m_spellLights.erase(std::remove_if(m_spellLights.begin(), m_spellLights.end(),
++                                       [&](const SpellLight& l) { return now - l.start >= m_spellLightMs; }),
++                        m_spellLights.end());
++    for (const SpellLight& l : m_spellLights) {
++        if (l.effectId == effectId && l.pos == pos && now - l.start < m_spellLightGap)
++            return;
++    }
++    if ((int)m_spellLights.size() >= m_spellLightMax)
++        return;
++    m_spellLights.push_back({ pos, it->second.first, it->second.second, now, effectId });
++}
++
++void Map::collectSpellLights(std::vector<SpellLightDraw>& out)
++{
++    const ticks_t now = g_clock.millis();
++    m_spellLights.erase(std::remove_if(m_spellLights.begin(), m_spellLights.end(),
++                                       [&](const SpellLight& l) { return now - l.start >= m_spellLightMs; }),
++                        m_spellLights.end());
++    for (const SpellLight& l : m_spellLights) {
++        const float t = (float)(now - l.start) / (float)m_spellLightMs;
++        float strength;
++        if (t < m_spellLightAttack) {
++            strength = t / m_spellLightAttack;
++        } else {
++            const float u = (t - m_spellLightAttack) / (1.f - m_spellLightAttack);
++            strength = (1.f - u) * (1.f - u);
++        }
++        if (strength < m_spellLightMinFade)
++            continue;
++        const int r = (int)std::floor((l.color / 36) % 6 * strength + 0.5f);
++        const int g = (int)std::floor((l.color / 6) % 6 * strength + 0.5f);
++        const int b = (int)std::floor(l.color % 6 * strength + 0.5f);
++        const int color = r * 36 + g * 6 + b;
++        if (color <= 0)
++            continue;
++        const int radius = std::min(3, std::max(1, (int)std::floor(l.radius * strength + 0.5f)));
++        out.push_back({ l.pos, (uint8_t)color, (uint8_t)radius });
++    }
++}
++
+ void Map::cleanDynamicThings()
+ {
+     for(const auto& pair : m_knownCreatures) {
+--- a/src/client/tile.cpp
++++ b/src/client/tile.cpp
+@@ -575,6 +575,8 @@
+         m_effects.erase(std::remove_if(m_effects.begin(), m_effects.end(),
+                                        [effectId](const EffectPtr& e) { return e->getId() == effectId; }),
+                         m_effects.end());
++        // Chaos (base patch 0127): the colour light of a spell effect (nothing for an unknown effect or with the option off)
++        g_map.spellLightEffect(m_position, (int)effectId);
+         if(thing->isTopEffect())
+             m_effects.insert(m_effects.begin(), thing->static_self_cast<Effect>());
+         else
+--- a/src/client/mapview.cpp
++++ b/src/client/mapview.cpp
+@@ -344,6 +344,20 @@
+             m_lightView->addLight(Point((int)cx, (int)baseY), Color::to8bit(beam->color), 2);
+     };
+ 
++    // Chaos (base patch 0127): the colour lights of the spell effects that play on the camera floor, added to the map
++    // light view like the loot beam pools above; the light view only adds light, so full ambient light does not show them
++    if (m_lightView && floor == cameraPosition.z && g_map.hasSpellLights()) {
++        std::vector<Map::SpellLightDraw> spellLights;
++        g_map.collectSpellLights(spellLights);
++        const int half = g_sprites.spriteSize() / 2;
++        for (const auto& sl : spellLights) {
++            if (sl.pos.z != cameraPosition.z)
++                continue;
++            Point sp = transformPositionTo2D(sl.pos, cameraPosition);
++            m_lightView->addLight(Point(sp.x + half, sp.y + half), sl.color, sl.radius);
++        }
++    }
++
+     // light
+     if (m_lightView) {
+         for (auto& tile : tiles) {
+--- a/src/client/luafunctions_client.cpp
++++ b/src/client/luafunctions_client.cpp
+@@ -181,6 +181,10 @@
+     g_lua.bindSingletonFunction("g_map", "clearLootBeams", &Map::clearLootBeams, &g_map);
+     g_lua.bindSingletonFunction("g_map", "getLootBeamCount", &Map::getLootBeamCount, &g_map);
+     g_lua.bindSingletonFunction("g_map", "hasLootBeam", &Map::hasLootBeam, &g_map);
++    // Chaos (base patch 0127): spell colour light (map.h; overlay module game_visualfx)
++    g_lua.bindSingletonFunction("g_map", "setSpellLightColor", &Map::setSpellLightColor, &g_map);
++    g_lua.bindSingletonFunction("g_map", "clearSpellLightColors", &Map::clearSpellLightColors, &g_map);
++    g_lua.bindSingletonFunction("g_map", "setSpellLightConfig", &Map::setSpellLightConfig, &g_map);
+     g_lua.bindSingletonFunction("g_map", "getOrCreateTile", &Map::getOrCreateTile, &g_map);
+     g_lua.bindSingletonFunction("g_map", "getTiles", &Map::getTiles, &g_map);
+     g_lua.bindSingletonFunction("g_map", "setCentralPosition", &Map::setCentralPosition, &g_map);
+--- a/mods/client_settings/classes/dataset.lua
++++ b/mods/client_settings/classes/dataset.lua
+@@ -2056,6 +2056,16 @@
+     end,
+   },
+ 
++  -- Chaos (base patch 0127): a magic effect lights the tiles around it for a moment in its colour (game_visualfx)
++  spellLight = {
++    value = true,
++    apply = function(value)
++      local m = modules.game_visualfx
++      if m and m.onOption then m.onOption('spellLight', value) end
++      return true
++    end,
++  },
++
+   enableShaders = {
+     value = true,
+     apply = function(value)
+--- a/mods/client_settings/options/graphics.otui
++++ b/mods/client_settings/options/graphics.otui
+@@ -452,7 +452,7 @@
+ 
+   FlatPanel
+     // Chaos (base patch 0126, overlay module game_visualfx): the dark-fantasy look of the map, one switch per effect
+-    size: 505 86
++    size: 505 105
+     anchors.top: prev.bottom
+     anchors.right: parent.right
+     anchors.left: parent.left
+@@ -532,6 +532,25 @@
+         local value = modules.client_settings.getOption('screenGrade')
+         self:setChecked(value ~= false)
+ 
++    SettingsCheckBox
++      id: spellLight
++      size: 12 12
++      !text: tr('Light the ground around spell effects')
++      font: $var-cip-font
++      text-auto-resize: true
++      color: $var-text-cip-color
++      text-offset: 14 -2
++      anchors.left: parent.left
++      anchors.top: screenGrade.bottom
++      margin-top: 7
++      margin-left: 16
++      image-source: /images/ui/checkbox
++      image-clip: 0 0 12 12
++      !tooltip: tr('A spell effect lights the ground around it for a moment in its colour, so spells glow\nin caves and at night. It adds nothing in full daylight and needs Show light effects.')
++      @onSetup: |
++        local value = modules.client_settings.getOption('spellLight')
++        self:setChecked(value ~= false)
++
+     UIWidget
+       size: 12 12
+       anchors.top: parent.top
