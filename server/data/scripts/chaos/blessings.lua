@@ -2,6 +2,10 @@
 -- Rules: blessings_core.lua, numbers: blessings_config.lua, tests: tests/blessings_test.lua, overview: server/README.md
 -- "Ember Blessings".
 --
+--   the pickup     a proc drops an ember on the ground (ChaosPickups, item 32090, named after the blessing); the blessing is
+--                  given when it is taken: the corpse owner at once, the owner's party after cfg.pickup.ownerWindowMs,
+--                  nobody else; it goes out after cfg.pickup.lifetimeMs and gives nothing. The 20 s proc cooldown starts at
+--                  the roll. Not installed / disabled / no free tile: the blessing is given at once.
 --   the proc       EventCallback onDropLoot: one roll per kill, for the corpse owner only (the player who dealt the
 --                  most damage, or the master of the summon that did: the same player the Chaos loot is for). Party
 --                  members do not share the roll. No roll in PvP places (battleground, arena, siege, PvP-zone tiles),
@@ -193,12 +197,12 @@ local function feedback(player, grant)
 	if c.message then
 		local text
 		if grant.action == "refresh" then
-			text = string.format("%s burns again: %ds.", e.name, math.floor((c.durationMs or 60000) / 1000))
+			text = Chaos.t(player, "%s burns again: %ds.", e.name, math.floor((c.durationMs or 60000) / 1000))
 		else
-			text = string.format("A dying ember blesses you: %s, %s", e.name, string.format(e.desc or "", e.value or 0))
+			text = Chaos.t(player, "A dying ember blesses you: %s, %s", e.name, string.format(e.desc or "", e.value or 0))
 			if grant.replaced then
 				local old = K.entry(c, grant.replaced)
-				text = text .. string.format(" (%s fades)", old and old.name or grant.replaced)
+				text = text .. Chaos.t(player, " (%s fades)", old and old.name or grant.replaced)
 			end
 		end
 		player:sendTextMessage(MESSAGE_STATUS_DEFAULT or MESSAGE_INFO_DESCR, text)
@@ -229,7 +233,42 @@ local function monsterLevel(monster)
 	return ok and tonumber(lvl) or 0
 end
 
-function X.onKill(monster, owner)
+-- the ember on the ground (pickups.lua): the blessing is given when it is taken
+local function dropEmber(monster, corpse, owner, e)
+	local pc = cfg().pickup or {}
+	local P = rawget(_G, "ChaosPickups")
+	if pc.enabled == false or not P or not corpse or not P.installed("ember") then
+		return false
+	end
+	local key = e.key
+	local desc = string.format(e.desc or "", e.value or 0)
+	local entry = P.drop({
+		itemKey = "ember", kind = "ember", pos = corpse:getPosition(), ownerId = owner:getId(), ttlMs = pc.lifetimeMs,
+		ownerWindowMs = pc.ownerWindowMs, name = e.name, desc = desc .. " Step on it to be blessed.", data = {key = key},
+		onTake = function(player)
+			local place = X.pvpPlace(player)
+			if place then
+				player:sendTextMessage(MESSAGE_STATUS_DEFAULT or MESSAGE_INFO_DESCR,
+					Chaos.t(player, "Your Ember Blessings fade: no blessings in the %s.", place))
+				return false -- it stays for someone outside the PvP place
+			end
+			X.give(player, key)
+			return true
+		end
+	})
+	if not entry then
+		return false
+	end
+	if cfg().message then
+		owner:sendTextMessage(MESSAGE_STATUS_DEFAULT or MESSAGE_INFO_DESCR, Chaos.t(owner,
+			"A dying ember drops: %s. Step on it within %d seconds.", e.name, math.floor((pc.lifetimeMs or 30000) / 1000)))
+	end
+	return true
+end
+
+-- the roll of one kill (cooldown, chance, PvP places) for the corpse owner. With the ember pickup the blessing waits on
+-- the ground; without it (disabled, items not installed, no free tile) it is given at once. Returns the pool entry or nil.
+function X.onKill(monster, owner, corpse)
 	local c = cfg()
 	if c.enabled == false or monster:getMaster() then
 		return nil
@@ -246,16 +285,14 @@ function X.onKill(monster, owner)
 		monsterLevel = monsterLevel(monster),
 		blocked = X.pvpPlace(owner)
 	}
-	local grant = K.roll(c, st, info, now, math.random)
-	if not grant then
+	local e = K.rollDrop(c, st, info, now, math.random)
+	if not e then
 		return nil
 	end
-	if grant.replaced then
-		removeEffect(owner, grant.replaced)
+	if not dropEmber(monster, corpse, owner, e) then
+		X.give(owner, e.key, now)
 	end
-	applyEffect(owner, grant.key, grant.untilMs)
-	feedback(owner, grant)
-	return grant
+	return e
 end
 
 -- ---------------------------------------------------------------- engine hooks
@@ -299,7 +336,7 @@ drop.onDropLoot = function(self, corpse)
 	if pct > 0 then
 		try("gold", addGold, corpse, pct)
 	end
-	try("kill", X.onKill, self, owner)
+	try("kill", X.onKill, self, owner, corpse)
 end
 -- after the stock loot (0) and the Chaos loot layer (1), before autoloot (3): autoloot takes the extra coins too
 drop:register(2)

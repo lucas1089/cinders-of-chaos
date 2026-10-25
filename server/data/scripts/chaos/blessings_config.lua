@@ -9,8 +9,15 @@ return {
 	durationMs = 60000,
 	-- at most this many different blessings at once; a new kind past the cap replaces the one with the least time left
 	maxActive = 3,
-	-- after a proc no other proc for this long (one character, any kind)
+	-- after a proc no other proc for this long (one character, any kind); it starts at the roll, not at the pickup
 	cooldownMs = 20000,
+
+	-- A proc drops an ember on the ground (pickups.lua, item "ember" of pickups_config.lua) instead of blessing at once.
+	-- The blessing is given when someone takes it. lifetimeMs: how long it lies there, then it goes out with a fade
+	-- effect and gives nothing. ownerWindowMs: the corpse owner alone; after that the owner's party members take it
+	-- as well; nobody outside the party ever. enabled = false (or the items not installed, or no free tile): the
+	-- blessing goes to the owner at once, as before.
+	pickup = {enabled = true, lifetimeMs = 30000, ownerWindowMs = 6000},
 
 	-- ------------------------------------------------------------------ the chance of a kill
 	-- percent per kill by the monster's tier (monster_tiers.lua ChaosTierOf)

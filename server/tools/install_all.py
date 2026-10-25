@@ -235,6 +235,8 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   potions      tools/install_potions.py          no empty potion flasks (the base potion scripts, NPC sales, deposit texts),
                the Everfull health and mana potions in items.otb / items.xml, sold by every potion seller through the
                ShopModule hook (README "Potions"; after runes, before itemprices)
+  pickups      tools/install_pickups.py          the health globe, mana globe and ember (ground pickups) in items.otb / items.xml,
+               never pickupable or moveable (README "Ground pickups and globes")
   itemprices   tools/install_item_prices.py      the item price table (data/lib/chaos_item_prices_data.lua): the Loot Buyer NPC
                in data/npc, every NPC's sell price of a priced item set to the table, NPC buy prices below twice the
                sell price raised (no arbitrage; README "Item prices"; after packitems, fistweapons and runes, which
@@ -1112,6 +1114,13 @@ def step_potions(server, data, ctx):
 
 # after runes (shop entries by then), before itemprices (which reads every shop entry)
 STEPS.insert(STEPS.index('itemprices'), 'potions')
+
+
+def step_pickups(server, data, ctx):
+    return tool_result(run_tool([tool('install_pickups.py'), data], 'install_pickups.py'))
+
+
+STEPS.insert(STEPS.index('potions') + 1, 'pickups')  # the globes and the ember: own ids, no shop entries
 
 
 def step_worldtexts(server, data, ctx):

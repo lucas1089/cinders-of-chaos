@@ -7,7 +7,8 @@
 --   K.pick(cfg, rand)                              a pool entry drawn by weight
 --   K.grant(cfg, st, key, now)                     the blessing given: {action = "new" | "refresh" | "replace",
 --                                                  key, untilMs, replaced = key or nil}
---   K.roll(cfg, st, info, now, rand)               one kill: the grant, or nil and why
+--   K.rollDrop(cfg, st, info, now, rand)           one kill: the pool entry drawn (the cooldown starts), or nil and why
+--   K.roll(cfg, st, info, now, rand)               rollDrop and grant at once: the grant, or nil and why
 --   K.expire(st, now)                              the keys that ran out (taken out of st)
 --   K.left(st, key, now) / K.value(cfg, st, key, now) / K.mult(cfg, st, key, now)
 --   K.list(cfg, st, now)                           the active blessings, longest time left first
@@ -116,8 +117,9 @@ function K.grant(cfg, st, key, now)
 	return out
 end
 
--- info: {tier, playerLevel, monsterLevel, blocked = reason or nil}; returns the grant or nil, reason
-function K.roll(cfg, st, info, now, rand)
+-- info: {tier, playerLevel, monsterLevel, blocked = reason or nil}; the roll of one kill without giving anything: the
+-- pool entry drawn (the internal cooldown starts now), or nil, reason. The ground pickup (cfg.pickup) carries the entry.
+function K.rollDrop(cfg, st, info, now, rand)
 	if cfg.enabled == false then
 		return nil, "disabled"
 	end
@@ -140,6 +142,15 @@ function K.roll(cfg, st, info, now, rand)
 		return nil, "empty pool"
 	end
 	st.lastProcMs = now
+	return e
+end
+
+-- the roll and the grant at once (no pickup: staff simulation, the fallback without the pickup items)
+function K.roll(cfg, st, info, now, rand)
+	local e, why = K.rollDrop(cfg, st, info, now, rand)
+	if not e then
+		return nil, why
+	end
 	return K.grant(cfg, st, e.key, now)
 end
 

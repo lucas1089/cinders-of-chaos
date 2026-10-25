@@ -301,6 +301,7 @@ local function mkCorpse(ownerId, coins)
 		c._items[#c._items + 1] = {id = it[1], count = it[2]}
 	end
 	function c:getCorpseOwner() return self._owner end
+	function c:getPosition() return mkPos(100, 100, 7) end
 	function c:getSize() return #self._items end
 	function c:getItem(slot)
 		local it = self._items[slot + 1]
@@ -534,6 +535,84 @@ talks["/blessing"].onSay(hero, "/blessing", "clear")
 eq(X.state[1], nil, "/blessing clear")
 talks["/blessing"].onSay(hero, "/blessing", "roll rare, 60, 1000")
 ok(hero._msgs[#hero._msgs]:find("8.00%%"), "/blessing roll reports the chance")
+
+-- ================================================================== the ember on the ground (ChaosPickups)
+-- K.rollDrop: the draw and the cooldown without a grant
+do
+	local st = K.newState()
+	local e = K.rollDrop(cfg, st, {tier = "boss", playerLevel = 50, monsterLevel = 50}, 1000, low)
+	ok(e ~= nil and e.key == "xp", "rollDrop draws the first entry")
+	eq(next(st.active), nil, "rollDrop gives nothing")
+	eq(st.lastProcMs, 1000, "the 20 s cooldown starts at the roll")
+	local e2, why = K.rollDrop(cfg, st, {tier = "boss", playerLevel = 50, monsterLevel = 50}, 2000, low)
+	ok(e2 == nil and why == "cooldown", "no second roll inside the cooldown")
+	eq(cfg.pickup.lifetimeMs, 30000, "the ember lies 30 s")
+	ok(cfg.pickup.ownerWindowMs > 0 and cfg.pickup.ownerWindowMs < cfg.pickup.lifetimeMs, "an owner window shorter than the life")
+end
+
+local dropped, taken = {}, {}
+ChaosPickups = {
+	installed = function(key) return key == "ember" end,
+	drop = function(spec)
+		dropped[#dropped + 1] = spec
+		return {uid = #dropped}
+	end
+}
+local P2 = mkPlayer(2)
+events.ChaosBlessingsLogin.onLogin(P2)
+math.random = function(a, b)
+	if a == nil then return 0.99 end
+	return a
+end
+T = T + 100000
+local labelsBefore, nDrops = #labels, #dropped
+cb("onDropLoot")(mkMonster(700, "boss", 60), mkCorpse(1, {}))
+math.random = realRandom
+eq(#dropped, nDrops + 1, "a proc drops an ember pickup")
+local spec = dropped[#dropped]
+eq(spec.itemKey, "ember", "the ember item")
+eq(spec.ownerId, 1, "owned by the corpse owner")
+eq(spec.ttlMs, 30000, "30 s on the ground")
+eq(spec.ownerWindowMs, cfg.pickup.ownerWindowMs, "the owner window")
+eq(spec.name, "Ember of Insight", "named after the blessing (look text)")
+ok(spec.desc:find("+25%%") and spec.desc:find("Step on it"), "the description names the effect")
+eq(K.count(X.state[1]) , 0, "nothing is given at the drop")
+eq(#labels, labelsBefore, "no blessing label before the pickup")
+ok(hero._msgs[#hero._msgs]:find("dying ember drops") and hero._msgs[#hero._msgs]:find("30 seconds"), "the drop message")
+-- taking it gives the blessing to whoever takes it (the owner, or a party member the framework let through)
+eq(spec.onTake(P2), true, "the take is accepted")
+eq(K.value(cfg, X.state[2], "xp", T), 25, "the taker is blessed with the full minute")
+eq(X.state[2].active.xp.untilMs, T + 60000, "the minute starts at the pickup")
+eq(#labels, labelsBefore + 1, "the pickup shows the label")
+ok(P2._msgs[#P2._msgs]:find("A dying ember blesses you") and P2._msgs[#P2._msgs]:find("Ember of Insight"), "the pickup message")
+-- a PvP place refuses the take and the ember stays
+tileFlags[TILESTATE_PVPZONE] = true
+eq(spec.onTake(hero), false, "no blessing in a PvP place: the ember stays")
+eq(X.state[1] and K.count(X.state[1]) or 0, 0, "nothing was given there")
+ok(hero._msgs[#hero._msgs]:find("no blessings in the pvp zone"), "the PvP message")
+tileFlags[TILESTATE_PVPZONE] = nil
+-- no free tile: the blessing goes to the owner at once
+ChaosPickups.drop = function() return nil, "no tile" end
+math.random = function(a, b)
+	if a == nil then return 0.99 end
+	return a
+end
+T = T + 100000
+cb("onDropLoot")(mkMonster(701, "boss", 60), mkCorpse(1, {}))
+math.random = realRandom
+eq(K.value(cfg, X.state[1], "xp", T), 25, "no tile: given at once")
+-- the items not installed: given at once, as before
+ChaosPickups.installed = function() return false end
+X.clear(hero)
+math.random = function(a, b)
+	if a == nil then return 0.99 end
+	return a
+end
+T = T + 100000
+cb("onDropLoot")(mkMonster(702, "boss", 60), mkCorpse(1, {}))
+math.random = realRandom
+eq(K.value(cfg, X.state[1], "xp", T), 25, "not installed: given at once")
+ChaosPickups = nil
 
 print(string.format("blessings_test: %d checks, %d failed", checks, fails))
 if fails > 0 then

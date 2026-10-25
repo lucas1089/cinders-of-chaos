@@ -21319,6 +21319,9 @@ A monster kill may bless its loot owner for one minute. Numbers live in `blessin
 `blessings_core.lua` (pure, tested), the engine glue in `blessings.lua`. Nothing to install beyond the scripts: no
 database table, no storage, no opcode (the buff bar carries it).
 
+**The ember (O243).** A proc drops an ember on the ground instead of blessing at once; see "Ground pickups and globes (O243)".
+The roll below is unchanged, and the 20 s cooldown starts at the roll.
+
 **Who rolls.** One roll per kill, in `EventCallback onDropLoot`, for the corpse owner only: the player who dealt the most
 damage, or the master of the summon that did. That is the player the Chaos loot is for. Party members do not share the
 roll; a party hunt still procs often, since every member owns some of the corpses. No roll for a summon's death, without
@@ -21371,6 +21374,89 @@ and gone after 60 s; the buff bar rows; logout and `/blessing`.
 Tested on a live test server copy with one client: a proc label on a kill, three blessings on the bar with their
 countdowns and tooltip, a refresh of the same kind by a kill (48 s back to 58 s, one icon), the cap replacing the
 weakest, +25% experience (145 to 181) and +25% speed (2228 to 2785) measured. Not run live: the PvP-place fade, ward, gold.
+
+## Ground pickups and globes (O243) (`pickups.lua`, `pickups_core.lua`, `pickups_config.lua`, `globes.lua`, `globes_core.lua`, `globes_config.lua`, `tools/install_pickups.py`)
+
+Two things lie on the ground for a short time and are taken by walking onto them: the health and mana globes of a kill
+and the ember of an Ember Blessing proc. Both use one framework. Server only: no client part, no client build, no opcode,
+no storage key, no database table.
+
+**The framework** (`pickups_core.lua` pure and tested, `pickups.lua` the engine glue, `pickups_config.lua` the items and
+the shared numbers). A pickup is an item on a tile plus a record in memory (owner, birth, end, callback). `ChaosPickups.drop`
+takes the nearest tile with ground, no solid block and no pickup of ours (the corpse tile, then the ring around it, 13
+tiles tried), creates the item, starts a glow. Rules:
+- **Who takes it.** The owner (the killer, the corpse owner) at any time; the owner's party members once the owner window
+  has passed (`ownerWindowMs`: 0 for the globes, so the party at once; 6 s for the ember); **nobody outside the party, ever**,
+  and nobody after the end. The party is the owner's party when the step happens (an owner who logged out has none: only they
+  could take it). A stranger who steps on it gets "This is not meant for you." and nothing is taken. Monsters and summons
+  walk over it untouched.
+- **Once.** The step takes the record out first, then runs the callback; a second step or a second creature finds nothing.
+  The callback may refuse (it returns false): the record goes back and the pickup stays. The globes refuse a full bar, so
+  it stays for a hurt party member; the ember refuses a PvP place.
+- **Lifetime.** A half-second look-out (`tickMs`) ends a pickup at its time: the item goes with a fade effect
+  (`CONST_ME_POFF`) and grants nothing. The glow pulses (a red, blue or fire magic effect) every 1.5 s so it is easy to see.
+- **Not an item to keep.** The nodes are neither pickupable nor moveable (`install_pickups.py`), so they cannot go into a
+  bag, be pushed, traded or sold; they hold no game value. Nothing is saved: the record is in memory, and a map save does
+  not keep ground items outside houses. **After a restart or a reload** the record is gone; an item that is still on a tile
+  (a crash, a reload) is removed by the first step on it and grants nothing, and its items.xml entry decays by itself after
+  90 s (`failsafeSeconds`, `item:decay()` at creation). Relogging does not change a pickup (it lies on the ground, not in
+  the character).
+
+**The items** (new items.otb nodes, installed by `python3 -I tools/install_pickups.py DATA_DIR`, step `pickups` of
+`install_all.py`, idempotent, test `tools/install_pickups_test.py`; server ids 32088-32090, 32087 stays free):
+| id | item | look |
+|---|---|---|
+| 32088 | health globe | the stock health potion flask (7618) |
+| 32089 | mana globe | the stock mana potion flask (7620) |
+| 32090 | ember | the stock Ember Orb sprite (client id 25045), the name and text per blessing (item attributes) |
+The looks are existing sprites, so no new client files are needed. A drawn orb would need a sprite pair (a client build);
+until then the glow comes from a magic effect pulsing on the tile (red, blue, fire). The pickup effect is a magic effect and
+the heal number is the game's own (green for health, blue for mana). A pickup sound would need an event in `game_chaossound`
+(its heal sounds are keyed by magic effect themes); none is added.
+
+**The globes** (`globes_core.lua` pure and tested, `globes_config.lua` every number, `globes.lua` the hook).
+- **The drop.** `EventCallback onDropLoot` (index 8), for the corpse owner (the player who dealt the most damage, or the
+  master of the summon that did: **a minion's kill counts for its owner**, a Necromancer's raised minion included). Two
+  independent rolls, health and mana, on the **lowest share of max** among the owner and the party members within 12 tiles on
+  the same floor. The curve: 0% at 60% of max or more, 35% at 30%, 50% at 10% (linear between, flat below); plus a flat 3% for
+  rare, 5% legendary, 10% boss monsters (`flat`), whatever the bars; at most 60% (`maxChance`). A character with under 30
+  maximum mana gets no mana globe (and no flat chance for it).
+- **The pickup.** 18% of the maximum health or mana (`healthPct`, `manaPct`). Health goes through `doTargetCombat` with
+  `COMBAT_HEALING`, as the Everfull potions do, so the passive tree's Healing and the PvP healing rule apply to it; mana adds
+  the stored tree Healing percent (`potions_config.lua storage.healingPct`, 7102481). 15 s on the ground (`lifetimeMs`).
+- **Anti-abuse.** Per killer and kind: no new globe for 5 s (`cooldownMs`), at most 2 of a kind on the ground (`maxAlive`).
+  Monsters more than 10 levels under the character and under 0.45 of its level drop none (`levelGap`: no farming trivial
+  packs), nor does a character without stamina for loot, nor a summoned monster that dies (the Necromancer's raised
+  minions cannot be farmed). One item a tile. State is in memory.
+- **Where nothing drops** (`pickups_config.lua blocked`): the registered instances `arena`, `battleground`, `siege`,
+  `tower` (the Infinity Tower), `trials`, `tutorial` (`Chaos.inAnyInstance`), PvP-zone tiles (`ChaosBlessings.pvpPlace`), and
+  any `boxes` entry. **The Tower Defense of the base script has no registered instance or box here: add its room to `blocked.boxes`
+  once the coordinates are known** (`{x1, y1, x2, y2, z}`). Dungeons, rifts and the open map drop globes.
+
+**The Ember Blessings on the ground** (`blessings.lua`, `blessings_config.lua pickup`). A proc no longer blesses at once:
+the same roll (chance, level gap, PvP-place exclusion, stamina, the 20 s cooldown **which now starts at the roll**) drops an
+ember named after the drawn blessing ("Ember of Insight": look at it for the effect). Whoever takes it gets the blessing
+exactly as before (one minute, the cap, the buff bar, the label): the corpse owner at once, the owner's party after 6 s
+(`pickup.ownerWindowMs`), nobody else; it lies 30 s (`pickup.lifetimeMs`), then goes out and gives nothing. Taking it in a
+PvP place leaves it on the ground. The owner gets "A dying ember drops: <name>. Step on it within 30 seconds."; the pickup
+message is the old proc line, now translated. If the pickup cannot be made (`pickup.enabled = false`, `install_pickups.py`
+not run, no free tile) the blessing goes to the owner at once, as before. `/blessing <key>` still gives one directly.
+
+**Install.** `python3 -I server/tools/install_all.py SERVER_DIR --only pickups`, then `files` (the scripts) and a restart. Before
+the step runs the globes do nothing and the blessings work as before.
+
+**Tests.** `tests/globes_test.lua` (LuaJIT and Lua 5.3): the configs, the take rule (owner, party after the window, strangers,
+expiry, once), the curve and the flat chance (and about 35% of 20000 kills at 30%), amounts, level gap and cooldown; then
+`pickups.lua` and `globes.lua` against a mocked engine: a drop near the corpse, the step (monster, stranger, owner, party
+member, full bar, a leftover item), the lifetime and fade, the pulses, the cooldown and the limit of two, mana with the tree
+percent, every blocked place and no free tile. `tests/blessings_test.lua` has the ember path. `tools/install_pickups_test.py`.
+Not run live: the glue's engine calls (`Tile`, `Game.createItem`, `MoveEvent`, `Item:setAttribute` / `decay`, `Party`) are the
+ones other scripts here use, but this has only run against the mock.
+
+**To check live.** Run the install step and restart. Take a character to 25% health, kill monsters (raise the chance with
+`globes_config.lua` for a test): a red globe glows on the corpse, a step heals 18%; a second character outside the party
+cannot take it; wait 15 s and it fades; a character in the arena gets none. Force an ember with `/blessing roll` (simulation
+only) or many kills of rare monsters: the ember shows the blessing's name when looked at.
 
 ## Charms (`charms.lua`, `charms_core.lua`, `charms_config.lua`, `sql/chaos_charms.sql`, `tools/install_charms.py`, client `game_charms`)
 

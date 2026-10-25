@@ -2052,6 +2052,15 @@ return {
 		["The second ring slot is gone: the badge slot took its place. Moved: %s."] =
 			"O segundo slot de anel saiu: o slot de badge ficou no lugar dele. Movidos: %s.",
 		["Your Ember Blessings fade: no blessings in the %s."] = "Suas Ember Blessings somem: sem bênçãos em %s.",
+		-- Ground pickups, globes and the Ember Blessings' ember (pickups.lua, globes.lua, blessings.lua)
+		["This is not meant for you."] = "Isto não é para você.",
+		["A health globe restores %d health."] = "Um globo de vida restaura %d de vida.",
+		["A mana globe restores %d mana."] = "Um globo de mana restaura %d de mana.",
+		["A dying ember drops: %s. Step on it within %d seconds."] =
+			"Uma brasa moribunda cai: %s. Pise nela em até %d segundos.",
+		["%s burns again: %ds."] = "%s arde de novo: %ds.",
+		["A dying ember blesses you: %s, %s"] = "Uma brasa moribunda abençoa você: %s, %s",
+		[" (%s fades)"] = " (%s se apaga)",
 		-- Factions: reputation, contracts, the quartermasters (factions.lua, factions_core.lua contracts and offer states)
 		["+%d reputation with %s%s."] = "+%d de reputação com %s%s.",
 		["You have reached this week's reputation cap with %s."] = "Você atingiu o limite semanal de reputação com %s.",
