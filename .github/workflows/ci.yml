@@ -399,6 +399,16 @@ jobs:
           g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" client/tools/chaostextmotion_test.cpp -o "$d/chaostextmotion_asan"
           "$d/chaostextmotion_asan"
 
+      - name: Death fade bookkeeping (C++; header from base patch 0139)
+        run: |
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/client\/chaosdeathfade\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            client/base-patches/0139-death-fade.patch > "$d/chaosdeathfade.h"
+          g++ -std=c++17 -O1 -Wall -Wextra -I "$d" client/tools/chaosdeathfade_test.cpp -o "$d/chaosdeathfade_test"
+          "$d/chaosdeathfade_test"
+          g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" client/tools/chaosdeathfade_test.cpp -o "$d/chaosdeathfade_asan"
+          "$d/chaosdeathfade_asan"
+
       - name: Big creature click maths (C++; header from base patch 0051)
         run: |
           d=$(mktemp -d)

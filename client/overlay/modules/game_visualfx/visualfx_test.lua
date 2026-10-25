@@ -9,7 +9,7 @@ local function eq(a, b, what)
 end
 
 -- options: the grade is off by default (it shifts the biome colours), the rest on; a boolean wins, junk is the default
-local wantDefault = { hitFlash = true, screenShake = true, creatureShadow = true, screenGrade = false, spellLight = true, liquidShimmer = true, weather = true, bloom = false, numberMotion = true, targetOutline = true, hoverOutline = false, sceneFade = true }
+local wantDefault = { hitFlash = true, screenShake = true, creatureShadow = true, screenGrade = false, spellLight = true, liquidShimmer = true, weather = true, bloom = false, numberMotion = true, targetOutline = true, hoverOutline = false, sceneFade = true, deathFade = true }
 for _, name in ipairs(L.OPTIONS) do
   local d = wantDefault[name]
   eq(L.optionOn(name, nil), d, name .. ' default')
@@ -18,7 +18,7 @@ for _, name in ipairs(L.OPTIONS) do
   eq(L.optionOn(name, 'no'), d, name .. ' junk -> default')
   eq(L.optionOn(name, 0), d, name .. ' number -> default')
 end
-eq(#L.OPTIONS, 12, 'twelve options')
+eq(#L.OPTIONS, 13, 'thirteen options')
 eq(L.optionOn('nothing', nil), false, 'an unknown option is off')
 eq(L.DEFAULTS.numberMotion, true, 'soft damage numbers are on by default (purely visual, a few float operations per text)')
 do
@@ -30,6 +30,19 @@ do
   eq(calls >= 3, true, 'setSoftMotion is checked, called with the option and switched off at terminate')
   eq(src:find("name == 'numberMotion'", 1, true) ~= nil, true, 'onOption handles numberMotion')
   eq(src:find("optionValue('numberMotion')", 1, true) ~= nil, true, 'the option value is read')
+end
+
+do
+  -- the death fade (O221, base patch 0139): on by default, the engine switch is called on a change, at game start and off at terminate
+  eq(L.DEFAULTS.deathFade, true, 'the death fade is on by default (a copy of one frame, bounded, no server state)')
+  local f = io.open(dir .. 'visualfx.lua', 'r')
+  local src = f and f:read('*a') or ''
+  if f then f:close() end
+  local _, calls = src:gsub('Creature%.setDeathFade', '')
+  eq(calls >= 3, true, 'setDeathFade is checked, called with the option and switched off at terminate')
+  eq(src:find("name == 'deathFade'", 1, true) ~= nil, true, 'onOption handles deathFade')
+  eq(src:find("optionValue('deathFade')", 1, true) ~= nil, true, 'the option value is read')
+  eq(src:find('applyDeathFade()', 1, true) ~= nil, true, 'reapply sets it at game start')
 end
 
 -- hit flash
