@@ -352,6 +352,16 @@ jobs:
           shellcheck tools/linux/harden_vps.sh
           python3 -I tools/linux/harden_vps_test.py
 
+      - name: Pre-auth connection limits (C++; header from server src-patch 0067; also under ThreadSanitizer)
+        run: |
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/chaospreauth\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            server/src-patches/0067-preauth-limits.patch > "$d/chaospreauth.h"
+          g++ -std=c++17 -Wall -Wextra -pthread -I "$d" server/tools/chaospreauth_test.cpp -o "$d/chaospreauth_test"
+          "$d/chaospreauth_test"
+          g++ -std=c++17 -fsanitize=thread -pthread -I "$d" server/tools/chaospreauth_test.cpp -o "$d/chaospreauth_tsan"
+          "$d/chaospreauth_tsan"
+
       - name: Fuzz harnesses on their seed corpus (ASan + UBSan; PROXY protocol, client guard, login limit; netfuzz.py on a stand-in server)
         run: |
           sudo apt-get install -y -qq libcrypto++-dev libfmt-dev
