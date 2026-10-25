@@ -85,6 +85,34 @@
       ],
       "place": "east",
       "role": "boss"
+    },
+    {
+      "id": "rootfall",
+      "floor": 1,
+      "shape": "room",
+      "size": [
+        34,
+        26
+      ],
+      "at": [
+        112,
+        10
+      ],
+      "role": "hunt"
+    },
+    {
+      "id": "sinkhole",
+      "floor": 1,
+      "shape": "room",
+      "size": [
+        34,
+        26
+      ],
+      "at": [
+        112,
+        92
+      ],
+      "role": "hunt"
     }
   ],
   "paths": [
@@ -126,6 +154,21 @@
     {
       "from": "heart",
       "to": "drowned",
+      "width": 5
+    },
+    {
+      "from": "bog",
+      "to": "rootfall",
+      "width": 5
+    },
+    {
+      "from": "drowned",
+      "to": "sinkhole",
+      "width": 5
+    },
+    {
+      "from": "bog",
+      "to": "sinkhole",
       "width": 5
     }
   ],
@@ -182,6 +225,34 @@
       "monster": "Babayaga",
       "count": 4,
       "respawn": 120
+    },
+    {
+      "zone": "rootfall",
+      "monster": "Nightfang Widow",
+      "count": 14,
+      "pack": 2,
+      "respawn": 90
+    },
+    {
+      "zone": "rootfall",
+      "monster": "Babayaga",
+      "count": 8,
+      "pack": 2,
+      "respawn": 90
+    },
+    {
+      "zone": "sinkhole",
+      "monster": "Hodag",
+      "count": 14,
+      "pack": 2,
+      "respawn": 90
+    },
+    {
+      "zone": "sinkhole",
+      "monster": "Lochtag",
+      "count": 8,
+      "pack": 2,
+      "respawn": 90
     }
   ],
   "boss": {
