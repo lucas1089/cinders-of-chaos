@@ -109,7 +109,11 @@ ChaosPotionsConfig = {
 	-- grows with the potion's level: base + perLevel x the level it needs, at most cap. Health potion (level 0) 3%,
 	-- great (80) 3.8%, ultimate (130) 4.3%, level 200 5%, 500 8%, 700 10%. The tree's Healing (incrementHealth) raises
 	-- both: health through the heal event like every heal, mana here (storage healingPct, written by the tree).
-	amount = {base = 3, perLevel = 0.01, cap = 10},
+	-- The Everfull potions (owner 2026-10-25: "faça as everfull recuperar um fixo + uma porcentagem") take their percent
+	-- from their tier instead (everfullPct[tier], any character level): a flask has few charges, so each drink is worth
+	-- more than a stock potion of its level. A spirit potion gives it on health and on mana. A stock potion drunk by an
+	-- empty flask keeps the level curve.
+	amount = {base = 3, perLevel = 0.01, cap = 10, everfullPct = {6, 8, 10, 12}},
 	sound = "Aaaah...",
 
 	-- the old empty flasks (strong, great and small/"empty potion flask"): no potion makes them any more and no NPC

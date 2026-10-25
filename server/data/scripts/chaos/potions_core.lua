@@ -5,7 +5,7 @@
 --   ChaosPotionsCore.drink(cfg, s)             s = {id, exhausted, target[, charges]} -> {ok, health, mana, consume, flask}
 --                                              | {ok = false, why, text}
 --   ChaosPotionsCore.npcBuy(cfg, s)            s = {id, owned, money} -> {ok, price} | {ok = false, why, text}
---   ChaosPotionsCore.amount(cfg, range, level, max, bonusPct[, rand])  one drink: fixed roll + percent of max
+--   ChaosPotionsCore.amount(cfg, range, level, max, bonusPct[, rand, tier])  one drink: fixed roll + percent of max
 --   ChaosPotionsCore.grantDue(cfg, s)          s = {granted, lastLogin} -> true when a login grant is due
 --   Flask charges (cfg.flask; hundredths of a charge, an unset storage value is a full flask):
 --   ChaosPotionsCore.maxCharges(cfg, kind, treeExtra)      whole charges the flask holds
@@ -96,15 +96,21 @@ function K.drink(cfg, s)
 end
 
 -- the amount of one potion drink: a roll inside range (the fixed part) + percent(level) of max, then x (1 + bonusPct)
-function K.percent(cfg, level)
+-- tier: an Everfull potion's tier (amount.everfullPct gives its percent, the same at every character level); nil for
+-- a stock potion (and for a stock potion an empty flask drinks), which uses the level curve
+function K.percent(cfg, level, tier)
 	local a = cfg.amount or {}
+	local own = tier and (a.everfullPct or {})[tier]
+	if own then
+		return own
+	end
 	return math.min(a.cap or 0, (a.base or 0) + (a.perLevel or 0) * math.max(0, tonumber(level) or 0))
 end
 
-function K.amount(cfg, range, level, max, bonusPct, rand)
+function K.amount(cfg, range, level, max, bonusPct, rand, tier)
 	rand = rand or math.random
 	local lo, hi = math.floor(range[1] or 0), math.floor(range[2] or range[1] or 0)
-	local v = (hi > lo and rand(lo, hi) or lo) + math.max(0, max or 0) * K.percent(cfg, level) / 100
+	local v = (hi > lo and rand(lo, hi) or lo) + math.max(0, max or 0) * K.percent(cfg, level, tier) / 100
 	return math.floor(v * (1 + math.max(0, bonusPct or 0) / 100) + 0.5)
 end
 

@@ -188,8 +188,8 @@ heals, created = {}, {}
 eq(drink.onUse(ann, pot, {}, ann, {}, true), true, "drinks")
 eq(#heals, 1, "one heal")
 eq(heals[1].kind, COMBAT_HEALING, "healing")
-check(heals[1].a == heals[1].b and heals[1].a >= 155 and heals[1].a <= 205,
-	"the health potion's roll 125-175 + 3% of 1,000 health")
+check(heals[1].a == heals[1].b and heals[1].a >= 185 and heals[1].a <= 235,
+	"the health potion's roll 125-175 + 6% of 1,000 health (Everfull tier 1)")
 eq(heals[1].target, ann, "on the drinker")
 eq(pot.removed, 0, "the Everfull potion is not consumed")
 eq(#created, 0, "no flask")
@@ -387,6 +387,12 @@ do
 	check(K.amount(cfg, {150, 250}, 80, 50000, 0, lo) > K.amount(cfg, {150, 250}, 80, 10000, 0, lo),
 		"a larger pool gets more from the same potion")
 	eq(K.amount(cfg, {75, 75}, 0, 1000, 0), 105, "a fixed roll without rand range")
+	-- an Everfull drink: the percent of its tier, at any level (owner 2026-10-25)
+	eq(K.percent(cfg, 0, 1), 6, "Everfull tier 1: 6%")
+	eq(K.percent(cfg, 200, 4), 12, "Everfull tier 4: 12%, not the level curve")
+	eq(K.percent(cfg, 80, nil), 3.8, "no tier: the stock curve")
+	eq(K.amount(cfg, {125, 125}, 0, 10000, 0, lo, 1), 725, "everfull health potion on 10,000 health: 125 + 6%")
+	eq(K.amount(cfg, {150, 150}, 80, 10000, 20, lo, 2), 1140, "everfull great mana, +20% tree Healing: (150 + 8%) x 1.2")
 end
 
 -- ---------------------------------------------------------------- flask charges (O242)

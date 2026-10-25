@@ -5029,7 +5029,10 @@ Owner request 2026-10-16: "Remove the potion flasks and make the first pots infi
   healarem uma quantidade fixa + uma porcentagem. e elas também são afetadas por healing da skill tree"). Every health and
   mana potion gives its own roll (the fixed part) + a percent of the target's maximum health or mana: 3% + 0.01% per
   level the potion needs, at most 10% (`potions_config.lua` `amount`; health potion 3%, great 3.8%, ultimate 4.3%,
-  level 200 5%, 500 8%, 700 10%). The tree's Healing (`incrementHealth`) raises both: health through the heal event like
+  level 200 5%, 500 8%, 700 10%). **Everfull potions** (owner 2026-10-25: "faça as everfull recuperar um fixo + uma
+  porcentagem") take the percent from their tier instead, at any character level: tier 1 6%, 2 8%, 3 10%, 4 12%
+  (`amount.everfullPct`; a spirit potion gives it on health and on mana; a stock potion an empty flask drinks keeps the
+  level curve). The tree's Healing (`incrementHealth`) raises both: health through the heal event like
   every heal, mana in `ChaosPotions.amount` from the drinker's storage 7102481 (the tree writes it at every rebuild;
   the potion script runs in the actions' Lua state). `install_potions.py` rewrites the stock script's two
   `doTargetCombat(... potion.health[1], potion.health[2])` calls (marker "Chaos: potion amount", a loader line on top;
@@ -5072,7 +5075,7 @@ Owner request 2026-10-16: "Remove the potion flasks and make the first pots infi
 - **Higher tiers (O245).** Owner 2026-10-25: "Podemos vender everfull potion na store ou em quests também" (can we sell Everfull
   potions in the store, or give them through quests too). Seven more Everfull items, copies of the stock potions' nodes
   (`install_potions.py`, server ids **32261-32267**, the range the lead set aside: 32087-32100 belong to other work), each with
-  the stock potion's roll and level and the same "fixed + percent of the maximum" amount (percent by the level it needs):
+  the stock potion's roll and level and the same "fixed + percent of the maximum" amount (percent by the tier, `amount.everfullPct`):
 
   | Id | Item | Stock potion | Level | Roll | Spends | Made from |
   |---|---|---|---|---|---|---|

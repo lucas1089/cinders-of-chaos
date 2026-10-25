@@ -136,12 +136,13 @@ function drink.onUse(player, item, fromPosition, target, toPosition, isHotkey)
 	elseif not PT.spendPools(player, pools) then -- every pool pays one charge or nothing is spent
 		return true
 	end
+	local tier = not stock and (e.tier or 1) or nil -- a flask drink: the Everfull percent of its tier
 	if r.health then
-		local v = ChaosPotions.amount(player, who, "health", r.health, e.level or 0)
+		local v = ChaosPotions.amount(player, who, "health", r.health, e.level or 0, tier)
 		doTargetCombat(player, who, COMBAT_HEALING, v, v)
 	end
 	if r.mana then
-		local v = ChaosPotions.amount(player, who, "mana", r.mana, e.level or 0)
+		local v = ChaosPotions.amount(player, who, "mana", r.mana, e.level or 0, tier)
 		doTargetCombat(player, who, COMBAT_MANADRAIN, v, v)
 	end
 	who:say(PT.cfg().sound, TALKTYPE_MONSTER_SAY)

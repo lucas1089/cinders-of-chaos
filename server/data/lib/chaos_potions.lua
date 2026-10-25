@@ -256,17 +256,17 @@ end
 -- one drink of a health or mana potion (the stock potion script, patched by install_potions.py, and potions.lua):
 -- the fixed roll + a percent of the target's maximum (potions_config.lua amount). Health: the tree's Healing applies
 -- through the heal event, as for every heal. Mana: the drinker's tree Healing here (a storage, any Lua state).
-function PT.amount(player, target, kind, range, level)
+function PT.amount(player, target, kind, range, level, tier)
 	local who = target
 	if not (type(who) == "userdata" and who.isPlayer and who:isPlayer()) then
 		who = player
 	end
 	local cfg = PT.cfg()
 	if kind == "health" then
-		return K.amount(cfg, range, level, who:getMaxHealth(), 0)
+		return K.amount(cfg, range, level, who:getMaxHealth(), 0, nil, tier)
 	end
 	local pct = math.max(0, player:getStorageValue(cfg.storage.healingPct) or 0)
-	return K.amount(cfg, range, level, who:getMaxMana(), pct)
+	return K.amount(cfg, range, level, who:getMaxMana(), pct, nil, tier)
 end
 
 -- ---------------------------------------------------------------- flask charges (README "Potions", "Flask charges")
