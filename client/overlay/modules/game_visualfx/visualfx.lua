@@ -15,6 +15,8 @@
 --                  live lights and adds them to the map light view (nothing shows in full light).
 --   weather        the rain game_chaosweather draws when the server says it rains (O208, base patch 0130): this file passes the
 --                  option on (modules.game_chaosweather.setEnabled); nothing is drawn here.
+--   ambient        slow embers, motes or dust over the game window by the mood of the place (O226, base patch 0144 has the
+--                  checkbox): this file passes the option on (modules.game_chaosweather.setAmbientEnabled); nothing is drawn here.
 --   soft glow      a halo around very bright light only (O210, base patch 0132): this file creates the two shaders
 --                  chaos_bloom_extract / chaos_bloom_blur and calls g_app.setMapBloom; the engine does the passes (a quarter-size
 --                  buffer, one blur each way, one screen-blend composite) and nothing at all while the option is off. Off by default.
@@ -163,6 +165,12 @@ end
 local function applyWeather()
   local m = modules.game_chaosweather
   if m and m.setEnabled then pcall(m.setEnabled, optionValue('weather')) end
+end
+
+-- the ambient particles of game_chaosweather (O226, base patch 0144 has the checkbox): this file only passes the option on
+local function applyAmbient()
+  local m = modules.game_chaosweather
+  if m and m.setAmbientEnabled then pcall(m.setAmbientEnabled, optionValue('ambientParticles')) end
 end
 
 -- ---------------------------------------------------------------- soft glow
@@ -469,6 +477,8 @@ function onOption(name, value)
     applyLiquid()
   elseif name == 'weather' then
     applyWeather()
+  elseif name == 'ambientParticles' then
+    applyAmbient()
   elseif name == 'bloom' then
     applyBloom()
   elseif name == 'numberMotion' then
@@ -492,6 +502,7 @@ function reapply()
   applySpellLight()
   applyLiquid()
   applyWeather()
+  applyAmbient()
   applyBloom()
   applyNumberMotion()
   applyOutlines()

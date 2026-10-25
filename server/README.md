@@ -653,7 +653,7 @@ collision check") and be added here.
 | 110 | `stash` | `stash.lua` | `game_stash` | |
 | 111 | `depotTabs` | `depot.lua` | `game_depottabs` | |
 | 113 | `npcCurrency` | `data/lib/chaos_npc_currency.lua` (run by the base NPC scripts of a custom currency, `tools/patch_npc_currency.py`) | `game_npctradewindow` | server -> client, JSON `{action = "currency", data = {code, name, item?, amount, again?}}`: the currency of the shop that opens next, and its balance after each purchase and sale ("NPC currencies") |
-| 114 | `weather` | `weather.lua`, `weather_core.lua` | `game_chaosweather` | server -> client `set {k = "rain" / "none", i = 1..3, f = fade ms}`, client -> server `hello` (see "Weather on the client (O208)") |
+| 114 | `weather` | `weather.lua`, `weather_core.lua` | `game_chaosweather` | server -> client `set {k = "rain" / "none", i = 1..3, f = fade ms, a = "embers" / "motes" / "dust" (optional, O226)}`, client -> server `hello` (see "Weather on the client (O208)", "Ambient particles (O226)") |
 | 120 | none (`CHAOS_ADMIN_OPCODE`) | `admin/core.lua` | `game_admin` | big payloads through `Chaos.sendChunked` |
 | 125 | `monsterbar` | `monster_tiers.lua`, `worldboss.lua` | `game_monsterbar` | server -> client |
 | 151 | `notificationsAction` | `notifications.lua` | `game_chaosnotify` | client -> server: party invite answer, catacomb start |
@@ -897,6 +897,32 @@ floors 0-7 get `set` within 3 s (`/weather info` says how many), a cave player n
 or watch the console for `[ChaosWeather]` lines. In a client: the rain fades in, goes under a roof, returns, and the
 checkbox switches it. Not run yet: the glue's engine calls (`Game.getPlayers`, `GlobalEvent`, `addEvent`, `TalkAction`) are the ones other
 scripts here already use, but this file has only run against the mock.
+
+### Ambient particles (O226) (`weather_core.lua`, `weather_config.lua`, `weather.lua`, client `game_chaosweather`)
+
+The client draws slow embers, motes or dust over the game window (client/MANIFEST.md "Ambient particles (O226)"). The mood of a
+place is decided here, as the weather is (option 1 of the brief: the weather code made it a small step).
+- **Config:** `weather_config.lua` `ambient = {enabled, areas}`; an area is `{name, kind, minZ, maxZ, box}` like the rain areas, `kind` is
+  `embers`, `motes` or `dust`, the first area that holds the player's tile wins, a tile in none has no mood. It is independent of the
+  rain (a mood stands in rain or dry weather). `W.ambientAt(cfg, pos)` in `weather_core.lua` looks it up; a kind that is not in
+  `W.AMBIENT_KINDS` (a typo) is dropped, never sent.
+- **Protocol:** opcode 114 (no new opcode), server -> client `set {k, i?, f, a?}`: `a` is added only in a region with a mood. A player in no
+  region gets the old message byte for byte, an older client ignores `a`. The per-player signature is `k:i:a`, so crossing between
+  moods or into a cave is one message and walking inside one is none (the same 3 s tick and one `getPosition` per player as before).
+  A cave floor (8-15) now sends a first message to a player of a dry world (`none` + `dust`), once.
+- **Opcode budget and JSON guard:** nothing new to guard. The message is server -> client (about 60 bytes); the only inbound message of the
+  opcode is still `hello`, which goes through `Chaos.opcodeDispatch` (`Chaos.opcodeBudget`, the 16 KB request cap) and `Chaos.decode`
+  (`Chaos.guardJson`), and is rate limited to one a second as before.
+- **Places in the default config:** Emberdeep Hollows (z 9-10) and Cinderfall Wastes (z 7), exact from `areagen_config.lua`: `embers`;
+  every floor 8-15: `dust`. The surface swamp, jungle village, river forest and the jungle cave (`motes`) are boxes of 100 x 100
+  or less around the sample sites of `docs/MAP_GUIDE.md` (swamp town 32935,32055; jungle village 32578,32728; forest by the river
+  32602,32222; jungle cave 32666,32846 z 9). **They are guesses, the map is not in the repository: widen or move each box to the real
+  swamp and forest** (one line each, the map editor shows the tile), and add the other forests. Order matters: put a small box before a
+  wide one.
+- **Staff:** `/weather ambient` says the mood of your tile.
+- **Tests:** `tests/weather_test.lua` (the moods and boxes, an unknown kind, the signature rule, byte-for-byte old payload outside a region,
+  the cave payload, `/weather ambient`).
+- **Not run on a live server or in a client.**
 
 ### Extended opcode size limit (`extended_opcode.lua`, `Chaos.sendChunked`)
 One extended opcode message carries at most 8192 bytes (`NetworkMessage::addString` refuses longer strings without an

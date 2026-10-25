@@ -33,6 +33,29 @@ return {
 	-- first area that holds the player's tile wins. A player in no area gets "none".
 	areas = {
 		{name = "surface", kind = "rain", minZ = 0, maxZ = 7}
+	},
+
+	-- Ambient particles (O226; client game_chaosweather, option `ambientParticles`): a standing mood of a place that the
+	-- client draws as slow specks over the game window, whatever the weather. kind: "embers" (hot or burnt land), "motes"
+	-- (fireflies in forest and swamp), "dust" (caves). Same shape as `areas`; the first area that holds the player's tile
+	-- wins; a tile in none has no mood (the message carries no `a`, as before). The player's floor and tile are looked at on
+	-- the same tick as the rain, so nothing extra runs.
+	--  * The two generated hot places are exact (areagen_config.lua origins and sizes).
+	--  * The surface places are SAMPLE SITES of docs/MAP_GUIDE.md (the swamp town, the jungle village, the forest by the
+	--    river; the map is not in the repository, so the boxes are a guess around those points): widen or move them with
+	--    the real extent of each swamp and forest (the map editor shows the tile), one line each.
+	--  * Every other tile under the surface (floors 8-15) is a cave: dust.
+	ambient = {
+		enabled = true,
+		areas = {
+			{name = "emberdeep", kind = "embers", minZ = 9, maxZ = 10, box = {14400, 14400, 14495, 14475}},
+			{name = "cinderfall", kind = "embers", minZ = 7, maxZ = 7, box = {14400, 14560, 14544, 14675}},
+			{name = "swamp town", kind = "motes", minZ = 7, maxZ = 7, box = {32880, 32010, 33000, 32110}},
+			{name = "jungle village", kind = "motes", minZ = 7, maxZ = 7, box = {32530, 32680, 32630, 32780}},
+			{name = "river forest", kind = "motes", minZ = 7, maxZ = 7, box = {32550, 32180, 32660, 32270}},
+			{name = "jungle cave", kind = "motes", minZ = 8, maxZ = 10, box = {32630, 32810, 32700, 32880}},
+			{name = "caves", kind = "dust", minZ = 8, maxZ = 15}
+		}
 	}
 
 	-- Not kept: the base's thunder (a 50% chance per drop to strike a player standing on the drop's tile, 1-5 energy

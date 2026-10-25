@@ -676,6 +676,9 @@ jobs:
       - name: Rain art is up to date (gen_rain_art.py, three seamless tiles of game_chaosweather)
         run: python3 client/tools/gen_rain_art.py --check  # not -I: Pillow from the user site (installed above)
 
+      - name: Ambient particle art is up to date (gen_ambient_art.py, six seamless tiles of game_chaosweather)
+        run: python3 client/tools/gen_ambient_art.py --check  # not -I: Pillow from the user site (installed above)
+
       - name: Liquid orb art is up to date (gen_orb_art.py, one ring and mask per orb size at 2x)
         run: python3 client/tools/gen_orb_art.py --check  # not -I: Pillow from the user site (installed above)
 
