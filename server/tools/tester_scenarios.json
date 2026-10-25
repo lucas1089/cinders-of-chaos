@@ -9,7 +9,7 @@
  "counts": {
   "opcode": 60,
   "out": 38,
-  "passive": 74,
+  "passive": 76,
   "place": 13,
   "staff": 10
  },
@@ -2572,7 +2572,8 @@
   "bounty": {
    "files": [
     "bounty.lua",
-    "bounty_pool.lua"
+    "bounty_pool.lua",
+    "potion_flasks.lua"
    ],
    "kind": "opcode",
    "opcodes": [
@@ -3004,6 +3005,15 @@
   "gentledeath": {
    "files": [
     "gentledeath.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "globes": {
+   "files": [
+    "globes.lua"
    ],
    "kind": "passive",
    "opcodes": [],
@@ -3705,6 +3715,15 @@
     "/pet"
    ]
   },
+  "pickups": {
+   "files": [
+    "pickups.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
   "pocketboss": {
    "files": [
     "admin/actions_chaos_bosses.lua",
@@ -3732,6 +3751,7 @@
   },
   "potions": {
    "files": [
+    "potion_flasks.lua",
     "potions.lua"
    ],
    "kind": "passive",
