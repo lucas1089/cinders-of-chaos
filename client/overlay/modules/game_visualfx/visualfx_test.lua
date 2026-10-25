@@ -9,7 +9,7 @@ local function eq(a, b, what)
 end
 
 -- options: the grade is off by default (it shifts the biome colours), the rest on; a boolean wins, junk is the default
-local wantDefault = { hitFlash = true, screenShake = true, creatureShadow = true, screenGrade = false, spellLight = true, liquidShimmer = true, weather = true, bloom = false }
+local wantDefault = { hitFlash = true, screenShake = true, creatureShadow = true, screenGrade = false, spellLight = true, liquidShimmer = true, weather = true, bloom = false, numberMotion = true }
 for _, name in ipairs(L.OPTIONS) do
   local d = wantDefault[name]
   eq(L.optionOn(name, nil), d, name .. ' default')
@@ -18,8 +18,19 @@ for _, name in ipairs(L.OPTIONS) do
   eq(L.optionOn(name, 'no'), d, name .. ' junk -> default')
   eq(L.optionOn(name, 0), d, name .. ' number -> default')
 end
-eq(#L.OPTIONS, 8, 'eight options')
+eq(#L.OPTIONS, 9, 'nine options')
 eq(L.optionOn('nothing', nil), false, 'an unknown option is off')
+eq(L.DEFAULTS.numberMotion, true, 'soft damage numbers are on by default (purely visual, a few float operations per text)')
+do
+  -- the option is wired: the engine switch is called from visualfx.lua on a change, at game start and off at terminate
+  local f = io.open(dir .. 'visualfx.lua', 'r')
+  local src = f and f:read('*a') or ''
+  if f then f:close() end
+  local _, calls = src:gsub('AnimatedText%.setSoftMotion', '')
+  eq(calls >= 3, true, 'setSoftMotion is checked, called with the option and switched off at terminate')
+  eq(src:find("name == 'numberMotion'", 1, true) ~= nil, true, 'onOption handles numberMotion')
+  eq(src:find("optionValue('numberMotion')", 1, true) ~= nil, true, 'the option value is read')
+end
 
 -- hit flash
 local M = L.MODE

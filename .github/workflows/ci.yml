@@ -377,6 +377,16 @@ jobs:
           g++ -std=c++17 -O2 -Wall -Wextra -I "$d" -I client/tools client/tools/text_bench.cpp -o "$d/text_bench"
           "$d/text_bench" --check
 
+      - name: Floating number motion maths (C++; header from base patch 0134)
+        run: |
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/client\/chaostextmotion\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            client/base-patches/0134-soft-damage-numbers.patch > "$d/chaostextmotion.h"
+          g++ -std=c++17 -O1 -Wall -Wextra -I "$d" client/tools/chaostextmotion_test.cpp -o "$d/chaostextmotion_test"
+          "$d/chaostextmotion_test"
+          g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" client/tools/chaostextmotion_test.cpp -o "$d/chaostextmotion_asan"
+          "$d/chaostextmotion_asan"
+
       - name: Big creature click maths (C++; header from base patch 0051)
         run: |
           d=$(mktemp -d)

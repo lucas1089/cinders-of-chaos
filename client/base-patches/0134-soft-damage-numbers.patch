@@ -1,0 +1,266 @@
+# Chaos: softer motion of the floating damage numbers (O215; client/BASE.md "0134"; src/client/chaostextmotion.h (new, pure),
+# animatedtext.h/.cpp, luafunctions_client.cpp, mods/client_settings/classes/dataset.lua, options/graphics.otui; after 0001-0133).
+# The stock number rises on a straight line, shows at full size at once and fades on a straight line (patches 0081 and 0100
+# only shift it, scale its speed and give it a drift). With the new switch the same AnimatedText::drawText does this instead:
+#  * pop: the text starts at 75% size, grows to 130% in the first 8% of its life and settles to 100% by 24% (a queued text is
+#    scaled around its own centre with DrawQueue::setScale, the call the boss scale of patch 0020 uses; one condition per
+#    number only while the pop runs);
+#  * ease-out rise: the rise (the stock 48 px, the diagonal of GameDiagonalAnimatedText, or the Lua drift of patch 0100) follows
+#    1 - (1 - u)^3 instead of u: quick at the start, slow at the end;
+#  * smooth fade: smoothstep from the existing fade start (setFadeStart, stock 1/1.2) to the end of the life;
+#  * sideways spread: every text gets a number from a counter and moves up to 8 px sideways by golden-ratio steps (Fibonacci
+#    hashing), opening up with the rise, so numbers of one hit that appear one after the other land far apart (any six in a row
+#    are 0.1 of the range apart at least). It adds to the random shift of game_damagescatter, which stays the Lua side.
+# All the maths is in chaostextmotion.h (pure, tested by client/tools/chaostextmotion_test.cpp); drawText only calls it. The
+# cost is a few float operations per visible text per frame and, for the first fifth of its life, one scale condition.
+#  * AnimatedText.setSoftMotion(bool) / isSoftMotion() (static, one switch for all texts; default off in the engine, the overlay
+#    module game_visualfx turns it on from the option). With it off the old code path runs unchanged.
+#  * dataset.lua: option `numberMotion` (default on); its apply tells game_visualfx (`onOption('numberMotion', value)`).
+#  * options/graphics.otui: a ninth checkbox "Soft damage numbers" under "Soft glow" (the panel grows from 162 to 181 px).
+# Checked: applies after 0001-0133 on the base tree; the touched .cpp files pass g++ -fsyntax-only; the header passes its test.
+# Not built, linked or run in a client; goes live with the next client build.
+--- a/mods/client_settings/classes/dataset.lua
++++ b/mods/client_settings/classes/dataset.lua
+@@ -2115,6 +2115,16 @@
+     end,
+   },
+ 
++  -- Chaos (base patch 0134): softer motion of the floating numbers (game_visualfx -> AnimatedText.setSoftMotion)
++  numberMotion = {
++    value = true,
++    apply = function(value)
++      local m = modules.game_visualfx
++      if m and m.onOption then m.onOption('numberMotion', value) end
++      return true
++    end,
++  },
++
+   enableShaders = {
+     value = true,
+     apply = function(value)
+--- a/mods/client_settings/options/graphics.otui
++++ b/mods/client_settings/options/graphics.otui
+@@ -452,7 +452,7 @@
+ 
+   FlatPanel
+     // Chaos (base patch 0126, overlay module game_visualfx): the dark-fantasy look of the map, one switch per effect
+-    size: 505 162
++    size: 505 181
+     anchors.top: prev.bottom
+     anchors.right: parent.right
+     anchors.left: parent.left
+@@ -608,6 +608,25 @@
+         local value = modules.client_settings.getOption('bloom')
+         self:setChecked(value == true)
+ 
++    SettingsCheckBox
++      id: numberMotion
++      size: 12 12
++      !text: tr('Soft damage numbers')
++      font: $var-cip-font
++      text-auto-resize: true
++      color: $var-text-cip-color
++      text-offset: 14 -2
++      anchors.left: parent.left
++      anchors.top: bloom.bottom
++      margin-top: 7
++      margin-left: 16
++      image-source: /images/ui/checkbox
++      image-clip: 0 0 12 12
++      !tooltip: tr('Damage and healing numbers pop up a little, rise quickly and slow down, fade out smoothly and\nspread sideways so that several hits do not sit on top of each other. Turn it off for the plain\nstraight rise.')
++      @onSetup: |
++        local value = modules.client_settings.getOption('numberMotion')
++        self:setChecked(value ~= false)
++
+     UIWidget
+       size: 12 12
+       anchors.top: parent.top
+--- a/src/client/animatedtext.cpp
++++ b/src/client/animatedtext.cpp
+@@ -27,12 +27,14 @@
+ #include <framework/core/clock.h>
+ #include <framework/core/eventdispatcher.h>
+ #include <framework/graphics/graphics.h>
++#include <framework/graphics/drawqueue.h>
+ #include <algorithm>
+ 
+ AnimatedText::AnimatedText()
+ {
+     m_cachedText.setFont(g_fonts.getFont("verdana-11px-rounded"));
+     m_cachedText.setAlign(Fw::AlignLeft);
++    m_spreadSeed = s_nextSpread++;
+ }
+ 
+ void AnimatedText::drawText(const Point& dest, const Rect& visibleRect)
+@@ -48,7 +50,22 @@
+         return;
+     p.x -= textSize.width() / 2;
+ 
+-    if(m_hasCustomSpeed) {
++    // Chaos (base patch 0134): the soft motion replaces the linear rise by an ease-out one and adds the spread; the old code
++    // below is untouched for the option off
++    const bool soft = s_softMotion;
++    const float u = t / tf;
++    if(soft) {
++        const float rise = chaos::textmotion::riseProgress(u);
++        float dx = 0.0f, dy = -48.0f;
++        if(m_hasCustomSpeed) {
++            dx = m_animationSpeed.x;
++            dy = m_animationSpeed.y;
++        } else if(g_game.getFeature(Otc::GameDiagonalAnimatedText)) {
++            dx = -12.0f;
++        }
++        p.x += static_cast<int>(std::round(dx * rise + chaos::textmotion::spreadOffset(m_spreadSeed, u)));
++        p.y += static_cast<int>(std::round(dy * rise));
++    } else if(m_hasCustomSpeed) {
+         // Chaos (base patch 0100): the drift set from Lua, the whole way in pixels over the life of the text
+         p.x += static_cast<int>(std::round(m_animationSpeed.x * t / tf));
+         p.y += static_cast<int>(std::round(m_animationSpeed.y * t / tf));
+@@ -70,10 +87,19 @@
+     if(visibleRect.contains(rect)) {
+         const float t0 = tf * m_fadeStart; // Chaos (base patch 0100): stock 1 / 1.2
+         Color color = m_color;
+-        if(t > t0 && t0 < tf) {
++        if(soft) {
++            color.setAlpha(chaos::textmotion::fadeAlpha(u, m_fadeStart));
++        } else if(t > t0 && t0 < tf) {
+             color.setAlpha((float)(1 - (t - t0) / (tf - t0)));
+         }
++        const size_t queueStart = g_drawQueue->size();
+         m_cachedText.draw(rect, color);
++        if(soft) {
++            // the pop: the queued text is drawn bigger around its own centre for the first fifth of its life
++            const float scale = chaos::textmotion::popScale(u);
++            if(std::abs(scale - 1.0f) > 0.01f)
++                g_drawQueue->setScale(queueStart, rect.center(), scale);
++        }
+     }
+ }
+ 
+--- a/src/client/animatedtext.h
++++ b/src/client/animatedtext.h
+@@ -27,6 +27,7 @@
+ #include <framework/graphics/fontmanager.h>
+ #include <framework/core/timer.h>
+ #include <framework/graphics/cachedtext.h>
++#include "chaostextmotion.h"
+ #include <algorithm>
+ #include <cmath>
+ #include <memory>
+@@ -59,6 +60,12 @@
+     void setStackWithOtherTexts(bool stack) { m_stackWithOtherTexts = stack; }
+     void setImpact(int typeId, uint32 value, int percent) { m_impactType = typeId; m_impactValue = value; m_impactPercent = percent; }
+ 
++    // Chaos (base patch 0134): softer motion of every floating number (game_visualfx option numberMotion). On: a short pop
++    // (the text grows and settles), an ease-out rise instead of the linear one, a smooth fade and a small sideways spread
++    // that differs from text to text. Off: the motion of patches 0081 and 0100, as before. One switch for all texts.
++    static void setSoftMotion(bool enabled) { s_softMotion = enabled; }
++    static bool isSoftMotion() { return s_softMotion; }
++
+     Color getColor() { return m_color; }
+     const CachedText& getCachedText() const { return m_cachedText; }
+     Size getTextSize() { return m_cachedText.getTextSize(); }
+@@ -92,6 +99,9 @@
+     void updateOffset(float dt);
+     void scheduleRemoval(int delay);
+ 
++    static inline bool s_softMotion = false;
++    static inline uint32_t s_nextSpread = 0;
++
+     Color m_color;
+     Timer m_animationTimer;
+     Timer m_offsetTimer;
+@@ -113,6 +123,7 @@
+     int m_impactType = -1;
+     uint32 m_impactValue = 0;
+     int m_impactPercent = 0;
++    uint32_t m_spreadSeed = 0; // Chaos (base patch 0134): the number of this text, for its sideways spread
+ };
+ 
+ #endif
+--- a/src/client/chaostextmotion.h
++++ b/src/client/chaostextmotion.h
+@@ -0,0 +1,72 @@
++// Cinders of Chaos (base patch 0134): the motion maths of the floating numbers (AnimatedText), pure and header-only so
++// client/tools/chaostextmotion_test.cpp can run it without the engine. u is the share of the text's life that is over,
++// 0 (just appeared) .. 1 (removed).
++#ifndef CHAOSTEXTMOTION_H
++#define CHAOSTEXTMOTION_H
++
++#include <cmath>
++#include <cstdint>
++
++namespace chaos {
++namespace textmotion {
++
++constexpr float kPopStart = 0.75f;   // size at the first frame (a share of the final size)
++constexpr float kPopPeak = 1.3f;     // largest size
++constexpr float kPopUpEnd = 0.08f;   // u at which the peak is reached
++constexpr float kPopSettleEnd = 0.24f; // u at which the size is back to 1
++constexpr float kSpreadPixels = 8.0f;  // largest sideways spread of one text
++
++inline float clamp01(float u) { return u < 0.0f ? 0.0f : (u > 1.0f ? 1.0f : u); }
++
++// fast at the start, slow at the end: 0 -> 0, 1 -> 1, never above 1
++inline float easeOutCubic(float u)
++{
++    const float v = 1.0f - clamp01(u);
++    return 1.0f - v * v * v;
++}
++
++// 0 -> 0, 1 -> 1, flat at both ends
++inline float smoothStep(float u)
++{
++    const float v = clamp01(u);
++    return v * v * (3.0f - 2.0f * v);
++}
++
++// the share of the whole way (rise, drift) that is done at u
++inline float riseProgress(float u) { return easeOutCubic(u); }
++
++// size of the text at u: grows from kPopStart to kPopPeak, then settles to 1 and stays there
++inline float popScale(float u)
++{
++    if (u <= 0.0f)
++        return kPopStart;
++    if (u < kPopUpEnd)
++        return kPopStart + (kPopPeak - kPopStart) * easeOutCubic(u / kPopUpEnd);
++    if (u < kPopSettleEnd)
++        return kPopPeak + (1.0f - kPopPeak) * smoothStep((u - kPopUpEnd) / (kPopSettleEnd - kPopUpEnd));
++    return 1.0f;
++}
++
++// 1 until fadeStart, then a smooth fade to 0 at u = 1
++inline float fadeAlpha(float u, float fadeStart)
++{
++    if (u <= fadeStart || fadeStart >= 1.0f)
++        return 1.0f;
++    return 1.0f - smoothStep((u - fadeStart) / (1.0f - fadeStart));
++}
++
++// -1 .. 1 for the n-th text: golden-ratio steps (Fibonacci hashing), so any few texts that appear one after the other
++// land far apart sideways and stacked hits do not sit on each other
++inline float spreadUnit(uint32_t n)
++{
++    const uint32_t h = n * 2654435769u; // 2^32 / golden ratio, wraps on purpose
++    return static_cast<float>(h) / 2147483648.0f - 1.0f;
++}
++
++// sideways offset in pixels at u: the spread opens up with the rise
++inline float spreadOffset(uint32_t n, float u) { return spreadUnit(n) * kSpreadPixels * riseProgress(u); }
++
++} // namespace textmotion
++} // namespace chaos
++
++#endif
+--- a/src/client/luafunctions_client.cpp
++++ b/src/client/luafunctions_client.cpp
+@@ -927,6 +927,8 @@
+     g_lua.bindClassMemberFunction<StaticText>("getText", &StaticText::getText);
+ 
+     g_lua.registerClass<AnimatedText, Thing>();
++    g_lua.bindClassStaticFunction<AnimatedText>("setSoftMotion", &AnimatedText::setSoftMotion);
++    g_lua.bindClassStaticFunction<AnimatedText>("isSoftMotion", &AnimatedText::isSoftMotion);
+     g_lua.bindClassMemberFunction<AnimatedText>("getText", &AnimatedText::getText);
+     g_lua.bindClassMemberFunction<AnimatedText>("getOffset", &AnimatedText::getOffset);
+     g_lua.bindClassMemberFunction<AnimatedText>("getColor", &AnimatedText::getColor);
