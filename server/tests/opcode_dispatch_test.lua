@@ -212,6 +212,80 @@ sendOpcode(p, 60, string.rep("x", Chaos.opcodeRequestMax))
 ok(calls.Bank == 1, "a request of exactly the limit goes through")
 ok(Chaos.opcodeRequestMax >= 8192, "the cap is above the engine's 8192-byte string limit")
 
+-- request budget (O220): a bucket per player, dropped over it with one console line a minute, refilled over time,
+-- separate per player, cleared at logout
+do
+	local D = Chaos.opcodeDispatch
+	local burst, rate = Chaos.opcodeBudget.burst, Chaos.opcodeBudget.perSecond
+	ok(burst >= 100 and rate >= 50, "the budget is looser than the engine's 50 packets a second and a login burst")
+	local now = 5000000
+	local allowed = 0
+	for _ = 1, burst + 40 do
+		if D.take(900, now) then allowed = allowed + 1 end
+	end
+	ok(allowed == burst, "a burst of " .. burst .. " passes, the rest of the same instant does not: " .. allowed)
+	ok(D.take(901, now), "another player has a budget of their own")
+	ok(not D.take(900, now + 5), "5 ms later still empty")
+	ok(D.take(900, now + 1000), "a second later " .. rate .. " more are allowed")
+	local again = 1
+	while D.take(900, now + 1000) do again = again + 1 end
+	ok(again == rate, "exactly the refill: " .. again)
+	ok(not D.take(900, now - 10000), "a clock that goes back gives nothing")
+	for _ = 1, 5 do D.take(900, now + 100000) end
+	local full = 0
+	while D.take(900, now + 100000) do full = full + 1 end
+	ok(full <= burst, "the bucket never holds more than the burst: " .. full)
+	D.forget(900)
+	ok(D.bucket[900] == nil and D.warnedRate[900] == nil, "logout clears the bucket")
+
+	-- through dispatch: a flood reaches the handlers only up to the budget, with one warning
+	reset()
+	printed = {}
+	D.bucket[p:getId()] = nil
+	for _ = 1, burst + 100 do sendOpcode(p, 60, "{}") end
+	ok(calls.Bank and calls.Bank <= burst and calls.Bank >= burst - 5, "a flood reaches Bank " .. tostring(calls.Bank) .. " times")
+	local rateWarnings = 0
+	for _, line in ipairs(printed) do
+		if line:find("requests a second", 1, true) then rateWarnings = rateWarnings + 1 end
+	end
+	ok(rateWarnings == 1, "one rate warning, not one per request: " .. rateWarnings)
+	D.bucket[p:getId()] = nil
+end
+
+-- JSON nesting (O220): Chaos.jsonDepthOk and the json.decode guard
+do
+	local lim = Chaos.jsonMaxDepth
+	ok(lim >= 8 and lim <= 128, "a nesting limit between real messages (2-6) and a stack overflow")
+	ok(Chaos.jsonDepthOk("{}") and Chaos.jsonDepthOk("[]") and Chaos.jsonDepthOk(""), "empty containers pass")
+	ok(Chaos.jsonDepthOk('{"a":[1,{"b":[2,3]}],"c":"x"}'), "a normal message passes")
+	ok(Chaos.jsonDepthOk(string.rep("[", lim) .. string.rep("]", lim)), "exactly the limit passes")
+	ok(not Chaos.jsonDepthOk(string.rep("[", lim + 1)), "one over fails")
+	ok(not Chaos.jsonDepthOk(string.rep("{\"a\":", lim + 1)), "objects count too")
+	ok(not Chaos.jsonDepthOk(string.rep("[", Chaos.opcodeRequestMax)), "a request of nothing but [ fails")
+	ok(Chaos.jsonDepthOk(string.rep("[]", 5000)), "many siblings are depth 1")
+	ok(Chaos.jsonDepthOk('"' .. string.rep("[", 500) .. '"'), "brackets inside a string do not count")
+	ok(Chaos.jsonDepthOk('"\\\\"' .. "[]"), "an escaped backslash ends the string at the next quote")
+	ok(Chaos.jsonDepthOk('["a\\\\"]'), "a string ending in an escaped backslash")
+	ok(Chaos.jsonDepthOk('["a\\\\"' .. string.rep("[", lim + 1)) == false, "an escaped backslash does not hide what follows")
+	ok(Chaos.jsonDepthOk('["a\\\\"' .. string.rep("[", lim - 2) .. "]") == true, "a string and a normal depth after it")
+	ok(Chaos.jsonDepthOk('["a\\\\" ]]]]]]]]') == true, "more closers than openers do not go negative")
+	ok(Chaos.jsonDepthOk('["a') == true, "an unterminated string is left to the decoder")
+	ok(Chaos.jsonDepthOk(nil) == true and Chaos.jsonDepthOk(12) == true, "non-strings are left to the decoder")
+	-- the wrapper
+	local calls_ = 0
+	json = {decode = function(text) calls_ = calls_ + 1 return text end}
+	Chaos.jsonGuarded = nil
+	ok(Chaos.guardJson() == true, "wraps json.decode")
+	ok(Chaos.guardJson() == false, "and only once")
+	ok(json.decode("[1]") == "[1]" and calls_ == 1, "a shallow text reaches the real decoder")
+	local okc, err = pcall(json.decode, string.rep("[", lim + 1))
+	ok(not okc and tostring(err):find("nested too deeply", 1, true) and calls_ == 1, "a deep text is refused before it")
+	ok(Chaos.decode(string.rep("[", lim + 1)) == nil, "Chaos.decode answers nil for it")
+	json = nil
+	Chaos.jsonGuarded = nil
+	ok(Chaos.guardJson() == false, "no json library: nothing to wrap")
+end
+
 -- an error in one handler: reported, the next handler still runs
 reset()
 printed = {}

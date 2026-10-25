@@ -1,0 +1,30 @@
+# Extended opcode request size cap (O220; server/README.md "Extended opcode protocol audit (O220)").
+# ProtocolGame::parseExtendedOpcode copied every extended opcode string the client sent (up to the 90 KB of a network
+# message) into a dispatcher task, and patch 0021 holds up to 64 of them per connection before the client check is
+# answered. The Lua dispatcher drops a request over Chaos.opcodeRequestMax (16384 bytes), but only after the copy, the
+# task and the engine's own events: the base server's handlers (and any event the dispatcher leaves with the engine) saw
+# the big string and decoded it. Now parseExtendedOpcode returns for a string over 16384 bytes before any of that. The
+# client's largest request (a passive tree plan) is about 3 KB. Nothing else changes.
+--- a/src/protocolgame.cpp
++++ b/src/protocolgame.cpp
+@@ -3731,11 +3731,20 @@
+ 	msg.add<uint32_t>(std::max<uint32_t>(item.sellPrice, 0));
+ }
+ 
++// Chaos (patch 0075): most bytes of an extended opcode request that are passed on (chaos_constants.lua opcodeRequestMax)
++static constexpr size_t EXTENDED_OPCODE_MAX_BYTES = 16384;
++
+ void ProtocolGame::parseExtendedOpcode(NetworkMessage& msg)
+ {
+ 	uint8_t opcode = msg.getByte();
+ 	const std::string& buffer = msg.getString();
+ 
++	// Chaos (patch 0075): a request over EXTENDED_OPCODE_MAX_BYTES is dropped here, before the task, the copy for it and
++	// the Lua decode; the Lua dispatcher has the same limit (Chaos.opcodeRequestMax). The client's largest is ~3 KB.
++	if (buffer.size() > EXTENDED_OPCODE_MAX_BYTES) {
++		return;
++	}
++
+ 	// process additional opcodes via lua script event; Chaos (patch 0021): through the client guard on the dispatcher
+ 	// (the handshake answer is handled there, other opcodes wait for it)
+ 	g_dispatcher.addTask(createTask(std::bind(&ProtocolGame::onExtendedOpcode, getThis(), opcode, buffer)));

@@ -1290,6 +1290,73 @@ function Chaos.isMultiClient(player)
 	return #Chaos.mcSiblings(player) > 0
 end
 
+-- Nesting limit for every json.decode (O220). The base decoder (data/lib/core/json.lua) recurses once per `[` or `{`
+-- with no limit: a 16 KB request of nothing but `[` is 16,000 levels deep, which costs a stack overflow error per
+-- packet (and in an unprotected base handler a Lua error in the server log). Real messages nest 2-6 levels.
+-- Chaos.jsonDepthOk is a scan (strings skipped, nothing allocated), Chaos.guardJson wraps json.decode with it once.
+Chaos.jsonMaxDepth = 32
+
+function Chaos.jsonDepthOk(text, limit)
+	if type(text) ~= "string" then
+		return true
+	end
+	limit = limit or Chaos.jsonMaxDepth
+	local find, byte = string.find, string.byte
+	local depth, pos = 0, 1
+	while true do
+		local i = find(text, '[%[%]{}"]', pos)
+		if not i then
+			return true
+		end
+		local c = byte(text, i)
+		if c == 34 then -- a string: to its closing quote, skipping escaped characters
+			local j = i + 1
+			while true do
+				local k = find(text, '["\\]', j)
+				if not k then
+					return true -- unterminated: the decoder refuses it
+				end
+				if byte(text, k) == 92 then
+					j = k + 2
+				else
+					pos = k + 1
+					break
+				end
+			end
+		elseif c == 91 or c == 123 then
+			depth = depth + 1
+			if depth > limit then
+				return false
+			end
+			pos = i + 1
+		else
+			if depth > 0 then
+				depth = depth - 1
+			end
+			pos = i + 1
+		end
+	end
+end
+
+-- json.decode refuses text nested over Chaos.jsonMaxDepth with the error "json nested too deeply" (a pcall'd decode
+-- sees it as any other bad JSON). Wraps once; a reload of this file does not wrap the wrapper again.
+function Chaos.guardJson()
+	if type(json) ~= "table" or type(json.decode) ~= "function" or Chaos.jsonGuarded == json.decode then
+		return false
+	end
+	local raw = json.decode
+	local function guarded(text, ...)
+		if not Chaos.jsonDepthOk(text) then
+			error("json nested too deeply", 2)
+		end
+		return raw(text, ...)
+	end
+	json.decode = guarded
+	Chaos.jsonGuarded = guarded
+	return true
+end
+Chaos.guardJson()
+
 function Chaos.decode(buffer)
 	if type(buffer) ~= "string" or buffer == "" then
 		return nil
@@ -1819,7 +1886,14 @@ end
 -- ---------------------------------------------------------------------------
 Chaos.opcodeRequestMax = 16384 -- bytes; the client's requests are far under 8 KB (the largest, a passive tree plan, ~3 KB)
 
-local D = {byName = {}, byOpcode = {}, any = {}, players = {}, seq = 0, warned = {}}
+-- A player's budget of extended opcode requests (O220): a bucket of `burst` that refills `perSecond` a second. The engine
+-- already closes a connection above maxPacketsPerSecond (50, all packet types) on average; this bounds a burst inside
+-- that average and a client that stays just under it, since each request costs a handler call. Looser than the engine
+-- on purpose (a login sends a few dozen at once), so a real client never reaches it. Over the budget: dropped, one
+-- console line per player a minute.
+Chaos.opcodeBudget = {burst = 250, perSecond = 60}
+
+local D = {byName = {}, byOpcode = {}, any = {}, players = {}, seq = 0, warned = {}, bucket = {}, warnedRate = {}}
 Chaos.opcodeDispatch = D
 
 -- the opcode of a handler's guard (an upvalue named OPCODE holding a number), else nil
@@ -1876,6 +1950,26 @@ local function nowMs()
 	return os.mtime and os.mtime() or os.time() * 1000
 end
 
+-- true when player id `pid` may send one more request now (a token is taken)
+function D.take(pid, now)
+	now = now or nowMs()
+	local cfg = Chaos.opcodeBudget
+	local b = D.bucket[pid]
+	if not b then
+		D.bucket[pid] = {tokens = cfg.burst - 1, at = now}
+		return true
+	end
+	if now > b.at then
+		b.tokens = math.min(cfg.burst, b.tokens + (now - b.at) * cfg.perSecond / 1000)
+	end
+	b.at = now
+	if b.tokens < 1 then
+		return false
+	end
+	b.tokens = b.tokens - 1
+	return true
+end
+
 function D.dispatch(player, opcode, buffer)
 	local pid = player:getId()
 	if type(buffer) == "string" and #buffer > Chaos.opcodeRequestMax then
@@ -1884,6 +1978,15 @@ function D.dispatch(player, opcode, buffer)
 			D.warned[pid] = t
 			print(string.format("[Warning - Chaos] extended opcode %d from %s: %d bytes is over %d, dropped", opcode,
 				player:getName(), #buffer, Chaos.opcodeRequestMax))
+		end
+		return
+	end
+	if not D.take(pid) then
+		local t = nowMs()
+		if not D.warnedRate[pid] or t - D.warnedRate[pid] >= 60000 then
+			D.warnedRate[pid] = t
+			print(string.format("[Warning - Chaos] extended opcode %d from %s: over %d requests a second, dropped", opcode,
+				player:getName(), Chaos.opcodeBudget.perSecond))
 		end
 		return
 	end
@@ -1903,6 +2006,8 @@ end
 function D.forget(pid)
 	D.players[pid] = nil
 	D.warned[pid] = nil
+	D.bucket[pid] = nil
+	D.warnedRate[pid] = nil
 end
 
 if type(rawgetmetatable) == "function" and type(CreatureEvent) == "table" and getmetatable(CreatureEvent)
