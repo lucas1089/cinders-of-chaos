@@ -243,6 +243,10 @@ server/
                                       auto-walk, Lua) without per-search allocation and scans; same paths (see "Cheaper
                                       monster pathfinding (O211)"; header src/chaospathing.h, tools/chaospathing_test.cpp,
                                       tools/path_bench.cpp)
+  src-patches/0071-cheaper-spectators.patch   engine: Map::getSpectators without the heap traffic around it (SpectatorVec
+                                      with inline room, a cache that clears in O(1), a hashed union); same creatures in the
+                                      same order (see "Cheaper spectator queries (O212)"; header src/chaosspectators.h,
+                                      tools/chaosspectators_test.cpp, tools/spectator_bench.cpp)
     remote_cmd.lua    remote_cmd_core.lua    remote_cmd_config.lua  (remote admin commands by file, see "Remote admin commands")
     spectate.lua      spectate_core.lua      spectate_config.lua    (the admin app's live view of a character, see "Live spectator")
     helpai.lua  helpai_core.lua  helpai_config.lua (Ember answers questions in the Help channel through the sidecar
@@ -23251,3 +23255,96 @@ Re-run the benchmark: `python3 -I server/tools/path_bench_grid.py --map DIR/data
 (about 50 s), then build the patch's header out (`awk` line of the CI step) and
 `g++ -std=c++17 -O2 -I DIR server/tools/path_bench.cpp -o path_bench && path_bench --grid grid.txt`; without `--grid` it
 plays synthetic rooms and corridors.
+
+## Cheaper spectator queries (O212) (engine `src-patches/0071-cheaper-spectators.patch`, `src/chaosspectators.h`, `tools/spectator_bench.cpp`, `tools/chaosspectators_test.cpp`)
+
+Every creature step (`Map::moveCreature`: two queries and a union), magic effect, distance effect, health bar and area
+spell calls `Map::getSpectators`. This is what the audit of the stock engine (with patches 0001-0070) found, and what was
+changed.
+
+**What the stock code paid.** The QTree sector walk is not the cost (about 180 ns for a screen with 45 creatures, 30
+leaves of 8 x 8 tiles). The cost around it was:
+- `SpectatorVec` reserved 32 pointers on the heap in its constructor: one allocation and one free for every caller, used
+  or not. A step builds two (plus the union), an effect one, a distance effect two.
+- The two caches were `std::map<Position, SpectatorVec>`: a tree node and a vector copy per store. `Tile::addThing`,
+  `removeThing` and `internalAddThing` clear them for every creature that is added or removed, which is every step, so in a
+  hunting pack each query stored an entry that the next step freed. A query that missed cost 5 allocations; a hit still
+  built a `SpectatorVec` (2).
+- `SpectatorVec::addSpectators` (the union of the old and the new position of a step and of a distance effect) searched
+  the first list for every element of the second: 1800 compares for 45 and 40 creatures, 70,000 for a crowd of 260.
+- `Map::moveCreature` grew its `std::vector<int32_t>` of stack positions one `push_back` at a time (4 to 7 allocations).
+
+**What changed (patch 0071, same answers).** `src/chaosspectators.h`, header only: `ChaosSpec::SmallVec` (48 pointers inline,
+heap beyond), `ChaosSpec::SpectatorList` (the stock interface; `spectators.h` makes `SpectatorVec` an alias of it, same
+element order, `erase` still swaps with the last), `ChaosSpec::appendMissing` (the same union in the same order, a
+pointer set when both lists are long) and `ChaosSpec::Cache` (open addressing, generation stamped slots over a pool of
+vectors that are reused; `clear()` is O(1) and frees nothing; a burst of thousands of centres is trimmed back). `map.h` /
+`map.cpp`: the caches are `ChaosSpec::Cache`, `getSpectators` looks up and stores by a packed position key, the stack
+positions are a `SmallVec`. What a cache holds, when it is looked up, stored and cleared is exactly as before, so a query
+returns the same creatures in the same order.
+
+**Not done on purpose: skip the cache clear when nothing in range changed.** The leaf lists remove by swapping with the
+last element, so a kept entry could differ in order from a fresh walk (and `onlyPlayers` answers come from the all-creature
+entry or from `player_list` depending on what is cached), which would change the order creatures are notified in. And in a
+pack everything is in range of everything, so the clear would almost never be skipped where it matters. Collapsing the old
+and new query of a step into one is the same problem (the order of the union). The sector walk itself was left alone.
+
+**Measured** (`spectator_bench.cpp`; this sandbox, g++ 13.3 -O2, one core, best of 3, `--seconds 1.0`). The world copies the
+engine's QTree (8 x 8 leaves, `leafS` / `leafE` links, some missing sectors around the area, real map coordinates), creature
+and player lists, `getSpectators` / `getSpectatorsInternal` / the cache rules of `map.cpp`, `moveCreature` without the tile
+and the packets. One template runs twice, with the stock pieces (the unchanged `SpectatorVec`, `std::map` cache, `std::vector`)
+and with the new ones; heap allocations are counted with a global `operator new`. A tick: every creature steps once
+(`steps`), or one area spell (one area query, 3 queries per target, 25 tile effects), or 20 effects and distance effects,
+or all three (`mixed tick`). The hunt is 40 monsters and 5 players in one screen, the city 100 players spread over 160 x 110
+tiles, the crowd 200 monsters and 60 players in 60 x 50 tiles (a boss event, the Tower).
+
+| Per tick | stock | new | | allocations stock -> new |
+|---|---|---|---|---|
+| hunt, steps (90 queries) | 57.2 us | 43.1 us | 1.32x | 457 -> 0 |
+| hunt, spell (61 queries) | 2.6 us | 1.2 us | 2.21x | 66 -> 5 |
+| hunt, effects (15 queries) | 0.9 us | 0.4 us | 2.14x | 15 -> 0 |
+| hunt, mixed tick (141 queries) | 69.7 us | 48.7 us | 1.43x | 590 -> 1 |
+| city, steps (200 queries) | 80.3 us | 64.8 us | 1.24x | 945 -> 0 |
+| city, effects (60 queries) | 6.5 us | 2.8 us | 2.33x | 60 -> 0 |
+| city, mixed tick (286 queries) | 114.2 us | 80.4 us | 1.42x | 1160 -> 0 |
+| crowd, steps (520 queries) | 2299 us | 997 us | 2.31x | 4853 -> 1302 |
+| crowd, mixed tick (668 queries) | 2471 us | 1107 us | 2.23x | 5180 -> 1317 |
+
+That is 28% to 30% less time in the spectator code of a mixed hunt or city tick, and 55% less in a crowd (the 1302
+allocations left are lists longer than 48, which spill to the heap). Parts of one query in the hunt (ns per call):
+
+| | stock | new |
+|---|---|---|
+| sector walk alone, 45 creatures | 277 | 179 |
+| query, cache miss (walk + store) | 405 (5 allocations) | 216 (0) |
+| query, cache hit | 33 (2 allocations) | 17 (0) |
+| query, players only, cache hit | 72 | 35 |
+| union of 45 and 40 (copy + merge) | 307 | 176 |
+
+The answers are identical: `--check` (CI "Native checks") runs both worlds on the same random operations (steps,
+teleports, queries with the default range and with own ranges, one floor and multifloor, players only, a non empty target
+vector, the union, `erase`) and compares every list element by element, in order, 6 seeds x 3 scenarios; the timing run
+also compares the sums of the first 30 ticks of every phase. A broken union or a cache that clears too rarely makes
+`--check` fail (tried). `chaosspectators_test.cpp` checks the pieces against std containers (ASan and UBSan too).
+
+Reading the numbers: the saving is a share of the spectator code, and that code is small in absolute terms. A hunting
+pack of 40 monsters spends about 115 us of every second in it (two steps per monster per second at the hunt row), so 500
+hunting monsters cost about 1.4 ms per second (0.14% of one core) and the patch takes about 0.4 ms of that. The crowd is
+where it shows: 260 creatures stepping twice a second cost about 4.6 ms per second stock and 2 ms now. The engine's own
+work around each query (the tile moves, the packets, the Lua events) is unchanged and larger than the benchmark's
+stand-ins, so the share on the live server is smaller than the percentages above, not larger.
+
+**Not verified.** No full engine build or link, no run on the live server, no profile of the real server. The benchmark is
+a copy of the walk and the cache rules (kept in step with `map.cpp` by hand, not compiled from it). Verified: the chain
+0001-0071 applies to the base source with `patch -p1` (root `CMakeLists.txt` and `cmake` copied in for 0069), 0 FAILED, 0
+fuzz; `map.cpp`, `game.cpp`, `creature.cpp`, `tile.cpp`, `combat.cpp`, `monster.cpp`, `player.cpp`, `npc.cpp`,
+`luascript.cpp`, `condition.cpp`, `container.cpp` and `spawn.cpp` pass `g++ -std=c++17 -fsyntax-only` with the boost, fmt and
+LuaJIT headers of this sandbox; the unit test and `spectator_bench --check` pass (CI "Native checks").
+
+Install: apply the patch with the others and build. No key, no config, nothing to turn on; a restart brings it. To compare
+on a test server, watch the tick time (`slowTaskLogMs`) with a big pack or a crowd stepping before and after. VPS: no action
+beyond the normal update (the admin app has nothing to set for this).
+
+Re-run the benchmark: build the patch's header out (`awk` line of the CI step), then
+`g++ -std=c++17 -O2 -I DIR server/tools/spectator_bench.cpp -o spectator_bench && spectator_bench` (about 1 minute;
+`--seconds N` sets the time per row, `--check` the CI mode).
