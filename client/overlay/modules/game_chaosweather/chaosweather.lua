@@ -21,6 +21,7 @@ local covered = false
 local root, widgets = nil, {}
 local tickEvent, coverEvent
 local lastTick, clock0 = 0, 0
+local paint = L.newPaint()      -- what the layer widgets show now (O235)
 local handlers = {}
 local reported = {}
 
@@ -63,6 +64,7 @@ end
 local function destroyWidgets()
   if alive(root) then root:destroy() end
   root, widgets = nil, {}
+  paint.reset()
 end
 
 -- makes the root and the layers on the game map panel (once); false when the panel is not there yet
@@ -93,6 +95,7 @@ local function hideAll()
       w:setVisible(false)
     end
   end
+  paint.reset()
 end
 
 -- ---------------------------------------------------------------- drawing
@@ -107,12 +110,14 @@ local function draw()
     if alive(widget) then
       if opacity > L.MIN_OPACITY and w > 0 and h > 0 then
         local ox, oy = L.offset(layer, t)
-        widget:setImageRect(L.imageRect(ox, oy, w, h))
-        widget:setOpacity(opacity)
+        local rect = L.imageRect(ox, oy, w, h)
+        if paint.rect(layer.name, rect) then widget:setImageRect(rect) end
+        if paint.opacity(layer.name, opacity) then widget:setOpacity(opacity) end
         if not widget:isVisible() then widget:setVisible(true) end
       elseif widget:isVisible() then
         widget:setOpacity(0)
         widget:setVisible(false)
+        paint.forget(layer.name)
       end
     end
   end

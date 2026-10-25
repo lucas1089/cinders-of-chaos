@@ -2,6 +2,7 @@
 -- nothing runs without a mood or with the option off, the timer stops while the window is hidden (one slow poll waits), the
 -- widgets are two per kind at most visible, a reset leaves nothing behind.
 local dir = (arg and arg[0] or ''):match('^(.*[/\\])') or './'
+dofile(dir .. 'chaosweather_logic.lua')
 dofile(dir .. 'chaosambient_logic.lua')
 local fails, checks = 0, 0
 local function eq(a, b, what)
@@ -23,9 +24,9 @@ local function newWidget(name)
   function w:destroy() self.destroyed = true for _, c in ipairs(self.children) do c:destroy() end end
   function w:setVisible(v) self.visible = v end
   function w:isVisible() return self.visible end
-  function w:setOpacity(o) self.opacity = o end
+  function w:setOpacity(o) self.opacity = o; self.opacityCalls = (self.opacityCalls or 0) + 1 end
   function w:setImageSource(s) self.image = s end
-  function w:setImageRect(r) self.rect = r end
+  function w:setImageRect(r) self.rect = r; self.rectCalls = (self.rectCalls or 0) + 1 end
   function w:getSize() return { width = 1000, height = 700 } end
   function w:fill() end
   function w:insertChild() end
@@ -90,6 +91,22 @@ M.reset(nil); eq(count(), 0, 'reset: no timers'); eq(M.state().kind, nil, 'reset
 local alive = 0
 for _, w in ipairs(created) do if not w.destroyed then alive = alive + 1 end end
 eq(alive, 0 + (function() local n = 0 for _, w in ipairs(created) do if not w.destroyed and w.name == 'panel' then n = n + 1 end end return n end)(), 'reset: every widget destroyed')
+
+-- O235: dust has no twinkle, so once it has faded in the opacity is set no more, and the slow drift calls setImageRect only
+-- on the ticks where the whole-pixel rectangle moved
+M.setEnabled(true)
+M.setKind('dust', 100); run(2000, 50)
+local layers, op0, rect0 = {}, 0, 0
+for _, w in ipairs(created) do
+  if w.name == 'ChaosWeatherLayer' and w.visible and not w.destroyed then layers[#layers + 1] = w; op0 = op0 + (w.opacityCalls or 0); rect0 = rect0 + (w.rectCalls or 0) end
+end
+eq(#layers, 2, 'dust shows two layers')
+run(1000, 50)
+local op1, rect1 = 0, 0
+for _, w in ipairs(layers) do op1 = op1 + (w.opacityCalls or 0); rect1 = rect1 + (w.rectCalls or 0) end
+eq(op1, op0, 'dust: a steady opacity is not set again')
+eq(rect1 > rect0, true, 'dust: the drift still moves the picture')
+eq(rect1 - rect0 < 2 * 20, true, 'dust: setImageRect only when the rectangle moved (less than every tick)')
 
 if fails > 0 then print(string.format('chaosambient_glue: %d of %d checks failed', fails, checks)) os.exit(1) end
 print(string.format('chaosambient_glue: all %d checks passed', checks))

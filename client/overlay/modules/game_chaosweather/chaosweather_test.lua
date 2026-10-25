@@ -162,6 +162,38 @@ for _, name in ipairs(VisualFxLogic.OPTIONS) do if name == 'weather' then found 
 eq(found, true, 'weather is a game_visualfx option')
 eq(VisualFxLogic.DEFAULTS.weather, true, 'weather is on by default')
 
+do -- O235: a widget is told a rect / opacity only when it changed
+  local P = L.newPaint()
+  local r = { x = 1, y = 2, width = 30, height = 40 }
+  eq(P.rect('far', r), true, 'paint: first rect goes through')
+  eq(P.rect('far', { x = 1, y = 2, width = 30, height = 40 }), false, 'paint: the same rect (another table) is skipped')
+  eq(P.rect('far', { x = 2, y = 2, width = 30, height = 40 }), true, 'paint: a moved rect goes through')
+  eq(P.rect('far', { x = 2, y = 2, width = 31, height = 40 }), true, 'paint: a resized rect goes through')
+  eq(P.rect('mid', r), true, 'paint: layers are kept apart')
+  eq(P.opacity('far', 1), true, 'paint: first opacity'); eq(P.opacity('far', 1), false, 'paint: same opacity skipped')
+  eq(P.opacity('far', 0.5), true, 'paint: new opacity')
+  P.forget('far')
+  eq(P.rect('far', { x = 2, y = 2, width = 31, height = 40 }), true, 'paint: forget lets the same rect through')
+  eq(P.opacity('far', 0.5), true, 'paint: forget lets the same opacity through')
+  eq(P.rect('mid', r), false, 'paint: forget touches one layer only')
+  P.reset()
+  eq(P.rect('mid', r), true, 'paint: reset forgets all')
+  -- the rain moves every tick, the opacity of a steady rain does not
+  local moved, calls = 0, 0
+  local Q = L.newPaint()
+  for tick = 0, 59 do
+    local ox, oy = L.offset(L.LAYERS[1], tick * L.TICK_MS)
+    if Q.rect('far', L.imageRect(ox, oy, 1000, 700)) then moved = moved + 1 end
+    if Q.opacity('far', 1) then calls = calls + 1 end
+  end
+  eq(moved, 60, 'paint: rain scrolling changes the rect on every tick')
+  eq(calls, 1, 'paint: a steady opacity is set once in 60 ticks')
+  local f = io.open(dir .. 'chaosweather.lua', 'r')
+  local src = f and f:read('*a') or ''
+  if f then f:close() end
+  eq(src:find('paint.rect(layer.name, rect)', 1, true) ~= nil, true, 'chaosweather.lua guards setImageRect')
+end
+
 if fails > 0 then
   print(string.format('chaosweather: %d of %d checks failed', fails, checks))
   os.exit(1)

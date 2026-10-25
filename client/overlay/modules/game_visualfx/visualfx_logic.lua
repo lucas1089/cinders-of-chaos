@@ -47,6 +47,26 @@ function L.optionOn(name, value)
   return L.DEFAULTS[name] == true
 end
 
+-- O235: the option values, read from the settings once and kept. read(name) returns ok, value (ok false: the settings are not
+-- there yet, the default is answered and nothing is kept). The options' apply tells set(name, value) on every change (and
+-- game start clears it), so a hit, a mouse move or an outline refresh costs a table lookup instead of a settings call.
+function L.newOptionCache(read)
+  local vals = {}
+  local C = {}
+  function C.get(name)
+    local v = vals[name]
+    if v ~= nil then return v end
+    local ok, raw = read(name)
+    if not ok then return L.DEFAULTS[name] == true end
+    v = L.optionOn(name, raw)
+    vals[name] = v
+    return v
+  end
+  function C.set(name, value) vals[name] = L.optionOn(name, value) end
+  function C.clear() vals = {} end
+  return C
+end
+
 -- ---------------------------------------------------------------- hit flash
 -- Otc::MessageMode of this client as g_map.onImpactText gets it (same as game_damagescatter's L.MODE)
 L.MODE = { DAMAGE_DEALT = 21, DAMAGE_RECEIVED = 22, DAMAGE_OTHERS = 25 }
@@ -231,6 +251,35 @@ function L.lightFor(effectId)
   local theme = L.EFFECT_THEME[tonumber(effectId) or -1]
   if not theme then return nil end
   return L.THEME_COLOR[theme], L.LIGHT.radius
+end
+
+-- ---------------------------------------------------------------- glowing spell effects (O233)
+-- An effect of a bright, energetic theme is drawn added onto what is under it instead of covering it (base patch 0152,
+-- Map::deferGlowEffect; the engine holds them and draws them in one additive batch per floor). It rides on the spell light
+-- option, so it adds nothing new to the panel. Fire, energy, holy and arcane effects glow; blood, water, poison, frost,
+-- physical, death, shadow, earth and healing keep the normal blend (they are dark, soft or solid, and added they would
+-- turn to haze or white). Effects of no theme (smoke, puffs, buffs, portals, loot beams, combat feedback) keep it too.
+L.GLOW_THEMES = { fire = true, energy = true, holy = true, arcane = true }
+-- ids of a glowing theme that still keep the normal blend: the stock explosion area and hit (5, 6) carry dark smoke
+L.GLOW_SKIP = { [5] = true, [6] = true }
+
+-- does this effect id glow
+function L.glows(effectId)
+  local id = tonumber(effectId)
+  if not id or id ~= math.floor(id) or id <= 0 or id >= 65536 then return false end
+  if L.GLOW_SKIP[id] then return false end
+  local theme = L.EFFECT_THEME[id]
+  return theme ~= nil and L.GLOW_THEMES[theme] == true
+end
+
+-- the glowing ids, ascending (sent to g_map.addGlowEffect once)
+function L.glowIds()
+  local list = {}
+  for id in pairs(L.EFFECT_THEME) do
+    if L.glows(id) then list[#list + 1] = id end
+  end
+  table.sort(list)
+  return list
 end
 
 -- strength 0..1 at an age in ms: a short rise, then a smooth fall to nothing; 0 outside the life
