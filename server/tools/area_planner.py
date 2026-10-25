@@ -24,7 +24,7 @@ validate  the schema and the game rules (reachability, monsters and level tiers,
 compile   OUT_DIR/<id>.otbm (OTBM 2, items 3.57, for the map editor), <id>-frame.otbm (the view frame: bare rock on every
           spot within 9 x 7 of a walkable tile that has no tile), <id>-spawn.xml (monsters, boss, NPCs) and <id>.json
           (zones, chests with their quest keys, portals, links, stats, QA); exit 1 on a QA error.
-render    compile, then OUT_DIR/<id>_z<z>.png per floor with the client sprites and <id>_map.png (minimap colours and
+render    compile, then OUT_DIR/<id>_z<z>.png per floor (the area with its view frame) with the client sprites and <id>_map.png (minimap colours and
           marks). Review only: the pair stays out of git and the pictures are not published.
 stats     walkable tiles, monsters, density per 100 tiles and per screen, steps from the entry to the boss and zones.
 suggest   numbers from the approved plans of a biome near a level band, and our monsters and bosses of that band.

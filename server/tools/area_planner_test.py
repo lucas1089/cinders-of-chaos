@@ -214,8 +214,13 @@ def frame_ok(name, res):
     allt = set(res['tiles']) | set(fr)
     ok(not C.view_frame(res['walk'], allt), name + ': no void in view of a walkable tile')
     ok(not set(fr) & set(res['tiles']) and not set(fr) & res['walk'], name + ': the frame is off the area and its floor')
-    ok(man['tiles'] == len(fr) and {t['ground'] for t in fr.values()} <= {man['ground']}
-       and all(not t['items'] and not t['flags'] for t in fr.values()), name + ': the frame is bare %s' % man['family'])
+    if man.get('thicket'):
+        # a thicket biome: the whole plan rectangle, one blocking tree or bush on every tile
+        ok(man['tiles'] == len(fr) and all(len(t['items']) == 1 and not t['flags'] for t in fr.values()),
+           name + ': the frame is a thicket')
+    else:
+        ok(man['tiles'] == len(fr) and {t['ground'] for t in fr.values()} <= {man['ground']}
+           and all(not t['items'] and not t['flags'] for t in fr.values()), name + ': the frame is bare %s' % man['family'])
     _h, back, problems = PC.read_otbm_full(res['frame_otbm'])
     ok(not problems and set(back) == set(fr), name + ': the frame OTBM reads back')
 
@@ -284,6 +289,43 @@ ok(len(exit_items) == 1, 'crypt: one exit portal with the area exit action id')
 p = copy.deepcopy(examples['lava_cave'])
 p['seed'] = 999
 ok(PC.compile_plan(p, pair24=False, cat=cat)['otbm'] != results['lava_cave']['otbm'], 'another seed gives other tiles')
+# ragged zones and wild paths: other tiles, still a valid area, and the ragged sides take walkable tiles off
+p = copy.deepcopy(examples['swamp_hunt'])
+for z in p['zones']:
+    if z.get('role') != 'boss':
+        z['ragged'] = True
+for q in p['paths']:
+    if 'boss' not in [z.get('role') for z in p['zones'] if z['id'] in (q['from'], q['to'])]:
+        q['style'] = 'wild'
+ok(not msgs(p), 'ragged zones and wild paths validate: %s' % msgs(p))
+rg = PC.compile_plan(p, pair24=False, cat=cat)
+ok(rg['otbm'] != results['swamp_hunt']['otbm'], 'ragged zones and wild paths give other tiles')
+ok(not PC.qa_errors(rg), 'the ragged plan passes QA: %s' % PC.qa_errors(rg))
+# spawns along a path: outside every zone, on the path's tiles; a spawn names a zone or a path, not both
+p = copy.deepcopy(examples['swamp_hunt'])
+q0 = p['paths'][0]
+p['spawns'].append({'path': [q0['to'], q0['from']], 'monster': p['spawns'][0]['monster'], 'count': 4, 'pack': 2})
+ok(not msgs(p), 'a path spawn validates: %s' % msgs(p))
+ps = PC.compile_plan(p, pair24=False, cat=cat)
+on_path = [s_ for s_ in ps['spawns'] if s_['zone'].startswith('path ')]
+ok(sum(s_['count'] for s_ in on_path) == 4 and all((s_['x'], s_['y'], s_['z']) in ps['walk'] for s_ in on_path),
+   'a path spawn places its monsters on walkable path tiles')
+bad = copy.deepcopy(p)
+bad['spawns'][-1]['zone'] = q0['from']
+ok(has(bad, 'a zone or a path'), 'a spawn with a zone and a path is refused')
+bad = copy.deepcopy(p)
+bad['spawns'][-1]['path'] = [q0['from'], q0['from']]
+ok(has(bad, 'no path joins'), 'a spawn on a path that does not exist is refused')
+# spread spawns: one point per monster, evenly apart (no two closer than the default random placement allows)
+p = copy.deepcopy(examples['swamp_hunt'])
+for s_ in p['spawns']:
+    s_['spread'], s_['pack'] = True, 1
+ok(not msgs(p), 'spread spawns validate: %s' % msgs(p))
+sp = PC.compile_plan(p, pair24=False, cat=cat)
+pts = [(s_['x'], s_['y'], s_['z']) for s_ in sp['spawns']]
+ok(sum(s_['count'] for s_ in sp['spawns']) == sum(s_['count'] for s_ in p['spawns']), 'spread spawns place every monster')
+ok(len(set(pts)) == len(pts) and all(t in sp['walk'] for t in pts), 'spread spawns: one walkable point each')
+ok(not PC.qa_errors(sp), 'the spread plan passes QA: %s' % PC.qa_errors(sp))
 # a one-way hole: no ladder below it
 p = copy.deepcopy(base)
 p['connections'][0]['type'] = 'hole'

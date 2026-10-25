@@ -1,0 +1,395 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "sunken_mirewood",
+  "name": "Sunken Mirewood",
+  "biome": "marsh",
+  "size": [
+    168,
+    128
+  ],
+  "floors": 1,
+  "level": [
+    480,
+    540
+  ],
+  "seed": 50031,
+  "decoration": "normal",
+  "light": "dim",
+  "zones": [
+    {
+      "id": "camp",
+      "floor": 1,
+      "shape": "cave",
+      "size": [
+        14,
+        12
+      ],
+      "place": "west",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "reeds",
+      "floor": 1,
+      "shape": "cave",
+      "size": [
+        30,
+        24
+      ],
+      "place": "northwest",
+      "role": "hunt",
+      "ragged": true
+    },
+    {
+      "id": "bog",
+      "floor": 1,
+      "shape": "cave",
+      "size": [
+        36,
+        28
+      ],
+      "place": "center",
+      "role": "hunt",
+      "ragged": true
+    },
+    {
+      "id": "drowned",
+      "floor": 1,
+      "shape": "cave",
+      "size": [
+        26,
+        20
+      ],
+      "place": "south",
+      "role": "hunt",
+      "ragged": true
+    },
+    {
+      "id": "heart",
+      "floor": 1,
+      "shape": "cave",
+      "size": [
+        38,
+        24
+      ],
+      "at": [
+        39,
+        71
+      ],
+      "role": "hunt",
+      "ragged": true
+    },
+    {
+      "id": "lair",
+      "floor": 1,
+      "shape": "arena",
+      "size": [
+        24,
+        22
+      ],
+      "role": "boss",
+      "at": [
+        122,
+        43
+      ]
+    },
+    {
+      "id": "rootfall",
+      "floor": 1,
+      "shape": "cave",
+      "size": [
+        34,
+        26
+      ],
+      "at": [
+        112,
+        10
+      ],
+      "role": "hunt",
+      "ragged": true
+    },
+    {
+      "id": "sinkhole",
+      "floor": 1,
+      "shape": "cave",
+      "size": [
+        34,
+        26
+      ],
+      "at": [
+        112,
+        92
+      ],
+      "role": "hunt",
+      "ragged": true
+    }
+  ],
+  "paths": [
+    {
+      "from": "camp",
+      "to": "reeds",
+      "width": 5,
+      "style": "wild"
+    },
+    {
+      "from": "reeds",
+      "to": "bog",
+      "width": 5,
+      "style": "wild"
+    },
+    {
+      "from": "bog",
+      "to": "drowned",
+      "width": 5,
+      "style": "wild"
+    },
+    {
+      "from": "camp",
+      "to": "drowned",
+      "width": 5,
+      "style": "wild"
+    },
+    {
+      "from": "bog",
+      "to": "lair",
+      "width": 5,
+      "style": "tunnel"
+    },
+    {
+      "from": "camp",
+      "to": "heart",
+      "width": 5,
+      "style": "wild"
+    },
+    {
+      "from": "heart",
+      "to": "bog",
+      "width": 5,
+      "style": "wild"
+    },
+    {
+      "from": "heart",
+      "to": "drowned",
+      "width": 5,
+      "style": "wild"
+    },
+    {
+      "from": "bog",
+      "to": "rootfall",
+      "width": 5,
+      "style": "wild"
+    },
+    {
+      "from": "drowned",
+      "to": "sinkhole",
+      "width": 5,
+      "style": "wild"
+    },
+    {
+      "from": "bog",
+      "to": "sinkhole",
+      "width": 5,
+      "style": "wild"
+    }
+  ],
+  "entry": {
+    "zone": "camp"
+  },
+  "exit": {
+    "zone": "camp"
+  },
+  "spawns": [
+    {
+      "zone": "reeds",
+      "monster": "Lochtag",
+      "count": 24,
+      "pack": 1,
+      "respawn": 90,
+      "spread": true
+    },
+    {
+      "zone": "bog",
+      "monster": "Hodag",
+      "count": 24,
+      "pack": 1,
+      "respawn": 90,
+      "spread": true
+    },
+    {
+      "zone": "bog",
+      "monster": "Babayaga",
+      "count": 12,
+      "respawn": 120,
+      "pack": 1,
+      "spread": true
+    },
+    {
+      "zone": "drowned",
+      "monster": "Nightfang Widow",
+      "count": 20,
+      "pack": 1,
+      "respawn": 120,
+      "spread": true
+    },
+    {
+      "zone": "heart",
+      "monster": "Lochtag",
+      "count": 12,
+      "pack": 1,
+      "respawn": 90,
+      "spread": true
+    },
+    {
+      "zone": "heart",
+      "monster": "Hodag",
+      "count": 10,
+      "pack": 1,
+      "respawn": 90,
+      "spread": true
+    },
+    {
+      "zone": "heart",
+      "monster": "Babayaga",
+      "count": 4,
+      "respawn": 120,
+      "pack": 1,
+      "spread": true
+    },
+    {
+      "zone": "rootfall",
+      "monster": "Nightfang Widow",
+      "count": 14,
+      "pack": 1,
+      "respawn": 90,
+      "spread": true
+    },
+    {
+      "zone": "rootfall",
+      "monster": "Babayaga",
+      "count": 8,
+      "pack": 1,
+      "respawn": 90,
+      "spread": true
+    },
+    {
+      "zone": "sinkhole",
+      "monster": "Hodag",
+      "count": 14,
+      "pack": 1,
+      "respawn": 90,
+      "spread": true
+    },
+    {
+      "zone": "sinkhole",
+      "monster": "Lochtag",
+      "count": 8,
+      "pack": 1,
+      "respawn": 90,
+      "spread": true
+    },
+    {
+      "path": [
+        "camp",
+        "reeds"
+      ],
+      "monster": "Lochtag",
+      "count": 6,
+      "pack": 1,
+      "respawn": 90,
+      "spread": true
+    },
+    {
+      "path": [
+        "reeds",
+        "bog"
+      ],
+      "monster": "Lochtag",
+      "count": 6,
+      "pack": 1,
+      "respawn": 90,
+      "spread": true
+    },
+    {
+      "path": [
+        "camp",
+        "drowned"
+      ],
+      "monster": "Nightfang Widow",
+      "count": 6,
+      "pack": 1,
+      "respawn": 90,
+      "spread": true
+    },
+    {
+      "path": [
+        "bog",
+        "rootfall"
+      ],
+      "monster": "Babayaga",
+      "count": 6,
+      "pack": 1,
+      "respawn": 90,
+      "spread": true
+    },
+    {
+      "path": [
+        "bog",
+        "sinkhole"
+      ],
+      "monster": "Hodag",
+      "count": 6,
+      "pack": 1,
+      "respawn": 90,
+      "spread": true
+    },
+    {
+      "path": [
+        "drowned",
+        "sinkhole"
+      ],
+      "monster": "Hodag",
+      "count": 6,
+      "pack": 1,
+      "respawn": 90,
+      "spread": true
+    },
+    {
+      "path": [
+        "heart",
+        "drowned"
+      ],
+      "monster": "Nightfang Widow",
+      "count": 6,
+      "pack": 1,
+      "respawn": 90,
+      "spread": true
+    },
+    {
+      "path": [
+        "bog",
+        "drowned"
+      ],
+      "monster": "Babayaga",
+      "count": 6,
+      "pack": 1,
+      "respawn": 90,
+      "spread": true
+    }
+  ],
+  "boss": {
+    "zone": "lair",
+    "monster": "Malvorn the Hollow King"
+  },
+  "npcs": [
+    {
+      "zone": "camp",
+      "name": "Wandering Merchant"
+    }
+  ],
+  "notes": "A swamp hunt for level 500 with three hunting rooms and a boss at the end. Round 2: twice the size, wide paths, the open marsh biome. Round 3: a thicket instead of rock. Round 4: a big hunting room in the middle (heart).",
+  "origin": {
+    "x": 17456,
+    "y": 15156,
+    "z": 7
+  }
+}

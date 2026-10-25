@@ -70,7 +70,7 @@ def job_def(plan, cat, lay):
             if z['floor'] == f:
                 r = lay['rects'][z['id']]
                 zones.append(dict(x1=r[0], y1=r[1], x2=r[2], y2=r[3], shape=C.zone_shape(z, biome),
-                                  kind='boss' if z.get('role') == 'boss' else 'hunt'))
+                                  kind='boss' if z.get('role') == 'boss' else 'hunt', ragged=bool(z.get('ragged'))))
         paths = [dict(width=p['width'], style=p['style'], points=[list(q) for q in p['points']]) for p in lay['paths'][f]]
         per_floor[f] = dict(zones=zones, paths=paths, spots=[list(s) for s in lay['spots'][f]],
                             anchor=list(lay['anchors'][f]))
@@ -358,6 +358,19 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
                if (x, y, z) in walk and not near_special((x, y, z), avoid)]
         return out
 
+    def path_cells(ends):
+        """walkable tiles along the plan path joining the two zones, outside every zone"""
+        out = set()
+        for f, paths in lay['paths'].items():
+            for q in paths:
+                if q.get('kind') == 'path' and set(q['zones']) == set(ends):
+                    for x, y in C.route_cells(q['points'], q['width'] + {'tunnel': 2, 'wild': 4}.get(q['style'], 0)):
+                        a = absp(x, y, f)
+                        if a in walk and not near_special(a, 2) and not any(
+                                r[4] == a[2] and r[0] <= a[0] <= r[2] and r[1] <= a[1] <= r[3] for r in zrect.values()):
+                            out.add(a)
+        return sorted(out)
+
     def zcenter(zid):
         x1, y1, x2, y2, z = zrect[zid]
         return ((x1 + x2) // 2, (y1 + y2) // 2, z)
@@ -468,15 +481,35 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
     spawn_out = []
     taken = []
     for i, s in enumerate(plan.get('spawns', [])):
-        zid = s['zone']
         pack = s.get('pack', 1)
         npts = (s['count'] + pack - 1) // pack
-        cells = [t for t in zone_cells(zid, 2) if t not in pz and
+        if 'path' in s:
+            zid = 'path %s-%s' % tuple(s['path'])
+            cells = path_cells(s['path'])
+        else:
+            zid = s['zone']
+            cells = zone_cells(zid, 2)
+        cells = [t for t in cells if t not in pz and
                  not (t[2] == arrival[2] and max(abs(t[0] - arrival[0]), abs(t[1] - arrival[1])) < 4)]
         cells.sort(key=lambda t: (t[1], t[0]))
         rng.shuffle(cells)
         name = C.monsters()[s['monster'].lower()]['name']
         left = s['count']
+        if s.get('spread') and cells:
+            # even coverage: points about sqrt(tiles / points) apart, the spacing shrinking only when they do not fit
+            want = max(2.0, (len(cells) / max(1, npts)) ** 0.5)
+            while left > 0 and want >= 2:
+                for t in cells:
+                    if left <= 0:
+                        break
+                    if any(t[2] == q[2] and (t[0] - q[0]) ** 2 + (t[1] - q[1]) ** 2 < want * want for q in taken):
+                        continue
+                    cnt = min(pack, left)
+                    taken.append(t)
+                    spawn_out.append(dict(x=t[0], y=t[1], z=t[2], monster=name, count=cnt, spawntime=s.get('respawn', 90),
+                                          zone=zid, entry=i))
+                    left -= cnt
+                want -= 0.5
         for mind in (4, 3, 2):
             for t in cells:
                 if left <= 0:
@@ -526,7 +559,7 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
     corridor = set()
     for f, paths in lay['paths'].items():
         for q in paths:
-            for x, y in C.route_cells(q['points'], q['width'] + (2 if q['style'] == 'tunnel' else 0)):
+            for x, y in C.route_cells(q['points'], q['width'] + {'tunnel': 2, 'wild': 4}.get(q['style'], 0)):
                 a = absp(x, y, f)
                 if not any(r[4] == a[2] and r[0] <= a[0] <= r[2] and r[1] <= a[1] <= r[3] for r in zrect.values()):
                     corridor.add(a)
@@ -577,6 +610,35 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
         if fr['walk']:
             E('the view frame family %s is walkable; it needs a blocking ground' % fr['family'])
         frame = {p: dict(ground=fr['ground'], items=[], flags=0) for p in C.view_frame(walk, tiles)}
+    # a thicket biome (meta['thicket']): the rock around the floor and its edge pieces become grass under a tree or a
+    # bush on every tile, and the frame grows to the whole rectangle of the plan on each floor, all of it thicket
+    th = meta.get('thicket')
+    if th and fr:
+        rock = fr['family']
+        rgrounds = set(meta['families'].get(rock, {}).get('grounds', []))
+        rpieces = set()
+        for b in meta['borders']:
+            if b['over'] == rock:
+                rpieces |= set(meta['sets'].get(b['set'], []))
+        trng = random.Random(seed * 7 + 3)
+
+        def thick():
+            return dict(ground=trng.choice(th['grounds']), items=[(trng.choice(th['items']), {})], flags=0)
+        for k in sorted(tiles):
+            t = tiles[k]
+            if k in walk:
+                continue
+            if t['ground'] in rgrounds:
+                tiles[k] = thick()
+            elif any(i in rpieces for i, _a in t['items']):
+                t['items'] = [it for it in t['items'] if it[0] not in rpieces] + [(trng.choice(th['items']), {})]
+        for f in range(1, plan['floors'] + 1):
+            for x in range(plan['size'][0]):
+                for y in range(plan['size'][1]):
+                    p = absp(x + 1, y + 1, f)
+                    if p not in tiles:
+                        frame[p] = None
+        frame = {p: thick() for p in sorted(frame)}
     # ---------------------------------------------------------------------------------------- OTBM and QA
     spawn_name, house_name = plan['id'] + '-spawn.xml', plan['id'] + '-house.xml'
     data = otbm_bytes(plan['name'], plan['id'], 'seed %d' % seed, tiles, spawn_name, house_name)
@@ -597,6 +659,8 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
     if len(back_area) != len(tiles):
         E('OTBM: %d tiles written, %d read back' % (len(tiles), len(back_area)))
     allowed = set(meta['allowed']) | {meta['chest'], meta['portal'], meta['hole'], meta['ladder']} | D.all_ids()
+    if th:
+        allowed |= set(th['grounds']) | set(th['items'])
     if fr:
         allowed.add(fr['ground'])
     unknown = {}
@@ -729,7 +793,8 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
                     pair24=bool(pair24), dark=bool(dark),
                     zones={zid: dict(rect=list(r[:4]), z=r[4], role=zones[zid].get('role', 'hunt'), pz=bool(zones[zid].get('pz')))
                            for zid, r in sorted(zrect.items())},
-                    frame=dict(tiles=len(frame), family=fr and fr['family'], ground=fr and fr['ground'], view=list(C.VIEW), file=plan['id'] + '-frame.otbm'),
+                    frame=dict(tiles=len(frame), family=fr and fr['family'], ground=fr and fr['ground'], view=list(C.VIEW), file=plan['id'] + '-frame.otbm',
+                               thicket=bool(th and fr)),
                     arrival=list(arrival), exit=exit_out, links=link_out, teleports=tele_out, chests=chest_out,
                     npcs=npc_out, boss=boss_out, spawns=len(spawn_out), entry_from_world=plan['entry'].get('from_world'),
                     stats=stats, qa=[dict(level=l, message=m) for l, m in qa],
@@ -800,7 +865,8 @@ def render_floors(result, out_dir, items_otb, items_xml, dat, spr_path, scale=0.
     os.makedirs(out_dir, exist_ok=True)
     db = ItemDB(items_otb, items_xml, dat)
     spr = Spr(spr_path)
-    m = _Map(result['tiles'])
+    # the area with its view frame, as the map holds them once installed
+    m = _Map({**(result.get('frame') or {}), **result['tiles']})
     pid = result['manifest']['id']
     ox, oy, oz = result['origin']
     w, h = result['manifest']['size']

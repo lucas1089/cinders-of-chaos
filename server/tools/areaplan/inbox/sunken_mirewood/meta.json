@@ -1,11 +1,6 @@
 {
  "biome": "swamp",
- "compiled_sha256": {
-  "sunken_mirewood-frame.otbm": "ab62ae31c79c7b5c8fcc64d1e17904f864134c4c288252009236a6c195aecf47",
-  "sunken_mirewood-spawn.xml": "4e32d0662e85e33c172504ce9276bcd6f7461f03243356825137fa2727931936",
-  "sunken_mirewood.json": "1b9bd0ee1020073c46a9887fd53c9adc6af867e6eac5900ec592e36732f47e7b",
-  "sunken_mirewood.otbm": "5f1c628af2e195f66e6b4486689028af92131c9cbb2c057a831c72facb2c5e2f"
- },
+ "compiled_sha256": {},
  "created": "2026-10-24",
  "floors": 1,
  "id": "sunken_mirewood",
@@ -14,7 +9,8 @@
   540
  ],
  "name": "Sunken Mirewood",
- "note": "Smoke entry: written by hand, no AI endpoint in the session.",
+ "note": "approved after 8 rounds: big, green, wide wild paths, ragged rooms, spread spawns",
+ "promoted_to": "server/tools/areaplan/plans/sunken_mirewood.json",
  "prompt": "swamp hunt for level 500, three rooms, boss at the end",
  "schema": "chaos-area-inbox/1",
  "size": [
@@ -30,5 +26,5 @@
   "tiles": 2425,
   "walkable": 746
  },
- "status": "pending"
+ "status": "installed"
 }

@@ -201,6 +201,10 @@
           "pz": {
             "type": "boolean",
             "description": "a protection zone (no spawn may stand in it)"
+          },
+          "ragged": {
+            "type": "boolean",
+            "description": "ragged sides: each side of the zone bites in by a depth that wanders 0-4 tiles, so big rooms and caves lose their straight edges"
           }
         }
       }
@@ -231,9 +235,10 @@
           "style": {
             "enum": [
               "corridor",
-              "tunnel"
+              "tunnel",
+              "wild"
             ],
-            "description": "corridor: straight runs; tunnel: winding (default by biome)"
+            "description": "corridor: straight runs; tunnel: winding; wild: winding with ragged sides, its width swells and narrows (default by biome)"
           }
         }
       }
@@ -350,13 +355,22 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
-          "zone",
           "monster",
           "count"
         ],
         "properties": {
           "zone": {
-            "type": "string"
+            "type": "string",
+            "description": "the zone the spawn stands in (give zone or path)"
+          },
+          "path": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 2,
+            "items": {
+              "type": "string"
+            },
+            "description": "[from, to] of a plan path: the spawn stands along that path, outside the zones (give zone or path)"
           },
           "monster": {
             "type": "string",
@@ -378,6 +392,10 @@
             "minimum": 1,
             "maximum": 8,
             "description": "monsters per spawn point (default 1)"
+          },
+          "spread": {
+            "type": "boolean",
+            "description": "even coverage: points about sqrt(free tiles / points) apart, closer only when they do not fit; default: random points 4 tiles apart"
           }
         }
       }

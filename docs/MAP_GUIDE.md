@@ -427,16 +427,17 @@ temple with a nave, chapels and a boss throne room).
 |---|---|
 | `id`, `name`, `biome`, `size` [w, h] (24-200), `floors` (1-4), `level` [lo, hi] | the area |
 | `seed`, `origin`, `decoration` (sparse, normal, dense), `light` (dark, dim, normal, bright) | optional |
-| `zones` | `id`, `floor`, `shape` (room, cave, arena), `size` (small, medium, large, huge or [w, h]), `at` or `place` (compass), `role` (hunt, camp, boss, treasure, passage), `pz` |
-| `paths` | `from`, `to` (same floor), `width` 1-6, `style` corridor or tunnel |
+| `zones` | `id`, `floor`, `shape` (room, cave, arena), `size` (small, medium, large, huge or [w, h]), `at` or `place` (compass), `role` (hunt, camp, boss, treasure, passage), `pz`, `ragged` (sides bite in 0-4 tiles, no straight edges) |
+| `paths` | `from`, `to` (same floor), `width` 1-6, `style` corridor, tunnel or wild (ragged sides) |
 | `connections` | `stairs`, `ladder` (hole and ladder, both ways), `hole` (one way down), `teleport` (any two zones, `two_way`) |
 | `entry`, `exit` | the arrival zone (floor 1); the exit portal's zone and optional world target |
-| `spawns`, `boss`, `npcs`, `chests` | monster names from our list with count, pack and respawn; the boss in the boss room; NPCs of our list; quest chests with a quest key and a `reward` (item names, gold, experience); `new` NPCs with `lines`; `chest_action` |
+| `spawns`, `boss`, `npcs`, `chests` | monster names from our list with count, pack and respawn, in a `zone` or along a `path` ([from, to], outside the zones), `spread` for even coverage; the boss in the boss room; NPCs of our list; quest chests with a quest key and a `reward` (item names, gold, experience); `new` NPCs with `lines`; `chest_action` |
 
 Biomes map to our areagen themes (`python3 -I server/tools/area_planner.py catalogue`): cave (emberdeep), lava and
 waste (cinderfall), swamp (emberdeep with wide mud, swamp trees and glowing mushrooms; with the pair 24 switch on, the
 pair 24 swamp ground and water and acid pools), marsh (the open-air swamp on z7: the pair 24 swamp ground as the
-floor with grass and mud patches, water and acid pools, swamp trees, reeds; stock grass and mud without pair 24), crypt (ossuary), vault, catacomb, hall, abyss, sanctum (the rift
+floor with grass and mud patches, water and acid pools, swamp trees, reeds; stock grass and mud without pair 24; no rock: a thicket of green trees
+and bushes on the floor ground walls the paths and fills the whole plan rectangle as its view frame), crypt (ossuary), vault, catacomb, hall, abyss, sanctum (the rift
 themes), forest (16 stock grass ids, dirt patches, the grass border set, stock trees) and ice (27 stock snow ids, ice
 sheets and grey rock with the snow and ice border sets, snowy trees). `forest_pack` and `ice_pack` use the pack
 grounds and need the packitems step. `harvest` (a farmland at night: autumn grass, tilled soil, corn stubble, mud
@@ -757,10 +758,24 @@ editor on their Windows PC before anything goes onto the server. `server/tools/a
    plan and publishes again.
 5. `area_inbox.py promote ID [--origin X Y Z]` (approved -> installed) moves the plan to `server/tools/areaplan/plans/`,
    the folder `install_content_areas.py` reads (server/README.md "Hunt teleports"). It needs an `origin` and refuses one
-   that lands on another plan's box (same z, 4 tiles apart; `--force` overrides). It does not touch the map: the install
+   that lands on another plan's box (on any z, closer than 10 tiles; `--force` overrides). It does not touch the map: the install
    (`install_all.py`, step `contentareas`, or `install_content_areas.py DATA_DIR --dry-run` first) and the tests it prints
    are the remaining steps. A new hunt also changes the progression model (`progression_model.lua --check`) and the
    hunt teleport room (more plans than slots is refused: raise `modules` in `hunt_teleports_config.lua`).
+
+### The owner's taste (apply to every new area)
+Lessons from the owner's rounds on Sunken Mirewood. Start every new plan from them, not from the bare examples.
+- Big: an open-air hunt is about 160 x 130 tiles or more, with large rooms (30-40 tiles a side), not small pockets.
+- Wide paths: width 5, never a thin corridor.
+- The biome's own colours: a swamp is green swamp ground and trees, not brown cave rock.
+- No grey rock and no black void around the area: the view frame is filled (a thicket biome fills it with blocking
+  trees on the floor's ground).
+- A big room in the middle, and the rest spread over the map: no large empty block of rock or thicket left between
+  the rooms.
+- Nothing straight: `ragged: true` on hunt zones and `style: "wild"` on paths (the boss path may stay a tunnel).
+- Monsters everywhere: spawns on the trails between rooms too (`path` spawns), every spawn `spread: true` with pack 1,
+  so the monsters are spread evenly over the area, not packed in some spots and missing in others.
+- Show the rendered picture after each change, then wait for "approve".
 
 ### What is in git
 Only `plan.json` and `meta.json` (status, the owner's words, a note, level band, size, stats, and the sha256 of each compiled

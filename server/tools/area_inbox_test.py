@@ -186,10 +186,16 @@ def main():
         check(isinstance(rc, str) and 'lands on other' in rc, 'a clash is refused: %r' % (rc,))
         rc, out = call(T.cmd_promote, ['promote', 'mire_test', '--origin', '15050', '14550', '9'], inbox=inbox, plans=plans,
                        plans_dirs=[plans])
-        check(rc == 0, 'another z is free: %r %s' % (rc, out))
+        check(isinstance(rc, str) and 'lands on other' in rc, 'a clash on another z is refused too: %r' % (rc,))
+        rc, out = call(T.cmd_promote, ['promote', 'mire_test', '--origin', '15105', '14550', '9'], inbox=inbox, plans=plans,
+                       plans_dirs=[plans])
+        check(isinstance(rc, str) and 'lands on other' in rc, 'a box 5 tiles away is refused: %r' % (rc,))
+        rc, out = call(T.cmd_promote, ['promote', 'mire_test', '--origin', '15110', '14550', '9'], inbox=inbox, plans=plans,
+                       plans_dirs=[plans])
+        check(rc == 0, 'a box 10 tiles away is free: %r %s' % (rc, out))
         check(os.path.isfile(os.path.join(plans, 'mire_test.json')), 'the plan is in plans/')
         pl = json.load(open(os.path.join(plans, 'mire_test.json')))
-        check(pl['origin'] == dict(x=15050, y=14550, z=9) and pl['id'] == 'mire_test', 'the origin is written')
+        check(pl['origin'] == dict(x=15110, y=14550, z=9) and pl['id'] == 'mire_test', 'the origin is written')
         check(os.listdir(d) == ['meta.json'], 'only meta.json stays in the inbox')
         mm = json.load(open(os.path.join(d, 'meta.json')))
         check(mm['status'] == 'installed' and mm['promoted_to'].endswith('plans/mire_test.json'), 'status installed')

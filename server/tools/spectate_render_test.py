@@ -360,7 +360,9 @@ def test_unpack(tmp):
     expect(not os.path.islink(got[0]), 'a link named Tibia.dat is not followed')
     # a changed part, a part missing from the sums, an archive without the spr
     with open(parts[1], 'r+b') as f:
-        f.write(b'\0')
+        first = f.read(1)
+        f.seek(0)
+        f.write(bytes([first[0] ^ 0xff]))  # always a different byte (writing a 0 left a part that began with 0 as it was)
     for args, what in (((parts, sums, os.path.join(tmp, 'p2')), 'a changed part'),):
         try:
             sr.unpack_pair(*args)

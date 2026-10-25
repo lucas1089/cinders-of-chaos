@@ -507,8 +507,15 @@ def validate(plan, cat=None, pair24=None):
     zone_monsters = {}
     for i, s in enumerate(plan.get('spawns', [])):
         p = 'plan.spawns[%d]' % i
-        z = ref(p + '.zone', s['zone'])
         monster(p + '.monster', s['monster'])
+        if ('zone' in s) == ('path' in s):
+            E(p, 'a spawn names a zone or a path, one of the two', 'add "zone": "<id>" or "path": ["<from>", "<to>"]')
+            continue
+        if 'path' in s:
+            if not any({q['from'], q['to']} == set(s['path']) for q in plan.get('paths', [])):
+                E(p + '.path', 'no path joins %s and %s' % tuple(s['path']), 'name the from and to of a plan path')
+            continue
+        z = ref(p + '.zone', s['zone'])
         if z:
             if z.get('pz'):
                 E(p + '.zone', 'spawn in %s, a protection zone' % z['id'], 'move the spawn or drop "pz"')
