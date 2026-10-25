@@ -548,6 +548,7 @@ jobs:
           python3 client/tools/make_fonts_test.py  # not -I: Pillow from the user site (installed above)
           python3 client/tools/check_text_fit.py  # options menu sub-entries, English and pt-BR (base patch 0104)
           python3 client/tools/check_text_fit_test.py
+          python3 -I client/tools/check_pe_hardening_test.py  # PE header flags checker of the Windows package (O204)
 
       - name: Console lines drawn where their labels are (model of base patch 0110)
         run: python3 -I client/tools/console_glyphs_test.py

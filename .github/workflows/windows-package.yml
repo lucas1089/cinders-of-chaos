@@ -449,7 +449,8 @@ jobs:
       # modules, layouts or init.lua of game/ (the next steps always copy those fresh from the assembled tree).
       # The key is one sha256 of: every file of the assembled game/ tree except data/ modules/ mods/ layouts/ init.lua
       # (so src/ with the overlay's src/, the base patches' C++ and CMake changes, CMakeLists.txt, cmake/, vcpkg.json),
-      # the Visual Studio version of the image, the build recipe (keep it equal to the Build step) and the values baked
+      # client/tools/chaos_hardening.cmake (the release flags of the Build step), the Visual Studio version of the image,
+      # the build recipe (keep it equal to the Build step; client-win-v2 = LTO and hardening flags, O204) and the values baked
       # into the exe: CHAOS_CLIENT_BUILD and a sha256 of CHAOS_CLIENT_KEY (never the key; empty key = the dev key).
       # UPDATE_PUBLIC_KEY, SERVER_HOST, SITE_URL and CHAOS_RSA_PUBLIC are not compiled in: they are written into init.lua
       # in the Package job. Runs after "Client guard inputs", so a bad key never reaches the key.
@@ -469,8 +470,9 @@ jobs:
           vs=$("$vswhere" -latest -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationVersion 2>/dev/null | tr -d '\r' || true)
           vs=${vs:-image-${ImageVersion:-unknown}}
           keyhash=$(printf '%s' "$CHAOS_CLIENT_KEY" | sha256sum | cut -d' ' -f1)
-          recipe="client-win-v1 windows-2025 x64-windows-static Release Ninja build=$CLIENT_BUILD"
-          hash=$({ echo "$recipe"; echo "vs=$vs"; echo "key=$keyhash"; printf '%s\n' "$files" | xargs -d '\n' sha256sum; } | sha256sum | cut -d' ' -f1)
+          recipe="client-win-v2 windows-2025 x64-windows-static Release Ninja lto+harden build=$CLIENT_BUILD"
+          hardening=$(sha256sum ../chaos/client/tools/chaos_hardening.cmake | cut -d' ' -f1)
+          hash=$({ echo "$recipe"; echo "vs=$vs"; echo "key=$keyhash"; echo "flags=$hardening"; printf '%s\n' "$files" | xargs -d '\n' sha256sum; } | sha256sum | cut -d' ' -f1)
           echo "recipe: $recipe"; echo "visual studio: $vs"; echo "source files: $(wc -l <<<"$files")"; echo "key hash: $hash"
           echo "hash=$hash" >> "$GITHUB_OUTPUT"
 
@@ -479,7 +481,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: built
-          key: client-win-bin-v1-${{ steps.ckey.outputs.hash }}
+          key: client-win-bin-v2-${{ steps.ckey.outputs.hash }}
 
       - name: Get CMake and Ninja
         if: steps.ccache.outputs.cache-hit != 'true'
@@ -512,7 +514,7 @@ jobs:
           if not exist vcpkg git clone https://github.com/microsoft/vcpkg vcpkg
           call vcpkg\bootstrap-vcpkg.bat -disableMetrics
           if errorlevel 1 exit /b 1
-          cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl -DCMAKE_TOOLCHAIN_FILE=%CD%\vcpkg\scripts\buildsystems\vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x64-windows-static -DCHAOS_CLIENT_BUILD=%CLIENT_BUILD%
+          cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl -DCMAKE_TOOLCHAIN_FILE=%CD%\vcpkg\scripts\buildsystems\vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x64-windows-static -DCHAOS_CLIENT_BUILD=%CLIENT_BUILD% -DCMAKE_POLICY_DEFAULT_CMP0069=NEW -DCMAKE_PROJECT_INCLUDE=%GITHUB_WORKSPACE%\chaos\client\tools\chaos_hardening.cmake
           if errorlevel 1 exit /b 1
           cmake --build build --parallel %NUMBER_OF_PROCESSORS%
           if errorlevel 1 exit /b 1
@@ -541,12 +543,22 @@ jobs:
           if [ -d game/build/data ]; then cp -r game/build/data built/data; fi
           ls -la built
 
+      # PE header of the exe (client/tools/check_pe_hardening.py): ASLR, high entropy ASLR and DEP must be set; control flow
+      # guard is reported (a warning when the toolchain did not take it). Runs before the exe is cached and on a cache hit.
+      - name: Check the exe's hardening flags
+        shell: bash
+        run: |
+          test -s built/Chaos.exe || { echo "::error::built/Chaos.exe is missing"; exit 1; }
+          python -I chaos/client/tools/check_pe_hardening.py built/Chaos.exe | tee pe-hardening.txt
+          grep -q 'guard_cf .*ok' pe-hardening.txt || echo "::warning::Chaos.exe has no control flow guard (see the flags line of the Build step)"
+          grep -q 'cet_compat .*ok' pe-hardening.txt || echo "::notice::Chaos.exe is not CET shadow stack compatible"
+
       - name: Save the compiled client
         if: steps.ccache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
           path: built
-          key: client-win-bin-v1-${{ steps.ckey.outputs.hash }}
+          key: client-win-bin-v2-${{ steps.ckey.outputs.hash }}
 
       # the exe and DLLs come from built/ (build or cache); init.lua, data, modules, mods and layouts always from game/
       - name: Put the client folder together
