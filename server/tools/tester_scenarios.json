@@ -11,7 +11,7 @@
   "out": 38,
   "passive": 76,
   "place": 13,
-  "staff": 10
+  "staff": 11
  },
  "generated_by": "server/tools/gen_tester_scenarios.py",
  "npcs": [
@@ -2839,6 +2839,17 @@
     "/creatorcodes"
    ],
    "why": "real money creator codes"
+  },
+  "cursedchest": {
+   "files": [
+    "cursedchest.lua"
+   ],
+   "kind": "staff",
+   "opcodes": [],
+   "talkactions": [
+    "/cursedchest"
+   ],
+   "why": "staff command only (/cursedchest); testers are never staff"
   },
   "daily": {
    "files": [
