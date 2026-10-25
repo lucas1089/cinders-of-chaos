@@ -954,6 +954,13 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     `x11window.cpp`, so a scaled interface would mis-click there), the map picture (drawn by its own framebuffer inside the
     scaled one: sharp, but HD sprites from the xBRZ option gain nothing), and Lua code that reads `g_window.getSize()` instead
     of the root widget size.
+69w. `0130` (Lua and otui only: `mods/client_settings/classes/dataset.lua`, `options/graphics.otui`): **the weather option (O208).** Option
+    `weather` (default on) in `dataset.lua`; its apply calls `modules.game_visualfx.onOption('weather', value)`, which passes it to the
+    overlay module `game_chaosweather`. Options > Graphics gets a seventh checkbox "Rain and weather" under "Living water and lava" (the panel grows from
+    124 to 143 px). No C++: the rain is drawn by widgets. The base client's native `WeatherManager` (`weathermanager.cpp`, `UIMap`,
+    `ProtocolGame::parseZoneWeather`, packet 60, feature `GameZoneWeather` = 144) was left alone: it has no Lua binding and the server never
+    sends the packet. Applies after `0001`-`0129`; checked to apply cleanly (no fuzz, no offset) to the base client tree by assembling
+    it again and reading the log. Not run in a client.
 70. `0088` (`src/client/outfit.cpp`): **a look without a mounted pattern still rides.** `Outfit::draw` took
     `zPattern = min(1, pattern Z - 1)` and drew the mount only when it was above 0, so a mounted character in a look
     with pattern Z 1 showed no mount. In pair 30 (dat 8156792438dabee3aa768663d57a1619) 43 wearable looks (base

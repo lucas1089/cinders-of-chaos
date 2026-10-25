@@ -1,0 +1,66 @@
+# Chaos: the weather option (Lua and otui only, no C++; mods/client_settings/classes/dataset.lua, options/graphics.otui; after
+# 0001-0129). The server decides the weather (extended opcode 114, server/README.md "Weather on the client (O208)") and the
+# overlay module game_chaosweather (client/MANIFEST.md) draws the rain with plain widgets, so this patch only adds the switch:
+#  * dataset.lua: option `weather` (default on); its apply tells game_visualfx (`onOption('weather', value)`), which forwards it
+#    to game_chaosweather. The option list and default are in visualfx_logic.lua (L.OPTIONS, L.DEFAULTS) like the other six.
+#  * options/graphics.otui: a seventh checkbox "Rain and weather" under "Living water and lava" (the panel grows from 124 to
+#    143 px).
+# The base client has a native WeatherManager (src/client/weathermanager.cpp, drawn by UIMap) that only a game-protocol packet
+# can drive and that Lua cannot reach; it is not used here, so no engine patch is needed.
+# Checked: applies cleanly after 0001-0129 to the base client tree (no fuzz, no offset); not run in a client.
+--- a/mods/client_settings/classes/dataset.lua
++++ b/mods/client_settings/classes/dataset.lua
+@@ -2095,6 +2095,16 @@
+     end,
+   },
+ 
++  -- Chaos (base patch 0130): rain drawn by the client when the server says it rains (game_visualfx -> game_chaosweather)
++  weather = {
++    value = true,
++    apply = function(value)
++      local m = modules.game_visualfx
++      if m and m.onOption then m.onOption('weather', value) end
++      return true
++    end,
++  },
++
+   enableShaders = {
+     value = true,
+     apply = function(value)
+--- a/mods/client_settings/options/graphics.otui
++++ b/mods/client_settings/options/graphics.otui
+@@ -452,7 +452,7 @@
+ 
+   FlatPanel
+     // Chaos (base patch 0126, overlay module game_visualfx): the dark-fantasy look of the map, one switch per effect
+-    size: 505 124
++    size: 505 143
+     anchors.top: prev.bottom
+     anchors.right: parent.right
+     anchors.left: parent.left
+@@ -570,6 +570,25 @@
+         local value = modules.client_settings.getOption('liquidShimmer')
+         self:setChecked(value ~= false)
+ 
++    SettingsCheckBox
++      id: weather
++      size: 12 12
++      !text: tr('Rain and weather')
++      font: $var-cip-font
++      text-auto-resize: true
++      color: $var-text-cip-color
++      text-offset: 14 -2
++      anchors.left: parent.left
++      anchors.top: liquidShimmer.bottom
++      margin-top: 7
++      margin-left: 16
++      image-source: /images/ui/checkbox
++      image-clip: 0 0 12 12
++      !tooltip: tr('When the server says it rains, rain falls over the game window. It is drawn by your\ncomputer, only outdoors, and costs very little; turn it off if you do not want it.')
++      @onSetup: |
++        local value = modules.client_settings.getOption('weather')
++        self:setChecked(value ~= false)
++
+     UIWidget
+       size: 12 12
+       anchors.top: parent.top

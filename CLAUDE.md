@@ -56,6 +56,8 @@ python3 -I server/tools/survey_base_weapons_test.py   # base_weapons.csv: re-run
 python3 client/tools/make_fonts_test.py
 python3 -I client/tools/check_text_fit.py          # options menu entries fit their buttons (en + pt-BR)
 python3 -I client/tools/gen_orb_art.py --check     # liquid orb art, one ring and mask per orb size
+python3 client/tools/gen_rain_art.py --check        # rain tiles of game_chaosweather (O208)
+python3 -I server/tools/patch_base_rain_test.py     # base rain off in config.lua (install_all step baserain)
 python3 -I client/tools/check_shaders.py  # GLSL compile (glslangValidator) or smoke test
 python3 -I website/tools/gen_sprite_images_test.py   # website sprite images: colour maths, synthetic pair
 for t in website/tests/*_test.php; do php "$t"; done  # website PHP tests

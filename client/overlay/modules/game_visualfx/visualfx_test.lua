@@ -9,7 +9,7 @@ local function eq(a, b, what)
 end
 
 -- options: the grade is off by default (it shifts the biome colours), the rest on; a boolean wins, junk is the default
-local wantDefault = { hitFlash = true, screenShake = true, creatureShadow = true, screenGrade = false, spellLight = true, liquidShimmer = true }
+local wantDefault = { hitFlash = true, screenShake = true, creatureShadow = true, screenGrade = false, spellLight = true, liquidShimmer = true, weather = true }
 for _, name in ipairs(L.OPTIONS) do
   local d = wantDefault[name]
   eq(L.optionOn(name, nil), d, name .. ' default')
@@ -18,7 +18,7 @@ for _, name in ipairs(L.OPTIONS) do
   eq(L.optionOn(name, 'no'), d, name .. ' junk -> default')
   eq(L.optionOn(name, 0), d, name .. ' number -> default')
 end
-eq(#L.OPTIONS, 6, 'six options')
+eq(#L.OPTIONS, 7, 'seven options')
 eq(L.optionOn('nothing', nil), false, 'an unknown option is off')
 
 -- hit flash
