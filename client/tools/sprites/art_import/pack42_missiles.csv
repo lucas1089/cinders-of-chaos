@@ -1,0 +1,22 @@
+replace,kind,name,file,w,h,phases,ms,dx,dy,note,lua
+1,missile,rep42_m1,pack41_fx/rep42_m1.png,2,2,8,83,0,0,"proj_spear (steel) native 32 px, id 1 (from proj_spear/steel)",
+22,missile,rep42_m22,pack41_fx/rep42_m22.png,2,2,8,83,0,0,"proj_piercing_arrow (steel) native 32 px, id 22 (from proj_piercing_arrow/steel)",
+34,missile,rep42_m34,pack41_fx/rep42_m34.png,2,2,8,83,0,0,"proj_arrow (fire) native 32 px, id 34 (from proj_arrow/fire)",
+35,missile,rep42_m35,pack41_fx/rep42_m35.png,2,2,8,83,0,0,"proj_arrow (frost) native 32 px, id 35 (from proj_arrow/frost)",
+7,missile,rep42_m7,pack41_fx/rep42_m7.png,2,2,8,83,0,0,"proj_split_arrow (fire) native 32 px, id 7 (from proj_split_arrow/fire)",
+6,missile,rep42_m6,pack41_fx/rep42_m6.png,2,2,8,83,0,0,"proj_split_arrow (poison) native 32 px, id 6 (from proj_split_arrow/poison)",
+100,missile,rep42_m100,pack41_fx/rep42_m100.png,2,2,8,83,0,0,"proj_ball_lightning (thunder) native 32 px, id 100 (from proj_ball_lightning/thunder)",proj_ball_lightning_thunder
+108,missile,rep42_m108,pack41_fx/rep42_m108.png,2,2,8,83,0,0,"proj_blood_spike (necrotic) native 32 px, id 108 (from proj_blood_spike/necrotic)",proj_blood_spike_necrotic
+111,missile,rep42_m111,pack41_fx/rep42_m111.png,3,3,8,83,1,1,"proj_boulder (magma) native 32 px, id 111 (from proj_boulder/magma)",proj_boulder_magma
+115,missile,rep42_m115,pack41_fx/rep42_m115.png,3,3,8,83,1,1,"proj_flame_lance (spirit) native 32 px, id 115 (from proj_flame_lance/spirit)",proj_flame_lance_spirit
+137,missile,rep42_m137,pack41_fx/rep42_m137.png,3,3,8,83,1,1,"proj_poison_dart (necrotic) native 32 px, id 137 (from proj_poison_dart/necrotic)",proj_poison_dart_necrotic
+138,missile,rep42_m138,pack41_fx/rep42_m138.png,2,2,8,83,0,0,"proj_razor_leaf (sakura) native 32 px, id 138 (from proj_razor_leaf/sakura)",proj_razor_leaf_sakura
+139,missile,rep42_m139,pack41_fx/rep42_m139.png,2,2,8,83,0,0,"proj_shadow_bolt (blood) native 32 px, id 139 (from proj_shadow_bolt/blood)",proj_shadow_bolt_blood
+140,missile,rep42_m140,pack41_fx/rep42_m140.png,2,2,8,83,0,0,"proj_soul_skull (spirit) native 32 px, id 140 (from proj_soul_skull/spirit)",proj_soul_skull_spirit
+141,missile,rep42_m141,pack41_fx/rep42_m141.png,3,3,8,83,1,1,"proj_spirit_arrow (blood) native 32 px, id 141 (from proj_spirit_arrow/blood)",proj_spirit_arrow_blood
+142,missile,rep42_m142,pack41_fx/rep42_m142.png,3,3,8,83,1,1,"proj_spirit_arrow (gold) native 32 px, id 142 (from proj_spirit_arrow/gold)",proj_spirit_arrow_gold
+143,missile,rep42_m143,pack41_fx/rep42_m143.png,2,2,8,83,0,0,"proj_spirit_wisp (arcane) native 32 px, id 143 (from proj_spirit_wisp/arcane)",proj_spirit_wisp_arcane
+144,missile,rep42_m144,pack41_fx/rep42_m144.png,3,3,8,83,1,1,"proj_venom_glob (necrotic) native 32 px, id 144 (from proj_venom_glob/necrotic)",proj_venom_glob_necrotic
+145,missile,rep42_m145,pack41_fx/rep42_m145.png,3,3,8,83,1,1,"proj_void_orb (abyss) native 32 px, id 145 (from proj_void_orb/abyss)",proj_void_orb_abyss
+75,missile,rep42_m75,pack41_fx/rep42_m75.png,2,3,8,83,0,1,"proj_water_bolt (abyss) native 32 px, id 75 (from proj_water_bolt/abyss)",proj_water_bolt_abyss
+146,missile,rep42_m146,pack41_fx/rep42_m146.png,3,3,8,83,1,1,"proj_wind_blade (storm) native 32 px, id 146 (from proj_wind_blade/storm)",proj_wind_blade_storm

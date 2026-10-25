@@ -29,6 +29,13 @@ Appended (NEW below): ids 251 and on, named in server/data/lib/chaos_pack41_fx_i
 CONST_ANI_WEAPONTYPE, "use the weapon's missile" in a combat's distance effect) and 255 (check_pair.py warns above 254)
 stay free. No spell sends them yet.
 
+Pair 42 (second set, the same tool): the 21 remaining swaps the owner approved, from unused variants of the same pack: six
+in-use stock ids (1 spear, 22 sniper arrow, 34 flaming arrow, 35 shiver arrow, 7 burst arrow, 6 poison arrow; same
+rules as above: send offset 0, 0, at most 2 x 2 tiles, nothing cut) and fifteen named ones (SWAPS below; each registered in
+server/data/lib/chaos_pack41_fx_ids.lua, no spell wired; send offset from the art, at most 3 x 3 tiles, nothing moved).
+art_import/pack42_missiles.csv, pack42_fx_sources.csv and pack42_fx.sums; the strips go to the same ignored folder.
+Which ids are free is the owner's check of the base server and of the repo: see the SWAPS comment and client/MANIFEST.md.
+
 Licence (docs/CREDITS.md "Projectiles"): use in games, modified or not, no attribution; no resale, redistribution or
 sharing of the assets, even modified; never machine-learning training data. So nothing cut here is committed:
 art_import/pack41_fx/ is ignored by git; committed are this script, the spec (names, sizes, offsets, frame counts),
@@ -57,6 +64,9 @@ OUT = os.path.join(ART, 'pack41_fx')
 SPEC = os.path.join(ART, 'pack41_missiles.csv')
 SOURCES = os.path.join(ART, 'pack41_fx_sources.csv')
 SUMS = os.path.join(ART, 'pack41_fx.sums')
+SPEC42 = os.path.join(ART, 'pack42_missiles.csv')
+SOURCES42 = os.path.join(ART, 'pack42_fx_sources.csv')
+SUMS42 = os.path.join(ART, 'pack42_fx.sums')
 GITIGNORE_TEXT = ('# strips cut from the purchased projectile pack: not to be redistributed, never committed '
                   '(gen_pack41_missiles.py)\n*\n!.gitignore\n')
 PACK = 'projectiles'
@@ -72,6 +82,40 @@ NEW = [
     ('proj_arrow', 'frost', 'proj_arrow_frost', 'frost arrow'),
     ('proj_piercing_arrow', 'holy', 'proj_piercing_arrow_holy', 'holy piercing arrow'),
 ]
+
+# SWAPS (pair 42): (missile id, pack effect id, variant, Lua name or None), in the owner's order. A None name redraws a
+# stock id that is in use (the engine and the base data send it): offset 0, 0, at most 2 x 2 tiles, as pair 41. A name
+# registers the missile in chaos_pack41_fx_ids.lua: its own send offset, at most 3 x 3 tiles.
+# The owner asked for ids 62-76 (in this order: ball_lightning/thunder, blood_spike/necrotic, boulder/magma,
+# flame_lance/spirit, poison_dart/necrotic, razor_leaf/sakura, shadow_bolt/blood, soul_skull/spirit, spirit_arrow/blood,
+# spirit_arrow/gold, spirit_wisp/arcane, venom_glob/necrotic, void_orb/abyss, water_bolt/abyss, wind_blade/storm), "skip
+# an id in use and take the next unused one". Checked on the base server (monster files send 62-74 and 76 by number, 75
+# is free; the engine names none of them) and on the repo: 75 is free; the next unused ids above 76 are 100, 108, 111, 115
+# and 137 up (116-136 and 153 up are named in our Lua tables; 77-114 minus those are sent by number in the base data).
+SWAPS = [
+    (1, 'proj_spear', 'steel', None),
+    (22, 'proj_piercing_arrow', 'steel', None),
+    (34, 'proj_arrow', 'fire', None),
+    (35, 'proj_arrow', 'frost', None),
+    (7, 'proj_split_arrow', 'fire', None),
+    (6, 'proj_split_arrow', 'poison', None),
+    (100, 'proj_ball_lightning', 'thunder', 'proj_ball_lightning_thunder'),   # wanted 62
+    (108, 'proj_blood_spike', 'necrotic', 'proj_blood_spike_necrotic'),        # wanted 63
+    (111, 'proj_boulder', 'magma', 'proj_boulder_magma'),                      # wanted 64
+    (115, 'proj_flame_lance', 'spirit', 'proj_flame_lance_spirit'),            # wanted 65
+    (137, 'proj_poison_dart', 'necrotic', 'proj_poison_dart_necrotic'),        # wanted 66
+    (138, 'proj_razor_leaf', 'sakura', 'proj_razor_leaf_sakura'),              # wanted 67
+    (139, 'proj_shadow_bolt', 'blood', 'proj_shadow_bolt_blood'),              # wanted 68
+    (140, 'proj_soul_skull', 'spirit', 'proj_soul_skull_spirit'),              # wanted 69
+    (141, 'proj_spirit_arrow', 'blood', 'proj_spirit_arrow_blood'),            # wanted 70
+    (142, 'proj_spirit_arrow', 'gold', 'proj_spirit_arrow_gold'),              # wanted 71
+    (143, 'proj_spirit_wisp', 'arcane', 'proj_spirit_wisp_arcane'),            # wanted 72
+    (144, 'proj_venom_glob', 'necrotic', 'proj_venom_glob_necrotic'),          # wanted 73
+    (145, 'proj_void_orb', 'abyss', 'proj_void_orb_abyss'),                    # wanted 74
+    (75, 'proj_water_bolt', 'abyss', 'proj_water_bolt_abyss'),                 # wanted 75, free
+    (146, 'proj_wind_blade', 'storm', 'proj_wind_blade_storm'),                # wanted 76
+]
+FIELDS42 = ['replace'] + G.FIELDS + ['lua']
 
 
 # ------------------------------------------------------------------------------------------------ the targets
@@ -105,6 +149,16 @@ def pick_rows():
     rows = [('replace', i, name, e, v, geo) for i, name, e, v, geo in targets()]
     rows += [('new', None, name, e, v, None) for e, v, name, _ in NEW]
     return rows
+
+
+def pick_rows42():
+    """-> pair 42's picks in spec order: ('replace', id, name, effect, variant, (2, 2, 0, 0)) for an unnamed swap,
+    ('named', id, name, effect, variant, Lua name) for a registered one; the stock rule's geometry is (w, h, dx, dy)"""
+    out = []
+    for oid, e, v, lua in SWAPS:
+        name = f'rep42_m{oid}'
+        out.append(('replace', oid, name, e, v, (2, 2, 0, 0)) if lua is None else ('named', oid, name, e, v, lua))
+    return out
 
 
 # ------------------------------------------------------------------------------------------------ the art
@@ -144,12 +198,14 @@ def fixed_missile(name, pats, n, dx, dy, max_tiles):
 
 
 def convert(srcs, pick):
-    """-> (spec row, strip, notes)"""
+    """-> (spec row, strip, source, notes). Kinds: replace (an id redrawn in place, send offset fixed), new (appended),
+    named (pair 42: a free id redrawn and given a Lua name, send offset from the art)"""
     kind, oid, name, eid, var, geo = pick
     rows, ms = load(srcs, eid, var)
     pats, n = patterns(rows)
     src = f'{eid}/{var}'
     notes = []
+    lua = ''
     if kind == 'replace':
         dx, dy = geo[2:]
         tiles = P.REPLACE_MAX_MISSILE_TILES if oid <= 188 else P.MAX_MISSILE_TILES
@@ -166,9 +222,15 @@ def convert(srcs, pick):
         if got is None:
             raise SystemExit(f'{name}: larger than {P.MAX_MISSILE_TILES} tiles')
         strip, w, h, n, dx, dy = got
-        note = dict((nm, t) for _, _, nm, t in NEW).get(name, name)
-    row = dict(replace=oid if kind == 'replace' else '', kind='missile', name=name, file=f'pack41_fx/{name}.png',
-               w=w, h=h, phases=n, ms=ms, dx=dx, dy=dy, note=f'{note} (from {src})')
+        if kind == 'named':
+            lua = geo
+            note = f'{eid} ({var}) native 32 px, id {oid}'
+        else:
+            note = dict((nm, t) for _, _, nm, t in NEW).get(name, name)
+    row = dict(replace=oid if kind in ('replace', 'named') else '', kind='missile', name=name,
+               file=f'pack41_fx/{name}.png', w=w, h=h, phases=n, ms=ms, dx=dx, dy=dy, note=f'{note} (from {src})')
+    if kind == 'named':
+        row['lua'] = lua
     return row, strip, src, notes
 
 
@@ -176,9 +238,9 @@ def convert(srcs, pick):
 FIELDS = ['replace'] + G.FIELDS
 
 
-def spec_text(rows):
+def spec_text(rows, fields=None):
     buf = io.StringIO()
-    wr = csv.DictWriter(buf, fieldnames=FIELDS, lineterminator='\n')
+    wr = csv.DictWriter(buf, fieldnames=fields or FIELDS, lineterminator='\n')
     wr.writeheader()
     wr.writerows(rows)
     return buf.getvalue()
@@ -206,16 +268,22 @@ def existing_names():
     return names
 
 
-def read_sums():
-    if not os.path.exists(SUMS):
+def read_sums(path=SUMS):
+    if not os.path.exists(path):
         return {}
-    return {l.split('  ', 1)[1].strip(): l.split('  ', 1)[0] for l in open(SUMS) if l.strip()}
+    return {l.split('  ', 1)[1].strip(): l.split('  ', 1)[0] for l in open(path) if l.strip()}
 
 
-def build(srcs, check):
-    picks = pick_rows()
+def sets():
+    """the two spec sets of this tool: pair 41 (the first build) and pair 42 (the swaps on top of pair 41)"""
+    return [dict(label='pack41', picks=pick_rows, spec=SPEC, sources=SOURCES, sums=SUMS, fields=FIELDS),
+            dict(label='pack42', picks=pick_rows42, spec=SPEC42, sources=SOURCES42, sums=SUMS42, fields=FIELDS42)]
+
+
+def build_set(S, srcs, check):
+    picks = S['picks']()
     rows, entries, sums, notes = [], [], {}, {}
-    old = read_sums() if check else {}
+    old = read_sums(S['sums']) if check else {}
     bad_art = []
     if not check:
         os.makedirs(OUT, exist_ok=True)
@@ -231,29 +299,34 @@ def build(srcs, check):
             notes[row['name']] = nt
         if check and old.get(row['file']) != sums[row['file']]:
             bad_art.append(row['file'])
-    texts = {SPEC: spec_text(rows), SOURCES: sources_text(entries),
-             SUMS: ''.join(f'{sums[r["file"]]}  {r["file"]}\n' for r in rows)}
+    texts = {S['spec']: spec_text(rows, S['fields']), S['sources']: sources_text(entries),
+             S['sums']: ''.join(f'{sums[r["file"]]}  {r["file"]}\n' for r in rows)}
     if check:
         bad = [p for p, t in texts.items() if not os.path.exists(p) or open(p, newline='').read() != t]
         for p in bad:
             print('differs:', os.path.relpath(p, HERE))
         for f in bad_art:
             print('strip differs:', f)
-        print(f'pack41: {len(rows)} strips rebuilt, {"OK" if not (bad or bad_art) else "DIFFERS"}')
+        print(f'{S["label"]}: {len(rows)} strips rebuilt, {"OK" if not (bad or bad_art) else "DIFFERS"}')
         return 1 if bad or bad_art else 0
     for p, t in texts.items():
         open(p, 'w', newline='').write(t)
     for n, t in sorted(notes.items()):
         print(f'{n}: {"; ".join(t)}')
     nrep = sum(1 for r in rows if r['replace'])
-    print(f'{len(rows)} strips: {nrep} redrawn in place, {len(rows) - nrep} appended '
-          f'(ids {FIRST_NEW}..{FIRST_NEW + len(rows) - nrep - 1})')
+    print(f'{S["label"]}: {len(rows)} strips: {nrep} redrawn in place, {len(rows) - nrep} appended '
+          f'(ids {FIRST_NEW}..{FIRST_NEW + len(rows) - nrep - 1})' if len(rows) > nrep else
+          f'{S["label"]}: {len(rows)} strips: {nrep} redrawn in place')
     return 0
+
+
+def build(srcs, check):
+    return max(build_set(S, srcs, check) for S in sets())
 
 
 def check_without_art():
     """CI: spec, sources and sums name the same things; the targets are exactly pair 36's projectile missiles; new ids
-    and names free; geometry of the appended ones equals pair 36's"""
+    and names free; geometry of the appended ones equals pair 36's; then pair 42's set"""
     errs = []
     if not all(os.path.exists(p) for p in (SPEC, SOURCES, SUMS)):
         print('pack41: missing spec, sources or sums')
@@ -280,30 +353,75 @@ def check_without_art():
             errs.append(f"{r['name']}: an in-place stock missile has send offset 0, 0")
         if r['replace'] and int(r['replace']) > 188 and p[5] and (dx, dy) != p[5][2:]:
             errs.append(f"{r['name']}: send offset differs from pair 36 (the Lua offsets would be wrong)")
-    src = read_csv(SOURCES)
+    errs += tables_agree(SPEC, SOURCES, SUMS, rows)
+    errs += check_pair42(ids)
+    for e in errs:
+        print(e)
+    have = sum(1 for p in (SPEC, SPEC42) for r in read_csv(p) if os.path.exists(os.path.join(ART, r['file'])))
+    print(f'pack41 + pack42: {len(rows)} + {len(SWAPS)} missiles, {have} strips on disk checked, '
+          f"{'OK' if not errs else f'{len(errs)} problem(s)'}")
+    return 1 if errs else 0
+
+
+def tables_agree(spec, sources, sums_path, rows):
+    """sources and sums list the spec names / files in order; strips on disk equal their sums"""
+    errs = []
+    src = read_csv(sources)
     if [s['name'] for s in src] != [r['name'] for r in rows]:
-        errs.append('pack41_fx_sources.csv does not list the spec names')
-    sums = [l.split('  ', 1)[1].strip() for l in open(SUMS) if l.strip()]
+        errs.append(f'{os.path.basename(sources)} does not list the spec names')
+    sums = [l.split('  ', 1)[1].strip() for l in open(sums_path) if l.strip()]
     if sums != [r['file'] for r in rows]:
-        errs.append('pack41_fx.sums does not list the spec files in order')
-    have = [r['file'] for r in rows if os.path.exists(os.path.join(ART, r['file']))]
-    if have:
-        want_sums = read_sums()
-        for f in have:
+        errs.append(f'{os.path.basename(sums_path)} does not list the spec files in order')
+    want_sums = read_sums(sums_path)
+    for r in rows:
+        f = r['file']
+        if os.path.exists(os.path.join(ART, f)):
             a = np.asarray(Image.open(os.path.join(ART, f)).convert('RGBA'))
             if G.digest(a) != want_sums.get(f):
                 errs.append(f'{f}: differs from its sum')
-    for e in errs:
-        print(e)
-    print(f'pack41: {len(rows)} missiles, {len(have)} strips on disk checked, '
-          f"{'OK' if not errs else f'{len(errs)} problem(s)'}")
-    return 1 if errs else 0
+    return errs
+
+
+def check_pair42(ids41):
+    """pair 42's set: the spec lists SWAPS in order, every id is a stock or pair 36 / 41 missile (1..250) not redrawn by
+    pair 41, a named swap has a free Lua name and a send offset inside its canvas (pair 41's 251-253 are untouched)"""
+    errs = []
+    if not all(os.path.exists(p) for p in (SPEC42, SOURCES42, SUMS42)):
+        return ['pack42: missing spec, sources or sums']
+    rows = read_csv(SPEC42)
+    want = pick_rows42()
+    if [r['name'] for r in rows] != [p[2] for p in want]:
+        errs.append('pack42_missiles.csv does not list SWAPS in order')
+    ids = [int(r['replace']) for r in rows]
+    if len(set(ids)) != len(ids):
+        errs.append('pack42: a missile id is redrawn twice')
+    if set(ids) & set(ids41):
+        errs.append(f'pack42: ids redrawn by pair 41 as well: {sorted(set(ids) & set(ids41))}')
+    taken = existing_names()
+    lua = [r['lua'] for r in rows if r['lua']]
+    if len(set(lua)) != len(lua):
+        errs.append('pack42: a Lua name twice')
+    for r in rows:
+        oid = int(r['replace'])
+        w, h, dx, dy = int(r['w']), int(r['h']), int(r['dx']), int(r['dy'])
+        if not 1 <= oid <= 250 or oid >= FIRST_NEW:
+            errs.append(f"{r['name']}: id {oid} outside 1..250 (251-253 are pair 41's, 254 and 255 stay free)")
+        if not (0 <= dx < w and 0 <= dy < h) or w > 3 or h > 3:
+            errs.append(f"{r['name']}: size or offset outside")
+        if not r['lua'] and (dx, dy) != (0, 0):
+            errs.append(f"{r['name']}: an unnamed stock swap has send offset 0, 0")
+        if not r['lua'] and (w > 2 or h > 2):
+            errs.append(f"{r['name']}: an unnamed stock swap is at most 2 x 2 tiles")
+        if r['lua'] and r['lua'] in taken:
+            errs.append(f"{r['lua']}: name already used in another Lua table")
+    errs += tables_agree(SPEC42, SOURCES42, SUMS42, rows)
+    return errs
 
 
 def measure(srcs):
     """per variant the pack holds: the union box of its art in the 64 x 64 frame and the share of opaque pixels
     outside the centre 32 x 32; the targets and NEW picks marked"""
-    used = {(p[3], p[4]): p[0] for p in pick_rows()}
+    used = {(p[3], p[4]): p[0] for p in pick_rows() + pick_rows42()}
     paths = []
     for s in srcs:
         paths += glob.glob(os.path.join(s, '**', 'sheets', '32px', 'projectiles', '*', '*', '*.json'), recursive=True)

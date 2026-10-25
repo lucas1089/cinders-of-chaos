@@ -28,6 +28,8 @@ replace (optional column; client/tools/sprites/gen_pack36_fx.py, art_import/pack
 rebuilds that existing effect / missile IN PLACE (same id, new sprites appended; the old sprites stay unused in the
 spr), so every script and the engine keep sending the id they send. Such rows get no Lua name (the id keeps its old
 names); the catalog lists them with that id. The other rows are appended as usual.
+lua (optional column, missiles; art_import/pack42_missiles.csv): a replace row with a Lua name registers that name for the
+id in --lua-out / --catalog-out (an id that was free, so it had no name before); the row's own name stays the spec's key.
 Verification (always): the output dat re-parses; every frame / pattern of every new thing is rendered back from the
 output spr and compared pixel-exact with the art; every old dat entry is byte-identical; 3000 sampled old sprites
 (plus the first and last) are unchanged.
@@ -104,8 +106,8 @@ def lua_text(rows, gens, ids):
             L.append(f"ChaosVfx.{r['name']} = {{id = {ids[(r['kind'], r['name'])]}, dx = {g['dx']}, dy = {g['dy']}, "
                      f"ms = {g['ms'] * g['phases']}}}  -- {r['note']}")
     for r, g in zip(rows, gens):
-        if r['kind'] == 'missile' and not r.get('replace'):
-            L.append(f"ChaosVfxMissile.{r['name']} = {{id = {ids[(r['kind'], r['name'])]}, dx = {g['dx']}, dy = {g['dy']}}}"
+        if r['kind'] == 'missile' and (not r.get('replace') or r.get('lua')):
+            L.append(f"ChaosVfxMissile.{r.get('lua') or r['name']} = {{id = {ids[(r['kind'], r['name'])]}, dx = {g['dx']}, dy = {g['dy']}}}"
                      f"  -- {r['note']}")
     return '\n'.join(L) + '\n'
 
@@ -115,7 +117,7 @@ def write_catalog(rows, gens, ids, path):
         w = csv.writer(fh, lineterminator='\n')
         w.writerow(['kind', 'id', 'name', 'size', 'send_offset', 'patterns', 'frames', 'ms', 'note'])
         for r, g in zip(rows, gens):
-            w.writerow([r['kind'], ids[(r['kind'], r['name'])], r['name'], f"{g['w']}x{g['h']}", f"{g['dx']},{g['dy']}",
+            w.writerow([r['kind'], ids[(r['kind'], r['name'])], r.get('lua') or r['name'], f"{g['w']}x{g['h']}", f"{g['dx']},{g['dy']}",
                         f"{g['px']}x{g['py']}", g['phases'], g['ms'], r['note']])
 
 
@@ -126,6 +128,8 @@ def merge_lua(path, rows, gens, ids):
     names = {l.split(' = ')[0] for l in ours}
     old = open(path).read().splitlines() if os.path.exists(path) else lua_text([], [], {}).splitlines()
     keep = [l for l in old if l.split(' = ')[0] not in names]
+    if keep and ' from art_import/' in keep[0] and f'art_import/{SPEC_NAME}' not in keep[0]:     # a second spec: say so
+        keep[0] = keep[0].replace(': effects and missiles', f' and art_import/{SPEC_NAME}: effects and missiles', 1)
     taken = {}
     for l in keep:
         if l.startswith('ChaosVfx') and ' = {id = ' in l:

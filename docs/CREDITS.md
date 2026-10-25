@@ -78,7 +78,7 @@ ask for credit (appreciated, not required). Listed here as thanks.
 - **Projectiles**
   - Author: WsT
   - Licence: purchased; credit not required; no resale, redistribution or sharing of the assets, even modified; never machine-learning training data
-  - Used for: missiles; since pair 36 our procedural and the stock element missiles redrawn with them; since pair 41 (Projectiles 32px, the pack's native 32 px renders) the same missiles redrawn from those and three more appended
+  - Used for: missiles; since pair 36 our procedural and the stock element missiles redrawn with them; since pair 41 (Projectiles 32px, the pack's native 32 px renders) the same missiles redrawn from those and three more appended; since pair 42 six more arrows and spears redrawn in place and fifteen more variants in free missile slots
 - **Fields & Traps**
   - Author: WsT
   - Licence: purchased; credit not required

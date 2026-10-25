@@ -2768,7 +2768,7 @@ art may reach players only inside the pair** (docs/CREDITS.md "Projectiles"). No
   `server/data/lib/chaos_pack41_fx_ids.lua`, `server/data/spells/pack41_fx_catalog.csv`. No spell is wired. 254 is
   the server's `CONST_ANI_WEAPONTYPE` (a combat's "use the weapon's missile", never sent) and `check_pair.py` warns above
   254, so 254 and 255 stay free.
-- **Proposed swaps, none made** (remaining 19 unused variants). In use, so only on the owner's word: id 1 spear <-
+- **Proposed swaps** (remaining 19 unused variants; made in pair 42, next section, with ids 62-76 replaced where in use). In use, so only on the owner's word: id 1 spear <-
   spear/steel; 22 sniper arrow <- piercing_arrow/steel; 34 flaming arrow <- arrow/fire and 35 shiver arrow <-
   arrow/frost (251 and 252 are the same art, appended); 7 burst arrow <- split_arrow/fire; 6 poison arrow <-
   split_arrow/poison. Not sent by anything in the repo (ids 62-76 are stock ids with no engine name and no script
@@ -2803,6 +2803,61 @@ Output **pair 41**: dat 6a8e1a8db5144459d2544a0e2070fb3b (11,225,440 bytes), spr
   sha256 cdcb8241462dd6261436adebc9cb7b9f720bb904b2ad11149868b3db4a61d74b). Pushed to windows-assets at 7f1b7a08 (on e662cd24; the owner allowed new pairs without asking).
 - A client on pair 40 or older keeps the halved art; ids 251-253 are sent by nothing. Previews: scratchpad only. Not
   run in a client.
+
+## Projectile pack, remaining swaps (pair 42: 21 missiles redrawn in place, 15 of them named; `tools/sprites/gen_pack41_missiles.py` second set, `art_import/pack42_missiles.csv`; built 2026-10-25, Not pushed: pending review)
+Owner approved the swaps pair 41 proposed. Same tool, a second spec (`pack42_missiles.csv`, `pack42_fx_sources.csv`,
+`pack42_fx.sums`; the strips go to the git-ignored `art_import/pack41_fx/`, nothing of the pack is committed), same
+placement rules as pair 41: the whole 64 x 64 frame, pivot on (13, 13), alpha 0 / 255 with the 4x4 dither, 8 frames at
+83 ms, art past the bottom-right tile moved up and left as a whole, nothing cut (the build asserts it).
+- **Six in-use stock ids, unnamed** (the engine and the base data send them by name; send offset 0, 0, 2 x 2): 1 spear
+  <- spear/steel, 22 sniper arrow <- piercing_arrow/steel, 34 flaming arrow <- arrow/fire, 35 shiver arrow <-
+  arrow/frost, 7 burst arrow <- split_arrow/fire, 6 poison arrow <- split_arrow/poison. Art moved 3 to 10 px on 1 22 34 35 6.
+  (251 and 252 keep the same fire and frost arrow art.)
+- **Fifteen named swaps** (`ChaosVfxMissile.proj_<effect>_<variant>` in `server/data/lib/chaos_pack41_fx_ids.lua`, the
+  catalog `server/data/spells/pack41_fx_catalog.csv`; send offset from the art, at most 3 x 3; no spell is wired):
+  ball_lightning/thunder 100, blood_spike/necrotic 108, boulder/magma 111, flame_lance/spirit 115, poison_dart/necrotic
+  137, razor_leaf/sakura 138, shadow_bolt/blood 139, soul_skull/spirit 140, spirit_arrow/blood 141, spirit_arrow/gold
+  142, spirit_wisp/arcane 143, venom_glob/necrotic 144, void_orb/abyss 145, water_bolt/abyss 75, wind_blade/storm 146.
+- **Ids 62-76 were checked before use, and 14 of 15 are taken.** The owner asked for 62-76 in the order above and
+  "if an id is in use, skip it and use the next unused one".
+  - Base server (the windows-assets `server/base-server.tar.xz`): the engine names none of 62-76 (`ShootType_t` in
+    `const.h`, `shootTypeNames` in `tools.cpp`: names reach 61, then 85 89 92-96). Its monster files send them by number
+    (`shootEffect = N`): 62 x1, 63 x2, 64 x4, 65 x4, 66 x2, 67 x4, 68 x5, 69 x6, 70 x9, 71 x15, 72 x1, 73 x1, 74 x1, 76 x1
+    (expedition monsters). Only **75** is unused. No spell, script, weapon or item sends 62-76.
+  - This repo: no Lua send, `ChaosVfxMissile` / `ChaosFxMissile` name, monster file or `CONST_ANI_*` number uses 62-76.
+  - Pair 41 held the base's own stock art there (1 x 1, one phase), not empty slots.
+  - Skipped (in use): 62 63 64 65 66 67 68 69 70 71 72 73 74 76. They took, in order, the next unused ids: 100 108 111 115
+    (stock art no base file and no repo table sends) and 137-146 (ten missiles of the pair that held one 1 x 1 pattern
+    instead of the 3 x 3 directions: `check_pair.py` warned about them, 216 warnings -> 206). Not free, so not used:
+    77-99, 101-107, 109, 110, 112-114 (the base data sends them by number), 116-136 and 153-253 (named in our Lua
+    tables). The census is only as good as the grep: a base script that builds an id at run time would not show.
+```
+python3 -I client/tools/sprites/gen_pack41_missiles.py build --src PACK_DIR      # both sets; --check compares
+python3 -I client/tools/sprites/import_fx_art.py --ours-dat pair41/Tibia.dat --ours-spr pair41/Tibia.spr --out-dir pair42 \
+    --expect-first-effect 4102 --expect-first-missile 254 --spec client/tools/sprites/art_import/pack42_missiles.csv \
+    --lua-out server/data/lib/chaos_pack41_fx_ids.lua --catalog-out server/data/spells/pack41_fx_catalog.csv --merge
+python3 -I client/tools/sprites/check_pair.py pair42/Tibia.dat pair42/Tibia.spr --old pair41/Tibia.dat pair41/Tibia.spr \
+    --allow-changed 'missile:1,6,7,22,34,35,75,100,108,111,115,137-146' [--new-only]
+python3 -I client/tools/sprites/gen_outfit_anchors.py pair42/Tibia.dat pair42/Tibia.spr
+python3 -I client/tools/sprites/gen_info_lift.py pair42/Tibia.dat pair42/Tibia.spr
+```
+Input pair 41 (windows-assets 7f1b7a08, dat 6a8e1a8db5144459d2544a0e2070fb3b, spr 78c5fec6822a288c780f53a893d94de4).
+Output **pair 42**: dat 6a7cba691029a95689e23426de75b225 (11,260,478 bytes), spr 358da3065f83d2610e43c7a74f045472
+(1,541,015,197 bytes, 1,357,828 sprites: 2,474 appended), 38,641 items, 2,681 outfits, 4101 effects, 253 missiles
+(no new id: 251-253 are as in pair 41).
+- `check_pair.py --old --allow-changed` (the 21 ids): `--new-only` 0 errors, 0 warnings; full check 0 errors, 206
+  warnings (pair 41's 216 without the ten single-pattern missiles 137-146). `gen_fx_send_offsets.py --check` and
+  `--pair` agree; `outfit_anchors.lua`, `info_lifts.lua`: only the dat md5 changes. `gen_theme_art.py recolour
+  --check`, `gen_dungeon_banners.py --check` and `gen_sprite_images.py` pass on pair 42; the importer verified 1,512
+  frames pixel-identical and every other thing byte-identical.
+- Archive (the pair 41 recipe: `tar --owner=0 --group=0 --numeric-owner --mtime='2026-10-22 00:00:00Z' --format=gnu`, `xz -9 -T0`
+  (xz 5.4.5), `split -b 95M -d -a 2`): 147,029,728 bytes, sha256
+  9bccacb23bd3bed955eb40a6b979eb9e2152f07fd6556f7dc9b740da668b810d; parts `things-1098.tar.xz.part00` (99,614,720 bytes,
+  sha256 d797cee0ad0001bf2ff84367742b6a134ad35237090c52d17d029c0fb813a694) and `.part01` (47,415,008 bytes, sha256
+  bc839549983772db0f358aca3bffc8197b1881bff2668e5525e3778ac64f2225); stream-extracted from the parts, the md5s above
+  match. Not pushed: pending review (windows-assets SHA to be added when the owner pushes).
+- A client on pair 41 or older keeps the old art on these ids (the spear and arrows redraw only with pair 42); the 15
+  names are sent by nothing. Ship pair 42 with the server. Previews: scratchpad only. Not run in a client.
 
 ## Owner art (things_custom26: outfits 2213-2233, items 33940-33985, `tools/sprites/gen_owner_art.py`, `art_import/owner_art.csv`; on windows-assets 50645056, switch on since 2026-10-15)
 **Source and licence.** The owner's Google Drive folder "ots", files added 2026-10-15. The owner confirmed the art is
