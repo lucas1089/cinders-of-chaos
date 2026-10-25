@@ -3916,5 +3916,31 @@ return {
 			"Equipamento para todas as classes: %s e %s para Warriors, %s para Mystics e %s para Rangers.",
 		["Azure Coins drop from the boss of the Azure portals and the Forbidden Chevalier, and some hunting tasks pay them."] =
 			"Azure Coins caem do chefe dos portais Azure e do Forbidden Chevalier, e algumas tarefas de caça pagam com elas.",
+		-- Cursed Chest (cursedchest.lua, O244)
+		["A cursed chest rises where the %s fell! Use it within %d seconds if you dare: five hordes guard its loot."] =
+			"Um baú amaldiçoado surge onde o %s caiu! Use-o em %d segundos, se tiver coragem: cinco hordas guardam o tesouro.",
+		["CURSED CHEST"] = "BAÚ AMALDIÇOADO",
+		["%s opens the cursed chest! Five hordes will come, one after another."] =
+			"%s abre o baú amaldiçoado! Cinco hordas virão, uma após a outra.",
+		["Horde %d/%d!"] = "Horda %d/%d!",
+		["Horde %d/%d: a rare leader leads it!"] = "Horda %d/%d: um líder raro a comanda!",
+		["Horde %d/%d: a legendary leader leads it!"] = "Horda %d/%d: um líder lendário a comanda!",
+		["HORDE %d/%d"] = "HORDA %d/%d",
+		["All five hordes are dead! The cursed chest unseals: use it within %d seconds to take your loot."] =
+			"As cinco hordas morreram! O baú amaldiçoado se abre: use-o em %d segundos para pegar seu tesouro.",
+		["The curse wins: time is up. The cursed chest crumbles and its hordes fade."] =
+			"A maldição vence: o tempo acabou. O baú amaldiçoado se desfaz e as hordas somem.",
+		["Nobody is left to fight. The cursed chest crumbles and its hordes fade."] =
+			"Não sobrou ninguém para lutar. O baú amaldiçoado se desfaz e as hordas somem.",
+		["You are leaving the cursed chest! Go back or the curse wins in %d seconds."] =
+			"Você está se afastando do baú amaldiçoado! Volte ou a maldição vence em %d segundos.",
+		["This cursed chest is not yours."] = "Este baú amaldiçoado não é seu.",
+		["The cursed chest crumbles to dust."] = "O baú amaldiçoado vira pó.",
+		["The cursed chest is awake: horde %d/%d is upon you."] = "O baú amaldiçoado despertou: a horda %d/%d está sobre você.",
+		["You cannot open a cursed chest in %s."] = "Você não pode abrir um baú amaldiçoado em %s.",
+		["You already took your share of the cursed chest."] = "Você já pegou a sua parte do baú amaldiçoado.",
+		["You were not there when the curse was lifted."] = "Você não estava lá quando a maldição foi quebrada.",
+		["You are too far from the cursed chest."] = "Você está longe demais do baú amaldiçoado.",
+		["Cursed Chest loot: %s.%s"] = "Tesouro do Baú Amaldiçoado: %s.%s",
 	},
 }

@@ -17,7 +17,7 @@ end
 local STAFF = {
 	["/achievements"] = "achievements.lua", ["/testkit"] = "admin/testkit.lua", ["/areagen"] = "areagen.lua",
 	["/arena"] = "arena.lua", ["/ascendset"] = "ascension_quest.lua", ["/atlas"] = "atlas.lua",
-	["/bg"] = "battleground.lua", ["/blessing"] = "blessings.lua", ["/botreview"] = "botreview.lua",
+	["/bg"] = "battleground.lua", ["/blessing"] = "blessings.lua", ["/botreview"] = "botreview.lua", ["/cursedchest"] = "cursedchest.lua",
 	["/candlemarks"] = "candlemarks.lua", ["/charm"] = "charms.lua", ["/chronicle"] = "chronicle.lua",
 	["/classunlock"] = "class_unlocks.lua", ["/community"] = "community.lua", ["/conquest"] = "conquest.lua",
 	["/cosmetic"] = "cosmetics.lua", ["/creatorcodes"] = "creator_codes.lua", ["/daily"] = "daily.lua",
