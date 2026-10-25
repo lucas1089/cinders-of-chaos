@@ -7,7 +7,7 @@
   "game_npctradewindow"
  ],
  "counts": {
-  "opcode": 59,
+  "opcode": 60,
   "out": 38,
   "passive": 74,
   "place": 13,
@@ -2318,6 +2318,24 @@
    "systems": [
     "waystone_atlas"
    ]
+  },
+  "weather": {
+   "actions": [
+    "hello"
+   ],
+   "client": [
+    "game_chaosweather"
+   ],
+   "dataKeys": [],
+   "files": [
+    "weather.lua"
+   ],
+   "opcode": 114,
+   "out": false,
+   "skip": [],
+   "systems": [
+    "weather"
+   ]
   }
  },
  "systems": {
@@ -4347,6 +4365,19 @@
    "opcodes": [],
    "talkactions": [],
    "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "weather": {
+   "files": [
+    "chaos_constants.lua",
+    "weather.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "weather"
+   ],
+   "talkactions": [
+    "/weather"
+   ]
   },
   "wrapchain": {
    "files": [],
