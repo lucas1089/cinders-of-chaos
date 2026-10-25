@@ -6,8 +6,8 @@ local L = VisualFxLogic
 
 -- the options (client_settings dataset.lua, Options > Graphics "Visual effects"); on by default except the grade,
 -- which changes the biome colours and waits for the owner's look at the first build
-L.OPTIONS = { 'hitFlash', 'screenShake', 'creatureShadow', 'screenGrade' }
-L.DEFAULTS = { hitFlash = true, screenShake = true, creatureShadow = true, screenGrade = false }
+L.OPTIONS = { 'hitFlash', 'screenShake', 'creatureShadow', 'screenGrade', 'spellLight' }
+L.DEFAULTS = { hitFlash = true, screenShake = true, creatureShadow = true, screenGrade = false, spellLight = true }
 
 -- an option value from the settings: a boolean is kept, anything else (nil, junk, an older settings file) is the default
 function L.optionOn(name, value)
@@ -135,4 +135,148 @@ function L.shakeOffset(state, now, rnd)
   local y = pick()
   if x == 0 and y == 0 then x = (rnd() < 0.5) and -mag or mag end
   return x, y, false
+end
+
+-- ---------------------------------------------------------------- spell colour light (O205)
+-- A magic effect that plays on the map lights the tiles around it for a moment, in a colour that matches it, so spells
+-- glow in caves and at night. The engine (base patch 0127, Map::spellLightEffect, called from Tile::addThing for an
+-- effect) keeps the live lights and adds them to the map light view; this file holds the numbers and the rules the
+-- engine mirrors (the tests run the model below). The light view only adds light: on the full-light surface the
+-- ambient is already at its maximum, so the glow does not show there.
+L.LIGHT = {
+  max = 12,         -- lights alive at once; a new effect finds the table full -> no light
+  ms = 320,         -- life of one light
+  attack = 0.15,    -- share of the life spent rising to full
+  radius = 2,       -- tiles, 1..3
+  minRadius = 1,
+  maxRadius = 3,
+  minGap = 90,      -- the same effect on the same tile again inside this many ms is one light
+  minFade = 0.12,   -- under this share of full the light is dropped
+}
+
+-- the light colours, 8-bit (the engine palette: 36 * red + 6 * green + blue, each 0..5)
+local function rgb(r, g, b) return r * 36 + g * 6 + b end
+L.THEME_COLOR = {
+  fire = rgb(5, 2, 0), blood = rgb(5, 0, 0), energy = rgb(3, 4, 5), frost = rgb(1, 3, 5), water = rgb(0, 3, 5),
+  holy = rgb(5, 5, 2), poison = rgb(1, 5, 1), physical = rgb(4, 4, 4), arcane = rgb(4, 1, 5), healing = rgb(2, 5, 2),
+  death = rgb(3, 0, 3), shadow = rgb(2, 0, 4), earth = rgb(3, 2, 0),
+}
+
+-- effect ids by theme (single ids and {first, last} ranges): the stock spell effects and the effects of
+-- server/data/spells/effects_catalog.csv (ids 372-423 are ours), and by name the class, status and pack catalogs
+-- (class_fx, status_fx, pack, pack27, pack29, pack30). Left out on purpose: combat feedback (415-423), damage-over-time
+-- ticks, warning circles, loot beams, buffs, portals, smoke, sound and block effects.
+L.THEME_IDS = {
+  blood = { 1, 14, 167, 223, {388, 392}, {597, 598}, 716, {719, 726}, 730, 760, 831 },
+  water = { 2, 26, 54, 660, 840 },
+  fire = { {5, 7}, 16, 37, 200, 213, 216, 221, 226, 248, {372, 378}, 709, 739, 761, 834, {851, 852} },
+  holy = { 8, 40, 50, 201, {224, 225}, 262, 264, {403, 405}, {619, 621}, 624, 656, 672, 686, {711, 714}, 748, 753, 755, 835 },
+  poison = { 9, 17, 21, 47, {399, 402}, 729, 767, 839, {853, 854} },
+  physical = { 10, 32, 173 },
+  arcane = { 11, 13, 48, 187, 244, 288, 291, 309, 312, {406, 408}, 607, {768, 769}, 771, 775, {777, 778}, 830 },
+  energy = { 12, 38, 41, 49, 204, 217, 219, 246, {384, 387}, 671, 685, 710, 759, 833, 837 },
+  healing = { 15, 185, {411, 412}, 605, {665, 667}, 741, 776 },
+  death = { 18, 39, 158, 203, 218, 220, 222 },
+  earth = { 35, {45, 46}, 51, {182, 183}, 367, 593, 601, {668, 669}, 674, {717, 718}, {765, 766} },
+  frost = { {42, 44}, 53, 202, 205, 215, 359, {379, 383}, 662, 708, 762, 836 },
+  shadow = { {393, 398}, {614, 615}, 617, 657, 659, 727, {731, 738}, {742, 743}, 757, 770, {772, 774}, 779, 832 },
+}
+
+-- effect id -> theme, built once from THEME_IDS
+L.EFFECT_THEME = {}
+for theme, list in pairs(L.THEME_IDS) do
+  for _, e in ipairs(list) do
+    if type(e) == 'table' then
+      for id = e[1], e[2] do L.EFFECT_THEME[id] = theme end
+    else
+      L.EFFECT_THEME[e] = theme
+    end
+  end
+end
+
+-- the light of an effect: 8-bit colour and radius in tiles, or nil (unknown effect -> no light)
+function L.lightFor(effectId)
+  local theme = L.EFFECT_THEME[tonumber(effectId) or -1]
+  if not theme then return nil end
+  return L.THEME_COLOR[theme], L.LIGHT.radius
+end
+
+-- strength 0..1 at an age in ms: a short rise, then a smooth fall to nothing; 0 outside the life
+function L.fade(age)
+  local A = L.LIGHT
+  age = tonumber(age) or 0
+  if age < 0 or age >= A.ms then return 0 end
+  local t = age / A.ms
+  if t < A.attack then return t / A.attack end
+  local u = (t - A.attack) / (1 - A.attack)
+  return (1 - u) * (1 - u)
+end
+
+-- an 8-bit colour with each of its three levels scaled by f (0..1, rounded)
+function L.dim(color, f)
+  local r, g, b = math.floor(color / 36) % 6, math.floor(color / 6) % 6, color % 6
+  local function s(v) return math.floor(v * f + 0.5) end
+  return rgb(s(r), s(g), s(b))
+end
+
+-- the radius (tiles) at strength f: shrinks with the light, never under minRadius while it shows
+function L.radiusAt(radius, f)
+  local A = L.LIGHT
+  local r = math.floor(radius * f + 0.5)
+  if r < A.minRadius then r = A.minRadius end
+  if r > A.maxRadius then r = A.maxRadius end
+  return r
+end
+
+function L.newLights()
+  return { list = {}, last = {} }
+end
+
+local function prune(state, now)
+  local keep = {}
+  for _, l in ipairs(state.list) do
+    if now - l.at < L.LIGHT.ms then keep[#keep + 1] = l end
+  end
+  state.list = keep
+end
+
+-- An effect id plays at a position {x, y, z}. Returns the new light {x, y, z, color, radius, at} or nil: option off,
+-- unknown effect, the same effect on the same tile just now, or the table full.
+function L.lightAdd(state, now, pos, effectId, enabled)
+  if not enabled or not pos then return nil end
+  local color, radius = L.lightFor(effectId)
+  if not color then return nil end
+  local key = pos.x .. ':' .. pos.y .. ':' .. pos.z .. ':' .. effectId
+  local last = state.last[key]
+  if last and now - last < L.LIGHT.minGap then return nil end
+  prune(state, now)
+  if #state.list >= L.LIGHT.max then return nil end
+  state.last[key] = now
+  -- the memory of old keys does not grow for ever
+  local n = 0
+  for _ in pairs(state.last) do n = n + 1 end
+  if n > 256 then
+    for k, at in pairs(state.last) do
+      if now - at > L.LIGHT.ms then state.last[k] = nil end
+    end
+  end
+  local light = { x = pos.x, y = pos.y, z = pos.z, color = color, radius = radius, at = now }
+  state.list[#state.list + 1] = light
+  return light
+end
+
+-- the lights to draw at this moment: { color, radius, x, y, z } with the fade applied
+function L.lightsNow(state, now)
+  prune(state, now)
+  local out = {}
+  for _, l in ipairs(state.list) do
+    local f = L.fade(now - l.at)
+    if f >= L.LIGHT.minFade then
+      local color = L.dim(l.color, f)
+      if color > 0 then
+        out[#out + 1] = { x = l.x, y = l.y, z = l.z, color = color, radius = L.radiusAt(l.radius, f) }
+      end
+    end
+  end
+  return out
 end

@@ -8,6 +8,9 @@
 --   soft shadow    Creature.setSoftShadow (base patch 0126) draws the ellipse under creatures.
 --   grade          the map shader chaos_map_grade (vignette, a light grade) set on the game map panel; costs one extra texture
 --                  read per pixel of the map picture.
+--   spell light    a magic effect that plays lights the tiles around it for ~320 ms in a colour that matches it (O205, base patch
+--                  0127): this file sends the colour table and the limits to g_map.setSpellLight*, the engine keeps at most 12
+--                  live lights and adds them to the map light view (nothing shows in full light).
 -- A client without base patch 0126 has none of the C++ functions: the flash, shake and shadow do nothing, the grade (shader
 -- only) still works. Every engine call is guarded.
 local L = VisualFxLogic
@@ -87,6 +90,24 @@ local function onImpactText(thing, text, mode, typeId, value, percent, creatureI
   return false
 end
 
+-- ---------------------------------------------------------------- spell colour light
+local lightTableSent = false
+
+local function applySpellLight()
+  if not (g_map and g_map.setSpellLightConfig) then return end
+  local on = optionValue('spellLight')
+  if on and not lightTableSent and g_map.setSpellLightColor then
+    local A = L.LIGHT
+    if g_map.clearSpellLightColors then g_map.clearSpellLightColors() end
+    for id, theme in pairs(L.EFFECT_THEME) do
+      pcall(g_map.setSpellLightColor, id, L.THEME_COLOR[theme], A.radius)
+    end
+    lightTableSent = true
+  end
+  local A = L.LIGHT
+  pcall(g_map.setSpellLightConfig, on, A.max, A.ms, A.attack, A.minGap, A.minFade)
+end
+
 -- ---------------------------------------------------------------- shadow and grade
 local function applyShadow()
   if Creature and Creature.setSoftShadow then pcall(Creature.setSoftShadow, optionValue('creatureShadow')) end
@@ -118,6 +139,8 @@ function onOption(name, value)
     applyShadow()
   elseif name == 'screenGrade' then
     applyGrade()
+  elseif name == 'spellLight' then
+    applySpellLight()
   elseif name == 'screenShake' and value == false then
     stopShake()
   end
@@ -126,6 +149,7 @@ end
 function reapply()
   applyShadow()
   applyGrade()
+  applySpellLight()
 end
 
 -- ---------------------------------------------------------------- lifecycle
@@ -163,6 +187,7 @@ function terminate()
   if handlers.map then disconnect(g_map, handlers.map) end
   stopShake()
   if Creature and Creature.setSoftShadow then pcall(Creature.setSoftShadow, false) end
+  if g_map and g_map.setSpellLightConfig then pcall(g_map.setSpellLightConfig, false, 0, 0, 0, 0, 0) end
   local panel = mapPanel()
   if panel and panel.getShader and panel:getShader() == GRADE then panel:setShader('') end
   handlers = {}
