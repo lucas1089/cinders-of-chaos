@@ -235,6 +235,11 @@ local function applySmoothBars()
   if Creature and Creature.setSmoothBars then pcall(Creature.setSmoothBars, optionValue('smoothBars')) end
 end
 
+-- ---------------------------------------------------------------- light flicker (O228)
+local function applyLightFlicker()
+  if g_map and g_map.setLightFlicker then pcall(g_map.setLightFlicker, optionValue('lightFlicker') and true or false) end
+end
+
 -- ---------------------------------------------------------------- target, follow and hover outline (O216)
 local hl = { applied = {}, target = nil, follow = nil, hover = nil, panel = nil, mouseOn = false, gate = {}, sweep = nil }
 
@@ -518,6 +523,8 @@ function onOption(name, value)
     applyHitTint()
   elseif name == 'smoothBars' then
     applySmoothBars()
+  elseif name == 'lightFlicker' then
+    applyLightFlicker()
   elseif name == 'screenShake' and value == false then
     stopShake()
   end
@@ -538,6 +545,7 @@ function reapply()
   applyHitTint()
   applySmoothBars()
   applyMissileTrails()
+  applyLightFlicker()
 end
 
 -- ---------------------------------------------------------------- lifecycle
@@ -588,6 +596,7 @@ function terminate()
   unhookMouse()
   if Creature and Creature.setSoftShadow then pcall(Creature.setSoftShadow, false) end
   if g_map and g_map.setSpellLightConfig then pcall(g_map.setSpellLightConfig, false, 0, 0, 0, 0, 0) end
+  if g_map and g_map.setLightFlicker then pcall(g_map.setLightFlicker, false) end
   if Item and Item.setLiquidShimmer then pcall(Item.setLiquidShimmer, false) end
   if g_app and g_app.setMapBloom then pcall(g_app.setMapBloom, false, 0) end
   if AnimatedText and AnimatedText.setSoftMotion then pcall(AnimatedText.setSoftMotion, false) end

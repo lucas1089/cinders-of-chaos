@@ -9,7 +9,7 @@ local function eq(a, b, what)
 end
 
 -- options: the grade is off by default (it shifts the biome colours), the rest on; a boolean wins, junk is the default
-local wantDefault = { hitFlash = true, screenShake = true, creatureShadow = true, screenGrade = false, spellLight = true, liquidShimmer = true, weather = true, bloom = false, numberMotion = true, targetOutline = true, hoverOutline = false, sceneFade = true, deathFade = true, ambientParticles = true, smoothBars = true, missileTrails = true }
+local wantDefault = { hitFlash = true, screenShake = true, creatureShadow = true, screenGrade = false, spellLight = true, liquidShimmer = true, weather = true, bloom = false, numberMotion = true, targetOutline = true, hoverOutline = false, sceneFade = true, deathFade = true, ambientParticles = true, smoothBars = true, missileTrails = true, lightFlicker = true }
 
 for _, name in ipairs(L.OPTIONS) do
   local d = wantDefault[name]
@@ -19,7 +19,7 @@ for _, name in ipairs(L.OPTIONS) do
   eq(L.optionOn(name, 'no'), d, name .. ' junk -> default')
   eq(L.optionOn(name, 0), d, name .. ' number -> default')
 end
-eq(#L.OPTIONS, 16, 'sixteen options')
+eq(#L.OPTIONS, 17, 'seventeen options')
 eq(L.optionOn('nothing', nil), false, 'an unknown option is off')
 eq(L.DEFAULTS.numberMotion, true, 'soft damage numbers are on by default (purely visual, a few float operations per text)')
 do
@@ -57,6 +57,21 @@ do
   eq(src:find("name == 'smoothBars'", 1, true) ~= nil, true, 'onOption handles smoothBars')
   eq(src:find("optionValue('smoothBars')", 1, true) ~= nil, true, 'the option value is read')
   eq(src:find('applySmoothBars()', 1, true) ~= nil, true, 'reapply sets it at game start')
+end
+
+do
+  -- the light flicker (O228, base patch 0145): on by default, the engine switch g_map.setLightFlicker is called on a change,
+  -- at game start (reapply) and off at terminate
+  eq(L.DEFAULTS.lightFlicker, true, 'the light flicker is on by default')
+  eq(L.optionOn('lightFlicker', nil), true, 'default when unset')
+  eq(L.optionOn('lightFlicker', false), false, 'off is kept')
+  local f = io.open(dir .. 'visualfx.lua', 'r')
+  local src = f and f:read('*a') or ''
+  if f then f:close() end
+  eq(src:find("name == 'lightFlicker'", 1, true) ~= nil, true, 'onOption handles lightFlicker')
+  eq(src:find("optionValue('lightFlicker')", 1, true) ~= nil, true, 'the option value is read')
+  eq(src:find('applyLightFlicker()', 1, true) ~= nil, true, 'reapply sets it at game start')
+  eq(src:find('g_map.setLightFlicker, false', 1, true) ~= nil, true, 'terminate switches it off')
 end
 
 do

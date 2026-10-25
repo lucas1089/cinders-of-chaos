@@ -7,8 +7,8 @@ local L = VisualFxLogic
 -- the options (client_settings dataset.lua, Options > Graphics "Visual effects"); on by default except the grade,
 -- which changes the biome colours and waits for the owner's look at the first build, and the soft glow (bloom, O210), which
 -- costs fill rate and waits for the same look
-L.OPTIONS = { 'hitFlash', 'screenShake', 'creatureShadow', 'screenGrade', 'spellLight', 'liquidShimmer', 'weather', 'bloom', 'numberMotion', 'targetOutline', 'hoverOutline', 'sceneFade', 'deathFade', 'ambientParticles', 'smoothBars', 'missileTrails' }
-L.DEFAULTS = { hitFlash = true, screenShake = true, creatureShadow = true, screenGrade = false, spellLight = true, liquidShimmer = true, weather = true, bloom = false, numberMotion = true, targetOutline = true, hoverOutline = false, sceneFade = true, deathFade = true, ambientParticles = true, smoothBars = true, missileTrails = true }
+L.OPTIONS = { 'hitFlash', 'screenShake', 'creatureShadow', 'screenGrade', 'spellLight', 'liquidShimmer', 'weather', 'bloom', 'numberMotion', 'targetOutline', 'hoverOutline', 'sceneFade', 'deathFade', 'ambientParticles', 'smoothBars', 'missileTrails', 'lightFlicker' }
+L.DEFAULTS = { hitFlash = true, screenShake = true, creatureShadow = true, screenGrade = false, spellLight = true, liquidShimmer = true, weather = true, bloom = false, numberMotion = true, targetOutline = true, hoverOutline = false, sceneFade = true, deathFade = true, ambientParticles = true, smoothBars = true, missileTrails = true, lightFlicker = true }
 
 -- ---------------------------------------------------------------- missile arcs (O230, base patch 0147)
 -- Distance effect ids (missiles) that fly in a slight arc: the thrown and shot ones, which are physical. The ids are the
