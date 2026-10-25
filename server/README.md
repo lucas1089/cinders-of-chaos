@@ -16525,6 +16525,20 @@ effect packs of docs/CREDITS.md into the game. Effects only: no damage, area, ti
   (no level_up use). Client: `levelwingsmath_test.lua`, `lootbeams_test.lua` (ids against the ids file).
   Not run on a live server or in a client.
 
+## Projectile pack, native 32 px (pair 41) (`data/lib/chaos_pack41_fx_ids.lua`, loaded by `ChaosPack36Fx.live()`)
+Pair 41 (client/MANIFEST.md "Projectile pack, native 32 px (pair 41)") redraws 50 missiles of pair 36 from the pack's
+own 32 px renders instead of the halved 64 px ones, and appends three. No spell, monster or item is wired to it.
+- **Redrawn in place** (no server change): stock and procedural ids 4 5 11 12 13 15 25 28 29 30 31 32 33 36 37 38 39 41 56 57 60 84 85
+  86 104 116-125 and the pair 36 missiles 189-203. The ids, the send offsets (`dx`, `dy` of
+  `chaos_pack36_fx_ids.lua` for 189-203, 0, 0 for the stock ones) and the 3 x 3 direction layout are unchanged.
+- **Appended**: `ChaosVfxMissile.proj_arrow_fire` 251, `proj_arrow_frost` 252, `proj_piercing_arrow_holy` 253, each
+  at send offset 1, 1 (`VfxShoot(from, to, name)` or `ChaosSpell.vshoot` applies it). For the bow classes: a fire
+  arrow, a frost arrow and a holy piercing arrow (the Ranger line's Dawnpiercer and Sunspear are holy). Ids 254 and 255
+  stay free: 254 is `CONST_ANI_WEAPONTYPE` ("the weapon's missile" in a combat's distance effect, never sent to the
+  client), and `check_pair.py` warns above 254.
+- Test: `tests/pack41_fx_test.lua` (the ids file against `art_import/pack41_missiles.csv`, ids 251-253, no script sends
+  the new names yet).
+
 ## Owner outfits (pair 37) (`data/lib/chaos_pack37_looks.lua`, switch `ChaosPack37.PAIR37`, on)
 Moon outfits and novelty costumes of client pair 37 (client/MANIFEST.md "Owner outfits (pair 37)"). Owner, 2026-10-22:
 "Eu não coloquei uns outfits bem diferente no drive? Tipo de pizza e coisas assim?". The Drive held no pizza outfit;
