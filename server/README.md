@@ -22982,3 +22982,52 @@ Measured with `luajit tools/hotpath_bench.lua` and `lua5.3 tools/hotpath_bench.l
 | gems hit, two lookups | 3.1 / 2.4 | 133 / 62 |
 
 VPS: no action. A normal update brings it.
+
+## Build flags and allocator (O201) (engine `src-patches/0068-build-flags-mimalloc.patch`, `src/chaos_build.cmake`, `tools/linux/check_engine_hardening.sh`)
+
+Owner decision: **the hardening flags ship; the allocator and `-O2` do not.** How the Linux engine is built: the only
+Linux engine build in the repository is the `engine-linux` job of `.github/workflows/windows-package.yml` (Ubuntu 22.04,
+g++ 11, `cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DSKIP_GIT=ON`, `-Werror` stripped); `docs/LAUNCH.md` section 1 says
+the same for a by-hand build. The base `CMakeLists.txt` adds `-Wall -Wextra -Wnon-virtual-dtor -pedantic -Werror -pipe
+-fvisibility=hidden -fno-strict-aliasing` and turns link-time optimisation on (`check_ipo_supported`).
+
+| | before | now |
+|---|---|---|
+| build type, optimisation | Release (CMake's `-O3 -DNDEBUG`) | unchanged (`CHAOS_OPT_LEVEL` empty; `-DCHAOS_OPT_LEVEL=-O2` would replace it, never measured better) |
+| LTO / IPO | on (base `CMakeLists.txt`) | on, unchanged |
+| `-march` | none | none (the engine is built on one machine, run on another) |
+| stack protector, FORTIFY_SOURCE, PIE, RELRO, BIND_NOW | only what Ubuntu's g++ turns on by itself (not in the repo, not checked) | set by the build, same on any toolchain: `-fstack-protector-strong -D_FORTIFY_SOURCE=2 -fstack-clash-protection -fcf-protection=full -fPIE`, link `-pie -Wl,-z,relro,-z,now,-z,noexecstack`; checked in CI |
+| allocator | glibc malloc | glibc malloc (mimalloc is opt-in, off) |
+
+Patch 0068 adds `src/chaos_build.cmake`, included first by `src/CMakeLists.txt` (so the patch touches `src/` only, like
+the others, and the base `CMakeLists.txt` stays as it is). It does nothing for Windows, macOS, Debug, or a build with no
+build type (the sanitizer build passes `-DCMAKE_BUILD_TYPE=None -DCHAOS_MIMALLOC=OFF`). Options: `CHAOS_HARDEN` (ON;
+each flag is added only when the compiler accepts it), `CHAOS_OPT_LEVEL` (empty), `CHAOS_MIMALLOC` (OFF),
+`CHAOS_MIMALLOC_DIR` (prefix of the secure mimalloc, used with `CHAOS_MIMALLOC=ON`).
+
+**Check.** `tools/linux/check_engine_hardening.sh build/tfs` reads the binary with `readelf`: PIE, RELRO, BIND_NOW, stack
+protector, FORTIFY, non-executable stack. The `engine-linux` job runs it after the build and on a cache hit (cache key
+`engine-linux-bin-v4`). If a mimalloc is linked, the script also starts the engine once in an empty folder with
+`MIMALLOC_VERBOSE=1` and requires a secure level, so a plain mimalloc fails. Result of a full build with the defaults
+(g++ 13.3, `-Werror` kept, 0 warnings, 4,348,792 bytes, LTO): all six properties ok. On this Ubuntu toolchain the
+unflagged build already had them by default; the flags make it independent of the toolchain.
+
+**Allocator, measured and not shipped.** mimalloc 2.1.7 was linked and tried (the engine starts, LuaJIT GC64 works
+through it). Micro benchmark of pure allocation churn (4 threads, `make_shared` objects and strings, the worst case, 5
+runs each, 4 cores, the library preloaded):
+
+| allocator | seconds per run |
+|---|---|
+| glibc malloc | 0.55 to 0.75 |
+| mimalloc, plain (distro package) | 0.34 to 0.52 |
+| mimalloc, secure (`MI_SECURE`: guard pages, randomised allocation, encoded free lists, double-free detection) | 0.90 to 1.07 |
+
+The plain build is faster but has no heap-corruption checks glibc has, which the owner's no-security-trade-off rule
+excludes; the secure build is about 40% slower than glibc on this loop. So neither ships and nothing about the
+allocator changed. **Opt in, to experiment:** `bash tools/linux/build_mimalloc.sh /opt/chaos/mimalloc` (builds the
+pinned upstream release v2.1.7, checking its commit and source sha256, into that prefix as `libmimalloc-secure`), then
+`-DCHAOS_MIMALLOC=ON -DCHAOS_MIMALLOC_DIR=/opt/chaos/mimalloc` on the CMake call; the library is first in the link line
+and the engine finds it through an rpath (bundle `lib/` with `tools/linux/bundle_libs.sh` for a package). Only the
+secure build is accepted. Not measured on a live server.
+
+VPS: no action. A normal update brings it.
