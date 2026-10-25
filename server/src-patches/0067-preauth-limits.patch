@@ -1,0 +1,440 @@
+# Pre-auth connection limits (O200; server/README.md "Pre-auth connection limits (O200)").
+# The stock engine accepts any number of connections and keeps each one for CONNECTION_READ_TIMEOUT (30 s) before it has
+# said a word; its only throttle (Ban::acceptConnection) stops 6 connections of one IP within 500 ms. A few hundred idle
+# sockets from one host held the file descriptors and the io threads' attention. Now (all keys in config.lua, 0 = off):
+#   * src/chaospreauth.h (new, header only, no engine types; server/tools/chaospreauth_test.cpp tests it): a table of the
+#     connections that have not logged in yet. Per IP at most preAuthMaxPerIp (5), in all preAuthMaxTotal (200); an IP
+#     opening more than preAuthRateMax (10) connections within preAuthRateWindow (10) seconds is refused for
+#     preAuthCooldown (30) seconds. Refused connections are closed at once, before any packet is read. The table is
+#     bounded (100,000 IPs; expired ones are swept) and behind one mutex; one console line per kind per 10 s:
+#     [Pre-auth limit] ... : ip (N more refused since the last line).
+#   * ServicePort::onConnectionReady counts the connection (before the old throttle, so a flood never reaches the ban
+#     list). Exempt, not counted: 127.0.0.0/8 (preAuthExemptLoopback = true: the admin tools, the watchdog, the health
+#     check) and the trusted gateways of patch 0025 (their clients are counted by their own address, from the PROXY
+#     header). The login (7171), game (7172) and status ports all count: one connection of any of them is one.
+#   * Connection: startPreAuth arms a deadline timer (preAuthDeadline, 15 s): a connection that has not logged in by then
+#     is closed. endPreAuth gives the count back and cancels the timer; it runs on every close path (close(), also a
+#     repeated one, and the destructor) and when a game login went through (ProtocolGame::login / ::connect), under the
+#     connection's lock and once per connection (a flag), so nothing leaks and nothing is given back twice. A login or
+#     status connection ends by closing, a game connection by its login.
+#   * not covered: the live cast port (chaoscastserver.cpp has its own acceptor and limits).
+# Apply in the server source root after 0001-0066: patch -p1 < 0067-preauth-limits.patch, then rebuild.
+new file mode 100644
+--- /dev/null
++++ b/src/chaospreauth.h
+@@ -0,0 +1,183 @@
++// Chaos (patch 0067): limits on connections that have not logged in yet (server/README.md "Pre-auth connection limits").
++// Header only and free of engine types, so server/tools/chaospreauth_test.cpp builds it alone.
++// An IP address is the engine's own uint32_t (network byte order); time is whole seconds.
++
++#ifndef FS_CHAOSPREAUTH_H_CHAOS
++#define FS_CHAOSPREAUTH_H_CHAOS
++
++#include <cstddef>
++#include <cstdint>
++#include <mutex>
++#include <unordered_map>
++
++namespace PreAuth {
++
++// 0 in maxPerIp / maxTotal / rateMax turns that limit off; deadlineSec 0 turns the login deadline off
++struct Settings
++{
++	uint32_t maxPerIp = 5;          // connections of one IP that have not finished their login
++	uint32_t maxTotal = 200;        // the same over all IPs
++	uint32_t deadlineSec = 15;      // a connection still not logged in after this long is closed
++	uint32_t rateMax = 10;          // new connections of one IP within rateWindowSec
++	uint32_t rateWindowSec = 10;
++	uint32_t cooldownSec = 30;      // an IP over rateMax is refused for this long
++	bool exemptLoopback = true;     // 127.0.0.0/8: the admin tools, the watchdog and the health check
++};
++
++enum class Verdict
++{
++	Admitted, // counted: the caller must call release() exactly once when the connection closes or logs in
++	Exempt,   // not counted: nothing to release
++	PerIp,
++	Total,
++	Rate,
++	Full,     // the table of IPs is full of live entries (a flood from 100,000 addresses): refused
++};
++
++inline bool refused(Verdict v) { return v != Verdict::Admitted && v != Verdict::Exempt; }
++
++inline bool isLoopback(uint32_t ip)
++{
++	return reinterpret_cast<const uint8_t*>(&ip)[0] == 127; // network byte order: the first byte is in memory first
++}
++
++class Limiter
++{
++	public:
++		static constexpr size_t MAX_ENTRIES = 100000; // IPs kept; expired ones are swept when it is reached
++		static constexpr int64_t LOG_EVERY = 10;      // seconds between two log lines of one kind
++
++		Verdict admit(uint32_t ip, int64_t now, const Settings& s) {
++			if (s.exemptLoopback && isLoopback(ip)) {
++				return Verdict::Exempt;
++			}
++			std::lock_guard<std::mutex> guard(lock);
++			if (s.maxPerIp == 0 && s.maxTotal == 0 && s.rateMax == 0) {
++				return Verdict::Exempt;
++			}
++			if (ips.size() >= MAX_ENTRIES && ips.find(ip) == ips.end()) {
++				sweep(now, s);
++				if (ips.size() >= MAX_ENTRIES) {
++					return Verdict::Full;
++				}
++			}
++			Entry& e = ips[ip];
++			if (s.rateMax != 0) {
++				if (e.blockedUntil > now) {
++					return Verdict::Rate;
++				}
++				if (now - e.windowStart >= static_cast<int64_t>(s.rateWindowSec)) {
++					e.windowStart = now;
++					e.count = 0;
++				}
++				if (++e.count > s.rateMax) {
++					e.blockedUntil = now + s.cooldownSec;
++					e.count = 0;
++					e.windowStart = e.blockedUntil;
++					return Verdict::Rate;
++				}
++			}
++			if (s.maxPerIp != 0 && e.active >= s.maxPerIp) {
++				return Verdict::PerIp;
++			}
++			if (s.maxTotal != 0 && totalActive >= s.maxTotal) {
++				return Verdict::Total;
++			}
++			++e.active;
++			++totalActive;
++			return Verdict::Admitted;
++		}
++
++		// an admitted connection closed or logged in (the caller makes sure it is called once per Admitted)
++		void release(uint32_t ip) {
++			std::lock_guard<std::mutex> guard(lock);
++			auto it = ips.find(ip);
++			if (it != ips.end() && it->second.active > 0) {
++				--it->second.active;
++			}
++			if (totalActive > 0) {
++				--totalActive;
++			}
++		}
++
++		// true when a refusal of this kind may be logged now; suppressed gets the refusals left out since the last line
++		bool shouldLog(Verdict v, int64_t now, uint32_t& suppressed) {
++			std::lock_guard<std::mutex> guard(lock);
++			Log& l = logs[static_cast<size_t>(v)];
++			if (!l.any || now - l.last >= LOG_EVERY) {
++				suppressed = l.suppressed;
++				l.suppressed = 0;
++				l.last = now;
++				l.any = true;
++				return true;
++			}
++			++l.suppressed;
++			return false;
++		}
++
++		size_t total() {
++			std::lock_guard<std::mutex> guard(lock);
++			return totalActive;
++		}
++		size_t active(uint32_t ip) {
++			std::lock_guard<std::mutex> guard(lock);
++			auto it = ips.find(ip);
++			return it == ips.end() ? 0 : it->second.active;
++		}
++		size_t entries() {
++			std::lock_guard<std::mutex> guard(lock);
++			return ips.size();
++		}
++
++	private:
++		struct Entry
++		{
++			int64_t windowStart = 0;
++			int64_t blockedUntil = 0;
++			uint32_t count = 0;
++			uint32_t active = 0;
++		};
++		struct Log
++		{
++			int64_t last = 0;
++			uint32_t suppressed = 0;
++			bool any = false;
++		};
++
++		void sweep(int64_t now, const Settings& s) {
++			for (auto it = ips.begin(); it != ips.end();) {
++				const Entry& e = it->second;
++				if (e.active == 0 && e.blockedUntil <= now && now - e.windowStart >= static_cast<int64_t>(s.rateWindowSec)) {
++					it = ips.erase(it);
++				} else {
++					++it;
++				}
++			}
++		}
++
++		std::mutex lock;
++		std::unordered_map<uint32_t, Entry> ips;
++		size_t totalActive = 0;
++		Log logs[8];
++};
++
++inline Limiter& global()
++{
++	static Limiter limiter;
++	return limiter;
++}
++
++inline const char* name(Verdict v)
++{
++	switch (v) {
++		case Verdict::PerIp: return "too many unfinished logins from one IP";
++		case Verdict::Total: return "too many unfinished logins in all";
++		case Verdict::Rate: return "too many new connections from one IP, refused for a while";
++		case Verdict::Full: return "table of IPs full";
++		default: return "";
++	}
++}
++
++} // namespace PreAuth
++
++#endif
+--- a/src/configmanager.cpp
++++ b/src/configmanager.cpp
+@@ -344,6 +344,15 @@ bool ConfigManager::load()
+ 	integer[LOGIN_FAIL_MAX_PER_ACCOUNT] = getGlobalNumber(L, "loginFailMaxPerAccount", 50);
+ 	integer[LOGIN_FAIL_WINDOW] = getGlobalNumber(L, "loginFailWindow", 600);
+ 	integer[LOGIN_FAIL_BLOCK] = getGlobalNumber(L, "loginFailBlock", 900);
++	// Chaos (patch 0067): limits on connections that have not logged in yet (src/chaospreauth.h, server/README.md
++	// "Pre-auth connection limits"). 0 turns a limit off (preAuthDeadline 0: no deadline).
++	integer[PRE_AUTH_MAX_PER_IP] = getGlobalNumber(L, "preAuthMaxPerIp", 5);
++	integer[PRE_AUTH_MAX_TOTAL] = getGlobalNumber(L, "preAuthMaxTotal", 200);
++	integer[PRE_AUTH_DEADLINE] = getGlobalNumber(L, "preAuthDeadline", 15);
++	integer[PRE_AUTH_RATE_MAX] = getGlobalNumber(L, "preAuthRateMax", 10);
++	integer[PRE_AUTH_RATE_WINDOW] = getGlobalNumber(L, "preAuthRateWindow", 10);
++	integer[PRE_AUTH_COOLDOWN] = getGlobalNumber(L, "preAuthCooldown", 30);
++	boolean[PRE_AUTH_EXEMPT_LOOPBACK] = getGlobalBoolean(L, "preAuthExemptLoopback", true);
+ 	boolean[CLIENT_GUARD_ALLOW_DEV_KEY] = getGlobalBoolean(L, "clientGuardAllowDevKey", false);
+ 	// Chaos (patch 0025): the gateways in front of the server (src/proxyprotocol.h, server/README.md "Gateways and the PROXY
+ 	// protocol"). proxyProtocolTrusted: their addresses (a.b.c.d or a.b.c.d/nn, comma separated); a connection from one
+--- a/src/configmanager.h
++++ b/src/configmanager.h
+@@ -57,6 +57,7 @@ class ConfigManager
+ 			PLAYER_CONSOLE_LOGS,
+ 			ARMOR_PERCENT, // Chaos (patch 0016): percent armour for players
+ 			CLIENT_GUARD_ALLOW_DEV_KEY, // Chaos (patch 0021): client guard
++			PRE_AUTH_EXEMPT_LOOPBACK, // Chaos (patch 0067): pre-auth connection limits
+ 			PROXY_PROTOCOL_REQUIRED, // Chaos (patch 0025): PROXY protocol from the gateways
+ 			LOGIN_PREFETCH, // Chaos (patch 0031): login reads on the login worker
+ 			SPAWN_NEAR_PLAYERS, // Chaos (patch 0041): monsters respawn while a player sees the spot
+@@ -158,6 +159,12 @@ class ConfigManager
+ 			LOGIN_FAIL_MAX_PER_ACCOUNT,
+ 			LOGIN_FAIL_WINDOW,
+ 			LOGIN_FAIL_BLOCK,
++			PRE_AUTH_MAX_PER_IP, // Chaos (patch 0067): pre-auth connection limits
++			PRE_AUTH_MAX_TOTAL,
++			PRE_AUTH_DEADLINE,
++			PRE_AUTH_RATE_MAX,
++			PRE_AUTH_RATE_WINDOW,
++			PRE_AUTH_COOLDOWN,
+ 			SLOW_TASK_LOG_MS, // Chaos (patch 0027): slow task log
+ 			SPAWN_MIN_PLAYER_DISTANCE, // Chaos (patch 0041): no respawn this close to a player
+ 			CAST_PORT, // Chaos (patch 0064): the live cast for the admin app
+--- a/src/connection.cpp
++++ b/src/connection.cpp
+@@ -4,6 +4,7 @@
+ #include "otpch.h"
+ 
+ #include "configmanager.h"
++#include "chaospreauth.h"
+ #include "connection.h"
+ #include "outputmessage.h"
+ #include "protocol.h"
+@@ -52,6 +53,7 @@ void Connection::close(bool force)
+ 	ConnectionManager::getInstance().releaseConnection(shared_from_this());
+ 
+ 	std::lock_guard<std::recursive_mutex> lockClass(connectionLock);
++	endPreAuth(); // Chaos (patch 0067): every close path gives the pre-auth count back, also a repeated close
+ 	if (closed) {
+ 		return;
+ 	}
+@@ -75,6 +77,7 @@ void Connection::closeSocket()
+ 		try {
+ 			readTimer.cancel();
+ 			writeTimer.cancel();
++			preAuthTimer.cancel();
+ 			boost::system::error_code error;
+ 			socket.shutdown(boost::asio::ip::tcp::socket::shutdown_both, error);
+ 			socket.close(error);
+@@ -86,9 +89,43 @@ void Connection::closeSocket()
+ 
+ Connection::~Connection()
+ {
++	endPreAuth(); // Chaos (patch 0067): a connection that never went through close() still gives its count back
+ 	closeSocket();
+ }
+ 
++// Chaos (patch 0067): pre-auth connection limits
++void Connection::startPreAuth(uint32_t ip, uint32_t deadlineSec)
++{
++	std::lock_guard<std::recursive_mutex> lockClass(connectionLock);
++	if (preAuthHeld) {
++		return;
++	}
++	preAuthHeld = true;
++	preAuthIP = ip;
++	if (deadlineSec == 0) {
++		return;
++	}
++	try {
++		preAuthTimer.expires_from_now(std::chrono::seconds(deadlineSec));
++		preAuthTimer.async_wait(std::bind(&Connection::handleTimeout, std::weak_ptr<Connection>(shared_from_this()), std::placeholders::_1));
++	} catch (boost::system::system_error& e) {
++		std::cout << "[Network error - Connection::startPreAuth] " << e.what() << std::endl;
++		close(FORCE_CLOSE);
++	}
++}
++
++void Connection::endPreAuth()
++{
++	std::lock_guard<std::recursive_mutex> lockClass(connectionLock);
++	if (!preAuthHeld) {
++		return;
++	}
++	preAuthHeld = false;
++	boost::system::error_code ignored;
++	preAuthTimer.cancel(ignored);
++	PreAuth::global().release(preAuthIP);
++}
++
+ void Connection::accept(Protocol_ptr protocol)
+ {
+ 	this->protocol = protocol;
+--- a/src/connection.h
++++ b/src/connection.h
+@@ -56,6 +56,7 @@ class Connection : public std::enable_shared_from_this<Connection>
+ 		ConstServicePort_ptr service_port) :
+ 			readTimer(io_service),
+ 			writeTimer(io_service),
++			preAuthTimer(io_service),
+ 			service_port(std::move(service_port)),
+ 			socket(io_service),
+ 			timeConnected(time(nullptr)) {}
+@@ -76,6 +77,12 @@ class Connection : public std::enable_shared_from_this<Connection>
+ 		// starts the protocol (ServicePort::onConnectionReady)
+ 		void readProxyHeader();
+ 
++		// Chaos (patch 0067): the connection counts as not logged in (src/chaospreauth.h) from startPreAuth until it
++		// closes or endPreAuth (a game login that went through). Both are safe to call from any thread, endPreAuth
++		// any number of times: the count of the IP is given back exactly once.
++		void startPreAuth(uint32_t ip, uint32_t deadlineSec);
++		void endPreAuth();
++
+ 	private:
+ 		void parseHeader(const boost::system::error_code& error);
+ 		void parsePacket(const boost::system::error_code& error);
+@@ -97,6 +104,7 @@ class Connection : public std::enable_shared_from_this<Connection>
+ 
+ 		boost::asio::steady_timer readTimer;
+ 		boost::asio::steady_timer writeTimer;
++		boost::asio::steady_timer preAuthTimer; // Chaos (patch 0067): the login deadline
+ 
+ 		std::recursive_mutex connectionLock;
+ 
+@@ -113,6 +121,8 @@ class Connection : public std::enable_shared_from_this<Connection>
+ 		bool closed = false;
+ 		bool receivedFirst = false;
+ 		uint32_t proxiedIP = 0; // Chaos (patch 0025): network byte order, 0 = none
++		uint32_t preAuthIP = 0; // Chaos (patch 0067): the IP counted in PreAuth::global(), while preAuthHeld
++		bool preAuthHeld = false;
+ };
+ 
+ #endif
+--- a/src/protocolgame.cpp
++++ b/src/protocolgame.cpp
+@@ -402,6 +402,9 @@ void ProtocolGame::login(const std::string& name, uint32_t accountId, OperatingS
+ 		player->lastIP = player->getIP();
+ 		player->lastLoginSaved = std::max<time_t>(time(nullptr), player->lastLoginSaved + 1);
+ 		acceptPackets = true;
++		if (auto loginConnection = getConnection()) {
++			loginConnection->endPreAuth(); // Chaos (patch 0067): logged in, no longer a pre-auth connection
++		}
+ 	} else {
+ 		if (eventConnect != 0 || !g_config.getBoolean(ConfigManager::REPLACE_KICK_ON_LOGIN)) {
+ 			//Already trying to connect
+@@ -460,6 +463,9 @@ void ProtocolGame::connect(uint32_t playerId, OperatingSystem_t operatingSystem)
+ 	player->lastLoginSaved = std::max<time_t>(time(nullptr), player->lastLoginSaved + 1);
+ 	player->resetIdleTime();
+ 	acceptPackets = true;
++	if (auto loginConnection = getConnection()) {
++		loginConnection->endPreAuth(); // Chaos (patch 0067): logged in (a takeover of a lingering character)
++	}
+ }
+ 
+ void ProtocolGame::logout(bool displayEffect, bool forced)
+--- a/src/server.cpp
++++ b/src/server.cpp
+@@ -9,6 +9,7 @@
+ #include "configmanager.h"
+ #include "ban.h"
+ #include "proxyprotocol.h"
++#include "chaospreauth.h"
+ 
+ extern ConfigManager g_config;
+ Ban g_bans;
+@@ -136,6 +137,38 @@ Protocol_ptr ServicePort::make_protocol(bool checksummed, NetworkMessage& msg, c
+ 	return nullptr;
+ }
+ 
++// Chaos (patch 0067): the pre-auth limits of config.lua (src/chaospreauth.h). False: refuse the connection. A counted
++// connection gives its count back when it closes or when its game login goes through (Connection::endPreAuth).
++static bool preAuthAdmit(const Connection_ptr& connection, uint32_t ip)
++{
++	PreAuth::Settings s;
++	s.maxPerIp = static_cast<uint32_t>(std::max<int64_t>(0, g_config.getNumber(ConfigManager::PRE_AUTH_MAX_PER_IP)));
++	s.maxTotal = static_cast<uint32_t>(std::max<int64_t>(0, g_config.getNumber(ConfigManager::PRE_AUTH_MAX_TOTAL)));
++	s.deadlineSec = static_cast<uint32_t>(std::max<int64_t>(0, g_config.getNumber(ConfigManager::PRE_AUTH_DEADLINE)));
++	s.rateMax = static_cast<uint32_t>(std::max<int64_t>(0, g_config.getNumber(ConfigManager::PRE_AUTH_RATE_MAX)));
++	s.rateWindowSec = static_cast<uint32_t>(std::max<int64_t>(1, g_config.getNumber(ConfigManager::PRE_AUTH_RATE_WINDOW)));
++	s.cooldownSec = static_cast<uint32_t>(std::max<int64_t>(1, g_config.getNumber(ConfigManager::PRE_AUTH_COOLDOWN)));
++	s.exemptLoopback = g_config.getBoolean(ConfigManager::PRE_AUTH_EXEMPT_LOOPBACK);
++
++	const int64_t now = time(nullptr);
++	const PreAuth::Verdict verdict = PreAuth::global().admit(ip, now, s);
++	if (PreAuth::refused(verdict)) {
++		uint32_t suppressed = 0;
++		if (PreAuth::global().shouldLog(verdict, now, suppressed)) {
++			std::cout << "[Pre-auth limit] " << PreAuth::name(verdict) << ": " << convertIPToString(ip);
++			if (suppressed != 0) {
++				std::cout << " (" << suppressed << " more refused since the last line)";
++			}
++			std::cout << std::endl;
++		}
++		return false;
++	}
++	if (verdict == PreAuth::Verdict::Admitted) {
++		connection->startPreAuth(ip, s.deadlineSec);
++	}
++	return true;
++}
++
+ void ServicePort::onConnectionReady(const Connection_ptr& connection) const
+ {
+ 	if (services.empty()) {
+@@ -146,7 +179,8 @@ void ServicePort::onConnectionReady(const Connection_ptr& connection) const
+ 	// a gateway's own connections (its health checks: PROXY LOCAL) skip the per-IP connection throttle; the gateways
+ 	// limit their clients themselves, and each client is throttled here by its own address
+ 	auto remote_ip = connection->getIP();
+-	if (remote_ip != 0 && (ProxyProtocol::isTrusted(remote_ip) || g_bans.acceptConnection(remote_ip))) {
++	// Chaos (patch 0067): the pre-auth limits come before the throttle, so a flood is refused without touching the ban list
++	if (remote_ip != 0 && (ProxyProtocol::isTrusted(remote_ip) || (preAuthAdmit(connection, remote_ip) && g_bans.acceptConnection(remote_ip)))) {
+ 		Service_ptr service = services.front();
+ 		if (service->is_single_socket()) {
+ 			connection->accept(service->make_protocol(connection));
