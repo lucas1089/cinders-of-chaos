@@ -2,7 +2,9 @@
 -- hitFlash, screenShake, creatureShadow, screenGrade; client/MANIFEST.md "Visual effects"). The numbers and rules are in
 -- visualfx_logic.lua.
 --   hit flash      g_map.onImpactText (base patch 0100) tells which creature took a damage number; the creature draws with the
---                  outfit shader chaos_hit_white / chaos_hit_red for about 80 ms (Creature:flashHit, base patch 0126).
+--                  outfit shader chaos_hit_white / chaos_hit_red for about 80 ms (Creature:flashHit, base patch 0126). The same
+--                  option also switches the engine's soft white tint on a falling health percent (Creature.setHitTint, base
+--                  patch 0142, O224): 120 ms ease-out, no Lua per hit.
 --   screen shake   the local player's big or critical hits move the picture a few pixels for 180 ms (UIMap.setShake, base
 --                  patch 0126); one 16 ms timer runs only while it shakes.
 --   soft shadow    Creature.setSoftShadow (base patch 0126) draws the ellipse under creatures.
@@ -195,6 +197,11 @@ end
 -- ---------------------------------------------------------------- death fade (O221)
 local function applyDeathFade()
   if Creature and Creature.setDeathFade then pcall(Creature.setDeathFade, optionValue('deathFade')) end
+end
+
+-- ---------------------------------------------------------------- hit flash tint (O224)
+local function applyHitTint()
+  if Creature and Creature.setHitTint then pcall(Creature.setHitTint, optionValue('hitFlash')) end
 end
 
 -- ---------------------------------------------------------------- target, follow and hover outline (O216)
@@ -472,6 +479,8 @@ function onOption(name, value)
     applySceneFade()
   elseif name == 'deathFade' then
     applyDeathFade()
+  elseif name == 'hitFlash' then
+    applyHitTint()
   elseif name == 'screenShake' and value == false then
     stopShake()
   end
@@ -488,6 +497,7 @@ function reapply()
   applyOutlines()
   applySceneFade()
   applyDeathFade()
+  applyHitTint()
 end
 
 -- ---------------------------------------------------------------- lifecycle
@@ -542,6 +552,7 @@ function terminate()
   if g_app and g_app.setMapBloom then pcall(g_app.setMapBloom, false, 0) end
   if AnimatedText and AnimatedText.setSoftMotion then pcall(AnimatedText.setSoftMotion, false) end
   if Creature and Creature.setDeathFade then pcall(Creature.setDeathFade, false) end
+  if Creature and Creature.setHitTint then pcall(Creature.setHitTint, false) end
   local panel = mapPanel()
   if panel and panel.getShader and panel:getShader() == GRADE then panel:setShader('') end
   handlers = {}

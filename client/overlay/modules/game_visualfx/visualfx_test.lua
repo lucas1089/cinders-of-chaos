@@ -45,6 +45,19 @@ do
   eq(src:find('applyDeathFade()', 1, true) ~= nil, true, 'reapply sets it at game start')
 end
 
+do
+  -- the hit flash tint (O224, base patch 0142): the existing option hitFlash drives the engine switch too
+  eq(L.DEFAULTS.hitFlash, true, 'the hit flash is on by default')
+  local f = io.open(dir .. 'visualfx.lua', 'r')
+  local src = f and f:read('*a') or ''
+  if f then f:close() end
+  local _, calls = src:gsub('Creature%.setHitTint', '')
+  eq(calls >= 3, true, 'setHitTint is checked, called with the option and switched off at terminate')
+  eq(src:find("name == 'hitFlash'", 1, true) ~= nil, true, 'onOption handles hitFlash')
+  eq(src:find("optionValue('hitFlash')", 1, true) ~= nil, true, 'the option value is read')
+  eq(src:find('applyHitTint()', 1, true) ~= nil, true, 'reapply sets it at game start')
+end
+
 -- hit flash
 local M = L.MODE
 local f = L.newFlasher()

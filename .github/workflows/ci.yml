@@ -409,6 +409,16 @@ jobs:
           g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" client/tools/chaosdeathfade_test.cpp -o "$d/chaosdeathfade_asan"
           "$d/chaosdeathfade_asan"
 
+      - name: Hit flash bookkeeping (C++; header from base patch 0142)
+        run: |
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/client\/chaoshitflash\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            client/base-patches/0142-hit-flash.patch > "$d/chaoshitflash.h"
+          g++ -std=c++17 -O1 -Wall -Wextra -I "$d" client/tools/chaoshitflash_test.cpp -o "$d/chaoshitflash_test"
+          "$d/chaoshitflash_test"
+          g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" client/tools/chaoshitflash_test.cpp -o "$d/chaoshitflash_asan"
+          "$d/chaoshitflash_asan"
+
       - name: Light map fill, same bytes and benchmark check (C++; header from base patch 0140)
         run: |
           d=$(mktemp -d)
