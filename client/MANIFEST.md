@@ -2804,7 +2804,7 @@ Output **pair 41**: dat 6a8e1a8db5144459d2544a0e2070fb3b (11,225,440 bytes), spr
 - A client on pair 40 or older keeps the halved art; ids 251-253 are sent by nothing. Previews: scratchpad only. Not
   run in a client.
 
-## Projectile pack, remaining swaps (pair 42: 21 missiles redrawn in place, 15 of them named; `tools/sprites/gen_pack41_missiles.py` second set, `art_import/pack42_missiles.csv`; built 2026-10-25, Not pushed: pending review)
+## Projectile pack, remaining swaps (pair 42: 21 missiles redrawn in place, 15 of them named; `tools/sprites/gen_pack41_missiles.py` second set, `art_import/pack42_missiles.csv`; built 2026-10-25, on windows-assets b6c7709e)
 Owner approved the swaps pair 41 proposed. Same tool, a second spec (`pack42_missiles.csv`, `pack42_fx_sources.csv`,
 `pack42_fx.sums`; the strips go to the git-ignored `art_import/pack41_fx/`, nothing of the pack is committed), same
 placement rules as pair 41: the whole 64 x 64 frame, pivot on (13, 13), alpha 0 / 255 with the 4x4 dither, 8 frames at
@@ -2855,7 +2855,7 @@ Output **pair 42**: dat 6a7cba691029a95689e23426de75b225 (11,260,478 bytes), spr
   9bccacb23bd3bed955eb40a6b979eb9e2152f07fd6556f7dc9b740da668b810d; parts `things-1098.tar.xz.part00` (99,614,720 bytes,
   sha256 d797cee0ad0001bf2ff84367742b6a134ad35237090c52d17d029c0fb813a694) and `.part01` (47,415,008 bytes, sha256
   bc839549983772db0f358aca3bffc8197b1881bff2668e5525e3778ac64f2225); stream-extracted from the parts, the md5s above
-  match. Not pushed: pending review (windows-assets SHA to be added when the owner pushes).
+  match. On windows-assets b6c7709e.
 - A client on pair 41 or older keeps the old art on these ids (the spear and arrows redraw only with pair 42); the 15
   names are sent by nothing. Ship pair 42 with the server. Previews: scratchpad only. Not run in a client.
 
