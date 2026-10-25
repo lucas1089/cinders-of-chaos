@@ -906,6 +906,20 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     `0001`-`0125`; the touched files compile with the patched tree (only the base's own `g_app` declaration errors of a build
     without the framework defines remain, the same with and without the patch). Not built or run: check the Graphics tab fits
     the new panel (86 px) and the frame rate with the effects on and off.
+69t. `0127` (C++ `src/client/map.h/.cpp`, `tile.cpp`, `mapview.cpp`, `luafunctions_client.cpp`; Lua `mods/client_settings/classes/dataset.lua`,
+    `options/graphics.otui`): **spell colour light (O205).** `Map` keeps a table effect id -> {8-bit light colour, radius}
+    (`g_map.setSpellLightColor`, sent by `game_visualfx` from `visualfx_logic.lua`), the limits
+    (`g_map.setSpellLightConfig(enabled, max, ms, attack, minGap, minFade)`) and the live lights. `Tile::addThing` (the effect
+    branch of 0116) calls `Map::spellLightEffect(position, effectId)`: an unknown effect, the option off, the same effect on
+    the same tile inside 90 ms or 12 live lights already add nothing, so there is no Lua callback per effect. `MapView::drawFloor`
+    adds the live lights of the camera floor to the light view (`m_lightView->addLight(point, color8, radius)`, the call the
+    loot beam pools of 0069 use) before its light section; strength rises over 15% of the 320 ms life and falls smoothly, the
+    colour levels and the radius scale with it (maths mirrored in `L.fade`, `L.dim`, `L.radiusAt`, unit tested). The light view
+    only adds light: in full ambient light nothing shows; with "Show light effects" off there is no light view. Options >
+    Graphics gets a fifth checkbox `spellLight` (on; the panel grows from 86 to 105 px). Applies after `0001`-`0126`; checked to apply cleanly
+    (no fuzz) to the base client tree, and the four C++ files pass a syntax-only compile against its headers. `addLight(Point,
+    color, intensity)` is the light view's own call; `drawFloor` runs once per floor and the hunk adds only on the camera floor.
+    Not run in a client: colours, the look in a cave and the frame cost are unchecked.
 70. `0088` (`src/client/outfit.cpp`): **a look without a mounted pattern still rides.** `Outfit::draw` took
     `zPattern = min(1, pattern Z - 1)` and drew the mount only when it was above 0, so a mounted character in a look
     with pattern Z 1 showed no mount. In pair 30 (dat 8156792438dabee3aa768663d57a1619) 43 wearable looks (base

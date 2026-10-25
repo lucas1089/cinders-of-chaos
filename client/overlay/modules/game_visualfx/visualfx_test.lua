@@ -9,7 +9,7 @@ local function eq(a, b, what)
 end
 
 -- options: the grade is off by default (it shifts the biome colours), the rest on; a boolean wins, junk is the default
-local wantDefault = { hitFlash = true, screenShake = true, creatureShadow = true, screenGrade = false }
+local wantDefault = { hitFlash = true, screenShake = true, creatureShadow = true, screenGrade = false, spellLight = true }
 for _, name in ipairs(L.OPTIONS) do
   local d = wantDefault[name]
   eq(L.optionOn(name, nil), d, name .. ' default')
@@ -18,7 +18,7 @@ for _, name in ipairs(L.OPTIONS) do
   eq(L.optionOn(name, 'no'), d, name .. ' junk -> default')
   eq(L.optionOn(name, 0), d, name .. ' number -> default')
 end
-eq(#L.OPTIONS, 4, 'four options')
+eq(#L.OPTIONS, 5, 'five options')
 eq(L.optionOn('nothing', nil), false, 'an unknown option is off')
 
 -- hit flash
@@ -116,6 +116,78 @@ for t = 0, 400, 16 do
 end
 eq(worst <= L.SHAKE.maxPx, true, 'no frame goes over the cap')
 eq(worst >= 1, true, 'the run moved the picture')
+
+-- ---------------------------------------------------------------- spell colour light (O205)
+eq(L.DEFAULTS.spellLight, true, 'spell light is on by default')
+eq(L.optionOn('spellLight', nil), true, 'spell light option default')
+eq(L.optionOn('spellLight', false), false, 'spell light option off')
+-- every theme of the id lists has a colour, every colour is a valid 8-bit palette index, none is black
+for theme in pairs(L.THEME_IDS) do
+  local c = L.THEME_COLOR[theme]
+  eq(c ~= nil and c > 0 and c < 216, true, 'colour of ' .. theme)
+end
+-- an id is in one theme only
+local seen = {}
+local dup = 0
+for theme, list in pairs(L.THEME_IDS) do
+  for _, e in ipairs(list) do
+    local a, b = type(e) == 'table' and e[1] or e, type(e) == 'table' and e[2] or e
+    for id = a, b do
+      if seen[id] then dup = dup + 1 end
+      seen[id] = true
+    end
+  end
+end
+eq(dup, 0, 'no effect id in two themes')
+local fireC, fireR = L.lightFor(7)
+eq(fireC, 5 * 36 + 2 * 6, 'fire is orange')
+eq(fireR, L.LIGHT.radius, 'default radius')
+eq(L.lightFor(762) ~= L.lightFor(7), true, 'ice and fire differ')
+eq(L.lightFor(415), nil, 'combat feedback gives no light')
+eq(L.lightFor(99999), nil, 'unknown effect gives no light')
+eq(L.lightFor(nil), nil, 'no id gives no light')
+eq(L.LIGHT.radius >= 1 and L.LIGHT.radius <= 3, true, 'radius 1-3 tiles')
+eq(L.LIGHT.ms >= 250 and L.LIGHT.ms <= 400, true, 'life 250-400 ms')
+-- fade: rises, peaks, falls to nothing
+eq(L.fade(0), 0, 'fade starts at 0')
+eq(L.fade(L.LIGHT.ms * L.LIGHT.attack), 1, 'fade peaks after the attack')
+eq(L.fade(L.LIGHT.ms * 0.6) < 1 and L.fade(L.LIGHT.ms * 0.6) > L.fade(L.LIGHT.ms * 0.9), true, 'fade falls')
+eq(L.fade(L.LIGHT.ms), 0, 'fade over at the end of the life')
+eq(L.fade(-5), 0, 'no fade before the start')
+eq(L.dim(L.THEME_COLOR.fire, 1), L.THEME_COLOR.fire, 'dim 1 keeps the colour')
+eq(L.dim(L.THEME_COLOR.fire, 0), 0, 'dim 0 is black')
+eq(L.dim(5 * 36 + 5 * 6 + 5, 0.5), 3 * 36 + 3 * 6 + 3, 'dim halves the levels')
+eq(L.radiusAt(2, 0.01), 1, 'radius never under 1 while it shows')
+eq(L.radiusAt(9, 1), L.LIGHT.maxRadius, 'radius capped')
+
+local lights = L.newLights()
+local p = { x = 100, y = 100, z = 7 }
+local a = L.lightAdd(lights, 1000, p, 7, true)
+eq(a ~= nil and a.color == fireC, true, 'a known effect lights')
+eq(L.lightAdd(lights, 1000, p, 7, false), nil, 'option off -> no light')
+eq(L.lightAdd(lights, 1000, p, 99999, true), nil, 'unknown effect -> no light')
+eq(L.lightAdd(lights, 1030, p, 7, true), nil, 'same effect on the same tile is one light')
+eq(L.lightAdd(lights, 1030, { x = 101, y = 100, z = 7 }, 7, true) ~= nil, true, 'another tile lights')
+eq(L.lightAdd(lights, 1000, nil, 7, true), nil, 'no position -> no light')
+-- the cap
+local capped = L.newLights()
+local made = 0
+for i = 1, 40 do
+  if L.lightAdd(capped, 5000, { x = 200 + i, y = 100, z = 7 }, 7, true) then made = made + 1 end
+end
+eq(made, L.LIGHT.max, 'at most the cap alive at once')
+eq(#L.lightsNow(capped, 5000 + 50) <= L.LIGHT.max, true, 'never more than the cap drawn')
+eq(L.lightAdd(capped, 5000 + L.LIGHT.ms, { x = 300, y = 100, z = 7 }, 7, true) ~= nil, true, 'room again after the life')
+-- drawn lights fade and end
+local live = L.newLights()
+L.lightAdd(live, 0, p, 7, true)
+local early = L.lightsNow(live, math.floor(L.LIGHT.ms * L.LIGHT.attack))
+eq(#early, 1, 'drawn at the peak')
+eq(early[1].color, fireC, 'full colour at the peak')
+local late = L.lightsNow(live, math.floor(L.LIGHT.ms * 0.85))
+eq(#late == 0 or late[1].color < fireC, true, 'dimmer late in the life')
+eq(#L.lightsNow(live, L.LIGHT.ms), 0, 'gone after the life')
+eq(#L.lightsNow(L.newLights(), 0), 0, 'nothing when nothing played')
 
 if fails > 0 then
   print(fails .. ' of ' .. checks .. ' checks failed')
