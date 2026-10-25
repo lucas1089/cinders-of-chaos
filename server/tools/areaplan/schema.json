@@ -392,6 +392,10 @@
             "minimum": 1,
             "maximum": 8,
             "description": "monsters per spawn point (default 1)"
+          },
+          "spread": {
+            "type": "boolean",
+            "description": "even coverage: points about sqrt(free tiles / points) apart, closer only when they do not fit; default: random points 4 tiles apart"
           }
         }
       }

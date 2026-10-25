@@ -316,6 +316,16 @@ ok(has(bad, 'a zone or a path'), 'a spawn with a zone and a path is refused')
 bad = copy.deepcopy(p)
 bad['spawns'][-1]['path'] = [q0['from'], q0['from']]
 ok(has(bad, 'no path joins'), 'a spawn on a path that does not exist is refused')
+# spread spawns: one point per monster, evenly apart (no two closer than the default random placement allows)
+p = copy.deepcopy(examples['swamp_hunt'])
+for s_ in p['spawns']:
+    s_['spread'], s_['pack'] = True, 1
+ok(not msgs(p), 'spread spawns validate: %s' % msgs(p))
+sp = PC.compile_plan(p, pair24=False, cat=cat)
+pts = [(s_['x'], s_['y'], s_['z']) for s_ in sp['spawns']]
+ok(sum(s_['count'] for s_ in sp['spawns']) == sum(s_['count'] for s_ in p['spawns']), 'spread spawns place every monster')
+ok(len(set(pts)) == len(pts) and all(t in sp['walk'] for t in pts), 'spread spawns: one walkable point each')
+ok(not PC.qa_errors(sp), 'the spread plan passes QA: %s' % PC.qa_errors(sp))
 # a one-way hole: no ladder below it
 p = copy.deepcopy(base)
 p['connections'][0]['type'] = 'hole'

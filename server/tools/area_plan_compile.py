@@ -495,6 +495,21 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
         rng.shuffle(cells)
         name = C.monsters()[s['monster'].lower()]['name']
         left = s['count']
+        if s.get('spread') and cells:
+            # even coverage: points about sqrt(tiles / points) apart, the spacing shrinking only when they do not fit
+            want = max(2.0, (len(cells) / max(1, npts)) ** 0.5)
+            while left > 0 and want >= 2:
+                for t in cells:
+                    if left <= 0:
+                        break
+                    if any(t[2] == q[2] and (t[0] - q[0]) ** 2 + (t[1] - q[1]) ** 2 < want * want for q in taken):
+                        continue
+                    cnt = min(pack, left)
+                    taken.append(t)
+                    spawn_out.append(dict(x=t[0], y=t[1], z=t[2], monster=name, count=cnt, spawntime=s.get('respawn', 90),
+                                          zone=zid, entry=i))
+                    left -= cnt
+                want -= 0.5
         for mind in (4, 3, 2):
             for t in cells:
                 if left <= 0:

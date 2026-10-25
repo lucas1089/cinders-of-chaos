@@ -203,76 +203,89 @@
       "zone": "reeds",
       "monster": "Lochtag",
       "count": 24,
-      "pack": 2,
-      "respawn": 90
+      "pack": 1,
+      "respawn": 90,
+      "spread": true
     },
     {
       "zone": "bog",
       "monster": "Hodag",
       "count": 24,
-      "pack": 2,
-      "respawn": 90
+      "pack": 1,
+      "respawn": 90,
+      "spread": true
     },
     {
       "zone": "bog",
       "monster": "Babayaga",
       "count": 12,
-      "respawn": 120
+      "respawn": 120,
+      "pack": 1,
+      "spread": true
     },
     {
       "zone": "drowned",
       "monster": "Nightfang Widow",
       "count": 20,
-      "pack": 2,
-      "respawn": 120
+      "pack": 1,
+      "respawn": 120,
+      "spread": true
     },
     {
       "zone": "heart",
       "monster": "Lochtag",
       "count": 12,
-      "pack": 2,
-      "respawn": 90
+      "pack": 1,
+      "respawn": 90,
+      "spread": true
     },
     {
       "zone": "heart",
       "monster": "Hodag",
       "count": 10,
-      "pack": 2,
-      "respawn": 90
+      "pack": 1,
+      "respawn": 90,
+      "spread": true
     },
     {
       "zone": "heart",
       "monster": "Babayaga",
       "count": 4,
-      "respawn": 120
+      "respawn": 120,
+      "pack": 1,
+      "spread": true
     },
     {
       "zone": "rootfall",
       "monster": "Nightfang Widow",
       "count": 14,
-      "pack": 2,
-      "respawn": 90
+      "pack": 1,
+      "respawn": 90,
+      "spread": true
     },
     {
       "zone": "rootfall",
       "monster": "Babayaga",
       "count": 8,
-      "pack": 2,
-      "respawn": 90
+      "pack": 1,
+      "respawn": 90,
+      "spread": true
     },
     {
       "zone": "sinkhole",
       "monster": "Hodag",
       "count": 14,
-      "pack": 2,
-      "respawn": 90
+      "pack": 1,
+      "respawn": 90,
+      "spread": true
     },
     {
       "zone": "sinkhole",
       "monster": "Lochtag",
       "count": 8,
-      "pack": 2,
-      "respawn": 90
+      "pack": 1,
+      "respawn": 90,
+      "spread": true
     },
     {
       "path": [
@@ -281,8 +294,9 @@
       ],
       "monster": "Lochtag",
       "count": 6,
-      "pack": 2,
-      "respawn": 90
+      "pack": 1,
+      "respawn": 90,
+      "spread": true
     },
     {
       "path": [
@@ -291,8 +305,9 @@
       ],
       "monster": "Lochtag",
       "count": 6,
-      "pack": 2,
-      "respawn": 90
+      "pack": 1,
+      "respawn": 90,
+      "spread": true
     },
     {
       "path": [
@@ -301,8 +316,9 @@
       ],
       "monster": "Nightfang Widow",
       "count": 6,
-      "pack": 2,
-      "respawn": 90
+      "pack": 1,
+      "respawn": 90,
+      "spread": true
     },
     {
       "path": [
@@ -311,8 +327,9 @@
       ],
       "monster": "Babayaga",
       "count": 6,
-      "pack": 2,
-      "respawn": 90
+      "pack": 1,
+      "respawn": 90,
+      "spread": true
     },
     {
       "path": [
@@ -321,8 +338,9 @@
       ],
       "monster": "Hodag",
       "count": 6,
-      "pack": 2,
-      "respawn": 90
+      "pack": 1,
+      "respawn": 90,
+      "spread": true
     },
     {
       "path": [
@@ -331,8 +349,9 @@
       ],
       "monster": "Hodag",
       "count": 6,
-      "pack": 2,
-      "respawn": 90
+      "pack": 1,
+      "respawn": 90,
+      "spread": true
     },
     {
       "path": [
@@ -341,8 +360,9 @@
       ],
       "monster": "Nightfang Widow",
       "count": 6,
-      "pack": 2,
-      "respawn": 90
+      "pack": 1,
+      "respawn": 90,
+      "spread": true
     },
     {
       "path": [
@@ -351,8 +371,9 @@
       ],
       "monster": "Babayaga",
       "count": 6,
-      "pack": 2,
-      "respawn": 90
+      "pack": 1,
+      "respawn": 90,
+      "spread": true
     }
   ],
   "boss": {

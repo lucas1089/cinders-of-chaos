@@ -431,7 +431,7 @@ temple with a nave, chapels and a boss throne room).
 | `paths` | `from`, `to` (same floor), `width` 1-6, `style` corridor, tunnel or wild (ragged sides) |
 | `connections` | `stairs`, `ladder` (hole and ladder, both ways), `hole` (one way down), `teleport` (any two zones, `two_way`) |
 | `entry`, `exit` | the arrival zone (floor 1); the exit portal's zone and optional world target |
-| `spawns`, `boss`, `npcs`, `chests` | monster names from our list with count, pack and respawn, in a `zone` or along a `path` ([from, to], outside the zones); the boss in the boss room; NPCs of our list; quest chests with a quest key and a `reward` (item names, gold, experience); `new` NPCs with `lines`; `chest_action` |
+| `spawns`, `boss`, `npcs`, `chests` | monster names from our list with count, pack and respawn, in a `zone` or along a `path` ([from, to], outside the zones), `spread` for even coverage; the boss in the boss room; NPCs of our list; quest chests with a quest key and a `reward` (item names, gold, experience); `new` NPCs with `lines`; `chest_action` |
 
 Biomes map to our areagen themes (`python3 -I server/tools/area_planner.py catalogue`): cave (emberdeep), lava and
 waste (cinderfall), swamp (emberdeep with wide mud, swamp trees and glowing mushrooms; with the pair 24 switch on, the
