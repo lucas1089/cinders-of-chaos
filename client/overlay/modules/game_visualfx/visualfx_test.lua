@@ -9,7 +9,7 @@ local function eq(a, b, what)
 end
 
 -- options: the grade is off by default (it shifts the biome colours), the rest on; a boolean wins, junk is the default
-local wantDefault = { hitFlash = true, screenShake = true, creatureShadow = true, screenGrade = false, spellLight = true }
+local wantDefault = { hitFlash = true, screenShake = true, creatureShadow = true, screenGrade = false, spellLight = true, liquidShimmer = true }
 for _, name in ipairs(L.OPTIONS) do
   local d = wantDefault[name]
   eq(L.optionOn(name, nil), d, name .. ' default')
@@ -18,7 +18,7 @@ for _, name in ipairs(L.OPTIONS) do
   eq(L.optionOn(name, 'no'), d, name .. ' junk -> default')
   eq(L.optionOn(name, 0), d, name .. ' number -> default')
 end
-eq(#L.OPTIONS, 5, 'five options')
+eq(#L.OPTIONS, 6, 'six options')
 eq(L.optionOn('nothing', nil), false, 'an unknown option is off')
 
 -- hit flash
@@ -188,6 +188,38 @@ local late = L.lightsNow(live, math.floor(L.LIGHT.ms * 0.85))
 eq(#late == 0 or late[1].color < fireC, true, 'dimmer late in the life')
 eq(#L.lightsNow(live, L.LIGHT.ms), 0, 'gone after the life')
 eq(#L.lightsNow(L.newLights(), 0), 0, 'nothing when nothing played')
+
+-- living water and lava: the id sets and the option
+eq(L.DEFAULTS.liquidShimmer, true, 'liquid shimmer is on by default')
+eq(L.optionOn('liquidShimmer', nil), true, 'liquid shimmer option default')
+eq(L.optionOn('liquidShimmer', false), false, 'liquid shimmer option off')
+eq(L.liquidKind(4608), 'water', 'stock water first id')
+eq(L.liquidKind(4625), 'water', 'stock water last id')
+eq(L.liquidKind(4626), nil, 'one past the stock water')
+eq(L.liquidKind(33456), 'water', 'deep lake water')
+eq(L.liquidKind(33463), 'water', 'mountain shallows')
+eq(L.liquidKind(33464), nil, 'not a liquid')
+eq(L.liquidKind(35101), 'water', 'sewer water')
+eq(L.liquidKind(35059), 'lava', 'lava')
+eq(L.liquidKind(35073), 'lava', 'lava pool last piece')
+eq(L.liquidKind(35060), nil, 'lava bubbles (a border) do not shimmer')
+eq(L.liquidKind(35064), nil, 'the island floor does not shimmer')
+eq(L.liquidKind(27485), nil, 'magma-veined obsidian floor is a plain ground')
+eq(L.liquidKind(nil), nil, 'nil id')
+eq(L.liquidKind('x'), nil, 'junk id')
+eq(L.liquidKind('35059'), 'lava', 'an id as a string')
+local list = L.liquidList()
+local sawWater, sawLava, sorted, kindsOk = false, false, true, true
+for i, e in ipairs(list) do
+  if i > 1 and list[i - 1].id >= e.id then sorted = false end
+  if e.kind == 1 then sawWater = true; kindsOk = kindsOk and L.liquidKind(e.id) == 'water' end
+  if e.kind == 2 then sawLava = true; kindsOk = kindsOk and L.liquidKind(e.id) == 'lava' end
+end
+eq(#list, 18 + 8 + 1 + 1 + 4, 'liquid id count')
+eq(sorted and sawWater and sawLava, true, 'the list is sorted and has both kinds')
+eq(kindsOk, true, 'list kinds agree with liquidKind')
+eq(L.LIQUID.kind.water, 1, 'water kind number of the engine table')
+eq(L.LIQUID.kind.lava, 2, 'lava kind number of the engine table')
 
 if fails > 0 then
   print(fails .. ' of ' .. checks .. ' checks failed')

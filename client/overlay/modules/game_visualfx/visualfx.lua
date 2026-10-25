@@ -11,6 +11,9 @@
 --   spell light    a magic effect that plays lights the tiles around it for ~320 ms in a colour that matches it (O205, base patch
 --                  0127): this file sends the colour table and the limits to g_map.setSpellLight*, the engine keeps at most 12
 --                  live lights and adds them to the map light view (nothing shows in full light).
+--   liquids        water and lava ground sprites shimmer (O206, base patch 0128): this file creates the two shaders
+--                  chaos_liquid_water / chaos_liquid_lava and sends the ground id table to Item.addLiquidId once; the engine draws
+--                  those grounds with the shader while the option is on (no per-tile Lua).
 -- A client without base patch 0126 has none of the C++ functions: the flash, shake and shadow do nothing, the grade (shader
 -- only) still works. Every engine call is guarded.
 local L = VisualFxLogic
@@ -108,6 +111,31 @@ local function applySpellLight()
   pcall(g_map.setSpellLightConfig, on, A.max, A.ms, A.attack, A.minGap, A.minFade)
 end
 
+-- ---------------------------------------------------------------- living water and lava
+local liquidTableSent = false
+local liquidShadersMade = false
+
+local function createLiquidShaders()
+  if liquidShadersMade then return end
+  liquidShadersMade = true
+  for _, name in ipairs({ L.LIQUID.waterShader, L.LIQUID.lavaShader }) do
+    local ok, err = pcall(g_shaders.createShader, name, '/shaders/chaos_liquid_vertex', '/shaders/' .. name)
+    if not ok then g_logger.warning('[visualfx] ' .. name .. ': ' .. tostring(err)) end
+  end
+end
+
+local function applyLiquid()
+  if not (Item and Item.setLiquidShimmer) then return end
+  local on = optionValue('liquidShimmer')
+  if on and not liquidTableSent and Item.addLiquidId then
+    if Item.clearLiquidIds then Item.clearLiquidIds() end
+    for _, e in ipairs(L.liquidList()) do pcall(Item.addLiquidId, e.id, e.kind) end
+    liquidTableSent = true
+  end
+  if on then createLiquidShaders() end
+  pcall(Item.setLiquidShimmer, on)
+end
+
 -- ---------------------------------------------------------------- shadow and grade
 local function applyShadow()
   if Creature and Creature.setSoftShadow then pcall(Creature.setSoftShadow, optionValue('creatureShadow')) end
@@ -141,6 +169,8 @@ function onOption(name, value)
     applyGrade()
   elseif name == 'spellLight' then
     applySpellLight()
+  elseif name == 'liquidShimmer' then
+    applyLiquid()
   elseif name == 'screenShake' and value == false then
     stopShake()
   end
@@ -150,6 +180,7 @@ function reapply()
   applyShadow()
   applyGrade()
   applySpellLight()
+  applyLiquid()
 end
 
 -- ---------------------------------------------------------------- lifecycle
@@ -188,6 +219,7 @@ function terminate()
   stopShake()
   if Creature and Creature.setSoftShadow then pcall(Creature.setSoftShadow, false) end
   if g_map and g_map.setSpellLightConfig then pcall(g_map.setSpellLightConfig, false, 0, 0, 0, 0, 0) end
+  if Item and Item.setLiquidShimmer then pcall(Item.setLiquidShimmer, false) end
   local panel = mapPanel()
   if panel and panel.getShader and panel:getShader() == GRADE then panel:setShader('') end
   handlers = {}

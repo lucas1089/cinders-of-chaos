@@ -920,6 +920,22 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     (no fuzz) to the base client tree, and the four C++ files pass a syntax-only compile against its headers. `addLight(Point,
     color, intensity)` is the light view's own call; `drawFloor` runs once per floor and the hunk adds only on the camera floor.
     Not run in a client: colours, the look in a cave and the frame cost are unchecked.
+69u. `0128` (C++ `src/client/item.h/.cpp`, `luafunctions_client.cpp`; Lua `mods/client_settings/classes/dataset.lua`,
+    `options/graphics.otui`): **living water and lava (O206).** `Item` keeps a byte table client id -> kind (1 water, 2 lava;
+    `Item.clearLiquidIds`, `Item.addLiquidId`, filled once by `game_visualfx` from `L.LIQUID` in `visualfx_logic.lua`) and the
+    switch `Item.setLiquidShimmer`. `Item::draw` (the map overload): an item with no shader of its own whose id is in the table
+    draws through `ThingType::drawWithShader` / `DrawQueueItemThingWithShader`, the path items with `setShader` already use,
+    with `chaos_liquid_water` or `chaos_liquid_lava` (`data/shaders/chaos_liquid_*.frag`, vertex stage
+    `chaos_liquid_vertex.frag`; a missing shader falls back to the plain draw there). Cost: one byte lookup per drawn item
+    and, for a liquid tile, one shader draw in place of a batched textured rect; no extra pass, no Lua per tile. The ripple is
+    under one texture pixel and fades to nothing at the tile edge (`v_Norm`, as `chaos_map_vertex.frag`), so a sprite never reads
+    the next frame of its sheet; the waves are whole multiples of pi across the tile and run on over the seam. Water: a few
+    percent brightness; lava: about 12% brightness swell; colour ratios and alpha are the sprite's own, so each biome keeps its
+    colours (docs/MAP_GUIDE.md "The owner's taste"). Options > Graphics gets a sixth checkbox `liquidShimmer` (on; the panel grows
+    from 105 to 124 px). Applies after `0001`-`0127`; checked to apply cleanly (no fuzz) to the base client tree, and
+    `item.cpp` and `luafunctions_client.cpp` pass a syntax-only compile. The stock water ids (4608-4625) are from memory of the
+    10.98 data and the stock lava ids are not listed. Not run in a client: the look, the frame rate on a screen of water
+    (every liquid tile breaks the draw batch), and whether a zoomed view draws the shader quads at the same size are unchecked.
 70. `0088` (`src/client/outfit.cpp`): **a look without a mounted pattern still rides.** `Outfit::draw` took
     `zPattern = min(1, pattern Z - 1)` and drew the mount only when it was above 0, so a mounted character in a look
     with pattern Z 1 showed no mount. In pair 30 (dat 8156792438dabee3aa768663d57a1619) 43 wearable looks (base
