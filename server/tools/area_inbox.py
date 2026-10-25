@@ -33,7 +33,7 @@ publish   build every entry with one of the statuses (default approved and pendi
           line per area: id|status|lo-hi|name) and index.json. What `chaos-ctl.sh areas-publish` runs.
 promote   approved -> installed: the plan moves to server/tools/areaplan/plans/ (where install_content_areas.py reads it).
           It needs an `origin` (the plan has one, or --origin X Y Z); refused when the box lands on another plan's box
-          (same z, 4 tiles apart) unless --force. It prints the steps that remain (the map and the tests).
+          (any z, 10 tiles apart) unless --force. It prints the steps that remain (the map and the tests).
 remove    delete a pending or approved entry.
 Python 3 standard library; compile needs LuaJIT (LUAJIT=... to point elsewhere), as area_planner.py does.
 """
@@ -49,7 +49,7 @@ SCHEMA = 'chaos-area-inbox/1'
 STATUSES = ('pending', 'approved', 'installed')
 ID_RE = re.compile(r'^[a-z][a-z0-9_]{2,39}$')
 ASSET_FILES = ('items.otb', 'items.xml', 'Tibia.dat', 'Tibia.spr')
-MARGIN = 4  # tiles between two areas of one z
+MARGIN = 10  # tiles between two areas, on any z (area_planner_test.py "placed areas")
 
 
 class InboxError(Exception):
@@ -388,7 +388,8 @@ def box_of(plan):
 
 
 def overlaps(b, plans_dirs, own_id):
-    """the ids of other plans whose box (same z, MARGIN tiles apart) meets box b"""
+    """the ids of other plans whose box (any z: the frames and the world spawn overlap across floors) comes within MARGIN
+    tiles of box b"""
     hit = []
     for d in plans_dirs:
         if not os.path.isdir(d):
@@ -403,7 +404,7 @@ def overlaps(b, plans_dirs, own_id):
             o = box_of(p) if isinstance(p, dict) and 'size' in p else None
             if not o or p.get('id') == own_id:
                 continue
-            if o[2] == b[2] and b[0] < o[0] + o[3] + MARGIN and o[0] < b[0] + b[3] + MARGIN \
+            if b[0] < o[0] + o[3] + MARGIN and o[0] < b[0] + b[3] + MARGIN \
                     and b[1] < o[1] + o[4] + MARGIN and o[1] < b[1] + b[4] + MARGIN:
                 hit.append(p.get('id', n))
     return hit
@@ -425,7 +426,7 @@ def cmd_promote(a, inbox=INBOX, plans=PLANS, plans_dirs=None):
     dirs = plans_dirs if plans_dirs is not None else [plans] + OTHER_PLAN_DIRS
     clash = overlaps(box_of(plan), dirs, a.id)
     if clash and not a.force:
-        raise InboxError('the origin %s lands on %s (same z, within %d tiles); pick another with --origin, or --force'
+        raise InboxError('the origin %s lands on %s (any z, within %d tiles); pick another with --origin, or --force'
                          % (plan['origin'], ', '.join(clash), MARGIN))
     target = os.path.join(plans, a.id + '.json')
     if os.path.exists(target):

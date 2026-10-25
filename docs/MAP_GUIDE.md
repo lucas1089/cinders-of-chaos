@@ -758,7 +758,7 @@ editor on their Windows PC before anything goes onto the server. `server/tools/a
    plan and publishes again.
 5. `area_inbox.py promote ID [--origin X Y Z]` (approved -> installed) moves the plan to `server/tools/areaplan/plans/`,
    the folder `install_content_areas.py` reads (server/README.md "Hunt teleports"). It needs an `origin` and refuses one
-   that lands on another plan's box (same z, 4 tiles apart; `--force` overrides). It does not touch the map: the install
+   that lands on another plan's box (on any z, closer than 10 tiles; `--force` overrides). It does not touch the map: the install
    (`install_all.py`, step `contentareas`, or `install_content_areas.py DATA_DIR --dry-run` first) and the tests it prints
    are the remaining steps. A new hunt also changes the progression model (`progression_model.lua --check`) and the
    hunt teleport room (more plans than slots is refused: raise `modules` in `hunt_teleports_config.lua`).
