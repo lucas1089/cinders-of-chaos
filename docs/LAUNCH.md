@@ -53,6 +53,9 @@ server/README.md "Map master") replaces the base map first when the branch has o
    (several change `Game`, `Item`, `Player` and `ProtocolGame`). The Windows binary in the download has none of them
    (no "CRIT!" visual, no off-hand sword for the Ninja, no client guard, no item lock, crit / leech chances fire less
    often than the rescaled values say, and more).
+   Patch 0068 sets the Release flags (`-O2`, hardening) and links mimalloc when it is installed: build with
+   `-DCMAKE_BUILD_TYPE=Release` and run `sudo apt install libmimalloc-dev` first (without it the build uses glibc malloc;
+   `server/README.md` "Build flags and allocator (O201)"; `tools/linux/check_engine_hardening.sh` checks the binary).
 2. Put the binary into the server folder as `/opt/chaos/server/tfs` (the path the service file uses).
 
 ## 2. Database

@@ -22982,3 +22982,57 @@ Measured with `luajit tools/hotpath_bench.lua` and `lua5.3 tools/hotpath_bench.l
 | gems hit, two lookups | 3.1 / 2.4 | 133 / 62 |
 
 VPS: no action. A normal update brings it.
+
+## Build flags and allocator (O201) (engine `src-patches/0068-build-flags-mimalloc.patch`, `src/chaos_build.cmake`, `tools/linux/check_engine_hardening.sh`)
+
+How the Linux engine is built, and what changed. The only Linux engine build in the repository is the `engine-linux`
+job of `.github/workflows/windows-package.yml` (Ubuntu 22.04, g++ 11, `cmake -G Ninja -DCMAKE_BUILD_TYPE=Release
+-DSKIP_GIT=ON`, `-Werror` stripped); `docs/LAUNCH.md` section 1 says the same for a by-hand build. The base
+`CMakeLists.txt` adds `-Wall -Wextra -Wnon-virtual-dtor -pedantic -Werror -pipe -fvisibility=hidden -fno-strict-aliasing`
+and turns link-time optimisation on (`check_ipo_supported`).
+
+| | before | now |
+|---|---|---|
+| build type | Release (CMake's `-O3 -DNDEBUG`) | Release, **`-O2 -DNDEBUG`** (`CHAOS_OPT_LEVEL`) |
+| LTO / IPO | on (base `CMakeLists.txt`) | on, unchanged |
+| `-march` | none | none (the engine is built on one machine, run on another) |
+| stack protector, FORTIFY_SOURCE, PIE, RELRO, BIND_NOW | only what Ubuntu's g++ turns on by itself (not in the repo, not checked) | set by the build, same on any toolchain: `-fstack-protector-strong -D_FORTIFY_SOURCE=2 -fstack-clash-protection -fcf-protection=full -fPIE`, link `-pie -Wl,-z,relro,-z,now,-z,noexecstack`; checked in CI |
+| allocator | glibc malloc | **mimalloc** when `libmimalloc` is installed, else glibc malloc |
+
+Patch 0068 adds `src/chaos_build.cmake`, included first by `src/CMakeLists.txt` (so the patch touches `src/` only, like
+the others, and the base `CMakeLists.txt` stays as it is). It does nothing for Windows, macOS, Debug, or a build with no
+build type (the sanitizer build passes `-DCMAKE_BUILD_TYPE=None -DCHAOS_MIMALLOC=OFF`). Options: `CHAOS_HARDEN` (ON),
+`CHAOS_MIMALLOC` (ON; used when `find_library(mimalloc)` finds it, otherwise one status line and the build goes on),
+`CHAOS_OPT_LEVEL` (`-O2`). Each hardening flag is added only when the compiler accepts it.
+
+**Why -O2.** The task asked for -O2 unless -O3 measures better; there is no server benchmark in the repository and the
+engine's time is in the Lua scripts, the database and the map, not in vectorisable loops, so -O2 (smaller code, fewer
+instruction-cache misses, shorter compile) is the default. `-DCHAOS_OPT_LEVEL=-O3` goes back. Not measured on a live
+server.
+
+**Why linking mimalloc, not `LD_PRELOAD`.** The library is the first entry of the link line, kept with `--no-as-needed`
+(`readelf -d tfs` shows `libmimalloc.so.2` as the first NEEDED), so it is in place before libstdc++, Boost, the
+database client and LuaJIT, with nothing to remember in the systemd unit or in `start-server.sh`. `LD_PRELOAD` in the
+unit would also work but silently does nothing when the library is missing. LuaJIT: the distro's LuaJIT is built with
+GC64, which takes its memory from `realloc`, so the Lua heap goes through mimalloc too and works (checked: the engine
+starts, loads LuaJIT and `MIMALLOC_SHOW_STATS=1` shows the heap); a LuaJIT without GC64 uses its own allocator under
+2 GB and ignores malloc, which is also fine.
+
+**Security trade-off.** glibc's allocator aborts on some heap corruptions (double free in the tcache, bad chunk sizes).
+The distro mimalloc is the default build (secure level 0, no guard pages, no encoded free lists) and does not. The
+sanitizer build and the fuzz harnesses (section "Engine hardening") are where such bugs are found; they run without
+mimalloc. A hardened mimalloc (`MI_SECURE`, about 10% slower) would need us to build the library; not done.
+
+**Build and check.**
+- Build machine (CI installs it): `sudo apt install libmimalloc-dev`. The `engine-linux` job has it in `APT_PACKAGES`,
+  its cache key is `engine-linux-bin-v2` and the recipe says `patch-0068-flags mimalloc`.
+- `tools/linux/check_engine_hardening.sh build/tfs [--require-mimalloc]` reads the binary with `readelf`: PIE, RELRO,
+  BIND_NOW, stack protector, FORTIFY, non-executable stack, mimalloc. The CI job runs it after the build with
+  `--require-mimalloc`, so a missing library fails the release instead of shipping the slower binary.
+- The Linux server package bundles `libmimalloc.so.2` into `server/lib/` (`tools/linux/bundle_libs.sh`, RUNPATH
+  `$ORIGIN/lib`), so the update path of the kit (`chaos_kit_update.sh`) needs nothing on the VPS.
+
+VPS: no action for a normal update from the server package. Only when the owner builds the engine by hand on the VPS
+(docs/LAUNCH.md section 1): once `sudo apt install libmimalloc-dev` (Ubuntu 22.04 and Debian 12: the runtime package
+`libmimalloc2.0` comes with it), then the usual build; without it the build still works with glibc malloc.
+

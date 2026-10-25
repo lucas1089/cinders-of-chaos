@@ -246,6 +246,11 @@ them are named by role, so they carry no Reserved Font Name.
   - Author: rxi
   - Licence: MIT
   - Used for: JSON in the server scripts
+- **mimalloc**
+  - Author: Microsoft (Daan Leijen)
+  - Licence: MIT
+  - Used for: the memory allocator of the Linux server engine (libmimalloc, bundled in the Linux server package)
+  - Source: https://github.com/microsoft/mimalloc
 - **ZnoteX**
   - Author: Open Games Community
   - Licence: open source; its own credits page is on the website (credits.php)
