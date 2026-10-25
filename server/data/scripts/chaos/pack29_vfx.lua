@@ -31,19 +31,35 @@ V.scan = V.scan or {
 	{"CONDITION_REGENERATION", "CONDITIONID_COMBAT", "regeneration"}, -- a spell's regeneration, not the food one
 }
 
-local function scanPlayer(player)
+-- the engine constants of V.scan, looked up in _G once (the scan runs every second over every player)
+local resolved, resolvedFor
+local function resolveScan()
+	if resolved and resolvedFor == V.scan then
+		return resolved
+	end
+	resolved, resolvedFor = {}, V.scan
 	for _, row in ipairs(V.scan) do
 		local ctype = _G[row[1]]
 		if ctype then
-			local cond
-			if row[2] then
-				cond = _G[row[2]] and player:getCondition(ctype, _G[row[2]])
-			else
-				cond = player:hasCondition(ctype)
-			end
-			if cond then
-				V.show(player, row[3])
-			end
+			local id = row[2] and _G[row[2]]
+			-- a row with a condition id name the engine does not know never matches (as before)
+			resolved[#resolved + 1] = {ctype, id, row[2] ~= nil, row[3]}
+		end
+	end
+	return resolved
+end
+
+local function scanPlayer(player, rows)
+	for i = 1, #rows do
+		local row = rows[i]
+		local cond
+		if row[3] then
+			cond = row[2] and player:getCondition(row[1], row[2])
+		else
+			cond = player:hasCondition(row[1])
+		end
+		if cond then
+			V.show(player, row[4])
 		end
 	end
 end
@@ -53,8 +69,12 @@ function scan.onThink(interval)
 	if not V.live() then
 		return true
 	end
+	local rows = resolveScan()
+	if #rows == 0 then
+		return true
+	end
 	for _, player in ipairs(Game.getPlayers()) do
-		pcall(scanPlayer, player)
+		pcall(scanPlayer, player, rows)
 	end
 	return true
 end

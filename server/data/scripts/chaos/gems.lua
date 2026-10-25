@@ -93,6 +93,12 @@ local DAMAGE = {
 	[COMBAT_HOLYDAMAGE] = "holy"
 }
 
+-- storage keys of the totals per damage type, built once (the hit callbacks run per hit: no string building there)
+local DMGKEY, RESKEY = {}, {}
+for ctype, name in pairs(DAMAGE) do
+	DMGKEY[ctype], RESKEY[ctype] = "dmg_" .. name, "res_" .. name
+end
+
 local function playerOf(creature)
 	if not creature then
 		return nil
@@ -105,8 +111,8 @@ local function playerOf(creature)
 end
 
 local function hasDamage(t)
-	for _, name in pairs(DAMAGE) do
-		if (t["dmg_" .. name] or 0) > 0 then
+	for _, key in pairs(DMGKEY) do
+		if (t[key] or 0) > 0 then
 			return true
 		end
 	end
@@ -121,11 +127,11 @@ function dealt.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 	local p = playerOf(attacker)
 	local t = p and p ~= creature and cache[p:getId()]
 	if t then
-		local a = DAMAGE[primaryType] and t["dmg_" .. DAMAGE[primaryType]] or 0
+		local a = DMGKEY[primaryType] and t[DMGKEY[primaryType]] or 0
 		if a > 0 and primaryDamage ~= 0 then
 			primaryDamage = G.scale(primaryDamage, a)
 		end
-		local b = DAMAGE[secondaryType] and t["dmg_" .. DAMAGE[secondaryType]] or 0
+		local b = DMGKEY[secondaryType] and t[DMGKEY[secondaryType]] or 0
 		if b > 0 and secondaryDamage ~= 0 then
 			secondaryDamage = G.scale(secondaryDamage, b)
 		end
@@ -167,11 +173,11 @@ function taken.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 	end
 	local t = cache[creature:getId()]
 	if t then
-		local a = DAMAGE[primaryType] and t["res_" .. DAMAGE[primaryType]] or 0
+		local a = RESKEY[primaryType] and t[RESKEY[primaryType]] or 0
 		if a > 0 and primaryDamage ~= 0 then
 			primaryDamage = G.scale(primaryDamage, -a)
 		end
-		local b = DAMAGE[secondaryType] and t["res_" .. DAMAGE[secondaryType]] or 0
+		local b = RESKEY[secondaryType] and t[RESKEY[secondaryType]] or 0
 		if b > 0 and secondaryDamage ~= 0 then
 			secondaryDamage = G.scale(secondaryDamage, -b)
 		end
