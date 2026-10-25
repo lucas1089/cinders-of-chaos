@@ -253,6 +253,8 @@ local function onMessage(msg)
     renderTracker()
   elseif msg.action == 'done' then
     status(V.doneText(msg.data))
+    local cs = modules.game_chaossound -- O238: the goal sound
+    if cs and cs.onGoalDone then pcall(cs.onGoalDone) end
   end
 end
 

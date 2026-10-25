@@ -29,7 +29,7 @@ local counts = { session = L.counts(nil), total = L.counts(nil) }
 local ruleRows = {}   -- [rule key] = row widget of the counters panel
 local soundSaveEvent
 local lastPlayed      -- {file, gain, rule, at}: the last alert played (for the in-game check)
-local onCounts, playKillSound -- defined with the counters panel below (used by the loot channel)
+local onCounts, playKillSound, tellGameSound -- defined with the counters panel below (used by the loot channel)
 local unlocked = false
 local presets = {}
 local samples = {}
@@ -339,7 +339,9 @@ local function onKill(data)
   local drops = list(data.drops)
   showFlash(drops)
   if type(data.counts) == 'table' then onCounts(data.counts) end
-  if type(data.hits) == 'table' then playKillSound(data.hits) end
+  local alerted = false
+  if type(data.hits) == 'table' then alerted = playKillSound(data.hits) end
+  tellGameSound(data, alerted)
   local panel = ensureLootPanel()
   if not panel then return end
   ensureLootTab()
@@ -448,9 +450,18 @@ local function playFile(file, gain, rule)
   return ok
 end
 
+-- true when a rule sound was chosen for the kill (it plays unless the client has no sound: the alert was meant)
 playKillSound = function(hits)
   local file, gain, rule = L.pickSound(hits, snd)
   if file then playFile(file, gain, rule) end
+  return file ~= nil
+end
+
+-- game_chaossound (O238): the kill's rare-drop lines, and whether this module's own rule sound went off for it, so a rare
+-- drop is announced once
+tellGameSound = function(data, alerted)
+  local cs = modules.game_chaossound
+  if cs and cs.onLootKill then pcall(cs.onLootKill, data, alerted) end
 end
 
 local function notifyHunt()

@@ -4710,5 +4710,21 @@ ChaosLocaleStrings['pt-BR'] = {
   -- client/overlay/modules/game_npctradewindow/tradewindow.lua
   ["Balance:"] = "Saldo:",
   ["Price %s"] = "Preço %s",
+  -- game_chaossound/chaossound.otui, chaossound.lua (O238; the menu entry is System > Sound in client_chaos_topbar)
+  ["Sound"] = "Som",
+  ["Game Sound"] = "Som do jogo",
+  ["Short sounds for your fights, spells and rewards. They follow the sound switch and the effect volume of the client."] = "Sons curtos para suas lutas, magias e recompensas. Eles seguem a chave de som e o volume de efeitos do cliente.",
+  ["Game sounds"] = "Sons do jogo",
+  ["Hits, kills and damage taken"] = "Golpes, mortes e dano sofrido",
+  ["Your hits, critical hits and kills, the hits you take, your dodges and blocks."] = "Seus golpes, golpes críticos e mortes, os golpes que você sofre, suas esquivas e bloqueios.",
+  ["Spells by element"] = "Magias por elemento",
+  ["A sound for fire, ice, energy, holy, death, earth, physical and healing spell effects near you."] = "Um som para os efeitos de magia de fogo, gelo, energia, sagrado, morte, terra, físico e cura perto de você.",
+  ["Level up, rare loot and goals"] = "Subir de nível, saque raro e metas",
+  ["Rare and better drops sound unless your loot filter already plays an alert for them."] = "Itens raros ou melhores tocam um som, a não ser que seu filtro de saque já toque um alerta para eles.",
+  ["Windows and buttons"] = "Janelas e botões",
+  ["A very quiet click when a window opens or closes or a button is pressed."] = "Um clique bem baixo quando uma janela abre ou fecha ou um botão é apertado.",
+  ["Quiet"] = "Baixo",
+  ["Sounds"] = "Sons",
+  ["Loud"] = "Alto",
 }
 return ChaosLocaleStrings['pt-BR']

@@ -80,6 +80,17 @@ ChaosCreditsData = {
     },
   },
   {
+    title = "Sounds",
+    pt = "Sons",
+    note = "Game sounds (game_chaossound, O238): short picks from four packs, cut, set to mono and levelled by client/tools/gen_sfx.py. All four are Creative Commons Zero 1.0 (the licence text in each pack's own download reads \"License: (Creative Commons Zero, CC0)\"): no credit is required, and we credit the author anyway.",
+    entries = {
+      { name = "Impact Sounds", author = "Kenney (www.kenney.nl)", licence = "Creative Commons Zero 1.0 (CC0)", use = "hits, critical hits, kills, damage taken, blocks, ice, holy and earth spell sounds, the level up and unique drop sounds", source = "https://kenney.nl/assets/impact-sounds" },
+      { name = "RPG Audio", author = "Kenney (www.kenney.nl)", licence = "Creative Commons Zero 1.0 (CC0)", use = "dodges, physical spell sounds and the rare drop coins", source = "https://kenney.nl/assets/rpg-audio" },
+      { name = "Interface Sounds", author = "Kenney (www.kenney.nl)", licence = "Creative Commons Zero 1.0 (CC0)", use = "healing, goal and window sounds", source = "https://kenney.nl/assets/interface-sounds" },
+      { name = "Sci-fi Sounds", author = "Kenney (www.kenney.nl)", licence = "Creative Commons Zero 1.0 (CC0)", use = "fire, energy and death spell sounds", source = "https://kenney.nl/assets/sci-fi-sounds" },
+    },
+  },
+  {
     title = "Engine and libraries",
     pt = "Motor e bibliotecas",
     note = "",
