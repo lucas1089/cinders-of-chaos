@@ -409,6 +409,18 @@ jobs:
           g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" client/tools/chaosdeathfade_test.cpp -o "$d/chaosdeathfade_asan"
           "$d/chaosdeathfade_asan"
 
+      - name: Light map fill, same bytes and benchmark check (C++; header from base patch 0140)
+        run: |
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/client\/chaoslightfill\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            client/base-patches/0140-cheaper-light-map.patch > "$d/chaoslightfill.h"
+          g++ -std=c++17 -O1 -Wall -Wextra -I "$d" -I client/tools client/tools/chaoslightfill_test.cpp -o "$d/chaoslightfill_test"
+          "$d/chaoslightfill_test"
+          g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" -I client/tools client/tools/chaoslightfill_test.cpp -o "$d/chaoslightfill_asan"
+          "$d/chaoslightfill_asan"
+          g++ -std=c++17 -O2 -Wall -Wextra -I "$d" -I client/tools client/tools/light_bench.cpp -o "$d/light_bench"
+          "$d/light_bench" --check
+
       - name: Big creature click maths (C++; header from base patch 0051)
         run: |
           d=$(mktemp -d)

@@ -1,0 +1,176 @@
+# Chaos: cheaper light map per frame (O222; client/BASE.md "0140"; src/client/chaoslightfill.h (new, pure), lightview.cpp;
+# after 0001-0139).
+# Audit of the map draw for what costs per frame in proportion to the map: LightView::draw (render thread) visited every map
+# tile and, for each tile, every light added after the tile's floor started (tiles x lights, a double sqrt, a division and
+# Color::from8bit per pair; 400 lights on a 31x23 map is 285k pairs). A light only lights tiles within `intensity` tiles of
+# itself, so almost all of those pairs were culled by the stock `intensity < 0.01` test after the maths was done.
+#  * chaoslight::fill (chaoslightfill.h): the buffer starts as the global light, then each light, in order, is applied to
+#    the tiles of its reach box only (one tile of margin on each side, a squared-distance cut before the sqrt that only skips
+#    what the stock test skips), for tiles whose floor start allows that light. Every pair that is visited runs the stock
+#    expression unchanged; each tile ends as the maximum of the global light and of the lights that reach it, and the
+#    maximum does not depend on the order. Color::from8bit is done once per light, not once per pair. Same bytes as the
+#    stock loop. No state across frames: the buffer is filled from scratch each frame, the only memory is the existing
+#    static buffer (map area x 4), no new allocation.
+# Checked: applies cleanly after 0001-0139 (no fuzz); lightview.cpp passes g++ -std=c++20 -fsyntax-only -w -Isrc
+# -DFRAMEWORK_GRAPHICS. Not built, linked or run in a client. Test client/tools/chaoslightfill_test.cpp (also under ASan/
+# UBSan), bench client/tools/light_bench.cpp --check (both in CI).
+diff -ruN a/src/client/chaoslightfill.h b/src/client/chaoslightfill.h
+--- a/src/client/chaoslightfill.h
++++ b/src/client/chaoslightfill.h
+@@ -0,0 +1,97 @@
++// Chaos (base patch 0140, O222): the per-frame fill of the light map, pure, no engine types.
++// Stock LightView::draw visited every map tile and, for each tile, every light added after the tile's floor started:
++// tiles x lights distance maths per frame. A light only reaches tiles within `intensity` tiles of itself, so this walks the
++// lights and visits only the tiles inside that reach. The result is the same byte for byte: each tile ends as the
++// maximum of the global light and of the lights that reach it (max does not depend on the order), and each light/tile
++// pair that is visited runs the stock expression unchanged. A pair that is skipped is one the stock code skipped as well.
++#ifndef CHAOSLIGHTFILL_H
++#define CHAOSLIGHTFILL_H
++
++#include <algorithm>
++#include <cmath>
++#include <cstddef>
++#include <cstdint>
++
++namespace chaoslight {
++
++inline int floorDiv(int a, int b) // b > 0
++{
++    int q = a / b;
++    if (a % b != 0 && a < 0) --q;
++    return q;
++}
++
++// Tile columns and rows that can get light from a light at pixel (lx, ly) with this intensity. A tile centre farther away
++// than `intensity` tiles gets intensity <= 0 and is skipped by the stock test; the box adds one tile on every side, so
++// rounding can never leave out a tile the stock code lit.
++struct Box {
++    int x0, x1, y0, y1;
++    bool empty() const { return x0 > x1 || y0 > y1; }
++};
++
++inline Box reach(int lx, int ly, int intensity, int spriteSize, int w, int h)
++{
++    const int r = (intensity + 1) * spriteSize;
++    const int half = spriteSize / 2;
++    Box b;
++    b.x0 = std::max(0, floorDiv(lx - r - half, spriteSize));
++    b.x1 = std::min(w - 1, floorDiv(lx + r - half, spriteSize) + 1);
++    b.y0 = std::max(0, floorDiv(ly - r - half, spriteSize));
++    b.y1 = std::min(h - 1, floorDiv(ly + r - half, spriteSize) + 1);
++    return b;
++}
++
++// buffer: w * h * 4 bytes (RGBA), every byte is written. lights[i] has .pos.x, .pos.y, .color, .intensity; tiles[index].start
++// is the first light that tile takes (lights before it belong to a floor drawn over that tile's floor).
++// base(light) is called once per light and returns what shade needs; shade(base, k, rgb) writes the three 8 bit channels
++// of the light colour scaled by k (0 < k <= 1) to rgb. Both are the stock Color::from8bit(c) and Color * k.
++template <class L, class T, class Base, class Shade>
++void fill(uint8_t* buffer, int w, int h, int spriteSize, uint8_t gr, uint8_t gg, uint8_t gb,
++          const L* lights, size_t count, const T* tiles, Base base, Shade shade)
++{
++    const size_t area = size_t(w) * size_t(h);
++    for (size_t i = 0; i < area; ++i) {
++        buffer[i * 4] = gr;
++        buffer[i * 4 + 1] = gg;
++        buffer[i * 4 + 2] = gb;
++        buffer[i * 4 + 3] = 255;
++    }
++    for (size_t i = 0; i < count; ++i) {
++        const L& light = lights[i];
++        const int lightIntensity = light.intensity;
++        const Box b = reach(light.pos.x, light.pos.y, lightIntensity, spriteSize, w, h);
++        if (b.empty())
++            continue;
++        const int64_t limit = int64_t(lightIntensity) * spriteSize; // at or beyond this distance the stock test culls
++        const auto prepared = base(light);
++        for (int y = b.y0; y <= b.y1; ++y) {
++            for (int x = b.x0; x <= b.x1; ++x) {
++                const size_t index = size_t(y) * size_t(w) + size_t(x);
++                if (tiles[index].start > i)
++                    continue;
++                const int px = x * spriteSize + spriteSize / 2;
++                const int py = y * spriteSize + spriteSize / 2;
++                const int dx = px - light.pos.x;
++                const int dy = py - light.pos.y;
++                const int64_t d2 = int64_t(dx) * dx + int64_t(dy) * dy;
++                if (d2 >= limit * limit)
++                    continue; // distance >= intensity tiles: (intensity - distance) * 0.2 <= 0 < 0.01, stock skips it
++                float distance = std::sqrt(dx * dx + dy * dy);
++                distance /= spriteSize;
++                float intensity = (-distance + light.intensity) * 0.2f;
++                if (intensity < 0.01f) continue;
++                if (intensity > 1.0f) intensity = 1.0f;
++                int rgb[3];
++                shade(prepared, intensity, rgb);
++                uint8_t* p = buffer + index * 4;
++                p[0] = uint8_t(std::max<int>(p[0], rgb[0]));
++                p[1] = uint8_t(std::max<int>(p[1], rgb[1]));
++                p[2] = uint8_t(std::max<int>(p[2], rgb[2]));
++            }
++        }
++    }
++}
++
++} // namespace chaoslight
++
++#endif
+diff -ruN a/src/client/lightview.cpp b/src/client/lightview.cpp
+--- a/src/client/lightview.cpp
++++ b/src/client/lightview.cpp
+@@ -21,6 +21,7 @@
+  */
+ 
+ #include "lightview.h"
++#include "chaoslightfill.h"
+ #include "spritemanager.h"
+ #include <framework/graphics/painter.h>
+ 
+@@ -46,35 +47,22 @@
+ 
+ void LightView::draw() // render thread
+ {
+-    // TODO: optimize in the future for big areas
++    // Chaos (base patch 0140): the same light map, filled light by light over the tiles each light reaches instead of
++    // every tile against every light (chaoslightfill.h); the buffer is the same byte for byte
+     static std::vector<uint8_t> buffer;
+     if (buffer.size() < 4u * m_mapSize.area())
+         buffer.resize(m_mapSize.area() * 4);
+ 
+-    for (int x = 0; x < m_mapSize.width(); ++x) {
+-        for (int y = 0; y < m_mapSize.height(); ++y) {
+-            Point pos(x * g_sprites.spriteSize() + g_sprites.spriteSize() / 2, y * g_sprites.spriteSize() + g_sprites.spriteSize() / 2);
+-            int index = (y * m_mapSize.width() + x);
+-            int colorIndex = index * 4;
+-            buffer[colorIndex] = m_globalLight.r();
+-            buffer[colorIndex + 1] = m_globalLight.g();
+-            buffer[colorIndex + 2] = m_globalLight.b();
+-            buffer[colorIndex + 3] = 255; // alpha channel
+-            for (size_t i = m_tiles[index].start; i < m_lights.size(); ++i) {
+-                Light& light = m_lights[i];
+-                float distance = std::sqrt((pos.x - light.pos.x) * (pos.x - light.pos.x) +
+-                                           (pos.y - light.pos.y) * (pos.y - light.pos.y));
+-                distance /= g_sprites.spriteSize();
+-                float intensity = (-distance + light.intensity) * 0.2f;
+-                if (intensity < 0.01f) continue;
+-                if (intensity > 1.0f) intensity = 1.0f;
+-                Color lightColor = Color::from8bit(light.color) * intensity;
+-                buffer[colorIndex] = std::max<int>(buffer[colorIndex], lightColor.r());
+-                buffer[colorIndex + 1] = std::max<int>(buffer[colorIndex + 1], lightColor.g());
+-                buffer[colorIndex + 2] = std::max<int>(buffer[colorIndex + 2], lightColor.b());
+-            }
+-        }
+-    }
++    chaoslight::fill(buffer.data(), m_mapSize.width(), m_mapSize.height(), g_sprites.spriteSize(),
++                     m_globalLight.r(), m_globalLight.g(), m_globalLight.b(),
++                     m_lights.data(), m_lights.size(), m_tiles.data(),
++                     [](const Light& light) { return Color::from8bit(light.color); },
++                     [](const Color& base, float k, int* rgb) {
++                         const Color lightColor = base * k;
++                         rgb[0] = lightColor.r();
++                         rgb[1] = lightColor.g();
++                         rgb[2] = lightColor.b();
++                     });
+ 
+     m_lightTexture->update();
+     glBindTexture(GL_TEXTURE_2D, m_lightTexture->getId());
