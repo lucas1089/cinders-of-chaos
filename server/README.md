@@ -18004,12 +18004,15 @@ hunts take floor 6 ("More Teleports"), which has no tile around it.
   (two frames on one spot: the first plan by id); it never replaces a tile, and a second run adds nothing. An area
   placed before the frame existed (`placed already`) gets its frame on the next run. A plan placed later on another
   area's frame takes those tiles when they still hold the bare frame ground (they are cut and written again).
-- Grows floor 6 by `modules` (5) alcove modules on each side: the columns of `room.east.module` / `room.west.module`
+- Grows floor 6 by `modules` (6) alcove modules on each side: the columns of `room.east.module` / `room.west.module`
   are copied one after another past the old end, and the end (`cap`, with its temple teleport and destination) moves
-  out by 20. Only the old end's 34 tiles are replaced (cut from the map file); the 420 other new tiles land where the map
-  has none, else nothing is written. The copies have no teleport and blank signs: 20 new slots (x 31610-31626 and
-  31670-31686, both rows; room for the 14 plans of 2026-10-14 and 6 spare); floor 6 spans x 31606-31690 instead of
-  31626-31670.
+  out by 24. Only the old end's 34 tiles are replaced (cut from the map file); the 504 other new tiles land where the map
+  has none, else nothing is written. The copies have no teleport and blank signs: 24 new slots (x 31606-31626 and
+  31670-31690, both rows); floor 6 spans x 31602-31694 instead of 31626-31670. A floor grown before by fewer modules
+  (5 until 2026-10-25, when Sunken Mirewood made 38 hunts on floor 6) grows on from its ends where they stand: only the
+  missing modules are new, the ends move on (log "floor 6 is grown by east 5 / west 5 modules already"). The same holds
+  for the wings. `hall.capacity` names each floor's slot count; `install_content_areas_test.py` counts the hunts per
+  floor (base hunts and plans, by level) and fails CI with "grow the room" before a deploy would.
 - Spawn file: the plans' spawn blocks (marked `chaoscontent="ID"`) and two display monsters per used slot in the cells
   beside its counter (`chaoshunt="ID"`, spawntime `displaySpawntime`), the same way the room shows its own hunts. A
   display monster is a frequent monster of the plan whose look renders in the client pair (checked:

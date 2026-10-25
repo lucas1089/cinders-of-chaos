@@ -43,8 +43,8 @@ return {
 		teleportRows = {32254, 32258}, -- the teleport of each alcove, north and south side
 		cellRows = {32253, 32259}, -- the closed cells beside the counter behind each teleport (display monsters)
 		signRows = {32252, 32260}, -- the counter with the sign behind each teleport
-		east = {module = {31664, 31667}, cap = {31668, 31670}, modules = 5},
-		west = {module = {31629, 31632}, cap = {31626, 31628}, modules = 5},
+		east = {module = {31664, 31667}, cap = {31668, 31670}, modules = 6},
+		west = {module = {31629, 31632}, cap = {31626, 31628}, modules = 6},
 		-- the middle of the corridor (the stairs' column): where a plan's exit portal sends players when its places
 		-- entry has no `front` (the tile in front of its own teleport) and the room has no teleport rows; the end
 		-- teleports' fronts face this column
@@ -82,6 +82,10 @@ return {
 		enabled = true,
 		floors = {7, 6, 5},
 		levels = {{z = 7, max = 500}, {z = 6, max = 1000}, {z = 5}},
+		-- the hunt slots of each floor as the install counts them on the live map (2 a module a side, plus the base
+		-- room's); install_content_areas_test.py refuses more hunts on a floor (the base hunts of hall_hunts.csv and every
+		-- plan, by `levels`) than it has, so CI says "grow it" before an update fails on the server. Raise it with the room.
+		capacity = {{z = 7, slots = 48}, {z = 6, slots = 41}, {z = 5, slots = 18}},
 		quests = {
 			z = 7,
 			north = {y = 32263, x = {31630, 31634, 31638, 31642, 31654, 31658, 31662, 31666}},
@@ -138,7 +142,8 @@ return {
 	display = {x = {31594, 31706}, floors = {5, 7}},
 
 	-- 66 plans. With the base hunts they fill every slot of the hall since 2026-10-22 (server/README.md "Hall order":
-	-- 48 of 48 on z 7, 37 of 37 on z 6, 18 of 18 on z 5).
+	-- 48 of 48 on z 7, 37 of 37 on z 6, 18 of 18 on z 5). 2026-10-25: Sunken Mirewood is the 38th hunt of z 6, so floor 6
+	-- grew one module a side (5 -> 6, 41 slots; hall.capacity).
 	-- The order here does not count: install_content_areas.py gives the slots by level band ascending (the plan's
 	-- `level`), along the corridor from west to east, the north teleport of a column before the south one; a new
 	-- hunt lands in its place by itself. A plan of tools/areaplan/plans/ missing here still gets a teleport, with its
