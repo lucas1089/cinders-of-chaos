@@ -839,6 +839,7 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7102460 - 7102469 | Candlemarks (`candlemarks_config.lua` `storage`): +0 the id of the last Candlemark purchase delivered to the character (the crash-safe delivery mark); +1..9 free |
 | 7102490 - 7102499 | rarity migration (`rarity_migrate.lua`): +0 the version of the walk this character had; +1..9 free |
 | 7102480 - 7102489 | potions (`potions_config.lua` `storage`): +0 the Everfull potions were given (kit or login grant); +1 the tree's Healing percent for the potion scripts; +2 / +3 the health / mana flask's charges in hundredths of a charge (-1 = never set = full, O242); +4 the tree's extra flask charges; +5 the tree's charge gain percent; +6..9 free |
+| 7102510 - 7102519 | Everfull tier upgrades (`potions_config.lua` `storage.upgradeBase`, O245): +0 .. +6 the upgrade to the tier at that place among the tiers 2+ (great health, great mana, great spirit, ultimate health, ultimate mana, ultimate spirit, supreme health) was done (1); +7..9 free |
 | 7102800 - 7102810 | Haunted Harvest (`harvest_event_config.lua` `storage`): +0 the day, +1 hollow candy from pumpkins that day, +2 the day of the boss's first-kill candy; +3..9 free; 7102810 the GLOBAL forced state (0 window, 1 open, 2 shut) |
 | 7102820 | Infinity Tower first-clear floors (`infinitytower_balance_config.lua` `rewards.storage`): the tower season x 1000 + the highest milestone floor paid that season; 7102821 - 7102829 free |
 | 7109990 - 7109992 | spell supports: cast context and Reprisal (`data/lib/chaos_supports_config.lua`) |
@@ -4976,6 +4977,9 @@ Owner request 2026-10-16: "Remove the potion flasks and make the first pots infi
   nothing back. Tests: `tools/patch_open_potions_test.py`; `tests/potions_patch_test.lua` runs the patched script on a mock
   engine and checks that every vocation id (0-25: the stock ones, Thief, Ninja, Samurai, Necromancer, Lich, Templar and the
   rest) drinks every healing potion. The helper client lists all of them (`helper_potions.lua`).
+- **Everfull upgrades (O245).** She also gives the Everfull flask tiers: ask her about an {upgrade} (the task: 40 stock potions of the
+  tier plus the previous flask, the level of the stock potion) or a {lost} flask. Nothing is added to her trade window. README "Potions",
+  "Higher tiers".
 - **Old flasks keep their value.** Nothing removes the flasks players hold. The NPCs' `shop_sellable` entries stay and
   the Loot Buyer and the Auto Seller still pay the old 5 gold each (`sell_prices.lua`), so nobody loses gold. No source
   creates new ones.
@@ -4983,8 +4987,8 @@ Owner request 2026-10-16: "Remove the potion flasks and make the first pots infi
   1, every class) has an Everfull copy: **everfull health potion 32085** (125-175 health) and **everfull mana potion
   32086** (75-125 mana), the rolls of the stock potions. New items.otb nodes copied from 7618 / 7620 (flags, attributes,
   the stock look), stackable like them for the same reason as the Everfull Ration (count 1, never used up), items.xml
-  entries "A flask: kills and the temple refill its charges ..." (the item tooltip shows them; "Never runs out" until O242). No spirit potion: the first one is the great spirit
-  potion (level 80); the hybrid classes start on health and mana potions too (docs/CLASSES.md, `newplayer_config.lua`).
+  entries "A flask: kills and the temple refill its charges ..." (the item tooltip shows them; "Never runs out" until O242). No spirit potion at tier 1: the first one is the great spirit
+  potion (level 80, a higher tier below); the hybrid classes start on health and mana potions too (docs/CLASSES.md, `newplayer_config.lua`).
 - **Drinking.** On yourself or another player like the stock potion (not on a monster or an NPC). Never used up, no flask.
   The health and the mana potion each have their own wait (the action interval - 100 ms = 900 ms, a per-player timer in
   `potions.lua`; owner 2026-10-17: a mana potion after a health potion said "You are exhausted."), so each is no faster
@@ -5064,10 +5068,89 @@ Owner request 2026-10-16: "Remove the potion flasks and make the first pots infi
     `potions_config.lua`. The mana flask matters most (README "mana" report of a level 800 Juggernaut that lived on infinite
     mana potions).
   Tests: `tests/potions_test.lua` ("flask charges").
+- **Higher tiers (O245).** Owner 2026-10-25: "Podemos vender everfull potion na store ou em quests também" (can we sell Everfull
+  potions in the store, or give them through quests too). Seven more Everfull items, copies of the stock potions' nodes
+  (`install_potions.py`, server ids **32261-32267**, the range the lead set aside: 32087-32100 belong to other work), each with
+  the stock potion's roll and level and the same "fixed + percent of the maximum" amount (percent by the level it needs):
+
+  | Id | Item | Stock potion | Level | Roll | Spends | Made from |
+  |---|---|---|---|---|---|---|
+  | 32261 | everfull great health potion | 7591 | 80 | 425-575 health | 1 health charge | 32085 |
+  | 32262 | everfull great mana potion | 7590 | 80 | 150-250 mana | 1 mana charge | 32086 |
+  | 32263 | everfull great spirit potion | 8472 | 80 | 250-350 health, 100-200 mana | 1 health + 1 mana | 32085 |
+  | 32264 | everfull ultimate health potion | 8473 | 130 | 650-850 health | 1 health | 32261 |
+  | 32265 | everfull ultimate mana potion | 26029 | 130 | 425-575 mana | 1 mana | 32262 |
+  | 32266 | everfull ultimate spirit potion | 26030 | 130 | 420-580 health, 200-350 mana | 1 health + 1 mana | 32263 |
+  | 32267 | everfull supreme health potion | 26031 | 200 | 875-1125 health | 1 health | 32264 |
+
+  Rolls and levels are the base server's `data/actions/scripts/other/potions.lua`. Its comments call 26030 "supreme spirit" and
+  26031 "ultimate health"; this repository's names (the Apothecary table above, the store packs) are the real game's: 26030 ultimate
+  spirit, 26031 supreme health. The classes are all open to every potion since O175, so the spirit line is a choice of any class,
+  not a hybrid-only item. The hybrid classes (Rangers and the like) are who it suits: it heals and restores mana in one key.
+  - **A slot, not a tier.** A character holds ONE Everfull item per slot: health (the health line and the spirit line) and mana.
+    An upgrade replaces the item with the next tier of its line; the old item is removed, the new one is store-bound and locked
+    with the old item's `chaos_storebound` / `chaos_locked` values (a lock of 1, the client's grey, becomes the bind value 2). The
+    health slot has two lines from tier 1: health (great 32261, ultimate 32264, supreme 32267) and spirit (great 32263, ultimate
+    32266). The choice is made at level 80 and the lines never cross (`from` in the config; a spirit flask cannot become a health
+    flask: there is no downgrade, and `K.upgradeCheck` says "needs a different flask").
+  - **Charges stay shared.** The pools are `pools = {"health", "mana"}`, one per kind, in the character's storage (7102482 /
+    7102483), never per tier or per item. An upgrade does not read or write them (tested: they are the same before and after), so it
+    cannot refill or reset a flask. A kill refills each pool once whatever items are held (`PT.addKill` iterates the pools, not
+    the entries), and the temple fills the pools. The look and the drink line show the pool(s) of the item.
+  - **Spirit and double dipping.** A spirit potion draws from BOTH pools: one health charge and one mana charge a drink, and it
+    needs a whole charge in each (`K.drink`: `why = "empty"`, naming the short pool, nothing spent). So it costs exactly what a
+    health drink plus a mana drink cost, its mana never comes free from the health pool, and holding a spirit flask next to the
+    mana flask gives no second source. Its waits are both pools' waits (a spirit drink is no faster than the two flasks), and an empty
+    spirit flask falls back to the stock spirit potion of its tier like the others.
+  - **Level.** Each tier keeps the stock potion's level: a drink below it is refused ("Only characters of level N or above may
+    drink this fluid", the stock script's text) before any charge is spent, and the upgrade is refused below it (both ways).
+  - **The quest: Veyra the Apothecary** (`data/npc/scripts/veyra_the_apothecary.lua`; no new NPC, no opcode). Ask her about an
+    {upgrade} (also {everfull}, {task}). She lists what the previous tier the character holds can become and what it needs:
+    **40 stock potions of the tier** (`upgrade.materials`; the stock potion of the item, in the backpack, 40 great health potions
+    for 32261 and so on), the flask in the backpack, inbox, store purse or a depot, and the level. The materials are loot and
+    purchases, so the task is a gold sink at her prices (docs/PRICES.md); a character with a choice (health or spirit at level 80)
+    says which. {yes} does it. The same code runs again at {yes}, nothing is trusted from the first answer. Anybody can say any
+    words; the only inputs are the NPC's keywords and a word match, and an unknown word does nothing.
+  - **The store sells the same swap.** `{kind = "service", service = "everfullUpgrade", upgrade = <id>, cost = coins}` in
+    Consumables > Convenience (`shop_config.lua`), registered into `ChaosShopServices.services` by `potions.lua` (as the Ration). 30
+    coins for the great tier, 50 the ultimate, 70 the supreme (`upgrade.coins`; a spirit or health line costs 150 coins in all, the
+    limit is 200). The same `ChaosPotions.upgrade(player, id, "store")` as the task, minus the materials, with the same level
+    gate, previous tier and once per tier. Pay to skip: it gives exactly what the task gives and nothing beyond (no better roll, no
+    charges). The offer key includes the tier (`shop_core.lua`), services are not giftable, and the service checks that the
+    offer's cost is the config's (`K.upgradeCoins`) before it does anything.
+  - **Atomic, no duplicates.** `ChaosPotions.upgrade`: check everything (`K.upgradeCheck`: tier known and installed, not done, the
+    ONE Everfull item of the slot is the tier's `from`, level, materials) -> place the new item (no room: nothing changed) -> take the
+    materials -> set the tier's flag (7102510 + n) -> remove the old item. An error or a refusal anywhere undoes what was done (the
+    new item removed, the flag cleared, the materials given back); everything runs in one call, so a double click finds the swap done
+    (flag set, old item gone) and is refused. The store takes coins before `apply` and refunds on any result but `true`
+    (`shop.lua`), and `apply` changes nothing unless it returns true. Paths that could duplicate a flask: trade, mail, the market,
+    the trash and the ground are refused for any `chaos_storebound` item (pouches.lua, engine patch 0009); death keeps it
+    (`death_keep.lua`); a relog changes nothing (the charges and the flags are storage); the stash is not used. A character
+    that holds two Everfull items of a slot (a GM gift, an old copy) is refused ("Keep only one"), never a third. A seller's
+    replacement (`PT.npcBuy`, and the starter kit / login grant `PT.giveAll`) now checks the SLOT, not the id: an upgraded character
+    never buys or is given a starting flask next to its great one.
+  - **Where the previous tier may be.** Equipped or in any backpack, the store purse, the inbox or a depot chest (`PT.everfullItems`
+    walks them). Anywhere else (the floor, another player's container) it is not found and the swap is refused with "Carry your
+    Everfull potion in your backpack, your inbox or a depot".
+  - **A lost flask.** Flasks are bound and kept through death, so this should not happen (a GM delete, a bug). A character that
+    earned a tier and holds no Everfull item of that slot says {lost} / {restore} to Veyra: she gives back the highest tier it earned
+    in that slot for `price` gold (the task's materials at her prices). The seller's trade window refuses the starting flask for such
+    a character ("You earned a better flask than that") so it cannot take the cheap path to a second item.
+  - **Not sold anywhere else.** Only tier 1 is added to the potion sellers (`install_potions.py`); the new ids are marked `bound`
+    in the item price table (no NPC pays for them), listed by the item finder (source "Veyra the Apothecary", the store service),
+    and have the potion cooldown channel like the others (`cooldown_channels.lua` reads the config). The engine's hotkey patch (0043)
+    finds them by their look like the first two.
+  - **Install:** the same step `potions` (nine nodes now). New: the `tier` of each row, the store offers, no sellers for tier 2+.
+  - **Texts:** English keys, pt-BR in `i18n_strings.lua` ("Everfull potion tiers"). The item descriptions are in items.xml.
+  - **Not done / risks:** the client's helper and action bar know only the first two looks as Everfull (`helper_potions.lua`), so
+    the helper's "use the Everfull flask" path does not know the new ones (the hotkey by look works through patch 0043); the new
+    looks are the stock great, ultimate and supreme potions' (no new art). The levels and rolls of the stock potions are read from the
+    base `potions.lua` here; the names of 26029-26031 are the real game's. Prices are a first estimate (`store_model.lua`), nothing
+    is measured on a running server and the whole path is only tested on a mocked engine.
 - **Install:** `tools/install_potions.py DATA_DIR [--dry-run]` (step `potions` of `install_all.py`, after `runes`, before
   `itemprices`; idempotent; `items.otb.bak` keeps the original; exit 1 with nothing written when the ShopModule hook
   cannot be placed or no potion seller is found). `tools/gen_item_prices.py` marks both ids `bound` (never priced).
-- **Tests:** `tests/potions_test.lua` (the rules, drinking on a mocked engine: healed, not consumed, no flask, the exhaust;
+- **Tests:** `tests/potions_test.lua` (the rules and the O245 tiers: config, check rules, swap, rollbacks, store service; drinking on a mocked engine: healed, not consumed, no flask, the exhaust;
   the kit and login grant; the NPC replacement; the stock potions.lua patched by the tool: no flask, a higher tier still
   used up, the exhaust unchanged), `tools/install_potions_test.py` (a synthetic base server: items, NPCs, the hook,
   idempotent).

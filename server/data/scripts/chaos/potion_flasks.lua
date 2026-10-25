@@ -183,8 +183,8 @@ function F.safePass(players)
 	local cfg, n = PT.cfg(), 0
 	for _, p in ipairs(players) do
 		local needs = false
-		for _, e in ipairs(cfg.everfull) do
-			if PT.charges(p, e.key) < PT.maxCharges(p, e.key) * 100 then
+		for _, pool in ipairs(cfg.pools) do
+			if PT.charges(p, pool) < PT.maxCharges(p, pool) * 100 then
 				needs = true
 			end
 		end
@@ -229,15 +229,15 @@ local look = EventCallback
 look.onLook = function(self, thing, position, distance, description)
 	if thing and thing.isItem and thing:isItem() and self and self.isPlayer and self:isPlayer() then
 		local ok, text = pcall(function()
-			local kind = PT.kindOf(thing:getId())
-			if not kind then
+			local entry = PT.everfull(thing:getId())
+			if not entry then
 				return description
 			end
 			local top = thing:getTopParent()
 			if top ~= self then -- somebody else's flask (or one on the floor) shows none of ours
 				return description
 			end
-			return description .. "\n" .. Chaos.t(self, "Charges: %s", PT.label(self, kind))
+			return description .. "\n" .. Chaos.t(self, "Charges: %s", PT.labelOf(self, entry))
 		end)
 		if ok then
 			description = text

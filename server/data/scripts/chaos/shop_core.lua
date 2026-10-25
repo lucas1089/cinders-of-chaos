@@ -254,7 +254,8 @@ function C.offerKey(o)
 	elseif k == "frame" then
 		return "frame:" .. tostring(o.frame)
 	elseif k == "service" then
-		return "service:" .. tostring(o.service) .. (o.buff and (":" .. o.buff) or "") .. (o.pouch and (":" .. o.pouch) or "")
+		return "service:" .. tostring(o.service) .. (o.buff and (":" .. o.buff) or "") .. (o.pouch and (":" .. o.pouch) or "") ..
+			(o.upgrade and (":" .. o.upgrade) or "")
 	elseif k == "unlock" then
 		return "unlock:" .. tostring(o.unlock)
 	elseif k == "pact" then

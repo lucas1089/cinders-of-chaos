@@ -180,7 +180,7 @@ for _, e in ipairs(COS.mounts) do MOUNTS[e.id] = e.clientid end
 local servicesSrc = readFile("data/scripts/chaos/shop_services.lua")
 local function serviceKnown(name)
 	if servicesSrc:find("\n\t" .. name .. " = ", 1, true) then return true end
-	for _, f in ipairs({"pact.lua", "store_food.lua"}) do
+	for _, f in ipairs({"pact.lua", "store_food.lua", "potions.lua"}) do
 		if readFile("data/scripts/chaos/" .. f):find("S.services." .. name .. " =", 1, true) then return true end
 	end
 	return dofile("data/scripts/chaos/gentledeath_config.lua").eternal.service == name

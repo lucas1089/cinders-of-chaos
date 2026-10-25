@@ -422,6 +422,23 @@ local cfg = {
 				-- price decided 2026-10-14 (docs/PRICES.md)
 				{kind = "service", service = "storeFood", icon = 32084, cost = 100, name = "Everfull Ration",
 					description = "Food that never runs out: 12 minutes of regeneration a bite, like the best food, until you are full. Store-bound."},
+				-- the Everfull potion tiers (potions.lua, potions_config.lua upgrade): the same swap Veyra's task does, for
+				-- coins. Needs the previous tier and the stock potion's level, once per tier and character, nothing beyond
+				-- what the task gives (pay to skip the hunt for the potions, docs/PRICES.md)
+				{kind = "service", service = "everfullUpgrade", upgrade = 32261, icon = 32261, cost = 30, name = "Everfull Great Health Potion",
+					description = "Swaps your Everfull Health Potion for the great one (level 80): 425-575 health a drink. Needs your Everfull Health Potion in your backpack, inbox or depot. The charges stay. Veyra the Apothecary does the same for 40 great health potions."},
+				{kind = "service", service = "everfullUpgrade", upgrade = 32262, icon = 32262, cost = 30, name = "Everfull Great Mana Potion",
+					description = "Swaps your Everfull Mana Potion for the great one (level 80): 150-250 mana a drink. Needs your Everfull Mana Potion in your backpack, inbox or depot. The charges stay. Veyra the Apothecary does the same for 40 great mana potions."},
+				{kind = "service", service = "everfullUpgrade", upgrade = 32263, icon = 32263, cost = 30, name = "Everfull Great Spirit Potion",
+					description = "Swaps your Everfull Health Potion for the great spirit one (level 80): health and mana a drink, one health and one mana charge. The charges stay. Veyra the Apothecary does the same for 40 great spirit potions."},
+				{kind = "service", service = "everfullUpgrade", upgrade = 32264, icon = 32264, cost = 50, name = "Everfull Ultimate Health Potion",
+					description = "Swaps your Everfull Great Health Potion for the ultimate one (level 130): 650-850 health a drink. The charges stay. Veyra the Apothecary does the same for 40 ultimate health potions."},
+				{kind = "service", service = "everfullUpgrade", upgrade = 32265, icon = 32265, cost = 50, name = "Everfull Ultimate Mana Potion",
+					description = "Swaps your Everfull Great Mana Potion for the ultimate one (level 130): 425-575 mana a drink. The charges stay. Veyra the Apothecary does the same for 40 ultimate mana potions."},
+				{kind = "service", service = "everfullUpgrade", upgrade = 32266, icon = 32266, cost = 50, name = "Everfull Ultimate Spirit Potion",
+					description = "Swaps your Everfull Great Spirit Potion for the ultimate one (level 130): health and mana a drink, one health and one mana charge. The charges stay. Veyra the Apothecary does the same for 40 ultimate spirit potions."},
+				{kind = "service", service = "everfullUpgrade", upgrade = 32267, icon = 32267, cost = 70, name = "Everfull Supreme Health Potion",
+					description = "Swaps your Everfull Ultimate Health Potion for the supreme one (level 200): 875-1125 health a drink. The charges stay. Veyra the Apothecary does the same for 40 supreme health potions."},
 				{kind = "unlock", unlock = "autoSeller", icon = 2160, iconCount = 100, cost = 400, name = "Auto Seller",
 					description = "Permanent: loot on your auto-sell list (Economy > Auto Seller) is sold at NPC prices, gold to your bank."},
 				{kind = "unlock", unlock = "rarityAutoloot", icon = 2472, cost = 300, name = "Rarity Autoloot",

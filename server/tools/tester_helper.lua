@@ -77,8 +77,10 @@ local function info(player)
 		potions = {health = hp and hp:getClientId() or 0, mana = mp and mp:getClientId() or 0}}
 	local ever = ChaosPotionsConfig and ChaosPotionsConfig.everfull or {}
 	for _, e in ipairs(ever) do
-		local it = ItemType(e.id)
-		data.potions["everfull_" .. e.key] = it and it:getClientId() or 0
+		if (e.tier or 1) <= 1 then -- the starting flasks; the O245 tiers share their key
+			local it = ItemType(e.id)
+			data.potions["everfull_" .. e.key] = it and it:getClientId() or 0
+		end
 	end
 	tell(player, "info", data)
 end
