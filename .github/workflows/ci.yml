@@ -421,6 +421,16 @@ jobs:
           g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" client/tools/chaosdeathfade_test.cpp -o "$d/chaosdeathfade_asan"
           "$d/chaosdeathfade_asan"
 
+      - name: Idle state of the window (C++; header from base patch 0143)
+        run: |
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/framework\/core\/chaosidle\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            client/base-patches/0143-idle-when-hidden.patch > "$d/chaosidle.h"
+          g++ -std=c++17 -O1 -Wall -Wextra -I "$d" client/tools/chaosidle_test.cpp -o "$d/chaosidle_test"
+          "$d/chaosidle_test"
+          g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" client/tools/chaosidle_test.cpp -o "$d/chaosidle_asan"
+          "$d/chaosidle_asan"
+
       - name: Hit flash bookkeeping (C++; header from base patch 0142)
         run: |
           d=$(mktemp -d)

@@ -127,10 +127,17 @@ local function stopTick()
   end
 end
 
+-- O227: a minimized window draws nothing, so the rain does not scroll and the roof is not checked (the timers stay, they only
+-- return at once); when the window is back the next tick goes on from there
+local function windowHidden()
+  return g_window ~= nil and g_window.isVisible ~= nil and not g_window.isVisible()
+end
+
 local function tick()
   local t = now()
   local dt = t - lastTick
   lastTick = t
+  if windowHidden() then return end
   local tgt = target()
   L.stepAll(cur, tgt, dt, L.fadeMs(weather, covered))
   draw()
@@ -156,6 +163,7 @@ end
 
 -- ---------------------------------------------------------------- roof check
 local function checkCover()
+  if windowHidden() then return end
   local player = g_game.getLocalPlayer()
   if not player then return end
   local pos = player:getPosition()
