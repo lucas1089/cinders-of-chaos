@@ -12,7 +12,9 @@
 #    colour levels (each of red, green, blue 0..5 of the 8-bit colour) and the radius scale with it (visualfx_logic.lua
 #    L.fade / L.dim / L.radiusAt are the same maths and are unit tested). The light view only adds light, so the surface in
 #    full ambient light does not get brighter; with "Show light effects" off there is no light view and nothing is drawn.
-# Checked: applies cleanly after 0001-0126 to the base client tree (no fuzz); not compiled or run in a client.
+#  * Option spellLight (default on), Options > Graphics under the other four visual effects of 0126.
+# Checked: applies cleanly after 0001-0126 to the base client tree (no fuzz) and the C++ passes a syntax-only compile;
+# not run in a client.
 --- a/src/client/map.h
 +++ b/src/client/map.h
 @@ -300,6 +300,20 @@
