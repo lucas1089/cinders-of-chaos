@@ -3,7 +3,7 @@
 -- which sent a map effect to every player every 100 ms. Here the server only decides the weather (weather_core.lua: the
 -- base's dice, the areas of weather_config.lua) and sends a player one small JSON message
 --     set {k = "rain", i = 1..3, f = fadeMs}   or   set {k = "none", f = fadeMs}
--- when he logs in, asks (client -> server `hello`), crosses into or out of a weather area, or the weather changes. A
+-- when the player logs in, asks (client -> server `hello`), crosses into or out of a weather area, or the weather changes. A
 -- GlobalEvent looks at the players every tickMs (3 s). The client draws the rain itself.
 -- Staff: /weather rain [1-3] | clear | info. Lua 5.1 / LuaJIT compatible.
 
