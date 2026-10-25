@@ -18,7 +18,7 @@ local function strike(casterId, targetId)
 	if target:getHealth() < target:getMaxHealth() * 0.25 then
 		min, max = min * 1.5, max * 1.5
 	end
-	ChaosSpell.vshoot(player:getPosition(), target:getPosition(), "holy_spear", "holy_arrow", CONST_ANI_HOLY)
+	ChaosSpell.pshoot(player:getPosition(), target:getPosition(), "proj_piercing_arrow_holy", "holy_spear", "holy_arrow", CONST_ANI_HOLY)
 	ChaosSpell.vfx(target:getPosition(), "holy_smite")
 	ChaosSpell.damageTarget(player, target, COMBAT_HOLYDAMAGE, min, max, Fx("holy_smite", CONST_ME_HOLYDAMAGE))
 end

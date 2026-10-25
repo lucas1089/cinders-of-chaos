@@ -67,7 +67,7 @@ function onCastSpell(creature, variant, isHotkey)
 		if M and M.shoot(pos, ppos, "ki_blast_blue") then
 			fly = M.flightMs(pos, ppos)
 		else
-			ChaosSpell.shoot(pos, ppos, "arcane_orb", CONST_ANI_SMALLHOLY)
+			ChaosSpell.pshoot(pos, ppos, "proj_spirit_wisp_arcane", nil, "arcane_orb", CONST_ANI_SMALLHOLY)
 		end
 	end
 	ChaosSpell.healTarget(player, primary, amount, amount, Fx("heal_sparkle", CONST_ME_MAGIC_BLUE))

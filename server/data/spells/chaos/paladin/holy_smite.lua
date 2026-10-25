@@ -25,7 +25,7 @@ function onCastSpell(creature, variant, isHotkey)
 	end
 	local target = ChaosSpell.targetOf(variant)
 	if target and ChaosVfxMissile then
-		VfxShoot(creature:getPosition(), target:getPosition(), "holy_spear")
+		ChaosSpell.pshoot(creature:getPosition(), target:getPosition(), "proj_piercing_arrow_holy", "holy_spear", "holy_arrow", CONST_ANI_HOLY)
 		ChaosSpell.vfx(target:getPosition(), "holy_hit")
 	end
 	return true

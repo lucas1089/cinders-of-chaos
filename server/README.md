@@ -16527,7 +16527,7 @@ effect packs of docs/CREDITS.md into the game. Effects only: no damage, area, ti
 
 ## Projectile pack, native 32 px (pair 41) (`data/lib/chaos_pack41_fx_ids.lua`, loaded by `ChaosPack36Fx.live()`)
 Pair 41 (client/MANIFEST.md "Projectile pack, native 32 px (pair 41)") redraws 50 missiles of pair 36 from the pack's
-own 32 px renders instead of the halved 64 px ones, and appends three. No spell, monster or item is wired to it.
+own 32 px renders instead of the halved 64 px ones, and appends three. O239 wires the appended three and eleven of the pair 42 names to spells and bow shots (section "Pair 41 / 42 missile wiring (O239)" below).
 - **Redrawn in place** (no server change): stock and procedural ids 4 5 11 12 13 15 25 28 29 30 31 32 33 36 37 38 39 41 56 57 60 84 85
   86 104 116-125 and the pair 36 missiles 189-203. The ids, the send offsets (`dx`, `dy` of
   `chaos_pack36_fx_ids.lua` for 189-203, 0, 0 for the stock ones) and the 3 x 3 direction layout are unchanged.
@@ -16536,8 +16536,8 @@ own 32 px renders instead of the halved 64 px ones, and appends three. No spell,
   arrow, a frost arrow and a holy piercing arrow (the Ranger line's Dawnpiercer and Sunspear are holy). Ids 254 and 255
   stay free: 254 is `CONST_ANI_WEAPONTYPE` ("the weapon's missile" in a combat's distance effect, never sent to the
   client), and `check_pair.py` warns above 254.
-- Test: `tests/pack41_fx_test.lua` (the ids file against `art_import/pack41_missiles.csv`, ids 251-253, no script sends
-  the new names yet).
+- Test: `tests/pack41_fx_test.lua` (the ids file against `art_import/pack41_missiles.csv`, ids 251-253, and which files
+  send which names).
 - **Pair 42** (client/MANIFEST.md "Projectile pack, remaining swaps (pair 42)"): six in-use stock ids redrawn in place
   with no server change (1 spear, 22 sniper arrow, 34 flaming arrow, 35 shiver arrow, 7 burst arrow, 6 poison arrow;
   send offset 0, 0), and fifteen more variants named in the same ids file, each with the send offset of its art:
@@ -16545,10 +16545,40 @@ own 32 px renders instead of the halved 64 px ones, and appends three. No spell,
   `proj_flame_lance_spirit` 115, `proj_poison_dart_necrotic` 137, `proj_razor_leaf_sakura` 138,
   `proj_shadow_bolt_blood` 139, `proj_soul_skull_spirit` 140, `proj_spirit_arrow_blood` 141,
   `proj_spirit_arrow_gold` 142, `proj_spirit_wisp_arcane` 143, `proj_venom_glob_necrotic` 144, `proj_void_orb_abyss`
-  145, `proj_water_bolt_abyss` 75, `proj_wind_blade_storm` 146. No spell, monster or item sends them. They are not on
+  145, `proj_water_bolt_abyss` 75, `proj_wind_blade_storm` 146. O239 sends eleven of them (below). They are not on
   62-76 as first asked: the base server's monster files send 62-74 and 76 by number, so those 14 took the next unused
   ids (the census is in the MANIFEST section). A pair older than 42 draws the old art on the six stock ids and nothing
   on the named ones. The test also checks that no pair 42 id is a pair 41 id, a `ChaosFxMissile` id or on 62-76 except 75.
+
+### Pair 41 / 42 missile wiring (O239)
+`ChaosSpell.pshoot(from, to, pname, vname, name, fallback)` (`data/spells/chaos/_common.lua`) sends the ChaosVfxMissile
+`pname` at its send offset. It loads the ids through `ChaosPack36Fx.live()` (switch `PAIR36_FX`). It sends the old
+missile (`vshoot(vname ..)`, else `shoot(name ..)`, else nothing) when the ids are not known, when the caster chose a
+skin for it, or when a pair 27 / 29 swap exists for the old name (those switches stay in charge). So a client or a
+config without the art draws what it drew before. Attack kit specs take `pshot` (and `pshotBy`, a vocation name to
+missile map) in `attack_kit_config.lua`. The elemental extra projectile of a bow (`chaos_archery_core.lua` `ELEMENTS`,
+`vmissile`) is sent by `weapon_styles.lua`; the ordinary shot of a bow is the engine's ammunition missile and is not
+touched. The table of what flies where, checked by `tests/pack41_fx_test.lua`:
+
+| Missile | Sent by |
+|---|---|
+| `proj_arrow_fire` 251, `proj_arrow_frost` 252 | extra projectile of a bow or crossbow with a fire or ice quiver |
+| `proj_piercing_arrow_holy` 253 | Ranger line: Sunspear, Dawnpiercer, Hail of Dawn, Final Verdict, Twin Verdict |
+| `proj_ball_lightning_thunder` | Forked Storm |
+| `proj_boulder_magma` | Falling Pyre |
+| `proj_wind_blade_storm` | Iaijutsu |
+| `proj_razor_leaf_sakura` | Razor Rain, Samurai only (Thief and Ninja keep the razor disc) |
+| `proj_blood_spike_necrotic` | Marrow Bolt |
+| `proj_venom_glob_necrotic` | Blightbrand |
+| `proj_flame_lance_spirit` | Soulrend Beam |
+| `proj_shadow_bolt_blood` | Life Siphon (the drain flies back to the Lich) |
+| `proj_soul_skull_spirit` | Raise Dead |
+| `proj_spirit_wisp_arcane` | Mirror Mend (heal to an ally) |
+| `proj_void_orb_abyss` | Umbral Stride |
+
+Unsent: `proj_poison_dart_necrotic` (the Beastmaster dart is earth and keeps its dart), `proj_spirit_arrow_blood` and
+`proj_spirit_arrow_gold` (Skewering Line's blood spear has a store skin; no other bow spell fits), `proj_water_bolt_abyss`
+(no water spell). Monster files are base data and are not edited. Energy and earth quivers keep the flash and earth arrow.
 
 ## Owner outfits (pair 37) (`data/lib/chaos_pack37_looks.lua`, switch `ChaosPack37.PAIR37`, on)
 Moon outfits and novelty costumes of client pair 37 (client/MANIFEST.md "Owner outfits (pair 37)"). Owner, 2026-10-22:

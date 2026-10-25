@@ -15,7 +15,7 @@ local function pulse(playerId, targetId, min, max, left)
 	if ChaosNecroCore.distance(ppos, tpos) > 7 then
 		return
 	end
-	tpos:sendDistanceEffect(ppos, FxMissile("skull_orb", CONST_ANI_DEATH))
+	ChaosSpell.pshoot(tpos, ppos, "proj_shadow_bolt_blood", nil, "skull_orb", CONST_ANI_DEATH)
 	local drained = NecroSpell.fx(tpos, {"lich_soul_drain", "px448_crimson"}, "shadow_smoke", CONST_ME_MAGIC_RED)
 	local dealt = ChaosNecro.damage(player, target, COMBAT_DEATHDAMAGE, min, max,
 		drained == "lich_soul_drain" and CONST_ME_NONE or CONST_ME_MAGIC_RED, ORIGIN_SPELL)

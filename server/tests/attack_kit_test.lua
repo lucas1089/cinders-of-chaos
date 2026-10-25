@@ -73,12 +73,20 @@ do
 	dofile("data/lib/chaos_fx.lua")
 	dofile("data/lib/chaos_vfx.lua")
 	dofile("data/lib/chaos_vfx_art.lua")
+	dofile("data/lib/chaos_pack41_fx_ids.lua")
+	PACK41 = ChaosVfxMissile
 	local dirs = {"n", "ne", "e", "se", "s", "sw", "w", "nw"}
 	for _, key in ipairs(keys) do
 		local s = cfg.spells[key]
 		if s.fx then ok(ChaosFx[s.fx] ~= nil, key .. ": ChaosFx has " .. s.fx) end
 		if s.shot then
 			ok(ChaosFxMissile[s.shot] ~= nil or ChaosVfxMissile[s.shot] ~= nil, key .. ": a missile named " .. s.shot)
+		end
+		if s.pshot then
+			ok(s.pshot:match("^proj_") ~= nil and PACK41[s.pshot] ~= nil, key .. ": a pair 41 / 42 missile named " .. s.pshot)
+		end
+		for voc, name in pairs(s.pshotBy or {}) do
+			ok(PACK41[name] ~= nil, key .. ": " .. voc .. " missile " .. name .. " exists")
 		end
 		if s.vfx then
 			local found = ChaosVfx[s.vfx] ~= nil
@@ -315,6 +323,7 @@ ChaosSpell = {
 	vfx = function(pos, name) calls[#calls + 1] = {kind = "vfx", name = name}; return true end,
 	vfxDir = function() return false end,
 	vshoot = function(a, b, name) calls[#calls + 1] = {kind = "shot", name = name} end,
+	pshoot = function(a, b, pname, vname, name) calls[#calls + 1] = {kind = "shot", name = pname} end,
 	pulse = function(casterId, count, interval, fn)
 		for step = 1, count do
 			local caster = Creature(casterId)

@@ -25,7 +25,7 @@ function onCastSpell(creature, variant, isHotkey)
 	-- a shadow eruption where the Illusionist leaves, the pack shadow orb, the shadow hit on the stab when the orb
 	-- arrives (server/data/spells/README_FX.md "Mystic line effects")
 	local M = ChaosMysticFx
-	ChaosSpell.vshoot(from, tpos, "shadow_orb", "shadow_bolt", CONST_ANI_DEATH)
+	ChaosSpell.pshoot(from, tpos, "proj_void_orb_abyss", "shadow_orb", "shadow_bolt", CONST_ANI_DEATH)
 	if M then
 		M.send(from, "shadow_eruption")
 	end
