@@ -28,7 +28,7 @@ ChaosCreditsData = {
       { name = "Magic VFX Spells & Impacts", author = "WsT", licence = "purchased; credit not required", use = "spell effects; since pair 36 every impact and circle (one colour each) and our procedural hits redrawn with them" },
       { name = "Auras & Buffs", author = "WsT", licence = "purchased; credit not required", use = "auras and buff effects; since pair 36 all 84 auras and states" },
       { name = "UI Game Feel", author = "WsT", licence = "purchased; credit not required", use = "level up, loot beams and other game feel effects; since pair 36 the level-up effect, the critical, dodge and block pop-ups and the rest of the set" },
-      { name = "Projectiles", author = "WsT", licence = "purchased; credit not required; no resale, redistribution or sharing of the assets, even modified; never machine-learning training data", use = "missiles; since pair 36 our procedural and the stock element missiles redrawn with them; since pair 41 (Projectiles 32px, the pack's native 32 px renders) the same missiles redrawn from those and three more appended" },
+      { name = "Projectiles", author = "WsT", licence = "purchased; credit not required; no resale, redistribution or sharing of the assets, even modified; never machine-learning training data", use = "missiles; since pair 36 our procedural and the stock element missiles redrawn with them; since pair 41 (Projectiles 32px, the pack's native 32 px renders) the same missiles redrawn from those and three more appended; since pair 42 six more arrows and spears redrawn in place and fifteen more variants in free missile slots" },
       { name = "Fields & Traps", author = "WsT", licence = "purchased; credit not required", use = "field and trap effects (all 31 since pair 36)" },
       { name = "Mega VFX 500", author = "WsT", licence = "purchased; credit not required", use = "Mystic line spell effects and missiles; since pair 36 every effect (directional ones in eight directions) and the missiles that fit" },
       { name = "Pixel Spellcraft VFX", author = "WsT", licence = "purchased; credit not required", use = "the first animated spell effects, auras and missiles; since pair 36 also some of our procedural effects redrawn" },
@@ -77,6 +77,17 @@ ChaosCreditsData = {
       { name = "Alegreya Sans", author = "Copyright 2013 The Alegreya Sans Project Authors, Huerta Tipogr\225fica", licence = "SIL Open Font License 1.1", use = "text over the game picture", source = "https://github.com/huertatipografica/Alegreya-Sans" },
       { name = "IM Fell English", author = "Copyright (c) 2010, Igino Marini", licence = "SIL Open Font License 1.1", use = "NPC dialogue", source = "https://github.com/librefonts/imfellenglish" },
       { name = "PT Sans", author = "Copyright (c) 2010, ParaType Ltd., with Reserved Font Names \"PT Sans\" and \"ParaType\"", licence = "SIL Open Font License 1.1", use = "the small interface fonts with the pt-BR letters", source = "https://www.paratype.com/public" },
+    },
+  },
+  {
+    title = "Sounds",
+    pt = "Sons",
+    note = "Game sounds (game_chaossound, O238): short picks from four packs, cut, set to mono and levelled by client/tools/gen_sfx.py. All four are Creative Commons Zero 1.0 (the licence text in each pack's own download reads \"License: (Creative Commons Zero, CC0)\"): no credit is required, and we credit the author anyway.",
+    entries = {
+      { name = "Impact Sounds", author = "Kenney (www.kenney.nl)", licence = "Creative Commons Zero 1.0 (CC0)", use = "hits, critical hits, kills, damage taken, blocks, ice, holy and earth spell sounds, the level up and unique drop sounds", source = "https://kenney.nl/assets/impact-sounds" },
+      { name = "RPG Audio", author = "Kenney (www.kenney.nl)", licence = "Creative Commons Zero 1.0 (CC0)", use = "dodges, physical spell sounds and the rare drop coins", source = "https://kenney.nl/assets/rpg-audio" },
+      { name = "Interface Sounds", author = "Kenney (www.kenney.nl)", licence = "Creative Commons Zero 1.0 (CC0)", use = "healing, goal and window sounds", source = "https://kenney.nl/assets/interface-sounds" },
+      { name = "Sci-fi Sounds", author = "Kenney (www.kenney.nl)", licence = "Creative Commons Zero 1.0 (CC0)", use = "fire, energy and death spell sounds", source = "https://kenney.nl/assets/sci-fi-sounds" },
     },
   },
   {

@@ -5,6 +5,9 @@
 -- send offsets; ids 254 (CONST_ANI_WEAPONTYPE in the server) and 255 stay free; a redrawn row gets no Lua name and its id
 -- is one pair 36 built, once; the names are free in the other tables; nothing sends the new names yet (no spell is
 -- wired); the pair 36 loader brings the ids in.
+-- Pair 42 (the same tool, art_import/pack42_missiles.csv): six in-use stock ids redrawn without a name (1 22 34 35 7 6) and
+-- fifteen named swaps of free ids (100 108 111 115 137-146 and 75; 62-74 and 76 are sent by number in the base data),
+-- registered in the same ids file after 251-253 with the spec's send offsets; none is a pair 41 id or a second name.
 local failures = 0
 local function ok(c, msg)
 	if not c then
@@ -59,6 +62,36 @@ for line in (readFile("../client/tools/sprites/art_import/pack36_missiles.csv") 
 end
 eq(nApp, 62, "pair 36 appended 62 missiles (189-250)")
 
+-- a quote-aware CSV line (pair 42's note is quoted and holds commas)
+local function csvFields(line)
+	local f, i, n = {}, 1, #line
+	while i <= n + 1 do
+		if line:sub(i, i) == '"' then
+			local j = i + 1
+			local buf = {}
+			while j <= n do
+				local c = line:sub(j, j)
+				if c == '"' and line:sub(j + 1, j + 1) == '"' then
+					buf[#buf + 1] = '"'
+					j = j + 2
+				elseif c == '"' then
+					break
+				else
+					buf[#buf + 1] = c
+					j = j + 1
+				end
+			end
+			f[#f + 1] = table.concat(buf)
+			i = j + 2
+		else
+			local j = line:find(",", i, true) or (n + 1)
+			f[#f + 1] = line:sub(i, j - 1)
+			i = j + 1
+		end
+	end
+	return f
+end
+
 local seen, new = {}, {}
 for _, r in ipairs(rows) do
 	eq(r.kind, "missile", r.name .. ": a missile")
@@ -76,6 +109,47 @@ for _, r in ipairs(rows) do
 end
 eq(#new, 3, "three new missiles")
 
+-- pair 42's spec: replace,kind,name,file,w,h,phases,ms,dx,dy,note,lua
+local text42 = readFile("../client/tools/sprites/art_import/pack42_missiles.csv")
+ok(text42 ~= nil, "spec pack42_missiles.csv")
+local rows42, named42, first42 = {}, {}, true
+for line in (text42 or ""):gmatch("[^\n]+") do
+	if first42 then
+		first42 = false
+	else
+		local f = csvFields(line)
+		local r = {replace = tonumber(f[1]), kind = f[2], name = f[3], w = tonumber(f[5]), h = tonumber(f[6]),
+			dx = tonumber(f[9]), dy = tonumber(f[10]), lua = f[12] or ""}
+		rows42[#rows42 + 1] = r
+		if r.lua ~= "" then named42[#named42 + 1] = r end
+	end
+end
+eq(#rows42, 21, "pair 42 redraws 21 missiles")
+eq(#named42, 15, "pair 42 names 15 of them")
+local seen42, redrawn41 = {}, {}
+for _, r in ipairs(rows) do
+	if r.replace then redrawn41[r.replace] = true end
+end
+for _, r in ipairs(rows42) do
+	eq(r.kind, "missile", r.name .. ": a missile")
+	ok(r.replace and r.replace >= 1 and r.replace <= 250, r.name .. ": id inside 1-250 (251-253 are pair 41's)")
+	ok(not seen42[r.replace], r.name .. ": id redrawn once")
+	ok(not redrawn41[r.replace], r.name .. ": not an id pair 41 redrew")
+	seen42[r.replace] = true
+	ok(r.w <= 3 and r.h <= 3 and r.dx < r.w and r.dy < r.h, r.name .. ": size and offset")
+	if r.lua == "" then
+		ok(r.dx == 0 and r.dy == 0 and r.w <= 2 and r.h <= 2, r.name .. ": an unnamed stock swap is sent at offset 0, 0, 2 x 2 at most")
+	end
+end
+for _, id in ipairs({1, 22, 34, 35, 7, 6}) do
+	ok(seen42[id], "stock id " .. id .. " is swapped")
+end
+-- ids 62-74 and 76 are sent by number in the base data (monster files): pair 42 must not draw over them; 75 was free
+for id = 62, 76 do
+	ok(id == 75 or not seen42[id], "id " .. id .. " is in use by the base data and stays untouched")
+end
+ok(seen42[75], "id 75 (free) holds the water bolt")
+
 -- the ids file
 local ids = readFile("data/lib/chaos_pack41_fx_ids.lua") or ""
 ok(ids ~= "", "the ids file exists")
@@ -83,22 +157,33 @@ local got = {}
 for name, id, dx, dy in ids:gmatch("\nChaosVfxMissile%.([%w_]+) = {id = (%d+), dx = (%d+), dy = (%d+)}") do
 	got[#got + 1] = {name = name, id = tonumber(id), dx = tonumber(dx), dy = tonumber(dy)}
 end
-eq(#got, #new, "the ids file lists every new row")
+eq(#got, #new + #named42, "the ids file lists every new row and every named pair 42 row")
 for i, r in ipairs(new) do
 	local e = got[i]
 	ok(e ~= nil and e.name == r.name and e.id == 250 + i and e.dx == r.dx and e.dy == r.dy,
 		r.name .. " is id " .. (250 + i) .. " with the spec's offset in the ids file")
 end
-ok(not ids:find("\nChaosVfx.", 1, true) and not ids:find("rep41_", 1, true), "no effect and no redrawn row has a Lua name")
-for _, e in ipairs(got) do
-	ok(e.id >= 251 and e.id <= 253, e.name .. ": id inside 251-253 (254 is the server's weapon-type marker, 255 stays free)")
+for i, r in ipairs(named42) do
+	local e = got[#new + i]
+	ok(e ~= nil and e.name == r.lua and e.id == r.replace and e.dx == r.dx and e.dy == r.dy,
+		r.lua .. " is id " .. r.replace .. " with the spec's offset in the ids file")
+end
+ok(not ids:find("\nChaosVfx.", 1, true) and not ids:find("rep41_", 1, true) and not ids:find("rep42_", 1, true),
+	"no effect and no redrawn row has a Lua name")
+for i, e in ipairs(got) do
+	if i <= #new then
+		ok(e.id >= 251 and e.id <= 253, e.name .. ": id inside 251-253 (254 is the server's weapon-type marker, 255 stays free)")
+	else
+		ok(e.id < 251 and e.id ~= 254 and e.id ~= 255, e.name .. ": a pair 42 id stays below pair 41's appended ones")
+	end
 end
 
 -- the names and ids are free in the other tables
 local others = {"chaos_vfx", "chaos_vfx_art", "chaos_pack_fx_ids", "chaos_pack27_fx_ids", "chaos_pack29_fx_ids",
 	"chaos_pack29_vfx_ids", "chaos_pack30_fx_ids", "chaos_pack36_fx_ids", "chaos_class_fx_ids", "chaos_big_fx_ids",
 	"chaos_status_fx_ids"}
-ChaosVfx, ChaosVfxMissile = nil, nil
+ChaosVfx, ChaosVfxMissile, ChaosFxMissile = nil, nil, nil
+pcall(dofile, "data/lib/chaos_fx.lua")
 for _, f in ipairs(others) do
 	pcall(dofile, "data/lib/" .. f .. ".lua")
 end
@@ -107,6 +192,9 @@ for _, e in ipairs(got) do
 	ok(ChaosVfxMissile and ChaosVfxMissile[e.name] == nil, e.name .. ": name free in the other tables")
 	for _, other in pairs(ChaosVfxMissile or {}) do
 		ok(other.id ~= e.id, e.name .. ": id " .. e.id .. " is free")
+	end
+	for k, v in pairs(ChaosFxMissile or {}) do
+		ok(v ~= e.id, e.name .. ": id " .. e.id .. " is not ChaosFxMissile." .. k)
 	end
 end
 

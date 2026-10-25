@@ -16538,6 +16538,17 @@ own 32 px renders instead of the halved 64 px ones, and appends three. No spell,
   client), and `check_pair.py` warns above 254.
 - Test: `tests/pack41_fx_test.lua` (the ids file against `art_import/pack41_missiles.csv`, ids 251-253, no script sends
   the new names yet).
+- **Pair 42** (client/MANIFEST.md "Projectile pack, remaining swaps (pair 42)"): six in-use stock ids redrawn in place
+  with no server change (1 spear, 22 sniper arrow, 34 flaming arrow, 35 shiver arrow, 7 burst arrow, 6 poison arrow;
+  send offset 0, 0), and fifteen more variants named in the same ids file, each with the send offset of its art:
+  `proj_ball_lightning_thunder` 100, `proj_blood_spike_necrotic` 108, `proj_boulder_magma` 111,
+  `proj_flame_lance_spirit` 115, `proj_poison_dart_necrotic` 137, `proj_razor_leaf_sakura` 138,
+  `proj_shadow_bolt_blood` 139, `proj_soul_skull_spirit` 140, `proj_spirit_arrow_blood` 141,
+  `proj_spirit_arrow_gold` 142, `proj_spirit_wisp_arcane` 143, `proj_venom_glob_necrotic` 144, `proj_void_orb_abyss`
+  145, `proj_water_bolt_abyss` 75, `proj_wind_blade_storm` 146. No spell, monster or item sends them. They are not on
+  62-76 as first asked: the base server's monster files send 62-74 and 76 by number, so those 14 took the next unused
+  ids (the census is in the MANIFEST section). A pair older than 42 draws the old art on the six stock ids and nothing
+  on the named ones. The test also checks that no pair 42 id is a pair 41 id, a `ChaosFxMissile` id or on 62-76 except 75.
 
 ## Owner outfits (pair 37) (`data/lib/chaos_pack37_looks.lua`, switch `ChaosPack37.PAIR37`, on)
 Moon outfits and novelty costumes of client pair 37 (client/MANIFEST.md "Owner outfits (pair 37)"). Owner, 2026-10-22:

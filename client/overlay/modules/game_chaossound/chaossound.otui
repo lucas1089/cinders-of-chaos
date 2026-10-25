@@ -1,0 +1,82 @@
+// Game sound (game_chaossound): the settings window. Styles from client_chaos_theme.
+
+ChaosSoundCheck < ChaosCheckBox
+  anchors.left: parent.left
+  anchors.right: parent.right
+  margin-top: 8
+
+ChaosSoundWindow < ChaosMainWindow
+  id: chaosSoundWindow
+  size: 420 340
+  !text: tr('Game Sound')
+  @onEscape: modules.game_chaossound.hide()
+
+  ChaosLabelDim
+    id: intro
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 42
+    text-wrap: true
+    text-align: topLeft
+    !text: tr('Short sounds for your fights, spells and rewards. They follow the sound switch and the effect volume of the client.')
+
+  ChaosSoundCheck
+    id: enabled
+    anchors.top: intro.bottom
+    !text: tr('Game sounds')
+
+  ChaosSoundCheck
+    id: combat
+    anchors.top: enabled.bottom
+    !text: tr('Hits, kills and damage taken')
+    !tooltip: tr('Your hits, critical hits and kills, the hits you take, your dodges and blocks.')
+
+  ChaosSoundCheck
+    id: spells
+    anchors.top: combat.bottom
+    !text: tr('Spells by element')
+    !tooltip: tr('A sound for fire, ice, energy, holy, death, earth, physical and healing spell effects near you.')
+
+  ChaosSoundCheck
+    id: events
+    anchors.top: spells.bottom
+    !text: tr('Level up, rare loot and goals')
+    !tooltip: tr('Rare and better drops sound unless your loot filter already plays an alert for them.')
+
+  ChaosSoundCheck
+    id: ui
+    anchors.top: events.bottom
+    !text: tr('Windows and buttons')
+    !tooltip: tr('A very quiet click when a window opens or closes or a button is pressed.')
+
+  ChaosLabel
+    id: volumeLabel
+    anchors.top: ui.bottom
+    anchors.left: parent.left
+    margin-top: 16
+    width: 80
+    !text: tr('Volume')
+
+  ChaosComboBox
+    id: volumeCombo
+    anchors.verticalCenter: volumeLabel.verticalCenter
+    anchors.left: volumeLabel.right
+    margin-left: 8
+    size: 110 22
+
+  ChaosLabelDim
+    id: savedLabel
+    anchors.verticalCenter: closeButton.verticalCenter
+    anchors.left: parent.left
+    anchors.right: closeButton.left
+    text-align: left
+    !text: tr('Saved on this computer.')
+
+  ChaosButton
+    id: closeButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    size: 80 24
+    !text: tr('Close')
+    @onClick: modules.game_chaossound.hide()

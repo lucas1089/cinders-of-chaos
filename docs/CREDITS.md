@@ -78,7 +78,7 @@ ask for credit (appreciated, not required). Listed here as thanks.
 - **Projectiles**
   - Author: WsT
   - Licence: purchased; credit not required; no resale, redistribution or sharing of the assets, even modified; never machine-learning training data
-  - Used for: missiles; since pair 36 our procedural and the stock element missiles redrawn with them; since pair 41 (Projectiles 32px, the pack's native 32 px renders) the same missiles redrawn from those and three more appended
+  - Used for: missiles; since pair 36 our procedural and the stock element missiles redrawn with them; since pair 41 (Projectiles 32px, the pack's native 32 px renders) the same missiles redrawn from those and three more appended; since pair 42 six more arrows and spears redrawn in place and fifteen more variants in free missile slots
 - **Fields & Traps**
   - Author: WsT
   - Licence: purchased; credit not required
@@ -229,6 +229,33 @@ them are named by role, so they carry no Reserved Font Name.
   - Used for: the small interface fonts with the pt-BR letters
   - Source: https://www.paratype.com/public
 
+## Sounds {pt-BR: Sons}
+
+Game sounds (game_chaossound, O238): short picks from four packs, cut, set to mono and levelled by
+`client/tools/gen_sfx.py`. All four are Creative Commons Zero 1.0 (the licence text in each pack's own download reads
+"License: (Creative Commons Zero, CC0)"): no credit is required, and we credit the author anyway.
+
+- **Impact Sounds**
+  - Author: Kenney (www.kenney.nl)
+  - Licence: Creative Commons Zero 1.0 (CC0)
+  - Used for: hits, critical hits, kills, damage taken, blocks, ice, holy and earth spell sounds, the level up and unique drop sounds
+  - Source: https://kenney.nl/assets/impact-sounds
+- **RPG Audio**
+  - Author: Kenney (www.kenney.nl)
+  - Licence: Creative Commons Zero 1.0 (CC0)
+  - Used for: dodges, physical spell sounds and the rare drop coins
+  - Source: https://kenney.nl/assets/rpg-audio
+- **Interface Sounds**
+  - Author: Kenney (www.kenney.nl)
+  - Licence: Creative Commons Zero 1.0 (CC0)
+  - Used for: healing, goal and window sounds
+  - Source: https://kenney.nl/assets/interface-sounds
+- **Sci-fi Sounds**
+  - Author: Kenney (www.kenney.nl)
+  - Licence: Creative Commons Zero 1.0 (CC0)
+  - Used for: fire, energy and death spell sounds
+  - Source: https://kenney.nl/assets/sci-fi-sounds
+
 ## Engine and libraries {pt-BR: Motor e bibliotecas}
 
 - **Server engine (TFS 1.4.2 fork)**
@@ -342,3 +369,7 @@ Sources the art tools record in their `*sources.csv` files. `check_credits.py` c
   are never committed; the art ships only inside the pair (and the website's outfit images, tier donor).
 - **set35 icons**: the free Raven Fantasy Icons set above (its 32 x 32 full sheet). Pair 35 ring and necklace looks,
   `client/tools/sprites/gen_jewelry_art.py`; `art_import/jewelry_sources.csv` names each pick by this label.
+- **sfx impact**, **sfx rpg**, **sfx interface**, **sfx scifi**: the internal labels of the four sound packs above
+  (Impact Sounds, RPG Audio, Interface Sounds, Sci-fi Sounds). `client/tools/sfx_sources.csv` names each sound's pack by
+  these labels and records the pick, the cut, the peak level and the sha256 of the file in
+  `client/overlay/modules/game_chaossound/sounds/` (`client/tools/gen_sfx.py --check`).

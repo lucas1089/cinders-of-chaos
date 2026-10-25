@@ -67,7 +67,8 @@ def test_cells():
         make_pack(root, 'proj_t', 'steel', 9)
         for label, pick in (('stock id', ('replace', 4, 'rep41_m4', 'proj_t', 'steel', (2, 2, 0, 0))),
                             ('appended id', ('replace', 190, 'rep41_m190', 'proj_t', 'steel', (3, 3, 1, 1))),
-                            ('new', ('new', None, 'proj_t_steel', 'proj_t', 'steel', None))):
+                            ('new', ('new', None, 'proj_t_steel', 'proj_t', 'steel', None)),
+                            ('named', ('named', 100, 'rep42_m100', 'proj_t', 'steel', 'proj_t_steel'))):
             row, strip, src, notes = M.convert([root], pick)
             w, h, n, dx, dy = row['w'], row['h'], row['phases'], row['dx'], row['dy']
             ok(strip.shape == (3 * h * 32, 3 * w * 32 * n, 4), f'{label}: strip shape {strip.shape}')
@@ -76,6 +77,9 @@ def test_cells():
                 ok((dx, dy) == (0, 0), f'{label}: send offset 0, 0')
             if label == 'appended id':
                 ok((dx, dy) == (1, 1), f'{label}: send offset kept')
+            if label == 'named':
+                ok(row['replace'] == 100 and row['lua'] == 'proj_t_steel', f'{label}: id and Lua name in the row')
+                ok(not notes, f'{label}: nothing moved or cut: {notes}')
             # the pivot of the cell: (left * 32 + 13, top * 32 + 13), left = w - 1 - dx
             px, py = (w - 1 - dx) * 32 + G.MISSILE_CENTRE[0], (h - 1 - dy) * 32 + G.MISSILE_CENTRE[1]
             for d, (x, y) in ENGINE_CELL.items():
@@ -137,6 +141,15 @@ def test_tables():
     ok(all(r['replace'] == '' for r in rows[-len(M.NEW):]), 'new picks have no replace id')
     taken = M.existing_names()
     ok(all(n not in taken for _, _, n, _ in M.NEW), 'new names are free')
+    # pair 42
+    ok(M.check_pair42(ids) == [], f'pair 42 tables agree: {M.check_pair42(ids)}')
+    sw = [i for i, *_ in M.SWAPS]
+    ok(len(sw) == len(set(sw)) and not set(sw) & set(ids), 'swaps: unique, none redrawn by pair 41')
+    ok(all(1 <= i <= 250 for i in sw), 'swaps: ids within 1..250')
+    ok([i for i in sw if 62 <= i <= 76] == [75], 'swaps: only 75 of 62-76 was free; the others are sent by number in the base data')
+    ok([i for i, _, _, lua in M.SWAPS if lua is None] == [1, 22, 34, 35, 7, 6], 'swaps: the six in-use stock ids carry no name')
+    names = [lua for *_, lua in M.SWAPS if lua]
+    ok(len(names) == 15 and len(set(names)) == 15 and not set(names) & taken, 'swaps: 15 free, unique Lua names')
 
 
 if __name__ == '__main__':

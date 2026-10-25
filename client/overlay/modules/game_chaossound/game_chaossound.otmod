@@ -1,0 +1,12 @@
+Module
+  name: game_chaossound
+  description: Game sound (O238) - short sounds for your hits, critical hits, kills, damage taken, dodges and blocks, spell casts by element, level up, rare loot, goals and (off by default) windows and buttons; rate limits, a cap on sounds at once, distance fade; follows the client's audio switch and effect volume (System > Sound)
+  author: Cinders of Chaos
+  sandboxed: true
+  scripts: [ soundlogic, chaossound ]
+  dependencies:
+    - game_interface
+  autoload: true
+  autoload-priority: 1001
+  @onLoad: init()
+  @onUnload: terminate()
