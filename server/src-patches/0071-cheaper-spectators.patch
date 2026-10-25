@@ -1,0 +1,504 @@
+# Cheaper spectator queries (O212; server/README.md "Cheaper spectator queries (O212)").
+# Every creature step (Map::moveCreature: two queries and a union), magic effect, distance effect, health bar and area
+# spell asks Map::getSpectators. The sector walk is cheap; what the stock code paid around it was memory and a quadratic
+# union:
+#   * SpectatorVec reserved 32 pointers on the heap in its constructor: one allocation (and free) for every caller, used
+#     or not (a few hundred per second of hunting per player in view).
+#   * the spectator cache was a std::map<Position, SpectatorVec>: a tree node and a vector copy per store, all freed again at
+#     the next creature added to or removed from any tile (Tile::addThing / removeThing / internalAddThing clear it), so in
+#     a hunting pack every query stored an entry the next step threw away.
+#   * SpectatorVec::addSpectators (the union of the old and new position of a step, of a distance effect) scanned the whole
+#     first list for every element of the second: n * m compares, 2500 for a pack of 45 and 70000 for a crowd of 260.
+#   * Map::moveCreature grew a std::vector of stack positions one push_back at a time (4 to 7 allocations per step).
+# Now:
+#   * src/chaosspectators.h (new, header only, no engine types; server/tools/chaosspectators_test.cpp and
+#     server/tools/spectator_bench.cpp build it alone): ChaosSpec::SmallVec (48 pointers inline, heap beyond that),
+#     ChaosSpec::SpectatorList (the stock SpectatorVec interface on it; spectators.h aliases SpectatorVec to it),
+#     ChaosSpec::appendMissing (the same union, same order, a pointer set when both lists are long) and ChaosSpec::Cache
+#     (open addressing, generation stamped slots over a pool of vectors that are reused: clear() is O(1) and frees nothing).
+#   * map.h / map.cpp: the two caches are ChaosSpec::Cache; getSpectators looks up and stores by a packed position key;
+#     the stack positions of moveCreature are a SmallVec.
+# Same behavior on purpose: what a cache holds, when it is looked up, stored and cleared is exactly as before, so every
+# query returns the same creatures in the same order (the benchmark's --check runs both on the same random operations and
+# compares every answer). Nothing that decides when a query is made changed. Not done: skipping the clear when nothing in
+# range changed. The leaf lists remove by swap with the last element, so a retained entry could differ in order from a fresh
+# walk, and in a pack everything is in range of everything.
+--- a/src/map.h
++++ b/src/map.h
+@@ -9,6 +9,7 @@
+ #include "fileloader.h"
+ 
+ #include "chaospathing.h"
++#include "chaosspectators.h"
+ #include "tools.h"
+ #include "tile.h"
+ #include "town.h"
+@@ -56,7 +57,8 @@
+ 		ChaosPath::Lease<ChaosPath::NodeStore<AStarNode, MAX_NODES>> store;
+ };
+ 
+-using SpectatorCache = std::map<Position, SpectatorVec>;
++// Chaos (patch 0071): a generation stamped table over reused vectors (src/chaosspectators.h), cleared in O(1)
++using SpectatorCache = ChaosSpec::Cache<SpectatorVec>;
+ 
+ static constexpr int32_t FLOOR_BITS = 3;
+ static constexpr int32_t FLOOR_SIZE = (1 << FLOOR_BITS);
+--- a/src/map.cpp
++++ b/src/map.cpp
+@@ -257,7 +257,7 @@
+ 	getSpectators(newPosSpectators, newPos, true);
+ 	spectators.addSpectators(newPosSpectators);
+ 
+-	std::vector<int32_t> oldStackPosVector;
++	ChaosSpec::SmallVec<int32_t, 48> oldStackPosVector; // Chaos (patch 0071): no heap growth for a screen of players
+ 	for (Creature* spectator : spectators) {
+ 		if (Player* tmpPlayer = spectator->getPlayer()) {
+ 			if (tmpPlayer->canSeeCreature(&creature)) {
+@@ -382,6 +382,7 @@
+ 
+ 	bool foundCache = false;
+ 	bool cacheResult = false;
++	const uint64_t cacheKey = ChaosSpec::posKey(centerPos.x, centerPos.y, centerPos.z);
+ 
+ 	minRangeX = (minRangeX == 0 ? -maxViewportX : -minRangeX);
+ 	maxRangeX = (maxRangeX == 0 ? maxViewportX : maxRangeX);
+@@ -390,12 +391,12 @@
+ 
+ 	if (minRangeX == -maxViewportX && maxRangeX == maxViewportX && minRangeY == -maxViewportY && maxRangeY == maxViewportY && multifloor) {
+ 		if (onlyPlayers) {
+-			auto it = playersSpectatorCache.find(centerPos);
+-			if (it != playersSpectatorCache.end()) {
++			const SpectatorVec* cached = playersSpectatorCache.find(cacheKey);
++			if (cached) {
+ 				if (!spectators.empty()) {
+-					spectators.addSpectators(it->second);
++					spectators.addSpectators(*cached);
+ 				} else {
+-					spectators = it->second;
++					spectators = *cached;
+ 				}
+ 
+ 				foundCache = true;
+@@ -403,17 +404,16 @@
+ 		}
+ 
+ 		if (!foundCache) {
+-			auto it = spectatorCache.find(centerPos);
+-			if (it != spectatorCache.end()) {
++			const SpectatorVec* cached = spectatorCache.find(cacheKey);
++			if (cached) {
+ 				if (!onlyPlayers) {
+ 					if (!spectators.empty()) {
+-						const SpectatorVec& cachedSpectators = it->second;
+-						spectators.addSpectators(cachedSpectators);
++						spectators.addSpectators(*cached);
+ 					} else {
+-						spectators = it->second;
++						spectators = *cached;
+ 					}
+ 				} else {
+-					const SpectatorVec& cachedSpectators = it->second;
++					const SpectatorVec& cachedSpectators = *cached;
+ 					for (Creature* spectator : cachedSpectators) {
+ 						if (spectator->getPlayer()) {
+ 							spectators.emplace_back(spectator);
+@@ -456,9 +456,9 @@
+ 
+ 		if (cacheResult) {
+ 			if (onlyPlayers) {
+-				playersSpectatorCache[centerPos] = spectators;
++				playersSpectatorCache.store(cacheKey) = spectators;
+ 			} else {
+-				spectatorCache[centerPos] = spectators;
++				spectatorCache.store(cacheKey) = spectators;
+ 			}
+ 		}
+ 	}
+--- a/src/spectators.h
++++ b/src/spectators.h
+@@ -4,49 +4,12 @@
+ #ifndef FS_SPECTATORS_H_D78A7CCB7080406E8CAA6B1D31D3DA71
+ #define FS_SPECTATORS_H_D78A7CCB7080406E8CAA6B1D31D3DA71
+ 
+-#include <vector>
++#include "chaosspectators.h"
+ 
+ class Creature;
+ 
+-class SpectatorVec
+-{
+-	using Vec = std::vector<Creature*>;
+-	using Iterator = Vec::iterator;
+-	using ConstIterator = Vec::const_iterator;
+-public:
+-	SpectatorVec() {
+-		vec.reserve(32);
+-	}
+-
+-	void addSpectators(const SpectatorVec& spectators) {
+-		for (Creature* spectator : spectators.vec) {
+-			auto it = std::find(vec.begin(), vec.end(), spectator);
+-			if (it != end()) {
+-				continue;
+-			}
+-			vec.emplace_back(spectator);
+-		}
+-	}
+-
+-	void erase(Creature* spectator) {
+-		auto it = std::find(vec.begin(), vec.end(), spectator);
+-		if (it == end()) {
+-			return;
+-		}
+-		std::iter_swap(it, end() - 1);
+-		vec.pop_back();
+-	}
+-
+-	size_t size() const { return vec.size(); }
+-	bool empty() const { return vec.empty(); }
+-	Iterator begin() { return vec.begin(); }
+-	ConstIterator begin() const { return vec.begin(); }
+-	Iterator end() { return vec.end(); }
+-	ConstIterator end() const { return vec.end(); }
+-	void emplace_back(Creature* c) { vec.emplace_back(c); }
+-
+-private:
+-	Vec vec;
+-};
++// Chaos (patch 0071): the creatures live in a ChaosSpec::SmallVec (room for 48 inline, heap beyond that), so a query
++// that finds 48 creatures or fewer allocates nothing. Same interface, same element order, same erase (swap with the last).
++using SpectatorVec = ChaosSpec::SpectatorList<Creature>;
+ 
+ #endif
+--- /dev/null
++++ b/src/chaosspectators.h
+@@ -0,0 +1,329 @@
++// Copyright 2022 The Forgotten Server Authors. All rights reserved.
++// Use of this source code is governed by the GPL-2.0 License that can be found in the LICENSE file.
++
++#ifndef FS_CHAOSSPECTATORS_H
++#define FS_CHAOSSPECTATORS_H
++
++// Cheaper spectator queries (patch 0071, server/README.md "Cheaper spectator queries (O212)"). Header only, no engine
++// types: server/tools/chaosspectators_test.cpp and server/tools/spectator_bench.cpp build it alone.
++//   SmallVec    a vector of pointers with room for N inline: the stock SpectatorVec reserved 32 on the heap in its
++//               constructor, so every getSpectators caller paid an allocation (and a free) before it had asked anything.
++//   Cache       the spectator cache as an open addressing table of generation stamped slots over a pool of vectors that
++//               are reused: clear() is O(1) and frees nothing, a store copies into a vector that already has its memory.
++//               The stock std::map<Position, SpectatorVec> allocated a tree node and a vector per store and freed them all
++//               at the next creature step (Tile::addThing / removeThing clear it), which is every step of every monster.
++//               What the cache holds, and when it is cleared, is exactly as before, so a query returns the same creatures
++//               in the same order.
++//   appendMissing  SpectatorVec::addSpectators (the union of the old and the new position of a step or a distance
++//               effect): same result and order, a pointer set instead of a scan of everything for every element.
++
++#include <cstddef>
++#include <cstdint>
++#include <cstring>
++#include <deque>
++#include <vector>
++
++namespace ChaosSpec {
++
++template<typename T, size_t N>
++class SmallVec
++{
++	public:
++		SmallVec() : ptr(inl), n(0), cap(N) {}
++		SmallVec(const SmallVec& o) : ptr(inl), n(0), cap(N) { assign(o); }
++		SmallVec(SmallVec&& o) noexcept : ptr(inl), n(0), cap(N) { take(o); }
++		~SmallVec() { release(); }
++
++		SmallVec& operator=(const SmallVec& o) {
++			if (this != &o) {
++				n = 0;
++				assign(o);
++			}
++			return *this;
++		}
++		SmallVec& operator=(SmallVec&& o) noexcept {
++			if (this != &o) {
++				release();
++				ptr = inl;
++				n = 0;
++				cap = N;
++				take(o);
++			}
++			return *this;
++		}
++
++		void push_back(T v) {
++			if (n == cap) {
++				grow(cap * 2);
++			}
++			ptr[n++] = v;
++		}
++		void pop_back() { --n; }
++		void clear() { n = 0; }
++		size_t size() const { return n; }
++		bool empty() const { return n == 0; }
++		T* begin() { return ptr; }
++		T* end() { return ptr + n; }
++		const T* begin() const { return ptr; }
++		const T* end() const { return ptr + n; }
++		T& operator[](size_t i) { return ptr[i]; }
++		const T& operator[](size_t i) const { return ptr[i]; }
++		bool heap() const { return ptr != inl; }
++
++	private:
++		void assign(const SmallVec& o) {
++			if (o.n > cap) {
++				grow(o.n);
++			}
++			if (o.n) {
++				std::memcpy(ptr, o.ptr, o.n * sizeof(T));
++			}
++			n = o.n;
++		}
++		void take(SmallVec& o) {
++			if (o.ptr != o.inl) {
++				ptr = o.ptr;
++				cap = o.cap;
++				n = o.n;
++				o.ptr = o.inl;
++				o.cap = N;
++				o.n = 0;
++			} else {
++				if (o.n) {
++					std::memcpy(inl, o.inl, o.n * sizeof(T));
++				}
++				n = o.n;
++				o.n = 0;
++			}
++		}
++		void grow(size_t want) {
++			size_t c = cap;
++			while (c < want) {
++				c *= 2;
++			}
++			T* p = new T[c];
++			if (n) {
++				std::memcpy(p, ptr, n * sizeof(T));
++			}
++			if (ptr != inl) {
++				delete[] ptr;
++			}
++			ptr = p;
++			cap = c;
++		}
++		void release() {
++			if (ptr != inl) {
++				delete[] ptr;
++			}
++		}
++
++		T* ptr;
++		size_t n;
++		size_t cap;
++		T inl[N];
++};
++
++// the union of two lists of pointers, in the order the stock loop made it: the elements of src that dst does not have, in
++// src order, appended to dst (an element twice in src is appended once)
++template<typename Vec>
++void appendMissing(Vec& dst, const Vec& src)
++{
++	const size_t a = dst.size();
++	const size_t b = src.size();
++	if (a * b <= 96) {
++		for (auto* s : src) {
++			bool have = false;
++			for (auto* d : dst) {
++				if (d == s) {
++					have = true;
++					break;
++				}
++			}
++			if (!have) {
++				dst.push_back(s);
++			}
++		}
++		return;
++	}
++
++	static thread_local std::vector<uintptr_t> table;
++	size_t cap = 16;
++	while (cap < (a + b) * 2) {
++		cap *= 2;
++	}
++	table.assign(cap, 0);
++	const size_t mask = cap - 1;
++	auto insert = [&](uintptr_t key) {
++		size_t i = size_t((key >> 4) * 0x9E3779B1u) & mask;
++		while (table[i]) {
++			if (table[i] == key) {
++				return false;
++			}
++			i = (i + 1) & mask;
++		}
++		table[i] = key;
++		return true;
++	};
++	for (auto* d : dst) {
++		insert(reinterpret_cast<uintptr_t>(d));
++	}
++	for (auto* s : src) {
++		if (insert(reinterpret_cast<uintptr_t>(s))) {
++			dst.push_back(s);
++		}
++	}
++}
++
++inline uint64_t posKey(uint32_t x, uint32_t y, uint32_t z)
++{
++	return (uint64_t(z) << 32) | (uint64_t(y) << 16) | uint64_t(x);
++}
++
++// A cache of vectors by 64 bit key. find() returns nullptr or the stored vector, store() returns an empty vector for the
++// key (the caller fills it), clear() empties everything in O(1).
++template<typename Vec>
++class Cache
++{
++	public:
++		Cache() : slots(256, Slot{0, 0, 0}), gen(1), used(0), pooled(0) {}
++
++		const Vec* find(uint64_t key) const {
++			const size_t mask = slots.size() - 1;
++			for (size_t i = hash(key) & mask;; i = (i + 1) & mask) {
++				const Slot& s = slots[i];
++				if (s.gen != gen) {
++					return nullptr;
++				}
++				if (s.key == key) {
++					return &pool[s.idx];
++				}
++			}
++		}
++
++		// the key must not be in the cache (find() said so)
++		Vec& store(uint64_t key) {
++			if ((used + 1) * 2 > slots.size()) {
++				rehash(slots.size() * 2);
++			}
++			if (pooled == pool.size()) {
++				pool.emplace_back();
++			}
++			Vec& v = pool[pooled];
++			v.clear();
++			put(Slot{key, gen, uint32_t(pooled)});
++			++pooled;
++			++used;
++			return v;
++		}
++
++		void clear() {
++			if (used == 0) {
++				return;
++			}
++			used = 0;
++			pooled = 0;
++			if (++gen == 0) {
++				for (Slot& s : slots) {
++					s.gen = 0;
++				}
++				gen = 1;
++			}
++			// a burst of distinct centres must not keep its memory for good
++			if (pool.size() > 4096) {
++				pool.resize(1024);
++				pool.shrink_to_fit();
++			}
++			if (slots.size() > 16384) {
++				slots.assign(1024, Slot{0, 0, 0});
++				gen = 1;
++			}
++		}
++
++		size_t size() const { return used; }
++
++	private:
++		struct Slot {
++			uint64_t key;
++			uint32_t gen;
++			uint32_t idx;
++		};
++
++		static size_t hash(uint64_t key) {
++			key *= 0x9E3779B97F4A7C15ull;
++			return size_t(key >> 40);
++		}
++
++		void put(const Slot& slot) {
++			const size_t mask = slots.size() - 1;
++			size_t i = hash(slot.key) & mask;
++			while (slots[i].gen == gen) {
++				i = (i + 1) & mask;
++			}
++			slots[i] = slot;
++		}
++
++		void rehash(size_t newSize) {
++			std::vector<Slot> old;
++			old.swap(slots);
++			slots.assign(newSize, Slot{0, 0, 0});
++			for (const Slot& s : old) {
++				if (s.gen == gen) {
++					put(s);
++				}
++			}
++		}
++
++		std::vector<Slot> slots;
++		std::deque<Vec> pool;
++		uint32_t gen;
++		size_t used;
++		size_t pooled;
++};
++
++// The SpectatorVec of the engine (spectators.h aliases it): the stock interface and element order on a SmallVec. erase
++// swaps the element with the last one, as before. 48 inline pointers: a hunting pack and a screen of players fit.
++template<typename C>
++class SpectatorList
++{
++	using Vec = SmallVec<C*, 48>;
++	using Iterator = C**;
++	using ConstIterator = C* const*;
++public:
++	void addSpectators(const SpectatorList& spectators) {
++		appendMissing(vec, spectators.vec);
++	}
++
++	void erase(C* spectator) {
++		Iterator it = begin();
++		for (; it != end(); ++it) {
++			if (*it == spectator) {
++				break;
++			}
++		}
++		if (it == end()) {
++			return;
++		}
++		Iterator last = end() - 1;
++		C* tmp = *it;
++		*it = *last;
++		*last = tmp;
++		vec.pop_back();
++	}
++
++	size_t size() const { return vec.size(); }
++	bool empty() const { return vec.empty(); }
++	Iterator begin() { return vec.begin(); }
++	ConstIterator begin() const { return vec.begin(); }
++	Iterator end() { return vec.end(); }
++	ConstIterator end() const { return vec.end(); }
++	void emplace_back(C* c) { vec.push_back(c); }
++	void clear() { vec.clear(); }
++	bool heap() const { return vec.heap(); }
++
++private:
++	Vec vec;
++};
++
++} // namespace ChaosSpec
++
++#endif
