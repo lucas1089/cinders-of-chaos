@@ -22618,6 +22618,92 @@ white, red or black skull, loses the harmful conditions of monsters (fire, poiso
 curse, drown, paralysis, root) and the battle lock. Outside protection zones nothing changes. The list is
 `ChaosTempleCleanseCore.conditions`. Tests: `tests/temple_cleanse_test.lua`.
 
+## Server hardening: systemd sandbox, no secret core dumps, SQL integer guards (O196)
+
+Live server, no gameplay change. Files: `server/deploy/*.service`, `server/deploy/chaos_units_test.py`,
+`data/scripts/chaos/admin/core.lua` (`ChaosAdmin.sqlInt`), `admin/actions_security.lua`, `admin/actions_players.lua`,
+`bank.lua`, `tests/sql_key_guard_test.lua`, `tests/bank_test.lua`, `tests/admin_panel_test.lua`. Not run on the live server
+here: only `systemd-analyze verify` and `security --offline`, the unit test (CI) and the Lua tests ran.
+
+**chaos-server.service.**
+
+| Line | Why |
+|---|---|
+| `LimitCORE=0` | a core holds the whole engine memory: database password, RSA key, client guard key, players' data. Nothing in the repository reads a core (`chaos_crashlog.sh` keeps the log tail, the watchdog the hang; `coredumpctl` appeared only in a runbook line, now changed). |
+| `PrivateDevices`, `ProtectKernelModules`, `ProtectKernelLogs`, `ProtectClock`, `ProtectHostname`, `ProtectProc=invisible` | the engine needs none of them (it reads `/dev/urandom`, which a private `/dev` has). |
+| `RestrictNamespaces`, `RestrictRealtime`, `RestrictSUIDSGID`, `LockPersonality`, `SystemCallArchitectures=native` | nothing uses them. Not `MemoryDenyWriteExecute` (LuaJIT needs writable + executable pages) and no `SystemCallFilter`. |
+| `RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK` | AF_UNIX: the MariaDB socket when `mysqlHost` is `localhost`; AF_NETLINK: the resolver and interface lookups (could not be proven unused, so it stays). |
+| `CapabilityBoundingSet=`, `AmbientCapabilities=` | the ports are 7171, 7172 and the cast on 127.0.0.1:7179, all above 1024, and the user is `chaos`. `curl` and `ls` started from Lua need none. |
+| no `UMask=` | the website (www-data) reads `/opt/chaos/server/data` (`CHAOS_SERVER_DATA`) and `chaos-ctl` / the admin app read the logs; 0077 could hide files they read. |
+| `ProtectSystem=full`, no `ReadWritePaths` | `strict` needs the full list of what the engine writes. The Lua side was audited: in `/opt/chaos/server` only `data/chaos_clientservices.json` (+ `.tmp`, renamed), `data/chaos_tree_picks_*.csv`, `helpai.queue` / `helpai.answers` / `helpai.alive`, `data/logs/clientguard.log` (engine patch 0021); `os.tmpname` files in `PrivateTmp`; the console log is opened by systemd. But the base engine's C++ is not in the repository, so "writes nowhere else" cannot be proven, and a wrong guess stops saves on the live server. If you want `strict` later: `ProtectSystem=strict` and `ReadWritePaths=/opt/chaos/server` (a drop-in), test on the test server through a daily save, a `/treestats export` and a stop / start. |
+
+`systemd-analyze security --offline=true` exposure (systemd 255): chaos-server 8.0 EXPOSED -> 3.0 OK; clientservices,
+helpai, discord, payworker 6.5 each -> 2.9 OK; health 6.9 -> 5.9; backup 8.6 -> 7.5; watchdog 9.4 -> 6.4;
+chaos-trial-server 8.8 -> 7.5. A score is not a test: the unit test checks the lines, the live start checks the rest.
+
+**The root `ExecStopPost`.** `chaos_crashlog.sh` runs as root (`+`) from `/opt/chaos/repo`. If the service user could write
+that file (or its directories), a crashed engine would be a root shell. The checkout steps create it as root, and
+`chaos_update.sh` / `chaos-ctl.sh` run as root and chown only `/opt/chaos/server`, so it is root-owned today. The unit now
+checks it at every stop: `find` over the script and its three directories; owned by `chaos`, group `chaos`, or writable by
+group or others (`-perm /022`), or any `find` error (no such user), and the script is skipped with one line in the
+journal (`chaos-server: ... crash record skipped`), the service restarts as before. Fails closed. `chaos_units_test.py`
+runs the guard on a throwaway tree. The other root units (`backup`, `health`, `watchdog`) execute files of the same
+checkout: the same rule protects them.
+
+**Other units.** `LimitCORE=0` in every unit; `clientservices`, `helpai`, `discord`, `payworker` (unprivileged, no port
+below 1024) get the same restrictions as the game server and an empty capability set; the root oneshots (`backup`,
+`health`, `watchdog`) keep their capabilities and get the kernel / clock / hostname / realtime / SUID / personality /
+architecture lines; `watchdog` also gets `NoNewPrivileges`, `PrivateTmp`, `PrivateDevices`, `ProtectSystem=full`,
+`ProtectHome` and the kernel protections; the kit unit (`chaos-trial-server`) gets `LimitCORE=0` and the safe subset.
+
+**One core, on purpose.** To debug one crash: install `systemd-coredump` and cap it, root only:
+`/etc/systemd/coredump.conf.d/chaos.conf` with `[Coredump]` `Storage=external`, `Compress=yes`, `ProcessSizeMax=6G`,
+`ExternalSizeMax=6G`, `MaxUse=8G`, `KeepFree=4G` (files in `/var/lib/systemd/coredump` are readable by root only), and a
+runtime drop-in that goes away at reboot: `/run/systemd/system/chaos-server.service.d/60-core.conf` with `[Service]`
+`LimitCORE=infinity`, then `systemctl daemon-reload && systemctl restart chaos-server`. After the crash:
+`coredumpctl list tfs`, `coredumpctl gdb tfs`, then `coredumpctl` is cleaned with `rm /var/lib/systemd/coredump/core.tfs.*`
+and the drop-in removed (`rm` it, `daemon-reload`). Never copy a core off the machine, never attach one to a ticket.
+
+**Owner steps on the VPS (once).** First get the new checkout there: admin app, Painel > card "Atualizar servidor" >
+"Aplicar e reiniciar" (`chaos-ctl.sh update-apply`). That updates the checkout, the engine and the data, but it does not
+copy unit files to `/etc/systemd/system`, and the app has no button for that, so this part is a shell step. Which unit
+file is installed as `chaos-server.service` depends on the layout: the Linux kit (`/opt/chaos-trial`, the live server of
+2026-10) has `chaos-trial-server.service` under that name; the repo layout (`/opt/chaos/server`) has
+`chaos-server.service`. Copying the wrong one stops the server. As root, on the VPS:
+```
+REPO=/opt/chaos/repo                       # CHAOS_REPO in /etc/chaos/ctl.conf
+U=/etc/systemd/system/chaos-server.service
+cp "$U" /root/chaos-server.service.before-o196                      # the way back
+if grep -q '/opt/chaos-trial' "$U"; then                            # the Linux kit
+  owner=$(stat -c '%U' /opt/chaos-trial); group=$(stat -c '%G' /opt/chaos-trial)
+  sed -e "s/^User=.*/User=$owner/" -e "s/^Group=.*/Group=$group/" "$REPO/server/deploy/chaos-trial-server.service" > "$U"
+else                                                                # the repo layout
+  stat -c '%U:%G %a' "$REPO" "$REPO/server" "$REPO/server/tools" "$REPO/server/tools/chaos_crashlog.sh"   # root, never chaos
+  cp "$REPO/server/deploy/chaos-server.service" "$U"
+fi
+for n in clientservices watchdog health backup helpai discord payworker; do   # only the units already installed
+  [ -f /etc/systemd/system/chaos-$n.service ] && cp "$REPO/server/deploy/chaos-$n.service" /etc/systemd/system/
+done
+systemd-analyze verify "$U"
+systemctl daemon-reload      # the running engine keeps its old settings; the sandbox starts with its next start
+```
+The next start is the daily server save (the engine shuts down and is started again), or `systemctl restart chaos-server`
+at a quiet moment (it saves, players are disconnected; admin app, Painel > "Reiniciar em..."). Then `systemctl status
+chaos-server`, the server log's last lines (map loaded, no `Lua Script Error`), a login from the client and `systemctl
+show chaos-server -p LimitCORE`. If the engine does not start: `journalctl -u chaos-server -n 50`, put
+`/root/chaos-server.service.before-o196` back, `systemctl daemon-reload`, `systemctl restart chaos-server`. The other
+units are picked up at their next start (timers: next run).
+
+**SQL integer guards.** The admin actions `security.ip_unban`, `security.ip_ban`, `security.account_info`,
+`players.ban` and `players.unban` write the address or account id through `ChaosAdmin.sqlInt` (a finite whole number as
+`%d` text, `nil` otherwise; the action refuses). `bank.lua` writes the transfer amount and ids with `sqlInt` as well
+(`%d`, raises on anything else), and `doTransfer` rejects an amount that `ChaosBankCore.checkAmount` does not accept (the
+opcode handler already did: `Chaos.toInt` and an exact compare); before this, a star transfer relied on that single entry
+check. The three cores with `'%s'` keys (`achievements_core.validKey`, `class_unlocks_core.validKey`,
+`legal_notice_core.cleanVersion`) never escape the key: `tests/sql_key_guard_test.lua` feeds them quotes, backslashes,
+semicolons, comment markers, newlines, NUL, unicode, spaces, empty and 1000-character strings and non-strings and checks
+that no statement is built. Tests: `tests/sql_key_guard_test.lua`, `tests/bank_test.lua`, `tests/admin_panel_test.lua`.
+
 ## Engine hardening (sanitizers, fuzzing) (`tools/build_sanitized.sh`, `tools/fuzz/`, `tools/netfuzz.py`, `src-patches/0061`-`0063`)
 
 ROADMAP "Open decisions and loose ends", owner 2026-10-20: harden the engine instead of a Rust rewrite. Parts (1) a

@@ -238,6 +238,27 @@ call(ana, "transfer", {"gold", "  Cara ", 899})
 eq(cara.bank, 899, "credited (name trimmed)")
 eq(ana.bank, 3789000, "debited")
 
+-- an offline receiver: the credit is one UPDATE whose amount and id are plain whole numbers (SQL defence in depth)
+local dora = newPlayer(3, "Dora")
+dora.online = false
+players.Dora = dora
+queries = {}
+call(ana, "transfer", {"gold", "Dora", 1000})
+local upd
+for _, q in ipairs(queries) do if q:find("UPDATE `players`", 1, true) then upd = q end end
+eq(upd, "UPDATE `players` SET `balance` = `balance` + 1000 WHERE `id` = 3", "offline credit: integers written with %d")
+eq(ana.bank, 3789000 - 1000, "debited")
+-- floats that are whole (1e3 style), fractions, negatives, NaN, infinity and strings never reach a query
+for _, bad in ipairs({2.5, -5, 0, 0 / 0, math.huge, -math.huge, "1; DROP TABLE players", {}, true, 1e300}) do
+	queries = {}
+	local b = ana.bank
+	call(ana, "transfer", {"gold", "Dora", bad})
+	eq(ana.bank, b, "bad transfer amount " .. tostring(bad))
+	eq(#queries, 0, "no query for transfer amount " .. tostring(bad))
+	call(ana, "transfer", {"star", "Dora", bad})
+	eq(#queries, 0, "no query for star transfer amount " .. tostring(bad))
+end
+
 -- rate limit: every money request shares one key, nothing runs on spam
 local before = ana.bank
 now = now + 10000

@@ -188,6 +188,17 @@ sudo systemctl enable --now chaos-server chaos-clientservices chaos-backup.timer
 - `chaos-server.service`: `Restart=always` brings the engine back after the daily save (which shuts it down on
   purpose) and after a crash. `systemctl stop` sends SIGTERM: the engine saves and shuts down (180 s allowed).
   `systemctl kill -s SIGUSR1 chaos-server` saves without stopping. The console goes to `/var/log/chaos/server.log`.
+- **Sandbox and no core dumps (O196).** The unit runs as `chaos` with no capabilities, no devices, no kernel
+  interfaces, no namespaces, no realtime scheduling, only IPv4 / IPv6 / unix / netlink sockets, `/usr`, `/boot` and `/etc`
+  read only and other users' processes hidden. `LimitCORE=0`: a core of the engine holds the database password, the RSA
+  key, the client guard key and every online player's data, so none is written. `ProtectSystem=full` stays (not
+  `strict`) on purpose, and there is no `UMask=`; the reasons, the `systemd-analyze security` score and how to catch one
+  core for one crash are in server/README.md "Server hardening (O196)". The root `ExecStopPost` runs the crash script
+  from `/opt/chaos/repo` only when that path is not owned by `chaos` or writable by group or others: **keep
+  `/opt/chaos/repo` owned by root, mode 0755** (clone and `git` as root; the update scripts run as root). The unit
+  files are not installed by `update-apply` (nor is there an admin-app button for it): after a release that changes
+  them, copy them again and `systemctl daemon-reload`; the steps and the way back are in server/README.md "Server
+  hardening (O196)", "Owner steps on the VPS".
 - **Crashes and hangs.** A crash (any stop that is not clean) is restarted 5 s later by `Restart=always`, without a
   retry limit (`StartLimitIntervalSec=0`). Before that `server/tools/chaos_crashlog.sh` (`ExecStopPost`) keeps the
   last 200 console lines in `/var/log/chaos/crashes/crash-<time>.log` (newest 50 kept) and, when
@@ -574,7 +585,8 @@ with the settings loaded: `sudo -i`, then `set -a; . /etc/chaos/chaos.env; set +
 
 **Crash loop** (several crash alerts in a few minutes):
 1. `ls -t /var/log/chaos/crashes/ | head` and read the newest `crash-*.log`: the last lines before the stop show the
-   script or the action. `coredumpctl list tfs` when core dumps are kept (`LimitCORE=infinity`).
+   script or the action. There are no core dumps (`LimitCORE=0`, they would hold the database password and the keys);
+   to catch one crash, server/README.md "Server hardening (O196)", "One core, on purpose".
 2. It started after an update: roll the update back with `chaos_update.sh --rollback --now` ("Updating the live
    server", "Rollback"). By hand: `git -C /opt/chaos/repo checkout <last good commit>`, run `install_all.py` again, or
    restore the data archive of section 7, then `systemctl restart chaos-server`.
@@ -594,7 +606,7 @@ with the settings loaded: `sudo -i`, then `set -a; . /etc/chaos/chaos.env; set +
 1. `df -h`, then the biggest: `du -xh --max-depth=2 /var | sort -h | tail -20`.
 2. Usual causes: `/var/log/chaos/server.log` growing from an error loop (fix the loop; `logrotate -f /etc/logrotate.d/chaos`),
    old dumps (`ls -lh /var/backups/chaos/db`; lower `CHAOS_BACKUP_KEEP_DAYS` once the off-site copy works; never delete
-   the newest), core dumps (`coredumpctl list`; `journalctl --vacuum-size=500M`), MariaDB binary logs
+   the newest), old core dumps from before O196 (`coredumpctl list`; `coredumpctl` files are in `/var/lib/systemd/coredump`; delete them, they hold secrets; `journalctl --vacuum-size=500M`), MariaDB binary logs
    (`mysql -e "PURGE BINARY LOGS BEFORE NOW() - INTERVAL 2 DAY"` when binary logging is on).
 3. A full disk can stop saves: once there is space, `systemctl kill -s SIGUSR1 chaos-server` (save now) and read the log.
 

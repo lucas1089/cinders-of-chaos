@@ -74,7 +74,9 @@ reg{id = "ban", name = "Ban account", description = "Ban the account of a player
 			return false, "Target has an equal or higher group than you."
 		end
 		if d.id == actor:getGuid() then return false, "You cannot ban yourself." end
-		local rid = db.storeQuery("SELECT 1 FROM `account_bans` WHERE `account_id` = " .. d.account_id)
+		local acc = ChaosAdmin.sqlInt(d.account_id)
+		if not acc then return false, "Player not found." end
+		local rid = db.storeQuery("SELECT 1 FROM `account_bans` WHERE `account_id` = " .. acc)
 		if rid then result.free(rid); return false, "Account is already banned." end
 		local now = os.time()
 		db.query(string.format("INSERT INTO `account_bans` (`account_id`,`reason`,`banned_at`,`expires_at`,`banned_by`) VALUES (%d,%s,%d,%d,%d)",
@@ -89,7 +91,9 @@ reg{id = "unban", name = "Unban account", description = "Remove the account ban 
 	handler = function(actor, p)
 		local d = ChaosAdmin.dbPlayer(p.player)
 		if not d then return false, "Player not found." end
-		db.query("DELETE FROM `account_bans` WHERE `account_id` = " .. d.account_id)
+		local acc = ChaosAdmin.sqlInt(d.account_id)
+		if not acc then return false, "Player not found." end
+		db.query("DELETE FROM `account_bans` WHERE `account_id` = " .. acc)
 		return true, "Account ban removed for " .. d.name .. " (if there was one)."
 	end}
 
