@@ -327,6 +327,30 @@ ok(K.mayUse({userId = 1, ownerId = 1}), "the owner may use")
 ok(K.mayUse({userId = 2, ownerId = 1, sameParty = true}), "the owner's party may use")
 ok(not K.mayUse({userId = 2, ownerId = 1}), "a stranger may not use")
 
+-- the looks: three own ids, the Sealed Coffer's chest as the fallback
+eq(#cfg.chest.itemIds, 3, "three looks")
+eq(cfg.chest.itemId, 12664, "the fallback is the Sealed Coffer chest")
+local function has(list, v) for _, x in ipairs(list) do if x == v then return true end end return false end
+local allOf = function() return true end
+eq(#K.chestIds(cfg, allOf), 3, "every installed look may be drawn")
+eq(#K.chestIds(cfg, nil), 3, "no existence check: all three")
+local onlyB = function(id) return id == cfg.chest.itemIds[2] end
+eq(table.concat(K.chestIds(cfg, onlyB), ","), tostring(cfg.chest.itemIds[2]), "a look that is not installed is left out")
+eq(table.concat(K.chestIds(cfg, function() return false end), ","), "12664", "none installed: the fallback")
+eq(K.pickChestId(cfg, allOf, low), cfg.chest.itemIds[1], "the draw: the first look")
+eq(K.pickChestId(cfg, allOf, high), cfg.chest.itemIds[3], "the draw: the last look")
+eq(K.pickChestId(cfg, function() return false end, high), 12664, "the draw with none installed: the fallback")
+local seenLook = {}
+local r1 = rng(11)
+for _ = 1, 300 do seenLook[K.pickChestId(cfg, allOf, r1)] = true end
+ok(seenLook[cfg.chest.itemIds[1]] and seenLook[cfg.chest.itemIds[2]] and seenLook[cfg.chest.itemIds[3]], "a random draw reaches every look")
+for _, id in ipairs(cfg.chest.itemIds) do
+	ok(K.isChestId(cfg, id), "look " .. id .. " is a cursed chest")
+end
+ok(K.isChestId(cfg, 12664), "the fallback id is a cursed chest")
+ok(not K.isChestId(cfg, 12665) and not K.isChestId(cfg, nil), "other items are not")
+eq(#K.allChestIds(cfg), 4, "four ids count as a cursed chest")
+
 -- ------------------------------------------------------------------ the loot
 eq(K.hourlyGold(cfg, 1), 19000, "gold per hour below the table")
 eq(K.hourlyGold(cfg, 100), 358839, "gold per hour at 100")
@@ -541,7 +565,10 @@ function Game.getPlayers()
 	end
 	return out
 end
-ItemType = function(id) return {getName = function() return "item" .. id end} end
+local installedIds = {} -- item ids the mocked server has besides the base ones (the Cursed Chest's own looks)
+ItemType = function(id)
+	return {getName = function() return "item" .. id end, getId = function() return (installedIds[id] or id < 30000) and id or 0 end}
+end
 
 local given = {}
 local function mkPlayer(id, guid, name)
@@ -926,6 +953,68 @@ ok(hero._cancels[#hero._cancels]:find("cannot open"), "no opening inside an inst
 eq(ch.state, "idle", "the chest stays closed")
 Chaos.instanceOrder, Chaos.instances.fake = {}, nil
 
+-- ---- the looks on the map: the three own ids, drawn at random, all work like the fallback
+Chaos.instanceOrder, Chaos.instances.fake = {}, nil
+do
+	local ids = cfg.chest.itemIds
+	eq(ch.itemId, 12664, "none of the looks installed on the mocked server: the chests above wore the fallback")
+	for _, id in ipairs(ids) do installedIds[id] = true end
+	local info = {name = "Troll", pool = "x", gear = {}, monsterLevel = 100, tier = "magic"}
+	local made = {}
+	for k = 1, 3 do
+		local pick = k
+		math.random = function(a, b) if a == 1 and b == #ids then return pick end return a end
+		CC.state.cooldown, CC.state.perOwner = {}, {}
+		local c3 = CC.spawnChest(hero, Position(140 + 3 * k, 140, 7), info)
+		ok(c3 ~= nil, "look " .. k .. ": a chest")
+		eq(c3.itemId, ids[k], "look " .. k .. ": the drawn id")
+		local it = Tile(c3.pos):getItemById(ids[k])
+		ok(it ~= nil, "look " .. k .. ": on the map")
+		eq(it._aid, 47730, "look " .. k .. ": with the chest's action id")
+		eq(it._attrs[ITEM_ATTRIBUTE_NAME], "cursed chest", "look " .. k .. ": named")
+		eq(Tile(c3.pos):getItemById(12664), nil, "look " .. k .. ": not the fallback")
+		made[k] = c3
+	end
+	-- the use works on each look (a stranger is refused, as on the fallback)
+	for k = 1, 3 do
+		stranger._pos = Position(made[k].pos.x + 1, made[k].pos.y, 7)
+		use(stranger, Tile(made[k].pos):getItemById(ids[k]))
+		ok(stranger._cancels[#stranger._cancels]:find("not yours"), "look " .. k .. ": a stranger may not use it")
+		eq(made[k].state, "idle", "look " .. k .. ": still idle")
+	end
+	-- an unopened chest of each look crumbles
+	T = T + (cfg.spawn.expireSec + 1) * 1000
+	think(1500)
+	for k = 1, 3 do
+		eq(Tile(made[k].pos):getItemById(ids[k]), nil, "look " .. k .. ": crumbles unopened")
+	end
+	eq(next(CC.chests), nil, "and is forgotten")
+	-- an unknown chest of a new look crumbles at the use, like the fallback
+	local ghost2 = Game.createItem(ids[3], 1, Position(150, 150, 7))
+	ghost2:setActionId(47730)
+	use(hero, ghost2)
+	ok(ghost2._removed == true, "an unknown chest of a new look is removed")
+	-- only one look installed: every chest wears it
+	installedIds[ids[1]], installedIds[ids[3]] = nil, nil
+	math.random = realRandom
+	for k = 1, 12 do
+		CC.state.cooldown, CC.state.perOwner = {}, {}
+		local c4 = CC.spawnChest(hero, Position(160 + 3 * k, 160, 7), info)
+		eq(c4.itemId, ids[2], "one look installed: every chest wears it (" .. k .. ")")
+	end
+	T = T + (cfg.spawn.expireSec + 1) * 1000
+	think(1500)
+	eq(next(CC.chests), nil, "they crumble")
+	for _, id in ipairs(ids) do installedIds[id] = nil end
+	-- and a server that has none of them: the fallback again
+	CC.state.cooldown, CC.state.perOwner = {}, {}
+	local c5 = CC.spawnChest(hero, Position(200, 200, 7), info)
+	eq(c5.itemId, 12664, "none installed: the fallback chest")
+	ok(Tile(c5.pos):getItemById(12664) ~= nil, "on the map")
+	T = T + (cfg.spawn.expireSec + 1) * 1000
+	think(1500)
+	eq(Tile(c5.pos):getItemById(12664), nil, "and it crumbles")
+end
 
 print(string.format("cursedchest_test: %d checks, %d failures", checks, fails))
 if fails > 0 then

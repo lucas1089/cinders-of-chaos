@@ -429,6 +429,52 @@ function K.claimDone(ev, nowMs)
 	return true
 end
 
+-- The looks of the chest. cfg.chest.itemIds are the three own looks, cfg.chest.itemId the fallback (the Sealed Coffer's
+-- chest). exists(id) -> true when the server has that item type (ItemType(id):getId() ~= 0).
+-- chestIds: the looks a new chest may wear; the installed ones, else the fallback alone.
+function K.chestIds(cfg, exists)
+	local out = {}
+	for _, id in ipairs(cfg.chest.itemIds or {}) do
+		if exists == nil or exists(id) then
+			out[#out + 1] = id
+		end
+	end
+	if #out == 0 then
+		out[1] = cfg.chest.itemId
+	end
+	return out
+end
+
+-- one look at random: rand(a, b) -> integer in [a, b]
+function K.pickChestId(cfg, exists, rand)
+	local ids = K.chestIds(cfg, exists)
+	return ids[rand(1, #ids)]
+end
+
+-- every id that is a cursed chest, whatever look it wears (the looks and the fallback)
+function K.allChestIds(cfg)
+	local out, seen = {}, {}
+	for _, id in ipairs(cfg.chest.itemIds or {}) do
+		if not seen[id] then
+			seen[id] = true
+			out[#out + 1] = id
+		end
+	end
+	if cfg.chest.itemId and not seen[cfg.chest.itemId] then
+		out[#out + 1] = cfg.chest.itemId
+	end
+	return out
+end
+
+function K.isChestId(cfg, id)
+	for _, v in ipairs(K.allChestIds(cfg)) do
+		if v == id then
+			return true
+		end
+	end
+	return false
+end
+
 -- Who may use the chest: its owner, or someone in the owner's party. info = {userId, ownerId, sameParty}.
 function K.mayUse(info)
 	return info.userId == info.ownerId or info.sameParty == true

@@ -44,7 +44,13 @@ return {
 
 	-- ------------------------------------------------------------------ the chest
 	chest = {
-		itemId = 12664, -- the treasure chest of the Sealed Coffer (rift_config.lua coffer): 2x2, not moveable, a container
+		-- the looks: each chest that spawns wears one of these at random (client items 38642-38644 of pair 43, server
+		-- items 32281-32283 from tools/install_cursed_chest.py: 2x2, not moveable, a container); an id that is not
+		-- installed on the server is left out of the draw
+		itemIds = {32281, 32282, 32283},
+		-- the fallback while none of the looks is installed: the treasure chest of the Sealed Coffer (rift_config.lua
+		-- coffer): 2x2, not moveable, a container. A chest wearing this id still counts as a cursed chest.
+		itemId = 12664,
 		actionId = 47730, -- 47720-47729 are the Harvest Portals; 47730 is free (server/README.md "Cursed Chest")
 		name = "cursed chest",
 		description = "A chest wrapped in dark chains. Something stirs inside. Whoever opened it first must face five hordes.",
