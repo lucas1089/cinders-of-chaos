@@ -763,6 +763,20 @@ editor on their Windows PC before anything goes onto the server. `server/tools/a
    are the remaining steps. A new hunt also changes the progression model (`progression_model.lua --check`) and the
    hunt teleport room (more plans than slots is refused: raise `modules` in `hunt_teleports_config.lua`).
 
+### The owner's taste (apply to every new area)
+Lessons from the owner's rounds on Sunken Mirewood. Start every new plan from them, not from the bare examples.
+- Big: an open-air hunt is about 160 x 130 tiles or more, with large rooms (30-40 tiles a side), not small pockets.
+- Wide paths: width 5, never a thin corridor.
+- The biome's own colours: a swamp is green swamp ground and trees, not brown cave rock.
+- No grey rock and no black void around the area: the view frame is filled (a thicket biome fills it with blocking
+  trees on the floor's ground).
+- A big room in the middle, and the rest spread over the map: no large empty block of rock or thicket left between
+  the rooms.
+- Nothing straight: `ragged: true` on hunt zones and `style: "wild"` on paths (the boss path may stay a tunnel).
+- Monsters everywhere: spawns on the trails between rooms too (`path` spawns), every spawn `spread: true` with pack 1,
+  so the monsters are spread evenly over the area, not packed in some spots and missing in others.
+- Show the rendered picture after each change, then wait for "approve".
+
 ### What is in git
 Only `plan.json` and `meta.json` (status, the owner's words, a note, level band, size, stats, and the sha256 of each compiled
 file). The `.otbm`, the frame, the spawn xml, the manifest and the pictures are made again from the plan by `build ID
