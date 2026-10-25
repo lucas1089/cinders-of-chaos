@@ -358,6 +358,19 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
                if (x, y, z) in walk and not near_special((x, y, z), avoid)]
         return out
 
+    def path_cells(ends):
+        """walkable tiles along the plan path joining the two zones, outside every zone"""
+        out = set()
+        for f, paths in lay['paths'].items():
+            for q in paths:
+                if q.get('kind') == 'path' and set(q['zones']) == set(ends):
+                    for x, y in C.route_cells(q['points'], q['width'] + {'tunnel': 2, 'wild': 4}.get(q['style'], 0)):
+                        a = absp(x, y, f)
+                        if a in walk and not near_special(a, 2) and not any(
+                                r[4] == a[2] and r[0] <= a[0] <= r[2] and r[1] <= a[1] <= r[3] for r in zrect.values()):
+                            out.add(a)
+        return sorted(out)
+
     def zcenter(zid):
         x1, y1, x2, y2, z = zrect[zid]
         return ((x1 + x2) // 2, (y1 + y2) // 2, z)
@@ -468,10 +481,15 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
     spawn_out = []
     taken = []
     for i, s in enumerate(plan.get('spawns', [])):
-        zid = s['zone']
         pack = s.get('pack', 1)
         npts = (s['count'] + pack - 1) // pack
-        cells = [t for t in zone_cells(zid, 2) if t not in pz and
+        if 'path' in s:
+            zid = 'path %s-%s' % tuple(s['path'])
+            cells = path_cells(s['path'])
+        else:
+            zid = s['zone']
+            cells = zone_cells(zid, 2)
+        cells = [t for t in cells if t not in pz and
                  not (t[2] == arrival[2] and max(abs(t[0] - arrival[0]), abs(t[1] - arrival[1])) < 4)]
         cells.sort(key=lambda t: (t[1], t[0]))
         rng.shuffle(cells)

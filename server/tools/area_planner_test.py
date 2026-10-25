@@ -301,6 +301,21 @@ ok(not msgs(p), 'ragged zones and wild paths validate: %s' % msgs(p))
 rg = PC.compile_plan(p, pair24=False, cat=cat)
 ok(rg['otbm'] != results['swamp_hunt']['otbm'], 'ragged zones and wild paths give other tiles')
 ok(not PC.qa_errors(rg), 'the ragged plan passes QA: %s' % PC.qa_errors(rg))
+# spawns along a path: outside every zone, on the path's tiles; a spawn names a zone or a path, not both
+p = copy.deepcopy(examples['swamp_hunt'])
+q0 = p['paths'][0]
+p['spawns'].append({'path': [q0['to'], q0['from']], 'monster': p['spawns'][0]['monster'], 'count': 4, 'pack': 2})
+ok(not msgs(p), 'a path spawn validates: %s' % msgs(p))
+ps = PC.compile_plan(p, pair24=False, cat=cat)
+on_path = [s_ for s_ in ps['spawns'] if s_['zone'].startswith('path ')]
+ok(sum(s_['count'] for s_ in on_path) == 4 and all((s_['x'], s_['y'], s_['z']) in ps['walk'] for s_ in on_path),
+   'a path spawn places its monsters on walkable path tiles')
+bad = copy.deepcopy(p)
+bad['spawns'][-1]['zone'] = q0['from']
+ok(has(bad, 'a zone or a path'), 'a spawn with a zone and a path is refused')
+bad = copy.deepcopy(p)
+bad['spawns'][-1]['path'] = [q0['from'], q0['from']]
+ok(has(bad, 'no path joins'), 'a spawn on a path that does not exist is refused')
 # a one-way hole: no ladder below it
 p = copy.deepcopy(base)
 p['connections'][0]['type'] = 'hole'

@@ -273,6 +273,86 @@
       "count": 8,
       "pack": 2,
       "respawn": 90
+    },
+    {
+      "path": [
+        "camp",
+        "reeds"
+      ],
+      "monster": "Lochtag",
+      "count": 6,
+      "pack": 2,
+      "respawn": 90
+    },
+    {
+      "path": [
+        "reeds",
+        "bog"
+      ],
+      "monster": "Lochtag",
+      "count": 6,
+      "pack": 2,
+      "respawn": 90
+    },
+    {
+      "path": [
+        "camp",
+        "drowned"
+      ],
+      "monster": "Nightfang Widow",
+      "count": 6,
+      "pack": 2,
+      "respawn": 90
+    },
+    {
+      "path": [
+        "bog",
+        "rootfall"
+      ],
+      "monster": "Babayaga",
+      "count": 6,
+      "pack": 2,
+      "respawn": 90
+    },
+    {
+      "path": [
+        "bog",
+        "sinkhole"
+      ],
+      "monster": "Hodag",
+      "count": 6,
+      "pack": 2,
+      "respawn": 90
+    },
+    {
+      "path": [
+        "drowned",
+        "sinkhole"
+      ],
+      "monster": "Hodag",
+      "count": 6,
+      "pack": 2,
+      "respawn": 90
+    },
+    {
+      "path": [
+        "heart",
+        "drowned"
+      ],
+      "monster": "Nightfang Widow",
+      "count": 6,
+      "pack": 2,
+      "respawn": 90
+    },
+    {
+      "path": [
+        "bog",
+        "drowned"
+      ],
+      "monster": "Babayaga",
+      "count": 6,
+      "pack": 2,
+      "respawn": 90
     }
   ],
   "boss": {
