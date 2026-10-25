@@ -250,6 +250,9 @@ server/
   src-patches/0072-cheaper-map-description.patch   engine: ProtocolGame::GetFloorDescription walks the quad tree once per 8x8
                                       block of tiles, not once per tile; same bytes (see "Cheaper map description (O213)";
                                       header src/chaosmapdesc.h, tools/chaosmapdesc_test.cpp, tools/mapdesc_bench.cpp)
+  src-patches/0074-cheaper-line-of-sight.patch   engine: Map::checkSightLine (behind Game::isSightClear) resolves the Floor once
+                                      per 8x8 block the line crosses, not once per tile; same answers (see "Cheaper line of
+                                      sight (O218)"; header src/chaossight.h, tools/chaossight_test.cpp, tools/sight_bench.cpp)
     remote_cmd.lua    remote_cmd_core.lua    remote_cmd_config.lua  (remote admin commands by file, see "Remote admin commands")
     spectate.lua      spectate_core.lua      spectate_config.lua    (the admin app's live view of a character, see "Live spectator")
     helpai.lua  helpai_core.lua  helpai_config.lua (Ember answers questions in the Help channel through the sidecar
@@ -23413,3 +23416,60 @@ to the base source with `patch -p1`, 0 FAILED, 0 fuzz, 0 reversed.
 
 Install: apply the patch with the others and build. No key, no config, nothing to turn on; a restart brings it. To compare
 on a test server, time a login or a teleport (`onLogin` to the first map packet) before and after. VPS: no action.
+
+## Cheaper line of sight (O218) (engine `src-patches/0074-cheaper-line-of-sight.patch`, `src/chaossight.h`, `tools/sight_bench.cpp`, `tools/chaossight_test.cpp`, `tools/sight_world.h`)
+
+`Game::isSightClear` -> `Map::checkSightLine` decides every ranged shot: each attacking monster asks once a second
+(`Creature::onAttacking`), `Monster::canUseAttack` asks for every target of a target search, spells that need a clear
+shot and a player's throw ask too. Audit of the hot paths left after 0070-0073: pathfinding, spectators and the map
+description are done; the other candidates were weighed by cost per call times calls per second. `Creature::executeConditions`
+copies its `std::list` of conditions once per creature per second, measured at about 50 ns for three conditions (a
+micro test, not kept): not worth a patch. `Monster::searchTarget` builds a `std::list` of candidates, but its cost is the
+`canUseAttack` sight lines it already pays for, so the sight line is the better place.
+
+**Found.** `checkSteepLine` / `checkSlightLine` called `Map::isTileClear` for each tile of the line, and that is
+`Map::getTile`: a walk down the quad tree from the root (13 pointer hops to an 8 x 8 leaf; patch 0072's text says 12,
+the engine's `createLeaf` runs levels 15 down to 3), then the leaf's floor, although the tiles of a line inside one 8 x 8
+block share both.
+
+**Changed (patch 0074, same answers).** `src/chaossight.h`, header only: `ChaosSight::Line` is the stock stepping (same
+float arithmetic, argument swaps for the steep case, loop bounds, early exit on the first blocking tile) with the `Floor`
+of the current block kept in two words on the stack of one call (`key = x >> 3, y >> 3`; a missing leaf or floor is
+cached as nullptr, so a tile lookup is still `nullptr` -> clear). `map.cpp`: `Map::checkSightLine` builds a `Line` over
+`Map::getFloorAt` (patch 0072) and `Tile::hasProperty(CONST_PROP_BLOCKPROJECTILE)`. `isTileClear` and `isSightClear` are
+untouched. Bounds: no allocation and nothing kept between calls, so a tile or floor created later is always seen and
+there is nothing to invalidate or to grow.
+
+**Left alone on purpose.** `Tile::hasProperty` (it walks the item list, needed work), the float arithmetic (changing
+it could move a line by one tile), and any cache across calls (a stale tile would change what a monster can shoot at).
+
+**Measured** (`sight_bench.cpp`; this sandbox, g++ 13.3 -O2, one core, best of 7 rounds of 4000 random lines on a
+400 x 400 city and cave, both versions on the same lines, interleaved).
+
+| Line | stock | new | |
+|---|---|---|---|
+| city, 4-7 tiles | 254 ns | 199 ns | 1.27-1.28x |
+| city, 7-10 tiles | 375-381 ns | 285-288 ns | 1.31-1.32x |
+| city, 11-15 tiles | 547-557 ns | 400 ns | 1.37-1.39x |
+| cave, 7-10 tiles | 376-381 ns | 289-294 ns | 1.29-1.30x |
+| sea, 7-10 tiles (almost all empty) | 96 ns | 87 ns | 1.11x |
+
+The tile test of the benchmark is a stand-in (a flag table lookup for the ground and each item), lighter than the
+engine's item list walk, which is the same before and after, so the share saved in the engine is smaller than the table,
+not measured. In absolute terms about 60 to 150 ns per sight check. A small gain: a monster asks once a second.
+
+The answers are identical: `chaossight_test.cpp` compares the new check with a copy of the stock one for 72,000 lines
+(60 synthetic maps: dense, sparse, many blockers, empty, floors that do not exist, z out of range, the edges of the 16
+bit coordinates; every slope, both directions, zero length, straight and diagonal lines; ASan and UBSan too), checks
+the walk count (4 for a 40 tile line, stock 39), that a blocker or a floor created after a check is seen by the next one,
+and that a wrong block key is caught (tried by hand). `sight_bench.cpp --check` compares every answer it times and fails
+when a line of 7 tiles or more is not at least 1.15x faster (CI "Native checks"). `tools/sight_world.h` has its own quad
+tree of 13 levels: `mapdesc_world.h` has 12, so a leaf there covers 16 x 16 tiles that share one 8 x 8 floor, which is
+wrong for a test that sets neighbouring blocks (harmless for 0072's byte comparison, left as it is).
+
+**Not verified.** No engine build or link, no run on a live server, no profile of a real server. `map.cpp` and
+`game.cpp` pass `g++ -fsyntax-only` against the patched base source. The world of the benchmark is a copy of the quad tree
+and the stock functions, kept in step with `map.cpp` by hand. Verified: the chain 0001-0074 applies to the base source with
+`patch -p1`, 0 FAILED, and 0074 itself with 0 fuzz and no offset.
+
+Install: apply the patch with the others and build. No key, no config, nothing to turn on; a restart brings it. VPS: no action.

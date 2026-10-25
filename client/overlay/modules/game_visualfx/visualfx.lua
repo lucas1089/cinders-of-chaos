@@ -28,6 +28,9 @@
 --                  33 ms, and the engine call only when the creature under the mouse changed); no per-frame Lua. A creature that
 --                  wears a bought cosmetic outline (game_cosmeticfx) keeps it: game_cosmeticfx.setHighlight(id, true) makes it leave
 --                  that creature alone while ours is up, and setHighlight(id, false) puts it back. The stock target square stays.
+--   scene fade     a short dip to black that eases out when the player changes floor or is moved four tiles or more in one step
+--                  (O219, base patch 0138 has the checkbox): Lua and OTUI only. One black widget on the map panel, hidden unless
+--                  a fade runs; one 33 ms timer runs only while it fades; the position hook is connected only while the option is on.
 -- A client without base patch 0126 has none of the C++ functions: the flash, shake and shadow do nothing, the grade (shader
 -- only) still works. Every engine call is guarded.
 local L = VisualFxLogic
@@ -327,6 +330,93 @@ local function onFollowingChange(creature)
   outlineRefresh()
 end
 
+-- ---------------------------------------------------------------- scene fade (O219)
+local SF = SceneFadeLogic
+local sf = { state = SF.new(), widget = nil, event = nil, hooked = false }
+local sfHooks = {}
+
+local function sfAlive(w)
+  if w == nil then return false end
+  local ok, destroyed = pcall(w.isDestroyed, w)
+  return ok and not destroyed
+end
+
+-- the black layer on the game map panel, made on the first fade; nil when the panel is not there
+local function sfWidget()
+  if sfAlive(sf.widget) then return sf.widget end
+  local panel = mapPanel()
+  if not panel then return nil end
+  local ok, w = pcall(g_ui.createWidget, 'ChaosSceneFade')
+  if not ok or not w then return nil end
+  pcall(panel.insertChild, panel, 1, w)
+  pcall(w.fill, w, 'parent')
+  pcall(w.setOpacity, w, 0)
+  sf.widget = w
+  return w
+end
+
+local function sfHide()
+  if sfAlive(sf.widget) then
+    pcall(sf.widget.setOpacity, sf.widget, 0)
+    pcall(sf.widget.setVisible, sf.widget, false)
+  end
+end
+
+local function sfStop()
+  if sf.event then
+    removeEvent(sf.event)
+    sf.event = nil
+  end
+  sf.state.from = 0
+  sf.state.shown = 0
+  sfHide()
+end
+
+local function sfStep()
+  local level, changed, over = SF.step(sf.state, now())
+  local w = sf.widget
+  if sfAlive(w) then
+    if changed and not over then
+      pcall(w.setOpacity, w, level)
+      pcall(w.setVisible, w, true)
+    end
+  end
+  if over then sfStop() end
+end
+
+local function onPlayerPosition(player, newPos, oldPos)
+  local kind = SF.classify(newPos, oldPos)
+  if not kind then return end -- the usual case: a walking step
+  if not SF.trigger(sf.state, now(), kind) then return end
+  if not sfWidget() then return end
+  if not sf.event then sf.event = cycleEvent(sfStep, SF.CFG.tickMs) end
+  sfStep() -- the first dark frame is this one, with the new picture
+end
+
+local function applySceneFade()
+  local on = optionValue('sceneFade')
+  if on and not sf.hooked then
+    sfHooks = { onPositionChange = onPlayerPosition }
+    connect(LocalPlayer, sfHooks)
+    sf.hooked = true
+  elseif not on and sf.hooked then
+    pcall(disconnect, LocalPlayer, sfHooks)
+    sf.hooked = false
+  end
+  if not on then sfStop() end
+end
+
+local function sceneFadeStart()
+  SF.reset(sf.state, now())
+  sfStop()
+end
+
+local function sceneFadeEnd()
+  sfStop()
+  if sfAlive(sf.widget) then sf.widget:destroy() end
+  sf.widget = nil
+end
+
 -- ---------------------------------------------------------------- shadow and grade
 local function applyShadow()
   if Creature and Creature.setSoftShadow then pcall(Creature.setSoftShadow, optionValue('creatureShadow')) end
@@ -370,6 +460,8 @@ function onOption(name, value)
     applyNumberMotion()
   elseif name == 'targetOutline' or name == 'hoverOutline' then
     applyOutlines()
+  elseif name == 'sceneFade' then
+    applySceneFade()
   elseif name == 'screenShake' and value == false then
     stopShake()
   end
@@ -384,12 +476,14 @@ function reapply()
   applyBloom()
   applyNumberMotion()
   applyOutlines()
+  applySceneFade()
 end
 
 -- ---------------------------------------------------------------- lifecycle
 local function onGameStart()
   flasher = L.newFlasher()
   stopShake()
+  sceneFadeStart()
   hl.target = g_game.getAttackingCreature and g_game.getAttackingCreature() or nil
   hl.follow = g_game.getFollowingCreature and g_game.getFollowingCreature() or nil
   reapply()
@@ -397,6 +491,7 @@ end
 
 local function onGameEnd()
   stopShake()
+  sceneFadeEnd()
   outlineClearAll()
   unhookMouse()
   flasher = L.newFlasher()
@@ -412,6 +507,7 @@ local function createFlashShaders()
 end
 
 function init()
+  g_ui.importStyle('scenefade')
   createFlashShaders()
   handlers.game = { onGameStart = onGameStart, onGameEnd = onGameEnd,
                     onAttackingCreatureChange = onAttackingChange, onFollowingCreatureChange = onFollowingChange }
@@ -425,6 +521,8 @@ function terminate()
   if handlers.game then disconnect(g_game, handlers.game) end
   if handlers.map then disconnect(g_map, handlers.map) end
   stopShake()
+  sceneFadeEnd()
+  if sf.hooked then pcall(disconnect, LocalPlayer, sfHooks); sf.hooked = false end
   outlineClearAll()
   unhookMouse()
   if Creature and Creature.setSoftShadow then pcall(Creature.setSoftShadow, false) end
