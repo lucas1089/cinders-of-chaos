@@ -251,6 +251,7 @@ server/
                                       block of tiles, not once per tile; same bytes (see "Cheaper map description (O213)";
                                       header src/chaosmapdesc.h, tools/chaosmapdesc_test.cpp, tools/mapdesc_bench.cpp)
   src-patches/0074-cheaper-line-of-sight.patch   engine: Map::checkSightLine (behind Game::isSightClear) resolves the Floor once
+  src-patches/0075-extended-opcode-size-cap.patch   engine: parseExtendedOpcode drops a request over 16384 bytes before the task, the copy and the Lua decode (O220)
                                       per 8x8 block the line crosses, not once per tile; same answers (see "Cheaper line of
                                       sight (O218)"; header src/chaossight.h, tools/chaossight_test.cpp, tools/sight_bench.cpp)
     remote_cmd.lua    remote_cmd_core.lua    remote_cmd_config.lua  (remote admin commands by file, see "Remote admin commands")
@@ -23473,3 +23474,23 @@ and the stock functions, kept in step with `map.cpp` by hand. Verified: the chai
 `patch -p1`, 0 FAILED, and 0074 itself with 0 fuzz and no offset.
 
 Install: apply the patch with the others and build. No key, no config, nothing to turn on; a restart brings it. VPS: no action.
+
+## Extended opcode protocol audit (O220) (engine `src-patches/0075-extended-opcode-size-cap.patch`, `chaos_constants.lua`, `tests/opcode_dispatch_test.lua`)
+
+Audit of the server side of the JSON-over-extended-opcode protocol (client to server). Each question and what the code did:
+
+| Question | Before | Now |
+|---|---|---|
+| Size cap before decode | `Chaos.opcodeRequestMax` (16,384 bytes) in the Lua dispatcher only, after the engine had read the string (up to 90 KB), copied it into a dispatcher task and, with the client guard of patch 0021, queued up to 64 of them per connection. The base handlers and any event left with the engine had no cap. | Patch 0075: `ProtocolGame::parseExtendedOpcode` returns for a string over 16,384 bytes before any of that (at most 64 x 16 KB held per connection). The Lua cap stays (reloads, tests). |
+| Rate limit | Engine: `maxPacketsPerSecond` (50, all packet types, average, closes the connection). Lua: per action keys through `Chaos.limited` in the handlers that touch the database; nothing in the dispatcher. | `Chaos.opcodeBudget`: a bucket of 250 requests per player refilled 60 a second, taken in `D.dispatch` before any handler; dropped over it with one console line per player a minute. Looser than the engine on purpose (a login sends a few dozen at once), so a real client never reaches it. Cleared at logout. |
+| `pcall` around decode | `Chaos.decode` and the admin, market, loadouts, charms, remote command and patch note decodes use `pcall`. The six base handlers are guarded by `patch_base_json_guards.py`. | Unchanged. |
+| Depth and element limit | None. The base `json.lua` recurses once per `[` or `{` (two Lua calls per level): a 16 KB request of `[` is 16,000 levels, a stack overflow error per packet. Elements are bounded by the byte cap (16 KB is at most about 8,000 values, about 1.4 ms to decode). | `Chaos.guardJson` wraps `json.decode` once: text nested over `Chaos.jsonMaxDepth` (32; real messages nest 2-6) fails with "json nested too deeply" before the decoder runs, for `Chaos.decode`, the admin panel and the base handlers alike. The scan skips strings and allocates nothing. |
+| Field validation | `Chaos.toInt` (rejects NaN, inf, beyond 2^53, fractions floored, ranges), `sqlInt` / `db.escapeString` for SQL; `tests/opcode_fuzz_test.lua` feeds every field of every handler (92 handlers, 576 actions) negative, fractional, NaN, inf, huge, wrong type and checks that no client string reaches SQL unescaped. | Unchanged. A spot check of the `db.*` calls built with `..` found each value escaped, passed through `tonumber` / an integer helper or taken from the database. |
+| Unbounded memory | Unknown opcode: no handler, no state. Chunked reassembly (`Chaos.sendChunked`) exists on the client side only: the server never joins parts, and a client request is one string under the cap. `ChaosRateLimit` keys are capped at 512 per player and cleared at logout. The client guard queue is 64 entries. | The 64-entry queue is now bounded in bytes too (patch 0075). Dispatcher state per player (`warned`, `bucket`, `warnedRate`) is cleared at logout (`D.forget`). |
+
+Limits: `Chaos.opcodeRequestMax` 16,384 bytes (the client's largest request, a passive tree plan, is about 3 KB), `Chaos.opcodeBudget` {burst 250, perSecond 60}, `Chaos.jsonMaxDepth` 32. Raise them in `chaos_constants.lua`; the engine constant `EXTENDED_OPCODE_MAX_BYTES` (patch 0075) must stay at least as large as `opcodeRequestMax`.
+
+Not done: no element-count limit beyond the byte cap (it would add a scan per request for no gain at 16 KB); the base `json.lua` itself is not edited (the wrapper is in `chaos_constants.lua`). A modified client can still send 50 packets a second of valid small requests: each runs its handler, and the handlers that read or write the database carry their own `Chaos.limited` keys.
+
+Tests: `tests/opcode_dispatch_test.lua` (budget: burst, refill, per player, backwards clock, logout, flood through the dispatcher; JSON depth: limit, strings, escapes, unterminated text, the wrapper) under luajit and Lua 5.3. Patch: 0001-0075 applied in order to the base with 0 FAILED and 0 fuzz; `g++ -std=c++17 -fsyntax-only` on the patched `protocolgame.cpp`. Not built or run in an engine.
+
