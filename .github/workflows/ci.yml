@@ -226,6 +226,15 @@ jobs:
           g++ -std=c++17 -Wall -Wextra -I "$d" server/tools/chaosdisplay_test.cpp -o "$d/chaosdisplay_test"
           "$d/chaosdisplay_test"
 
+      - name: Packet compression round trip (C++ and zlib; header from server src-patch 0069)
+        run: |
+          sudo apt-get install -y -qq zlib1g-dev
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/chaospacketcompress\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            server/src-patches/0069-packet-compression.patch > "$d/chaospacketcompress.h"
+          g++ -std=c++17 -O1 -Wall -Wextra -I "$d" server/tools/packet_compress_test.cpp -lz -o "$d/packet_compress_test"
+          "$d/packet_compress_test"
+
       - name: Incremental save, pure parts (C++; header from server src-patch 0026)
         run: |
           d=$(mktemp -d)

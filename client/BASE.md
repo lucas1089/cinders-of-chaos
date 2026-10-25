@@ -961,6 +961,13 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     `ProtocolGame::parseZoneWeather`, packet 60, feature `GameZoneWeather` = 144) was left alone: it has no Lua binding and the server never
     sends the packet. Applies after `0001`-`0129`; checked to apply cleanly (no fuzz, no offset) to the base client tree by assembling
     it again and reading the log. Not run in a client.
+69x. `0131` (`src/framework/net/protocol.cpp`): **inflated packets are capped, an overflow is a protocol error (O209).** The
+    engine inflates a server packet whose checksum word is 0 (server patch `0069` sends them; `GamePacketCompression` stays
+    off). Stock code gave `inflate` the whole 320 KB buffer and took a full buffer for success, cutting a packet short
+    without an error. Now the output space is one packet plus a byte (65536 + 1; with 4 byte lengths the input buffer);
+    a result over the cap, or input left over, logs the usual error and closes the connection. Nothing is sent to the
+    server. Applies after `0001`-`0130`; assembled onto the pristine tree with 0 FAILED / fuzz and `protocol.cpp` checked
+    with `g++ -std=c++20 -fsyntax-only`. Not run in a client against a compressing server.
 70. `0088` (`src/client/outfit.cpp`): **a look without a mounted pattern still rides.** `Outfit::draw` took
     `zPattern = min(1, pattern Z - 1)` and drew the mount only when it was above 0, so a mounted character in a look
     with pattern Z 1 showed no mount. In pair 30 (dat 8156792438dabee3aa768663d57a1619) 43 wearable looks (base
