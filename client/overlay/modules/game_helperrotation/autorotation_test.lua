@@ -222,14 +222,16 @@ do
   eq(#bare.ids, #A.presetFor(1, 60).spells, 'level-up check: preset only, no top-up')
   local clicked = A.select(1, 60, castAt(60))
   ok(#clicked.ids > #bare.ids, 'a click tops up')
-  -- a rotation the button wrote at 18, the player reaches 20 (a new spell, 200)
-  local sel18 = A.select(1, 18, castAt(18), { topUp = false })
+  -- a rotation the button wrote at 14, the player reaches 16 (new spells: Rime Bloom 200 and Arcane Ripple 85, O241)
+  local sel18 = A.select(1, 14, castAt(14), { topUp = false })
   local written = A.rules(sel18)
   local marker = A.ruleIds(written)
-  local sel20 = A.select(1, 20, castAt(20), { topUp = false })
+  local sel20 = A.select(1, 16, castAt(16), { topUp = false })
   local action, newIds = A.levelUpAction(sel20, written, marker, {})
   eq(action, 'notice', 'option off: a notice, not a change')
-  eq(newIds[1], 200, 'the new spell is named')
+  local named = {}
+  for _, id in ipairs(newIds) do named[id] = true end
+  ok(named[200], 'the new spell is named')
   action = A.levelUpAction(sel20, written, marker, { autoUpdate = true })
   eq(action, 'apply', 'option on: the button set may be updated')
   -- the player's own rules: never applied, even with the option on
@@ -237,7 +239,7 @@ do
   action, newIds = A.levelUpAction(sel20, own, nil, { autoUpdate = true })
   eq(action, 'notice', 'own rules with the option on: still only a notice')
   -- ignored spells are not offered again
-  action = A.levelUpAction(sel20, written, marker, { ignored = { [200] = true } })
+  action = A.levelUpAction(sel20, written, marker, { ignored = { [200] = true, [85] = true } })
   eq(action, 'none', 'an ignored spell is not offered again')
   -- nothing new: nothing at all
   action = A.levelUpAction(sel18, written, marker, { autoUpdate = true })

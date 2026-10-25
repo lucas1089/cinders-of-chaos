@@ -22494,6 +22494,21 @@ Portuguese hints used `Aventura >`, `Economia >` and an English `Next Goals`: th
 Left alone on purpose: spell unlock levels (spells_chaos.xml, rotation data, icons and tests change together), the top menu
 (shows every system from the start), and the milestone gifts (10 of 10 storages used).
 
+**O241 (2026-10-25): a spell between levels 12 and 20 for every class.** The O240 audit left the unlock levels alone; this
+moves them. Chaos spells (`spells_chaos.xml`): Reaping Gyre 30 -> 16 (Warrior, Juggernaut, Berserker), Dawnpiercer 30 -> 12
+and Snare Trap 40 -> 16 (Ranger, Deadeye, Beastmaster; Snare Trap is shared, so the Thief, Ninja and Samurai get it at 16
+too), Rime Bloom 20 -> 16 (Mystic, Elementalist), Sundering Palm 30 -> 16 (Monk, Shadowfist, Iron Sage), Consecration 40 -> 16
+(Templar, Inquisitor, Sentinel). The Illusionist had no Chaos attack spell before 110, so the base Arcane Ripple (also the
+Mystic's) goes 40 -> 16 through `data/spells/spell_timings.csv` (`patch_spell_timings.py`, install step `spells`) and
+`stock_spells.csv`. The Necromancer line keeps 12, 16 and 20. Damage formulas are unchanged: they scale with level and magic
+level or weapon skill, so the spells hit softly at 16; the mana check (`rotation_sim.py --mana --check`) still passes. The
+cooldown ladder is by damage, not level, so no cooldown moved. Regenerated: `spelldata.lua`, `autorotation_data.lua`
+(`rotation_sim.py --write`), `wiki_data.json`. The first-hour tip `nextspells` and the goal `spells25` now say "a new spell
+between levels 12 and 20, more around 25". `luajit tools/progression_model.lua --spells` has a new column, the longest
+stretch without a new spell in levels 8-30 (was 17 levels, 8 to 25, for 16 classes; now 10 at most, 25 to 35). No CI limit:
+`progression_config.lua` has no spell-gap number, and the 25-35 stretch (Flickerdash, Hunter's Instinct are shared) would need
+more moves first.
+
 ## Next Goals (`goals.lua`, `goals_core.lua`, `goals_config.lua`, `sql/chaos_goals.sql`, client `game_goals`)
 
 Owner goal (2026-10-15): item acquisition and progression must be clear: how to evolve, what the goal is, what to do

@@ -4,7 +4,7 @@ id,name,words,group,level,mana,cooldown,groupcooldown,secondarygroup,secondarygr
 169,Kindling Spark,kah ti pyr,attack,8,6,2000,2000,,0,,Mystic;Elementalist;Illusionist
 163,Pyre Torrent,drai gal pyr ul,attack,38,70,4000,2000,,0,,Elementalist
 13,Tempest Fan,drai zhul ul,attack,38,100,9000,2000,,0,,Elementalist
-85,Arcane Ripple,drai ondr,attack,40,105,4000,2000,,0,,Mystic;Illusionist
+85,Arcane Ripple,drai ondr,attack,16,105,4000,2000,,0,,Mystic;Illusionist
 124,Sanctum Burst,drai vas sol,attack,50,95,7000,2000,,0,,Ranger;Deadeye;Beastmaster
 53,Bewitching Hex,drai glam,attack,60,45,6000,2000,,0,,Mystic;Illusionist
 59,Scything Arc,kah ti,attack,70,35,4000,2000,,0,,Warrior;Juggernaut;Berserker

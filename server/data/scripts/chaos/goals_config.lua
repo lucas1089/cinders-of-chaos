@@ -327,11 +327,11 @@ C.goals = {
 		where = win("game_passivetree"), effort = T("One minute: pick a node next to the centre.",
 			"Um minuto: escolha um nó perto do centro.")},
 	lvl(20, 1),
-	-- O240: the next step between the passive point (12) and level 20; most classes learn new spells at 25 (a few at 20)
+	-- O240: the next step between the passive point (12) and level 20; every class learns a spell at 12-20 (O241), more at 25
 	{key = "spells25", level = 12, stat = "level", target = 25,
 		title = T("Reach level 25: new spells", "Alcance o nível 25: novas magias"),
-		why = T("Most classes learn their next spells at level 25; the Spellbook lists each one with its level.",
-			"A maioria das classes aprende as próximas magias no nível 25; o Spellbook lista cada uma com o seu nível."),
+		why = T("Every class learns a new spell between levels 12 and 20 and more at level 25; the Spellbook lists each one with its level.",
+			"Toda classe aprende uma magia nova entre os níveis 12 e 20 e mais no nível 25; o Spellbook lista cada uma com o seu nível."),
 		where = win("game_spellbook"),
 		effort = T("About 5 minutes of hunting past level 20.", "Cerca de 5 minutos de caça depois do nível 20.")},
 	-- 20-49
