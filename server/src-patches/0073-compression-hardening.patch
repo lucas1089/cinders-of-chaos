@@ -1,0 +1,57 @@
+# Chaos: packet compression hardening (server/README.md "Packet compression (O209)"), fixes in patch 0069:
+# 1. Protocol::compressBody: when deflate() had advanced the stream but replaceBody() refused the block, the block never
+#    reached the client and the stream was not reset, so every later packet inflated against the wrong history. Now the
+#    deflater is dropped (same as the deflate error path) and the packet goes out plain.
+# 2. ProtocolGame: enablePacketCompression ran before the version, ban, login-limit and password checks, so a connection
+#    that never logged in got about 130 KB of zlib state. Now it runs in the callback of the password check, after
+#    accountId is known non-zero. The client needs no signal (it inflates a packet whose checksum word is 0).
+# Apply after 0001-0072: patch -p1 < 0073-compression-hardening.patch
+--- a/src/protocol.cpp
++++ b/src/protocol.cpp
+@@ -73,7 +73,13 @@
+ 		return false;
+ 	}
+ 	// a deflated body is sent even when it is not smaller: the client's stream must see every block the server's saw
+-	return msg.replaceBody(out, outLength);
++	if (!msg.replaceBody(out, outLength)) {
++		// Chaos (patch 0073): deflate() already advanced the stream, but this block will not reach the client. Same as
++		// the error above: the stream is dead, this and every later packet stays plain (msg is untouched on failure).
++		deflater.reset();
++		return false;
++	}
++	return true;
+ }
+ 
+ void Protocol::onRecvMessage(NetworkMessage& msg)
+--- a/src/protocolgame.cpp
++++ b/src/protocolgame.cpp
+@@ -612,13 +612,6 @@
+ 		}
+ 	}
+ 
+-	// Chaos (patch 0069): packet compression for the official client (it has the inflate code of the engine it is built
+-	// on, and sends the markers above); other clients keep plain packets. Off unless config.lua packetCompression = true.
+-	if (chaosClient && g_config.getBoolean(ConfigManager::PACKET_COMPRESSION)) {
+-		enablePacketCompression(g_config.getNumber(ConfigManager::PACKET_COMPRESSION_LEVEL),
+-		                        static_cast<size_t>(std::max<int32_t>(0, g_config.getNumber(ConfigManager::PACKET_COMPRESSION_MIN))));
+-	}
+-
+ 	if (version < CLIENT_VERSION_MIN || version > CLIENT_VERSION_MAX) {
+ 		// Chaos (patch 0021): with the client guard on, another protocol is another client: the official-client message
+ 		if (ClientGuard::mode() != ClientGuard::Mode::Off) {
+@@ -667,6 +660,15 @@
+ 			thisPtr->disconnectClient("Account name or password is not correct.");
+ 			return;
+ 		}
++		// Chaos (patch 0073, was in patch 0069 before the checks above): packet compression for the official client (it
++		// has the inflate code of the engine it is built on, and sends the markers read in onRecvFirstMessage); other
++		// clients keep plain packets. Off unless config.lua packetCompression = true. Only now, after the password check,
++		// so a connection that never logs in does not hold the ~130 KB of zlib state. The client needs no signal: it
++		// inflates every packet whose checksum word is 0.
++		if (thisPtr->chaosClient && g_config.getBoolean(ConfigManager::PACKET_COMPRESSION)) {
++			thisPtr->enablePacketCompression(g_config.getNumber(ConfigManager::PACKET_COMPRESSION_LEVEL),
++			                                 static_cast<size_t>(std::max<int32_t>(0, g_config.getNumber(ConfigManager::PACKET_COMPRESSION_MIN))));
++		}
+ 		thisPtr->login(name, accountId, operatingSystem);
+ 	});
+ 	if (!queued) {
