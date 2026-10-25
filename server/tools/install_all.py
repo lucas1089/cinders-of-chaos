@@ -360,6 +360,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO_SERVER = os.path.dirname(HERE)
@@ -415,12 +416,32 @@ def say(text=''):
     print(text, flush=True)
 
 
+# sha1 of a file by (path, size, modification time): the report below hashes every file of data/ after every step (about
+# 100 times); a file untouched since the last look is not read again. A file written in the last two seconds is hashed
+# again next time, so a rewrite in the same clock tick (same size) cannot hide behind the cached value.
+_DIGESTS = {}
+_RACY_NS = 2 * 10 ** 9
+
+
+def cached_digest(path):
+    st = os.stat(path)
+    hit = _DIGESTS.get(path)
+    if hit and hit[0] == st.st_size and hit[1] == st.st_mtime_ns:
+        return hit[2]
+    value = digest(path)
+    if time.time_ns() - st.st_mtime_ns > _RACY_NS:
+        _DIGESTS[path] = (st.st_size, st.st_mtime_ns, value)
+    else:
+        _DIGESTS.pop(path, None)
+    return value
+
+
 def snapshot(server):
     """relative path -> sha1 of config.lua and every file under data/ (the map: size and mtime; no logs, reports)"""
     out = {}
     cfg = os.path.join(server, 'config.lua')
     if os.path.isfile(cfg):
-        out['config.lua'] = digest(cfg)
+        out['config.lua'] = cached_digest(cfg)
     data = os.path.join(server, 'data')
     for root, dirs, files in os.walk(data):
         dirs.sort()
@@ -433,7 +454,7 @@ def snapshot(server):
                 st = os.stat(path)
                 out[rel] = 'map %d %d' % (st.st_size, st.st_mtime_ns)
                 continue
-            out[rel] = digest(path)
+            out[rel] = cached_digest(path)
     return out
 
 
@@ -443,6 +464,22 @@ def digest(path):
         for block in iter(lambda: f.read(1 << 20), b''):
             h.update(block)
     return h.hexdigest()
+
+
+def fmt_seconds(sec):
+    return '%.1f s' % sec if sec < 100 else '%d s' % round(sec)
+
+
+def time_report(times, t_snap, total, top=8):
+    """the wall time: the total, the first look at the files, the change reports, and the slowest steps (a step is its
+    tool; the report after it is counted apart)"""
+    steps = sum(t[1] for t in times)
+    reports = sum(t[2] for t in times)
+    slow = sorted(times, key=lambda t: -t[1])[:top]
+    lines = ['Time: %s in all; steps %s, change reports %s (%d), first look %s' % (
+        fmt_seconds(total), fmt_seconds(steps), fmt_seconds(reports), len(times), fmt_seconds(t_snap))]
+    lines.append('Slowest steps: ' + ', '.join('%s %s' % (t[0], fmt_seconds(t[1])) for t in slow if t[1] >= 0.05))
+    return '\n'.join(lines)
 
 
 def diff(before, after):
@@ -1465,17 +1502,25 @@ def main(argv):
         say('  class hook installers: %s' % (', '.join(os.path.basename(h) for h in hooks) or 'none yet'))
         say()
         total_changed, warnings, failed = 0, [], None
+        t_start = time.monotonic()
         snap = snapshot(target)
+        t_snap = time.monotonic() - t_start
+        times = []  # (step, seconds of the step, seconds of the change report after it)
         for name in steps:
             fn = globals()['step_' + name]
+            t0 = time.monotonic()
             ok, lines, warn = fn(target, data, ctx)
+            t1 = time.monotonic()
             after = snapshot(target)
             added, changed, removed = diff(snap, after)
             snap = after
+            t2 = time.monotonic()
+            times.append((name, t1 - t0, t2 - t1))
             n = len(added) + len(changed) + len(removed)
             total_changed += n
-            say('[%s] %s%s' % ('ok' if ok else 'FAILED', name,
-                               '' if name == 'sql' else ' - %d file(s) %s' % (n, 'would change' if dry else 'changed')))
+            say('[%s] %s%s (%s)' % ('ok' if ok else 'FAILED', name,
+                                    '' if name == 'sql' else ' - %d file(s) %s' % (n, 'would change' if dry else 'changed'),
+                                    fmt_seconds(t1 - t0)))
             if not args.get('--quiet') or not ok:
                 limit = len(lines) if args.get('--verbose') or not ok else 15
                 for line in lines[:limit]:
@@ -1494,6 +1539,7 @@ def main(argv):
                 failed = name
                 break
         say()
+        say(time_report(times, t_snap, time.monotonic() - t_start))
         say('Summary: %d file(s) %s%s; %s.' % (total_changed, 'would change' if dry else 'changed',
                                                ', %d new table(s)' % len(ctx.get('new_tables', [])) if 'sql' in steps
                                                and not dry and not ctx['no_sql'] else '',

@@ -153,9 +153,9 @@ final class UpdateInfo {
             case "backup":
                 return "Backup (banco e arquivos)";
             case "install":
-                return "Instalando (servidor desligado)";
+                return "Instalando (o jogo segue no ar)";
             case "database":
-                return "Atualizando o banco";
+                return "Trocando a pasta e atualizando o banco (servidor desligado)";
             case "verify":
                 return "Esperando o servidor ligar";
             case "rollback":

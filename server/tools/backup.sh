@@ -3,7 +3,7 @@
 # config.lua and data/ (without the map .otbm files and logs). Keeps the last N days. Restore: docs/LAUNCH.md, "Backups".
 #
 # usage: server/tools/backup.sh [--dir DIR] [--keep-days N] [--server-dir DIR] [--db NAME]
-#                               [--save-service UNIT | --save-pid PID] [--no-data] [--dry-run]
+#                               [--save-service UNIT | --save-pid PID] [--save-log FILE] [--no-data] [--dry-run]
 #
 # Settings come from the environment (/etc/chaos/chaos.env, see server/deploy/chaos.env.example), options override them:
 #   CHAOS_DB_HOST CHAOS_DB_PORT CHAOS_DB_USER CHAOS_DB_PASS CHAOS_DB_NAME   the database (password never on a command line:
@@ -15,6 +15,9 @@
 # SIGUSR1 with the autosave in steps (a few players per tick, no freeze; about 3.5 s at 200 online, 7-8 s at 400) and keeps
 # running; a dump that starts before the pass ends still holds every character as of its last save (each save is one
 # transaction per character). server/README.md "Autosave in steps".
+# --save-log FILE (the engine's console log): the wait ends as soon as the engine prints "> Saved in steps:" after the
+# signal (polled twice a second), --save-wait stays the longest wait; without the option, or with an engine that does not
+# print the line, the wait is the whole --save-wait.
 #
 # Files: DIR/db/chaos-db-<name>-YYYYmmdd-HHMMSS.sql.gz and DIR/data/chaos-data-YYYYmmdd-HHMMSS.tar.gz (a data archive is
 # only written when config.lua or data/ differ from the newest archive, compared by a checksum list). Every dump is
@@ -29,6 +32,7 @@ DB=${CHAOS_DB_NAME:-}
 SAVE_SERVICE=""
 SAVE_PID=""
 SAVE_WAIT=15
+SAVE_LOG=""
 DATA=1
 DRY=0
 
@@ -44,6 +48,7 @@ while [ $# -gt 0 ]; do
 		--save-service) SAVE_SERVICE=${2:?}; shift 2 ;;
 		--save-pid) SAVE_PID=${2:?}; shift 2 ;;
 		--save-wait) SAVE_WAIT=${2:?}; shift 2 ;;
+		--save-log) SAVE_LOG=${2:?}; shift 2 ;;
 		--no-data) DATA=0; shift ;;
 		--dry-run) DRY=1; shift ;;
 		-h|--help) sed -n '2,20p' "$0"; exit 0 ;;
@@ -87,17 +92,35 @@ quote() { printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'; }
 	if [ -n "${CHAOS_DB_PASS:-}" ]; then echo "password=\"$(quote "$CHAOS_DB_PASS")\""; fi
 } > "$OPT"
 
+# wait_saved FROM: until the engine log, after byte FROM, has the "Saved in steps" line (the end of the save pass), at most
+# SAVE_WAIT seconds; the whole SAVE_WAIT without a readable log
+wait_saved() {
+	local from=$1 i n=$((SAVE_WAIT * 2))
+	if [ -z "$SAVE_LOG" ] || [ ! -r "$SAVE_LOG" ]; then sleep "$SAVE_WAIT"; return 0; fi
+	for ((i = 0; i < n; i++)); do
+		if tail -c +"$((from + 1))" "$SAVE_LOG" 2>/dev/null | grep -q '> Saved in steps:'; then
+			log "the engine finished the save after about $((i / 2)) s"
+			return 0
+		fi
+		sleep 0.5
+	done
+	log "no 'Saved in steps' line in ${SAVE_WAIT}s: dumping as it is"
+}
+log_end() { if [ -n "$SAVE_LOG" ]; then stat -c %s "$SAVE_LOG" 2>/dev/null || echo 0; else echo 0; fi; }
+
 # 1. ask the engine to save (players and houses live in the database)
 if [ -n "$SAVE_SERVICE" ]; then
 	if systemctl is-active --quiet "$SAVE_SERVICE"; then
-		systemctl kill -s SIGUSR1 --kill-whom=main "$SAVE_SERVICE" && log "asked $SAVE_SERVICE to save, waiting ${SAVE_WAIT}s"
-		sleep "$SAVE_WAIT"
+		from=$(log_end)
+		systemctl kill -s SIGUSR1 --kill-whom=main "$SAVE_SERVICE" && log "asked $SAVE_SERVICE to save, waiting up to ${SAVE_WAIT}s"
+		wait_saved "$from"
 	else
 		log "$SAVE_SERVICE is not running, dumping as it is"
 	fi
 elif [ -n "$SAVE_PID" ]; then
-	kill -USR1 "$SAVE_PID" && log "asked pid $SAVE_PID to save, waiting ${SAVE_WAIT}s"
-	sleep "$SAVE_WAIT"
+	from=$(log_end)
+	kill -USR1 "$SAVE_PID" && log "asked pid $SAVE_PID to save, waiting up to ${SAVE_WAIT}s"
+	wait_saved "$from"
 fi
 
 # 2. the database: one consistent InnoDB snapshot, without locking the game
