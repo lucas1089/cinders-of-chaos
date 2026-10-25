@@ -2922,7 +2922,7 @@ Built once.
 - A client on pair 42 or older draws nothing for the new ids: ship pair 43 before the `cursedchest` install step.
   Previews (the three looks at 1x and 4x, and every phase of each at 4x, rendered from pair 43): scratchpad only. Not run in a client.
 
-## Everfull potion looks (pair 44: items 38645-38656, `tools/sprites/gen_everfull_art.py`, `art_import/everfull*`; built 2026-10-25)
+## Everfull potion looks (pair 44: items 38645-38656, `tools/sprites/gen_everfull_art.py`, `art_import/everfull*`; built 2026-10-25; on windows-assets 743d2e0d)
 Owner request 2026-10-25: the Everfull potions wore the stock potions' looks (266 / 268 and the great, ultimate, supreme ones);
 they get art of their own, and every line gets four tiers (server/README.md "Potions", "Own art and four tiers a line", O247).
 Twelve PixelLab results (32 x 32 RGBA, alpha 0 / 255), owner approved: health, mana, spirit, tiers 1 to 4. One flask shape per
