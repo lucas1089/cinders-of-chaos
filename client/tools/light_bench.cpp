@@ -1,7 +1,8 @@
-// Offline benchmark of the light map fill (base patch 0140, client/BASE.md "0140").
-//   g++ -std=c++17 -O2 -I DIR -I client/tools client/tools/light_bench.cpp -o light_bench   (DIR holds chaoslightfill.h)
+// Offline benchmark of the light map fill (base patches 0140 and 0149, client/BASE.md "0140", "0149").
+//   g++ -std=c++17 -O2 -I DIR -I client/tools client/tools/light_bench.cpp -o light_bench
+//   (DIR holds chaoslightfill.h from patch 0140 and chaoslightsoft.h from patch 0149)
 //   light_bench [--seconds N] [--check]
-// Old path: the per-tile loop of LightView::draw, every tile against every light added after its floor started
+// Three paths. Stock: the per-tile loop of LightView::draw, every tile against every light added after its floor started
 // (chaoslight_ref.h, transcribed from the base client). New path: chaoslight::fill, light by light over the tiles each light
 // reaches. Same inputs, same buffer; the buffers are compared byte for byte on every frame that is timed. The upload of the
 // texture and the quad (identical after the patch) are not part of either side.
@@ -12,8 +13,13 @@
 //   hunt    31x23 map, 150 lights   a busy hunt, wide screen
 //   packed  31x23 map, 400 lights   a boss fight with many spell lights
 //   wide    55x41 map, 250 lights   a 4K screen, zoomed out
-// --check (CI): exit 1 on a buffer difference or when a scenario is under 1.5x faster than the old loop.
+// "reach" is chaoslight::fill of 0140: its buffer must equal the stock one byte for byte (compared on every timed frame)
+// and it must be 1.5x faster. "soft" is chaoslight::fillSoft of 0149 (smoothstep, soft clamp, flicker ON, a third of the
+// lights warm so the flicker costs what it costs): its output differs from stock on purpose, so it is not compared, only
+// timed against stock, and it must not be slower than 1.2x stock (it is normally much faster). Both gates in --check.
+// --check (CI): exit 1 on a reach buffer difference, a reach speedup under 1.5x, or a soft fill over 1.2x the stock time.
 #include "chaoslightfill.h"
+#include "chaoslightsoft.h"
 #include "chaoslight_ref.h"
 #include <chrono>
 #include <cstdio>
@@ -37,6 +43,22 @@ static void newFill(std::vector<uint8_t>& out, int w, int h, int S, const Color&
                      });
 }
 
+static void softFill(std::vector<uint8_t>& out, int w, int h, int S, const Color& g, const std::vector<Light>& lights,
+                     const std::vector<TileLight>& tiles, uint32_t timeMs)
+{
+    chaoslight::Flicker fl;
+    fl.on = true;
+    fl.timeMs = timeMs;
+    fl.originX = 1000;
+    fl.originY = 2000;
+    chaoslight::fillSoft(out.data(), w, h, S, g.r(), g.g(), g.b(), lights.data(), lights.size(), tiles.data(), fl,
+                         [](const Light& l) { return Color::from8bit(l.color); },
+                         [](const Color& base, float k, int* rgb) {
+                             const Color c = base * k;
+                             rgb[0] = c.r(); rgb[1] = c.g(); rgb[2] = c.b();
+                         });
+}
+
 int main(int argc, char** argv)
 {
     double seconds = 0.5;
@@ -48,7 +70,7 @@ int main(int argc, char** argv)
     const Scenario scenarios[] = { { "small", 19, 15, 40 }, { "hunt", 31, 23, 150 }, { "packed", 31, 23, 400 }, { "wide", 55, 41, 250 } };
     const int S = 32;
     int bad = 0;
-    std::printf("%-8s %12s %12s %8s\n", "scenario", "stock us/fr", "reach us/fr", "ratio");
+    std::printf("%-8s %12s %12s %8s %12s %10s\n", "scenario", "stock us/fr", "reach us/fr", "ratio", "soft us/fr", "soft/stock");
     for (const Scenario& sc : scenarios) {
         std::mt19937 rng(222);
         auto rnd = [&](int lo, int hi) { return std::uniform_int_distribution<int>(lo, hi)(rng); };
@@ -60,7 +82,7 @@ int main(int argc, char** argv)
                 Light l;
                 l.pos.x = rnd(-S, sc.w * S + S);
                 l.pos.y = rnd(-S, sc.h * S + S);
-                l.color = uint8_t(rnd(1, 215));
+                l.color = uint8_t(rnd(0, 2) == 0 ? 36 * rnd(3, 5) + 6 * rnd(0, 3) + rnd(0, 1) : rnd(1, 215)); // a third warm
                 const int k = rnd(0, 9);
                 l.intensity = uint8_t(k < 6 ? rnd(2, 6) : k < 9 ? rnd(6, 10) : rnd(10, 18));
                 lightSets[f].push_back(l);
@@ -70,7 +92,8 @@ int main(int argc, char** argv)
         }
         const Color global = Color::from8bit(36) * 0.4f; // a dark ambient
         std::vector<uint8_t> a(size_t(sc.w) * sc.h * 4), b(size_t(sc.w) * sc.h * 4);
-        double bestOld = 1e18, bestNew = 1e18;
+        std::vector<uint8_t> c(size_t(sc.w) * sc.h * 4);
+        double bestOld = 1e18, bestNew = 1e18, bestSoft = 1e18;
         bool same = true;
         double spent = 0;
         for (int round = 0; round < 8 || spent < seconds * 1000; ++round) {
@@ -84,7 +107,14 @@ int main(int argc, char** argv)
             const double ms1 = std::chrono::duration<double, std::milli>(t2 - t1).count();
             bestOld = std::min(bestOld, ms0);
             bestNew = std::min(bestNew, ms1);
-            spent += ms0 + ms1;
+            auto t3 = Clock::now();
+            uint64_t sc2 = 0;
+            for (int f = 0; f < frames; ++f) { softFill(c, sc.w, sc.h, S, global, lightSets[f], tileSets[f], uint32_t(round * 997 + f * 16)); sc2 += c[(f * 37) % c.size()]; }
+            auto t4 = Clock::now();
+            if (sc2 == 0xFFFFFFFFFFFFFFFFull) std::printf("."); // keep the loop
+            const double ms2 = std::chrono::duration<double, std::milli>(t4 - t3).count();
+            bestSoft = std::min(bestSoft, ms2);
+            spent += ms0 + ms1 + ms2;
             if (sa != sb) same = false;
             // full compare of the last frame of the round, and of every frame in the first round
             for (int f = (round == 0 ? 0 : frames - 1); f < frames; ++f) {
@@ -95,10 +125,12 @@ int main(int argc, char** argv)
             if (round >= 40) break;
         }
         const double ratio = bestOld / bestNew;
-        std::printf("%-8s %12.2f %12.2f %7.2fx  %s\n", sc.name, bestOld * 1000 / frames, bestNew * 1000 / frames, ratio,
-                    same ? "same buffer" : "BUFFERS DIFFER");
+        const double softRatio = bestSoft / bestOld;
+        std::printf("%-8s %12.2f %12.2f %7.2fx %12.2f %9.2fx  %s\n", sc.name, bestOld * 1000 / frames, bestNew * 1000 / frames, ratio,
+                    bestSoft * 1000 / frames, softRatio, same ? "reach: same buffer" : "reach: BUFFERS DIFFER");
         if (!same) ++bad;
         if (check && ratio < 1.5) { std::printf("  below 1.5x\n"); ++bad; }
+        if (check && softRatio > 1.2) { std::printf("  soft fill slower than 1.2x stock\n"); ++bad; }
     }
     if (bad) { std::printf("FAIL\n"); return 1; }
     std::printf("ok\n");
