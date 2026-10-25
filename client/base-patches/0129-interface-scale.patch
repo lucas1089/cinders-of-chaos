@@ -1,0 +1,147 @@
+# Chaos: interface scale (O207; src/framework/core/graphicalapplication.cpp and Lua: mods/client_settings/classes/dataset.lua,
+# settings.lua, options/interface.otui; after 0001-0128). The base already scales the whole interface (g_app.scale draws it
+# at window size / N and stretches it, the mouse is divided by N on Windows) but with a linear filter, which blurs the pixel
+# fonts and skin. This patch draws a whole N with hard pixel edges (a fraction keeps the linear filter) and adds the option
+# uiScale (a scrollbar with the steps 100 / 200 / 300 %, saved by the settings, applied at once) to Options > Interface.
+# Overlay module game_chaosuiscale (client/MANIFEST.md "Interface scale (O207)") limits the step to what the window fits.
+--- a/src/framework/core/graphicalapplication.cpp
++++ b/src/framework/core/graphicalapplication.cpp
+@@ -42,6 +42,7 @@
+ #include <framework/input/mouse.h>
+ #include <framework/util/extras.h>
+ #include <framework/util/stats.h>
++#include <cmath>
+ #include <mutex>
+ #include <array>
+ 
+@@ -415,6 +416,9 @@
+         AutoStat stat(STATS_RENDER, "SetupScaling");
+         g_painter->setResolution(g_graphics.getViewportSize() / m_scaling);
+         m_framebuffer->resize(g_painter->getResolution());
++        // Chaos (O207): a whole factor stretches the interface with hard pixel edges (sharp bitmap fonts and skin), a
++        // fraction keeps the linear filter
++        m_framebuffer->setSmooth(m_scaling.load() != std::floor(m_scaling.load()));
+         m_framebuffer->bind();
+     }
+ 
+@@ -777,6 +781,7 @@
+             AutoStat s(STATS_RENDER, "SetupScaling");
+             g_painter->setResolution(g_graphics.getViewportSize() / m_scaling);
+             m_framebuffer->resize(g_painter->getResolution());
++            m_framebuffer->setSmooth(m_scaling.load() != std::floor(m_scaling.load()));
+             m_framebuffer->bind();
+         }
+ 
+--- a/mods/client_settings/classes/dataset.lua
++++ b/mods/client_settings/classes/dataset.lua
+@@ -10,6 +10,25 @@
+     end
+ end
+ 
++-- Chaos (base patch 0129): the text of the interface scale line in Options > Interface; says so when the window only fits
++-- a smaller step than the one chosen
++function updateUiScaleLabel(index)
++    local win = GameOptions and GameOptions:getLoadedWindow('interface')
++    local label = win and win:recursiveGetChildById('uiScaleLabel')
++    if not label then return end
++    local want, got = ({100, 200, 300})[math.max(1, math.min(3, math.floor(tonumber(index) or 1)))], nil
++    local m = modules.game_chaosuiscale
++    if m and m.info then
++        local ok, w, g = pcall(m.info, index)
++        if ok and w then want, got = w, g end
++    end
++    if got and got < want then
++        label:setText(tr('Interface scale: %d%% (this window fits %d%%)', want, got))
++    else
++        label:setText(tr('Interface scale: %d%%', want))
++    end
++end
++
+ return {
+     layout = {
+         value = DEFAULT_LAYOUT,
+@@ -2279,6 +2298,22 @@
+       end,
+   },
+ 
++  -- Chaos (base patch 0129; overlay module game_chaosuiscale): interface scale. The value is the step index (1 = 100%,
++  -- 2 = 200%, 3 = 300%), also the scrollbar value; the module lowers it to what the window fits and calls g_app.scale
++  uiScale = {
++    value = 1,
++    apply = function(value)
++      local m = modules.game_chaosuiscale
++      if m and m.onOption then m.onOption(value) end
++      updateUiScaleLabel(value)
++      return true
++    end,
++    tempApply = function(value)
++      updateUiScaleLabel(value)
++      return true
++    end,
++  },
++
+   quickAllCorpses = {
+     value = false,
+   },
+--- a/mods/client_settings/options/interface.otui
++++ b/mods/client_settings/options/interface.otui
+@@ -631,6 +631,49 @@
+       image-source: /images/skin/show-gui-help-grey
+       !tooltip: tr('Check this box to see how much time or how many charges are left \non items that have not been used yet.')
+ 
++  FlatPanel
++    // Chaos (base patch 0129, overlay module game_chaosuiscale): interface scale for 1440p and 4K screens
++    size: 505 22
++    anchors.top: prev.bottom
++    anchors.right: parent.right
++    anchors.left: parent.left
++    margin-top: 5
++    margin-left: 4
++    margin-right: 4
++
++    Label
++      id: uiScaleLabel
++      !text: tr('Interface scale: %d%%', 100)
++      font: $var-cip-font
++      text-auto-resize: true
++      color: $var-text-cip-color
++      anchors.left: parent.left
++      anchors.top: parent.top
++      margin-top: 5
++      margin-left: 5
++
++    UIWidget
++      id: uiScaleHelp
++      size: 12 12
++      anchors.top: parent.top
++      anchors.right: parent.right
++      margin-right: 5
++      margin-top: 5
++      image-source: /images/skin/show-gui-help-grey
++      !tooltip: tr('Makes the whole interface bigger and sharp on large screens: 100%%, 200%% or 300%%.\nA size is offered only when the window is big enough for it (about 2048x1152 for 200%%,\n3072x1728 for 300%%); on a smaller window it stays at the largest size that fits.\nThe change applies at once and is saved on this computer.')
++
++    SettingsHorizontalScrollBar
++      id: uiScale
++      width: 120
++      anchors.top: parent.top
++      anchors.right: uiScaleHelp.left
++      margin-right: 10
++      margin-top: 4
++      step: 1
++      minimum: 1
++      maximum: 3
++      value: 1
++
+   Button
+     id: resetButton
+     size: 43 20
+--- a/mods/client_settings/settings.lua
++++ b/mods/client_settings/settings.lua
+@@ -2381,6 +2381,7 @@
+     setTempOption('timeInventory', false)
+     setTempOption('timeContainers', true)
+     setTempOption('timeUnnused', true)
++    setTempOption('uiScale', 1)
+     onApplyOptions()
+     optionsWindow:show(true)
+     g_client.setInputLockWidget(optionsWindow)
