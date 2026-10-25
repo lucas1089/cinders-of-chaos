@@ -1,0 +1,340 @@
+# Chaos: cheaper per-frame names, bars labels and damage numbers (O214; client/BASE.md "0133"; src/framework/graphics/
+# chaostextslot.h (new, pure), cachedtext.h/.cpp, textrender.h/.cpp, drawqueue.h/.cpp; after 0001-0132).
+# Audit of the text path of drawInformation, StaticText and AnimatedText (all go through CachedText::draw): the layout of a
+# string (BitmapFont::calculateGlyphsPositions / calculateDrawTextCoords) is already done once per (text, size, align, font)
+# by TextRender, so the glyph maths was not the waste. What every text paid on every frame was the lookup of that layout:
+# DrawQueue::addText hashed the whole string, took a mutex and searched a std::map, and DrawQueueItemText::draw did it again
+# (mutex, second search, a clock read for lastUse), 60 names and a few damage numbers per frame.
+#  * chaos::TextSlot (chaostextslot.h): CachedText keeps the TextRenderCache entry itself, keyed by font id, font texture
+#    identity, box size, alignment and a revision that update() bumps on every change of text, font or alignment. Same key =
+#    the same entry, with no hash, lock or lookup; any change builds one new entry (the old one dies with its last queue item).
+#    One entry per CachedText, so memory is bounded by the live texts, and the entries are not in TextRender's map (a stream
+#    of fresh damage numbers no longer fills and sweeps it). Colour and render scale are not part of a layout: colour is a draw
+#    parameter and the scale is applied by the painter, so neither can make an entry stale.
+#  * TextRender::makeEntry / drawEntry / drawColoredEntry: the same lazy layout on the first draw, on the graphics thread, with
+#    the same BitmapFont::calculateDrawTextCoords and the same Painter::drawText calls; DrawQueue::addTextEntry /
+#    addColoredTextEntry and the two items DrawQueueItemTextEntry / ...EntryColored carry the entry. The old hash path stays
+#    for every other caller (UI widgets, the creature icon counts). The producer thread only builds an entry and reads the
+#    pointer; only the graphics thread lays it out, so no entry is written by two threads.
+# Checked: applies cleanly after 0001-0132 (no fuzz); cachedtext.cpp, textrender.cpp, drawqueue.cpp, animatedtext.cpp and
+# statictext.cpp pass g++ -std=c++20 -fsyntax-only -w -Isrc -DFRAMEWORK_GRAPHICS; creature.cpp shows only the base's own g_app /
+# getFps errors of a build without the framework defines. Not built, linked or run in a client. Test client/tools/
+# chaostextslot_test.cpp, bench client/tools/text_bench.cpp (both in CI).
+diff -ruN a/src/framework/graphics/cachedtext.cpp b/src/framework/graphics/cachedtext.cpp
+--- a/src/framework/graphics/cachedtext.cpp
++++ b/src/framework/graphics/cachedtext.cpp
+@@ -41,11 +41,27 @@
+         m_textCachedScreenCoords = rect;
+     }
+ 
++    // Chaos (base patch 0133): same early outs as DrawQueue::addText, then the remembered layout instead of a hash and a map
++    // lookup per draw; the picture is the same (the entry is laid out by the same BitmapFont::calculateDrawTextCoords)
++    const Size boxSize = m_textCachedScreenCoords.size();
++    if(m_text.empty() || !boxSize.isValid())
++        return;
++
++    chaos::TextSlotKey key;
++    key.fontId = m_font->getId();
++    key.texture = m_font->getTexture().get();
++    key.width = boxSize.width();
++    key.height = boxSize.height();
++    key.align = static_cast<int>(Fw::AlignCenter);
++    key.revision = m_revision;
++    const std::shared_ptr<TextRenderCache>& entry = m_slot.get(key, [&]() {
++        return g_text.makeEntry(m_font, m_text, boxSize, Fw::AlignCenter);
++    });
++
+     if (m_textColors.empty()) {
+-        g_drawQueue->addText(m_font, m_text, m_textCachedScreenCoords, Fw::AlignCenter, color, false, shader);
++        g_drawQueue->addTextEntry(entry, m_textCachedScreenCoords.topLeft(), color, false, shader);
+     } else {
+-        g_drawQueue->addColoredText(m_font, m_text, m_textCachedScreenCoords, Fw::AlignCenter, m_textColors,
+-                                    false, shader);
++        g_drawQueue->addColoredTextEntry(entry, m_textCachedScreenCoords.topLeft(), m_textColors, false, shader);
+     }
+ }
+ 
+@@ -68,6 +84,7 @@
+ 
+ void CachedText::update()
+ {
++    ++m_revision;
+     if(m_font)
+         m_textSize = m_font->calculateTextRectSize(m_text);
+     m_textMustRecache = true;
+diff -ruN a/src/framework/graphics/cachedtext.h b/src/framework/graphics/cachedtext.h
+--- a/src/framework/graphics/cachedtext.h
++++ b/src/framework/graphics/cachedtext.h
+@@ -26,6 +26,8 @@
+ #include "declarations.h"
+ #include "coordsbuffer.h"
+ #include "drawqueue.h"
++#include "textrender.h"
++#include "chaostextslot.h"
+ 
+ class CachedText
+ {
+@@ -50,6 +52,10 @@
+ private:
+     void update();
+ 
++    // Chaos (base patch 0133): the layout entry of the last draw, rebuilt only when text, font, font texture, box size or
++    // alignment change (m_revision counts the changes of text, font and alignment)
++    chaos::TextSlot<TextRenderCache> m_slot;
++    uint32_t m_revision = 0;
+     std::string m_text;
+     std::vector<std::pair<int, Color>> m_textColors;
+     Size m_textSize;
+diff -ruN a/src/framework/graphics/chaostextslot.h b/src/framework/graphics/chaostextslot.h
+--- a/src/framework/graphics/chaostextslot.h
++++ b/src/framework/graphics/chaostextslot.h
+@@ -0,0 +1,67 @@
++// Chaos (base patch 0133): one remembered text layout per piece of text that is drawn every frame.
++// Pure logic, no engine types, so tools/chaostextslot_test.cpp and tools/text_bench.cpp compile it without the client.
++//
++// The stock path hands every draw of a name, a bar label or a damage number to TextRender::addText, which hashes the whole
++// string, takes a mutex, looks the hash up in a std::map, and again on the graphics thread (mutex, second lookup, a
++// clock read). A TextSlot lives in the object that owns the text (CachedText) and keeps the layout entry itself: while the
++// text, the font, the font texture, the box size and the alignment are unchanged the same entry is handed out with no
++// hashing, no lock and no lookup. Any change builds one new entry; the old one dies with its last queue item.
++// Colour is not part of a layout (the painter takes it per draw), and the render scale is applied by the painter and the
++// draw queue, not by the layout, so neither can make an entry stale.
++#ifndef CHAOS_TEXTSLOT_H
++#define CHAOS_TEXTSLOT_H
++
++#include <cstdint>
++#include <memory>
++#include <utility>
++
++namespace chaos {
++
++struct TextSlotKey {
++    int fontId = 0;                 // BitmapFont::getId(), unique per font object
++    const void* texture = nullptr;  // identity of the font texture the entry was built with (a reloaded font gets a new one)
++    int width = 0;                  // box size of the draw: the layout depends on it
++    int height = 0;
++    int align = 0;
++    uint32_t revision = 0;          // bumped by the owner on every change of the text
++
++    bool operator==(const TextSlotKey& o) const
++    {
++        return fontId == o.fontId && texture == o.texture && width == o.width && height == o.height
++            && align == o.align && revision == o.revision;
++    }
++    bool operator!=(const TextSlotKey& o) const { return !(*this == o); }
++};
++
++template <class Entry>
++class TextSlot
++{
++public:
++    // The entry for `key`; `make` (returns std::shared_ptr<Entry>) runs only when the key differs from the last draw.
++    // One entry per slot: memory is bounded by the number of live texts, whatever strings pass through them.
++    template <class Make>
++    const std::shared_ptr<Entry>& get(const TextSlotKey& key, Make&& make)
++    {
++        if (!m_entry || m_key != key) {
++            m_entry = make();
++            m_key = key;
++            ++m_builds;
++        }
++        ++m_gets;
++        return m_entry;
++    }
++
++    void reset() { m_entry.reset(); }
++    uint64_t builds() const { return m_builds; }
++    uint64_t gets() const { return m_gets; }
++
++private:
++    std::shared_ptr<Entry> m_entry;
++    TextSlotKey m_key;
++    uint64_t m_builds = 0;
++    uint64_t m_gets = 0;
++};
++
++} // namespace chaos
++
++#endif
+diff -ruN a/src/framework/graphics/drawqueue.cpp b/src/framework/graphics/drawqueue.cpp
+--- a/src/framework/graphics/drawqueue.cpp
++++ b/src/framework/graphics/drawqueue.cpp
+@@ -186,6 +186,16 @@
+     g_text.drawColoredText(m_point, m_hash, m_colors, m_shadow, m_shader);
+ }
+ 
++void DrawQueueItemTextEntry::draw()
++{
++    g_text.drawEntry(m_point, m_entry, m_color, m_shadow, m_shader);
++}
++
++void DrawQueueItemTextEntryColored::draw()
++{
++    g_text.drawColoredEntry(m_point, m_entry, m_colors, m_shadow, m_shader);
++}
++
+ void::DrawQueueItemLine::draw()
+ {
+     g_painter->setColor(m_color);
+@@ -310,6 +320,21 @@
+                                                                 colors, shadow, shader));
+ }
+ 
++void DrawQueue::addTextEntry(const std::shared_ptr<TextRenderCache>& entry, const Point& topLeft, const Color& color,
++                             bool shadow, const PainterShaderProgramPtr& shader)
++{
++    if (!entry) return;
++    m_queue.push_back(std::make_unique<DrawQueueItemTextEntry>(topLeft, entry, entry->texture, color, shadow, shader));
++}
++
++void DrawQueue::addColoredTextEntry(const std::shared_ptr<TextRenderCache>& entry, const Point& topLeft,
++                                    const std::vector<std::pair<int, Color>>& colors, bool shadow,
++                                    const PainterShaderProgramPtr& shader)
++{
++    if (!entry) return;
++    m_queue.push_back(std::make_unique<DrawQueueItemTextEntryColored>(topLeft, entry, entry->texture, colors, shadow, shader));
++}
++
+ void DrawQueue::correctOutfit(const Rect& dest, int fromPos, bool oldScaling, bool center)
+ {
+     std::vector<Rect*> rects;
+diff -ruN a/src/framework/graphics/drawqueue.h b/src/framework/graphics/drawqueue.h
+--- a/src/framework/graphics/drawqueue.h
++++ b/src/framework/graphics/drawqueue.h
+@@ -14,6 +14,7 @@
+ 
+ class DrawQueue;
+ struct DrawQueueItem;
++struct TextRenderCache;
+ 
+ enum DrawType : uint8_t {
+     DRAW_ALL = 0,
+@@ -175,6 +176,28 @@
+     PainterShaderProgramPtr m_shader;
+ };
+ 
++// Chaos (base patch 0133): the same two draws with the layout entry held by the item (CachedText's slot), not looked up by hash
++struct DrawQueueItemTextEntry : public DrawQueueItemText {
++    DrawQueueItemTextEntry(const Point& point, const std::shared_ptr<TextRenderCache>& entry, const TexturePtr& texture,
++                           const Color& color, bool shadow, const PainterShaderProgramPtr& shader) :
++        DrawQueueItemText(point, texture, 0, color, shadow, shader), m_entry(entry)
++    {};
++    void draw() override;
++
++    std::shared_ptr<TextRenderCache> m_entry;
++};
++
++struct DrawQueueItemTextEntryColored : public DrawQueueItemTextColored {
++    DrawQueueItemTextEntryColored(const Point& point, const std::shared_ptr<TextRenderCache>& entry, const TexturePtr& texture,
++                                  const std::vector<std::pair<int, Color>>& colors, bool shadow,
++                                  const PainterShaderProgramPtr& shader) :
++        DrawQueueItemTextColored(point, texture, 0, colors, shadow, shader), m_entry(entry)
++    {};
++    void draw() override;
++
++    std::shared_ptr<TextRenderCache> m_entry;
++};
++
+ struct DrawQueueItemLine : public DrawQueueItem {
+     DrawQueueItemLine(const std::vector<Point>& points, int width, const Color& color) :
+         DrawQueueItem(nullptr, color), m_points(points), m_width(width)
+@@ -289,6 +312,12 @@
+     void addColoredText(BitmapFontPtr font, const std::string& text, const Rect& screenCoords,
+                         Fw::AlignmentFlag align, const std::vector<std::pair<int, Color>>& colors,
+                         bool shadow = false, const PainterShaderProgramPtr& shader = nullptr);
++    // Chaos (base patch 0133): queue a text whose layout entry the caller keeps (see textrender.h makeEntry)
++    void addTextEntry(const std::shared_ptr<TextRenderCache>& entry, const Point& topLeft, const Color& color,
++                      bool shadow = false, const PainterShaderProgramPtr& shader = nullptr);
++    void addColoredTextEntry(const std::shared_ptr<TextRenderCache>& entry, const Point& topLeft,
++                             const std::vector<std::pair<int, Color>>& colors, bool shadow = false,
++                             const PainterShaderProgramPtr& shader = nullptr);
+ 
+     void addFilledTriangle(const Point& a, const Point& b, const Point& c, const Color& color = Color::white)
+     {
+diff -ruN a/src/framework/graphics/textrender.cpp b/src/framework/graphics/textrender.cpp
+--- a/src/framework/graphics/textrender.cpp
++++ b/src/framework/graphics/textrender.cpp
+@@ -74,6 +74,55 @@
+     drawText(rect.topLeft(), hash, color, shadow, shader);
+ }
+ 
++std::shared_ptr<TextRenderCache> TextRender::makeEntry(const BitmapFontPtr& font, const std::string& text, const Size& size,
++                                                       Fw::AlignmentFlag align)
++{
++    return std::make_shared<TextRenderCache>(TextRenderCache{ font, text, size, align, font->getTexture(), CoordsBuffer(), 0 });
++}
++
++void TextRender::drawEntry(const Point& pos, const std::shared_ptr<TextRenderCache>& entry, const Color& color, bool shadow,
++                           const PainterShaderProgramPtr& shader)
++{
++    VALIDATE_GRAPHICS_THREAD();
++    if (!entry)
++        return;
++    TextRenderCache* it = entry.get();
++    if (it->font) { // first draw: calculate text coords, exactly as the map entries do
++        it->font->calculateDrawTextCoords(it->coords, it->text, Rect(0, 0, it->size), it->align);
++        it->coords.cache();
++        it->text.clear();
++        it->font.reset();
++    }
++
++    if (shadow) {
++        auto shadowPos = Point(pos);
++        shadowPos.x += 1;
++        shadowPos.y += 1;
++        g_painter->drawText(shadowPos, it->coords, Color::black, it->texture, shader.get());
++    }
++
++    g_painter->drawText(pos, it->coords, color, it->texture, shader.get());
++}
++
++void TextRender::drawColoredEntry(const Point& pos, const std::shared_ptr<TextRenderCache>& entry,
++                                  const std::vector<std::pair<int, Color>>& colors, bool shadow,
++                                  const PainterShaderProgramPtr& shader)
++{
++    if (colors.empty())
++        return drawEntry(pos, entry, Color::white, shadow, shader);
++    VALIDATE_GRAPHICS_THREAD();
++    if (!entry)
++        return;
++    TextRenderCache* it = entry.get();
++    if (it->font) {
++        it->font->calculateDrawTextCoords(it->coords, it->text, Rect(0, 0, it->size), it->align);
++        it->coords.cache();
++        it->text.clear();
++        it->font.reset();
++    }
++    g_painter->drawText(pos, it->coords, colors, it->texture, shader.get());
++}
++
+ void TextRender::drawText(const Point& pos, uint64_t hash, const Color& color, bool shadow,
+                           const PainterShaderProgramPtr& shader)
+ {
+diff -ruN a/src/framework/graphics/textrender.h b/src/framework/graphics/textrender.h
+--- a/src/framework/graphics/textrender.h
++++ b/src/framework/graphics/textrender.h
+@@ -5,6 +5,7 @@
+ #include <mutex>
+ #include "bitmapfont.h"
+ #include "coordsbuffer.h"
++#include "chaostextslot.h"
+ #include <framework/core/clock.h>
+ 
+ struct TextRenderCache {
+@@ -30,6 +31,16 @@
+                   const PainterShaderProgramPtr& shader = nullptr);
+     void drawText(const Point& pos, uint64_t hash, const Color& color, bool shadow = false,
+                   const PainterShaderProgramPtr& shader = nullptr);
++    // Chaos (base patch 0133): a layout entry owned by the caller (CachedText's TextSlot) instead of one found by hash in
++    // the map. Not in the map, so never evicted by poll() and no lookup, lock or clock read per draw. The entry is laid out
++    // on its first draw on the graphics thread, as the map entries are, and never changed by anything else afterwards.
++    std::shared_ptr<TextRenderCache> makeEntry(const BitmapFontPtr& font, const std::string& text, const Size& size,
++                                               Fw::AlignmentFlag align);
++    void drawEntry(const Point& pos, const std::shared_ptr<TextRenderCache>& entry, const Color& color, bool shadow = false,
++                   const PainterShaderProgramPtr& shader = nullptr);
++    void drawColoredEntry(const Point& pos, const std::shared_ptr<TextRenderCache>& entry,
++                          const std::vector<std::pair<int, Color>>& colors, bool shadow = false,
++                          const PainterShaderProgramPtr& shader = nullptr);
+     void drawColoredText(const Point& pos, uint64_t hash, const std::vector<std::pair<int, Color>>& colors,
+                          bool shadow = false, const PainterShaderProgramPtr& shader = nullptr);
+ 
