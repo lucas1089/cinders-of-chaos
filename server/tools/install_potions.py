@@ -11,7 +11,7 @@ Lua side (potions.lua, data/lib/chaos_potions.lua) uses too.
    stock node (the 10.98 client reads a count for a stackable look; see install_store_food.py). A node already there
    with the same bytes is left alone, one with other bytes is replaced; a server id that belongs to another client id
    stops the script (nothing is written). items.otb.bak keeps the original the first time.
-2. data/items/items.xml: the entries (article, name, plural, description "Never runs out. ...", weight) between two
+2. data/items/items.xml: the entries (article, name, plural, description "A flask: kills and the temple refill its charges. ...", weight) between two
    marker comments before </items>, rewritten when the config changed. An id with an entry outside the block stops the
    script. The flask entries (7634-7636): a description sentence about a deposit is removed (the config's flaskText
    when nothing is left).

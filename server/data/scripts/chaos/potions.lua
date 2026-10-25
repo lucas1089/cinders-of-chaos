@@ -3,7 +3,7 @@
 -- server/tools/install_potions.py).
 --
 -- An Everfull potion drinks like the stock Health / Mana Potion (the same roll, on yourself or another player) and is
--- never used up and never leaves a flask. The health and the mana potion each have their own wait (the action
+-- never used up and never leaves a flask. Since O242 it is a flask with charges (potion_flasks.lua refills them). The health and the mana potion each have their own wait (the action
 -- interval - 100 ms), so a mana potion right after a health potion works (owner 2026-10-17: it said "You are
 -- exhausted"); no CONDITION_EXHAUST_HEAL is added any more, so healing spells are not held up either. Each kind is
 -- not faster than a stack of stock potions. Store-bound and locked like the Everfull Ration:
@@ -69,18 +69,56 @@ local function targetKind(player, target)
 end
 
 -- ---------------------------------------------------------------- drinking
+-- The Everfull potions are flasks with charges (README "Flask charges"): a drink costs one, an empty flask cannot be
+-- drunk (a carried stock potion of the same kind is drunk instead, used up), kills and the temple refill them
+-- (potion_flasks.lua). The charges are the character's storage, not the item's.
+local function flaskStatus(player, kind)
+	if kind == "mana" then
+		player:sendTextMessage(MESSAGE_STATUS_SMALL, Chaos.t(player, "Mana flask: %s", PT.label(player, kind)))
+	else
+		player:sendTextMessage(MESSAGE_STATUS_SMALL, Chaos.t(player, "Health flask: %s", PT.label(player, kind)))
+	end
+end
+
 local drink = Action()
 function drink.onUse(player, item, fromPosition, target, toPosition, isHotkey)
 	local kind, who = targetKind(player, target)
-	local slot = player:getId() .. ":" .. kindOf(item:getId())
+	local flask = kindOf(item:getId())
+	local slot = player:getId() .. ":" .. flask
 	local waiting = lastDrink[slot] ~= nil and nowMs() - lastDrink[slot] < exhaustMs()
-	local r = K.drink(PT.cfg(), {id = item:getId(), exhausted = waiting, target = kind})
+	local r = K.drink(PT.cfg(), {id = item:getId(), exhausted = waiting, target = kind,
+		charges = PT.charges(player, flask)})
+	local stock
 	if not r.ok then
 		if r.why == "exhausted" then
 			player:sendTextMessage(MESSAGE_STATUS_SMALL, Game.getReturnMessage(RETURNVALUE_YOUAREEXHAUSTED))
 			return true
 		end
-		return false
+		if r.why ~= "empty" then
+			return false
+		end
+		if waiting then
+			player:sendTextMessage(MESSAGE_STATUS_SMALL, Game.getReturnMessage(RETURNVALUE_YOUAREEXHAUSTED))
+			return true
+		end
+		local e = PT.everfull(item:getId())
+		stock = PT.cfg().flask.stockFallback and PT.findStock(player, e.sourceId) or nil
+		if not stock then
+			if flask == "mana" then
+				player:sendTextMessage(MESSAGE_STATUS_SMALL,
+					Chaos.t(player, "Your mana flask is empty. Kill monsters or visit a temple to refill it."))
+			else
+				player:sendTextMessage(MESSAGE_STATUS_SMALL,
+					Chaos.t(player, "Your health flask is empty. Kill monsters or visit a temple to refill it."))
+			end
+			return true
+		end
+		r = {ok = true, health = e.health, mana = e.mana}
+	end
+	if stock then
+		stock:remove(1) -- the empty flask drinks a stock potion of its kind from the backpack
+	elseif not PT.spend(player, flask) then
+		return true
 	end
 	if r.health then
 		local v = ChaosPotions.amount(player, who, "health", r.health, 0)
@@ -92,7 +130,18 @@ function drink.onUse(player, item, fromPosition, target, toPosition, isHotkey)
 	end
 	who:say(PT.cfg().sound, TALKTYPE_MONSTER_SAY)
 	lastDrink[slot] = nowMs()
-	return true -- never used up, no flask
+	if stock then
+		if flask == "mana" then
+			player:sendTextMessage(MESSAGE_STATUS_SMALL,
+				Chaos.t(player, "Your mana flask is empty: you drank a mana potion from your backpack."))
+		else
+			player:sendTextMessage(MESSAGE_STATUS_SMALL,
+				Chaos.t(player, "Your health flask is empty: you drank a health potion from your backpack."))
+		end
+	else
+		flaskStatus(player, flask)
+	end
+	return true -- the flask is never used up
 end
 local registered = 0
 for _, e in ipairs(PT.cfg().everfull) do
@@ -119,7 +168,7 @@ function login.onLogin(player)
 	end
 	if PT.giveAll(player) > 0 then
 		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player,
-			"You received an Everfull Health Potion and an Everfull Mana Potion. They never run out."))
+			"You received an Everfull Health Potion and an Everfull Mana Potion. They refill as you kill monsters."))
 	end
 	return true
 end

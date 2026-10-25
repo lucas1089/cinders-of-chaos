@@ -195,7 +195,7 @@ function PT.npcBuy(cid, id)
 		say(player, "You have no room for it.")
 		return false
 	end
-	say(player, "It never runs out: drink it as often as the potion exhaust allows.")
+	say(player, "Kills and the temple refill its charges: each drink costs one.")
 	return true
 end
 
@@ -213,4 +213,106 @@ function PT.amount(player, target, kind, range, level)
 	end
 	local pct = math.max(0, player:getStorageValue(cfg.storage.healingPct) or 0)
 	return K.amount(cfg, range, level, who:getMaxMana(), pct)
+end
+
+-- ---------------------------------------------------------------- flask charges (README "Potions", "Flask charges")
+-- The charges are the character's, in storage (potions_config.lua storage.healthCharges / manaCharges), in hundredths
+-- of a charge; a flask item carries none. -1 (never set) is a full flask.
+local function storageOf(kind)
+	return kind == "mana" and PT.cfg().storage.manaCharges or PT.cfg().storage.healthCharges
+end
+
+function PT.treeExtra(player)
+	return math.max(0, tonumber(player:getStorageValue(PT.cfg().storage.treeMaxCharges)) or 0)
+end
+
+function PT.treeGain(player)
+	return math.max(0, tonumber(player:getStorageValue(PT.cfg().storage.treeGainPct)) or 0)
+end
+
+function PT.maxCharges(player, kind)
+	return K.maxCharges(PT.cfg(), kind, PT.treeExtra(player))
+end
+
+-- hundredths of a charge the flask holds now
+function PT.charges(player, kind)
+	return K.read(PT.cfg(), kind, player:getStorageValue(storageOf(kind)), PT.treeExtra(player))
+end
+
+function PT.setCharges(player, kind, hundredths)
+	player:setStorageValue(storageOf(kind), math.max(0, math.floor(hundredths)))
+end
+
+-- "3/5"
+function PT.label(player, kind)
+	return K.label(PT.cfg(), kind, PT.charges(player, kind), PT.treeExtra(player))
+end
+
+-- one drink: false when the flask is empty (nothing changes), else the charge is spent
+function PT.spend(player, kind)
+	local c = PT.cfg()
+	local have = PT.charges(player, kind)
+	if not K.canDrink(c, have) then
+		return false
+	end
+	PT.setCharges(player, kind, K.spend(c, have))
+	return true
+end
+
+-- both flasks to full. Returns true when something changed.
+function PT.fill(player)
+	local changed = false
+	for _, e in ipairs(PT.cfg().everfull) do
+		local top = PT.maxCharges(player, e.key) * 100
+		if PT.charges(player, e.key) < top then
+			PT.setCharges(player, e.key, top)
+			changed = true
+		end
+	end
+	return changed
+end
+
+-- a kill's refill for both flasks. Returns the whole charges gained by the health and the mana flask
+-- (a table kind -> whole charges more than before) and whether anything was added.
+function PT.addKill(player, tier, xp)
+	local c = PT.cfg()
+	local gained, any = {}, false
+	local treeExtra, treeGain = PT.treeExtra(player), PT.treeGain(player)
+	for _, e in ipairs(c.everfull) do
+		local before = PT.charges(player, e.key)
+		local gain = K.killGain(c, {tier = tier, xp = xp, treeGainPct = treeGain, kind = e.key})
+		local after = K.add(c, e.key, before, gain, treeExtra)
+		if after ~= before then
+			PT.setCharges(player, e.key, after)
+			any = true
+		end
+		gained[e.key] = K.whole(after) - K.whole(before)
+	end
+	return gained, any
+end
+
+-- an Everfull potion kind ("health" / "mana") of a server id
+function PT.kindOf(id)
+	local e = K.everfull(PT.cfg(), id)
+	return e and e.key or nil
+end
+
+-- the first carried stock potion of this id (the flask's source potion) in the inventory, not the inbox or depots
+function PT.findStock(player, sourceId)
+	local found
+	local list = {}
+	for slot = CONST_SLOT_FIRST or 1, CONST_SLOT_LAST or 10 do
+		local item = player:getSlotItem(slot)
+		if item then
+			list[#list + 1] = item
+		end
+	end
+	walk(list, function(item)
+		if itemId(item) == sourceId then
+			found = item
+			return true
+		end
+		return false
+	end)
+	return found
 end

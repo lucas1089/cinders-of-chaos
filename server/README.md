@@ -288,7 +288,8 @@ server/
                                       slot pool, run HUD; see "Rifts")
     crafting.lua (crafting bench and orbs; rules in data/lib/chaos_crafting.lua, installer tools/install_crafting.py)
     salvage.lua  salvage_core.lua  salvage_config.lua (salvage into rune shards, the item lock; installer tools/install_salvage.py)
-    potions.lua  potions_core.lua  potions_config.lua (no empty flasks, the Everfull health / mana potions; helpers in
+    potions.lua  potions_core.lua  potions_config.lua  potion_flasks.lua (no empty flasks, the Everfull health / mana potions
+                                      with refilling charges; helpers in
                                       data/lib/chaos_potions.lua, installer tools/install_potions.py, see "Potions")
     lootline.lua  lootline_core.lua (one loot line per kill: the stock "Loot of", the Chaos bonus and the pouch line
                                       merged, see "One loot line per kill" under the loot filter)
@@ -837,7 +838,7 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7102400 - 7102409 | time-friendly progression (`catchup_config.lua` `storage`): +0 rested pool (centi-minutes), +1 day of the last low stamina notice, +2 the returning boost this character was welcomed for; +3 bounty rerolls held (`bounty_config.lua` `rerollStorage`), +4 kill task board rerolls held, +5 the task day of +6, +6 the board rerolls used that day (`bestiary_config.lua` `rerollStorage`); +7..9 free |
 | 7102460 - 7102469 | Candlemarks (`candlemarks_config.lua` `storage`): +0 the id of the last Candlemark purchase delivered to the character (the crash-safe delivery mark); +1..9 free |
 | 7102490 - 7102499 | rarity migration (`rarity_migrate.lua`): +0 the version of the walk this character had; +1..9 free |
-| 7102480 - 7102489 | potions (`potions_config.lua` `storage`): +0 the Everfull potions were given (kit or login grant); +1 the tree's Healing percent for the potion scripts; +2..9 free |
+| 7102480 - 7102489 | potions (`potions_config.lua` `storage`): +0 the Everfull potions were given (kit or login grant); +1 the tree's Healing percent for the potion scripts; +2 / +3 the health / mana flask's charges in hundredths of a charge (-1 = never set = full, O242); +4 the tree's extra flask charges; +5 the tree's charge gain percent; +6..9 free |
 | 7102800 - 7102810 | Haunted Harvest (`harvest_event_config.lua` `storage`): +0 the day, +1 hollow candy from pumpkins that day, +2 the day of the boss's first-kill candy; +3..9 free; 7102810 the GLOBAL forced state (0 window, 1 open, 2 shut) |
 | 7102820 | Infinity Tower first-clear floors (`infinitytower_balance_config.lua` `rewards.storage`): the tower season x 1000 + the highest milestone floor paid that season; 7102821 - 7102829 free |
 | 7109990 - 7109992 | spell supports: cast context and Reprisal (`data/lib/chaos_supports_config.lua`) |
@@ -4982,7 +4983,7 @@ Owner request 2026-10-16: "Remove the potion flasks and make the first pots infi
   1, every class) has an Everfull copy: **everfull health potion 32085** (125-175 health) and **everfull mana potion
   32086** (75-125 mana), the rolls of the stock potions. New items.otb nodes copied from 7618 / 7620 (flags, attributes,
   the stock look), stackable like them for the same reason as the Everfull Ration (count 1, never used up), items.xml
-  entries "Never runs out. ..." (the item tooltip shows them). No spirit potion: the first one is the great spirit
+  entries "A flask: kills and the temple refill its charges ..." (the item tooltip shows them; "Never runs out" until O242). No spirit potion: the first one is the great spirit
   potion (level 80); the hybrid classes start on health and mana potions too (docs/CLASSES.md, `newplayer_config.lua`).
 - **Drinking.** On yourself or another player like the stock potion (not on a monster or an NPC). Never used up, no flask.
   The health and the mana potion each have their own wait (the action interval - 100 ms = 900 ms, a per-player timer in
@@ -5029,6 +5030,40 @@ Owner request 2026-10-16: "Remove the potion flasks and make the first pots infi
   `doTargetCombat(... potion.health[1], potion.health[2])` calls (marker "Chaos: potion amount", a loader line on top;
   it falls back to the stock roll when the library cannot load); the Everfull potions use the same rule. Tests:
   `tests/potions_test.lua`, `tools/install_potions_test.py`.
+- **Flask charges (O242).** Owner 2026-10-25: "Can we do what PoE does, where potions refill as players kill monsters?"
+  The Everfull potions are flasks. `potions_config.lua` `flask`: the health flask holds 5 charges, the mana flask 8 (casters
+  drink more, so it also refills 1.5x as fast); a drink costs 1. Charges are kept in hundredths in the **character's
+  storage** (7102482 health, 7102483 mana; -1 = never set = full), never on the item, so a relog, a split or copied stack, a
+  moved or lost flask cannot reset them or add any (the flask is also store-bound, patch 0009). Every read clamps to
+  0..maximum, so an edited value is never trusted.
+  - **Kill refill** (`potion_flasks.lua`, a death event on every spawned monster that is not a summon, as `bestiary.lua`):
+    the last hit, the most damage, everybody in the damage map and their party members within 30 tiles on the same floor get
+    the refill. Per kill, in hundredths of a charge: normal 8, magic 25, rare 60, legendary 150, boss 300, times a factor from
+    the monster type's base experience (xp / 200, at least 0.25, at most 3; bosses skip it), times the flask's gain (mana
+    1.5), at most 300 (`killCap`: 3 charges). So 12 normal monsters of 200 experience fill one health charge, a rare 0.6, a
+    boss 3. The tier is `ChaosTierOf` (monster_tiers.lua). No refill from: a summon, a rift husk, a training dummy, **a
+    player's death** (no PvP refill: the death event is only put on monsters).
+  - **Town:** in a protection zone both flasks fill to full within 2 s (`safeMs`), not while the character is in a fight
+    (`CONDITION_INFIGHT`: no refill by shooting out of a temple tile).
+  - **Empty flask:** "Your health flask is empty. Kill monsters or visit a temple to refill it." A carried stock potion of the
+    same kind (7618 / 7620, inventory and backpacks) is drunk instead and used up (`stockFallback`), so a hotkey (patch 0043
+    picks the flask first) never dead-ends; the stock potions stay consumables and the backup, and the gold sink.
+  - **Showing the charges (server only, no client build):** Look at your own flask adds "Charges: 3/5" (an `onLook` callback,
+    not shown on somebody else's flask); each drink says "Health flask: 3/5"; a refill that adds a whole charge says "Flasks:
+    health 3/5, mana 4/8" at most every 4 s; the temple says "Your flasks are full again." Not done: a count on the item (the
+    flask is stackable, but a count of 0 would delete it, and a count of 1 cannot tell empty from one charge, and a split would
+    leave a second stack) and a HUD (needs a client build; `ChaosPotions.charges` is the one function it would read).
+  - **Passive tree hooks** (no node gives them yet; the tree is unchanged): the bonuses `flaskMaxCharges` (whole extra charges,
+    at most 5) and `flaskChargeGain` (percent of every kill's refill, at most 100) are written to storage 7102484 / 7102485 by
+    `passivetree_effects.lua` and read by `ChaosPotions`.
+  - **No opcode and no client input**, so there is nothing to validate or rate-limit besides the refill message (4 s per player);
+    the only inputs are server events.
+  - **Balance:** the owner's infinite healing is now rationed; at about 20 kills a minute of 200-experience monsters a health
+    flask gains roughly 1.6 charges a minute plus the magic and rare monsters, so it covers the occasional heal and the stock
+    potions (or the town) cover the rest. Nothing was measured on the live game: tune `perKill`, `max` and `xp` in
+    `potions_config.lua`. The mana flask matters most (README "mana" report of a level 800 Juggernaut that lived on infinite
+    mana potions).
+  Tests: `tests/potions_test.lua` ("flask charges").
 - **Install:** `tools/install_potions.py DATA_DIR [--dry-run]` (step `potions` of `install_all.py`, after `runes`, before
   `itemprices`; idempotent; `items.otb.bak` keeps the original; exit 1 with nothing written when the ShopModule hook
   cannot be placed or no potion seller is found). `tools/gen_item_prices.py` marks both ids `bound` (never priced).

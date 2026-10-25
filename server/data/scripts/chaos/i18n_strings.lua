@@ -1409,13 +1409,27 @@ return {
 			"A Everfull Ration está na sua %s. Use como comida: ela nunca acaba.",
 		["Back after your death: your Everfull Ration."] = "De volta depois da sua morte: sua Everfull Ration.",
 		-- Everfull potions (potions.lua, data/lib/chaos_potions.lua)
-		["You received an Everfull Health Potion and an Everfull Mana Potion. They never run out."] =
-			"Você recebeu uma Everfull Health Potion e uma Everfull Mana Potion. Elas nunca acabam.",
-		["You already have one. It never runs out."] = "Você já tem uma. Ela nunca acaba.",
+		["You received an Everfull Health Potion and an Everfull Mana Potion. They refill as you kill monsters."] =
+			"Você recebeu uma Everfull Health Potion e uma Everfull Mana Potion. Elas se recarregam quando você mata monstros.",
+		["You already have one. It refills as you kill monsters."] = "Você já tem uma. Ela se recarrega quando você mata monstros.",
+		-- flask charges (potions.lua, potion_flasks.lua)
+		["Health flask: %s"] = "Frasco de vida: %s",
+		["Mana flask: %s"] = "Frasco de mana: %s",
+		["Flasks: health %s, mana %s"] = "Frascos: vida %s, mana %s",
+		["Your health flask is empty. Kill monsters or visit a temple to refill it."] =
+			"Seu frasco de vida está vazio. Mate monstros ou visite um templo para recarregá-lo.",
+		["Your mana flask is empty. Kill monsters or visit a temple to refill it."] =
+			"Seu frasco de mana está vazio. Mate monstros ou visite um templo para recarregá-lo.",
+		["Your health flask is empty: you drank a health potion from your backpack."] =
+			"Seu frasco de vida está vazio: você bebeu uma poção de vida da mochila.",
+		["Your mana flask is empty: you drank a mana potion from your backpack."] =
+			"Seu frasco de mana está vazio: você bebeu uma poção de mana da mochila.",
+		["Charges: %s"] = "Cargas: %s",
+		["Your flasks are full again."] = "Seus frascos estão cheios de novo.",
 		["You do not have enough money."] = "Você não tem dinheiro suficiente.",
 		["You have no room for it."] = "Você não tem espaço para ela.",
-		["It never runs out: drink it as often as the potion exhaust allows."] =
-			"Ela nunca acaba: beba sempre que o intervalo das poções permitir.",
+		["Kills and the temple refill its charges: each drink costs one."] =
+			"Mortes e o templo recarregam as cargas dela: cada gole custa uma.",
 		["%d days of the Chaos Pact added: it runs until %s."] = "%d dias de Chaos Pact adicionados: ele vale até %s.",
 		["Your Chaos Pact runs until %s. Claim your %d Chaos Coins every day in Character > Chaos Pact."] =
 			"Seu Chaos Pact vale até %s. Pegue suas %d Chaos Coins todo dia em Character > Chaos Pact.",

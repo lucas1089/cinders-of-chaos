@@ -360,6 +360,15 @@ local function applyAll(player, bonuses)
 	if potionStorage then
 		player:setStorageValue(potionStorage, math.floor(ChaosPassiveDamagePercent(bonuses, COMBAT_HEALING)))
 	end
+	-- the flask hooks (potions_config.lua flask.tree: extra charges and charge gain percent; no node gives them yet)
+	if not ChaosPotionsCore then
+		pcall(dofile, "data/scripts/chaos/potions_core.lua")
+	end
+	if ChaosPotionsCore and ChaosPotionsCore.treeValues and ChaosPotionsConfig and ChaosPotionsConfig.flask then
+		local extra, gain = ChaosPotionsCore.treeValues(ChaosPotionsConfig, bonuses)
+		player:setStorageValue(ChaosPotionsConfig.storage.treeMaxCharges, extra)
+		player:setStorageValue(ChaosPotionsConfig.storage.treeGainPct, gain)
+	end
 
 	for stat in pairs(CONDITIONS) do
 		setCondition(player, stat, ChaosPassiveConditionValue(bonuses, stat))
