@@ -1,0 +1,62 @@
+# Chaos: window fade option (O223; client/BASE.md "0141"; mods/client_settings/classes/dataset.lua, options/graphics.otui;
+# after 0001-0140). Lua and OTUI only, no engine code: the overlay module client_chaos_uifade fades main windows and
+# dialogs in (about 140 ms) and out (about 100 ms), and reads this option.
+#  * dataset.lua: `uiFade` (default on); its apply tells client_chaos_uifade (`onOption(name, value)`).
+#  * options/graphics.otui: one checkbox under "Fade out dying creatures" (the visual effects panel grows from 257 to 276 px).
+# Not run in a client; goes live with the next client build.
+--- a/mods/client_settings/classes/dataset.lua
++++ b/mods/client_settings/classes/dataset.lua
+@@ -2165,6 +2165,16 @@
+     end,
+   },
+ 
++  -- Chaos (base patch 0141): windows fade in and out in about 120-160 ms (client_chaos_uifade)
++  uiFade = {
++    value = true,
++    apply = function(value)
++      local m = modules.client_chaos_uifade
++      if m and m.onOption then m.onOption('uiFade', value) end
++      return true
++    end,
++  },
++
+   enableShaders = {
+     value = true,
+     apply = function(value)
+--- a/mods/client_settings/options/graphics.otui
++++ b/mods/client_settings/options/graphics.otui
+@@ -452,7 +452,7 @@
+ 
+   FlatPanel
+     // Chaos (base patch 0126, overlay module game_visualfx): the dark-fantasy look of the map, one switch per effect
+-    size: 505 257
++    size: 505 276
+     anchors.top: prev.bottom
+     anchors.right: parent.right
+     anchors.left: parent.left
+@@ -704,6 +704,25 @@
+         local value = modules.client_settings.getOption('deathFade')
+         self:setChecked(value ~= false)
+ 
++    SettingsCheckBox
++      id: uiFade
++      size: 12 12
++      !text: tr('Fade windows in and out')
++      font: $var-cip-font
++      text-auto-resize: true
++      color: $var-text-cip-color
++      text-offset: 14 -2
++      anchors.left: parent.left
++      anchors.top: deathFade.bottom
++      margin-top: 7
++      margin-left: 16
++      image-source: /images/ui/checkbox
++      image-clip: 0 0 12 12
++      !tooltip: tr('Windows fade in when they open and fade out when they close, in about a tenth of a second.\nClicks and keys work at once and nothing waits for the fade.')
++      @onSetup: |
++        local value = modules.client_settings.getOption('uiFade')
++        self:setChecked(value ~= false)
++
+     UIWidget
+       size: 12 12
+       anchors.top: parent.top

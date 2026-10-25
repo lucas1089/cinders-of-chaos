@@ -1,0 +1,10 @@
+Module
+  name: client_chaos_uifade
+  description: Main windows and dialogs fade in (about 140 ms) and out (about 100 ms) with one hook on UIWindow, no edit of the windows themselves (O223; option uiFade in Options > Graphics, base patch 0141)
+  author: Cinders of Chaos
+  sandboxed: true
+  scripts: [ uifade_logic, uifade ]
+  autoload: true
+  autoload-priority: 520
+  @onLoad: init()
+  @onUnload: terminate()
