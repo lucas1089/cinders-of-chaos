@@ -4,6 +4,8 @@ Status of every requested module. **Nothing here has been run.** The session tha
 
 Layout: `overlay/modules/<name>` is copied into the client's `modules/` folder; `overlay/data/images/...` into its `data/images/`. Some of these were under `mods/` originally; they were all moved to `modules/` here, so check `autoload` and `autoload-priority` in each `.otmod` when wiring them in.
 
+Timers (O197): a `cycleEvent` / `scheduleEvent` under 100 ms runs only while its window, effect or animation is visible and is removed on hide and in `terminate`; the login animation, event marquees, cosmetic effects and look previews sleep when idle.
+
 Protocol target is 10.98 on the base server (TFS 1.4.2). The sources are mostly 8.60 or 12.x+ clients, so the real risk is the client engine (C++ API) and the server contract, not the Lua.
 
 | Module | Server contract | Client-engine needs | Verdict |

@@ -387,6 +387,7 @@ function Preview:fxTick()
 end
 
 local function fxTickAll()
+  if next(live) == nil then return end -- no preview panel open
   for h in pairs(live) do
     if alive(h.widget) then
       if h.fx and h.widget:isVisible() then
@@ -616,7 +617,7 @@ end
 
 -- the slow turn: every open, visible panel one step clockwise
 local function autoTick()
-  if not settings.auto then return end
+  if not settings.auto or next(live) == nil then return end
   for h in pairs(live) do
     if alive(h.widget) then
       if h.widget:isVisible() and h.widget:getParent() and h.widget:getParent():isVisible() then h:turn(1) end
