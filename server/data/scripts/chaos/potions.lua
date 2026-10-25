@@ -176,8 +176,20 @@ if registered > 0 then
 end
 
 -- ---------------------------------------------------------------- the one-time grant
+-- a logged-out player's waits go (the table is keyed by creature id, which is never reused: it would only grow)
+local forget = CreatureEvent("ChaosPotionsForget")
+function forget.onLogout(player)
+	for _, pool in ipairs(PT.cfg().pools) do
+		lastDrink[player:getId() .. ":" .. pool] = nil
+	end
+	return true
+end
+forget:type("logout")
+forget:register()
+
 local login = CreatureEvent("ChaosPotionsLogin")
 function login.onLogin(player)
+	player:registerEvent("ChaosPotionsForget")
 	local c = PT.cfg()
 	local okR, errR = pcall(PT.rebind, player)
 	if not okR then

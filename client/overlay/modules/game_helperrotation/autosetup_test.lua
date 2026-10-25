@@ -32,11 +32,11 @@ local function canCastFor(voc, level)
     return listed and s.level <= level
   end
 end
-local function planFor(voc, level, carried)
+local function planFor(voc, level, carried, held)
   local canCast = canCastFor(voc, level)
   local set = {}
   for _, id in ipairs(carried or {}) do set[id] = true end
-  return S.plan({ vocId = voc, level = level, canCast = canCast, has = function(id) return set[id] == true end,
+  return S.plan({ vocId = voc, level = level, canCast = canCast, has = function(id) return set[id] == true end, held = held,
     heals = A.heals(voc, level, canCast), rotation = A.select(voc, level, canCast) })
 end
 local function timerIds(plan)
@@ -239,6 +239,25 @@ do
   end
   eq(seen, #P.LIST, 'autosetup lists every potion once')
 end
+
+
+-- the Everfull the server says the character carries counts as carried (O246): the best tier it holds, at its level
+local function heldOf(h, m)
+  local v = {}
+  if h then v.health = { look = h[1], tier = h[2], level = h[3], line = h[4] or 'health', ready = true } end
+  if m then v.mana = { look = m[1], tier = m[2], level = m[3], line = 'mana', ready = true } end
+  return v
+end
+eq(planFor(4, 100, {}, heldOf({ 239, 2, 80 }, { 238, 2, 80 })).healing.potions[1].id, 239, 'Everfull great health, nothing else: it is chosen')
+eq(planFor(4, 100, {}, heldOf({ 239, 2, 80 }, { 238, 2, 80 })).healing.potions[2].id, 238, 'Everfull great mana')
+eq(planFor(4, 300, {}, heldOf({ 23375, 4, 200 }, { 23373, 3, 130 })).healing.potions[1].id, 23375, 'Everfull supreme health at 300')
+eq(planFor(4, 300, {}, heldOf({ 23375, 4, 200 }, { 23373, 3, 130 })).healing.potions[2].id, 23373, 'Everfull ultimate mana at 300')
+eq(planFor(4, 300, { 23375 }, heldOf({ 239, 2, 80 })).healing.potions[1].id, 23375, 'a stock supreme carried beats a great Everfull')
+eq(planFor(4, 100, { 236 }, heldOf({ 239, 2, 80 })).healing.potions[1].id, 239, 'the great Everfull beats a stock strong potion')
+eq(planFor(4, 100, {}, heldOf({ 7642, 2, 80, 'spirit' })).healing.potions[1].id, 7642, 'a spirit Everfull is the health potion (as the stock spirit potions are)')
+eq(planFor(4, 100, {}, heldOf({ 266, 1, 0 }, { 268, 1, 0 })).healing.potions[1].id, 266, 'tier 1: its look')
+eq(planFor(4, 70, {}, heldOf({ 239, 2, 80 })).healing.potions[1].id, 266, 'below the level of the Everfull the fallback look is kept')
+eq(planFor(4, 100, {}, nil).healing.potions[2].id, 268, 'no view: the mana fallback')
 
 if fails > 0 then error(fails .. ' failure(s)') end
 print('autosetup_test: OK')

@@ -8,10 +8,8 @@ local function eq(a, b, what)
 end
 
 -- the Everfull flasks under their client looks
-eq(P.EVERFULL.health, 266, 'everfull health look')
-eq(P.EVERFULL.mana, 268, 'everfull mana look')
-eq(P.EVERFULL_SERVER.health, 32085, 'everfull health server id')
-eq(P.EVERFULL_SERVER.mana, 32086, 'everfull mana server id')
+eq(P.everfullOf(266).server, 32085, 'everfull health: server id under the Health Potion look')
+eq(P.everfullOf(268).server, 32086, 'everfull mana: server id under the Mana Potion look')
 eq(P.isHealth(266), true, '266 is a health potion')
 eq(P.isMana(268), true, '268 is a mana potion')
 eq(P.isPotion(2160), false, 'gold is no potion')
@@ -120,6 +118,76 @@ for _, e in ipairs(P.options()) do
   seenKey[e.key] = true
 end
 eq(#P.options(), 14, '10 plain potions and two spirit potions with two entries each')
+
+
+-- ---------------------------------------------------------------- the Everfull table (O246) against the server's config
+local cfgFile = io.open('server/data/scripts/chaos/potions_config.lua', 'r') or io.open(dir .. '../../../../server/data/scripts/chaos/potions_config.lua', 'r')
+if cfgFile then
+  local src = cfgFile:read('*a') cfgFile:close()
+  local cfg = load(src)()
+  eq(#P.EVERFULL_ITEMS, #cfg.everfull, 'one client row per Everfull of the server')
+  for _, e in ipairs(cfg.everfull) do
+    local c
+    for _, x in ipairs(P.EVERFULL_ITEMS) do if x.server == e.id then c = x end end
+    eq(c ~= nil, true, 'client row for ' .. e.name)
+    if c then
+      eq(c.slot, e.key, e.name .. ': slot') eq(c.line, e.line, e.name .. ': line')
+      eq(c.tier, e.tier, e.name .. ': tier') eq(c.level, e.level, e.name .. ': level')
+      eq(c.kind, (e.line == 'spirit') and 'both' or e.key, e.name .. ': kind')
+      -- while the looks are shared, the look is the stock potion's, and the list knows it with the stock level
+      local stock = P.info(c.look)
+      eq(stock ~= nil, true, e.name .. ': its look is in the potion list')
+      if stock and stock.server == e.sourceId then eq(stock.level, math.max(e.level, 1), e.name .. ': the stock level') end
+    end
+  end
+end
+
+-- ---------------------------------------------------------------- resolve: a Health / Mana Potion row follows the carried Everfull
+local function held(slot, look, line, level, ready)
+  local h = {}
+  h[slot] = { look = look, tier = 2, level = level, line = line or slot, ready = ready ~= false }
+  return h
+end
+eq(P.resolve(266, nil, 100), 266, 'nothing held: unchanged')
+eq(P.resolve(266, {}, 100), 266, 'an empty view: unchanged')
+eq(P.resolve(266, held('health', 266, 'health', 0), 100), 266, 'tier 1 held: its own look')
+eq(P.resolve(266, held('health', 239, 'health', 80), 100), 239, 'great health held: the Health Potion row drinks it')
+eq(P.resolve(266, held('health', 23375, 'health', 200), 300), 23375, 'supreme health held')
+eq(P.resolve(268, held('mana', 23373, 'mana', 130), 130), 23373, 'ultimate mana held')
+eq(P.resolve(268, held('mana', 238, 'mana', 80), 79), 268, 'below the Everfull level: the stock row (the server would refuse)')
+eq(P.resolve(266, held('health', 239, 'health', 80, false), 100), 266, 'an empty flask is not followed (it would drink a dearer stock potion)')
+eq(P.resolve(266, held('health', 7642, 'spirit', 80), 100), 266, 'a spirit flask is chosen by a spirit row, not a health row')
+eq(P.resolve(266, held('mana', 238, 'mana', 80), 100), 266, 'a mana flask does not serve a health row')
+eq(P.resolve(266, held('health', 99999, 'health', 0), 100), 266, 'an unknown look is not followed')
+eq(P.resolve(268, held('health', 239, 'health', 80), 100), 268, 'the health slot does not serve the mana row')
+eq(P.resolve(239, held('health', 7643, 'health', 130), 200), 239, 'a row on the great potion is its own choice')
+eq(P.resolve(7876, held('health', 239, 'health', 80), 100), 7876, 'so is the small potion')
+eq(P.resolve('266', held('health', 239, 'health', 80), '100'), 239, 'strings from a saved config')
+eq(P.resolve(nil, held('health', 239, 'health', 80), 100), nil, 'nil stays nil')
+
+-- pick: the due row's resolved look is what goes out, and availability is asked for that look
+local rows = { { id = 266, percent = 60, priority = 1 }, { id = 268, percent = 50, priority = 1 } }
+local asked = {}
+local id, kind = P.pick(rows, { healthPct = 40, manaPct = 100, held = held('health', 239, 'health', 80), level = 100,
+  available = function(x) asked[#asked + 1] = x return true end })
+eq(id, 239, 'pick: the follow') eq(kind, 'health', 'pick: still a health potion') eq(asked[1], 239, 'availability asked for the Everfull look')
+id = P.pick(rows, { healthPct = 40, manaPct = 100, held = held('health', 239, 'health', 80), level = 100,
+  available = function(x) return x ~= 239 end })
+eq(id, nil, 'pick: the followed look is not available, nothing else is drunk for that row')
+id, kind = P.pick(rows, { healthPct = 100, manaPct = 40, held = { mana = { look = 238, tier = 2, level = 80, line = 'mana', ready = true } }, level = 100 })
+eq(id, 238, 'pick: mana follows') eq(kind, 'mana', 'pick: mana kind')
+id = P.pick(rows, { healthPct = 40, manaPct = 100 })
+eq(id, 266, 'pick without a held view: as before')
+-- a row on a spirit look is the spirit flask's own look (the server picks the Everfull of that look)
+id = P.pick({ { id = 7642, percent = 60, priority = 1 } }, { healthPct = 40, manaPct = 100, held = held('health', 7642, 'spirit', 80), level = 100 })
+eq(id, 7642, 'a spirit row keeps its look')
+
+-- ---------------------------------------------------------------- unique looks later: a new look joins the list from the table
+local before = #P.LIST
+eq(P.info(38645), nil, 'no look 38645 yet')
+-- (the table is data: a row with a look of its own is a potion of the list; checked on a copy of the loading code)
+for _, e in ipairs(P.EVERFULL_ITEMS) do eq(P.info(e.look) ~= nil, true, e.name .. ' is in the list') end
+eq(#P.LIST, before, 'shared looks add nothing to the list')
 
 if fails > 0 then os.exit(1) end
 print('helper_potions_test: ok')

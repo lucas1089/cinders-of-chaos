@@ -239,7 +239,7 @@ end
 function V.resultText(parts, headings, translate)
   local out = {}
   for _, p in ipairs(type(parts) == 'table' and parts or {}) do
-    if type(p.text) == 'string' and p.text ~= '' then
+    if type(p) == 'table' and type(p.text) == 'string' and p.text ~= '' then
       local h = headings and headings[p.id]
       if h then
         out[#out + 1] = '[ ' .. (translate and translate(h) or h) .. ' ]\n' .. p.text

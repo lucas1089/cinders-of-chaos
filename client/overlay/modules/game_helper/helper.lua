@@ -1347,7 +1347,10 @@ local function healTick(player)
   end })
   if id then cast(spellById(id), 'heal') end
   local manaPct = percentOf(player:getMana(), player:getMaxMana())
-  local potion = Pot.pick(helperConfig.potions, { healthPct = hpPct, manaPct = manaPct,
+  -- the Everfull the character carries (server message, game_helperrotation/everfullheld.lua): the Health / Mana Potion
+  -- rows follow an upgraded flask
+  local held = ChaosEverfullHeld and ChaosEverfullHeld.get() or nil
+  local potion = Pot.pick(helperConfig.potions, { healthPct = hpPct, manaPct = manaPct, held = held, level = player:getLevel(),
     available = function(pid) return potionAvailable(pid, player) end })
   if potion then usePotion(potion, player) end
   -- a healing rune on yourself (a carried rune, or a probe for one in a closed backpack)

@@ -655,6 +655,7 @@ collision check") and be added here.
 | 111 | `depotTabs` | `depot.lua` | `game_depottabs` | |
 | 113 | `npcCurrency` | `data/lib/chaos_npc_currency.lua` (run by the base NPC scripts of a custom currency, `tools/patch_npc_currency.py`) | `game_npctradewindow` | server -> client, JSON `{action = "currency", data = {code, name, item?, amount, again?}}`: the currency of the shop that opens next, and its balance after each purchase and sale ("NPC currencies") |
 | 114 | `weather` | `weather.lua`, `weather_core.lua` | `game_chaosweather` | server -> client `set {k = "rain" / "none", i = 1..3, f = fade ms, a = "embers" / "motes" / "dust" (optional, O226), m = "ice" / "swamp" / "desert" / "fire" / "crypt" (optional, O234)}`, client -> server `hello` (see "Weather on the client (O208)", "Ambient particles (O226)", "Area colour mood (O234)") |
+| 116 | `everfull` | `potions_helper.lua`, `data/lib/chaos_potions.lua`, `potions_core.lua` | `game_helperrotation` | server -> client `held {v = 1, health? = {look, tier, level, line, ready}, mana? = {...}}` (the Everfull each slot carries, by its client look; at login, after an upgrade and when it changes, checked every 3 s), client -> server `sync` (see "Potions", "The helper and the tiers (O246)") |
 | 120 | none (`CHAOS_ADMIN_OPCODE`) | `admin/core.lua` | `game_admin` | big payloads through `Chaos.sendChunked` |
 | 125 | `monsterbar` | `monster_tiers.lua`, `worldboss.lua` | `game_monsterbar` | server -> client |
 | 151 | `notificationsAction` | `notifications.lua` | `game_chaosnotify` | client -> server: party invite answer, catacomb start |
@@ -5140,10 +5141,34 @@ Owner request 2026-10-16: "Remove the potion flasks and make the first pots infi
     in the item price table (no NPC pays for them), listed by the item finder (source "Veyra the Apothecary", the store service),
     and have the potion cooldown channel like the others (`cooldown_channels.lua` reads the config). The engine's hotkey patch (0043)
     finds them by their look like the first two.
+  - **The helper and the tiers (O246).** Owner 2026-10-25: "Lembre de colocar as everfull no helper tambem". How a drink reaches the
+    Everfull: the client uses an inventory item BY CLIENT ID and the engine maps it to one server type, the stock potion. Patch 0043
+    (`Game::internalGetThing`) therefore tries first a carried item of that look that is never used up (stackable and
+    `chaos_storebound`), then the mapped type, then any item of the look: a use of look 239 drinks the Everfull great health
+    potion before a stock one, a use of 266 the tier 1 flask (this already held for the tiers 2-4, which copy the stock node). What
+    was broken for the helper: after an upgrade nothing carries look 266 / 268 any more, so the helper's Health / Mana Potion rows
+    (and Auto setup's fallback) drank stock potions or got "Sorry, not possible.", and the flask was never used. The client cannot
+    see the tier (a closed backpack is not counted, and the look is the stock potion's), so the server tells it:
+    `ChaosPotions.heldView` (`potions_core.lua` `heldView`/`heldKey`/`heldPayload`, tested in `tests/potions_helper_test.lua`)
+    reads `Player:getItemCount` of the nine ids (inventory and backpacks, the places the use by look searches; not the inbox, the
+    purse or the depots), the charge pools and `ItemType:getClientId`, and `potions_helper.lua` sends opcode **116** (`held`, per
+    slot `{look, tier, level, line, ready}`; free in the "Opcode collision check", listed in the opcode table) at login (after 1.5 s),
+    after an upgrade, on the client's `sync` (one a second) and from a 3 s think when the view changed (a flask emptied or
+    refilled, an item moved), never otherwise. `ready` is false when a pool the drink spends is below a whole charge (a spirit
+    flask needs both). The client (`helper_potions.lua` `P.resolve`) lets a Health / Mana Potion row follow a ready, plain, allowed
+    Everfull of its slot; any other row keeps its look (the engine prefers the Everfull of that look). An empty flask is not
+    followed, because the server's empty-flask fallback drinks the stock potion of the flask's tier (dearer than the row's). Spirit
+    flasks are chosen by a spirit row only. Auto setup counts the carried Everfull as carried. **Smallest design:** no engine change
+    and no new client input (`sync` reads nothing); the engine's drink already checks level and charges, so a client that lies
+    about a tier gets at most what it carries. **Audit:** the use finds only items the character carries; the level and the charges
+    are checked in `K.drink` and `PT.spendPools` from storage, not from the client; the stock fallback comes after the level
+    check; the per-pool wait table `lastDrink` was never cleaned (now forgotten at logout). **Unique looks later:** when the nine
+    get client ids of their own, the held message already carries the real look; change `look` in the client table
+    `EVERFULL_ITEMS`, and then patch 0043's look preference, the follow rule for the 266 / 268 rows and the empty-flask caveat
+    are no longer needed (the use of a look maps to one server id).
   - **Install:** the same step `potions` (nine nodes now). New: the `tier` of each row, the store offers, no sellers for tier 2+.
   - **Texts:** English keys, pt-BR in `i18n_strings.lua` ("Everfull potion tiers"). The item descriptions are in items.xml.
-  - **Not done / risks:** the client's helper and action bar know only the first two looks as Everfull (`helper_potions.lua`), so
-    the helper's "use the Everfull flask" path does not know the new ones (the hotkey by look works through patch 0043); the new
+  - **Not done / risks:** the new
     looks are the stock great, ultimate and supreme potions' (no new art). The levels and rolls of the stock potions are read from the
     base `potions.lua` here; the names of 26029-26031 are the real game's. Prices are a first estimate (`store_model.lua`), nothing
     is measured on a running server and the whole path is only tested on a mocked engine.
