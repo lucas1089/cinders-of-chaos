@@ -22666,25 +22666,33 @@ and the drop-in removed (`rm` it, `daemon-reload`). Never copy a core off the ma
 
 **Owner steps on the VPS (once).** First get the new checkout there: admin app, Painel > card "Atualizar servidor" >
 "Aplicar e reiniciar" (`chaos-ctl.sh update-apply`). That updates the checkout, the engine and the data, but it does not
-copy unit files to `/etc/systemd/system`, and the app has no button for that, so this part is a shell step. As root, on
-the VPS:
+copy unit files to `/etc/systemd/system`, and the app has no button for that, so this part is a shell step. Which unit
+file is installed as `chaos-server.service` depends on the layout: the Linux kit (`/opt/chaos-trial`, the live server of
+2026-10) has `chaos-trial-server.service` under that name; the repo layout (`/opt/chaos/server`) has
+`chaos-server.service`. Copying the wrong one stops the server. As root, on the VPS:
 ```
-cd /opt/chaos/repo
-stat -c '%U:%G %a' /opt/chaos/repo /opt/chaos/repo/server /opt/chaos/repo/server/tools /opt/chaos/repo/server/tools/chaos_crashlog.sh   # root:root 755 (or 644/755), never chaos
-cp /etc/systemd/system/chaos-server.service /root/chaos-server.service.before-o196    # the way back
-cp server/deploy/chaos-server.service server/deploy/chaos-clientservices.service server/deploy/chaos-watchdog.service \
-   server/deploy/chaos-health.service server/deploy/chaos-backup.service /etc/systemd/system/
-cp server/deploy/chaos-helpai.service server/deploy/chaos-discord.service server/deploy/chaos-payworker.service /etc/systemd/system/   # only those you use
-systemd-analyze verify /etc/systemd/system/chaos-server.service
+REPO=/opt/chaos/repo                       # CHAOS_REPO in /etc/chaos/ctl.conf
+U=/etc/systemd/system/chaos-server.service
+cp "$U" /root/chaos-server.service.before-o196                      # the way back
+if grep -q '/opt/chaos-trial' "$U"; then                            # the Linux kit
+  owner=$(stat -c '%U' /opt/chaos-trial); group=$(stat -c '%G' /opt/chaos-trial)
+  sed -e "s/^User=.*/User=$owner/" -e "s/^Group=.*/Group=$group/" "$REPO/server/deploy/chaos-trial-server.service" > "$U"
+else                                                                # the repo layout
+  stat -c '%U:%G %a' "$REPO" "$REPO/server" "$REPO/server/tools" "$REPO/server/tools/chaos_crashlog.sh"   # root, never chaos
+  cp "$REPO/server/deploy/chaos-server.service" "$U"
+fi
+for n in clientservices watchdog health backup helpai discord payworker; do   # only the units already installed
+  [ -f /etc/systemd/system/chaos-$n.service ] && cp "$REPO/server/deploy/chaos-$n.service" /etc/systemd/system/
+done
+systemd-analyze verify "$U"
 systemctl daemon-reload      # the running engine keeps its old settings; the sandbox starts with its next start
 ```
-The next start is the daily server save (the engine shuts down and `Restart=always` starts it again), or
-`systemctl restart chaos-server` at a quiet moment (it saves, players are disconnected; admin app, Painel > "Reiniciar em...").
-Then `systemctl status chaos-server`, `tail -n 50 /var/log/chaos/server.log` (map loaded, no `Lua Script Error`), a login
-from the client and `systemctl show chaos-server -p LimitCORE -p ProtectSystem`. If the engine does not start:
-`journalctl -u chaos-server -n 50`, put `/root/chaos-server.service.before-o196` back, `systemctl daemon-reload`,
-`systemctl restart chaos-server`. Leave `chaos-trial-server.service` alone on this VPS (kit layout only; its copy is in
-its own header). The five other units are picked up at their next start (timers: next run).
+The next start is the daily server save (the engine shuts down and is started again), or `systemctl restart chaos-server`
+at a quiet moment (it saves, players are disconnected; admin app, Painel > "Reiniciar em..."). Then `systemctl status
+chaos-server`, the server log's last lines (map loaded, no `Lua Script Error`), a login from the client and `systemctl
+show chaos-server -p LimitCORE`. If the engine does not start: `journalctl -u chaos-server -n 50`, put
+`/root/chaos-server.service.before-o196` back, `systemctl daemon-reload`, `systemctl restart chaos-server`. The other
+units are picked up at their next start (timers: next run).
 
 **SQL integer guards.** The admin actions `security.ip_unban`, `security.ip_ban`, `security.account_info`,
 `players.ban` and `players.unban` write the address or account id through `ChaosAdmin.sqlInt` (a finite whole number as
