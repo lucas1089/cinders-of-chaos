@@ -1,0 +1,13 @@
+// Rain over the game map (game_chaosweather). The root fills the game map panel and clips; each layer is one repeated rain tile.
+ChaosWeatherRoot < UIWidget
+  phantom: true
+  focusable: false
+  clipping: true
+
+ChaosWeatherLayer < UIWidget
+  anchors.fill: parent
+  phantom: true
+  focusable: false
+  visible: false
+  image-repeated: true
+  image-smooth: false

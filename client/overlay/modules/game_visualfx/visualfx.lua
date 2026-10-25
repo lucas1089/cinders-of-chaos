@@ -11,6 +11,8 @@
 --   spell light    a magic effect that plays lights the tiles around it for ~320 ms in a colour that matches it (O205, base patch
 --                  0127): this file sends the colour table and the limits to g_map.setSpellLight*, the engine keeps at most 12
 --                  live lights and adds them to the map light view (nothing shows in full light).
+--   weather        the rain game_chaosweather draws when the server says it rains (O208, base patch 0130): this file passes the
+--                  option on (modules.game_chaosweather.setEnabled); nothing is drawn here.
 --   liquids        water and lava ground sprites shimmer (O206, base patch 0128): this file creates the two shaders
 --                  chaos_liquid_water / chaos_liquid_lava and sends the ground id table to Item.addLiquidId once; the engine draws
 --                  those grounds with the shader while the option is on (no per-tile Lua).
@@ -136,6 +138,13 @@ local function applyLiquid()
   pcall(Item.setLiquidShimmer, on)
 end
 
+-- ---------------------------------------------------------------- weather
+-- the rain of game_chaosweather (O208, base patch 0130 has the checkbox): this file only passes the option on
+local function applyWeather()
+  local m = modules.game_chaosweather
+  if m and m.setEnabled then pcall(m.setEnabled, optionValue('weather')) end
+end
+
 -- ---------------------------------------------------------------- shadow and grade
 local function applyShadow()
   if Creature and Creature.setSoftShadow then pcall(Creature.setSoftShadow, optionValue('creatureShadow')) end
@@ -171,6 +180,8 @@ function onOption(name, value)
     applySpellLight()
   elseif name == 'liquidShimmer' then
     applyLiquid()
+  elseif name == 'weather' then
+    applyWeather()
   elseif name == 'screenShake' and value == false then
     stopShake()
   end
@@ -181,6 +192,7 @@ function reapply()
   applyGrade()
   applySpellLight()
   applyLiquid()
+  applyWeather()
 end
 
 -- ---------------------------------------------------------------- lifecycle

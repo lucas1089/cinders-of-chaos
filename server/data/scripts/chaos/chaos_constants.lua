@@ -2072,3 +2072,6 @@ if Chaos then
 	local okCfg, cfgBeta = pcall(dofile, "data/scripts/chaos/beta_mode_config.lua")
 	Chaos.betaMode = okCfg and type(cfgBeta) == "table" and cfgBeta or {enabled = false}
 end
+-- Weather: the server decides it (which areas, rain or clear, how strong) and sends one small message when it changes;
+-- the client draws the rain (client game_chaosweather; weather.lua, weather_core.lua, weather_config.lua; O208)
+ChaosOpcodes.weather = 114

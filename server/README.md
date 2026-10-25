@@ -585,6 +585,7 @@ working directory, as with the rest of the base server libs).
 | game_rightclickequip | `rightclick_equip.lua`, `rightclick_equip_core.lua`, `rightclick_equip_config.lua`, engine patch 0024 | **188** | Right-click equips: the client option "Right-click equips items" (client -> server) and the multi-use weapons a right-click equips (server -> client, at login); the equipping is the engine's (see "Right-click equips"). Tested in game. |
 | game_kitewalk | `kitewalk.lua`, `kitewalk_core.lua`, engine patch 0028 | **186** | Keep attacking while moving: the client option "Keep attacking while moving" (client -> server); the kiting itself is the engine's (see "Keep attacking while moving"). Tested in game. |
 | game_tileoverlays | `tilebars.lua`, `tilebars_core.lua`, `tilebars_config.lua` (users: `battleground.lua`, `professions.lua`, `invasion.lua`) | **156** (server -> client; `hello` back) | Progress bars over tiles: a labelled bar (progress or countdown) over a map position for the players near it; brazier captures, profession node respawns (gatherer only), the invasion breach. The same client module draws the field timers (client only). See "Progress bars over tiles". |
+| game_chaosweather | `weather.lua`, `weather_core.lua`, `weather_config.lua`, `tools/patch_base_rain.py` (install step `baserain`) | **114** (server -> client `set`, client -> server `hello`) | The weather: the server decides it (the base's dice, the surface floors) and tells a player when it changes for him; the client draws the rain (see "Weather on the client (O208)"). Logic tested on a mocked engine; not run on a live server or in a client. |
 | game_levelwings | `levelwings.lua`, `levelwings_core.lua`, `levelwings_config.lua` | **191** (server -> client) | Level-up effect: the pair 36 level-up effect plays on a character that gains a level, seen by every player on screen (see "Level-up effect"; golden wings until 2026-10-22). The wings were tested in game; the pair 36 effect not yet. |
 | game_bestiary | `bestiary.lua`, `bestiary_core.lua`, `bestiary_config.lua`, `bestiary_spawns.lua` | 253, Hunt > Bestiary, Hunt > Kill Tasks | Bestiary (an entry per monster, four stages by kills, completion bonus, points and ranks), personal kill tasks with daily / weekly limits, task tracker HUD with the bounty contracts; tested in game (see "Bestiary and kill tasks"). |
 | game_itemtooltip | `item_tooltip.lua`, `item_tooltip_core.lua` (client also `game_itemrarity`) | 242 | Rich item tooltips on hover (inventory, open containers): rarity, item level, base stats, every modifier with its tier and roll range, sockets and gems, unique and set (pieces worn, bonuses active: "Item sets"), requirements; Ctrl compares with the equipped item(s) of the same slot. Rarity frames from the item custom attributes of engine patch 0003; tested in game (see "Item attributes in packets and rich tooltips"). |
@@ -633,6 +634,7 @@ collision check") and be added here.
 | 110 | `stash` | `stash.lua` | `game_stash` | |
 | 111 | `depotTabs` | `depot.lua` | `game_depottabs` | |
 | 113 | `npcCurrency` | `data/lib/chaos_npc_currency.lua` (run by the base NPC scripts of a custom currency, `tools/patch_npc_currency.py`) | `game_npctradewindow` | server -> client, JSON `{action = "currency", data = {code, name, item?, amount, again?}}`: the currency of the shop that opens next, and its balance after each purchase and sale ("NPC currencies") |
+| 114 | `weather` | `weather.lua`, `weather_core.lua` | `game_chaosweather` | server -> client `set {k = "rain" / "none", i = 1..3, f = fade ms}`, client -> server `hello` (see "Weather on the client (O208)") |
 | 120 | none (`CHAOS_ADMIN_OPCODE`) | `admin/core.lua` | `game_admin` | big payloads through `Chaos.sendChunked` |
 | 125 | `monsterbar` | `monster_tiers.lua`, `worldboss.lua` | `game_monsterbar` | server -> client |
 | 151 | `notificationsAction` | `notifications.lua` | `game_chaosnotify` | client -> server: party invite answer, catacomb start |
@@ -767,7 +769,7 @@ constant. Opcodes in use there: 1, 67, 73, 89, 91, 92, 99, 106, 107, 136, 181, 2
 `ServerOpcodes` 125/126 in `global.lua` were first read as game-protocol opcodes, a different number space. They are not:
 the base NPC scripts send them with `player:sendExtendedOpcode`, and 125 is the monster bar's. O189 moved them to 126 / 127
 and gave the custom currencies their own opcode 113, see "NPC currencies".)
-No other Chaos opcode collides. Hideouts (192) also checked the reference client's own opcodes (`gamelib`
+No other Chaos opcode collides. Weather (O208) took **114**: not in the reference server's list above, not one of the base client's `ExtendedIds`, not a `ChaosOpcodes` value, not named by any client module (`tests/weather_test.lua` checks all four, and that no two `ChaosOpcodes` share a number); it is the smallest number above 113 (the NPC currency opcode) that nothing else uses; 188-254 are all taken. Hideouts (192) also checked the reference client's own opcodes (`gamelib`
 `ExtendedIds` 144-146, 210, 212, 213, 230, 246 and 0x8C = 140): 145 was taken there by the skill wheel. 110 was chosen for the stash because
 the client has no fixed value and 110 is free. Storage keys (see "Storage keys" below) and DB tables
 `chaos_*` are new; the one deliberate overlap is autoloot's storage base 80000 (shared on purpose).
@@ -822,6 +824,60 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7109990 - 7109992 | spell supports: cast context and Reprisal (`data/lib/chaos_supports_config.lua`) |
 | 7110000 - 7111999 | spell supports: sockets per spell id (base + spell id * 4 + 0..3) |
 | 7112000 - 7127999 | loadouts: support runes parked per loadout (`loadouts_config.lua` `runeMirrorBase`) |
+
+### Weather on the client (O208) (`weather.lua`, `weather_core.lua`, `weather_config.lua`, `tools/patch_base_rain.py`, client `game_chaosweather`)
+
+**What the base did.** `customs/globalevents/rain.lua` of the base server, all of it inside `if configManager.getBoolean(configKeys.WEATHER_RAIN)`
+(config.lua `weatherRain = true`):
+- one world-wide state in the global storage `Weather`: at startup 15% rain; every 5 minutes (`GlobalEvent` interval 300000) a dry
+  world starts to rain with 15%, a rainy one stops with 10% (a long-run share of about 60% of the rolls rainy);
+- while it rained, a `GlobalEvent` every 100 ms called `Player.sendWeatherEffect` for every online player
+  (`data/lib/core/player.lua`): a random tile within 7 x 5 of the player, the first floor from 0 to 7 that has a tile there, one
+  distance effect (drop, id 56) falling onto it from 7 tiles up-left and one magic effect (splash, id 2) on it, a second effect on
+  water, and with `thunderEffect = true` a 50% chance per drop, when a player stood on that tile outside a protection zone, of a
+  1-5 energy damage hit. So: no zones. It rains for everyone, but a drop lands on floors 0-7 only, so a player underground
+  (floor 8 and below) saw none, and a player under a roof saw the drops on the roof, which the client hides.
+- cost: two packets per player per 100 ms (about 14 million an hour at 200 online) and 6 s of game loop and 57 MB of garbage a minute
+  ("Game loop stalls", measured).
+
+**The design.** The server only decides; the client draws.
+- `weather_core.lua` (pure, `tests/weather_test.lua`): the state `{raining, intensity, nextRollAt}`, the base's dice (`startup`,
+  `roll`; a tick that comes late rolls once), a strength 1-3 picked when a rain starts (`weather_config.lua` `intensities`, 20 / 60 /
+  20 percent; 2 is the base's density), the areas (`areaAt`: a list of `{name, kind, minZ, maxZ, box}`; the default is one area,
+  floors 0-7, the base's), the message for a position, and the per-player rule `decide`: a message goes out only when what that
+  player should see changed (a player is taken to see nothing until a first message, so a dry world sends nothing).
+- `weather_config.lua`: every number (`tickMs = 3000`, the base's 15 / 10 / 300000, the strengths, `fadeMs = 2500`, the areas).
+- `weather.lua` (engine glue): a `GlobalEvent` every `tickMs` (the dice, then one `getPosition` per online player and a `decide`), a
+  startup event, a login event (a forced send after 1.5 s; the client also asks), `onExtendedOpcode` for `hello` (rate limited to
+  one a second), logout forgets the player, and the staff command `/weather rain [1-3]`, `/weather clear`, `/weather info`.
+  `Chaos.send` is the only send. The tick runs in a `pcall`.
+- `tools/patch_base_rain.py` (install step `baserain`, after `idlekick`): sets `weatherRain = false` in config.lua (keeping a
+  trailing comment; no key means off already). The base script is not edited: it registers nothing with the flag off. Idempotent,
+  `tools/patch_base_rain_test.py` (stock text, CRLF, comment, a missing key, `--dry-run`, the install step). `thunderEffect` stays;
+  only that script reads it.
+- Protocol (opcode **114**, JSON `{action, data}`; see "Extended opcodes in use"): server -> client `set {k = "rain" | "none",
+  i = 1..3 (rain only), f = fade ms}` (about 55 bytes); client -> server `hello {}` (answered with the current `set`, even when
+  nothing changed). A player gets `set` when he logs in, asks, crosses between an area and no area (the tick notices it
+  within 3 s: stepping from floor 7 to a cave, or back), or the weather or its strength changes. Steady rain sends nothing.
+  An hour of rain for 200 players at 3 s ticks is 200 messages (the test counts them), the base sent 14 million packets.
+- Storage keys: none (the state is in memory and rolls again at a restart, as the base's did). The global storage `Weather` is
+  no longer written; no other script read it.
+
+**What changed on purpose.**
+- No thunder damage (1-5 energy about once in 30 s out in the rain; the base's drops decided it).
+- No drops placed on tiles, so no splash effects on the ground and no extra effect on water; the client draws streaks over the screen.
+- The strength varies per rain (the base had one density).
+- The weather area follows the player's floor at the 3 s tick, not each step.
+
+**The client** (`game_chaosweather`, client/MANIFEST.md): three repeated pictures scrolled over the game map only; fades with the
+server's `f`; hidden under a roof; the option `weather` in Options > Graphics ("Rain and weather", base patch `0130`, through
+`game_visualfx`).
+
+**To check live.** Install (`install_all.py --only baserain`, then `files`), restart or reload, `/weather rain 2` as staff: players on
+floors 0-7 get `set` within 3 s (`/weather info` says how many), a cave player none; `/weather clear`; wait for a roll (5 minutes)
+or watch the console for `[ChaosWeather]` lines. In a client: the rain fades in, goes under a roof, returns, and the
+checkbox switches it. Not run yet: the glue's engine calls (`Game.getPlayers`, `GlobalEvent`, `addEvent`, `TalkAction`) are the ones other
+scripts here already use, but this file has only run against the mock.
 
 ### Extended opcode size limit (`extended_opcode.lua`, `Chaos.sendChunked`)
 One extended opcode message carries at most 8192 bytes (`NetworkMessage::addString` refuses longer strings without an
@@ -6793,7 +6849,8 @@ should stay around 100-150 ms with no stall over 250 ms from these causes.
   client's poll inside the save, so the COMMIT, which the slow task log did not count then (it does since this patch).
   A calm repeat with 100 bots: every logout under 30 ms, the longest part a 12 ms COMMIT. Not a steady-state stall.
 - The base weather's rain (above) when it rains (6 s of game loop and 57 MB of garbage a minute at 200 online, ticks
-  of 10-20 ms, a few of 70-180 ms); the base rarity check (`customs/rarity/base_rarity.lua`, 2 s and 42 MB a minute).
+  of 10-20 ms, a few of 70-180 ms): since O208 it is off (`tools/patch_base_rain.py`) and the client draws the rain, see
+  "Weather on the client (O208)"; the base rarity check (`customs/rarity/base_rarity.lua`, 2 s and 42 MB a minute).
   Both are base scripts that work as designed; no stall over 250 ms from either in these runs.
 
 Tests: `tests/item_mods_test.lua` (the 12 groups, every player once in 3 s, regeneration), `tests/respawn_test.lua`
