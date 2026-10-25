@@ -2870,6 +2870,58 @@ Output **pair 42**: dat 6a7cba691029a95689e23426de75b225 (11,260,478 bytes), spr
 - A client on pair 41 or older keeps the old art on these ids (the spear and arrows redraw only with pair 42); the 15
   names are sent by nothing. Ship pair 42 with the server. Previews: scratchpad only. Not run in a client.
 
+## Cursed Chest looks (pair 43: items 38642-38644, `tools/sprites/gen_cursed_chest_art.py`, `art_import/cursed_chest.*`; built 2026-10-25, on windows-assets f7a4e023)
+Owner request 2026-10-25: the Cursed Chest borrowed the Sealed Coffer's chest (server 12664, client 4073); it gets art of
+its own. The owner picked three PixelLab results (64 x 64 RGBA, alpha 0 / 255): A (lava cracks and chains, the main
+look), B (purple flame, faces on the lid), C (open maw with iron teeth). Each chest that spawns wears one at random.
+Later the same day the owner approved an idle animation (PixelLab animate-with-text, 64 x 64 frames): **A** 5 phases (its
+original sprite is frame 0, the loop), **B** a still (1 phase), **C** 8 phases as a ping-pong, frames 0 1 2 3 4 3 2 1
+(a mimic chewing).
+- **Pixels.** PixelLab's, owner approved: not repainted, snapped or recoloured. Credit: docs/CREDITS.md "Tools"
+  (PixelLab; `art_import/cursed_chest_sources.csv`). The raw folder is git-ignored; `build --src DIR` copies the three
+  files to `art_import/cursed_chest/` (`cursed_chest_a_f0..4.png`, `cursed_chest_b.png`, `cursed_chest_c_f0..4.png`:
+  the 11 committed sources, about 70 KB), so CI and later rebuilds need no PixelLab folder. The colour under fully
+  transparent pixels is cleared (PixelLab leaves noise there; nothing visible changes).
+- **Style.** The art is lava, purple and blood red, none of the seven theme palettes (`style_check.py` against each
+  theme: only the palette rule fails, mean distance 7-17 against the allowed 4.5). Snapping is not the standard step
+  for PixelLab art here (the themed icons take a per-item palette, not a theme), so nothing was snapped. `build` runs
+  the check on each 64 x 64 canvas (cell 64) against the canvas's own colours: outline, light, noise, colour count (58-60),
+  alpha and scale all pass, and `build` refuses otherwise, except the colour count: frame C 3 has 69 colours (limit 68),
+  reported as a warning, since the frames are owner approved and cannot be repainted. Checked as four 32 px cells, look B fails the outline rule
+  (the purple flame has no dark rim); as the one 2 x 2 item it is, it passes.
+- **Things.** `art_import/cursed_chest.csv`: client 38642 / 38643 / 38644 `cursed chest`, 2 x 2, 5 / 1 / 8 phases at 250 / - / 200 ms (the dat takes a
+  duration per item: min = max = ms), flags `copy:4073` (container, notwalkable, notmoveable, light 3 / 29, elevation 8, usable), mode new. The importer cuts each
+  canvas into the four 32 px tiles of a 2 x 2 item (`tiles()` in the tool is the same cut, tested). The atlas holds one cell per
+  phase (896 x 64, 14 cells); C's repeated frames are the same pixels, so the importer stores them once: 44 sprites
+  appended (A 20, B 4, C 20), not 56.
+- **Server.** `server/tools/install_cursed_chest.py` (step `cursedchest`): items.otb copies of node 12664 with server ids
+  32281-32283 and these client ids (A and C also carry FLAG_ANIMATION, so the server sends the phase byte), items.xml entries; `cursedchest_config.lua` `chest.itemIds`, fallback 12664
+  (server/README.md "Cursed Chest").
+
+```
+python3 -I client/tools/sprites/gen_cursed_chest_art.py build [--src PIXELLAB_DIR] [--preview DIR --dat pair43/Tibia.dat --spr pair43/Tibia.spr]
+python3 -I client/tools/sprites/import_art_things.py --ours-dat pair42/Tibia.dat --ours-spr pair42/Tibia.spr --out-dir pair43 \
+    --things client/tools/sprites/art_import/cursed_chest.csv --first-item 38642 --expect-items 38641
+python3 -I client/tools/sprites/check_pair.py pair43/Tibia.dat pair43/Tibia.spr --old pair42/Tibia.dat pair42/Tibia.spr [--new-only]
+python3 -I client/tools/sprites/gen_outfit_anchors.py pair43/Tibia.dat pair43/Tibia.spr
+python3 -I client/tools/sprites/gen_info_lift.py pair43/Tibia.dat pair43/Tibia.spr
+```
+Input pair 42 (windows-assets b6c7709e, dat 6a7cba691029a95689e23426de75b225, spr 358da3065f83d2610e43c7a74f045472).
+Output **pair 43**: dat 2cb2321ef0dffd58bc4d52411bca5a89 (11,260,881 bytes), spr 078b92ec8672792748999425de5e0743
+(1,541,120,045 bytes, 1,357,872 sprites: 44 appended), 38,644 items (3 appended), 2,681 outfits, 4101 effects, 253
+missiles. The importer verified the 56 sprite slots pixel-identical to the atlas and every old thing byte-identical.
+Built once.
+- `check_pair.py --old`: `--new-only` 0 errors, 0 warnings; full check 0 errors, 206 warnings (pair 42's).
+  `outfit_anchors.lua` and `info_lifts.lua`: only the dat md5 changes.
+- Archive (the pair 41 recipe: `tar --owner=0 --group=0 --numeric-owner --mtime='2026-10-22 00:00:00Z' --format=gnu`,
+  `xz -9 -T0` (xz 5.4.5), `split -b 95M -d -a 2`): 147,073,436 bytes, sha256
+  d435d1f05622d77456ff716745bbb59a2eb17ed69002b668f9d3673668d0f2e6; parts `things-1098.tar.xz.part00` (99,614,720
+  bytes, sha256 6e61b55becbe49a5567f162ee2a94374a3bf3fe0b370360e05eeec0161437642) and `.part01` (47,458,716 bytes,
+  sha256 1ea1d3dc5a1cb509221d50feb71cb3873008076894ee6fe9e28dc8424098b06a); stream-extracted from the parts, the md5s
+  above match. Pushed to windows-assets at f7a4e023 (on b6c7709e; the owner allowed new pairs without asking).
+- A client on pair 42 or older draws nothing for the new ids: ship pair 43 before the `cursedchest` install step.
+  Previews (the three looks at 1x and 4x, and every phase of each at 4x, rendered from pair 43): scratchpad only. Not run in a client.
+
 ## Owner art (things_custom26: outfits 2213-2233, items 33940-33985, `tools/sprites/gen_owner_art.py`, `art_import/owner_art.csv`; on windows-assets 50645056, switch on since 2026-10-15)
 **Source and licence.** The owner's Google Drive folder "ots", files added 2026-10-15. The owner confirmed the art is
 their own or commissioned and free to use for monsters and variants, outfits and wings as cosmetics, decoration and map

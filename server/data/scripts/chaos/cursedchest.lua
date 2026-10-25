@@ -7,8 +7,9 @@
 --                   autoloot): one roll per kill for the corpse owner. No roll for summons, in PvP places, in any
 --                   instance (Chaos.instanceAt / inAnyInstance), in protection zones, for monsters of other systems
 --                   (treasure goblins, rifts, invasions, generated areas, this event's own) or without stamina.
---   the chest       a map item (cfg.chest.itemId, action id cfg.chest.actionId) on the corpse's tile; it crumbles
---                   unopened after cfg.spawn.expireSec. A dark effect loops over it (GlobalEvent, cfg.chest.loopMs).
+--   the chest       a map item (one of cfg.chest.itemIds at random, else cfg.chest.itemId; action id
+--                   cfg.chest.actionId) on the corpse's tile; it crumbles unopened after cfg.spawn.expireSec.
+--                   A dark effect loops over it (GlobalEvent, cfg.chest.loopMs).
 --   the event       addEvent chain (cfg.event.tickMs) per chest. Monsters are husks (Monster:setDropLoot(false): no
 --                   corpse loot, so no Cursed Chest, treasure goblin, blessing or Chaos roll from them), paced like a
 --                   hunt (ChaosPace.apply: experience and health follow the hunt's model), scaled to the opener (health
@@ -238,9 +239,29 @@ local function placeFor(center)
 	return best
 end
 
+-- is this item type on the server? (an id that is not in items.otb has type id 0)
+local function itemExists(id)
+	local ok, res = pcall(function() return ItemType(id):getId() end)
+	return ok and res ~= nil and res ~= 0
+end
+
+-- the chest's item on its tile, whichever look it wears (the look it was made with first)
 local function chestItem(ch)
 	local tile = Tile(P(ch.pos))
-	return tile and tile:getItemById(cfg().chest.itemId) or nil
+	if not tile then
+		return nil
+	end
+	local item = ch.itemId and tile:getItemById(ch.itemId)
+	if item then
+		return item
+	end
+	for _, id in ipairs(K.allChestIds(cfg())) do
+		item = tile:getItemById(id)
+		if item then
+			return item
+		end
+	end
+	return nil
 end
 
 -- takes a chest out of the world: the item, the table and the server's count
@@ -265,7 +286,8 @@ function CC.spawnChest(owner, center, info)
 	if not pos then
 		return nil
 	end
-	local item = Game.createItem(c.chest.itemId, 1, P(pos))
+	local itemId = K.pickChestId(c, itemExists, rand)
+	local item = Game.createItem(itemId, 1, P(pos))
 	if not item then
 		return nil
 	end
@@ -274,7 +296,7 @@ function CC.spawnChest(owner, center, info)
 	item:setAttribute(ITEM_ATTRIBUTE_DESCRIPTION, c.chest.description)
 	CC.seq = CC.seq + 1
 	local ch = {
-		id = CC.seq, key = posKey(pos), pos = pos, state = "idle", ownerId = owner:getGuid(), ownerName = owner:getName(),
+		id = CC.seq, key = posKey(pos), pos = pos, itemId = itemId, state = "idle", ownerId = owner:getGuid(), ownerName = owner:getName(),
 		bornAt = nowMs(), expiresAt = nowMs() + c.spawn.expireSec * 1000, killed = info.name, pool = info.pool,
 		gear = info.gear, monsterLevel = info.monsterLevel, tier = info.tier
 	}

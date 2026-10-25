@@ -1,0 +1,4 @@
+key,cat,kind,name,atlas,x,y,w,h,patterns,phases,flags,mode,server_id,extra
+cursed_chest_a,item,chest,cursed chest,cursed_chest,0,0,2,2,1,5,copy:4073,new,32281,ms=250
+cursed_chest_b,item,chest,cursed chest,cursed_chest,320,0,2,2,1,1,copy:4073,new,32282,
+cursed_chest_c,item,chest,cursed chest,cursed_chest,384,0,2,2,1,8,copy:4073,new,32283,ms=200

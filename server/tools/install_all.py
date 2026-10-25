@@ -89,6 +89,8 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                in data/npc (README "Haunted Harvest")
   waystoneitems tools/install_waystone_items.py  the Waystone Tier VII-XV items (copies of the base tablets' nodes, server ids
                41951..41959, monster level 1700-2500) in items.otb / items.xml (README "Waystone tiers")
+  cursedchest  tools/install_cursed_chest.py     the Cursed Chest's three own looks of pair 43 (copies of the Sealed Coffer chest's
+               node with client ids 38642..38644, server ids 32281..32283) in items.otb / items.xml (README "Cursed Chest")
   gems         tools/install_gems.py             the gems and the Orb of Sockets in items.otb / items.xml, the orb's own look of
                pair 38, client 38641 (README "Gems and sockets")
   salvage      tools/install_salvage.py          the salvage Rune Shard in items.otb / items.xml (README "Salvage")
@@ -749,6 +751,13 @@ def step_waystoneitems(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('harvestevent') + 1, 'waystoneitems')  # the tier VII-XV items (base tablet looks)
+
+
+def step_cursedchest(server, data, ctx):
+    return tool_result(run_tool([tool('install_cursed_chest.py'), data], 'install_cursed_chest.py'))
+
+
+STEPS.insert(STEPS.index('waystoneitems') + 1, 'cursedchest')  # the chest's own looks (pair 43); the config falls back to 12664 without them
 
 
 def step_gems(server, data, ctx):
