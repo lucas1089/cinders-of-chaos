@@ -2,7 +2,8 @@
 # Build the secure mimalloc (MI_SECURE=ON: guard pages, randomised allocation, encoded free lists, double-free
 # detection) from the pinned upstream release and install it into PREFIX (PREFIX/lib/libmimalloc-secure.so*; the secure build names itself so). The engine's
 # CMake finds it with -DCHAOS_MIMALLOC_DIR=PREFIX (src/chaos_build.cmake, server/README.md "Build flags and allocator
-# (O201)"). Used by the engine-linux job of .github/workflows/windows-package.yml. The distro package is not used: it is
+# (O201)"). OPTIONAL and not used by the release (secure mode measured slower than glibc malloc); for experiments with
+# -DCHAOS_MIMALLOC=ON. The distro package is not used: it is
 # the default (not secure) build.
 #
 # The source is the git tag below, checked twice before anything is built: the commit it resolves to and the sha256 of

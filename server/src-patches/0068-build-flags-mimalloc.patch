@@ -1,18 +1,16 @@
-# Build flags, hardening and allocator of the Linux engine (O201; server/README.md "Build flags and allocator (O201)").
+# Build hardening flags of the Linux engine (and an opt-in allocator) (O201; server/README.md "Build flags and allocator (O201)").
 # New src/chaos_build.cmake, included first by src/CMakeLists.txt (so the patch touches src/ only, like the others, and
 # the base CMakeLists.txt stays as it is). Only for a Linux build with CMAKE_BUILD_TYPE Release, RelWithDebInfo or
 # MinSizeRel: Windows, macOS, Debug and the sanitizer build (build type None) are untouched.
-#   * Release flags -O2 -DNDEBUG instead of the stock -O3 (cache string CHAOS_OPT_LEVEL). Link-time optimisation stays
-#     as the base CMakeLists.txt has it. No -march: the engine is built on one machine and run on another.
+#   * Release flags: unchanged (CMake's -O3 -DNDEBUG; -O2 was never measured better). CHAOS_OPT_LEVEL="-O2" (cache string,
+#     default empty) would replace them. Link-time optimisation stays as the base CMakeLists.txt has it. No -march: the
+#     engine is built on one machine and run on another.
 #   * Hardening (CHAOS_HARDEN, default ON), each compiler flag only when the compiler takes it: -fstack-protector-strong,
 #     -D_FORTIFY_SOURCE=2, -fstack-clash-protection, -fcf-protection=full, -fPIE; link -pie -Wl,-z,relro,-z,now,
 #     -z,noexecstack. Ubuntu's g++ does most of this by default; the flags make it the same on any toolchain.
-#   * mimalloc (CHAOS_MIMALLOC, default ON): only the SECURE build (MI_SECURE: guard pages, randomised allocation,
-#     encoded free lists, double-free detection), which names itself libmimalloc-secure; tools/linux/build_mimalloc.sh
-#     builds the pinned release into a prefix, -DCHAOS_MIMALLOC_DIR=PREFIX points CMake at it. When found it is the first
-#     library of the link line, kept with --no-as-needed, and replaces malloc / free / operator new for the whole
-#     process. The distro's plain libmimalloc is never used. Not found: a status line and the system allocator, the
-#     build goes on. -DCHAOS_MIMALLOC=OFF skips it.
+#   * mimalloc (CHAOS_MIMALLOC, default OFF: measured slower than glibc in its secure mode, and the plain build weakens the
+#     heap checks). ON looks for the SECURE build only (libmimalloc-secure, made by tools/linux/build_mimalloc.sh;
+#     -DCHAOS_MIMALLOC_DIR=PREFIX), links it first with --no-as-needed, and falls back to glibc malloc when it is absent.
 # Apply in the server source root after 0001-0067: patch -p1 < 0068-build-flags-mimalloc.patch, then re-run CMake.
 --- a/src/CMakeLists.txt
 +++ b/src/CMakeLists.txt
@@ -32,16 +30,16 @@ new file mode 100644
 +# build: server/tools/build_sanitized.sh), and every piece falls back quietly when the toolchain or the library is
 +# missing, so the build never breaks because of it.
 +#
-+#   -O2 (not the stock Release -O3), -DNDEBUG   CHAOS_OPT_LEVEL            (cache string, default -O2)
++#   Release optimisation level                  CHAOS_OPT_LEVEL            (cache string, default empty: CMake's -O3 -DNDEBUG)
 +#   -fstack-protector-strong, -D_FORTIFY_SOURCE=2, -fstack-clash-protection, -fcf-protection (x86), -fPIE, -pie,
 +#   -Wl,-z,relro,-z,now,-z,noexecstack          CHAOS_HARDEN               (default ON; OFF leaves the toolchain's defaults)
-+#   secure mimalloc as the allocator            CHAOS_MIMALLOC             (default ON when libmimalloc-secure is found)
++#   secure mimalloc as the allocator            CHAOS_MIMALLOC             (default OFF; ON uses libmimalloc-secure if found)
 +# No -march: the engine is built on one machine and run on another.
 +# Link-time optimisation stays where the base CMakeLists.txt has it (check_ipo_supported).
 +
 +option(CHAOS_HARDEN "Chaos: hardening flags (stack protector, FORTIFY_SOURCE, PIE, RELRO, BIND_NOW)" ON)
-+option(CHAOS_MIMALLOC "Chaos: link the secure mimalloc as the allocator when it is installed" ON)
-+set(CHAOS_OPT_LEVEL "-O2" CACHE STRING "Chaos: optimisation level of the Release build")
++option(CHAOS_MIMALLOC "Chaos: link the secure mimalloc as the allocator when it is installed (off: measured slower than glibc)" OFF)
++set(CHAOS_OPT_LEVEL "" CACHE STRING "Chaos: optimisation level of the Release build (empty: CMake's own Release flags, -O3)")
 +
 +if (UNIX AND NOT APPLE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang"
 +        AND CMAKE_BUILD_TYPE MATCHES "^(Release|RelWithDebInfo|MinSizeRel)$")

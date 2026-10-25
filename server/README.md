@@ -22985,71 +22985,49 @@ VPS: no action. A normal update brings it.
 
 ## Build flags and allocator (O201) (engine `src-patches/0068-build-flags-mimalloc.patch`, `src/chaos_build.cmake`, `tools/linux/check_engine_hardening.sh`)
 
-How the Linux engine is built, and what changed. The only Linux engine build in the repository is the `engine-linux`
-job of `.github/workflows/windows-package.yml` (Ubuntu 22.04, g++ 11, `cmake -G Ninja -DCMAKE_BUILD_TYPE=Release
--DSKIP_GIT=ON`, `-Werror` stripped); `docs/LAUNCH.md` section 1 says the same for a by-hand build. The base
-`CMakeLists.txt` adds `-Wall -Wextra -Wnon-virtual-dtor -pedantic -Werror -pipe -fvisibility=hidden -fno-strict-aliasing`
-and turns link-time optimisation on (`check_ipo_supported`).
+Owner decision: **the hardening flags ship; the allocator and `-O2` do not.** How the Linux engine is built: the only
+Linux engine build in the repository is the `engine-linux` job of `.github/workflows/windows-package.yml` (Ubuntu 22.04,
+g++ 11, `cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DSKIP_GIT=ON`, `-Werror` stripped); `docs/LAUNCH.md` section 1 says
+the same for a by-hand build. The base `CMakeLists.txt` adds `-Wall -Wextra -Wnon-virtual-dtor -pedantic -Werror -pipe
+-fvisibility=hidden -fno-strict-aliasing` and turns link-time optimisation on (`check_ipo_supported`).
 
 | | before | now |
 |---|---|---|
-| build type | Release (CMake's `-O3 -DNDEBUG`) | Release, **`-O2 -DNDEBUG`** (`CHAOS_OPT_LEVEL`) |
+| build type, optimisation | Release (CMake's `-O3 -DNDEBUG`) | unchanged (`CHAOS_OPT_LEVEL` empty; `-DCHAOS_OPT_LEVEL=-O2` would replace it, never measured better) |
 | LTO / IPO | on (base `CMakeLists.txt`) | on, unchanged |
 | `-march` | none | none (the engine is built on one machine, run on another) |
 | stack protector, FORTIFY_SOURCE, PIE, RELRO, BIND_NOW | only what Ubuntu's g++ turns on by itself (not in the repo, not checked) | set by the build, same on any toolchain: `-fstack-protector-strong -D_FORTIFY_SOURCE=2 -fstack-clash-protection -fcf-protection=full -fPIE`, link `-pie -Wl,-z,relro,-z,now,-z,noexecstack`; checked in CI |
-| allocator | glibc malloc | **secure mimalloc 2.1.7** (`MI_SECURE`, built from the pinned upstream release) when found, else glibc malloc |
+| allocator | glibc malloc | glibc malloc (mimalloc is opt-in, off) |
 
 Patch 0068 adds `src/chaos_build.cmake`, included first by `src/CMakeLists.txt` (so the patch touches `src/` only, like
 the others, and the base `CMakeLists.txt` stays as it is). It does nothing for Windows, macOS, Debug, or a build with no
-build type (the sanitizer build passes `-DCMAKE_BUILD_TYPE=None -DCHAOS_MIMALLOC=OFF`). Options: `CHAOS_HARDEN` (ON),
-`CHAOS_MIMALLOC` (ON; used when `find_library(mimalloc-secure)` finds it, with `CHAOS_MIMALLOC_DIR` as the install prefix to look in; otherwise one status line and the build goes on),
-`CHAOS_OPT_LEVEL` (`-O2`). Each hardening flag is added only when the compiler accepts it.
+build type (the sanitizer build passes `-DCMAKE_BUILD_TYPE=None -DCHAOS_MIMALLOC=OFF`). Options: `CHAOS_HARDEN` (ON;
+each flag is added only when the compiler accepts it), `CHAOS_OPT_LEVEL` (empty), `CHAOS_MIMALLOC` (OFF),
+`CHAOS_MIMALLOC_DIR` (prefix of the secure mimalloc, used with `CHAOS_MIMALLOC=ON`).
 
-**Why -O2.** The task asked for -O2 unless -O3 measures better; there is no server benchmark in the repository and the
-engine's time is in the Lua scripts, the database and the map, not in vectorisable loops, so -O2 (smaller code, fewer
-instruction-cache misses, shorter compile) is the default. `-DCHAOS_OPT_LEVEL=-O3` goes back. Not measured on a live
-server.
+**Check.** `tools/linux/check_engine_hardening.sh build/tfs` reads the binary with `readelf`: PIE, RELRO, BIND_NOW, stack
+protector, FORTIFY, non-executable stack. The `engine-linux` job runs it after the build and on a cache hit (cache key
+`engine-linux-bin-v4`). If a mimalloc is linked, the script also starts the engine once in an empty folder with
+`MIMALLOC_VERBOSE=1` and requires a secure level, so a plain mimalloc fails. Result of a full build with the defaults
+(g++ 13.3, `-Werror` kept, 0 warnings, 4,348,792 bytes, LTO): all six properties ok. On this Ubuntu toolchain the
+unflagged build already had them by default; the flags make it independent of the toolchain.
 
-**Why linking mimalloc, not `LD_PRELOAD`.** The library is the first entry of the link line, kept with `--no-as-needed`
-(`readelf -d tfs` shows `libmimalloc-secure.so.2` as the first NEEDED), so it is in place before libstdc++, Boost, the
-database client and LuaJIT, with nothing to remember in the systemd unit or in `start-server.sh`. `LD_PRELOAD` in the
-unit would also work but silently does nothing when the library is missing. LuaJIT: the distro's LuaJIT is built with
-GC64, which takes its memory from `realloc`, so the Lua heap goes through mimalloc too and works (checked: the engine
-starts, loads LuaJIT and `MIMALLOC_SHOW_STATS=1` shows the heap); a LuaJIT without GC64 uses its own allocator under
-2 GB and ignores malloc, which is also fine.
+**Allocator, measured and not shipped.** mimalloc 2.1.7 was linked and tried (the engine starts, LuaJIT GC64 works
+through it). Micro benchmark of pure allocation churn (4 threads, `make_shared` objects and strings, the worst case, 5
+runs each, 4 cores, the library preloaded):
 
-**Security: secure mode only.** The owner's rule is no security trade-off, so the release links the SECURE build of
-mimalloc (`MI_SECURE=ON`, reports "secure level: 4" at start), never the distro package, which is the plain build and
-would lose glibc's heap checks. Secure mode gives: guard pages around mimalloc's pages and segments, randomised
-allocation order within pages, encrypted (keyed, encoded) free lists so a corrupted or forged free-list pointer is
-detected instead of followed, and double-free detection. `CMake` accepts only `libmimalloc-secure`; the plain
-`libmimalloc` is ignored, and `check_engine_hardening.sh` fails a release whose engine does not report a secure level.
-`tools/linux/build_mimalloc.sh PREFIX` builds it (shared library, `-DMI_SECURE=ON -DMI_BUILD_TESTS=OFF`,
-`MI_INSTALL_TOPLEVEL`) from the git tag `v2.1.7` of the upstream repository after checking two pins: the commit
-(`8c532c32...`) and the sha256 of `git archive --format=tar` of that commit (`cac1d8d6...`; a GitHub `.tar.gz` is not
-byte-stable, the tar of a commit is). A bump changes the version, commit and sha256 together. The sanitizer build and
-the fuzz harnesses run without mimalloc.
+| allocator | seconds per run |
+|---|---|
+| glibc malloc | 0.55 to 0.75 |
+| mimalloc, plain (distro package) | 0.34 to 0.52 |
+| mimalloc, secure (`MI_SECURE`: guard pages, randomised allocation, encoded free lists, double-free detection) | 0.90 to 1.07 |
 
-**Cost.** A micro benchmark of pure allocation churn (4 threads, `make_shared` objects and strings, the worst case;
-5 runs each, 4 cores, the library preloaded): glibc 0.55 to 0.75 s, plain mimalloc 0.34 to 0.52 s, **secure
-mimalloc 0.90 to 1.07 s**. So in secure mode the allocator is about 40% slower than glibc on a loop that does nothing
-else, where plain mimalloc was about 35% faster. The engine spends only a small part of its time allocating; the
-real-server effect is not measured. If the live server shows no gain or a loss, `-DCHAOS_MIMALLOC=OFF` returns to glibc
-malloc, and nothing else of patch 0068 depends on it.
+The plain build is faster but has no heap-corruption checks glibc has, which the owner's no-security-trade-off rule
+excludes; the secure build is about 40% slower than glibc on this loop. So neither ships and nothing about the
+allocator changed. **Opt in, to experiment:** `bash tools/linux/build_mimalloc.sh /opt/chaos/mimalloc` (builds the
+pinned upstream release v2.1.7, checking its commit and source sha256, into that prefix as `libmimalloc-secure`), then
+`-DCHAOS_MIMALLOC=ON -DCHAOS_MIMALLOC_DIR=/opt/chaos/mimalloc` on the CMake call; the library is first in the link line
+and the engine finds it through an rpath (bundle `lib/` with `tools/linux/bundle_libs.sh` for a package). Only the
+secure build is accepted. Not measured on a live server.
 
-**Build and check.**
-- The `engine-linux` job builds the secure mimalloc first (`tools/linux/build_mimalloc.sh "$HOME/mimalloc-prefix"`,
-  needs cmake, ninja, git and network access to github.com, all present on the runner), then the engine with
-  `-DCHAOS_MIMALLOC_DIR=$HOME/mimalloc-prefix`. `libmimalloc-dev` is not installed. The compiled-engine cache key is
-  `engine-linux-bin-v3` and includes the sha256 of `build_mimalloc.sh`.
-- `tools/linux/check_engine_hardening.sh build/tfs [--require-mimalloc]` reads the binary with `readelf` (PIE, RELRO,
-  BIND_NOW, stack protector, FORTIFY, non-executable stack) and, for mimalloc, starts the engine once in an empty
-  folder with `MIMALLOC_VERBOSE=1` and requires a secure level. The job runs it after the build and on a cache hit,
-  with `--require-mimalloc`: a missing or plain mimalloc fails the release.
-- The Linux server package bundles `libmimalloc-secure.so.2` into `server/lib/` (`tools/linux/bundle_libs.sh`, RUNPATH
-  `$ORIGIN/lib`), so the update path of the kit (`chaos_kit_update.sh`) needs nothing on the VPS.
-
-VPS: no action for a normal update from the server package. Only when the owner builds the engine by hand on the VPS
-(docs/LAUNCH.md section 1): once `sudo apt install cmake ninja-build git`, then `bash tools/linux/build_mimalloc.sh
-/opt/chaos/mimalloc` and `-DCHAOS_MIMALLOC_DIR=/opt/chaos/mimalloc` on the CMake call; without it the build still works
-with glibc malloc (the distro `libmimalloc-dev` is not used).
+VPS: no action. A normal update brings it.

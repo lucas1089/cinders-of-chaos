@@ -88,7 +88,6 @@ ChaosCreditsData = {
       { name = "Client engine (OTClient family)", author = "the OTClient contributors", licence = "open source, the base tree's LICENSE file ships with the client" },
       { name = "xBRZ 1.8", author = "Zenju", licence = "GPL-3.0", use = "HD sprite upscaling in the client", source = "https://sourceforge.net/projects/xbrz/" },
       { name = "json.lua", author = "rxi", licence = "MIT", use = "JSON in the server scripts" },
-      { name = "mimalloc", author = "Microsoft (Daan Leijen)", licence = "MIT", use = "the memory allocator of the Linux server engine (version 2.1.7 in secure mode, built from the upstream release and bundled in the Linux server package)", source = "https://github.com/microsoft/mimalloc" },
       { name = "ZnoteX", author = "Open Games Community", licence = "open source; its own credits page is on the website (credits.php)", use = "the account website", source = "https://github.com/Open-Games-Community/ZnoteX" },
       { name = "Znote AAC", author = "Znote and contributors", licence = "open source", use = "the base of ZnoteX", source = "https://github.com/Znote/ZnoteAAC" },
       { name = "Void layout", author = "Alex (opengamescommunity.com)", use = "the website layout, re-coloured for Cinders of Chaos" },

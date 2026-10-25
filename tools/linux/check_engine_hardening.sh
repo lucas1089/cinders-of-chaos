@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # Check the build properties of the Linux engine (server/README.md "Build flags and allocator (O201)"): position
 # independent executable, full RELRO with immediate binding, stack protector, glibc _FORTIFY_SOURCE checks, a
-# non-executable stack, and the SECURE mimalloc (the engine is started once in an empty folder with MIMALLOC_VERBOSE=1
-# and must report a secure level; a plain mimalloc fails the check). Prints one line per property; exit 1 when one is
-# missing. mimalloc is only required with --require-mimalloc (the build falls back to the system allocator without it).
+# non-executable stack, and, when a mimalloc is linked (opt-in, CHAOS_MIMALLOC=ON), that it is the SECURE build (the
+# engine is started once in an empty folder with MIMALLOC_VERBOSE=1 and must report a secure level; a plain mimalloc
+# fails the check). Prints one line per property; exit 1 when one is
+# missing. a mimalloc is only required with --require-mimalloc (the release does not use one).
 #
 # usage: tools/linux/check_engine_hardening.sh BINARY [--require-mimalloc]
 set -euo pipefail
