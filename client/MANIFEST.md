@@ -194,9 +194,17 @@ lava shaders, hit flash, screen shake, creature shadow and post-process did not 
   catalogs by name; combat feedback, damage ticks, warning circles, loot beams, buffs and portals have none; unknown effect ->
   no light); the module sends it to `g_map.setSpellLightColor` at game start. Without 0127 the calls are missing and nothing
   happens. Tested: the table, cap, fade, dim, option off, unknown effect (`visualfx_test.lua`). Not run in a client.
+- **Living water and lava (O206).** Water and lava ground sprites shimmer: a gentle ripple of under one texture pixel (zero at the
+  tile edge) and a brightness wave, a few percent on water and about 12% on lava; hue and alpha stay the sprite's own, so every
+  biome keeps its colours. Option `liquidShimmer` (Options > Graphics, on). Shaders `chaos_liquid_water.frag`,
+  `chaos_liquid_lava.frag` (vertex stage `chaos_liquid_vertex.frag`). Base patch `0128`: `Item::draw` looks the item's client id up
+  in a byte table and draws a liquid ground through the existing shader item path; no extra pass, no Lua per tile. The module
+  sends the table (`L.LIQUID`: stock water 629-634, 4597-4602 and 4609-4614, stock lava 728-730, pack water 33456-33463 and 35101, lava 35059 and 35070-35073; borders, bubbles
+  and the magma floor are not liquids) at game start. Without 0128 the calls are missing and nothing happens. Tested: the id
+  sets, the list, option off (`visualfx_test.lua`); the shaders compile (`check_shaders.py`). Not run in a client.
 Skipped, with the reason: floor fading and ambient light already exist; weather and the UI scale are
-partial and need a server packet, art or an engine rewrite; water and lava shaders need a
-tile mask or a water flag per tile from the draw path (a large change); bloom needs a second framebuffer and a blur pass per
+partial and need a server packet, art or an engine rewrite; water and lava shaders were skipped
+at first and came later as O206 (above); bloom needs a second framebuffer and a blur pass per
 frame (costly on a weak PC). Not run in a client: the first build should check the Graphics tab fits
 the four new rows (window 685x531), the flash on a pack, a shake from a boss hit, and the frame rate with all four on and off.
 

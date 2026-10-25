@@ -6,8 +6,8 @@ local L = VisualFxLogic
 
 -- the options (client_settings dataset.lua, Options > Graphics "Visual effects"); on by default except the grade,
 -- which changes the biome colours and waits for the owner's look at the first build
-L.OPTIONS = { 'hitFlash', 'screenShake', 'creatureShadow', 'screenGrade', 'spellLight' }
-L.DEFAULTS = { hitFlash = true, screenShake = true, creatureShadow = true, screenGrade = false, spellLight = true }
+L.OPTIONS = { 'hitFlash', 'screenShake', 'creatureShadow', 'screenGrade', 'spellLight', 'liquidShimmer' }
+L.DEFAULTS = { hitFlash = true, screenShake = true, creatureShadow = true, screenGrade = false, spellLight = true, liquidShimmer = true }
 
 -- an option value from the settings: a boolean is kept, anything else (nil, junk, an older settings file) is the default
 function L.optionOn(name, value)
@@ -278,5 +278,43 @@ function L.lightsNow(state, now)
       end
     end
   end
+  return out
+end
+
+-- ---------------------------------------------------------------- living water and lava
+-- Ground sprites that shimmer (base patch 0128, Item.addLiquidId): client ids of the water and lava grounds. The pack
+-- grounds are the rows of kind `water` in server/data/items/*.csv (client_id column: deep lake and shallows 33456-33463,
+-- the lava of the lava islands 35059 and 35070-35073, sewer water 35101). The stock 10.98 grounds are the client ids items.otb gives the
+-- items.xml "shallow water" grounds 4608-4625 (629-634, 4597-4602, 4609-4614) and "lava" grounds 599-601 (728-730). Lava
+-- borders, bubbles and the magma-veined floor are not liquids and stay as they are. A new liquid ground is one line here.
+L.LIQUID = {
+  water = { { 629, 634 }, { 4597, 4602 }, { 4609, 4614 }, { 33456, 33463 }, { 35101, 35101 } },
+  lava = { { 728, 730 }, { 35059, 35059 }, { 35070, 35073 } },
+  kind = { water = 1, lava = 2 },      -- the kind numbers Item.addLiquidId takes
+  waterShader = 'chaos_liquid_water',  -- data/shaders, vertex stage chaos_liquid_vertex
+  lavaShader = 'chaos_liquid_lava',
+}
+
+-- 'water', 'lava' or nil for a client id
+function L.liquidKind(id)
+  id = tonumber(id)
+  if not id then return nil end
+  for _, name in ipairs({ 'water', 'lava' }) do
+    for _, r in ipairs(L.LIQUID[name]) do
+      if id >= r[1] and id <= r[2] then return name end
+    end
+  end
+  return nil
+end
+
+-- every (id, kind number) pair, in id order, for the one-time table sent to the engine
+function L.liquidList()
+  local out = {}
+  for _, name in ipairs({ 'water', 'lava' }) do
+    for _, r in ipairs(L.LIQUID[name]) do
+      for id = r[1], r[2] do out[#out + 1] = { id = id, kind = L.LIQUID.kind[name] } end
+    end
+  end
+  table.sort(out, function(a, b) return a.id < b.id end)
   return out
 end

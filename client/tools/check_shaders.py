@@ -4,7 +4,7 @@
 Checks
 - every client/overlay/data/shaders/chaos_*.frag (a file named *_vertex.frag is a vertex stage, the rest fragment
   stages; chaos_ui_* pair with chaos_ui_vertex.frag, chaos_outfit_* with chaos_outfit_vertex.frag, chaos_map_* with
-  chaos_map_vertex.frag),
+  chaos_map_vertex.frag, chaos_liquid_* with chaos_liquid_vertex.frag),
 - the programs written inside base patches as C++ strings (const std::string glsl...Shader = "...";, the creature
   outline of 0038 and the item outline of 0044), taken from the added lines of the patch.
 
@@ -95,7 +95,8 @@ def file_stages():
             out.append((fn, 'vert', src, None))
         else:
             prefix = ('chaos_ui_' if fn.startswith('chaos_ui_') else 'chaos_outfit_' if fn.startswith('chaos_outfit_')
-                      else 'chaos_map_' if fn.startswith('chaos_map_') else None)
+                      else 'chaos_map_' if fn.startswith('chaos_map_')
+                      else 'chaos_liquid_' if fn.startswith('chaos_liquid_') else None)
             out.append((fn, 'frag', src, (prefix + 'vertex.frag') if prefix else None))
     return out
 
