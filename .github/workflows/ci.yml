@@ -365,6 +365,18 @@ jobs:
           g++ -std=c++17 -Wall -Wextra -I "$d/src" client/tools/chaosblob_mount_test.cpp -lcrypto -lphysfs -lz -o "$d/chaosblob_mount_test"
           "$d/chaosblob_mount_test" "$d/pack"
 
+      - name: Text layout slot, same coordinates and benchmark check (C++; header from base patch 0133)
+        run: |
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/framework\/graphics\/chaostextslot\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            client/base-patches/0133-cheaper-text.patch > "$d/chaostextslot.h"
+          g++ -std=c++17 -O1 -Wall -Wextra -I "$d" -I client/tools client/tools/chaostextslot_test.cpp -o "$d/chaostextslot_test"
+          "$d/chaostextslot_test"
+          g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" -I client/tools client/tools/chaostextslot_test.cpp -o "$d/chaostextslot_asan"
+          "$d/chaostextslot_asan"
+          g++ -std=c++17 -O2 -Wall -Wextra -I "$d" -I client/tools client/tools/text_bench.cpp -o "$d/text_bench"
+          "$d/text_bench" --check
+
       - name: Big creature click maths (C++; header from base patch 0051)
         run: |
           d=$(mktemp -d)
