@@ -18,7 +18,7 @@ local function strike(casterId, fromPos, targetId, factor, min, max, jump)
 		return
 	end
 	local toPos = target:getPosition()
-	ChaosSpell.vshoot(fromPos, toPos, "lightning_orb", "lightning_orb", CONST_ANI_ENERGY)
+	ChaosSpell.pshoot(fromPos, toPos, "proj_ball_lightning_thunder", "lightning_orb", "lightning_orb", CONST_ANI_ENERGY)
 	local hitFx = Fx("chain_lightning", CONST_ME_ENERGYHIT)
 	if M and M.known("lightning_hit") then
 		local fly = M.flightMs(fromPos, toPos)

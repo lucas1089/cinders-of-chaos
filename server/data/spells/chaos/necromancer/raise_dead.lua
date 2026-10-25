@@ -47,7 +47,7 @@ function onCastSpell(creature, variant, isHotkey)
 		L.consumeCorpse(c)
 		if L.raise(player, kind, cpos) then
 			raised = raised + 1
-			ChaosSpell.shoot(pos, cpos, "skull_orb", CONST_ANI_DEATH)
+			ChaosSpell.pshoot(pos, cpos, "proj_soul_skull_spirit", nil, "skull_orb", CONST_ANI_DEATH)
 			ChaosSpell.vfxOr(cpos, "necro_seal", "summon_portal", CONST_ME_MORTAREA) -- the seal on the corpse
 		end
 	end

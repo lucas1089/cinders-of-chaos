@@ -336,6 +336,27 @@ function ChaosSpell.vshoot(fromPos, toPos, vname, name, fallback)
 	end
 end
 
+-- A pair 41 / 42 missile (data/lib/chaos_pack41_fx_ids.lua, O239): `pname` (a ChaosVfxMissile name of the
+-- pair 41 or 42) when the ids are known (ChaosPack36Fx.PAIR36_FX on, which loads them), the spell has no
+-- skin and no pair 27 / 29 swap for the missile it sent before; else exactly what it sent before: vshoot(vname, name,
+-- fallback) when `vname` is given, else shoot(name, fallback) when `name` is. Neither given: nothing is sent then.
+function ChaosSpell.pshoot(fromPos, toPos, pname, vname, name, fallback)
+	if ChaosPack36Fx and ChaosPack36Fx.live then
+		pcall(ChaosPack36Fx.live)
+	end
+	local m = pname and ChaosVfxMissile and ChaosVfxMissile[pname]
+	local old = vname or name
+	local taken = old and (skinned("vmissile", old) or skinned("missile", old) or pack27("missile", old))
+	if m and VfxShoot ~= nil and not taken and VfxShoot(Position(fromPos), Position(toPos), pname) then
+		return
+	end
+	if vname then
+		ChaosSpell.vshoot(fromPos, toPos, vname, name, fallback)
+	elseif name then
+		ChaosSpell.shoot(fromPos, toPos, name, fallback)
+	end
+end
+
 -- Damage helper: returns positive min, max from the usual TFS level/magic-level formula, times `scale` (default 1,
 -- the per-spell balance factor: the whole value scales, the level part included).
 function ChaosSpell.mlValues(player, mlMin, mlMax, baseMin, baseMax, scale)

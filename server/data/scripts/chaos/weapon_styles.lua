@@ -189,13 +189,24 @@ local function extraProjectile(attacker, target, kind, element, hit)
 	end
 	local attackerId, targetId = attacker:getId(), target:getId()
 	local missile = A.extraMissile(kind, element)
+	local vmissile = element and element.vmissile
 	addEvent(function()
 		local a, t = Creature(attackerId), Creature(targetId)
 		if not a or not t then
 			return
 		end
 		local victim = nextTarget(a, t) or t
-		t:getPosition():sendDistanceEffect(victim:getPosition(), missile)
+		-- a fire or ice quiver sends the pair 41 fire / frost arrow (O239) where the client has it
+		local sent = false
+		if vmissile and ChaosVfxMissile and VfxShoot then
+			if ChaosPack36Fx and ChaosPack36Fx.live then
+				pcall(ChaosPack36Fx.live)
+			end
+			sent = ChaosVfxMissile[vmissile] ~= nil and VfxShoot(t:getPosition(), victim:getPosition(), vmissile)
+		end
+		if not sent then
+			t:getPosition():sendDistanceEffect(victim:getPosition(), missile)
+		end
 		local K = ChaosKeystones
 		if K then K.depth = (K.depth or 0) + 1 end
 		extraDepth = extraDepth + 1

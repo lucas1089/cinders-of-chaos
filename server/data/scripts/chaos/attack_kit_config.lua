@@ -29,7 +29,7 @@ ChaosAttackKit.cfg = {
 			id = 19, name = "Sunspear", words = "kah aur lanc", level = 160, mana = 115,
 			vocations = {"Ranger", "Deadeye", "Beastmaster"}, school = "distance", power = "distance", ctype = "holy",
 			pMin = 0.1235, pMax = 0.1976, mMin = 0, mMax = 0, bMin = 20, bMax = 40, scale = 1, shape = "single",
-			range = 7, shot = "holy_spear", fx = "holy_smite", vfx = "holy_hit"
+			range = 7, shot = "holy_spear", pshot = "proj_piercing_arrow_holy", fx = "holy_smite", vfx = "holy_hit"
 		},
 		arrowstorm = {
 			id = 22, name = "Arrowstorm", words = "drai sag vex", level = 220, mana = 85,
@@ -71,7 +71,7 @@ ChaosAttackKit.cfg = {
 			id = 56, name = "Razor Rain", words = "drai shur vex", level = 130, mana = 75,
 			vocations = {"Thief", "Ninja", "Samurai"}, school = "shuriken", power = "shuriken", ctype = "physical",
 			pMin = 0.0655, pMax = 0.1048, mMin = 0, mMax = 0, bMin = 20, bMax = 40, scale = 1, shape = "circle",
-			range = 5, radius = 2, shot = "razor_disc", fx = "crit_burst", hitFx = "CONST_ME_DRAWBLOOD"
+			range = 5, radius = 2, shot = "razor_disc", pshotBy = {Samurai = "proj_razor_leaf_sakura"}, fx = "crit_burst", hitFx = "CONST_ME_DRAWBLOOD"
 		},
 		venomspiral = {
 			id = 57, name = "Venom Spiral", words = "kah shur putr", level = 150, mana = 85,
@@ -131,7 +131,7 @@ ChaosAttackKit.cfg = {
 			id = 106, name = "Marrow Bolt", words = "kah oss sag", level = 70, mana = 135,
 			vocations = {"Necromancer", "Lich", "Bone Lord"}, school = "necro", power = "magic", ctype = "death",
 			pMin = 0, pMax = 0, mMin = 5.915, mMax = 9.464, bMin = 20, bMax = 40, scale = 1, shape = "single",
-			range = 7, shot = "skull_orb", fx = "necro_skull", hitFx = "CONST_ME_MORTAREA"
+			range = 7, shot = "skull_orb", pshot = "proj_blood_spike_necrotic", fx = "necro_skull", hitFx = "CONST_ME_MORTAREA"
 		},
 		wraithwind = {
 			id = 107, name = "Wraithwind", words = "drai nyx vael", level = 90, mana = 180,
@@ -149,13 +149,13 @@ ChaosAttackKit.cfg = {
 			id = 113, name = "Blightbrand", words = "kah putr brak", level = 135, mana = 310,
 			vocations = {"Necromancer", "Lich", "Bone Lord"}, school = "necro", power = "magic", ctype = "death",
 			pMin = 0, pMax = 0, mMin = 1.949, mMax = 3.118, bMin = 8, bMax = 16, scale = 1, shape = "dot", range = 7,
-			ticks = 6, tickMs = 1000, fx = "poison_flame", hitFx = "CONST_ME_SMALLCLOUDS"
+			ticks = 6, tickMs = 1000, pshot = "proj_venom_glob_necrotic", fx = "poison_flame", hitFx = "CONST_ME_SMALLCLOUDS"
 		},
 		soulrendbeam = {
 			id = 118, name = "Soulrend Beam", words = "kah nyx lanc", level = 170, mana = 270,
 			vocations = {"Necromancer", "Lich", "Bone Lord"}, school = "necro", power = "magic", ctype = "death",
 			pMin = 0, pMax = 0, mMin = 9.719, mMax = 15.55, bMin = 20, bMax = 40, scale = 1, shape = "line", range = 6,
-			length = 6, fx = "void_eye", vfx = "void_rift"
+			length = 6, pshot = "proj_flame_lance_spirit", fx = "void_eye", vfx = "void_rift"
 		},
 		cryptcollapse = {
 			id = 119, name = "Crypt Collapse", words = "drai gal oss", level = 210, mana = 415,

@@ -41,7 +41,7 @@ onCastSpell = ChaosCasting.spell({
 			end
 			local p = t:getPosition()
 			for i = 1, ARROWS do
-				ChaosSpell.shoot(Position(p.x + math.random(-3, 3), p.y - 3, p.z), p, "holy_arrow", CONST_ANI_HOLY)
+				ChaosSpell.pshoot(Position(p.x + math.random(-3, 3), p.y - 3, p.z), p, "proj_piercing_arrow_holy", nil, "holy_arrow", CONST_ANI_HOLY)
 				ChaosSpell.damageTarget(caster, t, COMBAT_HOLYDAMAGE, min, max, Fx("holy_smite", CONST_ME_HOLYDAMAGE))
 				if t:getHealth() <= 0 then
 					return false

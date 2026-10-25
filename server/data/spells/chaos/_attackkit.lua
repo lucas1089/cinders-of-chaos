@@ -133,7 +133,14 @@ end
 
 -- ---------------------------------------------------------------------------------------------- the effects
 local function shot(player, spec, toPos)
-	if spec.shot then
+	local pname = spec.pshot -- a pair 41 / 42 missile (O239), by class where pshotBy names the class
+	if spec.pshotBy then
+		local okVoc, voc = pcall(function() return player:getVocation():getName() end)
+		pname = okVoc and spec.pshotBy[voc] or pname
+	end
+	if pname then
+		ChaosSpell.pshoot(player:getPosition(), toPos, pname, spec.shot, spec.shot, const(SHOT_FALLBACK[spec.ctype], "CONST_ANI_ARROW"))
+	elseif spec.shot then
 		ChaosSpell.vshoot(player:getPosition(), toPos, spec.shot, spec.shot, const(SHOT_FALLBACK[spec.ctype], "CONST_ANI_ARROW"))
 	end
 end

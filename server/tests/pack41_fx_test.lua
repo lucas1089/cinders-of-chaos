@@ -198,26 +198,57 @@ for _, e in ipairs(got) do
 	end
 end
 
--- nothing sends the new names yet: no spell, script or monster file mentions them
-local function scan(dir)
-	local n = 0
+-- O239: which scripts send which names. Every name is sent by exactly the files listed (spells through
+-- ChaosSpell.pshoot, the bow's elemental extra projectile through chaos_archery_core.lua); the rest stay unsent.
+local SENT = {
+	proj_arrow_fire = {"chaos_archery_core.lua"},
+	proj_arrow_frost = {"chaos_archery_core.lua"},
+	proj_piercing_arrow_holy = {"attack_kit_config.lua", "holy_smite.lua", "judgement.lua", "sanctified_barrage.lua",
+		"twin_verdict.lua"},
+	proj_ball_lightning_thunder = {"chain_lightning.lua"},
+	proj_blood_spike_necrotic = {"attack_kit_config.lua"},
+	proj_boulder_magma = {"meteor_strike.lua"},
+	proj_flame_lance_spirit = {"attack_kit_config.lua"},
+	proj_razor_leaf_sakura = {"attack_kit_config.lua"},
+	proj_shadow_bolt_blood = {"life_siphon.lua"},
+	proj_soul_skull_spirit = {"raise_dead.lua"},
+	proj_spirit_wisp_arcane = {"mirror_mend.lua"},
+	proj_venom_glob_necrotic = {"attack_kit_config.lua"},
+	proj_void_orb_abyss = {"shadow_step.lua"},
+	proj_wind_blade_storm = {"iaijutsu.lua"},
+	-- unsent: no fitting spell (poison dart: the Beastmaster dart is earth and keeps its dart; spirit arrows: the
+	-- Skewering Line's blood spear has a store skin; water bolt: no water spell)
+	proj_poison_dart_necrotic = {}, proj_spirit_arrow_blood = {}, proj_spirit_arrow_gold = {}, proj_water_bolt_abyss = {}
+}
+local function scan(dir, into)
 	local h = io.popen("find " .. dir .. " -name '*.lua' -o -name '*.xml' 2>/dev/null")
 	if h then
 		for path in h:lines() do
 			local body = readFile(path) or ""
+			local base = path:match("([^/]+)$")
 			for _, e in ipairs(got) do
-				if body:find(e.name, 1, true) then
-					n = n + 1
-					print("sent by " .. path .. ": " .. e.name)
+				if body:find(e.name, 1, true) and not path:find("_ids.lua", 1, true) then
+					into[e.name] = into[e.name] or {}
+					into[e.name][#into[e.name] + 1] = base
 				end
 			end
 		end
 		h:close()
 	end
-	return n
 end
-eq(scan("data/scripts") + scan("data/spells") + scan("data/monster") + scan("data/XML"), 0,
-	"no script sends the new names yet")
+local sentBy = {}
+for _, d in ipairs({"data/scripts", "data/spells", "data/monster", "data/XML", "data/lib/chaos_archery_core.lua"}) do
+	scan(d, sentBy)
+end
+for _, e in ipairs(got) do
+	local have, want = sentBy[e.name] or {}, SENT[e.name]
+	ok(want ~= nil, e.name .. ": listed in the test's SENT table")
+	table.sort(have)
+	local w = {}
+	for i, v in ipairs(want or {}) do w[i] = v end
+	table.sort(w)
+	eq(table.concat(have, ","), table.concat(w, ","), e.name .. " is sent by the expected files")
+end
 
 -- the loader of pair 36 brings the ids in
 dofile("data/lib/chaos_pack27_fx.lua")

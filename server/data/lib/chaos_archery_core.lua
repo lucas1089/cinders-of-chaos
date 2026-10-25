@@ -313,8 +313,8 @@ end
 -- the hit (weapon_styles.lua): elemental share, critical strike, extra projectile
 -- ---------------------------------------------------------------------------------------------------------------
 A.ELEMENTS = {
-	{key = "arrowfire", combat = "COMBAT_FIREDAMAGE", missile = "CONST_ANI_FIRE", effect = "CONST_ME_HITBYFIRE"},
-	{key = "arrowice", combat = "COMBAT_ICEDAMAGE", missile = "CONST_ANI_SHIVERARROW", effect = "CONST_ME_ICEATTACK"},
+	{key = "arrowfire", combat = "COMBAT_FIREDAMAGE", missile = "CONST_ANI_FIRE", vmissile = "proj_arrow_fire", effect = "CONST_ME_HITBYFIRE"},
+	{key = "arrowice", combat = "COMBAT_ICEDAMAGE", missile = "CONST_ANI_SHIVERARROW", vmissile = "proj_arrow_frost", effect = "CONST_ME_ICEATTACK"},
 	{key = "arrowenergy", combat = "COMBAT_ENERGYDAMAGE", missile = "CONST_ANI_FLASHARROW", effect = "CONST_ME_ENERGYHIT"},
 	{key = "arrowearth", combat = "COMBAT_EARTHDAMAGE", missile = "CONST_ANI_EARTHARROW", effect = "CONST_ME_HITBYPOISON"}
 }
@@ -325,7 +325,7 @@ function A.elementOf(totals)
 	for _, e in ipairs(A.ELEMENTS) do
 		local v = num(totals and totals[e.key])
 		if v > 0 and (not best or v > best.pct) then
-			best = {key = e.key, pct = v, combat = e.combat, missile = e.missile, effect = e.effect}
+			best = {key = e.key, pct = v, combat = e.combat, missile = e.missile, vmissile = e.vmissile, effect = e.effect}
 		end
 	end
 	return best
