@@ -265,6 +265,18 @@ function M.longestSpellGap(levels, upTo)
 	return best
 end
 
+-- the longest stretch between two unlocks that starts in [from, to] (the first hour, O241): {gap, from, to}
+function M.earlyGap(levels, from, to)
+	local best = {0, 0, 0}
+	for i = 2, #levels do
+		local a, b = levels[i - 1], levels[i]
+		if a >= from and a <= to and b - a > best[1] then
+			best = {b - a, a, b}
+		end
+	end
+	return best
+end
+
 function M.load(opts)
 	opts = opts or {}
 	ChaosPaceCore = nil
@@ -308,13 +320,14 @@ if mode == "--spells" then
 	local lv = M.unlockLevels()
 	for voc in pairs(lv) do names[#names + 1] = voc end
 	table.sort(names)
-	print("| Class | Spells | Last unlock | Longest stretch without a new spell below level 300 | After the last unlock |")
-	print("|---|---|---|---|---|")
+	print("| Class | Spells | Last unlock | Longest stretch without a new spell in levels 8-30 | Longest stretch without a new spell below level 300 | After the last unlock |")
+	print("|---|---|---|---|---|---|")
 	for _, voc in ipairs(names) do
 		local g = M.longestSpellGap(lv[voc], 300)
 		local last = lv[voc][#lv[voc]]
-		print(string.format("| %s | %d | %d | %d levels (%d to %d) | %d levels to 2200 |", voc, #lv[voc], last, g[1], g[2], g[3],
-			2200 - last))
+		local e = M.earlyGap(lv[voc], 8, 30)
+		print(string.format("| %s | %d | %d | %d levels (%d to %d) | %d levels (%d to %d) | %d levels to 2200 |", voc, #lv[voc], last,
+			e[1], e[2], e[3], g[1], g[2], g[3], 2200 - last))
 	end
 	return
 end

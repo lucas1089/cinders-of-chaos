@@ -128,10 +128,10 @@ return {
 			pt = "Hora de melhorar a arma: as lojas da cidade vendem uma arma mais forte para a sua classe, e o Comprador de "
 				.. "Saque paga pelo que você achou. Economy > Item Finder mostra quem vende cada item. Caçadas do seu nível: %s."},
 		{key = "nextspells", level = 16,
-			en = "Your next class spells unlock around level 25 (a few classes at 20): Character > Spellbook lists every spell with its level. Until then, "
+			en = "Your class learns a new spell between levels 12 and 20, and more around level 25: Character > Spellbook lists every spell with its level. Meanwhile, "
 				.. "spend the passive points (levels 12, 16 and 20) and take a bounty: Adventure > Next Goals shows the next step.",
-			pt = "As próximas magias da sua classe se abrem por volta do nível 25 (algumas classes no 20): Personagem > Spellbook lista cada magia com o seu nível. "
-				.. "Até lá, gaste os pontos passivos (níveis 12, 16 e 20) e aceite uma recompensa: Adventure > Próximos objetivos mostra o próximo passo."}
+			pt = "Sua classe aprende uma nova magia entre os níveis 12 e 20, e mais por volta do nível 25: Personagem > Spellbook lista cada magia com o seu nível. "
+				.. "Enquanto isso, gaste os pontos passivos (níveis 12, 16 e 20) e aceite uma recompensa: Adventure > Próximos objetivos mostra o próximo passo."}
 	},
 
 	none = {en = "none near your temple yet, ask the Bestiary", pt = "nenhuma perto do seu templo ainda, consulte o Bestiário"}

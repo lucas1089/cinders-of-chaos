@@ -10,7 +10,7 @@ ChaosAutoRotationData = {
   classes = {
     [4] = { name = "Warrior", presets = {
       { level = 8, gap = 2.00, spells = { 61 }, creatures = { 1 } },
-      { level = 30, gap = 2.00, spells = { 220, 61 }, creatures = { 2, 1 } },
+      { level = 16, gap = 2.00, spells = { 220, 61 }, creatures = { 2, 1 } },
       { level = 60, gap = 2.00, spells = { 221, 220, 61 }, creatures = { 2, 2, 1 } },
       { level = 70, gap = 2.00, spells = { 221, 59, 61 }, creatures = { 2, 2, 1 } },
       { level = 90, gap = 2.00, spells = { 105, 221, 59, 61 }, creatures = { 2, 2, 2, 1 } },
@@ -26,7 +26,7 @@ ChaosAutoRotationData = {
     } },
     [8] = { name = "Juggernaut", presets = {
       { level = 8, gap = 2.00, spells = { 61 }, creatures = { 1 } },
-      { level = 30, gap = 2.00, spells = { 220, 61 }, creatures = { 2, 1 } },
+      { level = 16, gap = 2.00, spells = { 220, 61 }, creatures = { 2, 1 } },
       { level = 60, gap = 2.00, spells = { 221, 220, 61 }, creatures = { 2, 2, 1 } },
       { level = 70, gap = 2.00, spells = { 221, 59, 61 }, creatures = { 2, 2, 1 } },
       { level = 90, gap = 2.00, spells = { 105, 221, 59, 61 }, creatures = { 2, 2, 2, 1 } },
@@ -42,7 +42,7 @@ ChaosAutoRotationData = {
     } },
     [14] = { name = "Berserker", presets = {
       { level = 8, gap = 2.00, spells = { 61 }, creatures = { 1 } },
-      { level = 30, gap = 2.00, spells = { 220, 61 }, creatures = { 2, 1 } },
+      { level = 16, gap = 2.00, spells = { 220, 61 }, creatures = { 2, 1 } },
       { level = 60, gap = 2.00, spells = { 221, 220, 61 }, creatures = { 2, 2, 1 } },
       { level = 70, gap = 2.00, spells = { 221, 59, 61 }, creatures = { 2, 2, 1 } },
       { level = 90, gap = 2.00, spells = { 105, 221, 59, 61 }, creatures = { 2, 2, 2, 1 } },
@@ -59,7 +59,7 @@ ChaosAutoRotationData = {
     } },
     [3] = { name = "Ranger", presets = {
       { level = 8, gap = 2.00, spells = { 111 }, creatures = { 1 } },
-      { level = 30, gap = 2.00, spells = { 214, 111 }, creatures = { 1, 1 } },
+      { level = 12, gap = 2.00, spells = { 214, 111 }, creatures = { 1, 1 } },
       { level = 50, gap = 2.00, spells = { 124, 214, 111 }, creatures = { 2, 1, 1 } },
       { level = 60, gap = 2.00, spells = { 124, 215, 214, 111 }, creatures = { 2, 1, 1, 1 } },
       { level = 100, gap = 2.00, spells = { 216, 124, 215, 214, 111 }, creatures = { 2, 2, 1, 1, 1 } },
@@ -73,7 +73,7 @@ ChaosAutoRotationData = {
     } },
     [7] = { name = "Deadeye", presets = {
       { level = 8, gap = 2.00, spells = { 111 }, creatures = { 1 } },
-      { level = 30, gap = 2.00, spells = { 214, 111 }, creatures = { 1, 1 } },
+      { level = 12, gap = 2.00, spells = { 214, 111 }, creatures = { 1, 1 } },
       { level = 50, gap = 2.00, spells = { 124, 214, 111 }, creatures = { 2, 1, 1 } },
       { level = 60, gap = 2.00, spells = { 124, 215, 214, 111 }, creatures = { 2, 1, 1, 1 } },
       { level = 100, gap = 2.00, spells = { 216, 124, 215, 214, 111 }, creatures = { 2, 2, 1, 1, 1 } },
@@ -88,7 +88,7 @@ ChaosAutoRotationData = {
     } },
     [15] = { name = "Beastmaster", presets = {
       { level = 8, gap = 2.00, spells = { 111 }, creatures = { 1 } },
-      { level = 30, gap = 2.00, spells = { 214, 111 }, creatures = { 1, 1 } },
+      { level = 12, gap = 2.00, spells = { 214, 111 }, creatures = { 1, 1 } },
       { level = 50, gap = 2.00, spells = { 124, 214, 111 }, creatures = { 2, 1, 1 } },
       { level = 100, gap = 2.00, spells = { 216, 124, 214, 111 }, creatures = { 2, 2, 1, 1 } },
       { level = 110, gap = 2.00, spells = { 216, 124, 214, 249, 111 }, creatures = { 2, 2, 1, 1, 1 } },
@@ -103,10 +103,9 @@ ChaosAutoRotationData = {
     } },
     [1] = { name = "Mystic", presets = {
       { level = 8, gap = 2.00, spells = { 169 }, creatures = { 1 } },
-      { level = 20, gap = 2.00, spells = { 200, 169 }, creatures = { 2, 1 } },
-      { level = 25, gap = 2.00, spells = { 207, 200, 169 }, creatures = { 2, 2, 1 } },
-      { level = 30, gap = 2.00, spells = { 207, 200, 201, 169 }, creatures = { 2, 2, 1, 1 } },
-      { level = 40, gap = 2.00, spells = { 207, 85, 200, 201, 169 }, creatures = { 2, 2, 2, 1, 1 } },
+      { level = 16, gap = 2.00, spells = { 85, 200, 169 }, creatures = { 2, 2, 1 } },
+      { level = 25, gap = 2.00, spells = { 207, 85, 200, 169 }, creatures = { 2, 2, 2, 1 } },
+      { level = 30, gap = 2.00, spells = { 207, 85, 200, 201, 169 }, creatures = { 2, 2, 2, 1, 1 } },
       { level = 60, gap = 2.00, spells = { 207, 85, 53, 169 }, creatures = { 2, 2, 1, 1 } },
       { level = 150, gap = 2.00, spells = { 204, 210, 207, 228, 53 }, creatures = { 2, 2, 2, 1, 1 } },
       { level = 300, gap = 2.00, spells = { 204, 210, 207, 85, 228 }, creatures = { 2, 2, 2, 2, 1 } },
@@ -117,7 +116,7 @@ ChaosAutoRotationData = {
     } },
     [5] = { name = "Elementalist", presets = {
       { level = 8, gap = 2.00, spells = { 169 }, creatures = { 1 } },
-      { level = 20, gap = 2.00, spells = { 200, 169 }, creatures = { 2, 1 } },
+      { level = 16, gap = 2.00, spells = { 200, 169 }, creatures = { 2, 1 } },
       { level = 30, gap = 2.00, spells = { 200, 201, 169 }, creatures = { 2, 1, 1 } },
       { level = 38, gap = 2.00, spells = { 13, 200, 163, 201, 169 }, creatures = { 2, 2, 2, 1, 1 } },
       { level = 50, gap = 2.00, spells = { 13, 202, 200, 163, 201 }, creatures = { 2, 2, 2, 2, 1 } },
@@ -131,7 +130,7 @@ ChaosAutoRotationData = {
     } },
     [10] = { name = "Illusionist", presets = {
       { level = 8, gap = 2.00, spells = { 169 }, creatures = { 1 } },
-      { level = 40, gap = 2.00, spells = { 85, 169 }, creatures = { 2, 1 } },
+      { level = 16, gap = 2.00, spells = { 85, 169 }, creatures = { 2, 1 } },
       { level = 60, gap = 2.00, spells = { 85, 53, 169 }, creatures = { 2, 1, 1 } },
       { level = 110, gap = 3.00, spells = { 85, 228, 53 }, creatures = { 2, 1, 1 } },
       { level = 130, gap = 2.00, spells = { 85, 24, 228, 53, 169 }, creatures = { 2, 1, 1, 1, 1 } },
@@ -225,7 +224,7 @@ ChaosAutoRotationData = {
     } },
     [17] = { name = "Monk", presets = {
       { level = 8, gap = 2.00, spells = { 63 }, creatures = { 1 } },
-      { level = 30, gap = 2.00, spells = { 64, 63 }, creatures = { 1, 1 } },
+      { level = 16, gap = 2.00, spells = { 64, 63 }, creatures = { 1, 1 } },
       { level = 50, gap = 2.00, spells = { 65, 194, 64, 63 }, creatures = { 2, 2, 1, 1 } },
       { level = 70, gap = 2.00, spells = { 65, 194, 64, 82, 63 }, creatures = { 2, 2, 1, 1, 1 } },
       { level = 120, gap = 2.00, spells = { 65, 194, 64, 87, 82 }, creatures = { 2, 2, 1, 1, 1 } },
@@ -236,7 +235,7 @@ ChaosAutoRotationData = {
     } },
     [18] = { name = "Shadowfist", presets = {
       { level = 8, gap = 2.00, spells = { 63 }, creatures = { 1 } },
-      { level = 30, gap = 2.00, spells = { 64, 63 }, creatures = { 1, 1 } },
+      { level = 16, gap = 2.00, spells = { 64, 63 }, creatures = { 1, 1 } },
       { level = 50, gap = 2.00, spells = { 65, 194, 64, 63 }, creatures = { 2, 2, 1, 1 } },
       { level = 70, gap = 2.00, spells = { 65, 194, 64, 82, 63 }, creatures = { 2, 2, 1, 1, 1 } },
       { level = 100, gap = 2.00, spells = { 68, 65, 194, 64, 82 }, creatures = { 1, 2, 2, 1, 1 } },
@@ -248,7 +247,7 @@ ChaosAutoRotationData = {
     } },
     [19] = { name = "Iron Sage", presets = {
       { level = 8, gap = 2.00, spells = { 63 }, creatures = { 1 } },
-      { level = 30, gap = 2.00, spells = { 64, 63 }, creatures = { 1, 1 } },
+      { level = 16, gap = 2.00, spells = { 64, 63 }, creatures = { 1, 1 } },
       { level = 50, gap = 2.00, spells = { 65, 194, 64, 63 }, creatures = { 2, 2, 1, 1 } },
       { level = 70, gap = 2.00, spells = { 65, 194, 64, 82, 63 }, creatures = { 2, 2, 1, 1, 1 } },
       { level = 120, gap = 2.00, spells = { 65, 194, 71, 64, 82 }, creatures = { 2, 2, 1, 1, 1 } },
@@ -258,7 +257,7 @@ ChaosAutoRotationData = {
     } },
     [23] = { name = "Templar", presets = {
       { level = 8, gap = 2.00, spells = { 189 }, creatures = { 1 } },
-      { level = 40, gap = 2.00, spells = { 190, 189 }, creatures = { 2, 1 } },
+      { level = 16, gap = 2.00, spells = { 190, 189 }, creatures = { 2, 1 } },
       { level = 60, gap = 2.00, spells = { 190, 137, 189 }, creatures = { 2, 2, 1 } },
       { level = 80, gap = 2.00, spells = { 190, 137, 121, 189 }, creatures = { 2, 2, 1, 1 } },
       { level = 100, gap = 2.00, spells = { 190, 122, 137, 121, 189 }, creatures = { 2, 2, 2, 1, 1 } },
@@ -272,7 +271,7 @@ ChaosAutoRotationData = {
     } },
     [24] = { name = "Inquisitor", presets = {
       { level = 8, gap = 2.00, spells = { 189 }, creatures = { 1 } },
-      { level = 40, gap = 2.00, spells = { 190, 189 }, creatures = { 2, 1 } },
+      { level = 16, gap = 2.00, spells = { 190, 189 }, creatures = { 2, 1 } },
       { level = 80, gap = 2.00, spells = { 190, 121, 189 }, creatures = { 2, 1, 1 } },
       { level = 90, gap = 2.00, spells = { 190, 138, 121, 189 }, creatures = { 2, 1, 1, 1 } },
       { level = 100, gap = 2.00, spells = { 198, 190, 138, 121, 189 }, creatures = { 1, 2, 1, 1, 1 } },
@@ -285,7 +284,7 @@ ChaosAutoRotationData = {
     } },
     [25] = { name = "Sentinel", presets = {
       { level = 8, gap = 2.00, spells = { 189 }, creatures = { 1 } },
-      { level = 40, gap = 2.00, spells = { 190, 189 }, creatures = { 2, 1 } },
+      { level = 16, gap = 2.00, spells = { 190, 189 }, creatures = { 2, 1 } },
       { level = 80, gap = 2.00, spells = { 190, 121, 189 }, creatures = { 2, 1, 1 } },
       { level = 100, gap = 2.00, spells = { 190, 122, 121, 189 }, creatures = { 2, 2, 1, 1 } },
       { level = 110, gap = 2.00, spells = { 190, 122, 140, 121, 189 }, creatures = { 2, 2, 1, 1, 1 } },

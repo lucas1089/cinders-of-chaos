@@ -55,7 +55,7 @@ All have `groupcooldown=2000`, `needlearn=0` (everyone of the vocation and level
 | id | Name | Words | Vocations | Lvl | Mana | Cooldown | What it does |
 |---|---|---|---|---|---|---|---|
 | **sorcerer** | | | | | | | |
-| 200 | Rime Bloom | `drai hyr rhim` | M, E | 20 | 120 | 4s | Ice burst (7x7 circle) around you; hit enemies are slowed 40% for 4s. |
+| 200 | Rime Bloom | `drai hyr rhim` | M, E | 16 | 120 | 4s | Ice burst (7x7 circle) around you; hit enemies are slowed 40% for 4s. |
 | 201 | Witchfire Bolt | `kah pyr vesh` | M, E | 30 | 70 | 7s | Fire bolt at one target that also leaves it burning (4 ticks). |
 | 202 | Forked Storm | `kah zhul zarn` | M, E | 50 | 200 | 7s | Energy bolt that jumps to up to 3 more monsters within 3 sqm (full damage on every jump since 2026-10-20; was 70% per jump). |
 | 203 | Crimson Covenant | `tor nyx cruor` | M, E | 90 | 50 | 30s | Sacrifice 15% max health: restore 1.5x that as mana and +15% magic level for 12s. |
@@ -71,7 +71,7 @@ All have `groupcooldown=2000`, `needlearn=0` (everyone of the vocation and level
 | 212 | Verdant Sanctuary | `saen gal vas vert` | I | 180 | 600 | 30s | Healing zone on your tile: 8 pulses (1/s) heal allies within 3 sqm. |
 | 213 | Primordial Squall | `drai gal vas stoma` | I | 250 | 1200 | 7s | **Cast time 1.5 s.** Three waves (earth, ice, earth) over an 11x11 circle; the ice wave slows 50%. |
 | **paladin** | | | | | | | |
-| 214 | Dawnpiercer | `kah sol aurr` | R, D, BM | 30 | 50 | 6s | Holy bolt at one target, the paladin filler; scales mainly with distance skill. |
+| 214 | Dawnpiercer | `kah sol aurr` | R, D, BM | 12 | 50 | 6s | Holy bolt at one target, the paladin filler; scales mainly with distance skill. |
 | 215 | Skewering Line | `kah sag lanc` | R, D, BM | 60 | 150 | 8s | 7 sqm line of spears in your facing direction; every target takes a Dawnpiercer hit since 2026-10-20 (distance skill x attack 0.042-0.065, magic level 1.0-1.6; was 0.0195-0.0325, no magic level). |
 | 216 | Blessed Earth | `drai vas sol hal` | R, D, BM | 100 | 350 | 9s | Consecrates your tile for 6s: holy damage to enemies within 2 sqm each second, allies are healed half as much. |
 | 217 | Lightward | `tor sol ghar` | R, D, BM | 140 | 300 | 30s | Cleanses harmful conditions (incl. paralyze) and gives 8s of strong health/mana regeneration. |
@@ -80,7 +80,7 @@ All have `groupcooldown=2000`, `needlearn=0` (everyone of the vocation and level
 | 135 | Tautstring | `vyr sag` | R, D, BM | 60 | 300 | 30s | +25% distance skill for 12s; nothing else (no slow, no lock). In place of the stock Hawkeye, retired 2026-10-20 ("Tautstring" below). |
 | 134 | Wildstride | `ruan vert` | R, D, BM | 55 | 150 | 30s | +50% speed (0.5 x speed - 40, own sub id: adds to Haste) for 12s; no pacify, no lock. In place of the stock Windrunner, retired 2026-10-20 ("Ironhold and Wildstride" below). |
 | **knight** | | | | | | | |
-| 220 | Reaping Gyre | `kah spir` | W, J, B | 30 | 30 | 6s | Three spinning strikes (0/0.4/0.8s) against adjacent enemies; uses weapon attack and skill. |
+| 220 | Reaping Gyre | `kah spir` | W, J, B | 16 | 30 | 6s | Three spinning strikes (0/0.4/0.8s) against adjacent enemies; uses weapon attack and skill. |
 | 221 | Earthbreaker | `kah grund krak` | W, J, B | 60 | 50 | 7s | Shockwave (5x5) with physical damage; staggers enemies (60% slow, 3s). |
 | 222 | Red Frenzy | `vyr ira cruor` | W, J, B | 100 | 300 | 40s | +30% melee skill, -30% shield skill for 12s. |
 | 132 | Ironhold | `tor brak` | W, J, B | 55 | 200 | 30s | +40% shielding for 12s; no pacify, no lock. In place of the stock Bulwark, retired 2026-10-20 ("Ironhold and Wildstride" below). |
@@ -136,7 +136,7 @@ All have `groupcooldown=2000`, `needlearn=0` (everyone of the vocation and level
 | 197 | Bone Shrapnel | `drai oss krak` | N | 60 | 100 | 4s | The Necromancer only (range 7): a Bone Spear's hit on the target, every monster within 1 sqm of it 2.5x that (2026-10-15, `_packtools.lua`). |
 | **monk** (Mo Monk, SF Shadowfist, IS Iron Sage; finishers need 1 chi and spend all, "5 chi" values; rotations measured, see "Monk line") | | | | | | | |
 | 63 | Ashen Fist | `kah dhun` | Mo, SF, IS | 8 | 15 | 2s | Quick strike at the target next to you; +2 chi. The builder. |
-| 64 | Sundering Palm | `kah gal dhun` | Mo, SF, IS | 30 | 50 | 11s | Finisher: heavy palm strike, x(0.30 + 0.14 per chi). |
+| 64 | Sundering Palm | `kah gal dhun` | Mo, SF, IS | 16 | 50 | 11s | Finisher: heavy palm strike, x(0.30 + 0.14 per chi). |
 | 65 | Whirling Heel | `drai spir dhun` | Mo, SF, IS | 50 | 80 | 9s | Finisher: spinning kick on everything next to you (3x3), x chi scale. |
 | 66 | Kindled Breath | `saen qhal` | Mo, SF, IS | 40 | 100 | 8s | Finisher: heals yourself (level x 2 + fist x 6) x chi scale. Iron Sage (the second healer): the most hurt party member within 5 sqm (you without a party) for fist x 33 x chi scale, and 60% more over 6 s. |
 | 67 | Mistborne Step | `ash qhal` | Mo, SF, IS | 35 | 60 | 10s | Roll up to 3 sqm forward; +25% dodge for 2 s. |
@@ -150,7 +150,7 @@ All have `groupcooldown=2000`, `needlearn=0` (everyone of the vocation and level
 | 196 | Iron Chain | `kah brak vinc` | IS | 150 | 300 | 6s | An Ashen Fist on the target (range 4, +2 chi) that links on to 4 more monsters, each within 2 sqm of the last, for 2x that. |
 | **templar** (T Templar, I Inquisitor, Se Sentinel; P = weapon power, see "Templar line"; rotations measured there) | | | | | | | |
 | 189 | Radiant Smite | `kah sol dyr` | T, I, Se | 8 | 15 | 2s | Holy strike on one target within 3 sqm: (P x 0.10-0.16 + ml x 1-1.5 + 30-60) x the class scale (Templar 0.56, Inquisitor 0.69, below level 120 0.55, Sentinel 0.56). The filler. Cooldown 4 s and no scale until the rotation pass ("Rotations"). |
-| 190 | Consecration | `drai sol haln` | T, I, Se | 40 | 160 | 12s | Holy ground (circle 2) for 6 pulses: P x 0.025-0.04 + ml x 0.4-0.6 + 10-20 per pulse; allies in it healed 30% of a pulse. |
+| 190 | Consecration | `drai sol haln` | T, I, Se | 16 | 160 | 12s | Holy ground (circle 2) for 6 pulses: P x 0.025-0.04 + ml x 0.4-0.6 + 10-20 per pulse; allies in it healed 30% of a pulse. |
 | 191 | Vow of Mending | `saen tor fidh` | T, I, Se | 30 | 150 | 8s | Self heal: 8% max health + level/5 + ml x 4 (±10%). |
 | 198 | Judgement | `kah sol vehm` | I | 100 | 250 | 4s | Holy strike (range 5): P x 0.08-0.12 + ml x 1-1.5 + 20-40; the target takes +20% holy damage from everyone for 8 s. |
 | 199 | Purging Nova | `drai gal sol orr` | I | 120 | 350 | 6s | Holy circle of 3 sqm: P x 0.08-0.13 + ml x 1-1.5 + 20-40; heals 10% of the damage, at most 5% max health. |
@@ -161,7 +161,7 @@ All have `groupcooldown=2000`, `needlearn=0` (everyone of the vocation and level
 | 137 | Sanctified Ground | `drai sol sanct` | T | 60 | 160 | 4s | The Templar only: 3 holy pulses a second apart within 2 sqm of the cast tile; the Templar's target takes a third of a Radiant Smite a pulse, every other creature 2.5x that (players the plain hit, the PvP rules; 2026-10-15, `_packtools.lua`). |
 | 170 | Shield Wave | `drai sol aeg` | Se | 150 | 250 | 4s | A Radiant Smite of the Sentinel on the target (range 3) and a wave of holy force through the 3 x 3 tiles in front for 2x that (players the plain hit). |
 | **build archetypes, second round** (2026-10-12; docs/BUILDS.md "Snares", "Vigils"; server/README.md "Snares", "Vigils"; Rl = the Ranger line R, D, BM; Tl = the Thief line T, N, S; all = every class) | | | | | | | |
-| 99 | Snare Trap | `drai snar ["element"]` | Rl, Tl | 40 | 90 | 4s | A trap thrown up to 4 sqm (the target or ahead), armed after 0.6 s; a monster within 1 sqm sets it off: up to 8 enemies within 2 sqm take level x 0.4 + power x 0.09-0.135 + 20-40 (power: the best of bow, blade and shuriken). The element (fire, ice, energy, earth, death, holy, physical) is spoken, remembered, or the spell's brand rune. 3 at once, 20 s. |
+| 99 | Snare Trap | `drai snar ["element"]` | Rl, Tl | 16 | 90 | 4s | A trap thrown up to 4 sqm (the target or ahead), armed after 0.6 s; a monster within 1 sqm sets it off: up to 8 enemies within 2 sqm take level x 0.4 + power x 0.09-0.135 + 20-40 (power: the best of bow, blade and shuriken). The element (fire, ice, energy, earth, death, holy, physical) is spoken, remembered, or the spell's brand rune. 3 at once, 20 s. |
 | 100 | Seeker Mine | `kah snar ["element"]` | Rl, Tl | 60 | 110 | 6s | A mine thrown the same way, armed after 0.8 s, bursts for 1.15 x a trap at Detonate Mines or its 8 s fuse. 5 at once. |
 | 104 | Detonate Mines | `vok snar` | Rl, Tl | 60 | 20 | 1s | Every armed mine of yours goes off, 0.1 s apart (support group, no attack cooldown). |
 | 179 | Vigil of Wrath | `vigh vyr` | all | 60 | 0 | 2s | Switches the vigil: 35% of the maximum mana reserved; you and party members within 5 sqm deal +5%. |
@@ -3330,8 +3330,8 @@ spells keep their base numbers, all flat). "all" = the whole line; the mana is t
 |  | Town Portal | support | 1 | 1 s | 0 | all |
 |  | Battle Salve | healing | 8 | 1 s | 40 | all |
 |  | Bonebreaker | attack | 8 | 2 s | 10 | all |
+|  | Reaping Gyre | attack | 16 | 6 s | 30 | all |
 |  | Hunter's Instinct | support | 25 | 10 s | 40 | all |
-|  | Reaping Gyre | attack | 30 | 6 s | 30 | all |
 |  | Flickerdash | support | 35 | 6 s | 80 | all |
 |  | Vigil of Clarity | support | 40 | 2 s | 0 | all |
 |  | Vigil of Haste | support | 40 | 2 s | 0 | all |
@@ -3357,11 +3357,11 @@ spells keep their base numbers, all flat). "all" = the whole line; the mana is t
 | Ranger line | Town Portal | support | 1 | 1 s | 0 | all |
 |  | Minor Mending | healing | 8 | 1 s | 20 | all |
 |  | Phantom Javelin | attack | 8 | 2 s | 20 | all |
+|  | Dawnpiercer | attack | 12 | 6 s | 50 | all |
+|  | Snare Trap | attack | 16 | 4 s | 90 | all |
 |  | Hunter's Instinct | support | 25 | 10 s | 40 | all |
-|  | Dawnpiercer | attack | 30 | 6 s | 50 | all |
 |  | Dawn's Mending | healing | 35 | 1 s | 160 | all |
 |  | Flickerdash | support | 35 | 6 s | 80 | all |
-|  | Snare Trap | attack | 40 | 4 s | 90 | all |
 |  | Vigil of Clarity | support | 40 | 2 s | 0 | all |
 |  | Vigil of Haste | support | 40 | 2 s | 0 | all |
 |  | Sanctum Burst | attack | 50 | 8 s | 160 | all |
@@ -3385,7 +3385,8 @@ spells keep their base numbers, all flat). "all" = the whole line; the mana is t
 | Mystic line | Town Portal | support | 1 | 1 s | 0 | all |
 |  | Kindling Spark | attack | 8 | 2 s | 6 | all |
 |  | Minor Mending | healing | 8 | 1 s | 20 | all |
-|  | Rime Bloom | attack | 20 | 4 s | 120 | Mystic, Elementalist |
+|  | Rime Bloom | attack | 16 | 4 s | 120 | Mystic, Elementalist |
+|  | Arcane Ripple | attack | 16 | 4 s | 175 | Mystic, Illusionist |
 |  | Blightswarm | attack | 25 | 6 s | 110 | Mystic |
 |  | Hunter's Instinct | support | 25 | 10 s | 40 | all |
 |  | Grand Mending | healing | 30 | 1 s | 160 | Mystic, Elementalist |
@@ -3393,7 +3394,6 @@ spells keep their base numbers, all flat). "all" = the whole line; the mana is t
 |  | Flickerdash | support | 35 | 6 s | 80 | all |
 |  | Pyre Torrent | attack | 38 | 4 s | 120 | Elementalist |
 |  | Tempest Fan | attack | 38 | 12 s | 170 | Elementalist |
-|  | Arcane Ripple | attack | 40 | 4 s | 175 | Mystic, Illusionist |
 |  | Hall of Mirrors | support | 40 | 30 s | 250 | Illusionist |
 |  | Purifying Wellspring | healing | 40 | 6 s | 160 | Mystic, Illusionist |
 |  | Vigil of Clarity | support | 40 | 2 s | 0 | all |
@@ -3423,11 +3423,11 @@ spells keep their base numbers, all flat). "all" = the whole line; the mana is t
 |  | Glacial Doom | attack | 420 | 20 s | 2200 | Elementalist |
 | Thief line | Town Portal | support | 1 | 1 s | 0 | all |
 |  | Shuriken Toss | attack | 8 | 2 s | 16 | all |
+|  | Snare Trap | attack | 16 | 4 s | 90 | all |
 |  | Hunter's Instinct | support | 25 | 10 s | 40 | all |
 |  | Shadow Mend | healing | 25 | 1.5 s | 40 | all |
 |  | Flickerdash | support | 35 | 6 s | 80 | all |
 |  | Shadow Veil | support | 40 | 20 s | 120 | all |
-|  | Snare Trap | attack | 40 | 4 s | 90 | all |
 |  | Vigil of Clarity | support | 40 | 2 s | 0 | all |
 |  | Vigil of Haste | support | 40 | 2 s | 0 | all |
 |  | Blade Flurry | attack | 50 | 10 s | 120 | all |
@@ -3475,8 +3475,8 @@ spells keep their base numbers, all flat). "all" = the whole line; the mana is t
 |  | Rebirth of Flesh | healing | 300 | 6 s | 260 | all |
 | Monk line | Town Portal | support | 1 | 1 s | 0 | all |
 |  | Ashen Fist | attack | 8 | 2 s | 15 | all |
+|  | Sundering Palm | attack | 16 | 12 s | 50 | all |
 |  | Hunter's Instinct | support | 25 | 10 s | 40 | all |
-|  | Sundering Palm | attack | 30 | 12 s | 50 | all |
 |  | Flickerdash | support | 35 | 6 s | 80 | all |
 |  | Mistborne Step | support | 35 | 10 s | 60 | all |
 |  | Kindled Breath | healing | 40 | 8 s | 100 | all |
@@ -3497,10 +3497,10 @@ spells keep their base numbers, all flat). "all" = the whole line; the mana is t
 |  | Shadowfist Flurry | attack | 150 | 14 s | 300 | Shadowfist |
 | Templar line | Town Portal | support | 1 | 1 s | 0 | all |
 |  | Radiant Smite | attack | 8 | 2 s | 15 | all |
+|  | Consecration | attack | 16 | 6 s | 160 | all |
 |  | Hunter's Instinct | support | 25 | 10 s | 40 | all |
 |  | Vow of Mending | healing | 30 | 8 s | 150 | all |
 |  | Flickerdash | support | 35 | 6 s | 80 | all |
-|  | Consecration | attack | 40 | 6 s | 160 | all |
 |  | Vigil of Clarity | support | 40 | 2 s | 0 | all |
 |  | Vigil of Haste | support | 40 | 2 s | 0 | all |
 |  | Banner Call | support | 60 | 35 s | 250 | all |
