@@ -10,9 +10,15 @@
 --   soft shadow    Creature.setSoftShadow (base patch 0126) draws the ellipse under creatures.
 --   grade          the map shader chaos_map_grade (vignette, a light grade) set on the game map panel; costs one extra texture
 --                  read per pixel of the map picture.
+--   area mood      the grade of the map changes by area (O234, base patch 0153): game_chaosweather hands the mood name of the
+--                  server message (field `m`) to setMood() below; grademood_logic.lua has the presets and the 2 s ease, this file
+--                  sends the five values to g_shaders.setMapGrade from one 33 ms timer that runs only while they move. It follows
+--                  the option screenGrade (no grade, no mood); nothing runs per frame.
 --   spell light    a magic effect that plays lights the tiles around it for ~320 ms in a colour that matches it (O205, base patch
 --                  0127): this file sends the colour table and the limits to g_map.setSpellLight*, the engine keeps at most 12
 --                  live lights and adds them to the map light view (nothing shows in full light).
+--                  The same option makes the fire, energy, holy and arcane effects glow (O233, base patch 0152): they are drawn
+--                  with an additive blend, in one batch per floor; the id list comes from L.glowIds().
 --   weather        the rain game_chaosweather draws when the server says it rains (O208, base patch 0130): this file passes the
 --                  option on (modules.game_chaosweather.setEnabled); nothing is drawn here.
 --   ambient        slow embers, motes or dust over the game window by the mood of the place (O226, base patch 0144 has the
@@ -45,6 +51,7 @@
 -- A client without base patch 0126 has none of the C++ functions: the flash, shake and shadow do nothing, the grade (shader
 -- only) still works. Every engine call is guarded.
 local L = VisualFxLogic
+local GM = GradeMoodLogic
 
 local handlers = {}
 local flasher = L.newFlasher()
@@ -58,13 +65,15 @@ local function now()
   return g_clock.millis()
 end
 
-local function optionValue(name)
+-- read from the settings once per option and kept (O235); onOption below refreshes an entry, game start clears them all
+local optionCache = L.newOptionCache(function(name)
   local cs = modules.client_settings
-  if cs and cs.getOption then
-    local ok, value = pcall(cs.getOption, name)
-    if ok then return L.optionOn(name, value) end
-  end
-  return L.DEFAULTS[name] == true
+  if cs and cs.getOption then return pcall(cs.getOption, name) end
+  return false
+end)
+
+local function optionValue(name)
+  return optionCache.get(name)
 end
 
 local function mapPanel()
@@ -123,6 +132,7 @@ end
 
 -- ---------------------------------------------------------------- spell colour light
 local lightTableSent = false
+local glowIdsSent = false
 
 local function applySpellLight()
   if not (g_map and g_map.setSpellLightConfig) then return end
@@ -137,6 +147,15 @@ local function applySpellLight()
   end
   local A = L.LIGHT
   pcall(g_map.setSpellLightConfig, on, A.max, A.ms, A.attack, A.minGap, A.minFade)
+  -- glowing spell effects (O233, base patch 0152) ride on the same option
+  if g_map.setGlowEffects then
+    if on and not glowIdsSent and g_map.addGlowEffect then
+      if g_map.clearGlowEffects then pcall(g_map.clearGlowEffects) end
+      for _, id in ipairs(L.glowIds()) do pcall(g_map.addGlowEffect, id) end
+      glowIdsSent = true
+    end
+    pcall(g_map.setGlowEffects, on)
+  end
 end
 
 -- ---------------------------------------------------------------- living water and lava
@@ -480,6 +499,51 @@ local function createGrade()
   if not ok then g_logger.warning('[visualfx] ' .. GRADE .. ': ' .. tostring(err)) end
 end
 
+-- ---------------------------------------------------------------- area mood (O234)
+local mood = { state = GM.new(), shown = nil, event = nil }
+
+local function moodStop()
+  if mood.event then removeEvent(mood.event); mood.event = nil end
+end
+
+-- the five values to the engine, only when one moved at its resolution; a client without base patch 0153 has no call
+local function moodSend(vals)
+  if not (g_shaders and g_shaders.setMapGrade) then return end
+  if not GM.differ(mood.shown, vals) then return end
+  mood.shown = vals
+  pcall(g_shaders.setMapGrade, vals.r, vals.g, vals.b, vals.sat, vals.con)
+end
+
+local function moodStep()
+  local t = now()
+  moodSend(GM.values(mood.state, t))
+  if GM.settled(mood.state, t) then moodStop() end
+end
+
+-- the plain grade at once (game start and end, the option off, the module unloaded)
+local function moodClear()
+  moodStop()
+  GM.snap(mood.state, now(), nil)
+  moodSend(GM.neutral())
+end
+
+-- from game_chaosweather on every weather message: the mood name of the area the player is in, or nil for none. With the
+-- grade off only the name is kept (the option switched on shows it at once, see applyGrade).
+function setMood(name)
+  if optionValue('screenGrade') then
+    if GM.setKind(mood.state, now(), name) then
+      moodStep()
+      if not GM.settled(mood.state, now()) and not mood.event then mood.event = cycleEvent(moodStep, GM.STEP_MS) end
+    end
+  else
+    GM.snap(mood.state, now(), name)
+  end
+end
+
+function moodState()
+  return { kind = mood.state.kind, values = mood.shown, running = mood.event ~= nil }
+end
+
 -- sets or clears the grade on the game map; another map shader (the base's heat haze) is left alone
 local function applyGrade()
   local panel = mapPanel()
@@ -488,13 +552,19 @@ local function applyGrade()
   if optionValue('screenGrade') then
     createGrade()
     if current == '' then panel:setShader(GRADE) end
-  elseif current == GRADE then
-    panel:setShader('')
+    moodStop()
+    GM.snap(mood.state, now(), mood.state.kind)
+    moodSend(GM.values(mood.state, now()))
+  else
+    if current == GRADE then panel:setShader('') end
+    moodStop()
+    moodSend(GM.neutral())
   end
 end
 
 -- from the options' apply (client_settings dataset.lua) and after the base's enableShaders clears the map shader
 function onOption(name, value)
+  optionCache.set(name, value)
   if name == 'creatureShadow' then
     applyShadow()
   elseif name == 'screenGrade' then
@@ -550,7 +620,9 @@ end
 
 -- ---------------------------------------------------------------- lifecycle
 local function onGameStart()
+  optionCache.clear()
   flasher = L.newFlasher()
+  moodClear()
   stopShake()
   sceneFadeStart()
   hl.target = g_game.getAttackingCreature and g_game.getAttackingCreature() or nil
@@ -559,6 +631,7 @@ local function onGameStart()
 end
 
 local function onGameEnd()
+  moodClear()
   stopShake()
   sceneFadeEnd()
   outlineClearAll()
@@ -590,12 +663,14 @@ function terminate()
   if handlers.game then disconnect(g_game, handlers.game) end
   if handlers.map then disconnect(g_map, handlers.map) end
   stopShake()
+  moodClear()
   sceneFadeEnd()
   if sf.hooked then pcall(disconnect, LocalPlayer, sfHooks); sf.hooked = false end
   outlineClearAll()
   unhookMouse()
   if Creature and Creature.setSoftShadow then pcall(Creature.setSoftShadow, false) end
   if g_map and g_map.setSpellLightConfig then pcall(g_map.setSpellLightConfig, false, 0, 0, 0, 0, 0) end
+  if g_map and g_map.setGlowEffects then pcall(g_map.setGlowEffects, false) end
   if g_map and g_map.setLightFlicker then pcall(g_map.setLightFlicker, false) end
   if Item and Item.setLiquidShimmer then pcall(Item.setLiquidShimmer, false) end
   if g_app and g_app.setMapBloom then pcall(g_app.setMapBloom, false, 0) end

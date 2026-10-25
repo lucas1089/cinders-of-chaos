@@ -119,6 +119,29 @@ function L.imageRect(ox, oy, w, h)
   return { x = ox - L.TILE, y = oy - L.TILE, width = w + L.TILE, height = h + L.TILE }
 end
 
+-- O235: what was last handed to every widget, so a tick calls setImageRect / setOpacity only for a value that changed (the
+-- scroll of the rain moves the rectangle every tick, but a steady opacity and a still window do not need a call each time).
+-- rect(name, r) and opacity(name, o) return true when the value differs from the last one given for that name (and remember
+-- it); forget(name) / reset() when the widget was hidden or remade, so the next value always goes through.
+function L.newPaint()
+  local rects, ops = {}, {}
+  local P = {}
+  function P.rect(name, r)
+    local l = rects[name]
+    if l and l.x == r.x and l.y == r.y and l.width == r.width and l.height == r.height then return false end
+    rects[name] = { x = r.x, y = r.y, width = r.width, height = r.height }
+    return true
+  end
+  function P.opacity(name, o)
+    if ops[name] == o then return false end
+    ops[name] = o
+    return true
+  end
+  function P.forget(name) rects[name], ops[name] = nil, nil end
+  function P.reset() rects, ops = {}, {} end
+  return P
+end
+
 -- the most textured rectangles the layers draw on a w x h game window: the cap of the drawing
 function L.maxQuads(w, h)
   local per = (math.ceil((w + L.TILE) / L.TILE) + 1) * (math.ceil((h + L.TILE) / L.TILE) + 1)

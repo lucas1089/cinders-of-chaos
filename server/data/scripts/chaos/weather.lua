@@ -3,7 +3,8 @@
 -- which sent a map effect to every player every 100 ms. Here the server only decides the weather (weather_core.lua: the
 -- base's dice, the areas of weather_config.lua) and sends a player one small JSON message
 --     set {k = "rain", i = 1..3, f = fadeMs}   or   set {k = "none", f = fadeMs}
--- (plus a = "embers" | "dust" | "motes" in a region with an ambient mood, O226; a player outside every region gets the old
+-- (plus a = "embers" | "dust" | "motes" in a region with an ambient mood, O226, and m = "ice" | "swamp" | "desert" | "fire" |
+-- "crypt" in a region with a colour mood, O234; a player outside every region gets the old
 -- message exactly) when the player logs in, asks (client -> server `hello`), crosses into or out of a weather area, or the weather changes. A
 -- GlobalEvent looks at the players every tickMs (3 s). The client draws the rain itself.
 -- Staff: /weather rain [1-3] | clear | info | ambient. Lua 5.1 / LuaJIT compatible.
@@ -131,7 +132,7 @@ function talk.onSay(player, words, param)
 	local cmd, arg = tostring(param or ""):match("^%s*(%S*)%s*(.-)%s*$")
 	local s = W.state
 	if cmd == "ambient" then
-		player:sendTextMessage(MESSAGE_INFO_DESCR, "Ambient here: " .. tostring(W.ambientAt(cfg(), player:getPosition()) or "none") .. ".")
+		player:sendTextMessage(MESSAGE_INFO_DESCR, "Ambient here: " .. tostring(W.ambientAt(cfg(), player:getPosition()) or "none") .. ". Colour mood: " .. tostring(W.moodAt(cfg(), player:getPosition()) or "none") .. ".")
 		return false
 	end
 	if cmd == "rain" then

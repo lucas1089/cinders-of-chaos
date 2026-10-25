@@ -393,6 +393,124 @@ do
   eq(src:find('L.ARC_MISSILES', 1, true) ~= nil, true, 'the arc list is sent')
 end
 
+do -- O235: option values are read once and refreshed by the options' apply
+  local reads, store, up = 0, { hitFlash = false, bloom = true }, true
+  local C = L.newOptionCache(function(name)
+    reads = reads + 1
+    if not up then return false end
+    return true, store[name]
+  end)
+  eq(C.get('hitFlash'), false, 'cache: stored false')
+  eq(C.get('hitFlash'), false, 'cache: second read')
+  eq(C.get('bloom'), true, 'cache: stored true')
+  eq(reads, 2, 'cache: one settings read per option')
+  for _ = 1, 50 do C.get('hitFlash'); C.get('bloom') end
+  eq(reads, 2, 'cache: hits do not read the settings')
+  C.set('hitFlash', true)
+  eq(C.get('hitFlash'), true, 'cache: set by the option change')
+  C.set('bloom', 'junk')
+  eq(C.get('bloom'), false, 'cache: junk is the default (bloom off)')
+  eq(reads, 2, 'cache: set does not read')
+  store.screenGrade = nil
+  eq(C.get('screenGrade'), false, 'cache: nil screenGrade is the default, off')
+  eq(C.get('sceneFade'), true, 'cache: nil sceneFade is the default, on')
+  C.clear()
+  store.hitFlash = false
+  eq(C.get('hitFlash'), false, 'cache: clear reads again')
+  up = false
+  local C2 = L.newOptionCache(function() return false end)
+  eq(C2.get('hoverOutline'), false, 'cache: no settings, default off')
+  eq(C2.get('deathFade'), true, 'cache: no settings, default on')
+  up = true
+  local seen = 0
+  local C3 = L.newOptionCache(function() seen = seen + 1; return seen > 1, true end)
+  eq(C3.get('bloom'), false, 'cache: settings not ready, default')
+  eq(C3.get('bloom'), true, 'cache: a failed read is not kept')
+  local f = io.open(dir .. 'visualfx.lua', 'r')
+  local src = f and f:read('*a') or ''
+  if f then f:close() end
+  eq(src:find('optionCache.set(name, value)', 1, true) ~= nil, true, 'onOption refreshes the cache')
+  eq(src:find('optionCache.clear()', 1, true) ~= nil, true, 'game start clears the cache')
+  local _, direct = src:gsub('pcall%(cs%.getOption', '')
+  eq(direct, 1, 'getOption is called in one place only')
+end
+
+do -- O235: DEFAULTS match the value of each option in the base patches' dataset.lua entries (so a checkbox that shows a missing value matches)
+  local root = dir .. '../../../base-patches/'
+  local want = {}
+  for _, n in ipairs(L.OPTIONS) do want[n] = true end
+  local found = 0
+  local ok = io.open(root .. '0126-visual-effects.patch', 'r')
+  if ok then
+    ok:close()
+    for _, pf in ipairs({ '0126-visual-effects', '0127-spell-light', '0128-living-liquids', '0130-weather-option', '0132-map-bloom',
+      '0134-soft-damage-numbers', '0136-target-outline-options', '0138-scene-fade-option', '0139-death-fade',
+      '0144-ambient-particles-option', '0146-smooth-bars', '0147-missile-trails', '0149-light-flicker' }) do
+      local h = io.open(root .. pf .. '.patch', 'r')
+      local text = h and h:read('*a') or ''
+      if h then h:close() end
+      for name, val in text:gmatch('\n%+  (%w+) = {\n%+    value = (%a+),') do
+        if want[name] then
+          found = found + 1
+          eq(L.DEFAULTS[name], val == 'true', 'DEFAULTS.' .. name .. ' matches the dataset value')
+        end
+      end
+    end
+    eq(found, #L.OPTIONS, 'every visualfx option has a dataset default in the base patches')
+  end
+end
+
+do
+  -- glowing spell effects (O233, base patch 0152): bright themes glow, dark and soft ones do not, the list is sane and sent
+  local ids = L.glowIds()
+  eq(#ids > 40, true, 'a good number of effects glow: ' .. #ids)
+  local prev, seen = 0, {}
+  for _, id in ipairs(ids) do
+    eq(type(id) == 'number' and id > 0 and id < 65536, true, 'glow id ' .. tostring(id) .. ' is an effect id')
+    eq(id > prev, true, 'glow ids ascend and are unique at ' .. id)
+    prev = id
+    seen[id] = true
+    eq(L.glows(id), true, 'listed id glows ' .. id)
+    local theme = L.EFFECT_THEME[id]
+    eq(L.GLOW_THEMES[theme] == true, true, 'glow id ' .. id .. ' has a glowing theme, not ' .. tostring(theme))
+  end
+  for theme in pairs(L.GLOW_THEMES) do eq(L.THEME_COLOR[theme] ~= nil, true, 'glow theme ' .. theme .. ' exists') end
+  -- the dark, soft and solid themes keep the normal blend, whatever their ids
+  for _, theme in ipairs({ 'blood', 'water', 'poison', 'frost', 'physical', 'death', 'shadow', 'earth', 'healing' }) do
+    eq(L.GLOW_THEMES[theme], nil, theme .. ' is not a glow theme')
+  end
+  for id, theme in pairs(L.EFFECT_THEME) do
+    if not L.GLOW_THEMES[theme] then eq(seen[id], nil, 'effect ' .. id .. ' (' .. theme .. ') stays normal') end
+  end
+  -- named cases: fire hit 16, energy hit 12, holy rings 8, the energy range 384-387 glow; blood 1, water 2, poof 3,
+  -- block 4, death 18, poison 17, the explosion pair 5 and 6 (smoke) and the combat feedback range 415-423 do not
+  for _, id in ipairs({ 7, 8, 12, 16, 38, 384, 387, 403, 405, 372, 378 }) do eq(L.glows(id), true, 'effect ' .. id .. ' glows') end
+  for _, id in ipairs({ 1, 2, 3, 4, 5, 6, 9, 17, 18, 415, 416, 423, 628 }) do eq(L.glows(id), false, 'effect ' .. id .. ' stays normal') end
+  eq(L.glows(nil), false, 'nil does not glow')
+  eq(L.glows('x'), false, 'junk does not glow')
+  eq(L.glows(0), false, '0 does not glow')
+  eq(L.glows(-12), false, 'negative does not glow')
+  eq(L.glows(12.5), false, 'a fraction does not glow')
+  eq(L.glows(70000), false, 'over the engine bound does not glow')
+  eq(L.glows('12'), true, 'a numeric string is an id')
+  -- a skipped id of a glowing theme is the only way in and out of the list
+  for id in pairs(L.GLOW_SKIP) do
+    eq(L.EFFECT_THEME[id] ~= nil and L.GLOW_THEMES[L.EFFECT_THEME[id]] == true, true, 'skipped id ' .. id .. ' is of a glowing theme (else the skip is dead)')
+    eq(seen[id], nil, 'skipped id ' .. id .. ' is not listed')
+  end
+  -- wired: tied to the spell light option, sent once, switched off at terminate, no new option
+  eq(#L.OPTIONS, 17, 'still seventeen options (no new checkbox)')
+  local f = io.open(dir .. 'visualfx.lua', 'r')
+  local src = f and f:read('*a') or ''
+  if f then f:close() end
+  eq(src:find('g_map.setGlowEffects', 1, true) ~= nil, true, 'the engine switch is called')
+  eq(src:find('g_map.addGlowEffect', 1, true) ~= nil, true, 'the ids are sent')
+  eq(src:find('L.glowIds()', 1, true) ~= nil, true, 'the id list comes from the logic file')
+  local _, calls = src:gsub('setGlowEffects', '')
+  eq(calls >= 3, true, 'checked, called with the option and switched off at terminate')
+  eq(src:find("optionValue('glow", 1, true), nil, 'no option of its own')
+end
+
 if fails > 0 then
   print(fails .. ' of ' .. checks .. ' checks failed')
   os.exit(1)

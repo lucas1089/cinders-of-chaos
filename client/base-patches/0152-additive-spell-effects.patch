@@ -1,0 +1,292 @@
+# Chaos: additive spell effects (O233; client/BASE.md "69zs"; src/client/chaosglow.h (new, pure), map.h, tile.cpp, mapview.cpp,
+# luafunctions_client.cpp, src/framework/graphics/painter.h/.cpp, drawqueue.h/.cpp; after 0001-0150).
+# Magic effects (Effect, not missiles or creatures) of a bright theme are drawn added onto what is under them, so fire, energy,
+# holy and arcane hits brighten the map instead of covering it. Which ids: the Lua list L.glowIds() of game_visualfx
+# (visualfx_logic.lua, unit tested), sent once with g_map.addGlowEffect; smoke, blood, poison, water, frost, shadow, earth,
+# healing, combat feedback and every effect of no theme keep the normal blend.
+#  * Painter::CompositionMode_AddAlpha: glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE, GL_ZERO, GL_ONE), dst + src * alpha; the
+#    framebuffer alpha is kept, so the map picture's alpha does not fill up and soft sprite edges add little.
+#  * DrawQueueConditionGlow / DrawQueue::setGlow(start): the items queued since start are drawn inside that blend. A draw queue
+#    condition already makes DrawQueue::draw flush the draw cache before its start and before its end, so the range is one batch
+#    between two blend changes. The atlas bind inside the cache saves and restores the painter state (FrameBuffer::bind/release),
+#    so a sprite that enters the atlas in the middle of the range does not drop the blend.
+#  * Batching: Tile::drawTop does not queue a listed effect, it hands it to Map::deferGlowEffect (id, dest and offsets kept, at
+#    most 64 per floor; the 65th and later draw normal). MapView::drawFloor ends with one range: all held effects of the floor
+#    are queued after the missiles and setGlow wraps them. So a floor with glowing effects costs 2 cache flushes and 2 blend
+#    changes however many effects play, a floor with none costs nothing, and a frame with the usual one floor costs 2 and 2.
+#    Deferral is only on while drawFloor runs (beginGlowFloor/endGlowFloor), so a drawTop from elsewhere draws normally.
+#  * Tied to the existing option `spellLight` (no new option, no new text, the options panel is unchanged): game_visualfx calls
+#    g_map.setGlowEffects(on) with it. Unlike the spell light, the glow also shows in full daylight.
+#  * Lua binding: g_map.clearGlowEffects(), addGlowEffect(id), setGlowEffects(bool), isGlowEffects(). Off in the engine by
+#    default, so an engine without the module draws as before.
+# Cost: off, one bool test per drawn effect. On, per glowing effect the same textured rect as before plus one vector push; the
+# additive range overdraws like any effect. Not measured on a GPU.
+# Checked: applies after 0001-0150 on the base client tree (no fuzz); the touched .cpp files pass g++ -fsyntax-only; the header
+# passes client/tools/chaosglow_test.cpp. Not built, linked or run in a client.
+--- a/src/framework/graphics/painter.h
++++ b/src/framework/graphics/painter.h
+@@ -47,7 +47,8 @@
+         CompositionMode_AlphaZeroing,
+         CompositionMode_AlphaRestoring,
+         CompositionMode_ZeroAlphaOverrite,
+-        CompositionMode_Screen // Chaos (base patch 0132): src + dst * (1 - src), never above 1; the soft glow
++        CompositionMode_Screen, // Chaos (base patch 0132): src + dst * (1 - src), never above 1; the soft glow
++        CompositionMode_AddAlpha // Chaos (base patch 0152): dst + src * src alpha, the framebuffer alpha is kept; glowing spell effects
+ 
+     };
+     enum DepthFunc {
+--- a/src/framework/graphics/painter.cpp
++++ b/src/framework/graphics/painter.cpp
+@@ -381,6 +381,9 @@
+     case CompositionMode_Screen: // Chaos (base patch 0132)
+         glBlendFunc(GL_ONE_MINUS_DST_COLOR, GL_ONE);
+         break;
++    case CompositionMode_AddAlpha: // Chaos (base patch 0152): colour added by its alpha, alpha of the target kept
++        glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE, GL_ZERO, GL_ONE);
++        break;
+     }
+ }
+ 
+--- a/src/framework/graphics/drawqueue.h
++++ b/src/framework/graphics/drawqueue.h
+@@ -269,6 +269,16 @@
+     Color m_color;
+ };
+ 
++// Chaos (base patch 0152): the items of the range are drawn added onto what is under them (CompositionMode_AddAlpha). The
++// queue flushes the draw cache before start and before end, so the range is one batch inside two blend changes.
++struct DrawQueueConditionGlow : public DrawQueueCondition {
++    DrawQueueConditionGlow(size_t start, size_t end) :
++        DrawQueueCondition(start, end) {}
++
++    void start(DrawQueue* queue) override;
++    void end(DrawQueue* queue) override;
++};
++
+ class DrawQueue {
+ public:
+     DrawQueue() = default;
+@@ -417,6 +427,13 @@
+         m_conditions.push_back(std::make_unique<DrawQueueConditionMark>(start, m_queue.size(), color));
+     }
+ 
++    // Chaos (base patch 0152): draw everything queued since start with the additive blend
++    void setGlow(size_t start)
++    {
++        if (start >= m_queue.size()) return;
++        m_conditions.push_back(std::make_unique<DrawQueueConditionGlow>(start, m_queue.size()));
++    }
++
+     void markMapPosition()
+     {
+         mapPosition = m_queue.size();
+--- a/src/framework/graphics/drawqueue.cpp
++++ b/src/framework/graphics/drawqueue.cpp
+@@ -263,6 +263,18 @@
+     g_painter->resetShaderProgram();
+ }
+ 
++void DrawQueueConditionGlow::start(DrawQueue*)
++{
++    // the cache was flushed by DrawQueue::draw before this call: the blend changes between two batches
++    g_painter->setCompositionMode(Painter::CompositionMode_AddAlpha);
++}
++
++void DrawQueueConditionGlow::end(DrawQueue*)
++{
++    // the cache was flushed by DrawQueue::draw before this call (end of the range, or the end of the queue)
++    g_painter->setCompositionMode(Painter::CompositionMode_Normal);
++}
++
+ void DrawQueue::setFrameBuffer(const Rect& dest, const Size& size, const Rect& src, float renderScale)
+ {
+     m_useFrameBuffer = true;
+--- a/src/client/map.h
++++ b/src/client/map.h
+@@ -35,6 +35,7 @@
+ #include <framework/core/clock.h>
+ #include <unordered_map>
+ #include <unordered_set>
++#include "chaosglow.h"
+ 
+ enum OTBM_ItemAttr
+ {
+@@ -322,6 +323,28 @@
+     bool hasSpellLights() { return m_spellLightOn && !m_spellLights.empty(); }
+     void collectSpellLights(std::vector<SpellLightDraw>& out);
+ 
++    // Chaos (base patch 0152): glowing spell effects, see chaosglow.h. game_visualfx sends the list of effect ids and the
++    // switch (the spell light option). While a floor is queued (beginGlowFloor .. MapView::drawFloor's end) Tile::drawTop
++    // hands a listed effect to deferGlowEffect instead of drawing it; drawFloor then draws the batch once, additive.
++    struct GlowDraw {
++        EffectPtr effect;
++        Point dest;
++        int offsetX;
++        int offsetY;
++    };
++    void clearGlowEffects() { m_glowIds.clear(); m_glowBatch.clear(); }
++    void addGlowEffect(int id) { m_glowIds.add(id); }
++    void setGlowEffects(bool on) { m_glowOn = on; if (!on) m_glowBatch.clear(); }
++    bool isGlowEffects() const { return m_glowOn; }
++    void beginGlowFloor() { m_glowCollect = m_glowOn; m_glowBatch.clear(); }
++    void endGlowFloor() { m_glowCollect = false; }
++    bool deferGlowEffect(const EffectPtr& effect, int id, const Point& dest, int offsetX, int offsetY)
++    {
++        return chaos::glow::wantsGlow(m_glowOn, m_glowCollect, m_glowIds, id) &&
++               m_glowBatch.add(GlowDraw{ effect, dest, offsetX, offsetY });
++    }
++    chaos::glow::Batch<GlowDraw>& glowBatch() { return m_glowBatch; }
++
+     const std::vector<AnimatedTextPtr>& getAnimatedTexts() const { return m_animatedTexts; }
+     const std::vector<StaticTextPtr>& getStaticTexts() const { return m_staticTexts; }
+ 
+@@ -357,6 +380,10 @@
+     int m_spellLightGap = 90;
+     float m_spellLightAttack = 0.15f;
+     float m_spellLightMinFade = 0.12f;
++    chaos::glow::IdSet m_glowIds;            // Chaos (base patch 0152)
++    chaos::glow::Batch<GlowDraw> m_glowBatch;
++    bool m_glowOn = false;
++    bool m_glowCollect = false;
+     std::vector<AnimatedTextPtr> m_animatedTexts;
+     chaos::deathfade::GhostQueue<DeathGhost> m_deathGhosts;
+     std::vector<StaticTextPtr> m_staticTexts;
+--- a/src/client/tile.cpp
++++ b/src/client/tile.cpp
+@@ -343,6 +343,9 @@
+             continue;
+         if (g_map.isGroundEffect(m_effects[i]->getId()))
+             continue; // drawn under the creatures (drawGroundEffects)
++        // Chaos (base patch 0152): a bright spell effect of the glow list is held and drawn additive with its floor's batch
++        if (g_map.deferGlowEffect(m_effects[i], m_effects[i]->getId(), dest - m_drawElevation * g_sprites.getOffsetFactor(), m_position.x - g_map.getCentralPosition().x, m_position.y - g_map.getCentralPosition().y))
++            continue;
+         m_effects[i]->draw(dest - m_drawElevation * g_sprites.getOffsetFactor(), m_position.x - g_map.getCentralPosition().x, m_position.y - g_map.getCentralPosition().y, true, lightView);
+     }
+ 
+--- a/src/client/mapview.cpp
++++ b/src/client/mapview.cpp
+@@ -277,6 +277,7 @@
+ 
+     auto& tiles = m_cachedVisibleTiles[floor];
+     size_t lightFloorStart = m_lightView ? m_lightView->size() : 0;
++    g_map.beginGlowFloor(); // Chaos (base patch 0152): glowing effects of this floor are held until the end of it
+     const bool negativeOffsetPass = g_game.getFeature(Otc::GameNegativeOffset) &&
+         std::any_of(tiles.begin(), tiles.end(), [](const TilePtr& tile) {
+             return tile && tile->hasNegativeDisplacementCreature();
+@@ -477,6 +478,18 @@
+     for (const MissilePtr& missile : g_map.getFloorMissiles(floor)) {
+         missile->draw(transformPositionTo2D(missile->getPosition(), cameraPosition), true, m_lightView.get());
+     }
++
++    // Chaos (base patch 0152): the glowing effects of the floor, all in one additive range after everything else of the
++    // floor: the draw queue flushes the cache and changes the blend once before the range and once after it
++    g_map.endGlowFloor();
++    auto& glowBatch = g_map.glowBatch();
++    if (!glowBatch.empty()) {
++        const size_t glowStart = g_drawQueue->size();
++        for (const Map::GlowDraw& g : glowBatch.items())
++            g.effect->draw(g.dest, g.offsetX, g.offsetY, true, m_lightView.get());
++        g_drawQueue->setGlow(glowStart);
++        glowBatch.clear();
++    }
+ }
+ 
+ 
+--- a/src/client/luafunctions_client.cpp
++++ b/src/client/luafunctions_client.cpp
+@@ -185,6 +185,11 @@
+     g_lua.bindSingletonFunction("g_map", "setSpellLightColor", &Map::setSpellLightColor, &g_map);
+     g_lua.bindSingletonFunction("g_map", "clearSpellLightColors", &Map::clearSpellLightColors, &g_map);
+     g_lua.bindSingletonFunction("g_map", "setSpellLightConfig", &Map::setSpellLightConfig, &g_map);
++    // Chaos (base patch 0152): glowing spell effects (map.h, chaosglow.h; overlay module game_visualfx)
++    g_lua.bindSingletonFunction("g_map", "clearGlowEffects", &Map::clearGlowEffects, &g_map);
++    g_lua.bindSingletonFunction("g_map", "addGlowEffect", &Map::addGlowEffect, &g_map);
++    g_lua.bindSingletonFunction("g_map", "setGlowEffects", &Map::setGlowEffects, &g_map);
++    g_lua.bindSingletonFunction("g_map", "isGlowEffects", &Map::isGlowEffects, &g_map);
+     g_lua.bindSingletonFunction("g_map", "setLightFlicker", &Map::setLightFlicker, &g_map); // base patch 0149
+     g_lua.bindSingletonFunction("g_map", "isLightFlicker", &Map::isLightFlicker, &g_map);
+     g_lua.bindSingletonFunction("g_map", "getOrCreateTile", &Map::getOrCreateTile, &g_map);
+--- a/src/client/chaosglow.h
++++ b/src/client/chaosglow.h
+@@ -0,0 +1,81 @@
++// Cinders of Chaos (base patch 0152): additive blend for bright spell effects, pure and header-only so
++// client/tools/chaosglow_test.cpp can run it without the engine. The effects of the glow list (fire, energy, holy and
++// arcane effects; the list comes from Lua, game_visualfx) are not drawn where the map pass meets them: the tile pass hands
++// them to a Batch and MapView::drawFloor draws the whole batch once, after everything else of the floor, between one start
++// and one end of an additive blend. That is the only place the blend (and the draw cache) changes, so a floor with any
++// glowing effect costs two cache flushes and two blend changes however many effects play, and a floor with none costs nothing.
++#ifndef CHAOSGLOW_H
++#define CHAOSGLOW_H
++
++#include <bitset>
++#include <cstddef>
++#include <utility>
++#include <vector>
++
++namespace chaos {
++namespace glow {
++
++constexpr size_t kMaxDeferred = 64;  // glowing effects held per floor; the next ones draw with the normal blend
++constexpr int kFlushesPerGroup = 2;  // draw cache flushes around the one additive group (start and end)
++
++// the set of effect ids that glow, filled from Lua (one call per id, like the spell light table of base patch 0127)
++class IdSet
++{
++public:
++    void clear() { m_bits.reset(); }
++    void add(int id)
++    {
++        if (id > 0 && id < static_cast<int>(kIds))
++            m_bits.set(static_cast<size_t>(id));
++    }
++    bool contains(int id) const
++    {
++        return id > 0 && id < static_cast<int>(kIds) && m_bits.test(static_cast<size_t>(id));
++    }
++    size_t size() const { return m_bits.count(); }
++
++private:
++    static constexpr size_t kIds = 65536;
++    std::bitset<kIds> m_bits;
++};
++
++// the one decision whether an effect is held for the additive group: the option is on (the spell light option, sent as
++// the engine switch), the map pass is collecting (a floor is being queued) and the id is in the glow list
++inline bool wantsGlow(bool optionOn, bool collecting, const IdSet& ids, int id)
++{
++    return optionOn && collecting && ids.contains(id);
++}
++
++// the effects held for the group, in the order the tiles handed them over; at most kMaxDeferred, so a screen full of
++// effects cannot make the group (and its overdraw) grow without bound
++template <class T>
++class Batch
++{
++public:
++    // false when the batch is full: the caller then draws that effect with the normal blend
++    bool add(T item)
++    {
++        if (m_items.size() >= kMaxDeferred)
++            return false;
++        m_items.push_back(std::move(item));
++        return true;
++    }
++    void clear() { m_items.clear(); }
++    bool empty() const { return m_items.empty(); }
++    size_t size() const { return m_items.size(); }
++    const std::vector<T>& items() const { return m_items; }
++
++private:
++    std::vector<T> m_items;
++};
++
++// draw cache flushes the group of n held effects costs: none for no effects, else the same two for one or for sixty
++inline int flushCount(size_t n)
++{
++    return n == 0 ? 0 : kFlushesPerGroup;
++}
++
++} // namespace glow
++} // namespace chaos
++
++#endif

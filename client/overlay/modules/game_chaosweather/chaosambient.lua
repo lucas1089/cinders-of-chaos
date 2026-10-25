@@ -20,6 +20,7 @@ local cur = A.newOpacities()
 local root, widgets = nil, {}
 local tickEvent, pollEvent
 local lastTick, clock0 = 0, 0
+local paint = ChaosWeatherLogic.newPaint()   -- what the layer widgets show now (O235; chaosweather_logic.lua)
 local reported = {}
 
 local function now()
@@ -60,6 +61,7 @@ end
 local function destroyWidgets()
   if alive(root) then root:destroy() end
   root, widgets = nil, {}
+  paint.reset()
 end
 
 local function attach()
@@ -89,6 +91,7 @@ local function hideAll()
       w:setVisible(false)
     end
   end
+  paint.reset()
 end
 
 local function draw()
@@ -102,12 +105,15 @@ local function draw()
     if alive(widget) then
       if opacity > A.MIN_OPACITY and w > 0 and h > 0 then
         local ox, oy = A.offset(layer, t)
-        widget:setImageRect(A.imageRect(ox, oy, w, h))
-        widget:setOpacity(opacity * A.pulse(layer, t))
+        local rect = A.imageRect(ox, oy, w, h)
+        if paint.rect(layer.name, rect) then widget:setImageRect(rect) end
+        local shownOpacity = opacity * A.pulse(layer, t)
+        if paint.opacity(layer.name, shownOpacity) then widget:setOpacity(shownOpacity) end
         if not widget:isVisible() then widget:setVisible(true) end
       elseif widget:isVisible() then
         widget:setOpacity(0)
         widget:setVisible(false)
+        paint.forget(layer.name)
       end
     end
   end

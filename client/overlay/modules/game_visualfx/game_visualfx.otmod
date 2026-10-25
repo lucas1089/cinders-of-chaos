@@ -1,9 +1,9 @@
 Module
   name: game_visualfx
-  description: Dark-fantasy look for the map with a switch per effect in Options > Graphics - a short flash on a creature that takes damage, a small screen shake on big hits taken, a soft shadow under creatures (base patch 0126), a vignette with a light colour grade over the map, a soft glow around very bright light only (base patch 0132, off by default), and a short fade from black when you change floor or are teleported (O219)
+  description: Dark-fantasy look for the map with a switch per effect in Options > Graphics - a short flash on a creature that takes damage, a small screen shake on big hits taken, a soft shadow under creatures (base patch 0126), a vignette with a light colour grade over the map that changes by area (O234), a soft glow around very bright light only (base patch 0132, off by default), and a short fade from black when you change floor or are teleported (O219)
   author: Cinders of Chaos
   sandboxed: true
-  scripts: [ visualfx_logic, scenefade_logic, visualfx ]
+  scripts: [ visualfx_logic, scenefade_logic, grademood_logic, visualfx ]
   dependencies:
     - game_interface
   autoload: true

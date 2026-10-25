@@ -56,7 +56,35 @@ return {
 			{name = "jungle cave", kind = "motes", minZ = 8, maxZ = 10, box = {32630, 32810, 32700, 32880}},
 			{name = "caves", kind = "dust", minZ = 8, maxZ = 15}
 		}
-	}
+	},
+
+	-- Colour moods (O234; client game_visualfx, option `screenGrade`): a gentle colour grade of the map picture by area.
+	-- kind: "ice" (cold blue), "swamp" (sickly green), "desert" (warm amber), "fire" (warm amber-red), "crypt" (desaturated
+	-- and dim). The client holds the numbers (grademood_logic.lua) and eases to the new kind over about 2 s when the
+	-- player crosses a border, so a border needs no soft edge here. Same shape and lookup as `ambient.areas` (first area
+	-- that holds the tile wins; a tile in none has no mood, the message carries no `m`, the grade is the plain one).
+	--  * The generated areas are exact (areagen_config.lua origins and sizes).
+	--  * The surface places are SAMPLE SITES of docs/MAP_GUIDE.md (swamp town, the two deserts, the two ice fields; the
+	--    map is not in the repository, so these boxes are a guess around those points) and are MARKED FOR THE OWNER TO FIT:
+	--    widen or move them with the real extent of each swamp, desert and ice land (the map editor shows the tile), one
+	--    line each. Ice sits on floors 6-7 because the sample sites are at z 6 and 7.
+	mood = {
+		enabled = true,
+		areas = {
+			{name = "emberdeep", kind = "fire", minZ = 9, maxZ = 10, box = {14400, 14400, 14495, 14475}},
+			{name = "cinderfall", kind = "fire", minZ = 7, maxZ = 7, box = {14400, 14560, 14544, 14675}},
+			{name = "ossuary", kind = "crypt", minZ = 9, maxZ = 10, box = {14560, 14400, 14689, 14501}},
+			{name = "hollow vault", kind = "crypt", minZ = 9, maxZ = 9, box = {14560, 14560, 14675, 14655}},
+			{name = "marrow crypts", kind = "crypt", minZ = 9, maxZ = 9, box = {24576, 24576, 24679, 24659}},
+			{name = "iron crucible", kind = "fire", minZ = 9, maxZ = 9, box = {24832, 24576, 24935, 24659}},
+			{name = "pyre throne", kind = "fire", minZ = 9, maxZ = 9, box = {24832, 24832, 24935, 24915}},
+			{name = "swamp town", kind = "swamp", minZ = 7, maxZ = 7, box = {32880, 32010, 33000, 32110}},
+			{name = "desert west", kind = "desert", minZ = 7, maxZ = 7, box = {33000, 31330, 33100, 31420}},
+			{name = "desert east", kind = "desert", minZ = 7, maxZ = 7, box = {33200, 31310, 33300, 31410}},
+			{name = "ice settlement", kind = "ice", minZ = 6, maxZ = 7, box = {31950, 31310, 32040, 31400}},
+			{name = "ice field", kind = "ice", minZ = 6, maxZ = 7, box = {32000, 31060, 32100, 31150}}
+		}
+	},
 
 	-- Not kept: the base's thunder (a 50% chance per drop to strike a player standing on the drop's tile, 1-5 energy
 	-- damage, about once in 30 seconds out in the rain). The server no longer places drops.
