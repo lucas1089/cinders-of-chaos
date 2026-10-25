@@ -1,0 +1,284 @@
+# Chaos: creature spawn fade-in and hit recoil (O232; client/BASE.md "0151"; src/client/chaosrecoil.h (new, pure), creature.h/.cpp;
+# after 0001-0150).
+# Two small creature animations, both pure draw-time maths from one start time per creature (nothing else is kept).
+#  * Spawn fade-in: Creature::onAppear, in the branch of a creature that is new or comes back into view (m_removed), stores
+#    the start time when chaos::recoil::wantsFade allows it: the option is on and it is not the local player. Creature::
+#    draw then calls DrawQueue::setOpacity (the call the floor fading and the death fade of 0139 use) over the items of the
+#    outfit, with alpha 0 -> 1 over 180 ms (smoothstep). No setScale, setRotation or clip, so the draw cache is not flushed.
+#    The name, the bars and the light are not faded. The option is the existing `deathFade` (Creature.setDeathFade).
+#  * Hit recoil: Creature::setHealthPercent calls startRecoil(old, new) next to startHitTint of 0142, same trigger (health
+#    went down, creature on the map and already shown, new health above 0), same option (`hitFlash`, Creature.setHitTint). The
+#    drawn position is moved 1 px (2 px for a hit of 10% or more, times the sprite size over 32) away from the local player,
+#    the usual attacker, or in a small random direction when the player is the creature itself, on its tile or on another
+#    floor. The offset eases back to 0 in 120 ms ((1 - u)^2). Creature::draw adds it to `dest` only (the parameter is now
+#    drawDest and `dest` a local copy), map draw only, so the name and the bars stay still. A creature cannot restart its
+#    recoil inside 100 ms.
+#  * No new option, no new text, no Lua change: the panel keeps its height and there is no new pt-BR key.
+# Cost when idle: two int compares per drawn creature. Active: one opacity pass over that creature's items for 180 ms, or
+# an add of two ints for 120 ms.
+# Known: the attacker is taken as the local player, so a hit by a summon or a party member pushes the same way; a hit that
+# does not change the 1% step is not seen; the click box and the shadow of the creature move with the nudge; a layered
+# outfit (colour templates) fades through the atlas, which uses the queue colour, and when the atlas is full that item is
+# drawn without the fade (as in 0139); a shader item ignores opacity. At login, or on a floor change, every creature in view
+# is new and fades in.
+# Checked: applies after 0001-0150 on the base tree; creature.cpp shows the same 3 base errors under g++ -fsyntax-only; the
+# header passes its test.
+# Not built, linked or run in a client; goes live with the next client build.
+--- a/src/client/creature.h
++++ b/src/client/creature.h
+@@ -133,6 +133,9 @@
+     // See chaoshitflash.h; the state is one start time and one strength per creature.
+     static void setHitTint(bool enabled) { s_hitTint = enabled; }
+     static bool isHitTint() { return s_hitTint; }
++    // Chaos (base patch 0151): a creature that appears fades in over 180 ms (the option of the death fade, Creature.
++    // setDeathFade) and a creature whose health goes down is nudged 1-2 px away from the attacker for 120 ms (the option
++    // of the hit flash, Creature.setHitTint). See chaosrecoil.h; the state is two start times per creature.
+     // Chaos (base patch 0146): the health and mana bars over a creature ease to a new value in about 150 ms, and a hit leaves
+     // a pale chip segment that holds 250 ms and slides down in 300 ms (Options > Graphics "Smooth health bars"; the overlay
+     // module game_visualfx sets it). See chaosbars.h; computed from the clock at draw time, filled rects only.
+@@ -343,6 +346,12 @@
+     ticks_t m_hitTintStart = 0;
+     float m_hitTintPeak = 0.0f;
+     bool m_healthShown = false;
++    void startRecoil(int oldPercent, int newPercent); // base patch 0151
++    ticks_t m_spawnFadeStart = 0;
++    ticks_t m_recoilStart = 0;
++    int m_recoilDx = 0;
++    int m_recoilDy = 0;
++    int m_recoilPx = 0;
+     static bool s_smoothBars; // base patch 0146
+     chaos::bars::Track m_healthBar;
+     chaos::bars::Track m_manaBar;
+--- a/src/client/creature.cpp
++++ b/src/client/creature.cpp
+@@ -36,6 +36,7 @@
+ #include "creaturehit.h"
+ #include "chaosdeathfade.h"
+ #include "chaoshitflash.h"
++#include "chaosrecoil.h"
+ #include "chaosbars.h"
+ 
+ #include <framework/graphics/graphics.h>
+@@ -228,17 +229,58 @@
+     m_hitTintPeak = chaos::hitflash::peakForDrop(oldPercent - newPercent);
+ }
+ 
++// Chaos (base patch 0151): called from setHealthPercent with the old and the new percent. The push is away from the local
++// player (the usual attacker); the local player, a creature on the player's tile or another floor gets a small random one.
++// Uses the option of the hit flash (s_hitTint).
++void Creature::startRecoil(int oldPercent, int newPercent)
++{
++    const bool shown = m_healthShown && !m_removed;
++    if (!chaos::recoil::wantsRecoil(s_hitTint, m_position.isMapPosition(), shown, oldPercent, newPercent))
++        return;
++    const ticks_t now = g_clock.millis();
++    if (!chaos::recoil::gapPassed(m_recoilStart, now))
++        return;
++    bool known = false;
++    int dx = 0;
++    int dy = 0;
++    const LocalPlayerPtr player = g_game.getLocalPlayer();
++    if (player && player.get() != this && player->getPosition().isMapPosition() && player->getPosition().z == m_position.z) {
++        known = true;
++        dx = m_position.x - player->getPosition().x;
++        dy = m_position.y - player->getPosition().y;
++    }
++    const chaos::recoil::Offset dir = chaos::recoil::pushDirection(known, dx, dy, static_cast<uint32_t>(getId()) * 2654435761u + static_cast<uint32_t>(now));
++    m_recoilDx = dir.x;
++    m_recoilDy = dir.y;
++    m_recoilPx = chaos::recoil::pixelsForDrop(oldPercent - newPercent);
++    m_recoilStart = now == 0 ? 1 : now;
++}
++
+ void Creature::flashHit(const std::string& shader, int ms)
+ {
+     m_hitShader = shader;
+     m_hitFlashEnd = ms > 0 ? g_clock.millis() + ms : 0;
+ }
+ 
+-void Creature::draw(const Point& dest, bool animate, LightView* lightView)
++void Creature::draw(const Point& drawDest, bool animate, LightView* lightView)
+ {   
+     if (!canBeSeen())
+         return;
+ 
++    // Chaos (base patch 0151): the hit recoil moves only the drawn position, by a draw offset that eases back to 0
++    // (map draw only; the name and the bars stay where they are). One compare per creature when idle.
++    Point dest = drawDest;
++    if (m_recoilStart != 0) {
++        const ticks_t recoilElapsed = g_clock.millis() - m_recoilStart;
++        if (animate && recoilElapsed < chaos::recoil::kRecoilMs) {
++            const chaos::recoil::Offset nudge = chaos::recoil::offsetAt(recoilElapsed, chaos::recoil::Offset{ m_recoilDx, m_recoilDy },
++                                                                        m_recoilPx, std::max(1, g_sprites.spriteSize() / 32));
++            dest += Point(nudge.x, nudge.y);
++        } else if (recoilElapsed >= chaos::recoil::kRecoilMs || recoilElapsed < 0) {
++            m_recoilStart = 0;
++        }
++    }
++
+     const int sprSize = g_sprites.spriteSize();
+     Point jumpOffset = Point(m_jumpOffset.x, m_jumpOffset.y);
+     const Point logicalDisplacement = usesNegativeDisplacement() ? Point() : getDisplacement();
+@@ -357,6 +399,16 @@
+     if (m_marked) {
+         g_drawQueue->setMark(drawQueueSize, updatedMarkedColor());
+     }
++    // Chaos (base patch 0151): the spawn fade-in, the opacity call the floor fading and the death fade use, over just the
++    // items of this creature's outfit. The name and bars (drawInformation) and the light are not faded.
++    if (m_spawnFadeStart != 0) {
++        const ticks_t fadeElapsed = g_clock.millis() - m_spawnFadeStart;
++        if (animate && fadeElapsed < chaos::recoil::kFadeMs) {
++            g_drawQueue->setOpacity(drawQueueSize, chaos::recoil::fadeAlpha(fadeElapsed));
++        } else if (fadeElapsed >= chaos::recoil::kFadeMs || fadeElapsed < 0) {
++            m_spawnFadeStart = 0;
++        }
++    }
+ 
+     drawTopWidgets(creatureCenter, m_walking ? m_walkDirection : m_direction);
+ 
+@@ -854,6 +906,8 @@
+         m_removed = false;
+         m_healthBar.reset(); // Chaos (base patch 0146): a creature that returns into view shows its health, it does not slide
+         m_manaBar.reset();
++        // Chaos (base patch 0151): a new spawn, or a creature that walks into view, fades in
++        m_spawnFadeStart = chaos::recoil::wantsFade(s_deathFade, isLocalPlayer()) ? std::max<ticks_t>(1, g_clock.millis()) : 0;
+         callLuaField("onAppear");
+         // walk
+     } else if (m_oldPosition != m_position && m_oldPosition.isInRange(m_position, 1, 1) && m_allowAppearWalk) {
+@@ -1136,8 +1190,10 @@
+     }
+ 
+     bool changed = m_healthPercent != healthPercent;
+-    if (changed)
++    if (changed) {
+         startHitTint(m_healthPercent, healthPercent); // Chaos (base patch 0142): before the new value is stored
++        startRecoil(m_healthPercent, healthPercent); // Chaos (base patch 0151): same trigger
++    }
+     if (!m_healthShown || m_removed)
+         m_healthBar.reset(); // Chaos (base patch 0146): the health that comes with an appearance is a starting value
+     m_healthShown = true;
+--- a/src/client/chaosrecoil.h
++++ b/src/client/chaosrecoil.h
+@@ -0,0 +1,122 @@
++// Cinders of Chaos (base patch 0151): the spawn fade-in and the hit recoil of a creature, pure and header-only so
++// client/tools/chaosrecoil_test.cpp can run it without the engine. Both are draw-time maths from one start time per
++// creature: a creature that appears fades from 0 to full opacity in kFadeMs, and a creature whose health percent goes
++// down is drawn a pixel or two away from the attacker and eases back in kRecoilMs. Nothing is stored but the start times.
++#ifndef CHAOSRECOIL_H
++#define CHAOSRECOIL_H
++
++#include <algorithm>
++#include <cstdint>
++
++namespace chaos {
++namespace recoil {
++
++constexpr int kFadeMs = 180;        // from invisible to full opacity
++constexpr int kRecoilMs = 120;      // from the nudge back to the tile
++constexpr int kMinGapMs = 100;      // one creature does not restart its recoil faster than this
++constexpr int kSmallPx = 1;         // nudge of a small hit (in 32 px sprites)
++constexpr int kBigPx = 2;           // nudge of a hit of kBigDrop% or more
++constexpr int kBigDrop = 10;
++
++// A plain offset in pixels; kept free of engine types.
++struct Offset {
++    int x = 0;
++    int y = 0;
++};
++
++// Opacity of a creature `elapsedMs` after it appeared: 0 at the first frame, 1 from kFadeMs on, smoothstep in between,
++// never outside 0..1. A start in the future (the clock ran backwards) counts as the first frame.
++inline float fadeAlpha(int64_t elapsedMs)
++{
++    if (elapsedMs <= 0)
++        return 0.0f;
++    if (elapsedMs >= kFadeMs)
++        return 1.0f;
++    const float u = static_cast<float>(elapsedMs) / static_cast<float>(kFadeMs);
++    return u * u * (3.0f - 2.0f * u);
++}
++
++// The one decision whether an appearance starts a fade: the option is on and it is not the local player.
++inline bool wantsFade(bool optionOn, bool localPlayer)
++{
++    return optionOn && !localPlayer;
++}
++
++// Nudge in sprite pixels (at 32 px) from how many percent of the health the hit took.
++inline int pixelsForDrop(int dropPercent)
++{
++    return dropPercent >= kBigDrop ? kBigPx : kSmallPx;
++}
++
++inline int sign(int v)
++{
++    return v > 0 ? 1 : (v < 0 ? -1 : 0);
++}
++
++// Direction the creature is pushed: away from the attacker, one step per axis (-1, 0 or 1). When the attacker is unknown
++// or stands on the same tile (dx and dy both 0) the answer is a small random direction from the seed. Never (0, 0).
++inline Offset randomDirection(uint32_t seed)
++{
++    // Wang hash, then one of the 8 neighbours
++    seed = (seed ^ 61u) ^ (seed >> 16);
++    seed *= 9u;
++    seed = seed ^ (seed >> 4);
++    seed *= 0x27d4eb2du;
++    seed = seed ^ (seed >> 15);
++    static const int kDx[8] = { 0, 1, 1, 1, 0, -1, -1, -1 };
++    static const int kDy[8] = { -1, -1, 0, 1, 1, 1, 0, -1 };
++    const uint32_t i = seed % 8u;
++    return Offset{ kDx[i], kDy[i] };
++}
++
++// attackerKnown false: no attacker position is known. dx, dy: the creature's tile minus the attacker's tile.
++inline Offset pushDirection(bool attackerKnown, int dx, int dy, uint32_t seed)
++{
++    if (attackerKnown && (dx != 0 || dy != 0))
++        return Offset{ sign(dx), sign(dy) };
++    return randomDirection(seed);
++}
++
++// Share of the nudge left `elapsedMs` after the hit: 1 at the start, 0 from kRecoilMs on, ease-out (1 - u)^2.
++inline float recoilShare(int64_t elapsedMs)
++{
++    if (elapsedMs >= kRecoilMs)
++        return 0.0f;
++    if (elapsedMs <= 0)
++        return 1.0f;
++    const float u = static_cast<float>(elapsedMs) / static_cast<float>(kRecoilMs);
++    const float r = 1.0f - u;
++    return r * r;
++}
++
++// The draw offset in pixels. `dir` is a pushDirection, `px` a pixelsForDrop value, `pixelScale` the sprite size over 32
++// (1 for a 32 px sprite). Each axis is at most px * pixelScale and 0 once the recoil is over.
++inline Offset offsetAt(int64_t elapsedMs, Offset dir, int px, int pixelScale)
++{
++    const float share = recoilShare(elapsedMs);
++    const int peak = std::max(0, px) * std::max(1, pixelScale);
++    auto axis = [&](int d) {
++        const float v = static_cast<float>(sign(d) * peak) * share;
++        return static_cast<int>(v >= 0.0f ? v + 0.5f : v - 0.5f);
++    };
++    return Offset{ axis(dir.x), axis(dir.y) };
++}
++
++// The one decision whether a health change starts a recoil: the option is on, the creature stands on a map tile and was
++// already shown (the first health after it appears is a starting value, not a hit), the health went down and it is not 0
++// (a dying creature is removed at once).
++inline bool wantsRecoil(bool optionOn, bool onMap, bool shown, int oldPercent, int newPercent)
++{
++    return optionOn && onMap && shown && newPercent > 0 && newPercent < oldPercent;
++}
++
++// per creature: whether the last recoil started long enough ago (0 = never)
++inline bool gapPassed(int64_t lastStart, int64_t now)
++{
++    return lastStart == 0 || now < lastStart || now - lastStart >= kMinGapMs;
++}
++
++} // namespace recoil
++} // namespace chaos
++
++#endif

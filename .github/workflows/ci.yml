@@ -441,6 +441,16 @@ jobs:
           g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" client/tools/chaoshitflash_test.cpp -o "$d/chaoshitflash_asan"
           "$d/chaoshitflash_asan"
 
+      - name: Spawn fade and recoil bookkeeping (C++; header from base patch 0151)
+        run: |
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/client\/chaosrecoil\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            client/base-patches/0151-spawn-fade-recoil.patch > "$d/chaosrecoil.h"
+          g++ -std=c++17 -O1 -Wall -Wextra -I "$d" client/tools/chaosrecoil_test.cpp -o "$d/chaosrecoil_test"
+          "$d/chaosrecoil_test"
+          g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" client/tools/chaosrecoil_test.cpp -o "$d/chaosrecoil_asan"
+          "$d/chaosrecoil_asan"
+
       - name: Eased bars bookkeeping (C++; header from base patch 0146)
         run: |
           d=$(mktemp -d)
