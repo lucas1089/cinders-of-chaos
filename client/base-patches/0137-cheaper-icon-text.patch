@@ -1,0 +1,156 @@
+# Chaos: cheaper creature icon count text and no colour list copy per draw (O217; client/BASE.md "0137"; src/client/creature.h/.cpp,
+# src/framework/graphics/cachedtext.h/.cpp, drawqueue.h/.cpp; after 0001-0136).
+# Finishes the per-frame text work of 0133. The count drawn next to a creature icon went through DrawQueue::addText (hash of the
+# string, mutex, map search, again on the graphics thread) and g_fonts.getFont("verdana-cap-bold") (a name search) once per icon
+# per frame: now the font is found once per creature and each of the (at most 4) icons owns a chaos::TextSlot, keyed like
+# CachedText's (font id, font texture, box, alignment) with the count itself as the revision (the text is its decimal form).
+# DrawQueueItemTextEntryColored copied the colour vector of the speech on every draw: CachedText now keeps one immutable
+# shared copy (dropped by update(), the only way the list changes) and the item holds a shared_ptr to it. Same entries, same
+# TextRender::drawEntry / drawColoredEntry, same painter calls: the picture is the same. The edge-clipped name box (a size change
+# that rebuilds its layout) is left as it is. Not built or run.
+diff --git a/src/client/creature.cpp b/src/client/creature.cpp
+--- a/src/client/creature.cpp
++++ b/src/client/creature.cpp
+@@ -584,7 +584,9 @@
+     }
+ 
+     if (!m_creatureIcons.empty()) {
+-        const auto countFont = g_fonts.getFont("verdana-cap-bold");
++        if (!m_iconCountFont)
++            m_iconCountFont = g_fonts.getFont("verdana-cap-bold");
++        const BitmapFontPtr& countFont = m_iconCountFont;
+         const float iconX = backgroundRect.x() + 15.5 + 12;
+         const float iconY = backgroundRect.y() + 5;
+         const int iconStepY = 14;
+@@ -597,10 +599,24 @@
+                 g_drawQueue->addTexturedRect(r, tex, Rect(0, 0, tex->getSize()));
+ 
+                 if (iconCount > 0) {
+-                    std::string countStr = std::to_string(iconCount);
+-                    g_drawQueue->addText(countFont, countStr,
+-                        Rect(r.right() + 2, r.y() - 1, 24, r.height() + 2),
+-                        Fw::AlignLeftCenter, Color::white, true);
++                    // Chaos (base patch 0137): the layout entry of this icon's count, rebuilt only when the number, the font, the
++                    // font texture or the box change (the text is std::to_string(iconCount), so the count is the revision)
++                    const Rect countRect(r.right() + 2, r.y() - 1, 24, r.height() + 2);
++                    const Size boxSize = countRect.size();
++                    if (countFont && boxSize.isValid()) {
++                        chaos::TextSlotKey key;
++                        key.fontId = countFont->getId();
++                        key.texture = countFont->getTexture().get();
++                        key.width = boxSize.width();
++                        key.height = boxSize.height();
++                        key.align = static_cast<int>(Fw::AlignLeftCenter);
++                        const uint32_t countValue = iconCount; // a structured binding cannot be captured before C++20
++                        key.revision = countValue;
++                        const std::shared_ptr<TextRenderCache>& entry = m_iconCountSlots[i].get(key, [&]() {
++                            return g_text.makeEntry(countFont, std::to_string(countValue), boxSize, Fw::AlignLeftCenter);
++                        });
++                        g_drawQueue->addTextEntry(entry, countRect.topLeft(), Color::white, true);
++                    }
+                 }
+             }
+         }
+diff --git a/src/client/creature.h b/src/client/creature.h
+--- a/src/client/creature.h
++++ b/src/client/creature.h
+@@ -281,6 +281,9 @@
+     TexturePtr m_iconTexture;
+     std::vector<std::tuple<uint8_t, uint8_t, uint16_t>> m_creatureIcons; // iconId, category, count
+     std::vector<TexturePtr> m_creatureIconTextures;
++    // Chaos (base patch 0137): the count text of each of the (at most 4) icons: the font found once, one layout slot per icon
++    BitmapFontPtr m_iconCountFont;
++    chaos::TextSlot<TextRenderCache> m_iconCountSlots[4];
+     stdext::boolean<true> m_showShieldTexture;
+     stdext::boolean<false> m_shieldBlink;
+     ScheduledEventPtr m_shieldBlinkEvent;
+diff --git a/src/framework/graphics/cachedtext.cpp b/src/framework/graphics/cachedtext.cpp
+--- a/src/framework/graphics/cachedtext.cpp
++++ b/src/framework/graphics/cachedtext.cpp
+@@ -61,7 +61,9 @@
+     if (m_textColors.empty()) {
+         g_drawQueue->addTextEntry(entry, m_textCachedScreenCoords.topLeft(), color, false, shader);
+     } else {
+-        g_drawQueue->addColoredTextEntry(entry, m_textCachedScreenCoords.topLeft(), m_textColors, false, shader);
++        if (!m_colorsShared)
++            m_colorsShared = std::make_shared<const std::vector<std::pair<int, Color>>>(m_textColors);
++        g_drawQueue->addColoredTextEntry(entry, m_textCachedScreenCoords.topLeft(), m_colorsShared, false, shader);
+     }
+ }
+ 
+@@ -85,6 +87,7 @@
+ void CachedText::update()
+ {
+     ++m_revision;
++    m_colorsShared.reset();
+     if(m_font)
+         m_textSize = m_font->calculateTextRectSize(m_text);
+     m_textMustRecache = true;
+diff --git a/src/framework/graphics/cachedtext.h b/src/framework/graphics/cachedtext.h
+--- a/src/framework/graphics/cachedtext.h
++++ b/src/framework/graphics/cachedtext.h
+@@ -58,6 +58,9 @@
+     uint32_t m_revision = 0;
+     std::string m_text;
+     std::vector<std::pair<int, Color>> m_textColors;
++    // Chaos (base patch 0137): one immutable copy of m_textColors handed to the queue items; dropped by update() (every
++    // change of the list goes through it) and made again on the next draw
++    std::shared_ptr<const std::vector<std::pair<int, Color>>> m_colorsShared;
+     Size m_textSize;
+     stdext::boolean<true> m_textMustRecache;
+     Rect m_textCachedScreenCoords;
+diff --git a/src/framework/graphics/drawqueue.cpp b/src/framework/graphics/drawqueue.cpp
+--- a/src/framework/graphics/drawqueue.cpp
++++ b/src/framework/graphics/drawqueue.cpp
+@@ -193,7 +193,8 @@
+ 
+ void DrawQueueItemTextEntryColored::draw()
+ {
+-    g_text.drawColoredEntry(m_point, m_entry, m_colors, m_shadow, m_shader);
++    static const std::vector<std::pair<int, Color>> none;
++    g_text.drawColoredEntry(m_point, m_entry, m_sharedColors ? *m_sharedColors : none, m_shadow, m_shader);
+ }
+ 
+ void::DrawQueueItemLine::draw()
+@@ -328,7 +329,7 @@
+ }
+ 
+ void DrawQueue::addColoredTextEntry(const std::shared_ptr<TextRenderCache>& entry, const Point& topLeft,
+-                                    const std::vector<std::pair<int, Color>>& colors, bool shadow,
++                                    const std::shared_ptr<const std::vector<std::pair<int, Color>>>& colors, bool shadow,
+                                     const PainterShaderProgramPtr& shader)
+ {
+     if (!entry) return;
+diff --git a/src/framework/graphics/drawqueue.h b/src/framework/graphics/drawqueue.h
+--- a/src/framework/graphics/drawqueue.h
++++ b/src/framework/graphics/drawqueue.h
+@@ -188,14 +188,18 @@
+ };
+ 
+ struct DrawQueueItemTextEntryColored : public DrawQueueItemTextColored {
++    // Chaos (base patch 0137): the colour list is shared with its owner (CachedText) and never changed, not copied per draw;
++    // the base class's own list stays empty
+     DrawQueueItemTextEntryColored(const Point& point, const std::shared_ptr<TextRenderCache>& entry, const TexturePtr& texture,
+-                                  const std::vector<std::pair<int, Color>>& colors, bool shadow,
++                                  const std::shared_ptr<const std::vector<std::pair<int, Color>>>& colors, bool shadow,
+                                   const PainterShaderProgramPtr& shader) :
+-        DrawQueueItemTextColored(point, texture, 0, colors, shadow, shader), m_entry(entry)
++        DrawQueueItemTextColored(point, texture, 0, std::vector<std::pair<int, Color>>(), shadow, shader),
++        m_entry(entry), m_sharedColors(colors)
+     {};
+     void draw() override;
+ 
+     std::shared_ptr<TextRenderCache> m_entry;
++    std::shared_ptr<const std::vector<std::pair<int, Color>>> m_sharedColors;
+ };
+ 
+ struct DrawQueueItemLine : public DrawQueueItem {
+@@ -316,7 +320,7 @@
+     void addTextEntry(const std::shared_ptr<TextRenderCache>& entry, const Point& topLeft, const Color& color,
+                       bool shadow = false, const PainterShaderProgramPtr& shader = nullptr);
+     void addColoredTextEntry(const std::shared_ptr<TextRenderCache>& entry, const Point& topLeft,
+-                             const std::vector<std::pair<int, Color>>& colors, bool shadow = false,
++                             const std::shared_ptr<const std::vector<std::pair<int, Color>>>& colors, bool shadow = false,
+                              const PainterShaderProgramPtr& shader = nullptr);
+ 
+     void addFilledTriangle(const Point& a, const Point& b, const Point& c, const Color& color = Color::white)
