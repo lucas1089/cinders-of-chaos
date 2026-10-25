@@ -2742,7 +2742,7 @@ identical md5s and report.
 - A client on pair 39 or older keeps the old art; nothing breaks. Before / after sheets: scratchpad only. Not run in a
   client.
 
-## Projectile pack, native 32 px (pair 41: 50 missiles redrawn in place, 3 appended: 251-253; `tools/sprites/gen_pack41_missiles.py`, `art_import/pack41_missiles.csv`; built 2026-10-25)
+## Projectile pack, native 32 px (pair 41: 50 missiles redrawn in place, 3 appended: 251-253; `tools/sprites/gen_pack41_missiles.py`, `art_import/pack41_missiles.csv`; built 2026-10-25, on windows-assets 7f1b7a08)
 Owner allowed new pairs without asking. Pair 36 built its projectile missiles from the 64 px renders of the purchased
 projectile pack, halved. The pack also ships hand-tuned renders made at 32 px (frames of 64 x 64, pivot at the centre,
 8 frames at 12 fps, rows E SE S SW W NW N NE); pair 41 redraws the same ids from those, nothing halved. **Licence: the
@@ -2800,7 +2800,7 @@ Output **pair 41**: dat 6a8e1a8db5144459d2544a0e2070fb3b (11,225,440 bytes), spr
 - Archive (the pair 37 recipe, `--mtime='2026-10-22 00:00:00Z'`, xz 5.4.5, `split -b 95M -d -a 2`): 146,911,036 bytes,
   sha256 de164c17618445c3bf6caf6ae24650ca79eee2ecadefb08bfc10283af0c85624; parts `things-1098.tar.xz.part00` (99,614,720
   bytes, sha256 7b666eeb48ed01947eee5604e01cd4710582af65ae8d3e29b9202111ca9f64cc) and `.part01` (47,296,316 bytes,
-  sha256 cdcb8241462dd6261436adebc9cb7b9f720bb904b2ad11149868b3db4a61d74b). Not pushed: the owner reviews first.
+  sha256 cdcb8241462dd6261436adebc9cb7b9f720bb904b2ad11149868b3db4a61d74b). Pushed to windows-assets at 7f1b7a08 (on e662cd24; the owner allowed new pairs without asking).
 - A client on pair 40 or older keeps the halved art; ids 251-253 are sent by nothing. Previews: scratchpad only. Not
   run in a client.
 
