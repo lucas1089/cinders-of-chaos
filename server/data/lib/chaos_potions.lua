@@ -492,6 +492,7 @@ function PT.upgrade(player, targetId, mode)
 		st.oldGone = true
 	end)
 	if ok and not st.fail and st.oldGone then
+		pcall(PT.sendHeld, player) -- the helper follows the swap at once (a NPC state has no Chaos: the 3 s think does it)
 		return true
 	end
 	-- undo (the old item is still there: it is only gone when oldGone is set)
@@ -568,4 +569,49 @@ function PT.restorable(player)
 		end
 	end
 	return out
+end
+
+-- ---------------------------------------------------------------- the helper is told what is carried (README "Potions", O246)
+-- The Everfull potions show under the stock potions' looks, so the client's helper cannot tell a great Everfull from a stock
+-- Great Health Potion. Per slot the server sends the carried Everfull's look, tier, level, line and `ready` (the charges a
+-- drink needs are there) on ChaosOpcodes.everfull; the helper uses it to follow an upgrade (its Health / Mana Potion rows
+-- become the carried tier) and Auto setup to pick it. Carried = inventory and backpacks (Player:getItemCount), as the
+-- engine's use by look finds it; the inbox, the purse and the depots do not count.
+function PT.heldView(player)
+	local c = PT.cfg()
+	local counts = {}
+	for _, e in ipairs(c.everfull) do
+		if PT.installed(e.id) then
+			counts[e.id] = player:getItemCount(e.id)
+		end
+	end
+	local charges = {}
+	for _, pool in ipairs(c.pools) do
+		charges[pool] = PT.charges(player, pool)
+	end
+	return K.heldView(c, {counts = counts, charges = charges, clientId = function(id)
+		local ok, cid = pcall(function() return ItemType(id):getClientId() end)
+		return ok and cid or nil
+	end})
+end
+
+PT.heldSent = PT.heldSent or {} -- player id -> the key of the last message
+
+-- sends the view when it changed (or always with force); true when a message went out
+function PT.sendHeld(player, force)
+	if not (Chaos and Chaos.send and ChaosOpcodes and ChaosOpcodes.everfull) then
+		return false
+	end
+	local view = PT.heldView(player)
+	local key = K.heldKey(view)
+	local id = player:getId()
+	if not force and PT.heldSent[id] == key then
+		return false
+	end
+	PT.heldSent[id] = key
+	return Chaos.send(player, ChaosOpcodes.everfull, "held", K.heldPayload(view)) ~= false
+end
+
+function PT.forgetHeld(player)
+	PT.heldSent[player:getId()] = nil
 end

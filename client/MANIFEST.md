@@ -3891,6 +3891,19 @@ Magic Shield share the Tools tab's top box; Magic Shield shows only for a class 
 Tools, Settings and Alarm Settings texts have pt-BR and fit their widgets in both languages. `client/BASE.md` 69c.
 Base patch `0106` puts the other tabs and sub-windows through `tr()` as well (264 pt-BR entries; `client/BASE.md` 69d).
 
+### Helper and the Everfull tiers (`game_helperrotation/everfullheld.lua`, `game_helper/helper_potions.lua`, O246)
+The Everfull upgrades (server 32261-32267) show under the great, ultimate and supreme potions' looks, so the helper could not
+tell which Everfull a character carries, and its Health / Mana Potion rows (266 / 268, also what Auto setup set for the
+Everfull) stopped reaching the flask after an upgrade. The server now tells the client (extended opcode 116, `held`, per slot:
+the stock look the carried Everfull shows under, tier, level, line health / mana / spirit, `ready` when the charges a drink needs
+are there; server `potions_helper.lua`, `server/README.md` "The helper and the tiers (O246)"). `ChaosEverfullHeld`
+(`everfullheld.lua`, not sandboxed, `everfullheld_test.lua`) keeps the cleaned view and asks `sync` at game start.
+`ChaosHelperPotions.EVERFULL_ITEMS` is the one table of the Everfull (server id, look, slot, line, kind, tier, level; the test
+reads the server's config and compares): a row on the Health / Mana Potion look drinks the carried Everfull's look
+(`P.resolve`: only a plain flask of the slot, ready, within the level); a row on any other look keeps its look, and the server's
+engine (patch 0043) already prefers the Everfull of that look, the spirit flasks included. Auto setup counts the carried
+Everfull as carried (`S.potion` with `held`). When the Everfull get looks of their own, change `look` in that table.
+
 ### Helper potions in closed backpacks (`game_helperrotation/potiongate.lua`, base patch `0070`)
 The Everfull potions (server 32085 / 32086) have the client look of the Health / Mana Potion (266 / 268), so the
 helper's potion slots, the item picker and the use by id treat them as those; the bound lock (custom attribute 3 = 2)

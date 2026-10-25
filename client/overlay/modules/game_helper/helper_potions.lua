@@ -14,8 +14,24 @@
 ChaosHelperPotions = ChaosHelperPotions or {}
 local P = ChaosHelperPotions
 
-P.EVERFULL = { health = 266, mana = 268 }             -- the client looks of the server items 32085 and 32086
-P.EVERFULL_SERVER = { health = 32085, mana = 32086 }
+-- The Everfull potions, ONE table (server/data/scripts/chaos/potions_config.lua `everfull`; tested against it). A tier shows
+-- under the look of the stock potion it copies; when the Everfull get looks of their own (new client ids), change `look` here
+-- and nothing else: the dropdown then lists them, the server's held message (opcode 116) already carries the real look.
+-- slot: the flask the item takes (health | mana); line: health | mana | spirit; kind: what a row of it heals (health | mana |
+-- both: the spirit flasks); level: the stock potion's level; the server drinks it in any case at the use of its look.
+P.EVERFULL_ITEMS = {
+  { server = 32085, look = 266,   slot = 'health', line = 'health', kind = 'health', tier = 1, level = 0,   name = 'Everfull Health Potion' },
+  { server = 32086, look = 268,   slot = 'mana',   line = 'mana',   kind = 'mana',   tier = 1, level = 0,   name = 'Everfull Mana Potion' },
+  { server = 32261, look = 239,   slot = 'health', line = 'health', kind = 'health', tier = 2, level = 80,  name = 'Everfull Great Health Potion' },
+  { server = 32262, look = 238,   slot = 'mana',   line = 'mana',   kind = 'mana',   tier = 2, level = 80,  name = 'Everfull Great Mana Potion' },
+  { server = 32263, look = 7642,  slot = 'health', line = 'spirit', kind = 'both',   tier = 2, level = 80,  name = 'Everfull Great Spirit Potion' },
+  { server = 32264, look = 7643,  slot = 'health', line = 'health', kind = 'health', tier = 3, level = 130, name = 'Everfull Ultimate Health Potion' },
+  { server = 32265, look = 23373, slot = 'mana',   line = 'mana',   kind = 'mana',   tier = 3, level = 130, name = 'Everfull Ultimate Mana Potion' },
+  { server = 32266, look = 23374, slot = 'health', line = 'spirit', kind = 'both',   tier = 3, level = 130, name = 'Everfull Ultimate Spirit Potion' },
+  { server = 32267, look = 23375, slot = 'health', line = 'health', kind = 'health', tier = 4, level = 200, name = 'Everfull Supreme Health Potion' },
+}
+-- the stock looks of the first tier: a row on one of them follows the carried Everfull of its slot (P.resolve)
+P.FOLLOW = { [266] = 'health', [268] = 'mana' }
 
 -- the potions_config.lua numbers of the Everfull flasks (the fixed rolls) and the percent formula
 P.ROLL = { [266] = { 125, 175 }, [268] = { 75, 125 } }
@@ -41,6 +57,39 @@ P.LIST = {
 
 local byId = {}
 for _, p in ipairs(P.LIST) do byId[p.id] = p end
+-- an Everfull with a look of its own is a potion of the list too (the server item id is its `server`)
+for _, e in ipairs(P.EVERFULL_ITEMS) do
+  if not byId[e.look] then
+    local p = { id = e.look, server = e.server, kind = e.kind, name = e.name, level = e.level, everfull = true }
+    P.LIST[#P.LIST + 1] = p
+    byId[p.id] = p
+  end
+end
+
+-- the Everfull entry that shows under a look (the first one), or nil
+function P.everfullOf(look)
+  for _, e in ipairs(P.EVERFULL_ITEMS) do
+    if e.look == look then return e end
+  end
+  return nil
+end
+
+-- What a row on potion `id` really drinks. A row on the Health / Mana Potion (the stock look of tier 1, and the look
+-- Auto setup used for the Everfull) follows the Everfull the character carries in that slot: an upgrade replaces the item,
+-- so the row would otherwise drink stock potions or nothing. held: ChaosEverfullHeld.get() ({ health = {look, tier,
+-- level, line, ready}, mana = ... } or nil). Followed only when the carried one is a plain health / mana flask (a spirit
+-- flask spends both pools and is chosen by a spirit row), known, ready (an empty flask would drink a dearer stock potion) and
+-- allowed at `level`. The server checks level and charges again at the drink.
+function P.resolve(id, held, level)
+  id = tonumber(id)
+  local slot = id and P.FOLLOW[id]
+  local h = slot and type(held) == 'table' and held[slot]
+  if not h or h.ready ~= true or h.line ~= slot or h.look == id then return id end
+  if (tonumber(level) or 0) < (tonumber(h.level) or 0) then return id end
+  local p = byId[tonumber(h.look) or -1]
+  if not p or p.kind ~= slot then return id end
+  return p.id
+end
 
 function P.info(id)
   return byId[tonumber(id) or -1]
@@ -140,11 +189,13 @@ end
 -- The rows due now. rows: the healing tab's potion rows ({ id, percent, priority }); ctx = { healthPct, manaPct,
 -- available(id) -> true when the potion can be used (carried or probed, and its channel is ready) }.
 -- Returns the due rows of a kind sorted by the lowest threshold first, then the priority.
-local function due(rows, kind, pct, available)
+local function due(rows, kind, pct, available, resolve)
   local list = {}
   for i, row in ipairs(rows or {}) do
     local id = tonumber(row.id) or 0
-    if id > 0 and P.rowKind(row) == kind and pct <= (tonumber(row.percent) or 0) and (not available or available(id)) then
+    local kindOf = P.rowKind(row) -- of the row's own potion
+    if resolve and id > 0 then id = resolve(id) or id end
+    if id > 0 and kindOf == kind and pct <= (tonumber(row.percent) or 0) and (not available or available(id)) then
       list[#list + 1] = { id = id, percent = tonumber(row.percent) or 0, priority = tonumber(row.priority) or 0, index = i }
     end
   end
@@ -158,10 +209,12 @@ end
 P.due = due
 
 -- the potion to drink now, or nil: health before mana. Returns the item id and 'health' | 'mana'.
+-- ctx.held / ctx.level: the carried Everfull and the level (P.resolve); the id returned is the look to use
 function P.pick(rows, ctx)
-  local health = due(rows, 'health', tonumber(ctx.healthPct) or 100, ctx.available)
+  local resolve = ctx.held and function(id) return P.resolve(id, ctx.held, ctx.level) end or nil
+  local health = due(rows, 'health', tonumber(ctx.healthPct) or 100, ctx.available, resolve)
   if health[1] then return health[1].id, 'health' end
-  local mana = due(rows, 'mana', tonumber(ctx.manaPct) or 100, ctx.available)
+  local mana = due(rows, 'mana', tonumber(ctx.manaPct) or 100, ctx.available, resolve)
   if mana[1] then return mana[1].id, 'mana' end
   return nil
 end

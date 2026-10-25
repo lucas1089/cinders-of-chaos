@@ -28,6 +28,8 @@
 --   ChaosPotionsCore.upgradeCheck(cfg, s)          s = {id, level, installed, done, held = {ids}, mode, materials}
 --                                                  -> {ok, from, materials} | {ok = false, why, text, args}
 --   ChaosPotionsCore.restoreFor(cfg, slot, held, earned)  the entry a character that lost its flask gets back, or nil
+--   O246 (client helper, opcode ChaosOpcodes.everfull): ChaosPotionsCore.heldView(cfg, s) / heldKey(view) / heldPayload(view):
+--                                                  the Everfull potion each slot carries, by its stock look, for the helper
 -- Lua 5.1 / LuaJIT and Lua 5.3 compatible.
 ChaosPotionsCore = ChaosPotionsCore or {}
 local K = ChaosPotionsCore
@@ -343,4 +345,56 @@ function K.restoreFor(cfg, slot, held, earned)
 		end
 	end
 	return best
+end
+
+-- ---------------------------------------------------------------- what the helper is told (README "Potions", O246)
+-- The client sees every tier under the stock potion's look, so the helper cannot tell which Everfull a character carries.
+-- The server tells it: per slot (health, mana) the carried Everfull's look, tier, level, line and whether a drink would
+-- work now. s.counts: server id -> how many the character carries (inventory and backpacks, as Player:getItemCount);
+-- s.charges: pool -> hundredths; s.clientId(serverId) -> the client id (the look). A slot holding two items (a GM gift)
+-- reports the highest tier: the engine's use by look picks one of them, and both are the same slot's pool anyway.
+-- Returns { health = {look, tier, level, line, ready}, mana = {...} }, a slot with no Everfull left out.
+function K.heldView(cfg, s)
+	local view = {}
+	for _, e in ipairs(cfg.everfull or {}) do
+		local n = tonumber((s.counts or {})[e.id]) or 0
+		local look = n > 0 and s.clientId and tonumber(s.clientId(e.id)) or nil
+		if look and look > 0 then
+			local slot = e.key
+			local best = view[slot]
+			if not best or (e.tier or 1) > best.tier then
+				local ready = true
+				for _, pool in ipairs(K.poolsOf(cfg, e)) do
+					local have = s.charges and s.charges[pool]
+					if have ~= nil and not K.canDrink(cfg, have) then
+						ready = false
+					end
+				end
+				view[slot] = {look = look, tier = e.tier or 1, level = e.level or 0, line = e.line or e.key, ready = ready}
+			end
+		end
+	end
+	return view
+end
+
+-- a string that changes when anything the client is told changes (a push is sent only then)
+function K.heldKey(view)
+	local parts = {}
+	for _, slot in ipairs({"health", "mana"}) do
+		local v = view[slot]
+		parts[#parts + 1] = v and string.format("%s:%d:%d:%d:%s:%d", slot, v.look, v.tier, v.level, v.line, v.ready and 1 or 0) or (slot .. ":-")
+	end
+	return table.concat(parts, "|")
+end
+
+-- the message data: v is a version, so an empty view still encodes as an object
+function K.heldPayload(view)
+	local out = {v = 1}
+	for _, slot in ipairs({"health", "mana"}) do
+		local x = view[slot]
+		if x then
+			out[slot] = {look = x.look, tier = x.tier, level = x.level, line = x.line, ready = x.ready}
+		end
+	end
+	return out
 end

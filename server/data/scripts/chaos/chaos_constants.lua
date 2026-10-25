@@ -2177,6 +2177,9 @@ if Chaos then
 	local okCfg, cfgBeta = pcall(dofile, "data/scripts/chaos/beta_mode_config.lua")
 	Chaos.betaMode = okCfg and type(cfgBeta) == "table" and cfgBeta or {enabled = false}
 end
+-- Everfull potions told to the client's helper (potions_helper.lua, potions_core.lua heldView; client game_helperrotation
+-- everfullheld.lua; O246): the carried Everfull per slot by its stock look, server -> client; client -> server only `sync`
+ChaosOpcodes.everfull = 116
 -- Weather: the server decides it (which areas, rain or clear, how strong) and sends one small message when it changes;
 -- the client draws the rain (client game_chaosweather; weather.lua, weather_core.lua, weather_config.lua; O208)
 ChaosOpcodes.weather = 114

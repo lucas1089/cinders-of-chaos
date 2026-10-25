@@ -61,11 +61,19 @@ function S.canDrink(potion, line, level)
   return (tonumber(level) or 0) >= potion.level and (potion.lines == nil or potion.lines[line] == true)
 end
 
--- the best potion of a kind the character may drink and carries (has(id) -> true), else the Everfull's look
-function S.potion(kind, vocId, level, has)
+-- the best potion of a kind the character may drink and carries (has(id) -> true), else the Everfull's look. held: the
+-- Everfull the server says the character carries (ChaosEverfullHeld.get()): its look counts as carried (it lives in a closed
+-- backpack as often as not), so the best tier the character holds is chosen like a stock potion of that look; a spirit flask
+-- counts for the health kind, as the stock spirit potions of the list do. Its level is the stock potion's, which the list has.
+function S.potion(kind, vocId, level, has, held)
   local line = S.lineOf(vocId)
+  local h = held and held.health
+  local m = held and held.mana
+  local carried = {}
+  if h and h.look then carried[h.look] = true end
+  if m and m.look then carried[m.look] = true end
   for _, p in ipairs(S.POTIONS[kind] or {}) do
-    if S.canDrink(p, line, level) and has and has(p.id) then return p.id end
+    if S.canDrink(p, line, level) and ((has and has(p.id)) or carried[p.id]) then return p.id end
   end
   return S.EVERFULL[kind]
 end
@@ -158,7 +166,7 @@ function S.targetingOf(cfg)
   return out
 end
 
--- the whole plan. p: vocId, level, canCast(id), has(clientId), heals (ChaosAutoRotation.heals), rotation
+-- the whole plan. p: vocId, level, canCast(id), has(clientId), held (ChaosEverfullHeld.get()), heals (ChaosAutoRotation.heals), rotation
 -- (ChaosAutoRotation.select's result or nil), support (ChaosHelperSupport.autoPlan's result or nil)
 function S.plan(p)
   local line = S.lineOf(p.vocId)
@@ -168,8 +176,8 @@ function S.plan(p)
     healing = {
       spells = S.healSlots(p.heals),
       potions = {
-        { id = S.potion('health', p.vocId, p.level, p.has), percent = S.HEALTH_POTION_PERCENT },
-        { id = S.potion('mana', p.vocId, p.level, p.has), percent = manaPercent },
+        { id = S.potion('health', p.vocId, p.level, p.has, p.held), percent = S.HEALTH_POTION_PERCENT },
+        { id = S.potion('mana', p.vocId, p.level, p.has, p.held), percent = manaPercent },
       },
     },
     tools = { autoEatFood = true, haste = S.haste(p.canCast) },

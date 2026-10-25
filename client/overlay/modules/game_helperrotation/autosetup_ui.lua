@@ -242,7 +242,7 @@ function W.run()
     local ok, n = pcall(player.getInventoryCount, player, id, 0)
     return ok and (tonumber(n) or 0) > 0
   end
-  local plan = S.plan({ vocId = voc, level = level, canCast = canCast, has = has,
+  local plan = S.plan({ vocId = voc, level = level, canCast = canCast, has = has, held = ChaosEverfullHeld and ChaosEverfullHeld.get() or nil,
     heals = A.heals(voc, level, canCast), rotation = (A.select(voc, level, canCast, { topUp = true })),
     support = support() and support().plan() })
   local profile = H.getShooterProfile and H.getShooterProfile()

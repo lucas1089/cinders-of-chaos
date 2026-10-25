@@ -7,9 +7,9 @@
   "game_npctradewindow"
  ],
  "counts": {
-  "opcode": 60,
+  "opcode": 61,
   "out": 38,
-  "passive": 76,
+  "passive": 75,
   "place": 13,
   "staff": 11
  },
@@ -860,6 +860,24 @@
    "skip": [],
    "systems": [
     "embercache"
+   ]
+  },
+  "everfull": {
+   "actions": [
+    "sync"
+   ],
+   "client": [
+    "game_helperrotation"
+   ],
+   "dataKeys": [],
+   "files": [
+    "potions_helper.lua"
+   ],
+   "opcode": 116,
+   "out": false,
+   "skip": [],
+   "systems": [
+    "potions"
    ]
   },
   "factions": {
@@ -3762,13 +3780,16 @@
   },
   "potions": {
    "files": [
+    "chaos_constants.lua",
     "potion_flasks.lua",
-    "potions.lua"
+    "potions.lua",
+    "potions_helper.lua"
    ],
-   "kind": "passive",
-   "opcodes": [],
-   "talkactions": [],
-   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+   "kind": "opcode",
+   "opcodes": [
+    "everfull"
+   ],
+   "talkactions": []
   },
   "pouches": {
    "files": [

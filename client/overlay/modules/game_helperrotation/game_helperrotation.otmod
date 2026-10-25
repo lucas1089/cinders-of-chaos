@@ -1,10 +1,10 @@
 Module
   name: game_helperrotation
-  description: The helper's cast bookkeeping (ChaosHelperRotation; used by modules/game_helper through base patch 0052), its Auto rotation button (ChaosAutoRotation), the Auto setup button (ChaosAutoSetup), the helper's save rules (ChaosHelperSave, base patch 0067) and the checks of its saved settings on load (ChaosHelperConfig), potions in closed backpacks (ChaosPotionGate, base patch 0070) and the item-picker cursor of the helper's slots (ChaosItemPicker, base patch 0066) and the first-login opening of the helper on Auto setup (ChaosHelperOnboarding)
+  description: The helper's cast bookkeeping (ChaosHelperRotation; used by modules/game_helper through base patch 0052), its Auto rotation button (ChaosAutoRotation), the Auto setup button (ChaosAutoSetup), the helper's save rules (ChaosHelperSave, base patch 0067) and the checks of its saved settings on load (ChaosHelperConfig), potions in closed backpacks (ChaosPotionGate, base patch 0070), the Everfull potion each slot carries (ChaosEverfullHeld, opcode 116) and the item-picker cursor of the helper's slots (ChaosItemPicker, base patch 0066) and the first-login opening of the helper on Auto setup (ChaosHelperOnboarding)
   author: Cinders of Chaos
   sandboxed: false
   autoload: true
   autoload-priority: 100
-  scripts: [ rotation, helpersave, helperconfig, potiongate, itempicker, autorotation_data, autorotation, autorotation_ui, autosetup, autosetup_ui, onboarding ]
-  @onLoad: ChaosAutoRotationUI.init() ChaosHelperOnboarding.init()
-  @onUnload: ChaosHelperOnboarding.terminate() ChaosAutoRotationUI.terminate()
+  scripts: [ rotation, helpersave, helperconfig, potiongate, everfullheld, itempicker, autorotation_data, autorotation, autorotation_ui, autosetup, autosetup_ui, onboarding ]
+  @onLoad: ChaosAutoRotationUI.init() ChaosHelperOnboarding.init() ChaosEverfullHeld.init()
+  @onUnload: ChaosEverfullHeld.terminate() ChaosHelperOnboarding.terminate() ChaosAutoRotationUI.terminate()

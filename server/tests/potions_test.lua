@@ -144,6 +144,7 @@ local function mkPlayer(id, lastLogin)
 	function p:getLevel() return self.level or 1 end
 	function p:setStorageValue(k, v) self.st[k] = v end
 	function p:getLastLoginSaved() return self.last end
+	function p:registerEvent() end
 	function p:getMaxHealth() return 1000 end
 	function p:getMaxMana() return 2000 end
 	function p:sendTextMessage(_, text) self.msgs[#self.msgs + 1] = text end
