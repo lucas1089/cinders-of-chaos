@@ -160,7 +160,7 @@ categories were added.
 
 ## Visual effects (O203)
 Four switches in Options > Graphics (base patch `0126`, module `game_visualfx`, `dataset.lua` keys `hitFlash`, `screenShake`,
-`creatureShadow`, `screenGrade`, all on by default). Audit before it (grep of the base patches, BASE.md, this file, the engine tree and the shader folders): floor fading exists
+`creatureShadow` on by default, `screenGrade` off until the owner has seen it, since it shifts the biome colours). Audit before it (grep of the base patches, BASE.md, this file, the engine tree and the shader folders): floor fading exists
 (base option `floorFading`, `MapView` fades the floors), ambient light exists (Effects > ambient light slider, base light view,
 the server's world light), spell light is partial (effects and missiles light by the dat's light flags, no colour table per
 spell), weather is partial (the engine's `WeatherManager` has rain, snow and sand from the zone-weather packet (feature

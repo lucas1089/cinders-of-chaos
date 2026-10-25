@@ -245,7 +245,7 @@
 +  },
 +
 +  screenGrade = {
-+    value = true,
++    value = false,
 +    apply = function(value)
 +      local m = modules.game_visualfx
 +      if m and m.onOption then m.onOption('screenGrade', value) end

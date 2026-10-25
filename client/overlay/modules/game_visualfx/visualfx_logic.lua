@@ -4,9 +4,10 @@
 VisualFxLogic = {}
 local L = VisualFxLogic
 
--- the options (client_settings dataset.lua, Options > Graphics "Visual effects"); all on by default
+-- the options (client_settings dataset.lua, Options > Graphics "Visual effects"); on by default except the grade,
+-- which changes the biome colours and waits for the owner's look at the first build
 L.OPTIONS = { 'hitFlash', 'screenShake', 'creatureShadow', 'screenGrade' }
-L.DEFAULTS = { hitFlash = true, screenShake = true, creatureShadow = true, screenGrade = true }
+L.DEFAULTS = { hitFlash = true, screenShake = true, creatureShadow = true, screenGrade = false }
 
 -- an option value from the settings: a boolean is kept, anything else (nil, junk, an older settings file) is the default
 function L.optionOn(name, value)
