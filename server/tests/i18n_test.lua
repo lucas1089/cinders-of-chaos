@@ -217,7 +217,8 @@ local SITES = {
 	["leaderboard.lua"] = {},
 	["market.lua"] = {}, ["hideout.lua"] = {}, ["gamble.lua"] = {}, ["cosmetics.lua"] = {}, ["transmog.lua"] = {},
 	["trials_effects.lua"] = {}, ["paragon.lua"] = {}, ["passivetree.lua"] = {}, ["bosspoints.lua"] = {}, ["gems.lua"] = {},
-	["salvage.lua"] = {}, ["archery.lua"] = {}, ["blessings.lua"] = {}, ["candlemarks.lua"] = {}, ["catchup.lua"] = {},
+	["salvage.lua"] = {}, ["archery.lua"] = {}, ["blessings.lua"] = {},
+	["cursedchest.lua"] = {"say%(%w+,%s*", "toast%(%w+,%s*", "tellAll%(ev,%s*"}, ["candlemarks.lua"] = {}, ["catchup.lua"] = {},
 	["pocketboss.lua"] = {"tell%(run,%s*", "fail%(run,%s*", "K%.T%(%s*"}, ["pocketboss_core.lua"] = CORE_T,
 	-- factions, bestiary, season pass, community goal, dungeons, goblins and Chaos loot; reasons returned to the window
 	["factions.lua"] = {"return nil,%s*"}, ["factions_core.lua"] = CORE_T, ["bestiary.lua"] = {},

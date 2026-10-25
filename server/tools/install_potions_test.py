@@ -136,7 +136,7 @@ try:
 
     xml = first['items/items.xml'].decode()
     check(xml.count(T.XML_BEGIN) == 1 and 'name="everfull health potion"' in xml, 'items.xml block')
-    check('value="Never runs out.' in xml, 'the description')
+    check('value="A flask: kills' in xml, 'the description')
     check('deposit' not in xml.lower(), 'no flask deposit text in items.xml')
     check(cfg['flaskText'] in xml, 'the flask text')
 

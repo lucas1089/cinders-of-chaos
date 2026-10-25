@@ -831,6 +831,9 @@ jobs:
       - name: Potions install (no empty flasks, Everfull potions, NPC replacement)
         run: python3 -I server/tools/install_potions_test.py
 
+      - name: Ground pickups install (globes and ember items, synthetic items.otb / items.xml)
+        run: python3 -I server/tools/install_pickups_test.py
+
       - name: Base NPC script names (patch_base_npcs.py step 5, the letter case of the script file)
         run: python3 -I server/tools/patch_base_npcs_test.py
 

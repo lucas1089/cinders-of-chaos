@@ -27,10 +27,12 @@ eq(#cfg.everfull, 2, "no spirit potion: the first one is the great spirit potion
 check(HEALTH.id > 32084 and HEALTH.id <= 32090 and MANA.id > 32084 and MANA.id <= 32090,
 	"server ids in the free range after the Everfull Ration, before the faction tokens")
 check(HEALTH.id ~= MANA.id, "two ids")
-check(HEALTH.description:find("^Never runs out") ~= nil and MANA.description:find("^Never runs out") ~= nil,
-	"the descriptions say so")
+check(HEALTH.description:find("^A flask") ~= nil and MANA.description:find("^A flask") ~= nil,
+	"the descriptions say they are flasks")
 check(HEALTH.price > 0 and HEALTH.price <= 200 and MANA.price > 0 and MANA.price <= 200, "a cheap replacement")
-check(cfg.storage.granted >= 7102480 and cfg.storage.granted <= 7102489, "storage in its block")
+for k, v in pairs(cfg.storage) do
+	check(v >= 7102480 and v <= 7102489, "storage " .. k .. " in its block")
+end
 eq(cfg.attr.storebound, "chaos_storebound", "store-bound like the Everfull Ration")
 eq(cfg.attr.lock, "chaos_locked", "locked: no NPC buys it (engine patch 0009)")
 eq(#cfg.flasks, 3, "the three flasks")
@@ -241,7 +243,7 @@ eq(dan.bp.kids[1].count, 1, "count 1 whatever amount was asked")
 eq(dan.bp.kids[1].attrs.chaos_storebound, 1, "the bought copy is store-bound too")
 eq(dan.money + dan.bank, 150 - HEALTH.price, "paid, the bank too")
 eq(PT.npcBuy(dan.id, HEALTH.id), false, "a second one refused")
-eq(dan.msgs[#dan.msgs], "You already have one. It never runs out.", "told why")
+eq(dan.msgs[#dan.msgs], "You already have one. It refills as you kill monsters.", "told why")
 eq(PT.npcBuy(dan.id, MANA.id), false, "too poor for the mana one")
 eq(#dan.bp.kids, 1, "nothing given")
 eq(PT.npcBuy(999, MANA.id), false, "no such player")
@@ -368,6 +370,256 @@ do
 	check(K.amount(cfg, {150, 250}, 80, 50000, 0, lo) > K.amount(cfg, {150, 250}, 80, 10000, 0, lo),
 		"a larger pool gets more from the same potion")
 	eq(K.amount(cfg, {75, 75}, 0, 1000, 0), 105, "a fixed roll without rand range")
+end
+
+-- ---------------------------------------------------------------- flask charges (O242)
+do
+	local F = cfg.flask
+	local keys = {}
+	for _, v in pairs(cfg.storage) do
+		check(not keys[v], "storage keys are distinct (" .. v .. ")") keys[v] = true
+	end
+	-- core
+	eq(K.maxCharges(cfg, "health", 0), 5, "health flask max") eq(K.maxCharges(cfg, "mana", 0), 8, "mana flask max")
+	eq(K.maxCharges(cfg, "health", 2), 7, "tree: two extra charges")
+	eq(K.maxCharges(cfg, "health", 999), 5 + F.tree.maxExtra, "tree: extra charges are capped")
+	eq(K.maxCharges(cfg, "health", -3), 5, "tree: never negative") eq(K.maxCharges(cfg, "spirit", 0), 0, "no such flask")
+	eq(K.read(cfg, "health", -1), 500, "never set = full") eq(K.read(cfg, "health", nil), 500, "nil = full")
+	eq(K.read(cfg, "health", 230), 230, "stored hundredths") eq(K.read(cfg, "health", 99999), 500, "above the maximum: clamped")
+	eq(K.read(cfg, "health", 0), 0, "empty is empty (0 is not unset)")
+	eq(K.read(cfg, "health", 0 / 0), 500, "NaN is not trusted")
+	check(K.canDrink(cfg, 100) and not K.canDrink(cfg, 99) and not K.canDrink(cfg, 0), "a drink costs one charge")
+	eq(K.spend(cfg, 250), 150, "spend") eq(K.spend(cfg, 40), 0, "never below zero")
+	local order = {"normal", "magic", "rare", "legendary", "boss"}
+	for i = 2, #order do
+		check(F.perKill[order[i]] > F.perKill[order[i - 1]], order[i] .. " refills more than " .. order[i - 1])
+	end
+	for _, t in ipairs(order) do
+		check(K.killGain(cfg, {tier = t, xp = 100000, kind = "health"}) <= F.killCap, t .. " respects the cap per kill")
+	end
+	eq(K.killGain(cfg, {tier = "normal", xp = 200, kind = "health"}), 8, "normal at the reference experience")
+	eq(K.killGain(cfg, {tier = "normal", xp = 5, kind = "health"}), 2, "a rat: a quarter")
+	eq(K.killGain(cfg, {tier = "normal", xp = 1e9, kind = "health"}), 24, "experience factor is capped")
+	eq(K.killGain(cfg, {tier = "boss", xp = 1, kind = "health"}), 300, "a boss ignores the experience factor")
+	eq(K.killGain(cfg, {tier = "normal", xp = 200, kind = "mana"}), 12, "the mana flask gets 1.5x")
+	eq(K.killGain(cfg, {tier = "normal", xp = 200, kind = "health", treeGainPct = 50}), 12, "tree charge gain")
+	eq(K.killGain(cfg, {tier = "normal", xp = 200, kind = "health", treeGainPct = 5000}), 16, "tree gain is capped at 100%")
+	eq(K.killGain(cfg, {tier = "mythic", xp = 200, kind = "health"}), 0, "unknown tier: nothing")
+	eq(K.killGain(cfg, {tier = "boss", xp = 1, kind = "mana", treeGainPct = 100}), F.killCap, "the cap holds with everything on")
+	eq(K.add(cfg, "health", 480, 300, 0), 500, "refill stops at the maximum") eq(K.add(cfg, "health", 0, -50, 0), 0, "no negative gain")
+	eq(K.label(cfg, "health", 399, 0), "3/5", "label shows whole charges")
+	check(K.eligibleKill(cfg, {name = "Dragon"}), "a monster refills")
+	check(not K.eligibleKill(cfg, {name = "Dragon", summon = true}), "no summon")
+	check(not K.eligibleKill(cfg, {name = "Dragon", husk = true}), "no husk")
+	check(not K.eligibleKill(cfg, {name = "Dragon", player = true}), "no PvP refill")
+	check(not K.eligibleKill(cfg, {name = "Training Dummy"}) and not K.eligibleKill(cfg, {name = ""}), "no dummy, no nameless")
+	check(K.safeRefill(cfg, {safe = true, fighting = false}) and not K.safeRefill(cfg, {safe = false})
+		and not K.safeRefill(cfg, {safe = true, fighting = true}), "safe zone, not in a fight")
+	local ex, gn = K.treeValues(cfg, {flaskMaxCharges = 2, flaskChargeGain = 30})
+	eq(ex, 2, "tree extra") eq(gn, 30, "tree gain")
+	ex, gn = K.treeValues(cfg, {flaskMaxCharges = 99, flaskChargeGain = 999})
+	eq(ex, F.tree.maxExtra, "tree extra capped") eq(gn, F.tree.gainPctCap, "tree gain capped")
+	ex, gn = K.treeValues(cfg, nil) eq(ex, 0, "no tree bonus") eq(gn, 0, "no tree gain")
+	check(K.noticeDue(cfg, nil, 0) and not K.noticeDue(cfg, 1000, 1000 + F.noticeMs - 1) and K.noticeDue(cfg, 1000, 1000 + F.noticeMs),
+		"notice rate limit")
+	eq(K.drink(cfg, {id = HEALTH.id, target = "self", charges = 0}).why, "empty", "an empty flask")
+	eq(K.drink(cfg, {id = HEALTH.id, target = "self", charges = 0, exhausted = true}).why, "empty", "empty before exhausted")
+	eq(K.drink(cfg, {id = HEALTH.id, target = "self", charges = 100}).ok, true, "one charge drinks")
+
+	-- drinking on the mocked engine
+	local gwen = mkPlayer(30)
+	local flaskItem = mkItem(HEALTH.id)
+	heals = {}
+	eq(PT.charges(gwen, "health"), 500, "a new character has a full flask")
+	for i = 1, 5 do
+		os.mtime = function() return 100000 * i end -- the exhaust has passed between drinks
+		drink.onUse(gwen, flaskItem, {}, gwen, {}, true)
+	end
+	eq(#heals, 5, "five charges, five drinks")
+	eq(PT.charges(gwen, "health"), 0, "empty")
+	eq(gwen.st[cfg.storage.healthCharges], 0, "stored as 0, not as unset")
+	eq(PT.charges(gwen, "mana"), 800, "the mana flask is its own")
+	eq(gwen.msgs[#gwen.msgs], "Health flask: 0/5", "the status line after a drink")
+	os.mtime = function() return 900000 end
+	eq(drink.onUse(gwen, flaskItem, {}, gwen, {}, true), true, "an empty flask is handled")
+	eq(#heals, 5, "an empty flask does not heal")
+	eq(gwen.msgs[#gwen.msgs], "Your health flask is empty. Kill monsters or visit a temple to refill it.", "the empty message")
+	eq(flaskItem.removed, 0, "the flask item is never removed, empty or not")
+	-- stock fallback: a carried stock potion of the kind is drunk instead
+	local stockPot = mkItem(7618, 10)
+	gwen.bp.kids[#gwen.bp.kids + 1] = stockPot
+	os.mtime = function() return 950000 end
+	drink.onUse(gwen, flaskItem, {}, gwen, {}, true)
+	eq(#heals, 6, "the stock potion heals") eq(stockPot.removed, 1, "and is used up")
+	eq(PT.charges(gwen, "health"), 0, "the flask stays empty")
+	eq(gwen.msgs[#gwen.msgs], "Your health flask is empty: you drank a health potion from your backpack.", "told")
+	-- a second drink inside the exhaust (empty, with stock) is refused
+	drink.onUse(gwen, flaskItem, {}, gwen, {}, true)
+	eq(#heals, 6, "exhaust still applies to the fallback")
+	-- a drink on another player costs the drinker's charge
+	local hal = mkPlayer(31) local hanna = mkPlayer(32)
+	os.mtime = function() return 2000000 end
+	drink.onUse(hal, flaskItem, {}, hanna, {}, false)
+	eq(PT.charges(hal, "health"), 400, "the drinker pays") eq(PT.charges(hanna, "health"), 500, "the target does not")
+	-- relog / item identity: a second flask item (a split or a copy) shares the same pool
+	local copy = mkItem(HEALTH.id, 3)
+	os.mtime = function() return 3000000 end
+	drink.onUse(hal, copy, {}, hal, {}, false)
+	eq(PT.charges(hal, "health"), 300, "another item of the same id uses the same character pool")
+	-- never above the maximum, hand-edited storage clamps
+	hal.st[cfg.storage.healthCharges] = 10 ^ 9
+	eq(PT.charges(hal, "health"), 500, "an absurd stored value reads as the maximum")
+	-- the tree's extra charge raises the maximum
+	hal.st[cfg.storage.treeMaxCharges] = 2
+	eq(PT.maxCharges(hal, "health"), 7, "tree extra charges") PT.fill(hal) eq(PT.charges(hal, "health"), 700, "fill to the new maximum")
+	os.mtime = nil
+end
+
+-- kills, the safe zone and the look (potion_flasks.lua on the mocked engine)
+do
+	local callbacks, gevents, deathEvents = {}, {}, {}
+	EventCallback = {register = function(self)
+		callbacks[#callbacks + 1] = {onSpawn = self.onSpawn, onLook = self.onLook}
+		self.onSpawn, self.onLook = nil, nil
+	end}
+	local baseEvent = event
+	function GlobalEvent(name)
+		local e = baseEvent(name)
+		function e:interval(ms) self.ms = ms end
+		function e:register() gevents[name] = self end
+		return e
+	end
+	function CreatureEvent(name)
+		local e = baseEvent(name)
+		function e:register() deathEvents[name] = self end
+		return e
+	end
+	TILESTATE_PROTECTIONZONE, CONDITION_INFIGHT, CONDITIONID_DEFAULT = 1, 2, 3
+	local monsters = {}
+	Creature = function(id) return monsters[id] or players[id] end
+	local partyOf = {}
+	local function addParty(a, b)
+		local members = {a, b}
+		local party = {getMembers = function() local out = {} for _, m in ipairs(members) do out[#out + 1] = m end return out end,
+			getLeader = function() return a end}
+		partyOf[a], partyOf[b] = party, party
+	end
+	local function setup(p, x, pz, fighting)
+		p.pos = {x = x, y = 100, z = 7}
+		p.pz, p.fighting = pz, fighting
+		p.getPosition = function(self) return self.pos end
+		p.getParty = function(self) return partyOf[self] end
+		p.getTile = function(self) return {hasFlag = function(_, f) return f == TILESTATE_PROTECTIONZONE and self.pz end} end
+		p.getCondition = function(self, c) if c == CONDITION_INFIGHT and self.fighting then return {} end return self.conds[c] end
+		p.registerEvent = function() end
+		p.getTopParent = nil
+	end
+	dofile("data/scripts/chaos/potion_flasks.lua")
+	local F = ChaosPotionFlasks
+	local spawnCb, lookCb
+	for _, c in ipairs(callbacks) do spawnCb = spawnCb or c.onSpawn lookCb = lookCb or c.onLook end
+	check(spawnCb ~= nil and lookCb ~= nil and deathEvents.ChaosFlaskDeath ~= nil, "death event, spawn and look registered")
+	eq(gevents.ChaosFlaskSafeThink.ms, cfg.flask.safeMs, "the safe zone think interval")
+	local registeredOn = {}
+	local function mkMonster(id, name, xp, master)
+		local m = {id = id, name = name, dmg = {}, events = registeredOn}
+		function m:getId() return self.id end
+		function m:isPlayer() return false end
+		function m:isMonster() return true end
+		function m:getMaster() return master end
+		function m:getName() return self.name end
+		function m:getType() return {name = function() return name end, getExperience = function() return xp end} end
+		function m:getDamageMap() return self.dmg end
+		function m:registerEvent(e) registeredOn[#registeredOn + 1] = e end
+		monsters[id] = m
+		return m
+	end
+	local function kill(m, killer, most)
+		return deathEvents.ChaosFlaskDeath.onDeath(m, nil, killer, most)
+	end
+	local ivy = mkPlayer(40) local jon = mkPlayer(41) local kai = mkPlayer(42) local lou = mkPlayer(43)
+	for i, p in ipairs({ivy, jon, kai, lou}) do setup(p, 100 + (i == 4 and 90 or 0), false, false) end
+	addParty(ivy, kai) addParty(jon, lou)
+	for _, p in ipairs({ivy, jon, kai, lou}) do
+		p.st[cfg.storage.healthCharges] = 0 p.st[cfg.storage.manaCharges] = 0
+	end
+	-- spawn: a monster carries the event, a summon does not
+	spawnCb(mkMonster(900, "Rat", 5), {}, false, false)
+	eq(registeredOn[1], "ChaosFlaskDeath", "a spawned monster gets the death event")
+	local tamed = mkMonster(901, "Rat", 5, ivy) spawnCb(tamed, {}, false, false)
+	eq(#registeredOn, 1, "a summon does not")
+	-- a normal kill: killer + near party member + damage map; not a far party member
+	local ogre = mkMonster(902, "Ogre", 200)
+	ogre.dmg = {[jon.id] = 50}
+	kill(ogre, ivy, ivy)
+	eq(PT.charges(ivy, "health"), 8, "the killer: 8 hundredths (normal at the reference experience)")
+	eq(PT.charges(kai, "health"), 8, "a party member of the killer, near")
+	eq(PT.charges(jon, "health"), 8, "someone in the damage map")
+	eq(PT.charges(lou, "health"), 0, "the damage dealer's party member 90 tiles away gets nothing")
+	eq(PT.charges(ivy, "mana"), 12, "mana flask 1.5x")
+	-- a boss and a rare
+	local boss = mkMonster(903, "Big Boss", 1)
+	ChaosTierOf = function(c) return c.id == 903 and "boss" or c.id == 904 and "rare" or "normal" end
+	kill(boss, ivy, ivy)
+	eq(PT.charges(ivy, "health"), 308, "a boss: 300 more")
+	ivy.st[cfg.storage.healthCharges] = 0
+	kill(mkMonster(904, "Ogre", 200), ivy, ivy)
+	eq(PT.charges(ivy, "health"), 60, "a rare: 60")
+	-- no refill: a summon's death, a training dummy, a player's death (no PvP refill)
+	ivy.st[cfg.storage.healthCharges] = 0
+	kill(mkMonster(905, "Rat", 200, jon), ivy, ivy) kill(mkMonster(906, "Training Dummy", 200), ivy, ivy)
+	local victim = mkPlayer(44) setup(victim, 100, false, false)
+	victim.isMonster = function() return false end
+	kill(victim, ivy, ivy)
+	eq(PT.charges(ivy, "health"), 0, "summon, dummy and a player's death refill nothing")
+	-- a rift husk refills nothing
+	ChaosRift = {isHusk = function(c) return c.id == 907 end}
+	kill(mkMonster(907, "Ogre", 200), ivy, ivy)
+	eq(PT.charges(ivy, "health"), 0, "a husk refills nothing")
+	ChaosRift = nil
+	-- full flask stays full; a kill by a non-player (a monster killed by another) does nothing
+	ivy.st[cfg.storage.healthCharges] = -1
+	kill(mkMonster(908, "Ogre", 200), ivy, ivy)
+	eq(PT.charges(ivy, "health"), 500, "a full flask stays at the maximum")
+	local env = mkMonster(909, "Ogre", 200)
+	kill(env, nil, nil) kill(env, monsters[900], monsters[900])
+	-- the notice: a whole charge more, rate limited
+	local mia = mkPlayer(45) setup(mia, 100, false, false)
+	mia.st[cfg.storage.healthCharges] = 95 mia.st[cfg.storage.manaCharges] = 0
+	os.mtime = function() return 10000 end
+	kill(mkMonster(910, "Ogre", 200), mia, mia)
+	eq(mia.msgs[#mia.msgs], "Flasks: health 1/5, mana 0/8", "the refill line when a whole charge came")
+	local n = #mia.msgs
+	mia.st[cfg.storage.healthCharges] = 95
+	os.mtime = function() return 10000 + 1000 end
+	kill(mkMonster(911, "Ogre", 200), mia, mia)
+	eq(#mia.msgs, n, "at most one refill line per noticeMs")
+	os.mtime = function() return 10000 + cfg.flask.noticeMs + 1 end
+	mia.st[cfg.storage.healthCharges] = 95
+	kill(mkMonster(912, "Ogre", 200), mia, mia)
+	eq(#mia.msgs, n + 1, "and one again later")
+	-- the safe zone
+	local nan = mkPlayer(46) setup(nan, 100, true, false)
+	nan.st[cfg.storage.healthCharges] = 0 nan.st[cfg.storage.manaCharges] = 100
+	local oto = mkPlayer(47) setup(oto, 100, false, false) oto.st[cfg.storage.healthCharges] = 0
+	local pam = mkPlayer(48) setup(pam, 100, true, true) pam.st[cfg.storage.healthCharges] = 0
+	eq(F.safePass({nan, oto, pam}), 1, "only the player in the zone and out of a fight is filled")
+	eq(PT.charges(nan, "health"), 500, "health full") eq(PT.charges(nan, "mana"), 800, "mana full")
+	eq(PT.charges(oto, "health"), 0, "outside: nothing") eq(PT.charges(pam, "health"), 0, "in the zone but fighting: nothing")
+	eq(nan.msgs[#nan.msgs], "Your flasks are full again.", "told")
+	eq(F.safePass({nan}), 0, "already full: no second message")
+	-- look: your own flask only
+	local own = mkItem(HEALTH.id)
+	own.isItem = function() return true end
+	own.getTopParent = function() return ivy end
+	ivy.isPlayer = function() return true end
+	ivy.st[cfg.storage.healthCharges] = 230
+	eq(lookCb(ivy, own, {}, 1, "You see an everfull health potion."), "You see an everfull health potion.\nCharges: 2/5",
+		"look shows your charges")
+	eq(lookCb(jon, own, {}, 1, "You see x."), "You see x.", "somebody else's flask shows none of yours")
+	local other = mkItem(7618) other.isItem = function() return true end other.getTopParent = function() return ivy end
+	eq(lookCb(ivy, other, {}, 1, "You see y."), "You see y.", "a stock potion is untouched")
+	os.mtime = nil
 end
 
 print(string.format("potions_test: %d checks, %d failures", count, failures))

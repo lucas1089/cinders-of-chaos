@@ -2,11 +2,23 @@
 -- server/tests/potions_test.lua. README "Potions".
 --   ChaosPotionsCore.everfull(cfg, id)        the Everfull entry of a server id, or nil
 --   ChaosPotionsCore.isFlask(cfg, id)          an old empty flask id
---   ChaosPotionsCore.drink(cfg, s)             s = {id, exhausted, target} -> {ok, health, mana, consume, flask}
+--   ChaosPotionsCore.drink(cfg, s)             s = {id, exhausted, target[, charges]} -> {ok, health, mana, consume, flask}
 --                                              | {ok = false, why, text}
 --   ChaosPotionsCore.npcBuy(cfg, s)            s = {id, owned, money} -> {ok, price} | {ok = false, why, text}
 --   ChaosPotionsCore.amount(cfg, range, level, max, bonusPct[, rand])  one drink: fixed roll + percent of max
 --   ChaosPotionsCore.grantDue(cfg, s)          s = {granted, lastLogin} -> true when a login grant is due
+--   Flask charges (cfg.flask; hundredths of a charge, an unset storage value is a full flask):
+--   ChaosPotionsCore.maxCharges(cfg, kind, treeExtra)      whole charges the flask holds
+--   ChaosPotionsCore.read(cfg, kind, raw, treeExtra)       raw storage value -> hundredths (unset / bad = full)
+--   ChaosPotionsCore.canDrink(cfg, hundredths)             enough for one drink
+--   ChaosPotionsCore.spend(cfg, hundredths)                after a drink
+--   ChaosPotionsCore.killGain(cfg, s)                      s = {tier, xp, treeGainPct, kind} -> hundredths per kill
+--   ChaosPotionsCore.add(cfg, kind, hundredths, gain, treeExtra)  capped at the maximum
+--   ChaosPotionsCore.whole(hundredths) / K.label(...)      whole charges, "3/5"
+--   ChaosPotionsCore.eligibleKill(cfg, s)                  s = {name, summon, husk, player} -> bool
+--   ChaosPotionsCore.safeRefill(cfg, s)                    s = {safe, fighting} -> bool
+--   ChaosPotionsCore.treeValues(cfg, bonuses)              the tree's extra charges and gain percent (capped)
+--   ChaosPotionsCore.noticeDue(cfg, last, now)             at most one refill notice per noticeMs
 -- Lua 5.1 / LuaJIT and Lua 5.3 compatible.
 ChaosPotionsCore = ChaosPotionsCore or {}
 local K = ChaosPotionsCore
@@ -40,10 +52,13 @@ function K.drink(cfg, s)
 	if s.target == "creature" then
 		return {ok = false, why = "target"}
 	end
+	if s.charges ~= nil and not K.canDrink(cfg, s.charges) then
+		return {ok = false, why = "empty", kind = e.key}
+	end
 	if s.exhausted then
 		return {ok = false, why = "exhausted", text = "You are exhausted."}
 	end
-	return {ok = true, health = e.health, mana = e.mana, consume = false, flask = nil}
+	return {ok = true, kind = e.key, health = e.health, mana = e.mana, consume = false, flask = nil}
 end
 
 -- the amount of one potion drink: a roll inside range (the fixed part) + percent(level) of max, then x (1 + bonusPct)
@@ -66,7 +81,7 @@ function K.npcBuy(cfg, s)
 		return {ok = false, why = "unknown"}
 	end
 	if s.owned then
-		return {ok = false, why = "owned", text = "You already have one. It never runs out."}
+		return {ok = false, why = "owned", text = "You already have one. It refills as you kill monsters."}
 	end
 	if (s.money or 0) < e.price then
 		return {ok = false, why = "money", text = "You do not have enough money."}
@@ -91,4 +106,107 @@ function K.grantDue(cfg, s)
 		return false
 	end
 	return (s.lastLogin or 0) > 0
+end
+
+-- ---------------------------------------------------------------- flask charges (README "Potions", "Flask charges")
+local function flaskOf(cfg, kind)
+	return (cfg.flask or {})[kind]
+end
+
+function K.maxCharges(cfg, kind, treeExtra)
+	local f = flaskOf(cfg, kind)
+	if not f then
+		return 0
+	end
+	local cap = (cfg.flask.tree or {}).maxExtra or 0
+	local extra = math.max(0, math.min(cap, math.floor(tonumber(treeExtra) or 0)))
+	return (f.max or 0) + extra
+end
+
+-- the raw storage value (-1 / nil: never set) -> hundredths of a charge, 0 .. max * 100. A value outside the range
+-- (an old maximum, a hand edit) is clamped, never trusted.
+function K.read(cfg, kind, raw, treeExtra)
+	local top = K.maxCharges(cfg, kind, treeExtra) * 100
+	raw = tonumber(raw)
+	if raw == nil or raw < 0 or raw ~= raw then
+		return top
+	end
+	return math.min(top, math.floor(raw))
+end
+
+function K.canDrink(cfg, hundredths)
+	return (tonumber(hundredths) or 0) >= (cfg.flask.cost or 1) * 100
+end
+
+function K.spend(cfg, hundredths)
+	return math.max(0, (tonumber(hundredths) or 0) - (cfg.flask.cost or 1) * 100)
+end
+
+-- the refill of one kill for one flask, in whole hundredths of a charge. Zero for an unknown tier.
+function K.killGain(cfg, s)
+	local f = cfg.flask
+	local base = f.perKill[s.tier or "normal"]
+	local fl = flaskOf(cfg, s.kind)
+	if not base or not fl then
+		return 0
+	end
+	local factor = 1
+	if s.tier ~= "boss" then
+		local x = f.xp or {}
+		factor = (tonumber(s.xp) or 0) / math.max(1, x.ref or 1)
+		factor = math.max(x.min or 0, math.min(x.max or 1, factor))
+	end
+	local pct = math.max(0, math.min((f.tree or {}).gainPctCap or 0, tonumber(s.treeGainPct) or 0))
+	local v = base * factor * (fl.gain or 1) * (1 + pct / 100)
+	return math.max(0, math.min(f.killCap or v, math.floor(v + 0.5)))
+end
+
+function K.add(cfg, kind, hundredths, gain, treeExtra)
+	local top = K.maxCharges(cfg, kind, treeExtra) * 100
+	return math.min(top, math.max(0, math.floor(tonumber(hundredths) or 0)) + math.max(0, math.floor(tonumber(gain) or 0)))
+end
+
+function K.whole(hundredths)
+	return math.floor((tonumber(hundredths) or 0) / 100)
+end
+
+function K.label(cfg, kind, hundredths, treeExtra)
+	return K.whole(hundredths) .. "/" .. K.maxCharges(cfg, kind, treeExtra)
+end
+
+-- a kill that refills: a monster with a name, not a summon of a player or a dissolved rift husk, not a training dummy.
+-- A player never refills anything (no PvP refill): the death event is only put on monsters, and this refuses one.
+function K.eligibleKill(cfg, s)
+	if s.player or s.summon or s.husk then
+		return false
+	end
+	local name = tostring(s.name or ""):lower()
+	if name == "" then
+		return false
+	end
+	for _, w in ipairs(cfg.flask.skipWords or {}) do
+		if name:find(w, 1, true) then
+			return false
+		end
+	end
+	return true
+end
+
+function K.safeRefill(cfg, s)
+	if not s.safe then
+		return false
+	end
+	return not (cfg.flask.safeNeedsNoFight and s.fighting)
+end
+
+function K.treeValues(cfg, bonuses)
+	local t = cfg.flask.tree or {}
+	bonuses = bonuses or {}
+	local extra = math.max(0, math.min(t.maxExtra or 0, math.floor(tonumber(bonuses[t.maxStat or ""]) or 0)))
+	local gain = math.max(0, math.min(t.gainPctCap or 0, math.floor(tonumber(bonuses[t.gainStat or ""]) or 0)))
+	return extra, gain
+end
+
+function K.noticeDue(cfg, last, now)
+	return last == nil or now - last >= (cfg.flask.noticeMs or 0)
 end

@@ -1409,13 +1409,27 @@ return {
 			"A Everfull Ration está na sua %s. Use como comida: ela nunca acaba.",
 		["Back after your death: your Everfull Ration."] = "De volta depois da sua morte: sua Everfull Ration.",
 		-- Everfull potions (potions.lua, data/lib/chaos_potions.lua)
-		["You received an Everfull Health Potion and an Everfull Mana Potion. They never run out."] =
-			"Você recebeu uma Everfull Health Potion e uma Everfull Mana Potion. Elas nunca acabam.",
-		["You already have one. It never runs out."] = "Você já tem uma. Ela nunca acaba.",
+		["You received an Everfull Health Potion and an Everfull Mana Potion. They refill as you kill monsters."] =
+			"Você recebeu uma Everfull Health Potion e uma Everfull Mana Potion. Elas se recarregam quando você mata monstros.",
+		["You already have one. It refills as you kill monsters."] = "Você já tem uma. Ela se recarrega quando você mata monstros.",
+		-- flask charges (potions.lua, potion_flasks.lua)
+		["Health flask: %s"] = "Frasco de vida: %s",
+		["Mana flask: %s"] = "Frasco de mana: %s",
+		["Flasks: health %s, mana %s"] = "Frascos: vida %s, mana %s",
+		["Your health flask is empty. Kill monsters or visit a temple to refill it."] =
+			"Seu frasco de vida está vazio. Mate monstros ou visite um templo para recarregá-lo.",
+		["Your mana flask is empty. Kill monsters or visit a temple to refill it."] =
+			"Seu frasco de mana está vazio. Mate monstros ou visite um templo para recarregá-lo.",
+		["Your health flask is empty: you drank a health potion from your backpack."] =
+			"Seu frasco de vida está vazio: você bebeu uma poção de vida da mochila.",
+		["Your mana flask is empty: you drank a mana potion from your backpack."] =
+			"Seu frasco de mana está vazio: você bebeu uma poção de mana da mochila.",
+		["Charges: %s"] = "Cargas: %s",
+		["Your flasks are full again."] = "Seus frascos estão cheios de novo.",
 		["You do not have enough money."] = "Você não tem dinheiro suficiente.",
 		["You have no room for it."] = "Você não tem espaço para ela.",
-		["It never runs out: drink it as often as the potion exhaust allows."] =
-			"Ela nunca acaba: beba sempre que o intervalo das poções permitir.",
+		["Kills and the temple refill its charges: each drink costs one."] =
+			"Mortes e o templo recarregam as cargas dela: cada gole custa uma.",
 		["%d days of the Chaos Pact added: it runs until %s."] = "%d dias de Chaos Pact adicionados: ele vale até %s.",
 		["Your Chaos Pact runs until %s. Claim your %d Chaos Coins every day in Character > Chaos Pact."] =
 			"Seu Chaos Pact vale até %s. Pegue suas %d Chaos Coins todo dia em Character > Chaos Pact.",
@@ -2038,6 +2052,15 @@ return {
 		["The second ring slot is gone: the badge slot took its place. Moved: %s."] =
 			"O segundo slot de anel saiu: o slot de badge ficou no lugar dele. Movidos: %s.",
 		["Your Ember Blessings fade: no blessings in the %s."] = "Suas Ember Blessings somem: sem bênçãos em %s.",
+		-- Ground pickups, globes and the Ember Blessings' ember (pickups.lua, globes.lua, blessings.lua)
+		["This is not meant for you."] = "Isto não é para você.",
+		["A health globe restores %d health."] = "Um globo de vida restaura %d de vida.",
+		["A mana globe restores %d mana."] = "Um globo de mana restaura %d de mana.",
+		["A dying ember drops: %s. Step on it within %d seconds."] =
+			"Uma brasa moribunda cai: %s. Pise nela em até %d segundos.",
+		["%s burns again: %ds."] = "%s arde de novo: %ds.",
+		["A dying ember blesses you: %s, %s"] = "Uma brasa moribunda abençoa você: %s, %s",
+		[" (%s fades)"] = " (%s se apaga)",
 		-- Factions: reputation, contracts, the quartermasters (factions.lua, factions_core.lua contracts and offer states)
 		["+%d reputation with %s%s."] = "+%d de reputação com %s%s.",
 		["You have reached this week's reputation cap with %s."] = "Você atingiu o limite semanal de reputação com %s.",
@@ -3893,5 +3916,31 @@ return {
 			"Equipamento para todas as classes: %s e %s para Warriors, %s para Mystics e %s para Rangers.",
 		["Azure Coins drop from the boss of the Azure portals and the Forbidden Chevalier, and some hunting tasks pay them."] =
 			"Azure Coins caem do chefe dos portais Azure e do Forbidden Chevalier, e algumas tarefas de caça pagam com elas.",
+		-- Cursed Chest (cursedchest.lua, O244)
+		["A cursed chest rises where the %s fell! Use it within %d seconds if you dare: five hordes guard its loot."] =
+			"Um baú amaldiçoado surge onde o %s caiu! Use-o em %d segundos, se tiver coragem: cinco hordas guardam o tesouro.",
+		["CURSED CHEST"] = "BAÚ AMALDIÇOADO",
+		["%s opens the cursed chest! Five hordes will come, one after another."] =
+			"%s abre o baú amaldiçoado! Cinco hordas virão, uma após a outra.",
+		["Horde %d/%d!"] = "Horda %d/%d!",
+		["Horde %d/%d: a rare leader leads it!"] = "Horda %d/%d: um líder raro a comanda!",
+		["Horde %d/%d: a legendary leader leads it!"] = "Horda %d/%d: um líder lendário a comanda!",
+		["HORDE %d/%d"] = "HORDA %d/%d",
+		["All five hordes are dead! The cursed chest unseals: use it within %d seconds to take your loot."] =
+			"As cinco hordas morreram! O baú amaldiçoado se abre: use-o em %d segundos para pegar seu tesouro.",
+		["The curse wins: time is up. The cursed chest crumbles and its hordes fade."] =
+			"A maldição vence: o tempo acabou. O baú amaldiçoado se desfaz e as hordas somem.",
+		["Nobody is left to fight. The cursed chest crumbles and its hordes fade."] =
+			"Não sobrou ninguém para lutar. O baú amaldiçoado se desfaz e as hordas somem.",
+		["You are leaving the cursed chest! Go back or the curse wins in %d seconds."] =
+			"Você está se afastando do baú amaldiçoado! Volte ou a maldição vence em %d segundos.",
+		["This cursed chest is not yours."] = "Este baú amaldiçoado não é seu.",
+		["The cursed chest crumbles to dust."] = "O baú amaldiçoado vira pó.",
+		["The cursed chest is awake: horde %d/%d is upon you."] = "O baú amaldiçoado despertou: a horda %d/%d está sobre você.",
+		["You cannot open a cursed chest in %s."] = "Você não pode abrir um baú amaldiçoado em %s.",
+		["You already took your share of the cursed chest."] = "Você já pegou a sua parte do baú amaldiçoado.",
+		["You were not there when the curse was lifted."] = "Você não estava lá quando a maldição foi quebrada.",
+		["You are too far from the cursed chest."] = "Você está longe demais do baú amaldiçoado.",
+		["Cursed Chest loot: %s.%s"] = "Tesouro do Baú Amaldiçoado: %s.%s",
 	},
 }
