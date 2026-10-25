@@ -70,7 +70,7 @@ def job_def(plan, cat, lay):
             if z['floor'] == f:
                 r = lay['rects'][z['id']]
                 zones.append(dict(x1=r[0], y1=r[1], x2=r[2], y2=r[3], shape=C.zone_shape(z, biome),
-                                  kind='boss' if z.get('role') == 'boss' else 'hunt'))
+                                  kind='boss' if z.get('role') == 'boss' else 'hunt', ragged=bool(z.get('ragged'))))
         paths = [dict(width=p['width'], style=p['style'], points=[list(q) for q in p['points']]) for p in lay['paths'][f]]
         per_floor[f] = dict(zones=zones, paths=paths, spots=[list(s) for s in lay['spots'][f]],
                             anchor=list(lay['anchors'][f]))
@@ -526,7 +526,7 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
     corridor = set()
     for f, paths in lay['paths'].items():
         for q in paths:
-            for x, y in C.route_cells(q['points'], q['width'] + (2 if q['style'] == 'tunnel' else 0)):
+            for x, y in C.route_cells(q['points'], q['width'] + {'tunnel': 2, 'wild': 4}.get(q['style'], 0)):
                 a = absp(x, y, f)
                 if not any(r[4] == a[2] and r[0] <= a[0] <= r[2] and r[1] <= a[1] <= r[3] for r in zrect.values()):
                     corridor.add(a)

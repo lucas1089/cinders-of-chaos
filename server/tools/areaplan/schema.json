@@ -201,6 +201,10 @@
           "pz": {
             "type": "boolean",
             "description": "a protection zone (no spawn may stand in it)"
+          },
+          "ragged": {
+            "type": "boolean",
+            "description": "ragged sides: each side of the zone bites in by a depth that wanders 0-4 tiles, so big rooms and caves lose their straight edges"
           }
         }
       }
@@ -231,9 +235,10 @@
           "style": {
             "enum": [
               "corridor",
-              "tunnel"
+              "tunnel",
+              "wild"
             ],
-            "description": "corridor: straight runs; tunnel: winding (default by biome)"
+            "description": "corridor: straight runs; tunnel: winding; wild: winding with ragged sides, its width swells and narrows (default by biome)"
           }
         }
       }

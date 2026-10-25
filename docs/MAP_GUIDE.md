@@ -427,8 +427,8 @@ temple with a nave, chapels and a boss throne room).
 |---|---|
 | `id`, `name`, `biome`, `size` [w, h] (24-200), `floors` (1-4), `level` [lo, hi] | the area |
 | `seed`, `origin`, `decoration` (sparse, normal, dense), `light` (dark, dim, normal, bright) | optional |
-| `zones` | `id`, `floor`, `shape` (room, cave, arena), `size` (small, medium, large, huge or [w, h]), `at` or `place` (compass), `role` (hunt, camp, boss, treasure, passage), `pz` |
-| `paths` | `from`, `to` (same floor), `width` 1-6, `style` corridor or tunnel |
+| `zones` | `id`, `floor`, `shape` (room, cave, arena), `size` (small, medium, large, huge or [w, h]), `at` or `place` (compass), `role` (hunt, camp, boss, treasure, passage), `pz`, `ragged` (sides bite in 0-4 tiles, no straight edges) |
+| `paths` | `from`, `to` (same floor), `width` 1-6, `style` corridor, tunnel or wild (ragged sides) |
 | `connections` | `stairs`, `ladder` (hole and ladder, both ways), `hole` (one way down), `teleport` (any two zones, `two_way`) |
 | `entry`, `exit` | the arrival zone (floor 1); the exit portal's zone and optional world target |
 | `spawns`, `boss`, `npcs`, `chests` | monster names from our list with count, pack and respawn; the boss in the boss room; NPCs of our list; quest chests with a quest key and a `reward` (item names, gold, experience); `new` NPCs with `lines`; `chest_action` |

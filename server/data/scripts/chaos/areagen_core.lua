@@ -262,13 +262,14 @@ local function carveRect(F, x1, y1, x2, y2)
 end
 
 -- a winding tunnel from (x, y) to (tx, ty): steps toward the target, sometimes aside
-local function tunnel(F, r, x, y, tx, ty, radius)
+-- wild: the radius swells and narrows by one tile and the route strays more, for ragged open-air trails
+local function tunnel(F, r, x, y, tx, ty, radius, wild)
 	local guard = 0
 	while (x ~= tx or y ~= ty) and guard < 4 * (F.w + F.h) do
 		guard = guard + 1
-		carveDisc(F, x, y, radius)
+		carveDisc(F, x, y, wild and max(1, radius + r:int(-1, 1)) or radius)
 		local dx, dy = tx - x, ty - y
-		if r:chance(25) then
+		if r:chance(wild and 40 or 25) then
 			local d = D4[r:int(1, 4)]
 			x, y = x + d[1], y + d[2]
 		elseif abs(dx) > abs(dy) or (abs(dx) == abs(dy) and r:chance(50)) then
@@ -964,8 +965,8 @@ local function blob(F, r, cx, cy, rad, fn)
 end
 
 -- a planned layout (the area planner, tools/area_planner.py): the zones, paths and spots of one floor are given, in
--- local cells. p.zones = {{x1, y1, x2, y2, shape = "room" | "cave" | "arena", kind = "hunt" | "boss" | ...}},
--- p.paths = {{width = n, style = "corridor" | "tunnel", points = {{x, y}, ...}}}, p.spots = {{x, y, r}} (landings
+-- local cells. p.zones = {{x1, y1, x2, y2, shape = "room" | "cave" | "arena", kind = "hunt" | "boss" | ..., ragged}},
+-- p.paths = {{width = n, style = "corridor" | "tunnel" | "wild", points = {{x, y}, ...}}}, p.spots = {{x, y, r}} (landings
 -- under a hole). Zones become F.rooms (room floors, paths kept free, spawn caps); corridor cells F.corridor.
 local function plannedLayout(F, r, p, required)
 	F.open, F.rooms, F.roomIdx, F.corridor = {}, {}, {}, {}
@@ -1025,6 +1026,29 @@ local function plannedLayout(F, r, p, required)
 				end
 			end
 		end
+		if z.ragged then
+			-- ragged sides: each side bites in by a depth that wanders 0-4 tiles along it (paths carve after this)
+			local deep = min(4, floor(min(x2 - x1, y2 - y1) / 6))
+			local function bite(n, cut)
+				local d = r:int(0, deep)
+				for j = 0, n - 1 do
+					d = min(deep, max(0, d + r:int(-1, 1)))
+					for e = 0, d - 1 do
+						local i = cut(j, e)
+						if i and F.roomIdx[i] == k then
+							F.open[i], F.roomIdx[i] = nil, nil
+						end
+					end
+				end
+			end
+			local function at(x, y)
+				return inZone(x, y) and idx(F, x, y) or nil
+			end
+			bite(x2 - x1 + 1, function(j, e) return at(x1 + j, y1 + e) end)
+			bite(x2 - x1 + 1, function(j, e) return at(x1 + j, y2 - e) end)
+			bite(y2 - y1 + 1, function(j, e) return at(x1 + e, y1 + j) end)
+			bite(y2 - y1 + 1, function(j, e) return at(x2 - e, y1 + j) end)
+		end
 		F.rooms[k] = {x1 = x1, y1 = y1, x2 = x2, y2 = y2, cx = cx, cy = cy, kind = z.kind or "hunt"}
 	end
 	local function open(i)
@@ -1040,12 +1064,12 @@ local function plannedLayout(F, r, p, required)
 		local pts = pa.points or {}
 		for j = 1, #pts - 1 do
 			local ax, ay, bx, by = pts[j][1], pts[j][2], pts[j + 1][1], pts[j + 1][2]
-			if pa.style == "tunnel" then
+			if pa.style == "tunnel" or pa.style == "wild" then
 				local before = {}
 				for i in pairs(F.open) do
 					before[i] = true
 				end
-				tunnel(F, r, ax, ay, bx, by, half)
+				tunnel(F, r, ax, ay, bx, by, half, pa.style == "wild")
 				for i in pairs(F.open) do
 					if not before[i] then
 						F.corridor[i] = true

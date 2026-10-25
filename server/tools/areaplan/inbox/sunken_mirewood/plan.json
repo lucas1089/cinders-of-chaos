@@ -19,7 +19,7 @@
     {
       "id": "camp",
       "floor": 1,
-      "shape": "room",
+      "shape": "cave",
       "size": [
         14,
         12
@@ -37,7 +37,8 @@
         24
       ],
       "place": "northwest",
-      "role": "hunt"
+      "role": "hunt",
+      "ragged": true
     },
     {
       "id": "bog",
@@ -48,23 +49,25 @@
         28
       ],
       "place": "center",
-      "role": "hunt"
+      "role": "hunt",
+      "ragged": true
     },
     {
       "id": "drowned",
       "floor": 1,
-      "shape": "room",
+      "shape": "cave",
       "size": [
         26,
         20
       ],
       "place": "south",
-      "role": "hunt"
+      "role": "hunt",
+      "ragged": true
     },
     {
       "id": "heart",
       "floor": 1,
-      "shape": "room",
+      "shape": "cave",
       "size": [
         38,
         24
@@ -73,7 +76,8 @@
         39,
         71
       ],
-      "role": "hunt"
+      "role": "hunt",
+      "ragged": true
     },
     {
       "id": "lair",
@@ -83,13 +87,16 @@
         24,
         22
       ],
-      "place": "east",
-      "role": "boss"
+      "role": "boss",
+      "at": [
+        122,
+        43
+      ]
     },
     {
       "id": "rootfall",
       "floor": 1,
-      "shape": "room",
+      "shape": "cave",
       "size": [
         34,
         26
@@ -98,12 +105,13 @@
         112,
         10
       ],
-      "role": "hunt"
+      "role": "hunt",
+      "ragged": true
     },
     {
       "id": "sinkhole",
       "floor": 1,
-      "shape": "room",
+      "shape": "cave",
       "size": [
         34,
         26
@@ -112,64 +120,76 @@
         112,
         92
       ],
-      "role": "hunt"
+      "role": "hunt",
+      "ragged": true
     }
   ],
   "paths": [
     {
       "from": "camp",
       "to": "reeds",
-      "width": 5
+      "width": 5,
+      "style": "wild"
     },
     {
       "from": "reeds",
       "to": "bog",
-      "width": 5
+      "width": 5,
+      "style": "wild"
     },
     {
       "from": "bog",
       "to": "drowned",
-      "width": 5
+      "width": 5,
+      "style": "wild"
     },
     {
       "from": "camp",
       "to": "drowned",
-      "width": 5
+      "width": 5,
+      "style": "wild"
     },
     {
       "from": "bog",
       "to": "lair",
-      "width": 5
+      "width": 5,
+      "style": "tunnel"
     },
     {
       "from": "camp",
       "to": "heart",
-      "width": 5
+      "width": 5,
+      "style": "wild"
     },
     {
       "from": "heart",
       "to": "bog",
-      "width": 5
+      "width": 5,
+      "style": "wild"
     },
     {
       "from": "heart",
       "to": "drowned",
-      "width": 5
+      "width": 5,
+      "style": "wild"
     },
     {
       "from": "bog",
       "to": "rootfall",
-      "width": 5
+      "width": 5,
+      "style": "wild"
     },
     {
       "from": "drowned",
       "to": "sinkhole",
-      "width": 5
+      "width": 5,
+      "style": "wild"
     },
     {
       "from": "bog",
       "to": "sinkhole",
-      "width": 5
+      "width": 5,
+      "style": "wild"
     }
   ],
   "entry": {

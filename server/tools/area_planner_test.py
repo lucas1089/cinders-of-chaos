@@ -289,6 +289,18 @@ ok(len(exit_items) == 1, 'crypt: one exit portal with the area exit action id')
 p = copy.deepcopy(examples['lava_cave'])
 p['seed'] = 999
 ok(PC.compile_plan(p, pair24=False, cat=cat)['otbm'] != results['lava_cave']['otbm'], 'another seed gives other tiles')
+# ragged zones and wild paths: other tiles, still a valid area, and the ragged sides take walkable tiles off
+p = copy.deepcopy(examples['swamp_hunt'])
+for z in p['zones']:
+    if z.get('role') != 'boss':
+        z['ragged'] = True
+for q in p['paths']:
+    if 'boss' not in [z.get('role') for z in p['zones'] if z['id'] in (q['from'], q['to'])]:
+        q['style'] = 'wild'
+ok(not msgs(p), 'ragged zones and wild paths validate: %s' % msgs(p))
+rg = PC.compile_plan(p, pair24=False, cat=cat)
+ok(rg['otbm'] != results['swamp_hunt']['otbm'], 'ragged zones and wild paths give other tiles')
+ok(not PC.qa_errors(rg), 'the ragged plan passes QA: %s' % PC.qa_errors(rg))
 # a one-way hole: no ladder below it
 p = copy.deepcopy(base)
 p['connections'][0]['type'] = 'hole'
