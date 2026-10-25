@@ -247,6 +247,9 @@ server/
                                       with inline room, a cache that clears in O(1), a hashed union); same creatures in the
                                       same order (see "Cheaper spectator queries (O212)"; header src/chaosspectators.h,
                                       tools/chaosspectators_test.cpp, tools/spectator_bench.cpp)
+  src-patches/0072-cheaper-map-description.patch   engine: ProtocolGame::GetFloorDescription walks the quad tree once per 8x8
+                                      block of tiles, not once per tile; same bytes (see "Cheaper map description (O213)";
+                                      header src/chaosmapdesc.h, tools/chaosmapdesc_test.cpp, tools/mapdesc_bench.cpp)
     remote_cmd.lua    remote_cmd_core.lua    remote_cmd_config.lua  (remote admin commands by file, see "Remote admin commands")
     spectate.lua      spectate_core.lua      spectate_config.lua    (the admin app's live view of a character, see "Live spectator")
     helpai.lua  helpai_core.lua  helpai_config.lua (Ember answers questions in the Help channel through the sidecar
@@ -23348,3 +23351,59 @@ beyond the normal update (the admin app has nothing to set for this).
 Re-run the benchmark: build the patch's header out (`awk` line of the CI step), then
 `g++ -std=c++17 -O2 -I DIR server/tools/spectator_bench.cpp -o spectator_bench && spectator_bench` (about 1 minute;
 `--seconds N` sets the time per row, `--check` the CI mode).
+
+## Cheaper map description (O213) (engine `src-patches/0072-cheaper-map-description.patch`, `src/chaosmapdesc.h`, `tools/mapdesc_bench.cpp`, `tools/chaosmapdesc_test.cpp`, `tools/mapdesc_world.h`)
+
+A map description is sent on login, teleport and every floor change, and a row or a column of it on every step of a
+player (`ProtocolGame::GetMapDescription` -> `GetFloorDescription` -> `GetTileDescription`). Audit of the stock engine
+(with patches 0001-0071), what was found and what was left alone.
+
+**Found.** `GetFloorDescription` called `Map::getTile` for every tile of the rectangle. Each call walks the quad tree from
+the root (`QTreeNode::getLeafStatic`, 12 pointer hops down to an 8 x 8 leaf) and then the leaf's floor, although 64
+neighbouring tiles share that one leaf and floor. A full description is 18 x 14 tiles on up to 8 floors: about 2000 walks
+into memory that is cold on a big map. The sibling costs were checked and are small: `NetworkMessage` writes are a bounds
+check and a `memcpy` (patch 0032 already removed the 90 KB zeroing), and the strings and creature fields of a tile are
+needed bytes.
+
+**Changed (patch 0072, same bytes).** `src/chaosmapdesc.h`, header only: `ChaosMapDesc::describeFloor` is the stock loop
+(same order: x outer, y inner; same skip counter and the 0xFE flush) with the `Floor` resolved once per 8 x 8 block
+through four slots keyed by block (a column of up to 25 tiles spans at most four block rows, so the next column finds
+them again): an 18 x 14 floor needs 9 walks instead of 252. The coordinates are narrowed to `uint16_t` and the floor to
+`uint8_t` first, as `getTile`'s parameters did, so a rectangle past the map edge behaves the same. `map.h`: `Map::getFloorAt`
+(`getTile` without the last index). `protocolgame.cpp`: `GetFloorDescription` calls `describeFloor`.
+
+**Left alone on purpose.** The known creature list (`knownCreatureSet`, an `unordered_set`): its eviction after 1300
+entries follows the container's iteration order, so a different container could drop another creature and change the
+bytes. It is also touched once per creature in view, not per tile. The tile writer (`GetTileDescription`) is needed work.
+
+**Measured** (`mapdesc_bench.cpp`; this sandbox, g++ 13.3 -O2, one core, best of 7 rounds of 2000 random positions on a
+400 x 400 city and cave, both versions on the same positions, interleaved).
+
+| Description | stock | new | |
+|---|---|---|---|
+| city, full 18 x 14 (z 7, 8 floors, 11.2 KB) | 97-101 us | 67-72 us | 1.41-1.44x |
+| cave, full 18 x 14 (z 11, 5 floors, 14.1 KB) | 93-99 us | 71-75 us | 1.30-1.32x |
+| city, step: row of 18 | 9-13 us | 7-10 us | 1.28-1.29x |
+| city, step: column of 14 | 5-6 us | 4-5 us | 1.21-1.28x |
+| sea, full 18 x 14 (almost all empty) | 10.2 us | 4.4 us | 2.29x |
+
+The tile writer of the benchmark is a stand-in (ground and a few items, a table lookup each, into a `std::vector`), much
+lighter than the engine's (creature visibility checks, outfits, the known creature list), and that part is the same before
+and after. So the share saved of a whole description in the engine is smaller than the table, probably 10 to 25%, not
+measured. In absolute terms: a step saves 2 to 4 us per player and a floor change or login about 30 us.
+
+The bytes are identical: `chaosmapdesc_test.cpp` compares the new loop with a copy of the stock one on 60 synthetic maps
+(dense, sparse, empty, one tile per leaf, rectangles on the 16 bit coordinate edges and across them, floors that do not
+exist, z out of range, a skip carried in from a previous floor, columns with more than 254 empty tiles) for 24,000
+single floors and 24,000 whole descriptions (ASan and UBSan too), and checks the count of walks (9 for 18 x 14).
+`mapdesc_bench.cpp --check` compares every byte of every position it times and fails when a full description is not at
+least 1.15x faster (CI "Native checks").
+
+**Not verified.** No engine build or link, no run on a live server, no profile of a real server. `protocolgame.cpp` and
+`map.cpp` were not compiled: the sandbox has no Lua or Boost headers, so the patched files were not even syntax-checked
+(`describeFloor` itself is compiled by the test with the same lambda shapes). The world of the benchmark is a copy of the
+quad tree and the loops, kept in step with `map.cpp` and `protocolgame.cpp` by hand. Verified: the chain 0001-0072 applies
+to the base source with `patch -p1`, 0 FAILED, 0 fuzz, 0 reversed.
+
+Install: apply the patch with the others and build. No key, no config, nothing to turn on; a restart brings it. To compare
+on a test server, time a login or a teleport (`onLogin` to the first map packet) before and after. VPS: no action.

@@ -259,6 +259,18 @@ jobs:
           g++ -std=c++17 -O2 -Wall -Wextra -I "$d" server/tools/spectator_bench.cpp -o "$d/spectator_bench"
           "$d/spectator_bench" --check
 
+      - name: Map description, byte equality and benchmark check (C++; header from server src-patch 0072)
+        run: |
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/chaosmapdesc\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            server/src-patches/0072-cheaper-map-description.patch > "$d/chaosmapdesc.h"
+          g++ -std=c++17 -O1 -Wall -Wextra -I "$d" -I server/tools server/tools/chaosmapdesc_test.cpp -o "$d/chaosmapdesc_test"
+          "$d/chaosmapdesc_test"
+          g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" -I server/tools server/tools/chaosmapdesc_test.cpp -o "$d/chaosmapdesc_asan"
+          "$d/chaosmapdesc_asan"
+          g++ -std=c++17 -O2 -Wall -Wextra -I "$d" -I server/tools server/tools/mapdesc_bench.cpp -o "$d/mapdesc_bench"
+          "$d/mapdesc_bench" --check
+
       - name: Incremental save, pure parts (C++; header from server src-patch 0026)
         run: |
           d=$(mktemp -d)

@@ -1,0 +1,155 @@
+# Cheaper map description (O213; server/README.md "Cheaper map description (O213)").
+# A map description (login, teleport, floor change; a row or a column on every step) is written by
+# ProtocolGame::GetMapDescription -> GetFloorDescription, which asked Map::getTile for every tile of the rectangle: one walk
+# down the quad tree (12 pointer hops, QTreeNode::getLeafStatic) per tile, although 64 neighbouring tiles (an 8x8 leaf) share
+# one leaf and one Floor. A full description is 18 x 14 tiles on up to 8 floors: about 2000 walks, mostly into memory that
+# is not in the cache on a big map.
+# Now:
+#   * src/chaosmapdesc.h (new, header only, no engine types; server/tools/chaosmapdesc_test.cpp and
+#     server/tools/mapdesc_bench.cpp build it alone): ChaosMapDesc::describeFloor, the same loop, order and skip counter,
+#     with the Floor resolved once per 8x8 block (four slots keyed by block): an 18 x 14 floor needs 9 walks instead of 252.
+#     Coordinates are narrowed to uint16_t / uint8_t first, as getTile's parameters did.
+#   * map.h: Map::getFloorAt, getTile without the last index.
+#   * protocolgame.cpp: GetFloorDescription calls describeFloor.
+# The bytes are identical (the test compares a copy of the stock loop on many synthetic maps, edges of the 16 bit
+# coordinates, floors that do not exist, runs of more than 254 empty tiles). Not changed on purpose: the known creature list
+# (its eviction order after 1300 entries follows the unordered_set iteration order, so a different container could change
+# which creature is dropped and the bytes) and NetworkMessage (patch 0032 already removed its 90 KB zeroing).
+--- a/src/map.h
++++ b/src/map.h
+@@ -182,6 +182,16 @@
+ 		  * \returns A pointer to that tile.
+ 		  */
+ 		Tile* getTile(uint16_t x, uint16_t y, uint8_t z) const;
++		// Chaos (patch 0072): the Floor (8x8 tiles) that holds the tile, or nullptr: getTile minus the last index, so a
++		// map description resolves it once per 8x8 block (src/chaosmapdesc.h)
++		const Floor* getFloorAt(uint16_t x, uint16_t y, uint8_t z) const {
++			if (z >= MAP_MAX_LAYERS) {
++				return nullptr;
++			}
++
++			const QTreeLeafNode* leaf = QTreeNode::getLeafStatic<const QTreeLeafNode*, const QTreeNode*>(&root, x, y);
++			return leaf ? leaf->getFloor(z) : nullptr;
++		}
+ 		Tile* getTile(const Position& pos) const {
+ 			return getTile(pos.x, pos.y, pos.z);
+ 		}
+--- a/src/protocolgame.cpp
++++ b/src/protocolgame.cpp
+@@ -24,6 +24,7 @@
+ #include "chaosdisplay.h"
+ #include "chaosfxoffsets.h"
+ #include "chaoscast.h"
++#include "chaosmapdesc.h"
+ #include "chaoscastserver.h"
+ #include <fmt/format.h>
+ 
+@@ -993,26 +994,10 @@
+ 
+ void ProtocolGame::GetFloorDescription(NetworkMessage& msg, int32_t x, int32_t y, int32_t z, int32_t width, int32_t height, int32_t offset, int32_t& skip)
+ {
+-	for (int32_t nx = 0; nx < width; nx++) {
+-		for (int32_t ny = 0; ny < height; ny++) {
+-			Tile* tile = g_game.map.getTile(x + nx + offset, y + ny + offset, z);
+-			if (tile) {
+-				if (skip >= 0) {
+-					msg.addByte(skip);
+-					msg.addByte(0xFF);
+-				}
+-
+-				skip = 0;
+-				GetTileDescription(tile, msg);
+-			} else if (skip == 0xFE) {
+-				msg.addByte(0xFF);
+-				msg.addByte(0xFF);
+-				skip = -1;
+-			} else {
+-				++skip;
+-			}
+-		}
+-	}
++	// Chaos (patch 0072): one quad tree walk per 8x8 block of tiles instead of one per tile; same tiles, order and bytes
++	ChaosMapDesc::describeFloor<Floor>(msg, x, y, z, width, height, offset, skip,
++		[](uint16_t tx, uint16_t ty, uint8_t tz) { return g_game.map.getFloorAt(tx, ty, tz); },
++		[this, &msg](const Tile* tile) { GetTileDescription(tile, msg); });
+ }
+ 
+ void ProtocolGame::checkCreatureAsKnown(uint32_t id, bool& known, uint32_t& removedKnown)
+--- /dev/null
++++ b/src/chaosmapdesc.h
+@@ -0,0 +1,75 @@
++// Copyright 2022 The Forgotten Server Authors. All rights reserved.
++// Use of this source code is governed by the GPL-2.0 License that can be found in the LICENSE file.
++
++#ifndef FS_CHAOSMAPDESC_H
++#define FS_CHAOSMAPDESC_H
++
++// Cheaper map description (patch 0072, server/README.md "Cheaper map description (O213)"). Header only, no engine
++// types: server/tools/chaosmapdesc_test.cpp and server/tools/mapdesc_bench.cpp build it alone.
++//   ProtocolGame::GetFloorDescription asked Map::getTile for every tile of the rectangle: one walk down the quad tree
++//   (12 pointer hops, each a likely cache miss on a big map) per tile, although 64 neighbouring tiles (an 8x8 leaf,
++//   FLOOR_SIZE 8) share one leaf and one Floor. A full description is 18 x 14 tiles on up to 8 floors, about 2000 walks;
++//   a step is a row or column of 14 to 18 tiles on every floor.
++//   describeFloor keeps the loop, the order and the skip counter exactly as they were and resolves the Floor once per
++//   8x8 block (a four slot cache keyed by x >> 3, y >> 3): an 18 x 14 floor
++//   needs 9 to 12 walks instead of 252. The tile coordinates are narrowed to
++//   16 bits and the floor to 8 bits first, as the stock call getTile(uint16_t, uint16_t, uint8_t) did, so a rectangle
++//   past the map edge behaves the same. The bytes written are identical.
++
++#include <cstdint>
++
++namespace ChaosMapDesc {
++
++// floorAt(uint16_t x, uint16_t y, uint8_t z) -> const FloorT* (nullptr when there is no leaf or no floor, or z is out of
++//   range: what Map::getTile checks before it reads the tile); FloorT::tiles[8][8] is indexed [x & 7][y & 7].
++// emitTile(tile)       writes one tile (ProtocolGame::GetTileDescription).
++// msg.addByte(uint8_t) writes a byte.
++// skip is the run of empty tiles not yet written (-1: none), shared by the floors of one description.
++template<typename FloorT, typename Msg, typename FloorAt, typename EmitTile>
++inline void describeFloor(Msg& msg, int32_t x, int32_t y, int32_t z, int32_t width, int32_t height, int32_t offset,
++                          int32_t& skip, FloorAt&& floorAt, EmitTile&& emitTile)
++{
++	const uint8_t fz = static_cast<uint8_t>(z);
++	// four slots, picked by the low bits of the block row: a column of up to 25 tiles spans at most four consecutive
++	// block rows, so the next column (same block column, the loop runs down y first) finds all of them again
++	const FloorT* slotFloor[4] = {};
++	uint32_t slotX[4] = {0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu}; // no real block key reaches 2^13
++	uint32_t slotY[4] = {};
++
++	for (int32_t nx = 0; nx < width; nx++) {
++		for (int32_t ny = 0; ny < height; ny++) {
++			const uint16_t tx = static_cast<uint16_t>(x + nx + offset);
++			const uint16_t ty = static_cast<uint16_t>(y + ny + offset);
++			const uint32_t bx = static_cast<uint32_t>(tx) >> 3;
++			const uint32_t by = static_cast<uint32_t>(ty) >> 3;
++			const uint32_t slot = by & 3;
++			if (slotX[slot] != bx || slotY[slot] != by) {
++				slotX[slot] = bx;
++				slotY[slot] = by;
++				slotFloor[slot] = floorAt(tx, ty, fz);
++			}
++			const FloorT* floor = slotFloor[slot];
++
++			auto* tile = floor ? floor->tiles[tx & 7][ty & 7] : nullptr;
++			if (tile) {
++				if (skip >= 0) {
++					msg.addByte(skip);
++					msg.addByte(0xFF);
++				}
++
++				skip = 0;
++				emitTile(tile);
++			} else if (skip == 0xFE) {
++				msg.addByte(0xFF);
++				msg.addByte(0xFF);
++				skip = -1;
++			} else {
++				++skip;
++			}
++		}
++	}
++}
++
++} // namespace ChaosMapDesc
++
++#endif // FS_CHAOSMAPDESC_H
