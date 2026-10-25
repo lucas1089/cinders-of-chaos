@@ -38,8 +38,18 @@ local function starsEnabled()
 	return cfg.starItemId and cfg.starItemId > 0 and ItemType(cfg.starItemId):getId() ~= 0
 end
 
+-- SQL defence in depth: an id or an amount goes into a query only as a whole number written with %d (never "1e+15" or
+-- "1000.0"); anything else raises an error and the request dies there. The values already come from Chaos.toInt and
+-- the database; this keeps one bad caller from reaching the query text.
+local function sqlInt(n)
+	if type(n) ~= "number" or n ~= n or n == math.huge or n == -math.huge or math.floor(n) ~= n then
+		error("bank: not a whole number for a query: " .. tostring(n), 2)
+	end
+	return string.format("%d", n)
+end
+
 local function getStarBank(guid)
-	local resultId = db.storeQuery("SELECT `stars` FROM `" .. T .. "` WHERE `player_id` = " .. guid)
+	local resultId = db.storeQuery("SELECT `stars` FROM `" .. T .. "` WHERE `player_id` = " .. sqlInt(guid))
 	if not resultId then
 		return 0
 	end
@@ -51,8 +61,8 @@ end
 -- delta may be negative; callers check the balance first
 local function addStarBank(guid, delta)
 	db.query(
-		"INSERT INTO `" .. T .. "` (`player_id`, `stars`) VALUES (" .. guid .. ", " .. delta ..
-			") ON DUPLICATE KEY UPDATE `stars` = `stars` + " .. delta
+		"INSERT INTO `" .. T .. "` (`player_id`, `stars`) VALUES (" .. sqlInt(guid) .. ", " .. sqlInt(delta) ..
+			") ON DUPLICATE KEY UPDATE `stars` = `stars` + " .. sqlInt(delta)
 	)
 end
 
@@ -200,6 +210,10 @@ local function doTransfer(player, currency, targetName, amount)
 	if currency ~= "gold" and currency ~= "star" then
 		return
 	end
+	-- a whole number of 1..maxAmount, whatever the caller: no float, negative, NaN or infinity reaches a query
+	if not K.checkAmount(amount, cfg.maxAmount) then
+		return
+	end
 	if player:getLevel() < cfg.transferMinLevel then
 		return fail(player, "You need level %d to transfer.", cfg.transferMinLevel)
 	end
@@ -242,7 +256,7 @@ local function doTransfer(player, currency, targetName, amount)
 			Chaos.saveCharacter(online)
 			online:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(online, "%s transferred %d gold to your bank account.", player:getName(), amount))
 		else
-			db.query("UPDATE `players` SET `balance` = `balance` + " .. amount .. " WHERE `id` = " .. targetGuid)
+			db.query("UPDATE `players` SET `balance` = `balance` + " .. sqlInt(amount) .. " WHERE `id` = " .. sqlInt(targetGuid))
 		end
 		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "You transferred %d gold to %s.", amount, canonical))
 	else

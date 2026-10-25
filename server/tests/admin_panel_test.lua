@@ -339,6 +339,36 @@ eq(r and r.ok, false, "unmute of a player that is not muted says so")
 r = run(player, "players.shadow_mute", {player = "Gamemaster", minutes = 5})
 check(not (r and r.ok), "a plain player cannot")
 
+-- ---------------------------------------------------------------- SQL integers (O196): ids and ips written as whole numbers
+eq(ChaosAdmin.sqlInt(42), "42", "sqlInt: an integer")
+eq(ChaosAdmin.sqlInt("42"), "42", "sqlInt: a numeric string")
+eq(ChaosAdmin.sqlInt(1e3), "1000", "sqlInt: a whole float is written without a point or exponent")
+eq(ChaosAdmin.sqlInt(4294967295), "4294967295", "sqlInt: an ip fits")
+eq(ChaosAdmin.sqlInt(-3), "-3", "sqlInt: negative stays a number (the caller decides)")
+for _, bad in ipairs({1.5, 0 / 0, math.huge, -math.huge, "x", "1; DROP TABLE players", "1e999", "", {}, true}) do
+	eq(ChaosAdmin.sqlInt(bad), nil, "sqlInt refuses " .. tostring(bad))
+end
+eq(ChaosAdmin.sqlInt(nil), nil, "sqlInt refuses nil")
+queries = {}
+r = run(god, "security.ip_unban", {ip = "10.0.0.7"})
+eq(r and r.ok, true, "ip_unban runs")
+eq(queries[#queries], "DELETE FROM `ip_bans` WHERE `ip` = 117440522", "ip_unban: the ip is a plain integer in the query")
+r = run(god, "security.ip_unban", {ip = "10.0.0.7; DROP TABLE x"})
+eq(r and r.ok, false, "ip_unban: a hostile address is refused by the schema")
+local okDb = ChaosAdmin.dbPlayer
+for _, badAcc in ipairs({7.5, 0 / 0, math.huge}) do
+	ChaosAdmin.dbPlayer = function() return {id = 99, account_id = badAcc, name = "Plain", group_id = 1} end
+	queries = {}
+	r = run(god, "players.unban", {player = "Plain"})
+	eq(r and r.ok, false, "unban refuses account id " .. tostring(badAcc))
+	eq(#queries, 0, "and sends no query for " .. tostring(badAcc))
+end
+ChaosAdmin.dbPlayer = function() return {id = 99, account_id = 990.0, name = "Plain", group_id = 1} end
+queries = {}
+r = run(god, "players.unban", {player = "Plain"})
+eq(queries[#queries], "DELETE FROM `account_bans` WHERE `account_id` = 990", "unban: the account id is a plain integer")
+ChaosAdmin.dbPlayer = okDb
+
 print = realPrint
 print(string.format("admin_panel_test: %d checks, %d failures (%d actions, catalog %d bytes in %d parts)", checks, failures, #ids, #raw, #parts))
 if failures > 0 then os.exit(1) end

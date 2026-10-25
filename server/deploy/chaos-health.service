@@ -29,4 +29,13 @@ ProtectKernelModules=true
 ProtectControlGroups=true
 # AF_UNIX: systemctl (D-Bus) and the MariaDB socket
 RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+# runs as root and keeps its capabilities (it reads /var/backups/chaos, mode 0700)
+ProtectKernelLogs=true
+ProtectClock=true
+ProtectHostname=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+LockPersonality=true
+SystemCallArchitectures=native
+LimitCORE=0
 MemoryMax=128M

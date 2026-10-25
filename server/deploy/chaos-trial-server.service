@@ -39,6 +39,16 @@ StandardOutput=append:/opt/chaos-trial/logs/server.log
 StandardError=append:/opt/chaos-trial/logs/server.log
 LimitNOFILE=65536
 NoNewPrivileges=true
+# no core dumps (they would hold the database password and the keys); the kit's own MariaDB and the engine run as the
+# kit's owner, no ports below 1024
+LimitCORE=0
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectClock=true
+ProtectHostname=true
+RestrictSUIDSGID=true
+LockPersonality=true
+SystemCallArchitectures=native
 
 [Install]
 WantedBy=multi-user.target
