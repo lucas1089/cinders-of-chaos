@@ -140,6 +140,7 @@ local function putPrint(pos, rotation, art, owner)
 end
 
 local function onStep(creature, newPos, oldPos)
+  if not preview and next(looks) == nil then return end -- no cosmetic is active: every creature step ends here
   if not creature or not creature:isPlayer() or not g_game.isOnline() then return end
   local me = g_game.getLocalPlayer()
   local isLocal = me ~= nil and creature:getId() == me:getId()
@@ -218,6 +219,7 @@ local function setGlow(creature, look)
 end
 
 handlers.sweep = function()
+  if not preview and next(looks) == nil and next(glows) == nil then return end -- nothing to draw or to drop
   if not g_game.isOnline() then return end
   local me = g_game.getLocalPlayer()
   if not me then return end
@@ -239,6 +241,7 @@ handlers.sweep = function()
 end
 
 handlers.tick = function()
+  if not preview and #prints == 0 and next(glows) == nil then return end
   local t = now()
   local keep = {}
   for _, p in ipairs(prints) do

@@ -458,6 +458,7 @@ Event.Define = function()
 				removeEvent(evId)
 				return
 			end
+			if not Event.UI:isVisible() then return end -- paused while the window is hidden
 			label.scrollPos = label.scrollPos + 1
 			if label.scrollPos >= unitWidth then
 				label.scrollPos = label.scrollPos - unitWidth

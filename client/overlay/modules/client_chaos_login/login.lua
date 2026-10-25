@@ -764,8 +764,11 @@ barTick = function()
 end
 
 local function tick()
+  if not alive(bg) or not bg:isVisible() then
+    animEvent = nil -- asleep while the login screen is hidden; its onVisibilityChange wakes it
+    return
+  end
   animEvent = scheduleEvent(tick, 50)
-  if not alive(bg) or not bg:isVisible() then return end
   clock = clock + 0.05
   local artWeight = 1
   if LoginScene and LoginScene.isActive() then
@@ -961,7 +964,10 @@ function init()
   connect(bg, { onGeometryChange = relayout })
   connect(enterGame, { onVisibilityChange = syncVisibility })
   connect(bg, { onVisibilityChange = function(_, visible)
-    if visible then updateStatus() end
+    if visible then
+      updateStatus()
+      if not animEvent then animEvent = scheduleEvent(tick, 50) end
+    end
   end })
   ChaosLogin.statusEvent = cycleEvent(updateStatus, 3000)
   animEvent = scheduleEvent(tick, 50)
