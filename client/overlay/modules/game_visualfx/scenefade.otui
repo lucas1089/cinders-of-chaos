@@ -1,0 +1,7 @@
+// A black layer over the game map for the scene fade (game_visualfx, O219). It lives on the map panel, takes no clicks and is
+// hidden (nothing drawn) unless a fade is running.
+ChaosSceneFade < UIWidget
+  phantom: true
+  focusable: false
+  visible: false
+  background-color: #000000

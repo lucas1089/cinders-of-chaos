@@ -1,0 +1,62 @@
+# Chaos: scene fade option (O219; client/BASE.md "0138"; mods/client_settings/classes/dataset.lua, options/graphics.otui;
+# after 0001-0137). Lua and OTUI only, no engine code: the overlay module game_visualfx fades the map in from black when the
+# player changes floor or is teleported, and reads this option.
+#  * dataset.lua: `sceneFade` (default on); its apply tells game_visualfx (`onOption(name, value)`).
+#  * options/graphics.otui: one checkbox under "Outline under the mouse" (the visual effects panel grows from 219 to 238 px).
+# Not run in a client; goes live with the next client build.
+--- a/mods/client_settings/classes/dataset.lua
++++ b/mods/client_settings/classes/dataset.lua
+@@ -2145,6 +2145,16 @@
+     end,
+   },
+ 
++  -- Chaos (base patch 0138): a short fade from black when the player changes floor or is teleported (game_visualfx)
++  sceneFade = {
++    value = true,
++    apply = function(value)
++      local m = modules.game_visualfx
++      if m and m.onOption then m.onOption('sceneFade', value) end
++      return true
++    end,
++  },
++
+   enableShaders = {
+     value = true,
+     apply = function(value)
+--- a/mods/client_settings/options/graphics.otui
++++ b/mods/client_settings/options/graphics.otui
+@@ -452,7 +452,7 @@
+ 
+   FlatPanel
+     // Chaos (base patch 0126, overlay module game_visualfx): the dark-fantasy look of the map, one switch per effect
+-    size: 505 219
++    size: 505 238
+     anchors.top: prev.bottom
+     anchors.right: parent.right
+     anchors.left: parent.left
+@@ -665,6 +665,25 @@
+         local value = modules.client_settings.getOption('hoverOutline')
+         self:setChecked(value == true)
+ 
++    SettingsCheckBox
++      id: sceneFade
++      size: 12 12
++      !text: tr('Fade on floor change')
++      font: $var-cip-font
++      text-auto-resize: true
++      color: $var-text-cip-color
++      text-offset: 14 -2
++      anchors.left: parent.left
++      anchors.top: hoverOutline.bottom
++      margin-top: 7
++      margin-left: 16
++      image-source: /images/ui/checkbox
++      image-clip: 0 0 12 12
++      !tooltip: tr('A short fade from black when you take stairs, fall through a hole or are teleported, so the\nnew place does not appear in one hard cut. It lasts under half a second and costs nothing otherwise.')
++      @onSetup: |
++        local value = modules.client_settings.getOption('sceneFade')
++        self:setChecked(value ~= false)
++
+     UIWidget
+       size: 12 12
+       anchors.top: parent.top
