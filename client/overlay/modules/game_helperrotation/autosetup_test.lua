@@ -237,7 +237,14 @@ do
       end
     end
   end
-  eq(seen, #P.LIST, 'autosetup lists every potion once')
+  eq(seen, #P.LIST - #P.EVERFULL_ITEMS, 'autosetup lists every stock potion once (the Everfull flasks are ranked as one of them)')
+  for _, x in ipairs(P.EVERFULL_ITEMS) do
+    local r = P.info(x.rank)
+    ok(r and not r.everfull, x.name .. ': its rank is a stock potion of the autosetup list')
+    local inList = false
+    for _, e in ipairs(S.POTIONS[x.kind == 'mana' and 'mana' or 'health']) do if e.id == x.rank then inList = true end end
+    ok(inList, x.name .. ': its rank is in the list of its kind')
+  end
 end
 
 
@@ -248,15 +255,21 @@ local function heldOf(h, m)
   if m then v.mana = { look = m[1], tier = m[2], level = m[3], line = 'mana', ready = true } end
   return v
 end
-eq(planFor(4, 100, {}, heldOf({ 239, 2, 80 }, { 238, 2, 80 })).healing.potions[1].id, 239, 'Everfull great health, nothing else: it is chosen')
-eq(planFor(4, 100, {}, heldOf({ 239, 2, 80 }, { 238, 2, 80 })).healing.potions[2].id, 238, 'Everfull great mana')
-eq(planFor(4, 300, {}, heldOf({ 23375, 4, 200 }, { 23373, 3, 130 })).healing.potions[1].id, 23375, 'Everfull supreme health at 300')
-eq(planFor(4, 300, {}, heldOf({ 23375, 4, 200 }, { 23373, 3, 130 })).healing.potions[2].id, 23373, 'Everfull ultimate mana at 300')
-eq(planFor(4, 300, { 23375 }, heldOf({ 239, 2, 80 })).healing.potions[1].id, 23375, 'a stock supreme carried beats a great Everfull')
-eq(planFor(4, 100, { 236 }, heldOf({ 239, 2, 80 })).healing.potions[1].id, 239, 'the great Everfull beats a stock strong potion')
-eq(planFor(4, 100, {}, heldOf({ 7642, 2, 80, 'spirit' })).healing.potions[1].id, 7642, 'a spirit Everfull is the health potion (as the stock spirit potions are)')
-eq(planFor(4, 100, {}, heldOf({ 266, 1, 0 }, { 268, 1, 0 })).healing.potions[1].id, 266, 'tier 1: its look')
-eq(planFor(4, 70, {}, heldOf({ 239, 2, 80 })).healing.potions[1].id, 266, 'below the level of the Everfull the fallback look is kept')
+-- (a plain flask is given the Health / Mana Potion look: that row follows the flask through every upgrade; a spirit flask its own look)
+eq(planFor(4, 100, {}, heldOf({ 38646, 2, 80 }, { 38650, 2, 80 })).healing.potions[1].id, 266, 'Everfull great health, nothing else: the Health Potion row follows it')
+eq(planFor(4, 100, {}, heldOf({ 38646, 2, 80 }, { 38650, 2, 80 })).healing.potions[2].id, 268, 'Everfull great mana: the Mana Potion row')
+eq(planFor(4, 300, {}, heldOf({ 38648, 4, 200 }, { 38652, 4, 200 })).healing.potions[1].id, 266, 'Everfull supreme health at 300')
+eq(planFor(4, 300, {}, heldOf({ 38648, 4, 200 }, { 38652, 4, 200 })).healing.potions[2].id, 268, 'Everfull supreme mana at 300')
+eq(planFor(4, 300, { 23375 }, heldOf({ 38646, 2, 80 })).healing.potions[1].id, 23375, 'a stock supreme carried beats a great Everfull')
+eq(planFor(4, 300, { 23375 }, heldOf({ 38648, 4, 200 })).healing.potions[1].id, 266, 'the Everfull supreme ranks with the stock supreme (the free one first)')
+eq(planFor(4, 100, { 236 }, heldOf({ 38646, 2, 80 })).healing.potions[1].id, 266, 'the great Everfull beats a stock strong potion')
+eq(planFor(4, 100, {}, heldOf({ 38654, 2, 80, 'spirit' })).healing.potions[1].id, 38654, 'a spirit Everfull is the health potion, under its own look')
+eq(planFor(4, 300, {}, heldOf({ 38656, 4, 200, 'spirit' })).healing.potions[1].id, 38656, 'the supreme spirit Everfull')
+eq(planFor(4, 10, {}, heldOf({ 38653, 1, 0, 'spirit' })).healing.potions[1].id, 38653, 'the spirit Everfull of tier 1 needs no level')
+eq(planFor(4, 100, {}, heldOf({ 38645, 1, 0 }, { 38649, 1, 0 })).healing.potions[1].id, 266, 'tier 1: the Health Potion row')
+eq(planFor(4, 100, {}, heldOf({ 38645, 1, 0 }, { 38649, 1, 0 })).healing.potions[2].id, 268, 'tier 1: the Mana Potion row')
+eq(planFor(4, 70, {}, heldOf({ 38654, 2, 80, 'spirit' })).healing.potions[1].id, 266, 'below the level of the Everfull the fallback look is kept')
+eq(planFor(4, 70, { 236 }, heldOf({ 38654, 2, 80, 'spirit' })).healing.potions[1].id, 236, 'below its level a carried stock potion is taken')
 eq(planFor(4, 100, {}, nil).healing.potions[2].id, 268, 'no view: the mana fallback')
 
 if fails > 0 then error(fails .. ' failure(s)') end

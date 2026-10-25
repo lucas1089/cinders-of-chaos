@@ -33,7 +33,7 @@ end
 
 -- potions by client item id: the server's potions.lua lists (knight: Warrior line and Templar; paladin: Ranger,
 -- Thief, Monk and Templar lines; sorcerer / druid: Mystic and Necromancer lines; the mana potions: both), strongest first per kind.
--- 266 / 268: the Health / Mana Potion, also the look of the Everfull potions.
+-- 266 / 268: the Health / Mana Potion; a row on one follows the Everfull flask the character carries (S.EVERFULL).
 local ANY = nil -- every class drinks every potion (owner 2026-10-24); only the level gates stay
 S.POTIONS = {
   health = {
@@ -43,14 +43,14 @@ S.POTIONS = {
     { id = 7642, level = 80, lines = ANY },   -- Great Spirit Potion
     { id = 239, level = 80, lines = ANY },     -- Great Health Potion
     { id = 236, level = 50, lines = ANY },
-    { id = 266, level = 1, lines = ANY },         -- Health Potion / Everfull Health Potion
+    { id = 266, level = 1, lines = ANY },         -- Health Potion (a plain Everfull flask follows it)
     { id = 7876, level = 1, lines = ANY },        -- Small Health Potion
   },
   mana = {
     { id = 23373, level = 130, lines = ANY },    -- Ultimate Mana Potion
     { id = 238, level = 80, lines = ANY },       -- Great Mana Potion
     { id = 237, level = 50, lines = ANY },       -- Strong Mana Potion
-    { id = 268, level = 1, lines = ANY },         -- Mana Potion / Everfull Mana Potion
+    { id = 268, level = 1, lines = ANY },         -- Mana Potion (a plain Everfull flask follows it)
   },
 }
 S.EVERFULL = { health = 266, mana = 268 }
@@ -62,18 +62,31 @@ function S.canDrink(potion, line, level)
 end
 
 -- the best potion of a kind the character may drink and carries (has(id) -> true), else the Everfull's look. held: the
--- Everfull the server says the character carries (ChaosEverfullHeld.get()): its look counts as carried (it lives in a closed
--- backpack as often as not), so the best tier the character holds is chosen like a stock potion of that look; a spirit flask
--- counts for the health kind, as the stock spirit potions of the list do. Its level is the stock potion's, which the list has.
+-- Everfull the server says the character carries (ChaosEverfullHeld.get()): it counts as carried (it lives in a closed
+-- backpack as often as not), ranked as the stock potion it is as good as (ChaosHelperPotions.EVERFULL_ITEMS `rank`: the great
+-- Everfull health potion as the Great Health Potion, the supreme mana potion as the Ultimate Mana Potion, the spirit potion of
+-- tier 1 as the Health Potion), at its own level; a spirit flask counts for the health kind, as the stock spirit potions of
+-- the list do. What is returned for a flask it wins with: the Health / Mana Potion look when the flask is a plain health or
+-- mana one (S.EVERFULL: that row follows the flask through every upgrade, helper_potions.lua P.resolve), else its own look.
+local function heldRank(h)
+  local HP = ChaosHelperPotions
+  local e = HP and h and h.look and HP.everfullOf and HP.everfullOf(h.look)
+  return (e and e.rank) or (h and h.look)
+end
+
 function S.potion(kind, vocId, level, has, held)
   local line = S.lineOf(vocId)
-  local h = held and held.health
-  local m = held and held.mana
-  local carried = {}
-  if h and h.look then carried[h.look] = true end
-  if m and m.look then carried[m.look] = true end
+  local carried = {} -- rank (a stock look of the list) -> the held flask of it, at the character's level
+  for _, slot in ipairs({ 'health', 'mana' }) do
+    local h = held and held[slot]
+    if h and h.look and (tonumber(level) or 0) >= (tonumber(h.level) or 0) then carried[heldRank(h)] = h end
+  end
   for _, p in ipairs(S.POTIONS[kind] or {}) do
-    if S.canDrink(p, line, level) and ((has and has(p.id)) or carried[p.id]) then return p.id end
+    local h = carried[p.id]
+    if h then
+      return h.line == kind and S.EVERFULL[kind] or h.look
+    end
+    if S.canDrink(p, line, level) and has and has(p.id) then return p.id end
   end
   return S.EVERFULL[kind]
 end

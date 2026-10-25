@@ -70,6 +70,16 @@ local function find(env, pred)
 end
 
 -- gold the NPCs ask for one potion or rune, nil when the store item is not a supply
+-- an Everfull entry made from another one (potions_config.lua `from`): the ones the store sells as a swap
+local function isUpgrade(e)
+	return type(e.from) == "table" and #e.from > 0
+end
+
+-- what Veyra's task takes for an upgrade: {id, count} (potions_core.lua materialOf)
+function M.materialOf(PC, e)
+	return {id = e.materialId or e.sourceId, count = e.materialCount or PC.upgrade.materials}
+end
+
 function M.askOf(env, id)
 	for _, p in ipairs(env.apo.potions) do
 		if p.id == id then return p.price end
@@ -283,13 +293,14 @@ function M.problems(env)
 	end
 	if conv > R.perCharacterConvenienceMax then bad("per-character convenience adds up to %d coins (limit %d)", conv, R.perCharacterConvenienceMax) end
 
-	-- Everfull potion tiers (O245): one store offer per tier at the config's price, never more than 2x cheaper than the
-	-- task's gold way, a line costs at most maxLineCoins, nothing sells to an NPC
+	-- Everfull potion tiers (O245, O247): one store offer per upgrade (an entry made from another one: tier 2 and up and the
+	-- tier 1 spirit potion) at the config's price, never more than 2x cheaper than the task's gold way, a line costs at most
+	-- maxLineCoins, nothing sells to an NPC
 	do
 		local PC, ev = env.potions, R.everfull
 		local lineCoins = {}
 		for _, e in ipairs(PC.everfull) do
-			if (e.tier or 1) >= 2 then
+			if isUpgrade(e) then
 				local offers = find(env, function(o) return o.service == "everfullUpgrade" and o.upgrade == e.id end)
 				local coins = PC.upgrade.coins[e.tier]
 				if #offers ~= 1 then
@@ -298,11 +309,12 @@ function M.problems(env)
 					local o = offers[1]
 					if o.cost ~= coins then bad("%s: the store asks %s coins, potions_config.lua upgrade.coins[%d] is %s", e.name, tostring(o.cost), e.tier, tostring(coins)) end
 					if o.kind ~= "service" or env.catOf[o] ~= "Convenience" then bad("%s: not a Convenience service", e.name) end
-					local ask = M.askOf(env, e.sourceId)
+					local mat = M.materialOf(PC, e)
+					local ask = M.askOf(env, mat.id)
 					if not ask then
-						bad("%s: Veyra has no price for the stock potion %d", e.name, e.sourceId)
+						bad("%s: Veyra has no price for the potion %d her task takes", e.name, mat.id)
 					else
-						local goldWay = PC.upgrade.materials * ask
+						local goldWay = mat.count * ask
 						if o.cost * R.goldPerCoin * R.maxCheaperThanGold < goldWay then
 							bad("%s: %d coins is more than %dx cheaper than the %d gold of the task", e.name, o.cost, R.maxCheaperThanGold, goldWay)
 						end
@@ -316,7 +328,7 @@ function M.problems(env)
 			if coins > ev.maxLineCoins then bad("Everfull %s line costs %d coins in all (limit %d)", line, coins, ev.maxLineCoins) end
 		end
 		local last = 0
-		for t = 2, 4 do
+		for t = 1, 4 do
 			local c = PC.upgrade.coins[t]
 			if not c or c < last then bad("Everfull upgrade coins do not grow with the tier (tier %d)", t) else last = c end
 		end
@@ -455,9 +467,10 @@ function M.report(env)
 	print("| Tier | Level | Coins | About | Task gold | Task gold in coins | Coins / task coins |")
 	print("|---|---|---|---|---|---|---|")
 	for _, e in ipairs(env.potions.everfull) do
-		if (e.tier or 1) >= 2 then
+		if isUpgrade(e) then
 			local coins = env.potions.upgrade.coins[e.tier]
-			local gold = env.potions.upgrade.materials * (M.askOf(env, e.sourceId) or 0)
+			local mat = M.materialOf(env.potions, e)
+			local gold = mat.count * (M.askOf(env, mat.id) or 0)
 			line("| %s | %d | %d | %s | %d | %.1f | %.1f |", e.name, e.level, coins, real(coins), gold, gold / R.goldPerCoin, coins / (gold / R.goldPerCoin))
 		end
 	end

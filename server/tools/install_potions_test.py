@@ -11,6 +11,8 @@ sys.path.insert(0, HERE)
 import install_potions as T  # noqa: E402
 from install_gems import scan, escape, attr, START, END, A_SERVERID, A_CLIENTID, FLAG_STACKABLE  # noqa: E402
 
+FLAG_ANIMATION = 1 << 24
+
 failed = 0
 
 
@@ -89,7 +91,9 @@ def make_base(root):
         os.makedirs(os.path.join(data, d), exist_ok=True)
     nodes = [item_node(7618, 7477), item_node(7620, 7478), item_node(7636, 7479), item_node(2376, 3264, 0)]
     # the stock great / ultimate / supreme potions the higher Everfull tiers copy (O245)
-    nodes += [item_node(sid, 8000 + i) for i, sid in enumerate((7590, 7591, 8472, 8473, 26029, 26030, 26031))]
+    # (the ultimate ones are animated in the stock data: the Everfull copies must lose that, their art has one phase)
+    nodes += [item_node(sid, 8000 + i, FLAG_STACKABLE | (FLAG_ANIMATION if sid >= 8473 else 0))
+              for i, sid in enumerate((7590, 7591, 8472, 8473, 26029, 26030, 26031))]
     open(os.path.join(data, 'items', 'items.otb'), 'wb').write(otb(nodes))
     files = {'items/items.xml': ITEMS_XML, 'npc/Morora.xml': SELLER_XML, 'npc/Smith.xml': DEALER_XML,
              'npc/scripts/potions.lua': SELLER_LUA, 'npc/lib/npcsystem/modules.lua': MODULES,
@@ -110,11 +114,14 @@ def snapshot(data):
 
 
 cfg = T.read_config()
-check([r['id'] for r in cfg['everfull']] == [32085, 32086] + list(range(32261, 32268)), 'config: the Everfull ids')
+check([r['id'] for r in cfg['everfull']] == [32085, 32086] + list(range(32261, 32271)), 'config: the Everfull ids')
 check([r['sourceId'] for r in cfg['everfull']][:2] == [7618, 7620], 'config: the first health and mana potions')
-check([r['sourceId'] for r in cfg['everfull']][2:] == [7591, 7590, 8472, 8473, 26029, 26030, 26031],
-      'config: the great, ultimate and supreme potions')
-check([r['tier'] for r in cfg['everfull']] == [1, 1, 2, 2, 2, 3, 3, 3, 4], 'config: tiers')
+check([r['sourceId'] for r in cfg['everfull']][2:] == [7591, 7590, 8472, 8473, 26029, 26030, 26031, 8472, 26029, 26030],
+      'config: the great, ultimate and supreme potions, then the nodes the three new ones copy')
+check([r['tier'] for r in cfg['everfull']] == [1, 1, 2, 2, 2, 3, 3, 3, 4, 1, 4, 4], 'config: tiers')
+check([r['upgrade'] for r in cfg['everfull']] == [False, False] + [True] * 10, 'config: ten are made from another (spirit tier 1 too)')
+check([r['clientId'] for r in cfg['everfull']] == [38645, 38649, 38646, 38650, 38654, 38647, 38651, 38655, 38648, 38653, 38652, 38656],
+      'config: the client ids of pair 44')
 
 tmp = tempfile.mkdtemp()
 try:
@@ -134,13 +141,15 @@ try:
     raw = first['items/items.otb']
     kids, _ = scan(raw)
     by = {k[2]: k for k in kids}
-    check(32085 in by and by[32085][3] == 7477, 'everfull health potion: the stock look')
-    check(32086 in by and by[32086][3] == 7478, 'everfull mana potion: the stock look')
+    check(32085 in by and by[32085][3] == 38645, 'everfull health potion: its own look (client 38645)')
+    check(32086 in by and by[32086][3] == 38649, 'everfull mana potion: its own look (client 38649)')
     check(bool(by[32085][5] & FLAG_STACKABLE), 'stackable like the stock node (the client reads a count)')
-    for r in cfg['everfull'][2:]:
-        stock = [k for k in kids if k[2] == r['sourceId']][0]
-        check(r['id'] in by and by[r['id']][3] == stock[3], '%s: the stock look of %d' % (r['name'], r['sourceId']))
+    for r in cfg['everfull']:
+        check(r['id'] in by and by[r['id']][3] == r['clientId'], '%s: client id %d' % (r['name'], r['clientId']))
         check(bool(by[r['id']][5] & FLAG_STACKABLE), '%s: stackable' % r['name'])
+        check(not by[r['id']][5] & FLAG_ANIMATION, '%s: no animation flag (one phase)' % r['name'])
+    check(len({by[r['id']][3] for r in cfg['everfull']}) == 12, 'twelve client ids')
+    check(bool(by[8473][5] & FLAG_ANIMATION), 'the stock nodes themselves are not touched')
     check(os.path.exists(os.path.join(data, 'items', 'items.otb.bak')), 'items.otb.bak kept')
 
     xml = first['items/items.xml'].decode()
@@ -150,7 +159,9 @@ try:
           'items.xml: the supreme tier, its name and description')
     check('Heals and restores mana like an ultimate spirit potion (level 130); a drink costs one health charge and one '
           'mana charge' in xml, 'items.xml: the spirit description says it spends two charges')
-    check(xml.count('<item id="32') == 9, 'items.xml: nine Everfull entries')
+    check(xml.count('<item id="32') == 12, 'items.xml: twelve Everfull entries')
+    check('name="everfull supreme mana potion"' in xml and 'name="everfull spirit potion"' in xml
+          and 'name="everfull supreme spirit potion"' in xml, 'items.xml: the three new potions')
     check('deposit' not in xml.lower(), 'no flask deposit text in items.xml')
     check(cfg['flaskText'] in xml, 'the flask text')
 
@@ -160,13 +171,14 @@ try:
     check('shop_sellable" value="empty potion flask,7636,5;' in morora, 'old flasks still bought')
     check('deposit' not in morora.lower() and 'Hello |PLAYERNAME|. Potions!' in morora, 'the greeting loses its deposit')
     check('everfull' not in first['npc/Smith.xml'].decode(), 'a weapon dealer sells no Everfull potion')
-    check('3226' not in morora and 'great' not in morora, 'no seller sells a higher tier (they are earned or bought in the store)')
+    check('3226' not in morora and '3227' not in morora and 'great' not in morora and 'spirit' not in morora,
+          'no seller sells a higher tier or the spirit potion (they are earned or bought in the store)')
 
     lua = first['npc/scripts/potions.lua'].decode()
     check("shopModule:addBuyableItem({'everfull health potion'}, 32085, 100, 1, 'everfull health potion')" in lua,
           'the Lua seller sells the health one')
     check("32086, 100, 1, 'everfull mana potion')" in lua, 'and the mana one')
-    check('3226' not in lua, 'the Lua seller sells no higher tier')
+    check('3226' not in lua and '3227' not in lua, 'the Lua seller sells no higher tier')
     check(lua.index('32086') > lua.index("7620, 50"), 'after its mana potion line')
     check('-- ' + T.FLASK_MARK + "shopModule:addBuyableItem({'flask'}, 7636" in lua, 'no flask for sale (Lua)')
     check("shopModule:addSellableItem({'flask'}, 7636, 5" in lua, 'old flasks still bought (Lua)')
@@ -185,7 +197,58 @@ try:
           pot.replace('math.random(potion.health[1], potion.health[2])', ''), 'the potion rolls: fixed + percent of the maximum')
     check(first['scripts/chaos/own.lua'] == b'player:addItem(potion.flask, 1)\n', 'the Chaos folders are not touched')
 
+    # a server installed before the looks (nodes with the stock look, the ultimate ones animated): the step moves them
+    shutil.rmtree(tmp)
+    tmp = tempfile.mkdtemp()
+    data = make_base(tmp)
+    path = os.path.join(data, 'items', 'items.otb')
+    kids0, root_end0 = scan(open(path, 'rb').read())
+    raw0 = open(path, 'rb').read()
+    stock_look = {7618: 7477, 7620: 7478}
+    stock_look.update({sid: 8000 + i for i, sid in enumerate((7590, 7591, 8472, 8473, 26029, 26030, 26031))})
+    olds = b''.join(item_node(r['id'], stock_look[r['sourceId']], FLAG_STACKABLE | (FLAG_ANIMATION if r['sourceId'] >= 8473 else 0))
+                    for r in cfg['everfull'][:9])
+    open(path, 'wb').write(raw0[:root_end0] + olds + raw0[root_end0:])
+    sys.stdout = devnull
+    try:
+        rc = T.main([data])
+        once = snapshot(data)
+        rc2 = T.main([data])
+    finally:
+        sys.stdout = old
+    check(rc == 0 and rc2 == 0, 'an installed server: runs twice')
+    check(snapshot(data) == once, 'an installed server: the second run changes nothing')
+    kids2, _ = scan(once['items/items.otb'])
+    by2 = {k[2]: k for k in kids2}
+    check(all(by2[r['id']][3] == r['clientId'] for r in cfg['everfull']),
+          'an installed server: the nine old nodes moved to their new look, the three new ones added')
+    check(all(not by2[r['id']][5] & FLAG_ANIMATION for r in cfg['everfull']), 'an installed server: no animation flag left')
+    check(len(kids2) == len(kids0) + 12, 'an installed server: no node twice')
+
+    # a server id that belongs to a client id that is neither the stock look nor the new one, and a client id another item has
+    for label, nodes_extra in (('a foreign client id', [item_node(32085, 5555)]), ('a taken client id', [item_node(9999, 38645)])):
+        shutil.rmtree(tmp)
+        tmp = tempfile.mkdtemp()
+        data = make_base(tmp)
+        path = os.path.join(data, 'items', 'items.otb')
+        raw0 = open(path, 'rb').read()
+        _k, end0 = scan(raw0)
+        open(path, 'wb').write(raw0[:end0] + b''.join(nodes_extra) + raw0[end0:])
+        before = snapshot(data)
+        sys.stdout = devnull
+        try:
+            try:
+                rc = T.main([data])
+            except SystemExit as e:
+                rc = 1 if e.code else 0
+        finally:
+            sys.stdout = old
+        check(rc == 1 and snapshot(data) == before, label + ': stops, nothing written')
+
     # no ShopModule:callbackOnBuy: an error, nothing written
+    shutil.rmtree(tmp)
+    tmp = tempfile.mkdtemp()
+    data = make_base(tmp)
     shutil.rmtree(tmp)
     tmp = tempfile.mkdtemp()
     data = make_base(tmp)

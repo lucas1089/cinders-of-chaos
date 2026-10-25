@@ -42,7 +42,7 @@ return {
 	premium = {minDiscountPct90 = 5, maxDiscountPct90 = 20, maxDiscountPct180 = 25},
 	pactDayTolerancePct = 10,           -- the Pact days of a starter pack at the Pact's own price per day
 	bundles = {maxStarterDiscountPct = 55, maxSetDiscountPct = 25},
-	-- Everfull potion tiers (O245, potions_config.lua upgrade): the store sells the swap Veyra's task does. The task's gold
+	-- Everfull potion tiers (O245, O247: ten upgrades, 20 / 30 / 50 / 70 coins; potions_config.lua upgrade): the store sells the swap Veyra's task does. The task's gold
 	-- way is `materials` stock potions at Veyra's price; the store may be at most maxCheaperThanGold times cheaper than
 	-- it (checked with goldPerCoin), and a whole line (health, mana or spirit) costs at most maxLineCoins in all.
 	-- Nothing a tier gives is for sale to an NPC (no coin -> gold loop).

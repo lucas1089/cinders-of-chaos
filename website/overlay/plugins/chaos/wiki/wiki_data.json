@@ -392,8 +392,8 @@
 		"spell.count": 148,
 		"store.categories": 36,
 		"store.cosmetic": 627,
-		"store.offers": 756,
-		"store.service": 33,
+		"store.offers": 759,
+		"store.service": 36,
 		"store.unlockCost": 0,
 		"support.count": 20,
 		"support.sockets": 3,
@@ -43424,7 +43424,7 @@
 								["Potions", "18", "15-135", "Consumable item"],
 								["Runes", "29", "3-108", "Consumable item"],
 								["Training", "15", "25-450", "Consumable item"],
-								["Convenience", "14", "30-400", "Convenience, Service"],
+								["Convenience", "17", "20-400", "Convenience, Service"],
 								["Outfits", "60", "300-750", "Cosmetic"],
 								["Costumes", "6", "300", "Cosmetic"],
 								["Outfit Addons", "9", "150", "Cosmetic"],
@@ -43495,7 +43495,7 @@
 								["Cosmetic", "627"],
 								["Pet (small abilities)", "7"],
 								["Convenience", "7"],
-								["Service", "13"],
+								["Service", "16"],
 								["Account storage", "13"],
 								["Chaos Pact", "1"],
 								["Season pass", "4"],
@@ -44404,11 +44404,11 @@
 				{
 					"id": "store:14",
 					"name": "Convenience",
-					"sub": "14 offers, 30-400 coins. Convenience, Service.",
+					"sub": "17 offers, 20-400 coins. Convenience, Service.",
 					"color": "#ff70c0",
 					"group": "category",
 					"sections": [
-						{"h": "Category", "p": ["14 offers, 30-400 Chaos Coins. Convenience, Service."]},
+						{"h": "Category", "p": ["17 offers, 20-400 Chaos Coins. Convenience, Service."]},
 						{
 							"h": "Offers",
 							"cols": ["Offer", "Coins", "Type", "What it is"],
@@ -44439,6 +44439,12 @@
 									"Food that never runs out: 12 minutes of regeneration a bite, like the best food, until you are full. Store-bound."
 								],
 								[
+									"Everfull Spirit Potion",
+									"20",
+									"Service",
+									"Swaps your Everfull Health Potion for the spirit one: health and mana a drink, one health and one mana charge. The charges stay. Veyra the Apothecary does the same for 40 health potions. It starts the spirit line: great, ultimate and supreme follow from it."
+								],
+								[
 									"Everfull Great Health Potion",
 									"30",
 									"Service",
@@ -44454,7 +44460,7 @@
 									"Everfull Great Spirit Potion",
 									"30",
 									"Service",
-									"Swaps your Everfull Health Potion for the great spirit one (level 80): health and mana a drink, one health and one mana charge. The charges stay. Veyra the Apothecary does the same for 40 great spirit potions."
+									"Swaps your Everfull Spirit Potion for the great spirit one (level 80): health and mana a drink, one health and one mana charge. The charges stay. Veyra the Apothecary does the same for 40 great spirit potions."
 								],
 								[
 									"Everfull Ultimate Health Potion",
@@ -44481,6 +44487,18 @@
 									"Swaps your Everfull Ultimate Health Potion for the supreme one (level 200): 875-1125 health a drink. The charges stay. Veyra the Apothecary does the same for 40 supreme health potions."
 								],
 								[
+									"Everfull Supreme Mana Potion",
+									"70",
+									"Service",
+									"Swaps your Everfull Ultimate Mana Potion for the supreme one (level 200): 575-775 mana a drink. The charges stay. Veyra the Apothecary does the same for 60 ultimate mana potions."
+								],
+								[
+									"Everfull Supreme Spirit Potion",
+									"70",
+									"Service",
+									"Swaps your Everfull Ultimate Spirit Potion for the supreme one (level 200): health and mana a drink, one health and one mana charge. The charges stay. Veyra the Apothecary does the same for 60 ultimate spirit potions."
+								],
+								[
 									"Auto Seller",
 									"400",
 									"Convenience",
@@ -44504,6 +44522,7 @@
 								{"item": 32082},
 								{"item": 32083},
 								{"item": 32084},
+								{"item": 32268},
 								{"item": 32261},
 								{"item": 32262},
 								{"item": 32263},
@@ -44511,6 +44530,8 @@
 								{"item": 32265},
 								{"item": 32266},
 								{"item": 32267},
+								{"item": 32269},
+								{"item": 32270},
 								{"item": 2160},
 								{"item": 2472},
 								{"item": 2365}

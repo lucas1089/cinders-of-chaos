@@ -18,45 +18,71 @@ ChaosPotionsConfig = {
 	-- potion spends one charge of EACH pool, so it costs what a health and a mana drink cost and nothing is gained
 	-- by holding it next to the other two flasks. price: gold, for a tier 1 potion a seller's replacement, for a higher
 	-- tier what Veyra asks to give back a lost flask (the materials' worth, upgrade.materials x her stock price).
+	-- O247: the looks (clientId: client items 38645-38656 of pair 44, art by PixelLab, one per entry; install_potions.py
+	-- writes it into each items.otb node, so a client without pair 44 draws nothing) and three more entries, so every line
+	-- has all four tiers: the spirit potion of tier 1 (32268, made from the Everfull health potion, level 0), the supreme
+	-- mana potion (32269) and the supreme spirit potion (32270), server ids 32268-32270 of the block 32268-32280. They
+	-- have no stock potion: the roll is designed in proportion to the line (spirit is about 60% of the health and mana
+	-- roll of its tier; supreme mana sits above ultimate mana as supreme health sits above ultimate health, x1.33).
+	-- sourceId is only the node the new item copies (group, flags, attributes); the look is clientId. materialId /
+	-- materialCount / materialName: what Veyra's task takes when it is not `upgrade.materials` stock potions of sourceId
+	-- (the tier 1 spirit potion costs 40 health potions, the two supreme ones 60 ultimate ones). The three new entries
+	-- stand last on purpose: an entry's place among the ones with a `from` is its upgrade flag (storage.upgradeBase +
+	-- place), so a new entry never goes in the middle.
 	everfull = {
-		{key = "health", id = 32085, sourceId = 7618, article = "an", name = "everfull health potion",
+		{key = "health", id = 32085, sourceId = 7618, clientId = 38645, article = "an", name = "everfull health potion",
 			plural = "everfull health potions", weight = 180, health = {125, 175}, price = 100,
 			line = "health", tier = 1, level = 0,
 			description = "A flask: kills and the temple refill its charges, each drink costs one. Heals like a health " ..
 				"potion. Cannot be traded or sold."},
-		{key = "mana", id = 32086, sourceId = 7620, article = "an", name = "everfull mana potion",
+		{key = "mana", id = 32086, sourceId = 7620, clientId = 38649, article = "an", name = "everfull mana potion",
 			plural = "everfull mana potions", weight = 180, mana = {75, 125}, price = 100,
 			line = "mana", tier = 1, level = 0,
 			description = "A flask: kills and the temple refill its charges, each drink costs one. Restores mana like a " ..
 				"mana potion. Cannot be traded or sold."},
-		{key = "health", id = 32261, sourceId = 7591, article = "an", name = "everfull great health potion",
+		{key = "health", id = 32261, sourceId = 7591, clientId = 38646, article = "an", name = "everfull great health potion",
 			plural = "everfull great health potions", weight = 180, health = {425, 575}, price = 7600,
 			line = "health", tier = 2, level = 80, from = {32085},
 			description = "A flask: kills and the temple refill its charges, each drink costs one. Heals like a great health potion (level 80). Cannot be traded or sold."},
-		{key = "mana", id = 32262, sourceId = 7590, article = "an", name = "everfull great mana potion",
+		{key = "mana", id = 32262, sourceId = 7590, clientId = 38650, article = "an", name = "everfull great mana potion",
 			plural = "everfull great mana potions", weight = 180, mana = {150, 250}, price = 4800,
 			line = "mana", tier = 2, level = 80, from = {32086},
 			description = "A flask: kills and the temple refill its charges, each drink costs one. Restores mana like a great mana potion (level 80). Cannot be traded or sold."},
-		{key = "health", id = 32263, sourceId = 8472, article = "an", name = "everfull great spirit potion",
+		{key = "health", id = 32263, sourceId = 8472, clientId = 38654, article = "an", name = "everfull great spirit potion",
 			plural = "everfull great spirit potions", weight = 180, health = {250, 350}, mana = {100, 200}, price = 7600,
-			line = "spirit", tier = 2, level = 80, from = {32085}, pools = {"health", "mana"},
+			line = "spirit", tier = 2, level = 80, from = {32268}, pools = {"health", "mana"},
 			description = "A flask: kills and the temple refill its charges. Heals and restores mana like a great spirit potion (level 80); a drink costs one health charge and one mana charge. Cannot be traded or sold."},
-		{key = "health", id = 32264, sourceId = 8473, article = "an", name = "everfull ultimate health potion",
+		{key = "health", id = 32264, sourceId = 8473, clientId = 38647, article = "an", name = "everfull ultimate health potion",
 			plural = "everfull ultimate health potions", weight = 180, health = {650, 850}, price = 12400,
 			line = "health", tier = 3, level = 130, from = {32261},
 			description = "A flask: kills and the temple refill its charges, each drink costs one. Heals like an ultimate health potion (level 130). Cannot be traded or sold."},
-		{key = "mana", id = 32265, sourceId = 26029, article = "an", name = "everfull ultimate mana potion",
+		{key = "mana", id = 32265, sourceId = 26029, clientId = 38651, article = "an", name = "everfull ultimate mana potion",
 			plural = "everfull ultimate mana potions", weight = 180, mana = {425, 575}, price = 14000,
 			line = "mana", tier = 3, level = 130, from = {32262},
 			description = "A flask: kills and the temple refill its charges, each drink costs one. Restores mana like an ultimate mana potion (level 130). Cannot be traded or sold."},
-		{key = "health", id = 32266, sourceId = 26030, article = "an", name = "everfull ultimate spirit potion",
+		{key = "health", id = 32266, sourceId = 26030, clientId = 38655, article = "an", name = "everfull ultimate spirit potion",
 			plural = "everfull ultimate spirit potions", weight = 180, health = {420, 580}, mana = {200, 350}, price = 14000,
 			line = "spirit", tier = 3, level = 130, from = {32263}, pools = {"health", "mana"},
 			description = "A flask: kills and the temple refill its charges. Heals and restores mana like an ultimate spirit potion (level 130); a drink costs one health charge and one mana charge. Cannot be traded or sold."},
-		{key = "health", id = 32267, sourceId = 26031, article = "an", name = "everfull supreme health potion",
+		{key = "health", id = 32267, sourceId = 26031, clientId = 38648, article = "an", name = "everfull supreme health potion",
 			plural = "everfull supreme health potions", weight = 180, health = {875, 1125}, price = 20000,
 			line = "health", tier = 4, level = 200, from = {32264},
-			description = "A flask: kills and the temple refill its charges, each drink costs one. Heals like a supreme health potion (level 200). Cannot be traded or sold."}
+			description = "A flask: kills and the temple refill its charges, each drink costs one. Heals like a supreme health potion (level 200). Cannot be traded or sold."},
+		{key = "health", id = 32268, sourceId = 8472, clientId = 38653, article = "an", name = "everfull spirit potion",
+			plural = "everfull spirit potions", weight = 180, health = {75, 105}, mana = {45, 75}, price = 1800,
+			line = "spirit", tier = 1, level = 0, from = {32085}, pools = {"health", "mana"},
+			materialId = 7618, materialName = "health potions",
+			description = "A flask: kills and the temple refill its charges. Heals and restores mana like a small spirit potion; a drink costs one health charge and one mana charge. Cannot be traded or sold."},
+		{key = "mana", id = 32269, sourceId = 26029, clientId = 38652, article = "an", name = "everfull supreme mana potion",
+			plural = "everfull supreme mana potions", weight = 180, mana = {575, 775}, price = 21000,
+			line = "mana", tier = 4, level = 200, from = {32265},
+			materialId = 26029, materialCount = 60, materialName = "ultimate mana potions",
+			description = "A flask: kills and the temple refill its charges, each drink costs one. Restores mana like a supreme mana potion (level 200). Cannot be traded or sold."},
+		{key = "health", id = 32270, sourceId = 26030, clientId = 38656, article = "an", name = "everfull supreme spirit potion",
+			plural = "everfull supreme spirit potions", weight = 180, health = {560, 760}, mana = {275, 475}, price = 21000,
+			line = "spirit", tier = 4, level = 200, from = {32266}, pools = {"health", "mana"},
+			materialId = 26030, materialCount = 60, materialName = "ultimate spirit potions",
+			description = "A flask: kills and the temple refill its charges. Heals and restores mana like a supreme spirit potion (level 200); a drink costs one health charge and one mana charge. Cannot be traded or sold."}
 	},
 
 	-- the charge pools (one per kind, shared by every tier and line): the flask table below is keyed by them
@@ -69,7 +95,7 @@ ChaosPotionsConfig = {
 	-- Both need the level of the stock potion and the previous tier, and each tier is done once per character.
 	upgrade = {
 		materials = 40,
-		coins = {[2] = 30, [3] = 50, [4] = 70}
+		coins = {[1] = 20, [2] = 30, [3] = 50, [4] = 70}
 	},
 
 	-- the potion exhaust: CONDITION_EXHAUST_HEAL for the action interval - 100 ms; only the Everfull potions add it,

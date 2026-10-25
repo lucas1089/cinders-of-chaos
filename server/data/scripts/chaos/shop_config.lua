@@ -425,12 +425,14 @@ local cfg = {
 				-- the Everfull potion tiers (potions.lua, potions_config.lua upgrade): the same swap Veyra's task does, for
 				-- coins. Needs the previous tier and the stock potion's level, once per tier and character, nothing beyond
 				-- what the task gives (pay to skip the hunt for the potions, docs/PRICES.md)
+				{kind = "service", service = "everfullUpgrade", upgrade = 32268, icon = 32268, cost = 20, name = "Everfull Spirit Potion",
+					description = "Swaps your Everfull Health Potion for the spirit one: health and mana a drink, one health and one mana charge. The charges stay. Veyra the Apothecary does the same for 40 health potions. It starts the spirit line: great, ultimate and supreme follow from it."},
 				{kind = "service", service = "everfullUpgrade", upgrade = 32261, icon = 32261, cost = 30, name = "Everfull Great Health Potion",
 					description = "Swaps your Everfull Health Potion for the great one (level 80): 425-575 health a drink. Needs your Everfull Health Potion in your backpack, inbox or depot. The charges stay. Veyra the Apothecary does the same for 40 great health potions."},
 				{kind = "service", service = "everfullUpgrade", upgrade = 32262, icon = 32262, cost = 30, name = "Everfull Great Mana Potion",
 					description = "Swaps your Everfull Mana Potion for the great one (level 80): 150-250 mana a drink. Needs your Everfull Mana Potion in your backpack, inbox or depot. The charges stay. Veyra the Apothecary does the same for 40 great mana potions."},
 				{kind = "service", service = "everfullUpgrade", upgrade = 32263, icon = 32263, cost = 30, name = "Everfull Great Spirit Potion",
-					description = "Swaps your Everfull Health Potion for the great spirit one (level 80): health and mana a drink, one health and one mana charge. The charges stay. Veyra the Apothecary does the same for 40 great spirit potions."},
+					description = "Swaps your Everfull Spirit Potion for the great spirit one (level 80): health and mana a drink, one health and one mana charge. The charges stay. Veyra the Apothecary does the same for 40 great spirit potions."},
 				{kind = "service", service = "everfullUpgrade", upgrade = 32264, icon = 32264, cost = 50, name = "Everfull Ultimate Health Potion",
 					description = "Swaps your Everfull Great Health Potion for the ultimate one (level 130): 650-850 health a drink. The charges stay. Veyra the Apothecary does the same for 40 ultimate health potions."},
 				{kind = "service", service = "everfullUpgrade", upgrade = 32265, icon = 32265, cost = 50, name = "Everfull Ultimate Mana Potion",
@@ -439,6 +441,10 @@ local cfg = {
 					description = "Swaps your Everfull Great Spirit Potion for the ultimate one (level 130): health and mana a drink, one health and one mana charge. The charges stay. Veyra the Apothecary does the same for 40 ultimate spirit potions."},
 				{kind = "service", service = "everfullUpgrade", upgrade = 32267, icon = 32267, cost = 70, name = "Everfull Supreme Health Potion",
 					description = "Swaps your Everfull Ultimate Health Potion for the supreme one (level 200): 875-1125 health a drink. The charges stay. Veyra the Apothecary does the same for 40 supreme health potions."},
+				{kind = "service", service = "everfullUpgrade", upgrade = 32269, icon = 32269, cost = 70, name = "Everfull Supreme Mana Potion",
+					description = "Swaps your Everfull Ultimate Mana Potion for the supreme one (level 200): 575-775 mana a drink. The charges stay. Veyra the Apothecary does the same for 60 ultimate mana potions."},
+				{kind = "service", service = "everfullUpgrade", upgrade = 32270, icon = 32270, cost = 70, name = "Everfull Supreme Spirit Potion",
+					description = "Swaps your Everfull Ultimate Spirit Potion for the supreme one (level 200): health and mana a drink, one health and one mana charge. The charges stay. Veyra the Apothecary does the same for 60 ultimate spirit potions."},
 				{kind = "unlock", unlock = "autoSeller", icon = 2160, iconCount = 100, cost = 400, name = "Auto Seller",
 					description = "Permanent: loot on your auto-sell list (Economy > Auto Seller) is sold at NPC prices, gold to your bank."},
 				{kind = "unlock", unlock = "rarityAutoloot", icon = 2472, cost = 300, name = "Rarity Autoloot",

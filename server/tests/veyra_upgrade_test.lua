@@ -120,25 +120,39 @@ local base = hold(32085)
 player.level = 79
 eq(say("upgrade"):find("level 80", 1, true) ~= nil, true, "level 79: the great tier is offered, with its level")
 player.level = 100
--- two ways from the starting health flask at level 80: health or spirit
+-- two ways from the starting health flask at level 80: health or spirit (O247: the spirit line starts at tier 1)
 local r = say("I want an upgrade")
 check(r:find("{health}", 1, true) ~= nil and r:find("{spirit}", 1, true) ~= nil, "two lines offered: " .. tostring(r))
+check(r:find("40 health potions", 1, true) ~= nil, "the spirit way names its potions: " .. tostring(r))
 eq(say("yes"), nil, "yes alone does not pick one of two (she waits)")
 check(player.bp.kids[1] == base, "nothing changed")
 r = say("spirit")
-check(r:find("Bring me 40 great spirit potions", 1, true) ~= nil, "no materials: she asks for them: " .. tostring(r))
+check(r:find("Bring me 40 health potions", 1, true) ~= nil, "no materials: she asks for them: " .. tostring(r))
 eq(player.st[7102510], nil, "no flag, nothing taken")
 eq(base.parent, player.bp, "the flask is still there")
 -- with the materials: pick the spirit line, the swap is done
-say("upgrade") stock(8472, 40)
+say("upgrade") stock(7618, 40)
 r = say("spirit")
 check(r:find("Done", 1, true) ~= nil, "done: " .. tostring(r))
-eq(player.bp.kids[1].id ~= nil and player:getItemCount(32263), 1, "the great spirit flask is in the backpack")
-eq(player:getItemCount(32085), 0, "the starting flask is gone") eq(player:getItemCount(8472), 0, "the 40 potions are gone")
+eq(player:getItemCount(32268), 1, "the spirit flask of tier 1 is in the backpack")
+eq(player:getItemCount(32085), 0, "the starting flask is gone") eq(player:getItemCount(7618), 0, "the 40 potions are gone")
 eq(player.bp.kids[#player.bp.kids].attrs.chaos_locked, 2, "its lock value")
-eq(player.st[cfg.storage.upgradeBase + 2], 1, "the great spirit flag (3rd tier)")
+eq(player.st[ChaosPotionsCore.upgradeStorage(cfg, 32268)], 1, "the spirit tier 1 flag")
 eq(say("yes"), nil, "yes with nothing pending does nothing")
-eq(player:getItemCount(32263), 1, "still one")
+eq(player:getItemCount(32268), 1, "still one")
+
+-- the next step: great spirit, from the spirit flask of tier 1
+player.level = 100
+r = say("upgrade")
+check(r:find("great spirit", 1, true) ~= nil or r:find("Bring me", 1, true) ~= nil, "great spirit is offered: " .. tostring(r))
+say("upgrade")
+local gs = ChaosPotionsCore.everfull(cfg, 32263)
+local mat = ChaosPotionsCore.materialOf(cfg, gs)
+say("upgrade") stock(mat.id, mat.count)
+r = say("yes")
+check(r ~= nil and r:find("Done", 1, true) ~= nil, "great spirit done: " .. tostring(r))
+eq(player:getItemCount(32263), 1, "the great spirit flask") eq(player:getItemCount(32268), 0, "the tier 1 flask is gone")
+eq(player.st[ChaosPotionsCore.upgradeStorage(cfg, 32263)], 1, "the great spirit flag")
 
 -- no: cancels; the next tier at level 130 needs ultimate spirit potions
 player.level = 130
@@ -157,16 +171,32 @@ r = say("yes")
 check(r:find("Done", 1, true) ~= nil, "yes: " .. tostring(r))
 eq(player:getItemCount(32266), 1, "ultimate spirit")
 
+-- the last tier (O247): supreme spirit takes 60 ultimate spirit potions at level 200
+player.level = 199
+r = say("upgrade")
+check(r:find("level 200", 1, true) ~= nil, "supreme spirit names level 200: " .. tostring(r))
+say("no")
+player.level = 200
+say("upgrade") stock(26030, 59)
+r = say("yes")
+check(r:find("Bring me 60 ultimate spirit potions", 1, true) ~= nil, "59 are not 60: " .. tostring(r))
+stock(26030, 1)
+say("upgrade")
+r = say("yes")
+check(r ~= nil and r:find("Done", 1, true) ~= nil, "supreme spirit done: " .. tostring(r))
+eq(player:getItemCount(32270), 1, "supreme spirit") eq(player:getItemCount(32266), 0, "ultimate spirit is gone")
+eq(player:getItemCount(26030), 0, "the 60 potions are gone")
+
 -- a lost flask: she gives back the highest tier of the slot for gold, once
-for i = #player.bp.kids, 1, -1 do if player.bp.kids[i].id == 32266 then player.bp.kids[i]:remove() end end
-eq(player:getItemCount(32266), 0, "lost")
-check(say("I lost my flask"):find("32") == nil and say("lost"):find("ultimate spirit", 1, true) ~= nil, "she offers the ultimate spirit one back")
+for i = #player.bp.kids, 1, -1 do if player.bp.kids[i].id == 32270 then player.bp.kids[i]:remove() end end
+eq(player:getItemCount(32270), 0, "lost")
+check(say("I lost my flask"):find("32") == nil and say("lost"):find("supreme spirit", 1, true) ~= nil, "she offers the supreme spirit one back")
 r = say("yes")
 check(r == "You do not have enough money.", "too poor: " .. tostring(r))
-say("lost") player.money = cfg.everfull[8].price + 5
+say("lost") player.money = ChaosPotionsCore.everfull(cfg, 32270).price + 5
 r = say("yes")
 check(r:find("Here is your", 1, true) ~= nil, "given back: " .. tostring(r))
-eq(player:getItemCount(32266), 1, "the flask is back") eq(player.money, 5, "for its price")
+eq(player:getItemCount(32270), 1, "the flask is back") eq(player.money, 5, "for its price")
 eq(say("lost"), "You have lost nothing I can give back.", "not twice")
 
 print(string.format("veyra_upgrade_test: %d checks, %d failures", count, failures))

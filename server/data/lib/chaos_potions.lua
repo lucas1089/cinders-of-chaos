@@ -193,7 +193,8 @@ function PT.giveAll(player, container)
 	local c = PT.cfg()
 	local n = 0
 	for _, e in ipairs(c.everfull) do
-		if (e.tier or 1) == 1 and PT.installed(e.id) and not PT.ownedSlot(player, e.key) and PT.give(player, e.id, container) then
+		if (e.tier or 1) == 1 and not K.isUpgrade(e) and PT.installed(e.id) and not PT.ownedSlot(player, e.key)
+			and PT.give(player, e.id, container) then
 			n = n + 1
 		end
 	end
@@ -403,6 +404,11 @@ function PT.stockName(e)
 	return (tostring(e.name):gsub("^everfull ", ""))
 end
 
+-- what the task takes (potions_core.lua materialOf): the stock potion id, how many, and their plural name
+function PT.material(e)
+	return K.materialOf(PT.cfg(), e)
+end
+
 local function flagOf(player, e)
 	return player:getStorageValue(K.upgradeStorage(PT.cfg(), e.id)) == 1
 end
@@ -436,7 +442,7 @@ function PT.upgradeCheck(player, targetId, mode)
 	local items = PT.everfullItems(player)
 	return K.upgradeCheck(c, {id = targetId, mode = mode, installed = PT.installed(targetId),
 		level = player:getLevel(), done = K.upgradeStorage(c, targetId) ~= nil and flagOf(player, e), held = heldIds(items),
-		materials = mode == "quest" and player:getItemCount(e.sourceId) or nil, materialName = PT.stockName(e) .. "s"}), items
+		materials = mode == "quest" and player:getItemCount(K.materialOf(c, e).id) or nil, materialName = K.materialOf(c, e).name}), items
 end
 
 -- The swap, for Veyra's task (mode "quest": takes the stock potions of the tier) and for the store (mode "store": the
@@ -476,9 +482,9 @@ function PT.upgrade(player, targetId, mode)
 		end
 		st.new = new
 		if r.materials > 0 then
-			if not player:removeItem(e.sourceId, r.materials) then
+			if not player:removeItem(K.materialOf(c, e).id, r.materials) then
 				st.fail = "Bring me %d %s and your flask."
-				st.args = {r.materials, PT.stockName(e) .. "s"}
+				st.args = {r.materials, K.materialOf(c, e).name}
 				return
 			end
 			st.materials = true
@@ -501,7 +507,7 @@ function PT.upgrade(player, targetId, mode)
 			player:setStorageValue(flagKey, 0)
 		end
 		if st.materials then
-			pcall(function() player:addItem(e.sourceId, r.materials) end)
+			pcall(function() player:addItem(K.materialOf(c, e).id, r.materials) end)
 		end
 		if st.new then
 			pcall(function() st.new:remove() end)

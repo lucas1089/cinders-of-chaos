@@ -23,7 +23,7 @@ local K = ChaosPotionsCore
 local HEALTH, MANA = cfg.everfull[1], cfg.everfull[2]
 eq(HEALTH.sourceId, 7618, "the first health potion (level 1) is the Everfull one")
 eq(MANA.sourceId, 7620, "the first mana potion (level 1) is the Everfull one")
-eq(#cfg.everfull, 9, "two starting potions and seven upgrade tiers (O245)")
+eq(#cfg.everfull, 12, "two starting potions and ten upgrades (O245: seven tiers; O247: the spirit potion of tier 1, the supreme mana and spirit potions)")
 eq(K.poolsOf(cfg, HEALTH)[1], "health", "a tier spends its key's pool")
 check(HEALTH.id > 32084 and HEALTH.id <= 32090 and MANA.id > 32084 and MANA.id <= 32090,
 	"server ids in the free range after the Everfull Ration, before the faction tokens")
@@ -645,21 +645,60 @@ do
 	local askOf, levelOf = {}, {}
 	for _, x in ipairs(apo.potions) do askOf[x.id], levelOf[x.id] = x.price, x.level end
 	local up = K.upgradeTargets(cfg)
-	eq(#up, 7, "seven upgrade tiers") eq(#K.upgradeTargets({everfull = {}}), 0, "none without entries")
+	eq(#up, 10, "ten upgrades") eq(#K.upgradeTargets({everfull = {}}), 0, "none without entries")
 	local seenId, seenSrc = {}, {}
 	for _, e in ipairs(up) do
 		check(e.id >= 32261 and e.id <= 32280, e.name .. ": server id in the reserved range 32261..32280")
-		check(not seenId[e.id] and not seenSrc[e.sourceId], e.name .. ": own id and own source")
+		check(not seenId[e.id] and (e.materialId or not seenSrc[e.sourceId]), e.name .. ": own id and own source")
 		seenId[e.id], seenSrc[e.sourceId] = true, true
-		eq(e.level, levelOf[e.sourceId], e.name .. ": the stock potion's level (apothecary_config.lua)")
-		eq(e.price, cfg.upgrade.materials * askOf[e.sourceId], e.name .. ": a lost flask costs the materials' worth")
-		check(e.description:find("^A flask") ~= nil and e.description:find("level " .. e.level, 1, true) ~= nil, e.name .. ": description")
+		local mat = K.materialOf(cfg, e)
+		check(askOf[mat.id] ~= nil, e.name .. ": Veyra sells the potion her task takes (" .. mat.id .. ")")
+		if not e.materialId then
+			eq(e.level, levelOf[e.sourceId], e.name .. ": the stock potion's level (apothecary_config.lua)")
+			eq(mat.count, cfg.upgrade.materials, e.name .. ": the standard number of potions")
+		end
+		eq(e.price, mat.count * askOf[mat.id], e.name .. ": a lost flask costs the materials' worth")
+		check(e.description:find("^A flask") ~= nil and (e.level == 0 or e.description:find("level " .. e.level, 1, true) ~= nil), e.name .. ": description")
 		check(e.name:find("^everfull ") ~= nil and e.plural == e.name .. "s", e.name .. ": name and plural")
 		check(K.upgradeStorage(cfg, e.id) >= 7102510 and K.upgradeStorage(cfg, e.id) <= 7102519, e.name .. ": its flag in the block")
 		check(cfg.upgrade.coins[e.tier] ~= nil and K.upgradeCoins(cfg, e.id) == cfg.upgrade.coins[e.tier], e.name .. ": a store price")
 		local pools = K.poolsOf(cfg, e)
 		eq(#pools, e.line == "spirit" and 2 or 1, e.name .. ": pools")
-		check(e.from ~= nil and K.everfull(cfg, e.from[1]) ~= nil and K.everfull(cfg, e.from[1]).tier == e.tier - 1, e.name .. ": made from the previous tier")
+		local from = e.from and K.everfull(cfg, e.from[1])
+		check(from ~= nil and (from.tier == e.tier - 1 or (e.line == "spirit" and e.tier == 1 and from.line == "health" and from.tier == 1)),
+			e.name .. ": made from the previous tier (the spirit potion of tier 1 from the health potion of tier 1)")
+		check(from ~= nil and (from.line == e.line or e.line == "spirit" and e.tier == 1), e.name .. ": made from its own line")
+	end
+	-- O247: every line has all four tiers, once each; the flags fit their block; the looks are twelve own client items
+	do
+		local seenTier, looks, nLooks = {}, {}, 0
+		for _, e in ipairs(cfg.everfull) do
+			local k = e.line .. e.tier
+			seenTier[k] = (seenTier[k] or 0) + 1
+			check(e.clientId and e.clientId >= 38645 and e.clientId <= 38656 and not looks[e.clientId], e.name .. ": its own client item of pair 44")
+			looks[e.clientId], nLooks = true, nLooks + 1
+		end
+		for _, line in ipairs({"health", "mana", "spirit"}) do
+			for tier = 1, 4 do eq(seenTier[line .. tier], 1, line .. " tier " .. tier .. " exists once") end
+		end
+		eq(nLooks, 12, "twelve looks")
+		check(#K.upgradeTargets(cfg) <= 10, "the upgrade flags fit the block 7102510-7102519")
+		-- the nine entries of O245 keep their place: a flag set before must still mean the same tier
+		local order = {32261, 32262, 32263, 32264, 32265, 32266, 32267, 32268, 32269, 32270}
+		for i, id in ipairs(order) do eq(K.upgradeStorage(cfg, id), cfg.storage.upgradeBase + i - 1, "the flag of " .. id .. " is place " .. i) end
+		-- rolls in proportion to the existing lines
+		local function avg(r) return (r[1] + r[2]) / 2 end
+		local by = {}
+		for _, e in ipairs(cfg.everfull) do by[e.line .. e.tier] = e end
+		for tier = 1, 4 do
+			local s, h, m = by["spirit" .. tier], by["health" .. tier], by["mana" .. tier]
+			check(avg(s.health) / avg(h.health) > 0.5 and avg(s.health) / avg(h.health) < 0.75, "spirit tier " .. tier .. ": the health roll is about 60% of the health potion's")
+			check(avg(s.mana) / avg(m.mana) > 0.45 and avg(s.mana) / avg(m.mana) < 0.85, "spirit tier " .. tier .. ": the mana roll is a part of the mana potion's")
+		end
+		local up3, up4 = avg(by.mana3.mana), avg(by.mana4.mana)
+		local hp3, hp4 = avg(by.health3.health), avg(by.health4.health)
+		check(math.abs(up4 / up3 - hp4 / hp3) < 0.06, "supreme mana sits above ultimate mana as supreme health sits above ultimate health")
+		eq(by.spirit1.level, 0, "spirit tier 1 needs no level") eq(by.mana4.level, 200, "supreme mana: level 200") eq(by.spirit4.level, 200, "supreme spirit: level 200")
 	end
 	local byId = {}
 	for _, e in ipairs(cfg.everfull) do byId[e.id] = e end
@@ -667,7 +706,12 @@ do
 	eq(byId[32267].level, 200, "supreme health level") eq(byId[32265].mana[1], 425, "ultimate mana roll")
 	eq(byId[32263].mana[2], 200, "great spirit mana roll") eq(byId[32266].health[1], 420, "ultimate spirit health roll")
 	eq(K.upgradeStorage(cfg, 32085), nil, "a starting potion has no flag") eq(K.upgradeCoins(cfg, 32086), nil, "and no price")
-	check(cfg.upgrade.coins[2] < cfg.upgrade.coins[3] and cfg.upgrade.coins[3] < cfg.upgrade.coins[4], "the price grows by tier")
+	check(cfg.upgrade.coins[1] < cfg.upgrade.coins[2] and cfg.upgrade.coins[2] < cfg.upgrade.coins[3] and cfg.upgrade.coins[3] < cfg.upgrade.coins[4], "the price grows by tier")
+	eq(cfg.upgrade.coins[1], 20, "the swap to the spirit potion of tier 1: 20 coins") eq(cfg.upgrade.coins[4], 70, "tier 4: 70 coins")
+	eq(K.materialOf(cfg, byId[32261]).id, 7591, "Veyra's task takes the stock potion by default") eq(K.materialOf(cfg, byId[32261]).count, 40, "40 of them")
+	eq(K.materialOf(cfg, byId[32268]).id, 7618, "the spirit potion of tier 1: health potions") eq(K.materialOf(cfg, byId[32268]).name, "health potions", "named")
+	eq(K.materialOf(cfg, byId[32269]).count, 60, "the supreme mana potion: 60") eq(K.materialOf(cfg, byId[32269]).id, 26029, "ultimate mana potions")
+	eq(K.materialOf(cfg, byId[32270]).name, "ultimate spirit potions", "supreme spirit takes ultimate spirit potions")
 
 	-- the drink core
 	r = K.drink(cfg, {id = 32261, target = "self", level = 79, charges = 500})
@@ -696,7 +740,17 @@ do
 	eq(chk({id = 32264, level = 200, held = {32085}}).why, "tier", "a tier cannot be skipped")
 	eq(chk({id = 32264, level = 200, held = {32263}}).why, "tier", "the spirit line does not turn into the health line")
 	eq(chk({id = 32266, level = 200, held = {32261}}).why, "tier", "nor the health line into the spirit line")
-	eq(chk({id = 32263, held = {32085}}).ok, true, "the spirit line starts from the health flask")
+	eq(chk({id = 32268, level = 1, held = {32085}, materials = 40}).ok, true, "the spirit line starts from the health flask of tier 1 (spirit tier 1)")
+	eq(chk({id = 32268, level = 1, held = {32085}, materials = 40}).materials, 40, "for 40 stock potions")
+	eq(chk({id = 32268, level = 1, held = {32261}}).why, "tier", "the spirit potion of tier 1 is made from the health potion of tier 1 only")
+	eq(chk({id = 32263, held = {32085}}).why, "tier", "great spirit now needs the spirit potion of tier 1, not the health flask")
+	eq(chk({id = 32263, held = {32268}}).ok, true, "great spirit is made from the spirit potion of tier 1")
+	eq(chk({id = 32269, level = 200, held = {32265}, materials = 60}).ok, true, "supreme mana from ultimate mana") eq(chk({id = 32269, level = 200, held = {32265}, materials = 60}).materials, 60, "for 60 potions")
+	eq(chk({id = 32269, level = 200, held = {32265}, materials = 59}).why, "materials", "one short of 60")
+	eq(chk({id = 32269, level = 199, held = {32265}, mode = "store"}).why, "level", "supreme mana: level 200")
+	eq(chk({id = 32269, level = 200, held = {32262}, mode = "store"}).why, "tier", "supreme mana: not from great mana")
+	eq(chk({id = 32270, level = 200, held = {32266}, mode = "store"}).ok, true, "supreme spirit from ultimate spirit")
+	eq(chk({id = 32270, level = 200, held = {32264}, mode = "store"}).why, "tier", "supreme spirit: not from ultimate health")
 	eq(chk({materials = 39}).why, "materials", "one short") eq(chk({materials = 39}).args[1], 40, "says how many")
 	eq(chk({materials = false}).why, "materials", "unknown count: refused")
 	eq(chk({level = "x"}).why, "level", "a bad level is not trusted") eq(chk({held = {99999}}).why, "missing", "unknown ids are not flasks")
@@ -708,6 +762,7 @@ do
 	eq(K.restoreFor(cfg, "health", {32261}, earned), nil, "nothing while the slot holds a flask")
 	eq(K.restoreFor(cfg, "mana", {}, {}), nil, "nothing earned: nothing back")
 	eq(K.npcBuy(cfg, {id = 32261, owned = false, money = 1e9}).why, "unknown", "a seller never sells a higher tier")
+	eq(K.npcBuy(cfg, {id = 32268, owned = false, money = 1e9}).why, "unknown", "nor the spirit potion of tier 1 (made from the health potion)")
 	eq(K.npcBuy(cfg, {id = HEALTH.id, owned = false, better = true, money = 1000}).why, "better", "nor the starting one over an earned tier")
 
 	-- the engine side
@@ -824,7 +879,9 @@ do
 
 	-- the spirit line: from the health flask, spends both pools
 	local sp = holder(71, 100)
-	eq(PT.upgrade(sp, 32263, "store"), true, "health flask -> great spirit")
+	eq(PT.upgrade(sp, 32263, "store"), false, "health flask -> great spirit: not directly (O247)")
+	eq(PT.upgrade(sp, 32268, "store"), true, "health flask -> spirit potion of tier 1")
+	eq(PT.upgrade(sp, 32263, "store"), true, "spirit tier 1 -> great spirit")
 	eq(PT.upgrade(sp, 32261, "store"), false, "then the health line is closed to it (no health flask)")
 	sp.level = 130
 	eq(PT.upgrade(sp, 32266, "store"), true, "great spirit -> ultimate spirit")
@@ -914,7 +971,7 @@ do
 			end
 		end
 	end
-	eq(n, 7, "one store offer per tier")
+	eq(n, 10, "one store offer per upgrade")
 end
 print(string.format("potions_test: %d checks, %d failures", count, failures))
 if failures > 0 then
