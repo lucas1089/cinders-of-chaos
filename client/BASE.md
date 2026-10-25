@@ -1153,6 +1153,32 @@ name and description; JSON keys and values) against the same name list as the re
 name fails. `assemble_client.sh` also deletes the base native splash picture and the browser emblem: both show the
 base client's name. Images are not read for baked-in text; check new base pictures by eye.
 
+### Release build flags: LTO and hardening (O204)
+
+The Windows client of `windows-package.yml` is built with MSVC (Visual Studio of `windows-2025`), CMake + Ninja, vcpkg
+`x64-windows-static`, `CMAKE_BUILD_TYPE=Release` (the base default is Release too). Before O204 it had the toolchain
+defaults only: `/O2 /Ob2` from the Release type, no link time code generation, and the linker's own x64 defaults
+(`/DYNAMICBASE /HIGHENTROPYVA /NXCOMPAT`, `/GS`), no control flow guard, no `/CETCOMPAT`; none of it was checked.
+- **`tools/chaos_hardening.cmake`**, passed as `-DCMAKE_PROJECT_INCLUDE=` (it runs right after `project()`, so the base
+  `CMakeLists.txt` stays untouched, no patch). Every flag is tested first (`check_cxx_compiler_flag`, `check_linker_flag`,
+  `check_ipo_supported`) and added only when the toolchain takes it; the flags are appended to the toolchain's, never
+  replace them. `-DCHAOS_HARDEN=OFF` skips the file. The configure log has one line, `Chaos: release flags on: ...`.
+  - MSVC: LTO (`/GL` + `/LTCG` through `CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE`, with `CMP0069 NEW`), `/GS`,
+    `/guard:cf` (compile) + `/GUARD:CF` (link), `/DYNAMICBASE /HIGHENTROPYVA /NXCOMPAT /CETCOMPAT`.
+  - MinGW (not used by the package): `-fstack-protector-strong`, `-D_FORTIFY_SOURCE=2`, `--dynamicbase --nxcompat
+    --high-entropy-va`, LTO.
+  - Not added: `/arch:AVX2`, `-march` (players' PCs differ). The optimisation level stays the build type's.
+- **LTO is safe for the guard and the pack:** the client key is a masked array in a generated header and the pack key is
+  derived at run time (see "Client guard" and "Client packs"); nothing reads symbol names, offsets or a hash of the exe.
+- **Check after the build:** `tools/check_pe_hardening.py` (stdlib only, unit test `check_pe_hardening_test.py` in CI)
+  reads the PE header of `built/Chaos.exe`. The job fails without DYNAMICBASE (with a relocation table),
+  HIGH_ENTROPY_VA and NX_COMPAT; control flow guard missing is a warning, CET compat a notice. It runs before the exe is
+  cached and on a cache hit.
+- **Cache:** the compiled client key now holds the sha256 of `chaos_hardening.cmake` and the recipe `client-win-v2`; the
+  cache name is `client-win-bin-v2-...`, so no pre-O204 exe is reused.
+- **Not run:** this job has not run with these flags. First package run: read the `Chaos: release flags on:` line of the
+  Build step and the output of "Check the exe's hardening flags". `windows-client.yml` and the Linux client job are unchanged.
+
 ### Client guard: the build secret
 
 The key the client proves itself with is read by CMake (`src/client/CMakeLists.txt`, patch 0035) at configure time:
