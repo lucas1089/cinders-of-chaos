@@ -157,6 +157,18 @@ keys, as before); the window's own strings are `tr()` keys with pt-BR in `client
 Server side and the action list: `server/data/scripts/chaos/admin/README.md`. Not run in a client since the Chaos
 categories were added.
 
+## Lazy modules (O202)
+Two modules with a window that is opened rarely and no server push load on first use (`autoload: false`) instead of at start:
+`game_codex` (the Codex, 800 KB of generated data, no opcode) and `client_chaos_credits` (the Credits window, no opcode).
+Startup loads 125 modules instead of 127 and about 5.28 MB of Lua and OTUI instead of 6.15 MB (-0.87 MB, -14%; counted
+from the `.otmod` files, not timed in a run). The menu entries stay: `client_chaos_topbar` (`LAZY_MODULES`) draws them
+without loading and runs `g_modules.ensureModuleLoaded(name)` when one is used (Economy > Codex, Alt+K; System >
+Credits). Callers that read the module ask for it first: `client_chaos_login` (CREDITS button), `game_itemfinder` (Codex
+link), `game_market` (modifier choices) and `game_crafting` (right-click on a modifier; its tooltip only needs the module
+to exist). A module stays eager when it registers an extended-opcode handler (it must receive server pushes), connects
+`onGameStart` or keeps an event running; 100+ modules do. Add a name to `LAZY_MODULES` only for a module that has none of
+those and whose callers load it.
+
 ## Healing helper: no replay after a stall (base patch 0026)
 `base-patches/0026-helper-no-cycle-replay.patch` (`mods/game_helper/helper.lua`): the helper's cycles schedule their next run from now (after a client stall they run once instead of replaying every missed 50 ms cycle) and its spell casts go through a rate guard; tested in game (one cast after a 2.5 s stall, 17 before).
 

@@ -1,0 +1,97 @@
+# Build hardening flags of the Linux engine (and an opt-in allocator) (O201; server/README.md "Build flags and allocator (O201)").
+# New src/chaos_build.cmake, included first by src/CMakeLists.txt (so the patch touches src/ only, like the others, and
+# the base CMakeLists.txt stays as it is). Only for a Linux build with CMAKE_BUILD_TYPE Release, RelWithDebInfo or
+# MinSizeRel: Windows, macOS, Debug and the sanitizer build (build type None) are untouched.
+#   * Release flags: unchanged (CMake's -O3 -DNDEBUG; -O2 was never measured better). CHAOS_OPT_LEVEL="-O2" (cache string,
+#     default empty) would replace them. Link-time optimisation stays as the base CMakeLists.txt has it. No -march: the
+#     engine is built on one machine and run on another.
+#   * Hardening (CHAOS_HARDEN, default ON), each compiler flag only when the compiler takes it: -fstack-protector-strong,
+#     -D_FORTIFY_SOURCE=2, -fstack-clash-protection, -fcf-protection=full, -fPIE; link -pie -Wl,-z,relro,-z,now,
+#     -z,noexecstack. Ubuntu's g++ does most of this by default; the flags make it the same on any toolchain.
+#   * mimalloc (CHAOS_MIMALLOC, default OFF: measured slower than glibc in its secure mode, and the plain build weakens the
+#     heap checks). ON looks for the SECURE build only (libmimalloc-secure, made by tools/linux/build_mimalloc.sh;
+#     -DCHAOS_MIMALLOC_DIR=PREFIX), links it first with --no-as-needed, and falls back to glibc malloc when it is absent.
+# Apply in the server source root after 0001-0067: patch -p1 < 0068-build-flags-mimalloc.patch, then re-run CMake.
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -1,3 +1,5 @@
++include(${CMAKE_CURRENT_LIST_DIR}/chaos_build.cmake)  # Chaos (patch 0068): build flags, hardening, allocator
++
+ set(tfs_SRC
+ 	${CMAKE_CURRENT_LIST_DIR}/otpch.cpp
+ 	${CMAKE_CURRENT_LIST_DIR}/actions.cpp
+new file mode 100644
+--- /dev/null
++++ b/src/chaos_build.cmake
+@@ -0,0 +1,71 @@
++# Chaos (patch 0068): build flags and allocator of the Linux engine (server/README.md "Build flags and allocator (O201)").
++# Included by src/CMakeLists.txt, before the target exists, so everything goes through global flag variables set in
++# the parent scope. Nothing here runs for Windows, macOS, a Debug build, or a build with no build type (the sanitizer
++# build: server/tools/build_sanitized.sh), and every piece falls back quietly when the toolchain or the library is
++# missing, so the build never breaks because of it.
++#
++#   Release optimisation level                  CHAOS_OPT_LEVEL            (cache string, default empty: CMake's -O3 -DNDEBUG)
++#   -fstack-protector-strong, -D_FORTIFY_SOURCE=2, -fstack-clash-protection, -fcf-protection (x86), -fPIE, -pie,
++#   -Wl,-z,relro,-z,now,-z,noexecstack          CHAOS_HARDEN               (default ON; OFF leaves the toolchain's defaults)
++#   secure mimalloc as the allocator            CHAOS_MIMALLOC             (default OFF; ON uses libmimalloc-secure if found)
++# No -march: the engine is built on one machine and run on another.
++# Link-time optimisation stays where the base CMakeLists.txt has it (check_ipo_supported).
++
++option(CHAOS_HARDEN "Chaos: hardening flags (stack protector, FORTIFY_SOURCE, PIE, RELRO, BIND_NOW)" ON)
++option(CHAOS_MIMALLOC "Chaos: link the secure mimalloc as the allocator when it is installed (off: measured slower than glibc)" OFF)
++set(CHAOS_OPT_LEVEL "" CACHE STRING "Chaos: optimisation level of the Release build (empty: CMake's own Release flags, -O3)")
++
++if (UNIX AND NOT APPLE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang"
++        AND CMAKE_BUILD_TYPE MATCHES "^(Release|RelWithDebInfo|MinSizeRel)$")
++    include(CheckCXXCompilerFlag)
++
++    if (CMAKE_BUILD_TYPE STREQUAL "Release" AND CHAOS_OPT_LEVEL)
++        set(CMAKE_CXX_FLAGS_RELEASE "${CHAOS_OPT_LEVEL} -DNDEBUG")
++        message(STATUS "Chaos: Release flags ${CHAOS_OPT_LEVEL} -DNDEBUG")
++    endif ()
++
++    if (CHAOS_HARDEN)
++        set(chaos_cxx "${CMAKE_CXX_FLAGS}")
++        set(chaos_ld "${CMAKE_EXE_LINKER_FLAGS}")
++        # the glibc checks need optimisation, and a toolchain that already defines the macro gets ours instead
++        set(chaos_cxx "${chaos_cxx} -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2")
++        foreach (flag -fstack-protector-strong -fstack-clash-protection -fcf-protection=full -fPIE)
++            string(MAKE_C_IDENTIFIER "CHAOS_HAS${flag}" var)
++            check_cxx_compiler_flag(${flag} ${var})
++            if (${var})
++                set(chaos_cxx "${chaos_cxx} ${flag}")
++            endif ()
++        endforeach ()
++        set(chaos_ld "${chaos_ld} -pie -Wl,-z,relro,-z,now,-z,noexecstack")
++        set(CMAKE_CXX_FLAGS "${chaos_cxx}")
++        set(CMAKE_EXE_LINKER_FLAGS "${chaos_ld}")
++        message(STATUS "Chaos: hardening on (stack protector, FORTIFY_SOURCE=2, PIE, RELRO, BIND_NOW)")
++    else ()
++        message(STATUS "Chaos: hardening off (CHAOS_HARDEN=OFF)")
++    endif ()
++
++    if (CHAOS_MIMALLOC)
++        # only the secure build (MI_SECURE: guard pages, randomised allocation, encoded free lists, double-free
++        # detection), which names itself libmimalloc-secure; the distro's libmimalloc is the plain build and is not
++        # used, so the allocator never lowers the heap checks glibc has. tools/linux/build_mimalloc.sh makes it.
++        # CHAOS_MIMALLOC_DIR (cache path) is the install prefix to look in first.
++        set(CHAOS_MIMALLOC_DIR "" CACHE PATH "Chaos: install prefix of the secure mimalloc (lib/libmimalloc-secure.so)")
++        find_library(CHAOS_MIMALLOC_LIBRARY NAMES mimalloc-secure HINTS "${CHAOS_MIMALLOC_DIR}/lib")
++        if (CHAOS_MIMALLOC_LIBRARY)
++            # first in the link line and kept even though the engine names no mi_ function: the library defines
++            # malloc, free, operator new, ... so every allocation of the engine and of the libraries it loads after it
++            # (libstdc++, Boost, the database client, LuaJIT on GC64) goes through it
++            get_filename_component(chaos_mi_dir "${CHAOS_MIMALLOC_LIBRARY}" DIRECTORY)
++            set(CMAKE_EXE_LINKER_FLAGS
++                "${CMAKE_EXE_LINKER_FLAGS} -Wl,--push-state,--no-as-needed ${CHAOS_MIMALLOC_LIBRARY} -Wl,--pop-state -Wl,-rpath,${chaos_mi_dir}")
++            message(STATUS "Chaos: allocator mimalloc, secure build (${CHAOS_MIMALLOC_LIBRARY})")
++        else ()
++            message(STATUS "Chaos: secure libmimalloc not found, the system allocator stays (tools/linux/build_mimalloc.sh, -DCHAOS_MIMALLOC_DIR=PREFIX)")
++        endif ()
++    endif ()
++
++    # the target is made by the parent directory: hand the variables up
++    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}" PARENT_SCOPE)
++    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}" PARENT_SCOPE)
++    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}" PARENT_SCOPE)
++endif ()

@@ -79,14 +79,22 @@ local function setIcon(widget, cid)
 end
 
 -- ---------------------------------------------------------------- the Codex link
+-- game_codex loads on first use (autoload: false, client/MANIFEST.md "Lazy modules")
+local function ensureCodex()
+  if not modules.game_codex and g_modules and g_modules.ensureModuleLoaded then
+    pcall(g_modules.ensureModuleLoaded, 'game_codex')
+  end
+  return modules.game_codex
+end
+
 local function codexModule()
-  local m = modules.game_codex
+  local m = ensureCodex()
   return m and m.open and m or nil
 end
 
 local function codexEntry(id)
   if not codexMap then
-    local m = modules.game_codex
+    local m = ensureCodex()
     local data = m and (m.getData and m.getData() or rawget(m, 'CodexData'))
     if not data then return nil end
     codexMap = L.codexIndex(data)

@@ -862,7 +862,7 @@ jobs:
           # shellcheck disable=SC2086 # APT_PACKAGES is a list of package names
           debs=$(dpkg-query -W -f='${Package} ${Version} ${Architecture}\n' $APT_PACKAGES libc6 libstdc++6 | LC_ALL=C sort)
           gcc=$(g++ -dumpfullversion -dumpmachine | tr '\n' ' ')
-          recipe="engine-linux-v1 ubuntu-22.04 Release Ninja SKIP_GIT=ON no-Werror"
+          recipe="engine-linux-v4 ubuntu-22.04 Release Ninja SKIP_GIT=ON no-Werror patch-0068-hardening"
           hash=$({ echo "$recipe"; echo "g++ $gcc"; echo "$debs"; printf '%s\n' "$files" | xargs -d '\n' sha256sum; } | sha256sum | cut -d' ' -f1)
           echo "recipe: $recipe"; echo "g++ $gcc"; echo "source files: $(wc -l <<<"$files")"; echo "key hash: $hash"
           echo "hash=$hash" >> "$GITHUB_OUTPUT"
@@ -872,7 +872,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: work/server/build/tfs
-          key: engine-linux-bin-v1-${{ steps.key.outputs.hash }}
+          key: engine-linux-bin-v4-${{ steps.key.outputs.hash }}
 
       - name: Build the engine
         if: steps.cache.outputs.cache-hit != 'true'
@@ -892,10 +892,13 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: work/server/build/tfs
-          key: engine-linux-bin-v1-${{ steps.key.outputs.hash }}
+          key: engine-linux-bin-v4-${{ steps.key.outputs.hash }}
 
       - name: Check the compiled engine
-        run: test -x work/server/build/tfs && ls -la work/server/build/tfs
+        run: |
+          test -x work/server/build/tfs && ls -la work/server/build/tfs
+          # patch 0068: PIE, RELRO, BIND_NOW, stack protector, FORTIFY (also for a cached binary)
+          bash chaos/tools/linux/check_engine_hardening.sh work/server/build/tfs
 
       - name: Portable MariaDB (official Linux build)
         run: bash chaos/tools/linux/fetch_mariadb.sh "$MARIADB_VERSION" mariadb-linux

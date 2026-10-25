@@ -84,7 +84,7 @@ fi
 
 SAN="-O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer -fno-optimize-sibling-calls"
 echo "== configure ($CXX_BIN: $SAN)"
-cmake -S "$TREE" -B "$BUILD" -G Ninja -DCMAKE_BUILD_TYPE=None -DSKIP_GIT=ON \
+cmake -S "$TREE" -B "$BUILD" -G Ninja -DCMAKE_BUILD_TYPE=None -DSKIP_GIT=ON -DCHAOS_MIMALLOC=OFF \
   -DCMAKE_CXX_COMPILER="$CXX_BIN" \
   -DCMAKE_CXX_FLAGS="$SAN" \
   -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined" > "$WORK/configure.log" 2>&1 || {

@@ -6,7 +6,6 @@ Module
   scripts: [ credits_data, creditsview, credits ]
   dependencies:
     - client_chaos_theme
-  autoload: true
-  autoload-priority: 1050
+  autoload: false
   @onLoad: init()
   @onUnload: terminate()

@@ -268,6 +268,10 @@ end
 
 -- the Credits window (client_chaos_credits, every source from docs/CREDITS.md); the short box only without it
 local function showCredits()
+  -- client_chaos_credits loads on first use (autoload: false)
+  if modules and not modules.client_chaos_credits and g_modules and g_modules.ensureModuleLoaded then
+    pcall(g_modules.ensureModuleLoaded, 'client_chaos_credits')
+  end
   local m = modules and modules.client_chaos_credits
   if m and type(rawget(m, 'show')) == 'function' then
     m.show()
