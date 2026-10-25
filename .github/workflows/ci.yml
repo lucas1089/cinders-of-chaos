@@ -283,6 +283,18 @@ jobs:
           g++ -std=c++17 -O2 -Wall -Wextra -I "$d" -I server/tools server/tools/sight_bench.cpp -o "$d/sight_bench"
           "$d/sight_bench" --check
 
+      - name: Walk map refresh, tile equality and benchmark check (C++; header from server src-patch 0076)
+        run: |
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/chaosstrip\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            server/src-patches/0076-cheaper-walk-map-refresh.patch > "$d/chaosstrip.h"
+          g++ -std=c++17 -O1 -Wall -Wextra -I "$d" -I server/tools server/tools/chaosstrip_test.cpp -o "$d/chaosstrip_test"
+          "$d/chaosstrip_test"
+          g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" -I server/tools server/tools/chaosstrip_test.cpp -o "$d/chaosstrip_asan"
+          "$d/chaosstrip_asan"
+          g++ -std=c++17 -O2 -Wall -Wextra -I "$d" -I server/tools server/tools/strip_bench.cpp -o "$d/strip_bench"
+          "$d/strip_bench" --check
+
       - name: Incremental save, pure parts (C++; header from server src-patch 0026)
         run: |
           d=$(mktemp -d)
