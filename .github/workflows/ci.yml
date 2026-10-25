@@ -271,6 +271,18 @@ jobs:
           g++ -std=c++17 -O2 -Wall -Wextra -I "$d" -I server/tools server/tools/mapdesc_bench.cpp -o "$d/mapdesc_bench"
           "$d/mapdesc_bench" --check
 
+      - name: Line of sight, answer equality and benchmark check (C++; header from server src-patch 0074)
+        run: |
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/chaossight\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            server/src-patches/0074-cheaper-line-of-sight.patch > "$d/chaossight.h"
+          g++ -std=c++17 -O1 -Wall -Wextra -I "$d" -I server/tools server/tools/chaossight_test.cpp -o "$d/chaossight_test"
+          "$d/chaossight_test"
+          g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" -I server/tools server/tools/chaossight_test.cpp -o "$d/chaossight_asan"
+          "$d/chaossight_asan"
+          g++ -std=c++17 -O2 -Wall -Wextra -I "$d" -I server/tools server/tools/sight_bench.cpp -o "$d/sight_bench"
+          "$d/sight_bench" --check
+
       - name: Incremental save, pure parts (C++; header from server src-patch 0026)
         run: |
           d=$(mktemp -d)

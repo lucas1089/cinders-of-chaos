@@ -1,0 +1,216 @@
+# Cheaper line of sight (O218; server/README.md "Cheaper line of sight (O218)").
+# Game::isSightClear -> Map::checkSightLine decides every ranged attack: each attacking monster asks once a second
+# (Creature::onAttacking), Monster::canUseAttack asks for every target in a target search, spells and a player's throw
+# ask too. It called Map::isTileClear for each tile of the line, and that walked the quad tree from the root (12 pointer
+# hops, QTreeNode::getLeafStatic) per tile, although the 8 or so tiles of a line inside one 8x8 block share one leaf and
+# one Floor.
+# Now:
+#   * src/chaossight.h (new, header only, no engine types; server/tools/chaossight_test.cpp and
+#     server/tools/sight_bench.cpp build it alone): ChaosSight::Line, the same stepping (same float arithmetic, argument
+#     swaps, loop bounds and early exit) with the Floor of the current 8x8 block kept in two words on the stack of one
+#     call. Nothing is kept between calls (a tile or floor added later is always seen) and nothing is allocated.
+#   * map.cpp: Map::checkSightLine builds a Line over Map::getFloorAt (patch 0072) and Tile::hasProperty(
+#     CONST_PROP_BLOCKPROJECTILE). Map::isTileClear and Map::isSightClear are untouched.
+# The answers are identical: the test compares a copy of the stock functions on many random maps, lines of all slopes
+# and lengths, both directions, other floors, floors and leaves that do not exist, and the edges of the 16 bit
+# coordinates.
+--- /dev/null
++++ b/src/chaossight.h
+@@ -0,0 +1,118 @@
++// Copyright 2022 The Forgotten Server Authors. All rights reserved.
++// Use of this source code is governed by the GPL-2.0 License that can be found in the LICENSE file.
++
++#ifndef FS_CHAOSSIGHT_H
++#define FS_CHAOSSIGHT_H
++
++// Cheaper line of sight (patch 0074, server/README.md "Cheaper line of sight (O218)"). Header only, no engine types:
++// server/tools/chaossight_test.cpp and server/tools/sight_bench.cpp build it alone.
++//   Map::checkSightLine (behind Game::isSightClear: every attacking monster once per second, every ranged target
++//   choice, every spell that needs a clear shot, a player's ranged attack and throw) called Map::isTileClear for each
++//   tile of the line, and that walked the quad tree from the root (12 pointer hops) per tile, although a line crosses
++//   at most a few 8x8 blocks and the 8 or so tiles of one block share one leaf and one Floor.
++//   Line keeps the stepping exactly as it was (same float arithmetic, same order, same early exit) and remembers the
++//   Floor of the block it is in, so the tree is walked once per block the line enters. The memory is two words on the
++//   stack of one call: nothing is kept between calls, so a tile added or a floor created later is always seen, and
++//   nothing is allocated.
++
++#include <cmath>
++#include <cstdlib>
++#include <cstdint>
++
++namespace ChaosSight {
++
++// floorAt(uint16_t x, uint16_t y, uint8_t z) -> const FloorT* (nullptr when there is no leaf or no floor, or z is out of
++//   range: what Map::getTile checks before it reads the tile); FloorT::tiles[8][8] is indexed [x & 7][y & 7].
++// blocks(const TileT*) -> bool: tile->hasProperty(CONST_PROP_BLOCKPROJECTILE).
++template<typename FloorT, typename FloorAt, typename Blocks>
++class Line
++{
++	public:
++		Line(uint8_t z, FloorAt& floorAt, Blocks& blocks) : z(z), floorAt(floorAt), blocks(blocks) {}
++
++		// Map::isTileClear(x, y, z) with blockFloor false: a missing tile is clear
++		bool clear(uint16_t x, uint16_t y)
++		{
++			const uint32_t key = (static_cast<uint32_t>(x) >> 3) | (static_cast<uint32_t>(y >> 3) << 13);
++			if (key != cachedKey) {
++				cachedKey = key;
++				cachedFloor = floorAt(x, y, z);
++			}
++			if (!cachedFloor) {
++				return true;
++			}
++			const auto* tile = cachedFloor->tiles[x & 7][y & 7];
++			return !tile || !blocks(tile);
++		}
++
++		// the stock checkSteepLine / checkSlightLine: arguments, float maths and loop as they were
++		bool steep(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1)
++		{
++			float dx = x1 - x0;
++			float slope = (dx == 0) ? 1 : (y1 - y0) / dx;
++			float yi = y0 + slope;
++
++			for (uint16_t x = x0 + 1; x < x1; ++x) {
++				//0.1 is necessary to avoid loss of precision during calculation
++				if (!clear(std::floor(yi + 0.1), x)) {
++					return false;
++				}
++				yi += slope;
++			}
++			return true;
++		}
++
++		bool slight(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1)
++		{
++			float dx = x1 - x0;
++			float slope = (dx == 0) ? 1 : (y1 - y0) / dx;
++			float yi = y0 + slope;
++
++			for (uint16_t x = x0 + 1; x < x1; ++x) {
++				//0.1 is necessary to avoid loss of precision during calculation
++				if (!clear(x, std::floor(yi + 0.1))) {
++					return false;
++				}
++				yi += slope;
++			}
++			return true;
++		}
++
++		// the stock Map::checkSightLine
++		bool check(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1)
++		{
++			if (x0 == x1 && y0 == y1) {
++				return true;
++			}
++
++			if (std::abs(y1 - y0) > std::abs(x1 - x0)) {
++				if (y1 > y0) {
++					return steep(y0, x0, y1, x1);
++				}
++				return steep(y1, x1, y0, x0);
++			}
++
++			if (x0 > x1) {
++				return slight(x1, y1, x0, y0);
++			}
++
++			return slight(x0, y0, x1, y1);
++		}
++
++	private:
++		uint8_t z;
++		FloorAt& floorAt;
++		Blocks& blocks;
++		uint32_t cachedKey = 0xFFFFFFFFu; // no real key reaches 2^26
++		const FloorT* cachedFloor = nullptr;
++};
++
++template<typename FloorT, typename FloorAt, typename Blocks>
++inline Line<FloorT, FloorAt, Blocks> makeLine(uint8_t z, FloorAt& floorAt, Blocks& blocks)
++{
++	return Line<FloorT, FloorAt, Blocks>(z, floorAt, blocks);
++}
++
++} // namespace ChaosSight
++
++#endif
+--- a/src/map.cpp
++++ b/src/map.cpp
+@@ -9,6 +9,7 @@
+ #include "creature.h"
+ #include "game.h"
+ #include "monster.h"
++#include "chaossight.h"
+ 
+ extern Game g_game;
+ 
+@@ -498,62 +499,14 @@
+ 	return !tile->hasProperty(CONST_PROP_BLOCKPROJECTILE);
+ }
+ 
+-namespace {
+-
+-bool checkSteepLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint8_t z)
+-{
+-	float dx = x1 - x0;
+-	float slope = (dx == 0) ? 1 : (y1 - y0) / dx;
+-	float yi = y0 + slope;
+-
+-	for (uint16_t x = x0 + 1; x < x1; ++x) {
+-		//0.1 is necessary to avoid loss of precision during calculation
+-		if (!g_game.map.isTileClear(std::floor(yi + 0.1), x, z)) {
+-			return false;
+-		}
+-		yi += slope;
+-	}
+-
+-	return true;
+-}
+-
+-bool checkSlightLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint8_t z)
+-{
+-	float dx = x1 - x0;
+-	float slope = (dx == 0) ? 1 : (y1 - y0) / dx;
+-	float yi = y0 + slope;
+-
+-	for (uint16_t x = x0 + 1; x < x1; ++x) {
+-		//0.1 is necessary to avoid loss of precision during calculation
+-		if (!g_game.map.isTileClear(x, std::floor(yi + 0.1), z)) {
+-			return false;
+-		}
+-		yi += slope;
+-	}
+-
+-	return true;
+-}
+-
+-}
+-
++// Chaos (patch 0074): the stepping of the stock checkSteepLine / checkSlightLine lives in src/chaossight.h; it resolves
++// the Floor once per 8x8 block the line crosses instead of walking the quad tree for every tile
+ bool Map::checkSightLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint8_t z) const
+ {
+-	if (x0 == x1 && y0 == y1) {
+-		return true;
+-	}
+-
+-	if (std::abs(y1 - y0) > std::abs(x1 - x0)) {
+-		if (y1 > y0) {
+-			return checkSteepLine(y0, x0, y1, x1, z);
+-		}
+-		return checkSteepLine(y1, x1, y0, x0, z);
+-	}
+-
+-	if (x0 > x1) {
+-		return checkSlightLine(x1, y1, x0, y0, z);
+-	}
+-
+-	return checkSlightLine(x0, y0, x1, y1, z);
++	auto floorAt = [this](uint16_t x, uint16_t y, uint8_t fz) { return getFloorAt(x, y, fz); };
++	auto blocks = [](const Tile* tile) { return tile->hasProperty(CONST_PROP_BLOCKPROJECTILE); };
++	auto line = ChaosSight::makeLine<Floor>(z, floorAt, blocks);
++	return line.check(x0, y0, x1, y1);
+ }
+ 
+ bool Map::isSightClear(const Position& fromPos, const Position& toPos, bool sameFloor /*= false*/) const
