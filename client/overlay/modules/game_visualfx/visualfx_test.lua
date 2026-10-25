@@ -9,7 +9,7 @@ local function eq(a, b, what)
 end
 
 -- options: the grade is off by default (it shifts the biome colours), the rest on; a boolean wins, junk is the default
-local wantDefault = { hitFlash = true, screenShake = true, creatureShadow = true, screenGrade = false, spellLight = true, liquidShimmer = true, weather = true }
+local wantDefault = { hitFlash = true, screenShake = true, creatureShadow = true, screenGrade = false, spellLight = true, liquidShimmer = true, weather = true, bloom = false }
 for _, name in ipairs(L.OPTIONS) do
   local d = wantDefault[name]
   eq(L.optionOn(name, nil), d, name .. ' default')
@@ -18,7 +18,7 @@ for _, name in ipairs(L.OPTIONS) do
   eq(L.optionOn(name, 'no'), d, name .. ' junk -> default')
   eq(L.optionOn(name, 0), d, name .. ' number -> default')
 end
-eq(#L.OPTIONS, 7, 'seven options')
+eq(#L.OPTIONS, 8, 'eight options')
 eq(L.optionOn('nothing', nil), false, 'an unknown option is off')
 
 -- hit flash
@@ -224,6 +224,31 @@ eq(sorted and sawWater and sawLava, true, 'the list is sorted and has both kinds
 eq(kindsOk, true, 'list kinds agree with liquidKind')
 eq(L.LIQUID.kind.water, 1, 'water kind number of the engine table')
 eq(L.LIQUID.kind.lava, 2, 'lava kind number of the engine table')
+
+-- soft glow (O210): off by default, strength low and capped, the shader holds the owner's high threshold
+eq(L.DEFAULTS.bloom, false, 'soft glow is off by default')
+eq(L.bloomStrength(false), 0, 'off asks for no strength')
+eq(L.bloomStrength(true), L.BLOOM.strength, 'on asks for the configured strength')
+eq(L.BLOOM.strength <= 0.5, true, 'the strength is low')
+eq(L.BLOOM.threshold >= 0.8, true, 'the threshold is high (luma 0.8 or more)')
+eq(L.BLOOM.full > L.BLOOM.threshold and L.BLOOM.full <= 1, true, 'the ramp goes up to full')
+do
+  local saved = L.BLOOM.strength
+  L.BLOOM.strength = 3
+  eq(L.bloomStrength(true), L.BLOOM.maxStrength, 'a too high strength is capped')
+  L.BLOOM.strength = -1
+  eq(L.bloomStrength(true), 0, 'a negative strength is 0')
+  L.BLOOM.strength = saved
+end
+do
+  local f = io.open(dir .. '../../data/shaders/chaos_bloom_extract.frag', 'r')
+  if f then
+    local src = f:read('*a'); f:close()
+    local lo, hi = src:match('smoothstep%(([%d%.]+),%s*([%d%.]+),%s*l%)')
+    eq(tonumber(lo), L.BLOOM.threshold, 'the shader threshold is L.BLOOM.threshold')
+    eq(tonumber(hi), L.BLOOM.full, 'the shader ramp end is L.BLOOM.full')
+  end
+end
 
 if fails > 0 then
   print(fails .. ' of ' .. checks .. ' checks failed')

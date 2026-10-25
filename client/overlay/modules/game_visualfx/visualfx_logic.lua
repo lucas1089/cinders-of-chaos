@@ -5,9 +5,10 @@ VisualFxLogic = {}
 local L = VisualFxLogic
 
 -- the options (client_settings dataset.lua, Options > Graphics "Visual effects"); on by default except the grade,
--- which changes the biome colours and waits for the owner's look at the first build
-L.OPTIONS = { 'hitFlash', 'screenShake', 'creatureShadow', 'screenGrade', 'spellLight', 'liquidShimmer', 'weather' }
-L.DEFAULTS = { hitFlash = true, screenShake = true, creatureShadow = true, screenGrade = false, spellLight = true, liquidShimmer = true, weather = true }
+-- which changes the biome colours and waits for the owner's look at the first build, and the soft glow (bloom, O210), which
+-- costs fill rate and waits for the same look
+L.OPTIONS = { 'hitFlash', 'screenShake', 'creatureShadow', 'screenGrade', 'spellLight', 'liquidShimmer', 'weather', 'bloom' }
+L.DEFAULTS = { hitFlash = true, screenShake = true, creatureShadow = true, screenGrade = false, spellLight = true, liquidShimmer = true, weather = true, bloom = false }
 
 -- an option value from the settings: a boolean is kept, anything else (nil, junk, an older settings file) is the default
 function L.optionOn(name, value)
@@ -317,4 +318,28 @@ function L.liquidList()
   end
   table.sort(out, function(a, b) return a.id < b.id end)
   return out
+end
+
+-- ---------------------------------------------------------------- soft glow (O210)
+-- A halo around very bright light only (base patch 0132, g_app.setMapBloom; shaders chaos_bloom_extract / chaos_bloom_blur in
+-- data/shaders). The engine keeps a pixel only when its luma is above `threshold` (smooth up to `full`) and screen-blends the blurred
+-- result over the map, so ordinary ground and biome colours are never changed. The two luma numbers are written in
+-- chaos_bloom_extract.frag; they are here so the test can hold them to the owner's rule (high threshold, low strength).
+L.BLOOM = {
+  strength = 0.35,   -- weight of the halo, 0..1 (the engine clamps it); low on purpose
+  maxStrength = 0.5, -- the most this file may ask for
+  threshold = 0.80,  -- luma under which nothing glows
+  full = 0.96,       -- luma from which a pixel glows at full weight
+  extractShader = 'chaos_bloom_extract',
+  blurShader = 'chaos_bloom_blur',
+  vertex = '/shaders/chaos_bloom_vertex',
+}
+
+-- the strength to hand to the engine: 0 when the option is off, else the configured one inside 0..maxStrength
+function L.bloomStrength(enabled)
+  if not enabled then return 0 end
+  local B = L.BLOOM
+  local s = tonumber(B.strength) or 0
+  if s < 0 then s = 0 elseif s > B.maxStrength then s = B.maxStrength end
+  return s
 end

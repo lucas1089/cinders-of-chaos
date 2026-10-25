@@ -13,6 +13,9 @@
 --                  live lights and adds them to the map light view (nothing shows in full light).
 --   weather        the rain game_chaosweather draws when the server says it rains (O208, base patch 0130): this file passes the
 --                  option on (modules.game_chaosweather.setEnabled); nothing is drawn here.
+--   soft glow      a halo around very bright light only (O210, base patch 0132): this file creates the two shaders
+--                  chaos_bloom_extract / chaos_bloom_blur and calls g_app.setMapBloom; the engine does the passes (a quarter-size
+--                  buffer, one blur each way, one screen-blend composite) and nothing at all while the option is off. Off by default.
 --   liquids        water and lava ground sprites shimmer (O206, base patch 0128): this file creates the two shaders
 --                  chaos_liquid_water / chaos_liquid_lava and sends the ground id table to Item.addLiquidId once; the engine draws
 --                  those grounds with the shader while the option is on (no per-tile Lua).
@@ -145,6 +148,30 @@ local function applyWeather()
   if m and m.setEnabled then pcall(m.setEnabled, optionValue('weather')) end
 end
 
+-- ---------------------------------------------------------------- soft glow
+local bloomShadersMade = false
+
+local function createBloomShaders()
+  if bloomShadersMade then return true end
+  local B = L.BLOOM
+  for _, name in ipairs({ B.extractShader, B.blurShader }) do
+    local ok, err = pcall(g_shaders.createShader, name, B.vertex, '/shaders/' .. name)
+    if not ok then
+      g_logger.warning('[visualfx] ' .. name .. ': ' .. tostring(err))
+      return false
+    end
+  end
+  bloomShadersMade = true
+  return true
+end
+
+local function applyBloom()
+  if not (g_app and g_app.setMapBloom) then return end -- a client without base patch 0132
+  local on = optionValue('bloom')
+  if on and not createBloomShaders() then on = false end
+  pcall(g_app.setMapBloom, on, L.bloomStrength(on))
+end
+
 -- ---------------------------------------------------------------- shadow and grade
 local function applyShadow()
   if Creature and Creature.setSoftShadow then pcall(Creature.setSoftShadow, optionValue('creatureShadow')) end
@@ -182,6 +209,8 @@ function onOption(name, value)
     applyLiquid()
   elseif name == 'weather' then
     applyWeather()
+  elseif name == 'bloom' then
+    applyBloom()
   elseif name == 'screenShake' and value == false then
     stopShake()
   end
@@ -193,6 +222,7 @@ function reapply()
   applySpellLight()
   applyLiquid()
   applyWeather()
+  applyBloom()
 end
 
 -- ---------------------------------------------------------------- lifecycle
@@ -232,6 +262,7 @@ function terminate()
   if Creature and Creature.setSoftShadow then pcall(Creature.setSoftShadow, false) end
   if g_map and g_map.setSpellLightConfig then pcall(g_map.setSpellLightConfig, false, 0, 0, 0, 0, 0) end
   if Item and Item.setLiquidShimmer then pcall(Item.setLiquidShimmer, false) end
+  if g_app and g_app.setMapBloom then pcall(g_app.setMapBloom, false, 0) end
   local panel = mapPanel()
   if panel and panel.getShader and panel:getShader() == GRADE then panel:setShader('') end
   handlers = {}
