@@ -239,6 +239,10 @@ server/
                                       (see "Skill names in messages")
   src-patches/0066-attack-at-once.patch   engine: the first swing at a new target (a pull, a switch, after a stair) no longer
                                       waits for the 1 s creature think (see "Attack delay after changing floor")
+  src-patches/0070-cheaper-pathfinding.patch   engine: the A* node store of every path search (monsters, summons, player
+                                      auto-walk, Lua) without per-search allocation and scans; same paths (see "Cheaper
+                                      monster pathfinding (O211)"; header src/chaospathing.h, tools/chaospathing_test.cpp,
+                                      tools/path_bench.cpp)
     remote_cmd.lua    remote_cmd_core.lua    remote_cmd_config.lua  (remote admin commands by file, see "Remote admin commands")
     spectate.lua      spectate_core.lua      spectate_config.lua    (the admin app's live view of a character, see "Live spectator")
     helpai.lua  helpai_core.lua  helpai_config.lua (Ember answers questions in the Help channel through the sidecar
@@ -23165,3 +23169,85 @@ Install: apply the patch with the others, add zlib to a Visual Studio project by
 client with base patch `0131` (optional for the feature: the stock client inflates already, only the size cap is new).
 Then `packetCompression = true` in `config.lua`. Check in a client: map loads, walking, a hunt, relog; if anything is
 wrong set it back to false. VPS: the admin app (`android/`) has no key editor for it; edit `config.lua` and restart.
+
+## Cheaper monster pathfinding (O211) (engine `src-patches/0070-cheaper-pathfinding.patch`, `src/chaospathing.h`, `tools/path_bench.cpp`, `tools/chaospathing_test.cpp`, `tools/path_bench_grid.py`)
+
+Monsters chase, summons follow, players auto-walk: all of it ends in `Map::getPathMatching`. This is what the audit of
+the stock engine (with patches 0001-0069) found, and what was changed.
+
+**How often it runs.** Less than expected. A monster searches from `Creature::goToFollowCreature`, which runs from
+`Creature::onThink`, and a monster's think is the 1 s creature think. A search is triggered by the 2 s refresh, by a step
+of the monster or of its target while it has a path (`isUpdatingPath`), by a failed step (`forceUpdateFollowPath`) or by
+a new target. The first three only set a flag that the next think reads, so a monster searches at most once a second
+and in the benchmark's packs 0.5 to 0.9 times a second. A throttle of "one search per 500 ms" would change nothing. Players
+search once per click (auto-walk). So the lever is the cost of one search, not the number of searches.
+
+**What one search costs.** Stock `AStarNodes` (`map.h`, `map.cpp`): `nodes(), openNodes()` zero 12.8 KB on the stack at every
+construction; every node goes into a `std::unordered_map<uint32_t, AStarNode*>` (one heap allocation per node, one more for
+the bucket array, all freed again at the end of the search); `getBestNode` scans every node ever created, closed ones
+too, once per expansion, so a search that reaches the 512 node cap costs about 130,000 comparisons. The tile tests are
+not the cost for monsters: `Map::canWalkTo` reads the creature's local walk cache first.
+
+**What changed (patch 0070, same answers).** `ChaosPath::NodeStore` (`src/chaospathing.h`, header only): arrays that are
+not cleared, the node table as open addressing with a generation stamp (no clearing between searches either), the open list
+as a binary heap ordered by (f, node index) with lazy deletion. The old scan took the lowest f and, among equal f, the
+lowest index; the heap pops exactly that node, so every path, every failed search and every node count stays the same.
+`ChaosPath::Lease` hands one store per thread to each search (a search that starts while another holds it, which does not
+happen today, gets a store of its own). `AStarNodes` keeps its interface and forwards to the store; `Map::getPathMatching`
+and every caller are untouched. Player auto-walk and the Lua `getPathTo` calls get the same store (safe reuse, same paths).
+
+**Measured** (`path_bench.cpp`; this sandbox, g++ 13 -O2, one core; the world is 8 windows of 96 x 96 tiles of the base
+server's real map, floor 7, tiles with the solid or path-blocking flag as walls, cut by `tools/path_bench_grid.py`, nothing
+of it kept in git; a melee monster, search radius 12, as `Monster::getPathSearchParams` sets it).
+
+| Single searches | searches | nodes taken from the open list per search | stock | new | |
+|---|---|---|---|---|---|
+| target reachable | 16000 | 67 | 19.8 us | 13.2 us | 1.50x |
+| target not reachable (hits the 512 node cap now and then) | 10547 | 147 | 48.5 us | 29.4 us | 1.65x |
+
+| A pack chases for 120 game seconds (12 monsters; think 1 s, step 500 ms, they block each other, the player walks, stands, or cannot be reached) | searches/s | nodes/s | search time per game second, stock | new | |
+|---|---|---|---|---|---|
+| player walks | 9.9 | 420 | 128 us | 75 us | 1.71x |
+| player stands | 9.3 | 229 | 60 us | 36 us | 1.65x |
+| player unreachable | 6.0 | 1553 | 590 us | 322 us | 1.78x |
+
+With 40 monsters (60 game seconds): 1290 / 672 us (1.92x) walking, 1094 / 575 us (1.90x) standing, 2012 / 1034 us (1.95x)
+unreachable. The searches, the nodes and the monsters' distance to the player are identical in both columns (the
+benchmark's `--check` fails otherwise). `chaospathing_test.cpp` runs the old and the new store through the same port of
+`getPathMatching` on 16,000 random searches (walls, crowds, the 512 node cap, the 100 node budget of `maxSearchDist 0`,
+ranged and fleeing parameters, no diagonals) and compares the found flag, the walk list, the end tile, the nodes expanded and
+the tile tests; it also runs under ASan and UBSan.
+
+Reading the numbers: the search time of the stock store at 40 monsters is about 32 us per monster per game second, so
+500 hunting monsters would spend about 16 ms of every second (1.6% of one core) in the search, and the new store about
+8 ms. That is the order of the saving on the live server, not a promise: the tile tests, `isSightClear` and the creature scan
+of the real engine cost more than the grid lookups of the benchmark, and they are unchanged, so the real share of the
+store is smaller and the real saving is below the 1.7x of the benchmark. The rest of the pathing cost (the think
+bookkeeping, `addEventWalk`'s scheduler events, `getDanceStep`) is not in the benchmark and was not touched.
+
+**Measured and not shipped: a search memo** (`tools/path_memo_experiment.h`, the third row of each chase in the benchmark).
+A monster that remembers its last search skips the next one when the target stands on the same tile and either the walk
+list still leads to the old goal (up to 1500 ms) or the last search from the same tile found nothing (up to 3000 ms).
+Result on the real-map windows: 3% fewer searches while the player walks, 5% while he stands, 20% against an unreachable
+player (the monsters wander, so the start tile changes and the failure is not reused); 1.15x to 1.25x less search time on
+top of the store. In the synthetic dungeon the mean distance of the pack to the player grew from 7.2 to 8.2 tiles while
+it walked, because monsters follow an older route round their own members until a step is blocked. Under the 20% line and
+it changes how a pack moves, so it stays out. The early exit for an unreachable target with a negative cache has the same
+problem (a failure is only reused when nothing moved) and a smaller search radius or node cap would change the paths; neither
+was done. If the live server shows the search near the top of the profile, the next step is a negative cache keyed by the
+set of tiles a failed search closed.
+
+**Not verified.** No full engine build or link, no run on the live server, no profile of the real server (the numbers
+are an offline reproduction of the search with grid lookups for the tile tests; the world is a 96 x 96 window of the real
+map, the packs are 12 or 40 monsters). Verified: the chain 0001-0070 applies to the base source with `patch -p1`, 0 FAILED,
+0 fuzz; `map.cpp`, `creature.cpp`, `monster.cpp`, `game.cpp` and `npc.cpp` pass `g++ -std=c++17 -fsyntax-only` with the
+boost, fmt, crypto++ and LuaJIT headers of this sandbox; the unit test and `path_bench --check` pass (CI "Native checks").
+
+Install: apply the patch with the others and build. No key, no config, nothing to turn on; a restart brings it. To compare on
+a test server, watch the tick time (`slowTaskLogMs`) with a big pack chasing before and after. VPS: no action beyond the
+normal update (the admin app has nothing to set for this).
+
+Re-run the benchmark: `python3 -I server/tools/path_bench_grid.py --map DIR/data/world/WORLD.otbm --items DIR/data/items/items.otb --out grid.txt`
+(about 50 s), then build the patch's header out (`awk` line of the CI step) and
+`g++ -std=c++17 -O2 -I DIR server/tools/path_bench.cpp -o path_bench && path_bench --grid grid.txt`; without `--grid` it
+plays synthetic rooms and corridors.
