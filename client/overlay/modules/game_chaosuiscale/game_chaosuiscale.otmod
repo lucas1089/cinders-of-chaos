@@ -1,0 +1,12 @@
+Module
+  name: game_chaosuiscale
+  description: Interface scale for 1440p and 4K screens (Options > Interface; the engine draws the whole interface at 1/N size and stretches it N times with hard pixel edges, base patch 0129)
+  author: Cinders of Chaos
+  sandboxed: true
+  scripts: [ uiscale_logic, uiscale ]
+  dependencies:
+    - game_interface
+  autoload: true
+  autoload-priority: 1006
+  @onLoad: init()
+  @onUnload: terminate()

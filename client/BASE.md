@@ -936,6 +936,24 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     `item.cpp` and `luafunctions_client.cpp` pass a syntax-only compile. The stock ids are the client ids items.otb gives the base
     items.xml water and lava grounds (water 629-634, 4597-4602, 4609-4614; lava 728-730). Not run in a client: the look, the frame rate on a screen of water
     (every liquid tile breaks the draw batch), and whether a zoomed view draws the shader quads at the same size are unchecked.
+69v. `0129` (C++ `src/framework/core/graphicalapplication.cpp`; Lua `mods/client_settings/classes/dataset.lua`, `settings.lua`,
+    `options/interface.otui`): **interface scale (O207).** The base already had the machinery: `g_app.scale(f)` draws the whole
+    interface into a framebuffer of window size / f and stretches it to the window (`GraphicalApplication::scale`, clamped to
+    1 .. min(h/180, w/280)/2); the Win32 window divides the mouse position by the factor, so clicks stay right. It was used only
+    by the phone client. No option and no UI text used it, and the framebuffer kept the default linear filter, so a stretched
+    interface was blurry. This patch sets the filter per frame in the two scaling set-ups: a whole factor draws with hard pixel
+    edges (nearest), a fraction keeps linear. Options > Interface gets a line `Interface scale: N%` with a scrollbar over three
+    steps (`dataset.lua` key `uiScale`, value = step index 1 / 2 / 3 = 100 / 200 / 300 %; the label updates while dragging;
+    `tempApply`), applied at once by the overlay module `game_chaosuiscale` (it lowers the step to what the window fits, 1024x576
+    interface pixels at least, re-checks every 500 ms for a resize or full screen, and calls `g_app.scale`). The Reset button of
+    the page sets 100 %. The value is saved by the settings (`g_settings`, the client's own config file: per computer). Why only
+    whole steps: the fonts are bitmaps and the skin is pixel art, so a stretch by 1.5 makes some pixels one screen pixel wide and
+    some two (shimmer when text moves). Applies after `0001`-`0128`; checked to apply cleanly (no fuzz, no offset) to the base
+    client tree, and `graphicalapplication.cpp` passes a syntax-only compile (`-DFW_GRAPHICS`). Not run in a client. Unchecked:
+    the Windows mouse mapping on every event type (read only for mouse move), the Linux window (no division found in
+    `x11window.cpp`, so a scaled interface would mis-click there), the map picture (drawn by its own framebuffer inside the
+    scaled one: sharp, but HD sprites from the xBRZ option gain nothing), and Lua code that reads `g_window.getSize()` instead
+    of the root widget size.
 70. `0088` (`src/client/outfit.cpp`): **a look without a mounted pattern still rides.** `Outfit::draw` took
     `zPattern = min(1, pattern Z - 1)` and drew the mount only when it was above 0, so a mounted character in a look
     with pattern Z 1 showed no mount. In pair 30 (dat 8156792438dabee3aa768663d57a1619) 43 wearable looks (base
