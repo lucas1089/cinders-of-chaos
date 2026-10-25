@@ -249,7 +249,7 @@ them are named by role, so they carry no Reserved Font Name.
 - **mimalloc**
   - Author: Microsoft (Daan Leijen)
   - Licence: MIT
-  - Used for: the memory allocator of the Linux server engine (libmimalloc, bundled in the Linux server package)
+  - Used for: the memory allocator of the Linux server engine (version 2.1.7 in secure mode, built from the upstream release and bundled in the Linux server package)
   - Source: https://github.com/microsoft/mimalloc
 - **ZnoteX**
   - Author: Open Games Community

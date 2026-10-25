@@ -7,9 +7,12 @@
 #   * Hardening (CHAOS_HARDEN, default ON), each compiler flag only when the compiler takes it: -fstack-protector-strong,
 #     -D_FORTIFY_SOURCE=2, -fstack-clash-protection, -fcf-protection=full, -fPIE; link -pie -Wl,-z,relro,-z,now,
 #     -z,noexecstack. Ubuntu's g++ does most of this by default; the flags make it the same on any toolchain.
-#   * mimalloc (CHAOS_MIMALLOC, default ON): when libmimalloc is installed (apt install libmimalloc-dev) it is the first
+#   * mimalloc (CHAOS_MIMALLOC, default ON): only the SECURE build (MI_SECURE: guard pages, randomised allocation,
+#     encoded free lists, double-free detection), which names itself libmimalloc-secure; tools/linux/build_mimalloc.sh
+#     builds the pinned release into a prefix, -DCHAOS_MIMALLOC_DIR=PREFIX points CMake at it. When found it is the first
 #     library of the link line, kept with --no-as-needed, and replaces malloc / free / operator new for the whole
-#     process. Not found: a status line and the system allocator, the build goes on. -DCHAOS_MIMALLOC=OFF skips it.
+#     process. The distro's plain libmimalloc is never used. Not found: a status line and the system allocator, the
+#     build goes on. -DCHAOS_MIMALLOC=OFF skips it.
 # Apply in the server source root after 0001-0067: patch -p1 < 0068-build-flags-mimalloc.patch, then re-run CMake.
 --- a/src/CMakeLists.txt
 +++ b/src/CMakeLists.txt
@@ -22,7 +25,7 @@
 new file mode 100644
 --- /dev/null
 +++ b/src/chaos_build.cmake
-@@ -0,0 +1,65 @@
+@@ -0,0 +1,71 @@
 +# Chaos (patch 0068): build flags and allocator of the Linux engine (server/README.md "Build flags and allocator (O201)").
 +# Included by src/CMakeLists.txt, before the target exists, so everything goes through global flag variables set in
 +# the parent scope. Nothing here runs for Windows, macOS, a Debug build, or a build with no build type (the sanitizer
@@ -32,12 +35,12 @@ new file mode 100644
 +#   -O2 (not the stock Release -O3), -DNDEBUG   CHAOS_OPT_LEVEL            (cache string, default -O2)
 +#   -fstack-protector-strong, -D_FORTIFY_SOURCE=2, -fstack-clash-protection, -fcf-protection (x86), -fPIE, -pie,
 +#   -Wl,-z,relro,-z,now,-z,noexecstack          CHAOS_HARDEN               (default ON; OFF leaves the toolchain's defaults)
-+#   mimalloc as the allocator                   CHAOS_MIMALLOC             (default ON when libmimalloc is found)
++#   secure mimalloc as the allocator            CHAOS_MIMALLOC             (default ON when libmimalloc-secure is found)
 +# No -march: the engine is built on one machine and run on another.
 +# Link-time optimisation stays where the base CMakeLists.txt has it (check_ipo_supported).
 +
 +option(CHAOS_HARDEN "Chaos: hardening flags (stack protector, FORTIFY_SOURCE, PIE, RELRO, BIND_NOW)" ON)
-+option(CHAOS_MIMALLOC "Chaos: link mimalloc as the allocator when libmimalloc is installed" ON)
++option(CHAOS_MIMALLOC "Chaos: link the secure mimalloc as the allocator when it is installed" ON)
 +set(CHAOS_OPT_LEVEL "-O2" CACHE STRING "Chaos: optimisation level of the Release build")
 +
 +if (UNIX AND NOT APPLE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang"
@@ -70,16 +73,22 @@ new file mode 100644
 +    endif ()
 +
 +    if (CHAOS_MIMALLOC)
-+        find_library(CHAOS_MIMALLOC_LIBRARY NAMES mimalloc)
++        # only the secure build (MI_SECURE: guard pages, randomised allocation, encoded free lists, double-free
++        # detection), which names itself libmimalloc-secure; the distro's libmimalloc is the plain build and is not
++        # used, so the allocator never lowers the heap checks glibc has. tools/linux/build_mimalloc.sh makes it.
++        # CHAOS_MIMALLOC_DIR (cache path) is the install prefix to look in first.
++        set(CHAOS_MIMALLOC_DIR "" CACHE PATH "Chaos: install prefix of the secure mimalloc (lib/libmimalloc-secure.so)")
++        find_library(CHAOS_MIMALLOC_LIBRARY NAMES mimalloc-secure HINTS "${CHAOS_MIMALLOC_DIR}/lib")
 +        if (CHAOS_MIMALLOC_LIBRARY)
 +            # first in the link line and kept even though the engine names no mi_ function: the library defines
 +            # malloc, free, operator new, ... so every allocation of the engine and of the libraries it loads after it
 +            # (libstdc++, Boost, the database client, LuaJIT on GC64) goes through it
++            get_filename_component(chaos_mi_dir "${CHAOS_MIMALLOC_LIBRARY}" DIRECTORY)
 +            set(CMAKE_EXE_LINKER_FLAGS
-+                "${CMAKE_EXE_LINKER_FLAGS} -Wl,--push-state,--no-as-needed ${CHAOS_MIMALLOC_LIBRARY} -Wl,--pop-state")
-+            message(STATUS "Chaos: allocator mimalloc (${CHAOS_MIMALLOC_LIBRARY})")
++                "${CMAKE_EXE_LINKER_FLAGS} -Wl,--push-state,--no-as-needed ${CHAOS_MIMALLOC_LIBRARY} -Wl,--pop-state -Wl,-rpath,${chaos_mi_dir}")
++            message(STATUS "Chaos: allocator mimalloc, secure build (${CHAOS_MIMALLOC_LIBRARY})")
 +        else ()
-+            message(STATUS "Chaos: libmimalloc not found, the system allocator stays (apt install libmimalloc-dev)")
++            message(STATUS "Chaos: secure libmimalloc not found, the system allocator stays (tools/linux/build_mimalloc.sh, -DCHAOS_MIMALLOC_DIR=PREFIX)")
 +        endif ()
 +    endif ()
 +

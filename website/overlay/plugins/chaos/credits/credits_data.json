@@ -327,7 +327,7 @@
      "name": "mimalloc",
      "author": "Microsoft (Daan Leijen)",
      "licence": "MIT",
-     "use": "the memory allocator of the Linux server engine (libmimalloc, bundled in the Linux server package)",
+     "use": "the memory allocator of the Linux server engine (version 2.1.7 in secure mode, built from the upstream release and bundled in the Linux server package)",
      "source": "https://github.com/microsoft/mimalloc"
     },
     {

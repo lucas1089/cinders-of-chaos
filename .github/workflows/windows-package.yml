@@ -817,7 +817,7 @@ jobs:
       APT_PACKAGES: >-
         cmake ninja-build g++ patchelf file libboost-date-time-dev libboost-system-dev libboost-filesystem-dev
         libboost-iostreams-dev libfmt-dev libpugixml-dev libcrypto++-dev libluajit-5.1-dev libmariadb-dev
-        libmariadb-dev-compat libmimalloc-dev
+        libmariadb-dev-compat
     steps:
       - name: Check out Cinders of Chaos
         uses: actions/checkout@v4
@@ -846,6 +846,12 @@ jobs:
           tar -xf server.tar -C work
           rm server.tar
 
+      # the secure mimalloc (MI_SECURE: guard pages, encoded free lists, double-free detection) from the pinned upstream
+      # release (commit and source sha256 checked in the script), not the distro's plain build. It runs on a cache hit
+      # too: package_server.sh bundles libmimalloc-secure.so from this prefix into the package's lib/
+      - name: Secure mimalloc (pinned upstream release)
+        run: bash chaos/tools/linux/build_mimalloc.sh "$HOME/mimalloc-prefix" "$RUNNER_TEMP/mimalloc-work"
+
       # Compiled engine cache: the one file work/server/build/tfs. The key is one sha256 of: src/, cmake/ and
       # CMakeLists.txt of the server folder from the server job (base source + src-patches), the apt versions of the
       # build packages (APT_PACKAGES, libc6, libstdc++6), the g++ version, and the build recipe (keep it equal to the
@@ -862,8 +868,8 @@ jobs:
           # shellcheck disable=SC2086 # APT_PACKAGES is a list of package names
           debs=$(dpkg-query -W -f='${Package} ${Version} ${Architecture}\n' $APT_PACKAGES libc6 libstdc++6 | LC_ALL=C sort)
           gcc=$(g++ -dumpfullversion -dumpmachine | tr '\n' ' ')
-          recipe="engine-linux-v2 ubuntu-22.04 Release Ninja SKIP_GIT=ON no-Werror patch-0068-flags mimalloc"
-          hash=$({ echo "$recipe"; echo "g++ $gcc"; echo "$debs"; printf '%s\n' "$files" | xargs -d '\n' sha256sum; } | sha256sum | cut -d' ' -f1)
+          recipe="engine-linux-v3 ubuntu-22.04 Release Ninja SKIP_GIT=ON no-Werror patch-0068-flags mimalloc-secure"
+          hash=$({ echo "$recipe"; echo "g++ $gcc"; echo "$debs"; printf '%s\n' "$files" | xargs -d '\n' sha256sum; sha256sum ../../chaos/tools/linux/build_mimalloc.sh; } | sha256sum | cut -d' ' -f1)
           echo "recipe: $recipe"; echo "g++ $gcc"; echo "source files: $(wc -l <<<"$files")"; echo "key hash: $hash"
           echo "hash=$hash" >> "$GITHUB_OUTPUT"
 
@@ -872,7 +878,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: work/server/build/tfs
-          key: engine-linux-bin-v2-${{ steps.key.outputs.hash }}
+          key: engine-linux-bin-v3-${{ steps.key.outputs.hash }}
 
       - name: Build the engine
         if: steps.cache.outputs.cache-hit != 'true'
@@ -883,21 +889,22 @@ jobs:
           # release, and the warnings stay in this log
           grep -q -- ' -Werror ' CMakeLists.txt
           sed -i 's/ -Werror / /' CMakeLists.txt
-          cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DSKIP_GIT=ON
+          cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DSKIP_GIT=ON -DCHAOS_MIMALLOC_DIR="$HOME/mimalloc-prefix"
           cmake --build build --parallel "$(nproc)"
           ls -la build/tfs
-          # patch 0068: -O2, hardening flags and mimalloc (libmimalloc-dev above); the properties are checked here
-          bash ../../chaos/tools/linux/check_engine_hardening.sh build/tfs --require-mimalloc
 
       - name: Save the compiled engine
         if: steps.cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
           path: work/server/build/tfs
-          key: engine-linux-bin-v2-${{ steps.key.outputs.hash }}
+          key: engine-linux-bin-v3-${{ steps.key.outputs.hash }}
 
       - name: Check the compiled engine
-        run: test -x work/server/build/tfs && ls -la work/server/build/tfs
+        run: |
+          test -x work/server/build/tfs && ls -la work/server/build/tfs
+          # patch 0068: PIE, RELRO, BIND_NOW, stack protector, FORTIFY and the secure mimalloc (also for a cached binary)
+          bash chaos/tools/linux/check_engine_hardening.sh work/server/build/tfs --require-mimalloc
 
       - name: Portable MariaDB (official Linux build)
         run: bash chaos/tools/linux/fetch_mariadb.sh "$MARIADB_VERSION" mariadb-linux
