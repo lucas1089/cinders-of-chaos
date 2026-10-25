@@ -895,6 +895,17 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     -fsyntax-only` on the patched tree. Not built, run or measured in play: confirm in the first build that
     `g_things.getTextureCacheBytes()` stays under the cap in a busy hunt and `getTextureCacheEvictions()` stays near 0 in
     normal play (raise `textureCacheMB` if it climbs).
+69s. `0126` (C++ `src/client/creature.h/.cpp`, `mapview.h/.cpp`, `uimap.h`, `luafunctions_client.cpp`; Lua `mods/client_settings/classes/dataset.lua`,
+    `options/graphics.otui`): **visual effects hooks (O203).** `Creature:flashHit(shader, ms)` draws the outfit with an outfit
+    shader until the time is up (the creature's own shader is put back after the draw); `Creature.setSoftShadow(bool)` makes
+    `Creature::draw` queue a procedural 64x32 ellipse (`Texture` from an `Image`, built once) under the feet before the outfit;
+    `UIMap.setShake(x, y)` adds a pixel shift (1x pixels, scaled to the sprite size) to `MapView::calcFramebufferSource`. The
+    vignette and colour grade need no C++: a map shader (`data/shaders/chaos_map_*.frag`) the overlay module `game_visualfx`
+    sets on the map panel. Options > Graphics gets four checkboxes (`hitFlash`, `screenShake`, `creatureShadow`, `screenGrade`,
+    all on); `enableShaders` off clears the base's map shader and asks the module to set the grade again. Applies after
+    `0001`-`0125`; the touched files compile with the patched tree (only the base's own `g_app` declaration errors of a build
+    without the framework defines remain, the same with and without the patch). Not built or run: check the Graphics tab fits
+    the new panel (86 px) and the frame rate with the effects on and off.
 70. `0088` (`src/client/outfit.cpp`): **a look without a mounted pattern still rides.** `Outfit::draw` took
     `zPattern = min(1, pattern Z - 1)` and drew the mount only when it was above 0, so a mounted character in a look
     with pattern Z 1 showed no mount. In pair 30 (dat 8156792438dabee3aa768663d57a1619) 43 wearable looks (base

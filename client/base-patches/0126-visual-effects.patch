@@ -1,0 +1,365 @@
+# Chaos: visual effects hooks (src/client/creature.h/.cpp, mapview.h/.cpp, uimap.h, luafunctions_client.cpp, and Lua:
+# mods/client_settings/classes/dataset.lua, options/graphics.otui; after 0001-0125). Owner overlay module game_visualfx
+# (client/MANIFEST.md "Visual effects") does the rest. Four options in Options > Graphics, all on by default:
+#  * Hit flash: Creature:flashHit(shader, ms) draws the outfit with an outfit shader (chaos_hit_white / chaos_hit_red) until
+#    the time is up, then the creature's own shader again. Lua tells which creature took a damage number (g_map.onImpactText of 0100).
+#  * Screen shake: UIMap.setShake(x, y), a pixel shift (1x sprite pixels, scaled to the sprite size) added to the framebuffer
+#    source rect in MapView::calcFramebufferSource, so the picture, the light, the names and the clicks all move together.
+#    The draw dimension keeps a margin of at least a tile around the visible area, so a shift of a few pixels shows no edge.
+#    The module caps it at 4 px and 180 ms and runs a 16 ms timer only while it shakes.
+#  * Soft shadow: Creature.setSoftShadow(bool); Creature::draw queues one 64x32 procedural ellipse (alpha 0 at the rim, built once
+#    on the first draw, uploaded by Texture like any other) at the creature's feet before its outfit; as wide as the look's
+#    tiles. One extra textured rect per visible creature, nothing when off.
+#  * Vignette and colour grade: no C++; a map shader (data/shaders/chaos_map_*.frag) set on the map panel by the module.
+# The option values live in dataset.lua (hitFlash, screenShake, creatureShadow, screenGrade); turning "Enable shaders" off
+# clears the base's map shader, so its apply asks the module to set the grade again.
+# Not run in a full build or in play; the touched files pass g++ -fsyntax-only with the patch chain applied (the only errors
+# are the base's own g_app declarations of a build without the framework defines).
+--- a/src/client/creature.h
++++ b/src/client/creature.h
+@@ -99,6 +99,12 @@
+     // Chaos: draw the creature bigger (bosses); 1 = normal size, anchored at the creature's feet
+     void setDrawScale(float scale) { m_drawScale = std::max(0.5f, std::min(3.0f, scale)); }
+     float getDrawScale() { return m_drawScale; }
++    // Chaos (base patch 0126): a soft dark ellipse under every creature (Options > Graphics "Soft shadows under
++    // creatures"; the overlay module game_visualfx sets it at every game start) and a short hit flash: the outfit
++    // draws with the given outfit shader for `ms` milliseconds (client/MANIFEST.md "Visual effects")
++    static void setSoftShadow(bool enabled) { s_softShadow = enabled; }
++    static bool isSoftShadow() { return s_softShadow; }
++    void flashHit(const std::string& shader, int ms);
+     // Chaos (base patch 0111): the name and bars lifted over a look taller than the stock ones, in sprite pixels at
+     // 1x, per look type (client_chaos_infolift sets the table generated from the pair). Players and NPCs only.
+     static void setInformationLift(int lookType, int pixels);
+@@ -292,6 +298,9 @@
+     bool m_useCustomInformationColor = false;
+     Point m_informationOffset;
+     float m_drawScale = 1.0f;
++    std::string m_hitShader; // base patch 0126
++    ticks_t m_hitFlashEnd = 0;
++    static bool s_softShadow;
+     OutfitOutline m_outline;
+     Color m_outfitColor;
+     ScheduledEventPtr m_outfitColorUpdateEvent;
+--- a/src/client/creature.cpp
++++ b/src/client/creature.cpp
+@@ -43,6 +43,7 @@
+ #include <framework/graphics/paintershaderprogram.h>
+ #include <framework/graphics/shadermanager.h>
+ #include <framework/graphics/texturemanager.h>
++#include <framework/graphics/image.h>
+ #include <framework/graphics/framebuffermanager.h>
+ #include "spritemanager.h"
+ 
+@@ -178,6 +179,36 @@
+     }
+ }
+ 
++// Chaos (base patch 0126): the soft shadow texture, a 64x32 ellipse that fades from the middle to nothing at the rim
++// (built once; Texture uploads on first draw), and the shadow option
++bool Creature::s_softShadow = false;
++
++static TexturePtr softShadowTexture()
++{
++    static TexturePtr texture;
++    if (!texture) {
++        const int w = 64, h = 32;
++        auto image = std::make_shared<Image>(Size(w, h));
++        for (int y = 0; y < h; ++y) {
++            for (int x = 0; x < w; ++x) {
++                const float nx = (x + 0.5f) / w * 2.f - 1.f;
++                const float ny = (y + 0.5f) / h * 2.f - 1.f;
++                const float t = 1.f - std::sqrt(nx * nx + ny * ny);
++                const float a = t <= 0.f ? 0.f : t * t * (3.f - 2.f * t);
++                image->setPixel(x, y, Color(0, 0, 0, static_cast<int>(a * 255.f + 0.5f)));
++            }
++        }
++        texture = std::make_shared<Texture>(image, false, false, true);
++    }
++    return texture;
++}
++
++void Creature::flashHit(const std::string& shader, int ms)
++{
++    m_hitShader = shader;
++    m_hitFlashEnd = ms > 0 ? g_clock.millis() + ms : 0;
++}
++
+ void Creature::draw(const Point& dest, bool animate, LightView* lightView)
+ {   
+     if (!canBeSeen())
+@@ -202,6 +233,21 @@
+     if (m_outfit.getCategory() != ThingCategoryCreature)
+         animationOffset -= getDisplacement();
+ 
++    // Chaos (base patch 0126): the soft shadow on the ground under the feet, behind the outfit; it stays on the tile
++    // while the creature jumps and is as wide as the creature's tiles (a big look gets a big shadow). Map draw only.
++    if (s_softShadow && animate && m_outfit.getCategory() == ThingCategoryCreature) {
++        int widthTiles = 1;
++        ThingType* shadowType = m_outfit.getId() > 0 ? g_things.rawGetThingType(m_outfit.getId(), ThingCategoryCreature) : nullptr;
++        if (shadowType)
++            widthTiles = std::max<int>(1, std::min<int>(4, shadowType->getWidth()));
++        const float unit = sprSize / 32.f;
++        const float w = (22.f * widthTiles + (widthTiles - 1) * 4.f) * unit * m_drawScale;
++        const float h = w * 0.42f;
++        const Point feet = dest + animationOffset + Point(sprSize / 2, sprSize - static_cast<int>(5 * unit));
++        g_drawQueue->addTexturedRect(Rect(feet.x - static_cast<int>(w / 2), feet.y - static_cast<int>(h / 2), static_cast<int>(w), static_cast<int>(h)),
++                                     softShadowTexture(), Rect(0, 0, 64, 32), Color(255, 255, 255, 120));
++    }
++
+     size_t drawQueueSize = g_drawQueue->size();
+     // Chaos (base patch 0051): a map draw records the parts it queues, so a click can take the creature by any of
+     // its drawn pixels; a big creature under the mouse gets the soft outline of base patch 0044 under its largest part
+@@ -215,7 +261,21 @@
+     }
+     m_outfit.setHitParts(hitView ? &hitParts : nullptr);
+     m_outfit.setDrawOutline(m_outline.width > 0 ? &m_outline : nullptr);
++    // Chaos (base patch 0126): the hit flash draws the outfit with its flash shader until the time is up
++    const bool hitFlash = animate && m_hitFlashEnd != 0 && !m_hitShader.empty();
++    std::string shaderBeforeFlash;
++    if (hitFlash) {
++        if (g_clock.millis() < m_hitFlashEnd) {
++            shaderBeforeFlash = m_outfit.getShader();
++            m_outfit.setShader(m_hitShader);
++        } else {
++            m_hitFlashEnd = 0;
++        }
++    }
++    const bool flashing = hitFlash && m_hitFlashEnd != 0;
+     m_outfit.draw(dest - jumpOffset + animationOffset, m_walking ? m_walkDirection : m_direction, m_walkAnimationPhase, true, lightView);
++    if (flashing)
++        m_outfit.setShader(shaderBeforeFlash);
+     m_outfit.setDrawOutline(nullptr);
+     m_outfit.setHitParts(nullptr);
+     if (hoverOutline) {
+--- a/src/client/mapview.h
++++ b/src/client/mapview.h
+@@ -119,6 +119,10 @@
+ 
+     void setAntiAliasingMode(uint8_t mode);
+     void setFloorFading(int value) { m_floorFading = value; }
++    // Chaos (base patch 0126): the screen shake, a pixel shift of the picture (1x sprite pixels, scaled to the
++    // sprite size) set by the overlay module game_visualfx for a few frames; 0, 0 = none. Clicks follow the picture.
++    static void setShake(int x, int y) { s_shakeX = x; s_shakeY = y; }
++    static Point getShake();
+     void setCrosshair(const std::string& file);
+ 
+     void setShader(const std::string& shader);
+@@ -173,6 +177,8 @@
+     Point m_virtualCenterOffset;
+     Point m_visibleCenterOffset;
+     Point m_moveOffset;
++    static int s_shakeX;
++    static int s_shakeY;
+     Position m_customCameraPosition;
+     Position m_lastCameraPosition;
+     stdext::boolean<true> m_mustUpdateVisibleTilesCache;
+--- a/src/client/mapview.cpp
++++ b/src/client/mapview.cpp
+@@ -842,6 +842,15 @@
+         requestVisibleTilesCacheUpdate();
+ }
+ 
++int MapView::s_shakeX = 0;
++int MapView::s_shakeY = 0;
++
++Point MapView::getShake()
++{
++    const float unit = g_sprites.spriteSize() / 32.f;
++    return Point(static_cast<int>(std::lround(s_shakeX * unit)), static_cast<int>(std::lround(s_shakeY * unit)));
++}
++
+ Rect MapView::calcFramebufferSource(const Size& destSize, bool inNextFrame)
+ {
+     float scaleFactor = g_sprites.spriteSize()/(float)g_sprites.spriteSize();
+@@ -855,6 +864,10 @@
+     drawOffset.x += (srcVisible.width() - srcSize.width()) / 2;
+     drawOffset.y += (srcVisible.height() - srcSize.height()) / 2;
+ 
++    // Chaos (base patch 0126): the screen shake; the draw dimension keeps a margin of a tile or more on every side
++    if (s_shakeX != 0 || s_shakeY != 0)
++        drawOffset += getShake();
++
+     return Rect(drawOffset, srcSize);
+ }
+ 
+--- a/src/client/uimap.h
++++ b/src/client/uimap.h
+@@ -94,6 +94,8 @@
+     CreaturePtr getCreatureAt(const Point& mousePos) { return pickCreature(mousePos, nullptr); }
+     // the soft outline on a big creature under the mouse (option "bigCreatureHover", on by default)
+     static void setBigCreatureHover(bool enabled) { s_bigCreatureHover = enabled; }
++    // Chaos (base patch 0126): the screen shake, see MapView::setShake
++    static void setShake(int x, int y) { MapView::setShake(x, y); }
+     static bool isBigCreatureHover() { return s_bigCreatureHover; }
+     int getMaxZoomIn() { return m_maxZoomIn; }
+     int getMaxZoomOut() { return m_maxZoomOut; }
+--- a/src/client/luafunctions_client.cpp
++++ b/src/client/luafunctions_client.cpp
+@@ -683,6 +683,9 @@
+     g_lua.bindClassMemberFunction<Creature>("getInformationOffset", &Creature::getInformationOffset);
+     g_lua.bindClassMemberFunction<Creature>("setDrawScale", &Creature::setDrawScale);
+     g_lua.bindClassMemberFunction<Creature>("getDrawScale", &Creature::getDrawScale);
++    g_lua.bindClassMemberFunction<Creature>("flashHit", &Creature::flashHit);
++    g_lua.bindClassStaticFunction<Creature>("setSoftShadow", &Creature::setSoftShadow);
++    g_lua.bindClassStaticFunction<Creature>("isSoftShadow", &Creature::isSoftShadow);
+     g_lua.bindClassStaticFunction<Creature>("setInformationLift", &Creature::setInformationLift);
+     g_lua.bindClassStaticFunction<Creature>("clearInformationLifts", &Creature::clearInformationLifts);
+     g_lua.bindClassStaticFunction<Creature>("getLookInformationLift", &Creature::getLookInformationLift);
+@@ -1218,6 +1221,7 @@
+     g_lua.bindClassMemberFunction<UIMap>("getTile", &UIMap::getTile);
+     g_lua.bindClassMemberFunction<UIMap>("getCreatureAt", &UIMap::getCreatureAt);
+     g_lua.bindClassStaticFunction<UIMap>("setBigCreatureHover", &UIMap::setBigCreatureHover);
++    g_lua.bindClassStaticFunction<UIMap>("setShake", &UIMap::setShake);
+     g_lua.bindClassStaticFunction<UIMap>("isBigCreatureHover", &UIMap::isBigCreatureHover);
+     g_lua.bindClassMemberFunction<UIMap>("getMaxZoomIn", &UIMap::getMaxZoomIn);
+     g_lua.bindClassMemberFunction<UIMap>("getMaxZoomOut", &UIMap::getMaxZoomOut);
+--- a/mods/client_settings/classes/dataset.lua
++++ b/mods/client_settings/classes/dataset.lua
+@@ -2022,10 +2022,47 @@
+     end,
+   },
+ 
++  -- Cinders of Chaos visual effects (base patch 0126; overlay module game_visualfx reads and applies them): a flash on a
++  -- creature that takes damage, a small screen shake on big hits taken, a soft shadow under creatures, a vignette and light
++  -- colour grade over the map
++  hitFlash = {
++    value = true,
++  },
++
++  screenShake = {
++    value = true,
++    apply = function(value)
++      local m = modules.game_visualfx
++      if m and m.onOption then m.onOption('screenShake', value) end
++      return true
++    end,
++  },
++
++  creatureShadow = {
++    value = true,
++    apply = function(value)
++      local m = modules.game_visualfx
++      if m and m.onOption then m.onOption('creatureShadow', value) end
++      return true
++    end,
++  },
++
++  screenGrade = {
++    value = false,
++    apply = function(value)
++      local m = modules.game_visualfx
++      if m and m.onOption then m.onOption('screenGrade', value) end
++      return true
++    end,
++  },
++
+   enableShaders = {
+     value = true,
+     apply = function(value)
+       modules.game_shaders.clearMapShader()
++      -- the map shader of the visual effects (base patch 0126) goes with it: set it again
++      local fx = modules.game_visualfx
++      if fx and fx.reapply then fx.reapply() end
+       if value and g_game.isOnline() then
+         modules.game_shaders.onPositionChange(_, g_game.getLocalPlayer():getPosition(), _)
+       end
+--- a/mods/client_settings/options/graphics.otui
++++ b/mods/client_settings/options/graphics.otui
+@@ -450,6 +450,97 @@
+       image-source: /images/skin/show-gui-help-grey
+       !tooltip: tr('A soft glow in the rarity colour around items of a rarity, on the\nground and in your bags and inventory; a light sweep across the frames\nof legendary and unique items; two liquid orbs for health and mana\nunder the game window. Turn them off if your frame rate drops.')
+ 
++  FlatPanel
++    // Chaos (base patch 0126, overlay module game_visualfx): the dark-fantasy look of the map, one switch per effect
++    size: 505 86
++    anchors.top: prev.bottom
++    anchors.right: parent.right
++    anchors.left: parent.left
++    margin-top: 5
++    margin-left: 4
++    margin-right: 4
++
++    SettingsCheckBox
++      id: hitFlash
++      size: 12 12
++      !text: tr('Flash creatures that take damage')
++      font: $var-cip-font
++      text-auto-resize: true
++      color: $var-text-cip-color
++      text-offset: 14 -2
++      anchors.left: parent.left
++      anchors.top: parent.top
++      margin-top: 7
++      margin-left: 16
++      image-source: /images/ui/checkbox
++      image-clip: 0 0 12 12
++      @onSetup: |
++        local value = modules.client_settings.getOption('hitFlash')
++        self:setChecked(value ~= false)
++
++    SettingsCheckBox
++      id: screenShake
++      size: 12 12
++      !text: tr('Shake the screen on big hits taken')
++      font: $var-cip-font
++      text-auto-resize: true
++      color: $var-text-cip-color
++      text-offset: 14 -2
++      anchors.left: parent.left
++      anchors.top: hitFlash.bottom
++      margin-top: 7
++      margin-left: 16
++      image-source: /images/ui/checkbox
++      image-clip: 0 0 12 12
++      @onSetup: |
++        local value = modules.client_settings.getOption('screenShake')
++        self:setChecked(value ~= false)
++
++    SettingsCheckBox
++      id: creatureShadow
++      size: 12 12
++      !text: tr('Soft shadow under creatures')
++      font: $var-cip-font
++      text-auto-resize: true
++      color: $var-text-cip-color
++      text-offset: 14 -2
++      anchors.left: parent.left
++      anchors.top: screenShake.bottom
++      margin-top: 7
++      margin-left: 16
++      image-source: /images/ui/checkbox
++      image-clip: 0 0 12 12
++      @onSetup: |
++        local value = modules.client_settings.getOption('creatureShadow')
++        self:setChecked(value ~= false)
++
++    SettingsCheckBox
++      id: screenGrade
++      size: 12 12
++      !text: tr('Vignette and colour grade')
++      font: $var-cip-font
++      text-auto-resize: true
++      color: $var-text-cip-color
++      text-offset: 14 -2
++      anchors.left: parent.left
++      anchors.top: creatureShadow.bottom
++      margin-top: 7
++      margin-left: 16
++      image-source: /images/ui/checkbox
++      image-clip: 0 0 12 12
++      @onSetup: |
++        local value = modules.client_settings.getOption('screenGrade')
++        self:setChecked(value ~= false)
++
++    UIWidget
++      size: 12 12
++      anchors.top: parent.top
++      anchors.right: parent.right
++      margin-right: 5
++      margin-top: 7
++      image-source: /images/skin/show-gui-help-grey
++      !tooltip: tr('Looks for the game window. A creature that takes damage flashes for a moment, a big hit\nyou take shakes the screen a few pixels, creatures get a soft shadow under their feet and\nthe edges of the picture darken with a light colour grade. Each one can be turned off; the\nshadow and the grade cost a little on a weak computer.')
++
+   Button
+     id: resetButton
+     size: 43 20
