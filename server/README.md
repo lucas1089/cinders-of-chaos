@@ -840,7 +840,7 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7102460 - 7102469 | Candlemarks (`candlemarks_config.lua` `storage`): +0 the id of the last Candlemark purchase delivered to the character (the crash-safe delivery mark); +1..9 free |
 | 7102490 - 7102499 | rarity migration (`rarity_migrate.lua`): +0 the version of the walk this character had; +1..9 free |
 | 7102480 - 7102489 | potions (`potions_config.lua` `storage`): +0 the Everfull potions were given (kit or login grant); +1 the tree's Healing percent for the potion scripts; +2 / +3 the health / mana flask's charges in hundredths of a charge (-1 = never set = full, O242); +4 the tree's extra flask charges; +5 the tree's charge gain percent; +6..9 free |
-| 7102510 - 7102519 | Everfull tier upgrades (`potions_config.lua` `storage.upgradeBase`, O245): +0 .. +6 the upgrade to the tier at that place among the tiers 2+ (great health, great mana, great spirit, ultimate health, ultimate mana, ultimate spirit, supreme health) was done (1); +7..9 free |
+| 7102510 - 7102519 | Everfull tier upgrades (`potions_config.lua` `storage.upgradeBase`, O245): +0 .. +9 the upgrade to the entry at that place among the entries with a `from` (great health, great mana, great spirit, ultimate health, ultimate mana, ultimate spirit, supreme health, spirit tier 1, supreme mana, supreme spirit: O247) was done (1); the block is full, a new upgrade needs a new block |
 | 7102800 - 7102810 | Haunted Harvest (`harvest_event_config.lua` `storage`): +0 the day, +1 hollow candy from pumpkins that day, +2 the day of the boss's first-kill candy; +3..9 free; 7102810 the GLOBAL forced state (0 window, 1 open, 2 shut) |
 | 7102820 | Infinity Tower first-clear floors (`infinitytower_balance_config.lua` `rewards.storage`): the tower season x 1000 + the highest milestone floor paid that season; 7102821 - 7102829 free |
 | 7109990 - 7109992 | spell supports: cast context and Reprisal (`data/lib/chaos_supports_config.lua`) |
@@ -5029,7 +5029,10 @@ Owner request 2026-10-16: "Remove the potion flasks and make the first pots infi
   healarem uma quantidade fixa + uma porcentagem. e elas também são afetadas por healing da skill tree"). Every health and
   mana potion gives its own roll (the fixed part) + a percent of the target's maximum health or mana: 3% + 0.01% per
   level the potion needs, at most 10% (`potions_config.lua` `amount`; health potion 3%, great 3.8%, ultimate 4.3%,
-  level 200 5%, 500 8%, 700 10%). The tree's Healing (`incrementHealth`) raises both: health through the heal event like
+  level 200 5%, 500 8%, 700 10%). **Everfull potions** (owner 2026-10-25: "faça as everfull recuperar um fixo + uma
+  porcentagem") take the percent from their tier instead, at any character level: tier 1 6%, 2 8%, 3 10%, 4 12%
+  (`amount.everfullPct`; a spirit potion gives it on health and on mana; a stock potion an empty flask drinks keeps the
+  level curve). The tree's Healing (`incrementHealth`) raises both: health through the heal event like
   every heal, mana in `ChaosPotions.amount` from the drinker's storage 7102481 (the tree writes it at every rebuild;
   the potion script runs in the actions' Lua state). `install_potions.py` rewrites the stock script's two
   `doTargetCombat(... potion.health[1], potion.health[2])` calls (marker "Chaos: potion amount", a loader line on top;
@@ -5072,7 +5075,7 @@ Owner request 2026-10-16: "Remove the potion flasks and make the first pots infi
 - **Higher tiers (O245).** Owner 2026-10-25: "Podemos vender everfull potion na store ou em quests também" (can we sell Everfull
   potions in the store, or give them through quests too). Seven more Everfull items, copies of the stock potions' nodes
   (`install_potions.py`, server ids **32261-32267**, the range the lead set aside: 32087-32100 belong to other work), each with
-  the stock potion's roll and level and the same "fixed + percent of the maximum" amount (percent by the level it needs):
+  the stock potion's roll and level and the same "fixed + percent of the maximum" amount (percent by the tier, `amount.everfullPct`):
 
   | Id | Item | Stock potion | Level | Roll | Spends | Made from |
   |---|---|---|---|---|---|---|
@@ -5166,12 +5169,38 @@ Owner request 2026-10-16: "Remove the potion flasks and make the first pots infi
     get client ids of their own, the held message already carries the real look; change `look` in the client table
     `EVERFULL_ITEMS`, and then patch 0043's look preference, the follow rule for the 266 / 268 rows and the empty-flask caveat
     are no longer needed (the use of a look maps to one server id).
-  - **Install:** the same step `potions` (nine nodes now). New: the `tier` of each row, the store offers, no sellers for tier 2+.
+  - **Install:** the same step `potions` (nine nodes now; twelve since O247). New: the `tier` of each row, the store offers, no sellers for tier 2+.
   - **Texts:** English keys, pt-BR in `i18n_strings.lua` ("Everfull potion tiers"). The item descriptions are in items.xml.
   - **Not done / risks:** the new
-    looks are the stock great, ultimate and supreme potions' (no new art). The levels and rolls of the stock potions are read from the
+    looks were the stock great, ultimate and supreme potions' (own art since O247, below). The levels and rolls of the stock potions are read from the
     base `potions.lua` here; the names of 26029-26031 are the real game's. Prices are a first estimate (`store_model.lua`), nothing
     is measured on a running server and the whole path is only tested on a mocked engine.
+- **Own art and four tiers a line (O247).** Owner 2026-10-25: the Everfull potions get art of their own, and every line gets four
+  tiers. **Art:** twelve PixelLab 32 x 32 flasks, client items **38645-38656** of pair 44 (client/MANIFEST.md "Everfull potion
+  looks"; `gen_everfull_art.py`, `art_import/everfull*`), one phase, stackable like the stock potions (flags copied from them; the
+  ANIMATION flag is cleared on the nodes, because the server sends a phase byte for it and the art has one phase).
+  `potions_config.lua` gives every entry a `clientId`; `install_potions.py` writes it into the node (new and existing nodes: a
+  re-run on a server installed before O247 moves the nine flasks to their new looks). **Three new items** (server ids 32268-32270,
+  nodes copied from stock nodes by `sourceId`, flags 7102517-7102519 appended last so the nine flags of O245 keep their place):
+
+  | Id | Item | Client | Level | Roll | Spends | Made from | Veyra's task | Coins |
+  |---|---|---|---|---|---|---|---|---|
+  | 32268 | everfull spirit potion (spirit tier 1) | 38653 | 0 | 75-105 health, 45-75 mana | 1 health + 1 mana | 32085 | 40 health potions (7618) | 20 |
+  | 32269 | everfull supreme mana potion | 38652 | 200 | 575-775 mana | 1 mana | 32265 | 60 ultimate mana potions (26029) | 70 |
+  | 32270 | everfull supreme spirit potion | 38656 | 200 | 560-760 health, 275-475 mana | 1 health + 1 mana | 32266 | 60 ultimate spirit potions (26030) | 70 |
+
+  The spirit rolls are about 60% of the health and mana rolls of the same tier, as in the lines of O245; supreme mana sits above
+  ultimate mana by the factor supreme health sits above ultimate health. **The chain:** health 32085 -> 32261 -> 32264 -> 32267;
+  mana 32086 -> 32262 -> 32265 -> 32269; spirit 32085 -> 32268 -> 32263 -> 32266 -> 32270. So the spirit line now starts at tier 1
+  (from the health flask of tier 1, level 0, 20 coins) and great spirit is made from it; there is no stock potion for the tier
+  1 or the supreme mana and spirit tiers, so those entries name their own task potions (`materialId`, `materialCount`,
+  `materialName`; `K.materialOf` falls back to the stock potion and the standard 40). Level gates 0 / 80 / 130 / 200. The store offers
+  one swap per upgrade (ten) at 20 / 30 / 50 / 70 coins by tier; a whole line stays under 200 coins (`store_model.lua --check`,
+  docs/PRICES.md). **Helper:** `EVERFULL_ITEMS` in `helper_potions.lua` has the twelve own looks; the rows on the stock 266 / 268
+  looks keep the follow rule, and an Everfull look appears in the dropdown (engine patch 0043 stays). **Ship order:** pair 44
+  and a client build FIRST (older clients draw nothing for the new client ids), then `install_potions.py` (step `potions`).
+  Tests: `tests/potions_test.lua`, `tests/veyra_upgrade_test.lua`, `tests/potions_helper_test.lua`, `tools/install_potions_test.py`,
+  `gen_everfull_art_test.py`.
 - **Install:** `tools/install_potions.py DATA_DIR [--dry-run]` (step `potions` of `install_all.py`, after `runes`, before
   `itemprices`; idempotent; `items.otb.bak` keeps the original; exit 1 with nothing written when the ShopModule hook
   cannot be placed or no potion seller is found). `tools/gen_item_prices.py` marks both ids `bound` (never priced).
@@ -23931,7 +23960,7 @@ Owner request 2026-10-25: a chest that any monster can leave; opening it wakes 5
 
 - **Chance.** One roll per kill for the corpse owner (EventCallback onDropLoot, index 5): normal 0.3%, magic 0.8%, rare 1.5%, legendary 2.2%, boss 3% (`spawn.chance`, at most 6%). The Ember Blessings level rule applies (a monster 10 levels under the player counts in full; at 75% / 60% / 45% of the player's level the chance is x1 / x0.5 / x0.2, below nothing). One chest at a time per player, 360 s cooldown, at most 25 on the server, 150 s before an unopened one crumbles.
 - **No chest from:** summons, PvP places (battleground, arena, siege, PvP zones), any instance (`Chaos.instanceAt` / `inAnyInstance`, rift runs, areas the treasure goblin excludes), protection zones and houses, monsters under 40 max health, no stamina, `spawn.excludeNames` / `excludedAreas`, and monsters of other systems (treasure goblins, rifts, invasions, generated areas, this event's own).
-- **Looks (pair 43).** Each chest wears one of three own looks at random, server items **32281-32283** (client 38642-38644, art from PixelLab, client/MANIFEST.md "Cursed Chest looks"; `chest.itemIds`): A idles in 5 phases, B is a still, C chews in 8. Installed by `tools/install_cursed_chest.py` (step `cursedchest`, test `tools/install_cursed_chest_test.py`): items.otb copies of node 12664 (container, blocks, not moveable; A and C with FLAG_ANIMATION) and items.xml entries "cursed chest". An id the server does not have (`ItemType(id):getId() == 0`) is left out of the draw; with none installed the chest is 12664 as before. All four ids count as a cursed chest (`K.isChestId`); the use is found by action id and tile. **Item id block 32281-32299 is reserved for this set** (32251-32267 are orbs and potions; 32268-32280 stay free; 32284-32299 free). Ship pair 43 before the install step: older clients draw nothing for the new ids.
+- **Looks (pair 43).** Each chest wears one of three own looks at random, server items **32281-32283** (client 38642-38644, art from PixelLab, client/MANIFEST.md "Cursed Chest looks"; `chest.itemIds`): A idles in 5 phases, B is a still, C chews in 8. Installed by `tools/install_cursed_chest.py` (step `cursedchest`, test `tools/install_cursed_chest_test.py`): items.otb copies of node 12664 (container, blocks, not moveable; A and C with FLAG_ANIMATION) and items.xml entries "cursed chest". An id the server does not have (`ItemType(id):getId() == 0`) is left out of the draw; with none installed the chest is 12664 as before. All four ids count as a cursed chest (`K.isChestId`); the use is found by action id and tile. **Item id block 32281-32299 is reserved for this set** (32251-32270 are orbs and potions; 32271-32280 stay free; 32284-32299 free). Ship pair 43 before the install step: older clients draw nothing for the new ids.
 - **Chest.** The Sealed Coffer's item (12664, the fallback look, not moveable) with action id **47730** (free: 47720-47729 are the Harvest Portals), placed on the corpse's tile or the nearest free one. A dark loop (`CONST_ME_MORTAREA`, every third `CONST_ME_PURPLEENERGY`, 1.5 s) plays over it. The owner gets a text, a toast and a floating "CURSED CHEST" label (en and pt-BR). Only the owner and the owner's party may use it.
 - **Event.** The use locks the chest. The opener and the party members within 9 tiles take part. The hordes (all in `event.hordes`) are 4, 5, 6, 7 and 8 monsters (+35% per extra player, at most x2), health x1.0 / 1.1 / 1.2 / 1.35 / 1.5, damage x1.0 / 1.05 / 1.1 / 1.2 / 1.3; the share of magic and rare monsters grows from 0% to 70%, and horde 5 has a rare (70%) or legendary (30%) leader. The next horde comes 3 s after one is dead, or 45 s after the last came (not while 30 live). Progress "Horde 3/5" shows as a message, a toast and a label over the chest. Monsters are the killed monster and the non-boss monsters within 10 tiles (up to 4 kinds), padded from a themed list by level band; they are scaled to 90% of the opener's level (areagen's `levelScale`: health, damage; capped x3 / x2), paced like a hunt (`ChaosPace.apply`: experience as normal) and appear 2-5 tiles from the chest.
 - **Fail.** 270 s total; or nobody who took part is alive, online and within 16 tiles for 10 s (warning after 4 s). The chest crumbles with no loot and the event's monsters are removed.

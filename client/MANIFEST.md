@@ -2922,6 +2922,59 @@ Built once.
 - A client on pair 42 or older draws nothing for the new ids: ship pair 43 before the `cursedchest` install step.
   Previews (the three looks at 1x and 4x, and every phase of each at 4x, rendered from pair 43): scratchpad only. Not run in a client.
 
+## Everfull potion looks (pair 44: items 38645-38656, `tools/sprites/gen_everfull_art.py`, `art_import/everfull*`; built 2026-10-25; on windows-assets a8d61566)
+Owner request 2026-10-25: the Everfull potions wore the stock potions' looks (266 / 268 and the great, ultimate, supreme ones);
+they get art of their own, and every line gets four tiers (server/README.md "Potions", "Own art and four tiers a line", O247).
+Twelve PixelLab results (32 x 32 RGBA, alpha 0 / 255), owner approved: health, mana, spirit, tiers 1 to 4. One flask shape per
+tier, the same in the three colours (a small flask, a round one with a neck ring, a round one in a gold cradle, a gold-winged one).
+- **Pixels.** PixelLab's: not repainted, snapped or recoloured (only the colour under fully transparent pixels is cleared).
+  Credit: docs/CREDITS.md "Tools" (PixelLab; `art_import/everfull_sources.csv`). The raw folder is git-ignored; `build --src DIR`
+  copies the twelve files to `art_import/everfull/` (about 25 KB), so CI and later rebuilds need no PixelLab folder.
+- **Style.** Red, blue, purple and gold, none of the seven theme palettes, so nothing is snapped. `build` runs `style_check.py`
+  on each canvas against its own colours: outline, noise, colour count, alpha and scale pass; the light rule is
+  a warning (the gold cradles of tier 3 catch the light from below). `build --check` (CI) rebuilds from the committed sources.
+- **Things.** `art_import/everfull.csv`: twelve 1 x 1 flasks, one phase, kind flask, mode new, flags `copy:<stock client id>`
+  (the potion each server item was made from: 266 / 268 for tier 1, the stock great, ultimate and supreme ones above; stackable,
+  multi-use, as the stock potion was; engine patch 0043 relies on a stackable item that is never used up). Atlas
+  `art_import/everfull.png`: 12 cells of 32 px side by side (384 x 32).
+
+| Client id | Look | Server id | | Client id | Look | Server id |
+|---|---|---|---|---|---|---|
+| 38645 | health tier 1 | 32085 | | 38651 | mana tier 3 (ultimate) | 32265 |
+| 38646 | health tier 2 (great) | 32261 | | 38652 | mana tier 4 (supreme) | 32269 |
+| 38647 | health tier 3 (ultimate) | 32264 | | 38653 | spirit tier 1 | 32268 |
+| 38648 | health tier 4 (supreme) | 32267 | | 38654 | spirit tier 2 (great) | 32263 |
+| 38649 | mana tier 1 | 32086 | | 38655 | spirit tier 3 (ultimate) | 32266 |
+| 38650 | mana tier 2 (great) | 32262 | | 38656 | spirit tier 4 (supreme) | 32270 |
+
+- **Server.** `potions_config.lua` `clientId` on every entry; `tools/install_potions.py` (step `potions`) writes it into each
+  item node, on new and on existing nodes (idempotent), and clears the ANIMATION flag (the art has one phase; the server sends a
+  phase byte for the flag and the client reads it only for a thing with more than one phase). Helper: `EVERFULL_ITEMS` in
+  `game_helper/helper_potions.lua` (the test compares it with `potions_config.lua`).
+
+```
+python3 -I client/tools/sprites/gen_everfull_art.py build [--src PIXELLAB_DIR] [--preview DIR --dat pair44/Tibia.dat --spr pair44/Tibia.spr]
+python3 -I client/tools/sprites/import_art_things.py --ours-dat pair43/Tibia.dat --ours-spr pair43/Tibia.spr --out-dir pair44 \
+    --things client/tools/sprites/art_import/everfull.csv --first-item 38645 --expect-items 38644
+python3 -I client/tools/sprites/check_pair.py pair44/Tibia.dat pair44/Tibia.spr --old pair43/Tibia.dat pair43/Tibia.spr [--new-only]
+python3 -I client/tools/sprites/gen_outfit_anchors.py pair44/Tibia.dat pair44/Tibia.spr
+python3 -I client/tools/sprites/gen_info_lift.py pair44/Tibia.dat pair44/Tibia.spr
+```
+Input pair 43 (dat 2cb2321ef0dffd58bc4d52411bca5a89, spr 078b92ec8672792748999425de5e0743).
+Output **pair 44**: dat 0b80ccae36490b8dd4a03f2627b2f85e (11,261,073 bytes), spr 8cbcc5370f74045323e2f8f27aae51a3
+(1,541,138,573 bytes, 1,357,884 sprites: 12 appended), 38,656 items (12 appended), 2,681 outfits, 4101 effects, 253 missiles.
+The importer verified the 12 sprite slots pixel-identical to the atlas and every old thing byte-identical. Built once.
+- `check_pair.py --old`: `--new-only` 0 errors, 0 warnings (45,580 old things and 1,357,872 old sprites compared).
+  `outfit_anchors.lua` and `info_lifts.lua`: only the dat md5 changes.
+- Archive (the pair 41 recipe: `tar --owner=0 --group=0 --numeric-owner --mtime='2026-10-22 00:00:00Z' --format=gnu`,
+  `xz -9 -T0`, `split -b 95M -d -a 2`): 147,050,148 bytes, sha256
+  de1841459bed5970acbccd5f477ee19875b5c7f5422369b736ad62b8ac3a3637; parts `things-1098.tar.xz.part00` (99,614,720
+  bytes, sha256 c0be978e46069045015b6ed405380083f9c357c8c6fa5dc894b27b8913adf3f5) and `.part01` (47,435,428 bytes,
+  sha256 5e106b88edfc9abaf39147c86bfe827acd1526f748a322b0c812d48804c08d9d); the parts joined equal the archive, and
+  stream-extracted from it the md5s above match. Not pushed to windows-assets by the builder: the lead pushes the pair.
+- **Ship order.** A client on pair 43 or older draws nothing for the new ids: ship pair 44 and a client build before the
+  server's `potions` install step. Preview (the twelve looks at 1x and 4x, rendered from pair 44): scratchpad only. Not run in a client.
+
 ## Owner art (things_custom26: outfits 2213-2233, items 33940-33985, `tools/sprites/gen_owner_art.py`, `art_import/owner_art.csv`; on windows-assets 50645056, switch on since 2026-10-15)
 **Source and licence.** The owner's Google Drive folder "ots", files added 2026-10-15. The owner confirmed the art is
 their own or commissioned and free to use for monsters and variants, outfits and wings as cosmetics, decoration and map

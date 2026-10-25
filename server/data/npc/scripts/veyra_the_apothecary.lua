@@ -130,15 +130,24 @@ local function creatureSayCallback(cid, type, msg)
 			pending[cid] = {kind = "upgrade", list = list}
 			if #list == 1 then
 				local e = list[1]
-				npcHandler:say(t(cid, "I can turn your flask into an %s, level %d. Bring me %d %s and keep your flask in your backpack, inbox or depot. Say {yes}.",
-					e.name, e.level, ChaosPotionsConfig.upgrade.materials, PT.stockName(e) .. "s"), cid)
+				local m = PT.material(e)
+				if (e.level or 0) > 0 then
+					npcHandler:say(t(cid, "I can turn your flask into an %s, level %d. Bring me %d %s and keep your flask in your backpack, inbox or depot. Say {yes}.",
+						e.name, e.level, m.count, m.name), cid)
+				else
+					npcHandler:say(t(cid, "I can turn your flask into an %s. Bring me %d %s and keep your flask in your backpack, inbox or depot. Say {yes}.",
+						e.name, m.count, m.name), cid)
+				end
 			else
+				-- one way per line, each with its own level and potions ("{health} (level 80, 40 great health potions)")
 				local lines = {}
 				for _, e in ipairs(list) do
-					lines[#lines + 1] = "{" .. e.line .. "}"
+					local m = PT.material(e)
+					local level = (e.level or 0) > 0 and ("level " .. e.level .. ", ") or ""
+					lines[#lines + 1] = "{" .. e.line .. "} (" .. level .. m.count .. " " .. m.name .. ")"
 				end
-				npcHandler:say(t(cid, "Your flask can go two ways, level %d: %s. Each needs %d potions of its kind and your flask. Which one?",
-					list[1].level, table.concat(lines, " / "), ChaosPotionsConfig.upgrade.materials), cid)
+				npcHandler:say(t(cid, "Your flask can go %d ways: %s. Each needs your flask and the potions named. Which one?",
+					#list, table.concat(lines, " / ")), cid)
 			end
 			return true
 		elseif has(text, "lost", "restore", "replace") then

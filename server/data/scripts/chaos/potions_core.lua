@@ -5,7 +5,7 @@
 --   ChaosPotionsCore.drink(cfg, s)             s = {id, exhausted, target[, charges]} -> {ok, health, mana, consume, flask}
 --                                              | {ok = false, why, text}
 --   ChaosPotionsCore.npcBuy(cfg, s)            s = {id, owned, money} -> {ok, price} | {ok = false, why, text}
---   ChaosPotionsCore.amount(cfg, range, level, max, bonusPct[, rand])  one drink: fixed roll + percent of max
+--   ChaosPotionsCore.amount(cfg, range, level, max, bonusPct[, rand, tier])  one drink: fixed roll + percent of max
 --   ChaosPotionsCore.grantDue(cfg, s)          s = {granted, lastLogin} -> true when a login grant is due
 --   Flask charges (cfg.flask; hundredths of a charge, an unset storage value is a full flask):
 --   ChaosPotionsCore.maxCharges(cfg, kind, treeExtra)      whole charges the flask holds
@@ -22,7 +22,9 @@
 --   O245 tiers (README "Potions", "Higher tiers"): an entry has tier, level, line (health | mana | spirit), from (the
 --   server ids it is made from) and pools (the charge pools a drink spends, default its key).
 --   ChaosPotionsCore.poolsOf(cfg, entry)          the pools a drink of this entry spends
---   ChaosPotionsCore.upgradeTargets(cfg)           the entries of tier 2 and up, in config order
+--   ChaosPotionsCore.upgradeTargets(cfg)           the entries made from another one (`from`: tier 2 and up, and the
+--                                                  tier 1 spirit potion), in config order = the order of their flags
+--   ChaosPotionsCore.materialOf(cfg, e)            {id, count, name}: what Veyra's task takes for an entry
 --   ChaosPotionsCore.upgradeStorage(cfg, id)       the player storage key that says "this tier was earned"
 --   ChaosPotionsCore.upgradeCoins(cfg, id)         the store price of a tier
 --   ChaosPotionsCore.upgradeCheck(cfg, s)          s = {id, level, installed, done, held = {ids}, mode, materials}
@@ -94,15 +96,21 @@ function K.drink(cfg, s)
 end
 
 -- the amount of one potion drink: a roll inside range (the fixed part) + percent(level) of max, then x (1 + bonusPct)
-function K.percent(cfg, level)
+-- tier: an Everfull potion's tier (amount.everfullPct gives its percent, the same at every character level); nil for
+-- a stock potion (and for a stock potion an empty flask drinks), which uses the level curve
+function K.percent(cfg, level, tier)
 	local a = cfg.amount or {}
+	local own = tier and (a.everfullPct or {})[tier]
+	if own then
+		return own
+	end
 	return math.min(a.cap or 0, (a.base or 0) + (a.perLevel or 0) * math.max(0, tonumber(level) or 0))
 end
 
-function K.amount(cfg, range, level, max, bonusPct, rand)
+function K.amount(cfg, range, level, max, bonusPct, rand, tier)
 	rand = rand or math.random
 	local lo, hi = math.floor(range[1] or 0), math.floor(range[2] or range[1] or 0)
-	local v = (hi > lo and rand(lo, hi) or lo) + math.max(0, max or 0) * K.percent(cfg, level) / 100
+	local v = (hi > lo and rand(lo, hi) or lo) + math.max(0, max or 0) * K.percent(cfg, level, tier) / 100
 	return math.floor(v * (1 + math.max(0, bonusPct or 0) / 100) + 0.5)
 end
 
@@ -111,7 +119,7 @@ end
 -- that one back, K.restoreFor)
 function K.npcBuy(cfg, s)
 	local e = K.everfull(cfg, s.id)
-	if not e or (e.tier or 1) > 1 then
+	if not e or (e.tier or 1) > 1 or K.isUpgrade(e) then
 		return {ok = false, why = "unknown"}
 	end
 	if s.owned then
@@ -250,10 +258,16 @@ function K.noticeDue(cfg, last, now)
 end
 
 -- ---------------------------------------------------------------- higher tiers (README "Potions", "Higher tiers", O245)
+-- An entry made from another one (`from`) is an upgrade: tier 2 and up, and the tier 1 spirit potion (O247, made from the
+-- tier 1 health potion). Only the others (the tier 1 health and mana potions) are sold and given.
+function K.isUpgrade(e)
+	return e ~= nil and type(e.from) == "table" and #e.from > 0
+end
+
 function K.upgradeTargets(cfg)
 	local out = {}
 	for _, e in ipairs(cfg.everfull or {}) do
-		if (e.tier or 1) >= 2 then
+		if K.isUpgrade(e) then
 			out[#out + 1] = e
 		end
 	end
@@ -272,7 +286,15 @@ end
 
 function K.upgradeCoins(cfg, id)
 	local e = K.everfull(cfg, id)
-	return e and (e.tier or 1) >= 2 and ((cfg.upgrade or {}).coins or {})[e.tier] or nil
+	return e and K.isUpgrade(e) and ((cfg.upgrade or {}).coins or {})[e.tier or 1] or nil
+end
+
+-- what Veyra's task takes for an entry: the stock potion it copies (sourceId) x upgrade.materials, unless the entry names
+-- its own (materialId / materialCount / materialName: the tier 1 spirit potion has no stock potion of its tier, the
+-- supreme mana and spirit potions none at all). name: the plural, what she says ("great health potions").
+function K.materialOf(cfg, e)
+	local name = e.materialName or (tostring(e.name):gsub("^everfull ", "") .. "s")
+	return {id = e.materialId or e.sourceId, count = e.materialCount or (cfg.upgrade or {}).materials or 0, name = name}
 end
 
 local function isFrom(e, id)
@@ -284,14 +306,14 @@ local function isFrom(e, id)
 	return false
 end
 
--- Whether a character may swap its flask for the tier s.id. mode "quest" (Veyra: needs s.materials stock potions, the
+-- Whether a character may swap its flask for the entry s.id (a tier, or the tier 1 spirit potion). mode "quest" (Veyra: needs s.materials stock potions, the
 -- count the character carries) or "store" (coins). Same level gate, same previous tier, same once per tier in both.
 -- s.held: the server ids of every Everfull item the character has (a tier it holds twice is listed twice); only the
 -- ones of the same slot count. The previous tier must be the ONLY item of the slot: none (lost, or not carried in
 -- the backpack, inbox or a depot) and more than one are refused. Nothing is taken here.
 function K.upgradeCheck(cfg, s)
 	local e = K.everfull(cfg, s.id)
-	if not e or (e.tier or 1) < 2 then
+	if not e or not K.isUpgrade(e) then
 		return {ok = false, why = "unknown", text = "This offer cannot be bought."}
 	end
 	if not s.installed then
@@ -321,7 +343,7 @@ function K.upgradeCheck(cfg, s)
 	if (tonumber(s.level) or 0) < (e.level or 0) then
 		return {ok = false, why = "level", text = "This flask is for level %d and up, and you are not there yet.", args = {e.level}}
 	end
-	local need = s.mode == "quest" and ((cfg.upgrade or {}).materials or 0) or 0
+	local need = s.mode == "quest" and K.materialOf(cfg, e).count or 0
 	if need > 0 and (tonumber(s.materials) or 0) < need then
 		return {ok = false, why = "materials", need = need,
 			text = "Bring me %d %s and your flask.", args = {need, tostring(s.materialName or "potions")}}

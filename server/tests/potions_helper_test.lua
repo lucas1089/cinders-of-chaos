@@ -20,7 +20,7 @@ local K = ChaosPotionsCore
 
 -- the looks: every Everfull tier shows under its stock potion's client id (the tests of the client helper list the same)
 local LOOK = {[32085] = 266, [32086] = 268, [32261] = 239, [32262] = 238, [32263] = 7642, [32264] = 7643, [32265] = 23373,
-	[32266] = 23374, [32267] = 23375}
+	[32266] = 23374, [32267] = 23375, [32268] = 38653, [32269] = 38652, [32270] = 38656}
 local function clientId(id) return LOOK[id] end
 local FULL = {health = 500, mana = 800}
 

@@ -6,16 +6,24 @@ usage: python3 -I install_potions.py DATA_DIR [--dry-run]
 Everything is read from server/data/scripts/chaos/potions_config.lua (`everfull`, `flasks`, `flaskText`), the file the
 Lua side (potions.lua, data/lib/chaos_potions.lua) uses too.
 
-Ranges in use: Everfull 32085..32086 (tier 1) and 32261..32267 (tiers 2 and up, O245), gems 32001..32035, salvage 32051,
-omens 32071..32072, pouches 32081..32083, supports 32101..32200, orbs v2 32251..32256; see install_omens.py for the rest.
-Only the tier 1 potions are sold by the potion sellers (steps 4 and 5): the higher tiers are earned from Veyra the
-Apothecary or bought in the store (ChaosPotions.upgrade), they replace the flask of their slot.
+Ranges in use: Everfull 32085..32086 (tier 1), 32261..32267 (tiers 2 and up, O245) and 32268..32280 (the block set aside
+for them: 32268..32270 are the spirit potion of tier 1 and the supreme mana and spirit potions, O247), gems 32001..32035,
+salvage 32051, omens 32071..32072, pouches 32081..32083, supports 32101..32200, orbs v2 32251..32256; see install_omens.py
+for the rest. Only the tier 1 health and mana potions are sold by the potion sellers (steps 4 and 5): the others (the
+tiers 2+ and the tier 1 spirit potion, made from another one: `from` in the config) are earned from Veyra the Apothecary
+or bought in the store (ChaosPotions.upgrade), they replace the flask of their slot.
 
 1. data/items/items.otb: per Everfull potion a copy of the stock node `sourceId` (7618 health potion, 7620 mana
    potion; the tiers 2+ copy the great / ultimate / supreme potion nodes 7591, 7590, 8472, 8473, 26029, 26030, 26031: group, flags, every attribute, the stock look) with the server id `id` (32085, 32086), stackable like the
-   stock node (the 10.98 client reads a count for a stackable look; see install_store_food.py). A node already there
-   with the same bytes is left alone, one with other bytes is replaced; a server id that belongs to another client id
-   stops the script (nothing is written). items.otb.bak keeps the original the first time.
+   stock node (the 10.98 client reads a count for a stackable look; see install_store_food.py). The look is the entry's
+   `clientId` (client items 38645..38656 of pair 44, one per Everfull potion; client/MANIFEST.md "Everfull potion looks"),
+   not the stock node's: ship pair 44 and a client build that has it BEFORE this step, a client on pair 43 or older draws
+   nothing for those ids. The art has one phase, so the node loses the stock node's animation flag (the server would
+   send a phase byte the client does not read). A node already there with the same bytes is left alone, one with other
+   bytes is replaced: that includes a node of an earlier install that still has the stock look (its client id is moved to
+   the new look, re-running the step on an installed server updates it); a server id that belongs to another client id
+   (neither the stock one nor the entry's) stops the script (nothing is written), as does a client id another item has.
+   items.otb.bak keeps the original the first time.
 2. data/items/items.xml: the entries (article, name, plural, description "A flask: kills and the temple refill its charges. ...", weight) between two
    marker comments before </items>, rewritten when the config changed. An id with an entry outside the block stops the
    script. The flask entries (7634-7636): a description sentence about a deposit is removed (the config's flaskText
@@ -46,6 +54,7 @@ from install_store_food import node  # noqa: E402
 CONFIG = os.path.join(os.path.dirname(HERE), 'data', 'scripts', 'chaos', 'potions_config.lua')
 XML_BEGIN = '\t<!-- Chaos Everfull potions (server/tools/install_potions.py, do not edit by hand) -->\n'
 XML_END = '\t<!-- end of the Chaos Everfull potions -->\n'
+FLAG_ANIMATION = 1 << 24   # items.otb: the server sends a phase byte; the new looks have one phase
 FLASK_MARK = 'Chaos: no potion flasks (install_potions.py): '
 SELL_MARK = '-- Chaos: Everfull potions (install_potions.py)'
 HOOK_MARK = '-- Chaos: Everfull potions (install_potions.py) v1'
@@ -75,8 +84,8 @@ def read_config(path=CONFIG):
         def num(key):
             return int(re.search(r'\b%s\s*=\s*(\d+)' % key, chunk).group(1))
         tier = re.search(r'\btier\s*=\s*(\d+)', chunk)
-        rows.append({'key': lua_string(chunk, 'key'), 'id': num('id'), 'sourceId': num('sourceId'),
-                     'tier': int(tier.group(1)) if tier else 1,
+        rows.append({'key': lua_string(chunk, 'key'), 'id': num('id'), 'sourceId': num('sourceId'), 'clientId': num('clientId'),
+                     'tier': int(tier.group(1)) if tier else 1, 'upgrade': bool(re.search(r'\bfrom\s*=\s*\{\s*\d', chunk)),
                      'weight': num('weight'), 'price': num('price'), 'article': lua_string(chunk, 'article'),
                      'name': lua_string(chunk, 'name'), 'plural': lua_string(chunk, 'plural'),
                      'description': lua_string(chunk, 'description')})
@@ -84,6 +93,7 @@ def read_config(path=CONFIG):
     cfg = {'everfull': rows, 'flasks': flasks, 'flaskText': lua_string(text, 'flaskText')}
     assert len(rows) >= 2 and len({r['id'] for r in rows}) == len(rows) and all(r['id'] and r['sourceId'] and r['name'] and r['price'] for r in rows), \
         'potions_config.lua: everfull incomplete'
+    assert len({r['clientId'] for r in rows}) == len(rows), 'potions_config.lua: two Everfull potions share a client id'
     assert flasks and cfg['flaskText'], 'potions_config.lua: flasks or flaskText missing'
     return cfg
 
@@ -94,23 +104,32 @@ def patch_otb(data, cfg):
     by_sid = {k[2]: k for k in kids}
     buf = bytearray(data)
     notes, wanted, inserts = [], [], b''
+    owners = {}
+    for k in kids:
+        owners.setdefault(k[3], []).append(k[2])
     # replacements from the end, so earlier offsets stay valid
     for row in sorted(cfg['everfull'], key=lambda r: -(by_sid[r['id']][0] if r['id'] in by_sid else -1)):
         stock = by_sid.get(row['sourceId'])
         if stock is None:
             raise SystemExit('items.otb: no stock node %d (the %s source); nothing written' % (row['sourceId'], row['name']))
-        want = node(stock, row, stock[3])
-        wanted.append((row, want, stock[3]))
+        cid = row['clientId']
+        other = [s for s in owners.get(cid, []) if s != row['id']]
+        if other:
+            raise SystemExit('items.otb: client id %d (the look of %s) belongs to server id %s; nothing written'
+                             % (cid, row['name'], other[0]))
+        # the stock node without its animation: our art has one phase (see the module docstring)
+        want = node(stock[:5] + (stock[5] & ~FLAG_ANIMATION,) + stock[6:], row, cid)
+        wanted.append((row, want, cid))
         k = by_sid.get(row['id'])
         if k is None:
             inserts += want
-            notes.append('items.otb: %s added (server id %d, client id %d)' % (row['name'], row['id'], stock[3]))
-        elif k[3] != stock[3]:
-            raise SystemExit('items.otb: server id %d already belongs to client id %s, not %d; nothing written'
-                             % (row['id'], k[3], stock[3]))
+            notes.append('items.otb: %s added (server id %d, client id %d)' % (row['name'], row['id'], cid))
+        elif k[3] not in (stock[3], cid):
+            raise SystemExit('items.otb: server id %d already belongs to client id %s, not %d or %d; nothing written'
+                             % (row['id'], k[3], stock[3], cid))
         elif data[k[0]:k[1]] != want:
             buf[k[0]:k[1]] = want
-            notes.append('items.otb: %s updated' % row['name'])
+            notes.append('items.otb: %s updated%s' % (row['name'], '' if k[3] == cid else ' (client id %d -> %d)' % (k[3], cid)))
         else:
             notes.append('items.otb: %s present' % row['name'])
     if inserts:
@@ -127,6 +146,9 @@ def verify_otb(data, wanted):
         assert k and k[3] == cid and data[k[0]:k[1]] == want, 'Everfull node %d' % row['id']
         stock = by_sid[row['sourceId']]
         assert bool(k[5] & FLAG_STACKABLE) == bool(stock[5] & FLAG_STACKABLE), 'stackable as its source'
+        assert not k[5] & FLAG_ANIMATION, 'Everfull node %d: one phase, no animation flag' % row['id']
+    cids = [x[3] for x in kids if x[2] in {r['id'] for r, _w, _c in wanted}]
+    assert len(cids) == len(set(cids)), 'Everfull potions share a client id'
     sids = [x[2] for x in kids]
     assert len(sids) == len(set(sids)), 'duplicate server ids in items.otb'
     return len(kids)
@@ -289,7 +311,7 @@ def patch_shop_list(value, cfg):
     removed = len(entries) - len(keep)
     seller = any(i in SELLER_IDS for i in ids)
     have = {i for i in ids if i is not None}
-    new = ['%s,%d,%d' % (r['name'], r['id'], r['price']) for r in cfg['everfull'] if seller and r['tier'] == 1 and r['id'] not in have]
+    new = ['%s,%d,%d' % (r['name'], r['id'], r['price']) for r in cfg['everfull'] if seller and r['tier'] == 1 and not r['upgrade'] and r['id'] not in have]
     if not removed and not new:
         return value, 0, 0, seller
     tail = ''
@@ -357,7 +379,7 @@ def patch_npc_lua(text, cfg):
         indent = LUA_ADD_LINE.match(lines[last_seller]).group(1)
         new = ['%s%s:addBuyableItem({\'%s\'}, %d, %d, 1, \'%s\') %s' % (indent, var, r['name'], r['id'], r['price'],
                                                                          r['name'], SELL_MARK)
-               for r in cfg['everfull'] if r['tier'] == 1 and r['id'] not in have]
+               for r in cfg['everfull'] if r['tier'] == 1 and not r['upgrade'] and r['id'] not in have]
         lines[last_seller + 1:last_seller + 1] = new
         added = len(new)
     text = nl.join(lines)

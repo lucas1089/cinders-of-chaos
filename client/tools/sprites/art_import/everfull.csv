@@ -1,0 +1,13 @@
+key,cat,kind,name,atlas,x,y,w,h,patterns,phases,flags,mode,server_id,extra
+everfull_health_t1,item,flask,everfull health potion,everfull,0,0,1,1,1,1,copy:266,new,32085,
+everfull_health_t2,item,flask,everfull great health potion,everfull,32,0,1,1,1,1,copy:239,new,32261,
+everfull_health_t3,item,flask,everfull ultimate health potion,everfull,64,0,1,1,1,1,copy:7643,new,32264,
+everfull_health_t4,item,flask,everfull supreme health potion,everfull,96,0,1,1,1,1,copy:23375,new,32267,
+everfull_mana_t1,item,flask,everfull mana potion,everfull,128,0,1,1,1,1,copy:268,new,32086,
+everfull_mana_t2,item,flask,everfull great mana potion,everfull,160,0,1,1,1,1,copy:238,new,32262,
+everfull_mana_t3,item,flask,everfull ultimate mana potion,everfull,192,0,1,1,1,1,copy:23373,new,32265,
+everfull_mana_t4,item,flask,everfull supreme mana potion,everfull,224,0,1,1,1,1,copy:23373,new,32269,
+everfull_spirit_t1,item,flask,everfull spirit potion,everfull,256,0,1,1,1,1,copy:7642,new,32268,
+everfull_spirit_t2,item,flask,everfull great spirit potion,everfull,288,0,1,1,1,1,copy:7642,new,32263,
+everfull_spirit_t3,item,flask,everfull ultimate spirit potion,everfull,320,0,1,1,1,1,copy:23374,new,32266,
+everfull_spirit_t4,item,flask,everfull supreme spirit potion,everfull,352,0,1,1,1,1,copy:23374,new,32270,

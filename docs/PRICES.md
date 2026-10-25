@@ -46,7 +46,7 @@ show".
 | Convenience | Rarity Autoloot (per character) | 300 | R$ 30 | was 400 |
 | Convenience | Orbs Pouch / Rift Key Pouch (per character) | 200 / 150 | R$ 20 / 15 | was 300 / 250 |
 | Convenience | Everfull Ration (per character) | 100 | R$ 10 | was 150 |
-| Convenience | Everfull potion tiers (per character, once per tier): great health / mana / spirit 30, ultimate health / mana / spirit 50, supreme health 70 | 30 / 50 / 70 | R$ 3 / 5 / 7 | new (O245). The same swap Veyra the Apothecary does for 40 stock potions of the tier (4,800-20,000 gold at her prices) and the previous flask; a whole line costs 150 coins |
+| Convenience | Everfull potion tiers (per character, once per tier): spirit tier 1 20, great health / mana / spirit 30, ultimate health / mana / spirit 50, supreme health / mana / spirit 70 | 20 / 30 / 50 / 70 | R$ 2 / 3 / 5 / 7 | new (O245), spirit tier 1 and the supreme mana and spirit added in O247. The same swap Veyra the Apothecary does for 40 stock potions of the tier (4,800-20,000 gold at her prices) and the previous flask; a whole line costs 150 coins |
 | Convenience | depot tab 150, 4 tabs 500, stash tabs 150-200, character slot 250, build slot 100 | | | kept |
 | VIP | Chaos Pact, 30 days | 300 | R$ 30 | kept |
 | Premium | 30 / 90 / 180 days | 250 / 650 / 1200 | | kept |
@@ -86,7 +86,7 @@ Owner: "Podemos vender everfull potion na store ou em quests também." The Everf
 - **Store (pay to skip the hunt for the potions):** 30 / 50 / 70 coins by tier (R$ 3 / 5 / 7). The same level gate, previous
   tier and once per tier; the store gives nothing the quest does not (no better roll, no charges). `store_model.lua --check`
   keeps it at most 2x cheaper than the quest's gold at 1,000 gold a coin (it is 3.5-6.3x dearer, a convenience), a whole line
-  (health 30 + 50 + 70, mana 30 + 50, spirit 30 + 50) at most 200 coins, one store offer per tier at the config's price, and no
+  (health 30 + 50 + 70, mana 30 + 50 + 70, spirit 20 + 30 + 50 + 70) at most 200 coins, one store offer per tier at the config's price, and no
   NPC paying for the item (it is bound: no coin -> gold loop).
 
 | Tier | Level | Coins | Quest gold | Coins / quest coins |
@@ -96,6 +96,13 @@ Owner: "Podemos vender everfull potion na store ou em quests também." The Everf
 | ultimate health | 130 | 50 | 12,400 | 4.0 |
 | ultimate mana / spirit | 130 | 50 | 14,000 | 3.6 |
 | supreme health | 200 | 70 | 20,000 | 3.5 |
+| spirit tier 1 (O247) | 0 | 20 | 1,800 | 11.1 |
+| supreme mana / spirit (O247) | 200 | 70 | 21,000 | 3.3 |
+
+O247 adds the spirit potion of tier 1 (made from the health potion of tier 1, 40 health potions at 45 gold, 20 coins: the swap that
+starts the spirit line) and the supreme mana and spirit tiers (60 ultimate potions at Veyra's price, 70 coins). The spirit line is
+now four tiers (20 + 30 + 50 + 70 = 170 coins), so the 200 coin cap holds. The task potions of these three are named in
+`potions_config.lua` (`materialId`, `materialCount`).
 
 A tier replaces the flask of its slot and the charges are shared, so what it sells is the hotter roll per drink, not more drinks:
 the health pool still holds 5 charges and the mana pool 8. A lost flask is given back by Veyra for the quest's gold (not coins).

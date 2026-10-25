@@ -1,7 +1,7 @@
 -- ChaosHelperPotions: the potions the helper drinks and when (pure Lua: no engine calls; tests: helper_potions_test.lua).
 -- The potions of the server (server/data/scripts/chaos/potions_config.lua, potions.lua; client/MANIFEST.md "Helper"):
---   * the Everfull Health and Mana Potions (server ids 32085 and 32086, one per character, never used up). The client sees
---     them under the look of the stock Health Potion (266) and Mana Potion (268), so those are the ids the helper uses;
+--   * the Everfull potions (health, mana and spirit, four tiers each, one per slot and character, never used up), each with a
+--     look of its own (pair 44); a row on the stock Health / Mana Potion look (266 / 268) follows the carried one;
 --   * the stock potions the NPCs sell (strong, great, ultimate, supreme, spirit), each with its level. Every class drinks
 --     every potion (owner 2026-10-24, server/tools/patch_open_potions.py), so the dropdown offers all of them to everyone;
 --     the server still refuses a potion below its level. Tested against the Apothecary's table (helper_potions_test.lua).
@@ -14,26 +14,32 @@
 ChaosHelperPotions = ChaosHelperPotions or {}
 local P = ChaosHelperPotions
 
--- The Everfull potions, ONE table (server/data/scripts/chaos/potions_config.lua `everfull`; tested against it). A tier shows
--- under the look of the stock potion it copies; when the Everfull get looks of their own (new client ids), change `look` here
--- and nothing else: the dropdown then lists them, the server's held message (opcode 116) already carries the real look.
--- slot: the flask the item takes (health | mana); line: health | mana | spirit; kind: what a row of it heals (health | mana |
--- both: the spirit flasks); level: the stock potion's level; the server drinks it in any case at the use of its look.
+-- The Everfull potions, ONE table (server/data/scripts/chaos/potions_config.lua `everfull`; tested against it). Each has a
+-- look of its own since pair 44 (client items 38645-38656, client/MANIFEST.md "Everfull potion looks"): a row on that look is
+-- exactly one server item, and the dropdown lists them. slot: the flask the item takes (health | mana); line: health | mana |
+-- spirit; kind: what a row of it heals (health | mana | both: the spirit flasks); level: the level it needs; rank: the look of
+-- the stock potion it is as good as (Auto setup's order, autosetup.lua); roll / rollMana: the fixed part of a drink (a spirit
+-- flask gives both). The server drinks it at the use of its look and checks level and charges itself.
 P.EVERFULL_ITEMS = {
-  { server = 32085, look = 266,   slot = 'health', line = 'health', kind = 'health', tier = 1, level = 0,   name = 'Everfull Health Potion' },
-  { server = 32086, look = 268,   slot = 'mana',   line = 'mana',   kind = 'mana',   tier = 1, level = 0,   name = 'Everfull Mana Potion' },
-  { server = 32261, look = 239,   slot = 'health', line = 'health', kind = 'health', tier = 2, level = 80,  name = 'Everfull Great Health Potion' },
-  { server = 32262, look = 238,   slot = 'mana',   line = 'mana',   kind = 'mana',   tier = 2, level = 80,  name = 'Everfull Great Mana Potion' },
-  { server = 32263, look = 7642,  slot = 'health', line = 'spirit', kind = 'both',   tier = 2, level = 80,  name = 'Everfull Great Spirit Potion' },
-  { server = 32264, look = 7643,  slot = 'health', line = 'health', kind = 'health', tier = 3, level = 130, name = 'Everfull Ultimate Health Potion' },
-  { server = 32265, look = 23373, slot = 'mana',   line = 'mana',   kind = 'mana',   tier = 3, level = 130, name = 'Everfull Ultimate Mana Potion' },
-  { server = 32266, look = 23374, slot = 'health', line = 'spirit', kind = 'both',   tier = 3, level = 130, name = 'Everfull Ultimate Spirit Potion' },
-  { server = 32267, look = 23375, slot = 'health', line = 'health', kind = 'health', tier = 4, level = 200, name = 'Everfull Supreme Health Potion' },
+  { server = 32085, look = 38645, rank = 266,   slot = 'health', line = 'health', kind = 'health', tier = 1, level = 0,   name = 'Everfull Health Potion',          roll = { 125, 175 } },
+  { server = 32261, look = 38646, rank = 239,   slot = 'health', line = 'health', kind = 'health', tier = 2, level = 80,  name = 'Everfull Great Health Potion',    roll = { 425, 575 } },
+  { server = 32264, look = 38647, rank = 7643,  slot = 'health', line = 'health', kind = 'health', tier = 3, level = 130, name = 'Everfull Ultimate Health Potion', roll = { 650, 850 } },
+  { server = 32267, look = 38648, rank = 23375, slot = 'health', line = 'health', kind = 'health', tier = 4, level = 200, name = 'Everfull Supreme Health Potion',  roll = { 875, 1125 } },
+  { server = 32086, look = 38649, rank = 268,   slot = 'mana',   line = 'mana',   kind = 'mana',   tier = 1, level = 0,   name = 'Everfull Mana Potion',            roll = { 75, 125 } },
+  { server = 32262, look = 38650, rank = 238,   slot = 'mana',   line = 'mana',   kind = 'mana',   tier = 2, level = 80,  name = 'Everfull Great Mana Potion',      roll = { 150, 250 } },
+  { server = 32265, look = 38651, rank = 23373, slot = 'mana',   line = 'mana',   kind = 'mana',   tier = 3, level = 130, name = 'Everfull Ultimate Mana Potion',   roll = { 425, 575 } },
+  { server = 32269, look = 38652, rank = 23373, slot = 'mana',   line = 'mana',   kind = 'mana',   tier = 4, level = 200, name = 'Everfull Supreme Mana Potion',    roll = { 575, 775 } },
+  { server = 32268, look = 38653, rank = 266,   slot = 'health', line = 'spirit', kind = 'both',   tier = 1, level = 0,   name = 'Everfull Spirit Potion',          roll = { 75, 105 },  rollMana = { 45, 75 } },
+  { server = 32263, look = 38654, rank = 7642,  slot = 'health', line = 'spirit', kind = 'both',   tier = 2, level = 80,  name = 'Everfull Great Spirit Potion',    roll = { 250, 350 }, rollMana = { 100, 200 } },
+  { server = 32266, look = 38655, rank = 23374, slot = 'health', line = 'spirit', kind = 'both',   tier = 3, level = 130, name = 'Everfull Ultimate Spirit Potion', roll = { 420, 580 }, rollMana = { 200, 350 } },
+  { server = 32270, look = 38656, rank = 23374, slot = 'health', line = 'spirit', kind = 'both',   tier = 4, level = 200, name = 'Everfull Supreme Spirit Potion',  roll = { 560, 760 }, rollMana = { 275, 475 } },
 }
--- the stock looks of the first tier: a row on one of them follows the carried Everfull of its slot (P.resolve)
+-- the stock looks of the first tier: a row on one of them (an old row, or one Auto setup made) follows the carried Everfull
+-- of its slot (P.resolve)
 P.FOLLOW = { [266] = 'health', [268] = 'mana' }
 
--- the potions_config.lua numbers of the Everfull flasks (the fixed rolls) and the percent formula
+-- the percent formula (potions_config.lua amount); the fixed rolls are the rows' `roll`. ROLL: the fixed roll of a look, kept
+-- for the stock looks 266 / 268 a row may still have (they follow the carried flask)
 P.ROLL = { [266] = { 125, 175 }, [268] = { 75, 125 } }
 P.PERCENT = { base = 3, perLevel = 0.01, cap = 10 }
 
@@ -57,7 +63,7 @@ P.LIST = {
 
 local byId = {}
 for _, p in ipairs(P.LIST) do byId[p.id] = p end
--- an Everfull with a look of its own is a potion of the list too (the server item id is its `server`)
+-- an Everfull with a look of its own is a potion of the list too (the server item id is its `server`); the dropdown offers it
 for _, e in ipairs(P.EVERFULL_ITEMS) do
   if not byId[e.look] then
     local p = { id = e.look, server = e.server, kind = e.kind, name = e.name, level = e.level, everfull = true }
@@ -66,7 +72,7 @@ for _, e in ipairs(P.EVERFULL_ITEMS) do
   end
 end
 
--- the Everfull entry that shows under a look (the first one), or nil
+-- the Everfull entry that wears a look, or nil
 function P.everfullOf(look)
   for _, e in ipairs(P.EVERFULL_ITEMS) do
     if e.look == look then return e end
@@ -74,8 +80,8 @@ function P.everfullOf(look)
   return nil
 end
 
--- What a row on potion `id` really drinks. A row on the Health / Mana Potion (the stock look of tier 1, and the look
--- Auto setup used for the Everfull) follows the Everfull the character carries in that slot: an upgrade replaces the item,
+-- What a row on potion `id` really drinks. A row on the Health / Mana Potion (the stock look the Everfull tier 1 wore before
+-- pair 44, and the look Auto setup gives a plain flask) follows the Everfull the character carries in that slot: an upgrade replaces the item,
 -- so the row would otherwise drink stock potions or nothing. held: ChaosEverfullHeld.get() ({ health = {look, tier,
 -- level, line, ready}, mana = ... } or nil). Followed only when the carried one is a plain health / mana flask (a spirit
 -- flask spends both pools and is chosen by a spirit row), known, ready (an empty flask would drink a dearer stock potion) and
@@ -134,11 +140,12 @@ function P.percentOf(level)
 end
 
 -- about what one potion gives at a maximum (health or mana): the fixed roll (the Everfull flasks; the others have their own
--- roll on the server) plus the percent. nil for an unknown item.
-function P.expected(id, maxValue)
+-- roll on the server) plus the percent. asMana: the mana part of a spirit flask. nil for an unknown item.
+function P.expected(id, maxValue, asMana)
   local p = byId[tonumber(id) or -1]
   if not p then return nil end
-  local roll = P.ROLL[p.id]
+  local e = P.everfullOf(p.id)
+  local roll = e and ((asMana and e.rollMana) or e.roll) or P.ROLL[p.id]
   local fixed = roll and (roll[1] + roll[2]) / 2 or 0
   return math.floor(fixed + (tonumber(maxValue) or 0) * P.percentOf(p.level) / 100 + 0.5)
 end

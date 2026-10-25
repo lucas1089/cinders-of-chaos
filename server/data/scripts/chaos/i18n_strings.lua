@@ -1454,8 +1454,10 @@ return {
 			"Não tenho upgrade para o seu frasco agora. Leve sua poção Everfull e volte no nível 80, 130 ou 200 para o próximo.",
 		["I can turn your flask into an %s, level %d. Bring me %d %s and keep your flask in your backpack, inbox or depot. Say {yes}."] =
 			"Posso transformar seu frasco em uma %s, nível %d. Traga-me %d %s e deixe o frasco na mochila, na caixa de entrada ou no depot. Diga {yes}.",
-		["Your flask can go two ways, level %d: %s. Each needs %d potions of its kind and your flask. Which one?"] =
-			"Seu frasco pode seguir dois caminhos, nível %d: %s. Cada um pede %d poções do seu tipo e o seu frasco. Qual?",
+		["I can turn your flask into an %s. Bring me %d %s and keep your flask in your backpack, inbox or depot. Say {yes}."] =
+			"Posso transformar seu frasco em uma %s. Traga-me %d %s e deixe o frasco na mochila, na caixa de entrada ou no depot. Diga {yes}.",
+		["Your flask can go %d ways: %s. Each needs your flask and the potions named. Which one?"] =
+			"Seu frasco pode seguir %d caminhos: %s. Cada um pede o seu frasco e as poções citadas. Qual?",
 		["You have lost nothing I can give back."] = "Você não perdeu nada que eu possa devolver.",
 		["I can give you back your %s for %d gold. Say {yes}."] = "Posso devolver sua %s por %d de ouro. Diga {yes}.",
 		["I can give back your {health} or your {mana} flask. Which one?"] =
