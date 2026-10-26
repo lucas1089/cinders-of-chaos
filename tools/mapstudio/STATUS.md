@@ -22,7 +22,7 @@ reads better in forests")._
 
 ## State
 
-- Setup: checked 2026-10-26 (34349 items, 89% named; the adapter's market-name read was fixed), indexing
+- Setup: checked 2026-10-26 (34349 items, 89% named; the adapter's market-name read was fixed), indexed (19.5M tiles), 695 ground families (--mix), floor 7 minimap
 - Kits: _(kit/<biome>.json: learned from which windows, status)_
 - Last batch: _(areas/<batch>: what changed, numbers from the summaries)_
 
