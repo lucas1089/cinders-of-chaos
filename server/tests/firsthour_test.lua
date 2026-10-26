@@ -155,7 +155,7 @@ assert(new.msgs[#new.msgs]:find("Árvore Passiva", 1, true), "pt hint")
 ChaosPoi = nil
 new.level = 20
 events.ChaosFirstHourAdvance.onAdvance(new, SKILL_LEVEL, 19, 20)
-assert(new.msgs[#new.msgs]:find("nível 25", 1, true), "the level 16 hint first (lowest level), in Portuguese")
+assert(new.msgs[#new.msgs]:find("níveis 25, 30 e 35", 1, true), "the level 16 hint first (lowest level), in Portuguese")
 assert(not new.msgs[#new.msgs]:find("Next Goals", 1, true), "no English menu name in the Portuguese hint")
 flush()
 assert(new.msgs[#new.msgs]:find("Bestiário", 1, true))

@@ -133,7 +133,7 @@ ChaosPotionsConfig = {
 		-- O245: +0 .. +6 the upgrade to the tier at that place among the tiers 2+ was done (1), block 7102510 - 7102519
 		upgradeBase = 7102510},
 
-	-- Flask charges (owner 2026-10-25, O242: "do what PoE does, where potions refill as players kill monsters").
+	-- Flask charges (owner 2026-10-25, O242: "make potions refill as players kill monsters").
 	-- The Everfull potions are flasks. Each holds `max` charges and a drink costs `cost` charges. Charges are kept in
 	-- hundredths in the character's storage (the flask item carries none: a relog, a moved, split or lost item
 	-- cannot change them). Never set = full.

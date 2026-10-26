@@ -97,7 +97,7 @@ All have `groupcooldown=2000`, `needlearn=0` (everyone of the vocation and level
 | 96 | Mirror Mend | `saen spek ["Name"]` | I | 60 | 180 | 2s | Heals the most hurt party member within 7 sqm (or the named one): level x 0.3 + ml x 11-17 + 40-80; a mirror heals the next most hurt (you included) for 25% of it. Healer pass, see "Healing". |
 | 97 | Lucid Reverie | `reth vas spek` | I | 120 | 300 | 20s | You and every party member within 7 sqm: 5 heals, one every 2 s (level x 0.16 + ml x 0.9-1.3 + 10-20 each); follows them up to 10 sqm. Healer pass. |
 | **shared** | | | | | | | |
-| 232 | Flickerdash | `ash flik` | every class | 35 | 80 | 6s | Dash up to 4 sqm in your facing direction, stops at obstacles; 2.5s speed boost. |
+| 232 | Flickerdash | `ash flik` | every class | 30 | 80 | 6s | Dash up to 4 sqm in your facing direction, stops at obstacles; 2.5s speed boost. |
 | 233 | Banner Call | `tor vas vant` | every class | 60 | 250 | 35s | You and party members within 5 sqm: +10% melee/distance/magic and speed for 12s. |
 | 234 | Soulward | `tor anh` | every class | 80 | 150 | 40s | Mana shield for 15s with mana regeneration (stock Magic Shield has none). Ward of the Mind, the stock Magic Shield (level 14, 50 mana, 200 s), is the Mystic, Necromancer and Ranger lines' only (server/README.md "Magic Shield"). |
 | 235 | Hunter's Instinct | `ash senn` | every class | 25 | 40 | 10s | Marks monsters within 12 sqm (max 15) and tells the nearest one's direction. |
@@ -167,7 +167,7 @@ All have `groupcooldown=2000`, `needlearn=0` (everyone of the vocation and level
 | 179 | Vigil of Wrath | `vigh vyr` | all | 60 | 0 | 2s | Switches the vigil: 35% of the maximum mana reserved; you and party members within 5 sqm deal +5%. |
 | 255 | Vigil of Iron | `vigh tor` | all | 60 | 0 | 2s | Switches the vigil: 35% reserved; -6% damage taken (the Templar aura and it: the stronger counts). |
 | 161 | Vigil of Haste | `vigh ruan` | all | 40 | 0 | 2s | Switches the vigil: 20% reserved; +15% speed. |
-| 162 | Vigil of Clarity | `vigh lum` | all | 40 | 0 | 2s | Switches the vigil: 20% reserved; 1% of the maximum mana back a second (not under Parched Veins). |
+| 162 | Vigil of Clarity | `vigh lum` | all | 35 | 0 | 2s | Switches the vigil: 20% reserved; 1% of the maximum mana back a second (not under Parched Veins). |
 
 Damage formulas follow the stock style: `level/5 + magicLevel*a + b` (min/max with different a, b); knight spells use the stock
 skill*attack callback, paladin spells scale mainly with the distance skill (plus a little magic level).
@@ -3332,8 +3332,8 @@ spells keep their base numbers, all flat). "all" = the whole line; the mana is t
 |  | Bonebreaker | attack | 8 | 2 s | 10 | all |
 |  | Reaping Gyre | attack | 16 | 6 s | 30 | all |
 |  | Hunter's Instinct | support | 25 | 10 s | 40 | all |
-|  | Flickerdash | support | 35 | 6 s | 80 | all |
-|  | Vigil of Clarity | support | 40 | 2 s | 0 | all |
+|  | Flickerdash | support | 30 | 6 s | 80 | all |
+|  | Vigil of Clarity | support | 35 | 2 s | 0 | all |
 |  | Vigil of Haste | support | 40 | 2 s | 0 | all |
 |  | Ironhold | support | 55 | 30 s | 200 | Warrior, Juggernaut |
 |  | Banner Call | support | 60 | 35 s | 250 | all |
@@ -3361,8 +3361,8 @@ spells keep their base numbers, all flat). "all" = the whole line; the mana is t
 |  | Snare Trap | attack | 16 | 4 s | 90 | all |
 |  | Hunter's Instinct | support | 25 | 10 s | 40 | all |
 |  | Dawn's Mending | healing | 35 | 1 s | 160 | all |
-|  | Flickerdash | support | 35 | 6 s | 80 | all |
-|  | Vigil of Clarity | support | 40 | 2 s | 0 | all |
+|  | Flickerdash | support | 30 | 6 s | 80 | all |
+|  | Vigil of Clarity | support | 35 | 2 s | 0 | all |
 |  | Vigil of Haste | support | 40 | 2 s | 0 | all |
 |  | Sanctum Burst | attack | 50 | 8 s | 160 | all |
 |  | Wildstride | support | 55 | 30 s | 150 | all |
@@ -3391,12 +3391,12 @@ spells keep their base numbers, all flat). "all" = the whole line; the mana is t
 |  | Hunter's Instinct | support | 25 | 10 s | 40 | all |
 |  | Grand Mending | healing | 30 | 1 s | 160 | Mystic, Elementalist |
 |  | Witchfire Bolt | attack | 30 | 8 s | 70 | Mystic, Elementalist |
-|  | Flickerdash | support | 35 | 6 s | 80 | all |
+|  | Flickerdash | support | 30 | 6 s | 80 | all |
 |  | Pyre Torrent | attack | 38 | 4 s | 120 | Elementalist |
 |  | Tempest Fan | attack | 38 | 12 s | 170 | Elementalist |
 |  | Hall of Mirrors | support | 40 | 30 s | 250 | Illusionist |
 |  | Purifying Wellspring | healing | 40 | 6 s | 160 | Mystic, Illusionist |
-|  | Vigil of Clarity | support | 40 | 2 s | 0 | all |
+|  | Vigil of Clarity | support | 35 | 2 s | 0 | all |
 |  | Vigil of Haste | support | 40 | 2 s | 0 | all |
 |  | Forked Storm | attack | 50 | 8 s | 200 | Elementalist |
 |  | Banner Call | support | 60 | 35 s | 250 | all |
@@ -3426,9 +3426,9 @@ spells keep their base numbers, all flat). "all" = the whole line; the mana is t
 |  | Snare Trap | attack | 16 | 4 s | 90 | all |
 |  | Hunter's Instinct | support | 25 | 10 s | 40 | all |
 |  | Shadow Mend | healing | 25 | 1.5 s | 40 | all |
-|  | Flickerdash | support | 35 | 6 s | 80 | all |
+|  | Flickerdash | support | 30 | 6 s | 80 | all |
 |  | Shadow Veil | support | 40 | 20 s | 120 | all |
-|  | Vigil of Clarity | support | 40 | 2 s | 0 | all |
+|  | Vigil of Clarity | support | 35 | 2 s | 0 | all |
 |  | Vigil of Haste | support | 40 | 2 s | 0 | all |
 |  | Blade Flurry | attack | 50 | 10 s | 120 | all |
 |  | Banner Call | support | 60 | 35 s | 250 | all |
@@ -3456,8 +3456,8 @@ spells keep their base numbers, all flat). "all" = the whole line; the mana is t
 |  | Raise Dead | support | 20 | 2 s | 60 | all |
 |  | Hunter's Instinct | support | 25 | 10 s | 40 | all |
 |  | Grand Mending | healing | 30 | 1 s | 160 | all |
-|  | Flickerdash | support | 35 | 6 s | 80 | all |
-|  | Vigil of Clarity | support | 40 | 2 s | 0 | all |
+|  | Flickerdash | support | 30 | 6 s | 80 | all |
+|  | Vigil of Clarity | support | 35 | 2 s | 0 | all |
 |  | Vigil of Haste | support | 40 | 2 s | 0 | all |
 |  | Withering Curse | attack | 40 | 4 s | 120 | all |
 |  | Grave Nova | attack | 50 | 6 s | 80 | Necromancer |
@@ -3477,10 +3477,10 @@ spells keep their base numbers, all flat). "all" = the whole line; the mana is t
 |  | Ashen Fist | attack | 8 | 2 s | 15 | all |
 |  | Sundering Palm | attack | 16 | 12 s | 50 | all |
 |  | Hunter's Instinct | support | 25 | 10 s | 40 | all |
-|  | Flickerdash | support | 35 | 6 s | 80 | all |
+|  | Flickerdash | support | 30 | 6 s | 80 | all |
 |  | Mistborne Step | support | 35 | 10 s | 60 | all |
 |  | Kindled Breath | healing | 40 | 8 s | 100 | all |
-|  | Vigil of Clarity | support | 40 | 2 s | 0 | all |
+|  | Vigil of Clarity | support | 35 | 2 s | 0 | all |
 |  | Vigil of Haste | support | 40 | 2 s | 0 | all |
 |  | Palm Shockwave | attack | 50 | 4 s | 70 | all |
 |  | Whirling Heel | attack | 50 | 6 s | 80 | all |
@@ -3500,8 +3500,8 @@ spells keep their base numbers, all flat). "all" = the whole line; the mana is t
 |  | Consecration | attack | 16 | 6 s | 160 | all |
 |  | Hunter's Instinct | support | 25 | 10 s | 40 | all |
 |  | Vow of Mending | healing | 30 | 8 s | 150 | all |
-|  | Flickerdash | support | 35 | 6 s | 80 | all |
-|  | Vigil of Clarity | support | 40 | 2 s | 0 | all |
+|  | Flickerdash | support | 30 | 6 s | 80 | all |
+|  | Vigil of Clarity | support | 35 | 2 s | 0 | all |
 |  | Vigil of Haste | support | 40 | 2 s | 0 | all |
 |  | Banner Call | support | 60 | 35 s | 250 | all |
 |  | Sanctified Ground | attack | 60 | 4 s | 160 | Templar |

@@ -5,7 +5,8 @@ Art pack names (ART_PACKS) are allowed only in the credits (docs/CREDITS.md and 
 from it): the owner shows the packs' credits in the game and on the website (2026-10-15).
 
 Names added from 2026-10-16 on are kept only as hashes (DENY_HASHES), so they are not written in the repo either:
-the first 16 hex digits of sha256 of the lower-case word. Words are split at non-letters and at camelCase humps
+the first 16 hex digits of sha256 of the lower-case word. A name of up to 3 words or camelCase humps is hashed
+joined without spaces ("path of foo" -> pathoffoo). Words are split at non-letters and at camelCase humps
 ("onFooBarClick" -> on, foo, bar, click), so a hashed name is found inside identifiers too. To add one:
   python3 -c "import hashlib; print(hashlib.sha256(b'name').hexdigest()[:16])"
 
@@ -26,6 +27,9 @@ DENY = re.compile(r'hellgrave|tenkaiser|drakantos|exodus|evolisca|black ?talon|m
 DENY_HASHES = {
     '356d28a3e5895f80',  # the base client's bot (side-bar tooltip, base patch 0059)
     '9a7be5bb26fa4e65',  # the maker of the shared potion pack (pair 30)
+    'e5336673bc2fb58f',  # an ARPG named in early docs (three words, found as a run of words)
+    '6db7636b5922f26c',  # the short form of that ARPG ("PoE" splits into two words, found as a run of words)
+    '8c649a8f85f3d89d',  # another ARPG named in early docs
 }
 ART_PACKS = re.compile(r'\bwst(_|\b)|raven ?fantasy|pixel ?spellcraft|anime ?ki ?auras|mutter ?pixel|pocket ?cozy|bloom ?pixle|'
                        r'pixel ?(status ?effects|projectiles|fireworks|blood ?vfx)|animated ?vfx', re.I)
@@ -36,7 +40,9 @@ WORD = re.compile(r'[A-Z]+(?![a-z])|[A-Z]?[a-z]+')
 
 
 def hashed_hit(text):
-    return any(hashlib.sha256(w.lower().encode()).hexdigest()[:16] in DENY_HASHES for w in WORD.findall(text))
+    words = [w.lower() for w in WORD.findall(text)]
+    return any(hashlib.sha256(''.join(words[i:i + n]).encode()).hexdigest()[:16] in DENY_HASHES
+               for i in range(len(words)) for n in (1, 2, 3))
 
 
 def name_hit(text, art_ok=False):

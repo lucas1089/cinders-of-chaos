@@ -3208,7 +3208,7 @@ What scaled before, and the change:
 ## Vigils (`vigils.lua`, `vigils_core.lua`, `vigils_config.lua`, `data/spells/chaos/_vigils.lua`, docs/BUILDS.md "Vigils")
 Auras that reserve mana (2026-10-12), every class: Vigil of Wrath (spell 179, `vigh vyr`, level 60, reserves 35%,
 +5% damage), Vigil of Iron (255, `vigh tor`, 60, 35%, -6% damage taken), Vigil of Haste (161, `vigh ruan`, 40, 20%,
-+15% speed), Vigil of Clarity (162, `vigh lum`, 40, 20%, 1% of the maximum mana a second). `mana="0"`: a cast
++15% speed), Vigil of Clarity (162, `vigh lum`, 35, 20%, 1% of the maximum mana a second). `mana="0"`: a cast
 switches the vigil in storage 7100025 (a bit each) and costs nothing.
 
 - **Reservation.** `vigils.lua` thinks every second over the online players. A holder's reserved share (the vigils'
@@ -5038,7 +5038,7 @@ Owner request 2026-10-16: "Remove the potion flasks and make the first pots infi
   `doTargetCombat(... potion.health[1], potion.health[2])` calls (marker "Chaos: potion amount", a loader line on top;
   it falls back to the stock roll when the library cannot load); the Everfull potions use the same rule. Tests:
   `tests/potions_test.lua`, `tools/install_potions_test.py`.
-- **Flask charges (O242).** Owner 2026-10-25: "Can we do what PoE does, where potions refill as players kill monsters?"
+- **Flask charges (O242).** Owner 2026-10-25: "Can potions refill as players kill monsters?"
   The Everfull potions are flasks. `potions_config.lua` `flask`: the health flask holds 5 charges, the mana flask 8 (casters
   drink more, so it also refills 1.5x as fast); a drink costs 1. Charges are kept in hundredths in the **character's
   storage** (7102482 health, 7102483 mana; -1 = never set = full), never on the item, so a relog, a split or copied stack, a
@@ -14782,7 +14782,7 @@ corpses of their own kills), corpses moved by a player (the row greys as decayed
 
 ## Ground loot labels (`groundloot.lua`, `groundloot_core.lua`, client `game_groundlabels`)
 
-Path of Exile style name plates over the loot on the ground. The client sees the items on the tiles around it (ids, counts
+ARPG-style name plates over the loot on the ground. The client sees the items on the tiles around it (ids, counts
 and the item custom attributes of engine patch 0003: rarity, unique, per-item id) but not their names, categories or
 decay, so it asks extended opcode 230 (`ChaosOpcodes.groundLoot`) about the tiles whose items changed and draws the labels
 itself by the loot filter's rules (`game_lootfilter`, the same settings the server keeps for the corpse highlights).
@@ -21567,8 +21567,12 @@ the heal number is the game's own (green for health, blue for mana). A pickup so
   minions cannot be farmed). One item a tile. State is in memory.
 - **Where nothing drops** (`pickups_config.lua blocked`): the registered instances `arena`, `battleground`, `siege`,
   `tower` (the Infinity Tower), `trials`, `tutorial` (`Chaos.inAnyInstance`), PvP-zone tiles (`ChaosBlessings.pvpPlace`), and
-  any `boxes` entry. **The Tower Defense of the base script has no registered instance or box here: add its room to `blocked.boxes`
-  once the coordinates are known** (`{x1, y1, x2, y2, z}`). Dungeons, rifts and the open map drop globes.
+  any `boxes` entry (`{x1, y1, x2, y2, z}`). **The Tower Defense of the base script is no registered instance**
+  (`instance_limits.lua` knows it only as the boss room `towerdefense`), so its room is a box: `{31180, 32239, 31236, 32277, 8}`,
+  the `fromPos` / `toPos` of the base script (the same values `tests/base_eventrooms_patch_test.lua` mirrors; the patch
+  `patch_base_eventrooms.py` hands them to the boss rooms as `bossArea`). `tests/globes_test.lua` checks the corners, the
+  middle and one tile outside on every side and on the floor above. If a base script change moves the room, change the box.
+  Dungeons, rifts and the open map drop globes.
 
 **The Ember Blessings on the ground** (`blessings.lua`, `blessings_config.lua pickup`). A proc no longer blesses at once:
 the same roll (chance, level gap, PvP-place exclusion, stamina, the 20 s cooldown **which now starts at the roll**) drops an
@@ -22764,8 +22768,16 @@ cooldown ladder is by damage, not level, so no cooldown moved. Regenerated: `spe
 (`rotation_sim.py --write`), `wiki_data.json`. The first-hour tip `nextspells` and the goal `spells25` now say "a new spell
 between levels 12 and 20, more around 25". `luajit tools/progression_model.lua --spells` has a new column, the longest
 stretch without a new spell in levels 8-30 (was 17 levels, 8 to 25, for 16 classes; now 10 at most, 25 to 35). No CI limit:
-`progression_config.lua` has no spell-gap number, and the 25-35 stretch (Flickerdash, Hunter's Instinct are shared) would need
-more moves first.
+`progression_config.lua` has no spell-gap number.
+
+**O248 (2026-10-26): the 25 to 35 stretch.** 15 classes still waited from 25 to 35 (about 7 minutes). Only shared spells sit
+there (Hunter's Instinct is at 25, Flickerdash at 35), so two moves cover all 21 classes without touching a kit, the rotation
+data or the icon sheets (neither is an attack spell): Flickerdash 35 -> 30 and Vigil of Clarity 40 -> 35 (`spells_chaos.xml`;
+Vigil of Haste stays at 40). Moving Flickerdash alone only shifted the gap to 30-40. Every class now has a spell at 25, 30, 35
+and 40. Longest stretch in levels 8-35 (`--spells`): was 10 levels (25 to 35) for 15 classes, now 9 at most (16 to 25, for 18
+classes; 5 for the Necromancer, Lich and Bone Lord). The 16 to 25 stretch is not closed: it would need a class spell moved to
+about 20. Regenerated: `spelldata.lua`. The tip `nextspells` and goal `spells25` say "more at levels 25, 30 and 35" (en,
+pt-BR). The Clarity vigil reserves 20% of the mana, so at 35 it is a real choice, not a free buff (not played).
 
 ## Next Goals (`goals.lua`, `goals_core.lua`, `goals_config.lua`, `sql/chaos_goals.sql`, client `game_goals`)
 

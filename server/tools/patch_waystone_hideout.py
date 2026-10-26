@@ -32,7 +32,7 @@ base behaviour stays):
   * a tier opens one of the maps of its band (WT.optionsFor: the base mapping's entries of the band's base tiers);
   * the window rows carry the tier's monster level (WT.tierLevel);
   * when the pads open, WT.startRun(finalArea, serverTypeId) sets the map to the run's tier.
-Part 4 (owner 2026-10-23: waystones with modifiers, the maps of Path of Exile; its own marker): the device takes the
+Part 4 (owner 2026-10-23: waystones with modifiers, the maps of an ARPG; its own marker): the device takes the
 waystone that was used on it (data/scripts/chaos/waystone_mods.lua ChaosWaystoneMods.choose / take; else the one of that
 tier with the fewest modifiers) instead of any one of the id, and passes its modifiers to WT.startRun.
 And in data/items/items.xml the descriptions of the six Waystone Tier items ("... on waystone device at house ...")

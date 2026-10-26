@@ -496,9 +496,9 @@
 								["Town Portal", "ash domh", "1", "0", "1 s", "whole line"],
 								["Reaping Gyre", "kah spir", "16", "20", "6 s", "whole line"],
 								["Hunter's Instinct", "ash senn", "25", "25", "10 s", "whole line"],
-								["Flickerdash", "ash flik", "35", "50", "6 s", "whole line"],
+								["Flickerdash", "ash flik", "30", "50", "6 s", "whole line"],
+								["Vigil of Clarity", "vigh lum", "35", "0", "2 s", "whole line"],
 								["Vigil of Haste", "vigh ruan", "40", "0", "2 s", "whole line"],
-								["Vigil of Clarity", "vigh lum", "40", "0", "2 s", "whole line"],
 								["Ironhold", "tor brak", "55", "120", "30 s", "Warrior, Juggernaut"],
 								["Vigil of Wrath", "vigh vyr", "60", "0", "2 s", "whole line"],
 								["Earthbreaker", "kah grund krak", "60", "30", "7 s", "whole line"],
@@ -522,8 +522,8 @@
 								"spell:220",
 								"spell:235",
 								"spell:232",
-								"spell:161",
 								"spell:162",
+								"spell:161",
 								"spell:132",
 								"spell:179",
 								"spell:221",
@@ -640,9 +640,9 @@
 								["Dawnpiercer", "kah sol aurr", "12", "30", "6 s", "whole line"],
 								["Snare Trap", "drai snar", "16", "55", "4 s", "whole line"],
 								["Hunter's Instinct", "ash senn", "25", "25", "10 s", "whole line"],
-								["Flickerdash", "ash flik", "35", "50", "6 s", "whole line"],
+								["Flickerdash", "ash flik", "30", "50", "6 s", "whole line"],
+								["Vigil of Clarity", "vigh lum", "35", "0", "2 s", "whole line"],
 								["Vigil of Haste", "vigh ruan", "40", "0", "2 s", "whole line"],
-								["Vigil of Clarity", "vigh lum", "40", "0", "2 s", "whole line"],
 								["Wildstride", "ruan vert", "55", "90", "30 s", "whole line"],
 								["Tautstring", "vyr sag", "60", "180", "30 s", "whole line"],
 								["Vigil of Wrath", "vigh vyr", "60", "0", "2 s", "whole line"],
@@ -668,8 +668,8 @@
 								"spell:99",
 								"spell:235",
 								"spell:232",
-								"spell:161",
 								"spell:162",
+								"spell:161",
 								"spell:134",
 								"spell:135",
 								"spell:179",
@@ -785,9 +785,9 @@
 								["Blightswarm", "drai vex kriv", "25", "65", "6 s", "Mystic"],
 								["Hunter's Instinct", "ash senn", "25", "25", "10 s", "whole line"],
 								["Witchfire Bolt", "kah pyr vesh", "30", "40", "7 s", "Mystic, Elementalist"],
-								["Flickerdash", "ash flik", "35", "50", "6 s", "whole line"],
+								["Flickerdash", "ash flik", "30", "50", "6 s", "whole line"],
+								["Vigil of Clarity", "vigh lum", "35", "0", "2 s", "whole line"],
 								["Vigil of Haste", "vigh ruan", "40", "0", "2 s", "whole line"],
-								["Vigil of Clarity", "vigh lum", "40", "0", "2 s", "whole line"],
 								["Purifying Wellspring", "saen vas aquen", "40", "95", "6 s", "Mystic, Illusionist"],
 								["Hall of Mirrors", "drai spek", "40", "150", "30 s", "Illusionist"],
 								["Forked Storm", "kah zhul zarn", "50", "120", "7 s", "Elementalist"],
@@ -823,8 +823,8 @@
 								"spell:235",
 								"spell:201",
 								"spell:232",
-								"spell:161",
 								"spell:162",
+								"spell:161",
 								"spell:208",
 								"spell:226",
 								"spell:202",
@@ -962,9 +962,9 @@
 								["Snare Trap", "drai snar", "16", "55", "4 s", "whole line"],
 								["Shadow Mend", "saen umh", "25", "25", "1.5 s", "whole line"],
 								["Hunter's Instinct", "ash senn", "25", "25", "10 s", "whole line"],
-								["Flickerdash", "ash flik", "35", "50", "6 s", "whole line"],
+								["Flickerdash", "ash flik", "30", "50", "6 s", "whole line"],
+								["Vigil of Clarity", "vigh lum", "35", "0", "2 s", "whole line"],
 								["Vigil of Haste", "vigh ruan", "40", "0", "2 s", "whole line"],
-								["Vigil of Clarity", "vigh lum", "40", "0", "2 s", "whole line"],
 								["Shadow Veil", "fen umh", "40", "70", "20 s", "whole line"],
 								["Blade Flurry", "drai vas kaen", "50", "70", "9 s", "whole line"],
 								["Seeker Mine", "kah snar", "60", "65", "6 s", "whole line"],
@@ -996,8 +996,8 @@
 								"spell:98",
 								"spell:235",
 								"spell:232",
-								"spell:161",
 								"spell:162",
+								"spell:161",
 								"spell:238",
 								"spell:73",
 								"spell:100",
@@ -1111,11 +1111,11 @@
 								["Ashen Fist", "kah dhun", "8", "15", "2 s", "whole line"],
 								["Sundering Palm", "kah gal dhun", "16", "30", "11 s", "whole line"],
 								["Hunter's Instinct", "ash senn", "25", "25", "10 s", "whole line"],
+								["Flickerdash", "ash flik", "30", "50", "6 s", "whole line"],
 								["Mistborne Step", "ash qhal", "35", "35", "10 s", "whole line"],
-								["Flickerdash", "ash flik", "35", "50", "6 s", "whole line"],
+								["Vigil of Clarity", "vigh lum", "35", "0", "2 s", "whole line"],
 								["Kindled Breath", "saen qhal", "40", "60", "8 s", "whole line"],
 								["Vigil of Haste", "vigh ruan", "40", "0", "2 s", "whole line"],
-								["Vigil of Clarity", "vigh lum", "40", "0", "2 s", "whole line"],
 								["Whirling Heel", "drai spir dhun", "50", "50", "9 s", "whole line"],
 								["Palm Shockwave", "drai gal dhun", "50", "40", "4 s", "whole line"],
 								["Vigil of Wrath", "vigh vyr", "60", "0", "2 s", "whole line"],
@@ -1141,11 +1141,11 @@
 								"spell:63",
 								"spell:64",
 								"spell:235",
-								"spell:67",
 								"spell:232",
+								"spell:67",
+								"spell:162",
 								"spell:66",
 								"spell:161",
-								"spell:162",
 								"spell:65",
 								"spell:194",
 								"spell:179",
@@ -1258,9 +1258,9 @@
 								["Raise Bone Mage", "vael oss mynd", "16", "40", "4 s", "whole line"],
 								["Raise Dead", "vael oss", "20", "35", "2 s", "whole line"],
 								["Hunter's Instinct", "ash senn", "25", "25", "10 s", "whole line"],
-								["Flickerdash", "ash flik", "35", "50", "6 s", "whole line"],
+								["Flickerdash", "ash flik", "30", "50", "6 s", "whole line"],
+								["Vigil of Clarity", "vigh lum", "35", "0", "2 s", "whole line"],
 								["Vigil of Haste", "vigh ruan", "40", "0", "2 s", "whole line"],
-								["Vigil of Clarity", "vigh lum", "40", "0", "2 s", "whole line"],
 								["Withering Curse", "kah nyx maled", "40", "70", "7 s", "whole line"],
 								["Grave Nova", "drai nyx oss", "50", "80", "6 s", "Necromancer"],
 								["Vigil of Wrath", "vigh vyr", "60", "0", "2 s", "whole line"],
@@ -1291,8 +1291,8 @@
 								"spell:180",
 								"spell:235",
 								"spell:232",
-								"spell:161",
 								"spell:162",
+								"spell:161",
 								"spell:182",
 								"spell:42",
 								"spell:179",
@@ -1420,9 +1420,9 @@
 								["Consecration", "drai sol haln", "16", "95", "12 s", "whole line"],
 								["Hunter's Instinct", "ash senn", "25", "25", "10 s", "whole line"],
 								["Vow of Mending", "saen tor fidh", "30", "90", "8 s", "whole line"],
-								["Flickerdash", "ash flik", "35", "50", "6 s", "whole line"],
+								["Flickerdash", "ash flik", "30", "50", "6 s", "whole line"],
+								["Vigil of Clarity", "vigh lum", "35", "0", "2 s", "whole line"],
 								["Vigil of Haste", "vigh ruan", "40", "0", "2 s", "whole line"],
-								["Vigil of Clarity", "vigh lum", "40", "0", "2 s", "whole line"],
 								["Sanctified Ground", "drai sol sanct", "60", "95", "4 s", "Templar"],
 								["Vigil of Wrath", "vigh vyr", "60", "0", "2 s", "whole line"],
 								["Banner Call", "tor vas vant", "60", "150", "35 s", "whole line"],
@@ -1454,8 +1454,8 @@
 								"spell:235",
 								"spell:191",
 								"spell:232",
-								"spell:161",
 								"spell:162",
+								"spell:161",
 								"spell:137",
 								"spell:179",
 								"spell:233",
@@ -2097,6 +2097,37 @@
 					"icon": "wiki/i/sp-202.png"
 				},
 				{
+					"id": "spell:232",
+					"name": "Flickerdash",
+					"sub": "\"ash flik\", level 30, 50 mana, cooldown 6 s",
+					"color": "#9fdc7f",
+					"sections": [
+						{
+							"h": "Effect",
+							"p": [
+								"Dash up to 4 sqm in the facing direction (stops at the first blocked tile) plus 2.5s of speed."
+							]
+						},
+						{
+							"h": "Spell",
+							"cols": ["", ""],
+							"w": [35, 65],
+							"rows": [
+								["Words", "ash flik"],
+								["Level", "30"],
+								["Mana", "50"],
+								["Cooldown", "6 s"],
+								["Kind", "Support"],
+								[
+									"Classes",
+									"Warrior, Juggernaut, Berserker, Ranger, Deadeye, Beastmaster, Mystic, Elementalist, Illusionist, Thief, Ninja, Samurai, Monk, Shadowfist, Iron Sage, Necromancer, Lich, Bone Lord, Templar, Inquisitor, Sentinel"
+								]
+							]
+						}
+					],
+					"icon": "wiki/i/sp-233.png"
+				},
+				{
 					"id": "spell:67",
 					"name": "Mistborne Step",
 					"sub": "\"ash qhal\", level 35, 35 mana, cooldown 10 s",
@@ -2125,15 +2156,15 @@
 					"icon": "wiki/i/sp-263.png"
 				},
 				{
-					"id": "spell:232",
-					"name": "Flickerdash",
-					"sub": "\"ash flik\", level 35, 50 mana, cooldown 6 s",
+					"id": "spell:162",
+					"name": "Vigil of Clarity",
+					"sub": "\"vigh lum\", level 35, 0 mana, cooldown 2 s",
 					"color": "#9fdc7f",
 					"sections": [
 						{
 							"h": "Effect",
 							"p": [
-								"Dash up to 4 sqm in the facing direction (stops at the first blocked tile) plus 2.5s of speed."
+								"Switches the vigil on or off. While on it reserves 20% of your maximum mana, and you and your party members within 5 sqm regain 1% of their maximum mana every second (not in a rift with Parched Veins). Rules: data/scripts/chaos/vigils_core.lua; the reservation and the party: vigils.lua."
 							]
 						},
 						{
@@ -2141,19 +2172,19 @@
 							"cols": ["", ""],
 							"w": [35, 65],
 							"rows": [
-								["Words", "ash flik"],
+								["Words", "vigh lum"],
 								["Level", "35"],
-								["Mana", "50"],
-								["Cooldown", "6 s"],
+								["Mana", "0"],
+								["Cooldown", "2 s"],
 								["Kind", "Support"],
 								[
 									"Classes",
-									"Warrior, Juggernaut, Berserker, Ranger, Deadeye, Beastmaster, Mystic, Elementalist, Illusionist, Thief, Ninja, Samurai, Monk, Shadowfist, Iron Sage, Necromancer, Lich, Bone Lord, Templar, Inquisitor, Sentinel"
+									"Warrior, Juggernaut, Berserker, Ranger, Deadeye, Beastmaster, Mystic, Elementalist, Illusionist, Thief, Ninja, Samurai, Necromancer, Lich, Bone Lord, Monk, Shadowfist, Iron Sage, Templar, Inquisitor, Sentinel"
 								]
 							]
 						}
 					],
-					"icon": "wiki/i/sp-233.png"
+					"icon": "wiki/i/sp-288.png"
 				},
 				{
 					"id": "spell:66",
@@ -2213,37 +2244,6 @@
 						}
 					],
 					"icon": "wiki/i/sp-287.png"
-				},
-				{
-					"id": "spell:162",
-					"name": "Vigil of Clarity",
-					"sub": "\"vigh lum\", level 40, 0 mana, cooldown 2 s",
-					"color": "#9fdc7f",
-					"sections": [
-						{
-							"h": "Effect",
-							"p": [
-								"Switches the vigil on or off. While on it reserves 20% of your maximum mana, and you and your party members within 5 sqm regain 1% of their maximum mana every second (not in a rift with Parched Veins). Rules: data/scripts/chaos/vigils_core.lua; the reservation and the party: vigils.lua."
-							]
-						},
-						{
-							"h": "Spell",
-							"cols": ["", ""],
-							"w": [35, 65],
-							"rows": [
-								["Words", "vigh lum"],
-								["Level", "40"],
-								["Mana", "0"],
-								["Cooldown", "2 s"],
-								["Kind", "Support"],
-								[
-									"Classes",
-									"Warrior, Juggernaut, Berserker, Ranger, Deadeye, Beastmaster, Mystic, Elementalist, Illusionist, Thief, Ninja, Samurai, Necromancer, Lich, Bone Lord, Monk, Shadowfist, Iron Sage, Templar, Inquisitor, Sentinel"
-								]
-							]
-						}
-					],
-					"icon": "wiki/i/sp-288.png"
 				},
 				{
 					"id": "spell:182",
