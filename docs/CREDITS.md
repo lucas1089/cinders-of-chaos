@@ -345,6 +345,10 @@ Sources the art tools record in their `*sources.csv` files. `check_credits.py` c
   mount looks. Per look tracing: `client/tools/sprites/monster_looks/sources.csv`,
   `client/tools/outfit_art/class_looks_sources.csv`. Their authors and licences are not recorded yet, so they are
   not shown in the game or on the website.
+- **decoration source B**: a donor sprite pair, the source of the 352 ice, swamp, lava and cave decoration items of pair 48
+  (`client/tools/sprites/decor48_selection.csv`, client/MANIFEST.md "Decoration of the ice, swamp, lava and cave biomes (pair 48)").
+  Its author and licence are not recorded; the owner approved using it (2026-10-26). It is not shown in the game or on the
+  website, and its sprites ship only inside the pair.
 - **set29 status**, **set29 projectile**, **set29 firework**, **set29 blood**, **set29 explosion**: the internal
   labels of the five MutterPixel Studio packs above, in the order of its Source line (status effects, projectiles,
   fireworks, blood, explosions). `client/tools/sprites/art_import/pack29_vfx_sources.csv` names each pick's pack by

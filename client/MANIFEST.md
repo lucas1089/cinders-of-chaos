@@ -3113,6 +3113,62 @@ The importer verified the sprite slot pixel-identical to the atlas and every old
 - **Ship order.** A client on pair 46 or older draws nothing for 38758: ship pair 47 (or later) and a client build before the server's
   `rewardchest` install step (then `rewardchests`). Not run in a client.
 
+## Decoration of the ice, swamp, lava and cave biomes (pair 48: items 38759-39110, `tools/sprites/import_donor_things.py import --source v1098w`, `tools/sprites/decor48_selection.csv`; built 2026-10-26; not pushed to windows-assets yet)
+Owner request 2026-10-26: more decoration things for the ice, swamp, lava and cave areas, taken from a donor pair ("source B", a
+10.98-style pair of 66,026 items whose map was surveyed for what stands on which ground; the owner approved using it). Art only: no
+text, logo, store or coin art, no signs.
+- **Selection.** Of the 8,258 things source B has that our pair 47 lacks (pixel compare of every sprite, near duplicates of our
+  art left out), each biome takes decoration things (no grounds, no walls or stairs, nothing pickupable, usable, hangable or with
+  an elevation or default action, nothing that draws above creatures), ranked by how often the map uses them on that biome's
+  grounds (ground colour classes ice / swamp / lava / cave; weak where the map shows no ground, then by the thing's own colour).
+  Every thing was then looked at on a contact sheet and kept only when it is a static prop: rocks, crystals, trees, bushes, reeds,
+  mushrooms, logs, roots, vines, snow piles, ice spikes, lava rocks and ember bits, a few flames. The cave list also holds the
+  dead trees, coal and sandstone boulders, blue and red crystals, moss and plants; walls, building and furniture pieces,
+  weapons, torches, text, creatures and statues were dropped.
+
+| Biome | Things | Limit | Client ids | Notes |
+|---|---|---|---|---|
+| ice | 58 | 120 | 38759-38816 | frosted and bare trees, snow piles, ice spikes and crystals, blue grass, rocks (the pool of the ice grounds holds only 127 props, most of them walls and stairs) |
+| lava | 16 | 70 | 38817-38832 | lava rocks and crystals, ember bits, flames, a cracked-lava patch (lava grounds are rare on the map: 63 candidates, most of them fire effects, 6 kept; 10 more picked by colour from the cave list) |
+| swamp | 150 | 150 | 38833-38982 | trees, bushes, reeds, flowers, mushrooms, logs, roots, vines, cacti (cut from 224 kept things, lowest map use first) |
+| cave | 128 | 200 | 38983-39110 | dead trees, logs, roots, crystals, coal and sand rocks, moss, plants (the cave ground class also covers towns, so most of the ranked list is building and furniture pieces; the deeper list was looked at to the point where nothing usable was left) |
+
+  Client ids follow the biome order of the table; sizes: 233 things 2 x 2, 71 1 x 1, 24 2 x 1, 24 1 x 2.
+- **Importer.** `import_donor_things.py` got the profile `v1098w` (10.98 flags and layout, a 14 byte header with a u32 last item id:
+  source B has more than 65,535 items), `--key-prefix decor48` (manifest key `decor48_<biome>_<client id>`), and an exact size
+  under 32 on a bigger-than-1x1 thing is raised to 32 (the client rule of `check_pair.py`; 14 things had 21-29). Test
+  `tools/sprites/import_donor_things_test.py` (CI).
+- **Server.** `tools/install_decor48_items.py` (install_all step `decor48items`, after `rewardchest`; test
+  `install_decor48_items_test.py`): items.otb nodes and items.xml names ("ice prop 1" ... "cave prop 128") from
+  `server/data/items/decor48_items.csv` (the importer's `donor_items.csv`). Server id = client id + **4000** (42759-43110): client id
+  + 3000 would cover the Waystone Tier items 41951-41959. Trees, rocks and the like block (otb solid), plants and snow piles do not;
+  `--kit-json` writes the biome lists for the map studio kits.
+
+```
+python3 -I client/tools/sprites/import_donor_things.py import --source v1098w --src-dat B/Tibia.dat --src-spr B/Tibia.spr \
+    --ours-dat pair47/Tibia.dat --ours-spr pair47/Tibia.spr --select client/tools/sprites/decor48_selection.csv \
+    --out-dir pair48 --server-id-offset 4000 --key-prefix decor48 --expect item=38759
+python3 -I client/tools/sprites/check_pair.py pair48/Tibia.dat pair48/Tibia.spr --old pair47/Tibia.dat pair47/Tibia.spr --new-only
+cp pair48/donor_items.csv server/data/items/decor48_items.csv
+```
+Input pair 47 (dat e0c1c929361d17242446e39f978dbe02, spr ec61b71c52447b6f22e0dd0ddd5f3815).
+Output **pair 48**: dat e0ffc626657cfa0f70545442aa427f41 (11,280,609 bytes), spr ce361ab67bbd8897f5332e9db0f2b95e
+(1,544,505,855 bytes, 1,359,878 sprites: 1,889 appended, 107 records of the new things were already in the pair and reused), 39,110
+items (352 appended), 2,681 outfits, 4101 effects, 253 missiles. The importer verified 2,493 sprite slots pixel-identical to
+the source and every old thing byte-identical; the build is deterministic (run twice, same md5s).
+- `check_pair.py --old`: `--new-only` 0 errors, 0 warnings (45,694 old things and 1,357,989 old sprites compared; 55 info lines
+  about empty slots of big things); the full check 0 errors, 206 warnings (the same as pair 47). `style_check.py` not run: it
+  measures our own art against our palette, and these are another pair's pixels.
+- Archive (the pair 41 recipe: `tar --owner=0 --group=0 --numeric-owner --mtime='2026-10-22 00:00:00Z' --format=gnu`, `xz -9 -T3`,
+  `split -b 95M -d -a 2`): 147,547,852 bytes, sha256 fa1c26382ea4865ece8d13ff29366b0d662e487c12bd4e691fcc59bb08be0fcd; parts
+  `things-1098.tar.xz.part00` (99,614,720 bytes, sha256 226bc8cd231ab95fe67d8786c6c13725cf1a4d0e8622be8474fd7ea8f5bb7cad) and `.part01`
+  (47,933,132 bytes, sha256 58ad98450dad34a054612f8f016f0aa61dcbaec48fa8c8aea9879bb2e2634be1); the joined parts extract to the md5s
+  above. Pushed to windows-assets as **afc57d34** (parent ba3a1e01); 90555d38 restores the sum line of the old unsplit
+  `things/things-1098.tar.xz` (still in the tree, unused) that afc57d34 had overwritten. `outfit_anchors.lua` and `info_lifts.lua` regenerated on
+  pair 48 (only the dat md5 changes). Install `decor48items` on the server only together with a client on pair 48 or newer.
+- **Ship order.** A client on pair 47 or older draws nothing for 38759-39110: ship pair 48 and a client build before placing
+  the items on a map.
+
 ## Owner art (things_custom26: outfits 2213-2233, items 33940-33985, `tools/sprites/gen_owner_art.py`, `art_import/owner_art.csv`; on windows-assets 50645056, switch on since 2026-10-15)
 **Source and licence.** The owner's Google Drive folder "ots", files added 2026-10-15. The owner confirmed the art is
 their own or commissioned and free to use for monsters and variants, outfits and wings as cosmetics, decoration and map

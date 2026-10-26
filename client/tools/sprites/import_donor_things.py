@@ -5,7 +5,8 @@ Sources (--source, default by the dat signature): donor-b (donor B, the 64px don
 donor-c (a 10.98 extended dat whose items carry extra flag bytes without payload, which are stripped, and repeated
 flags, of which the last is kept as the client does; frame groups without sprites are dropped; --extra-items
 reads its extended-items file, items numbered after the dat's last item) and library (a pair this tool wrote).
-Generic readers: v1098 (10.10-10.98 flag table), v860 (8.60), v772 (7.55-7.72, byte 23 = floor change) with the
+Generic readers: v1098 (10.10-10.98 flag table; v1098w the same with a 14 byte header, u32 item count, for dats
+of more than 65535 items), v860 (8.60), v772 (7.55-7.72, byte 23 = floor change) with the
 layout (u16/u32 sprite ids, frame groups, animator) found by trial parse, alpha or RGB sprs; donor-m (scrambled 8.x
 flag bytes, see SRC_TABLES); v1511 (15.x protobuf appearances + LZMA sprite sheets, --src-spr = catalog-content.json).
 Library options for them: --extra-flags (source bytes outside the table, stripped), --map-flags (an extra byte read as
@@ -35,7 +36,8 @@ Two commands:
            last existing item).  Sprite records already present in our spr (same record bytes) are reused, the others
            are appended once.  Writes OUT/Tibia.dat, OUT/Tibia.spr, OUT/donor_import.csv (category, source id -> new id,
            server id for items) and OUT/donor_items.csv (the items.otb / items.xml manifest that
-           server/tools/install_donor_items.py installs; server id = client id + --server-id-offset).
+           server/tools/install_donor_items.py installs; server id = client id + --server-id-offset; --key-prefix
+           decor48 puts the selection's purpose into the key, server/tools/install_decor48_items.py).
            Missile ids must stay <= 254 (the 10.98 protocol sends them as one byte): a selection above that stops.
 
 Donor B dat layout (signature 0x542535F9): the 10.98 layout (u32 header counts after the signature, flags then 0xFF,
@@ -99,7 +101,7 @@ MAX_WH, MAX_LAYERS = 16, 8                      # datspr's bounds (our other too
 # one layout may fit), the spr may be alpha or RGB (RGB sprites are re-encoded as alpha records).
 _V772 = {b: TABLE_OLD[b] for b in range(32)}
 _V772[23] = 'floorchange'                       # 7.55-7.72: byte 23 is floor change (no payload), no translucent
-SRC_TABLES = {'v1098': dict(TABLE_NEW), 'v860': dict(TABLE_OLD), 'v772': _V772,
+SRC_TABLES = {'v1098': dict(TABLE_NEW), 'v1098w': dict(TABLE_NEW), 'v860': dict(TABLE_OLD), 'v772': _V772,
               # donor M: an 8.x-layout dat with scrambled flag bytes; payload lengths learned from the file structure,
               # only light (21: level, colour index) and displacement (24: signed offsets, -32 on big creatures) are
               # certain; the other bytes are read and stripped (25 has a u16 and sits on furniture, stones, crates)
@@ -170,11 +172,18 @@ def parse_thing(data, pos, cat, tid, kinds, default=None, layout=(True, True, Tr
     return t, pos
 
 
-def parse_dat(data, kinds, default=None, layout=(True, True, True)):
+def parse_dat(data, kinds, default=None, layout=(True, True, True), wide=False):
     """things of a 10.98-layout dat (outfits with frame groups, u32 sprites, animator; other layouts see parse_thing);
-    must end exactly at EOF.  flags: [(byte, payload bytes)]; groups: [dict]; raw: (start, end)."""
-    sig, ni, no, ne, nm = struct.unpack_from('<IHHHH', data, 0)
-    pos, out = 12, {c: [] for c in CATS}
+    must end exactly at EOF.  flags: [(byte, payload bytes)]; groups: [dict]; raw: (start, end).
+    wide: the 14 byte header of dats with more than 65535 items (signature, u32 last item id, u16 outfits, effects,
+    missiles)."""
+    if wide:
+        sig, ni, no, ne, nm = struct.unpack_from('<IIHHH', data, 0)
+        pos = 14
+    else:
+        sig, ni, no, ne, nm = struct.unpack_from('<IHHHH', data, 0)
+        pos = 12
+    out = {c: [] for c in CATS}
     for cat, n in zip(CATS, (ni - 99, no, ne, nm)):
         for i in range(n):
             t, pos = parse_thing(data, pos, cat, FIRST[cat] + i, kinds, default, layout)
@@ -550,6 +559,8 @@ def parse_generic(data, profile, extra):
     kinds.update(SRC_EXTRA.get(profile, {}))
     kinds.update(extra)
     fits, err = [], None
+    if profile == 'v1098w':                           # 10.98 flags and layout, 14 byte header (decoration donor of pair 48)
+        return parse_dat(data, kinds, None, (True, True, True), wide=True), (True, True, True)
     if profile == 'v1098':                            # the 10.98 layout first; 10.10-10.41 dats lack frame groups
         try:
             return parse_dat(data, kinds), (True, True, True)
@@ -1138,7 +1149,7 @@ OTB_SOLID, OTB_MISSILE, OTB_PATH, OTB_PICKUP, OTB_MOVE, OTB_STACK = 1, 2, 4, 32,
 OTB_TOP, OTB_ANIM = 1 << 13, 1 << 24
 
 
-def otb_row(new_id, sid_off, name, t, flags):
+def otb_row(new_id, sid_off, name, t, flags, key_prefix='donor_b', purpose=''):
     names = dict((TABLE_NEW.get(b), v) for b, v in flags)
     g = t.groups[0]
     group = 1 if 'ground' in names else 2 if 'container' in names else 0
@@ -1161,7 +1172,8 @@ def otb_row(new_id, sid_off, name, t, flags):
     speed = struct.unpack('<H', names['ground'])[0] if 'ground' in names else 0
     ll, lc = struct.unpack('<HH', names['light']) if 'light' in names else (0, 0)
     mm = struct.unpack('<H', names['minimap'])[0] if 'minimap' in names else ''
-    return {'client_id': new_id, 'server_id': new_id + sid_off, 'key': f'donor_b_{new_id}', 'name': name,
+    key = f'{key_prefix}_{purpose}_{new_id}' if purpose else f'{key_prefix}_{new_id}'
+    return {'client_id': new_id, 'server_id': new_id + sid_off, 'key': key, 'name': name,
             'kind': 'ground' if group == 1 else 'object', 'piece': '', 'size': size_of(t),
             'patterns': f"{g['px']}x{g['py']}", 'phases': g['phases'], 'frame_ms': g['anim'][1][0] if g['anim'] else 0,
             'speed': speed, 'otb_group': group, 'otb_flags': fl, 'top_order': top, 'light_level': ll, 'light_color': lc,
@@ -1229,6 +1241,11 @@ def cmd_import(a, log):
         flags, stripped = convert_flags(t, profile)
         if dropped:
             stripped.append(f'{dropped} empty group(s)')
+        if sum(1 for g in t.groups if (g['w'] > 1 or g['h'] > 1) and g['exact'] < 32):
+            for g in t.groups:                       # the client's rule (check_pair exact-size): 32 up to 32 x size
+                if (g['w'] > 1 or g['h'] > 1) and g['exact'] < 32:
+                    g['exact'] = 32
+            stripped.append('exact size raised to 32')
         chosen[cat].append((t, flags, stripped, nxt[cat], name, purpose))
         nxt[cat] += 1
     if chosen['missile'] and chosen['missile'][-1][3] > 254:
@@ -1325,7 +1342,8 @@ def cmd_import(a, log):
     with open(os.path.join(a.out_dir, 'donor_items.csv'), 'w', newline='') as fh:
         w = csv.DictWriter(fh, MANIFEST_COLS); w.writeheader()
         for t, flags, stripped, nid, name, purpose in chosen['item']:
-            w.writerow(otb_row(nid, a.server_id_offset, name or f'donor item {t.id}', t, flags))
+            w.writerow(otb_row(nid, a.server_id_offset, name or f'donor item {t.id}', t, flags, a.key_prefix,
+                               purpose if a.key_prefix != 'donor_b' else ''))
     if a.preview:
         draw_preview(chosen, nt, ms, a.preview)
         log(f'preview sheets in {a.preview}')
@@ -1345,7 +1363,7 @@ def main():
     sub = ap.add_subparsers(dest='cmd', required=True)
     lb = sub.add_parser('library')
     lb.add_argument('--src-dat', required=True); lb.add_argument('--src-spr', required=True)
-    lb.add_argument('--source', choices=('donor-b', 'donor-c', 'v1098', 'v860', 'v772', 'donor-m', 'v1511'), default=None,
+    lb.add_argument('--source', choices=('donor-b', 'donor-c', 'v1098', 'v1098w', 'v860', 'v772', 'donor-m', 'v1511'), default=None,
                     help='default: by the dat signature')
     lb.add_argument('--extra-items', default=None, help='extended-items file of the source (items after 65535)')
     lb.add_argument('--extra-flags', default=None, help="generic readers: '39:2,41:0' extra source flag bytes "
@@ -1364,7 +1382,7 @@ def main():
     lb.add_argument('--out-dir', required=True); lb.add_argument('--sheets', default=None)
     im = sub.add_parser('import')
     im.add_argument('--src-dat', required=True); im.add_argument('--src-spr', required=True)
-    im.add_argument('--source', choices=('donor-b', 'donor-c', 'library', 'v1098', 'v860', 'v772', 'donor-m', 'v1511'), default=None,
+    im.add_argument('--source', choices=('donor-b', 'donor-c', 'library', 'v1098', 'v1098w', 'v860', 'v772', 'donor-m', 'v1511'), default=None,
                     help='default: donor-b for its dat signature, else library')
     im.add_argument('--extra-items', default=None)
     im.add_argument('--extra-flags', default=None)
@@ -1373,6 +1391,8 @@ def main():
     im.add_argument('--out-dir', required=True)
     im.add_argument('--first-item', type=int, default=None)
     im.add_argument('--server-id-offset', type=int, default=12000)
+    im.add_argument('--key-prefix', default='donor_b', help='manifest key = PREFIX_PURPOSE_ID (the selection\'s purpose '
+                    'column) for a prefix other than donor_b, e.g. decor48 -> decor48_ice_38759')
     im.add_argument('--expect', default=None, help='e.g. outfit=1511,item=28000: stop unless the first new ids match')
     im.add_argument('--preview', default=None)
     a = ap.parse_args()

@@ -18338,6 +18338,23 @@ Current ones are in `docs/map_guide/generated/`: sprite renders per floor, minim
 the entrances, in-game shots. A rift map: `--area "rift:<theme>:<band>:<seed>[:<kind>[:<floors>]]"` (the dump adds its
 sections, drawn orange on the minimap map; `summary` prints its tiles and walkable count).
 
+## Decoration of pair 48 (`tools/install_decor48_items.py`, `data/items/decor48_items.csv`)
+352 decoration items for the ice (58), swamp (150), lava (16) and cave (128) biomes, art of a donor pair ("source B") appended to the
+client pair as items 38759-39110 (client/MANIFEST.md "Decoration of the ice, swamp, lava and cave biomes (pair 48)").
+- **Ids.** Server id = client id + 4000 (**42759-43110**), key `decor48_<biome>_<client id>`, name "<biome> prop <n>". The usual +3000
+  would run into the Waystone Tier items (41951-41959); nothing else uses 42759-43110 (the test reads every other manifest of
+  `data/items/`).
+- **Install.** Step `decor48items` of `install_all.py`, after `rewardchest`: one items.otb node and one items.xml entry per row (the
+  rules of `install_donor_items.py`: a node of the same bytes is left alone, another client id on a server id stops it, `.bak`
+  of the original, the written file parsed back; items.xml block between two marker comments, an id outside the block stops it).
+  Idempotent. Run on a copy of the installed server data: 352 nodes and entries added, a second run changes nothing. Without a
+  client on pair 48 the items show as nothing.
+- **Flags.** None is pickupable, moveable or a container. Trees, big rocks and crystals block (otb solid: the dat flags notwalkable
+  or blockpath), bushes, flowers, snow piles, logs and the like do not. 26 are animated (9 of the 16 lava props, 14 cave, 2 swamp, 1 ice) and 34 more carry a light; `--kit-json OUT.json` writes biome -> [{server_id, size, kind static / animated / light, blocks}] for the map studio kits.
+- **Use.** Nothing places them by itself. The area planner kits and the map studio can list them once the client pair is shipped.
+- **Tests.** `python3 -I server/tools/install_decor48_items_test.py` (the shipped manifest, id and biome rules, a clash with another
+  manifest, nodes and XML on synthetic files, the command line twice).
+
 ## Reward chests (`rift_config.lua`, `descent_config.lua`, `reward_sparkle*.lua`, `tools/patch_reward_chests.py`)
 
 Owner request 2026-10-20: the plain wooden chest was hard to see on dark cave floors. Every chest a player takes a reward
