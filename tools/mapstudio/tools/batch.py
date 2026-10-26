@@ -40,7 +40,7 @@ def main():
             parts = knobs.split()
             if f"--{knob}" in parts:
                 at = parts.index(f"--{knob}") + 1
-                parts[at] = str(min(float(parts[at]), cap)).rstrip("0").rstrip(".")
+                parts[at] = f"{min(float(parts[at]), float(cap)):g}"  # :g, not rstrip("0"): an int cap of 10 would read "1"
                 knobs = " ".join(parts)
         name = f"{a.batch}/seed-{seed}"
         out = ROOT / "areas" / a.batch / f"seed-{seed}"
