@@ -921,6 +921,9 @@ jobs:
           python3 -I server/tools/gen_tester_scenarios.py --check
           python3 -I server/tools/tester_scenarios_test.py
 
+      - name: Tester bots keystone and mastery scenario (mocked server, route and probe table)
+        run: python3 -I server/tools/tester_keystones_test.py
+
       - name: Network message buffer stays unzeroed (server src-patch 0032)
         run: python3 -I server/tools/netmsg_buffer_patch_test.py
 

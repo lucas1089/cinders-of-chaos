@@ -426,6 +426,21 @@ final class CommandsTab {
         stop.setOnClickListener(v -> a.confirm("Parar os testers?", "Eles saem do jogo e o ajudante de teste é "
                 + "removido.", "Parar", true, () -> ctl("Parar testers", "testers stop", 60, null)));
         b.addView(ui.evenRow(start, stop), ui.gap(8));
+        // O249: the same run, but every tester first tests the passive tree keystones and masteries of its class
+        MaterialButton tree = ui.secondary("Iniciar testando a árvore", R.drawable.ic_play);
+        tree.setOnClickListener(v -> {
+            int n = number(count, 1, 150), m = number(minutes, 1, 1440);
+            if (n < 0 || m < 0) {
+                return;
+            }
+            a.confirm("Iniciar " + n + " testers por " + m + " min, testando a árvore?", "Cada tester aloca os keystones "
+                    + "e masteries da sua classe como um jogador, confere se o efeito aparece (totais da árvore, log de "
+                    + "combate), diz \"não observável\" quando o cliente não vê, e zera a árvore. Vale 40 testers ou mais "
+                    + "(uma classe por vez). O resultado por nó vai no Relatório. Se o ajudante de teste ainda não "
+                    + "carregou, o servidor reinicia com 5 minutos de aviso.", "Iniciar", true,
+                    () -> ctl("Iniciar testers (árvore)", "testers start " + n + " " + m + " --keystones --restart 300", 180, null));
+        });
+        b.addView(tree, ui.gap(6));
         MaterialButton status = ui.secondary("Status", R.drawable.ic_refresh);
         status.setOnClickListener(v -> a.ctlAction("testers status", 30, f -> {
             if (!f.ok) {

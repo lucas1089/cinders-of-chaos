@@ -961,6 +961,7 @@ def test_testers():
                   'the run: the key file path, minutes, count: ' + calls)
             check('--scenarios ' in calls and 'server/tools/tester_scenarios.json' in calls,
                   'the run gets the coverage table: ' + calls)
+            check('--keystones' not in calls, 'a plain start has no --keystones: ' + calls)
             check('ab' * 32 not in calls and 'secret' not in calls, 'no key and no password on a command line')
             check('db=yes' in calls, 'the database settings reach testers.py by the environment')
             check(os.getpgid(pid) == pid, 'the run has its own process group')
@@ -1019,6 +1020,25 @@ def test_testers():
         check(r.returncode != 0, 'log: N 0 refused')
         r = run('testers', 'log', 'x;id')
         check(r.returncode != 0, 'log: N not a number refused')
+
+        # --keystones (O249): the run gets the flag; without it none; a wrong order of options is refused
+        before = tcalls()
+        r = run('testers', 'start', '2', '1', '--keystones', extra={'STUB_BOTS': '5'})
+        check(r.returncode == 0 and 'keystones and masteries first' in r.stdout, 'start --keystones: ' + r.stdout + r.stderr)
+        pid = int(open(os.path.join(state, 'run.pid')).read())
+        for _ in range(50):
+            if 'run --key-file' in tcalls()[len(before):]:
+                break
+            time.sleep(0.1)
+        new = tcalls()[len(before):]
+        check('--scenarios' in new and new.split('--scenarios', 1)[1].split()[1:2] == ['--keystones'],
+              'the run gets --keystones after the table: ' + new)
+        r = run('testers', 'stop')
+        try:
+            os.killpg(pid, signal.SIGKILL)
+        except OSError:
+            pass
+        check(run('testers', 'start', '--keystones', 'x').returncode != 0, 'start: a word that is not a number is refused')
 
         # not loaded, with --restart: the restart countdown is queued, the bots wait for it
         with open(log, 'a') as f:

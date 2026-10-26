@@ -13,6 +13,8 @@ player can do with it, and how the bots reach it.
     reason; the bots never send these
   * passive: everything else is reached by play (combat, loot, login, death): only server log errors name it
 NPC dialogs: every NPC of data/npc with the {keywords} of its greeting.
+keytest (O249, tester_keytree.py): per class key every keystone and mastery of the passive tree it may hold, the route to
+it and how a bot can see that it works (statTotals for masteries, a combat log row for the keystones with extra hits).
 
 usage: python3 -I server/tools/gen_tester_scenarios.py [--check]
 Standard library only; deterministic (sorted, no timestamps).
@@ -23,6 +25,8 @@ import re
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+import tester_keytree as KT  # noqa: E402  (the keystone and mastery table, O249)
 SERVER = os.path.dirname(HERE)
 REPO = os.path.dirname(SERVER)
 CHAOS = os.path.join(SERVER, 'data', 'scripts', 'chaos')
@@ -318,7 +322,7 @@ def build():
     client_only = sorted({m for n, mods in clients.items() if n not in used for m, _ in mods})
     return {'generated_by': 'server/tools/gen_tester_scenarios.py', 'counts': dict(sorted(counts.items())),
             'systems': dict(sorted(systems.items())), 'opcodes': dict(sorted(table.items())),
-            'clientOnly': client_only, 'npcs': npc_dialogs()}
+            'clientOnly': client_only, 'npcs': npc_dialogs(), 'keytest': KT.build(CHAOS)}
 
 
 def render(table):
@@ -337,8 +341,9 @@ def main(argv):
     with open(OUT, 'w', encoding='utf-8') as f:
         f.write(text)
     t = json.loads(text)
-    print('tester scenarios: %d systems %s, %d opcodes, %d NPCs -> %s' % (
-        len(t['systems']), t['counts'], len(t['opcodes']), len(t['npcs']), OUT))
+    print('tester scenarios: %d systems %s, %d opcodes, %d NPCs, %d keystone and mastery nodes -> %s' % (
+        len(t['systems']), t['counts'], len(t['opcodes']), len(t['npcs']),
+        sum(len(v) for v in t['keytest']['classes'].values()), OUT))
     return 0
 
 

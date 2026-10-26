@@ -7329,7 +7329,8 @@ sudo /opt/chaos/repo/server/deploy/chaos-ctl.sh testers cleanup --yes    # delet
 ```
 
 The trial kit reads `/etc/chaos/ctl.conf` (`ctl.conf.trial.example`): server `/opt/chaos-trial/server`, log `/opt/chaos-trial/logs/server.log`.
-- `start [N] [MINUTES] [--restart SECONDS]`: default 100 bots, 60 minutes; at most 150 and 1440.
+- `start [N] [MINUTES] [--restart SECONDS] [--keystones]`: default 100 bots, 60 minutes; at most 150 and 1440.
+  `--keystones`: the keystone and mastery test first (below, "Keystones and masteries").
   The helper loads at a server start. Without "[tester-helper] running" in the log since the newest start, `start`
   refuses, unless `--restart SECONDS`: the usual restart countdown; the bots start 30 s after it.
   First run: `testers.py setup`. Then the run, detached (`setsid`, own process group), log `/var/log/chaos/testers.log`.
@@ -7383,11 +7384,67 @@ Character keys (name, target, cid, ...) only get a tester. Owner, guid, gift, pa
 Report: per system tried / ok / refused / log errors. A system never reached says why:
 out of scope with the reason, passive, or not picked in this run.
 
+### Keystones and masteries (O249, `tools/tester_keytree.py`, `tools/tester_keystones.py`)
+
+Owner request: prove on the live server that the passive tree keystones and masteries do what they promise.
+
+**How the owner runs it.**
+1. Admin app: tab Comandos > card Testers > button "Iniciar testando a árvore" (set Quantos and Minutos first; 40 or more
+   testers, so every class has a few; 60 minutes or more, a keystone with extra hits waits up to 150 s for its first one).
+   When the minutes are over, Relatório (same card) shows the section "Passive tree keystones and masteries".
+2. Fallback, on the VPS: `chaos-ctl.sh testers start 100 90 --keystones --restart 300`, then `chaos-ctl.sh testers report`
+   (the same text is also in `<state>/runs/run-*-report.txt`, and `testers log 400` has one `KEYTEST` line per node).
+   `--restart 300` only restarts the server when the TEST ONLY helper is not loaded yet.
+
+**What a bot does** (once per run, before its other behaviours; only requests of the tree window and the DPS meter, no
+development key, no god command, no helper command):
+1. read the tree (`requestNodesUnlocked`, `requestPoints`); clear it with `resetPreset` when something is left on it
+2. `planApply` the route to the node; `statTotals` for the baseline
+3. mastery: `planApply` the node with effect 1; every other effect with `masteryChoose`. The stats of the effect that the
+   totals show (the five attributes, the damage percent per type, `multiIncrement` on every element, the critical chance and
+   amount of the tree) must grow by exactly the effect's value. The rest of the effect is named as not observable.
+4. keystone: `planApply` route and node together. A flag in `PROC` (tester_keytree.py; the ones whose extra hits
+   `passivetree_keystones.lua` deals with `doTargetCombat`) must make the row "Keystones" of the combat log (`open`/`seg`,
+   damage dealt tab) grow while the bot hunts; the report names what the hunt needs (a shield, a bow, a second enemy).
+5. `resetPreset`, always (also after a refused plan, a failure or a bot that left the game), and the tree is read back.
+Bots of one class start at different nodes (their place in the class), the nodes go cheapest route first, a node needs its route
+in points (`points = (level - 8) / 4 + boss points`; a keystone is 3 to 32 nodes away).
+
+**Result per node:** `PASS`, `FAIL` (effect missing, wrong amount, plan refused by the server, accepted but not saved, no proc
+in 150 s), `NOT OBSERVABLE` (with the reason; the node was allocated), `NOT TESTED` (not enough points, a change of effect or a
+reset the character cannot pay, the bot left the game). Failures are listed first. Nothing unobservable is ever counted as a pass.
+
+**Coverage of the table** (generated; `gen_tester_scenarios.py --check` in CI): 21 classes, 242 keystones, 4 mastery nodes
+with 42 effects over 12 classes.
+
+| Class (line) | Keystones | Seen in the combat log | Mastery effects | Seen in the totals |
+|---|---|---|---|---|
+| Mystic, Elementalist, Illusionist | 11, 11, 11 | 1, 1, 0 | 0 | 0 |
+| Ranger, Deadeye, Beastmaster | 12, 12, 12 | 1, 0, 1 | 0 | 0 |
+| Warrior, Juggernaut, Berserker | 12, 12, 12 | 2, 1, 1 | 0 | 0 |
+| Thief, Ninja, Samurai | 9, 10, 10 | 1, 1, 1 | 4 each | 4 each |
+| Necromancer, Lich, Bone Lord | 11, 12, 12 | 1, 1, 1 | 3 each | 3 each |
+| Monk, Shadowfist, Iron Sage | 9, 10, 10 | 2, 2, 1 | 4 each | 4 each |
+| Templar, Inquisitor, Sentinel | 14, 15, 15 | 2, 2, 2 | 3 each | 2, 2, 2 |
+
+Not observable from a client (the reason is in the report): damage factors (Overload, Immovable, Hunter's Focus, Deadeye,
+Viper Verdict, Reaper's Toll, Pack Alpha), a heal with no row (Undying Rage), party-only (Shared Phantasm, Inspiring Illusion,
+Overgrowth), the build archetype keystones (`ar...`: their hits carry no label of their own in the combat log) and the
+class-line keystones (`ks...` in the Thief, Necromancer, Monk and Templar files). A new keystone flag without a probe or a
+reason stops the generator, so every new keystone gets a decision. Mastery stats the totals do not show (resists, speed, skills,
+healing, life drain) are listed per effect.
+
+**Assumed, not verified on a live server:** the shape of the answers (`statTotals`, `planResult`, `state` of the combat log)
+is the one in the Lua files; the bot's own weapon is the helper's class kit weapon, so a keystone that needs a two-handed
+weapon, a shield or a bow can fail on a bot that carries none (the report names the need); a reset costs gold above level 50
+(`respec_config.lua`) and the helper puts only 20,000 gold in the bank, so most bots can test one node and report the rest as
+"not tested: the tree could not be cleared". `testers cleanup --yes` deletes the tree rows with the characters.
+
 Not verified against a running server: the bots' packets in game, the helper on the real engine, the cleanup on the
 real schema, the scenario payloads against the real handlers. Tested only with mocks, stubs and synthetic packets.
 
 Tests: `tests/testers_test.lua`, `tests/tester_helper_test.lua`, `tools/testers_test.py`,
-`tools/chaostesters_test.cpp` (status answer without testers, CI), `tools/patch_tester_filters_test.py`,
+`tools/chaostesters_test.cpp` (status answer without testers, CI), `tools/patch_tester_filters_test.py`, `tools/tester_keystones_test.py` (keystones and masteries),
 `deploy/chaos_ctl_test.py` (testers), `tools/loadtest_test.py`, `tools/tester_scenarios_test.py`, website `chaos_leaderboards_page_test.php`,
 `chaos_client_api_test.php`.
 
