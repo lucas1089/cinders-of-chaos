@@ -10,6 +10,9 @@
 return {
 	-- ------------------------------------------------------------------ levels
 	maxLevel = 50,
+	-- the owner's level the pets open at (the window, summon, dismiss, rename; a pet is not called out at login below it).
+	-- The top menu (unlocks_config.lua "pets") shows the entry at this level; tests/unlocks_test.lua reads this field
+	minLevel = 25,
 	-- pet XP from level L to L + 1 = floor(curve.base * L ^ curve.power)
 	-- (L1: 8, L10: 200, L25: 724, L49: 1,859; 736 XP to level 10, 7,180 to 25, 38,871 to 50 = about 45 hours of
 	-- hunting at 700 counted kills an hour with a few tiered kills)

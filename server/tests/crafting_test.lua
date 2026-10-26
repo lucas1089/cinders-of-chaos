@@ -619,4 +619,12 @@ assert(C.signature(key) ~= ksig, "key signature changes")
 -- maxMods from the config caps the decoded list too
 eq(#R.decodeMods(rcfg, "vitality:20,brutality:20,haste:40,elites:50"), 3, "at most key.maxMods")
 
+-- the level gate (O262: the top menu entry "crafting")
+eq(C.config.minLevel, 20, "crafting opens at level 20")
+local gOk, gNeed = C.levelGate(19)
+eq(gOk, false, "19 is below the gate"); eq(gNeed, 20)
+gOk, gNeed = C.levelGate(20)
+eq(gOk, true, "20 passes"); eq(gNeed, 20)
+eq(C.levelGate(1), false); eq(C.levelGate(800), true); eq((C.levelGate(nil)), false, "no level: closed")
+
 print("crafting_test: OK")

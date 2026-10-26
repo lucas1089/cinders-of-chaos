@@ -786,7 +786,7 @@ local function afterLogin(cid)
 	local ok, err = pcall(function()
 		P.checkAchievements(player, false)
 		local row = activeRow(player)
-		if row and not P.live[player:getId()] then
+		if row and not P.live[player:getId()] and K.levelGate(player:getLevel(), cfg) then
 			P.callOut(player, row.species, true)
 		end
 	end)
@@ -905,6 +905,14 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 	local action = type(msg) == "table" and msg.action
 	local data = type(msg) == "table" and type(msg.data) == "table" and msg.data or {}
 	if ChaosRateLimit and not ChaosRateLimit.allow(player, "pets." .. tostring(action), 250) then
+		return
+	end
+	-- below the gate nothing answers (opening the window says why; the client's polling stays silent)
+	local levelOk, need = K.levelGate(player:getLevel(), cfg)
+	if not levelOk then
+		if action == "open" then
+			say(player, false, ChaosI18n.msg("Pets open at level %d.", need))
+		end
 		return
 	end
 	local ok, err = pcall(function()

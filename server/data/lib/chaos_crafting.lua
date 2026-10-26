@@ -121,6 +121,10 @@ C.config = {
 	-- items no orb may touch (boats, same list as customs/rarity/reroll_rarity_stats.lua)
 	excludedItems = {[27797] = true, [27798] = true, [27799] = true, [27800] = true, [27801] = true, [27802] = true},
 
+	-- the level the crafting system opens at (the bench, Salvage and the orbs' use-with): below it every entry point says so.
+	-- The top menu (unlocks_config.lua "crafting") shows the entry at this level; tests/unlocks_test.lua reads this field
+	minLevel = 20,
+
 	historySize = 8, -- crafts shown on the bench
 	historyTable = "chaos_crafting_log", -- server/sql/chaos.sql
 	historyKeepDays = 60
@@ -183,6 +187,15 @@ C.elements = {
 }
 
 C.orbByKey, C.orbById = {}, {}
+-- the level gate: true when a character of `level` may craft; else false and the level that opens it
+function C.levelGate(level)
+	local need = C.config.minLevel
+	if (tonumber(level) or 0) >= need then
+		return true, need
+	end
+	return false, need
+end
+
 local function indexOrb(orb)
 	C.orbByKey[orb.key] = orb
 	C.orbById[orb.id] = orb

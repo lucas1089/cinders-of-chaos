@@ -121,6 +121,11 @@ local readers = {
 	siege = function() return dofile("data/scripts/chaos/siege_config.lua").minLevel end,
 	tower = function() return fromFile("data/scripts/chaos/infinitytower_run.lua", "\n\tminLevel = (%d+),") end,
 	dungeons = function() return dofile("data/scripts/chaos/bossspawns_config.lua").dungeons.defaults[1].level end,
+	-- crafting has no config file of its own: its orbs and numbers live in data/lib/chaos_crafting.lua (needs the engine
+	-- libs to load, so the field is read from the text, like the Tower's); the gate itself is ChaosCrafting.levelGate
+	crafting = function() return fromFile("data/lib/chaos_crafting.lua", "\n\tminLevel = (%d+),") end,
+	pets = function() return dofile("data/scripts/chaos/pets_config.lua").minLevel end,
+	salvage = function() return fromFile("data/lib/chaos_crafting.lua", "\n\tminLevel = (%d+),") end,
 }
 -- every entry has a reader and every reader an entry
 for _, e in ipairs(cfg.entries) do
@@ -173,7 +178,7 @@ do
 	-- a level lost after unlocking: the entry stays unlocked and is not next
 	local mask = M.set(0, indexOf("passive"))
 	eq(M.nextLocked(mask, 5).key, "bounty", "lowest locked above the level")
-	eq(M.nextLocked(M.set(M.set(M.set(0, 1), 2), 3), 8).key, "events", "passive unlocked: events is next")
+	eq(M.nextLocked(M.set(M.set(M.set(0, 1), 2), 3), 8).key, "crafting", "passive unlocked: crafting (20) is next")
 end
 -- silent first masks
 do
@@ -292,27 +297,27 @@ sent = {}
 new.level = 12
 events.ChaosUnlocksAdvance.onAdvance(new, SKILL_LEVEL, 11, 12)
 eq(take("new")[1].data.key, "passive"); eq(take("new")[1].data.why[1], "Your first passive point is ready.")
-eq(take("state")[1].data.next.key, "events")
+eq(take("state")[1].data.next.key, "crafting")
 -- several at once, one per 75 s (a jump from 12 to 100)
 sent = {}
 new.level = 100
 events.ChaosUnlocksAdvance.onAdvance(new, SKILL_LEVEL, 12, 100)
-eq(#take("new"), 1, "events first (lowest level)"); eq(take("new")[1].data.key, "events")
-local order = {"events"}
-for _ = 1, 10 do
+eq(#take("new"), 1, "crafting first (lowest level)"); eq(take("new")[1].data.key, "crafting")
+local order = {"crafting"}
+for _ = 1, 14 do
 	if #queued == 0 then break end
 	local g = flush()
 	eq(g[1], 75000)
 	local t = take("new")
 	order[#order + 1] = t[#t].data.key
 end
-eq(table.concat(order, ","), "events,arena,rifts,siege,tower", "one per gap in level order, ties by index")
+eq(table.concat(order, ","), "crafting,salvage,pets,events,arena,rifts,siege,tower", "one per gap in level order, ties by index")
 eq(take("state")[#take("state")].data.next.key, "dungeons")
 -- a level lost: nothing is taken back, the state follows
 sent = {}
 new.level = 40
 events.ChaosUnlocksAdvance.onAdvance(new, SKILL_LEVEL, 100, 40)
-eq(#take("new"), 0); eq(#take("state")[1].data.unlocked, 9 - 1, "still unlocked after dying (dungeons not yet)")
+eq(#take("new"), 0); eq(#take("state")[1].data.unlocked, #cfg.entries - 1, "still unlocked after dying (dungeons not yet)")
 -- a veteran: silent
 sent = {}
 local vet = mk(2, 600)
