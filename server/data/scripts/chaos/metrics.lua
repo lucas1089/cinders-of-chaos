@@ -125,6 +125,11 @@ function X.computeChurn()
 	-- O258 where they stop: the area and band of the gone characters, a snapshot (the old rows are replaced)
 	local stops = Chaos.select(X.stopSql(cfg, now, Chaos.notTesterSql("`players`")),
 		{{"band", "n"}, {"sid", "n"}, {"pz", "n"}, {"cx", "n"}, {"cy", "n"}, {"gone", "n"}})
+	-- a failed query reads as no rows: keep the last snapshot then rather than wiping it until the next run
+	if #stops == 0 then
+		X.lastChurn = now
+		return
+	end
 	db.query("DELETE FROM `" .. T .. "` WHERE `kind` = 'stop'")
 	for _, q in ipairs(X.setSqlChunks(X.stopRows(stops, X.spots, cfg), T, db.escapeString)) do
 		db.asyncQuery(q)
