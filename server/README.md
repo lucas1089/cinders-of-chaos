@@ -23068,9 +23068,15 @@ notifications and orders, build codes, guild war terms and rows). A text for sev
 sale lines), build codes, report receipts, the crafting bench and salvage, guild wars, the PvP zone and its realm
 lines, the passive tree and transmog results, the Scorched Marches (conquest) and the season join flow, the store, pass,
 market and isolation refusals and the mode warnings. Still English on purpose: the guild log rows, salvage history
-lines, config validation messages, fixture descriptions and the season milestone names (window data). Not converted yet:
-shop payments (bilingual on their own), and cores such as mentor, memorial, guild boss, candlemarks, uber arenas, siege,
-charms, pets, loot filter, loadouts, bounty, class looks, goals and raid, which still return English from the core.
+lines, config validation messages, fixture descriptions and the season milestone names (window data). Last
+batch (14 cores): mentor (window rows and milestones), guild boss (HUD notes, run lines, guild tells), uber arenas (HUD, party
+note, ends), siege (status, sign-up results, warnings, weekday names), charms (modifier and signature texts, results),
+pets (rest reasons, level-ups, rename), loot filter (presets, rules, sounds, drop lines), loadouts (results, refund lines
+with singular and plural keys, castbar), bounty (accept refusals, progress notices) and the raid (journal mechanic texts,
+intros, roles and phase names per language, vendor results, buff bar). Memorial and candlemarks were already bilingual,
+class looks only has outfit names and goals keeps its own en / pt text pairs in `goals_config.lua`, so they only got
+`REASONS` entries. Shop payments are bilingual on their own. Boss yells, raid castbar labels and staff replies stay
+English. The table has about 3,700 keys now.
 
 Left: item descriptions and mail texts built in cores (one text for every viewer), party loot lines
 (`broadcastPartyLoot` sends one text to the party: English), monster speech, reasons that game logic reads as text
