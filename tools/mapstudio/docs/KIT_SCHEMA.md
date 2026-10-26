@@ -153,3 +153,16 @@ Every key is off unless the kit has it, so older kits (grass) generate the same 
 | `crossing.as_land` | `true`: a ford strip becomes ordinary base ground and land (no road or sand rectangles on lava) |
 | `creeks` | `{"share": s, "scale": cell, "wide": 2, "min": tiles, "away": steps}`: thin winding channels of the liquid cut into the land (swamp: reference land is a trail network). A creek never splits a land part: pieces other than the biggest go back to liquid. Swamp kit: share 0.4, away 3 |
 | `batch_variants` | `{"<seed>": "<knobs>", "*": "<knobs for any other seed>"}`: per kit batch knobs for tools/batch.py (cave 301-308, swamp 201-208, ice 401-408, lava 501-508) |
+
+## Keys added 2026-10-26 (round 7)
+
+Every key is off unless the kit has it (grass seeds 101-103 area.txt md5 unchanged).
+
+| key | what |
+|---|---|
+| `scatter` | `{"<id>": rate}`: props (blocking ones too) dropped on open base ground after the meadow pass, each on tiles no plant stands on. The clump density puts big props in a few groves only (ice); `scatter` spreads lone trees, shards and rocks over the whole floor. Access repair still clears any that close a path. Used by ice and lava |
+| `pocket_fill_tops` | `n`: with `pocket_fill`, unreached walkable pockets of up to `n` tiles on the floors above the main one (top parts that cliff pieces cut off) get the same blocking 1x1 plants as the main floor. Used by ice and lava |
+| `same_look` | `[[role, role], ...]`: ground pairs that look alike (ice: snow `base` and `rock_soil`; cave: the brown floor variants). Their missing border is counted in `same_look_seams` of the area header, not in `bare_seams` |
+| `top_corridor_walk` | `true`: the route corridor on mountain tops also takes walkable `top_flora` items (blocking ones stay out). Used by lava, whose tops were flat grey |
+| `patches` (cave) | the cave kit now uses `patches` for its floor: `clay` (G103), `stain` (G12234), `slate` (G9068), `rock_soil` (smooth members only); `defaults.sand` 0 so no 1-tile grey squares |
+| `top_gravel`, `gravel_on_rock`, `top_mix` (lava) | same keys as the grass kit: gravel patches (G4571) in the grey rock soil of tops, borders from `gravel_on_rock` |

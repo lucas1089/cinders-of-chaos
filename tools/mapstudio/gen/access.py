@@ -186,13 +186,20 @@ def drop_cut_off_tops(floors, items, ramp_dirs, start, main=7):
     return dropped
 
 
-def close_pockets(floors, items, ramp_dirs, start, fill, rng, main=7, most=30):
+def close_pockets(floors, items, ramp_dirs, start, fill, rng, main=7, most=30, tops=0):
     """Walkable pockets of up to `most` tiles on the main floor that no walk reaches (strips between a cliff and the water
     that the shore and cliff pieces cut off) are closed: each tile gets a blocking plant from `fill` (ids of 1x1
     blocking plants), so the nook reads as a thicket and nothing walkable is stranded. Bigger pockets are left for
-    the reach report. Returns the tiles closed."""
+    the reach report. With `tops` (kit pocket_fill_tops n), unreached pockets of up to n tiles on the floors above `main`
+    (top parts that cliff pieces and rim cut off) are closed the same way. Returns the tiles closed."""
     got = reach(floors, items, ramp_dirs, start)
-    layer = floors.get(main, {})
+    closed = 0
+    for z in [main] + (sorted(z for z in floors if z < main) if tops else []):
+        closed += _close_floor(floors.get(z, {}), z, items, got, fill, rng, most if z == main else tops)
+    return closed
+
+
+def _close_floor(layer, main, items, got, fill, rng, most):
     loose = {pos for pos, s in layer.items() if walkable(items, s) and (main, *pos) not in got}
     seen, closed = set(), 0
     for pos in sorted(loose):
