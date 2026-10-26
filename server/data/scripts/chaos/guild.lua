@@ -527,6 +527,7 @@ function G.spend(gid, amount)
 	if amount <= 0 then
 		return true
 	end
+	G.row(gid) -- cached before the debit: a row read after it already holds the new bank, and the subtraction below would count twice
 	local n = G.exec(string.format("UPDATE `%s` SET `bank` = `bank` - %d, `updated_at` = %d WHERE `guild_id` = %d AND `bank` >= %d",
 		T.guilds, amount, now(), gid, amount))
 	if n == 1 then
@@ -824,6 +825,10 @@ local function handle(player, action, data)
 			return
 		end
 		G.sendState(player, action == "open", type(data.tab) == "string" and data.tab:sub(1, 16) or nil)
+		return
+	elseif limited(player, "guild.act", 250) then
+		-- every action below answers with the whole state (members, log and depot are database reads): a flood of
+		-- refused requests ("Slow down", "already taken") must not cost a state each
 		return
 	elseif action == "deposit" then
 		ok, text = G.deposit(player, data.amount)

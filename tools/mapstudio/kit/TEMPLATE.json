@@ -1,0 +1,293 @@
+{
+ "name": "TEMPLATE: copy to kit/<biome>.json and replace every 0 with your item ids (docs/KIT_SCHEMA.md)",
+ "notes": "Where and how this kit was learned: reference windows, tools and dates.",
+ "water": {
+  "_note": "the sea, lakes and rivers; add bands/variants/order for depth variants",
+  "family": "G0",
+  "lead": 0,
+  "members": []
+ },
+ "base": {
+  "_note": "the main walkable ground",
+  "family": "G0",
+  "lead": 0,
+  "members": []
+ },
+ "sand": {
+  "_note": "roads and patches",
+  "family": "G0",
+  "lead": 0,
+  "members": []
+ },
+ "rock_soil": {
+  "_note": "aprons at cliff feet and ground on high tops",
+  "family": "G0",
+  "lead": 0,
+  "members": []
+ },
+ "gravel": {
+  "_note": "optional second apron ground; delete with its layer if unused",
+  "family": "G0",
+  "lead": 0,
+  "members": []
+ },
+ "mountain": {
+  "_note": "fill item of raised rock",
+  "lead": 0,
+  "members": [
+   0
+  ]
+ },
+ "hill": {
+  "_note": "fill of the second relief family; only needed with --hills above 0",
+  "lead": 0,
+  "members": [
+   0
+  ]
+ },
+ "worn_share": 0,
+ "no_water_border": [
+  "sand",
+  "gravel"
+ ],
+ "base_on_sand": {
+  "edge_n": 0,
+  "edge_e": 0,
+  "edge_s": 0,
+  "edge_w": 0,
+  "inner_nw": 0,
+  "inner_ne": 0,
+  "inner_sw": 0,
+  "inner_se": 0,
+  "outer_nw": 0,
+  "outer_ne": 0,
+  "outer_sw": 0,
+  "outer_se": 0
+ },
+ "base_on_rock": {
+  "edge_n": 0,
+  "edge_e": 0,
+  "edge_s": 0,
+  "edge_w": 0,
+  "inner_nw": 0,
+  "inner_ne": 0,
+  "inner_sw": 0,
+  "inner_se": 0,
+  "outer_nw": 0,
+  "outer_ne": 0,
+  "outer_sw": 0,
+  "outer_se": 0
+ },
+ "rock_on_sand": {
+  "edge_n": 0,
+  "edge_e": 0,
+  "edge_s": 0,
+  "edge_w": 0,
+  "inner_nw": 0,
+  "inner_ne": 0,
+  "inner_sw": 0,
+  "inner_se": 0,
+  "outer_nw": 0,
+  "outer_ne": 0,
+  "outer_sw": 0,
+  "outer_se": 0
+ },
+ "gravel_on_sand": {
+  "edge_n": 0,
+  "edge_e": 0,
+  "edge_s": 0,
+  "edge_w": 0,
+  "inner_nw": 0,
+  "inner_ne": 0,
+  "inner_sw": 0,
+  "inner_se": 0,
+  "outer_nw": 0,
+  "outer_ne": 0,
+  "outer_sw": 0,
+  "outer_se": 0
+ },
+ "shore_on_base": {
+  "edge_n": 0,
+  "edge_e": 0,
+  "edge_s": 0,
+  "edge_w": 0,
+  "inner_nw": 0,
+  "inner_ne": 0,
+  "inner_sw": 0,
+  "inner_se": 0,
+  "outer_nw": 0,
+  "outer_ne": 0,
+  "outer_sw": 0,
+  "outer_se": 0
+ },
+ "mountain_cliff": {
+  "edge_n": 0,
+  "edge_e": 0,
+  "edge_s": 0,
+  "edge_w": 0,
+  "inner_nw": 0,
+  "inner_ne": 0,
+  "inner_sw": 0,
+  "inner_se": 0,
+  "outer_nw": 0,
+  "outer_ne": 0,
+  "outer_sw": 0,
+  "outer_se": 0
+ },
+ "top_rim": {
+  "edge_n": 0,
+  "edge_e": 0,
+  "edge_s": 0,
+  "edge_w": 0,
+  "inner_nw": 0,
+  "inner_ne": 0,
+  "inner_sw": 0,
+  "inner_se": 0,
+  "outer_nw": 0,
+  "outer_ne": 0,
+  "outer_sw": 0,
+  "outer_se": 0
+ },
+ "hill_cliff": {
+  "edge_n": 0,
+  "edge_e": 0,
+  "edge_s": 0,
+  "edge_w": 0,
+  "inner_nw": 0,
+  "inner_ne": 0,
+  "inner_sw": 0,
+  "inner_se": 0,
+  "outer_nw": 0,
+  "outer_ne": 0,
+  "outer_sw": 0,
+  "outer_se": 0
+ },
+ "hill_rim": {
+  "edge_n": 0,
+  "edge_e": 0,
+  "edge_s": 0,
+  "edge_w": 0,
+  "inner_nw": 0,
+  "inner_ne": 0,
+  "inner_sw": 0,
+  "inner_se": 0,
+  "outer_nw": 0,
+  "outer_ne": 0,
+  "outer_sw": 0,
+  "outer_se": 0
+ },
+ "mountain_ramp": {
+  "n": [
+   0,
+   0
+  ],
+  "s": [
+   0,
+   0
+  ],
+  "e": [
+   0,
+   0
+  ],
+  "w": [
+   0,
+   0
+  ]
+ },
+ "hill_ramp": {
+  "n": [
+   0,
+   0
+  ],
+  "s": [
+   0,
+   0
+  ],
+  "e": [
+   0,
+   0
+  ],
+  "w": [
+   0,
+   0
+  ]
+ },
+ "_bridges": "add bridge_ew and bridge_ns (docs/KIT_SCHEMA.md, Crossings) to get bridges over rivers",
+ "layers": [
+  {
+   "kit": "sand",
+   "border": null
+  },
+  {
+   "kit": "gravel",
+   "border": "gravel_on_sand"
+  },
+  {
+   "kit": "rock_soil",
+   "border": "rock_on_sand"
+  },
+  {
+   "kit": "base",
+   "border": {
+    "sand": "base_on_sand",
+    "gravel": "base_on_sand",
+    "rock_soil": "base_on_rock"
+   }
+  },
+  {
+   "kit": "water",
+   "border": "shore_on_base",
+   "onto": [
+    "base",
+    "rock_soil"
+   ],
+   "outside": true
+  }
+ ],
+ "flora": {
+  "G0": {
+   "0": 0.01
+  }
+ },
+ "top_flora": {
+  "G0": {
+   "0": 0.01
+  }
+ },
+ "bank_flora": {
+  "G0": {
+   "0": 0.01
+  }
+ },
+ "meadow": {
+  "0": 0.01
+ },
+ "hill_top": {
+  "0": 1
+ },
+ "clumps": {
+  "quantiles": "study/<biome>_clumps.json",
+  "tops": {
+   "1": "study/<biome>_clumps_top.json"
+  },
+  "big": {
+   "0": 10
+  },
+  "small": {
+   "0": 10
+  },
+  "boost": {
+   "big": 1.0,
+   "small": 1.0
+  }
+ },
+ "swap_walkable": {
+  "2x2": [],
+  "3x3": [],
+  "2x3": [],
+  "1x1": []
+ },
+ "defaults": {
+  "hills": 0
+ }
+}
