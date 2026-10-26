@@ -1,0 +1,3003 @@
+# Chaos: the Graphics and Interface tabs of the Options window scroll (client/BASE.md "0156"; mods/client_settings/options/
+# graphics.otui, options/interface.otui; after 0001-0154). OTUI only, no engine code.
+# Bug (owner screenshot, Graphics tab with "Show Advanced Options"): the tab is a plain Panel that fills the 519 x 442 option
+# area, and its FlatPanel groups are stacked below one another with fixed heights. The groups added since (rarity outline,
+# orbs, the 371 px visual effects group of 0126, ...) sum to about 700 px, so the dark group backgrounds were drawn about
+# 380 px below the window, over the game screen. The Interface tab (about 540 px of groups) had the same fault.
+# Fix: the tab's rows move into a ScrollablePanel next to a VerticalScrollBar (the style the other lists of the window
+# use); the window stays 442 px high and the tab scrolls. The Reset button was anchored to the tab's bottom edge; it now
+# follows the last group (anchored to prev.bottom) so it scrolls with the rows. The first Interface group had no right
+# anchor (a fixed 505 px) and now stretches to the narrower viewport like the others. Ids of all rows are unchanged
+# (the options code finds them with recursiveGetChildById).
+# Not run in a client; goes live with the next client build.
+--- a/mods/client_settings/options/graphics.otui
++++ b/mods/client_settings/options/graphics.otui
+@@ -5,833 +5,849 @@
+   image-source: /images/ui/2pixel-up-frame-borderimage
+   image-border: 3
+   padding: 3
+-
+-  Label
+-    size: 120 15
+-    !text: tr('Graphics Engine:')
++  // Chaos (base patch 0156): the tab scrolls when its panels are taller than the Options window
++  VerticalScrollBar
++    id: graphicsScrollBar
+     anchors.top: parent.top
+-    anchors.left: parent.left
+-    margin-top: 10
+-    margin-left: 6
+-    color: $var-text-cip-color
+-  ComboBox
+-    id: engine
+-    size: 200 20
+-    anchors.top: prev.top
+-    anchors.left: prev.right
+-    margin-left: 16
+-    margin-top: -5
+-    color: $var-text-cip-color
+-    @onSetup: |
+-      -- only an OpenGL ES (ANGLE) build can draw through Vulkan or DirectX; our builds are desktop OpenGL, so they list
+-      -- OpenGL alone (greyed out: there is nothing to pick)
+-      if modules.client_settings.isOpenGlEsRenderer() then
+-        self:addOption("Vulkan", nil, true)
+-        self:addOption("DirectX11", nil, true)
+-        self:addOption("DirectX11 (WARP)", nil, true)
+-        self:addOption("DirectX9", nil, true)
+-        self:addOption("OpenGL", nil, true)
+-      else
+-        self:addOption("OpenGL", nil, true)
+-        self:setEnabled(false)
+-        self:setTooltip(tr('This client draws with OpenGL.'))
+-      end
+-
+-    @onOptionChange: modules.client_settings.setTempOption(self:getId(), self.currentIndex)
+-
+-  Label
+-    size: 120 15
+-    !text: tr('Antialiasing Mode:')
+-    anchors.top: prev.bottom
+-    anchors.left: parent.left
+-    margin-top: 10
+-    margin-left: 6
+-    color: $var-text-cip-color
+-  ComboBox
+-    id: antialiasing
+-    size: 200 20
+-    anchors.top: prev.top
+-    anchors.left: prev.right
+-    margin-left: 16
+-    margin-top: -5
+-    color: $var-text-cip-color
+-    @onSetup: |
+-      self:addOption("None", nil, true)
+-      self:addOption("Antialiasing", nil, true)
+-      self:addOption("Smooth Retro", nil, true)
+-      self:setCurrentOption("None")
+-
+-    @onOptionChange: modules.client_settings.setTempOption(self:getId(), self.currentIndex)
+-
+-  UIWidget
+-    size: 12 12
+-    anchors.top: prev.top
+-    anchors.right: parent.right
+-    margin-right: 9
+-    margin-top: 3
+-    image-source: /images/skin/show-gui-help-grey
+-    !tooltip: tr('If you select "Antialiasing", the Cinders of Chaos graphics will appear in a \nsmoother look. However, if you are a fan of retro games, you \nshould choose "None" to enjoy a pixelated old-school look. \n"Smooth Retro" combines the other two modes – it is offering a \nsmooth pixelated look.')
+-
+-  FlatPanel
+-    size: 505 22
+-    anchors.top: prev.bottom
+-    anchors.right: parent.right
+-    anchors.left: parent.left
+-    margin-top: 10
+-    margin-left: 4
+-    margin-right: 4
+-
+-    SettingsCheckBox
+-      id: hdmodeBox
+-      size: 12 12
+-      !text: tr('HD Sprite Upscaling')
+-      font: $var-cip-font
+-      text-auto-resize: true
+-      color: $var-text-cip-color
+-      anchors.left: parent.left
+-      anchors.top: parent.top
+-      image-source: /images/ui/checkbox
+-      image-clip: 0 0 12 12
+-      margin-top: 5
+-      margin-left: 5
+-
+-    UIWidget
+-      size: 12 12
+-      anchors.top: parent.top
+-      anchors.right: parent.right
+-      margin-right: 5
+-      margin-top: 5
+-      image-source: /images/skin/show-gui-help-grey
+-      !tooltip: tr('Upscales classic 32x32 sprites with the xBRZ filter for a sharper HD look.\nIncreases CPU and memory usage significantly.\nMay cause stuttering or slow loading on low-end machines.\nRestart the client to apply HD Sprite Upscaling.')
+-
+-  FlatPanel
+-    size: 505 22
+-    anchors.top: prev.bottom
+-    anchors.right: parent.right
+-    anchors.left: parent.left
+-    margin-top: 5
+-    margin-left: 4
+-    margin-right: 4
+-
+-    SettingsCheckBox
+-      id: fullscreen
+-      size: 12 12
+-      !text: tr('Full Screen Mode')
+-      font: $var-cip-font
+-      text-auto-resize: true
+-      color: $var-text-cip-color
+-      anchors.left: parent.left
+-      anchors.top: parent.top
+-      image-source: /images/ui/checkbox
+-      image-clip: 0 0 12 12
+-      margin-top: 5
+-      margin-left: 5
+-
+-    UIWidget
+-      size: 12 12
+-      anchors.top: parent.top
+-      anchors.right: parent.right
+-      margin-right: 5
+-      margin-top: 5
+-      image-source: /images/skin/show-gui-help-grey
+-      !tooltip: tr('You can play Cinders of Chaos both in a full screen mode and in a windowed \nmode. In full screen mode, Cinders of Chaos will take up the whole screen, \nwhile it is possible to modify the clients size if the windowed mode \nis activated. You can toggle between the two modes by using this \noption. Alternatively, pressing the shortcut Ctrl+F will have the \nsame effect.')
+-
+-  FlatPanel
+-    size: 505 22
+-    anchors.top: prev.bottom
+-    anchors.right: parent.right
+-    anchors.left: parent.left
+-    margin-top: 5
+-    margin-left: 4
+-    margin-right: 4
+-
+-    SettingsCheckBox
+-      id: dontStretchShrink
+-      size: 12 12
+-      !text: tr('Scale Using Only Integral Multiples')
+-      font: $var-cip-font
+-      text-auto-resize: true
+-      color: $var-text-cip-color
+-      text-offset: 14 -2
+-      anchors.left: parent.left
+-      anchors.top: parent.top
+-      image-source: /images/ui/checkbox
+-      image-clip: 0 0 12 12
+-      margin-top: 5
+-      margin-left: 5
+-
+-    UIWidget
+-      size: 12 12
+-      anchors.top: parent.top
+-      anchors.right: parent.right
+-      margin-right: 5
+-      margin-top: 5
+-      image-source: /images/skin/show-gui-help-grey
+-      !tooltip: tr('Enable this option to use only integral multiples as scale factor \ne.g., 50%%, 100%%, 200%% when scaling the game window. This way \nyou keep the original pixelated look of Cinders of Chaos when you do not use \nAntialiasing.')
+-
+-  FlatPanel
+-    size: 505 22
+-    anchors.top: prev.bottom
+     anchors.right: parent.right
++    anchors.bottom: parent.bottom
++    step: 28
++  ScrollablePanel
++    id: graphicsScroll
++    anchors.top: parent.top
+     anchors.left: parent.left
+-    margin-top: 5
+-    margin-left: 4
+-    margin-right: 4
+-
+-    SettingsCheckBox
+-      id: cacheUI
+-      size: 12 12
+-      !text: tr('Cache Interface Rendering')
+-      font: $var-cip-font
+-      text-auto-resize: true
+-      color: $var-text-cip-color
+-      text-offset: 14 -2
+-      anchors.left: parent.left
+-      anchors.top: parent.top
+-      margin-top: 5
+-      margin-left: 5
+-      image-source: /images/ui/checkbox
+-      image-clip: 0 0 12 12
++    anchors.right: graphicsScrollBar.left
++    anchors.bottom: parent.bottom
++    margin-right: 2
++    vertical-scrollbar: graphicsScrollBar
+ 
+-    UIWidget
+-      size: 12 12
++    Label
++      size: 120 15
++      !text: tr('Graphics Engine:')
+       anchors.top: parent.top
+-      anchors.right: parent.right
+-      margin-right: 5
+-      margin-top: 5
+-      image-source: /images/skin/show-gui-help-grey
+-      !tooltip: tr('Limits interface rebuilding to about 60 updates per second while allowing the map to render faster. Disable this option if an interface element appears delayed.')
+-
+-  FlatPanel
+-    size: 505 76
+-    anchors.top: prev.bottom
+-    anchors.right: parent.right
+-    anchors.left: parent.left
+-    margin-top: 5
+-    margin-left: 4
+-    margin-right: 4
+-
+-    SettingsCheckBox
+-      id: vsync
+-      size: 12 12
+-      !text: tr('V-Sync')
+-      font: $var-cip-font
+-      text-auto-resize: true
+-      color: $var-text-cip-color
+-      text-offset: 14 -2
+       anchors.left: parent.left
+-      anchors.top: parent.top
+-      margin-top: 4
+-      margin-left: 4
+-      image-source: /images/ui/checkbox
+-      image-clip: 0 0 12 12
+-
+-    UIWidget
+-      size: 12 12
+-      anchors.top: parent.top
+-      anchors.right: parent.right
+-      margin-right: 5
+-      margin-top: 5
+-      image-source: /images/skin/show-gui-help-grey
+-      !tooltip: tr('It might help to uncheck this option if your frame rate is low. \nHowever, disabling V-Sync can lead to screen tearing.')
+-
+-    SettingsCheckBox
+-      id: noFrameCheckBox
+-      size: 12 12
+-      !text: tr('No Frame Rate Limit')
+-      font: $var-cip-font
+-      text-auto-resize: true
++      margin-top: 10
++      margin-left: 6
+       color: $var-text-cip-color
+-      text-offset: 14 -2
+-      anchors.left: parent.left
+-      anchors.top: prev.bottom
+-      margin-top: 8
+-      margin-left: 4
+-      image-source: /images/ui/checkbox
+-      image-clip: 0 0 12 12
+-
+-    UIWidget
+-      size: 12 12
+-      anchors.top: prev.top
+-      anchors.right: parent.right
+-      margin-right: 5
+-      margin-top: -1
+-      image-source: /images/skin/show-gui-help-grey
+-      !tooltip: tr('If you check this option, the client will try to produce as many \nframes as possible. If you find your computers performance is bad \nwhen running Cinders of Chaos, you should rather try to set a frame rate limit.')
+-
+-    Label
+-      id: frameRateLabel
+-      !text: tr('Frame Rate Limit: 100')
+-      font: $var-cip-font
+-      text-auto-resize: true
+-      color: $var-cip-inactive-color
+-      anchors.left: parent.left
+-      anchors.top: noFrameCheckBox.bottom
+-      margin-top: 4
+-      margin-left: 20
+-      @onSetup: |
+-        local value = modules.client_settings.getOption('noFrameCheckBox')
+-        if not value then
+-          self:setColor("$var-text-cip-color")
+-        end
+-
+-        local value = modules.client_settings.getOption('backgroundFrameRate')
+-        self:setText(tr('Frame Rate Limit: %d', value))
+-
+-    HorizontalScrollBar
+-      id: backgroundFrameRate
+-      width: 175
+-      anchors.top: prev.top
+-      anchors.right: parent.right
+-      step: 27
+-      margin-right: 21
+-      margin-top: 1
+-      pixels-scroll: true
+-      value: 100
+-      minimum: 10
+-      maximum: 500
+-      default-scroll: true
+-      @onValueChange: modules.client_settings.setTempOption(self:getId(), self:getValue())
+-
+-      $!on:
+-        width: 0
+-
+-    UIWidget
+-      size: 12 12
++    ComboBox
++      id: engine
++      size: 200 20
+       anchors.top: prev.top
+-      anchors.right: parent.right
+-      margin-right: 5
+-      margin-top: -1
+-      image-source: /images/skin/show-gui-help-grey
+-      !tooltip: tr('By using this slider, you can modify the preset frame rate limit \nfrom 10 to 500 fps frames per second. If you find your \ncomputers performance is bad when running Cinders of Chaos, you should try \nreducing the frame rate. Note that this function is not available if \nyou have checked "No Frame Rate Limit".')
+-
+-    Label
+-      id: currentFrameRateLabel
+-      size: 194 15
+-      !text: tr('Current Frame Rate: x fps')
+-      font: $var-cip-font
++      anchors.left: prev.right
++      margin-left: 16
++      margin-top: -5
+       color: $var-text-cip-color
+-      anchors.left: parent.left
+-      anchors.bottom: parent.bottom
+-      margin-bottom: 3
+-      margin-left: 20
+       @onSetup: |
+-        local value = modules.client_settings.getOption('backgroundFrameRate')
+-        self:setText(tr('Current Frame Rate: %d fps', value))
+-        function checkFps()
+-          self:setText(tr('Current Frame Rate: %d fps', g_app.getFps()))
++        -- only an OpenGL ES (ANGLE) build can draw through Vulkan or DirectX; our builds are desktop OpenGL, so they list
++        -- OpenGL alone (greyed out: there is nothing to pick)
++        if modules.client_settings.isOpenGlEsRenderer() then
++          self:addOption("Vulkan", nil, true)
++          self:addOption("DirectX11", nil, true)
++          self:addOption("DirectX11 (WARP)", nil, true)
++          self:addOption("DirectX9", nil, true)
++          self:addOption("OpenGL", nil, true)
++        else
++          self:addOption("OpenGL", nil, true)
++          self:setEnabled(false)
++          self:setTooltip(tr('This client draws with OpenGL.'))
+         end
+-        cycleEvent(checkFps, 3000)
+-
+-    UIWidget
+-      size: 12 12
+-      anchors.top: prev.top
+-      anchors.right: parent.right
+-      margin-right: 5
+-      margin-top: 1
+-      image-source: /images/skin/show-gui-help-grey
+-      !tooltip: tr('If you are logged into the game, you can see your current frame \nrate here. Press Alt+F8 to show or hide your current frame rate in \nthe game window.')
+ 
+-  FlatPanel
+-    // one option per row (two columns overlapped: the right one began at a fixed 250 px and the
+-    // pt-BR texts are longer); each row stops short of the info icon on the right
+-    size: 505 92
+-    anchors.top: prev.bottom
+-    anchors.right: parent.right
+-    anchors.left: parent.left
+-    margin-top: 5
+-    margin-left: 4
+-    margin-right: 4
+-
+-    SettingsCheckBox
+-      id: rarityOutlineMap
+-      size: 12 12
+-      !text: tr('Rarity outline on dropped items')
+-      font: $var-cip-font
+-      text-auto-resize: true
+-      color: $var-text-cip-color
+-      text-offset: 14 -2
+-      anchors.left: parent.left
+-      anchors.top: parent.top
+-      margin-top: 7
+-      margin-left: 16
+-      image-source: /images/ui/checkbox
+-      image-clip: 0 0 12 12
+-      @onSetup: |
+-        local value = modules.client_settings.getOption('rarityOutlineMap')
+-        self:setChecked(value ~= false)
++      @onOptionChange: modules.client_settings.setTempOption(self:getId(), self.currentIndex)
+ 
+-    SettingsCheckBox
+-      id: rarityOutlineSlots
+-      size: 12 12
+-      !text: tr('Rarity outline in bags and inventory')
+-      font: $var-cip-font
+-      text-auto-resize: true
+-      color: $var-text-cip-color
+-      text-offset: 14 -2
++    Label
++      size: 120 15
++      !text: tr('Antialiasing Mode:')
++      anchors.top: prev.bottom
+       anchors.left: parent.left
+-      anchors.top: rarityOutlineMap.bottom
+-      margin-top: 7
+-      margin-left: 16
+-      image-source: /images/ui/checkbox
+-      image-clip: 0 0 12 12
+-      @onSetup: |
+-        local value = modules.client_settings.getOption('rarityOutlineSlots')
+-        self:setChecked(value ~= false)
+-
+-    SettingsCheckBox
+-      id: rarityFrameShine
+-      size: 12 12
+-      !text: tr('Shine on legendary and unique frames')
+-      font: $var-cip-font
+-      text-auto-resize: true
++      margin-top: 10
++      margin-left: 6
+       color: $var-text-cip-color
+-      text-offset: 14 -2
+-      anchors.left: parent.left
+-      anchors.top: rarityOutlineSlots.bottom
+-      margin-top: 7
++    ComboBox
++      id: antialiasing
++      size: 200 20
++      anchors.top: prev.top
++      anchors.left: prev.right
+       margin-left: 16
+-      image-source: /images/ui/checkbox
+-      image-clip: 0 0 12 12
+-      @onSetup: |
+-        local value = modules.client_settings.getOption('rarityFrameShine')
+-        self:setChecked(value ~= false)
+-
+-    SettingsCheckBox
+-      id: liquidOrbs
+-      size: 12 12
+-      !text: tr('Liquid health and mana orbs')
+-      font: $var-cip-font
+-      text-auto-resize: true
++      margin-top: -5
+       color: $var-text-cip-color
+-      text-offset: 14 -2
+-      anchors.left: parent.left
+-      anchors.top: rarityFrameShine.bottom
+-      margin-top: 7
+-      margin-left: 16
+-      image-source: /images/ui/checkbox
+-      image-clip: 0 0 12 12
+       @onSetup: |
+-        local value = modules.client_settings.getOption('liquidOrbs')
+-        self:setChecked(value == true)
++        self:addOption("None", nil, true)
++        self:addOption("Antialiasing", nil, true)
++        self:addOption("Smooth Retro", nil, true)
++        self:setCurrentOption("None")
+ 
+-    ComboBox
+-      id: liquidOrbSize
+-      size: 110 18
+-      anchors.verticalCenter: liquidOrbs.verticalCenter
+-      anchors.right: parent.right
+-      margin-right: 24
+-      color: $var-text-cip-color
+-      !tooltip: tr('Size of the health and mana orbs')
+-      @onSetup: |
+-        self:addOption(tr('Small'), 1, true)
+-        self:addOption(tr('Medium'), 2, true)
+-        self:addOption(tr('Large'), 3, true)
+-        local value = modules.client_settings.getOption('liquidOrbSize')
+-        self:setCurrentIndex(math.max(1, math.min(3, tonumber(value) or 2)), true)
+       @onOptionChange: modules.client_settings.setTempOption(self:getId(), self.currentIndex)
+ 
+-    Label
+-      id: liquidOrbSizeLabel
+-      !text: tr('Orb size')
+-      font: $var-cip-font
+-      color: $var-text-cip-color
+-      text-auto-resize: true
+-      anchors.verticalCenter: liquidOrbs.verticalCenter
+-      anchors.right: liquidOrbSize.left
+-      margin-right: 6
+-
+     UIWidget
+       size: 12 12
+-      anchors.top: parent.top
++      anchors.top: prev.top
+       anchors.right: parent.right
+-      margin-right: 5
+-      margin-top: 7
++      margin-right: 9
++      margin-top: 3
+       image-source: /images/skin/show-gui-help-grey
+-      !tooltip: tr('A soft glow in the rarity colour around items of a rarity, on the\nground and in your bags and inventory; a light sweep across the frames\nof legendary and unique items; two liquid orbs for health and mana\nunder the game window. Turn them off if your frame rate drops.')
+-
+-  FlatPanel
+-    // Chaos (base patch 0126, overlay module game_visualfx): the dark-fantasy look of the map, one switch per effect
+-    size: 505 371
+-    anchors.top: prev.bottom
+-    anchors.right: parent.right
+-    anchors.left: parent.left
+-    margin-top: 5
+-    margin-left: 4
+-    margin-right: 4
+-
+-    SettingsCheckBox
+-      id: hitFlash
+-      size: 12 12
+-      !text: tr('Flash creatures that take damage')
+-      font: $var-cip-font
+-      text-auto-resize: true
+-      color: $var-text-cip-color
+-      text-offset: 14 -2
+-      anchors.left: parent.left
+-      anchors.top: parent.top
+-      margin-top: 7
+-      margin-left: 16
+-      image-source: /images/ui/checkbox
+-      image-clip: 0 0 12 12
+-      @onSetup: |
+-        local value = modules.client_settings.getOption('hitFlash')
+-        self:setChecked(value ~= false)
+-
+-    SettingsCheckBox
+-      id: screenShake
+-      size: 12 12
+-      !text: tr('Shake the screen on big hits taken')
+-      font: $var-cip-font
+-      text-auto-resize: true
+-      color: $var-text-cip-color
+-      text-offset: 14 -2
+-      anchors.left: parent.left
+-      anchors.top: hitFlash.bottom
+-      margin-top: 7
+-      margin-left: 16
+-      image-source: /images/ui/checkbox
+-      image-clip: 0 0 12 12
+-      @onSetup: |
+-        local value = modules.client_settings.getOption('screenShake')
+-        self:setChecked(value ~= false)
+-
+-    SettingsCheckBox
+-      id: creatureShadow
+-      size: 12 12
+-      !text: tr('Soft shadow under creatures')
+-      font: $var-cip-font
+-      text-auto-resize: true
+-      color: $var-text-cip-color
+-      text-offset: 14 -2
+-      anchors.left: parent.left
+-      anchors.top: screenShake.bottom
+-      margin-top: 7
+-      margin-left: 16
+-      image-source: /images/ui/checkbox
+-      image-clip: 0 0 12 12
+-      @onSetup: |
+-        local value = modules.client_settings.getOption('creatureShadow')
+-        self:setChecked(value ~= false)
+-
+-    SettingsCheckBox
+-      id: screenGrade
+-      size: 12 12
+-      !text: tr('Vignette and colour grade')
+-      font: $var-cip-font
+-      text-auto-resize: true
+-      color: $var-text-cip-color
+-      text-offset: 14 -2
+-      anchors.left: parent.left
+-      anchors.top: creatureShadow.bottom
+-      margin-top: 7
+-      margin-left: 16
+-      image-source: /images/ui/checkbox
+-      image-clip: 0 0 12 12
+-      @onSetup: |
+-        local value = modules.client_settings.getOption('screenGrade')
+-        self:setChecked(value ~= false)
++      !tooltip: tr('If you select "Antialiasing", the Cinders of Chaos graphics will appear in a \nsmoother look. However, if you are a fan of retro games, you \nshould choose "None" to enjoy a pixelated old-school look. \n"Smooth Retro" combines the other two modes – it is offering a \nsmooth pixelated look.')
+ 
+-    SettingsCheckBox
+-      id: spellLight
+-      size: 12 12
+-      !text: tr('Light the ground around spell effects')
+-      font: $var-cip-font
+-      text-auto-resize: true
+-      color: $var-text-cip-color
+-      text-offset: 14 -2
+-      anchors.left: parent.left
+-      anchors.top: screenGrade.bottom
+-      margin-top: 7
+-      margin-left: 16
+-      image-source: /images/ui/checkbox
+-      image-clip: 0 0 12 12
+-      !tooltip: tr('A spell effect lights the ground around it for a moment in its colour, so spells glow\nin caves and at night. It adds nothing in full daylight and needs Show light effects.')
+-      @onSetup: |
+-        local value = modules.client_settings.getOption('spellLight')
+-        self:setChecked(value ~= false)
+-
+-    SettingsCheckBox
+-      id: liquidShimmer
+-      size: 12 12
+-      !text: tr('Living water and lava')
+-      font: $var-cip-font
+-      text-auto-resize: true
+-      color: $var-text-cip-color
+-      text-offset: 14 -2
+-      anchors.left: parent.left
+-      anchors.top: spellLight.bottom
+-      margin-top: 7
+-      margin-left: 16
+-      image-source: /images/ui/checkbox
+-      image-clip: 0 0 12 12
+-      !tooltip: tr('Water and lava ground ripple and shimmer a little. The colours stay the same;\nit costs a little on a weak computer.')
+-      @onSetup: |
+-        local value = modules.client_settings.getOption('liquidShimmer')
+-        self:setChecked(value ~= false)
+-
+-    SettingsCheckBox
+-      id: weather
+-      size: 12 12
+-      !text: tr('Rain and weather')
+-      font: $var-cip-font
+-      text-auto-resize: true
+-      color: $var-text-cip-color
+-      text-offset: 14 -2
+-      anchors.left: parent.left
+-      anchors.top: liquidShimmer.bottom
+-      margin-top: 7
+-      margin-left: 16
+-      image-source: /images/ui/checkbox
+-      image-clip: 0 0 12 12
+-      !tooltip: tr('When the server says it rains, rain falls over the game window. It is drawn by your\ncomputer, only outdoors, and costs very little; turn it off if you do not want it.')
+-      @onSetup: |
+-        local value = modules.client_settings.getOption('weather')
+-        self:setChecked(value ~= false)
+-
+-    SettingsCheckBox
+-      id: bloom
+-      size: 12 12
+-      !text: tr('Soft glow')
+-      font: $var-cip-font
+-      text-auto-resize: true
+-      color: $var-text-cip-color
+-      text-offset: 14 -2
+-      anchors.left: parent.left
+-      anchors.top: weather.bottom
+-      margin-top: 7
+-      margin-left: 16
+-      image-source: /images/ui/checkbox
+-      image-clip: 0 0 12 12
+-      !tooltip: tr('A soft halo around very bright light: spell effects, missiles, fire and lava. Only what is\nalready bright glows; the colours of the ground and the biome stay as they are. It costs a\nlittle on a weak computer and is off until you turn it on.')
+-      @onSetup: |
+-        local value = modules.client_settings.getOption('bloom')
+-        self:setChecked(value == true)
+-
+-    SettingsCheckBox
+-      id: numberMotion
+-      size: 12 12
+-      !text: tr('Soft damage numbers')
+-      font: $var-cip-font
+-      text-auto-resize: true
+-      color: $var-text-cip-color
+-      text-offset: 14 -2
++    FlatPanel
++      size: 505 22
++      anchors.top: prev.bottom
++      anchors.right: parent.right
+       anchors.left: parent.left
+-      anchors.top: bloom.bottom
+-      margin-top: 7
+-      margin-left: 16
+-      image-source: /images/ui/checkbox
+-      image-clip: 0 0 12 12
+-      !tooltip: tr('Damage and healing numbers pop up a little, rise quickly and slow down, fade out smoothly and\nspread sideways so that several hits do not sit on top of each other. Turn it off for the plain\nstraight rise.')
+-      @onSetup: |
+-        local value = modules.client_settings.getOption('numberMotion')
+-        self:setChecked(value ~= false)
++      margin-top: 10
++      margin-left: 4
++      margin-right: 4
+ 
+-    SettingsCheckBox
+-      id: targetOutline
+-      size: 12 12
+-      !text: tr('Target and follow outline')
+-      font: $var-cip-font
+-      text-auto-resize: true
+-      color: $var-text-cip-color
+-      text-offset: 14 -2
+-      anchors.left: parent.left
+-      anchors.top: numberMotion.bottom
+-      margin-top: 7
+-      margin-left: 16
+-      image-source: /images/ui/checkbox
+-      image-clip: 0 0 12 12
+-      !tooltip: tr('A soft red outline with a gentle pulse around the creature you attack and a green one around\nthe creature you follow, so you see your target in a crowd. The stock square stays.')
+-      @onSetup: |
+-        local value = modules.client_settings.getOption('targetOutline')
+-        self:setChecked(value ~= false)
++      SettingsCheckBox
++        id: hdmodeBox
++        size: 12 12
++        !text: tr('HD Sprite Upscaling')
++        font: $var-cip-font
++        text-auto-resize: true
++        color: $var-text-cip-color
++        anchors.left: parent.left
++        anchors.top: parent.top
++        image-source: /images/ui/checkbox
++        image-clip: 0 0 12 12
++        margin-top: 5
++        margin-left: 5
++
++      UIWidget
++        size: 12 12
++        anchors.top: parent.top
++        anchors.right: parent.right
++        margin-right: 5
++        margin-top: 5
++        image-source: /images/skin/show-gui-help-grey
++        !tooltip: tr('Upscales classic 32x32 sprites with the xBRZ filter for a sharper HD look.\nIncreases CPU and memory usage significantly.\nMay cause stuttering or slow loading on low-end machines.\nRestart the client to apply HD Sprite Upscaling.')
+ 
+-    SettingsCheckBox
+-      id: hoverOutline
+-      size: 12 12
+-      !text: tr('Outline under the mouse')
+-      font: $var-cip-font
+-      text-auto-resize: true
+-      color: $var-text-cip-color
+-      text-offset: 14 -2
++    FlatPanel
++      size: 505 22
++      anchors.top: prev.bottom
++      anchors.right: parent.right
+       anchors.left: parent.left
+-      anchors.top: targetOutline.bottom
+-      margin-top: 7
+-      margin-left: 16
+-      image-source: /images/ui/checkbox
+-      image-clip: 0 0 12 12
+-      !tooltip: tr('A faint white outline around the creature under the mouse, so you see what a click will hit.')
+-      @onSetup: |
+-        local value = modules.client_settings.getOption('hoverOutline')
+-        self:setChecked(value == true)
++      margin-top: 5
++      margin-left: 4
++      margin-right: 4
+ 
+-    SettingsCheckBox
+-      id: sceneFade
+-      size: 12 12
+-      !text: tr('Fade on floor change')
+-      font: $var-cip-font
+-      text-auto-resize: true
+-      color: $var-text-cip-color
+-      text-offset: 14 -2
+-      anchors.left: parent.left
+-      anchors.top: hoverOutline.bottom
+-      margin-top: 7
+-      margin-left: 16
+-      image-source: /images/ui/checkbox
+-      image-clip: 0 0 12 12
+-      !tooltip: tr('A short fade from black when you take stairs, fall through a hole or are teleported, so the\nnew place does not appear in one hard cut. It lasts under half a second and costs nothing otherwise.')
+-      @onSetup: |
+-        local value = modules.client_settings.getOption('sceneFade')
+-        self:setChecked(value ~= false)
++      SettingsCheckBox
++        id: fullscreen
++        size: 12 12
++        !text: tr('Full Screen Mode')
++        font: $var-cip-font
++        text-auto-resize: true
++        color: $var-text-cip-color
++        anchors.left: parent.left
++        anchors.top: parent.top
++        image-source: /images/ui/checkbox
++        image-clip: 0 0 12 12
++        margin-top: 5
++        margin-left: 5
++
++      UIWidget
++        size: 12 12
++        anchors.top: parent.top
++        anchors.right: parent.right
++        margin-right: 5
++        margin-top: 5
++        image-source: /images/skin/show-gui-help-grey
++        !tooltip: tr('You can play Cinders of Chaos both in a full screen mode and in a windowed \nmode. In full screen mode, Cinders of Chaos will take up the whole screen, \nwhile it is possible to modify the clients size if the windowed mode \nis activated. You can toggle between the two modes by using this \noption. Alternatively, pressing the shortcut Ctrl+F will have the \nsame effect.')
+ 
+-    SettingsCheckBox
+-      id: deathFade
+-      size: 12 12
+-      !text: tr('Fade out dying creatures')
+-      font: $var-cip-font
+-      text-auto-resize: true
+-      color: $var-text-cip-color
+-      text-offset: 14 -2
++    FlatPanel
++      size: 505 22
++      anchors.top: prev.bottom
++      anchors.right: parent.right
+       anchors.left: parent.left
+-      anchors.top: sceneFade.bottom
+-      margin-top: 7
+-      margin-left: 16
+-      image-source: /images/ui/checkbox
+-      image-clip: 0 0 12 12
+-      !tooltip: tr('A creature that dies fades away in about a third of a second instead of vanishing in one frame.\nThe corpse still appears at once and nothing is delayed. It costs almost nothing.')
+-      @onSetup: |
+-        local value = modules.client_settings.getOption('deathFade')
+-        self:setChecked(value ~= false)
++      margin-top: 5
++      margin-left: 4
++      margin-right: 4
+ 
+-    SettingsCheckBox
+-      id: uiFade
+-      size: 12 12
+-      !text: tr('Fade windows in and out')
+-      font: $var-cip-font
+-      text-auto-resize: true
+-      color: $var-text-cip-color
+-      text-offset: 14 -2
+-      anchors.left: parent.left
+-      anchors.top: deathFade.bottom
+-      margin-top: 7
+-      margin-left: 16
+-      image-source: /images/ui/checkbox
+-      image-clip: 0 0 12 12
+-      !tooltip: tr('Windows fade in when they open and fade out when they close, in about a tenth of a second.\nClicks and keys work at once and nothing waits for the fade.')
+-      @onSetup: |
+-        local value = modules.client_settings.getOption('uiFade')
+-        self:setChecked(value ~= false)
++      SettingsCheckBox
++        id: dontStretchShrink
++        size: 12 12
++        !text: tr('Scale Using Only Integral Multiples')
++        font: $var-cip-font
++        text-auto-resize: true
++        color: $var-text-cip-color
++        text-offset: 14 -2
++        anchors.left: parent.left
++        anchors.top: parent.top
++        image-source: /images/ui/checkbox
++        image-clip: 0 0 12 12
++        margin-top: 5
++        margin-left: 5
++
++      UIWidget
++        size: 12 12
++        anchors.top: parent.top
++        anchors.right: parent.right
++        margin-right: 5
++        margin-top: 5
++        image-source: /images/skin/show-gui-help-grey
++        !tooltip: tr('Enable this option to use only integral multiples as scale factor \ne.g., 50%%, 100%%, 200%% when scaling the game window. This way \nyou keep the original pixelated look of Cinders of Chaos when you do not use \nAntialiasing.')
+ 
+-    SettingsCheckBox
+-      id: ambientParticles
+-      size: 12 12
+-      !text: tr('Ambient particles')
+-      font: $var-cip-font
+-      text-auto-resize: true
+-      color: $var-text-cip-color
+-      text-offset: 14 -2
++    FlatPanel
++      size: 505 22
++      anchors.top: prev.bottom
++      anchors.right: parent.right
+       anchors.left: parent.left
+-      anchors.top: uiFade.bottom
+-      margin-top: 7
+-      margin-left: 16
+-      image-source: /images/ui/checkbox
+-      image-clip: 0 0 12 12
+-      !tooltip: tr('Slow embers in burnt places, fireflies in forests and swamps and dust in caves drift over the game window.\nThey are few and cheap, and stop while the window is hidden.')
+-      @onSetup: |
+-        local value = modules.client_settings.getOption('ambientParticles')
+-        self:setChecked(value ~= false)
++      margin-top: 5
++      margin-left: 4
++      margin-right: 4
+ 
+-    SettingsCheckBox
+-      id: smoothBars
+-      size: 12 12
+-      !text: tr('Smooth health bars')
+-      font: $var-cip-font
+-      text-auto-resize: true
+-      color: $var-text-cip-color
+-      text-offset: 14 -2
+-      anchors.left: parent.left
+-      anchors.top: ambientParticles.bottom
+-      margin-top: 7
+-      margin-left: 16
+-      image-source: /images/ui/checkbox
+-      image-clip: 0 0 12 12
+-      !tooltip: tr('Health and mana bars over creatures and on your own plate move smoothly to a new value in about a seventh of a second.\nWhen you lose health, a pale piece stays for a moment and then slides down. It costs almost nothing.')
+-      @onSetup: |
+-        local value = modules.client_settings.getOption('smoothBars')
+-        self:setChecked(value ~= false)
++      SettingsCheckBox
++        id: cacheUI
++        size: 12 12
++        !text: tr('Cache Interface Rendering')
++        font: $var-cip-font
++        text-auto-resize: true
++        color: $var-text-cip-color
++        text-offset: 14 -2
++        anchors.left: parent.left
++        anchors.top: parent.top
++        margin-top: 5
++        margin-left: 5
++        image-source: /images/ui/checkbox
++        image-clip: 0 0 12 12
++
++      UIWidget
++        size: 12 12
++        anchors.top: parent.top
++        anchors.right: parent.right
++        margin-right: 5
++        margin-top: 5
++        image-source: /images/skin/show-gui-help-grey
++        !tooltip: tr('Limits interface rebuilding to about 60 updates per second while allowing the map to render faster. Disable this option if an interface element appears delayed.')
+ 
+-    SettingsCheckBox
+-      id: missileTrails
+-      size: 12 12
+-      !text: tr('Trails and arcs on missiles')
+-      font: $var-cip-font
+-      text-auto-resize: true
+-      color: $var-text-cip-color
+-      text-offset: 14 -2
++    FlatPanel
++      size: 505 76
++      anchors.top: prev.bottom
++      anchors.right: parent.right
+       anchors.left: parent.left
+-      anchors.top: smoothBars.bottom
+-      margin-top: 7
+-      margin-left: 16
+-      image-source: /images/ui/checkbox
+-      image-clip: 0 0 12 12
+-      !tooltip: tr('Arrows, bolts and spell missiles leave a short fading trail, and arrows, bolts, spears and stones\nfly in a slight arc. Spell missiles stay straight. It costs a few extra sprites per missile.')
+-      @onSetup: |
+-        local value = modules.client_settings.getOption('missileTrails')
+-        self:setChecked(value ~= false)
++      margin-top: 5
++      margin-left: 4
++      margin-right: 4
+ 
+-    SettingsCheckBox
+-      id: combatDecals
+-      size: 12 12
+-      !text: tr('Stains on the ground')
+-      font: $var-cip-font
+-      text-auto-resize: true
+-      color: $var-text-cip-color
+-      text-offset: 14 -2
++      SettingsCheckBox
++        id: vsync
++        size: 12 12
++        !text: tr('V-Sync')
++        font: $var-cip-font
++        text-auto-resize: true
++        color: $var-text-cip-color
++        text-offset: 14 -2
++        anchors.left: parent.left
++        anchors.top: parent.top
++        margin-top: 4
++        margin-left: 4
++        image-source: /images/ui/checkbox
++        image-clip: 0 0 12 12
++
++      UIWidget
++        size: 12 12
++        anchors.top: parent.top
++        anchors.right: parent.right
++        margin-right: 5
++        margin-top: 5
++        image-source: /images/skin/show-gui-help-grey
++        !tooltip: tr('It might help to uncheck this option if your frame rate is low. \nHowever, disabling V-Sync can lead to screen tearing.')
++
++      SettingsCheckBox
++        id: noFrameCheckBox
++        size: 12 12
++        !text: tr('No Frame Rate Limit')
++        font: $var-cip-font
++        text-auto-resize: true
++        color: $var-text-cip-color
++        text-offset: 14 -2
++        anchors.left: parent.left
++        anchors.top: prev.bottom
++        margin-top: 8
++        margin-left: 4
++        image-source: /images/ui/checkbox
++        image-clip: 0 0 12 12
++
++      UIWidget
++        size: 12 12
++        anchors.top: prev.top
++        anchors.right: parent.right
++        margin-right: 5
++        margin-top: -1
++        image-source: /images/skin/show-gui-help-grey
++        !tooltip: tr('If you check this option, the client will try to produce as many \nframes as possible. If you find your computers performance is bad \nwhen running Cinders of Chaos, you should rather try to set a frame rate limit.')
++
++      Label
++        id: frameRateLabel
++        !text: tr('Frame Rate Limit: 100')
++        font: $var-cip-font
++        text-auto-resize: true
++        color: $var-cip-inactive-color
++        anchors.left: parent.left
++        anchors.top: noFrameCheckBox.bottom
++        margin-top: 4
++        margin-left: 20
++        @onSetup: |
++          local value = modules.client_settings.getOption('noFrameCheckBox')
++          if not value then
++            self:setColor("$var-text-cip-color")
++          end
++
++          local value = modules.client_settings.getOption('backgroundFrameRate')
++          self:setText(tr('Frame Rate Limit: %d', value))
++
++      HorizontalScrollBar
++        id: backgroundFrameRate
++        width: 175
++        anchors.top: prev.top
++        anchors.right: parent.right
++        step: 27
++        margin-right: 21
++        margin-top: 1
++        pixels-scroll: true
++        value: 100
++        minimum: 10
++        maximum: 500
++        default-scroll: true
++        @onValueChange: modules.client_settings.setTempOption(self:getId(), self:getValue())
++
++        $!on:
++          width: 0
++
++      UIWidget
++        size: 12 12
++        anchors.top: prev.top
++        anchors.right: parent.right
++        margin-right: 5
++        margin-top: -1
++        image-source: /images/skin/show-gui-help-grey
++        !tooltip: tr('By using this slider, you can modify the preset frame rate limit \nfrom 10 to 500 fps frames per second. If you find your \ncomputers performance is bad when running Cinders of Chaos, you should try \nreducing the frame rate. Note that this function is not available if \nyou have checked "No Frame Rate Limit".')
++
++      Label
++        id: currentFrameRateLabel
++        size: 194 15
++        !text: tr('Current Frame Rate: x fps')
++        font: $var-cip-font
++        color: $var-text-cip-color
++        anchors.left: parent.left
++        anchors.bottom: parent.bottom
++        margin-bottom: 3
++        margin-left: 20
++        @onSetup: |
++          local value = modules.client_settings.getOption('backgroundFrameRate')
++          self:setText(tr('Current Frame Rate: %d fps', value))
++          function checkFps()
++            self:setText(tr('Current Frame Rate: %d fps', g_app.getFps()))
++          end
++          cycleEvent(checkFps, 3000)
++
++      UIWidget
++        size: 12 12
++        anchors.top: prev.top
++        anchors.right: parent.right
++        margin-right: 5
++        margin-top: 1
++        image-source: /images/skin/show-gui-help-grey
++        !tooltip: tr('If you are logged into the game, you can see your current frame \nrate here. Press Alt+F8 to show or hide your current frame rate in \nthe game window.')
++
++    FlatPanel
++      // one option per row (two columns overlapped: the right one began at a fixed 250 px and the
++      // pt-BR texts are longer); each row stops short of the info icon on the right
++      size: 505 92
++      anchors.top: prev.bottom
++      anchors.right: parent.right
+       anchors.left: parent.left
+-      anchors.top: missileTrails.bottom
+-      margin-top: 7
+-      margin-left: 16
+-      image-source: /images/ui/checkbox
+-      image-clip: 0 0 12 12
+-      !tooltip: tr('Blood where a creature dies, a scorch mark under fire, frost cracks under ice and a green stain under poison.\nThey fade away in 20 to 30 seconds, at most 24 at a time, and only on the screen. It costs almost nothing.')
+-      @onSetup: |
+-        local value = modules.client_settings.getOption('combatDecals')
+-        self:setChecked(value ~= false)
++      margin-top: 5
++      margin-left: 4
++      margin-right: 4
+ 
+-    SettingsCheckBox
+-      id: lightFlicker
+-      size: 12 12
+-      !text: tr('Flickering fire light')
+-      font: $var-cip-font
+-      text-auto-resize: true
+-      color: $var-text-cip-color
+-      text-offset: 14 -2
++      SettingsCheckBox
++        id: rarityOutlineMap
++        size: 12 12
++        !text: tr('Rarity outline on dropped items')
++        font: $var-cip-font
++        text-auto-resize: true
++        color: $var-text-cip-color
++        text-offset: 14 -2
++        anchors.left: parent.left
++        anchors.top: parent.top
++        margin-top: 7
++        margin-left: 16
++        image-source: /images/ui/checkbox
++        image-clip: 0 0 12 12
++        @onSetup: |
++          local value = modules.client_settings.getOption('rarityOutlineMap')
++          self:setChecked(value ~= false)
++
++      SettingsCheckBox
++        id: rarityOutlineSlots
++        size: 12 12
++        !text: tr('Rarity outline in bags and inventory')
++        font: $var-cip-font
++        text-auto-resize: true
++        color: $var-text-cip-color
++        text-offset: 14 -2
++        anchors.left: parent.left
++        anchors.top: rarityOutlineMap.bottom
++        margin-top: 7
++        margin-left: 16
++        image-source: /images/ui/checkbox
++        image-clip: 0 0 12 12
++        @onSetup: |
++          local value = modules.client_settings.getOption('rarityOutlineSlots')
++          self:setChecked(value ~= false)
++
++      SettingsCheckBox
++        id: rarityFrameShine
++        size: 12 12
++        !text: tr('Shine on legendary and unique frames')
++        font: $var-cip-font
++        text-auto-resize: true
++        color: $var-text-cip-color
++        text-offset: 14 -2
++        anchors.left: parent.left
++        anchors.top: rarityOutlineSlots.bottom
++        margin-top: 7
++        margin-left: 16
++        image-source: /images/ui/checkbox
++        image-clip: 0 0 12 12
++        @onSetup: |
++          local value = modules.client_settings.getOption('rarityFrameShine')
++          self:setChecked(value ~= false)
++
++      SettingsCheckBox
++        id: liquidOrbs
++        size: 12 12
++        !text: tr('Liquid health and mana orbs')
++        font: $var-cip-font
++        text-auto-resize: true
++        color: $var-text-cip-color
++        text-offset: 14 -2
++        anchors.left: parent.left
++        anchors.top: rarityFrameShine.bottom
++        margin-top: 7
++        margin-left: 16
++        image-source: /images/ui/checkbox
++        image-clip: 0 0 12 12
++        @onSetup: |
++          local value = modules.client_settings.getOption('liquidOrbs')
++          self:setChecked(value == true)
++
++      ComboBox
++        id: liquidOrbSize
++        size: 110 18
++        anchors.verticalCenter: liquidOrbs.verticalCenter
++        anchors.right: parent.right
++        margin-right: 24
++        color: $var-text-cip-color
++        !tooltip: tr('Size of the health and mana orbs')
++        @onSetup: |
++          self:addOption(tr('Small'), 1, true)
++          self:addOption(tr('Medium'), 2, true)
++          self:addOption(tr('Large'), 3, true)
++          local value = modules.client_settings.getOption('liquidOrbSize')
++          self:setCurrentIndex(math.max(1, math.min(3, tonumber(value) or 2)), true)
++        @onOptionChange: modules.client_settings.setTempOption(self:getId(), self.currentIndex)
++
++      Label
++        id: liquidOrbSizeLabel
++        !text: tr('Orb size')
++        font: $var-cip-font
++        color: $var-text-cip-color
++        text-auto-resize: true
++        anchors.verticalCenter: liquidOrbs.verticalCenter
++        anchors.right: liquidOrbSize.left
++        margin-right: 6
++
++      UIWidget
++        size: 12 12
++        anchors.top: parent.top
++        anchors.right: parent.right
++        margin-right: 5
++        margin-top: 7
++        image-source: /images/skin/show-gui-help-grey
++        !tooltip: tr('A soft glow in the rarity colour around items of a rarity, on the\nground and in your bags and inventory; a light sweep across the frames\nof legendary and unique items; two liquid orbs for health and mana\nunder the game window. Turn them off if your frame rate drops.')
++
++    FlatPanel
++      // Chaos (base patch 0126, overlay module game_visualfx): the dark-fantasy look of the map, one switch per effect
++      size: 505 371
++      anchors.top: prev.bottom
++      anchors.right: parent.right
+       anchors.left: parent.left
+-      anchors.top: combatDecals.bottom
+-      margin-top: 7
+-      margin-left: 16
+-      image-source: /images/ui/checkbox
+-      image-clip: 0 0 12 12
+-      !tooltip: tr('Fire, torch and lava light flicker gently, by about a tenth. Only the glow on the map\nchanges, not the pictures. Soft round light edges and soft mixing of overlapping\nlights are always on.')
+-      @onSetup: |
+-        local value = modules.client_settings.getOption('lightFlicker')
+-        self:setChecked(value ~= false)
++      margin-top: 5
++      margin-left: 4
++      margin-right: 4
+ 
+-    UIWidget
+-      size: 12 12
+-      anchors.top: parent.top
++      SettingsCheckBox
++        id: hitFlash
++        size: 12 12
++        !text: tr('Flash creatures that take damage')
++        font: $var-cip-font
++        text-auto-resize: true
++        color: $var-text-cip-color
++        text-offset: 14 -2
++        anchors.left: parent.left
++        anchors.top: parent.top
++        margin-top: 7
++        margin-left: 16
++        image-source: /images/ui/checkbox
++        image-clip: 0 0 12 12
++        @onSetup: |
++          local value = modules.client_settings.getOption('hitFlash')
++          self:setChecked(value ~= false)
++
++      SettingsCheckBox
++        id: screenShake
++        size: 12 12
++        !text: tr('Shake the screen on big hits taken')
++        font: $var-cip-font
++        text-auto-resize: true
++        color: $var-text-cip-color
++        text-offset: 14 -2
++        anchors.left: parent.left
++        anchors.top: hitFlash.bottom
++        margin-top: 7
++        margin-left: 16
++        image-source: /images/ui/checkbox
++        image-clip: 0 0 12 12
++        @onSetup: |
++          local value = modules.client_settings.getOption('screenShake')
++          self:setChecked(value ~= false)
++
++      SettingsCheckBox
++        id: creatureShadow
++        size: 12 12
++        !text: tr('Soft shadow under creatures')
++        font: $var-cip-font
++        text-auto-resize: true
++        color: $var-text-cip-color
++        text-offset: 14 -2
++        anchors.left: parent.left
++        anchors.top: screenShake.bottom
++        margin-top: 7
++        margin-left: 16
++        image-source: /images/ui/checkbox
++        image-clip: 0 0 12 12
++        @onSetup: |
++          local value = modules.client_settings.getOption('creatureShadow')
++          self:setChecked(value ~= false)
++
++      SettingsCheckBox
++        id: screenGrade
++        size: 12 12
++        !text: tr('Vignette and colour grade')
++        font: $var-cip-font
++        text-auto-resize: true
++        color: $var-text-cip-color
++        text-offset: 14 -2
++        anchors.left: parent.left
++        anchors.top: creatureShadow.bottom
++        margin-top: 7
++        margin-left: 16
++        image-source: /images/ui/checkbox
++        image-clip: 0 0 12 12
++        @onSetup: |
++          local value = modules.client_settings.getOption('screenGrade')
++          self:setChecked(value ~= false)
++
++      SettingsCheckBox
++        id: spellLight
++        size: 12 12
++        !text: tr('Light the ground around spell effects')
++        font: $var-cip-font
++        text-auto-resize: true
++        color: $var-text-cip-color
++        text-offset: 14 -2
++        anchors.left: parent.left
++        anchors.top: screenGrade.bottom
++        margin-top: 7
++        margin-left: 16
++        image-source: /images/ui/checkbox
++        image-clip: 0 0 12 12
++        !tooltip: tr('A spell effect lights the ground around it for a moment in its colour, so spells glow\nin caves and at night. It adds nothing in full daylight and needs Show light effects.')
++        @onSetup: |
++          local value = modules.client_settings.getOption('spellLight')
++          self:setChecked(value ~= false)
++
++      SettingsCheckBox
++        id: liquidShimmer
++        size: 12 12
++        !text: tr('Living water and lava')
++        font: $var-cip-font
++        text-auto-resize: true
++        color: $var-text-cip-color
++        text-offset: 14 -2
++        anchors.left: parent.left
++        anchors.top: spellLight.bottom
++        margin-top: 7
++        margin-left: 16
++        image-source: /images/ui/checkbox
++        image-clip: 0 0 12 12
++        !tooltip: tr('Water and lava ground ripple and shimmer a little. The colours stay the same;\nit costs a little on a weak computer.')
++        @onSetup: |
++          local value = modules.client_settings.getOption('liquidShimmer')
++          self:setChecked(value ~= false)
++
++      SettingsCheckBox
++        id: weather
++        size: 12 12
++        !text: tr('Rain and weather')
++        font: $var-cip-font
++        text-auto-resize: true
++        color: $var-text-cip-color
++        text-offset: 14 -2
++        anchors.left: parent.left
++        anchors.top: liquidShimmer.bottom
++        margin-top: 7
++        margin-left: 16
++        image-source: /images/ui/checkbox
++        image-clip: 0 0 12 12
++        !tooltip: tr('When the server says it rains, rain falls over the game window. It is drawn by your\ncomputer, only outdoors, and costs very little; turn it off if you do not want it.')
++        @onSetup: |
++          local value = modules.client_settings.getOption('weather')
++          self:setChecked(value ~= false)
++
++      SettingsCheckBox
++        id: bloom
++        size: 12 12
++        !text: tr('Soft glow')
++        font: $var-cip-font
++        text-auto-resize: true
++        color: $var-text-cip-color
++        text-offset: 14 -2
++        anchors.left: parent.left
++        anchors.top: weather.bottom
++        margin-top: 7
++        margin-left: 16
++        image-source: /images/ui/checkbox
++        image-clip: 0 0 12 12
++        !tooltip: tr('A soft halo around very bright light: spell effects, missiles, fire and lava. Only what is\nalready bright glows; the colours of the ground and the biome stay as they are. It costs a\nlittle on a weak computer and is off until you turn it on.')
++        @onSetup: |
++          local value = modules.client_settings.getOption('bloom')
++          self:setChecked(value == true)
++
++      SettingsCheckBox
++        id: numberMotion
++        size: 12 12
++        !text: tr('Soft damage numbers')
++        font: $var-cip-font
++        text-auto-resize: true
++        color: $var-text-cip-color
++        text-offset: 14 -2
++        anchors.left: parent.left
++        anchors.top: bloom.bottom
++        margin-top: 7
++        margin-left: 16
++        image-source: /images/ui/checkbox
++        image-clip: 0 0 12 12
++        !tooltip: tr('Damage and healing numbers pop up a little, rise quickly and slow down, fade out smoothly and\nspread sideways so that several hits do not sit on top of each other. Turn it off for the plain\nstraight rise.')
++        @onSetup: |
++          local value = modules.client_settings.getOption('numberMotion')
++          self:setChecked(value ~= false)
++
++      SettingsCheckBox
++        id: targetOutline
++        size: 12 12
++        !text: tr('Target and follow outline')
++        font: $var-cip-font
++        text-auto-resize: true
++        color: $var-text-cip-color
++        text-offset: 14 -2
++        anchors.left: parent.left
++        anchors.top: numberMotion.bottom
++        margin-top: 7
++        margin-left: 16
++        image-source: /images/ui/checkbox
++        image-clip: 0 0 12 12
++        !tooltip: tr('A soft red outline with a gentle pulse around the creature you attack and a green one around\nthe creature you follow, so you see your target in a crowd. The stock square stays.')
++        @onSetup: |
++          local value = modules.client_settings.getOption('targetOutline')
++          self:setChecked(value ~= false)
++
++      SettingsCheckBox
++        id: hoverOutline
++        size: 12 12
++        !text: tr('Outline under the mouse')
++        font: $var-cip-font
++        text-auto-resize: true
++        color: $var-text-cip-color
++        text-offset: 14 -2
++        anchors.left: parent.left
++        anchors.top: targetOutline.bottom
++        margin-top: 7
++        margin-left: 16
++        image-source: /images/ui/checkbox
++        image-clip: 0 0 12 12
++        !tooltip: tr('A faint white outline around the creature under the mouse, so you see what a click will hit.')
++        @onSetup: |
++          local value = modules.client_settings.getOption('hoverOutline')
++          self:setChecked(value == true)
++
++      SettingsCheckBox
++        id: sceneFade
++        size: 12 12
++        !text: tr('Fade on floor change')
++        font: $var-cip-font
++        text-auto-resize: true
++        color: $var-text-cip-color
++        text-offset: 14 -2
++        anchors.left: parent.left
++        anchors.top: hoverOutline.bottom
++        margin-top: 7
++        margin-left: 16
++        image-source: /images/ui/checkbox
++        image-clip: 0 0 12 12
++        !tooltip: tr('A short fade from black when you take stairs, fall through a hole or are teleported, so the\nnew place does not appear in one hard cut. It lasts under half a second and costs nothing otherwise.')
++        @onSetup: |
++          local value = modules.client_settings.getOption('sceneFade')
++          self:setChecked(value ~= false)
++
++      SettingsCheckBox
++        id: deathFade
++        size: 12 12
++        !text: tr('Fade out dying creatures')
++        font: $var-cip-font
++        text-auto-resize: true
++        color: $var-text-cip-color
++        text-offset: 14 -2
++        anchors.left: parent.left
++        anchors.top: sceneFade.bottom
++        margin-top: 7
++        margin-left: 16
++        image-source: /images/ui/checkbox
++        image-clip: 0 0 12 12
++        !tooltip: tr('A creature that dies fades away in about a third of a second instead of vanishing in one frame.\nThe corpse still appears at once and nothing is delayed. It costs almost nothing.')
++        @onSetup: |
++          local value = modules.client_settings.getOption('deathFade')
++          self:setChecked(value ~= false)
++
++      SettingsCheckBox
++        id: uiFade
++        size: 12 12
++        !text: tr('Fade windows in and out')
++        font: $var-cip-font
++        text-auto-resize: true
++        color: $var-text-cip-color
++        text-offset: 14 -2
++        anchors.left: parent.left
++        anchors.top: deathFade.bottom
++        margin-top: 7
++        margin-left: 16
++        image-source: /images/ui/checkbox
++        image-clip: 0 0 12 12
++        !tooltip: tr('Windows fade in when they open and fade out when they close, in about a tenth of a second.\nClicks and keys work at once and nothing waits for the fade.')
++        @onSetup: |
++          local value = modules.client_settings.getOption('uiFade')
++          self:setChecked(value ~= false)
++
++      SettingsCheckBox
++        id: ambientParticles
++        size: 12 12
++        !text: tr('Ambient particles')
++        font: $var-cip-font
++        text-auto-resize: true
++        color: $var-text-cip-color
++        text-offset: 14 -2
++        anchors.left: parent.left
++        anchors.top: uiFade.bottom
++        margin-top: 7
++        margin-left: 16
++        image-source: /images/ui/checkbox
++        image-clip: 0 0 12 12
++        !tooltip: tr('Slow embers in burnt places, fireflies in forests and swamps and dust in caves drift over the game window.\nThey are few and cheap, and stop while the window is hidden.')
++        @onSetup: |
++          local value = modules.client_settings.getOption('ambientParticles')
++          self:setChecked(value ~= false)
++
++      SettingsCheckBox
++        id: smoothBars
++        size: 12 12
++        !text: tr('Smooth health bars')
++        font: $var-cip-font
++        text-auto-resize: true
++        color: $var-text-cip-color
++        text-offset: 14 -2
++        anchors.left: parent.left
++        anchors.top: ambientParticles.bottom
++        margin-top: 7
++        margin-left: 16
++        image-source: /images/ui/checkbox
++        image-clip: 0 0 12 12
++        !tooltip: tr('Health and mana bars over creatures and on your own plate move smoothly to a new value in about a seventh of a second.\nWhen you lose health, a pale piece stays for a moment and then slides down. It costs almost nothing.')
++        @onSetup: |
++          local value = modules.client_settings.getOption('smoothBars')
++          self:setChecked(value ~= false)
++
++      SettingsCheckBox
++        id: missileTrails
++        size: 12 12
++        !text: tr('Trails and arcs on missiles')
++        font: $var-cip-font
++        text-auto-resize: true
++        color: $var-text-cip-color
++        text-offset: 14 -2
++        anchors.left: parent.left
++        anchors.top: smoothBars.bottom
++        margin-top: 7
++        margin-left: 16
++        image-source: /images/ui/checkbox
++        image-clip: 0 0 12 12
++        !tooltip: tr('Arrows, bolts and spell missiles leave a short fading trail, and arrows, bolts, spears and stones\nfly in a slight arc. Spell missiles stay straight. It costs a few extra sprites per missile.')
++        @onSetup: |
++          local value = modules.client_settings.getOption('missileTrails')
++          self:setChecked(value ~= false)
++
++      SettingsCheckBox
++        id: combatDecals
++        size: 12 12
++        !text: tr('Stains on the ground')
++        font: $var-cip-font
++        text-auto-resize: true
++        color: $var-text-cip-color
++        text-offset: 14 -2
++        anchors.left: parent.left
++        anchors.top: missileTrails.bottom
++        margin-top: 7
++        margin-left: 16
++        image-source: /images/ui/checkbox
++        image-clip: 0 0 12 12
++        !tooltip: tr('Blood where a creature dies, a scorch mark under fire, frost cracks under ice and a green stain under poison.\nThey fade away in 20 to 30 seconds, at most 24 at a time, and only on the screen. It costs almost nothing.')
++        @onSetup: |
++          local value = modules.client_settings.getOption('combatDecals')
++          self:setChecked(value ~= false)
++
++      SettingsCheckBox
++        id: lightFlicker
++        size: 12 12
++        !text: tr('Flickering fire light')
++        font: $var-cip-font
++        text-auto-resize: true
++        color: $var-text-cip-color
++        text-offset: 14 -2
++        anchors.left: parent.left
++        anchors.top: combatDecals.bottom
++        margin-top: 7
++        margin-left: 16
++        image-source: /images/ui/checkbox
++        image-clip: 0 0 12 12
++        !tooltip: tr('Fire, torch and lava light flicker gently, by about a tenth. Only the glow on the map\nchanges, not the pictures. Soft round light edges and soft mixing of overlapping\nlights are always on.')
++        @onSetup: |
++          local value = modules.client_settings.getOption('lightFlicker')
++          self:setChecked(value ~= false)
++
++      UIWidget
++        size: 12 12
++        anchors.top: parent.top
++        anchors.right: parent.right
++        margin-right: 5
++        margin-top: 7
++        image-source: /images/skin/show-gui-help-grey
++        !tooltip: tr('Looks for the game window. A creature that takes damage flashes for a moment, a big hit\nyou take shakes the screen a few pixels, creatures get a soft shadow under their feet and\nthe edges of the picture darken with a light colour grade. Each one can be turned off; the\nshadow and the grade cost a little on a weak computer.')
++
++    Button
++      id: resetButton
++      size: 43 20
++      !text: tr('Reset')
++      anchors.top: prev.bottom
+       anchors.right: parent.right
+-      margin-right: 5
+-      margin-top: 7
+-      image-source: /images/skin/show-gui-help-grey
+-      !tooltip: tr('Looks for the game window. A creature that takes damage flashes for a moment, a big hit\nyou take shakes the screen a few pixels, creatures get a soft shadow under their feet and\nthe edges of the picture darken with a light colour grade. Each one can be turned off; the\nshadow and the grade cost a little on a weak computer.')
+-
+-  Button
+-    id: resetButton
+-    size: 43 20
+-    !text: tr('Reset')
+-    anchors.bottom: parent.bottom
+-    anchors.right: parent.right
+-    margin-bottom: 4
+-    margin-right: 4
+-    @onClick: modules.client_settings.resetGraphics()
++      margin-top: 8
++      margin-bottom: 4
++      margin-right: 4
++      @onClick: modules.client_settings.resetGraphics()
+--- a/mods/client_settings/options/interface.otui
++++ b/mods/client_settings/options/interface.otui
+@@ -5,710 +5,728 @@
+   image-source: /images/ui/2pixel-up-frame-borderimage
+   image-border: 3
+   padding: 3
+-  FlatPanel
+-    size: 505 22
++  // Chaos (base patch 0156): the tab scrolls when its panels are taller than the Options window
++  VerticalScrollBar
++    id: interfaceScrollBar
++    anchors.top: parent.top
++    anchors.right: parent.right
++    anchors.bottom: parent.bottom
++    step: 28
++  ScrollablePanel
++    id: interfaceScroll
+     anchors.top: parent.top
+     anchors.left: parent.left
+-    margin-left: 5
+-    margin-top: 5
+-
+-    SettingsCheckBox
+-      id: highlightThingsUnderCursor
+-      size: 12 12
+-      !text: tr('Highlight Mouse Target')
+-      font: $var-cip-font
+-      text-auto-resize: true
+-      color: $var-text-cip-color
+-      text-offset: 14 -2
+-      anchors.left: parent.left
+-      anchors.top: parent.top
+-      margin-top: 5
+-      margin-left: 4
+-      image-source: /images/ui/checkbox
+-      image-clip: 0 0 12 12
+-      @onSetup: |
+-        local value = modules.client_settings.getOption('highlightThingsUnderCursor')
+-        self:setChecked(value)
+-
+-    UIWidget
+-      size: 12 12
++    anchors.right: interfaceScrollBar.left
++    anchors.bottom: parent.bottom
++    margin-right: 2
++    vertical-scrollbar: interfaceScrollBar
++    FlatPanel
++      size: 505 22
+       anchors.top: parent.top
++      anchors.left: parent.left
+       anchors.right: parent.right
++      margin-left: 5
+       margin-right: 5
+       margin-top: 5
+-      image-source: /images/skin/show-gui-help-grey
+-      !tooltip: tr('If this option is enabled, you can always see which tile, object or \ncreature your mouse pointer is currently aiming at. Note, however, \nthat only interactive objects are highlighted, e.g., objects which can \nbe opened.')
+ 
+-  FlatPanel
+-    size: 505 22
+-    anchors.top: prev.bottom
+-    anchors.right: parent.right
+-    anchors.left: parent.left
+-    margin-top: 5
+-    margin-left: 4
+-    margin-right: 4
+-
+-    SettingsCheckBox
+-      id: nativeMouseCursor
+-      size: 12 12
+-      !text: tr('Use Native Mouse Cursor')
+-      font: $var-cip-font
+-      text-auto-resize: true
+-      color: $var-text-cip-color
+-      text-offset: 14 -2
++      SettingsCheckBox
++        id: highlightThingsUnderCursor
++        size: 12 12
++        !text: tr('Highlight Mouse Target')
++        font: $var-cip-font
++        text-auto-resize: true
++        color: $var-text-cip-color
++        text-offset: 14 -2
++        anchors.left: parent.left
++        anchors.top: parent.top
++        margin-top: 5
++        margin-left: 4
++        image-source: /images/ui/checkbox
++        image-clip: 0 0 12 12
++        @onSetup: |
++          local value = modules.client_settings.getOption('highlightThingsUnderCursor')
++          self:setChecked(value)
++
++      UIWidget
++        size: 12 12
++        anchors.top: parent.top
++        anchors.right: parent.right
++        margin-right: 5
++        margin-top: 5
++        image-source: /images/skin/show-gui-help-grey
++        !tooltip: tr('If this option is enabled, you can always see which tile, object or \ncreature your mouse pointer is currently aiming at. Note, however, \nthat only interactive objects are highlighted, e.g., objects which can \nbe opened.')
++
++    FlatPanel
++      size: 505 22
++      anchors.top: prev.bottom
++      anchors.right: parent.right
+       anchors.left: parent.left
+-      anchors.top: parent.top
+       margin-top: 5
+       margin-left: 4
+-      image-source: /images/ui/checkbox
+-      image-clip: 0 0 12 12
+-      checked: false
++      margin-right: 4
+ 
+-    UIWidget
+-      size: 12 12
+-      anchors.top: parent.top
+-      anchors.right: parent.right
+-      margin-right: 5
+-      margin-top: 5
+-      image-source: /images/skin/show-gui-help-grey
+-      !tooltip: tr('Enable this option if you prefer to use the mouse cursor design of \nyour operating system instead of the Cinders of Chaos design.')
++      SettingsCheckBox
++        id: nativeMouseCursor
++        size: 12 12
++        !text: tr('Use Native Mouse Cursor')
++        font: $var-cip-font
++        text-auto-resize: true
++        color: $var-text-cip-color
++        text-offset: 14 -2
++        anchors.left: parent.left
++        anchors.top: parent.top
++        margin-top: 5
++        margin-left: 4
++        image-source: /images/ui/checkbox
++        image-clip: 0 0 12 12
++        checked: false
++
++      UIWidget
++        size: 12 12
++        anchors.top: parent.top
++        anchors.right: parent.right
++        margin-right: 5
++        margin-top: 5
++        image-source: /images/skin/show-gui-help-grey
++        !tooltip: tr('Enable this option if you prefer to use the mouse cursor design of \nyour operating system instead of the Cinders of Chaos design.')
+ 
+-  FlatPanel
+-    size: 505 22
+-    anchors.top: prev.bottom
+-    anchors.right: parent.right
+-    anchors.left: parent.left
+-    margin-top: 5
+-    margin-left: 4
+-    margin-right: 4
+-
+-    SettingsCheckBox
+-      id: mouseAnimatedCursor
+-      size: 12 12
+-      !text: tr('Show Animated Mouse Cursor')
+-      font: $var-cip-font
+-      text-auto-resize: true
+-      color: $var-text-cip-color
+-      text-offset: 14 -2
++    FlatPanel
++      size: 505 22
++      anchors.top: prev.bottom
++      anchors.right: parent.right
+       anchors.left: parent.left
+-      anchors.top: parent.top
+       margin-top: 5
+       margin-left: 4
+-      image-source: /images/ui/checkbox
+-      image-clip: 0 0 12 12
+-      checked: true
++      margin-right: 4
+ 
+-    UIWidget
+-      size: 12 12
+-      anchors.top: parent.top
+-      anchors.right: parent.right
+-      margin-right: 5
+-      margin-top: 5
+-      image-source: /images/skin/show-gui-help-grey
+-      !tooltip: tr('Changes the game map cursor according to the object under the mouse pointer.')
++      SettingsCheckBox
++        id: mouseAnimatedCursor
++        size: 12 12
++        !text: tr('Show Animated Mouse Cursor')
++        font: $var-cip-font
++        text-auto-resize: true
++        color: $var-text-cip-color
++        text-offset: 14 -2
++        anchors.left: parent.left
++        anchors.top: parent.top
++        margin-top: 5
++        margin-left: 4
++        image-source: /images/ui/checkbox
++        image-clip: 0 0 12 12
++        checked: true
++
++      UIWidget
++        size: 12 12
++        anchors.top: parent.top
++        anchors.right: parent.right
++        margin-right: 5
++        margin-top: 5
++        image-source: /images/skin/show-gui-help-grey
++        !tooltip: tr('Changes the game map cursor according to the object under the mouse pointer.')
+ 
+-  FlatPanel
+-    size: 505 22
+-    anchors.top: prev.bottom
+-    anchors.right: parent.right
+-    anchors.left: parent.left
+-    margin-top: 5
+-    margin-left: 4
+-    margin-right: 4
+-
+-    SettingsCheckBox
+-      id: disableMeleeAttackAnimations
+-      size: 12 12
+-      !text: tr('Disable Melee Attack Animations')
+-      font: $var-cip-font
+-      text-auto-resize: true
+-      color: $var-text-cip-color
+-      text-offset: 14 -2
++    FlatPanel
++      size: 505 22
++      anchors.top: prev.bottom
++      anchors.right: parent.right
+       anchors.left: parent.left
+-      anchors.top: parent.top
+       margin-top: 5
+       margin-left: 4
+-      image-source: /images/ui/checkbox
+-      image-clip: 0 0 12 12
+-      @onSetup: |
+-        local value = modules.client_settings.getOption('disableMeleeAttackAnimations')
+-        self:setChecked(value)
++      margin-right: 4
+ 
+-    UIWidget
+-      size: 12 12
+-      anchors.top: parent.top
+-      anchors.right: parent.right
+-      margin-right: 5
+-      margin-top: 5
+-      image-source: /images/skin/show-gui-help-grey
+-      !tooltip: tr('Disables all visual weapon attack effects, including sword, club, axe, fist and monk weapon animations.')
++      SettingsCheckBox
++        id: disableMeleeAttackAnimations
++        size: 12 12
++        !text: tr('Disable Melee Attack Animations')
++        font: $var-cip-font
++        text-auto-resize: true
++        color: $var-text-cip-color
++        text-offset: 14 -2
++        anchors.left: parent.left
++        anchors.top: parent.top
++        margin-top: 5
++        margin-left: 4
++        image-source: /images/ui/checkbox
++        image-clip: 0 0 12 12
++        @onSetup: |
++          local value = modules.client_settings.getOption('disableMeleeAttackAnimations')
++          self:setChecked(value)
++
++      UIWidget
++        size: 12 12
++        anchors.top: parent.top
++        anchors.right: parent.right
++        margin-right: 5
++        margin-top: 5
++        image-source: /images/skin/show-gui-help-grey
++        !tooltip: tr('Disables all visual weapon attack effects, including sword, club, axe, fist and monk weapon animations.')
+ 
+-  FlatPanel
+-    size: 505 22
+-    anchors.top: prev.bottom
+-    anchors.right: parent.right
+-    anchors.left: parent.left
+-    margin-top: 5
+-    margin-left: 4
+-    margin-right: 4
+-
+-    SettingsCheckBox
+-      id: disableNpcDialogWindow
+-      size: 12 12
+-      !text: tr('Disable NPC Dialog Window')
+-      font: $var-cip-font
+-      text-auto-resize: true
+-      color: $var-text-cip-color
+-      text-offset: 14 -2
++    FlatPanel
++      size: 505 22
++      anchors.top: prev.bottom
++      anchors.right: parent.right
+       anchors.left: parent.left
+-      anchors.top: parent.top
+       margin-top: 5
+       margin-left: 4
+-      image-source: /images/ui/checkbox
+-      image-clip: 0 0 12 12
+-      @onSetup: |
+-        local value = modules.client_settings.getOption('disableNpcDialogWindow')
+-        self:setChecked(value)
++      margin-right: 4
+ 
+-    UIWidget
+-      size: 12 12
+-      anchors.top: parent.top
+-      anchors.right: parent.right
+-      margin-right: 5
+-      margin-top: 5
+-      image-source: /images/skin/show-gui-help-grey
+-      !tooltip: tr('Hides the custom NPC dialog window and keeps NPC messages in the standard chat.')
++      SettingsCheckBox
++        id: disableNpcDialogWindow
++        size: 12 12
++        !text: tr('Disable NPC Dialog Window')
++        font: $var-cip-font
++        text-auto-resize: true
++        color: $var-text-cip-color
++        text-offset: 14 -2
++        anchors.left: parent.left
++        anchors.top: parent.top
++        margin-top: 5
++        margin-left: 4
++        image-source: /images/ui/checkbox
++        image-clip: 0 0 12 12
++        @onSetup: |
++          local value = modules.client_settings.getOption('disableNpcDialogWindow')
++          self:setChecked(value)
++
++      UIWidget
++        size: 12 12
++        anchors.top: parent.top
++        anchors.right: parent.right
++        margin-right: 5
++        margin-top: 5
++        image-source: /images/skin/show-gui-help-grey
++        !tooltip: tr('Hides the custom NPC dialog window and keeps NPC messages in the standard chat.')
+ 
+-  FlatPanel
+-    size: 505 22
+-    anchors.top: prev.bottom
+-    anchors.right: parent.right
+-    anchors.left: parent.left
+-    margin-top: 5
+-    margin-left: 4
+-    margin-right: 4
+-
+-    SettingsCheckBox
+-      id: showCooldown
+-      size: 12 12
+-      !text: tr('Show Cooldown Bar')
+-      font: $var-cip-font
+-      text-auto-resize: true
+-      color: $var-text-cip-color
+-      text-offset: 14 -2
++    FlatPanel
++      size: 505 22
++      anchors.top: prev.bottom
++      anchors.right: parent.right
+       anchors.left: parent.left
+-      anchors.top: parent.top
+       margin-top: 5
+       margin-left: 4
+-      image-source: /images/ui/checkbox
+-      image-clip: 0 0 12 12
+-      checked: false
+-      @onSetup: |
+-        local value = modules.client_settings.getOption('showCooldown')
+-        self:setChecked(value)
++      margin-right: 4
+ 
+-    UIWidget
+-      size: 12 12
+-      anchors.top: parent.top
+-      anchors.right: parent.right
+-      margin-right: 5
+-      margin-top: 5
+-      image-source: /images/skin/show-gui-help-grey
+-      !tooltip: tr('Whenever you cast a spell, this spell and the spell groups it \nbelongs to have a certain cooldown which is displayed in the \ncooldown bar. If you prefer not to see the cooldown bar, simply \nuncheck this option here.')
++      SettingsCheckBox
++        id: showCooldown
++        size: 12 12
++        !text: tr('Show Cooldown Bar')
++        font: $var-cip-font
++        text-auto-resize: true
++        color: $var-text-cip-color
++        text-offset: 14 -2
++        anchors.left: parent.left
++        anchors.top: parent.top
++        margin-top: 5
++        margin-left: 4
++        image-source: /images/ui/checkbox
++        image-clip: 0 0 12 12
++        checked: false
++        @onSetup: |
++          local value = modules.client_settings.getOption('showCooldown')
++          self:setChecked(value)
++
++      UIWidget
++        size: 12 12
++        anchors.top: parent.top
++        anchors.right: parent.right
++        margin-right: 5
++        margin-top: 5
++        image-source: /images/skin/show-gui-help-grey
++        !tooltip: tr('Whenever you cast a spell, this spell and the spell groups it \nbelongs to have a certain cooldown which is displayed in the \ncooldown bar. If you prefer not to see the cooldown bar, simply \nuncheck this option here.')
+ 
+-  FlatPanel
+-    size: 505 22
+-    anchors.top: prev.bottom
+-    anchors.right: parent.right
+-    anchors.left: parent.left
+-    margin-top: 5
+-    margin-left: 4
+-    margin-right: 4
+-
+-    SettingsCheckBox
+-      id: linkCopyWarning
+-      size: 12 12
+-      !text: tr('Show Link Copy Warning')
+-      font: $var-cip-font
+-      text-auto-resize: true
+-      color: $var-text-cip-color
+-      text-offset: 14 -2
++    FlatPanel
++      size: 505 22
++      anchors.top: prev.bottom
++      anchors.right: parent.right
+       anchors.left: parent.left
+-      anchors.top: parent.top
+       margin-top: 5
+       margin-left: 4
+-      image-source: /images/ui/checkbox
+-      image-clip: 0 0 12 12
+-      @onSetup: |
+-        local value = modules.client_settings.getOption('linkCopyWarning')
+-        self:setChecked(value)
++      margin-right: 4
+ 
+-    UIWidget
+-      size: 12 12
+-      anchors.top: parent.top
+-      anchors.right: parent.right
+-      margin-right: 5
+-      margin-top: 5
+-      image-source: /images/skin/show-gui-help-grey
+-      !tooltip: tr('If this option is checked, you will get a warning whenever you try to \ncopy a link from the console. This warning will remind you to be \ncareful about any posted links as they might have been designed \nto hack your Cinders of Chaos account.')
++      SettingsCheckBox
++        id: linkCopyWarning
++        size: 12 12
++        !text: tr('Show Link Copy Warning')
++        font: $var-cip-font
++        text-auto-resize: true
++        color: $var-text-cip-color
++        text-offset: 14 -2
++        anchors.left: parent.left
++        anchors.top: parent.top
++        margin-top: 5
++        margin-left: 4
++        image-source: /images/ui/checkbox
++        image-clip: 0 0 12 12
++        @onSetup: |
++          local value = modules.client_settings.getOption('linkCopyWarning')
++          self:setChecked(value)
++
++      UIWidget
++        size: 12 12
++        anchors.top: parent.top
++        anchors.right: parent.right
++        margin-right: 5
++        margin-top: 5
++        image-source: /images/skin/show-gui-help-grey
++        !tooltip: tr('If this option is checked, you will get a warning whenever you try to \ncopy a link from the console. This warning will remind you to be \ncareful about any posted links as they might have been designed \nto hack your Cinders of Chaos account.')
+ 
+-  FlatPanel
+-    size: 505 22
+-    anchors.top: prev.bottom
+-    anchors.right: parent.right
+-    anchors.left: parent.left
+-    margin-top: 5
+-    margin-left: 4
+-    margin-right: 4
+-
+-    SettingsCheckBox
+-      id: rightClickEquip
+-      size: 12 12
+-      !text: tr('Right-click equips items')
+-      font: $var-cip-font
+-      text-auto-resize: true
+-      color: $var-text-cip-color
+-      text-offset: 14 -2
++    FlatPanel
++      size: 505 22
++      anchors.top: prev.bottom
++      anchors.right: parent.right
+       anchors.left: parent.left
+-      anchors.top: parent.top
+       margin-top: 5
+       margin-left: 4
+-      image-source: /images/ui/checkbox
+-      image-clip: 0 0 12 12
+-      @onSetup: |
+-        local value = modules.client_settings.getOption('rightClickEquip')
+-        self:setChecked(value ~= false)
++      margin-right: 4
+ 
+-    UIWidget
+-      size: 12 12
+-      anchors.top: parent.top
+-      anchors.right: parent.right
+-      margin-right: 5
+-      margin-top: 5
+-      image-source: /images/skin/show-gui-help-grey
+-      !tooltip: tr('When checked, using a piece of equipment you carry puts it on, and\nusing a worn one takes it off into your backpack. The use is a right-click\nwith Classic Controls, Ctrl + click with Regular Controls and a click\nwith Left Smart-Click. Items with a use of their own (potions, runes,\nfood, tools, keys) and containers work as before.')
++      SettingsCheckBox
++        id: rightClickEquip
++        size: 12 12
++        !text: tr('Right-click equips items')
++        font: $var-cip-font
++        text-auto-resize: true
++        color: $var-text-cip-color
++        text-offset: 14 -2
++        anchors.left: parent.left
++        anchors.top: parent.top
++        margin-top: 5
++        margin-left: 4
++        image-source: /images/ui/checkbox
++        image-clip: 0 0 12 12
++        @onSetup: |
++          local value = modules.client_settings.getOption('rightClickEquip')
++          self:setChecked(value ~= false)
++
++      UIWidget
++        size: 12 12
++        anchors.top: parent.top
++        anchors.right: parent.right
++        margin-right: 5
++        margin-top: 5
++        image-source: /images/skin/show-gui-help-grey
++        !tooltip: tr('When checked, using a piece of equipment you carry puts it on, and\nusing a worn one takes it off into your backpack. The use is a right-click\nwith Classic Controls, Ctrl + click with Regular Controls and a click\nwith Left Smart-Click. Items with a use of their own (potions, runes,\nfood, tools, keys) and containers work as before.')
+ 
+-  FlatPanel
+-    size: 505 22
+-    anchors.top: prev.bottom
+-    anchors.right: parent.right
+-    anchors.left: parent.left
+-    margin-top: 5
+-    margin-left: 4
+-    margin-right: 4
+-
+-    SettingsCheckBox
+-      id: bigCreatureHover
+-      size: 12 12
+-      !text: tr('Outline big creatures under the mouse')
+-      font: $var-cip-font
+-      text-auto-resize: true
+-      color: $var-text-cip-color
+-      text-offset: 14 -2
++    FlatPanel
++      size: 505 22
++      anchors.top: prev.bottom
++      anchors.right: parent.right
+       anchors.left: parent.left
+-      anchors.top: parent.top
+       margin-top: 5
+       margin-left: 4
+-      image-source: /images/ui/checkbox
+-      image-clip: 0 0 12 12
+-      @onSetup: |
+-        local value = modules.client_settings.getOption('bigCreatureHover')
+-        self:setChecked(value ~= false)
++      margin-right: 4
+ 
+-    UIWidget
+-      size: 12 12
+-      anchors.top: parent.top
+-      anchors.right: parent.right
+-      margin-right: 5
+-      margin-top: 5
+-      image-source: /images/skin/show-gui-help-grey
+-      !tooltip: tr('A creature bigger than one square can be clicked, attacked, looked at\nand targeted on any part of it you can see. When checked, such a\ncreature gets a soft outline while the mouse is over it.')
++      SettingsCheckBox
++        id: bigCreatureHover
++        size: 12 12
++        !text: tr('Outline big creatures under the mouse')
++        font: $var-cip-font
++        text-auto-resize: true
++        color: $var-text-cip-color
++        text-offset: 14 -2
++        anchors.left: parent.left
++        anchors.top: parent.top
++        margin-top: 5
++        margin-left: 4
++        image-source: /images/ui/checkbox
++        image-clip: 0 0 12 12
++        @onSetup: |
++          local value = modules.client_settings.getOption('bigCreatureHover')
++          self:setChecked(value ~= false)
++
++      UIWidget
++        size: 12 12
++        anchors.top: parent.top
++        anchors.right: parent.right
++        margin-right: 5
++        margin-top: 5
++        image-source: /images/skin/show-gui-help-grey
++        !tooltip: tr('A creature bigger than one square can be clicked, attacked, looked at\nand targeted on any part of it you can see. When checked, such a\ncreature gets a soft outline while the mouse is over it.')
+ 
+-  FlatPanel
+-    size: 505 22
+-    anchors.top: prev.bottom
+-    anchors.right: parent.right
+-    anchors.left: parent.left
+-    margin-top: 5
+-    margin-left: 4
+-    margin-right: 4
+-
+-    SettingsCheckBox
+-      id: keepAttackingWhileMoving
+-      size: 12 12
+-      !text: tr('Keep attacking while moving')
+-      font: $var-cip-font
+-      text-auto-resize: true
+-      color: $var-text-cip-color
+-      text-offset: 14 -2
++    FlatPanel
++      size: 505 22
++      anchors.top: prev.bottom
++      anchors.right: parent.right
+       anchors.left: parent.left
+-      anchors.top: parent.top
+       margin-top: 5
+       margin-left: 4
+-      image-source: /images/ui/checkbox
+-      image-clip: 0 0 12 12
+-      @onSetup: |
+-        local value = modules.client_settings.getOption('keepAttackingWhileMoving')
+-        self:setChecked(value ~= false)
++      margin-right: 4
+ 
+-    UIWidget
+-      size: 12 12
+-      anchors.top: parent.top
+-      anchors.right: parent.right
+-      margin-right: 5
+-      margin-top: 5
+-      image-source: /images/skin/show-gui-help-grey
+-      !tooltip: tr('When checked, walking by a click on the map or the minimap, or by\nkeys, keeps your attack target: you walk the path you chose and your\nattacks keep firing whenever the target is in range, even with Chase\nOpponent on. Chasing starts again when you stop. Unchecked, each step\ndelays your attacks and Chase Opponent pulls you back to the target.')
++      SettingsCheckBox
++        id: keepAttackingWhileMoving
++        size: 12 12
++        !text: tr('Keep attacking while moving')
++        font: $var-cip-font
++        text-auto-resize: true
++        color: $var-text-cip-color
++        text-offset: 14 -2
++        anchors.left: parent.left
++        anchors.top: parent.top
++        margin-top: 5
++        margin-left: 4
++        image-source: /images/ui/checkbox
++        image-clip: 0 0 12 12
++        @onSetup: |
++          local value = modules.client_settings.getOption('keepAttackingWhileMoving')
++          self:setChecked(value ~= false)
++
++      UIWidget
++        size: 12 12
++        anchors.top: parent.top
++        anchors.right: parent.right
++        margin-right: 5
++        margin-top: 5
++        image-source: /images/skin/show-gui-help-grey
++        !tooltip: tr('When checked, walking by a click on the map or the minimap, or by\nkeys, keeps your attack target: you walk the path you chose and your\nattacks keep firing whenever the target is in range, even with Chase\nOpponent on. Chasing starts again when you stop. Unchecked, each step\ndelays your attacks and Chase Opponent pulls you back to the target.')
+ 
+-  FlatPanel
+-    size: 505 22
+-    anchors.top: prev.bottom
+-    anchors.right: parent.right
+-    anchors.left: parent.left
+-    margin-top: 5
+-    margin-left: 4
+-    margin-right: 4
+-
+-    SettingsCheckBox
+-      id: fieldTimers
+-      size: 12 12
+-      !text: tr('Field timers over magic walls and fields')
+-      font: $var-cip-font
+-      text-auto-resize: true
+-      color: $var-text-cip-color
+-      text-offset: 14 -2
++    FlatPanel
++      size: 505 22
++      anchors.top: prev.bottom
++      anchors.right: parent.right
+       anchors.left: parent.left
+-      anchors.top: parent.top
+       margin-top: 5
+       margin-left: 4
+-      image-source: /images/ui/checkbox
+-      image-clip: 0 0 12 12
+-      @onSetup: |
+-        local value = modules.client_settings.getOption('fieldTimers')
+-        self:setChecked(value ~= false)
++      margin-right: 4
+ 
+-    UIWidget
+-      size: 12 12
+-      anchors.top: parent.top
+-      anchors.right: parent.right
+-      margin-right: 5
+-      margin-top: 5
+-      image-source: /images/skin/show-gui-help-grey
+-      !tooltip: tr('When checked, the seconds left are shown over magic walls, wild\ngrowth and other timed fields. A field that was already there when it\ncame into view shows "~": its start is not known.')
++      SettingsCheckBox
++        id: fieldTimers
++        size: 12 12
++        !text: tr('Field timers over magic walls and fields')
++        font: $var-cip-font
++        text-auto-resize: true
++        color: $var-text-cip-color
++        text-offset: 14 -2
++        anchors.left: parent.left
++        anchors.top: parent.top
++        margin-top: 5
++        margin-left: 4
++        image-source: /images/ui/checkbox
++        image-clip: 0 0 12 12
++        @onSetup: |
++          local value = modules.client_settings.getOption('fieldTimers')
++          self:setChecked(value ~= false)
++
++      UIWidget
++        size: 12 12
++        anchors.top: parent.top
++        anchors.right: parent.right
++        margin-right: 5
++        margin-top: 5
++        image-source: /images/skin/show-gui-help-grey
++        !tooltip: tr('When checked, the seconds left are shown over magic walls, wild\ngrowth and other timed fields. A field that was already there when it\ncame into view shows "~": its start is not known.')
+ 
+-  FlatPanel
+-    size: 505 22
+-    anchors.top: prev.bottom
+-    anchors.right: parent.right
+-    anchors.left: parent.left
+-    margin-top: 5
+-    margin-left: 4
+-    margin-right: 4
+-
+-    SettingsCheckBox
+-      id: attachedImpactText
+-      size: 12 12
+-      !text: tr('Damage numbers follow the creature')
+-      font: $var-cip-font
+-      text-auto-resize: true
+-      color: $var-text-cip-color
+-      text-offset: 14 -2
++    FlatPanel
++      size: 505 22
++      anchors.top: prev.bottom
++      anchors.right: parent.right
+       anchors.left: parent.left
+-      anchors.top: parent.top
+       margin-top: 5
+       margin-left: 4
+-      image-source: /images/ui/checkbox
+-      image-clip: 0 0 12 12
+-      @onSetup: |
+-        local value = modules.client_settings.getOption('attachedImpactText')
+-        self:setChecked(value ~= false)
++      margin-right: 4
+ 
+-    UIWidget
+-      size: 12 12
+-      anchors.top: parent.top
++      SettingsCheckBox
++        id: attachedImpactText
++        size: 12 12
++        !text: tr('Damage numbers follow the creature')
++        font: $var-cip-font
++        text-auto-resize: true
++        color: $var-text-cip-color
++        text-offset: 14 -2
++        anchors.left: parent.left
++        anchors.top: parent.top
++        margin-top: 5
++        margin-left: 4
++        image-source: /images/ui/checkbox
++        image-clip: 0 0 12 12
++        @onSetup: |
++          local value = modules.client_settings.getOption('attachedImpactText')
++          self:setChecked(value ~= false)
++
++      UIWidget
++        size: 12 12
++        anchors.top: parent.top
++        anchors.right: parent.right
++        margin-right: 5
++        margin-top: 5
++        image-source: /images/skin/show-gui-help-grey
++        !tooltip: tr('When checked, a damage, healing or experience number moves with\nthe creature it belongs to while it floats up. Unchecked, it stays\nover the square where the hit landed.')
++
++    FlatPanel
++      size: 505 22
++      anchors.top: prev.bottom
+       anchors.right: parent.right
+-      margin-right: 5
++      anchors.left: parent.left
+       margin-top: 5
+-      image-source: /images/skin/show-gui-help-grey
+-      !tooltip: tr('When checked, a damage, healing or experience number moves with\nthe creature it belongs to while it floats up. Unchecked, it stays\nover the square where the hit landed.')
++      margin-left: 4
++      margin-right: 4
+ 
+-  FlatPanel
+-    size: 505 22
+-    anchors.top: prev.bottom
+-    anchors.right: parent.right
+-    anchors.left: parent.left
+-    margin-top: 5
+-    margin-left: 4
+-    margin-right: 4
+-
+-    Label
+-      id: chaosLanguageLabel
+-      !text: tr('Language')
+-      font: $var-cip-font
+-      color: $var-text-cip-color
+-      text-auto-resize: true
+-      anchors.left: parent.left
+-      anchors.verticalCenter: parent.verticalCenter
+-      margin-left: 8
++      Label
++        id: chaosLanguageLabel
++        !text: tr('Language')
++        font: $var-cip-font
++        color: $var-text-cip-color
++        text-auto-resize: true
++        anchors.left: parent.left
++        anchors.verticalCenter: parent.verticalCenter
++        margin-left: 8
++
++      Button
++        id: chaosLanguageButton
++        size: 180 18
++        anchors.right: parent.right
++        anchors.verticalCenter: parent.verticalCenter
++        margin-right: 24
++        !tooltip: tr('The language of the client and of the server messages')
++        @onSetup: if ChaosLocale then self:setText(ChaosLocale.name()) else self:hide() end
++        @onClick: if ChaosLocale then ChaosLocale.showMenu(self) end
+ 
+-    Button
+-      id: chaosLanguageButton
+-      size: 180 18
++    FlatPanel
++      size: 505 44
++      anchors.top: prev.bottom
+       anchors.right: parent.right
+-      anchors.verticalCenter: parent.verticalCenter
+-      margin-right: 24
+-      !tooltip: tr('The language of the client and of the server messages')
+-      @onSetup: if ChaosLocale then self:setText(ChaosLocale.name()) else self:hide() end
+-      @onClick: if ChaosLocale then ChaosLocale.showMenu(self) end
+-
+-  FlatPanel
+-    size: 505 44
+-    anchors.top: prev.bottom
+-    anchors.right: parent.right
+-    anchors.left: parent.left
+-    margin-top: 5
+-    margin-left: 4
+-    margin-right: 4
+-
+-    SettingsCheckBox
+-      id: showRightHorizontalPanel
+-      size: 12 12
+-      !text: tr('Show Right Horizontal Panel')
+-      font: $var-cip-font
+-      text-auto-resize: true
+-      color: $var-text-cip-color
+-      text-offset: 14 -2
+       anchors.left: parent.left
+-      anchors.top: parent.top
+       margin-top: 5
+       margin-left: 4
+-      image-source: /images/ui/checkbox
+-      image-clip: 0 0 12 12
+-      @onSetup: |
+-        local value = modules.client_settings.getOption('showRightHorizontalPanel')
+-        self:setChecked(value)
++      margin-right: 4
+ 
+-    UIWidget
+-      size: 12 12
+-      anchors.top: parent.top
+-      anchors.right: parent.right
+-      margin-right: 5
+-      margin-top: 5
+-      image-source: /images/skin/show-gui-help-grey
+-      !tooltip: tr('If this option is enabled shows a Right Horizontal Panel')
++      SettingsCheckBox
++        id: showRightHorizontalPanel
++        size: 12 12
++        !text: tr('Show Right Horizontal Panel')
++        font: $var-cip-font
++        text-auto-resize: true
++        color: $var-text-cip-color
++        text-offset: 14 -2
++        anchors.left: parent.left
++        anchors.top: parent.top
++        margin-top: 5
++        margin-left: 4
++        image-source: /images/ui/checkbox
++        image-clip: 0 0 12 12
++        @onSetup: |
++          local value = modules.client_settings.getOption('showRightHorizontalPanel')
++          self:setChecked(value)
++
++      UIWidget
++        size: 12 12
++        anchors.top: parent.top
++        anchors.right: parent.right
++        margin-right: 5
++        margin-top: 5
++        image-source: /images/skin/show-gui-help-grey
++        !tooltip: tr('If this option is enabled shows a Right Horizontal Panel')
++
++      SettingsCheckBox
++        id: showLeftHorizontalPanel
++        size: 12 12
++        !text: tr('Show Left Horizontal Panel')
++        font: $var-cip-font
++        text-auto-resize: true
++        color: $var-text-cip-color
++        text-offset: 14 -2
++        anchors.left: parent.left
++        anchors.top: prev.bottom
++        margin-top: 12
++        margin-left: 4
++        image-source: /images/ui/checkbox
++        image-clip: 0 0 12 12
++        @onSetup: |
++          local value = modules.client_settings.getOption('showLeftHorizontalPanel')
++          self:setChecked(value)
++      UIWidget
++        size: 12 12
++        anchors.top: prev.top
++        anchors.right: parent.right
++        margin-right: 5
++        margin-top: -1
++        image-source: /images/skin/show-gui-help-grey
++        !tooltip: tr('If this option is enabled shows a Left Horizontal Panel')
+ 
+-    SettingsCheckBox
+-      id: showLeftHorizontalPanel
+-      size: 12 12
+-      !text: tr('Show Left Horizontal Panel')
+-      font: $var-cip-font
+-      text-auto-resize: true
+-      color: $var-text-cip-color
+-      text-offset: 14 -2
+-      anchors.left: parent.left
+-      anchors.top: prev.bottom
+-      margin-top: 12
+-      margin-left: 4
+-      image-source: /images/ui/checkbox
+-      image-clip: 0 0 12 12
+-      @onSetup: |
+-        local value = modules.client_settings.getOption('showLeftHorizontalPanel')
+-        self:setChecked(value)
+-    UIWidget
+-      size: 12 12
+-      anchors.top: prev.top
++    FlatPanel
++      size: 505 81
++      anchors.top: prev.bottom
+       anchors.right: parent.right
+-      margin-right: 5
+-      margin-top: -1
+-      image-source: /images/skin/show-gui-help-grey
+-      !tooltip: tr('If this option is enabled shows a Left Horizontal Panel')
+-
+-  FlatPanel
+-    size: 505 81
+-    anchors.top: prev.bottom
+-    anchors.right: parent.right
+-    anchors.left: parent.left
+-    margin-top: 5
+-    margin-left: 4
+-    margin-right: 4
+-
+-    Label
+-      size: 125 12
+-      !text: tr('Colourise Loot Value:')
+-      anchors.top: parent.top
+       anchors.left: parent.left
+-      margin-top: 8
+-      margin-left: 4
+-      color: $var-text-cip-color
+-      text-auto-resize: true
+-    ComboBox
+-      id: colouriseLootColor
+-      size: 150 20
+-      anchors.top: prev.top
+-      anchors.left: prev.right
+-      margin-left: 5
+-      margin-top: -4
+-      !text: tr('Frames')
+-      color: $var-text-cip-color
+-      @onSetup: |
+-        self:addOption('None')
+-        self:addOption('Frames')
+-        self:addOption('Corners')
+-        self:setCurrentOption("Frames")
+-      @onOptionChange: modules.client_settings.setTempOption(self:getId(), tostring(self.currentIndex))
+-    UIWidget
+-      size: 12 12
+-      anchors.top: parent.top
+-      anchors.right: parent.right
+-      margin-right: 5
+       margin-top: 5
+-      image-source: /images/skin/show-gui-help-grey
+-      !tooltip: tr('If you select Frames or Corners, your loot will be marked with \ndifferent colours in loot messages, containers and the Bestiary. \n\nThe colour depends on the loot value, which can be determined in \nthe Items Cyclopedia, either using the NPC buy value, the average \nMarket price or your own preferred value.')
+-    SettingsCheckBox
+-      id: timeInventory
+-      size: 12 12
+-      !text: tr('Show Expiry Time in Inventory')
+-      font: $var-cip-font
+-      text-auto-resize: true
+-      color: $var-text-cip-color
+-      text-offset: 14 -2
+-      anchors.left: parent.left
+-      anchors.top: prev.bottom
+-      margin-top: 12
+-      margin-left: 4
+-      image-source: /images/ui/checkbox
+-      image-clip: 0 0 12 12
+-    UIWidget
+-      size: 12 12
+-      anchors.top: prev.top
+-      anchors.right: parent.right
+-      margin-right: 5
+-      margin-top: -1
+-      image-source: /images/skin/show-gui-help-grey
+-      !tooltip: tr('Check this box to see how much time or how many charges are left \non your equipped items.')
+-    SettingsCheckBox
+-      id: timeContainers
+-      size: 12 12
+-      !text: tr('Show Expiry Time in Containers')
+-      font: $var-cip-font
+-      text-auto-resize: true
+-      color: $var-text-cip-color
+-      text-offset: 14 -2
+-      anchors.left: parent.left
+-      anchors.top: prev.bottom
+-      margin-top: 8
+       margin-left: 4
+-      image-source: /images/ui/checkbox
+-      image-clip: 0 0 12 12
+-    UIWidget
+-      size: 12 12
+-      anchors.top: prev.top
+-      anchors.right: parent.right
+-      margin-right: 5
+-      margin-top: -1
+-      image-source: /images/skin/show-gui-help-grey
+-      !tooltip: tr('Check this box to see how much time or how many charges the \nitems in your open containers have left.')
+-    SettingsCheckBox
+-      id: timeUnnused
+-      size: 12 12
+-      !text: tr('Show Expiry Time On Unused Items')
+-      font: $var-cip-font
+-      text-auto-resize: true
+-      color: $var-text-cip-color
+-      text-offset: 14 -2
+-      anchors.left: parent.left
++      margin-right: 4
++
++      Label
++        size: 125 12
++        !text: tr('Colourise Loot Value:')
++        anchors.top: parent.top
++        anchors.left: parent.left
++        margin-top: 8
++        margin-left: 4
++        color: $var-text-cip-color
++        text-auto-resize: true
++      ComboBox
++        id: colouriseLootColor
++        size: 150 20
++        anchors.top: prev.top
++        anchors.left: prev.right
++        margin-left: 5
++        margin-top: -4
++        !text: tr('Frames')
++        color: $var-text-cip-color
++        @onSetup: |
++          self:addOption('None')
++          self:addOption('Frames')
++          self:addOption('Corners')
++          self:setCurrentOption("Frames")
++        @onOptionChange: modules.client_settings.setTempOption(self:getId(), tostring(self.currentIndex))
++      UIWidget
++        size: 12 12
++        anchors.top: parent.top
++        anchors.right: parent.right
++        margin-right: 5
++        margin-top: 5
++        image-source: /images/skin/show-gui-help-grey
++        !tooltip: tr('If you select Frames or Corners, your loot will be marked with \ndifferent colours in loot messages, containers and the Bestiary. \n\nThe colour depends on the loot value, which can be determined in \nthe Items Cyclopedia, either using the NPC buy value, the average \nMarket price or your own preferred value.')
++      SettingsCheckBox
++        id: timeInventory
++        size: 12 12
++        !text: tr('Show Expiry Time in Inventory')
++        font: $var-cip-font
++        text-auto-resize: true
++        color: $var-text-cip-color
++        text-offset: 14 -2
++        anchors.left: parent.left
++        anchors.top: prev.bottom
++        margin-top: 12
++        margin-left: 4
++        image-source: /images/ui/checkbox
++        image-clip: 0 0 12 12
++      UIWidget
++        size: 12 12
++        anchors.top: prev.top
++        anchors.right: parent.right
++        margin-right: 5
++        margin-top: -1
++        image-source: /images/skin/show-gui-help-grey
++        !tooltip: tr('Check this box to see how much time or how many charges are left \non your equipped items.')
++      SettingsCheckBox
++        id: timeContainers
++        size: 12 12
++        !text: tr('Show Expiry Time in Containers')
++        font: $var-cip-font
++        text-auto-resize: true
++        color: $var-text-cip-color
++        text-offset: 14 -2
++        anchors.left: parent.left
++        anchors.top: prev.bottom
++        margin-top: 8
++        margin-left: 4
++        image-source: /images/ui/checkbox
++        image-clip: 0 0 12 12
++      UIWidget
++        size: 12 12
++        anchors.top: prev.top
++        anchors.right: parent.right
++        margin-right: 5
++        margin-top: -1
++        image-source: /images/skin/show-gui-help-grey
++        !tooltip: tr('Check this box to see how much time or how many charges the \nitems in your open containers have left.')
++      SettingsCheckBox
++        id: timeUnnused
++        size: 12 12
++        !text: tr('Show Expiry Time On Unused Items')
++        font: $var-cip-font
++        text-auto-resize: true
++        color: $var-text-cip-color
++        text-offset: 14 -2
++        anchors.left: parent.left
++        anchors.top: prev.bottom
++        margin-top: 8
++        margin-left: 4
++        image-source: /images/ui/checkbox
++        image-clip: 0 0 12 12
++      UIWidget
++        size: 12 12
++        anchors.top: prev.top
++        anchors.right: parent.right
++        margin-right: 5
++        margin-top: -1
++        image-source: /images/skin/show-gui-help-grey
++        !tooltip: tr('Check this box to see how much time or how many charges are left \non items that have not been used yet.')
++
++    FlatPanel
++      // Chaos (base patch 0129, overlay module game_chaosuiscale): interface scale for 1440p and 4K screens
++      size: 505 22
+       anchors.top: prev.bottom
+-      margin-top: 8
+-      margin-left: 4
+-      image-source: /images/ui/checkbox
+-      image-clip: 0 0 12 12
+-    UIWidget
+-      size: 12 12
+-      anchors.top: prev.top
+       anchors.right: parent.right
+-      margin-right: 5
+-      margin-top: -1
+-      image-source: /images/skin/show-gui-help-grey
+-      !tooltip: tr('Check this box to see how much time or how many charges are left \non items that have not been used yet.')
+-
+-  FlatPanel
+-    // Chaos (base patch 0129, overlay module game_chaosuiscale): interface scale for 1440p and 4K screens
+-    size: 505 22
+-    anchors.top: prev.bottom
+-    anchors.right: parent.right
+-    anchors.left: parent.left
+-    margin-top: 5
+-    margin-left: 4
+-    margin-right: 4
+-
+-    Label
+-      id: uiScaleLabel
+-      !text: tr('Interface scale: %d%%', 100)
+-      font: $var-cip-font
+-      text-auto-resize: true
+-      color: $var-text-cip-color
+       anchors.left: parent.left
+-      anchors.top: parent.top
+       margin-top: 5
+-      margin-left: 5
++      margin-left: 4
++      margin-right: 4
+ 
+-    UIWidget
+-      id: uiScaleHelp
+-      size: 12 12
+-      anchors.top: parent.top
++      Label
++        id: uiScaleLabel
++        !text: tr('Interface scale: %d%%', 100)
++        font: $var-cip-font
++        text-auto-resize: true
++        color: $var-text-cip-color
++        anchors.left: parent.left
++        anchors.top: parent.top
++        margin-top: 5
++        margin-left: 5
++
++      UIWidget
++        id: uiScaleHelp
++        size: 12 12
++        anchors.top: parent.top
++        anchors.right: parent.right
++        margin-right: 5
++        margin-top: 5
++        image-source: /images/skin/show-gui-help-grey
++        !tooltip: tr('Makes the whole interface bigger and sharp on large screens: 100%%, 200%% or 300%%.\nA size is offered only when the window is big enough for it (about 2048x1152 for 200%%,\n3072x1728 for 300%%); on a smaller window it stays at the largest size that fits.\nThe change applies at once and is saved on this computer.')
++
++      SettingsHorizontalScrollBar
++        id: uiScale
++        width: 120
++        anchors.top: parent.top
++        anchors.right: uiScaleHelp.left
++        margin-right: 10
++        margin-top: 4
++        step: 1
++        minimum: 1
++        maximum: 3
++        value: 1
++
++    FlatPanel
++      // Chaos (base patch 0154, overlay module client_chaos_topbar): the top menu shows systems as the character unlocks them
++      size: 505 22
++      anchors.top: prev.bottom
+       anchors.right: parent.right
+-      margin-right: 5
+-      margin-top: 5
+-      image-source: /images/skin/show-gui-help-grey
+-      !tooltip: tr('Makes the whole interface bigger and sharp on large screens: 100%%, 200%% or 300%%.\nA size is offered only when the window is big enough for it (about 2048x1152 for 200%%,\n3072x1728 for 300%%); on a smaller window it stays at the largest size that fits.\nThe change applies at once and is saved on this computer.')
+-
+-    SettingsHorizontalScrollBar
+-      id: uiScale
+-      width: 120
+-      anchors.top: parent.top
+-      anchors.right: uiScaleHelp.left
+-      margin-right: 10
+-      margin-top: 4
+-      step: 1
+-      minimum: 1
+-      maximum: 3
+-      value: 1
+-
+-  FlatPanel
+-    // Chaos (base patch 0154, overlay module client_chaos_topbar): the top menu shows systems as the character unlocks them
+-    size: 505 22
+-    anchors.top: prev.bottom
+-    anchors.right: parent.right
+-    anchors.left: parent.left
+-    margin-top: 5
+-    margin-left: 4
+-    margin-right: 4
+-
+-    SettingsCheckBox
+-      id: showWholeMenu
+-      size: 12 12
+-      !text: tr('Show the whole menu')
+-      font: $var-cip-font
+-      text-auto-resize: true
+-      color: $var-text-cip-color
+-      text-offset: 14 -2
+       anchors.left: parent.left
+-      anchors.top: parent.top
+       margin-top: 5
+       margin-left: 4
+-      image-source: /images/ui/checkbox
+-      image-clip: 0 0 12 12
+-      !tooltip: tr('The top menu shows a system when your character reaches its level, and the next one in grey with its level.\nCheck this box to see every entry now. Their windows still follow the level rules of the server.')
+-      @onSetup: |
+-        local value = modules.client_settings.getOption('showWholeMenu')
+-        self:setChecked(value == true)
+-
+-  Button
+-    id: resetButton
+-    size: 43 20
+-    !text: tr('Reset')
+-    anchors.bottom: parent.bottom
+-    anchors.right: parent.right
+-    margin-bottom: 4
+-    margin-right: 4
+-    @onClick: modules.client_settings.resetInterface()
++      margin-right: 4
++
++      SettingsCheckBox
++        id: showWholeMenu
++        size: 12 12
++        !text: tr('Show the whole menu')
++        font: $var-cip-font
++        text-auto-resize: true
++        color: $var-text-cip-color
++        text-offset: 14 -2
++        anchors.left: parent.left
++        anchors.top: parent.top
++        margin-top: 5
++        margin-left: 4
++        image-source: /images/ui/checkbox
++        image-clip: 0 0 12 12
++        !tooltip: tr('The top menu shows a system when your character reaches its level, and the next one in grey with its level.\nCheck this box to see every entry now. Their windows still follow the level rules of the server.')
++        @onSetup: |
++          local value = modules.client_settings.getOption('showWholeMenu')
++          self:setChecked(value == true)
++
++    Button
++      id: resetButton
++      size: 43 20
++      !text: tr('Reset')
++      anchors.top: prev.bottom
++      anchors.right: parent.right
++      margin-top: 8
++      margin-bottom: 4
++      margin-right: 4
++      @onClick: modules.client_settings.resetInterface()

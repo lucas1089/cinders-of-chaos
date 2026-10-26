@@ -772,6 +772,7 @@ jobs:
           python3 client/tools/make_fonts_test.py  # not -I: Pillow from the user site (installed above)
           python3 client/tools/check_text_fit.py  # options menu sub-entries, English and pt-BR (base patch 0104)
           python3 client/tools/check_text_fit_test.py
+          python3 -I client/tools/check_options_fit.py --self-test  # an Options tab taller than the window must scroll (base patch 0156)
           python3 -I client/tools/check_otui_lines.py  # no OTML line at column 0 inside a style (base patch 0145)
           python3 -I client/tools/check_win_macros.py  # no Windows SDK macro names as identifiers in base patch C++ (base patch 0150)
           python3 -I client/tools/check_pe_hardening_test.py  # PE header flags checker of the Windows package (O204)
