@@ -166,6 +166,79 @@ sent = {}
 check(A.requestPoints(rich) == false and sent[1].action == "respecInfo" and sent[1].data.node == C.nodeCost(1100),
 	"requestPoints: respecInfo then the tree's own reply")
 
+-- ---------------------------------------------------------------- tester bots: a waiver, never gold
+local w = cfg.testerWaiver
+check(w and w.perDay > 0 and w.storageDay >= 7102900 and w.storageUsed <= 7102909 and w.storageDay ~= w.storageUsed,
+	"tester waiver config inside the tester storage block")
+check(select(1, C.testerWaiver(-1, -1, 20000)) == true, "core: first waiver of the day")
+do
+	local okw, day, used = C.testerWaiver(-1, -1, 20000)
+	check(okw and day == 20000 and used == 1, "core: state after the first waiver")
+	okw, day, used = C.testerWaiver(20000, w.perDay, 20000)
+	check(not okw and used == w.perDay, "core: the daily cap refuses")
+	okw, day, used = C.testerWaiver(20000, w.perDay, 20001)
+	check(okw and used == 1 and day == 20001, "core: a new day starts over")
+	okw = C.testerWaiver(20000, 5, nil)
+	check(not okw, "core: no day, no waiver")
+	okw = C.testerWaiver(-1, -1, 20000, {})
+	check(not okw, "core: no testerWaiver config, nothing waived")
+end
+local function newTester(name, group, accountType, tag)
+	local t = newPlayer(1000, 4, 0)
+	t.name, t.group, t.accountType = name, group or 1, accountType or 1
+	t.storage[cfg.freeVocationStorage] = 4
+	if tag ~= false then
+		t.storage[Chaos.storage.tester] = 1
+	end
+	function t:getName() return self.name end
+	function t:getGroup() local g = self.group; return {getId = function() return g end} end
+	function t:getAccountType() return self.accountType end
+	return t
+end
+local printed = {}
+local rawPrint = print
+print = function(...) printed[#printed + 1] = table.concat({...}, " ") end
+local bot = newTester("Tester Abc")
+saved.nodes = {2, 9, 11}
+A.resetPreset(bot, 1)
+check(#saved.nodes == 0 and bot.gold == 0, "tester: full reset at level 1000 without gold, none created")
+check(printed[#printed] and printed[#printed]:find("waived 5,950,000 gold for tester Tester Abc"), "tester: the waiver is logged")
+check(bot.storage[w.storageUsed] == 1, "tester: counted")
+saved.nodes = {2, 9, 11}
+A.refundNode(bot, {id = 11})
+check(#saved.nodes == 2 and bot.gold == 0 and bot.storage[w.storageUsed] == 2, "tester: node refund waived too")
+for i = 1, w.perDay do
+	saved.nodes = {2, 9, 11}
+	A.refundNode(bot, {id = 11})
+end
+check(bot.storage[w.storageUsed] == w.perDay, "tester: the count stops at the daily cap")
+saved.nodes = {2, 9, 11}
+A.resetPreset(bot, 1)
+check(#saved.nodes == 3 and texts[#texts]:find("You need"), "tester: over the cap the normal price applies")
+bot.storage[w.storageDay] = bot.storage[w.storageDay] - 1 -- yesterday's count
+saved.nodes = {2, 9, 11}
+A.resetPreset(bot, 1)
+check(#saved.nodes == 0 and bot.storage[w.storageUsed] == 1, "tester: the next day starts over")
+-- not a tester: the tag alone is not enough (name, group, account type), and nobody without the tag
+for _, c in ipairs({
+	{"a player carrying the tag", newTester("Hero Player")},
+	{"a tester in a staff group", newTester("Tester Abc", 3)},
+	{"a tester on a staff account", newTester("Tester Abc", 1, 5)},
+	{"a player without the tag", newTester("Tester Abc", 1, 1, false)},
+	{"a normal player", newPlayer(1000, 4, 0)},
+}) do
+	local who = c[2]
+	who.getName = who.getName or function() return "Hero Player" end
+	who.getGroup = who.getGroup or function() return {getId = function() return 1 end} end
+	who.getAccountType = who.getAccountType or function() return 1 end
+	who.storage[cfg.freeVocationStorage] = 4
+	saved.nodes = {2, 9, 11}
+	A.resetPreset(who, 1)
+	check(#saved.nodes == 3 and who.gold == 0 and who.storage[w.storageUsed] == nil, c[1] .. ": pays like everybody")
+end
+check(R.fullCost(bot, "tree") == 5950000, "tester: the price shown is unchanged (only the payment is waived)")
+print = rawPrint
+
 print(string.format("respec_test: %d checks, %d failures", count, failures))
 if failures > 0 then
 	os.exit(1)

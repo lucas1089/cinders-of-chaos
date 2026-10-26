@@ -6,7 +6,7 @@
 --   * one free full reset after the vocation changed (ascension, class migration). The store's vocation change resets
 --     the tree for free itself and the store's Passive Tree Reset service resets tree and Paragon for free; both use
 --     ChaosPassiveTree.resetAll, which also uses up a pending free reset
---   * gold: carried gold first, then the bank (Chaos.pay)
+--   * gold: carried gold first, then the bank (Chaos.pay). A tester bot pays nothing (R.testerWaived: a waiver, no gold)
 -- Build sharing (buildshare.lua) charges the same full reset price when an import takes nodes back.
 --
 -- Protocol (opcode 65, dispatched through ChaosPassiveTree.extraActions, passivetree.lua):
@@ -31,6 +31,9 @@ if not ChaosRespecConfig then
 end
 if not ChaosRespecCore then
 	dofile("data/scripts/chaos/respec_core.lua")
+end
+if not ChaosTestersCore or not ChaosTestersCore.safetyProblem then
+	dofile("data/scripts/chaos/testers_core.lua")
 end
 
 ChaosRespec = ChaosRespec or {}
@@ -68,8 +71,46 @@ function R.useFree(player)
 	player:setStorageValue(cfg.freeVocationStorage, vocationId(player))
 end
 
+-- Tester bots pay nothing (respec_config.lua testerWaiver): the waiver is decided here on the server from the tester
+-- storage (only testers.py setup writes it), the "Tester Xxx" name, group 1 and account type <= 1, never from anything
+-- the client sends. No gold is credited, so there is nothing to move to a player. true when this payment is waived.
+function R.testerWaived(player, cost)
+	local w = cfg.testerWaiver
+	if not w or not Chaos.isTester(player) then
+		return false
+	end
+	local K = ChaosTestersCore
+	local group = player:getGroup()
+	local problem = K.safetyProblem(group and group:getId() or 0, player:getAccountType())
+	if not problem and not K.isTesterName(player:getName()) then
+		problem = "name is not \"Tester Xxx\""
+	end
+	if problem then
+		print(string.format("[Chaos respec] tester waiver refused for %s (guid %d): %s", player:getName(), player:getGuid(), problem))
+		return false
+	end
+	local today = math.floor((os.time and os.time() or 0) / 86400)
+	local allowed, day, used = Core.testerWaiver(player:getStorageValue(w.storageDay), player:getStorageValue(w.storageUsed),
+		today, cfg)
+	if not allowed then
+		if used == w.perDay then -- logged while the cap holds
+			print(string.format("[Chaos respec] tester %s (guid %d) reached its %d waived payments of the day", player:getName(),
+				player:getGuid(), w.perDay))
+		end
+		return false
+	end
+	player:setStorageValue(w.storageDay, day)
+	player:setStorageValue(w.storageUsed, used)
+	print(string.format("[Chaos respec] waived %s gold for tester %s (guid %d, level %d), %d of %d today",
+		Core.formatGold(cost), player:getName(), player:getGuid(), player:getLevel(), used, w.perDay))
+	return true
+end
+
 function R.pay(player, cost)
 	if cost <= 0 then
+		return true
+	end
+	if R.testerWaived(player, cost) then
 		return true
 	end
 	return Chaos.pay(player, cost) and true or false

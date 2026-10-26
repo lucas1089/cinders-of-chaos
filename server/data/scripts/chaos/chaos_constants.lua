@@ -254,7 +254,8 @@ Chaos.storage.wardrobe = 7102000
 -- Tester bots (server/README.md "Tester bots"; testers.lua, testers_core.lua, server/tools/testers.py): storages
 -- 7102900 - 7102909 reserved: +0 is 1 on a tester character (written only by testers.py setup; the engine reads the
 -- same key, src-patch 0059 CHAOS_TESTER_STORAGE: a tester is never counted online), +1 its supplies were given (the
--- TEST ONLY helper), +2/+3/+4 its hunt position x/y/z; +5..9 free
+-- TEST ONLY helper), +2/+3/+4 its hunt position x/y/z, +5 the day (days since 1970) of the
+-- respec waiver (respec.lua R.testerWaived), +6 the waivers used that day; +7..9 free
 Chaos.storage.tester = 7102900
 Chaos.testerGuids = Chaos.testerGuids or {} -- guid -> name of every tester character (testers.lua fills it)
 

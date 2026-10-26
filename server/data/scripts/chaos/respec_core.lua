@@ -5,6 +5,8 @@
 --   ChaosRespecCore.freeReason(level, vocId, stored, cfg)   why the next full reset is free ("level", "vocation") or nil
 --   ChaosRespecCore.canRemove(tree, ids, id)          true, or nil + error: the node is allocated and every other
 --                                                     allocated node stays connected to the root without it
+--   ChaosRespecCore.testerWaiver(day, used, today, cfg)  a tester bot's payment waived? -> allowed, day, used (the new
+--                                                     state to store); cfg.testerWaiver.perDay waivers a day
 --   ChaosRespecCore.formatGold(n)                     "1,250,000"
 
 ChaosRespecCore = ChaosRespecCore or {}
@@ -65,6 +67,23 @@ function R.freeReason(level, vocId, stored, cfg)
 		return "vocation"
 	end
 	return nil
+end
+
+-- Tester bots: day = the stored UTC day number, used = the stored count (-1 / nil: none yet), today = the day now.
+-- Returns allowed, day, used: the state to store when allowed. Without cfg.testerWaiver nothing is waived.
+function R.testerWaiver(day, used, today, cfg)
+	local w = config(cfg).testerWaiver
+	if not w or not tonumber(today) then
+		return false, day, used
+	end
+	used = tonumber(used) or 0
+	if used < 0 or tonumber(day) ~= today then
+		used = 0
+	end
+	if used >= (w.perDay or 0) then
+		return false, today, used
+	end
+	return true, today, used + 1
 end
 
 -- tree = passivetree_data.lua ({root, nodes = {[id] = {n = {neighbours}}}}); ids = allocated ids (list)
