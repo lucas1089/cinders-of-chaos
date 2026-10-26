@@ -389,7 +389,7 @@ local function templeOf(player)
 end
 
 local function pushBack(player, fromPosition, text)
-	player:sendCancelMessage(text)
+	player:sendCancelMessage(Chaos.tx(player, text))
 	player:teleportTo(fromPosition, true)
 	fromPosition:sendMagicEffect(CONST_ME_POFF)
 end
@@ -1046,8 +1046,8 @@ function G.hallView(player, gid, rank, level)
 		local money = Chaos.totalMoney(player)
 		local errSelf = C.hallBuyError({guildId = gid, rank = rank, level = level, hasHall = false, from = "self", money = money}, cfg)
 		hall.canBuyBank, hall.canBuySelf = errBank == nil, errSelf == nil
-		hall.reason = errBank or ""
-		hall.reasonSelf = errSelf or ""
+		hall.reason = Chaos.tx(player, errBank or "")
+		hall.reasonSelf = Chaos.tx(player, errSelf or "")
 		return hall, {active = false, items = {}, log = {}, used = 0, capacity = C.depotCapacity(level, cfg)}
 	end
 	local state, left = C.rentState(h.paidUntil, now(), cfg)

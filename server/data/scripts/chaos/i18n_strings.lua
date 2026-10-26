@@ -3990,5 +3990,158 @@ return {
 		["You were not there when the curse was lifted."] = "Você não estava lá quando a maldição foi quebrada.",
 		["You are too far from the cursed chest."] = "Você está longe demais do baú amaldiçoado.",
 		["Cursed Chest loot: %s.%s"] = "Tesouro do Baú Amaldiçoado: %s.%s",
+		-- Guild, guild hall and guild depot reasons (guild_core.lua, guild.lua, guild_hall.lua)
+		["You are not in a guild."] =
+			"Você não está em uma guild.",
+		["Only the guild leader can buy the guild hall."] =
+			"Só o líder da guild pode comprar o guild hall.",
+		["Your guild already owns a guild hall."] =
+			"Sua guild já tem um guild hall.",
+		["Your guild needs guild level %d for a guild hall."] =
+			"Sua guild precisa do level de guild %d para um guild hall.",
+		["The guild bank holds %s gold; the hall costs %s."] =
+			"O banco da guild tem %s de ouro; o hall custa %s.",
+		["You have %s gold; the hall costs %s."] =
+			"Você tem %s de ouro; o hall custa %s.",
+		["Pay from the guild bank or with your own gold."] =
+			"Pague com o banco da guild ou com o seu próprio ouro.",
+		["Unknown upgrade."] =
+			"Melhoria desconhecida.",
+		["Your guild has no guild hall."] =
+			"Sua guild não tem um guild hall.",
+		["Only the guild leader or a vice-leader can buy upgrades."] =
+			"Só o líder ou um vice-líder da guild pode comprar melhorias.",
+		["Pay the hall's rent first."] =
+			"Pague primeiro o aluguel do hall.",
+		["%s needs guild level %d."] =
+			"%s precisa do level de guild %d.",
+		["%s needs the %s first."] =
+			"%s precisa de %s antes.",
+		["The guild bank holds %s gold; %s costs %s."] =
+			"O banco da guild tem %s de ouro; %s custa %s.",
+		["Only members of this guild can use its depot."] =
+			"Só membros desta guild podem usar o depot dela.",
+		["The guild depot is locked (no depot upgrade, or the rent is unpaid)."] =
+			"O depot da guild está trancado (sem a melhoria do depot, ou o aluguel não foi pago).",
+		["Containers cannot go into the guild depot; put the items in one by one."] =
+			"Containers não podem ir para o depot da guild; coloque os itens um por um.",
+		["That cannot go into the guild depot."] =
+			"Isso não pode ir para o depot da guild.",
+		["That stack is too large."] =
+			"Essa pilha é grande demais.",
+		["The guild depot is full (%d / %d)."] =
+			"O depot da guild está cheio (%d / %d).",
+		["Your rank may not take items from the guild depot."] =
+			"Seu cargo não pode retirar itens do depot da guild.",
+		["That item is no longer in the guild depot."] =
+			"Esse item não está mais no depot da guild.",
+		["You took %d items from the guild depot today, the most a member may."] =
+			"Você retirou %d itens do depot da guild hoje, o máximo que um membro pode.",
+		["Season characters cannot use the guild bank or depot while the season runs."] =
+			"Personagens da season não podem usar o banco ou o depot da guild enquanto a season durar.",
+		["Your guild %s reached guild level %d!%s"] =
+			"Sua guild %s chegou ao level de guild %d!%s",
+		["Slow down."] =
+			"Mais devagar.",
+		["Deposit at least %s gold."] =
+			"Deposite pelo menos %s de ouro.",
+		["Your rank may not deposit."] =
+			"Seu cargo não pode depositar.",
+		["You do not have that much gold (carried and in the bank)."] =
+			"Você não tem tanto ouro (na mochila e no banco).",
+		["The guild bank is busy; your gold went back to your bank balance."] =
+			"O banco da guild está ocupado; seu ouro voltou para o saldo do seu banco.",
+		["The deposit failed; your gold went back to your bank balance."] =
+			"O depósito falhou; seu ouro voltou para o saldo do seu banco.",
+		["You deposited %s gold into the guild bank (now %s)."] =
+			"Você depositou %s de ouro no banco da guild (agora %s).",
+		["Only the guild leader can withdraw from the guild bank."] =
+			"Só o líder da guild pode sacar do banco da guild.",
+		["Withdraw how much?"] =
+			"Sacar quanto?",
+		["The guild bank holds %s gold."] =
+			"O banco da guild tem %s de ouro.",
+		["You withdrew %s gold to your bank balance (guild bank now %s)."] =
+			"Você sacou %s de ouro para o saldo do seu banco (banco da guild agora %s).",
+		["Your guild needs guild level %d for the guild hall scroll."] =
+			"Sua guild precisa do level de guild %d para o pergaminho do guild hall.",
+		["You already took today's guild hall scroll."] =
+			"Você já pegou o pergaminho do guild hall de hoje.",
+		["The scroll could not be created."] =
+			"O pergaminho não pôde ser criado.",
+		["You have no room for the scroll."] =
+			"Você não tem espaço para o pergaminho.",
+		["You received today's guild hall scroll."] =
+			"Você recebeu o pergaminho do guild hall de hoje.",
+		["You cannot use this inside the siege."] =
+			"Você não pode usar isto dentro do siege.",
+		["You cannot use this inside the arena."] =
+			"Você não pode usar isto dentro da arena.",
+		["You are not in a guild. Guilds are founded and joined on the website."] =
+			"Você não está em uma guild. As guilds são fundadas e acessadas pelo site.",
+		["The way back to your temple."] =
+			"O caminho de volta ao seu templo.",
+		["Only guild members may enter a guild hall."] =
+			"Só membros da guild podem entrar em um guild hall.",
+		["Your guild owns no guild hall."] =
+			"Sua guild não tem um guild hall.",
+		["Your guild hall cannot be entered right now."] =
+			"Seu guild hall não pode ser acessado agora.",
+		["The teleport hub is locked."] =
+			"O hub de teleporte está trancado.",
+		["This portal leads nowhere right now."] =
+			"Este portal não leva a lugar nenhum agora.",
+		["No guild hall slot is free. Tell a gamemaster."] =
+			"Nenhum espaço de guild hall está livre. Avise um gamemaster.",
+		["Not enough gold."] =
+			"Ouro insuficiente.",
+		["The purchase failed; the gold was returned."] =
+			"A compra falhou; o ouro foi devolvido.",
+		["%s bought a guild hall for %s! Enter it through the portal next to the temple."] =
+			"%s comprou um guild hall para %s! Entre pelo portal ao lado do templo.",
+		["Your guild owns a guild hall now. The first week's rent is paid; next rent: %s gold."] =
+			"Sua guild agora tem um guild hall. O aluguel da primeira semana está pago; próximo aluguel: %s de ouro.",
+		["The guild bank does not hold enough gold."] =
+			"O banco da guild não tem ouro suficiente.",
+		["The upgrade failed; the gold went back to the guild bank."] =
+			"A melhoria falhou; o ouro voltou para o banco da guild.",
+		["%s added %s%s to the guild hall."] =
+			"%s adicionou %s%s ao guild hall.",
+		["%s bought for %s gold. Weekly rent is now %s gold."] =
+			"%s comprado por %s de ouro. O aluguel semanal agora é de %s de ouro.",
+		["The guild bank holds %s gold; the rent is %s."] =
+			"O banco da guild tem %s de ouro; o aluguel é %s.",
+		["The payment failed; the gold went back to the guild bank."] =
+			"O pagamento falhou; o ouro voltou para o banco da guild.",
+		["Rent of %s gold paid; the hall is paid until %s."] =
+			"Aluguel de %s de ouro pago; o hall está pago até %s.",
+		["Only the guild leader or a vice-leader can pay the rent."] =
+			"Só o líder ou um vice-líder da guild pode pagar o aluguel.",
+		["The rent is already paid for more than a week ahead."] =
+			"O aluguel já está pago por mais de uma semana adiante.",
+		["The guild hall's rent was paid from the guild bank."] =
+			"O aluguel do guild hall foi pago pelo banco da guild.",
+		["The guild hall's rent (%s gold) is unpaid: its upgrades are locked until it is paid (Social > Guild)."] =
+			"O aluguel do guild hall (%s de ouro) não foi pago: as melhorias ficam trancadas até o pagamento (Social > Guild).",
+		["The guild hall's rent is due and the guild bank is short. The upgrades lock in %s."] =
+			"O aluguel do guild hall venceu e o banco da guild está sem fundos. As melhorias trancam em %s.",
+		["The item could not be moved into the guild depot."] =
+			"O item não pôde ser movido para o depot da guild.",
+		["The guild depot is busy. Try again in a moment."] =
+			"O depot da guild está ocupado. Tente de novo em instantes.",
+		["The guild depot could not take it."] =
+			"O depot da guild não pôde receber isto.",
+		["You put %d x %s into the guild depot."] =
+			"Você colocou %d x %s no depot da guild.",
+		["Take what?"] =
+			"Pegar o quê?",
+		["Take items at the guild depot in your guild hall."] =
+			"Retire itens no depot da guild, no seu guild hall.",
+		["The item could not be created. Tell a gamemaster."] =
+			"O item não pôde ser criado. Avise um gamemaster.",
+		["You took %d x %s from the guild depot (%s)."] =
+			"Você retirou %d x %s do depot da guild (%s).",
+		["Back to the guild hall (or your temple)."] =
+			"De volta ao guild hall (ou ao seu templo).",
 	},
 }

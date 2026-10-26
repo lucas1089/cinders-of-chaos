@@ -200,7 +200,7 @@ end
 
 function G.tellGuild(gid, text, msgType)
 	for _, p in ipairs(G.onlineMembers(gid)) do
-		p:sendTextMessage(msgType or MESSAGE_EVENT_ADVANCE, text)
+		p:sendTextMessage(msgType or MESSAGE_EVENT_ADVANCE, Chaos.tx(p, text)) -- each member reads their language
 	end
 end
 
@@ -665,7 +665,7 @@ function scroll.onUse(player, item, fromPosition, target, toPosition, isHotkey)
 		blocked = "You cannot use this inside the arena."
 	end
 	if blocked then
-		player:sendCancelMessage(blocked)
+		player:sendCancelMessage(Chaos.tx(player, blocked))
 		return true
 	end
 	local ok = G.enterHall and G.enterHall(player, true)
@@ -794,7 +794,7 @@ function G.sendState(player, open, tab)
 	local data = G.state(player, tab)
 	if not data then
 		if open then
-			Chaos.send(player, OPCODE, "none", {open = true, text = "You are not in a guild. Guilds are founded and joined on the website."})
+			Chaos.send(player, OPCODE, "none", {open = true, text = Chaos.t(player, "You are not in a guild. Guilds are founded and joined on the website.")})
 		end
 		return
 	end
@@ -804,6 +804,7 @@ end
 
 function G.message(player, ok, text)
 	if text and text ~= "" then
+		text = Chaos.tx(player, text) -- the cores and helpers return English reasons
 		player:sendTextMessage(ok and MESSAGE_INFO_DESCR or MESSAGE_STATUS_SMALL, text)
 		Chaos.send(player, OPCODE, "message", {ok = ok and true or false, text = text})
 	end
