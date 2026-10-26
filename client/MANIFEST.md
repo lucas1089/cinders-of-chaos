@@ -3163,7 +3163,8 @@ the source and every old thing byte-identical; the build is deterministic (run t
   `split -b 95M -d -a 2`): 147,547,852 bytes, sha256 fa1c26382ea4865ece8d13ff29366b0d662e487c12bd4e691fcc59bb08be0fcd; parts
   `things-1098.tar.xz.part00` (99,614,720 bytes, sha256 226bc8cd231ab95fe67d8786c6c13725cf1a4d0e8622be8474fd7ea8f5bb7cad) and `.part01`
   (47,933,132 bytes, sha256 58ad98450dad34a054612f8f016f0aa61dcbaec48fa8c8aea9879bb2e2634be1); the joined parts extract to the md5s
-  above. Pushed to windows-assets as **afc57d34** (parent ba3a1e01). `outfit_anchors.lua` and `info_lifts.lua` regenerated on
+  above. Pushed to windows-assets as **afc57d34** (parent ba3a1e01); 90555d38 restores the sum line of the old unsplit
+  `things/things-1098.tar.xz` (still in the tree, unused) that afc57d34 had overwritten. `outfit_anchors.lua` and `info_lifts.lua` regenerated on
   pair 48 (only the dat md5 changes). Install `decor48items` on the server only together with a client on pair 48 or newer.
 - **Ship order.** A client on pair 47 or older draws nothing for 38759-39110: ship pair 48 and a client build before placing
   the items on a map.
