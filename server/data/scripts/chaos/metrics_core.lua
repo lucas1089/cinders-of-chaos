@@ -123,6 +123,18 @@ local function clean(s, max)
 	s = s:gsub("[%c]", " ")
 	if #s > max then
 		s = s:sub(1, max)
+		-- never cut inside a UTF-8 character: drop trailing continuation bytes and the lead byte they belong to
+		local cut = #s
+		while cut > 0 and s:byte(cut) >= 0x80 and s:byte(cut) < 0xC0 do
+			cut = cut - 1
+		end
+		if cut > 0 and s:byte(cut) >= 0xC0 then
+			local lead = s:byte(cut)
+			local need = lead >= 0xF0 and 4 or (lead >= 0xE0 and 3 or 2)
+			if #s - cut + 1 < need then
+				s = s:sub(1, cut - 1)
+			end
+		end
 	end
 	return s
 end

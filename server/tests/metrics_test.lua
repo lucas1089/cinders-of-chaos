@@ -637,6 +637,14 @@ death(off, nil, dragon, nil)
 check(next(ChaosMetrics.state.counts) == nil, "disabled: nothing counted")
 Chaos.metricsConfig.enabled = true
 
+-- clean never cuts a UTF-8 character in half
+do
+	eq(M.clean("abcdef", 4), "abcd", "ascii cut")
+	eq(M.clean("ab\195\163cd", 3), "ab", "a 2-byte char at the cut is dropped whole")
+	eq(M.clean("ab\195\163cd", 4), "ab\195\163", "a whole 2-byte char kept")
+	eq(M.clean("a\226\130\172b", 3), "a", "a 3-byte char cut is dropped")
+	eq(M.clean("a\226\130\172b", 4), "a\226\130\172", "a whole 3-byte char kept")
+end
 if failures == 0 then
 	print(string.format("metrics_test: %d checks passed", count))
 else
