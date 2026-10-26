@@ -14,6 +14,8 @@
 --                     tree {name, nodes, masteries = [{id, choice}], cls, line, vocation, spent}   the active passive
 --                                                                    tree, read-only (ChaosInspect.treePayload), after the
 --                                                                    equipment; through Chaos.sendChunked when it is large
+--                     records {name, rows = [{key, name, value}]}   the personal records (O260: best drop, Tower floor,
+--                                                                    rift tier, fastest boss kills), after the result
 --                     denied {code, text}
 --                     privacy {allow}
 -- Hidden staff and players in ghost mode answer like a name that is not online.
@@ -165,6 +167,13 @@ local function inspect(player, data)
 		outfit = I.outfitOf(target:getOutfit()), self = target:getId() == pid, parts = #packets,
 		tree = ChaosPassiveTree ~= nil and ChaosPassiveTree.publicView ~= nil
 	})
+	-- the personal records (records.lua, O260), in the viewer's language
+	if ChaosRecords and ChaosRecords.personalRows then
+		local okRec, rows = pcall(ChaosRecords.personalRows, target:getGuid(), player)
+		if okRec and type(rows) == "table" then
+			reply(player, "records", {name = target:getName(), rows = rows})
+		end
+	end
 	-- each packet fits one extended opcode message (I.config.packetBytes); a single row bigger than that goes in parts
 	for _, packet in ipairs(packets) do
 		Chaos.sendChunked(player, OPCODE, packet)

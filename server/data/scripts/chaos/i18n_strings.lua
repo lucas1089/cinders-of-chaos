@@ -5321,5 +5321,17 @@ return {
 		["Bonus roll for every activity of the week: %s"] = "Sorteio bônus por todas as atividades da semana: %s",
 		["1 player looks for a group for %s."] = "1 jogador procura um grupo para %s.",
 		["%d players look for a group for %s."] = "%d jogadores procuram um grupo para %s.",
+		-- O260: the first unique, the drop feed, the personal records
+		["Something heavy and old lies in the corpse: %s. It is yours."] = "Algo pesado e antigo jaz no corpo: %s. É seu.",
+		["%s (Lv %d) found %s!"] = "%s (Nv %d) encontrou %s!",
+		["Nobody can speak in the Drops channel."] = "Ninguém pode falar no canal Drops.",
+		["New record: %s: %s (was %s)"] = "Novo recorde: %s: %s (era %s)",
+		["Best Drop Rarity"] = "Melhor raridade de drop",
+		["Best Drop Value"] = "Melhor valor de drop",
+		["Best drop: rarity"] = "Melhor drop: raridade",
+		["Best drop: value"] = "Melhor drop: valor",
+		["Highest Tower floor"] = "Maior andar da Torre",
+		["Highest rift tier"] = "Maior nível de fenda",
+		["Fastest: %s"] = "Mais rápido: %s",
 	},
 }

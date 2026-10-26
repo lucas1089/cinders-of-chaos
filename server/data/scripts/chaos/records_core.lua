@@ -121,7 +121,7 @@ end
 local function makeBoard(cfg, tpl, src, key, name, extra)
 	local b = {key = key, cat = tpl.cat, name = name, mode = tpl.mode or "min", format = tpl.format, value = tpl.value,
 		byClass = tpl.byClass and true or false, first = tpl.first and true or false, maxGroup = tpl.maxGroup,
-		hook = tpl.hook, template = tpl.key, sizes = {}, variants = variantsOf(cfg, tpl, src)}
+		hook = tpl.hook, template = tpl.key, sizes = {}, variants = variantsOf(cfg, tpl, src), personal = tpl.personal and true or false}
 	for _, s in ipairs(tpl.sizes or {}) do
 		local def = cfg.sizes[s]
 		if def then
@@ -539,4 +539,104 @@ function K.firstDisplay(byKey, target, short)
 		return short .. " (" .. v.name .. ")"
 	end
 	return short or board.name
+end
+
+-- ---------------------------------------------------------------- personal records (O260)
+-- 12345678 -> "12,345,678"
+function K.groupDigits(n)
+	local s = tostring(floor(tonumber(n) or 0))
+	local out = s:reverse():gsub("(%d%d%d)", "%1,"):reverse()
+	return (out:gsub("^,", ""))
+end
+
+-- The personal records of one character: rows = {{slot, value, at}} of its period "all" (chaos_records), byKey = the
+-- catalogue's boards. opts: text(key, ...) -> the text in the reader's language (default: English), rarityName(rank).
+-- Returns {{key, name, value}} in this order: best drop rarity, best drop value, highest Tower floor, highest rift tier,
+-- then the fastest boss kills (at most cfg.personal.maxBossRows, by name). Only what the character has.
+function K.personalRows(cfg, byKey, rows, opts)
+	opts = opts or {}
+	local pc = cfg.personal or {}
+	local tx = opts.text or function(key, ...)
+		if select("#", ...) > 0 then
+			return string.format(key, ...)
+		end
+		return key
+	end
+	local rarityName = opts.rarityName or function(rank)
+		return tostring(rank)
+	end
+	local by = {}
+	for _, r in ipairs(rows or {}) do
+		local b, v, s = K.parseSlot(r.slot)
+		if b and byKey and byKey[b] and (tonumber(r.value) or 0) > 0 then
+			by[b] = by[b] or {}
+			by[b][#by[b] + 1] = {variant = v, size = s, value = floor(tonumber(r.value))}
+		end
+	end
+	local out = {}
+	local function best(boardKey)
+		local list = by[boardKey]
+		if not list then
+			return nil
+		end
+		local top
+		for _, e in ipairs(list) do
+			if not top or e.value > top.value then
+				top = e
+			end
+		end
+		return top
+	end
+	local e = best(pc.rarity)
+	if e then
+		out[#out + 1] = {key = "drop_rarity", name = tx("Best drop: rarity"), value = rarityName(e.value)}
+	end
+	e = best(pc.value)
+	if e then
+		out[#out + 1] = {key = "drop_value", name = tx("Best drop: value"), value = tx("%s gold", K.groupDigits(e.value))}
+	end
+	e = best(pc.tower)
+	if e then
+		out[#out + 1] = {key = "tower", name = tx("Highest Tower floor"), value = tostring(e.value)}
+	end
+	e = best(pc.rift)
+	if e then
+		out[#out + 1] = {key = "rift", name = tx("Highest rift tier"), value = tostring(e.value)}
+	end
+	local bosses = {}
+	for boardKey, list in pairs(by) do
+		local board = byKey[boardKey]
+		if board and board.cat == (pc.bossCat or "bosses") and board.mode == "min" then
+			for _, x in ipairs(list) do
+				-- one row per boss: the fastest of the party sizes
+				local lbl = label(board, x.variant, nil)
+				local row = bosses[lbl]
+				if not row or x.value < row.raw then
+					bosses[lbl] = {name = tx("Fastest: %s", lbl), value = K.valueText(x.value, "time"), raw = x.value}
+				end
+			end
+		end
+	end
+	local names = {}
+	for lbl in pairs(bosses) do
+		names[#names + 1] = lbl
+	end
+	table.sort(names)
+	for i = 1, math.min(#names, tonumber(pc.maxBossRows) or 12) do
+		local b = bosses[names[i]]
+		out[#out + 1] = {key = "boss", name = b.name, value = b.value}
+	end
+	return out
+end
+
+-- the value of a personal record as text: a rarity name, gold, or the board's own format. opts as K.personalRows.
+function K.personalValueText(cfg, board, value, opts)
+	opts = opts or {}
+	local pc = cfg.personal or {}
+	if board.key == pc.rarity then
+		return (opts.rarityName or tostring)(floor(tonumber(value) or 0))
+	elseif board.key == pc.value then
+		return string.format((opts.text and opts.text("%s gold")) or "%s gold", K.groupDigits(value))
+	end
+	return K.valueText(value, board.format)
 end

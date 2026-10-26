@@ -434,4 +434,56 @@ do
 	eq(hasCat, true, "category title")
 end
 
+-- ---------------------------------------------------------------- O260 personal records
+do
+	local pb = byKey.drop_rarity
+	eq(pb ~= nil and pb.personal, true, "drop_rarity is a personal board")
+	eq(byKey.drop_value.personal, true, "drop_value is a personal board")
+	eq(byKey.omen.personal, false, "other boards are not")
+	eq(cfg.categories ~= nil, true, "categories")
+	local hidden
+	for _, c in ipairs(cfg.categories) do
+		if c.key == "loot" then
+			hidden = c.hidden
+		end
+	end
+	eq(hidden, true, "the loot category is hidden")
+	eq(K.groupDigits(0), "0", "digits 0")
+	eq(K.groupDigits(999), "999", "digits 999")
+	eq(K.groupDigits(1000), "1,000", "digits 1000")
+	eq(K.groupDigits(1234567), "1,234,567", "digits 7")
+	eq(K.groupDigits(100000), "100,000", "digits 100000")
+	local rows = {
+		{slot = "drop_rarity|-|-", value = 5, at = 1}, {slot = "drop_value|-|-", value = 1500000, at = 1},
+		{slot = "tower_floor|-|-", value = 41, at = 1}, {slot = "tower_floor|-|-", value = 30, at = 1},
+		{slot = "rift_tier|-|-", value = 9, at = 1},
+		{slot = "wb_time|kaelgor|solo", value = 300, at = 1}, {slot = "wb_time|kaelgor|party", value = 250, at = 1},
+		{slot = "wb_time|rotmother|solo", value = 400, at = 1},
+		{slot = "nothing|-|-", value = 7, at = 1}, {slot = "tower_floor|-|-", value = 0, at = 1}
+	}
+	local out = K.personalRows(cfg, byKey, rows, {rarityName = function(r) return "R" .. r end})
+	eq(out[1].key, "drop_rarity", "rarity first")
+	eq(out[1].value, "R5", "rarity name through the reader")
+	eq(out[2].value, "1,500,000 gold", "gold with digit groups")
+	eq(out[3].key, "tower", "tower third")
+	eq(out[3].value, "41", "the highest floor")
+	eq(out[4].key, "rift", "rift fourth")
+	eq(out[4].value, "9", "the highest tier")
+	eq(#out, 6, "two bosses after the four, unknown slots dropped")
+	eq(out[5].key .. out[6].key, "bossboss", "boss rows")
+	local fast = out[5].value
+	eq(fast, K.valueText(250, "time"), "the fastest of the party sizes")
+	eq(#K.personalRows(cfg, byKey, {}, nil), 0, "no records, no rows")
+	-- the value text of the notice
+	eq(K.personalValueText(cfg, byKey.drop_rarity, 6, {rarityName = function(r) return "R" .. r end}), "R6", "rarity text")
+	eq(K.personalValueText(cfg, byKey.drop_value, 2500), "2,500 gold", "gold text")
+	-- the boss rows are capped
+	local many = {}
+	for i = 1, 30 do
+		many[#many + 1] = {slot = "wb_time|v" .. i .. "|solo", value = i, at = 1}
+	end
+	local capped = K.personalRows(cfg, byKey, many, nil)
+	eq(#capped <= cfg.personal.maxBossRows, true, "boss rows capped")
+end
+
 print("records_test: all passed")

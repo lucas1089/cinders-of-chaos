@@ -716,7 +716,7 @@ collision check") and be added here.
 | 226 | `pouches` | `pouches.lua` | `game_pouches` | |
 | 227 | `seasonPass` | `seasonpass.lua` | `game_battlepass` | |
 | 228 | `rift` | `rift.lua` | `game_rift` | server -> client |
-| 229 | `leaderboard` | `leaderboard.lua` (the season ladder and mode tabs: `season.lua`, `season_modes.lua`; the Records view, actions `rmeta` / `rget` / `rfirsts`: `records.lua`) | `game_leaderboard` | |
+| 229 | `leaderboard` | `leaderboard.lua` (the season ladder and mode tabs: `season.lua`, `season_modes.lua`; the Records view, actions `rmeta` / `rget` / `rfirsts`: `records.lua`; the Drop Feed option, action `feedopt`: `retention_loot.lua`; the tab My Records, action `rmine`: `records.lua`) | `game_leaderboard` | |
 | 230 | `groundLoot` | `groundloot.lua` | `game_groundlabels` | a base client `ExtendedIds` value no base module registers |
 | 231 | `castbar` | `casting.lua`, `data/lib/chaos_casting.lua` | `game_castbar` | both ways |
 | 232 | `crafting` | `crafting.lua`, `salvage.lua` | `game_crafting` | |
@@ -847,6 +847,7 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7102820 | Infinity Tower first-clear floors (`infinitytower_balance_config.lua` `rewards.storage`): the tower season x 1000 + the highest milestone floor paid that season; 7102821 - 7102829 free |
 | 7102830 - 7102832 | progress metrics (`metrics_config.lua`): +0 the bit mask of the 9 milestones recorded (O253, O258); +1 `day * 8 + flags` (O258: the day of the first login, whole days since the epoch in server time, flags bit 0 / 1 / 2 = return d1 / d3 / d7 counted); +2 first-use bit mask (O258, bit i = `systems[i + 1]`: dungeon, rift, waystone, tower, pocketboss, worldboss, invasion, party, guild, market, bounty, craft); 7102833 - 7102839 free |
 | 7103000 - 7103009 | the level-gated top menu (`unlocks_config.lua` `storage`, O259): +0 the unlocked entries (bits, by index), +1 the entries opened since (bits), +2 how many entries the character knows of; 7103010 and up are for O260 and O261 |
+| 7103010 - 7103011 | early spike and pity (`retention_loot_config.lua`): 7103010 the first unique (-1 / 0 unset, 1..149 kills counted, 1000000 given), 7103011 the pity counter (kills without a Rare or better drop) |
 | 7103020 - 7103029 | the Weekly Chest (`weeklychest_config.lua` `storage`, `Chaos.storage.weeklyChest`): +0 the week (YYYYMMDD of its Monday), +1 activities done (bit mask), +2 the chest was given, +3 the bonus roll was given, +4 chests given in all; +5..9 free |
 | 7109990 - 7109992 | spell supports: cast context and Reprisal (`data/lib/chaos_supports_config.lua`) |
 | 7110000 - 7111999 | spell supports: sockets per spell id (base + spell id * 4 + 0..3) |
@@ -24325,3 +24326,52 @@ Entering a dungeon (`dungeons.lua`, after `startRun`) or a rift (`rift.lua`, aft
 ### The party bonus on the party frame
 
 `party_xp_core.lua` `bonusPercent(lines)` is the stock share rule (`Party:onShareExperience`, the class lines counted by `tools/patch_base_classes.py`): +20% for one class line, else n x (5 (n - 1) + 10) percent for n lines, at most 5 lines (+150%). `partyframes.lua` adds `xp {p, on}` to the party state (`on` 1 the share works, 2 the leader switched it on but a member breaks its rules, 0 not switched on) and the frame header shows "+20% XP" in green, "XP share broken" in red or "XP share off" in grey, with a tooltip. The state signature includes it, so a change is sent at once. Tests: `tests/party_xp_test.lua`, `tests/partyframes_test.lua`, client `partymath_test.lua`.
+
+## Early spike, pity, drop feed and personal records (O260) (`retention_loot.lua`, `retention_loot_core.lua`, `retention_loot_config.lua`, `tools/patch_drops_channel.py`, client `game_dropfeed`)
+
+Spec: `docs/superpowers/specs/2026-10-26-retention-design.md`. Why: the first hours had no moment where the character got
+stronger by luck, a long dry streak had no end, a big drop was told to the people on the same screen only, and a record of
+your own was not kept. Rules in `retention_loot_core.lua` (tests `tests/retention_loot_test.lua`), numbers in
+`retention_loot_config.lua`, the engine side in `retention_loot.lua`. `loot.lua` calls it from `processKill` three times
+(begin, once per gear drop, finish), each call in a `pcall`: a failure never costs a kill its loot.
+
+- **First unique.** The character's 150th kill (every kill that gives it a corpse, bosses too) adds a leveling unique of its
+  class to that corpse, once per character, up to level 60, never for tester bots. It is in the corpse, so the loot beam,
+  the unique sound and the autoloot of the loot filter treat it like any unique drop. The candidates per class are
+  `firstUnique.byClass` (ascensions use their line, `lineOf`; an unknown class uses `default`): the one with the highest level
+  requirement the character already meets, else the lowest. The test checks that every candidate is a real unique of
+  `chaos_unique_items.lua` and that every class has some. Storage 7103010.
+- **Pity.** A hidden counter, storage 7103011, of the normal hunting kills in a row without a gear drop of Rare or better (a
+  unique counts as one). At 400 the next gear drop of Magic or better is raised one rarity (Magic to Rare, Rare to Legendary;
+  not above Legendary) and the counter starts again. Boss kills, summons, rifts, waystone maps, pocket bosses and testers
+  neither count nor are raised. The raise is made in step 2 of `processKill` through `ChaosRetentionLoot.adjustRarity`; the
+  counter is written in `finish` from the corpse as it is then (forged items keep their rarity as text until a tick later,
+  `ChaosCrafting.rarityOf` reads both).
+- **Drop feed.** A legendary or divine gear drop or a unique posts `Name (Lv N) found [Item]{...}!` in the channel **Drops**
+  (id 21) and in the Default tab of everyone online, in each player's language (`i18n_strings.lua`). The item is an item link
+  (`ChaosItemLink.linkFor`, "Item links in chat"): hover shows the tooltip for 10 minutes. The best find of a kill posts
+  (unique over divine over legendary). Limits: one line per character per `feed.perCharSeconds` (60) and
+  `feed.maxPerMinute` (12) server-wide; the rest is dropped silently. Staff and testers post nothing. The local broadcast
+  of `loot.lua` (`broadcastText`) stays. The Discord relay gets the same line (`discord.lua` `X.drop`, event `drop`, channel
+  key `drops`, 6 a minute; `website/overlay/plugins/chaos/discord_lib.php`). The first unique of the gift never posts.
+- **Drops channel.** `tools/patch_drops_channel.py` (install step `events`, idempotent) adds
+  `<channel id="21" name="Drops" public="1" script="drops.lua" />` to `data/chatchannels/chatchannels.xml` (a taken id or name
+  is an error, nothing is written) and writes `data/chatchannels/scripts/drops.lua`, a read-only channel whose join and leave
+  tell `ChaosRetentionLoot`. Test `tools/patch_drops_channel_test.py` (also checks the id and name against the config).
+- **Client option.** System > Drop Feed (`game_dropfeed`): Off, Unique and Divine only, or Legendary and better (default).
+  The client keeps it in its settings and sends `feedopt {mode}` on the records opcode 229 at login and on a change; the
+  server keeps it in memory per player and filters the lines (`C.shown`). Until the client has sent one, every kind shows.
+- **Personal records.** `records.lua` and `records_core.lua` got two hidden personal boards, `drop_rarity` (rank 1..7) and
+  `drop_value` (NPC sell price), category `loot` (`records_config.lua`). A personal board keeps the all-time value of the
+  character only: no weekly top 3, no title, no broadcast, no website publish, no realm first. `ChaosRecords.personalBests`
+  reads a character's all-time rows once per `personal.cacheSeconds` (600). `ChaosRecords.submit` sends "New record: <what>:
+  <value> (was <old>)" to a member whose own best of a board improved (any board: a boss time, a Tower floor, a rift tier
+  too) and updates the cache. `K.personalRows` lists the best drop rarity, the best drop value, the highest Tower floor, the
+  highest rift tier and the fastest boss kills (at most 12, the fastest party size of each boss). Shown in Inspect (a
+  `records` packet after the result; the Records button next to Passive Tree swaps the equipment for the rows) and in the
+  Leaderboards Records view as the tab **My Records** (`rmine` on opcode 229, `R.sendMine`).
+- **Opcodes.** None new: the feed is chat and text messages, `feedopt` and `rmine` ride on 229, `records` on 240.
+- **Install.** `install_all.py --only events` (the channel); the Lua files come with the `scripts` step.
+- **Assumptions, not run on a live server.** `Player:sendChannelMessage` and the channel id 21 are free on the base copy; a
+  public channel with a script is listed to every player; the base `onDropLoot` pass finishes before `loot.lua` (it does, it
+  is index 1). The item value of the record is `ChaosItemPrices.sellPrice` (0 when the file is not loaded).

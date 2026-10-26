@@ -4368,3 +4368,10 @@ on every level change, and `new {key, level, menu, title, why}` one entry at a t
   patch the filter stays on. Staff and a switched-off server module get the whole menu (`all`).
 - Texts through `tr()`, pt-BR in `client_chaos_locale/pt_br.lua` ("Go", "New: %s!", "Show the whole menu" and its tooltip; "Level %d",
   "Unlocks at level %d", "New", "Close" existed). Not run in a client.
+
+## Drop feed option and personal records (O260)
+
+- **game_dropfeed** (new; extended opcode 229, action `feedopt {mode}`, client to server; server `retention_loot.lua`): System > Drop Feed opens a small window with one drop-down, Off / Unique and Divine only / Legendary and better (default). The choice is kept in the client settings (node `chaosDropFeed`) and sent at login and on a change; the server filters the drop lines of other players (Default tab and the channel Drops). Logic `dropfeed_logic.lua`, tested by `dropfeed_logic_test.lua`. Not run in a client.
+- **game_playerinspect**: a `records` packet after the result (`{name, rows = [{key, name, value}]}`, text in the viewer's language) and a Records button next to Passive Tree that swaps the equipment panel for the rows (`L.onRecords`, `L.recordsButtonText`, tested). Not run in a client.
+- **game_leaderboard**: the Records view has a client category **My Records** (`rmine` on opcode 229, `rmine {rows}` back; `recordsview.lua` adds the category, tested). Not run in a client.
+- **client_chaos_topbar**: the System menu has the entry Drop Feed.

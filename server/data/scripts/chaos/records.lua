@@ -24,8 +24,10 @@
 --                              difficulty, difficultyStart, first = {key, short}} -> true | false, reason
 --   ChaosRecords.titlesOf(player), ChaosRecords.badgeOf(player)
 -- Protocol (JSON {action, data}) on the leaderboard opcode; leaderboard.lua ignores these actions:
---   client -> server  rmeta | rget {board, variant, size, period, group} | rfirsts
---   server -> client  rmeta {categories, periods, groups, ownGroup, season, parts}   rcat {cat, boards, part}
+--   client -> server  rmeta | rget {board, variant, size, period, group} | rfirsts | rmine
+--   server -> client  rmine {rows = [{key, name, value}]}   the own personal records (O260: best drop, Tower floor, rift tier,
+--                     fastest boss kills), in the player's language
+--                     rmeta {categories, periods, groups, ownGroup, season, parts}   rcat {cat, boards, part}
 --                     rboard {board, variant, size, period, group, rows, own, total, record, resetIn, seasonName}
 --                     rfirsts {season, seasonName, rows = [{target, board, name, members, at, value, format}]}
 -- Lua 5.1 / LuaJIT compatible.
@@ -154,6 +156,7 @@ local function publishBoards()
 	ensureTables()
 	db.query("DELETE FROM `" .. T.boards .. "`")
 	for i, b in ipairs(R.boards) do
+		-- the personal boards (O260) are not public
 		local v, s = {}, {}
 		for _, x in ipairs(b.variants) do
 			v[#v + 1] = x.key .. "=" .. x.name:gsub("[;=]", " ")
@@ -161,9 +164,11 @@ local function publishBoards()
 		for _, x in ipairs(b.sizes) do
 			s[#s + 1] = x.key .. "=" .. x.name
 		end
-		db.query(string.format("INSERT INTO `%s` (`key`, `cat`, `name`, `mode`, `format`, `label`, `variants`, `sizes`, `ord`) " ..
-			"VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %d)", T.boards, esc(b.key), esc(b.cat), esc(b.name), esc(b.mode),
-			esc(b.format or ""), esc(b.value or ""), esc(table.concat(v, ";")), esc(table.concat(s, ";")), i))
+		if not b.personal then
+			db.query(string.format("INSERT INTO `%s` (`key`, `cat`, `name`, `mode`, `format`, `label`, `variants`, `sizes`, `ord`) " ..
+				"VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %d)", T.boards, esc(b.key), esc(b.cat), esc(b.name), esc(b.mode),
+				esc(b.format or ""), esc(b.value or ""), esc(table.concat(v, ";")), esc(table.concat(s, ";")), i))
+		end
 	end
 end
 
@@ -306,14 +311,24 @@ function R.submit(run)
 	end
 	local value = math.floor(tonumber(run.value))
 	local slot = K.slot(board.key, run.variant, size)
-	local prev = bestOf(slot, board.mode)
+	local prev = not board.personal and bestOf(slot, board.mode) or nil
 	local at, k = now(), keys()
 	local names = K.names(members)
 	ensureTables()
+	-- O260: what each member's own best was before this run (nil: none yet), for "New record: ..."
+	local before = {}
 	for _, m in ipairs(members) do
-		for _, period in ipairs({k.week, k.season, k.all}) do
+		before[m.guid] = R.personalBests(m.guid)[slot]
+	end
+	-- a personal board (the best drop) keeps the all-time value only
+	for _, m in ipairs(members) do
+		for _, period in ipairs(board.personal and {k.all} or {k.week, k.season, k.all}) do
 			upsert(slot, period, m, value, board.mode, at, #members, names)
 		end
+	end
+	if board.personal then
+		R.personalNotice(board, run.variant, size, slot, value, members, before)
+		return true, slot
 	end
 	if board.mode ~= "add" and K.better(board.mode, value, prev or 0) then
 		R.best[slot] = value
@@ -321,8 +336,78 @@ function R.submit(run)
 			broadcast(function(lang) return K.recordText(board, run.variant, size, value, members, prev, lang) end)
 		end
 	end
+	R.personalNotice(board, run.variant, size, slot, value, members, before)
 	realmFirst(board, run, members, value)
 	return true, slot
+end
+
+-- ---------------------------------------------------------------- personal records (O260)
+-- slot -> the all-time value of a character, read once per cfg.personal.cacheSeconds (and kept up to date by submit)
+R.pcache = R.pcache or {}
+function R.personalBests(guid)
+	local c = R.pcache[guid]
+	local ttl = tonumber((cfg.personal or {}).cacheSeconds) or 600
+	if c and now() - c.at < ttl then
+		return c.slots
+	end
+	ensureTables()
+	local rows = Chaos.select(string.format("SELECT `slot`, `value` FROM `%s` WHERE `player_id` = %d AND `period` = 'all'",
+		T.best, guid), {{"slot", "s"}, {"value", "n"}})
+	local slots = {}
+	for _, r in ipairs(rows) do
+		slots[r.slot] = r.value
+	end
+	R.pcache[guid] = {at = now(), slots = slots}
+	return slots
+end
+
+-- the text helpers of a reader: Chaos.t in the player's language, the rarity names of data/lib/chaos_rarity.lua
+local function personalOpts(player)
+	local pt = player and Chaos.lang and Chaos.lang(player) == "pt-BR"
+	return {
+		text = function(key, ...)
+			return player and Chaos.t(player, key, ...) or (select("#", ...) > 0 and string.format(key, ...) or key)
+		end,
+		rarityName = function(rank)
+			local e = ChaosRarity and ChaosRarity.list and ChaosRarity.list[rank]
+			if not e then
+				return tostring(rank)
+			end
+			return pt and e.pt or e.name
+		end
+	}
+end
+
+-- after a run: "New record: ..." to each online member whose own best just improved, and the cache follows
+function R.personalNotice(board, variant, size, slot, value, members, before)
+	for _, m in ipairs(members) do
+		local c = R.pcache[m.guid]
+		local old = before[m.guid]
+		if c then
+			if board.mode == "add" then
+				c.slots[slot] = (c.slots[slot] or 0) + value
+			elseif K.better(board.mode, value, c.slots[slot] or 0) then
+				c.slots[slot] = value
+			end
+		end
+		if old and old > 0 and board.mode ~= "add" and K.better(board.mode, value, old) then
+			local p = Player(m.guid)
+			if p then
+				local o = personalOpts(p)
+				p:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(p, "New record: %s: %s (was %s)",
+					o.text(K.label(board, variant, size)), K.personalValueText(cfg, board, value, o),
+					K.personalValueText(cfg, board, old, o)))
+			end
+		end
+	end
+end
+
+-- the personal records of a character for a reader (Inspect): {{key, name, value}}
+function R.personalRows(guid, reader)
+	ensureTables()
+	local rows = Chaos.select(string.format("SELECT `slot`, `value`, `at` FROM `%s` WHERE `player_id` = %d AND `period` = 'all'",
+		T.best, guid), {{"slot", "s"}, {"value", "n"}, {"at", "n"}})
+	return K.personalRows(cfg, R.byKey, rows, personalOpts(reader))
 end
 
 -- ---------------------------------------------------------------- firsts, awards, titles
@@ -375,7 +460,7 @@ function R.checkReset(force)
 	local ranked = {}
 	for slot, list in pairs(bySlot) do
 		local b = R.byKey[K.parseSlot(slot) or ""]
-		if b then
+		if b and not b.personal then
 			ranked[slot] = K.rank(list, b.mode)
 		end
 	end
@@ -720,7 +805,7 @@ function R.sendMeta(player)
 	for _, c in ipairs(cfg.categories) do
 		local list = {}
 		for _, b in ipairs(R.boards) do
-			if b.cat == c.key then
+			if b.cat == c.key and not c.hidden and not b.personal then
 				list[#list + 1] = boardMeta(b)
 			end
 		end
@@ -769,6 +854,12 @@ function R.sendFirsts(player)
 	Chaos.send(player, OPCODE, "rfirsts", {season = k.season, seasonName = K.seasonName(k.season, season()), rows = rows})
 end
 
+-- the Records tab "My Records" (O260): the own personal records
+function R.sendMine(player)
+	local ok, rows = pcall(R.personalRows, player:getGuid(), player)
+	Chaos.send(player, OPCODE, "rmine", {rows = ok and rows or {}})
+end
+
 -- ---------------------------------------------------------------- events
 local ext = CreatureEvent("ChaosRecordsExtended")
 function ext.onExtendedOpcode(player, opcode, buffer)
@@ -777,7 +868,8 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 	end
 	local msg = Chaos.decode(buffer)
 	-- only the Records actions: every other action on this opcode is leaderboard.lua's
-	if not msg or (msg.action ~= "rmeta" and msg.action ~= "rget" and msg.action ~= "rfirsts") then
+	if not msg or (msg.action ~= "rmeta" and msg.action ~= "rget" and msg.action ~= "rfirsts"
+		and msg.action ~= "rmine") then
 		return
 	end
 	if ChaosRateLimit and not ChaosRateLimit.allow(player, "records." .. msg.action, 150) then
@@ -798,6 +890,8 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 		end
 	elseif msg.action == "rfirsts" then
 		R.sendFirsts(player)
+	elseif msg.action == "rmine" then
+		R.sendMine(player)
 	end
 end
 ext:type("extendedopcode")

@@ -4762,5 +4762,17 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Shared experience is working: the monsters' experience is split between the members, with %d%% extra on top."] = "A experiência compartilhada está funcionando: a experiência dos monstros é dividida entre os membros, com %d%% a mais por cima.",
   ["The leader switched shared experience on, but a member does not meet its rules: level range, distance to the leader or a recent attack or heal. The party would get +%d%% XP."] = "O líder ligou a experiência compartilhada, mas um membro não cumpre as regras: faixa de nível, distância do líder ou um ataque ou cura recente. O grupo ganharia +%d%% de XP.",
   ["The party leader can switch shared experience on from the party shield menu. With it the party gets +%d%% XP."] = "O líder do grupo pode ligar a experiência compartilhada no menu do escudo do grupo. Com ela o grupo ganha +%d%% de XP.",
+  -- game_dropfeed, Records (O260)
+  ["Drop Feed"] = "Feed de drops",
+  ["Legendary and better"] = "Lendário ou melhor",
+  ["Unique and Divine only"] = "Somente Único e Divino",
+  ["Show"] = "Mostrar",
+  ["When a player finds a legendary, divine or unique item, the server posts one line in your Default tab and in the channel Drops. Choose which ones you get."] = "Quando um jogador encontra um item lendário, divino ou único, o servidor mostra uma linha na sua aba Default e no canal Drops. Escolha quais você recebe.",
+  ["My Records"] = "Meus recordes",
+  ["Your own best drop, highest Tower floor and rift tier, and your fastest boss kills."] = "Seu melhor drop, o maior andar da Torre, o maior nível de fenda e suas mortes de chefe mais rápidas.",
+  ["Your best drop, Tower floor, rift tier and boss times. A new best shows \"New record\" in the game."] = "Seu melhor drop, andar da Torre, nível de fenda e tempos de chefe. Um novo recorde mostra \"Novo recorde\" no jogo.",
+  ["No records yet."] = "Nenhum recorde ainda.",
+  ["Records (%d)"] = "Recordes (%d)",
+  ["Show this character's personal records"] = "Mostrar os recordes pessoais deste personagem",
 }
 return ChaosLocaleStrings['pt-BR']

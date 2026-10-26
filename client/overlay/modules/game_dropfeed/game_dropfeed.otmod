@@ -1,0 +1,13 @@
+Module
+  name: game_dropfeed
+  description: Drop feed option (O260) - which drops of other players the server posts in your chat (Default tab and the Drops channel): off, unique and divine only, or legendary and better
+  author: Cinders of Chaos
+  sandboxed: true
+  scripts: [ dropfeed_logic, dropfeed ]
+  dependencies:
+    - client_chaos_theme
+    - game_interface
+  autoload: true
+  autoload-priority: 1001
+  @onLoad: init()
+  @onUnload: terminate()

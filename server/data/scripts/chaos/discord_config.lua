@@ -15,6 +15,7 @@ ChaosDiscordConfig = {
 		worldboss_kill = true, -- a world boss falls (the records' kill time and the fighters)
 		ascended_kill = true, -- an Ascended Omen falls
 		cinderheart_kill = true, -- the Cinderheart falls
+		drop = true, -- a legendary, divine or unique drop of the server drop feed (retention_loot.lua, O260)
 		level = true, -- a character reaches a level of levelMilestones
 		season_start = true,
 		season_end = true,
@@ -29,7 +30,7 @@ ChaosDiscordConfig = {
 	channels = {
 		record = "records", first = "records",
 		worldboss_spawn = "bosses", worldboss_kill = "bosses", ascended_kill = "bosses", cinderheart_kill = "bosses",
-		level = "players",
+		level = "players", drop = "drops",
 		season_start = "announce", season_end = "announce", chronicle = "announce",
 		status_up = "status", status_down = "status", status_restart = "status"
 	},
@@ -39,7 +40,7 @@ ChaosDiscordConfig = {
 
 	-- game side rate limit: at most this many rows per event type per minute (more are dropped and counted); the worker
 	-- also spaces its posts per webhook and honours Discord's 429 retry_after
-	perMinute = {default = 6, level = 10, record = 10, first = 10},
+	perMinute = {default = 6, level = 10, record = 10, first = 10, drop = 6},
 
 	-- the daily restart: a shutdown within this many minutes after the server save time of
 	-- data/globalevents/globalevents.xml ("serversave.lua", time="HH:MM:SS") posts status_restart, else status_down

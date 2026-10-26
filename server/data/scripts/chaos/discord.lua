@@ -16,6 +16,7 @@
 --                                             in server_config, so a restart does not announce again)
 --   startup / shutdown                        server up; the daily restart (a shutdown just after the server save
 --                                             time of globalevents.xml) or down
+--   ChaosDiscord.drop(name, level, item, kind)   a drop of the server drop feed (retention_loot.lua, O260)
 -- Lua 5.1 / LuaJIT compatible.
 
 if not Chaos then
@@ -68,6 +69,11 @@ function X.queue(ev, sync)
 	end
 	X.sent = X.sent + 1
 	return true
+end
+
+-- the drop feed (retention_loot.lua) calls this: English text, the game side rate limit of cfg.perMinute.drop
+function X.drop(name, level, item, kind)
+	return X.queue(D.drop(cfg, name, level, item, kind))
 end
 
 local function try(name, fn, ...)

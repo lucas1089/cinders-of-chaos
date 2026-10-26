@@ -289,6 +289,7 @@ local CATEGORIES = {
     entry('Options',         'options',     { modules = { 'client_settings', 'client_options' }, fns = { 'toggle' }, offline = true }),
     entry('Hotkeys',         'options',     { modules = { 'game_hotkeys' },   fns = { 'toggle' } }),
     entry('Sound',           'options',     { modules = { 'game_chaossound' }, fns = { 'toggle' }, offline = true }), -- O238
+    entry('Drop Feed',       'options',     { modules = { 'game_dropfeed' }, fns = { 'toggle' } }), -- O260
     entry('Helper',          'help',        { modules = { 'game_helper' },    fns = { 'toggle' } }),
     entry('Server Info',     'help',        info('server')),
     entry('Report a Bug',    'help',        { modules = { 'game_bugreport' }, fns = { 'show' } }),

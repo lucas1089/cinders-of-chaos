@@ -128,5 +128,34 @@ do
   eq(L.joinPart(p2, 'E:1}'), '{"e":1}', 'replaces the lost one')
 end
 
+-- the personal records packet (O260)
+do
+  local st = L.newState()
+  eq(L.onRecords(st, { name = 'Anna', rows = {} }), false, 'no records before a result')
+  eq(L.recordsButtonText(st), nil, 'no button text before the packet')
+  L.onResult(st, { name = 'Anna', parts = 0 })
+  eq(L.recordsButtonText(st), nil, 'a result without the packet yet')
+  eq(L.onRecords(st, { name = 'Bob', rows = {} }), false, 'another character')
+  eq(L.onRecords(st, { name = 'Anna', rows = 'x' }), false, 'rows must be a list')
+  eq(L.onRecords(st, 5), false, 'junk')
+  local rows = { { name = 'Best drop: rarity', value = 'Legendary' }, { name = 'Highest Tower floor', value = 41 },
+    { name = 5, value = 'x' }, { name = 'No value' }, 'junk' }
+  eq(L.onRecords(st, { name = 'Anna', rows = rows }), true, 'the packet')
+  eq(#st.records, 2, 'rows without a text name or a value are dropped')
+  eq(st.records[2].value, '41', 'values are text')
+  eq(L.recordsButtonText(st), 'Records (2)', 'the button counts the rows')
+  eq(L.recordsEmptyText(st), 'No records yet.', 'empty text after the packet')
+  L.onResult(st, { name = 'Bob', parts = 0 })
+  eq(st.records, nil, 'a new result clears the records')
+  eq(L.recordsEmptyText(st), 'Nothing to show.', 'empty text before the packet')
+  L.onResult(st, { name = 'Cy', parts = 0 })
+  L.onRecords(st, { name = 'Cy', rows = {} })
+  eq(L.recordsButtonText(st), 'Records', 'no records: plain text')
+  local many = {}
+  for i = 1, 60 do many[i] = { name = 'r' .. i, value = i } end
+  L.onRecords(st, { name = 'Cy', rows = many })
+  eq(#st.records, L.MAX_RECORD_ROWS, 'at most MAX_RECORD_ROWS rows')
+end
+
 if fails > 0 then print(fails .. ' of ' .. checks .. ' checks FAILED'); os.exit(1) end
 print('playerinspect_logic_test: ' .. checks .. ' checks ok')

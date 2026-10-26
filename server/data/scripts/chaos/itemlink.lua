@@ -225,4 +225,24 @@ end
 logout:type("logout")
 logout:register()
 
+-- O260 (the drop feed, retention_loot.lua): the link text of an item that is not in the player's hands, for a line the
+-- server writes itself ("<name> (Lv N) found [Item]{...}!"). The snapshot is the tooltip as the item is now, owned by
+-- `owner` (the finder), kept like any link for `ttl` seconds. Returns the token and the clean name, nil when the tooltip
+-- cannot be built (the caller writes the plain name).
+function K.linkFor(owner, item)
+	local attrs
+	if item.getClientAttributes then
+		local okAttrs, a = pcall(item.getClientAttributes, item)
+		attrs = okAttrs and a or nil
+	end
+	local okTip, tip = pcall(T.build, item, {equippedIds = {}, attrs = attrs})
+	if not okTip or type(tip) ~= "table" then
+		return nil
+	end
+	K.purge(K.cache, nowSec())
+	local entry = K.put(K.cache, {owner = owner:getGuid(), ownerName = owner:getName(), key = tip.key, tip = tip, now = nowSec(),
+		id = K.makeId(systemBytes, math.random)})
+	return K.token(tip.name, tip.rarity, entry.id, tip.unique ~= nil), K.cleanName(tip.name)
+end
+
 return K

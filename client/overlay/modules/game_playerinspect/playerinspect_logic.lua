@@ -5,6 +5,8 @@
 --          a single big row comes in parts "S..", "P..", "E.." like the tree, joined by L.joinPart)
 --   tree   {name, nodes, masteries = [{id, choice}], cls, line, vocation, spent, total}   the passive tree, after the
 --          equipment; a big one comes in parts "S..", "P..", "E.." (Chaos.sendChunked), joined by L.joinPart
+--   records {name, rows = [{key, name, value}]}   the personal records (best drop, Tower floor, rift tier, boss kills),
+--          text already in the language of the viewer; after the result
 --   denied {code, text}      privacy {allow}
 local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
@@ -13,6 +15,7 @@ local L = PlayerInspectLogic
 
 L.OPCODE = 240
 L.MAX_TRIAL_TIER = 3
+L.MAX_RECORD_ROWS = 24
 L.COLORS = { text = '#d6c9ae', dim = '#8c8070', gold = '#f6cf72', red = '#e03a1e', good = '#5ccf5c' }
 
 -- where each inventory slot sits in the window: column and row (0-based), and its name
@@ -72,7 +75,34 @@ function L.newState()
 end
 
 function L.onResult(state, d)
-  state.data, state.tips, state.parts, state.got, state.tree = d, {}, tonumber(d.parts) or 0, 0, nil
+  state.data, state.tips, state.parts, state.got, state.tree, state.records = d, {}, tonumber(d.parts) or 0, 0, nil, nil
+end
+
+-- the records packet; false when it belongs to another character than the result shown or is not a records packet.
+-- Keeps the rows that have a name and a value as text (at most L.MAX_RECORD_ROWS).
+function L.onRecords(state, d)
+  if not state.data or type(d) ~= 'table' or d.name ~= state.data.name or type(d.rows) ~= 'table' then return false end
+  local rows = {}
+  for _, r in ipairs(d.rows) do
+    if type(r) == 'table' and type(r.name) == 'string' and r.value ~= nil and #rows < L.MAX_RECORD_ROWS then
+      rows[#rows + 1] = { name = r.name, value = tostring(r.value) }
+    end
+  end
+  state.records = rows
+  return true
+end
+
+-- the Records button's text: "Records (5)", plain "Records" when the character has none, nil before the packet arrived
+function L.recordsButtonText(state)
+  if not state.records then return nil end
+  if #state.records == 0 then return tr('Records') end
+  return tr('Records (%d)', #state.records)
+end
+
+-- what the Records panel says when there are no rows
+function L.recordsEmptyText(state)
+  if not state.records then return tr('Nothing to show.') end
+  return tr('No records yet.')
 end
 
 -- the tree packet; false when it belongs to another character than the result shown or is not a tree
