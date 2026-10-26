@@ -29,6 +29,7 @@ DENY_HASHES = {
     '9a7be5bb26fa4e65',  # the maker of the shared potion pack (pair 30)
     'e5336673bc2fb58f',  # an ARPG named in early docs (three words, found as a run of words)
     '6db7636b5922f26c',  # the short form of that ARPG ("PoE" splits into two words, found as a run of words)
+    '8c649a8f85f3d89d',  # another ARPG named in early docs
 }
 ART_PACKS = re.compile(r'\bwst(_|\b)|raven ?fantasy|pixel ?spellcraft|anime ?ki ?auras|mutter ?pixel|pocket ?cozy|bloom ?pixle|'
                        r'pixel ?(status ?effects|projectiles|fireworks|blood ?vfx)|animated ?vfx', re.I)

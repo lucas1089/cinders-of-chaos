@@ -1,6 +1,6 @@
 # Cinders of Chaos: status
 
-Private working repo for a dark-fantasy (Diablo flavour) Open Tibia server. Everything here was written in cloud sessions with no OTClient and no TFS runtime: **nothing has been run**. Treat it as a map to verify.
+Private working repo for a dark-fantasy ARPG-flavoured Open Tibia server. Everything here was written in cloud sessions with no OTClient and no TFS runtime: **nothing has been run**. Treat it as a map to verify.
 
 ## Decisions
 - Protocol 10.98, server base: the existing server (TFS 1.4.2 with OTClient extensions); best populated map and spawns found.
