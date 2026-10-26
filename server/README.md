@@ -18927,6 +18927,54 @@ parts in one pass after `contentareas` (before `poi`), idempotent like the other
 Checked on the copy (not on a live server, not in a client): the scan again (no destination without a tile), both
 checkers, the display cells of all 62 rooms, renders of the hub and the temple before and after.
 
+## Dead holes (`tools/check_dead_holes.py`, `tools/patch_dead_holes.py`, `tools/dead_holes.csv`, install step `deadholes`, O264)
+Owner report of 2026-10-26 with a screenshot: "esse buraco nao leva a lugar nenhum" (this hole leads nowhere): a dirt hole
+on a patch of grass beside grey stone ruins and jungle plants. No coordinates. The checker and the patch below came out
+of it; the base server's own map is where the holes are (see "Found").
+- **The checker** (`python3 -I server/tools/check_dead_holes.py MAP.otbm [--items items.otb] [--xml items.xml] [--plans DIR]
+  [--csv FILE] [--all] [--quiet]`; about a minute for the base map; items.otb and items.xml are looked for beside the map,
+  else `../items/`). It reads the map with `tools/map/otbm.py`, finds every tile with a floor change item and works out where
+  the engine puts a creature that steps on it, from the floor change values of items.xml (`floorchange`; items.otb bits 8-12
+  too) and the item names:
+  - `down` (holes, pitfalls, trapdoors, stairs down, ground-type holes): the same x,y one floor below, moved by the floor
+    change of that tile as the engine does (the first of south-alt, east-alt, south, east, west: a stair below pushes the
+    landing off its foot; a north stair below does not);
+  - `north` / `south` / `east` / `west` (ramps, stairs up, corkscrew stairs): one floor up and one tile that way (alt: two);
+  - ladders, rope-ladders and the rope spots (384, 418, 8278, 8592): the tile above or any of its 8 neighbours;
+  - sewer grates: the tile below or any of its 8 neighbours.
+  A landing is `void` (no tile, or a tile without a ground) or `blocked` (a ground with an item that blocks: flag block solid;
+  block path only steers path finding, stairs and holes have it). A change is dead when every candidate landing is. A tile
+  nobody can stand on (no ground, or a blocking item: roof pieces, rails) is no hole and is not listed. The area of a dead
+  change is the plan box (origin, size, floors) of `areaplan/plans`, `chronicle`, `rooms`, `events` and `inbox` it lies in,
+  else `base map`. The engine side is read from the usual TFS 1.4 floor change rules (the base source is not in the repo);
+  run it again after an engine change that touches floor changes.
+- **Not in CI on a map:** it needs the map. `tools/check_dead_holes_test.py` runs in CI on a synthetic map (down, up, ladder,
+  grate, rope spot, stair offsets, void and blocked, roofs, items.xml ranges, a tiny OTBM, the CSV rows).
+- **Found** on the installed map (the winpkg-80 release, 25,909 floor change tiles): 445 dead,
+  all in the base map. By kind: stairs down 215 (ground-type stairs over nothing or over a wall), ramps and stairs up 111,
+  sewer grates 45 (the cities' sewers are not mapped), pitfalls 18, holes 13, trapdoors 12, ladders and rope-ladders 12,
+  ramps down 3, rope spots 3, and 13 others (9 ice huts and 2 coffins that carry a floor change, 2 open pitfalls drawn as
+  "grass"). By floor: 114 on floor 7, 57 on 6, 55 on 3, the rest over 0 to 15. 246 land on no tile, 199 on a wall. None
+  in our areas: the 73 plans of `areaplan/plans`, `chronicle`, `rooms` and `events` compiled alone
+  (`area_planner.py compile`, deterministic) hold 18 floor change tiles and none is dead; the teleport hall and the placed
+  areas of the installed map have none either (`area` is `base map` in every row). One dead hole lands on our view frame's
+  rock (31339,30999,7: a large hole of the base map over the bare rock of an area's frame; the hole is the base server's).
+- **The screenshot:** most likely 32396,31518,7 (item 293, a "grass" ground that is a pitfall, no tile on floor 8): jungle
+  grass, shallow water, a mossy stone wall, carved stone, a broken lizard statue, stone pillars, bamboo and an umbrella
+  plant within six tiles. Another 15 pitfalls on jungle grass (32675-32729, 32965-33038, floor 7) are dead too. The owner
+  gave no position, so this is a match by description, not confirmed.
+- **The patch** (`tools/patch_dead_holes.py DATA_DIR [--dry-run] [--map FILE] [--out FILE] [--csv FILE]`, install step
+  `deadholes` after `mapfixes`, before `poi`; test `tools/patch_dead_holes_test.py`). `tools/dead_holes.csv` (made by
+  `check_dead_holes.py --csv`; positions and item ids only) has one row per floor change item of a dead tile: `remove` takes
+  the item off (the ground stays), `ground` turns a floor change that IS the ground (stairs, an open pitfall) into the
+  commonest plain walkable ground round it, `none` where none is near. A row is applied only while the tile is still dead
+  on the map the tool reads, so a lower floor mapped later keeps its hole. Idempotent like `mapfixes` (`.bak`, `.tmp`, tile
+  count checked, `--dry-run`, `--out`). On the installed map: 195 items removed, 243 grounds replaced, 7 left alone (4 on house
+  tiles, which the writer does not rewrite, 3 with no plain ground near); the checker finds those 7 and nothing else after.
+- **A new dead hole in one of our areas** is fixed in its plan (`areaplan/plans/*.json`) or in the install tool that
+  placed it, not by this patch: run the checker on the compiled area (`area_planner.py compile PLAN OUT`, then
+  `check_dead_holes.py OUT/ID.otbm --items items.otb --xml items.xml`). To refresh the list after a new base-map change: `check_dead_holes.py MAP --csv server/tools/dead_holes.csv`.
+
 ## Temple portal gallery (`temple_portals_config.lua`, `cityportals*.lua`, `tools/patch_map_fixes.py`)
 Owner 2026-10-22: "take these NPCs out of the temple and do away with the Hall of Services. The portals of the Hall of
 Services go to the temple, with decoration and the orange text saying where they go." The NPC arcade of 2026-10-21 (the

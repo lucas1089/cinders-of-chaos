@@ -1,0 +1,315 @@
+{
+ "name": "cave: dirt-floor tunnels in solid earth, stone walls on the floor edge",
+ "notes": "Learned 2026-10-26 from refs/cave-a (x 33050-33189 y 32650-32779, floors 9-11, tunnel maze), refs/cave-b (x 32420-32559 y 31860-31989, floors 9-11, winding tunnels, grey patches, rubble), refs/cave-c (x 33130-33269 y 31090-31219, floors 8-10, wide chambers). See docs/kits/cave.md. The solid area is the 'water' role (non-walkable earth fill) and the wall set is the shore drawn onto the floor edge tiles.",
+ "water": {
+  "family": "G9026",
+  "lead": 9026,
+  "members": [
+   9026,
+   9026,
+   9026,
+   9026,
+   9026,
+   9026,
+   9026,
+   9026,
+   9027,
+   9028,
+   9029,
+   9030,
+   9031,
+   9032,
+   9033,
+   9042
+  ]
+ },
+ "base": {
+  "family": "G9021",
+  "lead": 9024,
+  "members": [
+   9021,
+   9021,
+   9025,
+   9025,
+   9023,
+   9022,
+   9024
+  ]
+ },
+ "sand": {
+  "family": "G4405",
+  "lead": 4405,
+  "members": [
+   4405,
+   4407,
+   4408,
+   4409,
+   4410,
+   4413,
+   4414,
+   4415,
+   4416,
+   4417,
+   4418,
+   4419,
+   4420
+  ]
+ },
+ "rock_soil": {
+  "family": "G4405",
+  "lead": 4405,
+  "members": [
+   4405,
+   4407,
+   4408,
+   4409,
+   4410,
+   4413,
+   4414,
+   4415,
+   4416,
+   4417,
+   4418,
+   4419,
+   4420
+  ]
+ },
+ "mountain": {
+  "lead": 919,
+  "members": [
+   919
+  ]
+ },
+ "hill": {
+  "lead": 919,
+  "members": [
+   919
+  ]
+ },
+ "worn_share": 0,
+ "no_water_border": [],
+ "base_on_rock": {
+  "edge_n": 7654,
+  "edge_e": 7834,
+  "edge_s": 7833,
+  "edge_w": 7666,
+  "inner_nw": 7671,
+  "inner_ne": 7672,
+  "inner_sw": 7836,
+  "inner_se": 7837,
+  "outer_nw": 7667,
+  "outer_ne": 7668,
+  "outer_sw": 7669,
+  "outer_se": 7835
+ },
+ "shore_on_base": {
+  "edge_n": 5640,
+  "edge_e": 5641,
+  "edge_s": 5642,
+  "edge_w": 5639,
+  "inner_nw": 5648,
+  "inner_ne": 5652,
+  "inner_sw": 5650,
+  "inner_se": 5649,
+  "outer_nw": 5645,
+  "outer_ne": 5646,
+  "outer_sw": 5644,
+  "outer_se": 5643
+ },
+ "layers": [
+  {
+   "kit": "sand",
+   "border": null
+  },
+  {
+   "kit": "rock_soil",
+   "border": null
+  },
+  {
+   "kit": "base",
+   "border": {
+    "sand": "base_on_rock",
+    "rock_soil": "base_on_rock"
+   }
+  },
+  {
+   "kit": "water",
+   "border": "shore_on_base",
+   "onto": [
+    "base",
+    "rock_soil",
+    "sand"
+   ],
+   "outside": true
+  }
+ ],
+ "defaults": {
+  "hills": 0,
+  "levels": 1,
+  "mountains": 0,
+  "rivers": 0,
+  "lakes": 8,
+  "roads": 0,
+  "sand": 5,
+  "vegetation": 100,
+  "rough": 70
+ },
+ "batch_cap": {
+  "levels": 1
+ },
+ "meadow": {
+  "3611": 0.03,
+  "3613": 0.03,
+  "3612": 0.02,
+  "3621": 0.02,
+  "3622": 0.02,
+  "3623": 0.02
+ },
+ "swap_walkable": {
+  "2x2": [],
+  "3x3": [],
+  "2x3": [],
+  "1x1": [
+   3611,
+   3612,
+   3613
+  ]
+ },
+ "flora": {},
+ "top_flora": {},
+ "bank_flora": {},
+ "hill_top": {},
+ "clumps": {
+  "quantiles": "study/cave-clumps.json",
+  "tops": {},
+  "big": {
+   "5708": 30,
+   "5709": 25,
+   "5707": 5,
+   "5619": 8,
+   "5620": 5,
+   "386": 12,
+   "387": 12,
+   "390": 12,
+   "391": 12
+  },
+  "small": {
+   "6374": 150,
+   "3623": 43,
+   "3622": 40,
+   "3613": 40,
+   "3611": 38,
+   "3621": 36,
+   "3612": 34,
+   "6376": 56,
+   "6375": 54,
+   "6378": 52,
+   "6377": 54,
+   "6476": 60,
+   "6379": 42,
+   "6381": 44,
+   "6380": 42,
+   "6382": 40,
+   "3614": 18,
+   "3610": 16
+  },
+  "boost": {
+   "big": 1.0,
+   "small": 1.0
+  }
+ },
+ "mountain_cliff": {
+  "edge_n": 5640,
+  "edge_e": 5641,
+  "edge_s": 5642,
+  "edge_w": 5639,
+  "inner_nw": 5648,
+  "inner_ne": 5652,
+  "inner_sw": 5650,
+  "inner_se": 5649,
+  "outer_nw": 5645,
+  "outer_ne": 5646,
+  "outer_sw": 5644,
+  "outer_se": 5643
+ },
+ "top_rim": {
+  "edge_n": 5640,
+  "edge_e": 5641,
+  "edge_s": 5642,
+  "edge_w": 5639,
+  "inner_nw": 5648,
+  "inner_ne": 5652,
+  "inner_sw": 5650,
+  "inner_se": 5649,
+  "outer_nw": 5645,
+  "outer_ne": 5646,
+  "outer_sw": 5644,
+  "outer_se": 5643
+ },
+ "hill_cliff": {
+  "edge_n": 5640,
+  "edge_e": 5641,
+  "edge_s": 5642,
+  "edge_w": 5639,
+  "inner_nw": 5648,
+  "inner_ne": 5652,
+  "inner_sw": 5650,
+  "inner_se": 5649,
+  "outer_nw": 5645,
+  "outer_ne": 5646,
+  "outer_sw": 5644,
+  "outer_se": 5643
+ },
+ "hill_rim": {
+  "edge_n": 5640,
+  "edge_e": 5641,
+  "edge_s": 5642,
+  "edge_w": 5639,
+  "inner_nw": 5648,
+  "inner_ne": 5652,
+  "inner_sw": 5650,
+  "inner_se": 5649,
+  "outer_nw": 5645,
+  "outer_ne": 5646,
+  "outer_sw": 5644,
+  "outer_se": 5643
+ },
+ "_placeholders": "mountain_cliff, top_rim, hill_cliff, hill_rim and the ramps repeat the wall set: the generator reads them although the cave has no relief (mountains 0, hills 0)",
+ "mountain_ramp": {
+  "n": [
+   5640,
+   5640
+  ],
+  "s": [
+   5642,
+   5642
+  ],
+  "e": [
+   5641,
+   5641
+  ],
+  "w": [
+   5639,
+   5639
+  ]
+ },
+ "hill_ramp": {
+  "n": [
+   5640,
+   5640
+  ],
+  "s": [
+   5642,
+   5642
+  ],
+  "e": [
+   5641,
+   5641
+  ],
+  "w": [
+   5639,
+   5639
+  ]
+ },
+ "_decor_notes": "clumps.small: debris (border overlay items 6374-6386, 6476) about 0.5 per floor tile and stones 3610-3623 about 0.3 per tile (cave-b); clumps.big: 2x2 rubble 5707-5709, 5619-5620 and 1x1 stalagmites 386 387 390 391 (reference rate about 0.4% of floor tiles each)"
+}

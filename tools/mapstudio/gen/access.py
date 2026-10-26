@@ -186,6 +186,35 @@ def drop_cut_off_tops(floors, items, ramp_dirs, start, main=7):
     return dropped
 
 
+def close_pockets(floors, items, ramp_dirs, start, fill, rng, main=7, most=30):
+    """Walkable pockets of up to `most` tiles on the main floor that no walk reaches (strips between a cliff and the water
+    that the shore and cliff pieces cut off) are closed: each tile gets a blocking plant from `fill` (ids of 1x1
+    blocking plants), so the nook reads as a thicket and nothing walkable is stranded. Bigger pockets are left for
+    the reach report. Returns the tiles closed."""
+    got = reach(floors, items, ramp_dirs, start)
+    layer = floors.get(main, {})
+    loose = {pos for pos, s in layer.items() if walkable(items, s) and (main, *pos) not in got}
+    seen, closed = set(), 0
+    for pos in sorted(loose):
+        if pos in seen:
+            continue
+        part, queue = [], deque([pos])
+        seen.add(pos)
+        while queue:
+            x, y = queue.popleft()
+            part.append((x, y))
+            for i, j in STEPS:
+                nb = (x + i, y + j)
+                if nb in loose and nb not in seen:
+                    seen.add(nb)
+                    queue.append(nb)
+        if len(part) <= most:
+            for t in part:
+                layer[t].append(rng.choice(fill))
+            closed += len(part)
+    return closed
+
+
 def open_lanes(floors, items, plants, swap, rng, strict_tops=True):
     """Keeps paths through vegetation open, the way the reference map's blocking plants sit (tools/path_study.py: on
     the reference map 85% of open ground lies in walkable space 9+ wide, 1-2 wide gaps are rare): blocking plants either

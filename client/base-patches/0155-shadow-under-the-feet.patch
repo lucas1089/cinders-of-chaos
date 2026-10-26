@@ -1,0 +1,162 @@
+# Chaos: the soft shadow sits under the drawn feet (O263; client/BASE.md "0155"; src/client/chaosshadow.h (new, pure),
+# creature.cpp; after 0001-0154).
+# Owner report 2026-10-26: players and monsters looked like they float. Cause: the shadow of 0126 was centred on the
+# creature's tile (tile middle, 5 px over the tile bottom), but a creature look is drawn by ThingType::draw from the tile
+# corner minus the look's displacement (8,8 for most looks) and minus (tiles - 1) tiles, so the feet are left and up of the tile
+# middle: 8 px for a 1x1 look (both axes), 24 px left and 8 px up for a 2x2 look.
+# Now the shadow is queued behind the outfit as before, with a place holder rect, and moved once the outfit is drawn:
+# the middle of the pieces just drawn (their final rects, trimmed to the opaque pixels, mount and body) and their lowest row,
+# 5 px (times sprite size / 32) up. Width as before from the look's tiles (the mount's too, the larger of the two). The jump
+# is added back (the shadow stays on the ground) and a creature drawn scaled has its shadow moved and sized around the same
+# point. A look whose texture is not loaded yet falls back to chaosshadow.h bodyFromPlacement (the frame of ThingType::draw).
+--- a/src/client/creature.cpp
++++ b/src/client/creature.cpp
+@@ -38,6 +38,7 @@
+ #include "chaoshitflash.h"
+ #include "chaosrecoil.h"
+ #include "chaosbars.h"
++#include "chaosshadow.h"
+ 
+ #include <framework/graphics/graphics.h>
+ #include <framework/core/eventdispatcher.h>
+@@ -302,17 +303,20 @@
+ 
+     // Chaos (base patch 0126): the soft shadow on the ground under the feet, behind the outfit; it stays on the tile
+     // while the creature jumps and is as wide as the creature's tiles (a big look gets a big shadow). Map draw only.
++    // Chaos (base patch 0155): queued here (behind the outfit) with a place holder and moved once the outfit is drawn,
++    // under the middle of the pieces that were drawn at their lowest row (chaosshadow.h). A look is drawn from the tile
++    // corner minus its displacement and minus (tiles - 1) tiles, so the tile's middle and bottom were off the feet.
++    DrawQueueItemTexturedRect* shadowItem = nullptr;
++    int shadowTiles = 1;
++    ThingType* shadowType = nullptr;
+     if (s_softShadow && animate && m_outfit.getCategory() == ThingCategoryCreature) {
+-        int widthTiles = 1;
+-        ThingType* shadowType = m_outfit.getId() > 0 ? g_things.rawGetThingType(m_outfit.getId(), ThingCategoryCreature) : nullptr;
++        shadowType = m_outfit.getId() > 0 ? g_things.rawGetThingType(m_outfit.getId(), ThingCategoryCreature) : nullptr;
++        ThingType* shadowMount = m_outfit.getMount() > 0 ? g_things.rawGetThingType(m_outfit.getMount(), ThingCategoryCreature) : nullptr;
+         if (shadowType)
+-            widthTiles = std::max<int>(1, std::min<int>(4, shadowType->getWidth()));
+-        const float unit = sprSize / 32.f;
+-        const float w = (22.f * widthTiles + (widthTiles - 1) * 4.f) * unit * m_drawScale;
+-        const float h = w * 0.42f;
+-        const Point feet = dest + animationOffset + Point(sprSize / 2, sprSize - static_cast<int>(5 * unit));
+-        g_drawQueue->addTexturedRect(Rect(feet.x - static_cast<int>(w / 2), feet.y - static_cast<int>(h / 2), static_cast<int>(w), static_cast<int>(h)),
+-                                     softShadowTexture(), Rect(0, 0, 64, 32), Color(255, 255, 255, 120));
++            shadowTiles = std::max<int>(shadowTiles, shadowType->getWidth());
++        if (shadowMount)
++            shadowTiles = std::max<int>(shadowTiles, shadowMount->getWidth());
++        shadowItem = g_drawQueue->addTexturedRect(Rect(dest.x, dest.y, 1, 1), softShadowTexture(), Rect(0, 0, 64, 32), Color(255, 255, 255, 120));
+     }
+ 
+     size_t drawQueueSize = g_drawQueue->size();
+@@ -326,7 +330,7 @@
+         hoverOutline = outline.get();
+         g_drawQueue->add(std::move(outline));
+     }
+-    m_outfit.setHitParts(hitView ? &hitParts : nullptr);
++    m_outfit.setHitParts((hitView || shadowItem) ? &hitParts : nullptr);
+     m_outfit.setDrawOutline(m_outline.width > 0 ? &m_outline : nullptr);
+     // Chaos (base patch 0126): the hit flash draws the outfit with its flash shader until the time is up
+     const bool hitFlash = animate && m_hitFlashEnd != 0 && !m_hitShader.empty();
+@@ -345,6 +349,37 @@
+         m_outfit.setShader(shaderBeforeFlash);
+     m_outfit.setDrawOutline(nullptr);
+     m_outfit.setHitParts(nullptr);
++    if (shadowItem) {
++        // the middle and the lower edge of the pieces just drawn (their final rects, trimmed to the opaque pixels)
++        bool any = false;
++        int left = 0, right = 0, bottom = 0;
++        for (const CreatureHitPart& part : hitParts) {
++            const Rect r = part.item ? part.item->m_dest : part.dest;
++            if (r.width() <= 0 || r.height() <= 0)
++                continue;
++            left = any ? std::min<int>(left, r.left()) : r.left();
++            right = any ? std::max<int>(right, r.right() + 1) : r.right() + 1;
++            bottom = any ? std::max<int>(bottom, r.bottom() + 1) : r.bottom() + 1;
++            any = true;
++        }
++        float bodyX, bodyY;
++        if (any) {
++            bodyX = (left + right) / 2.0f;
++            bodyY = static_cast<float>(bottom);
++        } else {
++            const Point shown = dest - jumpOffset + animationOffset;
++            const Point disp = shadowType ? shadowType->getDisplacement() * g_sprites.getOffsetFactor() : Point();
++            chaos::shadow::bodyFromPlacement(static_cast<float>(shown.x), static_cast<float>(shown.y), static_cast<float>(disp.x),
++                                             static_cast<float>(disp.y), shadowType ? shadowType->getWidth() : 1, sprSize, bodyX, bodyY);
++        }
++        // the shadow stays on the ground: the jump lifts the pieces, not the floor
++        bodyX += jumpOffset.x;
++        bodyY += jumpOffset.y;
++        const Point scaleAt = creatureCenter + Point(0, sprSize / 2);
++        const chaos::shadow::Ellipse e = chaos::shadow::place(bodyX, bodyY, shadowTiles, sprSize / 32.f, m_drawScale,
++                                                              static_cast<float>(scaleAt.x), static_cast<float>(scaleAt.y));
++        shadowItem->m_dest = Rect(e.x, e.y, e.w, e.h);
++    }
+     if (hoverOutline) {
+         DrawQueueItemTexturedRect* largest = nullptr;
+         for (const CreatureHitPart& part : hitParts) {
+--- a/src/client/chaosshadow.h
++++ b/src/client/chaosshadow.h
+@@ -0,0 +1,61 @@
++// Cinders of Chaos (base patch 0155): where the soft shadow under a creature sits, pure and header-only so
++// client/tools/chaosshadow_test.cpp can run it without the engine. The shadow is centred on the drawn body (the middle of
++// its pieces) at the lowest drawn row, not on the logical tile: a creature look is drawn from its tile corner minus the
++// look's displacement and minus (tiles - 1) tiles, so the tile and the feet are different places.
++#ifndef CHAOSSHADOW_H
++#define CHAOSSHADOW_H
++
++#include <algorithm>
++
++namespace chaos {
++namespace shadow {
++
++constexpr float kLiftPx = 5.0f;     // from the lowest drawn row up to the middle of the ellipse (at 32 px sprites)
++constexpr float kTileWidthPx = 22.0f;  // ellipse width for a one tile look (at 32 px sprites)
++constexpr float kExtraTilePx = 4.0f;   // more width for every tile beyond the first
++constexpr float kHeightRatio = 0.42f;  // ellipse height over its width
++constexpr int kMaxTiles = 4;
++
++struct Ellipse {
++    int x = 0, y = 0, w = 0, h = 0;
++};
++
++inline int clampTiles(int widthTiles)
++{
++    return std::max(1, std::min(kMaxTiles, widthTiles));
++}
++
++// The ellipse for a body whose drawn pieces have the middle `bodyCenterX` and the lower edge `bodyBottomY` (the row under
++// the lowest drawn pixel). `unit` is spriteSize / 32. A creature drawn scaled by `scale` around (scaleX, scaleY) gets its
++// shadow moved and sized the same way (the shadow is queued outside the scaled pieces).
++inline Ellipse place(float bodyCenterX, float bodyBottomY, int widthTiles, float unit, float scale, float scaleX, float scaleY)
++{
++    const int tiles = clampTiles(widthTiles);
++    const float w = (kTileWidthPx * tiles + (tiles - 1) * kExtraTilePx) * unit * scale;
++    const float h = w * kHeightRatio;
++    const float cx = scaleX + (bodyCenterX - scaleX) * scale;
++    const float cy = scaleY + ((bodyBottomY - kLiftPx * unit) - scaleY) * scale;
++    Ellipse e;
++    e.w = static_cast<int>(w);
++    e.h = static_cast<int>(h);
++    e.x = static_cast<int>(cx) - e.w / 2;
++    e.y = static_cast<int>(cy) - e.h / 2;
++    return e;
++}
++
++// The drawn body without its pieces (a look whose texture is not loaded yet): the same middle and lower edge, worked out
++// from the place the outfit is drawn at (`destX`, `destY`, the tile corner plus walk offset), as ThingType::draw does:
++// the frame starts at dest - displacement - (tiles - 1) * spriteSize and is `tiles` tiles wide and high.
++inline void bodyFromPlacement(float destX, float destY, float dispX, float dispY, int widthTiles, int spriteSize,
++                              float& centerX, float& bottomY)
++{
++    const float s = static_cast<float>(spriteSize);
++    const int tiles = std::max(1, widthTiles);
++    centerX = destX - dispX - (tiles - 1) * s + tiles * s / 2.0f;
++    bottomY = destY - dispY + s;
++}
++
++}  // namespace shadow
++}  // namespace chaos
++
++#endif

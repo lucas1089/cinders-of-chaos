@@ -1,0 +1,456 @@
+{
+ "name": "ice and snow, frozen island",
+ "notes": "Learned 2026-10-26 from the reference map's snow region (north-west of the continent): window ice-a (x 32300-32470, y 31140-31360: snow island, icy mountain terraces, ice patches), ice-b (x 31950-32130, y 31130-31300: frozen lake, snow mainland, snowy ridges, a river), ice-c (x 31900-32110, y 31480-31650: snow island with fir and dead trees). Sets named with tools/name_set.py, ramps with tools/ramp_check.py, shares with tools/learn_kit.py, tools/family_items.py, tools/clump_study.py (snow families G670 and G6838 counted as one; ids below). See docs/kits/ice.md.",
+ "water": {
+  "family": "G4608",
+  "lead": 4608,
+  "members": [
+   4609,
+   4610,
+   4611,
+   4612,
+   4613
+  ],
+  "bands": [
+   [
+    2,
+    {
+     "shallow": 0.96,
+     "deep": 0.04
+    }
+   ],
+   [
+    3,
+    {
+     "shallow": 0.78,
+     "deep": 0.22
+    }
+   ],
+   [
+    4,
+    {
+     "shallow": 0.61,
+     "deep": 0.39
+    }
+   ],
+   [
+    5,
+    {
+     "shallow": 0.44,
+     "deep": 0.56
+    }
+   ],
+   [
+    6,
+    {
+     "shallow": 0.32,
+     "deep": 0.68
+    }
+   ],
+   [
+    7,
+    {
+     "shallow": 0.23,
+     "deep": 0.77
+    }
+   ],
+   [
+    8,
+    {
+     "shallow": 0.17,
+     "deep": 0.83
+    }
+   ],
+   [
+    10,
+    {
+     "shallow": 0.1,
+     "deep": 0.9
+    }
+   ],
+   [
+    999,
+    {
+     "shallow": 0.05,
+     "deep": 0.95
+    }
+   ]
+  ],
+  "variants": {
+   "shallow": {
+    "lead": 4608,
+    "members": [
+     4609,
+     4610,
+     4611,
+     4612,
+     4613
+    ]
+   },
+   "deep": {
+    "lead": 27725,
+    "members": [
+     27728,
+     27729,
+     27730,
+     27731
+    ]
+   }
+  },
+  "order": [
+   "shallow",
+   "deep"
+  ]
+ },
+ "base": {
+  "family": "G670",
+  "lead": 670,
+  "members": [
+   6587,
+   6593,
+   6582,
+   6580,
+   6591,
+   6592,
+   6586,
+   6584,
+   6583,
+   6589,
+   6590,
+   6588,
+   6581,
+   6585
+  ]
+ },
+ "sand": {
+  "family": "G6684",
+  "lead": 6684,
+  "members": [
+   6683,
+   6685,
+   6686
+  ]
+ },
+ "rock_soil": {
+  "family": "G670",
+  "lead": 6587,
+  "members": [
+   6593,
+   6582,
+   6580,
+   6591,
+   6592,
+   6586,
+   6584
+  ]
+ },
+ "mountain": {
+  "lead": 919,
+  "members": [
+   919
+  ]
+ },
+ "worn_share": 0,
+ "no_water_border": [
+  "sand",
+  "rock_soil"
+ ],
+ "shore_on_base": {
+  "edge_n": 6627,
+  "edge_e": 6628,
+  "edge_s": 6629,
+  "edge_w": 6630,
+  "inner_nw": 6634,
+  "inner_ne": 6633,
+  "inner_sw": 6632,
+  "inner_se": 6631,
+  "outer_nw": 6635,
+  "outer_ne": 6636,
+  "outer_sw": 6638,
+  "outer_se": 6637
+ },
+ "mountain_cliff": {
+  "edge_n": 6720,
+  "edge_e": 6762,
+  "edge_s": 6761,
+  "edge_w": 6719,
+  "inner_nw": 6724,
+  "inner_ne": 6726,
+  "inner_sw": 6725,
+  "inner_se": 6727,
+  "outer_nw": 6723,
+  "outer_ne": 6722,
+  "outer_sw": 6721,
+  "outer_se": 6768
+ },
+ "mountain_ramp": {
+  "n": [
+   6915,
+   6916
+  ],
+  "s": [
+   6913,
+   6914
+  ],
+  "e": [
+   6909,
+   6910
+  ],
+  "w": [
+   6911,
+   6912
+  ]
+ },
+ "layers": [
+  {
+   "kit": "sand",
+   "border": null
+  },
+  {
+   "kit": "rock_soil",
+   "border": null
+  },
+  {
+   "kit": "base",
+   "border": {
+    "sand": "snow_on_ice"
+   }
+  },
+  {
+   "kit": "water",
+   "border": "shore_on_base",
+   "onto": [
+    "base",
+    "rock_soil"
+   ],
+   "outside": true
+  }
+ ],
+ "flora": {
+  "G6684": {
+   "6718": 0.02,
+   "6715": 0.014,
+   "6716": 0.011,
+   "6717": 0.011
+  }
+ },
+ "top_flora": {
+  "G670": {
+   "6718": 0.019,
+   "6715": 0.0127,
+   "6716": 0.0092,
+   "6717": 0.009,
+   "6218": 0.004,
+   "7003": 0.0017,
+   "7002": 0.0015,
+   "7000": 0.0015
+  },
+  "G6838": {
+   "6718": 0.019,
+   "6715": 0.0127,
+   "6716": 0.0092,
+   "6717": 0.009,
+   "6218": 0.004,
+   "7003": 0.0017,
+   "7002": 0.0015,
+   "7000": 0.0015
+  },
+  "G6684": {
+   "6718": 0.02,
+   "6715": 0.014
+  }
+ },
+ "apron_flora": {
+  "G6838": {
+   "6718": 0.019,
+   "6715": 0.0127,
+   "6716": 0.0092,
+   "6717": 0.009,
+   "6218": 0.004
+  }
+ },
+ "bank_flora": {
+  "G670": {
+   "6718": 0.015,
+   "6715": 0.01
+  }
+ },
+ "meadow": {
+  "7145": 0.004,
+  "7151": 0.003,
+  "7152": 0.003,
+  "7149": 0.003,
+  "7146": 0.0028,
+  "7150": 0.0027,
+  "7148": 0.002,
+  "7153": 0.002,
+  "6611": 0.0045,
+  "6609": 0.004,
+  "6610": 0.003,
+  "6218": 0.003
+ },
+ "hill_top": {
+  "6718": 1
+ },
+ "clumps": {
+  "quantiles": "study/ice_clumps.json",
+  "tops": {
+   "1": "study/ice_clumps_top1.json"
+  },
+  "big": {
+   "2698": 133,
+   "2697": 53,
+   "7020": 40,
+   "7021": 32,
+   "7022": 30
+  },
+  "small": {
+   "6718": 636,
+   "6715": 423,
+   "6716": 305,
+   "6717": 298,
+   "6218": 137,
+   "7003": 57,
+   "7002": 51,
+   "7000": 50,
+   "7001": 48,
+   "6999": 36,
+   "7145": 428,
+   "7151": 297,
+   "7152": 297,
+   "7149": 297,
+   "7146": 261,
+   "7150": 270,
+   "7148": 234,
+   "7153": 234,
+   "7147": 180,
+   "7154": 90,
+   "7155": 72,
+   "7156": 72,
+   "7157": 108
+  },
+  "boost": {
+   "big": 1.0,
+   "small": 1.0
+  }
+ },
+ "swap_walkable": {
+  "2x2": [],
+  "3x3": [],
+  "2x3": [],
+  "1x1": [
+   6718,
+   6715,
+   6716,
+   6717
+  ]
+ },
+ "defaults": {
+  "hills": 0,
+  "levels": 1,
+  "mountains": 25,
+  "rivers": 0,
+  "lakes": 1,
+  "roads": 0,
+  "sand": 2
+ },
+ "top_rim": {
+  "edge_n": 4737,
+  "edge_e": 4738,
+  "edge_s": 4739,
+  "edge_w": 4740,
+  "inner_nw": 4745,
+  "inner_ne": 4746,
+  "inner_sw": 4747,
+  "inner_se": 4748,
+  "outer_nw": 4741,
+  "outer_ne": 4742,
+  "outer_sw": 4743,
+  "outer_se": 4744
+ },
+ "join_land": {
+  "least": 12,
+  "gap": 14
+ },
+ "ramp_least": 6,
+ "notch_level0": true,
+ "repair_pocket": 1,
+ "drop_cut_off_tops": true,
+ "road_least": 30,
+ "top_rock": {
+  "1": [
+   0.05,
+   0.02
+  ],
+  "2": [
+   0.1,
+   0.05
+  ]
+ },
+ "hill": {
+  "lead": 919,
+  "members": [
+   919
+  ]
+ },
+ "hill_cliff": {
+  "edge_n": 6720,
+  "edge_e": 6762,
+  "edge_s": 6761,
+  "edge_w": 6719,
+  "inner_nw": 6724,
+  "inner_ne": 6726,
+  "inner_sw": 6725,
+  "inner_se": 6727,
+  "outer_nw": 6723,
+  "outer_ne": 6722,
+  "outer_sw": 6721,
+  "outer_se": 6768
+ },
+ "hill_rim": {
+  "edge_n": 4737,
+  "edge_e": 4738,
+  "edge_s": 4739,
+  "edge_w": 4740,
+  "inner_nw": 4745,
+  "inner_ne": 4746,
+  "inner_sw": 4747,
+  "inner_se": 4748,
+  "outer_nw": 4741,
+  "outer_ne": 4742,
+  "outer_sw": 4743,
+  "outer_se": 4744
+ },
+ "hill_ramp": {
+  "n": [
+   6915,
+   6916
+  ],
+  "s": [
+   6913,
+   6914
+  ],
+  "e": [
+   6909,
+   6910
+  ],
+  "w": [
+   6911,
+   6912
+  ]
+ },
+ "snow_on_ice": {
+  "edge_n": 4737,
+  "edge_e": 4738,
+  "edge_s": 4739,
+  "edge_w": 4740,
+  "inner_nw": 4745,
+  "inner_ne": 4746,
+  "inner_sw": 4747,
+  "inner_se": 4748,
+  "outer_nw": 4741,
+  "outer_ne": 4742,
+  "outer_sw": 4743,
+  "outer_se": 4744
+ }
+}

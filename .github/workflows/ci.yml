@@ -185,6 +185,8 @@ jobs:
           python3 -I server/tools/install_owner_decor.py --lua --check
           python3 -I server/tools/install_owner_decor_test.py
           python3 -I server/tools/patch_npc_currency_test.py
+          python3 -I server/tools/check_dead_holes_test.py   # floor changes that lead nowhere (O263; needs a map to run for real)
+          python3 -I server/tools/patch_dead_holes_test.py   # the install step deadholes on a synthetic map
           python3 -I server/tools/patch_drops_channel_test.py  # the Drops channel of the drop feed (O260)
           # catacomb kit (pair 27 trial): spec, sources and picks match gen_assets_art.py's tables (kit files not in git)
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_assets_art.py build --check
@@ -475,6 +477,16 @@ jobs:
           g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" client/tools/chaosrecoil_test.cpp -o "$d/chaosrecoil_asan"
           "$d/chaosrecoil_asan"
 
+      - name: Creature shadow placement (C++; header from base patch 0155)
+        run: |
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/client\/chaosshadow\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            client/base-patches/0155-shadow-under-the-feet.patch > "$d/chaosshadow.h"
+          g++ -std=c++17 -O1 -Wall -Wextra -I "$d" client/tools/chaosshadow_test.cpp -o "$d/chaosshadow_test"
+          "$d/chaosshadow_test"
+          g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" client/tools/chaosshadow_test.cpp -o "$d/chaosshadow_asan"
+          "$d/chaosshadow_asan"
+
       - name: Eased bars bookkeeping (C++; header from base patch 0146)
         run: |
           d=$(mktemp -d)
@@ -762,6 +774,7 @@ jobs:
           python3 client/tools/make_fonts_test.py  # not -I: Pillow from the user site (installed above)
           python3 client/tools/check_text_fit.py  # options menu sub-entries, English and pt-BR (base patch 0104)
           python3 client/tools/check_text_fit_test.py
+          python3 -I client/tools/check_options_fit.py --self-test  # an Options tab taller than the window must scroll (base patch 0156)
           python3 -I client/tools/check_otui_lines.py  # no OTML line at column 0 inside a style (base patch 0145)
           python3 -I client/tools/check_win_macros.py  # no Windows SDK macro names as identifiers in base patch C++ (base patch 0150)
           python3 -I client/tools/check_pe_hardening_test.py  # PE header flags checker of the Windows package (O204)

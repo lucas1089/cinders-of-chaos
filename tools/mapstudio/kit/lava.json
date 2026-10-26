@@ -1,0 +1,415 @@
+{
+ "name": "lava: volcanic isle in a lava sea",
+ "notes": "Learned 2026-10-26 (round 1) from refs/lava-a (cave floor 8, x 32885-33085 y 33035-33250, lava ring round a cave), lava-c (floor 8, x 33095-33295 y 33055-33245), lava-d (floor 14, x 32500-32720 y 31790-32020, an earth island in a lava sea) and lava-b (surface volcano, x 32000-32140 y 32525-32670, floors 3-7). See docs/kits/lava.md.",
+ "water": {
+  "family": "G598",
+  "lead": 598,
+  "members": [
+   600,
+   601
+  ],
+  "variants": {
+   "molten": {
+    "lead": 598,
+    "members": [
+     600,
+     601
+    ]
+   }
+  },
+  "order": [
+   "molten"
+  ],
+  "bands": [
+   [
+    99,
+    {
+     "molten": 1.0
+    }
+   ]
+  ],
+  "deep_flora_max": 3
+ },
+ "base": {
+  "family": "G351",
+  "lead": 351,
+  "members": [
+   355,
+   353,
+   352,
+   354
+  ]
+ },
+ "sand": {
+  "family": "G5815",
+  "lead": 5815,
+  "members": [
+   7354
+  ]
+ },
+ "rock_soil": {
+  "family": "G4405",
+  "lead": 4405,
+  "members": [
+   4407,
+   4408,
+   4409,
+   4410,
+   4413,
+   4414,
+   4415,
+   4416,
+   4417,
+   4418,
+   4419,
+   4420
+  ]
+ },
+ "mountain": {
+  "lead": 919,
+  "members": [
+   919
+  ]
+ },
+ "worn_share": 0,
+ "no_water_border": [
+  "sand"
+ ],
+ "edge_on_lava": {
+  "edge_n": 4808,
+  "edge_e": 4809,
+  "edge_s": 4810,
+  "edge_w": 4811,
+  "outer_nw": 4812,
+  "outer_ne": 4813,
+  "outer_se": 4815,
+  "outer_sw": 4814,
+  "inner_nw": 4816,
+  "inner_ne": 4817,
+  "inner_se": 4819,
+  "inner_sw": 4818
+ },
+ "edge_on_cracks": {
+  "edge_n": 4796,
+  "edge_e": 4797,
+  "edge_s": 4798,
+  "edge_w": 4799,
+  "outer_nw": 4800,
+  "outer_ne": 4801,
+  "outer_se": 4803,
+  "outer_sw": 4802,
+  "inner_nw": 4804,
+  "inner_ne": 4805,
+  "inner_se": 4807,
+  "inner_sw": 4806
+ },
+ "edge_on_rock": {
+  "edge_n": 4796,
+  "edge_e": 4797,
+  "edge_s": 4798,
+  "edge_w": 4799,
+  "outer_nw": 4800,
+  "outer_ne": 4801,
+  "outer_se": 4803,
+  "outer_sw": 4802,
+  "inner_nw": 4804,
+  "inner_ne": 4805,
+  "inner_se": 4807,
+  "inner_sw": 4806
+ },
+ "mountain_cliff": {
+  "edge_n": 4471,
+  "edge_e": 4468,
+  "edge_s": 4469,
+  "edge_w": 4472,
+  "outer_nw": 4475,
+  "outer_ne": 4474,
+  "outer_se": 4470,
+  "outer_sw": 4473,
+  "inner_nw": 4476,
+  "inner_ne": 4478,
+  "inner_se": 4479,
+  "inner_sw": 4477
+ },
+ "top_rim": {
+  "edge_n": 891,
+  "edge_e": 892,
+  "edge_s": 893,
+  "edge_w": 894,
+  "outer_nw": 895,
+  "outer_ne": 896,
+  "outer_se": 897,
+  "outer_sw": 898,
+  "inner_nw": 899,
+  "inner_ne": 900,
+  "inner_se": 901,
+  "inner_sw": 902
+ },
+ "mountain_ramp": {
+  "n": [
+   1394,
+   1395
+  ],
+  "s": [
+   1392,
+   1393
+  ],
+  "e": [
+   1388,
+   1389
+  ],
+  "w": [
+   1390,
+   1391
+  ]
+ },
+ "layers": [
+  {
+   "kit": "water",
+   "border": null
+  },
+  {
+   "kit": "sand",
+   "border": null
+  },
+  {
+   "kit": "rock_soil",
+   "border": {
+    "water": "edge_on_lava"
+   }
+  },
+  {
+   "kit": "base",
+   "border": {
+    "water": "edge_on_lava",
+    "sand": "edge_on_cracks",
+    "rock_soil": "edge_on_rock"
+   }
+  }
+ ],
+ "crossing": {
+  "type": "ford",
+  "ground": 5815
+ },
+ "water_flora": {
+  "deep": {
+   "5061": 0.008,
+   "5066": 0.007,
+   "5062": 0.006,
+   "8174": 0.005,
+   "5064": 0.004,
+   "5065": 0.004,
+   "5067": 0.003,
+   "1487": 0.003,
+   "1488": 0.003
+  }
+ },
+ "flora": {
+  "G5815": {
+   "3613": 0.022,
+   "3611": 0.021,
+   "3614": 0.02,
+   "3610": 0.016,
+   "3612": 0.015,
+   "1487": 0.008,
+   "1488": 0.008,
+   "1489": 0.007
+  }
+ },
+ "top_flora": {
+  "G4405": {
+   "3610": 0.012,
+   "3611": 0.02,
+   "3612": 0.02,
+   "3613": 0.02,
+   "3614": 0.01,
+   "3621": 0.019,
+   "3622": 0.02,
+   "3623": 0.02
+  },
+  "G351": {}
+ },
+ "bank_flora": {
+  "G351": {
+   "3611": 0.01,
+   "3612": 0.01
+  }
+ },
+ "apron_flora": {
+  "G4405": {
+   "3610": 0.012,
+   "3611": 0.02,
+   "3612": 0.02,
+   "3613": 0.02,
+   "3614": 0.01,
+   "3621": 0.019,
+   "3622": 0.02,
+   "3623": 0.02
+  }
+ },
+ "meadow": {
+  "1487": 0.006,
+  "1488": 0.006,
+  "1489": 0.007,
+  "3610": 0.006,
+  "3611": 0.007,
+  "3612": 0.01,
+  "3613": 0.009,
+  "3614": 0.01,
+  "6476": 0.016,
+  "6477": 0.016,
+  "6478": 0.016,
+  "6479": 0.016,
+  "6480": 0.014,
+  "6481": 0.012,
+  "6482": 0.014,
+  "6483": 0.012,
+  "6484": 0.014
+ },
+ "hill_top": {
+  "3610": 1
+ },
+ "clumps": {
+  "quantiles": "study/lava_clumps.json",
+  "tops": {
+   "1": "study/lava_clumps_top1.json"
+  },
+  "big": {
+   "1489": 22,
+   "1487": 17,
+   "1488": 17,
+   "5063": 4,
+   "5061": 6
+  },
+  "small": {
+   "3612": 10,
+   "3614": 10,
+   "3613": 9,
+   "3611": 7,
+   "3610": 5,
+   "386": 5,
+   "6476": 16,
+   "6478": 8,
+   "6477": 8,
+   "6479": 8,
+   "6480": 7,
+   "6481": 6,
+   "6482": 7,
+   "6483": 6,
+   "6484": 7
+  },
+  "boost": {
+   "big": 0.5,
+   "small": 1.6
+  }
+ },
+ "swap_walkable": {
+  "2x2": [
+   1487,
+   1488,
+   1489
+  ],
+  "3x3": [],
+  "2x3": [],
+  "1x1": [
+   3610,
+   3611,
+   3612,
+   3613,
+   3614
+  ]
+ },
+ "defaults": {
+  "hills": 0,
+  "levels": 1,
+  "mountains": 14,
+  "rivers": 2,
+  "river_width": 5,
+  "lakes": 0,
+  "roads": 0,
+  "sand": 1,
+  "sea_cliffs": 0
+ },
+ "batch_cap": {
+  "levels": 2
+ },
+ "hill": {
+  "lead": 919,
+  "members": [
+   919
+  ]
+ },
+ "hill_cliff": {
+  "edge_n": 4471,
+  "edge_e": 4468,
+  "edge_s": 4469,
+  "edge_w": 4472,
+  "outer_nw": 4475,
+  "outer_ne": 4474,
+  "outer_se": 4470,
+  "outer_sw": 4473,
+  "inner_nw": 4476,
+  "inner_ne": 4478,
+  "inner_se": 4479,
+  "inner_sw": 4477
+ },
+ "hill_rim": {
+  "edge_n": 891,
+  "edge_e": 892,
+  "edge_s": 893,
+  "edge_w": 894,
+  "outer_nw": 895,
+  "outer_ne": 896,
+  "outer_se": 897,
+  "outer_sw": 898,
+  "inner_nw": 899,
+  "inner_ne": 900,
+  "inner_se": 901,
+  "inner_sw": 902
+ },
+ "hill_ramp": {
+  "n": [
+   1394,
+   1395
+  ],
+  "s": [
+   1392,
+   1393
+  ],
+  "e": [
+   1388,
+   1389
+  ],
+  "w": [
+   1390,
+   1391
+  ]
+ },
+ "_hill": "hills are off (defaults hills 0); the generator still reads these keys, so they repeat the mountain's",
+ "top_rock": {
+  "1": [
+   1.0,
+   0.9
+  ],
+  "2": [
+   1.0,
+   0.9
+  ]
+ },
+ "ramp_least": 6,
+ "notch_level0": true,
+ "road_least": 30,
+ "repair_pocket": 1,
+ "drop_cut_off_tops": true,
+ "road_limit": {
+  "share": 0.03,
+  "bridge": 8
+ },
+ "road_broad": 2,
+ "road_brush": 1,
+ "road_rough": 1,
+ "join_land": {
+  "least": 12,
+  "gap": 14
+ }
+}
