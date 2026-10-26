@@ -1,0 +1,441 @@
+{
+ "name": "swamp: mud and grass trails through impassable swamp",
+ "notes": "Learned 2026-10-26 from the reference map's swamp island floor 7: windows refs/swamp-a (x 32880-33040, y 32150-32260), refs/swamp-b (x 33010-33120, y 32010-32120), refs/swamp-c (x 32790-32900, y 32110-32220). The olive and lime swamp grounds (18580-18590, 4691 and 4700-4712) are BLOCK_SOLID in the server's item table, so they are the liquid here: mud (18560-18567), grass and moss (17665-17672) are the walkable land that draws its borders onto them. Mountain, rim and ramp keys repeat the grass kit's (a lump of rock is unavoidable, see docs/kits/swamp.md). Sets named with tools/name_set.py.",
+ "water": {
+  "family": "G18580",
+  "lead": 18580,
+  "members": [
+   18581,
+   18582,
+   18583,
+   18584,
+   18585,
+   18586,
+   18587,
+   18588,
+   18589,
+   18590
+  ],
+  "bands": [
+   [
+    999,
+    {
+     "crust": 1.0
+    }
+   ]
+  ],
+  "variants": {
+   "crust": {
+    "lead": 18580,
+    "members": [
+     18581,
+     18582,
+     18583,
+     18584,
+     18585,
+     18586,
+     18587,
+     18588,
+     18589,
+     18590
+    ]
+   }
+  },
+  "order": [
+   "crust"
+  ]
+ },
+ "base": {
+  "family": "G18560",
+  "lead": 18560,
+  "members": [
+   18561,
+   18562,
+   18563,
+   18564,
+   18565,
+   18566,
+   18567
+  ]
+ },
+ "sand": {
+  "family": "G9043",
+  "lead": 9043,
+  "members": [
+   9046,
+   9044,
+   9045,
+   9047,
+   9048,
+   9049,
+   9050,
+   9051,
+   9052,
+   9053,
+   9054,
+   9055,
+   9056,
+   9057,
+   9058
+  ]
+ },
+ "grey_sand": {
+  "family": "G17665",
+  "lead": 17667,
+  "members": [
+   17665,
+   17666,
+   17668,
+   17669,
+   17670,
+   17671,
+   17672
+  ]
+ },
+ "rock_soil": {
+  "family": "G4405",
+  "lead": 4405,
+  "members": [
+   4405,
+   4407,
+   4408,
+   4409,
+   4410,
+   4413,
+   4414,
+   4415,
+   4416,
+   4417,
+   4418,
+   4419,
+   4420
+  ]
+ },
+ "mountain": {
+  "lead": 919,
+  "members": [
+   919
+  ]
+ },
+ "worn_share": 6,
+ "no_water_border": [],
+ "mud_on_swamp": {
+  "edge_n": 18568,
+  "edge_w": 18569,
+  "edge_s": 18570,
+  "edge_e": 18571,
+  "outer_nw": 18572,
+  "outer_ne": 18573,
+  "outer_se": 18574,
+  "outer_sw": 18575,
+  "inner_nw": 18576,
+  "inner_ne": 18577,
+  "inner_se": 18578,
+  "inner_sw": 18579
+ },
+ "grass_on_swamp": {
+  "edge_n": 7653,
+  "edge_e": 7710,
+  "edge_s": 7709,
+  "edge_w": 7656,
+  "inner_nw": 7661,
+  "inner_ne": 7662,
+  "inner_sw": 7663,
+  "inner_se": 7664,
+  "outer_nw": 7657,
+  "outer_ne": 7658,
+  "outer_sw": 7659,
+  "outer_se": 7660
+ },
+ "moss_on_swamp": {
+  "edge_s": 18141,
+  "edge_n": 18142,
+  "edge_e": 18143,
+  "edge_w": 18144,
+  "inner_se": 18145,
+  "inner_sw": 18146,
+  "inner_nw": 18147,
+  "inner_ne": 18148,
+  "outer_se": 18149,
+  "outer_sw": 18150,
+  "outer_nw": 18151,
+  "outer_ne": 18152
+ },
+ "mountain_cliff": {
+  "edge_n": 4471,
+  "edge_e": 4468,
+  "edge_s": 4469,
+  "edge_w": 4472,
+  "inner_nw": 4476,
+  "inner_ne": 4478,
+  "inner_sw": 4477,
+  "inner_se": 4479,
+  "outer_nw": 4475,
+  "outer_ne": 4474,
+  "outer_sw": 4473,
+  "outer_se": 4470
+ },
+ "top_rim": {
+  "edge_n": 4456,
+  "edge_e": 4457,
+  "edge_s": 4458,
+  "edge_w": 4459,
+  "inner_nw": 4464,
+  "inner_ne": 4465,
+  "inner_sw": 4467,
+  "inner_se": 4466,
+  "outer_nw": 4460,
+  "outer_ne": 4461,
+  "outer_sw": 4463,
+  "outer_se": 4462
+ },
+ "mountain_ramp": {
+  "n": [
+   1394,
+   1395
+  ],
+  "s": [
+   1392,
+   1393
+  ],
+  "e": [
+   1388,
+   1389
+  ],
+  "w": [
+   1390,
+   1391
+  ]
+ },
+ "hill": {
+  "lead": 919,
+  "members": [
+   919
+  ]
+ },
+ "hill_cliff": {
+  "edge_n": 4471,
+  "edge_e": 4468,
+  "edge_s": 4469,
+  "edge_w": 4472,
+  "inner_nw": 4476,
+  "inner_ne": 4478,
+  "inner_sw": 4477,
+  "inner_se": 4479,
+  "outer_nw": 4475,
+  "outer_ne": 4474,
+  "outer_sw": 4473,
+  "outer_se": 4470
+ },
+ "hill_rim": {
+  "edge_n": 4456,
+  "edge_e": 4457,
+  "edge_s": 4458,
+  "edge_w": 4459,
+  "inner_nw": 4464,
+  "inner_ne": 4465,
+  "inner_sw": 4467,
+  "inner_se": 4466,
+  "outer_nw": 4460,
+  "outer_ne": 4461,
+  "outer_sw": 4463,
+  "outer_se": 4462
+ },
+ "hill_ramp": {
+  "n": [
+   1394,
+   1395
+  ],
+  "s": [
+   1392,
+   1393
+  ],
+  "e": [
+   1388,
+   1389
+  ],
+  "w": [
+   1390,
+   1391
+  ]
+ },
+ "layers": [
+  {
+   "kit": "water",
+   "border": null
+  },
+  {
+   "kit": "base",
+   "border": {
+    "water": "mud_on_swamp"
+   }
+  },
+  {
+   "kit": "sand",
+   "border": {
+    "water": "grass_on_swamp",
+    "base": "grass_on_swamp"
+   }
+  },
+  {
+   "kit": "grey_sand",
+   "border": {
+    "water": "moss_on_swamp",
+    "base": "moss_on_swamp",
+    "sand": "moss_on_swamp"
+   }
+  }
+ ],
+ "flora": {
+  "G9043": {
+   "6219": 0.4004,
+   "6218": 0.286,
+   "6217": 0.1612,
+   "19433": 0.0572,
+   "2779": 0.0468,
+   "2767": 0.033,
+   "2768": 0.0309,
+   "2772": 0.0281,
+   "2782": 0.0247,
+   "10740": 0.019,
+   "4155": 0.019,
+   "2771": 0.0179,
+   "18657": 0.014,
+   "10739": 0.0135,
+   "2773": 0.0133,
+   "2769": 0.0127,
+   "18658": 0.012,
+   "2708": 0.0114,
+   "2776": 0.0109,
+   "4156": 0.0094
+  },
+  "G17665": {
+   "6219": 0.4108,
+   "6218": 0.2054,
+   "19433": 0.0884,
+   "6217": 0.078,
+   "2779": 0.0442,
+   "2772": 0.0372,
+   "2776": 0.0221,
+   "2771": 0.0185,
+   "11268": 0.0159,
+   "2773": 0.0151,
+   "2769": 0.013,
+   "2774": 0.0125,
+   "3611": 0.0109,
+   "17744": 0.0109
+  }
+ },
+ "top_flora": {},
+ "bank_flora": {
+  "G18560": {
+   "6219": 0.126,
+   "6218": 0.075,
+   "6217": 0.025,
+   "19433": 0.024,
+   "2779": 0.02,
+   "2772": 0.019,
+   "10740": 0.01
+  }
+ },
+ "water_flora": {
+  "crust": {
+   "19433": 0.1929,
+   "2779": 0.1333,
+   "2772": 0.1197,
+   "2773": 0.0513,
+   "2771": 0.0361,
+   "2778": 0.0348,
+   "2775": 0.0301,
+   "2776": 0.0268,
+   "2769": 0.018,
+   "2780": 0.0176,
+   "2774": 0.0163,
+   "2782": 0.0141,
+   "2777": 0.0119,
+   "2755": 0.0106,
+   "11015": 0.009,
+   "10743": 0.0088,
+   "10736": 0.0084,
+   "2757": 0.0073
+  }
+ },
+ "meadow": {
+  "6219": 0.03,
+  "6218": 0.02,
+  "10739": 0.005,
+  "10740": 0.005
+ },
+ "hill_top": {
+  "3610": 1
+ },
+ "clumps": {
+  "quantiles": "study/swamp_clumps.json",
+  "tops": {
+   "1": "study/grass_clumps_top1.json"
+  },
+  "big": {
+   "19433": 15,
+   "2773": 4,
+   "2778": 3,
+   "2777": 3,
+   "2775": 3,
+   "2780": 3
+  },
+  "small": {
+   "6219": 176,
+   "6218": 96,
+   "6217": 28,
+   "10740": 16,
+   "10739": 11,
+   "2779": 14,
+   "2772": 11,
+   "2771": 4,
+   "2776": 2,
+   "17745": 3,
+   "17744": 3
+  },
+  "boost": {
+   "big": 2.0,
+   "small": 2.2
+  }
+ },
+ "swap_walkable": {
+  "2x2": [
+   18665,
+   11268
+  ],
+  "3x3": [],
+  "2x3": [],
+  "1x1": [
+   6219,
+   6218,
+   6217
+  ]
+ },
+ "crossing": {
+  "type": "ford",
+  "ground": 18764
+ },
+ "defaults": {
+  "hills": 0,
+  "levels": 1,
+  "mountains": 5,
+  "rivers": 10,
+  "river_width": 2,
+  "lakes": 20,
+  "roads": -1,
+  "sand": 62,
+  "vegetation": 100
+ },
+ "batch_cap": {
+  "levels": 1
+ },
+ "road_least": 30,
+ "repair_pocket": 1,
+ "join_land": {
+  "least": 12,
+  "gap": 14
+ },
+ "ramp_least": 6
+}
