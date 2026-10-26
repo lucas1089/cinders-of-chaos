@@ -1,0 +1,544 @@
+{
+ "name": "asylum: abandoned madhouse, wards of white and grey tiles",
+ "notes": "Cave mode (gen/cave.py) as the closest layout: chambers are wards, tunnels are corridors, pillars are cell blocks. Walls are the clapboard set 41242-41245 drawn on the solid tile beside the floor (on_rock). Floor: marble tiles with cracked temple floor members, patches of dark crypt flagstones and blood. See docs/kits/asylum.md.",
+ "water": {
+  "family": "G407",
+  "lead": 407,
+  "members": []
+ },
+ "base": {
+  "family": "G457",
+  "lead": 457,
+  "members": [
+   457,
+   15791,
+   406,
+   9146,
+   8959,
+   23717,
+   14931,
+   457,
+   15791
+  ]
+ },
+ "sand": {
+  "family": "G41304",
+  "lead": 41304,
+  "members": [
+   41305,
+   41306,
+   41307,
+   41308,
+   41309,
+   41310,
+   41311,
+   41312
+  ]
+ },
+ "rock_soil": {
+  "family": "G41304",
+  "lead": 41304,
+  "members": [
+   41305,
+   41306,
+   41307,
+   41308,
+   41309,
+   41310,
+   41311,
+   41312
+  ]
+ },
+ "mountain": {
+  "lead": 919,
+  "members": [
+   919
+  ]
+ },
+ "hill": {
+  "lead": 919,
+  "members": [
+   919
+  ]
+ },
+ "worn_share": 0,
+ "no_water_border": [
+  "sand",
+  "grey_sand",
+  "rock_soil",
+  "gravel"
+ ],
+ "layers": [
+  {
+   "kit": "water",
+   "border": null
+  },
+  {
+   "kit": "sand",
+   "border": null
+  },
+  {
+   "kit": "rock_soil",
+   "border": null
+  },
+  {
+   "kit": "grey_sand",
+   "border": null
+  },
+  {
+   "kit": "base",
+   "border": {
+    "water": "wall"
+   }
+  }
+ ],
+ "defaults": {
+  "hills": 0,
+  "levels": 1,
+  "mountains": 0,
+  "rivers": 0,
+  "lakes": 0,
+  "roads": 0,
+  "sand": 7,
+  "vegetation": 100,
+  "rough": 70
+ },
+ "batch_cap": {
+  "levels": 1
+ },
+ "flora": {
+  "G12234": {
+   "42983": 0.012,
+   "42984": 0.012,
+   "42985": 0.012,
+   "42986": 0.012,
+   "42989": 0.012,
+   "42990": 0.012,
+   "43001": 0.012,
+   "43002": 0.012,
+   "43003": 0.012,
+   "43011": 0.012,
+   "43013": 0.012,
+   "43014": 0.012,
+   "43015": 0.012,
+   "43018": 0.012,
+   "43021": 0.012,
+   "43024": 0.012,
+   "43027": 0.012,
+   "43029": 0.012,
+   "43030": 0.012,
+   "43035": 0.012
+  },
+  "G9068": {
+   "43013": 0.012,
+   "43014": 0.012,
+   "43015": 0.012,
+   "43018": 0.012,
+   "43021": 0.012,
+   "43024": 0.012,
+   "43027": 0.012,
+   "43029": 0.012,
+   "43030": 0.012,
+   "43035": 0.012,
+   "43039": 0.012,
+   "43041": 0.012,
+   "43042": 0.012,
+   "43045": 0.012,
+   "43049": 0.012,
+   "43050": 0.012,
+   "43055": 0.012,
+   "43056": 0.012,
+   "43061": 0.012,
+   "43062": 0.012
+  }
+ },
+ "top_flora": {},
+ "bank_flora": {
+  "G9021": {
+   "43016": 0.012,
+   "43022": 0.012,
+   "43028": 0.012,
+   "43048": 0.012,
+   "43057": 0.012,
+   "43060": 0.012,
+   "43070": 0.012,
+   "43071": 0.012,
+   "43092": 0.012,
+   "43093": 0.012,
+   "43097": 0.012,
+   "43098": 0.012,
+   "43101": 0.012,
+   "43102": 0.012,
+   "43104": 0.012,
+   "43023": 0.012,
+   "43025": 0.012,
+   "43051": 0.012,
+   "43108": 0.012,
+   "43107": 0.012,
+   "43059": 0.012,
+   "43058": 0.012,
+   "43033": 0.012,
+   "43074": 0.012,
+   "43073": 0.012,
+   "42987": 0.006,
+   "42991": 0.006,
+   "42992": 0.006,
+   "42993": 0.006,
+   "42994": 0.006,
+   "42995": 0.006,
+   "42996": 0.006,
+   "42997": 0.006,
+   "42998": 0.006,
+   "42999": 0.006,
+   "42984": 0.012,
+   "42989": 0.012,
+   "42990": 0.012,
+   "43001": 0.012,
+   "43002": 0.012,
+   "43003": 0.012,
+   "43011": 0.012,
+   "43024": 0.012,
+   "43027": 0.012,
+   "43029": 0.012,
+   "43030": 0.012,
+   "43035": 0.012
+  }
+ },
+ "hill_top": {},
+ "clumps": {
+  "quantiles": "study/cave-clumps.json",
+  "tops": {},
+  "big": {
+   "1754": 8,
+   "1755": 8,
+   "1760": 8,
+   "1761": 8,
+   "1762": 8,
+   "1763": 8,
+   "38584": 8,
+   "38588": 6,
+   "38583": 3,
+   "38581": 3,
+   "1546": 9,
+   "1547": 9,
+   "3794": 4,
+   "3795": 4,
+   "20241": 3,
+   "5481": 3
+  },
+  "small": {
+   "1900": 6,
+   "1901": 6,
+   "1903": 6,
+   "1905": 6,
+   "7137": 6,
+   "7139": 6,
+   "9731": 6,
+   "9732": 6,
+   "38580": 4,
+   "38592": 2,
+   "38590": 3,
+   "38591": 3,
+   "38587": 3,
+   "38578": 4,
+   "38842": 3,
+   "38586": 4,
+   "38585": 2,
+   "3958": 4,
+   "3959": 4,
+   "5472": 3,
+   "5473": 3,
+   "3124": 3,
+   "38308": 2,
+   "38516": 1,
+   "38975": 1,
+   "3744": 2,
+   "9512": 1
+  },
+  "boost": {
+   "big": 0.9,
+   "small": 0.5
+  }
+ },
+ "mountain_cliff": {
+  "edge_n": 5640,
+  "edge_e": 5641,
+  "edge_s": 5642,
+  "edge_w": 5639,
+  "inner_nw": 5648,
+  "inner_ne": 5652,
+  "inner_sw": 5650,
+  "inner_se": 5649,
+  "outer_nw": 5645,
+  "outer_ne": 5646,
+  "outer_sw": 5644,
+  "outer_se": 5643
+ },
+ "top_rim": {
+  "edge_n": 5640,
+  "edge_e": 5641,
+  "edge_s": 5642,
+  "edge_w": 5639,
+  "inner_nw": 5648,
+  "inner_ne": 5652,
+  "inner_sw": 5650,
+  "inner_se": 5649,
+  "outer_nw": 5645,
+  "outer_ne": 5646,
+  "outer_sw": 5644,
+  "outer_se": 5643
+ },
+ "hill_cliff": {
+  "edge_n": 5640,
+  "edge_e": 5641,
+  "edge_s": 5642,
+  "edge_w": 5639,
+  "inner_nw": 5648,
+  "inner_ne": 5652,
+  "inner_sw": 5650,
+  "inner_se": 5649,
+  "outer_nw": 5645,
+  "outer_ne": 5646,
+  "outer_sw": 5644,
+  "outer_se": 5643
+ },
+ "hill_rim": {
+  "edge_n": 5640,
+  "edge_e": 5641,
+  "edge_s": 5642,
+  "edge_w": 5639,
+  "inner_nw": 5648,
+  "inner_ne": 5652,
+  "inner_sw": 5650,
+  "inner_se": 5649,
+  "outer_nw": 5645,
+  "outer_ne": 5646,
+  "outer_sw": 5644,
+  "outer_se": 5643
+ },
+ "mountain_ramp": {
+  "n": [
+   1394,
+   1395
+  ],
+  "s": [
+   1392,
+   1393
+  ],
+  "e": [
+   1388,
+   1389
+  ],
+  "w": [
+   1390,
+   1391
+  ]
+ },
+ "hill_ramp": {
+  "n": [
+   1394,
+   1395
+  ],
+  "s": [
+   1392,
+   1393
+  ],
+  "e": [
+   1388,
+   1389
+  ],
+  "w": [
+   1390,
+   1391
+  ]
+ },
+ "floor": 9,
+ "cave": {
+  "shape": "chambers",
+  "wall_style": "on_rock",
+  "chambers": {
+   "per_1000": 1.1,
+   "radius": [
+    3,
+    6
+   ],
+   "spacing": 12
+  },
+  "tunnel_width": {
+   "2": 0.5,
+   "3": 0.5
+  },
+  "loops": [
+   0.15,
+   0.25
+  ],
+  "spurs_per_1000": 3.0,
+  "floor_share": [
+   0.15,
+   0.25
+  ],
+  "pillars_per_chamber": 3,
+  "stairs": {
+   "count": [
+    1,
+    2
+   ]
+  },
+  "styles": {
+   "on_rock": {
+    "layers": [
+     {
+      "kit": "water",
+      "border": null
+     },
+     {
+      "kit": "sand",
+      "border": null
+     },
+     {
+      "kit": "rock_soil",
+      "border": null
+     },
+     {
+      "kit": "grey_sand",
+      "border": null
+     },
+     {
+      "kit": "base",
+      "border": {
+       "water": "wall"
+      }
+     }
+    ],
+    "no_water_border": [
+     "sand",
+     "grey_sand",
+     "rock_soil",
+     "gravel"
+    ]
+   }
+  },
+  "void_beyond": 1,
+  "meander": {
+   "amp": 2.5,
+   "scale": 12.0,
+   "width_jitter": 1
+  },
+  "void_jitter": 0
+ },
+ "pocket_fill": [
+  1754,
+  1755
+ ],
+ "repair_pocket": 1,
+ "stain": {
+  "family": "G12234",
+  "lead": 12234,
+  "members": [
+   12234,
+   12234,
+   12237,
+   12235,
+   12236
+  ]
+ },
+ "slate": {
+  "family": "G9068",
+  "lead": 9068,
+  "members": [
+   9068,
+   9073,
+   9069,
+   9071,
+   9070
+  ]
+ },
+ "clay": {
+  "family": "G103",
+  "lead": 103,
+  "members": [
+   103,
+   7352,
+   8594,
+   10176
+  ]
+ },
+ "patches": [
+  {
+   "ground": "grey_sand",
+   "share": 0.05,
+   "scale": 3,
+   "min": 2
+  }
+ ],
+ "same_look": [
+  [
+   "base",
+   "clay"
+  ],
+  [
+   "stain",
+   "clay"
+  ],
+  [
+   "slate",
+   "clay"
+  ],
+  [
+   "stain",
+   "slate"
+  ]
+ ],
+ "grey_sand": {
+  "family": "G20932",
+  "lead": 20932,
+  "members": [
+   20933,
+   20934,
+   20935,
+   20936,
+   20937
+  ]
+ },
+ "wall": {
+  "edge_n": 41243,
+  "edge_s": 41243,
+  "edge_e": 41244,
+  "edge_w": 41244,
+  "inner_nw": 41242,
+  "inner_ne": 41242,
+  "inner_sw": 41242,
+  "inner_se": 41242,
+  "outer_se": 41245,
+  "outer_nw": 41243,
+  "outer_ne": 41244,
+  "outer_sw": 41243
+ },
+ "meadow": {
+  "1903": 0.01,
+  "1905": 0.01,
+  "3124": 0.006,
+  "3744": 0.004,
+  "5472": 0.004,
+  "38308": 0.004
+ },
+ "swap_walkable": {
+  "2x2": [],
+  "3x3": [],
+  "2x3": [],
+  "1x1": [
+   3124,
+   3958
+  ]
+ },
+ "batch_variants": {
+  "801": "--size 96 --cave-shape chambers",
+  "802": "--size 96 --cave-shape mix",
+  "803": "--size 112 --cave-shape chambers",
+  "804": "--size 96 --cave-shape tunnels",
+  "805": "--size 112 --cave-shape mix",
+  "806": "--size 128 --cave-shape chambers",
+  "807": "--size 96 --cave-shape mix",
+  "808": "--size 112 --cave-shape tunnels"
+ }
+}

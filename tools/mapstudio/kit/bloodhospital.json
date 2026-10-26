@@ -1,0 +1,555 @@
+{
+ "name": "bloodhospital: butcher hospital, red light, pale tiles and gore",
+ "notes": "Cave mode as the closest layout (wards = chambers, corridors = tunnels, pillars = blocks). Walls: crypt brick set 41391-41394, drawn on the solid tile (on_rock). Floor: cracked temple tiles, blood pools as patches, crypt flagstones as dirty patches. Decor: bone tables as surgical tables, cell beds, bone and skull piles, crates, barrels, blood spots, bloodfire torches for the red light. See docs/kits/bloodhospital.md.",
+ "water": {
+  "family": "G407",
+  "lead": 407,
+  "members": []
+ },
+ "base": {
+  "family": "G14931",
+  "lead": 14931,
+  "members": [
+   14932,
+   14933,
+   14934,
+   14935,
+   14936,
+   14937,
+   14938,
+   14939,
+   457,
+   457,
+   15791
+  ]
+ },
+ "sand": {
+  "family": "G20932",
+  "lead": 20932,
+  "members": [
+   20933,
+   20934,
+   20935,
+   20936,
+   20937
+  ]
+ },
+ "rock_soil": {
+  "family": "G20932",
+  "lead": 20932,
+  "members": [
+   20933,
+   20934,
+   20935,
+   20936,
+   20937
+  ]
+ },
+ "mountain": {
+  "lead": 919,
+  "members": [
+   919
+  ]
+ },
+ "hill": {
+  "lead": 919,
+  "members": [
+   919
+  ]
+ },
+ "worn_share": 0,
+ "no_water_border": [
+  "sand",
+  "grey_sand",
+  "rock_soil",
+  "gravel"
+ ],
+ "layers": [
+  {
+   "kit": "water",
+   "border": null
+  },
+  {
+   "kit": "sand",
+   "border": null
+  },
+  {
+   "kit": "rock_soil",
+   "border": null
+  },
+  {
+   "kit": "grey_sand",
+   "border": null
+  },
+  {
+   "kit": "base",
+   "border": {
+    "water": "wall"
+   }
+  }
+ ],
+ "defaults": {
+  "hills": 0,
+  "levels": 1,
+  "mountains": 0,
+  "rivers": 0,
+  "lakes": 0,
+  "roads": 0,
+  "sand": 7,
+  "vegetation": 100,
+  "rough": 70
+ },
+ "batch_cap": {
+  "levels": 1
+ },
+ "flora": {
+  "G12234": {
+   "42983": 0.012,
+   "42984": 0.012,
+   "42985": 0.012,
+   "42986": 0.012,
+   "42989": 0.012,
+   "42990": 0.012,
+   "43001": 0.012,
+   "43002": 0.012,
+   "43003": 0.012,
+   "43011": 0.012,
+   "43013": 0.012,
+   "43014": 0.012,
+   "43015": 0.012,
+   "43018": 0.012,
+   "43021": 0.012,
+   "43024": 0.012,
+   "43027": 0.012,
+   "43029": 0.012,
+   "43030": 0.012,
+   "43035": 0.012
+  },
+  "G9068": {
+   "43013": 0.012,
+   "43014": 0.012,
+   "43015": 0.012,
+   "43018": 0.012,
+   "43021": 0.012,
+   "43024": 0.012,
+   "43027": 0.012,
+   "43029": 0.012,
+   "43030": 0.012,
+   "43035": 0.012,
+   "43039": 0.012,
+   "43041": 0.012,
+   "43042": 0.012,
+   "43045": 0.012,
+   "43049": 0.012,
+   "43050": 0.012,
+   "43055": 0.012,
+   "43056": 0.012,
+   "43061": 0.012,
+   "43062": 0.012
+  }
+ },
+ "top_flora": {},
+ "bank_flora": {
+  "G9021": {
+   "43016": 0.012,
+   "43022": 0.012,
+   "43028": 0.012,
+   "43048": 0.012,
+   "43057": 0.012,
+   "43060": 0.012,
+   "43070": 0.012,
+   "43071": 0.012,
+   "43092": 0.012,
+   "43093": 0.012,
+   "43097": 0.012,
+   "43098": 0.012,
+   "43101": 0.012,
+   "43102": 0.012,
+   "43104": 0.012,
+   "43023": 0.012,
+   "43025": 0.012,
+   "43051": 0.012,
+   "43108": 0.012,
+   "43107": 0.012,
+   "43059": 0.012,
+   "43058": 0.012,
+   "43033": 0.012,
+   "43074": 0.012,
+   "43073": 0.012,
+   "42987": 0.006,
+   "42991": 0.006,
+   "42992": 0.006,
+   "42993": 0.006,
+   "42994": 0.006,
+   "42995": 0.006,
+   "42996": 0.006,
+   "42997": 0.006,
+   "42998": 0.006,
+   "42999": 0.006,
+   "42984": 0.012,
+   "42989": 0.012,
+   "42990": 0.012,
+   "43001": 0.012,
+   "43002": 0.012,
+   "43003": 0.012,
+   "43011": 0.012,
+   "43024": 0.012,
+   "43027": 0.012,
+   "43029": 0.012,
+   "43030": 0.012,
+   "43035": 0.012
+  }
+ },
+ "hill_top": {},
+ "clumps": {
+  "quantiles": "study/cave-clumps.json",
+  "tops": {},
+  "big": {
+   "12149": 6,
+   "12150": 6,
+   "12154": 5,
+   "12155": 5,
+   "12153": 4,
+   "12151": 3,
+   "38584": 5,
+   "38585": 4,
+   "38588": 3,
+   "7481": 5,
+   "9686": 5,
+   "36633": 4,
+   "36635": 3,
+   "38983": 3,
+   "29361": 3,
+   "29362": 3,
+   "41378": 3,
+   "41421": 2,
+   "41419": 3,
+   "11122": 3,
+   "11253": 2,
+   "41550": 2,
+   "29387": 3,
+   "9441": 3,
+   "12009": 3,
+   "38581": 3,
+   "38263": 3,
+   "1754": 4,
+   "1755": 4,
+   "1760": 4,
+   "1762": 4
+  },
+  "small": {
+   "1900": 8,
+   "1901": 8,
+   "1903": 8,
+   "1905": 8,
+   "7137": 8,
+   "7139": 8,
+   "9731": 8,
+   "9732": 8,
+   "38840": 3,
+   "38580": 4,
+   "38590": 3,
+   "3124": 3,
+   "3125": 3,
+   "3127": 3,
+   "41360": 4,
+   "41361": 3,
+   "41199": 3,
+   "3958": 3,
+   "3959": 3,
+   "38578": 2,
+   "38842": 3,
+   "11934": 2,
+   "38975": 1,
+   "38592": 2,
+   "38587": 2
+  },
+  "boost": {
+   "big": 2.0,
+   "small": 1.1
+  }
+ },
+ "mountain_cliff": {
+  "edge_n": 5640,
+  "edge_e": 5641,
+  "edge_s": 5642,
+  "edge_w": 5639,
+  "inner_nw": 5648,
+  "inner_ne": 5652,
+  "inner_sw": 5650,
+  "inner_se": 5649,
+  "outer_nw": 5645,
+  "outer_ne": 5646,
+  "outer_sw": 5644,
+  "outer_se": 5643
+ },
+ "top_rim": {
+  "edge_n": 5640,
+  "edge_e": 5641,
+  "edge_s": 5642,
+  "edge_w": 5639,
+  "inner_nw": 5648,
+  "inner_ne": 5652,
+  "inner_sw": 5650,
+  "inner_se": 5649,
+  "outer_nw": 5645,
+  "outer_ne": 5646,
+  "outer_sw": 5644,
+  "outer_se": 5643
+ },
+ "hill_cliff": {
+  "edge_n": 5640,
+  "edge_e": 5641,
+  "edge_s": 5642,
+  "edge_w": 5639,
+  "inner_nw": 5648,
+  "inner_ne": 5652,
+  "inner_sw": 5650,
+  "inner_se": 5649,
+  "outer_nw": 5645,
+  "outer_ne": 5646,
+  "outer_sw": 5644,
+  "outer_se": 5643
+ },
+ "hill_rim": {
+  "edge_n": 5640,
+  "edge_e": 5641,
+  "edge_s": 5642,
+  "edge_w": 5639,
+  "inner_nw": 5648,
+  "inner_ne": 5652,
+  "inner_sw": 5650,
+  "inner_se": 5649,
+  "outer_nw": 5645,
+  "outer_ne": 5646,
+  "outer_sw": 5644,
+  "outer_se": 5643
+ },
+ "mountain_ramp": {
+  "n": [
+   1394,
+   1395
+  ],
+  "s": [
+   1392,
+   1393
+  ],
+  "e": [
+   1388,
+   1389
+  ],
+  "w": [
+   1390,
+   1391
+  ]
+ },
+ "hill_ramp": {
+  "n": [
+   1394,
+   1395
+  ],
+  "s": [
+   1392,
+   1393
+  ],
+  "e": [
+   1388,
+   1389
+  ],
+  "w": [
+   1390,
+   1391
+  ]
+ },
+ "floor": 9,
+ "cave": {
+  "shape": "mix",
+  "wall_style": "on_rock",
+  "chambers": {
+   "per_1000": 1.0,
+   "radius": [
+    3,
+    6
+   ],
+   "spacing": 13
+  },
+  "tunnel_width": {
+   "2": 0.4,
+   "3": 0.6
+  },
+  "loops": [
+   0.15,
+   0.25
+  ],
+  "spurs_per_1000": 3.0,
+  "floor_share": [
+   0.15,
+   0.25
+  ],
+  "pillars_per_chamber": 3,
+  "stairs": {
+   "count": [
+    1,
+    2
+   ]
+  },
+  "styles": {
+   "on_rock": {
+    "layers": [
+     {
+      "kit": "water",
+      "border": null
+     },
+     {
+      "kit": "sand",
+      "border": null
+     },
+     {
+      "kit": "rock_soil",
+      "border": null
+     },
+     {
+      "kit": "grey_sand",
+      "border": null
+     },
+     {
+      "kit": "base",
+      "border": {
+       "water": "wall"
+      }
+     }
+    ],
+    "no_water_border": [
+     "sand",
+     "grey_sand",
+     "rock_soil",
+     "gravel"
+    ]
+   }
+  },
+  "void_beyond": 1,
+  "meander": {
+   "amp": 2.5,
+   "scale": 12.0,
+   "width_jitter": 1
+  },
+  "void_jitter": 0
+ },
+ "pocket_fill": [
+  7481,
+  9686
+ ],
+ "repair_pocket": 1,
+ "stain": {
+  "family": "G12234",
+  "lead": 12234,
+  "members": [
+   12234,
+   12234,
+   12237,
+   12235,
+   12236
+  ]
+ },
+ "slate": {
+  "family": "G9068",
+  "lead": 9068,
+  "members": [
+   9068,
+   9073,
+   9069,
+   9071,
+   9070
+  ]
+ },
+ "clay": {
+  "family": "G103",
+  "lead": 103,
+  "members": [
+   103,
+   7352,
+   8594,
+   10176
+  ]
+ },
+ "patches": [
+  {
+   "ground": "grey_sand",
+   "share": 0.05,
+   "scale": 3,
+   "min": 2
+  }
+ ],
+ "same_look": [
+  [
+   "base",
+   "clay"
+  ],
+  [
+   "stain",
+   "clay"
+  ],
+  [
+   "slate",
+   "clay"
+  ],
+  [
+   "stain",
+   "slate"
+  ]
+ ],
+ "grey_sand": {
+  "family": "G41304",
+  "lead": 41304,
+  "members": [
+   41305,
+   41306,
+   41307,
+   41308,
+   41309,
+   41310,
+   41311,
+   41312
+  ]
+ },
+ "wall": {
+  "edge_n": 41392,
+  "edge_s": 41392,
+  "edge_e": 41393,
+  "edge_w": 41393,
+  "inner_nw": 41391,
+  "inner_ne": 41391,
+  "inner_sw": 41391,
+  "inner_se": 41391,
+  "outer_se": 41394,
+  "outer_nw": 41392,
+  "outer_ne": 41393,
+  "outer_sw": 41392
+ },
+ "meadow": {
+  "1903": 0.012,
+  "1905": 0.012,
+  "41360": 0.01,
+  "41199": 0.008,
+  "3124": 0.006
+ },
+ "swap_walkable": {
+  "2x2": [],
+  "3x3": [],
+  "2x3": [],
+  "1x1": [
+   3124,
+   3958
+  ]
+ },
+ "batch_variants": {
+  "811": "--size 96 --cave-shape chambers",
+  "812": "--size 96 --cave-shape mix",
+  "813": "--size 112 --cave-shape chambers",
+  "814": "--size 96 --cave-shape tunnels",
+  "815": "--size 112 --cave-shape mix",
+  "816": "--size 128 --cave-shape chambers",
+  "817": "--size 96 --cave-shape mix",
+  "818": "--size 112 --cave-shape tunnels"
+ }
+}
