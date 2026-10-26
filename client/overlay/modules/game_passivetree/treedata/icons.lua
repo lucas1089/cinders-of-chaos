@@ -1037,6 +1037,7 @@ function getTreeIcons()
 		ntRighteousArm = {x = 405, y = 162, w = 27, h = 27}, -- node 658, atlas cell A6.15
 		ntSacredFire = {x = 242, y = 646, w = 25, h = 25}, -- node 659, atlas cell B14.9
 		ntBurningZeal = {x = 536, y = 967, w = 25, h = 25}, -- node 660, atlas cell B26.20
+		ntBottomlessFlasks = {x = 837, y = 54, w = 27, h = 27}, -- node 672, shares the atlas cell of Healing Hands (A2.31)
 		ntSteadfast = {x = 513, y = 54, w = 27, h = 27}, -- node 662, atlas cell A2.19
 		ntSanctuary = {x = 643, y = 458, w = 25, h = 25}, -- node 663, atlas cell B7.24
 		msShadowDiscipline = {x = 378, y = 81, w = 27, h = 27}, -- node 665, atlas cell A3.14

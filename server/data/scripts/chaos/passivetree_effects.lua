@@ -360,7 +360,7 @@ local function applyAll(player, bonuses)
 	if potionStorage then
 		player:setStorageValue(potionStorage, math.floor(ChaosPassiveDamagePercent(bonuses, COMBAT_HEALING)))
 	end
-	-- the flask hooks (potions_config.lua flask.tree: extra charges and charge gain percent; no node gives them yet)
+	-- the flask hooks (potions_config.lua flask.tree: extra charges and charge gain percent; nodes 669-672 give them)
 	if not ChaosPotionsCore then
 		pcall(dofile, "data/scripts/chaos/potions_core.lua")
 	end
@@ -368,6 +368,17 @@ local function applyAll(player, bonuses)
 		local extra, gain = ChaosPotionsCore.treeValues(ChaosPotionsConfig, bonuses)
 		player:setStorageValue(ChaosPotionsConfig.storage.treeMaxCharges, extra)
 		player:setStorageValue(ChaosPotionsConfig.storage.treeGainPct, gain)
+		-- a refund / respec that lowers the maximum must not leave charges above it (reads clamp, but the stored value
+		-- would come back with the node): cut the stored charges to the new maximum
+		for _, pool in ipairs(ChaosPotionsConfig.pools or {}) do
+			local key = ChaosPotionsConfig.storage[pool .. "Charges"]
+			if key then
+				local cut = ChaosPotionsCore.clampStored(ChaosPotionsConfig, pool, player:getStorageValue(key), extra)
+				if cut then
+					player:setStorageValue(key, cut)
+				end
+			end
+		end
 	end
 
 	for stat in pairs(CONDITIONS) do

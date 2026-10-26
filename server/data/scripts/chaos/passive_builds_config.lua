@@ -240,7 +240,7 @@ ChaosPassiveBuildsConfig = {
 	statLabels = {
 		strength = {"Strength", 1}, dexterity = {"Dexterity", 1}, intelligence = {"Intelligence", 1}, vitality = {"Vitality", 1},
 		spirit = {"Spirit", 1}, speed = {"Speed", 0.1}, experience = {"Experience %", 0.1}, loot = {"Item find %", 0.2},
-		rarityLoot = {"Item rarity %", 1}, criticalHitChance = {"Crit chance", 1}, criticalHitAmount = {"Crit amount", 1},
+		rarityLoot = {"Item rarity %", 1}, flaskMaxCharges = {"Flask charges", 1}, flaskChargeGain = {"Flask refill %", 1}, criticalHitChance = {"Crit chance", 1}, criticalHitAmount = {"Crit amount", 1},
 		lifeLeechChance = {"Life leech chance", 1}, lifeLeechAmount = {"Life leech amount", 1},
 		manaLeechChance = {"Mana leech chance", 1}, manaLeechAmount = {"Mana leech amount", 1},
 		multiIncrement = {"All damage", 1}, incrementHealth = {"Healing spells", 1}, skillShield = {"Shielding", 1},

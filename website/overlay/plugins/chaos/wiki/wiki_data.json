@@ -401,8 +401,8 @@
 		"tower.seasonDays": 30,
 		"tree.keystones": 58,
 		"tree.levelsPerPoint": 4,
-		"tree.nodes": 639,
-		"tree.notables": 112,
+		"tree.nodes": 643,
+		"tree.notables": 113,
 		"tree.points1000": 248,
 		"tree.points300": 73,
 		"tree.presets": 6,
@@ -6893,6 +6893,21 @@
 					"sections": [
 						{"h": "Effect", "p": ["+6.0 Physical Damage. +4.0 Death Damage."]},
 						{"h": "Who", "p": ["Classes: Necromancer, Lich, Bone Lord."]}
+					],
+					"icon": "wiki/i/k-light-nodes.png"
+				},
+				{
+					"id": "tree:672",
+					"name": "Bottomless Flasks",
+					"sub": "Notable. +2 max charges on the health and mana flasks. +25% flask charges from kills.",
+					"color": "#c8b890",
+					"group": "notable",
+					"sections": [
+						{
+							"h": "Effect",
+							"p": ["+2 max charges on the health and mana flasks. +25% flask charges from kills."]
+						},
+						{"h": "Who", "p": ["Classes: every class."]}
 					],
 					"icon": "wiki/i/k-light-nodes.png"
 				},

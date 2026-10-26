@@ -2632,6 +2632,14 @@ return {
 			"Item find",
 		["Item rarity"] =
 			"Raridade de item",
+		["Flask charges"] =
+			"Cargas dos frascos",
+		["+1 maximum charge on the Everfull health flask and the Everfull mana flask per point, at most +5 (potions_config.lua flask.tree)."] =
+			"+1 carga máxima no frasco Everfull de vida e no de mana por ponto, no máximo +5 (potions_config.lua flask.tree).",
+		["Flask refill"] =
+			"Recarga dos frascos",
+		["+percent of the charges every kill refills on both Everfull flasks, at most +100 percent (a kill still gives at most 3 charges)."] =
+			"+percent das cargas que cada abate recarrega nos dois frascos Everfull, no máximo +100 por cento (um abate ainda dá no máximo 3 cargas).",
 		["Sword skill"] =
 			"Skill de espada",
 		["Axe skill"] =
@@ -2915,6 +2923,8 @@ return {
 			"Item find %",
 		["Item rarity %"] =
 			"Raridade de item %",
+		["Flask refill %"] =
+			"Recarga dos frascos %",
 		["Healing spells"] =
 			"Magias de cura",
 		["Slayer"] =

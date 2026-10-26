@@ -10,6 +10,7 @@
 --   Flask charges (cfg.flask; hundredths of a charge, an unset storage value is a full flask):
 --   ChaosPotionsCore.maxCharges(cfg, kind, treeExtra)      whole charges the flask holds
 --   ChaosPotionsCore.read(cfg, kind, raw, treeExtra)       raw storage value -> hundredths (unset / bad = full)
+--   ChaosPotionsCore.clampStored(cfg, kind, raw, extra)    the value to write back when a refund lowered the maximum, else nil
 --   ChaosPotionsCore.canDrink(cfg, hundredths)             enough for one drink
 --   ChaosPotionsCore.spend(cfg, hundredths)                after a drink
 --   ChaosPotionsCore.killGain(cfg, s)                      s = {tier, xp, treeGainPct, kind} -> hundredths per kill
@@ -178,6 +179,21 @@ function K.read(cfg, kind, raw, treeExtra)
 		return top
 	end
 	return math.min(top, math.floor(raw))
+end
+
+-- a stored value above the flask's maximum (the tree's extra charges were refunded or respecced away) is cut to the
+-- maximum, so a later re-buy of the node cannot bring the lost charges back. Returns the new raw value, or nil when
+-- nothing has to change (unset, in range).
+function K.clampStored(cfg, kind, raw, treeExtra)
+	raw = tonumber(raw)
+	if raw == nil or raw < 0 or raw ~= raw then
+		return nil
+	end
+	local top = K.maxCharges(cfg, kind, treeExtra) * 100
+	if math.floor(raw) > top then
+		return top
+	end
+	return nil
 end
 
 function K.canDrink(cfg, hundredths)

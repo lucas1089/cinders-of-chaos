@@ -1252,7 +1252,7 @@ notifications
 - `/gmnotify` is allowed for any group with `Group:getAccess()`.
 
 passivetree
-- Tree shape comes from the client's `nodes.lua` (664 nodes, 659 on the server: the four class section start nodes fold into the root,
+- Tree shape comes from the client's `nodes.lua` (664 nodes, 659 on the server, plus the four flask nodes 669-672 of O251: the four class section start nodes fold into the root,
   and node 239, a stray copy of the original tree on top of 240 with no links, is `hidden`; the generator records 1024 stat entries,
   per-class keystone variants included). `server/tests/passivetree_layout_test.lua` checks the whole tree: every client link is a
   server link and the other way round, every link is drawn (the client draws from `out` lists), no overlapping nodes, no line
@@ -2935,6 +2935,10 @@ effect. Rules in `passivetree_core.lua` (pure), numbers in `passivetree_config.l
   planned nodes, every planned mastery with a valid effect, no effect for a saved mastery. All of it is saved at once, or
   nothing, with the reason in `planResult {ok, message}`. Same rate limit as a save (one a second, key
   `passivetree.save`); the tree has no zone or combat rule today and the planner adds none.
+- **Flask nodes 669-672 (O251)**: four nodes in own groups 105-108 on a side branch of Mercy of Embers (358): Everfull flask
+  charges and refill, stats `flaskMaxCharges` / `flaskChargeGain` (node values, shown as "+N max charges on the health and
+  mana flasks" and "+N% flask charges from kills"). Flag stats (`flask` + capital): `tools/passivetree_lanes_lib.lua` never lets
+  a class lane re-skin them and they are neutral in `passivetree_stats_config.lua`. See "Potions", "Flask charges".
 - **Mastery nodes 665-668** (one per class section, above its third line node; any class of the line may take it): 1
   point like every node; 3 or 4 effects of ordinary tree stats, about one notable each (no new combat code). The effect
   is picked while the node is planned (free, changeable until Apply). Changing the effect of a saved mastery
@@ -5061,9 +5065,33 @@ Owner request 2026-10-16: "Remove the potion flasks and make the first pots infi
     health 3/5, mana 4/8" at most every 4 s; the temple says "Your flasks are full again." Not done: a count on the item (the
     flask is stackable, but a count of 0 would delete it, and a count of 1 cannot tell empty from one charge, and a split would
     leave a second stack) and a HUD (needs a client build; `ChaosPotions.charges` is the one function it would read).
-  - **Passive tree hooks** (no node gives them yet; the tree is unchanged): the bonuses `flaskMaxCharges` (whole extra charges,
-    at most 5) and `flaskChargeGain` (percent of every kill's refill, at most 100) are written to storage 7102484 / 7102485 by
-    `passivetree_effects.lua` and read by `ChaosPotions`.
+  - **Passive tree hooks and nodes (O251).** The bonuses `flaskMaxCharges` (whole extra charges on both flasks, at most 5) and
+    `flaskChargeGain` (percent of every kill's refill, at most 100) are node stats like any other: `passivetree.lua` sums them
+    into the bonus table, `passivetree_effects.lua` (`applyAll`, after every save, reset and login) turns them into the
+    storage 7102484 / 7102485 through `ChaosPotionsCore.treeValues` (capped), and `ChaosPotions.treeExtra` / `treeGain`
+    (`data/lib/chaos_potions.lua`) read them for the maximum, the kill refill and the labels. The names match end to end
+    (node stat key = `flask.tree.maxStat` / `gainStat`; `tests/potions_test.lua` reads the four nodes from the generated tree
+    and checks that). Nodes, a side branch of Mercy of Embers (358, healing and vitality) with 1 point each:
+
+    | Node | Name | Gives |
+    |---|---|---|
+    | 669 | Attribute (mana icon) | +10% charge gain |
+    | 670 | Attribute (life icon) | +1 max charge, health and mana flask |
+    | 671 | Attribute (mana icon) | +10% charge gain |
+    | 672 | Bottomless Flasks (notable) | +2 max charges, +25% charge gain |
+
+    Numbers: health 5 / mana 8 charges, a kill gives 0.08 (normal) to 3 (boss) charges times the experience factor, so a
+    flask refills in about 12 normal 200-experience kills. All four nodes (4 points, plus the way to Mercy of Embers)
+    give health 8 and mana 11 charges (+60% / +38% buffer) and +45% refill (12 kills per health charge become 8.3). That
+    is a buffer and a throughput gain for one corner of the tree, not a heal: the amount per drink, the 1 s exhaust
+    and the stock-potion fallback are untouched, a boss still gives at most 3 charges (`killCap`), the caps (+5 charges,
+    +100%) are far above, and the mana flask already gains 1.5x so +45% matters more to casters. The notable is two thirds
+    of the whole bonus on purpose, the small nodes are a taste. Nothing measured on the live game; tune the node values in
+    the client's `treedata/nodes.lua` (then `gen_passivetree_data.lua`) or the caps in `potions_config.lua`.
+  - **Respec and refund.** Reads always clamp to the current maximum, but the raw storage value used to survive: refund the
+    nodes and the flask read 5/5, buy them again and it read 8/8 (the 3 lost charges came back). `applyAll` now cuts the
+    stored health / mana charges to the new maximum (`ChaosPotionsCore.clampStored`: unset -1 stays unset = full, a value in
+    range is not touched). Tests: `tests/passivetree_effects_test.lua`, `tests/potions_test.lua`.
   - **No opcode and no client input**, so there is nothing to validate or rate-limit besides the refill message (4 s per player);
     the only inputs are server events.
   - **Balance:** the owner's infinite healing is now rationed; at about 20 kills a minute of 200-experience monsters a health

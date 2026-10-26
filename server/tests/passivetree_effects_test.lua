@@ -143,6 +143,33 @@ assertEq(ChaosPassiveFlatMax(536000000, 1500), 2147483647, "flat max clamped")
 assertEq(ChaosPassiveFlatMax(1/0, 5), 2147483647, "flat max inf clamped")
 assertEq(ChaosPassiveFlatMax(0/0, 5), 0, "flat max nan")
 assertEq(ChaosPassiveFlatMax(nil, 5), 0, "flat max nil")
+do -- the flask nodes (O251): the tree's bonus names reach the potion storage, a refund cuts the stored charges
+  local pf, st = mkPlayer()
+  local cfgP = ChaosPotionsConfig
+  assert(cfgP and cfgP.storage, "potions config loaded by the effects file")
+  local sh, sm = cfgP.storage.healthCharges, cfgP.storage.manaCharges
+  st[sh], st[sm] = -1, -1 -- never set: a full flask
+  ChaosPassiveTree.listeners[1](pf, {})
+  assertEq(st[cfgP.storage.treeMaxCharges], 0, "no node: no extra charges")
+  assertEq(st[cfgP.storage.treeGainPct], 0, "no node: no gain")
+  assertEq(st[sh], -1, "an unset flask stays unset") assertEq(st[sm], -1, "an unset mana flask stays unset")
+  ChaosPassiveTree.listeners[1](pf, {flaskMaxCharges = 3, flaskChargeGain = 45})
+  assertEq(st[cfgP.storage.treeMaxCharges], 3, "nodes: +3 charges") assertEq(st[cfgP.storage.treeGainPct], 45, "nodes: +45% gain")
+  st[sh], st[sm] = 800, 1100 -- full flasks of 8 and 11
+  ChaosPassiveTree.listeners[1](pf, {flaskMaxCharges = 3, flaskChargeGain = 45})
+  assertEq(st[sh], 800, "kept while the nodes stay") assertEq(st[sm], 1100, "mana kept while the nodes stay")
+  ChaosPassiveTree.listeners[1](pf, {flaskMaxCharges = 1, flaskChargeGain = 10}) -- respec: the notable is gone
+  assertEq(st[cfgP.storage.treeMaxCharges], 1, "respec: +1 charge left")
+  assertEq(st[sh], 600, "respec: health charges cut to the new maximum 6") assertEq(st[sm], 900, "respec: mana cut to 9")
+  st[sh] = 250
+  ChaosPassiveTree.listeners[1](pf, {}) -- everything refunded
+  assertEq(st[sh], 250, "a flask below the maximum is untouched") assertEq(st[sm], 800, "mana cut to the base 8")
+  ChaosPassiveTree.listeners[1](pf, {flaskMaxCharges = 3, flaskChargeGain = 45}) -- bought again
+  assertEq(st[sm], 800, "re-buying does not bring the lost charges back")
+  ChaosPassiveTree.listeners[1](pf, {flaskMaxCharges = 99, flaskChargeGain = 999})
+  assertEq(st[cfgP.storage.treeMaxCharges], cfgP.flask.tree.maxExtra, "extra charges are capped") 
+  assertEq(st[cfgP.storage.treeGainPct], cfgP.flask.tree.gainPctCap, "gain is capped")
+end
 do
   local p2 = mkPlayer()
   function p2:getMaxMana() return 6000000000 end
