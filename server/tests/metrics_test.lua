@@ -241,7 +241,7 @@ Chaos.registerInstance("arena", {label = "Arena", inside = function(p) return p.
 Chaos.testerGuids = {}
 dofile("data/scripts/chaos/metrics.lua")
 for _, name in ipairs({"ChaosMetricsDeath", "ChaosMetricsAdvance", "ChaosMetricsLogin", "ChaosMetricsLogout",
-	"ChaosMetricsStartup", "ChaosMetricsThink", "ChaosMetricsShutdown"}) do
+	"ChaosMetricsKill", "ChaosMetricsStartup", "ChaosMetricsThink", "ChaosMetricsShutdown"}) do
 	check(registry[name] ~= nil, "registered " .. name)
 end
 eq(registry.ChaosMetricsThink.i, 60000, "think interval")
@@ -426,11 +426,83 @@ do
 	check(rows[1].kind == "stop" and rows[1].k1 == "Ember Caves" and rows[1].k2 == "1-5" and rows[1].n == 5, "two cells of one area add up")
 	check(rows[2].k1 == "Outside hunts, floor 9" and rows[2].k2 == "901+" and rows[2].n == 6, "far away: outside hunts, open band")
 	local q = M.stopSql(cfg, 2000000, "1 = 1")
-	check(q:find("GROUP BY `band`, `pz`, `cx`, `cy`", 1, true) and q:find("`lastlogin` < " .. (2000000 - 14 * 86400), 1, true)
+	check(q:find("GROUP BY `band`, `sid`, `pz`, `cx`, `cy`", 1, true) and q:find("`lastlogin` < " .. (2000000 - 14 * 86400), 1, true)
 		and not q:find("`name`", 1, true), "stopSql: grouped, gone only, no name")
 	local chunks = M.setSqlChunks((function() local r = {} for i = 1, 450 do r[i] = {kind = "stop", k1 = "a" .. i, k2 = "b", n = 1} end return r end)(),
 		"t", db.escapeString)
 	eq(#chunks, 3, "setSqlChunks: 200 rows per statement")
+end
+
+
+-- O258 last hunt: stable ids, the kill hook, the stop query and rows
+do
+	local a, b = M.stableId("ember-caves"), M.stableId("frost-hold")
+	check(a >= 1 and a <= 1073741789 and a ~= b and a == M.stableId("ember-caves"), "stableId: stable, in range, differs")
+	check(M.stableId("") == 5382, "stableId: fixed value")
+	local sp = {{name = "Ember Caves", x = 100, y = 100, z = 7, sid = a}, {name = "Frost Hold", x = 150, y = 100, z = 7, sid = b}}
+	local sess = {}
+	eq(M.huntMark(sess, {x = 105, y = 100, z = 7}, 1000, sp, cfg), a, "huntMark: a kill in a hunt gives its id")
+	eq(M.huntMark(sess, {x = 150, y = 100, z = 7}, 1030, sp, cfg), nil, "huntMark: throttled inside 60 s")
+	eq(M.huntMark(sess, {x = 105, y = 100, z = 7}, 1061, sp, cfg), nil, "huntMark: same hunt, no write")
+	eq(M.huntMark(sess, {x = 150, y = 100, z = 7}, 1122, sp, cfg), b, "huntMark: another hunt after 60 s")
+	eq(M.huntMark(sess, {x = 900, y = 900, z = 7}, 1200, sp, cfg), nil, "huntMark: outside every hunt")
+	eq(sess.hunt, b, "huntMark: the cache keeps the last hunt")
+	local q = M.stopSql(cfg, 2000000, "1 = 1")
+	check(q:find("LEFT JOIN `player_storage` AS `ps` ON `ps`.`player_id` = `players`.`id` AND `ps`.`key` = 7102833", 1, true),
+		"stopSql: joins player_storage on the hunt key")
+	check(q:find("IF(`ps`.`value` > 0, 0, FLOOR(`players`.`posx` / 8))", 1, true)
+		and q:find("GROUP BY `band`, `sid`, `pz`, `cx`, `cy`", 1, true), "stopSql: cell fallback, one grouped query")
+	local rows = M.stopRows({{band = 1, sid = a, pz = 0, cx = 0, cy = 0, gone = 4}, {band = 1, sid = a, gone = 2},
+		{band = 1, sid = 12345, gone = 6}, {band = 1, sid = 0, pz = 7, cx = 12, cy = 12, gone = 3}}, sp, cfg)
+	eq(#rows, 2, "stopRows: a hunt (with the fallback cell of it) and a removed hunt")
+	local by = {}
+	for _, r in ipairs(rows) do by[r.k1] = r.n end
+	eq(by["Ember Caves"], 9, "stopRows: stored hunts add to the fallback cells of the same area")
+	eq(by[cfg.removedArea], 6, "stopRows: an id no place has")
+end
+do
+	TILESTATE_PROTECTIONZONE = 1
+	local pz = false
+	local function mkTile() return {hasFlag = function() return pz end} end
+	local hunter = mk({id = 40, guid = 40, name = "Synthetic Hunter", player = true, level = 30, group = 1, lastLogin = 5,
+		pos = {x = 101, y = 100, z = 7}})
+	function hunter:getTile() return mkTile() end
+	local mob = mk({id = 140, name = "Dragon"})
+	ChaosMetrics.spots = {{name = "Ember Caves", x = 100, y = 100, z = 7, sid = M.stableId("ember")}}
+	local sid = M.stableId("ember")
+	registry.ChaosMetricsLogin.onLogin(hunter)
+	check(hunter.events.ChaosMetricsKill, "the kill event is registered at login")
+	local function kill(t) clock = clock + t registry.ChaosMetricsKill.onKill(hunter, mob) end
+	pz = true
+	kill(100)
+	check(hunter.storage[cfg.huntStorage] == nil, "no hunt stored in a protection zone")
+	pz = false
+	kill(10)
+	check(hunter.storage[cfg.huntStorage] == nil, "throttled: the check in the zone counted")
+	kill(100)
+	eq(hunter.storage[cfg.huntStorage], sid, "a kill in a hunt stores its id")
+	local writes = 0
+	local set = hunter.setStorageValue
+	function hunter:setStorageValue(k, v) if k == cfg.huntStorage then writes = writes + 1 end return set(self, k, v) end
+	kill(100)
+	kill(100)
+	eq(writes, 0, "the same hunt is not written again")
+	hunter.pos = {x = 500, y = 500, z = 7}
+	kill(100)
+	eq(hunter.storage[cfg.huntStorage], sid, "a kill in town keeps the last hunt")
+	registry.ChaosMetricsKill.onKill(hunter, hunter) -- a player target is not a monster kill
+	hunter.pos = {x = 101, y = 100, z = 7}
+	hunter.inArena = true
+	kill(100)
+	eq(writes, 0, "an instance is not a hunt")
+	hunter.inArena = false
+	-- a relog reads the stored hunt: no write for the same hunt
+	registry.ChaosMetricsLogin.onLogin(hunter)
+	kill(100)
+	eq(writes, 0, "a new session starts from the stored hunt")
+	registry.ChaosMetricsKill.onKill(bot, mob)
+	check(bot.storage[cfg.huntStorage] == nil, "a tester is not marked")
+	ChaosMetrics.spots = {{name = "Ember Caves", x = 100, y = 100, z = 7}}
 end
 
 -- the engine file
