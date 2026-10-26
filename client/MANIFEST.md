@@ -3066,6 +3066,52 @@ Owner request 2026-10-26: "Gere novas runas. Vamos usar as artes das runas como 
 - **Ship order.** A client on pair 45 or older draws nothing for the new ids: ship pair 46 and a client build (the new icons) before the
   server's `supports` install step, or keep `clientFirstId = nil` until then.
 
+## Reward Chest look, one tile (pair 47: item 38758, `tools/sprites/gen_reward_chest_art.py build-small`, `art_import/reward_chest_small*`; built 2026-10-26; on windows-assets ba3a1e01)
+Owner request 2026-10-26: the base map's quest chests were one tile big, and a 2 x 2 chest overlaps walls and neighbouring chests in tight
+quest rooms (31 of about 297 sit next to another chest). The owner picked a one-tile version of the Reward Chest look ("use o 15", candidate
+15 of the 32 x 32 sheet). Quest chests and quest boxes of the base map wear it; server/README.md "Reward chests".
+- **Pixels.** PixelLab's: `generate-image-v2` (Pro), 32 x 32, no background, style image = the approved 64 art scaled down 2x, reference =
+  the 64 art (raw file `pro_style32_13.png` of the git-ignored `pixellab-pip-generations/reward-chest-32/`). Not repainted, snapped or
+  recoloured: the colour under fully transparent pixels is cleared, and the picture is **mirrored left-right** (`MIRROR_SMALL`, lossless).
+  Compared side by side, the raw 32 px file leans like the big look's unflipped source (the big look is mirrored by `build`), so without
+  the flip the two looks would face opposite ways. The committed source `art_import/reward_chest/reward_chest_small.png` is the unflipped
+  PixelLab file. Credit: docs/CREDITS.md "Tools" (PixelLab; `art_import/reward_chest_sources.csv`).
+- **Style.** `build-small` runs `style_check.py` on the 32 px cell against its own colours (61 colours): outline, light, noise, colour
+  count, alpha and scale pass, no warnings. `build-small --check` (CI) rebuilds from the committed source.
+- **Things.** `art_import/reward_chest_small.csv`: one 1 x 1 item, one phase, kind chest, mode new, flags `copy:19250` (container, blocks,
+  not moveable). Atlas `art_import/reward_chest_small.png`: one 32 px cell.
+
+| Client id | Look | Server id |
+|---|---|---|
+| 38758 | reward chest, one tile | 32311 |
+
+- **Server.** `tools/install_reward_chest.py` installs it beside 32310 (same node copy of 21584, same items.xml attributes);
+  `rift_config.lua` `chest.smallItemId`; `tools/patch_reward_chests.py` gives it to the base map's quest chests and boxes.
+
+```
+python3 -I client/tools/sprites/gen_reward_chest_art.py build-small [--src PIXELLAB_DIR/pro_style32_13.png]
+python3 -I client/tools/sprites/import_art_things.py --ours-dat pair46/Tibia.dat --ours-spr pair46/Tibia.spr --out-dir pair47 \
+    --things client/tools/sprites/art_import/reward_chest_small.csv --first-item 38758 --expect-items 38757
+python3 -I client/tools/sprites/check_pair.py pair47/Tibia.dat pair47/Tibia.spr --old pair46/Tibia.dat pair46/Tibia.spr --new-only
+python3 -I client/tools/sprites/gen_outfit_anchors.py pair47/Tibia.dat pair47/Tibia.spr
+python3 -I client/tools/sprites/gen_info_lift.py pair47/Tibia.dat pair47/Tibia.spr
+```
+Input pair 46 (dat 58062a1ed9dc6f0e5323752a4d1fd896, spr 71b147590afcc0561f7bfcf3dfdc1301).
+Output **pair 47**: dat e0c1c929361d17242446e39f978dbe02 (11,263,074 bytes), spr ec61b71c52447b6f22e0dd0ddd5f3815
+(1,541,352,814 bytes, 1,357,989 sprites: 1 appended), 38,758 items (1 appended), 2,681 outfits, 4101 effects, 253 missiles.
+The importer verified the sprite slot pixel-identical to the atlas and every old thing byte-identical. Built once.
+- `check_pair.py --old`: `--new-only` 0 errors, 0 warnings (45,693 old things and 1,357,988 old sprites compared); the full check
+  gives 0 errors and the same 206 warnings as pair 46. `outfit_anchors.lua` and `info_lifts.lua`: only the dat md5 changes (the
+  "Live sprite pair" CI job checks both against the pair on windows-assets).
+- Archive (the pair 41 recipe: `tar --owner=0 --group=0 --numeric-owner --mtime='2026-10-22 00:00:00Z' --format=gnu`, `xz -9 -T3`,
+  `split -b 95M -d -a 2`): 147,077,004 bytes, sha256 5f436e96cbfe182252936574c00069fbf1a63f731ac6189088d10c527ce996ea; parts
+  `things-1098.tar.xz.part00` (99,614,720 bytes, sha256 f00d4c5fb7dfcc25cdc5852b7ede493a60dac60e6601cb67f91c96f7086385e6) and `.part01`
+  (47,462,284 bytes, sha256 8d2060c017fd1f36b0de9cf5dd992572c36389eca8e92b22ae6d76acb0e1aa7c); the joined parts extract to the md5s
+  above. Pushed to windows-assets as **ba3a1e01** (parent 4553b922, "Pair 47 (1-tile reward chest)"; `SHA256SUMS.parts` and the two
+  part files changed, the part count stays two).
+- **Ship order.** A client on pair 46 or older draws nothing for 38758: ship pair 47 (or later) and a client build before the server's
+  `rewardchest` install step (then `rewardchests`). Not run in a client.
+
 ## Owner art (things_custom26: outfits 2213-2233, items 33940-33985, `tools/sprites/gen_owner_art.py`, `art_import/owner_art.csv`; on windows-assets 50645056, switch on since 2026-10-15)
 **Source and licence.** The owner's Google Drive folder "ots", files added 2026-10-15. The owner confirmed the art is
 their own or commissioned and free to use for monsters and variants, outfits and wings as cosmetics, decoration and map

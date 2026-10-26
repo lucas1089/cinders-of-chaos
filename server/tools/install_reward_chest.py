@@ -6,20 +6,25 @@ usage: python3 -I install_reward_chest.py DATA_DIR [--dry-run]
 Every chest a player takes a reward from (the rift's, the Descent's treasure room, the quest chests of the planned areas
 and of the base server's quests) used the stock reward chest (server 21584, client 19250: a gold chest on a stone plinth).
 Pair 45 appends a look of its own (client id 38657, client/MANIFEST.md "Reward Chest look"); this step makes the server
-item that wears it: server id 32310, "reward chest".
+item that wears it: server id 32310, "reward chest" (2 x 2 tiles).
+
+A second look, one tile big, is installed the same way: pair 47 appends client id 38758 (client/MANIFEST.md "Reward Chest
+look, one tile"), server id 32311, also named "reward chest" with the same attributes. The base map's quest chests and boxes
+sit in tight rooms where a 2 x 2 chest overlaps walls and neighbours; tools/patch_reward_chests.py gives them this one and
+the planned areas, the rift and the Descent keep the big one.
 
 1. data/items/items.otb: a copy of the node of server 21584 (group container, flags, every attribute) with server id 32310
-   and client id 38657. Appended at the end of the root; a node already there with the same bytes is left alone, one with
+   and client id 38657, and another one with server id 32311 and client id 38758 (both: LOOKS). Appended at the end of the root; a node already there with the same bytes is left alone, one with
    other bytes is replaced, a server id that belongs to another client id stops the script (nothing is written).
    items.otb.bak keeps the original the first time; the written file is parsed again and the node checked.
-2. data/items/items.xml: its entry (article "a", name "reward chest", the attributes of 21584's entry: description,
+2. data/items/items.xml: their two entries (article "a", name "reward chest", the attributes of 21584's entry: description,
    container size 32, not pickupable, not moveable) between two marker comments before </items>, rewritten when it
    changed. An id with an entry outside the block stops the script.
 
-The id comes from the free block 32310-32319 (32301-32309 are the charms, 32351-32399 the professions). The configs
+The ids come from the free block 32310-32319 (32301-32309 are the charms, 32351-32399 the professions). The configs
 (rift_config.lua chest, descent_config.lua objects) fall back to 21584 while the id is not installed; the map step
-`rewardchests` (patch_reward_chests.py) refuses to run until the id is in items.otb. A client on a pair before 45 draws
-nothing for the new client id: ship pair 45 before this step.
+`rewardchests` (patch_reward_chests.py) refuses to run until both ids are in items.otb. A client on a pair before 45 draws
+nothing for client id 38657, one before 47 nothing for 38758: ship pair 47 before this step.
 
 Idempotent: a second run changes nothing.
 """
@@ -34,7 +39,9 @@ from install_gems import scan, escape, attr, xml_escape, START, END, A_SERVERID,
 
 STOCK_SID = 21584                # the stock reward chest: container, blocks, not moveable, 2x2
 RANGE = (32310, 32319)           # reserved for this item
-LOOK = (32310, 38657)            # (server id, client id): pair 45, art_import/reward_chest.csv
+LOOK = (32310, 38657)            # (server id, client id): pair 45, art_import/reward_chest.csv (2 x 2)
+LOOK_SMALL = (32311, 38758)      # pair 47, art_import/reward_chest_small.csv (1 x 1)
+LOOKS = (LOOK, LOOK_SMALL)
 NAME = 'reward chest'
 DEFAULT_ATTRS = (('description', 'This chest contains your rewards earned in battles.'), ('containersize', '32'),
                  ('pickupable', '0'), ('moveable', '0'))
@@ -56,38 +63,53 @@ def node(stock, sid, cid):
 
 
 def patch_otb(data):
-    sid, cid = LOOK
-    assert RANGE[0] <= sid <= RANGE[1], sid
+    """(new bytes, notes, [wanted node of each look])"""
     kids, root_end = scan(data)
     by_sid = {k[2]: k for k in kids}
     stock = by_sid.get(STOCK_SID)
     if stock is None:
         raise SystemExit('items.otb: no stock node %d (the reward chest); nothing written' % STOCK_SID)
-    want = node(stock, sid, cid)
-    k = by_sid.get(sid)
+    # check every look before anything is changed: a taken id stops the script with nothing written
+    for sid, cid in LOOKS:
+        assert RANGE[0] <= sid <= RANGE[1], sid
+        k = by_sid.get(sid)
+        if k is not None and k[3] != cid:
+            raise SystemExit('items.otb: server id %d already belongs to client id %s, not %d; nothing written'
+                             % (sid, k[3], cid))
+    notes, wants = [], []
     buf = bytearray(data)
-    if k is None:
-        buf[root_end:root_end] = want
-        note = 'items.otb: %s added (server id %d, client id %d)' % (NAME, sid, cid)
-    elif k[3] != cid:
-        raise SystemExit('items.otb: server id %d already belongs to client id %s, not %d; nothing written'
-                         % (sid, k[3], cid))
-    elif data[k[0]:k[1]] != want:
-        buf[k[0]:k[1]] = want
-        note = 'items.otb: %s %d updated' % (NAME, sid)
-    else:
-        note = 'items.otb: %s %d present' % (NAME, sid)
-    return bytes(buf), [note], want
+    add = b''
+    for sid, cid in LOOKS:
+        want = node(stock, sid, cid)
+        wants.append(want)
+        k = by_sid.get(sid)
+        if k is None:
+            add += want
+            notes.append('items.otb: %s added (server id %d, client id %d)' % (NAME, sid, cid))
+        elif data[k[0]:k[1]] != want:
+            notes.append('items.otb: %s %d updated' % (NAME, sid))
+        else:
+            notes.append('items.otb: %s %d present' % (NAME, sid))
+    # replace stale nodes from the back so the offsets stay valid, then append the new ones at the end of the root
+    for (sid, _cid), want in sorted(zip(LOOKS, wants), key=lambda t: -(by_sid[t[0][0]][0] if t[0][0] in by_sid else -1)):
+        k = by_sid.get(sid)
+        if k is not None and data[k[0]:k[1]] != want:
+            buf[k[0]:k[1]] = want
+    if add:
+        # root_end moves when a stale node changed its length; both are in `buf`, so find the end again
+        _kids, root_end = scan(bytes(buf))
+        buf[root_end:root_end] = add
+    return bytes(buf), notes, wants
 
 
-def verify_otb(data, want):
-    sid, cid = LOOK
+def verify_otb(data, wants):
     kids, _ = scan(data)
     by_sid = {k[2]: k for k in kids}
-    k = by_sid.get(sid)
     stock = by_sid[STOCK_SID]
-    assert k and k[3] == cid and data[k[0]:k[1]] == want, 'reward chest node %d' % sid
-    assert k[4] == stock[4] and k[5] == stock[5], 'reward chest %d keeps the stock group and flags' % sid
+    for (sid, cid), want in zip(LOOKS, wants):
+        k = by_sid.get(sid)
+        assert k and k[3] == cid and data[k[0]:k[1]] == want, 'reward chest node %d' % sid
+        assert k[4] == stock[4] and k[5] == stock[5], 'reward chest %d keeps the stock group and flags' % sid
     sids = [x[2] for x in kids]
     assert len(sids) == len(set(sids)), 'duplicate server ids in items.otb'
     return len(kids)
@@ -104,11 +126,12 @@ def stock_attrs(text):
 
 
 def xml_block(attrs):
-    sid = LOOK[0]
-    body = '\t<item id="%d" article="a" name="%s">\n' % (sid, xml_escape(NAME))
-    for k, v in attrs:
-        body += '\t\t<attribute key="%s" value="%s" />\n' % (k, v)
-    body += '\t</item>\n'
+    body = ''
+    for sid, _cid in LOOKS:
+        body += '\t<item id="%d" article="a" name="%s">\n' % (sid, xml_escape(NAME))
+        for k, v in attrs:
+            body += '\t\t<attribute key="%s" value="%s" />\n' % (k, v)
+        body += '\t</item>\n'
     return XML_BEGIN + body + XML_END
 
 
@@ -122,10 +145,10 @@ def patch_xml(text):
     else:
         outside = text
     block = xml_block(stock_attrs(outside))
-    sid = LOOK[0]
     ranges = [(int(a), int(b)) for a, b in re.findall(r'fromid="(\d+)"\s+toid="(\d+)"', outside)]
-    if re.search(r'<item\s+id="%d"' % sid, outside) or any(a <= sid <= b for a, b in ranges):
-        raise SystemExit('items.xml: id %d already has an entry outside the Reward Chest block; nothing written' % sid)
+    for sid, _cid in LOOKS:
+        if re.search(r'<item\s+id="%d"' % sid, outside) or any(a <= sid <= b for a, b in ranges):
+            raise SystemExit('items.xml: id %d already has an entry outside the Reward Chest block; nothing written' % sid)
     if s >= 0:
         if text[s:e + len(XML_END)] == block:
             return text, 'items.xml: Reward Chest block up to date'
@@ -148,8 +171,8 @@ def main(argv):
         print('items.otb / items.xml not found in', args[0])
         return 1
     raw = open(otb, 'rb').read()
-    new, notes, want = patch_otb(raw)
-    n = verify_otb(new, want)
+    new, notes, wants = patch_otb(raw)
+    n = verify_otb(new, wants)
     for note in notes:
         print(note)
     print('items.otb: verified (%d item nodes)' % n)

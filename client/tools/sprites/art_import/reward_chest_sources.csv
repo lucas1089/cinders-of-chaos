@@ -1,2 +1,3 @@
 name,kind,pack,source,licence
 reward_chest,item,PixelLab,"generate image 64x64, our own prompt (gold chest overflowing with coins and gems, lid open; the committed file is unflipped, build mirrors it); art_import/reward_chest/reward_chest.png","made with our PixelLab subscription; docs/CREDITS.md"
+reward_chest_small,item,PixelLab,"generate image 32x32 (Pro generate-image-v2, no background; style image = the 64 art scaled down 2x, reference = the 64 art; owner pick 15 of the sheet); the committed file is unflipped, build-small mirrors it","made with our PixelLab subscription; docs/CREDITS.md"

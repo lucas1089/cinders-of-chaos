@@ -91,8 +91,9 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                41951..41959, monster level 1700-2500) in items.otb / items.xml (README "Waystone tiers")
   cursedchest  tools/install_cursed_chest.py     the Cursed Chest's three own looks of pair 43 (copies of the Sealed Coffer chest's
                node with client ids 38642..38644, server ids 32281..32283) in items.otb / items.xml (README "Cursed Chest")
-  rewardchest  tools/install_reward_chest.py    the Reward Chest's own look of pair 45 (a copy of the stock reward chest 21584's node
-               with client id 38657, server id 32310) in items.otb / items.xml (README "Reward chests"; before rewardchests)
+  rewardchest  tools/install_reward_chest.py    the Reward Chest's own looks (copies of the stock reward chest 21584's node: client id
+               38657 / server id 32310, 2 x 2, pair 45; client id 38758 / server id 32311, one tile, pair 47) in items.otb /
+               items.xml (README "Reward chests"; before rewardchests)
   gems         tools/install_gems.py             the gems and the Orb of Sockets in items.otb / items.xml, the orb's own look of
                pair 38, client 38641 (README "Gems and sockets")
   salvage      tools/install_salvage.py          the salvage Rune Shard in items.otb / items.xml (README "Salvage")
@@ -260,8 +261,9 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                in the map's house file (README "Base houses")
   rewardchests tools/patch_reward_chests.py     the quest chests already on the map become the reward chest of rift_config.lua
                (32310): the planned areas' (chest 1740 or 21584 with an action id of 47960-47999) so the contentareas step
-               sees its placed areas unchanged, and the base server's own quest chests (the base quest system's action ids
-               and quest unique ids, README "Reward chests"; right before contentareas)
+               sees its placed areas unchanged; the base server's own quest chests and quest boxes (the base quest system's
+               action ids and quest unique ids) become its one-tile look 32311, README "Reward chests"; right before
+               contentareas)
   contentareas tools/install_content_areas.py   the planned content hunts (tools/areaplan/plans/) into the map at their
                origins, their spawns and chest scripts; the teleport room of Cinderhold grows by copies of its alcove
                modules on floor 6, the display monsters beside each new teleport go into the spawn file, and
