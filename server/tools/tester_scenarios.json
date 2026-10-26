@@ -7,9 +7,9 @@
   "game_npctradewindow"
  ],
  "counts": {
-  "opcode": 62,
+  "opcode": 63,
   "out": 38,
-  "passive": 77,
+  "passive": 78,
   "place": 13,
   "staff": 11
  },
@@ -7973,11 +7973,13 @@
    "actions": [
     "get",
     "rfirsts",
+    "rmine",
     "rget",
     "rmeta",
     "open"
    ],
    "client": [
+    "game_dropfeed",
     "game_leaderboard"
    ],
    "dataKeys": [
@@ -10683,6 +10685,15 @@
     "hunt"
    ],
    "talkactions": []
+  },
+  "retention_loot": {
+   "files": [
+    "retention_loot.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
   },
   "retired_spells": {
    "files": [
