@@ -22,6 +22,17 @@ local function cfgOf(cfg)
 	return cfg or ChaosLoadoutsConfig
 end
 
+-- the text in `lang` (ChaosI18n when it is loaded, English otherwise); loadouts.lua passes the language of the reader
+local function T(lang, key, ...)
+	if ChaosI18n and ChaosI18n.text then
+		return ChaosI18n.text(lang, key, ...)
+	end
+	if select("#", ...) == 0 then
+		return key
+	end
+	return string.format(key, ...)
+end
+
 local function msg(cfg, key, ...)
 	local text = (cfgOf(cfg).messages or {})[key] or key
 	if select("#", ...) > 0 then
@@ -276,25 +287,25 @@ function C.countWhy(removed)
 end
 
 -- the player's text for free refunds of a validation; nil when nothing was removed
-function C.refundText(removed, paragonRemoved)
+function C.refundText(removed, paragonRemoved, lang)
 	local why = C.countWhy(removed)
 	local parts = {}
-	local function add(n, text)
+	local function add(n, one, many)
 		if n and n > 0 then
-			parts[#parts + 1] = string.format("%d node%s %s", n, n == 1 and "" or "s", text)
+			parts[#parts + 1] = T(lang, n == 1 and one or many, n)
 		end
 	end
-	add(why.unknown, "that left the tree")
-	add(why.disconnected, "that no longer connect (the tree changed)")
-	add(why.class, "your class cannot hold")
-	add(why.budget, "over your passive points")
+	add(why.unknown, "%d node that left the tree", "%d nodes that left the tree")
+	add(why.disconnected, "%d node that no longer connects (the tree changed)", "%d nodes that no longer connect (the tree changed)")
+	add(why.class, "%d node your class cannot hold", "%d nodes your class cannot hold")
+	add(why.budget, "%d node over your passive points", "%d nodes over your passive points")
 	if paragonRemoved and paragonRemoved > 0 then
-		parts[#parts + 1] = string.format("%d Paragon point%s over what you own", paragonRemoved, paragonRemoved == 1 and "" or "s")
+		parts[#parts + 1] = T(lang, paragonRemoved == 1 and "%d Paragon point over what you own" or "%d Paragon points over what you own", paragonRemoved)
 	end
 	if #parts == 0 then
 		return nil
 	end
-	return "Refunded for free: " .. table.concat(parts, ", ") .. "."
+	return T(lang, "Refunded for free: %s.", table.concat(parts, ", "))
 end
 
 -- ------------------------------------------------------------------------------------------------ Paragon

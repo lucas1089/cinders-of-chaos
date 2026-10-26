@@ -794,9 +794,21 @@ local function spawnBoss(run)
 	return 0
 end
 
+-- the item of a room object; the reward chest falls back to the stock one while its own look is not installed
+local function objectItemId(cfg, kind)
+	local id = cfg.objects[kind]
+	if kind == "chest" and cfg.objects.chestFallback then
+		local ok, tid = pcall(function() return ItemType(id):getId() end)
+		if not (ok and tid ~= nil and tid ~= 0) then
+			return cfg.objects.chestFallback
+		end
+	end
+	return id
+end
+
 local function placeObject(run, pos, kind)
 	local cfg = C()
-	local item = Game.createItem(cfg.objects[kind], 1, P(pos))
+	local item = Game.createItem(objectItemId(cfg, kind), 1, P(pos))
 	if item then
 		item:setActionId(cfg.aid[kind])
 		P(pos):sendMagicEffect(CONST_ME_FIREAREA)

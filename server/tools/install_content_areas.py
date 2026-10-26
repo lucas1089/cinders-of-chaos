@@ -652,7 +652,8 @@ def tile_nodes(tiles):
                 q += bytes([ATTR_TELE]) + struct.pack('<HHB', *attrs['tele'])
             if attrs.get('raw'):  # other attributes kept as read (a sign's text, a count)
                 q += attrs['raw']
-            out += b'\xFE' + _esc(q) + b'\xFF'
+            kids = b''.join(b'\xFE' + _esc(bytes([6]) + struct.pack('<H', k)) + b'\xFF' for k in attrs.get('kids', ()))
+            out += b'\xFE' + _esc(q) + kids + b'\xFF'  # kids: item ids of the things inside a container
         out += b'\xFF'
     if cur is not None:
         out += b'\xFF'

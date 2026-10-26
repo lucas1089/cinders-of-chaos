@@ -335,7 +335,10 @@ function K.summonError(s, cfg)
 		return "You do not own that pet."
 	end
 	if s.zone == "banned" then
-		return "Pets are not allowed here" .. (s.zoneName and (" (" .. s.zoneName .. ")") or "") .. "."
+		if s.zoneName then
+			return string.format("Pets are not allowed here (%s).", s.zoneName)
+		end
+		return "Pets are not allowed here."
 	end
 	local death = K.cooldownLeft(s.deathReady, s.now)
 	if death > 0 then

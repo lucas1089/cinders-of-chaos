@@ -501,7 +501,7 @@ ok(all(C.CHEST_ACTION_BLOCK[0] <= c['aid'] <= C.CHEST_ACTION_BLOCK[1] for r in r
    'chests: the action id in the block')
 ok(all(C.CHEST_STORAGE_BLOCK[0] <= c['storage'] <= C.CHEST_STORAGE_BLOCK[1] for r in results.values() for c in r['chests']),
    'chests: the storage in the block')
-ok(cat['items']['chest'] == 21584, 'chests: the reward chest of rift_config.lua (21584, README "Reward chests")')
+ok(cat['items']['chest'] == 32310, 'chests: the reward chest of rift_config.lua (32310, README "Reward chests")')
 ok(all(dict(temple['tiles'][c['at']]['items']).get(cat['items']['chest'], {}).get('aid') == c['aid'] for c in temple['chests']),
    'chests: the chest item carries the action id')
 p = copy.deepcopy(examples['temple_throne'])

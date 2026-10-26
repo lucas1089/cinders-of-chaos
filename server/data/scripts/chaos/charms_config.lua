@@ -116,7 +116,7 @@ C.uniques = {
 	gravewarden = {mods = {{"dmg_undead", 6}, {"res_death", 4}}, signature = "lastember",
 		signatureText = "Last Ember: once every 10 minutes a hit that would kill you leaves you at 1 health."},
 	compass = {mods = {{"oocspeed", 5}, {"rifttime", 20}}, signature = "wayfarer",
-		signatureText = "Wayfarer's Rest: out of combat you recover 1% of your health and mana every 2 seconds."},
+		signatureText = "Wayfarer's Rest: out of combat you recover 1% health and mana every 2 seconds."},
 	hoard = {mods = {{"orbfind", 8}, {"goldfind", 5}}, signature = "hoardsense", extra = {goblinchance = 15},
 		signatureText = "Hoard Sense: +15% Treasure Goblin Chance."},
 	tally = {mods = {{"lifeonkill", 12}}, signature = "harvester",

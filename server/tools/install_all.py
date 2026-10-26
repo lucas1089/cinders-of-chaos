@@ -91,6 +91,8 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                41951..41959, monster level 1700-2500) in items.otb / items.xml (README "Waystone tiers")
   cursedchest  tools/install_cursed_chest.py     the Cursed Chest's three own looks of pair 43 (copies of the Sealed Coffer chest's
                node with client ids 38642..38644, server ids 32281..32283) in items.otb / items.xml (README "Cursed Chest")
+  rewardchest  tools/install_reward_chest.py    the Reward Chest's own look of pair 45 (a copy of the stock reward chest 21584's node
+               with client id 38657, server id 32310) in items.otb / items.xml (README "Reward chests"; before rewardchests)
   gems         tools/install_gems.py             the gems and the Orb of Sockets in items.otb / items.xml, the orb's own look of
                pair 38, client 38641 (README "Gems and sockets")
   salvage      tools/install_salvage.py          the salvage Rune Shard in items.otb / items.xml (README "Salvage")
@@ -256,9 +258,10 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                name"; after worldtexts)
   houses       tools/patch_base_houses.py        Chaos street names of the houses by house id (tools/base_house_names.csv)
                in the map's house file (README "Base houses")
-  rewardchests tools/patch_reward_chests.py     the old plain quest chests of the planned areas already on the map
-               (chest 1740 with an action id of 47960-47999) become the reward chest of rift_config.lua (21584), so the
-               contentareas step sees its placed areas unchanged (README "Reward chests"; right before contentareas)
+  rewardchests tools/patch_reward_chests.py     the quest chests already on the map become the reward chest of rift_config.lua
+               (32310): the planned areas' (chest 1740 or 21584 with an action id of 47960-47999) so the contentareas step
+               sees its placed areas unchanged, and the base server's own quest chests (the base quest system's action ids
+               and quest unique ids, README "Reward chests"; right before contentareas)
   contentareas tools/install_content_areas.py   the planned content hunts (tools/areaplan/plans/) into the map at their
                origins, their spawns and chest scripts; the teleport room of Cinderhold grows by copies of its alcove
                modules on floor 6, the display monsters beside each new teleport go into the spawn file, and
@@ -760,6 +763,13 @@ def step_cursedchest(server, data, ctx):
 STEPS.insert(STEPS.index('waystoneitems') + 1, 'cursedchest')  # the chest's own looks (pair 43); the config falls back to 12664 without them
 
 
+def step_rewardchest(server, data, ctx):
+    return tool_result(run_tool([tool('install_reward_chest.py'), data], 'install_reward_chest.py'))
+
+
+STEPS.insert(STEPS.index('cursedchest') + 1, 'rewardchest')  # the reward chest's own look (pair 45); the configs fall back to 21584 without it
+
+
 def step_gems(server, data, ctx):
     return tool_result(run_tool([tool('install_gems.py'), data], 'install_gems.py'))
 
@@ -1175,8 +1185,9 @@ def step_rewardchests(server, data, ctx):
         if not mp:
             return tool_result((False, ['no map in %s/world' % real]))
         out = os.path.join(ctx['tmp'], 'reward_chests.otbm')
-        ok, lines = run_tool([tool('patch_reward_chests.py'), real, '--dry-run', '--map', mp, '--out', out],
-                             'patch_reward_chests.py')
+        # the new chest item is in the copy's items.otb (the rewardchest step ran on it), not in the real one yet
+        ok, lines = run_tool([tool('patch_reward_chests.py'), real, '--dry-run', '--map', mp, '--out', out,
+                              '--items-otb', os.path.join(data, 'items', 'items.otb')], 'patch_reward_chests.py')
         if ok and os.path.isfile(out):
             ctx['dry_map'] = out
         return tool_result((ok, lines))

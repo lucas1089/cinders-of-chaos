@@ -409,7 +409,7 @@ local function accept(player, key)
 	local st = stateOf(player)
 	local ok, c = B.canAccept(board, st.entries, key, (B.visibleBands(player:getLevel(), cfg)), cfg)
 	if not ok then
-		player:sendCancelMessage(Chaos.t(player, c))
+		player:sendCancelMessage(Chaos.tx(player, c))
 		B.sendBoard(player)
 		return
 	end
@@ -511,8 +511,8 @@ local function creditKill(player, c, tierName, direct)
 		state = done and "done" or "active"})
 	if done then
 		local paid = payContract(player, c, e)
-		notify(player, string.format("Bounty completed: %s (%d/%d).%s", c.name, e.progress, e.required,
-			paid and "" or " No reward (multi-client)."), c.look)
+		notify(player, Chaos.t(player, "Bounty completed: %s (%d/%d).%s", c.name, e.progress, e.required,
+			paid and "" or Chaos.t(player, " No reward (multi-client).")), c.look)
 		if paid then
 			if ChaosLeaderboard and ChaosLeaderboard.record then ChaosLeaderboard.record("bounty", player, 1) end -- leaderboard.lua
 			if ChaosCharms and ChaosCharms.onSource then -- a charm drop (charms.lua)
@@ -533,7 +533,7 @@ local function creditKill(player, c, tierName, direct)
 		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Bounty %s: %d%% done (%d/%d).", c.name, pct, e.progress,
 			e.required))
 		if pct == 50 then
-			notify(player, string.format("Bounty halfway: %s %d/%d.", c.name, e.progress, e.required), c.look)
+			notify(player, Chaos.t(player, "Bounty halfway: %s %d/%d.", c.name, e.progress, e.required), c.look)
 		end
 	end
 end

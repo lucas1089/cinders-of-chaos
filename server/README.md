@@ -15542,7 +15542,7 @@ storages 7100400-7100409, action ids 47401 (key), 47402 (reward chest) and 47403
   rift, legendary, with 3x its base health (+100% per extra player). With a party every pack monster gets more health
   too, so the rift's total monster health is +100% per extra player (see "Party scaling"). Time limit 12-15 minutes by the map's size. The HUD (top left, under the
   character plate) shows tier, theme, time left, kills / left, the guardian, the modifiers and the bonuses.
-- **End.** Guardian killed in time: the rift is sealed, the remaining monsters vanish, a reward chest (21584, action id 47402,
+- **End.** Guardian killed in time: the rift is sealed, the remaining monsters vanish, a reward chest (32310, the own look, falling back to 21584; action id 47402,
   "Reward chests") appears where it died and every finisher may open it once within 60 s; whoever did not gets it delivered at the exit
   (or at the next login when offline). Time up: "the rift collapses", everyone is sent back to where they used the key,
   the key is lost. Death inside: the normal death rules (temple, losses), the player is out of the run. Logout inside: the
@@ -18340,8 +18340,21 @@ sprite pair (gold and readable on dark floors, 2x2, not moveable, not pickupable
 
 | Chest | Item | Was | Where |
 |---|---|---|---|
-| reward chest (gold, on a stone plinth, container 32) | 21584 | 1740 | the rift chest where the guardian died (`rift_config.lua` `chest`), the Ember Descent's treasure room chest (`descent_config.lua` `objects.chest`), the quest chests of every planned area (`tools/areaplan_build.lua` hands the rift chest to the planner) |
+| reward chest (own look: dark wood, gold bands, ember red; container 32) | 32310 (client 38657, pair 45); falls back to 21584 (the stock gold chest on a stone plinth) while 32310 is not installed | 1740, then 21584 | the rift chest where the guardian died (`rift_config.lua` `chest`), the Ember Descent's treasure room chest (`descent_config.lua` `objects.chest`), the quest chests of every planned area (`tools/areaplan_build.lua` hands the rift chest to the planner), and every quest chest of the base server's map (see "Install") |
 | treasure chest (blue and silver, container 20) | 12664 | 1746 | the rift's Sealed Coffer (`rift_config.lua` `coffer`): it must be a container, its spoils go inside |
+
+**Own look (owner request 2026-10-26: "make a reward chest and give every quest chest this sprite"; pair 45).** The stock
+21584 is a gold chest on a stone plinth. Item **32310** "reward chest" is a copy of its node (group container, flags,
+attributes; container 32, not moveable, not pickupable) with the client id **38657**, a PixelLab painting of our own: dark
+wood bound in ornate gold, ember-red lining and trim, an ember glowing in the lock (2 x 2, a still; client/MANIFEST.md
+"Reward Chest look", `client/tools/sprites/gen_reward_chest_art.py`). The block 32310-32319 is reserved for it (32301-32309
+are the charms, 32351-32399 the professions). `install_all.py` step `rewardchest` (`tools/install_reward_chest.py`, modelled on
+the Cursed Chest's; before `rewardchests`) writes the otb node and an items.xml entry between two marker comments. Until it
+is installed `rift_config.lua` `chest.fallbackId` and `descent_config.lua` `objects.chestFallback` (21584) are what the rift
+and the Descent create (`ItemType(id):getId() ~= 0`, as the Cursed Chest does); the map step refuses to run without the id.
+Ship pair 45 and a client build before the `rewardchest` step: a client on pair 44 or older draws nothing for the new
+client id. `tools/install_reward_chest_test.py` (synthetic items.otb / items.xml; also checks the configs and the client
+things file).
 
 The old ids could be moved and picked up (1740 and 1746 are pickupable in items.otb); the new ones cannot. Neither id
 is used by another system (the base server's own handler of 21584 is commented out in its actions.xml; the plaza's
@@ -18355,12 +18368,34 @@ inbox, so they keep their small looks.
   is sealed). An entry ends when its check says so, when the item is no longer on its tile, after `maxAge` (30 min), or
   past `maxEntries` (200). The planned areas' quest chests do not glint: they are per character and on the map always.
   Rules: `reward_sparkle_core.lua`, `tests/reward_sparkle_test.lua` (also checks the ids of the configs).
-- **Install** (`install_all.py` step `rewardchests`, right before `contentareas`): `tools/patch_reward_chests.py
-  DATA_DIR [--dry-run] [--map FILE] [--out FILE]` turns every old chest 1740 on the map that carries a quest chest action
-  id (47960-47999, or a plan's own `chest_action`) into the reward chest of `rift_config.lua`. It rewrites only the item
-  id of those nodes (action id, tile and the rest stay), so the `contentareas` step sees its placed areas unchanged
-  instead of refusing them as changed plans. Refused when the new id is not in `items/items.otb`. A second run changes
-  nothing. `<map>.otbm.bak` is written first when missing. `tools/patch_reward_chests_test.py` (synthetic map).
+- **Install** (`install_all.py` step `rewardchests`, right before `contentareas`, after `rewardchest`): `tools/patch_reward_chests.py
+  DATA_DIR [--dry-run] [--map FILE] [--out FILE] [--items-otb FILE]` turns the quest chests on the map into the reward chest
+  of `rift_config.lua` (32310). It rewrites only the item id of the node: action id, unique id, the contents (a quest chest
+  holds its rewards as child items), the tile and the rest stay, so the base quest scripts work as before (they look at the
+  unique / action id, never at the item id; 21584 is a container like the old ones). What counts as a quest chest:
+  1. **Planned areas:** a chest 1740 or 21584 with an action id of the quest chest block (47960-47999, or a plan's own
+     `chest_action`). They are swapped, not only the old 1740, so a map that already holds 21584 chests catches up; the
+     `contentareas` step sees its placed areas unchanged instead of refusing them as changed plans.
+  2. **The base server's own quest chests** (`BASE_CHEST_IDS`: chest looks 1740, 1746-1749, 8587, 12664, 18472-18474) that the base
+     quest system opens (`data/actions/actions.xml`, `scripts/quests/`): an action id of `system.lua` (2000, 2016, 2215,
+     10544, 12374, 12513, 26300, 27300, 28300; the unique id is the storage key) **and** items inside (system.lua hands out
+     the contents; a chest with nothing inside would hand out a copy of itself, so an empty one is no quest chest); action id
+     2001 with a unique id of `system2.lua`'s table (a fixed reward); a unique id a quest script owns (Inquisition
+     1300-1308, In Service of Yalahar 3088-3090, Bigfoot's Burden 3147-3150, Children of the Revolution 3164, Wrath of
+     the Emperor 3200, Demon Oak 9008-9011, warzone 9172-9174); the base's own reward chest 21584 with an action id (the
+     starter chest 33735, the Soul War chest 33733).
+  3. **Not touched:** boxes, coffins, sarcophagi, drawers, bookcases, barrels, slain creatures and the other things that
+     carry the same quest action id but are no chest (1738, 1741, 1716-1721, 1410, 1419 ...), chests no script owns (a unique
+     id nothing handles, no action id: decoration or loot containers, e.g. the 12 of uid 61907-61918), the plaza's royal chests
+     (29327), the runtime chests (rift, coffer, Descent, Cursed Chest), and containers players keep things in (houses and
+     depots carry no quest action id), a bare 21584 without an action id.
+  On the base map of 2026-10 the rule finds **215** chests: 185 by `system.lua` (140 x 1740, 3 x 1746, 7 x 1747, 6 x 1748, 18 x
+  1749, 3 x 8587, 5 x 12664, 3 x 18473), 5 by `system2.lua` (1740), 21 by a quest script (14 x 1740, 3 x 1748, 12664,
+  18472, 18473, 18474), 4 starter / Soul War chests (21584). The new look is 2 x 2 like 21584: a chest that was 1 x 1 now
+  draws up and to the left over its neighbour tile (the planned areas had the same change on 2026-10-20), nothing else changes.
+  Refused when the new id is not in `items/items.otb` (`--items-otb` names another file: `install_all.py --dry-run` reads its
+  copy's, where the `rewardchest` step just ran). A second run changes nothing. `<map>.otbm.bak` is written first when
+  missing. `tools/patch_reward_chests_test.py` (synthetic map with contents: every rule and every exception).
 
 ## Area planner (`tools/area_planner.py`, `tools/area_plan_*.py`, `tools/areaplan_build.lua`, `tools/areaplan/`)
 
@@ -18407,7 +18442,7 @@ docs/MAP_GUIDE.md "Content plans"). CI validates and compiles them with the exam
   its own because it is not the area: `install_content_areas.py` and `place` lay it only where the map has no tile and
   no area or room goes, so it never replaces a tile; the 66 plans of 2026-10-22 add 359,383 frame tiles and no frame
   touches another plan.
-- **Quest chests:** the reward chest (rift_config.lua `chest.itemId`, 21584; "Reward chests") with the area's action id (block **47960-47999**, plan `chest_action` or one from the
+- **Quest chests:** the reward chest (rift_config.lua `chest.itemId`, 32310; "Reward chests") with the area's action id (block **47960-47999**, plan `chest_action` or one from the
   block by the area id) and one player storage per chest (block **7101200-7101299**, by the quest key). The compile
   writes `data/scripts/chaos_areaplan/<id>_chests.lua`: a revscript Action that gives the plan's `reward` (item names
   from our item tables, gold, experience) once per character, keyed by the chest's offset from the area's ORIGIN.
@@ -23033,9 +23068,15 @@ notifications and orders, build codes, guild war terms and rows). A text for sev
 sale lines), build codes, report receipts, the crafting bench and salvage, guild wars, the PvP zone and its realm
 lines, the passive tree and transmog results, the Scorched Marches (conquest) and the season join flow, the store, pass,
 market and isolation refusals and the mode warnings. Still English on purpose: the guild log rows, salvage history
-lines, config validation messages, fixture descriptions and the season milestone names (window data). Not converted yet:
-shop payments (bilingual on their own), and cores such as mentor, memorial, guild boss, candlemarks, uber arenas, siege,
-charms, pets, loot filter, loadouts, bounty, class looks, goals and raid, which still return English from the core.
+lines, config validation messages, fixture descriptions and the season milestone names (window data). Last
+batch (14 cores): mentor (window rows and milestones), guild boss (HUD notes, run lines, guild tells), uber arenas (HUD, party
+note, ends), siege (status, sign-up results, warnings, weekday names), charms (modifier and signature texts, results),
+pets (rest reasons, level-ups, rename), loot filter (presets, rules, sounds, drop lines), loadouts (results, refund lines
+with singular and plural keys, castbar), bounty (accept refusals, progress notices) and the raid (journal mechanic texts,
+intros, roles and phase names per language, vendor results, buff bar). Memorial and candlemarks were already bilingual,
+class looks only has outfit names and goals keeps its own en / pt text pairs in `goals_config.lua`, so they only got
+`REASONS` entries. Shop payments are bilingual on their own. Boss yells, raid castbar labels and staff replies stay
+English. The table has about 3,700 keys now.
 
 Left: item descriptions and mail texts built in cores (one text for every viewer), party loot lines
 (`broadcastPartyLoot` sends one text to the party: English), monster speech, reasons that game logic reads as text

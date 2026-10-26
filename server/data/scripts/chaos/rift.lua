@@ -1182,7 +1182,15 @@ local function success(run, pos)
 	-- the chest (on the boss's tile, or the guardian's spawn)
 	local chestPos = pos or P(run.L.bossSpawn)
 	run.chestPos = chestPos
-	local chest = Game.createItem(cfg.chest.itemId, 1, chestPos)
+	-- the chest's own look while it is installed (32310), else the stock reward chest (cfg.chest.fallbackId)
+	local chestId = cfg.chest.itemId
+	do
+		local ok, tid = pcall(function() return ItemType(chestId):getId() end)
+		if not (ok and tid ~= nil and tid ~= 0) then
+			chestId = cfg.chest.fallbackId or chestId
+		end
+	end
+	local chest = Game.createItem(chestId, 1, chestPos)
 	if chest then
 		chest:setActionId(cfg.chest.actionId)
 		chest:setAttribute(ITEM_ATTRIBUTE_DESCRIPTION, run.omen and "The guardian's hoard. Every finisher may open it once."
@@ -1190,7 +1198,7 @@ local function success(run, pos)
 		chestPos:sendMagicEffect(CONST_ME_FIREWORK_RED)
 		-- a soft glint while a finisher has not taken their share (reward_sparkle.lua, one shared timer)
 		if ChaosRewardSparkle and ChaosRewardSparkle.add then
-			ChaosRewardSparkle.add("rift:chest:" .. run.id, chestPos, cfg.chest.itemId, function()
+			ChaosRewardSparkle.add("rift:chest:" .. run.id, chestPos, chestId, function()
 				if run.ended then
 					return false
 				end

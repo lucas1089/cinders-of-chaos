@@ -954,7 +954,7 @@ function M.soak(run)
 				shareHit(r, p, each_, COMBAT_FIREDAMAGE)
 			end
 			if overflow > 0 then
-				alert(r, string.format("Ember Brand overflows: only %d of %d soaked!", #inside, need), "fail")
+				alert(r, ChaosI18n.msg("Ember Brand overflows: only %d of %d soaked!", #inside, need), "fail")
 				for _, p in ipairs(room) do
 					if not isIn[p:getId()] then
 						shareHit(r, p, overflow, COMBAT_FIREDAMAGE)
@@ -1149,7 +1149,7 @@ local function phaseStart(run, idx)
 		boss:say(ph.yell, TALKTYPE_MONSTER_YELL)
 	end
 	if idx > 1 then
-		alert(run, ChaosI18n.msg("%s: phase %d of %d, %s.", b.name, idx, #b.phases, ph.name), "phase")
+		alert(run, ChaosI18n.msg("%s: phase %d of %d, %s.", b.name, idx, #b.phases, ChaosI18n.msg(ph.name)), "phase")
 		if boss then
 			fxAt(boss:getPosition(), "dome_blast_fire", CONST_ME_FIREAREA)
 		end
@@ -1495,7 +1495,7 @@ local function removePlayer(run, pid, mode)
 			p:teleportTo(to)
 			p:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
 		end
-		send(p, "end", {text = "You left " .. C().name .. "."})
+		send(p, "end", {text = Chaos.t(p, "You left %s.", C().name)})
 	end
 	run.lastActive = os.time()
 	if run.fight then
@@ -1655,7 +1655,7 @@ function X.open(player, id, force)
 		end
 	end
 	if #group < cfg.minPlayers and not force then
-		return false, string.format("The Sepulchre opens for a party of %d to %d (within %d sqm). You have %d.",
+		return false, ChaosI18n.msg("The Sepulchre opens for a party of %d to %d (within %d sqm). You have %d.",
 			cfg.minPlayers, cfg.maxPlayers, cfg.partyRange, #group) -- only with minPlayers above 1
 	end
 	local IL = ChaosInstanceLimits
@@ -2203,10 +2203,13 @@ end
 X.placeFonts = placeFonts
 
 -- ======================================================================== the window
-local journal
+local journals = {}
 function X.sendJournal(player)
+	local lang = Chaos.lang(player)
+	local journal = journals[lang]
 	if not journal then
-		journal = K.journal(C())
+		journal = K.journal(C(), lang)
+		journals[lang] = journal
 		for _, b in ipairs(journal) do
 			for _, it in ipairs(b.loot.items) do
 				it.n = itemName(it.id, it.count)
@@ -2285,7 +2288,7 @@ end
 local function makeGear(o)
 	local Cr, M2, F = ChaosCrafting, ChaosItemMods, ChaosFactionsCore
 	if not Cr or not M2 or not Cr.writeAffix or not F then
-		return nil, "The vendor's forge is cold (crafting is not loaded)."
+		return nil, ChaosI18n.msg("The vendor's forge is cold (crafting is not loaded).")
 	end
 	local item = Game.createItem(o.id, 1)
 	if not item then
@@ -2316,18 +2319,18 @@ function X.buy(player, k)
 	local o = K.offer(cfg, tostring(k or ""))
 	local w = week()
 	if not o or not K.inStock(cfg, w, o.key) then
-		return false, "That is not for sale this week."
+		return false, ChaosI18n.msg("That is not for sale this week.")
 	end
 	if cfg.needProtectionZone and not inProtectionZone(player) and not X.runOf[player:getId()] then
-		return false, "Visit the vendor from a protection zone (or inside the raid)."
+		return false, ChaosI18n.msg("Visit the vendor from a protection zone (or inside the raid).")
 	end
 	local guid = player:getGuid()
 	local bought = S().purchases(guid, w)[o.key] or 0
 	local row = X.row(guid)
 	local ok, why = K.canBuy(o, bought, row.marks)
 	if not ok then
-		return false, why == "limit" and "You bought that as often as you may this week." or
-			string.format("You need %d Sepulchre Marks.", o.price)
+		return false, why == "limit" and ChaosI18n.msg("You bought that as often as you may this week.") or
+			ChaosI18n.msg("You need %d Sepulchre Marks.", o.price)
 	end
 	local item
 	if o.kind == "gear" then
@@ -2343,7 +2346,7 @@ function X.buy(player, k)
 			item:remove()
 		end
 		X.prow[guid] = nil
-		return false, "Your marks could not be spent."
+		return false, ChaosI18n.msg("Your marks could not be spent.")
 	end
 	row.marks = row.marks - o.price
 	S().addPurchase(guid, w, o.key)
@@ -2354,7 +2357,7 @@ function X.buy(player, k)
 			giveStack(player, it.id, it.count)
 		end
 	end
-	return true, string.format("You bought %s for %d marks.", o.name, o.price)
+	return true, ChaosI18n.msg("You bought %s for %d marks.", o.name, o.price)
 end
 
 local ext = CreatureEvent("ChaosRaidExtended")
@@ -2394,7 +2397,7 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 	elseif a == "buy" then
 		if rate(player, "buy", 600) then
 			local ok, text = X.buy(player, d.key)
-			send(player, "msg", {text = text, ok = ok or nil})
+			send(player, "msg", {text = Chaos.t(player, text), ok = ok or nil})
 			X.sendInfo(player)
 		end
 	elseif a == "leave" then
@@ -2402,7 +2405,7 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 		if run then
 			if run.fight and run.players[player:getId()] and not run.players[player:getId()].fallen and
 					K.inRoom(run.L, run.fight.idx, player:getPosition()) then
-				send(player, "msg", {text = "Not in the middle of a boss fight."})
+				send(player, "msg", {text = Chaos.t(player, "Not in the middle of a boss fight.")})
 			else
 				removePlayer(run, player:getId(), "exit")
 				X.sendInfo(player)
@@ -2438,14 +2441,14 @@ function X.buffItems(player, kind)
 	end
 	local h = f.hexed.stacks[pid]
 	if h and h > 0 then
-		list[#list + 1] = {key = "raid_hexed", name = "Hexed", icon = "buff:raid_hexed", kind = "debuff", prio = 38,
-			desc = string.format("Each living effigy adds a stack; %d%% of your health per stack every %d s.",
+		list[#list + 1] = {key = "raid_hexed", name = Chaos.t(player, "Hexed"), icon = "buff:raid_hexed", kind = "debuff", prio = 38,
+			desc = Chaos.t(player, "Each living effigy adds a stack; %d%% of your health per stack every %d s.",
 				math.floor(cfg.mechanics.totem.stackShare * 100 + 0.5), math.floor(cfg.mechanics.totem.hexMs / 1000)), stacks = h}
 	end
 	local due = f.hexes[pid]
 	if due then
-		list[#list + 1] = {key = "raid_hex", name = "Withering Hex", icon = "buff:raid_hex", kind = "debuff", prio = 37,
-			desc = "Lift it (cure curse or the Font of Ash) before it bursts on everyone near you.",
+		list[#list + 1] = {key = "raid_hex", name = Chaos.t(player, "Withering Hex"), icon = "buff:raid_hex", kind = "debuff", prio = 37,
+			desc = Chaos.t(player, "Lift it (cure curse or the Font of Ash) before it bursts on everyone near you."),
 			leftMs = math.max(0, due - mnow())}
 	end
 	return list
