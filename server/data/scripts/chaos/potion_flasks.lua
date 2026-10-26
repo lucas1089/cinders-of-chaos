@@ -1,5 +1,5 @@
--- Flask charges of the Everfull potions (README "Potions", "Flask charges"; owner 2026-10-25, O242: "do what PoE does,
--- where potions refill as players kill monsters"). Rules: potions_core.lua; numbers: potions_config.lua `flask`; the
+-- Flask charges of the Everfull potions (README "Potions", "Flask charges"; owner 2026-10-25, O242: "potions refill
+-- as players kill monsters"). Rules: potions_core.lua; numbers: potions_config.lua `flask`; the
 -- charge helpers: data/lib/chaos_potions.lua; the drink itself: potions.lua.
 --
 --   * A monster's death refills the health and the mana flask of the killers (last hit, most damage, everybody in the

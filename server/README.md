@@ -5038,7 +5038,7 @@ Owner request 2026-10-16: "Remove the potion flasks and make the first pots infi
   `doTargetCombat(... potion.health[1], potion.health[2])` calls (marker "Chaos: potion amount", a loader line on top;
   it falls back to the stock roll when the library cannot load); the Everfull potions use the same rule. Tests:
   `tests/potions_test.lua`, `tools/install_potions_test.py`.
-- **Flask charges (O242).** Owner 2026-10-25: "Can we do what PoE does, where potions refill as players kill monsters?"
+- **Flask charges (O242).** Owner 2026-10-25: "Can potions refill as players kill monsters?"
   The Everfull potions are flasks. `potions_config.lua` `flask`: the health flask holds 5 charges, the mana flask 8 (casters
   drink more, so it also refills 1.5x as fast); a drink costs 1. Charges are kept in hundredths in the **character's
   storage** (7102482 health, 7102483 mana; -1 = never set = full), never on the item, so a relog, a split or copied stack, a
@@ -14782,7 +14782,7 @@ corpses of their own kills), corpses moved by a player (the row greys as decayed
 
 ## Ground loot labels (`groundloot.lua`, `groundloot_core.lua`, client `game_groundlabels`)
 
-Path of Exile style name plates over the loot on the ground. The client sees the items on the tiles around it (ids, counts
+ARPG-style name plates over the loot on the ground. The client sees the items on the tiles around it (ids, counts
 and the item custom attributes of engine patch 0003: rarity, unique, per-item id) but not their names, categories or
 decay, so it asks extended opcode 230 (`ChaosOpcodes.groundLoot`) about the tiles whose items changed and draws the labels
 itself by the loot filter's rules (`game_lootfilter`, the same settings the server keeps for the corpse highlights).

@@ -2,7 +2,7 @@
 -- and tests/waystone_mods_test.lua. server/README.md "Waystone modifiers"; numbers in waystone_mods_config.lua.
 --   rarity     Normal / Magic / Rare by the prefixes and suffixes a waystone carries
 --   rolls      new modifiers within the rarity's room, gated by the waystone's tier (minTier, tier windows I-V)
---   orbs       what each crafting orb does to a waystone (the map way of Path of Exile)
+--   orbs       what each crafting orb does to a waystone (the ARPG map way)
 --   rewards    quantity, rarity, experience (the modifiers' own rewards) and waystone drop chance
 --   effects    rift_core.lua R.effects on the modifiers (what rift.lua does with them, waystone_mods.lua does in a map)
 -- A waystone here is {tier = 1..15, mods = {{key, value}, ...}}. Every random number comes from `rand(a, b)`.
@@ -283,7 +283,7 @@ function W.describe(cfg, ws, level)
 end
 
 -- ===================================================================== orbs (chaos_crafting.lua keys)
--- PoE's map crafting with this server's orbs: Awakening = transmutation (Normal -> Magic, one modifier), Gilding =
+-- ARPG map crafting with this server's orbs: Awakening = transmutation (Normal -> Magic, one modifier), Gilding =
 -- alchemy (Normal -> Rare, 4-6), Grafting = exaltation / augmentation (one more on an open side of its rarity), Fate =
 -- regal on a Magic one (Rare, one more) and divine on a Rare one (new values), Upheaval = chaos / alteration (new
 -- modifiers of the same rarity), Unmaking = annulment (one off), Erasure = scouring (Normal again).

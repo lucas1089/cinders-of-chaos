@@ -1,4 +1,4 @@
--- Waystone modifiers (server/README.md "Waystone modifiers"): the maps of Path of Exile. A waystone is Normal, Magic or
+-- Waystone modifiers (server/README.md "Waystone modifiers"): the maps of an ARPG. A waystone is Normal, Magic or
 -- Rare by its modifiers (custom attribute "ws_mods"); prefixes make the map's monsters stronger, suffixes make it worse
 -- for the players, every modifier adds item quantity, item rarity, experience and waystone drop chance. Numbers:
 -- waystone_mods_config.lua; pure logic: waystone_mods_core.lua (tests/waystone_mods_test.lua). The modifiers are the

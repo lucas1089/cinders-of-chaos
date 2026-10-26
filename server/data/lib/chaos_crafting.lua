@@ -1739,7 +1739,7 @@ function C.describeKey(item, opts)
 end
 
 -- ---------------------------------------------------------------------------------------------------------------
--- waystones (data/scripts/chaos/waystone_mods.lua): the maps of Path of Exile. The base orbs change a waystone's
+-- waystones (data/scripts/chaos/waystone_mods.lua): the maps of an ARPG. The base orbs change a waystone's
 -- modifiers by waystone_mods_core.lua W.orbApply (Awakening Normal -> Magic, Gilding Normal -> Rare, Grafting one more,
 -- Fate Magic -> Rare or new values, Upheaval new ones, Unmaking one off, Erasure Normal); the other orbs refuse.
 -- A waystone of a stack comes off it first (ChaosWaystoneMods.single). Needs waystone_mods.lua loaded.

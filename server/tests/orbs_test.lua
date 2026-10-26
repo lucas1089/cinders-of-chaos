@@ -128,7 +128,7 @@ end
 eq(cfg.ruin.improve + cfg.ruin.nothing + cfg.ruin.ruin, 100, "ruin odds add up")
 eq(cfg.ruin.ruin, 0, "the Orb of Ruin never ruins an item (worst case: nothing)")
 eq(cfg.ruin.improve, 40, "it keeps its 40% improvement")
--- no Path of Exile currency names in the orbs
+-- no other game currency names in the orbs
 for _, orb in ipairs(C.config.orbs) do
 	for _, bad in ipairs({"Transmutation", "Alchemy", "Exalted", "Annulment", "Scouring", "Chaos Orb", "Divine Orb", "Vaal"}) do
 		ok(not orb.name:find(bad, 1, true), orb.name .. " has the old name " .. bad)

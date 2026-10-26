@@ -1,6 +1,6 @@
 # Classes (design, agreed; phase 1, the Thief line, and phase 2a, the other three lines, implemented; the Necromancer, Monk and Templar built, phase A)
 
-Seven class lines: four base classes plus the Necromancer, Monk and Templar (unlocked per account at level 200). At promotion each picks one of two ascended classes, like Path of Exile ascendancies.
+Seven class lines: four base classes plus the Necromancer, Monk and Templar (unlocked per account at level 200). At promotion each picks one of two ascended classes, like ARPG ascendancy classes.
 The Necromancer, the Monk and the Templar are classes five to seven (tested in game, phase B: level 300 measured); they are
 unlocked for the account once one of its characters reaches level 200 (see "Class lock").
 

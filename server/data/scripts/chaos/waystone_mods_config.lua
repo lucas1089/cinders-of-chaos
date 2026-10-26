@@ -1,7 +1,7 @@
 -- Waystone modifiers (waystone_mods.lua, waystone_mods_core.lua; server/README.md "Waystone modifiers"): every number.
 -- Plain table: ChaosWaystoneMods.config = dofile("data/scripts/chaos/waystone_mods_config.lua"). Lua 5.1 / LuaJIT and 5.3.
 --
--- Owner 2026-10-23: "treat the waystones as the maps of Path of Exile: they take modifiers, each one a debuff for the
+-- Owner 2026-10-23: "treat the waystones as the maps of an ARPG: they take modifiers, each one a debuff for the
 -- player or a buff for the monsters, with an experience and loot bonus". So a waystone has a rarity by its modifiers:
 -- Normal (none), Magic (at most one prefix and one suffix), Rare (at most three of each). Prefixes make the map's monsters
 -- (or its boss) stronger, suffixes make it worse for the players. Every modifier adds item quantity, item rarity,
@@ -58,7 +58,7 @@ return {
 	},
 
 	-- how many modifiers a roll gives: {count, weight}. magic: an Orb of Awakening gives one, Upheaval on a Magic one
-	-- rerolls 1-2; rare: a drop or an Orb of Upheaval on a Rare one; gilding: an Orb of Gilding (PoE's alchemy: 4+)
+	-- rerolls 1-2; rare: a drop or an Orb of Upheaval on a Rare one; gilding: an Orb of Gilding (alchemy-like: 4+)
 	count = {
 		magic = {{1, 60}, {2, 40}},
 		rare = {{3, 30}, {4, 35}, {5, 25}, {6, 10}},
