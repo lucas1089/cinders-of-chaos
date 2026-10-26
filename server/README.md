@@ -24297,10 +24297,10 @@ not a `ChaosOpcodes` value and not named by any client module other than `client
 one shows grey with a padlock and "Level N" and says "Unlocks at level N" when clicked; its hotkey (Alt+J, Alt+E, Alt+P) says the
 same instead of opening. On `new`: a big text "New: <title>!", a gold "New" badge on the entry (and a gold category button)
 until it is opened, and a small window with the two lines, Go and Close. The option "Show the whole menu" (System > Options >
-Interface, client base patch `0156`, `showWholeMenu`, off by default, kept in g_settings by client_settings like the other options)
+Interface, client base patch `0154`, `showWholeMenu`, off by default, kept in g_settings by client_settings like the other options)
 turns the filter off. Without the patch the filter stays on.
 
-**Assumptions / not run.** Nothing here ran on a live server or in a client. The base patch `0156` was checked only against
+**Assumptions / not run.** Nothing here ran on a live server or in a client. The base patch `0154` was checked only against
 a synthetic file with the context lines of patches `0129` and `0148` (`patch` accepts it), not against the base tree. The Go
 button's `open` and the unused `go.mark` of the design (a map mark) are not both built: only `open` is.
 

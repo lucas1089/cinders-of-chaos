@@ -860,7 +860,7 @@ function init()
   -- handlers do, so a handler at the end of the list may never run
   connect(g_game, { onGameStart = onGameStart, onGameEnd = onGameEnd }, true)
   hideStockTopMenu()
-  -- O259: the level-gated menu (topbar_unlocks.lua); the option "Show the whole menu" (System > Options, base patch 0156)
+  -- O259: the level-gated menu (topbar_unlocks.lua); the option "Show the whole menu" (System > Options, base patch 0154)
   if ChaosTopBarUnlocks then
     ChaosTopBarUnlocks.init({
       parent = function() return gameParent end,
@@ -871,7 +871,7 @@ function init()
   if g_game.isOnline() then onGameStart() else ChaosTopBar.refresh() end
 end
 
--- the option "Show the whole menu" (base patch 0156) tells the menu when it changes (its apply in dataset.lua)
+-- the option "Show the whole menu" (base patch 0154) tells the menu when it changes (its apply in dataset.lua)
 function onOption(name, value)
   if name == 'showWholeMenu' and ChaosTopBarUnlocks then ChaosTopBarUnlocks.setShowAll(value == true) end
 end

@@ -14,7 +14,7 @@
      end,
    },
  
-+  -- Chaos (base patch 0156): show every entry of the top menu, not only the unlocked systems (client_chaos_topbar)
++  -- Chaos (base patch 0154): show every entry of the top menu, not only the unlocked systems (client_chaos_topbar)
 +  showWholeMenu = {
 +    value = false,
 +    apply = function(value)
@@ -34,7 +34,7 @@
        value: 1
  
 +  FlatPanel
-+    // Chaos (base patch 0156, overlay module client_chaos_topbar): the top menu shows systems as the character unlocks them
++    // Chaos (base patch 0154, overlay module client_chaos_topbar): the top menu shows systems as the character unlocks them
 +    size: 505 22
 +    anchors.top: prev.bottom
 +    anchors.right: parent.right

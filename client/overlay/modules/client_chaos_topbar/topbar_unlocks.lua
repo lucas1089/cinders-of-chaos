@@ -3,7 +3,7 @@
 -- and `new` (an entry just unlocked: a big text on the screen, a "New" badge on the entry and a small window with a Go
 -- button), and tells the server `hello` (at the start of a game) and `seen {key}` (the player opened an entry).
 -- chaos_topbar.lua asks this file how to draw each entry (status, isNew, blockedMessage) and hands it the three calls it
--- needs (host.parent, host.run, host.refresh). The player's option "Show the whole menu" (System > Options, base patch 0156)
+-- needs (host.parent, host.run, host.refresh). The player's option "Show the whole menu" (System > Options, base patch 0154)
 -- comes in through setShowAll. Every engine call is guarded: a failure here never breaks the menu.
 
 ChaosTopBarUnlocks = {}

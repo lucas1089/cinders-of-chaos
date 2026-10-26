@@ -4363,7 +4363,7 @@ on every level change, and `new {key, level, menu, title, why}` one entry at a t
   (`/images/game/depot/lock`) and "Level N", clicking it says "Unlocks at level N"; an entry opened from the menu, a hotkey or Go
   loses its gold "New" badge (and tells the server); a category with an unopened new entry is gold; a locked hotkey says
   "Unlocks at level N" instead of opening. `ChaosTopBar.available()` and `ChaosTopBar.run(text)` skip locked rows.
-- Option "Show the whole menu" (System > Options > Interface, `showWholeMenu`, off by default): base patch `0156` (dataset option
+- Option "Show the whole menu" (System > Options > Interface, `showWholeMenu`, off by default): base patch `0154` (dataset option
   plus a checkbox; its apply calls `client_chaos_topbar.onOption`); the module also reads it with `getOption` at load. Without the
   patch the filter stays on. Staff and a switched-off server module get the whole menu (`all`).
 - Texts through `tr()`, pt-BR in `client_chaos_locale/pt_br.lua` ("Go", "New: %s!", "Show the whole menu" and its tooltip; "Level %d",

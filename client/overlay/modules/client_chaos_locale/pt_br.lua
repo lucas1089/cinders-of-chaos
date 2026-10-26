@@ -4730,7 +4730,7 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Sounds"] = "Sons",
   ["Loud"] = "Alto",
   -- client_chaos_topbar/topbar_unlocks.lua, topbarunlockslogic.lua (O259: the top menu reveals systems by level) and the
-  -- option of base patch 0156
+  -- option of base patch 0154
   ["Go"] = "Ir",
   ["New: %s!"] = "Novo: %s!",
   ["Show the whole menu"] = "Mostrar o menu inteiro",
