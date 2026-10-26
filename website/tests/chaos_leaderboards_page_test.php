@@ -260,6 +260,7 @@ check(chaos_records_first_name(array('target' => 'gone:x', 'name' => 'Old Boss')
 check(chaos_records_value('pct', 4512) === '45.12%' && chaos_records_value('', 1500) === '1,500', 'records: value formats');
 check(preg_match('/^(s\d+|q\d{5})$/', $season) === 1, 'records: season key');
 check(count(chaos_records_categories()) === 6, 'records: categories read from records_config.lua');
+check(!isset(chaos_records_categories()['loot']), 'records: a hidden category (personal bests) is not on the website');
 
 // the sort of the dropdowns: accents folded (the client's BoardPick.fold), ties by the key
 check(array_keys(chaos_sort_options(array('b' => 'Zelo', 'a' => 'Égide', 'c' => 'escudo', 'd' => 'Arena'))) === array('d', 'a', 'c', 'b'), 'sort: accents fold to their base letter');
