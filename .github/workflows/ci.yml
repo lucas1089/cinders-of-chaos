@@ -184,6 +184,9 @@ jobs:
           python3 -I client/tools/sprites/gen_owner_art_test.py
           python3 -I server/tools/install_owner_decor.py --lua --check
           python3 -I server/tools/install_owner_decor_test.py
+          # pair 48 decoration (O266): the donor importer's wide-header reader and key prefix, the install step on synthetic files
+          python3 -I client/tools/sprites/import_donor_things_test.py
+          python3 -I server/tools/install_decor48_items_test.py
           python3 -I server/tools/patch_npc_currency_test.py
           python3 -I server/tools/check_dead_holes_test.py   # floor changes that lead nowhere (O263; needs a map to run for real)
           python3 -I server/tools/patch_dead_holes_test.py   # the install step deadholes on a synthetic map

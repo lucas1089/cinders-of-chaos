@@ -1,0 +1,353 @@
+client_id,server_id,key,name,kind,piece,size,patterns,phases,frame_ms,speed,otb_group,otb_flags,top_order,light_level,light_color,minimap,dat_flags
+38759,42759,decor48_ice_38759,ice prop 1,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38760,42760,decor48_ice_38760,ice prop 2,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38761,42761,decor48_ice_38761,ice prop 3,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38762,42762,decor48_ice_38762,ice prop 4,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38763,42763,decor48_ice_38763,ice prop 5,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38764,42764,decor48_ice_38764,ice prop 6,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38765,42765,decor48_ice_38765,ice prop 7,object,,2x2,1x1,6,100,0,0,16785413,2,0,0,186,bottom notwalkable notmoveable minimap
+38766,42766,decor48_ice_38766,ice prop 8,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38767,42767,decor48_ice_38767,ice prop 9,object,,2x2,2x2,1,0,0,0,8192,2,3,94,51,bottom notmoveable light minimap
+38768,42768,decor48_ice_38768,ice prop 10,object,,1x1,2x2,1,0,0,0,8192,2,3,94,51,bottom notmoveable light minimap
+38769,42769,decor48_ice_38769,ice prop 11,object,,1x1,2x2,1,0,0,0,8192,2,3,100,12,bottom notmoveable light minimap
+38770,42770,decor48_ice_38770,ice prop 12,object,,1x1,1x1,1,0,0,0,0,0,2,137,,notmoveable light
+38771,42771,decor48_ice_38771,ice prop 13,object,,1x1,1x1,1,0,0,0,0,0,3,137,,notmoveable light
+38772,42772,decor48_ice_38772,ice prop 14,object,,1x1,1x1,1,0,0,0,8192,2,0,0,12,bottom notmoveable minimap
+38773,42773,decor48_ice_38773,ice prop 15,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38774,42774,decor48_ice_38774,ice prop 16,object,,2x2,2x2,1,0,0,0,8197,2,3,100,51,bottom notwalkable notmoveable light minimap
+38775,42775,decor48_ice_38775,ice prop 17,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38776,42776,decor48_ice_38776,ice prop 18,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38777,42777,decor48_ice_38777,ice prop 19,object,,1x1,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38778,42778,decor48_ice_38778,ice prop 20,object,,2x2,2x2,1,0,0,0,8197,2,3,100,51,bottom notwalkable notmoveable light minimap
+38779,42779,decor48_ice_38779,ice prop 21,object,,1x1,1x1,1,0,0,0,5,0,4,137,,notwalkable notmoveable light
+38780,42780,decor48_ice_38780,ice prop 22,object,,2x2,1x1,1,0,0,0,8192,2,0,0,86,bottom notmoveable minimap
+38781,42781,decor48_ice_38781,ice prop 23,object,,2x2,1x1,1,0,0,0,8197,2,0,0,86,bottom notwalkable notmoveable minimap
+38782,42782,decor48_ice_38782,ice prop 24,object,,2x2,1x1,1,0,0,0,8192,2,0,0,86,bottom notmoveable minimap
+38783,42783,decor48_ice_38783,ice prop 25,object,,2x2,1x1,1,0,0,0,7,0,0,0,186,notwalkable notmoveable blockmissile minimap
+38784,42784,decor48_ice_38784,ice prop 26,object,,1x1,1x1,1,0,0,0,5,0,4,137,,notwalkable notmoveable light
+38785,42785,decor48_ice_38785,ice prop 27,object,,2x2,1x1,1,0,0,0,7,0,0,0,186,notwalkable notmoveable blockmissile minimap
+38786,42786,decor48_ice_38786,ice prop 28,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38787,42787,decor48_ice_38787,ice prop 29,object,,2x2,1x1,1,0,0,0,8197,2,0,0,86,bottom notwalkable notmoveable minimap
+38788,42788,decor48_ice_38788,ice prop 30,object,,2x1,1x1,1,0,0,0,8197,2,0,0,86,bottom notwalkable notmoveable minimap
+38789,42789,decor48_ice_38789,ice prop 31,object,,2x2,1x1,1,0,0,0,8197,2,0,0,86,bottom notwalkable notmoveable minimap
+38790,42790,decor48_ice_38790,ice prop 32,object,,2x2,1x1,1,0,0,0,8192,2,0,0,86,bottom notmoveable minimap
+38791,42791,decor48_ice_38791,ice prop 33,object,,2x1,1x1,1,0,0,0,8197,2,0,0,86,bottom notwalkable notmoveable minimap
+38792,42792,decor48_ice_38792,ice prop 34,object,,2x2,1x1,1,0,0,0,8197,2,0,0,86,bottom notwalkable notmoveable minimap
+38793,42793,decor48_ice_38793,ice prop 35,object,,2x2,1x1,1,0,0,0,8197,2,0,0,86,bottom notwalkable notmoveable minimap
+38794,42794,decor48_ice_38794,ice prop 36,object,,2x2,1x1,1,0,0,0,7,0,0,0,186,notwalkable notmoveable blockmissile minimap
+38795,42795,decor48_ice_38795,ice prop 37,object,,2x1,1x1,1,0,0,0,8197,2,0,0,86,bottom notwalkable notmoveable minimap
+38796,42796,decor48_ice_38796,ice prop 38,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38797,42797,decor48_ice_38797,ice prop 39,object,,2x2,1x1,1,0,0,0,8197,2,0,0,86,bottom notwalkable notmoveable minimap
+38798,42798,decor48_ice_38798,ice prop 40,object,,2x2,1x1,1,0,0,0,8197,2,0,0,86,bottom notwalkable notmoveable minimap
+38799,42799,decor48_ice_38799,ice prop 41,object,,2x2,1x1,1,0,0,0,8192,2,0,0,86,bottom notmoveable minimap
+38800,42800,decor48_ice_38800,ice prop 42,object,,2x2,1x1,1,0,0,0,8192,2,0,0,86,bottom notmoveable minimap
+38801,42801,decor48_ice_38801,ice prop 43,object,,2x1,1x1,1,0,0,0,8197,2,0,0,86,bottom notwalkable notmoveable minimap
+38802,42802,decor48_ice_38802,ice prop 44,object,,2x2,1x1,1,0,0,0,8197,2,0,0,86,bottom notwalkable notmoveable minimap
+38803,42803,decor48_ice_38803,ice prop 45,object,,1x1,1x1,1,0,0,0,5,0,0,0,207,notwalkable notmoveable minimap
+38804,42804,decor48_ice_38804,ice prop 46,object,,1x1,1x1,1,0,0,0,5,0,0,0,207,notwalkable notmoveable minimap
+38805,42805,decor48_ice_38805,ice prop 47,object,,1x1,1x1,1,0,0,0,5,0,0,0,207,notwalkable notmoveable minimap
+38806,42806,decor48_ice_38806,ice prop 48,object,,1x2,3x3,1,0,0,0,0,0,0,0,,notmoveable
+38807,42807,decor48_ice_38807,ice prop 49,object,,2x2,1x1,1,0,0,0,0,0,4,215,,notmoveable light
+38808,42808,decor48_ice_38808,ice prop 50,object,,2x2,1x1,1,0,0,0,8197,2,0,0,86,bottom notwalkable notmoveable minimap
+38809,42809,decor48_ice_38809,ice prop 51,object,,2x2,1x1,1,0,0,0,8192,2,0,0,86,bottom notmoveable minimap
+38810,42810,decor48_ice_38810,ice prop 52,object,,2x2,1x1,1,0,0,0,8192,2,0,0,86,bottom notmoveable minimap
+38811,42811,decor48_ice_38811,ice prop 53,object,,2x2,1x1,1,0,0,0,8192,2,0,0,86,bottom notmoveable minimap
+38812,42812,decor48_ice_38812,ice prop 54,object,,2x2,1x1,1,0,0,0,8197,2,0,0,86,bottom notwalkable notmoveable minimap
+38813,42813,decor48_ice_38813,ice prop 55,object,,2x2,1x1,1,0,0,0,8197,2,0,0,86,bottom notwalkable notmoveable minimap
+38814,42814,decor48_ice_38814,ice prop 56,object,,2x2,1x1,1,0,0,0,8197,2,0,0,86,bottom notwalkable notmoveable minimap
+38815,42815,decor48_ice_38815,ice prop 57,object,,2x2,1x1,1,0,0,0,8197,2,0,0,86,bottom notwalkable notmoveable minimap
+38816,42816,decor48_ice_38816,ice prop 58,object,,2x2,1x1,1,0,0,0,8197,2,0,0,86,bottom notwalkable notmoveable minimap
+38817,42817,decor48_lava_38817,lava prop 1,object,,1x1,1x1,19,180,0,0,16785413,2,3,200,114,bottom notwalkable notmoveable light minimap
+38818,42818,decor48_lava_38818,lava prop 2,object,,2x2,1x1,8,100,0,0,16777221,0,9,206,,notwalkable notmoveable light
+38819,42819,decor48_lava_38819,lava prop 3,object,,2x2,1x1,1,0,0,0,8197,2,6,207,12,bottom notwalkable notmoveable light minimap
+38820,42820,decor48_lava_38820,lava prop 4,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38821,42821,decor48_lava_38821,lava prop 5,object,,2x2,1x1,16,100,0,0,16777221,0,2,204,,notwalkable notmoveable light
+38822,42822,decor48_lava_38822,lava prop 6,object,,2x2,1x1,16,100,0,0,16777221,0,2,204,,notwalkable notmoveable light
+38823,42823,decor48_lava_38823,lava prop 7,object,,2x1,1x1,1,0,0,0,5,0,0,0,,notwalkable notmoveable
+38824,42824,decor48_lava_38824,lava prop 8,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38825,42825,decor48_lava_38825,lava prop 9,object,,1x1,1x1,1,0,0,0,5,0,0,0,,notwalkable notmoveable
+38826,42826,decor48_lava_38826,lava prop 10,object,,1x1,1x1,10,150,0,0,16777216,0,0,0,,notmoveable look
+38827,42827,decor48_lava_38827,lava prop 11,object,,2x2,1x1,8,100,0,0,16777216,0,3,206,,notmoveable light
+38828,42828,decor48_lava_38828,lava prop 12,object,,1x1,1x1,1,0,0,0,8192,2,0,0,,bottom notmoveable
+38829,42829,decor48_lava_38829,lava prop 13,object,,2x2,1x1,8,100,0,0,16777216,0,3,206,,notmoveable light
+38830,42830,decor48_lava_38830,lava prop 14,object,,1x1,1x1,1,0,0,0,8192,2,5,212,,bottom notmoveable light
+38831,42831,decor48_lava_38831,lava prop 15,object,,2x2,1x1,8,100,0,0,16785413,2,0,0,186,bottom notwalkable notmoveable minimap
+38832,42832,decor48_lava_38832,lava prop 16,object,,2x2,1x1,8,100,0,0,16785413,2,0,0,186,bottom notwalkable notmoveable minimap
+38833,42833,decor48_swamp_38833,swamp prop 1,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38834,42834,decor48_swamp_38834,swamp prop 2,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38835,42835,decor48_swamp_38835,swamp prop 3,object,,2x2,1x1,1,0,0,0,8197,2,0,0,,bottom notwalkable notmoveable
+38836,42836,decor48_swamp_38836,swamp prop 4,object,,2x2,1x1,1,0,0,0,8197,2,0,0,,bottom notwalkable notmoveable
+38837,42837,decor48_swamp_38837,swamp prop 5,object,,2x2,1x1,1,0,0,0,8197,2,0,0,,bottom notwalkable notmoveable
+38838,42838,decor48_swamp_38838,swamp prop 6,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38839,42839,decor48_swamp_38839,swamp prop 7,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38840,42840,decor48_swamp_38840,swamp prop 8,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38841,42841,decor48_swamp_38841,swamp prop 9,object,,1x1,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38842,42842,decor48_swamp_38842,swamp prop 10,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38843,42843,decor48_swamp_38843,swamp prop 11,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38844,42844,decor48_swamp_38844,swamp prop 12,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38845,42845,decor48_swamp_38845,swamp prop 13,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38846,42846,decor48_swamp_38846,swamp prop 14,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38847,42847,decor48_swamp_38847,swamp prop 15,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38848,42848,decor48_swamp_38848,swamp prop 16,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38849,42849,decor48_swamp_38849,swamp prop 17,object,,1x1,1x1,1,0,0,0,0,0,0,0,,notmoveable
+38850,42850,decor48_swamp_38850,swamp prop 18,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38851,42851,decor48_swamp_38851,swamp prop 19,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38852,42852,decor48_swamp_38852,swamp prop 20,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38853,42853,decor48_swamp_38853,swamp prop 21,object,,1x1,1x1,1,0,0,0,8192,2,0,0,,bottom notmoveable displacement
+38854,42854,decor48_swamp_38854,swamp prop 22,object,,2x2,1x1,1,0,0,0,0,0,0,0,,notmoveable
+38855,42855,decor48_swamp_38855,swamp prop 23,object,,2x2,1x1,1,0,0,0,0,0,0,0,,notmoveable
+38856,42856,decor48_swamp_38856,swamp prop 24,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38857,42857,decor48_swamp_38857,swamp prop 25,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38858,42858,decor48_swamp_38858,swamp prop 26,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38859,42859,decor48_swamp_38859,swamp prop 27,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38860,42860,decor48_swamp_38860,swamp prop 28,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38861,42861,decor48_swamp_38861,swamp prop 29,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38862,42862,decor48_swamp_38862,swamp prop 30,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38863,42863,decor48_swamp_38863,swamp prop 31,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38864,42864,decor48_swamp_38864,swamp prop 32,object,,1x1,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38865,42865,decor48_swamp_38865,swamp prop 33,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable displacement minimap
+38866,42866,decor48_swamp_38866,swamp prop 34,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38867,42867,decor48_swamp_38867,swamp prop 35,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38868,42868,decor48_swamp_38868,swamp prop 36,object,,1x1,1x1,1,0,0,0,0,0,0,0,,notmoveable
+38869,42869,decor48_swamp_38869,swamp prop 37,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38870,42870,decor48_swamp_38870,swamp prop 38,object,,2x2,1x1,1,0,0,0,5,0,0,0,,notmoveable blockpath
+38871,42871,decor48_swamp_38871,swamp prop 39,object,,2x2,1x1,1,0,0,0,5,0,0,0,12,notwalkable notmoveable minimap
+38872,42872,decor48_swamp_38872,swamp prop 40,object,,2x2,1x1,1,0,0,0,5,0,0,0,12,notwalkable notmoveable minimap
+38873,42873,decor48_swamp_38873,swamp prop 41,object,,2x2,2x2,1,0,0,0,0,0,0,0,,notmoveable
+38874,42874,decor48_swamp_38874,swamp prop 42,object,,2x2,1x1,1,0,0,0,5,0,0,0,12,notwalkable notmoveable minimap
+38875,42875,decor48_swamp_38875,swamp prop 43,object,,2x2,1x1,1,0,0,0,5,0,0,0,12,notwalkable notmoveable minimap
+38876,42876,decor48_swamp_38876,swamp prop 44,object,,2x2,1x1,1,0,0,0,5,0,0,0,12,notwalkable notmoveable minimap
+38877,42877,decor48_swamp_38877,swamp prop 45,object,,2x2,1x1,1,0,0,0,5,0,0,0,12,notwalkable notmoveable minimap
+38878,42878,decor48_swamp_38878,swamp prop 46,object,,2x2,1x1,1,0,0,0,5,0,0,0,12,notwalkable notmoveable minimap
+38879,42879,decor48_swamp_38879,swamp prop 47,object,,1x1,1x1,1,0,0,0,5,0,0,0,12,notwalkable notmoveable minimap
+38880,42880,decor48_swamp_38880,swamp prop 48,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38881,42881,decor48_swamp_38881,swamp prop 49,object,,2x2,2x2,1,0,0,0,0,0,0,0,,notmoveable
+38882,42882,decor48_swamp_38882,swamp prop 50,object,,2x2,4x4,1,0,0,0,8197,2,5,215,121,bottom notwalkable notmoveable light minimap
+38883,42883,decor48_swamp_38883,swamp prop 51,object,,1x2,1x1,1,0,0,0,0,0,0,0,,notmoveable
+38884,42884,decor48_swamp_38884,swamp prop 52,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38885,42885,decor48_swamp_38885,swamp prop 53,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38886,42886,decor48_swamp_38886,swamp prop 54,object,,2x2,1x1,1,0,0,0,0,0,0,0,,notmoveable
+38887,42887,decor48_swamp_38887,swamp prop 55,object,,2x2,1x1,1,0,0,0,0,0,0,0,,notmoveable look
+38888,42888,decor48_swamp_38888,swamp prop 56,object,,2x2,1x1,1,0,0,0,5,0,0,0,12,notwalkable notmoveable minimap
+38889,42889,decor48_swamp_38889,swamp prop 57,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38890,42890,decor48_swamp_38890,swamp prop 58,object,,1x1,1x1,1,0,0,0,5,0,0,0,12,notwalkable notmoveable minimap
+38891,42891,decor48_swamp_38891,swamp prop 59,object,,2x2,2x2,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38892,42892,decor48_swamp_38892,swamp prop 60,object,,2x2,1x1,1,0,0,0,0,0,0,0,,notmoveable look
+38893,42893,decor48_swamp_38893,swamp prop 61,object,,2x2,1x1,1,0,0,0,0,0,0,0,,notmoveable displacement
+38894,42894,decor48_swamp_38894,swamp prop 62,object,,2x2,1x1,1,0,0,0,5,0,0,0,12,notwalkable notmoveable minimap
+38895,42895,decor48_swamp_38895,swamp prop 63,object,,2x2,1x1,1,0,0,0,5,0,0,0,12,notwalkable notmoveable minimap
+38896,42896,decor48_swamp_38896,swamp prop 64,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38897,42897,decor48_swamp_38897,swamp prop 65,object,,2x2,1x1,1,0,0,0,0,0,0,0,,notmoveable look
+38898,42898,decor48_swamp_38898,swamp prop 66,object,,2x2,1x1,1,0,0,0,0,0,0,0,,notmoveable displacement
+38899,42899,decor48_swamp_38899,swamp prop 67,object,,2x2,1x1,1,0,0,0,8197,2,0,0,121,bottom notwalkable notmoveable minimap
+38900,42900,decor48_swamp_38900,swamp prop 68,object,,2x2,1x1,1,0,0,0,5,0,0,0,12,notwalkable notmoveable minimap
+38901,42901,decor48_swamp_38901,swamp prop 69,object,,2x2,1x1,1,0,0,0,0,0,0,0,,notmoveable displacement
+38902,42902,decor48_swamp_38902,swamp prop 70,object,,1x1,1x1,1,0,0,0,0,0,0,0,,notmoveable look
+38903,42903,decor48_swamp_38903,swamp prop 71,object,,2x1,1x1,1,0,0,0,0,0,0,0,,notmoveable look
+38904,42904,decor48_swamp_38904,swamp prop 72,object,,2x2,1x1,1,0,0,0,5,0,0,0,12,notwalkable notmoveable minimap
+38905,42905,decor48_swamp_38905,swamp prop 73,object,,2x2,1x1,1,0,0,0,5,0,0,0,12,notwalkable notmoveable minimap
+38906,42906,decor48_swamp_38906,swamp prop 74,object,,2x2,1x1,1,0,0,0,5,0,0,0,12,notwalkable notmoveable minimap
+38907,42907,decor48_swamp_38907,swamp prop 75,object,,2x2,1x1,1,0,0,0,5,0,0,0,,notwalkable notmoveable displacement
+38908,42908,decor48_swamp_38908,swamp prop 76,object,,2x2,1x1,14,100,0,0,16785413,2,6,143,12,bottom notwalkable notmoveable light minimap
+38909,42909,decor48_swamp_38909,swamp prop 77,object,,2x2,1x1,1,0,0,0,5,0,0,0,12,notwalkable notmoveable minimap
+38910,42910,decor48_swamp_38910,swamp prop 78,object,,1x2,1x1,1,0,0,0,8197,2,0,0,121,bottom notwalkable notmoveable minimap
+38911,42911,decor48_swamp_38911,swamp prop 79,object,,2x2,1x1,1,0,0,0,5,0,0,0,,notwalkable notmoveable displacement
+38912,42912,decor48_swamp_38912,swamp prop 80,object,,2x2,1x1,1,0,0,0,5,0,0,0,12,notwalkable notmoveable minimap
+38913,42913,decor48_swamp_38913,swamp prop 81,object,,2x2,1x1,1,0,0,0,8197,2,0,0,121,bottom notwalkable notmoveable minimap
+38914,42914,decor48_swamp_38914,swamp prop 82,object,,2x2,1x1,1,0,0,0,0,0,0,0,,notmoveable look
+38915,42915,decor48_swamp_38915,swamp prop 83,object,,1x1,1x1,1,0,0,0,0,0,0,0,,notmoveable look
+38916,42916,decor48_swamp_38916,swamp prop 84,object,,2x2,4x3,1,0,0,0,8197,2,5,137,121,bottom notwalkable notmoveable light minimap
+38917,42917,decor48_swamp_38917,swamp prop 85,object,,1x1,1x1,1,0,0,0,8197,2,0,0,186,bottom notwalkable notmoveable minimap
+38918,42918,decor48_swamp_38918,swamp prop 86,object,,2x2,1x1,1,0,0,0,5,0,0,0,,notwalkable notmoveable
+38919,42919,decor48_swamp_38919,swamp prop 87,object,,2x2,1x1,1,0,0,0,5,0,3,213,,notwalkable notmoveable light
+38920,42920,decor48_swamp_38920,swamp prop 88,object,,2x2,1x1,1,0,0,0,5,0,0,0,12,notwalkable notmoveable minimap
+38921,42921,decor48_swamp_38921,swamp prop 89,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38922,42922,decor48_swamp_38922,swamp prop 90,object,,2x2,1x1,1,0,0,0,5,0,0,0,12,notwalkable notmoveable minimap
+38923,42923,decor48_swamp_38923,swamp prop 91,object,,2x2,1x1,1,0,0,0,5,0,6,207,12,notwalkable notmoveable light minimap
+38924,42924,decor48_swamp_38924,swamp prop 92,object,,2x2,1x1,1,0,0,0,5,0,0,0,,notwalkable notmoveable displacement
+38925,42925,decor48_swamp_38925,swamp prop 93,object,,1x1,1x1,10,5000,0,0,16785413,2,0,0,,bottom notwalkable notmoveable
+38926,42926,decor48_swamp_38926,swamp prop 94,object,,2x2,1x1,1,0,0,0,5,0,0,0,12,notwalkable notmoveable minimap
+38927,42927,decor48_swamp_38927,swamp prop 95,object,,1x1,1x1,1,0,0,0,0,0,0,0,,notmoveable
+38928,42928,decor48_swamp_38928,swamp prop 96,object,,2x2,1x1,1,0,0,0,5,0,0,0,12,notwalkable notmoveable minimap
+38929,42929,decor48_swamp_38929,swamp prop 97,object,,2x2,1x1,1,0,0,0,5,0,0,0,12,notwalkable notmoveable minimap
+38930,42930,decor48_swamp_38930,swamp prop 98,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38931,42931,decor48_swamp_38931,swamp prop 99,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38932,42932,decor48_swamp_38932,swamp prop 100,object,,2x2,1x1,1,0,0,0,5,0,0,0,12,notwalkable notmoveable minimap
+38933,42933,decor48_swamp_38933,swamp prop 101,object,,2x2,1x1,1,0,0,0,5,0,0,0,12,notwalkable notmoveable minimap
+38934,42934,decor48_swamp_38934,swamp prop 102,object,,2x2,1x1,1,0,0,0,8197,2,0,0,121,bottom notwalkable notmoveable minimap
+38935,42935,decor48_swamp_38935,swamp prop 103,object,,2x2,1x1,1,0,0,0,5,0,0,0,12,notwalkable notmoveable minimap
+38936,42936,decor48_swamp_38936,swamp prop 104,object,,2x2,1x1,1,0,0,0,8197,2,0,0,186,bottom notwalkable notmoveable minimap
+38937,42937,decor48_swamp_38937,swamp prop 105,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38938,42938,decor48_swamp_38938,swamp prop 106,object,,2x2,1x1,1,0,0,0,5,0,0,0,12,notwalkable notmoveable minimap
+38939,42939,decor48_swamp_38939,swamp prop 107,object,,2x2,1x1,1,0,0,0,8197,2,0,0,186,bottom notwalkable notmoveable minimap
+38940,42940,decor48_swamp_38940,swamp prop 108,object,,2x2,1x1,1,0,0,0,5,0,0,0,12,notwalkable notmoveable minimap
+38941,42941,decor48_swamp_38941,swamp prop 109,object,,1x2,1x1,1,0,0,0,0,0,0,0,,notmoveable look
+38942,42942,decor48_swamp_38942,swamp prop 110,object,,2x2,1x1,1,0,0,0,5,0,0,0,,notwalkable notmoveable displacement
+38943,42943,decor48_swamp_38943,swamp prop 111,object,,1x1,1x1,1,0,0,0,8197,2,0,0,186,bottom notwalkable notmoveable minimap
+38944,42944,decor48_swamp_38944,swamp prop 112,object,,2x1,1x1,1,0,0,0,8197,2,0,0,186,bottom notwalkable notmoveable minimap
+38945,42945,decor48_swamp_38945,swamp prop 113,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38946,42946,decor48_swamp_38946,swamp prop 114,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38947,42947,decor48_swamp_38947,swamp prop 115,object,,2x2,1x1,1,0,0,0,8197,2,0,0,186,bottom notwalkable notmoveable minimap
+38948,42948,decor48_swamp_38948,swamp prop 116,object,,2x2,1x1,1,0,0,0,5,0,5,137,12,notwalkable notmoveable light minimap
+38949,42949,decor48_swamp_38949,swamp prop 117,object,,1x2,1x1,1,0,0,0,8197,2,0,0,,bottom notwalkable notmoveable
+38950,42950,decor48_swamp_38950,swamp prop 118,object,,2x2,1x1,1,0,0,0,5,0,0,0,12,notwalkable notmoveable minimap
+38951,42951,decor48_swamp_38951,swamp prop 119,object,,1x1,1x1,1,0,0,0,8197,2,0,0,186,bottom notwalkable notmoveable minimap
+38952,42952,decor48_swamp_38952,swamp prop 120,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38953,42953,decor48_swamp_38953,swamp prop 121,object,,2x2,1x2,1,0,0,0,0,0,0,0,,notmoveable look
+38954,42954,decor48_swamp_38954,swamp prop 122,object,,2x2,1x1,1,0,0,0,7,0,0,0,186,notwalkable notmoveable blockmissile minimap
+38955,42955,decor48_swamp_38955,swamp prop 123,object,,2x1,1x1,1,0,0,0,8197,2,3,29,186,bottom notwalkable notmoveable light minimap
+38956,42956,decor48_swamp_38956,swamp prop 124,object,,1x1,1x1,1,0,0,0,0,0,0,0,,notmoveable look
+38957,42957,decor48_swamp_38957,swamp prop 125,object,,1x1,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38958,42958,decor48_swamp_38958,swamp prop 126,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38959,42959,decor48_swamp_38959,swamp prop 127,object,,2x2,1x1,1,0,0,0,8197,2,3,206,186,bottom notwalkable notmoveable light minimap
+38960,42960,decor48_swamp_38960,swamp prop 128,object,,2x2,1x1,1,0,0,0,8197,2,3,206,186,bottom notwalkable notmoveable light minimap
+38961,42961,decor48_swamp_38961,swamp prop 129,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38962,42962,decor48_swamp_38962,swamp prop 130,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38963,42963,decor48_swamp_38963,swamp prop 131,object,,2x2,1x1,1,0,0,0,0,0,0,0,,notmoveable look
+38964,42964,decor48_swamp_38964,swamp prop 132,object,,1x2,1x1,1,0,0,0,0,0,0,0,,notmoveable look
+38965,42965,decor48_swamp_38965,swamp prop 133,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38966,42966,decor48_swamp_38966,swamp prop 134,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38967,42967,decor48_swamp_38967,swamp prop 135,object,,2x2,1x1,1,0,0,0,0,0,0,0,,notmoveable look
+38968,42968,decor48_swamp_38968,swamp prop 136,object,,2x2,1x1,1,0,0,0,7,0,0,0,186,notwalkable notmoveable blockmissile minimap
+38969,42969,decor48_swamp_38969,swamp prop 137,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38970,42970,decor48_swamp_38970,swamp prop 138,object,,2x2,2x1,1,0,0,0,5,0,2,203,12,notwalkable notmoveable light minimap
+38971,42971,decor48_swamp_38971,swamp prop 139,object,,2x2,1x1,1,0,0,0,5,0,0,0,12,notwalkable notmoveable minimap
+38972,42972,decor48_swamp_38972,swamp prop 140,object,,1x2,1x1,1,0,0,0,0,0,0,0,,notmoveable look
+38973,42973,decor48_swamp_38973,swamp prop 141,object,,1x2,1x1,1,0,0,0,5,0,2,203,12,notwalkable notmoveable light minimap
+38974,42974,decor48_swamp_38974,swamp prop 142,object,,2x2,2x2,1,0,0,0,5,0,3,65,51,notwalkable notmoveable light minimap
+38975,42975,decor48_swamp_38975,swamp prop 143,object,,1x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38976,42976,decor48_swamp_38976,swamp prop 144,object,,2x2,1x1,1,0,0,0,8197,2,3,206,186,bottom notwalkable notmoveable light minimap
+38977,42977,decor48_swamp_38977,swamp prop 145,object,,1x1,1x1,1,0,0,0,8197,2,3,207,186,bottom notwalkable notmoveable light minimap
+38978,42978,decor48_swamp_38978,swamp prop 146,object,,2x2,1x1,1,0,0,0,5,0,0,0,12,notwalkable notmoveable minimap
+38979,42979,decor48_swamp_38979,swamp prop 147,object,,2x2,2x1,1,0,0,0,0,0,0,0,,notmoveable
+38980,42980,decor48_swamp_38980,swamp prop 148,object,,2x2,2x1,1,0,0,0,0,0,0,0,,notmoveable
+38981,42981,decor48_swamp_38981,swamp prop 149,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38982,42982,decor48_swamp_38982,swamp prop 150,object,,2x2,1x1,1,0,0,0,8197,2,0,0,186,bottom notwalkable notmoveable minimap
+38983,42983,decor48_cave_38983,cave prop 1,object,,2x2,1x1,16,200,0,0,16777216,0,0,0,,notmoveable
+38984,42984,decor48_cave_38984,cave prop 2,object,,1x1,1x1,1,0,0,0,0,0,0,0,,notmoveable
+38985,42985,decor48_cave_38985,cave prop 3,object,,2x1,1x1,1,0,0,0,0,0,0,0,,notmoveable
+38986,42986,decor48_cave_38986,cave prop 4,object,,2x1,1x1,1,0,0,0,0,0,0,0,,notmoveable
+38987,42987,decor48_cave_38987,cave prop 5,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38988,42988,decor48_cave_38988,cave prop 6,object,,1x1,1x1,1,0,0,0,5,0,0,0,,notwalkable notmoveable displacement lenshelp
+38989,42989,decor48_cave_38989,cave prop 7,object,,1x1,2x2,1,0,0,0,8192,2,0,0,,bottom notmoveable
+38990,42990,decor48_cave_38990,cave prop 8,object,,1x1,2x2,1,0,0,0,8192,2,0,0,,bottom notmoveable
+38991,42991,decor48_cave_38991,cave prop 9,object,,2x2,1x1,25,100,0,0,16785413,2,0,0,186,bottom notwalkable notmoveable minimap
+38992,42992,decor48_cave_38992,cave prop 10,object,,2x2,1x1,7,200,0,0,16777221,0,0,0,,notwalkable notmoveable
+38993,42993,decor48_cave_38993,cave prop 11,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38994,42994,decor48_cave_38994,cave prop 12,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38995,42995,decor48_cave_38995,cave prop 13,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38996,42996,decor48_cave_38996,cave prop 14,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38997,42997,decor48_cave_38997,cave prop 15,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38998,42998,decor48_cave_38998,cave prop 16,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+38999,42999,decor48_cave_38999,cave prop 17,object,,2x2,1x1,26,100,0,0,16785413,2,0,0,186,bottom notwalkable notmoveable minimap
+39000,43000,decor48_cave_39000,cave prop 18,object,,2x1,1x1,6,300,0,0,16777221,0,3,115,,notwalkable notmoveable light
+39001,43001,decor48_cave_39001,cave prop 19,object,,1x1,2x2,1,0,0,0,8192,2,0,0,12,bottom notmoveable minimap
+39002,43002,decor48_cave_39002,cave prop 20,object,,1x1,1x1,1,0,0,0,0,0,0,0,,notmoveable
+39003,43003,decor48_cave_39003,cave prop 21,object,,1x1,2x1,1,0,0,0,0,0,0,0,,notmoveable
+39004,43004,decor48_cave_39004,cave prop 22,object,,1x1,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+39005,43005,decor48_cave_39005,cave prop 23,object,,1x1,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+39006,43006,decor48_cave_39006,cave prop 24,object,,1x1,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+39007,43007,decor48_cave_39007,cave prop 25,object,,1x1,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+39008,43008,decor48_cave_39008,cave prop 26,object,,2x2,2x2,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+39009,43009,decor48_cave_39009,cave prop 27,object,,2x2,2x2,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+39010,43010,decor48_cave_39010,cave prop 28,object,,2x2,2x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+39011,43011,decor48_cave_39011,cave prop 29,object,,1x1,1x1,1,0,0,0,0,0,0,0,,notmoveable
+39012,43012,decor48_cave_39012,cave prop 30,object,,2x2,1x1,1,0,0,0,8197,2,0,0,186,bottom notwalkable notmoveable minimap
+39013,43013,decor48_cave_39013,cave prop 31,object,,2x1,1x1,1,0,0,0,0,0,0,0,,notmoveable look
+39014,43014,decor48_cave_39014,cave prop 32,object,,2x2,1x1,1,0,0,0,0,0,0,0,186,notmoveable minimap
+39015,43015,decor48_cave_39015,cave prop 33,object,,2x2,2x1,1,0,0,0,0,0,0,0,,notmoveable
+39016,43016,decor48_cave_39016,cave prop 34,object,,2x2,1x1,6,100,0,0,16785413,2,4,23,186,bottom notwalkable notmoveable light minimap
+39017,43017,decor48_cave_39017,cave prop 35,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+39018,43018,decor48_cave_39018,cave prop 36,object,,2x2,1x2,1,0,0,0,0,0,0,0,,notmoveable
+39019,43019,decor48_cave_39019,cave prop 37,object,,2x2,1x1,1,0,0,0,8197,2,0,0,186,bottom notwalkable notmoveable minimap
+39020,43020,decor48_cave_39020,cave prop 38,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+39021,43021,decor48_cave_39021,cave prop 39,object,,1x2,1x1,1,0,0,0,0,0,0,0,,notmoveable
+39022,43022,decor48_cave_39022,cave prop 40,object,,2x2,1x1,6,100,0,0,16785413,2,4,30,186,bottom notwalkable notmoveable light minimap
+39023,43023,decor48_cave_39023,cave prop 41,object,,1x2,1x1,1,0,0,0,7,0,0,0,186,notwalkable notmoveable blockmissile minimap
+39024,43024,decor48_cave_39024,cave prop 42,object,,1x1,1x1,1,0,0,0,0,0,0,0,,notmoveable look
+39025,43025,decor48_cave_39025,cave prop 43,object,,2x1,1x1,1,0,0,0,7,0,0,0,186,notwalkable notmoveable blockmissile minimap
+39026,43026,decor48_cave_39026,cave prop 44,object,,2x2,2x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+39027,43027,decor48_cave_39027,cave prop 45,object,,1x1,1x1,1,0,0,0,0,0,0,0,,
+39028,43028,decor48_cave_39028,cave prop 46,object,,2x2,2x2,1,0,0,0,5,0,4,65,51,notwalkable notmoveable light minimap
+39029,43029,decor48_cave_39029,cave prop 47,object,,1x1,1x1,1,0,0,0,0,0,0,0,,notmoveable look
+39030,43030,decor48_cave_39030,cave prop 48,object,,1x1,2x1,1,0,0,0,0,0,0,0,12,notmoveable minimap
+39031,43031,decor48_cave_39031,cave prop 49,object,,1x1,1x1,1,0,0,0,5,0,4,215,,notwalkable notmoveable light
+39032,43032,decor48_cave_39032,cave prop 50,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+39033,43033,decor48_cave_39033,cave prop 51,object,,1x2,1x1,1,0,0,0,8197,2,0,0,207,bottom notwalkable notmoveable minimap
+39034,43034,decor48_cave_39034,cave prop 52,object,,2x2,1x1,1,0,0,0,8197,2,0,0,186,bottom notwalkable notmoveable minimap
+39035,43035,decor48_cave_39035,cave prop 53,object,,1x1,1x1,32,250,0,0,16785408,2,4,204,12,bottom notmoveable light minimap
+39036,43036,decor48_cave_39036,cave prop 54,object,,1x1,2x2,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+39037,43037,decor48_cave_39037,cave prop 55,object,,2x2,1x1,6,100,0,0,16785413,2,4,192,186,bottom notwalkable notmoveable light minimap
+39038,43038,decor48_cave_39038,cave prop 56,object,,1x1,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+39039,43039,decor48_cave_39039,cave prop 57,object,,1x1,1x1,1,0,0,0,0,0,0,0,,notmoveable
+39040,43040,decor48_cave_39040,cave prop 58,object,,1x1,1x1,1,0,0,0,5,0,0,0,,notwalkable notmoveable
+39041,43041,decor48_cave_39041,cave prop 59,object,,1x1,1x1,1,0,0,0,0,0,0,0,,
+39042,43042,decor48_cave_39042,cave prop 60,object,,2x1,1x1,1,0,0,0,0,0,0,0,,notmoveable
+39043,43043,decor48_cave_39043,cave prop 61,object,,1x1,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+39044,43044,decor48_cave_39044,cave prop 62,object,,1x1,1x1,1,0,0,0,5,0,4,215,,notwalkable notmoveable light
+39045,43045,decor48_cave_39045,cave prop 63,object,,1x2,1x1,1,0,0,0,0,0,0,0,,notmoveable
+39046,43046,decor48_cave_39046,cave prop 64,object,,2x2,1x1,7,100,0,0,16777221,0,4,156,,notwalkable notmoveable light
+39047,43047,decor48_cave_39047,cave prop 65,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+39048,43048,decor48_cave_39048,cave prop 66,object,,2x2,1x1,1,0,0,0,8197,2,0,0,86,bottom notwalkable notmoveable minimap
+39049,43049,decor48_cave_39049,cave prop 67,object,,1x2,1x2,1,0,0,0,0,0,0,0,,notmoveable
+39050,43050,decor48_cave_39050,cave prop 68,object,,1x2,1x1,1,0,0,0,0,0,0,0,,notmoveable
+39051,43051,decor48_cave_39051,cave prop 69,object,,2x2,1x1,1,0,0,0,8197,2,0,0,186,bottom notwalkable notmoveable minimap
+39052,43052,decor48_cave_39052,cave prop 70,object,,1x1,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+39053,43053,decor48_cave_39053,cave prop 71,object,,1x1,1x1,1,0,0,0,5,0,3,215,,notwalkable notmoveable blockpath light
+39054,43054,decor48_cave_39054,cave prop 72,object,,2x1,1x1,1,0,0,0,5,0,3,215,,notwalkable notmoveable blockpath light
+39055,43055,decor48_cave_39055,cave prop 73,object,,2x2,1x1,1,0,0,0,0,0,0,0,,notmoveable
+39056,43056,decor48_cave_39056,cave prop 74,object,,2x1,1x1,1,0,0,0,0,0,0,0,,notmoveable
+39057,43057,decor48_cave_39057,cave prop 75,object,,2x2,1x1,1,0,0,0,8197,2,0,0,86,bottom notwalkable notmoveable minimap
+39058,43058,decor48_cave_39058,cave prop 76,object,,2x2,1x1,1,0,0,0,8197,2,0,0,121,bottom notwalkable notmoveable minimap
+39059,43059,decor48_cave_39059,cave prop 77,object,,2x2,4x3,1,0,0,0,8197,2,5,207,121,bottom notwalkable notmoveable light minimap
+39060,43060,decor48_cave_39060,cave prop 78,object,,2x2,1x1,24,100,0,0,16777221,0,4,36,,notmoveable blockpath light
+39061,43061,decor48_cave_39061,cave prop 79,object,,2x1,1x1,1,0,0,0,0,0,0,0,,notmoveable
+39062,43062,decor48_cave_39062,cave prop 80,object,,2x2,1x1,1,0,0,0,0,0,0,0,,notmoveable look
+39063,43063,decor48_cave_39063,cave prop 81,object,,2x2,2x2,1,0,0,0,8192,2,0,0,12,bottom notmoveable minimap
+39064,43064,decor48_cave_39064,cave prop 82,object,,2x1,2x1,1,0,0,0,0,0,0,0,,notmoveable
+39065,43065,decor48_cave_39065,cave prop 83,object,,1x1,1x1,1,0,0,0,0,0,0,0,,notmoveable
+39066,43066,decor48_cave_39066,cave prop 84,object,,2x2,1x1,1,0,0,0,0,0,0,0,,notmoveable
+39067,43067,decor48_cave_39067,cave prop 85,object,,2x2,1x1,1,0,0,0,0,0,0,0,,notmoveable
+39068,43068,decor48_cave_39068,cave prop 86,object,,1x1,2x2,1,0,0,0,8192,2,0,0,12,bottom notmoveable minimap
+39069,43069,decor48_cave_39069,cave prop 87,object,,2x2,1x1,1,0,0,0,0,0,0,0,,notmoveable
+39070,43070,decor48_cave_39070,cave prop 88,object,,2x2,1x1,1,0,0,0,8197,2,0,0,121,bottom notwalkable notmoveable minimap
+39071,43071,decor48_cave_39071,cave prop 89,object,,2x2,1x1,6,100,0,0,16785413,2,4,107,186,bottom notwalkable notmoveable light minimap
+39072,43072,decor48_cave_39072,cave prop 90,object,,2x2,1x1,1,0,0,0,0,0,0,0,,notmoveable
+39073,43073,decor48_cave_39073,cave prop 91,object,,1x1,1x1,1,0,0,0,8197,2,0,0,186,bottom notwalkable notmoveable minimap
+39074,43074,decor48_cave_39074,cave prop 92,object,,2x1,1x1,1,0,0,0,5,0,0,0,,notwalkable notmoveable
+39075,43075,decor48_cave_39075,cave prop 93,object,,2x2,1x1,1,0,0,0,0,0,0,0,,notmoveable
+39076,43076,decor48_cave_39076,cave prop 94,object,,2x2,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+39077,43077,decor48_cave_39077,cave prop 95,object,,2x2,1x1,1,0,0,0,0,0,0,0,,notmoveable
+39078,43078,decor48_cave_39078,cave prop 96,object,,1x2,1x1,1,0,0,0,0,0,0,0,,notmoveable
+39079,43079,decor48_cave_39079,cave prop 97,object,,1x1,1x1,1,0,0,0,0,0,0,0,,notmoveable
+39080,43080,decor48_cave_39080,cave prop 98,object,,1x1,1x1,1,0,0,0,0,0,0,0,,notmoveable
+39081,43081,decor48_cave_39081,cave prop 99,object,,1x2,1x1,1,0,0,0,0,0,0,0,,notmoveable
+39082,43082,decor48_cave_39082,cave prop 100,object,,1x2,1x1,1,0,0,0,0,0,0,0,,notmoveable
+39083,43083,decor48_cave_39083,cave prop 101,object,,2x2,1x1,6,100,0,0,16777221,0,4,113,,notmoveable blockpath light
+39084,43084,decor48_cave_39084,cave prop 102,object,,1x2,2x1,1,0,0,0,8197,2,0,0,86,bottom notwalkable notmoveable minimap
+39085,43085,decor48_cave_39085,cave prop 103,object,,1x2,1x1,1,0,0,0,8197,2,0,0,86,bottom notwalkable notmoveable minimap
+39086,43086,decor48_cave_39086,cave prop 104,object,,2x1,1x1,1,0,0,0,0,0,0,0,,notmoveable
+39087,43087,decor48_cave_39087,cave prop 105,object,,2x2,1x1,7,200,0,0,16777221,0,0,0,,notwalkable notmoveable
+39088,43088,decor48_cave_39088,cave prop 106,object,,2x1,1x1,1,0,0,0,5,0,0,0,186,notwalkable notmoveable minimap
+39089,43089,decor48_cave_39089,cave prop 107,object,,2x1,3x1,1,0,0,0,0,0,0,0,,notmoveable
+39090,43090,decor48_cave_39090,cave prop 108,object,,1x1,1x1,1,0,0,0,8192,2,0,0,,bottom notmoveable
+39091,43091,decor48_cave_39091,cave prop 109,object,,1x1,1x1,1,0,0,0,0,0,0,0,,notmoveable
+39092,43092,decor48_cave_39092,cave prop 110,object,,1x2,1x1,1,0,0,0,8197,2,0,0,207,bottom notwalkable notmoveable minimap
+39093,43093,decor48_cave_39093,cave prop 111,object,,2x2,1x1,1,0,0,0,5,0,0,0,,notwalkable notmoveable
+39094,43094,decor48_cave_39094,cave prop 112,object,,1x1,1x1,1,0,0,0,0,0,0,0,,
+39095,43095,decor48_cave_39095,cave prop 113,object,,2x1,1x1,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+39096,43096,decor48_cave_39096,cave prop 114,object,,1x2,1x1,1,0,0,0,5,0,0,0,186,notwalkable notmoveable minimap
+39097,43097,decor48_cave_39097,cave prop 115,object,,2x2,1x2,1,0,0,0,8197,2,0,0,207,bottom notwalkable notmoveable minimap
+39098,43098,decor48_cave_39098,cave prop 116,object,,2x2,2x1,1,0,0,0,8197,2,0,0,207,bottom notwalkable notmoveable minimap
+39099,43099,decor48_cave_39099,cave prop 117,object,,1x1,1x1,1,0,0,0,0,0,2,215,,notmoveable light look
+39100,43100,decor48_cave_39100,cave prop 118,object,,2x2,1x1,1,0,0,0,8197,2,0,0,186,bottom notwalkable notmoveable displacement minimap
+39101,43101,decor48_cave_39101,cave prop 119,object,,2x2,1x1,1,0,0,0,8197,2,0,0,179,bottom notwalkable notmoveable minimap
+39102,43102,decor48_cave_39102,cave prop 120,object,,2x2,1x1,1,0,0,0,5,0,0,0,,notwalkable notmoveable
+39103,43103,decor48_cave_39103,cave prop 121,object,,2x1,2x1,1,0,0,0,8197,2,0,0,186,bottom notwalkable notmoveable minimap
+39104,43104,decor48_cave_39104,cave prop 122,object,,1x2,1x1,1,0,0,0,5,0,0,0,,notwalkable notmoveable
+39105,43105,decor48_cave_39105,cave prop 123,object,,1x2,1x2,1,0,0,0,8197,2,0,0,186,bottom notwalkable notmoveable minimap
+39106,43106,decor48_cave_39106,cave prop 124,object,,2x2,2x3,1,0,0,0,8197,2,0,0,12,bottom notwalkable notmoveable minimap
+39107,43107,decor48_cave_39107,cave prop 125,object,,2x2,4x4,1,0,0,0,8197,2,5,173,121,bottom notwalkable notmoveable light minimap
+39108,43108,decor48_cave_39108,cave prop 126,object,,2x2,2x2,1,0,0,0,5,0,3,65,51,notwalkable notmoveable light minimap
+39109,43109,decor48_cave_39109,cave prop 127,object,,1x1,1x1,1,0,0,0,0,0,0,0,,notmoveable
+39110,43110,decor48_cave_39110,cave prop 128,object,,1x1,1x1,1,0,0,0,0,0,0,0,,notmoveable

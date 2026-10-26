@@ -95,6 +95,9 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   rewardchest  tools/install_reward_chest.py    the Reward Chest's own looks (copies of the stock reward chest 21584's node: client id
                38657 / server id 32310, 2 x 2, pair 45; client id 38758 / server id 32311, one tile, pair 47) in items.otb /
                items.xml (README "Reward chests"; before rewardchests)
+  decor48items tools/install_decor48_items.py    the 352 ice, swamp, lava and cave decoration items of client pair 48 (props of a
+               donor pair, "source B") in items.otb / items.xml (server ids 42759..43110 = client id + 4000, from
+               data/items/decor48_items.csv; used by the map studio kits and map makers; README "Decoration of pair 48")
   gems         tools/install_gems.py             the gems and the Orb of Sockets in items.otb / items.xml, the orb's own look of
                pair 38, client 38641 (README "Gems and sockets")
   salvage      tools/install_salvage.py          the salvage Rune Shard in items.otb / items.xml (README "Salvage")
@@ -778,6 +781,13 @@ def step_rewardchest(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('cursedchest') + 1, 'rewardchest')  # the reward chest's own look (pair 45); the configs fall back to 21584 without it
+
+
+def step_decor48items(server, data, ctx):
+    return tool_result(run_tool([tool('install_decor48_items.py'), data], 'install_decor48_items.py'))
+
+
+STEPS.insert(STEPS.index('rewardchest') + 1, 'decor48items')  # the pair 48 decoration (client ids after pair 47's chest)
 
 
 def step_gems(server, data, ctx):
