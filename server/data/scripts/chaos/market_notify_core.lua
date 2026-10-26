@@ -18,6 +18,17 @@ local N = ChaosMarketNotify
 
 local floor = math.floor
 
+-- the text in `lang` (ChaosI18n when it is loaded, English otherwise); the engine passes Chaos.lang(player)
+local function T(lang, key, ...)
+	if ChaosI18n and ChaosI18n.text then
+		return ChaosI18n.text(lang, key, ...)
+	end
+	if select("#", ...) == 0 then
+		return key
+	end
+	return string.format(key, ...)
+end
+
 N.DEFAULT_CAP = 5
 
 local function int(v)
@@ -71,6 +82,14 @@ local function curName(cur, n)
 end
 N.curName = curName
 
+-- "1,200 gold", "1 Chaos Coin", "95 Chaos Coins" in `lang`
+local function amountText(cur, n, lang)
+	if cur == "coins" then
+		return T(lang, n == 1 and "%s Chaos Coin" or "%s Chaos Coins", grouped(n))
+	end
+	return T(lang, "%s gold", grouped(n))
+end
+
 -- row = {id, offer_id, kind = "gold" | "coins", amount = net, reason = "sold"}; offer = the offer row (name, count,
 -- buyer_name, paid_currency, paid_amount, tax, order_id) or nil when it is gone. A row that is not a sale -> nil.
 function N.saleOf(row, offer)
@@ -107,11 +126,18 @@ local function itemText(sale)
 end
 N.itemText = itemText
 
-function N.saleLine(sale)
+function N.saleLine(sale, lang)
 	local cur = sale.currency
-	local who = sale.order and (sale.buyer .. "'s buy order took your ") or (sale.buyer .. " bought your ")
-	return string.format("%s%s for %s %s (fee %s): +%s %s %s.", who, itemText(sale), grouped(sale.price), curName(cur, sale.price),
-		grouped(sale.fee), grouped(sale.net), curName(cur, sale.net), cur == "coins" and "to your account" or "to your bank")
+	local key
+	if sale.order then
+		key = cur == "coins" and "%s's buy order took your %s for %s (fee %s): +%s to your account." or
+			"%s's buy order took your %s for %s (fee %s): +%s to your bank."
+	else
+		key = cur == "coins" and "%s bought your %s for %s (fee %s): +%s to your account." or
+			"%s bought your %s for %s (fee %s): +%s to your bank."
+	end
+	return T(lang, key, sale.buyer, itemText(sale), amountText(cur, sale.price, lang), grouped(sale.fee),
+		amountText(cur, sale.net, lang))
 end
 
 function N.newBatch(cap)
@@ -144,15 +170,18 @@ function N.add(batch, sale)
 	return true
 end
 
-function N.totalText(batch)
+function N.totalText(batch, lang)
 	local parts = {}
 	if batch.gold > 0 or batch.coins == 0 then
-		parts[#parts + 1] = N.short(batch.gold) .. " gold"
+		parts[#parts + 1] = T(lang, "%s gold", N.short(batch.gold))
 	end
 	if batch.coins > 0 then
-		parts[#parts + 1] = N.short(batch.coins) .. " " .. curName("coins", batch.coins)
+		parts[#parts + 1] = T(lang, batch.coins == 1 and "%s Chaos Coin" or "%s Chaos Coins", N.short(batch.coins))
 	end
-	return table.concat(parts, " and ")
+	if #parts == 2 then
+		return T(lang, "%s and %s", parts[1], parts[2])
+	end
+	return parts[1]
 end
 
 -- away = the seller was offline when it sold (the login delivery). Returns nil for an empty batch, else
@@ -160,16 +189,17 @@ end
 --          login, "Market sales" for several online
 --   text   one sale: its line; more: "3 items sold for 4.2M gold: Sword, 20x Orb and 1 more." (net, after the fee)
 --   lines  the chat lines: one per kept sale, plus "... and N more sales (My Offers > Closed)."
-function N.summary(batch, away)
+function N.summary(batch, away, lang)
 	if not batch or batch.count == 0 then
 		return nil
 	end
 	local lines = {}
 	for _, s in ipairs(batch.sales) do
-		lines[#lines + 1] = N.saleLine(s)
+		lines[#lines + 1] = N.saleLine(s, lang)
 	end
 	if batch.more > 0 then
-		lines[#lines + 1] = string.format("... and %d more sale%s (see My Offers).", batch.more, batch.more == 1 and "" or "s")
+		lines[#lines + 1] = T(lang, batch.more == 1 and "... and %d more sale (see My Offers)." or
+			"... and %d more sales (see My Offers).", batch.more)
 	end
 	if batch.count == 1 then
 		return {title = away and "While you were away" or "", text = lines[1], lines = lines}
@@ -182,9 +212,9 @@ function N.summary(batch, away)
 	local rest = batch.count - shown
 	local list = table.concat(names, ", ")
 	if rest > 0 then
-		list = list .. " and " .. rest .. " more"
+		list = T(lang, "%s and %d more", list, rest)
 	end
-	local text = string.format("%d items sold for %s: %s.", batch.count, N.totalText(batch), list)
+	local text = T(lang, "%d items sold for %s: %s.", batch.count, N.totalText(batch, lang), list)
 	return {title = away and "While you were away" or "Market sales", text = text, lines = lines}
 end
 

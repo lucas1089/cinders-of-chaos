@@ -62,7 +62,7 @@ end
 
 -- A reason a pure core returns already formatted ("Your guild needs guild level 3 for a guild hall."): I.translate
 -- finds the pt-BR template it came from. A key with % conversions is turned into a Lua pattern once (%d -> a number,
--- other conversions -> any text); the longest literal part is tried first, and a key with less than 4 literal
+-- other conversions -> any text); the longest literal part is tried first, and a key with less than 12 literal
 -- characters is never used this way. An exact key wins. The captures are fed back to the pt-BR pattern, so one entry
 -- covers every value. A text without an entry is returned as it is (English).
 local matchers = {}
@@ -94,7 +94,7 @@ local function build(lang)
 					i = i + 1
 				end
 			end
-			if ok and convs > 0 and lits >= 4 then
+			if ok and convs > 0 and lits >= 12 then
 				pat[#pat + 1] = "$"
 				list[#list + 1] = {pattern = table.concat(pat), tr = tr, lits = lits, key = key}
 			end

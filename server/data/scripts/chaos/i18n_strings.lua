@@ -4143,5 +4143,176 @@ return {
 			"Você retirou %d x %s do depot da guild (%s).",
 		["Back to the guild hall (or your temple)."] =
 			"De volta ao guild hall (ou ao seu templo).",
+		-- Market: refusals, results and sale lines (market_core.lua, market_config.lua, market_orders_core.lua, market_notify_core.lua, market.lua)
+		["Prices cannot be negative."] =
+			"Os preços não podem ser negativos.",
+		["Set a price in gold, in Chaos Coins or in both."] =
+			"Defina um preço em ouro, em Chaos Coins ou em ambos.",
+		["Choose one of the offer durations."] =
+			"Escolha uma das durações de oferta.",
+		["That item is no longer where it was."] =
+			"Esse item não está mais onde estava.",
+		["Take the item off before you list it."] =
+			"Tire o item antes de anunciá-lo.",
+		["The item is locked. Unlock it first."] =
+			"O item está trancado. Destranque-o primeiro.",
+		["Store items cannot be sold."] =
+			"Itens da loja não podem ser vendidos.",
+		["Empty the container before you list it."] =
+			"Esvazie o container antes de anunciá-lo.",
+		["That item cannot be sold."] =
+			"Esse item não pode ser vendido.",
+		["That item cannot be sold on the market."] =
+			"Esse item não pode ser vendido no mercado.",
+		["Quest items cannot be sold."] =
+			"Itens de quest não podem ser vendidos.",
+		["Items that are wearing off cannot be sold."] =
+			"Itens que estão acabando não podem ser vendidos.",
+		["You do not have that many."] =
+			"Você não tem tantos.",
+		["That modifier filter is not valid."] =
+			"Esse filtro de modificador não é válido.",
+		["At most %d modifiers per search."] =
+			"No máximo %d modificadores por busca.",
+		["Unknown modifier."] =
+			"Modificador desconhecido.",
+		["Each modifier only once per search."] =
+			"Cada modificador só uma vez por busca.",
+		["You need level %d to use the market."] =
+			"Você precisa do level %d para usar o mercado.",
+		["This character is not saved by the server, so it cannot use the market."] =
+			"Este personagem não é salvo pelo servidor, então não pode usar o mercado.",
+		["That offer is no longer on the market."] =
+			"Essa oferta não está mais no mercado.",
+		["That is your own offer."] =
+			"Essa é a sua própria oferta.",
+		["You cannot buy from a character of your own account."] =
+			"Você não pode comprar de um personagem da sua própria conta.",
+		["That offer is not on your market."] =
+			"Essa oferta não está no seu mercado.",
+		["You do not have enough gold in your bank account."] =
+			"Você não tem ouro suficiente na sua conta bancária.",
+		["You do not have enough Chaos Coins."] =
+			"Você não tem Chaos Coins suficientes.",
+		["That offer is not sold for that currency."] =
+			"Essa oferta não é vendida nessa moeda.",
+		["The market is busy, please try again."] =
+			"O mercado está ocupado, tente de novo.",
+		["You already have %d active offers and buy orders."] =
+			"Você já tem %d ofertas e ordens de compra ativas.",
+		["Your account already has %d active offers and buy orders."] =
+			"Sua conta já tem %d ofertas e ordens de compra ativas.",
+		["The listing fee is %s gold; you do not have it in your bank account."] =
+			"A taxa de anúncio é de %s de ouro; você não tem isso na sua conta bancária.",
+		["That buy order is no longer open."] =
+			"Essa ordem de compra não está mais aberta.",
+		["That is your own buy order."] =
+			"Essa é a sua própria ordem de compra.",
+		["You cannot fill a buy order of your own account."] =
+			"Você não pode atender uma ordem de compra da sua própria conta.",
+		["That buy order is not on your market."] =
+			"Essa ordem de compra não está no seu mercado.",
+		["That is not the item the order asks for."] =
+			"Esse não é o item que a ordem pede.",
+		["That item cannot be ordered on the market."] =
+			"Esse item não pode ser pedido no mercado.",
+		["The order needs %s gold in your bank (%s for the items, %s listing fee)."] =
+			"A ordem precisa de %s de ouro no seu banco (%s pelos itens, %s de taxa de anúncio).",
+		["The order needs %s Chaos Coins on your account and the %s gold listing fee in your bank."] =
+			"A ordem precisa de %s Chaos Coins na sua conta e da taxa de anúncio de %s de ouro no seu banco.",
+		["Choose gold or Chaos Coins."] =
+			"Escolha ouro ou Chaos Coins.",
+		["Order at least one."] =
+			"Peça pelo menos um.",
+		["At most %s per order."] =
+			"No máximo %s por ordem.",
+		["An order may hold at most %s gold."] =
+			"Uma ordem pode guardar no máximo %s de ouro.",
+		["An order may hold at most %s Chaos Coins."] =
+			"Uma ordem pode guardar no máximo %s Chaos Coins.",
+		["Choose one of the order durations."] =
+			"Escolha uma das durações de ordem.",
+		["Its rarity is too low."] =
+			"A raridade dele é baixa demais.",
+		["Its item level is too low."] =
+			"O item level dele é baixo demais.",
+		["Its modifiers do not match."] =
+			"Os modificadores dele não combinam.",
+		["Not enough sockets."] =
+			"Sockets insuficientes.",
+		["Its quality is too low."] =
+			"A qualidade dele é baixa demais.",
+		["It has no free prefix."] =
+			"Ele não tem prefixo livre.",
+		["It has no free suffix."] =
+			"Ele não tem sufixo livre.",
+		["It has no legendary power."] =
+			"Ele não tem poder lendário.",
+		["It has no bound modifier."] =
+			"Ele não tem modificador vinculado.",
+		["That item does not fit the order: %s"] =
+			"Esse item não serve para a ordem: %s",
+		["The order closed before your fill went through: the item is back in your inbox."] =
+			"A ordem fechou antes de o seu pedido ser atendido: o item voltou para a sua inbox.",
+		["%s Chaos Coin"] =
+			"%s Chaos Coin",
+		["%s and %s"] =
+			"%s e %s",
+		["%s and %d more"] =
+			"%s e mais %d",
+		["Market: %s"] =
+			"Mercado: %s",
+		["%s bought your %s for %s (fee %s): +%s to your bank."] =
+			"%s comprou seu %s por %s (taxa %s): +%s no seu banco.",
+		["%s bought your %s for %s (fee %s): +%s to your account."] =
+			"%s comprou seu %s por %s (taxa %s): +%s na sua conta.",
+		["%s's buy order took your %s for %s (fee %s): +%s to your bank."] =
+			"A ordem de compra de %s levou seu %s por %s (taxa %s): +%s no seu banco.",
+		["%s's buy order took your %s for %s (fee %s): +%s to your account."] =
+			"A ordem de compra de %s levou seu %s por %s (taxa %s): +%s na sua conta.",
+		["... and %d more sale (see My Offers)."] =
+			"... e mais %d venda (veja Minhas ofertas).",
+		["... and %d more sales (see My Offers)."] =
+			"... e mais %d vendas (veja Minhas ofertas).",
+		["%d items sold for %s: %s."] =
+			"%d itens vendidos por %s: %s.",
+		["%s%s in your inbox (%s)"] =
+			"%s%s na sua inbox (%s)",
+		["bought"] =
+			"comprado",
+		["offer cancelled"] =
+			"oferta cancelada",
+		["offer expired"] =
+			"oferta expirada",
+		["sold"] =
+			"vendido",
+		["from your buy order"] =
+			"da sua ordem de compra",
+		["the buy order closed before your fill"] =
+			"a ordem de compra fechou antes do seu pedido",
+		["+%s back from your buy order %d"] =
+			"+%s de volta da sua ordem de compra %d",
+		["+%s (sold %s%s to %s)"] =
+			"+%s (vendeu %s%s para %s)",
+		["%s. Items are in your inbox, gold in your bank."] =
+			"%s. Os itens estão na sua inbox, o ouro no seu banco.",
+		["%d market deliveries: see the Server Log."] =
+			"%d entregas do mercado: veja o Server Log.",
+		["Listed %s%s for %s. Listing fee: %s gold."] =
+			"%s%s anunciado por %s. Taxa de anúncio: %s de ouro.",
+		["Bought %s%s for %s. It is in your inbox."] =
+			"%s%s comprado por %s. Está na sua inbox.",
+		["Offer cancelled: %s goes back to your inbox."] =
+			"Oferta cancelada: %s volta para a sua inbox.",
+		["Buy order posted: %dx %s at %s each. %s are held for it; listing fee: %s gold."] =
+			"Ordem de compra publicada: %dx %s a %s cada. %s ficam retidos nela; taxa de anúncio: %s de ouro.",
+		["Buy order cancelled: %s come back to you; the listing fee is not refunded."] =
+			"Ordem de compra cancelada: %s voltam para você; a taxa de anúncio não é devolvida.",
+		["Sold %s%s to %s's buy order for %s (tax %s): %s added to your account."] =
+			"%s%s vendido para a ordem de compra de %s por %s (imposto %s): %s adicionados à sua conta.",
+		["Sold %s%s to %s's buy order for %s (tax %s): %s to your bank."] =
+			"%s%s vendido para a ordem de compra de %s por %s (imposto %s): %s no seu banco.",
+		["%s filled your buy order: %s%s for %s."] =
+			"%s atendeu sua ordem de compra: %s%s por %s.",
 	},
 }

@@ -72,7 +72,8 @@ function O.checkOrder(cfg, d, known)
 	local total = price * qty
 	local maxTotal = (oc.maxTotal or {})[cur] or lim.max
 	if total > maxTotal then
-		return nil, string.format("An order may hold at most %s %s.", MC.money(maxTotal), cur == "coins" and "Chaos Coins" or "gold")
+		return nil, string.format(cur == "coins" and "An order may hold at most %s Chaos Coins." or "An order may hold at most %s gold.",
+			MC.money(maxTotal))
 	end
 	local days = int(d.days) or cfg.defaultDuration
 	local okDays = false
