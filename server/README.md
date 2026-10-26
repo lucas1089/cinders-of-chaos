@@ -18340,13 +18340,13 @@ sprite pair (gold and readable on dark floors, 2x2, not moveable, not pickupable
 
 | Chest | Item | Was | Where |
 |---|---|---|---|
-| reward chest (own look: shiny gold and jewels; container 32) | 32310 (client 38657, pair 45); falls back to 21584 (the stock gold chest on a stone plinth) while 32310 is not installed | 1740, then 21584 | the rift chest where the guardian died (`rift_config.lua` `chest`), the Ember Descent's treasure room chest (`descent_config.lua` `objects.chest`), the quest chests of every planned area (`tools/areaplan_build.lua` hands the rift chest to the planner), and every quest chest of the base server's map (see "Install") |
+| reward chest (own look: a gold chest overflowing with coins and gems; container 32) | 32310 (client 38657, pair 45); falls back to 21584 (the stock gold chest on a stone plinth) while 32310 is not installed | 1740, then 21584 | the rift chest where the guardian died (`rift_config.lua` `chest`), the Ember Descent's treasure room chest (`descent_config.lua` `objects.chest`), the quest chests of every planned area (`tools/areaplan_build.lua` hands the rift chest to the planner), and every quest chest of the base server's map (see "Install") |
 | treasure chest (blue and silver, container 20) | 12664 | 1746 | the rift's Sealed Coffer (`rift_config.lua` `coffer`): it must be a container, its spoils go inside |
 
 **Own look (owner request 2026-10-26: "make a reward chest and give every quest chest this sprite"; pair 45).** The stock
 21584 is a gold chest on a stone plinth. Item **32310** "reward chest" is a copy of its node (group container, flags,
-attributes; container 32, not moveable, not pickupable) with the client id **38657**, a PixelLab painting of our own: shiny
-gold covered in ruby, sapphire, emerald and amethyst gems, the lid open on a glitter of coins and jewels (2 x 2, a still; client/MANIFEST.md
+attributes; container 32, not moveable, not pickupable) with the client id **38657**, a PixelLab painting of our own: a
+gold chest overflowing with coins and gems, the lid open, mirrored left-right at the owner's request (2 x 2, a still; client/MANIFEST.md
 "Reward Chest look", `client/tools/sprites/gen_reward_chest_art.py`). The block 32310-32319 is reserved for it (32301-32309
 are the charms, 32351-32399 the professions). `install_all.py` step `rewardchest` (`tools/install_reward_chest.py`, modelled on
 the Cursed Chest's; before `rewardchests`) writes the otb node and an items.xml entry between two marker comments. Until it

@@ -2979,9 +2979,9 @@ The importer verified the 12 sprite slots pixel-identical to the atlas and every
 Owner request 2026-10-26: "make a reward chest and give every quest chest this sprite". Every chest a player takes a reward
 from (the rift's, the Descent's, the planned areas' and the base server's quest chests; server/README.md "Reward chests") wore the
 stock reward chest (server 21584, client 19250: a gold chest on a stone plinth). One PixelLab result (64 x 64 RGBA, alpha 0 / 255,
-our own prompts, `generate-image-v2`): shiny gold covered in ruby, sapphire, emerald and amethyst gems, the lid open on coins and jewels. The first pick (dark wood, gold bands, ember red) was too plain for the owner (2026-10-26: "far more eye-catching, gold and jewels, golden and shiny"); this is the second.
+our own prompts, `generate-image-v2`): a gold chest overflowing with coins and gems, the lid open. The first pick (dark wood, gold bands, ember red) was too plain for the owner (2026-10-26: "far more eye-catching, gold and jewels, golden and shiny"); the second (gem-studded gold, `f_14`) gave way to the runner-up with coins spilling out, which the owner asked to have mirrored left-right: `gen_reward_chest_art.py` flips the committed source in `build` (`MIRROR`, a lossless flip; `build --check` reproduces it).
 - **Pixels.** PixelLab's: not repainted, snapped or recoloured (only the colour under fully transparent pixels is cleared).
-  128 candidates from eight prompt variants; the pick is the 14th of the "lid open, coins and jewels spilling" variant (`reward_chest_f_14.png`; the raw
+  128 candidates from eight prompt variants; the pick is the 6th of the "lid open, coins and jewels spilling" variant (`reward_chest_f_6.png`, committed unflipped; the raw
   folder `pixellab-pip-generations/reward-chest/` is git-ignored). Credit: docs/CREDITS.md "Tools" (PixelLab;
   `art_import/reward_chest_sources.csv`). `build --src DIR` copies the file to `art_import/reward_chest/` (about 4 KB), so CI and
   later rebuilds need no PixelLab folder.
@@ -2989,7 +2989,7 @@ our own prompts, `generate-image-v2`): shiny gold covered in ruby, sapphire, eme
   in two frames; a chest that stands on the map for good should not shimmer, so one phase (the Cursed Chest's looks, which
   come and go, keep their loops).
 - **Style.** Gold, wood and ember red, none of the seven theme palettes, so nothing is snapped. `build` runs `style_check.py`
-  on the canvas against its own colours: outline, light, noise, colour count, alpha and scale pass (31 colours).
+  on the canvas against its own colours: outline, light, noise, colour count, alpha and scale pass (31 colours); the noise rule gives a warning (2 lone pixels and 2 specks: the sparkle glints and the spilled coins), as the colour count did for earlier owner-approved looks.
   `build --check` (CI) rebuilds from the committed source.
 - **Things.** `art_import/reward_chest.csv`: one 2 x 2 item, one phase, kind chest, mode new, flags `copy:19250` (the stock reward
   chest: container, blocks, not moveable). Atlas `art_import/reward_chest.png`: one 64 px cell.
@@ -3011,16 +3011,16 @@ python3 -I client/tools/sprites/gen_outfit_anchors.py pair45/Tibia.dat pair45/Ti
 python3 -I client/tools/sprites/gen_info_lift.py pair45/Tibia.dat pair45/Tibia.spr
 ```
 Input pair 44 (dat 0b80ccae36490b8dd4a03f2627b2f85e, spr 8cbcc5370f74045323e2f8f27aae51a3).
-Output **pair 45**: dat 24bfad917c9c8c47630fbcdc7f718098 (11,261,105 bytes), spr 2f668d8fb7374c236626cd2b253bb5ac
-(1,541,148,893 bytes, 1,357,888 sprites: 4 appended), 38,657 items (1 appended), 2,681 outfits, 4101 effects, 253 missiles.
+Output **pair 45**: dat 24bfad917c9c8c47630fbcdc7f718098 (11,261,105 bytes), spr 72aec17d22c02fb08875a22c36440662
+(1,541,150,037 bytes, 1,357,888 sprites: 4 appended), 38,657 items (1 appended), 2,681 outfits, 4101 effects, 253 missiles.
 The importer verified the 4 sprite slots pixel-identical to the atlas and every old thing byte-identical. Built once.
 - `check_pair.py --old`: `--new-only` 0 errors, 0 warnings (45,592 old things and 1,357,884 old sprites compared).
   `outfit_anchors.lua` and `info_lifts.lua`: only the dat md5 changes.
 - Archive (the pair 41 recipe: `tar --owner=0 --group=0 --numeric-owner --mtime='2026-10-22 00:00:00Z' --format=gnu`,
-  `xz -9 -T0`, `split -b 95M -d -a 2`): 147,077,996 bytes, sha256
-  096b6e2c7221c72ab2c20f05f6efc6fb1d7bcce31320d7ef7c756e669882d21a; parts `things-1098.tar.xz.part00` (99,614,720
-  bytes, sha256 7e5359c3dd1b11de79bd5d9d7df7987cb496bdf1b4d72b0790be7722a84589f1) and `.part01` (47,463,276 bytes,
-  sha256 160d6777bd94f115b1b5f16f4862c6991dd535a4d3c0f87af8076e33d1714f41); the parts joined equal the archive, and
+  `xz -9 -T0`, `split -b 95M -d -a 2`): 147,085,420 bytes, sha256
+  cd5e2d702af0294beb0c96484cc57370bc62b4b279933d2d482fb00df6bad894; parts `things-1098.tar.xz.part00` (99,614,720
+  bytes, sha256 dc3ea0efa6e9d4b696e77c968aeda58540b9bfa3a0f9c9979bc935298b3b70c8) and `.part01` (47,470,700 bytes,
+  sha256 0e9c114b342997737ca0e9e92a90df2cfcffac61a78be9230580aec1bfba75de); the parts joined equal the archive, and
   stream-extracted from it the md5s above match. Not pushed to windows-assets by the builder: the lead pushes the pair.
 - **Ship order.** A client on pair 44 or older draws nothing for the new id: ship pair 45 and a client build before the
   server's `rewardchest` install step. Preview (the new look and the stock chest at 1x and 4x, rendered from pair 45):
