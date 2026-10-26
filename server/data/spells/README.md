@@ -1197,6 +1197,80 @@ Elementalist in area 3496 / 10837 and 11275.
 - Notes: the Shadowfist's C4 plan at level 1000 spends only 192-199 of its 248 points (the harness planner stops; the
   same as the keystone check); not a game issue.
 
+### Blackblood Creed on every attack (O158 balance pass, 2026-10-26, computed, not measured in game)
+
+O158 made the Creed poison every attack, spells included. This pass computes what that changed for the Thief, Ninja and
+Samurai at levels 300 and 1000, one target and five, against the Deadeye (1258 / 4733) and the Elementalist (3378 / 10882).
+**Result: nothing to tune. No number changed.**
+
+**What is new.** Nearly every attack spell of the line is a weapon strike (`ChaosSpell.weaponStrike`, ORIGIN_MELEE or
+ORIGIN_RANGED), and with the Creed those poisoned before O158 already. The hits O158 adds are the ORIGIN_SPELL ones:
+**Venom Spiral** (Thief, Ninja: 5 ticks of 1 s, every tick is a hit) and **Smoke Bomb** (all three: 3 of the pack). The line
+has no wand. So the change is small by construction.
+
+**The rule** (`thief_combat.lua` `onOffence`, `classes.lua` `poisonTick`): one poison condition per target. Every
+qualifying hit adds a new condition, which **replaces** the running one (4 ticks of 1 s from that hit, the tick clock runs
+on). A tick is `hit x share x classScale x 1.3 / 4` (Thief and Samurai 0.39 of the last hit a second, Ninja 0.234). Sources
+never stack. They only change which hit the next ticks copy. A weak Spiral tick (a fifth of a Spiral cast) replaces the
+poison of a strong auto attack, so the new source can lower the poison as well as raise it. Only the C++ side decides
+whether a weaker new condition replaces a stronger running one; the repo documents "replaces" (Thief poison above), so
+that is the main column. The other reading (a weaker hit does not replace a stronger one) is the second.
+
+**Method.** A time simulation, 120 s, per target: the harness rotation of `rotation_sim.py` (the C4 kit on cooldown, the
+strongest ready first; the best set of 5 as a check), the auto attack at the class's swing (Thief 1.5 s, Ninja 1.3 s,
+Samurai 1.7 s) with the uncut weapon hit of the "Thief line" table (no tree), the spell hits at their cast times (a Spiral as
+5 ticks, an area spell on min(5, targets) with the 5-target total shared evenly, the Ninja's off-hand strike never
+poisons so it is taken out of Gutting Slash, Blade Flurry and Last Breath), the poison condition as above. Five auto attack
+phases averaged. It runs "before" (weapon hits and weapon strikes poison) and "after" (plus Spiral ticks and Smoke Bomb).
+The model poison is scaled to the build with one number per class and level: the Creed's computed one target gain of
+"Thief poison" (100 / 470 Thief, 46 / 349 Ninja, 64 / 350 Samurai at 300 / 1000) divided by the model's "before" poison
+on one target. The same number scales the 5 target poison. The 5 target "without the Creed" rows are the C4 table plus
+the kit of "Pack farming" (Thief 1898 / 6274, Ninja 1927 / 7621, Samurai 1544 / 5035), the last numbers that exist; the
+10-24 spell factor fit kept their score, not their split, so read them to a few percent. The Creed was never measured on
+five targets.
+
+One target (total with the Creed, before O158 -> now; main reading, in brackets the other):
+
+| Class | Level | Poison, model before -> after | Total before -> after | Deadeye ahead before -> after |
+|---|---|---|---|---|
+| Thief | 300 | 234 -> 214 | 964 -> 956 (-0.9%) [971] | +30.5% -> +31.7% |
+| Ninja | 300 | 133 -> 130 | 1162 -> 1161 (-0.1%) [1165] | +8.3% -> +8.4% |
+| Samurai | 300 | 279 -> 254 | 733 -> 727 (-0.8%) [735] | +71.6% -> +73.0% |
+| Thief | 1000 | 403 -> 378 | 3108 -> 3079 (-0.9%) [3136] | +52.3% -> +53.7% |
+| Ninja | 1000 | 226 -> 224 | 4432 -> 4429 (-0.1%) [4458] | +6.8% -> +6.9% [6.2%] |
+| Samurai | 1000 | 446 -> 405 | 2776 -> 2744 (-1.2%) [2785] | +70.5% -> +72.5% |
+
+Five targets (same reading; the Elementalist ahead is 3378 / 10882 over the total):
+
+| Class | Level | Creed poison before -> after | Total before -> after | Elementalist ahead before -> after |
+|---|---|---|---|---|
+| Thief | 300 | 448 -> 494 | 2346 -> 2392 (+2.0%) [2200 -> 2239] | +44% -> +41% |
+| Ninja | 300 | 296 -> 276 | 2223 -> 2203 (-0.9%) [2186 -> 2188] | +52% -> +53% |
+| Samurai | 300 | 318 -> 346 | 1862 -> 1890 (+1.5%) [1769 -> 1774] | +81% -> +79% |
+| Thief | 1000 | 1984 -> 2183 | 8258 -> 8457 (+2.4%) [7708 -> 7862] | +32% -> +29% |
+| Ninja | 1000 | 2800 -> 2592 | 10421 -> 10213 (-2.0%) [9760 -> 9779] | **+4.4% -> +6.5%** [11.5% -> 11.3%] |
+| Samurai | 1000 | 1776 -> 1927 | 6811 -> 6962 (+2.2%) [6277 -> 6416] | +60% -> +56% |
+
+The best set of 5 instead of the harness kit gives the same picture (one target -0.8% to +0.8%, five targets -0.9% to +3.3%,
+Ninja at level 1000 +9% / +10% behind the Elementalist in area, 6.8-7.1% behind the Deadeye on one target).
+
+**Reading it.**
+- O158 moves every total by under 1.3% on one target and under 3.3% on five, in both directions. The spread of a run is
+  5-10%. No class passes the Deadeye (the Ninja at level 1000 stays 6.2-6.9% behind) and none passes the Elementalist.
+  The Thief, the Samurai and the Ninja at 300 stay 30% or more behind their leader, as designed.
+- Venom Spiral lowers the poison on one target for the Thief (a Spiral tick replaces a strong hit); Smoke Bomb, the
+  Samurai's only new source, adds a hit on three more targets. In area the Thief and the Samurai gain 1.5-2.4%, the Ninja
+  loses 0.9-2.0% (its small Spiral ticks replace its stronger strikes).
+- **Open, not caused by O158:** the Creed's five target gain was never measured, and the model puts it at 12-26% of the
+  line's area damage (a poison tick copies the last hit on each target, and the off targets get no auto attack to replace
+  it). With the C4 kit the Ninja with the Creed at level 1000 is only 4.4-6.5% behind the Elementalist in area (11.5% under the
+  other reading; the "without the Creed" row is the least certain input). That is under the owner's 8-10% lead, and
+  the change of O158 moves it the other way. Measure it with the C4 harness on five targets (Ninja, two samples) before
+  touching `poisonBonus` (class_tree.lua `ksBlackbloodCreed`, now 0.30): halving it to 0.15 would cost the Ninja about 3% in
+  area and 1% on one target, the Thief 3% / 2%.
+- No config number or code shape changed: `poisonBonus` 0.30, `evasionScale` 0.5, `poisonBlades.share` 1.2 and
+  `classScale` stay.
+
 ### Overgrowth and Thorns for the Iron Sage and the Sentinel (2026-10-12, computed, not measured in game)
 
 The old druid pair on the main tree's keystone nodes had no class since the class rework. The owner approved giving
