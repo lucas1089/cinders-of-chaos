@@ -5,18 +5,22 @@
 --
 -- Item ids: one server id per support and level, firstId + (type - 1) * 5 + (level - 1) = 32101..32200. They are new
 -- items.otb nodes (server/tools/install_supports.py), copies of the stock rune stones named in `sprites` (stackable,
--- use-with), so the client needs no new sprite. Ranges in use: gems 32001..32035, salvage 32051, art 33000..,
+-- use-with) with a look of their own: client ids clientFirstId + (server id - firstId) = 38658..38757, the 100 rune
+-- stones of pair 46 (client/MANIFEST.md "Support rune looks", client/tools/sprites/gen_support_runes_art.py). Ranges in use: gems 32001..32035, salvage 32051, art 33000..,
 -- pack items 36000.., donor items 40000...
 
 return {
 	firstId = 32101,
+	-- client id of the first rune's own look (pair 46); nil = the items keep the stock rune stones' looks (the fallback:
+	-- set it to nil until the client is on pair 46 and run install_supports.py again, which turns the nodes back)
+	clientFirstId = 38658,
 	levels = 5,
 
 	-- the five levels carry the item rarity names and colours (Common .. Mythic of the gear rarities)
 	levelNames = {"Common", "Rare", "Epic", "Legendary", "Mythic"},
 	levelColors = {"#c4cebc", "#1e963e", "#e32121", "#f6fa07", "#a30ff6"},
 
-	-- stock rune stones (server id -> client sprite) the items copy; index = `sprite` of a support
+	-- stock rune stones (server ids) the items copy for their flags (client id = server id - 2656); index = `sprite` of a support
 	sprites = {24685, 24686, 24687, 24689, 24690, 24693, 24694, 24695, 24696, 24698},
 
 	-- what a spell is, for the compatibility rules (supports.lua works it out from data/spells/spells.xml with the

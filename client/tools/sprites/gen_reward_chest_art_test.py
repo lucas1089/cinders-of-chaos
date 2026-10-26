@@ -59,7 +59,9 @@ check((r['w'], r['h'], r['patterns'], r['phases'], r['flags'], r['mode']) == (2,
 check(int(r['server_id']) == 32310, 'server id 32310')
 fr = I.item_frames(r)[0]
 check(len(fr) == 1 and all(f.shape == (64, 64, 4) for f in fr.values()), 'importer frame')
-check(np.array_equal(fr[(0, 0, 0)], G.read_rgba(os.path.join(G.SRC_DIR, 'reward_chest.png'))), 'the importer reads the frame unchanged')
+src = G.read_rgba(os.path.join(G.SRC_DIR, 'reward_chest.png'))
+check(G.MIRROR and np.array_equal(fr[(0, 0, 0)], src[:, ::-1]) and not np.array_equal(src, src[:, ::-1]), 'the importer reads the mirrored source')
+check(np.array_equal(atlas, src[:, ::-1]), 'the atlas is the source mirrored')
 
 print('gen_reward_chest_art_test: %s' % ('OK' if not failed else 'FAILED %d' % failed))
 sys.exit(1 if failed else 0)

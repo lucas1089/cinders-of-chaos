@@ -420,7 +420,7 @@ Icons, hero images and banners make the wiki easier to scan. `server/tools/gen_w
   any more; `--check` fails on a stale or extra file (CI, with the pinned Pillow and numpy of the other art checks);
   `--sheet OUT.png` writes a contact sheet of every icon. Run it after `gen_wiki_data.lua` when an icon changes.
 - **Sources**, all our own committed art: the Chaos spell icon kit (`client/tools/gen_spell_icons.py`), the painted spell
-  icons and painted keystones and masteries (`gen_painted_icons.py`), the support runes (`gen_support_icons.py`), the
+  icons and painted keystones and masteries (`gen_painted_icons.py`), the support runes (`sprites/gen_support_runes_art.py icons`), the
   themed set item pieces (`client/tools/sprites/art_import/theme/items_<set>.png`), the client's top menu buttons, the
   site's class badges and backdrop (`gen_site_art.py`); orbs and gems are drawn by the script. A unique's icon is a themed
   piece of its slot, an illustration and not the item's own sprite. No screenshots: the client's screens show base

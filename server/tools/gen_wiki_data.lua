@@ -1983,7 +1983,7 @@ end
 --   orb-<theme>-<glyph>  a glowing orb with a kit glyph            gem-<rrggbb>  a cut gem of that colour
 --   sp-<clientId>        a Chaos spell's painted icon (client images/game/spells_painted/, gen_painted_icons.py)
 --   tr-<iconKey>         a painted keystone or mastery (images/passivetree/painted_nodes.png, treedata/painted.lua)
---   sup-<key>            a support rune (images/game/supports/, gen_support_icons.py)
+--   sup-<key>            a support rune (images/game/supports/, sprites/gen_support_runes_art.py icons)
 --   it-<set>-<kind>      an item of a themed set (client/tools/sprites/art_import/theme/items_<set>.png)
 --   gm-<key>-<tier>      a socket gem's look (client/tools/sprites/art_import/gems.png, gen_gem_art.py)
 --   top-<name>           a top menu button (client images/chaos/topbutton_<name>.png, gen_theme_art.py)

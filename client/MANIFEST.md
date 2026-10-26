@@ -2975,21 +2975,21 @@ The importer verified the 12 sprite slots pixel-identical to the atlas and every
 - **Ship order.** A client on pair 43 or older draws nothing for the new ids: ship pair 44 and a client build before the
   server's `potions` install step. Preview (the twelve looks at 1x and 4x, rendered from pair 44): scratchpad only. Not run in a client.
 
-## Reward Chest look (pair 45: item 38657, `tools/sprites/gen_reward_chest_art.py`, `art_import/reward_chest*`; built 2026-10-26; on windows-assets eac7e96f)
+## Reward Chest look (pair 45: item 38657, `tools/sprites/gen_reward_chest_art.py`, `art_import/reward_chest*`; built 2026-10-26; shipped inside pair 46, windows-assets 4553b922; the first pick went up alone as eac7e96f)
 Owner request 2026-10-26: "make a reward chest and give every quest chest this sprite". Every chest a player takes a reward
 from (the rift's, the Descent's, the planned areas' and the base server's quest chests; server/README.md "Reward chests") wore the
 stock reward chest (server 21584, client 19250: a gold chest on a stone plinth). One PixelLab result (64 x 64 RGBA, alpha 0 / 255,
-our own prompt, `generate-image-v2`): dark wood bound in ornate gold, ember-red lining and trim, an ember glowing in the lock.
+our own prompts, `generate-image-v2`): a gold chest overflowing with coins and gems, the lid open. The first pick (dark wood, gold bands, ember red) was too plain for the owner (2026-10-26: "far more eye-catching, gold and jewels, golden and shiny"); the second (gem-studded gold, `f_14`) gave way to the runner-up with coins spilling out, which the owner asked to have mirrored left-right: `gen_reward_chest_art.py` flips the committed source in `build` (`MIRROR`, a lossless flip; `build --check` reproduces it).
 - **Pixels.** PixelLab's: not repainted, snapped or recoloured (only the colour under fully transparent pixels is cleared).
-  64 candidates from four prompt variants; the pick is the fourth of the "closed lid" variant (`reward_chest_b_4.png`; the raw
+  128 candidates from eight prompt variants; the pick is the 6th of the "lid open, coins and jewels spilling" variant (`reward_chest_f_6.png`, committed unflipped; the raw
   folder `pixellab-pip-generations/reward-chest/` is git-ignored). Credit: docs/CREDITS.md "Tools" (PixelLab;
   `art_import/reward_chest_sources.csv`). `build --src DIR` copies the file to `art_import/reward_chest/` (about 4 KB), so CI and
   later rebuilds need no PixelLab folder.
-- **Still, no idle loop.** PixelLab's `animate-with-text-v3` on the pick (4 frames, 1 generation) moved the chest's outline and lid
-  from frame to frame; a chest that stands on the map for good should not shimmer, so one phase (the Cursed Chest's looks, which
+- **Still, no idle loop.** PixelLab's `animate-with-text-v3` on the pick (4 frames, sparkle glints) lifted the lid and moved the outline
+  in two frames; a chest that stands on the map for good should not shimmer, so one phase (the Cursed Chest's looks, which
   come and go, keep their loops).
 - **Style.** Gold, wood and ember red, none of the seven theme palettes, so nothing is snapped. `build` runs `style_check.py`
-  on the canvas against its own colours: outline, light, noise, colour count, alpha and scale pass (32 colours).
+  on the canvas against its own colours: outline, light, noise, colour count, alpha and scale pass (31 colours); the noise rule gives a warning (2 lone pixels and 2 specks: the sparkle glints and the spilled coins), as the colour count did for earlier owner-approved looks.
   `build --check` (CI) rebuilds from the committed source.
 - **Things.** `art_import/reward_chest.csv`: one 2 x 2 item, one phase, kind chest, mode new, flags `copy:19250` (the stock reward
   chest: container, blocks, not moveable). Atlas `art_import/reward_chest.png`: one 64 px cell.
@@ -3011,20 +3011,60 @@ python3 -I client/tools/sprites/gen_outfit_anchors.py pair45/Tibia.dat pair45/Ti
 python3 -I client/tools/sprites/gen_info_lift.py pair45/Tibia.dat pair45/Tibia.spr
 ```
 Input pair 44 (dat 0b80ccae36490b8dd4a03f2627b2f85e, spr 8cbcc5370f74045323e2f8f27aae51a3).
-Output **pair 45**: dat 24bfad917c9c8c47630fbcdc7f718098 (11,261,105 bytes), spr ccf66d5c47c1bc0d4275bca3cd3eae73
-(1,541,148,717 bytes, 1,357,888 sprites: 4 appended), 38,657 items (1 appended), 2,681 outfits, 4101 effects, 253 missiles.
+Output **pair 45**: dat 24bfad917c9c8c47630fbcdc7f718098 (11,261,105 bytes), spr 72aec17d22c02fb08875a22c36440662
+(1,541,150,037 bytes, 1,357,888 sprites: 4 appended), 38,657 items (1 appended), 2,681 outfits, 4101 effects, 253 missiles.
 The importer verified the 4 sprite slots pixel-identical to the atlas and every old thing byte-identical. Built once.
 - `check_pair.py --old`: `--new-only` 0 errors, 0 warnings (45,592 old things and 1,357,884 old sprites compared).
   `outfit_anchors.lua` and `info_lifts.lua`: only the dat md5 changes.
 - Archive (the pair 41 recipe: `tar --owner=0 --group=0 --numeric-owner --mtime='2026-10-22 00:00:00Z' --format=gnu`,
-  `xz -9 -T0`, `split -b 95M -d -a 2`): 147,070,820 bytes, sha256
-  5ac0f4e6d394e5e906ca2906ed83e81c91f6ea41bc4a67aec285cfc15c11b805; parts `things-1098.tar.xz.part00` (99,614,720
-  bytes, sha256 c7e1b912ecedc2d272c4dfae61ac06e9e6e060503b38fa5ac0d8a20bb818f342) and `.part01` (47,456,100 bytes,
-  sha256 b38bb8821ce87443dfda5fdad6bd7184b2582284f7af5153592732f61dc4f8df); the parts joined equal the archive, and
-  stream-extracted from it the md5s above match. Not pushed to windows-assets by the builder: the lead pushes the pair.
-- **Ship order.** A client on pair 44 or older draws nothing for the new id: ship pair 45 and a client build before the
+  `xz -9 -T0`, `split -b 95M -d -a 2`): 147,085,420 bytes, sha256
+  cd5e2d702af0294beb0c96484cc57370bc62b4b279933d2d482fb00df6bad894; parts `things-1098.tar.xz.part00` (99,614,720
+  bytes, sha256 dc3ea0efa6e9d4b696e77c968aeda58540b9bfa3a0f9c9979bc935298b3b70c8) and `.part01` (47,470,700 bytes,
+  sha256 0e9c114b342997737ca0e9e92a90df2cfcffac61a78be9230580aec1bfba75de); the parts joined equal the archive, and
+  stream-extracted from it the md5s above match. This archive was not pushed: pair 46 (below) carries it.
+- **Ship order.** A client on pair 44 or older draws nothing for the new id: ship pair 45 (or later) and a client build before the
   server's `rewardchest` install step. Preview (the new look and the stock chest at 1x and 4x, rendered from pair 45):
   scratchpad only. Not run in a client.
+
+## Support rune looks (pair 46: items 38658-38757, `tools/sprites/gen_support_runes_art.py`, `art_import/support_runes*`; built 2026-10-26; on windows-assets 4553b922)
+Owner request 2026-10-26: "Gere novas runas. Vamos usar as artes das runas como icones tambem". The 100 support rune items (server ids
+32101-32200, server/data/scripts/chaos/SUPPORTS.md "The runes") wore the stock rune stones and the window drew procedural icons.
+- **Art.** One carved dark stone per support, 32 x 32, the support's glowing sigil in its theme colour (ember sunburst orange, rime
+  crystal ice-blue, dawn cross pale gold, grave skull green, storm bolt blue, quickening spiral yellow, thrift drop teal, keen edge
+  sword silver, echo rings blue, fork trident yellow, breadth waves orange, shatter starburst cyan, deathburst red burst, surge bolt
+  yellow, reprisal shield silver, bloodthirst drop red, siphon drop in a ring blue, sunder hammer orange, hex eye purple, mercy leaf
+  green). One stone shape for all 20: PixelLab `generate-image-v2` with the first stone as `style_image` and one seed, 64 candidates per
+  support, one pick each. **Levels:** the five levels are the same picture with the stone's rim in the level colour of the game
+  (`chaos_supports_config.lua` `levelColors`: grey-brown Common = the pick, green Rare, red Epic, yellow Legendary, purple Mythic),
+  made with PixelLab `edit-images-v2` (text edit of the pick, 10 images per call, seed 2026); no local overlay, every pixel is
+  PixelLab's. Two Mythic rims (dawnbrand, hex) failed `style_check` (outline share, colour count) and were redone with a prompt
+  that keeps the black outline. Raw output: `pixellab-pip-generations/support-runes/` (git-ignored, with `calls.jsonl`).
+  Credits spent: 40 calls, USD 2.90 plus 1 included generation (21 Pro image batches 1.68 with the base stone, 15 Pro edit calls
+  1.20 with one test and the redos, 4 cheap Pixen edit tests 0.03 that were not used); credit: docs/CREDITS.md "Tools", `art_import/support_runes_sources.csv`.
+- **Committed.** `art_import/support_runes/<key>_<level>.png` (100 sources), `support_runes.png` (atlas 160 x 640, a row per support),
+  `support_runes.csv` (things: 1 x 1, one phase, kind rune, mode new, flags `copy:<stock client id>` = server id of the stock stone
+  - 2656, 22029-22042: stackable, use-with), `support_runes.sums`. `build --check` (CI) rebuilds; `build` runs `style_check` on each
+  look against its own colours (outline, noise, colour count, alpha, scale pass; not snapped to a theme palette).
+- **Icons.** `gen_support_runes_art.py icons` writes `client/overlay/data/images/game/supports/<key>.png` (32 x 32) = the Common look;
+  the window (`spellsupports.lua`), the action bar and the wiki (`gen_wiki_art.py`, regenerated) read those files. 32 x 32 is the
+  only size the client uses. `tools/gen_support_icons.py` (procedural) is removed.
+- **Server.** `chaos_supports_config.lua` `clientFirstId = 38658` (client id = clientFirstId + server id - 32101);
+  `install_supports.py` (step `supports`) writes it into each node, refuses a client id another item owns, is idempotent and turns
+  nodes still on the stock look. **Fallback:** `clientFirstId = nil` and run the step again: the nodes go back to the stock stones.
+- **Pair step.** `tools/sprites/build_support_runes_pair.sh IN_DIR OUT_DIR [LAST_ITEM_OF_IN]` (art check, `import_art_things.py
+  --first-item LAST+1 --expect-items LAST`, `check_pair.py --old --new-only`, md5s); then `gen_outfit_anchors.py` and `gen_info_lift.py`
+  on the output. Runs on any input pair whose last item is 38657 (the ids must equal `clientFirstId`).
+  Input the final pair 45 (dat 24bfad917c9c8c47630fbcdc7f718098, spr 72aec17d22c02fb08875a22c36440662).
+  Output **pair 46**: dat 58062a1ed9dc6f0e5323752a4d1fd896 (11,263,055 bytes), spr 71b147590afcc0561f7bfcf3dfdc1301 (1,541,350,017
+  bytes, 1,357,988 sprites: 100 appended), 38,757 items (100 appended); importer: 100 slots pixel-identical, every old thing
+  byte-identical; `check_pair --new-only` 0 errors, 0 warnings; the full check 0 errors, 206 warnings (the same as pair 45).
+  `outfit_anchors.lua` and `info_lifts.lua`: only the dat md5 changes.
+- Archive (the pair 41 recipe): 147,062,448 bytes, sha256 2d529ea91f9dfdc0c6d7cf50161d1c4ab13a129189656eece3ca46bfcebb7a54;
+  parts `things-1098.tar.xz.part00` (99,614,720 bytes, sha256 bc3b9ca801f750f629eae8aa8b11599134e84d34f69671b8b17d00d2ff002ecf)
+  and `.part01` (47,447,728 bytes, sha256 9b0c4580a90daf4ff6ef1560be9e96901a7f24883b7bb743059cc38835adb81a); the joined parts
+  extract to the md5s above. Preview (all 100 looks, 4x, names under each): scratchpad only. Not run in a client.
+- **Ship order.** A client on pair 45 or older draws nothing for the new ids: ship pair 46 and a client build (the new icons) before the
+  server's `supports` install step, or keep `clientFirstId = nil` until then.
 
 ## Owner art (things_custom26: outfits 2213-2233, items 33940-33985, `tools/sprites/gen_owner_art.py`, `art_import/owner_art.csv`; on windows-assets 50645056, switch on since 2026-10-15)
 **Source and licence.** The owner's Google Drive folder "ots", files added 2026-10-15. The owner confirmed the art is

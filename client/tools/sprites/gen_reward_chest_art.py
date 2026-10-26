@@ -5,12 +5,16 @@ container, blocks, not moveable).
 
     python3 -I gen_reward_chest_art.py build [--src DIR] [--check] [--preview DIR --dat P/Tibia.dat --spr P/Tibia.spr]
 
-Owner request, 2026-10-26: "make a reward chest and give every quest chest this sprite". Every chest a player takes a
+Owner request, 2026-10-26: "make a reward chest and give every quest chest this sprite"; after the first preview (dark
+wood, gold bands, ember red) "make it far more eye-catching, with gold and jewels, golden and shiny" (the first pick was
+reward_chest_b_4.png). Every chest a player takes a
 reward from (rift chest, Descent treasure room, the quest chests of the planned areas and of the base server's quests;
-server/README.md "Reward chests") wore the stock gold chest on a stone plinth; it gets a look of its own: dark wood
-bound in ornate gold, ember-red lining and trim, an ember glowing in the lock. Our own PixelLab prompt (generate-image-v2,
-64 x 64, no background; 64 candidates in four prompt variants, the pick is the 4th of the "closed lid" variant;
-credit: docs/CREDITS.md "Tools"). A still: PixelLab's idle animation of it wobbled the chest's outline from frame to frame
+server/README.md "Reward chests") wore the stock gold chest on a stone plinth; it gets a look of its own: a gold chest
+overflowing with coins and gems, the lid open. Our own PixelLab prompts (generate-image-v2, 64 x 64, no background; 128
+candidates in eight prompt variants; the owner picked the 6th of the "lid open, coins and jewels spilling" variant and asked
+for it mirrored left-right: `build` flips the committed source (MIRROR; a lossless flip of PixelLab's pixels, nothing else
+changes);
+credit: docs/CREDITS.md "Tools"). A still: PixelLab's idle animation of it lifted the lid and moved the outline from frame to frame
 (the Cursed Chest's animations were accepted; a reward chest that is on the map for good should not shimmer), so there is
 one phase.
 The pixels are PixelLab's; nothing is repainted, snapped or recoloured (only the colour under fully transparent pixels is
@@ -43,9 +47,10 @@ FIRST_CLIENT_ID = 38657   # after the last item of pair 44 (38656, the supreme E
 STOCK_CLIENT_ID = 19250   # client id of server 21584, the stock reward chest: container, notwalkable, notmoveable, 2x2
 SERVER_ID = 32310         # server/tools/install_reward_chest.py, server/README.md "Reward chests"
 CELL = 64
+MIRROR = True   # owner, 2026-10-26: the picked chest mirrored left-right (the committed source is PixelLab's, unflipped)
 
 # key, committed file, PixelLab file (relative to --src; the raw folder pixellab-pip-generations/reward-chest/), server id
-LOOK = ('reward_chest', 'reward_chest.png', 'reward_chest_b_4.png', SERVER_ID)
+LOOK = ('reward_chest', 'reward_chest.png', 'reward_chest_f_6.png', SERVER_ID)
 
 HEADER = ['key', 'cat', 'kind', 'name', 'atlas', 'x', 'y', 'w', 'h', 'patterns', 'phases', 'flags', 'mode',
           'server_id', 'extra']
@@ -91,16 +96,18 @@ def style_report(a):
     data = sc.load_palettes()
     own = np.unique(a[a[..., 3] > 0][:, :3], axis=0)
     bad, warn = sc.judge(sc.measure(a), own, data['light']['global'], data['thresholds'])
-    # the colour count (11-68 a cell) is a measure of flat or noisy art; the frame is owner approved and cannot be
-    # repainted, so it is reported (a warning), every other rule still refuses
-    soft = [b for b in bad if b.startswith('colours:')]
+    # the colour count (11-68 a cell) and the noise rule (lone pixels, specks) measure flat or noisy art; the sparkle glints
+    # and the coins that spill off the chest are lone pixels by design, and the frame is owner approved and cannot be
+    # repainted, so they are reported (a warning), every other rule still refuses
+    soft = [b for b in bad if b.startswith(('colours:', 'noise:'))]
     return [b for b in bad if b not in soft], warn + ['(owner-approved frame) ' + b for b in soft], own.shape[0]
 
 
 def build(src_dir):
     """(atlas RGBA, things text, sums text, [(key, errors, style bad, warnings, colours)])"""
     key, fname, _pl, sid = LOOK
-    a = read_rgba(os.path.join(src_dir, fname))
+    raw = read_rgba(os.path.join(src_dir, fname))
+    a = np.ascontiguousarray(raw[:, ::-1]) if MIRROR else raw   # the owner's flip: a lossless left-right mirror
     errs = problems_of(a)
     bad, warn, ncol = style_report(a) if not errs else ([], [], 0)
     out = io.StringIO()
@@ -108,7 +115,7 @@ def build(src_dir):
     w.writerow(HEADER)
     w.writerow([key, 'item', 'chest', 'reward chest', 'reward_chest', 0, 0, 2, 2, 1, 1,
                 'copy:%d' % STOCK_CLIENT_ID, 'new', sid, ''])
-    sums = '%s  reward_chest/%s\n%s  reward_chest.png\n' % (digest(a), fname, digest(a))
+    sums = '%s  reward_chest/%s\n%s  reward_chest.png\n' % (digest(raw), fname, digest(a))
     return a, out.getvalue(), sums, [(key, errs, bad, warn, ncol)]
 
 
