@@ -1,0 +1,120 @@
+// Weekly Chest window (game_weeklychest). Styles from client_chaos_theme (styles.otui).
+
+WeeklyActRow < UIWidget
+  height: 34
+  phantom: true
+
+  ChaosLabel
+    id: name
+    anchors.top: parent.top
+    anchors.left: parent.left
+    margin-left: 6
+    width: 220
+    height: 16
+    text-align: left
+
+  ChaosLabel
+    id: status
+    anchors.top: parent.top
+    anchors.right: parent.right
+    margin-right: 6
+    width: 140
+    height: 16
+    text-align: right
+
+  ChaosLabelDim
+    id: what
+    anchors.top: name.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-left: 14
+    height: 16
+    text-align: left
+
+ChaosMainWindow
+  id: weeklyChestWindow
+  size: 420 470
+  !text: tr('Weekly Chest')
+  @onEscape: modules.game_weeklychest.hide()
+
+  ChaosBloodLabel
+    id: head
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 18
+    text-align: center
+
+  ChaosLabelDim
+    id: ends
+    anchors.top: head.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 16
+    text-align: center
+
+  UIWidget
+    id: acts
+    anchors.top: ends.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 6
+    height: 204
+    phantom: true
+    layout:
+      type: verticalBox
+
+  ChaosSeparator
+    id: sep1
+    anchors.top: acts.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 6
+
+  ChaosLabel
+    id: chest
+    anchors.top: sep1.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 6
+    height: 16
+    text-align: left
+    margin-left: 6
+
+  ChaosLabelDim
+    id: reward
+    anchors.top: chest.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 16
+    text-align: left
+    margin-left: 14
+
+  ChaosLabel
+    id: bonus
+    anchors.top: reward.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 6
+    height: 32
+    text-wrap: true
+    text-align: topLeft
+    margin-left: 6
+
+  ChaosLabelDim
+    id: chests
+    anchors.top: bonus.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+    height: 16
+    text-align: left
+    margin-left: 6
+
+  ChaosButton
+    id: closeButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    width: 80
+    !text: tr('Close')
+    @onClick: modules.game_weeklychest.hide()

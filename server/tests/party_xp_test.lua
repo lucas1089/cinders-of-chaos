@@ -11,7 +11,7 @@ local function check(cond, label)
 	end
 end
 local function eq(a, b, label)
-	check(a == b, label .. " (" .. tostring(a) .. " ~= " .. tostring(b) .. ")")
+	check(a == b, tostring(label or "check") .. " (" .. tostring(a) .. " ~= " .. tostring(b) .. ")")
 end
 
 dofile("data/scripts/chaos/party_xp_core.lua")
@@ -145,6 +145,18 @@ do
 	bob.party = party
 	eq(callback(bob, monster, 700, 600), 700, "an error in the diagnosis does not change the experience")
 	os.time = realTime
+end
+
+-- ---------------------------------------------------------------- the bonus of the party frames (O261)
+do
+	local X = ChaosPartyXpCore
+	eq(X.bonusPercent(1), 20, "one line +20%"); eq(X.bonusPercent(2), 30, "two lines +30%"); eq(X.bonusPercent(3), 60)
+	eq(X.bonusPercent(4), 100); eq(X.bonusPercent(5), 150, "five lines: x2.5"); eq(X.bonusPercent(9), 150, "capped")
+	eq(X.bonusPercent(nil), 0); eq(X.bonusPercent(-3), 0); eq(X.bonusPercent(0 / 0), 0)
+	eq(X.lineCount({{line = 4}, {line = 4}, {line = 3}, {line = 0}, {}}), 2, "distinct lines")
+	local v = X.shareView({{line = 4}, {line = 3}, {line = 1}}, true, true)
+	eq(v.pct, 60, "three lines"); eq(v.on, 1)
+	eq(X.shareView({{line = 4}}, true, false).on, 2, "on, not working"); eq(X.shareView({{line = 4}}, false, false).on, 0)
 end
 
 if failures > 0 then

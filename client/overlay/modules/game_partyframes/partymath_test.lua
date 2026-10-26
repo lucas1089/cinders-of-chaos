@@ -153,4 +153,24 @@ eq(M.findLeader({ { id = 3, name = 'Bob' }, { id = 9, name = 'Aria' } }, 'aria')
 eq(M.findLeader({ { id = 3, name = 'Bob' } }, 'Aria'), nil, 'leader out of view')
 eq(M.findLeader(nil, 'Aria'), nil, 'no creatures')
 
+-- the shared experience bonus (O261)
+do
+  local st = {}
+  M.apply(st, { leader = 1, members = { { i = 1, n = 'Aria', lv = 10, f = 17 }, { i = 2, n = 'Bob', lv = 10, f = 0 } }, xp = { p = 30, on = 1 } }, 1)
+  eq(st.xp.p, 30, 'xp bonus kept'); eq(st.xp.on, 1, 'xp working')
+  local v = M.xpView(st)
+  eq(v.text, '+30% XP', 'the bonus text'); eq(v.color, '#7ccf5c', 'green when working')
+  st.xp.on = 2
+  eq(M.xpView(st).text, 'XP share broken', 'switched on, not working')
+  st.xp.on = 0
+  eq(M.xpView(st).text, 'XP share off', 'not switched on')
+  eq(M.xpView({ members = {}, xp = { p = 20, on = 1 } }), nil, 'no party: nothing')
+  eq(M.xpView({ members = { { id = 1 } } }), nil, 'a server without the field: nothing')
+  M.apply(st, { leader = 1, members = { { i = 1, n = 'Aria', lv = 10 } }, xp = 'junk' }, 2)
+  eq(st.xp, nil, 'junk xp ignored')
+  M.apply(st, { leader = 1, members = { { i = 1, n = 'Aria', lv = 10 } }, xp = { p = 0 / 0, on = 'x' } }, 3)
+  eq(st.xp.p, 0, 'NaN bonus is 0'); eq(st.xp.on, 0, 'junk state is off')
+  M.clear(st); eq(st.xp, nil, 'cleared')
+end
+
 print('party frames tests OK (' .. checks .. ' checks)')

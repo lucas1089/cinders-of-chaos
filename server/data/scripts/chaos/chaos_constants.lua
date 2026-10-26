@@ -2193,3 +2193,8 @@ ChaosOpcodes.weather = 114
 -- announcement), server -> client; `hello` and `seen {key}` client -> server (client client_chaos_topbar; unlocks.lua,
 -- unlocks_core.lua, unlocks_config.lua). Storages 7103000-7103009.
 ChaosOpcodes.unlocks = 115
+-- The Weekly Chest (weeklychest.lua, weeklychest_core.lua, weeklychest_config.lua; client game_weeklychest; O261): six
+-- activities a week open a chest. 117 is free in the reference server, the base client and every Chaos module. Storages
+-- 7103020 - 7103029 (weeklychest_config.lua storage); no tables.
+ChaosOpcodes.weeklyChest = 117
+Chaos.storage.weeklyChest = 7103020

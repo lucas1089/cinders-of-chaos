@@ -1242,6 +1242,10 @@ local function tryMatch(id)
 		players[#players + 1] = online(chosen[i].guid)
 	end
 	startRun(id, chosenDiff, players)
+	-- a lone player: the Party Finder's open groups for this dungeon, one line (groupnudge.lua, O261)
+	if ChaosGroupNudge and ChaosGroupNudge.onEnter and #players == 1 and players[1] then
+		pcall(ChaosGroupNudge.onEnter, players[1], "dungeon", (extraOf(id) or {}).title)
+	end
 end
 
 -- ------------------------------------------------------------------ ticker

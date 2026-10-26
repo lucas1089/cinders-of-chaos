@@ -1,0 +1,13 @@
+Module
+  name: game_weeklychest
+  description: Weekly Chest - six activities a week open a chest, all of them a bonus roll (server weeklychest.lua, extended opcode 117); Adventure > Weekly Chest
+  author: Cinders of Chaos
+  sandboxed: true
+  scripts: [ weeklyview, weeklychest ]
+  dependencies:
+    - client_chaos_theme
+    - game_interface
+  autoload: true
+  autoload-priority: 1004
+  @onLoad: init()
+  @onUnload: terminate()

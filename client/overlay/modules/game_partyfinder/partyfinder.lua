@@ -4,7 +4,8 @@
 --   client -> server  open | hide | refresh | post {...} | unlist | apply {id, role} | withdraw {id} | accept {id, g}
 --                     | decline {id, g} | queue {role, a} | unqueue
 --   server -> client  init {acts, roles, my, lv, exp, defExp, lim} | list {rows, mine, badge, applied, queue}
---                     | badge {n} | notice {text, kind}
+--                     | badge {n} | notice {text, kind} | nudge {text, a, n} (players look for a group for the content you
+--                     entered: a toast with [Join] that opens the browse tab)
 -- The server pushes a new list while the window is open; the time left counts down here every second. A new
 -- application shows a toast and a badge on the Social menu (also while the window is closed). Menu: Social > Party
 -- Finder (added with ChaosTopBar.addEntry).
@@ -99,7 +100,7 @@ local function hideToast()
   if toast then toast:destroy() toast = nil end
 end
 
-local function showToast(text)
+local function showToast(text, tabKey)
   hideToast()
   local root = g_ui.getRootWidget()
   if not root then return end
@@ -109,7 +110,7 @@ local function showToast(text)
   toast:addAnchor(AnchorRight, 'parent', AnchorRight)
   toast:setMarginTop(44)
   toast:setMarginRight(16)
-  toast.onClick = function() hideToast() show() selectTab('my') return true end
+  toast.onClick = function() hideToast() show() selectTab(tabKey or 'my') return true end
   toast:raise()
   toastEvent = scheduleEvent(hideToast, 7000)
 end
@@ -424,12 +425,21 @@ local function onNotice(d)
   if d.kind == 'apply' or d.kind == 'accepted' then showToast(text) end
 end
 
+-- the group nudge (server groupnudge.lua): players look for a group for the content just entered; one toast with [Join],
+-- a click opens the browse tab
+local function onNudge(d)
+  local text = type(d.text) == 'string' and d.text or ''
+  if text == '' or #text > 160 then return end
+  showToast(text .. ' ' .. tr('[Join]'), 'browse')
+end
+
 local function onMessage(protocol, opcode, msg)
   if type(msg) ~= 'table' or type(msg.data) ~= 'table' then return end
   if msg.action == 'init' then onInit(msg.data)
   elseif msg.action == 'list' then onList(msg.data)
   elseif msg.action == 'badge' then setBadge(msg.data.n)
-  elseif msg.action == 'notice' then onNotice(msg.data) end
+  elseif msg.action == 'notice' then onNotice(msg.data)
+  elseif msg.action == 'nudge' then onNudge(msg.data) end
 end
 
 -- ---------------------------------------------------------------- window

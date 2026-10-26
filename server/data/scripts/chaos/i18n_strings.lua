@@ -5314,5 +5314,12 @@ return {
 		["Court of Ash"] = "Corte de Cinzas",
 		["The Last Sovereign"] = "O Último Soberano",
 		["You are not part of this raid: you were sent to your temple."] = "Você não faz parte desta raid: foi enviado ao seu templo.",
+		-- The Weekly Chest and the group nudge (weeklychest.lua, groupnudge.lua; O261)
+		["Weekly Chest"] = "Baú Semanal",
+		["Weekly Chest: %d of %d activities done this week."] = "Baú Semanal: %d de %d atividades feitas nesta semana.",
+		["The Weekly Chest opens: %s"] = "O Baú Semanal se abre: %s",
+		["Bonus roll for every activity of the week: %s"] = "Sorteio bônus por todas as atividades da semana: %s",
+		["1 player looks for a group for %s."] = "1 jogador procura um grupo para %s.",
+		["%d players look for a group for %s."] = "%d jogadores procuram um grupo para %s.",
 	},
 }

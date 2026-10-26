@@ -16,7 +16,7 @@ local function ok(cond, what)
 	end
 end
 local function eq(a, b, what)
-	ok(a == b, what .. ": " .. tostring(a) .. " ~= " .. tostring(b))
+	ok(a == b, tostring(what or "check") .. ": " .. tostring(a) .. " ~= " .. tostring(b))
 end
 
 local function member(id, name, x, y, z, hp, extra)
@@ -127,6 +127,28 @@ okk = P.canInvite(1, nil, 42, target); ok(not okk, "a name that is not text")
 
 okk, why = P.canInvite(1, nil, "Dara", {id = 9, name = "Dara", isSelf = false, inParty = true, hidden = true})
 ok(not okk and why:find("no player called"), "a hidden player answers like an offline one: " .. tostring(why))
+
+-- ---------------------------------------------------------------- the party's XP bonus in the state (O261)
+dofile("data/scripts/chaos/party_xp_core.lua")
+do
+	local X = ChaosPartyXpCore
+	local function line(id, l) local m = member(id, "M" .. id, 0, 0, 7) m.line = l return m end
+	local roster = {line(1, 4), line(2, 4)}
+	local s = P.withShare(P.state(roster[1], roster, 1), roster, true, true)
+	eq(s.xp.p, 20, "one class line: +20%"); eq(s.xp.on, 1, "working")
+	roster = {line(1, 4), line(2, 3)}
+	s = P.withShare(P.state(roster[1], roster, 1), roster, true, false)
+	eq(s.xp.p, 30, "two lines: +30%"); eq(s.xp.on, 2, "switched on, not working")
+	s = P.withShare(P.state(roster[1], roster, 1), roster, false, false)
+	eq(s.xp.on, 0, "not switched on")
+	local lonely = P.withShare(P.state(roster[1], {roster[1]}, 1), {roster[1]}, true, true)
+	eq(lonely.xp, nil, "no party, no bonus"); eq(#lonely.members, 0)
+	local sig1 = P.signature(P.withShare(P.state(roster[1], roster, 1), roster, true, true))
+	local sig2 = P.signature(P.withShare(P.state(roster[1], roster, 1), roster, true, false))
+	ok(sig1 ~= sig2, "a share that switches off is a change")
+	eq(X.bonusPercent(5), 150, "five lines: +150%"); eq(X.bonusPercent(7), 150, "more than five count as five")
+	eq(X.bonusPercent(3), 60); eq(X.bonusPercent(0), 0); eq(X.bonusPercent(0 / 0), 0)
+end
 
 if fails > 0 then
 	print(fails .. " of " .. checks .. " checks FAILED")

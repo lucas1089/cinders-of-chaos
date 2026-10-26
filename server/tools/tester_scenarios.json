@@ -9,7 +9,7 @@
  "counts": {
   "opcode": 62,
   "out": 38,
-  "passive": 76,
+  "passive": 77,
   "place": 13,
   "staff": 11
  },
@@ -9056,6 +9056,25 @@
    "systems": [
     "weather"
    ]
+  },
+  "weeklyChest": {
+   "actions": [
+    "open",
+    "close"
+   ],
+   "client": [
+    "game_weeklychest"
+   ],
+   "dataKeys": [],
+   "files": [
+    "weeklychest.lua"
+   ],
+   "opcode": 117,
+   "out": false,
+   "skip": [],
+   "systems": [
+    "weeklychest"
+   ]
   }
  },
  "systems": {
@@ -9771,6 +9790,15 @@
     "groundLoot"
    ],
    "talkactions": []
+  },
+  "groupnudge": {
+   "files": [
+    "groupnudge.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
   },
   "guild": {
    "files": [
@@ -11153,6 +11181,17 @@
    "talkactions": [
     "/weather"
    ]
+  },
+  "weeklychest": {
+   "files": [
+    "chaos_constants.lua",
+    "weeklychest.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "weeklyChest"
+   ],
+   "talkactions": []
   },
   "wrapchain": {
    "files": [],

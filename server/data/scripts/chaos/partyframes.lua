@@ -55,7 +55,10 @@ local function plain(player, withBuffs, now)
 	local pos = player:getPosition()
 	local o = player:getOutfit()
 	local voc = player:getVocation()
+	-- the class line (base vocation) the party's shared experience bonus counts (party_xp_core.lua)
+	local okBase, base = pcall(function() return voc:getBase():getId() end)
 	local m = {id = player:getId(), name = player:getName(), level = player:getLevel(), voc = voc and voc:getId() or 0,
+		line = okBase and tonumber(base) or 0,
 		hp = player:getHealth(), hpMax = player:getMaxHealth(), mp = player:getMana(), mpMax = player:getMaxMana(),
 		x = pos.x, y = pos.y, z = pos.z, fight = player:hasCondition(CONDITION_INFIGHT), offline = player:getIp() == 0,
 		outfit = {t = o.lookType, h = o.lookHead, b = o.lookBody, l = o.lookLegs, f = o.lookFeet, a = o.lookAddons}}
@@ -110,6 +113,10 @@ function P.sendState(player, w, now, force)
 		list[#list + 1] = plainCached(member, w.buffs, now)
 	end
 	local state = P.state(plainCached(player, false, now), list, leader:getId())
+	-- the shared experience bonus in the title of the frames ("+20% XP", party_xp_core.lua; O261)
+	local okA, active = pcall(function() return party:isSharedExperienceActive() end)
+	local okE, enabled = pcall(function() return party:isSharedExperienceEnabled() end)
+	P.withShare(state, list, okA and active or false, okE and enabled or false)
 	local sig = P.signature(state)
 	w.hadParty = true
 	if not force and sig == w.sig and now - (w.sentAt or 0) < P.cfg.heartbeatMs then
