@@ -1769,6 +1769,10 @@ def build(p):
     bare = lambda x, y: (on_grass(x, y) and growable(x, y) and (x, y) not in bases
                          and not any((x + i, y + j) in bases for i in range(-2, 3) for j in range(-2, 3)))
     flora.update(place_flora(size, lambda x, y: "meadow", {"meadow": kit["meadow"]}, items, rng, bare))
+    if kit.get("scatter"):  # kit scatter {id: rate}: props (blocking ones too) dropped on open base ground, each on tiles no plant stands on
+        # (ice: the clump density puts trees in a few groves only; the reference snow also has lone props everywhere)
+        flora.update(place_flora(size, lambda x, y: "scatter", {"scatter": kit["scatter"]}, items, rng,
+                                 lambda x, y: on_grass(x, y) and growable(x, y) and (x, y) not in flora))
 
     water_ground, water_plants = liquid(size, rng, kit, items, water, mountain, fords, span, grain)
     lake_spec = kit.get("lake_water")
@@ -1923,7 +1927,8 @@ def build(p):
     # bare seams: two different grounds of the layer table side by side where the higher draws no border
     layer_of = {lay["kit"]: lay for lay in kit["layers"]}
     rank = {lay["kit"]: r for r, lay in enumerate(kit["layers"])}
-    bare = Counter()
+    bare, same_seams = Counter(), Counter()
+    same_look = kit.get("same_look", [])  # kit same_look [[role, role]]: ground pairs that look alike, their seam is no flaw (counted apart)
     for y in range(size):
         for x in range(size):
             for i, j in ((1, 0), (0, 1)):
@@ -1932,20 +1937,20 @@ def build(p):
                     if a != b and a in rank and b in rank:
                         hi_, lo_ = (a, b) if rank[a] > rank[b] else (b, a)
                         if not border_of(layer_of[hi_], lo_):
-                            bare[f"{hi_}|{lo_}"] += 1
+                            (same_seams if [hi_, lo_] in same_look or [lo_, hi_] in same_look else bare)[f"{hi_}|{lo_}"] += 1
     grey_cliff, brown_cliff = set(kit["mountain_cliff"].values()), set(kit.get("hill_cliff", {}).values())
     clashes = 0 if cave_cfg else sum(1 for s in floors[Z].values() if {int(i) for i in s} & grey_cliff and {int(i) for i in s} & brown_cliff)
     access.NO_WALK = water_ids(kit)  # liquid never counts as walkable ground (see gen/access.py NO_WALK)
     start = access.main_start(floors, items, Z)
     cleared, cut = access.repair(floors, items, ramp_dirs, plant_ids, start, kit.get("repair_pocket", 4)) if start else (0, [])
     dropped = access.drop_cut_off_tops(floors, items, ramp_dirs, start, Z) if start and kit.get("drop_cut_off_tops") else {}
-    closed = access.close_pockets(floors, items, ramp_dirs, start, kit["pocket_fill"], rng, Z) \
+    closed = access.close_pockets(floors, items, ramp_dirs, start, kit["pocket_fill"], rng, Z, tops=kit.get("pocket_fill_tops", 0)) \
         if start and kit.get("pocket_fill") else 0  # kit pocket_fill: ids of 1x1 blocking plants that close unreached nooks
     check = access.report(floors, items, ramp_dirs, start) if start else {}
     stats = {"access": {**check, "plants_cleared": cleared, "cut_off": cut, "passes": m["passes"],
                         "pockets_sealed": m["sealed"], "land_necks": necks, "tops_dropped": dropped, "pockets_closed": closed, "route_tiles": routes, "cliff_clashes": clashes,
                         "odd_borders": dict(odd), "ground_settled": settled, "bare_water_seams": unbordered,
-                        "bare_seams": dict(bare), "fords": len(fords),
+                        "bare_seams": dict(bare), **({"same_look_seams": dict(same_seams)} if same_look else {}), "fords": len(fords),
                         "narrow_share": access.widths(floors, items),
                         "top_parts_with_ramp": top_parts},
              "flora": len(flora), "top_flora": top_flora, "ramps": len(ramps) // 2,
@@ -2073,6 +2078,11 @@ def mountain_levels(size, levels, kit, items, rng, floors, terrace, keep, arriva
         plants = place_flora(size, lambda x, y: family.get((x, y)),
                              {f: t for f, t in kit["top_flora"].items() if f != base}, items, rng,
                              lambda x, y: clear(x, y) and (x, y) not in corridor)
+        if kit.get("top_corridor_walk"):  # kit key: the route corridor takes walkable top flora too (blocking items stay out of it)
+            walk_tab = {f: {i: r for i, r in t.items() if "not_walkable" not in items[int(i)]["flags"]}
+                        for f, t in kit["top_flora"].items() if f != base}
+            plants.update(place_flora(size, lambda x, y: family.get((x, y)), walk_tab, items, rng,
+                                      lambda x, y: clear(x, y) and (x, y) in corridor and (x, y) not in plants))
         # jungle grass on tops: clumped like the main map's tops on this floor (tools/clump_study.py --floor);
         # rim tiles included: on the reference map they carry more plants than inner top tiles (tools/rim_plants.py)
         clumps = kit["clumps"]
