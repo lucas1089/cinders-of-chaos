@@ -125,6 +125,9 @@ okk, why = P.canInvite(1, {leaderId = 1, members = 3, invited = {[9] = true}}, "
 okk, why = P.canInvite(1, {leaderId = 1, members = P.cfg.maxMembers, invited = {}}, "Dara", target); ok(not okk and why:find("full"), "a full party: " .. tostring(why))
 okk = P.canInvite(1, nil, 42, target); ok(not okk, "a name that is not text")
 
+okk, why = P.canInvite(1, nil, "Dara", {id = 9, name = "Dara", isSelf = false, inParty = true, hidden = true})
+ok(not okk and why:find("no player called"), "a hidden player answers like an offline one: " .. tostring(why))
+
 if fails > 0 then
 	print(fails .. " of " .. checks .. " checks FAILED")
 	os.exit(1)

@@ -242,4 +242,10 @@ function N.decodeQuery(buffer, max)
 	return ids
 end
 
+-- a plate query answers only for players the asker can see (not ghosts, not out of view, not another floor)
+function N.mayQuery(asker, p)
+	local a, b = asker:getPosition(), p:getPosition()
+	return a.z == b.z and a:getDistance(b) <= 40 and asker:canSeeCreature(p) and true or false
+end
+
 return N

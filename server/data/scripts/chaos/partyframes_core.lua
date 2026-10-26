@@ -190,7 +190,7 @@ function P.canInvite(viewerId, party, targetName, target, maxMembers)
 	if party and party.leaderId ~= viewerId then
 		return false, "Only the party leader can invite."
 	end
-	if not target then
+	if not target or target.hidden then
 		return false, "There is no player called " .. targetName .. " online."
 	end
 	if target.isSelf then

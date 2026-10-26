@@ -24105,3 +24105,20 @@ Owner request 2026-10-26: see where players stop playing and where they die, so 
 - **Report.** `chaos-ctl.sh metrics` prints text, `--json` one line (`ok`, `churn` {days, at, gone, active, bands}, `deathAreas` and `deathMonsters` (top 10: name, deaths, topBand), `firstSession`, `milestones` {level, medianMinutes, characters}); `{"ok": false, "error": "no-table" | "database"}` and exit 1 when it cannot read. The query is fixed and takes no argument.
 - **Limits and assumptions.** `players.onlinetime` is assumed to be seconds saved at logout (the mentor system reads it the same way); the engine fork is not run here. Hunt areas are named by the nearest arrival tile, not by the hunt's real boundary, so a death far inside a large hunt may fall to "Outside hunts" (raise `areaRadius`; not measured on the real map). Changing `bands` later leaves old rows under their old labels. Deaths are counted when the character has a session, so a death during the first seconds of a login is counted and a `/reload` loses the open sessions' first-session counts. Not run on a live server.
 - **Tests.** `tests/metrics_test.lua` (bands, buckets, counters and flush SQL, churn SQL and rows, areas, milestone mask, tester and staff exclusion, privacy of every statement, the engine file against a mocked engine), `tools/progress_metrics_test.py` (report, medians), `deploy/chaos_ctl_test.py` (the command, errors, refusals).
+
+## Opcode input audit (O252) (`partyframes_core.lua`, `mentor.lua`, `nameplate_core.lua`, `monster_tiers.lua`)
+
+Every committed handler of a client extended opcode was read against a client that sends arbitrary bytes at any time. The protocol layer (size cap, token bucket, JSON depth, one `xpcall` per handler) is O220; `tests/opcode_fuzz_test.lua` feeds every field of every handler. This round checked what the fuzz cannot: ids that must belong to the player, atomic money, and replies about other players.
+
+Checked and found sound: shop and gifts (guarded `UPDATE` plus `ROW_COUNT`, refund on failure), bank and guild deposits (`Chaos.toInt`, save before credit), stash, market (guarded transaction, own-item checks), factions, crafting, professions, autosell, donations (`shop_payments.lua`: orders are read by account), item tooltip, loot filter, town portal, hideout, atlas, candlemarks, commands UI, admin (group check on every message), death recap, leaderboard, records, party finder, inspect (staff and ghosts answer "not found"). Website PHP (prepared statements, escaped output, CSRF tokens, admin gates, signed webhooks) and the deploy scripts (validated names, password on stdin) showed no injection path.
+
+| Handler | Issue | Severity | Fixed | Test |
+|---|---|---|---|---|
+| party frames invite | the reply told apart an online hidden player from an offline one | low | yes | `partyframes_test.lua` |
+| mentor invite | same | low | yes | covered by the shared `canSeeCreature` rule, `mentor_test.lua` |
+| name plate query | plates of players out of view, on another floor or hidden were answered for any creature id | low | yes | `nameplate_test.lua` (`N.mayQuery`) |
+| monster bar query | distance check ignored the floor and sight | low | yes | `monster_tiers_test.lua` |
+| Infinity Tower claim | the claimed mask is written after the items are given, the DB result is not checked | low | no | not reachable by a client request |
+| admin throttle log | one log row per non-admin sender every 5 s | low | no | none |
+
+Not auditable here: the base server's own handlers (store, tasks, upgrades, inspect, stats, waystone device). The base tree is not in the repo; `patch_base_json_guards.py` is the only code that touches them.

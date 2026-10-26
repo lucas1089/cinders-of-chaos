@@ -183,4 +183,17 @@ for i = 1, 20 do
 end
 N.MEMO_MAX = max
 
+-- O252: a plate query answers only for players the asker sees (no ghosts, other floors, far away)
+do
+	local function pl(x, y, z, sees)
+		local pos = {x = x, y = y, z = z}
+		pos.getDistance = function(a, b) return math.max(math.abs(a.x - b.x), math.abs(a.y - b.y)) end
+		return {getPosition = function() return pos end, canSeeCreature = function() return sees end}
+	end
+	eq(N.mayQuery(pl(100, 100, 7, true), pl(105, 100, 7, true)), true, "a visible neighbour")
+	eq(N.mayQuery(pl(100, 100, 7, false), pl(105, 100, 7, true)), false, "a ghost")
+	eq(N.mayQuery(pl(100, 100, 7, true), pl(105, 100, 8, true)), false, "another floor")
+	eq(N.mayQuery(pl(100, 100, 7, true), pl(300, 100, 7, true)), false, "far away")
+end
+
 print("nameplate_test: OK")

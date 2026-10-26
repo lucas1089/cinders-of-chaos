@@ -129,7 +129,7 @@ local function sendPlates(target, ids)
 	local lines = {}
 	for _, id in ipairs(ids) do
 		local p = Player(id)
-		if p then
+		if p and N.mayQuery(target, p) then
 			local line = N.sent[id] or N.encode(N.plateOf(p))
 			N.sent[id] = line
 			lines[#lines + 1] = line
