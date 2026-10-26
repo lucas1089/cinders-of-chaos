@@ -694,7 +694,7 @@ def road_path(size, start, goal, cost):
     return path
 
 
-def grounds(size, rng, m, stops, p, bridges=(), needed=(), worn_share=0.12, broad_at=0.62, brush=None, rough_passes=None):
+def grounds(size, rng, m, stops, p, bridges=(), needed=(), worn_share=0.12, broad_at=0.62, brush=None, rough_passes=None, limit=None):
     """Sand (brown jungle sand) and grey-brown sand masks. On the reference map most brown sand is winding
     roads 2-3 tiles wide: here roads join the ramp feet (stops) and `roads` shore points along the cheapest path
     through a noise field (so they wind), plus sand patches over about sand% of open ground. Grey-brown sand
@@ -722,23 +722,34 @@ def grounds(size, rng, m, stops, p, bridges=(), needed=(), worn_share=0.12, broa
     points = list(stops) + coast[:p.roads] if p.roads >= 0 else []
     # a needed bridge gets a road across it: its two approach points in a row, so the second one joins the
     # first through the corridor
+    bridge_points = set()
     for b in needed:
         points += [b.tile(b.start - 2, b.at), b.tile(b.end + 2, b.at)]
+        bridge_points |= set(points[-2:])
+    limit = limit or {}  # kit road_limit: {"share": road mask cap as share of non-water tiles, "bridge": longest bridge approach road}
+    patches = quantile_region(size, blend(size, rng, [(9, 0.5), (4, 0.3), (2, 0.2)]), p.sand / 100,
+                              lambda x, y: near_block[y][x] >= 2 and m["shore"][y][x] >= 3)  # no rng use between here and the old place: same maps
+    cap = max(1, int(limit["share"] * sum(1 for row in water for v in row if not v)) - sum(map(sum, patches))) \
+        if limit.get("share") else 0  # the budget in road tiles; sand patches count against it
     roads, used = set(), set(needed)
     joined = [points[0]] if points else []
     for point in points[1:]:  # join each point to the nearest already-joined one: a tree of roads
+        if cap and len(roads) >= cap and point not in bridge_points:
+            continue  # road budget spent: this ramp foot or shore point gets no road
         q = min(joined, key=lambda j: abs(j[0] - point[0]) + abs(j[1] - point[1]))
         path = road_path(size, point, q, cost)
         used |= {corridor[t] for t in path if t in corridor}
-        for x, y in path:
+        if limit.get("bridge") and point in bridge_points:
+            path = path[-limit["bridge"]:]  # a short approach road, not a long tree branch from the bridge
+        for x, y in (path[::-1] if cap else path):  # with a budget: from the point, so the road stops short of the joined network
+            if cap and len(roads) >= cap and point not in bridge_points:
+                break
             # 3 wide, 5 where a noise field is high: The reference map's roads are 3-7 wide (tools/ground_context.py)
             r = 2 if broad[y][x] > broad_at else 1  # kit road_broad: noise level above which a road is 5 wide (grass: 2 = never)
             for i, j in ((i, j) for i in range(-r, r + 1) for j in range(-r, r + 1) if i * i + j * j <= (brush if brush is not None and r == 1 else r * r + 1)):  # kit road_brush: 1 = a plus-shaped 3-wide brush, narrower on diagonals than the 3x3 block
                 if 0 <= x + i < size and 0 <= y + j < size and not blocked[y + j][x + i]:
                     roads.add((x + i, y + j))
         joined.append(point)
-    patches = quantile_region(size, blend(size, rng, [(9, 0.5), (4, 0.3), (2, 0.2)]), p.sand / 100,
-                              lambda x, y: near_block[y][x] >= 2 and m["shore"][y][x] >= 3)
     sand = [[(x, y) in roads or patches[y][x] for x in range(size)] for y in range(size)]
     clean(sand)
     for y in range(size):  # cleaning must not push sand into water, mountains or hills
@@ -955,12 +966,16 @@ def settle_layers(kit, keys, fixed=("water",)):
             key = lay["kit"]
             if key in fixed or not lay.get("border"):
                 continue
-            at = lambda x, y: 0 <= x < size and 0 <= y < size and keys[y][x] == key
             for y in range(size):
                 for x in range(size):
                     here = keys[y][x]
-                    if here in rank and here not in fixed and rank[here] < rank[key] and border_of(lay, here) \
-                            and pinched(at, x, y):
+                    if here not in rank or here in fixed or rank[here] >= rank[key] or not border_of(lay, here):
+                        continue
+                    # layers that draw this same set onto this ground count as one mask: a strip pinched between two of
+                    # them would carry the set's pieces facing opposite ways (kit: gravel, stone floor and planks draw one set)
+                    same = {other["kit"] for other in kit["layers"] if border_of(other, here) == border_of(lay, here)}
+                    at = lambda x2, y2, same=same: 0 <= x2 < size and 0 <= y2 < size and keys[y2][x2] in same
+                    if pinched(at, x, y):
                         keys[y][x] = key
                         changed = True
                         changed_total += 1
@@ -1102,7 +1117,7 @@ def component_of(size, ok, seeds):
     return out
 
 
-def aprons(size, rng, m, sand, ramps, span, with_gravel=True, off_sand=False):
+def aprons(size, rng, m, sand, ramps, span, with_gravel=True, off_sand=False, patches=0):
     """Rock soil and gravel at mountain feet on the ground floor, as on the reference map (tools/ground_context.py): thin
     bands (81% edge tiles), 38% of rock soil on the cliff tiles themselves, 30% one tile out, 18% two out;
     gravel a little further (mostly 1-3 out) and bordered by the rock soil. Noise breaks the bands up.
@@ -1123,6 +1138,12 @@ def aprons(size, rng, m, sand, ramps, span, with_gravel=True, off_sand=False):
     clean(rock)
     rock = [[rock[y][x] and allowed(x, y) for x in range(size)] for y in range(size)]
     roughen(rock, rng, allowed=lambda x, y: allowed(x, y) and out[y][x] <= 4)
+    if patches:  # kit rock_patches: rock soil patches out on open ground too (the reference: 6.8% of floor 7 against 3.6% at cliff feet only)
+        extra = quantile_region(size, blend(size, rng, [(6, 0.6), (3, 0.4)]), patches,
+                                lambda x, y: allowed(x, y) and out[y][x] >= 3)
+        roughen(extra, rng, allowed=lambda x, y: allowed(x, y) and out[y][x] >= 3)
+        clean(extra)
+        rock = [[rock[y][x] or (extra[y][x] and allowed(x, y)) for x in range(size)] for y in range(size)]
     if not with_gravel:
         return rock, [[False] * size for _ in range(size)]
     gfield = blend(size, rng, [(4, 0.6), (2, 0.4)])
@@ -1134,7 +1155,7 @@ def aprons(size, rng, m, sand, ramps, span, with_gravel=True, off_sand=False):
     return rock, gravel
 
 
-def top_patches(size, rng, top, inside, near_higher, k, with_gravel=True, shares=None):
+def top_patches(size, rng, top, inside, near_higher, k, with_gravel=True, shares=None, mix=None):
     """Ground patchwork on the top of mountain level k, as on the reference map (tools/top_ground_study.py):
     rock soil and gravel gather on rim tiles and at the foot of the next cliff (z6: a third of those tiles,
     5% of inner ones; z5: about 45% and 10%; z4: most of the top); brown sand patches sit inner (z5 inner
@@ -1152,7 +1173,11 @@ def top_patches(size, rng, top, inside, near_higher, k, with_gravel=True, shares
     rock = [[band[y][x] or inner[y][x] for x in range(size)] for y in range(size)]
     on_top = lambda x, y: top[y][x]
     roughen(rock, rng, allowed=on_top)
-    gravel = quantile_region(size, blend(size, rng, [(3, 0.6), (2, 0.4)]), 0.35 if with_gravel else 0,
+    n_top = sum(map(sum, top))
+    g_share = 0.35  # kit top_mix: gravel as a share of the top tiles (not of the rock soil region)
+    if mix and mix.get("gravel"):
+        g_share, with_gravel = min(0.9, mix["gravel"] * n_top / max(1, sum(map(sum, rock)))), True
+    gravel = quantile_region(size, blend(size, rng, [(3, 0.6), (2, 0.4)]), g_share if with_gravel else 0,
                              lambda x, y: rock[y][x] and touches(rock, x, y))
     roughen(gravel, rng, allowed=lambda x, y: rock[y][x])
     near_rock = distance(size, rock)
@@ -1163,8 +1188,24 @@ def top_patches(size, rng, top, inside, near_higher, k, with_gravel=True, shares
     for y in range(size):
         for x in range(size):
             if top[y][x]:
-                keys[y][x] = ("gravel" if gravel[y][x] else "rock_soil" if rock[y][x]
+                keys[y][x] = (("top_gravel" if mix else "gravel") if gravel[y][x] else "rock_soil" if rock[y][x]
                               else "sand" if sand[y][x] else "base")
+    if mix:  # kit top_mix: patches of the reference's other top grounds (stone floor, planks) inside the grass; they may
+        # touch rock soil and gravel (the kit draws gravel_on_rock there) but stay 2+ tiles from each other
+        grass_at = lambda x, y: keys[y][x] == "base"
+        for name, role in (("stone", "top_stone"), ("plank", "top_plank")):
+            if not mix.get(name):
+                continue
+            apart = distance(size, [[keys[y][x] in ("top_stone", "top_plank") for x in range(size)] for y in range(size)])
+            allowed = lambda x, y, apart=apart: grass_at(x, y) and apart[y][x] >= 3
+            n_allowed = sum(1 for y in range(size) for x in range(size) if allowed(x, y))
+            patch = quantile_region(size, blend(size, rng, [(8, 0.6), (4, 0.4)]),
+                                    min(0.9, mix[name] * n_top / max(1, n_allowed)), allowed)
+            roughen(patch, rng, allowed=lambda x, y, apart=apart: grass_at(x, y) and apart[y][x] >= 2)
+            for y in range(size):
+                for x in range(size):
+                    if patch[y][x] and grass_at(x, y):
+                        keys[y][x] = role
     return keys
 
 
@@ -1333,11 +1374,11 @@ def build(p):
             centre = (x - dx, y - dy) if half == 1 else (x + dx, y + dy)
             keep |= {(centre[0] + i, centre[1] + j) for i in (-1, 0, 1) for j in (-1, 0, 1)}
     sand, grey, bridges = grounds(size, rng, m, feet, p, sites, sites, kit.get("worn_share", 0.12),
-                                 kit.get("road_broad", 0.62), kit.get("road_brush"), kit.get("road_rough"))
+                                 kit.get("road_broad", 0.62), kit.get("road_brush"), kit.get("road_rough"), kit.get("road_limit"))
     span = {t for b in bridges for t in b.guard()}  # rails, deck, banks and landings: kept clear of plants
     rock_layer = next((lay for lay in kit["layers"] if lay["kit"] == "rock_soil"), {})
     rock, gravel = aprons(size, rng, m, sand, {**ramps, **mramps}, span, "gravel" in kit,
-                          off_sand=not border_of(rock_layer, "sand"))
+                          off_sand=not border_of(rock_layer, "sand"), patches=kit.get("rock_patches", 0))
     ford = kit.get("crossing", {}).get("type") == "ford"
 
     def first_key(x, y):
@@ -1451,6 +1492,16 @@ def build(p):
                                lambda x, y: glade[y][x] and (x, y) not in flora, canopy,
                                {c: v * p.vegetation / 100 for c, v in clumps["boost"].items()}))
 
+    if clumps.get("cliff_small"):  # kit clumps.cliff_small: grass at a cliff foot (touching the mountain, not water) takes the
+        # walkable small plants too, at this share of the clump density (the reference: 19% of such tiles, ours had none)
+        walk_small = {i: w for i, w in clumps["small"].items() if not blocking(i)}
+        flora.update(place_clumped(size, u, learned["quantiles"], bucket_at, {"small": walk_small}, items, rng,
+                                   lambda x, y: on_grass(x, y) and open_ground(x, y) and touches(mountain, x, y)
+                                   and not touches(water, x, y) and not touches(hill, x, y) and (x, y) not in ramps
+                                   and (x, y) not in mramps and (x, y) not in span and (x, y) not in keep
+                                   and (x, y) not in flora, canopy,
+                                   {"small": clumps["cliff_small"] * p.vegetation / 100}))
+
     def bank(x, y):
         # jungle grass touching water (not cliff or ramp tiles): The reference map's banks carry water-edge plants
         return (family(x, y) == kit["base"]["family"] and touches(water, x, y) and not touches(mountain, x, y)
@@ -1504,19 +1555,26 @@ def build(p):
 
     # bridges (class Bridge): lip on the first bank tile, deck over the water, end piece on the far bank tile;
     # rail pieces (end, first, repeated middle, last, end) on top of the stacks beside the deck
+    families = kit.get("bridge_families")  # kit key: [{"name": .., "ew": {..}, "ns": {..}}, ..]; one per crossing, seeded by crossing
+    kinds = []
     for b in ([] if ford else bridges):
         kb = kit["bridge_ns" if b.ns else "bridge_ew"]
+        if families:
+            fam = random.Random(f"bridge-{p.seed}-{b.key()}").choice(families)
+            kb = fam["ns" if b.ns else "ew"]
+            kinds.append(fam.get("name", "?"))
         for x, y in b.deck():
             along = y if b.ns else x
-            if along == b.start:  # the lip lies on the inland tile's own ground and borders
-                layer[(ORIGIN + x, ORIGIN + y)].append(kb["lip"])
+            if along == b.start:  # the lip lies on the inland tile's own ground and borders (a family without a lip leaves the tile as it is)
+                if kb.get("lip"):
+                    layer[(ORIGIN + x, ORIGIN + y)].append(kb["lip"])
             else:
-                layer[(ORIGIN + x, ORIGIN + y)] = [kb["end"] if along == b.end else kb["deck"]]
+                layer[(ORIGIN + x, ORIGIN + y)] = [kb.get("end", kb["deck"]) if along == b.end else kb["deck"]]
         for line, rail in zip(b.rails(), (kb["west"], kb["east"]) if b.ns else (kb["north"], kb["south"])):
             for k, (x, y) in enumerate(line):
                 last = len(line) - 1
-                piece = rail[0] if k == 0 else rail[1] if k == 1 else rail[4] if k == last \
-                    else rail[3] if k == last - 1 else rail[2]
+                piece = rail[0] if len(rail) == 1 or k == 0 else rail[1] if k == 1 else rail[4] if k == last \
+                    else rail[3] if k == last - 1 else rail[2]  # a one-piece rail repeats along the whole side
                 layer[(ORIGIN + x, ORIGIN + y)].append(piece)
 
     floors = {Z: layer}
@@ -1584,16 +1642,18 @@ def build(p):
     start = access.main_start(floors, items)
     cleared, cut = access.repair(floors, items, ramp_dirs, plant_ids, start, kit.get("repair_pocket", 4)) if start else (0, [])
     dropped = access.drop_cut_off_tops(floors, items, ramp_dirs, start, Z) if start and kit.get("drop_cut_off_tops") else {}
+    closed = access.close_pockets(floors, items, ramp_dirs, start, kit["pocket_fill"], rng) \
+        if start and kit.get("pocket_fill") else 0  # kit pocket_fill: ids of 1x1 blocking plants that close unreached nooks
     check = access.report(floors, items, ramp_dirs, start) if start else {}
     stats = {"access": {**check, "plants_cleared": cleared, "cut_off": cut, "passes": m["passes"],
-                        "pockets_sealed": m["sealed"], "land_necks": necks, "tops_dropped": dropped, "route_tiles": routes, "cliff_clashes": clashes,
+                        "pockets_sealed": m["sealed"], "land_necks": necks, "tops_dropped": dropped, "pockets_closed": closed, "route_tiles": routes, "cliff_clashes": clashes,
                         "odd_borders": dict(odd), "ground_settled": settled, "bare_water_seams": unbordered,
                         "bare_seams": dict(bare), "fords": len(fords),
                         "narrow_share": access.widths(floors, items),
                         "top_parts_with_ramp": top_parts},
              "flora": len(flora), "top_flora": top_flora, "ramps": len(ramps) // 2,
              "bridges": [("ns" if b.ns else "ew", *[ORIGIN + v for v in b.tile(b.start, b.at)], b.end - b.start + 1)
-                         for b in bridges], "bridge_sites": len(sites),
+                         for b in bridges], "bridge_sites": len(sites), "bridge_kinds": kinds,
              "mountain_ramps": [len(mramps) // 2, *terrace_ramps],
              "levels": [sum(map(sum, v)) for v in m["levels"]],
              "sand": sum(map(sum, sand)), "grey": sum(map(sum, grey)), "river": len(m["river"]),
@@ -1633,7 +1693,7 @@ def mountain_levels(size, levels, kit, items, rng, floors, terrace, keep, arriva
                             and (x, y) not in near_ramp):
                         stacked[y][x] = True
                         top[y][x] = False
-        keys = top_patches(size, rng, top, inside, near_higher, k, "gravel" in kit, kit.get("top_rock"))
+        keys = top_patches(size, rng, top, inside, near_higher, k, "gravel" in kit, kit.get("top_rock"), kit.get("top_mix"))
         tidy_grounds(kit, keys, rng)
         family = {}
         for y in range(size):
@@ -1737,14 +1797,14 @@ def main():
     print(a.name, f"land {land} tiles: mountains {stats['levels'][0] / land:.0%} "
           f"(levels {stats['levels']}), hills {stats['hill'] / land:.0%}, sand {stats['sand'] / land:.0%}, "
           f"plants {stats['flora'] + stats['top_flora']}, ramps {stats['ramps']} + {stats['mountain_ramps']}, "
-          f"bridges {stats['bridges']} of {stats['bridge_sites']} sites")
+          f"bridges {stats['bridges']} of {stats['bridge_sites']} sites, kinds {stats.get('bridge_kinds', [])}")
     acc = stats["access"]
     print(f"  paths: route corridor tiles per level {acc['route_tiles']}, share of walkable tiles in 1-2 wide "
           f"space per floor {acc['narrow_share']}, grey/brown cliff clashes {acc['cliff_clashes']}")
     print(f"  borders: odd tiles per set {acc['odd_borders']}, ground tiles settled {acc['ground_settled']}, "
           f"unbordered ground touching water {acc['bare_water_seams']}, bare seams {acc['bare_seams']}, "
           f"ford tiles {acc['fords']}")
-    print(f"  access: passes {acc['passes']}, pocket tiles sealed {acc['pockets_sealed']}, land necks {acc.get('land_necks', 0)}, cut-off top tiles dropped {acc.get('tops_dropped', {})}, top parts 30+ with a ramp per level {acc['top_parts_with_ramp']}, "
+    print(f"  access: passes {acc['passes']}, pocket tiles sealed {acc['pockets_sealed']}, land necks {acc.get('land_necks', 0)}, pocket tiles closed {acc.get('pockets_closed', 0)}, cut-off top tiles dropped {acc.get('tops_dropped', {})}, top parts 30+ with a ramp per level {acc['top_parts_with_ramp']}, "
           f"ramps usable {acc.get('ramps_usable')}, plants cleared {acc['plants_cleared']}, "
           f"cut off {acc['cut_off']}, reached/walkable per floor {acc.get('reached/walkable')}")
     subprocess.run([sys.executable, "-B", str(ROOT / "run.py"), "tools/render.py", str(out / "area.txt"),

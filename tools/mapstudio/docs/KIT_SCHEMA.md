@@ -74,7 +74,13 @@ The direction is the side the raised ground is on. The ramp item needs a `floorc
 
 - Bridges: `bridge_ew` `{"lip", "deck", "end", "north": [5 rail pieces], "south": [5]}` and `bridge_ns`
   `{"lip", "deck", "end", "west": [5], "east": [5]}`. Rails run end, first, middle (repeated), last, end.
-  Without both keys there are no bridges.
+  Without both keys there are no bridges. `lip` may be left out (the first tile keeps its own ground), `end`
+  defaults to `deck`, and a rail list of one id repeats that piece along the whole side (rope bridge: the rail
+  is one ground-border piece).
+- `bridge_families`: `[{"name": "red", "ew": {...}, "ns": {...}}, ...]`, each `ew` / `ns` shaped like
+  `bridge_ew` / `bridge_ns`. Each crossing takes one family at random, seeded by the area seed and the
+  crossing (same seed, same bridges). Without the key every crossing uses `bridge_ew` / `bridge_ns`; keep
+  those two keys even with the list (they gate bridge sites). The summary line names the choice (`kinds`).
 - Fords: `"crossing": {"type": "ford", "ground": <walkable liquid-crust id>}` crosses any narrow liquid
   instead of using bridges.
 
@@ -108,4 +114,10 @@ Rates are learned with `tools/family_items.py` and `tools/learn_kit.py`, clumpin
 | `drop_cut_off_tops` | `true`: last resort, a group of tiles above the main floor that nobody can reach is removed (the rock below stays solid). Reported as `tops_dropped` |
 | `apron_flora` | `{"G<family>": {id: rate}}`: plants on rock soil / gravel on the main floor, in place of the top table |
 | `clumps.edge_boost` | `{"small": [factor per edge bucket]}`: multiplies the clump chance by edge distance bucket (corrects thinning near edges) |
+| `road_limit` | `{"share": s, "bridge": n}`: a road budget. `share` caps road plus sand patch tiles (before roughening) at `s` of the non-water tiles; ramp feet and shore points past the budget get no road, and a branch that meets it stops short. `bridge` caps the road leading from each bridge end to `n` tiles. Off without the key (a 3-wide road tree to every ramp foot) |
+| `top_mix` | `{"gravel": g, "stone": s, "plank": p}`: shares of the top tiles for the grounds of roles `top_gravel`, `top_stone`, `top_plank` (each a ground spec like `base`, and each a layer of the table). Gravel is carved out of the rock soil region (so raise `top_rock` by the same amount); stone and plank are blobs inside the grass, 2+ tiles from each other. Their borders: the layer table says which set each draws onto which ground; the grass draws its rock border onto all three. Off without the key |
+| `top_rock` | `{"1": [band, inner]}`: rock soil shares asked of the noise on level 1 tops (rim band, inner area); cleaning loses about a third |
+| `rock_patches` | share of open floor 7 ground (3+ tiles from cliffs) that becomes rock soil patches, besides the cliff-foot aprons. Default 0 |
+| `clumps.cliff_small` | factor on the small clump density for grass tiles touching the mountain but not water (walkable small plants only). Default off |
+| `pocket_fill` | ids of 1x1 blocking plants. A walkable pocket of up to 30 tiles on the main floor that no walk reaches (a strip cut off by cliff pieces and shore) gets one of them on every tile, so nothing walkable is stranded. Reported as `pocket tiles closed`. Off without the key |
 | `name`, `notes` | free text: where the kit was learned and how |

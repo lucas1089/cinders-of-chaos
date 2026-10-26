@@ -228,10 +228,36 @@
    "border": null
   },
   {
+   "kit": "top_gravel",
+   "border": {
+    "rock_soil": "gravel_on_rock"
+   }
+  },
+  {
+   "kit": "top_stone",
+   "border": {
+    "rock_soil": "gravel_on_rock",
+    "top_gravel": "gravel_on_rock",
+    "sand": "gravel_on_rock"
+   }
+  },
+  {
+   "kit": "top_plank",
+   "border": {
+    "rock_soil": "gravel_on_rock",
+    "top_gravel": "gravel_on_rock",
+    "sand": "gravel_on_rock",
+    "top_stone": "gravel_on_rock"
+   }
+  },
+  {
    "kit": "base",
    "border": {
     "sand": "base_on_sand",
-    "rock_soil": "base_on_rock"
+    "rock_soil": "base_on_rock",
+    "top_gravel": "base_on_rock",
+    "top_stone": "base_on_rock",
+    "top_plank": "base_on_rock"
    }
   },
   {
@@ -272,6 +298,16 @@
    "6218": 0.04,
    "6217": 0.033,
    "2740": 0.012
+  },
+  "G4571": {
+   "3613": 0.018,
+   "3610": 0.018,
+   "3611": 0.014,
+   "3612": 0.014,
+   "3614": 0.01,
+   "6219": 0.03,
+   "6218": 0.02,
+   "6217": 0.015
   }
  },
  "bank_flora": {
@@ -328,7 +364,8 @@
     0.9,
     0.93
    ]
-  }
+  },
+  "cliff_small": 1.1
  },
  "swap_walkable": {
   "2x2": [
@@ -412,8 +449,8 @@
  "road_rough": 1,
  "top_rock": {
   "1": [
-   0.8,
-   0.22
+   0.92,
+   0.5
   ]
  },
  "bridge_ew": {
@@ -481,5 +518,118 @@
    "3653": 0.006
   }
  },
- "road_least": 30
+ "road_least": 30,
+ "road_limit": {
+  "share": 0.06,
+  "bridge": 8
+ },
+ "top_gravel": {
+  "family": "G4571",
+  "lead": 4571,
+  "members": [
+   4572,
+   4573,
+   4574,
+   4575,
+   4576
+  ]
+ },
+ "top_stone": {
+  "family": "G413",
+  "lead": 413,
+  "members": []
+ },
+ "top_plank": {
+  "family": "G9067",
+  "lead": 9067,
+  "members": []
+ },
+ "gravel_on_rock": {
+  "edge_n": 4554,
+  "edge_e": 4555,
+  "edge_s": 4556,
+  "edge_w": 4557,
+  "outer_nw": 4558,
+  "outer_ne": 4559,
+  "outer_sw": 4560,
+  "outer_se": 4561,
+  "inner_nw": 4562,
+  "inner_ne": 4563,
+  "inner_sw": 4564,
+  "inner_se": 4565
+ },
+ "top_mix": {
+  "gravel": 0.24,
+  "stone": 0.2,
+  "plank": 0.2
+ },
+ "rock_patches": 0.15,
+ "pocket_fill": [
+  2767,
+  2768
+ ],
+ "bridge_families": [
+  {
+   "name": "red",
+   "ew": {
+    "lip": 11865,
+    "deck": 11860,
+    "end": 11861,
+    "north": [
+     11878,
+     11879,
+     11880,
+     11881,
+     11882
+    ],
+    "south": [
+     11883,
+     11884,
+     11885,
+     11886,
+     11887
+    ]
+   },
+   "ns": {
+    "lip": 11866,
+    "deck": 11858,
+    "end": 11859,
+    "west": [
+     11888,
+     11889,
+     11890,
+     11891,
+     11892
+    ],
+    "east": [
+     11893,
+     11894,
+     11895,
+     11896,
+     11897
+    ]
+   }
+  },
+  {
+   "name": "rope",
+   "ew": {
+    "deck": 6210,
+    "north": [
+     6211
+    ],
+    "south": [
+     6212
+    ]
+   },
+   "ns": {
+    "deck": 6213,
+    "west": [
+     6214
+    ],
+    "east": [
+     6215
+    ]
+   }
+  }
+ ]
 }
