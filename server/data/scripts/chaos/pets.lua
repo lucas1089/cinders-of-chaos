@@ -323,7 +323,7 @@ function P.stateOf(player, open)
 	return {
 		open = open and 1 or nil, pets = pets, catalog = catalog, active = live and live.species or nil,
 		out = live and live.cid ~= nil and Creature(live.cid) ~= nil or false,
-		rest = live and live.rest and K.restText(live.rest) or nil,
+		rest = live and live.rest and Chaos.tx(player, K.restText(live.rest)) or nil,
 		zone = rule ~= "full" and (rule .. (zone and (" (" .. (ZONE_NAMES[zone] or zone) .. ")") or "")) or nil,
 		cooldowns = {summon = K.cooldownLeft(cool.summon, t), death = K.cooldownLeft(cool.death, t),
 			rename = K.cooldownLeft(cool.rename, t)},
@@ -357,10 +357,10 @@ function P.addXp(player, key, amount, quiet)
 	local after, into, need, pct = K.levelOf(row.xp, cfg)
 	if after > before and species then
 		local name = displayName(row, species)
-		local text = string.format("%s reached level %d.", name, after)
+		local text = Chaos.t(player, "%s reached level %d.", name, after)
 		if before < cfg.secondAt and after >= cfg.secondAt then
 			local second = cfg.abilities[species.abilities[2]]
-			text = text .. string.format(" New ability: %s.", second and second.name or "?")
+			text = text .. Chaos.t(player, " New ability: %s.", second and second.name or "?")
 		end
 		if not quiet then
 			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, text)
@@ -649,10 +649,10 @@ function P.think(player)
 		end
 		if live.rest ~= reason then
 			live.rest = reason
-			local text = reason == "zone" and ("Pets are not allowed in " .. (ZONE_NAMES[zone] or "this place") ..
-				"; yours waits until you leave.") or K.restText(reason)
+			local text = reason == "zone" and ChaosI18n.msg("Pets are not allowed in %s; yours waits until you leave.",
+				ZONE_NAMES[zone] and ChaosI18n.msg(ZONE_NAMES[zone]) or ChaosI18n.msg("this place")) or K.restText(reason)
 			if text then
-				player:sendTextMessage(MESSAGE_STATUS_SMALL or MESSAGE_INFO_DESCR, text)
+				player:sendTextMessage(MESSAGE_STATUS_SMALL or MESSAGE_INFO_DESCR, Chaos.tx(player, text))
 			end
 			refresh(player)
 		end
@@ -893,7 +893,7 @@ end
 ward:register()
 
 local function say(player, ok, text)
-	player:sendTextMessage(ok and MESSAGE_INFO_DESCR or MESSAGE_STATUS_SMALL or MESSAGE_INFO_DESCR, text)
+	player:sendTextMessage(ok and MESSAGE_INFO_DESCR or MESSAGE_STATUS_SMALL or MESSAGE_INFO_DESCR, Chaos.tx(player, text))
 end
 
 local ext = CreatureEvent("ChaosPetsExtended")
@@ -926,7 +926,7 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 			P.sendState(player, false)
 		elseif action == "rename" then
 			local done, why = P.rename(player, tostring(data.species or ""), data.name)
-			say(player, done, done and ("Your pet is now called " .. why .. ".") or why)
+			say(player, done, done and ChaosI18n.msg("Your pet is now called %s.", why) or why)
 			P.sendState(player, false)
 		end
 	end)

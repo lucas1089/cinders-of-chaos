@@ -212,7 +212,7 @@ local SITES = {
 	["infinitytower.lua"] = {}, ["infinitytower_run.lua"] = {}, ["arena.lua"] = {"msg%(%w+,%s*"},
 	["battleground.lua"] = {"msg%(%w+,%s*"}, ["mentor.lua"] = {}, ["referral.lua"] = {}, ["beta.lua"] = {},
 	["pvpzone.lua"] = {}, ["multiclient.lua"] = {}, ["antibot.lua"] = {}, ["events_schedule.lua"] = {},
-	["commands_ui.lua"] = {}, ["spellbook.lua"] = {}, ["supports.lua"] = {}, ["loadouts.lua"] = {}, ["crafting.lua"] = {},
+	["commands_ui.lua"] = {}, ["spellbook.lua"] = {}, ["supports.lua"] = {}, ["loadouts.lua"] = {}, ["loadouts_core.lua"] = CORE_T, ["bounty.lua"] = {}, ["crafting.lua"] = {},
 	["chronicle.lua"] = {}, ["atlas.lua"] = {}, ["siege.lua"] = {"pushBack%(player, fromPosition,%s*", "[^%w_.:]T%(%s*"}, ["guildboss.lua"] = {},
 	["leaderboard.lua"] = {},
 	["market.lua"] = {}, ["hideout.lua"] = {}, ["gamble.lua"] = {}, ["cosmetics.lua"] = {}, ["transmog.lua"] = {},
@@ -298,6 +298,9 @@ local REASONS = {
 		"^No guild siege is running", "^Guild siege cancelled", "^Guild siege stopped", "^Siege portal placed", "^No portal placed",
 		"^Arena not built", "^No guild named", "^Sign%-ups for $", "^Game%.createTile"},
 	["charms_core.lua"] = {"^Unique Charm", "^Place it in your charm grid"}, ["charms.lua"] = {},
+	["pets_core.lua"] = {}, ["pets.lua"] = {"^Character not online", "^Unknown species", "^Call a pet first", "^Pet level", "^All pets of this", "^Usage: /pet"},
+	["lootfilter_core.lua"] = {}, ["lootfilter.lua"] = {"^Item Level "}, ["loadouts_core.lua"] = {}, ["loadouts.lua"] = {},
+	["bounty_core.lua"] = {}, ["bounty.lua"] = {},
 	["guildboss_core.lua"] = {},
 	["guildboss.lua"] = {"^The banner of ", "^The %%s of %%s: Gorvath", "^The Summoning Stone%. Feed", "^Game%.createTile", "^Guild boss run ",
 		"^No running guild boss", "^No guild boss arena"},
@@ -706,6 +709,20 @@ do
 	for _, def in ipairs(ccfg.pool) do check(pt[def.text or def.label] ~= nil, "charm modifier without pt-BR: " .. (def.text or def.label)) end
 	for _, def in pairs(ccfg.extraKeys) do check(pt[def.label] ~= nil, "charm extra modifier without pt-BR: " .. def.label) end
 	for _, u in pairs(ccfg.uniques) do check(pt[u.signatureText] ~= nil, "charm signature without pt-BR: " .. u.signatureText) end
+end
+
+-- loadouts and the loot filter: the texts their cores build take the language
+do
+	dofile("data/scripts/chaos/loadouts_core.lua")
+	local LC = ChaosLoadoutsCore
+	local rem = {{why = "unknown"}, {why = "unknown"}, {why = "class"}}
+	eq(LC.refundText(rem, 1, "pt-BR"), "Devolvido de graça: 2 nós que saíram da árvore, 1 nó que a sua classe não pode ter, 1 ponto de Paragon acima do que você tem.", "refund text in pt-BR")
+	eq(LC.refundText(rem, 0), "Refunded for free: 2 nodes that left the tree, 1 node your class cannot hold.", "refund text in English")
+	dofile("data/scripts/chaos/lootfilter_core.lua")
+	for _, p in ipairs(ChaosLootFilter.PRESETS or {}) do
+		check(pt[p.name] ~= nil and pt[p.desc] ~= nil, "loot filter preset without pt-BR: " .. p.name)
+	end
+	for _, r in ipairs(ChaosLootFilter.RULES or {}) do check(pt[r.name] ~= nil, "loot filter rule without pt-BR: " .. r.name) end
 end
 
 print(string.format("i18n_test: %d checks, %d failures", checks, failures))

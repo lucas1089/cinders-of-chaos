@@ -348,7 +348,7 @@ function F.label(info)
 end
 
 -- "Rare drop" line for an item, or nil when it is not worth a line under these settings.
-function F.dropLine(info, s)
+function F.dropLine(info, s, lang)
 	if not s.notify or F.classify(info, s) ~= "highlight" then
 		return nil
 	end
@@ -356,8 +356,11 @@ function F.dropLine(info, s)
 		return nil -- orbs glow, but a line per orb would spam the chat
 	end
 	local count = tonumber(info.count) or 1
-	local prefix = info.unique and "Unique drop: " or "Rare drop: "
-	return prefix .. (count > 1 and (count .. "x ") or "") .. F.label(info)
+	local body = (count > 1 and (count .. "x ") or "") .. F.label(info)
+	if ChaosI18n and ChaosI18n.text then
+		return ChaosI18n.text(lang, info.unique and "Unique drop: %s" or "Rare drop: %s", body)
+	end
+	return (info.unique and "Unique drop: " or "Rare drop: ") .. body
 end
 
 -- ---------------------------------------------------------------- rule counters and sounds

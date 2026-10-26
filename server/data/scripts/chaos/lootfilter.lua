@@ -122,7 +122,7 @@ end
 local function sendSettings(player, open)
 	local presets = {}
 	for _, p in ipairs(F.PRESETS) do
-		presets[#presets + 1] = {key = p.key, name = p.name, desc = p.desc}
+		presets[#presets + 1] = {key = p.key, name = Chaos.t(player, p.name), desc = Chaos.t(player, p.desc)}
 	end
 	-- example items for the preview row of the window (client ids)
 	local function cid(id)
@@ -133,10 +133,10 @@ local function sendSettings(player, open)
 		orb = cid(29856), coin = cid(2152), supply = cid(7618), other = cid(2229)}
 	local rules, sounds = {}, {}
 	for _, r in ipairs(F.RULES) do
-		rules[#rules + 1] = {key = r.key, name = r.name}
+		rules[#rules + 1] = {key = r.key, name = Chaos.t(player, r.name)}
 	end
 	for i, x in ipairs(F.SOUNDS) do
-		sounds[#sounds + 1] = {id = i, key = x.key, name = x.name}
+		sounds[#sounds + 1] = {id = i, key = x.key, name = Chaos.t(player, x.name)}
 	end
 	Chaos.send(player, OPCODE, "settings", {s = settingsOf(player), unlocked = unlocked(player), presets = presets,
 		samples = samples, open = open and true or false, snd = soundOf(player), rules = rules, sounds = sounds,
@@ -728,7 +728,7 @@ local function finish(monster, corpse)
 		local ray = F.rayEffect(info, c)
 		hasRay = hasRay or ray ~= nil
 		kill.entries[i] = {sig = F.signature(info), count = info.count, info = info, ray = ray}
-		local line = F.dropLine(info, drop.s)
+		local line = F.dropLine(info, drop.s, Chaos.lang(owner))
 		if line then
 			drops[#drops + 1] = {text = line, color = F.color(info) or "#ffffff", rank = info.unique and 100 or info.rarity}
 		end
@@ -793,6 +793,7 @@ moved:register(11)
 
 -- ---------------------------------------------------------------- click to loot
 local function reply(player, text)
+	text = Chaos.tx(player, text)
 	player:sendCancelMessage(text)
 	Chaos.send(player, OPCODE, "msg", {text = text}) -- shown by the client next to the loot channel
 end

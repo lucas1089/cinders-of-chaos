@@ -78,7 +78,11 @@ local function send(player, action, data)
 end
 
 local function result(player, ok, text, lines)
-	send(player, "result", {ok = ok and true or false, text = text or "", lines = lines or {}})
+	local out = {}
+	for i, line in ipairs(lines or {}) do
+		out[i] = Chaos.tx(player, line)
+	end
+	send(player, "result", {ok = ok and true or false, text = text and Chaos.tx(player, text) or "", lines = out})
 end
 
 -- ------------------------------------------------------------------------------------------------ other systems
@@ -597,18 +601,19 @@ local function slotView(player, slot, row, ctx)
 			{classKey = ctx.classKey, points = ctx.points, allowed = allowedFn()})
 		local par, parRemoved = paragonCheck(player, Core.decodeParagon(row.paragon))
 		nodes, paragon, layout = kept, par, mirrorLayout(player, slot)
-		local text = Core.refundText(removed, parRemoved)
+		local text = Core.refundText(removed, parRemoved, Chaos.lang(player))
 		if text then
-			warnings[#warnings + 1] = "When loaded: " .. text
+			warnings[#warnings + 1] = Chaos.t(player, "When loaded: %s", text)
 		end
 		local _, giveBack, dropped = Core.planRestore(layout, spellExists, isRune)
 		if #giveBack + #dropped > 0 then
-			warnings[#warnings + 1] = string.format("%d support rune%s of spells that left the game return to you when loaded.",
-				#giveBack + #dropped, #giveBack + #dropped == 1 and "" or "s")
+			warnings[#warnings + 1] = Chaos.t(player, #giveBack + #dropped == 1
+				and "%d support rune of spells that left the game returns to you when loaded."
+				or "%d support runes of spells that left the game return to you when loaded.", #giveBack + #dropped)
 		end
 	end
 	if (row.voc or 0) > 0 and row.voc ~= ctx.voc then
-		warnings[#warnings + 1] = "Saved as " .. vocationName(row.voc) .. "."
+		warnings[#warnings + 1] = Chaos.t(player, "Saved as %s.", vocationName(row.voc))
 	end
 	view.voc = vocationName(row.voc)
 	view.cls = ChaosClasses and ChaosClasses.classKey and ChaosClasses.classKey(row.voc) or ""
@@ -755,22 +760,23 @@ function L.switch(player, target)
 	end)
 
 	local lines = {}
-	local refund = Core.refundText(removed, parRemoved)
+	local refund = Core.refundText(removed, parRemoved, Chaos.lang(player))
 	if refund then
 		lines[#lines + 1] = refund
 	end
 	if #giveBack + #dropped > 0 then
-		lines[#lines + 1] = string.format("%d support rune%s of spells that left the game %s back to you.", #giveBack,
-			#giveBack == 1 and "" or "s", #giveBack == 1 and "is" or "are")
+		lines[#lines + 1] = ChaosI18n.msg(#giveBack == 1 and "%d support rune of spells that left the game is back to you."
+			or "%d support runes of spells that left the game are back to you.", #giveBack)
 	end
 	for _, line in ipairs(gear.lines) do
 		lines[#lines + 1] = line
 	end
-	local text = string.format("Loadout %s is active: %d passive nodes, %d support runes, %d item%s equipped.", targetRow.name,
-		#kept, Core.runeCount(keep), gear.equipped, gear.equipped == 1 and "" or "s")
-	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, text)
+	local text = ChaosI18n.msg(gear.equipped == 1 and "Loadout %s is active: %d passive nodes, %d support runes, %d item equipped."
+		or "Loadout %s is active: %d passive nodes, %d support runes, %d items equipped.", targetRow.name,
+		#kept, Core.runeCount(keep), gear.equipped)
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.tx(player, text))
 	for _, line in ipairs(lines) do
-		player:sendTextMessage(MESSAGE_STATUS_DEFAULT or MESSAGE_EVENT_ADVANCE, line)
+		player:sendTextMessage(MESSAGE_STATUS_DEFAULT or MESSAGE_EVENT_ADVANCE, Chaos.tx(player, line))
 	end
 	player:getPosition():sendMagicEffect(CONST_ME_MAGIC_BLUE)
 	return true, text, lines
@@ -785,10 +791,10 @@ end
 
 local function endCast(player, cast, res, text)
 	L.casts[player:getId()] = nil
-	castbar(player, "end", {s = cast.serial, r = res, t = text})
+	castbar(player, "end", {s = cast.serial, r = res, t = text and Chaos.tx(player, text) or nil})
 	send(player, "castEnd", {result = res})
 	if text then
-		player:sendCancelMessage(text)
+		player:sendCancelMessage(Chaos.tx(player, text))
 		result(player, false, text)
 	end
 end
@@ -845,7 +851,7 @@ function L.load(player, target)
 	local cast = {token = L.token, target = target, pos = {x = pos.x, y = pos.y, z = pos.z}, endMs = nowMs() + cfg.castMs,
 		serial = cfg.castSerialBase + L.token}
 	L.casts[player:getId()] = cast
-	castbar(player, "start", {s = cast.serial, n = "Switching loadout", ms = cfg.castMs, id = 0})
+	castbar(player, "start", {s = cast.serial, n = Chaos.t(player, "Switching loadout"), ms = cfg.castMs, id = 0})
 	send(player, "cast", {ms = cfg.castMs, slot = target})
 	player:sendTextMessage(MESSAGE_STATUS_SMALL, Chaos.t(player, "Switching loadout... stand still."))
 	addEvent(poll, cfg.pollMs, player:getId(), cast.token)
@@ -885,11 +891,12 @@ function L.save(player, slot, name, icon)
 			items = items + 1
 		end
 	end
-	local text = string.format("Saved %s: %d passive nodes, %d Paragon points, %d item%s in the set.", row.name, #liveIds,
-		Core.paragonSpent(liveParagon(player)), items, items == 1 and "" or "s")
+	local text = ChaosI18n.msg(items == 1 and "Saved %s: %d passive nodes, %d Paragon points, %d item in the set."
+		or "Saved %s: %d passive nodes, %d Paragon points, %d items in the set.", row.name, #liveIds,
+		Core.paragonSpent(liveParagon(player)), items)
 	local lines = {}
 	if plan.copy and Core.runeCount(liveRunes) > 0 then
-		lines[#lines + 1] = "Support runes stay with the loadout they are socketed in: this copy keeps its own."
+		lines[#lines + 1] = ChaosI18n.msg("Support runes stay with the loadout they are socketed in: this copy keeps its own.")
 	end
 	if plan.activate then
 		lines[#lines + 1] = "This loadout is now active: your current build is saved in it."
@@ -909,7 +916,7 @@ function L.rename(player, slot, name, icon)
 	row.name = Core.cleanName(name or row.name, slot)
 	row.icon = Core.cleanIcon(icon or row.icon)
 	writeRow(player:getGuid(), slot, row)
-	return true, "Renamed to " .. row.name .. "."
+	return true, ChaosI18n.msg("Renamed to %s.", row.name)
 end
 
 function L.delete(player, slot)
@@ -925,7 +932,7 @@ function L.delete(player, slot)
 	if plan.deactivate then
 		player:setStorageValue(ST.active, 0)
 	end
-	return true, string.format("Loadout %s deleted.%s", name, plan.deactivate and " Your current build stays as it is." or "")
+	return true, ChaosI18n.msg("Loadout %s deleted.%s", name, plan.deactivate and ChaosI18n.msg(" Your current build stays as it is.") or "")
 end
 
 -- ------------------------------------------------------------------------------------------------ login: crash recovery
