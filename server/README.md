@@ -21572,7 +21572,7 @@ the heal number is the game's own (green for health, blue for mana). A pickup so
   the `fromPos` / `toPos` of the base script (the same values `tests/base_eventrooms_patch_test.lua` mirrors; the patch
   `patch_base_eventrooms.py` hands them to the boss rooms as `bossArea`). `tests/globes_test.lua` checks the corners, the
   middle and one tile outside on every side and on the floor above. If a base script change moves the room, change the box.
-  Dungeons, rifts and the open map drop globes.
+  Dungeons, rifts, boss rooms and the open map drop globes (owner 2026-10-26: "Mantenha os globos").
 
 **The Ember Blessings on the ground** (`blessings.lua`, `blessings_config.lua pickup`). A proc no longer blesses at once:
 the same roll (chance, level gap, PvP-place exclusion, stamina, the 20 s cooldown **which now starts at the roll**) drops an
