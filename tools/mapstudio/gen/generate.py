@@ -19,9 +19,11 @@ import sys
 from collections import Counter, deque
 
 import access
+import cave as cavemod
 from common import ROOT, kit_name, load_items, load_kit, save_area, water_ids
 from shapes import blend, distance, largest, parts, place_ramps, region
-from lib import (break_runs, clean, edge_pieces, open_shape, pinched, place_clumped, place_flora, rank_field,
+import lib
+from lib import (blur_mask, break_runs, clean, edge_pieces, open_shape, pinched, place_clumped, place_flora, rank_field,
                  roughen, route_corridors, touches, weighted)
 
 Z = 7
@@ -106,6 +108,13 @@ def layout(size, rng, p):
                 lakes[y][x] = False
     water = [[not land[y][x] or lakes[y][x] for x in range(size)] for y in range(size)]
     clean(water, outside=True)
+    smooth = getattr(p, "edge_smooth", None)  # kit edge_smooth: {"blur": passes, "longest": run, "jag": run}: rounder outlines
+    if smooth:
+        blur_mask(water, smooth.get("blur", 1), outside=True)
+        for y in range(size):
+            for x in range(size):
+                water[y][x] = water[y][x] or not margin(x, y)
+        clean(water, outside=True)
     roughen(water, rng, outside=True, allowed=lambda x, y: margin(x, y) or water[y][x])
     shore = distance(size, water)
 
@@ -145,6 +154,12 @@ def layout(size, rng, p):
         else:
             room = lambda x, y: shore[y][x] >= 2
         open_shape(mask)  # no necks or spurs: tops stay walkable, shapes stay solid
+        if smooth:  # rounder: blur and threshold, kept inside the tiles this level may take
+            blur_mask(mask, smooth.get("blur", 1))
+            for y in range(size):
+                for x in range(size):
+                    mask[y][x] = mask[y][x] and below(x, y)
+            clean(mask)
         seats = ramp_windows(size, mask, rng, room=room)
         roughen(mask, rng, allowed=lambda x, y, below=below: below(x, y) and (x, y) not in seats)
         for part in parts(size, mask):  # lone pillars of a few tiles read as stray blocks
@@ -694,14 +709,15 @@ def road_path(size, start, goal, cost):
     return path
 
 
-def grounds(size, rng, m, stops, p, bridges=(), needed=(), worn_share=0.12, broad_at=0.62, brush=None, rough_passes=None, limit=None):
+def grounds(size, rng, m, stops, p, bridges=(), needed=(), worn_share=0.12, broad_at=0.62, brush=None, rough_passes=None, limit=None, fine=None):
     """Sand (brown jungle sand) and grey-brown sand masks. On the reference map most brown sand is winding
     roads 2-3 tiles wide: here roads join the ramp feet (stops) and `roads` shore points along the cheapest path
     through a noise field (so they wind), plus sand patches over about sand% of open ground. Grey-brown sand
     sits inside the sand. roads = -1 turns roads off."""
     water, hill, levels = m["water"], m["hill"], m["levels"]
     # the reference map has no water border onto jungle sand (no <id>/<id>), so sand never touches water
-    blocked = [[water[y][x] or touches(water, x, y) or (levels and levels[0][y][x]) or hill[y][x]
+    at_water = (fine or {}).get("at_water")  # kit patches_at_water: the kit has borders onto the liquid, so sand may touch it
+    blocked = [[water[y][x] or (touches(water, x, y) and not at_water) or (levels and levels[0][y][x]) or hill[y][x]
                 for x in range(size)] for y in range(size)]
     near_block = distance(size, blocked)
     wiggle = blend(size, rng, [(6, 0.6), (3, 0.4)])
@@ -727,8 +743,9 @@ def grounds(size, rng, m, stops, p, bridges=(), needed=(), worn_share=0.12, broa
         points += [b.tile(b.start - 2, b.at), b.tile(b.end + 2, b.at)]
         bridge_points |= set(points[-2:])
     limit = limit or {}  # kit road_limit: {"share": road mask cap as share of non-water tiles, "bridge": longest bridge approach road}
-    patches = quantile_region(size, blend(size, rng, [(9, 0.5), (4, 0.3), (2, 0.2)]), p.sand / 100,
-                              lambda x, y: near_block[y][x] >= 2 and m["shore"][y][x] >= 3)  # no rng use between here and the old place: same maps
+    fine = fine or {}  # kit patch_scale [[cell, weight], ...], worn_blob [min, max], worn_gap
+    patches = quantile_region(size, blend(size, rng, [tuple(t) for t in fine.get("scale", [(9, 0.5), (4, 0.3), (2, 0.2)])]), p.sand / 100,
+                              lambda x, y: near_block[y][x] >= fine.get("near", (2, 3))[0] and m["shore"][y][x] >= fine.get("near", (2, 3))[1])  # no rng use between here and the old place: same maps
     cap = max(1, int(limit["share"] * sum(1 for row in water for v in row if not v)) - sum(map(sum, patches))) \
         if limit.get("share") else 0  # the budget in road tiles; sand patches count against it
     roads, used = set(), set(needed)
@@ -765,11 +782,42 @@ def grounds(size, rng, m, stops, p, bridges=(), needed=(), worn_share=0.12, broa
         for x in range(size):
             sand[y][x] = sand[y][x] and not blocked[y][x]
     inside_sand = distance(size, [[not v for v in row] for row in sand])
-    grey = worn_rims(size, rng, sand, inside_sand, worn_share)
+    grey = worn_rims(size, rng, sand, inside_sand, worn_share, fine.get("blob", (3, 7)), fine.get("gap", 2))
     return sand, grey, sorted(used, key=Bridge.key)
 
 
-def worn_rims(size, rng, sand, inside_sand, share=0.12):
+def land_patches(size, rng, kit, water, mountain, hill, span):
+    """Kit patches: [{"ground": <role key of the kit and its layer table>, "share": s, "scale": cell, "min": tiles}, ...].
+    Each ground gets its own noise field and lays thin winding strips (the tiles of the field nearest its median, so the
+    patch is 1-3 wide and long) over about `share` of the open land, lower layers first, so higher grounds cut the lower ones.
+    Parts under `min` tiles go. Returns {(x, y): role}."""
+    out = {}
+    specs = kit.get("patches")
+    if not specs:
+        return out
+    rank = {lay["kit"]: r for r, lay in enumerate(kit["layers"])}
+    for spec in sorted(specs, key=lambda sp: rank[sp["ground"]]):
+        scale = spec.get("scale", 3)
+        field = blend(size, rng, [(scale, 0.7), (max(2, scale // 2), 0.3)])
+        allowed = lambda x, y: not water[y][x] and not mountain[y][x] and not hill[y][x] and (x, y) not in span
+        vals = sorted(field[y][x] for y in range(size) for x in range(size) if allowed(x, y))
+        if not vals:
+            continue
+        mid = vals[len(vals) // 2]
+        thin = [[-abs(field[y][x] - mid) for x in range(size)] for y in range(size)]
+        mask = quantile_region(size, thin, spec["share"], allowed)
+        for part in parts(size, mask):
+            if len(part) < spec.get("min", 2):
+                for x, y in part:
+                    mask[y][x] = False
+        for y in range(size):
+            for x in range(size):
+                if mask[y][x]:
+                    out[(x, y)] = spec["ground"]
+    return out
+
+
+def worn_rims(size, rng, sand, inside_sand, share=0.12, blob_size=(3, 7), gap=2):
     """Grey-brown sand as the reference map lays it on its roads (tools/ground_context.py on refs/<window>: 12% of the
     brown sand area; 91% of grey tiles on their own patch's edge, so the patches are 1-2 tiles thin): small
     thin blobs of 3-7 tiles grown along the road's edge against the grass, now and then one tile deeper, never a
@@ -783,9 +831,9 @@ def worn_rims(size, rng, sand, inside_sand, share=0.12):
         if placed >= target:
             break
         if grey[sy][sx] or any(0 <= sx + i < size and 0 <= sy + j < size and grey[sy + j][sx + i]
-                               for i in range(-2, 3) for j in range(-2, 3)):
+                               for i in range(-gap, gap + 1) for j in range(-gap, gap + 1)):
             continue  # patches stay apart
-        blob, want = [(sx, sy)], rng.randint(3, 7)
+        blob, want = [(sx, sy)], rng.randint(*blob_size)
         grey[sy][sx] = True
         while len(blob) < want:
             options = [(x + i, y + j) for x, y in blob for i, j in ((0, 1), (1, 0), (0, -1), (-1, 0))
@@ -840,12 +888,12 @@ def border_of(lay, lower):
     return border
 
 
-def tidy_grounds(kit, keys, rng, water=None):
+def tidy_grounds(kit, keys, rng, water=None, jag=2):
     """dissolve_islands once, then settle_layers, then jag_edges and settle again. Not alternated with
     dissolve: settle can leave a one-tile island where it fills a pinch, and dissolving that island recreates
     the pinch (seed 108). settle_layers alone only raises layers and always settles. Returns tiles changed."""
     changed = dissolve_islands(kit, keys) + settle_layers(kit, keys)
-    changed += jag_edges(kit, keys, rng, water) + settle_layers(kit, keys)
+    changed += jag_edges(kit, keys, rng, water, jag) + settle_layers(kit, keys)
     return changed
 
 
@@ -1209,7 +1257,7 @@ def top_patches(size, rng, top, inside, near_higher, k, with_gravel=True, shares
     return keys
 
 
-def liquid(size, rng, kit, items, water, mountain, fords, span):
+def liquid(size, rng, kit, items, water, mountain, fords, span, grain=None):
     """Ground and decor for the water tiles when the kit layers its liquid in bands (fire: tools/bands.py on
     the reference map's lava caves). Each tile's band is its distance to land; within a band a smooth ranked noise picks the
     variant in the kit's order (cooled crust, crust chunks, molten, obsidian), so variants come in patches with
@@ -1217,7 +1265,12 @@ def liquid(size, rng, kit, items, water, mountain, fords, span):
     tiles out, vents on crust. Returns (ground_at(x, y) or None, {(x, y): decor id})."""
     spec = kit["water"]
     if "bands" not in spec:
-        return None, {}
+        if not kit.get("plants_on_water") or not kit.get("water_flora"):
+            return None, {}
+        spec = {**spec, "bands": [[99, {"plain": 1.0}]], "order": ["plain"], "variants": {"plain": spec}}
+        plain = True  # kit plants_on_water without bands: the liquid keeps its own ground, plants still grow on it
+    else:
+        plain = False
     land = [[not v for v in row] for row in water]
     out = distance(size, land)
     u = rank_field(size, blend(size, rng, [(4, 0.6), (2, 0.4)]), lambda x, y: water[y][x])
@@ -1237,6 +1290,8 @@ def liquid(size, rng, kit, items, water, mountain, fords, span):
     crossing = kit.get("crossing", {}).get("ground")
 
     def ground_at(x, y):
+        if grain and (x, y) in grain:  # a plank walkway tile: the grain follows the way
+            return pick(rng, kit["plank_roads"][grain[(x, y)]])
         if (x, y) in fords and crossing:
             return crossing
         return pick(rng, spec["variants"][variant[(x, y)]])
@@ -1244,10 +1299,69 @@ def liquid(size, rng, kit, items, water, mountain, fords, span):
     flora_spec = kit.get("water_flora", {})
     deep_max = spec.get("deep_flora_max", 99)  # flows near the rock, not across an open sea
     kind = lambda x, y: ("deep" if variant.get((x, y)) == "molten" and 2 <= out[y][x] <= deep_max
-                         else "crust" if variant.get((x, y)) in ("crust", "crust2") else None)
+                         else "crust" if variant.get((x, y)) in ("crust", "crust2") or kit.get("plants_on_water") else None)
     ok = lambda x, y: (water[y][x] and (x, y) not in fords and (x, y) not in span and not touches(mountain, x, y))
     plants = place_flora(size, kind, flora_spec, items, rng, ok) if flora_spec else {}
     return ground_at, plants
+
+
+def frozen_lakes(size, water):
+    """Water tiles of the components that touch no map edge (inland lakes), as a set of (x, y)."""
+    seen, out = set(), set()
+    for y0 in range(size):
+        for x0 in range(size):
+            if not water[y0][x0] or (x0, y0) in seen:
+                continue
+            comp, stack, edge = [], [(x0, y0)], False
+            seen.add((x0, y0))
+            while stack:
+                x, y = stack.pop()
+                comp.append((x, y))
+                edge |= x in (0, size - 1) or y in (0, size - 1)
+                for i, j in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                    t = (x + i, y + j)
+                    if 0 <= t[0] < size and 0 <= t[1] < size and water[t[1]][t[0]] and t not in seen:
+                        seen.add(t)
+                        stack.append(t)
+            if not edge:
+                out.update(comp)
+    return out
+
+
+def plank_walkways(size, rng, spec, water, mountain, hill, shore, big, span):
+    """Kit plank_roads {"count": n, "width": {"1": .5, "2": .3, "3": .2}, "ns": ground spec, "ew": ground spec}: winding plank
+    walkways across the liquid, from one bank of the main ground to another 12-45 tiles away (cheapest way, water tiles
+    cost less than land), smoothed and drawn with a round brush; only liquid tiles take planks. The grain follows the way:
+    "ew" planks where it runs more east-west than north-south, else "ns". Returns {(x, y): "ns" | "ew"}."""
+    out = {}
+    if not spec or not spec.get("count"):
+        return out
+    cand = [(x, y) for (x, y) in sorted(big) if shore[y][x] == 1 and not mountain[y][x] and not hill[y][x]]
+    if len(cand) < 2:
+        return out
+    bend = blend(size, rng, [(6, 0.5), (3, 0.5)])
+    widths = spec.get("width", {"1": 0.5, "2": 0.3, "3": 0.2})
+    relief = lambda x, y: mountain[y][x] or hill[y][x]
+    cost = lambda x, y: None if relief(x, y) or (x, y) in span else (1 + 8 * bend[y][x] ** 2 if water[y][x] else 5)
+    for _ in range(spec["count"]):
+        a = rng.choice(cand)
+        far = [t for t in cand if 12 <= abs(t[0] - a[0]) + abs(t[1] - a[1]) <= 45]
+        if not far:
+            continue
+        path = road_path(size, a, rng.choice(far), cost)
+        if not path:
+            continue
+        course = smooth_course(path)
+        w = int(rng.choices(list(widths), [widths[k] for k in widths])[0])
+        offs = cavemod.brush(w)
+        for k, (x, y) in enumerate(course):
+            (x0, y0), (x1, y1) = course[max(0, k - 2)], course[min(len(course) - 1, k + 2)]
+            way = "ew" if abs(x1 - x0) >= abs(y1 - y0) else "ns"
+            for i, j in offs:
+                tx, ty = x + i, y + j
+                if 0 <= tx < size and 0 <= ty < size and water[ty][tx] and (tx, ty) not in span and not relief(tx, ty):
+                    out[(tx, ty)] = way
+    return out
 
 
 def pick(rng, g):
@@ -1258,10 +1372,31 @@ def build(p):
     size = p.size
     rng = random.Random(p.seed)
     kit = load_kit(getattr(p, "kit", None))
+    global Z  # the main floor: flag --floor, else kit key floor, else 7 (every other floor is read from Z)
+    Z = p.floor if getattr(p, "floor", None) is not None else kit.get("floor", 7)
     items = load_items()
+    cave_cfg = kit.get("cave") or (kit.get("corridor_ground") if getattr(p, "corridor_ground", False) else None)  # kit key: cave mode (gen/cave.py): solid rock, carved floor, chambers joined by tunnels
+    if cave_cfg and getattr(p, "cave_shape", None):
+        cave_cfg = {**cave_cfg, "shape": p.cave_shape}
+    style = None
+    if cave_cfg:  # each cave picks its wall style, seeded: the stone wall on the floor edge, or the dirt wall on the rock
+        styles = list(cave_cfg["styles"]) if cave_cfg.get("wall_style", "mixed") == "mixed" else [cave_cfg["wall_style"]]
+        style = getattr(p, "wall_style", None) or random.Random(f"cave-wall-{p.seed}").choice(styles)
+        kit = {**kit, **cave_cfg["styles"][style]}
     p.water_low = kit["layers"][0]["kit"] == "water"
-    m = layout(size, rng, p)
+    p.edge_smooth = kit.get("edge_smooth")
+    lib.LONGEST = (p.edge_smooth or {}).get("longest", 3)
+    m = cavemod.cave_layout(size, rng, cave_cfg, style, road_path, smooth_course) if cave_cfg else layout(size, rng, p)
     water, mountain, hill = m["water"], m["mountain"], m["hill"]
+    # kit solid_mountain (or --solid-mountain): the mountain is a solid fill with no top floor and no ramps; the wall
+    # set (kit wall_set: {ground key: 12-piece set name}) is drawn on the floor and liquid tiles beside it
+    solid = bool(kit.get("solid_mountain") or getattr(p, "solid_mountain", False))
+    if solid:
+        m["levels"] = []
+
+    def cliff_set(key):
+        ws = kit.get("wall_set") if solid else None
+        return kit[ws[key]] if ws and key in ws else kit["mountain_cliff"]
 
     def open_ground(x, y):
         return not water[y][x] and not mountain[y][x] and not hill[y][x]
@@ -1355,6 +1490,11 @@ def build(p):
         per_level.append(placed)
         reached_below = lambda x, y, reached=reached: reached[y][x]
     mramps = per_level[0] if per_level else {}
+    stair_ramp = set()  # cave mode: the alcoves' ramps (gen/cave.py stairs) are mountain ramps up to the floor above
+    for st in m.get("stairs", []):
+        mramps[st["ramp"]], mramps[st["low"]] = (st["d"], 0), (st["d"], 1)
+        quiet |= {st["ramp"], st["low"]}
+        stair_ramp.add(st["ramp"])
     terrace = per_level[1:]
     top_parts = []  # per level: (top parts of 30+ tiles with a ramp landing, all of them)
     for k, placed in enumerate(per_level):
@@ -1374,18 +1514,23 @@ def build(p):
             centre = (x - dx, y - dy) if half == 1 else (x + dx, y + dy)
             keep |= {(centre[0] + i, centre[1] + j) for i in (-1, 0, 1) for j in (-1, 0, 1)}
     sand, grey, bridges = grounds(size, rng, m, feet, p, sites, sites, kit.get("worn_share", 0.12),
-                                 kit.get("road_broad", 0.62), kit.get("road_brush"), kit.get("road_rough"), kit.get("road_limit"))
+                                 kit.get("road_broad", 0.62), kit.get("road_brush"), kit.get("road_rough"), kit.get("road_limit"),
+                                 {k: kit[key] for k, key in (("scale", "patch_scale"), ("blob", "worn_blob"), ("gap", "worn_gap"),
+                                                             ("at_water", "patches_at_water"), ("near", "patch_near")) if key in kit})
     span = {t for b in bridges for t in b.guard()}  # rails, deck, banks and landings: kept clear of plants
     rock_layer = next((lay for lay in kit["layers"] if lay["kit"] == "rock_soil"), {})
     rock, gravel = aprons(size, rng, m, sand, {**ramps, **mramps}, span, "gravel" in kit,
                           off_sand=not border_of(rock_layer, "sand"), patches=kit.get("rock_patches", 0))
     ford = kit.get("crossing", {}).get("type") == "ford"
+    patch_key = land_patches(size, rng, kit, water, mountain, hill, span)  # kit patches: more land grounds than base, sand, grey sand
 
     def first_key(x, y):
         if water[y][x]:
             return "water"
         if mountain[y][x] or hill[y][x]:
             return None
+        if (x, y) in patch_key:
+            return patch_key[(x, y)]
         return ("grey_sand" if grey[y][x] else "sand" if sand[y][x] else "gravel" if gravel[y][x]
                 else "rock_soil" if rock[y][x] else "base")
 
@@ -1402,7 +1547,9 @@ def build(p):
         for x, y in b.deck():  # deck and end tiles: no ground draws its border toward a bridge (user review)
             if (y if b.ns else x) != b.start:
                 keys[y][x] = "bridge"
-    settled = tidy_grounds(kit, keys, rng, water)
+    grain = plank_walkways(size, rng, kit.get("plank_roads"), water, mountain, hill, m["shore"], big, span)
+    fords |= set(grain)  # walkway tiles stay liquid for the borders, like ford crust, and take no plants
+    settled = tidy_grounds(kit, keys, rng, water, (kit.get("edge_smooth") or {}).get("jag", 2))
     # a ground with no border onto the water (fire: grey rock, mauve cobble) that still touches it becomes the
     # base ground, which has one; then settle once more
     off_water = kit.get("no_water_border", UNBORDERED_AT_WATER)
@@ -1522,7 +1669,21 @@ def build(p):
                          and not any((x + i, y + j) in bases for i in range(-2, 3) for j in range(-2, 3)))
     flora.update(place_flora(size, lambda x, y: "meadow", {"meadow": kit["meadow"]}, items, rng, bare))
 
-    water_ground, water_plants = liquid(size, rng, kit, items, water, mountain, fords, span)
+    water_ground, water_plants = liquid(size, rng, kit, items, water, mountain, fords, span, grain)
+    lake_spec = kit.get("lake_water")
+    lake = set()
+    if lake_spec:  # kit lake_water {"ground": spec, "decor": {id: rate}}: inland water (no tile on the map edge) is a frozen sheet
+        lake = frozen_lakes(size, water)
+        lake_land = {(x, y) for y in range(size) for x in range(size) if not water[y][x]}
+        inner = water_ground
+        rim = {(x, y) for (x, y) in lake if any((x + i, y + j) in lake_land for i in (-1, 0, 1) for j in (-1, 0, 1))} \
+            if lake_spec.get("rim_water") else set()  # the sheet's edge sprites are see-through: a ring of plain water under them
+        sheet = lambda x, y: ((pick(rng, lake_spec["ground"]) if (x, y) in lake and (x, y) not in rim
+                               else inner(x, y) if inner else pick(rng, kit["water"])))
+        water_ground = sheet
+        water_plants.update(place_flora(size, lambda x, y: "lake", {"lake": lake_spec.get("decor", {})}, items, rng,
+                                        lambda x, y: (x, y) in lake and (x, y) not in span and (x, y) not in fords
+                                        and not touches(mountain, x, y) and (x, y) not in water_plants))
     layer = {}
     for y in range(size):
         for x in range(size):
@@ -1530,25 +1691,42 @@ def build(p):
             if f == "water":  # where a mountain meets the water, the reference map draws its cliff on the water tiles; in a
                 # kit where land ranks above water (fire), the land's border is drawn on the water tiles too
                 ground = water_ground(x, y) if water_ground else pick(rng, kit["water"])
-                stack = [ground] + layered_borders(kit, keys, x, y) + edge_pieces(mountain, x, y, kit["mountain_cliff"])
+                stack = [ground] + layered_borders(kit, keys, x, y) + edge_pieces(mountain, x, y, cliff_set("water"))
                 if (x, y) in water_plants:
                     stack.append(water_plants[(x, y)])
             elif f == "relief":
-                stack = [kit["mountain" if mountain[y][x] else "hill"]["lead"]]
+                stack = [(kit.get("solid_fill") if solid and mountain[y][x] else None) and pick(rng, kit["solid_fill"])
+                         or kit["mountain" if mountain[y][x] else "hill"]["lead"]]
+                fill_decor = kit.get("mountain_fill_decor")  # kit key {id: rate}: snow chips and stones on the mountain's fill
+                if fill_decor and mountain[y][x]:
+                    for key, rate in fill_decor.items():
+                        if rng.random() < rate:
+                            stack.append(int(key))
+                            break
             elif f == "bridge":
                 stack = []  # laid by the bridge pass below
             else:
                 stack = [pick(rng, kit[keys[y][x]])] + layered_borders(kit, keys, x, y)
+                if (x, y) in stair_ramp:  # a wall piece would block the ramp tile
+                    stack = stack[:1]
                 if ramps.get((x, y), (None, 1))[1] != 0:  # a ramp replaces the cliff on its tile
                     stack += edge_pieces(hill, x, y, kit["hill_cliff"])
                 if mramps.get((x, y), (None, 1))[1] != 0:
-                    stack += edge_pieces(mountain, x, y, kit["mountain_cliff"])
+                    stack += edge_pieces(mountain, x, y, cliff_set(keys[y][x]))
                 if (x, y) in ramps:
                     d, half = ramps[(x, y)]
                     stack.append(kit["hill_ramp"][d][half])
                 if (x, y) in mramps:
                     d, half = mramps[(x, y)]
                     stack.append(kit["mountain_ramp"][d][half])
+                if lake_spec and any((x + i, y + j) in lake for i in (-1, 0, 1) for j in (-1, 0, 1)):
+                    # the shore set belongs to open water; a frozen sheet gets the lake's own border on the land beside it
+                    shore = {int(i) for i in kit[lake_spec.get("shore_set", "shore_on_base")].values()}
+                    stack = [i for i in stack if int(i) not in shore]
+                    for side, (dx, dy) in (("north", (0, -1)), ("west", (-1, 0))):
+                        # the sheet's sprite is 2x2: the reference map puts one piece on the land tile below and beside it
+                        if (x + dx, y + dy) in lake and (x, y) not in lake and lake_spec.get("fringe", {}).get(side):
+                            stack.append(lake_spec["fringe"][side])
                 if (x, y) in flora:
                     stack.append(flora[(x, y)])
             layer[(ORIGIN + x, ORIGIN + y)] = stack
@@ -1580,6 +1758,10 @@ def build(p):
     floors = {Z: layer}
     top_flora, terrace_ramps, routes = mountain_levels(size, m["levels"], kit, items, rng, floors, terrace, keep,
                                                        [mramps, *terrace], p.vegetation)
+
+    for st in m.get("stairs", []):  # cave mode: the landing above each ramp, a small floor of the kit's base ground
+        for x, y in st["landing"]:
+            floors.setdefault(Z - 1, {})[(ORIGIN + x, ORIGIN + y)] = [pick(rng, kit["base"])]
 
     # earth hills: one level (see gen/island.py)
     floor = floors.setdefault(Z - 1, {})
@@ -1637,12 +1819,12 @@ def build(p):
                         if not border_of(layer_of[hi_], lo_):
                             bare[f"{hi_}|{lo_}"] += 1
     grey_cliff, brown_cliff = set(kit["mountain_cliff"].values()), set(kit.get("hill_cliff", {}).values())
-    clashes = sum(1 for s in floors[Z].values() if {int(i) for i in s} & grey_cliff and {int(i) for i in s} & brown_cliff)
+    clashes = 0 if cave_cfg else sum(1 for s in floors[Z].values() if {int(i) for i in s} & grey_cliff and {int(i) for i in s} & brown_cliff)
     access.NO_WALK = water_ids(kit)  # liquid never counts as walkable ground (see gen/access.py NO_WALK)
-    start = access.main_start(floors, items)
+    start = access.main_start(floors, items, Z)
     cleared, cut = access.repair(floors, items, ramp_dirs, plant_ids, start, kit.get("repair_pocket", 4)) if start else (0, [])
     dropped = access.drop_cut_off_tops(floors, items, ramp_dirs, start, Z) if start and kit.get("drop_cut_off_tops") else {}
-    closed = access.close_pockets(floors, items, ramp_dirs, start, kit["pocket_fill"], rng) \
+    closed = access.close_pockets(floors, items, ramp_dirs, start, kit["pocket_fill"], rng, Z) \
         if start and kit.get("pocket_fill") else 0  # kit pocket_fill: ids of 1x1 blocking plants that close unreached nooks
     check = access.report(floors, items, ramp_dirs, start) if start else {}
     stats = {"access": {**check, "plants_cleared": cleared, "cut_off": cut, "passes": m["passes"],
@@ -1655,10 +1837,42 @@ def build(p):
              "bridges": [("ns" if b.ns else "ew", *[ORIGIN + v for v in b.tile(b.start, b.at)], b.end - b.start + 1)
                          for b in bridges], "bridge_sites": len(sites), "bridge_kinds": kinds,
              "mountain_ramps": [len(mramps) // 2, *terrace_ramps],
-             "levels": [sum(map(sum, v)) for v in m["levels"]],
+             "levels": [sum(map(sum, v)) for v in m["levels"]] or ([sum(map(sum, mountain))] if solid else []),
              "sand": sum(map(sum, sand)), "grey": sum(map(sum, grey)), "river": len(m["river"]),
              **{k: sum(map(sum, m[k])) for k in ("water", "hill")}}
+    if cave_cfg:
+        stats["cave"] = {**m["cave"], "walkable": check.get("reached/walkable")}
     return floors, stats
+
+
+def top_liquid(size, rng, spec, top, inside, near_higher, spare):
+    """Kit top_liquid {"share": [lo, hi], "inner": 3}: lakes of the kit's liquid (lava) in the middle of a mountain top, a
+    share of the top tiles drawn from the range (the reference volcano: 7-17% on its tops). Tiles are 3+ from the rim and the
+    next level and 4+ from every ramp arrival and departure (`spare`); a lake that would split the walkable top into
+    more parts is dropped. Returns a mask."""
+    off = [[False] * size for _ in range(size)]
+    if not spec:
+        return off
+    inner = spec.get("inner", 3)
+    far = lambda x, y: all(max(abs(x - a), abs(y - b)) >= 4 for a, b in spare)
+    ok = lambda x, y: top[y][x] and inside[y][x] >= inner and near_higher[y][x] >= inner and far(x, y)
+    n_ok = sum(1 for y in range(size) for x in range(size) if ok(x, y))
+    want = rng.uniform(*spec["share"]) * sum(map(sum, top))
+    if n_ok < 12 or want < 4:
+        return off
+    lava = quantile_region(size, blend(size, rng, [(6, 0.6), (3, 0.4)]), min(0.9, want / n_ok), ok)
+    for part in parts(size, lava):
+        if len(part) < 6:
+            for x, y in part:
+                lava[y][x] = False
+    walk = lambda x, y: top[y][x] and near_higher[y][x] >= 2  # clear tiles: cliff pieces beside the next level block
+    before = len(parts8(size, walk))
+    for part in sorted(parts(size, lava), key=len, reverse=True):
+        if len(parts8(size, lambda x, y: walk(x, y) and not lava[y][x])) <= before:
+            break
+        for x, y in part:
+            lava[y][x] = False
+    return lava
 
 
 def mountain_levels(size, levels, kit, items, rng, floors, terrace, keep, arrivals, vegetation=100):
@@ -1694,6 +1908,14 @@ def mountain_levels(size, levels, kit, items, rng, floors, terrace, keep, arriva
                         stacked[y][x] = True
                         top[y][x] = False
         keys = top_patches(size, rng, top, inside, near_higher, k, "gravel" in kit, kit.get("top_rock"), kit.get("top_mix"))
+        onto = arrivals[k - 1]
+        arrive = [(x + DIRS[d][0], y + DIRS[d][1]) for (x, y), (d, half) in onto.items() if half == 0]
+        leave = [(x - 2 * DIRS[d][0], y - 2 * DIRS[d][1]) for (x, y), (d, half) in ramps.items() if half == 0]
+        lava = top_liquid(size, rng, kit.get("top_liquid"), top, inside, near_higher, arrive + leave)
+        for y in range(size):
+            for x in range(size):
+                if lava[y][x]:
+                    keys[y][x] = "water"
         tidy_grounds(kit, keys, rng)
         family = {}
         for y in range(size):
@@ -1721,10 +1943,7 @@ def mountain_levels(size, levels, kit, items, rng, floors, terrace, keep, arriva
         # routes on this top (user review: paths among mountains must make sense): every ramp arriving here is
         # joined to every ramp leaving it and to the middle of each top part it lands on, along paths that keep
         # off the edges; a 3-wide corridor around them takes only walkable plants, groves grow elsewhere
-        onto = arrivals[k - 1]
-        arrive = [(x + DIRS[d][0], y + DIRS[d][1]) for (x, y), (d, half) in onto.items() if half == 0]
-        leave = [(x - 2 * DIRS[d][0], y - 2 * DIRS[d][1]) for (x, y), (d, half) in ramps.items() if half == 0]
-        walk_top = lambda x, y: top[y][x]
+        walk_top = lambda x, y: top[y][x] and not lava[y][x]
         middles = []
         for part in parts8(size, walk_top):
             if len(part) >= 30 and any(t in part for t in arrive):
@@ -1733,7 +1952,8 @@ def mountain_levels(size, levels, kit, items, rng, floors, terrace, keep, arriva
                 middles.append(min(part, key=lambda t: (t[0] - cx) ** 2 + (t[1] - cy) ** 2))
         corridor = route_corridors(size, walk_top, arrive + leave, middles)
         routes.append(len(corridor))
-        clear = lambda x, y: top[y][x] and near_higher[y][x] >= 2 and (x, y) not in ramps and (x, y) not in keep
+        clear = lambda x, y: (top[y][x] and not lava[y][x] and near_higher[y][x] >= 2 and (x, y) not in ramps
+                              and (x, y) not in keep)
         # rock soil, gravel and sand on tops: per-tile rates, never on the corridor
         plants = place_flora(size, lambda x, y: family.get((x, y)),
                              {f: t for f, t in kit["top_flora"].items() if f != base}, items, rng,
@@ -1782,6 +2002,15 @@ def main():
     p.add_argument("--roads", type=int, default=3, help="shore points joined by roads (-1 = no roads)")
     p.add_argument("--sand", type=float, default=4, help="sand patches as %% of open ground")
     p.add_argument("--vegetation", type=float, default=100, help="plant density, 100 = reference map")
+    p.add_argument("--floor", type=int, default=None, help="the main floor (default: kit key floor, else 7)")
+    p.add_argument("--cave-shape", dest="cave_shape", default=None, choices=("mix", "tunnels", "chambers"),
+                   help="cave kits: force the shape instead of the kit's cave.shape")
+    p.add_argument("--solid-mountain", dest="solid_mountain", action="store_const", const=True, default=None,
+                   help="mountains are solid fill with wall pieces, no tops and no ramps (kit wall_set)")
+    p.add_argument("--corridor-ground", dest="corridor_ground", action="store_const", const=True, default=None,
+                   help="kits with corridor_ground: carve the base ground as winding corridors in the liquid (cave mode)")
+    p.add_argument("--wall-style", dest="wall_style", default=None, choices=("on_floor", "on_rock"),
+                   help="cave kits: force a wall style instead of the seeded pick")
     a = p.parse_args()
     # the kit's own defaults (fire: no earth hills, wider lava rivers) for every knob left at its default
     a.kit = kit_name(a.kit)
@@ -1791,11 +2020,12 @@ def main():
             setattr(a, k, v)
     area, stats = build(a)
     out = ROOT / "areas" / a.name
-    knobs = {k: v for k, v in vars(a).items() if k != "name"}
+    knobs = {k: v for k, v in vars(a).items() if k != "name" and v is not None}  # None = knob not given (header of old maps stays the same)
     save_area(out / "area.txt", area, {"gen": "generate", **knobs, **stats})
     land = a.size * a.size - stats["water"]
-    print(a.name, f"land {land} tiles: mountains {stats['levels'][0] / land:.0%} "
-          f"(levels {stats['levels']}), hills {stats['hill'] / land:.0%}, sand {stats['sand'] / land:.0%}, "
+    top_level = stats["levels"][0] if stats["levels"] else 0  # no mountain (mountains 0, or every level vanished)
+    print(a.name, f"land {land} tiles: mountains {top_level / max(1, land):.0%} "
+          f"(levels {stats['levels']}), hills {stats['hill'] / max(1, land):.0%}, sand {stats['sand'] / max(1, land):.0%}, "
           f"plants {stats['flora'] + stats['top_flora']}, ramps {stats['ramps']} + {stats['mountain_ramps']}, "
           f"bridges {stats['bridges']} of {stats['bridge_sites']} sites, kinds {stats.get('bridge_kinds', [])}")
     acc = stats["access"]
@@ -1807,6 +2037,11 @@ def main():
     print(f"  access: passes {acc['passes']}, pocket tiles sealed {acc['pockets_sealed']}, land necks {acc.get('land_necks', 0)}, pocket tiles closed {acc.get('pockets_closed', 0)}, cut-off top tiles dropped {acc.get('tops_dropped', {})}, top parts 30+ with a ramp per level {acc['top_parts_with_ramp']}, "
           f"ramps usable {acc.get('ramps_usable')}, plants cleared {acc['plants_cleared']}, "
           f"cut off {acc['cut_off']}, reached/walkable per floor {acc.get('reached/walkable')}")
+    if "cave" in stats:
+        c = stats["cave"]
+        print(f"  cave: wall style {c['style']}, nodes {c['nodes']}, loops {c['loops']}, spurs {c['spurs']}, stairs {c['stairs']}, "
+              f"walkable share {c['share']:.1%} (target tried {c['attempts']}x), tunnel tiles by width {c['width_tiles']}, "
+              f"unjoined tiles removed {c['tiles_removed']}, tunnels cut to join {c['tunnels_joined']}")
     subprocess.run([sys.executable, "-B", str(ROOT / "run.py"), "tools/render.py", str(out / "area.txt"),
                     "--floor", str(Z), "--upper", "--out", str(out / "render.png")], check=True)
 

@@ -297,6 +297,8 @@ def water_ids(kit):
     """Every item id of the kit's liquid (all variants)."""
     spec = kit["water"]
     ids = set(spec.get("members", [])) | {spec.get("lead")}
-    for v in spec.get("variants", {}).values():
+    for name, v in spec.get("variants", {}).items():
+        if name in spec.get("walkable_variants", []):  # kit water.walkable_variants: cooled crust a player can stand on
+            continue
         ids |= set(v.get("members", [])) | {v.get("lead")}
     return {int(i) for i in ids if i}

@@ -13,7 +13,7 @@ from pathlib import Path
 
 from common import load_area, load_kit
 
-SETS = ("shore_on_base", "base_on_sand", "mountain_cliff", "top_rim", "grey_on_sand", "rock_on_gravel")
+SETS = ("shore_on_base", "base_on_sand", "mountain_cliff", "top_rim", "grey_on_sand", "rock_on_gravel", "edge_on_lava", "edge_on_rock")
 
 
 def main():

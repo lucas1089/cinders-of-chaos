@@ -411,5 +411,88 @@
  "join_land": {
   "least": 12,
   "gap": 14
+ },
+ "stone_wall": {
+  "edge_n": 5640,
+  "edge_e": 5641,
+  "edge_s": 5642,
+  "edge_w": 5639,
+  "inner_nw": 5648,
+  "inner_ne": 5652,
+  "inner_sw": 5650,
+  "inner_se": 5649,
+  "outer_nw": 5645,
+  "outer_ne": 5646,
+  "outer_sw": 5644,
+  "outer_se": 5643
+ },
+ "wall_set": {
+  "base": "stone_wall",
+  "sand": "stone_wall",
+  "rock_soil": "stone_wall",
+  "water": "stone_wall"
+ },
+ "solid_fill": {
+  "lead": 9026,
+  "members": [
+   9026,
+   9026,
+   9026,
+   9026,
+   9026,
+   9027,
+   9028,
+   9029,
+   9030,
+   9042
+  ]
+ },
+ "top_liquid": {
+  "share": [
+   0.07,
+   0.17
+  ],
+  "inner": 3
+ },
+ "corridor_ground": {
+  "shape": "mix",
+  "wall_style": "on_rock",
+  "chambers": {
+   "per_1000": 0.9,
+   "radius": [
+    3,
+    6
+   ],
+   "spacing": 14
+  },
+  "tunnel_width": {
+   "3": 0.5,
+   "4": 0.3,
+   "5": 0.2
+  },
+  "loops": [
+   0.1,
+   0.15
+  ],
+  "spurs_per_1000": 3.0,
+  "floor_share": [
+   0.15,
+   0.25
+  ],
+  "pillars_per_chamber": 2,
+  "styles": {
+   "on_rock": {}
+  },
+  "_notes": "used with --corridor-ground: the base ground is carved as winding corridors and halls in the lava (cave mode, lava = the solid role, the base draws edge_on_lava onto it)"
+ },
+ "batch_variants": {
+  "501": "--size 96",
+  "502": "--size 112 --mountains 20 --levels 2",
+  "503": "--size 128 --mountains 25 --levels 2",
+  "504": "--size 112 --solid-mountain --mountains 30 --levels 1",
+  "505": "--size 96 --corridor-ground",
+  "506": "--size 112 --corridor-ground --cave-shape tunnels",
+  "507": "--size 96 --mountains 20 --levels 2 --rivers 1",
+  "508": "--size 112 --solid-mountain --rivers 3 --mountains 24"
  }
 }

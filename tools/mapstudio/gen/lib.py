@@ -114,11 +114,33 @@ def open_shape(mask, allowed=None, block=3):
     clean(mask)
 
 
-def break_runs(mask, rng, allowed=None, outside=False, longest=3, passes=4, mode="both"):
+LONGEST = 3  # longest straight outline run break_runs leaves; a kit's edge_smooth.longest sets it for the run (gen/generate.py build)
+
+
+def blur_mask(mask, passes=1, outside=False):
+    """Rounds a mask, in place: blur and threshold, a tile is in when 5 or more of its 3x3 block are (spikes, 1-tile notches
+    and sharp corners go, outlines curve). Tiles beyond the edge count as `outside`."""
+    size = len(mask)
+    for _ in range(passes):
+        out = [[False] * size for _ in range(size)]
+        for y in range(size):
+            for x in range(size):
+                n = 0
+                for j in (-1, 0, 1):
+                    for i in (-1, 0, 1):
+                        nx, ny = x + i, y + j
+                        n += mask[ny][nx] if 0 <= nx < size and 0 <= ny < size else outside
+                out[y][x] = n >= 5
+        for y in range(size):
+            mask[y] = out[y]
+
+
+def break_runs(mask, rng, allowed=None, outside=False, longest=None, passes=4, mode="both"):
     """No straight outline longer than `longest` tiles (the reference map has almost none of 4+): every longer run of
     outside tiles facing the region on the same side gets, every few tiles, a 1-tile bump of the region
     (grow) or a 2-tile notch into it (shrink); both survive clean(). Edits mask in place."""
     size = len(mask)
+    longest = longest or LONGEST
 
     def at(x, y):
         return mask[y][x] if 0 <= x < size and 0 <= y < size else outside
