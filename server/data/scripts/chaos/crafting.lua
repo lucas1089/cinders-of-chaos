@@ -428,6 +428,14 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 		return
 	end
 	local data = type(msg.data) == "table" and msg.data or {}
+	-- below the gate nothing of the bench or Salvage answers (a window the player opens says why; the rest is silent)
+	local levelOk, need = C.levelGate(player:getLevel())
+	if not levelOk then
+		if msg.action == "open" then
+			player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Crafting opens at level %d.", need))
+		end
+		return
+	end
 	-- every answer walks the backpack and reads the history from the database; "apply" has its own MIN_INTERVAL
 	if ChaosSalvage and ChaosSalvage.actions and ChaosSalvage.actions[msg.action] then
 		ChaosSalvage.onAction(player, msg.action, data) -- salvage.lua, with its own rate limits
@@ -493,6 +501,11 @@ function ChaosCraftingUseOrb(player, orbItem, target, orbKey)
 	-- no target, a creature, the floor, or anything else that can never carry modifiers: explain the orb
 	if not target or type(target) ~= "userdata" or not target.isItem or not target:isItem() or target == orbItem then
 		useHint(player, orb)
+		return true
+	end
+	local levelOk, need = C.levelGate(player:getLevel())
+	if not levelOk then
+		player:sendCancelMessage(Chaos.t(player, "Crafting opens at level %d.", need))
 		return true
 	end
 	if not craftable(target) then

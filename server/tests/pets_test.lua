@@ -224,4 +224,12 @@ v = K.view({id = 4, species = "ash_cat", name = "Soot", xp = 0, active = 0}, 300
 eq(v.name, "Soot"); eq(v.active, false)
 eq(K.view({id = 5, species = "retired", name = "", xp = 0}, 1, 0, cfg), nil, "unknown species is skipped")
 
+-- ---------------------------------------------------------------- level gate (O262: the top menu entry "pets")
+eq(cfg.minLevel, 25, "pets open at level 25")
+local g, need = K.levelGate(24, cfg)
+eq(g, false, "24 is below the gate"); eq(need, 25)
+g, need = K.levelGate(25, cfg)
+eq(g, true, "25 passes"); eq(need, 25)
+eq(K.levelGate(1, cfg), false); eq(K.levelGate(800, cfg), true); eq((K.levelGate(nil, cfg)), false, "no level: closed")
+
 print("pets: all asserts passed")

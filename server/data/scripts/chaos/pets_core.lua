@@ -4,6 +4,9 @@
 -- Species
 --   K.species(key, cfg)                  the species entry (nil when unknown)
 --   K.speciesByMonster(name, cfg)        the species whose monster type is `name` (any case)
+-- Level gate
+--   K.levelGate(ownerLevel, cfg)         true, minLevel when the owner may use pets; false, minLevel below cfg.minLevel
+--
 -- Levels (the stored value is the pet's total XP)
 --   K.xpNeed(level, cfg)                 XP from `level` to level + 1 (nil at the max level)
 --   K.totalFor(level, cfg)               XP from level 1 to `level`
@@ -61,6 +64,11 @@ function K.speciesByMonster(name, cfg)
 end
 
 -- ---------------------------------------------------------------- levels
+function K.levelGate(ownerLevel, cfg)
+	local need = cfg.minLevel or 1
+	return (tonumber(ownerLevel) or 0) >= need, need
+end
+
 function K.xpNeed(level, cfg)
 	if not level or level < 1 or level >= cfg.maxLevel then
 		return nil

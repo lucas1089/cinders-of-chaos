@@ -1669,6 +1669,7 @@ return {
 		["%sUse the %s on an item: choose \"Use with\" on the orb, then click an item or a Rift Key in your backpack. The crafting bench (Economy > Crafting Bench) shows a preview first."] =
 			"%sUse o %s num item: escolha \"Use with\" no orbe, depois clique num item ou numa Rift Key na sua mochila. A Crafting Bench (Economy > Crafting Bench) mostra uma prévia antes.",
 		["That cannot carry modifiers. "] = "Isso não pode ter modificadores. ",
+		["Crafting opens at level %d."] = "O crafting abre no nível %d.",
 		["Rift Atlas: %s completed, +%d point%s."] = "Rift Atlas: %s completado, +%d ponto%s.",
 		["Waystone Atlas: %s completed, +%d point%s."] = "Waystone Atlas: %s completado, +%d ponto%s.",
 		["The way is sealed."] = "O caminho está selado.",
@@ -5205,6 +5206,7 @@ return {
 		["Wait %d s before renaming again."] = "Espere %d s antes de renomear de novo.",
 		["Pets are not allowed in %s; yours waits until you leave."] = "Pets não são permitidos em %s; o seu espera até você sair.",
 		["Your pet is now called %s."] = "Seu pet agora se chama %s.",
+		["Pets open at level %d."] = "Os pets abrem no nível %d.",
 		["this place"] = "este lugar",
 		["the arena"] = "a arena",
 		["the siege"] = "o cerco",

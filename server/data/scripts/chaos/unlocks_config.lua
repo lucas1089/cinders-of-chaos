@@ -82,6 +82,17 @@ return {
 			title = {"Dungeons", "Masmorras"},
 			why = {{"Boss dungeons with chests; the item level rises with the difficulty.", "Masmorras com chefes e baús; o nível do item sobe com a dificuldade."},
 				{"Enter alone or queue with a group.", "Entre sozinho ou na fila com um grupo."}},
-			go = {open = "game_dungeons"}}
+			go = {open = "game_dungeons"}},
+		-- O262: gates added to the systems themselves (Bank and Supply Stash stay open from level 1 on purpose)
+		{key = "crafting", level = 20, menu = "Crafting Bench", source = "data/lib/chaos_crafting.lua config.minLevel",
+			title = {"Crafting Bench", "Crafting Bench"},
+			why = {{"Improve your gear with orbs and see a preview first.", "Melhore seu equipamento com orbes e veja uma prévia antes."},
+				{"Salvage what you do not need for shards.", "Recicle o que não precisa em fragmentos."}},
+			go = {open = "game_crafting"}},
+		{key = "pets", level = 25, menu = "Pets", source = "pets_config.lua minLevel",
+			title = {"Pets", "Pets"},
+			why = {{"A small companion that follows you and levels with your kills.", "Um pequeno companheiro que te segue e sobe de nível com suas mortes."},
+				{"Call one out in the window.", "Chame um pela janela."}},
+			go = {open = "game_pets"}}
 	}
 }
