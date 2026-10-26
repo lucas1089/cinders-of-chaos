@@ -144,8 +144,8 @@ eq(K.doneCount(st, cfg), 1)
 local function tg(level) local t = K.targets(K.new(), cfg, level) return t.open, t.need, t.bonusNeed end
 local o, n, b = tg(1200); eq(o, 6); eq(n, 4); eq(b, 6, "all six at 1200")
 o, n, b = tg(300); eq(o, 5, "300: no waystone"); eq(n, 3, "3 of 5"); eq(b, 5, "bonus at 5 of 5")
-o, n, b = tg(100); eq(o, 5); eq(n, 3)
-o, n, b = tg(50); eq(o, 2, "50: boss and bounty (dungeon, rift, tower at 100)"); eq(n, 2, "minimum 2"); eq(b, nil, "no bonus beyond the chest")
+o, n, b = tg(100); eq(o, 4, "100: rift, tower, boss, bounty"); eq(n, 2, "4 open, 2 locked: need 2")
+o, n, b = tg(50); eq(o, 2, "50: boss and bounty (dungeon 150, rift and tower 100)"); eq(n, 2, "minimum 2"); eq(b, nil, "no bonus beyond the chest")
 o, n, b = tg(8); eq(o, 1, "8: the bounty only"); eq(n, 1, "never more than there is"); eq(b, nil, "no bonus with one")
 o, n, b = tg(30); eq(o, 2); eq(n, 2); eq(b, nil, "two open, two needed: no bonus roll beyond the chest")
 -- an activity done below its gate still counts (the gate is a guess about the systems; the player did it)
@@ -359,6 +359,22 @@ check(a.said[#a.said]:find("atividades", 1, true), "pt-BR progress: " .. tostrin
 for _, key in ipairs({"Weekly Chest: %d of %d activities done this week.", "The Weekly Chest opens: %s",
 		"Bonus roll for every activity of the week: %s"}) do
 	check(ChaosI18n and ChaosI18n.strings and ChaosI18n.strings["pt-BR"] and ChaosI18n.strings["pt-BR"][key], "pt-BR entry: " .. key)
+end
+
+-- the levels shared with the top menu's unlock table (O259) are the same
+do
+	local ok, U = pcall(dofile, "data/scripts/chaos/unlocks_config.lua")
+	check(ok and type(U) == "table" and U.entries, "unlocks_config.lua loads")
+	local menu = {}
+	for _, e in ipairs(ok and U.entries or {}) do
+		menu[e.key] = e.level
+	end
+	for _, a in ipairs(cfg.activities) do
+		local k = ({dungeon = "dungeons", rift = "rifts", tower = "tower"})[a.key]
+		if k then
+			eq(a.level, menu[k], "activity " .. a.key .. " level matches unlocks_config " .. k)
+		end
+	end
 end
 
 print(string.format("weeklychest_test: %d checks, %d failures", checks, failures))

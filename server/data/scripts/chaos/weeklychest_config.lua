@@ -33,9 +33,10 @@ return {
 	-- system's config in tests/weeklychest_test.lua where that config is a plain table): rifts rift_config.lua tiers[1].minLevel,
 	-- the world boss Chaos.worldBoss.minLevel (300) or an invasion invasion_config.lua minLevel (30, the lower one counts for
 	-- "boss"), bounty contracts the first band of bounty_config.lua, waystones the first tier of waystone_tiers_config.lua,
-	-- dungeons and the Infinity Tower the entry level of their lowest room (100).
+	-- dungeons the first base dungeon (bossspawns_config.lua, 150), the Infinity Tower its run minLevel (100). The levels shared
+	-- with unlocks_config.lua (dungeons, rifts, tower) are checked against it in tests/weeklychest_test.lua.
 	activities = {
-		{key = "dungeon", level = 100},
+		{key = "dungeon", level = 150},
 		{key = "rift", level = 100},
 		{key = "waystone", level = 1100},
 		{key = "tower", level = 100},
