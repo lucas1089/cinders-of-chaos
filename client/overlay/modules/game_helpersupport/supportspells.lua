@@ -69,7 +69,7 @@ H.CYCLE_MS = 250
 
 -- spells that are never offered: the teleport home, the mines trigger (needs mines), the dash and the roll (move the
 -- character), and the stock utilities (by words, the same in every client table)
-H.NEVER_IDS = { [254] = true, [104] = true, [232] = true, [67] = true }
+H.NEVER_IDS = { [254] = true, [104] = true, [232] = true }
 H.NEVER_WORDS = {}
 H.NEVER_STOCK = {}
 for _, w in ipairs({ 'utevo lux', 'utevo gran lux', 'utevo vis lux', 'exani tera', 'exiva moe res', 'exevo pan',
@@ -132,7 +132,6 @@ H.KINDS = {
   [233] = { auto = 'timer', dur = 12 },  -- Banner Call
   [239] = { auto = 'timer', dur = 20 },  -- Poison Blades
   [245] = { auto = 'timer', dur = 30 },  -- Bushido Focus
-  [250] = { auto = 'timer', dur = 20 },  -- Zealotry
   [72] = { auto = 'timer', dur = 12 },   -- Mantra of Stone
   [223] = { auto = 'timer', dur = 8 },   -- Iron Bellow
   [226] = { auto = 'timer', dur = 10 },  -- Hall of Mirrors
@@ -144,7 +143,6 @@ H.KINDS = {
   -- the hastes: offered, but the Tools tab keeps them up (Auto setup sets that), so Auto setup leaves them out here
   [6] = { auto = false, kind = 'buff', dur = 33, bar = { 'haste' }, haste = true },
   [39] = { auto = false, kind = 'buff', dur = 22, bar = { 'haste' }, haste = true },
-  [134] = { auto = false, kind = 'buff', dur = 12 },  -- Wildstride (the Chaos id 134 of the retired stock Windrunner)
   -- the support section
   [234] = { auto = 'support', kind = 'shield', dur = 15, rank = 2 },        -- Soulward
   [44] = { auto = 'support', kind = 'shield', dur = 200, bar = { 'magic shield' }, rank = 2 }, -- Ward of the Mind
@@ -155,7 +153,6 @@ H.KINDS = {
   [211] = { auto = 'support', kind = 'summon', fight = true, dur = 40, rank = 4 },   -- Moonfang Pack
   [180] = { auto = 'support', kind = 'summon', fight = true, rank = 4, capped = true },    -- Raise Dead
   [192] = { auto = 'support', kind = 'summon', fight = true, rank = 4, capped = true, minion = 'Risen Warrior' }, -- Raise Bone Warrior
-  [193] = { auto = 'support', kind = 'summon', fight = true, rank = 4, capped = true, minion = 'Risen Archer' },  -- Raise Bone Archer
   [176] = { auto = 'support', kind = 'summon', fight = true, rank = 4, capped = true, minion = 'Risen Mage' },    -- Raise Bone Mage
   -- (a recast with the golem / the companions out only calls them back and heals them: cast while fewer than `keep` are out)
   [186] = { auto = 'support', kind = 'summon', fight = true, rank = 4, minions = { 'Bone Golem' }, keep = { { 0, 1 } } }, -- Bone Golem
@@ -168,12 +165,10 @@ H.KINDS = {
   [197] = { auto = 'support', kind = 'summon', rank = 3 },
   [282] = { auto = 'support', kind = 'summon', rank = 3 },
   -- offered, never set up by Auto setup (they cost health, need a shield, a named target or a party, or give up the fight)
-  [203] = { auto = false },                          -- Crimson Covenant (costs health)
   [247] = { auto = false },                          -- Bloodrage (costs health)
   [252] = { auto = false, fight = true, dur = 5 },   -- Aegis of Faith (needs a shield)
   [229] = { auto = false, dur = 8 },                 -- Wraithshroud (invisible: the fight ends)
   [238] = { auto = false, dur = 4 },                 -- Shadow Veil
-  [241] = { auto = false },                          -- Smoke Bomb
   [235] = { auto = false },                          -- Hunter's Instinct
   [70] = { auto = false },                           -- Chi Ward (a party member's shield, needs chi)
   [126] = { auto = false, kind = 'party', dur = 60 },-- Train Party

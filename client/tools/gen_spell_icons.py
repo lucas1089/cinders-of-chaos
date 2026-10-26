@@ -394,12 +394,12 @@ ICONS = [  # (spell name, theme, glyph)
     ('Bone Golem', 'bone', 'golem'), ('Banner of Bones', 'bone', 'banner'), ('Bone Offering', 'blood', 'ribs'),
     # the Monk line (cells 259..268)
     ('Ashen Fist', 'ember', 'fist'), ('Sundering Palm', 'steel', 'palm'), ('Whirling Heel', 'ember', 'kick'),
-    ('Kindled Breath', 'light', 'flame'), ('Mistborne Step', 'water', 'dash'),
+    ('Kindled Breath', 'light', 'flame'), ('Mistborne Strike', 'water', 'dash'),
     ('Pressure Points', 'shadow', 'nodes'), ('Shadowfist Flurry', 'shadow', 'fist'),
     ('Chi Ward', 'holy', 'shield'), ('Iron Palm', 'steel', 'fist'), ('Mantra of Stone', 'light', 'mountain'),
     # the Templar line (cells 269..277)
     ('Radiant Smite', 'light', 'hammer'), ('Consecration', 'light', 'ring'), ('Vow of Mending', 'holy', 'drop'),
-    ('Judgement', 'holy', 'eye'), ('Purging Nova', 'holy', 'burst'), ('Zealotry', 'ember', 'sword'),
+    ('Judgement', 'holy', 'eye'), ('Purging Nova', 'holy', 'burst'), ("Crusader's Sweep", 'ember', 'sword'),
     ('Rebuke', 'light', 'wave'), ('Aegis of Faith', 'light', 'shield'), ('Lay on Hands', 'light', 'cross'),
     # the Illusionist healer pass (cells 278..279)
     ('Mirror Mend', 'water', 'twin'), ('Lucid Reverie', 'arcane', 'ring'),
@@ -418,7 +418,7 @@ ICONS = [  # (spell name, theme, glyph)
     ('Bone Shrapnel', 'bone', 'shrapnel'), ('Sanctified Ground', 'holy', 'ring'), ('Shield Wave', 'light', 'shieldwave'),
     ('Fan of Knives', 'steel', 'knives'),
     # the Necromancer line's summon spells (2026-10-18, cells 298..300: the last three of the 300-cell sheets)
-    ('Raise Bone Warrior', 'bone', 'sword'), ('Raise Bone Archer', 'bone', 'arrows'), ('Raise Bone Mage', 'necrotic', 'eye'),
+    ('Raise Bone Warrior', 'bone', 'sword'), ('Splinter Volley', 'bone', 'arrows'), ('Raise Bone Mage', 'necrotic', 'eye'),
     # the late spells of the ascended classes (C6, 2026-10-20): cells 301..307, past the old 300-cell sheets (the sheets get a 16th row)
     ('Bastion Cry', 'steel', 'banner'), ('Anvil Fall', 'steel', 'hammer'), ('Twin Verdict', 'holy', 'twin'),
     ('Rampage Leap', 'blood', 'slam'), ('Glacial Doom', 'frost', 'swirl'), ('Pack Frenzy', 'nature', 'paw'),
@@ -427,7 +427,7 @@ ICONS = [  # (spell name, theme, glyph)
     ('Tautstring', 'nature', 'arrowup'),
     # the Warrior line's guard buff and the Ranger line's run buff in place of the stock Bulwark and Windrunner (2026-10-20,
     # cells 309-310)
-    ('Ironhold', 'steel', 'shield'), ('Wildstride', 'nature', 'dash'),
+    ('Ironhold', 'steel', 'shield'), ('Gale Volley', 'nature', 'dash'),
     # the Necromancer line's area attack after Withering Curse (2026-10-22, cell 311)
     ('Grave Nova', 'necrotic', 'gravenova'),
     # the attack kit (2026-10-23, cells 312-348): 37 attack spells so every class has 10 (docs/CLASSES.md "Attack spell

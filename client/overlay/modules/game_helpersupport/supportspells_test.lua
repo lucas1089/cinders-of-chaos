@@ -78,15 +78,15 @@ ok(#p.timer >= 3, 'Samurai: at least three timer rules (was 3 at most)')
 
 p = H.autoPlan(entries, canCastFor(22, 200))       -- Bone Lord
 ok(has(p.support, 180) and has(p.support, 186) and has(p.support, 187), 'Bone Lord: his minions and the banner')
-ok(has(p.support, 192) and has(p.support, 193) and has(p.support, 176), 'Bone Lord: the three summon spells')
+ok(has(p.support, 192) and not has(p.support, 193) and has(p.support, 176), 'Bone Lord: the two summon spells (193 is an attack spell since O254)')
 ok(#p.support <= H.SUPPORT_MAX, 'Bone Lord: within the section')
 p = H.autoPlan(entries, canCastFor(20, 200))       -- Necromancer
-ok(has(p.support, 180) and has(p.support, 192) and has(p.support, 193) and has(p.support, 176), 'Necromancer 200: Raise Dead and the three summons')
+ok(has(p.support, 180) and has(p.support, 192) and has(p.support, 176) and not has(p.support, 193), 'Necromancer 200: Raise Dead and the two summons')
 ok(not has(p.support, 186) and not has(p.support, 187), 'Necromancer: no golem, no banner')
 p = H.autoPlan(entries, canCastFor(20, 10))
 ok(has(p.support, 192) and not has(p.support, 193) and not has(p.support, 176) and not has(p.support, 180), 'Necromancer 10: only the warrior')
 p = H.autoPlan(entries, canCastFor(20, 14))
-ok(has(p.support, 192) and has(p.support, 193) and not has(p.support, 176), 'Necromancer 14: warrior and archer')
+ok(has(p.support, 192) and not has(p.support, 193) and not has(p.support, 176), 'Necromancer 14: the warrior only (the mage comes at 16)')
 p = H.autoPlan(entries, canCastFor(10, 200))       -- Illusionist
 ok(has(p.support, 211), 'Illusionist: Moonfang Pack')
 p = H.autoPlan(entries, canCastFor(1, 200))        -- Mystic
@@ -506,33 +506,32 @@ now = now + 5000
 eq(H.pick(st, cfg, w.ctx()), nil, 'the summon is not repeated within its gap')
 now = now + 6000
 eq((H.pick(st, cfg, w.ctx()) or {}).id, 180, 'after the gap: again')
--- the capped summons (the next one kills the oldest): Raise Dead and the Risen Warrior / Archer / Mage are cast only below the cap
-ok(H.info(byId[192]).capped and H.info(byId[193]).capped and H.info(byId[176]).capped and H.info(byId[180]).capped, 'the necromancer summons are capped')
+-- the capped summons (the next one kills the oldest): Raise Dead and the Risen Warrior / Mage are cast only below the cap
+ok(H.info(byId[192]).capped and H.info(byId[176]).capped and H.info(byId[180]).capped, 'the necromancer summons are capped')
 eq(H.info(byId[192]).minion, 'Risen Warrior', 'Raise Bone Warrior counts its Risen Warrior')
 eq(H.summonCap(20), 3, 'Necromancer: 3'); eq(H.summonCap(21), 1, 'Lich: 1'); eq(H.summonCap(22, 100), 6, 'Bone Lord: 6')
 eq(H.summonCap(22, 400), 7, 'Bone Lord 400: 7'); eq(H.summonCap(4), 3, 'any other class: the default 3')
 st, w = H.newState(), world({ bar = {}, summons = {} })
-cfg = cfgOf({ 192, 193, 176, 180 })
+cfg = cfgOf({ 192, 176, 180 })
 now = now + 100000
 s = H.pick(st, cfg, w.ctx())
 eq(s and s.id, 192, 'nothing out: the warrior first')
-eq(st.status[193], 'queued', 'the archer is next')
+eq(st.status[176], 'queued', 'the mage is next')
 w.summons = { 'Risen Warrior' }
 H.noteCast(st, byId[192], now)
 now = now + 20000
 s = H.pick(st, cfg, w.ctx())
 eq(st.status[192], 'have', 'a warrior is out: not another one')
-eq(s and s.id, 193, 'then the archer')
-w.summons = { 'Risen Warrior', 'Risen Archer' }
+eq(s and s.id, 176, 'then the mage')
+w.summons = { 'Risen Warrior', 'Risen Mage' }
 H.noteCast(st, s, now)
 now = now + 20000
-eq((H.pick(st, cfg, w.ctx()) or {}).id, 176, 'then the mage')
-w.summons = { 'Risen Warrior', 'Risen Archer', 'Risen Mage' }
+w.summons = { 'Risen Warrior', 'Risen Mage', 'Risen Mage' }
 H.noteCast(st, byId[176], now)
 now = now + 20000
 eq(H.pick(st, cfg, w.ctx()), nil, 'three out: nothing is cast (the next summon would kill the oldest)')
 eq(st.status[192], 'full', 'status: full'); eq(st.status[180], 'full', 'Raise Dead too')
-w.summons = { 'Risen Skeleton', 'Risen Skeleton', 'Risen Archer' }
+w.summons = { 'Risen Skeleton', 'Risen Skeleton', 'Risen Mage' }
 eq(H.pick(st, cfg, w.ctx()), nil, 'three of any kind: full')
 w.summons = { 'Risen Skeleton', 'Risen Skeleton' }
 now = now + 20000

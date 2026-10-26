@@ -44,8 +44,8 @@ import pack_model as P
 
 SERVER = os.path.normpath(os.path.join(HERE, '..'))
 CLASSES = {'necromancer': 'Necromancer', 'lich': 'Lich', 'bonelord': 'Bone Lord'}
-SPELL_LEVEL = {'warrior': 8, 'archer': 12, 'mage': 16, 'skeleton': 20, 'shade': 1, 'golem': 1}
-SUMMON = ('warrior', 'archer', 'mage')
+SPELL_LEVEL = {'warrior': 8, 'mage': 16, 'skeleton': 20, 'shade': 1, 'golem': 1}
+SUMMON = ('warrior', 'mage')
 
 
 def lua_bin():
@@ -335,7 +335,7 @@ def kills_per_hour(cls, level, d1, d5):
 def fmt_kind_rows(data, level):
     rows = rows_of(data, 'necromancer', level)
     out = []
-    for k in ('skeleton', 'warrior', 'archer', 'mage'):
+    for k in ('skeleton', 'warrior', 'mage'):
         r = rows[k]
         out.append('| %d | %s | %d | %d | %.1f | %.1f | %.1f |' % (
             level, k, (r['hitMin'] + r['hitMax']) / 2, r['health'], (r['hitMin'] + r['hitMax']) / 2 / 2, r['dps1'], r['dps5']))

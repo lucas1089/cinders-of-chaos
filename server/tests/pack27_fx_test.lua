@@ -69,7 +69,7 @@ for id, kinds in pairs(C.spells) do
 		end
 	end
 end
-eq(n, 43, "the spells with pair 27 effects")
+eq(n, 42, "the spells with pair 27 effects")
 for use, name in pairs(C.uses) do
 	ok(spec["effect:" .. name], "use " .. use .. ": " .. name .. " in the client spec")
 end

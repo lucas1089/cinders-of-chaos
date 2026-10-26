@@ -3137,7 +3137,7 @@ supports and heals do not. `tools/ci/check_attack_counts.py` counts by class lin
 
 Before: Warrior 8, Juggernaut 8, Berserker 9, Ranger 8, Deadeye 9, Beastmaster 7, Mystic 10, Elementalist 10, Illusionist
 7, Thief 5, Ninja 7, Samurai 6, Monk 4, Shadowfist 7, Iron Sage 6, Necromancer 4, Lich 5, Bone Lord 3, Templar 3,
-Inquisitor 4, Sentinel 3. After: **10 for all 21**. The target is the highest count (Mystic and Elementalist). 37 new spells fill 77 class slots (Warrior 2, Juggernaut 2, Berserker 1, Ranger
+Inquisitor 4, Sentinel 3. After: **10 for all 21** (11 after O254, below). The target is the highest count (Mystic and Elementalist). 37 new spells fill 77 class slots (Warrior 2, Juggernaut 2, Berserker 1, Ranger
 2, Deadeye 1, Beastmaster 3, Illusionist 3, Thief 5, Ninja 3, Samurai 4, Monk 6, Shadowfist 3, Iron Sage 4,
 Necromancer 6, Lich 5, Bone Lord 7, Templar 7, Inquisitor 6, Sentinel 7). Each fills a thin level band of its class, and
 each line has single and area spells. Numbers: `attack_kit_config.lua` (fitted with `rotation_sim.py`), the XML and
@@ -3232,6 +3232,47 @@ high levels together. (2) Level 200 spikes: Illusionist +42%, Ranger +27%, Deade
 Lich, Bone Lord, Templar and Sentinel. `rotation_sim.py --ladder --check` and `--mana --check` pass. The
 `weapon_power_config.lua` `distance` row fell at levels 500 and up when regenerated (`weapon_sim.py --power --write`):
 its reference is the Ranger rotation, which changed.
+
+### Support to attack (O254, 2026-10-26; owner: faster, more fluid fights, more attack spells and fewer support spells; computed, not measured in game)
+
+**Counts.** One weak support per class line became an attack spell, so every class and ascension has **11** attack spells
+(was 10; `check_attack_counts.py` `ATTACK_SPELLS = 11`). Own supports (not the 9 shared ones, not heals) before and after:
+Warrior 3/3, Juggernaut 3/2, Berserker 2/2, Ranger 3/2, Deadeye 3/2, Beastmaster 4/3, Mystic 1/1, Elementalist 1/0,
+Illusionist 3/3, Thief 3/3, Ninja 4/3, Samurai 5/5, Monk 1/0, Shadowfist 1/0, Iron Sage 3/2, Necromancer 4/3, Lich 4/3,
+Bone Lord 6/5, Templar 0/0, Inquisitor 1/0, Sentinel 2/2. Attack spells in `spells_chaos.xml` per class: +1 each. No heal
+was touched; every class keeps its only sustain heal; tank and party auras that define the support ascensions stay.
+
+| Old support | New attack spell | Classes | Level | Shape | Why this one |
+|---|---|---|---|---|---|
+| Bastion Cry (taunt buff) | Bastion Cry | Warrior, Juggernaut, Berserker | 340 | wave | pure buff, the line keeps its guard spells |
+| Wildstride (move buff) | Gale Volley | Ranger, Deadeye, Beastmaster | 240 | line | speed is the base speed already; the line lacked a 240 hit |
+| Blood Pact (self cost buff) | Crimson Covenant | Mystic, Elementalist, Illusionist | 200 | dot, 6 ticks | trade hp for power slowed the rotation |
+| Smoke Bomb (evade buff) | Smoke Bomb | Thief, Ninja, Samurai | 200 | around r1 | the trio kept 3 other utility spells |
+| Raise Bone Archer (minion) | Splinter Volley | Necromancer, Lich, Bone Lord | 270 | circle r1 | weakest minion; the archer hit like the other two |
+| Mistborne Step (dash buff) | Mistborne Strike | Monk, Shadowfist, Iron Sage | 190 | wave, finisher | dash is in the roll already |
+| Zealotry (stack buff) | Crusader's Sweep | Templar, Inquisitor, Sentinel | 250 | wave | buff stack was never worth a slot |
+
+Each new spell keeps the id of the support, so the icon cell, the buff-bar slot and the pt-BR key stay. The files
+`wildstride.lua`, `blood_pact.lua`, `raise_archer.lua`, `mistborne_step.lua`, `zealotry.lua` and the monster
+`necro_risen_archer.xml` are deleted; `bastion_cry.lua` and `smoke_bomb.lua` were rewritten; the others are
+data driven (`attack_kit_config.lua`). Each has a `kindOverride` (`chaos_supports_config.lua`) and a row in
+`rotation_model.csv`; icons are renamed in `gen_spell_icons.py` and `chaos_spell_icons.csv` at the same cell.
+
+**Damage.** The coefficients are scaled from the comparable attack spell of the same class and level (same shape and
+school, the nearest level), then the cooldown follows the ladder ("Cooldown ladder"). The ladder re-ranked the cooldowns
+of the lines that gained a spell; the diff of `spells_chaos.xml` is the list.
+
+**Class spell factor.** The new high-level spells moved the best sets (Ranger +13%, Iron Sage +22%, Monk +5%, Lich +19%
+at 5 targets). Each knot from level 150 up of `spell_factor_config.lua` that moved by more than 2% (best-set score, 1
+target + 0.25 x pack) was multiplied by before / after, twice; now none is off by 2%. `spell_factor_test.lua` has the new
+numbers. Knots below 150 are untouched. `weapon_power_config.lua` was regenerated (`weapon_sim.py --power --write`).
+
+**Necromancer minions.** Without the archer the trio is warrior, warrior, mage (`necro_config.lua`, `necro_core.lua`);
+the Necromancer's own hit is 1.0 in `necro_balance_config.lua`. `minion_model.py --check` passes with its limits; the
+legacy numbers test builds `mages`.
+
+**Left over (dead code, not removed).** Buff-bar rows and SUBIDs of the five deleted scripts, the Zealotry stack
+mechanic in templar engine code and the monk roll hooks. They are never set now. A later pass can remove them.
 
 ### Mana cut (2026-10-22; owner: "custo de mana do ranger ainda está alto", "reveja o custo de mana das outras classes também"; computed with rotation_sim.py)
 

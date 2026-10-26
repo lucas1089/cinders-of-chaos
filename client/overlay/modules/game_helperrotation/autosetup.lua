@@ -101,8 +101,7 @@ function S.healSlots(heals)
   return out
 end
 
--- haste kept up: Haste (utani hur, Fleetfoot). Strong Haste (Galeborne Stride) is retired. Wildstride (12 s of 30, on top of Haste) and
--- Charge (a 5 s dash) are left out.
+-- haste kept up: Haste (utani hur, Fleetfoot). Strong Haste (Galeborne Stride) is retired. Charge (a 5 s dash) is left out.
 S.HASTES = { 6 }
 
 function S.haste(canCast)
@@ -113,7 +112,7 @@ function S.haste(canCast)
 end
 
 -- timer buffs: self buffs worth keeping up in a fight (server/data/spells/README.md). Spells that cost health
--- (Crimson Covenant, Bloodrage), need a shield or minions (Aegis of Faith, Banner of Bones) or call a summon are not.
+-- (Bloodrage), need a shield or minions (Aegis of Faith, Banner of Bones) or call a summon are not.
 -- cooldown: the spell's in seconds; the timer waits one more.
 S.BUFFS = {
   warrior = { { id = 222, words = 'vyr ira cruor', cooldown = 40 } },                 -- Red Frenzy
@@ -127,8 +126,7 @@ S.BUFFS = {
   monk = { { id = 72, words = 'tor vas qhal', cooldown = 30 },                         -- Mantra of Stone (Iron Sage)
     { id = 233, words = 'tor vas vant', cooldown = 35 } },
   necro = { { id = 233, words = 'tor vas vant', cooldown = 35 } },
-  templar = { { id = 250, words = 'vyr sol zel', cooldown = 30 },                      -- Zealotry (Inquisitor)
-    { id = 233, words = 'tor vas vant', cooldown = 35 } },
+  templar = { { id = 233, words = 'tor vas vant', cooldown = 35 } },
 }
 
 local function timerRule(id, words, cooldownSec)

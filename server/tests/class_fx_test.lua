@@ -136,7 +136,6 @@ eq(C.pick("warrior", 223, "aura_burst_gold"), "warrior_bellow", "Warrior Iron Be
 eq(C.pick("juggernaut", 223, "aura_burst_gold"), "juggernaut_bulwark", "Juggernaut's own Iron Bellow")
 eq(C.pick("berserker", 221, "earth_spikes"), "warrior_quake", "Berserker takes the line's Earthbreaker")
 eq(C.pick("samurai", 245, "aura_burst_gold"), "samurai_focus", "Bushido Focus")
-eq(C.pick("inquisitor", 250, "aura_burst_gold"), "inquisitor_zeal", "Zealotry")
 eq(C.pick("templar", 250, "aura_burst_gold"), nil, "no swap for a spell not listed")
 eq(C.pick("ranger", 214, "holy_spear"), nil, "no swap for another name")
 eq(C.pick(nil, 214, "holy_hit"), nil, "no class")

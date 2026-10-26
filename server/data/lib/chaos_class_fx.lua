@@ -84,7 +84,6 @@ C.swaps = {
 	ninja = {
 		[240] = {shade_vanish = "ninja_vanish", shade_appear = "ninja_vanish"}, -- Shadow Step
 		[73] = {whirlwind = "ninja_vanish"},            -- Blade Flurry (an ink slash through the spin)
-		[241] = {shadow_smoke = "ninja_smoke"},          -- Smoke Bomb (each tile)
 	},
 	samurai = {
 		[243] = {shield_bubble = "samurai_parry"},       -- Counter Stance
@@ -110,7 +109,6 @@ C.swaps = {
 		[191] = {healing_bloom = "templar_mend"},        -- Vow of Mending
 	},
 	inquisitor = {
-		[250] = {aura_burst_gold = "inquisitor_zeal"},   -- Zealotry
 	},
 	sentinel = {
 		[252] = {dawn_aegis = "sentinel_aegis"},         -- Aegis of Faith
@@ -120,7 +118,7 @@ C.swaps = {
 
 -- effects drawn for the snares and vigils (art in the pair, sent by nothing yet: their scripts send stock effects).
 -- C.send(pos, name, fallback) is the call for them once the switch is on.
-C.unwired = {"snare_jaws", "snare_blast", "vigil_wrath", "vigil_iron", "vigil_haste", "vigil_clarity"}
+C.unwired = {"ninja_smoke", "inquisitor_zeal", "snare_jaws", "snare_blast", "vigil_wrath", "vigil_iron", "vigil_haste", "vigil_clarity"}
 
 -- the class effect for a class key, spell id and effect name, or nil (pure: no switch, no ids)
 function C.pick(classKey, spellId, name)

@@ -104,7 +104,7 @@ for id, kinds in pairs(C.spells) do
 		end
 	end
 end
-eq(n, 42, "the spells with pair 36 effects")
+eq(n, 37, "the spells with pair 36 effects")
 for id in pairs(C.names) do
 	ok(C.spells[id] ~= nil, "name " .. id .. " has swaps")
 end

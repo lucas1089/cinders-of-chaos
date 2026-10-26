@@ -1,7 +1,7 @@
 -- luajit autosetup_classes_test.lua && lua5.3 autosetup_classes_test.lua (from the repository root or this folder)
 -- O186: Auto setup / Auto rotation of every class. Owner report 2026-10-24: a Ninja got 2 attack spells in the shooter
 -- although all of them were listed. At a high level every one of the 21 classes must get a full rotation (5 attack
--- spells, no repeats, every one an attack spell of the class), and the class's 10 attack spells must all be reachable
+-- spells, no repeats, every one an attack spell of the class), and the class's 11 attack spells must all be reachable
 -- (a preset or the extras), as check_rotation_kit.py expects. The spell checks are the ones of autorotation_ui.lua's
 -- canCastFor: the spell lists the vocation id as the server sends it (also through the client's translateVocation fold),
 -- the level is met.
@@ -64,7 +64,7 @@ for name, id in pairs(CLASSES) do
   classes = classes + 1
   local want = 0
   for _ in pairs(attack[id]) do want = want + 1 end
-  eq(want, 10, name .. ': 10 attack spells in the data')
+  eq(want, 11, name .. ': 11 attack spells in the data')
   -- the rotation at a high level, with and without the client folding ascension ids onto a base class
   for _, translate in ipairs({ false, function(v) return v == 12 and 11 or (v == 13 and 11 or 0) end }) do
     local sel = A.select(id, 2000, canCastFor(id, 2000, translate or function() return 0 end), { topUp = true })

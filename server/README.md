@@ -1793,6 +1793,7 @@ Mystic who cast it had no attack spell for 12 s; 2 s since the rotation pass ("S
 
 Until the cure spells were retired (C6 below) every spell id below 256 was in use (base server, `patch_spell_ids.py`, the Chaos block). The Necromancer's three summon
 spells (Raise Bone Warrior 192, Raise Bone Archer 193, Raise Bone Mage 176) took the ids of the base's Fletch Crystal Arrows
+(O254: Raise Bone Archer was removed; id 193 is the attack spell Splinter Volley and the trio is warrior, warrior, mage. Wildstride, Blood Pact, Mistborne Step and Zealotry became attack spells too: server/data/spells/README.md "Support to attack (O254)".)
 (192), Fletch Wraith Bolts (193) and Arrow Call (176): ammunition conjure spells, switched off by the `archery` step
 (`patch_base_archery.py`, `conjureScripts` of `data/lib/chaos_archery_config.lua`). The `spells` step runs before `archery`,
 so `register_spells.py` no longer counts a base spell whose script is in `conjureScripts` as holding its spellid;
@@ -1903,6 +1904,7 @@ lost its attacks for 10 s of every cast; Swift Foot was never offered (`NEVER_WO
   buff bar row `wildstride`); its own sub id adds it to the Haste the helper keeps up instead of replacing it.
 * Neither has a pacify, a slow, a defence loss or another group cooldown. Numbers: `data/spells/README.md` "Ironhold and
   Wildstride".
+  (O254: Wildstride became the attack spell Gale Volley, same id; see server/data/spells/README.md "Support to attack (O254)".)
 * Client: `gen_spell_data.py` writes both and adds `utamo tempo` and `utamo tempo san` to `ChaosRetiredSpells` (out of
   the spell list, moved off the server ids by `spellfix.lua`, dropped from the helper's lists); the `tor ira sol` fix
   entry is gone. The helper's Auto setup entry for id 132 is Ironhold (timer, 12 s); id 134 is Wildstride (offered in

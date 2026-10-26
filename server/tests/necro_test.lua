@@ -125,7 +125,7 @@ for _, kind in ipairs({"skeleton", "shade", "golem"}) do
 	end
 end
 eq(N.minionCap(cfg, "necromancer", "skeleton", 300), 4, "Raise Dead's own cap stays")
-for _, kind in ipairs({"warrior", "archer", "mage"}) do
+for _, kind in ipairs({"warrior", "mage"}) do
 	eq(N.minionCap(cfg, "necromancer", kind, 50), 3, "necromancer " .. kind .. ": limited only by the total")
 	eq(N.minionCap(cfg, "lich", kind, 50), 1, "lich " .. kind .. ": the total of 1")
 	eq(N.minionCap(cfg, "bonelord", kind, 50), 6, "bone lord " .. kind .. ": the total of 6")
@@ -137,11 +137,11 @@ local room = N.makeRoom(cfg, "necromancer", 30, kinds())
 eq(#room, 0, "no minions: nothing dismissed")
 room = N.makeRoom(cfg, "necromancer", 30, kinds("skeleton", "warrior"))
 eq(#room, 0, "two of three: nothing dismissed")
-room = N.makeRoom(cfg, "necromancer", 30, kinds("skeleton", "warrior", "archer"))
+room = N.makeRoom(cfg, "necromancer", 30, kinds("skeleton", "warrior", "mage"))
 eq(#room, 1, "three of three: one goes"); eq(room[1], 1, "the oldest (the first)")
-room = N.makeRoom(cfg, "necromancer", 300, kinds("mage", "skeleton", "archer"))
+room = N.makeRoom(cfg, "necromancer", 300, kinds("mage", "skeleton", "warrior"))
 eq(room[1], 1, "the oldest whatever its kind (a mage here)")
-room = N.makeRoom(cfg, "necromancer", 30, kinds("skeleton", "warrior", "archer", "mage"))
+room = N.makeRoom(cfg, "necromancer", 30, kinds("skeleton", "warrior", "mage", "mage"))
 eq(#room, 2, "four out (the cap was lowered): two go"); eq(room[1], 1, "oldest first"); eq(room[2], 2, "then the next")
 room = N.makeRoom(cfg, "lich", 300, kinds("shade"))
 eq(#room, 1, "the lich's shade makes room for a warrior"); eq(room[1], 1, "the shade")
@@ -150,50 +150,49 @@ room = N.makeRoom(cfg, "bonelord", 100, kinds("skeleton", "skeleton", "skeleton"
 eq(#room, 1, "bone lord with 5 skeletons and the golem: one goes"); eq(room[1], 1, "the oldest skeleton")
 eq(N.makeRoom(cfg, nil, 100, kinds()), nil, "no class: no room")
 -- three, then a fourth, a fifth: the first dies, then the second (simulate the owner's list)
-local army = kinds("skeleton", "warrior", "archer")
+local army = kinds("skeleton", "warrior", "mage")
 for step = 1, 2 do
 	local drop = N.makeRoom(cfg, "necromancer", 50, army)
 	for j = #drop, 1, -1 do table.remove(army, drop[j]) end
 	army[#army + 1] = {kind = "mage"}
 	eq(#army, 3, "step " .. step .. ": still 3")
 end
-eq(army[1].kind, "archer", "the skeleton and the warrior are gone, the archer is the oldest left")
+eq(army[1].kind, "mage", "the skeleton and the warrior are gone, a mage is the oldest left")
 -- over the caps after a level or vocation change: the per-kind cap first, then the total (newest first)
-local over2 = N.overCap(cfg, "necromancer", 50, kinds("skeleton", "warrior", "archer", "mage"))
+local over2 = N.overCap(cfg, "necromancer", 50, kinds("skeleton", "warrior", "mage", "mage"))
 eq(#over2, 1, "four minions of a total of 3: one too many"); eq(over2[1], 4, "the newest")
-eq(#N.overCap(cfg, "necromancer", 50, kinds("warrior", "archer", "mage")), 0, "three: within the total")
+eq(#N.overCap(cfg, "necromancer", 50, kinds("warrior", "mage", "mage")), 0, "three: within the total")
 eq(#N.overCap(cfg, "lich", 50, kinds("warrior")), 0, "the lich may have a warrior")
 eq(#N.overCap(cfg, "lich", 50, kinds("warrior", "mage")), 1, "the lich: only one in all")
-eq(#N.restFilter(cfg, "necromancer", 50, kinds("warrior", "archer", "mage", "mage")), 3, "rest: at most the total")
+eq(#N.restFilter(cfg, "necromancer", 50, kinds("warrior", "mage", "mage", "mage")), 3, "rest: at most the total")
 eq(#N.restFilter(cfg, "lich", 50, kinds("shade", "warrior")), 1, "rest: the lich keeps one")
 
 -- ------------------------------------------------------------------ the summon kinds' numbers
 eq(N.kindOf(cfg, "Risen Warrior"), "warrior", "kind of Risen Warrior")
-eq(N.kindOf(cfg, "risen archer"), "archer", "kind of Risen Archer")
+eq(N.kindOf(cfg, "risen archer"), nil, "no Risen Archer any more (O254)")
 eq(N.kindOf(cfg, "Risen Mage"), "mage", "kind of Risen Mage")
 local m = cfg.minions
-eq(m.warrior.range, 1, "warrior: melee"); eq(m.archer.range, 5, "archer: range 5"); eq(m.mage.range, 4, "mage: range 4")
-eq(m.warrior.combat, "physical", "warrior: physical"); eq(m.archer.combat, "physical", "archer: physical (arrows)")
+eq(m.warrior.range, 1, "warrior: melee"); eq(m.mage.range, 4, "mage: range 4")
+eq(m.warrior.combat, "physical", "warrior: physical")
 ok(m.mage.combat == "death" or m.mage.combat == "energy", "mage: death or energy")
-for _, kind in ipairs({"warrior", "archer", "mage"}) do
+for _, kind in ipairs({"warrior", "mage"}) do
 	ok(m[kind].summon, kind .. ": a summon-spell kind")
 	ok(m[kind].intervalMs >= 1000, kind .. ": a hit interval")
 end
 local hw = N.minionHealth(cfg, "necromancer", "warrior", 100, 50)
 local hs = N.minionHealth(cfg, "necromancer", "skeleton", 100, 50)
-local ha = N.minionHealth(cfg, "necromancer", "archer", 100, 50)
 local hm = N.minionHealth(cfg, "necromancer", "mage", 100, 50)
 ok(hw > hs, "the warrior is sturdier than a skeleton (" .. hw .. " vs " .. hs .. ")")
-ok(ha < hs and hm < hs, "the archer and the mage are fragile (" .. ha .. ", " .. hm .. " vs " .. hs .. ")")
+ok(hm < hs, "the mage is fragile (" .. hm .. " vs " .. hs .. ")")
 eq(hw, math.floor((200 + 100 * 9 + 50 * 6) * 1.0 * m.warrior.mult.health), "warrior health = formula x mult")
-local aMin, aMax = N.minionHit(cfg, "necromancer", "archer", 100, 50)
+local mMin, mMax = N.minionHit(cfg, "necromancer", "mage", 100, 50)
 local sMin, sMax = N.minionHit(cfg, "necromancer", "skeleton", 100, 50)
-ok(aMax > sMax, "the archer hits harder than the skeleton")
+ok(mMax > sMax, "the mage hits harder than the skeleton")
 local wMin, wMax = N.minionHit(cfg, "necromancer", "warrior", 100, 50)
 eq(wMax, sMax, "the warrior hits like a skeleton")
 ok(N.minionHealth(cfg, "lich", "warrior", 100, 50) > hw, "the lich's single minion is stronger (class factor)")
 ok(N.minionHealth(cfg, "bonelord", "warrior", 100, 50) ~= hw, "the class factors apply to the new kinds")
-eq(N.splashShare(cfg, "bonelord", "archer"), 0, "only skeletons splash")
+eq(N.splashShare(cfg, "bonelord", "mage"), 0, "only skeletons splash")
 
 -- ------------------------------------------------------------------ Raise Dead
 local plan = N.raisePlan(cfg, "necromancer", 300, 0, 5)
@@ -368,7 +367,7 @@ for a in xml:gmatch("<instant ([^>]*)>") do
 end
 local stock = readFile("data/spells/stock_spells.csv") or ""
 local prev
-for _, kind in ipairs({"warrior", "archer", "mage"}) do
+for _, kind in ipairs({"warrior", "mage"}) do
 	local sp = cfg.summonSpells[kind]
 	local id = cfg.spellIds[sp.spell]
 	ok(id and id < 256, kind .. ": spell id below 256")
@@ -393,7 +392,7 @@ for _, kind in ipairs({"warrior", "archer", "mage"}) do
 	eq(allIds[tostring(id)], 1, kind .. ": id used once"); eq(allWords[sp.words], 1, kind .. ": words used once")
 	ok(not stock:find("\n" .. id .. ",", 1, true), kind .. ": id is no stock spell of stock_spells.csv")
 	ok(sp.level >= 8, kind .. ": not below the start level 8 of the first spell")
-	ok(not prev or sp.level > prev, kind .. ": unlock levels rise (warrior, archer, mage)")
+	ok(not prev or sp.level > prev, kind .. ": unlock levels rise (warrior, mage)")
 	prev = sp.level
 	ok(sp.mana > 0 and sp.mana < 150 and sp.cooldownMs >= 2000 and sp.cooldownMs <= 10000, kind .. ": sensible mana and cooldown")
 end
@@ -402,7 +401,7 @@ eq(tonumber(xml:match('name="Bone Spear"[^>]*level="(%d+)"') or xml:match('level
 for _, kind in ipairs(N.kinds) do
 	local found
 	for _, f in ipairs({"necro_risen_skeleton", "necro_lich_shade", "necro_bone_golem", "necro_risen_warrior",
-			"necro_risen_archer", "necro_risen_mage"}) do
+			"necro_risen_mage"}) do
 		local t = readFile("data/monster/monsters/chaos/" .. f .. ".xml") or ""
 		if t:find('<monster name="' .. cfg.minions[kind].monster .. '"', 1, true) then
 			found = t
@@ -423,7 +422,7 @@ local EFFECTS = {hitarea = true, energyhit = true, mortarea = true, drawblood = 
 	energyarea = true, blackspark = true}
 local ANIS = {death = true, arrow = true, energy = true}
 local names = {}
-for kind in pairs({skeleton = 1, shade = 1, golem = 1, warrior = 1, archer = 1, mage = 1}) do
+for kind in pairs({skeleton = 1, shade = 1, golem = 1, warrior = 1, mage = 1}) do
 	local sp = cfg.minionSpells[kind]
 	ok(sp and sp.single and sp.area, kind .. ": a single target and an area spell")
 	for _, which in ipairs({"single", "area"}) do
@@ -453,7 +452,7 @@ local a, b = N.minionSpellHit(cfg, "warrior", "single", 100, 200)
 eq(a, math.floor(100 * cfg.minionSpells.warrior.single.mult), "single spell min")
 eq(b, math.floor(200 * cfg.minionSpells.warrior.single.mult), "single spell max")
 ok(cfg.minions.warrior.tauntMs and cfg.minions.warrior.tauntRadius >= 1, "the summoned warrior taunts")
-ok(not cfg.minions.archer.tauntMs and not cfg.minions.mage.tauntMs, "the ranged ones do not")
+ok(not cfg.minions.mage.tauntMs, "the ranged one does not")
 local libSrc = readFile("data/scripts/chaos/necro_lib.lua")
 for e in pairs(EFFECTS) do
 	ok(libSrc:find("\n\t*" .. e .. " = CONST_ME_") or libSrc:find("[{ ]" .. e .. " = CONST_ME_"), e .. ": in necro_lib EFFECT")

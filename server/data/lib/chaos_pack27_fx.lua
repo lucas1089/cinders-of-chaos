@@ -46,7 +46,6 @@ C.spells = {
 	[198] = {fx = {holy_smite = "judgment_holy"}, first = {holy_smite = true}}, -- Judgement
 	[199] = {fx = {dome_blast_holy = "nova_radiant"}, first = {dome_blast_holy = true}}, -- Purging Nova
 	[191] = {fx = {healing_bloom = "mend_holy"}, first = {healing_bloom = true}}, -- Vow of Mending
-	[250] = {fx = {aura_burst_gold = "zeal_oath"}, first = {aura_burst_gold = true}}, -- Zealotry
 	[252] = {fx = {dawn_aegis = "aegis_radiant"}, first = {dawn_aegis = true}}, -- Aegis of Faith
 	-- Warrior line
 	[220] = {fx = {whirlwind = "gyre_steel"}, first = {whirlwind = true}},      -- Reaping Gyre
@@ -118,7 +117,7 @@ C.names = {
 	[196] = "Iron Chain", [197] = "Bone Shrapnel", [137] = "Sanctified Ground", [170] = "Shield Wave",
 	[136] = "Fan of Knives", [235] = "Hunter's Instinct", [200] = "Rime Bloom", [204] = "Falling Pyre",
 	[202] = "Forked Storm", [231] = "Tear in the Weave", [189] = "Radiant Smite", [198] = "Judgement",
-	[199] = "Purging Nova", [191] = "Vow of Mending", [250] = "Zealotry", [252] = "Aegis of Faith",
+	[199] = "Purging Nova", [191] = "Vow of Mending", [252] = "Aegis of Faith",
 	[220] = "Reaping Gyre", [221] = "Earthbreaker", [225] = "Colossus Fall", [223] = "Iron Bellow",
 	[222] = "Red Frenzy", [247] = "Bloodrage", [246] = "Skyfall Cleave", [224] = "Vaulting Cleave",
 	[240] = "Shadow Step", [243] = "Counter Stance", [239] = "Poison Blades", [238] = "Shadow Veil",
