@@ -24314,9 +24314,9 @@ until it is opened, and a small window with the two lines, Go and Close. The opt
 Interface, client base patch `0154`, `showWholeMenu`, off by default, kept in g_settings by client_settings like the other options)
 turns the filter off. Without the patch the filter stays on.
 
-**Assumptions / not run.** Nothing here ran on a live server or in a client. The base patch `0154` was checked only against
-a synthetic file with the context lines of patches `0129` and `0148` (`patch` accepts it), not against the base tree. The Go
-button's `open` and the unused `go.mark` of the design (a map mark) are not both built: only `open` is.
+**Assumptions / not run.** Nothing here ran on a live server or in a client. The base patch `0154` applies in order on the
+clean base client (`client/tools/assemble_client.sh`, all patches). The Go button only opens the window (`go.open`); a map mark
+(`go.mark` of the design) is not built: every entry so far is a window, not a place.
 
 ## The Weekly Chest, group nudges and a visible party bonus (O261) (`weeklychest.lua`, `weeklychest_core.lua`, `weeklychest_config.lua`, `groupnudge.lua`, `groupnudge_core.lua`, `groupnudge_config.lua`, client `game_weeklychest`)
 
