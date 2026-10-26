@@ -77,10 +77,11 @@ ORDER = ['Warrior', 'Juggernaut', 'Berserker', 'Ranger', 'Deadeye', 'Beastmaster
          'Bone Lord', 'Templar', 'Inquisitor', 'Sentinel']
 # spells of its own per class after the cap (docs/CLASSES.md "Spell cap")
 # O136 (2026-10-23): Galeborne Stride retired, minus one in the 11 classes that had it
-PINNED = {'Warrior': 17, 'Juggernaut': 17, 'Berserker': 16, 'Ranger': 17, 'Deadeye': 16, 'Beastmaster': 17,
-          'Mystic': 14, 'Elementalist': 13, 'Illusionist': 18, 'Thief': 14, 'Ninja': 15, 'Samurai': 16, 'Monk': 12,
-          'Shadowfist': 12, 'Iron Sage': 14, 'Necromancer': 17, 'Lich': 17, 'Bone Lord': 19, 'Templar': 11,
-          'Inquisitor': 12, 'Sentinel': 14}
+# O254 (2026-10-26): a converted support goes to its whole line, plus one in the 8 classes that lacked it
+PINNED = {'Warrior': 18, 'Juggernaut': 17, 'Berserker': 17, 'Ranger': 17, 'Deadeye': 16, 'Beastmaster': 17,
+          'Mystic': 15, 'Elementalist': 13, 'Illusionist': 19, 'Thief': 15, 'Ninja': 15, 'Samurai': 17, 'Monk': 12,
+          'Shadowfist': 12, 'Iron Sage': 14, 'Necromancer': 17, 'Lich': 17, 'Bone Lord': 19, 'Templar': 12,
+          'Inquisitor': 12, 'Sentinel': 15}
 kit = {v: set() for v in ORDER}
 xml = re.sub(r'<!--.*?-->', '', open(os.path.join(SPELLS, 'chaos', 'spells_chaos.xml'), encoding='utf-8').read(), flags=re.S)
 for m in re.finditer(r'<instant ([^>]*)>(.*?)</instant>', xml, re.S):

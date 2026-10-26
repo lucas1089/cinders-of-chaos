@@ -272,7 +272,8 @@ ten rungs per class (2 to 20 s), so some older spells moved; Headsman's Hurl is 
 **Support to attack (O254, 2026-10-26; owner request: faster, more fluid fights, more attack spells, fewer support spells)**:
 seven weak support spells became attack spells and kept their ids and icon cells, so every class and ascension has
 **11 attack spells** (`ATTACK_SPELLS` in `tools/ci/check_attack_counts.py`). A converted spell is learned by the whole
-line of its old owner:
+line of its old owner, so the Warrior, Berserker, Mystic, Illusionist, Thief, Samurai, Templar and Sentinel
+have one spell more (pinned in `server/tools/patch_spell_cap_test.py`; the most is the Bone Lord's 19, under the 20 cap):
 
 | Old support (id) | Now (attack kit key) | Line | Level | Shape |
 |---|---|---|---|---|
