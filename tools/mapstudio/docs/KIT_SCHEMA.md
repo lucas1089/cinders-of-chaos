@@ -100,4 +100,12 @@ Rates are learned with `tools/family_items.py` and `tools/learn_kit.py`, clumpin
 |---|---|
 | `worn_share` | share of road area that gets the `grey_sand` worn rim (0 when the kit has none) |
 | `defaults` | knob values for this biome, used when the command line leaves a knob at its default, e.g. `{"hills": 0, "river_width": 4}` |
+| `join_land` | `{"least": walkable tiles, "gap": most water tiles}`: a landmass of `least`+ walkable tiles that no bridge joins gets a land neck (5 wide, staircase shores) over at most `gap` water tiles. Off without the key |
+| `ramp_least` | smallest top part (8-connected clear tiles) that gets a ramp; default 30 |
+| `notch_level0` | `true`: a top with no clean landing gets its ramp seated in a notch cut into the mountain's foot (as higher levels always did). Off by default |
+| `road_least` | ramps onto top parts smaller than this, and notch seats at level 0, get no road to their foot (keeps dirt down when `ramp_least` is small). Default 0 = every ramp gets one |
+| `repair_pocket` | smallest pocket of walkable tiles that only plants wall off, for which access repair clears a way in; default 4 |
+| `drop_cut_off_tops` | `true`: last resort, a group of tiles above the main floor that nobody can reach is removed (the rock below stays solid). Reported as `tops_dropped` |
+| `apron_flora` | `{"G<family>": {id: rate}}`: plants on rock soil / gravel on the main floor, in place of the top table |
+| `clumps.edge_boost` | `{"small": [factor per edge bucket]}`: multiplies the clump chance by edge distance bucket (corrects thinning near edges) |
 | `name`, `notes` | free text: where the kit was learned and how |

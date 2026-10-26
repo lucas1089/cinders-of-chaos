@@ -81,7 +81,7 @@ def main_start(floors, items, floor=7):
     return (floor, *best[0]) if best else None
 
 
-def repair(floors, items, ramp_dirs, plants, start):
+def repair(floors, items, ramp_dirs, plants, start, least=4):
     """Keeps every ramp reachable from start: where plants cut a ramp end off, clears the plants on the
     cheapest way to it (a plant-blocked tile costs 8 steps). plants: item ids that may be removed.
     Returns (plants removed, ramps still cut off)."""
@@ -129,8 +129,8 @@ def repair(floors, items, ramp_dirs, plants, start):
                 cut.append(end)
             else:
                 clear_way(end)
-    # open areas that only plants wall off: one way in per pocket of 4+ walkable tiles (single tiles shut in
-    # by a grove are left, as on the reference map)
+    # open areas that only plants wall off: one way in per pocket of `least`+ walkable tiles (default 4: single tiles shut in
+    # by a grove are left, as on the reference map; a kit may ask for 1)
     got = reach(floors, items, ramp_dirs, start)
     shut = {n for n in best if n not in got and state(n) == 1}
     seen = set()
@@ -147,9 +147,43 @@ def repair(floors, items, ramp_dirs, plants, start):
                     seen.add(nb)
                     pocket.append(nb)
                     queue.append(nb)
-        if len(pocket) >= 4:
+        if len(pocket) >= least:
             clear_way(min(pocket, key=lambda t: best[t]))
     return removed, sorted(set(cut))
+
+
+def drop_cut_off_tops(floors, items, ramp_dirs, start, main=7):
+    """Last resort for a top no ramp could be seated for: every group of 8-connected stacks on a floor above `main`
+    (cliff-top rim, ground, plants) that holds no reached tile is removed. The floor below keeps its solid rock
+    there, so the mountain just shows no top (nobody can enter it, as no way up exists). Returns the walkable tiles
+    removed per floor, {z: n}."""
+    got = reach(floors, items, ramp_dirs, start)
+    dropped = {}
+    for z, layer in floors.items():
+        if z >= main:
+            continue
+        seen = set()
+        for pos in sorted(layer):
+            if pos in seen or not layer[pos]:
+                continue
+            group, queue = [pos], deque([pos])
+            seen.add(pos)
+            while queue:
+                x, y = queue.popleft()
+                for i, j in STEPS:
+                    nb = (x + i, y + j)
+                    if nb in layer and layer[nb] and nb not in seen:
+                        seen.add(nb)
+                        group.append(nb)
+                        queue.append(nb)
+            if any((z, *t) in got for t in group):
+                continue
+            walk = sum(1 for t in group if walkable(items, layer[t]))
+            if walk:
+                dropped[z] = dropped.get(z, 0) + walk
+            for t in group:
+                del layer[t]
+    return dropped
 
 
 def open_lanes(floors, items, plants, swap, rng, strict_tops=True):

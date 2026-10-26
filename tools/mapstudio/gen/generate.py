@@ -331,6 +331,64 @@ def seal_pockets(size, water, levels, hill, rng, river=(), least=20):
     return len(grown)
 
 
+def join_landmass(size, m, big, stray, rng, gap, keep=()):
+    """A land neck from the joined ground to a landmass that nothing else reaches (no bridge site fits): the
+    cheapest way over water (a water tile costs 3, a land tile 1, relief and `keep` tiles are never crossed) from
+    `big` to the nearest region of `stray`; the water on it, brushed 5 wide so a 3-wide walkable lane stays
+    between the shore pieces, becomes land, and the new shores get the staircase outline. Needs a way over at
+    most `gap` water tiles, else nothing is cut. Edits m (water, river, shore) in place; returns the water
+    tiles turned to land (0 = no neck)."""
+    water, river = m["water"], m["river"]
+    relief = lambda x, y: m["mountain"][y][x] or m["hill"][y][x]
+    other = {t for part in stray for t in part}
+    best, prev = {t: 0 for t in big}, {}
+    queue = [(0, t) for t in big]
+    heapq.heapify(queue)
+    goal = None
+    while queue:
+        d, (x, y) = heapq.heappop(queue)
+        if (x, y) in other:
+            goal = (x, y)
+            break
+        if d > best[(x, y)]:
+            continue
+        for i, j in ((0, 1), (1, 0), (0, -1), (-1, 0)):
+            nx, ny = x + i, y + j
+            if not (2 <= nx < size - 2 and 2 <= ny < size - 2) or relief(nx, ny) or (nx, ny) in keep:
+                continue
+            step = 3 if water[ny][nx] else 1
+            if d + step < best.get((nx, ny), 1e18):
+                best[(nx, ny)], prev[(nx, ny)] = d + step, (x, y)
+                heapq.heappush(queue, (d + step, (nx, ny)))
+    if not goal:
+        return 0
+    path, t = [], goal
+    while t in prev:
+        path.append(t)
+        t = prev[t]
+    wet = sum(1 for x, y in path if water[y][x])
+    if not wet or wet > gap:  # no water on the way: relief or shore pieces shut it, not water
+        return 0
+    turned, area = 0, set()
+    for x, y in path:
+        if not water[y][x]:
+            continue
+        for i in range(-2, 3):
+            for j in range(-2, 3):
+                nx, ny = x + i, y + j
+                if i * i + j * j <= 6 and 0 <= nx < size and 0 <= ny < size and water[ny][nx] \
+                        and not relief(nx, ny) and (nx, ny) not in keep:
+                    water[ny][nx] = False
+                    river.discard((nx, ny))
+                    turned += 1
+                    area |= {(nx + a, ny + b) for a in range(-3, 4) for b in range(-3, 4)}
+    clean(water, outside=True)
+    roughen(water, rng, allowed=lambda x, y: (x, y) in area and not relief(x, y) and (x, y) not in keep,
+            outside=True, mode="shrink")
+    m["shore"] = distance(size, water)
+    return turned
+
+
 def ground_regions(size, water, levels, hill, least=60, shore_blocks=True):
     """Big regions of ground that will be walkable (shore and cliff pieces block their tiles), largest first.
     shore_blocks=False when the land's border onto the water is walkable (lava: water is the lowest layer)."""
@@ -942,13 +1000,15 @@ def clear_top(levels, k, x, y):
     return True
 
 
-def notch_seat(size, levels, k, part, reached_below, used, rng):
+def notch_seat(size, levels, k, part, reached_below, used, rng, ground=None):
     """A ramp onto level k (index, 1+) seated in a notch: an edge tile E of the level, facing a reachable
     tile O of the level below in direction d, loses E and E+d (3 wide along the edge), so the ramp stands on
     E+d, its lower half on E and the approach on O; the landing E+2d and the tile after it stay on the level
     (higher levels pulled back to keep them clear). Only notches whose landing is near `part`. Returns the
-    ramp dict ({} when no seat fits)."""
-    lv, below = levels[k], levels[k - 1]
+    ramp dict ({} when no seat fits). Level 0 (k = 0, kit key notch_level0) is seated the same way into the
+    mountain's foot: `ground` (the open ground mask: not water, not touching it) stands for the level below."""
+    lv = levels[k]
+    below = levels[k - 1] if k else ground
     near = {(x + i, y + j) for x, y in part for i in range(-3, 4) for j in range(-3, 4)}
     name = {v: n for n, v in DIRS.items()}
     inb = lambda x, y: 0 <= x < size and 0 <= y < size
@@ -1178,6 +1238,22 @@ def build(p):
         # a kit without bridge pieces gets no bridges (water then only splits ground that passes can't join)
         candidates = bridge_sites(size, m, rng) if m["river"] and "bridge_ns" in kit and "bridge_ew" in kit else []
     needed, joined = connecting(candidates, lambda x, y: region_of.get((x, y)))
+    join = kit.get("join_land")  # kit key: {"least": walkable tiles, "gap": most water tiles a neck crosses}
+    necks = 0
+    for _ in range(8 if join else 0):  # landmasses no bridge joins get a land neck, nearest first
+        big = {t for k in joined for t in regions[k]}
+        stray = [part for part in ground_regions(size, water, levels, hill, join["least"], not p.water_low)
+                 if not part & big]
+        keep = {t for b in needed for t in b.guard()}
+        for part in stray:
+            if join_landmass(size, m, big, [part], rng, join["gap"], keep):
+                necks += 1
+                break
+        else:
+            break
+        regions = ground_regions(size, water, levels, hill, 20, not p.water_low)
+        region_of = {t: k for k, part in enumerate(regions) for t in part}
+        needed, joined = connecting(candidates, lambda x, y: region_of.get((x, y)))
     # plus one crossing per river: a road is always led over it, so every river gets a bridge when a site fits
     sites = needed + spaced(candidates, p.rivers, needed)
     big = {t for t, k in region_of.items() if k in joined}
@@ -1187,6 +1263,10 @@ def build(p):
     # rock ramps up the mountains, level by level (same geometry as the earth ramps, tools/ramp_check.py): every
     # walkable part of a level's top (8-connected clear tiles, 30+) gets its own ramp from something already
     # reachable below, when a usable spot exists; parts landed on carry on to the next level (gen/access.py)
+    per_level, reached_below = [], on_big
+    road_least = kit.get("road_least", 0)  # kit key: ramps onto top parts smaller than this get no road to their foot
+    quiet = set()
+    ramp_least = kit.get("ramp_least", 30)  # kit key: smallest top part (8-connected clear tiles) that gets a ramp
     per_level, reached_below = [], on_big
     for k in range(len(levels)):
         if k == 0:
@@ -1199,7 +1279,7 @@ def build(p):
         placed = {}
         tops = parts8(size, lambda x, y, k=k: clear_top(levels, k, x, y))
         for part in sorted(tops, key=len, reverse=True):
-            if len(part) < 30:
+            if len(part) < ramp_least:
                 break
             used = set(placed) | set(ramps) | {t for lv in per_level for t in lv}
             args = dict(source=lambda x, y, rb=reached_below: rb(x, y) and (x, y) not in used,
@@ -1218,10 +1298,16 @@ def build(p):
                     if half == 0:
                         dx, dy = DIRS[d]
                         pull_back(size, levels, k + 1, [(x + t * dx, y + t * dy) for t in (1, 2, 3)])
-            if not step and k >= 1:
+            if not step and (k >= 1 or kit.get("notch_level0")):
                 # the terrace below is too narrow for approach, lower half and ramp: cut a notch into this
                 # level's edge and seat the ramp in it, as the reference map sets stairs into its cliffs
-                step = notch_seat(size, levels, k, part, reached_below, used, rng)
+                step = notch_seat(size, levels, k, part, reached_below, used, rng,
+                                  [[not water[y][x] and not touches(water, x, y) for x in range(size)]
+                                   for y in range(size)])
+                if k == 0:  # a seat cut into the mountain's foot: no road is led to it (kit road_least)
+                    quiet |= set(step) if road_least else set()
+            if len(part) < road_least:
+                quiet |= set(step)
             placed.update(step)
         landed = [(x + DIRS[d][0], y + DIRS[d][1]) for (x, y), (d, half) in placed.items() if half == 0]
         reached = component_of(size, lambda x, y, k=k: clear_top(levels, k, x, y), landed)
@@ -1232,9 +1318,9 @@ def build(p):
     top_parts = []  # per level: (top parts of 30+ tiles with a ramp landing, all of them)
     for k, placed in enumerate(per_level):
         landed = {(x + DIRS[d][0], y + DIRS[d][1]) for (x, y), (d, half) in placed.items() if half == 0}
-        big_tops = [part for part in parts8(size, lambda x, y, k=k: clear_top(levels, k, x, y)) if len(part) >= 30]
+        big_tops = [part for part in parts8(size, lambda x, y, k=k: clear_top(levels, k, x, y)) if len(part) >= ramp_least]
         top_parts.append((sum(1 for part in big_tops if part & landed), len(big_tops)))
-    feet = [pos for pos, (d, half) in {**ramps, **mramps}.items() if half == 1]
+    feet = [pos for pos, (d, half) in {**ramps, **mramps}.items() if half == 1 and pos not in quiet]
     # tiles that stay free of plants so every ramp keeps room: ramp, lower half, the approach before it, the
     # landing and the tile after it
     keep = set()
@@ -1319,8 +1405,10 @@ def build(p):
     # sand and grey sand: per-tile rates; jungle grass: clumped to the reference map's measured local densities
     base = kit["base"]["family"]
     lower = {k: v for k, v in kit["flora"].items() if k != base}
-    lower.update({kit[k]["family"]: kit["top_flora"][kit[k]["family"]] for k in ("rock_soil", "gravel")
-                  if k in kit and kit[k]["family"] in kit["top_flora"]})
+    # kit key apron_flora: {"G<family>": {id: rate}} replaces the top table on floor 7 (rock soil on the reference map's
+    # floor 7 carries more plants and stones than the same soil on tops, tools/edge_density.py)
+    lower.update({kit[k]["family"]: kit.get("apron_flora", {}).get(kit[k]["family"]) or kit["top_flora"][kit[k]["family"]]
+                  for k in ("rock_soil", "gravel") if k in kit and kit[k]["family"] in kit["top_flora"]})
     # roads stay open: blocking plants on sand only on its outer edge where the sand is 3+ wide
     blocking = lambda i: "not_walkable" in items[int(i)]["flags"]
     soft = {f: {i: r for i, r in t.items() if not blocking(i)} for f, t in lower.items()}
@@ -1349,7 +1437,7 @@ def build(p):
                                  {"big": clumps["big"], "small": clumps["small"]}, items, rng,
                                  lambda x, y: on_grass(x, y) and growable(x, y) and (x, y) not in flora,
                                  canopy, {c: v * p.vegetation / 100 for c, v in clumps["boost"].items()},
-                                 blocking=blocking_bases)
+                                 blocking=blocking_bases, edge_boost=clumps.get("edge_boost"))
     flora.update(grass_plants)
 
     # glades: small dense groves scattered through big open meadows (user review: large meadows read empty).
@@ -1494,10 +1582,11 @@ def build(p):
     clashes = sum(1 for s in floors[Z].values() if {int(i) for i in s} & grey_cliff and {int(i) for i in s} & brown_cliff)
     access.NO_WALK = water_ids(kit)  # liquid never counts as walkable ground (see gen/access.py NO_WALK)
     start = access.main_start(floors, items)
-    cleared, cut = access.repair(floors, items, ramp_dirs, plant_ids, start) if start else (0, [])
+    cleared, cut = access.repair(floors, items, ramp_dirs, plant_ids, start, kit.get("repair_pocket", 4)) if start else (0, [])
+    dropped = access.drop_cut_off_tops(floors, items, ramp_dirs, start, Z) if start and kit.get("drop_cut_off_tops") else {}
     check = access.report(floors, items, ramp_dirs, start) if start else {}
     stats = {"access": {**check, "plants_cleared": cleared, "cut_off": cut, "passes": m["passes"],
-                        "pockets_sealed": m["sealed"], "route_tiles": routes, "cliff_clashes": clashes,
+                        "pockets_sealed": m["sealed"], "land_necks": necks, "tops_dropped": dropped, "route_tiles": routes, "cliff_clashes": clashes,
                         "odd_borders": dict(odd), "ground_settled": settled, "bare_water_seams": unbordered,
                         "bare_seams": dict(bare), "fords": len(fords),
                         "narrow_share": access.widths(floors, items),
@@ -1655,7 +1744,7 @@ def main():
     print(f"  borders: odd tiles per set {acc['odd_borders']}, ground tiles settled {acc['ground_settled']}, "
           f"unbordered ground touching water {acc['bare_water_seams']}, bare seams {acc['bare_seams']}, "
           f"ford tiles {acc['fords']}")
-    print(f"  access: passes {acc['passes']}, pocket tiles sealed {acc['pockets_sealed']}, top parts 30+ with a ramp per level {acc['top_parts_with_ramp']}, "
+    print(f"  access: passes {acc['passes']}, pocket tiles sealed {acc['pockets_sealed']}, land necks {acc.get('land_necks', 0)}, cut-off top tiles dropped {acc.get('tops_dropped', {})}, top parts 30+ with a ramp per level {acc['top_parts_with_ramp']}, "
           f"ramps usable {acc.get('ramps_usable')}, plants cleared {acc['plants_cleared']}, "
           f"cut off {acc['cut_off']}, reached/walkable per floor {acc.get('reached/walkable')}")
     subprocess.run([sys.executable, "-B", str(ROOT / "run.py"), "tools/render.py", str(out / "area.txt"),

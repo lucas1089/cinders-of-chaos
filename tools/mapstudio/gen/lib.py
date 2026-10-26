@@ -335,7 +335,7 @@ def leaves_gap(x, y, blocked):
 
 
 def place_clumped(size, u, quantiles, bucket_at, tables, items, rng, ok_base, ok_canopy, boost=1.0,
-                  static_block=None, blocking=(), lanes=False, walk_only=()):
+                  static_block=None, blocking=(), lanes=False, walk_only=(), edge_boost=None):
     """Plants placed so their local density follows a measured distribution (tools/clump_study.py).
     u: uniform field (rank_field of smooth noise), so neighbouring tiles get similar targets and plants clump.
     quantiles[cls][bucket]: 21 density quantiles; a tile's target density = that quantile function at u, and
@@ -345,6 +345,8 @@ def place_clumped(size, u, quantiles, bucket_at, tables, items, rng, ok_base, ok
     that take only walkable items. With lanes, a blocking plant may not leave a 1-2 tile gap (leaves_gap) to
     another blocking base (this call's, or `blocking`) or to a tile where static_block(x, y); a walkable item
     is tried instead (off by default: it thinned groves too much; route corridors keep paths open).
+    edge_boost: {cls: [factor per edge bucket]} multiplies the chance by bucket (a kit corrects the thinning that
+    placement rules cause near edges); default None = no change.
     Returns {(x, y): id}."""
     walk_only = set(walk_only)
     placed = {}
@@ -369,7 +371,9 @@ def place_clumped(size, u, quantiles, bucket_at, tables, items, rng, ok_base, ok
             pos = u[y][x] * 20
             k = min(int(pos), 19)
             target = qs[k] + (qs[k + 1] - qs[k]) * (pos - k)
-            if rng.random() >= target * (boost[cls] if isinstance(boost, dict) else boost):
+            lift = (edge_boost or {}).get(cls)
+            lift = lift[min(b, len(lift) - 1)] if lift else 1.0
+            if rng.random() >= target * lift * (boost[cls] if isinstance(boost, dict) else boost):
                 continue
             options = dict(table)
             gap = None
