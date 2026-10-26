@@ -1,0 +1,435 @@
+{
+ "mountain": {
+  "lead": 919,
+  "members": [
+   919
+  ]
+ },
+ "hill": {
+  "lead": 919,
+  "members": [
+   919
+  ]
+ },
+ "mountain_cliff": {
+  "edge_n": 4471,
+  "edge_e": 4468,
+  "edge_s": 4469,
+  "edge_w": 4472,
+  "inner_nw": 4476,
+  "inner_ne": 4478,
+  "inner_sw": 4477,
+  "inner_se": 4479,
+  "outer_nw": 4475,
+  "outer_ne": 4474,
+  "outer_sw": 4473,
+  "outer_se": 4470
+ },
+ "top_rim": {
+  "edge_n": 4456,
+  "edge_e": 4457,
+  "edge_s": 4458,
+  "edge_w": 4459,
+  "inner_nw": 4464,
+  "inner_ne": 4465,
+  "inner_sw": 4467,
+  "inner_se": 4466,
+  "outer_nw": 4460,
+  "outer_ne": 4461,
+  "outer_sw": 4463,
+  "outer_se": 4462
+ },
+ "mountain_ramp": {
+  "n": [
+   1394,
+   1395
+  ],
+  "s": [
+   1392,
+   1393
+  ],
+  "e": [
+   1388,
+   1389
+  ],
+  "w": [
+   1390,
+   1391
+  ]
+ },
+ "hill_cliff": {
+  "edge_n": 4471,
+  "edge_e": 4468,
+  "edge_s": 4469,
+  "edge_w": 4472,
+  "inner_nw": 4476,
+  "inner_ne": 4478,
+  "inner_sw": 4477,
+  "inner_se": 4479,
+  "outer_nw": 4475,
+  "outer_ne": 4474,
+  "outer_sw": 4473,
+  "outer_se": 4470
+ },
+ "hill_rim": {
+  "edge_n": 4456,
+  "edge_e": 4457,
+  "edge_s": 4458,
+  "edge_w": 4459,
+  "inner_nw": 4464,
+  "inner_ne": 4465,
+  "inner_sw": 4467,
+  "inner_se": 4466,
+  "outer_nw": 4460,
+  "outer_ne": 4461,
+  "outer_sw": 4463,
+  "outer_se": 4462
+ },
+ "hill_ramp": {
+  "n": [
+   1394,
+   1395
+  ],
+  "s": [
+   1392,
+   1393
+  ],
+  "e": [
+   1388,
+   1389
+  ],
+  "w": [
+   1390,
+   1391
+  ]
+ },
+ "pocket_fill": [
+  8637,
+  8638
+ ],
+ "join_land": {
+  "least": 12,
+  "gap": 14
+ },
+ "ramp_least": 6,
+ "road_least": 30,
+ "repair_pocket": 1,
+ "drop_cut_off_tops": true,
+ "worn_share": 0,
+ "batch_cap": {
+  "levels": 1
+ },
+ "name": "celestial: floating islands of snow-white marble cloud over a black void, gold paths",
+ "notes": "Built 2026-10-26 (round 7 side task, no reference window): the void is the deep black gap ground (15212, 15623, 22658; not walkable, family G15212), seen on floors 8-15 of the real map as black sky round floating islands (refs read with tools/extract_ref.py at x 33408 y 32576 z11). Land draws its border onto the void like the lava and swamp kits. Snow (670, 6587, 6580-6593) is the cloud ground, sandstone tile 7350/419 is the gold path, ice 6683-6686 gives the blue patches. Border: snow_on_ice 4737-4748 (white fringe). Decor: pale ruins of the frozen-ruins pack (38913-38926), cherry trees 38616-38623, crystals 8633-8639, 9779, angel statue 1442. Needs: docs/kits/celestial.md",
+ "clumps": {
+  "quantiles": "study/swamp_clumps.json",
+  "tops": {
+   "1": "study/grass_clumps_top1.json"
+  },
+  "big": {
+   "38616": 3,
+   "38617": 3,
+   "38618": 3,
+   "38619": 3,
+   "38620": 3,
+   "38621": 3,
+   "38622": 3,
+   "38623": 3,
+   "36110": 3,
+   "39006": 2,
+   "8633": 3,
+   "8634": 3,
+   "9779": 2,
+   "9786": 1,
+   "38832": 1,
+   "38834": 1,
+   "38913": 1,
+   "38915": 1,
+   "38916": 1,
+   "38917": 1,
+   "38918": 1,
+   "38920": 1,
+   "38921": 1,
+   "38923": 1,
+   "38926": 1,
+   "38829": 1,
+   "38830": 1,
+   "38919": 2
+  },
+  "small": {
+   "2742": 14,
+   "4152": 8,
+   "4153": 8,
+   "4154": 8,
+   "4150": 4,
+   "4151": 4,
+   "2740": 6,
+   "38357": 6,
+   "38358": 4,
+   "8637": 2,
+   "8638": 2,
+   "40771": 1,
+   "40772": 1
+  },
+  "boost": {
+   "big": 1.6,
+   "small": 1.6
+  }
+ },
+ "top_flora": {},
+ "hill_top": {
+  "3610": 1
+ },
+ "water": {
+  "family": "G15212",
+  "lead": 15212,
+  "members": [
+   15212
+  ],
+  "bands": [
+   [
+    999,
+    {
+     "crust": 1.0
+    }
+   ]
+  ],
+  "variants": {
+   "crust": {
+    "lead": 15212,
+    "members": [
+     15212
+    ]
+   }
+  },
+  "order": [
+   "crust"
+  ]
+ },
+ "base": {
+  "family": "G670",
+  "lead": 670,
+  "members": [
+   6587,
+   6580,
+   6581,
+   6582,
+   6583,
+   6584,
+   6585,
+   6586,
+   6588,
+   6589,
+   6590,
+   6591,
+   6592,
+   6593
+  ]
+ },
+ "sand": {
+  "family": "G7350",
+  "lead": 7350,
+  "members": [
+   419
+  ]
+ },
+ "grey_sand": {
+  "family": "G6684",
+  "lead": 6684,
+  "members": [
+   6683,
+   6685,
+   6686
+  ]
+ },
+ "rock_soil": {
+  "family": "G6587",
+  "lead": 6587,
+  "members": [
+   6580,
+   6581,
+   6582
+  ]
+ },
+ "no_water_border": [
+  "sand",
+  "grey_sand"
+ ],
+ "snow_on_void": {
+  "edge_n": 4737,
+  "edge_e": 4738,
+  "edge_s": 4739,
+  "edge_w": 4740,
+  "inner_nw": 4745,
+  "inner_ne": 4746,
+  "inner_sw": 4747,
+  "inner_se": 4748,
+  "outer_nw": 4741,
+  "outer_ne": 4742,
+  "outer_sw": 4743,
+  "outer_se": 4744
+ },
+ "layers": [
+  {
+   "kit": "water",
+   "border": null
+  },
+  {
+   "kit": "grey_sand",
+   "border": null
+  },
+  {
+   "kit": "sand",
+   "border": null
+  },
+  {
+   "kit": "rock_soil",
+   "border": null
+  },
+  {
+   "kit": "base",
+   "border": {
+    "water": "snow_on_void",
+    "sand": "snow_on_void",
+    "grey_sand": "snow_on_void",
+    "rock_soil": "snow_on_void"
+   }
+  }
+ ],
+ "flora": {
+  "G7350": {
+   "4150": 0.004,
+   "2742": 0.004
+  },
+  "G6684": {
+   "38357": 0.03,
+   "38358": 0.02,
+   "2742": 0.01
+  }
+ },
+ "bank_flora": {
+  "G670": {
+   "2742": 0.04,
+   "4152": 0.02,
+   "4153": 0.02,
+   "38357": 0.03,
+   "38358": 0.02,
+   "4150": 0.02
+  }
+ },
+ "meadow": {
+  "2742": 0.03,
+  "4152": 0.02,
+  "4153": 0.02,
+  "4154": 0.02,
+  "2740": 0.02,
+  "38357": 0.02,
+  "38358": 0.015,
+  "4150": 0.01,
+  "4151": 0.01
+ },
+ "water_flora": {
+  "crust": {}
+ },
+ "plants_on_water": false,
+ "swap_walkable": {
+  "2x2": [
+   38913,
+   38915,
+   38916,
+   38917,
+   38918,
+   38919,
+   38920,
+   38921,
+   38923,
+   38926,
+   38829,
+   38830
+  ],
+  "3x3": [],
+  "2x3": [],
+  "1x1": [
+   2742,
+   4150,
+   4151,
+   4152,
+   4153,
+   4154,
+   38357,
+   38358
+  ]
+ },
+ "plank_roads": {
+  "count": 4,
+  "width": {
+   "1": 0.5,
+   "2": 0.3,
+   "3": 0.2
+  },
+  "ew": {
+   "lead": 7350,
+   "members": [
+    419
+   ]
+  },
+  "ns": {
+   "lead": 7350,
+   "members": [
+    419
+   ]
+  }
+ },
+ "crossing": {
+  "type": "ford",
+  "ground": 7350
+ },
+ "road_limit": {
+  "share": 0.05,
+  "bridge": 6
+ },
+ "defaults": {
+  "hills": 0,
+  "levels": 1,
+  "mountains": 0,
+  "rivers": 18,
+  "river_width": 5,
+  "lakes": 36,
+  "roads": -1,
+  "sand": 2,
+  "vegetation": 100
+ },
+ "patches": [
+  {
+   "ground": "grey_sand",
+   "share": 0.06,
+   "scale": 3,
+   "min": 4
+  }
+ ],
+ "patch_scale": [
+  [
+   3,
+   0.5
+  ],
+  [
+   5,
+   0.5
+  ]
+ ],
+ "worn_blob": [
+  2,
+  5
+ ],
+ "worn_gap": 1,
+ "batch_variants": {
+  "601": "--size 96",
+  "602": "--size 112",
+  "603": "--size 128",
+  "604": "--size 96 --lakes 36 --rivers 10",
+  "605": "--size 112 --lakes 20 --rivers 20",
+  "606": "--size 96 --lakes 14 --rivers 6",
+  "607": "--size 112 --lakes 34",
+  "608": "--size 128 --rivers 24 --lakes 30"
+ }
+}
