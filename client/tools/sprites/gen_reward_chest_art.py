@@ -5,12 +5,15 @@ container, blocks, not moveable).
 
     python3 -I gen_reward_chest_art.py build [--src DIR] [--check] [--preview DIR --dat P/Tibia.dat --spr P/Tibia.spr]
 
-Owner request, 2026-10-26: "make a reward chest and give every quest chest this sprite". Every chest a player takes a
+Owner request, 2026-10-26: "make a reward chest and give every quest chest this sprite"; after the first preview (dark
+wood, gold bands, ember red) "make it far more eye-catching, with gold and jewels, golden and shiny" (the first pick was
+reward_chest_b_4.png). Every chest a player takes a
 reward from (rift chest, Descent treasure room, the quest chests of the planned areas and of the base server's quests;
-server/README.md "Reward chests") wore the stock gold chest on a stone plinth; it gets a look of its own: dark wood
-bound in ornate gold, ember-red lining and trim, an ember glowing in the lock. Our own PixelLab prompt (generate-image-v2,
-64 x 64, no background; 64 candidates in four prompt variants, the pick is the 4th of the "closed lid" variant;
-credit: docs/CREDITS.md "Tools"). A still: PixelLab's idle animation of it wobbled the chest's outline from frame to frame
+server/README.md "Reward chests") wore the stock gold chest on a stone plinth; it gets a look of its own: a chest of
+shiny gold, studded with ruby, sapphire, emerald and amethyst gems, the lid open on a glitter of coins and jewels. Our own
+PixelLab prompts (generate-image-v2, 64 x 64, no background; 128 candidates in eight prompt variants, the pick is the 14th of
+the "open lid, coins and jewels spilling" variant;
+credit: docs/CREDITS.md "Tools"). A still: PixelLab's idle animation of it lifted the lid and moved the outline from frame to frame
 (the Cursed Chest's animations were accepted; a reward chest that is on the map for good should not shimmer), so there is
 one phase.
 The pixels are PixelLab's; nothing is repainted, snapped or recoloured (only the colour under fully transparent pixels is
@@ -45,7 +48,7 @@ SERVER_ID = 32310         # server/tools/install_reward_chest.py, server/README.
 CELL = 64
 
 # key, committed file, PixelLab file (relative to --src; the raw folder pixellab-pip-generations/reward-chest/), server id
-LOOK = ('reward_chest', 'reward_chest.png', 'reward_chest_b_4.png', SERVER_ID)
+LOOK = ('reward_chest', 'reward_chest.png', 'reward_chest_f_14.png', SERVER_ID)
 
 HEADER = ['key', 'cat', 'kind', 'name', 'atlas', 'x', 'y', 'w', 'h', 'patterns', 'phases', 'flags', 'mode',
           'server_id', 'extra']
