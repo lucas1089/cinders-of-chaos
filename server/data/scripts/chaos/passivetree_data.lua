@@ -354,7 +354,7 @@ ChaosPassiveTreeData = { root = 1, nodes = {
 [355]={n={353},s={arWinterLattice=1},c={bonelord=true,elementalist=true,illusionist=true,lich=true,mystic=true,necromancer=true}},
 [356]={n={357,359,362,368},s={vitality=2},v={ninja={strength=2},thief={dexterity=2}}},
 [357]={n={356,358},s={absorbEnergy=1},v={beastmaster={absorbPhysical=2},bonelord={absorbPhysical=2},deadeye={strength=2},inquisitor={intelligence=2},monk={absorbPhysical=2},ninja={dexterity=2},paladin={vitality=2},shadowfist={absorbPhysical=2},templar={absorbPhysical=2},thief={absorbPhysical=2}}},
-[358]={n={357,361},s={incrementHealth=3,vitality=2},v={lich={intelligence=2,multiIncrement=3},ninja={dexterity=2,incrementPhysical=3},thief={dexterity=2,incrementEarth=2}}},
+[358]={n={357,361,669},s={incrementHealth=3,vitality=2},v={lich={intelligence=2,multiIncrement=3},ninja={dexterity=2,incrementPhysical=3},thief={dexterity=2,incrementEarth=2}}},
 [359]={n={356,360},s={incrementEnergy=2}},
 [360]={n={359,361,411},s={vitality=2}},
 [361]={n={152,358,360},s={loot=10},v={beastmaster={spirit=2},berserker={vitality=2},bonelord={spirit=2},deadeye={strength=2},illusionist={intelligence=2},inquisitor={spirit=2},ironsage={spirit=2},juggernaut={strength=2},knight={strength=2},lich={spirit=2},monk={dexterity=2},necromancer={vitality=2},ninja={dexterity=2},paladin={vitality=2},samurai={strength=2},sentinel={strength=2},shadowfist={strength=2},sorcerer={spirit=2},templar={intelligence=2},thief={dexterity=2}}},
@@ -646,5 +646,9 @@ ChaosPassiveTreeData = { root = 1, nodes = {
 [666]={n={638},c={bonelord=true,lich=true,necromancer=true},m={{incrementDeath=6,magicSkill=1},{absorbPhysical=3,vitality=3},{absorbDeath=2,spirit=5}}},
 [667]={n={648},c={ironsage=true,monk=true,shadowfist=true},m={{incrementPhysical=6,strength=2},{criticalHitAmount=4,criticalHitChance=2},{incrementHealth=6,spirit=3},{absorbPhysical=2,vitality=4}}},
 [668]={n={658},c={inquisitor=true,sentinel=true,templar=true},m={{incrementHoly=6,strength=2},{absorbAllElements=1,absorbPhysical=2,shieldingSkill=2},{incrementHealth=6,vitality=3}}},
+[669]={n={358,670},s={flaskChargeGain=10}},
+[670]={n={669,671},s={flaskMaxCharges=1}},
+[671]={n={670,672},s={flaskChargeGain=10}},
+[672]={n={671},s={flaskChargeGain=25,flaskMaxCharges=2}},
 } }
 return ChaosPassiveTreeData

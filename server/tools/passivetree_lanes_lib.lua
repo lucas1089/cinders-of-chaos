@@ -18,13 +18,13 @@ function Lanes.isFlagNode(node)
 		return true
 	end
 	for stat in pairs(node.s or {}) do
-		if stat:match("^ar%u") or stat:match("^ks%u") or stat:match("^ct%u") then
+		if stat:match("^ar%u") or stat:match("^ks%u") or stat:match("^ct%u") or stat:match("^flask%u") then
 			return true
 		end
 	end
 	for _, v in pairs(node.v or {}) do
 		for stat in pairs(v) do
-			if stat:match("^ar%u") or stat:match("^ks%u") or stat:match("^ct%u") then
+			if stat:match("^ar%u") or stat:match("^ks%u") or stat:match("^ct%u") or stat:match("^flask%u") then
 				return true
 			end
 		end

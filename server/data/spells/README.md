@@ -55,8 +55,8 @@ All have `groupcooldown=2000`, `needlearn=0` (everyone of the vocation and level
 | id | Name | Words | Vocations | Lvl | Mana | Cooldown | What it does |
 |---|---|---|---|---|---|---|---|
 | **sorcerer** | | | | | | | |
-| 200 | Rime Bloom | `drai hyr rhim` | M, E | 16 | 120 | 4s | Ice burst (7x7 circle) around you; hit enemies are slowed 40% for 4s. |
-| 201 | Witchfire Bolt | `kah pyr vesh` | M, E | 30 | 70 | 7s | Fire bolt at one target that also leaves it burning (4 ticks). |
+| 200 | Rime Bloom | `drai hyr rhim` | M, E | 14 | 120 | 4s | Ice burst (7x7 circle) around you; hit enemies are slowed 40% for 4s. |
+| 201 | Witchfire Bolt | `kah pyr vesh` | M, E | 20 | 70 | 7s | Fire bolt at one target that also leaves it burning (4 ticks). |
 | 202 | Forked Storm | `kah zhul zarn` | M, E | 50 | 200 | 7s | Energy bolt that jumps to up to 3 more monsters within 3 sqm (full damage on every jump since 2026-10-20; was 70% per jump). |
 | 203 | Crimson Covenant | `tor nyx cruor` | M, E | 90 | 50 | 30s | Sacrifice 15% max health: restore 1.5x that as mana and +15% magic level for 12s. |
 | 204 | Falling Pyre | `drai gal vas infr` | M, E | 150 | 700 | 10s | Marks the target position; 1.2s later a meteor hits a 5x5 area for heavy fire damage and ignites enemies. |
@@ -64,7 +64,7 @@ All have `groupcooldown=2000`, `needlearn=0` (everyone of the vocation and level
 | 206 | Doomtide | `drai zhul infr doma` | E | 300 | 1500 | 12s | **Cast time 1.5 s.** Three waves (fire, energy, fire) over a 13x13 circle around you. |
 | **druid** | | | | | | | |
 | 207 | Blightswarm | `drai vex kriv` | M, I | 25 | 110 | 6s | Poison cloud (7x7) around you: earth damage plus a poison condition. |
-| 208 | Purifying Wellspring | `saen vas aquen` | M, I | 40 | 160 | 6s | Heals you, party members and your summons within 3 sqm and cures poison/fire/energy/bleeding/curse/freeze/dazzle/drown. |
+| 208 | Purifying Wellspring | `saen vas aquen` | M, I | 20 | 160 | 6s | Heals you, party members and your summons within 3 sqm and cures poison/fire/energy/bleeding/curse/freeze/dazzle/drown. |
 | 209 | Ironbark Hide | `tor ael skar` | M, I | 60 | 140 | 25s | +20% max health and regeneration for 20s. |
 | 210 | Briar Prison | `drai thral brin` | I | 70 | 240 | 8s | Thorns erupt around the target (3x3, 3 pulses) and root enemies (90% slow) for 5s. |
 | 211 | Moonfang Pack | `vael luth wyrd` | I | 120 | 450 | 30s | Summons 2 wolves (3 from level 200) for 40s; max 4 summons. |
@@ -80,8 +80,8 @@ All have `groupcooldown=2000`, `needlearn=0` (everyone of the vocation and level
 | 135 | Tautstring | `vyr sag` | R, D, BM | 60 | 300 | 30s | +25% distance skill for 12s; nothing else (no slow, no lock). In place of the stock Hawkeye, retired 2026-10-20 ("Tautstring" below). |
 | 134 | Wildstride | `ruan vert` | R, D, BM | 55 | 150 | 30s | +50% speed (0.5 x speed - 40, own sub id: adds to Haste) for 12s; no pacify, no lock. In place of the stock Windrunner, retired 2026-10-20 ("Ironhold and Wildstride" below). |
 | **knight** | | | | | | | |
-| 220 | Reaping Gyre | `kah spir` | W, J, B | 16 | 30 | 6s | Three spinning strikes (0/0.4/0.8s) against adjacent enemies; uses weapon attack and skill. |
-| 221 | Earthbreaker | `kah grund krak` | W, J, B | 60 | 50 | 7s | Shockwave (5x5) with physical damage; staggers enemies (60% slow, 3s). |
+| 220 | Reaping Gyre | `kah spir` | W, J, B | 14 | 30 | 6s | Three spinning strikes (0/0.4/0.8s) against adjacent enemies; uses weapon attack and skill. |
+| 221 | Earthbreaker | `kah grund krak` | W, J, B | 20 | 50 | 7s | Shockwave (5x5) with physical damage; staggers enemies (60% slow, 3s). |
 | 222 | Red Frenzy | `vyr ira cruor` | W, J, B | 100 | 300 | 40s | +30% melee skill, -30% shield skill for 12s. |
 | 132 | Ironhold | `tor brak` | W, J, B | 55 | 200 | 30s | +40% shielding for 12s; no pacify, no lock. In place of the stock Bulwark, retired 2026-10-20 ("Ironhold and Wildstride" below). |
 | 223 | Iron Bellow | `vok vas rhov` | W, J | 120 | 200 | 20s | Taunts all monsters within 4 sqm and slows them 25% for 6s; Iron Will: you take 25% less damage and get +15% shielding for 8s. |
@@ -105,7 +105,7 @@ All have `groupcooldown=2000`, `needlearn=0` (everyone of the vocation and level
 | 236 | Shuriken Toss | `kah shur` | T, N, Sa | 8 | 16 | 2s | Throws a shuriken (range 5): ranged weapon strike, the better of sword and distance skill x a default shuriken attack of 50 (a one-handed distance weapon in hand raises it; no stars, stackable throwing weapons left the game 2026-10-20). The Thief's filler. Cooldown 2 s since the second rotation pass (was 3 s at x2.0): damage x a class scale, Thief 1.33, Ninja 1.33 (1.62 from level 180), Samurai 1.33 (1.5 from level 120) ("Rotations"). |
 | 238 | Shadow Veil | `fen umh` | T, N, Sa | 40 | 120 | 20s | 4 s stealth: monsters drop you and cannot pick you; dealing damage or taking a hit ends it; the first weapon hit out of it crits (x2). |
 | 239 | Poison Blades | `vyr vex thyss` | T, N, Sa | 60 | 150 | 30s | 20 s: weapon hits and weapon strikes poison the target, 60% of the hit as earth damage over 4 s. |
-| 73 | Blade Flurry | `drai vas kaen` | T, N, Sa | 50 | 120 | 9s | Spin: a melee weapon strike on every monster within 2 sqm of you (the 5x5 square; 3x3 in the first pass; players are never hit). On one target it hits like a Shuriken Toss of the class (`_blades.lua` class scale: Thief 1.33, Ninja 1.08 plus the off-hand strike, 0.89 below 180, Samurai 1.5, 1.33 below 120); its worth is the pack (2026-10-15, "Pack farming for every class"). |
+| 73 | Blade Flurry | `drai vas kaen` | T, N, Sa | 20 | 120 | 9s | Spin: a melee weapon strike on every monster within 2 sqm of you (the 5x5 square; 3x3 in the first pass; players are never hit). On one target it hits like a Shuriken Toss of the class (`_blades.lua` class scale: Thief 1.33, Ninja 1.08 plus the off-hand strike, 0.89 below 180, Samurai 1.5, 1.33 below 120); its worth is the pack (2026-10-15, "Pack farming for every class"). |
 | 240 | Shadow Step | `ash umh` | N | 100 | 150 | 12s | Teleport behind the target (range 5) and stab it: melee weapon strike, the off-hand follows. |
 | 241 | Smoke Bomb | `drai nebh` | N | 130 | 300 | 20s | Smoke 5x5 around you: monsters lose their target and cannot pick a player for 3 s, slowed 30% (bosses only drop the target once). |
 | 242 | Shuriken Barrage | `drai vas shur` | N | 180 | 400 | 7s | A shuriken at the target and up to 4 more monsters within 3 sqm of it. |
@@ -136,7 +136,7 @@ All have `groupcooldown=2000`, `needlearn=0` (everyone of the vocation and level
 | 197 | Bone Shrapnel | `drai oss krak` | N | 60 | 100 | 4s | The Necromancer only (range 7): a Bone Spear's hit on the target, every monster within 1 sqm of it 2.5x that (2026-10-15, `_packtools.lua`). |
 | **monk** (Mo Monk, SF Shadowfist, IS Iron Sage; finishers need 1 chi and spend all, "5 chi" values; rotations measured, see "Monk line") | | | | | | | |
 | 63 | Ashen Fist | `kah dhun` | Mo, SF, IS | 8 | 15 | 2s | Quick strike at the target next to you; +2 chi. The builder. |
-| 64 | Sundering Palm | `kah gal dhun` | Mo, SF, IS | 16 | 50 | 11s | Finisher: heavy palm strike, x(0.30 + 0.14 per chi). |
+| 64 | Sundering Palm | `kah gal dhun` | Mo, SF, IS | 14 | 50 | 11s | Finisher: heavy palm strike, x(0.30 + 0.14 per chi). |
 | 65 | Whirling Heel | `drai spir dhun` | Mo, SF, IS | 50 | 80 | 9s | Finisher: spinning kick on everything next to you (3x3), x chi scale. |
 | 66 | Kindled Breath | `saen qhal` | Mo, SF, IS | 40 | 100 | 8s | Finisher: heals yourself (level x 2 + fist x 6) x chi scale. Iron Sage (the second healer): the most hurt party member within 5 sqm (you without a party) for fist x 33 x chi scale, and 60% more over 6 s. |
 | 67 | Mistborne Step | `ash qhal` | Mo, SF, IS | 35 | 60 | 10s | Roll up to 3 sqm forward; +25% dodge for 2 s. |
@@ -145,13 +145,13 @@ All have `groupcooldown=2000`, `needlearn=0` (everyone of the vocation and level
 | 70 | Chi Ward | `tor qhal ["Name"]` | IS | 100 | 200 | 12s | Finisher: shield absorbing (level x 2.5 + fist x 8) x chi scale for 8 s on a party member within 5 sqm (the named one, or the most hurt; you without a party). |
 | 71 | Iron Palm | `kah brak dhun` | IS | 120 | 200 | 12s | Finisher: strike x chi scale; stuns a monster 0.6 s + 0.4 s per chi (cannot move or attack), then 4 s immune; >50000 max health: only slowed 50%. A player (when the hit lands): 0.5 s + 0.1 s per chi (no moving, attacks or attack spells), then 6 s immune, half as long within 15 s (server/README.md "Iron Palm stun on players"). |
 | 72 | Mantra of Stone | `tor vas qhal` | IS | 150 | 400 | 30s | 12 s aura: you and party members within 6 sqm take 8% less damage, and every 2 s each is healed for level + fist x 26. |
-| 194 | Palm Shockwave | `drai gal dhun` | Mo, SF, IS | 50 | 70 | 4s | An Ashen Fist on the target next to you (+2 chi) and a shockwave through every monster within 2 sqm of the target for 2x that (2026-10-15, `_packtools.lua`). |
+| 194 | Palm Shockwave | `drai gal dhun` | Mo, SF, IS | 20 | 70 | 4s | An Ashen Fist on the target next to you (+2 chi) and a shockwave through every monster within 2 sqm of the target for 2x that (2026-10-15, `_packtools.lua`). |
 | 195 | Shadow Ricochet | `kah umh dhun` | SF | 150 | 300 | 6s | An Ashen Fist on the target (range 4, +2 chi) that jumps to 4 more monsters, each within 3 sqm of the last, for 2.5x that. |
 | 196 | Iron Chain | `kah brak vinc` | IS | 150 | 300 | 6s | An Ashen Fist on the target (range 4, +2 chi) that links on to 4 more monsters, each within 2 sqm of the last, for 2x that. |
 | **templar** (T Templar, I Inquisitor, Se Sentinel; P = weapon power, see "Templar line"; rotations measured there) | | | | | | | |
 | 189 | Radiant Smite | `kah sol dyr` | T, I, Se | 8 | 15 | 2s | Holy strike on one target within 3 sqm: (P x 0.10-0.16 + ml x 1-1.5 + 30-60) x the class scale (Templar 0.56, Inquisitor 0.69, below level 120 0.55, Sentinel 0.56). The filler. Cooldown 4 s and no scale until the rotation pass ("Rotations"). |
-| 190 | Consecration | `drai sol haln` | T, I, Se | 16 | 160 | 12s | Holy ground (circle 2) for 6 pulses: P x 0.025-0.04 + ml x 0.4-0.6 + 10-20 per pulse; allies in it healed 30% of a pulse. |
-| 191 | Vow of Mending | `saen tor fidh` | T, I, Se | 30 | 150 | 8s | Self heal: 8% max health + level/5 + ml x 4 (±10%). |
+| 190 | Consecration | `drai sol haln` | T, I, Se | 14 | 160 | 12s | Holy ground (circle 2) for 6 pulses: P x 0.025-0.04 + ml x 0.4-0.6 + 10-20 per pulse; allies in it healed 30% of a pulse. |
+| 191 | Vow of Mending | `saen tor fidh` | T, I, Se | 20 | 150 | 8s | Self heal: 8% max health + level/5 + ml x 4 (±10%). |
 | 198 | Judgement | `kah sol vehm` | I | 100 | 250 | 4s | Holy strike (range 5): P x 0.08-0.12 + ml x 1-1.5 + 20-40; the target takes +20% holy damage from everyone for 8 s. |
 | 199 | Purging Nova | `drai gal sol orr` | I | 120 | 350 | 6s | Holy circle of 3 sqm: P x 0.08-0.13 + ml x 1-1.5 + 20-40; heals 10% of the damage, at most 5% max health. |
 | 250 | Zealotry | `vyr sol zel` | I | 150 | 200 | 30s | 20 s: each melee weapon hit adds a stack, +4% to all damage per stack (max 10); stacks drop 3 s after the last hit. |
@@ -161,7 +161,7 @@ All have `groupcooldown=2000`, `needlearn=0` (everyone of the vocation and level
 | 137 | Sanctified Ground | `drai sol sanct` | T | 60 | 160 | 4s | The Templar only: 3 holy pulses a second apart within 2 sqm of the cast tile; the Templar's target takes a third of a Radiant Smite a pulse, every other creature 2.5x that (players the plain hit, the PvP rules; 2026-10-15, `_packtools.lua`). |
 | 170 | Shield Wave | `drai sol aeg` | Se | 150 | 250 | 4s | A Radiant Smite of the Sentinel on the target (range 3) and a wave of holy force through the 3 x 3 tiles in front for 2x that (players the plain hit). |
 | **build archetypes, second round** (2026-10-12; docs/BUILDS.md "Snares", "Vigils"; server/README.md "Snares", "Vigils"; Rl = the Ranger line R, D, BM; Tl = the Thief line T, N, S; all = every class) | | | | | | | |
-| 99 | Snare Trap | `drai snar ["element"]` | Rl, Tl | 16 | 90 | 4s | A trap thrown up to 4 sqm (the target or ahead), armed after 0.6 s; a monster within 1 sqm sets it off: up to 8 enemies within 2 sqm take level x 0.4 + power x 0.09-0.135 + 20-40 (power: the best of bow, blade and shuriken). The element (fire, ice, energy, earth, death, holy, physical) is spoken, remembered, or the spell's brand rune. 3 at once, 20 s. |
+| 99 | Snare Trap | `drai snar ["element"]` | Rl, Tl | 14 | 90 | 4s | A trap thrown up to 4 sqm (the target or ahead), armed after 0.6 s; a monster within 1 sqm sets it off: up to 8 enemies within 2 sqm take level x 0.4 + power x 0.09-0.135 + 20-40 (power: the best of bow, blade and shuriken). The element (fire, ice, energy, earth, death, holy, physical) is spoken, remembered, or the spell's brand rune. 3 at once, 20 s. |
 | 100 | Seeker Mine | `kah snar ["element"]` | Rl, Tl | 60 | 110 | 6s | A mine thrown the same way, armed after 0.8 s, bursts for 1.15 x a trap at Detonate Mines or its 8 s fuse. 5 at once. |
 | 104 | Detonate Mines | `vok snar` | Rl, Tl | 60 | 20 | 1s | Every armed mine of yours goes off, 0.1 s apart (support group, no attack cooldown). |
 | 179 | Vigil of Wrath | `vigh vyr` | all | 60 | 0 | 2s | Switches the vigil: 35% of the maximum mana reserved; you and party members within 5 sqm deal +5%. |
@@ -3364,7 +3364,7 @@ spells keep their base numbers, all flat). "all" = the whole line; the mana is t
 |  | Flickerdash | support | 30 | 6 s | 80 | all |
 |  | Vigil of Clarity | support | 35 | 2 s | 0 | all |
 |  | Vigil of Haste | support | 40 | 2 s | 0 | all |
-|  | Sanctum Burst | attack | 50 | 8 s | 160 | all |
+|  | Sanctum Burst | attack | 20 | 8 s | 160 | all |
 |  | Wildstride | support | 55 | 30 s | 150 | all |
 |  | Banner Call | support | 60 | 35 s | 250 | all |
 |  | Lightbearer's Grace | healing | 60 | 1 s | 210 | all |
@@ -3386,7 +3386,7 @@ spells keep their base numbers, all flat). "all" = the whole line; the mana is t
 |  | Kindling Spark | attack | 8 | 2 s | 6 | all |
 |  | Minor Mending | healing | 8 | 1 s | 20 | all |
 |  | Rime Bloom | attack | 16 | 4 s | 120 | Mystic, Elementalist |
-|  | Arcane Ripple | attack | 16 | 4 s | 175 | Mystic, Illusionist |
+|  | Arcane Ripple | attack | 14 | 4 s | 175 | Mystic, Illusionist |
 |  | Blightswarm | attack | 25 | 6 s | 110 | Mystic |
 |  | Hunter's Instinct | support | 25 | 10 s | 40 | all |
 |  | Grand Mending | healing | 30 | 1 s | 160 | Mystic, Elementalist |

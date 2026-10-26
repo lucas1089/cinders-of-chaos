@@ -23,7 +23,7 @@ function onCastSpell(creature, variant, isHotkey)
 	local from = creature:getPosition()
 	local dir = creature:getDirection()
 	for i = 2, 6, 2 do
-		ChaosSpell.shoot(from, ChaosSpell.stepPos(from, dir, i), "blood_spear", CONST_ANI_SPEAR)
+		ChaosSpell.pshoot(from, ChaosSpell.stepPos(from, dir, i), "proj_spirit_arrow_blood", nil, "blood_spear", CONST_ANI_SPEAR)
 	end
 	ChaosSpell.vfxDir(from, "thrust", dir)
 	return combat:execute(creature, variant)

@@ -297,6 +297,9 @@ def build_report(run, log):
     L.append('== Behaviours (tried / ok / failed)')
     for name, b in sorted(run.get('behaviours', {}).items()):
         L.append('  %-10s %6d %6d %6d' % (name, b.get('tried', 0), b.get('ok', 0), b.get('failed', 0)))
+    if run.get('keytest') or run.get('keytest_resets'):
+        import tester_keystones as TK  # the per-node results of the keystone and mastery scenario (O249)
+        L.extend(TK.report_lines(run.get('keytest') or [], run.get('keytest_resets') or []))
     cov = run.get('coverage')
     if cov:
         # short enough to paste: only what needs a look; the fine, out of scope and passive systems are counted

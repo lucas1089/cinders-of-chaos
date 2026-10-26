@@ -9,11 +9,6336 @@
  "counts": {
   "opcode": 61,
   "out": 38,
-  "passive": 75,
+  "passive": 76,
   "place": 13,
   "staff": 11
  },
  "generated_by": "server/tools/gen_tester_scenarios.py",
+ "keytest": {
+  "classes": {
+   "beastmaster": [
+    {
+     "flag": "arSnarewright",
+     "id": 105,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      103
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arSanguine",
+     "id": 81,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      59,
+      76
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arStormstring",
+     "id": 82,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      60,
+      74
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arThornbound",
+     "id": 77,
+     "kind": "keystone",
+     "path": [
+      5,
+      26,
+      28,
+      58,
+      57,
+      56,
+      75
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arCascade",
+     "id": 78,
+     "kind": "keystone",
+     "path": [
+      4,
+      14,
+      15,
+      16,
+      70,
+      68,
+      71
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arOpenHand",
+     "id": 109,
+     "kind": "keystone",
+     "path": [
+      2,
+      30,
+      31,
+      43,
+      44,
+      45,
+      72,
+      79
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "ksPackAlpha",
+     "id": 624,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      59,
+      62,
+      198,
+      199,
+      200,
+      215,
+      216,
+      238,
+      255,
+      256,
+      257,
+      261,
+      622,
+      623
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "companion damage and damage taken: factors, no row of their own"
+     }
+    },
+    {
+     "flag": "ksRicochet",
+     "id": 621,
+     "kind": "keystone",
+     "path": [
+      5,
+      26,
+      28,
+      58,
+      54,
+      53,
+      52,
+      51,
+      209,
+      208,
+      207,
+      236,
+      233,
+      234,
+      241,
+      248,
+      247,
+      246,
+      245,
+      602,
+      601,
+      600,
+      619,
+      620
+     ],
+     "probe": {
+      "mode": "combatlog",
+      "needs": "a bow or crossbow and a second enemy within 4 sqm of the target",
+      "row": "p:Keystones",
+      "tab": "dealt"
+     }
+    },
+    {
+     "flag": "arOpeningShot",
+     "id": 599,
+     "kind": "keystone",
+     "path": [
+      6,
+      23,
+      24,
+      25,
+      63,
+      65,
+      64,
+      122,
+      120,
+      121,
+      168,
+      169,
+      173,
+      197,
+      195,
+      584,
+      583,
+      582,
+      581,
+      591,
+      589,
+      587,
+      588,
+      595,
+      594,
+      593,
+      598
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arBarbed",
+     "id": 542,
+     "kind": "keystone",
+     "path": [
+      3,
+      32,
+      34,
+      35,
+      36,
+      37,
+      38,
+      42,
+      129,
+      125,
+      128,
+      180,
+      177,
+      181,
+      176,
+      175,
+      529,
+      527,
+      526,
+      525,
+      535,
+      533,
+      531,
+      530,
+      539,
+      538,
+      537,
+      536
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arLongshot",
+     "id": 561,
+     "kind": "keystone",
+     "path": [
+      6,
+      23,
+      24,
+      25,
+      63,
+      65,
+      64,
+      122,
+      120,
+      121,
+      168,
+      166,
+      374,
+      373,
+      370,
+      371,
+      388,
+      389,
+      386,
+      546,
+      545,
+      544,
+      543,
+      553,
+      551,
+      549,
+      550,
+      557,
+      556,
+      555,
+      560
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arHobble",
+     "id": 447,
+     "kind": "keystone",
+     "path": [
+      2,
+      30,
+      31,
+      43,
+      44,
+      45,
+      46,
+      50,
+      115,
+      117,
+      162,
+      163,
+      164,
+      350,
+      349,
+      352,
+      353,
+      364,
+      363,
+      366,
+      429,
+      430,
+      431,
+      432,
+      436,
+      435,
+      437,
+      439,
+      446,
+      441,
+      442,
+      443
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    }
+   ],
+   "berserker": [
+    {
+     "flag": "arIronTithe",
+     "id": 102,
+     "kind": "keystone",
+     "path": [
+      2,
+      9,
+      11,
+      101,
+      100
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arSanguine",
+     "id": 81,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      59,
+      76
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arThornbound",
+     "id": 77,
+     "kind": "keystone",
+     "path": [
+      5,
+      26,
+      28,
+      58,
+      57,
+      56,
+      75
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arCascade",
+     "id": 78,
+     "kind": "keystone",
+     "path": [
+      4,
+      14,
+      15,
+      16,
+      70,
+      68,
+      71
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arPyreOath",
+     "id": 108,
+     "kind": "keystone",
+     "path": [
+      2,
+      30,
+      31,
+      43,
+      44,
+      45,
+      72,
+      79
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arOpenHand",
+     "id": 109,
+     "kind": "keystone",
+     "path": [
+      2,
+      30,
+      31,
+      43,
+      44,
+      45,
+      72,
+      79
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "ksUndyingRage",
+     "id": 624,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      59,
+      62,
+      198,
+      199,
+      200,
+      215,
+      216,
+      238,
+      255,
+      256,
+      257,
+      261,
+      622,
+      623
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a heal of 4% of the damage dealt (plain health, no combat log row)"
+     }
+    },
+    {
+     "flag": "ksCleavingArc",
+     "id": 621,
+     "kind": "keystone",
+     "path": [
+      5,
+      26,
+      28,
+      58,
+      54,
+      53,
+      52,
+      51,
+      209,
+      208,
+      207,
+      236,
+      233,
+      234,
+      241,
+      248,
+      247,
+      246,
+      245,
+      602,
+      601,
+      600,
+      619,
+      620
+     ],
+     "probe": {
+      "mode": "combatlog",
+      "needs": "a two-handed melee weapon and a second enemy next to the target",
+      "row": "p:Keystones",
+      "tab": "dealt"
+     }
+    },
+    {
+     "flag": "arLastStand",
+     "id": 523,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      59,
+      62,
+      201,
+      202,
+      203,
+      222,
+      221,
+      217,
+      218,
+      240,
+      510,
+      508,
+      507,
+      506,
+      516,
+      514,
+      512,
+      511,
+      520,
+      519,
+      518,
+      517
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arEarthbreaker",
+     "id": 409,
+     "kind": "keystone",
+     "path": [
+      4,
+      14,
+      15,
+      16,
+      70,
+      67,
+      69,
+      113,
+      110,
+      114,
+      150,
+      154,
+      157,
+      182,
+      184,
+      392,
+      391,
+      395,
+      396,
+      397,
+      398,
+      400,
+      402,
+      403,
+      404,
+      405,
+      406
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arExecutioner",
+     "id": 428,
+     "kind": "keystone",
+     "path": [
+      4,
+      14,
+      15,
+      16,
+      70,
+      67,
+      69,
+      113,
+      110,
+      114,
+      150,
+      151,
+      152,
+      153,
+      156,
+      411,
+      410,
+      414,
+      415,
+      416,
+      417,
+      419,
+      421,
+      422,
+      423,
+      424,
+      425
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arRampage",
+     "id": 466,
+     "kind": "keystone",
+     "path": [
+      2,
+      30,
+      31,
+      43,
+      44,
+      45,
+      46,
+      50,
+      115,
+      117,
+      162,
+      158,
+      165,
+      159,
+      160,
+      448,
+      449,
+      450,
+      451,
+      455,
+      454,
+      456,
+      458,
+      465,
+      460,
+      461,
+      462
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    }
+   ],
+   "bonelord": [
+    {
+     "effects": [
+      {
+       "choice": 1,
+       "observable": {
+        "incrementDeath": 6
+       },
+       "other": [
+        "magicSkill"
+       ]
+      },
+      {
+       "choice": 2,
+       "observable": {
+        "vitality": 3
+       },
+       "other": [
+        "absorbPhysical"
+       ]
+      },
+      {
+       "choice": 3,
+       "observable": {
+        "spirit": 5
+       },
+       "other": [
+        "absorbDeath"
+       ]
+      }
+     ],
+     "id": 666,
+     "kind": "mastery",
+     "path": [
+      636,
+      637,
+      638
+     ]
+    },
+    {
+     "flag": "arHollowVessel",
+     "id": 96,
+     "kind": "keystone",
+     "path": [
+      5,
+      17,
+      18,
+      95,
+      94
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arVigils",
+     "id": 99,
+     "kind": "keystone",
+     "path": [
+      6,
+      23,
+      24,
+      98,
+      97
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "ksBoneColossus",
+     "id": 644,
+     "kind": "keystone",
+     "path": [
+      636,
+      637,
+      638,
+      642,
+      643
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a change of the minions, no row or total a client can read"
+     }
+    },
+    {
+     "flag": "arSanguine",
+     "id": 81,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      59,
+      76
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arThornbound",
+     "id": 77,
+     "kind": "keystone",
+     "path": [
+      5,
+      26,
+      28,
+      58,
+      57,
+      56,
+      75
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arCascade",
+     "id": 78,
+     "kind": "keystone",
+     "path": [
+      4,
+      14,
+      15,
+      16,
+      70,
+      68,
+      71
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arOpenHand",
+     "id": 109,
+     "kind": "keystone",
+     "path": [
+      2,
+      30,
+      31,
+      43,
+      44,
+      45,
+      72,
+      79
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arEffigy",
+     "id": 262,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      59,
+      62,
+      198,
+      199,
+      200,
+      215,
+      216,
+      238,
+      255,
+      256,
+      257,
+      261
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arWinterLattice",
+     "id": 355,
+     "kind": "keystone",
+     "path": [
+      2,
+      30,
+      31,
+      43,
+      44,
+      45,
+      46,
+      50,
+      115,
+      117,
+      162,
+      163,
+      164,
+      350,
+      349,
+      352,
+      353
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "ksReapersToll",
+     "id": 624,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      59,
+      62,
+      198,
+      199,
+      200,
+      215,
+      216,
+      238,
+      255,
+      256,
+      257,
+      261,
+      622,
+      623
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a damage factor on hits at 40% health or less (x2, otherwise x0.92)"
+     }
+    },
+    {
+     "flag": "ksGraveCovenant",
+     "id": 369,
+     "kind": "keystone",
+     "path": [
+      2,
+      30,
+      31,
+      43,
+      44,
+      45,
+      46,
+      50,
+      115,
+      117,
+      162,
+      163,
+      164,
+      350,
+      349,
+      352,
+      353,
+      364,
+      363,
+      366
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a change of the minions and corpses, no row or total a client can read"
+     }
+    },
+    {
+     "flag": "ksCorpseBlast",
+     "id": 621,
+     "kind": "keystone",
+     "path": [
+      5,
+      26,
+      28,
+      58,
+      54,
+      53,
+      52,
+      51,
+      209,
+      208,
+      207,
+      236,
+      233,
+      234,
+      241,
+      248,
+      247,
+      246,
+      245,
+      602,
+      601,
+      600,
+      619,
+      620
+     ],
+     "probe": {
+      "mode": "combatlog",
+      "needs": "a monster killed by the character or its minions",
+      "row": "p:Keystones",
+      "tab": "dealt"
+     }
+    }
+   ],
+   "deadeye": [
+    {
+     "flag": "arSnarewright",
+     "id": 105,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      103
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arSanguine",
+     "id": 81,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      59,
+      76
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arStormstring",
+     "id": 82,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      60,
+      74
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arThornbound",
+     "id": 77,
+     "kind": "keystone",
+     "path": [
+      5,
+      26,
+      28,
+      58,
+      57,
+      56,
+      75
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arCascade",
+     "id": 78,
+     "kind": "keystone",
+     "path": [
+      4,
+      14,
+      15,
+      16,
+      70,
+      68,
+      71
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arOpenHand",
+     "id": 109,
+     "kind": "keystone",
+     "path": [
+      2,
+      30,
+      31,
+      43,
+      44,
+      45,
+      72,
+      79
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "ksDeadeye",
+     "id": 624,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      59,
+      62,
+      198,
+      199,
+      200,
+      215,
+      216,
+      238,
+      255,
+      256,
+      257,
+      261,
+      622,
+      623
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "double damage on 15% of the crossbow shots: a factor on the hit itself"
+     }
+    },
+    {
+     "flag": "ksHuntersFocus",
+     "id": 621,
+     "kind": "keystone",
+     "path": [
+      5,
+      26,
+      28,
+      58,
+      54,
+      53,
+      52,
+      51,
+      209,
+      208,
+      207,
+      236,
+      233,
+      234,
+      241,
+      248,
+      247,
+      246,
+      245,
+      602,
+      601,
+      600,
+      619,
+      620
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "damage +4% per hit on the same target: a factor on the hit itself"
+     }
+    },
+    {
+     "flag": "arOpeningShot",
+     "id": 599,
+     "kind": "keystone",
+     "path": [
+      6,
+      23,
+      24,
+      25,
+      63,
+      65,
+      64,
+      122,
+      120,
+      121,
+      168,
+      169,
+      173,
+      197,
+      195,
+      584,
+      583,
+      582,
+      581,
+      591,
+      589,
+      587,
+      588,
+      595,
+      594,
+      593,
+      598
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arBarbed",
+     "id": 542,
+     "kind": "keystone",
+     "path": [
+      3,
+      32,
+      34,
+      35,
+      36,
+      37,
+      38,
+      42,
+      129,
+      125,
+      128,
+      180,
+      177,
+      181,
+      176,
+      175,
+      529,
+      527,
+      526,
+      525,
+      535,
+      533,
+      531,
+      530,
+      539,
+      538,
+      537,
+      536
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arLongshot",
+     "id": 561,
+     "kind": "keystone",
+     "path": [
+      6,
+      23,
+      24,
+      25,
+      63,
+      65,
+      64,
+      122,
+      120,
+      121,
+      168,
+      166,
+      374,
+      373,
+      370,
+      371,
+      388,
+      389,
+      386,
+      546,
+      545,
+      544,
+      543,
+      553,
+      551,
+      549,
+      550,
+      557,
+      556,
+      555,
+      560
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arHobble",
+     "id": 447,
+     "kind": "keystone",
+     "path": [
+      2,
+      30,
+      31,
+      43,
+      44,
+      45,
+      46,
+      50,
+      115,
+      117,
+      162,
+      163,
+      164,
+      350,
+      349,
+      352,
+      353,
+      364,
+      363,
+      366,
+      429,
+      430,
+      431,
+      432,
+      436,
+      435,
+      437,
+      439,
+      446,
+      441,
+      442,
+      443
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    }
+   ],
+   "elementalist": [
+    {
+     "flag": "arHollowVessel",
+     "id": 96,
+     "kind": "keystone",
+     "path": [
+      5,
+      17,
+      18,
+      95,
+      94
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arVigils",
+     "id": 99,
+     "kind": "keystone",
+     "path": [
+      6,
+      23,
+      24,
+      98,
+      97
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arSanguine",
+     "id": 81,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      59,
+      76
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arThornbound",
+     "id": 77,
+     "kind": "keystone",
+     "path": [
+      5,
+      26,
+      28,
+      58,
+      57,
+      56,
+      75
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arCascade",
+     "id": 78,
+     "kind": "keystone",
+     "path": [
+      4,
+      14,
+      15,
+      16,
+      70,
+      68,
+      71
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arCinderSigil",
+     "id": 106,
+     "kind": "keystone",
+     "path": [
+      3,
+      32,
+      34,
+      35,
+      39,
+      40,
+      73,
+      80
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arOpenHand",
+     "id": 109,
+     "kind": "keystone",
+     "path": [
+      2,
+      30,
+      31,
+      43,
+      44,
+      45,
+      72,
+      79
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arEffigy",
+     "id": 262,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      59,
+      62,
+      198,
+      199,
+      200,
+      215,
+      216,
+      238,
+      255,
+      256,
+      257,
+      261
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arWinterLattice",
+     "id": 355,
+     "kind": "keystone",
+     "path": [
+      2,
+      30,
+      31,
+      43,
+      44,
+      45,
+      46,
+      50,
+      115,
+      117,
+      162,
+      163,
+      164,
+      350,
+      349,
+      352,
+      353
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "ksOverload",
+     "id": 624,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      59,
+      62,
+      198,
+      199,
+      200,
+      215,
+      216,
+      238,
+      255,
+      256,
+      257,
+      261,
+      622,
+      623
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a +20% on the next spell of another element: a damage factor, no row of its own in the combat log"
+     }
+    },
+    {
+     "flag": "ksArcaneEcho",
+     "id": 621,
+     "kind": "keystone",
+     "path": [
+      5,
+      26,
+      28,
+      58,
+      54,
+      53,
+      52,
+      51,
+      209,
+      208,
+      207,
+      236,
+      233,
+      234,
+      241,
+      248,
+      247,
+      246,
+      245,
+      602,
+      601,
+      600,
+      619,
+      620
+     ],
+     "probe": {
+      "mode": "combatlog",
+      "needs": "a spell that hits 2 or more enemies (35% chance, 3 s cooldown)",
+      "row": "p:Keystones",
+      "tab": "dealt"
+     }
+    }
+   ],
+   "illusionist": [
+    {
+     "flag": "arHollowVessel",
+     "id": 96,
+     "kind": "keystone",
+     "path": [
+      5,
+      17,
+      18,
+      95,
+      94
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arVigils",
+     "id": 99,
+     "kind": "keystone",
+     "path": [
+      6,
+      23,
+      24,
+      98,
+      97
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arSanguine",
+     "id": 81,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      59,
+      76
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arThornbound",
+     "id": 77,
+     "kind": "keystone",
+     "path": [
+      5,
+      26,
+      28,
+      58,
+      57,
+      56,
+      75
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arCascade",
+     "id": 78,
+     "kind": "keystone",
+     "path": [
+      4,
+      14,
+      15,
+      16,
+      70,
+      68,
+      71
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arCinderSigil",
+     "id": 106,
+     "kind": "keystone",
+     "path": [
+      3,
+      32,
+      34,
+      35,
+      39,
+      40,
+      73,
+      80
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arOpenHand",
+     "id": 109,
+     "kind": "keystone",
+     "path": [
+      2,
+      30,
+      31,
+      43,
+      44,
+      45,
+      72,
+      79
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arEffigy",
+     "id": 262,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      59,
+      62,
+      198,
+      199,
+      200,
+      215,
+      216,
+      238,
+      255,
+      256,
+      257,
+      261
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arWinterLattice",
+     "id": 355,
+     "kind": "keystone",
+     "path": [
+      2,
+      30,
+      31,
+      43,
+      44,
+      45,
+      46,
+      50,
+      115,
+      117,
+      162,
+      163,
+      164,
+      350,
+      349,
+      352,
+      353
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "ksInspiringIllusion",
+     "id": 624,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      59,
+      62,
+      198,
+      199,
+      200,
+      215,
+      216,
+      238,
+      255,
+      256,
+      257,
+      261,
+      622,
+      623
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "needs a party: it buffs the other members, never the illusionist"
+     }
+    },
+    {
+     "flag": "ksSharedPhantasm",
+     "id": 621,
+     "kind": "keystone",
+     "path": [
+      5,
+      26,
+      28,
+      58,
+      54,
+      53,
+      52,
+      51,
+      209,
+      208,
+      207,
+      236,
+      233,
+      234,
+      241,
+      248,
+      247,
+      246,
+      245,
+      602,
+      601,
+      600,
+      619,
+      620
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "needs a party: it buffs the other members, never the illusionist"
+     }
+    }
+   ],
+   "inquisitor": [
+    {
+     "effects": [
+      {
+       "choice": 1,
+       "observable": {
+        "incrementHoly": 6,
+        "strength": 2
+       },
+       "other": []
+      },
+      {
+       "choice": 2,
+       "observable": {},
+       "other": [
+        "absorbAllElements",
+        "absorbPhysical",
+        "shieldingSkill"
+       ]
+      },
+      {
+       "choice": 3,
+       "observable": {
+        "vitality": 3
+       },
+       "other": [
+        "incrementHealth"
+       ]
+      }
+     ],
+     "id": 668,
+     "kind": "mastery",
+     "path": [
+      656,
+      657,
+      658
+     ]
+    },
+    {
+     "flag": "arHollowVessel",
+     "id": 96,
+     "kind": "keystone",
+     "path": [
+      5,
+      17,
+      18,
+      95,
+      94
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arVigils",
+     "id": 99,
+     "kind": "keystone",
+     "path": [
+      6,
+      23,
+      24,
+      98,
+      97
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arIronTithe",
+     "id": 102,
+     "kind": "keystone",
+     "path": [
+      2,
+      9,
+      11,
+      101,
+      100
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "ksDivineVerdict",
+     "id": 661,
+     "kind": "keystone",
+     "path": [
+      656,
+      657,
+      658,
+      659,
+      660
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a change of the Templar combat rules, no row or total a client can read"
+     }
+    },
+    {
+     "flag": "arSanguine",
+     "id": 81,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      59,
+      76
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arThornbound",
+     "id": 77,
+     "kind": "keystone",
+     "path": [
+      5,
+      26,
+      28,
+      58,
+      57,
+      56,
+      75
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arCascade",
+     "id": 78,
+     "kind": "keystone",
+     "path": [
+      4,
+      14,
+      15,
+      16,
+      70,
+      68,
+      71
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arCinderSigil",
+     "id": 106,
+     "kind": "keystone",
+     "path": [
+      3,
+      32,
+      34,
+      35,
+      39,
+      40,
+      73,
+      80
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arPyreOath",
+     "id": 108,
+     "kind": "keystone",
+     "path": [
+      2,
+      30,
+      31,
+      43,
+      44,
+      45,
+      72,
+      79
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arOpenHand",
+     "id": 109,
+     "kind": "keystone",
+     "path": [
+      2,
+      30,
+      31,
+      43,
+      44,
+      45,
+      72,
+      79
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "ksPenitentWrath",
+     "id": 376,
+     "kind": "keystone",
+     "path": [
+      6,
+      23,
+      24,
+      25,
+      63,
+      65,
+      64,
+      122,
+      120,
+      121,
+      168,
+      166,
+      374,
+      373,
+      370,
+      371
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a change of the Templar combat rules, no row or total a client can read"
+     }
+    },
+    {
+     "flag": "arAetherEdge",
+     "id": 362,
+     "kind": "keystone",
+     "path": [
+      4,
+      14,
+      15,
+      16,
+      70,
+      67,
+      69,
+      113,
+      110,
+      114,
+      150,
+      151,
+      152,
+      361,
+      358,
+      357,
+      356
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "ksDawnchain",
+     "id": 624,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      59,
+      62,
+      198,
+      199,
+      200,
+      215,
+      216,
+      238,
+      255,
+      256,
+      257,
+      261,
+      622,
+      623
+     ],
+     "probe": {
+      "mode": "combatlog",
+      "needs": "melee weapon hits and a second enemy within 3 sqm of the target",
+      "row": "p:Keystones",
+      "tab": "dealt"
+     }
+    },
+    {
+     "flag": "arReliquary",
+     "id": 253,
+     "kind": "keystone",
+     "path": [
+      5,
+      26,
+      28,
+      58,
+      54,
+      53,
+      52,
+      51,
+      209,
+      208,
+      207,
+      236,
+      233,
+      234,
+      241,
+      248,
+      247,
+      246,
+      245
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "ksRadiantRebuke",
+     "id": 621,
+     "kind": "keystone",
+     "path": [
+      5,
+      26,
+      28,
+      58,
+      54,
+      53,
+      52,
+      51,
+      209,
+      208,
+      207,
+      236,
+      233,
+      234,
+      241,
+      248,
+      247,
+      246,
+      245,
+      602,
+      601,
+      600,
+      619,
+      620
+     ],
+     "probe": {
+      "mode": "combatlog",
+      "needs": "a shield and an enemy that hits the character (20% blocked)",
+      "row": "p:Keystones",
+      "tab": "dealt"
+     }
+    }
+   ],
+   "ironsage": [
+    {
+     "effects": [
+      {
+       "choice": 1,
+       "observable": {
+        "incrementPhysical": 6,
+        "strength": 2
+       },
+       "other": []
+      },
+      {
+       "choice": 2,
+       "observable": {
+        "criticalHitAmount": 4,
+        "criticalHitChance": 2
+       },
+       "other": []
+      },
+      {
+       "choice": 3,
+       "observable": {
+        "spirit": 3
+       },
+       "other": [
+        "incrementHealth"
+       ]
+      },
+      {
+       "choice": 4,
+       "observable": {
+        "vitality": 4
+       },
+       "other": [
+        "absorbPhysical"
+       ]
+      }
+     ],
+     "id": 667,
+     "kind": "mastery",
+     "path": [
+      646,
+      647,
+      648
+     ]
+    },
+    {
+     "flag": "arHollowVessel",
+     "id": 96,
+     "kind": "keystone",
+     "path": [
+      5,
+      17,
+      18,
+      95,
+      94
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arIronTithe",
+     "id": 102,
+     "kind": "keystone",
+     "path": [
+      2,
+      9,
+      11,
+      101,
+      100
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "ksFlowingMercy",
+     "id": 654,
+     "kind": "keystone",
+     "path": [
+      646,
+      647,
+      648,
+      652,
+      653
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a change of the healing rules, no row or total a client can read"
+     }
+    },
+    {
+     "flag": "arSanguine",
+     "id": 81,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      59,
+      76
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arThornbound",
+     "id": 77,
+     "kind": "keystone",
+     "path": [
+      5,
+      26,
+      28,
+      58,
+      57,
+      56,
+      75
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arCascade",
+     "id": 78,
+     "kind": "keystone",
+     "path": [
+      4,
+      14,
+      15,
+      16,
+      70,
+      68,
+      71
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arAetherEdge",
+     "id": 362,
+     "kind": "keystone",
+     "path": [
+      4,
+      14,
+      15,
+      16,
+      70,
+      67,
+      69,
+      113,
+      110,
+      114,
+      150,
+      151,
+      152,
+      361,
+      358,
+      357,
+      356
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "ksPiercingPalm",
+     "id": 624,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      59,
+      62,
+      198,
+      199,
+      200,
+      215,
+      216,
+      238,
+      255,
+      256,
+      257,
+      261,
+      622,
+      623
+     ],
+     "probe": {
+      "mode": "combatlog",
+      "needs": "melee hits and a second enemy right behind the target",
+      "row": "p:Keystones",
+      "tab": "dealt"
+     }
+    },
+    {
+     "flag": "ksScarredDiscipline",
+     "id": 390,
+     "kind": "keystone",
+     "path": [
+      6,
+      23,
+      24,
+      25,
+      63,
+      65,
+      64,
+      122,
+      120,
+      121,
+      168,
+      166,
+      374,
+      373,
+      370,
+      371,
+      388,
+      389,
+      386
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a change of the Monk chi rules, no row or total a client can read"
+     }
+    },
+    {
+     "flag": "ksOvergrowth",
+     "id": 621,
+     "kind": "keystone",
+     "path": [
+      5,
+      26,
+      28,
+      58,
+      54,
+      53,
+      52,
+      51,
+      209,
+      208,
+      207,
+      236,
+      233,
+      234,
+      241,
+      248,
+      247,
+      246,
+      245,
+      602,
+      601,
+      600,
+      619,
+      620
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "needs another player healed by the character: heals on others, bots never heal real players"
+     }
+    }
+   ],
+   "juggernaut": [
+    {
+     "flag": "arIronTithe",
+     "id": 102,
+     "kind": "keystone",
+     "path": [
+      2,
+      9,
+      11,
+      101,
+      100
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arSanguine",
+     "id": 81,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      59,
+      76
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arThornbound",
+     "id": 77,
+     "kind": "keystone",
+     "path": [
+      5,
+      26,
+      28,
+      58,
+      57,
+      56,
+      75
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arCascade",
+     "id": 78,
+     "kind": "keystone",
+     "path": [
+      4,
+      14,
+      15,
+      16,
+      70,
+      68,
+      71
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arPyreOath",
+     "id": 108,
+     "kind": "keystone",
+     "path": [
+      2,
+      30,
+      31,
+      43,
+      44,
+      45,
+      72,
+      79
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arOpenHand",
+     "id": 109,
+     "kind": "keystone",
+     "path": [
+      2,
+      30,
+      31,
+      43,
+      44,
+      45,
+      72,
+      79
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "ksBulwark",
+     "id": 624,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      59,
+      62,
+      198,
+      199,
+      200,
+      215,
+      216,
+      238,
+      255,
+      256,
+      257,
+      261,
+      622,
+      623
+     ],
+     "probe": {
+      "mode": "combatlog",
+      "needs": "a shield and an enemy that hits the character in melee (30% of the hit comes back)",
+      "row": "p:Keystones",
+      "tab": "dealt"
+     }
+    },
+    {
+     "flag": "ksImmovable",
+     "id": 621,
+     "kind": "keystone",
+     "path": [
+      5,
+      26,
+      28,
+      58,
+      54,
+      53,
+      52,
+      51,
+      209,
+      208,
+      207,
+      236,
+      233,
+      234,
+      241,
+      248,
+      247,
+      246,
+      245,
+      602,
+      601,
+      600,
+      619,
+      620
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "less damage taken: a factor on each hit, no row or total a client can read"
+     }
+    },
+    {
+     "flag": "arLastStand",
+     "id": 523,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      59,
+      62,
+      201,
+      202,
+      203,
+      222,
+      221,
+      217,
+      218,
+      240,
+      510,
+      508,
+      507,
+      506,
+      516,
+      514,
+      512,
+      511,
+      520,
+      519,
+      518,
+      517
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arEarthbreaker",
+     "id": 409,
+     "kind": "keystone",
+     "path": [
+      4,
+      14,
+      15,
+      16,
+      70,
+      67,
+      69,
+      113,
+      110,
+      114,
+      150,
+      154,
+      157,
+      182,
+      184,
+      392,
+      391,
+      395,
+      396,
+      397,
+      398,
+      400,
+      402,
+      403,
+      404,
+      405,
+      406
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arExecutioner",
+     "id": 428,
+     "kind": "keystone",
+     "path": [
+      4,
+      14,
+      15,
+      16,
+      70,
+      67,
+      69,
+      113,
+      110,
+      114,
+      150,
+      151,
+      152,
+      153,
+      156,
+      411,
+      410,
+      414,
+      415,
+      416,
+      417,
+      419,
+      421,
+      422,
+      423,
+      424,
+      425
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arRampage",
+     "id": 466,
+     "kind": "keystone",
+     "path": [
+      2,
+      30,
+      31,
+      43,
+      44,
+      45,
+      46,
+      50,
+      115,
+      117,
+      162,
+      158,
+      165,
+      159,
+      160,
+      448,
+      449,
+      450,
+      451,
+      455,
+      454,
+      456,
+      458,
+      465,
+      460,
+      461,
+      462
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    }
+   ],
+   "lich": [
+    {
+     "effects": [
+      {
+       "choice": 1,
+       "observable": {
+        "incrementDeath": 6
+       },
+       "other": [
+        "magicSkill"
+       ]
+      },
+      {
+       "choice": 2,
+       "observable": {
+        "vitality": 3
+       },
+       "other": [
+        "absorbPhysical"
+       ]
+      },
+      {
+       "choice": 3,
+       "observable": {
+        "spirit": 5
+       },
+       "other": [
+        "absorbDeath"
+       ]
+      }
+     ],
+     "id": 666,
+     "kind": "mastery",
+     "path": [
+      636,
+      637,
+      638
+     ]
+    },
+    {
+     "flag": "arHollowVessel",
+     "id": 96,
+     "kind": "keystone",
+     "path": [
+      5,
+      17,
+      18,
+      95,
+      94
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arVigils",
+     "id": 99,
+     "kind": "keystone",
+     "path": [
+      6,
+      23,
+      24,
+      98,
+      97
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "ksHoardedSouls",
+     "id": 641,
+     "kind": "keystone",
+     "path": [
+      636,
+      637,
+      638,
+      639,
+      640
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a change of the necromancer soul rules, no row or total a client can read"
+     }
+    },
+    {
+     "flag": "arSanguine",
+     "id": 81,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      59,
+      76
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arThornbound",
+     "id": 77,
+     "kind": "keystone",
+     "path": [
+      5,
+      26,
+      28,
+      58,
+      57,
+      56,
+      75
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arCascade",
+     "id": 78,
+     "kind": "keystone",
+     "path": [
+      4,
+      14,
+      15,
+      16,
+      70,
+      68,
+      71
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arOpenHand",
+     "id": 109,
+     "kind": "keystone",
+     "path": [
+      2,
+      30,
+      31,
+      43,
+      44,
+      45,
+      72,
+      79
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arEffigy",
+     "id": 262,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      59,
+      62,
+      198,
+      199,
+      200,
+      215,
+      216,
+      238,
+      255,
+      256,
+      257,
+      261
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arWinterLattice",
+     "id": 355,
+     "kind": "keystone",
+     "path": [
+      2,
+      30,
+      31,
+      43,
+      44,
+      45,
+      46,
+      50,
+      115,
+      117,
+      162,
+      163,
+      164,
+      350,
+      349,
+      352,
+      353
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "ksReapersToll",
+     "id": 624,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      59,
+      62,
+      198,
+      199,
+      200,
+      215,
+      216,
+      238,
+      255,
+      256,
+      257,
+      261,
+      622,
+      623
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a damage factor on hits at 40% health or less (x2, otherwise x0.92)"
+     }
+    },
+    {
+     "flag": "ksGraveCovenant",
+     "id": 369,
+     "kind": "keystone",
+     "path": [
+      2,
+      30,
+      31,
+      43,
+      44,
+      45,
+      46,
+      50,
+      115,
+      117,
+      162,
+      163,
+      164,
+      350,
+      349,
+      352,
+      353,
+      364,
+      363,
+      366
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a change of the minions and corpses, no row or total a client can read"
+     }
+    },
+    {
+     "flag": "ksCorpseBlast",
+     "id": 621,
+     "kind": "keystone",
+     "path": [
+      5,
+      26,
+      28,
+      58,
+      54,
+      53,
+      52,
+      51,
+      209,
+      208,
+      207,
+      236,
+      233,
+      234,
+      241,
+      248,
+      247,
+      246,
+      245,
+      602,
+      601,
+      600,
+      619,
+      620
+     ],
+     "probe": {
+      "mode": "combatlog",
+      "needs": "a monster killed by the character or its minions",
+      "row": "p:Keystones",
+      "tab": "dealt"
+     }
+    }
+   ],
+   "monk": [
+    {
+     "effects": [
+      {
+       "choice": 1,
+       "observable": {
+        "incrementPhysical": 6,
+        "strength": 2
+       },
+       "other": []
+      },
+      {
+       "choice": 2,
+       "observable": {
+        "criticalHitAmount": 4,
+        "criticalHitChance": 2
+       },
+       "other": []
+      },
+      {
+       "choice": 3,
+       "observable": {
+        "spirit": 3
+       },
+       "other": [
+        "incrementHealth"
+       ]
+      },
+      {
+       "choice": 4,
+       "observable": {
+        "vitality": 4
+       },
+       "other": [
+        "absorbPhysical"
+       ]
+      }
+     ],
+     "id": 667,
+     "kind": "mastery",
+     "path": [
+      646,
+      647,
+      648
+     ]
+    },
+    {
+     "flag": "arHollowVessel",
+     "id": 96,
+     "kind": "keystone",
+     "path": [
+      5,
+      17,
+      18,
+      95,
+      94
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arIronTithe",
+     "id": 102,
+     "kind": "keystone",
+     "path": [
+      2,
+      9,
+      11,
+      101,
+      100
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arSanguine",
+     "id": 81,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      59,
+      76
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arThornbound",
+     "id": 77,
+     "kind": "keystone",
+     "path": [
+      5,
+      26,
+      28,
+      58,
+      57,
+      56,
+      75
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arCascade",
+     "id": 78,
+     "kind": "keystone",
+     "path": [
+      4,
+      14,
+      15,
+      16,
+      70,
+      68,
+      71
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arAetherEdge",
+     "id": 362,
+     "kind": "keystone",
+     "path": [
+      4,
+      14,
+      15,
+      16,
+      70,
+      67,
+      69,
+      113,
+      110,
+      114,
+      150,
+      151,
+      152,
+      361,
+      358,
+      357,
+      356
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "ksPiercingPalm",
+     "id": 624,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      59,
+      62,
+      198,
+      199,
+      200,
+      215,
+      216,
+      238,
+      255,
+      256,
+      257,
+      261,
+      622,
+      623
+     ],
+     "probe": {
+      "mode": "combatlog",
+      "needs": "melee hits and a second enemy right behind the target",
+      "row": "p:Keystones",
+      "tab": "dealt"
+     }
+    },
+    {
+     "flag": "ksScarredDiscipline",
+     "id": 390,
+     "kind": "keystone",
+     "path": [
+      6,
+      23,
+      24,
+      25,
+      63,
+      65,
+      64,
+      122,
+      120,
+      121,
+      168,
+      166,
+      374,
+      373,
+      370,
+      371,
+      388,
+      389,
+      386
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a change of the Monk chi rules, no row or total a client can read"
+     }
+    },
+    {
+     "flag": "ksSeventhPalm",
+     "id": 621,
+     "kind": "keystone",
+     "path": [
+      5,
+      26,
+      28,
+      58,
+      54,
+      53,
+      52,
+      51,
+      209,
+      208,
+      207,
+      236,
+      233,
+      234,
+      241,
+      248,
+      247,
+      246,
+      245,
+      602,
+      601,
+      600,
+      619,
+      620
+     ],
+     "probe": {
+      "mode": "combatlog",
+      "needs": "melee hits (every 5th one) and a second enemy next to the target",
+      "row": "p:Keystones",
+      "tab": "dealt"
+     }
+    }
+   ],
+   "mystic": [
+    {
+     "flag": "arHollowVessel",
+     "id": 96,
+     "kind": "keystone",
+     "path": [
+      5,
+      17,
+      18,
+      95,
+      94
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arVigils",
+     "id": 99,
+     "kind": "keystone",
+     "path": [
+      6,
+      23,
+      24,
+      98,
+      97
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arSanguine",
+     "id": 81,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      59,
+      76
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arThornbound",
+     "id": 77,
+     "kind": "keystone",
+     "path": [
+      5,
+      26,
+      28,
+      58,
+      57,
+      56,
+      75
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arCascade",
+     "id": 78,
+     "kind": "keystone",
+     "path": [
+      4,
+      14,
+      15,
+      16,
+      70,
+      68,
+      71
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arCinderSigil",
+     "id": 106,
+     "kind": "keystone",
+     "path": [
+      3,
+      32,
+      34,
+      35,
+      39,
+      40,
+      73,
+      80
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arOpenHand",
+     "id": 109,
+     "kind": "keystone",
+     "path": [
+      2,
+      30,
+      31,
+      43,
+      44,
+      45,
+      72,
+      79
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arEffigy",
+     "id": 262,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      59,
+      62,
+      198,
+      199,
+      200,
+      215,
+      216,
+      238,
+      255,
+      256,
+      257,
+      261
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arWinterLattice",
+     "id": 355,
+     "kind": "keystone",
+     "path": [
+      2,
+      30,
+      31,
+      43,
+      44,
+      45,
+      46,
+      50,
+      115,
+      117,
+      162,
+      163,
+      164,
+      350,
+      349,
+      352,
+      353
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "ksOverload",
+     "id": 624,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      59,
+      62,
+      198,
+      199,
+      200,
+      215,
+      216,
+      238,
+      255,
+      256,
+      257,
+      261,
+      622,
+      623
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a +20% on the next spell of another element: a damage factor, no row of its own in the combat log"
+     }
+    },
+    {
+     "flag": "ksArcaneEcho",
+     "id": 621,
+     "kind": "keystone",
+     "path": [
+      5,
+      26,
+      28,
+      58,
+      54,
+      53,
+      52,
+      51,
+      209,
+      208,
+      207,
+      236,
+      233,
+      234,
+      241,
+      248,
+      247,
+      246,
+      245,
+      602,
+      601,
+      600,
+      619,
+      620
+     ],
+     "probe": {
+      "mode": "combatlog",
+      "needs": "a spell that hits 2 or more enemies (35% chance, 3 s cooldown)",
+      "row": "p:Keystones",
+      "tab": "dealt"
+     }
+    }
+   ],
+   "necromancer": [
+    {
+     "effects": [
+      {
+       "choice": 1,
+       "observable": {
+        "incrementDeath": 6
+       },
+       "other": [
+        "magicSkill"
+       ]
+      },
+      {
+       "choice": 2,
+       "observable": {
+        "vitality": 3
+       },
+       "other": [
+        "absorbPhysical"
+       ]
+      },
+      {
+       "choice": 3,
+       "observable": {
+        "spirit": 5
+       },
+       "other": [
+        "absorbDeath"
+       ]
+      }
+     ],
+     "id": 666,
+     "kind": "mastery",
+     "path": [
+      636,
+      637,
+      638
+     ]
+    },
+    {
+     "flag": "arHollowVessel",
+     "id": 96,
+     "kind": "keystone",
+     "path": [
+      5,
+      17,
+      18,
+      95,
+      94
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arVigils",
+     "id": 99,
+     "kind": "keystone",
+     "path": [
+      6,
+      23,
+      24,
+      98,
+      97
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arSanguine",
+     "id": 81,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      59,
+      76
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arThornbound",
+     "id": 77,
+     "kind": "keystone",
+     "path": [
+      5,
+      26,
+      28,
+      58,
+      57,
+      56,
+      75
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arCascade",
+     "id": 78,
+     "kind": "keystone",
+     "path": [
+      4,
+      14,
+      15,
+      16,
+      70,
+      68,
+      71
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arOpenHand",
+     "id": 109,
+     "kind": "keystone",
+     "path": [
+      2,
+      30,
+      31,
+      43,
+      44,
+      45,
+      72,
+      79
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arEffigy",
+     "id": 262,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      59,
+      62,
+      198,
+      199,
+      200,
+      215,
+      216,
+      238,
+      255,
+      256,
+      257,
+      261
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arWinterLattice",
+     "id": 355,
+     "kind": "keystone",
+     "path": [
+      2,
+      30,
+      31,
+      43,
+      44,
+      45,
+      46,
+      50,
+      115,
+      117,
+      162,
+      163,
+      164,
+      350,
+      349,
+      352,
+      353
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "ksReapersToll",
+     "id": 624,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      59,
+      62,
+      198,
+      199,
+      200,
+      215,
+      216,
+      238,
+      255,
+      256,
+      257,
+      261,
+      622,
+      623
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a damage factor on hits at 40% health or less (x2, otherwise x0.92)"
+     }
+    },
+    {
+     "flag": "ksGraveCovenant",
+     "id": 369,
+     "kind": "keystone",
+     "path": [
+      2,
+      30,
+      31,
+      43,
+      44,
+      45,
+      46,
+      50,
+      115,
+      117,
+      162,
+      163,
+      164,
+      350,
+      349,
+      352,
+      353,
+      364,
+      363,
+      366
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a change of the minions and corpses, no row or total a client can read"
+     }
+    },
+    {
+     "flag": "ksCorpseBlast",
+     "id": 621,
+     "kind": "keystone",
+     "path": [
+      5,
+      26,
+      28,
+      58,
+      54,
+      53,
+      52,
+      51,
+      209,
+      208,
+      207,
+      236,
+      233,
+      234,
+      241,
+      248,
+      247,
+      246,
+      245,
+      602,
+      601,
+      600,
+      619,
+      620
+     ],
+     "probe": {
+      "mode": "combatlog",
+      "needs": "a monster killed by the character or its minions",
+      "row": "p:Keystones",
+      "tab": "dealt"
+     }
+    }
+   ],
+   "ninja": [
+    {
+     "flag": "arSnarewright",
+     "id": 105,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      103
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "effects": [
+      {
+       "choice": 1,
+       "observable": {
+        "criticalHitAmount": 5,
+        "criticalHitChance": 2
+       },
+       "other": []
+      },
+      {
+       "choice": 2,
+       "observable": {
+        "dexterity": 3
+       },
+       "other": [
+        "speed"
+       ]
+      },
+      {
+       "choice": 3,
+       "observable": {
+        "vitality": 4
+       },
+       "other": [
+        "absorbPhysical"
+       ]
+      },
+      {
+       "choice": 4,
+       "observable": {
+        "incrementEarth": 6,
+        "incrementPhysical": 3
+       },
+       "other": []
+      }
+     ],
+     "id": 665,
+     "kind": "mastery",
+     "path": [
+      626,
+      627,
+      628
+     ]
+    },
+    {
+     "flag": "ksLivingShadow",
+     "id": 631,
+     "kind": "keystone",
+     "path": [
+      626,
+      627,
+      628,
+      629,
+      630
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a change of the Thief combat rules, no row or total a client can read"
+     }
+    },
+    {
+     "flag": "arSanguine",
+     "id": 81,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      59,
+      76
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arThornbound",
+     "id": 77,
+     "kind": "keystone",
+     "path": [
+      5,
+      26,
+      28,
+      58,
+      57,
+      56,
+      75
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arCascade",
+     "id": 78,
+     "kind": "keystone",
+     "path": [
+      4,
+      14,
+      15,
+      16,
+      70,
+      68,
+      71
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arContagion",
+     "id": 107,
+     "kind": "keystone",
+     "path": [
+      3,
+      32,
+      34,
+      35,
+      39,
+      40,
+      73,
+      80
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arOpenHand",
+     "id": 109,
+     "kind": "keystone",
+     "path": [
+      2,
+      30,
+      31,
+      43,
+      44,
+      45,
+      72,
+      79
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "ksBlackbloodCreed",
+     "id": 383,
+     "kind": "keystone",
+     "path": [
+      3,
+      32,
+      34,
+      35,
+      36,
+      37,
+      38,
+      42,
+      129,
+      125,
+      128,
+      180,
+      179,
+      178,
+      377,
+      378,
+      379,
+      382
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a change of the Thief combat rules, no row or total a client can read"
+     }
+    },
+    {
+     "flag": "ksViperVerdict",
+     "id": 624,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      59,
+      62,
+      198,
+      199,
+      200,
+      215,
+      216,
+      238,
+      255,
+      256,
+      257,
+      261,
+      622,
+      623
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a damage factor on weapon hits (x2 on a poisoned target, x0.85 otherwise)"
+     }
+    },
+    {
+     "flag": "ksShadowTwin",
+     "id": 621,
+     "kind": "keystone",
+     "path": [
+      5,
+      26,
+      28,
+      58,
+      54,
+      53,
+      52,
+      51,
+      209,
+      208,
+      207,
+      236,
+      233,
+      234,
+      241,
+      248,
+      247,
+      246,
+      245,
+      602,
+      601,
+      600,
+      619,
+      620
+     ],
+     "probe": {
+      "mode": "combatlog",
+      "needs": "weapon hits (30% chance)",
+      "row": "p:Keystones",
+      "tab": "dealt"
+     }
+    }
+   ],
+   "ranger": [
+    {
+     "flag": "arSnarewright",
+     "id": 105,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      103
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arSanguine",
+     "id": 81,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      59,
+      76
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arStormstring",
+     "id": 82,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      60,
+      74
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arThornbound",
+     "id": 77,
+     "kind": "keystone",
+     "path": [
+      5,
+      26,
+      28,
+      58,
+      57,
+      56,
+      75
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arCascade",
+     "id": 78,
+     "kind": "keystone",
+     "path": [
+      4,
+      14,
+      15,
+      16,
+      70,
+      68,
+      71
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arOpenHand",
+     "id": 109,
+     "kind": "keystone",
+     "path": [
+      2,
+      30,
+      31,
+      43,
+      44,
+      45,
+      72,
+      79
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "ksDeadeye",
+     "id": 624,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      59,
+      62,
+      198,
+      199,
+      200,
+      215,
+      216,
+      238,
+      255,
+      256,
+      257,
+      261,
+      622,
+      623
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "double damage on 15% of the crossbow shots: a factor on the hit itself"
+     }
+    },
+    {
+     "flag": "ksRicochet",
+     "id": 621,
+     "kind": "keystone",
+     "path": [
+      5,
+      26,
+      28,
+      58,
+      54,
+      53,
+      52,
+      51,
+      209,
+      208,
+      207,
+      236,
+      233,
+      234,
+      241,
+      248,
+      247,
+      246,
+      245,
+      602,
+      601,
+      600,
+      619,
+      620
+     ],
+     "probe": {
+      "mode": "combatlog",
+      "needs": "a bow or crossbow and a second enemy within 4 sqm of the target",
+      "row": "p:Keystones",
+      "tab": "dealt"
+     }
+    },
+    {
+     "flag": "arOpeningShot",
+     "id": 599,
+     "kind": "keystone",
+     "path": [
+      6,
+      23,
+      24,
+      25,
+      63,
+      65,
+      64,
+      122,
+      120,
+      121,
+      168,
+      169,
+      173,
+      197,
+      195,
+      584,
+      583,
+      582,
+      581,
+      591,
+      589,
+      587,
+      588,
+      595,
+      594,
+      593,
+      598
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arBarbed",
+     "id": 542,
+     "kind": "keystone",
+     "path": [
+      3,
+      32,
+      34,
+      35,
+      36,
+      37,
+      38,
+      42,
+      129,
+      125,
+      128,
+      180,
+      177,
+      181,
+      176,
+      175,
+      529,
+      527,
+      526,
+      525,
+      535,
+      533,
+      531,
+      530,
+      539,
+      538,
+      537,
+      536
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arLongshot",
+     "id": 561,
+     "kind": "keystone",
+     "path": [
+      6,
+      23,
+      24,
+      25,
+      63,
+      65,
+      64,
+      122,
+      120,
+      121,
+      168,
+      166,
+      374,
+      373,
+      370,
+      371,
+      388,
+      389,
+      386,
+      546,
+      545,
+      544,
+      543,
+      553,
+      551,
+      549,
+      550,
+      557,
+      556,
+      555,
+      560
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arHobble",
+     "id": 447,
+     "kind": "keystone",
+     "path": [
+      2,
+      30,
+      31,
+      43,
+      44,
+      45,
+      46,
+      50,
+      115,
+      117,
+      162,
+      163,
+      164,
+      350,
+      349,
+      352,
+      353,
+      364,
+      363,
+      366,
+      429,
+      430,
+      431,
+      432,
+      436,
+      435,
+      437,
+      439,
+      446,
+      441,
+      442,
+      443
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    }
+   ],
+   "samurai": [
+    {
+     "flag": "arSnarewright",
+     "id": 105,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      103
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "effects": [
+      {
+       "choice": 1,
+       "observable": {
+        "criticalHitAmount": 5,
+        "criticalHitChance": 2
+       },
+       "other": []
+      },
+      {
+       "choice": 2,
+       "observable": {
+        "dexterity": 3
+       },
+       "other": [
+        "speed"
+       ]
+      },
+      {
+       "choice": 3,
+       "observable": {
+        "vitality": 4
+       },
+       "other": [
+        "absorbPhysical"
+       ]
+      },
+      {
+       "choice": 4,
+       "observable": {
+        "incrementEarth": 6,
+        "incrementPhysical": 3
+       },
+       "other": []
+      }
+     ],
+     "id": 665,
+     "kind": "mastery",
+     "path": [
+      626,
+      627,
+      628
+     ]
+    },
+    {
+     "flag": "ksWayOfTheBlade",
+     "id": 634,
+     "kind": "keystone",
+     "path": [
+      626,
+      627,
+      628,
+      632,
+      633
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a change of the Thief combat rules, no row or total a client can read"
+     }
+    },
+    {
+     "flag": "arSanguine",
+     "id": 81,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      59,
+      76
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arThornbound",
+     "id": 77,
+     "kind": "keystone",
+     "path": [
+      5,
+      26,
+      28,
+      58,
+      57,
+      56,
+      75
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arCascade",
+     "id": 78,
+     "kind": "keystone",
+     "path": [
+      4,
+      14,
+      15,
+      16,
+      70,
+      68,
+      71
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arContagion",
+     "id": 107,
+     "kind": "keystone",
+     "path": [
+      3,
+      32,
+      34,
+      35,
+      39,
+      40,
+      73,
+      80
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arOpenHand",
+     "id": 109,
+     "kind": "keystone",
+     "path": [
+      2,
+      30,
+      31,
+      43,
+      44,
+      45,
+      72,
+      79
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "ksBlackbloodCreed",
+     "id": 383,
+     "kind": "keystone",
+     "path": [
+      3,
+      32,
+      34,
+      35,
+      36,
+      37,
+      38,
+      42,
+      129,
+      125,
+      128,
+      180,
+      179,
+      178,
+      377,
+      378,
+      379,
+      382
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a change of the Thief combat rules, no row or total a client can read"
+     }
+    },
+    {
+     "flag": "ksViperVerdict",
+     "id": 624,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      59,
+      62,
+      198,
+      199,
+      200,
+      215,
+      216,
+      238,
+      255,
+      256,
+      257,
+      261,
+      622,
+      623
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a damage factor on weapon hits (x2 on a poisoned target, x0.85 otherwise)"
+     }
+    },
+    {
+     "flag": "ksShadowTwin",
+     "id": 621,
+     "kind": "keystone",
+     "path": [
+      5,
+      26,
+      28,
+      58,
+      54,
+      53,
+      52,
+      51,
+      209,
+      208,
+      207,
+      236,
+      233,
+      234,
+      241,
+      248,
+      247,
+      246,
+      245,
+      602,
+      601,
+      600,
+      619,
+      620
+     ],
+     "probe": {
+      "mode": "combatlog",
+      "needs": "weapon hits (30% chance)",
+      "row": "p:Keystones",
+      "tab": "dealt"
+     }
+    }
+   ],
+   "sentinel": [
+    {
+     "effects": [
+      {
+       "choice": 1,
+       "observable": {
+        "incrementHoly": 6,
+        "strength": 2
+       },
+       "other": []
+      },
+      {
+       "choice": 2,
+       "observable": {},
+       "other": [
+        "absorbAllElements",
+        "absorbPhysical",
+        "shieldingSkill"
+       ]
+      },
+      {
+       "choice": 3,
+       "observable": {
+        "vitality": 3
+       },
+       "other": [
+        "incrementHealth"
+       ]
+      }
+     ],
+     "id": 668,
+     "kind": "mastery",
+     "path": [
+      656,
+      657,
+      658
+     ]
+    },
+    {
+     "flag": "arHollowVessel",
+     "id": 96,
+     "kind": "keystone",
+     "path": [
+      5,
+      17,
+      18,
+      95,
+      94
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arVigils",
+     "id": 99,
+     "kind": "keystone",
+     "path": [
+      6,
+      23,
+      24,
+      98,
+      97
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arIronTithe",
+     "id": 102,
+     "kind": "keystone",
+     "path": [
+      2,
+      9,
+      11,
+      101,
+      100
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "ksBastion",
+     "id": 664,
+     "kind": "keystone",
+     "path": [
+      656,
+      657,
+      658,
+      662,
+      663
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a change of the Templar defence rules, no row or total a client can read"
+     }
+    },
+    {
+     "flag": "arSanguine",
+     "id": 81,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      59,
+      76
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arThornbound",
+     "id": 77,
+     "kind": "keystone",
+     "path": [
+      5,
+      26,
+      28,
+      58,
+      57,
+      56,
+      75
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arCascade",
+     "id": 78,
+     "kind": "keystone",
+     "path": [
+      4,
+      14,
+      15,
+      16,
+      70,
+      68,
+      71
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arCinderSigil",
+     "id": 106,
+     "kind": "keystone",
+     "path": [
+      3,
+      32,
+      34,
+      35,
+      39,
+      40,
+      73,
+      80
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arPyreOath",
+     "id": 108,
+     "kind": "keystone",
+     "path": [
+      2,
+      30,
+      31,
+      43,
+      44,
+      45,
+      72,
+      79
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arOpenHand",
+     "id": 109,
+     "kind": "keystone",
+     "path": [
+      2,
+      30,
+      31,
+      43,
+      44,
+      45,
+      72,
+      79
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "ksPenitentWrath",
+     "id": 376,
+     "kind": "keystone",
+     "path": [
+      6,
+      23,
+      24,
+      25,
+      63,
+      65,
+      64,
+      122,
+      120,
+      121,
+      168,
+      166,
+      374,
+      373,
+      370,
+      371
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a change of the Templar combat rules, no row or total a client can read"
+     }
+    },
+    {
+     "flag": "arAetherEdge",
+     "id": 362,
+     "kind": "keystone",
+     "path": [
+      4,
+      14,
+      15,
+      16,
+      70,
+      67,
+      69,
+      113,
+      110,
+      114,
+      150,
+      151,
+      152,
+      361,
+      358,
+      357,
+      356
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "ksThorns",
+     "id": 624,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      59,
+      62,
+      198,
+      199,
+      200,
+      215,
+      216,
+      238,
+      255,
+      256,
+      257,
+      261,
+      622,
+      623
+     ],
+     "probe": {
+      "mode": "combatlog",
+      "needs": "an enemy that hits the character in melee or at range",
+      "row": "p:Keystones",
+      "tab": "dealt"
+     }
+    },
+    {
+     "flag": "arReliquary",
+     "id": 253,
+     "kind": "keystone",
+     "path": [
+      5,
+      26,
+      28,
+      58,
+      54,
+      53,
+      52,
+      51,
+      209,
+      208,
+      207,
+      236,
+      233,
+      234,
+      241,
+      248,
+      247,
+      246,
+      245
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "ksRadiantRebuke",
+     "id": 621,
+     "kind": "keystone",
+     "path": [
+      5,
+      26,
+      28,
+      58,
+      54,
+      53,
+      52,
+      51,
+      209,
+      208,
+      207,
+      236,
+      233,
+      234,
+      241,
+      248,
+      247,
+      246,
+      245,
+      602,
+      601,
+      600,
+      619,
+      620
+     ],
+     "probe": {
+      "mode": "combatlog",
+      "needs": "a shield and an enemy that hits the character (20% blocked)",
+      "row": "p:Keystones",
+      "tab": "dealt"
+     }
+    }
+   ],
+   "shadowfist": [
+    {
+     "effects": [
+      {
+       "choice": 1,
+       "observable": {
+        "incrementPhysical": 6,
+        "strength": 2
+       },
+       "other": []
+      },
+      {
+       "choice": 2,
+       "observable": {
+        "criticalHitAmount": 4,
+        "criticalHitChance": 2
+       },
+       "other": []
+      },
+      {
+       "choice": 3,
+       "observable": {
+        "spirit": 3
+       },
+       "other": [
+        "incrementHealth"
+       ]
+      },
+      {
+       "choice": 4,
+       "observable": {
+        "vitality": 4
+       },
+       "other": [
+        "absorbPhysical"
+       ]
+      }
+     ],
+     "id": 667,
+     "kind": "mastery",
+     "path": [
+      646,
+      647,
+      648
+     ]
+    },
+    {
+     "flag": "arHollowVessel",
+     "id": 96,
+     "kind": "keystone",
+     "path": [
+      5,
+      17,
+      18,
+      95,
+      94
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arIronTithe",
+     "id": 102,
+     "kind": "keystone",
+     "path": [
+      2,
+      9,
+      11,
+      101,
+      100
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "ksHundredHands",
+     "id": 651,
+     "kind": "keystone",
+     "path": [
+      646,
+      647,
+      648,
+      649,
+      650
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a change of the Monk combat rules, no row or total a client can read"
+     }
+    },
+    {
+     "flag": "arSanguine",
+     "id": 81,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      59,
+      76
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arThornbound",
+     "id": 77,
+     "kind": "keystone",
+     "path": [
+      5,
+      26,
+      28,
+      58,
+      57,
+      56,
+      75
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arCascade",
+     "id": 78,
+     "kind": "keystone",
+     "path": [
+      4,
+      14,
+      15,
+      16,
+      70,
+      68,
+      71
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arAetherEdge",
+     "id": 362,
+     "kind": "keystone",
+     "path": [
+      4,
+      14,
+      15,
+      16,
+      70,
+      67,
+      69,
+      113,
+      110,
+      114,
+      150,
+      151,
+      152,
+      361,
+      358,
+      357,
+      356
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "ksPiercingPalm",
+     "id": 624,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      59,
+      62,
+      198,
+      199,
+      200,
+      215,
+      216,
+      238,
+      255,
+      256,
+      257,
+      261,
+      622,
+      623
+     ],
+     "probe": {
+      "mode": "combatlog",
+      "needs": "melee hits and a second enemy right behind the target",
+      "row": "p:Keystones",
+      "tab": "dealt"
+     }
+    },
+    {
+     "flag": "ksScarredDiscipline",
+     "id": 390,
+     "kind": "keystone",
+     "path": [
+      6,
+      23,
+      24,
+      25,
+      63,
+      65,
+      64,
+      122,
+      120,
+      121,
+      168,
+      166,
+      374,
+      373,
+      370,
+      371,
+      388,
+      389,
+      386
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a change of the Monk chi rules, no row or total a client can read"
+     }
+    },
+    {
+     "flag": "ksSeventhPalm",
+     "id": 621,
+     "kind": "keystone",
+     "path": [
+      5,
+      26,
+      28,
+      58,
+      54,
+      53,
+      52,
+      51,
+      209,
+      208,
+      207,
+      236,
+      233,
+      234,
+      241,
+      248,
+      247,
+      246,
+      245,
+      602,
+      601,
+      600,
+      619,
+      620
+     ],
+     "probe": {
+      "mode": "combatlog",
+      "needs": "melee hits (every 5th one) and a second enemy next to the target",
+      "row": "p:Keystones",
+      "tab": "dealt"
+     }
+    }
+   ],
+   "templar": [
+    {
+     "effects": [
+      {
+       "choice": 1,
+       "observable": {
+        "incrementHoly": 6,
+        "strength": 2
+       },
+       "other": []
+      },
+      {
+       "choice": 2,
+       "observable": {},
+       "other": [
+        "absorbAllElements",
+        "absorbPhysical",
+        "shieldingSkill"
+       ]
+      },
+      {
+       "choice": 3,
+       "observable": {
+        "vitality": 3
+       },
+       "other": [
+        "incrementHealth"
+       ]
+      }
+     ],
+     "id": 668,
+     "kind": "mastery",
+     "path": [
+      656,
+      657,
+      658
+     ]
+    },
+    {
+     "flag": "arHollowVessel",
+     "id": 96,
+     "kind": "keystone",
+     "path": [
+      5,
+      17,
+      18,
+      95,
+      94
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arVigils",
+     "id": 99,
+     "kind": "keystone",
+     "path": [
+      6,
+      23,
+      24,
+      98,
+      97
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arIronTithe",
+     "id": 102,
+     "kind": "keystone",
+     "path": [
+      2,
+      9,
+      11,
+      101,
+      100
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arSanguine",
+     "id": 81,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      59,
+      76
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arThornbound",
+     "id": 77,
+     "kind": "keystone",
+     "path": [
+      5,
+      26,
+      28,
+      58,
+      57,
+      56,
+      75
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arCascade",
+     "id": 78,
+     "kind": "keystone",
+     "path": [
+      4,
+      14,
+      15,
+      16,
+      70,
+      68,
+      71
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arCinderSigil",
+     "id": 106,
+     "kind": "keystone",
+     "path": [
+      3,
+      32,
+      34,
+      35,
+      39,
+      40,
+      73,
+      80
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arPyreOath",
+     "id": 108,
+     "kind": "keystone",
+     "path": [
+      2,
+      30,
+      31,
+      43,
+      44,
+      45,
+      72,
+      79
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arOpenHand",
+     "id": 109,
+     "kind": "keystone",
+     "path": [
+      2,
+      30,
+      31,
+      43,
+      44,
+      45,
+      72,
+      79
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "ksPenitentWrath",
+     "id": 376,
+     "kind": "keystone",
+     "path": [
+      6,
+      23,
+      24,
+      25,
+      63,
+      65,
+      64,
+      122,
+      120,
+      121,
+      168,
+      166,
+      374,
+      373,
+      370,
+      371
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a change of the Templar combat rules, no row or total a client can read"
+     }
+    },
+    {
+     "flag": "arAetherEdge",
+     "id": 362,
+     "kind": "keystone",
+     "path": [
+      4,
+      14,
+      15,
+      16,
+      70,
+      67,
+      69,
+      113,
+      110,
+      114,
+      150,
+      151,
+      152,
+      361,
+      358,
+      357,
+      356
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "ksDawnchain",
+     "id": 624,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      59,
+      62,
+      198,
+      199,
+      200,
+      215,
+      216,
+      238,
+      255,
+      256,
+      257,
+      261,
+      622,
+      623
+     ],
+     "probe": {
+      "mode": "combatlog",
+      "needs": "melee weapon hits and a second enemy within 3 sqm of the target",
+      "row": "p:Keystones",
+      "tab": "dealt"
+     }
+    },
+    {
+     "flag": "arReliquary",
+     "id": 253,
+     "kind": "keystone",
+     "path": [
+      5,
+      26,
+      28,
+      58,
+      54,
+      53,
+      52,
+      51,
+      209,
+      208,
+      207,
+      236,
+      233,
+      234,
+      241,
+      248,
+      247,
+      246,
+      245
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "ksRadiantRebuke",
+     "id": 621,
+     "kind": "keystone",
+     "path": [
+      5,
+      26,
+      28,
+      58,
+      54,
+      53,
+      52,
+      51,
+      209,
+      208,
+      207,
+      236,
+      233,
+      234,
+      241,
+      248,
+      247,
+      246,
+      245,
+      602,
+      601,
+      600,
+      619,
+      620
+     ],
+     "probe": {
+      "mode": "combatlog",
+      "needs": "a shield and an enemy that hits the character (20% blocked)",
+      "row": "p:Keystones",
+      "tab": "dealt"
+     }
+    }
+   ],
+   "thief": [
+    {
+     "flag": "arSnarewright",
+     "id": 105,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      103
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "effects": [
+      {
+       "choice": 1,
+       "observable": {
+        "criticalHitAmount": 5,
+        "criticalHitChance": 2
+       },
+       "other": []
+      },
+      {
+       "choice": 2,
+       "observable": {
+        "dexterity": 3
+       },
+       "other": [
+        "speed"
+       ]
+      },
+      {
+       "choice": 3,
+       "observable": {
+        "vitality": 4
+       },
+       "other": [
+        "absorbPhysical"
+       ]
+      },
+      {
+       "choice": 4,
+       "observable": {
+        "incrementEarth": 6,
+        "incrementPhysical": 3
+       },
+       "other": []
+      }
+     ],
+     "id": 665,
+     "kind": "mastery",
+     "path": [
+      626,
+      627,
+      628
+     ]
+    },
+    {
+     "flag": "arSanguine",
+     "id": 81,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      59,
+      76
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arThornbound",
+     "id": 77,
+     "kind": "keystone",
+     "path": [
+      5,
+      26,
+      28,
+      58,
+      57,
+      56,
+      75
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arCascade",
+     "id": 78,
+     "kind": "keystone",
+     "path": [
+      4,
+      14,
+      15,
+      16,
+      70,
+      68,
+      71
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arContagion",
+     "id": 107,
+     "kind": "keystone",
+     "path": [
+      3,
+      32,
+      34,
+      35,
+      39,
+      40,
+      73,
+      80
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arOpenHand",
+     "id": 109,
+     "kind": "keystone",
+     "path": [
+      2,
+      30,
+      31,
+      43,
+      44,
+      45,
+      72,
+      79
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "ksBlackbloodCreed",
+     "id": 383,
+     "kind": "keystone",
+     "path": [
+      3,
+      32,
+      34,
+      35,
+      36,
+      37,
+      38,
+      42,
+      129,
+      125,
+      128,
+      180,
+      179,
+      178,
+      377,
+      378,
+      379,
+      382
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a change of the Thief combat rules, no row or total a client can read"
+     }
+    },
+    {
+     "flag": "ksViperVerdict",
+     "id": 624,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      59,
+      62,
+      198,
+      199,
+      200,
+      215,
+      216,
+      238,
+      255,
+      256,
+      257,
+      261,
+      622,
+      623
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a damage factor on weapon hits (x2 on a poisoned target, x0.85 otherwise)"
+     }
+    },
+    {
+     "flag": "ksShadowTwin",
+     "id": 621,
+     "kind": "keystone",
+     "path": [
+      5,
+      26,
+      28,
+      58,
+      54,
+      53,
+      52,
+      51,
+      209,
+      208,
+      207,
+      236,
+      233,
+      234,
+      241,
+      248,
+      247,
+      246,
+      245,
+      602,
+      601,
+      600,
+      619,
+      620
+     ],
+     "probe": {
+      "mode": "combatlog",
+      "needs": "weapon hits (30% chance)",
+      "row": "p:Keystones",
+      "tab": "dealt"
+     }
+    }
+   ],
+   "warrior": [
+    {
+     "flag": "arIronTithe",
+     "id": 102,
+     "kind": "keystone",
+     "path": [
+      2,
+      9,
+      11,
+      101,
+      100
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arSanguine",
+     "id": 81,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      59,
+      76
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arThornbound",
+     "id": 77,
+     "kind": "keystone",
+     "path": [
+      5,
+      26,
+      28,
+      58,
+      57,
+      56,
+      75
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arCascade",
+     "id": 78,
+     "kind": "keystone",
+     "path": [
+      4,
+      14,
+      15,
+      16,
+      70,
+      68,
+      71
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arPyreOath",
+     "id": 108,
+     "kind": "keystone",
+     "path": [
+      2,
+      30,
+      31,
+      43,
+      44,
+      45,
+      72,
+      79
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arOpenHand",
+     "id": 109,
+     "kind": "keystone",
+     "path": [
+      2,
+      30,
+      31,
+      43,
+      44,
+      45,
+      72,
+      79
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "ksBulwark",
+     "id": 624,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      59,
+      62,
+      198,
+      199,
+      200,
+      215,
+      216,
+      238,
+      255,
+      256,
+      257,
+      261,
+      622,
+      623
+     ],
+     "probe": {
+      "mode": "combatlog",
+      "needs": "a shield and an enemy that hits the character in melee (30% of the hit comes back)",
+      "row": "p:Keystones",
+      "tab": "dealt"
+     }
+    },
+    {
+     "flag": "ksCleavingArc",
+     "id": 621,
+     "kind": "keystone",
+     "path": [
+      5,
+      26,
+      28,
+      58,
+      54,
+      53,
+      52,
+      51,
+      209,
+      208,
+      207,
+      236,
+      233,
+      234,
+      241,
+      248,
+      247,
+      246,
+      245,
+      602,
+      601,
+      600,
+      619,
+      620
+     ],
+     "probe": {
+      "mode": "combatlog",
+      "needs": "a two-handed melee weapon and a second enemy next to the target",
+      "row": "p:Keystones",
+      "tab": "dealt"
+     }
+    },
+    {
+     "flag": "arLastStand",
+     "id": 523,
+     "kind": "keystone",
+     "path": [
+      3,
+      104,
+      12,
+      61,
+      59,
+      62,
+      201,
+      202,
+      203,
+      222,
+      221,
+      217,
+      218,
+      240,
+      510,
+      508,
+      507,
+      506,
+      516,
+      514,
+      512,
+      511,
+      520,
+      519,
+      518,
+      517
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arEarthbreaker",
+     "id": 409,
+     "kind": "keystone",
+     "path": [
+      4,
+      14,
+      15,
+      16,
+      70,
+      67,
+      69,
+      113,
+      110,
+      114,
+      150,
+      154,
+      157,
+      182,
+      184,
+      392,
+      391,
+      395,
+      396,
+      397,
+      398,
+      400,
+      402,
+      403,
+      404,
+      405,
+      406
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arExecutioner",
+     "id": 428,
+     "kind": "keystone",
+     "path": [
+      4,
+      14,
+      15,
+      16,
+      70,
+      67,
+      69,
+      113,
+      110,
+      114,
+      150,
+      151,
+      152,
+      153,
+      156,
+      411,
+      410,
+      414,
+      415,
+      416,
+      417,
+      419,
+      421,
+      422,
+      423,
+      424,
+      425
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    },
+    {
+     "flag": "arRampage",
+     "id": 466,
+     "kind": "keystone",
+     "path": [
+      2,
+      30,
+      31,
+      43,
+      44,
+      45,
+      46,
+      50,
+      115,
+      117,
+      162,
+      158,
+      165,
+      159,
+      160,
+      448,
+      449,
+      450,
+      451,
+      455,
+      454,
+      456,
+      458,
+      465,
+      460,
+      461,
+      462
+     ],
+     "probe": {
+      "mode": "none",
+      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+     }
+    }
+   ]
+  },
+  "elements": [
+   "incrementFire",
+   "incrementIce",
+   "incrementEnergy",
+   "incrementEarth",
+   "incrementDeath",
+   "incrementHoly",
+   "incrementArcane",
+   "incrementWater"
+  ],
+  "observableStats": [
+   "strength",
+   "intelligence",
+   "dexterity",
+   "vitality",
+   "spirit",
+   "incrementPhysical",
+   "incrementFire",
+   "incrementIce",
+   "incrementEnergy",
+   "incrementEarth",
+   "incrementDeath",
+   "incrementHoly",
+   "incrementArcane",
+   "incrementWater",
+   "criticalHitChance",
+   "criticalHitAmount",
+   "multiIncrement"
+  ]
+ },
  "npcs": [
   {
    "keywords": [
@@ -3475,6 +9800,16 @@
     "/mentor"
    ],
    "why": "pairs a tester with real players"
+  },
+  "metrics": {
+   "files": [
+    "chaos_constants.lua",
+    "metrics.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
   },
   "moderation_purge": {
    "files": [

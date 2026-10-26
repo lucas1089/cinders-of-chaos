@@ -916,10 +916,16 @@ jobs:
       - name: Tester bots (scheduling, anomaly rules, log report, key file, cleanup by exact ids)
         run: python3 -I server/tools/testers_test.py
 
+      - name: Progress metrics report (progress_metrics_test.py; medians from time buckets, top 10, churn shares, O253)
+        run: python3 -I server/tools/progress_metrics_test.py
+
       - name: Tester bots coverage table up to date, scenarios never out of scope
         run: |
           python3 -I server/tools/gen_tester_scenarios.py --check
           python3 -I server/tools/tester_scenarios_test.py
+
+      - name: Tester bots keystone and mastery scenario (mocked server, route and probe table)
+        run: python3 -I server/tools/tester_keystones_test.py
 
       - name: Network message buffer stays unzeroed (server src-patch 0032)
         run: python3 -I server/tools/netmsg_buffer_patch_test.py

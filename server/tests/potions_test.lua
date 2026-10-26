@@ -495,6 +495,34 @@ do
 	-- the tree's extra charge raises the maximum
 	hal.st[cfg.storage.treeMaxCharges] = 2
 	eq(PT.maxCharges(hal, "health"), 7, "tree extra charges") PT.fill(hal) eq(PT.charges(hal, "health"), 700, "fill to the new maximum")
+	-- the flask nodes of the passive tree (O251, nodes 669-672): the stat keys are the hooks' names, the sums are in range
+	local tree = dofile("data/scripts/chaos/passivetree_data.lua")
+	local sum = {}
+	for id = 669, 672 do
+		local node = tree.nodes[id]
+		check(node ~= nil and node.s ~= nil, "flask node " .. id .. " exists with stats")
+		for stat, v in pairs(node and node.s or {}) do
+			check(stat == F.tree.maxStat or stat == F.tree.gainStat, "flask node " .. id .. " gives a hook stat: " .. stat)
+			sum[stat] = (sum[stat] or 0) + v
+		end
+	end
+	eq(sum[F.tree.maxStat], 3, "all four flask nodes: +3 charges") eq(sum[F.tree.gainStat], 45, "all four flask nodes: +45% gain")
+	local gex, ggn = K.treeValues(cfg, sum)
+	eq(gex, 3, "treeValues reads the node sums") eq(ggn, 45, "treeValues reads the node gain")
+	check(gex < F.tree.maxExtra and ggn < F.tree.gainPctCap, "the nodes stay under the hooks' caps")
+	local ivy = mkPlayer(40)
+	ivy.st[cfg.storage.treeMaxCharges], ivy.st[cfg.storage.treeGainPct] = 0, 0
+	eq(PT.maxCharges(ivy, "health"), 5, "without the nodes: health 5") eq(PT.maxCharges(ivy, "mana"), 8, "without the nodes: mana 8")
+	ivy.st[cfg.storage.treeMaxCharges], ivy.st[cfg.storage.treeGainPct] = gex, ggn
+	eq(PT.maxCharges(ivy, "health"), 8, "with the nodes: health 8") eq(PT.maxCharges(ivy, "mana"), 11, "with the nodes: mana 11")
+	PT.fill(ivy) eq(PT.charges(ivy, "health"), 800, "a filled flask holds the new maximum")
+	eq(K.killGain(cfg, {tier = "normal", xp = 200, kind = "health", treeGainPct = ggn}), 12, "8 x 1.45 = 11.6 rounds to 12")
+	-- a refund: the stored charges are cut to the lower maximum (K.clampStored), unset and in-range values stay
+	eq(K.clampStored(cfg, "health", 800, 0), 500, "800 stored, maximum 5: cut to 500")
+	eq(K.clampStored(cfg, "mana", 1100, 0), 800, "mana 1100 stored, maximum 8: cut to 800")
+	eq(K.clampStored(cfg, "health", 800, 3), nil, "still in range: no change")
+	eq(K.clampStored(cfg, "health", -1, 0), nil, "unset (full) stays unset") eq(K.clampStored(cfg, "health", nil, 0), nil, "nil stays")
+	eq(K.clampStored(cfg, "health", 0/0, 0), nil, "nan is left to the read")
 	os.mtime = nil
 end
 

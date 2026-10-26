@@ -157,7 +157,8 @@ end
 
 local player = {isPlayer = function() return true end, isMonster = function() return false end, getId = function() return 7 end,
 	sendTextMessage = function(self, kind, text) messages[#messages + 1] = text end,
-	getPosition = function() return position(100, 100, 7) end}
+	getPosition = function() return position(100, 100, 7) end,
+	canSeeCreature = function() return true end}
 spectators = {player}
 
 -- a reload over a server that ran the old onSpawn roll: ChaosTierState is kept and holds an entry under id 0
@@ -241,6 +242,17 @@ eq(sent and sent.data.label, "Legendary", "monster bar: label")
 check(sent and #sent.data.mods >= 3, "monster bar: modifiers")
 eq(sent and sent.data.role, nil, "monster bar: no role outside a rift")
 eq(sent and sent.data.level, nil, "monster bar: no level without the loot script")
+-- O252: another floor, or a creature the player cannot see, gets no answer
+sent = nil
+local oldPos = legend.pos
+legend.pos = position(101, 100, 8)
+creatureEvents.ChaosTierQuery.onExtendedOpcode(player, ChaosOpcodes.monsterbar, "query")
+eq(sent, nil, "monster bar: no answer for another floor")
+legend.pos = oldPos
+player.canSeeCreature = function() return false end
+creatureEvents.ChaosTierQuery.onExtendedOpcode(player, ChaosOpcodes.monsterbar, "query")
+eq(sent, nil, "monster bar: no answer for an unseen creature")
+player.canSeeCreature = function() return true end
 -- a rift guardian and an Omen guardian (rift.lua's run of the monster), the level from loot.lua
 ChaosLoot = {monsterLevel = function(m) return 245.6 end}
 ChaosRift = {monsterRun = {[legend:getId()] = {bossIds = {[legend:getId()] = true}}}}

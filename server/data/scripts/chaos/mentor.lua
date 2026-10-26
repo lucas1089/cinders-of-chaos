@@ -770,7 +770,7 @@ local function invite(player, data)
 	end
 	local name = type(data.name) == "string" and data.name:gsub("^%s+", ""):gsub("%s+$", "") or ""
 	local target = name ~= "" and #name <= 29 and Player(name) or nil
-	if not target or target:getGuid() == guid then
+	if not target or target:getGuid() == guid or (target ~= player and not player:canSeeCreature(target)) then
 		return refuse(player, "offline")
 	end
 	local f = facts(target:getAccountId())

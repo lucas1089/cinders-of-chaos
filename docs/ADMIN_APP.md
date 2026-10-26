@@ -104,10 +104,13 @@ instalada é desconhecida: o passo 2 baixa a mais nova e, se o `tfs` for igual a
   disco e memória. Limpar mostra a lista e pede confirmação antes de apagar: pastas de trabalho de atualizações e
   publicações em `/var/tmp` com mais de um dia, pastas `srvNN` lá, `tfs.antes-*` além dos 2 mais novos,
   `config.lua.before-*` além dos 5 mais novos. Backups: lista os dumps e arquivos; restaurar continua sendo pela VPS.
-- **Testers** (`testers start N MINUTOS --restart 300`, `testers stop`, `testers status`, `testers report`, `testers log 400`, `testers cleanup --yes`): os
+- **Testers** (`testers start N MINUTOS --restart 300`, com o botão **Iniciar testando a árvore** `testers start N MINUTOS --keystones --restart 300`, `testers stop`, `testers status`, `testers report`, `testers log 400`, `testers cleanup --yes`): os
   testers no servidor ao vivo (server/README.md "Tester bots"). Iniciar reinicia o servidor com 5 minutos de aviso
   só quando o ajudante de teste ainda não carregou. A chave fica em /etc/chaos/tester-client-key (criada pela VPS).
   Status mostra quantos testers estão online agora, o pico da rodada e a contagem do servidor.
+  **Iniciar testando a árvore** (O249): cada tester aloca os keystones e masteries da sua classe como um jogador, confere
+  se o efeito aparece, anota "não observável" onde o cliente não vê, e zera a árvore; o resultado por nó é uma seção do
+  Relatório (server/README.md "Tester bots", Keystones and masteries).
 - **VPS** (`vps info`, `vps upgrade`, `vps upgrade-log 200`, `vps reboot MIN`, `vps reboot-cancel`): memória, disco,
   carga, atualizações do sistema pendentes (e quantas são do PHP), o pacote do PHP (php*-fpm ou o mod_php do Apache) e se precisa reiniciar. Atualizar sistema roda `apt-get update` e `upgrade`
   em segundo plano, mantendo os arquivos de configuração. Reiniciar VPS avisa os jogadores, salva o jogo e reinicia a
@@ -118,6 +121,12 @@ instalada é desconhecida: o passo 2 baixa a mais nova e, se o `tfs` for igual a
 - **Site e update do client** (`site-install`, `site-log`, `publish-update TAG`, `publish-log`). "Trocar os downloads do site" (`update-downloads`, O165) põe o pacote completo mais novo (Windows e Linux) na pasta `dl/` do site sem reiniciar o servidor; "Log da atualização" mostra o andamento. `publish-update` publica só a atualização assinada, não os pacotes.
 - **Mapas pedidos** (`areas-publish [--pictures] [--rotate]`, O192; Comandos > card "Mapas pedidos"). "Publicar áreas" monta, a partir das áreas pendentes e aprovadas da pasta `server/tools/areaplan/inbox/` do repositório na VPS (traga com Painel > Atualizar servidor depois de unir na main), os arquivos do editor de mapas em `dl/areas-TOKEN/` do site e mostra a linha `url=`; copie-a (botão de copiar do resultado) e rode `fetch-areas.bat` no Windows. "Novo endereço" (`--rotate`) cria outro TOKEN e apaga a pasta antiga. O site não tem login para arquivos estáticos: o TOKEN (32 dígitos hexa, `/var/lib/chaos/areas/token`) é a proteção. Não reinicia nem altera o mapa do jogo. docs/MAP_GUIDE.md "Map inbox".
 - **Logs de GM** (aba Logs, GM; `gm-logs [N] [NOME]`).
+- **Métricas dos jogadores** (aba Painel, card "Métricas dos jogadores", botão "Atualizar métricas"; `metrics [--json]`, O253). Só
+  leitura. Mostra por faixa de nível quantos personagens pararam de jogar (sem login há 14 dias ou mais), as 10 áreas e os 10
+  monstros com mais mortes, a duração da primeira sessão de personagens novos e o tempo mediano jogado até os níveis 10, 25,
+  50, 100 e 200. São contadores anônimos (sem nomes, contas nem IPs; testers e GMs ficam de fora), lidos da tabela
+  `chaos_progress_metrics`; server/README.md "Progress metrics (O253)". Precisa do passo `sql` do `install_all.py` (ou o
+  servidor cria a tabela ao ligar) e de um app recompilado para o card; o comando funciona pelo SSH sem isso.
 - **Assistir jogador** (Comandos > Ações rápidas > Assistir jogador). Só leitura: o jogador não é avisado e nada
   muda no jogo.
   - **Ao vivo** (`cast NOME`): o jogo como o jogador vê, em movimento, uns 30 quadros por segundo. Os 15 x 11
@@ -183,7 +192,7 @@ terminal do app ser root de verdade (instalar pacotes, mexer no sistema), rode n
 ## Comandos do servidor (`chaos-ctl.sh`)
 
 `status`, `start`, `stop`, `restart [segundos]`, `save`, `backup`, `backups`, `logs [n]`, `errors [n]`,
-`gm-logs [n] [NOME]`, `testers start [N] [MINUTOS] [--restart SEGUNDOS] | stop | status | report | log [N] | cleanup [--yes]` (bots de teste, server/README.md "Tester bots"), `errors clear`, `vps [info] | upgrade | upgrade-log [N] | reboot MIN | reboot-cancel`, `services`, `service NOME start|stop|restart`, `service-log NOME [N]`, `players`, `vocations`, `broadcast TEXTO`, `kick NOME`, `open`, `close`, `catalog NOME`,
+`gm-logs [n] [NOME]`, `metrics [--json]`, `testers start [N] [MINUTOS] [--restart SEGUNDOS] [--keystones] | stop | status | report | log [N] | cleanup [--yes]` (bots de teste, server/README.md "Tester bots"), `errors clear`, `vps [info] | upgrade | upgrade-log [N] | reboot MIN | reboot-cancel`, `services`, `service NOME start|stop|restart`, `service-log NOME [N]`, `players`, `vocations`, `broadcast TEXTO`, `kick NOME`, `open`, `close`, `catalog NOME`,
 `panel NOME ACAO JSON`, `update TAG now|at-save` e `rollback now|at-save` (layout padrão; no kit, `rollback now` é
 `update-rollback`), `update-check`, `update-apply [--no-client] [--no-downloads] [--no-site] [--no-map]`, `update-status`,
 `update-rollback`, `update-log`, `publish-update TAG` (atualização do cliente, docs/LAUNCH.md "Publishing a client

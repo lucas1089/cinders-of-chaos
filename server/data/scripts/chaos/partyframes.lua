@@ -216,7 +216,8 @@ local function invite(player, name)
 		end
 	end
 	local target = type(name) == "string" and Player(name) or nil
-	local t = target and {id = target:getId(), name = target:getName(), isSelf = target == player, inParty = target:getParty() ~= nil}
+	local t = target and {id = target:getId(), name = target:getName(), isSelf = target == player, inParty = target:getParty() ~= nil,
+		hidden = target ~= player and not player:canSeeCreature(target)}
 	local ok, why = P.canInvite(player:getId(), info, name, t, P.cfg.maxMembers)
 	if not ok then
 		return note(player, why)

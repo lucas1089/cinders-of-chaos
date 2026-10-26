@@ -63,7 +63,7 @@ F.STOCK = {
   ["kah"] = { mana = 40 },                                          -- Reaver's Spin
   ["kah ti"] = { mana = 35, exhaustion = 4000 },                    -- Scything Arc (cooldown ladder, 2026-10-20)
   ["kah gal"] = { mana = 60, exhaustion = 9000 },                  -- Butcher's Gyre (cooldown ladder, 9 s since O176)
-  ["drai vas sol"] = { exhaustion = 7000, mana = 95 },                         -- Sanctum Burst (cooldown ladder, 7 s since O176)
+  ["drai vas sol"] = { exhaustion = 7000, mana = 95, level = 20 },             -- Sanctum Burst (cooldown ladder, 7 s since O176; level 20 since O250)
   ["drai zhul ul"] = { exhaustion = 9000, mana = 100 },                         -- Tempest Fan (cooldown ladder, 9 s since O176)
   ["hesh sol"] = { exhaustion = 40000 },                            -- Glare of Dawn
   ["tor ael"] = { exhaustion = 2000 },                              -- Ward of the Mind
@@ -85,7 +85,7 @@ F.STOCK = {
 -- (2026-10-14): the Auto rotation of a Mystic picked Bewitching Hex and Arcane Ripple and the helper had no entry.
 -- Riftbolt, Crossfire Hex, Fading Step and Gravity Snare left with the 15-spell cap (2026-10-20: no class keeps them).
 F.EXTRA = {
-  { id = 85, name = "Arcane Ripple", words = "drai ondr", level = 16, mana = 105, cooldown = 4000, groupCooldown = 2000,
+  { id = 85, name = "Arcane Ripple", words = "drai ondr", level = 14, mana = 105, cooldown = 4000, groupCooldown = 2000,
     needTarget = true, range = 4, vocations = { 1, 10 }, icon = 43 },
   { id = 53, name = "Bewitching Hex", words = "drai glam", level = 60, mana = 45, cooldown = 6000, groupCooldown = 2000,
     needTarget = true, range = 4, vocations = { 1, 10 }, icon = 56 },

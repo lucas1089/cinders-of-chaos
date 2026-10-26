@@ -727,6 +727,14 @@ function getTreeGroups()
 		--- group 104: the class sections (625-664; the four lines share it, each sees only its own), shown only to a line
 		--- that has one (`section`). The start node in the centre, the line nodes up to the ring, the two paths round it ---
 		{ orbit = 0, x = -1800, y = -2350, nodes = {}, section = true }, -- 104
+		--- group 105: flask branch node 669 (O251) ---
+		{ orbit = 0, x = -1494, y = -474, nodes = {} },
+		--- group 106: flask branch node 670 (O251) ---
+		{ orbit = 0, x = -1458, y = -537, nodes = {} },
+		--- group 107: flask branch node 671 (O251) ---
+		{ orbit = 0, x = -1422, y = -599, nodes = {} },
+		--- group 108: flask branch node 672 (O251) ---
+		{ orbit = 0, x = -1359, y = -635, nodes = {} },
 	}
 end
 

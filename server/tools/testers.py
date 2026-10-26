@@ -10,7 +10,7 @@ by hand, as root:
   run      log them in and play until --minutes are over (default 60), then log out
              python3 -I testers.py run --key-file /etc/chaos/tester-client-key --server-dir SERVER
                  [--state DIR] [--minutes 60] [--count N] [--host 127.0.0.1] [--port 7171] [--log SERVER_LOG]
-                 [--scenarios FILE] [--ramp 1.0]
+                 [--scenarios FILE] [--ramp 1.0] [--keystones]
   report   the bug harvest of the last run (the bots' results and the server log since the run started)
              python3 -I testers.py report [--state DIR] [--log SERVER_LOG] [--scenarios FILE]
   cleanup  delete the tester accounts, their characters and every database row of them; nothing else
@@ -34,6 +34,9 @@ the depot (opens a locker), an NPC (hi, trade, buy potions, sell, bye), parties,
 requests (--scenarios tester_scenarios.json: tester_scenarios.py, also places and NPC dialogs through the helper's
 `!tester enter`), loot filter takes, opens its backpack, logs out and in. A dropped connection (server restart) is
 retried with a growing pause, so the bots come back after a restart.
+--keystones (needs --scenarios): each bot first runs the keystone and mastery scenario of its class once (tester_keystones.py,
+O249): allocates every node of its class the points allow, as the tree window does, checks that the effect shows (the
+totals of the tree window, the Keystones row of the combat log) or says it cannot be seen, and resets the tree.
 """
 import asyncio
 import base64
@@ -56,6 +59,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import loadtest as LT  # noqa: E402
 import tester_core as TC  # noqa: E402
+import tester_keystones as TK  # noqa: E402  (the keystone and mastery scenario, O249)
 
 DEFAULT_STATE = '/var/lib/chaos/testers'
 LETTERS = 'abcdefghijklmnopqrstuvwxyz'
@@ -531,6 +535,43 @@ class Results:
                  if k not in ('rule', 'who', 'did', 't')}, sort_keys=True)))
 
 
+class KeyIO:
+    """what tester_keystones.KeyTest needs of a bot in game: requests with their answers, pauses, whether it is still there"""
+
+    def __init__(self, bot, clock):
+        self.bot, self.clock = bot, clock
+
+    def alive(self):
+        return bool(self.bot.alive and not self.bot.died and not self.clock['stop'])
+
+    async def sleep(self, seconds):
+        end = time.monotonic() + seconds
+        while time.monotonic() < end and self.alive():
+            await asyncio.sleep(min(0.5, max(0.0, end - time.monotonic())))
+
+    async def request(self, opname, action, data, expect, timeout):
+        bot = self.bot
+        op = bot.args.ops.get(opname)
+        if op is None or not self.alive():
+            return None
+        fut = asyncio.get_event_loop().create_future()
+        waiter = (op, set(expect), fut)
+        if expect:
+            bot.waiters.append(waiter)
+        try:
+            payload = json.dumps({'action': action, 'data': data}, separators=(',', ':'))
+            bot.conn.send(b'\x32' + bytes([op]) + LT.string(payload))
+            await bot.conn.w.drain()
+            if not expect:
+                return None
+            return await asyncio.wait_for(fut, timeout)
+        except (asyncio.TimeoutError, ConnectionError, OSError):
+            return None
+        finally:
+            if waiter in bot.waiters:
+                bot.waiters.remove(waiter)
+
+
 ONLINE = LT.ONLINE  # creature id -> bot in game (loadtest's party_step reads the same table)
 HEAL_SEEN = 3.0  # seconds: a heal or a potion counts ok when the health rises within them
 FLEE_AT = 20  # percent of health: under it, with the heal and the potion on cooldown, the bot leaves for the temple
@@ -570,6 +611,9 @@ class TesterBot(LT.Bot):
         self.pending = {}  # 'heal_spell' / 'potion' -> until when a health rise counts it as ok
         self.back_at = None  # after a flee: when to go back to the hunt
         self.npc_spoke = False
+        self.waiters = []  # (opcode, {actions}, future): requests of the keystone scenario waiting for their answer
+        self.class_index = 0  # this bot's place among the bots of its class (the keystone scenario starts there)
+        self.keytest_done = False
 
     # ---------------------------------------------------------------- sessions until the end
     async def run(self, clock):
@@ -749,6 +793,9 @@ class TesterBot(LT.Bot):
             if data.get('items'):
                 self.kills.append(data)
                 del self.kills[:-5]
+        for w_op, w_actions, fut in list(self.waiters):
+            if w_op == op and msg.get('action') in w_actions and not fut.done():
+                fut.set_result(msg)
         hook = getattr(self.args, 'on_answer', None)
         if hook:
             hook(self, op, msg)
@@ -763,6 +810,8 @@ class TesterBot(LT.Bot):
                 next_ping = now + 2
             if now >= next_pick:
                 name = self.sched.next(now) or 'hunt'
+                if getattr(self.args, 'keystones', False) and not self.keytest_done:
+                    name, self.keytest_done = 'keytest', True  # once per bot per run, before anything else
                 self.last = name
                 self.results.behaviour(name, 'tried')
                 try:
@@ -950,6 +999,24 @@ class TesterBot(LT.Bot):
             await asyncio.sleep(getattr(runner, 'pause', 1.5))
         return True
 
+    async def do_keytest(self, clock):
+        """the keystone and mastery scenario (tester_keystones.py): True when no node failed"""
+        table = (getattr(self.args, 'keytest_table', None) or {})
+        if not table.get('classes'):
+            return self.failed('keytest', {'err': 'no keytest section in the scenarios file (gen_tester_scenarios.py)'})
+        await asyncio.sleep(15)  # the helper's supplies and the first target
+        io = KeyIO(self, clock)
+        test = TK.KeyTest(table, self.name, self.class_index)
+        try:
+            await test.run(io)
+        finally:
+            d = self.results.d
+            d.setdefault('keytest', []).extend(test.results)
+            d.setdefault('keytest_resets', []).extend(test.resets)
+            for r in test.results:
+                self.results.log(self, 'KEYTEST', '%s %s: %s' % (r['status'].upper(), r['what'], r['detail']))
+        return not any(r['status'] == TK.FAIL for r in test.results)
+
     async def do_loot(self, clock):
         lf = self.args.ops.get('lootfilter')
         if self.kills and lf:
@@ -1013,8 +1080,11 @@ async def run_bots(a, entries):
         except (NotImplementedError, RuntimeError):
             pass
     bots = []
+    seen_class = {}
     for i, e in enumerate(entries):
         bots.append(TesterBot(i, e, a, n, results, class_spells(spells, model, by_id.get(e['vocation'], ''), e['level'])))
+        bots[-1].class_index = seen_class.get(e.get('class'), 0)
+        seen_class[e.get('class')] = bots[-1].class_index + 1
     saver = asyncio.ensure_future(save_results_loop(a, results))
     tasks = []
     for bot in bots:
@@ -1079,11 +1149,15 @@ def run(a):
     a.next_request = None
     a.on_answer = None
     a.scenarios_runner = None
+    a.keytest_table = {}
     a.backpack_client_id = 0
     a.after_login = ''
     if a.scenarios:
         import tester_scenarios as TS  # the coverage layer (server/tools/tester_scenarios.py)
         TS.attach(a, a.scenarios)
+        a.keytest_table = TS.load(a.scenarios).get('keytest') or {}
+    if a.keystones and not a.scenarios:
+        sys.exit('--keystones needs --scenarios tester_scenarios.json (the table of keystones and masteries)')
     st = load_state(a.state)
     entries = [b for b in st.get('bots', []) if b.get('player_id') and safe_name(b['name']) and safe_account(b['account'])]
     if not entries:
@@ -1201,7 +1275,7 @@ def parse(argv):
                 '--key-file': '', '--rsa-key': '', '--scenarios': '', '--ramp': 1.0}
     types = {'--count': int, '--hash-iterations': int, '--town': int, '--minutes': int, '--port': int, '--ramp': float}
     vals = dict(defaults)
-    flags = {'--yes': False, '--dry-run': False}
+    flags = {'--yes': False, '--dry-run': False, '--keystones': False}
     i = 1
     while i < len(argv):
         k = argv[i]
@@ -1220,7 +1294,7 @@ def parse(argv):
         i += 1
     for k, v in vals.items():
         setattr(a, k.lstrip('-').replace('-', '_'), v)
-    a.yes, a.dry = flags['--yes'], flags['--dry-run']
+    a.yes, a.dry, a.keystones = flags['--yes'], flags['--dry-run'], flags['--keystones']
     if a.hash_iterations < 1:
         sys.exit('--hash-iterations: at least 1 (as the server passwordHashIterations); testers never use SHA-1')
     if a.cmd in ('setup', 'run') and not a.server_dir:

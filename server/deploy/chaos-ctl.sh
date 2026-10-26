@@ -19,6 +19,11 @@
 #                               the log is deleted; logs and the update log still show everything)
 #   players                     online characters: name, level, class name (tab separated)
 #   vocations                   id=class name, one per line
+#   metrics [--json]            anonymous progress counters (server/README.md "Progress metrics (O253)"), read-only: churn by level
+#                               band, the 10 areas and monsters with the most deaths, first session length, median time to
+#                               level 10 / 25 / 50 / 100 / 200. Reads the aggregate table chaos_progress_metrics (no names,
+#                               accounts or IPs) through server/tools/progress_metrics.py; text, or one JSON line with --json
+#                               ({"ok": false, "error": "no-table" | "database"} and exit 1 when it cannot be read)
 #   broadcast TEXT              a message to everyone online     (remote.cmd, server/README.md "Remote admin commands")
 #   kick NAME | open | close    kick one character / let players log in / close the server for login
 #   catalog ACTOR               the admin panel's catalog (all actions and their parameters) for the admin character ACTOR
@@ -110,13 +115,16 @@
 #   install-admin [--full] KEYFILE|-
 #                               creates the user "chaosadmin" with that ssh public key (a file, or - for stdin) and the
 #                               right to run this script as root; --full also gives it passwordless sudo for everything
-#   testers start [N] [MINUTES] [--restart SECONDS]
+#   testers start [N] [MINUTES] [--restart SECONDS] [--keystones]
 #                               tester bots (server/README.md "Tester bots"): N characters "Tester Xxx" (default 100, at
 #                               most 150) play for MINUTES (default 60, at most 1440), then stop by themselves. Copies the
 #                               TEST ONLY helper into data/scripts; it loads at a server start, so without one since the
 #                               copy the start is refused unless --restart SECONDS (restart with that countdown; the bots
 #                               start 30 s after it). Never with clientGuardAllowDevKey = true; the client key comes only
-#                               from CHAOS_TESTER_KEY (/etc/chaos/tester-client-key, root only, 0600)
+#                               from CHAOS_TESTER_KEY (/etc/chaos/tester-client-key, root only, 0600). --keystones: every bot
+#                               first tests the passive tree keystones and masteries of its class (O249: allocates them as
+#                               a player does, checks the effect shows, says "not observable" where a client cannot see it,
+#                               resets the tree; the per-node result is a section of testers report)
 #   testers stop                ends the bots (they log out) and removes the helper from data/scripts
 #   testers status              key=value lines: running, pid, started, bots, minutes, online (bots in game now),
 #                               online_peak, logins, deaths, online_server (the helper's last console count), helper,
@@ -585,6 +593,23 @@ case $cmd in
     ;;
   players)
     mysql_q "SELECT p.name, p.level, $(voc_case p.vocation) FROM players p JOIN players_online o ON o.player_id = p.id ORDER BY p.name"
+    ;;
+  metrics)
+    # read-only: fixed query, no argument reaches the shell or the SQL
+    mjson=()
+    case "${1:-}" in '') ;; --json) mjson=(--json) ;; *) die "metrics [--json]" ;; esac
+    [ $# -le 1 ] || die "metrics [--json]"
+    mpy="$REPO/server/tools/progress_metrics.py"
+    [ -r "$mpy" ] || die "no $mpy"
+    command -v python3 >/dev/null 2>&1 || die "python3-not-found"
+    mrc=0
+    mrows=$(mysql_q "SELECT kind, k1, k2, n FROM chaos_progress_metrics ORDER BY kind, k1, k2" 2>&1) || mrc=$?
+    if [ "$mrc" -ne 0 ]; then
+      case $mrows in *"doesn't exist"*) merr=no-table ;; *) merr=database ;; esac
+      python3 -I "$mpy" ${mjson[@]+"${mjson[@]}"} --error "$merr"
+      exit 1
+    fi
+    printf '%s\n' "$mrows" | python3 -I "$mpy" ${mjson[@]+"${mjson[@]}"}
     ;;
   vocations)
     for v in "${VOCATIONS[@]}"; do echo "${v%%:*}=${v#*:}"; done
@@ -1317,17 +1342,18 @@ print("pbkdf2-sha256$%d$%s$%s" % (n, base64.b64encode(salt).decode(), base64.b64
     [ $# -gt 0 ] && shift
     case $sub in
       start)
-        n=100 minutes=60 rsecs="" pos=0
+        n=100 minutes=60 rsecs="" pos=0 keyarg=""
         while [ $# -gt 0 ]; do
           case $1 in
+            --keystones) keyarg=--keystones; shift ;;
             --restart)
               rsecs=${2:-}
               num "$rsecs" || die "--restart SECONDS"
               [ "$rsecs" -le 900 ] || die "at most 900 seconds"
               shift 2 ;;
             *)
-              num "$1" || die "testers start [N] [MINUTES] [--restart SECONDS]"
-              [ $pos -lt 2 ] || die "testers start [N] [MINUTES] [--restart SECONDS]"
+              num "$1" || die "testers start [N] [MINUTES] [--restart SECONDS] [--keystones]"
+              [ $pos -lt 2 ] || die "testers start [N] [MINUTES] [--restart SECONDS] [--keystones]"
               if [ $pos -eq 0 ]; then n=$1; else minutes=$1; fi
               pos=$((pos + 1)); shift ;;
           esac
@@ -1370,17 +1396,17 @@ print("pbkdf2-sha256$%d$%s$%s" % (n, base64.b64encode(salt).decode(), base64.b64
         ( set -a; . "$ENVFILE"; [ -n "$DBSOCK" ] && CHAOS_DB_SOCKET=$DBSOCK; CHAOS_MYSQL=$MYSQL; set +a
           # shellcheck disable=SC2016
           exec setsid bash -c 'sleep "$1"; python3 -I "$2" run --key-file "$3" --server-dir "$4" --state "$5" \
-            --minutes "$6" --count "$7" --log "$8" --scenarios "${10}"; CHAOS_CTL_NO_SUDO=1 "$9" testers stop --finished' _ \
+            --minutes "$6" --count "$7" --log "$8" --scenarios "${10}" ${11:+"${11}"}; CHAOS_CTL_NO_SUDO=1 "$9" testers stop --finished' _ \
             "$delay" "$REPO/server/tools/testers.py" "$TKEY" "$SERVER" "$TSTATE" "$minutes" "$n" "$LOG" "$SELF" \
-            "$REPO/server/tools/tester_scenarios.json" \
+            "$REPO/server/tools/tester_scenarios.json" "$keyarg" \
             >> "$TLOG" 2>&1 < /dev/null ) &
         echo $! > "$TSTATE/run.pid"
         date +%s > "$TSTATE/started"
         rm -f "$TSTATE/stopped"
         if [ "$delay" -gt 0 ]; then
-          echo "tester bots: $n for $minutes minutes, starting in $delay s, after the restart (log $TLOG)"
+          echo "tester bots: $n for $minutes minutes${keyarg:+, keystones and masteries first}, starting in $delay s, after the restart (log $TLOG)"
         else
-          echo "tester bots: $n for $minutes minutes (log $TLOG)"
+          echo "tester bots: $n for $minutes minutes${keyarg:+, keystones and masteries first} (log $TLOG)"
         fi
         ;;
       stop)
@@ -1441,7 +1467,7 @@ print("pbkdf2-sha256$%d$%s$%s" % (n, base64.b64encode(salt).decode(), base64.b64
           echo "(nothing deleted: chaos-ctl.sh testers cleanup --yes)"
         fi
         ;;
-      *) die "testers start [N] [MINUTES] [--restart SECONDS] | stop | status | report | log [N] | cleanup [--yes]" ;;
+      *) die "testers start [N] [MINUTES] [--restart SECONDS] [--keystones] | stop | status | report | log [N] | cleanup [--yes]" ;;
     esac
     ;;
   ''|help|-h|--help)

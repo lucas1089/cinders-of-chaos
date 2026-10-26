@@ -401,8 +401,8 @@
 		"tower.seasonDays": 30,
 		"tree.keystones": 58,
 		"tree.levelsPerPoint": 4,
-		"tree.nodes": 639,
-		"tree.notables": 112,
+		"tree.nodes": 643,
+		"tree.notables": 113,
 		"tree.points1000": 248,
 		"tree.points300": 73,
 		"tree.presets": 6,
@@ -494,14 +494,14 @@
 							"w": [22, 22, 9, 12, 12, 23],
 							"rows": [
 								["Town Portal", "ash domh", "1", "0", "1 s", "whole line"],
-								["Reaping Gyre", "kah spir", "16", "20", "6 s", "whole line"],
+								["Reaping Gyre", "kah spir", "14", "20", "6 s", "whole line"],
+								["Earthbreaker", "kah grund krak", "20", "30", "7 s", "whole line"],
 								["Hunter's Instinct", "ash senn", "25", "25", "10 s", "whole line"],
 								["Flickerdash", "ash flik", "30", "50", "6 s", "whole line"],
 								["Vigil of Clarity", "vigh lum", "35", "0", "2 s", "whole line"],
 								["Vigil of Haste", "vigh ruan", "40", "0", "2 s", "whole line"],
 								["Ironhold", "tor brak", "55", "120", "30 s", "Warrior, Juggernaut"],
 								["Vigil of Wrath", "vigh vyr", "60", "0", "2 s", "whole line"],
-								["Earthbreaker", "kah grund krak", "60", "30", "7 s", "whole line"],
 								["Banner Call", "tor vas vant", "60", "150", "35 s", "whole line"],
 								["Vigil of Iron", "vigh tor", "60", "0", "2 s", "whole line"],
 								["Soulward", "tor anh", "80", "90", "40 s", "whole line"],
@@ -520,13 +520,13 @@
 							"links": [
 								"spell:254",
 								"spell:220",
+								"spell:221",
 								"spell:235",
 								"spell:232",
 								"spell:162",
 								"spell:161",
 								"spell:132",
 								"spell:179",
-								"spell:221",
 								"spell:233",
 								"spell:255",
 								"spell:234",
@@ -638,7 +638,7 @@
 							"rows": [
 								["Town Portal", "ash domh", "1", "0", "1 s", "whole line"],
 								["Dawnpiercer", "kah sol aurr", "12", "30", "6 s", "whole line"],
-								["Snare Trap", "drai snar", "16", "55", "4 s", "whole line"],
+								["Snare Trap", "drai snar", "14", "55", "4 s", "whole line"],
 								["Hunter's Instinct", "ash senn", "25", "25", "10 s", "whole line"],
 								["Flickerdash", "ash flik", "30", "50", "6 s", "whole line"],
 								["Vigil of Clarity", "vigh lum", "35", "0", "2 s", "whole line"],
@@ -781,14 +781,14 @@
 							"w": [22, 22, 9, 12, 12, 23],
 							"rows": [
 								["Town Portal", "ash domh", "1", "0", "1 s", "whole line"],
-								["Rime Bloom", "drai hyr rhim", "16", "70", "4 s", "Mystic, Elementalist"],
+								["Rime Bloom", "drai hyr rhim", "14", "70", "4 s", "Mystic, Elementalist"],
+								["Witchfire Bolt", "kah pyr vesh", "20", "40", "7 s", "Mystic, Elementalist"],
+								["Purifying Wellspring", "saen vas aquen", "20", "95", "6 s", "Mystic, Illusionist"],
 								["Blightswarm", "drai vex kriv", "25", "65", "6 s", "Mystic"],
 								["Hunter's Instinct", "ash senn", "25", "25", "10 s", "whole line"],
-								["Witchfire Bolt", "kah pyr vesh", "30", "40", "7 s", "Mystic, Elementalist"],
 								["Flickerdash", "ash flik", "30", "50", "6 s", "whole line"],
 								["Vigil of Clarity", "vigh lum", "35", "0", "2 s", "whole line"],
 								["Vigil of Haste", "vigh ruan", "40", "0", "2 s", "whole line"],
-								["Purifying Wellspring", "saen vas aquen", "40", "95", "6 s", "Mystic, Illusionist"],
 								["Hall of Mirrors", "drai spek", "40", "150", "30 s", "Illusionist"],
 								["Forked Storm", "kah zhul zarn", "50", "120", "7 s", "Elementalist"],
 								["Mirror Mend", "saen spek", "60", "110", "2 s", "Illusionist"],
@@ -819,13 +819,13 @@
 							"links": [
 								"spell:254",
 								"spell:200",
+								"spell:201",
+								"spell:208",
 								"spell:207",
 								"spell:235",
-								"spell:201",
 								"spell:232",
 								"spell:162",
 								"spell:161",
-								"spell:208",
 								"spell:226",
 								"spell:202",
 								"spell:96",
@@ -959,14 +959,14 @@
 							"rows": [
 								["Town Portal", "ash domh", "1", "0", "1 s", "whole line"],
 								["Shuriken Toss", "kah shur", "8", "16", "2 s", "whole line"],
-								["Snare Trap", "drai snar", "16", "55", "4 s", "whole line"],
+								["Snare Trap", "drai snar", "14", "55", "4 s", "whole line"],
+								["Blade Flurry", "drai vas kaen", "20", "70", "9 s", "whole line"],
 								["Shadow Mend", "saen umh", "25", "25", "1.5 s", "whole line"],
 								["Hunter's Instinct", "ash senn", "25", "25", "10 s", "whole line"],
 								["Flickerdash", "ash flik", "30", "50", "6 s", "whole line"],
 								["Vigil of Clarity", "vigh lum", "35", "0", "2 s", "whole line"],
 								["Vigil of Haste", "vigh ruan", "40", "0", "2 s", "whole line"],
 								["Shadow Veil", "fen umh", "40", "70", "20 s", "whole line"],
-								["Blade Flurry", "drai vas kaen", "50", "70", "9 s", "whole line"],
 								["Seeker Mine", "kah snar", "60", "65", "6 s", "whole line"],
 								["Detonate Mines", "vok snar", "60", "20", "1 s", "whole line"],
 								["Vigil of Wrath", "vigh vyr", "60", "0", "2 s", "whole line"],
@@ -993,13 +993,13 @@
 								"spell:254",
 								"spell:236",
 								"spell:99",
+								"spell:73",
 								"spell:98",
 								"spell:235",
 								"spell:232",
 								"spell:162",
 								"spell:161",
 								"spell:238",
-								"spell:73",
 								"spell:100",
 								"spell:104",
 								"spell:179",
@@ -1109,7 +1109,8 @@
 							"rows": [
 								["Town Portal", "ash domh", "1", "0", "1 s", "whole line"],
 								["Ashen Fist", "kah dhun", "8", "15", "2 s", "whole line"],
-								["Sundering Palm", "kah gal dhun", "16", "30", "11 s", "whole line"],
+								["Sundering Palm", "kah gal dhun", "14", "30", "11 s", "whole line"],
+								["Palm Shockwave", "drai gal dhun", "20", "40", "4 s", "whole line"],
 								["Hunter's Instinct", "ash senn", "25", "25", "10 s", "whole line"],
 								["Flickerdash", "ash flik", "30", "50", "6 s", "whole line"],
 								["Mistborne Step", "ash qhal", "35", "35", "10 s", "whole line"],
@@ -1117,7 +1118,6 @@
 								["Kindled Breath", "saen qhal", "40", "60", "8 s", "whole line"],
 								["Vigil of Haste", "vigh ruan", "40", "0", "2 s", "whole line"],
 								["Whirling Heel", "drai spir dhun", "50", "50", "9 s", "whole line"],
-								["Palm Shockwave", "drai gal dhun", "50", "40", "4 s", "whole line"],
 								["Vigil of Wrath", "vigh vyr", "60", "0", "2 s", "whole line"],
 								["Banner Call", "tor vas vant", "60", "150", "35 s", "whole line"],
 								["Vigil of Iron", "vigh tor", "60", "0", "2 s", "whole line"],
@@ -1140,6 +1140,7 @@
 								"spell:254",
 								"spell:63",
 								"spell:64",
+								"spell:194",
 								"spell:235",
 								"spell:232",
 								"spell:67",
@@ -1147,7 +1148,6 @@
 								"spell:66",
 								"spell:161",
 								"spell:65",
-								"spell:194",
 								"spell:179",
 								"spell:233",
 								"spell:255",
@@ -1417,9 +1417,9 @@
 							"rows": [
 								["Town Portal", "ash domh", "1", "0", "1 s", "whole line"],
 								["Radiant Smite", "kah sol dyr", "8", "15", "2 s", "whole line"],
-								["Consecration", "drai sol haln", "16", "95", "12 s", "whole line"],
+								["Consecration", "drai sol haln", "14", "95", "12 s", "whole line"],
+								["Vow of Mending", "saen tor fidh", "20", "90", "8 s", "whole line"],
 								["Hunter's Instinct", "ash senn", "25", "25", "10 s", "whole line"],
-								["Vow of Mending", "saen tor fidh", "30", "90", "8 s", "whole line"],
 								["Flickerdash", "ash flik", "30", "50", "6 s", "whole line"],
 								["Vigil of Clarity", "vigh lum", "35", "0", "2 s", "whole line"],
 								["Vigil of Haste", "vigh ruan", "40", "0", "2 s", "whole line"],
@@ -1451,8 +1451,8 @@
 								"spell:254",
 								"spell:189",
 								"spell:190",
-								"spell:235",
 								"spell:191",
+								"spell:235",
 								"spell:232",
 								"spell:162",
 								"spell:161",
@@ -1775,7 +1775,7 @@
 				{
 					"id": "spell:64",
 					"name": "Sundering Palm",
-					"sub": "\"kah gal dhun\", level 16, 30 mana, cooldown 11 s",
+					"sub": "\"kah gal dhun\", level 14, 30 mana, cooldown 11 s",
 					"color": "#9fdc7f",
 					"sections": [
 						{
@@ -1790,7 +1790,7 @@
 							"w": [35, 65],
 							"rows": [
 								["Words", "kah gal dhun"],
-								["Level", "16"],
+								["Level", "14"],
 								["Mana", "30"],
 								["Cooldown", "11 s"],
 								["Kind", "Attack"],
@@ -1803,7 +1803,7 @@
 				{
 					"id": "spell:99",
 					"name": "Snare Trap",
-					"sub": "\"drai snar\", level 16, 55 mana, cooldown 4 s",
+					"sub": "\"drai snar\", level 14, 55 mana, cooldown 4 s",
 					"color": "#9fdc7f",
 					"sections": [
 						{
@@ -1818,7 +1818,7 @@
 							"w": [35, 65],
 							"rows": [
 								["Words", "drai snar"],
-								["Level", "16"],
+								["Level", "14"],
 								["Mana", "55"],
 								["Cooldown", "4 s"],
 								["Kind", "Attack"],
@@ -1827,6 +1827,85 @@
 						}
 					],
 					"icon": "wiki/i/sp-282.png"
+				},
+				{
+					"id": "spell:190",
+					"name": "Consecration",
+					"sub": "\"drai sol haln\", level 14, 95 mana, cooldown 12 s",
+					"color": "#9fdc7f",
+					"sections": [
+						{
+							"h": "Effect",
+							"p": [
+								"Hallows the ground under the Templar for 6 seconds. Each second holy damage hits enemies within 2 sqm of the cast tile, and allies standing in it (party, own summons, the Templar) are healed a little. Pulse damage: weapon power and magic level like Radiant Smite, much smaller per pulse; allies get ChaosTemplar.cfg.consecration.allyHeal x a pulse. The zone stays where it was cast and ends when the Templar dies or logs out."
+							]
+						},
+						{
+							"h": "Spell",
+							"cols": ["", ""],
+							"w": [35, 65],
+							"rows": [
+								["Words", "drai sol haln"],
+								["Level", "14"],
+								["Mana", "95"],
+								["Cooldown", "12 s"],
+								["Kind", "Attack"],
+								["Classes", "Templar, Inquisitor, Sentinel"]
+							]
+						}
+					],
+					"icon": "wiki/i/sp-270.png"
+				},
+				{
+					"id": "spell:200",
+					"name": "Rime Bloom",
+					"sub": "\"drai hyr rhim\", level 14, 70 mana, cooldown 4 s",
+					"color": "#9fdc7f",
+					"sections": [
+						{"h": "Effect", "p": ["Ice burst around the caster, chills everything it hits."]},
+						{
+							"h": "Spell",
+							"cols": ["", ""],
+							"w": [35, 65],
+							"rows": [
+								["Words", "drai hyr rhim"],
+								["Level", "14"],
+								["Mana", "70"],
+								["Cooldown", "4 s"],
+								["Kind", "Attack"],
+								["Classes", "Mystic, Elementalist"]
+							]
+						}
+					],
+					"icon": "wiki/i/sp-201.png"
+				},
+				{
+					"id": "spell:220",
+					"name": "Reaping Gyre",
+					"sub": "\"kah spir\", level 14, 20 mana, cooldown 6 s",
+					"color": "#9fdc7f",
+					"sections": [
+						{
+							"h": "Effect",
+							"p": [
+								"Three spinning strikes (0 / 0.4 / 0.8s) against everything adjacent. Uses weapon attack and skill."
+							]
+						},
+						{
+							"h": "Spell",
+							"cols": ["", ""],
+							"w": [35, 65],
+							"rows": [
+								["Words", "kah spir"],
+								["Level", "14"],
+								["Mana", "20"],
+								["Cooldown", "6 s"],
+								["Kind", "Attack"],
+								["Classes", "Warrior, Juggernaut, Berserker"]
+							]
+						}
+					],
+					"icon": "wiki/i/sp-221.png"
 				},
 				{
 					"id": "spell:176",
@@ -1857,15 +1936,15 @@
 					"icon": "wiki/i/k-necrotic-eye.png"
 				},
 				{
-					"id": "spell:190",
-					"name": "Consecration",
-					"sub": "\"drai sol haln\", level 16, 95 mana, cooldown 12 s",
+					"id": "spell:73",
+					"name": "Blade Flurry",
+					"sub": "\"drai vas kaen\", level 20, 70 mana, cooldown 9 s",
 					"color": "#9fdc7f",
 					"sections": [
 						{
 							"h": "Effect",
 							"p": [
-								"Hallows the ground under the Templar for 6 seconds. Each second holy damage hits enemies within 2 sqm of the cast tile, and allies standing in it (party, own summons, the Templar) are healed a little. Pulse damage: weapon power and magic level like Radiant Smite, much smaller per pulse; allies get ChaosTemplar.cfg.consecration.allyHeal x a pulse. The zone stays where it was cast and ends when the Templar dies or logs out."
+								"Spin with your blades and cut every monster next to you. The Thief line's area strike (all three classes, level 50): a melee weapon strike on each monster in the 3x3 square around you (other players are never hit). On one target it hits like a Shuriken Toss; its worth is the pack. Each hit crits out of Shadow Veil, carries Poison Blades, rolls the Bushido crit and is followed by the Ninja's off-hand. Numbers and rules: _blades.lua."
 							]
 						},
 						{
@@ -1873,67 +1952,16 @@
 							"cols": ["", ""],
 							"w": [35, 65],
 							"rows": [
-								["Words", "drai sol haln"],
-								["Level", "16"],
-								["Mana", "95"],
-								["Cooldown", "12 s"],
-								["Kind", "Attack"],
-								["Classes", "Templar, Inquisitor, Sentinel"]
-							]
-						}
-					],
-					"icon": "wiki/i/sp-270.png"
-				},
-				{
-					"id": "spell:200",
-					"name": "Rime Bloom",
-					"sub": "\"drai hyr rhim\", level 16, 70 mana, cooldown 4 s",
-					"color": "#9fdc7f",
-					"sections": [
-						{"h": "Effect", "p": ["Ice burst around the caster, chills everything it hits."]},
-						{
-							"h": "Spell",
-							"cols": ["", ""],
-							"w": [35, 65],
-							"rows": [
-								["Words", "drai hyr rhim"],
-								["Level", "16"],
+								["Words", "drai vas kaen"],
+								["Level", "20"],
 								["Mana", "70"],
-								["Cooldown", "4 s"],
+								["Cooldown", "9 s"],
 								["Kind", "Attack"],
-								["Classes", "Mystic, Elementalist"]
+								["Classes", "Thief, Ninja, Samurai"]
 							]
 						}
 					],
-					"icon": "wiki/i/sp-201.png"
-				},
-				{
-					"id": "spell:220",
-					"name": "Reaping Gyre",
-					"sub": "\"kah spir\", level 16, 20 mana, cooldown 6 s",
-					"color": "#9fdc7f",
-					"sections": [
-						{
-							"h": "Effect",
-							"p": [
-								"Three spinning strikes (0 / 0.4 / 0.8s) against everything adjacent. Uses weapon attack and skill."
-							]
-						},
-						{
-							"h": "Spell",
-							"cols": ["", ""],
-							"w": [35, 65],
-							"rows": [
-								["Words", "kah spir"],
-								["Level", "16"],
-								["Mana", "20"],
-								["Cooldown", "6 s"],
-								["Kind", "Attack"],
-								["Classes", "Warrior, Juggernaut, Berserker"]
-							]
-						}
-					],
-					"icon": "wiki/i/sp-221.png"
+					"icon": "wiki/i/k-steel-flurry.png"
 				},
 				{
 					"id": "spell:180",
@@ -1962,6 +1990,139 @@
 						}
 					],
 					"icon": "wiki/i/sp-250.png"
+				},
+				{
+					"id": "spell:191",
+					"name": "Vow of Mending",
+					"sub": "\"saen tor fidh\", level 20, 90 mana, cooldown 8 s",
+					"color": "#9fdc7f",
+					"sections": [
+						{
+							"h": "Effect",
+							"p": [
+								"The Templar's self heal. Restores 8% of the maximum health + level / 5 + magic level x 4 (ChaosTemplar.cfg.vowOfMending, ChaosTemplar.vowAmount)."
+							]
+						},
+						{
+							"h": "Spell",
+							"cols": ["", ""],
+							"w": [35, 65],
+							"rows": [
+								["Words", "saen tor fidh"],
+								["Level", "20"],
+								["Mana", "90"],
+								["Cooldown", "8 s"],
+								["Kind", "Healing"],
+								["Classes", "Templar, Inquisitor, Sentinel"]
+							]
+						}
+					],
+					"icon": "wiki/i/sp-271.png"
+				},
+				{
+					"id": "spell:194",
+					"name": "Palm Shockwave",
+					"sub": "\"drai gal dhun\", level 20, 40 mana, cooldown 4 s",
+					"color": "#9fdc7f",
+					"sections": [
+						{
+							"h": "Effect",
+							"p": [
+								"An open palm on the target next to you sends a shockwave through every monster within 2 sqm of it. The Monk line's pack strike (all three classes, level 50): the target takes an Ashen Fist (+2 chi), every other monster within 2 sqm of it twice that (a player only as the target). Numbers and rules: _packtools.lua."
+							]
+						},
+						{
+							"h": "Spell",
+							"cols": ["", ""],
+							"w": [35, 65],
+							"rows": [
+								["Words", "drai gal dhun"],
+								["Level", "20"],
+								["Mana", "40"],
+								["Cooldown", "4 s"],
+								["Kind", "Attack"],
+								["Classes", "Monk, Shadowfist, Iron Sage"]
+							]
+						}
+					],
+					"icon": "wiki/i/k-ember-palmwave.png"
+				},
+				{
+					"id": "spell:201",
+					"name": "Witchfire Bolt",
+					"sub": "\"kah pyr vesh\", level 20, 40 mana, cooldown 7 s",
+					"color": "#9fdc7f",
+					"sections": [
+						{"h": "Effect", "p": ["Single target fire bolt that leaves the target burning."]},
+						{
+							"h": "Spell",
+							"cols": ["", ""],
+							"w": [35, 65],
+							"rows": [
+								["Words", "kah pyr vesh"],
+								["Level", "20"],
+								["Mana", "40"],
+								["Cooldown", "7 s"],
+								["Kind", "Attack"],
+								["Classes", "Mystic, Elementalist"]
+							]
+						}
+					],
+					"icon": "wiki/i/sp-202.png"
+				},
+				{
+					"id": "spell:208",
+					"name": "Purifying Wellspring",
+					"sub": "\"saen vas aquen\", level 20, 95 mana, cooldown 6 s",
+					"color": "#9fdc7f",
+					"sections": [
+						{
+							"h": "Effect",
+							"p": [
+								"Heals the caster, party members and own summons within 3 sqm and removes harmful conditions."
+							]
+						},
+						{
+							"h": "Spell",
+							"cols": ["", ""],
+							"w": [35, 65],
+							"rows": [
+								["Words", "saen vas aquen"],
+								["Level", "20"],
+								["Mana", "95"],
+								["Cooldown", "6 s"],
+								["Kind", "Healing"],
+								["Classes", "Mystic, Illusionist"]
+							]
+						}
+					],
+					"icon": "wiki/i/sp-209.png"
+				},
+				{
+					"id": "spell:221",
+					"name": "Earthbreaker",
+					"sub": "\"kah grund krak\", level 20, 30 mana, cooldown 7 s",
+					"color": "#9fdc7f",
+					"sections": [
+						{
+							"h": "Effect",
+							"p": ["Shockwave (5x5) that deals physical damage and staggers enemies (heavy slow for 3s)."]
+						},
+						{
+							"h": "Spell",
+							"cols": ["", ""],
+							"w": [35, 65],
+							"rows": [
+								["Words", "kah grund krak"],
+								["Level", "20"],
+								["Mana", "30"],
+								["Cooldown", "7 s"],
+								["Kind", "Attack"],
+								["Classes", "Warrior, Juggernaut, Berserker"]
+							]
+						}
+					],
+					"icon": "wiki/i/sp-222.png"
 				},
 				{
 					"id": "spell:98",
@@ -2044,57 +2205,6 @@
 						}
 					],
 					"icon": "wiki/i/sp-236.png"
-				},
-				{
-					"id": "spell:191",
-					"name": "Vow of Mending",
-					"sub": "\"saen tor fidh\", level 30, 90 mana, cooldown 8 s",
-					"color": "#9fdc7f",
-					"sections": [
-						{
-							"h": "Effect",
-							"p": [
-								"The Templar's self heal. Restores 8% of the maximum health + level / 5 + magic level x 4 (ChaosTemplar.cfg.vowOfMending, ChaosTemplar.vowAmount)."
-							]
-						},
-						{
-							"h": "Spell",
-							"cols": ["", ""],
-							"w": [35, 65],
-							"rows": [
-								["Words", "saen tor fidh"],
-								["Level", "30"],
-								["Mana", "90"],
-								["Cooldown", "8 s"],
-								["Kind", "Healing"],
-								["Classes", "Templar, Inquisitor, Sentinel"]
-							]
-						}
-					],
-					"icon": "wiki/i/sp-271.png"
-				},
-				{
-					"id": "spell:201",
-					"name": "Witchfire Bolt",
-					"sub": "\"kah pyr vesh\", level 30, 40 mana, cooldown 7 s",
-					"color": "#9fdc7f",
-					"sections": [
-						{"h": "Effect", "p": ["Single target fire bolt that leaves the target burning."]},
-						{
-							"h": "Spell",
-							"cols": ["", ""],
-							"w": [35, 65],
-							"rows": [
-								["Words", "kah pyr vesh"],
-								["Level", "30"],
-								["Mana", "40"],
-								["Cooldown", "7 s"],
-								["Kind", "Attack"],
-								["Classes", "Mystic, Elementalist"]
-							]
-						}
-					],
-					"icon": "wiki/i/sp-202.png"
 				},
 				{
 					"id": "spell:232",
@@ -2274,34 +2384,6 @@
 					"icon": "wiki/i/sp-252.png"
 				},
 				{
-					"id": "spell:208",
-					"name": "Purifying Wellspring",
-					"sub": "\"saen vas aquen\", level 40, 95 mana, cooldown 6 s",
-					"color": "#9fdc7f",
-					"sections": [
-						{
-							"h": "Effect",
-							"p": [
-								"Heals the caster, party members and own summons within 3 sqm and removes harmful conditions."
-							]
-						},
-						{
-							"h": "Spell",
-							"cols": ["", ""],
-							"w": [35, 65],
-							"rows": [
-								["Words", "saen vas aquen"],
-								["Level", "40"],
-								["Mana", "95"],
-								["Cooldown", "6 s"],
-								["Kind", "Healing"],
-								["Classes", "Mystic, Illusionist"]
-							]
-						}
-					],
-					"icon": "wiki/i/sp-209.png"
-				},
-				{
 					"id": "spell:226",
 					"name": "Hall of Mirrors",
 					"sub": "\"drai spek\", level 40, 150 mana, cooldown 30 s",
@@ -2412,62 +2494,6 @@
 						}
 					],
 					"icon": "wiki/i/sp-261.png"
-				},
-				{
-					"id": "spell:73",
-					"name": "Blade Flurry",
-					"sub": "\"drai vas kaen\", level 50, 70 mana, cooldown 9 s",
-					"color": "#9fdc7f",
-					"sections": [
-						{
-							"h": "Effect",
-							"p": [
-								"Spin with your blades and cut every monster next to you. The Thief line's area strike (all three classes, level 50): a melee weapon strike on each monster in the 3x3 square around you (other players are never hit). On one target it hits like a Shuriken Toss; its worth is the pack. Each hit crits out of Shadow Veil, carries Poison Blades, rolls the Bushido crit and is followed by the Ninja's off-hand. Numbers and rules: _blades.lua."
-							]
-						},
-						{
-							"h": "Spell",
-							"cols": ["", ""],
-							"w": [35, 65],
-							"rows": [
-								["Words", "drai vas kaen"],
-								["Level", "50"],
-								["Mana", "70"],
-								["Cooldown", "9 s"],
-								["Kind", "Attack"],
-								["Classes", "Thief, Ninja, Samurai"]
-							]
-						}
-					],
-					"icon": "wiki/i/k-steel-flurry.png"
-				},
-				{
-					"id": "spell:194",
-					"name": "Palm Shockwave",
-					"sub": "\"drai gal dhun\", level 50, 40 mana, cooldown 4 s",
-					"color": "#9fdc7f",
-					"sections": [
-						{
-							"h": "Effect",
-							"p": [
-								"An open palm on the target next to you sends a shockwave through every monster within 2 sqm of it. The Monk line's pack strike (all three classes, level 50): the target takes an Ashen Fist (+2 chi), every other monster within 2 sqm of it twice that (a player only as the target). Numbers and rules: _packtools.lua."
-							]
-						},
-						{
-							"h": "Spell",
-							"cols": ["", ""],
-							"w": [35, 65],
-							"rows": [
-								["Words", "drai gal dhun"],
-								["Level", "50"],
-								["Mana", "40"],
-								["Cooldown", "4 s"],
-								["Kind", "Attack"],
-								["Classes", "Monk, Shadowfist, Iron Sage"]
-							]
-						}
-					],
-					"icon": "wiki/i/k-ember-palmwave.png"
 				},
 				{
 					"id": "spell:202",
@@ -2802,32 +2828,6 @@
 						}
 					],
 					"icon": "wiki/i/sp-216.png"
-				},
-				{
-					"id": "spell:221",
-					"name": "Earthbreaker",
-					"sub": "\"kah grund krak\", level 60, 30 mana, cooldown 7 s",
-					"color": "#9fdc7f",
-					"sections": [
-						{
-							"h": "Effect",
-							"p": ["Shockwave (5x5) that deals physical damage and staggers enemies (heavy slow for 3s)."]
-						},
-						{
-							"h": "Spell",
-							"cols": ["", ""],
-							"w": [35, 65],
-							"rows": [
-								["Words", "kah grund krak"],
-								["Level", "60"],
-								["Mana", "30"],
-								["Cooldown", "7 s"],
-								["Kind", "Attack"],
-								["Classes", "Warrior, Juggernaut, Berserker"]
-							]
-						}
-					],
-					"icon": "wiki/i/sp-222.png"
 				},
 				{
 					"id": "spell:233",
@@ -6893,6 +6893,21 @@
 					"sections": [
 						{"h": "Effect", "p": ["+6.0 Physical Damage. +4.0 Death Damage."]},
 						{"h": "Who", "p": ["Classes: Necromancer, Lich, Bone Lord."]}
+					],
+					"icon": "wiki/i/k-light-nodes.png"
+				},
+				{
+					"id": "tree:672",
+					"name": "Bottomless Flasks",
+					"sub": "Notable. +2 max charges on the health and mana flasks. +25% flask charges from kills.",
+					"color": "#c8b890",
+					"group": "notable",
+					"sections": [
+						{
+							"h": "Effect",
+							"p": ["+2 max charges on the health and mana flasks. +25% flask charges from kills."]
+						},
+						{"h": "Who", "p": ["Classes: every class."]}
 					],
 					"icon": "wiki/i/k-light-nodes.png"
 				},

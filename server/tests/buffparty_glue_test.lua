@@ -61,6 +61,7 @@ local function newPlayer(name, x, y, z, conds)
 	function p:getIp() return 1 end
 	function p:getOutfit() return {lookType = 128, lookHead = 1, lookBody = 2, lookLegs = 3, lookFeet = 4, lookAddons = 0} end
 	function p:getParty() return parties[self._id] end
+	function p:canSeeCreature(o) return not o._ghost end
 	function p:registerEvent(n) self._events[n] = true end
 	function p:sendExtendedOpcode(op, buf) self._sent[#self._sent + 1] = {op = op, msg = json.decode(buf)} end
 	function p:sendTextMessage(t, text) self._texts[#self._texts + 1] = text end
@@ -295,6 +296,12 @@ eq(#party._invitees, 1, "the outsider is invited"); eq(party._invitees[1], X, "t
 ChaosRateLimit.last = {}
 ext(M1, ChaosOpcodes.partyFrames, "invite", {name = "Boran"})
 ok(lastText(M1):find("yourself"), "not yourself: " .. tostring(lastText(M1)))
+-- O252: a hidden (ghost) player answers like an offline one and is not invited
+local G = newPlayer("Ghosty"); G._ghost = true
+ChaosRateLimit.last = {}
+ext(M1, ChaosOpcodes.partyFrames, "invite", {name = "Ghosty"})
+ok(lastText(M1):find("no player called"), "hidden player: " .. tostring(lastText(M1)))
+eq(#party._invitees, 1, "the hidden player is not invited")
 -- someone without a party invites: a party is made
 local Y = newPlayer("Yara")
 ChaosRateLimit.last = {}

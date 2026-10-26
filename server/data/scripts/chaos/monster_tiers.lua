@@ -670,7 +670,8 @@ function query.onExtendedOpcode(player, opcode, buffer)
 	if not creature or not creature:isMonster() then
 		return
 	end
-	if player:getPosition():getDistance(creature:getPosition()) > 15 then
+	local pp, cp = player:getPosition(), creature:getPosition()
+	if pp.z ~= cp.z or pp:getDistance(cp) > 15 or not player:canSeeCreature(creature) then
 		return
 	end
 	sendInfo(player, creature)

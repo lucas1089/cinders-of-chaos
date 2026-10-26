@@ -1252,7 +1252,7 @@ notifications
 - `/gmnotify` is allowed for any group with `Group:getAccess()`.
 
 passivetree
-- Tree shape comes from the client's `nodes.lua` (664 nodes, 659 on the server: the four class section start nodes fold into the root,
+- Tree shape comes from the client's `nodes.lua` (664 nodes, 659 on the server, plus the four flask nodes 669-672 of O251: the four class section start nodes fold into the root,
   and node 239, a stray copy of the original tree on top of 240 with no links, is `hidden`; the generator records 1024 stat entries,
   per-class keystone variants included). `server/tests/passivetree_layout_test.lua` checks the whole tree: every client link is a
   server link and the other way round, every link is drawn (the client draws from `out` lists), no overlapping nodes, no line
@@ -2935,6 +2935,10 @@ effect. Rules in `passivetree_core.lua` (pure), numbers in `passivetree_config.l
   planned nodes, every planned mastery with a valid effect, no effect for a saved mastery. All of it is saved at once, or
   nothing, with the reason in `planResult {ok, message}`. Same rate limit as a save (one a second, key
   `passivetree.save`); the tree has no zone or combat rule today and the planner adds none.
+- **Flask nodes 669-672 (O251)**: four nodes in own groups 105-108 on a side branch of Mercy of Embers (358): Everfull flask
+  charges and refill, stats `flaskMaxCharges` / `flaskChargeGain` (node values, shown as "+N max charges on the health and
+  mana flasks" and "+N% flask charges from kills"). Flag stats (`flask` + capital): `tools/passivetree_lanes_lib.lua` never lets
+  a class lane re-skin them and they are neutral in `passivetree_stats_config.lua`. See "Potions", "Flask charges".
 - **Mastery nodes 665-668** (one per class section, above its third line node; any class of the line may take it): 1
   point like every node; 3 or 4 effects of ordinary tree stats, about one notable each (no new combat code). The effect
   is picked while the node is planned (free, changeable until Apply). Changing the effect of a saved mastery
@@ -5061,9 +5065,33 @@ Owner request 2026-10-16: "Remove the potion flasks and make the first pots infi
     health 3/5, mana 4/8" at most every 4 s; the temple says "Your flasks are full again." Not done: a count on the item (the
     flask is stackable, but a count of 0 would delete it, and a count of 1 cannot tell empty from one charge, and a split would
     leave a second stack) and a HUD (needs a client build; `ChaosPotions.charges` is the one function it would read).
-  - **Passive tree hooks** (no node gives them yet; the tree is unchanged): the bonuses `flaskMaxCharges` (whole extra charges,
-    at most 5) and `flaskChargeGain` (percent of every kill's refill, at most 100) are written to storage 7102484 / 7102485 by
-    `passivetree_effects.lua` and read by `ChaosPotions`.
+  - **Passive tree hooks and nodes (O251).** The bonuses `flaskMaxCharges` (whole extra charges on both flasks, at most 5) and
+    `flaskChargeGain` (percent of every kill's refill, at most 100) are node stats like any other: `passivetree.lua` sums them
+    into the bonus table, `passivetree_effects.lua` (`applyAll`, after every save, reset and login) turns them into the
+    storage 7102484 / 7102485 through `ChaosPotionsCore.treeValues` (capped), and `ChaosPotions.treeExtra` / `treeGain`
+    (`data/lib/chaos_potions.lua`) read them for the maximum, the kill refill and the labels. The names match end to end
+    (node stat key = `flask.tree.maxStat` / `gainStat`; `tests/potions_test.lua` reads the four nodes from the generated tree
+    and checks that). Nodes, a side branch of Mercy of Embers (358, healing and vitality) with 1 point each:
+
+    | Node | Name | Gives |
+    |---|---|---|
+    | 669 | Attribute (mana icon) | +10% charge gain |
+    | 670 | Attribute (life icon) | +1 max charge, health and mana flask |
+    | 671 | Attribute (mana icon) | +10% charge gain |
+    | 672 | Bottomless Flasks (notable) | +2 max charges, +25% charge gain |
+
+    Numbers: health 5 / mana 8 charges, a kill gives 0.08 (normal) to 3 (boss) charges times the experience factor, so a
+    flask refills in about 12 normal 200-experience kills. All four nodes (4 points, plus the way to Mercy of Embers)
+    give health 8 and mana 11 charges (+60% / +38% buffer) and +45% refill (12 kills per health charge become 8.3). That
+    is a buffer and a throughput gain for one corner of the tree, not a heal: the amount per drink, the 1 s exhaust
+    and the stock-potion fallback are untouched, a boss still gives at most 3 charges (`killCap`), the caps (+5 charges,
+    +100%) are far above, and the mana flask already gains 1.5x so +45% matters more to casters. The notable is two thirds
+    of the whole bonus on purpose, the small nodes are a taste. Nothing measured on the live game; tune the node values in
+    the client's `treedata/nodes.lua` (then `gen_passivetree_data.lua`) or the caps in `potions_config.lua`.
+  - **Respec and refund.** Reads always clamp to the current maximum, but the raw storage value used to survive: refund the
+    nodes and the flask read 5/5, buy them again and it read 8/8 (the 3 lost charges came back). `applyAll` now cuts the
+    stored health / mana charges to the new maximum (`ChaosPotionsCore.clampStored`: unset -1 stays unset = full, a value in
+    range is not touched). Tests: `tests/passivetree_effects_test.lua`, `tests/potions_test.lua`.
   - **No opcode and no client input**, so there is nothing to validate or rate-limit besides the refill message (4 s per player);
     the only inputs are server events.
   - **Balance:** the owner's infinite healing is now rationed; at about 20 kills a minute of 200-experience monsters a health
@@ -7329,7 +7357,8 @@ sudo /opt/chaos/repo/server/deploy/chaos-ctl.sh testers cleanup --yes    # delet
 ```
 
 The trial kit reads `/etc/chaos/ctl.conf` (`ctl.conf.trial.example`): server `/opt/chaos-trial/server`, log `/opt/chaos-trial/logs/server.log`.
-- `start [N] [MINUTES] [--restart SECONDS]`: default 100 bots, 60 minutes; at most 150 and 1440.
+- `start [N] [MINUTES] [--restart SECONDS] [--keystones]`: default 100 bots, 60 minutes; at most 150 and 1440.
+  `--keystones`: the keystone and mastery test first (below, "Keystones and masteries").
   The helper loads at a server start. Without "[tester-helper] running" in the log since the newest start, `start`
   refuses, unless `--restart SECONDS`: the usual restart countdown; the bots start 30 s after it.
   First run: `testers.py setup`. Then the run, detached (`setsid`, own process group), log `/var/log/chaos/testers.log`.
@@ -7383,11 +7412,67 @@ Character keys (name, target, cid, ...) only get a tester. Owner, guid, gift, pa
 Report: per system tried / ok / refused / log errors. A system never reached says why:
 out of scope with the reason, passive, or not picked in this run.
 
+### Keystones and masteries (O249, `tools/tester_keytree.py`, `tools/tester_keystones.py`)
+
+Owner request: prove on the live server that the passive tree keystones and masteries do what they promise.
+
+**How the owner runs it.**
+1. Admin app: tab Comandos > card Testers > button "Iniciar testando a árvore" (set Quantos and Minutos first; 40 or more
+   testers, so every class has a few; 60 minutes or more, a keystone with extra hits waits up to 150 s for its first one).
+   When the minutes are over, Relatório (same card) shows the section "Passive tree keystones and masteries".
+2. Fallback, on the VPS: `chaos-ctl.sh testers start 100 90 --keystones --restart 300`, then `chaos-ctl.sh testers report`
+   (the same text is also in `<state>/runs/run-*-report.txt`, and `testers log 400` has one `KEYTEST` line per node).
+   `--restart 300` only restarts the server when the TEST ONLY helper is not loaded yet.
+
+**What a bot does** (once per run, before its other behaviours; only requests of the tree window and the DPS meter, no
+development key, no god command, no helper command):
+1. read the tree (`requestNodesUnlocked`, `requestPoints`); clear it with `resetPreset` when something is left on it
+2. `planApply` the route to the node; `statTotals` for the baseline
+3. mastery: `planApply` the node with effect 1; every other effect with `masteryChoose`. The stats of the effect that the
+   totals show (the five attributes, the damage percent per type, `multiIncrement` on every element, the critical chance and
+   amount of the tree) must grow by exactly the effect's value. The rest of the effect is named as not observable.
+4. keystone: `planApply` route and node together. A flag in `PROC` (tester_keytree.py; the ones whose extra hits
+   `passivetree_keystones.lua` deals with `doTargetCombat`) must make the row "Keystones" of the combat log (`open`/`seg`,
+   damage dealt tab) grow while the bot hunts; the report names what the hunt needs (a shield, a bow, a second enemy).
+5. `resetPreset`, always (also after a refused plan, a failure or a bot that left the game), and the tree is read back.
+Bots of one class start at different nodes (their place in the class), the nodes go cheapest route first, a node needs its route
+in points (`points = (level - 8) / 4 + boss points`; a keystone is 3 to 32 nodes away).
+
+**Result per node:** `PASS`, `FAIL` (effect missing, wrong amount, plan refused by the server, accepted but not saved, no proc
+in 150 s), `NOT OBSERVABLE` (with the reason; the node was allocated), `NOT TESTED` (not enough points, a change of effect or a
+reset the character cannot pay, the bot left the game). Failures are listed first. Nothing unobservable is ever counted as a pass.
+
+**Coverage of the table** (generated; `gen_tester_scenarios.py --check` in CI): 21 classes, 242 keystones, 4 mastery nodes
+with 42 effects over 12 classes.
+
+| Class (line) | Keystones | Seen in the combat log | Mastery effects | Seen in the totals |
+|---|---|---|---|---|
+| Mystic, Elementalist, Illusionist | 11, 11, 11 | 1, 1, 0 | 0 | 0 |
+| Ranger, Deadeye, Beastmaster | 12, 12, 12 | 1, 0, 1 | 0 | 0 |
+| Warrior, Juggernaut, Berserker | 12, 12, 12 | 2, 1, 1 | 0 | 0 |
+| Thief, Ninja, Samurai | 9, 10, 10 | 1, 1, 1 | 4 each | 4 each |
+| Necromancer, Lich, Bone Lord | 11, 12, 12 | 1, 1, 1 | 3 each | 3 each |
+| Monk, Shadowfist, Iron Sage | 9, 10, 10 | 2, 2, 1 | 4 each | 4 each |
+| Templar, Inquisitor, Sentinel | 14, 15, 15 | 2, 2, 2 | 3 each | 2, 2, 2 |
+
+Not observable from a client (the reason is in the report): damage factors (Overload, Immovable, Hunter's Focus, Deadeye,
+Viper Verdict, Reaper's Toll, Pack Alpha), a heal with no row (Undying Rage), party-only (Shared Phantasm, Inspiring Illusion,
+Overgrowth), the build archetype keystones (`ar...`: their hits carry no label of their own in the combat log) and the
+class-line keystones (`ks...` in the Thief, Necromancer, Monk and Templar files). A new keystone flag without a probe or a
+reason stops the generator, so every new keystone gets a decision. Mastery stats the totals do not show (resists, speed, skills,
+healing, life drain) are listed per effect.
+
+**Assumed, not verified on a live server:** the shape of the answers (`statTotals`, `planResult`, `state` of the combat log)
+is the one in the Lua files; the bot's own weapon is the helper's class kit weapon, so a keystone that needs a two-handed
+weapon, a shield or a bow can fail on a bot that carries none (the report names the need); a reset costs gold above level 50
+(`respec_config.lua`) and the helper puts only 20,000 gold in the bank, so most bots can test one node and report the rest as
+"not tested: the tree could not be cleared". `testers cleanup --yes` deletes the tree rows with the characters.
+
 Not verified against a running server: the bots' packets in game, the helper on the real engine, the cleanup on the
 real schema, the scenario payloads against the real handlers. Tested only with mocks, stubs and synthetic packets.
 
 Tests: `tests/testers_test.lua`, `tests/tester_helper_test.lua`, `tools/testers_test.py`,
-`tools/chaostesters_test.cpp` (status answer without testers, CI), `tools/patch_tester_filters_test.py`,
+`tools/chaostesters_test.cpp` (status answer without testers, CI), `tools/patch_tester_filters_test.py`, `tools/tester_keystones_test.py` (keystones and masteries),
 `deploy/chaos_ctl_test.py` (testers), `tools/loadtest_test.py`, `tools/tester_scenarios_test.py`, website `chaos_leaderboards_page_test.php`,
 `chaos_client_api_test.php`.
 
@@ -16699,7 +16784,7 @@ effect packs of docs/CREDITS.md into the game. Effects only: no damage, area, ti
 
 ## Projectile pack, native 32 px (pair 41) (`data/lib/chaos_pack41_fx_ids.lua`, loaded by `ChaosPack36Fx.live()`)
 Pair 41 (client/MANIFEST.md "Projectile pack, native 32 px (pair 41)") redraws 50 missiles of pair 36 from the pack's
-own 32 px renders instead of the halved 64 px ones, and appends three. O239 wires the appended three and eleven of the pair 42 names to spells and bow shots (section "Pair 41 / 42 missile wiring (O239)" below).
+own 32 px renders instead of the halved 64 px ones, and appends three. O239 wires the appended three and all fifteen of the pair 42 names to spells and bow shots (section "Pair 41 / 42 missile wiring (O239)" below).
 - **Redrawn in place** (no server change): stock and procedural ids 4 5 11 12 13 15 25 28 29 30 31 32 33 36 37 38 39 41 56 57 60 84 85
   86 104 116-125 and the pair 36 missiles 189-203. The ids, the send offsets (`dx`, `dy` of
   `chaos_pack36_fx_ids.lua` for 189-203, 0, 0 for the stock ones) and the 3 x 3 direction layout are unchanged.
@@ -16717,7 +16802,7 @@ own 32 px renders instead of the halved 64 px ones, and appends three. O239 wire
   `proj_flame_lance_spirit` 115, `proj_poison_dart_necrotic` 137, `proj_razor_leaf_sakura` 138,
   `proj_shadow_bolt_blood` 139, `proj_soul_skull_spirit` 140, `proj_spirit_arrow_blood` 141,
   `proj_spirit_arrow_gold` 142, `proj_spirit_wisp_arcane` 143, `proj_venom_glob_necrotic` 144, `proj_void_orb_abyss`
-  145, `proj_water_bolt_abyss` 75, `proj_wind_blade_storm` 146. O239 sends eleven of them (below). They are not on
+  145, `proj_water_bolt_abyss` 75, `proj_wind_blade_storm` 146. O239 sends all fifteen (below). They are not on
   62-76 as first asked: the base server's monster files send 62-74 and 76 by number, so those 14 took the next unused
   ids (the census is in the MANIFEST section). A pair older than 42 draws the old art on the six stock ids and nothing
   on the named ones. The test also checks that no pair 42 id is a pair 41 id, a `ChaosFxMissile` id or on 62-76 except 75.
@@ -16747,10 +16832,12 @@ touched. The table of what flies where, checked by `tests/pack41_fx_test.lua`:
 | `proj_soul_skull_spirit` | Raise Dead |
 | `proj_spirit_wisp_arcane` | Mirror Mend (heal to an ally) |
 | `proj_void_orb_abyss` | Umbral Stride |
+| `proj_poison_dart_necrotic` | Soul Rot (the rot flies as a dart; the Beastmaster dart is earth and keeps its dart) |
+| `proj_spirit_arrow_blood` | Skewering Line (a caster with the blood spear store skin keeps the skin, `pshoot` yields to it) |
+| `proj_spirit_arrow_gold` | Radiant Smite (Templar holy filler) |
+| `proj_water_bolt_abyss` | Dreamrot (Illusionist; no spell is water, this is the abyssal one; it sent no missile before, so a client without the art sees none) |
 
-Unsent: `proj_poison_dart_necrotic` (the Beastmaster dart is earth and keeps its dart), `proj_spirit_arrow_blood` and
-`proj_spirit_arrow_gold` (Skewering Line's blood spear has a store skin; no other bow spell fits), `proj_water_bolt_abyss`
-(no water spell). Monster files are base data and are not edited. Energy and earth quivers keep the flash and earth arrow.
+Monster files are base data and are not edited. Energy and earth quivers keep the flash and earth arrow.
 
 ## Owner outfits (pair 37) (`data/lib/chaos_pack37_looks.lua`, switch `ChaosPack37.PAIR37`, on)
 Moon outfits and novelty costumes of client pair 37 (client/MANIFEST.md "Owner outfits (pair 37)"). Owner, 2026-10-22:
@@ -22779,6 +22866,26 @@ classes; 5 for the Necromancer, Lich and Bone Lord). The 16 to 25 stretch is not
 about 20. Regenerated: `spelldata.lua`. The tip `nextspells` and goal `spells25` say "more at levels 25, 30 and 35" (en,
 pt-BR). The Clarity vigil reserves 20% of the mana, so at 35 it is a real choice, not a free buff (not played).
 
+**O250 (2026-10-26): a new spell around level 20 for every class.** `--spells` showed 9 levels without a new spell (16 to 25)
+for 18 classes, and behind it a second gap the table did not show: 8 to 16, since the O241 spells sit at 16. Two moves per
+line close both, to at most 6 levels in 8-35 (was 9; the Ranger line 4, 2, 6, 5; the Necromancer line 5). A second spell
+from the line's own kit at 20, an attack spell where the mana runway allows: Earthbreaker 60 -> 20 (Warrior, Juggernaut,
+Berserker), Sanctum Burst 50 -> 20 (Ranger, Deadeye, Beastmaster; base spell, `stock_spells.csv` and a level in
+`spell_timings.csv`), Witchfire Bolt 30 -> 20 (Mystic, Elementalist), Blade Flurry 50 -> 20 (Thief, Ninja, Samurai), Palm
+Shockwave 50 -> 20 (Monk, Shadowfist, Iron Sage). Two lines get a heal because no attack spell fits. Templar line: Vow of
+Mending 30 -> 20; Hallowed Cut (80) was the other candidate, but its 115 mana (and Consecration's 95) leaves a Templar or
+Sentinel pool of 192 with 14.9 s of casting at level 20, under the 15 s runway of `rotation_sim_test.py` (the Inquisitor
+passes: it regenerates more). Illusionist: Purifying Wellspring 40 -> 20 (the Mystic's too); Bewitching Hex (60) was
+the only attack candidate and it is far above the other classes (Illusionist 26 -> 136 damage a second on one target at
+level 20, Mystic 55 -> 206; the median class is about 25), so it stays at 60. The O241 spells move from 16 to 14 so the first wait
+(8 to 14) is 6 levels: Reaping Gyre, Rime Bloom, Arcane Ripple, Sundering Palm, Consecration, Snare Trap (also the Thief
+line's; the Ranger line keeps Dawnpiercer at 12 and gets Snare Trap at 14). Attack counts per class do not change
+(`check_attack_counts.py` counts the total, 10 each). Damage formulas are unchanged and scale with level, so the moved
+spells hit softly at 20 and grow with you; cooldowns stay (the ladder is by damage). Regenerated: `spelldata.lua`,
+`autorotation_data.lua` (`rotation_sim.py --write`: a preset at 20 for the lines with an attack spell there), `wiki_data.json`, the Spellbook hero
+image of the wiki. `--spells` now covers levels 8-35. The tip `nextspells` and goal `spells25` say "around levels 12-14
+and 20, more at 25, 30 and 35" (en, pt-BR).
+
 ## Next Goals (`goals.lua`, `goals_core.lua`, `goals_config.lua`, `sql/chaos_goals.sql`, client `game_goals`)
 
 Owner goal (2026-10-15): item acquisition and progression must be clear: how to evolve, what the goal is, what to do
@@ -23981,3 +24088,37 @@ Owner request 2026-10-25: a chest that any monster can leave; opening it wakes 5
 - **Abuse.** Event monsters are husks (`Monster:setDropLoot(false)`, as rift husks): no corpse loot, so no `onDropLoot` (no chest, blessing, Chaos roll) and they are never treasure goblins (artificial spawns). They are also tagged and refused by the chest roll. One claim per participant (the mark is set before the loot). Everything is checked on the server. Nothing is stored (no storage keys, no table): after a restart or `/reload` no monster remains and a chest item left on the map is unknown to the table and crumbles at its next use.
 - **Staff.** `/cursedchest` makes a chest next to you; `/cursedchest roll <tier>, <level>[, <n>]` shows the chance.
 - **Not done / assumptions.** Damage scale needs `ChaosAreaGen` (its hit hook); without it only health is scaled. Without `Monster:setDropLoot` the monsters would drop loot. Untested on a live server. No client part: server texts only. Tests: `tests/cursedchest_test.lua` (rules, state machine, loot against the gold model, and the glue on a mocked engine).
+
+## Progress metrics (O253) (`metrics.lua`, `metrics_core.lua`, `metrics_config.lua`, `sql/chaos_progress_metrics.sql`, `tools/progress_metrics.py`)
+
+Owner request 2026-10-26: see where players stop playing and where they die, so balance is tuned from real data. The admin app shows it (Painel > "Métricas dos jogadores" > "Atualizar métricas"; command `chaos-ctl.sh metrics [--json]`, read only).
+
+- **What is measured.**
+  - **Churn** per level band: characters whose last login is older than `churnDays` (14) against the active ones. One `GROUP BY` over `players` (`lastlogin`, `level`) at startup (after `churnDelaySeconds`, 60) and every 24 h; the answer is one row per band, written to the table as a snapshot (`churn` rows, replaced each time). A character that never logged in is left out. This counts characters, not accounts.
+  - **Deaths** per area and per killer, each per level band (the level at the death). Area: the `Chaos.registerInstance` label when the character stood in an instance (rift, dungeon, arena, ...), else the nearest hunt of `data/lib/chaos_hunt_places.lua` (a hunt's arrival tile or a base hunt's destination) on the same floor within `areaRadius` (80) tiles, else "Outside hunts, floor N". Killer: the monster's name; a player is counted as "Player (PvP)", a player's summon as "Player's summon", no killer as "Environment or unknown". A player's name never reaches a counter. A defeat a mode cancels (arena, battleground, ...) is not a death and is not counted.
+  - **First session** of a new character (first login ever, `getLastLoginSaved() == 0`): minutes from login to logout, in the buckets of `sessionBuckets` (5, 10, 20, ... 480, then "inf"). A crash loses that one count; a relog starts the rest of the play, not a second first session.
+  - **Time to level**: when a character first reaches 10, 25, 50, 100 or 200 (`milestones`), its played minutes (`players.onlinetime` at the last logout plus this session) are added to a histogram bucket (`timeBuckets`, 5 minutes to 40 days). The report reads the median inside its bucket by linear interpolation (`progress_metrics.py`), so it is exact to the bucket width, finer in the first hours. A bit mask in player storage 7102830 (+0) records which milestones a character has had, so a level lost at a death and gained again counts once; at login every milestone below the character's level is marked without counting, so characters that existed before the install do not skew the medians. 7102831 - 7102839 free.
+- **Who is left out.** Tester bots (`Chaos.isTester`, storage 7102900; in SQL `Chaos.notTesterSql`) and staff (`group_id` above `maxGroupId`, 1). They get no session state, so no counter at all.
+- **Cost.** Counters are plain Lua table increments (one per death, one per milestone, one per new character's logout). Every `flushSeconds` (300) and at shutdown they are added to the table with one `INSERT ... ON DUPLICATE KEY UPDATE n = n + VALUES(n)` per 200 rows (`db.asyncQuery`; `db.query` at shutdown). `maxKeys` (4000) bounds the memory between flushes; a new key beyond it is dropped. The churn query runs once a day. The one SQL read in play is `onlinetime` of one character when it reaches a milestone.
+- **Privacy.** The table `chaos_progress_metrics` (kind, k1, k2, n) holds only counters keyed by band, area, monster name, minute bucket or milestone. No character name, account id, IP or chat is read into a counter, stored, sent to the app or kept in a log; the churn query reads `level`, `lastlogin`, `group_id` and the tester storage of `players` and returns counts. The only per-character value is the milestone bit mask in the character's own storage, a game flag that no report reads. The table has no row per character, so the tester cleanup and account deletion have nothing to remove from it. Counts of 1 or 2 in a rare band or area can still point at a single known character; nothing is hidden for small numbers.
+- **Install.** `install_all.py` step `sql` creates the table from `sql/chaos_progress_metrics.sql` (idempotent, every `sql/*.sql` runs); the script also creates it at startup when it is missing. The scripts reach the server through the `files` step. Restart once. The admin app needs a new build for the card; the ssh command works without it. The table is empty until players play (counters after 5 minutes, the churn snapshot a minute after the start).
+- **Report.** `chaos-ctl.sh metrics` prints text, `--json` one line (`ok`, `churn` {days, at, gone, active, bands}, `deathAreas` and `deathMonsters` (top 10: name, deaths, topBand), `firstSession`, `milestones` {level, medianMinutes, characters}); `{"ok": false, "error": "no-table" | "database"}` and exit 1 when it cannot read. The query is fixed and takes no argument.
+- **Limits and assumptions.** `players.onlinetime` is assumed to be seconds saved at logout (the mentor system reads it the same way); the engine fork is not run here. Hunt areas are named by the nearest arrival tile, not by the hunt's real boundary, so a death far inside a large hunt may fall to "Outside hunts" (raise `areaRadius`; not measured on the real map). Changing `bands` later leaves old rows under their old labels. Deaths are counted when the character has a session, so a death during the first seconds of a login is counted and a `/reload` loses the open sessions' first-session counts. Not run on a live server.
+- **Tests.** `tests/metrics_test.lua` (bands, buckets, counters and flush SQL, churn SQL and rows, areas, milestone mask, tester and staff exclusion, privacy of every statement, the engine file against a mocked engine), `tools/progress_metrics_test.py` (report, medians), `deploy/chaos_ctl_test.py` (the command, errors, refusals).
+
+## Opcode input audit (O252) (`partyframes_core.lua`, `mentor.lua`, `nameplate_core.lua`, `monster_tiers.lua`)
+
+Every committed handler of a client extended opcode was read against a client that sends arbitrary bytes at any time. The protocol layer (size cap, token bucket, JSON depth, one `xpcall` per handler) is O220; `tests/opcode_fuzz_test.lua` feeds every field of every handler. This round checked what the fuzz cannot: ids that must belong to the player, atomic money, and replies about other players.
+
+Checked and found sound: shop and gifts (guarded `UPDATE` plus `ROW_COUNT`, refund on failure), bank and guild deposits (`Chaos.toInt`, save before credit), stash, market (guarded transaction, own-item checks), factions, crafting, professions, autosell, donations (`shop_payments.lua`: orders are read by account), item tooltip, loot filter, town portal, hideout, atlas, candlemarks, commands UI, admin (group check on every message), death recap, leaderboard, records, party finder, inspect (staff and ghosts answer "not found"). Website PHP (prepared statements, escaped output, CSRF tokens, admin gates, signed webhooks) and the deploy scripts (validated names, password on stdin) showed no injection path.
+
+| Handler | Issue | Severity | Fixed | Test |
+|---|---|---|---|---|
+| party frames invite | the reply told apart an online hidden player from an offline one | low | yes | `partyframes_test.lua` |
+| mentor invite | same | low | yes | covered by the shared `canSeeCreature` rule, `mentor_test.lua` |
+| name plate query | plates of players out of view, on another floor or hidden were answered for any creature id | low | yes | `nameplate_test.lua` (`N.mayQuery`) |
+| monster bar query | distance check ignored the floor and sight | low | yes | `monster_tiers_test.lua` |
+| Infinity Tower claim | the claimed mask is written after the items are given, the DB result is not checked | low | no | not reachable by a client request |
+| admin throttle log | one log row per non-admin sender every 5 s | low | no | none |
+
+Not auditable here: the base server's own handlers (store, tasks, upgrades, inspect, stats, waystone device). The base tree is not in the repo; `patch_base_json_guards.py` is the only code that touches them.
