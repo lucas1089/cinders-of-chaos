@@ -3169,7 +3169,7 @@ the source and every old thing byte-identical; the build is deterministic (run t
 - **Ship order.** A client on pair 47 or older draws nothing for 38759-39110: ship pair 48 and a client build before placing
   the items on a map.
 
-## Decoration of the celestial and cursed biomes (pair 49: items 39111-39197, `tools/sprites/gen_decor49.py` + `import_art_things.py`, `tools/sprites/art_import/decor49*`; built 2026-10-26; not pushed to windows-assets yet)
+## Decoration of the celestial and cursed biomes (pair 49: items 39111-39197, `tools/sprites/gen_decor49.py` + `import_art_things.py`, `tools/sprites/art_import/decor49*`; built 2026-10-26; on windows-assets 4fcb48ff)
 Owner request 2026-10-26 ("pair 49"): decoration things for the two Map Studio biomes celestial and cursed. Art only: no text,
 logo, store or coin art, no signs.
 - **Art.** Own drawn art (clouds, glowing rune circles, starlight, marble pillars, taint pools, pumpkins) and prepared single
@@ -3206,7 +3206,7 @@ Output **pair 49**: dat 546d0c6099c8a40505b8f32b7e6ca381 (11,282,963 bytes), spr
   `split -b 95M -d -a 2`): 147,615,964 bytes, sha256 1b18181d88da9f72671db71e6f31a6bf562648f56594fce838507f75ae6bd1f7; parts
   `things-1098.tar.xz.part00` (99,614,720 bytes, sha256 ebbe6bc723020072f5de40f2a62064e79152940073b92c7fbd6a03738997f3cf) and `.part01`
   (48,001,244 bytes, sha256 d749e4e49f30043fecd0c0c7c0c8ce48d8248dab05d59071f92c834692254e01); the joined parts extract to the md5s
-  above. Not pushed to windows-assets yet.
+  above. Pushed to windows-assets as **4fcb48ff** (parent 90555d38); only the two part lines of SHA256SUMS.parts changed.
 - **Ship order.** Install `decor49items` on the server only together with a client on pair 49 or newer: a client on pair 48 or older
   draws nothing for 39111-39197. Ship pair 49 and a client build before placing the items on a map.
 

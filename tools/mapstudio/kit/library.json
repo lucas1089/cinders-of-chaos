@@ -76,9 +76,7 @@
   },
   {
    "kit": "base",
-   "border": {
-    "water": "wall"
-   }
+   "border": null
   }
  ],
  "defaults": {
@@ -265,8 +263,8 @@
    "38975": 1
   },
   "boost": {
-   "big": 1.8,
-   "small": 0.9
+   "big": 0.0,
+   "small": 0.0
   }
  },
  "mountain_cliff": {
@@ -389,8 +387,8 @@
   "pillars_per_chamber": 3,
   "stairs": {
    "count": [
-    1,
-    2
+    0,
+    1
    ]
   },
   "styles": {
@@ -414,9 +412,7 @@
      },
      {
       "kit": "base",
-      "border": {
-       "water": "wall"
-      }
+      "border": null
      }
     ],
     "no_water_border": [
@@ -433,7 +429,81 @@
    "scale": 12.0,
    "width_jitter": 1
   },
-  "void_jitter": 0
+  "void_jitter": 0,
+  "rooms": {
+   "per_1000": 1.4,
+   "gap": 3,
+   "corridor": {
+    "2": 0.5,
+    "3": 0.5
+   },
+   "loops": [
+    0.1,
+    0.25
+   ],
+   "floor_share": [
+    0.24,
+    0.36
+   ],
+   "kinds": [
+    {
+     "name": "reading",
+     "theme": "reading",
+     "w": [
+      9,
+      13
+     ],
+     "h": [
+      7,
+      9
+     ],
+     "weight": 2.5
+    },
+    {
+     "name": "stacks",
+     "theme": "stacks",
+     "w": [
+      9,
+      13
+     ],
+     "h": [
+      7,
+      11
+     ],
+     "weight": 3
+    },
+    {
+     "name": "ritual",
+     "theme": "ritual",
+     "w": [
+      7,
+      9
+     ],
+     "h": [
+      7,
+      9
+     ],
+     "weight": 1.2
+    },
+    {
+     "name": "cellblock",
+     "structure": "cells",
+     "cells": [
+      3,
+      5
+     ],
+     "cell": [
+      4,
+      4
+     ],
+     "hall": 3,
+     "theme": "study",
+     "hall_theme": "hall",
+     "both": 0.8,
+     "weight": 2
+    }
+   ]
+  }
  },
  "pocket_fill": [
   7481,
@@ -472,30 +542,31 @@
    10176
   ]
  },
- "patches": [
-  {
-   "ground": "grey_sand",
-   "share": 0.04,
-   "scale": 3,
-   "min": 2
-  }
- ],
+ "patches": [],
  "same_look": [
   [
    "base",
-   "clay"
+   "sand"
   ],
   [
-   "stain",
-   "clay"
+   "base",
+   "grey_sand"
   ],
   [
-   "slate",
-   "clay"
+   "base",
+   "rock_soil"
   ],
   [
-   "stain",
-   "slate"
+   "sand",
+   "grey_sand"
+  ],
+  [
+   "sand",
+   "rock_soil"
+  ],
+  [
+   "grey_sand",
+   "rock_soil"
   ]
  ],
  "grey_sand": {
@@ -508,20 +579,6 @@
    3156,
    3157
   ]
- },
- "wall": {
-  "edge_n": 41257,
-  "edge_s": 41257,
-  "edge_e": 41258,
-  "edge_w": 41258,
-  "inner_nw": 41256,
-  "inner_ne": 41256,
-  "inner_sw": 41256,
-  "inner_se": 41256,
-  "outer_se": 41259,
-  "outer_nw": 41257,
-  "outer_ne": 41258,
-  "outer_sw": 41257
  },
  "meadow": {
   "9511": 0.01,
@@ -549,5 +606,259 @@
   "856": "--size 128 --cave-shape chambers",
   "857": "--size 96 --cave-shape mix",
   "858": "--size 112 --cave-shape tunnels"
- }
+ },
+ "walls": {
+  "h": [
+   41257
+  ],
+  "v": [
+   41258
+  ],
+  "corner": 41259,
+  "pole": 41256,
+  "end_h": 41260,
+  "end_v": 41261,
+  "cover": 2,
+  "variants": {
+   "h": {
+    "41266": 0.07,
+    "41268": 0.02
+   },
+   "v": {
+    "41267": 0.07,
+    "41269": 0.02
+   }
+  }
+ },
+ "themes": {
+  "reading": {
+   "floor": {
+    "role": "base",
+    "accent": {
+     "role": "sand",
+     "share": 0.14,
+     "size": [
+      3,
+      4
+     ]
+    }
+   },
+   "along": [
+    {
+     "ids": [
+      1718,
+      1719,
+      6368,
+      20800,
+      29721
+     ],
+     "sides": [
+      "n",
+      "s"
+     ],
+     "inset": 1,
+     "chance": 0.95,
+     "single": true
+    },
+    {
+     "ids": [
+      6370,
+      6371,
+      20802,
+      29722
+     ],
+     "sides": [
+      "w",
+      "e"
+     ],
+     "inset": 2,
+     "chance": 0.9,
+     "single": true
+    }
+   ],
+   "grid": [
+    {
+     "ids": [
+      38263
+     ],
+     "step": [
+      4,
+      3
+     ],
+     "margin": 3,
+     "chance": 0.65
+    }
+   ],
+   "scatter": {
+    "11934": 0.02,
+    "1662": 0.015,
+    "23790": 0.02,
+    "12396": 0.01,
+    "38536": 0.01,
+    "38537": 0.01,
+    "9511": 0.01
+   }
+  },
+  "stacks": {
+   "floor": {
+    "role": "base"
+   },
+   "rows": [
+    {
+     "ids": [
+      1718,
+      1719,
+      6368,
+      20800,
+      29721
+     ],
+     "every": 3,
+     "axis": "x",
+     "margin": 1,
+     "single": true,
+     "gap_chance": 0.12,
+     "gap": [
+      1,
+      2
+     ]
+    }
+   ],
+   "along": [
+    {
+     "ids": [
+      6370,
+      6371,
+      20802,
+      29722
+     ],
+     "sides": [
+      "w",
+      "e"
+     ],
+     "inset": 0,
+     "chance": 0.5,
+     "single": true
+    }
+   ],
+   "scatter": {
+    "23790": 0.02,
+    "12948": 0.01,
+    "12954": 0.01,
+    "41383": 0.008
+   }
+  },
+  "ritual": {
+   "floor": {
+    "role": "grey_sand"
+   },
+   "center": [
+    {
+     "ids": [
+      41530,
+      41531
+     ],
+     "count": [
+      1,
+      1
+     ],
+     "spread": 0
+    }
+   ],
+   "along": [
+    {
+     "ids": [
+      41554,
+      41570,
+      38761,
+      38767
+     ],
+     "sides": [
+      "n",
+      "s"
+     ],
+     "inset": 1,
+     "chance": 0.6,
+     "gap": [
+      2,
+      3
+     ]
+    }
+   ],
+   "scatter": {
+    "24934": 0.03,
+    "24937": 0.01,
+    "41383": 0.015,
+    "21350": 0.01,
+    "8919": 0.0
+   }
+  },
+  "study": {
+   "floor": {
+    "role": "sand"
+   },
+   "along": [
+    {
+     "ids": [
+      1718,
+      1719,
+      6368,
+      20800,
+      29721
+     ],
+     "sides": [
+      "n"
+     ],
+     "chance": 1.0,
+     "single": true
+    }
+   ],
+   "props": [
+    {
+     "ids": [
+      38263,
+      1614,
+      23872,
+      41551
+     ],
+     "count": [
+      1,
+      1
+     ]
+    },
+    {
+     "ids": [
+      11934,
+      23790,
+      12948,
+      41385
+     ],
+     "count": [
+      1,
+      2
+     ]
+    }
+   ]
+  },
+  "hall": {
+   "floor": {
+    "role": "base"
+   },
+   "scatter": {
+    "9511": 0.012,
+    "41383": 0.012,
+    "23790": 0.01,
+    "12949": 0.008
+   }
+  },
+  "corridor": {
+   "scatter": {
+    "9511": 0.01,
+    "41383": 0.01,
+    "23790": 0.012,
+    "12948": 0.008,
+    "38537": 0.008
+   }
+  }
+ },
+ "wall_check": true
 }

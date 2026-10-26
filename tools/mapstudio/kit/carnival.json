@@ -18,23 +18,25 @@
   ]
  },
  "sand": {
-  "family": "G5159",
-  "lead": 5159,
+  "family": "G12115",
+  "lead": 12115,
   "members": [
-   5160,
-   5174,
-   5159,
-   5160
+   12116,
+   12117,
+   12118,
+   12119,
+   12120
   ]
  },
  "rock_soil": {
-  "family": "G5159",
-  "lead": 5159,
+  "family": "G12115",
+  "lead": 12115,
   "members": [
-   5160,
-   5174,
-   5159,
-   5160
+   12116,
+   12117,
+   12118,
+   12119,
+   12120
   ]
  },
  "mountain": {
@@ -75,9 +77,7 @@
   },
   {
    "kit": "base",
-   "border": {
-    "water": "wall"
-   }
+   "border": null
   }
  ],
  "defaults": {
@@ -271,8 +271,8 @@
    "41383": 2
   },
   "boost": {
-   "big": 0.6,
-   "small": 0.5
+   "big": 0.0,
+   "small": 0.0
   }
  },
  "mountain_cliff": {
@@ -396,8 +396,8 @@
   "pillars_per_chamber": 2,
   "stairs": {
    "count": [
-    1,
-    2
+    0,
+    1
    ]
   },
   "styles": {
@@ -421,9 +421,7 @@
      },
      {
       "kit": "base",
-      "border": {
-       "water": "wall"
-      }
+      "border": null
      }
     ],
     "no_water_border": [
@@ -440,7 +438,82 @@
    "scale": 12.0,
    "width_jitter": 1
   },
-  "void_jitter": 0
+  "void_jitter": 0,
+  "rooms": {
+   "per_1000": 1.4,
+   "gap": 3,
+   "corridor": {
+    "3": 0.5,
+    "4": 0.3,
+    "2": 0.2
+   },
+   "loops": [
+    0.1,
+    0.25
+   ],
+   "floor_share": [
+    0.24,
+    0.36
+   ],
+   "kinds": [
+    {
+     "name": "ring",
+     "theme": "ring",
+     "w": [
+      10,
+      15
+     ],
+     "h": [
+      8,
+      12
+     ],
+     "weight": 2.5
+    },
+    {
+     "name": "stage",
+     "theme": "stage",
+     "w": [
+      8,
+      11
+     ],
+     "h": [
+      6,
+      8
+     ],
+     "weight": 1.5
+    },
+    {
+     "name": "tent",
+     "theme": "tent",
+     "w": [
+      6,
+      9
+     ],
+     "h": [
+      5,
+      8
+     ],
+     "weight": 2.5
+    },
+    {
+     "name": "booths",
+     "structure": "cells",
+     "cells": [
+      3,
+      5
+     ],
+     "cell": [
+      4,
+      4
+     ],
+     "hall": 3,
+     "theme": "booth",
+     "hall_theme": "hall",
+     "both": 0.8,
+     "weight": 2.5
+    }
+   ]
+  }
  },
  "pocket_fill": [
   29351,
@@ -479,50 +552,37 @@
    10176
   ]
  },
- "patches": [
-  {
-   "ground": "grey_sand",
-   "share": 0.04,
-   "scale": 3,
-   "min": 2
-  }
- ],
+ "patches": [],
  "same_look": [
   [
    "base",
-   "clay"
+   "sand"
   ],
   [
-   "stain",
-   "clay"
+   "base",
+   "grey_sand"
   ],
   [
-   "slate",
-   "clay"
+   "base",
+   "rock_soil"
   ],
   [
-   "stain",
-   "slate"
+   "sand",
+   "grey_sand"
+  ],
+  [
+   "sand",
+   "rock_soil"
+  ],
+  [
+   "grey_sand",
+   "rock_soil"
   ]
  ],
  "grey_sand": {
   "family": "G29326",
   "lead": 29326,
   "members": []
- },
- "wall": {
-  "edge_n": 41295,
-  "edge_s": 41295,
-  "edge_e": 41296,
-  "edge_w": 41296,
-  "inner_nw": 41294,
-  "inner_ne": 41294,
-  "inner_sw": 41294,
-  "inner_se": 41294,
-  "outer_se": 41297,
-  "outer_nw": 41295,
-  "outer_ne": 41296,
-  "outer_sw": 41295
  },
  "meadow": {
   "41197": 0.012,
@@ -548,5 +608,221 @@
   "846": "--size 128 --cave-shape chambers",
   "847": "--size 96 --cave-shape mix",
   "848": "--size 112 --cave-shape tunnels"
- }
+ },
+ "walls": {
+  "h": [
+   41295
+  ],
+  "v": [
+   41296
+  ],
+  "corner": 41297,
+  "pole": 41294,
+  "end_h": 41298,
+  "end_v": 41299,
+  "cover": 2
+ },
+ "themes": {
+  "ring": {
+   "floor": {
+    "role": "base",
+    "accent": {
+     "role": "sand",
+     "share": 0.2,
+     "size": [
+      3,
+      5
+     ]
+    }
+   },
+   "center": [
+    {
+     "ids": [
+      41380,
+      41553,
+      41214
+     ],
+     "count": [
+      1,
+      2
+     ],
+     "spread": 2
+    }
+   ],
+   "along": [
+    {
+     "ids": [
+      41384,
+      41561,
+      41562
+     ],
+     "sides": [
+      "n",
+      "s"
+     ],
+     "inset": 1,
+     "chance": 0.5,
+     "gap": [
+      3,
+      4
+     ],
+     "single": true
+    }
+   ],
+   "scatter": {
+    "38993": 0.0,
+    "41555": 0.006,
+    "41556": 0.006,
+    "38533": 0.008,
+    "38532": 0.008,
+    "41197": 0.02,
+    "41195": 0.02
+   }
+  },
+  "stage": {
+   "floor": {
+    "role": "grey_sand"
+   },
+   "along": [
+    {
+     "ids": [
+      41384,
+      41562
+     ],
+     "sides": [
+      "n"
+     ],
+     "inset": 1,
+     "chance": 0.8,
+     "gap": [
+      2,
+      3
+     ],
+     "single": true
+    }
+   ],
+   "center": [
+    {
+     "ids": [
+      8734,
+      8735,
+      26459,
+      26460
+     ],
+     "count": [
+      1,
+      1
+     ],
+     "spread": 1
+    }
+   ],
+   "scatter": {
+    "41557": 0.01,
+    "41558": 0.01,
+    "38308": 0.02
+   }
+  },
+  "tent": {
+   "floor": {
+    "role": "sand"
+   },
+   "center": [
+    {
+     "ids": [
+      40187,
+      40188,
+      40189,
+      40190,
+      40191,
+      40192,
+      40193,
+      40194
+     ],
+     "count": [
+      1,
+      1
+     ],
+     "spread": 0
+    }
+   ],
+   "along": [
+    {
+     "ids": [
+      29132,
+      8781,
+      8783,
+      5544,
+      5546
+     ],
+     "sides": [
+      "n"
+     ],
+     "inset": 1,
+     "chance": 0.4,
+     "gap": [
+      2,
+      3
+     ]
+    }
+   ],
+   "scatter": {
+    "41383": 0.03,
+    "38308": 0.02,
+    "41558": 0.01
+   }
+  },
+  "booth": {
+   "floor": {
+    "role": "grey_sand"
+   },
+   "props": [
+    {
+     "ids": [
+      38985,
+      38986,
+      38987,
+      38988,
+      38989,
+      38990,
+      38991,
+      38992
+     ],
+     "count": [
+      1,
+      1
+     ]
+    }
+   ],
+   "scatter": {
+    "38532": 0.04,
+    "41383": 0.03,
+    "41369": 0.03
+   }
+  },
+  "hall": {
+   "floor": {
+    "role": "base"
+   },
+   "scatter": {
+    "41555": 0.02,
+    "41556": 0.02,
+    "41197": 0.03,
+    "41195": 0.03,
+    "41575": 0.01,
+    "38308": 0.01
+   }
+  },
+  "corridor": {
+   "scatter": {
+    "41555": 0.012,
+    "41556": 0.012,
+    "41197": 0.03,
+    "41195": 0.03,
+    "41575": 0.008,
+    "41198": 0.01,
+    "38308": 0.008
+   }
+  }
+ },
+ "wall_check": true
 }

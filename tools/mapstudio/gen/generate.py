@@ -20,6 +20,10 @@ from collections import Counter, deque
 
 import access
 import cave as cavemod
+import rooms as roomsmod
+import themes as themesmod
+import walls as wallsmod
+import wallcheck
 from common import ROOT, kit_name, load_items, load_kit, save_area, water_ids
 from shapes import blend, distance, largest, parts, place_ramps, region
 import lib
@@ -1481,7 +1485,10 @@ def build(p):
     p.edge_smooth = kit.get("edge_smooth")
     p.coast_round = kit.get("coast_round")  # kit key {"radius", "keep"}: rounder land outline of liquid-low kits (round_coast)
     lib.LONGEST = (p.edge_smooth or {}).get("longest", 3)
-    m = cavemod.cave_layout(size, rng, cave_cfg, style, road_path, smooth_course) if cave_cfg else layout(size, rng, p)
+    if cave_cfg and cave_cfg.get("rooms"):  # kit cave.rooms (round 8): rectangular rooms and corridors (gen/rooms.py)
+        m = roomsmod.rooms_layout(size, rng, cave_cfg, style, cavemod.stairs)
+    else:
+        m = cavemod.cave_layout(size, rng, cave_cfg, style, road_path, smooth_course) if cave_cfg else layout(size, rng, p)
     water, mountain, hill = m["water"], m["mountain"], m["hill"]
     if kit.get("creeks"):
         carve_creeks(size, rng, m, kit["creeks"])
@@ -1791,6 +1798,11 @@ def build(p):
                                         and not touches(mountain, x, y) and (x, y) not in water_plants))
     lake_mask = [[(x, y) in lake for x in range(size)] for y in range(size)]
     layer = {}
+    wall_spec = kit.get("walls")  # kit key walls (round 8): straight wall runs with corners and ends laid from the floor mask (gen/walls.py)
+    wall_pieces, wall_ground = {}, set()
+    if wall_spec:
+        floor_set = {(x, y) for y in range(size) for x in range(size) if not water[y][x]}
+        wall_pieces, wall_ground = wallsmod.build(floor_set, size, wall_spec, random.Random(f"walls-{p.seed}"))
     void = (cave_cfg or {}).get("void_beyond")  # kit cave.void_beyond n: solid tiles more than n steps from the floor get no tile (black)
     void_d = distance(size, [[not v for v in row] for row in water]) if void else None
     void_n = lib.noise(size, 5, random.Random(f"void-{p.seed}")) if void else None  # kit cave.void_jitter: ragged black edge
@@ -1798,6 +1810,13 @@ def build(p):
     for y in range(size):
         for x in range(size):
             f = family(x, y)
+            if wall_spec and f == "water":  # wall pieces on dark solid ground, solid cover behind them, void only beyond that
+                if (x, y) not in wall_ground:
+                    continue
+                ground = (pick(rng, wall_spec["solid"]) if wall_spec.get("solid")
+                          else water_ground(x, y) if water_ground else pick(rng, kit["water"]))
+                layer[(ORIGIN + x, ORIGIN + y)] = [ground] + ([wall_pieces[(x, y)]] if (x, y) in wall_pieces else [])
+                continue
             if f == "water" and void and void_d[y][x] > void + (void_n[y][x] - 0.5) * 2 * jit:
                 continue
             if f == "water":  # where a mountain meets the water, the reference map draws its cliff on the water tiles; in a
@@ -1882,6 +1901,10 @@ def build(p):
         for x, y in st["landing"]:
             floors.setdefault(Z - 1, {})[(ORIGIN + x, ORIGIN + y)] = [pick(rng, kit["base"])]
 
+    dressed = set()
+    if m.get("rooms"):  # kit cave.rooms: every room gets its floor and decor theme (gen/themes.py)
+        dressed = themesmod.dress(floors[Z], m, kit, items, rng, ORIGIN, size, wall_pieces)
+
     # earth hills: one level (see gen/island.py)
     floor = floors.setdefault(Z - 1, {})
     drop = [[not v for v in row] for row in hill]
@@ -1905,6 +1928,7 @@ def build(p):
     ramp_dirs = {ids[0]: d for key in ("mountain_ramp", "hill_ramp") for d, ids in kit.get(key, {}).items()}
     plant_ids = {int(i) for t in (kit["flora"], kit["top_flora"], kit["bank_flora"]) for f in t.values() for i in f}
     plant_ids |= {int(i) for c in ("big", "small") for i in kit["clumps"][c]} | {int(i) for i in kit.get("hill_top", {})}
+    plant_ids |= dressed
     # odd borders (tools/odd_borders.py): tiles where one set's pieces face opposite ways; every 12-piece set
     sets = [s for s, v in kit.items() if isinstance(v, dict) and "edge_n" in v and "inner_se" in v]
     piece_of = {int(i): (s, n.partition("_")[2]) for s in sets for n, i in kit[s].items()}
@@ -1934,7 +1958,7 @@ def build(p):
             for i, j in ((1, 0), (0, 1)):
                 if x + i < size and y + j < size:
                     a, b = keys[y][x], keys[y + j][x + i]
-                    if a != b and a in rank and b in rank:
+                    if a != b and a in rank and b in rank and not (wall_spec and "water" in (a, b)):  # walls: laid by gen/walls.py, no border set
                         hi_, lo_ = (a, b) if rank[a] > rank[b] else (b, a)
                         if not border_of(layer_of[hi_], lo_):
                             (same_seams if [hi_, lo_] in same_look or [lo_, hi_] in same_look else bare)[f"{hi_}|{lo_}"] += 1
@@ -1960,6 +1984,8 @@ def build(p):
              "levels": [sum(map(sum, v)) for v in m["levels"]] or ([sum(map(sum, mountain))] if solid else []),
              "sand": sum(map(sum, sand)), "grey": sum(map(sum, grey)), "river": len(m["river"]),
              **{k: sum(map(sum, m[k])) for k in ("water", "hill")}}
+    if kit.get("wall_check"):  # kit key wall_check: void beside floor or walls, wrong or missing wall pieces (gen/wallcheck.py)
+        stats["wall_check"] = wallcheck.summary(wallcheck.check(floors[Z], size, ORIGIN, items, kit, access.NO_WALK, edge_pieces))
     if cave_cfg:
         stats["cave"] = {**m["cave"], "walkable": check.get("reached/walkable")}
     return floors, stats
@@ -2162,6 +2188,9 @@ def main():
     print(f"  access: passes {acc['passes']}, pocket tiles sealed {acc['pockets_sealed']}, land necks {acc.get('land_necks', 0)}, pocket tiles closed {acc.get('pockets_closed', 0)}, cut-off top tiles dropped {acc.get('tops_dropped', {})}, top parts 30+ with a ramp per level {acc['top_parts_with_ramp']}, "
           f"ramps usable {acc.get('ramps_usable')}, plants cleared {acc['plants_cleared']}, "
           f"cut off {acc['cut_off']}, reached/walkable per floor {acc.get('reached/walkable')}")
+    if "wall_check" in stats:
+        w = stats["wall_check"]
+        print(f"  walls: void tiles touching floor or wall {w['void_touch']}, wrong wall pieces {w['wall_wrong']}, missing wall pieces {w['wall_missing']}")
     if "cave" in stats:
         c = stats["cave"]
         print(f"  cave: wall style {c['style']}, nodes {c['nodes']}, loops {c['loops']}, spurs {c['spurs']}, stairs {c['stairs']}, "
