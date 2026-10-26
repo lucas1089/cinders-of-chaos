@@ -284,6 +284,9 @@ def layout(size, rng, p):
         # shape instead of the water shape: such tiles become land.
         land = [[not v for v in row] for row in water]
         clean(land)
+        rounder = getattr(p, "coast_round", None)
+        if rounder:
+            round_coast(land, levels, hill, rounder, rng)
         for y in range(size):
             for x in range(size):
                 water[y][x] = not land[y][x]
@@ -310,6 +313,97 @@ def layout(size, rng, p):
     river ={(x, y) for x, y in river if water[y][x]}
     return {"water": water, "mountain": mountain, "levels": levels, "hill": hill, "shore": shore, "river": river,
             "passes": passes, "sealed": sealed}
+
+
+def carve_creeks(size, rng, m, cfg):
+    """Kit creeks {"share": s, "scale": cell, "wide": 2, "min": tiles, "away": steps}: thin winding channels of the kit's liquid cut
+    into the land (the reference swamp's land is a network of trails 1-3 wide: 61% of its land tiles are 1 step from other
+    ground, a blob with ponds has 14%). Tiles nearest the median of a fine noise field (so 1-3 wide and long) over about `share` of
+    the open land at least `away` steps from liquid, thickened to `wide` tiles, parts under `min` dropped, then the land is cleaned
+    so every outline is drawable. Edits m["water"] and m["shore"] in place. Uses the rng only with the key."""
+    water, mountain, hill = m["water"], m["mountain"], m["hill"]
+    scale = cfg.get("scale", 4)
+    field = blend(size, rng, [(scale, 0.7), (max(2, scale // 2), 0.3)])
+    shore = distance(size, water)
+    away = cfg.get("away", 2)
+    relief = lambda x, y: mountain[y][x] or hill[y][x] or any(lv[y][x] for lv in m["levels"])
+    allowed = lambda x, y: not water[y][x] and not relief(x, y) and shore[y][x] >= away and not touches(mountain, x, y, 2)
+    vals = sorted(field[y][x] for y in range(size) for x in range(size) if allowed(x, y))
+    if not vals:
+        return
+    mid = vals[len(vals) // 2]
+    thin = [[-abs(field[y][x] - mid) for x in range(size)] for y in range(size)]
+    strip = quantile_region(size, thin, cfg.get("share", 0.08), allowed)
+    for part in parts(size, strip):
+        if len(part) < cfg.get("min", 6):
+            for x, y in part:
+                strip[y][x] = False
+    wide = cfg.get("wide", 2)
+    cut = [row[:] for row in strip]
+    for y in range(size):
+        for x in range(size):
+            if strip[y][x] and wide >= 2:
+                for i, j in ((1, 0), (0, 1), (1, 1)):
+                    if x + i < size and y + j < size and allowed(x + i, y + j):
+                        cut[y + j][x + i] = True
+    for y in range(size):
+        for x in range(size):
+            if cut[y][x]:
+                water[y][x] = True
+    land = [[not v for v in row] for row in water]
+    clean(land)
+    # a creek never splits a land part: of the pieces left inside one former part only the biggest stays
+    old = [[not v for v in row] for row in water]
+    for y in range(size):
+        for x in range(size):
+            if cut[y][x]:
+                old[y][x] = True
+    for part in parts(size, old):
+        inside = [[False] * size for _ in range(size)]
+        for x, y in part:
+            inside[y][x] = land[y][x]
+        pieces = parts(size, inside)
+        pieces.sort(key=len, reverse=True)
+        for piece in pieces[1:]:
+            for x, y in piece:
+                land[y][x] = False
+    for y in range(size):
+        for x in range(size):
+            water[y][x] = not land[y][x]
+    m["shore"] = distance(size, water)
+
+
+def round_coast(land, levels, hill, cfg, rng):
+    """Kit coast_round {"radius": r, "keep": n, "longest": n}: rounds the land mask of a liquid-low kit before it is bordered. Box blur of
+    radius r and a 0.5 threshold (coves and capes at the scale of r survive, 1-tile notches and spikes go, outlines
+    curve); tiles within `keep` steps of the mountain or hills keep their value so cliff rings stay as laid. Beyond
+    the map edge counts as liquid. Edits `land` in place, then cleans it."""
+    size = len(land)
+    r, keep = cfg.get("radius", 2), cfg.get("keep", 2)
+    relief = [[any(lv[y][x] for lv in levels) or hill[y][x] for x in range(size)] for y in range(size)]
+    near = distance(size, relief)
+    pre = [[0] * (size + 1) for _ in range(size + 1)]
+    for y in range(size):
+        for x in range(size):
+            pre[y + 1][x + 1] = pre[y][x + 1] + pre[y + 1][x] - pre[y][x] + (1 if land[y][x] else 0)
+    out = [row[:] for row in land]
+    area = (2 * r + 1) ** 2
+    for y in range(size):
+        for x in range(size):
+            if near[y][x] <= keep:
+                continue
+            x0, y0, x1, y1 = max(0, x - r), max(0, y - r), min(size, x + r + 1), min(size, y + r + 1)
+            n = pre[y1][x1] - pre[y0][x1] - pre[y1][x0] + pre[y0][x0]
+            out[y][x] = n * 2 > area
+    for y in range(size):
+        land[y] = out[y]
+    clean(land)
+    if cfg.get("longest"):  # then no straight run longer than this (staircase steps of 2-3 tiles instead of 1-tile diagonals and long walls)
+        break_runs(land, rng, allowed=lambda x, y: near[y][x] > keep, longest=cfg["longest"])
+    for y in range(size):
+        for x in range(size):
+            if relief[y][x]:
+                land[y][x] = True
 
 
 def seal_pockets(size, water, levels, hill, rng, river=(), least=20):
@@ -1385,9 +1479,12 @@ def build(p):
         kit = {**kit, **cave_cfg["styles"][style]}
     p.water_low = kit["layers"][0]["kit"] == "water"
     p.edge_smooth = kit.get("edge_smooth")
+    p.coast_round = kit.get("coast_round")  # kit key {"radius", "keep"}: rounder land outline of liquid-low kits (round_coast)
     lib.LONGEST = (p.edge_smooth or {}).get("longest", 3)
     m = cavemod.cave_layout(size, rng, cave_cfg, style, road_path, smooth_course) if cave_cfg else layout(size, rng, p)
     water, mountain, hill = m["water"], m["mountain"], m["hill"]
+    if kit.get("creeks"):
+        carve_creeks(size, rng, m, kit["creeks"])
     # kit solid_mountain (or --solid-mountain): the mountain is a solid fill with no top floor and no ramps; the wall
     # set (kit wall_set: {ground key: 12-piece set name}) is drawn on the floor and liquid tiles beside it
     solid = bool(kit.get("solid_mountain") or getattr(p, "solid_mountain", False))
@@ -1540,9 +1637,13 @@ def build(p):
     for b in bridges:
         if ford:  # a ford: the lava under the deck and both rail lines becomes cooled crust (walkable on the reference map);
             # it stays lava for borders, so the slab draws its lava border onto it as the reference map does onto crust
+            as_land = kit["crossing"].get("as_land")  # kit crossing.as_land: the strip becomes base ground, bordered like any land
             for x, y in b.deck() + [t for line in b.rails() for t in line]:
                 if water[y][x]:
-                    fords.add((x, y))
+                    if as_land:
+                        keys[y][x], water[y][x] = "base", False
+                    else:
+                        fords.add((x, y))
             continue
         for x, y in b.deck():  # deck and end tiles: no ground draws its border toward a bridge (user review)
             if (y if b.ns else x) != b.start:
@@ -1684,10 +1785,17 @@ def build(p):
         water_plants.update(place_flora(size, lambda x, y: "lake", {"lake": lake_spec.get("decor", {})}, items, rng,
                                         lambda x, y: (x, y) in lake and (x, y) not in span and (x, y) not in fords
                                         and not touches(mountain, x, y) and (x, y) not in water_plants))
+    lake_mask = [[(x, y) in lake for x in range(size)] for y in range(size)]
     layer = {}
+    void = (cave_cfg or {}).get("void_beyond")  # kit cave.void_beyond n: solid tiles more than n steps from the floor get no tile (black)
+    void_d = distance(size, [[not v for v in row] for row in water]) if void else None
+    void_n = lib.noise(size, 5, random.Random(f"void-{p.seed}")) if void else None  # kit cave.void_jitter: ragged black edge
+    jit = (cave_cfg or {}).get("void_jitter", 0)
     for y in range(size):
         for x in range(size):
             f = family(x, y)
+            if f == "water" and void and void_d[y][x] > void + (void_n[y][x] - 0.5) * 2 * jit:
+                continue
             if f == "water":  # where a mountain meets the water, the reference map draws its cliff on the water tiles; in a
                 # kit where land ranks above water (fire), the land's border is drawn on the water tiles too
                 ground = water_ground(x, y) if water_ground else pick(rng, kit["water"])
@@ -1719,7 +1827,14 @@ def build(p):
                 if (x, y) in mramps:
                     d, half = mramps[(x, y)]
                     stack.append(kit["mountain_ramp"][d][half])
-                if lake_spec and any((x + i, y + j) in lake for i in (-1, 0, 1) for j in (-1, 0, 1)):
+                if lake_spec and lake_spec.get("border") and any((x + i, y + j) in lake for i in (-1, 0, 1) for j in (-1, 0, 1)):
+                    # kit lake_water.border: the reference map bords a frozen sheet with the mountain's own 12-piece cliff set on
+                    # the land tile beside it (named toward the sheet); the 2x2 pieces overhang the sheet's east and south
+                    # edge tiles, whose own sprites are see-through there
+                    shore = {int(i) for i in kit[lake_spec.get("shore_set", "shore_on_base")].values()}
+                    stack = [i for i in stack if int(i) not in shore]
+                    stack += edge_pieces(lake_mask, x, y, kit[lake_spec["border"]])
+                elif lake_spec and any((x + i, y + j) in lake for i in (-1, 0, 1) for j in (-1, 0, 1)):
                     # the shore set belongs to open water; a frozen sheet gets the lake's own border on the land beside it
                     shore = {int(i) for i in kit[lake_spec.get("shore_set", "shore_on_base")].values()}
                     stack = [i for i in stack if int(i) not in shore]

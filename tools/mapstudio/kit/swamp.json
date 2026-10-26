@@ -616,5 +616,12 @@
  "patch_near": [
   1,
   1
- ]
+ ],
+ "creeks": {
+  "share": 0.4,
+  "scale": 4,
+  "wide": 2,
+  "min": 8,
+  "away": 3
+ }
 }

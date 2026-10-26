@@ -56,7 +56,7 @@ def settings(cfg):
     s = {**MODES[shape], "shape": shape, "floor_share": [0.15, 0.25]}
     for k, v in cfg.get("chambers", {}).items():
         s[k] = v
-    for k in ("tunnel_width", "loops", "spurs_per_1000", "floor_share", "pillars_per_chamber"):
+    for k in ("tunnel_width", "loops", "spurs_per_1000", "floor_share", "pillars_per_chamber", "meander"):
         if k in cfg:
             s[k] = cfg[k]
     if not isinstance(s["loops"], (list, tuple)):
@@ -193,11 +193,48 @@ class Carver:
         if not path:
             return []
         course = self.smooth_course(path)
+        mean = self.s.get("meander")
+        if mean:
+            course = self.wiggle(course, mean)
+        jitter = (mean or {}).get("width_jitter", 0)
+        extra_w, run = 0, 0
         for (x, y), w in zip(course, self.widths_for(len(course))):
-            self.stamp(x, y, brush(w + self.extra))
+            if jitter:  # width wanders by up to `jitter` tiles on runs of 3-7 tiles
+                if run <= 0:
+                    extra_w, run = self.rng.randint(0, jitter), self.rng.randint(3, 7)
+                run -= 1
+            self.stamp(x, y, brush(w + extra_w + self.extra))
             self.width_tiles[w] = self.width_tiles.get(w, 0) + 1
         self.courses.append(course)
         return course
+
+    def wiggle(self, course, mean):
+        """Kit cave.meander {"amp": tiles, "scale": tiles, "width_jitter": n}: the course swings sideways by up to `amp`
+        tiles on a wave of about `scale` tiles (two harmonics, no swing at the ends so chambers still join), then every
+        tile between the moved points is filled. Breaks the long straight 45-degree runs of the cheapest path."""
+        n = len(course)
+        if n < 8:
+            return course
+        rng = self.rng
+        amp, scale = mean.get("amp", 2.5), mean.get("scale", 12.0)
+        f1, f2 = rng.uniform(0, 6.283), rng.uniform(0, 6.283)
+        moved = []
+        for k, (x, y) in enumerate(course):
+            (x0, y0), (x1, y1) = course[max(0, k - 3)], course[min(n - 1, k + 3)]
+            length = math.hypot(x1 - x0, y1 - y0) or 1.0
+            nx, ny = -(y1 - y0) / length, (x1 - x0) / length
+            env = min(1.0, k / 6.0, (n - 1 - k) / 6.0)
+            off = amp * env * (0.7 * math.sin(6.283 * k / scale + f1) + 0.3 * math.sin(6.283 * k / (scale * 0.43) + f2))
+            moved.append((x + nx * off, y + ny * off))
+        out = []
+        for (x1, y1), (x2, y2) in zip(moved, moved[1:]):
+            steps = max(1, int(max(abs(x2 - x1), abs(y2 - y1)) * 2))
+            for st in range(steps + 1):
+                t = st / steps
+                tile = (round(x1 + (x2 - x1) * t), round(y1 + (y2 - y1) * t))
+                if not out or out[-1] != tile:
+                    out.append(tile)
+        return out
 
     def spur(self):
         """A dead-end branch 4-12 tiles long, leaving a course sideways, kept clear of the rest of the floor."""

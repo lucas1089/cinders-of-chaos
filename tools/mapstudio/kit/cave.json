@@ -2,25 +2,10 @@
  "name": "cave: dirt-floor tunnels in solid earth, stone walls on the floor edge",
  "notes": "Learned 2026-10-26 from refs/cave-a (x 33050-33189 y 32650-32779, floors 9-11, tunnel maze), refs/cave-b (x 32420-32559 y 31860-31989, floors 9-11, winding tunnels, grey patches, rubble), refs/cave-c (x 33130-33269 y 31090-31219, floors 8-10, wide chambers). See docs/kits/cave.md. The solid area is the 'water' role (non-walkable earth fill) and the wall set is the shore drawn onto the floor edge tiles.",
  "water": {
-  "family": "G9026",
-  "lead": 9026,
+  "family": "G919",
+  "lead": 919,
   "members": [
-   9026,
-   9026,
-   9026,
-   9026,
-   9026,
-   9026,
-   9026,
-   9026,
-   9027,
-   9028,
-   9029,
-   9030,
-   9031,
-   9032,
-   9033,
-   9042
+   919
   ]
  },
  "base": {
@@ -228,8 +213,8 @@
    "3610": 16
   },
   "boost": {
-   "big": 1.0,
-   "small": 1.0
+   "big": 1.2,
+   "small": 1.55
   }
  },
  "mountain_cliff": {
@@ -380,7 +365,7 @@
      },
      {
       "kit": "water",
-      "border": "shore_on_base",
+      "border": "cliff_wall",
       "onto": [
        "base",
        "rock_soil",
@@ -419,10 +404,39 @@
      "grey_sand",
      "rock_soil",
      "gravel"
-    ]
+    ],
+    "water": {
+     "family": "G9026",
+     "lead": 9026,
+     "members": [
+      9026,
+      9026,
+      9026,
+      9026,
+      9026,
+      9026,
+      9026,
+      9026,
+      9027,
+      9028,
+      9029,
+      9030,
+      9031,
+      9032,
+      9033,
+      9042
+     ]
+    }
    }
   },
-  "_notes": "shape: mix (chambers joined by tunnels), tunnels (small junctions, narrow winding tunnels, more spurs) or chambers (halls joined by wide bands). wall_style: mixed = each cave picks on_floor (stone wall on the floor edge, blocks the edge tile) or on_rock (dirt wall on the rock tile beside the floor), seeded by the area seed. See docs/KIT_SCHEMA.md"
+  "_notes": "shape: mix (chambers joined by tunnels), tunnels (small junctions, narrow winding tunnels, more spurs) or chambers (halls joined by wide bands). wall_style: mixed = each cave picks on_floor (stone wall on the floor edge, blocks the edge tile) or on_rock (dirt wall on the rock tile beside the floor), seeded by the area seed. See docs/KIT_SCHEMA.md",
+  "void_beyond": 4,
+  "meander": {
+   "amp": 2.5,
+   "scale": 12.0,
+   "width_jitter": 1
+  },
+  "void_jitter": 1.6
  },
  "batch_variants": {
   "301": "--size 96 --cave-shape mix",
@@ -440,5 +454,19 @@
   390,
   391
  ],
- "repair_pocket": 1
+ "repair_pocket": 1,
+ "cliff_wall": {
+  "edge_n": 4471,
+  "edge_e": 4468,
+  "edge_s": 4469,
+  "edge_w": 4472,
+  "inner_nw": 4476,
+  "inner_ne": 4478,
+  "inner_sw": 4477,
+  "inner_se": 4479,
+  "outer_nw": 4475,
+  "outer_ne": 4474,
+  "outer_sw": 4473,
+  "outer_se": 4470
+ }
 }
