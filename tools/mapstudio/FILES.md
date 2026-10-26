@@ -108,7 +108,7 @@ Setup, study, check and review tools. Run each as `python -B run.py tools/<name>
 | `tools/test_clean.py` | Checks lib.clean on random and adversarial masks: it settles, leaves no pinched outside tile and no isolated region tile. python -B run.py tools/test_clean.py |
 | `tools/top_ground_study.py` | Which grounds make raised tops, by place on the top: rim tiles (a rim piece), cliff-foot tiles (a cliff piece of the level above), and inner tiles. |
 | `tools/top_items.py` | What the reference map stacks on tiles of a given ground, over refs/. |
-| `tools/unreached.py` | Walkable tiles a player cannot reach, grouped into pockets, with what blocks each pocket's rim. |
+| `tools/unreached.py` | Walkable tiles a player cannot reach, grouped into pockets, with what blocks each pocket's rim; also the landmasses of 30+ tiles (4-connected) with no reached tile, and the unreached share per floor. |
 
 ## Folders the tools create
 
