@@ -36,7 +36,7 @@ requests (--scenarios tester_scenarios.json: tester_scenarios.py, also places an
 retried with a growing pause, so the bots come back after a restart.
 --keystones (needs --scenarios): each bot first runs the keystone and mastery scenario of its class once (tester_keystones.py,
 O249): allocates every node of its class the points allow, as the tree window does, checks that the effect shows (the
-totals of the tree window, the Keystones row of the combat log) or says it cannot be seen, and resets the tree.
+totals of the tree window, the keystone's own row of the combat log) or says it cannot be seen, and resets the tree.
 """
 import asyncio
 import base64

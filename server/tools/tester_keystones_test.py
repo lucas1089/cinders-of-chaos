@@ -49,6 +49,7 @@ class FakeServer:
         self.node_stats = node_stats or {}
         self.clock = 0.0
         self.proc_hits = 0
+        self.row_key, self.row_tab = 'p:Keystone: Shadow Twin', 0   # the combat log row the mocked server grows, and its tab
         self.requests = []          # (opname, action, data) in order
         self.alive = True
         self.reset_cost = 5000
@@ -116,8 +117,10 @@ class FakeServer:
                 return {'action': 'sendNodes', 'data': {'preset': 1, 'nodes': [], 'cls': self.cls}}
         if opname == 'combatLog':
             if action in ('open', 'seg'):
-                rows = [['p:Keystones', 'p', 'Keystones', 'keystone', self.proc_hits * 40, self.proc_hits, 0, 40, 0]] if self.proc_hits else []
-                return {'action': 'state', 'data': {'sel': 's', 'v': {'t': [{'tot': 0, 'r': rows}, {}, {}, {}]}}}
+                rows = [[self.row_key, 'p', 'x', 'keystone', self.proc_hits * 40, self.proc_hits, 0, 40, 0]] if self.proc_hits else []
+                tabs = [{'tot': 0, 'r': []} for _ in range(4)]
+                tabs[self.row_tab]['r'] = rows
+                return {'action': 'state', 'data': {'sel': 's', 'v': {'t': tabs}}}
         return None
 
 
@@ -243,7 +246,7 @@ eq(s.requests[-1][1], 'resetPreset', 'reset sent after a missing answer')
 
 # ---------------------------------------------------------------- keystones
 def key_row(nid, flag, mode='combatlog', path=(5, 6)):
-    probe = ({'mode': 'combatlog', 'row': 'p:Keystones', 'tab': 'dealt', 'needs': 'a second enemy'} if mode == 'combatlog'
+    probe = ({'mode': 'combatlog', 'row': 'p:Keystone: Shadow Twin', 'tab': 'dealt', 'needs': 'a second enemy'} if mode == 'combatlog'
              else {'mode': 'none', 'why': 'a damage factor'})
     return {'id': nid, 'kind': 'keystone', 'flag': flag, 'path': list(path), 'probe': probe}
 
@@ -253,16 +256,34 @@ KTABLE = {'classes': {'thief': [key_row(631, 'ksShadowTwin'), key_row(383, 'ksBl
 
 s = FakeServer(points=30)
 t = run(KTABLE, s, io=FakeIO(s, proc_after=40), window=100, poll=10)
-eq(by(t, 'keystone 631 ksShadowTwin')['status'], TK.PASS, 'keystone: the Keystones row grows -> pass')
+eq(by(t, 'keystone 631 ksShadowTwin')['status'], TK.PASS, 'keystone: its own row grows -> pass')
 ok('grew' in by(t, 'keystone 631 ksShadowTwin')['detail'], 'pass says what was seen')
 eq(by(t, 'keystone 383 ksBlackbloodCreed')['status'], TK.NOT_OBSERVABLE, 'keystone: no probe -> not observable')
 ok('a damage factor' in by(t, 'keystone 383 ksBlackbloodCreed')['detail'], 'with the reason')
 ok('allocated' in by(t, 'keystone 383 ksBlackbloodCreed')['detail'], 'and the node was saved')
 eq(by(t, 'keystone 900 ksCleavingArc')['status'], TK.NOT_TESTED, 'keystone: more points than the character has -> not tested')
 eq(s.nodes, [], 'tree clean after the keystones')
+
 resets = [x for x in s.requests if x[1] == 'resetPreset']
 eq(len(resets), 2, 'a reset after each node that was planned')
 eq(len(t.resets), 2, 'the resets are recorded')
+
+# the old shared row is not the keystone's: a labelled flag needs its own row, in its own tab
+s2 = FakeServer(points=30)
+s2.row_key = 'p:Keystones'
+t2 = run(KTABLE, s2, io=FakeIO(s2, proc_after=40), window=100, poll=10)
+eq(by(t2, 'keystone 631 ksShadowTwin')['status'], TK.FAIL, 'keystone: only the shared "Keystones" row grew -> fail')
+ok('p:Keystone: Shadow Twin' in by(t2, 'keystone 631 ksShadowTwin')['detail'], 'the failure names the row it looked for')
+s2 = FakeServer(points=30)
+s2.row_tab = 1
+t2 = run(KTABLE, s2, io=FakeIO(s2, proc_after=40), window=100, poll=10)
+eq(by(t2, 'keystone 631 ksShadowTwin')['status'], TK.FAIL, 'keystone: the row grew in another tab -> fail')
+HEAL_TABLE = {'classes': {'thief': [dict(key_row(631, 'ksUndyingRage'), probe={'mode': 'combatlog', 'row': 'p:Keystone: Undying Rage',
+                                                                                   'tab': 'healing', 'needs': 'melee hits'})]}, 'elements': []}
+s2 = FakeServer(points=30)
+s2.row_key, s2.row_tab = 'p:Keystone: Undying Rage', 1
+t2 = run(HEAL_TABLE, s2, io=FakeIO(s2, proc_after=40), window=100, poll=10)
+eq(by(t2, 'keystone 631 ksUndyingRage')['status'], TK.PASS, 'keystone: a row of the healing tab is read from that tab')
 
 # nothing shows in the combat log
 s = FakeServer(points=30, procs=False)
@@ -375,19 +396,32 @@ tot_lua = open(os.path.join(CHAOS, 'passivetree_totals.lua')).read()
 for stat in KT.DAMAGE:
     ok('"%s"' % stat in tot_lua, 'the totals window lists ' + stat)
 ok('criticalHitChance' in totals_src and 'criticalHitAmount' in totals_src, 'the totals carry the tree crit')
-# a "combatlog" keystone flag is dealt by passivetree_keystones.lua (the file the combat log labels "Keystones")
-ks_src = open(os.path.join(CHAOS, 'passivetree_keystones.lua')).read()
-for flag in KT.PROC:
-    ok(flag in ks_src, flag + ' is implemented in passivetree_keystones.lua')
+# every flag with a combat log row of its own is wired in the server: its name is passed to the labels in one of the files
+labels = KT.load_labels(os.path.join(CHAOS, 'keystone_labels_config.lua'))
+wired = ''.join(open(os.path.join(CHAOS, f)).read() for f in ('passivetree_keystones.lua', 'archetypes.lua', 'templar_combat.lua',
+                                                              'monk_combat.lua'))
+for flag, label in sorted(labels.items()):
+    ok('"%s"' % flag in wired, flag + ' is passed to ChaosKeystoneLabels in the keystone scripts')
+    ok(label['tab'] in KT.TABS, flag + ' has a known tab')
+eq(sorted(KT.NEEDS), sorted(f for f, d in labels.items() if d['observe']), 'NEEDS = the observable labels')
+eq(labels['ksCleavingArc']['row'], 'p:Keystone: Cleaving Arc', 'a proc row key: kind, prefix, name')
+eq(labels['ksDeadeye']['row'], 'k:Keystone: Deadeye', 'a note row key')
+eq(labels['ksUndyingRage']['tab'], 'healing', 'a heal is in the healing tab')
+ok(labels['ksOvergrowth']['observe'] is False and labels['ksOvergrowth']['why'], 'a flag a bot cannot make fire says why')
+# the observable count the report names (O255): flags with a row of their own, over the nodes of the table
+shown = sum(1 for v in sc['classes'].values() for r in v if r['kind'] == 'keystone' and r['probe']['mode'] == 'combatlog')
+allks = sum(1 for v in sc['classes'].values() for r in v if r['kind'] == 'keystone')
+ok(shown >= 190 and allks == 242, 'observable keystone nodes: %d of %d' % (shown, allks))
+print('observable keystone nodes: %d of %d' % (shown, allks))
 log_cfg = open(os.path.join(CHAOS, 'combatlog_config.lua')).read()
-ok('["passivetree_keystones.lua"] = {name = "Keystones", kind = "p"' in log_cfg, 'the combat log labels that file "Keystones" (a proc row)')
+ok('["passivetree_keystones.lua"] = {name = "Keystones", kind = "p"' in log_cfg, 'the combat log keeps the "Keystones" fallback label')
 # a flag that is neither probed nor explained stops the generator
 bad_dir = None
 try:
     import tempfile
     import shutil
     bad_dir = tempfile.mkdtemp()
-    for f in ('passivetree_data.lua', 'chaos_constants.lua'):
+    for f in ('passivetree_data.lua', 'chaos_constants.lua', 'keystone_labels_config.lua'):
         shutil.copy(os.path.join(CHAOS, f), bad_dir)
     p = os.path.join(bad_dir, 'passivetree_data.lua')
     text = open(p).read().replace('{ksGraveCovenant=1}', '{ksBrandNewOne=1}', 1)

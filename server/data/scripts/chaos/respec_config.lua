@@ -24,7 +24,13 @@ ChaosRespecConfig = {
 	paragonFactor = 1.0,
 	-- one free full reset after the vocation changed (ascension, class migration); the vocation id the last free
 	-- reset was granted for is kept in this storage (respec.lua)
-	freeVocationStorage = 7100550
+	freeVocationStorage = 7100550,
+	-- Tester bots (testers_core.lua, server/README.md "Tester bots"): their resets, node refunds and mastery changes cost
+	-- no gold, so a bot can verify keystones at any level. Nothing is credited: no gold is created, so none can leave
+	-- the character. Only a character that passes ChaosTestersCore.safetyProblem and isTesterName AND carries the
+	-- tester storage; at most perDay waived payments per day (UTC day number and count in the two storages, inside the
+	-- tester block 7102900-7102909 of chaos_constants.lua). Every waiver is logged.
+	testerWaiver = {perDay = 400, storageDay = 7102905, storageUsed = 7102906}
 }
 
 return ChaosRespecConfig

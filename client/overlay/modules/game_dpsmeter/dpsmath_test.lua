@@ -94,6 +94,9 @@ eq(DpsMath.iconSpec('o', 'zzz').path, '/images/game/dpsmeter/other', 'unknown ic
 eq(DpsMath.iconSpec('s', '').path, '/images/game/dpsmeter/other', 'spell without words')
 eq(DpsMath.barColor('s', 2), DpsMath.HEAL_COLOR, 'healing bars are green')
 eq(DpsMath.barColor('zz', 1), DpsMath.KIND_COLORS.o, 'unknown kind')
+eq(DpsMath.barColor('k', 1), DpsMath.KIND_COLORS.k, 'a keystone note has its own colour')
+eq(DpsMath.isNote('k'), true, 'k is a note')
+eq(DpsMath.isNote('p'), false, 'p is a real source')
 eq(#DpsMath.ICONS, 18, 'own icons')
 for _, n in ipairs(DpsMath.ICONS) do
   local f = io.open(dir .. '../../data/images/game/dpsmeter/' .. n .. '.png', 'rb')

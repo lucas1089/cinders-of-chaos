@@ -917,6 +917,7 @@ ChaosLocaleStrings['pt-BR'] = {
   ["No party numbers yet."] = "Nenhum número do grupo ainda.",
   ["%s\n%s in all, %s per second, %s%%\n%d hits, %d%% critical, average %s, max %s"] = "%s\n%s no total, %s por segundo, %s%%\n%d acertos, %d%% críticos, média %s, máx. %s",
   ["\noverhealing %s"] = "\ncura em excesso %s",
+  ["\nA keystone note: how much it changed. Already counted in the other rows."] = "\nNota do keystone: quanto ele mudou. Já contado nas outras linhas.",
   ["Nothing in this tab yet."] = "Nada nesta aba ainda.",
   ["Waiting for the server..."] = "Esperando o servidor...",
   ["Boss fight"] = "Luta contra chefe",

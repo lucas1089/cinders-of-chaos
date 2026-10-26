@@ -154,6 +154,66 @@ CL.tick(env, 5100)
 eq(env.fight.tabs[TAKEN].total, 20, "but counts in the running fight")
 eq(env.session.tabs[TAKEN].total, 40, "and in the session")
 
+-- keystone notes (source kind k): counted as a hit, never added to the tab, the elements or the targets, never start a fight
+local kn = CL.newActor(0)
+local deadeye = CL.source("k", "Keystone: Deadeye", "keystone")
+CL.add(kn, 100, DMG, deadeye, 30, true, 5, "fire", "Rat", "Boss")
+CL.tick(kn, 200)
+eq(kn.fight, nil, "a note starts no fight")
+eq(kn.session.tabs[DMG].total, 0, "a note is not added to the tab's total")
+eq(kn.session.tabs[DMG].over, 0, "nor its overhealing")
+eq(kn.session.tabs[DMG].rows["k:Keystone: Deadeye"].total, 30, "the row keeps how much it changed")
+eq(kn.session.tabs[DMG].rows["k:Keystone: Deadeye"].hits, 1, "and how often")
+eq(kn.session.tabs[DMG].rows["k:Keystone: Deadeye"].crits, 0, "a note is never a critical hit")
+eq(next(kn.session.tabs[DMG].el), nil, "no element")
+eq(kn.bufBoss, nil, "no boss")
+CL.add(kn, 300, DMG, deadeye, 0, false, 0)
+CL.tick(kn, 400)
+eq(kn.session.tabs[DMG].rows["k:Keystone: Deadeye"].hits, 2, "a note of 0 still counts as a hit")
+CL.add(kn, 500, DMG, sword, 40, false, 0, "physical", "Rat")
+CL.add(kn, 600, DMG, deadeye, 10, false, 0)
+CL.tick(kn, 700)
+eq(kn.fight.tabs[DMG].total, 40, "a fight of real hits: the note is beside them")
+eq(kn.fight.tabs[DMG].rows["k:Keystone: Deadeye"].total, 10, "and in the fight's rows")
+eq(CL.view(kn, kn.fight).t[DMG].tot, 40, "the view's total leaves the note out")
+local sawNote
+for _, row in ipairs(CL.view(kn, kn.fight).t[DMG].r) do
+	if row[1] == "k:Keystone: Deadeye" then
+		sawNote = row
+	end
+end
+ok(sawNote and sawNote[2] == "k" and sawNote[3] == "Keystone: Deadeye" and sawNote[4] == "keystone", "the client gets kind k, the name and the icon")
+-- a full table drops a note (no "Other" row for it)
+local kf = CL.newActor(0)
+for i = 1, cfg.maxRows do
+	CL.add(kf, 100, DMG, CL.source("s", "Spell" .. i, ""), 1, false, 0)
+end
+CL.add(kf, 100, DMG, deadeye, 50, false, 0)
+CL.tick(kf, 200)
+eq(kf.fight.tabs[DMG].n, cfg.maxRows, "a note does not take the Other row of a full table")
+eq(kf.fight.tabs[DMG].total, cfg.maxRows, "and adds nothing")
+-- notes are sent after the real sources, a limited number of them, and never push a source out of the rows sent
+local ks = CL.newActor(0)
+for i = 1, cfg.maxRowsSent + 3 do
+	CL.add(ks, 100, DMG, CL.source("s", "Src" .. i, ""), i, false, 0)
+end
+for i = 1, cfg.maxRows - (cfg.maxRowsSent + 3) do -- the table has room for them
+	CL.add(ks, 100, DMG, CL.source("k", "Keystone: N" .. i, "keystone"), 1000 + i, false, 0)
+end
+CL.tick(ks, 200)
+local sentRows = CL.view(ks, ks.fight).t[DMG].r
+eq(#sentRows, cfg.maxRowsSent + (cfg.maxNotesSent or 10), "rows sent: the limit of sources plus the limit of notes")
+eq(sentRows[1][2], "s", "a source first, though the notes are larger")
+eq(sentRows[cfg.maxRowsSent][2], "s", "the last source row")
+eq(sentRows[cfg.maxRowsSent + 1][3], "Keystone: N" .. (cfg.maxRows - cfg.maxRowsSent - 3), "then the largest note")
+eq(sentRows[#sentRows][2], "k", "and a note last")
+-- a keystone's own heal (kind p) in the healing tab counts like any other source
+local kh = CL.newActor(0)
+CL.add(kh, 100, HEAL, CL.source("p", "Keystone: Undying Rage", "keystone"), 40, false, 0)
+CL.tick(kh, 200)
+eq(kh.session.tabs[HEAL].total, 40, "a keystone's own heal is counted")
+eq(kh.fight, nil, "healing alone starts no fight")
+
 -- boss label, taken-only label
 local b = CL.newActor(0)
 CL.add(b, 100, DMG, sword, 10, false, 0, "physical", "Rat")
@@ -561,6 +621,66 @@ eq(r["Minions"].total, 15, "the helper library outside a cast")
 eq(r["Witchfire Bolt"].total, 411 + 15 + 20, "the helper library and the spell file inside the cast")
 eq(r["Other"].total, 13, "an unlisted file: other")
 eq(r["Arrow splash"].total, 12, "doAreaCombat labelled")
+
+-- keystone labels (keystone_labels.lua): procs named after the keystone, notes, restore after errors
+local KL = ChaosKeystoneLabels
+ok(KL.sink and KL.sink.run and KL.sink.note, "the combat log registered with the keystone labels")
+local ksFile = chunk("data/scripts/chaos/passivetree_keystones.lua",
+	"local a, t, flag, v = ... local r = ChaosKeystoneLabels.run(flag, pcall, doTargetCombat, a, t, COMBAT_PHYSICALDAMAGE, -v, -v, 0, ORIGIN_SPELL) return r")
+local ksPlain = chunk("data/scripts/chaos/passivetree_keystones.lua",
+	"local a, t, v = ... local r = pcall(doTargetCombat, a, t, COMBAT_PHYSICALDAMAGE, -v, -v, 0, ORIGIN_SPELL) return r")
+ksFile(hero, dragon, "ksCleavingArc", 44)
+ksFile(hero, dragon, "ksCleavingArc", 6)
+ksFile(hero, dragon, "ksArcaneEcho", 9)
+ksPlain(hero, dragon, 3) -- a keystone hit without a label keeps the file's "Keystones" row
+ksFile(hero, dragon, "ksNoSuchKeystone", 2) -- a flag without a label: the file's row
+supportsFile(hero, dragon)
+r = heroRows(DMG)
+eq(r["Keystone: Cleaving Arc"].total, 50, "a keystone proc is named after the keystone")
+eq(r["Keystone: Cleaving Arc"].hits, 2, "with its hits")
+eq(r["Keystone: Cleaving Arc"].src.t, "p", "kind p")
+eq(r["Keystone: Cleaving Arc"].src.i, "keystone", "the keystone icon")
+eq(r["Keystone: Arcane Echo"].total, 9, "another keystone, another row")
+eq(r["Keystones"].total, 3 + 2, "unlabelled keystone hits keep the shared row")
+eq(r["Spell supports"].total, 120 + 60, "a later proc is labelled by its file again")
+-- inside a cast the keystone still wins (a proc is never the spell)
+supportsCtx = {hero.id, 201}
+ksFile(hero, dragon, "ksCleavingArc", 5)
+supportsCtx = nil
+eq(heroRows(DMG)["Keystone: Cleaving Arc"].total, 55, "a keystone proc inside a cast is the keystone")
+-- an error inside run restores the outer label
+local boom = chunk("data/scripts/chaos/passivetree_keystones.lua", "local KL = ChaosKeystoneLabels local r = KL.run('ksCleavingArc', function() error('boom') end) return r")
+local okb, errb = pcall(boom)
+ok(not okb and tostring(errb):find("boom"), "an error inside run goes on")
+ksPlain(hero, dragon, 1)
+eq(heroRows(DMG)["Keystones"].total, 3 + 2 + 1, "after an error the label is back to the file's")
+-- notes
+local dmgTotal = select(2, heroRows(DMG)).tabs[DMG].total
+ok(KL.note(hero, "ksDeadeye", 31), "a note is recorded")
+KL.note(hero, "ksDeadeye", 9)
+KL.note(hero, "ksDivineVerdict", 0)
+r = heroRows(DMG)
+eq(r["Keystone: Deadeye"].total, 40, "a note row: how much it changed")
+eq(r["Keystone: Deadeye"].hits, 2, "and how often")
+eq(r["Keystone: Deadeye"].src.t, "k", "kind k")
+eq(r["Keystone: Divine Verdict"].hits, 1, "a note without an amount counts")
+eq(select(2, heroRows(DMG)).tabs[DMG].total, dmgTotal, "notes add nothing to the damage total")
+-- the tab follows the label file
+KL.note(hero, "ksImmovable", 70)
+eq(heroRows(TAKEN)["Keystone: Immovable"].total, 70, "Immovable is in the damage taken tab")
+local healTotal = select(2, heroRows(HEAL)).tabs[HEAL].total
+KL.note(hero, "ksUndyingRage", 25)
+eq(heroRows(HEAL)["Keystone: Undying Rage"].total, 25, "a keystone's own heal is in the healing tab")
+eq(select(2, heroRows(HEAL)).tabs[HEAL].total, healTotal + 25, "and counts, Chaos.heal runs no health event")
+-- safe calls
+eq(KL.note(hero, "ksNoSuchKeystone", 5), false, "an unknown flag is ignored")
+eq(KL.note(nil, "ksDeadeye", 5), false, "no character is ignored")
+eq(KL.note(dragon, "ksDeadeye", 5), false, "a monster is ignored")
+eq(select(2, heroRows(DMG)).tabs[DMG].total, dmgTotal, "still nothing added")
+-- the meter's own switch
+Chaos.combatLogConfig.enabled = false
+eq(KL.note(hero, "ksDeadeye", 5), false, "the meter is off: no note")
+Chaos.combatLogConfig.enabled = true
 -- a spell's own delayed hits outside every cast context (the snares' scheduler, data/spells/chaos/_snares.lua): named
 -- by CL.asSpell; another character's name is not ours; nothing is left behind, also after an error
 local snareFile = chunk("data/spells/chaos/_snares.lua",
@@ -722,7 +842,7 @@ eq(st.r[1][6], pt.r[1][6], "hits stay")
 eq(st.r[1][7], pt.r[1][7], "crits stay")
 local elSum, rowSum = 0, 0
 for _, a in pairs(st.el) do elSum = elSum + a end
-for _, r in ipairs(st.r) do rowSum = rowSum + r[5] end
+for _, r in ipairs(st.r) do if r[2] ~= "k" then rowSum = rowSum + r[5] end end
 local plainElSum = 0
 for _, a in pairs(pt.el) do plainElSum = plainElSum + a end
 eq(elSum, plainElSum * 1000, "elements x1000")

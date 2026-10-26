@@ -419,6 +419,73 @@ if f then
     end
   end
 end
+-- ---------------------------------------------------------------- the combat log's keystone rows (keystone_labels.lua)
+-- a recording sink: which keystone each proc ran under, which notes were made
+do
+  local KL = ChaosKeystoneLabels
+  local ran, noted = {}, {}
+  KL.sink = {
+    run = function(def, fn, ...) ran[#ran + 1] = def.flag; return fn(...) end,
+    note = function(player, def, amount) noted[#noted + 1] = {id = player.id, flag = def.flag, amount = amount}; return true end,
+  }
+  local function reset() ran, noted, dealt = {}, {}, {} end
+  local function noteOf(flag) for _, n in ipairs(noted) do if n.flag == flag then return n end end end
+  for id in pairs(creatures) do creatures[id] = nil end
+  math.random = function() return 1 end
+  -- cleave: both extra hits run under the keystone
+  local k1 = mkCreature(1, pos(100, 100), "player")
+  k1.slots[CONST_SLOT_LEFT] = item(500, WEAPON_SWORD, SLOTP_TWO_HAND)
+  ChaosPassiveCache[1] = {ksCleavingArc = 1}
+  local m0 = mkCreature(10, pos(101, 100), "monster"); mkCreature(11, pos(101, 101), "monster"); mkCreature(12, pos(99, 99), "monster")
+  reset(); ev.onHealthChange(m0, k1, 1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE); runEvents()
+  eq(#dealt, 2, "cleave dealt"); eq(#ran, 2, "both extra hits ran under a keystone"); eq(ran[1], "ksCleavingArc", "the keystone's name")
+  -- deadeye: a note of what the double damage added
+  for id in pairs(creatures) do creatures[id] = nil end
+  local pal = mkCreature(2, pos(200, 200), "player")
+  pal.slots[CONST_SLOT_LEFT] = item(2455, WEAPON_DISTANCE, SLOTP_TWO_HAND)
+  ChaosPassiveCache[2] = {ksDeadeye = 1}
+  local t1 = mkCreature(20, pos(204, 200), "monster")
+  reset(); ev.onHealthChange(t1, pal, 500, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_RANGED); runEvents()
+  eq(noteOf("ksDeadeye").amount, 500, "deadeye: the note is what it added"); eq(noteOf("ksDeadeye").id, 2, "for the shooter")
+  -- hunter's focus: the first hit is no change, the second is
+  ChaosPassiveCache[2] = {ksHuntersFocus = 1}
+  pal.slots[CONST_SLOT_LEFT] = item(2456, WEAPON_DISTANCE, SLOTP_TWO_HAND)
+  reset(); ev.onHealthChange(t1, pal, 1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_RANGED)
+  eq(noteOf("ksHuntersFocus"), nil, "hunter's focus: the first hit changes nothing, no note")
+  ev.onHealthChange(t1, pal, 1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_RANGED)
+  eq(noteOf("ksHuntersFocus").amount, 40, "the second is +4%")
+  -- bulwark and thorns: the reflect runs under the keystone
+  for id in pairs(creatures) do creatures[id] = nil end
+  local tank = mkCreature(3, pos(300, 300), "player"); tank.slots[CONST_SLOT_RIGHT] = item(700, WEAPON_SHIELD)
+  ChaosPassiveCache[3] = {ksBulwark = 1}
+  local mob = mkCreature(30, pos(301, 300), "monster")
+  math.random = function(a, b) return 50 end
+  reset(); ev.onHealthChange(tank, mob, 800, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE); runEvents()
+  eq(ran[1], "ksBulwark", "bulwark's reflect")
+  ChaosPassiveCache[3] = {ksThorns = 1}
+  reset(); ev.onHealthChange(tank, mob, 800, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE); runEvents()
+  eq(ran[1], "ksThorns", "thorns")
+  -- immovable: the note is what the player did not take
+  ChaosPassiveCache[3] = {ksImmovable = 1}
+  tank.GetHealthMock = nil
+  function tank:getHealth() return 900 end
+  function tank:getMaxHealth() return 1000 end
+  reset(); local pd2 = ev.onHealthChange(tank, mob, 1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE)
+  eq(pd2, 920, "immovable: the hit is smaller"); eq(noteOf("ksImmovable").amount, 80, "the note is what it saved"); eq(noteOf("ksImmovable").id, 3, "for the player hit")
+  -- regrowth: each pulse is a note for the healer
+  local healed = {}
+  Chaos = {heal = function(c, amount) healed[#healed + 1] = amount; return amount end}
+  local sage = mkCreature(9, pos(403, 400), "player"); ChaosPassiveCache[9] = {ksOvergrowth = 1}
+  local ally = mkCreature(5, pos(402, 400), "player")
+  reset(); ev.onHealthChange(ally, sage, 900, COMBAT_HEALING, 0, COMBAT_NONE, ORIGIN_SPELL); runEvents()
+  local n = 0; for _, x in ipairs(noted) do if x.flag == "ksOvergrowth" and x.id == 9 and x.amount == 30 then n = n + 1 end end
+  eq(n, 3, "three pulses, three notes for the healer")
+  -- no sink: the same hit works
+  KL.sink = nil
+  reset(); ev.onHealthChange(t1, pal, 1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_RANGED)
+  eq(#noted, 0, "without a combat log nothing is noted")
+end
+
 -- ---------------------------------------------------------------- the per-ascended keystones (numbers: class_tree.lua)
 local near = function(a, b, m) assert(math.abs(a - b) < 1e-9, (m or "") .. ": " .. tostring(a) .. " ~= " .. tostring(b)) end
 near(K.immovableFactor(900, 1000), 0.92, "Immovable"); near(K.immovableFactor(400, 1000), 0.84, "Immovable below half")

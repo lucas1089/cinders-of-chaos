@@ -27,8 +27,10 @@
       103
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "any hit that is not a snare",
+      "row": "k:Keystone: Snarewright's Creed",
+      "tab": "dealt"
      }
     },
     {
@@ -44,8 +46,10 @@
       76
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "damage dealt (a weapon or a spell hit)",
+      "row": "p:Keystone: Sanguine Covenant",
+      "tab": "healing"
      }
     },
     {
@@ -61,8 +65,10 @@
       74
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "bow or crossbow hits and a second enemy within the arc radius",
+      "row": "p:Keystone: Stormstring",
+      "tab": "dealt"
      }
     },
     {
@@ -79,8 +85,10 @@
       75
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "an enemy that hits the character",
+      "row": "p:Keystone: Thornbound Oath",
+      "tab": "dealt"
      }
     },
     {
@@ -97,8 +105,10 @@
       71
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "a critical hit and a second enemy next to the target",
+      "row": "p:Keystone: Cascade Edge",
+      "tab": "dealt"
      }
     },
     {
@@ -116,8 +126,10 @@
       79
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "fist hits (no weapon in the hands)",
+      "row": "k:Keystone: Open Hand Creed",
+      "tab": "dealt"
      }
     },
     {
@@ -146,7 +158,7 @@
      ],
      "probe": {
       "mode": "none",
-      "why": "companion damage and damage taken: factors, no row of their own"
+      "why": "companion damage and damage taken: factors on the companion, no row of its own"
      }
     },
     {
@@ -182,7 +194,7 @@
      "probe": {
       "mode": "combatlog",
       "needs": "a bow or crossbow and a second enemy within 4 sqm of the target",
-      "row": "p:Keystones",
+      "row": "p:Keystone: Ricochet",
       "tab": "dealt"
      }
     },
@@ -220,8 +232,10 @@
       598
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "distance weapon hits on a monster at full health",
+      "row": "k:Keystone: Opening Shot",
+      "tab": "dealt"
      }
     },
     {
@@ -259,8 +273,10 @@
       536
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "distance weapon hits",
+      "row": "k:Keystone: Barbed Quiver",
+      "tab": "dealt"
      }
     },
     {
@@ -301,8 +317,10 @@
       560
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "distance weapon hits",
+      "row": "k:Keystone: Longshot",
+      "tab": "dealt"
      }
     },
     {
@@ -344,8 +362,10 @@
       443
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "distance weapon hits (25% chance)",
+      "row": "k:Keystone: Hobbling Shot",
+      "tab": "dealt"
      }
     }
    ],
@@ -363,7 +383,7 @@
      ],
      "probe": {
       "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "why": "the vigils reserve health instead of mana: a reservation, no row or total a client can read"
      }
     },
     {
@@ -379,8 +399,10 @@
       76
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "damage dealt (a weapon or a spell hit)",
+      "row": "p:Keystone: Sanguine Covenant",
+      "tab": "healing"
      }
     },
     {
@@ -397,8 +419,10 @@
       75
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "an enemy that hits the character",
+      "row": "p:Keystone: Thornbound Oath",
+      "tab": "dealt"
      }
     },
     {
@@ -415,8 +439,10 @@
       71
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "a critical hit and a second enemy next to the target",
+      "row": "p:Keystone: Cascade Edge",
+      "tab": "dealt"
      }
     },
     {
@@ -434,8 +460,10 @@
       79
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "an enemy near the character, out of a protection zone",
+      "row": "p:Keystone: Pyre Oath",
+      "tab": "dealt"
      }
     },
     {
@@ -453,8 +481,10 @@
       79
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "fist hits (no weapon in the hands)",
+      "row": "k:Keystone: Open Hand Creed",
+      "tab": "dealt"
      }
     },
     {
@@ -482,8 +512,10 @@
       623
      ],
      "probe": {
-      "mode": "none",
-      "why": "a heal of 4% of the damage dealt (plain health, no combat log row)"
+      "mode": "combatlog",
+      "needs": "melee weapon hits",
+      "row": "p:Keystone: Undying Rage",
+      "tab": "healing"
      }
     },
     {
@@ -519,7 +551,7 @@
      "probe": {
       "mode": "combatlog",
       "needs": "a two-handed melee weapon and a second enemy next to the target",
-      "row": "p:Keystones",
+      "row": "p:Keystone: Cleaving Arc",
       "tab": "dealt"
      }
     },
@@ -557,7 +589,7 @@
      ],
      "probe": {
       "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "why": "fires once in 90 seconds, on a hit that would take the character below 20% health"
      }
     },
     {
@@ -594,8 +626,10 @@
       406
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "melee weapon hits (every 4th one) and a second enemy within 2 sqm",
+      "row": "p:Keystone: Earthbreaker",
+      "tab": "dealt"
      }
     },
     {
@@ -632,8 +666,10 @@
       425
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "melee or spell hits on a monster",
+      "row": "k:Keystone: Executioner's Verdict",
+      "tab": "dealt"
      }
     },
     {
@@ -670,8 +706,10 @@
       462
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "a kill and the hits after it",
+      "row": "k:Keystone: Rampage",
+      "tab": "dealt"
      }
     }
    ],
@@ -727,7 +765,7 @@
      ],
      "probe": {
       "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "why": "only life drain and poison ticks are absorbed: a hunt does not meet them on demand"
      }
     },
     {
@@ -742,8 +780,10 @@
       97
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "any hit",
+      "row": "k:Keystone: Covenant of Vigils",
+      "tab": "dealt"
      }
     },
     {
@@ -775,8 +815,10 @@
       76
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "damage dealt (a weapon or a spell hit)",
+      "row": "p:Keystone: Sanguine Covenant",
+      "tab": "healing"
      }
     },
     {
@@ -793,8 +835,10 @@
       75
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "an enemy that hits the character",
+      "row": "p:Keystone: Thornbound Oath",
+      "tab": "dealt"
      }
     },
     {
@@ -811,8 +855,10 @@
       71
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "a critical hit and a second enemy next to the target",
+      "row": "p:Keystone: Cascade Edge",
+      "tab": "dealt"
      }
     },
     {
@@ -830,8 +876,10 @@
       79
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "fist hits (no weapon in the hands)",
+      "row": "k:Keystone: Open Hand Creed",
+      "tab": "dealt"
      }
     },
     {
@@ -857,8 +905,10 @@
       261
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "a spell cast with 2 or more enemies in reach",
+      "row": "p:Keystone: Effigy Covenant",
+      "tab": "dealt"
      }
     },
     {
@@ -885,8 +935,10 @@
       353
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "ice damage that kills a monster",
+      "row": "p:Keystone: Winter's Lattice",
+      "tab": "dealt"
      }
     },
     {
@@ -914,8 +966,10 @@
       623
      ],
      "probe": {
-      "mode": "none",
-      "why": "a damage factor on hits at 40% health or less (x2, otherwise x0.92)"
+      "mode": "combatlog",
+      "needs": "hits on a monster at 40% health or less",
+      "row": "k:Keystone: Reaper's Toll",
+      "tab": "dealt"
      }
     },
     {
@@ -982,7 +1036,7 @@
      "probe": {
       "mode": "combatlog",
       "needs": "a monster killed by the character or its minions",
-      "row": "p:Keystones",
+      "row": "p:Keystone: Corpse Detonation",
       "tab": "dealt"
      }
     }
@@ -998,8 +1052,10 @@
       103
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "any hit that is not a snare",
+      "row": "k:Keystone: Snarewright's Creed",
+      "tab": "dealt"
      }
     },
     {
@@ -1015,8 +1071,10 @@
       76
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "damage dealt (a weapon or a spell hit)",
+      "row": "p:Keystone: Sanguine Covenant",
+      "tab": "healing"
      }
     },
     {
@@ -1032,8 +1090,10 @@
       74
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "bow or crossbow hits and a second enemy within the arc radius",
+      "row": "p:Keystone: Stormstring",
+      "tab": "dealt"
      }
     },
     {
@@ -1050,8 +1110,10 @@
       75
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "an enemy that hits the character",
+      "row": "p:Keystone: Thornbound Oath",
+      "tab": "dealt"
      }
     },
     {
@@ -1068,8 +1130,10 @@
       71
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "a critical hit and a second enemy next to the target",
+      "row": "p:Keystone: Cascade Edge",
+      "tab": "dealt"
      }
     },
     {
@@ -1087,8 +1151,10 @@
       79
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "fist hits (no weapon in the hands)",
+      "row": "k:Keystone: Open Hand Creed",
+      "tab": "dealt"
      }
     },
     {
@@ -1116,8 +1182,10 @@
       623
      ],
      "probe": {
-      "mode": "none",
-      "why": "double damage on 15% of the crossbow shots: a factor on the hit itself"
+      "mode": "combatlog",
+      "needs": "crossbow shots (15% are Deadeye shots)",
+      "row": "k:Keystone: Deadeye",
+      "tab": "dealt"
      }
     },
     {
@@ -1151,8 +1219,10 @@
       620
      ],
      "probe": {
-      "mode": "none",
-      "why": "damage +4% per hit on the same target: a factor on the hit itself"
+      "mode": "combatlog",
+      "needs": "bow or crossbow hits on the same target",
+      "row": "k:Keystone: Hunter's Focus",
+      "tab": "dealt"
      }
     },
     {
@@ -1189,8 +1259,10 @@
       598
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "distance weapon hits on a monster at full health",
+      "row": "k:Keystone: Opening Shot",
+      "tab": "dealt"
      }
     },
     {
@@ -1228,8 +1300,10 @@
       536
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "distance weapon hits",
+      "row": "k:Keystone: Barbed Quiver",
+      "tab": "dealt"
      }
     },
     {
@@ -1270,8 +1344,10 @@
       560
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "distance weapon hits",
+      "row": "k:Keystone: Longshot",
+      "tab": "dealt"
      }
     },
     {
@@ -1313,8 +1389,10 @@
       443
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "distance weapon hits (25% chance)",
+      "row": "k:Keystone: Hobbling Shot",
+      "tab": "dealt"
      }
     }
    ],
@@ -1332,7 +1410,7 @@
      ],
      "probe": {
       "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "why": "only life drain and poison ticks are absorbed: a hunt does not meet them on demand"
      }
     },
     {
@@ -1347,8 +1425,10 @@
       97
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "any hit",
+      "row": "k:Keystone: Covenant of Vigils",
+      "tab": "dealt"
      }
     },
     {
@@ -1364,8 +1444,10 @@
       76
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "damage dealt (a weapon or a spell hit)",
+      "row": "p:Keystone: Sanguine Covenant",
+      "tab": "healing"
      }
     },
     {
@@ -1382,8 +1464,10 @@
       75
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "an enemy that hits the character",
+      "row": "p:Keystone: Thornbound Oath",
+      "tab": "dealt"
      }
     },
     {
@@ -1400,8 +1484,10 @@
       71
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "a critical hit and a second enemy next to the target",
+      "row": "p:Keystone: Cascade Edge",
+      "tab": "dealt"
      }
     },
     {
@@ -1419,8 +1505,10 @@
       80
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "a fire or holy spell hit (the sigil pulses afterwards)",
+      "row": "p:Keystone: Sigil of Cinders",
+      "tab": "dealt"
      }
     },
     {
@@ -1438,8 +1526,10 @@
       79
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "fist hits (no weapon in the hands)",
+      "row": "k:Keystone: Open Hand Creed",
+      "tab": "dealt"
      }
     },
     {
@@ -1465,8 +1555,10 @@
       261
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "a spell cast with 2 or more enemies in reach",
+      "row": "p:Keystone: Effigy Covenant",
+      "tab": "dealt"
      }
     },
     {
@@ -1493,8 +1585,10 @@
       353
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "ice damage that kills a monster",
+      "row": "p:Keystone: Winter's Lattice",
+      "tab": "dealt"
      }
     },
     {
@@ -1522,8 +1616,10 @@
       623
      ],
      "probe": {
-      "mode": "none",
-      "why": "a +20% on the next spell of another element: a damage factor, no row of its own in the combat log"
+      "mode": "combatlog",
+      "needs": "spells of two different elements in a row",
+      "row": "k:Keystone: Overload",
+      "tab": "dealt"
      }
     },
     {
@@ -1559,7 +1655,7 @@
      "probe": {
       "mode": "combatlog",
       "needs": "a spell that hits 2 or more enemies (35% chance, 3 s cooldown)",
-      "row": "p:Keystones",
+      "row": "p:Keystone: Arcane Echo",
       "tab": "dealt"
      }
     }
@@ -1578,7 +1674,7 @@
      ],
      "probe": {
       "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "why": "only life drain and poison ticks are absorbed: a hunt does not meet them on demand"
      }
     },
     {
@@ -1593,8 +1689,10 @@
       97
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "any hit",
+      "row": "k:Keystone: Covenant of Vigils",
+      "tab": "dealt"
      }
     },
     {
@@ -1610,8 +1708,10 @@
       76
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "damage dealt (a weapon or a spell hit)",
+      "row": "p:Keystone: Sanguine Covenant",
+      "tab": "healing"
      }
     },
     {
@@ -1628,8 +1728,10 @@
       75
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "an enemy that hits the character",
+      "row": "p:Keystone: Thornbound Oath",
+      "tab": "dealt"
      }
     },
     {
@@ -1646,8 +1748,10 @@
       71
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "a critical hit and a second enemy next to the target",
+      "row": "p:Keystone: Cascade Edge",
+      "tab": "dealt"
      }
     },
     {
@@ -1665,8 +1769,10 @@
       80
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "a fire or holy spell hit (the sigil pulses afterwards)",
+      "row": "p:Keystone: Sigil of Cinders",
+      "tab": "dealt"
      }
     },
     {
@@ -1684,8 +1790,10 @@
       79
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "fist hits (no weapon in the hands)",
+      "row": "k:Keystone: Open Hand Creed",
+      "tab": "dealt"
      }
     },
     {
@@ -1711,8 +1819,10 @@
       261
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "a spell cast with 2 or more enemies in reach",
+      "row": "p:Keystone: Effigy Covenant",
+      "tab": "dealt"
      }
     },
     {
@@ -1739,8 +1849,10 @@
       353
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "ice damage that kills a monster",
+      "row": "p:Keystone: Winter's Lattice",
+      "tab": "dealt"
      }
     },
     {
@@ -1859,7 +1971,7 @@
      ],
      "probe": {
       "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "why": "only life drain and poison ticks are absorbed: a hunt does not meet them on demand"
      }
     },
     {
@@ -1874,8 +1986,10 @@
       97
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "any hit",
+      "row": "k:Keystone: Covenant of Vigils",
+      "tab": "dealt"
      }
     },
     {
@@ -1891,7 +2005,7 @@
      ],
      "probe": {
       "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "why": "the vigils reserve health instead of mana: a reservation, no row or total a client can read"
      }
     },
     {
@@ -1906,8 +2020,10 @@
       660
      ],
      "probe": {
-      "mode": "none",
-      "why": "a change of the Templar combat rules, no row or total a client can read"
+      "mode": "combatlog",
+      "needs": "a radiant strike (the Templar line) and a 1 in n chance",
+      "row": "k:Keystone: Divine Verdict",
+      "tab": "dealt"
      }
     },
     {
@@ -1923,8 +2039,10 @@
       76
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "damage dealt (a weapon or a spell hit)",
+      "row": "p:Keystone: Sanguine Covenant",
+      "tab": "healing"
      }
     },
     {
@@ -1941,8 +2059,10 @@
       75
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "an enemy that hits the character",
+      "row": "p:Keystone: Thornbound Oath",
+      "tab": "dealt"
      }
     },
     {
@@ -1959,8 +2079,10 @@
       71
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "a critical hit and a second enemy next to the target",
+      "row": "p:Keystone: Cascade Edge",
+      "tab": "dealt"
      }
     },
     {
@@ -1978,8 +2100,10 @@
       80
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "a fire or holy spell hit (the sigil pulses afterwards)",
+      "row": "p:Keystone: Sigil of Cinders",
+      "tab": "dealt"
      }
     },
     {
@@ -1997,8 +2121,10 @@
       79
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "an enemy near the character, out of a protection zone",
+      "row": "p:Keystone: Pyre Oath",
+      "tab": "dealt"
      }
     },
     {
@@ -2016,8 +2142,10 @@
       79
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "fist hits (no weapon in the hands)",
+      "row": "k:Keystone: Open Hand Creed",
+      "tab": "dealt"
      }
     },
     {
@@ -2043,8 +2171,10 @@
       371
      ],
      "probe": {
-      "mode": "none",
-      "why": "a change of the Templar combat rules, no row or total a client can read"
+      "mode": "combatlog",
+      "needs": "an enemy that hits the character in melee or at range",
+      "row": "p:Keystone: Penitent's Wrath",
+      "tab": "dealt"
      }
     },
     {
@@ -2071,8 +2201,10 @@
       356
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "weapon hits and an energy shield",
+      "row": "p:Keystone: Aether Edge",
+      "tab": "dealt"
      }
     },
     {
@@ -2102,7 +2234,7 @@
      "probe": {
       "mode": "combatlog",
       "needs": "melee weapon hits and a second enemy within 3 sqm of the target",
-      "row": "p:Keystones",
+      "row": "p:Keystone: Dawnchain",
       "tab": "dealt"
      }
     },
@@ -2132,8 +2264,10 @@
       245
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "an enemy near the character, out of a protection zone",
+      "row": "p:Keystone: Reliquary Vow",
+      "tab": "dealt"
      }
     },
     {
@@ -2169,7 +2303,7 @@
      "probe": {
       "mode": "combatlog",
       "needs": "a shield and an enemy that hits the character (20% blocked)",
-      "row": "p:Keystones",
+      "row": "p:Keystone: Radiant Rebuke",
       "tab": "dealt"
      }
     }
@@ -2233,7 +2367,7 @@
      ],
      "probe": {
       "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "why": "only life drain and poison ticks are absorbed: a hunt does not meet them on demand"
      }
     },
     {
@@ -2249,7 +2383,7 @@
      ],
      "probe": {
       "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "why": "the vigils reserve health instead of mana: a reservation, no row or total a client can read"
      }
     },
     {
@@ -2281,8 +2415,10 @@
       76
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "damage dealt (a weapon or a spell hit)",
+      "row": "p:Keystone: Sanguine Covenant",
+      "tab": "healing"
      }
     },
     {
@@ -2299,8 +2435,10 @@
       75
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "an enemy that hits the character",
+      "row": "p:Keystone: Thornbound Oath",
+      "tab": "dealt"
      }
     },
     {
@@ -2317,8 +2455,10 @@
       71
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "a critical hit and a second enemy next to the target",
+      "row": "p:Keystone: Cascade Edge",
+      "tab": "dealt"
      }
     },
     {
@@ -2345,8 +2485,10 @@
       356
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "weapon hits and an energy shield",
+      "row": "p:Keystone: Aether Edge",
+      "tab": "dealt"
      }
     },
     {
@@ -2376,7 +2518,7 @@
      "probe": {
       "mode": "combatlog",
       "needs": "melee hits and a second enemy right behind the target",
-      "row": "p:Keystones",
+      "row": "p:Keystone: Piercing Palm",
       "tab": "dealt"
      }
     },
@@ -2406,8 +2548,10 @@
       386
      ],
      "probe": {
-      "mode": "none",
-      "why": "a change of the Monk chi rules, no row or total a client can read"
+      "mode": "combatlog",
+      "needs": "an enemy that hits the character",
+      "row": "k:Keystone: Scarred Discipline",
+      "tab": "taken"
      }
     },
     {
@@ -2460,7 +2604,7 @@
      ],
      "probe": {
       "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "why": "the vigils reserve health instead of mana: a reservation, no row or total a client can read"
      }
     },
     {
@@ -2476,8 +2620,10 @@
       76
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "damage dealt (a weapon or a spell hit)",
+      "row": "p:Keystone: Sanguine Covenant",
+      "tab": "healing"
      }
     },
     {
@@ -2494,8 +2640,10 @@
       75
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "an enemy that hits the character",
+      "row": "p:Keystone: Thornbound Oath",
+      "tab": "dealt"
      }
     },
     {
@@ -2512,8 +2660,10 @@
       71
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "a critical hit and a second enemy next to the target",
+      "row": "p:Keystone: Cascade Edge",
+      "tab": "dealt"
      }
     },
     {
@@ -2531,8 +2681,10 @@
       79
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "an enemy near the character, out of a protection zone",
+      "row": "p:Keystone: Pyre Oath",
+      "tab": "dealt"
      }
     },
     {
@@ -2550,8 +2702,10 @@
       79
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "fist hits (no weapon in the hands)",
+      "row": "k:Keystone: Open Hand Creed",
+      "tab": "dealt"
      }
     },
     {
@@ -2581,7 +2735,7 @@
      "probe": {
       "mode": "combatlog",
       "needs": "a shield and an enemy that hits the character in melee (30% of the hit comes back)",
-      "row": "p:Keystones",
+      "row": "p:Keystone: Bulwark",
       "tab": "dealt"
      }
     },
@@ -2616,8 +2770,10 @@
       620
      ],
      "probe": {
-      "mode": "none",
-      "why": "less damage taken: a factor on each hit, no row or total a client can read"
+      "mode": "combatlog",
+      "needs": "an enemy that hits the character",
+      "row": "k:Keystone: Immovable",
+      "tab": "taken"
      }
     },
     {
@@ -2654,7 +2810,7 @@
      ],
      "probe": {
       "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "why": "fires once in 90 seconds, on a hit that would take the character below 20% health"
      }
     },
     {
@@ -2691,8 +2847,10 @@
       406
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "melee weapon hits (every 4th one) and a second enemy within 2 sqm",
+      "row": "p:Keystone: Earthbreaker",
+      "tab": "dealt"
      }
     },
     {
@@ -2729,8 +2887,10 @@
       425
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "melee or spell hits on a monster",
+      "row": "k:Keystone: Executioner's Verdict",
+      "tab": "dealt"
      }
     },
     {
@@ -2767,8 +2927,10 @@
       462
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "a kill and the hits after it",
+      "row": "k:Keystone: Rampage",
+      "tab": "dealt"
      }
     }
    ],
@@ -2824,7 +2986,7 @@
      ],
      "probe": {
       "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "why": "only life drain and poison ticks are absorbed: a hunt does not meet them on demand"
      }
     },
     {
@@ -2839,8 +3001,10 @@
       97
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "any hit",
+      "row": "k:Keystone: Covenant of Vigils",
+      "tab": "dealt"
      }
     },
     {
@@ -2872,8 +3036,10 @@
       76
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "damage dealt (a weapon or a spell hit)",
+      "row": "p:Keystone: Sanguine Covenant",
+      "tab": "healing"
      }
     },
     {
@@ -2890,8 +3056,10 @@
       75
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "an enemy that hits the character",
+      "row": "p:Keystone: Thornbound Oath",
+      "tab": "dealt"
      }
     },
     {
@@ -2908,8 +3076,10 @@
       71
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "a critical hit and a second enemy next to the target",
+      "row": "p:Keystone: Cascade Edge",
+      "tab": "dealt"
      }
     },
     {
@@ -2927,8 +3097,10 @@
       79
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "fist hits (no weapon in the hands)",
+      "row": "k:Keystone: Open Hand Creed",
+      "tab": "dealt"
      }
     },
     {
@@ -2954,8 +3126,10 @@
       261
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "a spell cast with 2 or more enemies in reach",
+      "row": "p:Keystone: Effigy Covenant",
+      "tab": "dealt"
      }
     },
     {
@@ -2982,8 +3156,10 @@
       353
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "ice damage that kills a monster",
+      "row": "p:Keystone: Winter's Lattice",
+      "tab": "dealt"
      }
     },
     {
@@ -3011,8 +3187,10 @@
       623
      ],
      "probe": {
-      "mode": "none",
-      "why": "a damage factor on hits at 40% health or less (x2, otherwise x0.92)"
+      "mode": "combatlog",
+      "needs": "hits on a monster at 40% health or less",
+      "row": "k:Keystone: Reaper's Toll",
+      "tab": "dealt"
      }
     },
     {
@@ -3079,7 +3257,7 @@
      "probe": {
       "mode": "combatlog",
       "needs": "a monster killed by the character or its minions",
-      "row": "p:Keystones",
+      "row": "p:Keystone: Corpse Detonation",
       "tab": "dealt"
      }
     }
@@ -3143,7 +3321,7 @@
      ],
      "probe": {
       "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "why": "only life drain and poison ticks are absorbed: a hunt does not meet them on demand"
      }
     },
     {
@@ -3159,7 +3337,7 @@
      ],
      "probe": {
       "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "why": "the vigils reserve health instead of mana: a reservation, no row or total a client can read"
      }
     },
     {
@@ -3175,8 +3353,10 @@
       76
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "damage dealt (a weapon or a spell hit)",
+      "row": "p:Keystone: Sanguine Covenant",
+      "tab": "healing"
      }
     },
     {
@@ -3193,8 +3373,10 @@
       75
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "an enemy that hits the character",
+      "row": "p:Keystone: Thornbound Oath",
+      "tab": "dealt"
      }
     },
     {
@@ -3211,8 +3393,10 @@
       71
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "a critical hit and a second enemy next to the target",
+      "row": "p:Keystone: Cascade Edge",
+      "tab": "dealt"
      }
     },
     {
@@ -3239,8 +3423,10 @@
       356
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "weapon hits and an energy shield",
+      "row": "p:Keystone: Aether Edge",
+      "tab": "dealt"
      }
     },
     {
@@ -3270,7 +3456,7 @@
      "probe": {
       "mode": "combatlog",
       "needs": "melee hits and a second enemy right behind the target",
-      "row": "p:Keystones",
+      "row": "p:Keystone: Piercing Palm",
       "tab": "dealt"
      }
     },
@@ -3300,8 +3486,10 @@
       386
      ],
      "probe": {
-      "mode": "none",
-      "why": "a change of the Monk chi rules, no row or total a client can read"
+      "mode": "combatlog",
+      "needs": "an enemy that hits the character",
+      "row": "k:Keystone: Scarred Discipline",
+      "tab": "taken"
      }
     },
     {
@@ -3337,7 +3525,7 @@
      "probe": {
       "mode": "combatlog",
       "needs": "melee hits (every 5th one) and a second enemy next to the target",
-      "row": "p:Keystones",
+      "row": "p:Keystone: Seventh Palm",
       "tab": "dealt"
      }
     }
@@ -3356,7 +3544,7 @@
      ],
      "probe": {
       "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "why": "only life drain and poison ticks are absorbed: a hunt does not meet them on demand"
      }
     },
     {
@@ -3371,8 +3559,10 @@
       97
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "any hit",
+      "row": "k:Keystone: Covenant of Vigils",
+      "tab": "dealt"
      }
     },
     {
@@ -3388,8 +3578,10 @@
       76
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "damage dealt (a weapon or a spell hit)",
+      "row": "p:Keystone: Sanguine Covenant",
+      "tab": "healing"
      }
     },
     {
@@ -3406,8 +3598,10 @@
       75
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "an enemy that hits the character",
+      "row": "p:Keystone: Thornbound Oath",
+      "tab": "dealt"
      }
     },
     {
@@ -3424,8 +3618,10 @@
       71
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "a critical hit and a second enemy next to the target",
+      "row": "p:Keystone: Cascade Edge",
+      "tab": "dealt"
      }
     },
     {
@@ -3443,8 +3639,10 @@
       80
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "a fire or holy spell hit (the sigil pulses afterwards)",
+      "row": "p:Keystone: Sigil of Cinders",
+      "tab": "dealt"
      }
     },
     {
@@ -3462,8 +3660,10 @@
       79
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "fist hits (no weapon in the hands)",
+      "row": "k:Keystone: Open Hand Creed",
+      "tab": "dealt"
      }
     },
     {
@@ -3489,8 +3689,10 @@
       261
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "a spell cast with 2 or more enemies in reach",
+      "row": "p:Keystone: Effigy Covenant",
+      "tab": "dealt"
      }
     },
     {
@@ -3517,8 +3719,10 @@
       353
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "ice damage that kills a monster",
+      "row": "p:Keystone: Winter's Lattice",
+      "tab": "dealt"
      }
     },
     {
@@ -3546,8 +3750,10 @@
       623
      ],
      "probe": {
-      "mode": "none",
-      "why": "a +20% on the next spell of another element: a damage factor, no row of its own in the combat log"
+      "mode": "combatlog",
+      "needs": "spells of two different elements in a row",
+      "row": "k:Keystone: Overload",
+      "tab": "dealt"
      }
     },
     {
@@ -3583,7 +3789,7 @@
      "probe": {
       "mode": "combatlog",
       "needs": "a spell that hits 2 or more enemies (35% chance, 3 s cooldown)",
-      "row": "p:Keystones",
+      "row": "p:Keystone: Arcane Echo",
       "tab": "dealt"
      }
     }
@@ -3640,7 +3846,7 @@
      ],
      "probe": {
       "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "why": "only life drain and poison ticks are absorbed: a hunt does not meet them on demand"
      }
     },
     {
@@ -3655,8 +3861,10 @@
       97
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "any hit",
+      "row": "k:Keystone: Covenant of Vigils",
+      "tab": "dealt"
      }
     },
     {
@@ -3672,8 +3880,10 @@
       76
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "damage dealt (a weapon or a spell hit)",
+      "row": "p:Keystone: Sanguine Covenant",
+      "tab": "healing"
      }
     },
     {
@@ -3690,8 +3900,10 @@
       75
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "an enemy that hits the character",
+      "row": "p:Keystone: Thornbound Oath",
+      "tab": "dealt"
      }
     },
     {
@@ -3708,8 +3920,10 @@
       71
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "a critical hit and a second enemy next to the target",
+      "row": "p:Keystone: Cascade Edge",
+      "tab": "dealt"
      }
     },
     {
@@ -3727,8 +3941,10 @@
       79
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "fist hits (no weapon in the hands)",
+      "row": "k:Keystone: Open Hand Creed",
+      "tab": "dealt"
      }
     },
     {
@@ -3754,8 +3970,10 @@
       261
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "a spell cast with 2 or more enemies in reach",
+      "row": "p:Keystone: Effigy Covenant",
+      "tab": "dealt"
      }
     },
     {
@@ -3782,8 +4000,10 @@
       353
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "ice damage that kills a monster",
+      "row": "p:Keystone: Winter's Lattice",
+      "tab": "dealt"
      }
     },
     {
@@ -3811,8 +4031,10 @@
       623
      ],
      "probe": {
-      "mode": "none",
-      "why": "a damage factor on hits at 40% health or less (x2, otherwise x0.92)"
+      "mode": "combatlog",
+      "needs": "hits on a monster at 40% health or less",
+      "row": "k:Keystone: Reaper's Toll",
+      "tab": "dealt"
      }
     },
     {
@@ -3879,7 +4101,7 @@
      "probe": {
       "mode": "combatlog",
       "needs": "a monster killed by the character or its minions",
-      "row": "p:Keystones",
+      "row": "p:Keystone: Corpse Detonation",
       "tab": "dealt"
      }
     }
@@ -3895,8 +4117,10 @@
       103
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "any hit that is not a snare",
+      "row": "k:Keystone: Snarewright's Creed",
+      "tab": "dealt"
      }
     },
     {
@@ -3973,8 +4197,10 @@
       76
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "damage dealt (a weapon or a spell hit)",
+      "row": "p:Keystone: Sanguine Covenant",
+      "tab": "healing"
      }
     },
     {
@@ -3991,8 +4217,10 @@
       75
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "an enemy that hits the character",
+      "row": "p:Keystone: Thornbound Oath",
+      "tab": "dealt"
      }
     },
     {
@@ -4009,8 +4237,10 @@
       71
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "a critical hit and a second enemy next to the target",
+      "row": "p:Keystone: Cascade Edge",
+      "tab": "dealt"
      }
     },
     {
@@ -4028,8 +4258,10 @@
       80
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "weapon hits",
+      "row": "k:Keystone: Contagion Rite",
+      "tab": "dealt"
      }
     },
     {
@@ -4047,8 +4279,10 @@
       79
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "fist hits (no weapon in the hands)",
+      "row": "k:Keystone: Open Hand Creed",
+      "tab": "dealt"
      }
     },
     {
@@ -4105,8 +4339,10 @@
       623
      ],
      "probe": {
-      "mode": "none",
-      "why": "a damage factor on weapon hits (x2 on a poisoned target, x0.85 otherwise)"
+      "mode": "combatlog",
+      "needs": "weapon hits",
+      "row": "k:Keystone: Viper's Verdict",
+      "tab": "dealt"
      }
     },
     {
@@ -4142,7 +4378,7 @@
      "probe": {
       "mode": "combatlog",
       "needs": "weapon hits (30% chance)",
-      "row": "p:Keystones",
+      "row": "p:Keystone: Shadow Twin",
       "tab": "dealt"
      }
     }
@@ -4158,8 +4394,10 @@
       103
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "any hit that is not a snare",
+      "row": "k:Keystone: Snarewright's Creed",
+      "tab": "dealt"
      }
     },
     {
@@ -4175,8 +4413,10 @@
       76
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "damage dealt (a weapon or a spell hit)",
+      "row": "p:Keystone: Sanguine Covenant",
+      "tab": "healing"
      }
     },
     {
@@ -4192,8 +4432,10 @@
       74
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "bow or crossbow hits and a second enemy within the arc radius",
+      "row": "p:Keystone: Stormstring",
+      "tab": "dealt"
      }
     },
     {
@@ -4210,8 +4452,10 @@
       75
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "an enemy that hits the character",
+      "row": "p:Keystone: Thornbound Oath",
+      "tab": "dealt"
      }
     },
     {
@@ -4228,8 +4472,10 @@
       71
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "a critical hit and a second enemy next to the target",
+      "row": "p:Keystone: Cascade Edge",
+      "tab": "dealt"
      }
     },
     {
@@ -4247,8 +4493,10 @@
       79
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "fist hits (no weapon in the hands)",
+      "row": "k:Keystone: Open Hand Creed",
+      "tab": "dealt"
      }
     },
     {
@@ -4276,8 +4524,10 @@
       623
      ],
      "probe": {
-      "mode": "none",
-      "why": "double damage on 15% of the crossbow shots: a factor on the hit itself"
+      "mode": "combatlog",
+      "needs": "crossbow shots (15% are Deadeye shots)",
+      "row": "k:Keystone: Deadeye",
+      "tab": "dealt"
      }
     },
     {
@@ -4313,7 +4563,7 @@
      "probe": {
       "mode": "combatlog",
       "needs": "a bow or crossbow and a second enemy within 4 sqm of the target",
-      "row": "p:Keystones",
+      "row": "p:Keystone: Ricochet",
       "tab": "dealt"
      }
     },
@@ -4351,8 +4601,10 @@
       598
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "distance weapon hits on a monster at full health",
+      "row": "k:Keystone: Opening Shot",
+      "tab": "dealt"
      }
     },
     {
@@ -4390,8 +4642,10 @@
       536
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "distance weapon hits",
+      "row": "k:Keystone: Barbed Quiver",
+      "tab": "dealt"
      }
     },
     {
@@ -4432,8 +4686,10 @@
       560
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "distance weapon hits",
+      "row": "k:Keystone: Longshot",
+      "tab": "dealt"
      }
     },
     {
@@ -4475,8 +4731,10 @@
       443
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "distance weapon hits (25% chance)",
+      "row": "k:Keystone: Hobbling Shot",
+      "tab": "dealt"
      }
     }
    ],
@@ -4491,8 +4749,10 @@
       103
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "any hit that is not a snare",
+      "row": "k:Keystone: Snarewright's Creed",
+      "tab": "dealt"
      }
     },
     {
@@ -4569,8 +4829,10 @@
       76
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "damage dealt (a weapon or a spell hit)",
+      "row": "p:Keystone: Sanguine Covenant",
+      "tab": "healing"
      }
     },
     {
@@ -4587,8 +4849,10 @@
       75
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "an enemy that hits the character",
+      "row": "p:Keystone: Thornbound Oath",
+      "tab": "dealt"
      }
     },
     {
@@ -4605,8 +4869,10 @@
       71
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "a critical hit and a second enemy next to the target",
+      "row": "p:Keystone: Cascade Edge",
+      "tab": "dealt"
      }
     },
     {
@@ -4624,8 +4890,10 @@
       80
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "weapon hits",
+      "row": "k:Keystone: Contagion Rite",
+      "tab": "dealt"
      }
     },
     {
@@ -4643,8 +4911,10 @@
       79
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "fist hits (no weapon in the hands)",
+      "row": "k:Keystone: Open Hand Creed",
+      "tab": "dealt"
      }
     },
     {
@@ -4701,8 +4971,10 @@
       623
      ],
      "probe": {
-      "mode": "none",
-      "why": "a damage factor on weapon hits (x2 on a poisoned target, x0.85 otherwise)"
+      "mode": "combatlog",
+      "needs": "weapon hits",
+      "row": "k:Keystone: Viper's Verdict",
+      "tab": "dealt"
      }
     },
     {
@@ -4738,7 +5010,7 @@
      "probe": {
       "mode": "combatlog",
       "needs": "weapon hits (30% chance)",
-      "row": "p:Keystones",
+      "row": "p:Keystone: Shadow Twin",
       "tab": "dealt"
      }
     }
@@ -4794,7 +5066,7 @@
      ],
      "probe": {
       "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "why": "only life drain and poison ticks are absorbed: a hunt does not meet them on demand"
      }
     },
     {
@@ -4809,8 +5081,10 @@
       97
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "any hit",
+      "row": "k:Keystone: Covenant of Vigils",
+      "tab": "dealt"
      }
     },
     {
@@ -4826,7 +5100,7 @@
      ],
      "probe": {
       "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "why": "the vigils reserve health instead of mana: a reservation, no row or total a client can read"
      }
     },
     {
@@ -4858,8 +5132,10 @@
       76
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "damage dealt (a weapon or a spell hit)",
+      "row": "p:Keystone: Sanguine Covenant",
+      "tab": "healing"
      }
     },
     {
@@ -4876,8 +5152,10 @@
       75
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "an enemy that hits the character",
+      "row": "p:Keystone: Thornbound Oath",
+      "tab": "dealt"
      }
     },
     {
@@ -4894,8 +5172,10 @@
       71
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "a critical hit and a second enemy next to the target",
+      "row": "p:Keystone: Cascade Edge",
+      "tab": "dealt"
      }
     },
     {
@@ -4913,8 +5193,10 @@
       80
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "a fire or holy spell hit (the sigil pulses afterwards)",
+      "row": "p:Keystone: Sigil of Cinders",
+      "tab": "dealt"
      }
     },
     {
@@ -4932,8 +5214,10 @@
       79
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "an enemy near the character, out of a protection zone",
+      "row": "p:Keystone: Pyre Oath",
+      "tab": "dealt"
      }
     },
     {
@@ -4951,8 +5235,10 @@
       79
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "fist hits (no weapon in the hands)",
+      "row": "k:Keystone: Open Hand Creed",
+      "tab": "dealt"
      }
     },
     {
@@ -4978,8 +5264,10 @@
       371
      ],
      "probe": {
-      "mode": "none",
-      "why": "a change of the Templar combat rules, no row or total a client can read"
+      "mode": "combatlog",
+      "needs": "an enemy that hits the character in melee or at range",
+      "row": "p:Keystone: Penitent's Wrath",
+      "tab": "dealt"
      }
     },
     {
@@ -5006,8 +5294,10 @@
       356
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "weapon hits and an energy shield",
+      "row": "p:Keystone: Aether Edge",
+      "tab": "dealt"
      }
     },
     {
@@ -5037,7 +5327,7 @@
      "probe": {
       "mode": "combatlog",
       "needs": "an enemy that hits the character in melee or at range",
-      "row": "p:Keystones",
+      "row": "p:Keystone: Thorns",
       "tab": "dealt"
      }
     },
@@ -5067,8 +5357,10 @@
       245
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "an enemy near the character, out of a protection zone",
+      "row": "p:Keystone: Reliquary Vow",
+      "tab": "dealt"
      }
     },
     {
@@ -5104,7 +5396,7 @@
      "probe": {
       "mode": "combatlog",
       "needs": "a shield and an enemy that hits the character (20% blocked)",
-      "row": "p:Keystones",
+      "row": "p:Keystone: Radiant Rebuke",
       "tab": "dealt"
      }
     }
@@ -5168,7 +5460,7 @@
      ],
      "probe": {
       "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "why": "only life drain and poison ticks are absorbed: a hunt does not meet them on demand"
      }
     },
     {
@@ -5184,7 +5476,7 @@
      ],
      "probe": {
       "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "why": "the vigils reserve health instead of mana: a reservation, no row or total a client can read"
      }
     },
     {
@@ -5199,8 +5491,10 @@
       650
      ],
      "probe": {
-      "mode": "none",
-      "why": "a change of the Monk combat rules, no row or total a client can read"
+      "mode": "combatlog",
+      "needs": "a focus critical hit (Shadowfist)",
+      "row": "k:Keystone: Hundred Hands",
+      "tab": "dealt"
      }
     },
     {
@@ -5216,8 +5510,10 @@
       76
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "damage dealt (a weapon or a spell hit)",
+      "row": "p:Keystone: Sanguine Covenant",
+      "tab": "healing"
      }
     },
     {
@@ -5234,8 +5530,10 @@
       75
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "an enemy that hits the character",
+      "row": "p:Keystone: Thornbound Oath",
+      "tab": "dealt"
      }
     },
     {
@@ -5252,8 +5550,10 @@
       71
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "a critical hit and a second enemy next to the target",
+      "row": "p:Keystone: Cascade Edge",
+      "tab": "dealt"
      }
     },
     {
@@ -5280,8 +5580,10 @@
       356
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "weapon hits and an energy shield",
+      "row": "p:Keystone: Aether Edge",
+      "tab": "dealt"
      }
     },
     {
@@ -5311,7 +5613,7 @@
      "probe": {
       "mode": "combatlog",
       "needs": "melee hits and a second enemy right behind the target",
-      "row": "p:Keystones",
+      "row": "p:Keystone: Piercing Palm",
       "tab": "dealt"
      }
     },
@@ -5341,8 +5643,10 @@
       386
      ],
      "probe": {
-      "mode": "none",
-      "why": "a change of the Monk chi rules, no row or total a client can read"
+      "mode": "combatlog",
+      "needs": "an enemy that hits the character",
+      "row": "k:Keystone: Scarred Discipline",
+      "tab": "taken"
      }
     },
     {
@@ -5378,7 +5682,7 @@
      "probe": {
       "mode": "combatlog",
       "needs": "melee hits (every 5th one) and a second enemy next to the target",
-      "row": "p:Keystones",
+      "row": "p:Keystone: Seventh Palm",
       "tab": "dealt"
      }
     }
@@ -5434,7 +5738,7 @@
      ],
      "probe": {
       "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "why": "only life drain and poison ticks are absorbed: a hunt does not meet them on demand"
      }
     },
     {
@@ -5449,8 +5753,10 @@
       97
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "any hit",
+      "row": "k:Keystone: Covenant of Vigils",
+      "tab": "dealt"
      }
     },
     {
@@ -5466,7 +5772,7 @@
      ],
      "probe": {
       "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "why": "the vigils reserve health instead of mana: a reservation, no row or total a client can read"
      }
     },
     {
@@ -5482,8 +5788,10 @@
       76
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "damage dealt (a weapon or a spell hit)",
+      "row": "p:Keystone: Sanguine Covenant",
+      "tab": "healing"
      }
     },
     {
@@ -5500,8 +5808,10 @@
       75
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "an enemy that hits the character",
+      "row": "p:Keystone: Thornbound Oath",
+      "tab": "dealt"
      }
     },
     {
@@ -5518,8 +5828,10 @@
       71
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "a critical hit and a second enemy next to the target",
+      "row": "p:Keystone: Cascade Edge",
+      "tab": "dealt"
      }
     },
     {
@@ -5537,8 +5849,10 @@
       80
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "a fire or holy spell hit (the sigil pulses afterwards)",
+      "row": "p:Keystone: Sigil of Cinders",
+      "tab": "dealt"
      }
     },
     {
@@ -5556,8 +5870,10 @@
       79
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "an enemy near the character, out of a protection zone",
+      "row": "p:Keystone: Pyre Oath",
+      "tab": "dealt"
      }
     },
     {
@@ -5575,8 +5891,10 @@
       79
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "fist hits (no weapon in the hands)",
+      "row": "k:Keystone: Open Hand Creed",
+      "tab": "dealt"
      }
     },
     {
@@ -5602,8 +5920,10 @@
       371
      ],
      "probe": {
-      "mode": "none",
-      "why": "a change of the Templar combat rules, no row or total a client can read"
+      "mode": "combatlog",
+      "needs": "an enemy that hits the character in melee or at range",
+      "row": "p:Keystone: Penitent's Wrath",
+      "tab": "dealt"
      }
     },
     {
@@ -5630,8 +5950,10 @@
       356
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "weapon hits and an energy shield",
+      "row": "p:Keystone: Aether Edge",
+      "tab": "dealt"
      }
     },
     {
@@ -5661,7 +5983,7 @@
      "probe": {
       "mode": "combatlog",
       "needs": "melee weapon hits and a second enemy within 3 sqm of the target",
-      "row": "p:Keystones",
+      "row": "p:Keystone: Dawnchain",
       "tab": "dealt"
      }
     },
@@ -5691,8 +6013,10 @@
       245
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "an enemy near the character, out of a protection zone",
+      "row": "p:Keystone: Reliquary Vow",
+      "tab": "dealt"
      }
     },
     {
@@ -5728,7 +6052,7 @@
      "probe": {
       "mode": "combatlog",
       "needs": "a shield and an enemy that hits the character (20% blocked)",
-      "row": "p:Keystones",
+      "row": "p:Keystone: Radiant Rebuke",
       "tab": "dealt"
      }
     }
@@ -5744,8 +6068,10 @@
       103
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "any hit that is not a snare",
+      "row": "k:Keystone: Snarewright's Creed",
+      "tab": "dealt"
      }
     },
     {
@@ -5806,8 +6132,10 @@
       76
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "damage dealt (a weapon or a spell hit)",
+      "row": "p:Keystone: Sanguine Covenant",
+      "tab": "healing"
      }
     },
     {
@@ -5824,8 +6152,10 @@
       75
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "an enemy that hits the character",
+      "row": "p:Keystone: Thornbound Oath",
+      "tab": "dealt"
      }
     },
     {
@@ -5842,8 +6172,10 @@
       71
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "a critical hit and a second enemy next to the target",
+      "row": "p:Keystone: Cascade Edge",
+      "tab": "dealt"
      }
     },
     {
@@ -5861,8 +6193,10 @@
       80
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "weapon hits",
+      "row": "k:Keystone: Contagion Rite",
+      "tab": "dealt"
      }
     },
     {
@@ -5880,8 +6214,10 @@
       79
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "fist hits (no weapon in the hands)",
+      "row": "k:Keystone: Open Hand Creed",
+      "tab": "dealt"
      }
     },
     {
@@ -5938,8 +6274,10 @@
       623
      ],
      "probe": {
-      "mode": "none",
-      "why": "a damage factor on weapon hits (x2 on a poisoned target, x0.85 otherwise)"
+      "mode": "combatlog",
+      "needs": "weapon hits",
+      "row": "k:Keystone: Viper's Verdict",
+      "tab": "dealt"
      }
     },
     {
@@ -5975,7 +6313,7 @@
      "probe": {
       "mode": "combatlog",
       "needs": "weapon hits (30% chance)",
-      "row": "p:Keystones",
+      "row": "p:Keystone: Shadow Twin",
       "tab": "dealt"
      }
     }
@@ -5994,7 +6332,7 @@
      ],
      "probe": {
       "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "why": "the vigils reserve health instead of mana: a reservation, no row or total a client can read"
      }
     },
     {
@@ -6010,8 +6348,10 @@
       76
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "damage dealt (a weapon or a spell hit)",
+      "row": "p:Keystone: Sanguine Covenant",
+      "tab": "healing"
      }
     },
     {
@@ -6028,8 +6368,10 @@
       75
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "an enemy that hits the character",
+      "row": "p:Keystone: Thornbound Oath",
+      "tab": "dealt"
      }
     },
     {
@@ -6046,8 +6388,10 @@
       71
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "a critical hit and a second enemy next to the target",
+      "row": "p:Keystone: Cascade Edge",
+      "tab": "dealt"
      }
     },
     {
@@ -6065,8 +6409,10 @@
       79
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "an enemy near the character, out of a protection zone",
+      "row": "p:Keystone: Pyre Oath",
+      "tab": "dealt"
      }
     },
     {
@@ -6084,8 +6430,10 @@
       79
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "fist hits (no weapon in the hands)",
+      "row": "k:Keystone: Open Hand Creed",
+      "tab": "dealt"
      }
     },
     {
@@ -6115,7 +6463,7 @@
      "probe": {
       "mode": "combatlog",
       "needs": "a shield and an enemy that hits the character in melee (30% of the hit comes back)",
-      "row": "p:Keystones",
+      "row": "p:Keystone: Bulwark",
       "tab": "dealt"
      }
     },
@@ -6152,7 +6500,7 @@
      "probe": {
       "mode": "combatlog",
       "needs": "a two-handed melee weapon and a second enemy next to the target",
-      "row": "p:Keystones",
+      "row": "p:Keystone: Cleaving Arc",
       "tab": "dealt"
      }
     },
@@ -6190,7 +6538,7 @@
      ],
      "probe": {
       "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "why": "fires once in 90 seconds, on a hit that would take the character below 20% health"
      }
     },
     {
@@ -6227,8 +6575,10 @@
       406
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "melee weapon hits (every 4th one) and a second enemy within 2 sqm",
+      "row": "p:Keystone: Earthbreaker",
+      "tab": "dealt"
      }
     },
     {
@@ -6265,8 +6615,10 @@
       425
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "melee or spell hits on a monster",
+      "row": "k:Keystone: Executioner's Verdict",
+      "tab": "dealt"
      }
     },
     {
@@ -6303,8 +6655,10 @@
       462
      ],
      "probe": {
-      "mode": "none",
-      "why": "a build archetype keystone (archetypes.lua): its hits carry no label of their own in the combat log and its other effects are factors or reservations, so no bot can read them"
+      "mode": "combatlog",
+      "needs": "a kill and the hits after it",
+      "row": "k:Keystone: Rampage",
+      "tab": "dealt"
      }
     }
    ]

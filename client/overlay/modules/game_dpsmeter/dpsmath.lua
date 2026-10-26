@@ -36,7 +36,9 @@ local BUFF = { bleeding = true, burning = true, poison = true, energy = true, fr
 DpsMath.KIND_COLORS = {
   s = '#b8452a', r = '#8e4fc4', w = '#a8843a', d = '#4f9a34', p = '#2f8fc0', x = '#c8402a', m = '#4fb88e',
   i = '#c04a78', o = '#6b6258', c = '#9a1c14', u = '#c8a040', e = '#6b6258',
+  k = '#8a6cc8', -- a keystone note: how much a keystone changed a hit that the other rows already count
 }
+function DpsMath.isNote(kind) return kind == 'k' end
 DpsMath.HEAL_COLOR = '#3f9a4a'
 DpsMath.ELEMENT_NAMES = {
   physical = 'Physical', fire = 'Fire', earth = 'Earth', energy = 'Energy', ice = 'Ice', holy = 'Holy',

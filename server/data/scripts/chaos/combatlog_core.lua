@@ -7,7 +7,10 @@
 -- A source: {k = key ("<kind>:<name>"), t = kind, n = name, i = icon}. Kinds:
 --   dealt and healing  s spell (icon: its words), r rune (icon: the rune's client item id), w weapon attack,
 --                      d damage over time / regeneration, p proc (supports, keystones, item powers ...),
---                      x reflect / thorns, m summon / minion / pet, i item use (potions), o other
+--                      x reflect / thorns, m summon / minion / pet, i item use (potions), o other,
+--                      k keystone effect: a note of a keystone that changed a hit (a factor, a block) or fired without
+--                      a hit of its own. Its total is how much it changed (CL.note); it is already inside the other
+--                      rows, so a k row never adds to the tab's total, the elements or the targets and never starts a fight
 --   taken              c creature (monster), u player, e environment (no attacker)
 -- A segment (the session or a fight): {id ("s" or the fight serial), label, start, last (ms), dur (ms, the session:
 -- the sum of its fights), boss (name), tabs = {damage dealt, healing done, damage taken, healing received},
@@ -26,7 +29,7 @@ local NTABS = 4
 CL.ORIGIN = CL.ORIGIN or {NONE = 0, CONDITION = 1, SPELL = 2, MELEE = 3, RANGED = 4, WAND = 5}
 
 local DEFAULTS = {idleMs = 6000, minFightMs = 1000, keepFights = 10, maxRows = 40, maxRowsSent = 25, maxTargets = 16,
-	maxSourceCache = 4000}
+	maxSourceCache = 4000, maxNotesSent = 10}
 CL.cfg = CL.cfg or DEFAULTS
 
 function CL.configure(cfg)
@@ -226,8 +229,12 @@ end
 local function mergeRow(tab, e)
 	local key = e.src.k
 	local row = tab.rows[key]
+	local memo = e.src.t == "k"
 	if not row then
 		if tab.n >= CL.cfg.maxRows then
+			if memo then
+				return -- a note has no "Other" row: the table is full, the note is dropped
+			end
 			local o = CL.otherSource(e.tab)
 			key = o.k
 			row = tab.rows[key]
@@ -249,8 +256,10 @@ local function mergeRow(tab, e)
 	if e.max > row.max then
 		row.max = e.max
 	end
-	tab.total = tab.total + e.total
-	tab.over = tab.over + e.over
+	if not memo then
+		tab.total = tab.total + e.total
+		tab.over = tab.over + e.over
+	end
 end
 
 local function addTarget(f, name, amount)
@@ -372,11 +381,15 @@ end
 -- from no attacker (a field, a trap: source kind "e"); both still count in a running fight and the session.
 function CL.add(actor, now, tab, src, amount, crit, over, el, target, boss)
 	amount, over = amount or 0, over or 0
-	if amount <= 0 and over <= 0 then
+	local memo = src.t == "k" -- a keystone note: counted as a hit even when it changed nothing measurable
+	if amount <= 0 and over <= 0 and not memo then
 		return false
 	end
+	if memo then
+		amount, over, crit, el, target, boss = mmax(0, amount), 0, false, nil, nil, nil
+	end
 	-- damage taken without an attacker (fields, traps) neither starts nor extends a fight
-	if tab == DMG or (tab == TAKEN and src.t ~= "e") then
+	if not memo and (tab == DMG or (tab == TAKEN and src.t ~= "e")) then
 		if actor.fight and now - actor.last > CL.cfg.idleMs then
 			CL.endFight(actor)
 		end
@@ -500,16 +513,27 @@ local function byTotal(a, b)
 	return a.src.k < b.src.k
 end
 
--- the rows of a tab, largest first, at most `limit`
+-- the rows of a tab, largest first, at most `limit`; keystone notes (kind k) come after the real sources, at most
+-- CL.cfg.maxNotesSent of them, so a note never pushes a source out of the rows sent
 function CL.sortedRows(tab, limit)
-	local rows = {}
+	local rows, notes = {}, {}
 	for _, row in pairs(tab.rows) do
-		rows[#rows + 1] = row
+		if row.src.t == "k" then
+			notes[#notes + 1] = row
+		else
+			rows[#rows + 1] = row
+		end
 	end
 	table.sort(rows, byTotal)
 	if limit then
 		for i = #rows, limit + 1, -1 do
 			rows[i] = nil
+		end
+	end
+	if #notes > 0 then
+		table.sort(notes, byTotal)
+		for i = 1, math.min(#notes, CL.cfg.maxNotesSent or 10) do
+			rows[#rows + 1] = notes[i]
 		end
 	end
 	return rows
