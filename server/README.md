@@ -23020,8 +23020,22 @@ Staff command replies (O147): the sentence replies and "Usage:" lines of the tal
 season pass, leaderboard, records, patch notes, arena and battleground status, telemetry, poi, itemfinder, spellbook,
 supports, antibot, areagen). Cores that return a refusal text: `party_finder_core.lua` (`K.reasons`, `K.closeText`:
 `party_finder.lua` translates on display, a notice may be `{key, args...}`), `hideout_core.lua` (`hideout.lua` translates
-when it sends) and `townportal_core.lua` (`K.blockReason(f, T)` takes the translator); other cores (guild, market, shop
-payments, buildshare, reports, salvage, conquest and more) still return English.
+when it sends) and `townportal_core.lua` (`K.blockReason(f, T)` takes the translator).
+
+Reasons built in other cores (`Chaos.tx`): `Chaos.tx(player, text)` and `ChaosI18n.translate(lang, text)` translate a text a
+pure core already built in English. The text is looked up as a key; a key with `%` conversions also matches as a template
+(the numbers and names are taken out and put back into the pt-BR pattern), only when the key has at least 12 literal
+characters, so a short piece like "%s gold" never matches by accident. A text without an entry stays English. The engine
+file calls `tx` where it displays the text (a cancel message, a window `reason`, a result `text`), so the core keeps its
+English tests. Cores that must build several pieces take the `lang` and use `T(lang, key, ...)` instead (market
+notifications and orders, build codes, guild war terms and rows). A text for several players is a `function(lang)` for
+`tellGuild` and `Chaos.broadcast`. Converted this way: guild and guild hall, market (listings, orders, deliveries,
+sale lines), build codes, report receipts, the crafting bench and salvage, guild wars, the PvP zone and its realm
+lines, the passive tree and transmog results, the Scorched Marches (conquest) and the season join flow, the store, pass,
+market and isolation refusals and the mode warnings. Still English on purpose: the guild log rows, salvage history
+lines, config validation messages, fixture descriptions and the season milestone names (window data). Not converted yet:
+shop payments (bilingual on their own), and cores such as mentor, memorial, guild boss, candlemarks, uber arenas, siege,
+charms, pets, loot filter, loadouts, bounty, class looks, goals and raid, which still return English from the core.
 
 Left: item descriptions and mail texts built in cores (one text for every viewer), party loot lines
 (`broadcastPartyLoot` sends one text to the party: English), monster speech, reasons that game logic reads as text
@@ -23034,7 +23048,9 @@ language and messages, one table without a key twice, every key of the converted
 call-outs, ascension paths and hints, trial stories, tutorial and welcome, achievement categories and descriptions,
 faction lore, world buffs, mentor and referral messages, the NPC XML lines, season pass challenges, community stages
 and modifiers, the unique drop and goblin lines, bestiary stages, coffer directions), both persons of every "stays
-behind" reason, plus a few pt-BR texts end to end.
+behind" reason, plus a few pt-BR texts end to end. The `REASONS` table lists each file whose English literals
+reach a player through `tx` (with the patterns it skips on purpose); a new sentence there without a pt-BR key fails the
+test. The `translate` and `Chaos.tx` units (template match, short keys, no entry) are tested there too.
 
 ## Smart loot (`smartloot.lua`, `smartloot_core.lua`, `smartloot_config.lua`)
 
