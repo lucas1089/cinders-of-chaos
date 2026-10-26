@@ -94,6 +94,9 @@ final class CastView extends View {
     private long player;
     private JSONObject stats;
     private boolean animating;
+    private int sheetsOk, sheetsBad, minAmbient = CastMath.READABLE;
+    private String badKey = "", badWhy = "";
+    private int lastAmbient = 0xFFFFFF;
 
     private Bitmap frame;
     private Canvas frameCanvas;
@@ -149,6 +152,39 @@ final class CastView extends View {
         lightKnown = false;
     }
 
+    /** true: the map is never darker than CastMath.READABLE; false: as dark as the game (night, underground). */
+    synchronized void readableLight(boolean on) {
+        minAmbient = on ? CastMath.READABLE : 0;
+        postInvalidate();
+    }
+
+    /**
+     * What is wrong with the sprites, or null: sheets the relay could not draw ("sprerr"), sheets the app could not
+     * decode, or a view with tiles but not one sheet. A view with failed sheets is never silently black.
+     */
+    synchronized String problem() {
+        if (sheetsBad > 0) {
+            return String.format(java.util.Locale.ROOT, "%d sprite(s) não vieram (%s: %s)%s", sheetsBad, badKey, badWhy,
+                    sheetsOk == 0 ? ". Nenhum sprite chegou: use Baixar sprites e confira o Log do download."
+                            : ".");
+        }
+        if (known && sheetsOk == 0 && !tiles.isEmpty()) {
+            return "Nenhum sprite chegou da VPS. Use Sprites na VPS / Baixar sprites; veja o Log do download.";
+        }
+        return null;
+    }
+
+    /** true when the light now darkens the map to (nearly) black, by the game's own rules or not */
+    synchronized boolean dark() {
+        return lightKnown && CastMath.dark(lastAmbient);
+    }
+
+    private void badSheet(String key, String why) {
+        sheetsBad++;
+        badKey = key;
+        badWhy = why;
+    }
+
     /** Drops the sheets too (a new run of the relay sends them again). */
     synchronized void reset() {
         clear();
@@ -158,6 +194,10 @@ final class CastView extends View {
             }
         }
         sheets.clear();
+        sheetsOk = 0;
+        sheetsBad = 0;
+        badKey = "";
+        badWhy = "";
         for (Bitmap b : bubbles.values()) {
             b.recycle();
         }
@@ -173,14 +213,28 @@ final class CastView extends View {
     String apply(JSONObject j) {
         String t = j.optString("t");
         if ("spr".equals(t)) {
-            Sheet s = sheet(j);
+            Sheet s;
+            String why = "";
+            try {
+                s = sheet(j);
+            } catch (RuntimeException | OutOfMemoryError e) {
+                s = null;
+                why = e.getClass().getSimpleName();
+            }
             synchronized (this) {
                 if (s != null) {
                     Sheet old = sheets.put(j.optString("key"), s);
+                    sheetsOk++;
                     if (old != null && old.bmp != null) {
                         old.bmp.recycle();
                     }
+                } else {
+                    badSheet(j.optString("key"), why.isEmpty() ? "imagem ilegível" : why);
                 }
+            }
+        } else if ("sprerr".equals(t)) {
+            synchronized (this) {
+                badSheet(j.optString("key"), j.optString("why"));
             }
         } else if ("hello".equals(t)) {
             synchronized (this) {
@@ -802,7 +856,8 @@ final class CastView extends View {
      * then multiplied over the frame (smoothed up, so the glow has no steps). Full daylight draws nothing.
      */
     private void applyLight(Canvas c) {
-        int amb = CastMath.ambient(worldI, worldC, cz);
+        int amb = CastMath.ambient(worldI, worldC, cz, minAmbient);
+        lastAmbient = amb;
         if ((amb >> 16 & 0xFF) >= 0xF0 && (amb >> 8 & 0xFF) >= 0xF0 && (amb & 0xFF) >= 0xF0) {
             return;
         }
@@ -884,6 +939,9 @@ final class CastView extends View {
         }
         int fr = s.nf > 1 ? (int) ((now / s.fd) % s.nf) : 0;
         cell(c, s, e.pattern, fr, left + s.ax - e.lift, top + s.ay - e.lift);
+        if (s.lightI > 0) {
+            lights.add(new int[]{left + TILE / 2 - e.lift, top + TILE / 2 - e.lift, s.lightI, s.lightC});
+        }
     }
 
     /** true when drawn (an invisible creature has no look: no bar, no name) */

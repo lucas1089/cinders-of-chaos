@@ -366,6 +366,25 @@ final class CommandsTab {
                 InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
         b.addView(name);
         b.addView(pass, ui.gap(6));
+        if (pass.getEditText() != null) {
+            // the window is FLAG_SECURE while the password field is in focus or holds text
+            final android.widget.EditText pe = pass.getEditText();
+            pe.setOnFocusChangeListener((v, focus) -> a.secret("account-pass", focus || pe.length() > 0));
+            pe.addTextChangedListener(new android.text.TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int st, int c, int af) {
+                }
+
+                @Override
+                public void onTextChanged(CharSequence s, int st, int b4, int c) {
+                }
+
+                @Override
+                public void afterTextChanged(android.text.Editable e) {
+                    a.secret("account-pass", pe.hasFocus() || e.length() > 0);
+                }
+            });
+        }
         MaterialButton create = ui.primary("Criar conta", 0);
         create.setOnClickListener(v -> account("account-create", "Criar conta", name, pass));
         MaterialButton change = ui.secondary("Trocar senha", 0);

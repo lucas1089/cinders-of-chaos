@@ -40,6 +40,8 @@ final class SpectateCard {
     private final MaterialButton liveB;
     private final MaterialButton photoB;
     private final MaterialButton stopB;
+    private final MaterialButton lightB;
+    private boolean readable = true;
     private final CastView live;
     private final ImageView view;
     private final TextView info;
@@ -68,6 +70,15 @@ final class SpectateCard {
         stopB.setOnClickListener(v -> stop("Parado."));
         stopB.setEnabled(false);
         b.addView(ui.evenRow(liveB, photoB, stopB), ui.gap(8));
+        lightB = ui.flat("Luz clara", R.drawable.ic_search);
+        lightB.setOnClickListener(v -> {
+            readable = !readable;
+            live.readableLight(readable);
+            lightB.setText(readable ? "Luz clara" : "Luz do jogo");
+            lastHealth = "";
+            health();
+        });
+        b.addView(lightB, ui.gap(2));
 
         live = new CastView(a);
         live.setVisibility(View.GONE);
@@ -156,6 +167,8 @@ final class SpectateCard {
         view.setVisibility(View.GONE);
         info.setVisibility(View.GONE);
         live.reset();
+        live.readableLight(readable);
+        lastHealth = "";
         live.setVisibility(View.VISIBLE);
         live.animate(true);
         say("Conectando a " + n + "...");
@@ -227,6 +240,14 @@ final class SpectateCard {
         if ("spr".equals(t) || "hb".equals(t)) {
             return t;
         }
+        if ("sprerr".equals(t)) {
+            a.main.post(() -> {
+                if (gen == generation) {
+                    health();
+                }
+            });
+            return t;
+        }
         final JSONObject st = live.stats();
         a.main.post(() -> {
             if (gen != generation) {
@@ -247,6 +268,7 @@ final class SpectateCard {
                 case "full":
                 case "d":
                     stats(st);
+                    health();
                     break;
                 case "end":
                     stop(endText(j.optString("why")));
@@ -256,6 +278,19 @@ final class SpectateCard {
             }
         });
         return t;
+    }
+
+    private String lastHealth = "";
+
+    /** The state line while live: a sprite problem or darkness is said at once, never left as a black view. */
+    private void health() {
+        String p = live.problem();
+        String text = p != null ? "Sprites: " + p
+                : live.dark() ? "Escuro como no jogo (noite ou subsolo). Toque em Luz clara para ver o mapa." : "Ao vivo.";
+        if (!text.equals(lastHealth)) {
+            lastHealth = text;
+            say(text);
+        }
     }
 
     private void ended(int gen, int code, Exception e, String last) {
