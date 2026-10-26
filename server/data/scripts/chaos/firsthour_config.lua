@@ -128,9 +128,9 @@ return {
 			pt = "Hora de melhorar a arma: as lojas da cidade vendem uma arma mais forte para a sua classe, e o Comprador de "
 				.. "Saque paga pelo que você achou. Economy > Item Finder mostra quem vende cada item. Caçadas do seu nível: %s."},
 		{key = "nextspells", level = 16,
-			en = "Your class learns a new spell between levels 12 and 20, and more at levels 25, 30 and 35: Character > Spellbook lists every spell with its level. Meanwhile, "
+			en = "Your class learns new spells around levels 12-14 and 20, and more at levels 25, 30 and 35: Character > Spellbook lists every spell with its level. Meanwhile, "
 				.. "spend the passive points (levels 12, 16 and 20) and take a bounty: Adventure > Next Goals shows the next step.",
-			pt = "Sua classe aprende uma nova magia entre os níveis 12 e 20, e mais nos níveis 25, 30 e 35: Personagem > Spellbook lista cada magia com o seu nível. "
+			pt = "Sua classe aprende novas magias por volta dos níveis 12-14 e 20, e mais nos níveis 25, 30 e 35: Personagem > Spellbook lista cada magia com o seu nível. "
 				.. "Enquanto isso, gaste os pontos passivos (níveis 12, 16 e 20) e aceite uma recompensa: Adventure > Próximos objetivos mostra o próximo passo."}
 	},
 

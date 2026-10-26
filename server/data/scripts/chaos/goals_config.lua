@@ -330,8 +330,8 @@ C.goals = {
 	-- O240: the next step between the passive point (12) and level 20; every class learns a spell at 12-20 (O241), more at 25
 	{key = "spells25", level = 12, stat = "level", target = 25,
 		title = T("Reach level 25: new spells", "Alcance o nível 25: novas magias"),
-		why = T("Every class learns a new spell between levels 12 and 20 and more at levels 25, 30 and 35; the Spellbook lists each one with its level.",
-			"Toda classe aprende uma magia nova entre os níveis 12 e 20 e mais nos níveis 25, 30 e 35; o Spellbook lista cada uma com o seu nível."),
+		why = T("Every class learns new spells around levels 12-14 and 20 and more at levels 25, 30 and 35; the Spellbook lists each one with its level.",
+			"Toda classe aprende novas magias por volta dos níveis 12-14 e 20 e mais nos níveis 25, 30 e 35; o Spellbook lista cada uma com o seu nível."),
 		where = win("game_spellbook"),
 		effort = T("About 5 minutes of hunting past level 20.", "Cerca de 5 minutos de caça depois do nível 20.")},
 	-- 20-49

@@ -22836,6 +22836,26 @@ classes; 5 for the Necromancer, Lich and Bone Lord). The 16 to 25 stretch is not
 about 20. Regenerated: `spelldata.lua`. The tip `nextspells` and goal `spells25` say "more at levels 25, 30 and 35" (en,
 pt-BR). The Clarity vigil reserves 20% of the mana, so at 35 it is a real choice, not a free buff (not played).
 
+**O250 (2026-10-26): a new spell around level 20 for every class.** `--spells` showed 9 levels without a new spell (16 to 25)
+for 18 classes, and behind it a second gap the table did not show: 8 to 16, since the O241 spells sit at 16. Two moves per
+line close both, to at most 6 levels in 8-35 (was 9; the Ranger line 4, 2, 6, 5; the Necromancer line 5). A second spell
+from the line's own kit at 20, an attack spell where the mana runway allows: Earthbreaker 60 -> 20 (Warrior, Juggernaut,
+Berserker), Sanctum Burst 50 -> 20 (Ranger, Deadeye, Beastmaster; base spell, `stock_spells.csv` and a level in
+`spell_timings.csv`), Witchfire Bolt 30 -> 20 (Mystic, Elementalist), Blade Flurry 50 -> 20 (Thief, Ninja, Samurai), Palm
+Shockwave 50 -> 20 (Monk, Shadowfist, Iron Sage). Two lines get a heal because no attack spell fits. Templar line: Vow of
+Mending 30 -> 20; Hallowed Cut (80) was the other candidate, but its 115 mana (and Consecration's 95) leaves a Templar or
+Sentinel pool of 192 with 14.9 s of casting at level 20, under the 15 s runway of `rotation_sim_test.py` (the Inquisitor
+passes: it regenerates more). Illusionist: Purifying Wellspring 40 -> 20 (the Mystic's too); Bewitching Hex (60) was
+the only attack candidate and it is far above the other classes (Illusionist 26 -> 136 damage a second on one target at
+level 20, Mystic 55 -> 206; the median class is about 25), so it stays at 60. The O241 spells move from 16 to 14 so the first wait
+(8 to 14) is 6 levels: Reaping Gyre, Rime Bloom, Arcane Ripple, Sundering Palm, Consecration, Snare Trap (also the Thief
+line's; the Ranger line keeps Dawnpiercer at 12 and gets Snare Trap at 14). Attack counts per class do not change
+(`check_attack_counts.py` counts the total, 10 each). Damage formulas are unchanged and scale with level, so the moved
+spells hit softly at 20 and grow with you; cooldowns stay (the ladder is by damage). Regenerated: `spelldata.lua`,
+`autorotation_data.lua` (`rotation_sim.py --write`: a preset at 20 for the lines with an attack spell there), `wiki_data.json`, the Spellbook hero
+image of the wiki. `--spells` now covers levels 8-35. The tip `nextspells` and goal `spells25` say "around levels 12-14
+and 20, more at 25, 30 and 35" (en, pt-BR).
+
 ## Next Goals (`goals.lua`, `goals_core.lua`, `goals_config.lua`, `sql/chaos_goals.sql`, client `game_goals`)
 
 Owner goal (2026-10-15): item acquisition and progression must be clear: how to evolve, what the goal is, what to do

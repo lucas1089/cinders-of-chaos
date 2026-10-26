@@ -320,12 +320,12 @@ if mode == "--spells" then
 	local lv = M.unlockLevels()
 	for voc in pairs(lv) do names[#names + 1] = voc end
 	table.sort(names)
-	print("| Class | Spells | Last unlock | Longest stretch without a new spell in levels 8-30 | Longest stretch without a new spell below level 300 | After the last unlock |")
+	print("| Class | Spells | Last unlock | Longest stretch without a new spell in levels 8-35 | Longest stretch without a new spell below level 300 | After the last unlock |")
 	print("|---|---|---|---|---|---|")
 	for _, voc in ipairs(names) do
 		local g = M.longestSpellGap(lv[voc], 300)
 		local last = lv[voc][#lv[voc]]
-		local e = M.earlyGap(lv[voc], 8, 30)
+		local e = M.earlyGap(lv[voc], 8, 35)
 		print(string.format("| %s | %d | %d | %d levels (%d to %d) | %d levels (%d to %d) | %d levels to 2200 |", voc, #lv[voc], last,
 			e[1], e[2], e[3], g[1], g[2], g[3], 2200 - last))
 	end
