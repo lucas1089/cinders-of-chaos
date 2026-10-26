@@ -475,6 +475,16 @@ jobs:
           g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" client/tools/chaosrecoil_test.cpp -o "$d/chaosrecoil_asan"
           "$d/chaosrecoil_asan"
 
+      - name: Creature shadow placement (C++; header from base patch 0155)
+        run: |
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/client\/chaosshadow\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            client/base-patches/0155-shadow-under-the-feet.patch > "$d/chaosshadow.h"
+          g++ -std=c++17 -O1 -Wall -Wextra -I "$d" client/tools/chaosshadow_test.cpp -o "$d/chaosshadow_test"
+          "$d/chaosshadow_test"
+          g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" client/tools/chaosshadow_test.cpp -o "$d/chaosshadow_asan"
+          "$d/chaosshadow_asan"
+
       - name: Eased bars bookkeeping (C++; header from base patch 0146)
         run: |
           d=$(mktemp -d)
