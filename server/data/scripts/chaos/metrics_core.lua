@@ -12,6 +12,7 @@
 --   M.killerName(kind, name, cfg)             the monster's name, or the label of a player / summon / environment
 --   M.areaFor(pos, instanceLabel, spots, cfg) death area label
 --   M.milestonesCrossed(old, new, mask, cfg)  -> list of milestones newly reached, new mask
+--   M.suppress(n, cfg)                        n, or the text "<5" for 1 to minShown - 1 (the report tool does the same; 0 stays 0)
 --   M.sessionMinutes(seconds)                 whole minutes, a session of 0 s counts as 0
 -- Table: kind, k1, k2, n. Kinds: death_area (k1 area, k2 band), death_monster (k1 monster, k2 band),
 -- session1 (k1 minute bucket), ttl (k1 milestone level, k2 minute bucket), churn (k1 band, k2 gone | active),
@@ -91,6 +92,16 @@ function M.sessionMinutes(seconds)
 		return 0
 	end
 	return floor(seconds / 60)
+end
+
+-- small-number suppression: a count behind which fewer than cfg.minShown players could stand is never shown exactly
+function M.suppress(n, cfg)
+	n = floor(tonumber(n) or 0)
+	local min = (cfg and cfg.minShown) or 5
+	if n > 0 and n < min then
+		return "<" .. min
+	end
+	return n
 end
 
 -- ---------------------------------------------------------------- names

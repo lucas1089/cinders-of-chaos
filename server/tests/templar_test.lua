@@ -96,7 +96,7 @@ eq(T.regenAmount(10000, 10000, {regenPct = 0.004}), 0)
 eq(T.regenAmount(100, 200, {regenPct = 0.004}), 1, "at least 1")
 eq(T.regenAmount(100, 200, {reduction = 0.06, regenPct = 0}), 0, "the Templar's aura does not heal")
 
--- ------------------------------------------------------------------ weapon hits, Judgement, Zealotry
+-- ------------------------------------------------------------------ weapon hits, Judgement
 eq(T.radiantDamage(TEMPLAR, 1000, false), 150); eq(T.radiantDamage(INQ, -1000, false), 250)
 eq(T.radiantDamage(SENT, 1000, true), 200, "against players from the unhalved hit")
 eq(T.radiantDamage(4, 1000, false), 0); eq(T.radiantDamage(TEMPLAR, 0, false), 0)
@@ -107,16 +107,6 @@ eq(T.smiteScale(4, 300), 1); eq(T.smiteScale(INQ, 119), 0.55, "no Purging Nova y
 eq(T.smiteScale(TEMPLAR, 50), 0.56)
 near(T.judgementFactor(true, true), 1.2); near(T.judgementFactor(false, true), 1); near(T.judgementFactor(true, false), 1)
 
-T.zeal = {}
-near(T.zealMultiplier(1, 0, true), 1, "no stacks yet")
-for i = 1, 12 do T.zealHit(1, i * 100) end
-eq(T.zealStacks(1, 1300), 10, "capped at 10")
-near(T.zealMultiplier(1, 1300, true), 1.4)
-eq(T.zealStacks(1, 1200 + 2999), 10, "kept within the decay window")
-eq(T.zealStacks(1, 1200 + 3000), 0, "gone 3 s after the last hit")
-T.zealHit(1, 10000)
-near(T.zealMultiplier(1, 10000, false), 1, "no buff: no bonus")
-eq(T.zealStacks(1, 10001), 0, "and the stacks are dropped")
 
 -- ------------------------------------------------------------------ heals and spells
 eq(T.novaHeal(10000, 20000), 1000, "10% of the damage")
@@ -202,16 +192,13 @@ p = onHealth(mob, ally, 1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELE
 eq(p, 1000, "judged: physical unchanged")
 mob.conds = {}
 
--- Zealotry: the Inquisitor's damage grows with each melee hit while the buff is up
-iq.conds[cfg.ids.subId.zealotry] = true
-T.zeal = {}
-p = onHealth(mob, iq, 1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE)
-eq(p, 1040, "first hit: 1 stack")
-p = onHealth(mob, iq, 1000, COMBAT_HOLYDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL)
-eq(p, 1040, "spells get the stacks, do not add one")
+-- Zealotry is gone (O254): an Inquisitor melee hit is not scaled by any buff
 iq.conds = {}
 p = onHealth(mob, iq, 1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE)
-eq(p, 1000, "buff gone: no bonus")
+eq(p, 1000, "no stack mechanic")
+eq(T.zealHit, nil, "no zeal functions left")
+eq(cfg.zealotry, nil, "no zealotry config left")
+eq(cfg.ids.subId.zealotry, nil, "no zealotry sub id")
 
 -- the aura: a covered party member takes less; healing is never touched
 T.auraState = {}

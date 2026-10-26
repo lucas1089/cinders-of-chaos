@@ -6,15 +6,12 @@
 --     aura counts, they do not stack.
 --   * Radiant Strikes (passive, all three): a melee weapon hit is followed by a holy strike for a share of it.
 --   * Judgement (Inquisitor spell): a timer condition on the target; holy damage it takes, from anyone, is raised.
---   * Zealotry (Inquisitor spell): a timer condition on the Inquisitor; melee weapon hits add stacks, each stack raises
---     all its damage. The stacks fall off a few seconds after the last hit.
 --   * Aegis of Faith (Sentinel spell): a timer condition on the Sentinel; damage taken is cut for its duration.
 --   * Penitent's Wrath (the line's keystone in the main tree, node 376): a melee / ranged hit taken is answered with a
 --     holy strike on the attacker (40% of what was taken + 4 x magic level, one every 0.5 s); the own aura's reduction
 --     is halved (its party members' too).
 -- Scripted strikes (the holy strike) are dealt with origin ORIGIN_SPELL inside a guard flag, so they never trigger the
--- weapon-hit rules again (nor Zealotry a second time: the strike is a share of a hit Zealotry already raised). Not
--- ORIGIN_NONE: the engine runs no onHealthChange event for it, so Judgement and the curse never saw the strike.
+-- weapon-hit rules again. Not ORIGIN_NONE: the engine runs no onHealthChange event for it, so Judgement and the curse never saw the strike.
 
 if not ChaosTemplar then
 	dofile("data/scripts/chaos/templar_aura_core.lua")
@@ -184,7 +181,7 @@ local function penitentStrike(playerId, attackerId, amount)
 	end
 end
 
--- damage `creature` takes from a Templar-line attacker: Zealotry, Radiant Strikes
+-- damage `creature` takes from a Templar-line attacker: Radiant Strikes
 local function onOffence(creature, player, primaryDamage, secondaryDamage, origin)
 	local voc = player:getVocation():getId()
 	if not T.isTemplarLine(voc) then
@@ -194,20 +191,7 @@ local function onOffence(creature, player, primaryDamage, secondaryDamage, origi
 	if amount == 0 or scripted then
 		return primaryDamage, secondaryDamage
 	end
-	local now = T.now()
 	local isMeleeHit = origin == ORIGIN_MELEE and not scripted
-	if T.isInquisitor(voc) then
-		local buff = hasTimer(player, SUB.zealotry)
-		if buff and isMeleeHit then
-			T.zealHit(player:getId(), now)
-		end
-		local mult = T.zealMultiplier(player:getId(), now, buff)
-		if mult ~= 1 then
-			primaryDamage = T.scale(primaryDamage, mult)
-			secondaryDamage = T.scale(secondaryDamage, mult)
-			amount = math.abs(primaryDamage) + math.abs(secondaryDamage)
-		end
-	end
 	if isMeleeHit then
 		local value = T.radiantDamage(voc, amount, creature:isPlayer(), CT.value(player, "ctBurningZeal", "share"))
 		if value > 0 then

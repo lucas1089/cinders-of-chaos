@@ -42,6 +42,10 @@ return {
 	killerSummon = "Player's summon",
 	killerOther = "Environment or unknown",
 
+	-- small-number suppression in every report (progress_metrics.py MIN_SHOWN, metrics_core.lua M.suppress): a count
+	-- of 1 to minShown - 1 is shown as "<5", with its share and median left out. Keep both in step.
+	minShown = 5,
+
 	-- who is left out: a staff character (group id above this) and a tester bot (Chaos.isTester)
 	maxGroupId = 1,
 

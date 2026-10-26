@@ -31,7 +31,7 @@ M.ids = {
 	clientByte = {[17] = 8, [18] = 18, [19] = 28},
 	-- spell ids (below 256: the 10.98 cooldown packet sends one byte); 73, 74 kept free for the line
 	spell = {
-		ashenFist = 63, sunderingPalm = 64, whirlingHeel = 65, kindledBreath = 66, mistborneStep = 67,
+		ashenFist = 63, sunderingPalm = 64, whirlingHeel = 65, kindledBreath = 66, mistborneStrike = 67,
 		pressurePoints = 68, shadowfistFlurry = 69,
 		chiWard = 70, ironPalm = 71, mantraOfStone = 72
 	},
@@ -51,7 +51,7 @@ M.ids = {
 		ward = 71031, -- Chi Ward shield (timer; the amount is storage.wardAmount)
 		mantra = 71032, -- Mantra of Stone: damage taken reduced
 		mantraDeep = 71037, -- Mantra of Stone of an Iron Sage with the passive tree's Deep Mantra (a stronger reduction)
-		roll = 71033, -- Mistborne Step: dodge window
+		-- 71033 retired (the Mistborne Step dodge window, O254): never reused
 		stun = 71034, -- Iron Palm stun (CONDITION_PARALYZE on a monster, CONDITION_PACIFIED on a player)
 		stunImmune = 71035, -- after a stun the monster / player cannot be stunned again for a while
 		stunDr = 71038, -- a player stunned within this window is stunned for less (diminishing returns)
@@ -92,8 +92,8 @@ M.cfg = {
 	},
 	-- (spellLevelScale, a level factor of the strikes that stood in for the passive tree, was dropped with the class trees:
 	-- M.levelScale is 1 unless one is set here or in Chaos.classes)
-	-- dodge chance against melee / ranged hits, per vocation; Mistborne Step adds `roll` for rollMs
-	evasion = {[17] = 0.06, [18] = 0.08, [19] = 0.04, roll = 0.25, rollMs = 2000},
+	-- dodge chance against melee / ranged hits, per vocation
+	evasion = {[17] = 0.06, [18] = 0.08, [19] = 0.04},
 	-- Shadowfist: a finisher opens a focus window; weapon hits and Monk strikes in it crit with critPerChi x chi spent.
 	-- Measured (server/data/spells/README.md "Monk line"): the window covers nearly all of the rotation's damage at
 	-- 5 chi, so the total is about (crit-free total) x (1 + 0.5 x 5 x critPerChi): 0.08 gave +20% (1258 at level 300,
@@ -121,9 +121,7 @@ M.cfg = {
 	sageBreath = {perLevel = 0, perFist = 33, range = 5},
 	-- Mantra of Stone: party members within radius take `reduction` less damage while it lasts; every pulse also heals
 	-- them (and the Iron Sage) for level x heal.perLevel + fist x heal.perFist
-	mantra = {reduction = 0.08, durationMs = 12000, pulseMs = 2000, radius = 6, heal = {perLevel = 1.0, perFist = 26}},
-	-- Mistborne Step: dash range
-	step = {maxSteps = 3}
+	mantra = {reduction = 0.08, durationMs = 12000, pulseMs = 2000, radius = 6, heal = {perLevel = 1.0, perFist = 26}}
 }
 
 local function cfg()
@@ -471,22 +469,17 @@ function M.critGivesChi(id, now, icdMs)
 	return true
 end
 
--- dodge chance of a Monk (rolling: Mistborne Step's window)
-function M.dodgeChance(vocId, rolling)
-	local e = cfg().evasion
-	local c = e[vocId] or 0
-	if rolling and M.isMonkLine(vocId) then
-		c = c + e.roll
-	end
-	return c
+-- dodge chance of a Monk
+function M.dodgeChance(vocId)
+	return cfg().evasion[vocId] or 0
 end
 
 -- noDodge: Scarred Discipline (the line keystone) takes the evasion away
-function M.dodges(vocId, isWeaponAttack, rolling, roll, noDodge)
+function M.dodges(vocId, isWeaponAttack, roll, noDodge)
 	if noDodge then
 		return false
 	end
-	return isWeaponAttack and roll < M.dodgeChance(vocId, rolling) or false
+	return isWeaponAttack and roll < M.dodgeChance(vocId) or false
 end
 
 -- Scarred Discipline (the line keystone, class_tree.lua fx.ksScarredDiscipline): a hit taken gives fx.chi when the last

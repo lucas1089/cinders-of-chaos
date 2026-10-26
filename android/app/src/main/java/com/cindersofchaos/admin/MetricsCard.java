@@ -78,16 +78,28 @@ final class MetricsCard {
                     + "abandono é feito 1 minuto depois de ligar o servidor e a cada 24 horas.");
             return;
         }
-        long total = m.gone + m.active;
+        boolean hidden = m.gone == MetricsInfo.SMALL || m.active == MetricsInfo.SMALL;
+        long total = hidden ? 0 : m.gone + m.active;
         String when = MetricsInfo.when(m.churnAt);
-        summary.setText(total == 0 ? "Sem retrato de abandono ainda."
-                : "Retrato de abandono" + (when.isEmpty() ? "" : " de " + when) + ": " + m.gone + " de " + total
-                + " personagens sem entrar há mais de " + m.churnDays + " dias (" + MetricsInfo.pct(100.0 * m.gone / total)
-                + ").");
+        if (hidden) {
+            summary.setText("Retrato de abandono" + (when.isEmpty() ? "" : " de " + when) + ": " + MetricsInfo.n(m.gone)
+                    + " personagens sem entrar há mais de " + m.churnDays + " dias, " + MetricsInfo.n(m.active)
+                    + " ativos (grupos com menos de 5 não são mostrados).");
+        } else {
+            summary.setText(total == 0 ? "Sem retrato de abandono ainda."
+                    : "Retrato de abandono" + (when.isEmpty() ? "" : " de " + when) + ": " + m.gone + " de " + total
+                    + " personagens sem entrar há mais de " + m.churnDays + " dias ("
+                    + MetricsInfo.pct(100.0 * m.gone / total) + ").");
+        }
 
         section("Onde os jogadores param (sem login há " + m.churnDays + "+ dias, por faixa de nível)");
         boolean any = false;
         for (MetricsInfo.Band x : m.bands) {
+            if (x.gone == MetricsInfo.SMALL || x.active == MetricsInfo.SMALL || x.gonePct < 0) {
+                any = true;
+                bar("Nível " + x.band, 0, "<5 personagens", ui.gold);
+                continue;
+            }
             long t = x.gone + x.active;
             if (t == 0) {
                 continue;
@@ -103,14 +115,14 @@ final class MetricsCard {
         killers("Onde morrem (10 áreas com mais mortes)", m.areas);
         killers("Quem mata (10 monstros com mais mortes)", m.monsters);
 
-        section("Primeira sessão de um personagem novo (" + m.sessionCharacters + ")");
+        section("Primeira sessão de um personagem novo (" + MetricsInfo.n(m.sessionCharacters) + ")");
         if (m.sessions.isEmpty()) {
             note("Sem dados.");
         }
         String prev = "";
         for (MetricsInfo.Bucket x : m.sessions) {
-            bar(MetricsInfo.bucketText(x.bucket, prev), (int) Math.round(x.pct),
-                    MetricsInfo.pct(x.pct) + "  ·  " + x.characters, ui.gold);
+            bar(MetricsInfo.bucketText(x.bucket, prev), x.pct < 0 ? 0 : (int) Math.round(x.pct),
+                    MetricsInfo.pct(x.pct) + "  ·  " + MetricsInfo.n(x.characters), ui.gold);
             if (!x.bucket.equals("inf")) {
                 prev = x.bucket;
             }
@@ -122,7 +134,7 @@ final class MetricsCard {
         }
         for (MetricsInfo.Milestone x : m.milestones) {
             TextView t = ui.text("Nível " + x.level + ":  " + MetricsInfo.minutes(x.medianMinutes) + "   ("
-                    + x.characters + (x.characters == 1 ? " personagem)" : " personagens)"));
+                    + MetricsInfo.n(x.characters) + (x.characters == 1 ? " personagem)" : " personagens)"));
             t.setPadding(0, ui.dp(2), 0, ui.dp(2));
             out.addView(t);
         }
@@ -140,7 +152,8 @@ final class MetricsCard {
         }
         for (MetricsInfo.Killer k : list) {
             bar(k.name, MetricsInfo.percent(k.deaths, max),
-                    k.deaths + (k.deaths == 1 ? " morte" : " mortes") + "  ·  mais no nível " + k.topBand, ui.ember);
+                    MetricsInfo.n(k.deaths) + (k.deaths == 1 ? " morte" : " mortes")
+                            + (k.topBand.isEmpty() ? "" : "  ·  mais no nível " + k.topBand), ui.ember);
         }
     }
 

@@ -1,15 +1,14 @@
 -- templar_aura_core.lua: the Templar line (docs/CLASSES.md, the seventh class): Templar (base) -> Inquisitor |
 -- Sentinel. Every id and number of the line is in ChaosTemplar.cfg below (one table), followed by the rules that need
 -- no engine: the party defence aura (which members a Templar covers, which aura wins, what it takes off a hit, the
--- Sentinel's regeneration), Radiant Strikes, Judgement, Zealotry, Aegis of Faith and the heals.
+-- Sentinel's regeneration), Radiant Strikes, Judgement, Aegis of Faith and the heals.
 --
 -- Pure: no engine calls, no events. Loaded by data/scripts/chaos/templar_combat.lua (scripts Lua state) and by the
 -- spells through data/spells/chaos/_templar.lua (spells Lua state). Unit tests: server/tests/templar_test.lua.
 -- Lua 5.1 / LuaJIT and Lua 5.3 compatible.
 --
--- Times are milliseconds from whatever clock the caller passes (os.mtime on the server). State (aura, Zealotry
--- stacks) is per creature id and lives in memory: it does not survive a relog or a /reload, which is fine for
--- effects of a few seconds.
+-- Times are milliseconds from whatever clock the caller passes (os.mtime on the server). State (aura) is per creature id
+-- and lives in memory: it does not survive a relog or a /reload, which is fine for effects of a few seconds.
 
 ChaosTemplar = ChaosTemplar or {}
 local M = ChaosTemplar
@@ -26,14 +25,14 @@ M.cfg = {
 		-- server (stock spells.xml, the Chaos block) and in the client's spell list
 		spell = {
 			radiantSmite = 189, consecration = 190, vowOfMending = 191, -- Templar (all three classes)
-			judgement = 198, purgingNova = 199, zealotry = 250, -- Inquisitor
+			judgement = 198, purgingNova = 199, crusadersSweep = 250, -- Inquisitor (was Zealotry until O254)
 			rebuke = 251, aegisOfFaith = 252, layOnHands = 253 -- Sentinel
 		},
 		-- condition sub ids (CONDITIONID_COMBAT, CONDITION_ATTRIBUTES without attributes = a timer). The spells and
 		-- templar_combat.lua run in different Lua states; the conditions are the state both see.
 		-- Next to chaos_constants.lua (71001-71014), the Necromancer (71020-71023) and the Monk (71030-71044); 71050-71053.
 		-- auraRegen: the Sentinel aura's regeneration on a covered player (CONDITION_REGENERATION, refreshed every second)
-		subId = {judgement = 71050, zealotry = 71051, aegis = 71052, auraRegen = 71053},
+		subId = {judgement = 71050, aegis = 71052, auraRegen = 71053}, -- 71051 retired (Zealotry, O254): never reused
 		-- the class key of the store unlock (class_unlocks.lua, ChaosClassUnlocks)
 		unlockKey = "templar"
 	},
@@ -72,9 +71,6 @@ M.cfg = {
 	-- ------------------------------------------------------------------ Inquisitor
 	-- Judgement (spell): the target takes `bonus` more holy damage from every source (the party's too) for durationMs
 	judgement = {durationMs = 8000, bonus = 0.20},
-	-- Zealotry (spell): while the buff lasts every melee weapon hit adds a stack (max maxStacks); each stack is
-	-- +perStack damage on everything the Inquisitor deals. The stacks drop to zero decayMs after the last hit.
-	zealotry = {durationMs = 20000, perStack = 0.04, maxStacks = 10, decayMs = 3000},
 	-- Purging Nova (spell): heals the Inquisitor for healShare of the damage it deals, at most healCapPct of its
 	-- maximum health per cast (the line's "little sustain")
 	purgingNova = {healShare = 0.10, healCapPct = 0.05},
@@ -288,38 +284,6 @@ function M.judgementFactor(isHoly, judged)
 	return 1
 end
 
--- ------------------------------------------------------------------------------------------------ Zealotry
--- zeal[id] = {stacks = n, lastHit = ms}
-M.zeal = M.zeal or {}
-
-function M.zealStacks(id, now)
-	local z = M.zeal[id]
-	if not z then
-		return 0
-	end
-	if now - z.lastHit >= cfg().zealotry.decayMs then
-		M.zeal[id] = nil
-		return 0
-	end
-	return z.stacks
-end
-
--- a melee weapon hit while the buff is up: one more stack
-function M.zealHit(id, now)
-	local stacks = M.zealStacks(id, now)
-	M.zeal[id] = {stacks = math.min(cfg().zealotry.maxStacks, stacks + 1), lastHit = now}
-	return M.zeal[id].stacks
-end
-
--- the damage factor of everything the Inquisitor deals (1 without the buff)
-function M.zealMultiplier(id, now, buffActive)
-	if not buffActive then
-		M.zeal[id] = nil
-		return 1
-	end
-	return 1 + M.zealStacks(id, now) * cfg().zealotry.perStack
-end
-
 -- ------------------------------------------------------------------------------------------------ heals
 -- Purging Nova's heal for the damage it dealt
 function M.novaHeal(dealt, maxHealth)
@@ -395,7 +359,6 @@ end
 
 -- forget everything about a creature (logout, death)
 function M.clear(id)
-	M.zeal[id] = nil
 	M.auraState[id] = nil
 	M.penitentLast[id] = nil
 end

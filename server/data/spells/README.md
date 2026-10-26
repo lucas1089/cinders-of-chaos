@@ -78,7 +78,7 @@ All have `groupcooldown=2000`, `needlearn=0` (everyone of the vocation and level
 | 218 | Final Verdict | `kah gal sol judh` | D | 200 | 450 | 11s | Heavy holy strike (distance skill); +50% damage against targets under 25% health. |
 | 219 | Hail of Dawn | `drai gal vas sol volv` | R, D | 280 | 800 | 13s | **Cast time 1 s.** 3 volleys of 4 holy arrows, every arrow strikes the target (distance skill). |
 | 135 | Tautstring | `vyr sag` | R, D, BM | 60 | 300 | 30s | +25% distance skill for 12s; nothing else (no slow, no lock). In place of the stock Hawkeye, retired 2026-10-20 ("Tautstring" below). |
-| 134 | Wildstride | `ruan vert` | R, D, BM | 55 | 150 | 30s | +50% speed (0.5 x speed - 40, own sub id: adds to Haste) for 12s; no pacify, no lock. In place of the stock Windrunner, retired 2026-10-20 ("Ironhold and Wildstride" below). |
+| 134 | Wildstride | `ruan vert` | R, D, BM | 55 | 150 | 30s | Since O254 the attack spell Gale Volley ("Support to attack (O254)" below); it was +50% speed for 12s, in place of the stock Windrunner ("Ironhold and Wildstride" below). |
 | **knight** | | | | | | | |
 | 220 | Reaping Gyre | `kah spir` | W, J, B | 14 | 30 | 6s | Three spinning strikes (0/0.4/0.8s) against adjacent enemies; uses weapon attack and skill. |
 | 221 | Earthbreaker | `kah grund krak` | W, J, B | 20 | 50 | 7s | Shockwave (5x5) with physical damage; staggers enemies (60% slow, 3s). |
@@ -139,7 +139,7 @@ All have `groupcooldown=2000`, `needlearn=0` (everyone of the vocation and level
 | 64 | Sundering Palm | `kah gal dhun` | Mo, SF, IS | 14 | 50 | 11s | Finisher: heavy palm strike, x(0.30 + 0.14 per chi). |
 | 65 | Whirling Heel | `drai spir dhun` | Mo, SF, IS | 50 | 80 | 9s | Finisher: spinning kick on everything next to you (3x3), x chi scale. |
 | 66 | Kindled Breath | `saen qhal` | Mo, SF, IS | 40 | 100 | 8s | Finisher: heals yourself (level x 2 + fist x 6) x chi scale. Iron Sage (the second healer): the most hurt party member within 5 sqm (you without a party) for fist x 33 x chi scale, and 60% more over 6 s. |
-| 67 | Mistborne Step | `ash qhal` | Mo, SF, IS | 35 | 60 | 10s | Roll up to 3 sqm forward; +25% dodge for 2 s. |
+| 67 | Mistborne Step | `ash qhal` | Mo, SF, IS | 35 | 60 | 10s | Since O254 the attack spell Mistborne Strike ("Support to attack (O254)" below); it was a roll of up to 3 sqm with +25% dodge for 2 s. |
 | 68 | Pressure Points | `kah mynd dhun` | SF | 100 | 120 | 7s | Strike + 1 chi + a stack on the target (max 5, 8 s): +5% damage taken from Monks per stack. |
 | 69 | Shadowfist Flurry | `kah gal umh dhun` | SF | 150 | 300 | 12s | Finisher: 2 + 1 per chi hits, one every 0.2 s, while the target stays next to you. |
 | 70 | Chi Ward | `tor qhal ["Name"]` | IS | 100 | 200 | 12s | Finisher: shield absorbing (level x 2.5 + fist x 8) x chi scale for 8 s on a party member within 5 sqm (the named one, or the most hurt; you without a party). |
@@ -154,7 +154,7 @@ All have `groupcooldown=2000`, `needlearn=0` (everyone of the vocation and level
 | 191 | Vow of Mending | `saen tor fidh` | T, I, Se | 20 | 150 | 8s | Self heal: 8% max health + level/5 + ml x 4 (±10%). |
 | 198 | Judgement | `kah sol vehm` | I | 100 | 250 | 4s | Holy strike (range 5): P x 0.08-0.12 + ml x 1-1.5 + 20-40; the target takes +20% holy damage from everyone for 8 s. |
 | 199 | Purging Nova | `drai gal sol orr` | I | 120 | 350 | 6s | Holy circle of 3 sqm: P x 0.08-0.13 + ml x 1-1.5 + 20-40; heals 10% of the damage, at most 5% max health. |
-| 250 | Zealotry | `vyr sol zel` | I | 150 | 200 | 30s | 20 s: each melee weapon hit adds a stack, +4% to all damage per stack (max 10); stacks drop 3 s after the last hit. |
+| 250 | Zealotry | `vyr sol zel` | I | 150 | 200 | 30s | Since O254 the attack spell Crusader's Sweep ("Support to attack (O254)" below); it was a 20 s stack buff (+4% damage per melee hit, max 10). |
 | 251 | Rebuke | `vok sol kal` | Se | 100 | 150 | 12s | Taunts every monster within 4 sqm, 25% slow for 6 s. |
 | 252 | Aegis of Faith | `tor gal sol aeg` | Se | 120 | 150 | 25s | With a shield: -40% damage taken for 5 s. |
 | 253 | Lay on Hands | `saen gal manh "Name"` | Se | 150 | 400 | 60s | Party member (named, or the lowest health share) or itself within 5 sqm: 35% max health + ml x 10. |
@@ -610,7 +610,7 @@ Ascension at level 100 (the Ascendant Oracle), behind the store unlock of the Mo
   its attack). The level factor (x2 at level 1000) was dropped with the class trees ("Classes with the passive trees" below).
 - **Shadowfist**: a finisher opens a 4 s focus: weapon hits and strikes crit (x1.5) with 2.5% per chi spent (was 8%, see the
   measurement below). Pressure Points: +5% per stack.
-- **Evasion**: 6% Monk, 8% Shadowfist, 4% Iron Sage against melee and ranged hits; +25% for 2 s after Mistborne Step.
+- **Evasion**: 6% Monk, 8% Shadowfist, 4% Iron Sage against melee and ranged hits (the +25% window of Mistborne Step went with the spell, O254).
 
 **Estimate, not measured, with the former focus crit (8% per chi)** (`ztest`-style rotation computed from the formulas: 90 s, the auto attack averaged from the formula, dexterity 20,
 the 2 s group cooldown, best ready spell, finishers at 4+ chi, Pressure Points kept at 5 stacks; no passive tree; skill 110 at level 300, 140 at
@@ -3271,8 +3271,14 @@ numbers. Knots below 150 are untouched. `weapon_power_config.lua` was regenerate
 the Necromancer's own hit is 1.0 in `necro_balance_config.lua`. `minion_model.py --check` passes with its limits; the
 legacy numbers test builds `mages`.
 
-**Left over (dead code, not removed).** Buff-bar rows and SUBIDs of the five deleted scripts, the Zealotry stack
-mechanic in templar engine code and the monk roll hooks. They are never set now. A later pass can remove them.
+**Dead code removed (cleanup after O254).** The buff-bar rows `blood_pact`, `wildstride`, `roll` and `zealotry`
+(`chaos_buffs.lua`) and their icons (`buffs/`, `buffs_painted/`, `gen_buff_icons.py`), the SUBIDs `blood_pact` and
+`wildstride` (`ChaosSpell.SUBID`), the Zealotry stack mechanic (`templar_aura_core.lua` `zealotry` config, `zealHit`,
+`zealStacks`, `zealMultiplier`, the damage factor in `templar_combat.lua`) and the Monk roll hooks (`monk_chi_core.lua`
+`evasion.roll`, `rollMs`, `step`, the `rolling` argument of `dodgeChance` / `dodges`, the check in `monk_combat.lua`).
+`ids.spell.zealotry` is now `crusadersSweep` and `mistborneStep` is `mistborneStrike` (same ids 250 and 67). The condition
+sub ids **71001, 71033, 71051 and 71074 stay reserved and are never reused** (nothing sets them; a character online
+during the update may still carry one until it runs out, the bar just does not show it). `raise_archer` had no buff row.
 
 ### Mana cut (2026-10-22; owner: "custo de mana do ranger ainda está alto", "reveja o custo de mana das outras classes também"; computed with rotation_sim.py)
 

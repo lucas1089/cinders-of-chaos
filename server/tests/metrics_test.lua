@@ -52,6 +52,12 @@ eq(M.sessionMinutes(125), 2, "125 s")
 eq(M.sessionMinutes(-5), 0, "negative")
 
 -- ---------------------------------------------------------------- who counts
+eq(M.suppress(0, cfg), 0, "suppress: zero stays zero")
+eq(M.suppress(1, cfg), "<5", "suppress: 1")
+eq(M.suppress(4, cfg), "<5", "suppress: 4")
+eq(M.suppress(5, cfg), 5, "suppress: 5 is shown")
+eq(M.suppress(1234, cfg), 1234, "suppress: large")
+eq(cfg.minShown, 5, "minShown")
 check(M.eligible(1, false, cfg), "a player counts")
 check(M.eligible(0, false, cfg), "group 0 counts")
 check(not M.eligible(2, false, cfg), "group 2 (staff) does not")
