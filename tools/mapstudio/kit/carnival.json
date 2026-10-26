@@ -1,0 +1,552 @@
+{
+ "name": "carnival: abandoned macabre circus, tents, cages and carts",
+ "notes": "Cave mode: rings and midways are chambers, paths are tunnels, the iron cemetery fence (set 41294-41297) is the perimeter wall on the solid tile (dark grass). Floor: dirt, striped marquee floor patches as ring floors (sand), plank floor patches as stages. Decor: tents, market stalls, cages, carts, wagons, barrels, banners, lantern posts, pumpkin and bulb strings. Broken rides are missing (kits_wanted.json). See docs/kits/carnival.md.",
+ "water": {
+  "family": "G38003",
+  "lead": 38003,
+  "members": []
+ },
+ "base": {
+  "family": "G103",
+  "lead": 103,
+  "members": [
+   8594,
+   10176,
+   7352,
+   103,
+   8594
+  ]
+ },
+ "sand": {
+  "family": "G5159",
+  "lead": 5159,
+  "members": [
+   5160,
+   5174,
+   5159,
+   5160
+  ]
+ },
+ "rock_soil": {
+  "family": "G5159",
+  "lead": 5159,
+  "members": [
+   5160,
+   5174,
+   5159,
+   5160
+  ]
+ },
+ "mountain": {
+  "lead": 919,
+  "members": [
+   919
+  ]
+ },
+ "hill": {
+  "lead": 919,
+  "members": [
+   919
+  ]
+ },
+ "worn_share": 0,
+ "no_water_border": [
+  "sand",
+  "grey_sand",
+  "rock_soil",
+  "gravel"
+ ],
+ "layers": [
+  {
+   "kit": "water",
+   "border": null
+  },
+  {
+   "kit": "sand",
+   "border": null
+  },
+  {
+   "kit": "rock_soil",
+   "border": null
+  },
+  {
+   "kit": "grey_sand",
+   "border": null
+  },
+  {
+   "kit": "base",
+   "border": {
+    "water": "wall"
+   }
+  }
+ ],
+ "defaults": {
+  "hills": 0,
+  "levels": 1,
+  "mountains": 0,
+  "rivers": 0,
+  "lakes": 0,
+  "roads": 0,
+  "sand": 8,
+  "vegetation": 100,
+  "rough": 70
+ },
+ "batch_cap": {
+  "levels": 1
+ },
+ "flora": {
+  "G12234": {
+   "42983": 0.012,
+   "42984": 0.012,
+   "42985": 0.012,
+   "42986": 0.012,
+   "42989": 0.012,
+   "42990": 0.012,
+   "43001": 0.012,
+   "43002": 0.012,
+   "43003": 0.012,
+   "43011": 0.012,
+   "43013": 0.012,
+   "43014": 0.012,
+   "43015": 0.012,
+   "43018": 0.012,
+   "43021": 0.012,
+   "43024": 0.012,
+   "43027": 0.012,
+   "43029": 0.012,
+   "43030": 0.012,
+   "43035": 0.012
+  },
+  "G9068": {
+   "43013": 0.012,
+   "43014": 0.012,
+   "43015": 0.012,
+   "43018": 0.012,
+   "43021": 0.012,
+   "43024": 0.012,
+   "43027": 0.012,
+   "43029": 0.012,
+   "43030": 0.012,
+   "43035": 0.012,
+   "43039": 0.012,
+   "43041": 0.012,
+   "43042": 0.012,
+   "43045": 0.012,
+   "43049": 0.012,
+   "43050": 0.012,
+   "43055": 0.012,
+   "43056": 0.012,
+   "43061": 0.012,
+   "43062": 0.012
+  }
+ },
+ "top_flora": {},
+ "bank_flora": {
+  "G9021": {
+   "43016": 0.012,
+   "43022": 0.012,
+   "43028": 0.012,
+   "43048": 0.012,
+   "43057": 0.012,
+   "43060": 0.012,
+   "43070": 0.012,
+   "43071": 0.012,
+   "43092": 0.012,
+   "43093": 0.012,
+   "43097": 0.012,
+   "43098": 0.012,
+   "43101": 0.012,
+   "43102": 0.012,
+   "43104": 0.012,
+   "43023": 0.012,
+   "43025": 0.012,
+   "43051": 0.012,
+   "43108": 0.012,
+   "43107": 0.012,
+   "43059": 0.012,
+   "43058": 0.012,
+   "43033": 0.012,
+   "43074": 0.012,
+   "43073": 0.012,
+   "42987": 0.006,
+   "42991": 0.006,
+   "42992": 0.006,
+   "42993": 0.006,
+   "42994": 0.006,
+   "42995": 0.006,
+   "42996": 0.006,
+   "42997": 0.006,
+   "42998": 0.006,
+   "42999": 0.006,
+   "42984": 0.012,
+   "42989": 0.012,
+   "42990": 0.012,
+   "43001": 0.012,
+   "43002": 0.012,
+   "43003": 0.012,
+   "43011": 0.012,
+   "43024": 0.012,
+   "43027": 0.012,
+   "43029": 0.012,
+   "43030": 0.012,
+   "43035": 0.012
+  }
+ },
+ "hill_top": {},
+ "clumps": {
+  "quantiles": "study/cave-clumps.json",
+  "tops": {},
+  "big": {
+   "40187": 5,
+   "40188": 5,
+   "40189": 5,
+   "40190": 5,
+   "40191": 5,
+   "40192": 5,
+   "40193": 5,
+   "40194": 5,
+   "38985": 3,
+   "38986": 3,
+   "38987": 3,
+   "38988": 3,
+   "38989": 3,
+   "38990": 3,
+   "38991": 3,
+   "38992": 3,
+   "29132": 4,
+   "8781": 3,
+   "8783": 3,
+   "5544": 2,
+   "5546": 2,
+   "5547": 2,
+   "5548": 2,
+   "8581": 2,
+   "8734": 2,
+   "8735": 2,
+   "26459": 2,
+   "26460": 2,
+   "26464": 2,
+   "29351": 3,
+   "29354": 3,
+   "29360": 3,
+   "29361": 3,
+   "38983": 2,
+   "41369": 3,
+   "41370": 2,
+   "41384": 3,
+   "41561": 3,
+   "41562": 3,
+   "39043": 2,
+   "41214": 2,
+   "41380": 2,
+   "41553": 2,
+   "41563": 2
+  },
+  "small": {
+   "9495": 4,
+   "9496": 4,
+   "9499": 4,
+   "9500": 4,
+   "10378": 3,
+   "10379": 3,
+   "10388": 3,
+   "10389": 3,
+   "41557": 3,
+   "41558": 3,
+   "41555": 3,
+   "41556": 3,
+   "38993": 3,
+   "38994": 3,
+   "38995": 3,
+   "38996": 3,
+   "41388": 2,
+   "41575": 2,
+   "41389": 3,
+   "41197": 4,
+   "41195": 3,
+   "41198": 2,
+   "38533": 2,
+   "38532": 2,
+   "38308": 2,
+   "41383": 2
+  },
+  "boost": {
+   "big": 0.6,
+   "small": 0.5
+  }
+ },
+ "mountain_cliff": {
+  "edge_n": 5640,
+  "edge_e": 5641,
+  "edge_s": 5642,
+  "edge_w": 5639,
+  "inner_nw": 5648,
+  "inner_ne": 5652,
+  "inner_sw": 5650,
+  "inner_se": 5649,
+  "outer_nw": 5645,
+  "outer_ne": 5646,
+  "outer_sw": 5644,
+  "outer_se": 5643
+ },
+ "top_rim": {
+  "edge_n": 5640,
+  "edge_e": 5641,
+  "edge_s": 5642,
+  "edge_w": 5639,
+  "inner_nw": 5648,
+  "inner_ne": 5652,
+  "inner_sw": 5650,
+  "inner_se": 5649,
+  "outer_nw": 5645,
+  "outer_ne": 5646,
+  "outer_sw": 5644,
+  "outer_se": 5643
+ },
+ "hill_cliff": {
+  "edge_n": 5640,
+  "edge_e": 5641,
+  "edge_s": 5642,
+  "edge_w": 5639,
+  "inner_nw": 5648,
+  "inner_ne": 5652,
+  "inner_sw": 5650,
+  "inner_se": 5649,
+  "outer_nw": 5645,
+  "outer_ne": 5646,
+  "outer_sw": 5644,
+  "outer_se": 5643
+ },
+ "hill_rim": {
+  "edge_n": 5640,
+  "edge_e": 5641,
+  "edge_s": 5642,
+  "edge_w": 5639,
+  "inner_nw": 5648,
+  "inner_ne": 5652,
+  "inner_sw": 5650,
+  "inner_se": 5649,
+  "outer_nw": 5645,
+  "outer_ne": 5646,
+  "outer_sw": 5644,
+  "outer_se": 5643
+ },
+ "mountain_ramp": {
+  "n": [
+   1394,
+   1395
+  ],
+  "s": [
+   1392,
+   1393
+  ],
+  "e": [
+   1388,
+   1389
+  ],
+  "w": [
+   1390,
+   1391
+  ]
+ },
+ "hill_ramp": {
+  "n": [
+   1394,
+   1395
+  ],
+  "s": [
+   1392,
+   1393
+  ],
+  "e": [
+   1388,
+   1389
+  ],
+  "w": [
+   1390,
+   1391
+  ]
+ },
+ "floor": 9,
+ "cave": {
+  "shape": "chambers",
+  "wall_style": "on_rock",
+  "chambers": {
+   "per_1000": 1.0,
+   "radius": [
+    4,
+    8
+   ],
+   "spacing": 14
+  },
+  "tunnel_width": {
+   "3": 0.4,
+   "4": 0.3,
+   "5": 0.3
+  },
+  "loops": [
+   0.15,
+   0.25
+  ],
+  "spurs_per_1000": 3.0,
+  "floor_share": [
+   0.15,
+   0.25
+  ],
+  "pillars_per_chamber": 2,
+  "stairs": {
+   "count": [
+    1,
+    2
+   ]
+  },
+  "styles": {
+   "on_rock": {
+    "layers": [
+     {
+      "kit": "water",
+      "border": null
+     },
+     {
+      "kit": "sand",
+      "border": null
+     },
+     {
+      "kit": "rock_soil",
+      "border": null
+     },
+     {
+      "kit": "grey_sand",
+      "border": null
+     },
+     {
+      "kit": "base",
+      "border": {
+       "water": "wall"
+      }
+     }
+    ],
+    "no_water_border": [
+     "sand",
+     "grey_sand",
+     "rock_soil",
+     "gravel"
+    ]
+   }
+  },
+  "void_beyond": 1,
+  "meander": {
+   "amp": 2.5,
+   "scale": 12.0,
+   "width_jitter": 1
+  },
+  "void_jitter": 0
+ },
+ "pocket_fill": [
+  29351,
+  29354
+ ],
+ "repair_pocket": 1,
+ "stain": {
+  "family": "G12234",
+  "lead": 12234,
+  "members": [
+   12234,
+   12234,
+   12237,
+   12235,
+   12236
+  ]
+ },
+ "slate": {
+  "family": "G9068",
+  "lead": 9068,
+  "members": [
+   9068,
+   9073,
+   9069,
+   9071,
+   9070
+  ]
+ },
+ "clay": {
+  "family": "G103",
+  "lead": 103,
+  "members": [
+   103,
+   7352,
+   8594,
+   10176
+  ]
+ },
+ "patches": [
+  {
+   "ground": "grey_sand",
+   "share": 0.04,
+   "scale": 3,
+   "min": 2
+  }
+ ],
+ "same_look": [
+  [
+   "base",
+   "clay"
+  ],
+  [
+   "stain",
+   "clay"
+  ],
+  [
+   "slate",
+   "clay"
+  ],
+  [
+   "stain",
+   "slate"
+  ]
+ ],
+ "grey_sand": {
+  "family": "G29326",
+  "lead": 29326,
+  "members": []
+ },
+ "wall": {
+  "edge_n": 41295,
+  "edge_s": 41295,
+  "edge_e": 41296,
+  "edge_w": 41296,
+  "inner_nw": 41294,
+  "inner_ne": 41294,
+  "inner_sw": 41294,
+  "inner_se": 41294,
+  "outer_se": 41297,
+  "outer_nw": 41295,
+  "outer_ne": 41296,
+  "outer_sw": 41295
+ },
+ "meadow": {
+  "41197": 0.012,
+  "41195": 0.01,
+  "41198": 0.006,
+  "41389": 0.01
+ },
+ "swap_walkable": {
+  "2x2": [],
+  "3x3": [],
+  "2x3": [],
+  "1x1": [
+   29351,
+   29354
+  ]
+ },
+ "batch_variants": {
+  "841": "--size 96 --cave-shape chambers",
+  "842": "--size 96 --cave-shape mix",
+  "843": "--size 112 --cave-shape chambers",
+  "844": "--size 96 --cave-shape tunnels",
+  "845": "--size 112 --cave-shape mix",
+  "846": "--size 128 --cave-shape chambers",
+  "847": "--size 96 --cave-shape mix",
+  "848": "--size 112 --cave-shape tunnels"
+ }
+}
