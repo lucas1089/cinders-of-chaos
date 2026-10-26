@@ -70,6 +70,8 @@ final class SpectateCard {
         stopB.setOnClickListener(v -> stop("Parado."));
         stopB.setEnabled(false);
         b.addView(ui.evenRow(liveB, photoB, stopB), ui.gap(8));
+        live = new CastView(a);
+        live.setVisibility(View.GONE);
         lightB = ui.flat("Luz clara", R.drawable.ic_search);
         lightB.setOnClickListener(v -> {
             readable = !readable;
@@ -80,8 +82,6 @@ final class SpectateCard {
         });
         b.addView(lightB, ui.gap(2));
 
-        live = new CastView(a);
-        live.setVisibility(View.GONE);
         b.addView(live, ui.gap(10));
         view = new ImageView(a);
         view.setAdjustViewBounds(true);
