@@ -87,14 +87,18 @@ local function playerOf(creature)
 	return master and master:isPlayer() and master or nil
 end
 
-local function announce(text, toast)
+-- `what`: an English text, a deferred text (ChaosI18n.msg) or a function(lang) -> text; each player reads their language
+local function announce(what, toast)
+	local text
 	if Game.broadcastMessage then
-		Chaos.broadcast(MESSAGE_EVENT_ADVANCE, text)
+		text = Chaos.broadcast(MESSAGE_EVENT_ADVANCE, what)
 	else
 		for _, p in ipairs(Game.getPlayers()) do
-			p:sendTextMessage(MESSAGE_EVENT_ADVANCE, text)
+			p:sendTextMessage(MESSAGE_EVENT_ADVANCE, type(what) == "function" and what(Chaos.lang(p)) or Chaos.tx(p, what))
 		end
+		text = type(what) == "function" and what("en") or tostring(what)
 	end
+	text = text or (type(what) == "function" and what("en") or tostring(what))
 	if toast and ChaosNotify and ChaosNotify.gmBroadcast then
 		ChaosNotify.gmBroadcast(nil, text)
 	end
@@ -239,8 +243,8 @@ function S.join(player)
 	db.query(string.format("INSERT INTO `%s` (`siege_at`, `guild_id`, `guild_name`, `signed_by`, `signed_at`) VALUES (%d, %d, %s, %d, %d)",
 		T_SIGNUPS, at, info.guildId, db.escapeString(info.guildName), player:getGuid(), os.time()))
 	log(string.format("%s signed up %s for %s", player:getName(), info.guildName, S.whenText(at)))
-	return true, string.format("%s is signed up for the guild siege on %s (%d guild(s) so far). Members enter through the portals next to the temples when it starts.",
-		info.guildName, S.whenText(at), info.count + 1)
+	return true, ChaosI18n.msg("%s is signed up for the guild siege on %s (%d guild(s) so far). Members enter through the portals next to the temples when it starts.",
+		info.guildName, ChaosI18n.msg(S.whenText(at)), info.count + 1)
 end
 
 function S.leave(player)
@@ -251,7 +255,7 @@ function S.leave(player)
 	end
 	db.query(string.format("DELETE FROM `%s` WHERE `siege_at` = %d AND `guild_id` = %d", T_SIGNUPS, at, info.guildId))
 	log(string.format("%s withdrew %s from %s", player:getName(), info.guildName, S.whenText(at)))
-	return true, info.guildName .. " is no longer signed up for the guild siege."
+	return true, ChaosI18n.msg("%s is no longer signed up for the guild siege.", info.guildName)
 end
 
 -- ======================================================================== arena
@@ -527,7 +531,7 @@ local function sendOut(player, p, text)
 		leaveCleanup(player, p)
 	end
 	if text then
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, text)
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.tx(player, text))
 	end
 end
 
@@ -816,14 +820,16 @@ local function beginMatch(token)
 			P(L.bases[slot].gate):sendMagicEffect(CONST_ME_MAGIC_BLUE)
 		end
 	end
-	announce(string.format("GUILD SIEGE: the gates are open! %d minutes to hold the Chaos Obelisk and strike down your enemies.%s",
-		cfg.matchMinutes, cfg.lateJoin and " The portals next to the temples stay open." or ""), true)
+	announce(function(lang)
+		return ChaosI18n.text(lang, "GUILD SIEGE: the gates are open! %d minutes to hold the Chaos Obelisk and strike down your enemies.%s",
+			cfg.matchMinutes, cfg.lateJoin and ChaosI18n.text(lang, " The portals next to the temples stay open.") or "")
+	end, true)
 end
 
-local function bracketText(br)
+local function bracketText(br, lang)
 	local parts = {}
 	for _, t in ipairs(br.standings or {}) do
-		parts[#parts + 1] = string.format("%d. %s %d (%d kills)", t.place, t.name, t.score, t.kills)
+		parts[#parts + 1] = ChaosI18n.text(lang, "%d. %s %d (%d kills)", t.place, t.name, t.score, t.kills)
 	end
 	return table.concat(parts, ", ")
 end
@@ -888,8 +894,7 @@ finish = function(reason)
 			if win then
 				S.champions[win.id] = {name = win.name, untilAt = now + (cfg.titleDays or 7) * 86400}
 			end
-			lines[#lines + 1] = (#state.brackets > 1 and ("Arena " .. b .. ": ") or "")
-				.. (win and (win.name .. " wins! ") or "No winner. ") .. bracketText(br)
+			lines[#lines + 1] = {arena = #state.brackets > 1 and b or nil, winner = win and win.name or nil, br = br}
 		end
 		for guid, p in pairs(state.players) do
 			local br = state.brackets[p.bracket]
@@ -917,8 +922,16 @@ finish = function(reason)
 				table.insert(S.pending[r.guid], r)
 			end
 		end
-		announce("GUILD SIEGE OVER" .. (reason == "end" and " (ended by the staff)" or "") .. ": " .. table.concat(lines, " | ")
-			.. string.format(" Everyone inside returns home in %d seconds.", delay), true)
+		announce(function(lang)
+			local parts = {}
+			for _, l in ipairs(lines) do
+				parts[#parts + 1] = (l.arena and ChaosI18n.text(lang, "Arena %d: ", l.arena) or "")
+					.. (l.winner and ChaosI18n.text(lang, "%s wins! ", l.winner) or ChaosI18n.text(lang, "No winner. ")) .. bracketText(l.br, lang)
+			end
+			local over = reason == "end" and "GUILD SIEGE OVER (ended by the staff): %s Everyone inside returns home in %d seconds."
+				or "GUILD SIEGE OVER: %s Everyone inside returns home in %d seconds."
+			return ChaosI18n.text(lang, over, table.concat(parts, " | "), delay)
+		end, true)
 		db.query(string.format("DELETE FROM `%s` WHERE `siege_at` = %d", T_SIGNUPS, state.at))
 		for guid, p in pairs(state.players) do
 			local player = Player(p.name)
@@ -976,14 +989,14 @@ function S.start(forced)
 			names[#names + 1] = g.name
 		end
 	end
-	announce(string.format("GUILD SIEGE: %s march on the Chaos Obelisk! Members (level %d+): enter through the portals next to the temples. The gates open in %d seconds.",
+	announce(ChaosI18n.msg("GUILD SIEGE: %s march on the Chaos Obelisk! Members (level %d+): enter through the portals next to the temples. The gates open in %d seconds.",
 		table.concat(names, ", "), cfg.minLevel, cfg.gatherSeconds), true)
 	if #waiting > 0 then
 		local w = {}
 		for _, g in ipairs(waiting) do
 			w[#w + 1] = g.name
 		end
-		announce("No room in this siege for: " .. table.concat(w, ", ") .. ".", false)
+		announce(ChaosI18n.msg("No room in this siege for: %s.", table.concat(w, ", ")), false)
 	end
 	addEvent(beginMatch, cfg.gatherSeconds * 1000, token)
 	addEvent(tick, 1000, token)
@@ -1011,7 +1024,8 @@ function S.matchNow()
 	return true
 end
 
-function S.status()
+function S.status(lang)
+	local T = function(key, ...) return ChaosI18n.text(lang, key, ...) end
 	if state.phase == "idle" then
 		local at = S.upcoming()
 		local list = signupsFor(at)
@@ -1019,12 +1033,12 @@ function S.status()
 		for _, r in ipairs(list) do
 			names[#names + 1] = r.guild_name
 		end
-		return string.format("Next guild siege: %s (in %s). Signed up (%d/%d): %s.%s", S.whenText(at),
-			S.durationText(at - os.time()), #list, S.capacity(cfg), #names > 0 and table.concat(names, ", ") or "nobody yet",
-			S.signupsOpen(os.time(), at, cfg) and "" or " Sign-ups are closed.")
+		return T("Next guild siege: %s (in %s). Signed up (%d/%d): %s.%s", S.whenText(at, lang),
+			S.durationText(at - os.time()), #list, S.capacity(cfg), #names > 0 and table.concat(names, ", ") or T("nobody yet"),
+			S.signupsOpen(os.time(), at, cfg) and "" or T(" Sign-ups are closed."))
 	end
 	if state.phase == "gather" then
-		return string.format("The guild siege is gathering: the gates open in %d seconds. Portals are next to the temples.",
+		return T("The guild siege is gathering: the gates open in %d seconds. Portals are next to the temples.",
 			math.max(0, state.matchAt - os.time()))
 	elseif state.phase == "match" then
 		local parts = {}
@@ -1036,9 +1050,9 @@ function S.status()
 			end
 			parts[#parts + 1] = table.concat(t, ", ")
 		end
-		return string.format("The guild siege is on (%s left): %s.", S.clock(state.endAt - os.time()), table.concat(parts, " | "))
+		return T("The guild siege is on (%s left): %s.", S.clock(state.endAt - os.time()), table.concat(parts, " | "))
 	end
-	return "The guild siege is ending."
+	return T("The guild siege is ending.")
 end
 
 -- ======================================================================== the window (client game_siege)
@@ -1055,25 +1069,27 @@ function S.sendInfo(player, open)
 			champions[#champions + 1] = {name = c.name, untilText = os.date("%a %d %b %H:%M", c.untilAt)}
 		end
 	end
+	local lang = Chaos.lang(player)
+	local T = function(key, ...) return ChaosI18n.text(lang, key, ...) end
 	local joinErr = S.signupError(info, cfg)
 	local leaveErr = S.leaveError(info, cfg)
 	Chaos.send(player, OPCODE, "info", {
-		open = open or false, phase = state.phase, at = at, whenText = S.whenText(at), inSeconds = math.max(0, at - now),
+		open = open or false, phase = state.phase, at = at, whenText = S.whenText(at, lang), inSeconds = math.max(0, at - now),
 		signupsOpen = info.open and not info.running, signups = signups, capacity = S.capacity(cfg),
 		guild = info.guildName or "", rank = info.rank, signed = info.signed, members = info.members,
-		canJoin = joinErr == nil, joinReason = joinErr or "", canLeave = leaveErr == nil and info.signed,
-		champions = champions, status = S.status(),
+		canJoin = joinErr == nil, joinReason = joinErr and ChaosI18n.translate(lang, joinErr) or "", canLeave = leaveErr == nil and info.signed,
+		champions = champions, status = S.status(lang),
 		rules = {
-			string.format("Every %s at %02d:%02d server time: %s of gathering, then a %d-minute war for the Chaos Obelisk.",
-				S.WEEKDAYS[cfg.weekday], cfg.hour, cfg.minute, cfg.gatherSeconds >= 120 and (math.floor(cfg.gatherSeconds / 60) .. " minutes")
-				or (cfg.gatherSeconds .. " seconds"), cfg.matchMinutes),
-			string.format("The guild leader or a vice-leader signs up in the Guild Siege window; the guild needs %d members. Up to %d guilds per arena, %d arenas.",
+			T("Every %s at %02d:%02d server time: %s of gathering, then a %d-minute war for the Chaos Obelisk.",
+				T(S.WEEKDAYS[cfg.weekday]), cfg.hour, cfg.minute, cfg.gatherSeconds >= 120 and T("%d minutes", math.floor(cfg.gatherSeconds / 60))
+				or T("%d seconds", cfg.gatherSeconds), cfg.matchMinutes),
+			T("The guild leader or a vice-leader signs up in the Guild Siege window; the guild needs %d members. Up to %d guilds per arena, %d arenas.",
 				cfg.minMembers, cfg.perBracket, cfg.maxBrackets),
-			string.format("Members (level %d+) enter through the portals next to the temples. Multi-clienting characters cannot take part.", cfg.minLevel),
-			string.format("%d points per enemy struck down, %d per second for the guild with the most members on the obelisk (a tie contests it).",
+			T("Members (level %d+) enter through the portals next to the temples. Multi-clienting characters cannot take part.", cfg.minLevel),
+			T("%d points per enemy struck down, %d per second for the guild with the most members on the obelisk (a tie contests it).",
 				cfg.points.kill, cfg.points.holdPerSecond),
-			"No real deaths: no skulls, frags, experience or item loss. A downed player wakes up in the guild's base.",
-			string.format("Winners: %s for %d days (look text, +%d%% experience from monsters) and %d gold + orbs each; everyone else who fought gets %d gold + orbs.",
+			T("No real deaths: no skulls, frags, experience or item loss. A downed player wakes up in the guild's base."),
+			T("Winners: %s for %d days (look text, +%d%% experience from monsters) and %d gold + orbs each; everyone else who fought gets %d gold + orbs.",
 				cfg.title, cfg.titleDays, math.floor(cfg.buff.xp * 100 + 0.5), cfg.reward.winner.bankGold, cfg.reward.others.bankGold)
 		}
 	})
@@ -1096,7 +1112,7 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 		S.sendInfo(player, true)
 	elseif msg.action == "join" or msg.action == "leave" then
 		local ok, text = (msg.action == "join" and S.join or S.leave)(player)
-		player:sendTextMessage(ok and MESSAGE_INFO_DESCR or MESSAGE_STATUS_SMALL, text)
+		player:sendTextMessage(ok and MESSAGE_INFO_DESCR or MESSAGE_STATUS_SMALL, Chaos.tx(player, text))
 		S.sendInfo(player, false)
 	end
 	return true
@@ -1336,16 +1352,19 @@ function schedule.onThink(interval)
 			for _, r in ipairs(list) do
 				names[#names + 1] = r.guild_name
 			end
-			announce(string.format("The guild siege begins in %d minute(s)! Signed up: %s.%s", m,
-				#names > 0 and table.concat(names, ", ") or "nobody",
-				#names < (cfg.minGuilds or 2) and string.format(" At least %d guilds are needed: leaders, sign up in Adventure > Guild Siege.", cfg.minGuilds or 2) or ""),
-				i == 1 or i == #cfg.warnMinutes)
+			announce(function(lang)
+				return ChaosI18n.text(lang, "The guild siege begins in %d minute(s)! Signed up: %s.%s", m,
+					#names > 0 and table.concat(names, ", ") or ChaosI18n.text(lang, "nobody"),
+					#names < (cfg.minGuilds or 2) and ChaosI18n.text(lang, " At least %d guilds are needed: leaders, sign up in Adventure > Guild Siege.", cfg.minGuilds or 2) or "")
+			end, i == 1 or i == #cfg.warnMinutes)
 		end
 	end
 	if now >= at then
 		local ok, err = S.start(false)
 		if not ok then
-			announce("The guild siege of " .. S.whenText(at) .. " is cancelled: " .. tostring(err) .. ".", false)
+			announce(function(lang)
+				return ChaosI18n.text(lang, "The guild siege of %s is cancelled: %s.", S.whenText(at, lang), ChaosI18n.translate(lang, tostring(err)))
+			end, false)
 			db.query(string.format("DELETE FROM `%s` WHERE `siege_at` = %d", T_SIGNUPS, at))
 			S.nextAt = S.nextStart(now, cfg)
 		end

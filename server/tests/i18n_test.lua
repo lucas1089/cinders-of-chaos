@@ -213,7 +213,7 @@ local SITES = {
 	["battleground.lua"] = {"msg%(%w+,%s*"}, ["mentor.lua"] = {}, ["referral.lua"] = {}, ["beta.lua"] = {},
 	["pvpzone.lua"] = {}, ["multiclient.lua"] = {}, ["antibot.lua"] = {}, ["events_schedule.lua"] = {},
 	["commands_ui.lua"] = {}, ["spellbook.lua"] = {}, ["supports.lua"] = {}, ["loadouts.lua"] = {}, ["crafting.lua"] = {},
-	["chronicle.lua"] = {}, ["atlas.lua"] = {}, ["siege.lua"] = {"pushBack%(player, fromPosition,%s*"}, ["guildboss.lua"] = {},
+	["chronicle.lua"] = {}, ["atlas.lua"] = {}, ["siege.lua"] = {"pushBack%(player, fromPosition,%s*", "[^%w_.:]T%(%s*"}, ["guildboss.lua"] = {},
 	["leaderboard.lua"] = {},
 	["market.lua"] = {}, ["hideout.lua"] = {}, ["gamble.lua"] = {}, ["cosmetics.lua"] = {}, ["transmog.lua"] = {},
 	["trials_effects.lua"] = {}, ["paragon.lua"] = {}, ["passivetree.lua"] = {}, ["bosspoints.lua"] = {}, ["gems.lua"] = {},
@@ -290,6 +290,14 @@ local REASONS = {
 	["mentor_core.lua"] = {}, ["mentor.lua"] = {"^Mentor: %%d marks", "^Apprentice of ", "^No mentor data"},
 	["memorial_core.lua"] = {"^The Ember Memorial", "^Remember me", "^Lembrar", "^The Memorial will", "^Memorial: ", "^A statue%.", "^A memorial stone%."},
 	["candlemarks_core.lua"] = {}, ["candlemarks.lua"] = {},
+	["uber_core.lua"] = {"^Ascended Sigil", "^Cinderheart Sigil", "^Ascended Relic", "^Unique Charm"},
+	["uber.lua"] = {"^It opens the arena of ", "^Level %%d, ", "^Torn from ", "^Game%.createTile", "^Ascended run ", "^No running Ascended",
+		"^No Ascended arena", "^Ascended Omen of the ", "^Ascended Sigil", "^Cinderheart Sigil", "^Ascended Relic", "^Time is up: $"},
+	["siege_core.lua"] = {"^Guild leaders sign up in Adventure"},
+	["siege.lua"] = {"^Guild siege started", "^Not started", "^The gates are open%.$", "^The siege is not gathering", "^Guild siege ended",
+		"^No guild siege is running", "^Guild siege cancelled", "^Guild siege stopped", "^Siege portal placed", "^No portal placed",
+		"^Arena not built", "^No guild named", "^Sign%-ups for $", "^Game%.createTile"},
+	["charms_core.lua"] = {"^Unique Charm", "^Place it in your charm grid"}, ["charms.lua"] = {},
 	["guildboss_core.lua"] = {},
 	["guildboss.lua"] = {"^The banner of ", "^The %%s of %%s: Gorvath", "^The Summoning Stone%. Feed", "^Game%.createTile", "^Guild boss run ",
 		"^No running guild boss", "^No guild boss arena"},
@@ -670,6 +678,34 @@ do
 	eq(v.apprentice.bonusText, "O seu mentor está offline.", "bonus note in pt-BR")
 	eq(MC.view({apprentice = {guid = 1, name = "A", bonus = true}}, mcfg, 1000, "pt-BR").apprentice.bonusText,
 		"Bônus ativo: +" .. v.rules.exp .. "% de experiência, " .. v.rules.dmg .. "% menos dano recebido.", "bonus line in pt-BR")
+end
+
+-- Ascended arenas, guild siege and charms: the texts their cores build take the language
+do
+	dofile("data/scripts/chaos/uber_core.lua")
+	local U, ucfg = ChaosUberCore, dofile("data/scripts/chaos/uber_config.lua")
+	local sang = U.kind(ucfg, "bloodmoon")
+	local h = U.hud({def = sang, phase = 2, phases = 3, phaseName = "Blood Pools", left = 300, limit = 780, enraged = false,
+		toEnrage = 200, lives = 3, livesMax = 3, boss = "alive", state = "running", hp = 55, adds = 0, waiting = 1}, "pt-BR")
+	eq(h.notes[1], "Fase 2 de 3: Blood Pools", "uber HUD phase note") eq(h.notes[2], "Vida: 55%", "uber HUD health note")
+	eq(h.notes[3], "Enrage em " .. U.clockText(200), "uber HUD enrage note") eq(h.notes[4], "1 no Ember Gate.", "uber HUD gate note")
+	eq(U.hud({def = sang, phase = 1, phases = 3, left = 1, limit = 2, boss = "alive", state = "running", hp = 1}).notes[2],
+		"Health: 1%", "uber HUD in English")
+	check(U.partyNote(ucfg, sang, 3, "pt-BR"):find("^Grupo de 3: vida do chefe x"), "uber party note in pt-BR")
+	dofile("data/scripts/chaos/siege_core.lua")
+	local at = os.time({year = 2026, month = 10, day = 24, hour = 20, min = 0})
+	eq(ChaosSiege.whenText(at, "pt-BR"), "Sábado 20:00", "siege date in pt-BR")
+	eq(ChaosSiege.whenText(at), "Saturday 20:00", "siege date in English")
+	dofile("data/scripts/chaos/charms_core.lua")
+	local CC, ccfg = ChaosCharmsCore, dofile("data/scripts/chaos/charms_config.lua")
+	eq(CC.text(ccfg, "dmg_undead", 3, "pt-BR"), "Dano a Mortos-vivos +3%", "charm modifier in pt-BR")
+	eq(CC.text(ccfg, "rifttime", 20, "pt-BR"), "Tempo do Rift +20 s", "charm text with its own format in pt-BR")
+	eq(CC.text(ccfg, "lifeonkill", 8, "pt-BR"), "Vida ao Abater +8", "flat charm modifier in pt-BR")
+	eq(CC.text(ccfg, "dmg_undead", 3), "Damage to Undead +3%", "charm modifier in English")
+	for _, u in pairs(ccfg.unlocks) do check(pt[u.text] ~= nil, "charm unlock without pt-BR: " .. u.text) end
+	for _, def in ipairs(ccfg.pool) do check(pt[def.text or def.label] ~= nil, "charm modifier without pt-BR: " .. (def.text or def.label)) end
+	for _, def in pairs(ccfg.extraKeys) do check(pt[def.label] ~= nil, "charm extra modifier without pt-BR: " .. def.label) end
+	for _, u in pairs(ccfg.uniques) do check(pt[u.signatureText] ~= nil, "charm signature without pt-BR: " .. u.signatureText) end
 end
 
 print(string.format("i18n_test: %d checks, %d failures", checks, failures))

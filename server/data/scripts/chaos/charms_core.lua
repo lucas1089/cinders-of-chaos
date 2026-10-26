@@ -29,6 +29,17 @@ function C.attributeKeys()
 	return {A.rarity, A.ilvl, A.key1, A.value1, A.key2, A.value2}
 end
 
+-- the text in `lang` (ChaosI18n when it is loaded, English otherwise); charms.lua passes the language of the reader
+local function T(lang, key, ...)
+	if ChaosI18n and ChaosI18n.text then
+		return ChaosI18n.text(lang, key, ...)
+	end
+	if select("#", ...) == 0 then
+		return key
+	end
+	return string.format(key, ...)
+end
+
 local function clamp(v, lo, hi)
 	if v < lo then
 		return lo
@@ -493,18 +504,18 @@ function C.emberCap(health, primary, secondary)
 end
 
 -- ------------------------------------------------------------------ texts
-function C.text(cfg, key, value)
+function C.text(cfg, key, value, lang)
 	local def = C.index(cfg).any[key]
 	value = int(value) or 0
 	if not def then
 		return tostring(key) .. " " .. value
 	end
 	if def.text then
-		return string.format(def.text, value)
+		return T(lang, def.text, value)
 	elseif def.fmt == "flat" then
-		return string.format("%s +%d", def.label, value)
+		return string.format("%s +%d", T(lang, def.label), value)
 	end
-	return string.format("%s +%d%%", def.label, value)
+	return string.format("%s +%d%%", T(lang, def.label), value)
 end
 
 function C.rarityName(cfg, charm)
@@ -550,26 +561,26 @@ function C.describe(cfg, charm)
 end
 
 -- the client's view of one charm
-function C.viewOf(cfg, charm)
+function C.viewOf(cfg, charm, lang)
 	local mods = {}
 	for _, m in ipairs(charm.mods or {}) do
-		mods[#mods + 1] = {k = m.key, v = m.value, t = C.text(cfg, m.key, m.value)}
+		mods[#mods + 1] = {k = m.key, v = m.value, t = C.text(cfg, m.key, m.value, lang)}
 	end
 	local u = charm.unique and cfg.uniques[charm.unique]
 	local s = cfg.shapes[charm.shape] or {w = 1, h = 1}
 	return {name = C.nameOf(cfg, charm), shape = charm.shape, w = s.w, h = s.h, rarity = C.rarityName(cfg, charm),
 		color = C.rarityColor(cfg, charm), ilvl = charm.ilvl, unique = charm.unique, mods = mods,
-		signature = u and u.signatureText or nil, icon = charm.unique or (charm.mods and charm.mods[1] and charm.mods[1].key) or "charm",
+		signature = u and T(lang, u.signatureText) or nil, icon = charm.unique or (charm.mods and charm.mods[1] and charm.mods[1].key) or "charm",
 		salvage = C.salvageShards(cfg, charm), reforge = C.reforgeCost(cfg, charm)}
 end
 
 -- the totals summary rows for the client: {{k, v, cap, t}} of every key above 0, in pool order
-function C.totalsView(cfg, own)
+function C.totalsView(cfg, own, lang)
 	local rows = {}
 	local function add(key, def)
 		local v = own[key] or 0
 		if v > 0 then
-			rows[#rows + 1] = {k = key, v = v, cap = def.cap, t = C.text(cfg, key, v)}
+			rows[#rows + 1] = {k = key, v = v, cap = def.cap, t = C.text(cfg, key, v, lang)}
 		end
 	end
 	for _, def in ipairs(cfg.pool) do

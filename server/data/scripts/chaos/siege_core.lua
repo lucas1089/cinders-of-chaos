@@ -21,6 +21,17 @@ local S = ChaosSiege
 
 S.WEEKDAYS = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"}
 
+-- the text in `lang` (ChaosI18n when it is loaded, English otherwise); siege.lua passes the language of the reader
+local function T(lang, key, ...)
+	if ChaosI18n and ChaosI18n.text then
+		return ChaosI18n.text(lang, key, ...)
+	end
+	if select("#", ...) == 0 then
+		return key
+	end
+	return string.format(key, ...)
+end
+
 -- ---------------------------------------------------------------- schedule
 function S.nextStart(now, cfg)
 	local d = os.date("*t", now)
@@ -38,9 +49,9 @@ function S.signupsOpen(now, at, cfg)
 end
 
 -- "Saturday 20:00"
-function S.whenText(at)
+function S.whenText(at, lang)
 	local d = os.date("*t", at)
-	return string.format("%s %02d:%02d", S.WEEKDAYS[d.wday], d.hour, d.min)
+	return string.format("%s %02d:%02d", T(lang, S.WEEKDAYS[d.wday]), d.hour, d.min)
 end
 
 function S.capacity(cfg)
@@ -58,7 +69,7 @@ function S.signupError(info, cfg)
 			or "Only the guild leader or a vice-leader can sign the guild up."
 	end
 	if info.signed then
-		return info.guildName and (info.guildName .. " is already signed up for the next siege.")
+		return info.guildName and string.format("%s is already signed up for the next siege.", info.guildName)
 			or "Your guild is already signed up for the next siege."
 	end
 	if info.running then

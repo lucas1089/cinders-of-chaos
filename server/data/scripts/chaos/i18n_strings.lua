@@ -5036,5 +5036,157 @@ return {
 		["Chat name colour (account-wide), the same as the store's."] = "Cor do nome no chat (da conta toda), a mesma da loja.",
 		["Kill effect (account-wide), the same as the store's."] = "Efeito de abate (da conta toda), o mesmo da loja.",
 		["Supplies for a hunt with your apprentice."] = "Suprimentos para uma caçada com o seu aprendiz.",
+		-- Ascended arenas and the Cinderheart (uber.lua, uber_core.lua)
+		["%s The arena collapses and the sigil is spent."] = "%s A arena desaba e o sigilo é gasto.",
+		["%s falls in %s. You leave the arena in %d seconds."] = "%s cai em %s. Você sai da arena em %d segundos.",
+		["%s calls %d %s!"] = "%s convoca %d %s!",
+		["%s calls %d %ss!"] = "%s convoca %d %s!",
+		["%s answers the sigil! Enrage in %s, the arena closes in %s."] =
+			"%s responde ao sigilo! Enrage em %s, a arena se fecha em %s.",
+		["Ascended Omen of the %s"] = "Ascended Omen: %s",
+		["%s steps back through the Ember Gate."] = "%s volta pelo Ember Gate.",
+		["Party of %d: boss health x%s, damage +%d%%; spoils +%d%%."] =
+			"Grupo de %d: vida do chefe x%s, dano +%d%%; espólios +%d%%.",
+		["Ascended Omen - %s"] = "Ascended Omen - %s",
+		["Adds: %d"] = "Adds: %d",
+		["Every Ascended arena is in use. Try again in a moment."] =
+			"Todas as arenas Ascended estão em uso. Tente de novo em instantes.",
+		["The server is restarting: your arena closes and its sigil is returned"] =
+			"O servidor está reiniciando: a sua arena se fecha e o sigilo é devolvido",
+		["The dark creeps closer."] = "A escuridão se aproxima.",
+		["The arena did not answer."] = "A arena não respondeu.",
+		["You are not part of this Ascended Omen: you were sent to your temple."] =
+			"Você não faz parte deste Ascended Omen: foi enviado ao seu templo.",
+		-- Guild siege (siege.lua, siege_core.lua)
+		["Only the guild leader can sign the guild up."] = "Só o líder da guild pode inscrever a guild.",
+		["Only the guild leader or a vice-leader can sign the guild up."] = "Só o líder ou um vice-líder da guild pode inscrever a guild.",
+		["%s is already signed up for the next siege."] = "%s já está inscrita no próximo cerco.",
+		["Your guild is already signed up for the next siege."] = "A sua guild já está inscrita no próximo cerco.",
+		["Sign-ups for this siege are closed."] = "As inscrições para este cerco estão encerradas.",
+		["Your guild needs at least %d members to sign up (it has %d)."] =
+			"A sua guild precisa de pelo menos %d membros para se inscrever (tem %d).",
+		["The siege is full (%d guilds)."] = "O cerco está cheio (%d guilds).",
+		["Only the guild leader or a vice-leader can withdraw the guild."] =
+			"Só o líder ou um vice-líder da guild pode retirar a guild.",
+		["Your guild is not signed up."] = "A sua guild não está inscrita.",
+		["Sign-ups for this siege are closed: the guild can no longer withdraw."] =
+			"As inscrições para este cerco estão encerradas: a guild não pode mais se retirar.",
+		["Sunday"] = "Domingo",
+		["Monday"] = "Segunda-feira",
+		["Tuesday"] = "Terça-feira",
+		["Wednesday"] = "Quarta-feira",
+		["Thursday"] = "Quinta-feira",
+		["Friday"] = "Sexta-feira",
+		["Saturday"] = "Sábado",
+		["%s is signed up for the guild siege on %s (%d guild(s) so far). Members enter through the portals next to the temples when it starts."] =
+			"%s está inscrita no cerco de guilds de %s (%d guild(s) até agora). Os membros entram pelos portais ao lado dos templos quando ele começar.",
+		["%s is no longer signed up for the guild siege."] = "%s não está mais inscrita no cerco de guilds.",
+		["GUILD SIEGE: %s march on the Chaos Obelisk! Members (level %d+): enter through the portals next to the temples. The gates open in %d seconds."] =
+			"CERCO DE GUILDS: %s marcham sobre o Chaos Obelisk! Membros (nível %d+): entrem pelos portais ao lado dos templos. Os portões abrem em %d segundos.",
+		["No room in this siege for: %s."] = "Não há vaga neste cerco para: %s.",
+		["GUILD SIEGE: the gates are open! %d minutes to hold the Chaos Obelisk and strike down your enemies.%s"] =
+			"CERCO DE GUILDS: os portões estão abertos! %d minutos para segurar o Chaos Obelisk e abater os seus inimigos.%s",
+		[" The portals next to the temples stay open."] = " Os portais ao lado dos templos continuam abertos.",
+		["%d. %s %d (%d kills)"] = "%d. %s %d (%d abates)",
+		["Arena %d: "] = "Arena %d: ",
+		["%s wins! "] = "%s vence! ",
+		["No winner. "] = "Sem vencedor. ",
+		["GUILD SIEGE OVER (ended by the staff): %s Everyone inside returns home in %d seconds."] =
+			"FIM DO CERCO DE GUILDS (encerrado pela equipe): %s Todos lá dentro voltam para casa em %d segundos.",
+		["GUILD SIEGE OVER: %s Everyone inside returns home in %d seconds."] =
+			"FIM DO CERCO DE GUILDS: %s Todos lá dentro voltam para casa em %d segundos.",
+		["The guild siege begins in %d minute(s)! Signed up: %s.%s"] =
+			"O cerco de guilds começa em %d minuto(s)! Inscritas: %s.%s",
+		["nobody"] = "ninguém",
+		["nobody yet"] = "ninguém ainda",
+		[" At least %d guilds are needed: leaders, sign up in Adventure > Guild Siege."] =
+			" São necessárias pelo menos %d guilds: líderes, inscrevam-se em Aventura > Cerco de Guilds.",
+		["The guild siege of %s is cancelled: %s."] = "O cerco de guilds de %s foi cancelado: %s.",
+		["not enough guilds signed up (%d, at least %d needed)"] = "guilds inscritas insuficientes (%d, são necessárias pelo menos %d)",
+		["a siege is already running"] = "já há um cerco em andamento",
+		["The guild siege was cancelled by the staff."] = "O cerco de guilds foi cancelado pela equipe.",
+		["Another character from your connection is online: you were sent out of the siege."] =
+			"Outro personagem da sua conexão está online: você foi retirado do cerco.",
+		["Next guild siege: %s (in %s). Signed up (%d/%d): %s.%s"] =
+			"Próximo cerco de guilds: %s (em %s). Inscritas (%d/%d): %s.%s",
+		[" Sign-ups are closed."] = " As inscrições estão encerradas.",
+		["The guild siege is gathering: the gates open in %d seconds. Portals are next to the temples."] =
+			"O cerco de guilds está reunindo: os portões abrem em %d segundos. Os portais ficam ao lado dos templos.",
+		["The guild siege is on (%s left): %s."] = "O cerco de guilds está em andamento (restam %s): %s.",
+		["The guild siege is ending."] = "O cerco de guilds está acabando.",
+		["Every %s at %02d:%02d server time: %s of gathering, then a %d-minute war for the Chaos Obelisk."] =
+			"Toda semana, %s às %02d:%02d, horário do servidor: %s de reunião, depois uma guerra de %d minutos pelo Chaos Obelisk.",
+		["The guild leader or a vice-leader signs up in the Guild Siege window; the guild needs %d members. Up to %d guilds per arena, %d arenas."] =
+			"O líder ou um vice-líder da guild inscreve a guild na janela de Cerco de Guilds; a guild precisa de %d membros. Até %d guilds por arena, %d arenas.",
+		["Members (level %d+) enter through the portals next to the temples. Multi-clienting characters cannot take part."] =
+			"Os membros (nível %d+) entram pelos portais ao lado dos templos. Personagens em multi-client não podem participar.",
+		["%d points per enemy struck down, %d per second for the guild with the most members on the obelisk (a tie contests it)."] =
+			"%d pontos por inimigo abatido, %d por segundo para a guild com mais membros no obelisco (um empate o deixa em disputa).",
+		["No real deaths: no skulls, frags, experience or item loss. A downed player wakes up in the guild's base."] =
+			"Sem mortes reais: sem skulls, frags, perda de experiência ou de itens. Quem cai acorda na base da guild.",
+		["Winners: %s for %d days (look text, +%d%% experience from monsters) and %d gold + orbs each; everyone else who fought gets %d gold + orbs."] =
+			"Vencedores: %s por %d dias (texto de look, +%d%% de experiência dos monstros) e %d de ouro + orbs cada; quem mais lutou recebe %d de ouro + orbs.",
+		["This gate is not yours."] = "Este portão não é seu.",
+		["You are still recovering."] = "Você ainda está se recuperando.",
+		["The siege is over."] = "O cerco acabou.",
+		["You left the siege. A portal next to the temple takes you back while it is open."] =
+			"Você saiu do cerco. Um portal ao lado do templo leva você de volta enquanto estiver aberto.",
+		-- Charms (charms.lua, charms_core.lua, charms_config.lua)
+		["That is not a charm."] = "Isso não é um charm.",
+		["The charm does not fit inside the grid there."] = "O charm não cabe na grade ali.",
+		["That cell is locked."] = "Essa célula está bloqueada.",
+		["Another charm is in the way."] = "Outro charm está no caminho.",
+		["Your charm grid is full."] = "Sua grade de charms está cheia.",
+		["Charms need level %d."] = "Charms exigem o nível %d.",
+		["Not while you are in combat."] = "Não enquanto você estiver em combate.",
+		["This character is not saved, so it cannot use the charm grid."] =
+			"Este personagem não está salvo, então não pode usar a grade de charms.",
+		["That charm is not in your backpack any more."] = "Esse charm não está mais na sua mochila.",
+		["That charm could not be moved."] = "Não foi possível mover esse charm.",
+		["The charm grid is busy; try again."] = "A grade de charms está ocupada; tente de novo.",
+		["That charm is not in your grid."] = "Esse charm não está na sua grade.",
+		["There is no room for the charm (backpack and inbox)."] = "Não há espaço para o charm (mochila e caixa de entrada).",
+		["That charm is locked."] = "Esse charm está trancado.",
+		["That charm could not be salvaged."] = "Não foi possível reciclar esse charm.",
+		["A unique charm cannot be reforged."] = "Um charm único não pode ser reforjado.",
+		["Reforging this charm needs %d charm shards."] = "Reforjar este charm exige %d charm shards.",
+		["Something went wrong."] = "Algo deu errado.",
+		["%s placed."] = "%s colocado.",
+		["%s taken out."] = "%s retirado.",
+		["%s salvaged: %d charm shards."] = "%s reciclado: %d charm shards.",
+		["%s reforged: %s."] = "%s reforjado: %s.",
+		["Open from the start"] = "Aberto desde o início",
+		["Reach level 600"] = "Chegue ao nível 600",
+		["Reach level 800"] = "Chegue ao nível 800",
+		["Achievement \"Edge of Ruin\" (seal a tier 10 rift)"] = "Conquista \"Edge of Ruin\" (sele um rift de tier 10)",
+		["Damage to Dragons"] = "Dano a Dragões",
+		["Damage to Demons"] = "Dano a Demônios",
+		["Damage to Undead"] = "Dano a Mortos-vivos",
+		["Damage to Humans"] = "Dano a Humanos",
+		["Damage to Humanoids"] = "Dano a Humanoides",
+		["Damage to Beasts"] = "Dano a Feras",
+		["Damage to Elementals"] = "Dano a Elementais",
+		["Damage to Insects and Arachnids"] = "Dano a Insetos e Aracnídeos",
+		["Fire Resistance"] = "Resistência a fogo",
+		["Ice Resistance"] = "Resistência a gelo",
+		["Energy Resistance"] = "Resistência a energia",
+		["Earth Resistance"] = "Resistência a terra",
+		["Death Resistance"] = "Resistência a morte",
+		["Holy Resistance"] = "Resistência sagrada",
+		["Life on Kill"] = "Vida ao Abater",
+		["Mana on Kill"] = "Mana ao Abater",
+		["Gold Find"] = "Gold Find",
+		["Orb Find"] = "Orb Find",
+		["Movement Speed out of Combat"] = "Velocidade de Movimento fora de Combate",
+		["Reputation"] = "Reputação",
+		["Rift Time +%d s"] = "Tempo do Rift +%d s",
+		["Treasure Goblin Chance"] = "Chance de Treasure Goblin",
+		["Last Ember: once every 10 minutes a hit that would kill you leaves you at 1 health."] =
+			"Last Ember: a cada 10 minutos, um golpe que mataria você o deixa com 1 de vida.",
+		["Wayfarer's Rest: out of combat you recover 1% health and mana every 2 seconds."] =
+			"Wayfarer's Rest: fora de combate você recupera vida e mana: 1% a cada 2 segundos.",
+		["Hoard Sense: +15% Treasure Goblin Chance."] = "Hoard Sense: Treasure Goblin Chance +15%.",
+		["Harvester: the Life on Kill of your charms also restores half as much mana."] =
+			"Harvester: a Vida ao Abater dos seus charms também restaura metade disso em mana.",
 	},
 }

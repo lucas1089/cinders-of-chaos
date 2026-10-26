@@ -92,6 +92,7 @@ local function send(player, action, data)
 end
 
 local function result(player, ok, text)
+	text = text and Chaos.tx(player, text) or text -- English text or a deferred text
 	send(player, "result", {ok = ok and true or false, text = text})
 	if text and text ~= "" then
 		player:sendTextMessage(MESSAGE_STATUS_SMALL or MESSAGE_STATUS_DEFAULT, text)
@@ -451,17 +452,18 @@ end
 
 function CH.state(player)
 	local st = CH.recompute(player, true)
+	local lang = Chaos.lang(player)
 	local cells = {}
 	for y = 1, cfg.grid.rows do
 		for x = 1, cfg.grid.cols do
 			local k = Core.cellKey(x, y)
 			local lock = st.unlock.locked[k]
-			cells[#cells + 1] = {x = x, y = y, open = st.unlock.open[k] or nil, why = lock and lock.text or nil}
+			cells[#cells + 1] = {x = x, y = y, open = st.unlock.open[k] or nil, why = lock and Chaos.t(player, lock.text) or nil}
 		end
 	end
 	local placed = {}
 	for _, r in ipairs(st.rows) do
-		local v = Core.viewOf(cfg, r.c)
+		local v = Core.viewOf(cfg, r.c, lang)
 		v.id, v.x, v.y, v.active = r.id, r.x, r.y, r.active
 		v.icon = iconOf(r.c)
 		v.item = ItemType(r.item_id):getClientId()
@@ -469,7 +471,7 @@ function CH.state(player)
 	end
 	local bag = {}
 	for _, b in ipairs(bagCharms(player)) do
-		local v = Core.viewOf(cfg, b.charm)
+		local v = Core.viewOf(cfg, b.charm, lang)
 		v.ref, v.sid, v.iid = b.ref, b.item:getId(), string.format("%.0f", iidOf(b.item))
 		v.item = ItemType(b.item:getId()):getClientId()
 		bag[#bag + 1] = v
@@ -479,10 +481,10 @@ function CH.state(player)
 	end
 	local groups = {}
 	for _, g in ipairs(st.unlock.groups) do
-		groups[#groups + 1] = {text = g.text, open = g.open, cells = #g.cells}
+		groups[#groups + 1] = {text = Chaos.t(player, g.text), open = g.open, cells = #g.cells}
 	end
 	return {cols = cfg.grid.cols, rows = cfg.grid.rows, cells = cells, placed = placed, bag = bag, groups = groups,
-		totals = Core.totalsView(cfg, st.own), level = player:getLevel(), shards = player:getItemCount(Core.shardId(cfg)),
+		totals = Core.totalsView(cfg, st.own, lang), level = player:getLevel(), shards = player:getItemCount(Core.shardId(cfg)),
 		max = cfg.maxPlaced}
 end
 
@@ -594,7 +596,7 @@ function CH.place(player, d)
 	end
 	CH.players[guid] = nil
 	CH.recompute(player)
-	result(player, true, Core.nameOf(cfg, charm) .. " placed.")
+	result(player, true, ChaosI18n.msg("%s placed.", Core.nameOf(cfg, charm)))
 	CH.sendState(player)
 	return true
 end
@@ -653,7 +655,7 @@ function CH.take(player, d)
 	end
 	CH.players[guid] = nil
 	CH.recompute(player)
-	result(player, true, Core.nameOf(cfg, row.c) .. " taken out.")
+	result(player, true, ChaosI18n.msg("%s taken out.", Core.nameOf(cfg, row.c)))
 	CH.sendState(player)
 	return true
 end
@@ -677,7 +679,7 @@ function CH.salvage(player, d)
 	if shards then
 		giveItem(player, shards)
 	end
-	result(player, true, string.format("%s salvaged: %d charm shards.", name, n))
+	result(player, true, ChaosI18n.msg("%s salvaged: %d charm shards.", name, n))
 	CH.sendState(player)
 	return true
 end
@@ -706,9 +708,9 @@ function CH.reforge(player, d)
 	end
 	local parts = {}
 	for _, m in ipairs(new.mods) do
-		parts[#parts + 1] = Core.text(cfg, m.key, m.value)
+		parts[#parts + 1] = Core.text(cfg, m.key, m.value, Chaos.lang(player))
 	end
-	result(player, true, string.format("%s reforged: %s.", Core.nameOf(cfg, new), table.concat(parts, ", ")))
+	result(player, true, ChaosI18n.msg("%s reforged: %s.", Core.nameOf(cfg, new), table.concat(parts, ", ")))
 	CH.sendState(player)
 	return true
 end

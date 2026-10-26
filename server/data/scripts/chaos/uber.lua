@@ -133,7 +133,8 @@ local function say(run, text, kind)
 	for id in pairs(run.players) do
 		local p = Player(id)
 		if p then
-			p:sendTextMessage(kind or MESSAGE_EVENT_ADVANCE, text)
+			-- English text, a deferred text, or a function(lang) -> text
+			p:sendTextMessage(kind or MESSAGE_EVENT_ADVANCE, type(text) == "function" and text(Chaos.lang(p)) or Chaos.tx(p, text))
 		end
 	end
 end
@@ -440,7 +441,7 @@ local function takeSlot(player)
 				end
 				text = IL.busy(player, "ascended", "Ascended arenas", lefts, cfg.limits)
 			end
-			player:sendCancelMessage(text)
+			player:sendCancelMessage(Chaos.tx(player, text))
 			return nil
 		end
 		local L, why = buildSlot(slot)
@@ -457,7 +458,7 @@ local function bossOf(run)
 	return run.bossId and Monster(run.bossId) or nil
 end
 
-local function hudData(run)
+local function hudData(run, lang)
 	local now = mnow()
 	local boss = bossOf(run)
 	local def = run.def
@@ -484,22 +485,21 @@ local function hudData(run)
 	return U.hud({def = def, phase = run.phase or 1, phases = #def.phases, phaseName = phase.name, left = math.floor(left),
 		limit = def.limit, enraged = run.enraged, toEnrage = toEnrage, lives = run.lives, livesMax = run.livesMax,
 		boss = run.boss, state = run.state, adds = adds, waiting = waiting,
-		hp = boss and math.max(0, math.floor(boss:getHealth() * 100 / math.max(1, boss:getMaxHealth()))) or 100})
+		hp = boss and math.max(0, math.floor(boss:getHealth() * 100 / math.max(1, boss:getMaxHealth()))) or 100}, lang)
 end
 
 local function sendHud(run, action, player)
 	if not OPCODE or not Chaos.send then
 		return
 	end
-	local data = hudData(run)
 	if player then
-		Chaos.send(player, OPCODE, action, data)
+		Chaos.send(player, OPCODE, action, hudData(run, Chaos.lang(player)))
 		return
 	end
 	for id in pairs(run.players) do
 		local p = Player(id)
 		if p then
-			Chaos.send(p, OPCODE, action, data)
+			Chaos.send(p, OPCODE, action, hudData(run, Chaos.lang(p)))
 		end
 	end
 end
@@ -539,7 +539,7 @@ local function removePlayer(run, id, mode)
 		if mode ~= "logout" and OPCODE and Chaos.send then
 			local running = run.state == "running"
 			Chaos.send(player, OPCODE, "end", {result = running and "left" or run.state,
-				text = running and "You left the arena." or (run.endText or "")})
+				text = Chaos.tx(player, running and "You left the arena." or (run.endText or ""))})
 		end
 		if entry.guid == run.openerGuid then
 			clearMarker(player)
@@ -598,7 +598,7 @@ local function fail(run, text)
 		return
 	end
 	run.state = "failed"
-	run.endText = text .. " The arena collapses and the sigil is spent."
+	run.endText = ChaosI18n.msg("%s The arena collapses and the sigil is spent.", ChaosI18n.isMsg(text) and text or ChaosI18n.msg(text))
 	say(run, run.endText)
 	sendHud(run, "update")
 	finishExit(run)
@@ -762,7 +762,7 @@ local function success(run)
 		count = count + 1
 	end
 	local size = math.max(run.size, count)
-	run.endText = string.format("%s falls in %s. You leave the arena in %d seconds.", def.boss, U.clockText(secs), cfg.exitDelay)
+	run.endText = ChaosI18n.msg("%s falls in %s. You leave the arena in %d seconds.", def.boss, U.clockText(secs), cfg.exitDelay)
 	say(run, run.endText)
 	for id, e in pairs(run.players) do
 		local p = Player(id)
@@ -798,7 +798,7 @@ local function success(run)
 	for id in pairs(run.players) do
 		local p = Player(id)
 		if p and OPCODE and Chaos.send then
-			Chaos.send(p, OPCODE, "end", {result = "success", text = run.endText, exitIn = cfg.exitDelay})
+			Chaos.send(p, OPCODE, "end", {result = "success", text = Chaos.tx(p, run.endText), exitIn = cfg.exitDelay})
 		end
 	end
 	log(string.format("run %d: %s slain in %d s by %d player(s), %d deaths", run.id, def.boss, secs, size, run.deaths or 0))
@@ -877,7 +877,7 @@ local function spawnAdds(run, adds)
 		end
 	end
 	if made > 0 then
-		say(run, string.format("%s calls %d %s%s!", run.def.boss, made, run.def.add, made == 1 and "" or "s"),
+		say(run, ChaosI18n.msg(made == 1 and "%s calls %d %s!" or "%s calls %d %ss!", run.def.boss, made, run.def.add),
 			MESSAGE_STATUS_CONSOLE_ORANGE or MESSAGE_INFO_DESCR)
 	end
 end
@@ -989,7 +989,7 @@ local function startPhase(run, idx)
 	if idx > 1 and boss then
 		boss:say(ph.yell or "", TALKTYPE_MONSTER_YELL)
 		fx(boss:getPosition(), "dome_blast_fire", CONST_ME_FIREAREA)
-		say(run, string.format("%s enters phase %d of %d: %s.", def.boss, idx, #def.phases, ph.name),
+		say(run, ChaosI18n.msg("%s enters phase %d of %d: %s.", def.boss, idx, #def.phases, ph.name),
 			MESSAGE_STATUS_CONSOLE_ORANGE or MESSAGE_INFO_DESCR)
 	elseif boss and ph.yell then
 		boss:say(ph.yell, TALKTYPE_MONSTER_YELL)
@@ -1092,7 +1092,7 @@ local function spawnBoss(run)
 	fx(m:getPosition(), "shadow_eruption", CONST_ME_MORTAREA)
 	U.advancePhase(run, def, 1)
 	startPhase(run, 1)
-	say(run, string.format("%s answers the sigil! Enrage in %s, the arena closes in %s.", def.boss,
+	say(run, ChaosI18n.msg("%s answers the sigil! Enrage in %s, the arena closes in %s.", def.boss,
 		U.clockText(def.enrageAt), U.clockText(def.limit)))
 	sendHud(run, "update")
 end
@@ -1113,7 +1113,7 @@ local function tick(slot, rid)
 			local pos = p:getPosition()
 			if not U.inArena(run.L, pos) and not U.inAnte(run.L, pos) then
 				removePlayer(run, id, "stay")
-				say(run, e.name .. " left the arena.")
+				say(run, ChaosI18n.msg("%s left the arena.", e.name))
 			end
 		end
 	end
@@ -1135,7 +1135,7 @@ local function tick(slot, rid)
 		local def = run.def
 		local enraged, _, toLimit = U.clock(def, (now - run.bossAt) / 1000)
 		if toLimit <= 0 then
-			fail(run, "Time is up: " .. def.boss .. " still stands.")
+			fail(run, ChaosI18n.msg("Time is up: %s still stands.", def.boss))
 			return
 		end
 		if enraged and not run.enraged then
@@ -1146,7 +1146,7 @@ local function tick(slot, rid)
 				boss:say("ENOUGH! BURN!", TALKTYPE_MONSTER_YELL)
 				fx(boss:getPosition(), "aura_burst_red", CONST_ME_FIREAREA)
 			end
-			say(run, def.boss .. " is ENRAGED: every hit is far stronger and the telegraphs come twice as fast.")
+			say(run, ChaosI18n.msg("%s is ENRAGED: every hit is far stronger and the telegraphs come twice as fast.", def.boss))
 		end
 		local boss = bossOf(run)
 		if boss then
@@ -1351,12 +1351,12 @@ function A.open(player, item)
 		m:teleportTo(P(L.starts[i] or L.entry))
 		m:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
 	end
-	say(run, string.format("%s: %s comes in %d seconds. %s, %d shared %s. Lethal hits send you to the Ember Gate.",
-		def.final and "The Cinderheart" or ("Ascended Omen of the " .. def.name), def.boss, cfg.startDelay,
-		U.clockText(def.limit), run.lives, run.lives == 1 and "life" or "lives"))
-	local partyNote = U.partyNote(cfg, def, run.size)
-	if partyNote then
-		say(run, partyNote)
+	say(run, ChaosI18n.msg(run.lives == 1 and "%s: %s comes in %d seconds. %s, %d shared life. Lethal hits send you to the Ember Gate." or
+		"%s: %s comes in %d seconds. %s, %d shared lives. Lethal hits send you to the Ember Gate.",
+		def.final and "The Cinderheart" or ChaosI18n.msg("Ascended Omen of the %s", def.name), def.boss, cfg.startDelay,
+		U.clockText(def.limit), run.lives))
+	if U.partyNote(cfg, def, run.size) then
+		say(run, function(lang) return U.partyNote(cfg, def, run.size, lang) end)
 	end
 	sendHud(run, "start")
 	log(string.format("%s opened run %d (%s): slot %d, %d player(s)", player:getName(), run.id, def.key, slot, #group))
@@ -1405,7 +1405,7 @@ local function fall(run, pid)
 	end
 	local left = U.loseLife(run)
 	if left <= 0 then
-		say(run, p:getName() .. " falls, and with them the arena's last life.")
+		say(run, ChaosI18n.msg("%s falls, and with them the arena's last life.", p:getName()))
 		fail(run, "No lives are left!")
 		return
 	end
@@ -1415,8 +1415,8 @@ local function fall(run, pid)
 	p:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
 	Chaos.heal(p, p:getMaxHealth() - p:getHealth())
 	p:addMana(p:getMaxMana() - p:getMana())
-	say(run, string.format("%s falls: %d shared %s left. The Ember Gate lets them back in %d seconds.", p:getName(), left,
-		left == 1 and "life" or "lives", cfg.lives.reenterSeconds))
+	say(run, ChaosI18n.msg(left == 1 and "%s falls: %d shared life left. The Ember Gate lets them back in %d seconds." or
+		"%s falls: %d shared lives left. The Ember Gate lets them back in %d seconds.", p:getName(), left, cfg.lives.reenterSeconds))
 	sendHud(run, "update")
 end
 A._fall = fall
@@ -1444,7 +1444,7 @@ function A.gate(player)
 	entry.shieldUntil = now + cfg.lives.shieldSeconds
 	player:teleportTo(P(run.L.entry))
 	player:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
-	say(run, player:getName() .. " steps back through the Ember Gate.", MESSAGE_STATUS_CONSOLE_ORANGE or MESSAGE_INFO_DESCR)
+	say(run, ChaosI18n.msg("%s steps back through the Ember Gate.", player:getName()), MESSAGE_STATUS_CONSOLE_ORANGE or MESSAGE_INFO_DESCR)
 	sendHud(run, "update")
 	return true
 end
@@ -1675,7 +1675,7 @@ function logout.onLogout(player)
 	end
 	local run = A.runOf[player:getId()]
 	if run then
-		say(run, player:getName() .. " left the arena.")
+		say(run, ChaosI18n.msg("%s left the arena.", player:getName()))
 		removePlayer(run, player:getId(), "logout")
 	end
 	return true

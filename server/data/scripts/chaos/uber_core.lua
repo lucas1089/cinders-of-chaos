@@ -21,6 +21,17 @@ local G = ChaosBossMechCore
 
 local floor, abs, sqrt = math.floor, math.abs, math.sqrt
 
+-- the text in `lang` (ChaosI18n when it is loaded, English otherwise); uber.lua passes the language of the reader
+local function T(lang, key, ...)
+	if ChaosI18n and ChaosI18n.text then
+		return ChaosI18n.text(lang, key, ...)
+	end
+	if select("#", ...) == 0 then
+		return key
+	end
+	return string.format(key, ...)
+end
+
 local function key(x, y)
 	return x .. "," .. y
 end
@@ -195,12 +206,12 @@ function U.party(cfg, players)
 end
 
 -- the chat line of a party's scaling ("Party of 3: boss health x3, damage +20%; spoils +20%."), nil solo
-function U.partyNote(cfg, def, players)
+function U.partyNote(cfg, def, players, lang)
 	local ps = U.party(cfg, players)
 	if ps.players <= 1 then
 		return nil
 	end
-	return string.format("Party of %d: boss health x%s, damage +%d%%; spoils +%d%%.", ps.players,
+	return T(lang, "Party of %d: boss health x%s, damage +%d%%; spoils +%d%%.", ps.players,
 		tostring(floor(U.healthMult(def, ps.players) * 100 + 0.5) / 100), floor((ps.damage - 1) * 100 + 0.5),
 		floor((ps.reward - 1) * 100 + 0.5))
 end
@@ -566,27 +577,27 @@ end
 -- the HUD (rift HUD, opcode 228) of a run: the same fields as a rift's, the boss state in `notes`
 -- s = {def, phase, phaseName, phases, left, limit, enraged, toEnrage, lives, livesMax, boss = waiting|alive|dead,
 --      state, hp (0..100), adds}
-function U.hud(s)
+function U.hud(s, lang)
 	local notes = {}
 	if s.boss == "alive" then
-		notes[#notes + 1] = string.format("Phase %d of %d: %s", s.phase or 1, s.phases or 1, s.phaseName or "")
-		notes[#notes + 1] = string.format("Health: %d%%", s.hp or 100)
+		notes[#notes + 1] = T(lang, "Phase %d of %d: %s", s.phase or 1, s.phases or 1, s.phaseName or "")
+		notes[#notes + 1] = T(lang, "Health: %d%%", s.hp or 100)
 		if s.enraged then
-			notes[#notes + 1] = "ENRAGED: every hit is far stronger."
+			notes[#notes + 1] = T(lang, "ENRAGED: every hit is far stronger.")
 		else
-			notes[#notes + 1] = "Enrage in " .. U.clockText(s.toEnrage)
+			notes[#notes + 1] = T(lang, "Enrage in %s", U.clockText(s.toEnrage))
 		end
 		if (s.adds or 0) > 0 then
-			notes[#notes + 1] = string.format("Adds: %d", s.adds)
+			notes[#notes + 1] = T(lang, "Adds: %d", s.adds)
 		end
 	end
 	if (s.waiting or 0) > 0 then
-		notes[#notes + 1] = string.format("%d at the Ember Gate.", s.waiting)
+		notes[#notes + 1] = T(lang, "%d at the Ember Gate.", s.waiting)
 	end
 	return {tier = 15, theme = s.def.final and "The Cinderheart" or ("Ascended " .. s.def.name), left = s.left, limit = s.limit,
 		total = 0, killed = 0, bossAt = 0, boss = s.boss, state = s.state, bossName = s.def.boss, mods = {}, notes = notes,
 		lives = s.lives, livesMax = s.livesMax, omen = s.def.final and "the Cinderheart" or ("Ascended " .. s.def.name),
-		title = s.def.final and "The Cinderheart" or ("Ascended Omen - " .. s.def.name)}
+		title = s.def.final and "The Cinderheart" or T(lang, "Ascended Omen - %s", s.def.name)}
 end
 
 return U
