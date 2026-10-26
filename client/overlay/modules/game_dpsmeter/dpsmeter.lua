@@ -184,7 +184,8 @@ function refreshPanel()
       end
       row:setTooltip(tr('%s\n%s in all, %s per second, %s%%\n%d hits, %d%% critical, average %s, max %s', r.name,
         DpsMath.exact(r.total), DpsMath.exact(r.rate), tostring(r.pct), r.hits, r.critPct, DpsMath.exact(r.avg),
-        DpsMath.exact(r.max)) .. (r.over > 0 and tr('\noverhealing %s', DpsMath.exact(r.over)) or ''))
+        DpsMath.exact(r.max)) .. (r.over > 0 and tr('\noverhealing %s', DpsMath.exact(r.over)) or '') ..
+        (DpsMath.isNote(r.kind) and tr('\nA keystone note: how much it changed. Already counted in the other rows.') or ''))
       setBar(row, r.frac, DpsMath.barColor(r.kind, tab.idx))
       n = i
     end

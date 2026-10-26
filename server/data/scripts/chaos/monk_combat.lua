@@ -38,6 +38,10 @@ if not ChaosClassTree then
 	dofile("data/scripts/chaos/class_tree.lua") -- the class nodes of the passive tree
 end
 local CT = ChaosClassTree
+if not ChaosKeystoneLabels then
+	dofile("data/scripts/chaos/keystone_labels.lua") -- the combat log's keystone rows (optional)
+end
+local KL = ChaosKeystoneLabels
 if not ChaosWeaponPower then
 	dofile("data/scripts/chaos/weapon_power_core.lua") -- the auto attack keeps up with the level and the skill
 end
@@ -147,6 +151,7 @@ local function onOffence(creature, attacker, primaryDamage, secondaryDamage, pri
 				local f = CT.fx.ksHundredHands
 				if M.critGivesChi(player:getId(), M.now(), f.icdMs) then
 					M.addChi(player, f.chi)
+					KL.note(player, "ksHundredHands", 0)
 				end
 			end
 		end
@@ -188,8 +193,10 @@ local function onDefence(player, attacker, primaryDamage, secondaryDamage, prima
 		local chi = M.getChi(player)
 		local f = M.scarFactor(chi, scar)
 		if f ~= 1 then
+			local before = amount
 			primaryDamage, secondaryDamage = scale(primaryDamage, f), scale(secondaryDamage, f)
 			amount = math.abs(primaryDamage) + math.abs(secondaryDamage)
+			KL.note(player, "ksScarredDiscipline", before - amount)
 		end
 		if M.scarGivesChi(player:getId(), M.now(), scar) then
 			M.addChi(player, scar.chi)

@@ -57,6 +57,12 @@ ChaosPassiveTree.listeners = ChaosPassiveTree.listeners or {}
 ChaosPassiveCache = ChaosPassiveCache or {}
 ChaosItemModsCache = ChaosItemModsCache or {}
 
+-- the combat log names what a keystone did (keystone_labels.lua): its hits are "Keystone: <name>" rows, a factor is a
+-- note row. Optional: without the combat log nothing changes.
+if not ChaosKeystoneLabels then
+	dofile("data/scripts/chaos/keystone_labels.lua")
+end
+local KL = ChaosKeystoneLabels
 ChaosArchetypes = ChaosArchetypes or {}
 local M = ChaosArchetypes
 local A = ChaosArchetypesCore
@@ -223,18 +229,22 @@ end
 M.source = nil -- the archetype whose own damage is being dealt (see the top)
 
 -- a share of a hit: the keystone guard up (nothing reacts to it)
-local function dealProc(attacker, target, ctype, amount, effect)
+local function dealProc(attacker, target, ctype, amount, effect, flag)
 	amount = math.floor(amount or 0)
 	if amount <= 0 or not target or target:getHealth() <= 0 then
 		return
 	end
 	ChaosKeystones.depth = ChaosKeystones.depth + 1
-	local ok, err = pcall(doTargetCombat, attacker, target, ctype, -amount, -amount, effect or CONST_ME_NONE, ORIGIN_SPELL)
+	local ok, err = KL.run(flag, pcall, doTargetCombat, attacker, target, ctype, -amount, -amount, effect or CONST_ME_NONE,
+		ORIGIN_SPELL)
 	ChaosKeystones.depth = ChaosKeystones.depth - 1
 	if not ok then
 		print("[ChaosArchetypes] " .. tostring(err))
 	end
 end
+
+-- the keystone of each source of dealOwn (the combat log row)
+local SOURCE_FLAG = {aether = "arAetherEdge", pyre = "arPyreOath", relic = "arReliquary", shatter = "arWinterLattice"}
 
 -- damage of an archetype's own (tree bonuses apply, as to a spell)
 local function dealOwn(source, attacker, target, ctype, amount, effect)
@@ -244,7 +254,8 @@ local function dealOwn(source, attacker, target, ctype, amount, effect)
 	end
 	local before = M.source
 	M.source = source
-	local ok, err = pcall(doTargetCombat, attacker, target, ctype, -amount, -amount, effect or CONST_ME_NONE, ORIGIN_SPELL)
+	local ok, err = KL.run(SOURCE_FLAG[source], pcall, doTargetCombat, attacker, target, ctype, -amount, -amount,
+		effect or CONST_ME_NONE, ORIGIN_SPELL)
 	M.source = before
 	if not ok then
 		print("[ChaosArchetypes] " .. tostring(err))
@@ -558,7 +569,7 @@ local function pulseEffigies(player, s, t)
 				Position(e.pos.x, e.pos.y, e.pos.z):sendMagicEffect(fx("arcane_burst", CONST_ME_FIREAREA or CONST_ME_POFF))
 				for _, v in ipairs(A.pickNear(around(player, e.pos, cfg().arEffigy.radius, true), e.pos,
 						cfg().arEffigy.radius, nil, e.cast.count)) do
-					dealProc(player, Creature(v.id), ctype, amount, CONST_ME_NONE)
+					dealProc(player, Creature(v.id), ctype, amount, CONST_ME_NONE, "arEffigy")
 				end
 			end
 			keep[#keep + 1] = e
@@ -595,7 +606,7 @@ local function pulseSigil(player, s, t)
 	local list = A.pickNear(around(player, bp, cfg().arCinderSigil.pulseRadius, false), bp, cfg().arCinderSigil.pulseRadius,
 		nil, 9)
 	for _, v in ipairs(list) do
-		dealProc(player, Creature(v.id), COMBAT_FIREDAMAGE, amount, CONST_ME_NONE)
+		dealProc(player, Creature(v.id), COMBAT_FIREDAMAGE, amount, CONST_ME_NONE, "arCinderSigil")
 	end
 end
 
@@ -690,8 +701,12 @@ function M.warriorDefence(player, flags, attacker, pd, sd)
 	end
 	if flags.arLastStand and not (attacker and attacker:isPlayer()) then
 		local triggered
+		local before = math.abs(pd) + math.abs(sd)
 		pd, sd, triggered = A.lastStandHit(s.lastStand, t, player:getHealth(),
 			player.getEnergyShield and player:getEnergyShield() or 0, player:getMaxHealth(), pd, sd)
+		if before ~= math.abs(pd) + math.abs(sd) then
+			KL.note(player, "arLastStand", before - math.abs(pd) - math.abs(sd))
+		end
 		if triggered then
 			player:getPosition():sendMagicEffect(fx("arcane_circle", CONST_ME_MAGIC_RED or CONST_ME_POFF))
 		end
@@ -712,11 +727,15 @@ local function defend(player, flags, attacker, pd, pt, sd, st, origin)
 	end
 	if flags.arHollowVessel then
 		local oname = originName(origin)
+		local before = math.abs(pd) + math.abs(sd)
 		if A.hollowImmune(typeName(pt), oname) then
 			pd = 0
 		end
 		if A.hollowImmune(typeName(st), oname) then
 			sd = 0
+		end
+		if before ~= math.abs(pd) + math.abs(sd) then
+			KL.note(player, "arHollowVessel", before - math.abs(pd) - math.abs(sd))
 		end
 	end
 	if flags.arRampage or flags.arLastStand then
@@ -749,7 +768,7 @@ local function defend(player, flags, attacker, pd, pt, sd, st, origin)
 			local p, a = Player(pid), Creature(aid)
 			if p and a and validTarget(p, a) then
 				reflecting = true
-				dealProc(p, a, COMBAT_PHYSICALDAMAGE, amount, CONST_ME_EXPLOSIONHIT or CONST_ME_NONE)
+				dealProc(p, a, COMBAT_PHYSICALDAMAGE, amount, CONST_ME_EXPLOSIONHIT or CONST_ME_NONE, "arThornbound")
 				reflecting = false
 			end
 		end, 0)
@@ -793,6 +812,24 @@ local function hobble(target, t)
 	end
 end
 
+-- the combat log: what each factor flag of A.hitFactor changed in this hit (the flag alone, on the hit's size before any
+-- factor). Only the flags that have a note row of their own (keystone_labels_config.lua kind k).
+local FACTOR_FLAGS = {}
+for _, flag in ipairs({"arVigils", "arSnarewright", "arContagion", "arExecutioner", "arRampage", "arLongshot",
+		"arOpeningShot", "arHobble", "arBarbed"}) do
+	FACTOR_FLAGS[#FACTOR_FLAGS + 1] = {flag = flag, only = {[flag] = true}}
+end
+local function noteFactors(player, flags, ctx, before)
+	for _, f in ipairs(FACTOR_FLAGS) do
+		if flags[f.flag] then
+			local m = A.hitFactor(f.only, ctx)
+			if m ~= 1 then
+				KL.note(player, f.flag, before * math.abs(m - 1))
+			end
+		end
+	end
+end
+
 -- a player hits: everything else
 local function attack(player, flags, creature, pd, pt, sd, st, origin, critical)
 	local pid = player:getId()
@@ -809,7 +846,9 @@ local function attack(player, flags, creature, pd, pt, sd, st, origin, critical)
 		local m = A.openHandFactor(player:getLevel(), player:getEffectiveSkillLevel(SKILL_FIST), bestMeleeSkill(player),
 			attackFactor(player), flags.arOpenHand, hasUnique(pid, "openHand"))
 		if m and m ~= 1 then
+			local before = math.abs(pd) + math.abs(sd)
 			pd, sd = A.scale(pd, m), A.scale(sd, m)
+			KL.note(player, "arOpenHand", math.abs(math.abs(pd) + math.abs(sd) - before))
 		end
 	end
 
@@ -836,6 +875,9 @@ local function attack(player, flags, creature, pd, pt, sd, st, origin, critical)
 		end
 	end
 	local m = A.hitFactor(flags, ctx)
+	if m ~= 1 and KL.sink then
+		noteFactors(player, flags, ctx, math.abs(pd) + math.abs(sd))
+	end
 	if flags.arEarthbreaker and oname == "melee" and not source then
 		local slamMult
 		slamMult, doSlam = A.slamStep(stateOf(pid).slam, t0)
@@ -858,8 +900,10 @@ local function attack(player, flags, creature, pd, pt, sd, st, origin, critical)
 	-- (spells too since 2026-10-21, player report "so funciona com attack normal, nao com magias")
 	if flags.arExecutioner and (oname == "melee" or oname == "spell") and not source and isMonsterTarget and validTarget(player, creature) then
 		local executed
+		local before = math.abs(pd) + math.abs(sd)
 		pd, sd, executed = A.executeHit(creature:getHealth(), creature:getMaxHealth(), pd, sd, isBoss(creature))
 		if executed then
+			KL.note(player, "arExecutioner", math.abs(pd) + math.abs(sd) - before)
 			creature:getPosition():sendMagicEffect(fx("blood_slash", CONST_ME_DRAWBLOOD or CONST_ME_POFF))
 		end
 	end
@@ -902,6 +946,7 @@ local function attack(player, flags, creature, pd, pt, sd, st, origin, critical)
 			local give = A.leech(stateOf(pid).leech, now(), landed, p:getMaxHealth(), unique)
 			if give > 0 and Chaos and Chaos.heal then
 				Chaos.heal(p, give)
+				KL.note(p, "arSanguine", give)
 			end
 		end, 0)
 	end
@@ -937,7 +982,7 @@ local function attack(player, flags, creature, pd, pt, sd, st, origin, critical)
 			Position(tpos.x, tpos.y, tpos.z):sendMagicEffect(CONST_ME_GROUNDSHAKER or CONST_ME_POFF)
 			for _, v in ipairs(A.pickNear(around(p, tpos, radius, true), tpos, radius, {[cid] = true},
 					cfg().arEarthbreaker.maxTargets)) do
-				dealProc(p, Creature(v.id), COMBAT_PHYSICALDAMAGE, slam, CONST_ME_GROUNDSHAKER or CONST_ME_NONE)
+				dealProc(p, Creature(v.id), COMBAT_PHYSICALDAMAGE, slam, CONST_ME_GROUNDSHAKER or CONST_ME_NONE, "arEarthbreaker")
 			end
 		end, 0)
 	end
@@ -950,6 +995,7 @@ local function attack(player, flags, creature, pd, pt, sd, st, origin, critical)
 				local p, c = Player(pid), Creature(cid)
 				if p and c and validTarget(p, c) then
 					addBleed(p, c, tick, ticks, tickMs)
+					KL.note(p, "arBarbed", tick * ticks)
 				end
 			end, 0)
 		end
@@ -961,6 +1007,7 @@ local function attack(player, flags, creature, pd, pt, sd, st, origin, critical)
 			local p, c = Player(pid), Creature(cid)
 			if p and c and validTarget(p, c) then
 				hobble(c, now())
+				KL.note(p, "arHobble", 0)
 			end
 		end, 0)
 	end
@@ -981,7 +1028,7 @@ local function attack(player, flags, creature, pd, pt, sd, st, origin, critical)
 				Position(tpos.x, tpos.y, tpos.z):sendMagicEffect(fx("arcane_burst", CONST_ME_ENERGYAREA or CONST_ME_POFF))
 				for _, v in ipairs(A.pickNear(around(p, tpos, cfg().arCascade.radius, true), tpos, cfg().arCascade.radius,
 						{[cid] = true}, 8)) do
-					dealProc(p, Creature(v.id), ctype, burst, CONST_ME_NONE)
+					dealProc(p, Creature(v.id), ctype, burst, CONST_ME_NONE, "arCascade")
 				end
 			end, 0)
 		end
@@ -1001,7 +1048,7 @@ local function attack(player, flags, creature, pd, pt, sd, st, origin, critical)
 						cfg().arStormstring.radius, {[cid] = true}, arcs)) do
 					Position(tpos.x, tpos.y, tpos.z):sendDistanceEffect(Position(v.pos.x, v.pos.y, v.pos.z),
 						CONST_ANI_ENERGY or 5)
-					dealProc(p, Creature(v.id), COMBAT_ENERGYDAMAGE, arc, CONST_ME_ENERGYHIT or CONST_ME_NONE)
+					dealProc(p, Creature(v.id), COMBAT_ENERGYDAMAGE, arc, CONST_ME_ENERGYHIT or CONST_ME_NONE, "arStormstring")
 				end
 			end, 0)
 		end
@@ -1344,7 +1391,8 @@ local function relicTick(player, s, t)
 			local heal = A.relicHeal(member:getMaxHealth(), player:getMagicLevel(), unique)
 			if heal > 0 then
 				ChaosKeystones.depth = ChaosKeystones.depth + 1
-				pcall(doTargetCombat, player, member, COMBAT_HEALING, heal, heal, CONST_ME_NONE, ORIGIN_SPELL)
+				KL.run("arReliquary", pcall, doTargetCombat, player, member, COMBAT_HEALING, heal, heal, CONST_ME_NONE,
+					ORIGIN_SPELL)
 				ChaosKeystones.depth = ChaosKeystones.depth - 1
 			end
 			if member:getId() ~= pid then

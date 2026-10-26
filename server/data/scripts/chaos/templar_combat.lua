@@ -25,6 +25,10 @@ if not ChaosClassTree then
 	dofile("data/scripts/chaos/class_tree.lua") -- the class nodes of the passive tree
 end
 local CT = ChaosClassTree
+if not ChaosKeystoneLabels then
+	dofile("data/scripts/chaos/keystone_labels.lua") -- the combat log's keystone rows (optional)
+end
+local KL = ChaosKeystoneLabels
 local function cfg()
 	return T.cfg
 end
@@ -135,6 +139,7 @@ local function radiantStrike(attackerId, targetId, amount)
 		c:setParameter(CONDITION_PARAM_SUBID, SUB.judgement)
 		c:setParameter(CONDITION_PARAM_TICKS, cfg().judgement.durationMs)
 		target:addCondition(c)
+		KL.note(attacker, "ksDivineVerdict", 0)
 		fx(target:getPosition(), "holy_spiral", CONST_ME_HOLYAREA)
 	end
 	scripted = true
@@ -170,8 +175,8 @@ local function penitentStrike(playerId, attackerId, amount)
 		K.depth = (K.depth or 0) + 1
 	end
 	scripted = true
-	local ok, err = pcall(doTargetCombat, player, target, COMBAT_HOLYDAMAGE, -amount, -amount, CONST_ME_HOLYDAMAGE,
-		ORIGIN_SPELL)
+	local ok, err = KL.run("ksPenitentWrath", pcall, doTargetCombat, player, target, COMBAT_HOLYDAMAGE, -amount, -amount,
+		CONST_ME_HOLYDAMAGE, ORIGIN_SPELL)
 	scripted = false
 	if K then
 		K.depth = K.depth - 1

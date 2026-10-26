@@ -826,7 +826,7 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7101820 - 7101829 | keep attacking while moving (`Chaos.storage.kiteWalkOff`): +0 is 1 while the player turned the option off; the engine reads it (src-patch 0028) |
 | 7101830 - 7101839 | the player's language (`i18n_core.lua` `ChaosI18n.STORAGE`): +0 is 1 for pt-BR |
 | 7102000 - 7102049 | wardrobe (`Chaos.storage.wardrobe`): +0 footprint, +1 outline (`cosmetics_config.lua`), +10 .. +39 name plate frame slots 9 and up (`Chaos.storage.shopFrameBase2`, `shop_core.lua` `frameStorage`) |
-| 7102900 - 7102909 | tester bots (`Chaos.storage.tester`, "Tester bots"): +0 is 1 on a tester character (only `tools/testers.py` setup writes it; the engine reads it, src-patch 0059), +1 the TEST ONLY helper gave its supplies, +2/+3/+4 its hunt position x/y/z; +5..9 free |
+| 7102900 - 7102909 | tester bots (`Chaos.storage.tester`, "Tester bots"): +0 is 1 on a tester character (only `tools/testers.py` setup writes it; the engine reads it, src-patch 0059), +1 the TEST ONLY helper gave its supplies, +2/+3/+4 its hunt position x/y/z, +5 the day of its respec waiver and +6 the waivers used that day ("Respec waiver for testers"); +7..9 free |
 | 7102100 - 7102119 | the Ashen Chronicle's GLOBAL storages (`Game.setStorageValue`, `chronicle_config.lua` `globalStorage`): +1..+9 chapter n written, +10 chapters written, +11 the season; no player storage |
 | 7101900 - 7101909 | the Gambler (`gamble_config.lua` `storage`, `Chaos.storage.gamble`): +0 window, +1 level, +2 vocation, +3 sold slots, +4 early refreshes; +5..9 free |
 | 7102640 - 7102689 | Conquest Tokens (`conquest_config.lua` `storage`, `Chaos.storage.conquest`): +0 the day of the counters, +1..+29 tokens earned today per source, +30..+39 bad-luck misses in a row per pity group; +40..+49 free |
@@ -3542,6 +3542,16 @@ What taking passive points back costs. Every number is in `respec_config.lua`.
   bank, a right-click refund of node 4 (on a loop) charged 157,000 and freed the point, a refund of node 11 (others depend on it) was
   refused with its message. Not seen in game: the free reset after a class change (unit test only; the test server was killed by the
   machine's memory limit during that run) and the Paragon reset dialog (character below level 1000).
+
+**Respec waiver for testers (O255).** The tester bots have 20,000 gold, so above level 50 they could not pay the reset after
+every node of the keystone run (O249). Instead of giving them gold, `Respec.pay` waives the price for a tester, and credits
+nothing: no gold exists that could leave the account. `R.testerWaived(player, cost)` (core: `R.testerWaiver`) requires all of:
+the tester storage 7102900 = 1, a name that is "Tester Xxx", group 1, account type 1 or lower (`ChaosTestersCore.safetyProblem`),
+and fewer than `testerWaiver.perDay` (400) waivers today (storages 7102905 = day, 7102906 = count, reset on a new day). A normal
+account, a tagged character with another name, any staff character and a tester over the cap pay as always. Every waiver prints
+`[Chaos respec] waived N gold for tester NAME (guid, level), K of 400 today`; a refusal or the cap prints a line as well.
+The price shown in the window is unchanged. Nothing sets the tag but `tools/testers.py setup`. No dev key is involved.
+Test: `tests/respec_test.lua`.
 
 ## Infinity Tower gameplay (`infinitytower_run.lua`)
 The tower exists now. The Enter Tower button of the client window (action `enter`) takes you, or your party (leader only, members within 12 tiles, up to 4), into an arena that is built at runtime with `Game.createTile` in an empty part of the map (x from 2000, y 2000, z 7; sixteen arenas side by side), so no map editing is needed. Floors are waves: kill everything to open the next one (6 s pause, half of the missing health and mana restored, `floorGold` x floor gold); every 10th floor is a boss floor with its helpers (twice the floor time since 2026-10-13: 10 minutes). Pools get harder every 8 floors, and the chance of magic, rare and legendary monsters (with their modifiers and shaders) rises with the floor. A floor has a 300 s limit and a whole run 60 minutes (`runTimeLimit`, warnings at 5 min, 1 min and 10 s, the floor's at 1 min and 10 s; "Instance limits"); at most 16 arenas, the wait and the waiting line when all are busy. Dying, leaving (the Leave Tower button), logging out or running out of time ends your part of the run and records the cleared floors with `ChaosTower.recordRun` (points, best floor, ranking, milestones). Logging in inside an arena sends you to the temple. Milestone rewards now use item ids that exist (gold, Orbs of Upheaval and Fate, Soulreaper). Everything is configured at the top of the file (`ChaosTowerRunConfig`).
@@ -7433,9 +7443,8 @@ development key, no god command, no helper command):
 3. mastery: `planApply` the node with effect 1; every other effect with `masteryChoose`. The stats of the effect that the
    totals show (the five attributes, the damage percent per type, `multiIncrement` on every element, the critical chance and
    amount of the tree) must grow by exactly the effect's value. The rest of the effect is named as not observable.
-4. keystone: `planApply` route and node together. A flag in `PROC` (tester_keytree.py; the ones whose extra hits
-   `passivetree_keystones.lua` deals with `doTargetCombat`) must make the row "Keystones" of the combat log (`open`/`seg`,
-   damage dealt tab) grow while the bot hunts; the report names what the hunt needs (a shield, a bow, a second enemy).
+4. keystone: `planApply` route and node together. A flag with a label (`keystone_labels_config.lua`, O255: 202 of the 242 keystone nodes) must make its row
+   "Keystone: Name" of the combat log (`open`/`seg`, the tab of the label) grow while the bot hunts; the report names what the hunt needs (a shield, a bow, a second enemy).
 5. `resetPreset`, always (also after a refused plan, a failure or a bot that left the game), and the tree is read back.
 Bots of one class start at different nodes (their place in the class), the nodes go cheapest route first, a node needs its route
 in points (`points = (level - 8) / 4 + boss points`; a keystone is 3 to 32 nodes away).
@@ -14762,6 +14771,18 @@ puts what it takes into the backpack; with no room it stays in the corpse (the r
 the stash or inbox).
 Treasure goblins add their hoard in their death event, which the engine runs before `dropLoot`, so the snapshot sees it
 (rays included; the old `ChaosLootRays.beam` hook in `treasure_goblin.lua` was removed).
+
+**Keystone rows (O255).** A keystone shows as its own row, "Keystone: Name", instead of the shared "Keystones" row. One central
+hook does it: `keystone_labels_config.lua` lists the flags (name, tab, kind) and `keystone_labels.lua` gives the keystone scripts two
+calls, `ChaosKeystoneLabels.run(flag, fn, ...)` (the hits `fn` deals count under the keystone) and `note(player, flag, amount)`.
+`combatlog.lua` plugs in as the sink; without it, or with the meter off, both are plain calls. Kind `p` rows are real damage or
+healing and add to the totals. Kind `k` rows are notes (a damage factor such as Deadeye, damage not taken such as Immovable, a
+count such as Hundred Hands): they are drawn in violet, never add to the totals, sort after the real sources (at most
+`maxNotesSent`, 10, of them) and are dropped, not merged into "Other", when the table is full. Row count and payload limits are
+unchanged (`maxRows` 40, `maxRowsSent` 25; `Chaos.sendChunked` over 8192 bytes). Tests: `tests/keystone_labels_test.lua`,
+`tests/combatlog_test.lua`, `tests/passivetree_keystones_test.lua`. Not labelled yet (no single hook): Pack Alpha, Inspiring
+Illusion, Grave Covenant, Blackblood Creed, Living Shadow, Way of the Blade, Hoarded Souls, Bone Colossus, Flowing Mercy,
+Bastion, Iron Tithe; and four flags without a visible effect (`observe = false` in the config).
 
 ### Loot channel (icons, click to loot)
 - On each kill the corpse owner gets `kill {k, m, look, p, items = [{n, id, c, r, u, o, g, nm, left}], drops}`; an empty

@@ -15,6 +15,8 @@ return {
 	maxRows = 40,
 	-- rows per tab sent to the client (the totals always count everything)
 	maxRowsSent = 25,
+	-- keystone note rows (kind k, keystone_labels_config.lua) sent besides those, per tab
+	maxNotesSent = 10,
 	-- targets remembered per fight for its label (the most damaged one names a fight without a boss)
 	maxTargets = 16,
 	-- distinct source names cached server-wide (spells, summons, monsters); the cache starts over beyond this

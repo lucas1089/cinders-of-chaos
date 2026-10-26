@@ -14,6 +14,10 @@
 --           outside a cast; an unlisted file is "Other" (also only outside a cast). Calls made by data/spells/** are
 --           not labelled: the cast names them.
 --   summon  the attacker is a summon of the character: the summon's name
+--   keystone a hit inside ChaosKeystoneLabels.run(flag, fn) (keystone_labels.lua): the proc row is named after the
+--           keystone, "Keystone: Cleaving Arc" (kind p, in the tab of the hit), instead of the file's label. A keystone
+--           that only changes a hit or fires without a hit of its own is a note row (kind k, ChaosKeystoneLabels.note):
+--           how much it changed, inside the other rows and never added to the tab's total
 --   cast    the spell running now: the spell supports' cast context (data/spells/chaos/_supports.lua, ChaosSupportsSpell
 --           .cast(): every wrapped spell, also in the addEvent callbacks it starts), else the spell / rune between
 --           the engine's Player:onSpellPreCast and onSpellCast (engine patch 0008; every instant spell and rune);
@@ -36,6 +40,9 @@ if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
 dofile("data/scripts/chaos/combatlog_core.lua")
+if not ChaosKeystoneLabels then
+	dofile("data/scripts/chaos/keystone_labels.lua")
+end
 
 Chaos.combatLogConfig = dofile("data/scripts/chaos/combatlog_config.lua")
 local cfg = Chaos.combatLogConfig
@@ -304,7 +311,53 @@ local function labelFor(source)
 	return OTHER_PROC
 end
 
--- the label of the script that called the wrapper (level 1 = this function, 2 = the wrapper)
+-- keystone labels: CL.asFlag(def, fn, ...) runs fn(...) with the procs inside named after the keystone def
+-- (keystone_labels.lua: {name, kind, tab}); nested runs restore the outer one. Only a kind p def renames a proc.
+local flagged
+local flagProcs = {} -- def name -> {src, helper}
+local function flagProc(def)
+	local l = flagProcs[def.name]
+	if not l then
+		l = CL.procSource({name = def.name, kind = "p", icon = "keystone"})
+		flagProcs[def.name] = l
+	end
+	return l
+end
+
+local function flagDone(outer, ok, ...)
+	flagged = outer
+	if not ok then
+		error((...), 0)
+	end
+	return ...
+end
+
+function CL.asFlag(def, fn, ...)
+	local outer = flagged
+	flagged = def
+	return flagDone(outer, pcall(fn, ...))
+end
+
+-- a keystone note (kind k) or its own healing (kind p, healing tab) for a character; true when it was recorded
+local NOTE_TABS = {dealt = DMG, healing = HEAL, taken = TAKEN}
+function CL.note(player, def, amount)
+	if not cfg.enabled or not def or not player or not player:isPlayer() then
+		return false
+	end
+	local a = actorOf(player)
+	a.sessionOn = huntRunning(player)
+	local src = CL.source(def.kind == "p" and "p" or "k", def.name, "keystone")
+	CL.add(a, nowMs(), NOTE_TABS[def.tab] or DMG, src, math.floor(amount or 0), false, 0)
+	return true
+end
+
+ChaosKeystoneLabels.sink = {
+	run = function(def, fn, ...) return CL.asFlag(def, fn, ...) end,
+	note = function(player, def, amount) return CL.note(player, def, amount) end,
+}
+
+-- the label of the script that called the wrapper (level 1 = this function, 2 = the wrapper); data/global.lua and
+-- keystone_labels.lua (ChaosKeystoneLabels.run: Lua 5.3 keeps its frame when it tail-calls pcall) are looked through
 local function callerLabel()
 	for level = 3, 7 do
 		local info = debug.getinfo(level, "S")
@@ -312,7 +365,7 @@ local function callerLabel()
 			return nil
 		end
 		local src = info.source or ""
-		if src ~= "=[C]" and not src:find("global.lua", 1, true) then
+		if src ~= "=[C]" and not src:find("global.lua", 1, true) and not src:find("keystone_labels.lua", 1, true) then
 			local l = labelCache[src]
 			if l == nil then
 				l = labelFor(src)
@@ -449,6 +502,9 @@ local function wrapTarget(raw)
 	return function(cid, target, ctype, mn, mx, effect, ...)
 		local origin = ...
 		local label = callerLabel()
+		if label and flagged and flagged.kind == "p" then
+			label = flagProc(flagged)
+		end
 		local attacker = creatureArg(cid)
 		local owner = attacker and ownerOf(attacker)
 		local pushed = false
@@ -480,6 +536,9 @@ end
 local function wrapArea(raw)
 	return function(cid, ...)
 		local label = callerLabel()
+		if label and flagged and flagged.kind == "p" then
+			label = flagProc(flagged)
+		end
 		local attacker = creatureArg(cid)
 		local owner = attacker and ownerOf(attacker)
 		local pushed = false

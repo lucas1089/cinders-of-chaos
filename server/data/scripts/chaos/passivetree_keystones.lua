@@ -64,6 +64,13 @@ ChaosKeystones = ChaosKeystones or {}
 local K = ChaosKeystones
 K.depth = K.depth or 0
 
+-- the combat log names what a keystone did (keystone_labels.lua): its extra hits are "Keystone: <name>" rows, a factor or
+-- a block is a note row. Optional: without the combat log nothing changes.
+if not ChaosKeystoneLabels then
+	dofile("data/scripts/chaos/keystone_labels.lua")
+end
+local KL = ChaosKeystoneLabels
+
 local cfg = {
 	cleave = {percent = 0.40, maxTargets = 3},
 	bulwark = {blockChance = 15, reflectPercent = 0.30},
@@ -384,11 +391,17 @@ local function guarded(fn, ...)
 	end
 end
 
-local function procDamage(attacker, target, ctype, amount, effect)
+-- flag: the keystone this share belongs to (the combat log row)
+local function procDamage(attacker, target, ctype, amount, effect, flag)
 	amount = math.floor(amount)
 	if amount > 0 and target and target:getHealth() > 0 then
-		guarded(doTargetCombat, attacker, target, ctype, -amount, -amount, effect or CONST_ME_NONE, ORIGIN_SPELL)
+		KL.run(flag, guarded, doTargetCombat, attacker, target, ctype, -amount, -amount, effect or CONST_ME_NONE, ORIGIN_SPELL)
 	end
+end
+
+-- a factor changed a hit from `before` (the total damage of the hit) to pd + sd: note it for the combat log
+local function noteFactor(player, flag, before, pd, sd)
+	KL.note(player, flag, math.abs(math.abs(pd) + math.abs(sd) - before))
 end
 
 local function procType(ctype)
@@ -406,7 +419,7 @@ local function cleave(pid, mainId, amount, ctype)
 	end
 	local center = p:getPosition()
 	for _, v in ipairs(K.cleavePick(candidatesAround(p, center, 1, false), center, mainId, cfg.cleave.maxTargets)) do
-		procDamage(p, Creature(v.id), ctype, amount, fx("blood_slash", CONST_ME_HITAREA))
+		procDamage(p, Creature(v.id), ctype, amount, fx("blood_slash", CONST_ME_HITAREA), "ksCleavingArc")
 	end
 end
 
@@ -425,7 +438,7 @@ local function ricochet(pid, mainId, startPos, base, ctype, missile)
 			local target = Creature(step.id)
 			if a and target and validTarget(a, target) then
 				Position(step.from.x, step.from.y, step.from.z):sendDistanceEffect(target:getPosition(), missile)
-				procDamage(a, target, ctype, step.amount, CONST_ME_HITAREA)
+				procDamage(a, target, ctype, step.amount, CONST_ME_HITAREA, "ksRicochet")
 			end
 		end, (i - 1) * cfg.ricochet.delay)
 	end
@@ -436,7 +449,7 @@ local function shadowStrike(pid, targetId, amount, ctype)
 	local p, target = Player(pid), Creature(targetId)
 	if p and target and validTarget(p, target) then
 		target:getPosition():sendMagicEffect(fx("shadow_smoke", CONST_ME_MORTAREA))
-		procDamage(p, target, ctype, amount, CONST_ME_NONE)
+		procDamage(p, target, ctype, amount, CONST_ME_NONE, "ksShadowTwin")
 	end
 end
 
@@ -449,7 +462,7 @@ local function corpseBlast(pid, deadId, center, amount)
 	Position(center.x, center.y, center.z):sendMagicEffect(fx("necro_skull", CONST_ME_MORTAREA))
 	local radius = CK.cfg.ksCorpseBlast.radius
 	for _, v in ipairs(CK.corpseBlastPick(candidatesAround(p, center, radius, true), center, deadId)) do
-		procDamage(p, Creature(v.id), COMBAT_DEATHDAMAGE, amount, CONST_ME_MORTAREA)
+		procDamage(p, Creature(v.id), COMBAT_DEATHDAMAGE, amount, CONST_ME_MORTAREA, "ksCorpseBlast")
 	end
 end
 
@@ -461,7 +474,7 @@ local function palmShock(pid, mainId, center, amount, ctype)
 	end
 	Position(center.x, center.y, center.z):sendMagicEffect(fx("ground_slam", CONST_ME_GROUNDSHAKER))
 	for _, v in ipairs(CK.palmShockPick(candidatesAround(p, center, 1, false), center, mainId)) do
-		procDamage(p, Creature(v.id), ctype, amount, fx("shockwave", CONST_ME_EXPLOSIONHIT))
+		procDamage(p, Creature(v.id), ctype, amount, fx("shockwave", CONST_ME_EXPLOSIONHIT), "ksSeventhPalm")
 	end
 end
 
@@ -477,7 +490,7 @@ local function pierce(pid, target, base, ctype)
 		addEvent(function()
 			local a, t = Player(pid), Creature(step.id)
 			if a and t and validTarget(a, t) then
-				procDamage(a, t, ctype, step.amount, fx("shockwave", CONST_ME_EXPLOSIONHIT))
+				procDamage(a, t, ctype, step.amount, fx("shockwave", CONST_ME_EXPLOSIONHIT), "ksPiercingPalm")
 			end
 		end, i * CK.cfg.ksPiercingPalm.delayMs)
 	end
@@ -492,7 +505,7 @@ local function rebukeNova(pid, center, amount)
 	Position(center.x, center.y, center.z):sendMagicEffect(fx("holy_spiral", CONST_ME_HOLYAREA))
 	local radius = CK.cfg.ksRadiantRebuke.radius
 	for _, v in ipairs(CK.rebukePick(candidatesAround(p, center, radius, true), center)) do
-		procDamage(p, Creature(v.id), COMBAT_HOLYDAMAGE, amount, fx("holy_cross", CONST_ME_HOLYDAMAGE))
+		procDamage(p, Creature(v.id), COMBAT_HOLYDAMAGE, amount, fx("holy_cross", CONST_ME_HOLYDAMAGE), "ksRadiantRebuke")
 	end
 end
 
@@ -512,7 +525,7 @@ local function dawnchain(pid, mainId, startPos, base)
 			if a and target and validTarget(a, target) then
 				Position(step.from.x, step.from.y, step.from.z):sendDistanceEffect(target:getPosition(),
 					fxMissile("holy_bolt", CONST_ANI_HOLY))
-				procDamage(a, target, COMBAT_HOLYDAMAGE, step.amount, fx("holy_cross", CONST_ME_HOLYDAMAGE))
+				procDamage(a, target, COMBAT_HOLYDAMAGE, step.amount, fx("holy_cross", CONST_ME_HOLYDAMAGE), "ksDawnchain")
 			end
 		end, (i - 1) * d.delay)
 	end
@@ -530,7 +543,7 @@ local function runEcho(pid, hits)
 		pos:sendMagicEffect(fx("arcane_burst", CONST_ME_ENERGYAREA))
 		local c = Creature(h.id)
 		if c and validTarget(p, c) and K.distance(c:getPosition(), h.pos) <= 1 then
-			procDamage(p, c, h.type, h.amount * cfg.echo.percent, CONST_ME_NONE)
+			procDamage(p, c, h.type, h.amount * cfg.echo.percent, CONST_ME_NONE, "ksArcaneEcho")
 		end
 	end
 end
@@ -592,8 +605,8 @@ local function flushLeech(memberId)
 	leechBuffer[memberId] = nil
 	local member = Player(memberId)
 	if entry and member and member:getHealth() > 0 and entry.amount > 0 then
-		guarded(doTargetCombat, Player(entry.owner) or 0, member, COMBAT_HEALING, entry.amount, entry.amount, CONST_ME_NONE,
-			ORIGIN_SPELL)
+		KL.run("ksSharedPhantasm", guarded, doTargetCombat, Player(entry.owner) or 0, member, COMBAT_HEALING, entry.amount,
+			entry.amount, CONST_ME_NONE, ORIGIN_SPELL)
 	end
 end
 
@@ -647,7 +660,7 @@ end
 -- The pulses are plain health (Chaos.heal: no health event), so the healer's bonuses (the stat window, the healing
 -- rules, the tree) count once, in the heal that planted them; a heal in PvP combat plants the reduced share.
 local regrowth = {}
-local function startRegrowth(targetId, heal)
+local function startRegrowth(targetId, heal, healerId)
 	local running = regrowth[targetId]
 	local pulses, pool = K.overgrowthPlan(running and running.left or 0, heal)
 	if pool <= 0 then
@@ -672,19 +685,20 @@ local function startRegrowth(targetId, heal)
 			if t and t:getHealth() > 0 and amount > 0 and Chaos and Chaos.heal then
 				Chaos.heal(t, amount)
 				t:getPosition():sendMagicEffect(fx("heal_sparkle", CONST_ME_MAGIC_GREEN))
+				KL.note(healerId and Player(healerId), "ksOvergrowth", amount)
 			end
 		end, i * cfg.overgrowth.interval)
 	end
 end
 
 -- ---- reflected damage (Bulwark, Thorns)
-local function reflect(ownerId, attackerId, ctype, amount, missile, effect)
+local function reflect(ownerId, attackerId, ctype, amount, missile, effect, flag)
 	local owner, attacker = Player(ownerId), Creature(attackerId)
 	if owner and attacker and validTarget(owner, attacker) then
 		if missile then
 			owner:getPosition():sendDistanceEffect(attacker:getPosition(), missile)
 		end
-		procDamage(owner, attacker, ctype, amount, effect)
+		procDamage(owner, attacker, ctype, amount, effect, flag)
 	end
 end
 
@@ -724,7 +738,9 @@ end
 local function defend(player, b, attacker, pd, pt, sd, st, origin)
 	if b.ksImmovable then
 		local m = K.immovableFactor(player:getHealth(), player:getMaxHealth())
+		local before = math.abs(pd) + math.abs(sd)
 		pd, sd = K.scale(pd, m), K.scale(sd, m)
+		noteFactor(player, "ksImmovable", before, pd, sd)
 	end
 	-- Shadow Twin's price: every hit taken (a hit a mana shield took paid it in the mana event, manashield.lua)
 	if b.ksShadowTwin and not ChaosManaShield.scaled(player, attacker, "shadowtwin") then
@@ -758,13 +774,13 @@ local function defend(player, b, attacker, pd, pt, sd, st, origin)
 		if origin == ORIGIN_MELEE then
 			combatFx("reflect", player)
 			addEvent(reflect, 0, player:getId(), attacker:getId(), COMBAT_PHYSICALDAMAGE, total * cfg.bulwark.reflectPercent,
-				nil, fx("shockwave", CONST_ME_EXPLOSIONHIT))
+				nil, fx("shockwave", CONST_ME_EXPLOSIONHIT), "ksBulwark")
 		end
 	end
 	if b.ksThorns then
 		combatFx("reflect", player)
 		addEvent(reflect, 0, player:getId(), attacker:getId(), COMBAT_EARTHDAMAGE, K.thornsAmount(total, player:getMagicLevel()),
-			CONST_ANI_SMALLEARTH, CONST_ME_PLANTATTACK)
+			CONST_ANI_SMALLEARTH, CONST_ME_PLANTATTACK, "ksThorns")
 	end
 	return pd, sd
 end
@@ -801,7 +817,9 @@ local function classHit(player, b, creature, pd, pt, sd, origin, weapon)
 	if b.ksViperVerdict then
 		local m, vital = CK.viperStep(creature:hasCondition(CONDITION_POISON))
 		if m ~= 1 then
+			local before = math.abs(pd) + math.abs(sd)
 			pd, sd = K.scale(pd, m), K.scale(sd, m)
+			noteFactor(player, "ksViperVerdict", before, pd, sd)
 		end
 		if vital then
 			creature:getPosition():sendMagicEffect(fx("poison_burst", CONST_ME_GREEN_RINGS))
@@ -860,7 +878,9 @@ local function attack(player, b, creature, pd, pt, sd, st, origin)
 			s.focus = s.focus or {}
 			local m = K.focusStep(s.focus, creature:getId(), now())
 			if m ~= 1 then
+				local before = math.abs(pd) + math.abs(sd)
 				pd, sd = K.scale(pd, m), K.scale(sd, m)
+				noteFactor(player, "ksHuntersFocus", before, pd, sd)
 			end
 		end
 		if b.ksUndyingRage and origin == ORIGIN_MELEE and MELEE_WEAPON[weapon:getWeaponType()] then
@@ -870,12 +890,15 @@ local function attack(player, b, creature, pd, pt, sd, st, origin)
 					local p = Player(pid)
 					if p and p:getHealth() > 0 and Chaos and Chaos.heal then
 						Chaos.heal(p, heal)
+						KL.note(p, "ksUndyingRage", heal)
 					end
 				end, 0)
 			end
 		end
 		if b.ksDeadeye and origin == ORIGIN_RANGED and shootsBolts(player, weapon) and K.roll(cfg.deadeye.chance) then
+			local before = math.abs(pd) + math.abs(sd)
 			pd, sd = K.scale(pd, cfg.deadeye.multiplier), K.scale(sd, cfg.deadeye.multiplier)
+			noteFactor(player, "ksDeadeye", before, pd, sd)
 			creature:getPosition():sendMagicEffect(fx("holy_cross", CONST_ME_HOLYDAMAGE))
 			combatFx("crit", creature:getPosition())
 		end
@@ -895,7 +918,9 @@ local function attack(player, b, creature, pd, pt, sd, st, origin)
 		if b.ksOverload and ELEMENTS[pt] then
 			local m = K.overloadStep(stateOf(pid), pt, now())
 			if m ~= 1 then
+				local before = math.abs(pd) + math.abs(sd)
 				pd, sd = K.scale(pd, m), K.scale(sd, m)
+				noteFactor(player, "ksOverload", before, pd, sd)
 				local s = stateOf(pid)
 				if s.boostFxAt ~= s.boostAt then
 					s.boostFxAt = s.boostAt
@@ -931,7 +956,7 @@ function event.onHealthChange(creature, attacker, pd, pt, sd, st, origin)
 	if pt == COMBAT_HEALING then
 		local b = attacker:isPlayer() and ChaosPassiveCache[attacker:getId()]
 		if b and b.ksOvergrowth and not selfHit and creature:isPlayer() and origin ~= ORIGIN_CONDITION then
-			startRegrowth(creature:getId(), math.abs(pd) + math.abs(sd))
+			startRegrowth(creature:getId(), math.abs(pd) + math.abs(sd), attacker:getId())
 		end
 		return pd, pt, sd, st
 	end
@@ -1051,6 +1076,7 @@ local function classFactor(creature, attacker, pd, sd, origin)
 	if b.ksReapersToll and creature:isMonster() then
 		local f, low = CK.reaperFactor(creature:getHealth(), creature:getMaxHealth())
 		m = m * f
+		KL.note(owner, "ksReapersToll", math.abs((math.abs(pd) + math.abs(sd)) * (f - 1)))
 		local cid = creature:getId()
 		if low and not reaped[cid] then
 			reaped[cid] = true

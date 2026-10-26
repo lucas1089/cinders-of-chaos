@@ -8,8 +8,8 @@ bot can see that it works) and for each node, as a player does it (extended opco
   2. plans the route (planApply), reads the totals of the tree window (statTotals)
   3. mastery: plans the node with its first effect, reads the totals again; the stats the totals show must grow by exactly
      what the effect gives; every other effect is chosen with masteryChoose (priced: refused for lack of gold = not tested)
-     keystone: plans route and node together; a flag with extra hits (tester_keytree.PROC) must make the "Keystones" row of
-     the combat log (opcode 204) grow while the bot hunts; any other flag is "not observable", with the reason
+     keystone: plans route and node together; a flag with its own row in the combat log (opcode 204, "Keystone: <name>",
+     keystone_labels_config.lua) must make that row grow while the bot hunts; any other flag is "not observable", with the reason
   4. resets the tree (resetPreset), always, also after an error, and reads it back
 Result per node: pass | fail | not observable | not tested (not enough points, a reset or a change of effect the character
 cannot pay, the bot left the game). Nothing is faked: a node whose effect a client cannot see is reported as that.
@@ -29,7 +29,8 @@ ANSWER = 8.0      # seconds a request waits for its answer
 WINDOW = 150.0    # seconds a keystone with extra hits may take to show its first one
 POLL = 15.0       # seconds between two looks at the combat log
 TOLERANCE = 0.15  # totals are rounded to one decimal
-PROC_ROW = 'p:Keystones'
+PROC_ROW = 'p:Keystones'   # the row of a keystone proc that has no label of its own (the fallback of combatlog_config.lua)
+TABS = {'dealt': 0, 'healing': 1, 'taken': 2, 'received': 3}   # tab of the combat log state (v.t)
 
 
 def class_key(name):
@@ -207,19 +208,20 @@ class KeyTest:
             await self.reset(io)
 
     async def watch_log(self, io, nid, what, probe):
-        """the Keystones row of the combat log must grow while the bot hunts"""
+        """the keystone's row of the combat log (its own tab) must grow while the bot hunts"""
         row_key = probe.get('row') or PROC_ROW
+        tab = TABS.get(probe.get('tab'), 0)
         a = await io.request(LOG, 'open', {'seg': 's'}, ['state'], ANSWER)
         if not a:
             return self.add(nid, 'keystone', what, NOT_TESTED, 'the combat log did not answer')
-        base, _ = proc_hits(a.get('data'), row_key)
+        base, _ = proc_hits(a.get('data'), row_key, tab)
         waited, seen = 0.0, (0, 0)
         while waited < self.window and io.alive():
             await io.sleep(self.poll)
             waited += self.poll
             s = await io.request(LOG, 'seg', {'id': 's'}, ['state'], ANSWER)
             if s:
-                seen = proc_hits(s.get('data'), row_key)
+                seen = proc_hits(s.get('data'), row_key, tab)
                 if seen[0] > base:
                     await io.request(LOG, 'close', {}, [], 0)
                     return self.add(nid, 'keystone', what, PASS, 'the "%s" row of the combat log grew: %d hits (%d before), %d damage'
