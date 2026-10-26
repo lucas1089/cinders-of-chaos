@@ -4942,5 +4942,99 @@ return {
 			"o seu saldo bancário e o estoque de suprimentos são esvaziados",
 		[" Confirm in the Season window within %d seconds."] =
 			" Confirme na janela de Temporada em até %d segundos.",
+		-- The weekly guild boss (guildboss.lua, guildboss_core.lua)
+		["Donate how much?"] = "Doar quanto?",
+		["Donate at least %s gold."] = "Doe pelo menos %s de ouro.",
+		["That is not enough for one ember."] = "Isso não é o bastante para uma brasa.",
+		["The guild boss sleeps (disabled)."] = "O chefe da guild dorme (desativado).",
+		["Only the guild leader or a vice-leader can summon the guild boss."] =
+			"Só o líder ou um vice-líder da guild pode invocar o chefe da guild.",
+		["The Summoning Stone stands in a guild hall: your guild has none."] =
+			"A Summoning Stone fica em um guild hall: a sua guild não tem nenhum.",
+		["The hall's rent is unpaid: the Summoning Stone is cold."] =
+			"O aluguel do hall não foi pago: a Summoning Stone está fria.",
+		["Stand in your guild hall to summon the guild boss."] =
+			"Fique no seu guild hall para invocar o chefe da guild.",
+		["Your guild already slew the guild boss this week."] = "A sua guild já derrotou o chefe da guild nesta semana.",
+		["Your guild is fighting the guild boss right now."] = "A sua guild está lutando contra o chefe da guild agora.",
+		["Your guild used its %d summons this week."] = "A sua guild usou as suas %d invocações desta semana.",
+		["The stone holds %s of %s embers."] = "A pedra guarda %s de %s brasas.",
+		["At least %d members (level %d+) must stand in the hall."] =
+			"Pelo menos %d membros (nível %d+) precisam estar no hall.",
+		["Your guild already slew the guild boss this week; the stone rests until the reset."] =
+			"A sua guild já derrotou o chefe da guild nesta semana; a pedra descansa até o reset.",
+		["The stone is busy; your gold went back to your bank balance."] =
+			"A pedra está ocupada; o seu ouro voltou para o saldo do banco.",
+		["You fed the Summoning Stone %s gold: %d embers."] = "Você alimentou a Summoning Stone com %s de ouro: %d brasas.",
+		["The stone does not take that."] = "A pedra não aceita isso.",
+		["The items could not be taken."] = "Não foi possível pegar os itens.",
+		["The stone is busy. Try again in a moment."] = "A pedra está ocupada. Tente de novo em instantes.",
+		["You fed the Summoning Stone %d x %s: %d embers."] = "Você alimentou a Summoning Stone com %d x %s: %d brasas.",
+		["You need level %d to face the guild boss."] = "Você precisa do nível %d para enfrentar o chefe da guild.",
+		["Every guild boss arena is in use. Try again in a moment."] =
+			"Todas as arenas do chefe da guild estão em uso. Tente de novo em instantes.",
+		["The Summoning Stone is not ready."] = "A Summoning Stone não está pronta.",
+		["%s is coming."] = "%s está chegando.",
+		["Phase %d of %d: %s"] = "Fase %d de %d: %s",
+		["Health: %d%%"] = "Vida: %d%%",
+		["Enrage in %s"] = "Enrage em %s",
+		["ENRAGED: every hit is far stronger."] = "ENFURECIDO: todo golpe é bem mais forte.",
+		["%d at the Ember Gate."] = "%d no Ember Gate.",
+		["Guild Boss: %s"] = "Chefe da Guild: %s",
+		["You left the arena."] = "Você saiu da arena.",
+		["Everyone left the arena."] = "Todos saíram da arena.",
+		["The guild boss attempt failed. The Summoning Stone keeps %d embers."] =
+			"A tentativa contra o chefe da guild falhou. A Summoning Stone guarda %d brasas.",
+		["%s The arena collapses."] = "%s A arena desaba.",
+		["The server is restarting: the arena closes."] = "O servidor está reiniciando: a arena se fecha.",
+		["%s falls in %s! The guild earns %d guild XP and %s gold, shared by contribution. You return to the hall in %d seconds."] =
+			"%s cai em %s! A guild ganha %d de XP de guild e %s de ouro, dividido pela contribuição. Você volta ao hall em %d segundos.",
+		["Your guild slew %s in %s with %d members!%s"] = "A sua guild derrotou %s em %s com %d membros!%s",
+		[" The hall flies the %s."] = " O hall ergue o %s.",
+		["%s raises %d %s!"] = "%s ergue %d %s!",
+		["%s raises %d %ss!"] = "%s ergue %d %s!",
+		["%s enters phase %d of %d: %s."] = "%s entra na fase %d de %d: %s.",
+		["The stone did not answer; its embers are returned."] = "A pedra não respondeu; as brasas foram devolvidas.",
+		["%s answers the stone! Enrage in %s, the arena closes in %s."] =
+			"%s responde à pedra! Enrage em %s, a arena se fecha em %s.",
+		["%s left the arena."] = "%s saiu da arena.",
+		["%s is ENRAGED: every hit is far stronger and the telegraphs come twice as fast."] =
+			"%s está ENFURECIDO: todo golpe é bem mais forte e os avisos vêm duas vezes mais rápidos.",
+		["You are not part of this guild boss fight: you were sent to your temple."] =
+			"Você não faz parte desta luta contra o chefe da guild: foi enviado ao seu templo.",
+		["%s: %s comes in %d seconds. %s, %d shared life. Lethal hits send you to the Ember Gate."] =
+			"%s: %s chega em %d segundos. %s, %d vida compartilhada. Golpes letais enviam você ao Ember Gate.",
+		["%s: %s comes in %d seconds. %s, %d shared lives. Lethal hits send you to the Ember Gate."] =
+			"%s: %s chega em %d segundos. %s, %d vidas compartilhadas. Golpes letais enviam você ao Ember Gate.",
+		["%s woke the guild boss with %d members."] = "%s despertou o chefe da guild com %d membros.",
+		["%s falls, and with them the arena's last life."] = "%s cai, e com isso a última vida da arena.",
+		["%s falls: %d shared life left. The Ember Gate lets them back in %d seconds."] =
+			"%s cai: resta %d vida compartilhada. O Ember Gate o deixa voltar em %d segundos.",
+		["%s falls: %d shared lives left. The Ember Gate lets them back in %d seconds."] =
+			"%s cai: restam %d vidas compartilhadas. O Ember Gate o deixa voltar em %d segundos.",
+		["A gamemaster closed the arena."] = "Um gamemaster fechou a arena.",
+		-- Mentors (mentor_core.lua, mentor_config.lua)
+		["Your mentor is offline."] = "O seu mentor está offline.",
+		["Join a party with your mentor for the bonus."] = "Entre em um grupo com o seu mentor para ganhar o bônus.",
+		["Stay close to your mentor for the bonus."] = "Fique perto do seu mentor para ganhar o bônus.",
+		["No bonus while you share a connection."] = "Sem bônus enquanto vocês dividem a mesma conexão.",
+		["Your mentor is too high for these monsters: no bonus (no power-levelling)."] =
+			"O seu mentor está alto demais para estes monstros: sem bônus (sem power-levelling).",
+		["Bonus active: +%d%% experience, %d%% less damage taken."] = "Bônus ativo: +%d%% de experiência, %d%% menos dano recebido.",
+		["Level %d: graduation"] = "Nível %d: formatura",
+		["Level 25"] = "Nível 25",
+		["Level 50"] = "Nível 50",
+		["Level 100"] = "Nível 100",
+		["First rift sealed"] = "Primeiro rift selado",
+		["First dungeon"] = "Primeira dungeon",
+		["First bounty contract"] = "Primeiro contrato de bounty",
+		["First world boss"] = "Primeiro world boss",
+		["A name plate title for those who light the way."] = "Um título de placa de nome para quem ilumina o caminho.",
+		["A name plate title for a mentor who knows every road."] = "Um título de placa de nome para o mentor que conhece todas as estradas.",
+		["A name plate title for the patient guides of the realm."] = "Um título de placa de nome para os guias pacientes do reino.",
+		["Loot label accent (account-wide), the same as the store's."] = "Destaque da etiqueta de saque (da conta toda), o mesmo da loja.",
+		["Chat name colour (account-wide), the same as the store's."] = "Cor do nome no chat (da conta toda), a mesma da loja.",
+		["Kill effect (account-wide), the same as the store's."] = "Efeito de abate (da conta toda), o mesmo da loja.",
+		["Supplies for a hunt with your apprentice."] = "Suprimentos para uma caçada com o seu aprendiz.",
 	},
 }

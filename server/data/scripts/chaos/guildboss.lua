@@ -332,7 +332,7 @@ function GB.view(player)
 	v.fuel, v.need, v.attempts, v.killed = row.fuel, info.need, row.attempts, row.killed_at > 0
 	v.bestSeconds, v.damage, v.pool = row.best_seconds, row.damage, row.pool
 	v.canSummon = why == nil
-	v.reason = why or ""
+	v.reason = why and Chaos.tx(player, why) or ""
 	v.hasHall = info.hasHall
 	v.inHall = info.inHall
 	v.running = info.running
@@ -557,7 +557,7 @@ local function say(run, text, kind)
 	for id in pairs(run.players) do
 		local p = Player(id)
 		if p then
-			p:sendTextMessage(kind or MESSAGE_EVENT_ADVANCE, text)
+			p:sendTextMessage(kind or MESSAGE_EVENT_ADVANCE, Chaos.tx(p, text)) -- English text or a deferred text, per reader
 		end
 	end
 end
@@ -610,9 +610,9 @@ local function hudData(run)
 	local notes = {}
 	if run.boss == "alive" then
 		local ph = def.phases[run.phase or 1] or def.phases[1]
-		notes[#notes + 1] = string.format("Phase %d of %d: %s", run.phase or 1, #def.phases, ph.name)
-		notes[#notes + 1] = string.format("Health: %d%%", boss and math.floor(boss:getHealth() * 100 / math.max(1, boss:getMaxHealth())) or 100)
-		notes[#notes + 1] = run.enraged and "ENRAGED: every hit is far stronger." or ("Enrage in " .. B.clockText(toEnrage))
+		notes[#notes + 1] = ChaosI18n.msg("Phase %d of %d: %s", run.phase or 1, #def.phases, ph.name)
+		notes[#notes + 1] = ChaosI18n.msg("Health: %d%%", boss and math.floor(boss:getHealth() * 100 / math.max(1, boss:getMaxHealth())) or 100)
+		notes[#notes + 1] = run.enraged and "ENRAGED: every hit is far stronger." or ChaosI18n.msg("Enrage in %s", B.clockText(toEnrage))
 	end
 	local waiting = 0
 	for _, e in pairs(run.players) do
@@ -621,11 +621,25 @@ local function hudData(run)
 		end
 	end
 	if waiting > 0 then
-		notes[#notes + 1] = string.format("%d at the Ember Gate.", waiting)
+		notes[#notes + 1] = ChaosI18n.msg("%d at the Ember Gate.", waiting)
 	end
 	return {tier = 0, theme = run.guildName, left = math.floor(left), limit = def.limit, total = 0, killed = 0, bossAt = 0,
 		boss = run.boss, state = run.state, bossName = def.boss, mods = {}, notes = notes, lives = run.lives, livesMax = run.livesMax,
-		title = "Guild Boss: " .. def.name}
+		title = ChaosI18n.msg("Guild Boss: %s", def.name)}
+end
+
+-- the HUD data with the notes and the title in the reader's language
+local function hudIn(data, p)
+	local d = {}
+	for k, v in pairs(data) do
+		d[k] = v
+	end
+	d.notes = {}
+	for i, n in ipairs(data.notes) do
+		d.notes[i] = Chaos.tx(p, n)
+	end
+	d.title = Chaos.tx(p, data.title)
+	return d
 end
 
 local function sendHud(run, action, player)
@@ -634,13 +648,13 @@ local function sendHud(run, action, player)
 	end
 	local data = hudData(run)
 	if player then
-		Chaos.send(player, HUD, action, data)
+		Chaos.send(player, HUD, action, hudIn(data, player))
 		return
 	end
 	for id in pairs(run.players) do
 		local p = Player(id)
 		if p then
-			Chaos.send(p, HUD, action, data)
+			Chaos.send(p, HUD, action, hudIn(data, p))
 		end
 	end
 end
@@ -678,7 +692,7 @@ local function removePlayer(run, id, mode)
 		if mode ~= "logout" and HUD and Chaos.send then
 			local running = run.state == "running"
 			Chaos.send(player, HUD, "end", {result = running and "left" or run.state,
-				text = running and "You left the arena." or (run.endText or "")})
+				text = Chaos.tx(player, running and "You left the arena." or (run.endText or ""))})
 		end
 	end
 	if next(run.players) == nil and not run.ended then
@@ -752,7 +766,7 @@ function GB.recordFail(run)
 	db.query(string.format("UPDATE `%s` SET `fuel` = `fuel` + %d, `damage` = `damage` + %d, `updated_at` = %d WHERE `guild_id` = %d AND `week` = %d",
 		T().week, keep, totalDamage(run), now(), run.gid, run.week))
 	saveRun(run, run.state, run.bossAt and math.floor((mnow() - run.bossAt) / 1000) or 0)
-	G().tellGuild(run.gid, string.format("The guild boss attempt failed. The Summoning Stone keeps %d embers.", keep))
+	G().tellGuild(run.gid, ChaosI18n.msg("The guild boss attempt failed. The Summoning Stone keeps %d embers.", keep))
 end
 
 local function fail(run, text)
@@ -760,7 +774,7 @@ local function fail(run, text)
 		return
 	end
 	run.state = "failed"
-	run.endText = text .. " The arena collapses."
+	run.endText = ChaosI18n.msg("%s The arena collapses.", ChaosI18n.isMsg(text) and text or ChaosI18n.msg(text))
 	say(run, run.endText)
 	GB.recordFail(run)
 	sendHud(run, "update")
@@ -852,8 +866,7 @@ local function success(run)
 	local pool = B.goldPool(nWin, cfg)
 	local shares = B.splitGold(pool, winners, run.damage, healing, cfg)
 	db.query(string.format("UPDATE `%s` SET `pool` = %d WHERE `guild_id` = %d AND `week` = %d", T().week, pool, run.gid, run.week))
-	run.endText = string.format("%s falls in %s! The guild earns %d guild XP and %s gold, shared by contribution. " ..
-		"You return to the hall in %d seconds.", cfg.boss.boss, B.clockText(secs), gxp, B.money(pool), cfg.exitDelay)
+	run.endText = ChaosI18n.msg("%s falls in %s! The guild earns %d guild XP and %s gold, shared by contribution. You return to the hall in %d seconds.", cfg.boss.boss, B.clockText(secs), gxp, B.money(pool), cfg.exitDelay)
 	say(run, run.endText)
 	for id, e in pairs(run.players) do
 		local p = Player(id)
@@ -901,14 +914,16 @@ local function success(run)
 		pcall(GB.syncLockout, m)
 	end
 	local tier, bname = B.banner(GB.killsOf(run.gid), cfg)
-	G().tellGuild(run.gid, string.format("Your guild slew %s in %s with %d members!%s", cfg.boss.boss, B.clockText(secs), size,
-		tier > 0 and string.format(" The hall flies the %s.", bname) or ""))
+	G().tellGuild(run.gid, function(lang)
+		return ChaosI18n.text(lang, "Your guild slew %s in %s with %d members!%s", cfg.boss.boss, B.clockText(secs), size,
+			tier > 0 and ChaosI18n.text(lang, " The hall flies the %s.", bname) or "")
+	end)
 	pcall(G().furnish, run.gid)
 	sendHud(run, "update")
 	for id in pairs(run.players) do
 		local p = Player(id)
 		if p and HUD then
-			Chaos.send(p, HUD, "end", {result = "success", text = run.endText, exitIn = cfg.exitDelay})
+			Chaos.send(p, HUD, "end", {result = "success", text = Chaos.tx(p, run.endText), exitIn = cfg.exitDelay})
 		end
 	end
 	log(string.format("run %d: guild %d slew the guild boss in %d s with %d player(s)", run.id, run.gid, secs, size))
@@ -990,7 +1005,7 @@ local function spawnAdds(run, adds)
 		end
 	end
 	if made > 0 then
-		say(run, string.format("%s raises %d %s%s!", cfg.boss.boss, made, cfg.boss.add, made == 1 and "" or "s"),
+		say(run, ChaosI18n.msg(made == 1 and "%s raises %d %s!" or "%s raises %d %ss!", cfg.boss.boss, made, cfg.boss.add),
 			MESSAGE_STATUS_CONSOLE_ORANGE or MESSAGE_INFO_DESCR)
 	end
 end
@@ -1099,7 +1114,7 @@ local function startPhase(run, idx)
 		boss:say(ph.yell, TALKTYPE_MONSTER_YELL)
 	end
 	if idx > 1 then
-		say(run, string.format("%s enters phase %d of %d: %s.", def.boss, idx, #def.phases, ph.name),
+		say(run, ChaosI18n.msg("%s enters phase %d of %d: %s.", def.boss, idx, #def.phases, ph.name),
 			MESSAGE_STATUS_CONSOLE_ORANGE or MESSAGE_INFO_DESCR)
 	end
 	run.hazard = nil
@@ -1188,7 +1203,7 @@ local function spawnBoss(run)
 	fx(m:getPosition(), "shadow_eruption", CONST_ME_MORTAREA)
 	U.advancePhase(run, def, 1)
 	startPhase(run, 1)
-	say(run, string.format("%s answers the stone! Enrage in %s, the arena closes in %s.", def.boss, B.clockText(def.enrageAt),
+	say(run, ChaosI18n.msg("%s answers the stone! Enrage in %s, the arena closes in %s.", def.boss, B.clockText(def.enrageAt),
 		B.clockText(def.limit)))
 end
 
@@ -1208,7 +1223,7 @@ local function tick(slot, rid)
 			local pos = p:getPosition()
 			if not U.inArena(run.L, pos) and not U.inAnte(run.L, pos) then
 				removePlayer(run, id, "stay")
-				say(run, e.name .. " left the arena.")
+				say(run, ChaosI18n.msg("%s left the arena.", e.name))
 			end
 		end
 	end
@@ -1229,13 +1244,13 @@ local function tick(slot, rid)
 	if run.state == "running" and run.boss == "alive" then
 		local enraged, _, toLimit = U.clock(def, (t - run.bossAt) / 1000)
 		if toLimit <= 0 then
-			fail(run, "Time is up: " .. def.boss .. " still stands.")
+			fail(run, ChaosI18n.msg("Time is up: %s still stands.", def.boss))
 			return
 		end
 		if enraged and not run.enraged then
 			run.enraged = true
 			run.nextPulse = t + cfg.enrage.pulseMs
-			say(run, def.boss .. " is ENRAGED: every hit is far stronger and the telegraphs come twice as fast.")
+			say(run, ChaosI18n.msg("%s is ENRAGED: every hit is far stronger and the telegraphs come twice as fast.", def.boss))
 		end
 		local boss = bossOf(run)
 		if boss then
@@ -1367,9 +1382,10 @@ function GB.summon(player)
 		m:teleportTo(P(L.starts[(i - 1) % #L.starts + 1] or L.entry))
 		m:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
 	end
-	say(run, string.format("%s: %s comes in %d seconds. %s, %d shared %s. Lethal hits send you to the Ember Gate.",
-		gname, cfg.boss.boss, cfg.startDelay, B.clockText(cfg.boss.limit), run.lives, run.lives == 1 and "life" or "lives"))
-	G().tellGuild(gid, string.format("%s woke the guild boss with %d members.", player:getName(), #group))
+	say(run, ChaosI18n.msg(run.lives == 1 and "%s: %s comes in %d seconds. %s, %d shared life. Lethal hits send you to the Ember Gate." or
+		"%s: %s comes in %d seconds. %s, %d shared lives. Lethal hits send you to the Ember Gate.",
+		gname, cfg.boss.boss, cfg.startDelay, B.clockText(cfg.boss.limit), run.lives))
+	G().tellGuild(gid, ChaosI18n.msg("%s woke the guild boss with %d members.", player:getName(), #group))
 	sendHud(run, "start")
 	log(string.format("%s summoned run %d for guild %d: slot %d, %d player(s)", player:getName(), run.id, gid, slot, #group))
 	addEvent(tick, cfg.tickMs, slot, run.id)
@@ -1417,7 +1433,7 @@ local function fall(run, pid)
 	run.deaths = run.deaths + 1
 	run.lives = math.max(0, run.lives - 1)
 	if run.lives <= 0 then
-		say(run, p:getName() .. " falls, and with them the arena's last life.")
+		say(run, ChaosI18n.msg("%s falls, and with them the arena's last life.", p:getName()))
 		fail(run, "No lives are left!")
 		return
 	end
@@ -1427,8 +1443,8 @@ local function fall(run, pid)
 	p:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
 	Chaos.heal(p, p:getMaxHealth() - p:getHealth())
 	p:addMana(p:getMaxMana() - p:getMana())
-	say(run, string.format("%s falls: %d shared %s left. The Ember Gate lets them back in %d seconds.", p:getName(), run.lives,
-		run.lives == 1 and "life" or "lives", cfg.lives.reenterSeconds))
+	say(run, ChaosI18n.msg(run.lives == 1 and "%s falls: %d shared life left. The Ember Gate lets them back in %d seconds." or
+		"%s falls: %d shared lives left. The Ember Gate lets them back in %d seconds.", p:getName(), run.lives, cfg.lives.reenterSeconds))
 	sendHud(run, "update")
 end
 
@@ -1473,7 +1489,7 @@ function GB.handle(player, action, data)
 	elseif action == "bossSummon" then
 		local ok, text = GB.summon(player)
 		if ok then
-			return true, text or string.format("%s is coming.", C().boss.boss)
+			return true, text or ChaosI18n.msg("%s is coming.", C().boss.boss)
 		end
 		return false, text
 	end
@@ -1634,7 +1650,7 @@ function logout.onLogout(player)
 	end
 	local run = GB.runOf[player:getId()]
 	if run then
-		say(run, player:getName() .. " left the arena.")
+		say(run, ChaosI18n.msg("%s left the arena.", player:getName()))
 		removePlayer(run, player:getId(), "logout")
 	end
 	return true

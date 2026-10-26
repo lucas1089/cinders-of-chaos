@@ -286,6 +286,13 @@ local REASONS = {
 	["market_core.lua"] = {}, ["market_config.lua"] = {}, ["market_orders_core.lua"] = {},
 	["market_notify_core.lua"] = {"^While you were away", "^Market sales", "^Orb Exchange", "^Chaos Coin", "^your "},
 	["market.lua"] = {"^Market sweep", "^Buy orders%%s", "^Offer %%d", "^No such offer", "^/market", "^Chaos Coins$"},
+	-- mentor, memorial, guild boss
+	["mentor_core.lua"] = {}, ["mentor.lua"] = {"^Mentor: %%d marks", "^Apprentice of ", "^No mentor data"},
+	["memorial_core.lua"] = {"^The Ember Memorial", "^Remember me", "^Lembrar", "^The Memorial will", "^Memorial: ", "^A statue%.", "^A memorial stone%."},
+	["candlemarks_core.lua"] = {}, ["candlemarks.lua"] = {},
+	["guildboss_core.lua"] = {},
+	["guildboss.lua"] = {"^The banner of ", "^The %%s of %%s: Gorvath", "^The Summoning Stone%. Feed", "^Game%.createTile", "^Guild boss run ",
+		"^No running guild boss", "^No guild boss arena"},
 }
 local SQL = {"^SELECT", "^INSERT", "^UPDATE", "^DELETE", "^WHERE", "^FROM", "^ON DUP", "^CREATE", "^ALTER"}
 local nReason = 0
@@ -631,6 +638,7 @@ end
 
 -- Town Portal: K.blockReason takes the translator (townportal.lua passes Chaos.t); the keys are in the table (O147)
 dofile("data/scripts/chaos/townportal_core.lua")
+dofile("data/scripts/chaos/mentor_core.lua")
 do
 	local TK = ChaosTownPortalCore
 	local function T(key, ...) return I.text("pt-BR", key, ...) end
@@ -645,6 +653,23 @@ do
 		local text = TK.blockReason({[f] = true})
 		check(text ~= nil and pt[text] ~= nil, "town portal refusal " .. f .. " has a pt-BR text")
 	end
+end
+
+-- the window of the mentor system: milestone names, shop texts, the bonus line and the refusal notes in pt-BR (view takes the language)
+do
+	local MC = ChaosMentorCore
+	local mcfg = dofile("data/scripts/chaos/mentor_config.lua")
+	for _, m in ipairs(mcfg.milestones) do check(pt[m.name] ~= nil, "mentor milestone without pt-BR: " .. m.name) end
+	for _, o in ipairs(mcfg.shop) do check(pt[o.desc] ~= nil, "mentor shop text without pt-BR: " .. o.desc) end
+	for _, t in pairs(MC.BONUS_TEXT) do check(pt[t] ~= nil, "mentor bonus text without pt-BR: " .. t) end
+	local rows = MC.milestoneRows({}, mcfg, "pt-BR")
+	eq(rows[1].name, "Nível 25", "milestone row in pt-BR")
+	eq(rows[#rows].name, "Nível 200: formatura", "graduation row in pt-BR")
+	eq(MC.milestoneRows({}, mcfg)[1].name, "Level 25", "milestone row in English")
+	local v = MC.view({apprentice = {guid = 1, name = "A", bonus = false, bonusReason = "offline"}}, mcfg, 1000, "pt-BR")
+	eq(v.apprentice.bonusText, "O seu mentor está offline.", "bonus note in pt-BR")
+	eq(MC.view({apprentice = {guid = 1, name = "A", bonus = true}}, mcfg, 1000, "pt-BR").apprentice.bonusText,
+		"Bônus ativo: +" .. v.rules.exp .. "% de experiência, " .. v.rules.dmg .. "% menos dano recebido.", "bonus line in pt-BR")
 end
 
 print(string.format("i18n_test: %d checks, %d failures", checks, failures))

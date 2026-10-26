@@ -471,7 +471,7 @@ local function sendStatus(player, open)
 		end
 	end
 	state.top = topMentors()
-	local v = K.view(state, cfg, now)
+	local v = K.view(state, cfg, now, Chaos.lang(player))
 	v.open = open == true
 	send(player, "status", v)
 end
@@ -595,11 +595,11 @@ function M.checkApprentice(player, extra)
 			end
 			log(player:getGuid(), link.mentor_id, "milestone", m.key .. " " .. state .. " " .. marks)
 			if state == "paid" then
-				tell(link.mentor_id, say("milestone", player:getName(), m.name, marks))
+				tell(link.mentor_id, say("milestone", player:getName(), ChaosI18n.msg(m.name), marks))
 			elseif state == "unearned" then
-				tell(link.mentor_id, say("milestoneUnearned", player:getName(), m.name), MESSAGE_STATUS_CONSOLE_BLUE)
+				tell(link.mentor_id, say("milestoneUnearned", player:getName(), ChaosI18n.msg(m.name)), MESSAGE_STATUS_CONSOLE_BLUE)
 			else
-				tell(link.mentor_id, say("milestoneCapped", player:getName(), m.name), MESSAGE_STATUS_CONSOLE_BLUE)
+				tell(link.mentor_id, say("milestoneCapped", player:getName(), ChaosI18n.msg(m.name)), MESSAGE_STATUS_CONSOLE_BLUE)
 			end
 		end
 	end
@@ -620,7 +620,7 @@ local function notifyOffline(mentorGuid, player)
 			local text = r.s == "paid" and say("graduatedMentor", r.n, r.k) or say("graduatedUnearned", r.n, cfg.graduationLevel)
 			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, text))
 		elseif r.s == "paid" then
-			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, say("milestone", r.n, name, r.k)))
+			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, say("milestone", r.n, ChaosI18n.msg(name), r.k)))
 		end
 	end
 	if #rows > 0 then

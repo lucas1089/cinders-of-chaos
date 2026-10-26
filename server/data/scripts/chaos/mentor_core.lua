@@ -42,12 +42,20 @@ function K.cleanText(text, max)
 	return text
 end
 
+-- the text in `lang` (ChaosI18n when it is loaded, English otherwise); mentor.lua passes the language of the reader
+local function TT(lang, key, ...)
+	if ChaosI18n and ChaosI18n.text then
+		return ChaosI18n.text(lang, key, ...)
+	end
+	if select("#", ...) == 0 then
+		return key
+	end
+	return string.format(key, ...)
+end
+
 function K.leftText(seconds, lang)
 	local T = function(key, n)
-		if ChaosI18n and ChaosI18n.text then
-			return ChaosI18n.text(lang, key, n)
-		end
-		return n and string.format(key, n) or key
+		return TT(lang, key, n)
 	end
 	seconds = floor(num(seconds))
 	if seconds <= 0 then
@@ -539,23 +547,23 @@ end
 
 -- ---------------------------------------------------------------- the client window
 -- states = {[key] = {state, marks}} -> rows of every milestone and the graduation, in order
-function K.milestoneRows(states, cfg)
+function K.milestoneRows(states, cfg, lang)
 	local out = {}
 	states = states or {}
 	for _, m in ipairs(cfg.milestones) do
 		local s = states[m.key]
-		out[#out + 1] = {key = m.key, name = m.name, marks = m.marks, state = s and s.state or "open", got = s and s.marks or 0}
+		out[#out + 1] = {key = m.key, name = TT(lang, m.name), marks = m.marks, state = s and s.state or "open", got = s and s.marks or 0}
 	end
 	local g = states.graduation
-	out[#out + 1] = {key = "graduation", name = "Level " .. cfg.graduationLevel .. ": graduation", marks = cfg.graduation.marks,
+	out[#out + 1] = {key = "graduation", name = TT(lang, "Level %d: graduation", cfg.graduationLevel), marks = cfg.graduation.marks,
 		state = g and g.state or "open", got = g and g.marks or 0}
 	return out
 end
 
-local function linkRow(l, cfg)
+local function linkRow(l, cfg, lang)
 	return {guid = l.guid, name = l.name or "?", level = num(l.level), voc = l.voc or "", online = l.online and true or false,
 		linkedAt = num(l.linkedAt), shared = num(l.shared), source = l.source or "list",
-		milestones = K.milestoneRows(l.states, cfg)}
+		milestones = K.milestoneRows(l.states, cfg, lang)}
 end
 
 -- state = {me = {name, level, voc}, mentorOk, mentorReason, apprenticeOk, apprenticeReason, cooldownLeft,
@@ -565,7 +573,7 @@ end
 --          apprentice = {guid, name, level, voc, online, linkedAt, shared, source, states, bonus, bonusReason} or nil,
 --          invites = {{guid, name, level, voc, lang, at}}, seeking, referrer = {guid, name} or nil,
 --          owned = {[offer key] = true}, weekly = {[offer key] = n}, top = {{name, graduates}}, graduated}
-function K.view(state, cfg, now)
+function K.view(state, cfg, now, lang)
 	local v = {
 		enabled = cfg.enabled == true,
 		me = state.me or {},
@@ -577,9 +585,9 @@ function K.view(state, cfg, now)
 			mentorLevel = cfg.mentor.minAccountLevel, mentorHours = cfg.mentor.minOnlineHours,
 			mentorDays = cfg.mentor.minAccountDays, gradReward = K.graduationText(cfg), gradMarks = cfg.graduation.marks},
 		canMentor = state.mentorOk and true or false,
-		mentorNote = state.mentorOk and "" or K.say(cfg, state.mentorReason or "disabled"),
+		mentorNote = state.mentorOk and "" or K.say(cfg, state.mentorReason or "disabled", nil, lang),
 		canPick = state.apprenticeOk and true or false,
-		pickNote = state.apprenticeOk and "" or K.say(cfg, state.apprenticeReason or "disabled", state.cooldownLeft),
+		pickNote = state.apprenticeOk and "" or K.say(cfg, state.apprenticeReason or "disabled", state.cooldownLeft, lang),
 		seeking = state.seeking and true or false,
 		graduated = state.graduated and true or false,
 		lines = {},
@@ -599,15 +607,15 @@ function K.view(state, cfg, now)
 			monthMarks = num(m.monthMarks), linksThisMonth = num(m.linksThisMonth), monthlyLinks = cfg.mentor.monthlyLinks,
 			apprentices = {}}
 		for _, l in ipairs(m.apprentices or {}) do
-			v.mentor.apprentices[#v.mentor.apprentices + 1] = linkRow(l, cfg)
+			v.mentor.apprentices[#v.mentor.apprentices + 1] = linkRow(l, cfg, lang)
 		end
 	end
 	local a = state.apprentice
 	if a then
-		v.apprentice = linkRow(a, cfg)
+		v.apprentice = linkRow(a, cfg, lang)
 		v.apprentice.bonus = a.bonus and true or false
-		v.apprentice.bonusText = a.bonus and string.format("Bonus active: +%d%% experience, %d%% less damage taken.",
-			v.rules.exp, v.rules.dmg) or (K.BONUS_TEXT[a.bonusReason or "party"] or "")
+		v.apprentice.bonusText = a.bonus and TT(lang, "Bonus active: +%d%% experience, %d%% less damage taken.",
+			v.rules.exp, v.rules.dmg) or TT(lang, K.BONUS_TEXT[a.bonusReason or "party"] or "")
 	end
 	for _, i in ipairs(state.invites or {}) do
 		v.invites[#v.invites + 1] = {guid = i.guid, name = i.name, level = num(i.level), voc = i.voc or "", lang = i.lang or "",
@@ -617,7 +625,7 @@ function K.view(state, cfg, now)
 		v.referrer = {guid = state.referrer.guid, name = state.referrer.name}
 	end
 	for _, o in ipairs(cfg.shop) do
-		local row = {key = o.key, kind = o.kind, name = o.name, desc = o.desc, cost = o.cost, color = o.color,
+		local row = {key = o.key, kind = o.kind, name = o.name, desc = TT(lang, o.desc), cost = o.cost, color = o.color,
 			owned = (state.owned or {})[o.key] and true or false}
 		if o.weekly then
 			row.weeklyLeft = math.max(0, o.weekly - num((state.weekly or {})[o.key]))
