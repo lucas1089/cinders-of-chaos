@@ -2975,7 +2975,7 @@ The importer verified the 12 sprite slots pixel-identical to the atlas and every
 - **Ship order.** A client on pair 43 or older draws nothing for the new ids: ship pair 44 and a client build before the
   server's `potions` install step. Preview (the twelve looks at 1x and 4x, rendered from pair 44): scratchpad only. Not run in a client.
 
-## Reward Chest look (pair 45: item 38657, `tools/sprites/gen_reward_chest_art.py`, `art_import/reward_chest*`; built 2026-10-26; not pushed to windows-assets yet)
+## Reward Chest look (pair 45: item 38657, `tools/sprites/gen_reward_chest_art.py`, `art_import/reward_chest*`; built 2026-10-26; on windows-assets eac7e96f)
 Owner request 2026-10-26: "make a reward chest and give every quest chest this sprite". Every chest a player takes a reward
 from (the rift's, the Descent's, the planned areas' and the base server's quest chests; server/README.md "Reward chests") wore the
 stock reward chest (server 21584, client 19250: a gold chest on a stone plinth). One PixelLab result (64 x 64 RGBA, alpha 0 / 255,
