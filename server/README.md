@@ -21567,8 +21567,12 @@ the heal number is the game's own (green for health, blue for mana). A pickup so
   minions cannot be farmed). One item a tile. State is in memory.
 - **Where nothing drops** (`pickups_config.lua blocked`): the registered instances `arena`, `battleground`, `siege`,
   `tower` (the Infinity Tower), `trials`, `tutorial` (`Chaos.inAnyInstance`), PvP-zone tiles (`ChaosBlessings.pvpPlace`), and
-  any `boxes` entry. **The Tower Defense of the base script has no registered instance or box here: add its room to `blocked.boxes`
-  once the coordinates are known** (`{x1, y1, x2, y2, z}`). Dungeons, rifts and the open map drop globes.
+  any `boxes` entry (`{x1, y1, x2, y2, z}`). **The Tower Defense of the base script is no registered instance**
+  (`instance_limits.lua` knows it only as the boss room `towerdefense`), so its room is a box: `{31180, 32239, 31236, 32277, 8}`,
+  the `fromPos` / `toPos` of the base script (the same values `tests/base_eventrooms_patch_test.lua` mirrors; the patch
+  `patch_base_eventrooms.py` hands them to the boss rooms as `bossArea`). `tests/globes_test.lua` checks the corners, the
+  middle and one tile outside on every side and on the floor above. If a base script change moves the room, change the box.
+  Dungeons, rifts and the open map drop globes.
 
 **The Ember Blessings on the ground** (`blessings.lua`, `blessings_config.lua pickup`). A proc no longer blesses at once:
 the same roll (chance, level gap, PvP-place exclusion, stamina, the 20 s cooldown **which now starts at the roll**) drops an

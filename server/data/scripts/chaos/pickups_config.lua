@@ -42,11 +42,15 @@ return {
 
 	-- Where nothing drops (read by the globes; the blessings keep their own PvP rule). instances: keys of
 	-- Chaos.registerInstance (arena, battleground, siege, the Infinity Tower ...) in which the player gets no globe;
-	-- boxes: {x1, y1, x2, y2, z} for places that are no registered instance (the Tower Defense of the base script: add
-	-- its room here, the server has no box for it). ChaosBlessings.pvpPlace (PvP-zone tiles too) is checked as well.
+	-- boxes: {x1, y1, x2, y2, z} for places that are no registered instance. The Tower Defense room is the only one:
+	-- the base script has no instance of its own (instance_limits.lua knows it only as a boss room), and its
+	-- fromPos / toPos (31180,32239 to 31236,32277, z 8; patch_base_eventrooms.py hands the same box to the boss rooms)
+	-- are the corners below. ChaosBlessings.pvpPlace (PvP-zone tiles too) is checked as well.
 	blocked = {
 		instances = {arena = true, battleground = true, siege = true, tower = true, trials = true, tutorial = true},
-		boxes = {}
+		boxes = {
+			{31180, 32239, 31236, 32277, 8} -- Tower Defense room (base script fromPos / toPos)
+		}
 	},
 
 	-- messages (Chaos.t keys, pt-BR in i18n_strings.lua)

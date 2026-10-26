@@ -244,7 +244,7 @@ local function mkPlayer(id, x, y)
 	function p:isMonster() return false end
 	function p:getPlayer() return self end
 	function p:getMaster() return nil end
-	function p:getPosition() return Pos(self._x, self._y, 7) end
+	function p:getPosition() return Pos(self._x, self._y, self._z or 7) end
 	function p:getHealth() return self._hp end
 	function p:getMaxHealth() return self._maxhp end
 	function p:getMana() return self._mp end
@@ -282,7 +282,7 @@ end
 local function mkCorpse(ownerId, x, y)
 	local c = {_owner = ownerId, _x = x or 100, _y = y or 100}
 	function c:getCorpseOwner() return self._owner end
-	function c:getPosition() return Pos(self._x, self._y, 7) end
+	function c:getPosition() return Pos(self._x, self._y, self._z or 7) end
 	return c
 end
 ChaosTierOf = function(m) return m._tier end
@@ -448,9 +448,31 @@ weak._instance = "dungeon"
 eq(#kill(mkMonster(555), 40, 96, 96), 1, "a dungeon is no blocked place")
 reset()
 weak._instance = nil
-ChaosPickupsConfig.blocked.boxes[1] = {90, 90, 97, 97, 7} -- a Tower Defense room in the config
-eq(#kill(mkMonster(556), 40, 96, 96), 0, "no globe in a configured box")
+local tdBox = ChaosPickupsConfig.blocked.boxes[1] -- the shipped Tower Defense room
+ok(tdBox and tdBox[1] == 31180 and tdBox[2] == 32239 and tdBox[3] == 31236 and tdBox[4] == 32277 and tdBox[5] == 8,
+	"the Tower Defense room box is configured")
 ChaosPickupsConfig.blocked.boxes[1] = nil
+ChaosPickupsConfig.blocked.boxes[1] = {90, 90, 97, 97, 7} -- a test room
+eq(#kill(mkMonster(556), 40, 96, 96), 0, "no globe in a configured box")
+ChaosPickupsConfig.blocked.boxes[1] = tdBox
+-- the shipped box: a kill on its corners and edges drops nothing, one tile outside or on another floor does
+local tdp = mkPlayer(42, 31180, 32239)
+tdp._hp = 100
+tdp._z = 8
+for i, c in ipairs({{31180, 32239}, {31236, 32277}, {31208, 32258}, {31236, 32239}}) do
+	reset()
+	tdp._x, tdp._y = c[1], c[2]
+	eq(#kill(mkMonster(570 + i), 42, c[1], c[2]), 0, "no globe in the Tower Defense room at " .. c[1] .. "," .. c[2])
+end
+for i, c in ipairs({{31179, 32258, 8}, {31237, 32258, 8}, {31208, 32238, 8}, {31208, 32278, 8}, {31208, 32258, 7}}) do
+	reset()
+	mkTile(c[1], c[2], c[3])
+	tdp = mkPlayer(60 + i, c[1], c[2]) -- a new killer each time (cooldown, limit on the ground)
+	tdp._hp, tdp._z = 100, c[3]
+	local corpse = mkCorpse(60 + i, c[1], c[2])
+	corpse._z = c[3]
+	eq(#X.onKill(mkMonster(580 + i), corpse, tdp, low), 1, "a globe just outside the room at " .. c[1] .. "," .. c[2] .. "," .. c[3])
+end
 ChaosBlessings = {pvpPlace = function() return "pvp zone" end}
 eq(#kill(mkMonster(557), 40, 96, 96), 0, "no globe in a PvP place")
 ChaosBlessings = nil
