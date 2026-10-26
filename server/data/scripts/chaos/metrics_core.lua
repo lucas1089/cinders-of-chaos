@@ -22,6 +22,9 @@
 --   M.playedBucket(minutes, cfg)               the played-minutes bucket label of a first use
 --   M.stopSql(cfg, now, notTesterSql) / M.stopRows(sqlRows, spots, cfg)   where the gone characters stood, by area and band
 --   M.setSqlChunks(rows, table, escape)        setSql in chunks of at most 200 rows
+--   M.stableId(id)                             the number stored for a hunt place (hash of its id string, 1 .. 1073741789)
+--   M.spotFor(pos, spots, cfg)                 the nearest hunt spot within cfg.areaRadius on the floor, or nil
+--   M.huntMark(session, pos, now, spots, cfg)  -> the new stored hunt id when a kill changed it (throttled), else nil
 -- Table: kind, k1, k2, n. Kinds: death_area (k1 area, k2 band), death_monster (k1 monster, k2 band),
 -- session1 (k1 minute bucket), ttl (k1 milestone level, k2 minute bucket), churn (k1 band, k2 gone | active),
 -- meta (k1 name, n value: churn_at, churn_days), cohort (k1 YYYYMMDD of a first login), return (k1 d1 | d3 | d7,
@@ -137,6 +140,22 @@ function M.killerName(kind, name, cfg)
 end
 
 -- the nearest spot {name, x, y, z} on the same floor within cfg.areaRadius
+function M.spotFor(pos, spots, cfg)
+	if type(pos) ~= "table" then
+		return nil
+	end
+	local best, bestD
+	for _, s in ipairs(spots or {}) do
+		if s.z == pos.z then
+			local d = math.max(math.abs(s.x - pos.x), math.abs(s.y - pos.y))
+			if d <= cfg.areaRadius and (not bestD or d < bestD) then
+				best, bestD = s, d
+			end
+		end
+	end
+	return best
+end
+
 function M.areaFor(pos, instanceLabel, spots, cfg)
 	if type(instanceLabel) == "string" and instanceLabel ~= "" then
 		return clean(instanceLabel, cfg.nameMax)
@@ -144,19 +163,37 @@ function M.areaFor(pos, instanceLabel, spots, cfg)
 	if type(pos) ~= "table" then
 		return string.format(cfg.otherArea, 0)
 	end
-	local best, bestD
-	for _, s in ipairs(spots or {}) do
-		if s.z == pos.z then
-			local d = math.max(math.abs(s.x - pos.x), math.abs(s.y - pos.y))
-			if d <= cfg.areaRadius and (not bestD or d < bestD) then
-				best, bestD = s.name, d
-			end
-		end
-	end
+	local best = M.spotFor(pos, spots, cfg)
 	if best then
-		return clean(best, cfg.nameMax)
+		return clean(best.name, cfg.nameMax)
 	end
 	return string.format(cfg.otherArea, pos.z or 0)
+end
+
+-- O258 last hunt: a stable number for a hunt place. The index in the places file shifts when the installer places a
+-- new plan (plans are ordered by level band), so the id string of the place is hashed instead: h = h * 33 + byte
+-- modulo a prime below 2^30 (exact in doubles, the same in Lua 5.3 and LuaJIT, fits the int32 of a storage value).
+function M.stableId(id)
+	local h = 5381
+	for i = 1, #tostring(id) do
+		h = (h * 33 + tostring(id):byte(i)) % 1073741789
+	end
+	return h + 1
+end
+
+-- a kill at `pos`: the id to store when the character stands in a hunt and it differs from session.hunt (the cached
+-- value); the check runs at most once per cfg.huntSeconds. Sets session.hunt and session.huntAt.
+function M.huntMark(session, pos, now, spots, cfg)
+	if type(session) ~= "table" or (session.huntAt and now - session.huntAt < cfg.huntSeconds) then
+		return nil
+	end
+	session.huntAt = now
+	local spot = M.spotFor(pos, spots, cfg)
+	if not spot or not spot.sid or spot.sid == session.hunt then
+		return nil
+	end
+	session.hunt = spot.sid
+	return spot.sid
 end
 
 -- ---------------------------------------------------------------- counters
@@ -361,15 +398,21 @@ end
 
 -- ---------------------------------------------------------------- O258: where they stop
 -- Gone characters (last login older than churnDays) grouped by level band and by a cell of cfg.stopCell tiles of the
--- last position. The answer is rows of (band, floor, cell, count): no row belongs to a character.
+-- last position, or by the last hunt the character was seen in (storage cfg.huntStorage). The answer is rows of (band, floor, cell, count): no row belongs to a character.
 function M.stopSql(cfg, now, notTesterSql)
 	local cutoff = floor(now - cfg.churnDays * 86400)
 	local cell = floor(cfg.stopCell)
+	-- sid: the last hunt (player storage cfg.huntStorage), 0 when the character has none; then the cell of the last
+	-- position (pz / cx / cy are 0 for a character with a hunt, so the groups stay few)
+	local has = string.format("`ps`.`value` > 0")
 	return string.format(
-		"SELECT %s AS `band`, `players`.`posz` AS `pz`, FLOOR(`players`.`posx` / %d) AS `cx`, FLOOR(`players`.`posy` / %d) AS `cy`, " ..
-		"COUNT(*) AS `gone` FROM `players` WHERE `players`.`group_id` <= %d AND `players`.`lastlogin` > 0 AND " ..
-		"`players`.`lastlogin` < %d AND %s GROUP BY `band`, `pz`, `cx`, `cy`",
-		M.bandCaseSql("`players`.`level`", cfg.bands), cell, cell, cfg.maxGroupId, cutoff, notTesterSql)
+		"SELECT %s AS `band`, IF(%s, `ps`.`value`, 0) AS `sid`, IF(%s, 0, `players`.`posz`) AS `pz`, " ..
+		"IF(%s, 0, FLOOR(`players`.`posx` / %d)) AS `cx`, IF(%s, 0, FLOOR(`players`.`posy` / %d)) AS `cy`, " ..
+		"COUNT(*) AS `gone` FROM `players` LEFT JOIN `player_storage` AS `ps` ON `ps`.`player_id` = `players`.`id` AND " ..
+		"`ps`.`key` = %d WHERE `players`.`group_id` <= %d AND `players`.`lastlogin` > 0 AND " ..
+		"`players`.`lastlogin` < %d AND %s GROUP BY `band`, `sid`, `pz`, `cx`, `cy`",
+		M.bandCaseSql("`players`.`level`", cfg.bands), has, has, has, cell, has, cell, cfg.huntStorage,
+		cfg.maxGroupId, cutoff, notTesterSql)
 end
 
 function M.stopRows(sqlRows, spots, cfg)
@@ -378,9 +421,21 @@ function M.stopRows(sqlRows, spots, cfg)
 	for _, r in ipairs(sqlRows or {}) do
 		local n = floor(tonumber(r.gone) or 0)
 		if n > 0 then
-			local pos = {x = floor(tonumber(r.cx) or 0) * cell + floor(cell / 2),
-				y = floor(tonumber(r.cy) or 0) * cell + floor(cell / 2), z = floor(tonumber(r.pz) or 0)}
-			local area = M.areaFor(pos, nil, spots, cfg)
+			local sid = floor(tonumber(r.sid) or 0)
+			local area
+			if sid > 0 then
+				area = cfg.removedArea
+				for _, sp in ipairs(spots or {}) do
+					if sp.sid == sid then
+						area = clean(sp.name, cfg.nameMax)
+						break
+					end
+				end
+			else
+				local pos = {x = floor(tonumber(r.cx) or 0) * cell + floor(cell / 2),
+					y = floor(tonumber(r.cy) or 0) * cell + floor(cell / 2), z = floor(tonumber(r.pz) or 0)}
+				area = M.areaFor(pos, nil, spots, cfg)
+			end
 			local band = M.bandLabel(floor(tonumber(r.band) or 1), cfg.bands)
 			local key = area .. SEP .. band
 			if not sum[key] then

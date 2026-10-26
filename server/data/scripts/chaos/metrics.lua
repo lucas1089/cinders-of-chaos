@@ -65,16 +65,28 @@ function X.loadSpots()
 	if not ok or type(places) ~= "table" then
 		return
 	end
-	local function add(name, pos)
+	local function add(name, pos, sid)
 		if type(name) == "string" and type(pos) == "table" and pos.x and pos.y and pos.z then
-			X.spots[#X.spots + 1] = {name = name, x = pos.x, y = pos.y, z = pos.z}
+			X.spots[#X.spots + 1] = {name = name, x = pos.x, y = pos.y, z = pos.z, sid = sid}
 		end
 	end
+	local seen = {}
+	local function id(e)
+		local sid = e.id ~= nil and X.stableId(e.id) or nil
+		if sid and seen[sid] and seen[sid] ~= tostring(e.id) then
+			print("[Warning - ChaosMetrics] hunt ids " .. seen[sid] .. " and " .. tostring(e.id) .. " share a stored id")
+			return nil
+		end
+		if sid then
+			seen[sid] = tostring(e.id)
+		end
+		return sid
+	end
 	for _, e in ipairs(type(places.places) == "table" and places.places or {}) do
-		add(e.name or e.id, e.arrival)
+		add(e.name or e.id, e.arrival, id(e))
 	end
 	for _, e in ipairs(type(places.base) == "table" and places.base or {}) do
-		add(e.name or e.id, e.dest or e.arrival)
+		add(e.name or e.id, e.dest or e.arrival, id(e))
 	end
 end
 
@@ -112,7 +124,7 @@ function X.computeChurn()
 	end
 	-- O258 where they stop: the area and band of the gone characters, a snapshot (the old rows are replaced)
 	local stops = Chaos.select(X.stopSql(cfg, now, Chaos.notTesterSql("`players`")),
-		{{"band", "n"}, {"pz", "n"}, {"cx", "n"}, {"cy", "n"}, {"gone", "n"}})
+		{{"band", "n"}, {"sid", "n"}, {"pz", "n"}, {"cx", "n"}, {"cy", "n"}, {"gone", "n"}})
 	db.query("DELETE FROM `" .. T .. "` WHERE `kind` = 'stop'")
 	for _, q in ipairs(X.setSqlChunks(X.stopRows(stops, X.spots, cfg), T, db.escapeString)) do
 		db.asyncQuery(q)
@@ -130,6 +142,7 @@ function X.onLogin(player)
 	player:registerEvent("ChaosMetricsDeath")
 	player:registerEvent("ChaosMetricsLogout")
 	player:registerEvent("ChaosMetricsAdvance")
+	player:registerEvent("ChaosMetricsKill")
 	X.sessions[player:getId()] = nil
 	if not cfg.enabled or not counted(player) then
 		return
@@ -140,7 +153,8 @@ function X.onLogin(player)
 		player:setStorageValue(cfg.storage, newMask)
 	end
 	local first = player:getLastLoginSaved() == 0
-	X.sessions[player:getId()] = {at = os.time(), first = first, guid = player:getGuid()}
+	local hunt = player:getStorageValue(cfg.huntStorage)
+	X.sessions[player:getId()] = {at = os.time(), first = first, guid = player:getGuid(), hunt = hunt > 0 and hunt or nil}
 	try("return", X.countReturn, player, first)
 	-- already in a guild at login: not a first use (a join during the session is found by memberCheck)
 	if player:getGuild() then
@@ -272,6 +286,33 @@ function X.onDeath(player, killer)
 	X.add(X.state, "death_monster", X.killerName(kind, name, cfg), band, 1, cfg)
 end
 
+-- O258 last hunt: a kill of a monster by a counted character, at most once per cfg.huntSeconds, only on a tile that is
+-- not a protection zone, outside the instances, near a hunt's arrival tile. The storage is written when the hunt changes.
+function X.onKill(player, target)
+	local s = cfg.enabled and X.sessions[player:getId()]
+	if not s or not target or not target:isMonster() then
+		return
+	end
+	local now = os.time()
+	if s.huntAt and now - s.huntAt < cfg.huntSeconds then
+		return
+	end
+	local okT, tile = pcall(function() return player:getTile() end)
+	if okT and tile and tile:hasFlag(TILESTATE_PROTECTIONZONE) then
+		s.huntAt = now
+		return
+	end
+	local okI, inside = pcall(Chaos.inAnyInstance, player)
+	if okI and inside then
+		s.huntAt = now
+		return
+	end
+	local sid = X.huntMark(s, player:getPosition(), now, X.spots, cfg)
+	if sid then
+		player:setStorageValue(cfg.huntStorage, sid)
+	end
+end
+
 function X.onAdvance(player, oldLevel, newLevel)
 	local s = X.sessions[player:getId()]
 	if not cfg.enabled or not s then
@@ -376,6 +417,16 @@ function death.onDeath(creature, corpse, killer, mostDamageKiller)
 end
 death:type("death")
 death:register()
+
+local kill = CreatureEvent("ChaosMetricsKill")
+function kill.onKill(creature, target)
+	if creature:isPlayer() then
+		try("kill", X.onKill, creature, target)
+	end
+	return true
+end
+kill:type("kill")
+kill:register()
 
 local advance = CreatureEvent("ChaosMetricsAdvance")
 function advance.onAdvance(player, skill, oldLevel, newLevel)

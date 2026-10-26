@@ -51,7 +51,7 @@ return {
 	maxGroupId = 1,
 
 	-- player storage: bit mask of the milestones already recorded for the character (+0), so a level lost at a death
-	-- and gained again counts once. A game flag of the character; no metric row holds it. 7102830 - 7102839 reserved
+	-- and gained again counts once. A game flag of the character; no metric row holds it. 7102830 - 7102839 reserved (7102833 = the last hunt)
 	storage = 7102830,
 
 	-- O258 return: the first login of a character stores `day * 8 + flags` in this storage (day = whole days since the
@@ -70,6 +70,12 @@ return {
 	-- last position (posx / posy / posz of `players`); the area of a cell is its centre's nearest hunt (areaFor).
 	-- There is no row per player: a row is (area, band) and a count.
 	stopCell = 8,
+	-- O258 last hunt: the stable id (ChaosMetrics.stableId of the place's id) of the last hunt the character killed in,
+	-- player storage; the stop query groups by it and falls back to the cell for a character without it. The kill
+	-- check runs at most once per huntSeconds per character. A stored id no place has any more reads as removedArea.
+	huntStorage = 7102833,
+	huntSeconds = 60,
+	removedArea = "Hunt no longer listed",
 	-- the first-use / stop / return checks of party and guild membership run in the 60 s think for the open sessions
 	memberCheckSeconds = 60
 }
