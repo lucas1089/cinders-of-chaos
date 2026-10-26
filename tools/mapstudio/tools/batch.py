@@ -10,7 +10,7 @@ import argparse
 import subprocess
 import sys
 
-from common import ROOT, kit_name
+from common import ROOT, kit_name, load_kit
 
 GENERATOR = "gen/generate.py"
 VARIANTS = {  # seed: knobs; together they cover small/large, wet/dry, flat/high
@@ -36,6 +36,12 @@ def main():
     seeds = [int(s) for s in a.seeds.split(",")] if a.seeds else list(VARIANTS)
     for seed in seeds:
         knobs = VARIANTS.get(seed, "")
+        for knob, cap in load_kit(kit).get("batch_cap", {}).items():  # a kit may cap a knob (grass: one mountain level)
+            parts = knobs.split()
+            if f"--{knob}" in parts:
+                at = parts.index(f"--{knob}") + 1
+                parts[at] = f"{min(float(parts[at]), float(cap)):g}"  # :g, not rstrip("0"): an int cap of 10 would read "1"
+                knobs = " ".join(parts)
         name = f"{a.batch}/seed-{seed}"
         out = ROOT / "areas" / a.batch / f"seed-{seed}"
         out.mkdir(parents=True, exist_ok=True)
