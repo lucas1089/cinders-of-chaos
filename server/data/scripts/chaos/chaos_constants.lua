@@ -1029,6 +1029,10 @@ ChaosOpcodes.levelWings = 191
 ChaosOpcodes.deathRecap = 154
 Chaos.tables.deathRecaps = "chaos_death_recaps"
 
+-- Progress metrics: anonymous aggregate counters for balancing (metrics.lua, metrics_core.lua, metrics_config.lua,
+-- sql/chaos_progress_metrics.sql; read by chaos-ctl.sh metrics). No opcode. Storage 7102830 - 7102839 reserved (metrics_config.lua)
+Chaos.tables.progressMetrics = "chaos_progress_metrics"
+
 -- Nemesis: a monster that kills a character may become its personal nemesis (client game_nemesis; nemesis.lua,
 -- nemesis_core.lua, nemesis_config.lua, sql/chaos_nemesis.sql). 163 is free in the reference server, the base client
 -- and every Chaos module. Storages 7102300 - 7102309 reserved (nemesis_config.lua storage)

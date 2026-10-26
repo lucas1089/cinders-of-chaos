@@ -19,6 +19,11 @@
 #                               the log is deleted; logs and the update log still show everything)
 #   players                     online characters: name, level, class name (tab separated)
 #   vocations                   id=class name, one per line
+#   metrics [--json]            anonymous progress counters (server/README.md "Progress metrics (O253)"), read-only: churn by level
+#                               band, the 10 areas and monsters with the most deaths, first session length, median time to
+#                               level 10 / 25 / 50 / 100 / 200. Reads the aggregate table chaos_progress_metrics (no names,
+#                               accounts or IPs) through server/tools/progress_metrics.py; text, or one JSON line with --json
+#                               ({"ok": false, "error": "no-table" | "database"} and exit 1 when it cannot be read)
 #   broadcast TEXT              a message to everyone online     (remote.cmd, server/README.md "Remote admin commands")
 #   kick NAME | open | close    kick one character / let players log in / close the server for login
 #   catalog ACTOR               the admin panel's catalog (all actions and their parameters) for the admin character ACTOR
@@ -588,6 +593,23 @@ case $cmd in
     ;;
   players)
     mysql_q "SELECT p.name, p.level, $(voc_case p.vocation) FROM players p JOIN players_online o ON o.player_id = p.id ORDER BY p.name"
+    ;;
+  metrics)
+    # read-only: fixed query, no argument reaches the shell or the SQL
+    mjson=()
+    case "${1:-}" in '') ;; --json) mjson=(--json) ;; *) die "metrics [--json]" ;; esac
+    [ $# -le 1 ] || die "metrics [--json]"
+    mpy="$REPO/server/tools/progress_metrics.py"
+    [ -r "$mpy" ] || die "no $mpy"
+    command -v python3 >/dev/null 2>&1 || die "python3-not-found"
+    mrc=0
+    mrows=$(mysql_q "SELECT kind, k1, k2, n FROM chaos_progress_metrics ORDER BY kind, k1, k2" 2>&1) || mrc=$?
+    if [ "$mrc" -ne 0 ]; then
+      case $mrows in *"doesn't exist"*) merr=no-table ;; *) merr=database ;; esac
+      python3 -I "$mpy" ${mjson[@]+"${mjson[@]}"} --error "$merr"
+      exit 1
+    fi
+    printf '%s\n' "$mrows" | python3 -I "$mpy" ${mjson[@]+"${mjson[@]}"}
     ;;
   vocations)
     for v in "${VOCATIONS[@]}"; do echo "${v%%:*}=${v#*:}"; done

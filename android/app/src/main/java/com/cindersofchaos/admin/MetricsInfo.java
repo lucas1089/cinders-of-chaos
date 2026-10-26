@@ -1,0 +1,202 @@
+package com.cindersofchaos.admin;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+
+/**
+ * The progress metrics in Portuguese: what chaos-ctl.sh metrics --json reports (anonymous aggregate counters: churn
+ * by level band, deaths by area and by monster, first session, median time to level). Read only. Pure Java apart from
+ * org.json, no views.
+ */
+final class MetricsInfo {
+    static final Locale PT = new Locale("pt", "BR");
+
+    static final class Band {
+        String band = "";
+        long gone;
+        long active;
+        double gonePct;
+    }
+
+    static final class Killer {
+        String name = "";
+        long deaths;
+        String topBand = "";
+    }
+
+    static final class Bucket {
+        String bucket = "";
+        long characters;
+        double pct;
+    }
+
+    static final class Milestone {
+        int level;
+        double medianMinutes = -1;
+        long characters;
+    }
+
+    boolean ok;
+    String error = "";
+    boolean empty;
+    int churnDays;
+    long churnAt;
+    long gone;
+    long active;
+    final List<Band> bands = new ArrayList<>();
+    final List<Killer> areas = new ArrayList<>();
+    final List<Killer> monsters = new ArrayList<>();
+    final List<Bucket> sessions = new ArrayList<>();
+    long sessionCharacters;
+    final List<Milestone> milestones = new ArrayList<>();
+
+    /** Parses the one JSON line (other lines, such as ssh banners, are skipped); null when there is none. */
+    static MetricsInfo parse(String out) {
+        if (out == null) {
+            return null;
+        }
+        for (String line : out.split("\n")) {
+            String t = line.trim();
+            if (!t.startsWith("{")) {
+                continue;
+            }
+            try {
+                return fromJson(new JSONObject(t));
+            } catch (JSONException ignored) {
+                // not the answer; try the next line
+            }
+        }
+        return null;
+    }
+
+    static MetricsInfo fromJson(JSONObject o) {
+        MetricsInfo m = new MetricsInfo();
+        m.ok = o.optBoolean("ok", false);
+        m.error = o.optString("error", "");
+        if (!m.ok) {
+            return m;
+        }
+        m.empty = o.optBoolean("empty", false);
+        JSONObject churn = o.optJSONObject("churn");
+        if (churn != null) {
+            m.churnDays = churn.optInt("days", 0);
+            m.churnAt = churn.optLong("at", 0);
+            m.gone = churn.optLong("gone", 0);
+            m.active = churn.optLong("active", 0);
+            JSONArray arr = churn.optJSONArray("bands");
+            for (int i = 0; arr != null && i < arr.length(); i++) {
+                JSONObject b = arr.optJSONObject(i);
+                if (b == null) {
+                    continue;
+                }
+                Band x = new Band();
+                x.band = b.optString("band", "");
+                x.gone = b.optLong("gone", 0);
+                x.active = b.optLong("active", 0);
+                x.gonePct = b.optDouble("gonePct", 0);
+                m.bands.add(x);
+            }
+        }
+        killers(o.optJSONArray("deathAreas"), m.areas);
+        killers(o.optJSONArray("deathMonsters"), m.monsters);
+        m.sessionCharacters = o.optLong("firstSessionCharacters", 0);
+        JSONArray fs = o.optJSONArray("firstSession");
+        for (int i = 0; fs != null && i < fs.length(); i++) {
+            JSONObject b = fs.optJSONObject(i);
+            if (b == null) {
+                continue;
+            }
+            Bucket x = new Bucket();
+            x.bucket = b.optString("bucket", "");
+            x.characters = b.optLong("characters", 0);
+            x.pct = b.optDouble("pct", 0);
+            m.sessions.add(x);
+        }
+        JSONArray ms = o.optJSONArray("milestones");
+        for (int i = 0; ms != null && i < ms.length(); i++) {
+            JSONObject b = ms.optJSONObject(i);
+            if (b == null) {
+                continue;
+            }
+            Milestone x = new Milestone();
+            x.level = b.optInt("level", 0);
+            x.medianMinutes = b.isNull("medianMinutes") ? -1 : b.optDouble("medianMinutes", -1);
+            x.characters = b.optLong("characters", 0);
+            m.milestones.add(x);
+        }
+        return m;
+    }
+
+    private static void killers(JSONArray arr, List<Killer> into) {
+        for (int i = 0; arr != null && i < arr.length(); i++) {
+            JSONObject b = arr.optJSONObject(i);
+            if (b == null) {
+                continue;
+            }
+            Killer k = new Killer();
+            k.name = b.optString("name", "");
+            k.deaths = b.optLong("deaths", 0);
+            k.topBand = b.optString("topBand", "");
+            into.add(k);
+        }
+    }
+
+    /** Why the numbers could not be read, in Portuguese. */
+    String errorText() {
+        switch (error) {
+            case "no-table":
+                return "A tabela de métricas ainda não existe. Atualize o servidor (passo sql do install_all.py) e "
+                        + "reinicie; ela se enche com o jogo.";
+            case "database":
+                return "Não consegui ler o banco de dados do servidor.";
+            default:
+                return "Resposta inesperada do servidor" + (error.isEmpty() ? "." : " (" + error + ").");
+        }
+    }
+
+    /** A bar's length from 0 to 100 for value out of max. */
+    static int percent(long value, long max) {
+        if (max <= 0 || value <= 0) {
+            return 0;
+        }
+        return (int) Math.min(100, Math.round(value * 100.0 / max));
+    }
+
+    static String pct(double v) {
+        return String.format(PT, "%.1f%%", v);
+    }
+
+    /** 15 min, 3,5 h, 2,0 dias; "sem dados" for none. */
+    static String minutes(double m) {
+        if (m < 0) {
+            return "sem dados";
+        }
+        if (m < 90) {
+            return Math.round(m) + " min";
+        }
+        if (m < 48 * 60) {
+            return String.format(PT, "%.1f h", m / 60.0);
+        }
+        return String.format(PT, "%.1f dias", m / 1440.0);
+    }
+
+    /** "até 30 min" or "mais de 480 min" for a first-session bucket (the last one is "inf"). */
+    static String bucketText(String bucket, String previous) {
+        if (bucket.equals("inf")) {
+            return previous.isEmpty() ? "mais longa" : "mais de " + previous + " min";
+        }
+        return "até " + bucket + " min";
+    }
+
+    static String when(long unix) {
+        if (unix <= 0) {
+            return "";
+        }
+        return new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm", PT).format(new java.util.Date(unix * 1000L));
+    }
+}

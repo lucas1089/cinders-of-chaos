@@ -121,6 +121,12 @@ instalada é desconhecida: o passo 2 baixa a mais nova e, se o `tfs` for igual a
 - **Site e update do client** (`site-install`, `site-log`, `publish-update TAG`, `publish-log`). "Trocar os downloads do site" (`update-downloads`, O165) põe o pacote completo mais novo (Windows e Linux) na pasta `dl/` do site sem reiniciar o servidor; "Log da atualização" mostra o andamento. `publish-update` publica só a atualização assinada, não os pacotes.
 - **Mapas pedidos** (`areas-publish [--pictures] [--rotate]`, O192; Comandos > card "Mapas pedidos"). "Publicar áreas" monta, a partir das áreas pendentes e aprovadas da pasta `server/tools/areaplan/inbox/` do repositório na VPS (traga com Painel > Atualizar servidor depois de unir na main), os arquivos do editor de mapas em `dl/areas-TOKEN/` do site e mostra a linha `url=`; copie-a (botão de copiar do resultado) e rode `fetch-areas.bat` no Windows. "Novo endereço" (`--rotate`) cria outro TOKEN e apaga a pasta antiga. O site não tem login para arquivos estáticos: o TOKEN (32 dígitos hexa, `/var/lib/chaos/areas/token`) é a proteção. Não reinicia nem altera o mapa do jogo. docs/MAP_GUIDE.md "Map inbox".
 - **Logs de GM** (aba Logs, GM; `gm-logs [N] [NOME]`).
+- **Métricas dos jogadores** (aba Painel, card "Métricas dos jogadores", botão "Atualizar métricas"; `metrics [--json]`, O253). Só
+  leitura. Mostra por faixa de nível quantos personagens pararam de jogar (sem login há 14 dias ou mais), as 10 áreas e os 10
+  monstros com mais mortes, a duração da primeira sessão de personagens novos e o tempo mediano jogado até os níveis 10, 25,
+  50, 100 e 200. São contadores anônimos (sem nomes, contas nem IPs; testers e GMs ficam de fora), lidos da tabela
+  `chaos_progress_metrics`; server/README.md "Progress metrics (O253)". Precisa do passo `sql` do `install_all.py` (ou o
+  servidor cria a tabela ao ligar) e de um app recompilado para o card; o comando funciona pelo SSH sem isso.
 - **Assistir jogador** (Comandos > Ações rápidas > Assistir jogador). Só leitura: o jogador não é avisado e nada
   muda no jogo.
   - **Ao vivo** (`cast NOME`): o jogo como o jogador vê, em movimento, uns 30 quadros por segundo. Os 15 x 11
@@ -186,7 +192,7 @@ terminal do app ser root de verdade (instalar pacotes, mexer no sistema), rode n
 ## Comandos do servidor (`chaos-ctl.sh`)
 
 `status`, `start`, `stop`, `restart [segundos]`, `save`, `backup`, `backups`, `logs [n]`, `errors [n]`,
-`gm-logs [n] [NOME]`, `testers start [N] [MINUTOS] [--restart SEGUNDOS] [--keystones] | stop | status | report | log [N] | cleanup [--yes]` (bots de teste, server/README.md "Tester bots"), `errors clear`, `vps [info] | upgrade | upgrade-log [N] | reboot MIN | reboot-cancel`, `services`, `service NOME start|stop|restart`, `service-log NOME [N]`, `players`, `vocations`, `broadcast TEXTO`, `kick NOME`, `open`, `close`, `catalog NOME`,
+`gm-logs [n] [NOME]`, `metrics [--json]`, `testers start [N] [MINUTOS] [--restart SEGUNDOS] [--keystones] | stop | status | report | log [N] | cleanup [--yes]` (bots de teste, server/README.md "Tester bots"), `errors clear`, `vps [info] | upgrade | upgrade-log [N] | reboot MIN | reboot-cancel`, `services`, `service NOME start|stop|restart`, `service-log NOME [N]`, `players`, `vocations`, `broadcast TEXTO`, `kick NOME`, `open`, `close`, `catalog NOME`,
 `panel NOME ACAO JSON`, `update TAG now|at-save` e `rollback now|at-save` (layout padrão; no kit, `rollback now` é
 `update-rollback`), `update-check`, `update-apply [--no-client] [--no-downloads] [--no-site] [--no-map]`, `update-status`,
 `update-rollback`, `update-log`, `publish-update TAG` (atualização do cliente, docs/LAUNCH.md "Publishing a client

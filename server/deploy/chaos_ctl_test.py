@@ -32,6 +32,10 @@ The live cast (phase 2): cast NAME refuses bad names, is off without castPort (o
 "cast NAME", runs the relay (a stub reading stdin to its end) with the port and the name as one argument, queues
 "caststop" when it ends, and keeps one cast at a time (busy, exit 75).
 
+Progress metrics (O253): metrics [--json] runs one fixed read-only query against chaos_progress_metrics (stub mysql),
+pipes the rows to server/tools/progress_metrics.py, prints text or one JSON line, answers {"ok": false, "error": ...} with
+exit 1 when the table or the database is missing, and refuses any argument (nothing reaches the shell or the SQL).
+
 usage: python3 -I server/deploy/chaos_ctl_test.py
 """
 import json
@@ -567,6 +571,7 @@ def main():
         check(out.get('pid') == '', 'a pid that is not the engine (tfs) is not used')
     test_admin_commands()
     test_testers()
+    test_metrics()
     print('chaos_ctl_test: %d failures' % failures)
     return 1 if failures else 0
 
@@ -1055,6 +1060,112 @@ def test_testers():
         except OSError:
             pass
         time.sleep(6)  # the stub restart countdown runs out inside the folder
+
+
+METRICS_MYSQL = '''#!/usr/bin/env bash
+echo "$(basename "$0") $*" >> "$STUB/calls"
+case "$*" in
+  *chaos_progress_metrics*)
+    case "${STUB_METRICS_FAIL:-}" in
+      table) echo "ERROR 1146 (42S02) at line 1: Table 'chaos.chaos_progress_metrics' doesn't exist" >&2; exit 1 ;;
+      db) echo "ERROR 2002 (HY000): Can't connect to local MySQL server" >&2; exit 1 ;;
+    esac
+    cat "$STUB/metrics.tsv" ;;
+esac
+'''
+
+# synthetic counters: no real player, name or account
+METRICS_ROWS = [
+    ('churn', '1-5', 'gone', 30), ('churn', '1-5', 'active', 10), ('churn', '6-10', 'gone', 5),
+    ('churn', '6-10', 'active', 15), ('churn', '11-15', 'gone', 0), ('churn', '11-15', 'active', 0),
+    ('churn', '101-150', 'gone', 1), ('churn', '101-150', 'active', 3),
+    ('meta', 'churn_at', '', 1760000000), ('meta', 'churn_days', '', 14),
+    ('death_area', 'Ember Caves', '6-10', 12), ('death_area', 'Ember Caves', '11-15', 3),
+    ('death_area', 'Frost Hold', '6-10', 20),
+    ('death_monster', 'Dragon', '11-15', 9), ('death_monster', 'Rat', '1-5', 40),
+    ('session1', '5', '', 6), ('session1', '10', '', 2), ('session1', '30', '', 2), ('session1', 'inf', '', 1),
+    ('ttl', '10', '10', 10), ('ttl', '10', '20', 10), ('ttl', '25', '60', 4),
+]
+
+
+def test_metrics():
+    """chaos-ctl.sh metrics [--json]"""
+    repo_root = os.path.dirname(os.path.dirname(HERE))
+    with tempfile.TemporaryDirectory() as tmp:
+        stub = os.path.join(tmp, 'stub')
+        repo = os.path.join(tmp, 'repo')
+        os.makedirs(stub)
+        os.makedirs(os.path.join(repo, 'server', 'tools'))
+        shutil.copy(os.path.join(repo_root, 'server', 'tools', 'progress_metrics.py'),
+                    os.path.join(repo, 'server', 'tools'))
+        for name, body in (('systemctl', SYSTEMCTL), ('mysql', METRICS_MYSQL)):
+            p = os.path.join(stub, name)
+            with open(p, 'w') as f:
+                f.write(body)
+            os.chmod(p, 0o755)
+        with open(os.path.join(stub, 'metrics.tsv'), 'w') as f:
+            f.write(''.join('\t'.join(str(c) for c in row) + '\n' for row in METRICS_ROWS))
+        env_file = os.path.join(tmp, 'chaos.env')
+        with open(env_file, 'w') as f:
+            f.write('CHAOS_DB_USER=chaos\nCHAOS_DB_PASS=secret\n')
+        env = dict(os.environ, PATH=stub + ':' + os.environ['PATH'], STUB=stub, CHAOS_CTL_NO_SUDO='1',
+                   CHAOS_SERVER_DIR=os.path.join(tmp, 'server'), CHAOS_ENV=env_file, CHAOS_REPO=repo,
+                   CHAOS_MYSQL='mysql', CHAOS_CTL_CONF=os.path.join(tmp, 'none.conf'),
+                   CHAOS_PID_FILE=os.path.join(tmp, 'no.pid'), CHAOS_LOG=os.path.join(tmp, 'no.log'))
+        for k in ('SUDO_USER', 'CHAOS_UNIT', 'CHAOS_ROOT', 'CHAOS_KIT_DIR', 'CHAOS_DB_SOCKET', 'STUB_METRICS_FAIL'):
+            env.pop(k, None)
+
+        def run(*args, extra=None):
+            return subprocess.run(['bash', SCRIPT] + list(args), env=dict(env, **(extra or {})), capture_output=True,
+                                  text=True, timeout=60)
+
+        def calls():
+            p = os.path.join(stub, 'calls')
+            return open(p).read() if os.path.exists(p) else ''
+
+        r = run('metrics', '--json')
+        check(r.returncode == 0 and r.stdout.count('\n') == 1, 'metrics --json: one line: ' + r.stdout + r.stderr)
+        try:
+            d = json.loads(r.stdout)
+        except ValueError:
+            d = {}
+            check(False, 'metrics --json: valid JSON: ' + r.stdout)
+        check(d.get('ok') is True, 'metrics --json: ok')
+        check('SELECT kind, k1, k2, n FROM chaos_progress_metrics' in calls(), 'metrics: the fixed query: ' + calls())
+        check(d.get('churn', {}).get('days') == 14 and d['churn']['gone'] == 36 and d['churn']['active'] == 28,
+              'metrics: churn totals: ' + str(d.get('churn')))
+        bands = [b['band'] for b in d.get('churn', {}).get('bands', [])]
+        check(bands == ['1-5', '6-10', '11-15', '101-150'], 'metrics: bands in level order: %r' % (bands,))
+        check(d['churn']['bands'][0]['gonePct'] == 75.0, 'metrics: gone share of band 1')
+        check([e['name'] for e in d.get('deathAreas', [])] == ['Frost Hold', 'Ember Caves']
+              and d['deathAreas'][1]['deaths'] == 15 and d['deathAreas'][1]['topBand'] == '6-10', 'metrics: death areas')
+        check([e['name'] for e in d.get('deathMonsters', [])] == ['Rat', 'Dragon'], 'metrics: death monsters')
+        check(d.get('milestones', [{}])[0].get('medianMinutes') == 10.0 and d['milestones'][0]['characters'] == 20,
+              'metrics: median time to level 10: ' + str(d.get('milestones')))
+        check(d.get('firstSessionCharacters') == 11, 'metrics: first sessions')
+        r = run('metrics')
+        check(r.returncode == 0 and 'Churn (gone = no login for 14 days; 36 gone, 28 active)' in r.stdout
+              and 'Ember Caves' in r.stdout and 'level 10: 10 min' in r.stdout, 'metrics: text: ' + r.stdout + r.stderr)
+        r = run('metrics', '--json', extra={'STUB_METRICS_FAIL': 'table'})
+        check(r.returncode == 1 and json.loads(r.stdout) == {'ok': False, 'error': 'no-table'},
+              'metrics: no table: ' + r.stdout + r.stderr)
+        r = run('metrics', '--json', extra={'STUB_METRICS_FAIL': 'db'})
+        check(r.returncode == 1 and json.loads(r.stdout) == {'ok': False, 'error': 'database'},
+              'metrics: no database: ' + r.stdout + r.stderr)
+        with open(os.path.join(stub, 'metrics.tsv'), 'w') as f:
+            f.write('')
+        r = run('metrics', '--json')
+        check(r.returncode == 0 and json.loads(r.stdout).get('empty') is True, 'metrics: an empty table: ' + r.stdout)
+        before = calls()
+        for bad in (('metrics', 'x'), ('metrics', '--json', 'x'), ('metrics', '--json;id'), ('metrics', '$(id)'),
+                    ('metrics', '--top', '3'), ('metrics', "' OR 1=1 --")):
+            r = run(*bad)
+            check(r.returncode != 0, 'metrics refuses %r' % (bad,))
+        check(calls() == before, 'metrics: a refused call never reaches the database')
+        # a missing tool is told, not a traceback
+        os.unlink(os.path.join(repo, 'server', 'tools', 'progress_metrics.py'))
+        r = run('metrics', '--json')
+        check(r.returncode != 0 and 'progress_metrics.py' in r.stderr, 'metrics: a missing tool is named: ' + r.stderr)
 
 
 if __name__ == '__main__':
