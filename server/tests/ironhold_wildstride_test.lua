@@ -3,8 +3,9 @@
 -- and Swift Foot (Windrunner, "utamo tempo san", id 134, Ranger line) put CONDITION_PACIFIED on the caster for 10 s (no
 -- auto attack at all) and a 10 s attack group cooldown; the helper's Auto setup kept Protector up, so the Warrior stopped
 -- attacking. Both go (tools/retire_cure_spells.py OTHERS) and the Chaos Ironhold (132) and Wildstride (134) take their
--- ids. This test casts both on a mocked player: one condition each and nothing that pacifies, slows or locks a group;
--- the spell entries, the retirement and the client data agree.
+-- ids. This test casts Ironhold on a mocked player: one condition and nothing that pacifies, slows or locks a group;
+-- the spell entry, the retirement and the client data agree. Wildstride (134) became the attack spell Gale Volley
+-- (O254, attack_kit_config.lua), so its checks are gone; the file keeps its name.
 local n = 0
 setmetatable(_G, {__index = function(t, k)
 	if type(k) == "string" and k:match("^[A-Z_0-9]+$") then n = n + 1; rawset(t, k, n); return n end
@@ -16,10 +17,9 @@ local function read(path) local f = assert(io.open(path, "r")); local t = f:read
 -- ------------------------------------------------------------------ the casts (mocked engine)
 local common = read("data/spells/chaos/_common.lua")
 local subs = common:match("ChaosSpell%.SUBID = %b{}")
-local subIron, subWild = tonumber(subs:match("ironhold = (%d+)")), tonumber(subs:match("wildstride = (%d+)"))
+local subIron = tonumber(subs:match("ironhold = (%d+)"))
 ok(subIron == 71073, "ChaosSpell.SUBID.ironhold = 71073")
-ok(subWild == 71074, "ChaosSpell.SUBID.wildstride = 71074")
-ChaosSpell = {SUBID = {ironhold = subIron, wildstride = subWild}, vfxOr = function() return true end}
+ChaosSpell = {SUBID = {ironhold = subIron}, vfxOr = function() return true end}
 local realDofile = dofile
 dofile = function(path)
 	if path == "data/spells/scripts/chaos/_common.lua" then return end -- ChaosSpell is the stub above
@@ -65,15 +65,7 @@ ok(c.params[CONDITION_PARAM_SUBID] == 71073, "Ironhold: its own sub id (the buff
 ok(c.params[CONDITION_PARAM_TICKS] == 12000, "Ironhold: 12 s")
 ok(c.params[CONDITION_PARAM_SKILL_SHIELDPERCENT] == 140, "Ironhold: +40% shielding")
 ok(c.params[CONDITION_PARAM_SKILL_MELEEPERCENT] == nil, "Ironhold: melee skill untouched")
-
-local wild = cast("data/spells/chaos/paladin/wildstride.lua")
 dofile = realDofile
-ok(#wild == 1, "Wildstride: one condition: " .. #wild)
-c = wild[1] or {params = {}}
-ok(c.type == CONDITION_HASTE, "Wildstride: a haste")
-ok(c.params[CONDITION_PARAM_SUBID] == 71074, "Wildstride: its own sub id (adds to Haste, own buff bar row)")
-ok(c.params[CONDITION_PARAM_TICKS] == 12000, "Wildstride: 12 s")
-ok(c.formula and c.formula[1] == 0.5 and c.formula[2] == -40, "Wildstride: +50% speed (0.5 x speed - 40)")
 
 -- ------------------------------------------------------------------ the spell entries
 local xml = read("data/spells/chaos/spells_chaos.xml"):gsub("<!%-%-.-%-%->", "")
@@ -95,7 +87,6 @@ local function entry(name, id, words, level, mana, vocs)
 	ok(count == 1, name .. ": one Chaos spell with id " .. id)
 end
 entry("Ironhold", 132, "tor brak", 55, 120, "Warrior,Juggernaut") -- the Berserker (no shield) left it: the 15-spell cap
-entry("Wildstride", 134, "ruan vert", 55, 90, "Ranger,Deadeye,Beastmaster")
 
 -- ------------------------------------------------------------------ the retirement
 local tool = read("tools/retire_cure_spells.py")
@@ -105,18 +96,17 @@ local names = read("data/spells/spell_names.csv")
 ok(not names:find("utamo tempo", 1, true), "no Chaos name for the retired spells")
 local buffs = read("data/lib/chaos_buffs.lua")
 ok(buffs:find('cond("ironhold", "CONDITION_ATTRIBUTES", 71073', 1, true), "Ironhold: a buff bar row")
-ok(buffs:find('cond("wildstride", "CONDITION_HASTE", 71074', 1, true), "Wildstride: a buff bar row")
 
 -- ------------------------------------------------------------------ the client data (generated, gen_spell_data.py)
 local cdata = read("../client/overlay/modules/game_chaosspells/spelldata.lua")
 ok(cdata:find('{ id = 132, name = "Ironhold", words = "tor brak"', 1, true), "the client knows Ironhold")
-ok(cdata:find('{ id = 134, name = "Wildstride", words = "ruan vert"', 1, true), "the client knows Wildstride")
+ok(cdata:find('{ id = 134, name = "Gale Volley", words = "ruan vert"', 1, true), "the client knows Gale Volley (the id of Wildstride)")
 ok(cdata:find('["utamo tempo"] = true', 1, true), "the client hides the retired Protector")
 ok(cdata:find('["utamo tempo san"] = true', 1, true), "the client hides the retired Swift Foot")
 ok(not cdata:find('"tor ira"', 1, true) and not cdata:find('"tor ira sol"', 1, true), "no rename to the old words")
 local support = read("../client/overlay/modules/game_helpersupport/supportspells.lua")
 ok(support:find("[132] = { auto = 'timer', dur = 12 }", 1, true), "the helper's Auto setup times Ironhold (12 s)")
-ok(support:find("[134] = { auto = false, kind = 'buff', dur = 12 }", 1, true), "Wildstride: offered, not in Auto setup")
+ok(not support:find("[134] =", 1, true), "Gale Volley is an attack spell: no support row")
 
 if fails > 0 then error("ironhold_wildstride_test: " .. fails .. " failure(s)") end
 print("ironhold_wildstride_test: OK")

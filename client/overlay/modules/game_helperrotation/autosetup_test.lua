@@ -117,7 +117,7 @@ eq(timerIds(planFor(12, 160)), '233,239', 'Ninja: no Bushido Focus')
 eq(timerIds(planFor(19, 160)), '72,233', 'Iron Sage 160: Mantra of Stone')
 eq(timerIds(planFor(17, 160)), '233', 'Monk: Banner Call')
 eq(timerIds(planFor(22, 160)), '233', 'Bone Lord: Banner Call only (no minion buffs)')
-eq(timerIds(planFor(24, 160)), '233,250', 'Inquisitor 160: Zealotry')
+eq(timerIds(planFor(24, 160)), '233', 'Inquisitor 160: Banner Call only (Zealotry is the attack spell Crusader\'s Sweep since O254)')
 eq(timerIds(planFor(25, 160)), '233', 'Sentinel: no Aegis of Faith (needs a shield)')
 local r = planFor(4, 120).timers[1]
 eq(r.cooldown, 41, 'timer waits one second more than the cooldown')

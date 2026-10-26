@@ -61,7 +61,7 @@ cell,spell,set,index,why
 260,Sundering Palm,Water,30,open palm
 261,Whirling Heel,Fire,22,spin
 262,Kindled Breath,Fire,13,inner flame
-263,Mistborne Step,Water,13,leap through mist
+263,Mistborne Strike,Water,13,leap through mist
 264,Pressure Points,Arcane,1,struck points
 265,Shadowfist Flurry,Arcane,38,shadow fist
 266,Chi Ward,Water,25,ward
@@ -72,7 +72,7 @@ cell,spell,set,index,why
 271,Vow of Mending,Nature,2,healing cross
 272,Judgement,Steel,19,sword brand
 273,Purging Nova,Fire,31,radiant burst
-274,Zealotry,Fire,32,phoenix
+274,Crusader's Sweep,Fire,32,phoenix
 275,Rebuke,Fire,33,spread wings
 276,Aegis of Faith,Steel,25,shield
 277,Lay on Hands,Fire,37,hand of light

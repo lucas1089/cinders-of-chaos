@@ -24,7 +24,6 @@ C.spells = {
 	-- Elementalist kit
 	[201] = {missile = {fireball = "witchfire_lance"}},                                 -- Witchfire Bolt
 	[202] = {missile = {lightning_orb = "storm_bolt"}, send = {lightning_strike = "storm_shock"}}, -- Forked Storm
-	[203] = {fx = {blood_pact = "covenant_bloodlust"}, send = {blood_pact = "covenant_bloodlust"}}, -- Crimson Covenant
 	[204] = {fx = {infernal_seal = "pyre_rune"}, missile = {fireball = "pyre_comet"}},  -- Falling Pyre
 	[205] = {missile = {ice_lance = "crypt_lance"}, send = {nova_frost = "crypt_ice_strike"}}, -- Frozen Crypt
 	[206] = {fx = {storm_ring = "doom_tornado", fire_explosion = "doom_skyfall"}},      -- Doomtide (waves 2 and 3)
@@ -53,7 +52,7 @@ C.stock = {
 
 -- spell id -> the spell's name in spells_chaos.xml (checked by tests/pack29_fx_test.lua: an id that moves fails it)
 C.names = {
-	[201] = "Witchfire Bolt", [202] = "Forked Storm", [203] = "Crimson Covenant", [204] = "Falling Pyre",
+	[201] = "Witchfire Bolt", [202] = "Forked Storm", [204] = "Falling Pyre",
 	[205] = "Frozen Crypt", [206] = "Doomtide", [209] = "Ironbark Hide", [210] = "Briar Prison",
 	[213] = "Primordial Squall", [226] = "Hall of Mirrors", [227] = "Umbral Stride", [228] = "Shattered Psyche",
 	[229] = "Wraithshroud", [230] = "Nightburst", [231] = "Tear in the Weave", [96] = "Mirror Mend",

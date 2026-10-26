@@ -1,5 +1,6 @@
 -- attack_kit_config.lua: the numbers of the attack kit (ChaosAttackKit): 37 attack spells that give every class
--- line the same count of attack spells (10 per class; owner 2026-10-23, "devem ter a mesma quantidade").
+-- line the same count of attack spells (10 per class; owner 2026-10-23, "devem ter a mesma quantidade"), and 7 more (O254)
+-- that took over the ids of weak support spells, so every class has 11.
 -- The numbers were fitted with server/tools/rotation_sim.py. Change one here, in spells_chaos.xml and in
 -- rotation_model.csv together: tests/attack_kit_test.lua checks all three. Rules and shapes: attack_kit_core.lua; the cast:
 -- data/spells/chaos/_attackkit.lua; the balance: server/data/spells/README.md "Attack spell parity".
@@ -235,6 +236,51 @@ ChaosAttackKit.cfg = {
 			mMin = 0.5, mMax = 0.8, bMin = 20, bMax = 40, scale = 1, shape = "around", radius = 2, fx = "shockwave",
 			vfx = "dome_blast_holy"
 		},
+		-- the converted supports (O254: the owner asked for faster, more fluid fights, more attack spells and fewer support
+		-- spells). Each took the spell id of a weak support, so its icon cell stays; see server/data/spells/README.md
+		-- "Support to attack (O254)". The coefficients are scaled from the class's comparable spell at the same level.
+		bastioncry = {
+			id = 29, name = "Bastion Cry", words = "vok gal rhov kor", level = 340, mana = 200,
+			vocations = {"Warrior", "Juggernaut", "Berserker"}, school = "melee", power = "melee", ctype = "physical",
+			pMin = 0.1538, pMax = 0.2461, mMin = 0, mMax = 0, bMin = 20, bMax = 40, scale = 1, shape = "wave", range = 3,
+			depth = 3, halfWidth = 1, fx = "shockwave", vfx = "aura_burst_gold"
+		},
+		galevolley = {
+			id = 134, name = "Gale Volley", words = "ruan vert", level = 240, mana = 110,
+			vocations = {"Ranger", "Deadeye", "Beastmaster"}, school = "distance", power = "distance", ctype = "physical",
+			pMin = 0.1352, pMax = 0.2163, mMin = 0, mMax = 0, bMin = 20, bMax = 40, scale = 1, shape = "line", range = 6,
+			length = 6, shot = "gale_arrow", fx = "crit_burst"
+		},
+		crimsoncovenant = {
+			id = 203, name = "Crimson Covenant", words = "tor nyx cruor", level = 200, mana = 350,
+			vocations = {"Mystic", "Elementalist", "Illusionist"}, school = "magic", power = "magic", ctype = "death",
+			pMin = 0, pMax = 0, mMin = 1.626, mMax = 2.602, bMin = 8, bMax = 16, scale = 1, shape = "dot", range = 6,
+			ticks = 6, tickMs = 1000, pshot = "proj_shadow_bolt_blood", fx = "blood_nova", hitFx = "CONST_ME_DRAWBLOOD"
+		},
+		smokebomb = {
+			id = 241, name = "Smoke Bomb", words = "drai nebh", level = 200, mana = 150,
+			vocations = {"Thief", "Ninja", "Samurai"}, school = "spell", power = "blade", ctype = "earth",
+			pMin = 0.1157, pMax = 0.1851, mMin = 0, mMax = 0, bMin = 20, bMax = 40, scale = 1, shape = "around", radius = 1,
+			fx = "shadow_smoke", hitFx = "CONST_ME_POISONAREA"
+		},
+		splintervolley = {
+			id = 193, name = "Splinter Volley", words = "vael oss sag", level = 270, mana = 400,
+			vocations = {"Necromancer", "Lich", "Bone Lord"}, school = "necro", power = "magic", ctype = "death",
+			pMin = 0, pMax = 0, mMin = 15.85, mMax = 25.36, bMin = 20, bMax = 40, scale = 1, shape = "circle", range = 6,
+			radius = 1, fx = "necro_skull", vfx = "bone_burst"
+		},
+		mistbornestrike = {
+			id = 67, name = "Mistborne Strike", words = "ash qhal", level = 190, mana = 150,
+			vocations = {"Monk", "Shadowfist", "Iron Sage"}, school = "monk", power = "monk", ctype = "physical",
+			pMin = 0.2076, pMax = 0.3322, mMin = 0, mMax = 0, bMin = 20, bMax = 40, scale = 1, shape = "wave", range = 3,
+			depth = 3, halfWidth = 1, finisher = true, fx = "shadow_cloud", vfx = "ki_hit_blue"
+		},
+		crusaderssweep = {
+			id = 250, name = "Crusader's Sweep", words = "vyr sol zel", level = 250, mana = 230,
+			vocations = {"Templar", "Inquisitor", "Sentinel"}, school = "templar", power = "melee", ctype = "holy",
+			pMin = 0.2154, pMax = 0.3446, mMin = 0.5, mMax = 0.8, bMin = 20, bMax = 40, scale = 1, shape = "wave", range = 3,
+			depth = 3, halfWidth = 1, fx = "holy_cross", vfx = "holy_smite"
+		},
 	},
-	order = {"gorehook", "riftcleaver", "sunspear", "arrowstorm", "packdart", "phantomneedles", "mirrorshards", "dreamrot", "guttingslash", "razorrain", "venomspiral", "crescentcut", "lastbreath", "hollowknuckle", "quakingstomp", "chilance", "cleavingheel", "tidalpalm", "skysplitter", "marrowbolt", "wraithwind", "gravewail", "blightbrand", "soulrendbeam", "cryptcollapse", "ossuarysurge", "hallowedcut", "censerswing", "penitentlash", "martyrspyre", "bellofreckoning", "lanceofvigil", "sanctumverdict", "hereticsbrand", "zealotswrath", "bulwarkslam", "rampartquake"},
+	order = {"gorehook", "riftcleaver", "sunspear", "arrowstorm", "packdart", "phantomneedles", "mirrorshards", "dreamrot", "guttingslash", "razorrain", "venomspiral", "crescentcut", "lastbreath", "hollowknuckle", "quakingstomp", "chilance", "cleavingheel", "tidalpalm", "skysplitter", "marrowbolt", "wraithwind", "gravewail", "blightbrand", "soulrendbeam", "cryptcollapse", "ossuarysurge", "hallowedcut", "censerswing", "penitentlash", "martyrspyre", "bellofreckoning", "lanceofvigil", "sanctumverdict", "hereticsbrand", "zealotswrath", "bulwarkslam", "rampartquake", "bastioncry", "galevolley", "crimsoncovenant", "smokebomb", "splintervolley", "mistbornestrike", "crusaderssweep"},
 }

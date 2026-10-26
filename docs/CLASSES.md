@@ -12,7 +12,7 @@ unlocked for the account once one of its characters reaches level 200 (see "Clas
 | **Thief** | fast light-weapon attacks, shurikens, stealth | **Ninja**: the line's burst single target. Dual-wields daggers, very fast hits, shadow step | **Samurai**: duelist off-tank. One katana-style sword, a counter stance that parries, guards and taunts |
 | **Necromancer** | summoner: skeletons and spirits, curses, corpses | **Lich**: curses, damage over time, life drain, corpse explosion; one strong shade or none | **Bone Lord**: the army: more skeletons, the Bone Golem, an aura, sacrifices |
 | **Monk** | unarmed (or a staff), chi / combo points, evasion | **Shadowfist**: single-target burst. Pressure Points, Flurry, crits from spent chi | **Iron Sage**: the second healer, a melee chi healer with some bruiser toughness. Kindled Breath on the most hurt ally, Mantra of Stone heals and shields the party, Chi Ward |
-| **Templar** | holy melee: sword or mace and shield, heavy armour, a party defence aura | **Inquisitor**: holy area damage. Judgement, Purging Nova, Zealotry | **Sentinel**: tank-support. A stronger aura with regeneration, Rebuke (taunt), Aegis of Faith, Lay on Hands |
+| **Templar** | holy melee: sword or mace and shield, heavy armour, a party defence aura | **Inquisitor**: holy area damage. Judgement, Purging Nova, Crusader's Sweep | **Sentinel**: tank-support. A stronger aura with regeneration, Rebuke (taunt), Aegis of Faith, Lay on Hands |
 
 ## Roles in a group
 
@@ -59,9 +59,9 @@ bows, crossbows and quivers for them from level 1 on (server/README.md "Gear cov
 spellbooks the same way), and eight Ranger-line quiver uniques fill levels 6 to 1900. Every class
 wears one ring and one badge: the badge slot took the place of the second ring slot (server/README.md "Badge slot"). The line's fight buff is
 Tautstring (level 60, +25% distance skill for 12 s); the stock Sharpshooter / Hawkeye it replaced was retired on 2026-10-20
-because its slow kept the bow from firing (server/README.md "Hawkeye retired, Tautstring"). Its run buff is Wildstride
-(level 55, +50% speed for 12 s on top of Haste) in place of the stock Swift Foot / Windrunner, retired the same day: it
-pacified the caster for 10 s.
+because its slow kept the bow from firing (server/README.md "Hawkeye retired, Tautstring"). Its run buff Wildstride
+(level 55, +50% speed for 12 s on top of Haste), which replaced the stock Swift Foot / Windrunner (retired the same day: it
+pacified the caster for 10 s), became the attack spell Gale Volley in O254 (below).
 - **Deadeye**: crossbow, Final Verdict, marks.
 - **Beastmaster**: a wolf/bear companion that scales with level, arrow splash, Ricochet.
   The companion (Wild Bond) and every other player summon is an ally of its owner and party: it never hits them, they never
@@ -99,8 +99,8 @@ grow with the chi spent; evasion; light armour.
 
 **Templar** (base): holy melee with a one-handed sword or mace and a shield; a party defence aura and Radiant Strikes (each
 melee hit adds a holy strike). Radiant Smite, Consecration, Vow of Mending.
-- **Inquisitor**: Judgement (the target takes +20% holy damage), Purging Nova (holy area that heals a little), Zealotry
-  (stacking damage while hitting).
+- **Inquisitor**: Judgement (the target takes +20% holy damage), Purging Nova (holy area that heals a little), Crusader's
+  Sweep (a holy wave; it took the id of Zealotry in O254).
 - **Sentinel**: a stronger aura with regeneration, Rebuke (taunt), Aegis of Faith (-40% damage taken with a shield), Lay on Hands.
 
 **Runes (2026-10-13, owner: "Tire as spells de fazer runa. Deixa as runas serem de vendedores e craft.")**: no class
@@ -257,7 +257,7 @@ Elementalist 5, Mystic 4 -> rung 4 (8 s); Withering Curse Bone Lord 2, Lich 5, N
 ## Spell cap
 
 **Raised to 20 on 2026-10-23** (owner: "veja quantas magias de ataque cada classe tem. devem ter a mesma quantidade"): the
-attack kit gave every class and ascension **10 attack spells** (37 new spells, 77 class slots; list, levels and balance:
+attack kit gave every class and ascension **10 attack spells** (37 new spells, 77 class slots; since O254 **11**, see below; list, levels and balance:
 server/data/spells/README.md "Attack spell parity"; CI: `tools/ci/check_attack_counts.py`). The Bone Lord reaches 20, so
 `MAX_SPELLS` is 20. The per-class counts in the tables below are from before the kit (15 cap): add the new spells.
 Combat pass (O136, 2026-10-23): **Galeborne Stride is retired** (Fleetfoot and Vigil of Haste are universal), so every
@@ -268,6 +268,27 @@ Attack spells per class now: Warrior, Juggernaut, Berserker, Ranger, Deadeye, Be
 Illusionist, Thief, Ninja, Samurai, Monk, Shadowfist, Iron Sage, Necromancer, Lich, Bone Lord, Templar, Inquisitor and
 Sentinel: 10 each (before: 8, 8, 9, 8, 9, 7, 10, 10, 7, 5, 7, 6, 4, 7, 6, 4, 5, 3, 3, 4, 3). The cooldown ladder now has
 ten rungs per class (2 to 20 s), so some older spells moved; Headsman's Hurl is 20 s.
+
+**Support to attack (O254, 2026-10-26; owner request: faster, more fluid fights, more attack spells, fewer support spells)**:
+seven weak support spells became attack spells and kept their ids and icon cells, so every class and ascension has
+**11 attack spells** (`ATTACK_SPELLS` in `tools/ci/check_attack_counts.py`). A converted spell is learned by the whole
+line of its old owner, so the Warrior, Berserker, Mystic, Illusionist, Thief, Samurai, Templar and Sentinel
+have one spell more (pinned in `server/tools/patch_spell_cap_test.py`; the most is the Bone Lord's 19, under the 20 cap):
+
+| Old support (id) | Now (attack kit key) | Line | Level | Shape |
+|---|---|---|---|---|
+| Bastion Cry (29), a taunt and a heal | Bastion Cry (`bastioncry`) | Warrior, Juggernaut, Berserker | 340 | wave 3 sqm |
+| Wildstride (134), a 12 s haste | Gale Volley (`galevolley`) | Ranger, Deadeye, Beastmaster | 240 | arrow line 6 sqm |
+| Crimson Covenant (203), health for magic level | Crimson Covenant (`crimsoncovenant`) | Mystic, Elementalist, Illusionist | 200 | death damage over 6 s |
+| Smoke Bomb (241), a blinding cloud | Smoke Bomb (`smokebomb`) | Thief, Ninja, Samurai | 200 | burst around the caster |
+| Raise Bone Archer (193), a third minion | Splinter Volley (`splintervolley`) | Necromancer, Lich, Bone Lord | 270 | bone circle, radius 1 |
+| Mistborne Step (67), a dodge dash | Mistborne Strike (`mistbornestrike`) | Monk, Shadowfist, Iron Sage | 190 | mist wave 3 sqm, chi finisher |
+| Zealotry (250), a stacking damage buff | Crusader's Sweep (`crusaderssweep`) | Templar, Inquisitor, Sentinel | 250 | holy wave 3 sqm |
+
+Kept: every heal, the tank and party auras (Ironhold, Rebuke, Aegis of Faith, Hall of Mirrors, Banner Call, Soulward) and
+the Necromancer's two other summons. The Necromancer line summons Raise Bone Warrior and Raise Bone Mage now (the
+Risen Archer is gone; the best build is two warriors and a mage). Numbers, balance and the retune:
+server/data/spells/README.md "Support to attack (O254)".
 
 **15 spells per class (2026-10-20, owner: "mysthic tem magias demais. abaixe pra 15. faça isso pra todas as classes")**:
 every class and ascension can learn and cast at most 15 spells of its own: attack, healing and support, the stock spells
@@ -637,7 +658,7 @@ Wild Bond by its words, and the level 1000 sanity measurement in `server/data/sp
   rules `necro_core.lua` (tests `server/tests/necro_test.lua`), numbers `necro_config.lua`; minion monsters
   `server/data/monster/monsters/chaos/necro_*.xml` (looks: skeleton 33, ghost 48, demon skeleton 37). New-player kit: the
   Mystic's (`newplayer_config.lua`).
-- **Summon spells** (2026-10-18, support group, all three classes, 4 s cooldown): Raise Bone Warrior (192, `vael oss brak`, level 8, 50 mana; a sturdy melee minion, range 1, physical), Raise Bone Archer (193, `vael oss sag`, level 12, 60 mana; range 5, physical arrows, fragile) and Raise Bone Mage (176, `vael oss mynd`, level 16, 70 mana; range 4, energy, fragile). Each creates ONE minion next to the caster. **Total cap** (all kinds together: skeletons, shades, the golem and these three): Necromancer 3, Lich 1, Bone Lord 6 (7 from level 400), the passive tree's Legion adds to it. At the cap the next summon of any spell dismisses the OLDEST minion first (a puff, no corpse, no loot), then the new one appears. Raise Dead's own per-kind caps stay; the total wins. Numbers: `necro_config.lua` `minions`.
+- **Summon spells** (2026-10-18, support group, all three classes, 4 s cooldown): Raise Bone Warrior (192, `vael oss brak`, level 8, 50 mana; a sturdy melee minion, range 1, physical), Raise Bone Archer (193, `vael oss sag`, level 12, 60 mana; range 5, physical arrows, fragile; **left in O254**, its id is the attack spell Splinter Volley) and Raise Bone Mage (176, `vael oss mynd`, level 16, 70 mana; range 4, energy, fragile). Each creates ONE minion next to the caster. **Total cap** (all kinds together: skeletons, shades, the golem and these three): Necromancer 3, Lich 1, Bone Lord 6 (7 from level 400), the passive tree's Legion adds to it. At the cap the next summon of any spell dismisses the OLDEST minion first (a puff, no corpse, no loot), then the new one appears. Raise Dead's own per-kind caps stay; the total wins. Numbers: `necro_config.lua` `minions`.
 - **Summons**: capped per class and level, scale with the owner's level and magic level, follow (brought back past
   7 sqm or across floors), rest in protection zones and rise outside, go at logout and death, pushable. They show
   their owner's level after the name and follow a level up while out (the level shown and the maximum health, the
@@ -737,7 +758,7 @@ everything the Warrior wears; potions of the Elite Knight and the Royal Paladin.
   Mending (self heal).
 - Inquisitor: Judgement (holy strike; the target takes +20% holy damage from everyone for 8 s), Purging Nova (holy circle of
   3 sqm, heals 10% of the damage dealt, at most 5% max health per cast), Zealotry (20 s: each melee hit adds a stack, +4%
-  damage per stack up to +40%, gone 3 s after the last hit).
+  damage per stack up to +40%, gone 3 s after the last hit; **no spell casts it since O254**, Crusader's Sweep took its id).
 - Sentinel: Rebuke (taunt within 4 sqm, 25% slow), Aegis of Faith (with a shield: -40% damage taken for 5 s), Lay on Hands
   (a party member or itself within 5 sqm: 35% of its maximum health + magic level x 10; 60 s cooldown), Shield Wave (a
   Radiant Smite on the target and 2x it on everything in the 3 x 3 tiles in front, 2026-10-15).
@@ -1063,6 +1084,8 @@ PvP damage unchanged (the cleave never hits a boss or a player; the new spells h
 Table: `server/data/spells/README.md` "Pack farming for every class".
 
 ### Late spells, levels 340-460 (C6, 2026-10-20)
+
+(O254: Bastion Cry is an attack spell now, level 340, a wave of 3 sqm; the taunt, the slow and the heal are gone.)
 
 Report: ascended classes had no new spell above level 300. The cure (status-cleanse) spells were retired for all classes
 (`server/tools/retire_cure_spells.py`) and their 7 ids reused. Numbers are computed (rotation sim), not measured in game.

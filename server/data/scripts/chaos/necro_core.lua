@@ -63,7 +63,7 @@ function N.minionCap(cfg, classKey, kind, level, bonus)
 	end
 	local c = classCfg(cfg, classKey)
 	if c and cfg.minions[kind] and cfg.minions[kind].summon then
-		-- a summon spell's minion (warrior / archer / mage): only the total cap limits it
+		-- a summon spell's minion (warrior / mage): only the total cap limits it
 		return N.totalCap(cfg, classKey, level, bonus)
 	end
 	if not c or c.kind ~= kind then
@@ -510,7 +510,7 @@ function N.overCap(cfg, classKey, level, list, bonus)
 end
 
 -- every minion kind (monster types of necro_*.xml)
-N.kinds = {"skeleton", "shade", "golem", "warrior", "archer", "mage"}
+N.kinds = {"skeleton", "shade", "golem", "warrior", "mage"}
 
 -- the minion kind of a monster name, nil for any other monster
 function N.kindOf(cfg, name)

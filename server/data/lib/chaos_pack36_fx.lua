@@ -27,7 +27,6 @@ C.PAIR36_FX = true
 -- (the test checks it), so the two tables never fight.
 C.spells = {
 	-- Sorcerer, Druid
-	[203] = {fx = {blood_pact = "w_circle_blood_ritual"}},                     -- Crimson Covenant
 	[205] = {fx = {frost_glyph = "w_circle_frost_field"}},                     -- Frozen Crypt
 	[207] = {fx = {toxic_burst = "mega_venom_wasps"}},                         -- Blightswarm
 	[208] = {fx = {healing_bloom = "w_circle_healing_spring"}},                -- Purifying Wellspring
@@ -41,12 +40,10 @@ C.spells = {
 	[218] = {fx = {holy_smite = "w_impact_divine_judgment"}},                  -- Final Verdict
 	[144] = {fx = {holy_smite = "w_impact_holy_smite"}},                       -- Twin Verdict
 	[135] = {fx = {aura_burst_gold = "w_status_eagle_eye"}},                   -- Tautstring
-	[134] = {fx = {gale_ring = "w_status_haste"}},                             -- Wildstride
 	[190] = {fx = {holy_seal = "w_circle_prayer_circle"}},                     -- Consecration
 	[251] = {fx = {solar_flash = "w_impact_holy_nova"}},                       -- Rebuke
 	[253] = {fx = {healing_bloom = "w_impact_holy_heal"}},                     -- Lay on Hands
 	-- Knight, Samurai, Berserker
-	[29] = {fx = {aura_burst_gold = "w_status_battle_cry"}},                   -- Bastion Cry
 	[132] = {fx = {shield_bubble = "w_status_fortified"}},                     -- Ironhold
 	[58] = {fx = {earth_spikes = "w_impact_terra_strike"}},                    -- Anvil Fall
 	[244] = {dir = {sword_slash = "cone_steel_crescent"}},                     -- Iaijutsu
@@ -61,7 +58,6 @@ C.spells = {
 	[96] = {fx = {regenerating = "w_status_regeneration"}},                    -- Mirror Mend
 	[97] = {fx = {starfall_crown = "w_aura_starfall"}},                        -- Lucid Reverie
 	-- Ninja, Beastmaster
-	[241] = {fx = {stunned = "w_status_stunned"}},                             -- Smoke Bomb
 	[248] = {fx = {summon_portal = "mega_summon_totem_drop"}},                 -- Wild Bond
 	-- Lich, Bonelord
 	[185] = {fx = {bone_burst = "w_impact_corpse_explosion"}},                 -- Corpse Explosion
@@ -71,7 +67,6 @@ C.spells = {
 	-- Monk, Shadowfist, Ironsage
 	[64] = {fx = {punch_hit_red = "w_impact_punch"}},                          -- Sundering Palm
 	[65] = {fx = {whirlwind = "w_impact_whirlwind"}},                          -- Whirling Heel
-	[67] = {fxdir = {gale_hit = "w_impact_gale_cut"}},                         -- Mistborne Step (turned from the caster)
 	[68] = {fxdir = {punch_hit_violet = "mega_wraith_palm"}},                  -- Pressure Points (turned from the caster)
 	[70] = {fx = {shield_bubble = "w_status_shielded"}},                       -- Chi Ward
 	[72] = {fx = {stone_rise = "mega_stone_shelves"}},                         -- Mantra of Stone
@@ -79,15 +74,15 @@ C.spells = {
 
 -- spell id -> the spell's name in spells_chaos.xml (tests/pack36_fx_test.lua: an id that moves fails it)
 C.names = {
-	[203] = "Crimson Covenant", [205] = "Frozen Crypt", [207] = "Blightswarm", [208] = "Purifying Wellspring",
+	[205] = "Frozen Crypt", [207] = "Blightswarm", [208] = "Purifying Wellspring",
 	[209] = "Ironbark Hide", [211] = "Moonfang Pack", [212] = "Verdant Sanctuary", [214] = "Dawnpiercer",
 	[216] = "Blessed Earth", [217] = "Lightward", [218] = "Final Verdict", [144] = "Twin Verdict",
-	[135] = "Tautstring", [134] = "Wildstride", [190] = "Consecration", [251] = "Rebuke", [253] = "Lay on Hands",
-	[29] = "Bastion Cry", [132] = "Ironhold", [58] = "Anvil Fall", [244] = "Iaijutsu", [245] = "Bushido Focus",
+	[135] = "Tautstring", [190] = "Consecration", [251] = "Rebuke", [253] = "Lay on Hands",
+	[132] = "Ironhold", [58] = "Anvil Fall", [244] = "Iaijutsu", [245] = "Bushido Focus",
 	[226] = "Hall of Mirrors", [227] = "Umbral Stride", [229] = "Wraithshroud", [230] = "Nightburst",
-	[232] = "Flickerdash", [233] = "Banner Call", [96] = "Mirror Mend", [97] = "Lucid Reverie", [241] = "Smoke Bomb",
+	[232] = "Flickerdash", [233] = "Banner Call", [96] = "Mirror Mend", [97] = "Lucid Reverie", 
 	[248] = "Wild Bond", [185] = "Corpse Explosion", [186] = "Bone Golem", [187] = "Banner of Bones",
-	[188] = "Bone Offering", [64] = "Sundering Palm", [65] = "Whirling Heel", [67] = "Mistborne Step",
+	[188] = "Bone Offering", [64] = "Sundering Palm", [65] = "Whirling Heel", 
 	[68] = "Pressure Points", [70] = "Chi Ward", [72] = "Mantra of Stone",
 }
 

@@ -19,11 +19,12 @@ local BASE_OF = {
 	Inquisitor = "Templar", Sentinel = "Templar",
 }
 -- ascended class -> {spells of its own over its base class, highest level of any of its spells}
--- (counts and top levels include the attack kit, 2026-10-23)
+-- (counts and top levels include the attack kit, 2026-10-23, and its seven converted supports, O254: Bastion Cry,
+-- Crimson Covenant, Smoke Bomb and Crusader's Sweep are the base class's spells too now, so the ascension's own count drops)
 local PINNED = {
-	Juggernaut = {2, 380}, Berserker = {3, 380}, Deadeye = {2, 400}, Beastmaster = {4, 320}, Elementalist = {7, 420},
-	Illusionist = {12, 280}, Ninja = {4, 270}, Samurai = {4, 230}, Lich = {3, 300}, ["Bone Lord"] = {4, 300},
-	Shadowfist = {3, 250}, ["Iron Sage"] = {4, 190}, Inquisitor = {5, 200}, Sentinel = {6, 230},
+	Juggernaut = {1, 380}, Berserker = {3, 380}, Deadeye = {2, 400}, Beastmaster = {4, 320}, Elementalist = {6, 420},
+	Illusionist = {12, 280}, Ninja = {3, 270}, Samurai = {4, 230}, Lich = {3, 300}, ["Bone Lord"] = {4, 300},
+	Shadowfist = {3, 250}, ["Iron Sage"] = {4, 190}, Inquisitor = {4, 250}, Sentinel = {6, 250},
 }
 local MAX_OWN = 15 -- owner 2026-10-20: an ascended class has at most 15 spells of its own
 local checks = 0

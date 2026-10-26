@@ -14,7 +14,7 @@ def main():
     kit = C.load_kit()
     spells, classes = C.load_data()
     model_spells, model = C.R.load_all()
-    assert len(kit) == 37, len(kit)
+    assert len(kit) == 44, len(kit)
     assert C.problems(kit, spells, classes, model_spells, model) == []
     names = {k['name']: k['id'] for k in kit}
     # the Thief case: the five spells are known, with the area rule of their shape

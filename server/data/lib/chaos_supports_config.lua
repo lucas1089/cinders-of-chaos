@@ -31,7 +31,6 @@ return {
 		[242] = "single", -- Shuriken Barrage: one target plus jumps
 		[219] = "single", -- Hail of Dawn: every arrow on the target
 		[185] = "area", -- Corpse Explosion: bursts around the target
-		[203] = "buff", -- Crimson Covenant: health into mana, not a heal
 		[186] = "buff", -- Bone Golem: a summon
 		[182] = "single", -- Withering Curse
 		[188] = "area", -- Bone Offering: a skeleton bursts
@@ -53,6 +52,8 @@ return {
 		[9] = "area", [22] = "area", [38] = "area", [56] = "area", [62] = "area", [84] = "area", [87] = "area",
 		[89] = "area", [107] = "area", [112] = "area", [118] = "area", [119] = "area", [120] = "area", [122] = "area",
 		[126] = "area", [128] = "area", [129] = "area", [139] = "area", [141] = "area",
+		-- the attack kit (O254): seven support ids turned into attack spells
+		[203] = "single", [134] = "area", [29] = "area", [241] = "area", [193] = "area", [67] = "area", [250] = "area",
 	},
 
 	-- ------------------------------------------------------------------ the supports

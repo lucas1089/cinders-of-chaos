@@ -1,7 +1,7 @@
 -- necro_minions.lua: the Necromancer line's minions (docs/CLASSES.md "Necromancer"; numbers in necro_config.lua,
 -- rules in necro_core.lua, engine helpers in necro_lib.lua).
 --
--- Minions are raised by the spells (Raise Dead, Bone Golem, Raise Bone Warrior / Archer / Mage) as the player's summons: the engine makes them follow
+-- Minions are raised by the spells (Raise Dead, Bone Golem, Raise Bone Warrior / Mage) as the player's summons: the engine makes them follow
 -- the owner and go for the owner's target. This file does the rest, every Chaos minions.thinkMs:
 --   * Hits: the monster types have no attacks of their own. A minion that reaches the owner's target (or its own)
 --     hits it every intervalMs, and the hit is dealt as the owner (doTargetCombat with the owner as attacker), so it
@@ -127,7 +127,7 @@ local function hit(owner, classKey, minion, kind, target, aura)
 		return
 	end
 	if k.range > 1 then
-		-- the shade's skull orb; the archer's arrow and the mage's energy bolt (config `ani`, no Chaos missile)
+		-- the shade's skull orb; the mage's energy bolt (config `ani`, no Chaos missile)
 		local ani = k.ani and L.animation(k) or FxMissile("skull_orb", CONST_ANI_DEATH)
 		mpos:sendDistanceEffect(target:getPosition(), ani)
 	end

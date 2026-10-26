@@ -21,10 +21,11 @@ local F, C = ChaosSpellFactor, ChaosSpellFactorConfig
 
 -- the table: the factor at the end of each class's curve (level 1000 and up; the whole factor of a class without a curve),
 -- by vocation id (docs/CLASSES.md ids). O136 (2026-10-23): a level curve per class (byLevel), the end values changed.
+-- O254: the curves from level 150 up were refitted again (the seven converted supports moved the best sets).
 -- O176 (2026-10-24, shorter cooldowns for the strongest spells): the curves were refitted so every class gains the same share;
 -- the Mystic and the Elementalist got a curve (they had none) and every class is listed
-local want = {[1] = 1.07, [3] = 1.03, [4] = 1.03, [5] = 0.64, [7] = 1.01, [8] = 1.05, [10] = 0.74, [11] = 0.94, [12] = 1.17, [13] = 1.15, [14] = 1.04, [15] = 1.07, [17] = 0.96,
-	[18] = 0.79, [19] = 1.16, [20] = 0.67, [21] = 0.92, [22] = 0.66, [23] = 0.64, [24] = 0.76, [25] = 0.64}
+local want = {[1] = 0.99, [3] = 0.93, [4] = 0.99, [5] = 0.64, [7] = 1.01, [8] = 1.05, [10] = 0.74, [11] = 0.94, [12] = 1.14, [13] = 1.15, [14] = 1.06, [15] = 1.07, [17] = 0.9,
+	[18] = 0.79, [19] = 1, [20] = 0.67, [21] = 0.88, [22] = 0.66, [23] = 0.61, [24] = 0.76, [25] = 0.62}
 local count = 0
 for id, v in pairs(C.byVocation) do
 	count = count + 1
@@ -50,9 +51,9 @@ eq(math.abs(F.forVocation(23, nil, 35) - 0.80555555555556) < 1e-9, true, "Templa
 eq(F.forVocation(23, nil, 40), 0.87, "Templar at 40")
 eq(F.forVocation(23, nil, 50), 0.84, "Templar at 50 (O141: knots 45/50/55/59 keep the 40-60 ramp; O176 refit)")
 eq(F.forVocation(23, nil, 59), 0.87, "Templar at 59: the last level before Sanctified Ground")
-eq(F.forVocation(23, nil, 300), 0.61, "Templar at 300")
-eq(F.forVocation(23, nil, 5000), 0.64, "Templar above level 1000")
-eq(F.forVocation(23), 0.64, "Templar without a level: the end of the curve")
+eq(F.forVocation(23, nil, 300), 0.57, "Templar at 300")
+eq(F.forVocation(23, nil, 5000), 0.61, "Templar above level 1000")
+eq(F.forVocation(23), 0.61, "Templar without a level: the end of the curve")
 local synth = {byVocation = {[9] = 2}, byLevel = {[9] = {{10, 1}, {20, 3}}}}
 eq(F.forVocation(9, synth, 5), 1, "synthetic curve below")
 eq(F.forVocation(9, synth, 15), 2, "synthetic curve between")
@@ -60,8 +61,8 @@ eq(F.forVocation(9, synth, 99), 3, "synthetic curve above")
 
 -- the rule
 local SPELL, MELEE, COND, WAND, HEAL, FIRE = 1, 2, 3, 4, 100, 7
-eq(F.factor(23, SPELL, FIRE, SPELL, HEAL, false), 0.64, "a Templar spell hit (no level: the end of the curve)")
-eq(F.factor(23, SPELL, FIRE, SPELL, HEAL, false, nil, 300), 0.61, "a Templar spell hit at level 300")
+eq(F.factor(23, SPELL, FIRE, SPELL, HEAL, false), 0.61, "a Templar spell hit (no level: the end of the curve)")
+eq(F.factor(23, SPELL, FIRE, SPELL, HEAL, false, nil, 300), 0.57, "a Templar spell hit at level 300")
 eq(F.factor(7, SPELL, FIRE, SPELL, HEAL, false), 1.01, "a Deadeye spell hit (no level)")
 eq(F.factor(15, SPELL, FIRE, SPELL, HEAL, false, nil, 30), 1.25, "a level 30 Beastmaster spell hit")
 eq(F.factor(23, MELEE, FIRE, SPELL, HEAL, false), 1, "a weapon hit")
@@ -70,9 +71,9 @@ eq(F.factor(23, COND, FIRE, SPELL, HEAL, false), 1, "a condition tick")
 eq(F.factor(23, SPELL, HEAL, SPELL, HEAL, false), 1, "healing")
 eq(F.factor(23, SPELL, 0, SPELL, HEAL, false), 1, "no secondary damage")
 eq(F.factor(23, SPELL, FIRE, SPELL, HEAL, true), 1, "a keystone proc")
-eq(F.factor(4, SPELL, FIRE, SPELL, HEAL, false), 1.03, "a Warrior spell hit")
-eq(F.factor(11, SPELL, FIRE, SPELL, HEAL, false, nil, 300), 0.96, "a level 300 Thief spell hit (C2)")
-eq(F.factor(12, SPELL, FIRE, SPELL, HEAL, false, nil, 300), 0.9, "a level 300 Ninja spell hit (C2)")
+eq(F.factor(4, SPELL, FIRE, SPELL, HEAL, false), 0.99, "a Warrior spell hit")
+eq(F.factor(11, SPELL, FIRE, SPELL, HEAL, false, nil, 300), 0.99, "a level 300 Thief spell hit (C2)")
+eq(F.factor(12, SPELL, FIRE, SPELL, HEAL, false, nil, 300), 0.88, "a level 300 Ninja spell hit (C2)")
 eq(F.factor(13, SPELL, FIRE, SPELL, HEAL, false, nil, 1000), 1.15, "a level 1000 Samurai spell hit (C2)")
 eq(F.factor(11, MELEE, FIRE, SPELL, HEAL, false, nil, 300), 1, "a Thief auto attack stays unscaled")
 local inside
@@ -109,8 +110,8 @@ local function player(voc)
 end
 local templar, warrior = player(23), player(4)
 local d1, _, d2 = ev.onHealthChange({}, templar, -1000, COMBAT_HOLYDAMAGE, -100, COMBAT_FIREDAMAGE, ORIGIN_SPELL)
-eq(d1, -610, "event: a level 300 Templar spell hit x0.61")
-eq(d2, -61, "event: its secondary damage too")
+eq(d1, -570, "event: a level 300 Templar spell hit x0.57")
+eq(d2, -57, "event: its secondary damage too")
 d1 = ev.onHealthChange({}, templar, -1000, COMBAT_HOLYDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE)
 eq(d1, -1000, "event: a Templar weapon hit unchanged")
 d1 = ev.onHealthChange({}, templar, 500, COMBAT_HEALING, 0, COMBAT_NONE, ORIGIN_SPELL)
@@ -126,7 +127,7 @@ d1 = ev.onHealthChange({}, templar, -1000, COMBAT_HOLYDAMAGE, 0, COMBAT_NONE, OR
 ChaosKeystones.depth = 0
 eq(d1, -1000, "event: a keystone proc unchanged")
 d1 = ev.onHealthChange({}, player(7), -1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL)
-eq(d1, -960, "event: a level 300 Deadeye spell hit x0.96")
+eq(d1, -940, "event: a level 300 Deadeye spell hit x0.94")
 
 -- the guards in the combat scripts
 local function read(p) local f = io.open(p); local s = f:read("*a"); f:close(); return s end
@@ -157,8 +158,8 @@ do
 		getVocation = function() return {getId = function() return 12 end} end}
 	env.ChaosSpell.thiefLevelScale = env.ChaosSpell.thiefLevelScale
 	env.ChaosSpell.weaponStrike(caster, {}, 100, 200, 0, 2)
-	eq(got and got[1], -90, "a level 300 Ninja strike minimum x0.90")
-	eq(got and got[2], -180, "and its maximum")
+	eq(got and got[1], -88, "a level 300 Ninja strike minimum x0.88")
+	eq(got and got[2], -176, "and its maximum")
 	F.depth = 1
 	env.ChaosSpell.weaponStrike(caster, {}, 100, 200, 0, 2)
 	F.depth = 0

@@ -62,7 +62,7 @@ for id, kinds in pairs(C.spells) do
 		end
 	end
 end
-eq(n, 17, "the Mystic line spells with pair 29 effects")
+eq(n, 16, "the Mystic line spells with pair 29 effects")
 local mystic = readFile("data/lib/chaos_mystic_fx.lua") or ""
 for key, swaps in pairs(C.stock) do
 	ok(mystic:find(key .. " = {", 1, true) ~= nil, "stock spell " .. key .. " is wrapped by ChaosMysticFx")
@@ -77,6 +77,8 @@ end
 ok((readFile("data/spells/chaos/illusionist/reality_rift.lua") or ""):find('"weave_marble"', 1, true) ~= nil,
 	"Tear in the Weave shoots weave_marble")
 used["missile:weave_marble"] = true
+-- Crimson Covenant became an attack kit spell (O254) and no longer swaps its effect: the drawn effect stays in the pair, unwired
+used["effect:covenant_bloodlust"] = true
 for _, key in ipairs(specNames) do
 	ok(used[key], key .. " is sent by a pair 29 swap")
 end

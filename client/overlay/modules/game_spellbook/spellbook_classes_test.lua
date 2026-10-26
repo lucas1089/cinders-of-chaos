@@ -14,7 +14,7 @@ local CLASSES = {
   Thief = 11, Ninja = 12, Samurai = 13, Berserker = 14, Beastmaster = 15, Monk = 17, Shadowfist = 18,
   ['Iron Sage'] = 19, Necromancer = 20, Lich = 21, ['Bone Lord'] = 22, Templar = 23, Inquisitor = 24, Sentinel = 25
 }
-local ATTACK_SPELLS = 10
+local ATTACK_SPELLS = 11
 local GROUP = { attack = 1, healing = 2, support = 3 }
 
 dofile(here .. '../game_chaosspells/spelldata.lua')
@@ -70,8 +70,10 @@ for name, id in pairs(CLASSES) do
   -- every attack spell of the class is learned by the time its last one unlocks
   local last = 0
   for _, s in ipairs(attack) do last = math.max(last, s.level) end
-  eq(#list(id, last, 'learned', 'attack'), ATTACK_SPELLS, name .. ': all 10 at level ' .. last)
-  eq(#list(id, last - 1, 'learned', 'attack'), ATTACK_SPELLS - 1, name .. ': one short at level ' .. (last - 1))
+  eq(#list(id, last, 'learned', 'attack'), ATTACK_SPELLS, name .. ': all ' .. ATTACK_SPELLS .. ' at level ' .. last)
+  local atLast = 0
+  for _, s in ipairs(attack) do if s.level == last then atLast = atLast + 1 end end
+  eq(#list(id, last - 1, 'learned', 'attack'), ATTACK_SPELLS - atLast, name .. ': one short at level ' .. (last - 1))
 end
 eq(classes, 21, 'the 21 classes')
 

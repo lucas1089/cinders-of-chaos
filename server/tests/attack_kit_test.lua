@@ -1,6 +1,6 @@
 -- Run from the server/ folder: luajit tests/attack_kit_test.lua && lua5.3 tests/attack_kit_test.lua (CI runs both)
 -- The attack kit (owner 2026-10-23: every class has the same number of attack spells; docs/CLASSES.md "Attack spell
--- parity"): the 37 spells of attack_kit_config.lua against spells_chaos.xml and rotation_model.csv, the pure rules of
+-- parity"): the 44 spells of attack_kit_config.lua against spells_chaos.xml and rotation_model.csv, the pure rules of
 -- attack_kit_core.lua (damage, shapes) and the cast of _attackkit.lua on a mocked engine.
 local n = 0
 setmetatable(_G, {__index = function(t, k)
@@ -47,20 +47,20 @@ eq(#problems, 0, "config problems: " .. table.concat(problems, "; "))
 local keys = {}
 for k in pairs(cfg.spells) do keys[#keys + 1] = k end
 table.sort(keys)
-eq(#keys, 37, "37 kit spells")
-eq(#cfg.order, 37, "the order lists every spell")
+eq(#keys, 44, "44 kit spells")
+eq(#cfg.order, 44, "the order lists every spell")
 local ordered = {}
 for _, k in ipairs(cfg.order) do ordered[k] = true; ok(cfg.spells[k], "order key " .. k) end
 for _, k in ipairs(keys) do ok(ordered[k], k .. " is in the order") end
 
 -- every class line gets what it needs: the per-vocation kit counts
-local COUNT = {Warrior = 2, Juggernaut = 2, Berserker = 1, Ranger = 2, Deadeye = 1, Beastmaster = 3, Illusionist = 3,
-	Thief = 5, Ninja = 3, Samurai = 4, Monk = 6, Shadowfist = 3, ["Iron Sage"] = 4, Necromancer = 6, Lich = 5,
-	["Bone Lord"] = 7, Templar = 7, Inquisitor = 6, Sentinel = 7}
-do -- 77 class slots: the shortfall to 10 attack spells per class (docs/CLASSES.md "Attack spell parity")
+local COUNT = {Warrior = 3, Juggernaut = 3, Berserker = 2, Ranger = 3, Deadeye = 2, Beastmaster = 4, Illusionist = 4,
+	Mystic = 1, Elementalist = 1, Thief = 6, Ninja = 4, Samurai = 5, Monk = 7, Shadowfist = 4, ["Iron Sage"] = 5,
+	Necromancer = 7, Lich = 6, ["Bone Lord"] = 8, Templar = 8, Inquisitor = 7, Sentinel = 8}
+do -- 98 class slots: the shortfall to 11 attack spells per class (docs/CLASSES.md "Attack spell parity")
 	local total = 0
 	for _, v in pairs(COUNT) do total = total + v end
-	eq(total, 77, "the kit fills 77 class slots")
+	eq(total, 98, "the kit fills 98 class slots")
 end
 local byVoc = K.byVocation(cfg)
 for voc, want in pairs(COUNT) do
