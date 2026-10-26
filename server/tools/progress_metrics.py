@@ -10,6 +10,12 @@ text summary. The rows are aggregate counters; no name, account or IP is in them
   deathMonsters  the 10 killers with the most deaths (top level band of each)
   firstSession   characters per minutes bucket of the first session
   milestones     median played minutes to reach each milestone level, read from the time buckets by interpolation
+                 (10, 25, 50, 100, 200, 500, 1000, 1500, 2000)
+  returns        (O258) per cohort week (Monday of the first-login day): new characters and how many logged in again on
+                 day 1, 3 and 7 or later; a share is shown only when the whole week is old enough for that day
+  firstUse       (O258) per system (dungeon, rift, waystone, tower, ...): characters that used it, their share of all
+                 characters (churn totals), the median played minutes at the first use and the most common level band
+  stops          (O258) the 10 areas where the most gone characters were last seen (top level band of each)
 
 Small numbers: a count of 1 to 4 (a band, an area, a monster, a bucket, a milestone) is written "<5" in the text and as
 the string "<5" in the JSON, with its percentage, median and top band left out (null or empty). 0 stays 0.
@@ -17,6 +23,7 @@ the string "<5" in the JSON, with its percentage, median and top band left out (
 usage: progress_metrics.py [--json] [--top N] [--error CODE]  < rows
        --error CODE writes {"ok": false, "error": CODE} (the database could not be read)
 """
+import datetime
 import json
 import sys
 
@@ -84,31 +91,101 @@ def median(buckets):
     return None, total
 
 
-def top(rows, kind, limit):
+def top(rows, kind, limit, field='deaths'):
     by = {}
     for k, k1, k2, n in rows:
         if k == kind and n > 0:
-            e = by.setdefault(k1, {'name': k1, 'deaths': 0, 'bands': {}})
-            e['deaths'] += n
+            e = by.setdefault(k1, {'name': k1, field: 0, 'bands': {}})
+            e[field] += n
             e['bands'][k2] = e['bands'].get(k2, 0) + n
     out = []
     for e in by.values():
         best = sorted(e['bands'].items(), key=lambda kv: (-kv[1], band_start(kv[0])))[0]
-        out.append({'name': e['name'], 'deaths': e['deaths'], 'topBand': best[0], 'topBandDeaths': best[1]})
-    out.sort(key=lambda e: (-e['deaths'], e['name']))
+        out.append({'name': e['name'], field: e[field], 'topBand': best[0], 'topBandDeaths': best[1]})
+    out.sort(key=lambda e: (-e[field], e['name']))
     out = out[:limit]
     for e in out:
-        if hide(e['deaths']) == SMALL:
-            # a handful of deaths in one level band can point at one character: no band either
+        if hide(e[field]) == SMALL:
+            # a handful in one level band can point at one character: no band either
             e['topBand'] = ''
             e['topBandDeaths'] = SMALL
         else:
             e['topBandDeaths'] = hide(e['topBandDeaths'])
-        e['deaths'] = hide(e['deaths'])
+        e[field] = hide(e[field])
     return out
 
 
-def report(rows, limit=TOP):
+def parse_day(label):
+    """'20241004' -> a date, or None"""
+    try:
+        return datetime.datetime.strptime(str(label), '%Y%m%d').date()
+    except ValueError:
+        return None
+
+
+RETURN_DAYS = (1, 3, 7)
+
+
+def returns(rows, today):
+    """Cohort weeks: new characters per week (Monday of the first-login day) and the returns d1 / d3 / d7.
+
+    A share of dN is given only when the whole week is at least N days old (its Sunday + N <= today), so a young week
+    does not look like churn. A hidden count (1 to 4), or a cohort of fewer than 5, leaves its share out (None)."""
+    weeks = {}
+    for k, k1, k2, n in rows:
+        if k not in ('cohort', 'return') or n <= 0:
+            continue
+        day = parse_day(k1 if k == 'cohort' else k2)
+        if day is None:
+            continue
+        monday = day - datetime.timedelta(days=day.weekday())
+        w = weeks.setdefault(monday, {'cohort': 0, 'd1': 0, 'd3': 0, 'd7': 0})
+        if k == 'cohort':
+            w['cohort'] += n
+        elif k1 in ('d1', 'd3', 'd7'):
+            w[k1] += n
+    out = []
+    for monday in sorted(weeks):
+        w = weeks[monday]
+        sunday = monday + datetime.timedelta(days=6)
+        e = {'week': monday.isoformat(), 'cohort': hide(w['cohort'])}
+        for d in RETURN_DAYS:
+            key = 'd%d' % d
+            mature = today is not None and sunday + datetime.timedelta(days=d) <= today
+            e[key] = hide(w[key])
+            e[key + 'Pct'] = None
+            if mature and w['cohort'] >= MIN_SHOWN and hide(w[key]) != SMALL:
+                e[key + 'Pct'] = round(100.0 * w[key] / w['cohort'], 1)
+        out.append(e)
+    return out
+
+
+def first_use(rows, population):
+    """Per system: characters, share of the population, median played minutes, most common level band.
+    k2 of a row is 'band|played-minutes bucket'."""
+    by = {}
+    for k, k1, k2, n in rows:
+        if k != 'first' or n <= 0:
+            continue
+        band, _, bucket = k2.partition('|')
+        e = by.setdefault(k1, {'bands': {}, 'buckets': {}, 'total': 0})
+        e['total'] += n
+        e['bands'][band] = e['bands'].get(band, 0) + n
+        e['buckets'][bucket] = e['buckets'].get(bucket, 0) + n
+    out = []
+    for system, e in by.items():
+        small = hide(e['total']) == SMALL
+        med, _ = median([(bucket_limit(b), c) for b, c in e['buckets'].items()])
+        band = sorted(e['bands'].items(), key=lambda kv: (-kv[1], band_start(kv[0])))[0][0]
+        out.append({'system': system, 'characters': hide(e['total']),
+                    'pct': None if small or not population else round(100.0 * e['total'] / population, 1),
+                    'medianMinutes': None if small else med,
+                    'topBand': '' if small else band})
+    out.sort(key=lambda e: (e['characters'] == SMALL, -(e['characters'] if e['characters'] != SMALL else 0), e['system']))
+    return out
+
+
+def report(rows, limit=TOP, today=None):
     meta = {k1: n for k, k1, k2, n in rows if k == 'meta'}
     bands = {}
     for k, k1, k2, n in rows:
@@ -122,6 +199,7 @@ def report(rows, limit=TOP):
         churn_rows.append(b)
     gone = sum(b['gone'] for b in churn_rows)
     active = sum(b['active'] for b in churn_rows)
+    gone_raw, active_raw = gone, active
     for b in churn_rows:
         # a band of fewer than 5, or one side of it, is not shown; the share would give it away
         if hide(b['total']) == SMALL or hide(b['gone']) == SMALL or hide(b['active']) == SMALL:
@@ -150,6 +228,8 @@ def report(rows, limit=TOP):
         small = hide(total) == SMALL
         milestones.append({'level': level, 'medianMinutes': None if small else med, 'characters': hide(total)})
 
+    if today is None:
+        today = datetime.date.today()
     return {
         'ok': True,
         'churn': {'days': meta.get('churn_days', 0), 'at': meta.get('churn_at', 0), 'gone': gone, 'active': active,
@@ -159,6 +239,9 @@ def report(rows, limit=TOP):
         'firstSession': first,
         'firstSessionCharacters': hide(sess_total),
         'milestones': milestones,
+        'returns': returns(rows, today),
+        'firstUse': first_use(rows, gone_raw + active_raw),
+        'stops': top(rows, 'stop', limit, 'gone'),
         'empty': not rows,
     }
 
@@ -196,6 +279,23 @@ def text(rep):
     out.append('Median time to level')
     for m in rep['milestones']:
         out.append('  level %d: %s (%s characters)' % (m['level'], minutes_text(m['medianMinutes']), m['characters']))
+    out.append('Return (new characters per first-login week; share that came back on day 1 / 3 / 7 or later)')
+    for w in rep['returns']:
+        parts = []
+        for d in RETURN_DAYS:
+            pct = w['d%dPct' % d]
+            parts.append('d%d %s (%s)' % (d, w['d%d' % d], '%.1f%%' % pct if pct is not None else 'n/a'))
+        out.append('  week of %s: %s new, %s' % (w['week'], w['cohort'], ', '.join(parts)))
+    out.append('First use of a system (share of all characters, median played time at the first use)')
+    for e in rep['firstUse']:
+        pct = '%.1f%%' % e['pct'] if e['pct'] is not None else 'n/a'
+        where = ', mostly level %s' % e['topBand'] if e['topBand'] else ''
+        out.append('  %-10s %6s characters (%s), median %s%s' % (e['system'], e['characters'], pct,
+                                                                 minutes_text(e['medianMinutes']), where))
+    out.append('Where they stop (gone characters by last area)')
+    for e in rep['stops']:
+        where = ' (most at level %s)' % e['topBand'] if e['topBand'] else ''
+        out.append('  %6s  %s%s' % (e['gone'], e['name'], where))
     return '\n'.join(out) + '\n'
 
 

@@ -53,6 +53,23 @@ final class MetricsInfo {
         long characters;
     }
 
+    /** O258: a cohort week of new characters and how many came back on day 1 / 3 / 7 or later (pN: share, -1 hidden). */
+    static final class Week {
+        String week = "";
+        long cohort;
+        final long[] back = new long[3];
+        final double[] pct = {-1, -1, -1};
+    }
+
+    /** O258: the first use of one system (characters, share of all characters, median played minutes, top band). */
+    static final class FirstUse {
+        String system = "";
+        long characters;
+        double pct = -1;
+        double medianMinutes = -1;
+        String topBand = "";
+    }
+
     boolean ok;
     String error = "";
     boolean empty;
@@ -66,6 +83,9 @@ final class MetricsInfo {
     final List<Bucket> sessions = new ArrayList<>();
     long sessionCharacters;
     final List<Milestone> milestones = new ArrayList<>();
+    final List<Week> weeks = new ArrayList<>();
+    final List<FirstUse> firstUses = new ArrayList<>();
+    final List<Killer> stops = new ArrayList<>();
 
     /** Parses the one JSON line (other lines, such as ssh banners, are skipped); null when there is none. */
     static MetricsInfo parse(String out) {
@@ -114,8 +134,39 @@ final class MetricsInfo {
                 m.bands.add(x);
             }
         }
-        killers(o.optJSONArray("deathAreas"), m.areas);
-        killers(o.optJSONArray("deathMonsters"), m.monsters);
+        killers(o.optJSONArray("deathAreas"), m.areas, "deaths");
+        killers(o.optJSONArray("deathMonsters"), m.monsters, "deaths");
+        killers(o.optJSONArray("stops"), m.stops, "gone");
+        JSONArray wk = o.optJSONArray("returns");
+        for (int i = 0; wk != null && i < wk.length(); i++) {
+            JSONObject b = wk.optJSONObject(i);
+            if (b == null) {
+                continue;
+            }
+            Week x = new Week();
+            x.week = b.optString("week", "");
+            x.cohort = count(b, "cohort");
+            String[] keys = {"d1", "d3", "d7"};
+            for (int k = 0; k < 3; k++) {
+                x.back[k] = count(b, keys[k]);
+                x.pct[k] = b.isNull(keys[k] + "Pct") ? -1 : b.optDouble(keys[k] + "Pct", -1);
+            }
+            m.weeks.add(x);
+        }
+        JSONArray fu = o.optJSONArray("firstUse");
+        for (int i = 0; fu != null && i < fu.length(); i++) {
+            JSONObject b = fu.optJSONObject(i);
+            if (b == null) {
+                continue;
+            }
+            FirstUse x = new FirstUse();
+            x.system = b.optString("system", "");
+            x.characters = count(b, "characters");
+            x.pct = b.isNull("pct") ? -1 : b.optDouble("pct", -1);
+            x.medianMinutes = b.isNull("medianMinutes") ? -1 : b.optDouble("medianMinutes", -1);
+            x.topBand = b.optString("topBand", "");
+            m.firstUses.add(x);
+        }
         m.sessionCharacters = count(o, "firstSessionCharacters");
         JSONArray fs = o.optJSONArray("firstSession");
         for (int i = 0; fs != null && i < fs.length(); i++) {
@@ -144,7 +195,7 @@ final class MetricsInfo {
         return m;
     }
 
-    private static void killers(JSONArray arr, List<Killer> into) {
+    private static void killers(JSONArray arr, List<Killer> into, String field) {
         for (int i = 0; arr != null && i < arr.length(); i++) {
             JSONObject b = arr.optJSONObject(i);
             if (b == null) {
@@ -152,7 +203,7 @@ final class MetricsInfo {
             }
             Killer k = new Killer();
             k.name = b.optString("name", "");
-            k.deaths = count(b, "deaths");
+            k.deaths = count(b, field);
             k.topBand = b.optString("topBand", "");
             into.add(k);
         }
@@ -168,6 +219,25 @@ final class MetricsInfo {
                 return "Não consegui ler o banco de dados do servidor.";
             default:
                 return "Resposta inesperada do servidor" + (error.isEmpty() ? "." : " (" + error + ").");
+        }
+    }
+
+    /** A system of the first-use list in Portuguese; an unknown key is shown as it is. */
+    static String systemName(String key) {
+        switch (key) {
+            case "dungeon": return "Masmorra";
+            case "rift": return "Fenda";
+            case "waystone": return "Pedra-guia";
+            case "tower": return "Torre Infinita";
+            case "pocketboss": return "Chefe de bolso";
+            case "worldboss": return "Chefe mundial";
+            case "invasion": return "Invasão";
+            case "party": return "Grupo";
+            case "guild": return "Guilda";
+            case "market": return "Mercado";
+            case "bounty": return "Contrato de caça";
+            case "craft": return "Criação";
+            default: return key;
         }
     }
 

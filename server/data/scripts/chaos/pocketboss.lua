@@ -845,6 +845,9 @@ local function success(run)
 		local p = Player(id)
 		if p then
 			saveRow(e.guid, run.boss.key, rowsOf(e.guid)[run.boss.key] or K.charges(C(), nil, now()), true)
+			if ChaosMetrics and ChaosMetrics.firstUse then -- funnel metrics (metrics.lua, O258)
+				pcall(ChaosMetrics.firstUse, p, "pocketboss")
+			end
 			if tokens > 0 and ChaosConquest and ChaosConquest.grant then
 				pcall(ChaosConquest.grant, p, "pocketboss:" .. run.boss.key, tokens)
 			end

@@ -96,6 +96,51 @@ def main():
     check('"<5"' in json.dumps(sr) and pm.hide(0) == 0 and pm.hide(4) == '<5' and pm.hide(5) == 5, 'hide()')
     check(pm.report([('death_monster', 'Rat', '1-5', 4)])['deathMonsters'][0]['deaths'] == '<5', 'monster of 4 deaths')
 
+    # O258 funnel: returns by cohort week, first use, where they stop
+    import datetime
+    d = datetime.date
+    check(pm.parse_day('20241004') == d(2024, 10, 4) and pm.parse_day('nope') is None and pm.parse_day('20241399') is None, 'parse_day')
+    fr = [('cohort', '20241007', '', 10), ('cohort', '20241009', '', 20), ('cohort', '20241014', '', 3),   # weeks of Oct 7 and Oct 14
+          ('return', 'd1', '20241007', 6), ('return', 'd1', '20241009', 9), ('return', 'd3', '20241009', 8),
+          ('return', 'd7', '20241009', 3),
+          ('return', 'd1', '20241014', 1), ('cohort', 'garbage', '', 5)]
+    wk = pm.returns(fr, d(2024, 10, 30))
+    check([w['week'] for w in wk] == ['2024-10-07', '2024-10-14'], 'weeks ordered by Monday: %r' % (wk,))
+    w0, w1 = wk
+    check(w0['cohort'] == 30 and w0['d1'] == 15 and w0['d1Pct'] == 50.0 and w0['d3Pct'] == 26.7, 'week 1 shares: %r' % (w0,))
+    check(w0['d7'] == '<5' and w0['d7Pct'] is None, 'a hidden d7 has no share')
+    check(w1['cohort'] == '<5' and w1['d1'] == '<5' and w1['d1Pct'] is None, 'a cohort of 3 is hidden')
+    young = pm.returns(fr, d(2024, 10, 13))[0]
+    check(young['d1Pct'] is None and young['d3Pct'] is None, 'a week not yet old enough has no share')
+    mid = pm.returns(fr, d(2024, 10, 14))[0]  # Sunday Oct 13 + 1 day = Oct 14: d1 mature, d3 not
+    check(mid['d1Pct'] == 50.0 and mid['d3Pct'] is None, 'maturity per day')
+    check(pm.returns([], d(2024, 10, 30)) == [], 'no cohorts')
+
+    ff = [('first', 'dungeon', '11-15|60', 30), ('first', 'dungeon', '16-20|120', 10), ('first', 'rift', '31-40|45', 4),
+          ('first', 'guild', '1-5|10', 50), ('first', 'bad', 'no-pipe', 7), ('first', 'tower', '1-5|5', 0)]
+    fu = pm.first_use(ff, 200)
+    names = [e['system'] for e in fu]
+    check(names[0] == 'guild' and names[1] == 'dungeon' and names.index('rift') == len(names) - 1 and 'tower' not in names,
+          'first use order: biggest first, hidden last: %r' % (names,))
+    dg = [e for e in fu if e['system'] == 'dungeon'][0]
+    check(dg['characters'] == 40 and dg['pct'] == 20.0 and dg['topBand'] == '11-15', 'dungeon row: %r' % (dg,))
+    check(dg['medianMinutes'] is not None and 0 < dg['medianMinutes'] <= 60, 'dungeon median inside its buckets: %r' % (dg,))
+    rf = [e for e in fu if e['system'] == 'rift'][0]
+    check(rf['characters'] == '<5' and rf['pct'] is None and rf['medianMinutes'] is None and rf['topBand'] == '', 'rift of 4 hidden')
+    check(pm.first_use(ff, 0)[0]['pct'] is None, 'no population: no share')
+
+    sr2 = pm.report([('stop', 'Ember Caves', '1-5', 12), ('stop', 'Ember Caves', '6-10', 30), ('stop', 'Marsh', '1-5', 4),
+                     ('stop', 'Cave', '1-5', 0), ('churn', '1-5', 'gone', 46), ('churn', '1-5', 'active', 154),
+                     ('first', 'dungeon', '1-5|10', 20)], today=d(2024, 10, 30))
+    check([e['name'] for e in sr2['stops']] == ['Ember Caves', 'Marsh'], 'stops: zero rows dropped')
+    check(sr2['stops'][0]['gone'] == 42 and sr2['stops'][0]['topBand'] == '6-10', 'stops: area total and top band')
+    check(sr2['stops'][1]['gone'] == '<5' and sr2['stops'][1]['topBand'] == '', 'stops: a handful hidden with its band')
+    check(sr2['firstUse'][0]['pct'] == 10.0, 'first use share of the churn population (46 + 154 = 200)')
+    t2 = pm.text(sr2)
+    check('Where they stop' in t2 and 'First use of a system' in t2 and 'Return (' in t2 and 'Ember Caves' in t2, 'text has the new sections')
+    check(all(k in sr2 for k in ('returns', 'firstUse', 'stops')), 'json keys')
+    check(pm.report([])['returns'] == [] and pm.report([])['firstUse'] == [] and pm.report([])['stops'] == [], 'empty table, new sections')
+
     e = pm.report([])
     check(e['ok'] and e['empty'] and e['churn']['bands'] == [] and e['milestones'] == [], 'empty table')
 

@@ -1031,7 +1031,8 @@ ChaosOpcodes.deathRecap = 154
 Chaos.tables.deathRecaps = "chaos_death_recaps"
 
 -- Progress metrics: anonymous aggregate counters for balancing (metrics.lua, metrics_core.lua, metrics_config.lua,
--- sql/chaos_progress_metrics.sql; read by chaos-ctl.sh metrics). No opcode. Storage 7102830 - 7102839 reserved (metrics_config.lua)
+-- sql/chaos_progress_metrics.sql; read by chaos-ctl.sh metrics). No opcode. Storage 7102830 - 7102839 reserved (metrics_config.lua;
+-- O258 funnel: +0 milestone mask, +1 return day and flags, +2 first-use mask)
 Chaos.tables.progressMetrics = "chaos_progress_metrics"
 
 -- Nemesis: a monster that kills a character may become its personal nemesis (client game_nemesis; nemesis.lua,

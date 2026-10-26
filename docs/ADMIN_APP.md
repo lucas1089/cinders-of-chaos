@@ -127,6 +127,7 @@ instalada é desconhecida: o passo 2 baixa a mais nova e, se o `tfs` for igual a
   50, 100 e 200. São contadores anônimos (sem nomes, contas nem IPs; testers e GMs ficam de fora), lidos da tabela
   `chaos_progress_metrics`; server/README.md "Progress metrics (O253)". Precisa do passo `sql` do `install_all.py` (ou o
   servidor cria a tabela ao ligar) e de um app recompilado para o card; o comando funciona pelo SSH sem isso.
+  O258: o card "Funil dos jogadores" (logo abaixo, preenchido pelo mesmo botão) mostra a volta dos personagens novos nos dias 1, 3 e 7 por semana de entrada, quando cada sistema (masmorra, fenda, torre, mercado, guilda...) é usado pela primeira vez e as áreas onde ficaram os personagens que pararam; níveis até 2000 entram no tempo mediano. server/README.md "Funnel metrics (O258)".
 - **Assistir jogador** (Comandos > Ações rápidas > Assistir jogador). Só leitura: o jogador não é avisado e nada
   muda no jogo.
   - **Ao vivo** (`cast NOME`): o jogo como o jogador vê, em movimento, uns 30 quadros por segundo. Os 15 x 11

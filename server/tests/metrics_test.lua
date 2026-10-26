@@ -141,7 +141,7 @@ c, mask = M.milestonesCrossed(20, 60, mask, cfg)
 eq(#c, 2, "a jump past 25 and 50"); eq(c[1], 25, "25 first"); eq(c[2], 50, "then 50"); eq(mask, 7, "bits 1-3")
 eq(M.maskAtLogin(30, 0, cfg), 3, "at login a level 30 character has 10 and 25 recorded silently")
 eq(M.maskAtLogin(1, 0, cfg), 0, "a new character has none")
-eq(M.maskAtLogin(500, 0, cfg), 31, "all five")
+eq(M.maskAtLogin(499, 0, cfg), 31, "the first five")
 c, mask = M.milestonesCrossed(1, 5, -1, cfg)
 eq(#c, 0, "an unset storage (-1) reads as 0"); eq(mask, 0, "mask 0")
 
@@ -168,12 +168,24 @@ local function apply(q, replace)
 		tbl[key] = replace and tonumber(v) or (tbl[key] or 0) + tonumber(v)
 	end
 end
-local playersOnline = {onlinetime = {[8] = 7200}}
+local playersOnline = {onlinetime = {[8] = 7200, [21] = 600}}
+local stopRowsMock = {{band = 1, pz = 7, cx = 12, cy = 12, gone = 3}, {band = 2, pz = 7, cx = 13, cy = 12, gone = 2},
+	{band = 1, pz = 9, cx = 1, cy = 1, gone = 4}}
+local onlineList = {}
+Game = {getPlayers = function() return onlineList end}
+Player = function(id)
+	for _, p in ipairs(onlineList) do
+		if p.guid == id or p.name == id then return p end
+	end
+end
 db = {}
 function db.escapeString(s) return "'" .. s:gsub("'", "\\'") .. "'" end
 function db.query(q)
 	queries[#queries + 1] = q
 	if q:find("^INSERT") then apply(q, q:find("`n` = VALUES", 1, true) ~= nil) end
+	if q:find("^DELETE FROM `chaos_progress_metrics` WHERE `kind` = 'stop'") then
+		for k in pairs(tbl) do if k:find("^stop|") then tbl[k] = nil end end
+	end
 	return true
 end
 db.asyncQuery = db.query
@@ -184,6 +196,8 @@ function db.storeQuery(q)
 	local guid = q:match("SELECT `onlinetime` AS `t` FROM `players` WHERE `id` = (%d+)")
 	if guid then
 		list = {{t = playersOnline.onlinetime[tonumber(guid)] or 0}}
+	elseif q:find("FLOOR(", 1, true) then
+		list = stopRowsMock
 	elseif q:find("GROUP BY `band`", 1, true) then
 		list = {{band = 1, gone = 5, active = 2}, {band = 2, gone = 1, active = 1}}
 	else
@@ -215,6 +229,8 @@ local function mk(def)
 	function c:getPosition() return self.pos end
 	function c:getGroup() local g = self.group return {getId = function() return g end} end
 	function c:getLastLoginSaved() return self.lastLogin end
+	function c:getGuild() return self.guild end
+	function c:getParty() return self.party end
 	function c:registerEvent(ev) self.events[ev] = true end
 	function c:getStorageValue(k) return self.storage[k] or -1 end
 	function c:setStorageValue(k, v) self.storage[k] = v end
@@ -345,6 +361,195 @@ registry.ChaosMetricsLogin.onLogin(vet)
 death(vet, nil, dragon, nil)
 registry.ChaosMetricsShutdown.onShutdown()
 eq(key("death_monster", "Dragon", "51-60"), 1, "shutdown flush")
+
+
+-- ---------------------------------------------------------------- O258: funnel
+-- pure helpers
+eq(M.dayNumber(0, 0), 0, "day 0")
+eq(M.dayNumber(86399, 0), 0, "end of day 0")
+eq(M.dayNumber(86400, 0), 1, "day 1")
+eq(M.dayNumber(86400, -3600), 0, "an offset moves the day")
+eq(M.dayString(0), "19700101", "dayString epoch")
+eq(M.dayString(19723), "20240101", "dayString 2024-01-01")
+eq(M.dayString(19782), "20240229", "dayString leap day")
+eq(M.dayString(19783), "20240301", "dayString after the leap day")
+eq(M.dayString(20000), "20241004", "dayString 20000")
+eq(#cfg.milestones, 9, "nine milestones")
+eq(M.maskAtLogin(1000, 0, cfg), 127, "a level 1000 character has seven milestones recorded silently")
+eq(M.maskAtLogin(2000, 0, cfg), 511, "level 2000: nine bits")
+do
+	local crossed, mask = M.milestonesCrossed(499, 500, 31, cfg)
+	check(#crossed == 1 and crossed[1] == 500 and mask == 63, "level 500 is a milestone")
+	crossed, mask = M.milestonesCrossed(1400, 2010, 127, cfg)
+	check(#crossed == 2 and crossed[1] == 1500 and crossed[2] == 2000 and mask == 511, "two milestones in one level-up")
+end
+eq(M.returnStart(100), 800, "returnStart")
+do
+	local due, new, cohort = M.returnCheck(0, 105, cfg)
+	check(#due == 0 and new == 0 and cohort == nil, "no value: a character from before the install")
+	due, new, cohort = M.returnCheck(-1, 105, cfg)
+	check(#due == 0 and cohort == nil, "storage -1")
+	due, new, cohort = M.returnCheck(800, 100, cfg)
+	check(#due == 0 and new == 800 and cohort == 100, "same day: nothing")
+	due, new = M.returnCheck(800, 101, cfg)
+	check(#due == 1 and due[1] == "d1" and new == 801, "next day: d1")
+	due, new = M.returnCheck(801, 101, cfg)
+	check(#due == 0 and new == 801, "d1 counts once")
+	due, new = M.returnCheck(801, 102, cfg)
+	check(#due == 0, "day 2: nothing new")
+	due, new = M.returnCheck(801, 103, cfg)
+	check(#due == 1 and due[1] == "d3" and new == 803, "day 3: d3")
+	due, new = M.returnCheck(800, 110, cfg)
+	check(#due == 3 and new == 807, "a long absence: all three at once")
+	due, new = M.returnCheck(807, 200, cfg)
+	check(#due == 0 and new == 807, "all counted: nothing more")
+end
+do
+	local b, m = M.firstUseMark(0, "dungeon", cfg)
+	check(b == true and m == 1, "first dungeon sets bit 0")
+	b, m = M.firstUseMark(m, "dungeon", cfg)
+	check(b == false and m == 1, "a second dungeon does not count")
+	b, m = M.firstUseMark(m, "craft", cfg)
+	check(b == true and m == 1 + 2 ^ 11, "craft is bit 11")
+	b, m = M.firstUseMark(1, "nonsense", cfg)
+	check(b == false and m == 1, "an unknown system counts nothing")
+	b, m = M.firstUseMark(-5, "rift", cfg)
+	check(b == true and m == 2, "a negative mask reads as 0")
+end
+eq(M.playedBucket(61, cfg), "90", "played bucket")
+eq(M.playedBucket(10 ^ 7, cfg), "inf", "played bucket, open")
+do
+	local rows = M.stopRows({{band = 1, pz = 7, cx = 12, cy = 12, gone = 3}, {band = 1, pz = 7, cx = 13, cy = 13, gone = 2},
+		{band = 3, pz = 7, cx = 12, cy = 12, gone = 0}, {band = 20, pz = 9, cx = 1, cy = 1, gone = 6}},
+		{{name = "Ember Caves", x = 100, y = 100, z = 7}}, cfg)
+	eq(#rows, 2, "stopRows: two areas, a zero count dropped")
+	check(rows[1].kind == "stop" and rows[1].k1 == "Ember Caves" and rows[1].k2 == "1-5" and rows[1].n == 5, "two cells of one area add up")
+	check(rows[2].k1 == "Outside hunts, floor 9" and rows[2].k2 == "901+" and rows[2].n == 6, "far away: outside hunts, open band")
+	local q = M.stopSql(cfg, 2000000, "1 = 1")
+	check(q:find("GROUP BY `band`, `pz`, `cx`, `cy`", 1, true) and q:find("`lastlogin` < " .. (2000000 - 14 * 86400), 1, true)
+		and not q:find("`name`", 1, true), "stopSql: grouped, gone only, no name")
+	local chunks = M.setSqlChunks((function() local r = {} for i = 1, 450 do r[i] = {kind = "stop", k1 = "a" .. i, k2 = "b", n = 1} end return r end)(),
+		"t", db.escapeString)
+	eq(#chunks, 3, "setSqlChunks: 200 rows per statement")
+end
+
+-- the engine file
+registry.ChaosMetricsStartup.onStartup()
+ChaosMetrics.spots = {{name = "Ember Caves", x = 100, y = 100, z = 7}}
+local firstDay = math.floor(newbie.storage[cfg.returnStorage] / 8)
+flushAll()
+eq(key("cohort", M.dayString(firstDay)), 1, "cohort: one new character on its first day")
+eq(newbie.storage[cfg.returnStorage], firstDay * 8, "first login stores the day")
+check(vet.storage[cfg.returnStorage] == nil, "an older character has no return value")
+check(bot.storage[cfg.returnStorage] == nil and gm.storage[cfg.returnStorage] == nil, "tester and staff have none")
+
+-- return: d1, d3, d7
+local ret = mk({id = 20, guid = 20, name = "Synthetic Ret", player = true, level = 3, group = 1, lastLogin = 0, pos = {x = 1, y = 1, z = 7}})
+local function relog(p, days)
+	clock = clock + days * 86400
+	p.lastLogin = 1
+	registry.ChaosMetricsLogin.onLogin(p)
+	flushAll()
+end
+local retDay = ChaosMetrics.today()
+registry.ChaosMetricsLogin.onLogin(ret)
+flushAll()
+eq(key("cohort", M.dayString(retDay)), 1, "cohort of the day: the new character")
+relog(ret, 0)
+eq(key("return", "d1", M.dayString(retDay)), nil, "same day: no return")
+relog(ret, 1)
+eq(key("return", "d1", M.dayString(retDay)), 1, "next day: d1")
+relog(ret, 0)
+eq(key("return", "d1", M.dayString(retDay)), 1, "d1 counts once")
+relog(ret, 2)
+eq(key("return", "d3", M.dayString(retDay)), 1, "day 3: d3")
+eq(key("return", "d7", M.dayString(retDay)), nil, "not yet d7")
+relog(ret, 5)
+eq(key("return", "d7", M.dayString(retDay)), 1, "day 8: d7")
+eq(key("return", "d3", M.dayString(retDay)), 1, "d3 stays 1")
+
+-- first use of a system, through the wrapped APIs and the direct call
+local f = mk({id = 21, guid = 21, name = "Synthetic Fu", player = true, level = 12, group = 1, lastLogin = 5, pos = {x = 1, y = 1, z = 7}})
+onlineList = {f, bot, gm}
+registry.ChaosMetricsLogin.onLogin(f)
+registry.ChaosMetricsLogin.onLogin(bot)
+registry.ChaosMetricsLogin.onLogin(gm)
+local calls = {}
+ChaosLeaderboard = {record = function(board, who, value, mode) calls[#calls + 1] = board return {} end}
+ChaosSeasonJourney = {emit = function() return true end}
+ChaosTower = {recordRun = function() end}
+ChaosWaystoneAtlas = {beginRun = function() return {} end}
+ChaosMarket = {list = function(player, d) return d == "ok" end, buy = function(player, d) return d == "ok" end}
+ChaosCrafting = {apply = function(orbKey, item) return item ~= nil, {} end}
+registry.ChaosMetricsStartup.onStartup() -- installs the hooks
+ChaosMetrics.spots = {{name = "Ember Caves", x = 100, y = 100, z = 7}}
+ChaosLeaderboard.record("rift", f, 3, "max")
+ChaosLeaderboard.record("rift", f, 4, "max")
+ChaosLeaderboard.record("arena1v1", f, 1500, "max") -- no system
+ChaosLeaderboard.record("bounty", {guid = 21, name = "Synthetic Fu"}, 1, "add")
+ChaosLeaderboard.record("defender", {guid = 99, name = "Nobody Online"}, 5, "add") -- offline: nothing
+ChaosLeaderboard.record("worldboss", {guid = 21, name = "Synthetic Fu"}, 100, "add")
+check(#calls == 6, "the wrapped function still runs: " .. #calls)
+ChaosSeasonJourney.emit(f, "dungeon_clears", 1)
+ChaosSeasonJourney.emit(f, "other_stat", 1)
+ChaosTower.recordRun(f, 0, 30) -- no floor cleared
+ChaosTower.recordRun(f, 3, 60)
+ChaosWaystoneAtlas.beginRun(1, 2, {opener = 21})
+ChaosWaystoneAtlas.beginRun(2, 2, {opener = 999})
+check(ChaosMarket.list(f, "refused") == false, "market list returns as before")
+ChaosMarket.list(f, "refused")
+ChaosMarket.buy(f, "ok")
+ChaosCrafting.apply("alchemy", nil)
+local item = {getTopParent = function() return f end}
+local okApply = ChaosCrafting.apply("alchemy", item)
+check(okApply == true, "crafting returns as before")
+eq(ChaosMetrics.firstUse(f, "pocketboss"), true, "direct call")
+eq(ChaosMetrics.firstUse(f, "pocketboss"), false, "direct call, second time")
+eq(ChaosMetrics.firstUse(bot, "dungeon"), false, "a tester bot is not counted")
+eq(ChaosMetrics.firstUse(gm, "dungeon"), false, "staff is not counted")
+f.party = {getMembers = function() return {} end}
+f.guild = nil
+ChaosMetrics.memberCheck()
+f.party = {getMembers = function() return {{}} end}
+ChaosMetrics.memberCheck()
+f.guild = {}
+ChaosMetrics.memberCheck()
+ChaosMetrics.memberCheck()
+flushAll()
+for _, sys in ipairs({"rift", "bounty", "worldboss", "dungeon", "tower", "waystone", "market", "craft", "pocketboss", "party", "guild"}) do
+	local found = 0
+	for k, v in pairs(tbl) do
+		if k:find("^first|" .. sys .. "|11%-15|") then found = found + v end
+	end
+	eq(found, 1, "first use of " .. sys .. " counted once")
+end
+local total = 0
+for k, v in pairs(tbl) do if k:find("^first|") then total = total + v end end
+eq(total, 11, "eleven first uses, no invasion (offline), no tester or staff")
+-- played minutes: onlinetime 600 s = 10 minutes at the login, bucket 15 for the first use a few minutes later
+check(key("first", "rift", "11-15|15") == 1 or key("first", "rift", "11-15|10") == 1, "first use: band and played-minutes bucket")
+-- a guild at login is not a first use
+local g = mk({id = 22, guid = 22, name = "Synthetic Gu", player = true, level = 12, group = 1, lastLogin = 5, pos = {x = 1, y = 1, z = 7}, guild = {}})
+onlineList = {g}
+registry.ChaosMetricsLogin.onLogin(g)
+ChaosMetrics.memberCheck()
+flushAll()
+total = 0
+for k, v in pairs(tbl) do if k:find("^first|guild|") then total = total + v end end
+eq(total, 1, "already in a guild at login: not counted")
+eq(g.storage[cfg.firstStorage], 2 ^ 8, "the guild bit is set silently")
+
+-- where they stop: written with the churn snapshot, replaced each time
+local stopArea = key("stop", "Ember Caves", "1-5")
+eq(stopArea, 3, "stop: band 1 near the hunt")
+eq(key("stop", "Ember Caves", "6-10"), 2, "stop: band 2 near the hunt")
+eq(key("stop", "Outside hunts, floor 9", "1-5"), 4, "stop: outside hunts")
+stopRowsMock = {{band = 2, pz = 7, cx = 12, cy = 12, gone = 7}}
+clock = clock + cfg.churnEverySeconds
+registry.ChaosMetricsThink.onThink(60000)
+eq(key("stop", "Ember Caves", "6-10"), 7, "stop: the snapshot replaces")
+eq(key("stop", "Ember Caves", "1-5"), nil, "stop: old rows are gone")
+eq(key("stop", "Outside hunts, floor 9", "1-5"), nil, "stop: old rows are gone, outside")
 
 -- privacy: no player name, id or IP in any statement
 local all = table.concat(queries, "\n")

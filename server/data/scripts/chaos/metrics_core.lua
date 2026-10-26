@@ -14,16 +14,26 @@
 --   M.milestonesCrossed(old, new, mask, cfg)  -> list of milestones newly reached, new mask
 --   M.suppress(n, cfg)                        n, or the text "<5" for 1 to minShown - 1 (the report tool does the same; 0 stays 0)
 --   M.sessionMinutes(seconds)                 whole minutes, a session of 0 s counts as 0
+-- O258 funnel (server/README.md "Funnel metrics (O258)"):
+--   M.dayNumber(t, offset) / M.dayString(day)  whole days since the epoch in server time / "YYYYMMDD"
+--   M.returnCheck(stored, today, cfg)          -> list of "d1" / "d3" / "d7" newly due, new stored value, cohort day
+--   M.returnStart(today)                       the stored value of a first login
+--   M.firstUseMark(mask, key, cfg)             -> true and the new mask when the system's bit was not set; false, mask
+--   M.playedBucket(minutes, cfg)               the played-minutes bucket label of a first use
+--   M.stopSql(cfg, now, notTesterSql) / M.stopRows(sqlRows, spots, cfg)   where the gone characters stood, by area and band
+--   M.setSqlChunks(rows, table, escape)        setSql in chunks of at most 200 rows
 -- Table: kind, k1, k2, n. Kinds: death_area (k1 area, k2 band), death_monster (k1 monster, k2 band),
 -- session1 (k1 minute bucket), ttl (k1 milestone level, k2 minute bucket), churn (k1 band, k2 gone | active),
--- meta (k1 name, n value: churn_at, churn_days).
+-- meta (k1 name, n value: churn_at, churn_days), cohort (k1 YYYYMMDD of a first login), return (k1 d1 | d3 | d7,
+-- k2 YYYYMMDD of the cohort day), first (k1 system, k2 "band|played-minutes bucket"), stop (k1 area, k2 band: gone
+-- characters, a snapshot).
 -- Lua 5.1 / LuaJIT and 5.3 compatible.
 
 ChaosMetrics = ChaosMetrics or {}
 local M = ChaosMetrics
 local floor = math.floor
 
-M.KINDS = {"death_area", "death_monster", "session1", "ttl", "churn", "meta"}
+M.KINDS = {"death_area", "death_monster", "session1", "ttl", "churn", "meta", "cohort", "return", "first", "stop"}
 
 function M.createSql(t)
 	return "CREATE TABLE IF NOT EXISTS `" .. t .. "` (" ..
@@ -277,4 +287,128 @@ end
 function M.maskAtLogin(level, mask, cfg)
 	local _, m = M.milestonesCrossed(level, level, mask, cfg)
 	return m
+end
+
+-- ---------------------------------------------------------------- O258: return
+-- whole days since the epoch of unix time t, in the server's time (offset = seconds east of UTC)
+function M.dayNumber(t, offset)
+	return floor(((tonumber(t) or 0) + (tonumber(offset) or 0)) / 86400)
+end
+
+-- "YYYYMMDD" of a day number (proleptic Gregorian, civil-from-days)
+function M.dayString(day)
+	local z = floor(tonumber(day) or 0) + 719468
+	local era = floor(z / 146097)
+	local doe = z - era * 146097
+	local yoe = floor((doe - floor(doe / 1460) + floor(doe / 36524) - floor(doe / 146096)) / 365)
+	local y = yoe + era * 400
+	local doy = doe - (365 * yoe + floor(yoe / 4) - floor(yoe / 100))
+	local mp = floor((5 * doy + 2) / 153)
+	local d = doy - floor((153 * mp + 2) / 5) + 1
+	local m = mp < 10 and mp + 3 or mp - 9
+	if m <= 2 then
+		y = y + 1
+	end
+	return string.format("%04d%02d%02d", y, m, d)
+end
+
+-- the value stored at a character's first login: day * 8, no flag set
+function M.returnStart(today)
+	return floor(today) * 8
+end
+
+-- stored = day * 8 + flags (bit i = cfg.returnDays[i] counted). A login on day >= first + N with the flag clear counts
+-- "dN" once. Nothing stored (<= 0): a character from before the install, nothing counted.
+function M.returnCheck(stored, today, cfg)
+	stored = floor(tonumber(stored) or 0)
+	if stored <= 0 then
+		return {}, stored, nil
+	end
+	local cohort = floor(stored / 8)
+	local flags = stored % 8
+	local due = {}
+	for i, n in ipairs(cfg.returnDays) do
+		local bit = 2 ^ (i - 1)
+		if floor(flags / bit) % 2 == 0 and today >= cohort + n then
+			due[#due + 1] = "d" .. n
+			flags = flags + bit
+		end
+	end
+	return due, cohort * 8 + flags, cohort
+end
+
+-- ---------------------------------------------------------------- O258: first use of a system
+function M.firstUseMark(mask, key, cfg)
+	mask = floor(tonumber(mask) or 0)
+	if mask < 0 then
+		mask = 0
+	end
+	for i, k in ipairs(cfg.systems) do
+		if k == key then
+			local bit = 2 ^ (i - 1)
+			if floor(mask / bit) % 2 == 1 then
+				return false, mask
+			end
+			return true, mask + bit
+		end
+	end
+	return false, mask
+end
+
+function M.playedBucket(minutes, cfg)
+	return M.bucketLabel(minutes, cfg.timeBuckets)
+end
+
+-- ---------------------------------------------------------------- O258: where they stop
+-- Gone characters (last login older than churnDays) grouped by level band and by a cell of cfg.stopCell tiles of the
+-- last position. The answer is rows of (band, floor, cell, count): no row belongs to a character.
+function M.stopSql(cfg, now, notTesterSql)
+	local cutoff = floor(now - cfg.churnDays * 86400)
+	local cell = floor(cfg.stopCell)
+	return string.format(
+		"SELECT %s AS `band`, `players`.`posz` AS `pz`, FLOOR(`players`.`posx` / %d) AS `cx`, FLOOR(`players`.`posy` / %d) AS `cy`, " ..
+		"COUNT(*) AS `gone` FROM `players` WHERE `players`.`group_id` <= %d AND `players`.`lastlogin` > 0 AND " ..
+		"`players`.`lastlogin` < %d AND %s GROUP BY `band`, `pz`, `cx`, `cy`",
+		M.bandCaseSql("`players`.`level`", cfg.bands), cell, cell, cfg.maxGroupId, cutoff, notTesterSql)
+end
+
+function M.stopRows(sqlRows, spots, cfg)
+	local sum, order = {}, {}
+	local cell = floor(cfg.stopCell)
+	for _, r in ipairs(sqlRows or {}) do
+		local n = floor(tonumber(r.gone) or 0)
+		if n > 0 then
+			local pos = {x = floor(tonumber(r.cx) or 0) * cell + floor(cell / 2),
+				y = floor(tonumber(r.cy) or 0) * cell + floor(cell / 2), z = floor(tonumber(r.pz) or 0)}
+			local area = M.areaFor(pos, nil, spots, cfg)
+			local band = M.bandLabel(floor(tonumber(r.band) or 1), cfg.bands)
+			local key = area .. SEP .. band
+			if not sum[key] then
+				sum[key] = {kind = "stop", k1 = area, k2 = band, n = 0}
+				order[#order + 1] = key
+			end
+			sum[key].n = sum[key].n + n
+		end
+	end
+	local out = {}
+	for _, key in ipairs(order) do
+		out[#out + 1] = sum[key]
+	end
+	table.sort(out, function(a, b)
+		if a.k1 ~= b.k1 then return a.k1 < b.k1 end
+		return a.k2 < b.k2
+	end)
+	return out
+end
+
+function M.setSqlChunks(rows, t, escape)
+	local out = {}
+	for i = 1, #rows, 200 do
+		local chunk = {}
+		for j = i, math.min(i + 199, #rows) do
+			chunk[#chunk + 1] = rows[j]
+		end
+		out[#out + 1] = M.setSql(chunk, t, escape)
+	end
+	return out
 end

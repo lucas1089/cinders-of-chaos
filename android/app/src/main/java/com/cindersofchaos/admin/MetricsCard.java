@@ -14,10 +14,15 @@ import java.util.List;
  * Painel > Métricas dos jogadores (read only): chaos-ctl.sh metrics --json. Where players stop playing (churn by level
  * band), where and by what they die (top 10 areas and monsters), how long the first session lasts and the median time
  * to levels 10 / 25 / 50 / 100 / 200. The numbers are anonymous aggregate counters (server/README.md "Progress metrics
- * (O253)"): no names, accounts or IPs reach the phone. docs/ADMIN_APP.md.
+ * (O253)"): no names, accounts or IPs reach the phone. docs/ADMIN_APP.md. The funnel card (O258) shows the return per
+ * cohort week, the first use of each system and where the gone characters stood, from the same report.
  */
 final class MetricsCard {
     final MaterialCardView card;
+    /** O258: the funnel card (return, first use, where they stop), filled by the same load. */
+    final MaterialCardView funnelCard;
+    private final TextView funnelNote;
+    private final LinearLayout funnelOut;
     private final MainActivity a;
     private final Ui ui;
     private final TextView summary;
@@ -40,6 +45,16 @@ final class MetricsCard {
         b.addView(load, ui.gap(8));
         out = ui.column();
         b.addView(out, ui.gap(4));
+
+        funnelCard = ui.titledCard("Funil dos jogadores");
+        LinearLayout fb = Ui.body(funnelCard);
+        fb.addView(ui.hint("Volta no dia 1, 3 e 7 por semana de entrada, quando cada sistema é usado pela primeira vez "
+                + "e onde ficam os personagens que pararam. Contadores anônimos, só leitura; atualize no card de métricas."));
+        funnelNote = ui.text("Toque em Atualizar métricas acima.");
+        funnelNote.setPadding(0, ui.dp(8), 0, 0);
+        fb.addView(funnelNote);
+        funnelOut = ui.column();
+        fb.addView(funnelOut, ui.gap(4));
     }
 
     private void load() {
@@ -59,6 +74,7 @@ final class MetricsCard {
             }
             MetricsInfo m = MetricsInfo.parse(r.out);
             out.removeAllViews();
+            funnelOut.removeAllViews();
             if (m == null) {
                 Friendly f = Friendly.ofResult(r.out, r.code);
                 summary.setText(f.title + ". " + f.detail);
@@ -66,9 +82,11 @@ final class MetricsCard {
             }
             if (!m.ok) {
                 summary.setText(m.errorText());
+                funnelNote.setText(m.errorText());
                 return;
             }
             show(m);
+            showFunnel(m);
         });
     }
 
@@ -138,6 +156,84 @@ final class MetricsCard {
             t.setPadding(0, ui.dp(2), 0, ui.dp(2));
             out.addView(t);
         }
+    }
+
+    /** O258: return per cohort week, first use of each system, and the areas where the gone characters stood last. */
+    private void showFunnel(MetricsInfo m) {
+        boolean any = !m.weeks.isEmpty() || !m.firstUses.isEmpty() || !m.stops.isEmpty();
+        funnelNote.setText(any ? "Dados do servidor (grupos com menos de 5 não são mostrados)."
+                : "Ainda não há dados do funil. Eles se enchem com o jogo.");
+        funnelSection("Volta por semana de entrada (dia 1 / 3 / 7 ou depois)");
+        if (m.weeks.isEmpty()) {
+            funnelOut.addView(ui.hint("Sem dados."));
+        }
+        String[] days = {"dia 1", "dia 3", "dia 7"};
+        for (MetricsInfo.Week w : m.weeks) {
+            StringBuilder sb = new StringBuilder();
+            for (int k = 0; k < 3; k++) {
+                sb.append(days[k]).append(": ").append(MetricsInfo.n(w.back[k])).append(" (")
+                        .append(w.pct[k] < 0 ? "—" : MetricsInfo.pct(w.pct[k])).append(")");
+                if (k < 2) {
+                    sb.append("  ·  ");
+                }
+            }
+            TextView head = ui.text("Semana de " + w.week + ":  " + MetricsInfo.n(w.cohort) + " novos");
+            head.setPadding(0, ui.dp(4), 0, 0);
+            funnelOut.addView(head);
+            TextView v = ui.hint(sb.toString());
+            v.setTextSize(12);
+            funnelOut.addView(v);
+        }
+        funnelSection("Primeiro uso de cada sistema");
+        if (m.firstUses.isEmpty()) {
+            funnelOut.addView(ui.hint("Sem dados."));
+        }
+        for (MetricsInfo.FirstUse f : m.firstUses) {
+            funnelBar(MetricsInfo.systemName(f.system), f.pct < 0 ? 0 : (int) Math.round(f.pct),
+                    MetricsInfo.n(f.characters) + " personagens" + (f.pct < 0 ? "" : "  ·  " + MetricsInfo.pct(f.pct))
+                            + (f.medianMinutes < 0 ? "" : "  ·  mediana " + MetricsInfo.minutes(f.medianMinutes))
+                            + (f.topBand.isEmpty() ? "" : "  ·  mais no nível " + f.topBand));
+        }
+        funnelSection("Onde pararam (últimos locais, 10 áreas com mais personagens)");
+        if (m.stops.isEmpty()) {
+            funnelOut.addView(ui.hint("Sem dados."));
+            return;
+        }
+        long max = 0;
+        for (MetricsInfo.Killer k : m.stops) {
+            max = Math.max(max, k.deaths);
+        }
+        for (MetricsInfo.Killer k : m.stops) {
+            funnelBar(k.name, MetricsInfo.percent(k.deaths, max),
+                    MetricsInfo.n(k.deaths) + " personagens" + (k.topBand.isEmpty() ? "" : "  ·  mais no nível " + k.topBand));
+        }
+    }
+
+    private void funnelSection(String title) {
+        funnelOut.addView(new View(a), ui.gap(10));
+        TextView h = ui.heading(title);
+        h.setTextSize(11);
+        funnelOut.addView(h);
+    }
+
+    private void funnelBar(String label, int percent, String value) {
+        LinearLayout row = ui.column();
+        row.setPadding(0, ui.dp(4), 0, ui.dp(4));
+        TextView l = ui.text(label);
+        l.setTextSize(13);
+        row.addView(l);
+        LinearProgressIndicator bar = new LinearProgressIndicator(a);
+        bar.setMax(100);
+        bar.setTrackThickness(ui.dp(6));
+        bar.setTrackCornerRadius(ui.dp(3));
+        bar.setTrackColor(ui.iron0);
+        bar.setIndicatorColor(ui.gold);
+        bar.setProgressCompat(Math.max(0, Math.min(100, percent)), false);
+        row.addView(bar, ui.gap(3));
+        TextView v = ui.hint(value);
+        v.setTextSize(12);
+        row.addView(v);
+        funnelOut.addView(row);
     }
 
     private void killers(String title, List<MetricsInfo.Killer> list) {
