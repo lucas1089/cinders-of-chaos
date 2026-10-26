@@ -4397,5 +4397,103 @@ return {
 			"grátis abaixo do level %d",
 		["free once after your class changed"] =
 			"grátis uma vez depois que sua classe mudou",
+		-- Player and bug reports (reports_core.lua, reports.lua)
+		["Player reports are switched off."] =
+			"As denúncias de jogadores estão desligadas.",
+		["Type the name of the character you want to report."] =
+			"Digite o nome do personagem que você quer denunciar.",
+		["You cannot report yourself."] =
+			"Você não pode denunciar a si mesmo.",
+		["Staff members cannot be reported here; write to another staff member."] =
+			"Membros da equipe não podem ser denunciados aqui; escreva para outro membro da equipe.",
+		["Choose a reason."] =
+			"Escolha um motivo.",
+		["Describe the problem in the note (reason Other)."] =
+			"Descreva o problema na nota (motivo Outro).",
+		["You need a higher level to send reports."] =
+			"Você precisa de um level maior para enviar denúncias.",
+		["Please wait a moment before sending another report."] =
+			"Espere um momento antes de enviar outra denúncia.",
+		["You sent the most reports allowed today. Thank you; staff will look at them."] =
+			"Você enviou o máximo de denúncias permitido hoje. Obrigado; a equipe vai analisá-las.",
+		["You already reported this character recently. Staff will look at it."] =
+			"Você já denunciou este personagem há pouco. A equipe vai analisar.",
+		["Bug reports are switched off. Please report the bug on our Discord."] =
+			"Os relatos de bug estão desligados. Relate o bug no nosso Discord.",
+		["Describe the bug in a few words (at least 6 characters)."] =
+			"Descreva o bug em poucas palavras (pelo menos 6 caracteres).",
+		["Please wait a moment before sending another bug report."] =
+			"Espere um momento antes de enviar outro relato de bug.",
+		["You sent the most bug reports allowed today. Thank you; staff will read them."] =
+			"Você enviou o máximo de relatos de bug permitido hoje. Obrigado; a equipe vai lê-los.",
+		["Thank you. Your report about %s was sent to the staff (#%d)."] =
+			"Obrigado. Sua denúncia sobre %s foi enviada à equipe (#%d).",
+		-- Crafting bench and Salvage (crafting.lua, salvage_core.lua, salvage.lua)
+		["Put the item in your backpack first (equipped items cannot be crafted)."] =
+			"Coloque o item na sua mochila primeiro (itens equipados não podem ser criados).",
+		["You have no %s."] =
+			"Você não tem %s.",
+		["Take the item off first: the bench works on items in your backpack."] =
+			"Tire o item primeiro: a bancada trabalha com itens da sua mochila.",
+		["Put an item from your backpack on the bench."] =
+			"Coloque um item da sua mochila na bancada.",
+		["The item moved or changed. Put it on the bench again."] =
+			"O item mudou de lugar ou foi alterado. Coloque-o na bancada de novo.",
+		["Unique items cannot be salvaged."] =
+			"Itens únicos não podem ser desmontados.",
+		["Rift Keys cannot be salvaged."] =
+			"Rift Keys não podem ser desmontadas.",
+		["Only gear can be salvaged."] =
+			"Só equipamentos podem ser desmontados.",
+		["Only items with a rarity can be salvaged."] =
+			"Só itens com raridade podem ser desmontados.",
+		["Take the gems out first (bench: Remove or Shatter)."] =
+			"Tire as gemas primeiro (bancada: Remover ou Quebrar).",
+		["Put the item in your backpack first (equipped items cannot be salvaged)."] =
+			"Coloque o item na sua mochila primeiro (itens equipados não podem ser desmontados).",
+		["Stacks cannot be salvaged."] =
+			"Pilhas não podem ser desmontadas.",
+		["There is no such recipe."] =
+			"Essa receita não existe.",
+		["You do not have enough rune shards."] =
+			"Você não tem rune shards suficientes.",
+		["You do not have enough %s."] =
+			"Você não tem %s suficientes.",
+		["Choose how many orbs to make."] =
+			"Escolha quantos orbs fazer.",
+		["You do not have that many orbs."] =
+			"Você não tem tantos orbs.",
+		["Combine %s at the Crafting Bench (Salvage tab) into %s %s."] =
+			"Combine %s na Crafting Bench (aba Salvage) em %s %s.",
+		["Salvage is not installed on this server (no rune shard item)."] =
+			"O Salvage não está instalado neste servidor (sem o item rune shard).",
+		["The item could not be salvaged."] =
+			"O item não pôde ser desmontado.",
+		["Wait a moment before the next batch."] =
+			"Espere um momento antes do próximo lote.",
+		["Choose a rarity."] =
+			"Escolha uma raridade.",
+		["That bag is not in your backpack any more."] =
+			"Essa bolsa não está mais na sua mochila.",
+		["Nothing to salvage there."] =
+			"Não há nada para desmontar ali.",
+		["The items changed since the preview. Check the list and confirm again."] =
+			"Os itens mudaram desde a prévia. Confira a lista e confirme de novo.",
+		["Put the item from your backpack on the bench first."] =
+			"Coloque primeiro o item da sua mochila na bancada.",
+		["That cannot be made."] =
+			"Isso não pode ser feito.",
+		["That cannot be recycled."] =
+			"Isso não pode ser reciclado.",
+		["%s is locked: it cannot be sold, salvaged or thrown away."] =
+			"%s está trancado: não pode ser vendido, desmontado nem jogado fora.",
+		["%s is unlocked."] =
+			"%s está destrancado.",
+		["%s (level %d): %d %s"] =
+			"%s (level %d): %d %s",
+		[" + %d Conquest Tokens"] =
+			" + %d Conquest Tokens",
+		["Unique"] =
+			"Única",
 	},
 }

@@ -273,6 +273,8 @@ local REASONS = {
 		"^World bosses", "^ The Ashen", "^Records: ", "^Guild level %%d %(", "^Rent of %%s: ", "^That guild has no hall", "^Guild bank$",
 		"^%%d way", "^%%d guild hall"},
 	["buildshare_core.lua"] = {"^Preset ", "^class "}, ["buildshare.lua"] = {},
+	["reports_core.lua"] = {"^New bug report", "^New player report", "^Character position", "^Reported map tile", "^Level %%d"},
+	["salvage_core.lua"] = {}, ["salvage.lua"] = {"^Main backpack", "^Set piece$"}, ["crafting.lua"] = {"^Rift Key$"},
 	["market_core.lua"] = {}, ["market_config.lua"] = {}, ["market_orders_core.lua"] = {},
 	["market_notify_core.lua"] = {"^While you were away", "^Market sales", "^Orb Exchange", "^Chaos Coin", "^your "},
 	["market.lua"] = {"^Market sweep", "^Buy orders%%s", "^Offer %%d", "^No such offer", "^/market", "^Chaos Coins$"},
