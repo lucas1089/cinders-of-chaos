@@ -84,15 +84,19 @@ check(cfg.intervalMs >= 1000, "one shared timer, not faster than 1 s")
 check(type(cfg.effect) == "string" and cfg.effect:match("^CONST_ME_") ~= nil, "effect is a CONST_ME name")
 
 -- ---------------------------------------------------------------- the reward chest ids
--- 21584 "reward chest" (2x2, gold, on a stone plinth, container 32, not moveable / pickupable in the base items.otb)
+-- 32310 "reward chest" (the chest's own look, pair 45; a copy of 21584: 2x2, container 32, not moveable / pickupable),
+-- 21584 the stock reward chest it falls back to while 32310 is not installed
 -- 12664 "treasure chest" (2x2, blue and silver, container 20, not moveable): the rift's sealed coffer (needs a container)
-local REWARD, COFFER = 21584, 12664
+local REWARD, STOCK, COFFER = 32310, 21584, 12664
 local rift = dofile("data/scripts/chaos/rift_config.lua")
 eq(rift.chest.itemId, REWARD, "rift chest: the reward chest")
+eq(rift.chest.fallbackId, STOCK, "rift chest: falls back to the stock reward chest")
 eq(rift.coffer.itemId, COFFER, "rift coffer: the big treasure chest")
 local descent = dofile("data/scripts/chaos/descent_config.lua")
 eq(descent.objects.chest, REWARD, "Descent treasure room chest: the reward chest")
+eq(descent.objects.chestFallback, STOCK, "Descent treasure room chest: falls back to the stock reward chest")
 check(rift.chest.itemId ~= rift.coffer.itemId, "chest and coffer differ (the coffer is looked up by id on its tile)")
+check(rift.chest.fallbackId ~= rift.coffer.itemId, "the fallback is not the coffer either")
 
 if fails > 0 then
 	print(string.format("reward_sparkle_test: %d of %d checks failed", fails, count))

@@ -13,10 +13,12 @@ return {
 	-- many modifiers an Orb of Gilding gives a key without any, {count, weight} (data/lib/chaos_crafting.lua)
 	key = {itemId = 10155, actionId = 47401, nameFormat = "Rift Key (Tier %d)", maxMods = 3,
 		alchemyCount = {{2, 60}, {3, 40}}},
-	-- the reward chest that appears where the rift boss died: 21584 "reward chest" (big, gold on a stone plinth, not
-	-- moveable; was the plain chest 1740). It also is the quest chest of the planned areas (tools/areaplan_build.lua)
-	-- and the Descent's (descent_config.lua objects.chest); server/README.md "Reward chests"
-	chest = {itemId = 21584, actionId = 47402},
+	-- the reward chest that appears where the rift boss died: 32310 "reward chest", the chest's own look (pair 45, client
+	-- 38657; tools/install_reward_chest.py: a copy of the stock reward chest 21584, a container, not moveable). It also is
+	-- the quest chest of the planned areas (tools/areaplan_build.lua) and the Descent's (descent_config.lua objects.chest);
+	-- tools/patch_reward_chests.py swaps the placed ones on the map. fallbackId is the stock chest (gold on a stone plinth;
+	-- the plain chest 1740 before 2026-10-20) used while 32310 is not installed. server/README.md "Reward chests"
+	chest = {itemId = 32310, fallbackId = 21584, actionId = 47402},
 	maxTier = 15,
 
 	-- ------------------------------------------------------------------ opening
