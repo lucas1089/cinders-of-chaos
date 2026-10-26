@@ -4759,5 +4759,103 @@ return {
 			"Sua proteção acabou: você atacou.",
 		["You cannot carry more than %d embers. Bank them at a safe exit."] =
 			"Você não pode carregar mais de %d embers. Guarde-as em uma saída segura.",
+		-- Passive tree (passivetree.lua, passivetree_core.lua)
+		["Unknown node in request."] =
+			"Nó desconhecido no pedido.",
+		["That node belongs to another class."] =
+			"Esse nó pertence a outra classe.",
+		["You do not own enough passive points for that allocation."] =
+			"Você não tem pontos passivos suficientes para essa alocação.",
+		["Every allocated node must be connected to the starting node."] =
+			"Todo nó alocado precisa estar ligado ao nó inicial.",
+		["Saved nodes cannot be removed by saving. Use a refund (right-click a node) or a reset."] =
+			"Nós salvos não podem ser removidos ao salvar. Use um reembolso (clique direito no nó) ou um reset.",
+		["Choose an effect for every new mastery node."] =
+			"Escolha um efeito para cada novo nó de maestria.",
+		["You already have those nodes. Your tree was refreshed."] =
+			"Você já tem esses nós. Sua árvore foi atualizada.",
+		["%d node allocated."] =
+			"%d nó alocado.",
+		["%d nodes allocated."] =
+			"%d nós alocados.",
+		["You need %s gold coins (carried or in the bank) to change the effect."] =
+			"Você precisa de %s gold coins (na mochila ou no banco) para mudar o efeito.",
+		["Mastery effect changed for %s gold coins."] =
+			"Efeito de maestria mudado por %s gold coins.",
+		["Mastery effect changed (free)."] =
+			"Efeito de maestria mudado (grátis).",
+		["There is nothing to reset."] =
+			"Não há nada para resetar.",
+		["You need %d gold coins (carried or in the bank) to reset your passive tree."] =
+			"Você precisa de %d gold coins (na mochila ou no banco) para resetar sua árvore passiva.",
+		["Your passive tree was reset for %d gold coins."] =
+			"Sua árvore passiva foi resetada por %d gold coins.",
+		["Mastery node %d is in the request twice."] =
+			"O nó de maestria %d aparece duas vezes no pedido.",
+		["Nothing is planned."] =
+			"Nada foi planejado.",
+		["The plan is too large (at most %d nodes)."] =
+			"O plano é grande demais (no máximo %d nós).",
+		["Unknown node in the plan."] =
+			"Nó desconhecido no plano.",
+		["Node %d is in the plan twice."] =
+			"O nó %d aparece duas vezes no plano.",
+		["Node %d is already allocated."] =
+			"O nó %d já está alocado.",
+		["Node %d belongs to another class."] =
+			"O nó %d pertence a outra classe.",
+		["The plan needs %d points; you have %d free."] =
+			"O plano precisa de %d pontos; você tem %d livres.",
+		["Node %d is not connected to your allocated nodes."] =
+			"O nó %d não está ligado aos seus nós alocados.",
+		["Node %d is not a mastery node."] =
+			"O nó %d não é um nó de maestria.",
+		["Mastery node %d is not in the plan."] =
+			"O nó de maestria %d não está no plano.",
+		["Mastery node %d has no effect %d."] =
+			"O nó de maestria %d não tem o efeito %d.",
+		["Choose an effect for the mastery node %d."] =
+			"Escolha um efeito para o nó de maestria %d.",
+		["That is not a mastery node."] =
+			"Esse não é um nó de maestria.",
+		["That mastery is not allocated: plan it and choose its effect there."] =
+			"Essa maestria não está alocada: planeje-a e escolha o efeito dela ali.",
+		["That mastery has no such effect."] =
+			"Essa maestria não tem esse efeito.",
+		["That effect is already chosen."] =
+			"Esse efeito já está escolhido.",
+		-- Transmog (transmog_core.lua, transmog.lua)
+		["There is no item in that slot."] =
+			"Não há item nesse slot.",
+		["This item cannot change its look."] =
+			"Este item não pode mudar de visual.",
+		["Unknown appearance."] =
+			"Aparência desconhecida.",
+		["That appearance is not of the same kind (%s)."] =
+			"Essa aparência não é do mesmo tipo (%s).",
+		["That is the item's own look: use Remove to restore it."] =
+			"Esse é o visual original do item: use Remover para restaurá-lo.",
+		["The item already has that look."] =
+			"O item já tem esse visual.",
+		["You have not unlocked that appearance yet."] =
+			"Você ainda não desbloqueou essa aparência.",
+		["You need %d gold (backpack and bank) to change the look."] =
+			"Você precisa de %d de ouro (mochila e banco) para mudar o visual.",
+		["The item already shows its own look."] =
+			"O item já mostra o visual original.",
+		["You need %d gold to restore the look."] =
+			"Você precisa de %d de ouro para restaurar o visual.",
+		["You need %d gold to change the look."] =
+			"Você precisa de %d de ouro para mudar o visual.",
+		["Your %s now looks like %s%s."] =
+			"Seu %s agora tem o visual de %s%s.",
+		[" (%d gold)"] =
+			" (%d de ouro)",
+		[" This server's engine lacks patch 0019: the look is saved but not shown yet."] =
+			" O motor deste servidor não tem o patch 0019: o visual foi salvo, mas ainda não aparece.",
+		["Your %s shows its own look again."] =
+			"Seu %s mostra o visual original de novo.",
+		["Choose them in Character > Transmog (account-wide, appearance only)."] =
+			"Escolha-as em Character > Transmog (vale para a conta toda, só aparência).",
 	},
 }
