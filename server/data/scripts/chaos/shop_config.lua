@@ -597,20 +597,20 @@ local cfg = {
 			name = "Pets", parent = P_COSMETICS, icon = {outfit = {type = 294, rotating = true}},
 			offers = {
 				{kind = "unlock", unlock = "petLanternWisp", look = 294, icon = 2050, cost = 400, name = "Lantern Wisp",
-					description = "A pet that mends you below half health and later wards you. Call it in Character > Pets."},
+					description = "A pet that mends you below half health and later wards you. Call it in Character > Pets from level 25."},
 				{kind = "unlock", unlock = "petHoarderSquirrel", look = 274, icon = 2148, cost = 400, name = "Hoarder Squirrel",
-					description = "A pet that finds more gold in your kills and later more items. Call it in Character > Pets."},
+					description = "A pet that finds more gold in your kills and later more items. Call it in Character > Pets from level 25."},
 				-- >>> Wardrobe: five more pets, the same two ability pairs (pets_config.lua; boss pets are never sold)
 				{kind = "unlock", unlock = "petEmberParrot", look = 217, icon = 2050, cost = 400, name = "Ember Parrot",
-					description = "A pet that mends you below half health and later wards you. Call it in Character > Pets."},
+					description = "A pet that mends you below half health and later wards you. Call it in Character > Pets from level 25."},
 				{kind = "unlock", unlock = "petRimePenguin", look = 250, icon = 2148, cost = 400, name = "Rime Penguin",
-					description = "A pet that finds more gold in your kills and later more items. Call it in Character > Pets."},
+					description = "A pet that finds more gold in your kills and later more items. Call it in Character > Pets from level 25."},
 				{kind = "unlock", unlock = "petAshenHare", look = 262, icon = 2050, cost = 400, name = "Ashen Hare",
-					description = "A pet that mends you below half health and later wards you. Call it in Character > Pets."},
+					description = "A pet that mends you below half health and later wards you. Call it in Character > Pets from level 25."},
 				{kind = "unlock", unlock = "petBogFrog", look = 224, icon = 2148, cost = 400, name = "Bog Frog",
-					description = "A pet that finds more gold in your kills and later more items. Call it in Character > Pets."},
+					description = "A pet that finds more gold in your kills and later more items. Call it in Character > Pets from level 25."},
 				{kind = "unlock", unlock = "petDuskMoth", look = 213, icon = 2050, cost = 400, name = "Dusk Moth",
-					description = "A pet that mends you below half health and later wards you. Call it in Character > Pets."}
+					description = "A pet that mends you below half health and later wards you. Call it in Character > Pets from level 25."}
 				-- <<< Wardrobe
 			}
 		},

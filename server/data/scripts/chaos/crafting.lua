@@ -417,6 +417,15 @@ ChaosCraftingBench = {itemAt = itemAt, walk = walk, pathOf = pathOf, inBackpack 
 	sendState = sendState, sendResult = sendResult, craft = craft,
 	select = function(player, sel) selected[player:getId()] = sel end}
 
+-- the level gate (C.config.minLevel); the tutorial's orb station (newplayer_tutorial.lua, a level 1 character) is let through
+local function gateOpen(player)
+	local ok, need = C.levelGate(player:getLevel())
+	if not ok and ChaosNewPlayer and ChaosNewPlayer.onTutorial and ChaosNewPlayer.onTutorial(player) then
+		ok = true
+	end
+	return ok, need
+end
+
 -- ---------------------------------------------------------------- events
 local ext = CreatureEvent("ChaosCraftingExtended")
 function ext.onExtendedOpcode(player, opcode, buffer)
@@ -429,9 +438,9 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 	end
 	local data = type(msg.data) == "table" and msg.data or {}
 	-- below the gate nothing of the bench or Salvage answers (a window the player opens says why; the rest is silent)
-	local levelOk, need = C.levelGate(player:getLevel())
+	local levelOk, need = gateOpen(player)
 	if not levelOk then
-		if msg.action == "open" then
+		if msg.action == "open" and (not ChaosRateLimit or ChaosRateLimit.allow(player, "crafting.gate", 1000)) then
 			player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Crafting opens at level %d.", need))
 		end
 		return
@@ -503,7 +512,7 @@ function ChaosCraftingUseOrb(player, orbItem, target, orbKey)
 		useHint(player, orb)
 		return true
 	end
-	local levelOk, need = C.levelGate(player:getLevel())
+	local levelOk, need = gateOpen(player)
 	if not levelOk then
 		player:sendCancelMessage(Chaos.t(player, "Crafting opens at level %d.", need))
 		return true

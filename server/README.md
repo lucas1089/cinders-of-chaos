@@ -24256,7 +24256,7 @@ the level where that system opens, announces it, and hides the rest.
 entry in the client's top menu; `title` and the two `why` lines are English and pt-BR; `go = {open = <client module>}` (the
 Go button runs the menu entry, which opens that module). The bits of the storages are by index: never reorder or insert,
 add at the end (up to 30). Eleven entries now: Bounty Board 8, Market 8, Passive Tree 12 (the first point), Events 30 (invasions),
-Arena 50, Rifts 100, Guild Siege 100, Infinity Tower 100, Dungeons 150, and (O262) Crafting Bench 20, Pets 25.
+Arena 50, Rifts 100, Guild Siege 100, Infinity Tower 100, Dungeons 150, and (O262) Crafting Bench 20, Salvage 20 (the same gate), Pets 25.
 
 **The level is the system's own.** Nothing here gates a system; each keeps its own check, and this table only says when the menu
 shows it. `tests/unlocks_test.lua` has a reader per entry and fails when a level differs from the one the system enforces:
@@ -24285,7 +24285,8 @@ enforce one and the table follows: Crafting at level 20 (`ChaosCrafting.config.m
 rule `ChaosCrafting.levelGate(level)`) and Pets at level 25 (`pets_config.lua` `minLevel`, rule `ChaosPetsCore.levelGate`). Crafting:
 below the level the bench opcode (232: open, select, apply, gem, clear and Salvage) answers nothing but a line on `open`
 ("Crafting opens at level 20.") and the orbs' "Use with" is refused with the same line (a plain use of an orb still explains
-how it works). Pets: below the level the opcode answers nothing but a line on `open` ("Pets open at level 25."), no pet is
+how it works); the tutorial island's orb station (a level 1 character, `ChaosNewPlayer.onTutorial`) is let through. Salvage has
+its own top menu entry (`salvage`, the same level). Pets: below the level the opcode answers nothing but a line on `open` ("Pets open at level 25."), no pet is
 called out at login (a pet a character already owns is kept and comes back at the level), the staff `/pet` command is not
 gated. Both lines are in en and pt-BR (`i18n_strings.lua`). Bank and the Supply Stash are NOT gated on purpose: a new
 character needs them from level 1, so they stay out of the table and always show.

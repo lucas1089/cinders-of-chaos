@@ -125,6 +125,7 @@ local readers = {
 	-- libs to load, so the field is read from the text, like the Tower's); the gate itself is ChaosCrafting.levelGate
 	crafting = function() return fromFile("data/lib/chaos_crafting.lua", "\n\tminLevel = (%d+),") end,
 	pets = function() return dofile("data/scripts/chaos/pets_config.lua").minLevel end,
+	salvage = function() return fromFile("data/lib/chaos_crafting.lua", "\n\tminLevel = (%d+),") end,
 }
 -- every entry has a reader and every reader an entry
 for _, e in ipairs(cfg.entries) do
@@ -303,14 +304,14 @@ new.level = 100
 events.ChaosUnlocksAdvance.onAdvance(new, SKILL_LEVEL, 12, 100)
 eq(#take("new"), 1, "crafting first (lowest level)"); eq(take("new")[1].data.key, "crafting")
 local order = {"crafting"}
-for _ = 1, 12 do
+for _ = 1, 14 do
 	if #queued == 0 then break end
 	local g = flush()
 	eq(g[1], 75000)
 	local t = take("new")
 	order[#order + 1] = t[#t].data.key
 end
-eq(table.concat(order, ","), "crafting,pets,events,arena,rifts,siege,tower", "one per gap in level order, ties by index")
+eq(table.concat(order, ","), "crafting,salvage,pets,events,arena,rifts,siege,tower", "one per gap in level order, ties by index")
 eq(take("state")[#take("state")].data.next.key, "dungeons")
 -- a level lost: nothing is taken back, the state follows
 sent = {}

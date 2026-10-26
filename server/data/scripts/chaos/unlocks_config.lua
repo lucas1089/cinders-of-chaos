@@ -93,6 +93,12 @@ return {
 			title = {"Pets", "Pets"},
 			why = {{"A small companion that follows you and levels with your kills.", "Um pequeno companheiro que te segue e sobe de nível com suas mortes."},
 				{"Call one out in the window.", "Chame um pela janela."}},
-			go = {open = "game_pets"}}
+			go = {open = "game_pets"}},
+		-- the bench's Salvage mode has its own menu entry and the same gate as the bench
+		{key = "salvage", level = 20, menu = "Salvage", source = "data/lib/chaos_crafting.lua config.minLevel",
+			title = {"Salvage", "Reciclagem"},
+			why = {{"Break gear you do not need into shards and orbs.", "Quebre o equipamento que não precisa em fragmentos e orbes."},
+				{"Lock the pieces you want to keep first.", "Tranque antes as peças que quer guardar."}},
+			go = {open = "game_crafting"}}
 	}
 }
