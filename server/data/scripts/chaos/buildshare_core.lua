@@ -231,7 +231,7 @@ function B.decode(code)
 	end
 	local version, body = code:match("^" .. B.PREFIX .. "(%d+)%-([%w_%-]*)$")
 	if not version then
-		return nil, "That is not a build code (codes start with " .. B.PREFIX .. B.VERSION .. "-)."
+		return nil, string.format("That is not a build code (codes start with %s%s-).", B.PREFIX, B.VERSION)
 	end
 	version = tonumber(version)
 	if not B.READS[version] then
@@ -469,13 +469,13 @@ function B.plan(tree, build, ctx)
 		plan.masteries, plan.masteryChanged = held, 0
 	end
 	if masteryChanged > 0 and wanted > 0 then
-		plan.notes[#plan.notes + 1] = string.format("%d mastery node%s you hold change%s effect (a respec).", masteryChanged,
-			masteryChanged == 1 and "" or "s", masteryChanged == 1 and "s its" or " their")
+		plan.notes[#plan.notes + 1] = string.format(masteryChanged == 1 and "%d mastery node you hold changes its effect (a respec)." or
+			"%d mastery nodes you hold change their effect (a respec).", masteryChanged)
 	end
 	if defaulted > 0 and wanted > 0 then
-		plan.notes[#plan.notes + 1] = string.format(
-			"The code names no effect for %d mastery node%s: the first effect is taken (change it in the tree).", defaulted,
-			defaulted == 1 and "" or "s")
+		plan.notes[#plan.notes + 1] = string.format(defaulted == 1 and
+			"The code names no effect for %d mastery node: the first effect is taken (change it in the tree)." or
+			"The code names no effect for %d mastery nodes: the first effect is taken (change it in the tree).", defaulted)
 	end
 	if plan.skipped > 0 then
 		plan.notes[#plan.notes + 1] = string.format(
@@ -484,9 +484,9 @@ function B.plan(tree, build, ctx)
 	end
 	plan.reworked = reworked
 	if reworked > 0 then
-		plan.notes[#plan.notes + 1] = string.format(
-			"The code is older than a tree change: %d node%s whose effect changed %s left out.", reworked,
-			reworked == 1 and "" or "s", reworked == 1 and "is" or "are")
+		plan.notes[#plan.notes + 1] = string.format(reworked == 1 and
+			"The code is older than a tree change: %d node whose effect changed is left out." or
+			"The code is older than a tree change: %d nodes whose effect changed are left out.", reworked)
 	end
 
 	-- Paragon part

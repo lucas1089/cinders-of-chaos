@@ -137,8 +137,14 @@ function S.fallenMark(guid)
 end
 
 -- ---------------------------------------------------------------- joining
-function S.modesChoices()
-	return M.choices(mc)
+function S.modesChoices(player)
+	local out = M.choices(mc)
+	if player then
+		for _, c in ipairs(out) do
+			c.warning = Chaos.tx(player, c.warning)
+		end
+	end
+	return out
 end
 
 function S.modesPick(key)
@@ -377,7 +383,7 @@ function S.modesMarketRefusal(player, action)
 		return nil
 	end
 	local ok, why = M.marketAllowed(S.modesOf(player), action)
-	return not ok and MSG[why] or nil
+	return not ok and MSG[why] and Chaos.tx(player, MSG[why]) or nil
 end
 
 function S.modesOrbRefusal(player, action)
@@ -385,7 +391,7 @@ function S.modesOrbRefusal(player, action)
 		return nil
 	end
 	local ok, why = M.orbAllowed(S.modesOf(player), action)
-	return not ok and MSG[why] or nil
+	return not ok and MSG[why] and Chaos.tx(player, MSG[why]) or nil
 end
 
 -- ---------------------------------------------------------------- loot bonus and the buff bar

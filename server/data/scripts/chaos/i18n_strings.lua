@@ -3990,5 +3990,957 @@ return {
 		["You were not there when the curse was lifted."] = "Você não estava lá quando a maldição foi quebrada.",
 		["You are too far from the cursed chest."] = "Você está longe demais do baú amaldiçoado.",
 		["Cursed Chest loot: %s.%s"] = "Tesouro do Baú Amaldiçoado: %s.%s",
+		-- Guild, guild hall and guild depot reasons (guild_core.lua, guild.lua, guild_hall.lua)
+		["You are not in a guild."] =
+			"Você não está em uma guild.",
+		["Only the guild leader can buy the guild hall."] =
+			"Só o líder da guild pode comprar o guild hall.",
+		["Your guild already owns a guild hall."] =
+			"Sua guild já tem um guild hall.",
+		["Your guild needs guild level %d for a guild hall."] =
+			"Sua guild precisa do level de guild %d para um guild hall.",
+		["The guild bank holds %s gold; the hall costs %s."] =
+			"O banco da guild tem %s de ouro; o hall custa %s.",
+		["You have %s gold; the hall costs %s."] =
+			"Você tem %s de ouro; o hall custa %s.",
+		["Pay from the guild bank or with your own gold."] =
+			"Pague com o banco da guild ou com o seu próprio ouro.",
+		["Unknown upgrade."] =
+			"Melhoria desconhecida.",
+		["Your guild has no guild hall."] =
+			"Sua guild não tem um guild hall.",
+		["Only the guild leader or a vice-leader can buy upgrades."] =
+			"Só o líder ou um vice-líder da guild pode comprar melhorias.",
+		["Pay the hall's rent first."] =
+			"Pague primeiro o aluguel do hall.",
+		["%s needs guild level %d."] =
+			"%s precisa do level de guild %d.",
+		["%s needs the %s first."] =
+			"%s precisa de %s antes.",
+		["The guild bank holds %s gold; %s costs %s."] =
+			"O banco da guild tem %s de ouro; %s custa %s.",
+		["Only members of this guild can use its depot."] =
+			"Só membros desta guild podem usar o depot dela.",
+		["The guild depot is locked (no depot upgrade, or the rent is unpaid)."] =
+			"O depot da guild está trancado (sem a melhoria do depot, ou o aluguel não foi pago).",
+		["Containers cannot go into the guild depot; put the items in one by one."] =
+			"Containers não podem ir para o depot da guild; coloque os itens um por um.",
+		["That cannot go into the guild depot."] =
+			"Isso não pode ir para o depot da guild.",
+		["That stack is too large."] =
+			"Essa pilha é grande demais.",
+		["The guild depot is full (%d / %d)."] =
+			"O depot da guild está cheio (%d / %d).",
+		["Your rank may not take items from the guild depot."] =
+			"Seu cargo não pode retirar itens do depot da guild.",
+		["That item is no longer in the guild depot."] =
+			"Esse item não está mais no depot da guild.",
+		["You took %d items from the guild depot today, the most a member may."] =
+			"Você retirou %d itens do depot da guild hoje, o máximo que um membro pode.",
+		["Season characters cannot use the guild bank or depot while the season runs."] =
+			"Personagens da season não podem usar o banco ou o depot da guild enquanto a season durar.",
+		["Your guild %s reached guild level %d!%s"] =
+			"Sua guild %s chegou ao level de guild %d!%s",
+		["Slow down."] =
+			"Mais devagar.",
+		["Deposit at least %s gold."] =
+			"Deposite pelo menos %s de ouro.",
+		["Your rank may not deposit."] =
+			"Seu cargo não pode depositar.",
+		["You do not have that much gold (carried and in the bank)."] =
+			"Você não tem tanto ouro (na mochila e no banco).",
+		["The guild bank is busy; your gold went back to your bank balance."] =
+			"O banco da guild está ocupado; seu ouro voltou para o saldo do seu banco.",
+		["The deposit failed; your gold went back to your bank balance."] =
+			"O depósito falhou; seu ouro voltou para o saldo do seu banco.",
+		["You deposited %s gold into the guild bank (now %s)."] =
+			"Você depositou %s de ouro no banco da guild (agora %s).",
+		["Only the guild leader can withdraw from the guild bank."] =
+			"Só o líder da guild pode sacar do banco da guild.",
+		["Withdraw how much?"] =
+			"Sacar quanto?",
+		["The guild bank holds %s gold."] =
+			"O banco da guild tem %s de ouro.",
+		["You withdrew %s gold to your bank balance (guild bank now %s)."] =
+			"Você sacou %s de ouro para o saldo do seu banco (banco da guild agora %s).",
+		["Your guild needs guild level %d for the guild hall scroll."] =
+			"Sua guild precisa do level de guild %d para o pergaminho do guild hall.",
+		["You already took today's guild hall scroll."] =
+			"Você já pegou o pergaminho do guild hall de hoje.",
+		["The scroll could not be created."] =
+			"O pergaminho não pôde ser criado.",
+		["You have no room for the scroll."] =
+			"Você não tem espaço para o pergaminho.",
+		["You received today's guild hall scroll."] =
+			"Você recebeu o pergaminho do guild hall de hoje.",
+		["You cannot use this inside the siege."] =
+			"Você não pode usar isto dentro do siege.",
+		["You cannot use this inside the arena."] =
+			"Você não pode usar isto dentro da arena.",
+		["You are not in a guild. Guilds are founded and joined on the website."] =
+			"Você não está em uma guild. As guilds são fundadas e acessadas pelo site.",
+		["The way back to your temple."] =
+			"O caminho de volta ao seu templo.",
+		["Only guild members may enter a guild hall."] =
+			"Só membros da guild podem entrar em um guild hall.",
+		["Your guild owns no guild hall."] =
+			"Sua guild não tem um guild hall.",
+		["Your guild hall cannot be entered right now."] =
+			"Seu guild hall não pode ser acessado agora.",
+		["The teleport hub is locked."] =
+			"O hub de teleporte está trancado.",
+		["This portal leads nowhere right now."] =
+			"Este portal não leva a lugar nenhum agora.",
+		["No guild hall slot is free. Tell a gamemaster."] =
+			"Nenhum espaço de guild hall está livre. Avise um gamemaster.",
+		["Not enough gold."] =
+			"Ouro insuficiente.",
+		["The purchase failed; the gold was returned."] =
+			"A compra falhou; o ouro foi devolvido.",
+		["%s bought a guild hall for %s! Enter it through the portal next to the temple."] =
+			"%s comprou um guild hall para %s! Entre pelo portal ao lado do templo.",
+		["Your guild owns a guild hall now. The first week's rent is paid; next rent: %s gold."] =
+			"Sua guild agora tem um guild hall. O aluguel da primeira semana está pago; próximo aluguel: %s de ouro.",
+		["The guild bank does not hold enough gold."] =
+			"O banco da guild não tem ouro suficiente.",
+		["The upgrade failed; the gold went back to the guild bank."] =
+			"A melhoria falhou; o ouro voltou para o banco da guild.",
+		["%s added %s%s to the guild hall."] =
+			"%s adicionou %s%s ao guild hall.",
+		["%s bought for %s gold. Weekly rent is now %s gold."] =
+			"%s comprado por %s de ouro. O aluguel semanal agora é de %s de ouro.",
+		["The guild bank holds %s gold; the rent is %s."] =
+			"O banco da guild tem %s de ouro; o aluguel é %s.",
+		["The payment failed; the gold went back to the guild bank."] =
+			"O pagamento falhou; o ouro voltou para o banco da guild.",
+		["Rent of %s gold paid; the hall is paid until %s."] =
+			"Aluguel de %s de ouro pago; o hall está pago até %s.",
+		["Only the guild leader or a vice-leader can pay the rent."] =
+			"Só o líder ou um vice-líder da guild pode pagar o aluguel.",
+		["The rent is already paid for more than a week ahead."] =
+			"O aluguel já está pago por mais de uma semana adiante.",
+		["The guild hall's rent was paid from the guild bank."] =
+			"O aluguel do guild hall foi pago pelo banco da guild.",
+		["The guild hall's rent (%s gold) is unpaid: its upgrades are locked until it is paid (Social > Guild)."] =
+			"O aluguel do guild hall (%s de ouro) não foi pago: as melhorias ficam trancadas até o pagamento (Social > Guild).",
+		["The guild hall's rent is due and the guild bank is short. The upgrades lock in %s."] =
+			"O aluguel do guild hall venceu e o banco da guild está sem fundos. As melhorias trancam em %s.",
+		["The item could not be moved into the guild depot."] =
+			"O item não pôde ser movido para o depot da guild.",
+		["The guild depot is busy. Try again in a moment."] =
+			"O depot da guild está ocupado. Tente de novo em instantes.",
+		["The guild depot could not take it."] =
+			"O depot da guild não pôde receber isto.",
+		["You put %d x %s into the guild depot."] =
+			"Você colocou %d x %s no depot da guild.",
+		["Take what?"] =
+			"Pegar o quê?",
+		["Take items at the guild depot in your guild hall."] =
+			"Retire itens no depot da guild, no seu guild hall.",
+		["The item could not be created. Tell a gamemaster."] =
+			"O item não pôde ser criado. Avise um gamemaster.",
+		["You took %d x %s from the guild depot (%s)."] =
+			"Você retirou %d x %s do depot da guild (%s).",
+		["Back to the guild hall (or your temple)."] =
+			"De volta ao guild hall (ou ao seu templo).",
+		-- Market: refusals, results and sale lines (market_core.lua, market_config.lua, market_orders_core.lua, market_notify_core.lua, market.lua)
+		["Prices cannot be negative."] =
+			"Os preços não podem ser negativos.",
+		["Set a price in gold, in Chaos Coins or in both."] =
+			"Defina um preço em ouro, em Chaos Coins ou em ambos.",
+		["Choose one of the offer durations."] =
+			"Escolha uma das durações de oferta.",
+		["That item is no longer where it was."] =
+			"Esse item não está mais onde estava.",
+		["Take the item off before you list it."] =
+			"Tire o item antes de anunciá-lo.",
+		["The item is locked. Unlock it first."] =
+			"O item está trancado. Destranque-o primeiro.",
+		["Store items cannot be sold."] =
+			"Itens da loja não podem ser vendidos.",
+		["Empty the container before you list it."] =
+			"Esvazie o container antes de anunciá-lo.",
+		["That item cannot be sold."] =
+			"Esse item não pode ser vendido.",
+		["That item cannot be sold on the market."] =
+			"Esse item não pode ser vendido no mercado.",
+		["Quest items cannot be sold."] =
+			"Itens de quest não podem ser vendidos.",
+		["Items that are wearing off cannot be sold."] =
+			"Itens que estão acabando não podem ser vendidos.",
+		["You do not have that many."] =
+			"Você não tem tantos.",
+		["That modifier filter is not valid."] =
+			"Esse filtro de modificador não é válido.",
+		["At most %d modifiers per search."] =
+			"No máximo %d modificadores por busca.",
+		["Unknown modifier."] =
+			"Modificador desconhecido.",
+		["Each modifier only once per search."] =
+			"Cada modificador só uma vez por busca.",
+		["You need level %d to use the market."] =
+			"Você precisa do level %d para usar o mercado.",
+		["This character is not saved by the server, so it cannot use the market."] =
+			"Este personagem não é salvo pelo servidor, então não pode usar o mercado.",
+		["That offer is no longer on the market."] =
+			"Essa oferta não está mais no mercado.",
+		["That is your own offer."] =
+			"Essa é a sua própria oferta.",
+		["You cannot buy from a character of your own account."] =
+			"Você não pode comprar de um personagem da sua própria conta.",
+		["That offer is not on your market."] =
+			"Essa oferta não está no seu mercado.",
+		["You do not have enough gold in your bank account."] =
+			"Você não tem ouro suficiente na sua conta bancária.",
+		["You do not have enough Chaos Coins."] =
+			"Você não tem Chaos Coins suficientes.",
+		["That offer is not sold for that currency."] =
+			"Essa oferta não é vendida nessa moeda.",
+		["The market is busy, please try again."] =
+			"O mercado está ocupado, tente de novo.",
+		["You already have %d active offers and buy orders."] =
+			"Você já tem %d ofertas e ordens de compra ativas.",
+		["Your account already has %d active offers and buy orders."] =
+			"Sua conta já tem %d ofertas e ordens de compra ativas.",
+		["The listing fee is %s gold; you do not have it in your bank account."] =
+			"A taxa de anúncio é de %s de ouro; você não tem isso na sua conta bancária.",
+		["That buy order is no longer open."] =
+			"Essa ordem de compra não está mais aberta.",
+		["That is your own buy order."] =
+			"Essa é a sua própria ordem de compra.",
+		["You cannot fill a buy order of your own account."] =
+			"Você não pode atender uma ordem de compra da sua própria conta.",
+		["That buy order is not on your market."] =
+			"Essa ordem de compra não está no seu mercado.",
+		["That is not the item the order asks for."] =
+			"Esse não é o item que a ordem pede.",
+		["That item cannot be ordered on the market."] =
+			"Esse item não pode ser pedido no mercado.",
+		["The order needs %s gold in your bank (%s for the items, %s listing fee)."] =
+			"A ordem precisa de %s de ouro no seu banco (%s pelos itens, %s de taxa de anúncio).",
+		["The order needs %s Chaos Coins on your account and the %s gold listing fee in your bank."] =
+			"A ordem precisa de %s Chaos Coins na sua conta e da taxa de anúncio de %s de ouro no seu banco.",
+		["Choose gold or Chaos Coins."] =
+			"Escolha ouro ou Chaos Coins.",
+		["Order at least one."] =
+			"Peça pelo menos um.",
+		["At most %s per order."] =
+			"No máximo %s por ordem.",
+		["An order may hold at most %s gold."] =
+			"Uma ordem pode guardar no máximo %s de ouro.",
+		["An order may hold at most %s Chaos Coins."] =
+			"Uma ordem pode guardar no máximo %s Chaos Coins.",
+		["Choose one of the order durations."] =
+			"Escolha uma das durações de ordem.",
+		["Its rarity is too low."] =
+			"A raridade dele é baixa demais.",
+		["Its item level is too low."] =
+			"O item level dele é baixo demais.",
+		["Its modifiers do not match."] =
+			"Os modificadores dele não combinam.",
+		["Not enough sockets."] =
+			"Sockets insuficientes.",
+		["Its quality is too low."] =
+			"A qualidade dele é baixa demais.",
+		["It has no free prefix."] =
+			"Ele não tem prefixo livre.",
+		["It has no free suffix."] =
+			"Ele não tem sufixo livre.",
+		["It has no legendary power."] =
+			"Ele não tem poder lendário.",
+		["It has no bound modifier."] =
+			"Ele não tem modificador vinculado.",
+		["That item does not fit the order: %s"] =
+			"Esse item não serve para a ordem: %s",
+		["The order closed before your fill went through: the item is back in your inbox."] =
+			"A ordem fechou antes de o seu pedido ser atendido: o item voltou para a sua inbox.",
+		["%s Chaos Coin"] =
+			"%s Chaos Coin",
+		["%s and %s"] =
+			"%s e %s",
+		["%s and %d more"] =
+			"%s e mais %d",
+		["Market: %s"] =
+			"Mercado: %s",
+		["%s bought your %s for %s (fee %s): +%s to your bank."] =
+			"%s comprou seu %s por %s (taxa %s): +%s no seu banco.",
+		["%s bought your %s for %s (fee %s): +%s to your account."] =
+			"%s comprou seu %s por %s (taxa %s): +%s na sua conta.",
+		["%s's buy order took your %s for %s (fee %s): +%s to your bank."] =
+			"A ordem de compra de %s levou seu %s por %s (taxa %s): +%s no seu banco.",
+		["%s's buy order took your %s for %s (fee %s): +%s to your account."] =
+			"A ordem de compra de %s levou seu %s por %s (taxa %s): +%s na sua conta.",
+		["... and %d more sale (see My Offers)."] =
+			"... e mais %d venda (veja Minhas ofertas).",
+		["... and %d more sales (see My Offers)."] =
+			"... e mais %d vendas (veja Minhas ofertas).",
+		["%d items sold for %s: %s."] =
+			"%d itens vendidos por %s: %s.",
+		["%s%s in your inbox (%s)"] =
+			"%s%s na sua inbox (%s)",
+		["bought"] =
+			"comprado",
+		["offer cancelled"] =
+			"oferta cancelada",
+		["offer expired"] =
+			"oferta expirada",
+		["sold"] =
+			"vendido",
+		["from your buy order"] =
+			"da sua ordem de compra",
+		["the buy order closed before your fill"] =
+			"a ordem de compra fechou antes do seu pedido",
+		["+%s back from your buy order %d"] =
+			"+%s de volta da sua ordem de compra %d",
+		["+%s (sold %s%s to %s)"] =
+			"+%s (vendeu %s%s para %s)",
+		["%s. Items are in your inbox, gold in your bank."] =
+			"%s. Os itens estão na sua inbox, o ouro no seu banco.",
+		["%d market deliveries: see the Server Log."] =
+			"%d entregas do mercado: veja o Server Log.",
+		["Listed %s%s for %s. Listing fee: %s gold."] =
+			"%s%s anunciado por %s. Taxa de anúncio: %s de ouro.",
+		["Bought %s%s for %s. It is in your inbox."] =
+			"%s%s comprado por %s. Está na sua inbox.",
+		["Offer cancelled: %s goes back to your inbox."] =
+			"Oferta cancelada: %s volta para a sua inbox.",
+		["Buy order posted: %dx %s at %s each. %s are held for it; listing fee: %s gold."] =
+			"Ordem de compra publicada: %dx %s a %s cada. %s ficam retidos nela; taxa de anúncio: %s de ouro.",
+		["Buy order cancelled: %s come back to you; the listing fee is not refunded."] =
+			"Ordem de compra cancelada: %s voltam para você; a taxa de anúncio não é devolvida.",
+		["Sold %s%s to %s's buy order for %s (tax %s): %s added to your account."] =
+			"%s%s vendido para a ordem de compra de %s por %s (imposto %s): %s adicionados à sua conta.",
+		["Sold %s%s to %s's buy order for %s (tax %s): %s to your bank."] =
+			"%s%s vendido para a ordem de compra de %s por %s (imposto %s): %s no seu banco.",
+		["%s filled your buy order: %s%s for %s."] =
+			"%s atendeu sua ordem de compra: %s%s por %s.",
+		-- Build codes (buildshare_core.lua, buildshare.lua)
+		["That is not a build code."] =
+			"Isso não é um código de build.",
+		["That build code is too long."] =
+			"Esse código de build é longo demais.",
+		["That is not a build code (codes start with %s%s-)."] =
+			"Isso não é um código de build (os códigos começam com %s%s-).",
+		["That build code is from an old format (version %d) that is no longer read."] =
+			"Esse código de build é de um formato antigo (versão %d) que não é mais lido.",
+		["That build code is from a newer format (version %d) than this server reads (%d)."] =
+			"Esse código de build é de um formato mais novo (versão %d) do que este servidor lê (%d).",
+		["That build code is damaged (check for a typo or a missing part)."] =
+			"Esse código de build está danificado (confira se há erro de digitação ou parte faltando).",
+		["That build code is damaged: the checksum does not match (check for a typo)."] =
+			"Esse código de build está danificado: o checksum não confere (confira se há erro de digitação).",
+		["That build code is damaged."] =
+			"Esse código de build está danificado.",
+		["That build code has a Paragon stat this server does not know."] =
+			"Esse código de build tem um atributo de Paragon que este servidor não conhece.",
+		["This build is for a %s; you are a %s. Builds can only be imported by the same class line."] =
+			"Esta build é de %s; você é %s. Builds só podem ser importadas pela mesma linha de classe.",
+		["This build uses node %d, which is not in the passive tree (the tree changed)."] =
+			"Esta build usa o nó %d, que não está na árvore passiva (a árvore mudou).",
+		["This build takes keystone node %d, which your class has no version of."] =
+			"Esta build usa o nó-chave %d, que a sua classe não tem.",
+		["This build takes node %d of another class's path."] =
+			"Esta build usa o nó %d do caminho de outra classe.",
+		["This build code has no allocated nodes."] =
+			"Esse código de build não tem nós alocados.",
+		["This build code has a mastery effect for node %d, which is not a mastery node."] =
+			"Esse código de build tem um efeito de maestria para o nó %d, que não é um nó de maestria.",
+		["This build code picks effect %d of mastery node %d, which has %d."] =
+			"Esse código de build escolhe o efeito %d do nó de maestria %d, que tem %d.",
+		["This build is broken: node %d is not connected to the start."] =
+			"Esta build está quebrada: o nó %d não está ligado ao início.",
+		["You have no passive points yet."] =
+			"Você ainda não tem pontos passivos.",
+		["%d mastery node you hold changes its effect (a respec)."] =
+			"%d nó de maestria que você tem muda de efeito (um respec).",
+		["%d mastery nodes you hold change their effect (a respec)."] =
+			"%d nós de maestria que você tem mudam de efeito (um respec).",
+		["The code names no effect for %d mastery node: the first effect is taken (change it in the tree)."] =
+			"O código não indica efeito para %d nó de maestria: o primeiro efeito é usado (mude-o na árvore).",
+		["The code names no effect for %d mastery nodes: the first effect is taken (change it in the tree)."] =
+			"O código não indica efeito para %d nós de maestria: o primeiro efeito é usado (mude-o na árvore).",
+		["You own %d passive points; the build needs %d. The first %d nodes along the path are applied, %d are left out."] =
+			"Você tem %d pontos passivos; a build precisa de %d. Os primeiros %d nós do caminho são aplicados, %d ficam de fora.",
+		["The code is older than a tree change: %d node whose effect changed is left out."] =
+			"O código é anterior a uma mudança da árvore: %d nó cujo efeito mudou ficou de fora.",
+		["The code is older than a tree change: %d nodes whose effect changed are left out."] =
+			"O código é anterior a uma mudança da árvore: %d nós cujo efeito mudou ficaram de fora.",
+		["The Paragon part of the build is skipped: the Paragon track is not unlocked yet."] =
+			"A parte de Paragon da build foi ignorada: a trilha de Paragon ainda não foi desbloqueada.",
+		["The Paragon part needs %d points, you own %d: %d are left out (in stat order)."] =
+			"A parte de Paragon precisa de %d pontos, você tem %d: %d ficam de fora (na ordem dos atributos).",
+		["Build for a %s: %d nodes, %d applied (%d new, %d taken back)."] =
+			"Build de %s: %d nós, %d aplicados (%d novos, %d devolvidos).",
+		["The Paragon allocation changes too."] =
+			"A alocação de Paragon também muda.",
+		["You already have this build: nothing would change."] =
+			"Você já tem esta build: nada mudaria.",
+		["It takes points back, so it costs the full reset price: %s gold coins."] =
+			"Ela devolve pontos, então custa o preço cheio do reset: %s gold coins.",
+		["It takes points back; the reset is free (%s)."] =
+			"Ela devolve pontos; o reset é grátis (%s).",
+		["It only adds nodes: free."] =
+			"Ela só adiciona nós: grátis.",
+		["You already have this build: nothing changed."] =
+			"Você já tem esta build: nada mudou.",
+		["The price changed since the preview. Preview the build again."] =
+			"O preço mudou desde a prévia. Veja a prévia da build de novo.",
+		["You need %s gold coins (carried or in the bank) to take points back for this build."] =
+			"Você precisa de %s gold coins (na mochila ou no banco) para devolver pontos nesta build.",
+		["Build imported: %d nodes allocated%s."] =
+			"Build importada: %d nós alocados%s.",
+		[" for %s gold coins"] =
+			" por %s gold coins",
+		[" %d nodes were left out (not enough points)."] =
+			" %d nós ficaram de fora (pontos insuficientes).",
+		["free below level %d"] =
+			"grátis abaixo do level %d",
+		["free once after your class changed"] =
+			"grátis uma vez depois que sua classe mudou",
+		-- Player and bug reports (reports_core.lua, reports.lua)
+		["Player reports are switched off."] =
+			"As denúncias de jogadores estão desligadas.",
+		["Type the name of the character you want to report."] =
+			"Digite o nome do personagem que você quer denunciar.",
+		["You cannot report yourself."] =
+			"Você não pode denunciar a si mesmo.",
+		["Staff members cannot be reported here; write to another staff member."] =
+			"Membros da equipe não podem ser denunciados aqui; escreva para outro membro da equipe.",
+		["Choose a reason."] =
+			"Escolha um motivo.",
+		["Describe the problem in the note (reason Other)."] =
+			"Descreva o problema na nota (motivo Outro).",
+		["You need a higher level to send reports."] =
+			"Você precisa de um level maior para enviar denúncias.",
+		["Please wait a moment before sending another report."] =
+			"Espere um momento antes de enviar outra denúncia.",
+		["You sent the most reports allowed today. Thank you; staff will look at them."] =
+			"Você enviou o máximo de denúncias permitido hoje. Obrigado; a equipe vai analisá-las.",
+		["You already reported this character recently. Staff will look at it."] =
+			"Você já denunciou este personagem há pouco. A equipe vai analisar.",
+		["Bug reports are switched off. Please report the bug on our Discord."] =
+			"Os relatos de bug estão desligados. Relate o bug no nosso Discord.",
+		["Describe the bug in a few words (at least 6 characters)."] =
+			"Descreva o bug em poucas palavras (pelo menos 6 caracteres).",
+		["Please wait a moment before sending another bug report."] =
+			"Espere um momento antes de enviar outro relato de bug.",
+		["You sent the most bug reports allowed today. Thank you; staff will read them."] =
+			"Você enviou o máximo de relatos de bug permitido hoje. Obrigado; a equipe vai lê-los.",
+		["Thank you. Your report about %s was sent to the staff (#%d)."] =
+			"Obrigado. Sua denúncia sobre %s foi enviada à equipe (#%d).",
+		-- Crafting bench and Salvage (crafting.lua, salvage_core.lua, salvage.lua)
+		["Put the item in your backpack first (equipped items cannot be crafted)."] =
+			"Coloque o item na sua mochila primeiro (itens equipados não podem ser criados).",
+		["You have no %s."] =
+			"Você não tem %s.",
+		["Take the item off first: the bench works on items in your backpack."] =
+			"Tire o item primeiro: a bancada trabalha com itens da sua mochila.",
+		["Put an item from your backpack on the bench."] =
+			"Coloque um item da sua mochila na bancada.",
+		["The item moved or changed. Put it on the bench again."] =
+			"O item mudou de lugar ou foi alterado. Coloque-o na bancada de novo.",
+		["Unique items cannot be salvaged."] =
+			"Itens únicos não podem ser desmontados.",
+		["Rift Keys cannot be salvaged."] =
+			"Rift Keys não podem ser desmontadas.",
+		["Only gear can be salvaged."] =
+			"Só equipamentos podem ser desmontados.",
+		["Only items with a rarity can be salvaged."] =
+			"Só itens com raridade podem ser desmontados.",
+		["Take the gems out first (bench: Remove or Shatter)."] =
+			"Tire as gemas primeiro (bancada: Remover ou Quebrar).",
+		["Put the item in your backpack first (equipped items cannot be salvaged)."] =
+			"Coloque o item na sua mochila primeiro (itens equipados não podem ser desmontados).",
+		["Stacks cannot be salvaged."] =
+			"Pilhas não podem ser desmontadas.",
+		["There is no such recipe."] =
+			"Essa receita não existe.",
+		["You do not have enough rune shards."] =
+			"Você não tem rune shards suficientes.",
+		["You do not have enough %s."] =
+			"Você não tem %s suficientes.",
+		["Choose how many orbs to make."] =
+			"Escolha quantos orbs fazer.",
+		["You do not have that many orbs."] =
+			"Você não tem tantos orbs.",
+		["Combine %s at the Crafting Bench (Salvage tab) into %s %s."] =
+			"Combine %s na Crafting Bench (aba Salvage) em %s %s.",
+		["Salvage is not installed on this server (no rune shard item)."] =
+			"O Salvage não está instalado neste servidor (sem o item rune shard).",
+		["The item could not be salvaged."] =
+			"O item não pôde ser desmontado.",
+		["Wait a moment before the next batch."] =
+			"Espere um momento antes do próximo lote.",
+		["Choose a rarity."] =
+			"Escolha uma raridade.",
+		["That bag is not in your backpack any more."] =
+			"Essa bolsa não está mais na sua mochila.",
+		["Nothing to salvage there."] =
+			"Não há nada para desmontar ali.",
+		["The items changed since the preview. Check the list and confirm again."] =
+			"Os itens mudaram desde a prévia. Confira a lista e confirme de novo.",
+		["Put the item from your backpack on the bench first."] =
+			"Coloque primeiro o item da sua mochila na bancada.",
+		["That cannot be made."] =
+			"Isso não pode ser feito.",
+		["That cannot be recycled."] =
+			"Isso não pode ser reciclado.",
+		["%s is locked: it cannot be sold, salvaged or thrown away."] =
+			"%s está trancado: não pode ser vendido, desmontado nem jogado fora.",
+		["%s is unlocked."] =
+			"%s está destrancado.",
+		["%s (level %d): %d %s"] =
+			"%s (level %d): %d %s",
+		[" + %d Conquest Tokens"] =
+			" + %d Conquest Tokens",
+		["Unique"] =
+			"Única",
+		-- Guild wars (guildwar_core.lua, guildwar.lua)
+		["Pick one of the frag limits."] =
+			"Escolha um dos limites de frags.",
+		["Pick one of the durations."] =
+			"Escolha uma das durações.",
+		["The stake cannot be negative."] =
+			"A aposta não pode ser negativa.",
+		["Guild wars are closed."] =
+			"As guerras de guild estão fechadas.",
+		["Only the guild leader or a vice-leader can declare war."] =
+			"Só o líder ou um vice-líder da guild pode declarar guerra.",
+		["There is no guild of that name."] =
+			"Não existe guild com esse nome.",
+		["Your guild cannot declare war on itself."] =
+			"Sua guild não pode declarar guerra a si mesma.",
+		["Wars are fought only within a realm: that guild belongs to another realm."] =
+			"Guerras só acontecem dentro de um realm: essa guild pertence a outro realm.",
+		["These two guilds are led from the same account or connection; they cannot fight each other."] =
+			"Essas duas guilds são lideradas pela mesma conta ou conexão; elas não podem lutar entre si.",
+		["Your guild needs at least %d members to declare war."] =
+			"Sua guild precisa de pelo menos %d membros para declarar guerra.",
+		["That guild has fewer than %d members."] =
+			"Essa guild tem menos de %d membros.",
+		["There is already an offer or a war between these guilds."] =
+			"Já existe uma oferta ou uma guerra entre essas guilds.",
+		["These guilds fought recently: a new war in %s."] =
+			"Essas guilds lutaram há pouco: uma nova guerra em %s.",
+		["Your guild already has %d wars and offers."] =
+			"Sua guild já tem %d guerras e ofertas.",
+		["That guild has as many wars and offers as it may."] =
+			"Essa guild já tem o máximo de guerras e ofertas permitido.",
+		["Your guild just declared a war. Wait a moment."] =
+			"Sua guild acabou de declarar uma guerra. Espere um momento.",
+		["Only the guild leader can put gold at stake."] =
+			"Só o líder da guild pode apostar ouro.",
+		["Season characters cannot use the guild bank while the season runs."] =
+			"Personagens da season não podem usar o banco da guild enquanto a season durar.",
+		["The guild bank holds %s gold; the stake is %s."] =
+			"O banco da guild tem %s de ouro; a aposta é de %s.",
+		["That war is not there any more."] =
+			"Essa guerra não existe mais.",
+		["Your guild is not part of that war."] =
+			"Sua guild não faz parte dessa guerra.",
+		["Only the guild leader or a vice-leader can do that."] =
+			"Só o líder ou um vice-líder da guild pode fazer isso.",
+		["That offer is no longer open."] =
+			"Essa oferta não está mais aberta.",
+		["Your guild made that offer; the other guild answers it."] =
+			"Sua guild fez essa oferta; a outra guild é quem responde.",
+		["That offer expired."] =
+			"Essa oferta expirou.",
+		["Your guild already has %d wars."] =
+			"Sua guild já tem %d guerras.",
+		["Only the guild leader can accept a war with gold at stake."] =
+			"Só o líder da guild pode aceitar uma guerra com ouro em jogo.",
+		["Your guild bank holds %s gold; the stake is %s."] =
+			"O banco da sua guild tem %s de ouro; a aposta é de %s.",
+		["Only the guild that made the offer can take it back."] =
+			"Só a guild que fez a oferta pode retirá-la.",
+		["That war is not running."] =
+			"Essa guerra não está em andamento.",
+		["Unknown action."] =
+			"Ação desconhecida.",
+		["first to %d kills"] =
+			"primeiro a %d kills",
+		["%s gold at stake per side"] =
+			"%s de ouro em jogo por lado",
+		["no stake"] =
+			"sem aposta",
+		["frag limit reached"] =
+			"limite de frags atingido",
+		["time is up"] =
+			"o tempo acabou",
+		["surrender"] =
+			"rendição",
+		["a guild disbanded"] =
+			"uma guild foi dissolvida",
+		["ended by the staff"] =
+			"encerrada pela equipe",
+		["ended outside the game"] =
+			"encerrada fora do jogo",
+		["no war"] =
+			"sem guerra",
+		["war over"] =
+			"guerra encerrada",
+		["same account"] =
+			"mesma conta",
+		["same IP"] =
+			"mesmo IP",
+		["realm"] =
+			"realm",
+		["low level"] =
+			"level baixo",
+		["repeat"] =
+			"repetida",
+		["The declaration could not be saved."] =
+			"A declaração não pôde ser salva.",
+		["%s declared war on %s: %s. The offer is open for %d hours."] =
+			"%s declarou guerra a %s: %s. A oferta fica aberta por %d horas.",
+		["%s declares WAR on your guild: %s. Your leader or a vice-leader can accept or decline it (Social > Guild Wars) within %d hours."] =
+			"%s declara GUERRA à sua guild: %s. Seu líder ou um vice-líder pode aceitar ou recusar em até %d horas (Social > Guild Wars).",
+		["War declared on %s. They have %d hours to answer."] =
+			"Guerra declarada a %s. Eles têm %d horas para responder.",
+		["%s declined the war offered by %s%s."] =
+			"%s recusou a guerra oferecida por %s%s.",
+		["%s took back its war offer to %s."] =
+			"%s retirou sua oferta de guerra a %s.",
+		["The war offer of %s to %s expired."] =
+			"A oferta de guerra de %s a %s expirou.",
+		[" The stake went back to the guild bank."] =
+			" A aposta voltou para o banco da guild.",
+		["The war could not be started."] =
+			"A guerra não pôde ser iniciada.",
+		["You declined the war."] =
+			"Você recusou a guerra.",
+		["You took back the war offer."] =
+			"Você retirou a oferta de guerra.",
+		["Your guild surrendered."] =
+			"Sua guild se rendeu.",
+		["WAR! %s and %s are at war: %s. Ends in %s."] =
+			"GUERRA! %s e %s estão em guerra: %s. Termina em %s.",
+		[" The war emblems show after your next login."] =
+			" Os emblemas de guerra aparecem depois do seu próximo login.",
+		["Your guild is at war with %s."] =
+			"Sua guild está em guerra com %s.",
+		["The war between %s and %s ended in a draw (%s, %s)."] =
+			"A guerra entre %s e %s terminou em empate (%s, %s).",
+		["%s surrendered%s: %s wins the war (%s)."] =
+			"%s se rendeu%s: %s vence a guerra (%s).",
+		["%s won the war against %s (%s, %s)."] =
+			"%s venceu a guerra contra %s (%s, %s).",
+		[" %s gold goes to the winner's guild bank."] =
+			" %s de ouro vão para o banco da guild vencedora.",
+		["War %s - %s: %s killed %s%s. Score %s : %s."] =
+			"Guerra %s - %s: %s matou %s%s. Placar %s : %s.",
+		[" (not counted: %s)"] =
+			" (não contou: %s)",
+		["That guild does not exist any more."] =
+			"Essa guild não existe mais.",
+		["Wars are fought only within a realm."] =
+			"Guerras só acontecem dentro de um realm.",
+		["Your guild bank holds %s gold."] =
+			"O banco da sua guild tem %s de ouro.",
+		["That war changed in the meantime."] =
+			"Essa guerra mudou nesse meio tempo.",
+		["A stake is at least %s gold (or none)."] =
+			"Uma aposta é de no mínimo %s de ouro (ou nenhuma).",
+		["A stake is at most %s gold."] =
+			"Uma aposta é de no máximo %s de ouro.",
+		-- Scorched Marches (pvpzone_core.lua, pvpzone.lua)
+		["%s are closed."] =
+			"%s estão fechadas.",
+		["You are already in %s."] =
+			"Você já está em %s.",
+		["You need level %d to enter %s."] =
+			"Você precisa do level %d para entrar em %s.",
+		["Hardcore characters cannot enter the Marches: a Hardcore life is not staked in open PvP."] =
+			"Personagens Hardcore não podem entrar nas Marches: uma vida Hardcore não é arriscada em PvP aberto.",
+		["Hardcore: confirm that a defeat in the Marches may end your Hardcore run."] =
+			"Hardcore: confirme que uma derrota nas Marches pode encerrar a sua run Hardcore.",
+		["Characters of your realm cannot enter %s."] =
+			"Personagens do seu realm não podem entrar em %s.",
+		["You were defeated in the Marches. You can enter again in %d seconds."] =
+			"Você foi derrotado nas Marches. Você poderá entrar de novo em %d segundos.",
+		["You cannot enter the Marches while another character from your connection is online."] =
+			"Você não pode entrar nas Marches enquanto outro personagem da sua conexão estiver online.",
+		["You cannot enter the Marches while in %s."] =
+			"Você não pode entrar nas Marches enquanto estiver em %s.",
+		["You cannot enter the Marches while in combat."] =
+			"Você não pode entrar nas Marches em combate.",
+		["You can only enter the Marches from a protection zone."] =
+			"Você só pode entrar nas Marches a partir de uma zona de proteção.",
+		["Read and accept the rules of the Marches first."] =
+			"Leia e aceite primeiro as regras das Marches.",
+		["Unknown faction."] =
+			"Facção desconhecida.",
+		["You already fight for %s."] =
+			"Você já luta por %s.",
+		["%s does not trust you enough: you need the rank %s."] =
+			"%s não confia em você o bastante: você precisa do posto %s.",
+		["You can change your pledge in %d hour(s)."] =
+			"Você poderá mudar seu juramento em %d hora(s).",
+		["You already own it."] =
+			"Você já possui isso.",
+		["Weekly limit reached (%d)."] =
+			"Limite semanal atingido (%d).",
+		["You need %d more banked embers."] =
+			"Você precisa de mais %d embers no banco.",
+		["level gap"] =
+			"diferença de level",
+		["just arrived"] =
+			"acabou de chegar",
+		["The Marches cannot be reached right now."] =
+			"As Marches não podem ser alcançadas agora.",
+		["You enter %s. Protected for %d seconds. Bank your embers at a safe exit (the white circles by the banners)."] =
+			"Você entra em %s. Protegido por %d segundos. Guarde suas embers em uma saída segura (os círculos brancos junto às bandeiras).",
+		["You wake in %s. You are protected while you are brought to a safe exit."] =
+			"Você acorda em %s. Você está protegido enquanto é levado a uma saída segura.",
+		["%s are a PvP zone: enter through Adventure > Scorched Marches and accept the rules first."] =
+			"%s são uma zona de PvP: entre por Adventure > Scorched Marches e aceite as regras primeiro.",
+		["You left the Marches without a safe exit: your %d carried embers burned."] =
+			"Você saiu das Marches sem uma saída segura: suas %d embers carregadas queimaram.",
+		["You leave %s. %d embers banked (%d in total)%s."] =
+			"Você sai de %s. %d embers guardadas (%d no total)%s.",
+		[", %d lost over the bank limit"] =
+			", %d perdidas acima do limite do banco",
+		["You leave %s."] =
+			"Você sai de %s.",
+		["You take %d embers (carrying %d)."] =
+			"Você pega %d embers (carregando %d).",
+		["These embers belong to the victor for a few more seconds."] =
+			"Essas embers pertencem ao vencedor por mais alguns segundos.",
+		["Self-Found characters do not take the embers of others."] =
+			"Personagens Self-Found não pegam as embers de outros.",
+		["You took all you may from this pile."] =
+			"Você já pegou tudo o que podia desta pilha.",
+		["You took all the embers you may from other players today."] =
+			"Você já pegou hoje todas as embers que pode de outros jogadores.",
+		["You cannot carry more embers. Bank them at a safe exit."] =
+			"Você não pode carregar mais embers. Guarde-as em uma saída segura.",
+		["You have earned all the reputation the Marches give today."] =
+			"Você já ganhou hoje toda a reputação que as Marches dão.",
+		["You defeated %s.%s"] =
+			"Você derrotou %s.%s",
+		[" %d embers fell: yours alone for %d seconds."] =
+			" %d embers caíram: só suas por %d segundos.",
+		["You defeated %s, but it does not count (%s): the embers burn."] =
+			"Você derrotou %s, mas não conta (%s): as embers queimam.",
+		["You were defeated by %s in %s.%s You can enter again in %d seconds."] =
+			"Você foi derrotado por %s em %s.%s Você poderá entrar de novo em %d segundos.",
+		[" Your %d carried embers fell where you stood."] =
+			" Suas %d embers carregadas caíram onde você estava.",
+		[" Your %d carried embers burned."] =
+			" Suas %d embers carregadas queimaram.",
+		["The Cinder Shrine stirs in %s: its Warden has risen. Slay it and hold the circle for your faction."] =
+			"O Cinder Shrine desperta em %s: seu Warden se levantou. Derrote-o e segure o círculo pela sua facção.",
+		["The Shrine Warden has fallen: the Cinder Shrine can be taken. Stand in its circle with your faction."] =
+			"O Shrine Warden caiu: o Cinder Shrine pode ser tomado. Fique no círculo dele com a sua facção.",
+		["%s took the Cinder Shrine in %s: everyone sworn to it gains +%d%% experience and +%d%% loot for %d minutes."] =
+			"%s tomou o Cinder Shrine em %s: todos que juraram a ele ganham +%d%% de experiência e +%d%% de loot por %d minutos.",
+		["The Cinder Shrine falls silent: nobody took it in time."] =
+			"O Cinder Shrine silencia: ninguém o tomou a tempo.",
+		["The factions are not available."] =
+			"As facções não estão disponíveis.",
+		["Pledge before you enter the Marches."] =
+			"Faça o juramento antes de entrar nas Marches.",
+		["You fight for %s in the Marches."] =
+			"Você luta por %s nas Marches.",
+		["Cosmetics are not available."] =
+			"Os cosméticos não estão disponíveis.",
+		["That cosmetic could not be granted."] =
+			"Esse cosmético não pôde ser concedido.",
+		["Bought %s for %d embers.%s"] =
+			"%s comprado por %d embers.%s",
+		[" Part of it went to your inbox."] =
+			" Parte foi para a sua inbox.",
+		["You are at a safe exit, protected for %d seconds. Stand in the circle to leave and bank your embers."] =
+			"Você está em uma saída segura, protegido por %d segundos. Fique no círculo para sair e guardar suas embers.",
+		["Leaving in %d seconds: do not fight."] =
+			"Saindo em %d segundos: não lute.",
+		["Your protection ends: you attacked."] =
+			"Sua proteção acabou: você atacou.",
+		["You cannot carry more than %d embers. Bank them at a safe exit."] =
+			"Você não pode carregar mais de %d embers. Guarde-as em uma saída segura.",
+		-- Passive tree (passivetree.lua, passivetree_core.lua)
+		["Unknown node in request."] =
+			"Nó desconhecido no pedido.",
+		["That node belongs to another class."] =
+			"Esse nó pertence a outra classe.",
+		["You do not own enough passive points for that allocation."] =
+			"Você não tem pontos passivos suficientes para essa alocação.",
+		["Every allocated node must be connected to the starting node."] =
+			"Todo nó alocado precisa estar ligado ao nó inicial.",
+		["Saved nodes cannot be removed by saving. Use a refund (right-click a node) or a reset."] =
+			"Nós salvos não podem ser removidos ao salvar. Use um reembolso (clique direito no nó) ou um reset.",
+		["Choose an effect for every new mastery node."] =
+			"Escolha um efeito para cada novo nó de maestria.",
+		["You already have those nodes. Your tree was refreshed."] =
+			"Você já tem esses nós. Sua árvore foi atualizada.",
+		["%d node allocated."] =
+			"%d nó alocado.",
+		["%d nodes allocated."] =
+			"%d nós alocados.",
+		["You need %s gold coins (carried or in the bank) to change the effect."] =
+			"Você precisa de %s gold coins (na mochila ou no banco) para mudar o efeito.",
+		["Mastery effect changed for %s gold coins."] =
+			"Efeito de maestria mudado por %s gold coins.",
+		["Mastery effect changed (free)."] =
+			"Efeito de maestria mudado (grátis).",
+		["There is nothing to reset."] =
+			"Não há nada para resetar.",
+		["You need %d gold coins (carried or in the bank) to reset your passive tree."] =
+			"Você precisa de %d gold coins (na mochila ou no banco) para resetar sua árvore passiva.",
+		["Your passive tree was reset for %d gold coins."] =
+			"Sua árvore passiva foi resetada por %d gold coins.",
+		["Mastery node %d is in the request twice."] =
+			"O nó de maestria %d aparece duas vezes no pedido.",
+		["Nothing is planned."] =
+			"Nada foi planejado.",
+		["The plan is too large (at most %d nodes)."] =
+			"O plano é grande demais (no máximo %d nós).",
+		["Unknown node in the plan."] =
+			"Nó desconhecido no plano.",
+		["Node %d is in the plan twice."] =
+			"O nó %d aparece duas vezes no plano.",
+		["Node %d is already allocated."] =
+			"O nó %d já está alocado.",
+		["Node %d belongs to another class."] =
+			"O nó %d pertence a outra classe.",
+		["The plan needs %d points; you have %d free."] =
+			"O plano precisa de %d pontos; você tem %d livres.",
+		["Node %d is not connected to your allocated nodes."] =
+			"O nó %d não está ligado aos seus nós alocados.",
+		["Node %d is not a mastery node."] =
+			"O nó %d não é um nó de maestria.",
+		["Mastery node %d is not in the plan."] =
+			"O nó de maestria %d não está no plano.",
+		["Mastery node %d has no effect %d."] =
+			"O nó de maestria %d não tem o efeito %d.",
+		["Choose an effect for the mastery node %d."] =
+			"Escolha um efeito para o nó de maestria %d.",
+		["That is not a mastery node."] =
+			"Esse não é um nó de maestria.",
+		["That mastery is not allocated: plan it and choose its effect there."] =
+			"Essa maestria não está alocada: planeje-a e escolha o efeito dela ali.",
+		["That mastery has no such effect."] =
+			"Essa maestria não tem esse efeito.",
+		["That effect is already chosen."] =
+			"Esse efeito já está escolhido.",
+		-- Transmog (transmog_core.lua, transmog.lua)
+		["There is no item in that slot."] =
+			"Não há item nesse slot.",
+		["This item cannot change its look."] =
+			"Este item não pode mudar de visual.",
+		["Unknown appearance."] =
+			"Aparência desconhecida.",
+		["That appearance is not of the same kind (%s)."] =
+			"Essa aparência não é do mesmo tipo (%s).",
+		["That is the item's own look: use Remove to restore it."] =
+			"Esse é o visual original do item: use Remover para restaurá-lo.",
+		["The item already has that look."] =
+			"O item já tem esse visual.",
+		["You have not unlocked that appearance yet."] =
+			"Você ainda não desbloqueou essa aparência.",
+		["You need %d gold (backpack and bank) to change the look."] =
+			"Você precisa de %d de ouro (mochila e banco) para mudar o visual.",
+		["The item already shows its own look."] =
+			"O item já mostra o visual original.",
+		["You need %d gold to restore the look."] =
+			"Você precisa de %d de ouro para restaurar o visual.",
+		["You need %d gold to change the look."] =
+			"Você precisa de %d de ouro para mudar o visual.",
+		["Your %s now looks like %s%s."] =
+			"Seu %s agora tem o visual de %s%s.",
+		[" (%d gold)"] =
+			" (%d de ouro)",
+		[" This server's engine lacks patch 0019: the look is saved but not shown yet."] =
+			" O motor deste servidor não tem o patch 0019: o visual foi salvo, mas ainda não aparece.",
+		["Your %s shows its own look again."] =
+			"Seu %s mostra o visual original de novo.",
+		["Choose them in Character > Transmog (account-wide, appearance only)."] =
+			"Escolha-as em Character > Transmog (vale para a conta toda, só aparência).",
+		-- Season join, refusals and messages
+		["%s has not started yet: it starts in %s."] =
+			"%s ainda não começou: começa em %s.",
+		["No season is running."] =
+			"Nenhuma temporada está em andamento.",
+		["This character is already a %s character."] =
+			"Este personagem já é um personagem de %s.",
+		["This character already played a season. Make a new character to join."] =
+			"Este personagem já jogou uma temporada. Crie um novo personagem para participar.",
+		["Only a fresh character can join: level %d or lower (this character is level %d). Make a new character to join."] =
+			"Só um personagem novo pode participar: nível %d ou menor (este personagem é nível %d). Crie um novo personagem para participar.",
+		["Empty your depot, stash items, inbox and store inbox first: season characters start with nothing."] =
+			"Esvazie antes o seu depósito, o estoque, a caixa de entrada e a caixa de entrada da loja: personagens de temporada começam sem nada.",
+		["Characters that own a house cannot join a season."] =
+			"Personagens que possuem uma casa não podem participar de uma temporada.",
+		["The season chosen when this character was created is over. %s is running now: Adventure > Season to join it."] =
+			"A temporada escolhida na criação deste personagem acabou. %s está em andamento agora: Aventura > Temporada para participar.",
+		["The season chosen when this character was created could not be joined: %s"] =
+			"Não foi possível entrar na temporada escolhida na criação deste personagem: %s",
+		["%s is not for season characters: they get only cosmetics and account services from the store. Buy it with a standard character."] =
+			"%s não é para personagens de temporada: eles recebem da loja apenas cosméticos e serviços da conta. Compre com um personagem padrão.",
+		["%s is a season character: only cosmetics and account services can be given to it."] =
+			"%s é um personagem de temporada: só é possível dar a ele cosméticos e serviços da conta.",
+		["Season characters cannot claim the pass's items while the season runs: claim them with a standard character, or after the season."] =
+			"Personagens de temporada não podem resgatar os itens do passe enquanto a temporada durar: resgate com um personagem padrão ou depois da temporada.",
+		["Season markets trade for gold only: Chaos Coins belong to the whole account."] =
+			"Os mercados de temporada negociam apenas em ouro: os Chaos Coins pertencem a toda a conta.",
+		["Season characters cannot claim this now."] =
+			"Personagens de temporada não podem resgatar isto agora.",
+		["Season markets trade for gold only."] =
+			"Os mercados de temporada negociam apenas em ouro.",
+		["Season characters can only trade with characters of the same season."] =
+			"Personagens de temporada só podem negociar com personagens da mesma temporada.",
+		["You cannot take or hand over items between season and standard characters."] =
+			"Você não pode pegar nem entregar itens entre personagens de temporada e padrão.",
+		["Season characters can only send mail to characters of the same season."] =
+			"Personagens de temporada só podem enviar correio a personagens da mesma temporada.",
+		["This house belongs to a character of another realm (season / standard)."] =
+			"Esta casa pertence a um personagem de outro reino (temporada / padrão).",
+		["Season characters can only be in a party with characters of the same season."] =
+			"Personagens de temporada só podem estar em grupo com personagens da mesma temporada.",
+		["Self-Found characters cannot trade."] =
+			"Personagens Self-Found não podem negociar.",
+		["Self-Found characters can only be in a party with other Self-Found characters."] =
+			"Personagens Self-Found só podem estar em grupo com outros personagens Self-Found.",
+		["Self-Found characters cannot buy or sell on the market."] =
+			"Personagens Self-Found não podem comprar nem vender no mercado.",
+		["Self-Found characters cannot use the Orb Exchange."] =
+			"Personagens Self-Found não podem usar a Troca de Orbes.",
+		["Self-Found characters cannot send mail."] =
+			"Personagens Self-Found não podem enviar correio.",
+		["That character is Self-Found: it cannot receive mail."] =
+			"Esse personagem é Self-Found: não pode receber correio.",
+		["Self-Found: you can only take your own items and your own loot."] =
+			"Self-Found: você só pode pegar os seus próprios itens e o seu próprio saque.",
+		["Self-Found: you cannot hand items to other players."] =
+			"Self-Found: você não pode entregar itens a outros jogadores.",
+		["That item belongs to a Self-Found character."] =
+			"Esse item pertence a um personagem Self-Found.",
+		["Self-Found characters keep their items to themselves (house)."] =
+			"Personagens Self-Found guardam os itens só para si (casa).",
+		["Trade, party and loot with every character of the season."] =
+			"Negocie, forme grupo e divida o saque com todos os personagens da temporada.",
+		["Self-Found: no trading of any kind (trade window, market, Orb Exchange, mail, bank transfers, items of other players on the ground), parties only with Self-Found characters, loot stays your own. Reward: +25% Item Find and +25% Rarity Find, and the Self-Found ladder."] =
+			"Self-Found: nenhum tipo de negociação (janela de troca, mercado, Troca de Orbes, correio, transferências bancárias, itens de outros jogadores no chão), grupos só com personagens Self-Found, o saque fica só seu. Recompensa: Item Find e Rarity Find aumentados em 25%, e o ranking Self-Found.",
+		["Hardcore: one life. If this character dies it falls: it leaves the Hardcore ladder for good, becomes a standard character at once and its grave stays on the ladder."] =
+			"Hardcore: uma só vida. Se este personagem morrer, ele cai: sai do ranking Hardcore para sempre, vira um personagem padrão na hora e a sua lápide fica no ranking.",
+		["Hardcore Self-Found: one life AND no trading. Both sets of rules at once."] =
+			"Hardcore Self-Found: uma só vida E nenhuma negociação. Os dois conjuntos de regras ao mesmo tempo.",
+		["%s is a season character."] =
+			"%s é um personagem de temporada.",
+		["%s is not for season characters."] =
+			"%s não é para personagens de temporada.",
+		["%s %s a %s character %s."] =
+			"%s %s um personagem de %s %s.",
+		["%s %s a veteran of %s."] =
+			"%s %s um veterano de %s.",
+		["Join %s %s? This cannot be undone: %s. Until the season ends this character can only trade, mail and party with %s characters. At the end it becomes a standard character and keeps everything."] =
+			"Entrar em %s %s? Isto não pode ser desfeito: %s. Até o fim da temporada este personagem só pode negociar, enviar correio e formar grupo com personagens de %s. No fim ele vira um personagem padrão e mantém tudo.",
+		["every item you carry is destroyed"] =
+			"todo item que você carrega é destruído",
+		["your bank balance and supply stash are emptied"] =
+			"o seu saldo bancário e o estoque de suprimentos são esvaziados",
+		[" Confirm in the Season window within %d seconds."] =
+			" Confirme na janela de Temporada em até %d segundos.",
 	},
 }

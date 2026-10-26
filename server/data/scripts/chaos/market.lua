@@ -383,6 +383,9 @@ local function coinsOf(accountId)
 end
 
 local function send(player, action, data)
+	if type(data) == "table" and type(data.text) == "string" then
+		data.text = Chaos.tx(player, data.text) -- the refusals and results of the core and the config are English
+	end
 	Chaos.sendChunked(player, OPCODE, json.encode({action = action, data = data or {}}))
 end
 
@@ -402,7 +405,15 @@ local function toast(player, text)
 end
 
 local function tell(player, text)
-	player:sendTextMessage(MESSAGE_EVENT_ADVANCE or MESSAGE_INFO_DESCR, "Market: " .. text)
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE or MESSAGE_INFO_DESCR, Chaos.t(player, "Market: %s", Chaos.tx(player, text)))
+end
+
+-- "1,200 gold" / "95 Chaos Coins" in the player's language
+local function amt(player, cur, n)
+	if cur == "coins" then
+		return Chaos.t(player, "%s Chaos Coins", MC.money(n))
+	end
+	return Chaos.t(player, "%s gold", MC.money(n))
 end
 
 -- a toast of the notification module (notifications.lua ChaosNotify.send; kind "sale" = the ITEM SOLD header)
@@ -642,14 +653,14 @@ function MK.deliver(player, away)
 				logRow("error", {offer = r.offer_id, player = guid, text = "delivery " .. r.id .. ": inbox refused (" .. tostring(ret) .. ")"})
 				break
 			end
-			lines[#lines + 1] = string.format("%s%s in your inbox (%s)", o.count > 1 and (o.count .. "x ") or "", o.name, REASON_TEXT[r.reason] or r.reason)
+			lines[#lines + 1] = Chaos.t(player, "%s%s in your inbox (%s)", o.count > 1 and (o.count .. "x ") or "", o.name,
+				Chaos.t(player, REASON_TEXT[r.reason] or r.reason))
 		elseif (r.kind == "gold" or r.kind == "coins") and r.reason == "refund" then
 			-- what a closed buy order did not spend (offer_id = -order id; coins were already put back on the account)
 			if r.kind == "gold" then
 				player:setBankBalance(player:getBankBalance() + r.amount)
 			end
-			lines[#lines + 1] = string.format("+%s %s back from your buy order %d", MC.money(r.amount), r.kind == "gold" and "gold" or "Chaos Coins",
-				-r.offer_id)
+			lines[#lines + 1] = Chaos.t(player, "+%s back from your buy order %d", amt(player, r.kind, r.amount), -r.offer_id)
 		elseif r.kind == "gold" or r.kind == "coins" then
 			if r.kind == "gold" then
 				player:setBankBalance(player:getBankBalance() + r.amount)
@@ -661,7 +672,7 @@ function MK.deliver(player, away)
 			if sale then
 				ChaosMarketNotify.add(sales, sale)
 			else
-				lines[#lines + 1] = string.format("+%s %s (sold %s%s to %s)", MC.money(r.amount), r.kind == "gold" and "gold" or "Chaos Coins",
+				lines[#lines + 1] = Chaos.t(player, "+%s (sold %s%s to %s)", amt(player, r.kind, r.amount),
 					o.count > 1 and (o.count .. "x ") or "", o.name, o.buyer_name)
 			end
 		end
@@ -689,7 +700,7 @@ function MK.deliver(player, away)
 				text = r.kind .. " " .. r.reason})
 		end
 	end
-	local sold = ChaosMarketNotify.summary(sales, away)
+	local sold = ChaosMarketNotify.summary(sales, away, Chaos.lang(player))
 	if sold then
 		for _, line in ipairs(sold.lines) do
 			tell(player, line)
@@ -697,8 +708,8 @@ function MK.deliver(player, away)
 		notify(player, sold.title, sold.text, "sale")
 	end
 	if #lines > 0 then
-		tell(player, table.concat(lines, "; ") .. ". Items are in your inbox, gold in your bank.")
-		toast(player, #lines == 1 and lines[1] or string.format("%d market deliveries: see the Server Log.", #lines))
+		tell(player, Chaos.t(player, "%s. Items are in your inbox, gold in your bank.", table.concat(lines, "; ")))
+		toast(player, #lines == 1 and lines[1] or Chaos.t(player, "%d market deliveries: see the Server Log.", #lines))
 	end
 	if sold or #lines > 0 then
 		sendWallet(player)
@@ -869,21 +880,21 @@ function MK.list(player, d)
 	logRow("list", {offer = id, player = guid, item = itemId, count = count, name = name,
 		currency = (gold > 0 and "gold" or "") .. (coins > 0 and "coins" or ""), amount = gold > 0 and gold or coins, fee = fee,
 		text = string.format("gold %d coins %d days %d realm %d codec %s", gold, coins, days, realm, codec)})
-	send(player, "done", {what = "list", id = id, text = string.format("Listed %s%s for %s. Listing fee: %s gold.",
-		count > 1 and (count .. "x ") or "", name, MK.priceText(gold, coins), MC.money(fee))})
+	send(player, "done", {what = "list", id = id, text = Chaos.t(player, "Listed %s%s for %s. Listing fee: %s gold.",
+		count > 1 and (count .. "x ") or "", name, MK.priceText(gold, coins, player), MC.money(fee))})
 	sendWallet(player)
 	return true
 end
 
-function MK.priceText(gold, coins)
+function MK.priceText(gold, coins, player)
 	local parts = {}
 	if (gold or 0) > 0 then
-		parts[#parts + 1] = MC.money(gold) .. " gold"
+		parts[#parts + 1] = amt(player, "gold", gold)
 	end
 	if (coins or 0) > 0 then
-		parts[#parts + 1] = MC.money(coins) .. " Chaos Coins"
+		parts[#parts + 1] = amt(player, "coins", coins)
 	end
-	return table.concat(parts, " or ")
+	return table.concat(parts, Chaos.t(player, " or "))
 end
 
 -- ------------------------------------------------------------------ buying
@@ -995,8 +1006,8 @@ function MK.buy(player, d)
 	if ChaosMarketHistory then
 		pcall(ChaosMarketHistory.record, id, realm) -- the price history (market_history.lua); never fails the sale
 	end
-	send(player, "done", {what = "buy", id = id, text = string.format("Bought %s%s for %s %s. It is in your inbox.",
-		o.count > 1 and (o.count .. "x ") or "", o.name, MC.money(price), cur == "coins" and "Chaos Coins" or "gold")})
+	send(player, "done", {what = "buy", id = id, text = Chaos.t(player, "Bought %s%s for %s. It is in your inbox.",
+		o.count > 1 and (o.count .. "x ") or "", o.name, amt(player, cur, price))})
 	MK.deliver(player)
 	sendWallet(player)
 	-- the seller online: told now by its delivery (the gold or the coins notice: one chat line and the ITEM SOLD toast);
@@ -1036,7 +1047,7 @@ function MK.cancel(player, d)
 		return refuse(player, MSG.notFound)
 	end
 	logRow("cancel", {offer = id, player = o.seller_id, item = o.item_id, count = o.count, name = o.name})
-	send(player, "done", {what = "cancel", id = id, text = string.format("Offer cancelled: %s goes back to your inbox.", o.name)})
+	send(player, "done", {what = "cancel", id = id, text = Chaos.t(player, "Offer cancelled: %s goes back to your inbox.", o.name)})
 	MK.deliver(player)
 	return true
 end
@@ -1069,10 +1080,6 @@ local function orderById(id)
 	return sql(string.format("SELECT %s FROM `%s` WHERE `id` = %d", ORDER_SELECT, T.orders, id), ORDER_COLS)[1]
 end
 MK.orderById = orderById
-
-local function curName(cur)
-	return cur == "coins" and "Chaos Coins" or "gold"
-end
 
 -- the item kinds an order may name: pickupable, movable, not money
 local function orderableType(sid)
@@ -1212,8 +1219,8 @@ function MK.orderPost(player, d)
 	player:setBankBalance(balance - goldTaken)
 	logRow("order", {offer = -id, player = guid, item = sid, count = o.quantity, name = name, currency = o.cur, amount = o.total, fee = o.fee,
 		text = string.format("buy order %d: %d x %d %s, days %d, realm %d, filter %s", id, o.quantity, o.price, o.cur, o.days, realm, filterText)})
-	send(player, "done", {what = "orderPost", id = id, text = string.format("Buy order posted: %dx %s at %s %s each. %s %s are held for it; "
-		.. "listing fee: %s gold.", o.quantity, name, MC.money(o.price), curName(o.cur), MC.money(o.total), curName(o.cur), MC.money(o.fee))})
+	send(player, "done", {what = "orderPost", id = id, text = Chaos.t(player, "Buy order posted: %dx %s at %s each. %s are held for it; listing fee: %s gold.",
+		o.quantity, name, amt(player, o.cur, o.price), amt(player, o.cur, o.total), MC.money(o.fee))})
 	sendWallet(player)
 	return true
 end
@@ -1254,8 +1261,8 @@ function MK.orderCancel(player, d)
 	end
 	logRow("ordercancel", {offer = -id, player = o.buyer_id, item = o.item_id, count = o.quantity - o.filled, name = o.name, currency = o.currency,
 		amount = o.escrow})
-	send(player, "done", {what = "orderCancel", id = id, text = string.format("Buy order cancelled: %s %s come back to you; the listing fee is not refunded.",
-		MC.money(o.escrow), curName(o.currency))})
+	send(player, "done", {what = "orderCancel", id = id, text = Chaos.t(player, "Buy order cancelled: %s come back to you; the listing fee is not refunded.",
+		amt(player, o.currency, o.escrow))})
 	MK.deliver(player)
 	sendWallet(player)
 	return true
@@ -1482,7 +1489,7 @@ function MK.fill(player, d)
 	local facts, tip = itemFacts(item)
 	local fits, missing = MO.matches(MO.decodeFilter(o.filter), facts)
 	if not fits then
-		return refuse(player, "That item does not fit the order: " .. missing)
+		return refuse(player, Chaos.t(player, "That item does not fit the order: %s", Chaos.tx(player, missing)))
 	end
 	local total, tax, net = MO.payment(cfg, o.currency, o.price, n)
 	if o.escrow < total then
@@ -1543,15 +1550,21 @@ function MK.fill(player, d)
 		MK.deliver(player)
 		return false
 	end
-	send(player, "done", {what = "fill", id = id, text = string.format("Sold %s%s to %s's buy order for %s %s (tax %s): %s %s %s.",
-		n > 1 and (n .. "x ") or "", name, o.buyer_name, MC.money(total), curName(o.currency), MC.money(tax), MC.money(net), curName(o.currency),
-		o.currency == "coins" and "added to your account" or "to your bank")})
+	local soldText
+	if o.currency == "coins" then
+		soldText = Chaos.t(player, "Sold %s%s to %s's buy order for %s (tax %s): %s added to your account.", n > 1 and (n .. "x ") or "",
+			name, o.buyer_name, amt(player, o.currency, total), MC.money(tax), amt(player, o.currency, net))
+	else
+		soldText = Chaos.t(player, "Sold %s%s to %s's buy order for %s (tax %s): %s to your bank.", n > 1 and (n .. "x ") or "",
+			name, o.buyer_name, amt(player, o.currency, total), MC.money(tax), amt(player, o.currency, net))
+	end
+	send(player, "done", {what = "fill", id = id, text = soldText})
 	MK.deliver(player)
 	sendWallet(player)
 	local buyer = Player(o.buyer_id)
 	if buyer then
-		tell(buyer, string.format("%s filled your buy order: %s%s for %s %s.", player:getName(), n > 1 and (n .. "x ") or "", name, MC.money(total),
-			curName(o.currency)))
+		tell(buyer, Chaos.t(buyer, "%s filled your buy order: %s%s for %s.", player:getName(), n > 1 and (n .. "x ") or "", name,
+			amt(buyer, o.currency, total)))
 		MK.deliver(buyer)
 	end
 	return true
@@ -1755,7 +1768,7 @@ end
 function MK.open(player)
 	local ok, why = canUse(player)
 	if not ok then
-		player:sendCancelMessage(why)
+		player:sendCancelMessage(Chaos.tx(player, why))
 		return false
 	end
 	send(player, "meta", MK.meta(player))

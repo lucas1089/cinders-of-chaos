@@ -60,6 +60,88 @@ function I.text(lang, key, ...)
 	return format(key, ...) or key
 end
 
+-- A reason a pure core returns already formatted ("Your guild needs guild level 3 for a guild hall."): I.translate
+-- finds the pt-BR template it came from. A key with % conversions is turned into a Lua pattern once (%d -> a number,
+-- other conversions -> any text); the longest literal part is tried first, and a key with less than 12 literal
+-- characters is never used this way. An exact key wins. The captures are fed back to the pt-BR pattern, so one entry
+-- covers every value. A text without an entry is returned as it is (English).
+local matchers = {}
+local function build(lang)
+	local list = {}
+	for key, tr in pairs(I.strings[lang] or {}) do
+		if key:find("%%[-+ #0]*%d*%.?%d*[diouxXeEfgGqsc]") then
+			local convs, lits, pat, i, ok = 0, 0, {"^"}, 1, true
+			while i <= #key do
+				local c = key:sub(i, i)
+				if c == "%" then
+					if key:sub(i + 1, i + 1) == "%" then
+						pat[#pat + 1] = "%%"
+						lits = lits + 1
+						i = i + 2
+					else
+						local spec, conv = key:match("^%%([-+ #0]*%d*%.?%d*)([diouxXeEfgGqsc])", i)
+						if not conv then
+							ok = false
+							break
+						end
+						convs = convs + 1
+						pat[#pat + 1] = (conv == "d" or conv == "i" or conv == "u") and "(%-?%d+)" or "(.-)"
+						i = i + 1 + #spec + 1
+					end
+				else
+					pat[#pat + 1] = (c:gsub("[%^%$%(%)%.%[%]%*%+%-%?%%]", "%%%0"))
+					lits = lits + 1
+					i = i + 1
+				end
+			end
+			if ok and convs > 0 and lits >= 12 then
+				pat[#pat + 1] = "$"
+				list[#list + 1] = {pattern = table.concat(pat), tr = tr, lits = lits, key = key}
+			end
+		end
+	end
+	table.sort(list, function(a, b)
+		if a.lits ~= b.lits then
+			return a.lits > b.lits
+		end
+		return a.key < b.key
+	end)
+	return list
+end
+
+-- forget the compiled templates (a test that adds table entries calls it)
+function I.resetMatchers()
+	matchers = {}
+end
+
+function I.translate(lang, text)
+	if I.isMsg(text) then
+		return I.resolve(text, lang)
+	end
+	if type(text) ~= "string" or text == "" then
+		return text
+	end
+	lang = I.normalize(lang) or I.DEFAULT
+	local t = I.strings[lang]
+	if not t or lang == I.DEFAULT then
+		return text
+	end
+	if t[text] then
+		return I.text(lang, text)
+	end
+	matchers[lang] = matchers[lang] or build(lang)
+	for _, m in ipairs(matchers[lang]) do
+		local caps = {text:match(m.pattern)}
+		if #caps > 0 then
+			local out = format(m.tr, unpack(caps))
+			if out then
+				return out
+			end
+		end
+	end
+	return text
+end
+
 -- A deferred text: ChaosI18n.msg("Wave %d of %d: %s reach %s!", ...) keeps the key and the arguments, so a broadcast
 -- can write it in each player's language (I.resolve). tostring() of one is its English text (logs). An argument may
 -- be a deferred text too.
@@ -229,6 +311,12 @@ function I.install(C)
 			end
 		end
 		return I.text(lang, key, unpack(args, 1, n))
+	end
+
+	-- Chaos.tx(player, reason): the text a core returned (a plain or formatted English text, or a deferred text) in the
+	-- player's language; see ChaosI18n.translate
+	function C.tx(player, text)
+		return I.translate(C.lang(player), text)
 	end
 
 	-- a broadcast in each player's language. `what` is a key (with the arguments), a deferred text (I.msg) or a

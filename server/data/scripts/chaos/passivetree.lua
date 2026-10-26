@@ -65,7 +65,8 @@ local function getTree()
 end
 
 local function sendMessageBox(player, title, message)
-	Chaos.send(player, OPCODE, "sendMessage", {title = title, message = message})
+	-- the title stays English; the message is a refusal of the core or a formatted line
+	Chaos.send(player, OPCODE, "sendMessage", {title = title, message = Chaos.tx(player, message)})
 end
 
 local function totalPoints(player)
@@ -330,7 +331,7 @@ local function handleSave(player, data)
 end
 
 local function planResult(player, ok, message)
-	Chaos.send(player, OPCODE, "planResult", {ok = ok == true, message = message})
+	Chaos.send(player, OPCODE, "planResult", {ok = ok == true, message = Chaos.tx(player, message)})
 end
 
 -- the whole plan in one request: checked fully (validatePlan: the same rules as a save), saved at once or not at all
@@ -371,7 +372,7 @@ local function handlePlanApply(player, data)
 	sendNodes(player)
 	sendPoints(player)
 	applyBonuses(player)
-	planResult(player, true, string.format("%d node%s allocated.", #result.added, #result.added == 1 and "" or "s"))
+	planResult(player, true, string.format(#result.added == 1 and "%d node allocated." or "%d nodes allocated.", #result.added))
 end
 
 -- a saved mastery takes another effect: the single-node refund price (respec.lua), the same free cases

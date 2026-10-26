@@ -26,6 +26,17 @@ local C = ChaosGuildWarCore
 
 local floor = math.floor
 
+-- the text in `lang` (ChaosI18n when it is loaded, English otherwise); guildwar.lua passes the language of the reader
+local function T(lang, key, ...)
+	if ChaosI18n and ChaosI18n.text then
+		return ChaosI18n.text(lang, key, ...)
+	end
+	if select("#", ...) == 0 then
+		return key
+	end
+	return string.format(key, ...)
+end
+
 function C.money(n)
 	n = floor(tonumber(n) or 0)
 	local s = tostring(math.abs(n))
@@ -324,13 +335,13 @@ function C.gxpOf(war, side, reason, cfg)
 end
 
 -- ---------------------------------------------------------------- texts and rows
-function C.termsText(war)
-	local parts = {string.format("first to %d kills", war.fragLimit or 0),
-		string.format("%d hours", war.hours or 0)}
+function C.termsText(war, lang)
+	local parts = {T(lang, "first to %d kills", war.fragLimit or 0),
+		T(lang, "%d hours", war.hours or 0)}
 	if (war.stake or 0) > 0 then
-		parts[#parts + 1] = string.format("%s gold at stake per side", C.money(war.stake))
+		parts[#parts + 1] = T(lang, "%s gold at stake per side", C.money(war.stake))
 	else
-		parts[#parts + 1] = "no stake"
+		parts[#parts + 1] = T(lang, "no stake")
 	end
 	return table.concat(parts, ", ")
 end
@@ -347,16 +358,17 @@ end
 local REASONS = {limit = "frag limit reached", time = "time is up", surrender = "surrender", disband = "a guild disbanded",
 	staff = "ended by the staff", external = "ended outside the game"}
 
-function C.reasonText(reason)
-	return REASONS[reason] or tostring(reason or "")
+function C.reasonText(reason, lang)
+	local text = REASONS[reason]
+	return text and T(lang, text) or tostring(reason or "")
 end
 
 -- one war for the window, from gid's point of view (gid nil: the declarer's)
-function C.row(war, gid, now)
+function C.row(war, gid, now, lang)
 	local side = C.side(war, gid) or 1
 	local own, other = side == 1 and war.name1 or war.name2, side == 1 and war.name2 or war.name1
 	local r = {id = war.id, status = war.status, own = own, enemy = other, side = side, mine = C.side(war, gid) ~= nil,
-		fragLimit = war.fragLimit, hours = war.hours, stake = war.stake or 0, terms = C.termsText(war),
+		fragLimit = war.fragLimit, hours = war.hours, stake = war.stake or 0, terms = C.termsText(war, lang),
 		ownKills = side == 1 and (war.kills1 or 0) or (war.kills2 or 0),
 		enemyKills = side == 1 and (war.kills2 or 0) or (war.kills1 or 0),
 		score = C.scoreText(war, side == 1 and war.guild1 or war.guild2)}
@@ -367,7 +379,7 @@ function C.row(war, gid, now)
 		r.left = math.max(0, (war.endsAt or 0) - now)
 	else
 		r.endedAt = war.endedAt or 0
-		r.reason = C.reasonText(war.reason)
+		r.reason = C.reasonText(war.reason, lang)
 		if war.status == "ended" then
 			if (war.winner or 0) == 0 then
 				r.result = "draw"

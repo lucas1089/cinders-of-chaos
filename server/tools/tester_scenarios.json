@@ -8128,7 +8128,8 @@
     "pos",
     "q",
     "ref",
-    "sid"
+    "sid",
+    "text"
    ],
    "files": [
     "market.lua"
@@ -8529,6 +8530,7 @@
     "pledge",
     "pledge_at",
     "protect",
+    "text",
     "week",
     "week_banked"
    ],

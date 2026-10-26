@@ -220,14 +220,26 @@ local function orbName(key)
 	return orb and orb.name or key
 end
 
-local function rowText(info, roll)
-	local text = string.format("%s (level %d): %d %s", info.setPiece and "Set piece" or (info.unique and "Unique" or C.rarityName(info.rarity)), info.level, roll.shards,
+-- player: the language of the line (nil: English, for the bench history)
+local function rowText(info, roll, player)
+	local kind
+	if info.setPiece then
+		kind = Chaos.t(player, "Set piece")
+	elseif info.unique then
+		kind = Chaos.t(player, "Unique")
+	else
+		kind = C.rarityName(info.rarity)
+		if player and Chaos.lang(player) == "pt-BR" and ChaosRarity.namePt then
+			kind = ChaosRarity.namePt(info.rarity) or kind
+		end
+	end
+	local text = Chaos.t(player, "%s (level %d): %d %s", kind, info.level, roll.shards,
 		roll.shards == 1 and cfg.shard.name or cfg.shard.plural)
 	if roll.orb then
 		text = text .. " + 1 " .. orbName(roll.orb)
 	end
 	if roll.tokens then
-		text = text .. " + " .. roll.tokens .. " Conquest Tokens"
+		text = text .. Chaos.t(player, " + %d Conquest Tokens", roll.tokens)
 	end
 	return text
 end
@@ -455,8 +467,8 @@ local function salvageOne(player, data)
 			print("[Chaos salvage] " .. name .. " of " .. player:getName() .. ": the save failed, " .. roll.tokens .. " tokens not given")
 		end
 	end
-	local text = rowText(info, roll)
-	logRows(player, {{item = name, text = text}})
+	local text = rowText(info, roll, player)
+	logRows(player, {{item = name, text = rowText(info, roll)}})
 	player:getPosition():sendMagicEffect(CONST_ME_BLOCKHIT or 9)
 	local msg = Chaos.t(player, "Salvaged %s: %s.%s", name, text,
 		inbox > 0 and Chaos.t(player, " Your backpack is full: some went to your inbox.") or "")
@@ -537,8 +549,8 @@ local function lockAction(player, data)
 	S.setLocked(item, on)
 	local name = C.itemName(item)
 	logRows(player, {{orb = "Lock", item = name, text = on and "locked" or "unlocked"}})
-	local msg = on and string.format("%s is locked: it cannot be sold, salvaged or thrown away.", name)
-		or string.format("%s is unlocked.", name)
+	local msg = on and Chaos.t(player, "%s is locked: it cannot be sold, salvaged or thrown away.", name)
+		or Chaos.t(player, "%s is unlocked.", name)
 	b.sendResult(player, true, "salvage", msg)
 	b.sendState(player, false)
 end

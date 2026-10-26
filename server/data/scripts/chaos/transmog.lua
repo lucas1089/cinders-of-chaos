@@ -421,7 +421,7 @@ local function sendLooks(player, kind)
 end
 
 local function sendResult(player, ok, text)
-	send(player, "result", {ok = ok and true or false, text = text})
+	send(player, "result", {ok = ok and true or false, text = Chaos.tx(player, text)}) -- the core's reasons are English
 end
 
 local function apply(player, slot, lookId)
@@ -437,14 +437,14 @@ local function apply(player, slot, lookId)
 		return sendResult(player, false, reason)
 	end
 	if not pay(player, fee) then
-		return sendResult(player, false, string.format("You need %d gold to change the look.", fee))
+		return sendResult(player, false, Chaos.t(player, "You need %d gold to change the look.", fee))
 	end
 	T.setLook(item, look.id)
-	local text = string.format("Your %s now looks like %s%s.", item:getName(), look.name,
-		fee > 0 and string.format(" (%d gold)", fee) or "")
+	local text = Chaos.t(player, "Your %s now looks like %s%s.", item:getName(), look.name,
+		fee > 0 and Chaos.t(player, " (%d gold)", fee) or "")
 	local attrs = item.getClientAttributes and item:getClientAttributes() or nil
 	if attrs and not attrs[Chaos.itemAttr.appearance or 8] then
-		text = text .. " This server's engine lacks patch 0019: the look is saved but not shown yet."
+		text = text .. Chaos.t(player, " This server's engine lacks patch 0019: the look is saved but not shown yet.")
 	end
 	sendResult(player, true, text)
 	T.sendState(player, false)
@@ -459,10 +459,10 @@ local function remove(player, slot)
 		return sendResult(player, false, reason)
 	end
 	if not pay(player, fee) then
-		return sendResult(player, false, string.format("You need %d gold to restore the look.", fee))
+		return sendResult(player, false, Chaos.t(player, "You need %d gold to restore the look.", fee))
 	end
 	T.clearLook(item)
-	sendResult(player, true, string.format("Your %s shows its own look again.", item:getName()))
+	sendResult(player, true, Chaos.t(player, "Your %s shows its own look again.", item:getName()))
 	T.sendState(player, false)
 end
 

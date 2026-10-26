@@ -252,10 +252,10 @@ function RP.handle(player, action, d)
 	elseif action == "report" then
 		local row, err = RP.submit(player, d)
 		if row then
-			send(player, "reportResult", {ok = true, text = string.format("Thank you. Your report about %s was sent to " ..
-				"the staff (#%d).", row.target_name, row.id)})
+			send(player, "reportResult", {ok = true, text = Chaos.t(player, "Thank you. Your report about %s was sent to the staff (#%d).",
+				row.target_name, row.id)})
 		else
-			send(player, "reportResult", {ok = false, text = R.errors[err] or tostring(err)})
+			send(player, "reportResult", {ok = false, text = Chaos.tx(player, R.errors[err] or tostring(err))})
 		end
 	end
 end

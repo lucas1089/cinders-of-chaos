@@ -301,7 +301,7 @@ function K.entryRefusal(cfg, p)
 		return "You cannot enter the Marches while another character from your connection is online."
 	end
 	if p.elsewhere then
-		return "You cannot enter the Marches while in " .. p.elsewhere .. "."
+		return string.format("You cannot enter the Marches while in %s.", p.elsewhere)
 	end
 	if p.inCombat then
 		return "You cannot enter the Marches while in combat."

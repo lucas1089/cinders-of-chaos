@@ -194,7 +194,7 @@ function K.applyCheck(cfg, a)
 	end
 	if look.kind ~= item.kind then
 		local def = K.kindDef(cfg, item.kind)
-		return "That appearance is not of the same kind (" .. (def and def.name or item.kind) .. ")."
+		return string.format("That appearance is not of the same kind (%s).", def and def.name or item.kind)
 	end
 	if look.id == item.id then
 		return "That is the item's own look: use Remove to restore it."

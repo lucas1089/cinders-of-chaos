@@ -239,7 +239,8 @@ local function sendState(player, open)
 end
 
 local function sendResult(player, ok, orbKey, text)
-	Chaos.send(player, OPCODE, "result", {ok = ok, orb = orbKey, text = text})
+	-- the refusals and results of the bench, the gems and salvage are English texts of cores: translated here
+	Chaos.send(player, OPCODE, "result", {ok = ok, orb = orbKey, text = Chaos.tx(player, text)})
 end
 
 -- ---------------------------------------------------------------- shared apply (bench and use-with)

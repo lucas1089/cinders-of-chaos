@@ -178,7 +178,7 @@ end
 
 -- ---------------------------------------------------------------- isolation
 local function message(player, key)
-	player:sendCancelMessage(iso.messages[key] or iso.messages.move)
+	player:sendCancelMessage(Chaos.t(player, iso.messages[key] or iso.messages.move))
 end
 
 -- a refused item move: the engine then shows its own "Sorry, not possible." as the cancel message, so the reason goes
@@ -190,8 +190,8 @@ local function notice(player, key)
 		return
 	end
 	lastNotice[id] = now()
-	player:sendTextMessage(MESSAGE_STATUS_WARNING or MESSAGE_INFO_DESCR, iso.messages[key] or
-		(cfg.modes and cfg.modes.messages[key]) or iso.messages.move) -- modes: season_modes.lua
+	player:sendTextMessage(MESSAGE_STATUS_WARNING or MESSAGE_INFO_DESCR, Chaos.t(player, iso.messages[key] or
+		(cfg.modes and cfg.modes.messages[key]) or iso.messages.move)) -- modes: season_modes.lua
 end
 
 -- tags of a thing and of every container around it; returns the tile when it lies on the ground (else nil)
@@ -343,7 +343,7 @@ partyJoin.onJoin = function(party, player)
 		return true
 	end
 	message(player, "party")
-	leader:sendTextMessage(MESSAGE_INFO_DESCR, iso.messages.party)
+	leader:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(leader, iso.messages.party))
 	return false
 end
 partyJoin:register(50)
@@ -421,7 +421,11 @@ function S.storeProblem(target, offer, gift, name)
 		realm = S.realmOf(target)
 		name = name or target:getName()
 	end
-	return S.storeText(realm, offer, cfg.store, gift, name)
+	local why = S.storeText(realm, offer, cfg.store, gift, name)
+	if why and type(target) ~= "number" then
+		return Chaos.tx(target, why)
+	end
+	return why
 end
 
 -- the season pass (seasonpass.lua): why this character may not claim `reward` now, or nil
@@ -429,7 +433,7 @@ function S.passClaimProblem(player, reward)
 	if not S.current() or staff(player) or S.passClaimAllowed(reward, S.realmOf(player), cfg.passItems) then
 		return nil
 	end
-	return cfg.passItems and cfg.passItems.message or "Season characters cannot claim this now."
+	return Chaos.tx(player, cfg.passItems and cfg.passItems.message or "Season characters cannot claim this now.")
 end
 
 -- the market (market.lua, no change there): a season character lists, buys and posts buy orders for gold only.
@@ -448,11 +452,11 @@ function S.marketRefusal(player, action, d)
 	end
 	local modes = S.modesMarketRefusal and S.modesMarketRefusal(player, action) -- season modes (season_modes.lua)
 	if modes then
-		return modes
+		return Chaos.tx(player, modes)
 	end
 	local ok, currency = pcall(pick, type(d) == "table" and d or {})
 	if ok and not S.marketCurrencyAllowed(S.realmOf(player), currency, cfg.market) then
-		return cfg.market and cfg.market.message or "Season markets trade for gold only."
+		return Chaos.tx(player, cfg.market and cfg.market.message or "Season markets trade for gold only.")
 	end
 	return nil
 end
@@ -746,17 +750,16 @@ function S.joinInfo(player)
 	return info
 end
 
-local function joinTerms(season)
+local function joinTerms(season, player)
 	local jc = cfg.join
 	local parts = {}
 	if jc.wipeInventory then
-		parts[#parts + 1] = "every item you carry is destroyed"
+		parts[#parts + 1] = Chaos.t(player, "every item you carry is destroyed")
 	end
 	if jc.wipeBank then
-		parts[#parts + 1] = "your bank balance and supply stash are emptied"
+		parts[#parts + 1] = Chaos.t(player, "your bank balance and supply stash are emptied")
 	end
-	return string.format("Join %s %s? This cannot be undone: %s. Until the season ends this character can only trade, " ..
-		"mail and party with %s characters. At the end it becomes a standard character and keeps everything.",
+	return Chaos.t(player, "Join %s %s? This cannot be undone: %s. Until the season ends this character can only trade, mail and party with %s characters. At the end it becomes a standard character and keeps everything.",
 		season.name, season.tag or "", table.concat(parts, ", "), season.name)
 end
 
@@ -801,6 +804,7 @@ function S.join(player, confirm, modeKey)
 	local season, reason = S.joinCheck(S.joinInfo(player), cfg, now(), S.ov)
 	if not season then
 		S.pending[guid] = nil
+		reason = Chaos.tx(player, reason) -- the core's reasons are English
 		player:sendTextMessage(MESSAGE_INFO_DESCR, reason)
 		Chaos.send(player, OPCODE, "notice", {text = reason})
 		return false
@@ -811,7 +815,7 @@ function S.join(player, confirm, modeKey)
 			local why
 			mode, why = S.modesPick(modeKey)
 			if not mode then
-				player:sendTextMessage(MESSAGE_INFO_DESCR, why)
+				player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.tx(player, why))
 				return false
 			end
 		end
@@ -824,11 +828,11 @@ function S.join(player, confirm, modeKey)
 		return true
 	end
 	S.pending[guid] = now() + cfg.join.confirmSeconds
-	local text = joinTerms(season)
-	player:sendTextMessage(MESSAGE_INFO_DESCR, text .. string.format(" Confirm in the Season window within %d seconds.",
+	local text = joinTerms(season, player)
+	player:sendTextMessage(MESSAGE_INFO_DESCR, text .. Chaos.t(player, " Confirm in the Season window within %d seconds.",
 		cfg.join.confirmSeconds))
 	Chaos.send(player, OPCODE, "confirm", {text = text, seconds = cfg.join.confirmSeconds,
-		modes = S.modesChoices and S.modesChoices() or nil}) -- season modes (season_modes.lua)
+		modes = S.modesChoices and S.modesChoices(player) or nil}) -- season modes (season_modes.lua)
 	return false
 end
 
@@ -845,9 +849,9 @@ function S.applyRequest(player)
 	end
 	db.query(string.format("DELETE FROM `%s` WHERE `player_id` = %d", T.requests, guid))
 	local season, reason = S.joinCheck(S.joinInfo(player), cfg, now(), S.ov)
-	local outcome, text = S.requestOutcome(request, season, reason)
+	local outcome, text = S.requestOutcome(request, season, Chaos.tx(player, reason))
 	if outcome ~= "join" then
-		player:sendTextMessage(MESSAGE_INFO_DESCR, text)
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.tx(player, text))
 		logEvent(request.season, guid, "request", "dropped: " .. tostring(text))
 		return false
 	end

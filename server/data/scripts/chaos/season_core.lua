@@ -158,14 +158,14 @@ function S.joinCheck(info, cfg, now, ov)
 	end
 	if info.row then
 		if info.row.season == season.id and (tonumber(info.row.migrated) or 0) == 0 then
-			return nil, "This character is already a " .. season.name .. " character."
+			return nil, string.format("This character is already a %s character.", season.name)
 		end
 		return nil, "This character already played a season. Make a new character to join."
 	end
 	local jc = cfg.join
 	if (info.level or 0) > jc.maxLevel then
-		return nil, string.format("Only a fresh character can join: level %d or lower (this character is level %d). " ..
-			"Make a new character to join.", jc.maxLevel, info.level or 0)
+		return nil, string.format("Only a fresh character can join: level %d or lower (this character is level %d). Make a new character to join.",
+			jc.maxLevel, info.level or 0)
 	end
 	if jc.requireEmptyDepot and (info.items or 0) > 0 then
 		return nil, "Empty your depot, stash items, inbox and store inbox first: season characters start with nothing."
@@ -192,11 +192,11 @@ function S.requestOutcome(request, joinSeason, reason)
 		return "join"
 	end
 	if joinSeason then
-		return "drop", string.format("The season chosen when this character was created is over. %s is running now: " ..
-			"Adventure > Season to join it.", joinSeason.name)
+		return "drop", string.format("The season chosen when this character was created is over. %s is running now: Adventure > Season to join it.",
+			joinSeason.name)
 	end
-	return "drop", "The season chosen when this character was created could not be joined: " .. tostring(reason or
-		"no season is running.")
+	return "drop", string.format("The season chosen when this character was created could not be joined: %s",
+		tostring(reason or "No season is running."))
 end
 
 -- Does joinCheck read info.items for this info? Only a character without a season row, at or below the join level,

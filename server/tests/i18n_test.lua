@@ -261,6 +261,95 @@ for f, extra in pairs(SITES) do
 end
 check(used >= 100, "the sites use their keys (" .. used .. ")")
 
+-- Cores and engine files whose reasons are returned as English text and translated where they are shown
+-- (Chaos.tx / ChaosI18n.translate: an exact key, else the pt-BR template the formatted text came from). Every English
+-- sentence they return or format needs a pt-BR entry. REASONS lists the files; the value is a list of Lua patterns of
+-- sentences that stay English on purpose (staff lines, log rows, item descriptions of one text for all viewers).
+local REASONS = {
+	["guild_core.lua"] = {"^%%s %%s put in", "^%%s %%s took out", "^%%s %%s deposited", "^%%s %%s withdrew", "^This portal$"},
+	["guild.lua"] = {"^Guild level $", "^%%s: ", "^%%s %(%%d%): ", "^That guild has no hall", "^/guild", "^Teleported",
+		"^Use it to travel", "^%%s %(%%d%) reached guild level", "^guild "},
+	["guild_hall.lua"] = {"^The banner of $", "^Teleport to ", "^The guild's crafting bench", "^The guild depot%. Drop", "^Guild Siege",
+		"^World bosses", "^ The Ashen", "^Records: ", "^Guild level %%d %(", "^Rent of %%s: ", "^That guild has no hall", "^Guild bank$",
+		"^%%d way", "^%%d guild hall"},
+	["buildshare_core.lua"] = {"^Preset ", "^class "}, ["buildshare.lua"] = {},
+	["reports_core.lua"] = {"^New bug report", "^New player report", "^Character position", "^Reported map tile", "^Level %%d"},
+	["salvage_core.lua"] = {}, ["salvage.lua"] = {"^Main backpack", "^Set piece$"}, ["crafting.lua"] = {"^Rift Key$"},
+	["guildwar_core.lua"] = {}, ["guildwar.lua"] = {"^War declared$", "^%%s declares war: ", "^%%s %%(%%d%%) offered war", "^%%d: ", "^No war offers",
+		"^%%d war offer", "^War %%d ended", "^Offer %%d expired", "^Chaos guildwar"},
+	["pvpzone_core.lua"] = {}, ["pvpzone.lua"] = {"^%%d embers of ", "^%%d inside", "^%%s instance %%d ready", "^Marches: "},
+	["passivetree_core.lua"] = {"^Boss points"}, ["passivetree.lua"] = {"^Error saving", "^Boss points", "^Reset$", "^Preset "},
+	["transmog_core.lua"] = {"^Achievement reward", "^Season reward", "^Exclusive: events"},
+	["transmog.lua"] = {"^Unknown appearance set", "^The account already has", "^Could not save the set", "^Unlocked ", "^%%s the set"},
+	["season_core.lua"] = {"^That character$", "^This offer$", "^%%s %%s is running", "^%%s starts in", "^No season is configured", "^Season of Ash"},
+	["season.lua"] = {"^No season is configured", "^%%s %%s is running", "^%%s %%s starts in", "^%%s has ended%.$", "^Modifier ", "^This character is a season", "^This character can join", "^%%s running", "^%%d character", "^%%s is already running", "^No upcoming season", "^No season is running%. Migration", "^%%s's end date", "^%%s: season"},
+	["market_core.lua"] = {}, ["market_config.lua"] = {}, ["market_orders_core.lua"] = {},
+	["market_notify_core.lua"] = {"^While you were away", "^Market sales", "^Orb Exchange", "^Chaos Coin", "^your "},
+	["market.lua"] = {"^Market sweep", "^Buy orders%%s", "^Offer %%d", "^No such offer", "^/market", "^Chaos Coins$"},
+}
+local SQL = {"^SELECT", "^INSERT", "^UPDATE", "^DELETE", "^WHERE", "^FROM", "^ON DUP", "^CREATE", "^ALTER"}
+local nReason = 0
+for f, skips in pairs(REASONS) do
+	local fh = io.open("data/scripts/chaos/" .. f, "r")
+	check(fh ~= nil, "source " .. f)
+	if fh then
+		local src = fh:read("*a")
+		fh:close()
+		for line in src:gmatch("[^\n]+") do
+			if not line:find("^%s*%-%-") then
+				local pos = 1
+				while true do
+					local a, b = line:find('"', pos, true)
+					if not a then break end
+					local j, buf = b + 1, {}
+					while j <= #line and line:sub(j, j) ~= '"' do
+						if line:sub(j, j) == "\\" then
+							buf[#buf + 1] = line:sub(j + 1, j + 1)
+							j = j + 2
+						else
+							buf[#buf + 1] = line:sub(j, j)
+							j = j + 1
+						end
+					end
+					pos = j + 1
+					local lit = table.concat(buf)
+					local sentence = lit:find("^%u[%l ]") and lit:find("%a+[ ]%a") and not lit:find("`") and not lit:find("^%u+ ")
+					for _, x in ipairs(SQL) do
+						if lit:find(x) then sentence = false end
+					end
+					for _, x in ipairs(skips) do
+						if lit:find(x) then sentence = false end
+					end
+					if sentence then
+						nReason = nReason + 1
+						check(pt[lit] ~= nil, f .. ": no pt-BR for \"" .. lit .. "\"")
+					end
+				end
+			end
+		end
+	end
+end
+check(nReason >= 80, "the returned reasons are found (" .. nReason .. ")")
+
+-- translate: the formatted English text a core returned finds its pt-BR template
+eq(I.translate("pt-BR", "Unknown upgrade."), "Melhoria desconhecida.", "translate: an exact key")
+eq(I.translate("pt-BR", "Your guild needs guild level 7 for a guild hall."),
+	"Sua guild precisa do level de guild 7 para um guild hall.", "translate: a number taken out of the text")
+eq(I.translate("pt-BR", "The guild bank holds 1,500 gold; the hall costs 50,000."),
+	"O banco da guild tem 1,500 de ouro; o hall custa 50,000.", "translate: two texts")
+eq(I.translate("pt-BR", "Ashen Wolf needs level 120."), "Ashen Wolf precisa do nível 120.", "translate: a name in the text")
+eq(I.translate("pt-BR", "Nothing like this in the table."), "Nothing like this in the table.", "translate: unknown stays English")
+eq(I.translate("en", "Unknown upgrade."), "Unknown upgrade.", "translate: English is the text")
+eq(I.translate("pt-BR", I.msg("Removed %s.", "Gold Coin")), "Gold Coin removido.", "translate: a deferred text")
+eq(I.translate("pt-BR", ""), "", "translate: empty")
+eq(I.translate("pt-BR", nil), nil, "translate: nil")
+do
+	local pl = newPlayer(77)
+	pl:setStorageValue(I.STORAGE, 1)
+	eq(Chaos.tx(pl, "Unknown upgrade."), "Melhoria desconhecida.", "Chaos.tx in the player's language")
+	eq(Chaos.tx(newPlayer(78), "Unknown upgrade."), "Unknown upgrade.", "Chaos.tx: English player")
+end
+
 -- the boss warnings and the raid call-outs are keys too
 local cfg = dofile("data/scripts/chaos/boss_mechanics_config.lua")
 local function walk(t, seen)
