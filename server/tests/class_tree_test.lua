@@ -426,7 +426,7 @@ else
 end
 -- Scarred Discipline (Monk line): no dodge, chi from hits taken (one every 2 s), -10% at 3+ chi
 local sc = CT.fx.ksScarredDiscipline
-eq(M.dodges(17, true, false, 0.0), true, "a Monk dodges a roll of 0"); eq(M.dodges(17, true, false, 0.0, true), false, "not with it")
+eq(M.dodges(17, true, 0.0), true, "a Monk dodges a roll of 0"); eq(M.dodges(17, true, 0.0, true), false, "not with it")
 eq(M.scarGivesChi(4, 10000, sc), true); eq(M.scarGivesChi(4, 11999, sc), false, "one every 2 s")
 eq(M.scarGivesChi(4, 12000, sc), true); M.clear(4); eq(M.scarGivesChi(4, 12100, sc), true, "cleared")
 near(M.scarFactor(2, sc), 1, "2 chi: nothing"); near(M.scarFactor(3, sc), 0.9, "3 chi: -10%"); near(M.scarFactor(5, sc), 0.9)

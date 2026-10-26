@@ -1904,7 +1904,7 @@ lost its attacks for 10 s of every cast; Swift Foot was never offered (`NEVER_WO
   buff bar row `wildstride`); its own sub id adds it to the Haste the helper keeps up instead of replacing it.
 * Neither has a pacify, a slow, a defence loss or another group cooldown. Numbers: `data/spells/README.md` "Ironhold and
   Wildstride".
-  (O254: Wildstride became the attack spell Gale Volley, same id; see server/data/spells/README.md "Support to attack (O254)".)
+  (O254: Wildstride became the attack spell Gale Volley, same id; its buff bar row, sub id 71074 (retired, never reused) and icon were removed; see server/data/spells/README.md "Support to attack (O254)".)
 * Client: `gen_spell_data.py` writes both and adds `utamo tempo` and `utamo tempo san` to `ChaosRetiredSpells` (out of
   the spell list, moved off the server ids by `spellfix.lua`, dropped from the helper's lists); the `tor ira sol` fix
   entry is gone. The helper's Auto setup entry for id 132 is Ironhold (timer, 12 s); id 134 is Wildstride (offered in
@@ -19877,10 +19877,9 @@ meantime). The server is the authority: the client draws what it is told and cou
 - Covered (90 entries): the engine conditions haste, regeneration, food ("Well Fed", regeneration with the default id), mana
   shield, invisible, light, spell / potion buffs (attributes without a sub id), poison, burning, energy, bleeding, drowning,
   freezing, dazzled, cursed, paralyze (shown as "Slowed"), drunk, pacified, muted, in fight (also the PZ lock, the engine keeps
-  one condition for both), white / red / black skull with the time the engine keeps it; the class buffs by sub id (Crimson
-  Covenant, Red Frenzy, Banner Call, Ironbark Hide, Lightward, Soulward, Wraithshroud, Flickerdash, Iron Bellow, Shadow Veil,
+  one condition for both), white / red / black skull with the time the engine keeps it; the class buffs by sub id (Red Frenzy, Banner Call, Ironbark Hide, Lightward, Soulward, Wraithshroud, Flickerdash, Iron Bellow, Shadow Veil,
   Poison Blades, Counter Stance, Bushido Focus with its stacks, Bloodrage, Banner of Bones, Bone Offering, the Monk's Focus /
-  Chi Ward / Mantra of Stone / Mistborne Step / Kindled Breath, Zealotry, Aegis of Faith, Moonfang Pack, Hall of Mirrors); the sources: the three world buffs
+  Chi Ward / Mantra of Stone / Kindled Breath, Aegis of Faith, Moonfang Pack, Hall of Mirrors); the sources: the three world buffs
   (global storages of `shop_services.lua`), the Victory buff (server-wide, or only inside its area), Golden Hour and Chaos Storm
   (only for a character standing in the area, `ChaosWorldEvents.active`), the day's events with a bonus (no timer),
   the double experience potion (storage 6000), Vocation Trials kill stacks (Bloodlust, Zeal and the other stack nodes: the stacks

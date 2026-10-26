@@ -95,7 +95,6 @@ source("community_goal", "community", "buff", "Community Goal", "buff:community_
 source("wmod_week", "community", "buff", "World Modifier", "buff:wmod_week", "This week's world modifier.", 19, {week = true})
 
 -- ---- Chaos buffs: class spells (sub ids of ChaosSpell.SUBID, Chaos.classes.subId, necro_config, monk_chi_core, templar_aura_core)
-cond("blood_pact", "CONDITION_ATTRIBUTES", 71001, "buff", "Crimson Covenant", "buff:blood_pact", "A short magic level boost, paid for in health.", 30)
 cond("red_frenzy", "CONDITION_ATTRIBUTES", 71002, "buff", "Red Frenzy", "buff:red_frenzy", "More melee skill, less shielding.", 30)
 cond("rally", "CONDITION_ATTRIBUTES", 71003, "buff", "Banner Call", "buff:rally", "Melee, distance and magic are stronger, and you are faster.", 30)
 cond("barkskin", "CONDITION_ATTRIBUTES", 71004, "buff", "Ironbark Hide", "buff:barkskin", "More maximum health and steady regeneration.", 30)
@@ -105,7 +104,6 @@ cond("phantom_veil", "CONDITION_INVISIBLE", 71007, "buff", "Wraithshroud", "buff
 cond("dash", "CONDITION_HASTE", 71008, "buff", "Flickerdash", "buff:dash", "A short burst of speed.", 31)
 cond("tautstring", "CONDITION_ATTRIBUTES", 71072, "buff", "Tautstring", "buff:tautstring", "Your distance skill is higher.", 30)
 cond("ironhold", "CONDITION_ATTRIBUTES", 71073, "buff", "Ironhold", "buff:ironhold", "Your shielding is higher.", 30)
-cond("wildstride", "CONDITION_HASTE", 71074, "buff", "Wildstride", "buff:wildstride", "You run faster.", 31)
 cond("iron_will", "CONDITION_ATTRIBUTES", 71009, "buff", "Iron Will", "buff:iron_will", "Less damage taken and more shielding.", 30)
 cond("stealth", "CONDITION_INVISIBLE", 71010, "buff", "Shadow Veil", "buff:stealth", "Monsters lose you. Your first weapon hit out of it is a critical hit.", 30)
 cond("poison_blades", "CONDITION_ATTRIBUTES", 71011, "buff", "Poison Blades", "buff:poison_blades", "Your weapon hits poison the target.", 30)
@@ -122,11 +120,9 @@ cond("chi_ward", "CONDITION_ATTRIBUTES", 71031, "buff", "Chi Ward", "buff:chi_wa
 cond("mantra", "CONDITION_ATTRIBUTES", 71032, "buff", "Mantra of Stone", "buff:mantra",
 	"Damage taken is reduced while you stay near the Sage (refreshed every pulse of the 12 second chant).", 30,
 	{cond = {type = "CONDITION_ATTRIBUTES", sub = 71032, subs = {71032, 71037}, ids = {"CONDITIONID_COMBAT"}}})
-cond("roll", "CONDITION_ATTRIBUTES", 71033, "buff", "Mistborne Step", "buff:roll", "You may slip the next blow.", 30)
 cond("breath", "CONDITION_REGENERATION", 71036, "buff", "Kindled Breath", "buff:breath", "Heals you over time.", 30)
 cond("moonfang_pack", "CONDITION_ATTRIBUTES", 71070, "buff", "Moonfang Pack", "buff:moonfang_pack", "Your summoned wolves fight for you. They vanish after 40 seconds.", 30)
 cond("mirror_image", "CONDITION_ATTRIBUTES", 71071, "buff", "Hall of Mirrors", "buff:mirror_image", "Mirror images of you distract monsters. They vanish after 10 seconds.", 30)
-cond("zealotry", "CONDITION_ATTRIBUTES", 71051, "buff", "Zealotry", "buff:zealotry", "A fervour that strengthens your strikes.", 30)
 cond("aegis_faith", "CONDITION_ATTRIBUTES", 71052, "buff", "Aegis of Faith", "buff:aegis_faith", "Faith shields you.", 30)
 
 -- ---- Chaos counters and windows (sources)

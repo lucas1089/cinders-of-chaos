@@ -156,9 +156,9 @@ eq(M.mantraDamage(-1000), 920, "8% less"); eq(M.mantraDamage(0), 0)
 
 -- ------------------------------------------------------------------ evasion
 near(M.dodgeChance(MONK), 0.06); near(M.dodgeChance(SF), 0.08); near(M.dodgeChance(IS), 0.04)
-near(M.dodgeChance(MONK, true), 0.31, "rolling")
-eq(M.dodgeChance(4, true), 0, "not a monk")
-eq(M.dodges(SF, true, false, 0.05), true); eq(M.dodges(SF, false, false, 0.0), false, "spells are not dodged")
-eq(M.dodges(IS, true, false, 0.05), false)
+eq(M.dodgeChance(4), 0, "not a monk")
+eq(M.dodges(SF, true, 0.05), true); eq(M.dodges(SF, false, 0.0), false, "spells are not dodged")
+eq(M.dodges(IS, true, 0.05), false)
+eq(M.dodges(SF, true, 0.0, true), false, "Scarred Discipline takes the evasion away")
 
 print("monk tests OK")

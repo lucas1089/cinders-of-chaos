@@ -93,7 +93,7 @@ end
 for _, key in ipairs({"haste", "regen", "fed", "poison", "burning", "freezing", "drowning", "energy", "paralyze", "drunk",
 		"manashield", "invisible", "infight", "skull_white", "skull_red", "skull_black", "world_xp", "world_loot", "world_skill",
 		"victory", "golden_hour", "chaos_storm", "double_xp", "trial_stacks", "reprisal", "rage", "chi", "stealth", "bloodrage",
-		"bushido", "blood_pact", "bone_shield", "chi_ward", "rally"}) do
+		"bushido", "red_frenzy", "bone_shield", "chi_ward", "rally"}) do
 	ok(B.byKey[key] ~= nil, "registry has " .. key)
 end
 -- every entry draws our own icon: "buff:<name>", and that PNG (and the key's, the client's fallback) is in the client
@@ -130,7 +130,7 @@ eq(B.byKey.paralyze.name, "Slowed", "paralyze is shown as slowed")
 dofile("data/scripts/chaos/necro_config.lua")
 local necro = dofile("data/scripts/chaos/necro_config.lua")
 local expectSub = {
-	blood_pact = 71001, red_frenzy = 71002, rally = 71003, barkskin = 71004, divine_ward = 71005, soul_aegis = 71006,
+	red_frenzy = 71002, rally = 71003, barkskin = 71004, divine_ward = 71005, soul_aegis = 71006,
 	phantom_veil = 71007, dash = 71008, iron_will = 71009,
 	stealth = Chaos.classes.subId.stealth, poison_blades = Chaos.classes.subId.poisonBlades, counter = Chaos.classes.subId.counter,
 	bushido = Chaos.classes.subId.bushido, bloodrage = Chaos.classes.subId.bloodrage,
@@ -142,18 +142,23 @@ end
 local common = readFile("data/spells/chaos/_common.lua")
 if common then
 	-- (the registry calls the Red Frenzy "red_frenzy"; the spell file calls its sub id crimson_fury)
-	for key, sub in pairs({blood_pact = 71001, crimson_fury = 71002, rally = 71003, barkskin = 71004, divine_ward = 71005,
+	for key, sub in pairs({crimson_fury = 71002, rally = 71003, barkskin = 71004, divine_ward = 71005,
 			soul_aegis = 71006, phantom_veil = 71007, dash = 71008, iron_will = 71009}) do
 		ok(common:find(key .. " = " .. sub, 1, true) ~= nil, "ChaosSpell.SUBID has " .. key .. " = " .. sub)
 	end
 end
 dofile("data/scripts/chaos/monk_chi_core.lua")
 eq(B.byKey.focus.cond.sub, ChaosMonk.ids.subId.focus, "focus sub id"); eq(B.byKey.chi_ward.cond.sub, ChaosMonk.ids.subId.ward, "ward sub id")
-eq(B.byKey.mantra.cond.sub, ChaosMonk.ids.subId.mantra, "mantra sub id"); eq(B.byKey.roll.cond.sub, ChaosMonk.ids.subId.roll, "roll sub id")
+eq(B.byKey.mantra.cond.sub, ChaosMonk.ids.subId.mantra, "mantra sub id")
 eq(B.byKey.breath.cond.sub, ChaosMonk.ids.subId.breath, "breath sub id")
 local templar = readFile("data/scripts/chaos/templar_aura_core.lua")
-ok(templar and templar:find("zealotry = 71051", 1, true) and templar:find("aegis = 71052", 1, true), "templar sub ids")
-eq(B.byKey.zealotry.cond.sub, 71051, "zealotry"); eq(B.byKey.aegis_faith.cond.sub, 71052, "aegis")
+ok(templar and templar:find("aegis = 71052", 1, true), "templar sub ids")
+eq(B.byKey.aegis_faith.cond.sub, 71052, "aegis")
+-- retired with their scripts (O254): no row, no sub id; the numbers stay reserved
+for _, key in ipairs({"blood_pact", "wildstride", "roll", "zealotry"}) do eq(B.byKey[key], nil, "retired buff row " .. key) end
+eq(common and common:find("blood_pact =", 1, true), nil, "no SUBID blood_pact")
+eq(common and common:find("wildstride =", 1, true), nil, "no SUBID wildstride")
+eq(ChaosMonk.ids.subId.roll, nil, "no monk roll sub id")
 
 -- support spells with a duration: every sub id of ChaosSpell.SUBID has a row (the summon / decoy timers, 71070 / 71071,
 -- included), and the two spells set their timer

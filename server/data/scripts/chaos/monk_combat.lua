@@ -11,7 +11,7 @@
 --   * Shadowfist focus: after a finisher, the Shadowfist's weapon hits and strikes crit with the chi spent
 --     (condition subId.focus, chi in storage.focusChi).
 --   * Pressure Points: a target with stacks (one condition per stack, subId.pressure) takes more from Monks.
---   * Evasion: a chance to dodge melee / ranged hits, more while Mistborne Step's window lasts (subId.roll).
+--   * Evasion: a chance to dodge melee / ranged hits.
 --   * Chi Ward: a shield on any player (subId.ward timer, storage.wardAmount) absorbs damage.
 --   * Mantra of Stone: players under it (subId.mantra) take less damage.
 --   * Scarred Discipline (the line's keystone in the main tree, node 390): no evasion; a hit taken from a creature
@@ -176,7 +176,7 @@ local function onDefence(player, attacker, primaryDamage, secondaryDamage, prima
 	-- evasion (Monk line; melee and ranged hits of creatures)
 	if attacker and M.isMonkLine(voc) and origin ~= ORIGIN_CONDITION then
 		local isWeapon = origin == ORIGIN_MELEE or origin == ORIGIN_RANGED
-		if M.dodges(voc, isWeapon, hasCond(player, CONDITION_ATTRIBUTES, ID.subId.roll), math.random(), scar ~= nil) then
+		if M.dodges(voc, isWeapon, math.random(), scar ~= nil) then
 			if ChaosCombatFx then
 				ChaosCombatFx.dodge(player)
 			end

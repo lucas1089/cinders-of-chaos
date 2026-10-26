@@ -778,15 +778,6 @@ def m_ironhold(c):
     c.px(['h', '', '', '', '', '', 'h'], 8, 6, {'h': AH}); c.px(['h', '', '', '', '', '', 'h'], 17, 6, {'h': AH})
 
 
-# Wildstride (the Ranger line's run buff, data/spells/chaos/paladin/wildstride.lua): a leaf on the wind, speed lines
-def m_wildstride(c):
-    c.poly([(6, 18), (12, 8), (21, 4), (18, 13), (9, 20)], A)                      # the leaf
-    c.line([(7, 19), (19, 6)], AD, 0.7)                                            # its vein
-    for y, x0 in ((10, 2), (15, 3), (20, 9)):                                      # speed lines behind it
-        c.line([(x0, y + 3), (x0 + 5, y + 3)], BL, 0.8)
-    c.px(['W'], 18, 6, {'W': W})
-
-
 # time-friendly progression (server catchup.lua)
 def m_rested(c):
     c.ell(3, 4, 19, 20, A)                                                         # a crescent moon: rest
@@ -851,17 +842,17 @@ MOTIFS = {  # name: (function, ramps A, B, C)
     'vigil_haste': (m_vigil_haste, 'nature', 'wood', 'wind'), 'vigil_clarity': (m_vigil_clarity, 'arcane', 'wood', 'water'),
     'vigil_tithe': (m_vigil_tithe, 'obsidian', 'wood', 'blood'),
     'tautstring': (m_tautstring, 'nature', 'wood'),
-    'ironhold': (m_ironhold, 'steel', 'wood'), 'wildstride': (m_wildstride, 'nature', 'wind'),
+    'ironhold': (m_ironhold, 'steel', 'wood'),
 }
 
 # the class buffs that come from a Chaos spell show that spell's icon (key -> the spell's words)
 SPELL_ICONS = {
-    'blood_pact': 'tor nyx cruor', 'red_frenzy': 'vyr ira cruor', 'rally': 'tor vas vant', 'barkskin': 'tor ael skar',
+    'red_frenzy': 'vyr ira cruor', 'rally': 'tor vas vant', 'barkskin': 'tor ael skar',
     'divine_ward': 'tor sol ghar', 'soul_aegis': 'tor anh', 'phantom_veil': 'fen wrai', 'dash': 'ash flik',
     'iron_will': 'vok vas rhov', 'stealth': 'fen umh', 'poison_blades': 'vyr vex thyss', 'counter': 'tor ryx',
     'bushido': 'vyr mynd', 'bloodrage': 'vyr sang khar', 'bone_aura': 'tor vas oss', 'bone_shield': 'drai sang oss',
-    'chi_ward': 'tor qhal', 'mantra': 'tor vas qhal', 'roll': 'ash qhal', 'breath': 'saen qhal',
-    'zealotry': 'vyr sol zel', 'aegis_faith': 'tor gal sol aeg',
+    'chi_ward': 'tor qhal', 'mantra': 'tor vas qhal', 'breath': 'saen qhal',
+    'aegis_faith': 'tor gal sol aeg',
     'moonfang_pack': 'vael luth wyrd', 'mirror_image': 'drai spek',
 }
 
