@@ -318,8 +318,8 @@
    "6216": 4
   },
   "boost": {
-   "big": 1.0,
-   "small": 1.0
+   "big": 2.2,
+   "small": 1.1
   }
  },
  "swap_walkable": {
@@ -398,5 +398,14 @@
    1391
   ]
  },
- "_hill": "hills are off (defaults hills 0); the generator still reads these keys, so they repeat the mountain's"
+ "_hill": "hills are off (defaults hills 0); the generator still reads these keys, so they repeat the mountain's",
+ "road_broad": 2,
+ "road_brush": 1,
+ "road_rough": 1,
+ "top_rock": {
+  "1": [
+   0.8,
+   0.22
+  ]
+ }
 }

@@ -19,7 +19,7 @@ import sys
 from collections import Counter, deque
 
 import access
-from common import ROOT, kit_name, load_items, load_kit, save_area
+from common import ROOT, kit_name, load_items, load_kit, save_area, water_ids
 from shapes import blend, distance, largest, parts, place_ramps, region
 from lib import (break_runs, clean, edge_pieces, open_shape, pinched, place_clumped, place_flora, rank_field,
                  roughen, route_corridors, touches, weighted)
@@ -636,7 +636,7 @@ def road_path(size, start, goal, cost):
     return path
 
 
-def grounds(size, rng, m, stops, p, bridges=(), needed=(), worn_share=0.12):
+def grounds(size, rng, m, stops, p, bridges=(), needed=(), worn_share=0.12, broad_at=0.62, brush=None, rough_passes=None):
     """Sand (brown jungle sand) and grey-brown sand masks. On the reference map most brown sand is winding
     roads 2-3 tiles wide: here roads join the ramp feet (stops) and `roads` shore points along the cheapest path
     through a noise field (so they wind), plus sand patches over about sand% of open ground. Grey-brown sand
@@ -674,8 +674,8 @@ def grounds(size, rng, m, stops, p, bridges=(), needed=(), worn_share=0.12):
         used |= {corridor[t] for t in path if t in corridor}
         for x, y in path:
             # 3 wide, 5 where a noise field is high: The reference map's roads are 3-7 wide (tools/ground_context.py)
-            r = 2 if broad[y][x] > 0.62 else 1
-            for i, j in ((i, j) for i in range(-r, r + 1) for j in range(-r, r + 1) if i * i + j * j <= r * r + 1):
+            r = 2 if broad[y][x] > broad_at else 1  # kit road_broad: noise level above which a road is 5 wide (grass: 2 = never)
+            for i, j in ((i, j) for i in range(-r, r + 1) for j in range(-r, r + 1) if i * i + j * j <= (brush if brush is not None and r == 1 else r * r + 1)):  # kit road_brush: 1 = a plus-shaped 3-wide brush, narrower on diagonals than the 3x3 block
                 if 0 <= x + i < size and 0 <= y + j < size and not blocked[y + j][x + i]:
                     roads.add((x + i, y + j))
         joined.append(point)
@@ -688,7 +688,10 @@ def grounds(size, rng, m, stops, p, bridges=(), needed=(), worn_share=0.12):
             if blocked[y][x]:
                 sand[y][x] = False
     # staircase outlines; roads only grow, so roughening never narrows or cuts them
-    roughen(sand, rng, allowed=lambda x, y: not blocked[y][x], mode="grow", p=0.4)
+    if rough_passes is None:
+        roughen(sand, rng, allowed=lambda x, y: not blocked[y][x], mode="grow", p=0.4)
+    else:  # kit road_rough: fewer bump passes; 4 of them thickened a 3-wide road to 7-9 tiles on diagonals
+        break_runs(sand, rng, lambda x, y: not blocked[y][x], passes=rough_passes, mode="grow")
     for y in range(size):  # never on water-touching, relief or hill tiles: the reference map has no water border onto sand
         for x in range(size):
             sand[y][x] = sand[y][x] and not blocked[y][x]
@@ -1071,7 +1074,7 @@ def aprons(size, rng, m, sand, ramps, span, with_gravel=True, off_sand=False):
     return rock, gravel
 
 
-def top_patches(size, rng, top, inside, near_higher, k, with_gravel=True):
+def top_patches(size, rng, top, inside, near_higher, k, with_gravel=True, shares=None):
     """Ground patchwork on the top of mountain level k, as on the reference map (tools/top_ground_study.py):
     rock soil and gravel gather on rim tiles and at the foot of the next cliff (z6: a third of those tiles,
     5% of inner ones; z5: about 45% and 10%; z4: most of the top); brown sand patches sit inner (z5 inner
@@ -1080,6 +1083,7 @@ def top_patches(size, rng, top, inside, near_higher, k, with_gravel=True):
     edge = [[min(inside[y][x], near_higher[y][x]) for x in range(size)] for y in range(size)]
     # shares asked of the noise cut; cleaning narrow terraces loses about a third, so they sit above the targets
     band_share, inner_share = {1: (0.55, 0.06), 2: (0.6, 0.12)}.get(k, (0.85, 0.45))
+    band_share, inner_share = (shares or {}).get(str(k), (band_share, inner_share))  # kit top_rock: {level: [band, inner]}
     sand_share = {1: 0.10, 2: 0.33}.get(k, 0.0)
     rocky = blend(size, rng, [(4, 0.6), (2, 0.4)])
     band = quantile_region(size, rocky, band_share, lambda x, y: top[y][x] and edge[y][x] <= 2)
@@ -1242,7 +1246,8 @@ def build(p):
             # crowding a ramp, seed 107)
             centre = (x - dx, y - dy) if half == 1 else (x + dx, y + dy)
             keep |= {(centre[0] + i, centre[1] + j) for i in (-1, 0, 1) for j in (-1, 0, 1)}
-    sand, grey, bridges = grounds(size, rng, m, feet, p, sites, sites, kit.get("worn_share", 0.12))
+    sand, grey, bridges = grounds(size, rng, m, feet, p, sites, sites, kit.get("worn_share", 0.12),
+                                 kit.get("road_broad", 0.62), kit.get("road_brush"), kit.get("road_rough"))
     span = {t for b in bridges for t in b.guard()}  # rails, deck, banks and landings: kept clear of plants
     rock_layer = next((lay for lay in kit["layers"] if lay["kit"] == "rock_soil"), {})
     rock, gravel = aprons(size, rng, m, sand, {**ramps, **mramps}, span, "gravel" in kit,
@@ -1487,6 +1492,7 @@ def build(p):
                             bare[f"{hi_}|{lo_}"] += 1
     grey_cliff, brown_cliff = set(kit["mountain_cliff"].values()), set(kit.get("hill_cliff", {}).values())
     clashes = sum(1 for s in floors[Z].values() if {int(i) for i in s} & grey_cliff and {int(i) for i in s} & brown_cliff)
+    access.NO_WALK = water_ids(kit)  # liquid never counts as walkable ground (see gen/access.py NO_WALK)
     start = access.main_start(floors, items)
     cleared, cut = access.repair(floors, items, ramp_dirs, plant_ids, start) if start else (0, [])
     check = access.report(floors, items, ramp_dirs, start) if start else {}
@@ -1538,7 +1544,7 @@ def mountain_levels(size, levels, kit, items, rng, floors, terrace, keep, arriva
                             and (x, y) not in near_ramp):
                         stacked[y][x] = True
                         top[y][x] = False
-        keys = top_patches(size, rng, top, inside, near_higher, k, "gravel" in kit)
+        keys = top_patches(size, rng, top, inside, near_higher, k, "gravel" in kit, kit.get("top_rock"))
         tidy_grounds(kit, keys, rng)
         family = {}
         for y in range(size):

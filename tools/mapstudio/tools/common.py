@@ -291,3 +291,12 @@ def item_image(obj, cache, x=0, y=0, phase=0, pattern=None):
 def displacement(obj):
     f = obj["flags"]
     return f.get("displacement_x", 0), f.get("displacement_y", 0)
+
+
+def water_ids(kit):
+    """Every item id of the kit's liquid (all variants)."""
+    spec = kit["water"]
+    ids = set(spec.get("members", [])) | {spec.get("lead")}
+    for v in spec.get("variants", {}).values():
+        ids |= set(v.get("members", [])) | {v.get("lead")}
+    return {int(i) for i in ids if i}

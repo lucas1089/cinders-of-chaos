@@ -16,6 +16,12 @@ DIRS = {"n": (0, -1), "e": (1, 0), "s": (0, 1), "w": (-1, 0)}
 STEPS = [(i, j) for i in (-1, 0, 1) for j in (-1, 0, 1) if i or j]
 
 
+# Ground ids that count as not walkable even when the item data lets a player stand on them: the kit's liquid
+# (its "deep" water variant is a walkable item far out at sea, cut off from land by the not walkable shallow band; counted as
+# walkable it read as ~50% of floor 7 unreached). Set by the generator and tools/unreached.py from the kit.
+NO_WALK = set()
+
+
 def blocks(items, i):
     o = items.get(int(i))
     return bool(o) and "not_walkable" in o["flags"]
@@ -23,6 +29,8 @@ def blocks(items, i):
 
 def walkable(items, stack):
     if not stack:
+        return False
+    if int(stack[0]) in NO_WALK:
         return False
     g = items.get(int(stack[0]))
     if not g or kind_of(g["flags"]) != "ground" or "not_walkable" in g["flags"]:

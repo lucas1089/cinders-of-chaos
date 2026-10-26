@@ -13,7 +13,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "gen"))
 
 import access  # noqa: E402
-from common import load_area, load_items, load_kit, names_of  # noqa: E402
+from common import load_area, load_items, load_kit, names_of, water_ids  # noqa: E402
 
 
 def main():
@@ -26,6 +26,7 @@ def main():
     meta, floors = load_area(a.area)
     kit = load_kit(a.kit or meta.get("kit"))
     ramp_dirs = {ids[0]: d for key in ("mountain_ramp", "hill_ramp") for d, ids in kit.get(key, {}).items()}
+    access.NO_WALK = water_ids(kit)  # liquid never counts as walkable (gen/access.py NO_WALK)
     start = access.main_start(floors, items)
     got = access.reach(floors, items, ramp_dirs, start)
     for z in sorted(floors, reverse=True):
