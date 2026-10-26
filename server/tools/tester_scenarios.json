@@ -9,7 +9,7 @@
  "counts": {
   "opcode": 61,
   "out": 38,
-  "passive": 75,
+  "passive": 76,
   "place": 13,
   "staff": 11
  },
@@ -9800,6 +9800,16 @@
     "/mentor"
    ],
    "why": "pairs a tester with real players"
+  },
+  "metrics": {
+   "files": [
+    "chaos_constants.lua",
+    "metrics.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
   },
   "moderation_purge": {
    "files": [
