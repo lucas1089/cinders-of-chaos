@@ -301,6 +301,8 @@ local REASONS = {
 	["pets_core.lua"] = {}, ["pets.lua"] = {"^Character not online", "^Unknown species", "^Call a pet first", "^Pet level", "^All pets of this", "^Usage: /pet"},
 	["lootfilter_core.lua"] = {}, ["lootfilter.lua"] = {"^Item Level "}, ["loadouts_core.lua"] = {}, ["loadouts.lua"] = {},
 	["bounty_core.lua"] = {}, ["bounty.lua"] = {},
+	["class_looks_core.lua"] = {" Class$"}, ["class_looks.lua"] = {}, ["goals_core.lua"] = {}, ["goals.lua"] = {},
+	["raid_core.lua"] = {"^Hex Effigy$"}, ["raid.lua"] = {"^Game%.createTile", "^No open raid", "^Bone Bloom$", "^Crushing Verdict$", "^Bought with ", "^Raid "},
 	["guildboss_core.lua"] = {},
 	["guildboss.lua"] = {"^The banner of ", "^The %%s of %%s: Gorvath", "^The Summoning Stone%. Feed", "^Game%.createTile", "^Guild boss run ",
 		"^No running guild boss", "^No guild boss arena"},
@@ -723,6 +725,20 @@ do
 		check(pt[p.name] ~= nil and pt[p.desc] ~= nil, "loot filter preset without pt-BR: " .. p.name)
 	end
 	for _, r in ipairs(ChaosLootFilter.RULES or {}) do check(pt[r.name] ~= nil, "loot filter rule without pt-BR: " .. r.name) end
+end
+
+-- raid: the journal of the window takes the language
+do
+	dofile("data/scripts/chaos/raid_core.lua")
+	local RK, rcfg = ChaosRaidCore, dofile("data/scripts/chaos/raid_config.lua")
+	local jp, je = RK.journal(rcfg, "pt-BR"), RK.journal(rcfg)
+	check(jp[1].mech[2]:find("^Golpe Frontal: um cone"), "raid mechanic text in pt-BR")
+	check(je[1].mech[2]:find("^Frontal Cleave: a cone"), "raid mechanic text in English")
+	eq(jp[1].n, je[1].n, "raid boss name stays English")
+	for _, b in ipairs(rcfg.bosses) do
+		check(pt[b.intro] ~= nil and pt[b.roles] ~= nil, "raid journal text without pt-BR: " .. b.key)
+		for _, ph in ipairs(b.phases) do check(pt[ph.name] ~= nil, "raid phase name without pt-BR: " .. ph.name) end
+	end
 end
 
 print(string.format("i18n_test: %d checks, %d failures", checks, failures))

@@ -17,6 +17,24 @@ local K = ChaosRaidCore
 
 local floor, abs, sqrt = math.floor, math.abs, math.sqrt
 
+-- the text in `lang` (ChaosI18n when it is loaded, English otherwise); the raid window passes the reader's language
+local function T(lang, key, ...)
+	if ChaosI18n and ChaosI18n.text then
+		return ChaosI18n.text(lang, key, ...)
+	end
+	if select("#", ...) == 0 then
+		return key
+	end
+	return string.format(key, ...)
+end
+-- config text that may have no translation (names stay English)
+local function TR(lang, text)
+	if ChaosI18n and ChaosI18n.translate and text then
+		return ChaosI18n.translate(lang, text)
+	end
+	return text
+end
+
 local function key(x, y)
 	return x .. "," .. y
 end
@@ -900,36 +918,27 @@ local function pct(v)
 end
 
 -- what a mechanic does, with its numbers (the journal and the yells)
-function K.mechText(cfg, mech, b)
+function K.mechText(cfg, mech, b, lang)
 	local m = cfg.mechanics[mech] or {}
 	if mech == "sunder" then
-		return string.format("Sundering Blows: every hit stacks Sundered on the tank (+%d%% damage taken each, %d s). " ..
-			"At %d stacks the boss turns to the next tank in melee range; with nobody there it brings down Crushing Verdict " ..
-			"(%s of max health and more with the stacks).", m.stackPct, floor(m.expireMs / 1000), m.swapAt, pct(m.verdictShare))
+		return T(lang, "Sundering Blows: every hit stacks Sundered on the tank (+%d%% damage taken each, %d s). At %d stacks the boss turns to the next tank in melee range; with nobody there it brings down Crushing Verdict (%s of max health and more with the stacks).", m.stackPct, floor(m.expireMs / 1000), m.swapAt, pct(m.verdictShare))
 	elseif mech == "cleave" then
-		return string.format("Frontal Cleave: a cone %d sqm long in front of the boss, every %d s. Everyone in it but the " ..
-			"tank takes %s of max health. Stand beside or behind.", m.length, floor(m.every / 1000), pct(m.share))
+		return T(lang, "Frontal Cleave: a cone %d sqm long in front of the boss, every %d s. Everyone in it but the tank takes %s of max health. Stand beside or behind.", m.length, floor(m.every / 1000), pct(m.share))
 	elseif mech == "sweep" then
-		return string.format("Rear Sweep: a cone %d sqm long behind the boss, every %d s, %s of max health. Never stand " ..
-			"behind it.", m.length, floor(m.every / 1000), pct(m.share))
+		return T(lang, "Rear Sweep: a cone %d sqm long behind the boss, every %d s, %s of max health. Never stand behind it.", m.length, floor(m.every / 1000), pct(m.share))
 	elseif mech == "soak" then
-		return string.format("Ember Brand: circles fall near players (one more per %d raiders). Each circle's %s of max " ..
-			"health is split among those inside; fewer than %d inside (+1 per %d raiders over %d) and everyone else takes %s.",
+		return T(lang, "Ember Brand: circles fall near players (one more per %d raiders). Each circle's %s of max health is split among those inside; fewer than %d inside (+1 per %d raiders over %d) and everyone else takes %s.",
 			m.perCircle, pct(m.totalShare), m.need, m.needPerPlayers, K.basePlayers(cfg), pct(m.overflowShare))
 	elseif mech == "adds" then
-		return string.format("%s: adds every %d s; each one alive makes the boss take %d%% less damage (up to %d%%) and " ..
-			"heals it %d%% every 5 s. Kill them first.", b and b.add or "Adds", floor(m.every / 1000), m.reducePct, m.maxReduce,
+		return T(lang, "%s: adds every %d s; each one alive makes the boss take %d%% less damage (up to %d%%) and heals it %d%% every 5 s. Kill them first.", b and TR(lang, b.add) or T(lang, "Adds"), floor(m.every / 1000), m.reducePct, m.maxReduce,
 			m.healPct)
 	elseif mech == "marks" then
-		return string.format("Bone Bloom: a circle opens under every player; %s of max health to anyone still on one. " ..
-			"Step out, and not onto someone else's.", pct(m.share))
+		return T(lang, "Bone Bloom: a circle opens under every player; %s of max health to anyone still on one. Step out, and not onto someone else's.", pct(m.share))
 	elseif mech == "totem" then
-		return string.format("%s: effigies rise every %d s; each puts a Hexed stack on everyone every %d s (%s of max " ..
-			"health per stack). Not killed within %d s they detonate for %s on everyone.", b and b.totem or "Hex Effigy",
+		return T(lang, "%s: effigies rise every %d s; each puts a Hexed stack on everyone every %d s (%s of max health per stack). Not killed within %d s they detonate for %s on everyone.", b and TR(lang, b.totem) or "Hex Effigy",
 			floor(m.every / 1000), floor(m.hexMs / 1000), pct(m.stackShare), floor(m.lifeMs / 1000), pct(m.detonateShare))
 	elseif mech == "hex" then
-		return string.format("Withering Hex: a curse on random players. Lift it within %d s (a cure curse spell, or use " ..
-			"the Font of Ash in a corner) or it bursts for %s on everyone within %d sqm of them.", floor(m.windowMs / 1000),
+		return T(lang, "Withering Hex: a curse on random players. Lift it within %d s (a cure curse spell, or use the Font of Ash in a corner) or it bursts for %s on everyone within %d sqm of them.", floor(m.windowMs / 1000),
 			pct(m.burstShare), m.radius)
 	end
 	return mech
@@ -949,23 +958,23 @@ K.ANNOUNCE = {
 }
 
 -- the journal of the window: per boss {k, n, intro, roles, phases = {{n, at}}, mech = {text}, loot = {...}}
-function K.journal(cfg)
+function K.journal(cfg, lang)
 	local out = {}
 	for i, b in ipairs(cfg.bosses) do
 		local phases = {}
 		for _, p in ipairs(b.phases) do
-			phases[#phases + 1] = {n = p.name, at = floor(p.at * 100 + 0.5)}
+			phases[#phases + 1] = {n = TR(lang, p.name), at = floor(p.at * 100 + 0.5)}
 		end
 		local mech = {}
 		for _, m in ipairs(K.bossMechs(b)) do
-			mech[#mech + 1] = K.mechText(cfg, m, b)
+			mech[#mech + 1] = K.mechText(cfg, m, b, lang)
 		end
 		local sp = K.spoils(cfg, b)
 		local uniques = {}
 		for _, u in ipairs(K.uniquesOf(cfg, b.key)) do
 			uniques[#uniques + 1] = u.name
 		end
-		out[i] = {k = b.key, n = b.name, intro = b.intro, roles = b.roles, phases = phases, mech = mech,
+		out[i] = {k = b.key, n = b.name, intro = TR(lang, b.intro), roles = TR(lang, b.roles), phases = phases, mech = mech,
 			enrage = b.enrageAt, final = b.final or nil,
 			loot = {gold = sp.gold, items = sp.items, gear = b.gear, gearRolls = sp.gearRolls, gearLevel = cfg.loot.gearLevel,
 				unique = sp.uniqueChance, uniques = uniques, marks = sp.marks}}

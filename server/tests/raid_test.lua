@@ -1212,7 +1212,7 @@ eq(mem.players[lead.guid].marks, 140, "60 marks spent")
 eq(lead:getItemCount(29857), 3 + cfg.loot.boss.orbs[2].count, "three Orbs of Fate more")
 X.buy(lead, "v_fate")
 okBuy, text = X.buy(lead, "v_fate")
-check(not okBuy and text:find("as often", 1, true) ~= nil, "the weekly limit: " .. tostring(text))
+check(not okBuy and tostring(text):find("as often", 1, true) ~= nil, "the weekly limit: " .. tostring(text))
 okBuy = X.buy(lead, "v_nothing")
 check(not okBuy, "not for sale")
 
