@@ -71,15 +71,19 @@ local function log(text)
 	print("[Chaos marches] " .. text)
 end
 
+-- every text of this file is English (the core's refusals and the formatted lines): Chaos.tx finds its pt-BR entry
 local function msg(player, text)
-	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, text)
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.tx(player, text))
 end
 
 local function note(player, text)
-	player:sendTextMessage(MESSAGE_STATUS_SMALL or MESSAGE_EVENT_ADVANCE, text)
+	player:sendTextMessage(MESSAGE_STATUS_SMALL or MESSAGE_EVENT_ADVANCE, Chaos.tx(player, text))
 end
 
 local function send(player, action, data)
+	if type(data) == "table" and type(data.text) == "string" then
+		data.text = Chaos.tx(player, data.text)
+	end
 	return Chaos.sendChunked(player, OPCODE, json.encode({action = action, data = data or {}}))
 end
 
@@ -467,7 +471,7 @@ local function announceRealm(realm, slot, text)
 	for _, p in ipairs(Game.getPlayers()) do
 		local st = Z.state[p:getId()]
 		if (st and st.slot == slot) or (realmOf(p) == realm and (Z.rows[p:getGuid()] and Z.rows[p:getGuid()].pledge or "") ~= "") then
-			p:sendTextMessage(MESSAGE_EVENT_ADVANCE, text)
+			p:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.tx(p, text))
 		end
 	end
 end
@@ -724,8 +728,8 @@ function Z.enter(player, data)
 	here:sendMagicEffect(CONST_ME_TELEPORT)
 	player:teleportTo(arrivalSpot(inst.L, math.random(math.max(1, #inst.L.exits))))
 	player:getPosition():sendMagicEffect(CONST_ME_FIREAREA)
-	msg(player, string.format("You enter %s. Protected for %d seconds. Bank your embers at a safe exit (the white circles " ..
-		"by the banners).", cfg.name, cfg.entry.protectSeconds))
+	msg(player, string.format("You enter %s. Protected for %d seconds. Bank your embers at a safe exit (the white circles by the banners).",
+		cfg.name, cfg.entry.protectSeconds))
 	send(player, "enter", {})
 	Z.sendHud(player, s)
 	return true
@@ -810,8 +814,8 @@ local function leaveSafe(player, st)
 	end
 	release(player, "exit")
 	if moved > 0 or lostN > 0 then
-		msg(player, string.format("You leave %s. %d embers banked (%d in total)%s.", cfg.name, moved, r.banked,
-			lostN > 0 and string.format(", %d lost over the bank limit", lostN) or ""))
+		msg(player, Chaos.t(player, "You leave %s. %d embers banked (%d in total)%s.", cfg.name, moved, r.banked,
+			lostN > 0 and Chaos.t(player, ", %d lost over the bank limit", lostN) or ""))
 	else
 		msg(player, string.format("You leave %s.", cfg.name))
 	end
@@ -946,10 +950,10 @@ local function defeat(player, st, killer)
 			elseif why == "daily cap" then
 				note(kp, "You have earned all the reputation the Marches give today.")
 			end
-			msg(kp, string.format("You defeated %s.%s", player:getName(), pile.amount > 0 and string.format(
+			msg(kp, Chaos.t(kp, "You defeated %s.%s", player:getName(), pile.amount > 0 and Chaos.t(kp,
 				" %d embers fell: yours alone for %d seconds.", pile.amount, cfg.death.ownerSeconds) or ""))
 		else
-			msg(kp, string.format("You defeated %s, but it does not count (%s): the embers burn.", player:getName(), reason))
+			msg(kp, Chaos.t(kp, "You defeated %s, but it does not count (%s): the embers burn.", player:getName(), Chaos.tx(kp, reason)))
 		end
 		Z.saveRow(killerGuid)
 	end
@@ -957,9 +961,12 @@ local function defeat(player, st, killer)
 	Z.cooldown[victimGuid] = t + cfg.entry.cooldownSeconds
 	release(player, "defeat")
 	local by = kp and kp:getName() or (killer and killer:getName()) or "the Marches"
-	local fell = carried > 0 and string.format(" Your %d carried embers %s.", carried,
-		(pile.amount > 0 and "fell where you stood") or "burned") or ""
-	msg(player, string.format("You were defeated by %s in %s.%s You can enter again in %d seconds.", by, cfg.name, fell,
+	local fell = ""
+	if carried > 0 then
+		fell = pile.amount > 0 and Chaos.t(player, " Your %d carried embers fell where you stood.", carried) or
+			Chaos.t(player, " Your %d carried embers burned.", carried)
+	end
+	msg(player, Chaos.t(player, "You were defeated by %s in %s.%s You can enter again in %d seconds.", by, cfg.name, fell,
 		cfg.entry.cooldownSeconds))
 	if burned > 0 then
 		log(string.format("%d embers of %s burned", burned, player:getName()))
@@ -1007,8 +1014,8 @@ local function contestTick(inst, t)
 	for _, e in ipairs(ev) do
 		if e.kind == "start" then
 			spawnWarden(inst)
-			announceRealm(inst.realm, inst.slot, string.format("The Cinder Shrine stirs in %s: its Warden has risen. " ..
-				"Slay it and hold the circle for your faction.", cfg.name))
+			announceRealm(inst.realm, inst.slot, string.format("The Cinder Shrine stirs in %s: its Warden has risen. Slay it and hold the circle for your faction.",
+				cfg.name))
 		elseif e.kind == "warden" then
 			inst.wardenCid = nil
 			eachInside(inst.slot, function(p)
@@ -1030,9 +1037,8 @@ local function contestTick(inst, t)
 					achievement(p, "pvpzone_captures", 1)
 				end
 			end)
-			announceRealm(inst.realm, inst.slot, string.format("%s took the Cinder Shrine in %s: everyone sworn to it gains " ..
-				"+%d%% experience and +%d%% loot for %d minutes.", name, cfg.name, cfg.contest.buff.exp, cfg.contest.buff.loot,
-				cfg.contest.holdMinutes))
+			announceRealm(inst.realm, inst.slot, string.format("%s took the Cinder Shrine in %s: everyone sworn to it gains +%d%% experience and +%d%% loot for %d minutes.",
+				name, cfg.name, cfg.contest.buff.exp, cfg.contest.buff.loot, cfg.contest.holdMinutes))
 		elseif e.kind == "expired" then
 			if inst.wardenCid then
 				local m = Creature(inst.wardenCid)
@@ -1130,7 +1136,7 @@ local function vendorView(player, r)
 		local ok, why = K.vendorCheck(cfg, o.key, r.banked, r.bought[o.key], owns)
 		out[#out + 1] = {key = o.key, name = o.name, cost = o.cost, kind = o.kind, id = o.id, count = o.count,
 			weekly = o.weekly, bought = r.bought[o.key] or 0, owned = o.kind == "cosmetic" and owns(o.cosmetic) or nil,
-			can = ok, why = why}
+			can = ok, why = Chaos.tx(player, why)}
 	end
 	return out
 end
@@ -1149,7 +1155,7 @@ function Z.stateOf(player, confirm)
 		local rf = factionOf(f.rival)
 		factions[#factions + 1] = {key = f.key, name = f.name, short = f.short, color = f.color, rival = f.rival,
 			rivalName = rf and rf.name or nil,
-			pledged = r.pledge == f.key or nil, can = why == nil, why = why}
+			pledged = r.pledge == f.key or nil, can = why == nil, why = Chaos.tx(player, why)}
 	end
 	local facts = entryFacts(player, {accept = true, hcAccept = true})
 	local why = K.entryRefusal(cfg, facts)
@@ -1162,7 +1168,7 @@ function Z.stateOf(player, confirm)
 		pledgeChangeIn = r.pledge ~= "" and math.max(0, r.pledgeAt + cfg.reputation.changeHours * 3600 - t) or 0,
 		factions = factions, contest = contestView(Z.inst[slot], t, realm), rules = cfg.entry.rules,
 		hc = {isHc = modes.hc == true, allow = cfg.hardcore.allow == true}, ssf = modes.ssf == true,
-		canEnter = why == nil, why = why, vendor = vendorView(player, r),
+		canEnter = why == nil, why = Chaos.tx(player, why), vendor = vendorView(player, r),
 		monsters = {hp = cfg.monsters.hpMult, damage = cfg.monsters.damageMult, exp = cfg.monsters.expMult,
 			loot = cfg.monsters.lootMult},
 		pickup = {perKill = cfg.pickup.perKillMax, perDay = cfg.pickup.perDayMax, ownerSeconds = cfg.death.ownerSeconds},
@@ -1252,8 +1258,8 @@ function Z.buy(player, key)
 	Z.saveRow(guid)
 	db.query(string.format("INSERT INTO `%s` (`player_id`, `offer`, `week`, `cost`, `at`) VALUES (%d, %s, %d, %d, %d)",
 		T("purchases"), guid, db.escapeString(o.key), r.week, o.cost, now()))
-	send(player, "msg", {text = string.format("Bought %s for %d embers.%s", o.name, o.cost,
-		inbox and " Part of it went to your inbox." or ""), ok = true})
+	send(player, "msg", {text = Chaos.t(player, "Bought %s for %d embers.%s", o.name, o.cost,
+		inbox and Chaos.t(player, " Part of it went to your inbox.") or ""), ok = true})
 	return true
 end
 
@@ -1293,8 +1299,8 @@ function Z.tick()
 				player:teleportTo(arrivalSpot(inst.L, K.nearestExit(inst.L, pos)))
 				player:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
 				player:setStorageValue(ST().protect, t + cfg.login.protectSeconds)
-				msg(player, string.format("You are at a safe exit, protected for %d seconds. Stand in the circle to leave and " ..
-					"bank your embers.", cfg.login.protectSeconds))
+				msg(player, string.format("You are at a safe exit, protected for %d seconds. Stand in the circle to leave and bank your embers.",
+					cfg.login.protectSeconds))
 			end
 			clearSkull(player)
 			-- the battle lock never runs longer than combatLock.maxSeconds in here (each player hit renews it with the

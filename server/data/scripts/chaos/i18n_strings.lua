@@ -4644,5 +4644,120 @@ return {
 			"Uma aposta é de no mínimo %s de ouro (ou nenhuma).",
 		["A stake is at most %s gold."] =
 			"Uma aposta é de no máximo %s de ouro.",
+		-- Scorched Marches (pvpzone_core.lua, pvpzone.lua)
+		["%s are closed."] =
+			"%s estão fechadas.",
+		["You are already in %s."] =
+			"Você já está em %s.",
+		["You need level %d to enter %s."] =
+			"Você precisa do level %d para entrar em %s.",
+		["Hardcore characters cannot enter the Marches: a Hardcore life is not staked in open PvP."] =
+			"Personagens Hardcore não podem entrar nas Marches: uma vida Hardcore não é arriscada em PvP aberto.",
+		["Hardcore: confirm that a defeat in the Marches may end your Hardcore run."] =
+			"Hardcore: confirme que uma derrota nas Marches pode encerrar a sua run Hardcore.",
+		["Characters of your realm cannot enter %s."] =
+			"Personagens do seu realm não podem entrar em %s.",
+		["You were defeated in the Marches. You can enter again in %d seconds."] =
+			"Você foi derrotado nas Marches. Você poderá entrar de novo em %d segundos.",
+		["You cannot enter the Marches while another character from your connection is online."] =
+			"Você não pode entrar nas Marches enquanto outro personagem da sua conexão estiver online.",
+		["You cannot enter the Marches while in %s."] =
+			"Você não pode entrar nas Marches enquanto estiver em %s.",
+		["You cannot enter the Marches while in combat."] =
+			"Você não pode entrar nas Marches em combate.",
+		["You can only enter the Marches from a protection zone."] =
+			"Você só pode entrar nas Marches a partir de uma zona de proteção.",
+		["Read and accept the rules of the Marches first."] =
+			"Leia e aceite primeiro as regras das Marches.",
+		["Unknown faction."] =
+			"Facção desconhecida.",
+		["You already fight for %s."] =
+			"Você já luta por %s.",
+		["%s does not trust you enough: you need the rank %s."] =
+			"%s não confia em você o bastante: você precisa do posto %s.",
+		["You can change your pledge in %d hour(s)."] =
+			"Você poderá mudar seu juramento em %d hora(s).",
+		["You already own it."] =
+			"Você já possui isso.",
+		["Weekly limit reached (%d)."] =
+			"Limite semanal atingido (%d).",
+		["You need %d more banked embers."] =
+			"Você precisa de mais %d embers no banco.",
+		["level gap"] =
+			"diferença de level",
+		["just arrived"] =
+			"acabou de chegar",
+		["The Marches cannot be reached right now."] =
+			"As Marches não podem ser alcançadas agora.",
+		["You enter %s. Protected for %d seconds. Bank your embers at a safe exit (the white circles by the banners)."] =
+			"Você entra em %s. Protegido por %d segundos. Guarde suas embers em uma saída segura (os círculos brancos junto às bandeiras).",
+		["You wake in %s. You are protected while you are brought to a safe exit."] =
+			"Você acorda em %s. Você está protegido enquanto é levado a uma saída segura.",
+		["%s are a PvP zone: enter through Adventure > Scorched Marches and accept the rules first."] =
+			"%s são uma zona de PvP: entre por Adventure > Scorched Marches e aceite as regras primeiro.",
+		["You left the Marches without a safe exit: your %d carried embers burned."] =
+			"Você saiu das Marches sem uma saída segura: suas %d embers carregadas queimaram.",
+		["You leave %s. %d embers banked (%d in total)%s."] =
+			"Você sai de %s. %d embers guardadas (%d no total)%s.",
+		[", %d lost over the bank limit"] =
+			", %d perdidas acima do limite do banco",
+		["You leave %s."] =
+			"Você sai de %s.",
+		["You take %d embers (carrying %d)."] =
+			"Você pega %d embers (carregando %d).",
+		["These embers belong to the victor for a few more seconds."] =
+			"Essas embers pertencem ao vencedor por mais alguns segundos.",
+		["Self-Found characters do not take the embers of others."] =
+			"Personagens Self-Found não pegam as embers de outros.",
+		["You took all you may from this pile."] =
+			"Você já pegou tudo o que podia desta pilha.",
+		["You took all the embers you may from other players today."] =
+			"Você já pegou hoje todas as embers que pode de outros jogadores.",
+		["You cannot carry more embers. Bank them at a safe exit."] =
+			"Você não pode carregar mais embers. Guarde-as em uma saída segura.",
+		["You have earned all the reputation the Marches give today."] =
+			"Você já ganhou hoje toda a reputação que as Marches dão.",
+		["You defeated %s.%s"] =
+			"Você derrotou %s.%s",
+		[" %d embers fell: yours alone for %d seconds."] =
+			" %d embers caíram: só suas por %d segundos.",
+		["You defeated %s, but it does not count (%s): the embers burn."] =
+			"Você derrotou %s, mas não conta (%s): as embers queimam.",
+		["You were defeated by %s in %s.%s You can enter again in %d seconds."] =
+			"Você foi derrotado por %s em %s.%s Você poderá entrar de novo em %d segundos.",
+		[" Your %d carried embers fell where you stood."] =
+			" Suas %d embers carregadas caíram onde você estava.",
+		[" Your %d carried embers burned."] =
+			" Suas %d embers carregadas queimaram.",
+		["The Cinder Shrine stirs in %s: its Warden has risen. Slay it and hold the circle for your faction."] =
+			"O Cinder Shrine desperta em %s: seu Warden se levantou. Derrote-o e segure o círculo pela sua facção.",
+		["The Shrine Warden has fallen: the Cinder Shrine can be taken. Stand in its circle with your faction."] =
+			"O Shrine Warden caiu: o Cinder Shrine pode ser tomado. Fique no círculo dele com a sua facção.",
+		["%s took the Cinder Shrine in %s: everyone sworn to it gains +%d%% experience and +%d%% loot for %d minutes."] =
+			"%s tomou o Cinder Shrine em %s: todos que juraram a ele ganham +%d%% de experiência e +%d%% de loot por %d minutos.",
+		["The Cinder Shrine falls silent: nobody took it in time."] =
+			"O Cinder Shrine silencia: ninguém o tomou a tempo.",
+		["The factions are not available."] =
+			"As facções não estão disponíveis.",
+		["Pledge before you enter the Marches."] =
+			"Faça o juramento antes de entrar nas Marches.",
+		["You fight for %s in the Marches."] =
+			"Você luta por %s nas Marches.",
+		["Cosmetics are not available."] =
+			"Os cosméticos não estão disponíveis.",
+		["That cosmetic could not be granted."] =
+			"Esse cosmético não pôde ser concedido.",
+		["Bought %s for %d embers.%s"] =
+			"%s comprado por %d embers.%s",
+		[" Part of it went to your inbox."] =
+			" Parte foi para a sua inbox.",
+		["You are at a safe exit, protected for %d seconds. Stand in the circle to leave and bank your embers."] =
+			"Você está em uma saída segura, protegido por %d segundos. Fique no círculo para sair e guardar suas embers.",
+		["Leaving in %d seconds: do not fight."] =
+			"Saindo em %d segundos: não lute.",
+		["Your protection ends: you attacked."] =
+			"Sua proteção acabou: você atacou.",
+		["You cannot carry more than %d embers. Bank them at a safe exit."] =
+			"Você não pode carregar mais de %d embers. Guarde-as em uma saída segura.",
 	},
 }

@@ -277,6 +277,7 @@ local REASONS = {
 	["salvage_core.lua"] = {}, ["salvage.lua"] = {"^Main backpack", "^Set piece$"}, ["crafting.lua"] = {"^Rift Key$"},
 	["guildwar_core.lua"] = {}, ["guildwar.lua"] = {"^War declared$", "^%%s declares war: ", "^%%s %%(%%d%%) offered war", "^%%d: ", "^No war offers",
 		"^%%d war offer", "^War %%d ended", "^Offer %%d expired", "^Chaos guildwar"},
+	["pvpzone_core.lua"] = {}, ["pvpzone.lua"] = {"^%%d embers of ", "^%%d inside", "^%%s instance %%d ready", "^Marches: "},
 	["market_core.lua"] = {}, ["market_config.lua"] = {}, ["market_orders_core.lua"] = {},
 	["market_notify_core.lua"] = {"^While you were away", "^Market sales", "^Orb Exchange", "^Chaos Coin", "^your "},
 	["market.lua"] = {"^Market sweep", "^Buy orders%%s", "^Offer %%d", "^No such offer", "^/market", "^Chaos Coins$"},
