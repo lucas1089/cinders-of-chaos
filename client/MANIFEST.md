@@ -2975,7 +2975,7 @@ The importer verified the 12 sprite slots pixel-identical to the atlas and every
 - **Ship order.** A client on pair 43 or older draws nothing for the new ids: ship pair 44 and a client build before the
   server's `potions` install step. Preview (the twelve looks at 1x and 4x, rendered from pair 44): scratchpad only. Not run in a client.
 
-## Reward Chest look (pair 45: item 38657, `tools/sprites/gen_reward_chest_art.py`, `art_import/reward_chest*`; built 2026-10-26; on windows-assets XXXXXXXX)
+## Reward Chest look (pair 45: item 38657, `tools/sprites/gen_reward_chest_art.py`, `art_import/reward_chest*`; built 2026-10-26; shipped inside pair 46, windows-assets 4553b922; the first pick went up alone as eac7e96f)
 Owner request 2026-10-26: "make a reward chest and give every quest chest this sprite". Every chest a player takes a reward
 from (the rift's, the Descent's, the planned areas' and the base server's quest chests; server/README.md "Reward chests") wore the
 stock reward chest (server 21584, client 19250: a gold chest on a stone plinth). One PixelLab result (64 x 64 RGBA, alpha 0 / 255,
@@ -3021,12 +3021,12 @@ The importer verified the 4 sprite slots pixel-identical to the atlas and every 
   cd5e2d702af0294beb0c96484cc57370bc62b4b279933d2d482fb00df6bad894; parts `things-1098.tar.xz.part00` (99,614,720
   bytes, sha256 dc3ea0efa6e9d4b696e77c968aeda58540b9bfa3a0f9c9979bc935298b3b70c8) and `.part01` (47,470,700 bytes,
   sha256 0e9c114b342997737ca0e9e92a90df2cfcffac61a78be9230580aec1bfba75de); the parts joined equal the archive, and
-  stream-extracted from it the md5s above match. Not pushed to windows-assets by the builder: the lead pushes the pair.
-- **Ship order.** A client on pair 44 or older draws nothing for the new id: ship pair 45 and a client build before the
+  stream-extracted from it the md5s above match. This archive was not pushed: pair 46 (below) carries it.
+- **Ship order.** A client on pair 44 or older draws nothing for the new id: ship pair 45 (or later) and a client build before the
   server's `rewardchest` install step. Preview (the new look and the stock chest at 1x and 4x, rendered from pair 45):
   scratchpad only. Not run in a client.
 
-## Support rune looks (pair 46: items 38658-38757, `tools/sprites/gen_support_runes_art.py`, `art_import/support_runes*`; art and scripts done 2026-10-26, **pair not built yet**)
+## Support rune looks (pair 46: items 38658-38757, `tools/sprites/gen_support_runes_art.py`, `art_import/support_runes*`; built 2026-10-26; on windows-assets 4553b922)
 Owner request 2026-10-26: "Gere novas runas. Vamos usar as artes das runas como icones tambem". The 100 support rune items (server ids
 32101-32200, server/data/scripts/chaos/SUPPORTS.md "The runes") wore the stock rune stones and the window drew procedural icons.
 - **Art.** One carved dark stone per support, 32 x 32, the support's glowing sigil in its theme colour (ember sunburst orange, rime
@@ -3054,12 +3054,15 @@ Owner request 2026-10-26: "Gere novas runas. Vamos usar as artes das runas como 
 - **Pair step.** `tools/sprites/build_support_runes_pair.sh IN_DIR OUT_DIR [LAST_ITEM_OF_IN]` (art check, `import_art_things.py
   --first-item LAST+1 --expect-items LAST`, `check_pair.py --old --new-only`, md5s); then `gen_outfit_anchors.py` and `gen_info_lift.py`
   on the output. Runs on any input pair whose last item is 38657 (the ids must equal `clientFirstId`).
-  **Verified only** on the first pair 45 (dat 24bfad917c9c8c47630fbcdc7f718098, spr ccf66d5c47c1bc0d4275bca3cd3eae73): output dat
-  58062a1ed9dc6f0e5323752a4d1fd896 (11,263,055 bytes), spr 1ca48be7b8ec4a76097fed90479891c0 (1,541,348,697 bytes, 1,357,988
-  sprites: 100 appended), 38,757 items; importer: 100 slots pixel-identical, every old thing byte-identical; `check_pair --new-only`
-  0 errors, 0 warnings. **Not a release:** pair 45 is being rebuilt with new chest art (same item 38657), so **the final pair 46 must
-  be rebuilt on top of the final pair 45** (the md5s above change; `outfit_anchors.lua` / `info_lifts.lua` get the final dat md5;
-  no archive was prepared). Preview (all 100 looks, 4x, names under each, rendered from the verification pair): scratchpad only.
+  Input the final pair 45 (dat 24bfad917c9c8c47630fbcdc7f718098, spr 72aec17d22c02fb08875a22c36440662).
+  Output **pair 46**: dat 58062a1ed9dc6f0e5323752a4d1fd896 (11,263,055 bytes), spr 71b147590afcc0561f7bfcf3dfdc1301 (1,541,350,017
+  bytes, 1,357,988 sprites: 100 appended), 38,757 items (100 appended); importer: 100 slots pixel-identical, every old thing
+  byte-identical; `check_pair --new-only` 0 errors, 0 warnings; the full check 0 errors, 206 warnings (the same as pair 45).
+  `outfit_anchors.lua` and `info_lifts.lua`: only the dat md5 changes.
+- Archive (the pair 41 recipe): 147,062,448 bytes, sha256 2d529ea91f9dfdc0c6d7cf50161d1c4ab13a129189656eece3ca46bfcebb7a54;
+  parts `things-1098.tar.xz.part00` (99,614,720 bytes, sha256 bc3b9ca801f750f629eae8aa8b11599134e84d34f69671b8b17d00d2ff002ecf)
+  and `.part01` (47,447,728 bytes, sha256 9b0c4580a90daf4ff6ef1560be9e96901a7f24883b7bb743059cc38835adb81a); the joined parts
+  extract to the md5s above. Preview (all 100 looks, 4x, names under each): scratchpad only. Not run in a client.
 - **Ship order.** A client on pair 45 or older draws nothing for the new ids: ship pair 46 and a client build (the new icons) before the
   server's `supports` install step, or keep `clientFirstId = nil` until then.
 
