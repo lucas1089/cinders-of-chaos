@@ -1604,6 +1604,7 @@ return {
 		["Hardcore: you cannot be hurt for %d seconds after logging in."] =
 			"Hardcore: você não pode ser ferido por %d segundos depois de entrar.",
 		["You already claimed this reward."] = "Você já pegou essa recompensa.",
+		["Something went wrong. Try again later."] = "Algo deu errado. Tente novamente mais tarde.",
 		["You do not have enough Tower Points yet."] = "Você ainda não tem Tower Points suficientes.",
 		["You claimed the %d point Infinity Tower reward."] = "Você pegou a recompensa de %d pontos da Infinity Tower.",
 		["Tower Season %d ends %s. Last season paid out: %s."] =

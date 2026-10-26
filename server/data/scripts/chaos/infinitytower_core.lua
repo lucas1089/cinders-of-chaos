@@ -9,6 +9,9 @@
 --   K.pendingSeasons(done, current)      -> seasons to pay out (each ended season once), or nil on a new server
 --   K.chestText(chest)                   "Gold Tower Chest (15 Orb of Fate, 25 Orb of Upheaval)"
 --   K.topRewards(seasonEnd, clientIdOf)  the podium for the client window (place, name, chest client id, items)
+--   K.claimReward(api, row, index, milestone)  milestone claim, mark first: -> "claimed" | "already" | "points" | "room" | "db"
+--                                        api.mark(bit) sets the claimed bit only while it is clear and returns true on success,
+--                                        api.unmark(bit) clears it, api.give(item) -> count given, api.take(id, count)
 -- Lua 5.1 / LuaJIT and Lua 5.3 compatible.
 
 ChaosTowerCore = ChaosTowerCore or {}
@@ -93,6 +96,44 @@ function K.chestText(chest)
 		parts[#parts + 1] = it.count .. " " .. (it.name or ("item " .. it.id))
 	end
 	return string.format("%s (%s)", chest.name, table.concat(parts, ", "))
+end
+
+-- The claimed bit is written BEFORE the items are given, so a second claim (double click, two packets) finds it
+-- set and gets nothing. If the mark fails, nothing is given. If the items do not fit, they are taken back and the
+-- bit is cleared again (a failed clear is logged by the caller through api.log, the reward stays unclaimable then).
+function K.claimReward(api, row, index, milestone)
+	local bit = 2 ^ (index - 1)
+	if math.floor((row.claimed_mask or 0) / bit) % 2 == 1 then
+		return "already"
+	end
+	if (row.points or 0) < milestone.points then
+		return "points"
+	end
+	if not api.mark(bit) then
+		return "db"
+	end
+	local granted = {}
+	local ok = true
+	for _, item in ipairs(milestone.items) do
+		local given = api.give(item) or 0
+		if given > 0 then
+			granted[#granted + 1] = {id = item.id, count = given}
+		end
+		if given < item.count then
+			ok = false
+			break
+		end
+	end
+	if ok then
+		return "claimed"
+	end
+	for _, g in ipairs(granted) do
+		api.take(g.id, g.count)
+	end
+	if not api.unmark(bit) and api.log then
+		api.log("could not clear claimed bit " .. index .. " after a failed give")
+	end
+	return "room"
 end
 
 K.placeNames = {"1st", "2nd", "3rd"}

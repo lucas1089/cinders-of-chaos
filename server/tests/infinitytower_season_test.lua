@@ -394,6 +394,54 @@ do
 	eq(talks["/towerseason"].onSay(alice, "/towerseason", "pay"), true, "players: plain chat")
 end
 
+-- ---------------------------------------------------------------- reward claim: mark first, give second
+do
+	local ms = {points = 100, items = {{id = 1, count = 2}, {id = 2, count = 1}}}
+	local function mkapi(opts)
+		local a = {bits = 0, gave = {}, took = {}, logs = {}}
+		a.mark = function(bit)
+			if opts.markFails then return false end
+			a.bits = a.bits + bit
+			return true
+		end
+		a.unmark = function(bit) a.bits = a.bits - bit; return not opts.unmarkFails end
+		a.give = function(item)
+			-- the bit must already be set while items are handed over
+			a.bitAtGive = a.bits
+			if opts.short == item.id then return item.count - 1 end
+			a.gave[#a.gave + 1] = item.id
+			return item.count
+		end
+		a.take = function(id, c) a.took[#a.took + 1] = id .. "x" .. c end
+		a.log = function(t) a.logs[#a.logs + 1] = t end
+		return a
+	end
+	local a = mkapi({})
+	eq(K.claimReward(a, {claimed_mask = 0, points = 100}, 3, ms), "claimed", "claim ok")
+	eq(a.bits, 4, "claim: bit 3 is set")
+	eq(a.bitAtGive, 4, "claim: bit set before items are given")
+	eq(#a.gave, 2, "claim: both items given")
+
+	a = mkapi({})
+	eq(K.claimReward(a, {claimed_mask = 4, points = 100}, 3, ms), "already", "second claim refused")
+	eq(#a.gave, 0, "second claim gives nothing")
+	eq(a.bits, 0, "second claim marks nothing")
+	eq(K.claimReward(a, {claimed_mask = 0, points = 99}, 3, ms), "points", "too few points")
+
+	a = mkapi({markFails = true})
+	eq(K.claimReward(a, {claimed_mask = 0, points = 100}, 1, ms), "db", "mark fails: db")
+	eq(#a.gave, 0, "mark fails: nothing given")
+
+	a = mkapi({short = 2})
+	eq(K.claimReward(a, {claimed_mask = 0, points = 100}, 2, ms), "room", "no room")
+	eq(a.bits, 0, "no room: bit cleared again")
+	eq(a.took[1], "1x2", "no room: first item taken back")
+
+	a = mkapi({short = 2, unmarkFails = true})
+	eq(K.claimReward(a, {claimed_mask = 0, points = 100}, 2, ms), "room", "no room, unmark fails")
+	eq(#a.logs, 1, "failed unmark is logged")
+end
+
 print(string.format("infinitytower_season_test: %d checks, %d failed", count, failures))
 if failures > 0 then
 	os.exit(1)

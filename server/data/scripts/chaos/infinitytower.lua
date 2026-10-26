@@ -195,37 +195,37 @@ local function claim(player, index)
 	local row = loadPlayerRow(guid, season)
 	local milestone = cfg.milestones[index]
 
-	if hasBit(row.claimed_mask, index) then
+	local where = " WHERE `player_id` = " .. guid .. " AND `season` = " .. season
+	local result = K.claimReward({
+		-- atomic in SQL: the bit is set only while it is clear; the read-back tells whether this call set it
+		mark = function(bit)
+			local b = string.format("%d", bit)
+			if not db.query("UPDATE `" .. T .. "` SET `claimed_mask` = `claimed_mask` | " .. b ..
+				where .. " AND (`claimed_mask` & " .. b .. ") = 0") then
+				return false
+			end
+			local fresh = loadPlayerRow(guid, season)
+			return hasBit(fresh.claimed_mask, index)
+		end,
+		unmark = function(bit)
+			return db.query("UPDATE `" .. T .. "` SET `claimed_mask` = `claimed_mask` & ~" .. string.format("%d", bit) .. where)
+		end,
+		give = function(item) return Chaos.giveItem(player, item.id, item.count) end,
+		take = function(id, count) player:removeItem(id, count) end,
+		log = log
+	}, row, index, milestone)
+
+	if result == "already" then
 		player:sendCancelMessage(Chaos.t(player, "You already claimed this reward."))
-	elseif row.points < milestone.points then
+	elseif result == "points" then
 		player:sendCancelMessage(Chaos.t(player, "You do not have enough Tower Points yet."))
+	elseif result == "claimed" then
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "You claimed the %d point Infinity Tower reward.", milestone.points))
+	elseif result == "room" then
+		player:sendCancelMessage(Chaos.t(player, "You do not have enough room or capacity for the reward."))
 	else
-		-- all-or-nothing: roll back anything already handed over if one item does not fit
-		local granted = {}
-		local ok = true
-		for _, item in ipairs(milestone.items) do
-			local given = Chaos.giveItem(player, item.id, item.count)
-			if given > 0 then
-				granted[#granted + 1] = {id = item.id, count = given}
-			end
-			if given < item.count then
-				ok = false
-				break
-			end
-		end
-		if ok then
-			local mask = row.claimed_mask + 2 ^ (index - 1)
-			db.query(
-				"UPDATE `" .. T .. "` SET `claimed_mask` = " .. string.format("%d", mask) ..
-					" WHERE `player_id` = " .. guid .. " AND `season` = " .. season
-			)
-			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "You claimed the %d point Infinity Tower reward.", milestone.points))
-		else
-			for _, g in ipairs(granted) do
-				player:removeItem(g.id, g.count)
-			end
-			player:sendCancelMessage(Chaos.t(player, "You do not have enough room or capacity for the reward."))
-		end
+		log("claim: database write failed for player " .. guid)
+		player:sendCancelMessage(Chaos.t(player, "Something went wrong. Try again later."))
 	end
 	sendTower(player, "update")
 end
