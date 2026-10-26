@@ -11,6 +11,9 @@ text summary. The rows are aggregate counters; no name, account or IP is in them
   firstSession   characters per minutes bucket of the first session
   milestones     median played minutes to reach each milestone level, read from the time buckets by interpolation
 
+Small numbers: a count of 1 to 4 (a band, an area, a monster, a bucket, a milestone) is written "<5" in the text and as
+the string "<5" in the JSON, with its percentage, median and top band left out (null or empty). 0 stays 0.
+
 usage: progress_metrics.py [--json] [--top N] [--error CODE]  < rows
        --error CODE writes {"ok": false, "error": CODE} (the database could not be read)
 """
@@ -18,6 +21,15 @@ import json
 import sys
 
 TOP = 10
+# small-number suppression: a count of 1 to MIN_SHOWN - 1 is shown as SMALL (text and JSON), never exactly. Zero is
+# shown as 0 (nobody there). The percentages and medians of a hidden count are hidden with it (null in JSON).
+MIN_SHOWN = 5
+SMALL = '<%d' % MIN_SHOWN
+
+
+def hide(n):
+    """n, or SMALL when 0 < n < MIN_SHOWN"""
+    return SMALL if 0 < n < MIN_SHOWN else n
 
 
 def num(s, default=0):
@@ -84,7 +96,16 @@ def top(rows, kind, limit):
         best = sorted(e['bands'].items(), key=lambda kv: (-kv[1], band_start(kv[0])))[0]
         out.append({'name': e['name'], 'deaths': e['deaths'], 'topBand': best[0], 'topBandDeaths': best[1]})
     out.sort(key=lambda e: (-e['deaths'], e['name']))
-    return out[:limit]
+    out = out[:limit]
+    for e in out:
+        if hide(e['deaths']) == SMALL:
+            # a handful of deaths in one level band can point at one character: no band either
+            e['topBand'] = ''
+            e['topBandDeaths'] = SMALL
+        else:
+            e['topBandDeaths'] = hide(e['topBandDeaths'])
+        e['deaths'] = hide(e['deaths'])
+    return out
 
 
 def report(rows, limit=TOP):
@@ -101,6 +122,12 @@ def report(rows, limit=TOP):
         churn_rows.append(b)
     gone = sum(b['gone'] for b in churn_rows)
     active = sum(b['active'] for b in churn_rows)
+    for b in churn_rows:
+        # a band of fewer than 5, or one side of it, is not shown; the share would give it away
+        if hide(b['total']) == SMALL or hide(b['gone']) == SMALL or hide(b['active']) == SMALL:
+            b['gonePct'] = None
+        b['gone'], b['active'], b['total'] = hide(b['gone']), hide(b['active']), hide(b['total'])
+    gone, active = hide(gone), hide(active)
 
     sess = {}
     for k, k1, k2, n in rows:
@@ -109,8 +136,9 @@ def report(rows, limit=TOP):
     sess_total = sum(sess.values())
     first = []
     for label in sorted(sess, key=lambda s: (bucket_limit(s) is None, bucket_limit(s) or 0)):
-        first.append({'bucket': label, 'characters': sess[label],
-                      'pct': round(100.0 * sess[label] / sess_total, 1) if sess_total else 0.0})
+        small = hide(sess[label]) == SMALL
+        first.append({'bucket': label, 'characters': hide(sess[label]),
+                      'pct': None if small else (round(100.0 * sess[label] / sess_total, 1) if sess_total else 0.0)})
 
     ttl = {}
     for k, k1, k2, n in rows:
@@ -119,7 +147,8 @@ def report(rows, limit=TOP):
     milestones = []
     for level in sorted(ttl):
         med, total = median(ttl[level])
-        milestones.append({'level': level, 'medianMinutes': med, 'characters': total})
+        small = hide(total) == SMALL
+        milestones.append({'level': level, 'medianMinutes': None if small else med, 'characters': hide(total)})
 
     return {
         'ok': True,
@@ -128,7 +157,7 @@ def report(rows, limit=TOP):
         'deathAreas': top(rows, 'death_area', limit),
         'deathMonsters': top(rows, 'death_monster', limit),
         'firstSession': first,
-        'firstSessionCharacters': sess_total,
+        'firstSessionCharacters': hide(sess_total),
         'milestones': milestones,
         'empty': not rows,
     }
@@ -150,20 +179,23 @@ def text(rep):
         return 'metrics: %s\n' % rep.get('error', 'error')
     out = []
     c = rep['churn']
-    out.append('Churn (gone = no login for %d days; %d gone, %d active)' % (c['days'], c['gone'], c['active']))
+    out.append('Churn (gone = no login for %d days; %s gone, %s active)' % (c['days'], c['gone'], c['active']))
     for b in c['bands']:
-        out.append('  %-9s gone %5d  active %5d  %5.1f%% gone' % (b['band'], b['gone'], b['active'], b['gonePct']))
+        pct = '%5.1f%% gone' % b['gonePct'] if b['gonePct'] is not None else '   n/a'
+        out.append('  %-9s gone %5s  active %5s  %s' % (b['band'], b['gone'], b['active'], pct))
     for title, key in (('Deaths by area', 'deathAreas'), ('Deaths by monster', 'deathMonsters')):
         out.append(title)
         for e in rep[key]:
-            out.append('  %6d  %s (most at level %s)' % (e['deaths'], e['name'], e['topBand']))
-    out.append('First session (%d new characters)' % rep['firstSessionCharacters'])
+            where = ' (most at level %s)' % e['topBand'] if e['topBand'] else ''
+            out.append('  %6s  %s%s' % (e['deaths'], e['name'], where))
+    out.append('First session (%s new characters)' % rep['firstSessionCharacters'])
     for e in rep['firstSession']:
         label = 'longer' if e['bucket'] == 'inf' else 'up to %s min' % e['bucket']
-        out.append('  %s: %d (%.1f%%)' % (label, e['characters'], e['pct']))
+        share = '%.1f%%' % e['pct'] if e['pct'] is not None else SMALL
+        out.append('  %s: %s (%s)' % (label, e['characters'], share))
     out.append('Median time to level')
     for m in rep['milestones']:
-        out.append('  level %d: %s (%d characters)' % (m['level'], minutes_text(m['medianMinutes']), m['characters']))
+        out.append('  level %d: %s (%s characters)' % (m['level'], minutes_text(m['medianMinutes']), m['characters']))
     return '\n'.join(out) + '\n'
 
 

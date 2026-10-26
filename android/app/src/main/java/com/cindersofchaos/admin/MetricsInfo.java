@@ -16,6 +16,18 @@ import java.util.Locale;
 final class MetricsInfo {
     static final Locale PT = new Locale("pt", "BR");
 
+    /** A count the server hides because fewer than 5 players are behind it (it sends the text "<5"). */
+    static final long SMALL = -1;
+
+    static long count(JSONObject o, String key) {
+        return o.opt(key) instanceof String ? SMALL : o.optLong(key, 0);
+    }
+
+    /** The count as text: "<5" for a hidden one. */
+    static String n(long v) {
+        return v == SMALL ? "<5" : String.valueOf(v);
+    }
+
     static final class Band {
         String band = "";
         long gone;
@@ -86,8 +98,8 @@ final class MetricsInfo {
         if (churn != null) {
             m.churnDays = churn.optInt("days", 0);
             m.churnAt = churn.optLong("at", 0);
-            m.gone = churn.optLong("gone", 0);
-            m.active = churn.optLong("active", 0);
+            m.gone = count(churn, "gone");
+            m.active = count(churn, "active");
             JSONArray arr = churn.optJSONArray("bands");
             for (int i = 0; arr != null && i < arr.length(); i++) {
                 JSONObject b = arr.optJSONObject(i);
@@ -96,15 +108,15 @@ final class MetricsInfo {
                 }
                 Band x = new Band();
                 x.band = b.optString("band", "");
-                x.gone = b.optLong("gone", 0);
-                x.active = b.optLong("active", 0);
-                x.gonePct = b.optDouble("gonePct", 0);
+                x.gone = count(b, "gone");
+                x.active = count(b, "active");
+                x.gonePct = b.isNull("gonePct") ? -1 : b.optDouble("gonePct", 0);
                 m.bands.add(x);
             }
         }
         killers(o.optJSONArray("deathAreas"), m.areas);
         killers(o.optJSONArray("deathMonsters"), m.monsters);
-        m.sessionCharacters = o.optLong("firstSessionCharacters", 0);
+        m.sessionCharacters = count(o, "firstSessionCharacters");
         JSONArray fs = o.optJSONArray("firstSession");
         for (int i = 0; fs != null && i < fs.length(); i++) {
             JSONObject b = fs.optJSONObject(i);
@@ -113,8 +125,8 @@ final class MetricsInfo {
             }
             Bucket x = new Bucket();
             x.bucket = b.optString("bucket", "");
-            x.characters = b.optLong("characters", 0);
-            x.pct = b.optDouble("pct", 0);
+            x.characters = count(b, "characters");
+            x.pct = b.isNull("pct") ? -1 : b.optDouble("pct", 0);
             m.sessions.add(x);
         }
         JSONArray ms = o.optJSONArray("milestones");
@@ -126,7 +138,7 @@ final class MetricsInfo {
             Milestone x = new Milestone();
             x.level = b.optInt("level", 0);
             x.medianMinutes = b.isNull("medianMinutes") ? -1 : b.optDouble("medianMinutes", -1);
-            x.characters = b.optLong("characters", 0);
+            x.characters = count(b, "characters");
             m.milestones.add(x);
         }
         return m;
@@ -140,7 +152,7 @@ final class MetricsInfo {
             }
             Killer k = new Killer();
             k.name = b.optString("name", "");
-            k.deaths = b.optLong("deaths", 0);
+            k.deaths = count(b, "deaths");
             k.topBand = b.optString("topBand", "");
             into.add(k);
         }
@@ -168,6 +180,9 @@ final class MetricsInfo {
     }
 
     static String pct(double v) {
+        if (v < 0) {
+            return "<5";
+        }
         return String.format(PT, "%.1f%%", v);
     }
 
