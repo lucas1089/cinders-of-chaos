@@ -91,6 +91,8 @@ local REWARD, STOCK, COFFER = 32310, 21584, 12664
 local rift = dofile("data/scripts/chaos/rift_config.lua")
 eq(rift.chest.itemId, REWARD, "rift chest: the reward chest")
 eq(rift.chest.fallbackId, STOCK, "rift chest: falls back to the stock reward chest")
+eq(rift.chest.smallItemId, 32311, "rift chest: the one-tile look (the base map's quest chests; only the map patch reads it)")
+check(rift.chest.smallItemId ~= rift.chest.itemId and rift.chest.smallItemId ~= rift.chest.fallbackId, "the small look is a look of its own")
 eq(rift.coffer.itemId, COFFER, "rift coffer: the big treasure chest")
 local descent = dofile("data/scripts/chaos/descent_config.lua")
 eq(descent.objects.chest, REWARD, "Descent treasure room chest: the reward chest")

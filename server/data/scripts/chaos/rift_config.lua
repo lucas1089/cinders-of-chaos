@@ -17,8 +17,10 @@ return {
 	-- 38657; tools/install_reward_chest.py: a copy of the stock reward chest 21584, a container, not moveable). It also is
 	-- the quest chest of the planned areas (tools/areaplan_build.lua) and the Descent's (descent_config.lua objects.chest);
 	-- tools/patch_reward_chests.py swaps the placed ones on the map. fallbackId is the stock chest (gold on a stone plinth;
-	-- the plain chest 1740 before 2026-10-20) used while 32310 is not installed. server/README.md "Reward chests"
-	chest = {itemId = 32310, fallbackId = 21584, actionId = 47402},
+	-- the plain chest 1740 before 2026-10-20) used while 32310 is not installed. smallItemId is the same look in one tile
+	-- (32311, client 38758, pair 47): the base map's quest chests and boxes wear it (read by tools/patch_reward_chests.py
+	-- only; no script uses it). server/README.md "Reward chests"
+	chest = {itemId = 32310, fallbackId = 21584, smallItemId = 32311, actionId = 47402},
 	maxTier = 15,
 
 	-- ------------------------------------------------------------------ opening

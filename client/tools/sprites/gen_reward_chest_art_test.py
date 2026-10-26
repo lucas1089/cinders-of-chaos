@@ -63,5 +63,31 @@ src = G.read_rgba(os.path.join(G.SRC_DIR, 'reward_chest.png'))
 check(G.MIRROR and np.array_equal(fr[(0, 0, 0)], src[:, ::-1]) and not np.array_equal(src, src[:, ::-1]), 'the importer reads the mirrored source')
 check(np.array_equal(atlas, src[:, ::-1]), 'the atlas is the source mirrored')
 
+# the small (one tile) look
+check(G.problems_of(np.zeros((32, 32, 4), np.uint8), 32) != [], 'an empty 32 px canvas is refused')
+ok32 = np.zeros((32, 32, 4), np.uint8); ok32[2:30, 1:31] = (90, 40, 40, 255)
+check(G.problems_of(ok32, 32) == [], 'a filled 32 px canvas passes')
+check(G.problems_of(ok32) != [], 'a 32 px canvas is not a 64 px one')
+tiny32 = np.zeros((32, 32, 4), np.uint8); tiny32[14:18, 14:18] = (1, 2, 3, 255)
+check(any('fill' in p for p in G.problems_of(tiny32, 32)), 'a small speck on a 32 px canvas is refused')
+satlas, sthings, ssums, serrs, sbad, _swarn, _sn = G.build_small(G.SMALL_SRC)
+check(not serrs and not sbad, 'the small look passes the style check on its own colours')
+check(satlas.shape == (32, 32, 4), 'small atlas size: one 32 px cell')
+check(np.array_equal(G.read_rgba(G.SMALL_ATLAS), satlas), 'small atlas on disk is up to date')
+check(open(G.SMALL_THINGS, encoding='utf-8').read() == sthings, 'small things file is up to date')
+check(open(G.SMALL_SUMS, encoding='utf-8').read() == ssums, 'small sums file is up to date')
+srows = I.read_things(G.SMALL_THINGS)
+check([r['key'] for r in srows] == ['reward_chest_small'], 'one small row')
+sr = srows[0]
+check((sr['w'], sr['h'], sr['patterns'], sr['phases'], sr['flags'], sr['mode']) == (1, 1, '1', '1', 'copy:19250', 'new'),
+      'a 1 x 1 still of the flags of 19250, appended')
+check(int(sr['server_id']) == G.SMALL_SERVER_ID == 32311 and G.SMALL_CLIENT_ID == 38758, 'ids 32311 / 38758')
+sfr = I.item_frames(sr)[0]
+check(len(sfr) == 1 and all(f.shape == (32, 32, 4) for f in sfr.values()), 'small importer frame')
+ssrc = G.read_rgba(G.SMALL_SRC)
+check(G.MIRROR_SMALL and np.array_equal(satlas, ssrc[:, ::-1]) and not np.array_equal(ssrc, ssrc[:, ::-1]),
+      'the small atlas is the source mirrored')
+check(np.array_equal(sfr[(0, 0, 0)], satlas), 'the importer reads the small atlas')
+
 print('gen_reward_chest_art_test: %s' % ('OK' if not failed else 'FAILED %d' % failed))
 sys.exit(1 if failed else 0)

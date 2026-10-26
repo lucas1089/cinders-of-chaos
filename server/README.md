@@ -18356,6 +18356,14 @@ Ship pair 45 and a client build before the `rewardchest` step: a client on pair 
 client id. `tools/install_reward_chest_test.py` (synthetic items.otb / items.xml; also checks the configs and the client
 things file).
 
+**Two looks (2026-10-26, pair 47).** The base map's quest chests were one tile big and many sit in tight quest rooms (31 of
+about 297 next to another chest), where a 2 x 2 chest overlaps walls and neighbours. Item **32311** "reward chest" (client
+**38758**, a 32 x 32 PixelLab version of the same chest: owner pick "use o 15"; client/MANIFEST.md "Reward Chest look, one
+tile") is a second copy of the 21584 node with the same attributes, installed by the same step in the same block. The big
+32310 stays the rift chest, the Descent's and the planned areas' quest chest, and the base's own 21584 chests (2 x 2
+already); the small 32311 is what the base map's quest chests and quest boxes get (`rift_config.lua` `chest.smallItemId`,
+read only by `patch_reward_chests.py`; no script uses it). Ship pair 47 before the `rewardchest` step.
+
 The old ids could be moved and picked up (1740 and 1746 are pickupable in items.otb); the new ones cannot. Neither id
 is used by another system (the base server's own handler of 21584 is commented out in its actions.xml; the plaza's
 daily chests are 29327). The reward chests of the other systems are not map items: dungeon boss chests
@@ -18370,7 +18378,8 @@ inbox, so they keep their small looks.
   Rules: `reward_sparkle_core.lua`, `tests/reward_sparkle_test.lua` (also checks the ids of the configs).
 - **Install** (`install_all.py` step `rewardchests`, right before `contentareas`, after `rewardchest`): `tools/patch_reward_chests.py
   DATA_DIR [--dry-run] [--map FILE] [--out FILE] [--items-otb FILE]` turns the quest chests on the map into the reward chest
-  of `rift_config.lua` (32310). It rewrites only the item id of the node: action id, unique id, the contents (a quest chest
+  of `rift_config.lua` (the planned areas' and the base's 21584 chests: 32310, 2 x 2; the base map's quest chests and boxes:
+  `smallItemId` 32311, one tile). It rewrites only the item id of the node: action id, unique id, the contents (a quest chest
   holds its rewards as child items), the tile and the rest stay, so the base quest scripts work as before (they look at the
   unique / action id, never at the item id; 21584 is a container like the old ones). What counts as a quest chest:
   1. **Planned areas:** a chest 1740 or 21584 with an action id of the quest chest block (47960-47999, or a plan's own
@@ -18384,18 +18393,30 @@ inbox, so they keep their small looks.
      1300-1308, In Service of Yalahar 3088-3090, Bigfoot's Burden 3147-3150, Children of the Revolution 3164, Wrath of
      the Emperor 3200, Demon Oak 9008-9011, warzone 9172-9174); the base's own reward chest 21584 with an action id (the
      starter chest 33735, the Soul War chest 33733).
-  3. **Not touched:** boxes, coffins, sarcophagi, drawers, bookcases, barrels, slain creatures and the other things that
-     carry the same quest action id but are no chest (1738, 1741, 1716-1721, 1410, 1419 ...), chests no script owns (a unique
-     id nothing handles, no action id: decoration or loot containers, e.g. the 12 of uid 61907-61918), the plaza's royal chests
-     (29327), the runtime chests (rift, coffer, Descent, Cursed Chest), and containers players keep things in (houses and
-     depots carry no quest action id), a bare 21584 without an action id.
-  On the base map of 2026-10 the rule finds **215** chests: 185 by `system.lua` (140 x 1740, 3 x 1746, 7 x 1747, 6 x 1748, 18 x
-  1749, 3 x 8587, 5 x 12664, 3 x 18473), 5 by `system2.lua` (1740), 21 by a quest script (14 x 1740, 3 x 1748, 12664,
-  18472, 18473, 18474), 4 starter / Soul War chests (21584). The new look is 2 x 2 like 21584: a chest that was 1 x 1 now
-  draws up and to the left over its neighbour tile (the planned areas had the same change on 2026-10-20), nothing else changes.
-  Refused when the new id is not in `items/items.otb` (`--items-otb` names another file: `install_all.py --dry-run` reads its
+  3. **Quest boxes** (`BOX_IDS`: 1738 and 1741, "box"): the base quest systems open some boxes as reward containers, and the
+     owner asked that every container that gives a quest reward wears the look. A box counts under the first two base rules
+     only: an action id of `system.lua` with a unique id and items inside, or action id 2001 with a unique id of
+     `system2.lua`'s table. An empty box, one without a unique id, one with only a quest-script unique id stays a box.
+  4. **Not touched, on purpose:** the other containers that carry the quest action id are themed hiding places and keep
+     their look: corpses and slain creatures, coffins, sarcophagi, chests of drawers, bookcases, barrels, the bamboo shelf
+     (1716-1721, 1410, 1419 ...). Also not touched: chests no script owns (a unique id nothing handles, no action id:
+     decoration or loot containers, e.g. the 12 of uid 61907-61918, and the mechanisms 61900-61918, 65207 and the action id
+     41762 / 41763 / 12503 treasure chests: they trigger levers and doors, they hand out no reward), the plaza's royal
+     chests (29327), the runtime chests (rift, coffer, Descent, Cursed Chest), and containers players keep things in
+     (houses and depots carry no quest action id), a bare 21584 without an action id.
+  5. **Migration:** a server that ran the first version of this step has its base chests as 32310. The next run moves those
+     (32310 that match a base rule and carry no planned area's action id) to 32311, and swaps the boxes; planned areas keep
+     32310.
+  On the base map of 2026-10 the step finds **301** nodes: 4 starter / Soul War chests (21584 -> 32310, big) and **297** that
+  become 32311 (small): 265 by `system.lua` (140 x 1740, 3 x 1746, 7 x 1747, 6 x 1748, 18 x 1749, 3 x 8587, 5 x 12664, 3 x
+  18473 chests, plus 51 x 1738 and 29 x 1741 boxes), 11 by `system2.lua` (5 x 1740, 5 x 1738, 1 x 1741), 21 by a quest script
+  (14 x 1740, 3 x 1748, 12664, 18472, 18473, 18474): 86 boxes and 211 chests in all. A simulated earlier run (215 as 32310)
+  followed by this one gives byte for byte the same map as one run (211 moved, 86 boxes swapped). The big look is 2 x 2 like
+  21584; the small one is exactly one tile, so nothing on the map shifts.
+  Refused when either new id is not in `items/items.otb` (`--items-otb` names another file: `install_all.py --dry-run` reads its
   copy's, where the `rewardchest` step just ran). A second run changes nothing. `<map>.otbm.bak` is written first when
-  missing. `tools/patch_reward_chests_test.py` (synthetic map with contents: every rule and every exception).
+  missing. `tools/patch_reward_chests_test.py` (synthetic map with contents: every rule and every exception, boxes, the
+  migration).
 
 ## Area planner (`tools/area_planner.py`, `tools/area_plan_*.py`, `tools/areaplan_build.lua`, `tools/areaplan/`)
 

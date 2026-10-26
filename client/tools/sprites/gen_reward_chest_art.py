@@ -30,6 +30,22 @@ Style: docs/SPRITE_STYLE.md wants one theme palette (`style_check.py snap`). Thi
 the seven themes, so it is not snapped. `build` runs the style check on the canvas (cell 64) against its own colours:
 every rule but the theme palette (outline, light, noise, colour count, alpha, scale) must pass or `build` refuses.
 Deterministic: numpy and Pillow only.
+
+The small look (client item 38758, server 32311). The base map's quest chests were one tile big; a 2 x 2 chest overlaps
+the walls and the neighbouring chests of tight quest rooms (31 of about 297 sit next to another chest). Owner pick
+2026-10-26 ("use o 15"): candidate 15 of the 32 x 32 sheet, PixelLab Pro `generate-image-v2`, 32 x 32, no background,
+style image = the approved 64 art scaled down 2x, reference = the 64 art (raw file pro_style32_13.png of the git-ignored
+folder pixellab-pip-generations/reward-chest-32/). A one tile (1 x 1) item with the same flags as the big look.
+
+    python3 -I gen_reward_chest_art.py build-small [--src FILE] [--check]
+
+PixelLab's pixels are unchanged except for two lossless steps: the colour under fully transparent pixels is cleared, and
+the picture is mirrored left-right (MIRROR_SMALL) because the raw 32 px result leans the other way from the big look as
+shipped (the big source is mirrored by `build`; compared side by side, the small raw file matched the unmirrored big
+one, so the flip makes it match the shipped one: ring and clasp side, lid opening). Committed source:
+art_import/reward_chest/reward_chest_small.png; outputs art_import/reward_chest_small.png (atlas, one 32 px cell),
+reward_chest_small.csv (things file: w = h = 1, one phase, flags copy:19250, mode new) and reward_chest_small.sums.
+`--check` (CI) rebuilds from the committed source and compares. The style check runs on the 32 px cell like the big one.
 """
 import argparse, csv, hashlib, io, os, shutil, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -47,6 +63,15 @@ FIRST_CLIENT_ID = 38657   # after the last item of pair 44 (38656, the supreme E
 STOCK_CLIENT_ID = 19250   # client id of server 21584, the stock reward chest: container, notwalkable, notmoveable, 2x2
 SERVER_ID = 32310         # server/tools/install_reward_chest.py, server/README.md "Reward chests"
 CELL = 64
+# the small (one tile) look: pair 47 appends one item after pair 46's last (38757, the last support rune)
+SMALL_CLIENT_ID = 38758
+SMALL_SERVER_ID = 32311   # install_reward_chest.py, second item of the block 32310-32319
+SMALL_CELL = 32
+SMALL_SRC = os.path.join(SRC_DIR, 'reward_chest_small.png')
+SMALL_ATLAS = os.path.join(ART, 'reward_chest_small.png')
+SMALL_THINGS = os.path.join(ART, 'reward_chest_small.csv')
+SMALL_SUMS = os.path.join(ART, 'reward_chest_small.sums')
+MIRROR_SMALL = True   # the raw 32 px pick leans the other way from the shipped big look; see the module docstring
 MIRROR = True   # owner, 2026-10-26: the picked chest mirrored left-right (the committed source is PixelLab's, unflipped)
 
 # key, committed file, PixelLab file (relative to --src; the raw folder pixellab-pip-generations/reward-chest/), server id
@@ -64,11 +89,12 @@ def read_rgba(path):
     return a
 
 
-def problems_of(a):
-    """why a picture cannot be a 64 x 64 item canvas ([] = fine)"""
+def problems_of(a, cell=CELL):
+    """why a picture cannot be a cell x cell item canvas (64 for the big look, 32 for the small; [] = fine)"""
     out = []
-    if a.shape[:2] != (CELL, CELL):
-        return ['size %d x %d, not %d x %d' % (a.shape[1], a.shape[0], CELL, CELL)]
+    margin = 12 if cell == CELL else cell // 5
+    if a.shape[:2] != (cell, cell):
+        return ['size %d x %d, not %d x %d' % (a.shape[1], a.shape[0], cell, cell)]
     al = a[..., 3]
     if ((al != 0) & (al != 255)).any():
         out.append('semi-transparent pixels (alpha must be 0 or 255)')
@@ -76,8 +102,8 @@ def problems_of(a):
         out.append('empty')
     else:
         ys, xs = np.nonzero(al)
-        if ys.min() > 12 or xs.min() > 12 or ys.max() < CELL - 13 or xs.max() < CELL - 13:
-            out.append('the art does not fill the canvas (a chest is about 56 x 56)')
+        if ys.min() > margin or xs.min() > margin or ys.max() < cell - margin - 1 or xs.max() < cell - margin - 1:
+            out.append('the art does not fill the canvas (a chest is about %d px wide)' % (cell - cell // 8))
     if (a[al == 0][:, :3] != 0).any():
         out.append('colour under transparent pixels')
     return out
@@ -90,7 +116,7 @@ def tiles(a):
             for hh in range(2) for ww in range(2)}
 
 
-def style_report(a):
+def style_report(a):  # judged on a whole canvas of one cell (64 or 32 px)
     """(reasons that stop the build, warnings, colour count) of one canvas; the palette rule is judged against the
     canvas's own colours (no theme palette: see the module docstring)"""
     data = sc.load_palettes()
@@ -117,6 +143,61 @@ def build(src_dir):
                 'copy:%d' % STOCK_CLIENT_ID, 'new', sid, ''])
     sums = '%s  reward_chest/%s\n%s  reward_chest.png\n' % (digest(raw), fname, digest(a))
     return a, out.getvalue(), sums, [(key, errs, bad, warn, ncol)]
+
+
+def build_small(src_path):
+    """(atlas RGBA, things text, sums text, errors, style bad, warnings, colours) of the small look"""
+    raw = read_rgba(src_path)
+    a = np.ascontiguousarray(raw[:, ::-1]) if MIRROR_SMALL else raw
+    errs = problems_of(a, SMALL_CELL)
+    bad, warn, ncol = style_report(a) if not errs else ([], [], 0)
+    out = io.StringIO()
+    w = csv.writer(out, lineterminator='\n')
+    w.writerow(HEADER)
+    w.writerow(['reward_chest_small', 'item', 'chest', 'reward chest', 'reward_chest_small', 0, 0, 1, 1, 1, 1,
+                'copy:%d' % STOCK_CLIENT_ID, 'new', SMALL_SERVER_ID, ''])
+    sums = '%s  reward_chest/reward_chest_small.png\n%s  reward_chest_small.png\n' % (digest(raw), digest(a))
+    return a, out.getvalue(), sums, errs, bad, warn, ncol
+
+
+def main_small(args):
+    src = args.src or SMALL_SRC
+    if args.src and args.check:
+        sys.exit('--check reads the committed source only; leave --src out')
+    if not os.path.exists(src):
+        sys.exit('missing %s' % src)
+    atlas, things, sums, errs, bad, warn, ncol = build_small(src)
+    reasons = errs + bad
+    print('reward_chest_small: %s (%d colours)' % ('style PASS (own palette)' if not reasons else 'FAIL', ncol))
+    for r in reasons:
+        print('  ' + r)
+    for w_ in warn:
+        print('  warn ' + w_)
+    if reasons:
+        return 1
+    if args.check:
+        ok = True
+        for path, want in ((SMALL_THINGS, things), (SMALL_SUMS, sums)):
+            if not os.path.exists(path) or open(path, encoding='utf-8').read() != want:
+                print('stale:', os.path.relpath(path, HERE)); ok = False
+        if not os.path.exists(SMALL_SRC):
+            print('missing:', os.path.relpath(SMALL_SRC, HERE)); ok = False
+        if not os.path.exists(SMALL_ATLAS) or not np.array_equal(read_rgba(SMALL_ATLAS), atlas):
+            print('stale:', os.path.relpath(SMALL_ATLAS, HERE)); ok = False
+        print('small reward chest art up to date' if ok else 'run: python3 -I gen_reward_chest_art.py build-small')
+        return 0 if ok else 1
+    os.makedirs(SRC_DIR, exist_ok=True)
+    if args.src:   # the committed source: PixelLab's pixels, transparent colour cleared, not mirrored
+        with open(SMALL_SRC, 'wb') as f:
+            f.write(png_bytes(read_rgba(src)))
+    with open(SMALL_ATLAS, 'wb') as f:
+        f.write(png_bytes(atlas))
+    with open(SMALL_THINGS, 'w', encoding='utf-8', newline='') as f:
+        f.write(things)
+    with open(SMALL_SUMS, 'w', encoding='utf-8', newline='') as f:
+        f.write(sums)
+    print('atlas', SMALL_ATLAS, atlas.shape[1], 'x', atlas.shape[0], '; client id %d' % SMALL_CLIENT_ID)
+    return 0
 
 
 def digest(a):
@@ -157,14 +238,16 @@ def preview(outdir, dat, spr, first=FIRST_CLIENT_ID, name='reward_chest_preview.
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
-    ap.add_argument('cmd', choices=['build'])
-    ap.add_argument('--src', default=None, help='the PixelLab folder (pixellab-pip-generations/reward-chest); the frame '
-                    'is copied to art_import/reward_chest/')
+    ap.add_argument('cmd', choices=['build', 'build-small'])
+    ap.add_argument('--src', default=None, help='build: the PixelLab folder (pixellab-pip-generations/reward-chest); the frame '
+                    'is copied to art_import/reward_chest/. build-small: the PixelLab PNG (reward-chest-32/pro_style32_13.png)')
     ap.add_argument('--check', action='store_true', help='compare with the committed files, write nothing')
     ap.add_argument('--preview', default=None, help='a folder for reward_chest_preview.png (needs --dat / --spr of pair 45)')
     ap.add_argument('--dat')
     ap.add_argument('--spr')
     a = ap.parse_args()
+    if a.cmd == 'build-small':   # --src is the PixelLab PNG itself here
+        return main_small(a)
     if a.src and a.check:
         sys.exit('--check reads the committed source only; leave --src out')
     src = SRC_DIR

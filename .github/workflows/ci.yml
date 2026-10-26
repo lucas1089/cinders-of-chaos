@@ -169,6 +169,7 @@ jobs:
           # the Reward Chest look of pair 45 (one PixelLab chest, a 2 x 2 item): committed source, atlas, things file and
           # sums match the generator, and the look passes style_check on its own colours
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_reward_chest_art.py build --check
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_reward_chest_art.py build-small --check
           python3 -I client/tools/sprites/gen_reward_chest_art_test.py
           # the support rune looks of pair 46 (100 PixelLab rune stones, 1 x 1 items) and the support icons: committed sources,
           # atlas, things file and sums match the generator, each look passes style_check, ids agree with the config
