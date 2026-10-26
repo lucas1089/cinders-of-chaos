@@ -655,6 +655,7 @@ collision check") and be added here.
 | 111 | `depotTabs` | `depot.lua` | `game_depottabs` | |
 | 113 | `npcCurrency` | `data/lib/chaos_npc_currency.lua` (run by the base NPC scripts of a custom currency, `tools/patch_npc_currency.py`) | `game_npctradewindow` | server -> client, JSON `{action = "currency", data = {code, name, item?, amount, again?}}`: the currency of the shop that opens next, and its balance after each purchase and sale ("NPC currencies") |
 | 114 | `weather` | `weather.lua`, `weather_core.lua` | `game_chaosweather` | server -> client `set {k = "rain" / "none", i = 1..3, f = fade ms, a = "embers" / "motes" / "dust" (optional, O226), m = "ice" / "swamp" / "desert" / "fire" / "crypt" (optional, O234)}`, client -> server `hello` (see "Weather on the client (O208)", "Ambient particles (O226)", "Area colour mood (O234)") |
+| 115 | `unlocks` | `unlocks.lua`, `unlocks_core.lua`, `unlocks_config.lua` | `client_chaos_topbar` | server -> client `state {entries = [{key, level, menu}], unlocked = [key], seen = [key], next? = {key, level}, all? = true}` (login, `hello`, every level change) and `new {key, level, menu, title, why = [line1, line2]}` (one entry just unlocked, one per 75 s); client -> server `hello` and `seen {key}` (see "The top menu reveals systems by level (O259)") |
 | 116 | `everfull` | `potions_helper.lua`, `data/lib/chaos_potions.lua`, `potions_core.lua` | `game_helperrotation` | server -> client `held {v = 1, health? = {look, tier, level, line, ready}, mana? = {...}}` (the Everfull each slot carries, by its client look; at login, after an upgrade and when it changes, checked every 3 s), client -> server `sync` (see "Potions", "The helper and the tiers (O246)") |
 | 120 | none (`CHAOS_ADMIN_OPCODE`) | `admin/core.lua` | `game_admin` | big payloads through `Chaos.sendChunked` |
 | 125 | `monsterbar` | `monster_tiers.lua`, `worldboss.lua` | `game_monsterbar` | server -> client |
@@ -844,6 +845,7 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7102800 - 7102810 | Haunted Harvest (`harvest_event_config.lua` `storage`): +0 the day, +1 hollow candy from pumpkins that day, +2 the day of the boss's first-kill candy; +3..9 free; 7102810 the GLOBAL forced state (0 window, 1 open, 2 shut) |
 | 7102820 | Infinity Tower first-clear floors (`infinitytower_balance_config.lua` `rewards.storage`): the tower season x 1000 + the highest milestone floor paid that season; 7102821 - 7102829 free |
 | 7102830 - 7102832 | progress metrics (`metrics_config.lua`): +0 the bit mask of the 9 milestones recorded (O253, O258); +1 `day * 8 + flags` (O258: the day of the first login, whole days since the epoch in server time, flags bit 0 / 1 / 2 = return d1 / d3 / d7 counted); +2 first-use bit mask (O258, bit i = `systems[i + 1]`: dungeon, rift, waystone, tower, pocketboss, worldboss, invasion, party, guild, market, bounty, craft); 7102833 - 7102839 free |
+| 7103000 - 7103009 | the level-gated top menu (`unlocks_config.lua` `storage`, O259): +0 the unlocked entries (bits, by index), +1 the entries opened since (bits), +2 how many entries the character knows of; 7103010 and up are for O260 and O261 |
 | 7109990 - 7109992 | spell supports: cast context and Reprisal (`data/lib/chaos_supports_config.lua`) |
 | 7110000 - 7111999 | spell supports: sockets per spell id (base + spell id * 4 + 0..3) |
 | 7112000 - 7127999 | loadouts: support runes parked per loadout (`loadouts_config.lua` `runeMirrorBase`) |
@@ -24240,3 +24242,62 @@ Part of the retention pass (docs/superpowers/specs/2026-10-26-retention-design.m
 - **Report.** `progress_metrics.py` gets `returns` (week, cohort, d1 / d3 / d7 and their shares), `firstUse` (system, characters, share of all characters = churn gone + active, median played minutes, most common level band) and `stops` (top 10 areas: gone, top band), in text and JSON; the milestones list is longer. Counts of 1 to 4 are `<5` (text) / `"<5"` (JSON) with their shares and medians left out; a hidden stop area also hides its band.
 - **Limits.** Characters from before the install count their first use of a system at their current level and played time, which skews the first weeks; the cohort and return figures are clean (only characters created after the install). A first use inside one 60 s window that ends before the next check (a party that forms and disbands) is missed. The "where they stop" area is the last saved position, which is the town after most logouts if the server saves there; read it with that in mind. `waystone` counts the first waystone opened by the character, not the first map cleared. Not run on a live server.
 - **Tests.** `tests/metrics_test.lua` (day maths, return flags, first-use bits, stop rows and SQL, the wrapped hooks against fake systems, tester and staff left out), `tools/progress_metrics_test.py` (cohort weeks and maturity, first use, stops, suppression). The Android card is not built here (no SDK); CI `admin-app.yml` compiles it.
+
+## The top menu reveals systems by level (O259) (`unlocks.lua`, `unlocks_core.lua`, `unlocks_config.lua`; client `client_chaos_topbar`)
+
+**Why.** The top menu showed about 60 entries to a character that has just left the tutorial. The retention pass (design
+`docs/superpowers/specs/2026-10-26-retention-design.md`, section O259) shows a system in the menu when the character reaches
+the level where that system opens, announces it, and hides the rest.
+
+**One table.** `unlocks_config.lua` `entries`: `{key, level, menu, source, title, why, go}`. `menu` is the English text of the
+entry in the client's top menu; `title` and the two `why` lines are English and pt-BR; `go = {open = <client module>}` (the
+Go button runs the menu entry, which opens that module). The bits of the storages are by index: never reorder or insert,
+add at the end (up to 30). Nine entries now: Bounty Board 8, Market 8, Passive Tree 12 (the first point), Events 30 (invasions),
+Arena 50, Rifts 100, Guild Siege 100, Infinity Tower 100, Dungeons 150.
+
+**The level is the system's own.** Nothing here gates a system; each keeps its own check, and this table only says when the menu
+shows it. `tests/unlocks_test.lua` has a reader per entry and fails when a level differs from the one the system enforces:
+
+| Entry | Level from |
+|---|---|
+| bounty | `bounty_config.lua` `bands[1].min` |
+| market | `market_config.lua` `minLevel` |
+| passive | `Chaos.passive.startLevel + levelsPerPoint` (`chaos_constants.lua`: the first point is at level 12) |
+| events | `invasion_config.lua` `minLevel` |
+| arena | `arena_config.lua` `minLevel` |
+| rifts | `rift_config.lua` `tiers[1].minLevel` |
+| siege | `siege_config.lua` `minLevel` |
+| tower | `infinitytower_run.lua` `cfg.minLevel` (read from the file text: the number is a local of the run file) |
+| dungeons | `bossspawns_config.lua` `dungeons.defaults[1].level` (the first base dungeon, mirrors the base's own `Level`) |
+
+The test also checks that every entry has a reader and the other way round, that the menu text is an `entry('<text>', ...)` of
+`chaos_topbar.lua`, that the Go module exists in `client/overlay/modules`, that both languages and two lines are there, and
+that the changed level of a copy of the table is found. Systems of the menu without a gate the repo can read (Skills, Crafting
+Bench, Pets, Bank, Stash, ...) are not in the table and always show; add one when its own config has a level.
+
+**What the server does.**
+- Login: a character with no storage yet gets masks: above `quietAbove` (20) every entry of its level is unlocked and seen,
+  silently; at or below it nothing, so a new character at level 8 is told about the Bounty Board and the Market (20 s after the
+  login, then 75 s apart). A returning character gets entries added to the table since silently when it already passed
+  their level (`known`, like the first hour's `hintsKnown`).
+- `run` (login after `delayMs` 20 s, and every level change, up or down): the entries at or below the level and not unlocked
+  yet, lowest level first; one per run (`pace.perRun`), the rest after `pace.gapMs` 75 s (the first hour's pace, checked by the
+  test). The bit is set first, then `new` and `state` go out. A level lost never takes an entry back.
+- `state` carries the whole table (the client keeps none), the unlocked and seen keys and the `next` entry: the lowest level
+  above the character's that is not unlocked. Staff (group 4 and up) and a switched-off module get `all = true`.
+- `seen {key}` sets the seen bit of an unlocked entry; the badge goes. `hello` answers with `state` (rate limited 1 s).
+
+**Opcode 115** is free: not in the reference server's list ("Opcode collision check"), not one of the base client's `ExtendedIds`,
+not a `ChaosOpcodes` value and not named by any client module other than `client_chaos_topbar` (the test checks all four).
+**Storages 7103000-7103009** are used by no other file (the test scans `data/scripts/chaos` and `data/lib`).
+
+**Client** (`client/MANIFEST.md`, `client_chaos_topbar`): a menu entry whose key the table names is hidden until unlocked; the next
+one shows grey with a padlock and "Level N" and says "Unlocks at level N" when clicked; its hotkey (Alt+J, Alt+E, Alt+P) says the
+same instead of opening. On `new`: a big text "New: <title>!", a gold "New" badge on the entry (and a gold category button)
+until it is opened, and a small window with the two lines, Go and Close. The option "Show the whole menu" (System > Options >
+Interface, client base patch `0156`, `showWholeMenu`, off by default, kept in g_settings by client_settings like the other options)
+turns the filter off. Without the patch the filter stays on.
+
+**Assumptions / not run.** Nothing here ran on a live server or in a client. The base patch `0156` was checked only against
+a synthetic file with the context lines of patches `0129` and `0148` (`patch` accepts it), not against the base tree. The Go
+button's `open` and the unused `go.mark` of the design (a map mark) are not both built: only `open` is.

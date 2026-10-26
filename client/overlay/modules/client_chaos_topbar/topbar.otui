@@ -45,3 +45,84 @@ ChaosMenuBar < UIWidget
     layout:
       type: horizontalBox
       spacing: 4
+
+// O259: the screen text "New: <title>!" when an entry unlocks (topbar_unlocks.lua), over the game map, fading out
+ChaosUnlockText < UILabel
+  font: sans-bold-16px
+  color: #ffe7a6
+  text-auto-resize: true
+  anchors.top: parent.top
+  anchors.horizontalCenter: parent.horizontalCenter
+  margin-top: 120
+  phantom: true
+  focusable: false
+
+// O259: the small window of a newly unlocked entry: its name, two lines about it, Go and Close
+ChaosUnlockWindow < UIWidget
+  id: chaosUnlockWindow
+  size: 480 100
+  anchors.top: parent.top
+  anchors.horizontalCenter: parent.horizontalCenter
+  margin-top: 150
+  image-source: /images/chaos/skin/menubar
+  image-border: 8
+  focusable: false
+
+  UILabel
+    id: title
+    font: verdana-11px-antialised
+    color: #ffe7a6
+    text-auto-resize: true
+    anchors.top: parent.top
+    anchors.left: parent.left
+    margin-top: 10
+    margin-left: 14
+    phantom: true
+
+  UILabel
+    id: line1
+    font: verdana-11px-antialised
+    color: #d6c9ae
+    text-wrap: true
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 4
+    margin-left: 14
+    margin-right: 14
+    height: 14
+    phantom: true
+
+  UILabel
+    id: line2
+    font: verdana-11px-antialised
+    color: #d6c9ae
+    text-wrap: true
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 0
+    margin-left: 14
+    margin-right: 14
+    height: 14
+    phantom: true
+
+  ChaosMenuButton
+    id: go
+    width: 70
+    text-align: center
+    text-offset: 0 1
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    margin-bottom: 8
+    margin-right: 14
+
+  ChaosMenuButton
+    id: close
+    width: 70
+    text-align: center
+    text-offset: 0 1
+    anchors.bottom: parent.bottom
+    anchors.right: prev.left
+    margin-bottom: 8
+    margin-right: 6

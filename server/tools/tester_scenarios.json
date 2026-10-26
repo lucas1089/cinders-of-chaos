@@ -7,7 +7,7 @@
   "game_npctradewindow"
  ],
  "counts": {
-  "opcode": 61,
+  "opcode": 62,
   "out": 38,
   "passive": 76,
   "place": 13,
@@ -8971,6 +8971,27 @@
     "transmog"
    ]
   },
+  "unlocks": {
+   "actions": [
+    "hello",
+    "seen"
+   ],
+   "client": [
+    "client_chaos_topbar"
+   ],
+   "dataKeys": [
+    "key"
+   ],
+   "files": [
+    "unlocks.lua"
+   ],
+   "opcode": 115,
+   "out": false,
+   "skip": [],
+   "systems": [
+    "unlocks"
+   ]
+  },
   "veiled": {
    "actions": [
     "choose"
@@ -11027,6 +11048,17 @@
     "/ascended"
    ],
    "why": "staff command only (/ascended); testers are never staff"
+  },
+  "unlocks": {
+   "files": [
+    "chaos_constants.lua",
+    "unlocks.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "unlocks"
+   ],
+   "talkactions": []
   },
   "vigils": {
    "files": [

@@ -1,0 +1,67 @@
+# Chaos: the option "Show the whole menu" (O259; client/BASE.md "0156"; mods/client_settings/classes/dataset.lua,
+# options/interface.otui; after 0001-0153). Lua and OTUI only, no engine code. The top menu (overlay module
+# client_chaos_topbar) shows a system when the character reaches its level (server unlocks.lua, extended opcode 115) and the
+# next one in grey with its level; this switch turns the filter off.
+#  * dataset.lua: `showWholeMenu` (default off); its apply tells client_chaos_topbar (`onOption('showWholeMenu', value)`).
+#    client_settings keeps it in g_settings like the other options, and the topbar reads it with getOption at load.
+#  * options/interface.otui: one checkbox in Options > Interface, in a new panel after "Interface scale" (0129), before the
+#    Reset button.
+# Without this patch the option counts as off (the filter is on). Number 0156: 0154-0155 are left to the other items of the
+# retention pass. Not run in a client; goes live with the next client build.
+--- a/mods/client_settings/classes/dataset.lua
++++ b/mods/client_settings/classes/dataset.lua
+@@ -2234,6 +2234,16 @@
+     end,
+   },
+ 
++  -- Chaos (base patch 0156): show every entry of the top menu, not only the unlocked systems (client_chaos_topbar)
++  showWholeMenu = {
++    value = false,
++    apply = function(value)
++      local m = modules.client_chaos_topbar
++      if m and m.onOption then m.onOption('showWholeMenu', value) end
++      return true
++    end,
++  },
++
+   enableShaders = {
+     value = true,
+     apply = function(value)
+--- a/mods/client_settings/options/interface.otui
++++ b/mods/client_settings/options/interface.otui
+@@ -674,6 +674,35 @@
+       maximum: 3
+       value: 1
+ 
++  FlatPanel
++    // Chaos (base patch 0156, overlay module client_chaos_topbar): the top menu shows systems as the character unlocks them
++    size: 505 22
++    anchors.top: prev.bottom
++    anchors.right: parent.right
++    anchors.left: parent.left
++    margin-top: 5
++    margin-left: 4
++    margin-right: 4
++
++    SettingsCheckBox
++      id: showWholeMenu
++      size: 12 12
++      !text: tr('Show the whole menu')
++      font: $var-cip-font
++      text-auto-resize: true
++      color: $var-text-cip-color
++      text-offset: 14 -2
++      anchors.left: parent.left
++      anchors.top: parent.top
++      margin-top: 5
++      margin-left: 4
++      image-source: /images/ui/checkbox
++      image-clip: 0 0 12 12
++      !tooltip: tr('The top menu shows a system when your character reaches its level, and the next one in grey with its level.\nCheck this box to see every entry now. Their windows still follow the level rules of the server.')
++      @onSetup: |
++        local value = modules.client_settings.getOption('showWholeMenu')
++        self:setChecked(value == true)
++
+   Button
+     id: resetButton
+     size: 43 20

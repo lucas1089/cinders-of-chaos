@@ -4729,5 +4729,11 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Quiet"] = "Baixo",
   ["Sounds"] = "Sons",
   ["Loud"] = "Alto",
+  -- client_chaos_topbar/topbar_unlocks.lua, topbarunlockslogic.lua (O259: the top menu reveals systems by level) and the
+  -- option of base patch 0156
+  ["Go"] = "Ir",
+  ["New: %s!"] = "Novo: %s!",
+  ["Show the whole menu"] = "Mostrar o menu inteiro",
+  ["The top menu shows a system when your character reaches its level, and the next one in grey with its level.\nCheck this box to see every entry now. Their windows still follow the level rules of the server."] = "O menu do topo mostra um sistema quando o personagem chega ao nível dele, e o próximo em cinza com o nível.\nMarque esta caixa para ver todas as entradas agora. As janelas continuam seguindo as regras de nível do servidor.",
 }
 return ChaosLocaleStrings['pt-BR']

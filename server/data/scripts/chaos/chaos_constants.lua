@@ -2189,3 +2189,7 @@ ChaosOpcodes.everfull = 116
 -- Weather: the server decides it (which areas, rain or clear, how strong) and sends one small message when it changes;
 -- the client draws the rain (client game_chaosweather; weather.lua, weather_core.lua, weather_config.lua; O208)
 ChaosOpcodes.weather = 114
+-- The top menu reveals systems by level (O259): `state` (the table, what is unlocked, the next one) and `new` (an
+-- announcement), server -> client; `hello` and `seen {key}` client -> server (client client_chaos_topbar; unlocks.lua,
+-- unlocks_core.lua, unlocks_config.lua). Storages 7103000-7103009.
+ChaosOpcodes.unlocks = 115

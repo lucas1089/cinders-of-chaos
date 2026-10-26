@@ -4345,3 +4345,25 @@ executable icon (`src/otcicon.rc` names `otcicon.ico`) were the stock pictures. 
 copies it to `overlay/data/images/clienticon.png` and builds `overlay/src/otcicon.ico` (16 to 256 px, PNG frames);
 `tools/assemble_client.sh` copies `overlay/src/` over the base client's `src/`. `--check` verifies both. Not seen in a
 built client (the resource compiler must accept PNG frames in the .ico; MSVC `rc.exe` does).
+
+## Level-gated top menu (`client_chaos_topbar`, O259)
+
+The top menu shows a system when the character reaches its level. The server (`unlocks.lua`, extended opcode **115**,
+server/README.md "The top menu reveals systems by level (O259)") sends `state {entries, unlocked, seen, next, all}` at login and
+on every level change, and `new {key, level, menu, title, why}` one entry at a time (75 s apart); the client keeps no table.
+- `topbarunlockslogic.lua` (pure, tested by `topbarunlockslogic_test.lua`): status of an entry by its menu text (`open`,
+  `locked` = the next one, `hidden`), the "New" badge (unlocked, not opened), the level that blocks a hotkey, the row and screen
+  texts. Before the first `state` (an older server, a login in progress) every entry is open; an entry the table does not name
+  is always open.
+- `topbar_unlocks.lua`: the opcode (`registerExtendedJSONOpcode`), `hello` and `seen {key}` out, the big text "New: <title>!"
+  (`ChaosUnlockText`, fades after 4.2 s) and the small window (`ChaosUnlockWindow` in `topbar.otui`: name, two lines, Go, Close;
+  closes by itself after 30 s). Go runs the entry of the menu (`ChaosTopBar.run`).
+- `chaos_topbar.lua`: `availableEntries` hides the entries that are not open; the next one is a grey row with a padlock
+  (`/images/game/depot/lock`) and "Level N", clicking it says "Unlocks at level N"; an entry opened from the menu, a hotkey or Go
+  loses its gold "New" badge (and tells the server); a category with an unopened new entry is gold; a locked hotkey says
+  "Unlocks at level N" instead of opening. `ChaosTopBar.available()` and `ChaosTopBar.run(text)` skip locked rows.
+- Option "Show the whole menu" (System > Options > Interface, `showWholeMenu`, off by default): base patch `0156` (dataset option
+  plus a checkbox; its apply calls `client_chaos_topbar.onOption`); the module also reads it with `getOption` at load. Without the
+  patch the filter stays on. Staff and a switched-off server module get the whole menu (`all`).
+- Texts through `tr()`, pt-BR in `client_chaos_locale/pt_br.lua` ("Go", "New: %s!", "Show the whole menu" and its tooltip; "Level %d",
+  "Unlocks at level %d", "New", "Close" existed). Not run in a client.

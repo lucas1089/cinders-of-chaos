@@ -314,6 +314,26 @@ local function isOnline()
   return g_game and g_game.isOnline() or false
 end
 
+-- the unlock state of an entry (topbar_unlocks.lua, O259): 'open' | 'locked' | 'hidden', and its level. Without that file,
+-- or before the server's state came, every entry is open.
+local function unlockStatus(text)
+  if not ChaosTopBarUnlocks then return 'open' end
+  local ok, status, level = pcall(ChaosTopBarUnlocks.status, text)
+  if not ok then return 'open' end
+  return status, level
+end
+
+local function unlockIsNew(text)
+  if not ChaosTopBarUnlocks then return false end
+  local ok, isNew = pcall(ChaosTopBarUnlocks.isNew, text)
+  return ok and isNew == true
+end
+
+-- the player opened an entry: its "New" badge goes
+local function unlockOpened(text)
+  if ChaosTopBarUnlocks then pcall(ChaosTopBarUnlocks.markOpened, text) end
+end
+
 -- the usable entries of a list (a category or a sub-menu): {entry, action} items, separators, and {entry, sub} items
 -- for sub-menus with at least one usable entry
 local function availableEntries(entries)
@@ -329,7 +349,15 @@ local function availableEntries(entries)
       if #inner > 0 then list[#list + 1] = { entry = entry, sub = inner } end
     else
       local action = findAction(entry)
-      if action then list[#list + 1] = { entry = entry, action = action } end
+      if action then
+        -- O259: an entry of a system the character has not unlocked is hidden; the next one to unlock shows grey, with its level
+        local status, level = unlockStatus(entry.text)
+        if status == 'open' then
+          list[#list + 1] = { entry = entry, action = action }
+        elseif status == 'locked' then
+          list[#list + 1] = { entry = entry, locked = level }
+        end
+      end
     end
   end
   if #list > 0 and list[#list].separator then list[#list] = nil end
@@ -342,9 +370,9 @@ local function flatEntries(entries, out)
   for _, item in ipairs(availableEntries(entries)) do
     if item.sub then
       for _, inner in ipairs(item.sub) do
-        if not inner.separator then out[#out + 1] = inner end
+        if not inner.separator and not inner.locked then out[#out + 1] = inner end
       end
-    elseif not item.separator then
+    elseif not item.separator and not item.locked then
       out[#out + 1] = item
     end
   end
@@ -369,6 +397,7 @@ end
 local function runItem(item)
   local ok, err = pcall(item.action)
   if not ok then g_logger.error('[chaos_menu] ' .. item.entry.text .. ': ' .. tostring(err)) end
+  unlockOpened(item.entry.text)
 end
 
 -- the text an entry shows: translated (client_chaos_locale) when the language has it
@@ -376,6 +405,50 @@ local function shownText(item)
   local t = item.entry and item.entry.text or ''
   local ok, v = pcall(tr, t)
   return ok and type(v) == 'string' and v or t
+end
+
+-- O259: the text of a row (the badge "New" after an entry just unlocked, "Level N" after the locked one) and its look
+local LOCK_IMAGE = '/images/game/depot/lock' -- the padlock of the depot art, 10 x 12
+local COLOR_NEW, COLOR_LOCKED, COLOR_NORMAL = '#ffd24a', '#7a7466', '#d6c9ae' -- COLOR_NORMAL: ChaosMenuButton in topbar.otui
+
+local function tx(text)
+  local ok, v = pcall(tr, text)
+  return ok and type(v) == 'string' and v or text
+end
+
+local function subHasNew(list)
+  for _, it in ipairs(list or {}) do
+    if it.sub then
+      if subHasNew(it.sub) then return true end
+    elseif it.entry and not it.separator and not it.locked and unlockIsNew(it.entry.text) then
+      return true
+    end
+  end
+  return false
+end
+
+local function rowText(item)
+  local isNew = (item.sub and subHasNew(item.sub)) or (not item.sub and not item.locked and unlockIsNew(item.entry.text))
+  return ChaosTopBarUnlocksLogic.rowText(shownText(item), item.locked and 'locked' or 'open', item.locked, isNew, tx)
+end
+
+local function decorateRow(option, item)
+  if not option then return end
+  pcall(function()
+    if item.locked then
+      option:setColor(COLOR_LOCKED)
+      option:setIcon(LOCK_IMAGE)
+      option:setIconSize({ width = 10, height = 12 })
+      option:setIconOffset({ x = 7, y = 3 })
+    elseif (item.sub and subHasNew(item.sub)) or (not item.sub and unlockIsNew(item.entry.text)) then
+      option:setColor(COLOR_NEW)
+    end
+  end)
+end
+
+-- a click on a locked row says when it opens
+local function lockedClick(item)
+  if ChaosTopBarUnlocks then pcall(ChaosTopBarUnlocks.blockedMessage, item.entry.text) end
 end
 
 -- ---------------------------------------------------------------- sub-menus ("More")
@@ -420,8 +493,9 @@ local function openSub(menu, option, item)
       sep:setMarginRight(1)
     else
       local b = g_ui.createWidget('PopupMenuButton', sub)
-      b:setText('      ' .. shownText(it))
-      setOptionIcon(b, it.entry.icon)
+      b:setText('      ' .. rowText(it))
+      if not it.locked then setOptionIcon(b, it.entry.icon) end
+      decorateRow(b, it)
       local w = b:getTextSize().width + b:getMarginLeft() + b:getMarginRight() + 50
       if it.entry.key then
         local label = g_ui.createWidget('PopupMenuShortcutLabel', b)
@@ -431,7 +505,7 @@ local function openSub(menu, option, item)
       width = math.max(width, w)
       b.chaosRun = function()
         closeMenu()
-        runItem(it)
+        if it.locked then lockedClick(it) else runItem(it) end
       end
     end
   end
@@ -486,9 +560,10 @@ local function showList(list, pos)
       menu:addSeparator()
     elseif item.sub then
       -- leading spaces leave room for the icon drawn at the left of the option
-      menu:addOption('      ' .. shownText(item) .. '  >', function() end)
+      menu:addOption('      ' .. rowText(item) .. '  >', function() end)
       local option = menu:getLastChild()
       setOptionIcon(option, item.entry.icon)
+      decorateRow(option, item)
       option.onClick = function(widget)
         if menu.chaosSubOf == widget and isAlive(menu.chaosSub) then
           closeSub(menu)
@@ -499,10 +574,18 @@ local function showList(list, pos)
       option.onHoverChange = function(widget, hovered)
         if hovered then openSub(menu, widget, item) end
       end
+    elseif item.locked then
+      menu:addOption('      ' .. rowText(item), function() lockedClick(item) end, item.entry.key)
+      local option = menu:getLastChild()
+      decorateRow(option, item)
+      option.onHoverChange = function(widget, hovered)
+        if hovered then closeSub(menu) end
+      end
     else
-      menu:addOption('      ' .. shownText(item), function() runItem(item) end, item.entry.key)
+      menu:addOption('      ' .. rowText(item), function() runItem(item) end, item.entry.key)
       local option = menu:getLastChild()
       setOptionIcon(option, item.entry.icon)
+      decorateRow(option, item)
       option.onHoverChange = function(widget, hovered)
         if hovered then closeSub(menu) end
       end
@@ -572,9 +655,12 @@ function ChaosTopBar.refresh()
   for _, category in ipairs(CATEGORIES) do
     local button = categoryButtons[category.id]
     if button then
-      local show = #availableEntries(category.entries) > 0
+      local items = availableEntries(category.entries)
+      local show = #items > 0
       if show and category.admin then show = hasAdminAccess() end
       button:setVisible(show)
+      -- O259: the category with a newly unlocked entry the player has not opened yet is gold
+      pcall(function() button:setColor(subHasNew(items) and COLOR_NEW or COLOR_NORMAL) end)
       if show then width = width + button:getWidth() + 4 end
     end
   end
@@ -642,6 +728,7 @@ function ChaosTopBar.run(text)
     for _, item in ipairs(flatEntries(category.entries)) do
       if item.entry.text == text then
         item.action()
+        unlockOpened(text)
         return true
       end
     end
@@ -675,6 +762,8 @@ local function bindHotkeys()
     forEachKeyed(category.entries, function(e)
       if not boundKeys[e.key] then
         local handler = function()
+          -- O259: the key of a system the character has not unlocked says when it opens
+          if ChaosTopBarUnlocks and ChaosTopBarUnlocks.blockedMessage(e.text) then return true end
           local action = findAction(e)
           if action then runItem({ entry = e, action = action }) end
           return true
@@ -737,6 +826,16 @@ local function hideStockTopMenu()
 end
 
 -- ---------------------------------------------------------------- lifecycle
+-- the player's option "Show the whole menu" (System > Options; client_settings keeps it in g_settings like the others)
+local function wholeMenuOption()
+  local cs = modules.client_settings
+  if cs and cs.getOption then
+    local ok, value = pcall(cs.getOption, 'showWholeMenu')
+    if ok then return value == true end
+  end
+  return false
+end
+
 function init()
   g_ui.importStyle('topbar')
 
@@ -761,11 +860,25 @@ function init()
   -- handlers do, so a handler at the end of the list may never run
   connect(g_game, { onGameStart = onGameStart, onGameEnd = onGameEnd }, true)
   hideStockTopMenu()
+  -- O259: the level-gated menu (topbar_unlocks.lua); the option "Show the whole menu" (System > Options, base patch 0156)
+  if ChaosTopBarUnlocks then
+    ChaosTopBarUnlocks.init({
+      parent = function() return gameParent end,
+      run = function(text) return ChaosTopBar and ChaosTopBar.run(text) end,
+      refresh = function() if ChaosTopBar then ChaosTopBar.refresh() end end,
+    }, wholeMenuOption())
+  end
   if g_game.isOnline() then onGameStart() else ChaosTopBar.refresh() end
+end
+
+-- the option "Show the whole menu" (base patch 0156) tells the menu when it changes (its apply in dataset.lua)
+function onOption(name, value)
+  if name == 'showWholeMenu' and ChaosTopBarUnlocks then ChaosTopBarUnlocks.setShowAll(value == true) end
 end
 
 function terminate()
   disconnect(g_game, { onGameStart = onGameStart, onGameEnd = onGameEnd })
+  if ChaosTopBarUnlocks then ChaosTopBarUnlocks.terminate() end
   unbindHotkeys()
   if refreshEvent then removeEvent(refreshEvent) refreshEvent = nil end
   closeMenu()
