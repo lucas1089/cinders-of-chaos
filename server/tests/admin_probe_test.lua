@@ -44,7 +44,31 @@ ext.onExtendedOpcode(player, CHAOS_ADMIN_OPCODE, '{"action":"run","data":{"id":"
 check(#printed == 1 and printed[1]:find("denied", 1, true), "a real admin request of a player is logged")
 check(#queries == 1 and queries[1]:find("chaos_admin_log", 1, true), "and stored in chaos_admin_log")
 ext.onExtendedOpcode(player, CHAOS_ADMIN_OPCODE, "not json")
-check(#printed == 2, "garbage on the admin opcode is logged too")
+check(#printed == 1, "garbage on the admin opcode from the same sender in the window: not logged again")
+
+-- one row per sender per 10 minutes, not one per 5 s
+local nq = #queries
+for i = 1, 5 do
+	clock = clock + 6000
+	ext.onExtendedOpcode(player, CHAOS_ADMIN_OPCODE, '{"action":"run"}')
+end
+check(#queries == nq, "repeat attempts within 10 minutes: no new row")
+clock = clock + 11 * 60 * 1000
+ext.onExtendedOpcode(player, CHAOS_ADMIN_OPCODE, '{"action":"run"}')
+check(#queries == nq + 1, "after 10 minutes the sender is logged again")
+nq = #queries
+local other = mkPlayer(2, 1, false)
+ext.onExtendedOpcode(other, CHAOS_ADMIN_OPCODE, '{"action":"run"}')
+check(#queries == nq + 1, "another sender has its own window")
+
+-- bounded table: many senders never grow it past the cap, expired entries are cleaned up
+ChaosAdmin.deniedAt, ChaosAdmin.deniedCount = {}, 0
+local t0 = 5000000
+for id = 1, ChaosAdmin.deniedLogMax do check(ChaosAdmin.shouldLogDenied(1000 + id, t0), "fill " .. id) end
+check(not ChaosAdmin.shouldLogDenied(9999, t0 + 1000), "full of recent senders: new sender not logged, table not grown")
+check(ChaosAdmin.deniedCount == ChaosAdmin.deniedLogMax, "count stays at the cap")
+check(ChaosAdmin.shouldLogDenied(9999, t0 + ChaosAdmin.deniedLogMs + 1), "expired entries are purged, new sender fits")
+check(ChaosAdmin.deniedCount == 1, "purged to the one live entry")
 
 check(ChaosAdmin.isCatalogProbe('{"action":"catalog"}') and not ChaosAdmin.isCatalogProbe('{"action":"run"}')
 	and not ChaosAdmin.isCatalogProbe(('x'):rep(300)) and not ChaosAdmin.isCatalogProbe(nil), "isCatalogProbe")

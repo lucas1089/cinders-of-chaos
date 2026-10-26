@@ -37,6 +37,37 @@ ChaosAdminConfig = {
 ChaosAdminPending = ChaosAdminPending or {} -- id -> definition, filled by actions_*.lua
 ChaosAdmin = ChaosAdmin or {}
 ChaosAdmin.lastRequest = ChaosAdmin.lastRequest or {}
+-- denied-attempt log of non-admins: one row per sender per deniedLogMs, at most deniedLogMax senders kept in memory
+ChaosAdmin.deniedAt = ChaosAdmin.deniedAt or {}
+ChaosAdmin.deniedCount = ChaosAdmin.deniedCount or 0
+ChaosAdmin.deniedLogMs = ChaosAdmin.deniedLogMs or 10 * 60 * 1000
+ChaosAdmin.deniedLogMax = ChaosAdmin.deniedLogMax or 256
+
+-- true when this sender's denied attempt is to be logged now (and records it)
+function ChaosAdmin.shouldLogDenied(senderId, now)
+	local last = ChaosAdmin.deniedAt[senderId]
+	if last and now - last < ChaosAdmin.deniedLogMs then
+		return false
+	end
+	if last == nil then
+		if ChaosAdmin.deniedCount >= ChaosAdmin.deniedLogMax then
+			local kept, count = {}, 0
+			for id, at in pairs(ChaosAdmin.deniedAt) do
+				if now - at < ChaosAdmin.deniedLogMs then
+					kept[id] = at
+					count = count + 1
+				end
+			end
+			if count >= ChaosAdmin.deniedLogMax then
+				return false -- full of recent senders: an attacker with many ids gets no more rows, nothing grows
+			end
+			ChaosAdmin.deniedAt, ChaosAdmin.deniedCount = kept, count
+		end
+		ChaosAdmin.deniedCount = ChaosAdmin.deniedCount + 1
+	end
+	ChaosAdmin.deniedAt[senderId] = now
+	return true
+end
 
 ChaosAdmin.categories = {
 	{id = "players",  label = "Players"},
@@ -468,9 +499,7 @@ function extEvent.onExtendedOpcode(player, opcode, buffer)
 		-- every client asks for the catalog once after login (game_admin): not worth a log line or a row
 		if ChaosAdmin.isCatalogProbe(buffer) then return end
 		local now = os.mtime and os.mtime() or os.time() * 1000
-		local last = ChaosAdmin.lastRequest[player:getId()] or 0
-		if now - last > 5000 then
-			ChaosAdmin.lastRequest[player:getId()] = now
+		if ChaosAdmin.shouldLogDenied(player:getId(), now) then
 			ChaosAdmin.log(player, "panel.access", "", {}, "denied", "non-admin sent admin opcode")
 		end
 		return
