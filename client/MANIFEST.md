@@ -3026,6 +3026,43 @@ The importer verified the 4 sprite slots pixel-identical to the atlas and every 
   server's `rewardchest` install step. Preview (the new look and the stock chest at 1x and 4x, rendered from pair 45):
   scratchpad only. Not run in a client.
 
+## Support rune looks (pair 46: items 38658-38757, `tools/sprites/gen_support_runes_art.py`, `art_import/support_runes*`; art and scripts done 2026-10-26, **pair not built yet**)
+Owner request 2026-10-26: "Gere novas runas. Vamos usar as artes das runas como icones tambem". The 100 support rune items (server ids
+32101-32200, server/data/scripts/chaos/SUPPORTS.md "The runes") wore the stock rune stones and the window drew procedural icons.
+- **Art.** One carved dark stone per support, 32 x 32, the support's glowing sigil in its theme colour (ember sunburst orange, rime
+  crystal ice-blue, dawn cross pale gold, grave skull green, storm bolt blue, quickening spiral yellow, thrift drop teal, keen edge
+  sword silver, echo rings blue, fork trident yellow, breadth waves orange, shatter starburst cyan, deathburst red burst, surge bolt
+  yellow, reprisal shield silver, bloodthirst drop red, siphon drop in a ring blue, sunder hammer orange, hex eye purple, mercy leaf
+  green). One stone shape for all 20: PixelLab `generate-image-v2` with the first stone as `style_image` and one seed, 64 candidates per
+  support, one pick each. **Levels:** the five levels are the same picture with the stone's rim in the level colour of the game
+  (`chaos_supports_config.lua` `levelColors`: grey-brown Common = the pick, green Rare, red Epic, yellow Legendary, purple Mythic),
+  made with PixelLab `edit-images-v2` (text edit of the pick, 10 images per call, seed 2026); no local overlay, every pixel is
+  PixelLab's. Two Mythic rims (dawnbrand, hex) failed `style_check` (outline share, colour count) and were redone with a prompt
+  that keeps the black outline. Raw output: `pixellab-pip-generations/support-runes/` (git-ignored, with `calls.jsonl`).
+  Credits spent: 40 calls, USD 2.90 plus 1 included generation (21 Pro image batches 1.68 with the base stone, 15 Pro edit calls
+  1.20 with one test and the redos, 4 cheap Pixen edit tests 0.03 that were not used); credit: docs/CREDITS.md "Tools", `art_import/support_runes_sources.csv`.
+- **Committed.** `art_import/support_runes/<key>_<level>.png` (100 sources), `support_runes.png` (atlas 160 x 640, a row per support),
+  `support_runes.csv` (things: 1 x 1, one phase, kind rune, mode new, flags `copy:<stock client id>` = server id of the stock stone
+  - 2656, 22029-22042: stackable, use-with), `support_runes.sums`. `build --check` (CI) rebuilds; `build` runs `style_check` on each
+  look against its own colours (outline, noise, colour count, alpha, scale pass; not snapped to a theme palette).
+- **Icons.** `gen_support_runes_art.py icons` writes `client/overlay/data/images/game/supports/<key>.png` (32 x 32) = the Common look;
+  the window (`spellsupports.lua`), the action bar and the wiki (`gen_wiki_art.py`, regenerated) read those files. 32 x 32 is the
+  only size the client uses. `tools/gen_support_icons.py` (procedural) is removed.
+- **Server.** `chaos_supports_config.lua` `clientFirstId = 38658` (client id = clientFirstId + server id - 32101);
+  `install_supports.py` (step `supports`) writes it into each node, refuses a client id another item owns, is idempotent and turns
+  nodes still on the stock look. **Fallback:** `clientFirstId = nil` and run the step again: the nodes go back to the stock stones.
+- **Pair step.** `tools/sprites/build_support_runes_pair.sh IN_DIR OUT_DIR [LAST_ITEM_OF_IN]` (art check, `import_art_things.py
+  --first-item LAST+1 --expect-items LAST`, `check_pair.py --old --new-only`, md5s); then `gen_outfit_anchors.py` and `gen_info_lift.py`
+  on the output. Runs on any input pair whose last item is 38657 (the ids must equal `clientFirstId`).
+  **Verified only** on the first pair 45 (dat 24bfad917c9c8c47630fbcdc7f718098, spr ccf66d5c47c1bc0d4275bca3cd3eae73): output dat
+  58062a1ed9dc6f0e5323752a4d1fd896 (11,263,055 bytes), spr 1ca48be7b8ec4a76097fed90479891c0 (1,541,348,697 bytes, 1,357,988
+  sprites: 100 appended), 38,757 items; importer: 100 slots pixel-identical, every old thing byte-identical; `check_pair --new-only`
+  0 errors, 0 warnings. **Not a release:** pair 45 is being rebuilt with new chest art (same item 38657), so **the final pair 46 must
+  be rebuilt on top of the final pair 45** (the md5s above change; `outfit_anchors.lua` / `info_lifts.lua` get the final dat md5;
+  no archive was prepared). Preview (all 100 looks, 4x, names under each, rendered from the verification pair): scratchpad only.
+- **Ship order.** A client on pair 45 or older draws nothing for the new ids: ship pair 46 and a client build (the new icons) before the
+  server's `supports` install step, or keep `clientFirstId = nil` until then.
+
 ## Owner art (things_custom26: outfits 2213-2233, items 33940-33985, `tools/sprites/gen_owner_art.py`, `art_import/owner_art.csv`; on windows-assets 50645056, switch on since 2026-10-15)
 **Source and licence.** The owner's Google Drive folder "ots", files added 2026-10-15. The owner confirmed the art is
 their own or commissioned and free to use for monsters and variants, outfits and wings as cosmetics, decoration and map

@@ -41,8 +41,14 @@ purse, the depot inbox, the depot chest, the backpack; too few, ground, locked, 
 
 Server ids 32101..32200: `firstId + (support - 1) * 5 + (level - 1)`. Item name `<level> <support> rune`
 ("epic fork rune"). Levels carry our rarity names and colours: 1 Common, 2 Rare, 3 Epic, 4 Legendary, 5 Mythic.
-The items are copies of the unused stock rune stones (stackable, use-with), so the client needs no new sprite; the
-window and the action bar use our own procedural icons (`client/tools/gen_support_icons.py`).
+The items are copies of the stock rune stones (stackable, use-with) with a look of their own: client ids 38658..38757
+(`clientFirstId + (server id - firstId)`), 100 PixelLab rune stones of pair 46, one carved dark stone per support with its
+glowing sigil in its theme colour, the rim in the level's colour (grey Common, green Rare, red Epic, yellow Legendary,
+purple Mythic; client/MANIFEST.md "Support rune looks"). `install_supports.py` writes the client id into each node
+(refuses a client id another item owns; idempotent; turns a node still on the stock look to the own one). Fallback while the
+client is not on pair 46: set `clientFirstId = nil` in `chaos_supports_config.lua` and run the step again, the nodes go back
+to the stock stones. The window and the action bar draw the Common look of each support as its icon
+(`client/overlay/data/images/game/supports/<key>.png`, `client/tools/sprites/gen_support_runes_art.py icons`).
 
 Kinds: **single** = damage to one target (also spells that jump from it), **area** = damage in an area,
 **heal**, **buff** = everything else (buffs, summons, utility). Taken from the spellbook parser (`spellbook.lua`), with

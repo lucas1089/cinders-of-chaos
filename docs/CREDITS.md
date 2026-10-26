@@ -327,7 +327,7 @@ Game sounds (game_chaossound, O238): short picks from four packs, cut, set to mo
 
 - **PixelLab**
   - Licence: paid subscription
-  - Used for: painting the themed item sets, the three looks of the Cursed Chest, the twelve Everfull potion flasks and the Reward Chest
+  - Used for: painting the themed item sets, the three looks of the Cursed Chest, the twelve Everfull potion flasks, the Reward Chest and the hundred support rune stones (also the support icons)
 - **NexaMap Editor**
   - Author: Mateuzkl, Skyyzyy and SoyFabi
   - Licence: freeware end-user licence in the source's LICENSE.rtf: free to use; copies may be passed on only unmodified, with that licence text and without a fee. Not part of our downloads: the owner downloads it from its source

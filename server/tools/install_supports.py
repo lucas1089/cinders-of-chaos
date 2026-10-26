@@ -3,14 +3,19 @@
 
 usage: python3 -I install_supports.py DATA_DIR [--dry-run]
 
-Everything is read from server/data/lib/chaos_supports_config.lua (the same file the Lua side uses): firstId, levels,
-levelNames, sprites and supports (key, name, sprite, fits, values, values2, text).
+Everything is read from server/data/lib/chaos_supports_config.lua (the same file the Lua side uses): firstId,
+clientFirstId (optional), levels, levelNames, sprites and supports (key, name, sprite, fits, values, values2, text).
 
 1. data/items/items.otb: one node per support and level, server ids firstId.. (32101..32200), each a copy of the stock
-   rune stone `sprites[sprite]` (stackable, use-with: the client already treats them so) with the new server id. Nodes
-   are appended at the end of the root. A node already there with the same bytes is left alone; one with other bytes
-   (an older config) is replaced; a server id that belongs to another client id stops the script (nothing is
-   written). items.otb.bak keeps the original the first time; the written file is parsed again and every node checked.
+   rune stone `sprites[sprite]` (stackable, use-with: the client treats them so) with the new server id. With
+   `clientFirstId` (38658, the own rune looks of pair 46, client/MANIFEST.md "Support rune looks") every node also gets
+   its own client id, clientFirstId + (server id - firstId); without it the nodes keep the stock stone's client id (the
+   fallback: set it to nil when the client is not on pair 46 yet). A client id that already belongs to another server
+   id stops the script. Nodes are appended at the end of the root. A node already there with the same bytes is left
+   alone; one with other bytes (an older config, or the stock look before the own one) is replaced; a server id that
+   belongs to another client id (neither the stock stone's nor its own) stops the script (nothing is written);
+   with clientFirstId unset every rune node goes back to the stock stone's client id (the fallback).
+   items.otb.bak keeps the original the first time; the written file is parsed again and every node checked.
    Ranges in use: gems 32001..32035, salvage 32051, dark tiles 30484..30557, art 33000.., pack 36000.., donor 40000...
 2. data/items/items.xml: the runes (name, plural, description, weight) between two marker comments before </items>,
    rewritten when the config changed. An id that already has an entry outside the block stops the script.
@@ -24,8 +29,8 @@ import os, re, struct, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-from install_gems import scan, escape, attr, xml_escape, START, END, A_SERVERID, FLAG_USEABLE, FLAG_STACKABLE, \
-    FLAG_PICKUPABLE, FLAG_MOVEABLE  # noqa: E402
+from install_gems import scan, escape, attr, xml_escape, START, END, A_SERVERID, A_CLIENTID, FLAG_USEABLE, \
+    FLAG_STACKABLE, FLAG_PICKUPABLE, FLAG_MOVEABLE  # noqa: E402
 
 CONFIG = os.path.join(os.path.dirname(HERE), 'data', 'lib', 'chaos_supports_config.lua')
 XML_BEGIN = '\t<!-- Chaos spell support runes (server/tools/install_supports.py, do not edit by hand) -->\n'
@@ -48,7 +53,9 @@ def _numbers(s):
 def read_config(path=CONFIG):
     raw = open(path, encoding='utf-8').read()
     text = _strip_comments(raw)
+    cf = re.search(r'clientFirstId\s*=\s*(\d+)', text)
     cfg = {'firstId': int(re.search(r'firstId\s*=\s*(\d+)', text).group(1)),
+           'clientFirstId': int(cf.group(1)) if cf else None,
            'levels': int(re.search(r'\blevels\s*=\s*(\d+)', text).group(1)),
            'levelNames': re.findall(r'"([^"]+)"', re.search(r'levelNames\s*=\s*\{([^}]*)\}', text).group(1)),
            'sprites': _numbers(re.search(r'sprites\s*=\s*\{([^}]*)\}', text).group(1))}
@@ -91,26 +98,29 @@ def description(cfg, s, level):
 
 
 def runes(cfg):
-    """[(server id, sprite server id, name, plural, description)]"""
+    """[(server id, sprite server id, name, plural, description, own client id or None)]"""
     out = []
     n = cfg['levels']
     for ti, s in enumerate(cfg['supports']):
         for level in range(1, n + 1):
             sid = cfg['firstId'] + ti * n + level - 1
             name = ('%s %s rune' % (cfg['levelNames'][level - 1], s['name'])).lower()
-            out.append((sid, cfg['sprites'][s['sprite'] - 1], name, name + 's', description(cfg, s, level)))
+            cid = cfg['clientFirstId'] + sid - cfg['firstId'] if cfg['clientFirstId'] else None
+            out.append((sid, cfg['sprites'][s['sprite'] - 1], name, name + 's', description(cfg, s, level), cid))
     return out
 
 
 # ------------------------------------------------------------------------------------------------ items.otb
-def rune_node(stock, sid):
-    """a copy of the stock rune stone node (group, flags, every attribute) with the new server id"""
+def rune_node(stock, sid, cid=None):
+    """a copy of the stock rune stone node (group, flags, every attribute) with the new server id (and own client id)"""
     _s, _e, _sid, _cid, group, flags, attrs = stock
     flags |= FLAG_PICKUPABLE | FLAG_MOVEABLE
     body = struct.pack('<I', flags)
     for k, v in attrs:
         if k == A_SERVERID:
             v = struct.pack('<H', sid)
+        elif k == A_CLIENTID and cid is not None:
+            v = struct.pack('<H', cid)
         body += attr(k, v)
     return bytes([START]) + escape(bytes([group])) + escape(body) + bytes([END])
 
@@ -119,20 +129,29 @@ def patch_otb(data, rows):
     kids, root_end = scan(data)
     by_sid = {k[2]: k for k in kids}
     replace, append, wanted = [], [], {}
-    for sid, source, _name, _plural, _desc in rows:
+    owners = {}
+    for k in kids:
+        owners.setdefault(k[3], []).append(k[2])
+    for sid, source, _name, _plural, _desc, own in rows:
         stock = by_sid.get(source)
         if stock is None:
             raise SystemExit('items.otb: no stock node %d (rune stone of rune %d); nothing written' % (source, sid))
         if not (stock[5] & FLAG_STACKABLE and stock[5] & FLAG_USEABLE):
             raise SystemExit('items.otb: node %d is not a stackable use-with item; nothing written' % source)
-        want = rune_node(stock, sid)
-        wanted[sid] = (want, stock[3])
+        cid = own if own is not None else stock[3]
+        if own is not None:
+            other = [s for s in owners.get(own, []) if s != sid]
+            if other:
+                raise SystemExit('items.otb: client id %d (the look of rune %d) belongs to server id %s; nothing written'
+                                 % (own, sid, other[0]))
+        want = rune_node(stock, sid, own)
+        wanted[sid] = (want, cid)
         k = by_sid.get(sid)
         if k is None:
             append.append(want)
-        elif k[3] != stock[3]:
-            raise SystemExit('items.otb: server id %d already belongs to client id %s, not %d; nothing written'
-                             % (sid, k[3], stock[3]))
+        elif own is not None and k[3] not in (stock[3], cid):   # without own looks every rune node goes back to the stock stone
+            raise SystemExit('items.otb: server id %d already belongs to client id %s, not %d or %d; nothing written'
+                             % (sid, k[3], stock[3], cid))
         elif data[k[0]:k[1]] != want:
             replace.append((k[0], k[1], want))
     out = bytearray(data)
@@ -154,20 +173,22 @@ def patch_otb(data, rows):
 def verify_otb(data, rows, wanted):
     kids, _ = scan(data)
     by_sid = {k[2]: k for k in kids}
-    for sid, _src, _n, _p, _d in rows:
+    for sid, _src, _n, _p, _d, _own in rows:
         k = by_sid.get(sid)
         want, cid = wanted[sid]
         assert k and k[3] == cid and k[5] & FLAG_STACKABLE, 'rune node %d' % sid
         assert data[k[0]:k[1]] == want, 'rune node %d bytes' % sid
     sids = [k[2] for k in kids]
     assert len(sids) == len(set(sids)), 'duplicate server ids in items.otb'
+    own = [by_sid[r[0]][3] for r in rows if r[5] is not None]
+    assert len(own) == len(set(own)), 'two support runes share a client id'
     return len(kids)
 
 
 # ------------------------------------------------------------------------------------------------ items.xml
 def xml_block(rows):
     lines = [XML_BEGIN]
-    for sid, _src, name, plural, desc in rows:
+    for sid, _src, name, plural, desc, _own in rows:
         lines.append('\t<item id="%d" article="a" name="%s" plural="%s">\n'
                      '\t\t<attribute key="description" value="%s" />\n'
                      '\t\t<attribute key="weight" value="%d" />\n'
@@ -228,7 +249,8 @@ def main():
     n = verify_otb(new, rows, wanted)
     for line in notes:
         print(line)
-    print('items.otb: verified (%d item nodes, every rune node a copy of its rune stone)' % n)
+    print('items.otb: verified (%d item nodes, every rune node a copy of its rune stone%s)'
+          % (n, ', own client ids %d..%d' % (rows[0][5], rows[-1][5]) if rows[0][5] else ''))
     text = open(xml, encoding='utf-8', errors='surrogateescape').read()
     new_text, note = patch_xml(text, rows)
     print(note)

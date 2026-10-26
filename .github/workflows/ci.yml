@@ -170,6 +170,12 @@ jobs:
           # sums match the generator, and the look passes style_check on its own colours
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_reward_chest_art.py build --check
           python3 -I client/tools/sprites/gen_reward_chest_art_test.py
+          # the support rune looks of pair 46 (100 PixelLab rune stones, 1 x 1 items) and the support icons: committed sources,
+          # atlas, things file and sums match the generator, each look passes style_check, ids agree with the config
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_support_runes_art.py build --check
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_support_runes_art.py icons --check
+          python3 -I client/tools/sprites/gen_support_runes_art_test.py
+          python3 -I server/tools/install_supports_test.py
           # the jewelry looks of pair 35 (icon set picks): things file, atlas size and chaos_jewelry.lua bases agree
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_jewelry_art.py build --check
           # the owner's art of pair 26 (monster looks, wings, decoration): sheets, things file and picks match the spec

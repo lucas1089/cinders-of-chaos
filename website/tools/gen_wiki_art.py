@@ -18,7 +18,7 @@ what shows what; this file only draws. Icon names (wiki/i/<name>.png, 48 x 48, i
   gem-<rrggbb>         a cut gem drawn here
   sp-<clientId>        client/overlay/data/images/game/spells_painted/<clientId>.png (gen_painted_icons.py)
   tr-<iconKey>         a cell of client/overlay/data/images/passivetree/painted_nodes.png (treedata/painted.lua)
-  sup-<key>            client/overlay/data/images/game/supports/<key>.png (gen_support_icons.py)
+  sup-<key>            client/overlay/data/images/game/supports/<key>.png (sprites/gen_support_runes_art.py icons)
   it-<set>-<kind>      a cell of client/tools/sprites/art_import/theme/items_<set>.png (theme_things.csv), 2x crisp
   gm-<key>-<tier>      a socket gem's look, phase 0 of its row in client/tools/sprites/art_import/gems.png
                        (gen_gem_art.py: config type order, five tiers a type), 2x crisp
