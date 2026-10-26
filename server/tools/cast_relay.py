@@ -22,6 +22,8 @@ Lines (each a JSON object with "t"):
   d        changes since the last line (at most ~20 a second): "c", "tiles", "cr", "walk", "fx", "mi", "tx", "say",
            "st", "light", only the keys that changed; protocol 3: "fl" (when the range changed), "fc" (floors that
            came into view whole: forget their tiles first), "ft", "fxf", "mif" (effects / missiles of other floors)
+  sprerr   {"t":"sprerr","key","why"}: a sheet that could not be drawn (the pair lacks the thing, the 600 limit, or the
+           error text); the app counts them and says so instead of showing black
   hb       nothing happened for a second
   end      {"t":"end","why"}: the relay stops
 Protocol 3 (phase 3, the hello's "v"; older lines are read as 2): every addition is a new key, so an older app keeps
@@ -984,6 +986,7 @@ class Sheets:
         self.np, self.gsi = np, gsi
         self.dat, self.spr = dat, spr
         self.sent = set()
+        self.errors = 0
         self.items = {t.id: t for t in dat.items}
 
     def draw(self, view, x, y, z, layers, phase):
@@ -1137,14 +1140,25 @@ class Sheets:
                 'nw': len(cols) - ni, 'fd': frame_ms(wv, 100), 'png': png_b64(img)}
 
     def need(self, key, build):
-        """the sheet line for key the first time (None after, or when the run has sent MAX_SHEETS)"""
-        if key in self.sent or len(self.sent) >= MAX_SHEETS:
+        """the sheet line for key the first time (None after). A sheet that cannot be had is not silent: the line is
+        {"t":"sprerr","key","why"} (why: "none" the pair has no such thing, "limit" the run sent MAX_SHEETS, or the
+        error's name and text), so the app can say what is missing instead of drawing black."""
+        if key in self.sent:
             return None
+        if len(self.sent) >= MAX_SHEETS:
+            self.sent.add(key)
+            self.errors += 1
+            return {'t': 'sprerr', 'key': key, 'why': 'limit'}
         self.sent.add(key)
         try:
-            return build()
-        except Exception:   # noqa: BLE001 - a broken thing in the pair: drawn as nothing
-            return None
+            line = build()
+        except Exception as e:   # noqa: BLE001 - a broken thing in the pair: drawn as nothing, and said
+            self.errors += 1
+            return {'t': 'sprerr', 'key': key, 'why': ('%s: %s' % (type(e).__name__, e))[:120]}
+        if line is None:
+            self.errors += 1
+            return {'t': 'sprerr', 'key': key, 'why': 'none'}
+        return line
 
 
 def outfit_key(o):

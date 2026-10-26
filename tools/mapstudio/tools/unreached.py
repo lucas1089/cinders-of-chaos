@@ -30,7 +30,7 @@ def main():
     kit = load_kit(a.kit or meta.get("kit"))
     ramp_dirs = {ids[0]: d for key in ("mountain_ramp", "hill_ramp") for d, ids in kit.get(key, {}).items()}
     access.NO_WALK = water_ids(kit)  # liquid never counts as walkable (gen/access.py NO_WALK)
-    start = access.main_start(floors, items)
+    start = access.main_start(floors, items, max(floors))  # the main floor is the highest z (cave kit: 9)
     got = access.reach(floors, items, ramp_dirs, start)
     layer = floors[max(floors)]
     land = {pos for pos, s in layer.items() if s and int(s[0]) not in access.NO_WALK}

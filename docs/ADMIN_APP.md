@@ -137,6 +137,13 @@ instalada é desconhecida: o passo 2 baixa a mais nova e, se o `tfs` for igual a
     tochas, criaturas e magias que brilham. Nível, vida e mana embaixo. Para no botão Parar, ao trocar de aba, ao sair
     do app, num erro e depois de 30 minutos. Uma visão ao vivo por vez. Não desenha a interface do jogo. Precisa do app
     novo e do relay novo juntos para ver andares e luz; um dos dois antigos ainda mostra o andar do jogador.
+  - **Tela preta (O265, 2026-10-26):** só nomes e barras de vida apareciam. O escuro do jogo (noite: luz do mundo 40 de
+    255; subsolo: 0) era multiplicado sobre o quadro e os nomes são desenhados depois da luz. Agora o mapa nunca fica
+    abaixo de uns 40% (botão **Luz clara**; **Luz do jogo** volta ao escuro de verdade) e as luzes dos itens (tochas)
+    brilham de fato. Falhas de sprite aparecem na linha de estado: "Sprites: N sprite(s) não vieram (chave: motivo)" (o
+    relay manda `sprerr`; o app conta imagens ilegíveis) e "Nenhum sprite chegou da VPS" quando há mapa e nenhuma
+    folha. Precisa do app novo (APK) e do `cast_relay.py` novo na VPS (atualizar o repositório em Comandos > Versão do
+    servidor).
   - **Ligar a porta de cast (uma vez):** o motor precisa do src-patch 0064 e de `castPort` no `config.lua` (porta só
     em 127.0.0.1, desligada por padrão). No app: Painel > Atualizar servidor com uma versão que tenha o patch 0064. A
     atualização roda o `install_all.py`, e o passo `castport` liga a porta (7179). Sem o app, na VPS:
@@ -184,7 +191,10 @@ terminal do app ser root de verdade (instalar pacotes, mexer no sistema), rode n
 
 - A chave privada fica criptografada com uma chave do Keystore do Android. Não vai para backup da nuvem.
 - O app pede a senha, PIN ou digital do celular ao abrir e depois de 1 minuto fora. Sem bloqueio de tela ele avisa.
-- Sem captura de tela e sem miniatura na lista de apps recentes.
+- Captura de tela: **Config > Tela > Permitir captura de tela**, ligada por padrão (para o dono poder mostrar um erro
+  num print). Desligada, o Android bloqueia prints e a miniatura na lista de apps recentes. Em qualquer caso a janela
+  fica bloqueada enquanto o campo Senha de Comandos > Contas está em foco ou tem texto. A chave privada nunca aparece
+  na tela.
 - O app não abre porta nenhuma na VPS e nenhum painel na internet. Só SSH, com chave (sem senha).
 - Para tirar o acesso: apague `/home/chaosadmin/.ssh/authorized_keys` e `/etc/sudoers.d/chaos-admin` na VPS.
 - Perdeu o celular: faça isso na hora, de outro aparelho.

@@ -34,6 +34,11 @@ final class Store {
         p.edit().putString(k, v).apply();
     }
 
+    /** Config > Tela > Permitir captura de tela; default on. Off: the window is FLAG_SECURE. */
+    boolean allowCapture() {
+        return !"0".equals(get("capture", "1"));
+    }
+
     String host() {
         return get("host", "");
     }

@@ -68,11 +68,28 @@ final class CastMath {
      * sun does not reach, so only the sources light.
      */
     static int ambient(int intensity, int colour8, int cameraFloor) {
-        if (cameraFloor > SEA_FLOOR) {
-            return 0;
-        }
-        return scale(rgb8(colour8), Math.max(0, Math.min(255, intensity)) / 255f);
+        return ambient(intensity, colour8, cameraFloor, 0);
     }
+
+    /**
+     * Same, but never darker than minimum (0..255, like the client's minimum ambient light): the spectator sees the
+     * map at night and underground. 2026-10-26: with the game's own darkness (night: world light 40 of 255; underground:
+     * 0) the view looked black except the names and health bars, which are drawn after the light.
+     */
+    static int ambient(int intensity, int colour8, int cameraFloor, int minimum) {
+        int i = cameraFloor > SEA_FLOOR ? 0 : Math.max(0, Math.min(255, intensity));
+        i = Math.max(i, Math.max(0, Math.min(255, minimum)));
+        int base = cameraFloor > SEA_FLOOR ? 0xFFFFFF : rgb8(colour8);
+        return scale(base, i / 255f);
+    }
+
+    /** true when the light would leave the map (nearly) dark: the app tells the owner why */
+    static boolean dark(int ambientRgb) {
+        return Math.max(ambientRgb >> 16 & 0xFF, Math.max(ambientRgb >> 8 & 0xFF, ambientRgb & 0xFF)) < 0x60;
+    }
+
+    /** The lightest the spectator's map gets by default (about 40 %): readable at night and underground. */
+    static final int READABLE = 104;
 
     /** The client gives the player a little light of his own in the dark and underground. */
     static int playerIntensity(int own, int worldIntensity, int cameraFloor) {

@@ -19374,6 +19374,30 @@ already mirrors the floors (map, `0x4B`, floor changes), world light (`0x82`), c
   light overlay and its speed) on any device, the cover rule against the real client, a live run of the new lines on a
   server.
 
+**Black Ao vivo view (O265, owner 2026-10-26).** In Comandos > Ações rápidas > Assistir jogador > Ao vivo only names and
+health bars showed; ground, items and outfits were black. The sprites were on the VPS (Sprites na VPS showed the pair).
+- **Root cause (by reading; no phone or live server here).** `CastView.applyLight` multiplied the light view over the
+  whole frame and drew names and bars after it. The game's own darkness is nearly black: `Game::checkLight` (day/night
+  cycle) sends world light 40 of 255 at night, and `CastMath.ambient` returned 0 on every underground floor (hunts are
+  mostly underground), so only a 2-tile glow around the player was lit. The names and bars were the only things not
+  darkened, which is exactly the report. Candidates read and cleared: sheet field names (`key`, `png`, `cw`, `ch`, `ax`,
+  `ay`, `np`, `nf`, `fd`, `ni`, `nw`, `el`, `gr`, `lt`) match between `cast_relay.py` and `CastView.sheet`; tile entries
+  `[key, pattern, lift]` and tiles `[x, y, under, over, elev]` match; sheets go out before the `full` line; `Ssh.stream`
+  takes lines up to 8 MiB; the relay test with the synthetic pair draws every sheet. A second silent path made the same
+  picture: a sheet that failed to draw (`Sheets.need` swallowed the exception) or to decode (`BitmapFactory` null)
+  left no trace, and `CastView.creature` draws the name and bar even without a body sheet.
+- **Fix.** `CastMath.ambient(..., minimum)` and `READABLE` (104 of 255): the map is never darker than about 40% by
+  default; the button Luz clara / Luz do jogo switches to the game's real darkness (a state line then says "Escuro como
+  no jogo"). Item lights (torches, lamps) now add their glow; they were described here but not drawn. `Sheets.need`
+  returns `{"t":"sprerr","key","why"}` (why: `none`, `limit` or the error) instead of nothing; the app counts those and
+  the sheets it cannot decode and shows "Sprites: N sprite(s) não vieram (chave: motivo)", or "Nenhum sprite chegou da
+  VPS" when a map has no sheet at all.
+- Tests: `cast_relay_test.py` `test_black_view_is_not_silent` (PIL failure gives `sprerr` lines, the full line still
+  goes out), `android/app/src/test/java/.../CastMathTest.java` (plain JVM: night and caves are dark, the minimum lifts
+  them, day untouched). The app classes were compiled with `javac` against the Android API jar (only the generated `R`
+  is missing there). Not run on a phone or against a live relay: if the view is still black, the state line now says
+  why.
+
 **chaos-ctl.sh settings file (`/etc/chaos/ctl.conf`).** Owner, 2026-10-20: the app showed "service not found, codigo 5"
 on the beta VPS. The kit there runs from `/opt/chaos-trial` (`tools/linux/server/start-server.sh`) with no systemd
 unit, and `systemctl` exits 5 for a unit that does not exist. Setting `CHAOS_UNIT` in the environment never helped: the

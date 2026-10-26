@@ -3,6 +3,8 @@ writes the review page areas/<batch>/index.html (tools/review_page.py).
 
 python -B run.py tools/batch.py <batch> [--kit <name>] [--seeds 101,102] [--timeout 900]
 Each map runs as its own process with a time limit, so one stuck run can't hang the batch.
+Knobs per seed: the kit's key batch_variants ({"301": "--size 96 --cave-x 1", ...}, a "*" entry for any other seed) when the
+kit has it, else the VARIANTS table below (seeds 101-108). With the key and no --seeds the batch runs the key's seeds.
 """
 from __future__ import annotations
 
@@ -29,13 +31,15 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument("batch")
     p.add_argument("--kit")
-    p.add_argument("--seeds", help="comma-separated subset of " + ",".join(map(str, VARIANTS)))
+    p.add_argument("--seeds", help="comma-separated seeds (default: the kit's batch_variants seeds, else " + ",".join(map(str, VARIANTS)) + ")")
     p.add_argument("--timeout", type=int, default=900, help="seconds per map")
     a = p.parse_args()
     kit = kit_name(a.kit)
-    seeds = [int(s) for s in a.seeds.split(",")] if a.seeds else list(VARIANTS)
+    variants = load_kit(kit).get("batch_variants")  # kit key: {"<seed>": "<knobs>", "*": "<knobs for any other seed>"}
+    table = {int(k): v for k, v in variants.items() if k != "*"} if variants else VARIANTS
+    seeds = [int(s) for s in a.seeds.split(",")] if a.seeds else list(table)
     for seed in seeds:
-        knobs = VARIANTS.get(seed, "")
+        knobs = table.get(seed, variants.get("*", "") if variants else "")
         for knob, cap in load_kit(kit).get("batch_cap", {}).items():  # a kit may cap a knob (grass: one mountain level)
             parts = knobs.split()
             if f"--{knob}" in parts:

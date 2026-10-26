@@ -713,7 +713,14 @@ def test_sheets(dat, spr, items, dims):
     expect(red == tuple((200 * v + 127) // 255 for v in c), 'tinted as the client does')
     expect(sh.outfit(dict(o, t=9)) is None, 'an unknown look: nothing')
     expect(sh.need('x', lambda: {'t': 'spr'}) == {'t': 'spr'} and sh.need('x', lambda: {}) is None, 'once per run')
-    expect(sh.need('y', lambda: 1 / 0) is None, 'a broken thing is skipped')
+    bad = sh.need('y', lambda: 1 / 0)
+    expect(bad['t'] == 'sprerr' and bad['key'] == 'y' and 'ZeroDivisionError' in bad['why'], 'a broken thing is said')
+    expect(sh.need('y', lambda: 1 / 0) is None, 'and said once')
+    expect(sh.need('z', lambda: None) == {'t': 'sprerr', 'key': 'z', 'why': 'none'}, 'no such thing in the pair: said')
+    expect(sh.errors == 2, 'the errors are counted')
+    lim = cr.Sheets(dat, spr)
+    lim.sent = set('k%d' % n for n in range(cr.MAX_SHEETS))
+    expect(lim.need('over', lambda: {'t': 'spr'}) == {'t': 'sprerr', 'key': 'over', 'why': 'limit'}, 'the limit is said')
     # a full line names its sheets first
     enc = Enc()
     w = cr.World(items, dims)
@@ -730,6 +737,29 @@ def test_sheets(dat, spr, items, dims):
     t = [tl for tl in full_line['tiles'] if tl[:2] == [PX + 1, PY]][0]
     expect(t[2][1][:2] == ['i104', 6], 'a stack of 30: pattern 2,1')
     expect(full_line['cr'][str(PID)]['o'] == 'o1.10.20.30.40.0.0', 'the player names its outfit sheet')
+    json.dumps(lines)
+
+
+def test_black_view_is_not_silent(dat, spr, items, dims):
+    """2026-10-26 owner report: names and health bars but no ground, items or outfits. A sheet that fails to draw (a
+    missing PIL, a broken thing) used to vanish without a line, so the app could not tell it from a dark map."""
+    enc = Enc()
+    w = cr.World(items, dims)
+    start(w, enc, base_tiles(enc))
+    real = cr.png_b64
+
+    def broken(_arr):
+        raise ImportError('No module named PIL')
+    cr.png_b64 = broken
+    try:
+        lines = cr.View(w, cr.Sheets(dat, spr), dims).lines()
+    finally:
+        cr.png_b64 = real
+    errs = [ln for ln in lines if ln['t'] == 'sprerr']
+    expect(not [ln for ln in lines if ln['t'] == 'spr'], 'no sheet could be drawn')
+    expect(errs and all('ImportError' in e['why'] for e in errs), 'every failed sheet is a sprerr line: %s' % errs[:1])
+    expect({'i100', 'o1.10.20.30.40.0.0'} <= {e['key'] for e in errs}, 'the ground and the outfit are named')
+    expect([ln for ln in lines if ln['t'] == 'full'], 'the full line still goes out')
     json.dumps(lines)
 
 
@@ -824,6 +854,7 @@ def main():
         test_light_lines(dat, spr, items, dims)
         test_errors(items, dims)
         test_sheets(dat, spr, items, dims)
+        test_black_view_is_not_silent(dat, spr, items, dims)
         test_loop(dat_path, spr_path, dat, spr, items, dims)
         test_fuzz(items, dims)
     print('cast_relay_test: %d checks, %d failures' % (COUNT[0], len(FAILS)))

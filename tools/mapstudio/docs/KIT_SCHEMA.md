@@ -121,3 +121,30 @@ Rates are learned with `tools/family_items.py` and `tools/learn_kit.py`, clumpin
 | `clumps.cliff_small` | factor on the small clump density for grass tiles touching the mountain but not water (walkable small plants only). Default off |
 | `pocket_fill` | ids of 1x1 blocking plants. A walkable pocket of up to 30 tiles on the main floor that no walk reaches (a strip cut off by cliff pieces and shore) gets one of them on every tile, so nothing walkable is stranded. Reported as `pocket tiles closed`. Off without the key |
 | `name`, `notes` | free text: where the kit was learned and how |
+
+## Keys added 2026-10-26 (cave, lava, swamp, ice)
+
+Every key is off unless the kit has it, so older kits (grass) generate the same files as before.
+
+| key | what |
+|---|---|
+| `floor` | the map's main floor (default 7). Cave kit: 9. Also `--floor N` on the command line |
+| `cave` | cave mode (gen/cave.py): solid rock is the "water" role, the carved floor is the land. Sub keys: `shape` (`tunnels`, `chambers`, `mix`), `wall_style` (`on_floor`: a wall piece on the floor edge, tunnels are carved 2 wider; `on_rock`: a wall on the rock tile; `mixed`: seeded pick per cave), `chambers` {`per_1000`, `radius` [lo, hi], `spacing`}, `tunnel_width` {width: share}, `loops` [lo, hi], `spurs_per_1000`, `floor_share` [lo, hi], `pillars_per_chamber`, `stairs` {`count` [lo, hi]}, `styles` {style: {`layers`, `no_water_border`}} overriding the kit's table per wall style. Flags `--cave-shape`, `--wall-style` |
+| `corridor_ground` | the same sub keys as `cave`, used only with `--corridor-ground`: the base ground is carved as winding corridors in the liquid (lava) |
+| `stairs` | in `cave`: ramps between floors with a small landing floor of the base ground |
+| `pocket_fill` | see above; cave mode uses it for every sealed pocket |
+| `solid_mountain` | `true` (or `--solid-mountain`): the mountain is a solid fill with no top floor and no ramps |
+| `solid_fill` | ground spec for that fill (members repeat to weight the lead) |
+| `wall_set` | `{ground key: 12-piece set name}`: the wall set drawn on the floor and liquid tiles beside a solid mountain |
+| `top_liquid` | `{"share": [lo, hi], "inner": 3}`: lakes of the kit's liquid in the middle of a mountain top, 3+ tiles from the rim and from ramp arrivals and departures; a lake that would split the walkable top is skipped |
+| `water.walkable_variants` | names of band variants a player can stand on (cooled crust); they leave `water_ids` and so count as walkable |
+| `patches` | `[{"ground": role, "share": s, "scale": cell, "min": tiles}]`: blobs of a ground role inside the base ground (swamp: grey sand) |
+| `patch_scale`, `worn_blob`, `worn_gap` | finer noise for the worn rim: `[[cell, weight], ..]`, blob size `[min, max]`, gap between blobs |
+| `plank_roads` | `{"count": n, "width": {"1": .5, "2": .3, "3": .2}, "ew": ground spec, "ns": ground spec}`: winding plank walkways over liquid, 12-45 tiles long, grain follows the way |
+| `plants_on_water` | `true`: `water_flora` grows on the kit's plain liquid (swamp reeds, lily pads) |
+| `crossing` | `{"type": "ford", "ground": id}`: fords instead of bridges |
+| `road_rough`, `road_brush`, `road_broad` | road shape knobs, see the 2026-10-26 round 3 decision in STATUS.md |
+| `edge_smooth` | `{"blur": passes, "longest": run, "jag": run}`: rounder outlines. `blur` smooths the layout masks, `longest` is the longest straight outline run `break_runs` leaves (default 3), `jag` the jag size `tidy_grounds` removes (default 2). Not set in any kit: measured on lava it did not shorten the straight runs of the lava edge (see STATUS.md) |
+| `mountain_fill_decor` | `{"<id>": rate}`: decor rolled once per mountain fill tile (ice: 2x2 snow chips and stones of ids 6939-6950, 6871-6881, 6926-6937, about 22% of the fill) |
+| `lake_water` | `{"ground": spec, "decor": {id: rate}, "rim_water": bool, "fringe": {"north": id, "west": id}}`: inland water (a component touching no map edge) takes the sheet ground instead of the liquid. Experimental: the sheet 6869 renders black on its east and south edge tiles in the preview, `rim_water` puts plain water there. Not used by any kit (stored as `_unused_lake_water` in kit/ice.json) |
+| `batch_variants` | `{"<seed>": "<knobs>", "*": "<knobs for any other seed>"}`: per kit batch knobs for tools/batch.py (cave 301-308, swamp 201-208, ice 401-408, lava 501-508) |

@@ -93,12 +93,32 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
+    private final java.util.Set<String> secrets = new java.util.HashSet<>();
+
+    /** FLAG_SECURE (no screenshot, no preview in the recent apps list): when captures are off, or a secret is on screen. */
+    void applySecure() {
+        boolean secure = !store.allowCapture() || !secrets.isEmpty();
+        if (secure) {
+            getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE);
+        } else {
+            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_SECURE);
+        }
+    }
+
+    /** A password field (key) is being typed in (on) or is done (off): the window stays secure meanwhile. */
+    void secret(String key, boolean on) {
+        if (on ? secrets.add(key) : secrets.remove(key)) {
+            applySecure();
+        }
+    }
+
     @Override
     protected void onCreate(Bundle b) {
         super.onCreate(b);
-        // no screenshots and no preview in the recent apps list: the screen shows the server's data
-        getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE);
         store = new Store(this);
+        // screenshots are allowed by default (Config > Tela); FLAG_SECURE comes back when the owner turns that off and
+        // while a password is being typed
+        applySecure();
         ui = new Ui(this);
 
         shell = ui.column();

@@ -116,6 +116,20 @@
   "outer_sw": 5644,
   "outer_se": 5643
  },
+ "dirt_wall": {
+  "edge_n": 357,
+  "edge_e": 358,
+  "edge_s": 356,
+  "edge_w": 359,
+  "inner_nw": 366,
+  "inner_ne": 367,
+  "inner_sw": 365,
+  "inner_se": 364,
+  "outer_nw": 362,
+  "outer_ne": 363,
+  "outer_sw": 361,
+  "outer_se": 360
+ },
  "layers": [
   {
    "kit": "sand",
@@ -148,7 +162,7 @@
   "levels": 1,
   "mountains": 0,
   "rivers": 0,
-  "lakes": 8,
+  "lakes": 0,
   "roads": 0,
   "sand": 5,
   "vegetation": 100,
@@ -274,42 +288,157 @@
   "outer_sw": 5644,
   "outer_se": 5643
  },
- "_placeholders": "mountain_cliff, top_rim, hill_cliff, hill_rim and the ramps repeat the wall set: the generator reads them although the cave has no relief (mountains 0, hills 0)",
+ "_placeholders": "mountain_cliff, top_rim, hill_cliff and hill_rim repeat the stone wall set: the generator reads them although the cave has no relief. mountain_ramp is the real ramp (cave stairs); hill_ramp repeats it",
  "mountain_ramp": {
   "n": [
-   5640,
-   5640
+   1394,
+   1395
   ],
   "s": [
-   5642,
-   5642
+   1392,
+   1393
   ],
   "e": [
-   5641,
-   5641
+   1388,
+   1389
   ],
   "w": [
-   5639,
-   5639
+   1390,
+   1391
   ]
  },
  "hill_ramp": {
   "n": [
-   5640,
-   5640
+   1394,
+   1395
   ],
   "s": [
-   5642,
-   5642
+   1392,
+   1393
   ],
   "e": [
-   5641,
-   5641
+   1388,
+   1389
   ],
   "w": [
-   5639,
-   5639
+   1390,
+   1391
   ]
  },
- "_decor_notes": "clumps.small: debris (border overlay items 6374-6386, 6476) about 0.5 per floor tile and stones 3610-3623 about 0.3 per tile (cave-b); clumps.big: 2x2 rubble 5707-5709, 5619-5620 and 1x1 stalagmites 386 387 390 391 (reference rate about 0.4% of floor tiles each)"
+ "_decor_notes": "clumps.small: debris (border overlay items 6374-6386, 6476) about 0.5 per floor tile and stones 3610-3623 about 0.3 per tile (cave-b); clumps.big: 2x2 rubble 5707-5709, 5619-5620 and 1x1 stalagmites 386 387 390 391 (reference rate about 0.4% of floor tiles each)",
+ "floor": 9,
+ "cave": {
+  "shape": "mix",
+  "wall_style": "mixed",
+  "chambers": {
+   "per_1000": 0.9,
+   "radius": [
+    3,
+    6
+   ],
+   "spacing": 14
+  },
+  "tunnel_width": {
+   "2": 0.2,
+   "3": 0.6,
+   "4": 0.1,
+   "5": 0.1
+  },
+  "loops": [
+   0.1,
+   0.15
+  ],
+  "spurs_per_1000": 3.0,
+  "floor_share": [
+   0.15,
+   0.25
+  ],
+  "pillars_per_chamber": 2,
+  "stairs": {
+   "count": [
+    1,
+    2
+   ]
+  },
+  "styles": {
+   "on_floor": {
+    "layers": [
+     {
+      "kit": "sand",
+      "border": null
+     },
+     {
+      "kit": "rock_soil",
+      "border": null
+     },
+     {
+      "kit": "base",
+      "border": {
+       "sand": "base_on_rock",
+       "rock_soil": "base_on_rock"
+      }
+     },
+     {
+      "kit": "water",
+      "border": "shore_on_base",
+      "onto": [
+       "base",
+       "rock_soil",
+       "sand"
+      ],
+      "outside": true
+     }
+    ],
+    "no_water_border": []
+   },
+   "on_rock": {
+    "layers": [
+     {
+      "kit": "water",
+      "border": null
+     },
+     {
+      "kit": "sand",
+      "border": null
+     },
+     {
+      "kit": "rock_soil",
+      "border": null
+     },
+     {
+      "kit": "base",
+      "border": {
+       "water": "dirt_wall",
+       "sand": "base_on_rock",
+       "rock_soil": "base_on_rock"
+      }
+     }
+    ],
+    "no_water_border": [
+     "sand",
+     "grey_sand",
+     "rock_soil",
+     "gravel"
+    ]
+   }
+  },
+  "_notes": "shape: mix (chambers joined by tunnels), tunnels (small junctions, narrow winding tunnels, more spurs) or chambers (halls joined by wide bands). wall_style: mixed = each cave picks on_floor (stone wall on the floor edge, blocks the edge tile) or on_rock (dirt wall on the rock tile beside the floor), seeded by the area seed. See docs/KIT_SCHEMA.md"
+ },
+ "batch_variants": {
+  "301": "--size 96 --cave-shape mix",
+  "302": "--size 96 --cave-shape tunnels",
+  "303": "--size 96 --cave-shape chambers",
+  "304": "--size 112 --cave-shape mix",
+  "305": "--size 112 --cave-shape tunnels",
+  "306": "--size 128 --cave-shape mix",
+  "307": "--size 96 --cave-shape mix --vegetation 140",
+  "308": "--size 112 --cave-shape chambers"
+ },
+ "pocket_fill": [
+  386,
+  387,
+  390,
+  391
+ ],
+ "repair_pocket": 1
 }

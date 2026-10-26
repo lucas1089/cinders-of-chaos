@@ -68,6 +68,23 @@ final class ConfigTab {
         sb.addView(ui.evenRow(test, save), ui.gap(12));
         page.addView(srv, ui.gap(10));
 
+        // ---- screen
+        MaterialCardView scr = ui.titledCard("Tela");
+        LinearLayout scb = Ui.body(scr);
+        com.google.android.material.materialswitch.MaterialSwitch cap =
+                new com.google.android.material.materialswitch.MaterialSwitch(a);
+        cap.setText("Permitir captura de tela");
+        cap.setTextColor(ui.bright);
+        cap.setChecked(st.allowCapture());
+        cap.setOnCheckedChangeListener((v, on) -> {
+            a.store.put("capture", on ? "1" : "0");
+            a.applySecure();
+        });
+        scb.addView(cap);
+        scb.addView(ui.hint("Ligado: dá para tirar print e a tela aparece nos apps recentes. Desligado: o Android "
+                + "bloqueia os dois. A tela sempre fica bloqueada enquanto você digita uma senha."), ui.gap(4));
+        page.addView(scr, ui.gap(10));
+
         // ---- key
         MaterialCardView key = ui.titledCard("Chave SSH deste celular");
         LinearLayout kb = Ui.body(key);
