@@ -19,8 +19,10 @@ local meta = V.finish(st, { parts = 3, categories = { { key = 'bosses', name = '
   periods = { { key = 'week', name = 'This week' }, { key = 'season', name = 'Season' }, { key = 'all', name = 'All time' } },
   groups = { { key = 1, name = 'Knight' } }, season = { key = 'q20264', name = 'Q4 2026' } })
 eq(meta.complete, true, 'every part arrived')
-eq(#meta.categories, 3, 'two categories and the realm firsts')
-eq(meta.categories[3].key, 'firsts', 'realm firsts last')
+eq(#meta.categories, 4, 'two categories, the realm firsts and the own records')
+eq(meta.categories[3].key, 'firsts', 'realm firsts after the boards')
+eq(meta.categories[4].key, 'mine', 'my records last (O260)')
+eq(#meta.categories[4].boards, 0, 'my records has no boards')
 eq(#V.category(meta, 'bosses').boards, 2, 'bosses joined from two parts')
 local b, c = V.board(meta, 'omen')
 eq(c.key, 'bosses', 'category of a board')

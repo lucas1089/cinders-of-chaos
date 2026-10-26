@@ -1167,6 +1167,12 @@ local function processKill(monster, corpse)
 	ctx.orbFind = ChaosCharms and ChaosCharms.orbFindMult and ChaosCharms.orbFindMult(owner) or 1
 	local bonus = {} -- text pieces for the bonus-loot message
 	local corpsePos = corpse:getPosition()
+	-- O260 (retention_loot.lua): the kill's pity state; nil when the layer is off or failed
+	local retention
+	if ChaosRetentionLoot and ChaosRetentionLoot.begin then
+		local okR, st = pcall(ChaosRetentionLoot.begin, monster, owner, tier)
+		retention = okR and st or nil
+	end
 
 	-- items that must never be touched: unique items
 	-- uniques are ordinary base items until ChaosMakeUnique runs on the dropped copy (step 4, after the gear
@@ -1306,6 +1312,12 @@ local function processKill(monster, corpse)
 		if L.isGearId(id) and not L.isRolled(item) then
 			local current = itemRarityOf(item)
 			local target = L.upgradeRarity(tier, current, ctx.itemFind * (1 + rarityFind / 100), ctx.huntLevel)
+			if retention then -- O260 pity: the first magic or better drop of a due kill goes one rarity up
+				local okR, t = pcall(ChaosRetentionLoot.adjustRarity, retention, current, target)
+				if okR and t then
+					target = t
+				end
+			end
 			if ChaosRarity.rank(target) > ChaosRarity.rank(current) then
 				item:setCustomAttribute("rarity", target)
 				-- one loot line (lootline.lua): the stock entry of this item ("[Common] x", written before this roll)
@@ -1402,6 +1414,14 @@ local function processKill(monster, corpse)
 			announce(owner, corpsePos,
 				ChaosI18n.msg(u.broadcastText, owner:getName(), e.name),
 				ChaosI18n.msg(u.message, Chaos.monsterNameDescription(monster), e.name))
+		end
+	end
+
+	-- O260: the pity counter, the drop feed, the personal drop records and the first unique (retention_loot.lua)
+	if retention then
+		local okR, err = pcall(ChaosRetentionLoot.finish, retention, monster, owner, corpse, corpsePos, L, bonus)
+		if not okR then
+			print("[Chaos loot] retention finish failed: " .. tostring(err))
 		end
 	end
 

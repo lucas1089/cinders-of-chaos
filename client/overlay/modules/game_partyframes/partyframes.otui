@@ -179,6 +179,16 @@ PartyFrames < UIWidget
       text-auto-resize: true
       phantom: true
 
+    UILabel
+      id: xp
+      font: Verdana-9px-antialiased
+      color: #7ccf5c
+      anchors.left: title.right
+      anchors.verticalCenter: parent.verticalCenter
+      margin-left: 6
+      text-auto-resize: true
+      visible: false
+
     UIButton
       id: gear
       text: *

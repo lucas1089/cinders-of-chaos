@@ -1,5 +1,5 @@
 -- Pure helpers of the Records view of the Leaderboards window (no client API), tested by recordsview_test.lua.
--- Server: server/data/scripts/chaos/records.lua (actions rmeta / rcat / rboard / rfirsts on opcode 229).
+-- Server: server/data/scripts/chaos/records.lua (actions rmeta / rcat / rboard / rfirsts / rmine on opcode 229).
 local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 RecordsView = {}
 
@@ -37,6 +37,9 @@ function RecordsView.finish(state, data)
   -- the realm firsts: a category of the client (its own request)
   meta.categories[#meta.categories + 1] = { key = 'firsts', name = 'Realm Firsts', boards = {},
     info = 'The first player or party to defeat each boss this season.' }
+  -- the own personal records (O260): a category of the client, its own request (rmine)
+  meta.categories[#meta.categories + 1] = { key = 'mine', name = tr('My Records'), boards = {},
+    info = tr('Your own best drop, highest Tower floor and rift tier, and your fastest boss kills.') }
   meta.season = type(data.season) == 'table' and data.season or nil
   meta.badge = data.badge
   meta.complete = (tonumber(data.parts) or 0) == state.parts

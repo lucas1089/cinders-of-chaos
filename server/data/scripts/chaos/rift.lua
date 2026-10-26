@@ -2317,6 +2317,10 @@ function RF.open(player, item)
 	RF.runs[slot] = run
 
 	enter(run, group)
+	-- a lone player: the Party Finder's open groups for this tier, one line (groupnudge.lua, O261)
+	if ChaosGroupNudge and ChaosGroupNudge.onEnter and #group == 1 then
+		pcall(ChaosGroupNudge.onEnter, player, "rift", key.tier)
+	end
 	local spawned = spawnPacks(run)
 	-- density: the whole plan counts (the queue comes later); monsters that could not be created leave it
 	run.total = run.density and math.max(0, plan.total - (run.planMissing or 0)) or spawned

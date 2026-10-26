@@ -63,6 +63,12 @@ The tier comes from `ChaosTierDead[monster:getId()].tier` (set by monster_tiers.
 6. A single line `Chaos bonus loot of <monster>: ...` goes to the owner / party (MESSAGE_LOOT). Gear upgraded to
    rarity >= `announceRarityFrom` (10, Divine) is announced to nearby players like a unique find.
 
+7. **O260 layer** (`retention_loot.lua`, server/README.md "Early spike, pity, drop feed and personal records (O260)"):
+   `processKill` calls `ChaosRetentionLoot.begin` after the context is built, `adjustRarity` for every gear drop of step 2
+   (a due pity raises the first Magic or better drop by one rarity) and `finish` after step 4 (pity counter, the drop feed
+   line, the personal drop records and, on the character's 150th kill, a leveling unique of its class added to the corpse).
+   Each call is in a `pcall`.
+
 `ChaosLootConfig.rateMult` (number or `function(ctx)`, ctx = `{tier, monster, player, level, itemFind}`) multiplies
 extra-roll chance and currency chance. loot.lua caps the result (guild wrapper included) at `ChaosLootConfig.maxRate`
 (3.0); `ChaosLoot.rateMult(ctx)` is the capped value. Unique chance is only scaled by tier and item find.

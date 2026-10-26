@@ -15,6 +15,10 @@
 --   f flags (1 leader, 2 in fight, 4 dead, 8 connection lost, 16 you), o {t, h, b, l, f, a} outfit, b [{i icon, t 0/1, l ms}]}
 -- Lua 5.1 / LuaJIT and 5.3.
 
+if not ChaosPartyXpCore then
+	pcall(dofile, "data/scripts/chaos/party_xp_core.lua")
+end
+
 ChaosPartyFrames = ChaosPartyFrames or {}
 local P = ChaosPartyFrames
 
@@ -138,9 +142,20 @@ function P.state(viewer, members, leaderId, cfg)
 	return {leader = leaderId, members = list}
 end
 
+-- the party's shared experience for the title of the frames: {pct = bonus in percent, on = 1 works / 2 switched on but off /
+-- 0 not switched on} (party_xp_core.lua K.shareView); members as plain() has them ({line = base vocation id}).
+-- Added to a state the viewer is listed in; an empty state stays empty.
+function P.withShare(state, members, active, enabled)
+	if state and state.members and #state.members > 0 and ChaosPartyXpCore then
+		local v = ChaosPartyXpCore.shareView(members, active, enabled)
+		state.xp = {p = v.pct, on = v.on}
+	end
+	return state
+end
+
 -- a short text that is equal for equal states (what the viewer last got), to send only what changed
 function P.signature(state)
-	local parts = {tostring(state.leader or 0)}
+	local parts = {tostring(state.leader or 0), state.xp and (tostring(state.xp.p) .. ":" .. tostring(state.xp.on)) or "-"}
 	for _, e in ipairs(state.members or {}) do
 		local buffs = {}
 		for _, b in ipairs(e.b or {}) do

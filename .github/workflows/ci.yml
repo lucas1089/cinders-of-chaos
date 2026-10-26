@@ -185,6 +185,7 @@ jobs:
           python3 -I server/tools/install_owner_decor.py --lua --check
           python3 -I server/tools/install_owner_decor_test.py
           python3 -I server/tools/patch_npc_currency_test.py
+          python3 -I server/tools/patch_drops_channel_test.py  # the Drops channel of the drop feed (O260)
           # catacomb kit (pair 27 trial): spec, sources and picks match gen_assets_art.py's tables (kit files not in git)
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_assets_art.py build --check
           python3 -I client/tools/sprites/gen_assets_art_test.py

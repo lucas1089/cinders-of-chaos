@@ -10,7 +10,8 @@
 --   server -> client  rcat {cat, boards} (parts of the meta), rmeta {categories, periods, groups, parts, season, badge},
 --                     rboard {board, variant, size, period, group, rows, own, total, record, resetIn, seasonName},
 --                     rfirsts {season, seasonName, rows = [{target, board, name, members, at, value, format}]}
---   client -> server  rmeta | rget {board, variant, size, period, group} | rfirsts
+--                     rmine {rows = [{key, name, value}]}   the own personal records (O260), the tab "My Records"
+--   client -> server  rmeta | rget {board, variant, size, period, group} | rfirsts | rmine
 -- The top menu (Social > Leaderboards) calls toggle().
 -- The weekly boards are a dropdown sorted by the name shown (boardpick.lua); the board chosen is kept per character in
 -- g_settings (node BoardPick.SETTINGS) and asked for when the window opens (World Boss when none is kept).
@@ -450,6 +451,10 @@ local function requestRecord()
     send('rfirsts', {})
     return
   end
+  if rcat == 'mine' then
+    send('rmine', {})
+    return
+  end
   local b = rBoardMeta()
   if not b then return end
   rsel = RecordsView.normalize(b, rsel, rmeta.periods)
@@ -482,7 +487,7 @@ end
 local function buildRecordFilters()
   window.recordFilters:destroyChildren()
   local b = rBoardMeta()
-  local visible = recordsMode and b ~= nil and rcat ~= 'firsts'
+  local visible = recordsMode and b ~= nil and rcat ~= 'firsts' and rcat ~= 'mine'
   window.recordFilters:setVisible(visible)
   if not visible then
     window.recordFilters:setHeight(0)
@@ -590,7 +595,17 @@ local function showRecords(data)
   local ownName = player and player:getName() or nil
   local rows = rowsOf(data.rows)
   local c = RecordsView.category(rmeta, rcat)
-  if data.isFirsts then
+  if data.isMine then
+    window.header.value:setText(tr('Best'))
+    window.header.extra:setText('')
+    for i, r in ipairs(rows) do
+      createRecordRow(i, tostring(r.name or ''), '', tostring(r.value or ''), '', nil)
+    end
+    window.championPanel.championTitle:setText(tr('My Records'))
+    window.championPanel.championNames:setText(tr('Your best drop, Tower floor, rift tier and boss times. A new best shows "New record" in the game.'))
+    window.ownPanel.ownLabel:setText('')
+    window.emptyText:setText(tr('No records yet.'))
+  elseif data.isFirsts then
     window.header.value:setText(tr('Date'))
     window.header.extra:setText(tr('Time'))
     for i, r in ipairs(rows) do
@@ -736,6 +751,11 @@ local function onExtendedOpcode(protocol, opcode, buffer)
   elseif msg.action == 'rfirsts' then
     if rcat == 'firsts' then
       data.isFirsts = true
+      showRecords(data)
+    end
+  elseif msg.action == 'rmine' then
+    if rcat == 'mine' then
+      data.isMine = true
       showRecords(data)
     end
   end

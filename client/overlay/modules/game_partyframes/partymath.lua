@@ -131,12 +131,32 @@ function PartyMath.apply(state, data, now)
   end
   state.members = list
   state.leader = num(data.leader)
+  -- the party's shared experience: {p bonus percent, on 1 works / 2 switched on but off / 0 not switched on}
+  local xp = type(data.xp) == 'table' and data.xp or nil
+  state.xp = xp and { p = math.max(0, math.floor(num(xp.p) or 0)), on = math.floor(num(xp.on) or 0) } or nil
   state.at = now
   return true
 end
 
 function PartyMath.clear(state)
-  state.members, state.leader, state.at = {}, nil, nil
+  state.members, state.leader, state.at, state.xp = {}, nil, nil, nil
+end
+
+-- the party's shared experience bonus for the header: {text, color, tooltip} or nil (server without it, or no party).
+-- "+20% XP" while the share works; grey and red when it is off (the leader can switch it on / a member breaks its rules)
+function PartyMath.xpView(state)
+  local xp = state and state.xp
+  if not xp or not PartyMath.inParty(state) then return nil end
+  if xp.on == 1 and xp.p > 0 then
+    return { text = tr('+%d%% XP', xp.p), color = '#7ccf5c',
+      tooltip = tr('Shared experience is working: the monsters\' experience is split between the members, with %d%% extra on top.', xp.p) }
+  end
+  if xp.on == 2 then
+    return { text = tr('XP share broken'), color = '#e07a5f',
+      tooltip = tr('The leader switched shared experience on, but a member does not meet its rules: level range, distance to the leader or a recent attack or heal. The party would get +%d%% XP.', xp.p) }
+  end
+  return { text = tr('XP share off'), color = '#8a8078',
+    tooltip = tr('The party leader can switch shared experience on from the party shield menu. With it the party gets +%d%% XP.', xp.p) }
 end
 
 function PartyMath.inParty(state)

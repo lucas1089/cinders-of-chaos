@@ -276,6 +276,16 @@ updateAllFrames = function()
   panel:setSize({ width = math.max(PartyMath.scaled(PartyMath.FRAME_W, settings.scale), width), height = math.max(total, HEADER + 1) })
   local title = panel:getChildById('header'):getChildById('title')
   title:setText(#members > 0 and tr('Party (%d)', #(state.members or {})) or tr('Party'))
+  local xpLabel = panel:getChildById('header'):getChildById('xp')
+  local xv = xpLabel and PartyMath.xpView(state)
+  if xpLabel then
+    xpLabel:setVisible(xv ~= nil)
+    if xv then
+      xpLabel:setText(xv.text)
+      xpLabel:setColor(xv.color)
+      xpLabel:setTooltip(xv.tooltip)
+    end
+  end
   local inParty = PartyMath.inParty(state)
   panel:getChildById('header'):getChildById('invite'):setVisible(true)
   local visible = g_game.isOnline() and settings.shown and #members > 0

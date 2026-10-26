@@ -46,7 +46,10 @@ return {
 		{key = "rifts", name = "Rifts", title = "Rift Sprinter", info = "Highest tier sealed, the fastest tier 15 and the Rift Atlas completion."},
 		{key = "descent", name = "Ember Descent", title = "Depth Seeker", info = "Deepest room of the weekly seeded run."},
 		{key = "trials", name = "Vocation Trials", title = "Trial Breaker", info = "Fastest Vocation Trial clears per difficulty."},
-		{key = "pvp", name = "Arena", title = "Warlord", info = "Best arena rating per bracket and battleground wins."}
+		{key = "pvp", name = "Arena", title = "Warlord", info = "Best arena rating per bracket and battleground wins."},
+		-- O260: the personal drop records. A category only for the boards below: never listed in the Records view, no weekly
+		-- top 3, no title, not published to the website (hidden = true, personal = true on the boards)
+		{key = "loot", name = "Treasure", title = "Treasure Hunter", info = "Personal bests: the best drop.", hidden = true}
 	},
 
 	-- board templates. mode "min" (fastest: seconds), "max" (highest), "add" (sum). format: "time" (m:ss), "pct"
@@ -89,7 +92,20 @@ return {
 		{key = "arena", cat = "pvp", name = "Arena Rating", mode = "max", value = "Rating", variants = "arena", byClass = true,
 			maxGroup = 3, hook = "ChaosLeaderboard.record arena*"},
 		{key = "battleground", cat = "pvp", name = "Battleground Wins", mode = "add", value = "Wins", byClass = true,
-			maxGroup = 1, hook = "ChaosLeaderboard.record battleground"}
+			maxGroup = 1, hook = "ChaosLeaderboard.record battleground"},
+		-- O260 personal records (retention_loot.lua submits them; all-time value of a character only): the best drop of a
+		-- character by rarity rank (Common 1 .. Divine 6, Unique 7) and by the NPC sell price of the item
+		{key = "drop_rarity", cat = "loot", name = "Best Drop Rarity", mode = "max", value = "Rarity", maxGroup = 1, personal = true,
+			hook = "ChaosRetentionLoot.onKill"},
+		{key = "drop_value", cat = "loot", name = "Best Drop Value", mode = "max", value = "Gold", maxGroup = 1, personal = true,
+			hook = "ChaosRetentionLoot.onKill"}
+	},
+
+	-- O260: what the personal records view lists (Inspect and the Records tab), by board key
+	personal = {
+		rarity = "drop_rarity", value = "drop_value", tower = "tower_floor", rift = "rift_tier",
+		bossCat = "bosses", maxBossRows = 12,
+		cacheSeconds = 600 -- a character's personal bests are read from the database once per this many seconds
 	},
 
 	-- rift tier bands of "rift_band" (the clear time of a sealed rift of that tier band); tier 15 is a band of its own

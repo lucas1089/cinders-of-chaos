@@ -25,6 +25,7 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   events       tools/patch_base_events.py        experience / loot / siege / login hooks (README "Install" 4)
                tools/patch_season_events.py      season isolation hooks (when the tool exists)
                tools/patch_help_itemlinks.py     no item links in the Help channel (when the tool exists)
+               tools/patch_drops_channel.py      the Drops channel of the server drop feed (O260, when the tool exists)
                tools/patch_report_chat.py        public channel lines for player reports (when the tool exists)
                tools/patch_shadow_mute.py        shadow mute hook in the public channels (when the tool exists)
                tools/patch_help_ai.py            the Help channel assistant's hook in help.lua (when the tool exists)
@@ -623,6 +624,9 @@ def step_events(server, data, ctx):
     if ok and os.path.isfile(tool('patch_help_itemlinks.py')):
         ok3, more = run_tool([tool('patch_help_itemlinks.py'), data], 'patch_help_itemlinks.py')
         ok, lines = ok3, lines + more
+    if ok and os.path.isfile(tool('patch_drops_channel.py')):
+        ok11, more = run_tool([tool('patch_drops_channel.py'), data], 'patch_drops_channel.py')
+        ok, lines = ok11, lines + more
     if ok and os.path.isfile(tool('patch_report_chat.py')):
         ok6, more = run_tool([tool('patch_report_chat.py'), data], 'patch_report_chat.py')
         ok, lines = ok6, lines + more

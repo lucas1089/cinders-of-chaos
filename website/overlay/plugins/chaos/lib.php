@@ -614,6 +614,10 @@ function chaos_records_categories(): array {
 	$body = chaos_lua_block(chaos_read_server_file('scripts/chaos/records_config.lua'), 'categories');
 	foreach (chaos_lua_entries($body) as $entry) {
 		$key = chaos_lua_field($entry, 'key');
+		// hidden = true: personal bests only (records_config.lua), never on the website
+		if (preg_match('/\bhidden\s*=\s*true\b/', $entry)) {
+			continue;
+		}
 		if (is_string($key) && preg_match('/^[a-z0-9_]{1,16}$/', $key)) {
 			$cats[$key] = array('name' => (string)(chaos_lua_field($entry, 'name') ?? $key),
 				'title' => (string)(chaos_lua_field($entry, 'title') ?? ''), 'info' => (string)(chaos_lua_field($entry, 'info') ?? ''));

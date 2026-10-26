@@ -110,6 +110,13 @@ function D.bossKill(cfg, kind, bossName, secs, names)
 			("slain " .. tostring(bossName)) or "extinguished the Cinderheart", D.clock(secs)), fields)
 end
 
+-- O260, the drop feed: a legendary, divine or unique drop. kind: "legendary" | "divine" | "unique"; item = the item's name
+function D.drop(cfg, name, level, item, kind)
+	local title = {legendary = "Legendary find", divine = "Divine find", unique = "Unique find"}
+	return event(cfg, "drop", title[kind] or "Rare find", string.format("%s (Lv %d) found %s!", tostring(name),
+		floor(tonumber(level) or 0), tostring(item)))
+end
+
 function D.level(cfg, name, level, className)
 	return event(cfg, "level", string.format("Level %d", level),
 		string.format("%s%s reached level %d.", tostring(name), className and (" the " .. className) or "", level))

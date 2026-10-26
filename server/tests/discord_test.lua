@@ -25,6 +25,16 @@ local function esc(s)
 	return "'" .. tostring(s):gsub("'", "''") .. "'"
 end
 
+-- ------------------------------------------------------------------ O260: the drop feed event
+do
+	local ev = D.drop(cfg, "Ann", 812, "Hollow Throne Claymore", "unique")
+	eq(ev.kind, "drop", "drop kind")
+	eq(ev.channel, "drops", "drop channel")
+	eq(ev.title, "Unique find", "drop title")
+	eq(ev.text, "Ann (Lv 812) found Hollow Throne Claymore!", "drop text")
+	eq(D.drop(cfg, "Bob", 90, "Sword", "legendary").title, "Legendary find", "legendary title")
+end
+
 -- ------------------------------------------------------------------ switches, channels, rate limit
 for kind, on in pairs(cfg.events) do
 	check(on == true, kind .. " is on by default")

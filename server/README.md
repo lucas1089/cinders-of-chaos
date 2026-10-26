@@ -655,7 +655,9 @@ collision check") and be added here.
 | 111 | `depotTabs` | `depot.lua` | `game_depottabs` | |
 | 113 | `npcCurrency` | `data/lib/chaos_npc_currency.lua` (run by the base NPC scripts of a custom currency, `tools/patch_npc_currency.py`) | `game_npctradewindow` | server -> client, JSON `{action = "currency", data = {code, name, item?, amount, again?}}`: the currency of the shop that opens next, and its balance after each purchase and sale ("NPC currencies") |
 | 114 | `weather` | `weather.lua`, `weather_core.lua` | `game_chaosweather` | server -> client `set {k = "rain" / "none", i = 1..3, f = fade ms, a = "embers" / "motes" / "dust" (optional, O226), m = "ice" / "swamp" / "desert" / "fire" / "crypt" (optional, O234)}`, client -> server `hello` (see "Weather on the client (O208)", "Ambient particles (O226)", "Area colour mood (O234)") |
+| 115 | `unlocks` | `unlocks.lua`, `unlocks_core.lua`, `unlocks_config.lua` | `client_chaos_topbar` | server -> client `state {entries = [{key, level, menu}], unlocked = [key], seen = [key], next? = {key, level}, all? = true}` (login, `hello`, every level change) and `new {key, level, menu, title, why = [line1, line2]}` (one entry just unlocked, one per 75 s); client -> server `hello` and `seen {key}` (see "The top menu reveals systems by level (O259)") |
 | 116 | `everfull` | `potions_helper.lua`, `data/lib/chaos_potions.lua`, `potions_core.lua` | `game_helperrotation` | server -> client `held {v = 1, health? = {look, tier, level, line, ready}, mana? = {...}}` (the Everfull each slot carries, by its client look; at login, after an upgrade and when it changes, checked every 3 s), client -> server `sync` (see "Potions", "The helper and the tiers (O246)") |
+| 117 | `weeklyChest` | `weeklychest.lua`, `weeklychest_core.lua` | `game_weeklychest` | client -> server `open` / `close` / `get`, server -> client `state {open?, endsIn, acts = [{k, done, open, lv}], got, need, bonusNeed, open, chest = {given, gold, it}, bonus = {given, lo, hi}, chests}` (see "The Weekly Chest (O261)") |
 | 120 | none (`CHAOS_ADMIN_OPCODE`) | `admin/core.lua` | `game_admin` | big payloads through `Chaos.sendChunked` |
 | 125 | `monsterbar` | `monster_tiers.lua`, `worldboss.lua` | `game_monsterbar` | server -> client |
 | 151 | `notificationsAction` | `notifications.lua` | `game_chaosnotify` | client -> server: party invite answer, catacomb start |
@@ -714,7 +716,7 @@ collision check") and be added here.
 | 226 | `pouches` | `pouches.lua` | `game_pouches` | |
 | 227 | `seasonPass` | `seasonpass.lua` | `game_battlepass` | |
 | 228 | `rift` | `rift.lua` | `game_rift` | server -> client |
-| 229 | `leaderboard` | `leaderboard.lua` (the season ladder and mode tabs: `season.lua`, `season_modes.lua`; the Records view, actions `rmeta` / `rget` / `rfirsts`: `records.lua`) | `game_leaderboard` | |
+| 229 | `leaderboard` | `leaderboard.lua` (the season ladder and mode tabs: `season.lua`, `season_modes.lua`; the Records view, actions `rmeta` / `rget` / `rfirsts`: `records.lua`; the Drop Feed option, action `feedopt`: `retention_loot.lua`; the tab My Records, action `rmine`: `records.lua`) | `game_leaderboard` | |
 | 230 | `groundLoot` | `groundloot.lua` | `game_groundlabels` | a base client `ExtendedIds` value no base module registers |
 | 231 | `castbar` | `casting.lua`, `data/lib/chaos_casting.lua` | `game_castbar` | both ways |
 | 232 | `crafting` | `crafting.lua`, `salvage.lua` | `game_crafting` | |
@@ -843,6 +845,10 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7102510 - 7102519 | Everfull tier upgrades (`potions_config.lua` `storage.upgradeBase`, O245): +0 .. +9 the upgrade to the entry at that place among the entries with a `from` (great health, great mana, great spirit, ultimate health, ultimate mana, ultimate spirit, supreme health, spirit tier 1, supreme mana, supreme spirit: O247) was done (1); the block is full, a new upgrade needs a new block |
 | 7102800 - 7102810 | Haunted Harvest (`harvest_event_config.lua` `storage`): +0 the day, +1 hollow candy from pumpkins that day, +2 the day of the boss's first-kill candy; +3..9 free; 7102810 the GLOBAL forced state (0 window, 1 open, 2 shut) |
 | 7102820 | Infinity Tower first-clear floors (`infinitytower_balance_config.lua` `rewards.storage`): the tower season x 1000 + the highest milestone floor paid that season; 7102821 - 7102829 free |
+| 7102830 - 7102832 | progress metrics (`metrics_config.lua`): +0 the bit mask of the 9 milestones recorded (O253, O258); +1 `day * 8 + flags` (O258: the day of the first login, whole days since the epoch in server time, flags bit 0 / 1 / 2 = return d1 / d3 / d7 counted); +2 first-use bit mask (O258, bit i = `systems[i + 1]`: dungeon, rift, waystone, tower, pocketboss, worldboss, invasion, party, guild, market, bounty, craft); 7102833 - 7102839 free |
+| 7103000 - 7103009 | the level-gated top menu (`unlocks_config.lua` `storage`, O259): +0 the unlocked entries (bits, by index), +1 the entries opened since (bits), +2 how many entries the character knows of; 7103010 and up are for O260 and O261 |
+| 7103010 - 7103011 | early spike and pity (`retention_loot_config.lua`): 7103010 the first unique (-1 / 0 unset, 1..149 kills counted, 1000000 given), 7103011 the pity counter (kills without a Rare or better drop) |
+| 7103020 - 7103029 | the Weekly Chest (`weeklychest_config.lua` `storage`, `Chaos.storage.weeklyChest`): +0 the week (YYYYMMDD of its Monday), +1 activities done (bit mask), +2 the chest was given, +3 the bonus roll was given, +4 chests given in all; +5..9 free |
 | 7109990 - 7109992 | spell supports: cast context and Reprisal (`data/lib/chaos_supports_config.lua`) |
 | 7110000 - 7111999 | spell supports: sockets per spell id (base + spell id * 4 + 0..3) |
 | 7112000 - 7127999 | loadouts: support runes parked per loadout (`loadouts_config.lua` `runeMirrorBase`) |
@@ -24197,7 +24203,7 @@ Owner request 2026-10-26: see where players stop playing and where they die, so 
   - **Churn** per level band: characters whose last login is older than `churnDays` (14) against the active ones. One `GROUP BY` over `players` (`lastlogin`, `level`) at startup (after `churnDelaySeconds`, 60) and every 24 h; the answer is one row per band, written to the table as a snapshot (`churn` rows, replaced each time). A character that never logged in is left out. This counts characters, not accounts.
   - **Deaths** per area and per killer, each per level band (the level at the death). Area: the `Chaos.registerInstance` label when the character stood in an instance (rift, dungeon, arena, ...), else the nearest hunt of `data/lib/chaos_hunt_places.lua` (a hunt's arrival tile or a base hunt's destination) on the same floor within `areaRadius` (80) tiles, else "Outside hunts, floor N". Killer: the monster's name; a player is counted as "Player (PvP)", a player's summon as "Player's summon", no killer as "Environment or unknown". A player's name never reaches a counter. A defeat a mode cancels (arena, battleground, ...) is not a death and is not counted.
   - **First session** of a new character (first login ever, `getLastLoginSaved() == 0`): minutes from login to logout, in the buckets of `sessionBuckets` (5, 10, 20, ... 480, then "inf"). A crash loses that one count; a relog starts the rest of the play, not a second first session.
-  - **Time to level**: when a character first reaches 10, 25, 50, 100 or 200 (`milestones`), its played minutes (`players.onlinetime` at the last logout plus this session) are added to a histogram bucket (`timeBuckets`, 5 minutes to 40 days). The report reads the median inside its bucket by linear interpolation (`progress_metrics.py`), so it is exact to the bucket width, finer in the first hours. A bit mask in player storage 7102830 (+0) records which milestones a character has had, so a level lost at a death and gained again counts once; at login every milestone below the character's level is marked without counting, so characters that existed before the install do not skew the medians. 7102831 - 7102839 free.
+  - **Time to level**: when a character first reaches 10, 25, 50, 100 or 200 (`milestones`), its played minutes (`players.onlinetime` at the last logout plus this session) are added to a histogram bucket (`timeBuckets`, 5 minutes to 40 days). The report reads the median inside its bucket by linear interpolation (`progress_metrics.py`), so it is exact to the bucket width, finer in the first hours. A bit mask in player storage 7102830 (+0) records which milestones a character has had, so a level lost at a death and gained again counts once; at login every milestone below the character's level is marked without counting, so characters that existed before the install do not skew the medians. 7102831 and 7102832 are used by the funnel (O258, below); 7102833 - 7102839 free. Nine milestones since O258 (10, 25, 50, 100, 200, 500, 1000, 1500, 2000; the first five keep their bits).
 - **Who is left out.** Tester bots (`Chaos.isTester`, storage 7102900; in SQL `Chaos.notTesterSql`) and staff (`group_id` above `maxGroupId`, 1). They get no session state, so no counter at all.
 - **Cost.** Counters are plain Lua table increments (one per death, one per milestone, one per new character's logout). Every `flushSeconds` (300) and at shutdown they are added to the table with one `INSERT ... ON DUPLICATE KEY UPDATE n = n + VALUES(n)` per 200 rows (`db.asyncQuery`; `db.query` at shutdown). `maxKeys` (4000) bounds the memory between flushes; a new key beyond it is dropped. The churn query runs once a day. The one SQL read in play is `onlinetime` of one character when it reaches a milestone.
 - **Privacy.** The table `chaos_progress_metrics` (kind, k1, k2, n) holds only counters keyed by band, area, monster name, minute bucket or milestone. No character name, account id, IP or chat is read into a counter, stored, sent to the app or kept in a log; the churn query reads `level`, `lastlogin`, `group_id` and the tester storage of `players` and returns counts. The only per-character value is the milestone bit mask in the character's own storage, a game flag that no report reads. The table has no row per character, so the tester cleanup and account deletion have nothing to remove from it. Small numbers are suppressed: a count of 1 to 4 (a churn band or one side of it, an area, a monster, a first-session bucket, a milestone) is written `<5` in the text and as the string `"<5"` in the JSON, with its share and median left out (`null`) and the top band of a hidden death count empty; 0 stays 0 (`MIN_SHOWN` in `progress_metrics.py`, `minShown` in `metrics_config.lua`, `M.suppress`; the admin app shows `<5`).
@@ -24222,3 +24228,150 @@ Checked and found sound: shop and gifts (guarded `UPDATE` plus `ROW_COUNT`, refu
 | admin throttle log | one log row per non-admin sender every 5 s | low | no | none |
 
 Not auditable here: the base server's own handlers (store, tasks, upgrades, inspect, stats, waystone device). The base tree is not in the repo; `patch_base_json_guards.py` is the only code that touches them.
+
+## Funnel metrics (O258) (`metrics.lua`, `metrics_core.lua`, `metrics_config.lua`, `tools/progress_metrics.py`)
+
+Part of the retention pass (docs/superpowers/specs/2026-10-26-retention-design.md): measure where new characters leave, so the next steps (O259 - O261) are chosen from data. It extends the progress metrics (O253, section above); same table, same flush, same exclusions (tester bots and staff), no opcode, no new table. Admin app: Painel > card "Funil dos jogadores" (filled by the same "Atualizar métricas" button of the card above); `chaos-ctl.sh metrics [--json]`.
+
+- **Milestones.** `milestones` is now 10, 25, 50, 100, 200, 500, 1000, 1500, 2000 (nine bits in storage 7102830; the old five keep their bits). A character past a new milestone is marked silently at login (`maskAtLogin`). `timeBuckets` goes on to 180 days for the high levels (the last bucket "inf"; a median in the open bucket is a lower bound).
+- **Return.** The first login ever (`getLastLoginSaved() == 0`) stores `day * 8` in storage 7102831 (day = whole days since the epoch in server time, `X.today`) and counts `cohort / YYYYMMDD`. A later login on calendar day first + 1, + 3 or + 7 (or later) counts `return / dN / <cohort YYYYMMDD>` once each; the flags live in the low 3 bits of the same value. A character from before the install has no value and is not counted. The report groups cohort days into weeks (Monday) and gives the share that came back; a share is shown only when the whole week is old enough for that day (Sunday + N <= today), so a young week does not look like churn.
+- **First use.** `ChaosMetrics.firstUse(player, key)` counts `first / <system> / "<level band>|<played-minutes bucket>"` once per character and system (bit in storage 7102832). Played minutes = `players.onlinetime` (one read per session, at the first use) + the session so far. Hooks (`X.installHooks`, wrapped through `ChaosWrapChain` at startup and every minute, like `community.lua`):
+  - dungeon: `ChaosSeasonJourney.emit(player, "dungeon_clears")`, which `dungeons.lua` `endRun` calls for every member of a clear;
+  - rift, bounty, invasion, world boss: `ChaosLeaderboard.record` with the boards `rift` (a sealed rift), `bounty`, `defender` (a repelled wave) and `worldboss` (every share);
+  - tower: `ChaosTower.recordRun` with at least one floor cleared; waystone: `ChaosWaystoneAtlas.beginRun` (the opener of a map); market: `ChaosMarket.list` or `.buy` that returned true; craft: `ChaosCrafting.apply` that succeeded (the item's owner);
+  - pocket boss: a direct call in `pocketboss.lua` `success` (no public hook there);
+  - party and guild have no hook: every `memberCheckSeconds` (60) the open sessions are looked at (a party with at least one other member, a guild). A character already in a guild at login is marked silently (a join during the session counts).
+- **Where they stop.** With the churn snapshot, a second query groups the gone characters (last login older than `churnDays`) by level band and by an 8-tile cell (`stopCell`) of `posx / posy / posz`; the cell centre is named by `areaFor` (nearest hunt within 80 tiles, else "Outside hunts, floor N"). The answer is rows of `stop / <area> / <band>` (a snapshot: the old `stop` rows are deleted first). No row belongs to a character.
+- **Report.** `progress_metrics.py` gets `returns` (week, cohort, d1 / d3 / d7 and their shares), `firstUse` (system, characters, share of all characters = churn gone + active, median played minutes, most common level band) and `stops` (top 10 areas: gone, top band), in text and JSON; the milestones list is longer. Counts of 1 to 4 are `<5` (text) / `"<5"` (JSON) with their shares and medians left out; a hidden stop area also hides its band.
+- **Limits.** Characters from before the install count their first use of a system at their current level and played time, which skews the first weeks; the cohort and return figures are clean (only characters created after the install). A first use inside one 60 s window that ends before the next check (a party that forms and disbands) is missed. The "where they stop" area is the last saved position, which is the town after most logouts if the server saves there; read it with that in mind. `waystone` counts the first waystone opened by the character, not the first map cleared. Not run on a live server.
+- **Tests.** `tests/metrics_test.lua` (day maths, return flags, first-use bits, stop rows and SQL, the wrapped hooks against fake systems, tester and staff left out), `tools/progress_metrics_test.py` (cohort weeks and maturity, first use, stops, suppression). The Android card is not built here (no SDK); CI `admin-app.yml` compiles it.
+
+## The top menu reveals systems by level (O259) (`unlocks.lua`, `unlocks_core.lua`, `unlocks_config.lua`; client `client_chaos_topbar`)
+
+**Why.** The top menu showed about 60 entries to a character that has just left the tutorial. The retention pass (design
+`docs/superpowers/specs/2026-10-26-retention-design.md`, section O259) shows a system in the menu when the character reaches
+the level where that system opens, announces it, and hides the rest.
+
+**One table.** `unlocks_config.lua` `entries`: `{key, level, menu, source, title, why, go}`. `menu` is the English text of the
+entry in the client's top menu; `title` and the two `why` lines are English and pt-BR; `go = {open = <client module>}` (the
+Go button runs the menu entry, which opens that module). The bits of the storages are by index: never reorder or insert,
+add at the end (up to 30). Nine entries now: Bounty Board 8, Market 8, Passive Tree 12 (the first point), Events 30 (invasions),
+Arena 50, Rifts 100, Guild Siege 100, Infinity Tower 100, Dungeons 150.
+
+**The level is the system's own.** Nothing here gates a system; each keeps its own check, and this table only says when the menu
+shows it. `tests/unlocks_test.lua` has a reader per entry and fails when a level differs from the one the system enforces:
+
+| Entry | Level from |
+|---|---|
+| bounty | `bounty_config.lua` `bands[1].min` |
+| market | `market_config.lua` `minLevel` |
+| passive | `Chaos.passive.startLevel + levelsPerPoint` (`chaos_constants.lua`: the first point is at level 12) |
+| events | `invasion_config.lua` `minLevel` |
+| arena | `arena_config.lua` `minLevel` |
+| rifts | `rift_config.lua` `tiers[1].minLevel` |
+| siege | `siege_config.lua` `minLevel` |
+| tower | `infinitytower_run.lua` `cfg.minLevel` (read from the file text: the number is a local of the run file) |
+| dungeons | `bossspawns_config.lua` `dungeons.defaults[1].level` (the first base dungeon, mirrors the base's own `Level`) |
+
+The test also checks that every entry has a reader and the other way round, that the menu text is an `entry('<text>', ...)` of
+`chaos_topbar.lua`, that the Go module exists in `client/overlay/modules`, that both languages and two lines are there, and
+that the changed level of a copy of the table is found. Systems of the menu without a gate the repo can read (Skills, Crafting
+Bench, Pets, Bank, Stash, ...) are not in the table and always show; add one when its own config has a level.
+
+**What the server does.**
+- Login: a character with no storage yet gets masks: above `quietAbove` (20) every entry of its level is unlocked and seen,
+  silently; at or below it nothing, so a new character at level 8 is told about the Bounty Board and the Market (20 s after the
+  login, then 75 s apart). A returning character gets entries added to the table since silently when it already passed
+  their level (`known`, like the first hour's `hintsKnown`).
+- `run` (login after `delayMs` 20 s, and every level change, up or down): the entries at or below the level and not unlocked
+  yet, lowest level first; one per run (`pace.perRun`), the rest after `pace.gapMs` 75 s (the first hour's pace, checked by the
+  test). The bit is set first, then `new` and `state` go out. A level lost never takes an entry back.
+- `state` carries the whole table (the client keeps none), the unlocked and seen keys and the `next` entry: the lowest level
+  above the character's that is not unlocked. Staff (group 4 and up) and a switched-off module get `all = true`.
+- `seen {key}` sets the seen bit of an unlocked entry; the badge goes. `hello` answers with `state` (rate limited 1 s).
+
+**Opcode 115** is free: not in the reference server's list ("Opcode collision check"), not one of the base client's `ExtendedIds`,
+not a `ChaosOpcodes` value and not named by any client module other than `client_chaos_topbar` (the test checks all four).
+**Storages 7103000-7103009** are used by no other file (the test scans `data/scripts/chaos` and `data/lib`).
+
+**Client** (`client/MANIFEST.md`, `client_chaos_topbar`): a menu entry whose key the table names is hidden until unlocked; the next
+one shows grey with a padlock and "Level N" and says "Unlocks at level N" when clicked; its hotkey (Alt+J, Alt+E, Alt+P) says the
+same instead of opening. On `new`: a big text "New: <title>!", a gold "New" badge on the entry (and a gold category button)
+until it is opened, and a small window with the two lines, Go and Close. The option "Show the whole menu" (System > Options >
+Interface, client base patch `0154`, `showWholeMenu`, off by default, kept in g_settings by client_settings like the other options)
+turns the filter off. Without the patch the filter stays on.
+
+**Assumptions / not run.** Nothing here ran on a live server or in a client. The base patch `0154` was checked only against
+a synthetic file with the context lines of patches `0129` and `0148` (`patch` accepts it), not against the base tree. The Go
+button's `open` and the unused `go.mark` of the design (a map mark) are not both built: only `open` is.
+
+## The Weekly Chest, group nudges and a visible party bonus (O261) (`weeklychest.lua`, `weeklychest_core.lua`, `weeklychest_config.lua`, `groupnudge.lua`, `groupnudge_core.lua`, `groupnudge_config.lua`, client `game_weeklychest`)
+
+Retention pass of 2026-10-26 (design: `docs/superpowers/specs/2026-10-26-retention-design.md`, part 4): a reason to come back every week, and a push towards each other. Nothing here is run on a live server or in a client.
+
+### The Weekly Chest
+
+- **Six activities, once each per week:** a dungeon (`ChaosSeasonJourney.emit` `dungeon_clears`), a rift (`ChaosAchievements.progress` `rift_runs`), a waystone run (`ChaosWaystoneTiers.startRun`, the run's opener `mods.opener`), an Infinity Tower floor (`ChaosTower.recordRun` with a floor cleared), a world boss or an invasion share (`wb_kills`, `invasion_fought`) and a bounty contract (`bounty_done`). The hooks go through `ChaosWrapChain` at startup and again every minute, as the Ember Cache does. The week is the bounty board's (`ChaosBounty.week`, Monday at `resetHour` 6; the test compares both).
+- **4 of 6 open the chest, all unlocked ones add a bonus roll.** The chest is given at once (gold to the bank, orbs to the backpack, else the inbox) with a toast, once per week; the bonus roll picks one of three options. An activity the character cannot do yet is left out: each locked one takes one off the 4, but never below 2, and the bonus roll needs more activities open than the chest asks (`K.targets`). An activity the character did anyway counts as open, so a wrong gate never hides progress. Testers and staff bots earn nothing.
+- **The gates** (`weeklychest_config.lua` `activities`): dungeon 150 (`bossspawns_config.lua` `dungeons.defaults[1].level`), rift 100 (`rift_config.lua` `tiers[1].minLevel`), waystone 1100 (`waystone_tiers_config.lua` `tiers[1].level`), tower 100, world boss or invasion 30 (`invasion_config.lua` `minLevel`; the world boss needs `Chaos.worldBoss.minLevel` 300), bounty 8 (first band of `bounty_config.lua`). This is a local table that mirrors each system's own gate; `tests/weeklychest_test.lua` reads rift, bounty, waystone and invasion configs and fails when one differs, and checks dungeon, rift and tower against the top menu's unlock table (`unlocks_config.lua`, O259).
+- **Rewards by level band** (the bounty board's six bands): `hours` of hunting gold (the Ember Cache's `income` table, one source) plus orbs (counts x 1, 1, 2, 2, 3, 3 by band). Chest: 1.0 h of gold, 2 Orbs of Upheaval, 1 Awakening, 1 Whetstone, 1 Tempering. Bonus roll, one of: 0.8 h of gold; 0.3 h + Orb of Fate + Orb of Tempering; 0.4 h + Orb of Sockets. Orb values in hours are the Ember Cache's (2, 2, 2, 5, 6, 10 minutes). Limits checked by `tests/weeklychest_test.lua` at every band: chest at most 2.0 h, one bonus option at most 1.0 h, both at most 3.0 h, under the Ember Cache's top weekly milestone (3.95 h). The store and roulette models (`tools/store_model.lua`, `tools/roulette_model.lua --check`) do not read this table and stay green: the chest pays no coin or token value, and its gold is the same hours-of-income unit as the Ember Cache's.
+- **Protocol (opcode 117, `ChaosOpcodes.weeklyChest`):** client -> server `open` / `close` / `get`; server -> client `state {open?, endsIn, acts = [{k, done, open, lv}], got, need, bonusNeed, open, chest = {given, gold, it}, bonus = {given, lo, hi}, chests}`. 117 is not in the reference server's list, not one of the base client's `ExtendedIds` and not named by another module (the test checks it).
+- **Storages 7103020 - 7103029:** +0 the week, +1 the activities done (bit mask in the order of `activities`), +2 the chest was given, +3 the bonus roll was given, +4 chests given in all. The state is written before anything is given.
+- **Client:** Adventure > Weekly Chest, `game_weeklychest` (client/MANIFEST.md). Tests: `tests/weeklychest_test.lua`, `weeklyview_test.lua`.
+
+### The group nudge
+
+Entering a dungeon (`dungeons.lua`, after `startRun`) or a rift (`rift.lua`, after `enter`) alone calls `ChaosGroupNudge.onEnter(player, "dungeon" | "rift", detail)` behind a guard. `groupnudge_core.lua` counts the players that look for a group for that content in the Party Finder: the people (leader, party, accepted members) of open listings that cover it (a rift listing's tier range, a dungeon listing's target or any dungeon) and the quick-join queue entries for that activity; the player's own listing and party, closed or full listings and other realms do not count. If the count is above zero and the player has not been nudged in the last 10 minutes (`cooldownSeconds`, in memory, spent only when there is something to say), the server sends `nudge {text, a, n}` on the Party Finder opcode 208 ("2 players look for a group for Rift T5.") and the client adds a [Join] to the toast; a click opens the Party Finder on the browse tab. A player already in a party is not nudged. Tests: `tests/groupnudge_test.lua`.
+
+### The party bonus on the party frame
+
+`party_xp_core.lua` `bonusPercent(lines)` is the stock share rule (`Party:onShareExperience`, the class lines counted by `tools/patch_base_classes.py`): +20% for one class line, else n x (5 (n - 1) + 10) percent for n lines, at most 5 lines (+150%). `partyframes.lua` adds `xp {p, on}` to the party state (`on` 1 the share works, 2 the leader switched it on but a member breaks its rules, 0 not switched on) and the frame header shows "+20% XP" in green, "XP share broken" in red or "XP share off" in grey, with a tooltip. The state signature includes it, so a change is sent at once. Tests: `tests/party_xp_test.lua`, `tests/partyframes_test.lua`, client `partymath_test.lua`.
+
+## Early spike, pity, drop feed and personal records (O260) (`retention_loot.lua`, `retention_loot_core.lua`, `retention_loot_config.lua`, `tools/patch_drops_channel.py`, client `game_dropfeed`)
+
+Spec: `docs/superpowers/specs/2026-10-26-retention-design.md`. Why: the first hours had no moment where the character got
+stronger by luck, a long dry streak had no end, a big drop was told to the people on the same screen only, and a record of
+your own was not kept. Rules in `retention_loot_core.lua` (tests `tests/retention_loot_test.lua`), numbers in
+`retention_loot_config.lua`, the engine side in `retention_loot.lua`. `loot.lua` calls it from `processKill` three times
+(begin, once per gear drop, finish), each call in a `pcall`: a failure never costs a kill its loot.
+
+- **First unique.** The character's 150th kill (every kill that gives it a corpse, bosses too) adds a leveling unique of its
+  class to that corpse, once per character, up to level 60, never for tester bots. It is in the corpse, so the loot beam,
+  the unique sound and the autoloot of the loot filter treat it like any unique drop. The candidates per class are
+  `firstUnique.byClass` (ascensions use their line, `lineOf`; an unknown class uses `default`): the one with the highest level
+  requirement the character already meets, else the lowest. The test checks that every candidate is a real unique of
+  `chaos_unique_items.lua` and that every class has some. Storage 7103010.
+- **Pity.** A hidden counter, storage 7103011, of the normal hunting kills in a row without a gear drop of Rare or better (a
+  unique counts as one). At 400 the next gear drop of Magic or better is raised one rarity (Magic to Rare, Rare to Legendary;
+  not above Legendary) and the counter starts again. Boss kills, summons, rifts, waystone maps, pocket bosses and testers
+  neither count nor are raised. The raise is made in step 2 of `processKill` through `ChaosRetentionLoot.adjustRarity`; the
+  counter is written in `finish` from the corpse as it is then (forged items keep their rarity as text until a tick later,
+  `ChaosCrafting.rarityOf` reads both).
+- **Drop feed.** A legendary or divine gear drop or a unique posts `Name (Lv N) found [Item]{...}!` in the channel **Drops**
+  (id 21) and in the Default tab of everyone online, in each player's language (`i18n_strings.lua`). The item is an item link
+  (`ChaosItemLink.linkFor`, "Item links in chat"): hover shows the tooltip for 10 minutes. The best find of a kill posts
+  (unique over divine over legendary). Limits: one line per character per `feed.perCharSeconds` (60) and
+  `feed.maxPerMinute` (12) server-wide; the rest is dropped silently. Staff and testers post nothing. The local broadcast
+  of `loot.lua` (`broadcastText`) stays. The Discord relay gets the same line (`discord.lua` `X.drop`, event `drop`, channel
+  key `drops`, 6 a minute; `website/overlay/plugins/chaos/discord_lib.php`). The first unique of the gift never posts.
+- **Drops channel.** `tools/patch_drops_channel.py` (install step `events`, idempotent) adds
+  `<channel id="21" name="Drops" public="1" script="drops.lua" />` to `data/chatchannels/chatchannels.xml` (a taken id or name
+  is an error, nothing is written) and writes `data/chatchannels/scripts/drops.lua`, a read-only channel whose join and leave
+  tell `ChaosRetentionLoot`. Test `tools/patch_drops_channel_test.py` (also checks the id and name against the config).
+- **Client option.** System > Drop Feed (`game_dropfeed`): Off, Unique and Divine only, or Legendary and better (default).
+  The client keeps it in its settings and sends `feedopt {mode}` on the records opcode 229 at login and on a change; the
+  server keeps it in memory per player and filters the lines (`C.shown`). Until the client has sent one, every kind shows.
+- **Personal records.** `records.lua` and `records_core.lua` got two hidden personal boards, `drop_rarity` (rank 1..7) and
+  `drop_value` (NPC sell price), category `loot` (`records_config.lua`). A personal board keeps the all-time value of the
+  character only: no weekly top 3, no title, no broadcast, no website publish, no realm first. `ChaosRecords.personalBests`
+  reads a character's all-time rows once per `personal.cacheSeconds` (600). `ChaosRecords.submit` sends "New record: <what>:
+  <value> (was <old>)" to a member whose own best of a board improved (any board: a boss time, a Tower floor, a rift tier
+  too) and updates the cache. `K.personalRows` lists the best drop rarity, the best drop value, the highest Tower floor, the
+  highest rift tier and the fastest boss kills (at most 12, the fastest party size of each boss). Shown in Inspect (a
+  `records` packet after the result; the Records button next to Passive Tree swaps the equipment for the rows) and in the
+  Leaderboards Records view as the tab **My Records** (`rmine` on opcode 229, `R.sendMine`).
+- **Opcodes.** None new: the feed is chat and text messages, `feedopt` and `rmine` ride on 229, `records` on 240.
+- **Install.** `install_all.py --only events` (the channel); the Lua files come with the `scripts` step.
+- **Assumptions, not run on a live server.** `Player:sendChannelMessage` and the channel id 21 are free on the base copy; a
+  public channel with a script is listed to every player; the base `onDropLoot` pass finishes before `loot.lua` (it does, it
+  is index 1). The item value of the record is `ChaosItemPrices.sellPrice` (0 when the file is not loaded).

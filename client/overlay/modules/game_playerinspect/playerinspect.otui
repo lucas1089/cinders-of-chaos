@@ -14,6 +14,29 @@ InspectSlot < ChaosItemSlot
 
 // a row of infoPanel.lines, a verticalBox: the layout places it and gives it the full width (no anchors: the client
 // refuses anchors on a child of a box layout and logs an error for each one)
+// a row of the Records panel (recordsPanel.list, a verticalBox): the name left, the value right
+InspectRecord < UIWidget
+  height: 16
+  phantom: true
+
+  UILabel
+    id: name
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    font: verdana-11px-antialised
+    color: #d6c9ae
+    text-align: left
+    phantom: true
+
+  UILabel
+    id: value
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    font: verdana-11px-antialised
+    color: #f6cf72
+    text-align: right
+    phantom: true
+
 InspectLine < UILabel
   font: verdana-11px-antialised
   color: #d6c9ae
@@ -111,6 +134,34 @@ ChaosMainWindow
       text-align: center
       !text: tr('Hover an item for its tooltip.')
 
+  ChaosPanelDark
+    id: recordsPanel
+    anchors.top: nameEdit.bottom
+    anchors.left: infoPanel.right
+    anchors.right: parent.right
+    anchors.bottom: statusLabel.top
+    margin-top: 8
+    margin-left: 8
+    margin-bottom: 6
+    padding: 8
+    visible: false
+
+    UIWidget
+      id: list
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.right: parent.right
+      phantom: true
+      layout:
+        type: verticalBox
+        spacing: 2
+
+    ChaosLabelDim
+      id: emptyLabel
+      anchors.centerIn: parent
+      text-align: center
+      !text: tr('Nothing to show.')
+
   ChaosLabelDim
     id: statusLabel
     anchors.bottom: privacyBox.top
@@ -128,6 +179,17 @@ ChaosMainWindow
     text-horizontal-auto-resize: true
     !text: tr('Allow others to inspect me')
     @onCheckChange: modules.game_playerinspect.onPrivacyToggle()
+
+  ChaosButton
+    id: recordsButton
+    anchors.bottom: parent.bottom
+    anchors.right: treeButton.left
+    margin-right: 6
+    width: 110
+    enabled: false
+    !text: tr('Records')
+    !tooltip: tr("Show this character's personal records")
+    @onClick: modules.game_playerinspect.toggleRecords()
 
   ChaosButton
     id: treeButton

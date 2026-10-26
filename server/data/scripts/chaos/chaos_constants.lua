@@ -1031,7 +1031,8 @@ ChaosOpcodes.deathRecap = 154
 Chaos.tables.deathRecaps = "chaos_death_recaps"
 
 -- Progress metrics: anonymous aggregate counters for balancing (metrics.lua, metrics_core.lua, metrics_config.lua,
--- sql/chaos_progress_metrics.sql; read by chaos-ctl.sh metrics). No opcode. Storage 7102830 - 7102839 reserved (metrics_config.lua)
+-- sql/chaos_progress_metrics.sql; read by chaos-ctl.sh metrics). No opcode. Storage 7102830 - 7102839 reserved (metrics_config.lua;
+-- O258 funnel: +0 milestone mask, +1 return day and flags, +2 first-use mask)
 Chaos.tables.progressMetrics = "chaos_progress_metrics"
 
 -- Nemesis: a monster that kills a character may become its personal nemesis (client game_nemesis; nemesis.lua,
@@ -2188,3 +2189,12 @@ ChaosOpcodes.everfull = 116
 -- Weather: the server decides it (which areas, rain or clear, how strong) and sends one small message when it changes;
 -- the client draws the rain (client game_chaosweather; weather.lua, weather_core.lua, weather_config.lua; O208)
 ChaosOpcodes.weather = 114
+-- The top menu reveals systems by level (O259): `state` (the table, what is unlocked, the next one) and `new` (an
+-- announcement), server -> client; `hello` and `seen {key}` client -> server (client client_chaos_topbar; unlocks.lua,
+-- unlocks_core.lua, unlocks_config.lua). Storages 7103000-7103009.
+ChaosOpcodes.unlocks = 115
+-- The Weekly Chest (weeklychest.lua, weeklychest_core.lua, weeklychest_config.lua; client game_weeklychest; O261): six
+-- activities a week open a chest. 117 is free in the reference server, the base client and every Chaos module. Storages
+-- 7103020 - 7103029 (weeklychest_config.lua storage); no tables.
+ChaosOpcodes.weeklyChest = 117
+Chaos.storage.weeklyChest = 7103020

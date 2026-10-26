@@ -3,6 +3,7 @@
 -- 240 (JSON {action, data}); the logic is in playerplayerinspect_logic.lua.
 --   client -> server  inspect {cid} | inspect {name}   privacy {} | privacy {allow}
 --   server -> client  result {...}   equip {name, rows}   tree {name, nodes, masteries, cls, line, vocation}
+--                     records {name, rows = [{key, name, value}]}   (the Records button swaps the equipment for them)
 --                     denied {code, text}   privacy {allow}
 -- The Passive Tree button opens the inspected character's tree read-only in the passive tree window
 -- (game_passivetree viewother.lua showOtherTree); a big tree or equipment packet arrives in parts (L.joinPart).
@@ -16,6 +17,7 @@ local state = L.newState()
 local loadingPrivacy = false
 local hooked = false
 local chunkParts = {}
+local recordsShown = false
 
 local function safe(name, fn)
   local reported = false
@@ -109,6 +111,34 @@ local function refreshTreeButton()
   window.treeButton:setText(text or tr('Passive Tree'))
 end
 
+-- the Records button swaps the equipment panel for the personal records of the character shown
+local function refreshRecords()
+  if not window then return end
+  local text = L.recordsButtonText(state)
+  window.recordsButton:setEnabled(text ~= nil)
+  window.recordsButton:setText(text or tr('Records'))
+  if text == nil then recordsShown = false end
+  window.gearPanel:setVisible(not recordsShown)
+  window.recordsPanel:setVisible(recordsShown)
+  window.recordsPanel.list:destroyChildren()
+  if recordsShown then
+    local rows = state.records or {}
+    for _, r in ipairs(rows) do
+      local row = g_ui.createWidget('InspectRecord', window.recordsPanel.list)
+      row.name:setText(r.name)
+      row.value:setText(r.value)
+    end
+    window.recordsPanel.emptyLabel:setText(L.recordsEmptyText(state))
+    window.recordsPanel.emptyLabel:setVisible(#rows == 0)
+  end
+end
+
+function toggleRecords()
+  if not state.records then return end
+  recordsShown = not recordsShown
+  refreshRecords()
+end
+
 function openInspectedTree()
   local tree = modules.game_passivetree
   if not state.tree or not tree or not tree.showOtherTree then return end
@@ -118,6 +148,7 @@ end
 
 local function clearAll()
   refreshTreeButton()
+  refreshRecords()
   for slot in pairs(L.SLOTS) do clearSlot(slot) end
   window.infoPanel.lines:destroyChildren()
   window.infoPanel.charName:setText('')
@@ -141,6 +172,7 @@ local function showResult(d)
   end
   setStatus(d.self and tr('This is you.') or '', L.COLORS.dim)
   refreshTreeButton()
+  refreshRecords()
 end
 
 local function onEquip(d)
@@ -172,6 +204,8 @@ local function onExtendedOpcode(protocol, opcode, buffer)
     onEquip(msg.data)
   elseif msg.action == 'tree' then
     if L.onTree(state, msg.data) then refreshTreeButton() end
+  elseif msg.action == 'records' then
+    if L.onRecords(state, msg.data) then refreshRecords() end
   elseif msg.action == 'denied' then
     onDenied(msg.data)
     show()

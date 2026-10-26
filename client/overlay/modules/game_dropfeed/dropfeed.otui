@@ -1,0 +1,48 @@
+// Drop feed option (game_dropfeed): a small settings window. Styles from client_chaos_theme.
+
+ChaosDropFeedWindow < ChaosMainWindow
+  id: chaosDropFeedWindow
+  size: 420 200
+  !text: tr('Drop Feed')
+  @onEscape: modules.game_dropfeed.hide()
+
+  ChaosLabelDim
+    id: intro
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 56
+    text-wrap: true
+    text-align: topLeft
+    !text: tr('When a player finds a legendary, divine or unique item, the server posts one line in your Default tab and in the channel Drops. Choose which ones you get.')
+
+  ChaosLabel
+    id: modeLabel
+    anchors.top: intro.bottom
+    anchors.left: parent.left
+    margin-top: 12
+    width: 80
+    !text: tr('Show')
+
+  ChaosComboBox
+    id: modeCombo
+    anchors.verticalCenter: modeLabel.verticalCenter
+    anchors.left: modeLabel.right
+    margin-left: 8
+    size: 190 22
+
+  ChaosLabelDim
+    id: savedLabel
+    anchors.verticalCenter: closeButton.verticalCenter
+    anchors.left: parent.left
+    anchors.right: closeButton.left
+    text-align: left
+    !text: tr('Saved on this computer.')
+
+  ChaosButton
+    id: closeButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    size: 80 24
+    !text: tr('Close')
+    @onClick: modules.game_dropfeed.hide()

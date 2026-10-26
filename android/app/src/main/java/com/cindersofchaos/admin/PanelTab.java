@@ -193,6 +193,7 @@ final class PanelTab {
 
         metrics = new MetricsCard(a);
         page.addView(metrics.card, ui.gap(10));
+        page.addView(metrics.funnelCard, ui.gap(10)); // O258
 
         ScrollView sv = new ScrollView(a);
         sv.addView(page, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,

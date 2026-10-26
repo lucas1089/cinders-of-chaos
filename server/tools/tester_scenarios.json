@@ -7,9 +7,9 @@
   "game_npctradewindow"
  ],
  "counts": {
-  "opcode": 61,
+  "opcode": 63,
   "out": 38,
-  "passive": 76,
+  "passive": 78,
   "place": 13,
   "staff": 11
  },
@@ -7973,11 +7973,13 @@
    "actions": [
     "get",
     "rfirsts",
+    "rmine",
     "rget",
     "rmeta",
     "open"
    ],
    "client": [
+    "game_dropfeed",
     "game_leaderboard"
    ],
    "dataKeys": [
@@ -8971,6 +8973,27 @@
     "transmog"
    ]
   },
+  "unlocks": {
+   "actions": [
+    "hello",
+    "seen"
+   ],
+   "client": [
+    "client_chaos_topbar"
+   ],
+   "dataKeys": [
+    "key"
+   ],
+   "files": [
+    "unlocks.lua"
+   ],
+   "opcode": 115,
+   "out": false,
+   "skip": [],
+   "systems": [
+    "unlocks"
+   ]
+  },
   "veiled": {
    "actions": [
     "choose"
@@ -9034,6 +9057,25 @@
    "skip": [],
    "systems": [
     "weather"
+   ]
+  },
+  "weeklyChest": {
+   "actions": [
+    "open",
+    "close"
+   ],
+   "client": [
+    "game_weeklychest"
+   ],
+   "dataKeys": [],
+   "files": [
+    "weeklychest.lua"
+   ],
+   "opcode": 117,
+   "out": false,
+   "skip": [],
+   "systems": [
+    "weeklychest"
    ]
   }
  },
@@ -9750,6 +9792,15 @@
     "groundLoot"
    ],
    "talkactions": []
+  },
+  "groupnudge": {
+   "files": [
+    "groupnudge.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
   },
   "guild": {
    "files": [
@@ -10635,6 +10686,15 @@
    ],
    "talkactions": []
   },
+  "retention_loot": {
+   "files": [
+    "retention_loot.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
   "retired_spells": {
    "files": [
     "retired_spells.lua"
@@ -11028,6 +11088,17 @@
    ],
    "why": "staff command only (/ascended); testers are never staff"
   },
+  "unlocks": {
+   "files": [
+    "chaos_constants.lua",
+    "unlocks.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "unlocks"
+   ],
+   "talkactions": []
+  },
   "vigils": {
    "files": [
     "vigils.lua"
@@ -11121,6 +11192,17 @@
    "talkactions": [
     "/weather"
    ]
+  },
+  "weeklychest": {
+   "files": [
+    "chaos_constants.lua",
+    "weeklychest.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "weeklyChest"
+   ],
+   "talkactions": []
   },
   "wrapchain": {
    "files": [],

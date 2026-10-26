@@ -127,3 +127,41 @@ function K.sweep(state, now, keep)
 		end
 	end
 end
+
+-- ---------------------------------------------------------------- the bonus the party frames show (O261)
+-- The shared experience is `exp x bonus / members` (the stock Party:onShareExperience, with the class lines counted by
+-- tools/patch_base_classes.py): bonus 1.2 for one class line, else 1 + n(5(n-1)+10)/100 for n lines, at most 5 lines
+-- (x2.5). The party frames show the part above what each member would get alone, in percent: "+20% XP".
+K.MAX_LINES = 5
+
+-- the bonus in percent for n distinct class lines in the party (0 for no line at all)
+function K.bonusPercent(lines)
+	lines = math.floor(tonumber(lines) or 0)
+	if lines ~= lines or lines < 1 then
+		return 0
+	end
+	if lines == 1 then
+		return 20
+	end
+	local n = math.min(lines, K.MAX_LINES)
+	return n * (5 * (n - 1) + 10)
+end
+
+-- distinct class lines of a list of members ({line = base vocation id}); a member without a line (0, nil) adds none
+function K.lineCount(members)
+	local seen, n = {}, 0
+	for _, m in ipairs(members or {}) do
+		local id = tonumber(m.line) or 0
+		if id > 0 and not seen[id] then
+			seen[id] = true
+			n = n + 1
+		end
+	end
+	return n
+end
+
+-- {pct, on}: on 1 = the share works now, 2 = the leader switched it on but it is off (see K.diagnose), 0 = not switched on
+function K.shareView(members, active, enabled)
+	local on = enabled and 1 or (active and 2 or 0)
+	return {pct = K.bonusPercent(K.lineCount(members)), on = on}
+end
