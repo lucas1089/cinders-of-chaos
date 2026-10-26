@@ -20,7 +20,7 @@ function onCastSpell(creature, variant, isHotkey)
 	-- cooldown 2 s since the rotation pass (2026-10-14; was 4 s): x the class's scale (ChaosTemplar.cfg.radiantSmite)
 	local scale = ChaosTemplar.smiteScale(player:getVocation():getId(), player:getLevel())
 	min, max = min * scale, max * scale
-	ChaosSpell.shoot(player:getPosition(), target:getPosition(), "holy_arrow", CONST_ANI_SMALLHOLY)
+	ChaosSpell.pshoot(player:getPosition(), target:getPosition(), "proj_spirit_arrow_gold", nil, "holy_arrow", CONST_ANI_SMALLHOLY)
 	ChaosSpell.fx(target:getPosition(), "holy_smite", CONST_ME_HOLYAREA)
 	ChaosSpell.vfx(target:getPosition(), "px652_white")
 	TemplarSpell.holyStrike(player, target, min, max, CONST_ME_HOLYDAMAGE)

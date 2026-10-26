@@ -3,8 +3,7 @@
 -- 32 px renders, and three of its unused variants appended as missiles 251-253 (data/lib/chaos_pack41_fx_ids.lua).
 -- Checks: the ids file lists exactly the appended rows of the client spec, in order after pair 36's 250, with the spec's
 -- send offsets; ids 254 (CONST_ANI_WEAPONTYPE in the server) and 255 stay free; a redrawn row gets no Lua name and its id
--- is one pair 36 built, once; the names are free in the other tables; nothing sends the new names yet (no spell is
--- wired); the pair 36 loader brings the ids in.
+-- is one pair 36 built, once; the names are free in the other tables; O239 wires every name (see SENT below); the pair 36 loader brings the ids in.
 -- Pair 42 (the same tool, art_import/pack42_missiles.csv): six in-use stock ids redrawn without a name (1 22 34 35 7 6) and
 -- fifteen named swaps of free ids (100 108 111 115 137-146 and 75; 62-74 and 76 are sent by number in the base data),
 -- registered in the same ids file after 251-253 with the spec's send offsets; none is a pair 41 id or a second name.
@@ -216,9 +215,10 @@ local SENT = {
 	proj_venom_glob_necrotic = {"attack_kit_config.lua"},
 	proj_void_orb_abyss = {"shadow_step.lua"},
 	proj_wind_blade_storm = {"iaijutsu.lua"},
-	-- unsent: no fitting spell (poison dart: the Beastmaster dart is earth and keeps its dart; spirit arrows: the
-	-- Skewering Line's blood spear has a store skin; water bolt: no water spell)
-	proj_poison_dart_necrotic = {}, proj_spirit_arrow_blood = {}, proj_spirit_arrow_gold = {}, proj_water_bolt_abyss = {}
+	-- the last four (all sent since the O239 follow-up): Soul Rot, Skewering Line (a store skin keeps the blood spear
+	-- through pshoot), Radiant Smite, Dreamrot (the kit's pshot)
+	proj_poison_dart_necrotic = {"soul_rot.lua"}, proj_spirit_arrow_blood = {"piercing_volley.lua"},
+	proj_spirit_arrow_gold = {"radiant_smite.lua"}, proj_water_bolt_abyss = {"attack_kit_config.lua"}
 }
 local function scan(dir, into)
 	local h = io.popen("find " .. dir .. " -name '*.lua' -o -name '*.xml' 2>/dev/null")

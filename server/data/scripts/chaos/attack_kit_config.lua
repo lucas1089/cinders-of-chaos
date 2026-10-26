@@ -58,7 +58,7 @@ ChaosAttackKit.cfg = {
 		dreamrot = {
 			id = 43, name = "Dreamrot", words = "kah mynd putr", level = 230, mana = 470, vocations = {"Illusionist"},
 			school = "magic", power = "magic", ctype = "death", pMin = 0, pMax = 0, mMin = 3.218, mMax = 5.149,
-			bMin = 8, bMax = 16, scale = 1, shape = "dot", range = 5, ticks = 6, tickMs = 1000, fx = "shadow_smoke",
+			bMin = 8, bMax = 16, scale = 1, shape = "dot", range = 5, ticks = 6, tickMs = 1000, pshot = "proj_water_bolt_abyss", fx = "shadow_smoke",
 			hitFx = "CONST_ME_SMALLCLOUDS"
 		},
 		guttingslash = {

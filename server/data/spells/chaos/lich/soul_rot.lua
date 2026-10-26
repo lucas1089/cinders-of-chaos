@@ -20,7 +20,7 @@ function onCastSpell(creature, variant, isHotkey)
 	local r = NecroSpell.cfg.soulRot
 	-- Lingering Rot (the passive tree, class_tree.lua): +25%
 	local min, max = ChaosNecro.values(player, r.tick, 1 + ChaosClassTree.value(player, "ctLingeringRot", "bonus"))
-	ChaosSpell.shoot(player:getPosition(), target:getPosition(), "skull_orb", CONST_ANI_DEATH)
+	ChaosSpell.pshoot(player:getPosition(), target:getPosition(), "proj_poison_dart_necrotic", nil, "skull_orb", CONST_ANI_DEATH)
 	NecroSpell.fx(target:getPosition(), {"toxic_burst", "px633_green"}, "shadow_smoke", CONST_ME_SMALLCLOUDS)
 	NecroSpell.dot(player:getId(), target:getId(), "soulrot", r.ticks, r.tickMs, min, max, COMBAT_DEATHDAMAGE,
 		{vfx = "px633_green", fx = CONST_ME_MORTAREA}, r.jumpRadius) -- each tick: the green skull

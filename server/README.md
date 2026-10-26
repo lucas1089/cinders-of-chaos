@@ -16756,7 +16756,7 @@ effect packs of docs/CREDITS.md into the game. Effects only: no damage, area, ti
 
 ## Projectile pack, native 32 px (pair 41) (`data/lib/chaos_pack41_fx_ids.lua`, loaded by `ChaosPack36Fx.live()`)
 Pair 41 (client/MANIFEST.md "Projectile pack, native 32 px (pair 41)") redraws 50 missiles of pair 36 from the pack's
-own 32 px renders instead of the halved 64 px ones, and appends three. O239 wires the appended three and eleven of the pair 42 names to spells and bow shots (section "Pair 41 / 42 missile wiring (O239)" below).
+own 32 px renders instead of the halved 64 px ones, and appends three. O239 wires the appended three and all fifteen of the pair 42 names to spells and bow shots (section "Pair 41 / 42 missile wiring (O239)" below).
 - **Redrawn in place** (no server change): stock and procedural ids 4 5 11 12 13 15 25 28 29 30 31 32 33 36 37 38 39 41 56 57 60 84 85
   86 104 116-125 and the pair 36 missiles 189-203. The ids, the send offsets (`dx`, `dy` of
   `chaos_pack36_fx_ids.lua` for 189-203, 0, 0 for the stock ones) and the 3 x 3 direction layout are unchanged.
@@ -16774,7 +16774,7 @@ own 32 px renders instead of the halved 64 px ones, and appends three. O239 wire
   `proj_flame_lance_spirit` 115, `proj_poison_dart_necrotic` 137, `proj_razor_leaf_sakura` 138,
   `proj_shadow_bolt_blood` 139, `proj_soul_skull_spirit` 140, `proj_spirit_arrow_blood` 141,
   `proj_spirit_arrow_gold` 142, `proj_spirit_wisp_arcane` 143, `proj_venom_glob_necrotic` 144, `proj_void_orb_abyss`
-  145, `proj_water_bolt_abyss` 75, `proj_wind_blade_storm` 146. O239 sends eleven of them (below). They are not on
+  145, `proj_water_bolt_abyss` 75, `proj_wind_blade_storm` 146. O239 sends all fifteen (below). They are not on
   62-76 as first asked: the base server's monster files send 62-74 and 76 by number, so those 14 took the next unused
   ids (the census is in the MANIFEST section). A pair older than 42 draws the old art on the six stock ids and nothing
   on the named ones. The test also checks that no pair 42 id is a pair 41 id, a `ChaosFxMissile` id or on 62-76 except 75.
@@ -16804,10 +16804,12 @@ touched. The table of what flies where, checked by `tests/pack41_fx_test.lua`:
 | `proj_soul_skull_spirit` | Raise Dead |
 | `proj_spirit_wisp_arcane` | Mirror Mend (heal to an ally) |
 | `proj_void_orb_abyss` | Umbral Stride |
+| `proj_poison_dart_necrotic` | Soul Rot (the rot flies as a dart; the Beastmaster dart is earth and keeps its dart) |
+| `proj_spirit_arrow_blood` | Skewering Line (a caster with the blood spear store skin keeps the skin, `pshoot` yields to it) |
+| `proj_spirit_arrow_gold` | Radiant Smite (Templar holy filler) |
+| `proj_water_bolt_abyss` | Dreamrot (Illusionist; no spell is water, this is the abyssal one; it sent no missile before, so a client without the art sees none) |
 
-Unsent: `proj_poison_dart_necrotic` (the Beastmaster dart is earth and keeps its dart), `proj_spirit_arrow_blood` and
-`proj_spirit_arrow_gold` (Skewering Line's blood spear has a store skin; no other bow spell fits), `proj_water_bolt_abyss`
-(no water spell). Monster files are base data and are not edited. Energy and earth quivers keep the flash and earth arrow.
+Monster files are base data and are not edited. Energy and earth quivers keep the flash and earth arrow.
 
 ## Owner outfits (pair 37) (`data/lib/chaos_pack37_looks.lua`, switch `ChaosPack37.PAIR37`, on)
 Moon outfits and novelty costumes of client pair 37 (client/MANIFEST.md "Owner outfits (pair 37)"). Owner, 2026-10-22:
