@@ -563,20 +563,79 @@ function C.decodeAttrs(text)
 	return list
 end
 
+-- The text a log row stores is English (written once, whoever reads it). At display time it is matched against these
+-- patterns (numbers and names taken out) and told in the reader's language: {Lua pattern, key, kinds of the captures}
+-- ("n" a number, "t" a short English word that has its own pt-BR entry, "s" a name that stays as it is). A text that
+-- matches nothing (staff rows, free text) is shown as stored. Every key needs a pt-BR entry (i18n_strings.lua).
+C.LOG_TEXTS = {
+	{"^level (%d+) %-> (%d+)$", "level %d -> %d", "nn"},
+	{"^deposit failed, gold returned to the bank balance$", "deposit failed, gold returned to the bank balance", ""},
+	{"^hall purchase failed$", "hall purchase failed", ""},
+	{"^rent payment failed$", "rent payment failed", ""},
+	{"^(.-) purchase failed$", "%s purchase failed", "s"},
+	{"^bought the guild hall %(slot (%d+), (.-)%)$", "bought the guild hall (slot %d, %s)", "nt"},
+	{"^(.-) tier (%d+)$", "%s tier %d", "sn"},
+	{"^rent paid until (.+)$", "rent paid until %s", "s"},
+	{"^staff set the rent to (.+)$", "staff set the rent to %s", "s"},
+	{"^fed the Summoning Stone (%d+) embers$", "fed the Summoning Stone %d embers", "n"},
+	{"^fed the Summoning Stone (%d+) x (.-) %((%d+) embers%)$", "fed the Summoning Stone %d x %s (%d embers)", "nsn"},
+	{"^stake of the war offer to (.-) %(held%)$", "stake of the war offer to %s (held)", "s"},
+	{"^war stake returned %(offer (.-)%)$", "war stake returned (offer %s)", "t"},
+	{"^stake of the war with (.-) %(held%)$", "stake of the war with %s (held)", "s"},
+	{"^war with (.-): stake returned %(draw%)$", "war with %s: stake returned (draw)", "s"},
+	{"^war with (.-): both stakes won, minus the fee$", "war with %s: both stakes won, minus the fee", "s"},
+}
+
+-- the texts of the names a row can carry for the server itself
+C.LOG_WORDS = {"Guild", "Guild bank", "Staff", "guild bank", "own gold", "declined", "cancelled", "expired"}
+
+-- t(key, ...): the text in the reader's language (nil: English)
+function C.logText(text, t)
+	if not t or type(text) ~= "string" then
+		return text
+	end
+	for _, rule in ipairs(C.LOG_TEXTS) do
+		if rule[3] == "" then
+			if text:find(rule[1]) then
+				return t(rule[2])
+			end
+		else
+			local caps = {text:match(rule[1])}
+			if #caps > 0 then
+				for i = 1, #caps do
+					local kind = rule[3]:sub(i, i)
+					if kind == "n" then
+						caps[i] = tonumber(caps[i])
+					elseif kind == "t" then
+						caps[i] = t(caps[i])
+					end
+				end
+				return t(rule[2], (table.unpack or unpack)(caps))
+			end
+		end
+	end
+	return text
+end
+
 -- entry = {at, name, action ("put" | "take" | "deposit" | "withdraw" | "hall" | "upgrade" | "rent"), count, item, amount}
-function C.logLine(entry)
+-- t: optional translator, t(key, ...) -> the text in the reader's language (default: English)
+function C.logLine(entry, t)
+	t = t or function(key, ...) return select("#", ...) > 0 and string.format(key, ...) or key end
 	local when = os.date("%d.%m %H:%M", entry.at or 0)
 	local who = entry.name or "?"
-	if entry.action == "put" then
-		return string.format("%s %s put in %d x %s", when, who, entry.count or 1, entry.item or "?")
-	elseif entry.action == "take" then
-		return string.format("%s %s took out %d x %s", when, who, entry.count or 1, entry.item or "?")
-	elseif entry.action == "deposit" then
-		return string.format("%s %s deposited %s gold", when, who, C.money(entry.amount or 0))
-	elseif entry.action == "withdraw" then
-		return string.format("%s %s withdrew %s gold", when, who, C.money(entry.amount or 0))
+	if who == "Guild" or who == "Guild bank" or who == "Staff" then
+		who = t(who)
 	end
-	return string.format("%s %s: %s", when, who, entry.text or entry.action or "")
+	if entry.action == "put" then
+		return t("%s %s put in %d x %s", when, who, entry.count or 1, entry.item or "?")
+	elseif entry.action == "take" then
+		return t("%s %s took out %d x %s", when, who, entry.count or 1, entry.item or "?")
+	elseif entry.action == "deposit" then
+		return t("%s %s deposited %s gold", when, who, C.money(entry.amount or 0))
+	elseif entry.action == "withdraw" then
+		return t("%s %s withdrew %s gold", when, who, C.money(entry.amount or 0))
+	end
+	return string.format("%s %s: %s", when, who, C.logText(entry.text or entry.action or "", t))
 end
 
 -- ---------------------------------------------------------------- weekly board

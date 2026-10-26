@@ -138,9 +138,32 @@ local function history(player)
 		"SELECT `created_at`, `orb`, `item`, `result` FROM `%s` WHERE `player_id` = %d ORDER BY `id` DESC LIMIT %d",
 		cfg.historyTable, player:getGuid(), cfg.historySize),
 		{{"created_at", "n"}, {"orb", "s"}, {"item", "s"}, {"result", "s"}})
+	-- the rows are stored in English; they are told in the player's language here, so old rows read the same way
+	local t
+	if Chaos.t and Chaos.lang and Chaos.lang(player) ~= "en" then
+		t = function(key, ...) return Chaos.t(player, key, ...) end
+	end
 	local out = {}
 	for _, r in ipairs(rows) do
-		out[#out + 1] = {time = r.created_at, orb = r.orb, item = r.item, text = shortText(r.result, 110)}
+		local orb, text = r.orb, r.result
+		if t then
+			if ChaosSalvageCore and ChaosSalvageCore.historyRow then
+				orb, text = ChaosSalvageCore.historyRow(orb, text, t, function(kind)
+					if ChaosRarity and ChaosRarity.name then
+						for id = 1, 15 do
+							if ChaosRarity.name(id) == kind then
+								return ChaosRarity.namePt(id) or kind
+							end
+						end
+					end
+					return kind
+				end)
+			end
+			if text == r.result and orb ~= "Lock" then
+				text = Chaos.tx(player, text)
+			end
+		end
+		out[#out + 1] = {time = r.created_at, orb = orb, item = r.item, text = shortText(text, 110)}
 	end
 	return out
 end

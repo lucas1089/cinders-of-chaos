@@ -663,4 +663,27 @@ eq(copy.custom.chaos_locked, 1, "copyLock")
 S.copyLock(sword, copy)
 eq(copy.custom.chaos_locked, 1, "copyLock never unlocks")
 
+-- ---------------------------------------------------------------- the bench history in pt-BR (told at display time)
+dofile("data/scripts/chaos/i18n_core.lua")
+do
+	local function tpt(key, ...) return ChaosI18n.text("pt-BR", key, ...) end
+	local kindName = function(k) return ({Rare = "Raro"})[k] end
+	local function row(orb, text) local o, x = K.historyRow(orb, text, tpt, kindName) return o .. " | " .. x end
+	eq(row("Salvage", "Rare (level 40): 5 rune shards + 1 Orb of Upheaval + 30 Conquest Tokens"),
+		"Desmontar | Raro (nível 40): 5 rune shards + 1 Orb of Upheaval + 30 Conquest Tokens", "salvage row")
+	eq(row("Salvage", "Set piece (level 12): 1 rune shard"), "Desmontar | Peça de set (nível 12): 1 rune shard", "set piece row")
+	eq(row("Salvage", "Unique (level 60): 4 rune shards + 69 Conquest Tokens"), "Desmontar | Única (nível 60): 4 rune shards + 69 Conquest Tokens", "unique row")
+	eq(row("Lock", "locked"), "Trava | Item trancado", "lock row")
+	eq(row("Lock", "unlocked"), "Trava | Item destrancado", "unlock row")
+	eq(row("Shards", "1,000 rune shards -> 1x Ember Orb"), "Fragmentos | 1,000 rune shards -> 1x Ember Orb", "shards row")
+	eq(row("Recycle", "2x Orb of Upheaval -> 9 rune shards"), "Reciclar | 2x Orb of Upheaval -> 9 rune shards", "recycle row")
+	eq(row("Orb of Upheaval", "Upgraded"), "Orb of Upheaval | Upgraded", "a crafting row is not touched")
+	eq(row("Salvage", "something else"), "Desmontar | something else", "an unknown salvage text stays")
+	local o, x = K.historyRow("Lock", "locked", nil)
+	eq(o .. x, "Locklocked", "no translator: English")
+	for _, k in ipairs({"Salvage", "Lock", "Shards", "Recycle", "Item locked", "Item unlocked", "%s (level %d): %d %s", " + %d Conquest Tokens"}) do
+		assert(ChaosI18n.strings["pt-BR"][k], "pt-BR for " .. k)
+	end
+end
+
 print("salvage_test: ok")

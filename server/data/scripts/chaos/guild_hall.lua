@@ -1076,7 +1076,7 @@ function G.hallView(player, gid, rank, level)
 			depot.items[#depot.items + 1] = {id = row.id, name = row.name, count = row.count, clientId = it and it:getClientId() or 0}
 		end
 		depot.used = #depot.items
-		depot.log = G.logLines(gid, {"put", "take"})
+		depot.log = G.logLines(gid, {"put", "take"}, nil, player)
 	else
 		depot.log = {}
 	end
