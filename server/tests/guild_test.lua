@@ -329,6 +329,32 @@ eq(C.logLine({at = at, name = "Tester", action = "take", count = 1, item = "drag
 eq(C.logLine({at = at, name = "Ann", action = "deposit", amount = 2500000}), "08.10 14:05 Ann deposited 2,500,000 gold", "deposit line")
 eq(C.logLine({at = at, name = "Ann", action = "withdraw", amount = 1000}), "08.10 14:05 Ann withdrew 1,000 gold", "withdraw line")
 eq(C.logLine({at = at, name = "Guild", action = "rent", text = "rent paid"}), "08.10 14:05 Guild: rent paid", "other line")
+-- the same rows told in pt-BR at display time (the stored text is English): templates with the numbers taken out
+dofile("data/scripts/chaos/i18n_core.lua")
+local function tpt(key, ...) return ChaosI18n.text("pt-BR", key, ...) end
+eq(C.logLine({at = at, name = "Tester", action = "put", count = 5, item = "Orb of Upheaval"}, tpt), "08.10 14:05 Tester colocou 5 x Orb of Upheaval", "put line pt")
+eq(C.logLine({at = at, name = "Tester", action = "take", count = 1, item = "dragon robe"}, tpt), "08.10 14:05 Tester retirou 1 x dragon robe", "take line pt")
+eq(C.logLine({at = at, name = "Ann", action = "deposit", amount = 2500000}, tpt), "08.10 14:05 Ann depositou 2,500,000 de ouro", "deposit line pt")
+eq(C.logLine({at = at, name = "Ann", action = "withdraw", amount = 1000}, tpt), "08.10 14:05 Ann sacou 1,000 de ouro", "withdraw line pt")
+eq(C.logLine({at = at, name = "Guild bank", action = "rent", text = "rent paid until 12.11.2026 10:00"}, tpt),
+	"08.10 14:05 Banco da guild: aluguel pago até 12.11.2026 10:00", "rent line pt")
+eq(C.logLine({at = at, name = "Guild", action = "level", text = "level 3 -> 4"}, tpt), "08.10 14:05 Guild: nível 3 -> 4", "level line pt")
+eq(C.logLine({at = at, name = "Ann", action = "hall", text = "bought the guild hall (slot 2, own gold)"}, tpt),
+	"08.10 14:05 Ann: comprou o hall da guild (vaga 2, ouro próprio)", "hall line pt")
+eq(C.logLine({at = at, name = "Ann", action = "upgrade", text = "Crafting bench tier 2"}, tpt), "08.10 14:05 Ann: Crafting bench nível 2", "upgrade line pt")
+eq(C.logLine({at = at, name = "Ann", action = "boss", text = "fed the Summoning Stone 3 x Ember (9 embers)"}, tpt),
+	"08.10 14:05 Ann: alimentou a Summoning Stone com 3 x Ember (9 embers)", "boss line pt")
+eq(C.logLine({at = at, name = "Guild", action = "war", text = "war stake returned (offer declined)"}, tpt),
+	"08.10 14:05 Guild: aposta da guerra devolvida (oferta recusada)", "war line pt")
+eq(C.logLine({at = at, name = "Ann", action = "staff", text = "staff credit"}, tpt), "08.10 14:05 Ann: staff credit", "unknown text stays")
+eq(C.logLine({at = at, name = "Guild", action = "level", text = "level 3 -> 4"}), "08.10 14:05 Guild: level 3 -> 4", "no translator: English")
+-- every stored text the writers use has a rule
+for _, w in ipairs(C.LOG_WORDS) do
+	assert(ChaosI18n.strings["pt-BR"][w], "pt-BR for " .. w)
+end
+for _, rule in ipairs(C.LOG_TEXTS) do
+	assert(ChaosI18n.strings["pt-BR"][rule[2]], "pt-BR for " .. rule[2])
+end
 
 -- ---------------------------------------------------------------- weekly board
 local thu = os.time({year = 2026, month = 10, day = 8, hour = 10})

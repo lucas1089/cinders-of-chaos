@@ -23094,8 +23094,12 @@ notifications and orders, build codes, guild war terms and rows). A text for sev
 `tellGuild` and `Chaos.broadcast`. Converted this way: guild and guild hall, market (listings, orders, deliveries,
 sale lines), build codes, report receipts, the crafting bench and salvage, guild wars, the PvP zone and its realm
 lines, the passive tree and transmog results, the Scorched Marches (conquest) and the season join flow, the store, pass,
-market and isolation refusals and the mode warnings. Still English on purpose: the guild log rows, salvage history
-lines, config validation messages, fixture descriptions and the season milestone names (window data). Last
+market and isolation refusals and the mode warnings. The guild log and depot log rows (`guild_core.lua` `C.logLine`,
+`C.LOG_TEXTS`: the row is stored as English text and matched against a pattern with the numbers taken out when the
+window is built, so old rows translate too; `/guild log` for staff stays English) and the bench history lines
+(`salvage_core.lua` `K.historyRow`, called by `crafting.lua` when it reads `chaos_crafting_log`: labels, "Rare (level 40):
+5 rune shards + ..." and locked / unlocked) are told in the reader's language the same way. Still English on purpose:
+config validation messages, fixture descriptions and the season milestone names (window data). Last
 batch (14 cores): mentor (window rows and milestones), guild boss (HUD notes, run lines, guild tells), uber arenas (HUD, party
 note, ends), siege (status, sign-up results, warnings, weekday names), charms (modifier and signature texts, results),
 pets (rest reasons, level-ups, rename), loot filter (presets, rules, sounds, drop lines), loadouts (results, refund lines

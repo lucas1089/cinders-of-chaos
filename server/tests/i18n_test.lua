@@ -266,7 +266,7 @@ check(used >= 100, "the sites use their keys (" .. used .. ")")
 -- sentence they return or format needs a pt-BR entry. REASONS lists the files; the value is a list of Lua patterns of
 -- sentences that stay English on purpose (staff lines, log rows, item descriptions of one text for all viewers).
 local REASONS = {
-	["guild_core.lua"] = {"^%%s %%s put in", "^%%s %%s took out", "^%%s %%s deposited", "^%%s %%s withdrew", "^This portal$"},
+	["guild_core.lua"] = {"^This portal$"},
 	["guild.lua"] = {"^Guild level $", "^%%s: ", "^%%s %(%%d%): ", "^That guild has no hall", "^/guild", "^Teleported",
 		"^Use it to travel", "^%%s %(%%d%) reached guild level", "^guild "},
 	["guild_hall.lua"] = {"^The banner of $", "^Teleport to ", "^The guild's crafting bench", "^The guild depot%. Drop", "^Guild Siege",

@@ -730,7 +730,8 @@ local function membersOf(gid)
 	return list
 end
 
-function G.logLines(gid, actions, limit)
+-- player: the reader (the rows are told in the reader's language); nil: English (the staff command)
+function G.logLines(gid, actions, limit, player)
 	local where = ""
 	if actions then
 		local q = {}
@@ -739,12 +740,16 @@ function G.logLines(gid, actions, limit)
 		end
 		where = " AND `action` IN (" .. table.concat(q, ", ") .. ")"
 	end
+	local t
+	if player and Chaos.t then
+		t = function(key, ...) return Chaos.t(player, key, ...) end
+	end
 	local out = {}
 	for _, r in ipairs(Chaos.select(string.format("SELECT `at`, `player_name`, `action`, `amount`, `item_id`, `count`, `text` FROM `%s` " ..
 			"WHERE `guild_id` = %d%s ORDER BY `id` DESC LIMIT %d", T.log, gid, where, limit or cfg.window.logRows),
 			{{"at", "n"}, {"player_name", "s"}, {"action", "s"}, {"amount", "n"}, {"item_id", "n"}, {"count", "n"}, {"text", "s"}})) do
 		out[#out + 1] = C.logLine({at = r.at, name = r.player_name ~= "" and r.player_name or "Guild", action = r.action,
-			amount = r.amount, count = r.count, item = r.text, text = r.text})
+			amount = r.amount, count = r.count, item = r.text, text = r.text}, t)
 	end
 	return out
 end
@@ -782,7 +787,7 @@ function G.state(player, tab)
 			scroll = perks.scroll, scrollTaken = player:getStorageValue(cfg.storage.scrollDay) == Chaos.dayKey()},
 		perks = {now = perks, list = C.perkList(level, cfg)},
 		members = membersOf(gid),
-		log = G.logLines(gid, {"deposit", "withdraw", "hall", "upgrade", "rent", "refund", "level", "war", "boss"}),
+		log = G.logLines(gid, {"deposit", "withdraw", "hall", "upgrade", "rent", "refund", "level", "war", "boss"}, nil, player),
 		top = {rows = rows, resetIn = math.max(0, weekEnd - now()), lastWinner = lastWeek[1] and lastWeek[1].name or ""}
 	}
 	if G.hallView then

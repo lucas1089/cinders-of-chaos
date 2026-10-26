@@ -21,6 +21,7 @@
 --   K.combineCheck(owned, key, count, cfg) ok, cost | nil, reason key (owned = rune shards, or the recipe's input)
 --   K.reasonText(why, recipe)             the text of a reason key ("input" names the recipe's shards)
 --   K.inputRecipe(id, cfg)                the shard recipe that eats item `id`, nil when none does
+--   K.historyRow(orb, text, t, kindName)  one bench history row (stored in English) told in the reader's language
 --   K.shardHint(recipe, orbName)          "Combine 1,500 at the Crafting Bench (Salvage tab) into an Ember Orb."
 
 if not ChaosRarity then
@@ -280,6 +281,48 @@ function K.reasonText(why, recipe)
 		return string.format(text, recipe and recipe.plural or "shards")
 	end
 	return text
+end
+
+-- The bench history keeps the English line that was written when the item was broken down (salvage.lua rowText,
+-- the lock rows). Shown to a reader the line is told again: the label of the row, "Rare (level 40): 5 rune shards
+-- + 1 Orb of X + 30 Conquest Tokens" and "locked" / "unlocked". Item and orb names stay as they are. t(key, ...) is the
+-- reader's translator (Chaos.t with the player), kindName(english) the translated rarity name or nil. Returns the
+-- label and the text; a row of another system (a crafted orb) comes back unchanged.
+K.historyLabels = {Salvage = "Salvage", Lock = "Lock", Shards = "Shards", Recycle = "Recycle"}
+
+function K.historyRow(orb, text, t, kindName)
+	if not t then
+		return orb, text
+	end
+	local label = K.historyLabels[orb] and t(orb) or orb
+	if orb == "Lock" and (text == "locked" or text == "unlocked") then
+		return label, t(text == "locked" and "Item locked" or "Item unlocked")
+	end
+	if orb ~= "Salvage" then
+		return label, text
+	end
+	local kind, level, count, rest = tostring(text):match("^(.-) %(level (%d+)%): (%d+) (.*)$")
+	if not kind then
+		return label, text
+	end
+	local tokens
+	local head, n = rest:match("^(.-) %+ (%d+) Conquest Tokens$")
+	if head then
+		rest, tokens = head, tonumber(n)
+	end
+	local word, orbPart = rest:match("^(.-)( %+ 1 .*)$")
+	word = word or rest
+	local kindT
+	if kind == "Set piece" or kind == "Unique" then
+		kindT = t(kind)
+	else
+		kindT = kindName and kindName(kind) or kind
+	end
+	local out = t("%s (level %d): %d %s", kindT, tonumber(level), tonumber(count), word) .. (orbPart or "")
+	if tokens then
+		out = out .. t(" + %d Conquest Tokens", tokens)
+	end
+	return label, out
 end
 
 -- 1500 -> "1,500"

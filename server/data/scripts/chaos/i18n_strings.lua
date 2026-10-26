@@ -4491,7 +4491,7 @@ return {
 		["%s is unlocked."] =
 			"%s está destrancado.",
 		["%s (level %d): %d %s"] =
-			"%s (level %d): %d %s",
+			"%s (nível %d): %d %s",
 		[" + %d Conquest Tokens"] =
 			" + %d Conquest Tokens",
 		["Unique"] =
@@ -5335,5 +5335,39 @@ return {
 		["Highest Tower floor"] = "Maior andar da Torre",
 		["Highest rift tier"] = "Maior nível de fenda",
 		["Fastest: %s"] = "Mais rápido: %s",
+		-- O262: guild log rows and bench history lines (guild_core.lua C.logLine / C.logText, salvage_core.lua K.historyRow):
+		-- stored in English, told in the reader's language when shown
+		["%s %s put in %d x %s"] = "%s %s colocou %d x %s",
+		["%s %s took out %d x %s"] = "%s %s retirou %d x %s",
+		["%s %s deposited %s gold"] = "%s %s depositou %s de ouro",
+		["%s %s withdrew %s gold"] = "%s %s sacou %s de ouro",
+		["Guild"] = "Guild",
+		["Guild bank"] = "Banco da guild",
+		["guild bank"] = "banco da guild",
+		["own gold"] = "ouro próprio",
+		["declined"] = "recusada",
+		["cancelled"] = "cancelada",
+		["level %d -> %d"] = "nível %d -> %d",
+		["deposit failed, gold returned to the bank balance"] = "o depósito falhou, o ouro voltou ao saldo do banco",
+		["hall purchase failed"] = "a compra do hall falhou",
+		["rent payment failed"] = "o pagamento do aluguel falhou",
+		["%s purchase failed"] = "a compra de %s falhou",
+		["bought the guild hall (slot %d, %s)"] = "comprou o hall da guild (vaga %d, %s)",
+		["%s tier %d"] = "%s nível %d",
+		["rent paid until %s"] = "aluguel pago até %s",
+		["staff set the rent to %s"] = "a staff ajustou o aluguel para %s",
+		["fed the Summoning Stone %d embers"] = "alimentou a Summoning Stone com %d embers",
+		["fed the Summoning Stone %d x %s (%d embers)"] = "alimentou a Summoning Stone com %d x %s (%d embers)",
+		["stake of the war offer to %s (held)"] = "aposta da oferta de guerra a %s (retida)",
+		["war stake returned (offer %s)"] = "aposta da guerra devolvida (oferta %s)",
+		["stake of the war with %s (held)"] = "aposta da guerra com %s (retida)",
+		["war with %s: stake returned (draw)"] = "guerra com %s: aposta devolvida (empate)",
+		["war with %s: both stakes won, minus the fee"] = "guerra com %s: as duas apostas ganhas, menos a taxa",
+		["Salvage"] = "Desmontar",
+		["Lock"] = "Trava",
+		["Shards"] = "Fragmentos",
+		["Recycle"] = "Reciclar",
+		["Item locked"] = "Item trancado",
+		["Item unlocked"] = "Item destrancado",
 	},
 }
