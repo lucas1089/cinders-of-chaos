@@ -1,0 +1,88 @@
+biome,source,name,size,kind,blocks
+celestial,D,Starlight crystal cluster,2x2,light,1
+celestial,D,White crystal cluster,2x2,static,1
+celestial,D,Frosted crystal cluster,2x2,static,1
+celestial,D,Sapphire crystal cluster,2x2,light,1
+celestial,D,Amethyst crystal cluster,2x2,light,1
+celestial,D,Glacial crystal cluster,2x2,static,1
+celestial,D,Pale crystal cluster,2x2,static,1
+celestial,D,Azure crystal cluster,2x2,light,1
+celestial,D,Moonstone crystal cluster,2x2,static,1
+celestial,D,Golden brazier,1x1,light,1
+celestial,C,Marble angel statue,1x1,static,1
+celestial,C,Marble stele,1x1,static,1
+celestial,C,Marble cross stele,1x1,static,1
+celestial,C,Broken marble stele,1x1,static,1
+celestial,C,Marble fountain,2x2,static,1
+celestial,C,Marble shrine,2x2,static,1
+celestial,C,Marble lectern,1x1,static,1
+celestial,C,Marble sarcophagus,1x2,static,1
+celestial,C,Narrow marble sarcophagus,1x2,static,1
+celestial,C,Golden candelabra,1x1,light,0
+celestial,C,Golden lamp post,1x1,light,1
+celestial,C,Golden basin,1x1,light,1
+celestial,C,Golden candle,1x1,light,0
+celestial,C,Doves,2x1,static,0
+celestial,C,Flock of doves,2x2,static,0
+celestial,C,Marble signpost,1x1,static,0
+celestial,own,Marble pillar,1x2,static,1
+celestial,own,Broken marble pillar,1x2,static,1
+celestial,own,Small cloud,1x1,static,0
+celestial,own,Cloud puff,1x1,static,0
+celestial,own,Drifting cloud,1x1,static,0
+celestial,own,Cloud bank,2x1,static,0
+celestial,own,Golden rune circle,1x1,animated,0
+celestial,own,Star rune circle,1x1,animated,0
+celestial,own,Azure rune circle,1x1,animated,0
+celestial,own,Starlight sparkle,1x1,animated,0
+cursed,E,Gnarled dead tree,2x2,static,1
+cursed,E,Twisted dead tree,2x2,static,1
+cursed,E,Split dead tree,2x2,static,1
+cursed,E,Hollow dead tree,2x2,static,1
+cursed,E,Broad dead tree,2x2,static,1
+cursed,E,Dead tree stump,2x2,static,1
+cursed,E,Pale dead tree,2x2,static,1
+cursed,E,Rotten dead tree,2x2,static,1
+cursed,E,Fallen dead tree,2x2,static,1
+cursed,E,Hollow fallen log,2x2,static,1
+cursed,E,Thin dead tree,2x2,static,1
+cursed,E,Tall dead tree,2x2,static,1
+cursed,C,Bats,2x2,static,0
+cursed,C,Cursed well,2x2,static,1
+cursed,C,Cursed crypt,2x2,static,1
+cursed,C,Scarecrow,2x2,static,1
+cursed,C,Open coffin,1x2,static,1
+cursed,C,Coffin,1x2,static,1
+cursed,C,Crows,2x1,static,0
+cursed,C,Pumpkin scarecrow,1x2,static,1
+cursed,C,Angel tombstone,1x1,static,1
+cursed,C,Round tombstone,1x1,static,1
+cursed,C,Cross tombstone,1x1,static,1
+cursed,C,Cracked tombstone,1x1,static,1
+cursed,C,Witch broom,1x2,static,0
+cursed,C,Cursed candles,1x1,light,0
+cursed,C,Haunted lantern post,1x1,light,1
+cursed,C,Witch hat,1x1,static,0
+cursed,C,Candle skull,1x1,light,0
+cursed,C,Witch cauldron,1x1,light,1
+cursed,C,Open grave,1x2,static,1
+cursed,C,Cursed signpost,1x1,static,0
+cursed,C,Rotten wheelbarrow,1x1,static,0
+cursed,C,Watching cauldron,1x1,light,1
+cursed,C,Butcher table,2x1,static,1
+cursed,C,Sacrificial slab,2x1,static,1
+cursed,C,Cursed lectern,1x1,static,1
+cursed,C,Brewing table,2x1,static,1
+cursed,C,Blood altar,2x1,static,1
+cursed,C,Skull pile,1x1,static,0
+cursed,D,Skeleton remains,1x1,static,0
+cursed,D,Fossil beast,2x2,static,0
+cursed,D,Bone-picked carcass,2x2,static,0
+cursed,D,Horned carcass,2x2,static,0
+cursed,D,Horned bone mound,2x1,static,1
+cursed,own,Jack-o-lantern,1x1,light,0
+cursed,own,Pumpkin patch,1x1,static,0
+cursed,own,Pumpkin,1x1,static,0
+cursed,own,Purple taint pool,1x1,animated,0
+cursed,own,Green taint pool,1x1,animated,0
+cursed,own,Cursed rune circle,1x1,animated,0

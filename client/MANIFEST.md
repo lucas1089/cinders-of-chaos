@@ -3169,6 +3169,47 @@ the source and every old thing byte-identical; the build is deterministic (run t
 - **Ship order.** A client on pair 47 or older draws nothing for 38759-39110: ship pair 48 and a client build before placing
   the items on a map.
 
+## Decoration of the celestial and cursed biomes (pair 49: items 39111-39197, `tools/sprites/gen_decor49.py` + `import_art_things.py`, `tools/sprites/art_import/decor49*`; built 2026-10-26; not pushed to windows-assets yet)
+Owner request 2026-10-26 ("pair 49"): decoration things for the two Map Studio biomes celestial and cursed. Art only: no text,
+logo, store or coin art, no signs.
+- **Art.** Own drawn art (clouds, glowing rune circles, starlight, marble pillars, taint pools, pumpkins) and prepared single
+  objects of three decoration sources (C, D, E in docs/CREDITS.md), recoloured to marble / gold where the spec says, padded to
+  whole tiles, never scaled. The atlas `art_import/decor49.png` holds third-party pixels and is git-ignored; `gen_decor49.py
+  build --src DIR` rebuilds it, `decor49.csv` (things file), `decor49.sums`, `decor49_sources.csv` (neutral source letter, file and
+  pixel sha256 of each object), `decor49_selection.csv` and `server/data/items/decor49_items.csv`. `build --check` (CI) compares
+  the tables with each other and the sums with the atlas when it is on disk; `gen_decor49_test.py` (CI).
+
+| Biome | Things | Client ids | Notes |
+|---|---|---|---|
+| celestial | 36 | 39111-39146 | crystal clusters, marble statues, stelae, a shrine, a fountain, pillars, golden lamps and braziers, doves, clouds, glowing rune circles, starlight |
+| cursed | 51 | 39147-39197 | 12 dead trees, tombstones, coffins, an open grave, a crypt, scarecrows, altars, cauldrons, bones, pumpkins, taint pools, a violet sigil |
+
+  Sizes: 39 things 1 x 1, 31 2 x 2, 9 1 x 2, 8 2 x 1. 22 carry a light, 7 are animated (4 phases), 55 block.
+- **Server.** `tools/install_decor49_items.py` (install_all step `decor49items`, after `decor48items`; test
+  `install_decor49_items_test.py`): items.otb nodes and items.xml names from `decor49_items.csv`, server id = client id + **4000**
+  (43111-43197, directly after pair 48's block). `--kit-json` writes the biome lists for the map studio kits.
+
+```
+python3 -I client/tools/sprites/gen_decor49.py build --src DIR
+python3 -I client/tools/sprites/import_art_things.py --ours-dat pair48/Tibia.dat --ours-spr pair48/Tibia.spr --out-dir pair49 \
+    --things client/tools/sprites/art_import/decor49.csv --first-item 39111 --expect-items 39110
+python3 -I client/tools/sprites/check_pair.py pair49/Tibia.dat pair49/Tibia.spr --old pair48/Tibia.dat pair48/Tibia.spr --new-only
+```
+Input pair 48 (dat e0ffc626657cfa0f70545442aa427f41, spr ce361ab67bbd8897f5332e9db0f2b95e).
+Output **pair 49**: dat 546d0c6099c8a40505b8f32b7e6ca381 (11,282,963 bytes), spr f241c7a5a4a9784da19d5ade105544d9
+(1,544,792,351 bytes, 1,360,082 sprites: 204 appended), 39,197 items (87 appended), 2,681 outfits, 4101 effects, 253 missiles.
+- `check_pair.py --old` (46,046 old things and 1,359,878 old sprites compared): `--new-only` 0 errors, 0 warnings (3 info lines
+  about empty slots of big things); the full check 0 errors, 206 warnings (the same as pair 48). The dat flags of all 87 items
+  were compared with the manifest. `gen_outfit_anchors.py --check` and `gen_info_lift.py --check` pass on pair 49 (only the dat md5
+  changed in `outfit_anchors.lua` and `info_lifts.lua`). Not run in a client.
+- Archive (the pair 41 recipe: `tar --owner=0 --group=0 --numeric-owner --mtime='2026-10-22 00:00:00Z' --format=gnu`, `xz -9 -T3`,
+  `split -b 95M -d -a 2`): 147,615,964 bytes, sha256 1b18181d88da9f72671db71e6f31a6bf562648f56594fce838507f75ae6bd1f7; parts
+  `things-1098.tar.xz.part00` (99,614,720 bytes, sha256 ebbe6bc723020072f5de40f2a62064e79152940073b92c7fbd6a03738997f3cf) and `.part01`
+  (48,001,244 bytes, sha256 d749e4e49f30043fecd0c0c7c0c8ce48d8248dab05d59071f92c834692254e01); the joined parts extract to the md5s
+  above. Not pushed to windows-assets yet.
+- **Ship order.** Install `decor49items` on the server only together with a client on pair 49 or newer: a client on pair 48 or older
+  draws nothing for 39111-39197. Ship pair 49 and a client build before placing the items on a map.
+
 ## Owner art (things_custom26: outfits 2213-2233, items 33940-33985, `tools/sprites/gen_owner_art.py`, `art_import/owner_art.csv`; on windows-assets 50645056, switch on since 2026-10-15)
 **Source and licence.** The owner's Google Drive folder "ots", files added 2026-10-15. The owner confirmed the art is
 their own or commissioned and free to use for monsters and variants, outfits and wings as cosmetics, decoration and map

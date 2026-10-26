@@ -18355,6 +18355,24 @@ client pair as items 38759-39110 (client/MANIFEST.md "Decoration of the ice, swa
 - **Tests.** `python3 -I server/tools/install_decor48_items_test.py` (the shipped manifest, id and biome rules, a clash with another
   manifest, nodes and XML on synthetic files, the command line twice).
 
+## Decoration of pair 49 (`tools/install_decor49_items.py`, `data/items/decor49_items.csv`)
+87 decoration items for the celestial (36) and cursed (51) Map Studio biomes, appended to the client pair as items 39111-39197
+(client/MANIFEST.md "Decoration of the celestial and cursed biomes (pair 49)").
+- **Ids.** Server id = client id + 4000 (**43111-43197**), key `decor49_<biome>_<client id>`. They follow pair 48's block
+  (42759-43110) with no gap; the test reads every other manifest of `data/items/` for clashes.
+- **Install.** Step `decor49items` of `install_all.py`, after `decor48items`: the same rules as `decor48items` (a node of the same
+  bytes is left alone, another client id on a server id stops it, `.bak` of the original, the written file parsed back, items.xml
+  block between two marker comments). Idempotent. Install it only together with a client on pair 49 or newer: on an older
+  client the items show as nothing.
+- **Flags.** None is pickupable, moveable or a container. 55 block (otb solid): trees, statues, pillars, graves, altars, tables,
+  crystals. Small clutter, birds and ground details do not. 7 are animated (4 phases) and 22 carry a light.
+  `--kit-json OUT.json` writes biome -> [{server_id, client_id, size, kind, blocks}] for the map studio kits.
+- **Source.** `client/tools/sprites/gen_decor49.py` builds the art atlas (git-ignored), the things file, the sums and
+  this manifest from own drawn art and prepared single objects of three decoration sources; `build --check` in CI compares the
+  tables with each other and the sums with the atlas when there is one.
+- **Tests.** `python3 -I server/tools/install_decor49_items_test.py` (the shipped manifest, id and biome rules, a clash with
+  another manifest, nodes and XML on synthetic files, the command line twice).
+
 ## Reward chests (`rift_config.lua`, `descent_config.lua`, `reward_sparkle*.lua`, `tools/patch_reward_chests.py`)
 
 Owner request 2026-10-20: the plain wooden chest was hard to see on dark cave floors. Every chest a player takes a reward

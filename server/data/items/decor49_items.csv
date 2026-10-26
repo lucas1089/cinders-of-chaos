@@ -1,0 +1,88 @@
+client_id,server_id,key,name,kind,piece,size,patterns,phases,frame_ms,speed,otb_group,otb_flags,top_order,light_level,light_color,minimap,dat_flags
+39111,43111,decor49_celestial_39111,Starlight crystal cluster,object,,2x2,1x1,1,0,0,0,8197,2,4,179,143,bottom notwalkable notmoveable light minimap
+39112,43112,decor49_celestial_39112,White crystal cluster,object,,2x2,1x1,1,0,0,0,8197,2,0,0,143,bottom notwalkable notmoveable minimap
+39113,43113,decor49_celestial_39113,Frosted crystal cluster,object,,2x2,1x1,1,0,0,0,8197,2,0,0,143,bottom notwalkable notmoveable minimap
+39114,43114,decor49_celestial_39114,Sapphire crystal cluster,object,,2x2,1x1,1,0,0,0,8197,2,4,101,143,bottom notwalkable notmoveable light minimap
+39115,43115,decor49_celestial_39115,Amethyst crystal cluster,object,,2x2,1x1,1,0,0,0,8197,2,3,155,143,bottom notwalkable notmoveable light minimap
+39116,43116,decor49_celestial_39116,Glacial crystal cluster,object,,2x2,1x1,1,0,0,0,8197,2,0,0,143,bottom notwalkable notmoveable minimap
+39117,43117,decor49_celestial_39117,Pale crystal cluster,object,,2x2,1x1,1,0,0,0,8197,2,0,0,143,bottom notwalkable notmoveable minimap
+39118,43118,decor49_celestial_39118,Azure crystal cluster,object,,2x2,1x1,1,0,0,0,8197,2,3,101,143,bottom notwalkable notmoveable light minimap
+39119,43119,decor49_celestial_39119,Moonstone crystal cluster,object,,2x2,1x1,1,0,0,0,8197,2,0,0,143,bottom notwalkable notmoveable minimap
+39120,43120,decor49_celestial_39120,Golden brazier,object,,1x1,1x1,1,0,0,0,8197,2,5,205,204,bottom notwalkable notmoveable light minimap
+39121,43121,decor49_celestial_39121,Marble angel statue,object,,1x1,1x1,1,0,0,0,8197,2,0,0,215,bottom notwalkable notmoveable minimap
+39122,43122,decor49_celestial_39122,Marble stele,object,,1x1,1x1,1,0,0,0,8197,2,0,0,215,bottom notwalkable notmoveable minimap
+39123,43123,decor49_celestial_39123,Marble cross stele,object,,1x1,1x1,1,0,0,0,8197,2,0,0,215,bottom notwalkable notmoveable minimap
+39124,43124,decor49_celestial_39124,Broken marble stele,object,,1x1,1x1,1,0,0,0,8197,2,0,0,215,bottom notwalkable notmoveable minimap
+39125,43125,decor49_celestial_39125,Marble fountain,object,,2x2,1x1,1,0,0,0,8197,2,0,0,215,bottom notwalkable notmoveable minimap
+39126,43126,decor49_celestial_39126,Marble shrine,object,,2x2,1x1,1,0,0,0,8197,2,0,0,215,bottom notwalkable notmoveable minimap
+39127,43127,decor49_celestial_39127,Marble lectern,object,,1x1,1x1,1,0,0,0,8197,2,0,0,215,bottom notwalkable notmoveable minimap
+39128,43128,decor49_celestial_39128,Marble sarcophagus,object,,1x2,1x1,1,0,0,0,8197,2,0,0,215,bottom notwalkable notmoveable minimap
+39129,43129,decor49_celestial_39129,Narrow marble sarcophagus,object,,1x2,1x1,1,0,0,0,8197,2,0,0,215,bottom notwalkable notmoveable minimap
+39130,43130,decor49_celestial_39130,Golden candelabra,object,,1x1,1x1,1,0,0,0,0,0,4,205,,notmoveable light
+39131,43131,decor49_celestial_39131,Golden lamp post,object,,1x1,1x1,1,0,0,0,8197,2,6,205,204,bottom notwalkable notmoveable light minimap
+39132,43132,decor49_celestial_39132,Golden basin,object,,1x1,1x1,1,0,0,0,8197,2,4,179,204,bottom notwalkable notmoveable light minimap
+39133,43133,decor49_celestial_39133,Golden candle,object,,1x1,1x1,1,0,0,0,0,0,3,205,,notmoveable light
+39134,43134,decor49_celestial_39134,Doves,object,,2x1,1x1,1,0,0,0,0,0,0,0,,notmoveable
+39135,43135,decor49_celestial_39135,Flock of doves,object,,2x2,1x1,1,0,0,0,0,0,0,0,,notmoveable
+39136,43136,decor49_celestial_39136,Marble signpost,object,,1x1,1x1,1,0,0,0,0,0,0,0,,notmoveable
+39137,43137,decor49_celestial_39137,Marble pillar,object,,1x2,1x1,1,0,0,0,8197,2,0,0,215,bottom notwalkable notmoveable minimap
+39138,43138,decor49_celestial_39138,Broken marble pillar,object,,1x2,1x1,1,0,0,0,8197,2,0,0,215,bottom notwalkable notmoveable minimap
+39139,43139,decor49_celestial_39139,Small cloud,object,,1x1,1x1,1,0,0,0,0,0,0,0,,notmoveable
+39140,43140,decor49_celestial_39140,Cloud puff,object,,1x1,1x1,1,0,0,0,0,0,0,0,,notmoveable
+39141,43141,decor49_celestial_39141,Drifting cloud,object,,1x1,1x1,1,0,0,0,0,0,0,0,,notmoveable
+39142,43142,decor49_celestial_39142,Cloud bank,object,,2x1,1x1,1,0,0,0,0,0,0,0,,notmoveable
+39143,43143,decor49_celestial_39143,Golden rune circle,object,,1x1,1x1,4,220,0,0,16777216,0,4,205,,notmoveable light
+39144,43144,decor49_celestial_39144,Star rune circle,object,,1x1,1x1,4,220,0,0,16777216,0,4,205,,notmoveable light
+39145,43145,decor49_celestial_39145,Azure rune circle,object,,1x1,1x1,4,220,0,0,16777216,0,4,101,,notmoveable light
+39146,43146,decor49_celestial_39146,Starlight sparkle,object,,1x1,1x1,4,260,0,0,16777216,0,2,215,,notmoveable light
+39147,43147,decor49_cursed_39147,Gnarled dead tree,object,,2x2,1x1,1,0,0,0,8197,2,0,0,85,bottom notwalkable notmoveable minimap
+39148,43148,decor49_cursed_39148,Twisted dead tree,object,,2x2,1x1,1,0,0,0,8197,2,0,0,85,bottom notwalkable notmoveable minimap
+39149,43149,decor49_cursed_39149,Split dead tree,object,,2x2,1x1,1,0,0,0,8197,2,0,0,85,bottom notwalkable notmoveable minimap
+39150,43150,decor49_cursed_39150,Hollow dead tree,object,,2x2,1x1,1,0,0,0,8197,2,0,0,85,bottom notwalkable notmoveable minimap
+39151,43151,decor49_cursed_39151,Broad dead tree,object,,2x2,1x1,1,0,0,0,8197,2,0,0,85,bottom notwalkable notmoveable minimap
+39152,43152,decor49_cursed_39152,Dead tree stump,object,,2x2,1x1,1,0,0,0,8197,2,0,0,85,bottom notwalkable notmoveable minimap
+39153,43153,decor49_cursed_39153,Pale dead tree,object,,2x2,1x1,1,0,0,0,8197,2,0,0,85,bottom notwalkable notmoveable minimap
+39154,43154,decor49_cursed_39154,Rotten dead tree,object,,2x2,1x1,1,0,0,0,8197,2,0,0,85,bottom notwalkable notmoveable minimap
+39155,43155,decor49_cursed_39155,Fallen dead tree,object,,2x2,1x1,1,0,0,0,8197,2,0,0,85,bottom notwalkable notmoveable minimap
+39156,43156,decor49_cursed_39156,Hollow fallen log,object,,2x2,1x1,1,0,0,0,8197,2,0,0,85,bottom notwalkable notmoveable minimap
+39157,43157,decor49_cursed_39157,Thin dead tree,object,,2x2,1x1,1,0,0,0,8197,2,0,0,85,bottom notwalkable notmoveable minimap
+39158,43158,decor49_cursed_39158,Tall dead tree,object,,2x2,1x1,1,0,0,0,8197,2,0,0,85,bottom notwalkable notmoveable minimap
+39159,43159,decor49_cursed_39159,Bats,object,,2x2,1x1,1,0,0,0,0,0,0,0,,notmoveable
+39160,43160,decor49_cursed_39160,Cursed well,object,,2x2,1x1,1,0,0,0,8197,2,0,0,129,bottom notwalkable notmoveable minimap
+39161,43161,decor49_cursed_39161,Cursed crypt,object,,2x2,1x1,1,0,0,0,8197,2,0,0,129,bottom notwalkable notmoveable minimap
+39162,43162,decor49_cursed_39162,Scarecrow,object,,2x2,1x1,1,0,0,0,8197,2,0,0,78,bottom notwalkable notmoveable minimap
+39163,43163,decor49_cursed_39163,Open coffin,object,,1x2,1x1,1,0,0,0,8197,2,0,0,78,bottom notwalkable notmoveable minimap
+39164,43164,decor49_cursed_39164,Coffin,object,,1x2,1x1,1,0,0,0,8197,2,0,0,78,bottom notwalkable notmoveable minimap
+39165,43165,decor49_cursed_39165,Crows,object,,2x1,1x1,1,0,0,0,0,0,0,0,,notmoveable
+39166,43166,decor49_cursed_39166,Pumpkin scarecrow,object,,1x2,1x1,1,0,0,0,8197,2,0,0,78,bottom notwalkable notmoveable minimap
+39167,43167,decor49_cursed_39167,Angel tombstone,object,,1x1,1x1,1,0,0,0,8197,2,0,0,129,bottom notwalkable notmoveable minimap
+39168,43168,decor49_cursed_39168,Round tombstone,object,,1x1,1x1,1,0,0,0,8197,2,0,0,129,bottom notwalkable notmoveable minimap
+39169,43169,decor49_cursed_39169,Cross tombstone,object,,1x1,1x1,1,0,0,0,8197,2,0,0,129,bottom notwalkable notmoveable minimap
+39170,43170,decor49_cursed_39170,Cracked tombstone,object,,1x1,1x1,1,0,0,0,8197,2,0,0,129,bottom notwalkable notmoveable minimap
+39171,43171,decor49_cursed_39171,Witch broom,object,,1x2,1x1,1,0,0,0,0,0,0,0,,notmoveable
+39172,43172,decor49_cursed_39172,Cursed candles,object,,1x1,1x1,1,0,0,0,0,0,4,206,,notmoveable light
+39173,43173,decor49_cursed_39173,Haunted lantern post,object,,1x1,1x1,1,0,0,0,8197,2,5,206,78,bottom notwalkable notmoveable light minimap
+39174,43174,decor49_cursed_39174,Witch hat,object,,1x1,1x1,1,0,0,0,0,0,0,0,,notmoveable
+39175,43175,decor49_cursed_39175,Candle skull,object,,1x1,1x1,1,0,0,0,0,0,3,206,,notmoveable light
+39176,43176,decor49_cursed_39176,Witch cauldron,object,,1x1,1x1,1,0,0,0,8197,2,4,67,129,bottom notwalkable notmoveable light minimap
+39177,43177,decor49_cursed_39177,Open grave,object,,1x2,1x1,1,0,0,0,8197,2,0,0,129,bottom notwalkable notmoveable minimap
+39178,43178,decor49_cursed_39178,Cursed signpost,object,,1x1,1x1,1,0,0,0,0,0,0,0,,notmoveable
+39179,43179,decor49_cursed_39179,Rotten wheelbarrow,object,,1x1,1x1,1,0,0,0,0,0,0,0,,notmoveable
+39180,43180,decor49_cursed_39180,Watching cauldron,object,,1x1,1x1,1,0,0,0,8197,2,3,67,129,bottom notwalkable notmoveable light minimap
+39181,43181,decor49_cursed_39181,Butcher table,object,,2x1,1x1,1,0,0,0,8197,2,0,0,78,bottom notwalkable notmoveable minimap
+39182,43182,decor49_cursed_39182,Sacrificial slab,object,,2x1,1x1,1,0,0,0,8197,2,0,0,108,bottom notwalkable notmoveable minimap
+39183,43183,decor49_cursed_39183,Cursed lectern,object,,1x1,1x1,1,0,0,0,8197,2,0,0,78,bottom notwalkable notmoveable minimap
+39184,43184,decor49_cursed_39184,Brewing table,object,,2x1,1x1,1,0,0,0,8197,2,0,0,78,bottom notwalkable notmoveable minimap
+39185,43185,decor49_cursed_39185,Blood altar,object,,2x1,1x1,1,0,0,0,8197,2,0,0,108,bottom notwalkable notmoveable minimap
+39186,43186,decor49_cursed_39186,Skull pile,object,,1x1,1x1,1,0,0,0,0,0,0,0,,notmoveable
+39187,43187,decor49_cursed_39187,Skeleton remains,object,,1x1,1x1,1,0,0,0,0,0,0,0,,notmoveable
+39188,43188,decor49_cursed_39188,Fossil beast,object,,2x2,1x1,1,0,0,0,0,0,0,0,,notmoveable
+39189,43189,decor49_cursed_39189,Bone-picked carcass,object,,2x2,1x1,1,0,0,0,0,0,0,0,,notmoveable
+39190,43190,decor49_cursed_39190,Horned carcass,object,,2x2,1x1,1,0,0,0,0,0,0,0,,notmoveable
+39191,43191,decor49_cursed_39191,Horned bone mound,object,,2x1,1x1,1,0,0,0,8197,2,0,0,171,bottom notwalkable notmoveable minimap
+39192,43192,decor49_cursed_39192,Jack-o-lantern,object,,1x1,1x1,1,0,0,0,0,0,4,206,,notmoveable light
+39193,43193,decor49_cursed_39193,Pumpkin patch,object,,1x1,1x1,1,0,0,0,0,0,0,0,,notmoveable
+39194,43194,decor49_cursed_39194,Pumpkin,object,,1x1,1x1,1,0,0,0,0,0,0,0,,notmoveable
+39195,43195,decor49_cursed_39195,Purple taint pool,object,,1x1,1x1,4,300,0,0,16777216,0,3,155,,notmoveable light
+39196,43196,decor49_cursed_39196,Green taint pool,object,,1x1,1x1,4,300,0,0,16777216,0,3,67,,notmoveable light
+39197,43197,decor49_cursed_39197,Cursed rune circle,object,,1x1,1x1,4,220,0,0,16777216,0,4,155,,notmoveable light

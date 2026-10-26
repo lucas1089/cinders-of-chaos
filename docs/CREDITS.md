@@ -349,6 +349,18 @@ Sources the art tools record in their `*sources.csv` files. `check_credits.py` c
   (`client/tools/sprites/decor48_selection.csv`, client/MANIFEST.md "Decoration of the ice, swamp, lava and cave biomes (pair 48)").
   Its author and licence are not recorded; the owner approved using it (2026-10-26). It is not shown in the game or on the
   website, and its sprites ship only inside the pair.
+- **decoration source C**: purchased and owner-supplied prop sheets of a haunted-village art set, the source of the cursed props of
+  pair 49 (tombstones, coffins, scarecrows, cauldrons, lanterns, altars and tables) and, recoloured to marble and gold, of the
+  celestial statues, stelae, lamps and sarcophagi (`client/tools/sprites/art_import/decor49_sources.csv`, client/MANIFEST.md
+  "Decoration of the celestial and cursed biomes (pair 49)"). Recolouring and use in games are allowed; the raw files are not
+  shared and never used as AI training data or a style reference. Not shown in the game or on the website; its sprites ship only
+  inside the pair.
+- **decoration source D**: an item set of 32 px ore, bone and brazier art, the source of the crystal clusters, bone piles and the
+  golden brazier of pair 49. Its author and licence are not recorded; the owner approved using it (2026-10-26). Not shown in the
+  game or on the website; its sprites ship only inside the pair.
+- **decoration source E**: a graveyard builder kit, the source of the dead trees of pair 49 (one tree sheet, read at native size).
+  Purchased; use in games incl. commercial and modified is allowed, the raw files are not shared. Not shown in the game or on the
+  website; its sprites ship only inside the pair.
 - **set29 status**, **set29 projectile**, **set29 firework**, **set29 blood**, **set29 explosion**: the internal
   labels of the five MutterPixel Studio packs above, in the order of its Source line (status effects, projectiles,
   fireworks, blood, explosions). `client/tools/sprites/art_import/pack29_vfx_sources.csv` names each pick's pack by

@@ -8,3 +8,5 @@ payments.env
 pixellab-pip-generations/
 # real folder names of the third-party packs behind the neutral slugs of pack30_packs.csv (pack30lib.py)
 client/tools/sprites/art_import/pack30_packs.private.csv
+# pair 49 decoration atlas (third-party pixels inside; gen_decor49.py rebuilds it from the sources)
+client/tools/sprites/art_import/decor49.png
