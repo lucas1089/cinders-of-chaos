@@ -284,6 +284,10 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                hall becomes deep water with its shore borders and ground under its walls, and the portal gallery at
                Cinderhold's temple is built (temple_portals_config.lua; after contentareas, before poi; with --dry-run
                it reads the real map and writes nothing)
+  deadholes    tools/patch_dead_holes.py         the owner's report of 2026-10-26 ("this hole leads nowhere", README "Dead holes (O264)"): the
+               floor changes of the base map whose landing has no walkable ground (tools/dead_holes.csv, found by
+               tools/check_dead_holes.py) lose their item or turn into plain ground; one that has a tile below now is
+               kept (after mapfixes, before poi; with --dry-run it reads the real map and writes nothing)
   hubnpcs      tools/patch_hub_npcs.py           the stalls of the hub (the market of Cinderhold's teleport room,
                npc_booths_config.lua) cleared of the base server's NPCs: their spawn file entries on the stall tiles
                go, by position; the Chaos NPCs stand there from startup (README "Hub NPC booths"; before poi)
@@ -1228,6 +1232,20 @@ def step_mapfixes(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('contentareas') + 1, 'mapfixes')  # after contentareas (the hall's map), before poi
+
+
+def step_deadholes(server, data, ctx):
+    if ctx['dry']:
+        # the dry copy has no map: read the real one, write nothing
+        real = os.path.join(ctx['server'], 'data')
+        mp = ctx.get('dry_map') or tool_map_path(real)
+        if not mp:
+            return tool_result((False, ['no map in %s/world' % real]))
+        return tool_result(run_tool([tool('patch_dead_holes.py'), real, '--dry-run', '--map', mp], 'patch_dead_holes.py'))
+    return tool_result(run_tool([tool('patch_dead_holes.py'), data], 'patch_dead_holes.py'))
+
+
+STEPS.insert(STEPS.index('mapfixes') + 1, 'deadholes')  # after mapfixes (the hall and the earlier fixes), before poi
 
 
 def step_hubnpcs(server, data, ctx):

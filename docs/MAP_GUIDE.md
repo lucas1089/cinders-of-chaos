@@ -272,7 +272,9 @@ map that are not a content plan: the broken teleports of `server/tools/teleport_
 teleport hall (`hunt_teleports_config.lua` `hall.fill`: void -> deep water 28915-28918 with the water border pieces
 29166-29177 on the shore: n 29166, e 29167, w 29168, s 29177, two sides 29169-29172, a corner 29173-29176) and the
 portal gallery at Cinderhold's temple (`temple_portals_config.lua`; it replaced the NPC arcade of 2026-10-21 on the same
-tiles). Add a row or a config entry and run the install again. The
+tiles). Floor changes that lead nowhere (a hole over nothing, a ramp under a wall) are found by `server/tools/check_dead_holes.py`
+and taken off by `patch_dead_holes.py` (install step `deadholes`, `server/tools/dead_holes.csv`, README "Dead holes").
+Add a row or a config entry and run the install again. The
 team never edits the map by hand; the owner's hand edits go through the map master below.
 
 ## Editing the live map (map master)
