@@ -281,6 +281,8 @@ local REASONS = {
 	["passivetree_core.lua"] = {"^Boss points"}, ["passivetree.lua"] = {"^Error saving", "^Boss points", "^Reset$", "^Preset "},
 	["transmog_core.lua"] = {"^Achievement reward", "^Season reward", "^Exclusive: events"},
 	["transmog.lua"] = {"^Unknown appearance set", "^The account already has", "^Could not save the set", "^Unlocked ", "^%%s the set"},
+	["season_core.lua"] = {"^That character$", "^This offer$", "^%%s %%s is running", "^%%s starts in", "^No season is configured", "^Season of Ash"},
+	["season.lua"] = {"^No season is configured", "^%%s %%s is running", "^%%s %%s starts in", "^%%s has ended%.$", "^Modifier ", "^This character is a season", "^This character can join", "^%%s running", "^%%d character", "^%%s is already running", "^No upcoming season", "^No season is running%. Migration", "^%%s's end date", "^%%s: season"},
 	["market_core.lua"] = {}, ["market_config.lua"] = {}, ["market_orders_core.lua"] = {},
 	["market_notify_core.lua"] = {"^While you were away", "^Market sales", "^Orb Exchange", "^Chaos Coin", "^your "},
 	["market.lua"] = {"^Market sweep", "^Buy orders%%s", "^Offer %%d", "^No such offer", "^/market", "^Chaos Coins$"},

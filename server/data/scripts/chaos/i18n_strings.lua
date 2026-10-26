@@ -4857,5 +4857,90 @@ return {
 			"Seu %s mostra o visual original de novo.",
 		["Choose them in Character > Transmog (account-wide, appearance only)."] =
 			"Escolha-as em Character > Transmog (vale para a conta toda, só aparência).",
+		-- Season join, refusals and messages
+		["%s has not started yet: it starts in %s."] =
+			"%s ainda não começou: começa em %s.",
+		["No season is running."] =
+			"Nenhuma temporada está em andamento.",
+		["This character is already a %s character."] =
+			"Este personagem já é um personagem de %s.",
+		["This character already played a season. Make a new character to join."] =
+			"Este personagem já jogou uma temporada. Crie um novo personagem para participar.",
+		["Only a fresh character can join: level %d or lower (this character is level %d). Make a new character to join."] =
+			"Só um personagem novo pode participar: nível %d ou menor (este personagem é nível %d). Crie um novo personagem para participar.",
+		["Empty your depot, stash items, inbox and store inbox first: season characters start with nothing."] =
+			"Esvazie antes o seu depósito, o estoque, a caixa de entrada e a caixa de entrada da loja: personagens de temporada começam sem nada.",
+		["Characters that own a house cannot join a season."] =
+			"Personagens que possuem uma casa não podem participar de uma temporada.",
+		["The season chosen when this character was created is over. %s is running now: Adventure > Season to join it."] =
+			"A temporada escolhida na criação deste personagem acabou. %s está em andamento agora: Aventura > Temporada para participar.",
+		["The season chosen when this character was created could not be joined: %s"] =
+			"Não foi possível entrar na temporada escolhida na criação deste personagem: %s",
+		["%s is not for season characters: they get only cosmetics and account services from the store. Buy it with a standard character."] =
+			"%s não é para personagens de temporada: eles recebem da loja apenas cosméticos e serviços da conta. Compre com um personagem padrão.",
+		["%s is a season character: only cosmetics and account services can be given to it."] =
+			"%s é um personagem de temporada: só é possível dar a ele cosméticos e serviços da conta.",
+		["Season characters cannot claim the pass's items while the season runs: claim them with a standard character, or after the season."] =
+			"Personagens de temporada não podem resgatar os itens do passe enquanto a temporada durar: resgate com um personagem padrão ou depois da temporada.",
+		["Season markets trade for gold only: Chaos Coins belong to the whole account."] =
+			"Os mercados de temporada negociam apenas em ouro: os Chaos Coins pertencem a toda a conta.",
+		["Season characters cannot claim this now."] =
+			"Personagens de temporada não podem resgatar isto agora.",
+		["Season markets trade for gold only."] =
+			"Os mercados de temporada negociam apenas em ouro.",
+		["Season characters can only trade with characters of the same season."] =
+			"Personagens de temporada só podem negociar com personagens da mesma temporada.",
+		["You cannot take or hand over items between season and standard characters."] =
+			"Você não pode pegar nem entregar itens entre personagens de temporada e padrão.",
+		["Season characters can only send mail to characters of the same season."] =
+			"Personagens de temporada só podem enviar correio a personagens da mesma temporada.",
+		["This house belongs to a character of another realm (season / standard)."] =
+			"Esta casa pertence a um personagem de outro reino (temporada / padrão).",
+		["Season characters can only be in a party with characters of the same season."] =
+			"Personagens de temporada só podem estar em grupo com personagens da mesma temporada.",
+		["Self-Found characters cannot trade."] =
+			"Personagens Self-Found não podem negociar.",
+		["Self-Found characters can only be in a party with other Self-Found characters."] =
+			"Personagens Self-Found só podem estar em grupo com outros personagens Self-Found.",
+		["Self-Found characters cannot buy or sell on the market."] =
+			"Personagens Self-Found não podem comprar nem vender no mercado.",
+		["Self-Found characters cannot use the Orb Exchange."] =
+			"Personagens Self-Found não podem usar a Troca de Orbes.",
+		["Self-Found characters cannot send mail."] =
+			"Personagens Self-Found não podem enviar correio.",
+		["That character is Self-Found: it cannot receive mail."] =
+			"Esse personagem é Self-Found: não pode receber correio.",
+		["Self-Found: you can only take your own items and your own loot."] =
+			"Self-Found: você só pode pegar os seus próprios itens e o seu próprio saque.",
+		["Self-Found: you cannot hand items to other players."] =
+			"Self-Found: você não pode entregar itens a outros jogadores.",
+		["That item belongs to a Self-Found character."] =
+			"Esse item pertence a um personagem Self-Found.",
+		["Self-Found characters keep their items to themselves (house)."] =
+			"Personagens Self-Found guardam os itens só para si (casa).",
+		["Trade, party and loot with every character of the season."] =
+			"Negocie, forme grupo e divida o saque com todos os personagens da temporada.",
+		["Self-Found: no trading of any kind (trade window, market, Orb Exchange, mail, bank transfers, items of other players on the ground), parties only with Self-Found characters, loot stays your own. Reward: +25% Item Find and +25% Rarity Find, and the Self-Found ladder."] =
+			"Self-Found: nenhum tipo de negociação (janela de troca, mercado, Troca de Orbes, correio, transferências bancárias, itens de outros jogadores no chão), grupos só com personagens Self-Found, o saque fica só seu. Recompensa: Item Find e Rarity Find aumentados em 25%, e o ranking Self-Found.",
+		["Hardcore: one life. If this character dies it falls: it leaves the Hardcore ladder for good, becomes a standard character at once and its grave stays on the ladder."] =
+			"Hardcore: uma só vida. Se este personagem morrer, ele cai: sai do ranking Hardcore para sempre, vira um personagem padrão na hora e a sua lápide fica no ranking.",
+		["Hardcore Self-Found: one life AND no trading. Both sets of rules at once."] =
+			"Hardcore Self-Found: uma só vida E nenhuma negociação. Os dois conjuntos de regras ao mesmo tempo.",
+		["%s is a season character."] =
+			"%s é um personagem de temporada.",
+		["%s is not for season characters."] =
+			"%s não é para personagens de temporada.",
+		["%s %s a %s character %s."] =
+			"%s %s um personagem de %s %s.",
+		["%s %s a veteran of %s."] =
+			"%s %s um veterano de %s.",
+		["Join %s %s? This cannot be undone: %s. Until the season ends this character can only trade, mail and party with %s characters. At the end it becomes a standard character and keeps everything."] =
+			"Entrar em %s %s? Isto não pode ser desfeito: %s. Até o fim da temporada este personagem só pode negociar, enviar correio e formar grupo com personagens de %s. No fim ele vira um personagem padrão e mantém tudo.",
+		["every item you carry is destroyed"] =
+			"todo item que você carrega é destruído",
+		["your bank balance and supply stash are emptied"] =
+			"o seu saldo bancário e o estoque de suprimentos são esvaziados",
+		[" Confirm in the Season window within %d seconds."] =
+			" Confirme na janela de Temporada em até %d segundos.",
 	},
 }
