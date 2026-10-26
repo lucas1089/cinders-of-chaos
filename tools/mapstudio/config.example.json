@@ -1,0 +1,12 @@
+{
+ "adapter": "otbm_dat",
+ "map": "path/to/your/world.otbm",
+ "items_otb": "path/to/items.otb",
+ "items_xml": "path/to/items.xml",
+ "dat": "path/to/Tibia.dat",
+ "spr": "path/to/Tibia.spr",
+ "dat_format": "auto",
+ "transparency": "auto",
+ "map_ids": "server",
+ "kit": "TEMPLATE"
+}

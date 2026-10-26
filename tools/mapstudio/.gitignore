@@ -1,0 +1,6 @@
+config.json
+cache/
+areas/
+refs/
+study/
+__pycache__/
