@@ -4314,5 +4314,88 @@ return {
 			"%s%s vendido para a ordem de compra de %s por %s (imposto %s): %s no seu banco.",
 		["%s filled your buy order: %s%s for %s."] =
 			"%s atendeu sua ordem de compra: %s%s por %s.",
+		-- Build codes (buildshare_core.lua, buildshare.lua)
+		["That is not a build code."] =
+			"Isso não é um código de build.",
+		["That build code is too long."] =
+			"Esse código de build é longo demais.",
+		["That is not a build code (codes start with %s%s-)."] =
+			"Isso não é um código de build (os códigos começam com %s%s-).",
+		["That build code is from an old format (version %d) that is no longer read."] =
+			"Esse código de build é de um formato antigo (versão %d) que não é mais lido.",
+		["That build code is from a newer format (version %d) than this server reads (%d)."] =
+			"Esse código de build é de um formato mais novo (versão %d) do que este servidor lê (%d).",
+		["That build code is damaged (check for a typo or a missing part)."] =
+			"Esse código de build está danificado (confira se há erro de digitação ou parte faltando).",
+		["That build code is damaged: the checksum does not match (check for a typo)."] =
+			"Esse código de build está danificado: o checksum não confere (confira se há erro de digitação).",
+		["That build code is damaged."] =
+			"Esse código de build está danificado.",
+		["That build code has a Paragon stat this server does not know."] =
+			"Esse código de build tem um atributo de Paragon que este servidor não conhece.",
+		["This build is for a %s; you are a %s. Builds can only be imported by the same class line."] =
+			"Esta build é de %s; você é %s. Builds só podem ser importadas pela mesma linha de classe.",
+		["This build uses node %d, which is not in the passive tree (the tree changed)."] =
+			"Esta build usa o nó %d, que não está na árvore passiva (a árvore mudou).",
+		["This build takes keystone node %d, which your class has no version of."] =
+			"Esta build usa o nó-chave %d, que a sua classe não tem.",
+		["This build takes node %d of another class's path."] =
+			"Esta build usa o nó %d do caminho de outra classe.",
+		["This build code has no allocated nodes."] =
+			"Esse código de build não tem nós alocados.",
+		["This build code has a mastery effect for node %d, which is not a mastery node."] =
+			"Esse código de build tem um efeito de maestria para o nó %d, que não é um nó de maestria.",
+		["This build code picks effect %d of mastery node %d, which has %d."] =
+			"Esse código de build escolhe o efeito %d do nó de maestria %d, que tem %d.",
+		["This build is broken: node %d is not connected to the start."] =
+			"Esta build está quebrada: o nó %d não está ligado ao início.",
+		["You have no passive points yet."] =
+			"Você ainda não tem pontos passivos.",
+		["%d mastery node you hold changes its effect (a respec)."] =
+			"%d nó de maestria que você tem muda de efeito (um respec).",
+		["%d mastery nodes you hold change their effect (a respec)."] =
+			"%d nós de maestria que você tem mudam de efeito (um respec).",
+		["The code names no effect for %d mastery node: the first effect is taken (change it in the tree)."] =
+			"O código não indica efeito para %d nó de maestria: o primeiro efeito é usado (mude-o na árvore).",
+		["The code names no effect for %d mastery nodes: the first effect is taken (change it in the tree)."] =
+			"O código não indica efeito para %d nós de maestria: o primeiro efeito é usado (mude-o na árvore).",
+		["You own %d passive points; the build needs %d. The first %d nodes along the path are applied, %d are left out."] =
+			"Você tem %d pontos passivos; a build precisa de %d. Os primeiros %d nós do caminho são aplicados, %d ficam de fora.",
+		["The code is older than a tree change: %d node whose effect changed is left out."] =
+			"O código é anterior a uma mudança da árvore: %d nó cujo efeito mudou ficou de fora.",
+		["The code is older than a tree change: %d nodes whose effect changed are left out."] =
+			"O código é anterior a uma mudança da árvore: %d nós cujo efeito mudou ficaram de fora.",
+		["The Paragon part of the build is skipped: the Paragon track is not unlocked yet."] =
+			"A parte de Paragon da build foi ignorada: a trilha de Paragon ainda não foi desbloqueada.",
+		["The Paragon part needs %d points, you own %d: %d are left out (in stat order)."] =
+			"A parte de Paragon precisa de %d pontos, você tem %d: %d ficam de fora (na ordem dos atributos).",
+		["Build for a %s: %d nodes, %d applied (%d new, %d taken back)."] =
+			"Build de %s: %d nós, %d aplicados (%d novos, %d devolvidos).",
+		["The Paragon allocation changes too."] =
+			"A alocação de Paragon também muda.",
+		["You already have this build: nothing would change."] =
+			"Você já tem esta build: nada mudaria.",
+		["It takes points back, so it costs the full reset price: %s gold coins."] =
+			"Ela devolve pontos, então custa o preço cheio do reset: %s gold coins.",
+		["It takes points back; the reset is free (%s)."] =
+			"Ela devolve pontos; o reset é grátis (%s).",
+		["It only adds nodes: free."] =
+			"Ela só adiciona nós: grátis.",
+		["You already have this build: nothing changed."] =
+			"Você já tem esta build: nada mudou.",
+		["The price changed since the preview. Preview the build again."] =
+			"O preço mudou desde a prévia. Veja a prévia da build de novo.",
+		["You need %s gold coins (carried or in the bank) to take points back for this build."] =
+			"Você precisa de %s gold coins (na mochila ou no banco) para devolver pontos nesta build.",
+		["Build imported: %d nodes allocated%s."] =
+			"Build importada: %d nós alocados%s.",
+		[" for %s gold coins"] =
+			" por %s gold coins",
+		[" %d nodes were left out (not enough points)."] =
+			" %d nós ficaram de fora (pontos insuficientes).",
+		["free below level %d"] =
+			"grátis abaixo do level %d",
+		["free once after your class changed"] =
+			"grátis uma vez depois que sua classe mudou",
 	},
 }

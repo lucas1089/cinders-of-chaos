@@ -272,6 +272,7 @@ local REASONS = {
 	["guild_hall.lua"] = {"^The banner of $", "^Teleport to ", "^The guild's crafting bench", "^The guild depot%. Drop", "^Guild Siege",
 		"^World bosses", "^ The Ashen", "^Records: ", "^Guild level %%d %(", "^Rent of %%s: ", "^That guild has no hall", "^Guild bank$",
 		"^%%d way", "^%%d guild hall"},
+	["buildshare_core.lua"] = {"^Preset ", "^class "}, ["buildshare.lua"] = {},
 	["market_core.lua"] = {}, ["market_config.lua"] = {}, ["market_orders_core.lua"] = {},
 	["market_notify_core.lua"] = {"^While you were away", "^Market sales", "^Orb Exchange", "^Chaos Coin", "^your "},
 	["market.lua"] = {"^Market sweep", "^Buy orders%%s", "^Offer %%d", "^No such offer", "^/market", "^Chaos Coins$"},

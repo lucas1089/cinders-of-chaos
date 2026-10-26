@@ -24,6 +24,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 if not ChaosBuildShare then
 	dofile("data/scripts/chaos/buildshare_core.lua")
 end
@@ -138,24 +141,25 @@ function B.preview(player, code)
 	}, nil, plan
 end
 
-local function summary(p)
-	local lines = {string.format("Build for a %s: %d nodes, %d applied (%d new, %d taken back).", p.className, p.wanted,
+-- player: the language of the lines (nil: English); the notes of the plan are English reasons
+local function summary(p, player)
+	local lines = {Chaos.t(player, "Build for a %s: %d nodes, %d applied (%d new, %d taken back).", p.className, p.wanted,
 		p.applied, p.added, p.removed)}
 	if p.paragon and p.paragonChange then
-		lines[#lines + 1] = "The Paragon allocation changes too."
+		lines[#lines + 1] = Chaos.t(player, "The Paragon allocation changes too.")
 	end
 	for _, note in ipairs(p.notes) do
-		lines[#lines + 1] = note
+		lines[#lines + 1] = Chaos.tx(player, note)
 	end
 	if not p.change then
-		lines[#lines + 1] = "You already have this build: nothing would change."
+		lines[#lines + 1] = Chaos.t(player, "You already have this build: nothing would change.")
 	elseif p.cost > 0 then
-		lines[#lines + 1] = string.format("It takes points back, so it costs the full reset price: %s gold coins.",
+		lines[#lines + 1] = Chaos.t(player, "It takes points back, so it costs the full reset price: %s gold coins.",
 			ChaosRespecCore and ChaosRespecCore.formatGold(p.cost) or tostring(p.cost))
 	elseif p.free then
-		lines[#lines + 1] = "It takes points back; the reset is free (" .. p.free .. ")."
+		lines[#lines + 1] = Chaos.t(player, "It takes points back; the reset is free (%s).", Chaos.tx(player, p.free))
 	else
-		lines[#lines + 1] = "It only adds nodes: free."
+		lines[#lines + 1] = Chaos.t(player, "It only adds nodes: free.")
 	end
 	return table.concat(lines, "\n")
 end
@@ -169,19 +173,19 @@ function B.apply(player, code, seenCost)
 		return nil, err
 	end
 	if not p.change then
-		return nil, "You already have this build: nothing changed."
+		return nil, Chaos.t(player, "You already have this build: nothing changed.")
 	end
 	if seenCost and p.cost > seenCost then
-		return nil, "The price changed since the preview. Preview the build again."
+		return nil, Chaos.t(player, "The price changed since the preview. Preview the build again.")
 	end
 	-- the same checks as a normal save (known ids, connected, points owned)
 	local ids, invalid = T.validateNodes(player, plan.nodes)
 	if not ids then
-		return nil, invalid
+		return nil, Chaos.tx(player, invalid)
 	end
 	local R = ChaosRespec
 	if p.cost > 0 and not (R and R.pay(player, p.cost) or (not R and Chaos.pay(player, p.cost))) then
-		return nil, string.format("You need %s gold coins (carried or in the bank) to take points back for this build.",
+		return nil, Chaos.t(player, "You need %s gold coins (carried or in the bank) to take points back for this build.",
 			ChaosRespecCore and ChaosRespecCore.formatGold(p.cost) or tostring(p.cost))
 	end
 	if (p.treeReset or p.paragonReset) and R then
@@ -215,10 +219,10 @@ function B.apply(player, code, seenCost)
 	if R then
 		R.sendInfo(player)
 	end
-	local text = string.format("Build imported: %d nodes allocated%s.", #ids,
-		p.cost > 0 and string.format(" for %s gold coins", ChaosRespecCore.formatGold(p.cost)) or "")
+	local text = Chaos.t(player, "Build imported: %d nodes allocated%s.", #ids,
+		p.cost > 0 and Chaos.t(player, " for %s gold coins", ChaosRespecCore.formatGold(p.cost)) or "")
 	if p.skipped > 0 then
-		text = text .. string.format(" %d nodes were left out (not enough points).", p.skipped)
+		text = text .. Chaos.t(player, " %d nodes were left out (not enough points).", p.skipped)
 	end
 	return true, text
 end
@@ -227,7 +231,7 @@ end
 local actions = ChaosPassiveTree.extraActions
 
 local function sendError(player, text)
-	Chaos.send(player, OPCODE, "buildError", {message = text})
+	Chaos.send(player, OPCODE, "buildError", {message = Chaos.tx(player, text)})
 end
 
 actions.buildExport = function(player)
@@ -242,7 +246,7 @@ actions.buildPreview = function(player, data)
 	if not p then
 		sendError(player, err)
 	else
-		p.summary = summary(p)
+		p.summary = summary(p, player)
 		Chaos.send(player, OPCODE, "buildPreview", p)
 	end
 	return true
@@ -250,7 +254,7 @@ end
 
 actions.buildApply = function(player, data)
 	if type(data) ~= "table" or type(data.code) ~= "string" then
-		sendError(player, "Malformed request.")
+		sendError(player, Chaos.t(player, "Malformed request."))
 		return true
 	end
 	local ok, text = B.apply(player, data.code, Chaos.toInt(data.cost, 0))
