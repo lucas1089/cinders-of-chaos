@@ -1,0 +1,402 @@
+{
+ "name": "grass and forest, hunting island",
+ "notes": "Learned 2026-10-26 from the reference map's floor 7 and mountain floors 3-6: window a (x 32450-32649, y 31880-32099: grass, forest, rivers, mountain edge), window b (x 32100-32299, y 32050-32249: coast, forest, rock patches), window c (x 32380-32579, y 32020-32179: terraced mountain in grass). Sets named with tools/name_set.py, ramps with tools/ramp_check.py, rates with tools/family_items.py, clumps with tools/clump_study.py. Grass family merge is in study/family_overrides.json. Not learned yet: bridges, hill kit, second apron ground.",
+ "water": {
+  "family": "G4608",
+  "lead": 4608,
+  "members": [
+   4608,
+   4609,
+   4610,
+   4611,
+   4612,
+   4613
+  ],
+  "bands": [
+   [
+    4,
+    {
+     "shallow": 1.0
+    }
+   ],
+   [
+    6,
+    {
+     "shallow": 0.8,
+     "deep": 0.2
+    }
+   ],
+   [
+    8,
+    {
+     "shallow": 0.55,
+     "deep": 0.45
+    }
+   ],
+   [
+    10,
+    {
+     "shallow": 0.3,
+     "deep": 0.7
+    }
+   ],
+   [
+    999,
+    {
+     "shallow": 0.08,
+     "deep": 0.92
+    }
+   ]
+  ],
+  "variants": {
+   "shallow": {
+    "lead": 4608,
+    "members": [
+     4609,
+     4610,
+     4611,
+     4612,
+     4613
+    ]
+   },
+   "deep": {
+    "lead": 27725,
+    "members": [
+     27728,
+     27729,
+     27730,
+     27731
+    ]
+   }
+  },
+  "order": [
+   "shallow",
+   "deep"
+  ]
+ },
+ "base": {
+  "family": "G9043",
+  "lead": 9043,
+  "members": [
+   9043,
+   9046,
+   9044,
+   9045,
+   9047,
+   9048,
+   9049,
+   9050,
+   9051,
+   9052,
+   9053,
+   9054,
+   9055,
+   9056,
+   9057,
+   9058
+  ]
+ },
+ "sand": {
+  "family": "G103",
+  "lead": 103,
+  "members": []
+ },
+ "rock_soil": {
+  "family": "G4405",
+  "lead": 4405,
+  "members": [
+   4405,
+   4407,
+   4408,
+   4409,
+   4410,
+   4413,
+   4414,
+   4415,
+   4416,
+   4417,
+   4418,
+   4419,
+   4420
+  ]
+ },
+ "mountain": {
+  "lead": 919,
+  "members": [
+   919
+  ]
+ },
+ "worn_share": 0,
+ "no_water_border": [
+  "sand"
+ ],
+ "base_on_sand": {
+  "edge_n": 7653,
+  "edge_e": 7710,
+  "edge_s": 7709,
+  "edge_w": 7656,
+  "inner_nw": 7661,
+  "inner_ne": 7662,
+  "inner_sw": 7663,
+  "inner_se": 7664,
+  "outer_nw": 7657,
+  "outer_ne": 7658,
+  "outer_sw": 7659,
+  "outer_se": 7660
+ },
+ "base_on_rock": {
+  "edge_n": 4542,
+  "edge_e": 4543,
+  "edge_s": 4544,
+  "edge_w": 4545,
+  "inner_nw": 4550,
+  "inner_ne": 4551,
+  "inner_sw": 4552,
+  "inner_se": 4553,
+  "outer_nw": 4546,
+  "outer_ne": 4547,
+  "outer_sw": 4548,
+  "outer_se": 4549
+ },
+ "shore_on_base": {
+  "edge_n": 4644,
+  "edge_e": 4645,
+  "edge_s": 4646,
+  "edge_w": 4647,
+  "inner_nw": 4648,
+  "inner_ne": 4649,
+  "inner_sw": 4650,
+  "inner_se": 4651,
+  "outer_nw": 4652,
+  "outer_ne": 4653,
+  "outer_sw": 4654,
+  "outer_se": 4655
+ },
+ "mountain_cliff": {
+  "edge_n": 4471,
+  "edge_e": 4468,
+  "edge_s": 4469,
+  "edge_w": 4472,
+  "inner_nw": 4476,
+  "inner_ne": 4478,
+  "inner_sw": 4477,
+  "inner_se": 4479,
+  "outer_nw": 4475,
+  "outer_ne": 4474,
+  "outer_sw": 4473,
+  "outer_se": 4470
+ },
+ "top_rim": {
+  "edge_n": 4456,
+  "edge_e": 4457,
+  "edge_s": 4458,
+  "edge_w": 4459,
+  "inner_nw": 4464,
+  "inner_ne": 4465,
+  "inner_sw": 4467,
+  "inner_se": 4466,
+  "outer_nw": 4460,
+  "outer_ne": 4461,
+  "outer_sw": 4463,
+  "outer_se": 4462
+ },
+ "mountain_ramp": {
+  "n": [
+   1394,
+   1395
+  ],
+  "s": [
+   1392,
+   1393
+  ],
+  "e": [
+   1388,
+   1389
+  ],
+  "w": [
+   1390,
+   1391
+  ]
+ },
+ "layers": [
+  {
+   "kit": "sand",
+   "border": null
+  },
+  {
+   "kit": "rock_soil",
+   "border": null
+  },
+  {
+   "kit": "base",
+   "border": {
+    "sand": "base_on_sand",
+    "rock_soil": "base_on_rock"
+   }
+  },
+  {
+   "kit": "water",
+   "border": "shore_on_base",
+   "onto": [
+    "base",
+    "rock_soil"
+   ],
+   "outside": true
+  }
+ ],
+ "flora": {
+  "G103": {
+   "6219": 0.048,
+   "6218": 0.048,
+   "6217": 0.033,
+   "3612": 0.01,
+   "3614": 0.007,
+   "3621": 0.007,
+   "3623": 0.007,
+   "3611": 0.005
+  }
+ },
+ "top_flora": {
+  "G4405": {
+   "3613": 0.018,
+   "3610": 0.018,
+   "3611": 0.014,
+   "3612": 0.014,
+   "3614": 0.01,
+   "6219": 0.03,
+   "6218": 0.02,
+   "6217": 0.015
+  },
+  "G9043": {
+   "6219": 0.1,
+   "6218": 0.04,
+   "6217": 0.033,
+   "2740": 0.012
+  }
+ },
+ "bank_flora": {
+  "G9043": {
+   "6219": 0.12,
+   "6218": 0.09,
+   "4156": 0.004,
+   "2767": 0.03
+  }
+ },
+ "meadow": {
+  "6219": 0.03,
+  "6218": 0.02,
+  "4156": 0.003,
+  "2740": 0.002,
+  "4155": 0.0012,
+  "4154": 0.0008,
+  "2742": 0.0006
+ },
+ "hill_top": {
+  "3610": 1
+ },
+ "clumps": {
+  "quantiles": "study/grass_clumps.json",
+  "tops": {
+   "1": "study/grass_clumps_top1.json"
+  },
+  "big": {
+   "2767": 42,
+   "2768": 41,
+   "2700": 7,
+   "2703": 6,
+   "2705": 4,
+   "2701": 3,
+   "2708": 4,
+   "2702": 4,
+   "2707": 3,
+   "8313": 1
+  },
+  "small": {
+   "6219": 137,
+   "6218": 86,
+   "6217": 63,
+   "6216": 4
+  },
+  "boost": {
+   "big": 1.0,
+   "small": 1.0
+  }
+ },
+ "swap_walkable": {
+  "2x2": [
+   8013
+  ],
+  "3x3": [],
+  "2x3": [],
+  "1x1": [
+   6219,
+   6218,
+   6217
+  ]
+ },
+ "defaults": {
+  "hills": 0,
+  "levels": 1,
+  "mountains": 30,
+  "rivers": 1,
+  "lakes": 1,
+  "roads": 0,
+  "sand": 1
+ },
+ "batch_cap": {
+  "levels": 1
+ },
+ "hill": {
+  "lead": 919,
+  "members": [
+   919
+  ]
+ },
+ "hill_cliff": {
+  "edge_n": 4471,
+  "edge_e": 4468,
+  "edge_s": 4469,
+  "edge_w": 4472,
+  "inner_nw": 4476,
+  "inner_ne": 4478,
+  "inner_sw": 4477,
+  "inner_se": 4479,
+  "outer_nw": 4475,
+  "outer_ne": 4474,
+  "outer_sw": 4473,
+  "outer_se": 4470
+ },
+ "hill_rim": {
+  "edge_n": 4456,
+  "edge_e": 4457,
+  "edge_s": 4458,
+  "edge_w": 4459,
+  "inner_nw": 4464,
+  "inner_ne": 4465,
+  "inner_sw": 4467,
+  "inner_se": 4466,
+  "outer_nw": 4460,
+  "outer_ne": 4461,
+  "outer_sw": 4463,
+  "outer_se": 4462
+ },
+ "hill_ramp": {
+  "n": [
+   1394,
+   1395
+  ],
+  "s": [
+   1392,
+   1393
+  ],
+  "e": [
+   1388,
+   1389
+  ],
+  "w": [
+   1390,
+   1391
+  ]
+ },
+ "_hill": "hills are off (defaults hills 0); the generator still reads these keys, so they repeat the mountain's"
+}
