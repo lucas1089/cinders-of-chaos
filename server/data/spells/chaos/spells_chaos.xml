@@ -124,7 +124,7 @@
 		<vocation name="Illusionist" />
 	</instant>
 	<!-- shared: every class -->
-	<instant group="support" spellid="232" name="Flickerdash" words="ash flik" level="35" mana="50" premium="0" aggressive="0" selftarget="1" cooldown="6000" groupcooldown="2000" needlearn="0" script="chaos/shared/blink_dash.lua">
+	<instant group="support" spellid="232" name="Flickerdash" words="ash flik" level="30" mana="50" premium="0" aggressive="0" selftarget="1" cooldown="6000" groupcooldown="2000" needlearn="0" script="chaos/shared/blink_dash.lua">
 		<vocation name="Warrior" />
 		<vocation name="Juggernaut" />
 		<vocation name="Berserker" />
@@ -558,7 +558,7 @@
 		<vocation name="Inquisitor" />
 		<vocation name="Sentinel" />
 	</instant>
-	<instant group="support" spellid="162" name="Vigil of Clarity" words="vigh lum" level="40" mana="0" premium="0" aggressive="0" selftarget="1" cooldown="2000" groupcooldown="0" needlearn="0" script="chaos/shared/vigil_clarity.lua">
+	<instant group="support" spellid="162" name="Vigil of Clarity" words="vigh lum" level="35" mana="0" premium="0" aggressive="0" selftarget="1" cooldown="2000" groupcooldown="0" needlearn="0" script="chaos/shared/vigil_clarity.lua">
 		<vocation name="Warrior" />
 		<vocation name="Juggernaut" />
 		<vocation name="Berserker" />

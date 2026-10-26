@@ -3208,7 +3208,7 @@ What scaled before, and the change:
 ## Vigils (`vigils.lua`, `vigils_core.lua`, `vigils_config.lua`, `data/spells/chaos/_vigils.lua`, docs/BUILDS.md "Vigils")
 Auras that reserve mana (2026-10-12), every class: Vigil of Wrath (spell 179, `vigh vyr`, level 60, reserves 35%,
 +5% damage), Vigil of Iron (255, `vigh tor`, 60, 35%, -6% damage taken), Vigil of Haste (161, `vigh ruan`, 40, 20%,
-+15% speed), Vigil of Clarity (162, `vigh lum`, 40, 20%, 1% of the maximum mana a second). `mana="0"`: a cast
++15% speed), Vigil of Clarity (162, `vigh lum`, 35, 20%, 1% of the maximum mana a second). `mana="0"`: a cast
 switches the vigil in storage 7100025 (a bit each) and costs nothing.
 
 - **Reservation.** `vigils.lua` thinks every second over the online players. A holder's reserved share (the vigils'
@@ -22764,8 +22764,16 @@ cooldown ladder is by damage, not level, so no cooldown moved. Regenerated: `spe
 (`rotation_sim.py --write`), `wiki_data.json`. The first-hour tip `nextspells` and the goal `spells25` now say "a new spell
 between levels 12 and 20, more around 25". `luajit tools/progression_model.lua --spells` has a new column, the longest
 stretch without a new spell in levels 8-30 (was 17 levels, 8 to 25, for 16 classes; now 10 at most, 25 to 35). No CI limit:
-`progression_config.lua` has no spell-gap number, and the 25-35 stretch (Flickerdash, Hunter's Instinct are shared) would need
-more moves first.
+`progression_config.lua` has no spell-gap number.
+
+**O248 (2026-10-26): the 25 to 35 stretch.** 15 classes still waited from 25 to 35 (about 7 minutes). Only shared spells sit
+there (Hunter's Instinct is at 25, Flickerdash at 35), so two moves cover all 21 classes without touching a kit, the rotation
+data or the icon sheets (neither is an attack spell): Flickerdash 35 -> 30 and Vigil of Clarity 40 -> 35 (`spells_chaos.xml`;
+Vigil of Haste stays at 40). Moving Flickerdash alone only shifted the gap to 30-40. Every class now has a spell at 25, 30, 35
+and 40. Longest stretch in levels 8-35 (`--spells`): was 10 levels (25 to 35) for 15 classes, now 9 at most (16 to 25, for 18
+classes; 5 for the Necromancer, Lich and Bone Lord). The 16 to 25 stretch is not closed: it would need a class spell moved to
+about 20. Regenerated: `spelldata.lua`. The tip `nextspells` and goal `spells25` say "more at levels 25, 30 and 35" (en,
+pt-BR). The Clarity vigil reserves 20% of the mana, so at 35 it is a real choice, not a free buff (not played).
 
 ## Next Goals (`goals.lua`, `goals_core.lua`, `goals_config.lua`, `sql/chaos_goals.sql`, client `game_goals`)
 

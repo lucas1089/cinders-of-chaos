@@ -3800,7 +3800,7 @@ for the character's class and level (`ChaosAutoSetup.plan`, tested per class in 
   first casts are staggered `TIMER_STAGGER_MS` = 2.5 s apart (the first at once) and the rest follow their own
   cooldowns. The timer switch is turned on when there are rules.
 - Support spells: the rest of the class's support spells (a shield, the summons, the Vigil of Clarity ...) fill the
-  Support spells tab, up to `SUPPORT_MAX` = 8 rows, and the tab is switched on. Every class gets the vigil (from level 40)
+  Support spells tab, up to `SUPPORT_MAX` = 8 rows, and the tab is switched on. Every class gets the vigil (from level 35)
   and Soulward (from level 80); the Bone Lord, the Necromancer line, the Illusionist and the Beastmaster get their minions too.
   Hastes stay in Tools; spells that cost health, need a shield, a party or a typed name, and the 2 h avatars are left
   out (they can be picked by hand in the tab where the data allows).
