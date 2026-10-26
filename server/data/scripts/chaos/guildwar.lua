@@ -250,6 +250,12 @@ local function sameOwner(a, b)
 	return (oa.ip or 0) ~= 0 and oa.ip == ob.ip
 end
 
+-- a text in a language: the key is the English pattern (i18n_strings.lua)
+local function L(lang, key, ...)
+	return ChaosI18n.text(lang, key, ...)
+end
+
+-- text: English, a deferred text or a function(lang) -> text (G.tellGuild)
 local function tellBoth(war, text)
 	G().tellGuild(war.guild1, text)
 	G().tellGuild(war.guild2, text)
@@ -331,20 +337,20 @@ function W.state(player, tab)
 	end)
 	for _, w in ipairs(mine) do
 		if gid and C.side(w, gid) then
-			local row = C.row(w, gid, t)
+			local row = C.row(w, gid, t, Chaos.lang(player))
 			table.insert(w.status == "pending" and data.wars.pending or data.wars.active, row)
 		end
 		if w.status == "active" and #data.board.active < c.board.active then
-			data.board.active[#data.board.active + 1] = C.row(w, nil, t)
+			data.board.active[#data.board.active + 1] = C.row(w, nil, t, Chaos.lang(player))
 		end
 	end
 	if gid then
 		for _, w in ipairs(W.historyOf(gid, c.board.history)) do
-			data.wars.history[#data.wars.history + 1] = C.row(w, gid, t)
+			data.wars.history[#data.wars.history + 1] = C.row(w, gid, t, Chaos.lang(player))
 		end
 	end
 	for _, w in ipairs(W.historyOf(nil, c.board.history)) do
-		data.board.history[#data.board.history + 1] = C.row(w, nil, t)
+		data.board.history[#data.board.history + 1] = C.row(w, nil, t, Chaos.lang(player))
 	end
 	if ChaosGuildBoss and ChaosGuildBoss.view then
 		local ok, view = pcall(ChaosGuildBoss.view, player)
@@ -391,6 +397,7 @@ end
 
 function W.message(player, ok, text)
 	if text and text ~= "" then
+		text = Chaos.tx(player, text) -- the core's refusals are English
 		player:sendTextMessage(ok and MESSAGE_INFO_DESCR or MESSAGE_STATUS_SMALL, text)
 		Chaos.send(player, OPCODE, "message", {ok = ok and true or false, text = text})
 	end
@@ -446,10 +453,14 @@ function W.declare(player, data)
 	if terms.stake > 0 then
 		G().logRow(gid, player, "war", terms.stake, 0, 0, string.format("stake of the war offer to %s (held)", tname))
 	end
-	G().tellGuild(gid, string.format("%s declared war on %s: %s. The offer is open for %d hours.", player:getName(), tname,
-		C.termsText(war), c.offerHours))
-	G().tellGuild(tid, string.format("%s declares WAR on your guild: %s. Your leader or a vice-leader can accept or decline it " ..
-		"(Social > Guild Wars) within %d hours.", gname, C.termsText(war), c.offerHours))
+	G().tellGuild(gid, function(lang)
+		return L(lang, "%s declared war on %s: %s. The offer is open for %d hours.", player:getName(), tname, C.termsText(war, lang),
+			c.offerHours)
+	end)
+	G().tellGuild(tid, function(lang)
+		return L(lang, "%s declares WAR on your guild: %s. Your leader or a vice-leader can accept or decline it (Social > Guild Wars) within %d hours.",
+			gname, C.termsText(war, lang), c.offerHours)
+	end)
 	notify(tid, "War declared", string.format("%s declares war: %s.", gname, C.termsText(war)))
 	log(string.format("%s (%d) offered war %d to %s (%d): %s", gname, gid, id, tname, tid, C.termsText(war)))
 	W.push({gid, tid})
@@ -475,10 +486,17 @@ local function closeOffer(war, status, byName)
 			end
 		end
 	end
-	local what = status == "declined" and string.format("%s declined the war offered by %s%s.", war.name2, war.name1,
-		byName and (" (" .. byName .. ")") or "") or status == "cancelled" and string.format("%s took back its war offer to %s.",
-		war.name1, war.name2) or string.format("The war offer of %s to %s expired.", war.name1, war.name2)
-	tellBoth(war, what .. ((war.escrow1 or 0) > 0 and " The stake went back to the guild bank." or ""))
+	tellBoth(war, function(lang)
+		local what
+		if status == "declined" then
+			what = L(lang, "%s declined the war offered by %s%s.", war.name2, war.name1, byName and (" (" .. byName .. ")") or "")
+		elseif status == "cancelled" then
+			what = L(lang, "%s took back its war offer to %s.", war.name1, war.name2)
+		else
+			what = L(lang, "The war offer of %s to %s expired.", war.name1, war.name2)
+		end
+		return what .. ((war.escrow1 or 0) > 0 and L(lang, " The stake went back to the guild bank.") or "")
+	end)
 	log(string.format("war %d %s", war.id, status))
 	W.push({war.guild1, war.guild2})
 	return true
@@ -534,11 +552,14 @@ function W.accept(player, id)
 		G().logRow(gid, player, "war", war.stake, 0, 0, string.format("stake of the war with %s (held)", war.name1))
 	end
 	local live = W.refreshWarLists({war.guild1, war.guild2})
-	local text = string.format("WAR! %s and %s are at war: %s. Ends in %s.", war.name1, war.name2, C.termsText(war),
-		C.durationText(war.hours * 3600))
-	tellBoth(war, text .. (live and "" or " The war emblems show after your next login."))
+	tellBoth(war, function(lang)
+		return L(lang, "WAR! %s and %s are at war: %s. Ends in %s.", war.name1, war.name2, C.termsText(war, lang),
+			C.durationText(war.hours * 3600)) .. (live and "" or L(lang, " The war emblems show after your next login."))
+	end)
 	if c.broadcast then
-		Chaos.broadcast(MESSAGE_EVENT_ADVANCE, "%s and %s are now at war (%s).", war.name1, war.name2, C.termsText(war))
+		Chaos.broadcast(MESSAGE_EVENT_ADVANCE, function(lang)
+			return L(lang, "%s and %s are now at war (%s).", war.name1, war.name2, C.termsText(war, lang))
+		end)
 	end
 	log(string.format("war %d accepted by %s: base war %d", war.id, player:getName(), baseId))
 	W.push(nil)
@@ -611,25 +632,28 @@ function W.finish(war, reason, loserSide, byName)
 		end
 	end
 	W.refreshWarLists({war.guild1, war.guild2})
-	local result
-	if side == 0 then
-		result = string.format("The war between %s and %s ended in a draw (%s, %s).", war.name1, war.name2, C.scoreText(war),
-			C.reasonText(reason))
-	elseif reason == "surrender" then
-		result = string.format("%s surrendered%s: %s wins the war (%s).", side == 1 and war.name2 or war.name1,
-			byName and (" (" .. byName .. ")") or "", side == 1 and war.name1 or war.name2, C.scoreText(war))
-	else
-		result = string.format("%s won the war against %s (%s, %s).", side == 1 and war.name1 or war.name2,
-			side == 1 and war.name2 or war.name1, C.scoreText(war, winner), C.reasonText(reason))
-	end
-	if pay.pay1 + pay.pay2 > 0 and side ~= 0 then
-		result = result .. string.format(" %s gold goes to the winner's guild bank.", C.money(pay.pay1 + pay.pay2))
+	local function result(lang)
+		local text
+		if side == 0 then
+			text = L(lang, "The war between %s and %s ended in a draw (%s, %s).", war.name1, war.name2, C.scoreText(war),
+				C.reasonText(reason, lang))
+		elseif reason == "surrender" then
+			text = L(lang, "%s surrendered%s: %s wins the war (%s).", side == 1 and war.name2 or war.name1,
+				byName and (" (" .. byName .. ")") or "", side == 1 and war.name1 or war.name2, C.scoreText(war))
+		else
+			text = L(lang, "%s won the war against %s (%s, %s).", side == 1 and war.name1 or war.name2,
+				side == 1 and war.name2 or war.name1, C.scoreText(war, winner), C.reasonText(reason, lang))
+		end
+		if pay.pay1 + pay.pay2 > 0 and side ~= 0 then
+			text = text .. L(lang, " %s gold goes to the winner's guild bank.", C.money(pay.pay1 + pay.pay2))
+		end
+		return text
 	end
 	tellBoth(war, result)
 	if c.broadcast then
 		Chaos.broadcast(MESSAGE_EVENT_ADVANCE, result)
 	end
-	log(string.format("war %d ended: %s", war.id, result))
+	log(string.format("war %d ended: %s", war.id, result("en")))
 	W.push(nil)
 	return true
 end
@@ -683,9 +707,10 @@ function W.onKill(victim, killer)
 		done = C.addKill(war, side)
 		db.query(string.format("UPDATE `%s` SET `kills%d` = `kills%d` + 1 WHERE `id` = %d AND `status` = 'active'", T().wars, side, side, war.id))
 	end
-	local line = string.format("War %s - %s: %s killed %s%s. Score %s : %s.", war.name1, war.name2, killer:getName(), victim:getName(),
-		counted and "" or (" (not counted: " .. reason .. ")"), war.kills1, war.kills2)
-	tellBoth(war, line)
+	tellBoth(war, function(lang)
+		return L(lang, "War %s - %s: %s killed %s%s. Score %s : %s.", war.name1, war.name2, killer:getName(), victim:getName(),
+			counted and "" or L(lang, " (not counted: %s)", ChaosI18n.translate(lang, reason)), war.kills1, war.kills2)
+	end)
 	if done then
 		W.finish(war, "limit")
 	else
@@ -791,7 +816,7 @@ local function handle(player, action, data)
 			return
 		end
 	elseif limited(player, "guildwar.act", 1000) then
-		W.message(player, false, "Slow down.")
+		W.message(player, false, Chaos.t(player, "Slow down."))
 		return
 	elseif action == "declare" then
 		ok, text = W.declare(player, data)
@@ -835,7 +860,7 @@ function login.onLogin(player)
 	if gid and rank >= cfg().rank then
 		for _, w in pairs(wars()) do
 			if w.status == "pending" and w.guild2 == gid then
-				player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "%s declared war on your guild (%s). Answer it in Social > Guild Wars before it expires in %s.", w.name1, C.termsText(w), C.durationText(w.expiresAt - now())))
+				player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "%s declared war on your guild (%s). Answer it in Social > Guild Wars before it expires in %s.", w.name1, C.termsText(w, Chaos.lang(player)), C.durationText(w.expiresAt - now())))
 			end
 		end
 	end

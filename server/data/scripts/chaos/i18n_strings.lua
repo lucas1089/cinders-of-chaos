@@ -4495,5 +4495,154 @@ return {
 			" + %d Conquest Tokens",
 		["Unique"] =
 			"Única",
+		-- Guild wars (guildwar_core.lua, guildwar.lua)
+		["Pick one of the frag limits."] =
+			"Escolha um dos limites de frags.",
+		["Pick one of the durations."] =
+			"Escolha uma das durações.",
+		["The stake cannot be negative."] =
+			"A aposta não pode ser negativa.",
+		["Guild wars are closed."] =
+			"As guerras de guild estão fechadas.",
+		["Only the guild leader or a vice-leader can declare war."] =
+			"Só o líder ou um vice-líder da guild pode declarar guerra.",
+		["There is no guild of that name."] =
+			"Não existe guild com esse nome.",
+		["Your guild cannot declare war on itself."] =
+			"Sua guild não pode declarar guerra a si mesma.",
+		["Wars are fought only within a realm: that guild belongs to another realm."] =
+			"Guerras só acontecem dentro de um realm: essa guild pertence a outro realm.",
+		["These two guilds are led from the same account or connection; they cannot fight each other."] =
+			"Essas duas guilds são lideradas pela mesma conta ou conexão; elas não podem lutar entre si.",
+		["Your guild needs at least %d members to declare war."] =
+			"Sua guild precisa de pelo menos %d membros para declarar guerra.",
+		["That guild has fewer than %d members."] =
+			"Essa guild tem menos de %d membros.",
+		["There is already an offer or a war between these guilds."] =
+			"Já existe uma oferta ou uma guerra entre essas guilds.",
+		["These guilds fought recently: a new war in %s."] =
+			"Essas guilds lutaram há pouco: uma nova guerra em %s.",
+		["Your guild already has %d wars and offers."] =
+			"Sua guild já tem %d guerras e ofertas.",
+		["That guild has as many wars and offers as it may."] =
+			"Essa guild já tem o máximo de guerras e ofertas permitido.",
+		["Your guild just declared a war. Wait a moment."] =
+			"Sua guild acabou de declarar uma guerra. Espere um momento.",
+		["Only the guild leader can put gold at stake."] =
+			"Só o líder da guild pode apostar ouro.",
+		["Season characters cannot use the guild bank while the season runs."] =
+			"Personagens da season não podem usar o banco da guild enquanto a season durar.",
+		["The guild bank holds %s gold; the stake is %s."] =
+			"O banco da guild tem %s de ouro; a aposta é de %s.",
+		["That war is not there any more."] =
+			"Essa guerra não existe mais.",
+		["Your guild is not part of that war."] =
+			"Sua guild não faz parte dessa guerra.",
+		["Only the guild leader or a vice-leader can do that."] =
+			"Só o líder ou um vice-líder da guild pode fazer isso.",
+		["That offer is no longer open."] =
+			"Essa oferta não está mais aberta.",
+		["Your guild made that offer; the other guild answers it."] =
+			"Sua guild fez essa oferta; a outra guild é quem responde.",
+		["That offer expired."] =
+			"Essa oferta expirou.",
+		["Your guild already has %d wars."] =
+			"Sua guild já tem %d guerras.",
+		["Only the guild leader can accept a war with gold at stake."] =
+			"Só o líder da guild pode aceitar uma guerra com ouro em jogo.",
+		["Your guild bank holds %s gold; the stake is %s."] =
+			"O banco da sua guild tem %s de ouro; a aposta é de %s.",
+		["Only the guild that made the offer can take it back."] =
+			"Só a guild que fez a oferta pode retirá-la.",
+		["That war is not running."] =
+			"Essa guerra não está em andamento.",
+		["Unknown action."] =
+			"Ação desconhecida.",
+		["first to %d kills"] =
+			"primeiro a %d kills",
+		["%s gold at stake per side"] =
+			"%s de ouro em jogo por lado",
+		["no stake"] =
+			"sem aposta",
+		["frag limit reached"] =
+			"limite de frags atingido",
+		["time is up"] =
+			"o tempo acabou",
+		["surrender"] =
+			"rendição",
+		["a guild disbanded"] =
+			"uma guild foi dissolvida",
+		["ended by the staff"] =
+			"encerrada pela equipe",
+		["ended outside the game"] =
+			"encerrada fora do jogo",
+		["no war"] =
+			"sem guerra",
+		["war over"] =
+			"guerra encerrada",
+		["same account"] =
+			"mesma conta",
+		["same IP"] =
+			"mesmo IP",
+		["realm"] =
+			"realm",
+		["low level"] =
+			"level baixo",
+		["repeat"] =
+			"repetida",
+		["The declaration could not be saved."] =
+			"A declaração não pôde ser salva.",
+		["%s declared war on %s: %s. The offer is open for %d hours."] =
+			"%s declarou guerra a %s: %s. A oferta fica aberta por %d horas.",
+		["%s declares WAR on your guild: %s. Your leader or a vice-leader can accept or decline it (Social > Guild Wars) within %d hours."] =
+			"%s declara GUERRA à sua guild: %s. Seu líder ou um vice-líder pode aceitar ou recusar em até %d horas (Social > Guild Wars).",
+		["War declared on %s. They have %d hours to answer."] =
+			"Guerra declarada a %s. Eles têm %d horas para responder.",
+		["%s declined the war offered by %s%s."] =
+			"%s recusou a guerra oferecida por %s%s.",
+		["%s took back its war offer to %s."] =
+			"%s retirou sua oferta de guerra a %s.",
+		["The war offer of %s to %s expired."] =
+			"A oferta de guerra de %s a %s expirou.",
+		[" The stake went back to the guild bank."] =
+			" A aposta voltou para o banco da guild.",
+		["The war could not be started."] =
+			"A guerra não pôde ser iniciada.",
+		["You declined the war."] =
+			"Você recusou a guerra.",
+		["You took back the war offer."] =
+			"Você retirou a oferta de guerra.",
+		["Your guild surrendered."] =
+			"Sua guild se rendeu.",
+		["WAR! %s and %s are at war: %s. Ends in %s."] =
+			"GUERRA! %s e %s estão em guerra: %s. Termina em %s.",
+		[" The war emblems show after your next login."] =
+			" Os emblemas de guerra aparecem depois do seu próximo login.",
+		["Your guild is at war with %s."] =
+			"Sua guild está em guerra com %s.",
+		["The war between %s and %s ended in a draw (%s, %s)."] =
+			"A guerra entre %s e %s terminou em empate (%s, %s).",
+		["%s surrendered%s: %s wins the war (%s)."] =
+			"%s se rendeu%s: %s vence a guerra (%s).",
+		["%s won the war against %s (%s, %s)."] =
+			"%s venceu a guerra contra %s (%s, %s).",
+		[" %s gold goes to the winner's guild bank."] =
+			" %s de ouro vão para o banco da guild vencedora.",
+		["War %s - %s: %s killed %s%s. Score %s : %s."] =
+			"Guerra %s - %s: %s matou %s%s. Placar %s : %s.",
+		[" (not counted: %s)"] =
+			" (não contou: %s)",
+		["That guild does not exist any more."] =
+			"Essa guild não existe mais.",
+		["Wars are fought only within a realm."] =
+			"Guerras só acontecem dentro de um realm.",
+		["Your guild bank holds %s gold."] =
+			"O banco da sua guild tem %s de ouro.",
+		["That war changed in the meantime."] =
+			"Essa guerra mudou nesse meio tempo.",
+		["A stake is at least %s gold (or none)."] =
+			"Uma aposta é de no mínimo %s de ouro (ou nenhuma).",
+		["A stake is at most %s gold."] =
+			"Uma aposta é de no máximo %s de ouro.",
 	},
 }

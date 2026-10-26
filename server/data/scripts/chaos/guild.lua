@@ -200,7 +200,8 @@ end
 
 function G.tellGuild(gid, text, msgType)
 	for _, p in ipairs(G.onlineMembers(gid)) do
-		p:sendTextMessage(msgType or MESSAGE_EVENT_ADVANCE, Chaos.tx(p, text)) -- each member reads their language
+		-- each member reads their language: `text` is English (or a deferred text), or a function(lang) -> text
+		p:sendTextMessage(msgType or MESSAGE_EVENT_ADVANCE, type(text) == "function" and text(Chaos.lang(p)) or Chaos.tx(p, text))
 	end
 end
 

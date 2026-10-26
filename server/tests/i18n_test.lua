@@ -275,6 +275,8 @@ local REASONS = {
 	["buildshare_core.lua"] = {"^Preset ", "^class "}, ["buildshare.lua"] = {},
 	["reports_core.lua"] = {"^New bug report", "^New player report", "^Character position", "^Reported map tile", "^Level %%d"},
 	["salvage_core.lua"] = {}, ["salvage.lua"] = {"^Main backpack", "^Set piece$"}, ["crafting.lua"] = {"^Rift Key$"},
+	["guildwar_core.lua"] = {}, ["guildwar.lua"] = {"^War declared$", "^%%s declares war: ", "^%%s %%(%%d%%) offered war", "^%%d: ", "^No war offers",
+		"^%%d war offer", "^War %%d ended", "^Offer %%d expired", "^Chaos guildwar"},
 	["market_core.lua"] = {}, ["market_config.lua"] = {}, ["market_orders_core.lua"] = {},
 	["market_notify_core.lua"] = {"^While you were away", "^Market sales", "^Orb Exchange", "^Chaos Coin", "^your "},
 	["market.lua"] = {"^Market sweep", "^Buy orders%%s", "^Offer %%d", "^No such offer", "^/market", "^Chaos Coins$"},
@@ -305,7 +307,7 @@ for f, skips in pairs(REASONS) do
 					end
 					pos = j + 1
 					local lit = table.concat(buf)
-					local sentence = lit:find("^%u%l") and lit:find("%a+[ ]%a") and not lit:find("`") and not lit:find("^%u+ ")
+					local sentence = lit:find("^%u[%l ]") and lit:find("%a+[ ]%a") and not lit:find("`") and not lit:find("^%u+ ")
 					for _, x in ipairs(SQL) do
 						if lit:find(x) then sentence = false end
 					end
