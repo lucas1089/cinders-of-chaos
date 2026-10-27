@@ -56,8 +56,8 @@ for _, p in ipairs(cfg.plans) do
 end
 ok(cfg.aid >= 47930 and cfg.aid <= 47939, "aid in its block")
 local lv = cfg.hall.levels
-ok(lv and #lv == 3 and lv[1].z == 7 and lv[1].max == 500 and lv[2].z == 6 and lv[2].max == 1000 and lv[3].z == 5 and lv[3].max == nil,
-	"floors by level: 7 for 1-500, 6 for 500-1000, 5 for 1000 and up")
+ok(lv and #lv == 3 and lv[1].z == 7 and lv[1].max == 560 and lv[2].z == 6 and lv[2].max == 1000 and lv[3].z == 5 and lv[3].max == nil,
+	"floors by level: 7 for 1-560, 6 for 560-1000, 5 for 1000 and up")
 ok(cfg.hall.quests and cfg.hall.quests.z == 7 and #cfg.hall.quests.chests == 4, "the quest hall and the four reward chests of the base plaza")
 for k, v in pairs(cfg.texts["pt-BR"]) do
 	local a, b = select(2, k:gsub("%%[ds]", "")), select(2, v:gsub("%%[ds]", ""))

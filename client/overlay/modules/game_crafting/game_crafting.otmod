@@ -3,7 +3,7 @@ Module
   description: Crafting bench (crafting orbs on backpack items; extended opcode 232)
   author: Cinders of Chaos
   sandboxed: true
-  scripts: [ recipeview, crafting ]
+  scripts: [ recipeview, lockmenu, crafting ]
   dependencies:
     - client_chaos_theme
     - game_interface

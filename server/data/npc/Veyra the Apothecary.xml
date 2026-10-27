@@ -14,7 +14,7 @@
 	<look type="136" head="78" body="94" legs="113" feet="115" addons="3" />
 	<parameters>
 		<parameter key="module_shop" value="1" />
-		<parameter key="message_greet" value="Welcome, |PLAYERNAME|. Draughts for the living, runes for the bold, rope for the deep. Ask for a {trade}." />
+		<parameter key="message_greet" value="Welcome, |PLAYERNAME|. Draughts for the living, runes for the bold, rope for the deep. Ask for a {trade}, or an {upgrade} for your Everfull flask." />
 		<parameter key="message_farewell" value="Drink before the dark does, |PLAYERNAME|." />
 		<parameter key="message_walkaway" value="The shelves keep until you return." />
 		<parameter key="message_sendtrade" value="Every potion is sold one at a time. The bulk packs are in the store." />

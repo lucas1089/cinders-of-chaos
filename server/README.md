@@ -5215,6 +5215,7 @@ Owner request 2026-10-16: "Remove the potion flasks and make the first pots infi
     get client ids of their own, the held message already carries the real look; change `look` in the client table
     `EVERFULL_ITEMS`, and then patch 0043's look preference, the follow rule for the 266 / 268 rows and the empty-flask caveat
     are no longer needed (the use of a look maps to one server id).
+    Auto setup (owner 2026-10-27, "o auto setup nao coloca as everfull"): it also counts the flasks seen by their own O247 looks in open containers (for a slot the message says nothing about), asks `sync` and waits 0.6 s when no message has arrived yet, sets a row on the flask's own look when the row cannot follow it, and the potion and rune dropdowns of the helper are sorted alphabetically (`ChaosHelperPotions.sortOptions`).
   - **Install:** the same step `potions` (nine nodes now; twelve since O247). New: the `tier` of each row, the store offers, no sellers for tier 2+.
   - **Texts:** English keys, pt-BR in `i18n_strings.lua` ("Everfull potion tiers"). The item descriptions are in items.xml.
   - **Not done / risks:** the new
@@ -7280,8 +7281,8 @@ Built on `loadtest.py` (login, client guard answer, 10.98 packets). Standard lib
   Characters "Tester Aaa" upward; a name a player owns is skipped. Levels 30/100/250/500/750/1000/1250/1500/1750/2000 in turn (each band 1/10 of the testers), the classes shifted
   by one each round (`plan_bots`).
   Rows: account type 1, group 1, the marker storage, the hunt spot (+2..+4) on a hunt of its level.
-  The hunt is chosen by `tester_core.safe_hunts`: the whole band of the map mark, in hunting levels (twice the pool level the
-  mark prints, `pace_config.lua` `baseLevelMult`), at or under the tester's level, and on a spawn centre whose monsters all
+  The hunt is chosen by `tester_core.safe_hunts`: the whole band of the map mark (hunting levels since 2026-10-27; the pool levels
+  of `bounty_pool.lua` still need `baseLevelMult`), at or under the tester's level, and on a spawn centre whose monsters all
   hunt at or under its level (`loadtest.spawn_levels`, from `bounty_pool.lua` and the spawn file); none within 30 sqm: the temple.
   State: `/var/lib/chaos/testers/state.json`, mode 0600, root. It holds the passwords.
 - `run`: every bot logs in from its own 127.1.x.y address (the 2-per-IP rule). Secure mode on.
@@ -11975,7 +11976,12 @@ previewed items (paths and item signatures); when anything changed in between th
 confirm again").
 
 **The item lock.** The bench's Lock / Unlock button (gear and Rift Keys in the backpack) sets the custom attribute
-`chaos_locked` = 1. **Locked items cannot be sold nor melted.** A locked item is refused by salvage, skipped by "salvage
+`chaos_locked` = 1. The game's item right-click menu has the same as "Lock item" / "Unlock item" (client `game_crafting`
+`lockmenu.lua`, two `addMenuHook` entries; the menu shows the one that fits the `chaos_locked` key 3 the item packet carries): action
+`lockAt {pos, cid, on}` on the salvage opcode. The server finds the item by its client position (inventory slot or open
+container, `ChaosItemTooltip.decodePos`; never the ground), requires that it hangs on the player himself (`getTopParent`), that
+its client id is `cid`, and that it is gear or a Rift Key (also when worn); it answers with a text message and one
+rate-limited action per `singleIntervalMs`. The bench's `lock` action only takes a real `on = true`. **Locked items cannot be sold nor melted.** A locked item is refused by salvage, skipped by "salvage
 all", and never sold by the **Auto Seller**, whatever rarities are ticked (`autosell.lua` reads the attribute,
 `ChaosShopServices.sellBlocked` returns "locked"; "Auto seller: kept a locked item."). The look text says "It is locked:
 it cannot be sold, salvaged or thrown away." (EventCallback onLook, index 120); the gear grid shows locked items dimmed,
@@ -18747,8 +18753,9 @@ Tests: `tests/hunt_teleports_test.lua` (core and the engine file against a mock)
 
 ## Hall order (`tools/hall_order.py`, `tools/hall_quests.py`, `tools/hall_hunts.csv`, `install_content_areas.py`, `hunt_teleports.lua`)
 Owner, 2026-10-16: the teleport hall of Cinderhold ordered by level, floors going up as the monsters get stronger.
+Hunting levels (owner 2026-10-27): the base hunts of `hall_hunts.csv` are on the pool scale; the install multiplies their `level`, `lo` and `hi` by `baseLevelMult` (`hall_order.hunting_rows`), so signs, labels, the order and the floors use the hunting level like the plans. With them the 560 boundary below replaced 500 (z 6 would have needed 44 slots, it has 41).
 Owner, 2026-10-18 (after the first order overwrote some quest teleports of the ground floor): the **ground floor z 7
-holds the hunts of levels 1-500, z 6 of 500-1000, z 5 of 1000 and up** (`hall.levels` in the config), and the base
+holds the hunts of levels 1-560 (500 until 2026-10-27, see "Hunting levels in the hall"), z 6 of 560-1000, z 5 of 1000 and up** (`hall.levels` in the config), and the base
 quests are back, in their own hall. Every hunt teleport of the hall, the base server's and the planned hunts', takes a
 slot of the floor its level belongs on, by its level (below), then band floor, ceiling and id: along the corridor from
 west to east (north before south in a column). A floor with too few slots is grown (`room.wings`; below). A new hunt
@@ -19211,11 +19218,22 @@ level only for a monster type with both `min` and `max` of `<level>` in its XML 
 `<level>`. Giving them one would change them: the engine's level adds health (`monsterBonusHealth` x level), speed,
 damage and a skull colour. So patch 0040 adds a display level instead (`monster:setDisplayLevel` /
 `getDisplayLevel`), shown after the name and in the look text only. At every spawn (`onSpawn`, before the
-placement) `monster_levels.lua` gives a monster without a level of its own `ChaosLoot.monsterLevel`: the bounty pool's
-hunting level of its type, else the experience / health estimate; the same level item level, monster damage and pace
-use. Not for a player's summon (a Necromancer minion shows its owner's level, see "Summons: targets, walk-through,
+placement) `monster_levels.lua` gives a monster without a level of its own its **hunting level** (owner 2026-10-27, "O272"):
+`ChaosLoot.monsterLevel`, the bounty pool's "fair hunt" level of its type (else the experience / health estimate), times
+`pace_config.lua` `baseLevelMult` (2; `Chaos.huntingLevel`, `ChaosMonsterLevelsCore.huntingLevel`), the level pace
+uses to hunt it. Item level, monster damage and loot still read the pool level (display only). A generated area point's
+level and a waystone run's level are hunting levels already and are not multiplied. Not for a player's summon (a Necromancer minion shows its owner's level, see "Summons: targets, walk-through,
 levels"). Display monsters of the teleport room get it like any monster. Without patch 0040
 nothing changes.
+
+**Monsters outside the pool and summons in a high hunt (beta 2026-10-27).** A type that is not in `bounty_pool.lua` (fewer
+than six spawn entries, scenery, a boss: Sheep, Dog, Mirror Image, Tornado, Rift Lord ...) only had the estimate of its
+experience and health, so a Sheep stood in a level 240 hunt as "level 2". Now `ChaosMonsterLevels.apply` raises it to the
+lower end of the hunting area it stands in (the nearest hunt mark of `data/chaos_poi.lua` within 60 sqm on its floor,
+`ChaosMonsterLevelsCore.areaFloor`); a type of the pool is raised only when it shows less than a tenth of that lower end
+(`farBelow`: a Badger in a level 120 hunt). The summon of a monster shows at least its master's level. The monster bar
+(`monster_tiers.lua`) shows the nameplate level. `tests/hunt_display_levels_test.lua` crosses the pool, the spawn data and
+the marks and fails when a monster of a hunt of 100+ would show less than a tenth of its lower end.
 
 **Scaled monsters** show the level their system scaled them to, not their type's. The system passes it to
 `Chaos.createMonsterNamed(type, pos, extended, force, shownName, shownLevel)` (or sets `Chaos.spawnLevel` around
@@ -20534,7 +20552,7 @@ script answers its own part. Client: `client/overlay/modules/game_mapmarkers/` (
   crafting tables (action ids 38820-38826; three or more within 20 tiles are a "Crafting hall"), the service NPCs of the
   spawn file (travel, bank, blessings, shop, by their NPC file and script), hunting areas (the bounty pool's monsters at
   the busiest spots of the bestiary spawn data, spots within 40 tiles merged, the level band from the middle 70% of the
-  spawn entries, at least 12 entries, the 300 biggest) and the island, raid and lair bosses of `bossspawns_config.lua`.
+  spawn entries (printed as the **hunting level**, the pool level times `pace_config.lua` `baseLevelMult`, since 2026-10-27: "Terror Bird (level 40-60)"; `gen_poi.py` reads the multiplier, `data/chaos_poi.lua` was rewritten with the same transform), at least 12 entries, the 300 biggest) and the island, raid and lair bosses of `bossspawns_config.lua`.
   Every name is checked against the rename lists (sha256 of each phrase); a mark that would still carry an old-world
   name is left out. The committed `server/data/chaos_poi.lua` is the output for the shipped map (800 marks: 20 temples,
   45 depots, 4 crafting halls, 27 banks, 19 blessings, 63 travel, 272 shops, 50 bosses, 300 hunting areas);

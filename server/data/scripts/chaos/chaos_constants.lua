@@ -2198,3 +2198,26 @@ ChaosOpcodes.unlocks = 115
 -- 7103020 - 7103029 (weeklychest_config.lua storage); no tables.
 ChaosOpcodes.weeklyChest = 117
 Chaos.storage.weeklyChest = 7103020
+-- Hunting level on screen (owner 2026-10-27): the bounty pool's level (ChaosLoot.monsterLevel) is half of the level
+-- players hunt a monster at; every text that prints a pool-scale level (monster level thresholds, map marks) prints
+-- Chaos.huntingLevel(n) = n x pace_config.lua baseLevelMult. Display only: the gates keep comparing pool levels.
+function Chaos.huntingMult()
+	local pc = ChaosPaceConfig
+	if type(pc) ~= "table" then
+		local ok, c = pcall(dofile, "data/scripts/chaos/pace_config.lua")
+		if not ok then
+			ok, c = pcall(dofile, "server/data/scripts/chaos/pace_config.lua")
+		end
+		pc = ok and type(c) == "table" and c or nil
+	end
+	local m = pc and tonumber(pc.baseLevelMult)
+	return (m and m >= 1) and m or 1
+end
+
+function Chaos.huntingLevel(poolLevel)
+	local n = tonumber(poolLevel)
+	if not n then
+		return poolLevel
+	end
+	return math.floor(n * Chaos.huntingMult() + 0.5)
+end

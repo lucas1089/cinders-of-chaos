@@ -290,8 +290,15 @@ local function roleOf(creature)
 	return nil
 end
 
--- the level the monster bar shows: the one the item level uses (loot.lua ChaosLoot.monsterLevel)
+-- the level the monster bar shows: the one on the nameplate (engine getDisplayLevel, set by monster_levels.lua: the
+-- HUNTING level, owner 2026-10-27), else the one the item level uses (loot.lua ChaosLoot.monsterLevel)
 local function levelOf(creature)
+	if creature.getDisplayLevel then
+		local okD, shown = pcall(function() return creature:getDisplayLevel() end)
+		if okD and tonumber(shown) and tonumber(shown) > 0 then
+			return math.floor(tonumber(shown))
+		end
+	end
 	if not (ChaosLoot and ChaosLoot.monsterLevel) then
 		return nil
 	end

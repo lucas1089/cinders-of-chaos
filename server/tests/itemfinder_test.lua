@@ -645,8 +645,8 @@ do
 		check(awakening and awakening.d:find("legendary and boss monsters always draw one entry by weight (this one 20 of " ..
 			total .. ")", 1, true) ~= nil, "and its weight in the guaranteed draw: " .. tostring(awakening and awakening.d))
 		eq(globalRow(32255).v, "global drop, about 1 in 10,000 magic monster kills", "Orb of Ruin: none from normal monsters")
-		check(globalRow(D.rift.key.itemId).v:find("level 60+", 1, true) ~= nil, "the key's level gate")
-		check(globalRow(gems.firstId + 4).v:find("level 300+", 1, true) ~= nil, "a perfect gem's level gate: " .. globalRow(gems.firstId + 4).v)
+		check(globalRow(D.rift.key.itemId).v:find("level " .. Chaos.huntingLevel(60) .. "+", 1, true) ~= nil, "the key's level gate")
+		check(globalRow(gems.firstId + 4).v:find("level " .. Chaos.huntingLevel(300) .. "+", 1, true) ~= nil, "a perfect gem's level gate: " .. globalRow(gems.firstId + 4).v)
 	end
 	has(2160, "reward", "Ashen Pass", "the season pass")
 	has(29855, "reward", "The Ashen Pilgrimage", "the season journey")

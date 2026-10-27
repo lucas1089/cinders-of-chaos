@@ -76,13 +76,13 @@ eq(TC.health_anomaly(60, 0, True, 0.1), None, 'a death after damage')
 eq(TC.health_anomaly(100, 70, False, 0.1), None, 'a hit')
 eq(TC.health_anomaly(100, 0, False, 0.1), 'death within one hit from full health', 'the update to 0 %')
 
-# where a tester hunts: the whole band, in hunting levels (twice the pool level the marks print), at or under the level
-HUNTS = [(1, 10, 1, 1, 7), (10, 20, 2, 2, 7), (20, 30, 3, 3, 7), (20, 90, 4, 4, 7), (40, 60, 5, 5, 7), (1, 20, 6, 6, 7)]
-eq([h[:2] for h in TC.safe_hunts(HUNTS, 30)], [(1, 10)], 'level 30: bands up to 15 (not 20-30, not 20-90)')
-eq([h[:2] for h in TC.safe_hunts(HUNTS, 45)], [(10, 20), (1, 20)], 'level 45: bands up to 22, the highest ones')
-eq([h[:2] for h in TC.safe_hunts(HUNTS, 100)], [(20, 30)], 'level 100: up to 50, the highest top')
-eq([h[:2] for h in TC.safe_hunts(HUNTS, 4)], [(1, 10)], 'nothing that low: the lowest bands')
-eq(all(2 * h[1] <= 45 for h in TC.safe_hunts(HUNTS, 45)), True, 'never a band over the level')
+# where a tester hunts: the whole band (the marks print hunting levels since 2026-10-27) at or under the level
+HUNTS = [(1, 20, 1, 1, 7), (20, 40, 2, 2, 7), (40, 60, 3, 3, 7), (40, 180, 4, 4, 7), (80, 120, 5, 5, 7), (1, 40, 6, 6, 7)]
+eq([h[:2] for h in TC.safe_hunts(HUNTS, 30)], [(1, 20)], 'level 30: bands up to 30 (not 20-40, not 40-180)')
+eq([h[:2] for h in TC.safe_hunts(HUNTS, 45)], [(20, 40), (1, 40)], 'level 45: bands up to 45, the highest ones')
+eq([h[:2] for h in TC.safe_hunts(HUNTS, 100)], [(40, 60)], 'level 100: up to 100, the highest top')
+eq([h[:2] for h in TC.safe_hunts(HUNTS, 4)], [(1, 20)], 'nothing that low: the lowest band')
+eq(all(h[1] <= 45 for h in TC.safe_hunts(HUNTS, 45)), True, 'never a band over the level (no second doubling)')
 
 # resting in the temple after a death: 20 s, doubled for each death in a row, at most 5 minutes, forgotten after 5 minutes
 eq(TC.death_rest([100.0], 100.0), 20.0, 'first death: 20 s')
@@ -620,6 +620,8 @@ SP = ('<spawn centerx="100" centery="100" centerz="7" radius="3">\n<monster name
 CL = LT.spawn_levels(SP, LT.pool_levels(POOL))
 eq(CL, {(100, 100, 7): 10, (104, 100, 7): 40, (108, 100, 7): 568, (112, 100, 7): 10 ** 9},
    'a spawn centre counts at its highest monster, twice the pool level; an unknown monster never safe')
+eq(LT.base_level_mult(), 2, 'baseLevelMult read from pace_config.lua')
+eq(LT.spawn_levels(SP, LT.pool_levels(POOL), 3)[(104, 100, 7)], 60, 'the multiplier is a parameter')
 IDX = LT.spawn_index(SP)
 eq(LT.snap_to_spawn((107, 100, 7), IDX, reach=12, centre_levels=CL, max_level=30), (100, 100, 7),
    'level 30 passes the Terror Bird (40) and the Juggernaut: the quiet centre')

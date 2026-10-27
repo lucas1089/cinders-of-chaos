@@ -189,7 +189,8 @@ def health_anomaly(before_pct, after_pct, died, age=None, seen=True):
 
 
 # ------------------------------------------------------------------------------------------------ where a bot hunts
-HUNT_MULT = 2  # the hunting level is twice the pool level that the map marks print (pace_config.lua baseLevelMult)
+# Since 2026-10-27 the map marks print the HUNTING level (gen_poi.py: pool level x pace_config.lua baseLevelMult), so a
+# band is compared with the character level as it is; only pool levels (bounty_pool.lua) still need baseLevelMult.
 DEATH_REST = 20.0     # seconds in the temple after the first death in a row, doubled for each one that follows
 DEATH_REST_MAX = 300.0
 DEATH_WINDOW = 300.0  # deaths this close together are "in a row"
@@ -197,11 +198,11 @@ DEATH_WINDOW = 300.0  # deaths this close together are "in a row"
 
 def safe_hunts(hunts, level):
     """the hunts a tester of this level may be placed in: [(low, high, x, y, z)] of the map marks (loadtest.hunt_marks;
-    their band is in pool levels, so HUNT_MULT x it in hunting levels) whose whole band is at or under the level. The
-    first live run put level 30-45 testers into bands such as 20-30 or 20-90 (hunting level 40 to 180): 2998 deaths in 20
-    minutes, killers with a pool level of 20 to 284. Of those the ones with the highest top (at least 0.8 x the highest),
+    their band is in hunting levels since 2026-10-27, before that in pool levels, twice it in hunting levels) whose whole
+    band is at or under the level. The first live run put level 30-45 testers into bands such as 20-30 or 20-90 (read as
+    pool levels: hunting level 40 to 180): 2998 deaths in 20 minutes, killers with a pool level of 20 to 284. Of those the ones with the highest top (at least 0.8 x the highest),
     else, when no band is that low, the lowest ones."""
-    fit = [h for h in hunts if HUNT_MULT * h[1] <= level]
+    fit = [h for h in hunts if h[1] <= level]
     if fit:
         top = max(h[1] for h in fit)
         return [h for h in fit if h[1] >= top * 0.8]

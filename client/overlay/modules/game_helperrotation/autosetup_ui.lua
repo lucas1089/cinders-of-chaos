@@ -227,7 +227,14 @@ end
 
 local TAB_NAMES = { healing = 'Healing', tools = 'Tools', shooter = 'Shooter', timers = 'Timers', support = 'Support spells' }
 
-function W.run()
+function W.run(waited)
+  -- the Everfull the character carries is known from the server's `held` message: when it has not come yet, ask and run again
+  local EH = ChaosEverfullHeld
+  if not waited and EH and EH.received and not EH.received() and EH.ask and g_game.isOnline() and scheduleEvent then
+    EH.ask()
+    scheduleEvent(function() W.run(true) end, 600)
+    return true
+  end
   local H, M = helper()
   local player = g_game.getLocalPlayer()
   local cfg = H and H.getHelperConfig and H.getHelperConfig()

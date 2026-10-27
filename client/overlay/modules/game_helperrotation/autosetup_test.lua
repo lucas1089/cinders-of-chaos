@@ -3,6 +3,7 @@ local dir = (arg and arg[0] or ''):match('^(.*[/\\])') or './'
 dofile(dir .. 'autorotation_data.lua')
 dofile(dir .. 'autorotation.lua')
 dofile(dir .. 'autosetup.lua')
+dofile(dir .. '../game_helper/helper_potions.lua')
 dofile(dir .. '../game_chaosspells/spelldata.lua')
 dofile(dir .. '../game_helpersupport/supportspells.lua')
 local A, S = ChaosAutoRotation, ChaosAutoSetup
@@ -98,6 +99,35 @@ eq(planFor(18, 60, ALL_POTIONS).healing.potions[1].id, 236, 'Monk line 60: stron
 eq(planFor(23, 250, ALL_POTIONS).healing.potions[1].id, 23375, 'Templar 250: supreme health')
 eq(planFor(23, 250, ALL_POTIONS).healing.potions[2].id, 23373, 'Templar 250: ultimate mana')
 eq(planFor(5, 49, ALL_POTIONS).healing.potions[2].id, 268, 'level 49: no strong potions yet')
+
+-- the Everfull the character carries (O246 held message, own looks since O247): preferred over stock potions of its tier or lower
+local function flask(look, tier, line, level, ready)
+  return { look = look, tier = tier, line = line, level = level, ready = ready ~= false }
+end
+-- known only from the held message (closed backpack: nothing visible): the plain tier 1 flask, the Health Potion row follows it
+local closed = { health = flask(38645, 1, 'health', 0), mana = flask(38649, 1, 'mana', 0) }
+eq(planFor(4, 100, {}, closed).healing.potions[1].id, 266, 'held only: the health row follows the Everfull flask')
+eq(planFor(4, 100, {}, closed).healing.potions[2].id, 268, 'held only: the mana row follows the Everfull flask')
+-- tier 2 flask beside stock potions: the Everfull beats the stock Great Health / Mana Potion (same tier) and the lower ones
+local t2 = { health = flask(38646, 2, 'health', 80), mana = flask(38650, 2, 'mana', 80) }
+eq(planFor(4, 100, { 239, 236, 238, 237 }, t2).healing.potions[1].id, 266, 'Everfull great health beats the stock Great Health Potion')
+eq(planFor(4, 100, { 239, 236, 238, 237 }, t2).healing.potions[2].id, 268, 'Everfull great mana beats the stock Great Mana Potion')
+-- a spirit flask counts for the health row, on its own look
+eq(planFor(4, 100, { 239 }, { health = flask(38654, 2, 'spirit', 80) }).healing.potions[1].id, 38654, 'Everfull great spirit: its own look')
+-- a stock potion of a higher tier still wins over a lower Everfull
+eq(planFor(4, 300, { 23375 }, closed).healing.potions[1].id, 23375, 'stock supreme beats the tier 1 Everfull')
+-- no Everfull: the stock fallback
+eq(planFor(4, 100, { 239 }, {}).healing.potions[1].id, 239, 'no Everfull held: the stock Great Health Potion')
+eq(planFor(4, 100, { 239 }, nil).healing.potions[1].id, 239, 'no held message: the stock potion')
+-- level too low for the tier: the flask is not used
+eq(planFor(4, 50, { 236 }, t2).healing.potions[1].id, 236, 'level 50 below the great flask: stock')
+eq(planFor(4, 50, {}, t2).healing.potions[1].id, 266, 'level 50 below the great flask, nothing carried: the Everfull look')
+-- no message yet: the flask seen in an open container, on its own look (the row cannot follow upgrades without the message)
+eq(planFor(4, 100, { 38646, 239 }, nil).healing.potions[1].id, 38646, 'seen in a container: the Everfull great health look')
+eq(planFor(4, 100, { 38650, 238 }, nil).healing.potions[2].id, 38650, 'seen in a container: the Everfull great mana look')
+eq(planFor(4, 60, { 38646, 236 }, nil).healing.potions[1].id, 236, 'seen, level too low: stock')
+-- an empty flask (not ready) is set on its own look: the 266 row would drink the stock potion
+eq(planFor(4, 100, {}, { health = flask(38646, 2, 'health', 80, false) }).healing.potions[1].id, 38646, 'not ready: its own look')
 
 -- haste: Strong Haste for the Mystic line, Haste for the others from level 14
 eq(planFor(1, 30).tools.haste, 6, 'Mystic: Haste (Galeborne Stride is retired)')

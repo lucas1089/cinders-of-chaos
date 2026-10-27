@@ -34,7 +34,7 @@ A step by step path for new players: where to hunt in each level bracket, which 
 ## Level 8-50: first steps
 
 => @temple | Teleport hall | The two great teleports 5 tiles north of the temple lead to the hunting hall.
-=> @level | Level signs | Every teleport has a sign: "Name, levels X-Y". Floor 7 holds levels 1-500.
+=> @level | Level signs | Every teleport has a sign: "Name, levels X-Y". Floor 7 holds levels 1-560.
 => @reward | First contract | Adventure > Bounty Board: take a contract from level 8.
 => @level | First point | Your first passive point comes at level 12.
 
@@ -91,7 +91,7 @@ A step by step path for new players: where to hunt in each level bracket, which 
 
 ## Level 500-750: hardened
 
-- **Hall floor 6 (levels 500-1000).** Gloomtooth Caverns (500-615), Wyrmspine Hollows (500-640), Brackwater Sloughs (515-630), Pyrarch Crucible (520-690), Sablemourn Ossuary (530-645), Thornmantle Glade (545-660), Embergut Rift (560-675), Frostvein Reach (575-690), Graveknell Catacombs (590-705), Umbral Sink (605-720), Cinderscour Barrens (620-735), Bramblegrave Reach (630-770), Grimlock Vaults (635-750) and Blackmarble Halls (650-765).
+- **Hall, levels 500-1000 (floor 7 up to 560, floor 6 above).** Gloomtooth Caverns (500-615), Wyrmspine Hollows (500-640), Brackwater Sloughs (515-630), Pyrarch Crucible (520-690), Sablemourn Ossuary (530-645), Thornmantle Glade (545-660), Embergut Rift (560-675), Frostvein Reach (575-690), Graveknell Catacombs (590-705), Umbral Sink (605-720), Cinderscour Barrens (620-735), Bramblegrave Reach (630-770), Grimlock Vaults (635-750) and Blackmarble Halls (650-765).
 - **Rifts.** Tier 6 at level {{rift.level6}}, tier 7 at {{rift.level7}}, tier 8 at {{rift.level8}}.
 - **Level 500 goals:** 5 world bosses, an item with 5 modifiers, 25 Infinity Tower floors, 10 completed Bestiary creatures.
 - **Faction:** Revered at level 600.

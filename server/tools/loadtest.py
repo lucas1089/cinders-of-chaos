@@ -769,7 +769,8 @@ def class_stats(vocation, level, gains, power=1.0):
 
 
 def hunt_marks(text):
-    """[(low, high, x, y, z)] of the hunt marks of a data/chaos_poi.lua that name a level band"""
+    """[(low, high, x, y, z)] of the hunt marks of a data/chaos_poi.lua that name a level band (hunting levels since
+    2026-10-27, gen_poi.py)"""
     out = []
     for m in re.finditer(r'\{k = "hunt", x = (\d+), y = (\d+), z = (\d+), n = "([^"]*)"', text):
         band = re.search(r'\(level (\d+)-(\d+)\)', m.group(4))
@@ -840,9 +841,21 @@ def pool_levels(pool_text):
             for m in re.finditer(r'\{name = "([^"]+)", level = (\d+)', hunt)}
 
 
-def spawn_levels(spawn_text, levels, mult=2):
-    """{(x, y, z): the highest hunting level (mult x the pool level) of the monsters of the spawn at that centre}; a
-    monster the pool does not know counts as unknown (never safe)"""
+def base_level_mult(path=None):
+    """pace_config.lua baseLevelMult (the hunting level is the pool level times it); the repo's copy unless `path`"""
+    path = path or os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', 'scripts', 'chaos',
+                                'pace_config.lua')
+    m = re.search(r'\bbaseLevelMult\s*=\s*(\d+)', read_text(path))
+    if not m:
+        raise ValueError('baseLevelMult not found in %s' % path)
+    return int(m.group(1))
+
+
+def spawn_levels(spawn_text, levels, mult=None):
+    """{(x, y, z): the highest hunting level (mult x the pool level, mult: baseLevelMult) of the monsters of the spawn at
+    that centre; the pool levels of pool_levels stay pool levels, only the map marks print hunting levels); a monster
+    the pool does not know counts as unknown (never safe)"""
+    mult = base_level_mult() if mult is None else mult
     out = {}
     for m in re.finditer(r'<spawn\s+centerx="(\d+)"\s+centery="(\d+)"\s+centerz="(\d+)"[^>]*>(.*?)</spawn>',
                          spawn_text, re.S):

@@ -193,6 +193,42 @@ function P.options()
   return out
 end
 
+-- Alphabetical order for a dropdown's options ({ text, data }): the option with data 0 ("(empty)") stays first, the rest by
+-- the shown text, case-insensitive, an accented letter as its base letter (pt-BR names). Stable; a saved selection maps by
+-- `data` (the key), never by position. Returns a new list.
+local FOLD = {
+  ['a'] = 'àáâãäå', ['c'] = 'ç', ['e'] = 'èéêë', ['i'] = 'ìíîï', ['n'] = 'ñ', ['o'] = 'òóôõö', ['u'] = 'ùúûü', ['y'] = 'ýÿ',
+}
+local foldMap = {}
+for base, chars in pairs(FOLD) do
+  for ch in chars:gmatch('[\192-\247][\128-\191]*') do
+    foldMap[ch] = base
+    foldMap[ch:upper()] = base
+  end
+end
+local UPPER_ACCENTS = { ['À']='a',['Á']='a',['Â']='a',['Ã']='a',['Ä']='a',['Å']='a',['Ç']='c',['È']='e',['É']='e',['Ê']='e',['Ë']='e',
+  ['Ì']='i',['Í']='i',['Î']='i',['Ï']='i',['Ñ']='n',['Ò']='o',['Ó']='o',['Ô']='o',['Õ']='o',['Ö']='o',['Ù']='u',['Ú']='u',['Û']='u',['Ü']='u',['Ý']='y' }
+for ch, base in pairs(UPPER_ACCENTS) do foldMap[ch] = base end
+
+function P.sortKey(text)
+  local s = tostring(text or '')
+  s = s:gsub('[\192-\247][\128-\191]*', function(ch) return foldMap[ch] end)
+  return s:lower()
+end
+
+function P.sortOptions(options)
+  local first, rest = {}, {}
+  for i, o in ipairs(options or {}) do
+    if o.data == 0 then first[#first + 1] = o else rest[#rest + 1] = { o = o, key = P.sortKey(o.text), i = i } end
+  end
+  table.sort(rest, function(a, b)
+    if a.key ~= b.key then return a.key < b.key end
+    return a.i < b.i
+  end)
+  for _, e in ipairs(rest) do first[#first + 1] = e.o end
+  return first
+end
+
 -- The rows due now. rows: the healing tab's potion rows ({ id, percent, priority }); ctx = { healthPct, manaPct,
 -- available(id) -> true when the potion can be used (carried or probed, and its channel is ready) }.
 -- Returns the due rows of a kind sorted by the lowest threshold first, then the priority.

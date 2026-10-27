@@ -1415,7 +1415,8 @@ return {
 		-- Everfull potions (potions.lua, data/lib/chaos_potions.lua)
 		["You received an Everfull Health Potion and an Everfull Mana Potion. They refill as you kill monsters."] =
 			"Você recebeu uma Everfull Health Potion e uma Everfull Mana Potion. Elas se recarregam quando você mata monstros.",
-		["You already have one. It refills as you kill monsters."] = "Você já tem uma. Ela se recarrega quando você mata monstros.",
+		["You already have an Everfull flask of that kind, in your backpack, inbox or depot. It refills as you kill monsters. For a better one, ask Veyra for an {upgrade}."] =
+			"Você já tem um frasco Everfull desse tipo, na mochila, na caixa de entrada ou no depot. Ele se recarrega quando você mata monstros. Para um melhor, peça um {upgrade} à Veyra.",
 		-- flask charges (potions.lua, potion_flasks.lua)
 		["Health flask: %s"] = "Frasco de vida: %s",
 		["Mana flask: %s"] = "Frasco de mana: %s",
@@ -3168,20 +3169,20 @@ return {
 		["Welcome, |PLAYERNAME|. Your gold is safe with me. Shall I {open} your account?"] =
 			"Bem-vindo, |PLAYERNAME|. Seu ouro está seguro comigo. Devo {open} sua conta?",
 		-- Veyra the Apothecary (hub supplies; apothecary_config.lua, data/npc/Veyra the Apothecary.xml)
-		["Welcome, |PLAYERNAME|. Draughts for the living, runes for the bold, rope for the deep. Ask for a {trade}."] =
-			"Bem-vindo, |PLAYERNAME|. Poções para os vivos, runas para os ousados, corda para as profundezas. Peça uma {trade}.",
+		["Welcome, |PLAYERNAME|. Draughts for the living, runes for the bold, rope for the deep. Ask for a {trade}, or an {upgrade} for your Everfull flask."] =
+			"Bem-vindo, |PLAYERNAME|. Poções para os vivos, runas para os ousados, corda para as profundezas. Peça uma {trade}, ou um {upgrade} do seu frasco Everfull.",
 		["Drink before the dark does, |PLAYERNAME|."] = "Beba antes que a escuridão o faça, |PLAYERNAME|.",
 		["The shelves keep until you return."] = "As prateleiras esperam até você voltar.",
 		["Every potion is sold one at a time. The bulk packs are in the store."] =
 			"Cada poção é vendida uma de cada vez. Os pacotes grandes ficam na loja.",
-		["Veyra, apothecary. I sell potions of every tier one at a time, the runes hunters ask for most, and rope, shovel, torch and backpack. Ask for a {trade}."] =
-			"Veyra, boticária. Vendo poções de todos os níveis, uma de cada vez, as runas que os caçadores mais pedem, e corda, pá, tocha e mochila. Peça uma {trade}.",
+		["Veyra, apothecary. I sell potions of every tier one at a time, the runes hunters ask for most, and rope, shovel, torch and backpack. Ask for a {trade}, or an {upgrade} for your Everfull flask."] =
+			"Veyra, boticária. Vendo poções de todos os níveis, uma de cada vez, as runas que os caçadores mais pedem, e corda, pá, tocha e mochila. Peça uma {trade}, ou um {upgrade} do seu frasco Everfull.",
 		["A deck holds your cards: five in the Bronze, ten in the Silver, twenty in the Golden. Carry it, then use a card to put it in and turn it on. Ask for a {trade}."] =
 			"Um baralho guarda suas cartas: cinco no de Bronze, dez no de Prata, vinte no de Ouro. Carregue-o e use uma carta para guardá-la nele e ativá-la. Peça uma {trade}.",
-		["Health, mana and spirit draughts from the small to the supreme, each for a level. In bulk the store sells packs of one hundred for less. Ask for a {trade}."] =
-			"Poções de vida, mana e espírito, da pequena à suprema, cada uma para um nível. Em grande quantidade, a loja vende pacotes de cem por menos. Peça uma {trade}.",
-		["No potion leaves a flask now. Old empty ones I still buy, five gold each."] =
-			"Nenhuma poção deixa frasco agora. Os velhos frascos vazios eu ainda compro, cinco de ouro cada.",
+		["Health, mana and spirit draughts from the small to the supreme, each for a level. In bulk the store sells packs of one hundred for less. Ask for a {trade}, or an {upgrade} for your Everfull flask."] =
+			"Poções de vida, mana e espírito, da pequena à suprema, cada uma para um nível. Em grande quantidade, a loja vende pacotes de cem por menos. Peça uma {trade}, ou um {upgrade} do seu frasco Everfull.",
+		["No potion leaves a flask now. Old empty ones I still buy, five gold each. An Everfull flask I can {upgrade}."] =
+			"Nenhuma poção deixa frasco agora. Os velhos frascos vazios eu ainda compro, cinco de ouro cada. Um frasco Everfull eu posso dar {upgrade}.",
 		["A %s is for level %d and up, and you are not there yet."] =
 			"Uma %s é para o nível %d ou mais, e você ainda não chegou lá.",
 		["Which house? Say {buy} and its name; ask for the {list} to hear the free ones."] =
@@ -4486,6 +4487,10 @@ return {
 			"Os itens mudaram desde a prévia. Confira a lista e confirme de novo.",
 		["Put the item from your backpack on the bench first."] =
 			"Coloque primeiro o item da sua mochila na bancada.",
+		["The item moved. Try again."] =
+			"O item mudou de lugar. Tente de novo.",
+		["Only gear and Rift Keys can be locked."] =
+			"Só equipamentos e Rift Keys podem ser trancados.",
 		["That cannot be made."] =
 			"Isso não pode ser feito.",
 		["That cannot be recycled."] =

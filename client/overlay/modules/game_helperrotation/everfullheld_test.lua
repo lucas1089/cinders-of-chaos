@@ -43,5 +43,9 @@ eq(E.apply('x'), false, 'not a table') eq(E.apply(nil), false, 'nil')
 E.apply({ health = 5, mana = 'a' }) eq(next(E.get()), nil, 'slots that are no tables')
 E.reset() eq(next(E.get()), nil, 'reset')
 
+E.reset() eq(E.received(), false, 'nothing received after reset')
+E.apply({}) eq(E.received(), true, 'a message arrived')
+E.reset()
+
 if fails > 0 then os.exit(1) end
 print('everfullheld_test: ok')

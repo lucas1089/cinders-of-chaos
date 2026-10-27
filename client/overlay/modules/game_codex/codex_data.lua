@@ -15490,7 +15490,7 @@ CodexData = {
 							rows = {
 								{"Finished rift", "45% + 10% per modifier (at most 75%) for a next key; 60% + 10% per modifier of those are one tier higher."},
 								{"Rift monsters", "Rare 4%, legendary 10%: a key of the rift's tier."},
-								{"Monsters", "Tier-1 keys: 0.25% per kill (Normal x1, Magic x3, Rare x8, Legendary x20, Boss x40) from monsters of hunting level 60 or more and at least 40% of yours."},
+								{"Monsters", "Tier-1 keys: 0.25% per kill (Normal x1, Magic x3, Rare x8, Legendary x20, Boss x40) from monsters of hunting level 120 or more and at least 80% of yours."},
 								{"Bounty board", "Tier-1 key for a finished contract: hunt 25%, elite 50%, boss 100%."}
 							}
 						},

@@ -124,7 +124,7 @@ function K.npcBuy(cfg, s)
 		return {ok = false, why = "unknown"}
 	end
 	if s.owned then
-		return {ok = false, why = "owned", text = "You already have one. It refills as you kill monsters."}
+		return {ok = false, why = "owned", text = "You already have an Everfull flask of that kind, in your backpack, inbox or depot. It refills as you kill monsters. For a better one, ask Veyra for an {upgrade}."}
 	end
 	if s.better then
 		return {ok = false, why = "better",

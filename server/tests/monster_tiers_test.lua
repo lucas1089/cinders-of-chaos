@@ -259,6 +259,10 @@ ChaosRift = {monsterRun = {[legend:getId()] = {bossIds = {[legend:getId()] = tru
 creatureEvents.ChaosTierQuery.onExtendedOpcode(player, ChaosOpcodes.monsterbar, "query")
 eq(sent and sent.data.role, "guardian", "monster bar: rift guardian")
 eq(sent and sent.data.level, 245, "monster bar: level")
+legend.getDisplayLevel = function() return 491 end
+creatureEvents.ChaosTierQuery.onExtendedOpcode(player, ChaosOpcodes.monsterbar, "query")
+eq(sent and sent.data.level, 491, "monster bar: the nameplate (hunting) level wins")
+legend.getDisplayLevel = nil
 ChaosRift.monsterRun[legend:getId()].omen = "storm"
 creatureEvents.ChaosTierQuery.onExtendedOpcode(player, ChaosOpcodes.monsterbar, "query")
 eq(sent and sent.data.role, "omen", "monster bar: omen guardian")

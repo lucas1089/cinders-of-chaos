@@ -224,8 +224,9 @@ def hall_order_checks(root):
     check('chaoshunt="base_6_12_11">\n\t\t<monster name="Hydra"' in sp and sp.count('name="Hydra"') == 2,
           'the base display monster follows its hunt (the old unmarked block taken over)')
     pl = open(os.path.join(srv, 'data', 'lib', 'chaos_hunt_places.lua')).read()
-    check('hall = true' in pl and '{id = "base_6_12_15", name = "Dragon", level = {600, 700}' in pl and 'floors = {' in pl,
-          'places file: the base hunts and the floors')
+    check('hall = true' in pl and ('{id = "base_6_12_15", name = "Dragon", level = {%d, %d}' % (600 * H.base_level_mult(), 700 * H.base_level_mult())) in pl and 'floors = {' in pl,
+          'places file: the base hunts (hunting levels: the CSV x baseLevelMult) and the floors')
+    check(H.hunting_rows([{'lo': 5, 'hi': 10, 'level': 7, 'x': 3}], 3) == [{'lo': 15, 'hi': 30, 'level': 21, 'x': 3}], 'hunting_rows')
     free = [(x, y, Z) for x in (12, 16, 20) for y in (11, 15) if (x, y, Z) not in hall.values()]
     check(len(free) == 2 and all(stacks[p] == [G, WALL] for p in free),
           'the rooms no hunt takes are closed: a wall on the teleport tile, the ring off: %s' % [(p, stacks[p]) for p in free])
@@ -374,7 +375,7 @@ def capacity_checks():
     import hall_order as H
     cfg = T.load_config()
     hall = cfg['hall']
-    rows = H.hunts_of(H.read_csv())
+    rows = H.hunts_of(H.hunting_rows(H.read_csv()))
     hunts = [dict(id=r['id'], lo=r['lo'], hi=r['hi'], level=r['level']) for r in rows]
     for f in sorted(glob.glob(os.path.join(HERE, 'areaplan', 'plans', '*.json'))):
         p = json.load(open(f))

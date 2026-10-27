@@ -214,6 +214,10 @@ local function say(player, text, ...)
 		end
 	end
 	player:sendTextMessage(MESSAGE_INFO_DESCR or MESSAGE_STATUS_SMALL, text)
+	-- in a seller's Lua state the NPC says it too: with the trade window open the line above is easy to miss
+	if type(selfSay) == "function" then
+		pcall(selfSay, text, player:getId())
+	end
 end
 
 -- a potion seller's trade window sells an Everfull potion (ShopModule:callbackOnBuy hook, install_potions.py): one
