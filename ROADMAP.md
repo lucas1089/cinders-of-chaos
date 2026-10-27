@@ -340,6 +340,8 @@ Estimated before items 4 and 5: ~155 h to level 1000 for a sorcerer, ~285 h for 
 
 ## Open decisions and loose ends
 
+- The 12-month moonshot plan (owner 2026-10-27, not scheduled): living world, play the boss, phone client. See
+  `docs/MOONSHOT.md`.
 - Parts (1) and (2) done 2026-10-23, part (3) started (O153) (owner 2026-10-20, later: "Coloque as suas recomendações ... de
   rust"): engine hardening instead of a Rust rewrite (a rewrite would mean the whole base engine, the src-patches and
   the Lua API at the same behaviour, for little a player sees). (1) Done: `server/tools/build_sanitized.sh`, a debug
