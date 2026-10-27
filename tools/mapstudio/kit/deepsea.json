@@ -4,12 +4,7 @@
  "water": {
   "family": "G23928",
   "lead": 23928,
-  "members": [
-   23929,
-   23930,
-   23931,
-   23932
-  ]
+  "members": []
  },
  "base": {
   "family": "G15232",
@@ -448,7 +443,8 @@
    "scale": 12.0,
    "width_jitter": 1
   },
-  "void_jitter": 0
+  "void_jitter": 0,
+  "void_smooth": 2
  },
  "pocket_fill": [
   5414,

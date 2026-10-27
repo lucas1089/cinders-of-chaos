@@ -58,7 +58,7 @@ def expected_stack(n, e, s, w, ends=False):
     """The pieces a wall tile needs, bottom to top, from which of its 4 neighbours are wall tiles (round 9: chosen by the wall
     skeleton, each case looked at in a render; the old rule put a thin post wherever a wall turned, which left a notch of
     dark ground at T joints, elbows and run ends). Classes: H, V, C (corner), P (post, a lone tile only), EH, EV.
-      straight: H (east-west), V (north-south)      turns: east+south C, west+south H, east+north V, west+north C
+      straight: H (east-west), V (north-south)      turns: east+south P (round 10, was C), west+south H, east+north V, west+north C
       T: west+east+south H, west+east+north V under H, north+south+east V, north+south+west H under V
       cross: V under H            ends: west end of a run EH, north end EV, east end H, south end V (no end pieces: H / V)
     """
@@ -76,7 +76,9 @@ def expected_stack(n, e, s, w, ends=False):
             return ["H"]
         if n and s:
             return ["V"]
-        if (e and s) or (w and n):
+        if e and s:
+            return ["P"]      # round 10: the corner piece's cap hangs one tile over its west neighbour (floor or cover): a stub
+        if w and n:
             return ["C"]
         return ["H"] if (w and s) else ["V"]
     if e:
@@ -391,6 +393,57 @@ def bands(layer, size, origin, items, kit, no_walk=()):
                     todo.append(n)
         blobs.append(comp[0])
     return {"wall_bands": len(blobs), "samples": [(origin + x, origin + y) for x, y in blobs[:6]]}
+
+
+def spurs(layer, size, origin, items, kit, no_walk=(), samples=6):
+    """Round 10 `wall_spurs`: wall pieces that stick out of the wall line (the owner's "paredes pra fora"). Kits with a 4-piece wall
+    set only (others return 0). Counted per wall tile:
+      cap       a corner piece (class C, whose sprite cap hangs one tile over its WEST neighbour) with no wall tile to its west: the
+                cap pokes into the floor or the dark cover as a stub (the elbow of every room corner showed it)
+      lone      a wall tile with no wall tile on any of its 4 sides, unless it is a door jamb (floor on both sides along a line)
+      dead_end  a run end (exactly 1 wall neighbour) whose continuation is not floor: a wall that stops in solid ground (an end
+                beside a doorway has floor there and is fine)
+      diagonal  a wall tile that touches floor only diagonally and has at most one wall neighbour (a single tile hanging off a corner)
+    Returns {"wall_spurs": n, "kinds": {...}, "samples": [(tile x, tile y, kind)]}."""
+    out = {"wall_spurs": 0, "kinds": {"cap": 0, "lone": 0, "dead_end": 0, "diagonal": 0}, "samples": []}
+    spec = spec_of(kit)
+    if not kit.get("walls") or not spec:
+        return out
+    pr = Probe(layer, size, origin, items, kit, no_walk)
+    cls = classes_of(spec)
+    wall, kinds = set(), {}
+    for y in range(size):
+        for x in range(size):
+            st = pr.stack(x, y)
+            if st:
+                hit = [cls[int(i)] for i in st[1:] if int(i) in cls]
+                if hit:
+                    wall.add((x, y))
+                    kinds[(x, y)] = hit
+    floor = {(x, y) for y in range(size) for x in range(size) if pr.floor(x, y)}
+    walk = lambda t: t in floor or (pr.stack(*t) is not None and 0 <= t[0] < size and 0 <= t[1] < size and pr.ground_floor(*t))
+    for t in sorted(wall, key=lambda t: (t[1], t[0])):
+        x, y = t
+        nb = [(i, j) for i, j in N4 if (x + i, y + j) in wall]
+        kind = None
+        if "C" in kinds[t] and (x - 1, y) not in wall:
+            kind = "cap"
+        elif not nb:
+            jamb = ((x - 1, y) in floor and (x + 1, y) in floor) or ((x, y - 1) in floor and (x, y + 1) in floor)
+            kind = None if jamb else "lone"
+        elif len(nb) == 1:
+            i, j = nb[0]
+            if not walk((x - i, y - j)):
+                kind = "dead_end"
+        if kind is None and len(nb) <= 1 and not any((x + i, y + j) in floor for i, j in N4) \
+                and any((x + i, y + j) in floor for i, j in ((-1, -1), (1, -1), (-1, 1), (1, 1))):
+            kind = "diagonal"
+        if kind:
+            out["wall_spurs"] += 1
+            out["kinds"][kind] += 1
+            if len(out["samples"]) < samples:
+                out["samples"].append((origin + x, origin + y, kind))
+    return out
 
 
 def summary(res):

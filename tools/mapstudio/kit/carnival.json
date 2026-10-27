@@ -900,10 +900,5 @@
    "mirror": true
   }
  ],
- "landing_ring": true,
- "doors": {
-  "h": 41302,
-  "v": 41303,
-  "max_width": 2
- }
+ "landing_ring": true
 }

@@ -191,6 +191,10 @@ def route_ok(path, w, own, nodes, lo, hi, placed=()):
             if n in own:
                 if overlap(r, inflate(n.rect, 5)) and not overlap(r, inflate(n.rect, 2)):
                     return None
+                if n.axis and overlap(r, n.rect):  # round 10: a corridor never cuts through the cell rows of a block, it stays in the hall's band
+                    m = n.main
+                    if (n.axis == "h" and (r[1] < m[1] or r[3] > m[3])) or (n.axis == "v" and (r[0] < m[0] or r[2] > m[2])):
+                        return None
                 continue
             if overlap(r, inflate(n.rect, 1)):
                 return None
