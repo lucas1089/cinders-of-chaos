@@ -45,6 +45,13 @@ and redraws stock images in place. `chaos_theme.lua` adds the corner ornaments a
 `&chaosOrnate: true` (`Window`, `NewWindow`, `ChaosWindow`; `&chaosTitleY`, `&chaosOrnInset`, `&chaosCrestUp` tune them) and skins tooltips.
 See client/MANIFEST.md, section "Ornate UI skin".
 
+## Interface skins
+
+Options > Interface > Interface skin: classic (this module's look), forge, abyss. `skin_core.lua` (logic, `skin_core_test.lua`),
+`skin_boot.lua` (run by init.lua at start, base patch 0159; copies the chosen skin's images from `data/skins/<id>/` in front of the
+client's files), `ChaosTheme.palette` (the active skin's colours), `ChaosTheme.showSkinMenu`. Applies at the next start. Art:
+`client/tools/gen_skin_variants.py`. See client/MANIFEST.md "Interface skins".
+
 ## Stock interface reskin
 
 The base client's own chrome (windows, mini windows, panels, buttons, scroll bars, tabs, console, action bar,

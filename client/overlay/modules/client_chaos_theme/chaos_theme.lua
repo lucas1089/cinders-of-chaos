@@ -4,24 +4,27 @@
 -- OTUI has no variables, so the palette is written once in styles.otui (header
 -- comment) and mirrored here for Lua code that needs the same colours.
 
+-- The interface skin (client/MANIFEST.md "Interface skins"): skin_core.lua is the logic, skin_boot.lua (run by init.lua at
+-- start) has put the chosen skin's images in front of the client's own, ChaosSkinBoot says what it did.
+local SkinCore = ChaosSkinCore or dofile('/modules/client_chaos_theme/skin_core.lua')
+ChaosSkinCore = SkinCore
+
 ChaosTheme = {
-  palette = {
-    bg          = '#0d0b0e',
-    iron        = '#3a3339',
-    ironLight   = '#7d7176',
-    text        = '#d6c9ae',
-    textDim     = '#8c8070',
-    textDisabled= '#6b6258',
-    gold        = '#e8b84a',
-    goldBright  = '#f6cf72',
-    blood       = '#b8160f',
-    bloodBright = '#e03a1e',
-    bloodDark   = '#5a0a0a',
-    health      = '#8a1010',
-    mana        = '#1f3f8f',
-  },
+  -- the active skin's colours (classic: the table styles.otui is written with); modules that paint in Lua read these
+  palette = {},
   imagePath = '/images/chaos/',
+  skin = SkinCore.DEFAULT,
 }
+for k, v in pairs(SkinCore.PALETTES[SkinCore.DEFAULT]) do ChaosTheme.palette[k] = v end
+
+-- the skin the images on screen belong to (what skin_boot.lua applied at start; classic when it did not run)
+local function applyBootPalette()
+  local boot = rawget(_G, 'ChaosSkinBoot')
+  local id = boot and SkinCore.normalize(boot.skin) or SkinCore.DEFAULT
+  ChaosTheme.skin = id
+  for k, v in pairs(SkinCore.palette(id)) do ChaosTheme.palette[k] = v end
+end
+applyBootPalette()
 
 -- Widget helpers some of our modules were written against; this engine does not ship them.
 local function installWidgetHelpers()
@@ -146,8 +149,6 @@ function ChaosTheme.decorateWindow(win)
   updateOrnaments(win)
 end
 
-local TITLE_COLOR = '#e8c477'
-
 -- The Chaos bitmap fonts, made from SIL Open Font License fonts (client/fonts-src/, tools/make_ofl_fonts.sh; see
 -- client/MANIFEST.md "OFL fonts"). They ship in data/fonts/chaos/. A role gives its font only when the client has it
 -- loaded (a client assembled without them keeps its Verdana everywhere). They hold the glyphs 32..255 (cp1252: the
@@ -219,7 +220,13 @@ function ChaosTheme.setBodyFont(choice)
 end
 
 local function onStyleApply(widget, styleName, styleNode)
-  if not widget.chaosOrnate then return end
+  if not widget.chaosOrnate then
+    -- the mini windows keep the title colour of their style (a gold of the classic palette): take the skin's
+    if ChaosTheme.skin ~= SkinCore.DEFAULT and widget.getClassName and widget:getClassName() == 'UIMiniWindow' then
+      widget:setColor(ChaosTheme.palette.miniTitle)
+    end
+    return
+  end
   -- many window styles of the base modules move the title for the old 17 px title bar and paint it grey:
   -- keep it centred on the skin's title plate, in gold
   local ty = tonumber(widget.chaosTitleY)
@@ -233,7 +240,7 @@ local function onStyleApply(widget, styleName, styleNode)
     if off.y ~= ty then
       widget:setTextOffset({ x = off.x, y = ty })
     end
-    widget:setColor(TITLE_COLOR)
+    widget:setColor(ChaosTheme.palette.title)
   end
   if not widget.chaosDecorated and not widget.chaosDecorPending then
     widget.chaosDecorPending = true
@@ -266,7 +273,7 @@ local function skinTooltip()
   label:setBorderWidth(0)
   label:setImageSource(SKIN .. 'tooltip')
   label:setImageBorder(4)
-  label:setColor('#e4d8c0')
+  label:setColor(ChaosTheme.palette.tooltipText)
   label:resize(label:getWidth() + 8, label:getHeight() + 4)
   label:setTextOffset({ x = 7, y = 4 })
 end
@@ -343,7 +350,57 @@ local function unwrapPopupMenu()
 end
 ChaosTheme.wrapPopupMenu, ChaosTheme.unwrapPopupMenu = wrapPopupMenu, unwrapPopupMenu -- chaos_theme_test.lua
 
+
+-- ---------------------------------------------------------------- the choice of the skin (Options > Interface)
+-- The choice is saved in g_settings 'chaos-skin' and applies at the next start (see skin_core.lua for why).
+function ChaosTheme.selectedSkin()
+  local v = g_settings and g_settings.getString and g_settings.getString(SkinCore.SETTING) or nil
+  return SkinCore.normalize(v)
+end
+
+-- the window's text for a skin (tr() keys of pt_br.lua)
+function ChaosTheme.skinName(id)
+  id = SkinCore.normalize(id or ChaosTheme.selectedSkin())
+  if id == 'forge' then return tr('Forge and Embers') end
+  if id == 'abyss' then return tr('Abyssal Arcane') end
+  return tr('Classic')
+end
+
+-- true when the saved choice is not the one on screen (the client has to restart)
+function ChaosTheme.skinPending()
+  return ChaosTheme.selectedSkin() ~= ChaosTheme.skin
+end
+
+function ChaosTheme.setSkin(id, quiet)
+  id = SkinCore.normalize(id)
+  local changed = id ~= ChaosTheme.selectedSkin()
+  pcall(g_settings.set, SkinCore.SETTING, id)
+  if changed and not quiet and displayInfoBox then
+    displayInfoBox(tr('Interface skin'), tr('Interface skin: %s. It applies the next time the client starts.', ChaosTheme.skinName(id)))
+  end
+  return id
+end
+
+-- a menu with the skins under `widget` (Options > Interface); the widget shows the choice
+function ChaosTheme.showSkinMenu(widget)
+  local menu = g_ui.createWidget('PopupMenu')
+  if menu.setGameMenu then menu:setGameMenu(g_game and g_game.isOnline and g_game.isOnline() or false) end
+  local current = ChaosTheme.selectedSkin()
+  for _, id in ipairs(SkinCore.SKINS) do
+    local mark = id == current and '> ' or '   '
+    menu:addOption(mark .. ChaosTheme.skinName(id), function()
+      ChaosTheme.setSkin(id)
+      if widget and not widget:isDestroyed() then widget:setText(ChaosTheme.skinName(id)) end
+    end)
+  end
+  local pos = widget and widget.getPosition and widget:getPosition() or g_window.getMousePosition()
+  if widget and widget.getHeight then pos = { x = pos.x, y = pos.y + widget:getHeight() } end
+  menu:display(pos)
+  return menu
+end
+
 function init()
+  applyBootPalette()
   wrapTooltip()
   wrapPopupMenu()
   g_ui.importStyle('styles')
