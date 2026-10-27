@@ -23854,6 +23854,22 @@ started it), `needCrystal = true` into false, and skips the warzone refusal. The
 install (`install_all.py --only gnometeleports`), then `/reload movements`, or restart. Test: `tools/patch_gnome_teleports_test.py`.
 
 
+## Astro tower door open to everyone (`tools/patch_astro_door.py`, install_all step `astrodoor`)
+
+Owner 2026-10-27 ("não dá pra entrar na porta"; a hunt of Bone Warrior [125], Bone Slicer [127] and Grimbone [335]): the door
+answered "You need find the Astro Clock." The base map has a closed door (item 1223, action id 13690) at 31567,33003,7 in the Astro
+tower. `scripts/customs/quests/astro_quest/astro_door.lua` lets a player through only when the quest storage `Quests.astroClock`
+is 1, which the clocks (action id 13689; 31543,33003,8 and 31568,33005,6) set; this server does not run that quest. Behind the door
+(31568,33003,7) is a closed 15 tile hall (stone floor, tables, a carpet, the blue "Go Back" teleport 31568,32999,7 to the tile west
+of the door) with the spawns of a Bone Slicer (31566,33000), a Bone Warrior (31567,33001) and a Grimbone (31569,33001): part of the
+tower hunts of `chaos_poi.lua` (31583,33009,7 and 31566,33004,8), so a hunt gate there blocks levelling. The rest of the tower is
+open (the tiles west of the door reach the hunt marks on foot). The patch (idempotent, text based, marker
+`Chaos (patch_astro_door.py)`) puts a block at the top of `onUse`: the door teleports every character to the other side (from east of
+the door to the tile west of it, else to the tile east of it), the old body stays below it, unreachable. The clocks and the Astro King
+lever room are unchanged. Run it with the install (`install_all.py --only astrodoor`), then `/reload actions`, or restart. Test:
+`tools/patch_astro_door_test.py`. Other custom quest gates of the base were checked: the Yalahari crystal door steps far from any
+hunt mark and is left alone.
+
 ## Temple cleanse (`temple_cleanse.lua`, `temple_cleanse_core.lua`)
 
 Beta report 2026-10-20: a boss's 10-minute fire kept characters in battle mode, so they could not use the town portal or

@@ -205,6 +205,7 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                "base" of client/tools/sprites/monster_looks/picks.csv; README "Pack 30 monsters in the hunts")
   gnometeleports tools/patch_gnome_teleports.py  the gnome city and warzone teleports of the base server open to every character
   annihilatorsolo tools/patch_annihilator_solo.py  the Annihilator lever lets one to four players in (demons scale with the team)
+  astrodoor    tools/patch_astro_door.py           the Astro tower door (action id 13690) lets everybody through; its hall is a hunt spawn
   absorbceiling tools/patch_absorb_ceiling.py    the base absorb event limits the summed absorb storages to 75 percent per
                type (README "Absorb ceiling"; matches engine patch 0049)
   openpotions  tools/patch_open_potions.py       every class drinks every health, mana and spirit potion: the vocation lists
@@ -1052,6 +1053,14 @@ def step_annihilatorsolo(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('gnometeleports') + 1, 'annihilatorsolo')  # the Annihilator quest soloable
+
+
+def step_astrodoor(server, data, ctx):
+    args = [tool('patch_astro_door.py'), data] + (['--dry-run'] if ctx['dry'] else [])
+    return tool_result(run_tool(args, 'patch_astro_door.py'))
+
+
+STEPS.insert(STEPS.index('annihilatorsolo') + 1, 'astrodoor')  # the Astro tower door open to everyone (a hunt spawn behind it)
 
 
 def step_absorbceiling(server, data, ctx):
