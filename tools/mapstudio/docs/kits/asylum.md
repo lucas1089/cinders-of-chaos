@@ -13,9 +13,7 @@ Item ids:
 - Stairs: ramps 1388-1395 from the cave kit.
 Good: walls and floors read as a clean institution gone bad, blood and chains scatter works. Weak: ward outlines are blobs, no cell rows, no real bars lines or doors, floor is mostly one cream tone.
 
-## Generator features missing
+## Generator features (round 8)
 
-- No building or room layout. The closest feature is cave mode (`gen/cave.py`): chambers act as rooms, tunnels as corridors, pillars as blocks. Rooms come out as organic blobs with stair-step outlines, so wall pieces read as broken or ruined runs, not as straight rectangular rooms. A rectangular room and corridor generator with doors would fix it.
-- No per-wall variety: the wall set has one piece per direction, so windows, doors and broken pieces (which exist in the item set) are not laid.
-- Ground patches (sand, grey_sand roles) have no border set between flat floors, so the summary reports `bare seams` of 6 to 140 tiles per map. This is by design for flat tile floors, not a missing border.
-- No structure placement (decor is scattered by the clump tables only).
+Round 8: rectangular rooms and cell blocks (`cave.rooms`) with straight `walls` (clapboard, windows, broken pieces), per-room floor and decor themes. `bare seams` 0 through `same_look`. Still missing: doors that open and close (door pieces are not laid), per-room lighting.
+

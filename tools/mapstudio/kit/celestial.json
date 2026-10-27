@@ -107,10 +107,6 @@
   8637,
   8638
  ],
- "join_land": {
-  "least": 12,
-  "gap": 14
- },
  "ramp_least": 6,
  "road_least": 30,
  "repair_pocket": 1,
@@ -154,7 +150,28 @@
    "38926": 1,
    "38829": 1,
    "38830": 1,
-   "38919": 2
+   "38919": 2,
+   "43111": 2,
+   "43112": 2,
+   "43113": 2,
+   "43114": 2,
+   "43115": 2,
+   "43116": 2,
+   "43117": 2,
+   "43118": 2,
+   "43119": 2,
+   "43120": 1,
+   "43121": 2,
+   "43122": 1,
+   "43123": 1,
+   "43124": 1,
+   "43125": 1,
+   "43126": 1,
+   "43128": 1,
+   "43129": 1,
+   "43131": 1,
+   "43137": 2,
+   "43138": 1
   },
   "small": {
    "2742": 14,
@@ -169,7 +186,17 @@
    "8637": 2,
    "8638": 2,
    "40771": 1,
-   "40772": 1
+   "40772": 1,
+   "43143": 3,
+   "43144": 3,
+   "43145": 3,
+   "43130": 2,
+   "43133": 2,
+   "43134": 1,
+   "43136": 1,
+   "43146": 6,
+   "43127": 1,
+   "43132": 1
   },
   "boost": {
    "big": 1.6,
@@ -252,7 +279,6 @@
   ]
  },
  "no_water_border": [
-  "sand",
   "grey_sand"
  ],
  "snow_on_void": {
@@ -276,15 +302,24 @@
   },
   {
    "kit": "grey_sand",
-   "border": null
+   "border": {
+    "water": "snow_on_void"
+   }
   },
   {
    "kit": "sand",
-   "border": null
+   "border": {
+    "water": "snow_on_void",
+    "grey_sand": "snow_on_void"
+   }
   },
   {
    "kit": "rock_soil",
-   "border": null
+   "border": {
+    "water": "snow_on_void",
+    "grey_sand": "snow_on_void",
+    "sand": "snow_on_void"
+   }
   },
   {
    "kit": "base",
@@ -360,41 +395,13 @@
    38358
   ]
  },
- "plank_roads": {
-  "count": 4,
-  "width": {
-   "1": 0.5,
-   "2": 0.3,
-   "3": 0.2
-  },
-  "ew": {
-   "lead": 7350,
-   "members": [
-    419
-   ]
-  },
-  "ns": {
-   "lead": 7350,
-   "members": [
-    419
-   ]
-  }
- },
- "crossing": {
-  "type": "ford",
-  "ground": 7350
- },
- "road_limit": {
-  "share": 0.05,
-  "bridge": 6
- },
  "defaults": {
   "hills": 0,
   "levels": 1,
   "mountains": 0,
-  "rivers": 18,
+  "rivers": 0,
   "river_width": 5,
-  "lakes": 36,
+  "lakes": 0,
   "roads": -1,
   "sand": 2,
   "vegetation": 100
@@ -426,10 +433,45 @@
   "601": "--size 96",
   "602": "--size 112",
   "603": "--size 128",
-  "604": "--size 96 --lakes 36 --rivers 10",
-  "605": "--size 112 --lakes 20 --rivers 20",
-  "606": "--size 96 --lakes 14 --rivers 6",
-  "607": "--size 112 --lakes 34",
-  "608": "--size 128 --rivers 24 --lakes 30"
- }
+  "604": "--size 96",
+  "605": "--size 112",
+  "606": "--size 96",
+  "607": "--size 112",
+  "608": "--size 128"
+ },
+ "islands": {
+  "per_1000": 1.0,
+  "radius": [
+   7,
+   14
+  ],
+  "gap": 4,
+  "margin": 6,
+  "width": {
+   "2": 0.6,
+   "3": 0.4
+  },
+  "max_len": 18,
+  "loops": [
+   1,
+   2
+  ],
+  "lake_min": 24,
+  "bridge_key": "sand"
+ },
+ "void_cover": {
+  "ground": [
+   30492
+  ],
+  "rings": 2,
+  "extra": 0.5,
+  "decor": {
+   "43139": 0.05,
+   "43140": 0.04,
+   "43141": 0.05,
+   "43142": 0.03,
+   "43146": 0.03
+  }
+ },
+ "wall_check": true
 }

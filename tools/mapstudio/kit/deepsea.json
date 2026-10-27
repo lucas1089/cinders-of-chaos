@@ -84,7 +84,7 @@
   "rivers": 0,
   "lakes": 0,
   "roads": 0,
-  "sand": 8,
+  "sand": 0,
   "vegetation": 100,
   "rough": 70
  },
@@ -488,29 +488,90 @@
    10176
   ]
  },
- "patches": [
-  {
-   "ground": "grey_sand",
-   "share": 0.06,
-   "scale": 3,
-   "min": 2
-  }
- ],
+ "patches": [],
  "same_look": [
+  [
+   "base",
+   "sand"
+  ],
+  [
+   "base",
+   "grey_sand"
+  ],
+  [
+   "base",
+   "rock_soil"
+  ],
+  [
+   "base",
+   "stain"
+  ],
+  [
+   "base",
+   "slate"
+  ],
   [
    "base",
    "clay"
   ],
   [
-   "stain",
-   "clay"
+   "sand",
+   "stain"
+  ],
+  [
+   "sand",
+   "slate"
+  ],
+  [
+   "grey_sand",
+   "sand"
+  ],
+  [
+   "grey_sand",
+   "rock_soil"
+  ],
+  [
+   "grey_sand",
+   "stain"
+  ],
+  [
+   "grey_sand",
+   "slate"
+  ],
+  [
+   "rock_soil",
+   "sand"
+  ],
+  [
+   "rock_soil",
+   "stain"
+  ],
+  [
+   "rock_soil",
+   "slate"
   ],
   [
    "slate",
-   "clay"
+   "stain"
   ],
   [
-   "stain",
+   "clay",
+   "sand"
+  ],
+  [
+   "clay",
+   "grey_sand"
+  ],
+  [
+   "clay",
+   "rock_soil"
+  ],
+  [
+   "clay",
+   "stain"
+  ],
+  [
+   "clay",
    "slate"
   ]
  ],
@@ -566,5 +627,31 @@
   "836": "--size 128 --cave-shape chambers",
   "837": "--size 96 --cave-shape mix",
   "838": "--size 112 --cave-shape tunnels"
- }
+ },
+ "wall_check": true,
+ "deep_edge": {
+  "edge_n": 36892,
+  "edge_e": 36893,
+  "edge_s": 36894,
+  "edge_w": 36895,
+  "outer_ne": 36896,
+  "outer_nw": 36897,
+  "outer_se": 36898,
+  "outer_sw": 36899,
+  "inner_ne": 36900,
+  "inner_nw": 36901,
+  "inner_se": 36902,
+  "inner_sw": 36903
+ },
+ "pools": [
+  {
+   "ground": [
+    36891
+   ],
+   "border": "deep_edge",
+   "share": 0.07,
+   "scale": 4,
+   "min": 8
+  }
+ ]
 }

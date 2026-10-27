@@ -12,9 +12,7 @@ Item ids:
 - Walkable decor: banners 9495 9496 9499 9500 10378 10379 10388 10389, torn banners 41557 41558, pumpkin strings 41555 41556, bulb strings 38993-38996, bat flock 41388, crows 41575, fog 41389, straw 41197, leaves 41195, puddle 41198, sweet bowl 38533, lantern 38532, candle 38308 41383.
 Good: strings, banners and bats give the circus mood. Weak: no rides (carousel, wheel, swing), no striped big top, striped floor patches are small, tents are plain canvas.
 
-## Generator features missing
+## Generator features (round 8)
 
-- No building or room layout. The closest feature is cave mode (`gen/cave.py`): chambers act as rooms, tunnels as corridors, pillars as blocks. Rooms come out as organic blobs with stair-step outlines, so wall pieces read as broken or ruined runs, not as straight rectangular rooms. A rectangular room and corridor generator with doors would fix it.
-- No per-wall variety: the wall set has one piece per direction, so windows, doors and broken pieces (which exist in the item set) are not laid.
-- Ground patches (sand, grey_sand roles) have no border set between flat floors, so the summary reports `bare seams` of 6 to 140 tiles per map. This is by design for flat tile floors, not a missing border.
-- No structure placement (decor is scattered by the clump tables only).
+Round 8: ring, stage, tent, booth and hall rooms (`cave.rooms`), iron fence `walls`, big top `stamps` (split rail outline with lantern posts), carpet floors. `bare seams` 0 through `same_look`.
+

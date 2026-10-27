@@ -12,9 +12,7 @@ Item ids:
 - Walkable decor: bloodspots (as asylum), blood bowl 38840, blood 38580, bones 3124 3125 3127 41360 41361 41199, skeleton 38592, pile of bones 38590, chains 38578 38842, cobweb 38587, chair 11934, hanging lamp 38975.
 Good: brick and pale tile contrast, torches give red accents. Weak: no real gurneys, no wheeled stretchers, no operating lamps (see kits_wanted.json); decor density is low in tunnels.
 
-## Generator features missing
+## Generator features (round 8)
 
-- No building or room layout. The closest feature is cave mode (`gen/cave.py`): chambers act as rooms, tunnels as corridors, pillars as blocks. Rooms come out as organic blobs with stair-step outlines, so wall pieces read as broken or ruined runs, not as straight rectangular rooms. A rectangular room and corridor generator with doors would fix it.
-- No per-wall variety: the wall set has one piece per direction, so windows, doors and broken pieces (which exist in the item set) are not laid.
-- Ground patches (sand, grey_sand roles) have no border set between flat floors, so the summary reports `bare seams` of 6 to 140 tiles per map. This is by design for flat tile floors, not a missing border.
-- No structure placement (decor is scattered by the clump tables only).
+Round 8: rooms, wards and cell blocks (`cave.rooms`), brick `walls` with windows, crypt flagstone floors, themed rooms. Pair 49 carcass piles and skeleton not placed yet in the room themes (left to a later round). `bare seams` 0 through `same_look`.
+

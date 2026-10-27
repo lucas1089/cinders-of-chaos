@@ -21,7 +21,7 @@ All 8 seeds 100 percent of walkable tiles on floor 7 (tools/unreached.py: 3321/3
 
 ## Needs from the generator
 Nothing blocks the kit, but these would make it look right:
-1. Separate floating islands. The generator keeps one big landmass with void lakes and rivers inside, so the map reads as a cloud continent with holes. Wanted: `islands` {"count", "radius", "gap"}: several land blobs in the void joined by ford or plank bridges only, no land neck, plus a kit key for a no-sea-border "outside" that shows pure black.
+1. (Done in round 8: `islands`, `void_cover`, see docs/KIT_SCHEMA.md.) Separate floating islands. The generator keeps one big landmass with void lakes and rivers inside, so the map reads as a cloud continent with holes. Wanted: `islands` {"count", "radius", "gap"}: several land blobs in the void joined by ford or plank bridges only, no land neck, plus a kit key for a no-sea-border "outside" that shows pure black.
 2. Light sources need a light tag. Crystals (8633, 8634, 9779, 9786) carry a light attribute in items.xml but the generator has no way to scatter lights by distance so they do not clump. Wanted: `lights` {"<id>": spacing}.
 3. Gold paths. `road_limit` plus `roads -1` leaves only bridge roads. Wanted: a `path_network` option for roads between island centres that works with `roads -1`, and a gold border set (gold onto snow) so paths have their own fringe. Now the snow draws onto the gold.
 4. Void 1-tile holes. Single void tiles inside land show as hard black squares with no fringe (a few per seed). Wanted: `lake_min` (smallest void lake, 4 tiles).

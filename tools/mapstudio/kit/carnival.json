@@ -824,5 +824,62 @@
    }
   }
  },
- "wall_check": true
+ "wall_check": true,
+ "stamp_walls": {
+  "tent": {
+   "h": [
+    41289
+   ],
+   "v": [
+    41290
+   ],
+   "corner": 41291,
+   "pole": 41288,
+   "end_h": 41292,
+   "end_v": 41293
+  }
+ },
+ "stamps": [
+  {
+   "name": "big top",
+   "pattern": [
+    "L#####L",
+    "#.....#",
+    "#..L..#",
+    "#.....#",
+    "##...##"
+   ],
+   "legend": {
+    "#": {
+     "wall": "tent"
+    },
+    "L": {
+     "items": [
+      41384,
+      41561,
+      41562
+     ]
+    },
+    ".": {
+     "ground": [
+      12115,
+      12116,
+      12117
+     ]
+    }
+   },
+   "count": [
+    1,
+    2
+   ],
+   "in": [
+    "ring",
+    "stage",
+    "hall",
+    "tent"
+   ],
+   "margin": 0,
+   "mirror": true
+  }
+ ]
 }

@@ -20,6 +20,9 @@ from collections import Counter, deque
 
 import access
 import cave as cavemod
+import islands as islandsmod
+import pools as poolsmod
+import stamps as stampsmod
 import rooms as roomsmod
 import themes as themesmod
 import walls as wallsmod
@@ -1485,7 +1488,9 @@ def build(p):
     p.edge_smooth = kit.get("edge_smooth")
     p.coast_round = kit.get("coast_round")  # kit key {"radius", "keep"}: rounder land outline of liquid-low kits (round_coast)
     lib.LONGEST = (p.edge_smooth or {}).get("longest", 3)
-    if cave_cfg and cave_cfg.get("rooms"):  # kit cave.rooms (round 8): rectangular rooms and corridors (gen/rooms.py)
+    if kit.get("islands"):  # kit islands (round 8): separate landmasses over void joined by bridges (gen/islands.py)
+        m = islandsmod.islands_layout(size, rng, kit["islands"])
+    elif cave_cfg and cave_cfg.get("rooms"):  # kit cave.rooms (round 8): rectangular rooms and corridors (gen/rooms.py)
         m = roomsmod.rooms_layout(size, rng, cave_cfg, style, cavemod.stairs)
     else:
         m = cavemod.cave_layout(size, rng, cave_cfg, style, road_path, smooth_course) if cave_cfg else layout(size, rng, p)
@@ -1622,6 +1627,7 @@ def build(p):
                                  {k: kit[key] for k, key in (("scale", "patch_scale"), ("blob", "worn_blob"), ("gap", "worn_gap"),
                                                              ("at_water", "patches_at_water"), ("near", "patch_near")) if key in kit})
     span = {t for b in bridges for t in b.guard()}  # rails, deck, banks and landings: kept clear of plants
+    span |= set(m.get("bridge_tiles", ()))  # island bridges: no plants on the strips
     rock_layer = next((lay for lay in kit["layers"] if lay["kit"] == "rock_soil"), {})
     rock, gravel = aprons(size, rng, m, sand, {**ramps, **mramps}, span, "gravel" in kit,
                           off_sand=not border_of(rock_layer, "sand"), patches=kit.get("rock_patches", 0))
@@ -1687,6 +1693,9 @@ def build(p):
         settled += changed
         if not changed:
             break
+
+    for x, y in m.get("bridge_tiles", ()):  # island bridges (kit islands.bridge_key): the strip's ground, after the settling
+        keys[y][x] = kit["islands"].get("bridge_key", "sand")
 
     def family(x, y):
         k = keys[y][x]
@@ -1807,6 +1816,10 @@ def build(p):
     void_d = distance(size, [[not v for v in row] for row in water]) if void else None
     void_n = lib.noise(size, 5, random.Random(f"void-{p.seed}")) if void else None  # kit cave.void_jitter: ragged black edge
     jit = (cave_cfg or {}).get("void_jitter", 0)
+    cover = kit.get("void_cover")  # kit void_cover: {"ground": [ids], "rings": n, "extra": share, "decor": {id: rate}}: a dark non-black
+    # ground on the void within n tiles of land (with a ragged extra ring), so no black tile touches the floor
+    cover_d = distance(size, [[not v for v in row] for row in water]) if cover else None
+    cover_n = lib.noise(size, 4, random.Random(f"cover-{p.seed}")) if cover else None
     for y in range(size):
         for x in range(size):
             f = family(x, y)
@@ -1822,7 +1835,15 @@ def build(p):
             if f == "water":  # where a mountain meets the water, the reference map draws its cliff on the water tiles; in a
                 # kit where land ranks above water (fire), the land's border is drawn on the water tiles too
                 ground = water_ground(x, y) if water_ground else pick(rng, kit["water"])
+                covered = bool(cover) and cover_d[y][x] <= cover["rings"] + (1 if cover_n[y][x] > 1 - cover.get("extra", 0) else 0)
+                if covered:
+                    ground = int(rng.choice(cover["ground"]))
                 stack = [ground] + layered_borders(kit, keys, x, y) + edge_pieces(mountain, x, y, cliff_set("water"))
+                if covered:
+                    for key, rate in cover.get("decor", {}).items():
+                        if rng.random() < rate:
+                            stack.append(int(key))
+                            break
                 if (x, y) in water_plants:
                     stack.append(water_plants[(x, y)])
             elif f == "relief":
@@ -1905,6 +1926,33 @@ def build(p):
     if m.get("rooms"):  # kit cave.rooms: every room gets its floor and decor theme (gen/themes.py)
         dressed = themesmod.dress(floors[Z], m, kit, items, rng, ORIGIN, size, wall_pieces)
 
+    pool_ids, pool_tiles, stamp_ids, stamps_placed = set(), set(), set(), 0
+    ramp_set = {int(i) for key in ("mountain_ramp", "hill_ramp") for v in kit.get(key, {}).values() for i in v}
+    if kit.get("pools"):  # kit pools (round 8): blob-shaped liquid patches on open land, each with its own border (gen/pools.py)
+        deep = m["shore"]
+        blocked = set(span) | set(keep) | set(ramps) | set(mramps) | {t for st in m.get("stairs", []) for t in (st["ramp"], st["low"], st["approach"], *st["landing"])}
+        pool_tiles, pool_ids = poolsmod.lay(
+            floors[Z], size, ORIGIN, kit, random.Random(f"pools-{p.seed}"),
+            lambda x, y: (not water[y][x] and not mountain[y][x] and not hill[y][x] and deep[y][x] >= 3 and (x, y) not in blocked
+                          and (x, y) not in m.get("bridge_tiles", ()) and not any(i in ramp_set for i in floors[Z].get((ORIGIN + x, ORIGIN + y), ()))),
+            None)
+
+    if kit.get("stamps"):  # kit stamps (round 8): small prefabs from kit tile patterns (gen/stamps.py)
+        border_ids = {int(i) for v in kit.values() if isinstance(v, dict) and "edge_n" in v and "inner_se" in v for i in v.values()}
+        sites = []
+        if m.get("rooms"):
+            for room in m["rooms"]:
+                x0, y0, x1, y1 = room["rect"]
+                zone = themesmod.door_zones(room["rect"], m["floor_set"])
+                sites.append((room["theme"], {(x, y) for y in range(y0 + 1, y1) for x in range(x0 + 1, x1) if (x, y) not in zone}))
+        else:
+            deep = m["shore"]
+            taken_by = set(span) | set(keep) | set(ramps) | set(mramps) | pool_tiles
+            sites.append(("open", {(x, y) for y in range(size) for x in range(size)
+                                   if not water[y][x] and not mountain[y][x] and not hill[y][x] and deep[y][x] >= 3 and (x, y) not in taken_by
+                                   and (x, y) not in m.get("bridge_tiles", ())}))
+        _, stamp_ids, stamps_placed = stampsmod.lay(floors[Z], size, ORIGIN, kit, random.Random(f"stamps-{p.seed}"), sites, border_ids)
+
     # earth hills: one level (see gen/island.py)
     floor = floors.setdefault(Z - 1, {})
     drop = [[not v for v in row] for row in hill]
@@ -1928,7 +1976,7 @@ def build(p):
     ramp_dirs = {ids[0]: d for key in ("mountain_ramp", "hill_ramp") for d, ids in kit.get(key, {}).items()}
     plant_ids = {int(i) for t in (kit["flora"], kit["top_flora"], kit["bank_flora"]) for f in t.values() for i in f}
     plant_ids |= {int(i) for c in ("big", "small") for i in kit["clumps"][c]} | {int(i) for i in kit.get("hill_top", {})}
-    plant_ids |= dressed
+    plant_ids |= dressed | stamp_ids
     # odd borders (tools/odd_borders.py): tiles where one set's pieces face opposite ways; every 12-piece set
     sets = [s for s, v in kit.items() if isinstance(v, dict) and "edge_n" in v and "inner_se" in v]
     piece_of = {int(i): (s, n.partition("_")[2]) for s in sets for n, i in kit[s].items()}
@@ -1964,7 +2012,7 @@ def build(p):
                             (same_seams if [hi_, lo_] in same_look or [lo_, hi_] in same_look else bare)[f"{hi_}|{lo_}"] += 1
     grey_cliff, brown_cliff = set(kit["mountain_cliff"].values()), set(kit.get("hill_cliff", {}).values())
     clashes = 0 if cave_cfg else sum(1 for s in floors[Z].values() if {int(i) for i in s} & grey_cliff and {int(i) for i in s} & brown_cliff)
-    access.NO_WALK = water_ids(kit)  # liquid never counts as walkable ground (see gen/access.py NO_WALK)
+    access.NO_WALK = water_ids(kit) | pool_ids | {int(i) for i in (kit.get("void_cover") or {}).get("ground", [])}  # liquid never counts as walkable ground (see gen/access.py NO_WALK)
     start = access.main_start(floors, items, Z)
     cleared, cut = access.repair(floors, items, ramp_dirs, plant_ids, start, kit.get("repair_pocket", 4)) if start else (0, [])
     dropped = access.drop_cut_off_tops(floors, items, ramp_dirs, start, Z) if start and kit.get("drop_cut_off_tops") else {}
@@ -1985,7 +2033,13 @@ def build(p):
              "sand": sum(map(sum, sand)), "grey": sum(map(sum, grey)), "river": len(m["river"]),
              **{k: sum(map(sum, m[k])) for k in ("water", "hill")}}
     if kit.get("wall_check"):  # kit key wall_check: void beside floor or walls, wrong or missing wall pieces (gen/wallcheck.py)
-        stats["wall_check"] = wallcheck.summary(wallcheck.check(floors[Z], size, ORIGIN, items, kit, access.NO_WALK, edge_pieces))
+        stats["wall_check"] = wallcheck.summary(wallcheck.check(floors[Z], size, ORIGIN, items, kit, access.NO_WALK, edge_pieces, pool_ids=pool_ids))
+    if pool_ids:
+        stats["pools"] = {"tiles": len(pool_tiles), "ids": sorted(pool_ids)}
+    if stamps_placed:
+        stats["stamps"] = stamps_placed
+    if m.get("islands"):
+        stats["islands"] = m["islands"]
     if cave_cfg:
         stats["cave"] = {**m["cave"], "walkable": check.get("reached/walkable")}
     return floors, stats

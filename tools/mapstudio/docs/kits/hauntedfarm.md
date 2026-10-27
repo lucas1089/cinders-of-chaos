@@ -12,9 +12,7 @@ Item ids:
 - Walkable decor: small pumpkins 41202 41524-41526 38657-38659, dead grass and flowers 38660-38664 40727 40729-40731, fog patches 41389 41390 (heaviest weight), puddle 41198, straw 41197, leaves 41195 41196, bones 41199, crows 41575, graves 41377 41535 41536 41539, crosses 40778 40780 40781, mushrooms 40745 40747, handcart 38656.
 Good: the best looking of the set, scarecrows and trees read well. Weak: no barn (barn plank wall pieces 41226-41241 exist but need a building feature), fence is only on the outline, fog is faint, crows are rare.
 
-## Generator features missing
+## Generator features (round 8)
 
-- No building or room layout. The closest feature is cave mode (`gen/cave.py`): chambers act as rooms, tunnels as corridors, pillars as blocks. Rooms come out as organic blobs with stair-step outlines, so wall pieces read as broken or ruined runs, not as straight rectangular rooms. A rectangular room and corridor generator with doors would fix it.
-- No per-wall variety: the wall set has one piece per direction, so windows, doors and broken pieces (which exist in the item set) are not laid.
-- Ground patches (sand, grey_sand roles) have no border set between flat floors, so the summary reports `bare seams` of 6 to 140 tiles per map. This is by design for flat tile floors, not a missing border.
-- No structure placement (decor is scattered by the clump tables only).
+Round 8: field, pumpkin, yard and grave rooms (`cave.rooms`), split rail `walls`, barn and scarecrow field `stamps`, pair 49 scarecrows, pumpkins and dead trees in the themes. `bare seams` 0 through `same_look`. Still missing: outdoor look (the rooms are walled yards, not open land).
+
