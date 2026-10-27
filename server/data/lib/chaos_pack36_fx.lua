@@ -111,6 +111,11 @@ function C.live()
 		if C.loaded and ChaosVfxMissile and not ChaosVfxMissile.proj_arrow_fire and dofile then
 			pcall(dofile, "data/lib/chaos_pack41_fx_ids.lua")
 		end
+		-- pair 50 effects (p50_*) and pair 51 missiles (p51_*), so Vfx / VfxShoot know their names
+		if C.loaded and dofile then
+			pcall(dofile, "data/lib/chaos_pair50_fx_ids.lua")
+			pcall(dofile, "data/lib/chaos_pair51_missile_ids.lua")
+		end
 	end
 	return C.loaded
 end

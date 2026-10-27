@@ -196,6 +196,10 @@ jobs:
           python3 -I client/tools/sprites/gen_pair50_fx_ids_test.py
           python3 -I client/tools/sprites/gen_pair50_fx_ids.py --check
           python3 -I server/tools/install_pair50_items_test.py
+          # pair 51 missiles: the 62 freed missile ids refilled from the two sources; selection and name table
+          python3 -I client/tools/sprites/import_pair51_missiles_test.py
+          python3 -I client/tools/sprites/gen_pair51_missile_ids_test.py
+          python3 -I client/tools/sprites/gen_pair51_missile_ids.py --check
           python3 -I server/tools/patch_npc_currency_test.py
           python3 -I server/tools/check_dead_holes_test.py   # floor changes that lead nowhere (O263; needs a map to run for real)
           python3 -I server/tools/patch_dead_holes_test.py   # the install step deadholes on a synthetic map
@@ -1128,6 +1132,9 @@ jobs:
 
       - name: Pair warning fixes (fix_pair_warnings.py on a synthetic pair)
         run: python3 -I client/tools/sprites/fix_pair_warnings_test.py
+
+      - name: Pair pruning (prune_pair.py on a synthetic pair)
+        run: python3 -I client/tools/sprites/prune_pair_test.py
 
       - name: PHP for the website tests (php-cli with PDO SQLite and mbstring)
         run: |
