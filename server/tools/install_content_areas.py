@@ -1241,6 +1241,10 @@ def hall_edit(world, map_path, cfg, rows, hl, hall_on, new_tiles, log, wing_lays
                 ed.set(p, t)
             for n in notes:
                 log('quests: ' + n)
+            if hall_on and qlay.get('corridor_rows'):
+                bad = Q.audit(ed, qlay, grounds)
+                if bad:
+                    raise Q.QuestError('the quest hall is not clean: ' + '; '.join(bad[:5]))
             if qlay['prev'] and hall_on:
                 w = plan_prev_cleanup(ed, qlay, map_path, qcfg['previous'], log, moved)
                 for p, t in w.items():

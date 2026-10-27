@@ -18798,7 +18798,8 @@ west to east (north before south in a column). A floor with too few slots is gro
   ones two tiles off, so that no alcove's front is a tile of the plaza's two event teleports at 31634 and 31638,
   32269), the plaza's aisle between them (x 31628-31668, y 32266-32269) in the hall's carpet; the gap in the middle of
   both rows (x 31643-31653) keeps the way from the hall's south door to the island's garden path. The plaza's own
-  teleports on the aisle (31631, 32267; 31634 and 31638, 32269) stay where they are. The corridor keeps its protection
+  teleports on the aisle (31631, 32267; 31634 and 31638, 32269) are strays of an older layout and go (below,
+  "Stray teleports on the carpet"). The corridor keeps its protection
   zone; "Quests" ("Missões") floats over its middle (31648, 32267). The
   rewards stay behind the teleport in the same arrangement; no unique id is shared or changed (the teleports have
   none; the rewards keep theirs). The quest sites' own ways back (the teleports that lead in front of the old alcove,
@@ -18840,6 +18841,15 @@ west to east (north before south in a column). A floor with too few slots is gro
 
   The quest names are read from the signs and the quest teleports' destinations; `--remove-hall` puts every quest
   back in its old alcove (verified against the base map: no tile of the quest rows differs).
+- **Stray teleports on the carpet** (owner, 2026-10-27, "teleports perdidos"). The first quest hall left the plaza's own
+  teleports on the aisle where they were (three: 31631,32267 in the west part, 31634,32269 and 31638,32269 on the
+  south edge), on tiles that the carpet had not covered, so they showed as blue swirls on a blank or green tile and led
+  nowhere that the hall uses. `hall_quests.check_free` now marks any teleport (no unique id) on a corridor tile that is
+  not an alcove's own as a stray (`lay['strays']`), and `plan_move` writes the hall's carpet tile over it (idempotent:
+  a second run finds none). After the move `hall_quests.audit` checks the hall and the install stops if a teleport
+  stands on the corridor rows, a teleport tile has no ground, or a quest teleport does not lead to its quest's
+  destination in `hall_hunts.csv`. VPS step: `install_all.py SERVER_DIR --only contentareas`. Test:
+  `install_content_areas_test.py` (strays with a destination, with none and with no ground).
 - **Reward chests removed.** The four royal chests of the plaza (item 29327, unique ids 34801 daily reward, 34802 weekly
   Nightmare Coin, 34803 weekly Stamina Extension, 34804 weekly Star Inlay Stone; x 31639, 31633, 31657, 31663, y 32265
   with their booth tiles y 32263-32265) are taken away by the same step, after checking that the item there has the

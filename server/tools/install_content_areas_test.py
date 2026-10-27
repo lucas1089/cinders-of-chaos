@@ -542,12 +542,15 @@ def quest_hall_checks(root):
             check('nothing written' in str(e), 'swept %s refused: %s' % (pos, e))
     # the quests move on from the quest hall over the pond to two rows round a corridor of the plaza (owner,
     # 2026-10-20: "you can overwrite this green region"); the earlier hall is taken back to the map's backup; a
-    # teleport of the plaza on the corridor stays where it is
+    # teleport of the plaza on the corridor is a stray of an older layout and goes (owner, 2026-10-22, "teleports
+    # perdidos": three portals on the carpet, two on bare tiles); the carpet is restored under it
     plaza = {}
     for x in range(44, 57):
         for y in range(39, 51):
             plaza[(x, y, QZ)] = t(flags=1)
     plaza[(48, 44, QZ)] = t((PORTAL, {'tele': (321, 321, 7)}), flags=1)
+    plaza[(49, 45, QZ)] = dict(ground=None, items=[(PORTAL, {'tele': (322, 322, 7)})], flags=0)  # no ground at all
+    plaza[(52, 45, QZ)] = t((PORTAL, {'tele': (0, 0, 0)}), flags=1)  # no destination
     import hall_quests as HQ
     srv5, plans5, comp5 = setup(os.path.join(root, 'quests5'), {**extra, **plaza})
     T.run(os.path.join(srv5, 'data'), plans_dir=plans5, config=cfg, compiled=comp5, log=lambda s: None, fixed_dirs=(),
@@ -567,7 +570,19 @@ def quest_hall_checks(root):
           'no quest teleport left in the earlier quest hall')
     check(tile_at(srv5, (49, 41, QZ))['items'][1] == (REWARD, {'uid': 44002, 'raw': bytes([15, 3])}), 'with their rewards')
     check(tele.get((701, 700, 7)) == (50, 43, QZ) and tele.get((711, 700, 7)) == (50, 45, QZ), 'ways back to the new fronts: %s' % tele)
-    check(tele.get((48, 44, QZ)) == (321, 321, 7), 'the plaza\'s own teleport on the corridor stays')
+    cor = [(x, y, QZ) for x in range(47, 54) for y in (43, 44, 45)]
+    check(not any(p in tele for p in cor), 'no portal on the corridor rows: %s' % [p for p in cor if p in tele])
+    check(all(stacks.get(p) and stacks[p][0] == G and PORTAL not in stacks[p] for p in cor),
+          'every corridor tile has its ground and no portal: %s' % [(p, stacks.get(p)) for p in cor if PORTAL in (stacks.get(p) or ())])
+    check(any('stray teleport' in l for l in logs), 'the install says it took the strays off: %s' % logs[-8:])
+    qdest = {q1, q2}
+    portals = [p for p, st_ in stacks.items() if p[2] == QZ and 44 <= p[0] <= 56 and 39 <= p[1] <= 50 and (QP1 in st_ or QP2 in st_ or PORTAL in st_)]
+    dests = {p: [at.get('tele') for _i, at in tile_at(srv5, p)['items'] if at.get('tele')] for p in portals}
+    check(portals and all(d and all(x in qdest for x in d) and stacks[p][0] == G for p, d in dests.items()),
+          'every portal of the plaza has ground and a destination of the plan: %s' % dests)
+    lay5 = HQ.layout_rows(dict(q5), cfg['room'], qrows)
+    ed5 = type('E', (), {'get': staticmethod(lambda p: tile_at(srv5, p))})
+    check(HQ.audit(ed5, lay5, {G}) == [], 'audit finds nothing: %s' % HQ.audit(ed5, lay5, {G}))
     lay0 = HQ.layout_grid(dict(cfg['hall']['quests']), cfg['room'], qrows)
     check(all(stacks.get(p) == [G] for p in lay0['rect'] if p in plaza or (24 <= p[0] <= 40 and 19 <= p[1] <= 29)),
           'the earlier quest hall back as the backup has it: %s' % [(p, stacks.get(p)) for p in lay0['rect'][:3]])

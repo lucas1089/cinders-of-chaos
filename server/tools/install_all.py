@@ -283,7 +283,8 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                1000+), the base quests move to their own hall with their rewards, the daily/weekly reward chests of the
                plaza go and the low-level hunts are added, the ways back from the hunts and quests follow their
                teleports and the ground floor's wings get ground under every tile (README "Hall order"; re-run over
-               an earlier hall it repairs that one: rewards left in the old alcoves, lost quest teleports, holes);
+               an earlier hall it repairs that one: rewards left in the old alcoves, lost quest teleports, holes, stray
+               teleports left on the quest hall's carpet);
                also the fixed areas of tools/areaplan/chronicle/ (the Ashen Chronicle's two chapter
                areas, the Capital Memorial's plaza) and tools/areaplan/rooms/ (the Idle Hall, README "Idle Hall") and, only while
                ChaosHarvestArt.PAIR33 is on, tools/areaplan/events/ (the Haunted Harvest's two areas) at
