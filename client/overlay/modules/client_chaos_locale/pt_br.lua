@@ -2952,6 +2952,13 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Language: %s"] = "Idioma: %s",
   ["Language: %s. New windows and the server messages use it now; the rest follows at the next login."] = "Idioma: %s. As novas janelas e as mensagens do servidor já usam esse idioma; o resto muda no próximo login.",
   ["The language of the client and of the server messages"] = "O idioma do cliente e das mensagens do servidor",
+  -- client_chaos_theme (the interface skin: Options > Interface, base patch 0159)
+  ["Classic"] = "Clássico",
+  ["Forge and Embers"] = "Forja e Brasas",
+  ["Abyssal Arcane"] = "Arcano Abissal",
+  ["Interface skin"] = "Skin da interface",
+  ["Interface skin: %s. It applies the next time the client starts."] = "Skin da interface: %s. Ela vale a partir da próxima vez que o cliente abrir.",
+  ["The look of the interface: Classic, Forge and Embers or Abyssal Arcane. The choice applies the next time the client starts."] = "O visual da interface: Clássico, Forja e Brasas ou Arcano Abissal. A escolha vale a partir da próxima vez que o cliente abrir.",
   -- game_pouches/autoseller.otui (placeholder: Item name -> !placeholder: tr('Item name'))
   ["Item name"] = "Nome do item",
   -- game_chronicle, game_nemesis

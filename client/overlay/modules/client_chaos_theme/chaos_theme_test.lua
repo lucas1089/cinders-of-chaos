@@ -26,6 +26,7 @@ function UIPopupMenu:addOption(text) widget(self, 'option', text) self.height = 
 function UIPopupMenu:addSeparator() widget(self, 'sep') self.height = self.height + 6 end
 function UIPopupMenu:display() self.shown = true end
 
+ChaosSkinCore = dofile(here .. 'skin_core.lua') -- the module loads it by its client path
 dofile(here .. 'chaos_theme.lua')
 ChaosTheme.wrapPopupMenu()
 
@@ -79,5 +80,22 @@ ChaosTheme.unwrapPopupMenu()
 local u = UIPopupMenu.new()
 u:addSeparator() u:addSeparator()
 eq(#u.children, 2, 'unwrapped: as the engine does')
+
+-- interface skin: palette of the skin on screen, the saved choice, restart note
+local store, infos = {}, {}
+g_settings = { getString = function(k) return store[k] or '' end, set = function(k, v) store[k] = v end }
+tr = function(s, ...) return (select('#', ...) > 0) and s:format(...) or s end
+displayInfoBox = function(title, text) infos[#infos + 1] = text end
+eq(ChaosTheme.skin, 'classic', 'no boot: classic on screen')
+eq(ChaosTheme.palette.title, '#e8c477', 'classic title colour')
+eq(ChaosTheme.selectedSkin(), 'classic', 'nothing saved: classic')
+eq(ChaosTheme.skinName('forge'), 'Forge and Embers', 'name')
+eq(ChaosTheme.setSkin('abyss'), 'abyss', 'set')
+eq(store['chaos-skin'], 'abyss', 'saved')
+eq(#infos, 1, 'the restart note is shown')
+eq(ChaosTheme.skinPending(), true, 'saved choice is not on screen yet')
+eq(ChaosTheme.setSkin('bone', true), 'classic', 'unknown value saved as classic')
+eq(store['chaos-skin'], 'classic', 'classic saved')
+eq(ChaosTheme.skinPending(), false, 'nothing pending')
 
 print('chaos_theme_test: ' .. n .. ' checks ok')

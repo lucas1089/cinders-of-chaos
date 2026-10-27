@@ -410,7 +410,10 @@ end
 
 -- O259: the text of a row (the badge "New" after an entry just unlocked, "Level N" after the locked one) and its look
 local LOCK_IMAGE = '/images/game/depot/lock' -- the padlock of the depot art, 10 x 12
-local COLOR_NEW, COLOR_LOCKED, COLOR_NORMAL = '#ffd24a', '#7a7466', '#d6c9ae' -- COLOR_NORMAL: ChaosMenuButton in topbar.otui
+-- COLOR_NORMAL: ChaosMenuButton in topbar.otui. The interface skin's palette (client_chaos_theme) gives the three; classic is
+-- '#ffd24a', '#7a7466', '#d6c9ae'
+local skinPalette = ChaosTheme and ChaosTheme.palette or {}
+local COLOR_NEW, COLOR_LOCKED, COLOR_NORMAL = skinPalette.menuNew or '#ffd24a', skinPalette.menuLocked or '#7a7466', skinPalette.menuNormal or '#d6c9ae'
 
 local function tx(text)
   local ok, v = pcall(tr, text)
