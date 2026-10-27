@@ -1817,6 +1817,23 @@ def build(p):
     void_d = distance(size, [[not v for v in row] for row in water]) if void else None
     void_n = lib.noise(size, 5, random.Random(f"void-{p.seed}")) if void else None  # kit cave.void_jitter: ragged black edge
     jit = (cave_cfg or {}).get("void_jitter", 0)
+    black = None  # cave.void_smooth n (round 10): n majority passes (3x3, 6 of 9, or 3 of 4 sides) over the black mask: black holes inside the rock fill
+    # in and 1-2 tile rock spikes into the black are shaved. Black never appears nearer than `void` tiles to land
+    if void and (cave_cfg or {}).get("void_smooth"):
+        black = [[family(x, y) == "water" and void_d[y][x] > void + (void_n[y][x] - 0.5) * 2 * jit for x in range(size)] for y in range(size)]
+        for _ in range(int(cave_cfg["void_smooth"])):
+            nxt = [row[:] for row in black]
+            for y in range(1, size - 1):
+                for x in range(1, size - 1):
+                    if family(x, y) != "water":
+                        continue
+                    n9 = sum(black[y + j][x + i] for i in (-1, 0, 1) for j in (-1, 0, 1))
+                    n4 = sum(black[y + j][x + i] for i, j in ((0, -1), (1, 0), (0, 1), (-1, 0)))
+                    if black[y][x] and (n9 <= 3 or n4 <= 1):
+                        nxt[y][x] = False  # a black hole, notch or thin black finger in the rock: fill it
+                    elif not black[y][x] and (n9 >= 6 or n4 >= 3) and void_d[y][x] > void:
+                        nxt[y][x] = True   # a rock spike or bite out into the black: shave it
+            black = nxt
     cover = kit.get("void_cover")  # kit void_cover: {"ground": [ids], "rings": n, "extra": share, "decor": {id: rate}}: a dark non-black
     # ground on the void within n tiles of land (with a ragged extra ring), so no black tile touches the floor
     cover_d = distance(size, [[not v for v in row] for row in water]) if cover else None
@@ -1831,7 +1848,7 @@ def build(p):
                           else water_ground(x, y) if water_ground else pick(rng, kit["water"]))
                 layer[(ORIGIN + x, ORIGIN + y)] = [ground] + list(wall_pieces.get((x, y), ()))
                 continue
-            if f == "water" and void and void_d[y][x] > void + (void_n[y][x] - 0.5) * 2 * jit:
+            if f == "water" and void and (black[y][x] if black is not None else void_d[y][x] > void + (void_n[y][x] - 0.5) * 2 * jit):
                 continue
             if f == "water":  # where a mountain meets the water, the reference map draws its cliff on the water tiles; in a
                 # kit where land ranks above water (fire), the land's border is drawn on the water tiles too
