@@ -12,9 +12,7 @@ Item ids:
 - Walkable decor: candles 9511 9512 41383 41385 21350 38308, scrolls 12948 12949 12954 12955, books 23790-23795 12396-12398 40797-40799 38501, strange runes 24934 24937 24938, rune stones 8919 13884, ritual circles 41530 41531 (4x4), chairs 11934 1662, table 1614, papers 38536 38537.
 Good: parquet and moss stone read as a library, books and scrolls scatter well. Weak: shelves are scattered, not lined along walls, no reading tables in rows, no hanging chandeliers.
 
-## Generator features missing
+## Generator features (round 8)
 
-- No building or room layout. The closest feature is cave mode (`gen/cave.py`): chambers act as rooms, tunnels as corridors, pillars as blocks. Rooms come out as organic blobs with stair-step outlines, so wall pieces read as broken or ruined runs, not as straight rectangular rooms. A rectangular room and corridor generator with doors would fix it.
-- No per-wall variety: the wall set has one piece per direction, so windows, doors and broken pieces (which exist in the item set) are not laid.
-- Ground patches (sand, grey_sand roles) have no border set between flat floors, so the summary reports `bare seams` of 6 to 140 tiles per map. This is by design for flat tile floors, not a missing border.
-- No structure placement (decor is scattered by the clump tables only).
+Round 8: reading rooms and halls (`cave.rooms`), crypt stone `walls` with windows, bookcase rows along walls (`themes`). `bare seams` 0 through `same_look`.
+

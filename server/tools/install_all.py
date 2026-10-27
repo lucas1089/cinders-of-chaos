@@ -98,6 +98,9 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   decor48items tools/install_decor48_items.py    the 352 ice, swamp, lava and cave decoration items of client pair 48 (props of a
                donor pair, "source B") in items.otb / items.xml (server ids 42759..43110 = client id + 4000, from
                data/items/decor48_items.csv; used by the map studio kits and map makers; README "Decoration of pair 48")
+  decor49items tools/install_decor49_items.py    the 87 celestial and cursed decoration items of client pair 49 (marble, crystals,
+               clouds, rune circles; dead trees, graves, bones, altars, pumpkins) in items.otb / items.xml (server ids
+               43111..43197 = client id + 4000, from data/items/decor49_items.csv; README "Decoration of pair 49")
   gems         tools/install_gems.py             the gems and the Orb of Sockets in items.otb / items.xml, the orb's own look of
                pair 38, client 38641 (README "Gems and sockets")
   salvage      tools/install_salvage.py          the salvage Rune Shard in items.otb / items.xml (README "Salvage")
@@ -788,6 +791,13 @@ def step_decor48items(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('rewardchest') + 1, 'decor48items')  # the pair 48 decoration (client ids after pair 47's chest)
+
+
+def step_decor49items(server, data, ctx):
+    return tool_result(run_tool([tool('install_decor49_items.py'), data], 'install_decor49_items.py'))
+
+
+STEPS.insert(STEPS.index('decor48items') + 1, 'decor49items')  # the pair 49 decoration (celestial and cursed biomes; needs a client on pair 49)
 
 
 def step_gems(server, data, ctx):

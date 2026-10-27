@@ -11,9 +11,7 @@ Item ids:
 - Walkable decor: seaweed 15146 15147 15148 36602, coral 36606 36607, shells 5679 5682 23767 36609 7551, barnacles 20161-20163, bubbles 25839 25840 and blue spores 18223 18222, fish 5554, gems 15267 9562 9563, glowing fruit 21179 21180 21213 21216-21218, debris 29205 29207, coral crate 15569.
 Good: wreck pieces, corals and chests give a readable reef. Weak: the grey rock walls and purple mass look like a cave, not water; no water tint or fish; sand patches are hard squares; wreck pieces are single hull tiles, not a full ship.
 
-## Generator features missing
+## Generator features (round 8)
 
-- No building or room layout. The closest feature is cave mode (`gen/cave.py`): chambers act as rooms, tunnels as corridors, pillars as blocks. Rooms come out as organic blobs with stair-step outlines, so wall pieces read as broken or ruined runs, not as straight rectangular rooms. A rectangular room and corridor generator with doors would fix it.
-- No per-wall variety: the wall set has one piece per direction, so windows, doors and broken pieces (which exist in the item set) are not laid.
-- Ground patches (sand, grey_sand roles) have no border set between flat floors, so the summary reports `bare seams` of 6 to 140 tiles per map. This is by design for flat tile floors, not a missing border.
-- No structure placement (decor is scattered by the clump tables only).
+Round 8: `wall_check` on (cliff pieces and void counts 0), flat sand and grey patches dropped (`patches` empty, `defaults.sand` 0, `same_look` for the rest), tinted deep water `pools` with their own border (`deep_edge`). Still missing: pools only fit in chambers 7+ wide, small tunnels get none.
+

@@ -11,9 +11,7 @@ Item ids:
 - Walkable decor: small mushrooms 17744-17746 4178-4183 38290 38291 40745-40749, spores 18221-18224 (overhead), slime fungus 13597, border mushrooms 17811-17814, roots 20850 20852 20855 4223-4226, mushroom table 17777.
 Good: giant caps with spores and moss on the cave look read well. Weak: the cave wall is the plain grey rock, no glowing caps in the walls, no huge (3x3 and larger) mushroom trees since the titanic mushroom pieces need to be laid as multi-tile sets.
 
-## Generator features missing
+## Generator features (round 8)
 
-- No building or room layout. The closest feature is cave mode (`gen/cave.py`): chambers act as rooms, tunnels as corridors, pillars as blocks. Rooms come out as organic blobs with stair-step outlines, so wall pieces read as broken or ruined runs, not as straight rectangular rooms. A rectangular room and corridor generator with doors would fix it.
-- No per-wall variety: the wall set has one piece per direction, so windows, doors and broken pieces (which exist in the item set) are not laid.
-- Ground patches (sand, grey_sand roles) have no border set between flat floors, so the summary reports `bare seams` of 6 to 140 tiles per map. This is by design for flat tile floors, not a missing border.
-- No structure placement (decor is scattered by the clump tables only).
+Round 8: `wall_check` on (counts 0), flat patches dropped, `same_look` for the remaining roles, `bare seams` 0. No pools yet.
+
