@@ -38,6 +38,9 @@ eq(L.style('on') ~= nil and L.style('off') ~= nil and L.style(nil) == nil and L.
   'a style for on and off only')
 eq(L.style('on').color ~= L.style('off').color, true, 'on and off differ')
 
+eq(L.needsPass(true, nil), true, 'a deck is drawn') eq(L.needsPass(false, true), true, 'a former deck window is wiped')
+eq(L.needsPass(false, nil), false, 'a plain bag is left alone') eq(L.needsPass(nil, nil), false, 'nil deck')
+
 -- the payload the server builds (the real config and core)
 local base
 for _, cand in ipairs({ dir .. '../../../../', './', '../' }) do

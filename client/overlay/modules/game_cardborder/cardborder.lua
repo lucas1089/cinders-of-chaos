@@ -70,8 +70,11 @@ local function decorate(container)
   if not container or not container.itemsPanel or container.itemsPanel:isDestroyed() then return end
   local deckId = deckIdOf(container)
   local isDeck = deckId and L.isDeck(state, deckId)
-  if not isDeck and not container.cardBorderDrawn then return end
-  container.cardBorderDrawn = isDeck and true or nil
+  -- the flag sits on the items panel, not on the container: a container opened in the window of a deck (same window,
+  -- new Container object, base patch 0122 keeps the slot widgets) must still clear the borders the deck left
+  local panel = container.itemsPanel
+  if not L.needsPass(isDeck, panel.cardBorderDrawn) then return end
+  panel.cardBorderDrawn = isDeck and true or nil
   for slot = 0, container:getCapacity() - 1 do
     local widget = container.itemsPanel:getChildById('item' .. slot)
     if widget then

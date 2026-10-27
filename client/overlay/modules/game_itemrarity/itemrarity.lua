@@ -612,6 +612,81 @@ local function onItemChange(widget)
 	end
 end
 
+-- ===========================================================================
+-- The stock value frame of container slots (ItemsDatabase.setRarityItem)
+-- ---------------------------------------------------------------------------
+-- The stock client paints a coloured frame on every container slot from the item's price: bright green from 1000 gold,
+-- blue from 10 000, purple from 100 000, yellow from 1 000 000. Here that read as a bug (owner 2026-10-27: "alguns
+-- quadrados da bp ficam verdes e dourados"): potions, runes and any pricey item lit up green, and slots whose item had
+-- left kept the frame (setRarityItem remembers the clip it drew and skips a redraw when it thinks nothing changed).
+-- It also says nothing the rarity frame above does not say better. So container windows switch it off: drawRarity=false
+-- on the items panel (the stock check walks up the parents), and every slot is reset to its plain image.
+-- ===========================================================================
+
+-- reset one slot to its plain image; db is ItemsDatabase. The remembered clip is dropped so the redraw really happens.
+function resetStockValueFrame(widget, db)
+	if not widget or not db or not db.setRarityItem then
+		return false
+	end
+	if widget.isDestroyed and widget:isDestroyed() then
+		return false
+	end
+	widget.itemsDatabaseRarityClip = nil
+	widget.itemsDatabaseRarityImageSource = nil
+	local item = widget.getItem and widget:getItem() or nil
+	return pcall(db.setRarityItem, widget, item)
+end
+
+-- switch the stock value frame off for a whole items panel. force: sweep the slots even if the panel is already off.
+-- Returns true when it swept.
+function silenceStockValueFrames(panel, db, force)
+	if not panel or (panel.isDestroyed and panel:isDestroyed()) then
+		return false
+	end
+	if panel.drawRarity == false and not force then
+		return false
+	end
+	panel.drawRarity = false
+	for _, child in ipairs(panel:getChildren()) do
+		if child.getItem then
+			resetStockValueFrame(child, db)
+		end
+	end
+	return true
+end
+
+local function silenceContainer(container, force)
+	if container and container.itemsPanel then
+		silenceStockValueFrames(container.itemsPanel, rawget(_G, "ItemsDatabase"), force)
+	end
+end
+
+local silencePending = {}
+local function onContainerSignal(container, force)
+	local cid = container:getId()
+	if silencePending[cid] then
+		silencePending[cid] = silencePending[cid] or force
+		return
+	end
+	silencePending[cid] = force or false
+	addEvent(function()
+		local f = silencePending[cid]
+		silencePending[cid] = nil
+		local c = g_game.getContainer(cid)
+		if c then
+			silenceContainer(c, f)
+		end
+	end)
+end
+
+local containerHandlers = {
+	onOpen = function(c) onContainerSignal(c, true) end,
+	onAddItem = function(c) onContainerSignal(c, false) end,
+	onRemoveItem = function(c) onContainerSignal(c, false) end,
+	onUpdateItem = function(c) onContainerSignal(c, false) end,
+	onSizeChange = function(c) onContainerSignal(c, false) end,
+}
+
 local function refreshContainers()
 	for _, container in pairs(g_game.getContainers() or {}) do
 		local panel = container.itemsPanel
@@ -665,7 +740,11 @@ function init()
 	connect(UIItem, { onItemChange = onItemChange })
 	connect(g_game, { onGameEnd = onGameEnd })
 	connect(LocalPlayer, { onInventoryChange = onInventoryChange })
+	connect(Container, containerHandlers)
 	if g_game.isOnline() then
+		for _, c in pairs(g_game.getContainers() or {}) do
+			silenceContainer(c, true)
+		end
 		refreshContainers()
 		refreshInventory()
 	end
@@ -676,6 +755,7 @@ function terminate()
 	disconnect(UIItem, { onItemChange = onItemChange })
 	disconnect(g_game, { onGameEnd = onGameEnd })
 	disconnect(LocalPlayer, { onInventoryChange = onInventoryChange })
+	disconnect(Container, containerHandlers)
 	if prismaticEvent then
 		removeEvent(prismaticEvent)
 		prismaticEvent = nil

@@ -60,6 +60,11 @@ function L.kind(state, deckId, itemId)
   return state.on[id] and 'on' or 'off'
 end
 
+-- a window needs a redraw when it is a deck, or when it drew card borders before and must wipe them
+function L.needsPass(isDeck, drawn)
+  return (isDeck and true or false) or (drawn and true or false)
+end
+
 -- the style of a kind (nil for none)
 function L.style(kind)
   return L.STYLE[kind]
