@@ -397,6 +397,44 @@ assertEq(Tile(Position(5016, 5036, 7)), nil, "gap stays empty")
 assertEq(Tile(Position(L.arenaBack.x, L.arenaBack.y, 7)):getItemById(1387).aid, cfg.aid.lobby, "arena back portal")
 assertEq(Tile(Position(L.lobbyToArena.x, L.lobbyToArena.y, 7)):getItemById(1387).aid, cfg.aid.arena, "lobby to arena portal")
 assertEq(Tile(Position(L.lobbyExits[1].x, L.lobbyExits[1].y, 7)):getItemById(1387).aid, cfg.aid.exit, "lobby exit")
+-- O276: the look of both rooms: every theme (a boss each), the arrival, the boss spot, the lane, the exits and the pillars
+-- stay open and reachable, nothing solid touches, the same look every time
+do
+  local AL = ChaosArenaLook
+  local L = W.layout()
+  for _, name in ipairs({"Fire Elemental", "Lich King", "Abyss Lord", "Plain Brute", "Zzz"}) do
+    assert(W.buildArena(name), "buildArena " .. name)
+    local lk = W.looks
+    local function floorOf(rect)
+      local f = {}
+      for _, t in ipairs(AL.rectTiles(1, 1, rect.x2 - rect.x1 - 1, rect.y2 - rect.y1 - 1)) do f[AL.key(t.x, t.y)] = t end
+      return f
+    end
+    local af = floorOf(L.arena)
+    local function loc(p, rect) return {x = p.x - rect.x1, y = p.y - rect.y1} end
+    local reach = AL.reachable(af, lk.arena.blocked, loc(L.arenaEntry, L.arena))
+    for _, p in ipairs({L.bossSpawn, L.arenaEntry, L.arenaBack, L.center}) do
+      local q = loc(p, L.arena)
+      assert(reach[AL.key(q.x, q.y)], name .. ": arena spot reachable")
+    end
+    for _, p in ipairs(L.pillars) do
+      local q = loc(p, L.arena)
+      assert(not lk.arena.blocked[AL.key(q.x, q.y)], name .. ": a pillar spot has no cover on it")
+    end
+    local lf = floorOf(L.lobby)
+    local lreach = AL.reachable(lf, lk.lobby.blocked, loc(L.lobbyArrival, L.lobby))
+    for _, p in ipairs({L.lobbyArrival, L.lobbyToArena, L.lobbyExits[1], L.lobbyExits[2]}) do
+      local q = loc(p, L.lobby)
+      assert(lreach[AL.key(q.x, q.y)], name .. ": lobby spot reachable")
+    end
+    assert(lk.arena.covers > 0 and lk.arena.lights > 0, name .. ": the arena has cover and lights")
+    -- the lane from the arrival to the boss is free: a clear line of sight
+    for y = L.bossSpawn.y, L.arenaEntry.y do
+      local q = loc({x = L.bossSpawn.x, y = y}, L.arena)
+      assert(not lk.arena.blocked[AL.key(q.x, q.y)], name .. ": the boss sees the entry")
+    end
+  end
+end
 assert(W.buildArena(), "rebuilding over our own arena is fine")
 local items = #Tile(Position(5000, 5000, 7)).items
 W.buildArena()

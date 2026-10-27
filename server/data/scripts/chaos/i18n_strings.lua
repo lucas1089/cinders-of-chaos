@@ -1597,6 +1597,9 @@ return {
 			"Todas as arenas da torre estão ocupadas. Tente de novo daqui a pouco.",
 		["Welcome to the Infinity Tower. Floor 1 starts in %d seconds. Leave Tower (Adventure > Infinity Tower) takes you out."] =
 			"Bem-vindo à Infinity Tower. O andar 1 começa em %d segundos. Leave Tower (Adventure > Infinity Tower) te tira de lá.",
+		["Goal: kill every monster of a floor to open the next one; every %dth floor is a boss floor. Stay in the open middle to kite; the pillars and braziers along the walls are cover."] =
+			"Objetivo: mate todos os monstros do andar para abrir o próximo; todo %dº andar é de chefe. Fique no meio aberto para fugir dos golpes; os pilares e braseiros junto às paredes são cobertura.",
+		["The tower arena is not ready. Tell a game master."] = "A arena da torre não está pronta. Avise um game master.",
 		["You are not inside the tower."] = "Você não está dentro da torre.",
 		["Next floor now is not available."] = "Próximo andar agora não está disponível.",
 		["The next floor can be called only when this one is cleared."] = "O próximo andar só pode ser chamado quando este estiver limpo.",

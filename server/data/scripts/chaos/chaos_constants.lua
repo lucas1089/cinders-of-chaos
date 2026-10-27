@@ -780,7 +780,10 @@ Chaos.worldBoss = {
 		-- dark tile set (server/README.md "Dark tile set"): with the set installed, walls, pillars and lights use
 		-- these and both rooms are painted (data/lib/chaos_dark_paint.lua styles); else the ids above are used
 		dark = {enabled = true, wall = "dark_wall", pillar = "ruined_pillar", basin = "brazier",
-			arenaStyle = "arena", lobbyStyle = "lobby"}
+			arenaStyle = "arena", lobbyStyle = "lobby"},
+		-- O276 look (arenalook_core.lua): the theme follows the boss (themes[bossName] or theme overrides it); seed picks the
+		-- layout variant; cover = percent of the arena floor, lights = fixtures at most (nil: the theme's defaults)
+		look = {seed = 11}
 	},
 	-- action ids of the forcefields (handled by MoveEvent onStepIn, never by the teleport destination, so monsters
 	-- that step on them are not moved and the entry rules are checked)

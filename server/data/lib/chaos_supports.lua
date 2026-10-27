@@ -413,8 +413,41 @@ function S.reresist(value, rOld, rNew)
 	return value < 0 and -a or a
 end
 
--- brand: pct of the primary part becomes element `etype`. Returns pd, pt, sd, st. resOf(ctype) = the target's
--- resistance in percent (nil = 0): the moved part loses the old element's resistance and takes the new one's.
+-- brand: pct of the primary part is ADDED on top as extra damage of element `etype`; the original hit stays whole
+-- (O277, it used to be moved: S.convert, which the spell cards still use). Returns pd, pt, sd, st, overflow. resOf(ctype) = the target's resistance in
+-- percent (nil = 0): the extra part loses the primary element's resistance and takes the new one's.
+-- Where the extra goes: onto the primary part when that already is the element, else into the secondary slot when it
+-- is free or holds the same element (one combat event, so leech and crits count the hit once). When the secondary
+-- holds another element the extra comes back as `overflow` (a signed amount of etype) for the caller to deal as an
+-- extra hit.
+function S.addElement(pd, pt, sd, st, pct, etype, resOf)
+	if pct <= 0 or pd == 0 then
+		return pd, pt, sd, st, 0
+	end
+	local extra = part(pd, pct)
+	if extra == 0 then
+		return pd, pt, sd, st, 0
+	end
+	if pt == etype then
+		return pd + extra, pt, sd, st, 0
+	end
+	if resOf then
+		extra = S.reresist(extra, resOf(pt), resOf(etype))
+		if extra == 0 then
+			return pd, pt, sd, st, 0
+		end
+	end
+	if sd == 0 then
+		return pd, pt, extra, etype, 0
+	end
+	if st == etype then
+		return pd, pt, sd + extra, st, 0
+	end
+	return pd, pt, sd, st, extra
+end
+
+-- convert: pct of the primary part MOVES to element `etype` (the total stays). Not used by the brand runes any more
+-- (O277, see addElement); the spell cards still convert with it (cards.lua, kind convert, 100%). Returns pd, pt, sd, st.
 -- Nothing changes when the secondary part holds another element already or the primary already is the element.
 function S.convert(pd, pt, sd, st, pct, etype, resOf)
 	if pct <= 0 or pd == 0 or pt == etype then

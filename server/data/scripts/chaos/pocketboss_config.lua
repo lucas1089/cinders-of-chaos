@@ -56,6 +56,10 @@ return {
 	portalId = 1387,
 	portalActionId = 47620, -- the way out in the antechamber (47620-47629 reserved for pocket bosses)
 	dark = {enabled = true, style = "hall", wall = "obsidian_wall", basin = "brazier"},
+	-- O276 look (arenalook_core.lua; the theme of the boss by keyword, or fixed here): ground variants with borders, mirrored
+	-- cover that never touches the entry, the lane to the boss or the boss spot, lights against the wall. `cover` is the
+	-- percent of the arena floor (nil: the theme's 5), `lights` the fixtures at most (nil: 6), `seed` the layout variant.
+	look = {seed = 7}, -- the theme follows the boss (ChaosArenaLook.themeFor of its name)
 
 	-- ------------------------------------------------------------------ the bosses
 	-- Read from the systems that own them (never drift): the world bosses of Chaos.worldBoss, and the Boss Spawns

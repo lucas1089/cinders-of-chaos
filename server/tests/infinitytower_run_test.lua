@@ -444,6 +444,63 @@ do
   assertEq(sent[#sent].inRun, false, "state: left")
   json = nil
 end
+-- ---- O276: the arena look. Every theme and layout variant: the group's start tiles and the whole spawn ring are open and
+-- reachable, the exit lane is free, cover never touches the walls' lane, the look is the same every time, a slot is
+-- repainted for a new run, and a tile of the map in the footprint refuses the build.
+do
+  local cfg = ChaosTowerRunConfig
+  local AL = ChaosArenaLook
+  local center = math.floor(cfg.inner / 2) + 1
+  local floor = {}
+  for _, t in ipairs(AL.rectTiles(1, 1, cfg.inner, cfg.inner)) do floor[AL.key(t.x, t.y)] = t end
+  local seenThemes, covers = {}, 0
+  for n = 1, #cfg.look.themes * cfg.look.variants do
+    local look = ChaosTowerRun.look(n)
+    seenThemes[look.theme] = true
+    covers = covers + look.covers
+    local reach = AL.reachable(floor, look.blocked, {x = center, y = center})
+    for i = 0, 3 do
+      assertEq(reach[AL.key(center + i % 2, center + math.floor(i / 2))] and true, true, "look " .. n .. ": start tile " .. i .. " open")
+    end
+    for dx = -cfg.spawnRadius, cfg.spawnRadius do
+      for dy = -cfg.spawnRadius, cfg.spawnRadius do
+        local k = AL.key(center + dx, center + dy)
+        if math.max(math.abs(dx), math.abs(dy)) >= cfg.spawnMinDistance then
+          assertEq(look.blocked[k] or reach[k], true, "look " .. n .. ": spawn ring tile reachable or solid " .. k)
+        else
+          assertEq(look.blocked[k], nil, "look " .. n .. ": nothing solid at the start " .. k)
+        end
+      end
+    end
+    for k, t in pairs(look.tiles) do
+      assertEq(t.road and look.blocked[k] or nil, nil, "look " .. n .. ": the lane to the middle is free")
+    end
+    assertEq(ChaosTowerRun.look(n) == look, true, "look " .. n .. ": cached, the same every time")
+  end
+  assertEq(next(seenThemes) ~= nil, true, "themes used")
+  assertEq(covers > 0, true, "the arenas have cover")
+  -- a started run paints the slot and the spawn picker avoids solid pieces
+  for _, p in pairs(players) do if ChaosTowerRun.isInside(p) then ChaosTowerRun.leave(p) end end
+  local z = mkPlayer(40, "Zed"); players[40] = z
+  assertEq(ChaosTowerRun.start(z), true, "look: a run starts on the painted arena")
+  local runs0 = ChaosTowerRun._state()
+  local slot, run
+  for sl, r in pairs(runs0) do slot, run = sl, r end
+  assertEq(run.look ~= nil, true, "the run holds its look")
+  local gpos = Position(cfg.arenaBase.x + slot * cfg.slotSpacing + center, cfg.arenaBase.y + center, cfg.arenaBase.z)
+  assertEq(Tile(gpos):getGround() ~= nil, true, "the middle has a ground")
+  ChaosTowerRun.leave(z)
+  -- a map tile inside an unbuilt slot refuses the build: the run does not start and nothing is left behind
+  local savedBase = cfg.arenaBase
+  cfg.arenaBase = {x = 5000, y = 5000, z = 7}
+  ChaosTowerBuiltSlots[0] = nil
+  Game.createTile(Position(5005, 5005, 7)) -- a tile of the map
+  local y2 = mkPlayer(41, "Yan"); players[41] = y2
+  assertEq(ChaosTowerRun.start(y2), false, "look: a footprint tile of the map refuses the build")
+  assertEq(ChaosTowerRun.isInside(y2), false, "look: the refused run holds nobody")
+  assertEq(Tile(Position(5001, 5001, 7)), nil, "look: nothing was built")
+  cfg.arenaBase = savedBase
+end
 print("infinity tower run: next floor now passed")
 print("infinity tower run: O144 floor health, rewards and drops passed")
 print("infinity tower run: all asserts passed")

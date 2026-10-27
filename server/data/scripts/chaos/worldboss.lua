@@ -46,6 +46,9 @@ if not ChaosCommands then
 	dofile("data/scripts/chaos/commands_ui_core.lua")
 end
 dofile("data/lib/chaos_dark_paint.lua")
+if not ChaosArenaLook then
+	dofile("data/scripts/chaos/arenalook_core.lua")
+end
 if not ChaosCityPortals then
 	dofile("data/scripts/chaos/cityportals.lua")
 end
@@ -571,32 +574,49 @@ local function fixedItemIds()
 end
 
 local function keepItem(keep, id)
-	return keep[id] or (darkArena() and ChaosDarkPaint.isDark(id))
+	return keep[id] or (darkArena() and ChaosDarkPaint.isDark(id)) or ChaosArenaLook.isOwned(id)
 end
 
--- paints the floors of both rooms (the fixtures' tiles stay plain)
-local function paintArena(L, foot)
+-- O276: the look of both rooms (arenalook_core.lua): the theme of the boss (the arena is repainted when the boss changes),
+-- varied ground with borders, mirrored cover and lights in the arena that leave the arrival, the boss spot, the lane
+-- between them and the fixtures open; the lobby gets the ground, the rim and rubble only. The fixtures (pillars, basins,
+-- portals) are placed after it.
+local function dressRooms(L, bossName)
 	local a = C().arena
-	local walls, arena, lobby = {}, {}, {}
-	for _, t in ipairs(foot) do
-		if t.wall then
-			walls[t.x .. "," .. t.y] = true
-		elseif t.lobby then
-			lobby[#lobby + 1] = t
-		else
-			arena[#arena + 1] = t
-		end
-	end
-	local reserved = {L.center, L.bossSpawn, L.arenaEntry, L.arenaBack, L.lobbyArrival, L.lobbyToArena}
-	for _, list in ipairs({L.lobbyExits, L.pillars, L.basins}) do
+	local lk = a.look or {}
+	local theme = (lk.themes and lk.themes[bossName]) or lk.theme or ChaosArenaLook.themeFor(bossName or "world boss")
+	local function keepOf(list, r)
+		local out = {}
 		for _, p in ipairs(list) do
-			reserved[#reserved + 1] = p
+			out[#out + 1] = {x = p.x, y = p.y, r = r}
 		end
+		return out
 	end
-	local opts = {walls = walls, reserved = reserved}
-	ChaosDarkPaint.apply(ChaosDarkPaint.plan(arena, a.dark.arenaStyle, math.random, opts), L.z)
-	ChaosDarkPaint.apply(ChaosDarkPaint.plan(lobby, a.dark.lobbyStyle, math.random, opts), L.z)
+	local keep = keepOf({L.bossSpawn, L.arenaEntry}, 3)
+	keep[#keep + 1] = {x = L.arenaBack.x, y = L.arenaBack.y, r = 1}
+	for _, p in ipairs(L.pillars) do
+		keep[#keep + 1] = {x = p.x, y = p.y, r = 1}
+	end
+	for _, p in ipairs(L.basins) do
+		keep[#keep + 1] = {x = p.x, y = p.y, r = 1}
+	end
+	local grounds = {[a.groundId] = true, [a.lobbyGroundId] = true}
+	local arenaLook = ChaosArenaLook.dress("world-arena", {x1 = L.arena.x1 + 1, y1 = L.arena.y1 + 1, x2 = L.arena.x2 - 1, y2 = L.arena.y2 - 1},
+		L.z, theme, {keep = keep, roads = {{from = L.arenaEntry, to = L.bossSpawn}}, seed = lk.seed or 1, cover = lk.cover,
+		lights = lk.lights, groundIds = grounds, fallbackGround = a.groundId})
+	local lkeep = keepOf({L.lobbyArrival, L.lobbyToArena}, 2)
+	for _, p in ipairs(L.lobbyExits) do
+		lkeep[#lkeep + 1] = {x = p.x, y = p.y, r = 1}
+	end
+	for _, p in ipairs(L.basins) do
+		lkeep[#lkeep + 1] = {x = p.x, y = p.y, r = 1}
+	end
+	local lobbyLook = ChaosArenaLook.dress("world-lobby", {x1 = L.lobby.x1 + 1, y1 = L.lobby.y1 + 1, x2 = L.lobby.x2 - 1, y2 = L.lobby.y2 - 1},
+		L.z, theme, {keep = lkeep, roads = {{from = L.lobbyArrival, to = L.lobbyToArena}}, seed = (lk.seed or 1) + 1, cover = 0,
+		lights = 0, groundIds = grounds, fallbackGround = a.lobbyGroundId})
+	W.looks = {arena = arenaLook, lobby = lobbyLook, theme = theme}
 end
+ChaosWorldBoss.dressRooms = dressRooms
 
 local function placeItem(pos, id, aid)
 	local tile = Tile(pos)
@@ -614,12 +634,12 @@ local function placeItem(pos, id, aid)
 end
 
 -- returns true, or false + reason (nothing is built then)
-function W.buildArena()
+function W.buildArena(bossName)
 	local dark = darkArena()
 	local a = C().arena
 	local L = W.layout()
 	local foot = W.footprint(L)
-	local ours = {[a.groundId] = true, [a.lobbyGroundId] = true}
+	local ours = setmetatable({[a.groundId] = true, [a.lobbyGroundId] = true}, {__index = function(_, id) return ChaosArenaLook.isOwned(id) or nil end})
 	for _, t in ipairs(foot) do
 		local tile = Tile(P(t))
 		if tile then
@@ -633,7 +653,7 @@ function W.buildArena()
 		local pos = P(t)
 		local tile = Game.createTile(pos, true)
 		if tile then
-			if not tile:getGround() then
+			if t.wall and not tile:getGround() then -- the floors get theirs from the look (below)
 				Game.createItem(t.lobby and a.lobbyGroundId or a.groundId, 1, pos)
 			end
 			if t.wall and not tile:getItemById(a.wallId) then
@@ -641,6 +661,8 @@ function W.buildArena()
 			end
 		end
 	end
+	W.lastBoss = bossName or W.lastBoss -- the staff's arena command keeps the theme of the last event
+	dressRooms(L, W.lastBoss)
 	for _, p in ipairs(L.pillars) do
 		placeItem(P(p), a.pillarId)
 	end
@@ -652,10 +674,6 @@ function W.buildArena()
 	placeItem(P(L.lobbyToArena), a.portalId, aid.arena)
 	for _, p in ipairs(L.lobbyExits) do
 		placeItem(P(p), a.portalId, aid.exit)
-	end
-	if dark and not W.painted then
-		paintArena(L, foot)
-		W.painted = true
 	end
 	return true
 end
@@ -1234,7 +1252,7 @@ function W.start(index)
 	if not MonsterType(b.name) then
 		return false, b.name .. " is not loaded (register world_bosses/*.xml in monsters.xml)"
 	end
-	local ok, err = W.buildArena()
+	local ok, err = W.buildArena(b.name)
 	if not ok then
 		return false, "arena not built: " .. err
 	end

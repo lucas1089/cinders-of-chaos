@@ -30,6 +30,13 @@ ChaosTowerBalance = dofile("data/scripts/chaos/infinitytower_balance_config.lua"
 local B = ChaosTowerBalanceCore
 local BC = ChaosTowerBalance
 
+if not ChaosArenaLook then
+	dofile("data/scripts/chaos/arenalook_core.lua")
+end
+if not ChaosDarkTiles then
+	dofile("data/lib/chaos_dark_tiles.lua")
+end
+
 ChaosTowerRun = ChaosTowerRun or {}
 
 local function bossNames()
@@ -44,11 +51,17 @@ local cfg = {
 	arenaBase = {x = 2000, y = 2000, z = 7}, -- top-left corner of slot 0; this part of the map has no tiles
 	slotSpacing = 40,
 	maxSlots = 16,
-	inner = 19, -- inner width and height of the arena (odd)
+	inner = 25, -- inner width and height of the arena (odd; O276: 19 -> 25, room to kite; slotSpacing 40 holds 27)
 	spawnRadius = 6, -- monsters appear within this distance of the middle (players start there)
 	spawnMinDistance = 3, -- ... but not closer than this
 	groundId = 413, -- "stone floor"
 	wallId = 5648, -- "stone wall"
+	-- O276 look (arenalook_core.lua): every run gets one theme and one layout variant in turn (the same hash of the
+	-- coordinates every time, so the layout of a variant never changes): varied ground with borders, a rim along the wall
+	-- with rubble, mirrored cover pieces that never touch each other or the spawn ring, lights against the wall and a
+	-- paved lane from the south wall to the middle. The theme "dark" is the dark tile set when it is installed (else the
+	-- ember theme). Nothing solid within keepRadius of the middle (the group starts there; monsters appear around it).
+	look = {themes = {"ember", "stone", "crypt", "dark"}, variants = 6, keepRadius = 3, cover = 5, lights = 8},
 	minLevel = 100,
 	maxPartySize = 4,
 	partyRange = 12, -- members farther than this from the leader stay out
@@ -119,28 +132,79 @@ local function arenaPos(slot, dx, dy) -- dx, dy are 0 .. inner+1 (0 and inner+1 
 	return Position(o.x + dx, o.y + dy, o.z)
 end
 
-local function buildArena(slot)
+-- the look of run number n (local coordinates 1..inner, the same in every slot): theme and variant in turn, cached
+local function towerLook(n)
+	local L = cfg.look
+	local themeName = L.themes[n % #L.themes + 1]
+	local variant = math.floor(n / #L.themes) % L.variants + 1
+	local theme = ChaosArenaLook.theme(themeName, ChaosArenaLook.darkIds)
+	local center = math.floor(cfg.inner / 2) + 1
+	local look = ChaosArenaLook.cached("tower:" .. theme.name .. ":" .. variant, function()
+		return {
+			tiles = ChaosArenaLook.rectTiles(1, 1, cfg.inner, cfg.inner), theme = theme, seed = 100 + variant, mirror = true,
+			keep = {{x = center, y = center, r = L.keepRadius}, {x = center, y = cfg.inner, r = 1}},
+			roads = {{from = {x = center, y = cfg.inner}, to = {x = center, y = center + L.keepRadius + 1}}},
+			cover = L.cover, lights = L.lights
+		}
+	end)
+	return look
+end
+ChaosTowerRun.look = towerLook
+
+ChaosTowerBuiltSlots = ChaosTowerBuiltSlots or {} -- global: survives a script reload (slot -> true once its tiles are ours)
+local builtSlots = ChaosTowerBuiltSlots
+
+-- returns true, or false + reason (nothing is built then: a tile of the footprint already belongs to the map)
+local function buildArena(slot, look)
 	local last = cfg.inner + 1
+	local wallId = look.wallId or cfg.wallId
+	if not builtSlots[slot] then
+		for dx = 0, last do
+			for dy = 0, last do
+				if Tile(arenaPos(slot, dx, dy)) then
+					return false, string.format("tile %d,%d,%d of tower slot %d already exists in the map",
+						arenaPos(slot, dx, dy).x, arenaPos(slot, dx, dy).y, cfg.arenaBase.z, slot)
+				end
+			end
+		end
+	end
 	for dx = 0, last do
 		for dy = 0, last do
 			local pos = arenaPos(slot, dx, dy)
 			local tile = Game.createTile(pos, true)
 			if tile then
+				local wall = dx == 0 or dy == 0 or dx == last or dy == last
 				-- Game.createItem places a ground item as the tile's ground; Tile:addItem does not
-				if not tile:getGround() then
+				if wall and not tile:getGround() then
 					Game.createItem(cfg.groundId, 1, pos)
 				end
-				if (dx == 0 or dy == 0 or dx == last or dy == last) and not tile:getItemById(cfg.wallId) then
-					Game.createItem(cfg.wallId, 1, pos)
+				if wall and not tile:getItemById(wallId) then
+					Game.createItem(wallId, 1, pos)
 				end
 			end
 		end
 	end
-end
-
-local function clearArena(slot)
+	local o = slotOrigin(slot)
+	ChaosArenaLook.paint(look, o.z, o.x, o.y)
+	-- a floor tile the painter could not give a ground (an unknown item) gets the plain one: never a hole
 	for dx = 1, cfg.inner do
 		for dy = 1, cfg.inner do
+			local pos = arenaPos(slot, dx, dy)
+			local tile = Tile(pos)
+			if tile and not tile:getGround() then
+				Game.createItem(cfg.groundId, 1, pos)
+			end
+		end
+	end
+	builtSlots[slot] = true
+	return true
+end
+
+-- ground, walls and decoration go too: the next run repaints with its own theme
+local function clearArena(slot)
+	local last = cfg.inner + 1
+	for dx = 0, last do
+		for dy = 0, last do
 			local tile = Tile(arenaPos(slot, dx, dy))
 			if tile then
 				local creatures = tile:getCreatures()
@@ -153,20 +217,26 @@ local function clearArena(slot)
 				for _, item in ipairs(items or {}) do
 					item:remove()
 				end
+				local ground = tile.getGround and tile:getGround()
+				if ground and type(ground) ~= "number" and ground.remove then
+					ground:remove()
+				end
 			end
 		end
 	end
 end
 
--- monsters appear around the middle of the arena, where the players stand, so they always see them
-local function randomInnerPos(slot, rng)
+-- monsters appear around the middle of the arena, where the players stand, so they always see them; never on a
+-- cover piece or a light
+local function randomInnerPos(slot, rng, look)
 	local center = math.floor(cfg.inner / 2) + 1
 	local r = math.min(cfg.spawnRadius or 6, center - 1)
 	local minDist = math.min(cfg.spawnMinDistance or 3, r)
-	for _ = 1, 20 do
+	local blocked = look and look.blocked or {}
+	for _ = 1, 30 do
 		local dx = center + rng(2 * r + 1) - r - 1
 		local dy = center + rng(2 * r + 1) - r - 1
-		if math.max(math.abs(dx - center), math.abs(dy - center)) >= minDist then
+		if math.max(math.abs(dx - center), math.abs(dy - center)) >= minDist and not blocked[ChaosArenaLook.key(dx, dy)] then
 			return arenaPos(slot, dx, dy)
 		end
 	end
@@ -174,6 +244,7 @@ local function randomInnerPos(slot, rng)
 end
 
 -- ------------------------------------------------------------------ run state
+local runCount = 0     -- runs started since the server came up: picks the theme and the layout variant
 local runs = {}        -- slot -> run
 local runOf = {}       -- player id -> run
 local monsterRun = {}  -- monster id -> run
@@ -497,9 +568,9 @@ local function spawnPlan(run, plan, rng)
 			-- O168: the floor's level goes to monster_levels.lua (Chaos.spawnLevel) so "[level]" follows the floor; a plain
 			-- Game.createMonster showed the species' own level whatever the floor
 			if Chaos.createMonsterNamed then
-				monster = Chaos.createMonsterNamed(name, randomInnerPos(run.slot, rng), false, true, nil, s.level)
+				monster = Chaos.createMonsterNamed(name, randomInnerPos(run.slot, rng, run.look), false, true, nil, s.level)
 			else
-				monster = Game.createMonster(name, randomInnerPos(run.slot, rng), false, true)
+				monster = Game.createMonster(name, randomInnerPos(run.slot, rng, run.look), false, true)
 			end
 			if monster then
 				break
@@ -590,6 +661,11 @@ startFloor = function(run)
 	run.floorLimit = ChaosTowerFloorLimit(run.floor)
 	run.floorWarn = {} -- the floor's own warnings (instance limits)
 	say(run, plan.boss and string.format("Floor %d: BOSS!", run.floor) or string.format("Floor %d", run.floor))
+	if ChaosCombatFx and ChaosCombatFx.label then
+		local c = math.floor(cfg.inner / 2) + 1
+		pcall(ChaosCombatFx.label, arenaPos(run.slot, c, c - cfg.look.keepRadius - 1),
+			plan.boss and string.format("BOSS FLOOR %d", run.floor) or string.format("Floor %d", run.floor), plan.boss and "#ff5050" or "#ffffff")
+	end
 	if run.remaining == 0 then
 		floorCleared(run) -- nothing could be created: do not trap the group
 		return
@@ -736,8 +812,16 @@ function ChaosTowerRun.start(player)
 		return false
 	end
 
-	buildArena(slot)
-	local run = {slot = slot, players = {}, finished = {}, floor = 0, cleared = 0, remaining = 0, startTime = os.time()}
+	runCount = runCount + 1
+	local look = towerLook(runCount)
+	local built, why = buildArena(slot, look)
+	if not built then
+		print("[Chaos tower] " .. tostring(why))
+		player:sendCancelMessage(Chaos.t(player, "The tower arena is not ready. Tell a game master."))
+		return false
+	end
+	local run = {slot = slot, players = {}, finished = {}, floor = 0, cleared = 0, remaining = 0, startTime = os.time(),
+		look = look}
 	runs[slot] = run
 	local center = math.floor(cfg.inner / 2) + 1
 	for i, m in ipairs(group) do
@@ -747,6 +831,7 @@ function ChaosTowerRun.start(player)
 		m:teleportTo(arenaPos(slot, center + (i - 1) % 2, center + math.floor((i - 1) / 2)))
 		m:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
 		m:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(m, "Welcome to the Infinity Tower. Floor 1 starts in %d seconds. Leave Tower (Adventure > Infinity Tower) takes you out.", cfg.startDelay))
+		m:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(m, "Goal: kill every monster of a floor to open the next one; every %dth floor is a boss floor. Stay in the open middle to kite; the pillars and braziers along the walls are cover.", cfg.bossEvery))
 		local reward = ChaosTowerRun.nextRewardText(m, 0)
 		if reward then
 			m:sendTextMessage(MESSAGE_EVENT_ADVANCE, reward)
@@ -894,7 +979,10 @@ logout:register()
 local login = CreatureEvent("ChaosTowerRunLogin") -- infinitytower.lua owns "ChaosTowerLogin" (a second one of that name is dropped)
 function login.onLogin(player)
 	if inArena(player:getPosition()) and not runOf[player:getId()] then
-		player:teleportTo(player:getTown():getTemplePosition())
+		local town = player:getTown()
+		if town then
+			player:teleportTo(town:getTemplePosition())
+		end
 	end
 	return true
 end

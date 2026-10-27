@@ -338,6 +338,16 @@ local function flush(pid)
 		end
 	end
 
+	-- brand extras that did not fit the hit's secondary slot (another element sat there): a hit of their own
+	for _, h in ipairs(hits) do
+		for _, o in ipairs(h.over or {}) do
+			local c = Creature(h.id)
+			if c and isFoe(p, c) then
+				procDamage(p, c, o.type, o.amount, CONST_ME_NONE)
+			end
+		end
+	end
+
 	-- Bloodthirst / Siphon: capped per cast
 	if fx.bloodthirst then
 		local cap = math.floor(p:getMaxHealth() * E.bloodthirstMaxShare / 100)
@@ -434,7 +444,7 @@ local function flush(pid)
 	end
 end
 
-local function record(pid, spellId, serial, creature, amount, ctype, crit, kill)
+local function record(pid, spellId, serial, creature, amount, ctype, crit, kill, over)
 	local b = buffers[pid]
 	if not b or b.serial ~= serial then
 		if b then
@@ -451,9 +461,15 @@ local function record(pid, spellId, serial, creature, amount, ctype, crit, kill)
 		h.amount = h.amount + amount
 		h.crit = h.crit or crit
 		h.kill = h.kill or kill
+		if over then
+			h.over = h.over or {}
+			for _, o in ipairs(over) do
+				h.over[#h.over + 1] = o
+			end
+		end
 	else
 		b.hits[#b.hits + 1] = {id = cid, pos = copyPos(creature:getPosition()), amount = amount, type = ctype, crit = crit,
-			kill = kill}
+			kill = kill, over = over}
 		b.index[cid] = #b.hits
 	end
 	b.total = b.total + amount
@@ -539,11 +555,31 @@ function event.onHealthChange(creature, attacker, pd, pt, sd, st, origin, critic
 	end
 	local res = resistances(creature)
 	local resOf = res and function(t) return res[t] or 0 end or nil
-	-- brand
-	for _, e in pairs(fx) do
-		if e.element and ELEMENT_TYPE[e.element] then
-			pd, pt, sd, st = S.convert(pd, pt, sd, st, e.value, ELEMENT_TYPE[e.element], resOf)
-			break
+	-- brand (O277): the hit stays whole, each brand adds value% of it as extra damage of its element. Monsters only
+	-- (PvP hits are not raised). The extra rides in the same combat event (secondary slot), so leech and crit
+	-- procs see one hit; only when the secondary slot holds another element does the extra come back as `over`
+	-- and is dealt from flush. Several brands add up (the window allows one per spell; sorted for a fixed order).
+	local over
+	if creature:isMonster() then
+		local brands = {}
+		for key, e in pairs(fx) do
+			if e.element and ELEMENT_TYPE[e.element] then
+				brands[#brands + 1] = key
+			end
+		end
+		table.sort(brands)
+		local basePd = pd
+		for _, key in ipairs(brands) do
+			local e = fx[key]
+			local o
+			-- every brand is a share of the ORIGINAL hit, not of the hit plus earlier extras
+			local npd, npt, nsd, nst
+			npd, npt, nsd, nst, o = S.addElement(basePd, pt, sd, st, e.value, ELEMENT_TYPE[e.element], resOf)
+			pd, sd, st = pd + (npd - basePd), nsd, nst
+			if o and o ~= 0 then
+				over = over or {}
+				over[#over + 1] = {type = ELEMENT_TYPE[e.element], amount = o}
+			end
 		end
 	end
 	-- Sunder
@@ -571,7 +607,7 @@ function event.onHealthChange(creature, attacker, pd, pt, sd, st, origin, critic
 	if amount > 0 then
 		-- the extra hits take the element of the bigger part (a brand may have moved most of it)
 		local ctype = (sd ~= 0 and math.abs(sd) > math.abs(pd)) and st or pt
-		record(attacker:getId(), spellId, serial, creature, amount, ctype, crit, amount >= creature:getHealth())
+		record(attacker:getId(), spellId, serial, creature, amount, ctype, crit, amount >= creature:getHealth(), over)
 	end
 	return pd, pt, sd, st
 end

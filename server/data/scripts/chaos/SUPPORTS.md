@@ -56,7 +56,7 @@ Kinds: **single** = damage to one target (also spells that jump from it), **area
 
 | # | support | effect (level 1/2/3/4/5) | fits | ids |
 | --- | --- | --- | --- | --- |
-| 1 | Emberbrand | 20/30/40/50/60% of the spell's damage becomes fire damage | single, area | 32101-32105 |
+| 1 | Emberbrand | 20/30/40/50/60% of the spell's damage is added as extra fire damage | single, area | 32101-32105 |
 | 2 | Rimebrand | the same, ice | single, area | 32106-32110 |
 | 3 | Dawnbrand | the same, holy | single, area | 32111-32115 |
 | 4 | Gravebrand | the same, death | single, area | 32116-32120 |
@@ -82,12 +82,18 @@ Thrift 30, Keen Edge 13, Echo 40, Bloodthirst 8, Siphon 40, Sunder 25, Hex 10, M
 
 Balance frame: a Perfect gem gives +12% element damage to one element; a Mythic support is worth roughly that much on
 one spell (Echo 35% x 50% = +17.5% expected on that spell, Fork 3 x 55% only with packs, Keen Edge 8% x 50% = +4% plus
-the Surge trigger). Brands add no damage by themselves: they turn damage into an element the monster resists less
-(the moved part loses the old element's resistance and takes the new one's), and they let element gems count.
+the Surge trigger). Brands (O277, owner: "em vez de ser 30% se torna x elemento, faça que os 30% seja adicionais")
+ADD damage: the spell's hit stays whole and value% of it comes on top as extra damage of the brand's element (it used
+to be moved, which kept the total). A Mythic brand is now +60% on that spell before resistances, well above the frame
+above; the extra part loses the hit's resistance and takes the element's (a monster weak to the element takes more,
+one that resists it less). The extra rides in the same combat event (the secondary damage slot, or the primary part
+when it already is that element), so leech and crit see one hit and nothing triggers twice; only when the hit's
+secondary slot holds another element does the extra become a hit of its own (guarded, like Echo). It is a share of the
+ORIGINAL hit, several brands add up, and Keen Edge crits both parts. Monsters only: a player target is never hit harder.
 
 Extra hits (Echo, Fork, Breadth, Shatter, Deathburst, Surge, Reprisal) only hit monsters (never players or a player's
 summon), use ORIGIN_SPELL, and run with the proc guard up, so they never trigger supports, keystones or another extra
-hit. Brand, Sunder, Keen Edge, Hex and Mercy work on the spell's own hits, in PvP too (Hex marks monsters only).
+hit. Sunder, Keen Edge, Hex and Mercy work on the spell's own hits, in PvP too (Hex marks monsters only); Brand adds nothing against players.
 
 ## Where runes come from
 
