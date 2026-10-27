@@ -200,16 +200,20 @@ local function warn(f, text, spell)
 		return
 	end
 	local name = f.profile.label or f.name
-	local function line(p)
-		local s = G.warnText(p and Chaos.t(p, text) or text, name)
+	local function lineIn(lang)
+		local s = G.warnText(lang and ChaosI18n.text(lang, text) or text, name)
 		if s and spell then
 			s = s:gsub("{spell}", function() return spell end)
 		end
 		return s
 	end
+	local function line(p)
+		return lineIn(p and Chaos.lang(p) or nil)
+	end
 	local boss = Monster(f.id)
 	if boss then
-		boss:say(line(nil), TALKTYPE_MONSTER_YELL)
+		-- the yell reaches everyone around: each listener hears it in own language (Chaos.yell)
+		Chaos.yell(boss, lineIn)
 	end
 	for _, p in ipairs(fightPlayers(f)) do
 		p:sendTextMessage(orange(), line(p))

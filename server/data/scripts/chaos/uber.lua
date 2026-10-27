@@ -987,12 +987,12 @@ local function startPhase(run, idx)
 	end
 	local boss = bossOf(run)
 	if idx > 1 and boss then
-		boss:say(ph.yell or "", TALKTYPE_MONSTER_YELL)
+		Chaos.yell(boss, ph.yell or "")
 		fx(boss:getPosition(), "dome_blast_fire", CONST_ME_FIREAREA)
 		say(run, ChaosI18n.msg("%s enters phase %d of %d: %s.", def.boss, idx, #def.phases, ph.name),
 			MESSAGE_STATUS_CONSOLE_ORANGE or MESSAGE_INFO_DESCR)
 	elseif boss and ph.yell then
-		boss:say(ph.yell, TALKTYPE_MONSTER_YELL)
+		Chaos.yell(boss, ph.yell)
 	end
 	run.hazard = nil
 	if ph.hazard then
@@ -1143,7 +1143,7 @@ local function tick(slot, rid)
 			run.nextPulse = now + cfg.enrage.pulseMs
 			local boss = bossOf(run)
 			if boss then
-				boss:say("ENOUGH! BURN!", TALKTYPE_MONSTER_YELL)
+				Chaos.yell(boss, "ENOUGH! BURN!")
 				fx(boss:getPosition(), "aura_burst_red", CONST_ME_FIREAREA)
 			end
 			say(run, ChaosI18n.msg("%s is ENRAGED: every hit is far stronger and the telegraphs come twice as fast.", def.boss))

@@ -1182,14 +1182,15 @@ function talk.onSay(player, words, param)
 	local lines = {}
 	local row = mentorRow(guid)
 	if row then
-		lines[#lines + 1] = string.format("Mentor: %d marks (%d earned, %d this month), %d graduates, %d apprentices, accepting %s.", row.marks,
-			row.earned, monthMarks(row, os.time()), row.graduates, #linksOfMentor(guid), row.accepting == 1 and "yes" or "no")
+		lines[#lines + 1] = Chaos.t(player, row.accepting == 1 and "Mentor: %d marks (%d earned, %d this month), %d graduates, %d apprentices, accepting apprentices." or
+			"Mentor: %d marks (%d earned, %d this month), %d graduates, %d apprentices, not accepting apprentices.", row.marks,
+			row.earned, monthMarks(row, os.time()), row.graduates, #linksOfMentor(guid))
 	end
 	if link then
-		lines[#lines + 1] = string.format("Apprentice of %s since %s (%s), %d minutes together.", (character(link.mentor_id) or {}).name or "?",
+		lines[#lines + 1] = Chaos.t(player, "Apprentice of %s since %s (%s), %d minutes together.", (character(link.mentor_id) or {}).name or "?",
 			os.date("%Y-%m-%d", link.linked_at), link.source, link.shared_minutes)
 	end
-	player:showTextDialog(2160, #lines > 0 and table.concat(lines, "\n") or "No mentor data.")
+	player:showTextDialog(2160, #lines > 0 and table.concat(lines, "\n") or Chaos.t(player, "No mentor data."))
 	return false
 end
 talk:separator(" ")

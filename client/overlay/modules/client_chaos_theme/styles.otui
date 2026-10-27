@@ -118,6 +118,33 @@ ChaosButton < UIButton
     color: #6b6258
     change-cursor-image: false
 
+// The primary button of the interface skins (sheet chaos/skin/button_primary: normal, hover, pressed, disabled, 64 x 24
+// each; solid ember in "Forge and Embers", violet in "Abyssal Arcane"; classic keeps the Button look, client/tools/gen_skin_variants.py)
+ChaosPrimaryButton < UIButton
+  font: verdana-11px-antialised
+  color: #f4ead6
+  size: 106 24
+  text-offset: 0 1
+  image-source: /images/chaos/skin/button_primary
+  image-clip: 0 0 64 24
+  image-border: 5
+  padding: 5 10 5 10
+  opacity: 1.0
+  change-cursor-image: true
+  cursor: pointer
+
+  $hover !disabled:
+    image-clip: 0 24 64 24
+
+  $pressed:
+    image-clip: 0 48 64 24
+    text-offset: 1 2
+
+  $disabled:
+    image-clip: 0 72 64 24
+    color: #6b6258
+    change-cursor-image: false
+
 // ---------------------------------------------------------------- text edit
 ChaosTextEdit < UITextEdit
   // base values of what a state below changes: a state style is not undone when the state ends (only the base

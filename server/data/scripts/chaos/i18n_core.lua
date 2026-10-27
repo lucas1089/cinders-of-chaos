@@ -129,6 +129,13 @@ function I.translate(lang, text)
 	if t[text] then
 		return I.text(lang, text)
 	end
+	-- a fixed text with percent signs ("+20% max health for 20s"): its key writes them as %%, the translation too
+	if text:find("%", 1, true) then
+		local escaped = text:gsub("%%", "%%%%")
+		if t[escaped] then
+			return (t[escaped]:gsub("%%%%", "%%"))
+		end
+	end
 	matchers[lang] = matchers[lang] or build(lang)
 	for _, m in ipairs(matchers[lang]) do
 		local caps = {text:match(m.pattern)}
@@ -317,6 +324,52 @@ function I.install(C)
 	-- player's language; see ChaosI18n.translate
 	function C.tx(player, text)
 		return I.translate(C.lang(player), text)
+	end
+
+	-- Chaos.yell(creature, what, talktype, ...): a boss shout or a monster's line in each listener's language. `what` is a
+	-- key (with the arguments) or a function(lang) -> text; talktype defaults to TALKTYPE_MONSTER_YELL. While every listener
+	-- reads English (or the engine cannot list them) it is the plain creature:say of before; otherwise each listener gets
+	-- the line in own language through creature:say(text, type, false, listener, position), which only that player sees.
+	-- Returns the English text.
+	function C.yell(creature, what, talktype, ...)
+		talktype = talktype or TALKTYPE_MONSTER_YELL
+		local args, n = {...}, select("#", ...)
+		local function textIn(lang)
+			if type(what) == "function" then
+				return what(lang)
+			end
+			if n == 0 then
+				return I.text(lang, what)
+			end
+			return I.text(lang, what, unpack(args, 1, n))
+		end
+		local english = textIn(I.DEFAULT)
+		if not creature then
+			return english
+		end
+		local listeners
+		if Game and Game.getSpectators and creature.getPosition then
+			local yelling = talktype == TALKTYPE_MONSTER_YELL
+			local ok, list = pcall(Game.getSpectators, creature:getPosition(), false, true, yelling and 18 or 8,
+				yelling and 18 or 8, yelling and 14 or 6, yelling and 14 or 6)
+			if ok and type(list) == "table" then
+				for _, p in ipairs(list) do
+					if C.lang(p) ~= I.DEFAULT then
+						listeners = list
+						break
+					end
+				end
+			end
+		end
+		if not listeners then
+			creature:say(english, talktype)
+			return english
+		end
+		local pos = creature:getPosition()
+		for _, p in ipairs(listeners) do
+			creature:say(textIn(C.lang(p)), talktype, false, p, pos)
+		end
+		return english
 	end
 
 	-- a broadcast in each player's language. `what` is a key (with the arguments), a deferred text (I.msg) or a

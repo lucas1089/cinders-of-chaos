@@ -321,7 +321,7 @@ do
 	local chest = alice.inbox[1]
 	eq(chest.id, 1740, "the Silver Tower Chest look")
 	eq(chest.attrs[ITEM_ATTRIBUTE_NAME], "Silver Tower Chest", "named")
-	check(tostring(chest.attrs[ITEM_ATTRIBUTE_DESCRIPTION]):find("Season 1, 2nd place", 1, true), "described")
+	check(tostring(chest.attrs[ITEM_ATTRIBUTE_DESCRIPTION]):find("Season 1, place 2", 1, true), "described")
 	eq(#chest.contents, 2, "two stacks inside")
 	eq(chest.contents[1].id .. "x" .. chest.contents[1].count, "29857x12", "Orbs of Fate")
 	eq(chest.contents[2].id .. "x" .. chest.contents[2].count, "29856x25", "Orbs of Upheaval")

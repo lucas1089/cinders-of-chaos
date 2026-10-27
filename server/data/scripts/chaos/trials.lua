@@ -176,12 +176,40 @@ function T.refresh(player)
 end
 
 -- ======================================================================== the client's state
+-- the English texts of the state (story, node lore and lines, refusals) in the player's language (Chaos.tx; i18n_strings.lua)
+local function localizeState(player, st)
+	if type(st) ~= "table" or not Chaos.tx then
+		return st
+	end
+	local function tx(v)
+		return type(v) == "string" and Chaos.tx(player, v) or v
+	end
+	st.story = tx(st.story)
+	for _, pr in pairs(st.pairs or {}) do
+		for _, node in pairs(pr.nodes or {}) do
+			node.lore, node.why = tx(node.lore), tx(node.why)
+			for _, line in pairs(node.lines or {}) do
+				line.text = tx(line.text)
+			end
+		end
+		if pr.clear then
+			pr.clear.why = tx(pr.clear.why)
+		end
+	end
+	for _, t in pairs(st.tiers or {}) do
+		if type(t) == "table" then
+			t.problem = tx(t.problem)
+		end
+	end
+	return st
+end
+
 function T.state(player)
 	local voc = vocId(player)
 	local tr = T.runs[player:getId()]
-	return M.clientState({voc = voc, level = player:getLevel(), tier = T.tierCleared(player, voc), picks = T.picks(player, voc),
+	return localizeState(player, M.clientState({voc = voc, level = player:getLevel(), tier = T.tierCleared(player, voc), picks = T.picks(player, voc),
 		tokens = tokens(player), cooldown = getS(player, S().cooldown), now = os.time(), running = tr and not tr.over or nil,
-		repeatsLeft = math.max(0, repeats(player).allowance - weekCount(player))})
+		repeatsLeft = math.max(0, repeats(player).allowance - weekCount(player))}))
 end
 
 function T.sendState(player)

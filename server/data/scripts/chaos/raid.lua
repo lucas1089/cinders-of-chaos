@@ -1146,7 +1146,7 @@ local function phaseStart(run, idx)
 	end
 	local boss = bossOf(run, f.idx)
 	if boss and ph.yell then
-		boss:say(ph.yell, TALKTYPE_MONSTER_YELL)
+		Chaos.yell(boss, ph.yell)
 	end
 	if idx > 1 then
 		alert(run, ChaosI18n.msg("%s: phase %d of %d, %s.", b.name, idx, #b.phases, ChaosI18n.msg(ph.name)), "phase")

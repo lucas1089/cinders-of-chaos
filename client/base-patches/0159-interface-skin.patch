@@ -1,0 +1,63 @@
+# Interface skin (client/MANIFEST.md "Interface skins"; init.lua, mods/client_settings/options/interface.otui; after 0001-0158). Lua and OTUI only, no engine code.
+#  * init.lua: after the signed updater's bootstrap and before g_modules.discoverModules(), runs the overlay's
+#    modules/client_chaos_theme/skin_boot.lua (pcall-guarded). It copies the images of the chosen skin (g_settings
+#    'chaos-skin': classic, forge, abyss) in front of the client's own files, or takes the last skin's files out for classic, so
+#    every image-source finds the skin's file first. It has to run here: textures are cached by path and styles read their
+#    images when a widget is built, so a switch cannot be made while the client runs; the choice applies at the next start.
+#  * options/interface.otui: a row "Interface skin" after the Language row of 0053 with a button that shows the skin and opens
+#    the choice (ChaosTheme.showSkinMenu). Without the overlay module the button hides itself.
+# Not run in a client; goes live with the next client build.
+--- a/init.lua
++++ b/init.lua
+@@ -102,6 +102,13 @@
+   if not ok then g_logger.warning("updater bootstrap: " .. tostring(err)) end
+ end
+ 
++-- interface skin (client/MANIFEST.md "Interface skins"): the chosen skin's images go in front of the client's own, before
++-- the first window is built; classic takes the last skin's files out again
++if g_resources.copyFile then
++  local ok, err = pcall(dofile, "/modules/client_chaos_theme/skin_boot.lua")
++  if not ok then g_logger.warning("interface skin: " .. tostring(err)) end
++end
++
+ g_modules.discoverModules()
+ g_modules.ensureModuleLoaded("corelib")
+   
+--- a/mods/client_settings/options/interface.otui
++++ b/mods/client_settings/options/interface.otui
+@@ -479,6 +479,35 @@
+         @onClick: if ChaosLocale then ChaosLocale.showMenu(self) end
+ 
+     FlatPanel
++      size: 505 22
++      anchors.top: prev.bottom
++      anchors.right: parent.right
++      anchors.left: parent.left
++      margin-top: 5
++      margin-left: 4
++      margin-right: 4
++
++      Label
++        id: chaosSkinLabel
++        !text: tr('Interface skin')
++        font: $var-cip-font
++        color: $var-text-cip-color
++        text-auto-resize: true
++        anchors.left: parent.left
++        anchors.verticalCenter: parent.verticalCenter
++        margin-left: 8
++
++      Button
++        id: chaosSkinButton
++        size: 180 18
++        anchors.right: parent.right
++        anchors.verticalCenter: parent.verticalCenter
++        margin-right: 24
++        !tooltip: tr('The look of the interface: Classic, Forge and Embers or Abyssal Arcane. The choice applies the next time the client starts.')
++        @onSetup: if ChaosTheme and ChaosTheme.skinName then self:setText(ChaosTheme.skinName()) else self:hide() end
++        @onClick: if ChaosTheme and ChaosTheme.showSkinMenu then ChaosTheme.showSkinMenu(self) end
++
++    FlatPanel
+       size: 505 44
+       anchors.top: prev.bottom
+       anchors.right: parent.right

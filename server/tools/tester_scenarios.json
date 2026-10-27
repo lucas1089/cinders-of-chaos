@@ -7,7 +7,7 @@
   "game_npctradewindow"
  ],
  "counts": {
-  "opcode": 63,
+  "opcode": 64,
   "out": 38,
   "passive": 79,
   "place": 13,
@@ -7105,7 +7105,9 @@
    "opcode": 234,
    "out": false,
    "skip": [],
-   "systems": []
+   "systems": [
+    "itemdesc_i18n"
+   ]
   },
   "candlemarks": {
    "actions": [
@@ -7282,7 +7284,12 @@
     "game_community"
    ],
    "dataKeys": [
-    "gold"
+    "goal",
+    "gold",
+    "mine",
+    "sources",
+    "stages",
+    "week"
    ],
    "files": [
     "community.lua"
@@ -10076,6 +10083,17 @@
    "kind": "opcode",
    "opcodes": [
     "itemTooltip"
+   ],
+   "talkactions": []
+  },
+  "itemdesc_i18n": {
+   "files": [
+    "buffbar.lua",
+    "itemdesc_i18n.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "buffs"
    ],
    "talkactions": []
   },

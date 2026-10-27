@@ -444,31 +444,35 @@ end
 -- how to unlock it, in words. names = {achievement = {id -> name}, faction = {key -> name}, rank = {key -> name}}
 function K.sourceText(cfg, src, names)
 	names = names or {}
+	-- names.tr(key, ...) -> the text in the player's language (the engine file); English by default
+	local tr = names.tr or function(key, ...)
+		return select("#", ...) > 0 and string.format(key, ...) or key
+	end
 	local t = src and src.type or "default"
 	if t == "default" then
-		return "Every character"
+		return tr("Every character")
 	elseif t == "achievement" then
-		return "Achievement: " .. ((names.achievement or {})[src.id] or src.id)
+		return tr("Achievement: %s", (names.achievement or {})[src.id] or src.id)
 	elseif t == "stat" then
 		if src.group == "trophy" then
-			return src.label or "A trophy of your own kills"
+			return tr(src.label or "A trophy of your own kills")
 		end
-		return src.label or ("Event: " .. tostring(src.stat))
+		return src.label and tr(src.label) or tr("Event: %s", tostring(src.stat))
 	elseif t == "faction" then
 		local f = (names.faction or {})[src.faction] or src.faction
 		local r = (names.rank or {})[src.rank] or src.rank
 		return string.format("%s: %s", f, r)
 	elseif t == "descent" then
 		if src.clear then
-			return "Ember Descent: slay its boss"
+			return tr("Ember Descent: slay its boss")
 		end
-		return string.format("Ember Descent: reach depth %d", src.depth or 1)
+		return tr("Ember Descent: reach depth %d", src.depth or 1)
 	elseif t == "journey" then
-		return string.format("Season journey: chapter %d", src.chapter or 1)
+		return tr("Season journey: chapter %d", src.chapter or 1)
 	elseif t == "store" then
-		return string.format("Store: %d Chaos Coins (cosmetic, giftable)", src.price or 0)
+		return tr("Store: %d Chaos Coins (cosmetic, giftable)", src.price or 0)
 	end
-	return "Unknown"
+	return tr("Unknown")
 end
 
 -- the filter group of a source (the window's "Source" filter)
@@ -691,7 +695,7 @@ function K.catalogueView(cfg, facts, placed, names, clientId)
 		rows[#rows + 1] = {key = d.key, name = d.name, cat = d.cat, layer = d.layer, block = d.block == true,
 			item = clientId(K.icon(d)), rots = rots, wallW = rots.w, max = K.maxOf(cfg, d), placed = per[d.key] or 0,
 			owned = owned, source = K.sourceGroup(d.source),
-			how = d.trophy and ("Trophy: slay " .. d.trophy.boss) or K.sourceText(cfg, d.source, names),
+			how = d.trophy and (names and names.tr and names.tr("Trophy: slay %s", d.trophy.boss) or ("Trophy: slay " .. d.trophy.boss)) or K.sourceText(cfg, d.source, names),
 			price = d.source and d.source.type == "store" and d.source.price or nil, trophy = d.trophy ~= nil}
 		rows[#rows].rots.w = nil
 	end

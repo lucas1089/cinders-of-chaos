@@ -10,6 +10,17 @@ end
 ChaosVigilSpell = {}
 local W = ChaosVigilSpell
 
+-- the text in the player's language (Chaos.t, i18n_core.lua); English where the helper is not loaded (unit tests)
+function W.tr(player, key, ...)
+	if Chaos and Chaos.t then
+		return Chaos.t(player, key, ...)
+	end
+	if select("#", ...) > 0 then
+		return string.format(key, ...)
+	end
+	return key
+end
+
 if not ChaosVigilsCore then
 	dofile("data/scripts/chaos/vigils_core.lua")
 end
@@ -41,11 +52,11 @@ function W.toggle(creature, key)
 	local was = V.has(mask, key)
 	local new, total, err = V.toggle(mask, key, mods)
 	if err then
-		return ChaosSpell.cancel(player, string.format("%s would reserve more than all of your %s (%d%% reserved now).",
-			V.byKey[key].def.name, mods.tithe and "health" or "mana", math.floor(total * 100 + 0.5)))
+		return ChaosSpell.cancel(player, W.tr(player, "%s would reserve more than all of your %s (%d%% reserved now).",
+			V.byKey[key].def.name, W.tr(player, mods.tithe and "health" or "mana"), math.floor(total * 100 + 0.5)))
 	end
 	player:setStorageValue(storage, new)
-	player:sendTextMessage(MESSAGE_INFO_DESCR or MESSAGE_STATUS_SMALL or 1, V.toggleText(key, not was, total, mods))
+	player:sendTextMessage(MESSAGE_INFO_DESCR or MESSAGE_STATUS_SMALL or 1, V.toggleText(key, not was, total, mods, Chaos.lang and Chaos.lang(player)))
 	player:getPosition():sendMagicEffect(was and (CONST_ME_POFF or 3) or (CONST_ME_MAGIC_GREEN or CONST_ME_POFF or 3))
 	local P27 = ChaosPack27Fx -- pair 27 (data/lib/chaos_pack27_fx.lua, off): the vigil's look when it starts
 	if not was and P27 and P27.PAIR27_FX and P27.send then
