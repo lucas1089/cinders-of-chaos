@@ -672,7 +672,7 @@ function C.buffItems(cfg, buffs, mods, now, weekEnd, kind)
 			local s = a.stage
 			out[#out + 1] = {key = "community_" .. s.key, name = s.name, icon = "buff:community_" .. s.key, kind = "buff",
 				prio = 18, leftMs = a.left * 1000,
-				desc = string.format("Community goal %d%%: %s for everyone online.", s.pct, s.text)}
+				desc = string.format("Community goal %d%% (for everyone online): %s.", s.pct, s.text)}
 		end
 	else
 		for _, m in ipairs(mods or {}) do

@@ -6200,8 +6200,8 @@ return {
 			"+%d%% de experiência dos monstros até o seu descanso acabar: restam cerca de %d minutos de caça.",
 		["Welcome back: +%d%% experience, +%d%% loot and +%d%% token drops."] =
 			"Bem-vindo de volta: +%d%% de experiência, +%d%% de loot e +%d%% de drops de tokens.",
-		["Community goal %d%%: %s for everyone online."] =
-			"Meta da comunidade %d%%: %s para todos online.",
+		["Community goal %d%% (for everyone online)"] =
+			"Meta da comunidade %d%% (para todos online)",
 		-- World boss status, season info, necromancer and monk refusals, siege, item links, market limits, tutorial, veiled (O147 round 5)
 		["No world boss is active. Next one at %s%s."] =
 			"Nenhum world boss ativo. O próximo é às %s%s.",
@@ -6344,5 +6344,1031 @@ return {
 		-- Respec refusal (O147 round 5)
 		["Unknown node."] =
 			"Nó desconhecido.",
+		-- Donations (shop_payments.lua, shop_payments_core.lua; O147 round 7)
+		["Chaos Coins are our thank-you for your donation."] =
+			"As Chaos Coins são o nosso agradecimento pela sua doação.",
+		["Thank you for your voluntary donation! You received %d Chaos Coins as a thank-you."] =
+			"Obrigado pela sua doação voluntária! Você recebeu %d Chaos Coins como agradecimento.",
+		["Donation received. Your Chaos Coins arrive in a few seconds."] =
+			"Doação recebida. Suas Chaos Coins chegam em alguns segundos.",
+		["This donation expired before it was paid. Nothing was charged."] =
+			"Esta doação expirou antes de ser paga. Nada foi cobrado.",
+		["This donation was cancelled. Nothing was charged."] =
+			"Esta doação foi cancelada. Nada foi cobrado.",
+		["The payment service is not available right now. Nothing was charged; try again later."] =
+			"O serviço de pagamento não está disponível agora. Nada foi cobrado; tente de novo mais tarde.",
+		["This donation was refunded."] = "Esta doação foi reembolsada.",
+		["This order could not be credited. Staff can see why in the Store log."] =
+			"Este pedido não pôde ser creditado. A equipe vê o motivo no registro da Loja.",
+		["Unknown pack."] = "Pacote desconhecido.",
+		["This donation method is not available."] = "Este método de doação não está disponível.",
+		["%s is once per account and was already received."] =
+			"%s vale uma vez por conta e já foi recebido.",
+		["You already have an open donation. Finish or cancel it first."] =
+			"Você já tem uma doação aberta. Conclua ou cancele essa primeiro.",
+		["Too many donations started in the last hour. Please wait a little."] =
+			"Doações demais iniciadas na última hora. Aguarde um pouco.",
+		["The payment service is slow to answer. Please wait or cancel."] =
+			"O serviço de pagamento está demorando a responder. Aguarde ou cancele.",
+		["Preparing your donation..."] = "Preparando a sua doação...",
+		["That is not an active creator code."] = "Esse não é um código de criador ativo.",
+		["You cannot support your own creator code."] = "Você não pode apoiar o seu próprio código de criador.",
+		["Creator codes are not available right now."] = "Os códigos de criador não estão disponíveis agora.",
+		-- Vigils (vigils_core.lua, spells _vigils.lua) and trial lines (trials_core.lua)
+		["health"] = "vida",
+		["+%s%% damage dealt"] = "+%s%% de dano causado",
+		["-%s%% damage taken"] = "-%s%% de dano sofrido",
+		["+%s%% speed"] = "+%s%% de velocidade",
+		["%s%% of your maximum mana back every second"] = "%s%% da sua mana máxima de volta a cada segundo",
+		["(none under Parched Veins)"] = "(nenhuma sob Parched Veins)",
+		["Your vigils reserve %d%% of your maximum health instead of mana. They cover you alone, %d%% stronger."] =
+			"Suas vigílias reservam %d%% da sua vida máxima em vez de mana. Elas cobrem só você, %d%% mais fortes.",
+		["Your own: it reserves %d%% of your maximum %s."] = "A sua: reserva %d%% da sua %s máxima.",
+		["From a party member's vigil."] = "Da vigília de um membro do grupo.",
+		["%s ends. Reserved: %d%% of your %s."] = "%s termina. Reservado: %d%% da sua %s.",
+		["%s: on. It reserves %d%% of your maximum %s; %d%% in all."] =
+			"%s: ligada. Reserva %d%% da sua %s máxima; %d%% no total.",
+		["%s would reserve more than all of your %s (%d%% reserved now)."] =
+			"%s reservaria mais do que toda a sua %s (%d%% reservado agora).",
+		["Survive a lethal hit (once per %d s)"] = "Sobreviva a um golpe letal (uma vez a cada %d s)",
+		["Each kill: +%s%% damage for %s s, up to %d times"] = "A cada morte: +%s%% de dano por %s s, até %d vezes",
+		-- Vocation Trials: node lines (templates, the numbers are %s), node lore (trials_nodes.lua, trials.lua T.state)
+		["+%s%% chance to avoid a melee or ranged hit"] = "+%s%% de chance de evitar um golpe corpo a corpo ou à distância",
+		["+%s%% critical hit chance"] = "+%s%% de chance de golpe crítico",
+		["+%s%% critical hit damage"] = "+%s%% de dano de golpe crítico",
+		["+%s%% damage above 90%% health"] = "+%s%% de dano acima de 90%% de vida",
+		["+%s%% damage below 35%% health"] = "+%s%% de dano abaixo de 35%% de vida",
+		["+%s%% damage over time"] = "+%s%% de dano ao longo do tempo",
+		["+%s%% damage vs enemies over 90%% health"] = "+%s%% de dano contra inimigos com mais de 90%% de vida",
+		["+%s%% damage vs enemies under 30%% health"] = "+%s%% de dano contra inimigos com menos de 30%% de vida",
+		["+%s%% death damage"] = "+%s%% de dano de morte",
+		["+%s%% elemental damage absorbed"] = "+%s%% de dano elemental absorvido",
+		["+%s%% energy damage"] = "+%s%% de dano de energia",
+		["+%s%% energy damage absorbed"] = "+%s%% de dano de energia absorvido",
+		["+%s%% fire damage"] = "+%s%% de dano de fogo",
+		["+%s%% fire damage absorbed"] = "+%s%% de dano de fogo absorvido",
+		["+%s%% healing you cast"] = "+%s%% de cura lançada por você",
+		["+%s%% holy damage"] = "+%s%% de dano sagrado",
+		["+%s%% holy damage absorbed"] = "+%s%% de dano sagrado absorvido",
+		["+%s%% ice damage"] = "+%s%% de dano de gelo",
+		["+%s%% ice damage absorbed"] = "+%s%% de dano de gelo absorvido",
+		["+%s%% maximum health"] = "+%s%% de vida máxima",
+		["+%s%% melee damage"] = "+%s%% de dano corpo a corpo",
+		["+%s%% minion damage"] = "+%s%% de dano dos lacaios",
+		["+%s%% physical damage absorbed"] = "+%s%% de dano físico absorvido",
+		["+%s%% ranged damage"] = "+%s%% de dano à distância",
+		["+%s%% spell damage"] = "+%s%% de dano de magia",
+		["-%s%% damage taken below 35%% health"] = "-%s%% de dano sofrido abaixo de 35%% de vida",
+		["-%s%% mana cost of spells"] = "-%s%% de custo de mana das magias",
+		["-%s%% melee and ranged damage taken"] = "-%s%% de dano corpo a corpo e à distância sofrido",
+		["-%s%% spell cooldowns"] = "-%s%% de recarga das magias",
+		["%s%% chance: a hit bursts within %s sqm for %s%%"] = "%s%% de chance: um golpe explode em %s sqm por %s%%",
+		["%s%% chance: a hit strikes again for %s%%"] = "%s%% de chance: um golpe acerta de novo por %s%%",
+		["%s%% of all damage returned as health"] = "%s%% de todo o dano devolvido como vida",
+		["%s%% of damage taken is paid from mana"] = "%s%% do dano sofrido é pago com mana",
+		["%s%% of max health restored per kill"] = "%s%% da vida máxima restaurada por morte",
+		["%s%% of max mana restored per kill"] = "%s%% da mana máxima restaurada por morte",
+		["%s%% of melee damage is reflected back"] = "%s%% do dano corpo a corpo é refletido de volta",
+		["%s%% of melee damage returned as health"] = "%s%% do dano corpo a corpo devolvido como vida",
+		["%s%% of spell damage returned as health"] = "%s%% do dano de magia devolvido como vida",
+		["A calm mind cuts clean."] = "Mente calma corta limpo.",
+		["A deep well takes the fall."] = "Um poço fundo amortece a queda.",
+		["A light that turns aside harm."] = "Uma luz que desvia o mal.",
+		["A promise that heals."] = "Uma promessa que cura.",
+		["A servant dies in your place."] = "Um servo morre no seu lugar.",
+		["A shadow cannot be held."] = "Uma sombra não se prende.",
+		["A shock that rolls outward."] = "Um choque que rola para fora.",
+		["A storm paid for in full."] = "Uma tempestade paga por inteiro.",
+		["A wall does not hurry."] = "Uma muralha não tem pressa.",
+		["A wounded beast is a finished beast."] = "Fera ferida é fera acabada.",
+		["Aim small, miss small."] = "Mire pequeno, erre pequeno.",
+		["Alone, you are enough."] = "Sozinho, você basta.",
+		["Arrows that scatter like a pack."] = "Flechas que se espalham como uma matilha.",
+		["At the edge, you are still."] = "Na beira do abismo, você fica imóvel.",
+		["At the last, the light falls."] = "No fim, a luz cai.",
+		["Be where the strike is not."] = "Esteja onde o golpe não está.",
+		["Bodies burst into more bodies."] = "Corpos explodem em mais corpos.",
+		["Bone armour, stitched on."] = "Armadura de osso, costurada ao corpo.",
+		["Breath from the fallen."] = "Fôlego dos caídos.",
+		["Breathe out, loose."] = "Expire e solte.",
+		["Burn it all."] = "Queime tudo.",
+		["Cast again before the echo fades."] = "Lance de novo antes que o eco se apague.",
+		["Cleanse by burning."] = "Purifique pelo fogo.",
+		["Clear thought is cheap."] = "Pensamento claro sai barato.",
+		["Dead, and not yet told."] = "Morto, e ainda não avisado.",
+		["Death has already been bargained for."] = "A morte já foi barganhada.",
+		["Death is only a door."] = "A morte é só uma porta.",
+		["Decay answers to you."] = "A decomposição lhe obedece.",
+		["Each ending feeds the next scene."] = "Cada fim alimenta a próxima cena.",
+		["Each kill feeds the hunt."] = "Cada morte alimenta a caçada.",
+		["Even a mirror can cut."] = "Até um espelho corta.",
+		["Every blast has a child."] = "Toda explosão tem uma cria.",
+		["Every blow against you is paid back."] = "Todo golpe contra você é pago de volta.",
+		["Every blow carries a prayer."] = "Todo golpe leva uma prece.",
+		["Every blow comes home."] = "Todo golpe volta para casa.",
+		["Every death makes room."] = "Toda morte abre espaço.",
+		["Every felled foe is a breath of air."] = "Cada inimigo abatido é um sopro de ar.",
+		["Everything near you rots."] = "Tudo perto de você apodrece.",
+		["Faith as a shield wall."] = "A fé como muralha de escudos.",
+		["Faith grows with every victory."] = "A fé cresce a cada vitória.",
+		["Fervour is a stacking sin."] = "O fervor é um pecado que se acumula.",
+		["Find the knot, press."] = "Ache o nó e aperte.",
+		["Gone before the answer."] = "Sumiu antes da resposta.",
+		["Hands before thought."] = "Mãos antes do pensamento.",
+		["Hands that would rather mend."] = "Mãos que prefeririam curar.",
+		["It only needs to touch."] = "Basta encostar.",
+		["It spreads while you wait."] = "Espalha-se enquanto você espera.",
+		["Let the sky choose."] = "Deixe o céu escolher.",
+		["Let them break themselves on you."] = "Deixe que se quebrem em você.",
+		["Name the spot before the arrow leaves."] = "Nomeie o ponto antes de a flecha partir.",
+		["Never where the claws land."] = "Nunca onde as garras caem.",
+		["Nothing is wasted."] = "Nada se perde.",
+		["Nothing to hit but smoke."] = "Nada para acertar além de fumaça.",
+		["Nothing wasted, nothing wild."] = "Nada de desperdício, nada de descontrole.",
+		["One more breath, one more step."] = "Mais um fôlego, mais um passo.",
+		["One strike, no second."] = "Um golpe, sem segundo.",
+		["One stroke, all in."] = "Um traço, tudo dentro.",
+		["Pain is only a louder drum."] = "A dor é só um tambor mais alto.",
+		["Patience on a blade."] = "Paciência sobre uma lâmina.",
+		["Planted, unmoved."] = "Plantado, inabalável.",
+		["Poison keeps the rhythm."] = "O veneno marca o ritmo.",
+		["Pour in more than the vessel holds."] = "Despeje mais do que o vaso aguenta.",
+		["Quick, close, cruel."] = "Rápido, perto, cruel.",
+		["Repeat until the mountain answers."] = "Repita até a montanha responder.",
+		["Scars that turn the next blade."] = "Cicatrizes que desviam a próxima lâmina.",
+		["Settle, and endure."] = "Firme-se e aguente.",
+		["Spent chi, spent foe."] = "Chi gasto, inimigo gasto.",
+		["Splinters find the next one."] = "As lascas acham o próximo.",
+		["Stillness is a weapon."] = "A quietude é uma arma.",
+		["Stillness that cracks mountains."] = "Uma quietude que racha montanhas.",
+		["Strike at the centre."] = "Golpeie o centro.",
+		["Strike me, and be struck."] = "Me golpeie e seja golpeado.",
+		["Strikes that cannot be counted."] = "Golpes que não se contam.",
+		["Suffer, and be spared."] = "Sofra e seja poupado.",
+		["Swing first, bleed later."] = "Golpeie primeiro, sangre depois.",
+		["Take the spark from them."] = "Tome a centelha deles.",
+		["Take the whole purse."] = "Leve a bolsa inteira.",
+		["Take up the spear yourself."] = "Empunhe você mesmo a lança.",
+		["The army marches under your name."] = "O exército marcha sob o seu nome.",
+		["The axe drinks and shares."] = "O machado bebe e reparte.",
+		["The blade finds only steel."] = "A lâmina só encontra aço.",
+		["The blow that arrives twice."] = "O golpe que chega duas vezes.",
+		["The dead pay for the next shot."] = "Os mortos pagam o próximo disparo.",
+		["The dead work for their keep."] = "Os mortos trabalham pelo próprio sustento.",
+		["The draw is the duel."] = "Sacar é o duelo.",
+		["The faithful stand behind you."] = "Os fiéis estão atrás de você.",
+		["The fallen pay what they owe."] = "Os caídos pagam o que devem.",
+		["The first cut is the deepest."] = "O primeiro corte é o mais fundo.",
+		["The first shot is the true shot."] = "O primeiro tiro é o verdadeiro.",
+		["The golem does not ask."] = "O golem não pergunta.",
+		["The kindest thing is to mend."] = "O mais gentil é curar.",
+		["The more that fall, the louder you roar."] = "Quanto mais caem, mais alto você ruge.",
+		["The scent of it drives you on."] = "O cheiro disso o empurra adiante.",
+		["The second arrow is already nocked."] = "A segunda flecha já está encaixada.",
+		["The sentence is read at the end."] = "A sentença é lida no fim.",
+		["The spell answers itself."] = "A magia responde por si.",
+		["The strike is answered twice."] = "O golpe é respondido duas vezes.",
+		["The verdict is already written."] = "O veredito já está escrito.",
+		["Their life, your cup."] = "A vida deles, o seu cálice.",
+		["Their strength, returned."] = "A força deles, devolvida.",
+		["Too dense to be patched."] = "Denso demais para remendar.",
+		["Too fast to guard."] = "Rápido demais para defender.",
+		["Two blades, one thought."] = "Duas lâminas, um só pensamento.",
+		["Two bolts in one breath."] = "Dois virotes num só fôlego.",
+		["Unhurt, you are unmatched."] = "Ileso, você não tem igual.",
+		["Wear the weather."] = "Vista o clima.",
+		["What they hit is not quite there."] = "O que eles acertam não está bem ali.",
+		["Where did he go?"] = "Para onde ele foi?",
+		["Where one stands, three strike."] = "Onde um fica, três golpeiam.",
+		["Where you stood is holy."] = "Onde você esteve é sagrado.",
+		["Wounded, you become the wall."] = "Ferido, você vira a muralha.",
+		["Wounded, you only grow harder to break."] = "Ferido, você só fica mais difícil de quebrar.",
+		["Wounds that keep opening."] = "Feridas que continuam abrindo.",
+		["You do not fall while others stand."] = "Você não cai enquanto outros ficam de pé.",
+		["You do not fall while the line holds."] = "Você não cai enquanto a linha aguenta.",
+		["You eat what you slay."] = "Você come o que mata.",
+		["You watch, and the watch holds."] = "Você vigia, e a vigia resiste.",
+		["You wear the herd's hide."] = "Você veste o couro do rebanho.",
+		["You were never where they struck."] = "Você nunca esteve onde eles golpearam.",
+		["Your beasts fight as you would."] = "Suas feras lutam como você lutaria.",
+		["Your beasts hunt without leash."] = "Suas feras caçam sem coleira.",
+		["Your calm becomes theirs."] = "Sua calma passa a ser a deles.",
+		["Your death is borrowed."] = "Sua morte é emprestada.",
+		["Your shout mends what is torn."] = "Seu grito remenda o que se rasgou.",
+		["Your spirit takes the blow first."] = "Seu espírito toma o golpe primeiro.",
+		["Your volley finds the herd."] = "Sua saraivada acha o rebanho.",
+		-- Boss shouts and intros of the world boss, the raid, the Ascended arenas and the guild boss (Chaos.yell)
+		["Kaelgor the Infernal Warlord marches out of the burning rift!"] =
+			"Kaelgor the Infernal Warlord marcha para fora do rift em chamas!",
+		["LEGION, TO ME!"] = "LEGIÃO, A MIM!",
+		["I WILL BURN THIS WORLD TO THE GROUND!"] = "VOU QUEIMAR ESTE MUNDO ATÉ OS ALICERCES!",
+		["My guard dies before I do!"] = "Minha guarda morre antes de mim!",
+		["The sky freezes over: Skaldra the Rime Queen descends!"] =
+			"O céu congela: Skaldra the Rime Queen desce!",
+		["My brood, wake!"] = "Minha ninhada, despertem!",
+		["THE LONG WINTER BEGINS!"] = "O LONGO INVERNO COMEÇA!",
+		["Shards, protect your queen!"] = "Estilhaços, protejam a sua rainha!",
+		["The ground splits and the Rotmother crawls out of the plague pits!"] =
+			"O chão se parte e a Rotmother rasteja para fora das covas da peste!",
+		["Children, feed!"] = "Filhos, alimentem-se!",
+		["More! I need MORE!"] = "Mais! Preciso de MAIS!",
+		["BREATHE ME IN!"] = "RESPIREM-ME!",
+		["Reality tears: Nyxareth the Void Archon steps out of the void!"] =
+			"A realidade se rasga: Nyxareth the Void Archon sai do vazio!",
+		["Echoes, consume them."] = "Ecos, consumam-nos.",
+		["THE VOID OPENS!"] = "O VAZIO SE ABRE!",
+		["Your dead serve me now."] = "Seus mortos me servem agora.",
+		["The earth trembles: Vharok the Blood Colossus awakens!"] =
+			"A terra treme: Vharok the Blood Colossus desperta!",
+		["FEED ME!"] = "ALIMENTEM-ME!",
+		["BLOOD FOR THE COLOSSUS!"] = "SANGUE PARA O COLOSSO!",
+		["CRUSH THEM!"] = "ESMAGUEM-NOS!",
+		["NONE PASS THE FIRST GATE!"] = "NINGUÉM PASSA DO PRIMEIRO PORTÃO!",
+		["I HAVE BURIED BETTER THAN YOU!"] = "JÁ ENTERREI GENTE MELHOR QUE VOCÊS!",
+		["SING WITH ME, AND BURN!"] = "CANTEM COMIGO, E ARDAM!",
+		["THE LAST VERSE IS YOURS!"] = "O ÚLTIMO VERSO É DE VOCÊS!",
+		["BONE... TO... BONE..."] = "OSSO... COM... OSSO...",
+		["BREAK! BREAK! BREAK!"] = "QUEBREM! QUEBREM! QUEBREM!",
+		["EVERY WALL HAS EYES!"] = "TODA PAREDE TEM OLHOS!",
+		["SPEAK THE CURSE WITH ME!"] = "PRONUNCIEM A MALDIÇÃO COMIGO!",
+		["KNEEL. ALL OF YOU."] = "AJOELHEM-SE. TODOS VOCÊS.",
+		["MY COURT WILL SING YOU DOWN!"] = "MINHA CORTE VAI CANTAR A SUA QUEDA!",
+		["THE SEPULCHRE IS MINE, AND SO ARE YOU!"] = "O SEPULCRO É MEU, E VOCÊS TAMBÉM!",
+		["THE MOON RISES AGAIN, AND IT IS MINE!"] = "A LUA NASCE DE NOVO, E ELA É MINHA!",
+		["DRINK, MY CHILDREN!"] = "BEBAM, MEUS FILHOS!",
+		["EVERY DROP RETURNS TO ME!"] = "TODA GOTA VOLTA PARA MIM!",
+		["KNEEL BEFORE A CROWN WITH NO KING!"] = "AJOELHEM-SE DIANTE DE UMA COROA SEM REI!",
+		["MY COURT RETURNS FROM THE GRAVE!"] = "MINHA CORTE VOLTA DA COVA!",
+		["THE DARK CLOSES IN. THERE IS NOWHERE LEFT."] = "A ESCURIDÃO SE FECHA. NÃO HÁ MAIS PARA ONDE IR.",
+		["I HAVE SEEN HOW YOU DIE. HOLD STILL."] = "EU VI COMO VOCÊS MORREM. FIQUEM QUIETOS.",
+		["THE SKY ANSWERS ONLY ME!"] = "O CÉU RESPONDE SÓ A MIM!",
+		["BREAK, AND BE SCATTERED!"] = "QUEBREM-SE E SEJAM ESPALHADOS!",
+		["THREE OMENS FELL. I AM WHAT THEY WERE HIDING."] = "TRÊS PRESSÁGIOS CAÍRAM. EU SOU O QUE ELES ESCONDIAM.",
+		["A THRONE OF ASH NEEDS A COURT!"] = "UM TRONO DE CINZAS PRECISA DE UMA CORTE!",
+		["BURN, AND LET THE SKY CARRY YOUR ASHES!"] = "ARDAM, E QUE O CÉU LEVE AS SUAS CINZAS!",
+		["IF I GO OUT, I TAKE THE WORLD'S LAST LIGHT WITH ME!"] = "SE EU ME APAGAR, LEVO COMIGO A ÚLTIMA LUZ DO MUNDO!",
+		["ENOUGH! BURN!"] = "CHEGA! ARDAM!",
+		["You are not worthy of my death."] = "Vocês não são dignos da minha morte.",
+		["YOUR BANNER WILL HANG IN MY GULLET!"] = "SEU ESTANDARTE VAI PENDER DA MINHA GOELA!",
+		["RISE, FALLEN STANDARD-BEARERS!"] = "LEVANTEM-SE, PORTA-ESTANDARTES CAÍDOS!",
+		["EVERY OATH YOU SWORE IS ASH IN MY MOUTH!"] = "TODO JURAMENTO QUE FIZERAM É CINZA NA MINHA BOCA!",
+		-- World boss podium (worldboss.lua)
+		["Top damage: %s."] = "Mais dano: %s.",
+		["Top healing: %s."] = "Mais cura: %s.",
+		["Top tanking: %s."] = "Mais tanque: %s.",
+		["World boss slain! %s"] = "Chefe mundial derrotado! %s",
+		-- Spellbook: the Chaos spells' own descriptions (the first comment of each spell script; spellbook.lua)
+		["Your companions leap at the target (range 7) and maul it, each for 1.5 bites at once."] =
+			"Seus companheiros saltam sobre o alvo (alcance 7) e o dilaceram, cada um com 1,5 mordida de uma vez.",
+		["Feral Command's late sibling. Your companions leap at the target (range 7) and maul it in a frenzy, each for 3.3 bites at once (Feral Command: 1.5). 6 s cooldown (the cooldown ladder, 2026-10-20; was 20 s)."] =
+			"A irmã tardia de Feral Command. Seus companheiros saltam sobre o alvo (alcance 7) e o dilaceram em frenesi, cada um com 3,3 mordidas de uma vez (Feral Command: 1,5). Recarga de 6 s (a escada de recargas, 2026-10-20; antes eram 20 s).",
+		["A venom dart at the quarry the pack is circling."] =
+			"Um dardo de veneno na presa que a matilha está cercando.",
+		["Call your companion (a war wolf; 2 from level 400). Companions already out are called back to your side and healed for half their health."] =
+			"Chame seu companheiro (um lobo de guerra; 2 a partir do nível 400). Os companheiros que já estão fora voltam para o seu lado e são curados em metade da vida.",
+		["Pay 10%% of your current health; for 12 s Rage gets +10%% on top and every melee weapon hit also strikes up to 4 other enemies next to you for 40%% of the hit."] =
+			"Pague 10%% da sua vida atual; por 12 s a Rage ganha +10%% a mais e todo golpe de arma corpo a corpo também atinge até 4 outros inimigos ao seu lado com 40%% do golpe.",
+		["Skyfall Cleave's late sibling. Leap next to the target (range 6) and bring the two-handed weapon down: heavy physical damage to everything in a 5x5 square around the target (about 1.6 times Skyfall Cleave per hit), from weapon attack and skill. Every hit gets Rage (data/scripts/chaos/berserker_combat.lua); the slam staggers (50%% slow, 2.5 s)."] =
+			"A irmã tardia de Skyfall Cleave. Salte para junto do alvo (alcance 6) e desça a arma de duas mãos: dano físico pesado em tudo num quadrado 5x5 ao redor do alvo (cerca de 1,6 vez o Skyfall Cleave por golpe), pela força da arma e pela habilidade. Cada golpe dá Rage (data/scripts/chaos/berserker_combat.lua); a pancada cambaleia (lentidão de 50%%, 2,5 s).",
+		["Leap next to the target (range 5) and bring the two-handed weapon down on it: physical damage to everything in a 3x3 square around the target, from weapon attack and skill (the knight spells' formula style)."] =
+			"Salte para junto do alvo (alcance 5) e desça a arma de duas mãos sobre ele: dano físico em tudo num quadrado 3x3 ao redor do alvo, pela força da arma e pela habilidade (o estilo de fórmula das magias de knight).",
+		["For 20 s your minions deal 30%% more damage, take 25%% less and regenerate 3%% of their health every second."] =
+			"Por 20 s seus lacaios causam 30%% mais dano, sofrem 25%% menos e regeneram 3%% da vida a cada segundo.",
+		["Raise the Bone Golem, a hulking construct of bone (one at a time, on top of your skeletons). It slams every enemy next to it and taunts the monsters around it. With the golem out, the cast calls it back to your side and heals half of its health."] =
+			"Ergue o Bone Golem, uma construção colossal de ossos (um por vez, além dos seus esqueletos). Ele golpeia todo inimigo ao seu lado e provoca os monstros ao redor. Com o golem fora, a conjuração o chama de volta para o seu lado e cura metade da vida dele.",
+		["The skeleton nearest to the target (range 7) bursts apart: physical damage to every enemy within 2 sqm of it, plus 15%% of the skeleton's remaining health; you take 20%% less damage for 6 s. The skeleton is gone (raise another one). Needs a skeleton; the Bone Golem is never offered."] =
+			"O esqueleto mais próximo do alvo (alcance 7) estoura: dano físico a todo inimigo a até 2 sqm dele, mais 15%% da vida restante do esqueleto; você sofre 20%% menos dano por 6 s. O esqueleto se vai (erga outro). Precisa de um esqueleto; o Bone Golem nunca é oferecido.",
+		["Bones rise from the floor around you; every enemy within 2 sqm is struck."] =
+			"Ossos se erguem do chão ao seu redor; todo inimigo a até 2 sqm é atingido.",
+		["Three waves (earth, ice, earth) around the caster, the ice wave chills."] =
+			"Três ondas (terra, gelo, terra) ao redor do conjurador; a onda de gelo congela.",
+		["+20%% max health and steady regeneration for 20s."] =
+			"+20%% de vida máxima e regeneração constante por 20 s.",
+		["Heals the caster, party members and own summons within 3 sqm and removes harmful conditions."] =
+			"Cura o conjurador, os membros do grupo e os próprios invocados a até 3 sqm e remove condições nocivas.",
+		["A healing zone on the caster's tile; 8 pulses (1/s) heal allies standing within 3 sqm."] =
+			"Uma zona de cura no quadrado do conjurador; 8 pulsos (1/s) curam os aliados a até 3 sqm.",
+		["Summons 2 wolves (3 from level 200) for 40s. Tries \"Spirit Wolf\", \"Winter Wolf\", \"Wolf\" in that order."] =
+			"Invoca 2 lobos (3 a partir do nível 200) por 40 s. Tenta \"Spirit Wolf\", \"Winter Wolf\" e \"Wolf\", nessa ordem.",
+		["Thorns erupt around the target for 3 pulses, rooting enemies in a 3x3 for 5s."] =
+			"Espinhos brotam ao redor do alvo por 3 pulsos, prendendo os inimigos num 3x3 por 5 s.",
+		["Toxic cloud around the caster, poisons everything it hits."] =
+			"Nuvem tóxica ao redor do conjurador, envenena tudo que atinge.",
+		["A rotting dream settles on the target and eats at it for 6 s."] =
+			"Um sonho podre se assenta no alvo e o corrói por 6 s.",
+		["A shared waking dream. The Illusionist and every party member within 7 sqm are healed 5 times, every 2 seconds (a heal over time that follows them: a member farther than 10 sqm or on another floor misses the pulse)."] =
+			"Um sonho desperto compartilhado. O Illusionist e todo membro do grupo a até 7 sqm são curados 5 vezes, a cada 2 segundos (uma cura ao longo do tempo que os acompanha: quem estiver a mais de 10 sqm ou em outro andar perde o pulso).",
+		["Death damage bolt, then a cursing damage-over-time and a short slow."] =
+			"Raio de dano de morte, depois um dano de maldição ao longo do tempo e uma lentidão curta.",
+		["Up to 3 decoys wearing the caster's outfit, they vanish after 10s."] =
+			"Até 3 chamarizes com o visual do conjurador; somem depois de 10 s.",
+		["The Illusionist heals the most hurt party member within 7 sqm (or the one named: saen spek \"Name\"), and a mirror image of the heal mends the next most hurt (the Illusionist included) for 25%% of it. Without a hurt party member it heals the Illusionist. Numbers: ChaosHealing.cfg.mirrorMend (data/scripts/chaos/healing_rules_core.lua)."] =
+			"O Illusionist cura o membro do grupo mais ferido a até 7 sqm (ou o nomeado: saen spek \"Nome\"), e uma imagem de espelho da cura trata o próximo mais ferido (o Illusionist incluído) com 25%% dela. Sem um membro ferido no grupo, cura o próprio Illusionist. Números: ChaosHealing.cfg.mirrorMend (data/scripts/chaos/healing_rules_core.lua).",
+		["The glass of a mirror bursts; every enemy next to you is cut."] =
+			"O vidro de um espelho estoura; todo inimigo ao seu lado é cortado.",
+		["Needles of a dream, one violet hit on one target."] =
+			"Agulhas de um sonho, um golpe violeta em um alvo.",
+		["8s of invisibility plus a speed boost."] =
+			"8 s de invisibilidade mais um ganho de velocidade.",
+		["Drags monsters within 5 sqm next to the caster (monsters over 20000 max health are not moved), then two arcane-death implosions at 0.6s and 1.2s."] =
+			"Arrasta os monstros a até 5 sqm para junto do conjurador (monstros com mais de 20000 de vida máxima não se movem), depois duas implosões arcanas de morte a 0,6 s e 1,2 s.",
+		["Teleport to the far side of the target (range 5) and stab it with death damage."] =
+			"Teletransporta-se para o outro lado do alvo (alcance 5) e o apunhala com dano de morte.",
+		["Shadows gather for 0.9s, then erupt in a 7x7 circle around the cast position."] =
+			"As sombras se reúnem por 0,9 s e depois irrompem num círculo 7x7 ao redor do ponto da conjuração.",
+		["A holy sweep 3 sqm ahead."] =
+			"Uma varredura sagrada 3 sqm à frente.",
+		["A brand burned into a heretic: one heavy holy hit on one target."] =
+			"Uma marca queimada num herege: um golpe sagrado pesado em um alvo.",
+		["The Inquisitor brands one target (range 5) with a holy strike. For 8 seconds the target takes 20%% more holy damage from every source, the party's included (ChaosTemplar.cfg.judgement; applied by data/scripts/chaos/templar_combat.lua, which sees the brand as a timer condition on the target)."] =
+			"O Inquisitor marca um alvo (alcance 5) com um golpe sagrado. Por 8 segundos o alvo sofre 20%% mais dano sagrado de todas as fontes, as do grupo incluídas (ChaosTemplar.cfg.judgement; aplicado por data/scripts/chaos/templar_combat.lua, que enxerga a marca como uma condição de tempo no alvo).",
+		["Holy fire bursts from the Inquisitor (circle of 3 sqm). It heals the Inquisitor for 10%% of the damage dealt, at most 5%% of its maximum health per cast (ChaosTemplar.cfg.purgingNova)."] =
+			"Fogo sagrado irrompe do Inquisitor (círculo de 3 sqm). Cura o Inquisitor em 10%% do dano causado, no máximo 5%% da vida máxima por conjuração (ChaosTemplar.cfg.purgingNova).",
+		["A burst of zeal; every enemy within 2 sqm of you takes holy damage."] =
+			"Uma explosão de zelo; todo inimigo a até 2 sqm de você sofre dano sagrado.",
+		["Spend all chi on a shield of chi around a party member (or yourself) that absorbs damage for 8 s."] =
+			"Gaste todo o chi num escudo de chi ao redor de um membro do grupo (ou de você) que absorve dano por 8 s.",
+		["Hurl a chain of iron at your target; it links on to up to 4 more monsters close by."] =
+			"Arremesse uma corrente de ferro no alvo; ela se prende a até 4 outros monstros por perto.",
+		["Spend all chi on an iron-hard palm at the target next to you; it stuns a monster for 1-2.6 s and a player for 0.6-1 s."] =
+			"Gaste todo o chi numa palma de ferro no alvo ao seu lado; atordoa um monstro por 1-2,6 s e um jogador por 0,6-1 s.",
+		["Chant for 12 s; you and party members within 6 sqm take 8%% less damage while they stay near, and every pulse (2 s) heals them for level x 1 + fist x 26 (the Iron Sage's party heal, ChaosMonk.cfg.mantra.heal)."] =
+			"Entoe por 12 s; você e os membros do grupo a até 6 sqm sofrem 8%% menos dano enquanto ficarem perto, e a cada pulso (2 s) são curados em nível x 1 + fist x 26 (a cura de grupo do Iron Sage, ChaosMonk.cfg.mantra.heal).",
+		["The Juggernaut brings its weapon down on the target (range 3): one crushing blow to everything in a 5x5 square around it, from weapon attack and skill; every enemy hit is stunned (90%% slow) for 2.5 s."] =
+			"O Juggernaut desce a arma sobre o alvo (alcance 3): um golpe esmagador em tudo num quadrado 5x5 ao redor dele, pela força da arma e pela habilidade; todo inimigo atingido fica atordoado (lentidão de 90%%) por 2,5 s.",
+		["A shout that hurls a shockwave 3 sqm ahead."] =
+			"Um grito que lança uma onda de choque 3 sqm à frente.",
+		["+30%% melee skill, -30%% shield skill for 12s. (Not the stock Bloodlust.)"] =
+			"+30%% de habilidade corpo a corpo, -30%% de habilidade de escudo por 12 s. (Não é o Bloodlust padrão.)",
+		["A hooked blow at the target next to you that opens it; it bleeds for 5 s."] =
+			"Um golpe com gancho no alvo ao seu lado que o abre; ele sangra por 5 s.",
+		["Shockwave (5x5) that deals physical damage and staggers enemies (heavy slow for 3s)."] =
+			"Onda de choque (5x5) que causa dano físico e faz os inimigos cambalearem (lentidão forte por 3 s).",
+		["+40%% shielding for 12 s. No pacify and no lock on other spells: the weapon keeps swinging."] =
+			"+40%% de escudo por 12 s. Sem pacificar e sem travar outras magias: a arma continua golpeando.",
+		["Jump next to the target (range 5) and strike it with weapon attack and skill."] =
+			"Salte para junto do alvo (alcance 5) e golpeie-o com a força da arma e a habilidade.",
+		["A cleave that tears a line 4 sqm long towards the target."] =
+			"Um golpe amplo que rasga uma linha de 4 sqm em direção ao alvo.",
+		["Two crushing blows (0 / 0.6s) in a 7x7 circle; enemies are slowed 70%% for 4s."] =
+			"Dois golpes esmagadores (0 / 0,6 s) num círculo 7x7; os inimigos ficam 70%% mais lentos por 4 s.",
+		["Taunts every monster within 4 sqm and slows them 25%% for 6s. The knight gains Iron Will for 8s: 25%% less damage taken (data/scripts/chaos/spell_guard.lua) and +15%% shielding."] =
+			"Provoca todo monstro a até 4 sqm e os deixa 25%% mais lentos por 6 s. O knight ganha Iron Will por 8 s: 25%% menos dano sofrido (data/scripts/chaos/spell_guard.lua) e +15%% de escudo.",
+		["Three spinning strikes (0 / 0.4 / 0.8s) against everything adjacent. Uses weapon attack and skill."] =
+			"Três golpes giratórios (0 / 0,4 / 0,8 s) contra tudo que estiver adjacente. Usa a força da arma e a habilidade.",
+		["Up to 3 corpses within 3 sqm of the target (range 7) burst; each burst hits every enemy within 1 sqm of it with death damage. Needs a usable corpse (no loot inside, yours, your party's or nobody's); without one the spell fails and costs nothing. The corpses are consumed."] =
+			"Até 3 cadáveres a até 3 sqm do alvo (alcance 7) estouram; cada explosão atinge todo inimigo a até 1 sqm dela com dano de morte. Precisa de um cadáver utilizável (sem saque dentro, seu, do seu grupo ou de ninguém); sem um, a magia falha e não custa nada. Os cadáveres são consumidos.",
+		["Drain the target's life (range 5): three death strikes half a second apart; you heal for half of the damage they deal."] =
+			"Drene a vida do alvo (alcance 5): três golpes de morte com meio segundo de intervalo; você se cura em metade do dano que eles causam.",
+		["Rot the target's soul (range 6): heavy death damage every second for 6 s. If the target dies before the rot ends, the rest jumps to the nearest enemy within 3 sqm. A recast on the same target restarts it."] =
+			"Apodreça a alma do alvo (alcance 6): dano de morte pesado a cada segundo por 6 s. Se o alvo morrer antes de a podridão acabar, o resto salta para o inimigo mais próximo a até 3 sqm. Conjurar de novo no mesmo alvo a reinicia.",
+		["A quick strike at the target next to you that builds 2 chi. The Monk's builder."] =
+			"Um golpe rápido no alvo ao seu lado que gera 2 de chi. O gerador do Monk.",
+		["A finisher: all your chi leaves in a line 4 sqm long; the damage grows with the chi spent."] =
+			"Um finalizador: todo o seu chi sai numa linha de 4 sqm; o dano cresce com o chi gasto.",
+		["A heel that cleaves the target next to you and builds 1 chi."] =
+			"Um calcanhar que racha o alvo ao seu lado e gera 1 de chi.",
+		["A knuckle strike at the target next to you that builds 1 chi."] =
+			"Um golpe de nó dos dedos no alvo ao seu lado que gera 1 de chi.",
+		["Breathe the chi in and heal; the heal grows with the chi spent (the Iron Sage's heal keeps healing for 6 s)."] =
+			"Inspire o chi e cure-se; a cura cresce com o chi gasto (a cura do Iron Sage continua curando por 6 s).",
+		["A finisher wave of mist 3 sqm ahead."] =
+			"Um finalizador: uma onda de névoa 3 sqm à frente.",
+		["An open palm on the target next to you sends a shockwave through every monster within 2 sqm of it."] =
+			"Uma palma aberta no alvo ao seu lado envia uma onda de choque por todo monstro a até 2 sqm dele.",
+		["A stomp that shakes every enemy next to you and builds 1 chi."] =
+			"Uma pisada que sacode todo inimigo ao seu lado e gera 1 de chi.",
+		["A finisher that spends all your chi in one blow at the target next to you."] =
+			"Um finalizador que gasta todo o seu chi num só golpe no alvo ao seu lado.",
+		["A heavy palm strike that spends all chi; the damage grows with the chi spent."] =
+			"Um golpe de palma pesado que gasta todo o chi; o dano cresce com o chi gasto.",
+		["An open palm that sends a wave over the 3 x 2 sqm in front of you and builds 1 chi."] =
+			"Uma palma aberta que envia uma onda sobre os 3 x 2 sqm à sua frente e gera 1 de chi.",
+		["A spinning kick that spends all chi and hits everything next to you."] =
+			"Um chute giratório que gasta todo o chi e atinge tudo ao seu lado.",
+		["A brand of blight that burns in the target for 6 s."] =
+			"Uma marca de praga que queima dentro do alvo por 6 s.",
+		["The bones of your target burst outward; it and every monster next to it are cut by the shards."] =
+			"Os ossos do alvo estouram para fora; ele e todo monstro ao lado dele são cortados pelos estilhaços.",
+		["Hurl a spear of bone at the target (range 5). Physical damage; the creature right behind the target (seen from you) takes half of it. The Necromancer line's filler."] =
+			"Arremesse uma lança de osso no alvo (alcance 5). Dano físico; a criatura logo atrás do alvo (vista de você) sofre metade dele. O tapa-buraco da linha Necromancer.",
+		["The ceiling of a crypt falls on the target and every enemy within 2 sqm of it."] =
+			"O teto de uma cripta desaba sobre o alvo e todo inimigo a até 2 sqm dele.",
+		["The grave breathes out around you; every enemy within 3 sqm takes death damage."] =
+			"A cova exala ao seu redor; todo inimigo a até 3 sqm sofre dano de morte.",
+		["The grave wails at the target; every enemy within 2 sqm of it takes death damage."] =
+			"A cova geme para o alvo; todo inimigo a até 2 sqm dele sofre dano de morte.",
+		["A bolt of bone marrow, one death hit on one target."] =
+			"Um raio de tutano de osso, um golpe de morte em um alvo.",
+		["Raise minions from the corpses around you (up to 4 sqm), or one from nothing for twice the mana."] =
+			"Erga lacaios dos cadáveres ao seu redor (até 4 sqm), ou um do nada pelo dobro da mana.",
+		["A risen mage joins you: a fragile caster minion (range 4, energy bolts) that hits harder than a skeleton. One minion per cast. You can have only a few minions of all kinds at once (3 for the Necromancer); at the limit the oldest one crumbles first (no corpse, no loot). Health and hits scale with your level and magic level (necro_config.lua minions.mage); the minion hits the creature you target (data/scripts/chaos/necro_minions.lua)."] =
+			"Um mago erguido se junta a você: um lacaio conjurador frágil (alcance 4, raios de energia) que bate mais forte que um esqueleto. Um lacaio por conjuração. Você só pode ter alguns lacaios de todos os tipos ao mesmo tempo (3 para o Necromancer); no limite, o mais antigo se desfaz primeiro (sem cadáver, sem saque). A vida e os golpes crescem com seu nível e nível mágico (necro_config.lua minions.mage); o lacaio ataca a criatura que você mira (data/scripts/chaos/necro_minions.lua).",
+		["A sturdy bone warrior rises next to you: a melee minion (range 1, physical) with the most health of the three. One minion per cast. You can have only a few minions of all kinds at once (3 for the Necromancer); at the limit the oldest one crumbles first (no corpse, no loot). Health and hits scale with your level and magic level (necro_config.lua minions.warrior); the minion hits the creature you target (data/scripts/chaos/necro_minions.lua)."] =
+			"Um guerreiro de osso robusto se ergue ao seu lado: um lacaio corpo a corpo (alcance 1, físico) com mais vida dos três. Um lacaio por conjuração. Você só pode ter alguns lacaios de todos os tipos ao mesmo tempo (3 para o Necromancer); no limite, o mais antigo se desfaz primeiro (sem cadáver, sem saque). A vida e os golpes crescem com seu nível e nível mágico (necro_config.lua minions.warrior); o lacaio ataca a criatura que você mira (data/scripts/chaos/necro_minions.lua).",
+		["A beam that rends everything in a line 6 sqm long towards the target."] =
+			"Um raio que dilacera tudo numa linha de 6 sqm em direção ao alvo.",
+		["Bone shards that burst in a circle at the target."] =
+			"Estilhaços de osso que estouram num círculo no alvo.",
+		["Curse the target (range 6) for 12 s: it takes 15%% more damage from everyone and rots (death damage every second, 10 ticks). The Lich's curse amplifies by 25%%, rots harder and also curses up to 2 more enemies within 2 sqm of the target."] =
+			"Amaldiçoe o alvo (alcance 6) por 12 s: ele sofre 15%% mais dano de todos e apodrece (dano de morte a cada segundo, 10 pulsos). A maldição do Lich amplifica em 25%%, apodrece mais forte e também amaldiçoa até 2 inimigos a mais a até 2 sqm do alvo.",
+		["A cold wind of the dead over the 3 x 3 sqm in front of you."] =
+			"Um vento frio dos mortos sobre os 3 x 3 sqm à sua frente.",
+		["Step through the shadows behind your target and stab it."] =
+			"Atravesse as sombras até as costas do alvo e o apunhale.",
+		["A fan of shurikens at your target and up to 4 more monsters near it."] =
+			"Um leque de shurikens no alvo e em até 4 monstros por perto.",
+		["Shuriken Barrage's late sibling. A storm of shurikens at your target and up to 8 more monsters within 4 sqm of it, two ranged weapon strikes each, 0.5 s apart (shuriken power as Shuriken Toss, 1.1 times a Barrage strike)."] =
+			"A irmã tardia de Shuriken Barrage. Uma tempestade de shurikens no alvo e em até 8 monstros a até 4 sqm dele, dois golpes de arma à distância cada, com 0,5 s de intervalo (poder do shuriken como Shuriken Toss, 1,1 vez um golpe do Barrage).",
+		["A bomb that bursts in a cloud around the caster."] =
+			"Uma bomba que estoura numa nuvem ao redor do conjurador.",
+		["A volley that lands in a circle of 2 sqm around the target."] =
+			"Uma saraivada que cai num círculo de 2 sqm ao redor do alvo.",
+		["Consecrates the caster's tile for 6s. Each second holy damage hits enemies within 2 sqm and allies (party, own summons, caster) standing in it are healed a little."] =
+			"Consagra o quadrado do conjurador por 6 s. A cada segundo dano sagrado atinge os inimigos a até 2 sqm, e os aliados (grupo, invocados próprios, conjurador) que estiverem nele são curados um pouco.",
+		["Cleanses harmful conditions and grants 8s of strong regeneration."] =
+			"Purifica condições nocivas e dá 8 s de regeneração forte.",
+		["A volley of arrows in a line 6 sqm long."] =
+			"Uma saraivada de flechas numa linha de 6 sqm.",
+		["Single target holy bolt, the paladin's filler. Scales with distance skill x weapon attack (the bow's own)."] =
+			"Raio sagrado em alvo único, o tapa-buraco do paladin. Escala com habilidade à distância x força da arma (a do próprio arco).",
+		["Heavy holy strike, +50%% damage against targets below 25%% health."] =
+			"Golpe sagrado pesado, +50%% de dano contra alvos abaixo de 25%% de vida.",
+		["A 7 sqm line of spears hitting everything in it. Every target takes a Dawnpiercer hit (owner, 2026-10-20: an area hit equals the single-target hit). Scales with distance skill x weapon attack."] =
+			"Uma linha de lanças de 7 sqm que atinge tudo nela. Todo alvo sofre um golpe de Dawnpiercer (dono, 2026-10-20: um golpe em área é igual ao golpe em alvo único). Escala com habilidade à distância x força da arma.",
+		["3 volleys of 4 holy arrows, every arrow strikes the target. Scales with distance skill x weapon attack."] =
+			"3 saraivadas de 4 flechas sagradas, toda flecha atinge o alvo. Escala com habilidade à distância x força da arma.",
+		["A spear of sunlight, a heavy holy hit on one target."] =
+			"Uma lança de luz do sol, um golpe sagrado pesado em um alvo.",
+		["+25%% distance skill for 12 s. No slow and no lock on other spells: the bow keeps firing."] =
+			"+25%% de habilidade à distância por 12 s. Sem lentidão e sem travar outras magias: o arco continua disparando.",
+		["Two heavy holy strikes at the target 0.6 s apart, each 1.3 times Final Verdict's; +50%% against a target below 25%% health, checked for each strike. 12 s cooldown (the cooldown ladder, 2026-10-20: 16 s, was 24 s; O176, 2026-10-24: 12 s)."] =
+			"Dois golpes sagrados pesados no alvo com 0,6 s de intervalo, cada um 1,3 vez o de Final Verdict; +50%% contra alvo abaixo de 25%% de vida, conferido a cada golpe. Recarga de 12 s (a escada de recargas, 2026-10-20: 16 s, antes 24 s; O176, 2026-10-24: 12 s).",
+		["For 30 seconds your critical chance grows while you take no damage."] =
+			"Por 30 segundos sua chance de crítico cresce enquanto você não sofre dano.",
+		["For 3 seconds the next melee hit you take is parried and answered with a strike, every other hit you take is 30%% smaller, and the monsters within 3 sqm turn on you (the Samurai is the line's duelist off-tank)."] =
+			"Por 3 segundos o próximo golpe corpo a corpo que você sofrer é aparado e respondido com um golpe, todo outro golpe que você sofrer é 30%% menor, e os monstros a até 3 sqm se voltam contra você (o Samurai é o off-tank duelista da linha).",
+		["Draw and cut wide; the target and every monster in front of you are struck."] =
+			"Saque e corte amplo; o alvo e todo monstro à sua frente são atingidos.",
+		["Gather for a moment, then cut your target with one heavy draw strike."] =
+			"Concentre-se por um instante e corte o alvo com um único saque pesado.",
+		["The Sentinel raises its shield and its faith: for 5 seconds it takes 40%% less damage (ChaosTemplar.cfg.aegis; applied by data/scripts/chaos/templar_combat.lua, which sees the timer condition)."] =
+			"O Sentinel ergue o escudo e a fé: por 5 segundos sofre 40%% menos dano (ChaosTemplar.cfg.aegis; aplicado por data/scripts/chaos/templar_combat.lua, que enxerga a condição de tempo).",
+		["A slam of your shield arm at the target next to you, holy damage from your weapon."] =
+			"Uma pancada do braço do escudo no alvo ao seu lado, dano sagrado pela sua arma.",
+		["A great heal on one party member within 5 sqm: 35%% of its maximum health + magic level x 10 (ChaosTemplar.cfg.layOnHands). Say a name to choose (saen gal manh \"Name\"); without one it goes to the party member (or the Sentinel) with the lowest health share. Long cooldown."] =
+			"Uma grande cura em um membro do grupo a até 5 sqm: 35%% da vida máxima dele + nível mágico x 10 (ChaosTemplar.cfg.layOnHands). Diga um nome para escolher (saen gal manh \"Nome\"); sem um, vai para o membro do grupo (ou o Sentinel) com a menor fatia de vida. Recarga longa.",
+		["The rampart shakes; every enemy within 2 sqm of you takes holy damage."] =
+			"A muralha treme; todo inimigo a até 2 sqm de você sofre dano sagrado.",
+		["The Sentinel calls every monster within 4 sqm to face it (taunt) and slows them 25%% for 6 seconds (ChaosTemplar.cfg.rebuke). Only monsters that are not player summons; players are never touched."] =
+			"O Sentinel chama todo monstro a até 4 sqm para encará-lo (provocar) e os deixa 25%% mais lentos por 6 segundos (ChaosTemplar.cfg.rebuke). Só monstros que não são invocados de jogadores; jogadores nunca são tocados.",
+		["Drive your shield forward; a wave of holy force hits your target and everything in front of you."] =
+			"Empurre o escudo para a frente; uma onda de força sagrada atinge o alvo e tudo à sua frente.",
+		["Strike a nerve of the target next to you: 1 chi, and a stack of Pressure Points on it (+5%% damage from Monks, up to 5 stacks, 8 s)."] =
+			"Atinja um nervo do alvo ao seu lado: 1 de chi, e um acúmulo de Pressure Points nele (+5%% de dano dos Monks, até 5 acúmulos, 8 s).",
+		["A shadow-wrapped strike that leaps from your target to up to 4 more monsters nearby."] =
+			"Um golpe envolto em sombra que salta do alvo para até 4 monstros por perto.",
+		["Spend all chi on a flurry of blows at the target next to you: 2 + 1 per chi spent."] =
+			"Gaste todo o chi numa saraivada de golpes no alvo ao seu lado: 2 + 1 por chi gasto.",
+		["Dash up to 4 sqm in the facing direction (stops at the first blocked tile) plus 2.5s of speed."] =
+			"Avance até 4 sqm na direção em que olha (para no primeiro quadrado bloqueado) mais 2,5 s de velocidade.",
+		["Every armed mine you threw goes off, 0.1 s apart, oldest first."] =
+			"Toda mina armada que você lançou explode, com 0,1 s de intervalo, a mais antiga primeiro.",
+		["Caster and party members within 5 sqm get +10%% melee/distance/magic and speed for 12s."] =
+			"O conjurador e os membros do grupo a até 5 sqm ganham +10%% de corpo a corpo/distância/magia e velocidade por 12 s.",
+		["Throws a mine up to 4 sqm (onto your attack target, else straight ahead). It arms after 0.8 s and waits for Detonate Mines or its 8 s fuse; then a burst hits up to 8 enemies within 2 sqm for 1.15 times a trap's hit. At most 5 mines (the oldest goes). The element works as for Snare Trap (kah snar \"ice\")."] =
+			"Lança uma mina até 4 sqm (no seu alvo de ataque, senão direto à frente). Ela arma depois de 0,8 s e espera por Detonate Mines ou pelo pavio de 8 s; então uma explosão atinge até 8 inimigos a até 2 sqm com 1,15 vez o golpe de uma armadilha. No máximo 5 minas (a mais antiga se vai). O elemento funciona como no Snare Trap (kah snar \"ice\").",
+		["Pings every monster within 12 sqm on the caster's floor (max 15 marked) and reports the nearest."] =
+			"Marca todo monstro a até 12 sqm no andar do conjurador (no máximo 15 marcados) e avisa qual é o mais próximo.",
+		["Throws a trap up to 4 sqm (onto your attack target, else straight ahead). It arms after 0.6 s; the first monster within 1 sqm sets it off: a burst hits up to 8 enemies within 2 sqm. At most 3 traps (the oldest goes); a trap lasts 20 s. Say an element after the words (drai snar \"fire\": fire, ice, energy, earth, death, holy,"] =
+			"Lança uma armadilha até 4 sqm (no seu alvo de ataque, senão direto à frente). Ela arma depois de 0,6 s; o primeiro monstro a até 1 sqm a dispara: uma explosão atinge até 8 inimigos a até 2 sqm. No máximo 3 armadilhas (a mais antiga se vai); uma armadilha dura 20 s. Diga um elemento depois das palavras (drai snar \"fire\": fire, ice, energy, earth, death, holy,",
+		["Mana shield for 15s plus mana regeneration while it lasts (the stock Ward of the Mind has no regen)."] =
+			"Escudo de mana por 15 s mais regeneração de mana enquanto durar (o Ward of the Mind padrão não regenera).",
+		["Every class, from level 1, no mana. A 3 s channel, then a portal home and a return portal beside the temple; all rules, the cooldown and the portal styles are in data/scripts/chaos/townportal.lua."] =
+			"Toda classe, desde o nível 1, sem mana. Uma canalização de 3 s, depois um portal para casa e um portal de volta ao lado do templo; todas as regras, a recarga e os estilos de portal estão em data/scripts/chaos/townportal.lua.",
+		["Switches the vigil on or off. While on it reserves 20%% of your maximum mana, and you and your party members within 5 sqm regain 1%% of their maximum mana every second (not in a rift with Parched Veins)."] =
+			"Liga ou desliga a vigília. Enquanto ligada, reserva 20%% da sua mana máxima, e você e os membros do grupo a até 5 sqm recuperam 1%% da mana máxima a cada segundo (não num rift com Parched Veins).",
+		["Switches the vigil on or off. While on it reserves 20%% of your maximum mana, and you and your party members within 5 sqm move 15%% faster."] =
+			"Liga ou desliga a vigília. Enquanto ligada, reserva 20%% da sua mana máxima, e você e os membros do grupo a até 5 sqm andam 15%% mais rápido.",
+		["Switches the vigil on or off. While on it reserves 35%% of your maximum mana, and you and your party members within 5 sqm take 6%% less damage (not on top of the Templar line's defence aura: the stronger counts)."] =
+			"Liga ou desliga a vigília. Enquanto ligada, reserva 35%% da sua mana máxima, e você e os membros do grupo a até 5 sqm sofrem 6%% menos dano (não somado à aura de defesa da linha Templar: vale a mais forte).",
+		["Switches the vigil on or off. While on it reserves 35%% of your maximum mana, and you and your party members within 5 sqm deal 5%% more damage (not on top of Inspiring Illusion: the stronger counts)."] =
+			"Liga ou desliga a vigília. Enquanto ligada, reserva 35%% da sua mana máxima, e você e os membros do grupo a até 5 sqm causam 5%% mais dano (não somado ao Inspiring Illusion: vale o mais forte).",
+		["Three waves (fire, energy, fire) rolling out from the caster over 6x6 area."] =
+			"Três ondas (fogo, energia, fogo) saindo do conjurador numa área de 6x6.",
+		["Hits the target, then jumps to up to 3 more monsters within 3 sqm (full damage on every jump)."] =
+			"Atinge o alvo e salta para até 3 monstros a mais a até 3 sqm (dano total em cada salto).",
+		["A blood curse that burns the target for 6 s."] =
+			"Uma maldição de sangue que queima o alvo por 6 s.",
+		["Ice burst around the caster, chills everything it hits."] =
+			"Explosão de gelo ao redor do conjurador, congela tudo que atinge.",
+		["Doomtide's late sibling in ice. Three waves (ice, energy, ice) rolling out from the caster over a 6x6 area; the energy wave in the middle. 13 s cooldown (the cooldown ladder, 2026-10-20: 20 s, was 60 s; O176, 2026-10-24: 13 s)."] =
+			"A irmã tardia de Doomtide em gelo. Três ondas (gelo, energia, gelo) saindo do conjurador numa área de 6x6; a onda de energia no meio. Recarga de 13 s (a escada de recargas, 2026-10-20: 20 s, antes 60 s; O176, 2026-10-24: 13 s).",
+		["Freezing zone on the target's position, 6 pulses over 5s, enemies inside are heavily slowed."] =
+			"Zona gélida na posição do alvo, 6 pulsos em 5 s; os inimigos dentro ficam muito lentos.",
+		["Single target fire bolt that leaves the target burning."] =
+			"Raio de fogo em alvo único que deixa o alvo em chamas.",
+		["Marks the target's position, the meteor lands 1.2s later (fire, 5x5) and sets enemies ablaze."] =
+			"Marca a posição do alvo; o meteoro cai 1,2 s depois (fogo, 5x5) e põe os inimigos em chamas.",
+		["A bell tolls over the target; every enemy within 2 sqm of it takes holy damage."] =
+			"Um sino dobra sobre o alvo; todo inimigo a até 2 sqm dele sofre dano sagrado.",
+		["A swung censer; every enemy next to you takes holy damage."] =
+			"Um incensário balançado; todo inimigo ao seu lado sofre dano sagrado.",
+		["Hallows the ground under the Templar for 6 seconds. Each second holy damage hits enemies within 2 sqm of the cast tile, and allies standing in it (party, own summons, the Templar) are healed a little."] =
+			"Santifica o chão sob o Templar por 6 segundos. A cada segundo dano sagrado atinge os inimigos a até 2 sqm do quadrado da conjuração, e os aliados que estiverem nele (grupo, invocados próprios, o Templar) são curados um pouco.",
+		["A blessed cut at the target next to you, holy damage from your weapon."] =
+			"Um corte abençoado no alvo ao seu lado, dano sagrado pela sua arma.",
+		["A lance of light through a line 5 sqm long towards the target."] =
+			"Uma lança de luz por uma linha de 5 sqm em direção ao alvo.",
+		["Holy fire that burns on the target for 5 s."] =
+			"Fogo sagrado que queima no alvo por 5 s.",
+		["A lash of penance over the 3 x 2 sqm in front of you."] =
+			"Um açoite de penitência sobre os 3 x 2 sqm à sua frente.",
+		["A hammer-blow of light on one target within 3 sqm. The Templar line's holy filler (cooldown 2 s)."] =
+			"Uma martelada de luz em um alvo a até 3 sqm. O tapa-buraco sagrado da linha Templar (recarga de 2 s).",
+		["The ground under you flares with holy light three times; everything within 2 sqm is burned."] =
+			"O chão sob você faísca com luz sagrada três vezes; tudo a até 2 sqm é queimado.",
+		["The sanctum passes sentence: one very heavy holy hit on one target."] =
+			"O santuário profere a sentença: um golpe sagrado muito pesado em um alvo.",
+		["The Templar's self heal. Restores 8%% of the maximum health + level / 5 + magic level x 4 (ChaosTemplar.cfg.vowOfMending, ChaosTemplar.vowAmount)."] =
+			"A autocura do Templar. Restaura 8%% da vida máxima + nível / 5 + nível mágico x 4 (ChaosTemplar.cfg.vowOfMending, ChaosTemplar.vowAmount).",
+		["Spin with your blades and cut every monster next to you."] =
+			"Gire com suas lâminas e corte todo monstro ao seu lado.",
+		["A wide arc in front of you, towards the target, a melee weapon strike on each."] =
+			"Um arco amplo à sua frente, em direção ao alvo, um golpe de arma corpo a corpo em cada um.",
+		["Throw a fan of knives at your target and up to 5 more monsters around you."] =
+			"Arremesse um leque de facas no alvo e em até 5 monstros a mais ao seu redor.",
+		["A quick cut at the target next to you, a melee weapon strike."] =
+			"Um corte rápido no alvo ao seu lado, um golpe de arma corpo a corpo.",
+		["A heavy finishing thrust at the target next to you, a melee weapon strike."] =
+			"Uma estocada final pesada no alvo ao seu lado, um golpe de arma corpo a corpo.",
+		["For 20 seconds your weapon hits poison the target."] =
+			"Por 20 segundos os golpes da sua arma envenenam o alvo.",
+		["Blades fall in a circle of 2 sqm around the target, a ranged weapon strike on each."] =
+			"Lâminas caem num círculo de 2 sqm ao redor do alvo, um golpe de arma à distância em cada um.",
+		["Heals you for your level / 2 + magic level x 20 + 5%% of your maximum health, 30%% more while Shadow Veil is up. Healing does not end the veil."] =
+			"Cura você em nível / 2 + nível mágico x 20 + 5%% da sua vida máxima, 30%% a mais enquanto o Shadow Veil está ativo. Curar não encerra o véu.",
+		["Vanish for 4 seconds; monsters lose you and your first weapon hit out of it is a critical hit."] =
+			"Desapareça por 4 segundos; os monstros perdem você de vista e o primeiro golpe de arma que você der saindo dele é crítico.",
+		["Throw a shuriken at one target; physical damage from your sword or distance skill."] =
+			"Arremesse um shuriken em um alvo; dano físico pela sua habilidade de espada ou de distância.",
+		["A coiled blade of venom; the target is poisoned for 5 s."] =
+			"Uma lâmina enrolada em veneno; o alvo fica envenenado por 5 s.",
+		-- Spellbook: generated descriptions of the stock spells and the scaling text (spellbook.lua)
+		["Spells for Level %d"] = "Magias do Nível %d",
+		["Increases your speed."] = "Aumenta a sua velocidade.",
+		["Makes you invisible."] = "Deixa você invisível.",
+		["Damage drains your mana before your health."] = "O dano drena a sua mana antes da sua vida.",
+		["Creates light around you."] = "Cria luz ao seu redor.",
+		["Slows the target down."] = "Deixa o alvo mais lento.",
+		["Regenerates health and mana over time."] = "Regenera vida e mana com o tempo.",
+		["Temporarily raises your skills."] = "Aumenta suas habilidades por um tempo.",
+		["Prevents the target from attacking."] = "Impede o alvo de atacar.",
+		["Lets you move up or down one floor in the direction you face."] = "Deixa você subir ou descer um andar na direção para a qual olha.",
+		["Shows the direction and distance of a player you name."] = "Mostra a direção e a distância de um jogador que você nomear.",
+		["Takes you up to the floor above from a rope spot."] = "Leva você ao andar de cima a partir de um ponto de corda.",
+		["Makes the monsters around you target you."] = "Faz os monstros ao seu redor mirarem em você.",
+		["Makes the monster you target attack you."] = "Faz o monstro que você mira atacar você.",
+		["Reveals invisible creatures around you."] = "Revela as criaturas invisíveis ao seu redor.",
+		["Gives you the look of a creature."] = "Dá a você a aparência de uma criatura.",
+		["Conjures %d x '%s'."] = "Conjura %d x '%s'.",
+		["Conjures '%s'."] = "Conjura '%s'.",
+		["Conjures an item."] = "Conjura um item.",
+		["Summons a creature to fight for you."] = "Invoca uma criatura para lutar por você.",
+		["Creates %s fields around the target."] = "Cria campos %s ao redor do alvo.",
+		["Creates a wall of %s fields."] = "Cria uma parede de campos %s.",
+		["Creates a %s field on the target tile."] = "Cria um campo %s no quadrado do alvo.",
+		["Creates magic barriers around the target."] = "Cria barreiras mágicas ao redor do alvo.",
+		["Creates a wall of magic barriers."] = "Cria uma parede de barreiras mágicas.",
+		["Creates a magic barrier on the target tile."] = "Cria uma barreira mágica no quadrado do alvo.",
+		["Single-target %s damage."] = "Dano %s em alvo único.",
+		["%s damage in front of you (%s)."] = "Dano %s à sua frente (%s).",
+		["%s damage around you."] = "Dano %s ao seu redor.",
+		["Area %s damage at the target."] = "Dano %s em área no alvo.",
+		["%s damage."] = "Dano %s.",
+		["Heals the target."] = "Cura o alvo.",
+		["Heals the target and cures %s."] = "Cura o alvo e remove %s.",
+		["Heals you and allies around you."] = "Cura você e os aliados ao seu redor.",
+		["Heals you and allies around you and cures %s."] = "Cura você e os aliados ao seu redor e remove %s.",
+		["Heals you."] = "Cura você.",
+		["Heals you and cures %s."] = "Cura você e remove %s.",
+		["Raises %s of %s."] = "Aumenta %s para %s.",
+		["Increases the speed of you and your party members."] = "Aumenta a velocidade de você e dos membros do seu grupo.",
+		["%s for %s."] = "%s por %s.",
+		["Cures %s."] = "Remove %s.",
+		["Support spell."] = "Magia de apoio.",
+		["Utility spell."] = "Magia utilitária.",
+		["[element] physical"] = "físico",
+		["[element] fire"] = "de fogo",
+		["[element] ice"] = "de gelo",
+		["[element] energy"] = "de energia",
+		["[element] earth"] = "de terra",
+		["[element] death"] = "de morte",
+		["[element] holy"] = "sagrado",
+		["[element] drown"] = "de afogamento",
+		["[element] life drain"] = "de drenagem de vida",
+		["[element] mana drain"] = "de drenagem de mana",
+		["[shape] beam"] = "raio",
+		["[shape] wave"] = "onda",
+		["[join] and"] = "e",
+		["[cure] poison"] = "o veneno",
+		["[cure] burning"] = "a queimadura",
+		["[cure] electrification"] = "a eletrificação",
+		["[cure] paralysis"] = "a paralisia",
+		["[cure] curse"] = "a maldição",
+		["[cure] bleeding"] = "o sangramento",
+		["[cure] drowning"] = "o afogamento",
+		["[cure] freezing"] = "o congelamento",
+		["[cure] dazzle"] = "o ofuscamento",
+		["[cure] invisibility"] = "a invisibilidade",
+		["[stat] magic level"] = "o nível mágico",
+		["[stat] melee skills"] = "as habilidades de combate corpo a corpo",
+		["[stat] distance skill"] = "a habilidade à distância",
+		["[stat] shielding"] = "o escudo",
+		["[stat] maximum health"] = "a vida máxima",
+		["[stat] maximum mana"] = "a mana máxima",
+		["[target] you and your party members"] = "você e os membros do seu grupo",
+		["[target] you"] = "você",
+		["fist skill x fist attack (or a staff)"] = "habilidade de punho x ataque de punho (ou um cajado)",
+		["skill x weapon attack, magic level"] = "habilidade x ataque da arma, nível mágico",
+		["distance skill x weapon attack"] = "habilidade à distância x ataque da arma",
+		["skill x weapon attack"] = "habilidade x ataque da arma",
+		-- Templar aura buff (chaos_buffs.lua)
+		["Your %s Aura"] = "Sua Aura de %s",
+		["%s's Aura"] = "Aura de %s",
+		["Under your %s aura: %d%% less damage taken"] = "Sob a sua aura de %s: %d%% menos dano sofrido",
+		["Under %s's %s aura: %d%% less damage taken"] = "Sob a aura de %s (%s): %d%% menos dano sofrido",
+		["Under a Templar's %s aura: %d%% less damage taken"] = "Sob a aura de um Templar (%s): %d%% menos dano sofrido",
+		[", %.1f%% of your maximum health back every second"] = ", %.1f%% da sua vida máxima de volta a cada segundo",
+		[" (Bastion)"] = " (Bastião)",
+		-- Hideout: window texts, results, store unlock (hideout.lua, hideout_core.lua, hideout_config.lua)
+		["Private"] = "Privado",
+		["Friends"] = "Amigos",
+		["Public"] = "Público",
+		["Only you."] = "Só você.",
+		["You, your VIP list and your party."] = "Você, a sua lista VIP e a sua party.",
+		["Friends and your guild."] = "Amigos e a sua guild.",
+		["Everyone; listed in the showcase."] = "Todos; listado na vitrine.",
+		["Cracked flagstones and soot-black walls."] = "Lajes rachadas e paredes negras de fuligem.",
+		["Obsidian floors still warm from the Descent."] = "Pisos de obsidiana ainda quentes da Descent.",
+		["Pale marble where the Choir keeps its silences."] = "Mármore pálido onde o Choir guarda os seus silêncios.",
+		["Moss and roots behind a living wall."] = "Musgo e raízes atrás de uma parede viva.",
+		["Every character"] = "Todo personagem",
+		["Achievement: %s"] = "Conquista: %s",
+		["Event: %s"] = "Evento: %s",
+		["Unknown"] = "Desconhecido",
+		["Ember Descent: slay its boss"] = "Ember Descent: derrote o seu chefe",
+		["Trophy: slay %s"] = "Troféu: derrote %s",
+		["A trophy of your own kills"] = "Um troféu das suas próprias mortes",
+		["Defend a town from an invasion"] = "Defenda uma cidade de uma invasão",
+		["Slay 10 Treasure Goblins"] = "Derrote 10 Treasure Goblins",
+		["Defend 5 invasions"] = "Defenda 5 invasões",
+		["%s is locked: %s."] = "%s está bloqueado: %s.",
+		["%s moved."] = "%s movido.",
+		["%s removed."] = "%s removido.",
+		["The decoration was removed."] = "A decoração foi removida.",
+		["%s holds %d decorations; put %d away first."] = "%s comporta %d decorações; guarde %d primeiro.",
+		["%s holds at most %d decorations."] = "%s comporta no máximo %d decorações.",
+		["Your hideout is now the %s."] = "Seu hideout agora é o %s.",
+		["Visitors: %s."] = "Visitantes: %s.",
+		["Unknown theme."] = "Tema desconhecido.",
+		["Unknown permission."] = "Permissão desconhecida.",
+		["That would wall off the training dummies."] = "Isso isolaria os bonecos de treino.",
+		["That would wall off the %s."] = "Isso isolaria o item %s.",
+		["That tile is kept free (a light)."] = "Esse quadrado fica livre (uma luz).",
+		["That tile is kept free (a dummy)."] = "Esse quadrado fica livre (um boneco).",
+		["That tile is kept free (the waystone)."] = "Esse quadrado fica livre (a waystone).",
+		["That tile is kept free (%s)."] = "Esse quadrado fica livre (%s).",
+		["Place it in your hideout: Character > Hideout (every character of your account, cosmetic only)."] =
+			"Coloque no seu hideout: Personagem > Hideout (todos os personagens da sua conta, só cosmético).",
+		["Hideout decoration (%s), for every character of your account. Cosmetic only: it changes how your hideout looks and nothing else. Character > Hideout."] =
+			"Decoração de hideout (%s), para todos os personagens da sua conta. Só cosmética: muda o visual do seu hideout e nada mais. Personagem > Hideout.",
+		-- Item modifier texts of the look (itemdesc_i18n_core.lua)
+		["Arc Lightning: %d%% chance on hit to arc to %d monsters nearby"] =
+			"Arc Lightning: %d%% de chance ao acertar de saltar para %d monstros próximos",
+		["Adds %d%% of Bow Damage as Earth"] =
+			"Adiciona %d%% do dano do arco como terra",
+		["Adds %d%% of Bow Damage as Energy"] =
+			"Adiciona %d%% do dano do arco como energia",
+		["Adds %d%% of Bow Damage as Fire"] =
+			"Adiciona %d%% do dano do arco como fogo",
+		["Adds %d%% of Bow Damage as Ice"] =
+			"Adiciona %d%% do dano do arco como gelo",
+		["Attack Speed +%d%%"] =
+			"Velocidade de ataque +%d%%",
+		["Chance to Bleed +%d%%"] =
+			"Chance de sangrar +%d%%",
+		["Block Chance +%d%%"] =
+			"Chance de bloqueio +%d%%",
+		["Bloodrush: each kill adds %d%% damage (%d stacks, %d s)"] =
+			"Bloodrush: cada morte soma %d%% de dano (%d acúmulos, %d s)",
+		["Damage to Elites and Bosses +%d%%"] =
+			"Dano contra elites e chefes +%d%%",
+		["Critical Strike Chance with Bows +%d%%"] =
+			"Chance de acerto crítico com arcos +%d%%",
+		["Distance Fighting +%d"] =
+			"Combate à distância +%d",
+		["Attack Speed with Bows +%d%%"] =
+			"Velocidade de ataque com arcos +%d%%",
+		["Cooldown Reduction +%d%%"] =
+			"Redução de recarga +%d%%",
+		["Chance to Chill +%d%%"] =
+			"Chance de congelar +%d%%",
+		["Crimson Burst: %d%% chance on hit to heal %d%% of your health"] =
+			"Crimson Burst: %d%% de chance ao acertar de curar %d%% da sua vida",
+		["Critical Echo: %d%% chance on a critical hit to strike again"] =
+			"Critical Echo: %d%% de chance em um acerto crítico de atacar de novo",
+		["Death Blast: %d%% chance on kill to explode"] =
+			"Death Blast: %d%% de chance ao matar de explodir",
+		["Dodge +%d%%"] =
+			"Esquiva +%d%%",
+		["Damage over Time +%d%%"] =
+			"Dano ao longo do tempo +%d%%",
+		["Echo Shot: %d%% chance on a ranged hit to shoot again"] =
+			"Echo Shot: %d%% de chance em um acerto à distância de atirar de novo",
+		["Elemental Penetration +%d%%"] =
+			"Penetração elemental +%d%%",
+		["Ember Step: %d%% chance when hit hard to blink away in flames"] =
+			"Ember Step: %d%% de chance, ao levar um golpe forte, de se teleportar em chamas",
+		["Maximum Energy Shield +%d"] =
+			"Escudo de energia máximo +%d",
+		["Maximum Energy Shield +%d%%"] =
+			"Escudo de energia máximo +%d%%",
+		["Faster Energy Shield Recharge +%d%%"] =
+			"Recarga mais rápida do escudo de energia +%d%%",
+		["Executes Monsters below %d%% Health"] =
+			"Executa monstros com menos de %d%% de vida",
+		["Experience +%d%%"] =
+			"Experiência +%d%%",
+		["Glacial Ward: %d%% chance when you dodge or block for a frost nova"] =
+			"Glacial Ward: %d%% de chance, ao esquivar ou bloquear, de soltar uma nova de gelo",
+		["Treasure Goblin Chance +%d%%"] =
+			"Chance de Treasure Goblin +%d%%",
+		["Gold Find +%d%%"] =
+			"Achado de ouro +%d%%",
+		["Healing Done +%d%%"] =
+			"Cura realizada +%d%%",
+		["Hunter's Rush: %d%% chance on kill for haste (%d s)"] =
+			"Hunter's Rush: %d%% de chance ao matar de ganhar pressa (%d s)",
+		["Chance to Ignite +%d%%"] =
+			"Chance de incendiar +%d%%",
+		["Item Find +%d%%"] =
+			"Achado de itens +%d%%",
+		["Last Breath: a lethal hit leaves you at %d%% health (once per %d minutes)"] =
+			"Last Breath: um golpe letal deixa você com %d%% de vida (uma vez a cada %d minutos)",
+		["Health on Hit +%d"] =
+			"Vida ao acertar +%d",
+		["Life on Kill +%d"] =
+			"Vida ao matar +%d",
+		["Mana Cost Reduction +%d%%"] =
+			"Redução de custo de mana +%d%%",
+		["Mana on Hit +%d"] =
+			"Mana ao acertar +%d",
+		["Mana on Kill +%d"] =
+			"Mana ao matar +%d",
+		["Damage Taken from Monsters -%d%%"] =
+			"Dano sofrido de monstros -%d%%",
+		["Movement Speed +%d%%"] =
+			"Velocidade de movimento +%d%%",
+		["Extra Projectile Chance +%d%%"] =
+			"Chance de projétil extra +%d%%",
+		["Physical Penetration +%d%%"] =
+			"Penetração física +%d%%",
+		["Chance to Poison +%d%%"] =
+			"Chance de envenenar +%d%%",
+		["Rarity Find +%d%%"] =
+			"Achado de raridade +%d%%",
+		["Reflect Damage +%d%%"] =
+			"Dano refletido +%d%%",
+		["Health Regeneration +%d per Second"] =
+			"Regeneração de vida +%d por segundo",
+		["Shatter Splash: killing blows burst for %d%%, shared by the monsters nearby"] =
+			"Shatter Splash: golpes fatais explodem em %d%%, dividido entre os monstros próximos",
+		["Chance to Shock +%d%%"] =
+			"Chance de eletrizar +%d%%",
+		["Smoldering Aura: while you fight, monsters within %d sqm take %d fire damage per second"] =
+			"Smoldering Aura: enquanto você luta, monstros a até %d sqm sofrem %d de dano de fogo por segundo",
+		["Thorns +%d"] =
+			"Espinhos +%d",
+		["Physical +%d%%"] =
+			"Físico +%d%%",
+		["Physical +%d%% dmg"] =
+			"Físico +%d%% de dano",
+		["Energy +%d%%"] =
+			"Energia +%d%%",
+		["Energy +%d%% dmg"] =
+			"Energia +%d%% de dano",
+		["Earth +%d%%"] =
+			"Terra +%d%%",
+		["Earth +%d%% dmg"] =
+			"Terra +%d%% de dano",
+		["Fire +%d%%"] =
+			"Fogo +%d%%",
+		["Fire +%d%% dmg"] =
+			"Fogo +%d%% de dano",
+		["Drown +%d%%"] =
+			"Afogamento +%d%%",
+		["Drown +%d%% dmg"] =
+			"Afogamento +%d%% de dano",
+		["Ice +%d%%"] =
+			"Gelo +%d%%",
+		["Ice +%d%% dmg"] =
+			"Gelo +%d%% de dano",
+		["Holy +%d%%"] =
+			"Sagrado +%d%%",
+		["Holy +%d%% dmg"] =
+			"Sagrado +%d%% de dano",
+		["Death +%d%%"] =
+			"Morte +%d%%",
+		["Death +%d%% dmg"] =
+			"Morte +%d%% de dano",
+		["Water +%d%%"] =
+			"Água +%d%%",
+		["Water +%d%% dmg"] =
+			"Água +%d%% de dano",
+		["Arcane +%d%%"] =
+			"Arcano +%d%%",
+		["Arcane +%d%% dmg"] =
+			"Arcano +%d%% de dano",
+		["Fist +%d"] =
+			"Punho +%d",
+		["Melee +%d"] =
+			"Corpo a corpo +%d",
+		["Ranged +%d"] =
+			"À distância +%d",
+		["Shielding +%d"] =
+			"Escudo +%d",
+		["Fishing +%d"] =
+			"Pesca +%d",
+		["Crafting +%d"] =
+			"Criação +%d",
+		["Woodcutting +%d"] =
+			"Lenhador +%d",
+		["Mining +%d"] =
+			"Mineração +%d",
+		["Herbalism +%d"] =
+			"Herbalismo +%d",
+		["Armorsmithing +%d"] =
+			"Forja de armaduras +%d",
+		["Weaponsmithing +%d"] =
+			"Forja de armas +%d",
+		["Jewelsmithing +%d"] =
+			"Joalheria +%d",
+		["Magic +%d"] =
+			"Magia +%d",
+		["Critical Chance +%d%%, Critical Hit +%d%%"] =
+			"Chance crítica +%d%%, acerto crítico +%d%%",
+		["Mana Chance +%d%%, Mana Amount +%d%%"] =
+			"Chance de mana +%d%%, quantidade de mana +%d%%",
+		["Life Chance +%d%%, Life Amount +%d%%"] =
+			"Chance de vida +%d%%, quantidade de vida +%d%%",
+		-- Item descriptions set by scripts (itemdesc_i18n.lua), crafted item lines, hideout, uber, guild, tower
+		["Item Level: %d"] =
+			"Nível do item: %d",
+		["Quality: +%d%%"] =
+			"Qualidade: +%d%%",
+		["Ruined"] =
+			"Arruinado",
+		["Corrupted"] =
+			"Corrompido",
+		["Prefixes:"] =
+			"Prefixos:",
+		["Suffixes:"] =
+			"Sufixos:",
+		["Corrupted implicit:"] =
+			"Implícito corrompido:",
+		[", bound"] =
+			", vinculado",
+		["The depot of your home town."] =
+			"O depot da sua cidade natal.",
+		["This depot cannot open here (the server lacks engine patch 0017). Use a town depot."] =
+			"Este depot não abre aqui (o servidor não tem o engine patch 0017). Use o depot de uma cidade.",
+		["The way back to where you came from."] =
+			"O caminho de volta para de onde você veio.",
+		["Your supply stash. Use it to open the stash window."] =
+			"Seu supply stash. Use para abrir a janela do stash.",
+		["The waystone device of your hideout. Use it to open the waystone window."] =
+			"O dispositivo de waystone do seu hideout. Use para abrir a janela das waystones.",
+		["A trophy of %s: %s, slain once."] =
+			"Um troféu de %s: %s, derrotado uma vez.",
+		["A trophy of %s: %s, slain %d times."] =
+			"Um troféu de %s: %s, derrotado %d vezes.",
+		["Use it to return to your temple. Not usable in combat, dungeons, the tower or the world boss arena. 1 use left."] =
+			"Use para voltar ao seu templo. Não pode ser usado em combate, em dungeons, na torre nem na arena do world boss. Resta 1 uso.",
+		["Use it to return to your temple. Not usable in combat, dungeons, the tower or the world boss arena. %d uses left."] =
+			"Use para voltar ao seu templo. Não pode ser usado em combate, em dungeons, na torre nem na arena do world boss. Restam %d usos.",
+		["Use it to read the lesson again."] =
+			"Use para ler a lição de novo.",
+		["It opens the arena of %s. Use it in a protection zone; your party within %d sqm comes along (up to %d). Level %d, %d minutes, shared lives."] =
+			"Abre a arena de %s. Use em uma zona de proteção; a sua party a até %d sqm vai junto (até %d). Nível %d, %d minutos, vidas compartilhadas.",
+		["Torn from %s. One relic of each Ascended Omen binds a Cinderheart Sigil: use one while you carry all three."] =
+			"Arrancado de %s. Uma relíquia de cada Ascended Omen forma um Cinderheart Sigil: use uma enquanto carrega as três.",
+		["A clot of the red night that would not die. Four of them bind an Ascended Sigil of the Bloodmoon."] =
+			"Um coágulo da noite vermelha que não quis morrer. Quatro deles formam um Ascended Sigil of the Bloodmoon.",
+		["A splinter of an empty crown, still cold. Four of them bind an Ascended Sigil of the Hollow Crown."] =
+			"Uma lasca de uma coroa vazia, ainda fria. Quatro deles formam um Ascended Sigil of the Hollow Crown.",
+		["A shard that hums with trapped thunder. Four of them bind an Ascended Sigil of the Storm."] =
+			"Um fragmento que zumbe com trovão preso. Quatro deles formam um Ascended Sigil of the Storm.",
+		["It burns with a name that should have stayed dead. Use it in a protection zone."] =
+			"Queima com um nome que deveria ter ficado morto. Use em uma zona de proteção.",
+		["Torn from an Ascended Omen. Three different relics wake the Cinderheart."] =
+			"Arrancado de um Ascended Omen. Três relíquias diferentes despertam o Cinderheart.",
+		["Infinity Tower Season %d, place %d."] =
+			"Temporada %d da Infinity Tower, %dº lugar.",
+		["1st"] =
+			"1º",
+		["2nd"] =
+			"2º",
+		["3rd"] =
+			"3º",
+		["%s %s (floor %d)"] =
+			"%s %s (andar %d)",
+		["%s, %s"] =
+			"%s, %s",
+		["Infinity Tower Season %d has ended: %s place with floor %d. Your %s is in your inbox."] =
+			"A Temporada %d da Infinity Tower terminou: %s lugar com o andar %d. Seu %s está na sua caixa de entrada.",
+		["Infinity Tower Season %d has ended. Top Rank Rewards: %s. Season %d begins."] =
+			"A Temporada %d da Infinity Tower terminou. Recompensas dos melhores: %s. A Temporada %d começa.",
+		["Infinity Tower Season %d has ended. Season %d begins."] =
+			"A Temporada %d da Infinity Tower terminou. A Temporada %d começa.",
+		["Guild level %d"] =
+			"Nível de guild %d",
+		["The pocket closes."] =
+			"O pocket se fecha.",
+		["Use it to travel to your guild's hall (a guild without one: your temple). One use."] =
+			"Use para viajar ao hall da sua guild (sem hall: o seu templo). Um uso.",
+		["The banner of %s."] =
+			"O estandarte de %s.",
+		["Teleport to %s (level %d+)."] =
+			"Teleporte para %s (nível %d+).",
+		["The guild's crafting bench. Use it to craft."] =
+			"A crafting bench da guild. Use para criar itens.",
+		["The guild depot. Drop an item on it to store it for the guild; use it to see what is inside."] =
+			"O depot da guild. Solte um item nele para guardar para a guild; use para ver o que há dentro.",
+		["Guild Siege wins: %d of %d."] =
+			"Vitórias em Guild Siege: %d de %d.",
+		["World bosses: %d victories shared by the members."] =
+			"World bosses: %d vitórias compartilhadas pelos membros.",
+		["The Ashen Sepulchre: %d raid trophies."] =
+			"The Ashen Sepulchre: %d troféus de raid.",
+		["Records: highest rift tier %d, %d rifts sealed, %d bounties, %d invasions defended."] =
+			"Recordes: maior tier de rift %d, %d rifts selados, %d bounties, %d invasões defendidas.",
+		["Guild level %d (%s GXP)."] =
+			"Nível de guild %d (%s GXP).",
+		["Top contributors: %s."] =
+			"Maiores contribuintes: %s.",
+		["The %s of %s: Gorvath the Banner-Eater slain once."] =
+			"%s de %s: Gorvath the Banner-Eater derrotado uma vez.",
+		["The %s of %s: Gorvath the Banner-Eater slain once (next tier at %d)."] =
+			"%s de %s: Gorvath the Banner-Eater derrotado uma vez (próximo nível em %d).",
+		["The %s of %s: Gorvath the Banner-Eater slain %d times."] =
+			"%s de %s: Gorvath the Banner-Eater derrotado %d vezes.",
+		["The %s of %s: Gorvath the Banner-Eater slain %d times (next tier at %d)."] =
+			"%s de %s: Gorvath the Banner-Eater derrotado %d vezes (próximo nível em %d).",
+		["Gorvath the Banner-Eater: slain once."] =
+			"Gorvath the Banner-Eater: derrotado uma vez.",
+		["Gorvath the Banner-Eater: slain %d times."] =
+			"Gorvath the Banner-Eater: derrotado %d vezes.",
+		["The Summoning Stone. Feed it embers (gold and materials) during the week; when it is full, the guild leader or a vice-leader wakes the guild boss here. Use it to see the fuel."] =
+			"A Summoning Stone. Alimente-a com brasas (ouro e materiais) durante a semana; quando estiver cheia, o líder ou um vice-líder da guild desperta aqui o guild boss. Use para ver o combustível.",
+		["The Great Brazier. Gold given to it feeds the community goal."] =
+			"O Great Brazier. O ouro dado a ele alimenta a meta da comunidade.",
+		["Bought with Sepulchre Marks."] =
+			"Comprado com Sepulchre Marks.",
+		["Issued by the quartermaster of %s."] =
+			"Emitido pelo intendente de %s.",
+		-- Mentor info (mentor.lua /mentor)
+		["Mentor: %d marks (%d earned, %d this month), %d graduates, %d apprentices, accepting apprentices."] =
+			"Mentor: %d marcas (%d ganhas, %d neste mês), %d formados, %d aprendizes, aceitando aprendizes.",
+		["Mentor: %d marks (%d earned, %d this month), %d graduates, %d apprentices, not accepting apprentices."] =
+			"Mentor: %d marcas (%d ganhas, %d neste mês), %d formados, %d aprendizes, sem aceitar aprendizes.",
+		["Apprentice of %s since %s (%s), %d minutes together."] =
+			"Aprendiz de %s desde %s (%s), %d minutos juntos.",
+		["No mentor data."] = "Sem dados de mentor.",
+		-- Community goal window and buff texts (community.lua, community_core.lua)
+		["World modifier of the week"] =
+			"Modificador mundial da semana",
+		["Everything the world does this week feeds the Great Brazier. Each stage lights a blessing for everyone."] =
+			"Tudo o que o mundo faz nesta semana alimenta o Great Brazier. Cada etapa acende uma bênção para todos.",
+		["Monsters slain"] =
+			"Monstros mortos",
+		["Rifts sealed"] =
+			"Rifts selados",
+		["Invasion waves repelled"] =
+			"Ondas de invasão repelidas",
+		["World bosses slain"] =
+			"World bosses mortos",
+		["Crafting orbs used"] =
+			"Orbs de crafting usados",
+		["Gold given to the Brazier"] =
+			"Ouro dado ao Brazier",
+		["+10%% loot"] =
+			"+10%% de loot",
+		["+5%% key chance"] =
+			"+5%% de chance de key",
+		["+20%% reputation"] =
+			"+20%% de reputação",
+		["+10%% experience"] =
+			"+10%% de experiência",
 	},
 }

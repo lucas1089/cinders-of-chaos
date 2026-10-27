@@ -519,7 +519,7 @@ local function removePlayer(run, id, mode)
 		if mode ~= "logout" and HUD and Chaos.send then
 			local running = run.state == "running"
 			Chaos.send(player, HUD, "end", {result = running and "left" or run.state,
-				text = running and "You left the pocket." or (run.endText or "")})
+				text = Chaos.tx(player, running and "You left the pocket." or (run.endText or ""))})
 		end
 		PB.push(player)
 	end

@@ -170,6 +170,23 @@ local function answer(player, data)
 						end
 					end
 				end
+				-- the flavour text in the player's language: a unique's generated pt-BR text (ChaosUniqueDescPt, from
+				-- unique_flavor_pt.tsv), else the sentences the pt-BR table knows (itemdesc_i18n_core.lua)
+				if type(tip) == "table" and type(tip.desc) == "string" and Chaos.lang and Chaos.tx and Chaos.lang(player) ~= "en" then
+					if not ChaosItemDescI18n then
+						dofile("data/scripts/chaos/itemdesc_i18n_core.lua")
+					end
+					local spec = ChaosUniqueSpecs and ChaosUniqueSpecs[item:getId()]
+					local ptd = spec and ChaosUniqueDescPt and ChaosUniqueDescPt[spec.description]
+					local okD, text = pcall(function()
+						return ptd or ChaosItemDescI18n.translate(tip.desc, function(t)
+							return Chaos.tx(player, t)
+						end, ChaosUniqueDescPt)
+					end)
+					if okD and type(text) == "string" then
+						tip.desc = text
+					end
+				end
 				-- the display scale of the item's level requirement (display_scale_core.lua DS.itemTip)
 				row.tip = (ChaosDisplayScale and ChaosDisplayScale.itemTip and ChaosDisplayScale.itemTip(tip) or tip)
 				-- where it comes from (itemfinder.lua F.brief): the first two sources, the expected effort, a token price

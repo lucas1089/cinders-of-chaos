@@ -229,14 +229,14 @@ local function trophyTexts(gid)
 		names[#names + 1] = string.format("%s (%s)", t.name, C.money(t.n))
 	end
 	return {
-		string.format("Guild Siege: %d win%s in %d siege%s.", s.siegeWins or 0, (s.siegeWins or 0) == 1 and "" or "s",
-			s.sieges or 0, (s.sieges or 0) == 1 and "" or "s"),
-		string.format("World bosses: %d victories shared by the members.%s", s.worldboss or 0,
-			(s.raidClears or 0) > 0 and string.format(" The Ashen Sepulchre: %d raid trophies.", s.raidClears) or ""),
+		-- the statue texts are translated when an item is looked at (itemdesc_i18n.lua): no plural suffixes
+		string.format("Guild Siege wins: %d of %d.", s.siegeWins or 0, s.sieges or 0),
+		string.format("World bosses: %d victories shared by the members.", s.worldboss or 0) ..
+			((s.raidClears or 0) > 0 and string.format(" The Ashen Sepulchre: %d raid trophies.", s.raidClears) or ""),
 		string.format("Records: highest rift tier %d, %d rifts sealed, %d bounties, %d invasions defended.", s.riftBest or 0,
 			s.rift or 0, s.bounty or 0, s.invasion or 0),
-		string.format("Guild level %d (%s GXP). Top contributors: %s.", r.level, C.money(r.xp),
-			#names > 0 and table.concat(names, ", ") or "none yet")
+		string.format("Guild level %d (%s GXP).", r.level, C.money(r.xp)) ..
+			(#names > 0 and string.format(" Top contributors: %s.", table.concat(names, ", ")) or "")
 	}
 end
 

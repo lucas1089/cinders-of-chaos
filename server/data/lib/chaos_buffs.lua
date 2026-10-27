@@ -437,20 +437,33 @@ function S.templarAura(player, now, def)
 	local pct = math.floor((aura.reduction or 0) * 100 + 0.5)
 	local own = aura.source == player:getId()
 	local source = not own and Player and Player(aura.source) or nil
-	local who = own and "your" or (source and (source:getName() .. "'s") or "a Templar's")
+	-- texts per language (Chaos.t keeps the English pattern when there is no translation or no i18n)
+	local tr = function(key, ...)
+		if Chaos and Chaos.t then
+			return Chaos.t(player, key, ...)
+		end
+		return string.format(key, ...)
+	end
 	local kind = "Templar"
 	local vocOf = own and player or source
 	if vocOf and vocOf.getVocation and vocOf:getVocation() then
 		kind = AURA_NAMES[vocOf:getVocation():getId()] or kind
 	end
 	local it = item(def, nil, pct)
-	it.name = clip(own and ("Your " .. kind .. " Aura") or ((source and source:getName() or "A Templar") .. "'s Aura"), B.cfg.maxName)
-	local text = string.format("Under %s %s aura: %d%% less damage taken", who, kind, pct)
+	it.name = clip(own and tr("Your %s Aura", kind) or tr("%s's Aura", source and source:getName() or "A Templar"), B.cfg.maxName)
+	local text
+	if own then
+		text = tr("Under your %s aura: %d%% less damage taken", kind, pct)
+	elseif source then
+		text = tr("Under %s's %s aura: %d%% less damage taken", source:getName(), kind, pct)
+	else
+		text = tr("Under a Templar's %s aura: %d%% less damage taken", kind, pct)
+	end
 	if (aura.regenPct or 0) > 0 then
-		text = text .. string.format(", %.1f%% of your maximum health back every second", aura.regenPct * 100)
+		text = text .. tr(", %.1f%% of your maximum health back every second", aura.regenPct * 100)
 	end
 	if aura.bastion then
-		text = text .. " (Bastion)"
+		text = text .. tr(" (Bastion)")
 	end
 	it.desc = clip(text .. ".", B.cfg.maxDesc)
 	return {it}

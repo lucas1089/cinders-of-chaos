@@ -630,7 +630,10 @@ local function durationText(ms)
 end
 
 -- short generated description of a stock spell
-function Book.describe(spell, info, conjureName)
+function Book.describe(spell, info, conjureName, lang)
+	if lang and lang ~= "en" and ChaosI18n and ChaosI18n.text then
+		return Book.describeIn(spell, info, conjureName, lang)
+	end
 	local kind, target = spell.type, spell.target
 	local el = info.damage and info.damage[1] and elementWord(info.damage[1])
 	if kind == "conjure" then
@@ -707,6 +710,109 @@ function Book.describe(spell, info, conjureName)
 		return kind == "buff" and "Support spell." or "Utility spell."
 	end
 	return "Utility spell."
+end
+
+-- The same description in another language (server/README.md "Server texts in pt-BR (Chaos.t)"): every sentence is a key of
+-- i18n_strings.lua; the element, area shape, condition, stat and cure words are keys with a "[kind] " prefix (their
+-- translation carries the preposition: "fire" -> "de fogo"). A word without an entry stays English.
+function Book.describeIn(spell, info, conjureName, lang)
+	local function T(key, ...)
+		return ChaosI18n.text(lang, key, ...)
+	end
+	local function word(kind, w)
+		local key = "[" .. kind .. "] " .. w
+		local out = T(key)
+		return out ~= key and out or w
+	end
+	local function list(items, kind, max)
+		local words = {}
+		for i = 1, math.min(max or 2, #items) do
+			words[i] = word(kind, items[i])
+		end
+		if #words <= 1 then
+			return words[1] or ""
+		end
+		local last = table.remove(words)
+		return table.concat(words, ", ") .. " " .. word("join", "and") .. " " .. last
+	end
+	local kind, target = spell.type, spell.target
+	local el = info.damage and info.damage[1] and word("element", elementWord(info.damage[1]))
+	if kind == "conjure" then
+		if conjureName and conjureName ~= "" then
+			local count = info.conjureCount or 1
+			if count > 1 then
+				return T("Conjures %d x '%s'.", count, conjureName)
+			end
+			return T("Conjures '%s'.", conjureName)
+		end
+		return T("Conjures an item.")
+	elseif kind == "summon" then
+		return T("Summons a creature to fight for you.")
+	end
+	if info.createsField then
+		local multi = spell.area and #spell.area > 1 and #spell.area[1] > 1
+		if el then
+			if multi then
+				return T("Creates %s fields around the target.", el)
+			elseif spell.area then
+				return T("Creates a wall of %s fields.", el)
+			end
+			return T("Creates a %s field on the target tile.", el)
+		end
+		if multi then
+			return T("Creates magic barriers around the target.")
+		elseif spell.area then
+			return T("Creates a wall of magic barriers.")
+		end
+		return T("Creates a magic barrier on the target tile.")
+	end
+	if kind == "damage" then
+		if target == "single" then
+			return T("Single-target %s damage.", el)
+		elseif target == "front" then
+			return capitalize(T("%s damage in front of you (%s).", el, word("shape", areaShape(spell.area))))
+		elseif target == "area" and spell.center == "caster" then
+			return capitalize(T("%s damage around you.", el))
+		elseif target == "area" then
+			return T("Area %s damage at the target.", el)
+		end
+		return capitalize(T("%s damage.", el))
+	elseif kind == "heal" then
+		local base = target == "single" and "Heals the target" or ((target == "area" or target == "front") and "Heals you and allies around you" or "Heals you")
+		if #(info.cures or {}) > 0 then
+			return T(base .. " and cures %s.", list(info.cures, "cure"))
+		end
+		return T(base .. ".")
+	elseif kind == "buff" or kind == "utility" then
+		local lasts = durationText(info.durationMs)
+		for _, cond in ipairs(info.grants or {}) do
+			if CONDITION_TEXT[cond] and not (cond == "PARALYZE" and target == "self") then
+				local text = T(CONDITION_TEXT[cond])
+				if cond == "ATTRIBUTES" and #(info.stats or {}) > 0 then
+					text = T("Raises %s of %s.", list(info.stats, "stat"),
+						word("target", info.party and "you and your party members" or "you"))
+				elseif info.party and cond == "HASTE" then
+					text = T("Increases the speed of you and your party members.")
+				end
+				if lasts then
+					text = T("%s for %s.", (text:gsub("%.$", "")), lasts)
+				end
+				return text
+			end
+		end
+		local fallback = Book.FALLBACK_TEXT[(info.scriptFile or ""):match("([^/]+)$") or ""]
+		if fallback then
+			return T(fallback)
+		end
+		if #(info.cures or {}) > 0 then
+			if info.cures[1] == "invisibility" then
+				return T("Reveals invisible creatures around you.")
+			end
+			return T("Cures %s.", list(info.cures, "cure"))
+		end
+		return T(kind == "buff" and "Support spell." or "Utility spell.")
+	end
+	return T("Utility spell.")
 end
 
 -- ------------------------------------------------------------------ building the list
@@ -791,6 +897,10 @@ local function itemClientId(id)
 	return nil
 end
 
+-- what a generated description was made from, per spell (not part of the spell: the list is encoded as it is), to
+-- write it again in another language
+Book.descSource = setmetatable({}, {__mode = "k"})
+
 -- One client spell from an XML entry; `scriptCache` maps script path -> analyzeScript result.
 function Book.buildSpell(entry, scriptCache)
 	local a = entry.attrs
@@ -865,6 +975,7 @@ function Book.buildSpell(entry, scriptCache)
 		spell.description = info.description
 	else
 		spell.description = Book.describe(spell, info, itemName(info.conjureItem))
+		Book.descSource[spell] = {info = info, conjureName = itemName(info.conjureItem)}
 	end
 
 	vocationIds = vocationIds or loadVocations()
@@ -976,20 +1087,47 @@ end
 -- is parsed again (`/spells reload`)
 local packCache = {}
 
+-- the list for a player reading `lang` (English: the parsed list as it is). Another language: the descriptions
+-- (generated ones from their parts, the Chaos spells' own texts as keys) and the scaling text; the signature differs
+-- with the texts, so a client that changes language fetches the list again
+local function localized(list, base, lang)
+	for i, spell in ipairs(list) do
+		local orig = base[i]
+		local src = orig and Book.descSource[orig]
+		if src then
+			spell.description = clean(Book.describe(orig, src.info, src.conjureName, lang))
+		elseif type(orig and orig.description) == "string" then
+			spell.description = clean(ChaosI18n.translate(lang, orig.description))
+		end
+		if type(orig and orig.scaling) == "string" then
+			spell.scaling = ChaosI18n.text(lang, orig.scaling)
+		end
+	end
+	return list
+end
+
 local function packedFor(player)
 	local base = Book.get()
-	local hit = packCache.all
+	local lang = player and Chaos.lang and Chaos.lang(player) or "en"
+	if not (ChaosI18n and ChaosI18n.text) then
+		lang = "en"
+	end
+	local cacheKey = lang == "en" and "all" or lang
+	local hit = packCache[cacheKey]
 	if hit and hit.source == base then
 		return hit
 	end
 	local list = clean(base)
+	if lang ~= "en" then
+		list = localized(list, base, lang)
+	end
 	local chunks = Book.chunk(list, Book.chunkBytes, json.encode)
 	local parts = {}
 	for i, chunk in ipairs(chunks) do
 		parts[i] = json.encode(chunk)
 	end
 	hit = {source = base, total = #list, chunks = chunks, sig = Book.checksum(table.concat(parts, "\n"))}
-	packCache.all = hit
+	packCache[cacheKey] = hit
 	return hit
 end
 
@@ -1100,7 +1238,7 @@ function Book.spellText(player)
 	local text, prev = {}, nil
 	for _, spell in ipairs(spells) do
 		if spell.level ~= prev then
-			text[#text + 1] = (prev and "\n" or "") .. "Spells for Level " .. spell.level .. "\n"
+			text[#text + 1] = (prev and "\n" or "") .. (Chaos.t and Chaos.t(player, "Spells for Level %d", spell.level) or ("Spells for Level " .. spell.level)) .. "\n"
 			prev = spell.level
 		end
 		text[#text + 1] = spell.words .. " - " .. spell.name .. " : " .. spell.mana .. "\n"

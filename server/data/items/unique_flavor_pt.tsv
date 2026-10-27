@@ -1,11 +1,11 @@
 # id<TAB>pt-BR text of the unique description before the passive line was added, as a format string (%s = a number).
 # Source of the pt-BR Codex texts of the uniques (tools/gen_unique_specs.py writes them into pt_br.lua). Empty: no translation yet.
 2123	A última brasa de um soberano morto, engastada num anel. Nunca esfria. (Requer nível %s.)
-2124	
+2124	O olho de uma efígie, engastado em cristal. Toda maldição que você ouve, ele ouve primeiro. (Requer nível %s.)
 2129	Um dente para cada pacto cumprido. (Requer nível %s.)
-2133	
+2133	Uma brasa do último salão, ainda pulsando. (Requer nível %s.)
 2171	A vidente viu todas as mortes, menos a sua. O olho ainda a procura. (Requer nível %s.)
-2357	
+2357	Nove portas, nove bênçãos, um anel para mostrar por elas. (Requer nível %s.)
 2402	Prata que lembra da lua. Escorrega entre as costelas como um sussurro. (Requer nível %s.)
 2403	A lâmina de um cortador de bolsas, gasta por mil golpes limpos. Os ladrões juram que duas valem mais que uma. (Requer nível %s.)
 2404	Trabalho quieto para uma tumba quieta. Pede apenas uma gêmea na outra mão. (Requer nível %s.)
@@ -18,9 +18,9 @@
 2493	Uma coroa sem nada dentro. Vista-a e ela continua vazia. (Requer nível %s.)
 2495	Revestida com o que o vazio cuspiu de volta. (Requer nível %s.)
 2496	Jurado a um mestre que não responde a ninguém acima. (Requer nível %s.) Parte do set Embers of Aranoth.
-2498	
+2498	Varkhul a usou até o fim do mundo e de volta. Ainda espera um trono. (Requer nível %s.)
 2500	Casca e couro, costurados com videira viva. (Requer nível %s.)
-2504	
+2504	Revestidas com os ossos do próprio Colosso. Rangem quando você fica parado. (Requer nível %s.)
 2646	Toda estrada termina em algum lugar. Estas ainda não acharam onde. (Requer nível %s.)
 2648	Remendada em cada estalagem entre a costa e os campos de brasa. (Requer nível %s.)
 2656	Usada por um coro que continuou cantando depois que as vozes se foram. (Requer nível %s.)
@@ -29,24 +29,24 @@
 3975	Levante-o e o fogo precisa pedir licença. (Requer nível %s.) Parte do set Embers of Aranoth.
 6391	A maré cinzenta quebrou nela por cem anos e deixou só sal. (Requer nível %s.)
 7379	Uma caveira num poste. A caveira está sorrindo, o poste não. (Requer nível %s.)
-7384	
-7402	
+7384	Temperada no nono salão da Descent; ainda brilha onde as brasas morderam. (Requer nível %s.)
+7402	Carregado para fora do salão em chamas por quem derrubou o Tirano. (Requer nível %s.)
 7404	A primeira de um par. Ela quer a outra na sua mão secundária. (Requer nível %s.)
 7418	A segunda de um par. Ela golpeia onde a Presa estava. (Requer nível %s.)
-7422	
+7422	O mangual do carcereiro quebrou todo escudo levado ao primeiro portão. Agora ele responde a você. (Requer nível %s.)
 7438	Encordoado pelos guardiões do pântano, que nunca deixam uma luz cruzar o charco sem ser vista. (Requer nível %s.)
 7462	O rei morreu, a coroa continuou queimando. (Requer nível %s.)
 7890	Ele tiquetaqueia quando ninguém escuta. Snares: mais duas minas podem ficar ativas, elas acertam %s%% mais forte e o pavio queima %s s a mais. (Requer nível %s. Linhas Ranger e Thief.)
-7891	
+7891	Elas lembram cada passo para baixo, e nenhum de volta. (Requer nível %s.)
 7894	Bordado com a mesma tempestade em fogo e em gelo. (Requer nível %s.)
 7899	Sua barra está sempre em brasa, e nunca queimada. (Requer nível %s.)
 8209	Cada alma que ela corta só alimenta a fome da sua lâmina. (Requer nível %s.)
 8601	A geada ainda dorme em sua mordida, um inverno mais velho que as brasas. (Requer nível %s.)
 8849	Um projeto de carrasco: só precisa de um disparo. (Requer nível %s.)
 8858	A corda zune antes da tempestade. Seus golpes de arco saltam para mais um inimigo com %s%% como energia (com Stormstring: mais um salto). (Requer nível %s.)
-8865	
+8865	Tecido com a cinza de toda canção de ninar que ela cantou. É quente, e não deveria ser. (Requer nível %s.)
 8881	Talhado de um gigante que entrou na própria pira e não parou. Pyre Oath: sua aura de queimadura causa %s%% a mais. (Requer nível %s.)
-8890	
+8890	Ela sussurra os nomes dos queimados, um por um, a noite toda. (Ember Descent.) (Requer nível %s.)
 8892	Chamuscada nas costuras, ainda arde em brasa quando ninguém olha. (Requer nível %s.) Parte do set Embers of Aranoth.
 8900	Cada página é um jeito diferente de queimar um dedo. (Requer nível %s. Linhas Mystic e Necromancer.)
 8925	Talhado de uma estrela moribunda; o cabo está sempre quente. (Requer nível %s.)
@@ -123,7 +123,7 @@
 27288	Pequenas presas forram as solas; melhor não perguntar por quê. (Requer nível %s.)
 27295	Placas que lembram da mão que as vestiu. A mão ainda se mexe. (Requer nível %s.)
 27390	Tecido para um corpo que já não sangra. Hollow Vessel: o escudo de energia dos itens conta %s%% a mais. (Requer nível %s. Linhas Mystic, Necromancer, Monk e Templar.)
-27403	
+27403	O juramento está gravado na pedra; a pedra ainda está quente. (Ashen Sepulchre.) (Requer nível %s.)
 27474	Sua corda foi a corda de um carrasco. Ainda se aperta sozinha. (Requer nível %s.)
 27646	Madeira de sarça que ainda faz nascer um espinho depois de cada disparo. (Requer nível %s.)
 27647	Tingidas no sangue da estrada que percorreram. (Requer nível %s.) Parte do set Embers of Aranoth.
@@ -158,7 +158,7 @@
 28114	Feitas para ficar muito tempo paradas num cadafalso frio. (Requer nível %s.)
 28115	Cada passo deixa algo para trás. Snares: mais uma armadilha pode ficar ativa, as armadilhas armam %s s mais cedo e acertam %s%% mais forte. (Requer nível %s. Linhas Ranger e Thief.)
 28125	Um anel sem frente e sem verso. (Requer nível %s.)
-28126	
+28126	Algo dentro dela ainda está vivo, e faminto. (Ember Descent.) (Requer nível %s.)
 28379	Um sol que se apagou e manteve a forma. (Requer nível %s. Linha Ranger.)
 28690	Ele se abre para um fogo muito pequeno e muito paciente. (Requer nível %s.)
 28691	Um anel de espinho trançado; fura, e depois cura. (Requer nível %s.)
@@ -166,13 +166,13 @@
 28708	Ande longe o bastante e a estrada vira cinza atrás de você. (Requer nível %s.)
 29470	O capuz que o carrasco usava para que o condenado não visse seu rosto. (Requer nível %s.)
 29471	Um diadema de vidro negro que chove faíscas ao vento. (Requer nível %s.)
-29559	
-29560	
-29561	
+29559	Chamuscado de preto na frente, intacto atrás: tudo o que estava atrás dele viveu. (Ashen Sepulchre.) (Requer nível %s.)
+29560	O visor de um carcereiro que jurou que os mortos ficariam no chão. Ficaram. (Ashen Sepulchre.) (Requer nível %s.)
+29561	A cinza enche as suas juntas e nunca cai. (Ashen Sepulchre.) (Requer nível %s.)
 29571	Uma jaula de correntes chacoalhantes para o que sobrou de uma mente. (Requer nível %s.)
 29572	O último capítulo não foi escrito. Ele espera que você o termine. (Requer nível %s. Linhas Mystic e Necromancer.)
-29573	
-29575	
+29573	Branca como osso e fria; os olhos por trás dela se apagam. (Ember Descent.) (Requer nível %s.)
+29575	Linho de sepultura preso por um cordão de cabelo. (Ember Descent.) (Requer nível %s.)
 29866	Ele tece a última luz do dia numa mortalha. (Requer nível %s.)
 29868	Vista-o e os vivos deixam de conseguir encontrar você. (Requer nível %s.)
 36659	Um santo entrou na pira e não parou; só a mão voltou. (Requer nível %s, apenas Monks.)
