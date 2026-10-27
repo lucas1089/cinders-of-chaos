@@ -645,7 +645,8 @@ function T.build(item, opts)
 		end
 	end
 	if type(desc) == "string" and desc ~= "" then
-		tip.desc = clip(desc, 300)
+		-- a unique's description carries its passive line (O278): room for it
+		tip.desc = clip(desc, unique and 600 or 300)
 	end
 
 	local locked = C and C.customNumber(item, "chaos_locked") or 0

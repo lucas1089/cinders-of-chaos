@@ -3310,6 +3310,235 @@ Before this the uniques stopped at level 1000 with flat stats, and the first one
   and cap, ChaosMakeUnique writes T8 modifiers the totals count, levels, rules, one power per endgame unique, drop
   sources), `tests/unique_equip_test.lua` (an empty class list).
 
+## Unique passives (`unique_passives*.lua`, O278, 2026-10-27)
+Owner: "nos itens unique, coloque passivas build changers. muito boas mesmo". Every one of the 183 uniques has ONE passive
+that changes how a build plays: a conversion, a trigger, a rule with a price. The rules are in `unique_passives_core.lua`
+(pure, tested), the numbers in `unique_passives_config.lua` (`families` = defaults, `passives[item id]` = the item's own
+numbers, `lv` checked against the item's level), the tooltip lines in `unique_passives_text.lua`, the engine glue in
+`unique_passives.lua`. The item keeps its name, flavor text, stats, class rule and archetype line; the passive is one more
+sentence in its description (`tools/gen_unique_specs.py` renders it from the config through `tools/dump_unique_passives.lua`,
+so a number changed in the config changes the item text, the Codex and the wiki after the generators run).
+- **Who gets it.** A passive works while the unique is worn as a real copy (custom attribute `chaos_unique`) and only for the
+  class lines it names (`lines`); the item stays wearable for every class its equip rule allows, the passive sleeps for the
+  others (so `gear_coverage` is unchanged). At most 5 passives are active, one per family: a character wearing more picks
+  by item level. Equipment is read at login, on every inventory move and every 3 s.
+- **Families (22).** convert, lowlife, overflow, opener, focus, statscale, critrule, crowd (damage rules with a price);
+  extra, nova, riposte, spread (hits that start from a hit, a kill or a hurt); ward, hitcap, immunity, panic, manashield,
+  feast, mend (defence, each with a price such as less healing received); stacks, mark (a state you build);
+  minionPact (Necromancer). Every number of a family is in the config comment.
+- **Safety.** The product of the damage multipliers is clamped to 0.5-1.8, the damage taken to 0.4-1.5, the bonus against
+  players is 1/3. Condition ticks and procs get no multiplier and start no passive (guard flag plus `ChaosKeystones.depth` /
+  `ChaosSpellFactor.depth` / `ChaosPowers.depth`, the same guard as the legendary powers). Every proc has an internal
+  cooldown; a price in health never takes the character under `minHealth`; extra hits only hit wild monsters (no summon, no
+  hunt-room display, never a player); a ward is capped (25% of the health at most, 4% per hit), fades, and is not an item;
+  heal per kill is capped per second; a spread is bounded (targets, ticks, 120 monsters remembered). No passive creates
+  gold or items. The unique's drop and sell values are untouched, so the economy does not change.
+- **Necromancer.** `ChaosNecro.minionFactor` is wrapped once (minion hit and health); the "own spells deal less" price is
+  taken in the damage event, so it does not reach the spell scripts' own Lua state (their `ownSpellFactor`).
+- **Languages.** The generated description is English. The pt-BR Codex lines are generated into `pt_br.lua` (between the
+  GENERATED UNIQUE DESCRIPTIONS markers) from `data/items/unique_flavor_pt.tsv` (the pt-BR flavor of each description) plus the
+  pt-BR passive line; the in-game tooltip swaps the passive line for pt-BR on the server (`item_tooltip.lua`). The passive
+  names stay English (proper nouns). The 18 uniques without a pt-BR flavor line show the English flavor with the pt-BR passive.
+- **Balance.** `tools/unique_passives_model.lua --check` (luajit and lua5.3): expected power gain = damage dealt x
+  survivability in a typical hunt (assumptions at the top of the file). Each passive: 1.03-1.55 on every line it works for;
+  the best five of a line in a level band: 1.35-3.2 (limits: `model.*` in the config); every line has 3+ passives per band.
+  `--list` prints every passive, no flag the table per class line and band, `--tune` the numbers that bring an outlier into range.
+  Average gain of one passive by class line: warrior 1.12-1.20, ranger 1.14-1.30, mystic 1.14-1.25, thief 1.10-1.20, monk
+  1.11-1.19, necromancer 1.13-1.24, templar 1.12-1.17. The model is an estimate, not a measurement: nothing here was run live.
+- **Bug found and fixed on the way.** `archetypes.lua` read the worn archetype uniques only at login and on inventory moves;
+  an item that left its slot another way kept its effect. The think event now checks them again.
+- Tests: `tests/unique_passives_test.lua` (every unique has a passive and its text matches the config, pt-BR numbers in the
+  English order, 3+ passives per class line and band, per family the trigger, cap or cooldown, price and no self-trigger, the
+  glue against a mocked engine). Install: Lua, XML-free; copy `data/scripts/chaos/unique_passives*.lua` and the regenerated
+  `data/lib/chaos_unique_specs.lua`; no new install step, no engine patch, no new opcode or storage key. Existing unique copies
+  work at once; the tooltip and the Codex read the spec, only the plain look text of a copy made before keeps the old sentence.
+
+| Level | Unique | Passive | Family | Classes |
+|---|---|---|---|---|
+| 6 | Fletcher's First Sheath | First Quarry | opener | Ranger |
+| 10 | Cutpurse's Sliver | Light Fingers | stacks | Thief, Monk |
+| 10 | Cinder-Wick Wand | Wick Surplus | overflow | Mystic, Necromancer |
+| 12 | Fenwatch Longbow | Fen Warden's Mark | mark | Ranger |
+| 12 | Primer of Small Fires | Small Fires | nova | Mystic, Necromancer |
+| 12 | Ashen Pilgrim's Blade | Pilgrim's Resolve | lowlife | Warrior, Monk, Templar |
+| 14 | Hollow-Reed Quiver | Reed Whistle | extra | Ranger |
+| 14 | Vigil-Knot Wraps | Vigil Knot | ward | Monk |
+| 15 | Hatchet of the First Winter | Winter Bite | convert | Warrior, Templar |
+| 15 | Tallow-Bell Mace | Bell Toll | crowd | Monk, Templar |
+| 18 | Wanderer's Leggings | Road Rations | feast | Warrior, Ranger, Thief |
+| 20 | Hood of the Roaming Pyre | Pilgrim's Pyre | nova | Mystic, Necromancer, Templar |
+| 20 | Pathfinder's Treads | Short Ways Home | statscale | Ranger, Thief, Monk |
+| 25 | Lantern-Ward Buckler | Lantern Ward | hitcap | Warrior, Templar |
+| 25 | Band of the Second Dawn | Second Dawn | panic | all |
+| 26 | Chapel-Iron Knuckles | Door-Hinge Counter | riposte | Monk |
+| 28 | Moonlit Shiv | Silver Whisper | opener | Thief |
+| 30 | Moth-Lantern Pendant | Moth to Flame | mend | Mystic, Monk, Templar |
+| 30 | Cinder Knuckle Band | Knuckle Spark | critrule | Thief, Monk |
+| 35 | Gutter-Saint's Mail | Gutter Mercy | ward | Warrior, Monk, Templar |
+| 38 | Gravewind Quiver | Wind-Borne | crowd | Ranger |
+| 40 | Hoarfen Bow | Fen Frost | convert | Ranger |
+| 40 | Widowmaker | Widow's Patience | focus | Warrior, Thief, Monk |
+| 50 | Carrion Scarab Amulet | Scarab Swarm | spread | Thief |
+| 50 | Hellspear of the Damned | Damned Flight | convert | Ranger, Thief |
+| 60 | Nightfang Katana | Crypt Whisper | critrule | Thief |
+| 60 | Bonelord's Gaze | Evil Eye | mark | Ranger, Mystic, Necromancer |
+| 60 | Gallowsbolt Crossbow | One Shot | opener | Ranger |
+| 60 | Pall of Skulls | Skull Pall | immunity | Ranger, Thief, Monk |
+| 60 | Hornbinder Ring | Horn-Bind | stacks | Warrior, Templar |
+| 70 | Hornsworn Helm | Hornsworn Oath | hitcap | Warrior, Templar |
+| 70 | Lichfang Staff | Lich's Grasp | spread | Necromancer |
+| 70 | Stormcaller Recurve | Stormcall | extra | Ranger |
+| 70 | Gorecleaver | Notched Edge | spread | Warrior, Thief |
+| 70 | Maw Treads | Tiny Fangs | riposte | Warrior, Thief, Monk |
+| 70 | Ring of the Last Ember | One Spark | panic | all |
+| 80 | Executioner's Reckoning | Last Words | opener | Warrior, Monk |
+| 80 | Cindermail Coat | Cinder Coat | immunity | Warrior, Ranger, Thief, Monk, Templar |
+| 80 | Cinderclaw Band | Claw of Fire | convert | Warrior, Thief, Templar |
+| 80 | Riftcaller | Seam of the World | nova | Mystic, Necromancer |
+| 80 | Bloodstep Boots | Road of Blood | statscale | Warrior, Ranger, Thief |
+| 80 | Emberveil Greaves | Warm Print | mend | Mystic, Monk, Templar |
+| 80 | Heart of Cinders | Never-Cooling Coal | statscale | Warrior, Monk, Templar |
+| 90 | Emberwarden | Fire Asks Permission | ward | Warrior, Templar |
+| 90 | Bonegrinder | Grinding Wheel | crowd | Warrior, Monk |
+| 90 | Widow's Last Vow | Grave Vow | lowlife | Thief, Monk, Necromancer |
+| 90 | Bloodmoon Edge | Crimson Tide | critrule | Warrior, Thief |
+| 90 | Shroud of the Hollow Wood | Hollow Bark | immunity | Ranger, Mystic, Necromancer |
+| 90 | Nightshade Leggings | Berry Juice | spread | Ranger, Thief |
+| 90 | Heartbleed Pendant | Borrowed Beat | feast | Warrior, Necromancer, Templar |
+| 100 | Crown of Cinders | Burning Crown | nova | Warrior, Mystic, Templar |
+| 100 | Harvester of Sorrows | Reaper's Reach | extra | Warrior, Templar |
+| 100 | Hellspite Arbalest | Screaming Bolts | critrule | Ranger |
+| 100 | Tome of Whispers | Answering Voice | overflow | Mystic, Necromancer |
+| 100 | Gorehammer | Argument Ender | opener | Monk, Templar |
+| 100 | Tear of the Void | Void Pool | manashield | Mystic, Monk, Necromancer |
+| 100 | Voidwalker Boots | Soundless Step | crowd | Ranger, Thief, Monk |
+| 100 | Shard of the Long Winter | Rime Heart | convert | Warrior |
+| 100 | Mortis Cowl | Burial Linen | minionPact | Necromancer |
+| 100 | Wraithplate | Remembering Hand | riposte | Warrior, Monk, Templar |
+| 110 | Obsidian Aegis | Reflected Fear | hitcap | Warrior, Templar |
+| 110 | Mawmaker | New Mouth | extra | Monk, Templar |
+| 110 | Doomtide Longbow | Hum of the Dead | mark | Ranger |
+| 110 | Mortis Shroud | Lich-Queen's Linen | minionPact | Necromancer |
+| 120 | Aetherbound Plate | Held Lightning | convert | Monk, Templar |
+| 120 | Soulreaper | Hungry Blade | feast | Warrior, Thief, Necromancer |
+| 120 | Effigy Carver's Idol | Carver's Patience | ward | Mystic, Necromancer |
+| 120 | Fangs of the Ninth Circle | Ninth-Circle Bite | spread | Mystic, Templar |
+| 120 | Visage of the Pale King | Looks Back | mark | Mystic, Thief, Necromancer |
+| 120 | Snarewalker Greaves | Footfall Debt | stacks | Ranger, Thief |
+| 120 | Soulshackle Scepter | Rattling Cage | statscale | Mystic, Necromancer |
+| 120 | Veil of the Wraith | Unfound | lowlife | Mystic, Thief, Necromancer |
+| 130 | Cinderbrand Axe | Dying Star | convert | Warrior, Templar |
+| 130 | Spitethorn Bulwark | Paid In Full | riposte | Warrior, Templar |
+| 130 | Voidscale Legguards | Between Stars | immunity | Mystic, Monk, Necromancer |
+| 140 | Duskweaver Wand | Last-Light Shroud | mend | Mystic, Monk, Templar |
+| 150 | Thornwake Jerkin | Living Vine | riposte | Warrior, Ranger, Thief |
+| 150 | Emberfall Blade | Ninth Hall Quench | lowlife | Warrior, Templar |
+| 150 | Fusewright's Charm | Slow Burn | spread | Ranger, Thief |
+| 150 | Ashwalker Treads | Down Never Back | statscale | Warrior, Thief, Monk |
+| 150 | Pyreheart Mantle | Giant's Pyre | hitcap | Warrior, Templar |
+| 150 | Brand of the Ashen Choir | Last Voice | nova | Mystic, Templar |
+| 150 | Thornwake Striders | Parting Undergrowth | statscale | Ranger, Thief |
+| 150 | Rotbloom Phial | Never-Stopping Flower | spread | Ranger, Thief |
+| 150 | Thornwake Longbow | Briar Shot | extra | Ranger |
+| 150 | Thornwake Loop | Prick and Heal | feast | Warrior, Ranger, Thief |
+| 180 | Oathkeeper's Standard | Oath Under the Banner | mend | Warrior, Mystic, Monk, Templar |
+| 180 | Vein of the Unsated | Drinks First | ward | all |
+| 200 | Heart of the Descent | Last Hall Ember | stacks | Warrior, Thief, Monk |
+| 200 | Choirmaster's Circlet | Conductor's Rest | nova | Mystic, Necromancer, Templar |
+| 220 | Reliquary Censer | Kneeling Smoke | mend | Mystic, Monk, Templar |
+| 250 | Hollowpack Fang Chain | One Tooth per Pact | minionPact | Necromancer |
+| 250 | Sigil of the Ninth Room | Nine Boons | stacks | Warrior, Ranger, Thief, Monk |
+| 250 | Hollowpack Mask | Pack Smells Kin | mark | Ranger, Necromancer |
+| 250 | Hollowpack Hide | Covenant Furs | crowd | Warrior, Ranger, Necromancer |
+| 250 | Hollowpack Bond | Fed Bond | feast | Ranger, Mystic, Necromancer |
+| 250 | Hollowglass Diadem | Cold Light | manashield | Mystic, Monk, Necromancer, Templar |
+| 300 | Pyre Cleaver | Put the Tyrant Down | opener | Warrior, Templar |
+| 300 | Duskstalker Fang | First of a Pair | focus | Thief |
+| 300 | Duskstalker Sting | Where the Fang Was | extra | Thief |
+| 300 | Duskstalker Jerkin | Blades Slide Off | riposte | Thief, Monk |
+| 300 | Duskstalker Breeches | Rooftop Run | statscale | Ranger, Thief, Monk |
+| 300 | Bloodsworn Hauberk | Sworn on a Wound | stacks | Warrior, Templar |
+| 300 | Bloodsworn Visage | Smiles When You Bleed | critrule | Warrior, Thief |
+| 300 | Duskstalker Tabi | Dust Does Not Hear | critrule | Thief |
+| 300 | Stillheart Robe | Bloodless Body | hitcap | Mystic, Monk, Necromancer, Templar |
+| 300 | Bloodsworn Greataxe | Altar Quench | lowlife | Warrior |
+| 300 | Bloodsworn Legplates | Tightening Plates | feast | Warrior, Templar |
+| 300 | Bloodsworn Treads | Red Prints | spread | Warrior, Thief |
+| 300 | Mirrorweave Circlet | Light That Is Not There | overflow | Mystic, Necromancer |
+| 300 | Mirrorweave Robe | Spun Twice | ward | Mystic, Necromancer, Templar |
+| 300 | Mirrorweave Skirt | Heartbeat Early | focus | Ranger, Mystic |
+| 300 | Mirrorweave Slippers | Two Sets of Footprints | nova | Mystic, Necromancer, Templar |
+| 300 | Mirrorweave Codex | Every Page Shows the Reader | extra | Mystic, Necromancer |
+| 300 | Duskstalker Cowl | Swallowed Light | crowd | Thief, Monk |
+| 300 | Mirrorweave Band | No Front No Back | critrule | Ranger, Mystic |
+| 400 | Cinderstorm Kilt | Same Storm Twice | manashield | Mystic, Necromancer |
+| 400 | Cinderstorm Mantle | Never Burnt | immunity | Mystic, Necromancer, Templar |
+| 400 | Lichbound Robe | Names of the Burned | spread | Necromancer |
+| 400 | Cinderstorm Sandals | Court Mage's Pace | statscale | Warrior, Monk, Templar |
+| 400 | Cinderstorm Wand | Hisses When Drawn | convert | Warrior |
+| 400 | Knuckles of the Unbound | Hand That Never Held | focus | Warrior, Thief, Monk |
+| 400 | Cinderstorm Signet | Court That Burned | convert | Templar |
+| 400 | Splintered Instant | Crack in Time | nova | Ranger, Thief, Monk |
+| 400 | Lichbound Phylactery | Alive and Hungry | feast | Necromancer |
+| 400 | Cinderstorm Crown | Rain of Sparks | nova | Mystic, Necromancer |
+| 400 | Lichbound Mask | Eyes Go Dark | mark | Mystic, Necromancer |
+| 400 | Lichbound Kilt | Cord of Hair | minionPact | Necromancer |
+| 450 | Pilgrim's Reliquary | Walked In Walked Out | panic | all |
+| 600 | Gravewhisper Stiletto | Quiet Work | critrule | Thief |
+| 600 | Gallows Coat | One Bolt per Pocket | extra | Ranger |
+| 600 | Gallows Arbalest | Hangman's Rope | opener | Ranger |
+| 600 | Gallows Leggings | Standing Still | focus | Ranger, Mystic |
+| 600 | Emberwake Locket | Small Patient Fire | mend | Mystic, Monk, Templar |
+| 600 | Gallows Hood | Face Unseen | mark | Ranger, Thief |
+| 650 | Grasp of the Pyre Saint | Saint Walked On | lowlife | Monk |
+| 750 | Quiver of Shattered Skies | Shattered Volley | extra | Ranger |
+| 800 | Eye of the Hexmaw | Every Curse First | spread | Mystic, Necromancer |
+| 800 | Crown of the Last Sovereign | Expected Throne | hitcap | Warrior, Templar |
+| 800 | Marrowforged Greaves | Creak and Hold | hitcap | Warrior, Monk, Templar |
+| 800 | Gravewarden's Verdict | Broken Shields | opener | Warrior, Templar |
+| 800 | Shroud of the Ash-Sister | Warm and Wrong | mend | Mystic, Monk, Necromancer, Templar |
+| 800 | Ashwarden Seal | Oath in Stone | riposte | Warrior, Monk, Templar |
+| 800 | Ashwarden Bulwark | Everything Behind Lived | ward | Warrior, Templar |
+| 800 | Ashwarden Visor | Down They Stayed | statscale | Warrior, Monk, Templar |
+| 800 | Ashwarden Cuirass | Ash in the Seams | immunity | Warrior, Ranger, Thief, Monk, Templar |
+| 900 | Moonlit Gallows Bow | Gallows Beam | mark | Ranger |
+| 900 | Ember-Lashed Quiver | Glow at the Knots | convert | Ranger |
+| 1000 | Cinderheart Signet | Last Coal of a Sovereign | nova | Warrior, Mystic, Templar |
+| 1000 | Eye of the Unbroken Storm | Seer's Last Sight | nova | Mystic, Thief, Necromancer |
+| 1000 | Sanguine Crescent | Drinks Before You | ward | all |
+| 1000 | Hollow Crown of Morvane | Nothing Inside | overflow | Mystic, Necromancer |
+| 1200 | Greaves of the Endless Road | Endless Road | statscale | Warrior, Ranger, Thief, Monk |
+| 1200 | Nightglass Quiver | Never Fewer Than You Need | extra | Ranger |
+| 1250 | Nightbloom Stiletto | Opens Once After Dark | spread | Thief |
+| 1300 | Ashfall Verdict | Judges of Ash | opener | Warrior, Thief, Monk, Templar |
+| 1400 | Diadem of the Ninth Pyre | Eight Pyres Before | nova | Mystic, Necromancer |
+| 1400 | Sleeve of Ashen Gales | Gale Sleeve | stacks | Ranger |
+| 1400 | Gravewind Talons | Wind Over an Empty Grave | critrule | Monk |
+| 1500 | Rampart of Grey Tides | Hundred Years of Tide | hitcap | Warrior, Templar |
+| 1500 | Wyrmgrave Cleaver | Wyrm Quench | spread | Warrior, Thief, Monk, Templar |
+| 1550 | Crown of Ten Thousand Cinders | Each Ember a Crown | nova | Warrior, Mystic, Necromancer, Templar |
+| 1550 | Hollow Throne Claymore | Seat Kept Warm | lowlife | Warrior, Templar |
+| 1600 | Stormherald's Recurve | Strand of the Storm | extra | Ranger |
+| 1600 | Pyre-Sworn Cuirass | Oath Outlives the Pyre | panic | all |
+| 1600 | Quiver of the Last Volley | One More | stacks | Ranger |
+| 1650 | Greaves of the Final Ash | Road Turns to Ash | statscale | Warrior, Thief, Monk |
+| 1650 | Codex of the Unwritten End | Unwritten Chapter | overflow | Mystic, Necromancer |
+| 1700 | Legguards of Unmaking | Spat Back | immunity | all |
+| 1800 | Maul of the Sunken Choir | One Note per Blow | crowd | Warrior, Thief, Monk, Templar |
+| 1800 | Gravetide Arbalest | Tide Brings Something | mark | Ranger |
+| 1800 | Veil of the Quiet Throne | Everyone Bows | manashield | Mystic, Monk, Necromancer, Templar |
+| 1900 | Band of the Severed Star | Cut Loose | critrule | Warrior, Ranger, Mystic, Thief, Monk, Necromancer |
+| 1900 | Misericorde of the Pale Vow | Carry Two | focus | Thief |
+| 1900 | Hollow Sun Quiver | Sun That Kept Its Shape | convert | Ranger |
+| 1950 | Emberhowl Greataxe | Embers Answer | convert | Warrior, Templar |
+| 2000 | Vestments of the Hollow Choir | Choir Sang On | minionPact | Necromancer |
+| 2000 | Dawnless Gauntlets | Morning That Never Came | ward | Monk |
+| 2100 | Wake-Heron Longbow | Nothing It Watches Walks | opener | Ranger |
+| 2100 | Quiver of Fallen Constellations | Not Allowed to Set | extra | Ranger |
+| 2200 | Bastion of the Last Dawn | Dawn Broke Here | panic | Warrior, Templar |
+| 2200 | Bellringer of the Last Vigil | Hour Without End | mend | Warrior, Monk, Templar |
+| 2400 | Choirless Pendant | Silence Left Behind | feast | all |
+
 ## Thief dual wield, attack speed and daggers (2026-10-23)
 Owner: "thief deveriam ser criados já com dual wield de daggers. devem atacar mais rápido que a outras classes, empatado com o monk"
 and "adicione também mais daggers pros thiefs". Class rules: docs/CLASSES.md; balance numbers: `data/spells/README.md` "Thief dual wield
