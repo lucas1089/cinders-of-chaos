@@ -96,13 +96,13 @@ end
 -- the player's line: "1,018 points (rank 2)" and today's
 function V.mineText(data)
   local m = data and data.mine or {}
-  local rank = num(m.rank) > 0 and string.format(' (rank %d)', num(m.rank)) or ''
-  return string.format('%s points%s', V.fmt(m.p), rank)
+  local rank = num(m.rank) > 0 and tr(' (rank %d)', num(m.rank)) or ''
+  return tr('%s points%s', V.fmt(m.p), rank)
 end
 
 function V.todayText(data)
   local m = data and data.mine or {}
-  return string.format('Today: %s / %s', V.fmt(m.today), V.fmt(m.cap))
+  return tr('Today: %s / %s', V.fmt(m.today), V.fmt(m.cap))
 end
 
 -- what the rewards need, and whether the player has it
@@ -114,8 +114,8 @@ function V.rewardText(data)
   end
   if num(m.token) > 0 then
     local have = num(m.p) >= num(m.token)
-    parts[#parts + 1] = string.format('%s points: %s%s', V.fmt(m.token), tostring(m.tokenText or 'a reward'),
-      have and ' (earned)' or '')
+    parts[#parts + 1] = tr('%s points: %s%s', V.fmt(m.token), tostring(m.tokenText or tr('a reward')),
+      have and (' ' .. tr('(earned)')) or '')
   end
   return table.concat(parts, '\n')
 end

@@ -164,7 +164,7 @@ function V.previewText(req, preview, side, base, quote, meta)
   if preview.fee > 0 then
     parts[#parts + 1] = tr('Fee %s gold (%s%%) on the gold you receive.', V.money(preview.fee), V.priceText((meta.fees.goldBps or 0) / 100))
   elseif quote == V.GOLD and side == 'buy' then
-    parts[#parts + 1] = 'No fee for the buyer.'
+    parts[#parts + 1] = tr('No fee for the buyer.')
   end
   if preview.placeFee > 0 then
     parts[#parts + 1] = tr('Orb-for-orb orders cost %s gold from your bank.', V.money(preview.placeFee))
@@ -193,7 +193,7 @@ function V.bookRows(book, rowsPerSide)
   local spread
   if asks[1] and bids[1] then
     local mid = (asks[1].p + bids[1].p) / 2
-    spread = { kind = 'spread', price = string.format('Spread %s', V.priceText(asks[1].p - bids[1].p)),
+    spread = { kind = 'spread', price = tr('Spread %s', V.priceText(asks[1].p - bids[1].p)),
       qty = mid > 0 and string.format('%s%%', V.priceText((asks[1].p - bids[1].p) / mid * 100)) or '' }
   else
     spread = { kind = 'spread', price = (#asks + #bids) == 0 and tr('No orders') or tr('One side only'), qty = '' }
@@ -263,7 +263,7 @@ end
 -- ------------------------------------------------------------------ my orders and fills
 -- o = the server's order view {id, give, giveQty, want, wantQty, given, got, state, left, refunded}
 function V.orderTitle(o, meta)
-  return string.format('%s for %s', V.amount(meta, o.give, o.giveQty), V.amount(meta, o.want, o.wantQty))
+  return tr('%s for %s', V.amount(meta, o.give, o.giveQty), V.amount(meta, o.want, o.wantQty))
 end
 
 -- the price of an order as people say it: gold per orb, or the larger way round for two orbs
@@ -275,13 +275,13 @@ function V.orderPrice(o, meta)
   elseif o.want == V.GOLD then
     return tr('%s gold per %s', V.priceText(want / give), V.shortName(meta, o.give))
   elseif want >= give then
-    return string.format('%s %s per %s', V.priceText(want / give), V.shortName(meta, o.want), V.shortName(meta, o.give))
+    return tr('%s %s per %s', V.priceText(want / give), V.shortName(meta, o.want), V.shortName(meta, o.give))
   end
-  return string.format('%s %s per %s', V.priceText(give / want), V.shortName(meta, o.give), V.shortName(meta, o.want))
+  return tr('%s %s per %s', V.priceText(give / want), V.shortName(meta, o.give), V.shortName(meta, o.want))
 end
 
 function V.orderSub(o, meta)
-  local done = string.format('%s / %s given, %s received', V.money(o.given), V.money(o.giveQty), V.money(o.got))
+  local done = tr('%s / %s given, %s received', V.money(o.given), V.money(o.giveQty), V.money(o.got))
   if o.state == 'active' then
     return table.concat({ done, V.orderPrice(o, meta), V.timeLeft(o.left) .. ' left' }, '  |  ')
   elseif o.state == 'pending' then
@@ -300,9 +300,9 @@ end
 -- f = {ago, order, gave, gaveQty, got, gotQty, fee, role}
 function V.fillText(f, meta)
   local when = V.ago(f.ago)
-  local s = string.format('%s: gave %s, got %s', when == 'now' and tr('just now') or (when .. ' ago'), V.amount(meta, f.gave, f.gaveQty),
+  local s = tr('%s: gave %s, got %s', when == 'now' and tr('just now') or (when .. ' ago'), V.amount(meta, f.gave, f.gaveQty),
     V.amount(meta, f.got, f.gotQty))
-  if f.fee then s = s .. string.format(' (fee %s)', V.money(f.fee)) end
+  if f.fee then s = s .. tr(' (fee %s)', V.money(f.fee)) end
   return s
 end
 

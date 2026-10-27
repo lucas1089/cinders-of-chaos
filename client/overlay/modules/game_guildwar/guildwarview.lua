@@ -24,9 +24,9 @@ function V.hoursText(h)
   h = math.floor(tonumber(h) or 0)
   if h >= 24 and h % 24 == 0 then
     local d = h / 24
-    return string.format('%d day%s', d, d == 1 and '' or 's')
+    return tr(d == 1 and '%d day' or '%d days', d)
   end
-  return string.format('%d hour%s', h, h == 1 and '' or 's')
+  return tr(h == 1 and '%d hour' or '%d hours', h)
 end
 
 function V.clock(s)
@@ -132,7 +132,7 @@ end
 -- a kill of the war log
 function V.killLine(k)
   k = k or {}
-  return string.format('%s %s killed %s (level %d)%s', tostring(k.at or ''), tostring(k.killer or '?'), tostring(k.victim or '?'),
+  return tr('%s %s killed %s (level %d)%s', tostring(k.at or ''), tostring(k.killer or '?'), tostring(k.victim or '?'),
     tonumber(k.level) or 0, k.counted and '' or (tr(' - not counted: %s', tostring(k.reason or ''))))
 end
 
@@ -172,7 +172,7 @@ function V.bannerText(bn)
     return tr('No guild banner yet: the first kill raises the Ember Banner.')
   end
   local k = tonumber(bn.kills) or 0
-  local s = string.format('%s (%d kill%s)', tostring(bn.name or ''), k, k == 1 and '' or 's')
+  local s = tr(k == 1 and '%s (%d kill)' or '%s (%d kills)', tostring(bn.name or ''), k)
   if (tonumber(bn.next) or 0) > 0 then s = s .. tr(', next tier at %d', bn.next) end
   return s
 end
@@ -190,13 +190,13 @@ function V.bossBoardLine(r)
     return tr('%d. %s - slain in %s by %d', tonumber(r.rank) or 0, tostring(r.name or '?'), V.clock(r.seconds),
       tonumber(r.players) or 0)
   end
-  return string.format('%d. %s - %s damage', tonumber(r.rank) or 0, tostring(r.name or '?'), V.money(r.damage))
+  return tr('%d. %s - %s damage', tonumber(r.rank) or 0, tostring(r.name or '?'), V.money(r.damage))
 end
 
 function V.contributorLine(c)
   c = c or {}
-  return string.format('%s: %s embers%s', tostring(c.name or '?'), V.money(c.embers),
-    (tonumber(c.gold) or 0) > 0 and string.format(' (%s gold)', V.money(c.gold)) or '')
+  return tr('%s: %s embers%s', tostring(c.name or '?'), V.money(c.embers),
+    (tonumber(c.gold) or 0) > 0 and tr(' (%s gold)', V.money(c.gold)) or '')
 end
 
 -- a member's share of the kill's gold pool: 'Vex: 2,250,000 gold (30%)'

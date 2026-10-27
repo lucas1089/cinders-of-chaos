@@ -90,7 +90,7 @@ function V.cells(s)
     local afford = num(s.money) >= num(it.p)
     local why
     if it.sold then
-      why = 'Sold. New crates come with the next stock.'
+      why = tr('Sold. New crates come with the next stock.')
     elseif not s.near then
       why = tr('Buy from %s in person (in the market of the teleport room).', (s.npc or tr('the Gambler')))
     elseif not afford then

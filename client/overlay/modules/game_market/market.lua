@@ -149,7 +149,7 @@ local function fillCombo(combo, options, current)
   combo:clearOptions()
   local index = 1
   for i, o in ipairs(options) do
-    combo:addOption(o[1], o[2])
+    combo:addOption(tr(o[1]), o[2])
     if o[2] == current then index = i end
   end
   combo:setCurrentIndex(index)
@@ -179,7 +179,7 @@ local function fillFilterCombos()
   fillCombo(window.browsePanel.modPanel.modeCombo, { { 'All must match', 'all' }, { 'At least ... match', 'count' } },
     window.browsePanel.modPanel.modeCombo.mode or 'all')
   local days = {}
-  for _, d in ipairs((meta and meta.durations) or { 1, 3, 7 }) do days[#days + 1] = { d == 1 and '1 day' or (d .. ' days'), d } end
+  for _, d in ipairs((meta and meta.durations) or { 1, 3, 7 }) do days[#days + 1] = { d == 1 and tr('1 day') or tr('%d days', d), d } end
   fillCombo(window.sellPanel.daysCombo, days, (meta and meta.defaultDuration) or 3)
 end
 
@@ -388,7 +388,7 @@ local function fillModCombo(row, keepKey)
   row.mod:clearOptions()
   local index = 1
   for i, o in ipairs(choices) do
-    row.mod:addOption(o[1], o[2], true)
+    row.mod:addOption(tr(o[1]), o[2], true)
     if want ~= '' and o[2] == want then index = i end
   end
   row.mod:setCurrentIndex(index, true)
@@ -667,7 +667,7 @@ local function updatePriceHint()
   local text = (key ~= '' and (key .. ': ') or '') .. V.typicalLine(g, 'gold').text
   priceState.suggest = g and g.typical and V.suggestPrice(g.typical, count, meta and meta.price and meta.price.gold and meta.price.gold.min) or nil
   if priceState.suggest then
-    text = text .. string.format('. Suggested: %s gold%s.', V.money(priceState.suggest), count > 1 and string.format(' for %d', count) or '')
+    text = text .. tr('. Suggested: %s gold%s.', V.money(priceState.suggest), count > 1 and tr(' for %d', count) or '')
   end
   s.priceHint:setText(text)
   s.suggestButton:setVisible(priceState.suggest ~= nil)
@@ -899,7 +899,7 @@ local function fillOrderCombos()
   fillCombo(p.orderSortCombo, sorts, orderFilter.sort or 'new')
   local f = p.postFrame
   local days = {}
-  for _, d in ipairs((meta and meta.durations) or { 1, 3, 7 }) do days[#days + 1] = { d == 1 and '1 day' or (d .. ' days'), d } end
+  for _, d in ipairs((meta and meta.durations) or { 1, 3, 7 }) do days[#days + 1] = { d == 1 and tr('1 day') or tr('%d days', d), d } end
   fillCombo(f.orderDaysCombo, days, (meta and meta.defaultDuration) or 3)
   local pay = { { 'Gold', 'gold' } }
   if not (meta and meta.coinsOk == false) then pay[2] = { 'Chaos Coins', 'coins' } end -- season markets: gold only
@@ -970,7 +970,7 @@ local function addOrderRow(list, row)
   local color = (tonumber(f.rarity) or 0) > 0 and rarityColor({ rarity = f.rarity }) or COLORS.text
   local name = w:getChildById('name')
   name:setColor(color)
-  fitText(name, string.format('Wanted: %s%s', left > 1 and (V.money(left) .. 'x ') or '', row.name or '?'))
+  fitText(name, tr('Wanted: %s%s', left > 1 and (V.money(left) .. 'x ') or '', row.name or '?'))
   local sub = w:getChildById('sub')
   fitText(sub, V.orderSubLine(row, modName))
   local prow = w:getChildById('prices')

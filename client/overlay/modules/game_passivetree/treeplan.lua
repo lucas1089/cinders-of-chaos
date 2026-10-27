@@ -377,8 +377,8 @@ function TreePlan.costText(cost, free)
     return tr('No plan: click a node to plan the path to it.'), true
   end
   local fits = cost <= free
-  return string.format('Plan: %d / %d point%s%s', cost, free, free == 1 and '' or 's',
-    fits and '' or string.format(' (%d short)', cost - free)), fits
+  return tr(free == 1 and 'Plan: %d / %d point%s' or 'Plan: %d / %d points%s', cost, free,
+    fits and '' or tr(' (%d short)', cost - free)), fits
 end
 
 -- ------------------------------------------------------------------------------------------------ search

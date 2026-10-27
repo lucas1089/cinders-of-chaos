@@ -163,7 +163,7 @@ function R.watch(st, id, why, now)
   if now - h.since >= R.STUCK_MS and (not h.logged or now - h.logged >= R.STUCK_LOG_MS) then
     h.logged = now
     local fails = st.fails and st.fails[id] or 0
-    R.log(string.format("[helper] spell %s held %.1f s: %s (refused %d times in a row, round trip %s ms)",
+    R.log(string.format("[helper] spell %s held %.1f s: %s (refused %d times in a row, round trip %s ms)", -- i18n-ok: not UI text
       tostring(id), (now - h.since) / 1000, why, fails, st.rtt and tostring(st.rtt) or "?"))
   end
 end

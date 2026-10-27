@@ -59,10 +59,10 @@ function V.status(row, elapsed)
   elseif st == 'due' then
     return tr('Respawn due'), V.COLORS.due
   elseif st == 'scheduled' then
-    if left and left > 0 then return 'In ' .. V.countdown(left), V.COLORS.scheduled end
-    return 'Starting', V.COLORS.starting
+    if left and left > 0 then return tr('In %s', V.countdown(left)), V.COLORS.scheduled end
+    return tr('Starting'), V.COLORS.starting
   elseif st == 'random' then
-    return 'Random', V.COLORS.random
+    return tr('Random'), V.COLORS.random
   elseif st == 'ondemand' then
     return tr('On demand'), V.COLORS.ondemand
   elseif st == 'cooldown' then
@@ -91,7 +91,7 @@ end
 
 function V.levelText(row)
   local parts = {}
-  if num(row and row.lv) > 0 then parts[#parts + 1] = string.format('Level %d+', num(row.lv))
+  if num(row and row.lv) > 0 then parts[#parts + 1] = tr('Level %d+', num(row.lv))
   elseif num(row and row.pl) > 0 then parts[#parts + 1] = tr('Pocket: level %d+', num(row.pl)) end
   if num(row and row.party) > 1 then parts[#parts + 1] = tr('party of %d', num(row.party)) end
   return table.concat(parts, ', ')
@@ -118,7 +118,7 @@ function V.tooltip(row, elapsed)
   if row.ago ~= nil then
     local line = tr('Last kill: %s', V.ago(num(row.ago) + num(elapsed)))
     if row.by then line = line .. ' by ' .. tostring(row.by) end
-    if num(row.kills) > 0 then line = line .. string.format(' (%d kills)', num(row.kills)) end
+    if num(row.kills) > 0 then line = line .. tr(' (%d kills)', num(row.kills)) end
     lines[#lines + 1] = line
   end
   local c = V.coords(row.p)
@@ -191,6 +191,6 @@ function V.header(g, collapsed)
     if r.st == 'alive' then alive = alive + 1 end
   end
   local text = string.format('%s %s (%s)', collapsed and '+' or '-', tostring(g.cat.n or g.cat.k), count)
-  if alive > 0 then text = text .. string.format(' - %d alive', alive) end
+  if alive > 0 then text = text .. tr(' - %d alive', alive) end
   return text
 end

@@ -66,7 +66,7 @@ function V.profRows(s)
     local t = V.tier(s, p.tier)
     out[#out + 1] = {
       key = p.k, name = p.n, level = num(p.lv),
-      xpText = num(p.need) > 0 and string.format('%s / %s', V.fmtNum(p.xp), V.fmtNum(p.need)) or 'Mastered',
+      xpText = num(p.need) > 0 and string.format('%s / %s', V.fmtNum(p.xp), V.fmtNum(p.need)) or tr('Mastered'),
       pct = num(p.need) > 0 and math.max(0, math.min(100, num(p.pct))) or 100,
       tierText = 'Gathers ' .. t.n:lower() .. ' materials', tierColor = t.col or V.COLORS.text,
       tool = p.tool or '', desc = p.d or '', gathered = num(p.g)
@@ -108,7 +108,7 @@ function V.demandRows(s, key)
       out[#out + 1] = {
         id = d.id, clientId = num(d.c), name = d.n, prof = d.p, tier = num(d.t), tierColor = V.tier(s, d.t).col,
         priceText = V.fmtNum(d.g) .. ' gold', multText = mt, multColor = mc,
-        soldText = string.format('%d / %d today', num(d.s), num(s.capDay)),
+        soldText = tr('%d / %d today', num(d.s), num(s.capDay)),
         haveText = V.fmtNum(d.h) .. ' carried',
         worth = q.gold, units = q.units, canSell = V.canSell(s, d), raw = d
       }
@@ -155,14 +155,14 @@ function V.areaLines(s)
       if n.k == 'angling' then
         parts[#parts + 1] = 'fishing'
       else
-        parts[#parts + 1] = string.format('%s %d/%d ready', V.profName(s, n.k), num(n.r), num(n.t))
+        parts[#parts + 1] = tr('%s %d/%d ready', V.profName(s, n.k), num(n.r), num(n.t))
       end
     end
     local where = a.near and ('near ' .. a.near) or ''
     out[#out + 1] = {
       title = string.format('%s (%s)', a.n, t.n), color = t.col or V.COLORS.text,
       text = (#parts > 0 and table.concat(parts, ', ') or tr('no nodes')) .. (where ~= '' and ('; ' .. where) or ''),
-      tip = string.format('%s%s\nPosition %d, %d, %d', a.n, a.m and (tr(': hunting ground of %s', a.m)) or '', num(a.x),
+      tip = tr('%s%s\nPosition %d, %d, %d', a.n, a.m and (tr(': hunting ground of %s', a.m)) or '', num(a.x),
         num(a.y), num(a.z)),
       monsters = a.m
     }

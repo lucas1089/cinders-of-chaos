@@ -71,7 +71,7 @@ end
 
 function V.rowSub(e, state)
   if not e.owned then return tr('Not owned') end
-  local s = string.format('Level %d', e.level)
+  local s = tr('Level %d', e.level)
   if state and state.active == e.key then
     s = s .. (state.out and ', out' or ', resting')
   end
@@ -80,7 +80,7 @@ end
 
 function V.xpText(p)
   if not p then return '' end
-  if num(p.need) <= 0 then return string.format('Level %d (max)', num(p.level)) end
+  if num(p.need) <= 0 then return tr('Level %d (max)', num(p.level)) end
   return tr('Level %d  -  %d / %d XP (%d%%)', num(p.level), num(p.into), num(p.need), num(p.pct))
 end
 
@@ -118,10 +118,10 @@ function V.statusText(state)
     if state.rest then
       parts[#parts + 1] = tostring(state.rest)
     elseif state.out then
-      parts[#parts + 1] = 'Your pet is with you.'
+      parts[#parts + 1] = tr('Your pet is with you.')
     end
   else
-    parts[#parts + 1] = 'No pet is out.'
+    parts[#parts + 1] = tr('No pet is out.')
   end
   if state.zone then
     parts[#parts + 1] = tr('Here: %s', (tostring(state.zone):gsub('^utility', 'utility abilities only'):gsub('^banned', 'no pets')))

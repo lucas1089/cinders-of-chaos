@@ -31,8 +31,8 @@ end
 
 function V.thanks(coins)
   coins = tonumber(coins) or 0
-  return string.format("Thank you for your voluntary donation! You received %d Chaos Coins as a thank-you.", coins),
-    string.format("Obrigado pela sua doa\231\227o volunt\225ria! Voc\234 recebeu %d Chaos Coins como agradecimento.", coins)
+  return string.format("Thank you for your voluntary donation! You received %d Chaos Coins as a thank-you.", coins), -- i18n-ok: not UI text
+    string.format("Obrigado pela sua doa\231\227o volunt\225ria! Voc\234 recebeu %d Chaos Coins como agradecimento.", coins) -- i18n-ok: not UI text
 end
 
 V.METHOD_LABEL = { pix = "Pix (BRL)", paypal = "PayPal (USD)" }

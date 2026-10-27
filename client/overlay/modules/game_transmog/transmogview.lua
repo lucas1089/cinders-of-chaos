@@ -30,9 +30,9 @@ end
 -- the line under an equipment slot
 function V.slotSub(row)
   local item = row and row.item
-  if not item then return 'Empty' end
+  if not item then return tr('Empty') end
   if not item.kind then return tr('Cannot change its look') end
-  if item.look then return 'Look: ' .. tostring(item.look.name) end
+  if item.look then return tr('Look: %s', tostring(item.look.name)) end
   return tr('%s, own look', (item.kindName or item.kind))
 end
 
@@ -70,32 +70,32 @@ function V.detail(row, look, money)
   local d = { apply = false, remove = false, fee = '', hint = '' }
   local item = row and row.item
   if not item then
-    d.hint = 'Equip an item in this slot to change its look.'
+    d.hint = tr('Equip an item in this slot to change its look.')
     return d
   end
   if not item.kind then
-    d.hint = 'This item cannot change its look.'
+    d.hint = tr('This item cannot change its look.')
     return d
   end
   money = tonumber(money) or 0
   local applyFee = tonumber(item.applyFee) or 0
-  d.fee = 'Fee: ' .. V.gold(applyFee) .. ' gold'
+  d.fee = tr('Fee: %s gold', V.gold(applyFee))
   if item.look then
     d.remove = true
     local removeFee = tonumber(item.removeFee) or 0
-    d.fee = d.fee .. (removeFee > 0 and ('  -  remove: ' .. V.gold(removeFee) .. ' gold') or tr('  -  remove: free'))
+    d.fee = d.fee .. (removeFee > 0 and tr('  -  remove: %s gold', V.gold(removeFee)) or tr('  -  remove: free'))
   end
   if not look then
-    d.hint = 'Pick an appearance on the right to preview it.'
+    d.hint = tr('Pick an appearance on the right to preview it.')
   elseif look.id == item.id then
-    d.hint = 'That is the item\'s own look.'
+    d.hint = tr('That is the item\'s own look.')
   elseif item.look and item.look.id == look.id then
-    d.hint = 'The item already has this look.'
+    d.hint = tr('The item already has this look.')
   elseif money < applyFee then
-    d.hint = 'Not enough gold (backpack and bank).'
+    d.hint = tr('Not enough gold (backpack and bank).')
   else
     d.apply = true
-    d.hint = 'Appearance only: stats and tooltip stay the item\'s own.'
+    d.hint = tr('Appearance only: stats and tooltip stay the item\'s own.')
   end
   return d
 end
@@ -112,6 +112,6 @@ function V.sortSets(sets)
 end
 
 function V.setLine(set)
-  if set.owned then return 'Owned' end
+  if set.owned then return tr('Owned') end
   return tostring(set.how or '')
 end

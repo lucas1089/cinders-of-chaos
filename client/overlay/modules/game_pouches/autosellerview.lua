@@ -156,7 +156,7 @@ end
 function V.listText(list, slots)
   local parts = {}
   for _, e in ipairs(list or {}) do parts[#parts + 1] = string.format('%s (%s)', e.name, V.gold(e.price)) end
-  local head = string.format('%d/%d items', #parts, slots or 40)
+  local head = tr('%d/%d items', #parts, slots or 40)
   if #parts == 0 then return tr('%s: none. Add items an NPC buys.', head) end
   return head .. ': ' .. table.concat(parts, ', ')
 end

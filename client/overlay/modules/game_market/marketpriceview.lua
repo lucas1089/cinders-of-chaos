@@ -38,7 +38,7 @@ end
 -- the typical price line: {text, color}
 function V.typicalLine(s, cur)
   if not s or (s.n30 or 0) == 0 and (s.n7 or 0) == 0 then
-    return { text = 'No sales of this item yet.', color = V.PRICE_COLORS.dim }
+    return { text = tr('No sales of this item yet.'), color = V.PRICE_COLORS.dim }
   end
   if not s.typical then
     local have = math.max(s.n7 or 0, s.n30 or 0)
@@ -64,7 +64,7 @@ function V.priceStatsLines(s, cur)
       out[#out + 1] = { text = tr('Usual range: %s - %s (lowest %s, highest %s)', V.money(s.lo), V.money(s.hi), V.money(s.min7),
         V.money(s.max7)), color = V.PRICE_COLORS.dim }
     else
-      out[#out + 1] = { text = string.format('Lowest %s, highest %s', V.money(s.min7), V.money(s.max7)), color = V.PRICE_COLORS.dim }
+      out[#out + 1] = { text = tr('Lowest %s, highest %s', V.money(s.min7), V.money(s.max7)), color = V.PRICE_COLORS.dim }
     end
   elseif (s.n30 or 0) > 0 then
     out[#out + 1] = { text = tr('No sales in 7 days; %d in %d days.', s.n30, s.days or 30), color = V.PRICE_COLORS.dim }

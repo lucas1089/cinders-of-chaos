@@ -42,24 +42,24 @@ end
 function TrialsMath.card(state, entry, side)
   local node = entry.nodes[side]
   if state.running then
-    return {action = entry.held == side and 'Held' or tr('In a trial'), enabled = false,
+    return {action = entry.held == side and tr('Held') or tr('In a trial'), enabled = false,
       status = entry.locked and TrialsMath.lockText(entry.tier) or tr('Not during a trial'), statusColor = DIM,
-      tooltip = 'Nodes cannot be changed while a trial runs.'}
+      tooltip = tr('Nodes cannot be changed while a trial runs.')}
   end
   if entry.locked then
-    return {action = 'Locked', enabled = false, status = TrialsMath.lockText(entry.tier), statusColor = DIM,
+    return {action = tr('Locked'), enabled = false, status = TrialsMath.lockText(entry.tier), statusColor = DIM,
       tooltip = TrialsMath.lockTooltip(state, entry)}
   end
   if entry.held == side then
-    return {action = 'Held', enabled = false, status = 'Held', statusColor = HELD,
-      tooltip = 'You hold this node. Pick the other one to change (1 Trial Token and gold).'}
+    return {action = tr('Held'), enabled = false, status = tr('Held'), statusColor = HELD,
+      tooltip = tr('You hold this node. Pick the other one to change (1 Trial Token and gold).')}
   end
   if (entry.held or 0) == 0 then
-    return {action = 'Choose', enabled = node.can == true, status = node.can and tr('Free to choose') or tostring(node.why or ''),
-      statusColor = node.can and GOOD or BAD, tooltip = 'The first choice of a pair is free. Choosing one locks the other.'}
+    return {action = tr('Choose'), enabled = node.can == true, status = node.can and tr('Free to choose') or tostring(node.why or ''),
+      statusColor = node.can and GOOD or BAD, tooltip = tr('The first choice of a pair is free. Choosing one locks the other.')}
   end
   local can = node.can == true
-  return {action = 'Switch', enabled = can, status = can and '1 token + gold' or tr('Needs a Trial Token'),
+  return {action = tr('Switch'), enabled = can, status = can and tr('1 token + gold') or tr('Needs a Trial Token'),
     statusColor = can and HELD or BAD,
     tooltip = tr('Replaces %s. Costs 1 Trial Token and %s gold.', tostring(entry.nodes[entry.held] and entry.nodes[entry.held].name or '?'),
       TrialsMath.gold(state.switchGold))}
@@ -104,7 +104,7 @@ function TrialsMath.tierButton(state, i)
   local tip = tr('%s: level %d, %d minutes, %d lives, guardian about %s health.', t.name, t.minLevel,
     math.floor((t.time or 0) / 60), t.lives or 0, TrialsMath.gold(t.bossHealth))
   if state.running then
-    return {text = text, enabled = false, tooltip = 'A trial is running.'}
+    return {text = text, enabled = false, tooltip = tr('A trial is running.')}
   end
   if t.problem then
     tip = tip .. '\n' .. t.problem

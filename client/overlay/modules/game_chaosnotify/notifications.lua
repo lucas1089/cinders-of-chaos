@@ -717,7 +717,7 @@ local function createCompactNotification(data, isPinned)
                         -- Iniciar catacomb automaticamente
                         if g_game and g_game.getProtocolGame then
                             local success, result = pcall(function()
-                                local message = string.format("start_catacomb|solo|%s|%s", 
+                                local message = string.format("start_catacomb|solo|%s|%s",  -- i18n-ok: not UI text
                                     data.catacombData.level, data.catacombData.element)
                                 g_game.getProtocolGame():sendExtendedOpcode(151, message)
                             end)

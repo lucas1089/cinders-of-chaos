@@ -38,13 +38,13 @@ end
 function InvasionMath.waveLine(d)
   d = type(d) == 'table' and d or {}
   if d.phase == 'occupied' then
-    return string.format('%d occupier%s left', tonumber(d.left) or 0, (tonumber(d.left) or 0) == 1 and '' or 's')
+    return tr((tonumber(d.left) or 0) == 1 and '%d occupier left' or '%d occupiers left', tonumber(d.left) or 0)
   end
   if (tonumber(d.wave) or 0) == 0 then
-    return string.format('Wave 1 of %d in %s', tonumber(d.waves) or 0, InvasionMath.clock(d.next))
+    return tr('Wave 1 of %d in %s', tonumber(d.waves) or 0, InvasionMath.clock(d.next))
   end
-  return string.format('Wave %d of %d - %d invader%s left', tonumber(d.wave) or 0, tonumber(d.waves) or 0,
-    tonumber(d.left) or 0, (tonumber(d.left) or 0) == 1 and '' or 's')
+  return tr((tonumber(d.left) or 0) == 1 and 'Wave %d of %d - %d invader left' or 'Wave %d of %d - %d invaders left',
+    tonumber(d.wave) or 0, tonumber(d.waves) or 0, tonumber(d.left) or 0)
 end
 
 -- breach bar colour: amber, orange from 50, red from 80

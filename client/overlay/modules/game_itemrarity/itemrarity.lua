@@ -434,11 +434,11 @@ function debugGroundRarity()
 			local sh = item:getShader() or ""
 			if sh ~= "" then
 				withShader = withShader + 1
-				g_logger.info(string.format("[rarity] id=%d shader='%s'", item:getId(), sh))
+				g_logger.info(string.format("[rarity] id=%d shader='%s'", item:getId(), sh)) -- i18n-ok: not UI text
 			end
 		end
 	end
-	g_logger.info(string.format("[rarity] scanned %d ground items, %d with a shader", total, withShader))
+	g_logger.info(string.format("[rarity] scanned %d ground items, %d with a shader", total, withShader)) -- i18n-ok: not UI text
 end
 
 -- ===========================================================================

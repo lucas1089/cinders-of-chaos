@@ -121,7 +121,7 @@ local function renderRecap()
     row.name:setText(r.name)
     row.name:setColor(r.color)
     row.value:setText(string.format('%s  %s%%', L.short(r.total), tostring(r.pct)))
-    local info = { string.format('%s, %d hit%s', tr(r.kindName), r.hits, r.hits == 1 and '' or 's') }
+    local info = { tr(r.hits == 1 and '%s, %d hit' or '%s, %d hits', tr(r.kindName), r.hits) }
     if r.crits > 0 then info[#info + 1] = tr('%d%% critical', r.critPct) end
     if r.mp > 0 then info[#info + 1] = tr('mana %s', L.short(r.mp)) end
     if r.elText ~= '' then info[#info + 1] = r.elText end

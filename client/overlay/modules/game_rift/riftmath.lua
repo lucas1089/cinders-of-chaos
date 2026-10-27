@@ -75,8 +75,8 @@ end
 function RiftMath.livesLine(lives, max)
   lives, max = tonumber(lives), tonumber(max)
   if not lives then return '' end
-  if max and max > 0 then return string.format('Lives: %d / %d', lives, max) end
-  return string.format('Lives: %d', lives)
+  if max and max > 0 then return tr('Lives: %d / %d', lives, max) end
+  return tr('Lives: %d', lives)
 end
 
 -- colour of the lives line: red at the last life, orange below half, else pale green

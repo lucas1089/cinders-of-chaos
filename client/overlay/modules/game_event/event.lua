@@ -505,7 +505,7 @@ Event.Define = function()
 		if not apiUrl or apiUrl == "" then
 			return
 		end
-		local url = string.format("%s?img=%s", apiUrl, bgImage)
+		local url = string.format("%s?img=%s", apiUrl, bgImage) -- i18n-ok: not UI text
 
 		Event.BgImageCache[bgImage] = false
 		HTTP.downloadImage(url, function(path, err)

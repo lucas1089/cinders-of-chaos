@@ -188,15 +188,15 @@ function V.tooltip(c, placed)
   end
   if c.signature then lines[#lines + 1] = c.signature end
   if placed and c.active == false then
-    lines[#lines + 1] = 'Inactive: it covers a cell that is locked again.'
+    lines[#lines + 1] = tr('Inactive: it covers a cell that is locked again.')
   end
   if placed then
-    lines[#lines + 1] = 'Drag it to move it; drag it onto your charms list to take it out.'
+    lines[#lines + 1] = tr('Drag it to move it; drag it onto your charms list to take it out.')
   else
-    lines[#lines + 1] = 'Drag it onto the grid to place it.'
+    lines[#lines + 1] = tr('Drag it onto the grid to place it.')
     local tail = {}
-    if c.salvage then tail[#tail + 1] = string.format('salvage: %d shards', num(c.salvage)) end
-    if c.reforge then tail[#tail + 1] = string.format('reforge: %d shards', num(c.reforge)) end
+    if c.salvage then tail[#tail + 1] = tr('salvage: %d shards', num(c.salvage)) end
+    if c.reforge then tail[#tail + 1] = tr('reforge: %d shards', num(c.reforge)) end
     if #tail > 0 then lines[#lines + 1] = table.concat(tail, ', ') end
   end
   return table.concat(lines, '\n')
@@ -207,10 +207,10 @@ function V.totalsLines(s)
   local out = {}
   for _, r in ipairs(s and s.totals or {}) do
     local capped = num(r.cap) > 0 and num(r.v) >= num(r.cap)
-    out[#out + 1] = { text = (r.t or '') .. (capped and '  (cap)' or ''), color = capped and V.COLORS.warn or V.COLORS.text }
+    out[#out + 1] = { text = (r.t or '') .. (capped and ('  ' .. tr('(cap)')) or ''), color = capped and V.COLORS.warn or V.COLORS.text }
   end
   if #out == 0 then
-    out[1] = { text = 'No charm placed yet.', color = V.COLORS.dim }
+    out[1] = { text = tr('No charm placed yet.'), color = V.COLORS.dim }
   end
   return out
 end
@@ -219,7 +219,7 @@ end
 function V.unlockLines(s)
   local out = {}
   for _, g in ipairs(s and s.groups or {}) do
-    out[#out + 1] = { text = string.format('%s %s: %d cells', g.open and '[open]' or '[locked]', g.text or '', num(g.cells)),
+    out[#out + 1] = { text = tr('%s %s: %d cells', g.open and '[open]' or '[locked]', g.text or '', num(g.cells)),
       color = g.open and V.COLORS.good or V.COLORS.dim }
   end
   return out

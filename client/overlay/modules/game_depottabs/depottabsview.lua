@@ -115,7 +115,7 @@ end
 
 -- "Potions", or "Tab 3" for a tab without a name
 function V.tabName(state, tab)
-  return V.customName(state, tab) or string.format('Tab %d', int(tab))
+  return V.customName(state, tab) or tr('Tab %d', int(tab))
 end
 
 -- the colour of a tab's accent (#rrggbb), nil for the default
@@ -174,7 +174,7 @@ end
 function V.title(state, tab)
   local name = V.tabName(state, tab)
   if V.isLocked(state, tab) then
-    return string.format('%s (locked)', name)
+    return tr('%s (locked)', name)
   end
   local used = state.used[int(tab)]
   if used == nil then
@@ -187,7 +187,7 @@ end
 function V.tooltip(state, tab)
   local used = state.used[int(tab)]
   local name = V.customName(state, tab)
-  local head = name and string.format('Tab %d: %s\n', int(tab), name) or ''
+  local head = name and tr('Tab %d: %s\n', int(tab), name) or ''
   if V.isLocked(state, tab) then
     local inside = (used and used > 0) and tr('%d items inside: you can take them out.\n', used) or ''
     return tr('%sTab %d is locked (your account has %d of %d tabs).\n%s%s', head, int(tab), state.tabs,
@@ -216,19 +216,19 @@ end
 function V.header(state, tab)
   if not tab then return tr('Opening the depot...') end
   local name = V.customName(state, tab)
-  local text = name and string.format('Tab %d: %s', int(tab), name) or string.format('Tab %d', int(tab))
+  local text = name and tr('Tab %d: %s', int(tab), name) or tr('Tab %d', int(tab))
   if V.isLocked(state, tab) then text = tr('%s  (locked: withdraw only)', text) end
   return text
 end
 
 -- {items = "87/100 items", itemsColor, tabs = "8 of 17 tabs"}
 function V.footer(state, tab)
-  local out = { tabs = string.format('%d of %d tabs', int(state.tabs), int(state.max)), itemsColor = V.COLORS.text }
+  local out = { tabs = tr('%d of %d tabs', int(state.tabs), int(state.max)), itemsColor = V.COLORS.text }
   local used = tab and state.used[int(tab)]
   if not tab or used == nil then
-    out.items = string.format('-/%d items', state.size)
+    out.items = tr('-/%d items', state.size)
   else
-    out.items = string.format('%d/%d items', used, state.size)
+    out.items = tr('%d/%d items', used, state.size)
     if used >= state.size then out.itemsColor = V.COLORS.full end
   end
   if tab and V.isLocked(state, tab) then out.itemsColor = V.COLORS.locked end

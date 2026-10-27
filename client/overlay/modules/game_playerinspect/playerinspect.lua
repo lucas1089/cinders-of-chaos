@@ -86,7 +86,7 @@ local function onSlotHover(w, hovered)
   local tt = tooltips()
   if not tt or not tt.showTip then return end
   if hovered and w.tip then
-    local extra = { { text = (L.SLOTS[w.slotNumber] or {}).name or '', color = L.COLORS.dim, sep = true } }
+    local extra = { { text = tr((L.SLOTS[w.slotNumber] or {}).name or ''), color = L.COLORS.dim, sep = true } }
     tt.showTip(w, L.tipKey(state.data and state.data.name, w.slotNumber, w.tip), w.tip, extra)
   elseif tt.hideTip then
     tt.hideTip(w)
