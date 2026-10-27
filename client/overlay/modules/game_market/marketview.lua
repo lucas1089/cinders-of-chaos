@@ -44,12 +44,12 @@ end
 -- "2d 5h", "3h 12m", "45m", "<1m"
 function V.timeLeft(sec)
   sec = floor(tonumber(sec) or 0)
-  if sec <= 0 then return 'ended' end
+  if sec <= 0 then return tr('ended') end
   local d, h, m = floor(sec / 86400), floor(sec % 86400 / 3600), floor(sec % 3600 / 60)
-  if d > 0 then return d .. 'd ' .. h .. 'h' end
-  if h > 0 then return h .. 'h ' .. m .. 'm' end
-  if m > 0 then return m .. 'm' end
-  return '<1m'
+  if d > 0 then return tr('%dd %dh', d, h) end
+  if h > 0 then return tr('%dh %dm', h, m) end
+  if m > 0 then return tr('%dm', m) end
+  return tr('<1m')
 end
 
 -- a typed amount: "1500", "1,500", "5k", "2.5m", "1b"; nil when it is not a whole positive number (0 allowed)
@@ -264,7 +264,7 @@ function V.matchedMods(tip, req)
     if r then
       local value = (m.g == 'special' and (tonumber(m.v2) or 0) ~= 0) and tonumber(m.v2) or (tonumber(m.v) or 0)
       if value >= (r.min or 0) and (tonumber(m.tr) or 0) >= (r.t or 0) then
-        out[#out + 1] = { text = 'Matches: ' .. tostring(m.t or m.l or m.k) .. ((m.tr or 0) > 0 and (' (T' .. m.tr .. ')') or '') }
+        out[#out + 1] = { text = tr('Matches: ') .. tostring(m.t or m.l or m.k) .. ((m.tr or 0) > 0 and (' (T' .. m.tr .. ')') or '') }
       end
     end
   end
@@ -274,8 +274,8 @@ end
 -- price lines of a row: { {text, currency} ... }
 function V.priceLines(row)
   local out = {}
-  if (row.gold or 0) > 0 then out[#out + 1] = { text = V.money(row.gold) .. ' gold', cur = 'gold' } end
-  if (row.coins or 0) > 0 then out[#out + 1] = { text = V.money(row.coins) .. ' coins', cur = 'coins' } end
+  if (row.gold or 0) > 0 then out[#out + 1] = { text = V.money(row.gold) .. ' ' .. tr('gold'), cur = 'gold' } end
+  if (row.coins or 0) > 0 then out[#out + 1] = { text = V.money(row.coins) .. ' ' .. tr('coins'), cur = 'coins' } end
   return out
 end
 
@@ -288,12 +288,12 @@ end
 function V.subLine(row)
   local parts = {}
   if row.unique then parts[#parts + 1] = tr('Unique')
-  elseif (row.rarity or 0) > 0 then parts[#parts + 1] = V.rarityName(row.rarity) or ('Rarity ' .. row.rarity) end
-  if (row.ilvl or 0) > 0 then parts[#parts + 1] = 'iLvl ' .. row.ilvl end
-  if row.veil then parts[#parts + 1] = row.veil == 'open' and 'Unveiled' or 'Veiled' end -- the veiled slot (server market.lua)
-  parts[#parts + 1] = V.CATEGORY_NAMES[row.cat] or row.cat
-  if row.seller then parts[#parts + 1] = 'by ' .. row.seller end
-  parts[#parts + 1] = V.timeLeft(row.left) .. ' left'
+  elseif (row.rarity or 0) > 0 then parts[#parts + 1] = V.rarityName(row.rarity) or tr('Rarity %d', row.rarity) end
+  if (row.ilvl or 0) > 0 then parts[#parts + 1] = tr('iLvl %d', row.ilvl) end
+  if row.veil then parts[#parts + 1] = row.veil == 'open' and tr('Unveiled') or tr('Veiled') end -- the veiled slot (server market.lua)
+  parts[#parts + 1] = tr(V.CATEGORY_NAMES[row.cat] or row.cat)
+  if row.seller then parts[#parts + 1] = tr('by %s', row.seller) end
+  parts[#parts + 1] = tr('%s left', V.timeLeft(row.left))
   return table.concat(parts, ' - ')
 end
 
@@ -301,7 +301,7 @@ end
 function V.stateLine(row)
   if row.state == 'sold' then
     local tax, net = row.tax or 0, (row.paid or 0) - (row.tax or 0)
-    local cur = row.cur == 'coins' and 'coins' or 'gold'
+    local cur = row.cur == 'coins' and tr('coins') or tr('gold')
     return tr('Sold to %s for %s %s (tax %s, you got %s)', row.buyer or '?', V.money(row.paid), cur, V.money(tax),
       V.money(net))
   elseif row.state == 'expired' then
@@ -309,13 +309,13 @@ function V.stateLine(row)
   elseif row.state == 'cancelled' then
     return tr('Cancelled: the item went back to your inbox')
   elseif row.state == 'active' then
-    return V.timeLeft(row.left) .. ' left'
+    return tr('%s left', V.timeLeft(row.left))
   end
   return row.state or ''
 end
 
 function V.historyLine(row)
-  local cur = row.cur == 'coins' and 'coins' or 'gold'
+  local cur = row.cur == 'coins' and tr('coins') or tr('gold')
   if row.side == 'bought' then
     return tr('Bought from %s for %s %s', row.seller or '?', V.money(row.paid), cur)
   end
@@ -324,7 +324,7 @@ end
 
 function V.pageText(page, pages, total)
   total = tonumber(total) or 0
-  return string.format('Page %d / %d  (%d offer%s)', tonumber(page) or 1, math.max(1, tonumber(pages) or 1), total, total == 1 and '' or 's')
+  return tr(total == 1 and 'Page %d / %d  (%d offer)' or 'Page %d / %d  (%d offers)', tonumber(page) or 1, math.max(1, tonumber(pages) or 1), total)
 end
 
 -- the Sell picker: listable items first, then the others (greyed, with why)
@@ -359,7 +359,7 @@ function V.checkOrder(meta, form)
   local p = meta and meta.price or {}
   local lim = (p[cur]) or (cur == 'coins' and { min = 1, max = 100000 } or { min = 100, max = 2000000000 })
   if not price or price < lim.min or price > lim.max then
-    return nil, tr('The price per item in %s must be between %s and %s.', cur == 'coins' and tr('Chaos Coins') or 'gold',
+    return nil, tr('The price per item in %s must be between %s and %s.', cur == 'coins' and tr('Chaos Coins') or tr('gold'),
       V.money(lim.min), V.money(lim.max))
   end
   local total = price * qty
@@ -380,7 +380,7 @@ end
 -- what posting holds and costs, for the form's text
 function V.orderCostText(meta, req, total, fee)
   if not req then return '' end
-  local curName = req.cur == 'coins' and tr('Chaos Coins') or 'gold'
+  local curName = req.cur == 'coins' and tr('Chaos Coins') or tr('gold')
   local lines = {}
   if req.cur == 'coins' then
     lines[#lines + 1] = tr('Held now: %s Chaos Coins from your account, and the listing fee of %s gold from your bank.', V.money(total), V.money(fee))
@@ -396,10 +396,10 @@ end
 
 -- the filter of an order in words; modName(key) gives a modifier's name (the Codex catalog), else the key is shown
 function V.orderFilterText(f, modName)
-  if type(f) ~= 'table' then return 'Any' end
+  if type(f) ~= 'table' then return tr('Any') end
   local parts = {}
-  if (tonumber(f.rarity) or 0) > 0 then parts[#parts + 1] = (V.rarityName(f.rarity) or ('Rarity ' .. f.rarity)) .. '+' end
-  if (tonumber(f.ilvl) or 0) > 0 then parts[#parts + 1] = 'iLvl ' .. f.ilvl .. '+' end
+  if (tonumber(f.rarity) or 0) > 0 then parts[#parts + 1] = (V.rarityName(f.rarity) or tr('Rarity %d', f.rarity)) .. '+' end
+  if (tonumber(f.ilvl) or 0) > 0 then parts[#parts + 1] = tr('iLvl %d', f.ilvl) .. '+' end
   local mods = {}
   for _, m in ipairs(f.mods or {}) do
     local name = (modName and modName(m.k)) or tostring(m.k)
@@ -410,43 +410,44 @@ function V.orderFilterText(f, modName)
   end
   if #mods > 0 then
     if f.need and tonumber(f.need) < #mods then
-      parts[#parts + 1] = string.format('%d of: %s', f.need, table.concat(mods, ', '))
+      parts[#parts + 1] = tr('%d of: %s', f.need, table.concat(mods, ', '))
     else
       parts[#parts + 1] = table.concat(mods, ', ')
     end
   end
-  if (tonumber(f.sockets) or 0) > 0 then parts[#parts + 1] = f.sockets .. '+ socket' .. (tonumber(f.sockets) > 1 and 's' or '') end
-  if (tonumber(f.quality) or 0) > 0 then parts[#parts + 1] = 'quality ' .. f.quality .. '%+' end
-  if f.freeP then parts[#parts + 1] = 'free prefix' end
-  if f.freeS then parts[#parts + 1] = 'free suffix' end
-  if f.power then parts[#parts + 1] = 'legendary power' end
-  if f.bound then parts[#parts + 1] = 'bound modifier' end
-  if #parts == 0 then return 'Any' end
+  if (tonumber(f.sockets) or 0) > 0 then parts[#parts + 1] = tr(tonumber(f.sockets) > 1 and '%d+ sockets' or '%d+ socket', f.sockets) end
+  if (tonumber(f.quality) or 0) > 0 then parts[#parts + 1] = tr('quality %d%%+', f.quality) end
+  if f.freeP then parts[#parts + 1] = tr('free prefix') end
+  if f.freeS then parts[#parts + 1] = tr('free suffix') end
+  if f.power then parts[#parts + 1] = tr('legendary power') end
+  if f.bound then parts[#parts + 1] = tr('bound modifier') end
+  if #parts == 0 then return tr('Any') end
   return table.concat(parts, ' - ')
 end
 
 -- the line under an order's name
 function V.orderSubLine(row, modName)
-  local parts = { string.format('%s/%s bought', V.money(row.filled or 0), V.money(row.qty or 0)) }
-  if row.buyer and not row.mine then parts[#parts + 1] = 'by ' .. row.buyer end
+  local parts = { tr('%s/%s bought', V.money(row.filled or 0), V.money(row.qty or 0)) }
+  if row.buyer and not row.mine then parts[#parts + 1] = tr('by %s', row.buyer) end
   if row.state == 'active' then
-    parts[#parts + 1] = V.timeLeft(row.left) .. ' left'
+    parts[#parts + 1] = tr('%s left', V.timeLeft(row.left))
   else
-    parts[#parts + 1] = row.state or ''
+    parts[#parts + 1] = row.state and tr(row.state) or ''
   end
   local f = V.orderFilterText(row.filter, modName)
-  if f ~= 'Any' then parts[#parts + 1] = f end
+  if f ~= tr('Any') then parts[#parts + 1] = f end
   return table.concat(parts, ' - ')
 end
 
 -- the price column of an order: {each, held}
 function V.orderPriceLines(row)
   local cur = row.cur == 'coins' and 'coins' or 'gold'
-  local out = { { text = V.money(row.price or 0) .. ' ' .. cur .. ' each', cur = cur } }
+  local word = cur == 'coins' and tr('coins') or tr('gold')
+  local out = { { text = tr('%s %s each', V.money(row.price or 0), word), cur = cur } }
   if row.state == 'active' then
-    out[#out + 1] = { text = V.money(row.escrow or 0) .. ' held', cur = cur }
+    out[#out + 1] = { text = tr('%s held', V.money(row.escrow or 0)), cur = cur }
   elseif (row.refunded or 0) > 0 then
-    out[#out + 1] = { text = V.money(row.refunded) .. ' back', cur = cur }
+    out[#out + 1] = { text = tr('%s back', V.money(row.refunded)), cur = cur }
   end
   return out
 end
@@ -458,8 +459,8 @@ function V.fillText(meta, row, n)
   local cur = row.cur == 'coins' and 'coins' or 'gold'
   local total = (tonumber(row.price) or 0) * n
   local tax, net = V.tax(meta, cur, total)
-  return tr('Sell %s for %s %s: tax %s, you receive %s %s%s.', n > 1 and (n .. ' items') or '1 item', V.money(total),
-    cur == 'coins' and tr('Chaos Coins') or 'gold', V.money(tax), V.money(net), cur == 'coins' and tr('Chaos Coins') or 'gold',
+  return tr('Sell %s for %s %s: tax %s, you receive %s %s%s.', n > 1 and tr('%d items', n) or tr('1 item'), V.money(total),
+    cur == 'coins' and tr('Chaos Coins') or tr('gold'), V.money(tax), V.money(net), cur == 'coins' and tr('Chaos Coins') or tr('gold'),
     cur == 'coins' and tr(' on your account') or tr(' in your bank'))
 end
 

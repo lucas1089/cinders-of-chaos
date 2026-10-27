@@ -83,7 +83,7 @@ end
 
 function GuildMath.memberText(m)
   m = m or {}
-  return string.format('%s (%s, level %d)', m.name or '?', m.rank or '?', tonumber(m.level) or 0)
+  return tr('%s (%s, level %d)', m.name or '?', m.rank or '?', tonumber(m.level) or 0)
 end
 
 function GuildMath.memberPoints(m)
@@ -93,7 +93,7 @@ end
 
 function GuildMath.topText(t)
   t = t or {}
-  return string.format('%d. %s (level %d)', tonumber(t.rank) or 0, t.name or '?', tonumber(t.level) or 0)
+  return tr('%d. %s (level %d)', tonumber(t.rank) or 0, t.name or '?', tonumber(t.level) or 0)
 end
 
 -- "5k" / "2.5m" / "1500" -> number, or nil

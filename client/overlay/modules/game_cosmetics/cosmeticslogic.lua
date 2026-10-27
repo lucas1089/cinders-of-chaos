@@ -57,7 +57,7 @@ function CL.tabRows(rows, kind, line, lineName)
   end
   if kind ~= 'spellskin' or line then
     out[1] = { id = 0, kind = kind, line = line, name = 'Default', owned = true, selected = not anySelected,
-      desc = CL.DEFAULT_TEXT[kind], how = kind == 'spellskin' and (tr('Every spell of your %s', (type(lineName) == 'string' and lineName or tr('line')))) or
+      desc = CL.DEFAULT_TEXT[kind] and tr(CL.DEFAULT_TEXT[kind]), how = kind == 'spellskin' and (tr('Every spell of your %s', (type(lineName) == 'string' and lineName or tr('line')))) or
       tr('Every character') }
   end
   for _, r in ipairs(mine) do out[#out + 1] = r end

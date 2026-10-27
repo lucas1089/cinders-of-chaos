@@ -3917,7 +3917,9 @@ Check: `python3 -I tools/ci/check_locales.py` fails on a `tr()` key without pt-B
 differ from its key, or a hard-coded UI text (an OTUI `text:` / `tooltip:` / `placeholder:` / `title:` value with
 letters; a Lua literal given straight to `setText`, `setTooltip`, `setTitle`, `setPlaceholder`, `display*Box` or a
 PopupMenu `addOption` without `tr()`); `--missing` prints the lines to fill in, `--stats` the coverage, `--fix FILE...`
-wraps the hard-coded texts of these files. Coverage: 2,453 literal keys in 2,998 `tr()` calls, all translated; 49
+wraps the hard-coded texts of these files. It also fails on `string.format('English ...')` that is not an argument of `tr()`
+(a sentence built by format must be one `tr('... %d ...', n)` key); a line marked `-- i18n-ok` is exempt (not UI text).
+Coverage: 3,327 literal keys in 4,115 `tr()` calls, all translated; 152
 `tr()` with a run-time key. Not run in a client yet (no client build or server in the session).
 
 ## Look preview (new, `game_lookpreview`; owner: "show a simple character with the effect applied")

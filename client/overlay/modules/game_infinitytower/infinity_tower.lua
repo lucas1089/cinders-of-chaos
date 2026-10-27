@@ -562,7 +562,7 @@ local function formatTimeRemaining(seconds)
     local secs = seconds % 60
     
     if days > 0 then
-        return string.format("%d days, %02d:%02d:%02d", days, hours, minutes, secs)
+        return tr("%d days, %02d:%02d:%02d", days, hours, minutes, secs)
     else
         return string.format("%02d:%02d:%02d", hours, minutes, secs)
     end

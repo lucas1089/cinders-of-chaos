@@ -552,7 +552,7 @@ local function onRaised(data)
   if not pick or pick.key ~= key or now() - pick.at > RETRY_S then return end
   pendingPick = nil
   if data.err then
-    message(RAISE_ERRORS[data.err] or RAISE_ERRORS.gone)
+    message(tr(RAISE_ERRORS[data.err] or RAISE_ERRORS.gone))
     return
   end
   local t = tiles[key]
@@ -561,7 +561,7 @@ local function onRaised(data)
   if thing and top and top:getStackPos() == thing:getStackPos() then
     pickUp(thing)
   else
-    message(RAISE_ERRORS.gone)
+    message(tr(RAISE_ERRORS.gone))
   end
 end
 

@@ -58,7 +58,7 @@ L.MAX_TIER = 8
 L.UNIQUE_COLOR = '#e07b24'
 L.ORB_COLOR = '#4fd8d0'
 L.CATEGORIES = { 'equipment', 'currency', 'supplies', 'other' }
-L.CATEGORY_NAMES = { equipment = 'Equipment', currency = 'Currency (orbs, coins)', supplies = 'Supplies (potions, runes)', other = 'Other' }
+L.CATEGORY_NAMES = { equipment = 'Equipment', currency = 'Currency (orbs, coins)', supplies = 'Supplies (potions, runes)', other = 'Other' } -- tr() of a value where shown
 
 local function flag(v)
   return v == true or v == 1 or v == '1'
@@ -145,7 +145,7 @@ function L.tooltip(info)
   end
   local left = tonumber(info.left)
   if left and left <= 0 then
-    lines[#lines + 1] = 'Looted (or gone)'
+    lines[#lines + 1] = tr('Looted (or gone)')
   else
     if left and left < count then lines[#lines + 1] = tr('%s left in the corpse', left) end
     lines[#lines + 1] = count > 1 and tr('Click: loot all   Shift+click: loot one') or tr('Click: loot')
@@ -196,7 +196,7 @@ end
 -- tooltip of the monster icon: its name and the kill time
 function L.killTip(name, t, empty)
   local lines = { (type(name) == 'string' and name ~= '') and name or tr('Unknown creature'), tr('Killed at %s', L.clock(t)) }
-  if empty then lines[#lines + 1] = 'Nothing to loot' end
+  if empty then lines[#lines + 1] = tr('Nothing to loot') end
   return table.concat(lines, '\n')
 end
 

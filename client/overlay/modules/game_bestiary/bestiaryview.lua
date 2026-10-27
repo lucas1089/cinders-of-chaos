@@ -43,16 +43,16 @@ function V.page(list, page, size)
 end
 
 function V.stageName(stage, names)
-  if num(stage) <= 0 then return 'Undiscovered' end
-  return (names and names[num(stage)]) or ('Stage ' .. num(stage))
+  if num(stage) <= 0 then return tr('Undiscovered') end
+  return (names and names[num(stage)] and tr(names[num(stage)])) or tr('Stage %d', num(stage))
 end
 
 -- "Kills 30 / 250" (towards the next stage) or "Kills 1200" (complete)
 function V.killText(kills, nextAt)
   if nextAt and num(nextAt) > 0 then
-    return string.format('Kills %d / %d', num(kills), num(nextAt))
+    return tr('Kills %d / %d', num(kills), num(nextAt))
   end
-  return string.format('Kills %d', num(kills))
+  return tr('Kills %d', num(kills))
 end
 
 -- progress to the next stage in percent (100 when complete): from the previous threshold to the next one
@@ -136,7 +136,7 @@ function V.taskText(t)
   if t.kind == 'family' then
     return tr('Kill %d %s of level %d-%d.', n, tostring(t.label), num(t.lo), num(t.hi))
   end
-  return string.format('Kill %d %s.', n, V.plural(tostring(t.label), n))
+  return tr('Kill %d %s.', n, V.plural(tostring(t.label), n))
 end
 
 function V.plural(name, count)

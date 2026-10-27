@@ -20,7 +20,7 @@ end
 function V.status(s)
   if type(s) ~= 'table' then return 'Loading...', '' end
   if s.active then
-    return tr('Chaos Pact active'), string.format('Until %s (%s left). Title: %s.', s.ends or '?', plural(n(s.daysLeft), 'day'),
+    return tr('Chaos Pact active'), tr('Until %s (%s left). Title: %s.', s.ends or '?', plural(n(s.daysLeft), 'day'),
       s.title ~= '' and s.title or (s.titleText or ''))
   end
   if n(s.endsAt) > 0 then
@@ -92,7 +92,7 @@ function V.buildRows(s)
       if not editable then sub = sub .. ' - read-only' end
       rows[#rows + 1] = { slot = slot, name = b.name or ('Build ' .. slot), sub = sub, saved = true, editable = editable }
     else
-      rows[#rows + 1] = { slot = slot, name = 'Empty slot', sub = editable and tr('Save your current tree here') or '', saved = false,
+      rows[#rows + 1] = { slot = slot, name = tr('Empty slot'), sub = editable and tr('Save your current tree here') or '', saved = false,
         editable = editable }
     end
   end

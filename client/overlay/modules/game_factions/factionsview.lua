@@ -124,13 +124,13 @@ end
 
 function V.tokenText(f)
   if not f then return '' end
-  return string.format('%d %s carried', num(f.tok), f.tn or 'tokens')
+  return tr('%d %s carried', num(f.tok), f.tn or 'tokens')
 end
 
 -- the Turn in button: enabled, tooltip
 function V.tokenButton(f, cap)
   if not f then return false, '' end
-  if num(f.tok) <= 0 then return false, string.format('Bring %s from %s content.', f.tn or 'tokens', f.s or f.n) end
+  if num(f.tok) <= 0 then return false, tr('Bring %s from %s content.', f.tn or 'tokens', f.s or f.n) end
   if not f.near then return false, tr('Speak with %s to turn them in.', f.npc or tr('the faction NPC')) end
   if V.capped(f, cap) or f.ex and num(f.rep) >= num(f.hi) then
     return false, tr('No more reputation this week: keep them.')
@@ -246,7 +246,7 @@ end
 
 function V.offerTooltip(o, f)
   local lines = { o.n or '' }
-  lines[#lines + 1] = string.format('Needs %s', o.rn or '?')
+  lines[#lines + 1] = tr('Needs %s', o.rn or '?')
   if o.kind == 'gear' then
     lines[#lines + 1] = V.offerKindText(o)
     for _, m in ipairs(list(o.mods)) do lines[#lines + 1] = '  ' .. tostring(m) end

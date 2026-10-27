@@ -53,7 +53,7 @@ end
 -- "Room 3 / 10 - Elite"
 function M.roomLine(d)
   if type(d) ~= 'table' then return '' end
-  return string.format('Room %d / %d - %s', tonumber(d.room) or 0, tonumber(d.rooms) or 0, M.roomName(d.type))
+  return tr('Room %d / %d - %s', tonumber(d.room) or 0, tonumber(d.rooms) or 0, M.roomName(d.type))
 end
 
 -- rooms cleared in percent (the progress bar)
@@ -82,10 +82,9 @@ function M.stateLine(d)
   local left = tonumber(d.monsters) or 0
   local waves = tonumber(d.waves) or 0
   if waves > 0 then
-    return string.format('Wave %d / %d - %d monster%s left', math.max(1, tonumber(d.wave) or 0), waves, left,
-      left == 1 and '' or 's')
+    return tr(left == 1 and 'Wave %d / %d - %d monster left' or 'Wave %d / %d - %d monsters left', math.max(1, tonumber(d.wave) or 0), waves, left)
   end
-  return string.format('%d monster%s left', left, left == 1 and '' or 's')
+  return tr(left == 1 and '%d monster left' or '%d monsters left', left)
 end
 
 -- "Embers 120   Rewards +25%"
@@ -93,7 +92,7 @@ function M.embersLine(d)
   if type(d) ~= 'table' then return '' end
   local text = 'Embers ' .. M.number(d.embers)
   if (tonumber(d.reward) or 0) > 0 then
-    text = text .. string.format('   Rewards +%d%%', tonumber(d.reward))
+    text = text .. tr('   Rewards +%d%%', tonumber(d.reward))
   end
   if (tonumber(d.ward) or 0) > 0 then
     text = text .. '   Ward ' .. M.number(d.ward)
@@ -112,7 +111,7 @@ end
 function M.stacksText(stacks, max)
   stacks, max = tonumber(stacks) or 0, tonumber(max) or 1
   if max <= 1 then return '' end
-  return string.format('Stack %d of %d', stacks, max)
+  return tr('Stack %d of %d', stacks, max)
 end
 
 -- the tooltip of a held boon {n, d, s, m} or curse {n, d, r}
@@ -121,7 +120,7 @@ function M.tooltip(b, curse)
   local head = tostring(b.n or '')
   if curse then
     return head .. ' (curse)\n' .. tostring(b.d or '') .. ((tonumber(b.r) or 0) > 0 and
-      string.format('\nRewards +%d%%', tonumber(b.r)) or '')
+      tr('\nRewards +%d%%', tonumber(b.r)) or '')
   end
   local roman = (tonumber(b.m) or 1) > 1 and ROMAN[tonumber(b.s) or 1] or nil
   return head .. (roman and (' ' .. roman) or '') .. '\n' .. tostring(b.d or '')
@@ -142,7 +141,7 @@ function M.cardNote(c)
   local have, max = tonumber(c.s) or 0, tonumber(c.m) or 1
   if max <= 1 then return tr('Unique boon') end
   if have == 0 then return tr('New (stacks to %d)', max) end
-  return string.format('Held %d of %d', have, max)
+  return tr('Held %d of %d', have, max)
 end
 
 -- the x of each of `count` cards of width w with gap between them, centred in `width`
@@ -161,8 +160,8 @@ end
 function M.curseLine(c)
   if type(c) ~= 'table' then return '' end
   local extra = {}
-  if (tonumber(c.r) or 0) > 0 then extra[#extra + 1] = string.format('+%d%% rewards', tonumber(c.r)) end
-  if (tonumber(c.e) or 0) > 0 then extra[#extra + 1] = string.format('+%d embers', tonumber(c.e)) end
+  if (tonumber(c.r) or 0) > 0 then extra[#extra + 1] = tr('+%d%% rewards', tonumber(c.r)) end
+  if (tonumber(c.e) or 0) > 0 then extra[#extra + 1] = tr('+%d embers', tonumber(c.e)) end
   return string.format('%s - %s%s', tostring(c.n or ''), tostring(c.d or ''),
     #extra > 0 and (' (' .. table.concat(extra, ', ') .. ')') or '')
 end
@@ -171,9 +170,9 @@ end
 function M.ware(w, embers)
   if type(w) ~= 'table' then return { can = false, text = '' } end
   local price = tonumber(w.p) or 0
-  if w.off then return { can = false, text = 'Not needed', price = price } end
+  if w.off then return { can = false, text = tr('Not needed'), price = price } end
   local can = (tonumber(embers) or 0) >= price
-  return { can = can, text = string.format('%d embers', price), price = price }
+  return { can = can, text = tr('%d embers', price), price = price }
 end
 
 -- the entry window: free runs, sigils, records
@@ -194,7 +193,7 @@ function M.infoLines(info)
   end
   add(info.freeWeekly and tr('Free weekly descent: ready') or tr('Free weekly descent: used this week'),
     info.freeWeekly and M.COLORS.good or M.COLORS.dim)
-  add(string.format('%s: %d carried', tostring(info.craft and info.craft.name or tr('Ember Sigils')),
+  add(tr('%s: %d carried', tostring(info.craft and info.craft.name or tr('Ember Sigils')),
     tonumber(info.sigils) or 0), (tonumber(info.sigils) or 0) > 0 and M.COLORS.bright or M.COLORS.dim)
   add(tr('Best depth: %d%s   Runs: %d   Clears: %d', tonumber(info.best) or 0,
     info.bestClear and ' (conquered)' or '', tonumber(info.runs) or 0, tonumber(info.clears) or 0), M.COLORS.gold)
@@ -247,15 +246,16 @@ M.RESULTS = {
 function M.endLines(d)
   if type(d) ~= 'table' then return { title = '', color = M.COLORS.text, lines = {} } end
   local r = M.RESULTS[d.result] or { title = tostring(d.text or ''), color = M.COLORS.text }
-  local lines = { string.format('Depth %d of %d%s', tonumber(d.depth) or 0, tonumber(d.rooms) or 0,
-    d.weekly and ' (weekly)' or '') }
+  -- the title of a known result is a key of pt_br.lua (run-time keys); the server's own text is given as it is
+  local title = M.RESULTS[d.result] and tr(r.title) or r.title
+  local lines = { tr('Depth %d of %d', tonumber(d.depth) or 0, tonumber(d.rooms) or 0) .. (d.weekly and (' ' .. tr('(weekly)')) or '') }
   if (tonumber(d.gold) or 0) > 0 then lines[#lines + 1] = tr('%s gold to your bank', M.number(d.gold)) end
   for _, it in ipairs(type(d.items) == 'table' and d.items or {}) do
-    lines[#lines + 1] = (it.unique and 'Unique: ' or '') .. ((tonumber(it.count) or 1) > 1 and (it.count .. ' ') or '')
+    lines[#lines + 1] = (it.unique and tr('Unique: ') or '') .. ((tonumber(it.count) or 1) > 1 and (it.count .. ' ') or '')
       .. tostring(it.name or '')
   end
   if d.title then lines[#lines + 1] = tr('New title: %s', tostring(d.title)) end
-  return { title = r.title, color = r.color, lines = lines }
+  return { title = title, color = r.color, lines = lines }
 end
 
 -- the party under the HUD: "Name 80%" or "Name (out)"

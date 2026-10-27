@@ -259,7 +259,7 @@ function PartyMath.vocation(id)
     local name = line[2][id]
     if name then return name, line[1] end
   end
-  return 'Adventurer', '#9a9088'
+  return tr('Adventurer'), '#9a9088'
 end
 
 -- ------------------------------------------------------------------ layout
@@ -305,19 +305,19 @@ end
 
 function PartyMath.tooltip(m, now)
   local voc = PartyMath.vocation(m.voc)
-  local lines = { m.name .. '  Lv ' .. m.level .. '  ' .. voc }
+  local lines = { tr('%s  Lv %d  %s', m.name, m.level, voc) }
   if m.far then
     lines[#lines + 1] = tr('Far away: about %s%% health', m.pct)
   else
-    lines[#lines + 1] = 'Health ' .. math.floor(m.hp) .. ' / ' .. math.floor(m.hpMax)
-    lines[#lines + 1] = 'Mana ' .. math.floor(m.mp) .. ' / ' .. math.floor(m.mpMax)
+    lines[#lines + 1] = tr('Health %d / %d', math.floor(m.hp), math.floor(m.hpMax))
+    lines[#lines + 1] = tr('Mana %d / %d', math.floor(m.mp), math.floor(m.mpMax))
   end
   local dir, n = PartyMath.floorMark(m.dz)
-  if dir then lines[#lines + 1] = n .. (n == 1 and ' floor ' or ' floors ') .. (dir == 'up' and tr('above you') or tr('below you')) end
-  if PartyMath.flag(m, 'leader') then lines[#lines + 1] = 'Party leader' end
-  if PartyMath.flag(m, 'fight') then lines[#lines + 1] = 'In a fight' end
-  if PartyMath.flag(m, 'dead') then lines[#lines + 1] = 'Dead' end
-  if PartyMath.flag(m, 'offline') then lines[#lines + 1] = 'Connection lost' end
+  if dir then lines[#lines + 1] = tr(n == 1 and '%d floor %s' or '%d floors %s', n, dir == 'up' and tr('above you') or tr('below you')) end
+  if PartyMath.flag(m, 'leader') then lines[#lines + 1] = tr('Party leader') end
+  if PartyMath.flag(m, 'fight') then lines[#lines + 1] = tr('In a fight') end
+  if PartyMath.flag(m, 'dead') then lines[#lines + 1] = tr('Dead') end
+  if PartyMath.flag(m, 'offline') then lines[#lines + 1] = tr('Connection lost') end
   -- the names of the buffs under the frame (the icons themselves take no mouse): a Templar's aura, a stun ...
   local names = {}
   for _, b in ipairs(m.buffs or {}) do

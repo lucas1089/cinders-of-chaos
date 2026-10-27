@@ -8,6 +8,8 @@
 -- and the class's heals. Here a character's class, level and the spells it can cast pick its rotation; a spell it
 -- cannot cast is replaced by the next one of an earlier preset, and the gap of the result is simulated again.
 
+local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
+
 ChaosAutoRotation = ChaosAutoRotation or {}
 local A = ChaosAutoRotation
 
@@ -371,7 +373,7 @@ function A.message(sel, nameOf)
   for _, id in ipairs(sel.ids) do
     names[#names + 1] = nameOf and nameOf(id) or tostring(id)
   end
-  return string.format('Rotation set: %s (max gap %.1f s)', table.concat(names, ' > '), sel.gap)
+  return tr('Rotation set: %s (max gap %.1f s)', table.concat(names, ' > '), sel.gap)
 end
 
 -- Which label the "Auto-update my spells" box can show in the room it has (the presets row, between the Set Key /

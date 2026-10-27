@@ -312,7 +312,7 @@ local function buildTabs()
   end
   local p = window.findPage
   p.onlineCombo:clearOptions()
-  for _, o in ipairs(V.ONLINE_OPTIONS) do p.onlineCombo:addOption(o[2], o[1]) end
+  for _, o in ipairs(V.ONLINE_OPTIONS) do p.onlineCombo:addOption(tr(o[2]), o[1]) end
   p.lineCombo:clearOptions()
   p.lineCombo:addOption(tr('Any class'), '')
   p.seekCheck.onCheckChange = function(widget, checked)

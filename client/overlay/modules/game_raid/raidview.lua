@@ -71,9 +71,9 @@ function RaidView.savedRow(s)
   local done, total = num(s.done) or 0, type(s.killed) == 'table' and #s.killed or 0
   local marks = {}
   for i = 1, total do marks[i] = s.killed[i] and 'X' or '-' end
-  local row = { title = string.format('Raid #%d (%s)', num(s.id) or 0, tostring(s.leader or '?')),
-    progress = string.format('%d / %d slain  [%s]', done, total, table.concat(marks)),
-    next = s.cleared and 'Cleared' or ('Next: ' .. tostring(s.next or '?')), color = s.cleared and '#8c8070' or '#e8b84a' }
+  local row = { title = tr('Raid #%d (%s)', num(s.id) or 0, tostring(s.leader or '?')),
+    progress = tr('%d / %d slain  [%s]', done, total, table.concat(marks)),
+    next = s.cleared and tr('Cleared') or tr('Next: %s', tostring(s.next or '?')), color = s.cleared and '#8c8070' or '#e8b84a' }
   if s.inside then
     row.action = 'inside'
   elseif s.open then
@@ -85,17 +85,17 @@ function RaidView.savedRow(s)
 end
 
 function RaidView.actionText(action)
-  return ({ continue = 'Continue', join = 'Join', inside = 'Inside' })[action] or ''
+  return ({ continue = tr('Continue'), join = tr('Join'), inside = tr('Inside') })[action] or ''
 end
 
 -- the start button: {text, can, why}
 function RaidView.startState(info)
-  if type(info) ~= 'table' then return { text = 'Open New Raid', can = false } end
-  if info.inRaid then return { text = 'In a raid', can = false, why = 'You are inside a raid.' } end
+  if type(info) ~= 'table' then return { text = tr('Open New Raid'), can = false } end
+  if info.inRaid then return { text = tr('In a raid'), can = false, why = tr('You are inside a raid.') } end
   if (num(info.level) or 0) < (num(info.minLevel) or 0) then
-    return { text = 'Open New Raid', can = false, why = string.format('Level %d needed.', num(info.minLevel) or 0) }
+    return { text = tr('Open New Raid'), can = false, why = tr('Level %d needed.', num(info.minLevel) or 0) }
   end
-  return { text = 'Open New Raid', can = true,
+  return { text = tr('Open New Raid'), can = true,
     why = tr('Alone, or your party of up to %d within range comes along (protection zone, out of combat).',
       num(info.maxPlayers) or 15) }
 end
@@ -122,7 +122,7 @@ function RaidView.journalBoss(b, index)
   loot[#loot + 1] = tr('%s gold to the bank, %d Sepulchre Marks', RaidView.number(l.gold), num(l.marks) or 0)
   for _, it in ipairs(type(l.items) == 'table' and l.items or {}) do
     loot[#loot + 1] = it.n and string.format('%d %s', num(it.count) or 0, tostring(it.n)) or
-      RaidView.lootText(string.format('%d item %d', num(it.count) or 0, num(it.id) or 0))
+      RaidView.lootText(string.format('%d item %d', num(it.count) or 0, num(it.id) or 0)) -- i18n-ok: not UI text
   end
   local lv = type(l.gearLevel) == 'table' and l.gearLevel or {}
   loot[#loot + 1] = tr('%d gear rolls, item level %d-%d (%d base items)', num(l.gearRolls) or 0, num(lv[1]) or 0,
@@ -132,17 +132,17 @@ function RaidView.journalBoss(b, index)
     loot[#loot + 1] = tr('%s%% chance of a raid unique: %s', string.format('%.1f', (num(l.unique) or 0) / 100),
       table.concat(u, ', '))
   end
-  return { title = string.format('%d. %s%s', index or 0, tostring(b.n or '?'), b.final and ' (final)' or ''),
-    intro = tostring(b.intro or ''), roles = 'Roles: ' .. tostring(b.roles or ''),
+  return { title = string.format('%d. %s%s', index or 0, tostring(b.n or '?'), b.final and (' ' .. tr('(final)')) or ''),
+    intro = tostring(b.intro or ''), roles = tr('Roles: %s', tostring(b.roles or '')),
     phases = tr('Phases: %s%s', table.concat(phases, ', '), tr('. Enrage at %s.', RaidView.clock(b.enrage))),
     mech = mech, loot = loot }
 end
 
 -- the item names the journal knows (orbs by server id); the rest stay "item <id>"
-RaidView.ITEMS = { [29856] = 'Orbs of Upheaval', [29857] = 'Orbs of Fate', [29855] = 'Exalted Orb' }
+RaidView.ITEMS = { [29856] = 'Orbs of Upheaval', [29857] = 'Orbs of Fate', [29855] = 'Exalted Orb' } -- proper names: stay English
 function RaidView.lootText(line)
   return (tostring(line):gsub('item (%d+)', function(id)
-    return RaidView.ITEMS[tonumber(id)] or ('item ' .. id)
+    return RaidView.ITEMS[tonumber(id)] or tr('item %s', id)
   end))
 end
 
@@ -164,7 +164,7 @@ function RaidView.vendorRow(e, marks)
   local bought, weekly = num(e.bought) or 0, num(e.weekly) or 1
   local price = num(e.price) or 0
   local can = bought < weekly and (num(marks) or 0) >= price
-  local button = bought >= weekly and tr('Sold out') or string.format('%d marks', price)
+  local button = bought >= weekly and tr('Sold out') or tr('%d marks', price)
   return { name = tostring(e.n or '?'), sub = sub, limit = tr('%d / %d this week', bought, weekly),
     button = button, can = can }
 end
@@ -189,12 +189,12 @@ function RaidView.bossLine(d)
   if num(d.trash) then
     return tr('%s - clear the corridor (%d left)', who, num(d.trash))
   end
-  return who .. ' awaits'
+  return tr('%s awaits', who)
 end
 
 function RaidView.phaseLine(d)
   if d.state ~= 'fight' or not d.phase then return '' end
-  return string.format('Phase %d of %d: %s', num(d.phase) or 1, num(d.phases) or 1, tostring(d.phaseName or ''))
+  return tr('Phase %d of %d: %s', num(d.phase) or 1, num(d.phases) or 1, tostring(d.phaseName or ''))
 end
 
 function RaidView.enrageText(d, left)
@@ -204,10 +204,10 @@ function RaidView.enrageText(d, left)
 end
 
 function RaidView.countsLine(d)
-  local parts = { string.format('Raiders %d', num(d.players) or 0) }
-  if num(d.fallen) then parts[#parts + 1] = string.format('fallen %d', num(d.fallen)) end
-  if num(d.adds) then parts[#parts + 1] = string.format('adds %d', num(d.adds)) end
-  if num(d.totems) then parts[#parts + 1] = string.format('effigies %d', num(d.totems)) end
+  local parts = { tr('Raiders %d', num(d.players) or 0) }
+  if num(d.fallen) then parts[#parts + 1] = tr('fallen %d', num(d.fallen)) end
+  if num(d.adds) then parts[#parts + 1] = tr('adds %d', num(d.adds)) end
+  if num(d.totems) then parts[#parts + 1] = tr('effigies %d', num(d.totems)) end
   return table.concat(parts, ', ')
 end
 

@@ -169,7 +169,7 @@ end
 -- ---------------------------------------------------------------- showing links
 local function asTooltip(entry, range)
   if entry and entry.tip then return entry.tip end
-  return { name = range.name, id = 0, count = 1, rarity = range.rarity, desc = 'This item link has expired.' }
+  return { name = range.name, id = 0, count = 1, rarity = range.rarity, desc = tr('This item link has expired.') }
 end
 
 local function footer(entry)

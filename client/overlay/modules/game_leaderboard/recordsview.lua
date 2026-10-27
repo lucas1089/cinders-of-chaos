@@ -35,8 +35,8 @@ function RecordsView.finish(state, data)
     if type(g) == 'table' and g.key ~= nil then meta.groups[#meta.groups + 1] = g end
   end
   -- the realm firsts: a category of the client (its own request)
-  meta.categories[#meta.categories + 1] = { key = 'firsts', name = 'Realm Firsts', boards = {},
-    info = 'The first player or party to defeat each boss this season.' }
+  meta.categories[#meta.categories + 1] = { key = 'firsts', name = tr('Realm Firsts'), boards = {},
+    info = tr('The first player or party to defeat each boss this season.') }
   -- the own personal records (O260): a category of the client, its own request (rmine)
   meta.categories[#meta.categories + 1] = { key = 'mine', name = tr('My Records'), boards = {},
     info = tr('Your own best drop, highest Tower floor and rift tier, and your fastest boss kills.') }

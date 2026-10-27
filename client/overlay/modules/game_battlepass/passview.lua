@@ -68,12 +68,12 @@ end
 -- the button of an offer of the Packs page: text, enabled
 function PassView.offerButton(offer)
   if type(offer) ~= 'table' then return '', false end
-  if offer.owned then return 'Owned', false end
+  if offer.owned then return tr('Owned'), false end
   local price = tonumber(offer.price)
-  if not price then return 'Unavailable', false end
+  if not price then return tr('Unavailable'), false end
   local full = tonumber(offer.full) or price
-  if price < full then return string.format('Upgrade %d', price), true end
-  return string.format('Buy %d', price), true
+  if price < full then return tr('Upgrade %d', price), true end
+  return tr('Buy %d', price), true
 end
 
 -- "Experience 120 / 300" (a source line of the Challenges page)

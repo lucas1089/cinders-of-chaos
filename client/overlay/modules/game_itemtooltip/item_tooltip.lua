@@ -175,7 +175,7 @@ local function diffRows(tip, other)
   local rows = { { text = tr('Compared with %s', (other.name or tr('equipped'))), color = C.dim, sep = true } }
   local diffs = L.diff(tip, other)
   if #diffs == 0 then
-    rows[#rows + 1] = { text = 'No difference', color = C.dim }
+    rows[#rows + 1] = { text = tr('No difference'), color = C.dim }
   end
   for _, d in ipairs(diffs) do
     rows[#rows + 1] = { text = L.diffText(d), color = d.better and C.better or C.worse }
@@ -264,10 +264,10 @@ local function render()
       for _, r in ipairs(diffRows(tip, partner)) do extra[#extra + 1] = r end
     end
     if #others == 0 and #missing == 0 then
-      extra[#extra + 1] = { text = 'Nothing equipped to compare', color = C.dim, sep = true }
+      extra[#extra + 1] = { text = tr('Nothing equipped to compare'), color = C.dim, sep = true }
     end
   elseif tip.cmp then
-    extra[#extra + 1] = { text = 'Hold Ctrl to compare', color = C.dim, sep = true }
+    extra[#extra + 1] = { text = tr('Hold Ctrl to compare'), color = C.dim, sep = true }
   end
   compareShown = wantCompare
   panels[1] = buildPanel(tip, extra)

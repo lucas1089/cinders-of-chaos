@@ -4,6 +4,7 @@
 -- and the price. Apply sends the code back with the price the preview showed.
 --   buildExport -> buildCode {code}, buildPreview {code} -> buildPreview {...} | buildError {message},
 --   buildApply {code, cost} -> buildApplied {message} | buildError {message}
+local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 ChaosTreeHandlers = ChaosTreeHandlers or {}
 local buildWindow = nil
 local preview = nil
@@ -170,7 +171,7 @@ ChaosTreeHandlers.buildPreview = function(data)
   local lines = {data.summary or ''}
   lines[#lines + 1] = tr('Points: the build needs %d, you own %d.', data.wanted or 0, data.points or 0)
   if data.change then
-    lines[#lines + 1] = 'The tree shows the build now. Apply Build to take it, Cancel Preview to go back.'
+    lines[#lines + 1] = tr('The tree shows the build now. Apply Build to take it, Cancel Preview to go back.')
   end
   setPreviewText(table.concat(lines, '\n'), data.change and '#d8cfc0' or '#c0b080')
   showTreeAllocation(data.nodes or {}, true, data.masteries)

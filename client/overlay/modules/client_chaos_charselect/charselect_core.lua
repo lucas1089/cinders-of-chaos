@@ -34,7 +34,7 @@ function C.classInfo(vocation)
       return { id = id, name = line.asc[id], base = line.base, line = line.name, icon = line.icon, ascended = true, lock = line.lock }
     end
   end
-  return { id = id, name = id == 0 and 'No class' or 'Unknown class', base = 0, line = '', icon = '', ascended = false, lock = '' }
+  return { id = id, name = id == 0 and tr('No class') or tr('Unknown class'), base = 0, line = '', icon = '', ascended = false, lock = '' }
 end
 
 -- "Juggernaut (Warrior)" for an ascended class, "Warrior" for a base class
@@ -53,23 +53,30 @@ end
 -- last login, in words: never (a new character), minutes / hours / days ago, else the date
 function C.lastLoginText(ts, now)
   ts, now = tonumber(ts) or 0, tonumber(now) or 0
-  if ts <= 0 then return 'Never played' end
+  if ts <= 0 then return tr('Never played') end
   local d = now - ts
   if d < 0 then d = 0 end
-  if d < 120 then return 'Last played just now' end
+  if d < 120 then return tr('Last played just now') end
   if d < 3600 then return tr('Last played %d minutes ago', math.floor(d / 60)) end
-  if d < 7200 then return 'Last played an hour ago' end
+  if d < 7200 then return tr('Last played an hour ago') end
   if d < 86400 then return tr('Last played %d hours ago', math.floor(d / 3600)) end
-  if d < 172800 then return 'Last played yesterday' end
+  if d < 172800 then return tr('Last played yesterday') end
   if d < 30 * 86400 then return tr('Last played %d days ago', math.floor(d / 86400)) end
   return tr('Last played on %s', os.date('!%Y-%m-%d', ts))
 end
 
 -- the same, short, for a card: "2 hours ago", "yesterday", "never played", "2026-09-03"
 function C.lastLoginShort(ts, now)
-  local t = C.lastLoginText(ts, now)
-  if t == 'Never played' then return 'never played' end
-  return (t:gsub('^Last played on ', ''):gsub('^Last played ', ''))
+  ts, now = tonumber(ts) or 0, tonumber(now) or 0
+  if ts <= 0 then return tr('never played') end
+  local d = math.max(0, now - ts)
+  if d < 120 then return tr('just now') end
+  if d < 3600 then return tr('%d minutes ago', math.floor(d / 60)) end
+  if d < 7200 then return tr('an hour ago') end
+  if d < 86400 then return tr('%d hours ago', math.floor(d / 3600)) end
+  if d < 172800 then return tr('yesterday') end
+  if d < 30 * 86400 then return tr('%d days ago', math.floor(d / 86400)) end
+  return os.date('!%Y-%m-%d', ts)
 end
 
 -- The world name of a character card: the name the login server sent when it is one of `allowed` (our world names
@@ -346,7 +353,7 @@ end
 -- "used" is never shown above the limit: then it says that no slot is free.
 function C.slotsText(count, slots)
   count = tonumber(count) or 0
-  local text = count == 1 and '1 character' or string.format('%d characters', count)
+  local text = count == 1 and '1 character' or tr('%d characters', count)
   local limit = type(slots) == 'table' and tonumber(slots.limit)
   if not limit then return text end
   local used = math.max(count, tonumber(slots.used) or count)
@@ -370,13 +377,13 @@ function C.checkName(name, rules)
   rules = rules or {}
   local minL, maxL, maxW = tonumber(rules.minL) or 3, tonumber(rules.maxL) or 20, tonumber(rules.maxW) or 3
   name = tostring(name or ''):gsub('^%s+', ''):gsub('%s+$', '')
-  if name == '' then return 'Enter a name.' end
-  if name:find('[^A-Za-z ]') then return 'Use letters and spaces only.' end
-  if name:find('  ', 1, true) then return 'Use one space between words.' end
+  if name == '' then return tr('Enter a name.') end
+  if name:find('[^A-Za-z ]') then return tr('Use letters and spaces only.') end
+  if name:find('  ', 1, true) then return tr('Use one space between words.') end
   local words = 0
   for w in name:gmatch('%S+') do
     words = words + 1
-    if #w == 1 then return 'Every word needs at least two letters.' end
+    if #w == 1 then return tr('Every word needs at least two letters.') end
   end
   if words > maxW then return tr('Use at most %d words.', maxW) end
   if #name < minL or #name > maxL then return tr('The name needs %d to %d letters.', minL, maxL) end
@@ -403,11 +410,11 @@ end
 
 -- the season choices: "No season" first, then one per mode of the running season ({season, mode, label, hc, warning})
 function C.seasonChoices(state)
-  local out = { { season = 0, mode = '', label = 'No season (standard character)', hc = false, warning = '' } }
+  local out = { { season = 0, mode = '', label = tr('No season (standard character)'), hc = false, warning = '' } }
   local s = state and state.account and state.account.season
   if type(s) == 'table' and tonumber(s.id) then
     for _, m in ipairs(s.modes or {}) do
-      out[#out + 1] = { season = tonumber(s.id), mode = m.key, label = string.format('%s %s: %s', s.name or 'Season',
+      out[#out + 1] = { season = tonumber(s.id), mode = m.key, label = string.format('%s %s: %s', s.name or tr('Season'),
         s.tag or '', m.name or m.key), hc = m.hc and true or false, warning = m.warning or '' }
     end
   end
@@ -452,7 +459,7 @@ function C.errorText(body, err)
   if err and tostring(err) ~= '' then
     return tr('The website could not be reached (%s).', tostring(err))
   end
-  return 'The website gave no answer.'
+  return tr('The website gave no answer.')
 end
 
 -- The account API's URL from the client config: HTTPS, or plain HTTP to this machine only (a local test server).

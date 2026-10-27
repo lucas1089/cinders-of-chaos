@@ -65,7 +65,7 @@ function V.cards(data)
       out[#out + 1] = {
         i = tonumber(o.i), key = o.key, name = tostring(o.name), text = tostring(o.text), lines = V.wrap(o.text, V.WRAP),
         tierText = tr('Veiled tier %s', tn), tierColor = V.tierColor(o.tier),
-        rangeText = (o.lo and o.hi) and (o.lo == o.hi and string.format('Range %d', o.lo) or string.format('Range %d-%d', o.lo, o.hi)) or '',
+        rangeText = (o.lo and o.hi) and (o.lo == o.hi and tr('Range %d', o.lo) or tr('Range %d-%d', o.lo, o.hi)) or '',
         hookText = o.hook and tr('Effect of its own') or ''
       }
     end

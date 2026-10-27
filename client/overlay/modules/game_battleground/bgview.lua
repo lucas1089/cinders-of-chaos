@@ -72,7 +72,7 @@ function V.bracketCard(view, tiers, placementTotal)
   else
     local left = num(view.placementLeft, num(placementTotal, 5))
     local total = num(placementTotal, 5)
-    c.tier = string.format('Placement %d/%d', total - left, total)
+    c.tier = tr('Placement %d/%d', total - left, total)
     c.color = '#8c8070'
     c.image = V.tierImage('ashen')
     c.rating = '?'
@@ -137,7 +137,7 @@ function V.vendorRow(o, honor)
   o = type(o) == 'table' and o or {}
   local r = { title = o.name or '?', button = V.number(o.cost) .. ' honor' }
   if o.owned then
-    r.sub, r.can, r.button = 'Unlocked for your account.', false, 'Owned'
+    r.sub, r.can, r.button = tr('Unlocked for your account.'), false, tr('Owned')
   elseif num(honor) < num(o.cost) then
     r.sub, r.can = tr('You need %s more honor.', V.number(num(o.cost) - num(honor))), false
   else
@@ -151,7 +151,7 @@ function V.rewardRows(tiers, seasonId)
   local out = {}
   for _, t in ipairs(type(tiers) == 'table' and tiers or {}) do
     local parts = {}
-    if t.title then parts[#parts + 1] = string.format('title "%s (S%d)"', t.title, num(seasonId)) end
+    if t.title then parts[#parts + 1] = tr('title "%s (S%d)"', t.title, num(seasonId)) end
     if t.frame then parts[#parts + 1] = tr('%s plate frame', t.frame) end
     local cos = type(t.cosmetics) == 'table' and #t.cosmetics or 0
     if cos > 0 then parts[#parts + 1] = cos .. (cos == 1 and ' cosmetic' or ' cosmetics') end
@@ -251,12 +251,12 @@ function V.summary(d, myTeam)
       if se.placed then
         s.rating = s.rating .. '  ' .. tostring(se.tierName or '')
       else
-        s.rating = s.rating .. string.format('  (placement: %d left)', num(se.placementLeft))
+        s.rating = s.rating .. tr('  (placement: %d left)', num(se.placementLeft))
       end
     else
       s.rating = ''
     end
-    s.honor = string.format('Honor +%d%s', num(d.honor), d.firstWin and tr(' (first win of the week)') or '')
+    s.honor = tr('Honor +%d%s', num(d.honor), d.firstWin and tr(' (first win of the week)') or '')
     if d.items and d.items ~= '' then s.honor = s.honor .. '  ' .. d.items end
   end
   return s

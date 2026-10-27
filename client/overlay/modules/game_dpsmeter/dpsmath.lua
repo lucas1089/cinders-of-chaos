@@ -217,7 +217,7 @@ end
 -- the dropdown entries: {id, text}; segs = [[id, label, dur, dmg, heal, taken, live, boss]]. The texts of the session
 -- and the running fight do not carry the running time, so the list only changes when the fights change.
 function DpsMath.segmentOptions(segs)
-  local out = { { id = 'c', text = 'Current fight' } }
+  local out = { { id = 'c', text = tr('Current fight') } }
   for _, s in ipairs(segs or {}) do
     local id, label, dur, live, boss = s[1], tostring(s[2] or ''), s[3], s[7] == 1, s[8] == 1
     if id == 's' then
@@ -284,7 +284,7 @@ function DpsMath.summary(view, idx, maxRows)
   }
   for i, r in ipairs(rows) do
     if i > (maxRows or 15) then break end
-    lines[#lines + 1] = string.format('%2d. %s  %s  %s%%  %s/s  hits %d  crit %d%%  avg %s  max %s', i, r.name,
+    lines[#lines + 1] = tr('%2d. %s  %s  %s%%  %s/s  hits %d  crit %d%%  avg %s  max %s', i, r.name,
       DpsMath.exact(r.total), tostring(r.pct), DpsMath.exact(r.rate), r.hits, r.critPct, DpsMath.exact(r.avg),
       DpsMath.exact(r.max))
   end
