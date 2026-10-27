@@ -16,3 +16,7 @@ Good: brick and pale tile contrast, torches give red accents. Weak: no real gurn
 
 Round 8: rooms, wards and cell blocks (`cave.rooms`), brick `walls` with windows, crypt flagstone floors, themed rooms. Pair 49 carcass piles and skeleton not placed yet in the room themes (left to a later round). `bare seams` 0 through `same_look`.
 
+
+## Round 9
+
+Doors at room entries; corridor stub removed by the layout clearance rule; wall_check all 0.

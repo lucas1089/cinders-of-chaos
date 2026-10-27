@@ -187,6 +187,48 @@ def floor_of(d, kit, spec, tiles):
             del st[1:]  # old borders and clumps go; the theme lays its own decor
 
 
+def corridor_along(d, free, floor, specs):
+    """Round 9: sparse wall decor along a corridor (kit corridor theme key `along`: the room `along` spec plus "spacing": the
+    fewest tiles between two of its items). An item stands on a corridor tile that has a wall on the spec's side."""
+    rng = d.rng
+    for spec in specs:
+        placed = []
+        for t in sorted(free):
+            for side in spec.get("sides", ["n"]):
+                dx, dy = SIDES[side]
+                if (t[0] + dx, t[1] + dy) in floor or t in d.taken:
+                    continue
+                if any(max(abs(t[0] - a), abs(t[1] - b)) < spec.get("spacing", 6) for a, b in placed):
+                    continue
+                if rng.random() < spec.get("chance", 0.05):
+                    item = int(rng.choice(spec["ids"]))
+                    if d.put(item, t[0], t[1], free, spec.get("single", True)):
+                        placed.append(t)
+                        break
+
+
+def doorways(rooms, floor, max_width):
+    """Round 9 (kit key `doors`): the doorways where a room meets a corridor or a hall: {tile: "h" | "v"}. A doorway is a run of
+    floor tiles in the ring just outside a room rectangle, at most `max_width` wide ("h": the wall line runs along x, so
+    the tile is in the top or bottom ring)."""
+    out = {}
+    for room in rooms:
+        x0, y0, x1, y1 = room["rect"]
+        sides = (("h", [(x, y0 - 1) for x in range(x0, x1 + 1)]), ("h", [(x, y1 + 1) for x in range(x0, x1 + 1)]),
+                 ("v", [(x0 - 1, y) for y in range(y0, y1 + 1)]), ("v", [(x1 + 1, y) for y in range(y0, y1 + 1)]))
+        for kind, ring in sides:
+            run = []
+            for t in ring + [None]:
+                if t is not None and t in floor:
+                    run.append(t)
+                    continue
+                if run and len(run) <= max_width:
+                    for q in run:
+                        out.setdefault(q, kind)
+                run = []
+    return out
+
+
 def dress(layer, m, kit, items, rng, origin, size, wall_pieces):
     """Floor and decor of every room and corridor. Returns the set of decor ids placed."""
     themes = kit.get("themes", {})
@@ -214,7 +256,20 @@ def dress(layer, m, kit, items, rng, origin, size, wall_pieces):
             free.discard(room["door"])
         apply_theme(d, r, free, theme)
     corridor = themes.get("corridor")
+    door_tiles = {}
+    doors = kit.get("doors")  # kit doors {"h": id, "v": id, "max_width": n}: an open door piece in every doorway up to n tiles wide
+    if doors:
+        door_tiles = {t: k for t, k in doorways(m["rooms"], floor, doors.get("max_width", 2)).items() if t not in keep}
     if corridor:
-        free = {t for t in floor if t not in in_room and t not in keep}
+        free = {t for t in floor if t not in in_room and t not in keep and t not in door_tiles}
+        # no decor right beside a doorway
+        near_door = {(x + i, y + j) for x, y in door_tiles for i in (-2, -1, 0, 1, 2) for j in (-2, -1, 0, 1, 2)}
+        free -= near_door
         apply_theme(d, (0, 0, size - 1, size - 1), free, {k: v for k, v in corridor.items() if k == "scatter"})
+        if corridor.get("along"):
+            corridor_along(d, free, floor, corridor["along"])
+    for (x, y), kind in sorted(door_tiles.items()):
+        st = layer.get((origin + x, origin + y))
+        if st is not None:
+            st[:] = st[:1] + [int(doors[kind])]
     return d.used

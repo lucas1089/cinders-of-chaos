@@ -179,17 +179,45 @@ def routes(rng, a, b, w, lo, hi):
     return out
 
 
-def route_ok(path, w, own, nodes, lo, hi):
+def route_ok(path, w, own, nodes, lo, hi, placed=()):
     rects = [seg_rect(p, q, w) for p, q in zip(path, path[1:])]
     for r in rects:
         if r[0] < lo or r[1] < lo or r[2] > hi or r[3] > hi:
             return None
+        for q in placed:  # round 9: corridors of other edges: join them or keep 1 or 5+ tiles away
+            if overlap(r, inflate(q, 5)) and not overlap(r, inflate(q, 2)):
+                return None
         for n in nodes:
             if n in own:
+                if overlap(r, inflate(n.rect, 5)) and not overlap(r, inflate(n.rect, 2)):
+                    return None
                 continue
             if overlap(r, inflate(n.rect, 1)):
                 return None
+            if overlap(r, inflate(n.rect, 5)) and not overlap(r, inflate(n.rect, 2)):
+                return None  # round 9: 2-4 solid tiles between a corridor and a room show two walls and a dark strip
     return rects
+
+
+def double_walls(floor, thick=(2, 3, 4)):
+    """Round 9: solid bands 2-4 tiles thick with floor on both sides: two walls stacked or with a 1-2 tile dark strip between
+    them (a band 1 thick is one shared wall, 5 or more shows plain rock). Returns the tiles of such bands."""
+    bad = set()
+    for (x, y) in floor:
+        for dx, dy in ((1, 0), (0, 1)):
+            for t in thick:
+                run = [(x + k * dx, y + k * dy) for k in range(1, t + 1)]
+                if all(r not in floor for r in run) and (x + (t + 1) * dx, y + (t + 1) * dy) in floor \
+                        and all((r[0] + dy, r[1] + dx) not in floor and (r[0] - dy, r[1] - dx) not in floor for r in run):
+                    bad.update(run)  # (a wall column between two doorways has floor beside it: not a band)
+    return bad
+
+
+def rock_pockets(floor):
+    """Round 9: rock tiles that touch no floor but have wall tiles on 3 of their 4 sides (a 1-tile dark notch between walls)."""
+    need = {(x + i, y + j) for x, y in floor for i in (-1, 0, 1) for j in (-1, 0, 1)} - floor
+    cand = {(x + i, y + j) for x, y in need for i in (-1, 0, 1) for j in (-1, 0, 1)} - need - floor
+    return {t for t in cand if sum((t[0] + a, t[1] + b) in need for a, b in ((1, 0), (-1, 0), (0, 1), (0, -1))) >= 3}
 
 
 def layout_floor(size, rng, cfg):
@@ -203,7 +231,7 @@ def layout_floor(size, rng, cfg):
     corridor = cfg.get("corridor", {"2": 0.5, "3": 0.5})
     best = None
     tried = set()
-    for attempt in range(10):
+    for attempt in range(25):
         tried.add(n)
         taken, nodes = [], []
         for _ in range(n * 6):
@@ -242,7 +270,7 @@ def layout_floor(size, rng, cfg):
             ok = None
             for _ in range(3):  # a few widths when the first finds no way
                 for path in routes(rng, na, nb, w, lo, hi):
-                    rects = route_ok(path, w, (na, nb), nodes, lo, hi)
+                    rects = route_ok(path, w, (na, nb), nodes, lo, hi, [q for d in done for q in d[2][1]])
                     if rects:
                         ok = (w, rects)
                         break
@@ -277,14 +305,20 @@ def layout_floor(size, rng, cfg):
         info = {"nodes": len(keep), "loops": extra, "attempts": attempt + 1, "share": round(share, 3),
                 "width_tiles": dict(sorted(widths.items())), "edges": len(done)}
         score = 0 if lo_share <= share <= hi_share else min(abs(share - lo_share), abs(share - hi_share))
+        pockets = len(double_walls(floor)) + len(rock_pockets(floor))  # round 9: two walls with 0-1 tile between them are not wanted
+        info["double_walls"] = pockets
+        score = (1 if pockets else 0, pockets, score)
         if best is None or score < best[0]:
             best = (score, floor, [nodes[i] for i in sorted(keep)], info)
-        if score == 0:
+        if score[:2] == (0, 0) and score[2] == 0:
             break
-        n2 = n + 1 if share < lo_share else n - 1
-        if n2 < 3 or n2 in tried:
+        if attempt >= 24:
             break
+        n2 = n if lo_share <= share <= hi_share else (n + 1 if share < lo_share else n - 1)
+        if n2 < 3:
+            n2 = n
         n = n2
+
     return best[1], best[2], best[3]
 
 
@@ -294,7 +328,15 @@ def rooms_layout(size, rng, cave_cfg, style, stairs_fn):
     floor_set, nodes, info = layout_floor(size, rng, cfg)
     floor = [[(x, y) in floor_set for x in range(size)] for y in range(size)]
     count = cave_cfg.get("stairs", {}).get("count", [0, 0]) if cave_cfg.get("stairs") else [0, 0]
-    found = stairs_fn(floor, rng, style, rng.randint(*count)) if count[1] else []
+    want = rng.randint(*count)
+    base_bad = len(double_walls(floor_set)) + len(rock_pockets(floor_set))
+    for _ in range(12):  # round 9: an alcove that leaves a thin band against a room is cut again elsewhere
+        trial = [row[:] for row in floor]
+        found = stairs_fn(trial, rng, style, want, clear=5) if count[1] else []
+        tf = {(x, y) for y in range(size) for x in range(size) if trial[y][x]}
+        if len(double_walls(tf)) + len(rock_pockets(tf)) <= base_bad:
+            break
+    floor = trial if count[1] else floor
     water = [[not v for v in row] for row in floor]
     rooms = [dict(r) for n in nodes for r in n.rooms]
     floor_set = {(x, y) for y in range(size) for x in range(size) if floor[y][x]}

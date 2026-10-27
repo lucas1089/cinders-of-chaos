@@ -23,12 +23,18 @@ def check_area(path):
     pools = {int(i) for i in (meta.get("pools") or {}).get("ids", [])}  # liquid pool grounds (header stat `pools`)
     no_walk = water_ids(kit) | pools | {int(i) for i in (kit.get("void_cover") or {}).get("ground", [])}
     res = wallcheck.check(area.get(z, {}), meta["size"], 1000, load_items(), kit, no_walk, edge_pieces, pool_ids=pools)
+    res["wall_gaps"], res["samples_gaps"], res["wall_bands"], res["samples_bands"] = 0, [], 0, []
+    if kit.get("walls"):  # the two round 9 counts are for wall sets (cliff-edge cave kits and island kits have none)
+        g = wallcheck.gaps(area.get(z, {}), meta["size"], 1000, load_items(), kit, no_walk)
+        res["wall_gaps"], res["samples_gaps"] = g["wall_gaps"], g["samples"]
+        b = wallcheck.bands(area.get(z, {}), meta["size"], 1000, load_items(), kit, no_walk)
+        res["wall_bands"], res["samples_bands"] = b["wall_bands"], b["samples"]
     return meta, res
 
 
 def main():
     paths = []
-    for a in sys.argv[1:] or ["."]:
+    for a in [a for a in sys.argv[1:] if not a.startswith('-')] or ["."]:
         p = (ROOT / a) if not Path(a).is_absolute() else Path(a)
         paths += sorted(p.glob("seed-*/area.txt")) if (p / "area.txt").exists() is False else [p / "area.txt"]
     bad = 0
@@ -36,8 +42,10 @@ def main():
         meta, r = check_area(path)
         tag = f"{path.parent.parent.name}/{path.parent.name}"
         print(f"{tag}: void_touch {r['void_touch']} (floor {r['void_touch_floor']}, wall {r['void_touch_wall']}), "
-              f"wall_wrong {r['wall_wrong']}, wall_missing {r['wall_missing']}, wall tiles {r['wall_tiles']}")
-        if r["void_touch"] or r["wall_wrong"] or r["wall_missing"]:
+              f"wall_wrong {r['wall_wrong']}, wall_missing {r['wall_missing']}, wall_gaps {r['wall_gaps']}, wall_bands {r['wall_bands']}, wall tiles {r['wall_tiles']}")
+        if "-v" in sys.argv or "--samples" in sys.argv:
+            print("   gap samples (tile x, y, px):", r["samples_gaps"], "band samples (tile x, y):", r["samples_bands"])
+        if r["void_touch"] or r["wall_wrong"] or r["wall_missing"] or r["wall_gaps"] or r["wall_bands"]:
             bad += 1
     print(f"{len(paths)} areas, {bad} with a count above 0")
     return 1 if bad else 0

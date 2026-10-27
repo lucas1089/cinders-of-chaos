@@ -451,7 +451,7 @@
   "void_jitter": 0,
   "rooms": {
    "per_1000": 1.0,
-   "gap": 3,
+   "gap": 5,
    "corridor": {
     "3": 0.4,
     "4": 0.3,
@@ -970,5 +970,6 @@
    ],
    "margin": 0
   }
- ]
+ ],
+ "landing_ring": true
 }

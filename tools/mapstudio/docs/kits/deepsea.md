@@ -15,3 +15,7 @@ Good: wreck pieces, corals and chests give a readable reef. Weak: the grey rock 
 
 Round 8: `wall_check` on (cliff pieces and void counts 0), flat sand and grey patches dropped (`patches` empty, `defaults.sand` 0, `same_look` for the rest), tinted deep water `pools` with their own border (`deep_edge`). Still missing: pools only fit in chambers 7+ wide, small tunnels get none.
 
+
+## Round 9
+
+Pools on every seed, also narrow ones; landing ring.

@@ -16,3 +16,7 @@ Good: strings, banners and bats give the circus mood. Weak: no rides (carousel, 
 
 Round 8: ring, stage, tent, booth and hall rooms (`cave.rooms`), iron fence `walls`, big top `stamps` (split rail outline with lantern posts), carpet floors. `bare seams` 0 through `same_look`.
 
+
+## Round 9
+
+Doors at room entries; sparse corridor decor (themes.corridor.along); wall_check all 0 (open fences are see-through, gap check skipped).

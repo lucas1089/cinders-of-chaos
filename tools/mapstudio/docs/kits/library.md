@@ -16,3 +16,7 @@ Good: parquet and moss stone read as a library, books and scrolls scatter well. 
 
 Round 8: reading rooms and halls (`cave.rooms`), crypt stone `walls` with windows, bookcase rows along walls (`themes`). `bare seams` 0 through `same_look`.
 
+
+## Round 9
+
+Doors at room entries; sparse wall decor and floor props along corridors (themes.corridor.along); wall_check all 0.

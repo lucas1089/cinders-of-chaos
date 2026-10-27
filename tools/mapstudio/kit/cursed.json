@@ -645,7 +645,7 @@
     36865
    ],
    "border": "acid_edge",
-   "share": 0.035,
+   "share": 0.055,
    "scale": 4,
    "min": 8,
    "decor": {
@@ -661,9 +661,18 @@
     711
    ],
    "border": "purple_edge",
-   "share": 0.03,
+   "share": 0.05,
    "scale": 4,
    "min": 6
+  },
+  {
+   "ground": [
+    36865
+   ],
+   "border": "acid_edge",
+   "share": 0.03,
+   "scale": 2,
+   "min": 5
   }
  ],
  "wall_check": true,

@@ -40,3 +40,7 @@ All 8 seeds 100 percent of walkable tiles on floor 7 (3633/3633, 5250/5250, 6382
 ## Round 8
 
 `pools` (acid 36865 with its own border, tar blobs), `stamps` (fenced gravestone rows with a gate), pair 49 dead trees, tombstones, coffins, carcasses, pumpkins and taint pools in `clumps`. `wall_check` is on.
+
+## Round 9
+
+More pools (about 6-8% of the area, dense); see KIT_SCHEMA round 9.

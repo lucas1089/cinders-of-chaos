@@ -36,3 +36,7 @@ Nothing blocks the kit, but these would make it look right:
 ## Best render paths
 - areas/celestial-review-01/seed-603/render.png
 - areas/celestial-review-01/seed-608/render.png
+
+## Round 9
+
+Island sizes vary (small ones, one large), bridges leave perpendicular to the island edge, decor about 35% lower.
