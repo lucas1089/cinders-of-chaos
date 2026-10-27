@@ -903,28 +903,43 @@ Discord channel **webhooks**. No bot, no token in the repository, no account lin
 `chaos_discord_queue`; the website's worker posts them. How it works: server/README.md "Discord announcements",
 website/README.md "Discord announcements".
 
-1. In Discord, Server Settings > Integrations > Webhooks: one webhook per channel you want, e.g. `#records`,
-   `#bosses`, `#players`, `#announcements`, `#server-status`, `#bazaar` (one webhook for all also works). Copy each URL.
-   A webhook URL is a password: anyone with it can post as it.
-2. `sudo install -m 600 -o www-data -g www-data /dev/null /etc/chaos/discord.env` and fill it in:
-   ```
-   CHAOS_DISCORD_WEBHOOK_RECORDS=https://discord.com/api/webhooks/...
-   CHAOS_DISCORD_WEBHOOK_BOSSES=...
-   CHAOS_DISCORD_WEBHOOK_PLAYERS=...
-   CHAOS_DISCORD_WEBHOOK_ANNOUNCE=...
-   CHAOS_DISCORD_WEBHOOK_STATUS=...
-   CHAOS_DISCORD_WEBHOOK_BAZAAR=...
-   # CHAOS_DISCORD_WEBHOOK_DEFAULT=...     every channel without its own
-   # CHAOS_DISCORD_OFF=level,bazaar_list   event kinds not to post
-   CHAOS_SITE_URL=https://<site>
-   ```
-3. `sudo cp server/deploy/chaos-discord.service server/deploy/chaos-discord.timer /etc/systemd/system/ &&
-   sudo systemctl daemon-reload && sudo systemctl enable --now chaos-discord.timer` (and copy `server/deploy/chaos.logrotate`
-   again: it now rotates `/var/log/chaos/discord.log`).
-4. Test: restart the game server (a "Server online" post in the status channel within a minute), then
-   `sudo -u www-data sh -c 'set -a; . /etc/chaos/discord.env; php /var/www/chaos/plugins/chaos/discord_worker.php --site /var/www/chaos'`
-   by hand and check `SELECT kind, status, error FROM chaos_discord_queue ORDER BY id DESC LIMIT 10;`.
-5. Switch event types on or off in `server/data/scripts/chaos/discord_config.lua` `events` (a `/reload` or restart),
+**From the admin app (the way to do it).** Nothing to type on the VPS:
+
+1. In Discord, Server Settings > Integrations > Webhooks > New Webhook > Copy Webhook URL: one webhook per channel you want,
+   e.g. `#records`, `#bosses`, `#players`, `#announcements`, `#server-status`, `#bazaar` (one webhook in the Default field
+   for all also works). A webhook URL is a password: anyone with it can post as it.
+2. Admin app, tab **Comandos** > **Ações rápidas** > card **Discord (anúncios do jogo)**: paste each URL in its field and
+   tap **Salvar** (the URL goes over SSH on the command's stdin into `/etc/chaos/discord.env`, mode 600, owner www-data;
+   it is never on a command line, in a log or shown again; an empty field + Salvar removes the channel).
+3. Same card, **Ativar**: installs `chaos-discord.service` / `.timer` and the logrotate file from the repository checkout,
+   `daemon-reload`, `enable --now chaos-discord.timer`. **Desativar** turns the timer off (the webhooks stay).
+4. Same card, **Testar**: posts "Cinders of Chaos: teste do webhook <canal>" to every saved webhook and shows the HTTP
+   code per channel (204 = ok). **Atualizar status** shows which channels have a webhook (last 4 digits of the id only), the
+   timer, the worker's last log lines and the last 10 rows of `chaos_discord_queue` (kind, status, error). Restart the game
+   server for a "Server online" post in the status channel within a minute.
+
+Needs the site installed (`plugins/chaos/discord_worker.php`) and the repository checkout (`CHAOS_REPO`, `update-apply`).
+`CHAOS_SITE_URL` is copied into `discord.env` from `site.env` when missing.
+
+**Shell fallback** (the same commands the app runs; the URL on stdin, never as an argument):
+
+```
+printf '%s\n' "$URL" | sudo /opt/chaos/repo/server/deploy/chaos-ctl.sh discord-set records   # records bosses players announce status bazaar drops default
+sudo /opt/chaos/repo/server/deploy/chaos-ctl.sh discord-enable
+sudo /opt/chaos/repo/server/deploy/chaos-ctl.sh discord-test all
+sudo /opt/chaos/repo/server/deploy/chaos-ctl.sh discord-status
+```
+
+By hand (without chaos-ctl.sh): `sudo install -m 600 -o www-data -g www-data /dev/null /etc/chaos/discord.env`, lines
+`CHAOS_DISCORD_WEBHOOK_RECORDS=https://discord.com/api/webhooks/...` (also `_BOSSES`, `_PLAYERS`, `_ANNOUNCE`, `_STATUS`,
+`_BAZAAR`, `_DROPS`, `_DEFAULT`), `CHAOS_SITE_URL=https://<site>`, optional `CHAOS_DISCORD_OFF=level,bazaar_list` (event kinds
+not to post); then `sudo cp server/deploy/chaos-discord.service server/deploy/chaos-discord.timer /etc/systemd/system/`,
+`sudo cp server/deploy/chaos.logrotate /etc/logrotate.d/chaos`, `sudo systemctl daemon-reload && sudo systemctl enable --now
+chaos-discord.timer`. Run the worker once with
+`sudo -u www-data sh -c 'set -a; . /etc/chaos/discord.env; php /var/www/chaos/plugins/chaos/discord_worker.php --site /var/www/chaos'`
+and check `SELECT kind, status, error FROM chaos_discord_queue ORDER BY id DESC LIMIT 10;`.
+
+Switch event types on or off in `server/data/scripts/chaos/discord_config.lua` `events` (a `/reload` or restart),
    or without a restart with `CHAOS_DISCORD_OFF` in `discord.env`.
 
 ## Balance telemetry

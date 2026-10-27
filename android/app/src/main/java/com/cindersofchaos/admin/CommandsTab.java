@@ -224,6 +224,7 @@ final class CommandsTab {
         buildBeta();
         buildClientServicesImpl();
         buildAccounts();
+        buildDiscord();
         buildHealth();
         buildVps();
         buildServices();
@@ -418,6 +419,133 @@ final class CommandsTab {
             a.snack(label + ": " + (f.ok ? "feito" : f.title), f.ok);
             if (f.ok) {
                 Ui.setValue(pass, "");
+            }
+        });
+    }
+
+    // Discord announcements (chaos-ctl.sh discord-set / -enable / -disable / -test / -status; docs/LAUNCH.md "Discord
+    // announcements"). A webhook URL is a password: it goes on stdin of discord-set, never on a command line, and the
+    // fields are emptied after saving.
+    private void buildDiscord() {
+        MaterialCardView c = ui.titledCard("Discord (anúncios do jogo)");
+        LinearLayout b = Ui.body(c);
+        TextView now = ui.text(DiscordInfo.summary(""));
+        b.addView(now);
+        b.addView(ui.hint("Crie um webhook por canal no Discord: Configurações do servidor > Integrações > Webhooks > "
+                + "Novo webhook > Copiar URL de Webhook. Cole aqui e toque em Salvar. A URL é uma senha: quem a tem "
+                + "posta no canal. Ela vai pelo SSH, fica só na VPS e o app não a mostra de volta. Um webhook só, no "
+                + "canal Padrão, já serve para todos. Depois toque em Ativar e em Testar."), ui.gap(4));
+        final Map<String, TextInputLayout> fields = new LinkedHashMap<>();
+        for (Map.Entry<String, String> e : DiscordInfo.CHANNELS.entrySet()) {
+            final String ch = e.getKey();
+            TextInputLayout f = ui.field(e.getValue(), "Cole a URL do webhook. Vazio + Salvar remove.", "",
+                    InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD
+                            | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+            fields.put(ch, f);
+            final android.widget.EditText pe = f.getEditText();
+            if (pe != null) {
+                // the window is FLAG_SECURE while a webhook field is in focus or holds text
+                final String key = "discord-" + ch;
+                pe.setOnFocusChangeListener((v, focus) -> a.secret(key, focus || pe.length() > 0));
+                pe.addTextChangedListener(new TextWatcher() {
+                    @Override
+                    public void beforeTextChanged(CharSequence s, int st, int cnt, int af) {
+                    }
+
+                    @Override
+                    public void onTextChanged(CharSequence s, int st, int bf, int cnt) {
+                    }
+
+                    @Override
+                    public void afterTextChanged(Editable ed) {
+                        a.secret(key, pe.hasFocus() || ed.length() > 0);
+                    }
+                });
+            }
+            MaterialButton save = ui.secondary("Salvar", 0);
+            save.setOnClickListener(v -> discordSave(ch, e.getValue(), f, now, fields));
+            b.addView(f, ui.gap(8));
+            b.addView(save, ui.gap(2));
+        }
+        MaterialButton on = ui.primary("Ativar", 0);
+        on.setOnClickListener(v -> discordCtl("Discord ativado", "discord-enable", 90, now, fields));
+        MaterialButton off = ui.danger("Desativar", 0);
+        off.setOnClickListener(v -> a.confirm("Desativar os anúncios no Discord?", "O jogo continua anotando os "
+                + "anúncios, mas nada é postado até você ativar de novo. Os webhooks salvos ficam.", "Desativar", true,
+                () -> discordCtl("Discord desativado", "discord-disable", 60, now, fields)));
+        b.addView(ui.evenRow(on, off), ui.gap(10));
+        MaterialButton test = ui.secondary("Testar", 0);
+        test.setOnClickListener(v -> a.confirm("Mandar mensagem de teste?", "Posta \"Cinders of Chaos: teste do webhook "
+                + "...\" em cada canal que tem webhook salvo. Resultado 204 = funcionou.", "Testar", false,
+                () -> discordCtl("Teste do Discord", "discord-test all", 150, now, fields)));
+        MaterialButton status = ui.secondary("Atualizar status", R.drawable.ic_refresh);
+        status.setOnClickListener(v -> discordStatus(now, fields, true));
+        b.addView(ui.evenRow(test, status), ui.gap(4));
+        quick.addView(c, ui.gap(10));
+    }
+
+    private void discordSave(String ch, String label, TextInputLayout field, TextView now, Map<String, TextInputLayout> fields) {
+        String url = field.getEditText() == null ? "" : field.getEditText().getText().toString().trim();
+        if (!url.isEmpty() && !DiscordInfo.valid(url)) {
+            field.setError("Não parece um webhook do Discord (https://discord.com/api/webhooks/ID/TOKEN).");
+            return;
+        }
+        field.setError(null);
+        if (!a.store.configured()) {
+            a.snack("Configure o servidor na aba Config.", false);
+            return;
+        }
+        Runnable go = () -> {
+            result.running("Discord: " + label);
+            // the URL is the command's stdin: never on its command line
+            a.ctlAction("discord-set " + ch, 40, url + "\n", f -> {
+                result.show("Discord: " + label, f);
+                a.snack(label + ": " + (f.ok ? (url.isEmpty() ? "removido" : "salvo") : f.title), f.ok);
+                if (f.ok) {
+                    Ui.setValue(field, "");
+                    discordStatus(now, fields, false);
+                }
+            });
+        };
+        if (url.isEmpty()) {
+            a.confirm("Remover o webhook de " + label + "?", "O canal deixa de receber anúncios (ou usa o Padrão).",
+                    "Remover", true, go);
+        } else {
+            go.run();
+        }
+    }
+
+    private void discordCtl(String what, String args, int timeout, TextView now, Map<String, TextInputLayout> fields) {
+        if (!a.store.configured()) {
+            a.snack("Configure o servidor na aba Config.", false);
+            return;
+        }
+        result.running(what);
+        a.ctlAction(args, timeout, f -> {
+            result.show(what, f);
+            a.snack(what + ": " + (f.ok ? "feito" : f.title), f.ok);
+            discordStatus(now, fields, false);
+        });
+    }
+
+    /** discord-status: the summary line and the saved channels (their field hint shows the last digits of the id). */
+    private void discordStatus(TextView now, Map<String, TextInputLayout> fields, boolean showResult) {
+        if (!a.store.configured()) {
+            a.snack("Configure o servidor na aba Config.", false);
+            return;
+        }
+        a.ctlAction("discord-status", 40, f -> {
+            if (showResult || !f.ok) {
+                result.show("Discord", f);
+            }
+            if (!f.ok) {
+                return;
+            }
+            now.setText(DiscordInfo.summary(f.raw));
+            for (Map.Entry<String, TextInputLayout> e : fields.entrySet()) {
+                String end = DiscordInfo.idEnd(f.raw, e.getKey());
+                e.getValue().setHelperText(end.isEmpty() ? "Sem webhook salvo. Cole a URL e toque em Salvar."
+                        : "Salvo (final do id " + end + "). Cole outra URL para trocar; vazio + Salvar remove.");
             }
         });
     }

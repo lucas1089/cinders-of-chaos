@@ -100,6 +100,12 @@ instalada é desconhecida: o passo 2 baixa a mais nova e, se o `tfs` for igual a
   recompila enquanto estiver ligado. O app precisa ser recompilado para ter o cartão; o comando funciona pelo SSH sem isso.
 - **Contas** (`account-create NOME`, `account-password NOME`): a senha vai pela entrada do comando (stdin do SSH),
   nunca na linha de comando nem em log, e vira hash PBKDF2 como o site grava. O personagem se cria no client ou no site.
+- **Discord** (`discord-set CANAL`, `discord-enable`, `discord-disable`, `discord-test`, `discord-status`; aba Comandos >
+  Ações rápidas > cartão Discord (anúncios do jogo) > um campo por canal + Salvar / Ativar / Desativar / Testar /
+  Atualizar status): a URL do webhook vai pela entrada do comando (stdin do SSH), nunca na linha de comando nem em log, e
+  fica só em `/etc/chaos/discord.env` (modo 600, dono www-data); o app confere o formato antes de enviar e não mostra a URL
+  de volta (só o final do id). Ativar instala as unidades `chaos-discord.service/.timer` e o logrotate do repositório e liga
+  o timer. Passo a passo: docs/LAUNCH.md "Discord announcements". O app precisa ser recompilado para ter o cartão.
 - **Saúde e espaço** (`health`, `cleanup [--yes]`, `backups`): servidor, banco, serviços web (nginx, apache, php-fpm),
   disco e memória. Limpar mostra a lista e pede confirmação antes de apagar: pastas de trabalho de atualizações e
   publicações em `/var/tmp` com mais de um dia, pastas `srvNN` lá, `tfs.antes-*` além dos 2 mais novos,
@@ -208,7 +214,7 @@ terminal do app ser root de verdade (instalar pacotes, mexer no sistema), rode n
 `update-rollback`), `update-check`, `update-apply [--no-client] [--no-downloads] [--no-site] [--no-map]`, `update-status`,
 `update-rollback`, `update-log`, `publish-update TAG` (atualização do cliente, docs/LAUNCH.md "Publishing a client
 update"), `publish-log`, `site-install`, `site-log`, `areas-publish [--pictures] [--rotate]`, `xp-rate`, `beta-mode [status | on | off] [restart]`, `clientservices-impl [status | rust | python]`, `health`, `cleanup [--yes]`, `account-create NOME`,
-`account-password NOME`, `install-admin`, `spectate NOME`, `spectate-pair [status | fetch | log [N]]`. Todos com argumentos conferidos (números, nomes, tags de release), nada de
+`account-password NOME`, `discord-set CANAL` (URL no stdin) | `discord-enable` | `discord-disable` | `discord-test [CANAL|all]` | `discord-status`, `install-admin`, `spectate NOME`, `spectate-pair [status | fetch | log [N]]`. Todos com argumentos conferidos (números, nomes, tags de release), nada de
 shell livre. Rode `chaos-ctl.sh help`. Aviso, expulsar, abrir, fechar e salvar passam pelo arquivo `remote.cmd`
 (`server/README.md`, "Remote admin commands"): o servidor do jogo precisa estar com os scripts novos.
 
