@@ -3,7 +3,7 @@
 python -B run.py tools/wall_check.py areas/asylum-review-02            # every seed folder of a batch
 python -B run.py tools/wall_check.py areas/asylum-review-02/seed-801   # one area
 Every count must be 0: void_touch, wall_wrong, wall_missing, wall_gaps, wall_bands, wall_spurs (round 10: corner caps, lone posts,
-dead-end stubs, diagonal-only tiles; -v lists samples). Exit code 1 when any is not.
+dead-end stubs, diagonal-only tiles; -v lists samples), fence_gaps (round 10: fence ends against lanterns, rock or void). Exit code 1 when any is not.
 """
 from __future__ import annotations
 
@@ -33,6 +33,10 @@ def check_area(path):
         res["wall_bands"], res["samples_bands"] = b["wall_bands"], b["samples"]
         sp = wallcheck.spurs(area.get(z, {}), meta["size"], 1000, load_items(), kit, no_walk)  # round 10
         res["wall_spurs"], res["samples_spurs"], res["kinds_spurs"] = sp["wall_spurs"], sp["samples"], sp["kinds"]
+    res["fence_gaps"], res["samples_fence"] = 0, []
+    if wallcheck.fence_ids(kit):  # round 10: loose ends of fence and wall lines (stamp outlines, doors)
+        f = wallcheck.fence_gaps(area.get(z, {}), meta["size"], 1000, load_items(), kit, no_walk)
+        res["fence_gaps"], res["samples_fence"] = f["fence_gaps"], f["samples"]
     return meta, res
 
 
@@ -46,11 +50,11 @@ def main():
         meta, r = check_area(path)
         tag = f"{path.parent.parent.name}/{path.parent.name}"
         print(f"{tag}: void_touch {r['void_touch']} (floor {r['void_touch_floor']}, wall {r['void_touch_wall']}), "
-              f"wall_wrong {r['wall_wrong']}, wall_missing {r['wall_missing']}, wall_gaps {r['wall_gaps']}, wall_bands {r['wall_bands']}, wall_spurs {r['wall_spurs']}, wall tiles {r['wall_tiles']}")
+              f"wall_wrong {r['wall_wrong']}, wall_missing {r['wall_missing']}, wall_gaps {r['wall_gaps']}, wall_bands {r['wall_bands']}, wall_spurs {r['wall_spurs']}, fence_gaps {r['fence_gaps']}, wall tiles {r['wall_tiles']}")
         if "-v" in sys.argv or "--samples" in sys.argv:
             print("   gap samples (tile x, y, px):", r["samples_gaps"], "band samples (tile x, y):", r["samples_bands"],
-                  "spur samples (tile x, y, kind):", r["samples_spurs"], r["kinds_spurs"])
-        if r["void_touch"] or r["wall_wrong"] or r["wall_missing"] or r["wall_gaps"] or r["wall_bands"] or r["wall_spurs"]:
+                  "spur samples (tile x, y, kind):", r["samples_spurs"], r["kinds_spurs"], "fence samples:", r["samples_fence"])
+        if r["void_touch"] or r["wall_wrong"] or r["wall_missing"] or r["wall_gaps"] or r["wall_bands"] or r["wall_spurs"] or r["fence_gaps"]:
             bad += 1
     print(f"{len(paths)} areas, {bad} with a count above 0")
     return 1 if bad else 0

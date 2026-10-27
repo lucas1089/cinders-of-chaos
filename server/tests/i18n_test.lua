@@ -236,6 +236,8 @@ local SITES = {
 	["../../spells/chaos/ironsage/chi_ward.lua"] = TR, ["../../spells/chaos/sentinel/aegis_of_faith.lua"] = TR,
 	["../../spells/chaos/shared/sense_prey.lua"] = TR, ["prizes.lua"] = {}, ["respec.lua"] = {}, ["vigils.lua"] = {},
 	["admin/actions_players.lua"] = {}, ["../../lib/chaos_unique_items.lua"] = TR,
+	["classes.lua"] = CORE_T, ["class_unlocks_core.lua"] = CORE_T, ["class_migration.lua"] = {}, ["partyframes.lua"] = {},
+	["../../lib/chaos_archery_core.lua"] = {}, ["buffbar.lua"] = {},
 }
 local used = 0
 for f, extra in pairs(SITES) do
@@ -304,6 +306,11 @@ local REASONS = {
 	["class_looks_core.lua"] = {" Class$"}, ["class_looks.lua"] = {}, ["goals_core.lua"] = {}, ["goals.lua"] = {},
 	["raid_core.lua"] = {"^Hex Effigy$"}, ["raid.lua"] = {"^Game%.createTile", "^No open raid", "^Bone Bloom$", "^Crushing Verdict$", "^Bought with ", "^Raid "},
 	["guildboss_core.lua"] = {},
+	-- round 5: party frames, inspect, class locks and ascension, respec, Paragon, atlas, gems and supports, casting
+	["partyframes_core.lua"] = {}, ["inspect_core.lua"] = {"^That player$"}, ["respec_core.lua"] = {}, ["itemlink_core.lua"] = {},
+	["store_food_core.lua"] = {}, ["necro_core.lua"] = {}, ["monk_chi_core.lua"] = {},
+	["class_unlocks_core.lua"] = {"^Unknown class", "^Tried to"}, ["classes.lua"] = {},
+	["../../lib/chaos_casting.lua"] = {"^ChaosCasting"}, ["../../lib/chaos_gems.lua"] = {}, ["../../lib/chaos_supports.lua"] = {},
 	["guildboss.lua"] = {"^The banner of ", "^The %%s of %%s: Gorvath", "^The Summoning Stone%. Feed", "^Game%.createTile", "^Guild boss run ",
 		"^No running guild boss", "^No guild boss arena"},
 }
@@ -739,6 +746,38 @@ do
 		check(pt[b.intro] ~= nil and pt[b.roles] ~= nil, "raid journal text without pt-BR: " .. b.key)
 		for _, ph in ipairs(b.phases) do check(pt[ph.name] ~= nil, "raid phase name without pt-BR: " .. ph.name) end
 	end
+end
+
+-- round 5: class locks and ascension, party frame refusals, the bow refund and the buff texts take the language
+do
+	dofile("data/scripts/chaos/classes.lua")
+	local CL = ChaosClasses
+	local _, why = CL.ascensionFor(CL.migrationFor and 0 or 0, 1, "x", true, false, nil, "pt-BR")
+	eq(why, "Sua vocação não tem ascensão.", "ascension refusal in pt-BR")
+	_, why = CL.ascensionFor(0, 1, "x", true, false)
+	eq(why, "Your vocation has no ascension.", "ascension refusal in English")
+	eq(CL.migrationMessage("Druid", "Mystic", nil, true, "pt-BR"),
+		"As classes foram refeitas: seu Druid agora é Mystic. Sua árvore passiva foi reiniciada de graça; distribua seus pontos de novo.",
+		"migration message in pt-BR")
+	dofile("data/scripts/chaos/class_unlocks_core.lua")
+	local UK = ChaosClassUnlocksCore
+	local ucfg = {table = "t", bypass = {minGroup = 4, minAccountType = 5}, login = {mode = "restrict"}, classes = {monk = {name = "Monk",
+		vocations = {40}, locked = true, unlock = {store = {offer = "unlockM", cost = 500}, level = {min = 100}}}}}
+	check(UK.lockMessage("monk", ucfg, "pt-BR"):find("^A classe Monk está bloqueada nesta conta%. Para jogar com ela, chegue ao nível 100 com qualquer personagem da sua conta, ou compre o desbloqueio de Monk na loja"),
+		"class lock in pt-BR")
+	check(UK.lockMessage("monk", ucfg):find("^The Monk is locked on this account%. To play it, reach level 100 with any character of your account, or buy the Monk unlock"), "class lock in English")
+	dofile("data/scripts/chaos/partyframes_core.lua")
+	local PF = ChaosPartyFramesCore or ChaosPartyFrames
+	if PF and PF.canInvite then
+		local _, r = PF.canInvite(1, nil, "Zed", nil, 5)
+		eq(ChaosI18n.translate("pt-BR", r), "Não há nenhum jogador chamado Zed online.", "party invite refusal in pt-BR")
+	end
+	dofile("data/lib/chaos_archery_core.lua")
+	check(ChaosArchery and ChaosArchery.refundText(2, 10, "pt-BR"):find("^Arcos e bestas não precisam mais de munição: 2 flechas"), "bow refund in pt-BR")
+	eq(ChaosI18n.translate("pt-BR", "Experience from monsters is increased for everyone."),
+		"A experiência dos monstros está maior para todos.", "buff description in pt-BR")
+	eq(ChaosI18n.translate("pt-BR", "Each stack: +5% damage (up to 3 stacks). A stack fades 8 s after the kill."),
+		"Cada acúmulo: +5% de dano (até 3 acúmulos). Um acúmulo some 8 s depois da morte.", "buff description with numbers in pt-BR")
 end
 
 print(string.format("i18n_test: %d checks, %d failures", checks, failures))

@@ -313,6 +313,7 @@ function M.send(player)
 end
 
 local function result(player, ok, text)
+	text = text and Chaos.tx and Chaos.tx(player, text) or text
 	Chaos.send(player, OPCODE, "result", {ok = ok and true or false, text = text})
 	if text and text ~= "" then
 		player:sendTextMessage(ok and (MESSAGE_INFO_DESCR or MESSAGE_STATUS_DEFAULT) or (MESSAGE_STATUS_SMALL or MESSAGE_STATUS_DEFAULT), text)

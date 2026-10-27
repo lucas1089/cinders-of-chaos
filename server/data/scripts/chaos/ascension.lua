@@ -175,7 +175,7 @@ function talk.onSay(player, words, param)
 	local key = Chaos.classes.storage.freeSwitch
 	local freeTo = player:getStorageValue(key)
 	local newId, how = C.ascensionFor(voc:getId(), player:getLevel(), param, inProtectionZone(player), inCombat(player),
-		freeTo > 0 and freeTo or nil)
+		freeTo > 0 and freeTo or nil, Chaos.lang(player))
 	if not newId then
 		player:sendTextMessage(MESSAGE_INFO_DESCR, how)
 		return false

@@ -2492,12 +2492,12 @@ function RF.status(player)
 	end
 	local left = R.timeLeft(run, os.time())
 	if run.omen then
-		return string.format("Omen arena (%s): %s, %d:%02d left, guardian %s, %d / %d lives.", R.omenKind(C(), run.omen).name,
+		return Chaos.t(player, "Omen arena (%s): %s, %d:%02d left, guardian %s, %d / %d lives.", R.omenKind(C(), run.omen).name,
 			run.state, math.floor(left / 60), left % 60, run.boss, run.lives or 0, run.livesMax or 0)
 	end
-	return string.format("Rift tier %d (%s): %s, %d:%02d left, %d / %d monsters, guardian %s, %d / %d lives.",
+	return Chaos.t(player, "Rift tier %d (%s): %s, %d:%02d left, %d / %d monsters, guardian %s, %d / %d lives.",
 		run.key.tier, run.themeName, run.state, math.floor(left / 60), left % 60, run.killed, run.total,
-		run.boss == "waiting" and ("after " .. run.bossAt .. " kills") or run.boss, run.lives or 0, run.livesMax or 0)
+		run.boss == "waiting" and Chaos.t(player, "after %d kills", run.bossAt) or run.boss, run.lives or 0, run.livesMax or 0)
 end
 
 -- ======================================================================== events
@@ -3187,18 +3187,18 @@ local function onRift(player, words, param)
 	local keys = keysOf(player)
 	for i, k in ipairs(keys) do
 		if i > 5 then
-			lines[#lines + 1] = string.format("... and %d more key(s).", #keys - 5)
+			lines[#lines + 1] = Chaos.t(player, "... and %d more key(s).", #keys - 5)
 			break
 		end
 		lines[#lines + 1] = R.keyName(cfg, k.tier) .. ": " .. R.describe(cfg, k)
 	end
 	if #keys == 0 then
-		lines[#lines + 1] = "You carry no Rift Key. Tier 1 keys drop from monsters of your level and from bounties; a sealed rift may leave a key of its tier or the next."
+		lines[#lines + 1] = Chaos.t(player, "You carry no Rift Key. Tier 1 keys drop from monsters of your level and from bounties; a sealed rift may leave a key of its tier or the next.")
 	end
 	local o = cfg.omen
 	if omenItemReady(o.fragment.id) then
-		lines[#lines + 1] = string.format("Omen fragments: %d / %d (rifts of tier %d+ give them; use %d to bind an Omen Key " ..
-			"that opens a guardian's arena).", player:getItemCount(o.fragment.id), o.keyCost, o.minTier, o.keyCost)
+		lines[#lines + 1] = Chaos.t(player, "Omen fragments: %d / %d (rifts of tier %d+ give them; use %d to bind an Omen Key that opens a guardian's arena).",
+			player:getItemCount(o.fragment.id), o.keyCost, o.minTier, o.keyCost)
 	end
 	player:showTextDialog(cfg.key.itemId, table.concat(lines, "\n\n"))
 	return false

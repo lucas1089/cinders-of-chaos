@@ -27,13 +27,13 @@ require_once __DIR__ . '/pay/Db.php';
 
 final class ChaosDiscordWorker {
 	public const KINDS = array('record', 'first', 'worldboss_spawn', 'worldboss_kill', 'ascended_kill', 'cinderheart_kill',
-		'level', 'season_start', 'season_end', 'status_up', 'status_down', 'status_restart', 'bazaar_list', 'bazaar_sale', 'drop');
+		'level', 'season_start', 'season_end', 'status_up', 'status_down', 'status_restart', 'bazaar_list', 'bazaar_sale', 'drop', 'patchnotes');
 	/** Embed colours: the site's palette (layouts/chaos/assets/css/chaos.css). */
 	public const COLORS = array(
 		'record' => 0xD9A53A, 'first' => 0xF6CF72, 'worldboss_spawn' => 0xB8160F, 'worldboss_kill' => 0xE03A1E,
 		'ascended_kill' => 0xE03A1E, 'cinderheart_kill' => 0x8A1010, 'level' => 0xD9A53A, 'season_start' => 0xF6CF72,
 		'season_end' => 0xA87420, 'status_up' => 0xD9A53A, 'status_down' => 0x574D52, 'status_restart' => 0xA87420,
-		'bazaar_list' => 0xA87420, 'bazaar_sale' => 0xD9A53A, 'drop' => 0xF6CF72,
+		'bazaar_list' => 0xA87420, 'bazaar_sale' => 0xD9A53A, 'drop' => 0xF6CF72, 'patchnotes' => 0xD9A53A,
 	);
 	public const CHANNELS = array('records', 'bosses', 'players', 'announce', 'status', 'bazaar', 'drops', 'default');
 

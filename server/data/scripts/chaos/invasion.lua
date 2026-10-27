@@ -292,7 +292,15 @@ end
 
 local function sendAll(action, data)
 	for _, p in ipairs(Game.getPlayers()) do
-		Chaos.send(p, OPCODE, action, data)
+		local own = data
+		if data.text ~= nil then -- the text is a deferred text (ChaosI18n.msg) or an English string: each player reads their language
+			own = {}
+			for k, v in pairs(data) do
+				own[k] = v
+			end
+			own.text = ChaosI18n.isMsg(data.text) and ChaosI18n.resolve(data.text, Chaos.lang(p)) or Chaos.tx(p, data.text)
+		end
+		Chaos.send(p, OPCODE, action, own)
 	end
 end
 
@@ -807,7 +815,7 @@ finish = function(result)
 		end
 		V.startBuff(state.area)
 		state.result = "win"
-		sendAll("end", {result = "win", text = string.format("%s held!", state.areaName)})
+		sendAll("end", {result = "win", text = ChaosI18n.msg("%s held!", state.areaName)})
 		cleanupInvaders()
 		addEvent(function(tk)
 			if state.token == tk then
@@ -818,8 +826,8 @@ finish = function(result)
 		return
 	end
 	state.result = result
-	sendAll("end", {result = result, text = result == "breach" and string.format("%s has fallen!", state.areaName)
-		or string.format("Time is up: %s is overrun!", state.areaName)})
+	sendAll("end", {result = result, text = result == "breach" and ChaosI18n.msg("%s has fallen!", state.areaName)
+		or ChaosI18n.msg("Time is up: %s is overrun!", state.areaName)})
 	announce(ChaosI18n.msg("DEFEAT! %s %s. The %s occupies it for %d minutes: slay the occupiers to free it.",
 		state.areaName, result == "breach" and "has fallen" or "could not be held in time", state.factionName,
 		(c.occupation or {}).minutes or 30))
@@ -887,10 +895,10 @@ function V.endOccupation(how)
 		local list = giveRewards((C().rewards or {}).liberationMult or 0.25, state.libContrib or {}, true)
 		announce(ChaosI18n.msg("%s is liberated! The last occupier is slain (%d defender%s rewarded).", state.areaName, #list,
 			#list == 1 and "" or "s"))
-		sendAll("end", {result = "liberated", text = string.format("%s is free again!", state.areaName)})
+		sendAll("end", {result = "liberated", text = ChaosI18n.msg("%s is free again!", state.areaName)})
 	else
 		announce(ChaosI18n.msg("The %s withdraws from %s.", state.factionName, state.areaName))
-		sendAll("end", {result = "withdrawn", text = string.format("The occupiers leave %s.", state.areaName)})
+		sendAll("end", {result = "withdrawn", text = ChaosI18n.msg("The occupiers leave %s.", state.areaName)})
 	end
 	cleanupInvaders()
 	state.phase = "ending"

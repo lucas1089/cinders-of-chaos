@@ -645,13 +645,15 @@
     36865
    ],
    "border": "acid_edge",
-   "share": 0.055,
+   "share": 0.03,
    "scale": 4,
    "min": 8,
    "decor": {
-    "43186": 0.04,
-    "43187": 0.02
-   }
+    "43186": 0.02,
+    "43187": 0.01
+   },
+   "spacing": 4.5,
+   "spread": 6
   },
   {
    "ground": [
@@ -661,18 +663,22 @@
     711
    ],
    "border": "purple_edge",
-   "share": 0.05,
+   "share": 0.03,
    "scale": 4,
-   "min": 6
+   "min": 6,
+   "spacing": 4.5,
+   "spread": 6
   },
   {
    "ground": [
     36865
    ],
    "border": "acid_edge",
-   "share": 0.03,
+   "share": 0.008,
    "scale": 2,
-   "min": 5
+   "min": 5,
+   "spacing": 8,
+   "spread": 6
   }
  ],
  "wall_check": true,
@@ -706,7 +712,7 @@
     },
     "G": {
      "wall": "fence",
-     "piece": 41300
+     "piece": 41302
     },
     "t": {
      "items": [

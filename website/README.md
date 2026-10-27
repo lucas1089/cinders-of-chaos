@@ -1154,6 +1154,9 @@ the environment only.
   (`EnvironmentFile=/etc/chaos/discord.env`, log `/var/log/chaos/discord.log`), or cron:
   `* * * * * www-data set -a; . /etc/chaos/discord.env; php <site>/plugins/chaos/discord_worker.php --site <site>`.
   `--loop [--interval 20]` keeps it running instead. Without any webhook it exits at once; the rows wait.
+- **Admin app:** the webhooks and the timer are set from the app (Comandos > Ações rápidas > Discord), which runs
+  `chaos-ctl.sh discord-set | discord-enable | discord-disable | discord-test | discord-status` (docs/LAUNCH.md
+  "Discord announcements"); the URL goes on stdin and is only ever written to the file below.
 - **Environment** (`/etc/chaos/discord.env`, mode 600, owned by www-data; never in the repository):
   `CHAOS_DISCORD_WEBHOOK_RECORDS` (records, realm firsts), `_BOSSES` (world boss spawn and kill, Ascended,
   Cinderheart), `_PLAYERS` (levels 500 and 1000), `_ANNOUNCE` (season start and end), `_STATUS` (server up, daily

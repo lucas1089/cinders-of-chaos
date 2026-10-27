@@ -27,6 +27,17 @@ local function cfg()
 	return Chaos.classes
 end
 
+-- a text in `lang` when i18n_core.lua is loaded (this file also runs in the spell Lua state without it); English otherwise
+local function T(lang, key, ...)
+	if lang and ChaosI18n and ChaosI18n.text then
+		return ChaosI18n.text(lang, key, ...)
+	end
+	if select("#", ...) == 0 then
+		return key
+	end
+	return string.format(key, ...)
+end
+
 M.now = os.mtime or function() return os.time() * 1000 end
 
 -- ------------------------------------------------------------------ class outfits (the donor art ones)
@@ -178,7 +189,7 @@ end
 -- vocId = current vocation, inPz = standing in a protection zone, inFight = has a fight condition,
 -- freeSwitchTo = the ascended vocation id a migrated character may still switch to for free (class_migration.lua),
 -- or nil. The free switch has no level rule (the character is ascended already).
-function M.ascensionFor(vocId, level, word, inPz, inFight, freeSwitchTo)
+function M.ascensionFor(vocId, level, word, inPz, inFight, freeSwitchTo, lang)
 	local a = cfg().ascension
 	local choices = a.choices[vocId]
 	local free = false
@@ -186,7 +197,7 @@ function M.ascensionFor(vocId, level, word, inPz, inFight, freeSwitchTo)
 		local base = cfg().baseOf[vocId]
 		local own = base and base ~= vocId and a.choices[base]
 		if not own then
-			return nil, "Your vocation has no ascension."
+			return nil, T(lang, "Your vocation has no ascension.")
 		end
 		local id = own[trimWord(word)]
 		if freeSwitchTo and freeSwitchTo > 0 then
@@ -197,29 +208,29 @@ function M.ascensionFor(vocId, level, word, inPz, inFight, freeSwitchTo)
 				end
 			end
 			if id == vocId then
-				return nil, "You already are of that class. Your free switch (to " .. tostring(freeWord) .. ") stays."
+				return nil, T(lang, "You already are of that class. Your free switch (to %s) stays.", tostring(freeWord))
 			end
 			if not id or id ~= freeSwitchTo then
-				return nil, "You may switch once, for free, to " .. tostring(freeWord) .. " (Character > Services)."
+				return nil, T(lang, "You may switch once, for free, to %s (Character > Services).", tostring(freeWord))
 			end
 			free = true
 		else
-			return nil, "You have already ascended. Only the store's Vocation Change can change that."
+			return nil, T(lang, "You have already ascended. Only the store's Vocation Change can change that.")
 		end
 		choices = {[trimWord(word)] = id}
 	end
 	local id = choices[trimWord(word)]
 	if not id then
-		return nil, "Choose your ascension: " .. table.concat(choiceNames(choices), " or ") .. ". The choice is final."
+		return nil, T(lang, "Choose your ascension: %s. The choice is final.", table.concat(choiceNames(choices), T(lang, " or ")))
 	end
 	if not free and level < a.minLevel then
-		return nil, string.format("You need level %d to ascend.", a.minLevel)
+		return nil, T(lang, "You need level %d to ascend.", a.minLevel)
 	end
 	if a.needProtectionZone and not inPz then
-		return nil, "Ascend in a protection zone (a temple or a depot)."
+		return nil, T(lang, "Ascend in a protection zone (a temple or a depot).")
 	end
 	if inFight then
-		return nil, "You cannot ascend in combat."
+		return nil, T(lang, "You cannot ascend in combat.")
 	end
 	return id, free
 end
@@ -243,14 +254,13 @@ function M.migrationFor(oldVoc)
 end
 
 -- the login message: oldName / newName = vocation names, freeWord = the class word of the free switch or nil
-function M.migrationMessage(oldName, newName, freeWord, treeReset)
-	local text = string.format("The classes were reworked: your %s is now %s.", oldName, newName)
+function M.migrationMessage(oldName, newName, freeWord, treeReset, lang)
+	local text = T(lang, "The classes were reworked: your %s is now %s.", oldName, newName)
 	if treeReset then
-		text = text .. " Your passive tree was reset for free; allocate your points again."
+		text = text .. T(lang, " Your passive tree was reset for free; allocate your points again.")
 	end
 	if freeWord then
-		text = text .. string.format(" You may switch to the other ascended class once, for free (%s): Character > Services, "
-			.. "in a protection zone.", freeWord)
+		text = text .. T(lang, " You may switch to the other ascended class once, for free (%s): Character > Services, in a protection zone.", freeWord)
 	end
 	return text
 end

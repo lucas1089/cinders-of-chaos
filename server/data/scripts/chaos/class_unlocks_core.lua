@@ -19,6 +19,17 @@
 ChaosClassUnlocksCore = ChaosClassUnlocksCore or {}
 local M = ChaosClassUnlocksCore
 
+-- a text in the player's language when i18n_core.lua is loaded and `lang` is given (English otherwise)
+local function T(lang, key, ...)
+	if lang and ChaosI18n and ChaosI18n.text then
+		return ChaosI18n.text(lang, key, ...)
+	end
+	if select("#", ...) == 0 then
+		return key
+	end
+	return string.format(key, ...)
+end
+
 M.config = {
 	table = "chaos_class_unlocks",
 	-- true while the open beta is on (class_unlocks.lua sets it from beta_config.lua enabled); false at launch
@@ -66,29 +77,29 @@ function M.registerMethod(kind, def)
 end
 
 M.registerMethod("store", {
-	describe = function(spec, class)
-		return string.format("buy the %s unlock in the store (Classes, %d Chaos Coins)", class.name, spec.cost or 0)
+	describe = function(spec, class, lang)
+		return T(lang, "buy the %s unlock in the store (Classes, %d Chaos Coins)", class.name, spec.cost or 0)
 	end
 })
 M.registerMethod("level", {
-	describe = function(spec)
-		return string.format("reach level %d with any character of your account", spec.min or 0)
+	describe = function(spec, class, lang)
+		return T(lang, "reach level %d with any character of your account", spec.min or 0)
 	end,
 	check = function(spec, facts)
 		return (facts.level or 0) >= (spec.min or math.huge)
 	end
 })
 M.registerMethod("quest", {
-	describe = function(spec)
-		return spec.text or "finish its quest"
+	describe = function(spec, class, lang)
+		return spec.text or T(lang, "finish its quest")
 	end,
 	check = function(spec, facts)
 		return facts.storage ~= nil and (facts.storage(spec.storage) or -1) >= (spec.value or 1)
 	end
 })
 M.registerMethod("achievement", {
-	describe = function(spec)
-		return spec.text or ("earn the achievement " .. tostring(spec.name))
+	describe = function(spec, class, lang)
+		return spec.text or T(lang, "earn the achievement %s", tostring(spec.name))
 	end,
 	check = function(spec, facts)
 		return facts.achievement ~= nil and facts.achievement(spec.name) == true
@@ -144,26 +155,26 @@ function M.classOfOffer(offer, c)
 end
 
 -- "The Templar is locked on this account. To play it, buy ... or reach ..."
-function M.lockMessage(classKey, c)
+function M.lockMessage(classKey, c, lang)
 	local class = conf(c).classes[classKey]
 	if not class then
-		return "This class is locked on this account."
+		return T(lang, "This class is locked on this account.")
 	end
 	local ways = {}
 	for _, kind in ipairs(M.methodKinds(classKey, c)) do
 		local m = M.methods[kind]
 		if m and m.describe then
-			ways[#ways + 1] = m.describe(class.unlock[kind], class)
+			ways[#ways + 1] = m.describe(class.unlock[kind], class, lang)
 		end
 	end
-	local how = #ways > 0 and (" To play it, " .. table.concat(ways, ", or ") .. ".") or ""
-	return string.format("The %s is locked on this account.%s", class.name, how)
+	local how = #ways > 0 and T(lang, " To play it, %s.", table.concat(ways, T(lang, ", or "))) or ""
+	return T(lang, "The %s is locked on this account.%s", class.name, how)
 end
 
 -- The account's class status grouped for a short text (Character Info): unlocked = sorted class names; groups = list
 -- of {names = {...}, level = n or nil, how = text} for the locked classes that unlock the same way (level = n when the
 -- only way is "reach level n"). isUnlocked(classKey) -> true when the account has that class.
-function M.lockGroups(isUnlocked, c)
+function M.lockGroups(isUnlocked, c, lang)
 	local unlocked, groups, byHow = {}, {}, {}
 	for _, key in ipairs(M.lockedClasses(c)) do
 		local class = conf(c).classes[key]
@@ -176,10 +187,10 @@ function M.lockGroups(isUnlocked, c)
 			for _, kind in ipairs(kinds) do
 				local m = M.methods[kind]
 				if m and m.describe then
-					ways[#ways + 1] = m.describe(class.unlock[kind], class)
+					ways[#ways + 1] = m.describe(class.unlock[kind], class, lang)
 				end
 			end
-			local how = table.concat(ways, ", or ")
+			local how = table.concat(ways, T(lang, ", or "))
 			local sig = (level and ("level:" .. level)) or how
 			local g = byHow[sig]
 			if not g then
@@ -199,7 +210,7 @@ end
 
 -- May an account become vocation `vocId`? unlocked = set {[classKey] = true} of the account's unlocks.
 -- Returns ok, message (nil when ok), classKey (nil for a vocation of no locked class).
-function M.decide(vocId, unlocked, groupId, accountType, c)
+function M.decide(vocId, unlocked, groupId, accountType, c, lang)
 	local key = M.classOfVocation(vocId, c)
 	if not key or not M.isLocked(key, c) then
 		return true, nil, key
@@ -207,7 +218,7 @@ function M.decide(vocId, unlocked, groupId, accountType, c)
 	if M.isBypass(groupId, accountType, c) or (unlocked and unlocked[key]) then
 		return true, nil, key
 	end
-	return false, M.lockMessage(key, c), key
+	return false, M.lockMessage(key, c, lang), key
 end
 
 -- the automatic method that unlocks `classKey` for these facts ({level = n, storage = fn(key), achievement = fn(name)}),

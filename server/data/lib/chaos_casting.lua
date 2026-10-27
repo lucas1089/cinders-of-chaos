@@ -215,6 +215,7 @@ local function finish(player, cast, result, text)
 		C.stats.done = C.stats.done + 1
 	end
 	if player then
+		text = text and tr(player, text) or text
 		send(player, "end", {s = cast.serial, r = result, t = text})
 		if text then
 			player:sendCancelMessage(text)

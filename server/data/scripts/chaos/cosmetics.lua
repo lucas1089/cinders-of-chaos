@@ -375,7 +375,7 @@ function M.sendState(player, open)
 end
 
 local function reply(player, ok, text)
-	send(player, "result", {ok = ok, text = text})
+	send(player, "result", {ok = ok, text = text and Chaos.tx(player, text) or text})
 end
 
 -- id 0 = back to the default (spell skins: of `line`)

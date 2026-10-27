@@ -207,6 +207,8 @@ function M.revoke(accountId, key)
 end
 
 local function tell(player, title, text)
+	text = Chaos.tx(player, text)
+	title = Chaos.t(player, title)
 	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, text)
 	if ChaosNotify and ChaosNotify.send then
 		pcall(ChaosNotify.send, player, title, text, "achievement")
@@ -240,8 +242,8 @@ function M.sync(player)
 		end
 	end
 	if #names > 0 then
-		tell(player, "Exclusive unlocked", "Unlocked for your account: " .. table.concat(names, ", ") ..
-			". See Character > Cosmetics > Collection.")
+		tell(player, "Exclusive unlocked", Chaos.t(player, "Unlocked for your account: %s. See Character > Cosmetics > Collection.",
+			table.concat(names, ", ")))
 	end
 	return names
 end
@@ -283,8 +285,8 @@ function M.bossKill(player, killKey)
 	end
 	local e = K.byKey(cfg, key)
 	local k = K.kind(cfg, e.kind) or {}
-	tell(player, "Rare drop!", string.format("Rare drop from %s: %s (%s), unlocked for your whole account. %s",
-		g.name, e.name, (k.name or e.kind):lower(), k.use or ""))
+	tell(player, "Rare drop!", Chaos.t(player, "Rare drop from %s: %s (%s), unlocked for your whole account. %s",
+		g.name, e.name, Chaos.t(player, k.name or e.kind):lower(), Chaos.t(player, k.use or "")))
 	player:getPosition():sendMagicEffect(CONST_ME_FIREWORK_RED or CONST_ME_FIREWORK_YELLOW or 29)
 	log(string.format("%s (account %d) rolled %s at %s", player:getName(), accountId, key, killKey))
 	return key

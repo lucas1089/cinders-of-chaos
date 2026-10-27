@@ -4,6 +4,7 @@
 dofile("data/scripts/chaos/patchnotes_core.lua")
 local PN = ChaosPatchNotes
 
+local check
 local function eq(a, b, m)
 	if a ~= b then
 		error((m or "") .. ": " .. tostring(a) .. " ~= " .. tostring(b), 2)
@@ -100,6 +101,12 @@ eq(#l.sections[1].items, PN.limits.items, "items capped")
 local l2 = PN.parse("## New\n- " .. string.rep("b", 1000), "2026-01-01")
 eq(#l2.sections[1].items[1].text, PN.limits.text, "text capped")
 eq(l2.sections[1].items[1].text:sub(-3), "...", "ellipsis")
+do
+	local cutText = PN.parse("## New\n- " .. string.rep("ç", 600), "x").sections[1].items[1].text
+	eq(cutText:sub(-3), "...", "utf-8 cut ellipsis")
+	assert(not cutText:sub(1, -4):find("[\192-\255]$"), "utf-8 cut leaves no half character")
+	assert(#cutText <= PN.limits.text, "utf-8 cut size")
+end
 eq(#PN.parse("# " .. string.rep("t", 200), "x").title, PN.limits.title, "title capped")
 
 -- ---------------------------------------------------------------- file list
@@ -199,6 +206,129 @@ eq(#tiny[2].intro, 0, "intro only in part 1")
 eq(tiny[8].parts, 8, "parts count everywhere")
 same(join(tiny), n, "budget 1 joins back")
 
+-- ---------------------------------------------------------------- pt-BR twins
+local listing2 = "2026-10-08.md\n2026-10-08.pt-br.md\n2026-10-09.PT-BR.md\n_draft.pt-br.md\nREADME.md\nbad name.pt-br.md\n2026-10-08.pt-br.md\n"
+local names2 = PN.fileNames(listing2)
+eq(#names2, 1, "twins are not notes of their own")
+eq(names2[1], "2026-10-08.md", "the English file stays")
+local tw = PN.twinNames(listing2)
+eq(tw["2026-10-08"], "2026-10-08.pt-br.md", "twin paired by id")
+eq(tw["2026-10-09"], "2026-10-09.PT-BR.md", "twin suffix any case")
+eq(tw["_draft"], nil, "draft twin skipped")
+eq(tw["bad name"], nil, "bad id skipped")
+eq(next(PN.twinNames(nil)), nil, "no listing")
+eq(PN.lang("pt-BR"), "pt-BR", "lang pt-BR")
+eq(PN.lang("pt_br"), "pt-BR", "lang pt_br")
+eq(PN.lang("pt"), "pt-BR", "lang pt")
+eq(PN.lang("en"), "en", "lang en")
+eq(PN.lang(nil), "en", "lang nil")
+eq(PN.lang("de"), "en", "other language falls back")
+
+local EN = "# Week\nDate: 2026-10-08\n\nIntro.\n\n## New\n- **Big.** thing\n  - sub\n- plain\n\n## Fixes\n- a fix\n"
+local PT = "# Semana\nDate: 2026-10-08\n\nIntro.\n\n## Novidades\n- **Grande.** coisa\n  - sub\n- simples\n\n## Correções\n- uma correção\n"
+local en = PN.parse(EN, "2026-10-08")
+local pt = PN.parse(PT, "2026-10-08")
+eq(pt.sections[1].kind, "new", "pt-BR Novidades is New")
+eq(pt.sections[2].kind, "fixes", "pt-BR Correções is Fixes")
+eq(PN.parse("## Mudanças\n- x\n## Balanceamento\n- y", "a").sections[1].kind, "changes", "Mudanças")
+eq(PN.parse("## Mudanças\n- x\n## Balanceamento\n- y", "a").sections[2].kind, "balance", "Balanceamento")
+eq(PN.compare(en, pt), nil, "same shape")
+local bad = PN.parse(PT:gsub("%- simples\n", ""), "x")
+check = PN.compare(en, bad)
+assert(check and check:find("items"), "a missing bullet is found: " .. tostring(check))
+assert(PN.compare(en, PN.parse(PT .. "## Balanceamento\n- x\n", "x")), "an extra section is found")
+assert(PN.compare(en, PN.parse(PT:gsub("Intro%.", "Intro.\n\nTwo."), "x")), "an extra intro line is found")
+
+eq(PN.localize(en, "pt-BR"), en, "no twin: English")
+en.tr = {["pt-BR"] = pt}
+local loc = PN.localize(en, "pt-BR")
+eq(loc.title, "Semana", "twin title")
+eq(loc.sections[1].name, "Novidades", "twin sections")
+eq(loc.id, "2026-10-08", "id from the English note")
+eq(PN.localize(en, "en"), en, "English player gets English")
+eq(PN.localize(en, nil), en, "no language: English")
+eq(PN.summary({en}, nil, nil, "pt-BR")[1].title, "Semana", "summary title in pt-BR")
+eq(PN.summary({en}, nil, nil, "en")[1].title, "Week", "summary title in English")
+eq(PN.summary({en}, nil)[1].title, "Week", "summary default English")
+eq(#PN.parts(PN.localize(en, "pt-BR"))[1].sections, 2, "parts of the twin")
+
+-- ---------------------------------------------------------------- Discord digest and dedupe
+local posts = PN.discordPosts(en, "en")
+eq(#posts, 1, "one short message")
+eq(posts[1].title, "Patch notes 2026-10-08: Week", "English title")
+assert(posts[1].text:find("**New**", 1, true), "section heading")
+assert(posts[1].text:find("- **Big.** thing", 1, true), "bullet with its lead")
+assert(not posts[1].text:find("sub", 1, true), "sub-bullets are left out")
+local pposts = PN.discordPosts(PN.localize(en, "pt-BR"), "pt-BR")
+eq(pposts[1].title, "Notas de atualização 2026-10-08: Semana", "pt-BR title")
+assert(pposts[1].text:find("**Novidades**", 1, true), "pt-BR heading")
+
+local big = {id = "x", date = "2026-11-01", title = "Big", intro = {"Hello."}, sections = {{name = "New", kind = "new", items = {}}}}
+for i = 1, 80 do
+	big.sections[1].items[i] = {lead = "Lead " .. i .. ".", text = string.rep("word ", 60), level = 1}
+end
+local many = PN.discordPosts(big, "en")
+eq(#many, PN.discordDefaults.maxParts, "capped at maxParts")
+for i, p in ipairs(many) do
+	assert(#p.text <= 2000, "message " .. i .. " fits Discord's 2000 characters: " .. #p.text)
+	assert(#p.title <= 250, "title length")
+	assert(p.title:find("(" .. i .. "/" .. #many .. ")", 1, true), "part number in the title")
+end
+assert(many[#many].text:find("More in game", 1, true), "the last message points to the game")
+local one = PN.discordPosts(big, "en", {maxParts = 2, maxChars = 900})
+eq(#one, 2, "options apply")
+for _, p in ipairs(one) do
+	assert(#p.text <= 900, "custom size")
+end
+-- no half UTF-8 character at a cut
+local u = PN.discordPosts({id = "u", date = "2026-11-01", title = "U", intro = {}, sections = {{name = "Novidades", kind = "new",
+	items = {{text = string.rep("ação ", 80), level = 1}}}}}, "pt-BR", {bulletChars = 33})
+assert(not u[1].text:find("[\194-\244]%.%.%."), "cut keeps UTF-8 whole")
+
+local n1 = {id = "a", date = "2026-10-08"}
+local n2 = {id = "b", date = "2026-10-20"}
+local n3 = {id = "c", date = "2026-10-31"}
+local sorted = {n3, n2, n1}
+eq(PN.dueForDiscord(sorted, "", "2026-10-27").id, "b", "newest note dated today or earlier")
+eq(PN.dueForDiscord(sorted, nil, "2026-10-31").id, "c", "a note waits for its day, then posts")
+eq(PN.dueForDiscord(sorted, PN.key(n2), "2026-10-27"), nil, "already posted")
+eq(PN.dueForDiscord(sorted, PN.key(n2), "2026-10-31").id, "c", "a newer one after it")
+eq(PN.dueForDiscord(sorted, PN.key(n3), "2026-12-01"), nil, "nothing newer")
+eq(PN.dueForDiscord({}, "", "2026-10-27"), nil, "no notes")
+eq(PN.dueForDiscord(sorted, "", nil).id, "c", "no date check without a date")
+
+local function runEnv(notes, posted, opts)
+	local env = {saved = nil, queued = {}, logs = {}}
+	env.notes, env.postedKey, env.today, env.opts = notes, posted, "2026-10-27", opts or {enabled = true}
+	env.event = function(title, text) return {kind = "patchnotes", title = title, text = text} end
+	env.queue = function(ev) env.queued[#env.queued + 1] = ev return true end
+	env.save = function(key) env.saved = key end
+	env.log = function(t) env.logs[#env.logs + 1] = t end
+	return env
+end
+local withTwin = {id = "b", date = "2026-10-20", title = "Week", intro = {}, sections = en.sections, tr = {["pt-BR"] = pt}}
+local env = runEnv({withTwin}, "")
+eq(PN.discordRun(env), 2, "English and pt-BR queued")
+eq(env.saved, "2026-10-20|b", "key saved")
+assert(env.queued[1].title:find("Patch notes", 1, true), "English first")
+assert(env.queued[2].title:find("Notas de atualização", 1, true), "pt-BR second")
+-- a second run with the saved key posts nothing
+local env2 = runEnv({withTwin}, env.saved)
+eq(PN.discordRun(env2), 0, "idempotent")
+eq(env2.saved, nil, "nothing saved again")
+-- no twin: English only
+local env3 = runEnv({{id = "b", date = "2026-10-20", title = "Week", intro = {}, sections = en.sections}}, "")
+eq(PN.discordRun(env3), 1, "English only without a twin")
+-- switched off
+local env4 = runEnv({withTwin}, "", {enabled = false})
+eq(PN.discordRun(env4), 0, "off")
+eq(env4.saved, nil, "off saves nothing")
+-- a failed queue still saves the key (at most once)
+local env5 = runEnv({withTwin}, "")
+env5.queue = function() return false end
+eq(PN.discordRun(env5), 0, "nothing queued")
+eq(env5.saved, "2026-10-20|b", "key saved before queueing")
+
 -- ---------------------------------------------------------------- the real files
 local ls = io.popen and io.popen('ls -1 data/patchnotes 2>/dev/null')
 local listing = ls and ls:read("*a") or ""
@@ -206,6 +336,7 @@ if ls then
 	ls:close()
 end
 local real = 0
+local twins = PN.twinNames(listing)
 for _, name in ipairs(PN.fileNames(listing)) do
 	local f = assert(io.open("data/patchnotes/" .. name, "rb"))
 	local body = f:read("*a")
@@ -230,8 +361,39 @@ for _, name in ipairs(PN.fileNames(listing)) do
 		assert(size <= PN.partBudget, name .. ": a part is too big")
 	end
 	same(join(parts), note, name .. " parts join back")
+	-- every English note has a pt-BR twin with the same sections and bullets
+	local id = name:sub(1, -4)
+	assert(twins[id], name .. ": no pt-BR twin (" .. id .. ".pt-br.md)")
+	local tf = assert(io.open("data/patchnotes/" .. twins[id], "rb"))
+	local tbody = tf:read("*a")
+	tf:close()
+	local tnote = PN.parse(tbody, id)
+	assert(tnote.date == note.date, twins[id] .. ": the Date line differs from " .. name)
+	assert(tnote.title ~= note.title, twins[id] .. ": the title is not translated")
+	local why = PN.compare(note, tnote)
+	assert(not why, twins[id] .. " does not match " .. name .. ": " .. tostring(why))
+	for _, sec in ipairs(tnote.sections) do
+		assert(sec.kind ~= "other", twins[id] .. ": unknown section " .. sec.name)
+		for _, it in ipairs(sec.items) do
+			assert(#it.text < PN.limits.text, twins[id] .. ": a bullet was cut: " .. it.text:sub(1, 40))
+		end
+	end
+	assert(not tbody:find("\226\128\148", 1, true), twins[id] .. ": em dash")
+	for _, p in ipairs(PN.parts(tnote)) do
+		local size = 0
+		for _, sec in ipairs(p.sections) do
+			for _, it in ipairs(sec.items) do
+				size = size + #it.text + #(it.lead or "") + 40
+			end
+		end
+		assert(size <= PN.partBudget, twins[id] .. ": a part is too big")
+	end
+	twins[id] = nil
 	real = real + 1
 end
 assert(real >= 1, "no notes files found in data/patchnotes")
+for id in pairs(twins) do
+	error("pt-BR twin without an English note: " .. id)
+end
 
 print("patchnotes_test: OK (" .. real .. " notes file(s))")

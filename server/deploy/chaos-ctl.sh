@@ -135,6 +135,29 @@
 #                               the run also writes its report next to it, run-*-report.txt; the 20 newest runs are kept)
 #   testers cleanup [--yes]     lists (or with --yes deletes) the tester accounts, characters and every row of them;
 #                               stops the bots first and waits 2 minutes after a stop (a character in a fight stays in game)
+#   discord-set CHANNEL         a Discord webhook URL of CHANNEL (records, bosses, players, announce, status, bazaar, drops,
+#                               default) into /etc/chaos/discord.env (CHAOS_DISCORD_ENV; mode 600, owner www-data). The URL
+#                               is read from stdin (one line), never from the command line, checked against
+#                               https://discord.com/api/webhooks/ID/TOKEN (also discordapp.com, canary., ptb.) and never
+#                               printed (only the last 4 digits of the id). Empty input removes the channel. Adds
+#                               CHAOS_SITE_URL from CHAOS_SITE_ENV when the file has none
+#   discord-enable | discord-disable
+#                               installs chaos-discord.service / .timer (and the logrotate file) from the repo when they
+#                               are missing or differ, daemon-reload, enable --now (disable --now) chaos-discord.timer
+#   discord-test [CHANNEL|all]  posts "Cinders of Chaos: teste do webhook CHANNEL" to each saved webhook (curl, the URL on
+#                               its stdin) and prints CHANNEL=HTTP-code ok|fail (204 = ok); exit 1 when one fails
+#   discord-status              key=value lines: channel_NAME=yes id_end=NNNN | no (never the URL), off_kinds, site_url,
+#                               env_file (mode owner), timer_installed / _enabled / _active; "@log" the last worker log
+#                               lines, "@queue" the last 10 rows of chaos_discord_queue (id kind status attempts error)
+#   feedback [--days N] [--all] [--category C] [--names]
+#                               the players' bug reports and suggestions (chaos_reports, reason bug) as plain text to paste
+#                               into a chat, newest first (max 200): "#id | date UTC | category | open | pos x,y,z | lvl N
+#                               class", the text indented below. Default: open ones of the last 30 days (--days 1 to 3650);
+#                               --all adds closed ones (with the staff note); --category map|typo|technical|other|
+#                               suggestion|all. Never prints account ids, IPs or e-mails; the character name only with
+#                               --names. Control characters stripped, text capped (server/tools/feedback_format.py)
+#   feedback-close ID [NOTE]    marks the open report ID closed with a staff note (200 characters; the note reaches the SQL
+#                               as a hex literal); exit 1 "feedback-not-found" when it is not open
 #   vps [info]                  key=value lines: host, os, kernel, uptime, load, cpus, mem_total_mb, mem_used_mb,
 #                               disk_total_gb, disk_used_gb, disk_free_gb (of /), upgrades (packages, -1 unknown),
 #                               php_upgrades (of them php*), php (the php*-fpm or libapache2-mod-php* package and its version),
@@ -192,7 +215,8 @@ CHAOS_PID_FILE CHAOS_DB_SOCKET CHAOS_MYSQL CHAOS_BACKUP_DIR CHAOS_PUBLISH_LOG CH
 CHAOS_UPDATE_PUBLIC CHAOS_UPDATE_REPO CHAOS_UPDATE_URL CHAOS_WORK_DIR CHAOS_KIT_DIR CHAOS_UPDATE_BRANCH \
 CHAOS_RELEASE_REPO CHAOS_KIT_STATE CHAOS_BOOT_TIMEOUT CHAOS_DL_DIR CHAOS_SITE_ENV CHAOS_SITE_LOG CHAOS_TESTER_KEY \
 CHAOS_TESTER_STATE CHAOS_TESTER_LOG CHAOS_VPS_LOG CHAOS_SPECTATE_PAIR CHAOS_SPECTATE_STATE CHAOS_PAIR_BRANCH \
-CHAOS_SPECTATE_LOG CHAOS_CAST_PORT CHAOS_SYSTEMD_DIR CHAOS_AREAS_STATE CHAOS_STAGING CHAOS_CACHE_DIR "
+CHAOS_SPECTATE_LOG CHAOS_CAST_PORT CHAOS_SYSTEMD_DIR CHAOS_AREAS_STATE CHAOS_STAGING CHAOS_CACHE_DIR \
+CHAOS_DISCORD_ENV CHAOS_DISCORD_LOG CHAOS_DISCORD_USER CHAOS_DISCORD_GROUP CHAOS_LOGROTATE_FILE "
 declare -A CFG=()
 # KEY=VALUE, optional "" or '' around the value, # comments; a value is a path or a unit name (no spaces, no $ or `)
 read_conf() {
@@ -414,6 +438,49 @@ unit_ok() {
     || [[ $1 =~ ^(apache2|nginx|php[0-9.]{1,6}-fpm)(\.service)?$ ]]
 }
 
+# ---- Discord announcements (discord-* commands): CHAOS_DISCORD_WEBHOOK_<CHANNEL> lines of $DENV, mode 600
+DENV=$(setting CHAOS_DISCORD_ENV /etc/chaos/discord.env)
+DLOG=$(setting CHAOS_DISCORD_LOG /var/log/chaos/discord.log)
+DUSER=$(setting CHAOS_DISCORD_USER www-data)
+DGROUP=$(setting CHAOS_DISCORD_GROUP "$DUSER")
+DLROT=$(setting CHAOS_LOGROTATE_FILE /etc/logrotate.d/chaos)
+DISCORD_CHANNELS="records bosses players announce status bazaar drops default"
+DISCORD_RE='^https://(discord\.com|discordapp\.com|canary\.discord\.com|ptb\.discord\.com)/api/webhooks/[0-9]{5,25}/[A-Za-z0-9_-]{20,100}$'
+discord_channel_ok() { local c; for c in $DISCORD_CHANNELS; do [ "$c" = "$1" ] && return 0; done; return 1; }
+# the URL of one channel from $DENV, only when it passes the same check as discord-set; else nothing
+discord_url() {
+  local up u
+  up=$(printf '%s' "$1" | tr '[:lower:]' '[:upper:]')
+  u=$(sed -n "s/^CHAOS_DISCORD_WEBHOOK_$up=//p" "$DENV" 2>/dev/null | head -n 1)
+  u=${u%$'\r'}
+  [[ $u =~ $DISCORD_RE ]] && printf '%s' "$u"
+  return 0
+}
+discord_configured() { local c; for c in $DISCORD_CHANNELS; do [ -z "$(discord_url "$c")" ] || echo "$c"; done; }
+# a webhook URL in a line of output shows its id only: the token is masked
+discord_redact() { sed -E 's#(/api/webhooks/[0-9]+/)[A-Za-z0-9_-]+#\1***#g'; }
+# $DENV exists (mode 600, owner www-data) and has CHAOS_SITE_URL (from the site's own setting) when it can
+discord_prepare_env() {
+  local real site senv
+  real=$(readlink -m -- "$DENV") || return 1
+  if [ ! -e "$real" ]; then
+    install -d -m 0755 "$(dirname "$real")" || return 1
+    install -m 600 -o "$DUSER" -g "$DGROUP" /dev/null "$real" || return 1
+  fi
+  chmod 0600 "$real" 2>/dev/null || true
+  if ! grep -q '^CHAOS_SITE_URL=' "$real" 2>/dev/null; then
+    senv=$(setting CHAOS_SITE_ENV /etc/chaos/site.env)
+    site=$(sed -n 's/^CHAOS_SITE_URL=\([^ #]*\).*/\1/p' "$senv" 2>/dev/null | head -n 1)
+    site=${site%/}
+    if [[ $site =~ ^https?://[A-Za-z0-9.-]+(:[0-9]{1,5})?$ ]]; then
+      # a hand-edited file may end without a newline: never glue the line onto the last webhook
+      if [ -s "$real" ] && [ -n "$(tail -c 1 "$real")" ]; then echo >> "$real" || return 1; fi
+      printf 'CHAOS_SITE_URL=%s\n' "$site" >> "$real" || return 1
+    fi
+  fi
+  return 0
+}
+
 # ---- tester bots (server/README.md "Tester bots")
 HELPER_FILES=(zz_tester_helper.lua zz_tester_helper_core.lua)
 testers_pid() {
@@ -610,6 +677,58 @@ case $cmd in
       exit 1
     fi
     printf '%s\n' "$mrows" | python3 -I "$mpy" ${mjson[@]+"${mjson[@]}"}
+    ;;
+  feedback)
+    # players' bug reports and suggestions (chaos_reports, reason bug) as plain text for the owner and for Claude.
+    # Read-only. The SQL holds only checked numbers and one fixed category word; no account id, IP or e-mail is read, and
+    # the character name only with --names. server/tools/feedback_format.py strips control characters and caps lengths.
+    fdays=30 fall=0 fcat="" fnames=0
+    while [ $# -gt 0 ]; do
+      case $1 in
+        --days) shift; { num "${1:-}" && [ "$1" -ge 1 ] && [ "$1" -le 3650 ]; } || die "feedback --days N (1 to 3650)"
+          fdays=$((10#$1)) ;;
+        --all) fall=1 ;;
+        --names) fnames=1 ;;
+        --category) shift
+          case ${1:-} in map|typo|technical|other|suggestion) fcat=$1 ;; all) fcat="" ;;
+            *) die "feedback --category map|typo|technical|other|suggestion|all" ;; esac ;;
+        *) die "feedback [--days N] [--all] [--category C] [--names]" ;;
+      esac
+      shift
+    done
+    fpy="$REPO/server/tools/feedback_format.py"
+    [ -r "$fpy" ] || die "no $fpy"
+    command -v python3 >/dev/null 2>&1 || die "python3-not-found"
+    fwho="''"
+    fnarg=()
+    if [ "$fnames" = 1 ]; then fwho="reporter_name"; fnarg=(--names); fi
+    fwhere="reason = 'bug' AND created_at >= UNIX_TIMESTAMP() - $fdays * 86400"
+    [ "$fall" = 1 ] || fwhere="$fwhere AND status = 'open'"
+    [ -z "$fcat" ] || fwhere="$fwhere AND note LIKE '[$fcat] %'"
+    frows=$(mysql_q "SELECT id, created_at, note, pos_x, pos_y, pos_z, chat, status, staff_note, $fwho FROM chaos_reports WHERE $fwhere ORDER BY id DESC LIMIT 200") \
+      || die "database-down: the reports could not be read (is the database up?)"
+    printf '%s\n' "$frows" | python3 -I "$fpy" ${fnarg[@]+"${fnarg[@]}"}
+    ;;
+  feedback-close)
+    # marks one bug report or suggestion closed with a staff note. The id is a checked number; the note reaches the SQL
+    # only as a hex literal made from sanitised text, so no quote or backslash of it can matter.
+    fid=${1:-}
+    { num "$fid" && [ "${#fid}" -le 9 ]; } || die "feedback-close ID [NOTE]"
+    shift
+    command -v python3 >/dev/null 2>&1 || die "python3-not-found"
+    fhex=$(printf '%s' "$*" | python3 -I -c '
+import sys, unicodedata
+s = sys.stdin.buffer.read().decode("utf-8", "replace")
+s = "".join(c if c not in "\r\n\t" else " " for c in s)
+s = "".join(c for c in s if unicodedata.category(c) not in ("Cc", "Cf", "Cs", "Co", "Cn"))
+print(s.strip()[:200].encode("utf-8").hex())') || die "could not read the note"
+    [[ $fhex =~ ^[0-9a-f]*$ ]] || die "bad note"
+    fnote="''"
+    [ -z "$fhex" ] || fnote="CONVERT(0x$fhex USING utf8mb4)"
+    fres=$(mysql_q - <<< "UPDATE chaos_reports SET status = 'closed', closed_at = UNIX_TIMESTAMP(), closed_by = 'chaos-ctl', staff_note = $fnote WHERE id = $((10#$fid)) AND reason = 'bug' AND status = 'open'; SELECT ROW_COUNT();") \
+      || die "database-down: the report could not be closed"
+    [ "$fres" = 1 ] || die "feedback-not-found: no open bug report or suggestion #$((10#$fid))"
+    echo "closed #$((10#$fid))"
     ;;
   vocations)
     for v in "${VOCATIONS[@]}"; do echo "${v%%:*}=${v#*:}"; done
@@ -1227,6 +1346,135 @@ print("pbkdf2-sha256$%d$%s$%s" % (n, base64.b64encode(salt).decode(), base64.b64
     install -m 0440 "$tmp" /etc/sudoers.d/chaos-admin
     rm -f "$tmp"
     echo "user $ADMIN ready ($([ "$full" -eq 1 ] && echo 'full sudo' || echo 'sudo for chaos-ctl.sh only')); key installed"
+    ;;
+  discord-set|discord-enable|discord-disable|discord-test|discord-status)
+    # Discord announcements (docs/LAUNCH.md "Discord announcements"). The webhook URLs live only in $DENV (mode 600,
+    # owner www-data). They are read from stdin, never put on a command line, never printed (not even in an error).
+    case $cmd in
+      discord-set)
+        dch=${1:-}
+        { [ $# -eq 1 ] && discord_channel_ok "$dch"; } \
+          || die "discord-set CHANNEL (one of: $DISCORD_CHANNELS; the webhook URL on stdin, empty removes it)"
+        durl=""
+        IFS= read -r -t 30 -n 400 durl; drc=$?
+        [ "$drc" -le 128 ] || die "no webhook URL on stdin (timed out)"
+        durl=${durl%$'\r'}
+        # one line only: more text after it is refused, so nothing else can ride along
+        dx=""
+        if IFS= read -r -t 2 -n 1 dx && [ -n "$dx" ]; then unset durl; die "one line only on stdin; nothing changed"; fi
+        durl=${durl#"${durl%%[![:space:]]*}"}
+        durl=${durl%"${durl##*[![:space:]]}"}
+        if [ -n "$durl" ] && ! [[ $durl =~ $DISCORD_RE ]]; then
+          unset durl
+          die "that is not a Discord webhook URL (https://discord.com/api/webhooks/ID/TOKEN); nothing changed"
+        fi
+        discord_prepare_env || die "cannot prepare $DENV"
+        # one writer at a time: two quick saves of different channels must not drop each other's line
+        exec 9<"$(dirname -- "$(readlink -m -- "$DENV")")" || die "cannot lock $DENV"
+        flock -w 10 9 || die "another discord-set is running; try again"
+        dkey="CHAOS_DISCORD_WEBHOOK_$(printf '%s' "$dch" | tr '[:lower:]' '[:upper:]')"
+        dreal=$(readlink -m -- "$DENV")
+        dtmp=$(mktemp "$dreal.XXXXXX") || die "cannot write next to $DENV"
+        chmod 0600 "$dtmp"
+        { grep -v -- "^$dkey=" "$dreal" 2>/dev/null || true
+          if [ -n "$durl" ]; then printf '%s=%s\n' "$dkey" "$durl"; fi; } > "$dtmp" \
+          || { rm -f "$dtmp"; die "cannot write $DENV"; }
+        chown --reference="$dreal" -- "$dtmp" 2>/dev/null || chown "$DUSER:$DGROUP" -- "$dtmp" 2>/dev/null || true
+        mv -f -- "$dtmp" "$dreal" || { rm -f "$dtmp"; die "cannot replace $DENV"; }
+        if [ -n "$durl" ]; then
+          did=${durl#*/api/webhooks/}; did=${did%%/*}
+          unset durl
+          echo "discord-set: $dch saved (webhook id ending ${did: -4}); the timer posts within a minute once it is enabled"
+        else
+          echo "discord-set: $dch removed"
+        fi
+        ;;
+      discord-enable|discord-disable)
+        [ $# -eq 0 ] || die "$cmd (no arguments)"
+        if [ "$cmd" = discord-disable ]; then
+          systemctl disable --now chaos-discord.timer >/dev/null 2>&1 || die "could not disable chaos-discord.timer"
+          echo "discord-disable: chaos-discord.timer is off (the webhooks stay saved; the game keeps queueing)"
+          exit 0
+        fi
+        dsite=$(setting CHAOS_SITE_DIR /var/www/chaos)
+        [ -f "$dsite/plugins/chaos/discord_worker.php" ] \
+          || die "site-not-installed: $dsite/plugins/chaos/discord_worker.php is missing (run site-install first)"
+        [ -d "$REPO/server/deploy" ] || die "no repository checkout at $REPO (update-apply first)"
+        discord_prepare_env || die "cannot prepare $DENV"
+        install -d -m 0755 "$(dirname "$DLOG")" || die "cannot create $(dirname "$DLOG")"
+        dchanged=0
+        for dsrc in chaos-discord.service chaos-discord.timer; do
+          [ -f "$REPO/server/deploy/$dsrc" ] || die "missing $REPO/server/deploy/$dsrc"
+          if ! cmp -s "$REPO/server/deploy/$dsrc" "$SYSD/$dsrc"; then
+            install -m 0644 "$REPO/server/deploy/$dsrc" "$SYSD/$dsrc" || die "cannot install $dsrc"
+            dchanged=1
+          fi
+        done
+        # the logrotate file also rotates discord.log (docs/LAUNCH.md)
+        if [ -f "$REPO/server/deploy/chaos.logrotate" ] && ! cmp -s "$REPO/server/deploy/chaos.logrotate" "$DLROT"; then
+          install -m 0644 "$REPO/server/deploy/chaos.logrotate" "$DLROT" || die "cannot install $DLROT"
+        fi
+        [ "$dchanged" -eq 0 ] || systemctl daemon-reload || die "daemon-reload failed"
+        systemctl enable --now chaos-discord.timer >/dev/null 2>&1 || die "could not enable chaos-discord.timer"
+        dn=$(discord_configured | wc -l)
+        echo "discord-enable: chaos-discord.timer is on (units installed: $([ "$dchanged" -eq 1 ] && echo updated || echo already), channels with a webhook: $dn)"
+        [ "$dn" -gt 0 ] || echo "note: no webhook saved yet (discord-set CHANNEL); the queue waits until there is one"
+        ;;
+      discord-test)
+        dwant=${1:-all}
+        { [ $# -le 1 ] && { [ "$dwant" = all ] || discord_channel_ok "$dwant"; }; } \
+          || die "discord-test [CHANNEL|all] (CHANNEL: $DISCORD_CHANNELS)"
+        command -v curl >/dev/null 2>&1 || die "curl-not-found: install curl"
+        dfail=0; dsent=0
+        for dch in $DISCORD_CHANNELS; do
+          [ "$dwant" = all ] || [ "$dwant" = "$dch" ] || continue
+          durl=$(discord_url "$dch")
+          if [ -z "$durl" ]; then
+            [ "$dwant" = all ] || { echo "$dch=not-configured"; dfail=1; }
+            continue
+          fi
+          [ "$dsent" -eq 0 ] || sleep 1
+          dsent=$((dsent + 1))
+          # the URL goes to curl on stdin as a config line: it never shows in ps
+          dcode=$(printf 'url = "%s"\n' "$durl" | curl -K - -sS -o /dev/null -w '%{http_code}' --max-time 15 \
+            -H 'Content-Type: application/json' \
+            -d "{\"content\":\"Cinders of Chaos: teste do webhook $dch\"}" 2>/dev/null) || dcode=${dcode:-000}
+          unset durl
+          if [ "$dcode" = 204 ]; then echo "$dch=204 ok"; else echo "$dch=${dcode:-000} fail"; dfail=1; fi
+        done
+        [ "$dsent" -gt 0 ] || { echo "no webhook saved (discord-set CHANNEL)"; exit 1; }
+        [ "$dfail" -eq 0 ] || exit 1
+        ;;
+      discord-status)
+        [ $# -eq 0 ] || die "discord-status (no arguments)"
+        for dch in $DISCORD_CHANNELS; do
+          durl=$(discord_url "$dch")
+          if [ -n "$durl" ]; then
+            did=${durl#*/api/webhooks/}; did=${did%%/*}
+            echo "channel_$dch=yes id_end=${did: -4}"
+          else
+            echo "channel_$dch=no"
+          fi
+        done
+        unset durl
+        doff=$(sed -n 's/^CHAOS_DISCORD_OFF=\([A-Za-z0-9_,]\{0,200\}\)[[:space:]]*$/\1/p' "$DENV" 2>/dev/null | head -n 1)
+        echo "off_kinds=$doff"
+        dsu=$(sed -n 's/^CHAOS_SITE_URL=\([^ #]*\).*/\1/p' "$DENV" 2>/dev/null | head -n 1)
+        echo "site_url=$dsu"
+        if [ -e "$DENV" ]; then echo "env_file=$(stat -c '%a %U:%G' "$DENV" 2>/dev/null)"; else echo "env_file=missing"; fi
+        if [ -f "$SYSD/chaos-discord.timer" ]; then echo timer_installed=yes; else echo timer_installed=no; fi
+        echo "timer_enabled=$(systemctl is-enabled chaos-discord.timer 2>/dev/null || echo disabled)"
+        echo "timer_active=$(systemctl is-active chaos-discord.timer 2>/dev/null || echo inactive)"
+        echo "@log"
+        if [ -r "$DLOG" ]; then tail -n 8 "$DLOG" 2>/dev/null | discord_redact; else echo "(no $DLOG yet)"; fi
+        echo "@queue"
+        if dq=$(mysql_q "SELECT id, kind, status, attempts, LEFT(error, 120) FROM chaos_discord_queue ORDER BY id DESC LIMIT 10" 2>/dev/null); then
+          printf '%s\n' "$dq" | discord_redact
+        else
+          echo "(the queue could not be read: is the database up?)"
+        fi
+        ;;
+    esac
     ;;
   vps)
     sub=${1:-info}

@@ -446,5 +446,56 @@ def spurs(layer, size, origin, items, kit, no_walk=(), samples=6):
     return out
 
 
+def fence_ids(kit):
+    """Every wall piece id of a kit: its `walls` set, each `stamp_walls` set and the fixed pieces (doors, windows, gates) of its stamps."""
+    out = set()
+    for spec in [kit.get("walls")] + list((kit.get("stamp_walls") or {}).values()):
+        if spec:
+            out |= set(classes_of(spec))
+    for st in kit.get("stamps") or []:
+        for cell in st.get("legend", {}).values():
+            if cell.get("wall") and cell.get("piece"):
+                out.add(int(cell["piece"]))
+    return out
+
+
+def fence_gaps(layer, size, origin, items, kit, no_walk=(), samples=6):
+    """Round 10 `fence_gaps`: loose ends of fence and wall lines. A wall tile with exactly one wall tile on its 4 sides ends a
+    run. The end is a gap when the tile right beyond it (on the line, away from that neighbour) is not free floor: a lantern or
+    another blocking item standing where a corner piece belongs, rock, void or the area's edge. Free floor beyond the end is a
+    door gap or the mouth of a lane and is fine. A lone wall tile (no wall tile on any side) counts too, unless it is a door jamb
+    (free floor on both sides along a line). Needs the kit's wall
+    sets (`walls`, `stamp_walls`); kits without them return 0.
+    Returns {"fence_gaps": n, "samples": [(tile x, tile y, kind)]}."""
+    out = {"fence_gaps": 0, "samples": []}
+    ids = fence_ids(kit)
+    if not ids:
+        return out
+    pr = Probe(layer, size, origin, items, kit, no_walk)
+    wall = {(x, y) for y in range(size) for x in range(size)
+            if any(int(i) in ids for i in (pr.stack(x, y) or ())[1:])}
+
+    def blocked(t):
+        st = pr.stack(*t)
+        return any("not_walkable" in items[int(i)]["flags"] for i in st[1:] if int(i) in items) if st else True
+
+    for t in sorted(wall, key=lambda t: (t[1], t[0])):
+        nb = [(i, j) for i, j in N4 if (t[0] + i, t[1] + j) in wall]
+        kind = None
+        if not nb:  # a lone post with floor on both sides along a line is a door jamb (a one-tile door gap beside it): fine
+            fl = lambda u: 0 <= u[0] < size and 0 <= u[1] < size and u not in wall and pr.ground_floor(*u) and not blocked(u)
+            if not ((fl((t[0] - 1, t[1])) and fl((t[0] + 1, t[1]))) or (fl((t[0], t[1] - 1)) and fl((t[0], t[1] + 1)))):
+                kind = "lone"
+        elif len(nb) == 1:  # open floor beyond the end is a wide opening (a lane into a field): fine
+            u = (t[0] - nb[0][0], t[1] - nb[0][1])
+            if not (0 <= u[0] < size and 0 <= u[1] < size) or (u not in wall and (not pr.ground_floor(*u) or blocked(u))):
+                kind = "open_end"
+        if kind:
+            out["fence_gaps"] += 1
+            if len(out["samples"]) < samples:
+                out["samples"].append((origin + t[0], origin + t[1], kind))
+    return out
+
+
 def summary(res):
     return {k: res[k] for k in ("void_touch", "wall_wrong", "wall_missing") + (("wall_gaps",) if "wall_gaps" in res else ())}

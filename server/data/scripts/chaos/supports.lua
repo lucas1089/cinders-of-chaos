@@ -748,6 +748,7 @@ end
 S.sendState = sendState
 
 local function sendResult(player, ok, text)
+	text = Chaos.tx(player, text)
 	Chaos.send(player, OPCODE, "result", {ok = ok and true or false, text = text})
 	if ok then
 		player:sendTextMessage(MESSAGE_INFO_DESCR, text)
@@ -1019,9 +1020,9 @@ local function onUseRune(player, item, fromPosition, target, toPosition, isHotke
 	if target and type(target) ~= "number" and target.isItem and target:isItem() and target:getId() == id then
 		local ok, text = S.combine(player, id, item, target)
 		if ok then
-			player:sendTextMessage(MESSAGE_INFO_DESCR, text)
+			player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.tx(player, text))
 		else
-			player:sendCancelMessage(Chaos.t(player, text))
+			player:sendCancelMessage(Chaos.tx(player, text))
 		end
 	else
 		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "%s - %s. Fits %s spells. Socket it in the spell supports window (Character > Spell Supports).%s", S.runeName(id), S.effectText(id), S.fitsText(S.runeOf(id).type),

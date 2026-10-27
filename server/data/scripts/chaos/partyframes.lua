@@ -46,6 +46,7 @@ local function send(player, action, data)
 end
 
 local function note(player, text)
+	text = Chaos.tx(player, text) -- the core's refusals are English texts
 	send(player, "message", {text = text})
 	player:sendTextMessage(MESSAGE_STATUS_SMALL, text)
 end
@@ -232,13 +233,13 @@ local function invite(player, name)
 	if not party then
 		party = Party(player)
 		if not party then
-			return note(player, "You cannot start a party now.")
+			return note(player, Chaos.t(player, "You cannot start a party now."))
 		end
 	end
 	if party:addInvite(target) then
-		note(player, target:getName() .. " was invited to your party.")
+		note(player, Chaos.t(player, "%s was invited to your party.", target:getName()))
 	else
-		note(player, target:getName() .. " cannot be invited now.")
+		note(player, Chaos.t(player, "%s cannot be invited now.", target:getName()))
 	end
 end
 

@@ -130,15 +130,15 @@ end
 function R.freeText(player)
 	local reason = R.freeReason(player)
 	if reason == "level" then
-		return string.format("free below level %d", cfg.freeBelowLevel)
+		return Chaos.t(player, "free below level %d", cfg.freeBelowLevel)
 	elseif reason == "vocation" then
-		return "free once after your class changed"
+		return Chaos.t(player, "free once after your class changed")
 	end
 	return nil
 end
 
 local function box(player, title, text)
-	Chaos.send(player, OPCODE, "sendMessage", {title = title, message = text})
+	Chaos.send(player, OPCODE, "sendMessage", {title = title, message = Chaos.tx(player, text)})
 end
 
 -- the store's free resets (vocation change, Passive Tree Reset service) use up a pending free reset too
@@ -204,8 +204,8 @@ actions.resetPreset = function(player, data)
 	T.sendPoints(player)
 	ChaosPassiveTree.apply(player)
 	R.sendInfo(player)
-	T.sendMessageBox(player, "Reset", free and ("Your passive tree was reset for free (" .. free .. ").") or
-		string.format("Your passive tree was reset for %s gold coins.", Core.formatGold(cost)))
+	T.sendMessageBox(player, "Reset", free and Chaos.t(player, "Your passive tree was reset for free (%s).", free) or
+		Chaos.t(player, "Your passive tree was reset for %s gold coins.", Core.formatGold(cost)))
 	return true
 end
 
@@ -229,8 +229,8 @@ actions.paragonReset = function(player)
 	R.useFree(player)
 	P.resetAll(player)
 	R.sendInfo(player)
-	box(player, "Paragon", free and ("Your Paragon points were reset for free (" .. free .. ").") or
-		string.format("Your Paragon points were reset for %s gold coins.", Core.formatGold(cost)))
+	box(player, "Paragon", free and Chaos.t(player, "Your Paragon points were reset for free (%s).", free) or
+		Chaos.t(player, "Your Paragon points were reset for %s gold coins.", Core.formatGold(cost)))
 	return true
 end
 

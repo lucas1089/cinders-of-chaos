@@ -212,3 +212,13 @@ Owner after round 9: "Só tem algumas paredes pra fora agora" (some wall pieces 
 | deepsea `water.members` | emptied. Ids 23929-23932 are 64x64 sprites whose only opaque 32x32 block sits in the top-left quarter, so a tile drawn with one paints its up-left neighbour and leaves itself black unless the tile to its south-east holds another member. That made the black squares inside the purple rim. The lead 23928 (full ground) covers the tile itself. Same trap: cave grey mass 919 (left as is, cave seeds are in the md5 list) |
 
 Check table (8 seeds per kit, all counts 0): `python3 -B run.py tools/wall_check.py areas/<kit>-review-04`. Not done: asylum corridor mouth where a corridor meets a hall wall (the V piece ends in a slanted tip, looks like half a wall; it is the piece's own shape, an end piece variant was tried and drew the same).
+
+## Keys added 2026-10-27 (round 10: fences, pools)
+
+| Key | Meaning |
+|---|---|
+| `pools[].spacing` | Pool centres lie at least `spacing` x `scale` tiles apart, taxicab distance (default 2.6). |
+| `pools[].spread` | n (default off): each pool tries n random centres and takes the one farthest from every other pool, also those of earlier specs. Cursed uses spacing 4.5 and spread 6 (acid and tar), spacing 8 for the small acid spec. |
+| `fence_gaps` (stat) | `wall_check` kits with wall sets (`walls`, `stamp_walls`, fixed stamp pieces): wall tiles that end against a blocking item, rock or void, and lone tiles that are no door jamb (gen/wallcheck.py `fence_gaps`; `tools/wall_check.py`, `tools/test_fences.py`). |
+
+Stamp rules (checked by `tools/test_fences.py`): a stamp with wall cells is a closed outline (corners are wall cells, no item on a corner), a gap in the outline is a doorway with wall at both ends, and an outline with an interior has a doorway or a walkable door piece (a closed door or gate seals it). Wall pieces of stamps are never "plants" for the access repair (gen/generate.py).

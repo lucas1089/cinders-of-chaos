@@ -7881,7 +7881,8 @@
     "game_invasion"
    ],
    "dataKeys": [
-    "open"
+    "open",
+    "text"
    ],
    "files": [
     "invasion.lua"

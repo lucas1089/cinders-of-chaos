@@ -320,9 +320,9 @@ local function onUseGem(player, item, fromPosition, target, toPosition, isHotkey
 		return true
 	end
 	if ok then
-		player:sendTextMessage(MESSAGE_INFO_DESCR, text)
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.tx(player, text))
 	else
-		player:sendCancelMessage(Chaos.t(player, text))
+		player:sendCancelMessage(Chaos.tx(player, text))
 	end
 	return true
 end

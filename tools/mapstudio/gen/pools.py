@@ -2,7 +2,10 @@
 
 kit pools: [{"ground": [ids of the liquid ground], "border": "<kit 12-piece set laid on the land around the pool>",
  "share": share of the allowed land, "scale": blob radius in tiles (3 small, 6 big), "min": smallest blob,
- "decor": {id: rate} (items on the pool's land rim, e.g. bones)}]
+ "decor": {id: rate} (items on the pool's land rim, e.g. bones),
+ "spacing": pool centres lie at least this many `scale`s apart, as a taxicab distance (default 2.6),
+ "spread": n (round 10, default off): each pool tries n random centres and takes the one farthest from every other pool, also
+ those of the specs laid before, so pools spread over the land instead of clumping}]
 The liquid grounds are not walkable (the caller adds them to access.NO_WALK). A pool keeps 2 tiles from anything the
 caller does not allow (shore, cliffs, ramps, walls) so its border pieces have room. Pools come out as rounded blobs (lib.clean).
 """
@@ -17,6 +20,7 @@ def lay(layer, size, origin, kit, rng, allowed, pick):
     """Returns (set of pool tiles, set of liquid ground ids)."""
     specs = kit.get("pools") or []
     taken, ids = set(), set()
+    all_centres = []  # centres of every spec laid so far (the `spread` key measures against them)
     for spec in specs:
         scale = spec.get("scale", 4)  # blob radius in tiles (half the blob's width)
         field = blend(size, rng, [(max(2, scale // 2), 0.7), (2, 0.3)])
@@ -33,9 +37,17 @@ def lay(layer, size, origin, kit, rng, allowed, pick):
         for _ in range(want * 12):
             if len(centres) >= want:
                 break
-            cx, cy = rng.choice(tiles)
-            if any(abs(cx - ax) + abs(cy - ay) < scale * 2.6 for ax, ay in centres):
-                continue
+            apart = scale * spec.get("spacing", 2.6)
+            if spec.get("spread", 1) > 1:
+                near = lambda c: min([abs(c[0] - ax) + abs(c[1] - ay) for ax, ay in all_centres + centres] or [10 ** 6])
+                tries = [c for c in (rng.choice(tiles) for _ in range(spec["spread"])) if near(c) >= apart]
+                if not tries:
+                    continue
+                cx, cy = max(tries, key=near)
+            else:
+                cx, cy = rng.choice(tiles)
+                if any(abs(cx - ax) + abs(cy - ay) < apart for ax, ay in centres):
+                    continue
             rx, ry = scale * rng.uniform(0.8, 1.3), scale * rng.uniform(0.8, 1.3)
             blob = [(x, y) for y in range(max(0, int(cy - ry * 1.4)), min(size, int(cy + ry * 1.4) + 1))
                     for x in range(max(0, int(cx - rx * 1.4)), min(size, int(cx + rx * 1.4) + 1))
@@ -73,6 +85,7 @@ def lay(layer, size, origin, kit, rng, allowed, pick):
                 if rng.random() < rate:
                     st.append(int(key))
                     break
+        all_centres += centres
         taken |= pool | rim
         ids |= {int(i) for i in spec["ground"]}
     return taken, ids

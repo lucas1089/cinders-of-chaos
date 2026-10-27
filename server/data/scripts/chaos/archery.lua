@@ -256,7 +256,7 @@ function A.sweep(player)
 	local p2, g2 = A.sweepStash(player)
 	local pieces, gold = p1 + p2, g1 + g2
 	if pieces > 0 then
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE or MESSAGE_INFO_DESCR, A.refundText(pieces, gold))
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE or MESSAGE_INFO_DESCR, A.refundText(pieces, gold, Chaos.lang(player)))
 	end
 	return pieces, gold
 end
@@ -400,7 +400,7 @@ moved.onItemMoved = function(player, item, count, fromPosition, toPosition, from
 		local gold = A.refundOf(id, n)
 		if item:remove() then
 			credit(player, gold)
-			player:sendTextMessage(MESSAGE_EVENT_ADVANCE or MESSAGE_INFO_DESCR, A.refundText(n, gold))
+			player:sendTextMessage(MESSAGE_EVENT_ADVANCE or MESSAGE_INFO_DESCR, A.refundText(n, gold, Chaos.lang(player)))
 		end
 		return
 	end

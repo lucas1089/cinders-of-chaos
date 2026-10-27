@@ -16,6 +16,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 if not ChaosBuffs then
 	dofile("data/lib/chaos_buffs.lua")
 end
@@ -31,9 +34,47 @@ local function send(player, action, data)
 	Chaos.send(player, OPCODE, action, data)
 end
 
+-- The descriptions are English texts of the registry (some with numbers): a player who reads pt-BR gets them through
+-- Chaos.tx. The result is remembered per language (a look at the bar runs every tick, the template match does not).
+local memo = {}
+local function describeFor(player, text)
+	local lang = Chaos.lang and Chaos.lang(player) or "en"
+	if lang == "en" or type(text) ~= "string" then
+		return text
+	end
+	local m = memo[lang]
+	if not m then
+		m = {n = 0}
+		memo[lang] = m
+	end
+	local out = m[text]
+	if out == nil then
+		if m.n >= 4000 then
+			memo[lang] = {n = 0}
+			m = memo[lang]
+		end
+		out = Chaos.tx(player, text)
+		m[text] = out
+		m.n = m.n + 1
+	end
+	return out
+end
+
 -- one look at one character: a full list when due, else the difference
 function Bar.update(player, w, now, force)
 	local items = B.get(player, now, B.cfg.tickMs * 0.9)
+	if Chaos.lang and Chaos.lang(player) ~= "en" then
+		local own = {}
+		for i, it in ipairs(items) do
+			local copy = {}
+			for k, v in pairs(it) do
+				copy[k] = v
+			end
+			copy.desc = describeFor(player, it.desc)
+			own[i] = copy
+		end
+		items = own
+	end
 	if force or now - (w.lastFull or 0) >= B.cfg.resyncMs then
 		w.lastFull = now
 		send(player, "full", B.full(w.sent, items, now))

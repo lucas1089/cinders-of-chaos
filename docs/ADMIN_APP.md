@@ -100,6 +100,12 @@ instalada é desconhecida: o passo 2 baixa a mais nova e, se o `tfs` for igual a
   recompila enquanto estiver ligado. O app precisa ser recompilado para ter o cartão; o comando funciona pelo SSH sem isso.
 - **Contas** (`account-create NOME`, `account-password NOME`): a senha vai pela entrada do comando (stdin do SSH),
   nunca na linha de comando nem em log, e vira hash PBKDF2 como o site grava. O personagem se cria no client ou no site.
+- **Discord** (`discord-set CANAL`, `discord-enable`, `discord-disable`, `discord-test`, `discord-status`; aba Comandos >
+  Ações rápidas > cartão Discord (anúncios do jogo) > um campo por canal + Salvar / Ativar / Desativar / Testar /
+  Atualizar status): a URL do webhook vai pela entrada do comando (stdin do SSH), nunca na linha de comando nem em log, e
+  fica só em `/etc/chaos/discord.env` (modo 600, dono www-data); o app confere o formato antes de enviar e não mostra a URL
+  de volta (só o final do id). Ativar instala as unidades `chaos-discord.service/.timer` e o logrotate do repositório e liga
+  o timer. Passo a passo: docs/LAUNCH.md "Discord announcements". O app precisa ser recompilado para ter o cartão.
 - **Saúde e espaço** (`health`, `cleanup [--yes]`, `backups`): servidor, banco, serviços web (nginx, apache, php-fpm),
   disco e memória. Limpar mostra a lista e pede confirmação antes de apagar: pastas de trabalho de atualizações e
   publicações em `/var/tmp` com mais de um dia, pastas `srvNN` lá, `tfs.antes-*` além dos 2 mais novos,
@@ -128,6 +134,7 @@ instalada é desconhecida: o passo 2 baixa a mais nova e, se o `tfs` for igual a
   `chaos_progress_metrics`; server/README.md "Progress metrics (O253)". Precisa do passo `sql` do `install_all.py` (ou o
   servidor cria a tabela ao ligar) e de um app recompilado para o card; o comando funciona pelo SSH sem isso.
   O258: o card "Funil dos jogadores" (logo abaixo, preenchido pelo mesmo botão) mostra a volta dos personagens novos nos dias 1, 3 e 7 por semana de entrada, quando cada sistema (masmorra, fenda, torre, mercado, guilda...) é usado pela primeira vez e as áreas onde ficaram os personagens que pararam; níveis até 2000 entram no tempo mediano. server/README.md "Funnel metrics (O258)".
+- **Bugs e sugestões** (aba Painel > card "Bugs e sugestões" > botões "Atualizar", "Copiar tudo" e, em cada relato, "Fechar"; `feedback [--days N] [--all] [--category C] [--names]` e `feedback-close ID [NOTA]`). Mostra o que os jogadores mandaram em System > Report a Bug, os mais novos primeiro: número, data (UTC), categoria (Mapa, Texto errado, Técnico, Outro, Sugestão), o texto, a posição e o nível e a classe de quem mandou. O campo "Últimos dias" (1 a 3650, padrão 30) e a caixa "Incluir os já fechados" filtram. "Copiar tudo" copia a lista em texto simples, com uma linha pedindo ao Claude para classificar e priorizar: cole direto na conversa. "Fechar" (com a nota opcional do campo "Nota ao fechar") marca o relato como fechado. O app nunca pede nomes, e o servidor nunca imprime contas, IPs nem e-mails; sem `--names` o texto copiado não leva dado de jogador. Sugestões: o cliente base não tem a opção, então o jogador escreve `sugestão:` ou `suggestion:` no começo do texto em "Outro" (server/README.md "Bug reports"). Precisa do repositório atualizado na VPS (Painel > Atualizar servidor; o comando lê `server/tools/feedback_format.py`) e de um app recompilado para o card; pelo SSH: `chaos-ctl.sh feedback`.
 - **Assistir jogador** (Comandos > Ações rápidas > Assistir jogador). Só leitura: o jogador não é avisado e nada
   muda no jogo.
   - **Ao vivo** (`cast NOME`): o jogo como o jogador vê, em movimento, uns 30 quadros por segundo. Os 15 x 11
@@ -208,7 +215,7 @@ terminal do app ser root de verdade (instalar pacotes, mexer no sistema), rode n
 `update-rollback`), `update-check`, `update-apply [--no-client] [--no-downloads] [--no-site] [--no-map]`, `update-status`,
 `update-rollback`, `update-log`, `publish-update TAG` (atualização do cliente, docs/LAUNCH.md "Publishing a client
 update"), `publish-log`, `site-install`, `site-log`, `areas-publish [--pictures] [--rotate]`, `xp-rate`, `beta-mode [status | on | off] [restart]`, `clientservices-impl [status | rust | python]`, `health`, `cleanup [--yes]`, `account-create NOME`,
-`account-password NOME`, `install-admin`, `spectate NOME`, `spectate-pair [status | fetch | log [N]]`. Todos com argumentos conferidos (números, nomes, tags de release), nada de
+`account-password NOME`, `discord-set CANAL` (URL no stdin) | `discord-enable` | `discord-disable` | `discord-test [CANAL|all]` | `discord-status`, `install-admin`, `spectate NOME`, `spectate-pair [status | fetch | log [N]]`. Todos com argumentos conferidos (números, nomes, tags de release), nada de
 shell livre. Rode `chaos-ctl.sh help`. Aviso, expulsar, abrir, fechar e salvar passam pelo arquivo `remote.cmd`
 (`server/README.md`, "Remote admin commands"): o servidor do jogo precisa estar com os scripts novos.
 

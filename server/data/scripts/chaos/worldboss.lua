@@ -1664,7 +1664,7 @@ gm:register()
 
 local info = {} -- reached from the menu: Info & Services window (commands_ui.lua, id "worldboss")
 function info.onSay(player, words, param)
-	player:sendTextMessage(MESSAGE_INFO_DESCR, W.status())
+	player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.tx(player, W.status()))
 	return false
 end
 ChaosCommands.register("worldboss", function(player, param) return info.onSay(player, "", param) end)

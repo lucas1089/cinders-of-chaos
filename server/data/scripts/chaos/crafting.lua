@@ -546,7 +546,7 @@ function ChaosCraftingUseOrb(player, orbItem, target, orbKey)
 	end
 	local ok, text = craft(player, orbKey, target, orbItem)
 	if not ok then
-		player:sendCancelMessage(text)
+		player:sendCancelMessage(Chaos.tx(player, text))
 	else
 		sendState(player, false) -- an open bench shows the new counts (a closed one stays closed)
 	end

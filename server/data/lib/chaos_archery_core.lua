@@ -397,9 +397,14 @@ function A.plan(entries)
 	return take, gold, pieces
 end
 
-function A.refundText(pieces, gold)
-	return string.format("Bows and crossbows need no ammunition any more: %d arrow%s and bolt%s left your belongings "
-		.. "and %d gold went to your bank account.", pieces, pieces == 1 and "" or "s", pieces == 1 and "" or "s", gold)
+function A.refundText(pieces, gold, lang)
+	local key = pieces == 1
+		and "Bows and crossbows need no ammunition any more: %d arrow and bolt left your belongings and %d gold went to your bank account."
+		or "Bows and crossbows need no ammunition any more: %d arrows and bolts left your belongings and %d gold went to your bank account."
+	if lang and ChaosI18n and ChaosI18n.text then
+		return ChaosI18n.text(lang, key, pieces, gold)
+	end
+	return string.format(key, pieces, gold)
 end
 
 return A

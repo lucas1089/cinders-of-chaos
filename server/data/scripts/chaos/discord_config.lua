@@ -22,7 +22,20 @@ ChaosDiscordConfig = {
 		chronicle = true, -- the Ashen Chronicle: its start, each written chapter, its end (chronicle.lua)
 		status_up = true, -- the server started
 		status_down = true, -- a clean shutdown outside the daily restart (a crash posts nothing: chaos_health.py)
-		status_restart = true -- the daily server save restart
+		status_restart = true, -- the daily server save restart
+		patchnotes = true -- a new patch note: one digest in English and one in pt-BR (patchnotes.lua)
+	},
+
+	-- the automatic patch note post (patchnotes.lua): off here or with events.patchnotes = false. Each note is posted
+	-- once (server_config key `postedKey`); a note dated after today waits for its day (checked at startup and hourly).
+	patchnotes = {
+		enabled = true,
+		postedKey = "chaos_discord_patchnotes", -- server_config: "date|id" of the last note announced
+		startDelaySeconds = 30, -- after startup, so discord.lua has created the queue table
+		checkSeconds = 3600,
+		maxChars = 1900, -- characters per message (the event text is clipped at 2000)
+		maxParts = 4, -- messages per language (the English ones, then the pt-BR ones)
+		bulletChars = 150
 	},
 
 	-- the channel of each event: the worker posts to CHAOS_DISCORD_WEBHOOK_<CHANNEL> (upper case), else to
@@ -31,7 +44,7 @@ ChaosDiscordConfig = {
 		record = "records", first = "records",
 		worldboss_spawn = "bosses", worldboss_kill = "bosses", ascended_kill = "bosses", cinderheart_kill = "bosses",
 		level = "players", drop = "drops",
-		season_start = "announce", season_end = "announce", chronicle = "announce",
+		season_start = "announce", season_end = "announce", chronicle = "announce", patchnotes = "announce",
 		status_up = "status", status_down = "status", status_restart = "status"
 	},
 
@@ -40,7 +53,7 @@ ChaosDiscordConfig = {
 
 	-- game side rate limit: at most this many rows per event type per minute (more are dropped and counted); the worker
 	-- also spaces its posts per webhook and honours Discord's 429 retry_after
-	perMinute = {default = 6, level = 10, record = 10, first = 10, drop = 6},
+	perMinute = {default = 6, level = 10, record = 10, first = 10, drop = 6, patchnotes = 10},
 
 	-- the daily restart: a shutdown within this many minutes after the server save time of
 	-- data/globalevents/globalevents.xml ("serversave.lua", time="HH:MM:SS") posts status_restart, else status_down

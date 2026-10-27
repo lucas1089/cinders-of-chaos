@@ -371,11 +371,27 @@ local function secondsLeft(tr)
 	return math.max(0, math.floor((tr.deadline - mnow()) / 1000))
 end
 
+-- the HUD notes are English texts or deferred texts (ChaosI18n.msg): the player reads them in their language
+local function notesOf(tr)
+	local out = {}
+	local player = Player(tr.pid)
+	for i, note in ipairs(tr.notes or {}) do
+		if not player then
+			out[i] = tostring(note)
+		elseif ChaosI18n.isMsg(note) then
+			out[i] = ChaosI18n.resolve(note, Chaos.lang(player))
+		else
+			out[i] = Chaos.tx(player, note)
+		end
+	end
+	return out
+end
+
 local function hudData(tr, state)
 	local boss = tr.bossState
 	return {title = "Vocation Trial - " .. tr.tierDef.name, theme = tr.fam.name, left = secondsLeft(tr), limit = tr.limit,
 		total = tr.total, killed = math.min(tr.killed, tr.total), bossAt = tr.total, boss = boss, state = state or "running",
-		bossName = tr.fam.boss.name, mods = {}, notes = tr.notes or {}, lives = tr.lives, livesMax = tr.livesMax, tier = tr.tier}
+		bossName = tr.fam.boss.name, mods = {}, notes = notesOf(tr), lives = tr.lives, livesMax = tr.livesMax, tier = tr.tier}
 end
 
 local function sendHud(tr, action, state)
@@ -514,7 +530,7 @@ local function startStage(tr)
 	local pos = player:getPosition()
 	if stage.kind == "wave" then
 		tr.waveNo = (tr.waveNo or 0) + 1
-		tr.notes = {string.format("Wave %d of %d.", tr.waveNo, tr.waveCount)}
+		tr.notes = {ChaosI18n.msg("Wave %d of %d.", tr.waveNo, tr.waveCount)}
 		for _ = 1, tr.scale.waveSize do
 			local at = randomFar(tr, pos, 4, 6)
 			if not spawnThrall(tr, at, tr.scale.addHp) then
@@ -555,7 +571,7 @@ local function startStage(tr)
 		if m.selectTarget then
 			m:selectTarget(player)
 		end
-		tr.notes = {tr.fam.boss.name .. " awakens."}
+		tr.notes = {ChaosI18n.msg("%s awakens.", tr.fam.boss.name)}
 		say(tr, "%s awakens. %s", tr.fam.boss.name, ChaosI18n.msg(tr.fam.story))
 	end
 	sendHud(tr, "update")
@@ -586,7 +602,7 @@ local function spawnMark(tr)
 	tr.markDeadline = mnow() + tr.tierDef.markSeconds * 1000
 	tr.markHp = m:getHealth()
 	m:getPosition():sendMagicEffect(CONST_ME_MAGIC_RED)
-	tr.notes = {string.format("Mark %d of %d: %d s.", tr.markIdx, tr.stage.count, tr.tierDef.markSeconds)}
+	tr.notes = {ChaosI18n.msg("Mark %d of %d: %d s.", tr.markIdx, tr.stage.count, tr.tierDef.markSeconds)}
 end
 
 -- a share of the maximum health; a Hollow Vessel counts health + maximum energy shield (Chaos.percentBase)
@@ -676,7 +692,7 @@ end
 local function sealNote(tr)
 	local idx = math.min(tr.seal.index, #tr.sealOrder)
 	local el = M.SEAL_ELEMENTS[tr.sealOrder[idx]]
-	tr.notes = {string.format("Seal %d of %d: break the %s seal.", idx, #tr.sealOrder, el:upper())}
+	tr.notes = {ChaosI18n.msg("Seal %d of %d: break the %s seal.", idx, #tr.sealOrder, ChaosI18n.msg(el:upper()))}
 end
 
 local function tickSeals(tr, player, ms, pos)
@@ -697,7 +713,7 @@ local function tickSeals(tr, player, ms, pos)
 		say(tr, "The %s seal breaks.", ChaosI18n.msg(M.SEAL_ELEMENTS[stand]))
 		tr.killed = tr.seal.index - 1
 		if tr.seal.index > #tr.sealOrder then
-			tr.notes = {"The seals are broken."}
+			tr.notes = {ChaosI18n.msg("The seals are broken.")}
 			addEvent(function()
 				if T.runs[tr.pid] == tr and not tr.over then
 					nextStage(tr)
@@ -767,9 +783,9 @@ local function tickMarks(tr, player, ms)
 		else
 			local left = math.max(0, math.ceil((tr.markDeadline - ms) / 1000))
 			if (tr.markFlees or 0) >= (C().markMaxFlees or 0) then
-				tr.notes = {string.format("Mark %d of %d.", tr.markIdx, tr.stage.count)}
+				tr.notes = {ChaosI18n.msg("Mark %d of %d.", tr.markIdx, tr.stage.count)}
 			else
-				tr.notes = {string.format("Mark %d of %d: %d s.", tr.markIdx, tr.stage.count, left)}
+				tr.notes = {ChaosI18n.msg("Mark %d of %d: %d s.", tr.markIdx, tr.stage.count, left)}
 			end
 		end
 	end
@@ -1094,7 +1110,7 @@ function deathEvent.onDeath(creature, corpse, killer, mostDamageKiller)
 		if id == tr.markId then
 			tr.markId = nil
 			tr.killed = tr.killed + 1
-			tr.notes = {string.format("Mark %d of %d down.", tr.markIdx, tr.stage and tr.stage.count or 0)}
+			tr.notes = {ChaosI18n.msg("Mark %d of %d down.", tr.markIdx, tr.stage and tr.stage.count or 0)}
 			sendHud(tr, "update")
 		elseif tr.stage and tr.stage.kind == "wave" and not tr.risen[id] then
 			tr.killed = tr.killed + 1 -- a thrall that stood up again was counted when it fell the first time

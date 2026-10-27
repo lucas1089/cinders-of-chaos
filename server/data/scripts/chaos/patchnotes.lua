@@ -101,12 +101,27 @@ function PN.scan(force)
 		listing = readFile(cfg.dir .. "index.txt") or ""
 	end
 	local notes, byId = {}, {}
+	local twins = PN.twinNames(listing)
 	for _, name in ipairs(PN.fileNames(listing)) do
 		local body = readFile(cfg.dir .. name)
 		if body then
 			local id = name:sub(1, -4)
 			local ok, note = pcall(PN.parse, body, id)
 			if ok and note then
+				-- the pt-BR twin <id>.pt-br.md: shown to players whose language is pt-BR; English where it is missing
+				local twin = twins[id] and readFile(cfg.dir .. twins[id])
+				if twin then
+					local tok, tr = pcall(PN.parse, twin, id)
+					if tok and tr then
+						local why = PN.compare(note, tr)
+						if why then
+							log(twins[id] .. " does not match " .. name .. " (" .. why .. ")")
+						end
+						note.tr = {[PN.TWIN_LANG] = tr}
+					else
+						log("could not parse " .. twins[id] .. ": " .. tostring(tr))
+					end
+				end
 				notes[#notes + 1] = note
 				byId[id] = note
 			else
@@ -248,13 +263,17 @@ local function loginDelay()
 end
 
 -- ---------------------------------------------------------------- protocol
+local function langOf(player)
+	return Chaos.lang and Chaos.lang(player) or "en"
+end
+
 function PN.sendList(player, opts)
 	opts = opts or {}
 	local notes = PN.scan()
 	local seenKey, autoEnabled = PN.state(player)
 	local selected = opts.selected and PN.byId[opts.selected] and opts.selected or (notes[1] and notes[1].id) or ""
 	Chaos.send(player, OPCODE, "list", {
-		weeks = PN.summary(notes, seenKey),
+		weeks = PN.summary(notes, seenKey, nil, langOf(player)),
 		selected = selected,
 		open = opts.open and true or false,
 		auto = opts.auto and true or false,
@@ -270,7 +289,7 @@ function PN.sendNote(player, id)
 		return false
 	end
 	-- in parts (PN.parts): one large message did not arrive in the test client
-	for _, part in ipairs(PN.parts(note)) do
+	for _, part in ipairs(PN.parts(PN.localize(note, langOf(player)))) do
 		Chaos.send(player, OPCODE, "note", part)
 	end
 	return true
@@ -387,9 +406,69 @@ function startup.onStartup()
 	ensureTable()
 	PN.scan(true)
 	PN.loadChangelog(true)
+	local dc = rawget(_G, "ChaosDiscordConfig")
+	addEvent(function() PN.tryPost() end, ((dc and dc.patchnotes and dc.patchnotes.startDelaySeconds) or 30) * 1000)
 	return true
 end
 startup:register()
+
+-- ---------------------------------------------------------------- Discord
+-- A note not announced yet goes to the Discord queue (ANNOUNCE channel) in English and pt-BR; patchnotes_core.lua
+-- PN.discordRun decides, the last note announced is kept in server_config (discord_config.lua patchnotes.postedKey).
+local function configGet(key)
+	local id = db.storeQuery("SELECT `value` FROM `server_config` WHERE `config` = " .. db.escapeString(key))
+	if not id then
+		return ""
+	end
+	local v = result.getString(id, "value")
+	result.free(id)
+	return v or ""
+end
+
+local function configSet(key, value)
+	db.query(string.format("INSERT INTO `server_config` (`config`, `value`) VALUES (%s, %s) ON DUPLICATE KEY UPDATE " ..
+		"`value` = VALUES(`value`)", db.escapeString(key), db.escapeString(value)))
+end
+
+function PN.postDiscord()
+	local DC, X, D = rawget(_G, "ChaosDiscordConfig"), rawget(_G, "ChaosDiscord"), rawget(_G, "ChaosDiscordCore")
+	if not (DC and X and X.queue and D) or DC.enabled == false or not DC.patchnotes or not D.enabled(DC, "patchnotes") then
+		return 0
+	end
+	local o = DC.patchnotes
+	PN.scan()
+	return PN.discordRun({
+		notes = PN.notes, today = os.date("%Y-%m-%d"), postedKey = configGet(o.postedKey), opts = o,
+		event = function(title, text) return D.patchnotes(DC, title, text) end,
+		queue = function(ev) return X.queue(ev) end,
+		save = function(key) configSet(o.postedKey, key) end,
+		log = log
+	})
+end
+
+local function tryPost()
+	local ok, err = pcall(PN.postDiscord)
+	if not ok then
+		log("Discord post failed: " .. tostring(err))
+	end
+end
+
+PN.tryPost = tryPost
+
+local post = GlobalEvent("ChaosPatchNotesDiscord")
+function post.onThink(interval)
+	tryPost()
+	return true
+end
+local dcfg = rawget(_G, "ChaosDiscordConfig")
+if not dcfg then
+	pcall(dofile, "data/scripts/chaos/discord_config.lua")
+	dcfg = rawget(_G, "ChaosDiscordConfig")
+end
+if post.interval then
+	post:interval(((dcfg and dcfg.patchnotes and dcfg.patchnotes.checkSeconds) or 3600) * 1000)
+end
+post:register()
 
 local logout = CreatureEvent("ChaosPatchNotesLogout")
 function logout.onLogout(player)

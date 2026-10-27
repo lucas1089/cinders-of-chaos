@@ -36,6 +36,13 @@ Progress metrics (O253): metrics [--json] runs one fixed read-only query against
 pipes the rows to server/tools/progress_metrics.py, prints text or one JSON line, answers {"ok": false, "error": ...} with
 exit 1 when the table or the database is missing, and refuses any argument (nothing reaches the shell or the SQL).
 
+Discord (discord-set / -enable / -disable / -test / -status): the webhook URL only on stdin and only if it matches the
+strict pattern (hosts, id and token lengths, no extra path or query, no second line), never on a command line (curl gets
+it as a config line on its stdin), never in any output; /etc/chaos/discord.env created mode 600, rewritten in place of the
+old line only, CHAOS_SITE_URL filled from the site env, empty input removes a line, a channel name outside the list (or
+with shell characters) refused; enable installs the units and the logrotate file, disable stops the timer; test reports
+the HTTP code per channel; status shows yes/no and the last 4 id digits, masks a token in log and queue lines.
+
 usage: python3 -I server/deploy/chaos_ctl_test.py
 """
 import json
@@ -572,6 +579,8 @@ def main():
     test_admin_commands()
     test_testers()
     test_metrics()
+    test_feedback()
+    test_discord()
     print('chaos_ctl_test: %d failures' % failures)
     return 1 if failures else 0
 
@@ -1088,6 +1097,123 @@ METRICS_ROWS = [
 ]
 
 
+FEEDBACK_MYSQL = '''#!/usr/bin/env bash
+echo "$(basename "$0") $*" >> "$STUB/calls"
+case " $* " in *" -e "*) ;; *) cat > "$STUB/stdin"; echo "STDIN: $(cat "$STUB/stdin")" >> "$STUB/calls" ;; esac
+case "$*" in
+  *"FROM chaos_reports"*) [ -z "${STUB_FB_FAIL:-}" ] || { echo "ERROR 2002 can't connect" >&2; exit 1; }
+    cat "$STUB/feedback.tsv" ;;
+esac
+if grep -q "UPDATE chaos_reports" "$STUB/stdin" 2>/dev/null; then echo "${STUB_FB_ROWS:-1}"; fi
+'''
+
+
+def test_feedback():
+    """chaos-ctl.sh feedback / feedback-close (and server/tools/feedback_format.py)"""
+    repo_root = os.path.dirname(os.path.dirname(HERE))
+    with tempfile.TemporaryDirectory() as tmp:
+        stub = os.path.join(tmp, 'stub')
+        repo = os.path.join(tmp, 'repo')
+        os.makedirs(stub)
+        os.makedirs(os.path.join(repo, 'server', 'tools'))
+        shutil.copy(os.path.join(repo_root, 'server', 'tools', 'feedback_format.py'), os.path.join(repo, 'server', 'tools'))
+        for name, body in (('systemctl', SYSTEMCTL), ('mysql', FEEDBACK_MYSQL)):
+            p = os.path.join(stub, name)
+            with open(p, 'w') as f:
+                f.write(body)
+            os.chmod(p, 0o755)
+        chat = 'Category: map\\nCharacter position: 1, 2, 3\\nLevel 120, Mystic\\nSent 2026-10-27 14:03:00'
+        rows = [['12', '1793109780', '[map] Wall \\\\x missing\\nnear the gate', '1010', '990', '7', chat, 'open', '', 'Bobby'],
+                ['11', '1793000000', '[suggestion] more depots\x07 \u202eplease', '5', '6', '7', '', 'closed', 'done; thanks', 'Al']]
+        with open(os.path.join(stub, 'feedback.tsv'), 'w') as f:
+            f.write(''.join('\t'.join(r) + '\n' for r in rows))
+        env_file = os.path.join(tmp, 'chaos.env')
+        with open(env_file, 'w') as f:
+            f.write('CHAOS_DB_USER=chaos\nCHAOS_DB_PASS=secret\n')
+        env = dict(os.environ, PATH=stub + ':' + os.environ['PATH'], STUB=stub, CHAOS_CTL_NO_SUDO='1',
+                   CHAOS_SERVER_DIR=os.path.join(tmp, 'server'), CHAOS_ENV=env_file, CHAOS_REPO=repo,
+                   CHAOS_MYSQL='mysql', CHAOS_CTL_CONF=os.path.join(tmp, 'none.conf'),
+                   CHAOS_PID_FILE=os.path.join(tmp, 'no.pid'), CHAOS_LOG=os.path.join(tmp, 'no.log'))
+        for k in ('SUDO_USER', 'CHAOS_UNIT', 'CHAOS_ROOT', 'CHAOS_KIT_DIR', 'CHAOS_DB_SOCKET', 'STUB_FB_FAIL', 'STUB_FB_ROWS'):
+            env.pop(k, None)
+
+        def run(*args, extra=None):
+            return subprocess.run(['bash', SCRIPT] + list(args), env=dict(env, **(extra or {})), capture_output=True,
+                                  text=True, timeout=60)
+
+        def calls():
+            p = os.path.join(stub, 'calls')
+            return open(p).read() if os.path.exists(p) else ''
+
+        def reset():
+            if os.path.exists(os.path.join(stub, 'calls')):
+                os.unlink(os.path.join(stub, 'calls'))
+
+        r = run('feedback')
+        check(r.returncode == 0, 'feedback runs: ' + r.stderr)
+        q = calls()
+        check("reason = 'bug'" in q and "status = 'open'" in q and '* 86400' in q and 'UNIX_TIMESTAMP() - 30 *' in q,
+              'feedback: default query is open, 30 days: ' + q)
+        for column in ('reporter_account', 'account', 'ip', 'email', 'reporter_id', 'target_id'):
+            check(not re.search(r'\b%s\b' % column, q.split('mysql', 1)[-1].replace('chaos_reports', '')), 'feedback never selects ' + column)
+        check('reporter_name' not in q, 'feedback: the name is not even selected without --names')
+        check(r.stdout.splitlines()[0] == '#12 | 2026-10-27 14:03 UTC | map | open | pos 1010,990,7 | lvl 120 Mystic',
+              'feedback: header line: ' + r.stdout)
+        check('  Wall \\x missing near the gate' in r.stdout, 'feedback: text unescaped on one line: ' + r.stdout)
+        check('Bobby' not in r.stdout and 'Al\n' not in r.stdout and 'from:' not in r.stdout, 'feedback: no names by default')
+        check('#11 | ' in r.stdout and 'closed: done; thanks' in r.stdout, 'feedback: closed rows with the staff note')
+        check('\x07' not in r.stdout and '\u202e' not in r.stdout and 'more depots please' in r.stdout,
+              'feedback: control and bidi characters stripped')
+        check(r.stdout.rstrip().endswith('-- 2 reports'), 'feedback: footer')
+        check('secret' not in calls().replace('STDIN', ''), 'feedback: the database password is not on a command line')
+        reset()
+        r = run('feedback', '--names', '--all', '--days', '7', '--category', 'suggestion')
+        q = calls()
+        check(r.returncode == 0 and 'from: Bobby' in r.stdout and 'from: Al' in r.stdout, 'feedback --names prints names: ' + r.stdout)
+        check('reporter_name FROM' in q and "status = 'open'" not in q and '- 7 * 86400' in q
+              and "note LIKE '[suggestion] %'" in q, 'feedback options reach the query: ' + q)
+        reset()
+        check(run('feedback', '--category', 'all').returncode == 0 and 'note LIKE' not in calls(), 'feedback --category all')
+        before = calls()
+        for bad in (('--days',), ('--days', '0'), ('--days', 'x'), ('--days', '99999'), ('--days', '1;id'),
+                    ('--category', "x' OR 1=1 --"), ('--category',), ('--category', 'map;id'), ('--bogus',), ('x',),
+                    ('--days', '$(id)'), ('--names=1',)):
+            r = run('feedback', *bad)
+            check(r.returncode != 0, 'feedback refuses %r' % (bad,))
+        check(calls() == before, 'feedback: a refused call never reaches the database')
+        with open(os.path.join(stub, 'feedback.tsv'), 'w') as f:
+            f.write('')
+        check('No bug reports or suggestions.' in run('feedback').stdout, 'feedback: nothing to show')
+        r = run('feedback', extra={'STUB_FB_FAIL': '1'})
+        check(r.returncode != 0 and 'database-down' in r.stderr and 'No bug' not in r.stdout, 'feedback: database down is an error')
+
+        # feedback-close
+        reset()
+        r = run('feedback-close', '12', 'fixed in the next update')
+        check(r.returncode == 0 and r.stdout.strip() == 'closed #12', 'feedback-close: ' + r.stdout + r.stderr)
+        sql = open(os.path.join(stub, 'stdin')).read()
+        check("status = 'closed'" in sql and 'WHERE id = 12 AND reason = \'bug\' AND status = \'open\'' in sql,
+              'feedback-close: the update: ' + sql)
+        check('CONVERT(0x%s USING utf8mb4)' % 'fixed in the next update'.encode().hex() in sql, 'feedback-close: note as hex: ' + sql)
+        reset()
+        hostile = "x'; DROP TABLE chaos_reports; -- \\\\ \"\n\x07 \u202e ok"
+        r = run('feedback-close', '7', hostile)
+        sql = open(os.path.join(stub, 'stdin')).read()
+        check(r.returncode == 0 and 'DROP' not in sql and "x'" not in sql and '\\' not in sql and '\x07' not in sql,
+              'feedback-close: a hostile note never reaches the SQL as text: ' + sql)
+        check(re.search(r"staff_note = CONVERT\(0x[0-9a-f]+ USING utf8mb4\) WHERE id = 7 ", sql), 'feedback-close: hex literal only: ' + sql)
+        r = run('feedback-close', '007')
+        sql = open(os.path.join(stub, 'stdin')).read()
+        check(r.returncode == 0 and "staff_note = ''" in sql and 'WHERE id = 7 ' in sql, 'feedback-close: no note, 007 is 7: ' + sql)
+        r = run('feedback-close', '12', extra={'STUB_FB_ROWS': '0'})
+        check(r.returncode != 0 and 'feedback-not-found' in r.stderr, 'feedback-close: not open -> error: ' + r.stderr)
+        reset()
+        for bad in ((), ('x',), ('1;id',), ('-1',), ('1 OR 1=1',), ('1234567890',), ("1' OR '1",), ('$(id)',)):
+            r = run('feedback-close', *bad)
+            check(r.returncode != 0, 'feedback-close refuses %r' % (bad,))
+        check(calls() == '', 'feedback-close: a refused call never reaches the database')
+
+
 def test_metrics():
     """chaos-ctl.sh metrics [--json]"""
     repo_root = os.path.dirname(os.path.dirname(HERE))
@@ -1166,6 +1292,194 @@ def test_metrics():
         os.unlink(os.path.join(repo, 'server', 'tools', 'progress_metrics.py'))
         r = run('metrics', '--json')
         check(r.returncode != 0 and 'progress_metrics.py' in r.stderr, 'metrics: a missing tool is named: ' + r.stderr)
+
+
+def test_discord():
+    repo_root = os.path.dirname(os.path.dirname(HERE))
+    token = 'AbCdEfGhIjKlMnOpQrStUvWxYz0123456789_-aBcD'
+    hook = 'https://discord.com/api/webhooks/123456789012345678/' + token
+    hook2 = 'https://canary.discord.com/api/webhooks/987654321098765432/' + token[::-1]
+    curl = '''#!/usr/bin/env bash
+echo "curl $*" >> "$STUB/calls"
+cat > "$STUB/curl.stdin"
+printf '%s' "${STUB_CURL_CODE:-204}"
+[ "${STUB_CURL_CODE:-204}" != 000 ] || exit 6
+'''
+    mysql = '''#!/usr/bin/env bash
+echo "mysql $*" >> "$STUB/calls"
+case "$*" in *chaos_discord_queue*)
+  printf '5\tchronicle\tfailed\t3\thttp 404 https://discord.com/api/webhooks/111111/SECRETTOKENSECRETTOKEN12\n' ;; esac
+'''
+    sysctl = '''#!/usr/bin/env bash
+echo "systemctl $*" >> "$STUB/calls"
+case "$*" in is-enabled*) echo enabled ;; is-active*) echo active ;; esac
+exit 0
+'''
+    with tempfile.TemporaryDirectory() as tmp:
+        stub = os.path.join(tmp, 'stub')
+        repo = os.path.join(tmp, 'repo')
+        site = os.path.join(tmp, 'site')
+        sysd = os.path.join(tmp, 'systemd')
+        os.makedirs(stub)
+        os.makedirs(os.path.join(repo, 'server', 'deploy'))
+        os.makedirs(os.path.join(site, 'plugins', 'chaos'))
+        os.makedirs(sysd)
+        for f in ('chaos-discord.service', 'chaos-discord.timer', 'chaos.logrotate'):
+            shutil.copy(os.path.join(HERE, f), os.path.join(repo, 'server', 'deploy', f))
+        open(os.path.join(site, 'plugins', 'chaos', 'discord_worker.php'), 'w').close()
+        for name, body in (('curl', curl), ('mysql', mysql), ('systemctl', sysctl)):
+            p = os.path.join(stub, name)
+            with open(p, 'w') as f:
+                f.write(body)
+            os.chmod(p, 0o755)
+        env_file = os.path.join(tmp, 'chaos.env')
+        with open(env_file, 'w') as f:
+            f.write('CHAOS_DB_USER=chaos\nCHAOS_DB_PASS=dbsecret\n')
+        site_env = os.path.join(tmp, 'site.env')
+        with open(site_env, 'w') as f:
+            f.write('CHAOS_SITE_URL=https://example.org/\n')
+        denv = os.path.join(tmp, 'etc', 'discord.env')
+        dlog = os.path.join(tmp, 'discord.log')
+        with open(dlog, 'w') as f:
+            f.write('12:00:00 discord: failed https://discord.com/api/webhooks/111111/SECRETTOKENSECRETTOKEN12\nline two\n')
+        rotate = os.path.join(tmp, 'logrotate-chaos')
+        env = dict(os.environ, PATH=stub + ':' + os.environ['PATH'], STUB=stub, CHAOS_CTL_NO_SUDO='1',
+                   CHAOS_SERVER_DIR=os.path.join(tmp, 'server'), CHAOS_ENV=env_file, CHAOS_REPO=repo, CHAOS_MYSQL='mysql',
+                   CHAOS_CTL_CONF=os.path.join(tmp, 'none.conf'), CHAOS_PID_FILE=os.path.join(tmp, 'no.pid'),
+                   CHAOS_LOG=os.path.join(tmp, 'no.log'), CHAOS_DISCORD_ENV=denv, CHAOS_DISCORD_LOG=dlog,
+                   CHAOS_DISCORD_USER=subprocess.run(['id', '-un'], capture_output=True, text=True).stdout.strip(),
+                   CHAOS_DISCORD_GROUP=subprocess.run(['id', '-gn'], capture_output=True, text=True).stdout.strip(),
+                   CHAOS_SITE_ENV=site_env, CHAOS_SITE_DIR=site, CHAOS_SYSTEMD_DIR=sysd, CHAOS_LOGROTATE_FILE=rotate)
+        for k in ('SUDO_USER', 'CHAOS_UNIT', 'CHAOS_ROOT', 'CHAOS_KIT_DIR', 'CHAOS_DB_SOCKET', 'CHAOS_BACKUP_DIR'):
+            env.pop(k, None)
+        seen = []  # every stdout / stderr of every run: the token must be in none of them
+
+        def run(*args, stdin=None, extra=None):
+            r = subprocess.run(['bash', SCRIPT] + list(args), env=dict(env, **(extra or {})), input=stdin,
+                               capture_output=True, text=True)
+            seen.append(r.stdout + r.stderr)
+            return r
+
+        def calls():
+            p = os.path.join(stub, 'calls')
+            return open(p).read() if os.path.exists(p) else ''
+
+        def text():
+            return open(denv).read()
+
+        # refusals: nothing is written, not even the file
+        for bad in ('http://discord.com/api/webhooks/123456/' + token, 'https://evil.com/api/webhooks/123456/' + token,
+                    'https://discord.com.evil.com/api/webhooks/123456/' + token,
+                    'https://discord.com/api/webhooks/1234/' + token, 'https://discord.com/api/webhooks/123456/short',
+                    hook + '?wait=true', hook + '/x', hook + ' extra', 'https://discord.com/api/webhooks/12a456/' + token,
+                    'https://user@discord.com/api/webhooks/123456/' + token, 'https://discord.com/api/webhooks/123456/' + token + '\nFOO=1',
+                    'javascript:alert(1)', '$(id)'):
+            r = run('discord-set', 'records', stdin=bad + '\n')
+            check(r.returncode != 0, 'discord-set refuses %r' % bad)
+            check(not os.path.exists(denv), 'discord-set: a refused URL writes nothing: %r' % bad)
+        for bad in ('records;id', 'Records', 'all', '', '../x', 'records bosses', '$(id)', 'RECORDS'):
+            r = run('discord-set', bad, stdin=hook + '\n')
+            check(r.returncode != 0 and not os.path.exists(denv), 'discord-set refuses the channel %r' % bad)
+        check(run('discord-set', stdin=hook).returncode != 0, 'discord-set needs a channel')
+        check(run('discord-set', 'records', 'extra', stdin=hook).returncode != 0, 'discord-set takes one argument')
+        check(run('discord-set', 'records', hook).returncode != 0, 'discord-set: a URL on the command line is no input')
+        check(run('discord-test', 'records;id').returncode != 0 and run('discord-test', 'a', 'b').returncode != 0,
+              'discord-test refuses a bad channel')
+
+        # set: created mode 600, the site url filled, only the one line replaced
+        r = run('discord-set', 'records', stdin=hook + '\n')
+        check(r.returncode == 0 and 'records saved' in r.stdout and token not in r.stdout + r.stderr, 'discord-set: ' + r.stdout + r.stderr)
+        check('5678' in r.stdout and '123456789012345678' not in r.stdout, 'discord-set: only the last 4 digits of the id')
+        check(stat.S_IMODE(os.stat(denv).st_mode) == 0o600, 'discord.env is mode 600: %o' % os.stat(denv).st_mode)
+        check('CHAOS_DISCORD_WEBHOOK_RECORDS=' + hook + '\n' in text() and 'CHAOS_SITE_URL=https://example.org\n' in text(),
+              'discord.env: the line and the site url: ' + repr(text()))
+        r = run('discord-set', 'bosses', stdin=hook2 + '\r\n')
+        check(r.returncode == 0 and 'WEBHOOK_BOSSES=' + hook2 + '\n' in text(), 'discord-set: a second channel (CRLF input): ' + r.stderr)
+        with open(denv, 'a') as f:
+            f.write('CHAOS_DISCORD_OFF=level,bazaar_list\n')
+        before = text()
+        r = run('discord-set', 'records', stdin='  ' + hook2 + '  \n')
+        check(r.returncode == 0 and 'WEBHOOK_RECORDS=' + hook2 + '\n' in text() and hook + '\n' not in text(), 'discord-set: replaces the line')
+        check(text().count('WEBHOOK_RECORDS') == 1 and 'WEBHOOK_BOSSES=' + hook2 in text() and 'CHAOS_DISCORD_OFF=level,bazaar_list' in text()
+              and text().count('CHAOS_SITE_URL') == 1, 'discord-set: the other lines stay: ' + repr(text()))
+        check(stat.S_IMODE(os.stat(denv).st_mode) == 0o600, 'discord.env still mode 600 after a rewrite')
+        check(not [n for n in os.listdir(os.path.dirname(denv)) if n != 'discord.env'], 'discord-set: no temp file left')
+        # a symlinked env file stays a symlink
+        real = os.path.join(tmp, 'real.env')
+        shutil.move(denv, real)
+        os.symlink(real, denv)
+        r = run('discord-set', 'players', stdin=hook + '\n')
+        check(r.returncode == 0 and os.path.islink(denv) and 'WEBHOOK_PLAYERS=' + hook in open(real).read(), 'discord-set: a symlink is followed')
+        os.unlink(denv)
+        shutil.move(real, denv)
+        # remove
+        r = run('discord-set', 'players', stdin='\n')
+        check(r.returncode == 0 and 'removed' in r.stdout and 'WEBHOOK_PLAYERS' not in text() and 'WEBHOOK_BOSSES' in text(), 'discord-set: empty input removes: ' + r.stderr)
+        r = run('discord-set', 'bosses', stdin='')
+        check(r.returncode == 0 and 'WEBHOOK_BOSSES' not in text(), 'discord-set: closed stdin removes')
+        run('discord-set', 'bosses', stdin=hook2 + '\n')
+        # a hand-edited file without a trailing newline and without the site url: the url gets its own line
+        saved = text()
+        with open(denv, 'w') as f:
+            f.write('CHAOS_DISCORD_WEBHOOK_DEFAULT=' + hook)
+        r = run('discord-set', 'status', stdin=hook2 + '\n')
+        check(r.returncode == 0 and 'CHAOS_DISCORD_WEBHOOK_DEFAULT=' + hook + '\n' in text() and 'CHAOS_SITE_URL=https://example.org\n' in text(),
+              'discord-set: no line glued onto an unterminated last line: ' + repr(text()))
+        with open(denv, 'w') as f:
+            f.write(saved)
+        # a rejected URL leaves the file as it was
+        before = text()
+        check(run('discord-set', 'bosses', stdin='nonsense\n').returncode != 0 and text() == before, 'discord-set: a bad URL leaves the file')
+
+        # status: yes / no, never the URL, masked log and queue
+        r = run('discord-status')
+        out = dict(l.split('=', 1) for l in r.stdout.splitlines() if '=' in l and not l.startswith('12:'))
+        check(r.returncode == 0 and out.get('channel_records') == 'yes id_end=5432' and out.get('channel_bosses') == 'yes id_end=5432'
+              and out.get('channel_status') == 'no' and out.get('channel_default') == 'no', 'discord-status: channels: ' + r.stdout)
+        check(out.get('off_kinds') == 'level,bazaar_list' and out.get('site_url') == 'https://example.org', 'discord-status: off kinds, site url')
+        check(out.get('timer_installed') == 'no' and out.get('timer_enabled') == 'enabled' and out.get('timer_active') == 'active', 'discord-status: timer')
+        check(re.search(r'env_file=600 ', r.stdout) is not None, 'discord-status: env file mode')
+        check('@log' in r.stdout and 'line two' in r.stdout and '@queue' in r.stdout and 'chronicle\tfailed\t3' in r.stdout, 'discord-status: log and queue: ' + r.stdout)
+        check('SECRETTOKEN' not in r.stdout and '/webhooks/111111/***' in r.stdout, 'discord-status: tokens in log and queue lines are masked')
+        check('/api/webhooks/12345' not in r.stdout, 'discord-status: no saved URL')
+        check(run('discord-status', 'x').returncode != 0, 'discord-status takes no argument')
+
+        # test: one post per saved channel, the URL only on curl's stdin
+        open(os.path.join(stub, 'calls'), 'w').close()
+        r = run('discord-test')
+        check(r.returncode == 0 and 'records=204 ok' in r.stdout and 'bosses=204 ok' in r.stdout and 'status' not in r.stdout, 'discord-test all: ' + r.stdout + r.stderr)
+        check(calls().count('curl ') == 2 and 'teste do webhook records' in calls() and 'teste do webhook bosses' in calls(), 'discord-test: two posts: ' + calls())
+        check('discord' not in calls().replace('chaos-discord', '').replace('teste do webhook', '') and token not in calls() and token[::-1] not in calls(),
+              'discord-test: the URL is never in curl arguments')
+        check('url = "' + hook2 + '"' in open(os.path.join(stub, 'curl.stdin')).read() or 'url = "' + hook + '"' in open(os.path.join(stub, 'curl.stdin')).read(),
+              'discord-test: curl gets the URL as a config line on stdin')
+        r = run('discord-test', 'records')
+        check(r.returncode == 0 and r.stdout.strip() == 'records=204 ok', 'discord-test records: ' + r.stdout)
+        r = run('discord-test', 'status')
+        check(r.returncode != 0 and 'status=not-configured' in r.stdout, 'discord-test: a channel without a webhook')
+        r = run('discord-test', 'bosses', extra={'STUB_CURL_CODE': '404'})
+        check(r.returncode == 1 and 'bosses=404 fail' in r.stdout, 'discord-test: HTTP 404 fails: ' + r.stdout)
+        r = run('discord-test', 'bosses', extra={'STUB_CURL_CODE': '000'})
+        check(r.returncode == 1 and 'bosses=000 fail' in r.stdout, 'discord-test: no connection fails: ' + r.stdout)
+
+        # enable / disable
+        r = run('discord-enable')
+        check(r.returncode == 0 and 'channels with a webhook: 2' in r.stdout, 'discord-enable: ' + r.stdout + r.stderr)
+        check(os.path.isfile(os.path.join(sysd, 'chaos-discord.timer')) and os.path.isfile(os.path.join(sysd, 'chaos-discord.service'))
+              and os.path.isfile(rotate), 'discord-enable: units and logrotate installed')
+        c = calls()
+        check(c.index('systemctl daemon-reload') < c.index('systemctl enable --now chaos-discord.timer'), 'discord-enable: daemon-reload, then enable --now')
+        open(os.path.join(stub, 'calls'), 'w').close()
+        r = run('discord-enable')
+        check(r.returncode == 0 and 'already' in r.stdout and 'daemon-reload' not in calls() and 'enable --now chaos-discord.timer' in calls(), 'discord-enable twice: no reload')
+        r = run('discord-disable')
+        check(r.returncode == 0 and 'systemctl disable --now chaos-discord.timer' in calls(), 'discord-disable: ' + r.stderr)
+        check(run('discord-enable', 'x').returncode != 0 and run('discord-disable', 'x').returncode != 0, 'enable / disable take no argument')
+        r = run('discord-enable', extra={'CHAOS_SITE_DIR': os.path.join(tmp, 'nosite')})
+        check(r.returncode != 0 and 'site-not-installed' in r.stderr, 'discord-enable: no site, no timer')
+
+        check(not any(token in t or token[::-1] in t for t in seen), 'no output of any discord command holds a webhook token')
+        check('webhooks' not in calls(), 'no command line (stubs) saw a webhook URL')
 
 
 if __name__ == '__main__':
