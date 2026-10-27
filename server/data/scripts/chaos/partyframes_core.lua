@@ -206,16 +206,16 @@ function P.canInvite(viewerId, party, targetName, target, maxMembers)
 		return false, "Only the party leader can invite."
 	end
 	if not target or target.hidden then
-		return false, "There is no player called " .. targetName .. " online."
+		return false, string.format("There is no player called %s online.", targetName)
 	end
 	if target.isSelf then
 		return false, "You cannot invite yourself."
 	end
 	if target.inParty then
-		return false, target.name .. " is already in a party."
+		return false, string.format("%s is already in a party.", target.name)
 	end
 	if party and party.invited and party.invited[target.id] then
-		return false, target.name .. " is already invited."
+		return false, string.format("%s is already invited.", target.name)
 	end
 	if party and (party.members or 0) >= (maxMembers or P.cfg.maxMembers) then
 		return false, "Your party is full."

@@ -23,6 +23,9 @@ if not ChaosClasses then
 	dofile("data/scripts/chaos/classes.lua")
 end
 local C = ChaosClasses
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 
 ChaosClassMigration = ChaosClassMigration or {}
 local M = ChaosClassMigration
@@ -116,7 +119,7 @@ function M.onLogin(player)
 	end
 	local free = player:getStorageValue(st.freeSwitch)
 	local text = C.migrationMessage(cfg().migration.oldNames[from] or "vocation", voc:getName(),
-		free > 0 and wordOf(free) or nil, plan.resetTree)
+		free > 0 and wordOf(free) or nil, plan.resetTree, Chaos.lang(player))
 	if not C.isAscended(voc:getId()) then
 		local choices = cfg().ascension.choices[voc:getId()]
 		if choices then
@@ -125,8 +128,8 @@ function M.onLogin(player)
 				names[#names + 1] = k
 			end
 			table.sort(names)
-			text = text .. string.format(" From level %d choose your ascended class at the Ascendant Oracle: %s.",
-				cfg().ascension.minLevel, table.concat(names, " or "))
+			text = text .. Chaos.t(player, " From level %d choose your ascended class at the Ascendant Oracle: %s.",
+				cfg().ascension.minLevel, table.concat(names, Chaos.t(player, " or ")))
 		end
 	end
 	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, text)

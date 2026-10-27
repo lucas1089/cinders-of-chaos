@@ -932,25 +932,25 @@ local function infoText(player)
 	local d = S.stateOf(player)
 	local s = d.season
 	if not s then
-		return "No season is configured."
+		return Chaos.t(player, "No season is configured.")
 	end
 	local lines = {}
 	if s.status == "active" then
-		lines[#lines + 1] = string.format("%s %s is running: %s left.", s.name, s.tag or "", S.formatDuration(s.endsIn))
+		lines[#lines + 1] = Chaos.t(player, "%s %s is running: %s left.", s.name, s.tag or "", S.formatDuration(s.endsIn))
 	elseif s.status == "upcoming" then
-		lines[#lines + 1] = string.format("%s %s starts in %s.", s.name, s.tag or "", S.formatDuration(s.startsIn))
+		lines[#lines + 1] = Chaos.t(player, "%s %s starts in %s.", s.name, s.tag or "", S.formatDuration(s.startsIn))
 	else
-		lines[#lines + 1] = string.format("%s has ended.", s.name)
+		lines[#lines + 1] = Chaos.t(player, "%s has ended.", s.name)
 	end
 	if s.modifier and s.status ~= "ended" then
-		lines[#lines + 1] = string.format("Modifier %s: %s", s.modifier.name, s.modifier.description)
+		lines[#lines + 1] = Chaos.t(player, "Modifier %s: %s", s.modifier.name, Chaos.tx(player, s.modifier.description))
 	end
 	if d.mine.seasonal then
-		lines[#lines + 1] = "This character is a season character."
+		lines[#lines + 1] = Chaos.t(player, "This character is a season character.")
 	elseif d.mine.eligible then
-		lines[#lines + 1] = "This character can join: Adventure > Season."
+		lines[#lines + 1] = Chaos.t(player, "This character can join: Adventure > Season.")
 	elseif s.status == "active" then
-		lines[#lines + 1] = "Join: " .. tostring(d.mine.reason)
+		lines[#lines + 1] = Chaos.t(player, "Join: %s", Chaos.tx(player, tostring(d.mine.reason)))
 	end
 	for _, m in ipairs(d.track) do
 		lines[#lines + 1] = string.format("  [%s] %s (%d/%d) - %s", m.unlocked and "x" or " ", m.name, m.progress, m.value,

@@ -265,7 +265,7 @@ function A.sellBag(player)
 	local guid = player:getGuid()
 	local wait = AK.cooldownLeft(A.lastBagSale[guid], os.time(), AK.COOLDOWN)
 	if wait > 0 then
-		return nil, string.format("Auto Seller: ready again in %d s.", wait)
+		return nil, Chaos.t(player, "Auto Seller: ready again in %d s.", wait)
 	end
 	local bag = ChaosPouches and ChaosPouches.carried and ChaosPouches.carried(player).loot
 	if not bag then

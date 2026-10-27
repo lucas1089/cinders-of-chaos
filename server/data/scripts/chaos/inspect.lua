@@ -52,7 +52,7 @@ local function reply(player, action, data)
 end
 
 local function deny(player, code, name)
-	reply(player, "denied", {code = code, text = I.reasonText(code, name)})
+	reply(player, "denied", {code = code, text = Chaos.tx(player, I.reasonText(code, name))})
 end
 
 local function pcallv(fn, ...)

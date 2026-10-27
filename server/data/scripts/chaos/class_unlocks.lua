@@ -133,7 +133,7 @@ function U.canUseVocation(player, vocId)
 	if U.isUnlocked(player, key) then
 		return true
 	end
-	return false, K.lockMessage(key)
+	return false, K.lockMessage(key, nil, Chaos.lang(player))
 end
 
 function U.isRestricted(player)
@@ -234,8 +234,7 @@ end
 -- ------------------------------------------------------------------------------------------------ the login check
 local function lockText(player)
 	local key = K.classOfVocation(player:getVocation():getId())
-	return K.lockMessage(key) .. " Until then this character stays in its temple: it cannot attack and gains no "
-		.. "experience or skills. Every other character of your account plays as usual."
+	return K.lockMessage(key, nil, Chaos.lang(player)) .. Chaos.t(player, " Until then this character stays in its temple: it cannot attack and gains no experience or skills. Every other character of your account plays as usual.")
 end
 
 local function kickLater(cid)
@@ -261,7 +260,8 @@ function login.onLogin(player)
 	end
 	local text = lockText(player)
 	if cfg().login.mode == "kick" then
-		text = K.lockMessage(K.classOfVocation(player:getVocation():getId())) .. " You will be logged out."
+		text = K.lockMessage(K.classOfVocation(player:getVocation():getId()), nil, Chaos.lang(player))
+			.. Chaos.t(player, " You will be logged out.")
 		addEvent(kickLater, cfg().login.kickAfterMs, player:getId())
 	end
 	player:sendTextMessage(MESSAGE_STATUS_WARNING, text)
@@ -288,7 +288,7 @@ local function notice(player)
 	local now = os.time()
 	if now - (lastNotice[player:getId()] or 0) >= 5 then
 		lastNotice[player:getId()] = now
-		player:sendCancelMessage(K.lockMessage(K.classOfVocation(player:getVocation():getId())))
+		player:sendCancelMessage(K.lockMessage(K.classOfVocation(player:getVocation():getId()), nil, Chaos.lang(player)))
 	end
 end
 
@@ -343,7 +343,7 @@ startup:register()
 -- ------------------------------------------------------------------------------------------------ commands
 -- one line for the unlocked classes, one per group of locked classes that unlock the same way (K.lockGroups)
 local function statusLines(player)
-	local status = K.lockGroups(function(key) return U.isUnlocked(player, key) end)
+	local status = K.lockGroups(function(key) return U.isUnlocked(player, key) end, nil, Chaos.lang(player))
 	local lines = {}
 	if #status.unlocked > 0 then
 		lines[#lines + 1] = Chaos.t(player, "Unlocked classes: %s.", table.concat(status.unlocked, ", "))

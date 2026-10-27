@@ -682,7 +682,7 @@ end
 
 -- title and text in the buyer's language: a key, a deferred text (ChaosI18n.msg) or a text already translated
 local function message(player, title, text)
-	send(player, "message", {title = Chaos.t(player, title), msg = Chaos.t(player, text)}, true)
+	send(player, "message", {title = Chaos.t(player, title), msg = Chaos.tx(player, text)}, true)
 end
 
 -- the tree: the parents first (a new client builds the tree when "categories" comes), then the categories

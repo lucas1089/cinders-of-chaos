@@ -30,6 +30,9 @@ local DIR_STEP = {
 
 function ChaosSpell.cancel(creature, message)
 	if message then
+		if type(message) == "string" and Chaos and Chaos.tx and creature.isPlayer and creature:isPlayer() then
+			message = Chaos.tx(creature, message) -- an English refusal of a core, in the player's language
+		end
 		creature:sendCancelMessage(message)
 	else
 		creature:sendCancelMessage(RETURNVALUE_NOTPOSSIBLE)

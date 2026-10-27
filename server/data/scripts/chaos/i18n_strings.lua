@@ -5452,5 +5452,895 @@ return {
 			"inativo",
 		["left"] =
 			"saiu",
+		-- Classes: ascension, migration, class locks, bow refund (O147 round 5)
+		["Your vocation has no ascension."] =
+			"Sua vocação não tem ascensão.",
+		["You already are of that class. Your free switch (to %s) stays."] =
+			"Você já é dessa classe. Sua troca grátis (para %s) continua valendo.",
+		["You may switch once, for free, to %s (Character > Services)."] =
+			"Você pode trocar uma vez, de graça, para %s (Character > Services).",
+		["You have already ascended. Only the store's Vocation Change can change that."] =
+			"Você já ascendeu. Só o Vocation Change da loja pode mudar isso.",
+		["Choose your ascension: %s. The choice is final."] =
+			"Escolha sua ascensão: %s. A escolha é definitiva.",
+		["You need level %d to ascend."] =
+			"Você precisa do nível %d para ascender.",
+		["Ascend in a protection zone (a temple or a depot)."] =
+			"Ascenda em uma zona de proteção (um templo ou um depot).",
+		["The classes were reworked: your %s is now %s."] =
+			"As classes foram refeitas: seu %s agora é %s.",
+		[" Your passive tree was reset for free; allocate your points again."] =
+			" Sua árvore passiva foi reiniciada de graça; distribua seus pontos de novo.",
+		[" You may switch to the other ascended class once, for free (%s): Character > Services, in a protection zone."] =
+			" Você pode trocar para a outra classe ascendida uma vez, de graça (%s): Character > Services, em uma zona de proteção.",
+		[" From level %d choose your ascended class at the Ascendant Oracle: %s."] =
+			" A partir do nível %d escolha sua classe ascendida no Ascendant Oracle: %s.",
+		["Bows and crossbows need no ammunition any more: %d arrow and bolt left your belongings and %d gold went to your bank account."] =
+			"Arcos e bestas não precisam mais de munição: %d flecha e virote saíram dos seus pertences e %d de ouro foram para a sua conta bancária.",
+		["Bows and crossbows need no ammunition any more: %d arrows and bolts left your belongings and %d gold went to your bank account."] =
+			"Arcos e bestas não precisam mais de munição: %d flechas e virotes saíram dos seus pertences e %d de ouro foram para a sua conta bancária.",
+		["buy the %s unlock in the store (Classes, %d Chaos Coins)"] =
+			"compre o desbloqueio de %s na loja (Classes, %d Chaos Coins)",
+		["reach level %d with any character of your account"] =
+			"chegue ao nível %d com qualquer personagem da sua conta",
+		["finish its quest"] =
+			"conclua a missão dela",
+		["earn the achievement %s"] =
+			"ganhe a conquista %s",
+		["earn %d achievement points on your account"] =
+			"ganhe %d pontos de conquista na sua conta",
+		["earn achievements"] =
+			"ganhe conquistas",
+		[", or "] =
+			", ou ",
+		["This class is locked on this account."] =
+			"Esta classe está bloqueada nesta conta.",
+		[" To play it, %s."] =
+			" Para jogar com ela, %s.",
+		["The %s is locked on this account.%s"] =
+			"A classe %s está bloqueada nesta conta.%s",
+		[" Until then this character stays in its temple: it cannot attack and gains no experience or skills. Every other character of your account plays as usual."] =
+			" Até lá este personagem fica no templo: não pode atacar e não ganha experiência nem skills. Os outros personagens da sua conta jogam normalmente.",
+		[" You will be logged out."] =
+			" Você será desconectado.",
+		["Could not save the unlock. Try again."] =
+			"Não foi possível salvar o desbloqueio. Tente de novo.",
+		["Could not remove the unlock."] =
+			"Não foi possível remover o desbloqueio.",
+		["Every character of your account can now become %s (and its ascended classes)."] =
+			"Todos os personagens da sua conta já podem se tornar %s (e as classes ascendidas dela).",
+		-- Refusals and lines of party frames, inspect, respec, paragon, atlas, arena, battleground, descent, gamble, hideout, pets, pocket boss, town portal, professions (O147 round 5)
+		["Only the party leader can remove a member."] =
+			"Só o líder do grupo pode remover um membro.",
+		["You cannot remove yourself: leave the party instead."] =
+			"Você não pode se remover: saia do grupo.",
+		["Only the party leader can pass the leadership."] =
+			"Só o líder do grupo pode passar a liderança.",
+		["You are the leader already."] =
+			"Você já é o líder.",
+		["Type the name of the player to invite."] =
+			"Digite o nome do jogador a convidar.",
+		["Only the party leader can invite."] =
+			"Só o líder do grupo pode convidar.",
+		["You cannot invite yourself."] =
+			"Você não pode se convidar.",
+		["There is no player called %s online."] =
+			"Não há nenhum jogador chamado %s online.",
+		["%s is already in a party."] =
+			"%s já está em um grupo.",
+		["%s is already invited."] =
+			"%s já foi convidado.",
+		["%s was invited to your party."] =
+			"%s foi convidado para o seu grupo.",
+		["No player of that name is online."] =
+			"Nenhum jogador com esse nome está online.",
+		["%s does not allow others to inspect them."] =
+			"%s não permite que outros o inspecionem.",
+		["%s is too far away to inspect."] =
+			"%s está longe demais para ser inspecionado.",
+		["You are inspecting too fast. Wait a moment."] =
+			"Você está inspecionando rápido demais. Espere um momento.",
+		["You cannot inspect that player."] =
+			"Você não pode inspecionar esse jogador.",
+		["Enter the name of a player."] =
+			"Digite o nome de um jogador.",
+		["You need %s gold coins (carried or in the bank) to reset your passive tree."] =
+			"Você precisa de %s gold coins (na mochila ou no banco) para resetar sua árvore passiva.",
+		["Your passive tree was reset for %s gold coins."] =
+			"Sua árvore passiva foi resetada por %s gold coins.",
+		["Your passive tree was reset for free (%s)."] =
+			"Sua árvore passiva foi resetada de graça (%s).",
+		["You need %s gold coins (carried or in the bank) to reset your Paragon points."] =
+			"Você precisa de %s gold coins (na mochila ou no banco) para resetar seus pontos de Paragon.",
+		["You need %d gold coins (carried or in the bank) to reset your Paragon points."] =
+			"Você precisa de %d gold coins (na mochila ou no banco) para resetar seus pontos de Paragon.",
+		["Your Paragon points were reset for %s gold coins."] =
+			"Seus pontos de Paragon foram resetados por %s gold coins.",
+		["Your Paragon points were reset for %d gold coins."] =
+			"Seus pontos de Paragon foram resetados por %d gold coins.",
+		["Your Paragon points were reset for free (%s)."] =
+			"Seus pontos de Paragon foram resetados de graça (%s).",
+		["You need %s gold coins (carried or in the bank) to refund a node."] =
+			"Você precisa de %s gold coins (na mochila ou no banco) para devolver um nó.",
+		["That node is not allocated."] =
+			"Esse nó não está alocado.",
+		["Other allocated nodes depend on that node: refund the nodes further out first."] =
+			"Outros nós alocados dependem desse nó: devolva primeiro os nós mais distantes.",
+		["The Paragon track unlocks at level %d."] =
+			"A trilha Paragon é liberada no nível %d.",
+		["Unknown Paragon mastery in request."] =
+			"Maestria Paragon desconhecida no pedido.",
+		["That mastery cannot take that many ranks."] =
+			"Essa maestria não aceita tantos ranks.",
+		["You do not own enough Paragon points for that."] =
+			"Você não tem pontos de Paragon suficientes para isso.",
+		["Unknown Paragon stat in request."] =
+			"Atributo Paragon desconhecido no pedido.",
+		["Paragon points can only be taken back with a reset."] =
+			"Pontos de Paragon só podem ser devolvidos com um reset.",
+		["You do not own enough Paragon points for that allocation."] =
+			"Você não tem pontos de Paragon suficientes para essa distribuição.",
+		["You do not have that many free passive points."] =
+			"Você não tem tantos pontos passivos livres.",
+		["A saved mastery changes its effect with Change effect (a priced respec), not with a plan."] =
+			"Uma maestria salva muda de efeito com Change effect (um respec pago), não com um plano.",
+		["The orbs could not be taken."] =
+			"Não foi possível pegar os orbes.",
+		["You need %d gold (carried or in the bank)."] =
+			"Você precisa de %d de ouro (na mochila ou no banco).",
+		["That node does not exist."] =
+			"Esse nó não existe.",
+		["You hold that node already."] =
+			"Você já tem esse nó.",
+		["Not enough atlas points: seal new rifts to earn more."] =
+			"Pontos de atlas insuficientes: sele novos rifts para ganhar mais.",
+		["Not enough atlas points: complete new maps to earn more."] =
+			"Pontos de atlas insuficientes: complete novos mapas para ganhar mais.",
+		["You can hold only one keystone. Refund the other first."] =
+			"Você só pode ter uma keystone. Devolva a outra primeiro.",
+		["That node is not connected to your atlas."] =
+			"Esse nó não está ligado ao seu atlas.",
+		["You do not hold that node."] =
+			"Você não tem esse nó.",
+		["Other nodes depend on that one: refund them first."] =
+			"Outros nós dependem desse: devolva-os primeiro.",
+		["Your atlas is empty."] =
+			"Seu atlas está vazio.",
+		["You need level %d to fight in the arena."] =
+			"Você precisa do nível %d para lutar na arena.",
+		["You are already in an arena match."] =
+			"Você já está em uma partida da arena.",
+		["You are already in the arena queue (leave it in the Arena window)."] =
+			"Você já está na fila da arena (saia dela na janela Arena).",
+		["You cannot fight in the arena while another character from your connection is online."] =
+			"Você não pode lutar na arena enquanto outro personagem da sua conexão estiver online.",
+		["You cannot queue for the arena while in combat."] =
+			"Você não pode entrar na fila da arena em combate.",
+		["You can only queue for the arena in a protection zone."] =
+			"Você só pode entrar na fila da arena em uma zona de proteção.",
+		["Arena: the match was stopped by the staff and is not rated."] =
+			"Arena: a partida foi encerrada pela equipe e não vale pontos.",
+		["The battleground is closed."] =
+			"O campo de batalha está fechado.",
+		["You need level %d for the battleground."] =
+			"Você precisa do nível %d para o campo de batalha.",
+		["You are already in a battleground match."] =
+			"Você já está em uma partida do campo de batalha.",
+		["You are already in the battleground queue."] =
+			"Você já está na fila do campo de batalha.",
+		["Deserter: you left a battleground early and cannot queue for %d more minute(s)."] =
+			"Desertor: você saiu cedo de um campo de batalha e não pode entrar na fila por mais %d minuto(s).",
+		["You cannot join the battleground while another character from your connection is online."] =
+			"Você não pode entrar no campo de batalha enquanto outro personagem da sua conexão estiver online.",
+		["You cannot queue for the battleground while in combat."] =
+			"Você não pode entrar na fila do campo de batalha em combate.",
+		["You can only queue for the battleground in a protection zone."] =
+			"Você só pode entrar na fila do campo de batalha em uma zona de proteção.",
+		["Only the party leader can queue the party for the battleground."] =
+			"Só o líder do grupo pode colocar o grupo na fila do campo de batalha.",
+		["A party of at most %d players can queue together."] =
+			"Um grupo de no máximo %d jogadores pode entrar na fila junto.",
+		["Battleground: the match was stopped by the staff and is not rated."] =
+			"Campo de batalha: a partida foi encerrada pela equipe e não vale pontos.",
+		["The %s took the %s!"] =
+			"O time %s tomou o %s!",
+		["The %s lost the %s."] =
+			"O time %s perdeu o %s.",
+		["You are not playing on this battlefield: you were sent to your temple."] =
+			"Você não está jogando neste campo: foi levado ao seu templo.",
+		["The wells are open: take the braziers!"] =
+			"Os poços estão abertos: tomem os braseiros!",
+		["Your account owns it already."] =
+			"Sua conta já tem isso.",
+		["You need %d honor (you have %d)."] =
+			"Você precisa de %d de honra (você tem %d).",
+		["The sigil could not be made."] =
+			"Não foi possível criar o sigilo.",
+		["You forged an %s.%s"] =
+			"Você forjou um %s.%s",
+		["The next door opens..."] =
+			"A próxima porta se abre...",
+		["The embers will not rise here: your descent ends."] =
+			"As brasas não sobem aqui: sua descida termina.",
+		["Room %d of %d: %s (%s), %d wave."] =
+			"Sala %d de %d: %s (%s), %d onda.",
+		["Room %d of %d: %s (%s), %d waves."] =
+			"Sala %d de %d: %s (%s), %d ondas.",
+		["You enter %s (weekly descent): %d rooms, %d minutes."] =
+			"Você entra em %s (descida semanal): %d salas, %d minutos.",
+		["You enter %s: %d rooms, %d minutes."] =
+			"Você entra em %s: %d salas, %d minutos.",
+		["The embers burn out: your descent ends here."] =
+			"As brasas se apagam: sua descida termina aqui.",
+		["You are not part of this descent: you were sent to your temple."] =
+			"Você não faz parte desta descida: foi levado ao seu templo.",
+		["A gamemaster closed the Descent."] =
+			"Um gamemaster fechou a Descent.",
+		["You need %s gold for that crate."] =
+			"Você precisa de %s de ouro para essa caixa.",
+		["The deal could not be written down. Your gold is in your bank account; try again."] =
+			"O trato não pôde ser registrado. Seu ouro está na sua conta bancária; tente de novo.",
+		["That crate was empty. Your gold is in your bank account."] =
+			"Essa caixa estava vazia. Seu ouro está na sua conta bancária.",
+		["The seal breaks: a [%s] %s (item level %d) for %s gold.%s"] =
+			"O selo se rompe: um [%s] %s (item level %d) por %s de ouro.%s",
+		["One crate at a time."] =
+			"Uma caixa de cada vez.",
+		["The Gambler shakes his head. Try again."] =
+			"O Gambler balança a cabeça. Tente de novo.",
+		["Ask the Gambler in person for fresh crates."] =
+			"Peça caixas novas ao Gambler pessoalmente.",
+		["The stock has changed. Look again."] =
+			"O estoque mudou. Olhe de novo.",
+		["No more fresh crates before %s."] =
+			"Não há mais caixas novas antes de %s.",
+		["Fresh crates cost %s gold."] =
+			"Caixas novas custam %s de ouro.",
+		["Fresh crates for %s gold."] =
+			"Caixas novas por %s de ouro.",
+		["The Gambler has packed up his crates for now."] =
+			"O Gambler guardou as caixas por enquanto.",
+		["Buy from the Gambler in person: he waits in the teleport room's market."] =
+			"Compre do Gambler pessoalmente: ele espera no mercado da sala de teleportes.",
+		["That crate is not on offer."] =
+			"Essa caixa não está à venda.",
+		["That crate is already sold."] =
+			"Essa caixa já foi vendida.",
+		["The decoration could not be saved. Your coins were refunded."] =
+			"A decoração não pôde ser salva. Suas moedas foram devolvidas.",
+		["There is no such character."] =
+			"Não existe esse personagem.",
+		["This hideout cannot be built right now. Tell a gamemaster."] =
+			"Este hideout não pode ser construído agora. Avise um gamemaster.",
+		["The owner closed this hideout to you."] =
+			"O dono fechou este hideout para você.",
+		["Decorate inside your own hideout."] =
+			"Decore dentro do seu próprio hideout.",
+		["That decoration is gone."] =
+			"Essa decoração sumiu.",
+		["Every decoration was put away."] =
+			"Todas as decorações foram guardadas.",
+		["The owner asked visitors to leave."] =
+			"O dono pediu que os visitantes saíssem.",
+		["No visitors are inside."] =
+			"Não há visitantes lá dentro.",
+		["You like this hideout."] =
+			"Você curtiu este hideout.",
+		["At most %d x %s per hideout."] =
+			"No máximo %d x %s por hideout.",
+		["Ember Descent: reach depth %d"] =
+			"Ember Descent: chegue à profundidade %d",
+		["Season journey: chapter %d"] =
+			"Jornada da temporada: capítulo %d",
+		["Store: %d Chaos Coins (cosmetic, giftable)"] =
+			"Loja: %d Chaos Coins (cosmético, presenteável)",
+		["A pet name has %d to %d letters."] =
+			"O nome de um pet tem de %d a %d letras.",
+		["A pet name has only letters and single spaces."] =
+			"O nome de um pet tem só letras e espaços simples.",
+		["Pocket: %d%% experience, %d%% loot"] =
+			"Pocket: %d%% de experiência, %d%% de loot",
+		["You left the pocket."] =
+			"Você saiu do pocket.",
+		["Everyone left the pocket."] =
+			"Todos saíram do pocket.",
+		["This pocket is not yours: you were sent to your temple."] =
+			"Este pocket não é seu: você foi levado ao seu templo.",
+		["Choose it in Character > Portal Style."] =
+			"Escolha em Character > Portal Style.",
+		["There is no room for a portal here."] =
+			"Não há espaço para um portal aqui.",
+		["The temple is crowded with portals; try again in a moment."] =
+			"O templo está lotado de portais; tente de novo em instantes.",
+		["The portal could not open here."] =
+			"O portal não pôde abrir aqui.",
+		["You moved: the portal fizzles."] =
+			"Você se moveu: o portal se desfaz.",
+		["You were hit: the portal fizzles."] =
+			"Você foi atingido: o portal se desfaz.",
+		["The portal will not carry you right after fighting other players."] =
+			"O portal não leva você logo depois de lutar contra outros jogadores.",
+		["The way back is blocked."] =
+			"O caminho de volta está bloqueado.",
+		["Your town portal closed behind you."] =
+			"Seu town portal se fechou atrás de você.",
+		["Your town portal faded."] =
+			"Seu town portal se dissipou.",
+		["Store: %d Chaos Coins (Portal Styles)"] =
+			"Loja: %d Chaos Coins (Portal Styles)",
+		["Every character has it."] =
+			"Todos os personagens têm.",
+		["You moved: gathering is interrupted."] =
+			"Você se moveu: a coleta foi interrompida.",
+		["You are already gathering."] =
+			"Você já está coletando.",
+		["You are casting a spell."] =
+			"Você está lançando uma magia.",
+		["Stand next to it."] =
+			"Fique ao lado.",
+		["You took what you could from this %s. It is ready for you again in %d:%02d."] =
+			"Você pegou o que podia deste(a) %s. Estará pronto de novo em %d:%02d.",
+		["This corpse was flayed already."] =
+			"Este corpo já foi esfolado.",
+		["The broker takes no more %s today (%d a day)."] =
+			"O corretor não aceita mais %s hoje (%d por dia).",
+		["Sell to a Material Broker: one stands next to every temple (in Cinderhold in the teleport room's market)."] =
+			"Venda a um Material Broker: há um ao lado de cada templo (em Cinderhold, no mercado da sala de teleportes).",
+		["Sold %d %s for %d gold (to your bank account)."] =
+			"Vendeu %d %s por %d de ouro (para a sua conta bancária).",
+		["Nothing the broker takes today."] =
+			"O corretor não aceita nada hoje.",
+		["Sold %d materials for %d gold (to your bank account)."] =
+			"Vendeu %d materiais por %d de ouro (para a sua conta bancária).",
+		["You need %s for %s (Material Brokers sell them)."] =
+			"Você precisa de %s para %s (os Material Brokers vendem).",
+		-- Spell casting: interrupt and target messages (chaos_casting.lua, O147 round 5)
+		["You moved: the spell is interrupted."] =
+			"Você se moveu: a magia foi interrompida.",
+		["You were paralysed: the spell is interrupted."] =
+			"Você foi paralisado: a magia foi interrompida.",
+		["You cast another spell: the first one is interrupted."] =
+			"Você lançou outra magia: a primeira foi interrompida.",
+		["You opened a town portal: the spell is interrupted."] =
+			"Você abriu um town portal: a magia foi interrompida.",
+		["Spell cancelled."] =
+			"Magia cancelada.",
+		["The spell fails."] =
+			"A magia falha.",
+		["Your target is gone."] =
+			"Seu alvo sumiu.",
+		["Your target is out of range."] =
+			"Seu alvo está fora de alcance.",
+		["Your target is out of sight."] =
+			"Seu alvo está fora de vista.",
+		["You may not attack this creature."] =
+			"Você não pode atacar esta criatura.",
+		["You were stunned: the spell is interrupted."] =
+			"Você foi atordoado: a magia foi interrompida.",
+		-- Crafting orbs, sockets, gems and support runes: refusals and results (O147 round 5)
+		["This item cannot carry modifiers."] =
+			"Este item não pode ter modificadores.",
+		["Unique items cannot be changed by orbs."] =
+			"Itens únicos não podem ser alterados por orbes.",
+		["Orbs work on a single item."] =
+			"Orbes funcionam em um único item.",
+		["This orb works only on a normal item (no rarity, no modifiers)."] =
+			"Este orbe só funciona em um item normal (sem raridade, sem modificadores).",
+		["This orb works only on an item with a rarity."] =
+			"Este orbe só funciona em um item com raridade.",
+		["This item has no free modifier slot."] =
+			"Este item não tem espaço livre para modificador.",
+		["Every open prefix and suffix of this item is taken."] =
+			"Todos os prefixos e sufixos livres deste item estão ocupados.",
+		["This item has no modifier to remove."] =
+			"Este item não tem modificador para remover.",
+		["There is no modifier left that this item could get."] =
+			"Não sobrou nenhum modificador que este item possa receber.",
+		["This item is ruined: no orb can change it any more."] =
+			"Este item está arruinado: nenhum orbe pode mais alterá-lo.",
+		["This item is corrupted: no orb can change it any more."] =
+			"Este item está corrompido: nenhum orbe pode mais alterá-lo.",
+		["Store items cannot be corrupted."] =
+			"Itens da loja não podem ser corrompidos.",
+		["A Void Orb works only on Rare or better gear."] =
+			"Um Void Orb só funciona em equipamento Raro ou melhor.",
+		["Every modifier of this item is bound."] =
+			"Todos os modificadores deste item estão presos.",
+		["This item has no bound modifier."] =
+			"Este item não tem modificador preso.",
+		["This item has all the bound modifiers its rarity allows."] =
+			"Este item já tem todos os modificadores presos que a raridade permite.",
+		["Choose a modifier of the item first."] =
+			"Escolha primeiro um modificador do item.",
+		["That modifier cannot be chosen for this orb."] =
+			"Esse modificador não pode ser escolhido para este orbe.",
+		["Bound modifiers stop this orb: use an Orb of Erasure first."] =
+			"Modificadores presos barram este orbe: use primeiro um Orb of Erasure.",
+		["This item has the highest rarity already."] =
+			"Este item já tem a maior raridade.",
+		["This item has all the quality it can get."] =
+			"Este item já tem toda a qualidade que pode ter.",
+		["This item has no modifier for the quality to act on."] =
+			"Este item não tem modificador para a qualidade agir.",
+		["Nothing left to risk: the item has no modifier an Orb of Ruin could improve."] =
+			"Nada a arriscar: o item não tem modificador que um Orb of Ruin possa melhorar.",
+		["This orb works only on a Rift Key without modifiers."] =
+			"Este orbe só funciona em uma Rift Key sem modificadores.",
+		["This Rift Key has no modifiers."] =
+			"Esta Rift Key não tem modificadores.",
+		["This Rift Key has the most modifiers a key can have."] =
+			"Esta Rift Key já tem o máximo de modificadores que uma chave pode ter.",
+		["There is no modifier left that this Rift Key could get."] =
+			"Não sobrou nenhum modificador que esta Rift Key possa receber.",
+		["Rift Keys have no sockets."] =
+			"Rift Keys não têm sockets.",
+		["This orb does not work on Rift Keys."] =
+			"Este orbe não funciona em Rift Keys.",
+		["This orb works only on a Normal waystone (no modifiers)."] =
+			"Este orbe só funciona em um waystone Normal (sem modificadores).",
+		["This waystone has no modifiers."] =
+			"Este waystone não tem modificadores.",
+		["This waystone has every modifier a Rare waystone can carry."] =
+			"Este waystone já tem todos os modificadores que um waystone Raro pode ter.",
+		["A Magic waystone carries one prefix and one suffix: an Orb of Fate makes it Rare."] =
+			"Um waystone Mágico tem um prefixo e um sufixo: um Orb of Fate o torna Raro.",
+		["Waystones have no sockets."] =
+			"Waystones não têm sockets.",
+		["This orb does not work on waystones."] =
+			"Este orbe não funciona em waystones.",
+		["No modifier of this item can rise: bound ones stay and the top tier is the limit."] =
+			"Nenhum modificador deste item pode subir: os presos ficam e o tier máximo é o limite.",
+		["This item is at the highest rarity a Crown Orb can lift it to."] =
+			"Este item já está na maior raridade a que um Crown Orb pode elevá-lo.",
+		["The orb fizzles: the new item could not be made."] =
+			"O orbe falha: o novo item não pôde ser criado.",
+		["Put the item in your backpack first."] =
+			"Coloque o item na sua mochila primeiro.",
+		["There is no room for the item."] =
+			"Não há espaço para o item.",
+		["This item cannot have sockets."] =
+			"Este item não pode ter sockets.",
+		["A unique item has a fixed socket; orbs cannot change it."] =
+			"Um item único tem socket fixo; orbes não podem alterá-lo.",
+		["This item already has the most sockets it can have."] =
+			"Este item já tem o máximo de sockets possível.",
+		["This item has no sockets."] =
+			"Este item não tem sockets.",
+		["There is no gem in that socket."] =
+			"Não há gema nesse socket.",
+		["This item has no free socket. Take a gem out at the crafting bench (Economy > Crafting Bench) first."] =
+			"Este item não tem socket livre. Retire uma gema na crafting bench (Economy > Crafting Bench) primeiro.",
+		["That is not a gem."] =
+			"Isso não é uma gema.",
+		["%s socketed into %s (socket %d): %s."] =
+			"%s encaixado em %s (socket %d): %s.",
+		["Three %s became a %s.%s"] =
+			"Três %s viraram um(a) %s.%s",
+		["Taking the %s out unharmed costs %d gold (bank or backpack)."] =
+			"Retirar %s sem danificar custa %d de ouro (banco ou mochila).",
+		["%s taken out of %s for %d gold.%s"] =
+			"%s retirado de %s por %d de ouro.%s",
+		["%s shattered (taken out of %s)."] =
+			"%s se estilhaçou (retirado de %s).",
+		["Socket gems into gear you carry (backpack or equipment)."] =
+			"Encaixe gemas em equipamentos que você carrega (mochila ou equipado).",
+		["That is not a support rune."] =
+			"Isso não é uma runa de suporte.",
+		["That spell cannot carry supports."] =
+			"Essa magia não pode receber suportes.",
+		["That support does not fit this spell (%s; the spell is %s)."] =
+			"Esse suporte não serve para esta magia (%s; a magia é %s).",
+		["This spell already has a %s rune."] =
+			"Esta magia já tem uma runa %s.",
+		["This spell already has a brand; one brand per spell."] =
+			"Esta magia já tem uma brand; uma brand por magia.",
+		["This spell has no free socket. Take a rune out first."] =
+			"Esta magia não tem socket livre. Retire uma runa primeiro.",
+		["That socket is not open yet."] =
+			"Esse socket ainda não está aberto.",
+		["There is no rune in that socket."] =
+			"Não há runa nesse socket.",
+		["The third socket of this spell is open already."] =
+			"O terceiro socket desta magia já está aberto.",
+		["The third socket needs level %d for this spell."] =
+			"O terceiro socket precisa do nível %d para esta magia.",
+		["You do not carry that rune."] =
+			"Você não carrega essa runa.",
+		["You need level %d to cast %s."] =
+			"Você precisa do nível %d para lançar %s.",
+		["Opening the third socket takes %d %s."] =
+			"Abrir o terceiro socket custa %d %s.",
+		["The third support socket of %s is open (%d %s used)."] =
+			"O terceiro socket de suporte de %s está aberto (%d %s usados).",
+		["Three %ss became one %s.%s"] =
+			"Três %ss viraram uma %s.%s",
+		-- Buff bar descriptions (lib/chaos_buffs.lua, translated in buffbar.lua; O147 round 5)
+		["Experience from monsters is increased for everyone."] =
+			"A experiência dos monstros está maior para todos.",
+		["More Chaos loot from monsters for everyone."] =
+			"Mais loot Chaos dos monstros para todos.",
+		["Skill and magic level training is faster for everyone."] =
+			"O treino de skills e de magic level está mais rápido para todos.",
+		["Magic and rare monsters appear more often everywhere."] =
+			"Monstros mágicos e raros aparecem com mais frequência em todo lugar.",
+		["A held invasion rewards extra experience."] =
+			"Uma invasão defendida dá experiência extra.",
+		["More Chaos loot from every monster in this area."] =
+			"Mais loot Chaos de todos os monstros nesta área.",
+		["Magic, rare and legendary monsters appear far more often in this area."] =
+			"Monstros mágicos, raros e lendários aparecem muito mais nesta área.",
+		["A scheduled event is running."] =
+			"Um evento programado está em andamento.",
+		["A double experience potion doubles the experience you get."] =
+			"Uma poção de experiência em dobro dobra a experiência que você ganha.",
+		["A community goal stage blesses everyone online."] =
+			"Uma etapa da meta da comunidade abençoa todos os jogadores online.",
+		["This week's world modifier."] =
+			"O modificador mundial desta semana.",
+		["More melee skill, less shielding."] =
+			"Mais skill corpo a corpo, menos shielding.",
+		["Melee, distance and magic are stronger, and you are faster."] =
+			"Corpo a corpo, distância e magia ficam mais fortes, e você fica mais rápido.",
+		["More maximum health and steady regeneration."] =
+			"Mais vida máxima e regeneração constante.",
+		["Strong health and mana regeneration."] =
+			"Forte regeneração de vida e mana.",
+		["Damage is taken from mana first, and mana regenerates."] =
+			"O dano é tirado primeiro da mana, e a mana se regenera.",
+		["You are invisible and faster."] =
+			"Você está invisível e mais rápido.",
+		["A short burst of speed."] =
+			"Uma breve explosão de velocidade.",
+		["Your distance skill is higher."] =
+			"Seu skill de distância está maior.",
+		["Your shielding is higher."] =
+			"Seu shielding está maior.",
+		["Less damage taken and more shielding."] =
+			"Menos dano recebido e mais shielding.",
+		["Monsters lose you. Your first weapon hit out of it is a critical hit."] =
+			"Os monstros perdem você de vista. Seu primeiro golpe de arma depois disso é um golpe crítico.",
+		["Your weapon hits poison the target."] =
+			"Os golpes da sua arma envenenam o alvo.",
+		["The next melee hit you take is parried and answered."] =
+			"O próximo golpe corpo a corpo que você receber é aparado e respondido.",
+		["Critical chance grows every second you take no damage. A hit taken starts the stacks again."] =
+			"A chance de crítico cresce a cada segundo sem receber dano. Um golpe recebido zera os acúmulos.",
+		["More Rage, and every melee hit also strikes enemies next to you."] =
+			"Mais Rage, e cada golpe corpo a corpo também atinge os inimigos ao seu lado.",
+		["Your bone minions are empowered."] =
+			"Seus lacaios de osso estão fortalecidos.",
+		["A shield of bone guards you."] =
+			"Um escudo de osso protege você.",
+		["Critical chance from the chi your last finisher spent."] =
+			"Chance de crítico pelo chi que seu último finalizador gastou.",
+		["A ward absorbs damage."] =
+			"Uma proteção absorve dano.",
+		["Damage taken is reduced while you stay near the Sage (refreshed every pulse of the 12 second chant)."] =
+			"O dano recebido é reduzido enquanto você fica perto do Sage (renovado a cada pulso do canto de 12 segundos).",
+		["Heals you over time."] =
+			"Cura você ao longo do tempo.",
+		["Your summoned wolves fight for you. They vanish after 40 seconds."] =
+			"Seus lobos invocados lutam por você. Somem depois de 40 segundos.",
+		["Mirror images of you distract monsters. They vanish after 10 seconds."] =
+			"Imagens espelhadas de você distraem os monstros. Somem depois de 10 segundos.",
+		["Each kill adds damage for a short time."] =
+			"Cada morte soma dano por pouco tempo.",
+		["Your strikes build chi, finishers spend it."] =
+			"Seus golpes geram chi, os finalizadores gastam.",
+		["You hit harder the lower your health."] =
+			"Você bate mais forte quanto menos vida tem.",
+		["Monsters that hit you may be struck back."] =
+			"Monstros que atingem você podem receber o golpe de volta.",
+		["A Templar's aura shields you."] =
+			"A aura de um Templar protege você.",
+		["A vigil covers you: more damage dealt."] =
+			"Uma vigília cobre você: mais dano causado.",
+		["A vigil covers you: less damage taken."] =
+			"Uma vigília cobre você: menos dano recebido.",
+		["A vigil covers you: you move faster."] =
+			"Uma vigília cobre você: você se move mais rápido.",
+		["A vigil covers you: mana comes back every second."] =
+			"Uma vigília cobre você: a mana volta a cada segundo.",
+		["Your vigils reserve maximum health instead of mana."] =
+			"Suas vigílias reservam vida máxima em vez de mana.",
+		["You cannot move, attack or cast attack spells. Healing still works."] =
+			"Você não pode se mover, atacar nem lançar magias de ataque. Curas ainda funcionam.",
+		["You were stunned: no stun can hold you until this ends, and the next one is shorter."] =
+			"Você foi atordoado: nenhum atordoamento prende você até isto acabar, e o próximo é mais curto.",
+		["A boon of the Ember Descent, for this run only."] =
+			"Uma bênção da Ember Descent, só para esta corrida.",
+		["A curse of the Ember Descent: more rewards, a harder run."] =
+			"Uma maldição da Ember Descent: mais recompensas, uma corrida mais difícil.",
+		["No trading; more and better loot."] =
+			"Sem trocas; mais loot e melhor.",
+		["You cannot be hurt for now."] =
+			"Você não pode ser ferido por enquanto.",
+		["More experience from monsters."] =
+			"Mais experiência dos monstros.",
+		["More gold coins in your kills' corpses."] =
+			"Mais gold coins nos corpos das suas mortes.",
+		["More damage dealt to monsters."] =
+			"Mais dano causado aos monstros.",
+		["Less damage taken from monsters."] =
+			"Menos dano recebido dos monstros.",
+		["Health and mana come back every 2 seconds."] =
+			"Vida e mana voltam a cada 2 segundos.",
+		["More critical hits, and harder ones."] =
+			"Mais golpes críticos, e mais fortes.",
+		["More Chaos loot from your kills."] =
+			"Mais loot Chaos das suas mortes.",
+		["Gear drops roll a higher rarity more often."] =
+			"Os drops de equipamento saem com raridade maior com mais frequência.",
+		["Orbs drop more often from your kills."] =
+			"Orbes caem com mais frequência das suas mortes.",
+		["Your profession levels add experience from monsters."] =
+			"Seus níveis de profissão somam experiência dos monstros.",
+		["More experience from monsters until your rest is spent."] =
+			"Mais experiência dos monstros até o seu descanso acabar.",
+		["More experience, loot and token drops for returning players."] =
+			"Mais experiência, loot e drops de tokens para jogadores que voltam.",
+		["More experience from monsters below your account's best level."] =
+			"Mais experiência dos monstros abaixo do melhor nível da sua conta.",
+		["Less experience and loot until your stamina comes back."] =
+			"Menos experiência e loot até a sua stamina voltar.",
+		["Health and mana come back faster."] =
+			"Vida e mana voltam mais rápido.",
+		["Food makes health and mana regenerate."] =
+			"A comida faz vida e mana se regenerarem.",
+		["Damage is taken from mana first."] =
+			"O dano é tirado primeiro da mana.",
+		["Monsters cannot see you."] =
+			"Os monstros não conseguem ver você.",
+		["You carry a light."] =
+			"Você carrega uma luz.",
+		["A support spell or potion boosts your skills for a short time."] =
+			"Uma magia de suporte ou poção aumenta seus skills por pouco tempo.",
+		["A raid boss's mark on you."] =
+			"A marca de um chefe de raid em você.",
+		["Poison hurts you every few seconds."] =
+			"Veneno fere você a cada poucos segundos.",
+		["Fire burns you every few seconds."] =
+			"Fogo queima você a cada poucos segundos.",
+		["Energy hurts you every few seconds."] =
+			"Energia fere você a cada poucos segundos.",
+		["You bleed, taking damage over time."] =
+			"Você sangra, recebendo dano ao longo do tempo.",
+		["You are drowning and take damage."] =
+			"Você está se afogando e recebe dano.",
+		["Cold hurts you every few seconds."] =
+			"Frio fere você a cada poucos segundos.",
+		["Holy light hurts you every few seconds."] =
+			"Luz sagrada fere você a cada poucos segundos.",
+		["A curse drains your health."] =
+			"Uma maldição drena a sua vida.",
+		["Your movement is slowed."] =
+			"Seu movimento está lento.",
+		["You stumble when you walk."] =
+			"Você tropeça quando anda.",
+		["You cannot cast spells."] =
+			"Você não pode lançar magias.",
+		["You cannot log out or enter a protection zone until the timer ends."] =
+			"Você não pode sair do jogo nem entrar em uma zona de proteção até o tempo acabar.",
+		["You attacked a player. Others may attack you freely."] =
+			"Você atacou um jogador. Outros podem atacar você livremente.",
+		["You killed too many players. Your skull fades when the timer ends."] =
+			"Você matou jogadores demais. Sua caveira some quando o tempo acabar.",
+		["You killed far too many players. Your skull fades when the timer ends."] =
+			"Você matou jogadores demais mesmo. Sua caveira some quando o tempo acabar.",
+		["Each stack: +%d%% damage (up to %d stacks). A stack fades %d s after the kill."] =
+			"Cada acúmulo: +%d%% de dano (até %d acúmulos). Um acúmulo some %d s depois da morte.",
+		["Strikes build chi, finishers spend it. Chi fades %d s after the last change."] =
+			"Golpes geram chi, finalizadores gastam. O chi some %d s depois da última mudança.",
+		-- Store, cosmetics, exclusives, rested/stamina, community goal, auto seller (O147 round 5)
+		["Your backpack and inbox are full. Your coins were refunded."] =
+			"Sua mochila e sua caixa de entrada estão cheias. Suas moedas foram devolvidas.",
+		["The Everfull Ration is not installed on this server yet."] =
+			"A Everfull Ration ainda não está instalada neste servidor.",
+		["You already have an Everfull Ration (backpack, purse, inbox or depot). One per character."] =
+			"Você já tem uma Everfull Ration (mochila, bolsa, caixa de entrada ou depot). Uma por personagem.",
+		["Your Everfull Ration comes back at your next login."] =
+			"Sua Everfull Ration volta no seu próximo login.",
+		["Could not start the donation. Please try again."] =
+			"Não foi possível iniciar a doação. Tente de novo.",
+		["Donation #%d was refunded or charged back: %d Chaos Coins were taken back."] =
+			"A doação #%d foi reembolsada ou estornada: %d Chaos Coins foram retiradas.",
+		["Auto Seller: ready again in %d s."] =
+			"Auto Seller: pronto de novo em %d s.",
+		["The account owns %s already."] =
+			"A conta já tem %s.",
+		["Could not save the cosmetic."] =
+			"Não foi possível salvar o cosmético.",
+		["Back to the default look."] =
+			"De volta ao visual padrão.",
+		["Choose it in the Outfit window (account-wide, cosmetic only)."] =
+			"Escolha na janela de Outfit (vale para a conta toda, só cosmético).",
+		["Choose it in Character > Cosmetics (account-wide, cosmetic only)."] =
+			"Escolha em Character > Cosmetics (vale para a conta toda, só cosmético).",
+		["Wait a moment before the next preview."] =
+			"Espere um momento antes da próxima prévia.",
+		["Unlocked for your account: %s. See Character > Cosmetics > Collection."] =
+			"Desbloqueado para a sua conta: %s. Veja Character > Cosmetics > Collection.",
+		["Rare drop from %s: %s (%s), unlocked for your whole account. %s"] =
+			"Drop raro de %s: %s (%s), desbloqueado para a sua conta toda. %s",
+		["Exclusive unlocked"] =
+			"Exclusivo desbloqueado",
+		["Rare drop!"] =
+			"Drop raro!",
+		["Choose it in the Outfit window."] =
+			"Escolha na janela de Outfit.",
+		["Choose them in the Outfit window."] =
+			"Escolha na janela de Outfit.",
+		["Switch it in Info & Services > Services > Plate frame."] =
+			"Troque em Info & Services > Services > Plate frame.",
+		["Use its looks in Character > Transmog."] =
+			"Use os visuais dele em Character > Transmog.",
+		["Choose it in its tab of this window."] =
+			"Escolha na aba correspondente desta janela.",
+		["Mount"] =
+			"Montaria",
+		["Wings"] =
+			"Asas",
+		["Name Plate Frame"] =
+			"Moldura da placa de nome",
+		["Transmog Set"] =
+			"Conjunto de Transmog",
+		["Cosmetic"] =
+			"Cosmético",
+		["Outfit Addons"] =
+			"Addons de Outfit",
+		["Season characters do not rest."] =
+			"Personagens de temporada não descansam.",
+		["Your rest is already full."] =
+			"Seu descanso já está cheio.",
+		["Below %d hours of stamina: %d%% experience and %d%% loot. Stamina comes back faster while you are offline."] =
+			"Com menos de %d horas de stamina: %d%% de experiência e %d%% de loot. A stamina volta mais rápido enquanto você está offline.",
+		["+%d%% experience from monsters until your rest is spent: about %d minutes of hunting left."] =
+			"+%d%% de experiência dos monstros até o seu descanso acabar: restam cerca de %d minutos de caça.",
+		["Welcome back: +%d%% experience, +%d%% loot and +%d%% token drops."] =
+			"Bem-vindo de volta: +%d%% de experiência, +%d%% de loot e +%d%% de drops de tokens.",
+		["Community goal %d%%: %s for everyone online."] =
+			"Meta da comunidade %d%%: %s para todos online.",
+		-- World boss status, season info, necromancer and monk refusals, siege, item links, market limits, tutorial, veiled (O147 round 5)
+		["No world boss is active. Next one at %s%s."] =
+			"Nenhum world boss ativo. O próximo é às %s%s.",
+		["No world boss is active."] =
+			"Nenhum world boss ativo.",
+		["%s appears in %d seconds. Portals are next to the temples."] =
+			"%s aparece em %d segundos. Os portais ficam ao lado dos templos.",
+		["%s is fighting (%d%% health, %d minutes left).%s"] =
+			"%s está lutando (%d%% de vida, faltam %d minutos).%s",
+		[" Portals are open."] =
+			" Os portais estão abertos.",
+		["The world boss event is ending."] =
+			"O evento de world boss está terminando.",
+		["No season is configured."] =
+			"Nenhuma temporada configurada.",
+		["%s %s is running: %s left."] =
+			"%s %s em andamento: faltam %s.",
+		["%s %s starts in %s."] =
+			"%s %s começa em %s.",
+		["Modifier %s: %s"] =
+			"Modificador %s: %s",
+		["This character is a season character."] =
+			"Este personagem é um personagem de temporada.",
+		["This character can join: Adventure > Season."] =
+			"Este personagem pode entrar: Adventure > Season.",
+		["Join: %s"] =
+			"Entrar: %s",
+		["Your account already has the premium pass."] =
+			"Sua conta já tem o passe premium.",
+		["Reach tier %d first."] =
+			"Chegue ao tier %d primeiro.",
+		["A siege is running. Sign-ups for the next one open when it is over."] =
+			"Um cerco está em andamento. As inscrições para o próximo abrem quando este terminar.",
+		["%02d:%02d server time: signed-up guilds fight for the Chaos Obelisk. Guild leaders sign up in Adventure > Guild Siege (at least %d members)."] =
+			"%02d:%02d no horário do servidor: as guilds inscritas lutam pelo Chaos Obelisk. Os líderes de guild se inscrevem em Adventure > Guild Siege (pelo menos %d membros).",
+		["Only a necromancer can raise minions."] =
+			"Só um necromante pode erguer lacaios.",
+		["Only a necromancer can raise the dead."] =
+			"Só um necromante pode erguer os mortos.",
+		["Your army is complete."] =
+			"Seu exército está completo.",
+		["The Necromancer is not unlocked for your account."] =
+			"O Necromancer não está desbloqueado na sua conta.",
+		["The Monk is locked. Unlock it in the store."] =
+			"O Monk está bloqueado. Desbloqueie na loja.",
+		["You have no chi. Build it with your strikes first."] =
+			"Você não tem chi. Gere-o com seus golpes primeiro.",
+		["Item links are not allowed in the Help channel."] =
+			"Links de item não são permitidos no canal Help.",
+		["Items cannot be linked here."] =
+			"Itens não podem ser linkados aqui.",
+		["You can link up to %d items in one message."] =
+			"Você pode linkar até %d itens em uma mensagem.",
+		["You are linking items too fast."] =
+			"Você está linkando itens rápido demais.",
+		["You can only link items you carry."] =
+			"Você só pode linkar itens que carrega.",
+		["That item cannot be linked."] =
+			"Esse item não pode ser linkado.",
+		["A gold price must be between %s and %s."] =
+			"Um preço em ouro deve ficar entre %s e %s.",
+		["A coin price must be between %s and %s."] =
+			"Um preço em moedas deve ficar entre %s e %s.",
+		["A %s price per item must be between %s and %s."] =
+			"Um preço de %s por item deve ficar entre %s e %s.",
+		["The tutorial island is not available."] =
+			"A ilha do tutorial não está disponível.",
+		["Use it to skip the tutorial: you go to Cinderhold with your full kit."] =
+			"Use para pular o tutorial: você vai para Cinderhold com o kit completo.",
+		["Choose one of the three veiled modifiers in the Unveil window."] =
+			"Escolha um dos três modificadores velados na janela Unveil.",
+		["The crafting bench is not available."] =
+			"A crafting bench não está disponível.",
+		["The item moved or changed. Use the orb on it again."] =
+			"O item mudou de lugar ou foi alterado. Use o orbe nele de novo.",
+		["No guild siege is running."] =
+			"Nenhum cerco de guild em andamento.",
+		["No Ascended arena is open."] =
+			"Nenhuma arena Ascended aberta.",
+		["No guild boss arena is open."] =
+			"Nenhuma arena de guild boss aberta.",
+		["No world boss event is running."] =
+			"Nenhum evento de world boss em andamento.",
+		["That guild has no hall."] =
+			"Essa guild não tem hall.",
+		["No item set pieces worn."] =
+			"Nenhuma peça de conjunto equipada.",
+		["Highest level per class, all time."] =
+			"Maior nível por classe, de todos os tempos.",
+		-- Invasion result lines (O147 round 5)
+		["%s held!"] =
+			"%s foi defendida!",
+		["%s has fallen!"] =
+			"%s caiu!",
+		["Time is up: %s is overrun!"] =
+			"O tempo acabou: %s foi tomada!",
+		["%s is free again!"] =
+			"%s está livre de novo!",
+		["The occupiers leave %s."] =
+			"Os ocupantes deixam %s.",
+		-- Rift key list and run status (O147 round 5)
+		["... and %d more key(s)."] =
+			"... e mais %d chave(s).",
+		["You carry no Rift Key. Tier 1 keys drop from monsters of your level and from bounties; a sealed rift may leave a key of its tier or the next."] =
+			"Você não carrega nenhuma Rift Key. Chaves de tier 1 caem de monstros do seu nível e de bounties; um rift selado pode deixar uma chave do mesmo tier ou do próximo.",
+		["Omen fragments: %d / %d (rifts of tier %d+ give them; use %d to bind an Omen Key that opens a guardian's arena)."] =
+			"Omen fragments: %d / %d (rifts de tier %d+ dão fragmentos; use %d para forjar uma Omen Key que abre a arena de um guardião).",
+		["Omen arena (%s): %s, %d:%02d left, guardian %s, %d / %d lives."] =
+			"Arena Omen (%s): %s, faltam %d:%02d, guardião %s, %d / %d vidas.",
+		["Rift tier %d (%s): %s, %d:%02d left, %d / %d monsters, guardian %s, %d / %d lives."] =
+			"Rift tier %d (%s): %s, faltam %d:%02d, %d / %d monstros, guardião %s, %d / %d vidas.",
+		["after %d kills"] =
+			"após %d mortes",
+		-- Vocation Trials HUD notes (O147 round 5)
+		["%s awakens."] =
+			"%s desperta.",
+		["Mark %d of %d: %d s."] =
+			"Marca %d de %d: %d s.",
+		["Seal %d of %d: break the %s seal."] =
+			"Selo %d de %d: quebre o selo de %s.",
+		["The seals are broken."] =
+			"Os selos foram quebrados.",
+		["Mark %d of %d."] =
+			"Marca %d de %d.",
+		["Mark %d of %d down."] =
+			"Marca %d de %d derrubada.",
+		["The trial ended in an odd way. Nothing is lost."] =
+			"O trial terminou de um jeito estranho. Nada se perde.",
+		-- Hardcore and Self-Found buff descriptions (O147 round 5)
+		["Login protection: you cannot be hurt for a few seconds."] =
+			"Proteção de login: você não pode ser ferido por alguns segundos.",
+		["Your connection is lost: you cannot be hurt and are pulled to the temple."] =
+			"Sua conexão caiu: você não pode ser ferido e é levado ao templo.",
+		["Your connection stalls: you cannot be hurt and are pulled to the temple if it does not come back."] =
+			"Sua conexão travou: você não pode ser ferido e será levado ao templo se ela não voltar.",
+		["The server is restarting: you cannot die now."] =
+			"O servidor está reiniciando: você não pode morrer agora.",
+		["No trading; +%d%% Item Find and +%d%% Rarity Find."] =
+			"Sem trocas; +%d%% de Item Find e +%d%% de Rarity Find.",
+		-- Respec refusal (O147 round 5)
+		["Unknown node."] =
+			"Nó desconhecido.",
 	},
 }

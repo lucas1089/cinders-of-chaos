@@ -212,7 +212,7 @@ local function create(player, data)
 	local row = ok and Chaos.select("SELECT `id` FROM `" .. T_ORDERS .. "` WHERE `provider` = " .. db.escapeString(method) ..
 		" AND `provider_ref` = " .. db.escapeString(token), {{"id", "n"}})[1]
 	if not row then
-		send(player, "pay_error", {msg = "Could not start the donation. Please try again."})
+		send(player, "pay_error", {msg = Chaos.t(player, "Could not start the donation. Please try again.")})
 		return
 	end
 	db.query("INSERT INTO `" .. T_PAY .. "` (`order_id`, `method`, `token`, `amount_cents`, `currency`, `source`, `updated`) VALUES (" ..
@@ -377,7 +377,7 @@ function Pay.processReversals()
 			for _, p in ipairs(Game.getPlayers()) do
 				if p:getAccountId() == r.account_id then
 					send(p, "pay_reversal", {id = r.order_id, coins = take,
-						text = string.format("Donation #%d was refunded or charged back: %d Chaos Coins were taken back.", r.order_id, take)}, true)
+						text = Chaos.t(p, "Donation #%d was refunded or charged back: %d Chaos Coins were taken back.", r.order_id, take)}, true)
 				end
 			end
 		end

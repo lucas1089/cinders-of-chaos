@@ -457,21 +457,27 @@ end
 -- query), so points are asked for as "points:N".
 function K.unlockMethod(index)
 	return {
-		describe = function(spec, class)
+		describe = function(spec, class, lang)
+			local function T(key, ...)
+				if lang and ChaosI18n and ChaosI18n.text then
+					return ChaosI18n.text(lang, key, ...)
+				end
+				return select("#", ...) == 0 and key or string.format(key, ...)
+			end
 			spec = spec or {}
 			if spec.text then
 				return spec.text
 			end
 			local ways = {}
 			if spec.points then
-				ways[#ways + 1] = string.format("earn %d achievement points on your account", spec.points)
+				ways[#ways + 1] = T("earn %d achievement points on your account", spec.points)
 			end
 			local id = spec.name or spec.id
 			if id then
 				local def = index and index.byId[id]
-				ways[#ways + 1] = "earn the achievement " .. (def and def.name or tostring(id))
+				ways[#ways + 1] = T("earn the achievement %s", def and def.name or tostring(id))
 			end
-			return #ways > 0 and table.concat(ways, ", or ") or "earn achievements"
+			return #ways > 0 and table.concat(ways, T(", or ")) or T("earn achievements")
 		end,
 		check = function(spec, facts)
 			if type(spec) ~= "table" or not facts or not facts.achievement then
