@@ -2,7 +2,7 @@
 
 Ideas kept for future work (owner, 2026-10-13). None is planned yet. The full research, with sources, links and
 licences, is in the owner's Drive folder `ots` ("pesquisa OTLand (2026-10-13)"). Outside code without a clear licence
-is ideas only: we write our own.
+is ideas only: we write our own. The big 12-month plan is in `docs/MOONSHOT.md`.
 
 ## Client
 - Item search across depot, inbox and stash in one field (`game_depottabs`, `game_stash`).
