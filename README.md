@@ -11,6 +11,7 @@ built or edited by hand; the branch has no history in common with `main`.
 | `things/things-1098.tar.xz` | pair 35, the last pair under 100 MB in one file; kept only while `main` still reads this name (remove it once `main` reads the parts) |
 | `mapeditor/map-editor.tar.xz` | the map editor (Remere's Map Editor build for 10.98, GPL; sources: github.com/hjnilsson/rme), unchanged; the package swaps in our items.otb/items.xml and adds our monsters to its creature list |
 | `backup/item-forge-cnn.tar.xz` | backup only, not a package input: the item forge model work (trained weights, training data, scripts, logs); checksum in `backup/SHA256SUMS` |
+| `backup/removed-pair51.tar.xz` | backup only, not a package input: the things pair 51 blanked as unused (a dat + spr with only those things at their original ids, and removed.csv); restore with `client/tools/sprites/prune_pair.py restore`; checksum in `backup/SHA256SUMS` |
 | `SHA256SUMS.parts` | checksums of the files above |
 
 To replace one: build the new archive the same way, update `SHA256SUMS.parts`, commit to this branch.
