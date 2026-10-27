@@ -1154,8 +1154,8 @@ def test_feedback():
         q = calls()
         check("reason = 'bug'" in q and "status = 'open'" in q and '* 86400' in q and 'UNIX_TIMESTAMP() - 30 *' in q,
               'feedback: default query is open, 30 days: ' + q)
-        for secret in ('reporter_account', 'account', 'ip', 'email', 'reporter_id', 'target_id'):
-            check(not re.search(r'\b%s\b' % secret, q.split('mysql', 1)[-1].replace('chaos_reports', '')), 'feedback never selects ' + secret)
+        for column in ('reporter_account', 'account', 'ip', 'email', 'reporter_id', 'target_id'):
+            check(not re.search(r'\b%s\b' % column, q.split('mysql', 1)[-1].replace('chaos_reports', '')), 'feedback never selects ' + column)
         check('reporter_name' not in q, 'feedback: the name is not even selected without --names')
         check(r.stdout.splitlines()[0] == '#12 | 2026-10-27 14:03 UTC | map | open | pos 1010,990,7 | lvl 120 Mystic',
               'feedback: header line: ' + r.stdout)
@@ -1432,7 +1432,7 @@ exit 0
         check(re.search(r'env_file=600 ', r.stdout) is not None, 'discord-status: env file mode')
         check('@log' in r.stdout and 'line two' in r.stdout and '@queue' in r.stdout and 'chronicle\tfailed\t3' in r.stdout, 'discord-status: log and queue: ' + r.stdout)
         check('SECRETTOKEN' not in r.stdout and '/webhooks/111111/***' in r.stdout, 'discord-status: tokens in log and queue lines are masked')
-        check('discord.com/api/webhooks/' + '12345' not in r.stdout, 'discord-status: no saved URL')
+        check('/api/webhooks/12345' not in r.stdout, 'discord-status: no saved URL')
         check(run('discord-status', 'x').returncode != 0, 'discord-status takes no argument')
 
         # test: one post per saved channel, the URL only on curl's stdin
