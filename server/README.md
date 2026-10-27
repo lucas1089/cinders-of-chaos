@@ -16077,8 +16077,38 @@ startup if missing; also `sql/chaos_patchnotes.sql`). The notes live on the serv
   client whether a daily window is expected; the client then waits up to 6 s for it to appear and until it is closed.
 - **Staff:** `/patchnotes reload` (read the folder now), `/patchnotes unseen` (forget the own account's last seen week, to
   test the login opening), `/patchnotes` (status).
-- **Tests:** `tests/patchnotes_test.lua` (parsing, limits, file list, ids, order, seen key, auto-open, the parts; also
-  parses every real file of `data/patchnotes/`) and the client's `patchnotesview_test.lua` (blocks and colours, joining
+- **Brazilian Portuguese (pt-BR).** Every note has a twin `<id>.pt-br.md` next to it (`2026-10-22.md` and
+  `2026-10-22.pt-br.md`; same format, same `Date:` line, same sections and bullets, translated). `fileNames` skips the
+  twins and `twinNames` pairs them by the id in front of `.pt-br.md`; a twin without its English file is ignored. Section
+  headings are translated and still map to the same kinds (Novidades = New, Mudanças = Changes, Correções = Fixes,
+  Balanceamento = Balance). The scan stores the twin on the note (`note.tr["pt-BR"]`); the week list and the note go out
+  through `PN.localize(note, Chaos.lang(player))`, so a player whose client language is pt-BR (client hello, see "Server
+  texts in pt-BR") reads the twin and everyone else, or any note without a twin, reads the English file. The id, date
+  and "last seen" key always come from the English note. The scan logs a warning when a twin has a different number of
+  sections or bullets. Names of spells, items, zones and menu paths stay as they are in game. No em dashes. The
+  **Changelog tab is English only**: `gen_changelog.py` builds it from git commit subjects (English), so it is not
+  translated.
+- **Discord post.** At startup (30 s later, once `discord.lua` has made the queue table) and then hourly,
+  `PN.postDiscord` takes the newest note that is dated today or earlier and not announced yet and queues rows of the new
+  event `patchnotes` (channel `announce`; `ChaosDiscordCore.patchnotes`): first the English digest, then the pt-BR one
+  (English only when there is no twin). A digest is the title, the intro and, per section, the top level bullets (bold
+  lead plus the start of the text, sub-bullets left out), cut into messages of at most 1900 characters (the event text
+  limit is 2000), at most 4 per language, the last one ending with "More in game: Social > Patch Notes." The worker
+  (`discord_worker.php`, kind `patchnotes`) posts each row as one embed. **No repeat:** the key `date|id` of the note is
+  saved in `server_config` (`chaos_discord_patchnotes`) before the rows are queued, so a restart, a `/reload` or the next
+  hourly check posts nothing again (at most once: a crash between the save and the insert loses the post, it never
+  doubles it). Older unannounced notes are never posted late, and a note dated in the future (the beta note before its
+  day) waits for its day. A server that has never recorded a key announces its newest due note once. Switches in
+  `discord_config.lua`: `enabled` and `events.patchnotes` (on by default), `patchnotes.enabled`, `postedKey`,
+  `startDelaySeconds`, `checkSeconds`, `maxChars`, `maxParts`, `bulletChars`; channel `channels.patchnotes`. The webhook
+  URLs stay in `/etc/chaos/discord.env` (`CHAOS_DISCORD_WEBHOOK_ANNOUNCE`); nothing here reads or prints them.
+  `CHAOS_DISCORD_OFF=patchnotes` also switches the kind off at the worker. When Discord is off or `discord.lua` is not
+  loaded nothing is queued and nothing is remembered, so the note goes out once Discord is on.
+- **Tests:** `tests/patchnotes_test.lua` (parsing, limits, file list, ids, order, seen key, auto-open, the parts, the
+  twins: pairing, headings, `compare`, `localize`, the Discord digest and dedupe; it also parses every real file of
+  `data/patchnotes/` and fails when an English note has no pt-BR twin with the same sections and bullets, or a twin has
+  no English note), `tests/patchnotes_discord_test.lua` (patchnotes.lua against a mocked engine: rows, once over
+  restarts, future dates, switches, what a pt-BR and an English player receive) and the client's `patchnotesview_test.lua` (blocks and colours, joining
   parts, the login wait).
 
 Verified on the test server: the window from the menu and with Social > Patch Notes, week list and switching weeks, the
@@ -20654,6 +20684,20 @@ sent as the text); client base patch 0040 sends the category, the text and, for 
   ones; `/reports show` shows the text, position and details; the admin panel's Player reports has the filter "Bug
   reports (open)"; the website staff page has the reason "Bug report". The reports webhook (`CHAOS_REPORTS_WEBHOOK`)
   gets "New bug report #15 (map) from Name at x, y, z." (never the text). Close them like player reports.
+- **Suggestions:** category `suggestion` (4 in `R.bugCategories`; a client that sends 4 is accepted). The base
+  dialog (`game_bugreport`, not in this repository) has only Map, Typo, Technical and Other and patch 0040 clamps the
+  category to 0..3, so a player writes `suggestion:` (or `sugestao:` / `sugestão:`, any case) at the start of the text in
+  "Other"; `R.suggestionPrefix` strips it and the note becomes `[suggestion] text`. A map report keeps its category.
+- **Reading them (owner):** `chaos-ctl.sh feedback [--days N] [--all] [--category C] [--names]` prints the open bug
+  reports and suggestions of the last N days (default 30) as plain text, newest first, max 200: `#id | date UTC |
+  category | open | pos x,y,z | lvl N class`, the text indented below (closed ones with the staff note under `--all`).
+  `feedback-close ID [NOTE]` closes one open report with a staff note. The admin app has the card Painel > Bugs e
+  sugestões (docs/ADMIN_APP.md) with "Copiar tudo" to paste the list to Claude. Safety: the query is fixed text with a
+  checked number of days and one category word from a fixed list; it never selects an account id, IP or e-mail, and the
+  character name only with `--names` (the app never passes it); `server/tools/feedback_format.py` strips control and
+  format characters and caps the text; `feedback-close` takes a digits-only id and sends the note as a hex literal built
+  from sanitised text (no quote or backslash can reach the SQL). Tests: `server/deploy/chaos_ctl_test.py`
+  (`test_feedback`), `android/app/src/test/java/com/cindersofchaos/admin/FeedbackInfoTest.java`.
 - **Tests:** `tests/bugreport_test.lua` (validation, categories, the cap, positions, limits, staff lines, webhook,
   `RP.onReportBug` with a normal account against a mocked engine, `/reports list bugs`, the patch tool on the stock
   function and the patched function's dispatch); `website/tests/chaos_reports_page_test.php` (the bug filter).

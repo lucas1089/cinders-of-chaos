@@ -42,6 +42,7 @@ final class PanelTab {
     private final MainActivity.ResultCard result;
     private final UpdateCard update;
     private final MetricsCard metrics;
+    private final FeedbackCard feedback;
     private boolean updateSeen = false;
     private final List<MaterialButton> actionButtons = new ArrayList<>();
     private boolean loading = false;
@@ -194,6 +195,9 @@ final class PanelTab {
         metrics = new MetricsCard(a);
         page.addView(metrics.card, ui.gap(10));
         page.addView(metrics.funnelCard, ui.gap(10)); // O258
+
+        feedback = new FeedbackCard(a);
+        page.addView(feedback.card, ui.gap(10));
 
         ScrollView sv = new ScrollView(a);
         sv.addView(page, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,

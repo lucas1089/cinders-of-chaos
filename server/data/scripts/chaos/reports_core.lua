@@ -199,7 +199,9 @@ end
 -- step 12) -> reports.lua RP.reportBug. Stored as a chaos_reports row: reason "bug", target = the reporter itself,
 -- note "[category] text", the position (the reported map tile for a map report, else the character's), and in `chat`
 -- the detail lines of R.bugDetails. cfg = antibot_config.lua reports.bugs.
-R.bugCategories = {[0] = "map", [1] = "typo", [2] = "technical", [3] = "other"}
+-- 4 "suggestion": the base dialog has no such entry (base patch 0040 sends 0..3), so a player writes the prefix
+-- "suggestion:" / "sugestao:" / "sugestão:" in the text (R.suggestionPrefix); a client that sends 4 is accepted too.
+R.bugCategories = {[0] = "map", [1] = "typo", [2] = "technical", [3] = "other", [4] = "suggestion"}
 
 -- the category name of a client category number (or of a name already given)
 function R.bugCategory(category)
@@ -211,10 +213,28 @@ function R.bugCategory(category)
 	return R.bugCategories[tonumber(category) or 3] or "other"
 end
 
+-- a leading "suggestion:" / "suggestao:" / "sugestao:" / "sugestão:" (any case, UTF-8 or not) -> the text without it, or nil
+function R.suggestionPrefix(message)
+	if type(message) ~= "string" then
+		return nil
+	end
+	local m = message:gsub("^%s+", ""):lower()
+	for _, p in ipairs({"suggestion:", "sugestao:", "sugest\195\163o:", "sugest\195\131o:"}) do
+		if m:sub(1, #p) == p then
+			return (message:gsub("^%s+", ""):sub(#p + 1))
+		end
+	end
+	return nil
+end
+
 -- message from the client -> {category, text, note, shortened} or nil, error key
 function R.validateBug(cfg, message, category)
 	if not cfg or cfg.enabled == false then
 		return nil, "bugdisabled"
+	end
+	local stripped = R.suggestionPrefix(message)
+	if stripped and R.bugCategory(category) == "other" then
+		message, category = stripped, "suggestion"
 	end
 	local text = R.clean(message)
 	if #text < (cfg.textMin or 6) then

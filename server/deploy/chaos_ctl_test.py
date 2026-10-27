@@ -579,6 +579,7 @@ def main():
     test_admin_commands()
     test_testers()
     test_metrics()
+    test_feedback()
     test_discord()
     print('chaos_ctl_test: %d failures' % failures)
     return 1 if failures else 0
@@ -1094,6 +1095,123 @@ METRICS_ROWS = [
     ('session1', '5', '', 6), ('session1', '10', '', 2), ('session1', '30', '', 2), ('session1', 'inf', '', 1),
     ('ttl', '10', '10', 10), ('ttl', '10', '20', 10), ('ttl', '25', '60', 4),
 ]
+
+
+FEEDBACK_MYSQL = '''#!/usr/bin/env bash
+echo "$(basename "$0") $*" >> "$STUB/calls"
+case " $* " in *" -e "*) ;; *) cat > "$STUB/stdin"; echo "STDIN: $(cat "$STUB/stdin")" >> "$STUB/calls" ;; esac
+case "$*" in
+  *"FROM chaos_reports"*) [ -z "${STUB_FB_FAIL:-}" ] || { echo "ERROR 2002 can't connect" >&2; exit 1; }
+    cat "$STUB/feedback.tsv" ;;
+esac
+if grep -q "UPDATE chaos_reports" "$STUB/stdin" 2>/dev/null; then echo "${STUB_FB_ROWS:-1}"; fi
+'''
+
+
+def test_feedback():
+    """chaos-ctl.sh feedback / feedback-close (and server/tools/feedback_format.py)"""
+    repo_root = os.path.dirname(os.path.dirname(HERE))
+    with tempfile.TemporaryDirectory() as tmp:
+        stub = os.path.join(tmp, 'stub')
+        repo = os.path.join(tmp, 'repo')
+        os.makedirs(stub)
+        os.makedirs(os.path.join(repo, 'server', 'tools'))
+        shutil.copy(os.path.join(repo_root, 'server', 'tools', 'feedback_format.py'), os.path.join(repo, 'server', 'tools'))
+        for name, body in (('systemctl', SYSTEMCTL), ('mysql', FEEDBACK_MYSQL)):
+            p = os.path.join(stub, name)
+            with open(p, 'w') as f:
+                f.write(body)
+            os.chmod(p, 0o755)
+        chat = 'Category: map\\nCharacter position: 1, 2, 3\\nLevel 120, Mystic\\nSent 2026-10-27 14:03:00'
+        rows = [['12', '1793109780', '[map] Wall \\\\x missing\\nnear the gate', '1010', '990', '7', chat, 'open', '', 'Bobby'],
+                ['11', '1793000000', '[suggestion] more depots\x07 \u202eplease', '5', '6', '7', '', 'closed', 'done; thanks', 'Al']]
+        with open(os.path.join(stub, 'feedback.tsv'), 'w') as f:
+            f.write(''.join('\t'.join(r) + '\n' for r in rows))
+        env_file = os.path.join(tmp, 'chaos.env')
+        with open(env_file, 'w') as f:
+            f.write('CHAOS_DB_USER=chaos\nCHAOS_DB_PASS=secret\n')
+        env = dict(os.environ, PATH=stub + ':' + os.environ['PATH'], STUB=stub, CHAOS_CTL_NO_SUDO='1',
+                   CHAOS_SERVER_DIR=os.path.join(tmp, 'server'), CHAOS_ENV=env_file, CHAOS_REPO=repo,
+                   CHAOS_MYSQL='mysql', CHAOS_CTL_CONF=os.path.join(tmp, 'none.conf'),
+                   CHAOS_PID_FILE=os.path.join(tmp, 'no.pid'), CHAOS_LOG=os.path.join(tmp, 'no.log'))
+        for k in ('SUDO_USER', 'CHAOS_UNIT', 'CHAOS_ROOT', 'CHAOS_KIT_DIR', 'CHAOS_DB_SOCKET', 'STUB_FB_FAIL', 'STUB_FB_ROWS'):
+            env.pop(k, None)
+
+        def run(*args, extra=None):
+            return subprocess.run(['bash', SCRIPT] + list(args), env=dict(env, **(extra or {})), capture_output=True,
+                                  text=True, timeout=60)
+
+        def calls():
+            p = os.path.join(stub, 'calls')
+            return open(p).read() if os.path.exists(p) else ''
+
+        def reset():
+            if os.path.exists(os.path.join(stub, 'calls')):
+                os.unlink(os.path.join(stub, 'calls'))
+
+        r = run('feedback')
+        check(r.returncode == 0, 'feedback runs: ' + r.stderr)
+        q = calls()
+        check("reason = 'bug'" in q and "status = 'open'" in q and '* 86400' in q and 'UNIX_TIMESTAMP() - 30 *' in q,
+              'feedback: default query is open, 30 days: ' + q)
+        for secret in ('reporter_account', 'account', 'ip', 'email', 'reporter_id', 'target_id'):
+            check(not re.search(r'\b%s\b' % secret, q.split('mysql', 1)[-1].replace('chaos_reports', '')), 'feedback never selects ' + secret)
+        check('reporter_name' not in q, 'feedback: the name is not even selected without --names')
+        check(r.stdout.splitlines()[0] == '#12 | 2026-10-27 14:03 UTC | map | open | pos 1010,990,7 | lvl 120 Mystic',
+              'feedback: header line: ' + r.stdout)
+        check('  Wall \\x missing near the gate' in r.stdout, 'feedback: text unescaped on one line: ' + r.stdout)
+        check('Bobby' not in r.stdout and 'Al\n' not in r.stdout and 'from:' not in r.stdout, 'feedback: no names by default')
+        check('#11 | ' in r.stdout and 'closed: done; thanks' in r.stdout, 'feedback: closed rows with the staff note')
+        check('\x07' not in r.stdout and '\u202e' not in r.stdout and 'more depots please' in r.stdout,
+              'feedback: control and bidi characters stripped')
+        check(r.stdout.rstrip().endswith('-- 2 reports'), 'feedback: footer')
+        check('secret' not in calls().replace('STDIN', ''), 'feedback: the database password is not on a command line')
+        reset()
+        r = run('feedback', '--names', '--all', '--days', '7', '--category', 'suggestion')
+        q = calls()
+        check(r.returncode == 0 and 'from: Bobby' in r.stdout and 'from: Al' in r.stdout, 'feedback --names prints names: ' + r.stdout)
+        check('reporter_name FROM' in q and "status = 'open'" not in q and '- 7 * 86400' in q
+              and "note LIKE '[suggestion] %'" in q, 'feedback options reach the query: ' + q)
+        reset()
+        check(run('feedback', '--category', 'all').returncode == 0 and 'note LIKE' not in calls(), 'feedback --category all')
+        before = calls()
+        for bad in (('--days',), ('--days', '0'), ('--days', 'x'), ('--days', '99999'), ('--days', '1;id'),
+                    ('--category', "x' OR 1=1 --"), ('--category',), ('--category', 'map;id'), ('--bogus',), ('x',),
+                    ('--days', '$(id)'), ('--names=1',)):
+            r = run('feedback', *bad)
+            check(r.returncode != 0, 'feedback refuses %r' % (bad,))
+        check(calls() == before, 'feedback: a refused call never reaches the database')
+        with open(os.path.join(stub, 'feedback.tsv'), 'w') as f:
+            f.write('')
+        check('No bug reports or suggestions.' in run('feedback').stdout, 'feedback: nothing to show')
+        r = run('feedback', extra={'STUB_FB_FAIL': '1'})
+        check(r.returncode != 0 and 'database-down' in r.stderr and 'No bug' not in r.stdout, 'feedback: database down is an error')
+
+        # feedback-close
+        reset()
+        r = run('feedback-close', '12', 'fixed in the next update')
+        check(r.returncode == 0 and r.stdout.strip() == 'closed #12', 'feedback-close: ' + r.stdout + r.stderr)
+        sql = open(os.path.join(stub, 'stdin')).read()
+        check("status = 'closed'" in sql and 'WHERE id = 12 AND reason = \'bug\' AND status = \'open\'' in sql,
+              'feedback-close: the update: ' + sql)
+        check('CONVERT(0x%s USING utf8mb4)' % 'fixed in the next update'.encode().hex() in sql, 'feedback-close: note as hex: ' + sql)
+        reset()
+        hostile = "x'; DROP TABLE chaos_reports; -- \\\\ \"\n\x07 \u202e ok"
+        r = run('feedback-close', '7', hostile)
+        sql = open(os.path.join(stub, 'stdin')).read()
+        check(r.returncode == 0 and 'DROP' not in sql and "x'" not in sql and '\\' not in sql and '\x07' not in sql,
+              'feedback-close: a hostile note never reaches the SQL as text: ' + sql)
+        check(re.search(r"staff_note = CONVERT\(0x[0-9a-f]+ USING utf8mb4\) WHERE id = 7 ", sql), 'feedback-close: hex literal only: ' + sql)
+        r = run('feedback-close', '007')
+        sql = open(os.path.join(stub, 'stdin')).read()
+        check(r.returncode == 0 and "staff_note = ''" in sql and 'WHERE id = 7 ' in sql, 'feedback-close: no note, 007 is 7: ' + sql)
+        r = run('feedback-close', '12', extra={'STUB_FB_ROWS': '0'})
+        check(r.returncode != 0 and 'feedback-not-found' in r.stderr, 'feedback-close: not open -> error: ' + r.stderr)
+        reset()
+        for bad in ((), ('x',), ('1;id',), ('-1',), ('1 OR 1=1',), ('1234567890',), ("1' OR '1",), ('$(id)',)):
+            r = run('feedback-close', *bad)
+            check(r.returncode != 0, 'feedback-close refuses %r' % (bad,))
+        check(calls() == '', 'feedback-close: a refused call never reaches the database')
 
 
 def test_metrics():

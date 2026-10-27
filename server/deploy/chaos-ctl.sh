@@ -149,6 +149,15 @@
 #   discord-status              key=value lines: channel_NAME=yes id_end=NNNN | no (never the URL), off_kinds, site_url,
 #                               env_file (mode owner), timer_installed / _enabled / _active; "@log" the last worker log
 #                               lines, "@queue" the last 10 rows of chaos_discord_queue (id kind status attempts error)
+#   feedback [--days N] [--all] [--category C] [--names]
+#                               the players' bug reports and suggestions (chaos_reports, reason bug) as plain text to paste
+#                               into a chat, newest first (max 200): "#id | date UTC | category | open | pos x,y,z | lvl N
+#                               class", the text indented below. Default: open ones of the last 30 days (--days 1 to 3650);
+#                               --all adds closed ones (with the staff note); --category map|typo|technical|other|
+#                               suggestion|all. Never prints account ids, IPs or e-mails; the character name only with
+#                               --names. Control characters stripped, text capped (server/tools/feedback_format.py)
+#   feedback-close ID [NOTE]    marks the open report ID closed with a staff note (200 characters; the note reaches the SQL
+#                               as a hex literal); exit 1 "feedback-not-found" when it is not open
 #   vps [info]                  key=value lines: host, os, kernel, uptime, load, cpus, mem_total_mb, mem_used_mb,
 #                               disk_total_gb, disk_used_gb, disk_free_gb (of /), upgrades (packages, -1 unknown),
 #                               php_upgrades (of them php*), php (the php*-fpm or libapache2-mod-php* package and its version),
@@ -666,6 +675,58 @@ case $cmd in
       exit 1
     fi
     printf '%s\n' "$mrows" | python3 -I "$mpy" ${mjson[@]+"${mjson[@]}"}
+    ;;
+  feedback)
+    # players' bug reports and suggestions (chaos_reports, reason bug) as plain text for the owner and for Claude.
+    # Read-only. The SQL holds only checked numbers and one fixed category word; no account id, IP or e-mail is read, and
+    # the character name only with --names. server/tools/feedback_format.py strips control characters and caps lengths.
+    fdays=30 fall=0 fcat="" fnames=0
+    while [ $# -gt 0 ]; do
+      case $1 in
+        --days) shift; { num "${1:-}" && [ "$1" -ge 1 ] && [ "$1" -le 3650 ]; } || die "feedback --days N (1 to 3650)"
+          fdays=$((10#$1)) ;;
+        --all) fall=1 ;;
+        --names) fnames=1 ;;
+        --category) shift
+          case ${1:-} in map|typo|technical|other|suggestion) fcat=$1 ;; all) fcat="" ;;
+            *) die "feedback --category map|typo|technical|other|suggestion|all" ;; esac ;;
+        *) die "feedback [--days N] [--all] [--category C] [--names]" ;;
+      esac
+      shift
+    done
+    fpy="$REPO/server/tools/feedback_format.py"
+    [ -r "$fpy" ] || die "no $fpy"
+    command -v python3 >/dev/null 2>&1 || die "python3-not-found"
+    fwho="''"
+    fnarg=()
+    if [ "$fnames" = 1 ]; then fwho="reporter_name"; fnarg=(--names); fi
+    fwhere="reason = 'bug' AND created_at >= UNIX_TIMESTAMP() - $fdays * 86400"
+    [ "$fall" = 1 ] || fwhere="$fwhere AND status = 'open'"
+    [ -z "$fcat" ] || fwhere="$fwhere AND note LIKE '[$fcat] %'"
+    frows=$(mysql_q "SELECT id, created_at, note, pos_x, pos_y, pos_z, chat, status, staff_note, $fwho FROM chaos_reports WHERE $fwhere ORDER BY id DESC LIMIT 200") \
+      || die "database-down: the reports could not be read (is the database up?)"
+    printf '%s\n' "$frows" | python3 -I "$fpy" ${fnarg[@]+"${fnarg[@]}"}
+    ;;
+  feedback-close)
+    # marks one bug report or suggestion closed with a staff note. The id is a checked number; the note reaches the SQL
+    # only as a hex literal made from sanitised text, so no quote or backslash of it can matter.
+    fid=${1:-}
+    { num "$fid" && [ "${#fid}" -le 9 ]; } || die "feedback-close ID [NOTE]"
+    shift
+    command -v python3 >/dev/null 2>&1 || die "python3-not-found"
+    fhex=$(printf '%s' "$*" | python3 -I -c '
+import sys, unicodedata
+s = sys.stdin.buffer.read().decode("utf-8", "replace")
+s = "".join(c if c not in "\r\n\t" else " " for c in s)
+s = "".join(c for c in s if unicodedata.category(c) not in ("Cc", "Cf", "Cs", "Co", "Cn"))
+print(s.strip()[:200].encode("utf-8").hex())') || die "could not read the note"
+    [[ $fhex =~ ^[0-9a-f]*$ ]] || die "bad note"
+    fnote="''"
+    [ -z "$fhex" ] || fnote="CONVERT(0x$fhex USING utf8mb4)"
+    fres=$(mysql_q - <<< "UPDATE chaos_reports SET status = 'closed', closed_at = UNIX_TIMESTAMP(), closed_by = 'chaos-ctl', staff_note = $fnote WHERE id = $((10#$fid)) AND reason = 'bug' AND status = 'open'; SELECT ROW_COUNT();") \
+      || die "database-down: the report could not be closed"
+    [ "$fres" = 1 ] || die "feedback-not-found: no open bug report or suggestion #$((10#$fid))"
+    echo "closed #$((10#$fid))"
     ;;
   vocations)
     for v in "${VOCATIONS[@]}"; do echo "${v%%:*}=${v#*:}"; done

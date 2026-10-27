@@ -103,6 +103,7 @@ each is under "Decided" with its reason. Left here: what needs the owner's own a
 ## On the live server
 
 - [ ] Machine timezone `America/Sao_Paulo` (`timedatectl set-timezone America/Sao_Paulo`). Weekly resets, events and the Gambler's 4-hour refresh use server time.
+- [ ] Bugs and suggestions from players: update the VPS repository (admin app: Painel > Atualizar servidor), recompile the app once, then read them in Painel > Bugs e sugestões > Atualizar > Copiar tudo and paste the list to Claude (docs/ADMIN_APP.md; shell fallback: `chaos-ctl.sh feedback`).
 - [ ] `expose_php = Off` in php.ini.
 - [ ] The nginx server block, the `limit_req_zone` lines and `fastcgi_param HTTPS on` from website/README.md "Web server".
 - [ ] No `mock` provider in `payments.env`.
