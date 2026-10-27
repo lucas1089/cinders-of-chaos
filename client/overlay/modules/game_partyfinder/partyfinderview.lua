@@ -100,10 +100,10 @@ function V.compTooltip(row)
       if s.st == 'leader' then mark = ' - leader'
       elseif s.st == 'invited' then mark = ' - invited' end
       if V.mentorTag(s.mt) then mark = mark .. ' - ' .. V.mentorTag(s.mt) end
-      lines[#lines + 1] = string.format('%s, level %d %s (%s)%s', tostring(s.name or '?'), num(s.level),
+      lines[#lines + 1] = tr('%s, level %d %s (%s)%s', tostring(s.name or '?'), num(s.level),
         tostring(s.voc or ''), V.roleName(s.role), mark)
     else
-      lines[#lines + 1] = string.format('Open: %s', V.roleName(s.role))
+      lines[#lines + 1] = tr('Open: %s', V.roleName(s.role))
     end
   end
   return table.concat(lines, '\n')
@@ -123,7 +123,7 @@ function V.canApply(row, my, level)
   if type(row) ~= 'table' then return false, 'Gone' end
   if row.mine then return false, tr('Your group') end
   if row.ap then return false, 'Applied' end
-  if num(level) < num(row.ml) then return false, string.format('Level %d+', num(row.ml)) end
+  if num(level) < num(row.ml) then return false, tr('Level %d+', num(row.ml)) end
   if #V.applyRoles(row, my) == 0 then return false, tr('No open role for you') end
   return true
 end

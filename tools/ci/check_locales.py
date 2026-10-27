@@ -371,6 +371,32 @@ def hardcoded(toks, src):
     return [(r.line_of(es), src[es:ee]) for es, ee, nt in r.edits()]
 
 
+ENGLISH_WORD = re.compile(r'(?<![%A-Za-z])[A-Za-z]{3,}')
+FMT_SPEC = re.compile(r'%[-+ #0]*\d*(?:\.\d+)?[a-zA-Z%]')
+
+
+def hardcoded_formats(toks, src):
+    """[(line, text)]: string.format('English words %d ...', ...) calls whose result is not given to tr(). The window
+    code builds many UI lines this way and gives the result to a field or a return value, which no sink check sees
+    (game_deathrecap, game_market, game_raid ...). Use tr('...', ...) instead. A format that is not UI text (a log
+    line, a key, a number layout like '%d:%02d') has no English word or carries `-- i18n-ok` on its line."""
+    out = []
+    lines = src.split(b'\n')
+    for i in range(len(toks) - 4):
+        if is_name(toks[i], 'string') and is_op(toks[i + 1], '.') and is_name(toks[i + 2], 'format') \
+                and is_op(toks[i + 3], '(') and toks[i + 4].kind == 'string':
+            if i > 0 and toks[i - 1].kind == 'op' and toks[i - 1].value in ('.', ':'):
+                continue
+            lit = FMT_SPEC.sub(' ', toks[i + 4].value.decode('latin-1'))
+            if not ENGLISH_WORD.search(lit):
+                continue
+            ln = toks[i].line
+            if b'i18n-ok' in lines[ln - 1]:
+                continue
+            out.append((ln, toks[i + 4].text))
+    return out
+
+
 # ---------------------------------------------------------------- OTUI
 OTUI_LINE = re.compile(rb'^(\s*)(!?)(' + b'|'.join(p.encode() for p in OTUI_PROPS) + rb')\s*:\s?(.*?)\s*$')
 
@@ -466,7 +492,7 @@ def scan():
         else:
             toks = lex(src)
             k, b = tr_keys(toks)
-            h = hardcoded(toks, src)
+            h = hardcoded(toks, src) + hardcoded_formats(toks, src)
         for key, ln in k:
             if key:  # tr('') is an empty label
                 keys.setdefault(key, []).append((rel, ln))

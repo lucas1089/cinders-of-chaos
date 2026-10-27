@@ -79,7 +79,7 @@ function V.categoryLabel(cat)
 end
 
 function V.summaryText(state)
-  return string.format('Points: %d   -   Account: %d   -   Unlocked: %d / %d', num(state.points), num(state.accountPoints),
+  return tr('Points: %d   -   Account: %d   -   Unlocked: %d / %d', num(state.points), num(state.accountPoints),
     num(state.unlocked), num(state.total))
 end
 
@@ -90,7 +90,7 @@ V.TRACK = 'track'
 
 local KIND_NAMES = { killfx = 'Kill effect', lootbeam = 'Loot label accent', chatcolor = 'Chat name colour',
   spellskin = 'Spell effect skin' }
-function V.kindName(kind) return KIND_NAMES[kind or ''] or 'Cosmetic' end
+function V.kindName(kind) return tr(KIND_NAMES[kind or ''] or 'Cosmetic') end
 
 local function steps(track)
   local out = {}

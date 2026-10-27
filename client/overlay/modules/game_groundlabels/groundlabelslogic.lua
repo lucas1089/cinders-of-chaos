@@ -5,6 +5,7 @@
 -- Server rows (server/data/scripts/chaos/groundloot.lua):
 --   item   {s, id, c, nm, r, u, o, pw, g, t, il, e}       corpse {s, id, k = 1, n, i = [{c, nm, r, u, o, pw, g, t}], e}
 
+local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 GroundLabelsLogic = {}
 local GL = GroundLabelsLogic
 local LF
@@ -223,8 +224,8 @@ function GL.corpseTooltip(row)
     lines[#lines + 1] = (c > 1 and (c .. 'x ') or '') .. LF.label({ u = info.u, r = info.r, nm = GL.titleCase(info.nm) })
   end
   local n = tonumber(row.n) or #lines
-  if n > #lines then lines[#lines + 1] = '... and ' .. (n - #lines) .. ' more' end
-  lines[#lines + 1] = 'Click: open the corpse'
+  if n > #lines then lines[#lines + 1] = tr('... and %d more', n - #lines) end
+  lines[#lines + 1] = tr('Click: open the corpse')
   return table.concat(lines, '\n')
 end
 

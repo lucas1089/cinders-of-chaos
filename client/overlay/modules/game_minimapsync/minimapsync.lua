@@ -98,7 +98,7 @@ local function restoreWindow(m, window)
   end
   target = target or fallback
   if not alive(target) then return end
-  g_logger.info(string.format('[minimapsync] minimap window shown=%s parent=%s after the login: back in %s',
+  g_logger.info(string.format('[minimapsync] minimap window shown=%s parent=%s after the login: back in %s', -- i18n-ok: not UI text
     tostring(window:isExplicitlyVisible()), tostring(window:getParent() and window:getParent():getId()),
     tostring(target:getId())))
   call(m, 'move', target, want and want.height or nil, want and want.index or 1)

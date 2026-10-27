@@ -153,7 +153,7 @@ end
 -- the hover text of a member: name, health, floor and where (from the viewer's position)
 function M.memberText(e, me)
   local parts = { tostring(e.n or '?') }
-  if tonumber(e.p) then parts[#parts + 1] = string.format('%d%% health', e.p) end
+  if tonumber(e.p) then parts[#parts + 1] = tr('%d%% health', e.p) end
   if me then
     local dz = (e.z or 0) - (me.z or 0)
     if dz < 0 then

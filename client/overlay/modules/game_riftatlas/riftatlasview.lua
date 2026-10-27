@@ -244,13 +244,13 @@ local REASON = {
   keystone = 'You hold a keystone already: refund it first.', path = 'Not connected to your atlas yet.',
   ['not held'] = 'Not allocated.',
 }
-function V.reasonText(why) return REASON[why] or tostring(why or '') end
+function V.reasonText(why) return REASON[why] and tr(REASON[why]) or tostring(why or '') end
 
 function V.kindLine(node)
   if not node then return '' end
   if node.k == 'start' then return tr('Start of the atlas') end
   local c = num(node.c)
-  return string.format('%s, %d point%s', KIND[node.k] or 'Node', c, c == 1 and '' or 's')
+  return tr(c == 1 and '%s, %d point' or '%s, %d points', tr(KIND[node.k] or 'Node'), c)
 end
 
 function V.tooltip(node, status)
@@ -258,9 +258,9 @@ function V.tooltip(node, status)
   local lines = { tostring(node.n or '?'), V.kindLine(node) }
   for _, t in ipairs(node.t or {}) do lines[#lines + 1] = tostring(t) end
   if status == 'alloc' then
-    lines[#lines + 1] = 'Allocated.'
+    lines[#lines + 1] = tr('Allocated.')
   elseif status == 'avail' then
-    lines[#lines + 1] = 'Click, then Allocate.'
+    lines[#lines + 1] = tr('Click, then Allocate.')
   end
   return table.concat(lines, '\n')
 end
@@ -285,13 +285,13 @@ end
 
 function V.earnedLine(state)
   if type(state) ~= 'table' then return '' end
-  return string.format('Earned %d / %d, spent %d', num(state.earned), num(state.max), num(state.spent))
+  return tr('Earned %d / %d, spent %d', num(state.earned), num(state.max), num(state.spent))
 end
 
 function V.refundLabels(state)
   local r = type(state) == 'table' and state.refund or {}
-  return string.format('Refund %s', V.short(r.gold)),
-    string.format('Refund %d orb%s', num(r.orbs), num(r.orbs) == 1 and '' or 's')
+  return tr('Refund %s', V.short(r.gold)),
+    tr(num(r.orbs) == 1 and 'Refund %d orb' or 'Refund %d orbs', num(r.orbs))
 end
 
 -- ---------------------------------------------------------------- the completion grid
@@ -318,19 +318,19 @@ function V.gridRows(tree, done)
     for t = 1, tiers do
       local key = 'c' .. ti .. '.' .. t
       row.cells[t] = { key = key, done = done[key] == true,
-        tip = string.format('%s tier %d: %s (+%d)', name, t, done[key] and 'sealed' or tr('not yet'), num(P.cell)) }
+        tip = tr('%s tier %d: %s (+%d)', name, t, done[key] and 'sealed' or tr('not yet'), num(P.cell)) }
     end
     rows[#rows + 1] = row
   end
-  local flaw = { label = 'Flawless', color = '#9fd89f', kind = 'flawless', cells = {} }
-  local swift = { label = 'Swift', color = '#7fb8e8', kind = 'swift', cells = {} }
+  local flaw = { label = tr('Flawless'), color = '#9fd89f', kind = 'flawless', cells = {} }
+  local swift = { label = tr('Swift'), color = '#7fb8e8', kind = 'swift', cells = {} }
   for t = 1, tiers do
     flaw.cells[t] = { key = 'f' .. t, done = done['f' .. t] == true,
-      tip = tr('Flawless tier %d (no death): %s (+%d)', t, done['f' .. t] and 'done' or tr('not yet'), num(P.flawless)) }
+      tip = tr('Flawless tier %d (no death): %s (+%d)', t, done['f' .. t] and tr('done') or tr('not yet'), num(P.flawless)) }
     local secs = V.swiftSeconds(g, t)
     swift.cells[t] = { key = 's' .. t, done = done['s' .. t] == true,
       tip = tr('Swift tier %d (sealed within %d:%02d): %s (+%d)', t, math.floor(secs / 60), secs % 60,
-        done['s' .. t] and 'done' or tr('not yet'), num(P.swift)) }
+        done['s' .. t] and tr('done') or tr('not yet'), num(P.swift)) }
   end
   rows[#rows + 1] = flaw
   rows[#rows + 1] = swift

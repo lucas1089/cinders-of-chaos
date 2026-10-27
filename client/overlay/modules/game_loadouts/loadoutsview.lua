@@ -38,27 +38,27 @@ function V.slotRow(s, slot)
   end
   if slot.locked and slot.empty then
     local lvl = V.unlockLevel(s, slot.slot)
-    row.title = 'Locked slot'
-    row.sub = lvl and tr('Opens at level %d', lvl) or 'Locked'
+    row.title = tr('Locked slot')
+    row.sub = lvl and tr('Opens at level %d', lvl) or tr('Locked')
     row.dim = true
     row.icon = V.iconPath('options')
     return row
   end
   if slot.empty then
-    row.title, row.sub = 'Empty slot', tr('Save your current build here')
+    row.title, row.sub = tr('Empty slot'), tr('Save your current build here')
     row.dim = true
     row.icon = V.iconPath('inventory')
     return row
   end
   row.title = slot.name or ('Loadout ' .. num(slot.slot))
   local parts = {}
-  parts[#parts + 1] = string.format('%d pts', num(slot.points))
+  parts[#parts + 1] = tr('%d pts', num(slot.points))
   if num(slot.supports and slot.supports.count) > 0 then
-    parts[#parts + 1] = string.format('%d runes', num(slot.supports.count))
+    parts[#parts + 1] = tr('%d runes', num(slot.supports.count))
   end
   local g = slot.gear or {}
   if num(g.total) > 0 then
-    parts[#parts + 1] = string.format('gear %d/%d', num(g.ready), num(g.total))
+    parts[#parts + 1] = tr('gear %d/%d', num(g.ready), num(g.total))
   end
   row.sub = table.concat(parts, ' | ')
   if slot.active then
@@ -97,7 +97,7 @@ function V.summary(s, slot, profile)
   end
   local cls = cap(slot.cls)
   if (slot.voc or '') ~= '' and cap(slot.voc) ~= cls and cls ~= '' then
-    add(string.format('Class: %s (%s)', cls, slot.voc))
+    add(tr('Class: %s (%s)', cls, slot.voc))
   else
     add('Class: ' .. (slot.voc ~= '' and slot.voc or cls))
   end
@@ -110,7 +110,7 @@ function V.summary(s, slot, profile)
   if num(slot.paragon) > 0 then add(tr('Paragon points: %d', num(slot.paragon))) end
   local sup = slot.supports or {}
   if num(sup.count) > 0 then
-    add(string.format('Supports: %d rune%s', num(sup.count), num(sup.count) == 1 and '' or 's'))
+    add(tr('Supports: %d rune%s', num(sup.count), num(sup.count) == 1 and '' or 's'))
     for _, sp in ipairs(sup.spells or {}) do
       add('  ' .. tostring(sp.name) .. ': ' .. table.concat(sp.runes or {}, ', '), V.COLORS.dim)
     end

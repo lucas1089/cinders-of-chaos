@@ -166,7 +166,7 @@ local function runeAt(spell, slot)
 end
 
 local function runeTooltip(r)
-  return tipText(string.format('%s\n%s.\nFits: %s spells.', r.name or '', r.text or '', r.fits or ''))
+  return tipText(tr('%s\n%s.\nFits: %s spells.', r.name or '', r.text or '', r.fits or ''))
 end
 
 -- ---------------------------------------------------------------- pips (list rows and action bar)
@@ -300,7 +300,7 @@ local function buildSpells()
     local row = g_ui.createWidget('SupportSpellRow', listWidget)
     row.spellId = spell.id
     setSpellIcon(row.icon, spell.words)
-    local kind = string.format('%s, level %d', KIND_SHORT[spell.kind] or spell.kind or '', tonumber(spell.level) or 0)
+    local kind = tr('%s, level %d', KIND_SHORT[spell.kind] or spell.kind or '', tonumber(spell.level) or 0)
     local full = (spell.name or '') .. '\n' .. kind
     fitLabel(row.name, spell.name or '', row, full)
     fitLabel(row.kind, kind, row, full)
@@ -336,7 +336,7 @@ local function showRuneInfo()
     return
   end
   window.runeInfo:setColor(r.color or '#d6c9ae')
-  fitLabel(window.runeInfo, string.format('%s (x%d): %s. Fits %s spells.', r.name, tonumber(r.count) or 0,
+  fitLabel(window.runeInfo, tr('%s (x%d): %s. Fits %s spells.', r.name, tonumber(r.count) or 0,
     r.text or '', r.fits or ''))
   window.combineButton:setEnabled(r.combine == true and (tonumber(r.count) or 0) >= 3)
 end

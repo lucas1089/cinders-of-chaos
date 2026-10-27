@@ -36,7 +36,7 @@ for i, s in ipairs(L.SECTIONS) do byKind[s.k] = i end
 
 function L.title(k)
   local i = byKind[k]
-  return i and L.SECTIONS[i].title or tostring(k)
+  return i and tr(L.SECTIONS[i].title) or tostring(k) -- run-time keys of pt_br.lua
 end
 
 -- the text sent as a search: trimmed, inner spaces folded, at most MAX_QUERY characters

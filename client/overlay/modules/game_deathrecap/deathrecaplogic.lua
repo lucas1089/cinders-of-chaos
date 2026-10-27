@@ -24,7 +24,7 @@ L.ELEMENTS = {
   manadrain = { name = 'Mana drain', color = '#4a5ad0' },
   other = { name = 'Other', color = '#6b6258' },
 }
-L.KIND_NAMES = { c = 'Monster', u = 'Player', s = 'Yourself', e = 'Environment', h = 'Hidden', o = 'Others' }
+L.KIND_NAMES = { c = 'Monster', u = 'Player', s = 'Yourself', e = 'Environment', h = 'Hidden', o = 'Others' } -- tr() where shown
 L.KIND_COLORS = { c = '#f2e8d0', u = '#f6cf72', s = '#a8a090', e = '#a8a090', h = '#8c8070', o = '#8c8070' }
 
 local function num(v)
@@ -83,7 +83,7 @@ end
 
 function L.elementName(el)
   local e = L.ELEMENTS[el or 'other'] or L.ELEMENTS.other
-  return e.name
+  return tr(e.name) -- run-time keys of pt_br.lua
 end
 
 function L.elementColor(el)
@@ -148,7 +148,7 @@ function L.rows(recap)
         critPct = hits > 0 and math.floor(crits * 100 / hits + 0.5) or 0,
         elements = L.elements(a.el), outfit = L.outfit(a.look),
       }
-      row.kindName = L.KIND_NAMES[row.kind] or L.KIND_NAMES.c
+      row.kindName = L.KIND_NAMES[row.kind] or L.KIND_NAMES.c -- the view gives it to tr()
       row.color = L.KIND_COLORS[row.kind] or L.KIND_COLORS.c
       if row.total > top then top = row.total end
       out[#out + 1] = row
@@ -195,30 +195,30 @@ function L.header(recap)
     h.title = tr('Killed by %s', who)
   end
   local sub = { L.clock(recap.at) }
-  if num(recap.lvl) then sub[#sub + 1] = string.format('level %d', num(recap.lvl)) end
+  if num(recap.lvl) then sub[#sub + 1] = tr('level %d', num(recap.lvl)) end
   if type(recap.mode) == 'string' and recap.mode ~= '' then sub[#sub + 1] = recap.mode end
   if recap.pvp == 1 then sub[#sub + 1] = 'PvP' end
   h.sub = table.concat(sub, ', ')
   local xl, ll = num(recap.xl), num(recap.ll)
   if defeat then
-    h.loss = 'Nothing lost'
+    h.loss = tr('Nothing lost')
   elseif not xl then
-    h.loss = 'Experience lost: shown at your next login'
+    h.loss = tr('Experience lost: shown at your next login')
   elseif xl <= 0 and (ll or 0) <= 0 then
-    h.loss = 'No experience lost'
+    h.loss = tr('No experience lost')
   else
-    h.loss = string.format('Lost %s experience', L.short(xl))
-    if ll and ll > 0 then h.loss = h.loss .. string.format(' and %d level%s', ll, ll == 1 and '' or 's') end
+    h.loss = tr('Lost %s experience', L.short(xl))
+    if ll and ll > 0 then h.loss = h.loss .. tr(ll == 1 and ' and %d level' or ' and %d levels', ll) end
   end
   local tot, hp, mp = num(recap.tot) or 0, num(recap.hp) or 0, num(recap.mp) or 0
   if tot <= 0 then
-    h.window = 'No hits recorded before the death'
+    h.window = tr('No hits recorded before the death')
     h.totals = ''
   else
-    h.window = tr('Last %s before the death, %d hit%s', L.seconds(recap.dur), num(recap.nh) or 0,
-      (num(recap.nh) or 0) == 1 and '' or 's')
+    h.window = tr((num(recap.nh) or 0) == 1 and 'Last %s before the death, %d hit' or 'Last %s before the death, %d hits',
+      L.seconds(recap.dur), num(recap.nh) or 0)
     h.totals = tr('Damage taken: %s', L.short(tot))
-    if mp > 0 then h.totals = h.totals .. string.format(' (health %s, mana %s)', L.short(hp), L.short(mp)) end
+    if mp > 0 then h.totals = h.totals .. tr(' (health %s, mana %s)', L.short(hp), L.short(mp)) end
   end
   return h
 end
@@ -233,11 +233,11 @@ function L.timeline(recap)
     if type(h) == 'table' then
       local dt = num(h.dt) or 0
       local e = {
-        time = dt < L.DEATH_MS and 'death' or ('-' .. L.seconds(dt)), name = L.displayName(h.n), amount = num(h.a) or 0,
+        time = dt < L.DEATH_MS and tr('death') or ('-' .. L.seconds(dt)), name = L.displayName(h.n), amount = num(h.a) or 0,
         element = L.elementName(h.el), color = L.elementColor(h.el), crit = h.c == 1, mana = h.mp == 1,
       }
       e.text = string.format('%s  %s  %s %s%s%s', e.time, e.name, L.exact(e.amount), e.element:lower(),
-        e.crit and ' (critical)' or '', e.mana and ' (mana)' or '')
+        e.crit and (' ' .. tr('(critical)')) or '', e.mana and (' ' .. tr('(mana)')) or '')
       out[#out + 1] = e
     end
   end
@@ -251,12 +251,12 @@ function L.historyRows(list, sel)
     if type(s) == 'table' and num(s.id) then
       local sub
       if s.real == 0 then
-        sub = (type(s.mode) == 'string' and s.mode ~= '') and s.mode or 'Defeat'
+        sub = (type(s.mode) == 'string' and s.mode ~= '') and s.mode or tr('Defeat')
       elseif num(s.xl) and num(s.xl) > 0 then
-        sub = string.format('-%s exp', L.short(s.xl))
-        if num(s.ll) and num(s.ll) > 0 then sub = sub .. string.format(', -%d lvl', num(s.ll)) end
+        sub = tr('-%s exp', L.short(s.xl))
+        if num(s.ll) and num(s.ll) > 0 then sub = sub .. tr(', -%d lvl', num(s.ll)) end
       else
-        sub = num(s.lvl) and string.format('Level %d', num(s.lvl)) or ''
+        sub = num(s.lvl) and tr('Level %d', num(s.lvl)) or ''
       end
       out[#out + 1] = { id = num(s.id), title = L.clock(s.at), sub = sub, killer = L.displayName(s.k),
         selected = num(sel) == num(s.id) }

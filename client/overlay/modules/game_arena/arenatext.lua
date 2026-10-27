@@ -34,17 +34,17 @@ function ArenaText.seasonLine(v, seasonId)
     local total = (tonumber(v.matches) or 0) + (tonumber(v.placementLeft) or 0)
     return tr('Season: placement %d/%d', tonumber(v.matches) or 0, total), '#8c8070', tip
   end
-  return string.format('Season: %s %d', v.tierName or '?', tonumber(v.rating) or 1500), v.color or '#d6c9ae', tip
+  return tr('Season: %s %d', v.tierName or '?', tonumber(v.rating) or 1500), v.color or '#d6c9ae', tip
 end
 
 -- the season part of the result toast
 function ArenaText.seasonDelta(s)
   if type(s) ~= 'table' then return '' end
-  local text = string.format('Season %d -> %d (%s)', tonumber(s.before) or 0, tonumber(s.after) or 0, ArenaText.delta(s.delta))
+  local text = tr('Season %d -> %d (%s)', tonumber(s.before) or 0, tonumber(s.after) or 0, ArenaText.delta(s.delta))
   if s.placed and s.tierName then
     text = text .. ' ' .. s.tierName
   elseif not s.placed then
-    text = text .. string.format(', placement: %d left', tonumber(s.placementLeft) or 0)
+    text = text .. tr(', placement: %d left', tonumber(s.placementLeft) or 0)
   end
   return text
 end
@@ -52,7 +52,7 @@ end
 
 -- "Rating 1000 -> 1020 (+20)"
 function ArenaText.ratingLine(before, after, delta)
-  return string.format('Rating %d -> %d (%s)', tonumber(before) or 0, tonumber(after) or 0, ArenaText.delta(delta))
+  return tr('Rating %d -> %d (%s)', tonumber(before) or 0, tonumber(after) or 0, ArenaText.delta(delta))
 end
 
 -- record "12-4-1" (wins-losses-draws)

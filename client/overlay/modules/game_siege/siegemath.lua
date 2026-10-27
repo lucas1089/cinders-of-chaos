@@ -60,5 +60,5 @@ end
 
 function SiegeMath.youText(you)
   if type(you) ~= 'table' then return '' end
-  return string.format('You: %d kills, %d downed, %d points', tonumber(you.kills) or 0, tonumber(you.deaths) or 0, tonumber(you.points) or 0)
+  return tr('You: %d kills, %d downed, %d points', tonumber(you.kills) or 0, tonumber(you.deaths) or 0, tonumber(you.points) or 0)
 end

@@ -295,7 +295,7 @@ function L.lines(tip, ctx)
     for i = 1, s.count do
       if s.list and s.list[i] and s.list[i].name then filled = filled + 1 end
     end
-    add(string.format('Sockets %d/%d', filled, s.count), C.gold, true)
+    add(tr('Sockets %d/%d', filled, s.count), C.gold, true)
     for i = 1, s.count do
       local g = s.list and s.list[i] or {}
       if g.name then
@@ -361,7 +361,7 @@ function L.lines(tip, ctx)
     add(line.text, line.color, i == 1)
   end
   if tip.weight then
-    add(string.format('Weight %s oz', trim(tip.weight)), C.dim, #srcLines == 0 and not tip.locked and not tip.store)
+    add(tr('Weight %s oz', trim(tip.weight)), C.dim, #srcLines == 0 and not tip.locked and not tip.store)
   end
   return out
 end
@@ -474,7 +474,7 @@ function L.setLines(set)
   local C = L.COLORS
   local out = {}
   if type(set) ~= 'table' then return out end
-  out[#out + 1] = { text = string.format('Set: %s (%d/%d)', tostring(set.name or '?'), tonumber(set.have) or 0,
+  out[#out + 1] = { text = tr('Set: %s (%d/%d)', tostring(set.name or '?'), tonumber(set.have) or 0,
     tonumber(set.total) or 0), color = C.set, sep = true }
   if tonumber(set.tiers) then
     out[#out + 1] = { text = tr('Active tier: %d of %d', tonumber(set.tier) or 0, tonumber(set.tiers) or 0),
@@ -482,12 +482,12 @@ function L.setLines(set)
   end
   for _, p in ipairs(type(set.pieces) == 'table' and set.pieces or {}) do
     local text = '  ' .. tostring(p.n or '?')
-    if (tonumber(p.h) or 1) > 1 then text = text .. string.format(' (counts %d)', p.h) end
+    if (tonumber(p.h) or 1) > 1 then text = text .. tr(' (counts %d)', p.h) end
     local color = C.empty
     if p.eq then
       color = C.setOn
     elseif p.low then
-      text = text .. string.format(' (level %d)', tonumber(p.lv) or 0)
+      text = text .. tr(' (level %d)', tonumber(p.lv) or 0)
       color = C.setLow
     end
     out[#out + 1] = { text = text, color = color }
@@ -598,8 +598,8 @@ function L.veilLines(veil)
   local out = {}
   if type(veil) ~= 'table' then return out end
   if veil.s == 'veiled' then
-    out[#out + 1] = { text = 'Veiled modifier', color = C.veiled, sep = true }
-    out[#out + 1] = { text = '  Reveal it with an Orb of Unveiling', color = C.dim }
+    out[#out + 1] = { text = tr('Veiled modifier'), color = C.veiled, sep = true }
+    out[#out + 1] = { text = tr('  Reveal it with an Orb of Unveiling'), color = C.dim }
     return out
   end
   if veil.s ~= 'open' then return out end

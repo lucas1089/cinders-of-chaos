@@ -68,8 +68,8 @@ function V.mentorRow(r, s)
   local sub = {}
   if (r.lang or '') ~= '' then sub[#sub + 1] = r.lang end
   if (r.hours or '') ~= '' then sub[#sub + 1] = r.hours end
-  sub[#sub + 1] = string.format('%d graduate%s', num(r.graduates), num(r.graduates) == 1 and '' or 's')
-  sub[#sub + 1] = string.format('%d place%s free', places, places == 1 and '' or 's')
+  sub[#sub + 1] = tr(num(r.graduates) == 1 and '%d graduate' or '%d graduates', num(r.graduates))
+  sub[#sub + 1] = tr(places == 1 and '%d place free' or '%d places free', places)
   return {
     guid = r.guid,
     title = string.format('%s  -  Lv %d %s', tostring(r.name or '?'), num(r.level), tostring(r.voc or '')),
@@ -163,7 +163,7 @@ function V.mentorStats(s)
   local m = s and s.mentor
   if not m then return '' end
   local r = s.rules or {}
-  return string.format('Marks %d (earned %d)   Graduates %d   Today %d/%d marks, %s   Month %d/%d marks, %d/%d new',
+  return tr('Marks %d (earned %d)   Graduates %d   Today %d/%d marks, %s   Month %d/%d marks, %d/%d new',
     num(m.marks), num(m.earned), num(m.graduates), num(m.dayMarks), num(r.dailyHuntMarks), V.minutesText(m.dayMinutes),
     num(m.monthMarks), num(r.monthlyCap), num(m.linksThisMonth), num(m.monthlyLinks))
 end
@@ -183,7 +183,7 @@ function V.apprenticeRows(s)
     out[#out + 1] = {
       guid = a.guid,
       title = string.format('%s  -  Lv %d %s%s', tostring(a.name or '?'), num(a.level), tostring(a.voc or ''), a.online and '  (online)' or ''),
-      sub = string.format('Since %s, together %s', num(a.linkedAt) > 0 and os.date('%Y-%m-%d', num(a.linkedAt)) or '?', V.minutesText(a.shared)),
+      sub = tr('Since %s, together %s', num(a.linkedAt) > 0 and os.date('%Y-%m-%d', num(a.linkedAt)) or '?', V.minutesText(a.shared)),
       steps = steps
     }
   end
@@ -226,7 +226,7 @@ function V.topRows(s)
   local out = {}
   for _, t in ipairs(s and s.top or {}) do
     out[#out + 1] = { rank = '#' .. num(t.rank), name = string.format('%s  -  Lv %d %s', tostring(t.name or '?'), num(t.level),
-      tostring(t.voc or '')), value = string.format('%d graduate%s', num(t.graduates), num(t.graduates) == 1 and '' or 's') }
+      tostring(t.voc or '')), value = tr(num(t.graduates) == 1 and '%d graduate' or '%d graduates', num(t.graduates)) }
   end
   return out
 end

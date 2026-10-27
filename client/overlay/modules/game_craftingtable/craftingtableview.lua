@@ -261,7 +261,7 @@ function V.reasonText(key, r, ctx)
   if key == 'locked' then
     return tr('Recipe not unlocked yet.%s', (r.lockText ~= '' and (' ' .. r.lockText) or ''))
   elseif key == 'skill' then
-    return string.format('Needs %s %d (yours %d).', V.SKILL_NAMES[cat and cat.skill or 7], r.level, num(ctx.skill))
+    return tr('Needs %s %d (yours %d).', tr(V.SKILL_NAMES[cat and cat.skill or 7]), r.level, num(ctx.skill))
   elseif key == 'gold' then
     return tr('Needs %s (you carry %s).', V.goldText(r.cost), V.goldText(ctx.money))
   elseif key == 'materials' then
@@ -368,7 +368,7 @@ end
 function V.plainTip(r)
   local lines = { r.name .. (r.count > 1 and (' x' .. r.count) or '') }
   local cat = V.category(r.category)
-  lines[#lines + 1] = string.format('%s level %d, %s', V.SKILL_NAMES[cat and cat.skill or 7], r.level, V.goldText(r.cost))
+  lines[#lines + 1] = tr('%s level %d, %s', tr(V.SKILL_NAMES[cat and cat.skill or 7]), r.level, V.goldText(r.cost))
   local b = V.bonusText(r)
   lines[#lines + 1] = b ~= '' and b or tr('A crafted item may roll a rarity.')
   return table.concat(lines, '\n')

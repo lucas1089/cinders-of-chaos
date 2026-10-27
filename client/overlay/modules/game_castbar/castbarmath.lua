@@ -1,4 +1,5 @@
 -- Pure parts of game_castbar (castbarmath_test.lua): progress, texts, colours and where a bar goes over a creature.
+local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 CastbarMath = {}
 local M = CastbarMath
 
@@ -27,7 +28,7 @@ end
 
 function M.resultText(result)
   if result == 'done' then return nil end
-  return M.RESULT_TEXT[result] or 'Interrupted'
+  return tr(M.RESULT_TEXT[result] or 'Interrupted') -- run-time keys of pt_br.lua
 end
 
 -- size of one map tile on screen: rect {x, y, width, height} of the map widget, visible dimension {width, height}

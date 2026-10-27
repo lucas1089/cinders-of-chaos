@@ -29,7 +29,7 @@ end
 
 -- the embers line: "Embers 1,250 / 2,500"
 function V.embersLine(d)
-  return string.format('Embers %s / %s', V.number(d.embers), V.number(d.cap))
+  return tr('Embers %s / %s', V.number(d.embers), V.number(d.cap))
 end
 
 -- 0..100: how full the carry is, and the bar colour (gold, then hot when nearly full)
@@ -53,7 +53,7 @@ function V.contestLine(c)
     end
     local lead = c.progress and c.progress[1]
     if lead then
-      return string.format('Shrine: %s %d%% - %s left', lead.short or lead.name, lead.pct or 0, V.clock(c.left)), lead.color or '#f6cf72'
+      return tr('Shrine: %s %d%% - %s left', lead.short or lead.name, lead.pct or 0, V.clock(c.left)), lead.color or '#f6cf72'
     end
     return tr('Shrine: open, take it! - %s left', V.clock(c.left)), '#f6cf72'
   end

@@ -12,10 +12,10 @@ function V.leftText(seconds)
   if seconds <= 0 then return '' end
   local days = math.floor(seconds / 86400)
   if days >= 1 then
-    return string.format('%d day%s left', days, days == 1 and '' or 's')
+    return tr(days == 1 and '%d day left' or '%d days left', days)
   end
   local hours = math.max(1, math.floor(seconds / 3600))
-  return string.format('%d hour%s left', hours, hours == 1 and '' or 's')
+  return tr(hours == 1 and '%d hour left' or '%d hours left', hours)
 end
 
 -- the big code line and the line under it
@@ -39,14 +39,14 @@ function V.rewardsText(s)
   lines[#lines + 1] = tr('Your friend gets: %s.', gift)
   local parts = {}
   for _, m in ipairs(s.milestones or {}) do
-    parts[#parts + 1] = string.format('level %d: %s', num(m.level), m.reward or '')
+    parts[#parts + 1] = tr('level %d: %s', num(m.level), m.reward or '')
   end
   if #parts > 0 then
     lines[#lines + 1] = tr('You get, when your friend\'s first character reaches %s.', table.concat(parts, '; '))
   end
   local tiers = {}
   for _, t in ipairs(s.tiers or {}) do
-    tiers[#tiers + 1] = string.format('%d friends: %s%s', num(t.count), t.reward or '', t.reached and ' (yours)' or '')
+    tiers[#tiers + 1] = tr('%d friends: %s%s', num(t.count), t.reward or '', t.reached and (' ' .. tr('(yours)')) or '')
   end
   if #tiers > 0 then
     lines[#lines + 1] = tr('And with friends at level %d (%d so far): %s.', num(s.qualifyLevel), num(s.qualified),
@@ -87,7 +87,7 @@ function V.friendRows(s)
         color = V.STATE_COLOR[st.state] or '#8c8070' }
     end
     local when = num(f.linkedAt) > 0 and os.date('%Y-%m-%d', num(f.linkedAt)) or '?'
-    rows[#rows + 1] = { name = f.name or '?', sub = string.format('Level %d, joined %s', num(f.level), when), steps = steps }
+    rows[#rows + 1] = { name = f.name or '?', sub = tr('Level %d, joined %s', num(f.level), when), steps = steps }
   end
   return rows
 end

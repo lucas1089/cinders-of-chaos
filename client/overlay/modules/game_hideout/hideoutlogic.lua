@@ -48,7 +48,7 @@ function HL.subText(r)
   if not r.owned then
     return 'Locked - ' .. tostring(r.how or '')
   end
-  return string.format('%d / %d placed', r.placed or 0, r.max or 0)
+  return tr('%d / %d placed', r.placed or 0, r.max or 0)
 end
 
 -- may the player start placing this row? -> true | false, reason
@@ -242,7 +242,7 @@ end
 -- the counter of the Decorate tab
 function HL.countText(hideout)
   if not hideout then return '' end
-  return string.format('%s - %d / %d decorations', hideout.themeName or '', hideout.count or 0, hideout.max or 0)
+  return tr('%s - %d / %d decorations', hideout.themeName or '', hideout.count or 0, hideout.max or 0)
 end
 
 return HL

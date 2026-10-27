@@ -52,20 +52,20 @@ function L.lines(d)
   local C = L.COLORS
   local out = {}
   local voc = d.voc ~= '' and d.voc or tr('No vocation')
-  out[#out + 1] = { text = string.format('Level %d %s', tonumber(d.level) or 0, voc), color = C.text }
-  if d.ascended then out[#out + 1] = { text = 'Ascended class', color = C.gold } end
+  out[#out + 1] = { text = tr('Level %d %s', tonumber(d.level) or 0, voc), color = C.text }
+  if d.ascended then out[#out + 1] = { text = tr('Ascended class'), color = C.gold } end
   if type(d.guild) == 'table' and d.guild.name then
-    out[#out + 1] = { text = string.format('%s of %s', d.guild.rank or 'Member', d.guild.name), color = C.text }
+    out[#out + 1] = { text = tr('%s of %s', d.guild.rank and tr(d.guild.rank) or tr('Member'), d.guild.name), color = C.text }
   else
-    out[#out + 1] = { text = 'No guild', color = C.dim }
+    out[#out + 1] = { text = tr('No guild'), color = C.dim }
   end
   out[#out + 1] = { text = tr('Achievement points: %s', L.numberText(d.ach)), color = C.text }
   local rift = tonumber(d.rift) or 0
   out[#out + 1] = rift > 0 and { text = tr('Best rift sealed: tier %d', rift), color = C.text }
-    or { text = 'No rift sealed yet', color = C.dim }
+    or { text = tr('No rift sealed yet'), color = C.dim }
   local trials = tonumber(d.trials) or 0
   out[#out + 1] = trials > 0 and { text = tr('Vocation Trials: tier %d of %d', trials, L.MAX_TRIAL_TIER), color = C.text }
-    or { text = 'No Vocation Trial cleared', color = C.dim }
+    or { text = tr('No Vocation Trial cleared'), color = C.dim }
   return out
 end
 
@@ -156,5 +156,5 @@ end
 
 -- the slot with the widest tooltip need not be known; the tooltip key of a slot is unique per character, slot and item
 function L.tipKey(name, slot, tip)
-  return string.format('inspect:%s:%d:%s', tostring(name), slot, tostring(tip and tip.key or tip and tip.name or ''))
+  return string.format('inspect:%s:%d:%s', tostring(name), slot, tostring(tip and tip.key or tip and tip.name or '')) -- i18n-ok: not UI text
 end

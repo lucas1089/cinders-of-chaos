@@ -352,7 +352,7 @@ function refundSelected(pay)
   local node = ix.byId[selected]
   local r = state and state.refund or {}
   local price = pay == 'orb' and string.format('%d %s', tonumber(r.orbs) or 1, tostring(state and state.orb or 'orb'))
-    or string.format('%s gold', V.short(r.gold))
+    or tr('%s gold', V.short(r.gold))
   local id = selected
   confirm(tr('Refund a node'), tr('Refund %s for %s? The point comes back.', node.n, price),
     { { text = tr('Refund'), callback = function() send('refund', { id = id, pay = pay }) end },

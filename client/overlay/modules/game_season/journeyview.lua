@@ -88,14 +88,14 @@ function V.chapterStatus(c)
   if c.state == 'locked' then
     return (tonumber(c.level) or 0) > 0 and string.format('Lv %d', c.level) or 'Locked'
   end
-  if c.state == 'preview' then return string.format('%d goals', tonumber(c.total) or 0) end
+  if c.state == 'preview' then return tr('%d goals', tonumber(c.total) or 0) end
   return string.format('%d / %d', tonumber(c.done) or 0, tonumber(c.total) or 0)
 end
 
 -- the line under the chapter name: its text, or why it is locked
 function V.chapterNote(c)
   if c.state == 'locked' and c.lockedWhy then
-    return string.format('Locked: %s', c.lockedWhy)
+    return tr('Locked: %s', c.lockedWhy)
   end
   return tostring(c.text or '')
 end
@@ -108,7 +108,7 @@ function V.objectiveRow(o, preview)
   local tag = o.only and V.ONLY_TAG[o.only] or nil
   if tag and text:sub(1, #tag + 1) == tag .. ':' then tag = nil end
   if preview then
-    return { text = text, tag = tag, percent = 0, label = string.format('Goal: %d', target), color = '#b8b0a0', done = false }
+    return { text = text, tag = tag, percent = 0, label = tr('Goal: %d', target), color = '#b8b0a0', done = false }
   end
   if o.done then
     return { text = text, tag = tag, percent = 100, label = 'Done', color = '#7fc86a', done = true }
@@ -138,10 +138,10 @@ function V.summary(h, chapterCount)
   if h.preview then
     parts[#parts + 1] = 'Preview'
   else
-    parts[#parts + 1] = string.format('Chapters %d / %d', tonumber(h.finished) or 0, chapterCount or 0)
+    parts[#parts + 1] = tr('Chapters %d / %d', tonumber(h.finished) or 0, chapterCount or 0)
   end
   if h.set then
-    parts[#parts + 1] = string.format('%s set %d / %d', h.set, tonumber(h.pieces) or 0, tonumber(h.piecesTotal) or 0)
+    parts[#parts + 1] = tr('%s set %d / %d', h.set, tonumber(h.pieces) or 0, tonumber(h.piecesTotal) or 0)
   end
   return table.concat(parts, '   ')
 end

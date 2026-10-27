@@ -49,7 +49,7 @@ local function feed()
   local list, looked = C.collect(readItem, 100, lastItemId(), weaponTypes())
   for _, e in ipairs(list) do p.onWeaponProficiencyCatalogItem(e.id, e.category, 0, e.name) end
   p.onWeaponProficiencyCatalogReady()
-  g_logger.info(string.format('[proficiencycatalog] %d weapons of %d item types', #list, looked))
+  g_logger.info(string.format('[proficiencycatalog] %d weapons of %d item types', #list, looked)) -- i18n-ok: not UI text
 end
 
 local function wrappedOpen(...)
