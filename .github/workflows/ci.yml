@@ -177,6 +177,8 @@ jobs:
           # verifies the recipe and the sums against themselves
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_reward_chest_art.py build-front --check
           python3 -I client/tools/sprites/gen_reward_chest_art_test.py
+          # in-place item redraw (redraw_items.py on a synthetic pair, pair 53)
+          /tmp/fxenv/bin/python -I client/tools/sprites/redraw_items_test.py
           # the support rune looks of pair 46 (100 PixelLab rune stones, 1 x 1 items) and the support icons: committed sources,
           # atlas, things file and sums match the generator, each look passes style_check, ids agree with the config
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_support_runes_art.py build --check
@@ -1156,9 +1158,6 @@ jobs:
 
       - name: Pair pruning (prune_pair.py on a synthetic pair)
         run: python3 -I client/tools/sprites/prune_pair_test.py
-
-      - name: In-place item redraw (redraw_items.py on a synthetic pair, pair 53)
-        run: /tmp/fxenv/bin/python -I client/tools/sprites/redraw_items_test.py
 
       - name: PHP for the website tests (php-cli with PDO SQLite and mbstring)
         run: |
