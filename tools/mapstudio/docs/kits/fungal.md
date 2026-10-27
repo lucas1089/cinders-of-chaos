@@ -15,3 +15,7 @@ Good: giant caps with spores and moss on the cave look read well. Weak: the cave
 
 Round 8: `wall_check` on (counts 0), flat patches dropped, `same_look` for the remaining roles, `bare seams` 0. No pools yet.
 
+
+## Round 9
+
+Detached floor squares and unjoined stair landings fixed (landing_ring); a few acid pools (acid_edge, pools).

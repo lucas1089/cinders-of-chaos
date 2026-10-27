@@ -66,14 +66,14 @@ def lay(layer, size, origin, kit, rng, sites, keep_ids=frozenset()):
                     group = walls[cell["wall"]]
                     wspec = kit["stamp_walls"][cell["wall"]]
                     if cell.get("piece"):
-                        pid = int(cell["piece"])
+                        pids = [int(cell["piece"])]
                     else:
-                        cls = wallcheck.expected_class((t[0], t[1] - 1) in group, (t[0] + 1, t[1]) in group,
+                        cls = wallcheck.expected_stack((t[0], t[1] - 1) in group, (t[0] + 1, t[1]) in group,
                                                        (t[0], t[1] + 1) in group, (t[0] - 1, t[1]) in group,
                                                        bool(wspec.get("end_h") and wspec.get("end_v")))
-                        pid = wall_piece(wspec, cls)
-                    st.append(pid)
-                    ids.add(pid)
+                        pids = [wall_piece(wspec, c) for c in cls]
+                    st.extend(pids)
+                    ids.update(pids)
                 elif cell.get("items") and rng.random() < cell.get("chance", 1.0):
                     pid = int(rng.choice(cell["items"]))
                     st.append(pid)

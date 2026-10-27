@@ -649,9 +649,28 @@
     36891
    ],
    "border": "deep_edge",
-   "share": 0.07,
+   "share": 0.16,
    "scale": 4,
    "min": 8
+  },
+  {
+   "ground": [
+    36891
+   ],
+   "border": "deep_edge",
+   "share": 0.1,
+   "scale": 3,
+   "min": 5
+  },
+  {
+   "ground": [
+    36891
+   ],
+   "border": "deep_edge",
+   "share": 0.08,
+   "scale": 2,
+   "min": 4
   }
- ]
+ ],
+ "landing_ring": true
 }

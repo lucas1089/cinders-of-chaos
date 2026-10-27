@@ -35,7 +35,7 @@ def wall_spec(base, windows=0.0, broken=0.0, cover=2, solid=None):
 
 
 def build(floor, size, spec, rng, keep_clear=()):
-    """Returns ({tile: wall piece id}, {tiles that take solid ground: walls plus the cover rings}).
+    """Returns ({tile: [wall piece ids, bottom to top]}, {tiles that take solid ground: walls plus the cover rings}).
     `keep_clear` tiles never get a variant piece."""
     need = wallcheck.wall_tiles(floor, size)
     ends = bool(spec.get("end_h") and spec.get("end_v"))
@@ -46,20 +46,28 @@ def build(floor, size, spec, rng, keep_clear=()):
     var = spec.get("variants", {})
     pieces, picked = {}, set()
     for t in sorted(cls, key=lambda t: (t[1], t[0])):
-        c = cls[t]
-        if c in single:
-            pieces[t] = single[c]
-            continue
-        ids = runs[c]
-        pid = ids[0] if len(ids) == 1 else rng.choice(ids)
-        table = var.get("h" if c == "H" else "v", {})
-        if table and t not in keep_clear and not any((t[0] + i, t[1] + j) in picked for i in (-1, 0, 1) for j in (-1, 0, 1)):
-            for key, share in table.items():
-                if rng.random() < share:
-                    pid = int(key)
-                    picked.add(t)
-                    break
-        pieces[t] = pid
+        stack = []
+        for c in cls[t]:
+            if c in single:
+                stack.append(single[c])
+                continue
+            ids = runs[c]
+            pid = ids[0] if len(ids) == 1 else rng.choice(ids)
+            table = var.get("h" if c == "H" else "v", {})
+            # variants (window, broken) only on a straight run tile with no other piece on it, never two touching
+            straight = len(cls[t]) == 1 and (((t[0] - 1, t[1]) in need and (t[0] + 1, t[1]) in need and (t[0], t[1] - 1) not in need
+                                              and (t[0], t[1] + 1) not in need) if c == "H" else
+                                             ((t[0], t[1] - 1) in need and (t[0], t[1] + 1) in need and (t[0] - 1, t[1]) not in need
+                                              and (t[0] + 1, t[1]) not in need))
+            if (table and straight and t not in keep_clear
+                    and not any((t[0] + i, t[1] + j) in picked for i in (-1, 0, 1) for j in (-1, 0, 1))):
+                for key, share in table.items():
+                    if rng.random() < share:
+                        pid = int(key)
+                        picked.add(t)
+                        break
+            stack.append(pid)
+        pieces[t] = stack
     ground = set(pieces)
     ring = set(pieces)
     for _ in range(spec.get("cover", 2)):

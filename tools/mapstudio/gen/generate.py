@@ -1683,7 +1683,8 @@ def build(p):
                                                                    and any(unbordered(keys[y][x], k) for k in near)):
                     keys[y][x] = "base"
                     changed += 1
-                elif p.water_low and keys[y][x] == "water" and (x, y) not in fords and pinched(base_at, x, y):
+                elif (p.water_low and not kit.get("walls") and keys[y][x] == "water" and (x, y) not in fords
+                      and pinched(base_at, x, y)):
                     # a liquid tile the base ground pinches (a mountain bump beside it leaves base on two sides):
                     # the base's border on it would face both ways, so it becomes base
                     keys[y][x] = "base"
@@ -1828,7 +1829,7 @@ def build(p):
                     continue
                 ground = (pick(rng, wall_spec["solid"]) if wall_spec.get("solid")
                           else water_ground(x, y) if water_ground else pick(rng, kit["water"]))
-                layer[(ORIGIN + x, ORIGIN + y)] = [ground] + ([wall_pieces[(x, y)]] if (x, y) in wall_pieces else [])
+                layer[(ORIGIN + x, ORIGIN + y)] = [ground] + list(wall_pieces.get((x, y), ()))
                 continue
             if f == "water" and void and void_d[y][x] > void + (void_n[y][x] - 0.5) * 2 * jit:
                 continue
@@ -1921,6 +1922,15 @@ def build(p):
     for st in m.get("stairs", []):  # cave mode: the landing above each ramp, a small floor of the kit's base ground
         for x, y in st["landing"]:
             floors.setdefault(Z - 1, {})[(ORIGIN + x, ORIGIN + y)] = [pick(rng, kit["base"])]
+        if kit.get("landing_ring"):  # kit key (round 9): a ring of the kit's solid ground around the landing, so it is not a loose square
+            up = floors[Z - 1]
+            solid_ground = (kit.get("walls") or {}).get("solid") or kit["water"]
+            for x, y in st["landing"]:
+                for i in (-1, 0, 1):
+                    for j in (-1, 0, 1):
+                        t = (ORIGIN + x + i, ORIGIN + y + j)
+                        if t not in up:
+                            up[t] = [pick(rng, solid_ground)]
 
     dressed = set()
     if m.get("rooms"):  # kit cave.rooms: every room gets its floor and decor theme (gen/themes.py)
@@ -1952,6 +1962,15 @@ def build(p):
                                    if not water[y][x] and not mountain[y][x] and not hill[y][x] and deep[y][x] >= 3 and (x, y) not in taken_by
                                    and (x, y) not in m.get("bridge_tiles", ())}))
         _, stamp_ids, stamps_placed = stampsmod.lay(floors[Z], size, ORIGIN, kit, random.Random(f"stamps-{p.seed}"), sites, border_ids)
+
+    if wall_pieces:  # kit walls (round 9): a wall tile beside the floor stands on that floor's ground, so the cut corner of a wall sprite shows
+        # floor, not a dark wedge (the solid ground stays on tiles that touch no floor)
+        for (x, y) in sorted(wall_pieces):
+            for i, j in ((0, 1), (1, 0), (0, -1), (-1, 0)):
+                nb = floors[Z].get((ORIGIN + x + i, ORIGIN + y + j))
+                if nb and (x + i, y + j) not in wall_pieces and (x + i, y + j) in floor_set:
+                    floors[Z][(ORIGIN + x, ORIGIN + y)][0] = nb[0]
+                    break
 
     # earth hills: one level (see gen/island.py)
     floor = floors.setdefault(Z - 1, {})
@@ -2251,7 +2270,7 @@ def main():
               f"walkable share {c['share']:.1%} (target tried {c['attempts']}x), tunnel tiles by width {c['width_tiles']}, "
               f"unjoined tiles removed {c['tiles_removed']}, tunnels cut to join {c['tunnels_joined']}")
     subprocess.run([sys.executable, "-B", str(ROOT / "run.py"), "tools/render.py", str(out / "area.txt"),
-                    "--floor", str(Z), "--upper", "--out", str(out / "render.png")], check=True)
+                    "--floor", str(Z)] + ([] if load_kit(a.kit).get("landing_ring") else ["--upper"]) + ["--out", str(out / "render.png")], check=True)
 
 
 if __name__ == "__main__":

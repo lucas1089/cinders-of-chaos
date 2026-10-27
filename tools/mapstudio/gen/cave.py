@@ -454,7 +454,7 @@ def join(floor, part, main, style, inside):
     return 1
 
 
-def stairs(floor, rng, style, count):
+def stairs(floor, rng, style, count, clear=3):
     """Alcoves for ramps up to the floor above. For a walkable tile I with a wall tile at I+d and rock from I+2d on: an
     alcove 3 wide and 2 deep is cut into the rock at I+2d, I+3d; the ramp stands on I+3d (touching the rock), the
     lower half on I+2d, the approach is I+d, the landing is the tile past the ramp on the floor above. Edits the
@@ -472,7 +472,7 @@ def stairs(floor, rng, style, count):
                 if not floor[y + dy][x + dx]:
                     continue
                 cells = [(x + t * dx + a * ax, y + t * dy + a * ay) for t in (2, 3) for a in (-1, 0, 1)]
-                behind = [(x + t * dx + a * ax, y + t * dy + a * ay) for t in (2, 3, 4, 5) for a in (-3, -2, 2, 3)]
+                behind = [(x + t * dx + a * ax, y + t * dy + a * ay) for t in (2, 3, 4, 5) for a in (*range(-clear, -1), *range(2, clear + 1))]
                 behind += [(x + 4 * dx + a * ax, y + 4 * dy + a * ay) for a in (-1, 0, 1)]
                 behind += [(x + 5 * dx + a * ax, y + 5 * dy + a * ay) for a in (-1, 0, 1)]
                 if not all(rock(*t) for t in cells + behind):

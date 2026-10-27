@@ -614,5 +614,31 @@
   "867": "--size 96 --cave-shape mix",
   "868": "--size 112 --cave-shape tunnels"
  },
- "wall_check": true
+ "wall_check": true,
+ "acid_edge": {
+  "edge_n": 36866,
+  "edge_e": 36867,
+  "edge_s": 36868,
+  "edge_w": 36869,
+  "outer_ne": 36870,
+  "outer_nw": 36871,
+  "outer_se": 36872,
+  "outer_sw": 36873,
+  "inner_ne": 36874,
+  "inner_nw": 36875,
+  "inner_se": 36876,
+  "inner_sw": 36877
+ },
+ "pools": [
+  {
+   "ground": [
+    36865
+   ],
+   "border": "acid_edge",
+   "share": 0.05,
+   "scale": 3,
+   "min": 6
+  }
+ ],
+ "landing_ring": true
 }

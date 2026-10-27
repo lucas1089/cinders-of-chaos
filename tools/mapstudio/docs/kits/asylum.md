@@ -17,3 +17,7 @@ Good: walls and floors read as a clean institution gone bad, blood and chains sc
 
 Round 8: rectangular rooms and cell blocks (`cave.rooms`) with straight `walls` (clapboard, windows, broken pieces), per-room floor and decor themes. `bare seams` 0 through `same_look`. Still missing: doors that open and close (door pieces are not laid), per-room lighting.
 
+
+## Round 9
+
+Doors (existing closed/open door ids) where rooms meet corridors; one-pass wall derivation, no stubs, double walls or gaps; stairs landing ring.

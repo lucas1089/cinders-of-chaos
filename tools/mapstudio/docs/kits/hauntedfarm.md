@@ -16,3 +16,7 @@ Good: the best looking of the set, scarecrows and trees read well. Weak: no barn
 
 Round 8: field, pumpkin, yard and grave rooms (`cave.rooms`), split rail `walls`, barn and scarecrow field `stamps`, pair 49 scarecrows, pumpkins and dead trees in the themes. `bare seams` 0 through `same_look`. Still missing: outdoor look (the rooms are walled yards, not open land).
 
+
+## Round 9
+
+Combined floor mask, clearance rules, landing ring; wall_check all 0 (fence, gap check skipped).

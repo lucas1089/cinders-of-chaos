@@ -138,6 +138,9 @@ def islands_layout(size, rng, cfg):
     margin = cfg.get("margin", 6)
     gap = cfg.get("gap", 4)
     lo_r, hi_r = cfg.get("radius", [6, 13])
+    sizes = cfg.get("sizes")  # round 9: [[weight, lo, hi], ...] radius classes (small, middle, ...); `big` [lo, hi]: one large island
+    big = cfg.get("big")
+    square = bool(cfg.get("perpendicular"))
     inner = (size - 2 * margin) ** 2
     want = max(3, round(cfg.get("per_1000", 0.9) * inner / 1000))
     field = lib.noise(size, 6, rng)
@@ -145,7 +148,13 @@ def islands_layout(size, rng, cfg):
     for _ in range(600):
         if len(isl) >= want:
             break
-        rx, ry = rng.uniform(lo_r, hi_r), rng.uniform(lo_r, hi_r)
+        if big and not isl:  # the large island is placed first, while there is room
+            rx, ry = rng.uniform(*big), rng.uniform(*big)
+        elif sizes:
+            _, cl, ch = rng.choices(sizes, [c[0] for c in sizes])[0]
+            rx, ry = rng.uniform(cl, ch), rng.uniform(cl, ch)
+        else:
+            rx, ry = rng.uniform(lo_r, hi_r), rng.uniform(lo_r, hi_r)
         cx = rng.uniform(margin + rx * 0.9, size - 1 - margin - rx * 0.9)
         cy = rng.uniform(margin + ry * 0.9, size - 1 - margin - ry * 0.9)
         t = ellipse(cx, cy, rx, ry, field, 0.9, size)
@@ -176,6 +185,30 @@ def islands_layout(size, rng, cfg):
     bridges, tiles = [], set()
     loops_left = rng.randint(*cfg.get("loops", [1, 2]))
 
+    def carve(st, i, j):
+        """Round 9 (kit islands.perpendicular): island land beside the strip (not at its two ends) is cut away, so the bridge leaves
+        and enters straight, never along an island edge. Returns the cut tiles, or None when more than 6 per side would go."""
+        xs, ys = {x for x, _ in st}, {y for _, y in st}
+        vertical = len(ys) >= len(xs)  # the strip runs along y
+        cut = set()
+        for x, y in st:
+            for d in (-1, 1):
+                n = (x + d, y) if vertical else (x, y + d)
+                if n not in st and (n in isl[i] or n in isl[j]):
+                    cut.add(n)
+        return cut if len(cut) <= 12 else None
+
+    def finish(st, i, j):
+        if not square:
+            return st
+        cut = carve(st, i, j)
+        if cut is None:
+            return None
+        isl[i] -= cut
+        isl[j] -= cut
+        land.difference_update(cut)
+        return st
+
     def try_edge(i, j):
         w = int(rng.choices(list(widths), [widths[k] for k in widths])[0])
         others = set().union(*[t for k, t in enumerate(isl) if k not in (i, j)]) if len(isl) > 2 else set()
@@ -184,7 +217,9 @@ def islands_layout(size, rng, cfg):
             for transpose in (False, True):
                 s = strip(isl[first], isl[second], near_other, land | tiles, w, max_len, rng, transpose, size)
                 if s:
-                    return s
+                    s = finish(s, i, j)
+                    if s:
+                        return s
         if w > 2:
             return try_edge_w(i, j, 2, near_other)
         return None
@@ -194,12 +229,14 @@ def islands_layout(size, rng, cfg):
             for transpose in (False, True):
                 s = strip(isl[first], isl[second], near_other, land | tiles, w, max_len, rng, transpose, size)
                 if s:
-                    return s
+                    s = finish(s, i, j)
+                    if s:
+                        return s
         return None
 
     for _, i, j in order:
         joined = find(i) == find(j)
-        if joined and (loops_left <= 0 or math.dist(centre[i], centre[j]) > (hi_r * 3.2)):
+        if joined and (loops_left <= 0 or math.dist(centre[i], centre[j]) > (max(hi_r, big[1] if big else 0) * 3.2)):
             continue
         s = try_edge(i, j)
         if not s:
