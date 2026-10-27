@@ -1078,13 +1078,15 @@ jobs:
           shellcheck server/deploy/chaos-ctl.sh
           python3 -I server/deploy/chaos_ctl_test.py
 
-      - name: Admin app pure Java (Discord card, webhook URL check and status text; Bugs e sugestões parsing; plain JVM)
+      - name: Admin app pure Java (Discord card, webhook URL check and status text; Bugs e sugestões parsing; Servidor como usuário chaos card; plain JVM)
         run: |
           mkdir -p /tmp/appjava
           javac -d /tmp/appjava android/app/src/main/java/com/cindersofchaos/admin/DiscordInfo.java android/app/src/test/java/com/cindersofchaos/admin/DiscordInfoTest.java
           java -cp /tmp/appjava com.cindersofchaos.admin.DiscordInfoTest
           javac -d /tmp/appjava android/app/src/main/java/com/cindersofchaos/admin/FeedbackInfo.java android/app/src/test/java/com/cindersofchaos/admin/FeedbackInfoTest.java
           java -cp /tmp/appjava com.cindersofchaos.admin.FeedbackInfoTest
+          javac -d /tmp/appjava android/app/src/main/java/com/cindersofchaos/admin/ServerUserInfo.java android/app/src/test/java/com/cindersofchaos/admin/ServerUserInfoTest.java
+          java -cp /tmp/appjava com.cindersofchaos.admin.ServerUserInfoTest
 
       - name: Kit server update (chaos_kit_update.sh with a fake repo, releases, systemctl and database; rates, rollback)
         run: |

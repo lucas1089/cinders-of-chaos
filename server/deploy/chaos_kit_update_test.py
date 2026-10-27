@@ -402,6 +402,7 @@ def test_flow():
               'check: engine and client needed', w.out)
         check(d.get('needs_downloads') == 'yes' and d.get('website_changed') == 'yes', 'check: downloads, site', w.out)
         check(d.get('update_available') == 'yes' and d.get('running') == 'no', 'check: update available', w.out)
+        check(d.get('runs_as_root') == 'yes', 'check: runs_as_root=yes when the unit has no User= (server-user fix)', w.out)
         check(d.get('map_master') == 'none' and d.get('installed_map') == '0' and d.get('needs_map') == 'no',
               'check: no map master branch', w.out)
         check(w.git('-C', w.repo, 'rev-parse', 'HEAD') != w.git('-C', w.origin, 'rev-parse', 'HEAD'),

@@ -271,6 +271,15 @@ stop_server() {
 	log "$SERVICE stopped cleanly"
 }
 
+# the unit runs the game server as root when it has no User= (systemd's default): the engine warns about it in its log
+warn_root_unit() {
+	local u
+	u=$(systemctl show -p User --value "$SERVICE" 2>/dev/null || true)
+	case $u in ''|0|root)
+		log "WARNING: the unit $SERVICE runs the game server as root (the engine says so in its log). The update goes on; fix it with the admin app, Comandos > Saúde e espaço > Servidor como usuário chaos > Corrigir (chaos-ctl.sh server-user fix, docs/OWNER_TODO.md)" ;;
+	esac
+}
+
 own_server() {
 	local user group
 	user=$(systemctl show -p User --value "$SERVICE" 2>/dev/null || true)
@@ -421,6 +430,7 @@ fi
 
 CHANGED=$(g diff --name-only "$DEPLOYED" "$NEW")
 has() { echo "$CHANGED" | grep -q "$1"; }
+warn_root_unit
 echo
 log "update: $(describe "$DEPLOYED") -> $REF ($(short "$NEW")), $(echo "$CHANGED" | grep -c . || true) file(s) changed"
 g log --oneline --no-decorate "$DEPLOYED..$NEW" | head -n 30

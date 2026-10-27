@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Tests for the systemd units of server/deploy/ (O196: server hardening; docs/LAUNCH.md "Running it").
 
-Reads the unit files as text. Checks that no unit keeps core dumps, that chaos-server.service has the sandbox lines and
+Reads the unit files as text. The two game server units run as User=chaos, never root (chaos-ctl.sh server-user). Checks that no unit keeps core dumps, that chaos-server.service has the sandbox lines and
 none of the two that would break it (MemoryDenyWriteExecute, SystemCallFilter), that it keeps ProtectSystem=full (the
 reason is in the unit), and that the root ExecStopPost on a file of the repository checkout is guarded: the guard is
 run here on a throwaway tree (clean tree runs the script; a file or directory writable by group or others, owned by the
@@ -58,6 +58,13 @@ need = ['LimitCORE=0', 'NoNewPrivileges=true', 'PrivateTmp=true', 'PrivateDevice
         'SystemCallArchitectures=native', 'CapabilityBoundingSet=', 'AmbientCapabilities=', 'User=chaos']
 for n in need:
     check(n in srv, 'chaos-server.service lacks ' + n)
+# the game server never runs as root (the engine warns about it; chaos-ctl.sh server-user fix installs these with User=chaos)
+kit = lines(os.path.join(HERE, 'chaos-trial-server.service'))
+for n in ('User=chaos', 'Group=chaos'):
+    check(n in kit, 'chaos-trial-server.service lacks ' + n)
+check(not any(l in ('User=root', 'Group=root') for l in srv + kit), 'a game server unit runs as root')
+check(any('start-server.sh' in l for l in kit if l.startswith('ExecStart=')), 'the kit unit starts start-server.sh '
+      '(chaos-ctl.sh server-user tells the two layouts apart by it)')
 fam = [l for l in srv if l.startswith('RestrictAddressFamilies=')]
 check(len(fam) == 1 and set(fam[0].split('=', 1)[1].split()) == {'AF_INET', 'AF_INET6', 'AF_UNIX', 'AF_NETLINK'},
       'chaos-server.service address families: %r' % fam)

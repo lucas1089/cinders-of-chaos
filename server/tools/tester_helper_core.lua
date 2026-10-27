@@ -10,11 +10,15 @@
 --   H.parseCommand(param)              "!tester <command> [arg]" -> command, arg (unknown -> nil)
 --   H.encode(kind, data)               one helper line: "[tester-helper] <kind> <json>" (the bot reads it)
 --   H.hitAnomaly(hit)                  a hit taken or dealt far out of range for the level, or a one-shot from full
+--   H.pushHit(list, now, hit)          remember a hit a tester took (the last 10 seconds)
+--   H.deathRecord(list, now, d)        the death event: hits, damage and the biggest hit of the last 5 seconds, as % of max health
 --   H.xpAnomaly(level, gained)         an experience gain that is negative or absurd for the level
 --   H.itemAnomaly(item)                an item with an impossible count or stat
 --   H.parsePlace(arg)                  "enter <kind> [N]" / "enter npc <name>" / "enter rift [tier]" -> a place, or nil
 --   H.pickMark(marks, kind, n)         the n-th map mark of a kind (data/chaos_poi.lua marks; wraps), and the count
 --   H.placeCounts(marks)               {kind = count} of the marks the helper can bring a tester to
+--   H.bagPlan(items, want, held)       the backpack clean-up: which top-level items to remove (every id not in `want`) and which
+--                                       supplies to add (an id of `want` held under half of its number, up to the number)
 --   H.onlineLine(count, last, minute)  the console line "[tester-helper] testers online: N" when the count changed
 --                                       since the last line, or every 5 minutes; nil otherwise
 -- Lua 5.1 / LuaJIT and 5.3 compatible.
@@ -25,7 +29,7 @@ local H = ChaosTesterHelperCore
 H.STORAGE = 7102900 -- Chaos.storage.tester (chaos_constants.lua; the test checks they agree)
 H.MARK = "[tester-helper]"
 H.ANOMALY = "[tester-anomaly]"
-H.COMMANDS = {town = true, depot = true, shop = true, hunt = true, info = true, enter = true, places = true}
+H.COMMANDS = {town = true, depot = true, shop = true, hunt = true, info = true, enter = true, places = true, bag = true}
 
 -- numbers of the anomaly rules (a hit is "absurd" far above anything the game should do; tune with the report)
 H.limits = {
@@ -84,6 +88,26 @@ end
 H.PLACE_KINDS = {temple = true, depot = true, craft = true, bank = true, bless = true, travel = true, shop = true,
 	boss = true, hunt = true, npc = true, portal = true, dungeon = true}
 H.RIFT_MAX = 15
+
+-- items = {{id, count}, ...} (the backpack's own slots); want = {[itemId] = number} (the supplies a tester keeps);
+-- held = {[itemId] = number} (carried in all, nested bags too). Returns the indexes of `items` to remove and the
+-- {id, count} to add, by id. A tester loots and never sells, so the bag fills; the potions are used up.
+function H.bagPlan(items, want, held)
+	local remove, add = {}, {}
+	for i, it in ipairs(items or {}) do
+		if not want[it.id] then
+			remove[#remove + 1] = i
+		end
+	end
+	for id, n in pairs(want or {}) do
+		local have = (held or {})[id] or 0
+		if have < n / 2 then
+			add[#add + 1] = {id = id, count = n - have}
+		end
+	end
+	table.sort(add, function(a, b) return a.id < b.id end)
+	return remove, add
+end
 
 function H.parsePlace(arg)
 	if type(arg) ~= "string" then
@@ -204,6 +228,37 @@ function H.hitAnomaly(hit)
 		end
 	end
 	return nil
+end
+
+-- the last hits a tester took, for its death record (the first live run, 2026-10-27: 2998 deaths and nobody could say whether one
+-- hit or a pack did it). list: {{t, damage, by}}, newest last; the helper keeps one per tester.
+H.HIT_WINDOW = 5 -- seconds a death record looks back
+H.HIT_KEEP = 40
+
+function H.pushHit(list, now, hit)
+	list[#list + 1] = {t = now, damage = math.max(0, tonumber(hit.damage) or 0), by = hit.by}
+	while #list > H.HIT_KEEP or (list[1] and now - list[1].t > 2 * H.HIT_WINDOW) do
+		table.remove(list, 1)
+	end
+end
+
+-- d: {who, level, killer, maxHealth, online (seconds since the login)}; the record the console line carries: how many hits
+-- in the last HIT_WINDOW seconds, their sum, the biggest one and the monster that dealt it, both as a percent of the maximum
+function H.deathRecord(list, now, d)
+	local hits, sum, big, bigBy = 0, 0, 0, nil
+	for _, h in ipairs(list or {}) do
+		if now - h.t <= H.HIT_WINDOW then
+			hits = hits + 1
+			sum = sum + h.damage
+			if h.damage > big then
+				big, bigBy = h.damage, h.by
+			end
+		end
+	end
+	local maxH = math.max(1, tonumber(d.maxHealth) or 1)
+	return {kind = "death", who = d.who, level = d.level, killer = d.killer or "?", t = now, maxHealth = maxH,
+		hits = hits, damage = sum, damagePct = math.floor(100 * sum / maxH), biggest = big,
+		biggestPct = math.floor(100 * big / maxH), biggestBy = bigBy or "?", online = d.online}
 end
 
 function H.xpAnomaly(level, gained)

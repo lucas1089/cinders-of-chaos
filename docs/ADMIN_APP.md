@@ -10,7 +10,7 @@ Visual escuro com dourado e brasa, nas cores do jogo e do site. Quatro abas emba
 | Aba | Para quê |
 |---|---|
 | Painel | Estado do servidor com selo colorido (no ar, parado, falhou, ligando, sem serviço), há quanto tempo está no ar, jogadores (toque: quem está online, com a classe), erros desde o último início (toque: abre os erros), memória e disco com barra, carga, último backup. Puxe para baixo para atualizar; atualiza sozinho a cada 30 s (muda em Config). Botões grandes: Ligar, Desligar, Salvar, Reiniciar, Reiniciar em… (1 a 15 min, com aviso aos jogadores), Backup. Os perigosos pedem confirmação; a resposta aparece num cartão, em português, com os detalhes escondidos e os botões **Copiar** e **Compartilhar** (uma resposta grande, como o log dos testers, vai como arquivo .txt para salvar ou anexar). Cartão **Atualizar servidor** (abaixo) |
-| Comandos | Ações rápidas: aviso para todos, expulsar, abrir e fechar o login, versão por tag (layout padrão), **Taxa de XP**, **Contas** (criar, trocar senha), **Saúde e espaço** (verificar, limpar sobras, ver backups), **Testers** (iniciar, parar, status, relatório, log das ações, apagar), **Site e update do client** (reinstalar o site, publicar o update de uma release). Painel do jogo: todos os comandos do painel de admin, por categoria, com busca e formulário (Chaos Coins: Store > Give Chaos Coins; grupo/GM: Players > Set group) |
+| Comandos | Ações rápidas: aviso para todos, expulsar, abrir e fechar o login, versão por tag (layout padrão), **Taxa de XP**, **Contas** (criar, trocar senha), **Saúde e espaço** (verificar, limpar sobras, ver backups), **Servidor como usuário chaos** (Ver, Corrigir, Corrigir e reiniciar, Log do reinício), **Testers** (iniciar, parar, status, relatório, log das ações, apagar), **Site e update do client** (reinstalar o site, publicar o update de uma release). Painel do jogo: todos os comandos do painel de admin, por categoria, com busca e formulário (Chaos Coins: Store > Give Chaos Coins; grupo/GM: Players > Set group) |
 | Logs | Console, Erros, Updates (servidor, publicação do client, instalação do site), GM e Terminal. GM: os logs de comando do staff (`data/logs/<nome> commands.log`, mais novo primeiro) e o registro do painel de admin (tabela `chaos_admin_log`), de todos ou de um membro do staff. Fonte monoespaçada, 50 a 500 linhas, Acompanhar (recarrega a cada 5 s), copiar. Erros: só desde o último início do servidor, linhas iguais juntas com a contagem (×56); "Incluir inícios anteriores" mostra os antigos, cada um com a data do início. "Limpar lista" (`errors clear`) zera a lista e o contador do Painel: só contam os erros novos; o log do servidor não é apagado. Terminal: qualquer comando na VPS, a pasta é guardada, botão `sudo -n` |
 | Config | Endereço, porta, usuário, caminho do chaos-ctl.sh, personagem admin, intervalo do painel. Chave: gerar, mostrar, copiar, compartilhar, copiar o comando de instalação. Impressão digital da VPS com o botão Esquecer. Testar conexão |
 
@@ -110,6 +110,17 @@ instalada é desconhecida: o passo 2 baixa a mais nova e, se o `tfs` for igual a
   disco e memória. Limpar mostra a lista e pede confirmação antes de apagar: pastas de trabalho de atualizações e
   publicações em `/var/tmp` com mais de um dia, pastas `srvNN` lá, `tfs.antes-*` além dos 2 mais novos,
   `config.lua.before-*` além dos 5 mais novos. Backups: lista os dumps e arquivos; restaurar continua sendo pela VPS.
+- **Servidor como usuário chaos** (`server-user status | fix [--restart 300] | rollback | log`; Comandos > Ações rápidas > cartão
+  Servidor como usuário chaos > Ver / Corrigir / Corrigir e reiniciar (5 min) / Log do reinício): o motor avisa "executed
+  as root user" quando a unidade do systemd roda o jogo como root. **Ver** mostra com que usuário o motor roda, o `User=` da
+  unidade, o dono das pastas e se o repositório continua só do root; não muda nada. **Corrigir** cria o usuário `chaos`
+  (sem login), passa a ele só as pastas que o jogo grava (no kit: server, database, run, logs, crashes e o chaos.env; nunca o
+  repositório), dá ao banco do kit o administrador `chaos` pelo socket, instala a unidade do layout certo com `User=chaos`
+  (a antiga fica em `/var/lib/chaos/server-user`) e confere com `systemd-analyze verify`; se algo falha, a unidade antiga
+  volta. Não reinicia: o motor segue como root até a unidade reiniciar (o salvamento diário não reinicia a unidade).
+  **Corrigir e reiniciar (5 min)** avisa os jogadores, para (salva), passa as pastas de novo, liga como chaos e confere; se
+  não subir como chaos, a unidade antiga volta e liga sozinha. Pode ser repetido. A atualização do servidor (Painel >
+  Atualizar servidor) avisa quando a unidade ainda roda como root. Detalhes: server/README.md "Server user (O271)".
 - **Testers** (`testers start N MINUTOS --restart 300`, com o botão **Iniciar testando a árvore** `testers start N MINUTOS --keystones --restart 300`, `testers stop`, `testers status`, `testers report`, `testers log 400`, `testers cleanup --yes`): os
   testers no servidor ao vivo (server/README.md "Tester bots"). Iniciar reinicia o servidor com 5 minutos de aviso
   só quando o ajudante de teste ainda não carregou. A chave fica em /etc/chaos/tester-client-key (criada pela VPS).
@@ -241,7 +252,8 @@ Os caminhos ficam em `/etc/chaos/ctl.conf` (dono root, sem escrita para grupo e 
 executado). Para o kit Linux em `/opt/chaos-trial`, como root:
 
     cp server/deploy/chaos-trial-server.service /etc/systemd/system/chaos-server.service
-    # troque User= e Group= pelo dono de /opt/chaos-trial (stat -c '%U %G' /opt/chaos-trial)
+    # deixe User=chaos e Group=chaos (nunca o dono de /opt/chaos-trial: se o root extraiu o kit, o jogo rodaria como root).
+    # Depois, no app: Comandos > Ações rápidas > Servidor como usuário chaos > Corrigir (cria o usuário e passa as pastas)
     /opt/chaos-trial/stop-server.sh        # se ele estiver rodando à mão
     systemctl daemon-reload && systemctl enable --now chaos-server
     mkdir -p /etc/chaos && cp server/deploy/ctl.conf.trial.example /etc/chaos/ctl.conf && chmod 644 /etc/chaos/ctl.conf

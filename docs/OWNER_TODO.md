@@ -109,6 +109,18 @@ each is under "Decided" with its reason. Left here: what needs the owner's own a
 - [ ] No `mock` provider in `payments.env`.
 - [ ] Behind a proxy, pass the real client address through to PHP. The register limit and the login lock use it.
 
+- [ ] **Game server as the system user `chaos`, not root** (the server log of the tester run 2026-10-27 says "executed as
+  root user"). Admin app: update the checkout first (Painel > Atualizar servidor > Aplicar e reiniciar), then Comandos >
+  Ações rápidas > card "Servidor como usuário chaos" > Ver (it should show "roda como root"), > Corrigir (nothing restarts),
+  then at a quiet moment "Corrigir e reiniciar (5 min)" (players are warned and disconnected; the server saves) or Painel >
+  Reiniciar em... . After it: Ver shows "Tudo certo", the log has no "executed as root user" after the new start, log in
+  with the client. The app needs recompiling once for the card. Shell fallback, as root on the VPS (the same commands, the
+  paths of the live kit):
+  `/opt/chaos/repo/server/deploy/chaos-ctl.sh server-user status`, then `... server-user fix` (or `... server-user fix
+  --restart 300`), then `... server-user log`. To go back: `... server-user rollback` and `systemctl restart chaos-server`.
+  Do not edit `User=` by hand to the owner of `/opt/chaos-trial` (that was the old step and is root). server/README.md
+  "Server user (O271)".
+
 ## Decided
 
 - Candlemarks (2026-10-15, server/README.md "Candlemarks"): the name stays Candlemarks (not "Vigil Coins": "Vigil" is

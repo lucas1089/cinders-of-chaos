@@ -167,6 +167,21 @@
 #   vps upgrade-log [N]         the last N lines (default 60, at most 500) of that log
 #   vps reboot MINUTES          reboots the machine in MINUTES (1 to 60): players are warned and the game is saved first
 #   vps reboot-cancel           cancels a planned reboot
+#   server-user [status]        key=value lines: the user the engine runs as (the unit's User= and the live process),
+#                               runs_as_root, whether the chaos user, the folder owners and the database admin are ready,
+#                               needs_fix, restart_needed. Changes nothing
+#   server-user fix [--restart SECONDS]
+#                               runs the game server as the system user chaos instead of root (the engine warns "executed
+#                               as root user"): creates the user when missing, chowns only the writable server folders
+#                               (kit: server/, database/, run/, logs/, crashes/ and chaos.env; repo layout: the server
+#                               folder; never the repo checkout, which must stay root-owned), gives the kit's database
+#                               its socket admin chaos, installs the unit of the layout the installed one has (the old unit is
+#                               kept in CHAOS_SERVER_USER_STATE), systemd-analyze verify, daemon-reload, and puts the old unit
+#                               back when a step fails. The engine keeps running as root until the unit restarts: --restart
+#                               SECONDS (30 to 900) warns the players, stops, chowns again, starts and checks the new user
+#                               (the old unit is back if it fails); without it, restart yourself (restart SECONDS)
+#   server-user rollback        puts the newest kept unit back and daemon-reload (no restart)
+#   server-user log [N]         the last N lines (default 60, at most 500) of the log of fix --restart
 #   services                    every chaos-* unit, one per line: NAME ACTIVE ENABLED (timers too)
 #   service NAME start|stop|restart
 #                               a chaos-* unit (NAME like chaos-helpai or chaos-backup.timer); the game server too
@@ -178,7 +193,8 @@
 # CHAOS_LOG /var/log/chaos/server.log, CHAOS_UPDATE_LOG /var/log/chaos/update.log, CHAOS_ADMIN_USER chaosadmin,
 # CHAOS_PID_FILE $CHAOS_ROOT/run/server.pid (the engine's pid, written by the Linux kit's start-server.sh),
 # CHAOS_DB_SOCKET (empty: TCP host/port of the env file), CHAOS_MYSQL (the client: mysql, mariadb or the kit's own),
-# CHAOS_BACKUP_DIR (else the env file's, else /var/backups/chaos). For publish-update: CHAOS_PUBLISH_LOG
+# CHAOS_BACKUP_DIR (else the env file's, else /var/backups/chaos). For server-user: CHAOS_SERVER_USER_STATE
+# /var/lib/chaos/server-user (the kept units), CHAOS_SERVER_USER_LOG /var/log/chaos/server-user.log. For publish-update: CHAOS_PUBLISH_LOG
 # /var/log/chaos/publish-update.log and, passed on to publish_client_update.sh (its defaults when unset), CHAOS_SITE_DIR,
 # CHAOS_UPDATE_KEY, CHAOS_UPDATE_PUBLIC, CHAOS_UPDATE_REPO, CHAOS_UPDATE_URL, CHAOS_WORK_DIR, and CHAOS_ENV (the update blobs are
 # encrypted with its CHAOS_CLIENT_KEY, which publish_client_update.sh reads from there). For the kit's update-*:
@@ -216,7 +232,8 @@ CHAOS_UPDATE_PUBLIC CHAOS_UPDATE_REPO CHAOS_UPDATE_URL CHAOS_WORK_DIR CHAOS_KIT_
 CHAOS_RELEASE_REPO CHAOS_KIT_STATE CHAOS_BOOT_TIMEOUT CHAOS_DL_DIR CHAOS_SITE_ENV CHAOS_SITE_LOG CHAOS_TESTER_KEY \
 CHAOS_TESTER_STATE CHAOS_TESTER_LOG CHAOS_VPS_LOG CHAOS_SPECTATE_PAIR CHAOS_SPECTATE_STATE CHAOS_PAIR_BRANCH \
 CHAOS_SPECTATE_LOG CHAOS_CAST_PORT CHAOS_SYSTEMD_DIR CHAOS_AREAS_STATE CHAOS_STAGING CHAOS_CACHE_DIR \
-CHAOS_DISCORD_ENV CHAOS_DISCORD_LOG CHAOS_DISCORD_USER CHAOS_DISCORD_GROUP CHAOS_LOGROTATE_FILE "
+CHAOS_DISCORD_ENV CHAOS_DISCORD_LOG CHAOS_DISCORD_USER CHAOS_DISCORD_GROUP CHAOS_LOGROTATE_FILE \
+CHAOS_SERVER_USER_STATE CHAOS_SERVER_USER_LOG "
 declare -A CFG=()
 # KEY=VALUE, optional "" or '' around the value, # comments; a value is a path or a unit name (no spaces, no $ or `)
 read_conf() {
@@ -285,6 +302,8 @@ SPSTATE=$(setting CHAOS_SPECTATE_STATE /var/lib/chaos/spectate)
 SPBRANCH=$(setting CHAOS_PAIR_BRANCH windows-assets)
 SPLOG=$(setting CHAOS_SPECTATE_LOG /var/log/chaos/spectate-pair.log)
 SYSD=$(setting CHAOS_SYSTEMD_DIR /etc/systemd/system)
+SUSTATE=$(setting CHAOS_SERVER_USER_STATE /var/lib/chaos/server-user)
+SULOG=$(setting CHAOS_SERVER_USER_LOG /var/log/chaos/server-user.log)
 if [ -z "$MYSQL" ]; then
   for c in mysql mariadb "$ROOT/mariadb/bin/mariadb"; do
     command -v "$c" >/dev/null 2>&1 && { MYSQL=$c; break; }
@@ -314,6 +333,206 @@ engine_pid() {
 }
 
 num() { case ${1:-} in ''|*[!0-9]*) return 1 ;; esac; }
+
+# ---- server-user: the game server runs as the system user chaos, not root (the engine warns about root)
+# the environment may name another user (tests); sudo drops it, so the app always gets chaos
+SUSER=${CHAOS_SERVER_USER:-chaos}
+if ! [[ $SUSER =~ ^[a-z_][a-z0-9_-]{0,30}$ ]] || [ "$SUSER" = root ]; then die "bad CHAOS_SERVER_USER"; fi
+unit_prop() { systemctl show "$UNIT" -p "$1" --value 2>/dev/null || true; }
+# systemd runs a unit without User= as root; a numeric 0 is root as well
+unit_user() { local u; u=$(unit_prop User); case $u in ''|0) u=root ;; esac; printf '%s' "$u"; }
+proc_user() { ps -o user:32= -p "$1" 2>/dev/null | tr -d ' ' || true; }
+# the engine's pid, else the unit's main process
+run_pid() {
+  local p
+  if p=$(engine_pid); then echo "$p"; return 0; fi
+  p=$(unit_prop MainPID)
+  num "$p" && [ "$p" != 0 ] && [ -d "/proc/$p" ] || return 1
+  echo "$p"
+}
+sulog() { printf '[%s] %s\n' "$(date '+%F %T')" "$*"; }
+# the unit file as installed; the layout it belongs to (kit: starts start-server.sh; repo: starts tfs itself)
+su_layout_of() { if grep -q 'start-server\.sh' "$1" 2>/dev/null; then echo kit; else echo repo; fi; }
+# the unit of the repository for this layout with User= and Group= set to chaos (and the kit folder if not /opt/chaos-trial)
+su_render() {
+  local src
+  if [ -n "$KIT" ]; then src="$REPO/server/deploy/chaos-trial-server.service"; else src="$REPO/server/deploy/chaos-server.service"; fi
+  [ -f "$src" ] || return 1
+  if [ -n "$KIT" ]; then
+    sed -e "s|/opt/chaos-trial|${KIT%/}|g" -e "s|^User=.*|User=$SUSER|" -e "s|^Group=.*|Group=$SUSER|" "$src"
+  else
+    sed -e "s|^User=.*|User=$SUSER|" -e "s|^Group=.*|Group=$SUSER|" "$src"
+  fi
+}
+# the folders the service writes: everything else (the checkout, the binaries) stays root-owned
+su_targets() {
+  local d
+  [ -d "$SERVER" ] && echo "$SERVER"
+  if [ -n "$KIT" ]; then
+    for d in database run logs crashes; do [ -d "${KIT%/}/$d" ] && echo "${KIT%/}/$d"; done
+  fi
+  return 0
+}
+su_envfile() { if [ -n "$KIT" ] && [ -f "$ENVFILE" ] && [ "$(dirname -- "$ENVFILE")" = "${KIT%/}" ]; then echo "$ENVFILE"; fi; return 0; }
+# the checkout must stay root-owned: not owned by chaos, no write for group or others (the ExecStopPost guard of chaos-server.service)
+su_repo_ok() {
+  local p u g m
+  for p in "$REPO" "$REPO/server" "$REPO/server/tools" "$REPO/server/deploy"; do
+    [ -d "$p" ] || return 1
+    read -r u g m < <(stat -L -c '%U %G %a' "$p") || return 1
+    [ "$u" != "$SUSER" ] && [ "$g" != "$SUSER" ] && (( (8#$m & 8#022) == 0 )) || return 1
+  done
+  return 0
+}
+# 0 when the checkout and one of the folders to chown contain each other
+su_overlap() {
+  local r t
+  r=$(readlink -f -- "$REPO")
+  while IFS= read -r t; do
+    t=$(readlink -f -- "$t")
+    case "$r/" in "$t"/*) return 0 ;; esac
+    case "$t/" in "$r"/*) return 0 ;; esac
+  done
+  return 1
+}
+su_foreign() {  # number of entries of the writable folders not owned by chaos (-1: the user does not exist yet)
+  local t n=0 c
+  getent passwd "$SUSER" >/dev/null 2>&1 || { echo -1; return 0; }
+  while IFS= read -r t; do
+    c=$(find "$t" -printf '%u\n' 2>/dev/null | grep -v -x -c -- "$SUSER" || true)
+    n=$((n + c))
+  done < <(su_targets)
+  echo "$n"
+}
+su_chown() {
+  local t f
+  while IFS= read -r t; do
+    chown -R -h "$SUSER:$SUSER" -- "$t" || return 1
+  done < <(su_targets)
+  f=$(su_envfile)
+  [ -z "$f" ] || chown -h "$SUSER" -- "$f" || return 1
+  return 0
+}
+su_db_sock() {
+  local s=""
+  [ -r "$KIT/run/socket.txt" ] && s=$(head -n 1 "$KIT/run/socket.txt" | tr -d '\r')
+  printf '%s' "${s:-$KIT/run/mariadb.sock}"
+}
+# the database admin is the system user that first started the kit (the owner of database/, root for a root unit), over the
+# socket (unix_socket authentication): run as that user
+su_db_q() {
+  local o
+  o=$(stat -c %U "$KIT/database" 2>/dev/null) || return 1
+  if [ "$o" = root ]; then
+    "$MYSQL" --no-defaults --socket="$(su_db_sock)" -u root -N -B -e "$1"
+  else
+    runuser -u "$o" -- "$MYSQL" --no-defaults --socket="$(su_db_sock)" -u "$o" -N -B -e "$1"
+  fi
+}
+# kit only: yes, no, unknown (database down) or n/a. The kit's start-server.sh is its own database admin over the socket.
+su_db_admin() {
+  local n
+  [ -n "$KIT" ] || { echo n/a; return 0; }
+  [ "$(stat -c %U "$KIT/database" 2>/dev/null)" = "$SUSER" ] && { echo yes; return 0; }
+  n=$(su_db_q "SELECT COUNT(*) FROM mysql.user WHERE user='$SUSER' AND host='localhost' AND plugin='unix_socket'" 2>/dev/null) \
+    || { echo unknown; return 0; }
+  [ "$n" = 0 ] && echo no || echo yes
+}
+su_backups() { find "$SUSTATE" -maxdepth 1 -name "$UNIT.service.before-*" 2>/dev/null | sort; }
+su_status() {
+  local uuser ugroup p euser who ufile layout unitcur foreign owner repo db needs restart user_ok backup
+  ufile="$SYSD/$UNIT.service"
+  uuser=$(unit_user)
+  ugroup=$(unit_prop Group)
+  p=$(run_pid) || p=""
+  euser=""
+  [ -z "$p" ] || euser=$(proc_user "$p")
+  who=${euser:-$uuser}
+  layout=repo; [ -n "$KIT" ] && layout=kit
+  unitcur=unknown
+  if [ -f "$ufile" ] && su_render >/dev/null 2>&1; then
+    if cmp -s "$ufile" <(su_render); then unitcur=yes; else unitcur=no; fi
+  fi
+  getent passwd "$SUSER" >/dev/null 2>&1 && user_ok=yes || user_ok=no
+  foreign=$(su_foreign)
+  owner=$(stat -c %U "$SERVER" 2>/dev/null || echo "")
+  su_repo_ok && repo=yes || repo=no
+  db=$(su_db_admin)
+  backup=no; [ -n "$(su_backups)" ] && backup=yes
+  needs=no
+  { [ "$uuser" != "$SUSER" ] || [ "$user_ok" = no ] || [ "$foreign" != 0 ] || [ "$db" = no ]; } && needs=yes
+  restart=no
+  [ -n "$p" ] && [ "$euser" != "$SUSER" ] && restart=yes
+  echo "unit=$UNIT"
+  echo "layout=$layout"
+  echo "unit_file=$ufile"
+  echo "unit_user=$uuser"
+  echo "unit_group=${ugroup:-root}"
+  echo "unit_current=$unitcur"
+  echo "engine_pid=$p"
+  echo "engine_user=$euser"
+  echo "runs_as_root=$([ "$who" = root ] && echo yes || echo no)"
+  echo "target_user=$SUSER"
+  echo "user_exists=$user_ok"
+  echo "server_dir=$SERVER"
+  echo "server_owner=$owner"
+  echo "foreign_files=$foreign"
+  echo "repo_root_owned=$repo"
+  echo "db_admin=$db"
+  echo "unit_backup=$backup"
+  echo "needs_fix=$needs"
+  echo "restart_needed=$restart"
+}
+# put the newest kept unit back (or the one named); the caller reloads
+su_restore() {
+  local ufile="$SYSD/$UNIT.service" b=${1:-}
+  [ -n "$b" ] || b=$(su_backups | tail -n 1)
+  [ -n "$b" ] && [ -f "$b" ] || return 1
+  cp -p -- "$b" "$ufile.restore.$$" && mv -f -- "$ufile.restore.$$" "$ufile"
+}
+# fix --restart: the detached part. Warn, stop (the engine saves), chown again (files the root engine wrote meanwhile), start,
+# check the new user; the old unit goes back if the engine does not come up as chaos.
+su_restart_impl() {
+  local secs=$1 b ok=0 p
+  b=$(cat "$SUSTATE/pending-backup" 2>/dev/null || true)
+  sulog "restart as $SUSER in $secs s (old unit kept as ${b:-none})"
+  if [ "$secs" -gt 60 ]; then
+    CHAOS_CTL_NO_SUDO=1 "$SELF" broadcast "The server restarts in $secs seconds. Please log out." >/dev/null 2>&1 || true
+    sleep $((secs - 30))
+    CHAOS_CTL_NO_SUDO=1 "$SELF" broadcast "The server restarts in 30 seconds. Please log out." >/dev/null 2>&1 || true
+    sleep 30
+  else
+    CHAOS_CTL_NO_SUDO=1 "$SELF" broadcast "The server restarts in $secs seconds. Please log out." >/dev/null 2>&1 || true
+    sleep "$secs"
+  fi
+  systemctl stop "$UNIT" || sulog "stop returned an error"
+  if ! su_chown; then
+    sulog "FAIL: chown after the stop failed; starting the old unit"
+    su_restore "$b" && systemctl daemon-reload
+    systemctl start "$UNIT"
+    sulog "RESULT rolled-back: chown failed"
+    return 1
+  fi
+  systemctl start "$UNIT" || sulog "start returned an error"
+  for _ in $(seq 1 60); do
+    if systemctl is-active --quiet "$UNIT" && p=$(run_pid) && [ "$(proc_user "$p")" = "$SUSER" ]; then ok=1; break; fi
+    sleep 5
+  done
+  if [ "$ok" = 1 ]; then
+    sulog "the server runs as $SUSER (pid $p)"
+    sulog "RESULT ok: the server runs as $SUSER"
+    return 0
+  fi
+  sulog "FAIL: the server did not come up as $SUSER in 300 s (systemctl status $UNIT; journalctl -u $UNIT -n 50)"
+  if su_restore "$b"; then
+    systemctl daemon-reload
+    systemctl restart "$UNIT"
+    sulog "RESULT rolled-back: the old unit is back and started (the server runs as root again)"
+  else
+    sulog "RESULT failed: no kept unit to put back"
+  fi
+  return 1
+}
 lines_arg() {
   local n=${1:-60}
   num "$n" || die "N must be a number"
@@ -589,6 +808,8 @@ case $cmd in
     echo "service=$(systemctl is-active "$UNIT" 2>/dev/null || true)"
     echo "since=$(systemctl show "$UNIT" -p ActiveEnterTimestamp --value 2>/dev/null || true)"
     echo "pid=$(engine_pid || true)"
+    ep=""; if p=$(run_pid); then ep=$(proc_user "$p"); fi
+    echo "engine_user=$ep"
     echo "players=$( (mysql_q 'SELECT COUNT(*) FROM players_online') 2>/dev/null || echo '?')"
     echo "load=$(cut -d' ' -f1-3 /proc/loadavg)"
     echo "mem=$(free -m | awk '/^Mem:/ {printf "%d/%d MB", $3, $2}')"
@@ -979,6 +1200,9 @@ print(s.strip()[:200].encode("utf-8").hex())') || die "could not read the note"
     [ "$cmd" = update-rollback ] && sub=rollback
     [ "$cmd" = update-downloads ] && sub=downloads
     setsid env "${kenv[@]}" "$kup" "$sub" "${kargs[@]}" >> "$ULOG" 2>&1 < /dev/null &
+    if [ "$cmd" = update-apply ] && [ "$(unit_user)" = root ]; then
+      echo "warning: the unit $UNIT runs the server as root (the engine warns about it): chaos-ctl.sh server-user fix" >&2
+    fi
     echo "started ($cmd ${kargs[*]}); follow it with: chaos-ctl.sh update-log"
     ;;
   update-status)
@@ -1475,6 +1699,167 @@ print("pbkdf2-sha256$%d$%s$%s" % (n, base64.b64encode(salt).decode(), base64.b64
         fi
         ;;
     esac
+    ;;
+  server-user)
+    sub=${1:-status}
+    [ $# -gt 0 ] && shift
+    case $sub in
+      status)
+        [ $# -eq 0 ] || die "server-user status"
+        need_unit
+        su_status
+        ;;
+      log)
+        [ $# -le 1 ] || die "server-user log [N]"
+        [ -f "$SULOG" ] || { echo "(no log yet: $SULOG)"; exit 0; }
+        tail -n "$(lines_arg "${1:-60}")" "$SULOG" 2>&1
+        ;;
+      rollback)
+        [ $# -eq 0 ] || die "server-user rollback"
+        need_unit
+        su_restore || die "no-backup: no kept unit in $SUSTATE"
+        systemctl daemon-reload
+        echo "the old unit is back ($(su_backups | tail -n 1)); the server keeps its user until the next restart"
+        echo "RESULT ok: restart the server to run it as before (restart SECONDS)"
+        ;;
+      fix)
+        again=0
+        case $#:${1:-} in
+          0:) ;;
+          2:--restart)
+            again=$2
+            { num "$again" && [ "${#again}" -le 3 ] && [ "$again" -ge 30 ] && [ "$again" -le 900 ]; } \
+              || die "server-user fix --restart SECONDS (30 to 900)"
+            ;;
+          *) die "server-user fix [--restart SECONDS]" ;;
+        esac
+        need_unit
+        ufile="$SYSD/$UNIT.service"
+        { [ -f "$ufile" ] && [ ! -L "$ufile" ]; } || die "unit-file-not-found: $ufile is not a plain file (CHAOS_SYSTEMD_DIR, CHAOS_UNIT)"
+        mkdir -p "$SUSTATE" || die "cannot create $SUSTATE"
+        chmod 0700 "$SUSTATE"
+        exec 8>"$SUSTATE/.lock"
+        flock -n 8 || die "server-user-running: another server-user fix is running"
+        # the layout is the installed unit's: the wrong unit stops the server, so a settings mismatch stops here
+        have=$(su_layout_of "$ufile"); want=repo; [ -n "$KIT" ] && want=kit
+        [ "$have" = "$want" ] \
+          || die "layout-mismatch: $ufile starts the $have layout, the settings (CHAOS_KIT_DIR / CHAOS_ROOT in $CONF) say $want; nothing changed"
+        if [ "$want" = repo ] && [ "${ROOT%/}" != /opt/chaos ]; then
+          die "layout-unsupported: the repo unit is written for /opt/chaos, not $ROOT; install it by hand (server/README.md, Server user)"
+        fi
+        su_render >/dev/null || die "no-unit-template: $REPO/server/deploy has no unit for the $want layout (CHAOS_REPO)"
+        su_repo_ok || die "repo-not-root-owned: $REPO, server/, server/tools or server/deploy is owned by $SUSER or writable by group or others; fix that first (chown root:root, chmod go-w). Nothing changed"
+        [ -d "$SERVER" ] || die "no server folder $SERVER"
+        while IFS= read -r t; do
+          [ ! -L "$t" ] || die "a symbolic link in the way: $t; nothing changed"
+        done < <(su_targets)
+        if su_targets | su_overlap; then die "the checkout $REPO and a folder to chown contain each other; nothing changed"; fi
+        if [ "$want" = kit ]; then
+          km=$(stat -c %a "$KIT" 2>/dev/null || echo 0)
+          (( (8#$km & 1) != 0 )) || die "kit-not-traversable: $KIT is mode $km; $SUSER cannot enter it (chmod o+x $KIT)"
+        fi
+        uuser=$(unit_user)
+        changed=no
+        # 0. the new unit, rendered and verified before anything is touched
+        vdir=$(mktemp -d "$SUSTATE/verify.XXXXXX") || die "cannot create a folder in $SUSTATE"
+        trap 'rm -rf "$vdir"' EXIT
+        tmpu="$vdir/$UNIT.service"
+        su_render > "$tmpu" || die "cannot render the unit"
+        if command -v systemd-analyze >/dev/null 2>&1; then
+          vout=$(systemd-analyze verify "$tmpu" 2>&1); vrc=$?
+          vout=$(printf '%s\n' "$vout" | grep -v -E 'Failed to create|Access denied|^$' || true)
+          if [ "$vrc" -ne 0 ] && [ -n "$vout" ]; then
+            printf '%s\n' "$vout" | head -n 5 >&2
+            die "unit-verify-failed: systemd-analyze verify refused the new unit; nothing changed"
+          fi
+        else
+          echo "unit: systemd-analyze is not installed, the new unit is not verified" >&2
+        fi
+        # 1. the system user
+        if getent passwd "$SUSER" >/dev/null 2>&1; then
+          [ "$(id -u "$SUSER" 2>/dev/null || echo 1)" != 0 ] || die "user $SUSER has uid 0; refused"
+          echo "user: $SUSER exists"
+        else
+          getent group "$SUSER" >/dev/null 2>&1 && gopt=(--gid "$SUSER") || gopt=(--user-group)
+          useradd --system "${gopt[@]}" --home-dir /var/lib/chaos --no-create-home --shell /usr/sbin/nologin "$SUSER" \
+            || die "cannot create the user $SUSER; nothing else changed"
+          echo "user: $SUSER created"
+          changed=yes
+        fi
+        # 2. the kit's database: its admin is the system user the server runs as (start-server.sh, unix_socket)
+        if [ "$want" = kit ]; then
+          dbs=$(su_db_admin)
+          case $dbs in
+            yes) echo "database: socket admin $SUSER already there" ;;
+            unknown)
+              command -v "$MYSQL" >/dev/null 2>&1 || die "mysql-not-found: no database client $MYSQL (set CHAOS_MYSQL in $CONF); nothing changed"
+              die "database-down: the kit's database does not answer on its socket $(su_db_sock); start the server first (it runs as the old user now). Nothing changed" ;;
+            *)
+              su_db_q "CREATE USER IF NOT EXISTS '$SUSER'@'localhost' IDENTIFIED VIA unix_socket;
+                ALTER USER '$SUSER'@'localhost' IDENTIFIED VIA unix_socket;
+                GRANT ALL PRIVILEGES ON *.* TO '$SUSER'@'localhost' WITH GRANT OPTION;" >/dev/null \
+                || die "cannot give the database admin to $SUSER; nothing else changed"
+              echo "database: socket admin $SUSER ready"
+              changed=yes ;;
+          esac
+        fi
+        # 3. the writable folders
+        foreign=$(su_foreign)
+        if [ "$foreign" != 0 ] || [ "$uuser" != "$SUSER" ]; then
+          su_chown || die "chown failed; nothing else changed (root can still run the server)"
+          echo "folders owned by $SUSER: $(su_targets | tr '\n' ' ')$(su_envfile)"
+          changed=yes
+        else
+          echo "folders: already owned by $SUSER"
+        fi
+        # 4. the unit
+        if [ "$uuser" = "$SUSER" ]; then
+          echo "unit: User=$SUSER already, left as it is"
+          rm -f "$SUSTATE/pending-backup"
+        else
+          bak="$SUSTATE/$UNIT.service.before-$(date +%Y%m%d-%H%M%S)"
+          cp -p -- "$ufile" "$bak" || die "cannot keep the old unit in $SUSTATE"
+          printf '%s\n' "$bak" > "$SUSTATE/pending-backup"
+          if ! cp -- "$tmpu" "$ufile.new.$$" || ! chmod 0644 "$ufile.new.$$" || ! mv -f -- "$ufile.new.$$" "$ufile"; then
+            rm -f "$ufile.new.$$"; die "cannot write $ufile; the old unit is untouched"
+          fi
+          systemctl daemon-reload
+          if [ "$(unit_user)" != "$SUSER" ]; then
+            su_restore "$bak" && systemctl daemon-reload
+            die "unit-user-not-applied: systemd still reports User=$(unit_user) (a drop-in in $ufile.d?); the old unit is back"
+          fi
+          echo "unit: installed $ufile with User=$SUSER (the old one: $bak)"
+          changed=yes
+          # keep the newest 5 old units
+          su_backups | head -n -5 | while IFS= read -r o; do rm -f -- "$o"; done
+        fi
+        # 5. the restart
+        p=$(run_pid) || p=""
+        if [ -z "$p" ]; then
+          echo "restart: the server is not running; it starts as $SUSER"
+        elif [ "$(proc_user "$p")" = "$SUSER" ]; then
+          echo "restart: not needed (the server runs as $SUSER)"
+        elif [ "$again" != 0 ]; then
+          : >> "$SULOG" 2>/dev/null || mkdir -p "$(dirname "$SULOG")"
+          exec 8>&-
+          setsid "$SELF" server-user-impl "$again" >> "$SULOG" 2>&1 < /dev/null &
+          echo "restart: in $again seconds, as $SUSER (follow it with: chaos-ctl.sh server-user log)"
+        else
+          echo "restart: needed. The engine runs as $(proc_user "$p") until the unit restarts (the daily save restarts only the engine, not the unit): chaos-ctl.sh restart 300"
+        fi
+        if [ "$changed" = yes ]; then echo "RESULT ok: prepared"; else echo "RESULT ok: nothing to change"; fi
+        ;;
+      *) die "server-user [status | fix [--restart SECONDS] | rollback | log [N]]" ;;
+    esac
+    ;;
+  server-user-impl)
+    # the detached part of server-user fix --restart SECONDS
+    { num "${1:-}" && [ "$1" -ge 30 ] && [ "$1" -le 900 ]; } || die "server-user-impl SECONDS (30 to 900)"
+    mkdir -p "$SUSTATE"
+    exec 8>"$SUSTATE/.lock"
+    flock -w 5 8 || die "server-user-running"
+    su_restart_impl "$1"
+    exit $?
     ;;
   vps)
     sub=${1:-info}

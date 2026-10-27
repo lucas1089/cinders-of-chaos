@@ -226,6 +226,7 @@ final class CommandsTab {
         buildAccounts();
         buildDiscord();
         buildHealth();
+        buildServerUser();
         buildVps();
         buildServices();
         buildTesters();
@@ -846,6 +847,71 @@ final class CommandsTab {
         }));
         b.addView(backups, ui.gap(4));
         quick.addView(c, ui.gap(10));
+    }
+
+    // the game server as the system user chaos instead of root (chaos-ctl.sh server-user status | fix; server/README.md
+    // "Server user")
+    private void buildServerUser() {
+        MaterialCardView c = ui.titledCard("Servidor como usuário chaos");
+        LinearLayout b = Ui.body(c);
+        TextView now = ui.text(ServerUserInfo.summary(""));
+        b.addView(now);
+        b.addView(ui.hint("O motor avisa no log \"executed as root user\" quando o jogo roda como root. Corrigir cria o "
+                + "usuário chaos, passa a ele só as pastas que o jogo grava (saves, banco do kit, logs), instala a unidade "
+                + "com User=chaos (a antiga fica guardada) e confere. O repositório continua do root. O servidor só passa a "
+                + "rodar como chaos depois de reiniciar a unidade."), ui.gap(4));
+        MaterialButton see = ui.secondary("Ver", R.drawable.ic_refresh);
+        see.setOnClickListener(v -> serverUserStatus(now, true));
+        MaterialButton log = ui.secondary("Log do reinício", R.drawable.ic_nav_logs);
+        log.setOnClickListener(v -> ctl("Log do reinício", "server-user log 60", 30, null));
+        b.addView(ui.evenRow(see, log), ui.gap(8));
+        MaterialButton fix = ui.primary("Corrigir", 0);
+        fix.setOnClickListener(v -> a.confirm("Passar o servidor para o usuário chaos?", "Cria o usuário chaos (se faltar), "
+                + "passa a ele as pastas que o jogo grava e instala a unidade com User=chaos. A unidade antiga fica "
+                + "guardada em /var/lib/chaos/server-user e volta sozinha se algo falhar. O servidor NÃO reinicia agora: "
+                + "ele segue como root até você reiniciar (Corrigir e reiniciar, ou Painel > Reiniciar em...).",
+                "Corrigir", false, () -> serverUserFix("server-user fix", now)));
+        MaterialButton fixRestart = ui.danger("Corrigir e reiniciar (5 min)", R.drawable.ic_restart);
+        fixRestart.setOnClickListener(v -> a.confirm("Corrigir e reiniciar em 5 minutos?", "Faz o Corrigir e avisa os "
+                + "jogadores. Em 5 minutos o servidor para (salva), passa as pastas de novo, liga como chaos e confere. "
+                + "Os jogadores são desconectados. Se não subir como chaos, a unidade antiga volta e liga sozinha. "
+                + "Acompanhe com Log do reinício e Ver.", "Corrigir e reiniciar", true,
+                () -> serverUserFix("server-user fix --restart 300", now)));
+        b.addView(ui.evenRow(fix, fixRestart), ui.gap(4));
+        quick.addView(c, ui.gap(10));
+    }
+
+    /** server-user status: the summary of the card. */
+    private void serverUserStatus(TextView now, boolean showResult) {
+        if (!a.store.configured()) {
+            a.snack("Configure o servidor na aba Config.", false);
+            return;
+        }
+        a.ctlAction("server-user status", 40, f -> {
+            if (!f.ok) {
+                result.show("Servidor como chaos", f);
+                return;
+            }
+            now.setText(ServerUserInfo.summary(f.raw));
+            if (showResult) {
+                result.show("Servidor como chaos", Friendly.ok("Feito", ServerUserInfo.summary(f.raw), f.raw));
+            }
+        });
+    }
+
+    private void serverUserFix(String args, TextView now) {
+        if (!a.store.configured()) {
+            a.snack("Configure o servidor na aba Config.", false);
+            return;
+        }
+        result.running("Servidor como chaos");
+        a.ctlAction(args, 240, f -> {
+            result.show("Servidor como chaos", f.ok ? Friendly.ok("Feito", ServerUserInfo.fixSummary(f.raw), f.raw) : f);
+            a.snack("Servidor como chaos: " + (f.ok ? "feito" : f.title), f.ok);
+            if (f.ok) {
+                serverUserStatus(now, false);
+            }
+        });
     }
 
     // the site and the client update on their own

@@ -24,6 +24,7 @@ NAME_KEYS = {'name', 'player', 'target', 'receiver', 'to', 'member', 'cid', 'who
 # never sent at all, whatever an answer held: gifts, money of real payments, creator codes
 # (a guid or owner from an answer is another character: a like or a visit would reach a real player)
 NEVER_KEYS = {'gift', 'cents', 'method', 'creator', 'code', 'price', 'confirm', 'owner', 'guid', 'pid', 'player_id'}
+NPC_CHANNEL = 12  # TALKTYPE_PRIVATE_PN: words to the NPC in focus
 PAUSE = 1.5  # seconds between the steps of a scenario
 WEIGHTS = {'opcode': 7, 'place': 2, 'npc': 2, 'rift': 1}
 FILE_RE = re.compile(r'data/scripts/chaos/([\w/]+\.lua)')
@@ -101,10 +102,46 @@ class Scenarios:
         names = [b.name for b in others.values() if b is not bot] or [bot.name]
         return self.rand.choice(names)
 
+    def near(self, bot):
+        """the 3 x 3 tiles around the bot, [[x, y, z], ...]: its hunt spot (the scenarios end there) or its login spot"""
+        for kind in ('hunt', 'info'):
+            p = (getattr(bot, 'helper', {}).get(kind) or {}).get('pos')
+            if isinstance(p, dict) and all(isinstance(p.get(k), int) for k in 'xyz'):
+                return [[p['x'] + dx, p['y'] + dy, p['z']] for dx in (-1, 0, 1) for dy in (-1, 0, 1)]
+        return None
+
+    def pile(self, bot, num):
+        """groundLoot tip / raise: an item of a pile the bot's own 'look' was answered with, as the client asks for it"""
+        for msg in reversed(self.answers.get(bot.name, {}).get(num, [])):
+            for tile in ((msg.get('data') or {}).get('t') or []) if msg.get('action') == 'tiles' else []:
+                for row in (tile.get('i') or []):
+                    if isinstance(tile.get('p'), dict) and isinstance(row.get('s'), int) and isinstance(row.get('id'), int):
+                        data = {'p': tile['p'], 's': row['s'], 'id': row['id']}
+                        for k in ('c', 'iid'):
+                            if row.get(k) is not None:
+                                data[k] = row[k]
+                        return data
+        return None
+
     def payload(self, bot, num, action, others):
+        """the JSON of a request, or None when the bot cannot build one (nothing seen to ask about)"""
         name, e = self.opcodes[num]
         seen = self.answers.get(bot.name, {}).get(num, [])
+        hint = (e.get('hints') or {}).get(action)
+        if hint is not None:  # data no answer carries (gen_tester_scenarios.py HINTS)
+            data = json.loads(json.dumps(hint))
+            for k, v in list(data.items()):
+                if v == '$near':
+                    data[k] = self.near(bot)
+                    if data[k] is None:
+                        return None
+            return json.dumps({'action': action, 'data': data}, separators=(',', ':'))
+        if name == 'groundLoot' and action in ('tip', 'raise'):
+            data = self.pile(bot, num)
+            return json.dumps({'action': action, 'data': data}, separators=(',', ':')) if data else None
         data = {}
+        for key in e.get('flags', []):  # an on / off switch (gen_tester_scenarios.py FLAGS)
+            data[key] = True
         for key, values in sorted((e.get('sub') or {}).items()):  # a sub-action (the stash's make): one of them
             if values:
                 data[key] = self.rand.choice(values)
@@ -152,8 +189,9 @@ class Scenarios:
             npc = self.rand.choice(self.npcs)
             words = list(npc.get('keywords') or [])
             say = self.rand.sample(words, min(2, len(words)))
+            # after "hi" the NPC has the player in focus and hears keywords only in the NPC channel ('npc' steps)
             return ([('say', '!tester enter npc ' + npc['npc']), ('check', 'npc:' + npc['npc']), ('say', 'hi')]
-                    + [('say', w) for w in say] + [('say', 'bye'), ('say', '!tester hunt')])
+                    + [('npc', w) for w in say] + [('npc', 'bye'), ('say', '!tester hunt')])
         tier = self.rand.randint(1, 5)
         return [('say', '!tester enter rift %d' % tier), ('check', 'place:rift'), ('usekey',)]
 
@@ -168,13 +206,21 @@ class Scenarios:
             _, num, action = step
             name = self.opcodes[num][0]
             key = self.system_of(name)
+            body = self.payload(bot, num, action, others)
+            if body is None:
+                return  # nothing to ask about yet (a pile in view): not a request, not counted
             c = self.cov(bot, key)
             c['tried'] += 1
             c['actions'][action] = c['actions'].get(action, 0) + 1
-            self.pending[(bot.name, num)] = (key, action)
-            send_ext(num, self.payload(bot, num, action, others))
+            if action in (self.opcodes[num][1].get('silent') or {}):
+                c['ok'] += 1  # the server answers nothing by design (gen_tester_scenarios.py SILENT)
+            else:
+                self.pending[(bot.name, num)] = (key, action)
+            send_ext(num, body)
         elif kind == 'say':
             say(step[1])
+        elif kind == 'npc':
+            say(step[1], NPC_CHANNEL)
         elif kind == 'check':
             # the helper's answer to the enter said a step ago
             c = self.cov(bot, step[1])
@@ -198,7 +244,9 @@ class Scenarios:
         p = self.pending.pop((bot.name, op), None)
         if p:
             c = self.cov(bot, p[0])
-            c['refused' if is_refusal(msg) else 'ok'] += 1
+            refuses = (self.opcodes.get(op, (None, {}))[1].get('refuses') or {})
+            # a refusal the table lists is the right answer (a window the bots cannot have open)
+            c['refused' if is_refusal(msg) and p[1] not in refuses else 'ok'] += 1
 
 
 def attach(a, path):

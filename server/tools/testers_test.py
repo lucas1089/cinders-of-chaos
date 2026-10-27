@@ -68,9 +68,30 @@ eq(TC.xp_anomaly(100, 5000), None, 'normal xp')
 eq(TC.gold_anomaly(100, -1), 'negative gold', 'negative gold')
 eq(TC.gold_anomaly(100, 10 ** 9), 'absurd gold in one corpse', 'absurd gold')
 eq(TC.gold_anomaly(100, 300), None, 'normal gold')
-eq(TC.health_anomaly(100, 0, True), 'death within one hit from full health', 'one hit from full')
-eq(TC.health_anomaly(60, 0, True), None, 'a death after damage')
-eq(TC.health_anomaly(100, 70, False), None, 'a hit')
+eq(TC.health_anomaly(100, 0, True, 0.1), 'death within one hit from full health', 'one hit from full')
+eq(TC.health_anomaly(100, 0, True), None, 'no health ever seen (age unknown): the 100 is the start value, no anomaly')
+eq(TC.health_anomaly(100, 0, True, 0.1, seen=False), None, 'not seen: none')
+eq(TC.health_anomaly(100, 0, True, 12.0), None, 'full health seen 12 s ago says nothing about the last hit')
+eq(TC.health_anomaly(60, 0, True, 0.1), None, 'a death after damage')
+eq(TC.health_anomaly(100, 70, False, 0.1), None, 'a hit')
+eq(TC.health_anomaly(100, 0, False, 0.1), 'death within one hit from full health', 'the update to 0 %')
+
+# where a tester hunts: the whole band, in hunting levels (twice the pool level the marks print), at or under the level
+HUNTS = [(1, 10, 1, 1, 7), (10, 20, 2, 2, 7), (20, 30, 3, 3, 7), (20, 90, 4, 4, 7), (40, 60, 5, 5, 7), (1, 20, 6, 6, 7)]
+eq([h[:2] for h in TC.safe_hunts(HUNTS, 30)], [(1, 10)], 'level 30: bands up to 15 (not 20-30, not 20-90)')
+eq([h[:2] for h in TC.safe_hunts(HUNTS, 45)], [(10, 20), (1, 20)], 'level 45: bands up to 22, the highest ones')
+eq([h[:2] for h in TC.safe_hunts(HUNTS, 100)], [(20, 30)], 'level 100: up to 50, the highest top')
+eq([h[:2] for h in TC.safe_hunts(HUNTS, 4)], [(1, 10)], 'nothing that low: the lowest bands')
+eq(all(2 * h[1] <= 45 for h in TC.safe_hunts(HUNTS, 45)), True, 'never a band over the level')
+
+# resting in the temple after a death: 20 s, doubled for each death in a row, at most 5 minutes, forgotten after 5 minutes
+eq(TC.death_rest([100.0], 100.0), 20.0, 'first death: 20 s')
+eq(TC.death_rest([100.0, 130.0], 130.0), 40.0, 'second within 5 minutes: 40 s')
+eq(TC.death_rest([100.0, 130.0, 170.0, 200.0], 200.0), 160.0, 'fourth: 160 s')
+eq(TC.death_rest([0.0] + [float(i) for i in range(100, 110)], 110.0), 300.0, 'at most 300 s')
+eq(TC.death_rest([0.0, 1000.0], 1000.0), 20.0, 'a death long ago is not in a row')
+
+
 t = b'Hello world'
 msg = b'\xb4\x16' + struct.pack('<H', len(t)) + t + b'\x8c\x01\x02'
 eq(TC.strings_of(msg), ['Hello world'], 'protocol strings by their length')
@@ -307,6 +328,15 @@ eq(res.d['deaths'], 1, 'the death window counts a death')
 eq(res.d['anomalies'][0]['rule'], 'death within one hit from full health', 'dead from full health')
 b.read(b'\xb4\x16' + LT.string('You are dead.'))
 
+# a death at once after the login, health never seen: no anomaly (the first run filed 500 of them)
+res0 = T.Results(1)
+b0 = T.TesterBot(5, dict(bot), A(), 1, res0, {'rotation': [], 'heal': None})
+b0.read(b'\x28\x00')
+eq(res0.d['anomalies'], [], 'dead one second after the login: no anomaly from the bot (the helper has the exact rule)')
+eq(len(b0.deaths_at), 1, 'the death time is kept')
+b0.after_death = True
+eq(round(TC.death_rest(b0.deaths_at, _time.monotonic())), 20, 'and the rest it asks for')
+
 # the bot learns its own creature id from the helper's info (the login answer may come after the guard's challenge)
 b2 = T.TesterBot(1, dict(bot), A(), 1, res, {'rotation': [], 'heal': None})
 eq(b2.cid, 0, 'no creature id before the info')
@@ -376,6 +406,119 @@ eq(k.npc_spoke, False, 'its name in a creature update is no answer')
 k.read(b'\xaa' + struct.pack('<I', 7) + LT.string('Material Broker') + b'\x0c' + LT.string('Ore, herbs...'))
 eq(k.npc_spoke, True, 'its speech is an answer')
 k.shop_npc = None
+
+# ---------------------------------------------------------------- first live run: what is expected in play (O262)
+import asyncio  # noqa: E402
+r5 = T.Results(1)
+q = T.TesterBot(3, dict(bot), A(), 1, r5, {'rotation': [], 'heal': heal})
+q.conn, q.cid = C(), 0x10000003
+q.pending = {'heal_spell': 1e12, 'potion': 1e12 + 1}
+q.on_text('You do not have enough mana.')
+eq(sorted(q.pending), ['potion'], 'no mana: the heal spell was not cast, the potion still waits')
+eq(r5.d['behaviours']['heal_spell']['expected'], 1, 'the heal spell: expected, not failed')
+q.on_text('You are exhausted.')
+eq(q.pending, {}, 'exhausted: the newest pending one was not used')
+eq(r5.d['behaviours']['potion']['expected'], 1, 'the potion: expected')
+q.pending = {'heal_spell': 1e12, 'potion': 1e12}
+q.on_death()
+eq((r5.d['behaviours']['heal_spell']['expected'], r5.d['behaviours']['potion']['expected']), (2, 2),
+   'dead before the heal or the potion could work: expected')
+q.died = False
+q.walk(2)
+q.on_text('Sorry, not possible.')
+eq(r5.d['failures'].get(T.WALKED_INTO), 1, 'a "not possible" after a blind walk is the step into an obstacle')
+q.walk_until = 0.0
+q.on_text('Sorry, not possible.')
+eq(r5.d['failures'].get('not possible'), 1, 'any other "not possible" stays')
+ok(T.WALKED_INTO in TC.EXPECTED and 'not enough room' in TC.EXPECTED, 'both are expected in play')
+ok(T.ROOM_AFTER_BAG not in TC.EXPECTED, 'no room right after the bag was emptied is not')
+q.on_text('There is not enough room.')
+eq(q.room_fails, 1, 'a missing room is counted for the clean-up')
+q.bag_at = __import__('time').monotonic()
+q.on_text('There is not enough room.')
+eq(r5.d['failures'].get(T.ROOM_AFTER_BAG), 1, 'right after the clean-up it is a finding')
+
+# the bag clean-up asks the helper and resets the count; a dead bot's missing answer is not a failure
+q.alive, q.died = True, False
+q.say = lambda text, kind=1: said.append((text, kind))
+q.helper['bag'] = {'removed': 3, 'topped': 1}
+
+
+async def _says_q(command, kind, wait=4.0):
+    return q.helper.get(kind)
+q.helper_says = _says_q
+q.room_fails = 5
+eq(asyncio.run(q.tidy_bag()), True, 'the clean-up worked')
+eq((q.room_fails, r5.d['behaviours']['bag']['ok']), (0, 1), 'and the count starts again')
+q.helper = {}
+q.died = True
+eq(asyncio.run(q.tidy_bag()), False, 'the helper did not answer a dead bot')
+eq(r5.d['behaviours']['bag']['expected'], 1, 'expected, not failed')
+eq(r5.d['failures'].get('bag: no helper answer'), None, 'no failure counted for a dead bot')
+
+# the shop: "hi" is a plain say; "trade" and "bye" go in the NPC channel (a focused NPC hears only that); amounts are bytes
+q2 = T.TesterBot(4, dict(bot), A(), 1, T.Results(1), {'rotation': [], 'heal': None})
+q2.conn, q2.cid, q2.alive = C(), 0x10000004, True
+q2.helper['shop'] = {'npc': 'Material Broker'}
+
+
+async def _says_q2(command, kind, wait=4.0):
+    return q2.helper.get(kind)
+q2.helper_says = _says_q2
+sleeps = []
+
+
+async def _nap(t):
+    sleeps.append(t)
+    if len(sleeps) == 2:  # the window arrives after "trade"
+        q2.shop = [{'id': 7618, 'sub': 0, 'name': 'health potion', 'buy': 45, 'sell': 0},
+                   {'id': 2553, 'sub': 0, 'name': 'pick', 'buy': 0, 'sell': 10}]
+T_sleep, T.asyncio.sleep = T.asyncio.sleep, _nap
+try:
+    random_state = T.random.getstate()
+    T.random.seed(1)
+    eq(asyncio.run(q2.do_shop({})), True, 'a shop visit with a trade window')
+finally:
+    T.asyncio.sleep = T_sleep
+sent_ = q2.conn.sent
+eq(sent_[0], b'\x96\x01' + LT.string('hi'), 'hi: a plain say')
+eq(sent_[1], b'\x96\x0c' + LT.string('trade'), 'trade: in the NPC channel (TALKTYPE_PRIVATE_PN)')
+eq(sent_[-1], b'\x96\x0c' + LT.string('bye'), 'bye: in the NPC channel')
+buys = [m for m in sent_ if m[:1] == b'\x7a']
+eq(buys, [b'\x7a' + struct.pack('<HBBBB', 7618, 0, 1, 0, 0)], 'the purchase: u16 id, sub type, u8 amount, two flags')
+# the Loot Buyer without anything to buy: his answer is the right one
+q3 = T.TesterBot(5, dict(bot), A(), 1, T.Results(1), {'rotation': [], 'heal': None})
+q3.conn, q3.cid, q3.alive = C(), 0x10000005, True
+q3.helper['shop'] = {'npc': 'Loot Buyer'}
+
+
+async def _says_q3(command, kind, wait=4.0):
+    return q3.helper.get(kind)
+q3.helper_says = _says_q3
+
+
+async def _nap2(t):
+    q3.nothing_to_sell = True
+T.asyncio.sleep = _nap2
+try:
+    eq(asyncio.run(q3.do_shop({})), True, 'the Loot Buyer has nothing to buy of a tester: fine')
+finally:
+    T.asyncio.sleep = T_sleep
+eq(q3.results.d['failures'], {T.SHOP_NOTHING: 1}, 'counted under its own (expected) key')
+ok(T.SHOP_NOTHING in TC.EXPECTED, 'and it is expected in play')
+
+# the pings of a session are sent by the guard task too (the engine logs out 60 s after the last one, no message)
+q4 = T.TesterBot(6, dict(bot), A(), 1, T.Results(1), {'rotation': [], 'heal': None})
+q4.conn, q4.alive = C(), True
+
+
+async def _guard_once():
+    task = asyncio.ensure_future(q4.guard())
+    await T_sleep(0.1)
+    q4.alive = False
+    await task
+asyncio.run(_guard_once())
+eq(q4.conn.sent[:1], [b'\x1E'], 'the guard pings while a long behaviour runs')
 
 # ---------------------------------------------------------------- healing spells
 spells = [{'words': 'heal a', 'group': 'healing', 'level': 10, 'needlearn': False, 'params': False, 'vocations': set()},
@@ -464,6 +607,47 @@ with open(os.path.join(_sd, 'run.json')) as _f:
 _j['online_at'] = int(_time.time()) - T.ONLINE_FRESH - 5
 T.write_private(os.path.join(_sd, 'run.json'), json.dumps(_j))
 eq(_status()['online'], '0', 'status: a stale count (the run stopped saving) is 0')
+
+# ---------------------------------------------------------------- placement and the death report (first live run, 2026-10-27)
+POOL = 'return { hunt = {\n{name = "Rat", level = 5, exp = 1}, {name = "Terror Bird", level = 20, exp = 150},\n' \
+       '{name = "Juggernaut", level = 284, exp = 1}, }, bosses = {{name = "Rat", level = 900}} }'
+eq(LT.pool_levels(POOL), {'rat': 5, 'terror bird': 20, 'juggernaut': 284}, 'pool levels: the hunting part only')
+SP = ('<spawn centerx="100" centery="100" centerz="7" radius="3">\n<monster name="Rat" x="1" y="1"/>\n</spawn>\n'
+      '<spawn centerx="104" centery="100" centerz="7" radius="3">\n<monster name="Rat" x="1" y="1"/>'
+      '<monster name="Terror Bird" x="2" y="2"/>\n</spawn>\n'
+      '<spawn centerx="108" centery="100" centerz="7" radius="3">\n<monster name="Juggernaut" x="1" y="1"/>\n</spawn>\n'
+      '<spawn centerx="112" centery="100" centerz="7" radius="3">\n<monster name="Nameless" x="1" y="1"/>\n</spawn>\n')
+CL = LT.spawn_levels(SP, LT.pool_levels(POOL))
+eq(CL, {(100, 100, 7): 10, (104, 100, 7): 40, (108, 100, 7): 568, (112, 100, 7): 10 ** 9},
+   'a spawn centre counts at its highest monster, twice the pool level; an unknown monster never safe')
+IDX = LT.spawn_index(SP)
+eq(LT.snap_to_spawn((107, 100, 7), IDX, reach=12, centre_levels=CL, max_level=30), (100, 100, 7),
+   'level 30 passes the Terror Bird (40) and the Juggernaut: the quiet centre')
+eq(LT.snap_to_spawn((107, 100, 7), IDX, reach=12, centre_levels=CL, max_level=45), (104, 100, 7), 'level 45: the Terror Bird one')
+eq(LT.snap_to_spawn((107, 100, 7), IDX, reach=12), (108, 100, 7), 'no levels: the nearest, as before')
+HUNTS2 = [(1, 10, 100, 100, 7), (20, 30, 108, 100, 7)]
+pos = T.place_testers([30, 45], HUNTS2, [(50, 50, 7)], IDX, CL)
+ok(all(CL.get(p, 10 ** 9) <= lv for p, lv in zip(pos, [30, 45])), 'no tester on a spawn above its level: %r' % pos)
+eq(T.place_testers([30], HUNTS2, [(50, 50, 7)], LT.spawn_index('<spawn centerx="108" centery="100" centerz="7" radius="3">'),
+                   {(108, 100, 7): 568}), [(50, 50, 7)], 'no safe spawn within reach: the temple')
+eq(T.place_testers([30], [], [(50, 50, 7)])[0][2], 7, 'no hunting marks: round the temple')
+dead = [{'kind': 'death', 'who': 'Tester Aaa', 'level': 30, 'killer': 'Wiggler', 'hits': 4, 'damage': 300, 'damagePct': 75,
+         'biggest': 90, 'biggestPct': 22, 'online': 3},
+        {'kind': 'death', 'who': 'Tester Aab', 'level': 30, 'killer': 'Wiggler', 'hits': 1, 'damage': 700, 'damagePct': 140,
+         'biggest': 700, 'biggestPct': 140, 'online': 90}]
+rd = TC.build_report({'deaths': 2}, {'errors': {}, 'warnings': {}, 'anomalies': [], 'events': dead, 'first': {}})
+ok('2 records' in rd and '1 deaths by one hit of 100% or more, 1 within 5 s of the login' in rd, 'the death record line: ' + rd[:700])
+
+# the keystone scenario of a bot goes on after a death: results reach the run's results once, with the reason for the rest
+resk = T.Results(1)
+bk = T.TesterBot(7, dict(bot), A(), 1, resk, {'rotation': [], 'heal': None})
+bk.keytest = T.TK.KeyTest({'classes': {'thief': [{'id': 1, 'kind': 'keystone', 'flag': 'ksX', 'path': []}]}}, bk.name, 0)
+bk.flush_keytest()
+eq(resk.d.get('keytest'), None, 'a KeyTest that is not through is not flushed without a reason')
+bk.flush_keytest('the run ended')
+eq([r['status'] for r in resk.d['keytest']], ['not tested'], 'flushed at the end of the run: not tested, with the reason')
+bk.flush_keytest('again')
+eq(len(resk.d['keytest']), 1, 'and only once')
 
 for f in FAILS:
     print('FAIL ' + f)

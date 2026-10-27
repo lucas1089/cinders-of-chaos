@@ -581,6 +581,7 @@ def main():
     test_metrics()
     test_feedback()
     test_discord()
+    test_server_user()
     print('chaos_ctl_test: %d failures' % failures)
     return 1 if failures else 0
 
@@ -1480,6 +1481,321 @@ exit 0
 
         check(not any(token in t or token[::-1] in t for t in seen), 'no output of any discord command holds a webhook token')
         check('webhooks' not in calls(), 'no command line (stubs) saw a webhook URL')
+
+
+SU_SYSTEMCTL = """#!/usr/bin/env bash
+echo "systemctl $*" >> "$STUB/calls"
+case "$*" in
+  *LoadState*) echo loaded ;;
+  *"-p User"*) cat "$STUB/unit_user" 2>/dev/null || echo root ;;
+  *"-p Group"*) echo root ;;
+  *"-p MainPID"*) echo 0 ;;
+  daemon-reload) [ -n "${STUB_NORELOAD:-}" ] || sed -n 's/^User=//p' "$STUB_UNITFILE" | head -n 1 > "$STUB/unit_user" ;;
+  is-active*) exit 0 ;;
+  show*) echo "Tue 2026-10-20 06:00:01 UTC" ;;
+esac
+exit 0
+"""
+SU_STUBS = {
+    'systemctl': SU_SYSTEMCTL,
+    'ps': '#!/usr/bin/env bash\n# STUB_PROC_AFTER: the user of the process once the unit was started (a restart happened)\n'
+          'if [ -n "${STUB_PROC_AFTER:-}" ] && grep -q "^systemctl start" "$STUB/calls" 2>/dev/null; then echo "  $STUB_PROC_AFTER"; '
+          'else echo "  ${STUB_PROC_USER:-root}"; fi\n',
+    'getent': '#!/usr/bin/env bash\necho "getent $*" >> "$STUB/calls"\n'
+              'case "$1" in passwd) [ -e "$STUB/have_user" ] ;; group) [ -e "$STUB/have_group" ] ;; *) false ;; esac\n',
+    'useradd': '#!/usr/bin/env bash\necho "useradd $*" >> "$STUB/calls"\ntouch "$STUB/have_user"\n',
+    'chown': '#!/usr/bin/env bash\necho "chown $*" >> "$STUB/calls"\n[ -z "${STUB_CHOWN_FAIL:-}" ]\n',
+    'runuser': '#!/usr/bin/env bash\necho "runuser $1 $2" >> "$STUB/calls"\nshift 3\nexec "$@"\n',
+    'sleep': '#!/usr/bin/env bash\nexit 0\n',
+    'systemd-analyze': '#!/usr/bin/env bash\necho "systemd-analyze $*" >> "$STUB/calls"\n'
+                       '[ -z "${STUB_VERIFY_RC:-}" ] || { echo "unit.service: Unknown key name Bogus"; exit 1; }\n',
+    'dbclient': '#!/usr/bin/env bash\necho "dbclient $*" >> "$STUB/calls"\n'
+                '[ -z "${STUB_DBDOWN:-}" ] || exit 1\n'
+                'case "$*" in *"SELECT COUNT(*) FROM mysql.user"*) echo "${STUB_DBADMIN:-0}" ;; '
+                '*"SELECT 1"*) echo 1 ;; esac\n',
+}
+
+
+def test_server_user():
+    """server-user status | fix | rollback | log (the engine ran as root: the unit gets User=chaos)"""
+    unit_src = os.path.join(HERE, 'chaos-trial-server.service')
+    repo_unit_src = os.path.join(HERE, 'chaos-server.service')
+    with tempfile.TemporaryDirectory() as tmp:
+        stub = os.path.join(tmp, 'stub')
+        os.makedirs(stub)
+        for name, body in SU_STUBS.items():
+            p = os.path.join(stub, name)
+            with open(p, 'w') as f:
+                f.write(body)
+            os.chmod(p, 0o755)
+        kit = os.path.join(tmp, 'kit')
+        repo = os.path.join(tmp, 'repo')
+        sysd = os.path.join(tmp, 'sysd')
+        state = os.path.join(tmp, 'state')
+        sulog = os.path.join(tmp, 'server-user.log')
+        for d in ('server', 'database', 'run', 'logs', 'crashes', 'mariadb/bin'):
+            os.makedirs(os.path.join(kit, d))
+        os.makedirs(sysd)
+        os.makedirs(os.path.join(repo, 'server', 'deploy'))
+        os.makedirs(os.path.join(repo, 'server', 'tools'))
+        for d in (kit, repo, os.path.join(repo, 'server'), os.path.join(repo, 'server', 'deploy'), os.path.join(repo, 'server', 'tools')):
+            os.chmod(d, 0o755)
+        shutil.copy(unit_src, os.path.join(repo, 'server', 'deploy'))
+        shutil.copy(repo_unit_src, os.path.join(repo, 'server', 'deploy'))
+        with open(os.path.join(repo, 'server', 'deploy', 'chaos_kit_update.sh'), 'w') as f:
+            f.write('#!/usr/bin/env bash\nexit 0\n')
+        os.chmod(os.path.join(repo, 'server', 'deploy', 'chaos_kit_update.sh'), 0o755)
+        with open(os.path.join(kit, 'start-server.sh'), 'w') as f:
+            f.write('#!/bin/sh\n')
+        os.chmod(os.path.join(kit, 'start-server.sh'), 0o755)
+        with open(os.path.join(kit, 'chaos.env'), 'w') as f:
+            f.write('CHAOS_DB_USER=chaos\nCHAOS_DB_PASS=secret\n')
+        os.chmod(os.path.join(kit, 'chaos.env'), 0o600)
+        ufile = os.path.join(sysd, 'chaos-server.service')
+
+        # the installed unit as the README's old step left it: the kit's unit with User=root (the owner of /opt/chaos-trial)
+        def install_old():
+            with open(unit_src) as f:
+                body = f.read().replace('/opt/chaos-trial', kit).replace('User=chaos', 'User=root').replace('Group=chaos', 'Group=root')
+            with open(ufile, 'w') as f:
+                f.write(body)
+            with open(os.path.join(stub, 'unit_user'), 'w') as f:
+                f.write('root\n')
+            return body
+
+        old_body = install_old()
+        env = dict(os.environ, PATH=stub + ':' + os.environ['PATH'], STUB=stub, CHAOS_CTL_NO_SUDO='1',
+                   CHAOS_CTL_CONF=os.path.join(tmp, 'none.conf'), CHAOS_KIT_DIR=kit, CHAOS_ROOT=kit,
+                   CHAOS_SERVER_DIR=os.path.join(kit, 'server'), CHAOS_REPO=repo, CHAOS_ENV=os.path.join(kit, 'chaos.env'),
+                   CHAOS_LOG=os.path.join(kit, 'logs', 'server.log'), CHAOS_SYSTEMD_DIR=sysd, CHAOS_SERVER_USER_STATE=state,
+                   CHAOS_SERVER_USER_LOG=sulog, CHAOS_MYSQL='dbclient', CHAOS_PID_FILE=os.path.join(kit, 'run', 'server.pid'),
+                   CHAOS_UPDATE_LOG=os.path.join(tmp, 'u.log'), CHAOS_KIT_STATE=os.path.join(tmp, 'kstate'),
+                   CHAOS_SERVER_USER='chaostest', STUB_UNITFILE=ufile)
+        for k in ('SUDO_USER', 'CHAOS_UNIT', 'CHAOS_DB_SOCKET', 'CHAOS_BACKUP_DIR'):
+            env.pop(k, None)
+
+        def run(*args, extra=None, e=None):
+            return subprocess.run(['bash', SCRIPT] + list(args), env=dict(e or env, **(extra or {})), capture_output=True, text=True)
+
+        def calls():
+            p = os.path.join(stub, 'calls')
+            return open(p).read() if os.path.exists(p) else ''
+
+        def reset_calls():
+            open(os.path.join(stub, 'calls'), 'w').close()
+
+        def kv(r):
+            return dict(l.split('=', 1) for l in r.stdout.splitlines() if '=' in l)
+
+        def unit_text():
+            return open(ufile).read()
+
+        # status before: a root unit, no chaos user
+        r = run('server-user')
+        st = kv(r)
+        check(r.returncode == 0 and st.get('unit_user') == 'root' and st.get('layout') == 'kit' and st.get('runs_as_root') == 'yes'
+              and st.get('user_exists') == 'no' and st.get('needs_fix') == 'yes' and st.get('target_user') == 'chaostest'
+              and st.get('repo_root_owned') == 'yes' and st.get('db_admin') == 'no' and st.get('unit_backup') == 'no'
+              and st.get('restart_needed') == 'no', 'server-user status before: ' + r.stdout + r.stderr)
+        check(not any(c in calls() for c in ('useradd', 'chown ', 'daemon-reload')), 'server-user status changes nothing')
+        check(run('server-user', 'status', 'x').returncode != 0 and run('server-user', 'nope').returncode != 0, 'server-user: bad arguments refused')
+        check(run('server-user', 'fix', '--restart', '5').returncode != 0 and run('server-user', 'fix', '--restart', '9999').returncode != 0
+              and run('server-user', 'fix', '--restart', 'x').returncode != 0 and run('server-user', 'fix', 'now').returncode != 0
+              and 'useradd' not in calls(), 'server-user fix: the restart delay is 30 to 900 seconds')
+
+        # refusals change nothing
+        def untouched(label):
+            check('useradd' not in calls() and 'chown ' not in calls() and 'daemon-reload' not in calls() and 'CREATE USER' not in calls()
+                  and unit_text() == old_body and not os.path.exists(state + '/pending-backup'), label + ': nothing changed: ' + calls())
+
+        reset_calls()
+        os.chmod(os.path.join(repo, 'server'), 0o775)
+        r = run('server-user', 'fix')
+        check(r.returncode != 0 and 'repo-not-root-owned' in r.stderr, 'fix: a group-writable checkout is refused: ' + r.stderr)
+        untouched('writable checkout')
+        os.chmod(os.path.join(repo, 'server'), 0o755)
+        os.chmod(kit, 0o750)
+        r = run('server-user', 'fix')
+        check(r.returncode != 0 and 'kit-not-traversable' in r.stderr, 'fix: a kit folder the user cannot enter is refused: ' + r.stderr)
+        untouched('kit mode')
+        os.chmod(kit, 0o755)
+        os.rename(os.path.join(kit, 'run'), os.path.join(kit, 'run.real'))
+        os.symlink(os.path.join(kit, 'run.real'), os.path.join(kit, 'run'))
+        r = run('server-user', 'fix')
+        check(r.returncode != 0 and 'symbolic link' in r.stderr, 'fix: a symbolic link in the way is refused: ' + r.stderr)
+        untouched('symlink')
+        os.unlink(os.path.join(kit, 'run'))
+        os.rename(os.path.join(kit, 'run.real'), os.path.join(kit, 'run'))
+        r = run('server-user', 'fix', extra={'CHAOS_REPO': kit})
+        check(r.returncode != 0 and ('contain each other' in r.stderr or 'no-unit-template' in r.stderr), 'fix: the checkout inside the kit folders is refused: ' + r.stderr)
+        untouched('overlap')
+        r = run('server-user', 'fix', extra={'STUB_VERIFY_RC': '1'})
+        check(r.returncode != 0 and 'unit-verify-failed' in r.stderr and 'Unknown key name' in r.stderr, 'fix: systemd-analyze verify failure stops it: ' + r.stderr)
+        untouched('verify')
+        r = run('server-user', 'fix', extra={'STUB_DBDOWN': '1'})
+        check(r.returncode != 0 and 'database-down' in r.stderr, 'fix: a database that does not answer stops it: ' + r.stderr)
+        check('chown ' not in calls() and unit_text() == old_body, 'fix: database down: no chown, unit untouched')
+        # a repo unit installed while the settings say kit would stop the server
+        with open(os.path.join(repo, 'server', 'deploy', 'chaos-server.service')) as f:
+            repo_body = f.read()
+        with open(ufile, 'w') as f:
+            f.write(repo_body)
+        reset_calls()
+        r = run('server-user', 'fix')
+        check(r.returncode != 0 and 'layout-mismatch' in r.stderr and unit_text() == repo_body and 'useradd' not in calls(),
+              'fix: the layout of the installed unit must match the settings: ' + r.stderr)
+        install_old()
+        r = run('server-user', 'fix', extra={'CHAOS_SERVER_USER': 'root'})
+        check(r.returncode != 0 and 'bad CHAOS_SERVER_USER' in r.stderr, 'the target user is never root')
+        r = run('server-user', 'fix', extra={'CHAOS_SYSTEMD_DIR': os.path.join(tmp, 'no-such')})
+        check(r.returncode != 0 and 'unit-file-not-found' in r.stderr, 'fix: no unit file, no change')
+
+        # a drop-in that keeps User=root: the new unit is not applied, the old one is put back
+        reset_calls()
+        r = run('server-user', 'fix', extra={'STUB_NORELOAD': '1'})
+        check(r.returncode != 0 and 'unit-user-not-applied' in r.stderr and unit_text() == old_body, 'fix: User= not applied: the old unit is back: ' + r.stderr + unit_text()[:200])
+        check(calls().count('daemon-reload') == 2, 'fix: reloaded after the install and after the way back')
+        for f in os.listdir(state):
+            if f.startswith('chaos-server.service.before-'):
+                os.unlink(os.path.join(state, f))
+        os.unlink(os.path.join(stub, 'have_user'))
+
+        # the engine runs as root (a process called tfs)
+        tfs = os.path.join(tmp, 'tfs')
+        shutil.copy('/bin/sleep', tfs)
+        proc = subprocess.Popen([tfs, '600'])
+        try:
+            with open(os.path.join(kit, 'run', 'server.pid'), 'w') as f:
+                f.write('%d\n' % proc.pid)
+            r = run('server-user')
+            st = kv(r)
+            check(st.get('engine_pid') == str(proc.pid) and st.get('engine_user') == 'root' and st.get('runs_as_root') == 'yes'
+                  and st.get('restart_needed') == 'yes', 'status: the live engine process runs as root: ' + r.stdout)
+            check(kv(run('status')).get('engine_user') == 'root', 'status: engine_user line')
+
+            # the fix
+            reset_calls()
+            r = run('server-user', 'fix')
+            c = calls()
+            check(r.returncode == 0 and 'RESULT ok: prepared' in r.stdout, 'fix: ok: ' + r.stdout + r.stderr)
+            check('systemd-analyze verify' in c and c.index('systemd-analyze verify') < c.index('useradd'), 'fix: the unit is verified before anything changes')
+            check('useradd --system --user-group --home-dir /var/lib/chaos --no-create-home --shell /usr/sbin/nologin chaostest' in c,
+                  'fix: the system user is created without a login: ' + c)
+            for d in ('server', 'database', 'run', 'logs', 'crashes'):
+                check('chown -R -h chaostest:chaostest -- %s' % os.path.join(kit, d) in c, 'fix: chown of %s' % d)
+            check('chown -h chaostest -- %s' % os.path.join(kit, 'chaos.env') in c, 'fix: chaos.env owned by the service user')
+            check(repo not in ''.join(l for l in c.splitlines() if l.startswith('chown')) and 'chown -R -h chaostest:chaostest -- %s\n' % kit not in c,
+                  'fix: never the checkout or the whole kit folder')
+            check(('runuser -u' in c or os.stat(os.path.join(kit, 'database')).st_uid == 0) and "CREATE USER IF NOT EXISTS 'chaostest'@'localhost' IDENTIFIED VIA unix_socket" in c
+                  and "GRANT ALL PRIVILEGES ON *.* TO 'chaostest'@'localhost'" in c, "fix: the kit's database gets the socket admin: " + c)
+            new_body = unit_text()
+            check('User=chaostest' in new_body and 'Group=chaostest' in new_body and 'User=root' not in new_body
+                  and 'ExecStart=%s/start-server.sh' % kit in new_body and '/opt/chaos-trial' not in new_body,
+                  'fix: the kit unit with the user and the kit folder: ' + new_body[-900:])
+            baks = [f for f in os.listdir(state) if f.startswith('chaos-server.service.before-')]
+            check(len(baks) == 1 and open(os.path.join(state, baks[0])).read() == old_body, 'fix: the old unit is kept: %r' % baks)
+            check('systemctl daemon-reload' in c, 'fix: daemon-reload')
+            check('restart: needed' in r.stdout and 'restart 300' in r.stdout and 'systemctl restart' not in c and 'systemctl stop' not in c,
+                  'fix: without --restart the server is not restarted: ' + r.stdout)
+            check(os.stat(state).st_mode & 0o777 == 0o700, 'fix: the state folder is private')
+
+            # again: idempotent (the database admin is there now, the unit already has the user)
+            reset_calls()
+            r = run('server-user', 'fix', extra={'STUB_DBADMIN': '1'})
+            c = calls()
+            check(r.returncode == 0 and 'left as it is' in r.stdout and 'useradd' not in c and 'CREATE USER' not in c
+                  and 'daemon-reload' not in c and unit_text() == new_body, 'fix twice: no new user, no new unit: ' + r.stdout + c)
+            check(len([f for f in os.listdir(state) if f.startswith('chaos-server.service.before-')]) == 1, 'fix twice: no second backup')
+            check(os.path.exists(os.path.join(stub, 'have_user')), 'fix twice: the user stays')
+            st = kv(run('server-user', extra={'STUB_DBADMIN': '1'}))
+            check(st.get('unit_user') == 'chaostest' and st.get('unit_current') == 'yes' and st.get('user_exists') == 'yes'
+                  and st.get('db_admin') == 'yes' and st.get('unit_backup') == 'yes' and st.get('restart_needed') == 'yes'
+                  and st.get('runs_as_root') == 'yes', 'status after: unit ready, engine still root until the restart: %r' % st)
+
+            # update-apply tells that the unit still runs as root; not when it does not
+            install_old()
+            r = run('update-apply')
+            check(r.returncode == 0 and 'warning' in r.stderr and 'server-user fix' in r.stderr, 'update-apply: warns when the unit runs as root: ' + r.stderr)
+            with open(os.path.join(stub, 'unit_user'), 'w') as f:
+                f.write('chaostest\n')
+            r = run('update-apply')
+            check(r.returncode == 0 and 'warning' not in r.stderr, 'update-apply: silent when the unit has a user: ' + r.stderr)
+
+            # rollback (no restart)
+            reset_calls()
+            with open(ufile, 'w') as f:
+                f.write(new_body)
+            r = run('server-user', 'rollback')
+            check(r.returncode == 0 and unit_text() == old_body and 'daemon-reload' in calls() and 'systemctl restart' not in calls(),
+                  'rollback: the old unit is back, no restart: ' + r.stdout + r.stderr)
+
+            # the restart part: success when the engine comes back as the service user
+            with open(ufile, 'w') as f:
+                f.write(new_body)
+            with open(os.path.join(stub, 'unit_user'), 'w') as f:
+                f.write('chaostest\n')
+            with open(os.path.join(state, 'pending-backup'), 'w') as f:
+                f.write(os.path.join(state, baks[0]) + '\n')
+            reset_calls()
+            r = run('server-user-impl', '30', extra={'STUB_PROC_USER': 'chaostest'})
+            c = calls()
+            check(r.returncode == 0 and 'RESULT ok' in r.stdout, 'impl: ok: ' + r.stdout + r.stderr)
+            check(c.index('systemctl stop chaos-server') < c.index('chown -R -h chaostest:chaostest') < c.index('systemctl start chaos-server'),
+                  'impl: stop, chown again, start: ' + c)
+            check('The server restarts in 30 seconds' in open(os.path.join(kit, 'server', 'remote.cmd')).read(), 'impl: players are warned')
+            check(unit_text() == new_body, 'impl: the new unit stays')
+            # failure: the engine comes back as root: the old unit is put back and started
+            reset_calls()
+            r = run('server-user-impl', '30', extra={'STUB_PROC_USER': 'root'})
+            c = calls()
+            check(r.returncode == 1 and 'RESULT rolled-back' in r.stdout and unit_text() == old_body, 'impl: wrong user: rolled back: ' + r.stdout + r.stderr)
+            check(c.rindex('daemon-reload') < c.rindex('systemctl restart chaos-server'), 'impl: reload, then start the old unit')
+            # chown failure after the stop
+            with open(ufile, 'w') as f:
+                f.write(new_body)
+            reset_calls()
+            r = run('server-user-impl', '30', extra={'STUB_PROC_USER': 'chaostest', 'STUB_CHOWN_FAIL': '1'})
+            check(r.returncode == 1 and 'RESULT rolled-back: chown failed' in r.stdout and unit_text() == old_body
+                  and 'systemctl start chaos-server' in calls(), 'impl: chown failure: old unit back and started: ' + r.stdout)
+            check(run('server-user-impl', '5').returncode != 0 and run('server-user-impl').returncode != 0, 'impl: the delay is checked')
+
+            # fix --restart: detached, the log gets the result
+            install_old()
+            reset_calls()
+            with open(os.path.join(stub, 'have_user'), 'w'):
+                pass
+            r = run('server-user', 'fix', '--restart', '60', extra={'STUB_PROC_USER': 'root', 'STUB_PROC_AFTER': 'chaostest', 'STUB_DBADMIN': '1'})
+            check(r.returncode == 0 and 'restart: in 60 seconds' in r.stdout, 'fix --restart: scheduled: ' + r.stdout + r.stderr)
+            for _ in range(100):
+                if os.path.exists(sulog) and 'RESULT' in open(sulog).read():
+                    break
+                time.sleep(0.1)
+            check(os.path.exists(sulog) and 'RESULT ok' in open(sulog).read(), 'fix --restart: the detached restart finished ok: ' + (open(sulog).read() if os.path.exists(sulog) else 'no log'))
+            r = run('server-user', 'log', '5')
+            check(r.returncode == 0 and 'RESULT ok' in r.stdout, 'server-user log: ' + r.stdout)
+        finally:
+            proc.kill()
+            proc.wait()
+
+        # the repo layout (/opt/chaos): only the server folder, no database step, the repo unit
+        rserver = os.path.join(tmp, 'rserver')
+        os.makedirs(rserver)
+        renv = dict(env, CHAOS_SERVER_DIR=rserver, CHAOS_ROOT='/opt/chaos', CHAOS_PID_FILE=os.path.join(tmp, 'none.pid'))
+        renv.pop('CHAOS_KIT_DIR')
+        with open(ufile, 'w') as f:
+            f.write(repo_body.replace('User=chaos', 'User=root'))
+        with open(os.path.join(stub, 'unit_user'), 'w') as f:
+            f.write('root\n')
+        reset_calls()
+        r = run('server-user', 'fix', e=renv)
+        c = calls()
+        check(r.returncode == 0 and 'User=chaostest' in unit_text() and 'ExecStart=/opt/chaos/server/tfs' in unit_text(), 'repo layout: the repo unit: ' + r.stdout + r.stderr)
+        check('chown -R -h chaostest:chaostest -- %s' % rserver in c and c.count('chown ') == 1 and 'dbclient' not in c and 'runuser' not in c,
+              'repo layout: only the server folder, no database step: ' + c)
+        check(kv(run('server-user', e=renv)).get('layout') == 'repo', 'repo layout: status')
+        r = run('server-user', 'fix', e=dict(renv, CHAOS_ROOT='/srv/other'))
+        check(r.returncode != 0 and 'layout-unsupported' in r.stderr, 'repo layout: another root folder is refused: ' + r.stderr)
+
 
 
 if __name__ == '__main__':

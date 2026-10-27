@@ -1,0 +1,31 @@
+[package]
+name = "clientservices-rs-fuzz"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+
+[dependencies.clientservices-rs]
+path = ".."
+
+[[bin]]
+name = "read_head"
+path = "fuzz_targets/read_head.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "parse_misc"
+path = "fuzz_targets/parse_misc.rs"
+test = false
+doc = false
+bench = false
+
+# not part of the main crate: stable `cargo test --locked` never builds this
+[workspace]

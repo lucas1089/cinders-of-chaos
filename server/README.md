@@ -7280,9 +7280,13 @@ Built on `loadtest.py` (login, client guard answer, 10.98 packets). Standard lib
   Characters "Tester Aaa" upward; a name a player owns is skipped. Levels 30/100/250/500/750/1000/1250/1500/1750/2000 in turn (each band 1/10 of the testers), the classes shifted
   by one each round (`plan_bots`).
   Rows: account type 1, group 1, the marker storage, the hunt spot (+2..+4) on a hunt of its level.
+  The hunt is chosen by `tester_core.safe_hunts`: the whole band of the map mark, in hunting levels (twice the pool level the
+  mark prints, `pace_config.lua` `baseLevelMult`), at or under the tester's level, and on a spawn centre whose monsters all
+  hunt at or under its level (`loadtest.spawn_levels`, from `bounty_pool.lua` and the spawn file); none within 30 sqm: the temple.
   State: `/var/lib/chaos/testers/state.json`, mode 0600, root. It holds the passwords.
 - `run`: every bot logs in from its own 127.1.x.y address (the 2-per-IP rule). Secure mode on.
-  Real damage, real death. A death is seen (0x28 or "You are dead."); the bot logs in again and says `!tester hunt`.
+  Real damage, real death. A death is seen (0x28 or "You are dead."); the bot logs in again, rests in the temple
+  (`tester_core.death_rest`: 20 s, doubled for each death within 5 minutes, at most 300 s) and then says `!tester hunt`.
   Heals itself: its best healing spell of spells.xml under 60 % health.
   Under 40 % a health potion by the hotkey packet: 0x84, position 0xFFFF, its own creature id.
   Casts its class rotation (`loadtest.rotation_for`).
@@ -7294,8 +7298,28 @@ Built on `loadtest.py` (login, client guard answer, 10.98 packets). Standard lib
 - `report`: the server log from the run's start offset, and `run.json` of the bots.
 - `cleanup`: see below.
 
+The bot's own "death within one hit from full health" needs a health update it really saw less than 0.5 s before; the exact
+rule is the helper's (health, maximum and damage of one hit on the server). The helper's death line carries the hits of the
+last 5 seconds (count, sum and biggest hit as % of the maximum health, seconds since the login) and the report summarizes them.
+
 What a bot reads: health percent (0x8C), text messages (failures, Lua error texts, experience, loot, level),
 the NPC trade window, extended opcode answers (chunked S/P/E joined).
+
+**First live run (2026-10-27, 100 testers of level 30 to 99, 20 minutes).** 2998 deaths and 500 "death within one hit from
+full health" anomalies. Causes found:
+- The testers stood on the wrong ground. The map marks print the pool level of a band ("level 20-30"; the middle 70 % of its
+  monsters, so up to 15 % are above it), the hunting level is twice that, and `snap_to_spawn` moved a tester to the nearest
+  spawn centre of any monster within 12 sqm. The killers had pool levels of 20 (Terror Bird, Frost Giant) to 284 (Juggernaut),
+  hunting levels 40 to 568, for characters of 295 to 515 health with a plain weapon and no armour. Now `safe_hunts`, `spawn_levels`
+  and `place_testers` (see "The bots").
+- A dead tester went back to the same pack in the next second (17-35 s between two deaths of the same tester). Now it rests
+  in the temple (`death_rest`).
+- The anomaly was the bot's own: health starts at 100 % in the bot and a tester that died one second after the login never saw
+  an update. The server side rule (helper `hitAnomaly`, exact numbers) fired 0 times: no single hit reached the maximum health. A
+  bot-side anomaly now needs an update seen less than 0.5 s before; the helper's death line carries the last hits.
+- Keystone test: 1240 nodes "not tested: the bot left the game" and the FAILs "no answer to planApply / statTotals" were
+  bots that died in the middle. The scenario now goes on after the login and drops the node it was cut off in.
+  Open for the owner: whether a hunt mark's band should be printed in hunting levels (see ROADMAP O110).
 
 ### The helper (TEST ONLY: `tools/tester_helper.lua`, `tools/tester_helper_core.lua`)
 
@@ -7308,7 +7332,7 @@ Not under `data/`, so no install step ships it. `chaos-ctl.sh testers start` cop
 - Gives a target: the nearest unowned monster within 5 tiles, then faces it. Never a player, never a summon.
 - Once: a backpack, the plain weapon of its class kit (`ChaosTestKit`, no unique roll), 100 health and mana
   potions, 20000 gold in the bank.
-- `!tester info | town | depot | hunt | shop`: answers one line `[tester-helper] <kind> <json>`.
+- `!tester info | town | depot | hunt | shop | bag`: answers one line `[tester-helper] <kind> <json>`.
   Teleports to the temple, next to a depot locker, next to an NPC, back to the hunt spot.
 - `!tester places`: the map mark counts by kind (`ChaosPoi`). `!tester enter <kind> [N]`: next to the N-th mark of
   that kind (temple, depot, craft, bank, bless, travel, shop, boss, hunt, portal, dungeon; guild halls refused).
@@ -7363,6 +7387,37 @@ handler's guard `action ~= "get"` as well as `action == "get"`, and fills a sub-
 `make`: Open, SendItems, ...). Before, 9 systems (charms, groundloot, item tooltip, loadouts, nemesis, pact, party
 markers, stash, veiled) were tried with requests their servers ignore and never counted ok. The report puts the
 systems that never answered, with no refusal and no log error, on one line "no answer, no error".
+
+**First live run (2026-10-27, 100 bots), what each finding was.** Root causes found, none a server bug:
+- *Shop 0 of 164.* A bot said `trade` as a plain say after `hi`. The NPC library (`npchandler.lua` onCreatureSay) takes a
+  keyword from a focused player only in the NPC channel (talk type 12, `TALKTYPE_PRIVATE_PN`), as the client sends it.
+  Now `trade` and `bye` go there (`NPC_CHANNEL`; the coverage NPC dialogs too, step `npc`). Purchase and sale packets used a
+  16-bit amount where 10.98 reads one byte. The Loot Buyer lists only what a tester carries; with nothing he buys he says
+  "You carry nothing I buy" (counted, expected).
+- *Connection closed without a message (65).* The engine logs a player out without a message 60 s after its last ping
+  answer (`Player::sendPing`, see src-patch 0034). The bot pinged in its behaviour loop, which stops while the keystone
+  scenario waits for minutes. The ping now runs in the always-on guard task as well.
+- *"not possible" after wander (823).* A blind step into a wall or a counter: the engine answers "Sorry, not possible."
+  A "not possible" within 3 s of a bot's walk is counted as `not possible (a blind step into an obstacle)`, expected.
+- *"not enough room" (1225).* The bots loot and never sell, so the backpack fills. The helper has `!tester bag`: it empties
+  the backpack of everything but the potions and tops the potions up to 100 (also at login; the supplies were given once,
+  a potion count of 100 does not last 29 deaths). A bot calls it every 4 minutes and after 3 "not enough room". A "not
+  enough room" within 30 s of a clean-up is reported as its own, unexpected, line.
+- *"no helper answer" (town, depot, shop) and "no way".* A bot that died while it waited for the helper has no answer to
+  wait for; such a behaviour is now `expected` (a fourth column of the behaviour table), not `failed`. The helper
+  answers an error when its teleport next to the locker or the NPC is refused (before, the bot used the locker from
+  where it stood and the engine said "There is no way.").
+- *Potion and heal spell "failed".* The bot counts a heal ok when its health rises within 3 s. Not cast because of "You do
+  not have enough mana." or "You are exhausted.", or dead before it worked: `expected`. What stays `failed` is a heal
+  or potion that was used and did not out-heal the damage (a stock potion gives 3 to 10 % of the maximum health).
+- *"no answer, no error" (castbar, charms, groundloot, item_tooltip, loadouts, map_marks, pact, partymarkers).* Four
+  causes. (1) The generator read the words of a handler's comparisons, not the keys of a dispatch table
+  (`actions[msg.action]`, `ACTIONS[m.action]`): charms, loadouts and pact were sent actions they do not have. It reads
+  the tables now. (2) A data key no answer carries: the item tooltip needs worn slots, the ground loot `look` needs
+  tiles (`HINTS`, `"$near"` = the 3 x 3 tiles round the bot; `tip` / `raise` take an item of the bot's own `look`
+  answer), the map overlays need their switch sent as true (`FLAGS`). (3) A request the server answers with nothing by
+  design (`SILENT`: castbar `cancel`). (4) A refusal that is the right answer (`EXPECT_REFUSAL`: veiled `choose` answers
+  a window the Orb of Unveiling opens; counted ok).
 
 ```
 sudo /opt/chaos/repo/server/deploy/chaos-ctl.sh testers start 100 60 --restart 300
@@ -7423,7 +7478,7 @@ The table is generated from the sources. CI runs `--check`. Regenerate after a n
 `chaos-ctl.sh testers start` passes `--scenarios` with the table. The `opcodes` behaviour then runs a scenario:
 - a module's requests: "open" first, then one to three actions in client order, 1.5 s apart;
 - a place: `!tester enter`, the opcode of the system there, back to the hunt;
-- an NPC: `enter npc`, hi, one or two keywords, bye;
+- an NPC: `enter npc`, hi (a plain say), one or two keywords and bye (in the NPC channel, type 12);
 - a rift: `enter rift N`, then the key used by hotkey.
 Data keys are filled only from the bot's own earlier answers on that opcode. Never invented.
 Character keys (name, target, cid, ...) only get a tester. Owner, guid, gift, payment keys are never sent.
@@ -7442,8 +7497,10 @@ Owner request: prove on the live server that the passive tree keystones and mast
    (the same text is also in `<state>/runs/run-*-report.txt`, and `testers log 400` has one `KEYTEST` line per node).
    `--restart 300` only restarts the server when the TEST ONLY helper is not loaded yet.
 
-**What a bot does** (once per run, before its other behaviours; only requests of the tree window and the DPS meter, no
-development key, no god command, no helper command):
+**What a bot does** (before its other behaviours, until it is through; a death or a logout in the middle drops the node it was on
+and the same scenario goes on at that node after the next login; the bot waits in the temple and walks to its hunt only for a
+keystone with a combat log row, both with the helper's `!tester town` / `hunt`; otherwise only requests of the tree window and the
+DPS meter, no development key, no god command):
 1. read the tree (`requestNodesUnlocked`, `requestPoints`); clear it with `resetPreset` when something is left on it
 2. `planApply` the route to the node; `statTotals` for the baseline
 3. mastery: `planApply` the node with effect 1; every other effect with `masteryChoose`. The stats of the effect that the
@@ -7457,7 +7514,9 @@ in points (`points = (level - 8) / 4 + boss points`; a keystone is 3 to 32 nodes
 
 **Result per node:** `PASS`, `FAIL` (effect missing, wrong amount, plan refused by the server, accepted but not saved, no proc
 in 150 s), `NOT OBSERVABLE` (with the reason; the node was allocated), `NOT TESTED` (not enough points, a change of effect or a
-reset the character cannot pay, the bot left the game). Failures are listed first. Nothing unobservable is ever counted as a pass.
+reset the character cannot pay, the run ended before the bot was through). A request without an answer while the bot is in the game
+is a FAIL with its cause: for `planApply` the tree is read back ("the nodes are saved, the reply was lost" or "nothing saved, the request
+was dropped"), `statTotals` is asked twice. Failures are listed first. Nothing unobservable is ever counted as a pass.
 
 **Coverage of the table** (generated; `gen_tester_scenarios.py --check` in CI): 21 classes, 242 keystones, 4 mastery nodes
 with 42 effects over 12 classes.
@@ -23579,33 +23638,27 @@ and the drop-in removed (`rm` it, `daemon-reload`). Never copy a core off the ma
 
 **Owner steps on the VPS (once).** First get the new checkout there: admin app, Painel > card "Atualizar servidor" >
 "Aplicar e reiniciar" (`chaos-ctl.sh update-apply`). That updates the checkout, the engine and the data, but it does not
-copy unit files to `/etc/systemd/system`, and the app has no button for that, so this part is a shell step. Which unit
-file is installed as `chaos-server.service` depends on the layout: the Linux kit (`/opt/chaos-trial`, the live server of
-2026-10) has `chaos-trial-server.service` under that name; the repo layout (`/opt/chaos/server`) has
-`chaos-server.service`. Copying the wrong one stops the server. As root, on the VPS:
+copy unit files to `/etc/systemd/system`. Two parts:
+- **The game server unit.** Admin app, Comandos > Ações rápidas > card "Servidor como usuário chaos" > Ver, then
+  Corrigir (or "Corrigir e reiniciar (5 min)"). It installs the unit of the right layout with `User=chaos` and keeps the
+  old one ("Server user (O271)" below). An older version of these steps copied the unit and set `User=` to the owner of
+  `/opt/chaos-trial`: that owner is root on the live server, which is why the engine warned "executed as root user".
+  Do not set `User=` by hand to the folder's owner.
+- **The helper units** (no app button for these; as root on the VPS, only the ones already installed):
 ```
 REPO=/opt/chaos/repo                       # CHAOS_REPO in /etc/chaos/ctl.conf
-U=/etc/systemd/system/chaos-server.service
-cp "$U" /root/chaos-server.service.before-o196                      # the way back
-if grep -q '/opt/chaos-trial' "$U"; then                            # the Linux kit
-  owner=$(stat -c '%U' /opt/chaos-trial); group=$(stat -c '%G' /opt/chaos-trial)
-  sed -e "s/^User=.*/User=$owner/" -e "s/^Group=.*/Group=$group/" "$REPO/server/deploy/chaos-trial-server.service" > "$U"
-else                                                                # the repo layout
-  stat -c '%U:%G %a' "$REPO" "$REPO/server" "$REPO/server/tools" "$REPO/server/tools/chaos_crashlog.sh"   # root, never chaos
-  cp "$REPO/server/deploy/chaos-server.service" "$U"
-fi
-for n in clientservices watchdog health backup helpai discord payworker; do   # only the units already installed
+for n in clientservices watchdog health backup helpai discord payworker; do
   [ -f /etc/systemd/system/chaos-$n.service ] && cp "$REPO/server/deploy/chaos-$n.service" /etc/systemd/system/
 done
-systemd-analyze verify "$U"
-systemctl daemon-reload      # the running engine keeps its old settings; the sandbox starts with its next start
+systemctl daemon-reload
 ```
-The next start is the daily server save (the engine shuts down and is started again), or `systemctl restart chaos-server`
-at a quiet moment (it saves, players are disconnected; admin app, Painel > "Reiniciar em..."). Then `systemctl status
-chaos-server`, the server log's last lines (map loaded, no `Lua Script Error`), a login from the client and `systemctl
-show chaos-server -p LimitCORE`. If the engine does not start: `journalctl -u chaos-server -n 50`, put
-`/root/chaos-server.service.before-o196` back, `systemctl daemon-reload`, `systemctl restart chaos-server`. The other
-units are picked up at their next start (timers: next run).
+The server unit takes its new settings (sandbox, `LimitCORE=0`) when the unit restarts: `systemctl restart chaos-server`
+at a quiet moment (it saves, players are disconnected; admin app, Painel > "Reiniciar em..."). On the Linux kit the
+daily server save restarts only the engine inside `start-server.sh`, not the unit, so it does not apply a new unit.
+Then `systemctl status chaos-server`, the server log's last lines (map loaded, no `Lua Script Error`), a login from the
+client and `systemctl show chaos-server -p LimitCORE`. If the engine does not start: `journalctl -u chaos-server -n 50`,
+`/opt/chaos/repo/server/deploy/chaos-ctl.sh server-user rollback` (puts the kept server unit back) and `systemctl restart
+chaos-server`. The other units are picked up at their next start (timers: next run).
 
 **SQL integer guards.** The admin actions `security.ip_unban`, `security.ip_ban`, `security.account_info`,
 `players.ban` and `players.unban` write the address or account id through `ChaosAdmin.sqlInt` (a finite whole number as
@@ -23616,6 +23669,70 @@ check. The three cores with `'%s'` keys (`achievements_core.validKey`, `class_un
 `legal_notice_core.cleanVersion`) never escape the key: `tests/sql_key_guard_test.lua` feeds them quotes, backslashes,
 semicolons, comment markers, newlines, NUL, unicode, spaces, empty and 1000-character strings and non-strings and checks
 that no statement is built. Tests: `tests/sql_key_guard_test.lua`, `tests/bank_test.lua`, `tests/admin_panel_test.lua`.
+
+## Server user: the engine runs as chaos, not root (O271) (`chaos-ctl.sh server-user`, `deploy/chaos_ctl_test.py`)
+
+Finding (tester run 2026-10-27): the live log said "Warning: Cinders of Chaos has been executed as root user, please
+consider running it as a normal user." Cause: the live unit (`chaos-trial-server.service` installed as
+`chaos-server.service`) ran with `User=root`. The shipped unit says `User=chaos`; the O196 owner steps told the owner to
+replace `User=` and `Group=` with the owner of `/opt/chaos-trial` (`stat -c '%U %G'`), and root extracted the kit, so that
+owner is root. An unit with no `User=` (very old install) runs as root too. The engine is the main process of the kit's
+`start-server.sh`, so it takes the unit's user.
+
+`chaos-ctl.sh server-user`, all as root through the admin app's sudo rule:
+- `server-user [status]`: key=value lines. `unit_user` (systemd's `User=`, root when empty), `engine_pid` / `engine_user`
+  (the live process: `engine_pid` is the pid file's, else the unit's main process), `runs_as_root`, `user_exists`,
+  `server_owner`, `foreign_files` (entries of the writable folders not owned by the user; -1 while the user does not
+  exist), `repo_root_owned`, `db_admin` (kit: the database's socket admin; `n/a` on the repo layout), `unit_current`
+  (the installed unit equals the rendered one), `unit_backup`, `needs_fix`, `restart_needed`. Changes nothing.
+  `status` also prints `engine_user=`. `update-apply` prints a warning when the unit runs as root, and the kit update
+  (`chaos_kit_update.sh`, `chaos_update.sh`) logs one at its start; `update-check` has `runs_as_root=`.
+- `server-user fix [--restart SECONDS]` (30 to 900), in this order, stopping at the first refusal:
+  1. Refusals before anything changes: the installed unit is not a plain file; its layout (it starts `start-server.sh`
+     = kit, else repo) differs from the settings (`layout-mismatch`: the wrong unit stops the server); the repo layout
+     under another root than `/opt/chaos`; the checkout (`CHAOS_REPO`, `server/`, `server/tools`, `server/deploy`) owned
+     by the user or writable by group or others (`repo-not-root-owned`: the same rule as the `ExecStopPost` guard of
+     `chaos-server.service`); a folder to chown that is a symbolic link or contains the checkout; the kit folder not
+     enterable by others; the new unit not passing `systemd-analyze verify`.
+  2. The system user `chaos` (`useradd --system --user-group`, home `/var/lib/chaos`, no login shell) when missing.
+  3. Kit only: the kit's MariaDB has no password admin. `start-server.sh` connects as the system user it runs as, over
+     the socket (unix_socket), and the database was created for root. The fix creates `'chaos'@'localhost' IDENTIFIED VIA
+     unix_socket` with all privileges (what a fresh install as chaos would have), by running the client as the owner of
+     `database/` (root: `-u root`). The game's own TCP account `'chaos'@'127.0.0.1'` is not touched. The database must be
+     up (`database-down` otherwise). Without this step the engine would start but `start-server.sh` would wait 60 seconds
+     for a database it cannot ping and give up.
+  4. `chown -R` of only the folders the service writes: kit: `server/`, `database/`, `run/`, `logs/`, `crashes/`, plus
+     `chaos.env` (owner only, mode kept); repo layout: the server folder. Never the checkout, the kit root or the
+     binaries (`mariadb/`, `start-server.sh`), which stay root-owned.
+  5. The unit: the repository's unit of the same layout with `User=` and `Group=` set (the kit folder replaced when it is not
+     `/opt/chaos-trial`), written next to the old one and moved in; the old one is kept as
+     `CHAOS_SERVER_USER_STATE/chaos-server.service.before-DATE` (default `/var/lib/chaos/server-user`, the newest 5),
+     `daemon-reload`, then `systemctl show -p User` must say the user (a drop-in that keeps `User=root` puts the old unit
+     back: `unit-user-not-applied`). A unit that already has `User=chaos` is left as it is.
+  6. The restart. Without `--restart` nothing restarts: the engine keeps running as root until the unit restarts, and
+     the output says `restart: needed`. (The daily server save does not help on the kit: it restarts only the engine.)
+     With `--restart SECONDS`, a detached run (`server-user log` shows it) warns the players like `restart SECONDS`,
+     stops the unit (the engine saves), chowns again (the root engine may have written files meanwhile), starts it and
+     waits up to 300 s for an engine running as the user. If the chown fails or the engine does not come up as the user,
+     it puts the old unit back, `daemon-reload`, restarts it and logs `RESULT rolled-back`.
+  Idempotent: a second run creates nothing, keeps the unit and only chowns again what is not the user's. Output ends with
+  `RESULT ok: prepared` or `RESULT ok: nothing to change`.
+- `server-user rollback`: the newest kept unit back, `daemon-reload`, no restart (`restart SECONDS` applies it).
+- `server-user log [N]`: the log of `fix --restart` (`CHAOS_SERVER_USER_LOG`, `/var/log/chaos/server-user.log`).
+- Settings (`ctl.conf`): `CHAOS_SERVER_USER_STATE`, `CHAOS_SERVER_USER_LOG`, plus the layout keys it already reads
+  (`CHAOS_KIT_DIR`, `CHAOS_ROOT`, `CHAOS_SERVER_DIR`, `CHAOS_REPO`, `CHAOS_SYSTEMD_DIR`, `CHAOS_MYSQL`). The user is
+  always `chaos` (`CHAOS_SERVER_USER` in the environment is for the tests and is dropped by sudo).
+
+Assumptions to watch on the first real run: an existing user named `chaos` is used as it is (one with uid 0 is refused); the kit extract is readable and executable by others (`mariadb/`, `server/tfs`); another program
+that writes into the kit as root (a hand-run `start-server.sh`, a root `tar`) leaves root-owned files, which `server-user
+status` shows as `foreign_files` and `fix` repairs; the engine as chaos can now use the database socket as admin of the
+kit's private MariaDB (the same as on a fresh install), which holds only the game database.
+
+Tests: `deploy/chaos_ctl_test.py` `test_server_user` (stubs for `systemctl`, `getent`, `useradd`, `chown`, `runuser`,
+`ps`, `systemd-analyze` and the database client: the refusals leave the unit and the owners untouched, the fix, again, a
+failed apply, the repo layout, the restart success and both rollbacks), `deploy/chaos_units_test.py` (both game server
+units keep `User=chaos`), `deploy/chaos_update_test.py` and `chaos_kit_update_test.py` (the warnings), and
+`android/app/src/test/.../ServerUserInfoTest.java` (the card). Not run on the live server.
 
 ## Engine hardening (sanitizers, fuzzing) (`tools/build_sanitized.sh`, `tools/fuzz/`, `tools/netfuzz.py`, `src-patches/0061`-`0063`)
 
@@ -23792,8 +23909,27 @@ restarts the unit; a failed build warns and keeps the old binary. The drop-in di
 - `chaos_ctl_test.py`: the switch (python by default, rust builds then writes the drop-in, a failed build changes
   nothing, python removes it, rebuild only while on, no unit refused).
 
-**Not covered.** A real `cargo build` on the VPS (the script and the switch are tested with a stub build); a cargo-fuzz
-run (only proptest, 2000 cases per property in CI); the unit under systemd with the real sandbox; a load test of the
+**Fuzzing** (`clientservices-rs/fuzz/`, cargo-fuzz and libFuzzer, nightly Rust, run by hand, not in CI). Own crate with
+its own `Cargo.lock` and an empty `[workspace]`, so stable `cargo test --locked`, fmt and clippy never build it. The
+invariants are plain functions in `src/fuzz_checks.rs`, shared by the targets and by `tests/fuzz_seeds.rs`, which
+replays the small seed corpus (`fuzz/seeds/`, 11 + 8 files) on stable in CI.
+- `read_head`: arbitrary bytes as one connection. `read_head`, then `head_error_reply` or `plan`, then `finish` on the
+  bytes after the head as the body. Checks: the cursor stays inside the input, fewer than 100 headers, a body request
+  within 64 KiB, `finish` answers 200 or 400, and every `render` starts with `HTTP/1.`, has a `Content-Length` equal to
+  the body, a JSON body (empty for 204).
+- `parse_misc`: the same bytes as a data file (`parse_data`, `answer`, `answer_all`), a target (`query_type`, the result
+  is part of the input), a `Content-Length` value, a log line (`log_safe`: at most 200 characters, no control
+  characters), a POST body and a timestamp (`http_date`).
+- Run (from `server/services/clientservices-rs/fuzz`, once `cargo install cargo-fuzz --locked`):
+  `mkdir -p corpus/read_head && cp seeds/read_head/* corpus/read_head/` then
+  `cargo +nightly fuzz run read_head -- -max_total_time=600 -max_len=262144 -timeout=10`; the same with `parse_misc`.
+  `corpus/`, `artifacts/` and `target/` are git-ignored; a crash lands in `artifacts/<target>/`: minimise it with
+  `cargo +nightly fuzz tmin`, fix the cause, add a unit test in `tests/protocol.rs` and a small seed file.
+- Result 2026-10-27: 10 minutes per target, both at once: `read_head` 2,294,629 runs, `parse_misc` 1,816,311 runs; no
+  crash, panic, timeout or broken invariant.
+
+**Not covered.** A real `cargo build` on the VPS (the script and the switch are tested with a stub build); longer fuzz
+runs than the 10 minutes above (and any in CI); the unit under systemd with the real sandbox; a load test of the
 thread-per-connection design against the Python server; IPv6 hosts; the Linux kit.
 
 

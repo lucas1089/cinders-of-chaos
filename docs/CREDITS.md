@@ -318,6 +318,12 @@ Game sounds (game_chaossound, O238): short picks from four packs, cut, set to mo
   - Used for: the Rust login-screen services (server/services/clientservices-rs), built on the server by the owner when switched on, not shipped in the packages
   - Source: https://github.com/serde-rs/json and https://github.com/BurntSushi/memchr and https://www.rust-lang.org/
 
+- **cargo-fuzz and libfuzzer-sys (Rust crates) with LLVM libFuzzer**
+  - Author: the Rust Fuzzing Authority and the cargo-fuzz contributors; the LLVM Project contributors
+  - Licence: MIT or Apache-2.0 (cargo-fuzz, libfuzzer-sys); Apache-2.0 with LLVM exceptions (libFuzzer)
+  - Used for: fuzzing the Rust login-screen services (server/services/clientservices-rs/fuzz), a developer tool run by hand on nightly Rust, not built in CI, not shipped in the packages
+  - Source: https://github.com/rust-fuzz/cargo-fuzz and https://github.com/rust-fuzz/libfuzzer
+
 - **Helper module**
   - Author: R!ck, ZLukSrT#8740, Christianlb, worthdavi
   - Licence: unknown; the owner supplied the file, no licence text came with it

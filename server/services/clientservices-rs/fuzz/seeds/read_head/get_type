@@ -1,0 +1,2 @@
+GET /?type=eventschedule HTTP/1.0
+
