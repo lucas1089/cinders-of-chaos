@@ -482,7 +482,7 @@ local function potionOptions(current)
     local info = id and Pot.info(id)
     o[#o + 1] = { text = info and tr(info.name) or tostring(current), data = current }
   end
-  return o
+  return Pot.sortOptions(o) -- alphabetical by the shown name, (empty) first; rows keep their key
 end
 
 local function potionUnit(row)
@@ -544,7 +544,7 @@ local function runeOptions(kind, current)
     local info = Runes.info(current)
     o[#o + 1] = { text = info and tr(info.name) or tostring(current), data = current }
   end
-  return o
+  return Pot.sortOptions(o) -- alphabetical by the shown name, (empty) first; rows keep their id
 end
 
 -- the attack rune rows of the selected preset (older presets may lack them)

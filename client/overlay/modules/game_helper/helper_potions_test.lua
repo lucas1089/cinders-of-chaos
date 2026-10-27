@@ -238,5 +238,23 @@ eq(P.resolve(268, held('mana', 38652, 'mana', 200), 300), 38652, 'the Mana Potio
 eq(P.resolve(266, held('health', 38645, 'health', 0), 100), 38645, 'tier 1: the Health Potion row drinks its own look')
 eq(P.resolve(266, held('health', 38653, 'spirit', 0), 100), 266, 'a spirit flask is not followed by a health row')
 
+-- the dropdown order: (empty) first, then alphabetical, case-insensitive, accents as base letters; selections map by data
+local sorted = P.sortOptions({
+  { text = 'Ultimate Health Potion', data = '7643' }, { text = '(empty)', data = 0 }, { text = 'everfull Supreme Health Potion', data = '38648' },
+  { text = 'Água Potion', data = 'a' }, { text = 'Supreme Health Potion', data = '23375' }, { text = 'Zebra', data = 'z' },
+  { text = 'Aguardente', data = 'b' }, { text = 'Great Health Potion', data = '239' },
+})
+local order = {}
+for _, o in ipairs(sorted) do order[#order + 1] = o.data end
+eq(table.concat(order, ','), '0,a,b,38648,239,23375,7643,z', 'options: (empty) first, then alphabetical without case and accents')
+local real = P.sortOptions((function() local o = { { text = '(empty)', data = 0 } }
+  for _, e in ipairs(P.options()) do o[#o + 1] = { text = e.name, data = e.key } end return o end)())
+eq(real[1].data, 0, 'the real list: (empty) first')
+for i = 3, #real do
+  eq(P.sortKey(real[i - 1].text) <= P.sortKey(real[i].text), true, 'the real list is alphabetical at ' .. real[i].text)
+end
+eq(#real, #P.options() + 1, 'sorting loses no option')
+eq(P.sortOptions(nil)[1], nil, 'no options: empty')
+
 if fails > 0 then os.exit(1) end
 print('helper_potions_test: ok')

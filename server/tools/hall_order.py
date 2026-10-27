@@ -58,6 +58,30 @@ class HallError(Exception):
 
 
 # ------------------------------------------------------------------------------------------------ the data file
+def base_level_mult(path=None):
+    """pace_config.lua baseLevelMult: the CSV's levels are on the bounty pool scale (hunt_band), the hall shows and orders
+    by the HUNTING level, pool x this (owner 2026-10-27)"""
+    path = path or os.path.join(os.path.dirname(HERE), 'data', 'scripts', 'chaos', 'pace_config.lua')
+    with open(path, encoding='utf-8') as f:
+        m = re.search(r'\bbaseLevelMult\s*=\s*(\d+)', f.read())
+    if not m:
+        raise HallError('pace_config.lua: baseLevelMult not found')
+    return int(m.group(1))
+
+
+def hunting_rows(rows, mult=None):
+    """copies of the CSV rows with lo, hi and level on the hunting scale (pool level x baseLevelMult)"""
+    mult = base_level_mult() if mult is None else mult
+    out = []
+    for r in rows or []:
+        r = dict(r)
+        for k in ('lo', 'hi', 'level'):
+            if isinstance(r.get(k), int):
+                r[k] = r[k] * mult
+        out.append(r)
+    return out
+
+
 def read_csv(path=CSV_PATH):
     if not os.path.isfile(path):
         return None
@@ -654,7 +678,7 @@ def main(argv):
     import install_content_areas as T
     if cmd == 'show':
         path = rest[rest.index('--csv') + 1] if '--csv' in rest else CSV_PATH
-        rows = read_csv(path) or []
+        rows = hunting_rows(read_csv(path) or [])
         cfg = T.load_config()
         for r in order_hunts(rows):
             print('%-22s %-15s  %4d (%4d-%-4d) %-10s %s %s' % (r['id'], ('z%d %5d %5d' % (r['z'], r['x'], r['y']))

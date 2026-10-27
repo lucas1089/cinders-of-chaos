@@ -49,6 +49,21 @@ eq(layout(m), 'Look|Open|-|Trade with ...|-|Add to Quick Sell BlackList|-|Pouch 
   'one separator between groups')
 eq(m.shown, true, 'shown')
 
+-- the Lock item / Unlock item hooks (game_crafting): one of the two shows, the other adds only a separator
+local lk = UIPopupMenu.new()
+lk:addOption('Look')
+lk:addSeparator() -- Lock item hidden
+lk:addSeparator() lk:addOption('Unlock item')
+lk:addSeparator() lk:addOption('Where to find')
+lk:display()
+eq(layout(lk), 'Look|-|Unlock item|-|Where to find', 'a hidden Lock item entry leaves no empty line')
+local lk2 = UIPopupMenu.new()
+lk2:addOption('Look')
+lk2:addSeparator() lk2:addOption('Lock item')
+lk2:addSeparator() -- Unlock item hidden
+lk2:display()
+eq(layout(lk2), 'Look|-|Lock item', 'a hidden Unlock item entry as the last one: no trailing line')
+
 -- bare grass: "Look", then every hook category empty ("Where to find" is hidden on ground: itemfinderlogic menuThing)
 local g = UIPopupMenu.new()
 g:addSeparator() -- a leading one

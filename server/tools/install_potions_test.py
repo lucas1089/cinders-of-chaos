@@ -2,8 +2,8 @@
 """python3 -I server/tools/install_potions_test.py : install_potions.py on a synthetic base server (items.otb with the
 stock potion nodes, items.xml with a flask deposit text, a potion seller in XML and one in Lua, a weapon dealer, the
 NPC library's ShopModule, the stock potions.lua): the Everfull nodes copied from the stock potions (stackable, stock
-look), the items.xml block, no flask made or sold, the deposit texts gone, the Everfull potions sold by the potion
-sellers only, the ShopModule hook; idempotent; a missing hook place stops it with nothing written."""
+look), the items.xml block, no flask made or sold, the deposit texts gone, NO Everfull potion sold by anybody (O273: a
+server installed before it gets the shop entries and the ShopModule hook taken out again); idempotent."""
 import os, shutil, struct, sys, tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -154,11 +154,14 @@ try:
 
     xml = first['items/items.xml'].decode()
     check(xml.count(T.XML_BEGIN) == 1 and 'name="everfull health potion"' in xml, 'items.xml block')
-    check('value="A flask: kills' in xml, 'the description')
+    check('value="A flask that never empties. Heals like a health potion. Cannot be traded or sold."' in xml, 'the description')
     check('name="everfull supreme health potion"' in xml and 'Heals like a supreme health potion (level 200)' in xml,
           'items.xml: the supreme tier, its name and description')
-    check('Heals and restores mana like an ultimate spirit potion (level 130); a drink costs one health charge and one '
-          'mana charge' in xml, 'items.xml: the spirit description says it spends two charges')
+    check('A flask that never empties. Restores mana like a supreme mana potion (level 200). Cannot be traded or sold.' in xml,
+          'items.xml: the supreme mana potion, the owner\'s example text')
+    check('Heals and restores mana like an ultimate spirit potion (level 130). Cannot be traded or sold.' in xml,
+          'items.xml: the spirit description')
+    check('charge' not in xml.lower() and 'refill' not in xml.lower(), 'items.xml: nothing about charges or refills')
     check(xml.count('<item id="32') == 12, 'items.xml: twelve Everfull entries')
     check('name="everfull supreme mana potion"' in xml and 'name="everfull spirit potion"' in xml
           and 'name="everfull supreme spirit potion"' in xml, 'items.xml: the three new potions')
@@ -166,28 +169,23 @@ try:
     check(cfg['flaskText'] in xml, 'the flask text')
 
     morora = first['npc/Morora.xml'].decode()
-    check('everfull health potion,32085,100;everfull mana potion,32086,100;' in morora, 'the XML seller sells both')
+    check('everfull' not in morora and '3208' not in morora and '3226' not in morora, 'the XML seller sells no Everfull potion')
+    check('health potion,7618,45;mana potion,7620,50;' in morora, 'its stock potions stay')
     check('empty potion flask,7636,20' not in morora, 'no flask for sale')
     check('shop_sellable" value="empty potion flask,7636,5;' in morora, 'old flasks still bought')
     check('deposit' not in morora.lower() and 'Hello |PLAYERNAME|. Potions!' in morora, 'the greeting loses its deposit')
     check('everfull' not in first['npc/Smith.xml'].decode(), 'a weapon dealer sells no Everfull potion')
-    check('3226' not in morora and '3227' not in morora and 'great' not in morora and 'spirit' not in morora,
-          'no seller sells a higher tier or the spirit potion (they are earned or bought in the store)')
 
     lua = first['npc/scripts/potions.lua'].decode()
-    check("shopModule:addBuyableItem({'everfull health potion'}, 32085, 100, 1, 'everfull health potion')" in lua,
-          'the Lua seller sells the health one')
-    check("32086, 100, 1, 'everfull mana potion')" in lua, 'and the mana one')
-    check('3226' not in lua and '3227' not in lua, 'the Lua seller sells no higher tier')
-    check(lua.index('32086') > lua.index("7620, 50"), 'after its mana potion line')
+    check('32085' not in lua and '32086' not in lua and 'everfull' not in lua and '3226' not in lua,
+          'the Lua seller sells no Everfull potion')
+    check("shopModule:addBuyableItem({'health potion'}, 7618, 45, 1, 'health potion')" in lua, 'its stock potions stay')
     check('-- ' + T.FLASK_MARK + "shopModule:addBuyableItem({'flask'}, 7636" in lua, 'no flask for sale (Lua)')
     check("shopModule:addSellableItem({'flask'}, 7636, 5" in lua, 'old flasks still bought (Lua)')
     check("{name = 'strong flask', id = 7634, sell = 5}" in lua, 'a table row loses its buy price')
     check('deposit on' not in lua and cfg['flaskText'] in lua, 'the deposit keyword reply replaced')
 
-    mod = first['npc/lib/npcsystem/modules.lua'].decode()
-    check(T.HOOK_MARK in mod and 'return ChaosPotions.npcBuy(cid, itemid)' in mod, 'ShopModule hook')
-    check(mod.index(T.HOOK_MARK) < mod.index('getShopItem'), 'before the stock purchase')
+    check(first['npc/lib/npcsystem/modules.lua'].decode() == MODULES, 'no ShopModule hook is written any more: modules.lua untouched')
 
     pot = first['actions/scripts/other/potions.lua'].decode()
     check('-- ' + T.FLASK_MARK + 'player:addItem(potion.flask, 1)' in pot, 'the stock potions.lua makes no flask')
@@ -245,22 +243,93 @@ try:
             sys.stdout = old
         check(rc == 1 and snapshot(data) == before, label + ': stops, nothing written')
 
-    # no ShopModule:callbackOnBuy: an error, nothing written
+    # a server installed BEFORE O273: the Everfull potions sold by the potion sellers (XML entries, marked Lua lines), a hand-made
+    # Lua sale, a table row with a buy price, the ShopModule hook, the old charge descriptions in items.xml
     shutil.rmtree(tmp)
     tmp = tempfile.mkdtemp()
     data = make_base(tmp)
+    OLD_HOOK = (T.HOOK_MARK + ': one store-bound copy (data/lib/chaos_potions.lua)\n'
+                '\t\tif ChaosPotions == nil then pcall(dofile, "data/lib/chaos_potions.lua") end\n'
+                '\t\tif ChaosPotions and ChaosPotions.everfull and ChaosPotions.everfull(itemid) then\n'
+                '\t\t\treturn ChaosPotions.npcBuy(cid, itemid)\n'
+                '\t\tend\n')
+    legacy = {
+        'npc/Morora.xml': SELLER_XML.replace('mana potion,7620,50;', 'mana potion,7620,50;everfull health potion,32085,100;'
+                                             'everfull mana potion,32086,100;'),
+        'npc/lib/npcsystem/modules.lua': MODULES.replace('\t\tlocal shopItem', '\t\t' + OLD_HOOK + '\t\tlocal shopItem'),
+        'npc/scripts/potions.lua': SELLER_LUA.replace(
+            "shopModule:addBuyableItem({'mana potion'}, 7620, 50, 1, 'mana potion')\n",
+            "shopModule:addBuyableItem({'mana potion'}, 7620, 50, 1, 'mana potion')\n"
+            "shopModule:addBuyableItem({'everfull health potion'}, 32085, 100, 1, 'everfull health potion') " + T.SELL_MARK + "\n"
+            "shopModule:addBuyableItem({'everfull mana potion'}, 32086, 100, 1, 'everfull mana potion') " + T.SELL_MARK + "\n"
+            "shopModule:addBuyableItem({'hand made'}, 32086, 90, 1, 'everfull mana potion')\n") +
+            "local rows = {{name = 'everfull health potion', id = 32085, buy = 100, sell = 0}}\n",
+    }
+    for rel, text in legacy.items():
+        open(os.path.join(data, rel), 'w', newline='').write(text)
+    old_items = open(os.path.join(data, 'items', 'items.xml')).read().replace(
+        '</items>', T.XML_BEGIN + '\t<item id="32085" article="an" name="everfull health potion" plural="everfull health potions">\n'
+        '\t\t<attribute key="description" value="A flask: kills and the temple refill its charges, each drink costs one." />\n'
+        '\t\t<attribute key="weight" value="180" />\n\t</item>\n' + T.XML_END + '</items>')
+    open(os.path.join(data, 'items', 'items.xml'), 'w', newline='').write(old_items)
+    sys.stdout = devnull
+    try:
+        rc = T.main([data])
+        cleaned = snapshot(data)
+        rc2 = T.main([data])
+    finally:
+        sys.stdout = old
+    check(rc == 0 and rc2 == 0, 'an earlier install: runs twice')
+    check(snapshot(data) == cleaned, 'an earlier install: the second run changes nothing')
+    m2 = cleaned['npc/Morora.xml'].decode()
+    check('everfull' not in m2 and '3208' not in m2 and 'mana potion,7620,50;' in m2, 'an earlier install: the XML entries are gone, the stock ones stay')
+    l2 = cleaned['npc/scripts/potions.lua'].decode()
+    check("addBuyableItem({'everfull" not in l2 and T.SELL_MARK not in l2, 'an earlier install: the marked Lua lines are deleted')
+    check('-- ' + T.EVER_MARK + "shopModule:addBuyableItem({'hand made'}, 32086, 90" in l2, 'an earlier install: a hand-made sale is commented out')
+    check("{name = 'everfull health potion', id = 32085, sell = 0}" in l2, 'an earlier install: a table row loses its buy price')
+    check("shopModule:addBuyableItem({'mana potion'}, 7620, 50, 1, 'mana potion')" in l2, 'an earlier install: the stock lines stay')
+    check(cleaned['npc/lib/npcsystem/modules.lua'].decode() == MODULES, 'an earlier install: the ShopModule hook is taken out, the rest is as it was')
+    x2 = cleaned['items/items.xml'].decode()
+    check('charge' not in x2.lower() and 'A flask that never empties.' in x2, 'an earlier install: the item descriptions are rewritten')
+
+    # a hook this script did not write (changed by hand): reported, left alone, the rest still done
     shutil.rmtree(tmp)
     tmp = tempfile.mkdtemp()
     data = make_base(tmp)
-    open(os.path.join(data, 'npc', 'lib', 'npcsystem', 'modules.lua'), 'w').write('-- nothing here\n')
-    before = snapshot(data)
+    odd = MODULES.replace('\t\tlocal shopItem', '\t\t' + T.HOOK_MARK + ': edited by hand\n\t\tlocal shopItem')
+    open(os.path.join(data, 'npc', 'lib', 'npcsystem', 'modules.lua'), 'w').write(odd)
     sys.stdout = devnull
     try:
         rc = T.main([data])
     finally:
         sys.stdout = old
-    check(rc == 1, 'no hook place: exit 1')
-    check(snapshot(data) == before, 'and nothing written')
+    check(rc == 0 and open(os.path.join(data, 'npc', 'lib', 'npcsystem', 'modules.lua')).read() == odd, 'an unknown hook: left alone, no error')
+    check(T.patch_shop_module(odd)[2] is False, 'an unknown hook: reported')
+
+    # no modules.lua at all: fine (nothing to clean)
+    shutil.rmtree(tmp)
+    tmp = tempfile.mkdtemp()
+    data = make_base(tmp)
+    os.remove(os.path.join(data, 'npc', 'lib', 'npcsystem', 'modules.lua'))
+    sys.stdout = devnull
+    try:
+        rc = T.main([data])
+    finally:
+        sys.stdout = old
+    check(rc == 0, 'no modules.lua: not an error')
+
+    # a base server without any potion seller: not an error either (nothing sells the Everfull potions anyway)
+    shutil.rmtree(tmp)
+    tmp = tempfile.mkdtemp()
+    data = make_base(tmp)
+    os.remove(os.path.join(data, 'npc', 'Morora.xml'))
+    os.remove(os.path.join(data, 'npc', 'scripts', 'potions.lua'))
+    sys.stdout = devnull
+    try:
+        rc = T.main([data])
+    finally:
+        sys.stdout = old
+    check(rc == 0, 'no potion seller at all: not an error')
 finally:
     shutil.rmtree(tmp, ignore_errors=True)
 

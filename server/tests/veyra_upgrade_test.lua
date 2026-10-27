@@ -134,6 +134,7 @@ eq(base.parent, player.bp, "the flask is still there")
 say("upgrade") stock(7618, 40)
 r = say("spirit")
 check(r:find("Done", 1, true) ~= nil, "done: " .. tostring(r))
+eq(r, "Done. Your flask is now an everfull spirit potion.", "the text names no charges")
 eq(player:getItemCount(32268), 1, "the spirit flask of tier 1 is in the backpack")
 eq(player:getItemCount(32085), 0, "the starting flask is gone") eq(player:getItemCount(7618), 0, "the 40 potions are gone")
 eq(player.bp.kids[#player.bp.kids].attrs.chaos_locked, 2, "its lock value")
@@ -198,6 +199,23 @@ r = say("yes")
 check(r:find("Here is your", 1, true) ~= nil, "given back: " .. tostring(r))
 eq(player:getItemCount(32270), 1, "the flask is back") eq(player.money, 5, "for its price")
 eq(say("lost"), "You have lost nothing I can give back.", "not twice")
+
+-- the tier 1 potion is no longer sold (O273): a character that never upgraded and lost it says {lost} too, and only
+-- one that was granted it (the kit or the login grant) is believed
+player.st, player.bp.kids, player.money = {}, {}, 1000
+eq(say("lost"), "You have lost nothing I can give back.", "never granted, nothing earned: nothing to give back")
+player.st[cfg.storage.granted] = 1
+r = say("lost")
+check(r:find("{health}", 1, true) ~= nil and r:find("{mana}", 1, true) ~= nil, "granted and holding nothing: both slots offered: " .. tostring(r))
+r = say("mana")
+check(r:find("Here is your everfull mana potion again", 1, true) ~= nil, "the tier 1 mana potion is given back: " .. tostring(r))
+eq(player:getItemCount(32086), 1, "it is in the backpack") eq(player.money, 1000 - cfg.everfull[2].price, "for its price")
+eq(player.bp.kids[1].attrs.chaos_storebound, 1, "bound")
+r = say("lost")
+check(r:find("everfull health potion", 1, true) ~= nil, "only the health slot is left: " .. tostring(r))
+player.bp:addItemEx(mkItem(32085))
+eq(say("yes"), "I have nothing to give back.", "she checks again at yes: a flask that appeared meanwhile blocks the second one")
+eq(player:getItemCount(32085), 1, "still one") eq(player.money, 1000 - cfg.everfull[2].price, "nothing more was paid")
 
 print(string.format("veyra_upgrade_test: %d checks, %d failures", count, failures))
 if failures > 0 then os.exit(1) end

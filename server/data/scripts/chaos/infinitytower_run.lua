@@ -30,6 +30,13 @@ ChaosTowerBalance = dofile("data/scripts/chaos/infinitytower_balance_config.lua"
 local B = ChaosTowerBalanceCore
 local BC = ChaosTowerBalance
 
+if not ChaosArenaLook then
+	dofile("data/scripts/chaos/arenalook_core.lua")
+end
+if not ChaosDarkTiles then
+	dofile("data/lib/chaos_dark_tiles.lua")
+end
+
 ChaosTowerRun = ChaosTowerRun or {}
 
 local function bossNames()
@@ -44,11 +51,17 @@ local cfg = {
 	arenaBase = {x = 2000, y = 2000, z = 7}, -- top-left corner of slot 0; this part of the map has no tiles
 	slotSpacing = 40,
 	maxSlots = 16,
-	inner = 19, -- inner width and height of the arena (odd)
+	inner = 25, -- inner width and height of the arena (odd; O276: 19 -> 25, room to kite; slotSpacing 40 holds 27)
 	spawnRadius = 6, -- monsters appear within this distance of the middle (players start there)
 	spawnMinDistance = 3, -- ... but not closer than this
 	groundId = 413, -- "stone floor"
 	wallId = 5648, -- "stone wall"
+	-- O276 look (arenalook_core.lua): every run gets one theme and one layout variant in turn (the same hash of the
+	-- coordinates every time, so the layout of a variant never changes): varied ground with borders, a rim along the wall
+	-- with rubble, mirrored cover pieces that never touch each other or the spawn ring, lights against the wall and a
+	-- paved lane from the south wall to the middle. The theme "dark" is the dark tile set when it is installed (else the
+	-- ember theme). Nothing solid within keepRadius of the middle (the group starts there; monsters appear around it).
+	look = {themes = {"ember", "stone", "crypt", "dark"}, variants = 6, keepRadius = 3, cover = 5, lights = 8},
 	minLevel = 100,
 	maxPartySize = 4,
 	partyRange = 12, -- members farther than this from the leader stay out
@@ -66,6 +79,16 @@ local cfg = {
 	limits = {warnAt = {300, 60, 10}, floorWarnAt = {60, 10}, maxRuns = 16, waitlist = true},
 	startDelay = 5, -- seconds before floor 1
 	nextFloorDelay = 6, -- seconds between floors
+	-- "Next floor now" (client button / hotkey, action "skip" of opcode 214): during the start delay or the pause between
+	-- floors it starts the next floor at once. Floors have no waves (all monsters of a floor appear together), so there
+	-- is no "call next wave": only the pause is skipped. Never more than one floor is alive (a floor must be cleared
+	-- first), so nothing stacks and no kill is skipped; the heal between floors is paid when the floor is cleared, so
+	-- only the regeneration of the pause is lost. The run leader presses it (any member once the leader is out).
+	skip = {
+		enabled = true,
+		minInterval = 2, -- seconds between two presses of one run
+		intoBoss = false -- true: the pause before a boss floor can be skipped too (false: it is the group's time to get ready)
+	},
 	healBetweenFloors = 0.5, -- fraction of missing health and mana restored
 	bossEvery = BC.bossEvery,
 	floorGold = 50, -- gold per floor per player (multiplied by the floor number), 0 = none
@@ -109,28 +132,79 @@ local function arenaPos(slot, dx, dy) -- dx, dy are 0 .. inner+1 (0 and inner+1 
 	return Position(o.x + dx, o.y + dy, o.z)
 end
 
-local function buildArena(slot)
+-- the look of run number n (local coordinates 1..inner, the same in every slot): theme and variant in turn, cached
+local function towerLook(n)
+	local L = cfg.look
+	local themeName = L.themes[n % #L.themes + 1]
+	local variant = math.floor(n / #L.themes) % L.variants + 1
+	local theme = ChaosArenaLook.theme(themeName, ChaosArenaLook.darkIds)
+	local center = math.floor(cfg.inner / 2) + 1
+	local look = ChaosArenaLook.cached("tower:" .. theme.name .. ":" .. variant, function()
+		return {
+			tiles = ChaosArenaLook.rectTiles(1, 1, cfg.inner, cfg.inner), theme = theme, seed = 100 + variant, mirror = true,
+			keep = {{x = center, y = center, r = L.keepRadius}, {x = center, y = cfg.inner, r = 1}},
+			roads = {{from = {x = center, y = cfg.inner}, to = {x = center, y = center + L.keepRadius + 1}}},
+			cover = L.cover, lights = L.lights
+		}
+	end)
+	return look
+end
+ChaosTowerRun.look = towerLook
+
+ChaosTowerBuiltSlots = ChaosTowerBuiltSlots or {} -- global: survives a script reload (slot -> true once its tiles are ours)
+local builtSlots = ChaosTowerBuiltSlots
+
+-- returns true, or false + reason (nothing is built then: a tile of the footprint already belongs to the map)
+local function buildArena(slot, look)
 	local last = cfg.inner + 1
+	local wallId = look.wallId or cfg.wallId
+	if not builtSlots[slot] then
+		for dx = 0, last do
+			for dy = 0, last do
+				if Tile(arenaPos(slot, dx, dy)) then
+					return false, string.format("tile %d,%d,%d of tower slot %d already exists in the map",
+						arenaPos(slot, dx, dy).x, arenaPos(slot, dx, dy).y, cfg.arenaBase.z, slot)
+				end
+			end
+		end
+	end
 	for dx = 0, last do
 		for dy = 0, last do
 			local pos = arenaPos(slot, dx, dy)
 			local tile = Game.createTile(pos, true)
 			if tile then
+				local wall = dx == 0 or dy == 0 or dx == last or dy == last
 				-- Game.createItem places a ground item as the tile's ground; Tile:addItem does not
-				if not tile:getGround() then
+				if wall and not tile:getGround() then
 					Game.createItem(cfg.groundId, 1, pos)
 				end
-				if (dx == 0 or dy == 0 or dx == last or dy == last) and not tile:getItemById(cfg.wallId) then
-					Game.createItem(cfg.wallId, 1, pos)
+				if wall and not tile:getItemById(wallId) then
+					Game.createItem(wallId, 1, pos)
 				end
 			end
 		end
 	end
-end
-
-local function clearArena(slot)
+	local o = slotOrigin(slot)
+	ChaosArenaLook.paint(look, o.z, o.x, o.y)
+	-- a floor tile the painter could not give a ground (an unknown item) gets the plain one: never a hole
 	for dx = 1, cfg.inner do
 		for dy = 1, cfg.inner do
+			local pos = arenaPos(slot, dx, dy)
+			local tile = Tile(pos)
+			if tile and not tile:getGround() then
+				Game.createItem(cfg.groundId, 1, pos)
+			end
+		end
+	end
+	builtSlots[slot] = true
+	return true
+end
+
+-- ground, walls and decoration go too: the next run repaints with its own theme
+local function clearArena(slot)
+	local last = cfg.inner + 1
+	for dx = 0, last do
+		for dy = 0, last do
 			local tile = Tile(arenaPos(slot, dx, dy))
 			if tile then
 				local creatures = tile:getCreatures()
@@ -143,20 +217,26 @@ local function clearArena(slot)
 				for _, item in ipairs(items or {}) do
 					item:remove()
 				end
+				local ground = tile.getGround and tile:getGround()
+				if ground and type(ground) ~= "number" and ground.remove then
+					ground:remove()
+				end
 			end
 		end
 	end
 end
 
--- monsters appear around the middle of the arena, where the players stand, so they always see them
-local function randomInnerPos(slot, rng)
+-- monsters appear around the middle of the arena, where the players stand, so they always see them; never on a
+-- cover piece or a light
+local function randomInnerPos(slot, rng, look)
 	local center = math.floor(cfg.inner / 2) + 1
 	local r = math.min(cfg.spawnRadius or 6, center - 1)
 	local minDist = math.min(cfg.spawnMinDistance or 3, r)
-	for _ = 1, 20 do
+	local blocked = look and look.blocked or {}
+	for _ = 1, 30 do
 		local dx = center + rng(2 * r + 1) - r - 1
 		local dy = center + rng(2 * r + 1) - r - 1
-		if math.max(math.abs(dx - center), math.abs(dy - center)) >= minDist then
+		if math.max(math.abs(dx - center), math.abs(dy - center)) >= minDist and not blocked[ChaosArenaLook.key(dx, dy)] then
 			return arenaPos(slot, dx, dy)
 		end
 	end
@@ -164,6 +244,7 @@ local function randomInnerPos(slot, rng)
 end
 
 -- ------------------------------------------------------------------ run state
+local runCount = 0     -- runs started since the server came up: picks the theme and the layout variant
 local runs = {}        -- slot -> run
 local runOf = {}       -- player id -> run
 local monsterRun = {}  -- monster id -> run
@@ -186,6 +267,74 @@ local function say(run, text)
 	end
 end
 
+-- ------------------------------------------------------------------ "Next floor now"
+-- The client's button is enabled by the state the server pushes (opcode 214, action "state"): {inRun, canSkip, floor,
+-- nextBoss}. canSkip is true only while the run waits for the next floor (start delay or pause) and the skip rules allow it.
+local function skipRefusal(run, player, now)
+	local sk = cfg.skip or {}
+	if sk.enabled == false then
+		return "Next floor now is not available."
+	end
+	if run.ended or not run.players[player:getId()] then
+		return "You are not inside the tower."
+	end
+	if not (player.getPosition and inArena(player:getPosition())) then
+		return "You are not inside the tower."
+	end
+	if not run.waiting or run.remaining > 0 then
+		return "The next floor can be called only when this one is cleared."
+	end
+	if run.leader and run.leader ~= player:getId() and run.players[run.leader] then
+		return "Only the run leader can call the next floor."
+	end
+	if (run.floor + 1) % cfg.bossEvery == 0 and not sk.intoBoss then
+		return "A boss floor is next: get ready, it starts by itself."
+	end
+	if run.lastSkip and now - run.lastSkip < (sk.minInterval or 2) then
+		return "Wait a moment before calling the next floor again."
+	end
+end
+
+function ChaosTowerRun.pushState(player, run)
+	local op = ChaosOpcodes and ChaosOpcodes.infinitytower
+	if not (op and json and json.encode and player.sendExtendedOpcode) then
+		return
+	end
+	local state = {action = "state", inRun = run ~= nil, canSkip = false, floor = 0, nextBoss = false}
+	if run then
+		state.floor = run.floor
+		state.nextBoss = (run.floor + 1) % cfg.bossEvery == 0
+		state.canSkip = skipRefusal(run, player, os.time()) == nil
+		-- the tower panel (O274): the floor's monsters, the countdowns (seconds left when this was sent; the client counts on)
+		local now = os.time()
+		state.cleared = run.cleared
+		state.waiting = run.waiting == true
+		state.remaining = run.waiting and 0 or run.remaining
+		state.total = run.total or 0
+		state.boss = run.floor > 0 and run.floor % cfg.bossEvery == 0
+		if run.waiting and run.nextDue then
+			state.nextIn = math.max(0, run.nextDue - now)
+		elseif run.floorStart and run.remaining > 0 then
+			state.floorLeft = math.max(0, run.floorStart + (run.floorLimit or cfg.floorTimeLimit) - now)
+		end
+		state.isLeader = run.leader == nil or run.leader == player:getId()
+	end
+	pcall(player.sendExtendedOpcode, player, op, json.encode(state))
+end
+
+function ChaosTowerRun.sendState(player)
+	ChaosTowerRun.pushState(player, runOf[player:getId()])
+end
+
+local function pushStates(run)
+	for _, p in pairs(run.players) do
+		local player = Player(p.id)
+		if player then
+			ChaosTowerRun.pushState(player, run)
+		end
+	end
+end
+
 local function removePlayer(run, playerId, teleportOut)
 	local entry = run.players[playerId]
 	if not entry then
@@ -202,6 +351,12 @@ local function removePlayer(run, playerId, teleportOut)
 		end
 	end
 	run.finished[#run.finished + 1] = {guid = entry.guid, id = playerId, floors = run.cleared}
+	if player and run.leader == playerId then
+		run.leader = nil -- the next skip press falls to any member
+	end
+	if player then
+		ChaosTowerRun.pushState(player, nil)
+	end
 	if player and ChaosTower and ChaosTower.recordRun then
 		ChaosTower.recordRun(player, run.cleared, os.time() - run.startTime)
 	end
@@ -242,16 +397,30 @@ local function currentSeason()
 	return 1
 end
 
--- into the bags; what does not fit goes to the inbox
+-- gold coins go straight to the bank (owner 2026-10-27: "o gold da infinity tower ainda está indo pra bp")
+local COIN_VALUE = {[2148] = 1, [2152] = 100, [2160] = 10000}
+
+local function bankGold(player, amount)
+	if amount > 0 then
+		player:setBankBalance(player:getBankBalance() + amount)
+	end
+end
+
+-- into the bags; what does not fit goes to the inbox; coins to the bank
 local function deliver(player, items)
 	for _, it in ipairs(items) do
-		local given = Chaos.giveItem(player, it.id, it.count) or 0
-		local rest = it.count - given
-		local inbox = rest > 0 and player.getInbox and player:getInbox() or nil
-		while inbox and rest > 0 do
-			local c = math.min(rest, 100)
-			inbox:addItem(it.id, c, INDEX_WHEREEVER or -1, FLAG_NOLIMIT)
-			rest = rest - c
+		local coin = COIN_VALUE[it.id]
+		if coin then
+			bankGold(player, coin * it.count)
+		else
+			local given = Chaos.giveItem(player, it.id, it.count) or 0
+			local rest = it.count - given
+			local inbox = rest > 0 and player.getInbox and player:getInbox() or nil
+			while inbox and rest > 0 do
+				local c = math.min(rest, 100)
+				inbox:addItem(it.id, c, INDEX_WHEREEVER or -1, FLAG_NOLIMIT)
+				rest = rest - c
+			end
 		end
 	end
 end
@@ -305,6 +474,21 @@ local function floorRewards(player, floor)
 	end
 end
 
+-- the next floor starts after `seconds`, or at once with ChaosTowerRun.skip; a sequence number makes the timer of a
+-- floor that was skipped to do nothing when it fires
+local function scheduleNext(run, seconds)
+	run.nextSeq = (run.nextSeq or 0) + 1
+	run.waiting = true
+	run.nextDue = os.time() + seconds
+	run.nextEvent = addEvent(function(slot, owner, seq)
+		local r = runs[slot]
+		if r and r == owner and not r.ended and r.waiting and r.nextSeq == seq then -- not a later run in the same slot
+			startFloor(r)
+		end
+	end, seconds * 1000, run.slot, run, run.nextSeq)
+	pushStates(run)
+end
+
 local function floorCleared(run)
 	run.cleared = run.floor
 	run.floorEvent = nil
@@ -315,7 +499,7 @@ local function floorCleared(run)
 		local player = Player(p.id)
 		if player then
 			if cfg.floorGold > 0 then
-				player:addMoney(cfg.floorGold * run.floor)
+				bankGold(player, cfg.floorGold * run.floor)
 			end
 			Chaos.heal(player, (player:getMaxHealth() - player:getHealth()) * cfg.healBetweenFloors)
 			player:addMana(math.floor((player:getMaxMana() - player:getMana()) * cfg.healBetweenFloors))
@@ -334,12 +518,7 @@ local function floorCleared(run)
 			end
 		end
 	end
-	run.nextEvent = addEvent(function(slot, owner)
-		local r = runs[slot]
-		if r and r == owner and not r.ended then -- not a later run in the same slot
-			startFloor(r)
-		end
-	end, cfg.nextFloorDelay * 1000, run.slot, run)
+	scheduleNext(run, cfg.nextFloorDelay)
 end
 
 local function onMonsterDead(monsterId)
@@ -352,6 +531,8 @@ local function onMonsterDead(monsterId)
 	run.remaining = run.remaining - 1
 	if run.remaining <= 0 then
 		floorCleared(run)
+	else
+		pushStates(run) -- the panel's monsters left
 	end
 end
 ChaosTowerRun._onMonsterDead = onMonsterDead
@@ -387,9 +568,9 @@ local function spawnPlan(run, plan, rng)
 			-- O168: the floor's level goes to monster_levels.lua (Chaos.spawnLevel) so "[level]" follows the floor; a plain
 			-- Game.createMonster showed the species' own level whatever the floor
 			if Chaos.createMonsterNamed then
-				monster = Chaos.createMonsterNamed(name, randomInnerPos(run.slot, rng), false, true, nil, s.level)
+				monster = Chaos.createMonsterNamed(name, randomInnerPos(run.slot, rng, run.look), false, true, nil, s.level)
 			else
-				monster = Game.createMonster(name, randomInnerPos(run.slot, rng), false, true)
+				monster = Game.createMonster(name, randomInnerPos(run.slot, rng, run.look), false, true)
 			end
 			if monster then
 				break
@@ -467,6 +648,7 @@ end
 ChaosTowerRun._engageTick = engageTick
 
 startFloor = function(run)
+	run.waiting = false
 	run.floor = run.floor + 1
 	local count = 0
 	for _ in pairs(run.players) do
@@ -474,10 +656,16 @@ startFloor = function(run)
 	end
 	local plan = ChaosTowerFloorPlan(run.floor, count)
 	run.remaining = spawnPlan(run, plan, math.random)
+	run.total = run.remaining
 	run.floorStart = os.time()
 	run.floorLimit = ChaosTowerFloorLimit(run.floor)
 	run.floorWarn = {} -- the floor's own warnings (instance limits)
 	say(run, plan.boss and string.format("Floor %d: BOSS!", run.floor) or string.format("Floor %d", run.floor))
+	if ChaosCombatFx and ChaosCombatFx.label then
+		local c = math.floor(cfg.inner / 2) + 1
+		pcall(ChaosCombatFx.label, arenaPos(run.slot, c, c - cfg.look.keepRadius - 1),
+			plan.boss and string.format("BOSS FLOOR %d", run.floor) or string.format("Floor %d", run.floor), plan.boss and "#ff5050" or "#ffffff")
+	end
 	if run.remaining == 0 then
 		floorCleared(run) -- nothing could be created: do not trap the group
 		return
@@ -489,6 +677,30 @@ startFloor = function(run)
 		end
 	end, run.floorLimit * 1000, run.slot, run.floor, run)
 	run.engageEvent = addEvent(engageTick, 1000, run.slot, run.floor, run)
+	pushStates(run)
+end
+
+-- Next floor now: the run leader (any member once the leader is out) starts the next floor at once. Returns true | false, text.
+function ChaosTowerRun.skip(player)
+	local run = runOf[player:getId()]
+	if not run then
+		player:sendCancelMessage(Chaos.t(player, "You are not inside the tower."))
+		ChaosTowerRun.pushState(player, nil)
+		return false
+	end
+	local why = skipRefusal(run, player, os.time())
+	if why then
+		player:sendCancelMessage(Chaos.t(player, why))
+		ChaosTowerRun.pushState(player, run)
+		return false
+	end
+	run.lastSkip = os.time()
+	if run.nextEvent and stopEvent then
+		pcall(stopEvent, run.nextEvent)
+	end
+	say(run, Chaos.t(player, "%s calls the next floor now.", player:getName()))
+	startFloor(run) -- also clears run.waiting, so the pending timer does nothing
+	return true
 end
 
 -- ------------------------------------------------------------------ the run's clock (instance limits)
@@ -600,8 +812,16 @@ function ChaosTowerRun.start(player)
 		return false
 	end
 
-	buildArena(slot)
-	local run = {slot = slot, players = {}, finished = {}, floor = 0, cleared = 0, remaining = 0, startTime = os.time()}
+	runCount = runCount + 1
+	local look = towerLook(runCount)
+	local built, why = buildArena(slot, look)
+	if not built then
+		print("[Chaos tower] " .. tostring(why))
+		player:sendCancelMessage(Chaos.t(player, "The tower arena is not ready. Tell a game master."))
+		return false
+	end
+	local run = {slot = slot, players = {}, finished = {}, floor = 0, cleared = 0, remaining = 0, startTime = os.time(),
+		look = look}
 	runs[slot] = run
 	local center = math.floor(cfg.inner / 2) + 1
 	for i, m in ipairs(group) do
@@ -611,17 +831,14 @@ function ChaosTowerRun.start(player)
 		m:teleportTo(arenaPos(slot, center + (i - 1) % 2, center + math.floor((i - 1) / 2)))
 		m:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
 		m:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(m, "Welcome to the Infinity Tower. Floor 1 starts in %d seconds. Leave Tower (Adventure > Infinity Tower) takes you out.", cfg.startDelay))
+		m:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(m, "Goal: kill every monster of a floor to open the next one; every %dth floor is a boss floor. Stay in the open middle to kite; the pillars and braziers along the walls are cover.", cfg.bossEvery))
 		local reward = ChaosTowerRun.nextRewardText(m, 0)
 		if reward then
 			m:sendTextMessage(MESSAGE_EVENT_ADVANCE, reward)
 		end
 	end
-	run.nextEvent = addEvent(function(s, owner)
-		local r = runs[s]
-		if r and r == owner and not r.ended then
-			startFloor(r)
-		end
-	end, cfg.startDelay * 1000, slot, run)
+	run.leader = player:getId()
+	scheduleNext(run, cfg.startDelay)
 	addEvent(clockTick, 1000, slot, run.startTime)
 	return true
 end
@@ -762,7 +979,10 @@ logout:register()
 local login = CreatureEvent("ChaosTowerRunLogin") -- infinitytower.lua owns "ChaosTowerLogin" (a second one of that name is dropped)
 function login.onLogin(player)
 	if inArena(player:getPosition()) and not runOf[player:getId()] then
-		player:teleportTo(player:getTown():getTemplePosition())
+		local town = player:getTown()
+		if town then
+			player:teleportTo(town:getTemplePosition())
+		end
 	end
 	return true
 end

@@ -1,5 +1,5 @@
--- Everfull potions: engine helpers with no event registration, so the potion sellers' NPC states can load them too
--- (the ShopModule hook of server/tools/install_potions.py) as well as data/scripts/chaos/potions.lua.
+-- Everfull potions: engine helpers with no event registration, so Veyra's NPC state (the {upgrade} and {lost} talk) can
+-- load them too, as well as data/scripts/chaos/potions.lua.
 -- Rules: data/scripts/chaos/potions_core.lua; numbers: potions_config.lua; README "Potions".
 -- Lua 5.1 / LuaJIT and Lua 5.3 compatible.
 
@@ -34,12 +34,17 @@ local function itemId(item)
 	return ok and id or nil
 end
 
+-- Every item of the roots, containers opened (breadth first). The cap only guards against a loop: a depot chest holds
+-- thousands of items, and a flask past a lower cap would be missed, which lets the restore and the starter grant give a
+-- second flask of the slot (O273 audit: the cap was 2000, the depot's own limit is about as large).
+local WALK_LIMIT = 30000
+
 local function walk(roots, fn)
 	local queue, i = {}, 1
 	for _, r in ipairs(roots) do
 		queue[#queue + 1] = r
 	end
-	while i <= #queue and i < 2000 do
+	while i <= #queue and i < WALK_LIMIT do
 		local item = queue[i]
 		i = i + 1
 		if fn(item) then
@@ -188,7 +193,8 @@ function PT.give(player, id, container)
 end
 
 -- every tier 1 Everfull potion the character does not have yet (the starter kit, the login grant); sets the grant flag.
--- A slot that holds any tier counts as held (an upgraded character never gets a second flask). Returns the number given.
+-- Since O273 this and Veyra's {lost} are the only ways to a tier 1 potion: nobody sells it. A slot that holds any tier
+-- counts as held (an upgraded character never gets a second flask). Returns the number given.
 function PT.giveAll(player, container)
 	local c = PT.cfg()
 	local n = 0
@@ -200,57 +206,6 @@ function PT.giveAll(player, container)
 	end
 	player:setStorageValue(c.storage.granted, 1)
 	return n
-end
-
--- the player's stored language (an NPC state never sees the client's hello; i18n_core.lua "NPC scripts")
-local function say(player, text, ...)
-	if not (ChaosI18n and ChaosI18n.npcText) then
-		pcall(dofile, "data/scripts/chaos/i18n_core.lua")
-	end
-	if ChaosI18n and ChaosI18n.npcText then
-		local ok, t = pcall(ChaosI18n.npcText, player, text, ...)
-		if ok and type(t) == "string" then
-			text = t
-		end
-	end
-	player:sendTextMessage(MESSAGE_INFO_DESCR or MESSAGE_STATUS_SMALL, text)
-end
-
--- a potion seller's trade window sells an Everfull potion (ShopModule:callbackOnBuy hook, install_potions.py): one
--- store-bound copy whatever amount was asked, paid like any purchase. Returns true when sold.
-function PT.npcBuy(cid, id)
-	local player = Player(cid)
-	if not player then
-		return false
-	end
-	if not ChaosPay then
-		dofile("data/lib/chaos_pay.lua")
-	end
-	local money = ChaosPay.total(player)
-	local e = PT.everfull(id)
-	local r = K.npcBuy(PT.cfg(), {id = id, owned = e ~= nil and PT.ownedSlot(player, e.key),
-		better = e ~= nil and K.restoreFor(PT.cfg(), e.key, {}, PT.earned(player)) ~= nil, money = money})
-	if not r.ok then
-		if r.text then
-			say(player, r.text)
-		end
-		return false
-	end
-	-- paid first (carried coins, then the bank); a potion that finds no room gives the gold back to the bank
-	if not ChaosPay.pay(player, r.price) then
-		say(player, "You do not have enough gold (carried and in the bank).")
-		return false
-	end
-	local where = PT.give(player, id)
-	if not where then
-		if r.price > 0 then
-			player:setBankBalance(player:getBankBalance() + r.price)
-		end
-		say(player, "You have no room for it.")
-		return false
-	end
-	say(player, "Kills and the temple refill its charges: each drink costs one.")
-	return true
 end
 
 -- one drink of a health or mana potion (the stock potion script, patched by install_potions.py, and potions.lua):
@@ -269,136 +224,6 @@ function PT.amount(player, target, kind, range, level, tier)
 	return K.amount(cfg, range, level, who:getMaxMana(), pct, nil, tier)
 end
 
--- ---------------------------------------------------------------- flask charges (README "Potions", "Flask charges")
--- The charges are the character's, in storage (potions_config.lua storage.healthCharges / manaCharges), in hundredths
--- of a charge; a flask item carries none. -1 (never set) is a full flask.
-local function storageOf(kind)
-	return kind == "mana" and PT.cfg().storage.manaCharges or PT.cfg().storage.healthCharges
-end
-
-function PT.treeExtra(player)
-	return math.max(0, tonumber(player:getStorageValue(PT.cfg().storage.treeMaxCharges)) or 0)
-end
-
-function PT.treeGain(player)
-	return math.max(0, tonumber(player:getStorageValue(PT.cfg().storage.treeGainPct)) or 0)
-end
-
-function PT.maxCharges(player, kind)
-	return K.maxCharges(PT.cfg(), kind, PT.treeExtra(player))
-end
-
--- hundredths of a charge the flask holds now
-function PT.charges(player, kind)
-	return K.read(PT.cfg(), kind, player:getStorageValue(storageOf(kind)), PT.treeExtra(player))
-end
-
-function PT.setCharges(player, kind, hundredths)
-	player:setStorageValue(storageOf(kind), math.max(0, math.floor(hundredths)))
-end
-
--- "3/5"
-function PT.label(player, kind)
-	return K.label(PT.cfg(), kind, PT.charges(player, kind), PT.treeExtra(player))
-end
-
--- one drink: false when the flask is empty (nothing changes), else the charge is spent
-function PT.spend(player, kind)
-	local c = PT.cfg()
-	local have = PT.charges(player, kind)
-	if not K.canDrink(c, have) then
-		return false
-	end
-	PT.setCharges(player, kind, K.spend(c, have))
-	return true
-end
-
--- both pools to full. Returns true when something changed.
-function PT.fill(player)
-	local changed = false
-	for _, pool in ipairs(PT.cfg().pools) do
-		local top = PT.maxCharges(player, pool) * 100
-		if PT.charges(player, pool) < top then
-			PT.setCharges(player, pool, top)
-			changed = true
-		end
-	end
-	return changed
-end
-
--- a kill's refill for both flasks. Returns the whole charges gained by the health and the mana flask
--- (a table kind -> whole charges more than before) and whether anything was added.
-function PT.addKill(player, tier, xp)
-	local c = PT.cfg()
-	local gained, any = {}, false
-	local treeExtra, treeGain = PT.treeExtra(player), PT.treeGain(player)
-	for _, pool in ipairs(c.pools) do -- one refill per pool, whatever tiers the character holds
-		local before = PT.charges(player, pool)
-		local gain = K.killGain(c, {tier = tier, xp = xp, treeGainPct = treeGain, kind = pool})
-		local after = K.add(c, pool, before, gain, treeExtra)
-		if after ~= before then
-			PT.setCharges(player, pool, after)
-			any = true
-		end
-		gained[pool] = K.whole(after) - K.whole(before)
-	end
-	return gained, any
-end
-
--- one drink of a flask that spends several pools (a spirit potion): every pool needs a whole charge, then each pays one;
--- false and nothing spent when one is short
-function PT.spendPools(player, pools)
-	local c = PT.cfg()
-	for _, pool in ipairs(pools) do
-		if not K.canDrink(c, PT.charges(player, pool)) then
-			return false
-		end
-	end
-	for _, pool in ipairs(pools) do
-		PT.spend(player, pool)
-	end
-	return true
-end
-
--- "3/5" for a health or mana flask, "3/5 + 4/8" (health, mana) for a spirit flask
-function PT.labelOf(player, entry)
-	local pools = K.poolsOf(PT.cfg(), entry)
-	if #pools == 1 then
-		return PT.label(player, pools[1])
-	end
-	local parts = {}
-	for _, pool in ipairs(pools) do
-		parts[#parts + 1] = PT.label(player, pool)
-	end
-	return table.concat(parts, " + ") -- health + mana, in the order of the pools
-end
-
--- an Everfull potion slot ("health" / "mana") of a server id
-function PT.kindOf(id)
-	local e = K.everfull(PT.cfg(), id)
-	return e and e.key or nil
-end
-
--- the first carried stock potion of this id (the flask's source potion) in the inventory, not the inbox or depots
-function PT.findStock(player, sourceId)
-	local found
-	local list = {}
-	for slot = CONST_SLOT_FIRST or 1, CONST_SLOT_LAST or 10 do
-		local item = player:getSlotItem(slot)
-		if item then
-			list[#list + 1] = item
-		end
-	end
-	walk(list, function(item)
-		if itemId(item) == sourceId then
-			found = item
-			return true
-		end
-		return false
-	end)
-	return found
-end
-
 -- ---------------------------------------------------------------- higher tiers (README "Potions", "Higher tiers", O245)
 function PT.stockName(e)
 	return (tostring(e.name):gsub("^everfull ", ""))
@@ -411,6 +236,11 @@ end
 
 local function flagOf(player, e)
 	return player:getStorageValue(K.upgradeStorage(PT.cfg(), e.id)) == 1
+end
+
+-- the character got its tier 1 potions once (the starter kit or the login grant set the flag)
+function PT.granted(player)
+	return player:getStorageValue(PT.cfg().storage.granted) == 1
 end
 
 -- the tiers the character has earned (their storage flag is set): a list of entries
@@ -450,7 +280,7 @@ end
 -- false, text, args (English key and format arguments for Chaos.t / ChaosI18n.npcText).
 -- Atomic: the new item is placed first (no room: nothing changed); then the materials, the done flag and the old item
 -- go; on any failure or error what was done is undone, so a character never holds two tiers of a slot and never pays
--- without the swap. The charges are the character's storage and are not read or written here.
+-- without the swap.
 function PT.upgrade(player, targetId, mode)
 	local c = PT.cfg()
 	local r, items = PT.upgradeCheck(player, targetId, mode)
@@ -531,8 +361,8 @@ function PT.upgradeOffers(player)
 	return out
 end
 
--- A lost flask (not carried anywhere, though a tier was earned): Veyra gives the highest tier earned for that slot back
--- for its price in gold. Returns true, entry | false, text, args.
+-- A lost flask (not carried anywhere, though a tier was earned or the tier 1 potion was given): Veyra gives the highest
+-- tier earned for that slot back, else its tier 1 potion, for its price in gold. Returns true, entry | false, text, args.
 function PT.restore(cid, slot)
 	local player = Player(cid)
 	if not player then
@@ -540,7 +370,7 @@ function PT.restore(cid, slot)
 	end
 	local c = PT.cfg()
 	local items = PT.everfullItems(player)
-	local e = K.restoreFor(c, slot, heldIds(items), PT.earned(player))
+	local e = K.restoreFor(c, slot, heldIds(items), PT.earned(player), PT.granted(player))
 	if not e or not PT.installed(e.id) then
 		return false, "I have nothing to give back."
 	end
@@ -569,7 +399,7 @@ function PT.restorable(player)
 	local out = {}
 	local held, earned = heldIds(PT.everfullItems(player)), PT.earned(player)
 	for _, slot in ipairs(PT.cfg().pools) do
-		local e = K.restoreFor(PT.cfg(), slot, held, earned)
+		local e = K.restoreFor(PT.cfg(), slot, held, earned, PT.granted(player))
 		if e then
 			out[#out + 1] = {slot = slot, entry = e}
 		end
@@ -579,8 +409,8 @@ end
 
 -- ---------------------------------------------------------------- the helper is told what is carried (README "Potions", O246)
 -- The Everfull potions show under the stock potions' looks, so the client's helper cannot tell a great Everfull from a stock
--- Great Health Potion. Per slot the server sends the carried Everfull's look, tier, level, line and `ready` (the charges a
--- drink needs are there) on ChaosOpcodes.everfull; the helper uses it to follow an upgrade (its Health / Mana Potion rows
+-- Great Health Potion. Per slot the server sends the carried Everfull's look, tier, level, line and `ready` (always true
+-- since O273: the flasks never empty) on ChaosOpcodes.everfull; the helper uses it to follow an upgrade (its Health / Mana Potion rows
 -- become the carried tier) and Auto setup to pick it. Carried = inventory and backpacks (Player:getItemCount), as the
 -- engine's use by look finds it; the inbox, the purse and the depots do not count.
 function PT.heldView(player)
@@ -591,11 +421,7 @@ function PT.heldView(player)
 			counts[e.id] = player:getItemCount(e.id)
 		end
 	end
-	local charges = {}
-	for _, pool in ipairs(c.pools) do
-		charges[pool] = PT.charges(player, pool)
-	end
-	return K.heldView(c, {counts = counts, charges = charges, clientId = function(id)
+	return K.heldView(c, {counts = counts, clientId = function(id)
 		local ok, cid = pcall(function() return ItemType(id):getClientId() end)
 		return ok and cid or nil
 	end})

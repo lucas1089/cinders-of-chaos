@@ -15490,7 +15490,7 @@ CodexData = {
 							rows = {
 								{"Finished rift", "45% + 10% per modifier (at most 75%) for a next key; 60% + 10% per modifier of those are one tier higher."},
 								{"Rift monsters", "Rare 4%, legendary 10%: a key of the rift's tier."},
-								{"Monsters", "Tier-1 keys: 0.25% per kill (Normal x1, Magic x3, Rare x8, Legendary x20, Boss x40) from monsters of hunting level 60 or more and at least 40% of yours."},
+								{"Monsters", "Tier-1 keys: 0.25% per kill (Normal x1, Magic x3, Rare x8, Legendary x20, Boss x40) from monsters of hunting level 120 or more and at least 80% of yours."},
 								{"Bounty board", "Tier-1 key for a finished contract: hunt 25%, elite 50%, boss 100%."}
 							}
 						},
@@ -15694,23 +15694,23 @@ CodexData = {
 					id = "support:dawnbrand",
 					name = "Dawnbrand",
 					color = "#f6fa07",
-					sub = "20/30/40/50/60% of the spell's damage becomes holy damage",
+					sub = "20/30/40/50/60% of the spell's damage is added as extra holy damage",
 					f = {kind = {"single", "area"}},
 					sections = {
 						{
 							h = "Effect",
-							p = {"20/30/40/50/60% of the spell's damage becomes holy damage.", "Fits single target, area spells.", "One brand support per spell."}
+							p = {"20/30/40/50/60% of the spell's damage is added as extra holy damage.", "Fits single target, area spells.", "One brand support per spell."}
 						},
 						{
 							h = "Levels",
 							cols = {"Level", "Effect"},
 							w = {22, 78},
 							rows = {
-								{"Common", "20% of the spell's damage becomes holy damage"},
-								{"Rare", "30% of the spell's damage becomes holy damage"},
-								{"Epic", "40% of the spell's damage becomes holy damage"},
-								{"Legendary", "50% of the spell's damage becomes holy damage"},
-								{"Mythic", "60% of the spell's damage becomes holy damage"}
+								{"Common", "20% of the spell's damage is added as extra holy damage"},
+								{"Rare", "30% of the spell's damage is added as extra holy damage"},
+								{"Epic", "40% of the spell's damage is added as extra holy damage"},
+								{"Legendary", "50% of the spell's damage is added as extra holy damage"},
+								{"Mythic", "60% of the spell's damage is added as extra holy damage"}
 							}
 						},
 						{
@@ -15826,23 +15826,23 @@ CodexData = {
 					id = "support:emberbrand",
 					name = "Emberbrand",
 					color = "#f6fa07",
-					sub = "20/30/40/50/60% of the spell's damage becomes fire damage",
+					sub = "20/30/40/50/60% of the spell's damage is added as extra fire damage",
 					f = {kind = {"single", "area"}},
 					sections = {
 						{
 							h = "Effect",
-							p = {"20/30/40/50/60% of the spell's damage becomes fire damage.", "Fits single target, area spells.", "One brand support per spell."}
+							p = {"20/30/40/50/60% of the spell's damage is added as extra fire damage.", "Fits single target, area spells.", "One brand support per spell."}
 						},
 						{
 							h = "Levels",
 							cols = {"Level", "Effect"},
 							w = {22, 78},
 							rows = {
-								{"Common", "20% of the spell's damage becomes fire damage"},
-								{"Rare", "30% of the spell's damage becomes fire damage"},
-								{"Epic", "40% of the spell's damage becomes fire damage"},
-								{"Legendary", "50% of the spell's damage becomes fire damage"},
-								{"Mythic", "60% of the spell's damage becomes fire damage"}
+								{"Common", "20% of the spell's damage is added as extra fire damage"},
+								{"Rare", "30% of the spell's damage is added as extra fire damage"},
+								{"Epic", "40% of the spell's damage is added as extra fire damage"},
+								{"Legendary", "50% of the spell's damage is added as extra fire damage"},
+								{"Mythic", "60% of the spell's damage is added as extra fire damage"}
 							}
 						},
 						{
@@ -15914,23 +15914,23 @@ CodexData = {
 					id = "support:gravebrand",
 					name = "Gravebrand",
 					color = "#f6fa07",
-					sub = "20/30/40/50/60% of the spell's damage becomes death damage",
+					sub = "20/30/40/50/60% of the spell's damage is added as extra death damage",
 					f = {kind = {"single", "area"}},
 					sections = {
 						{
 							h = "Effect",
-							p = {"20/30/40/50/60% of the spell's damage becomes death damage.", "Fits single target, area spells.", "One brand support per spell."}
+							p = {"20/30/40/50/60% of the spell's damage is added as extra death damage.", "Fits single target, area spells.", "One brand support per spell."}
 						},
 						{
 							h = "Levels",
 							cols = {"Level", "Effect"},
 							w = {22, 78},
 							rows = {
-								{"Common", "20% of the spell's damage becomes death damage"},
-								{"Rare", "30% of the spell's damage becomes death damage"},
-								{"Epic", "40% of the spell's damage becomes death damage"},
-								{"Legendary", "50% of the spell's damage becomes death damage"},
-								{"Mythic", "60% of the spell's damage becomes death damage"}
+								{"Common", "20% of the spell's damage is added as extra death damage"},
+								{"Rare", "30% of the spell's damage is added as extra death damage"},
+								{"Epic", "40% of the spell's damage is added as extra death damage"},
+								{"Legendary", "50% of the spell's damage is added as extra death damage"},
+								{"Mythic", "60% of the spell's damage is added as extra death damage"}
 							}
 						},
 						{
@@ -16178,23 +16178,23 @@ CodexData = {
 					id = "support:rimebrand",
 					name = "Rimebrand",
 					color = "#f6fa07",
-					sub = "20/30/40/50/60% of the spell's damage becomes ice damage",
+					sub = "20/30/40/50/60% of the spell's damage is added as extra ice damage",
 					f = {kind = {"single", "area"}},
 					sections = {
 						{
 							h = "Effect",
-							p = {"20/30/40/50/60% of the spell's damage becomes ice damage.", "Fits single target, area spells.", "One brand support per spell."}
+							p = {"20/30/40/50/60% of the spell's damage is added as extra ice damage.", "Fits single target, area spells.", "One brand support per spell."}
 						},
 						{
 							h = "Levels",
 							cols = {"Level", "Effect"},
 							w = {22, 78},
 							rows = {
-								{"Common", "20% of the spell's damage becomes ice damage"},
-								{"Rare", "30% of the spell's damage becomes ice damage"},
-								{"Epic", "40% of the spell's damage becomes ice damage"},
-								{"Legendary", "50% of the spell's damage becomes ice damage"},
-								{"Mythic", "60% of the spell's damage becomes ice damage"}
+								{"Common", "20% of the spell's damage is added as extra ice damage"},
+								{"Rare", "30% of the spell's damage is added as extra ice damage"},
+								{"Epic", "40% of the spell's damage is added as extra ice damage"},
+								{"Legendary", "50% of the spell's damage is added as extra ice damage"},
+								{"Mythic", "60% of the spell's damage is added as extra ice damage"}
 							}
 						},
 						{
@@ -16310,23 +16310,23 @@ CodexData = {
 					id = "support:stormbrand",
 					name = "Stormbrand",
 					color = "#f6fa07",
-					sub = "20/30/40/50/60% of the spell's damage becomes energy damage",
+					sub = "20/30/40/50/60% of the spell's damage is added as extra energy damage",
 					f = {kind = {"single", "area"}},
 					sections = {
 						{
 							h = "Effect",
-							p = {"20/30/40/50/60% of the spell's damage becomes energy damage.", "Fits single target, area spells.", "One brand support per spell."}
+							p = {"20/30/40/50/60% of the spell's damage is added as extra energy damage.", "Fits single target, area spells.", "One brand support per spell."}
 						},
 						{
 							h = "Levels",
 							cols = {"Level", "Effect"},
 							w = {22, 78},
 							rows = {
-								{"Common", "20% of the spell's damage becomes energy damage"},
-								{"Rare", "30% of the spell's damage becomes energy damage"},
-								{"Epic", "40% of the spell's damage becomes energy damage"},
-								{"Legendary", "50% of the spell's damage becomes energy damage"},
-								{"Mythic", "60% of the spell's damage becomes energy damage"}
+								{"Common", "20% of the spell's damage is added as extra energy damage"},
+								{"Rare", "30% of the spell's damage is added as extra energy damage"},
+								{"Epic", "40% of the spell's damage is added as extra energy damage"},
+								{"Legendary", "50% of the spell's damage is added as extra energy damage"},
+								{"Mythic", "60% of the spell's damage is added as extra energy damage"}
 							}
 						},
 						{

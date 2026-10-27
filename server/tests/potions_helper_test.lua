@@ -22,7 +22,7 @@ local K = ChaosPotionsCore
 local LOOK = {[32085] = 266, [32086] = 268, [32261] = 239, [32262] = 238, [32263] = 7642, [32264] = 7643, [32265] = 23373,
 	[32266] = 23374, [32267] = 23375, [32268] = 38653, [32269] = 38652, [32270] = 38656}
 local function clientId(id) return LOOK[id] end
-local FULL = {health = 500, mana = 800}
+local FULL = {health = 500, mana = 800} -- charges of before O273: ignored by the view, kept to prove it
 
 -- ---------------------------------------------------------------- core
 local v = K.heldView(cfg, {counts = {}, charges = FULL, clientId = clientId})
@@ -45,15 +45,15 @@ v = K.heldView(cfg, {counts = {[32263] = 1}, charges = FULL, clientId = clientId
 eq(v.health.look, 7642, "great spirit sits in the health slot, under the Great Spirit look") eq(v.health.line, "spirit", "spirit line")
 eq(v.mana, nil, "and takes no mana slot")
 
--- ready: a spirit drink needs a whole charge in BOTH pools; a plain flask only in its own
-v = K.heldView(cfg, {counts = {[32263] = 1}, charges = {health = 500, mana = 99}, clientId = clientId})
-eq(v.health.ready, false, "spirit with the mana pool short: not ready")
-v = K.heldView(cfg, {counts = {[32263] = 1}, charges = {health = 99, mana = 800}, clientId = clientId})
-eq(v.health.ready, false, "spirit with the health pool short: not ready")
-v = K.heldView(cfg, {counts = {[32261] = 1, [32262] = 1}, charges = {health = 500, mana = 0}, clientId = clientId})
-eq(v.health.ready, true, "the health flask does not care about the mana pool") eq(v.mana.ready, false, "an empty mana flask")
-v = K.heldView(cfg, {counts = {[32261] = 1}, charges = {health = 100, mana = 0}, clientId = clientId})
-eq(v.health.ready, true, "exactly one charge is ready")
+-- ready: always true since O273 (the flasks never empty), whatever charges an old caller still passes
+for _, ch in ipairs({FULL, {health = 500, mana = 99}, {health = 99, mana = 800}, {health = 0, mana = 0}, false}) do
+	v = K.heldView(cfg, {counts = {[32263] = 1, [32261] = 0, [32086] = 1}, charges = ch or nil, clientId = clientId})
+	eq(v.health.ready, true, "spirit: ready")
+	eq(v.mana.ready, true, "mana flask: ready")
+end
+v = K.heldView(cfg, {counts = {[32261] = 1, [32262] = 1}, clientId = clientId})
+eq(v.health.ready, true, "the health flask is ready") eq(v.mana.ready, true, "and the mana flask")
+eq(K.canDrink, nil, "the core has no charge rule left")
 
 -- a character that holds two (a GM gift) is told the higher tier; a count of 0 and a missing look are nothing
 v = K.heldView(cfg, {counts = {[32085] = 1, [32264] = 1}, charges = FULL, clientId = clientId})
@@ -70,9 +70,9 @@ eq(next(v), nil, "an item that is not an Everfull one is ignored")
 -- the key changes with every field the client sees, and only then
 local a = K.heldView(cfg, {counts = {[32261] = 1}, charges = FULL, clientId = clientId})
 local b = K.heldView(cfg, {counts = {[32261] = 1}, charges = {health = 400, mana = 3}, clientId = clientId})
-eq(K.heldKey(a), K.heldKey(b), "charges that stay ready change nothing")
+eq(K.heldKey(a), K.heldKey(b), "old charge values change nothing")
 local c2 = K.heldView(cfg, {counts = {[32261] = 1}, charges = {health = 0, mana = 3}, clientId = clientId})
-check(K.heldKey(a) ~= K.heldKey(c2), "a flask that empties changes the key")
+eq(K.heldKey(a), K.heldKey(c2), "an old empty flask changes nothing either")
 local d = K.heldView(cfg, {counts = {[32264] = 1}, charges = FULL, clientId = clientId})
 check(K.heldKey(a) ~= K.heldKey(d), "an upgrade changes the key")
 local p = K.heldPayload(a)
@@ -176,32 +176,31 @@ check(ann.sent[1].buffer:find('"look":268', 1, true) ~= nil, "the mana flask loo
 -- unchanged: the think sends nothing; changed: it sends once
 think.onThink(3000)
 eq(#ann.sent, 1, "unchanged: nothing sent")
-ann.st[cfg.storage.healthCharges] = 0 -- the flask empties
+ann.st[7102482] = 0 -- a leftover empty-flask value of before O273
 think.onThink(3000)
-eq(#ann.sent, 2, "an emptied flask is told") check(ann.sent[2].buffer:find('"ready":false', 1, true) ~= nil, "not ready")
-think.onThink(3000)
-eq(#ann.sent, 2, "and once")
+eq(#ann.sent, 1, "a leftover charge value changes nothing: no message")
+check(ann.sent[1].buffer:find('"ready":true', 1, true) ~= nil and ann.sent[1].buffer:find('"ready":false', 1, true) == nil, "ready is always true")
 ann.items = {[32264] = 1, [32086] = 1} -- the upgrade swapped the item
 think.onThink(3000)
-eq(#ann.sent, 3, "an upgrade is told") check(ann.sent[3].buffer:find('"look":7643', 1, true) ~= nil, "the ultimate look")
+eq(#ann.sent, 2, "an upgrade is told") check(ann.sent[2].buffer:find('"look":7643', 1, true) ~= nil, "the ultimate look")
 ann.items = {} -- everything moved to the depot
 think.onThink(3000)
-eq(#ann.sent, 4, "nothing carried any more is told too")
-check(ann.sent[4].buffer:find('"look"', 1, true) == nil, "with no slot")
+eq(#ann.sent, 3, "nothing carried any more is told too")
+check(ann.sent[3].buffer:find('"look"', 1, true) == nil, "with no slot")
 
 -- the client's sync: always answered, the request carries no data that is read
 ext.onExtendedOpcode(ann, 115, '{"action":"sync"}')
-eq(#ann.sent, 4, "another opcode: ignored")
+eq(#ann.sent, 3, "another opcode: ignored")
 ext.onExtendedOpcode(ann, 116, 'not json')
-eq(#ann.sent, 4, "garbage: ignored")
+eq(#ann.sent, 3, "garbage: ignored")
 ext.onExtendedOpcode(ann, 116, '{"action":"look","look":"239"}')
-eq(#ann.sent, 4, "an unknown action: ignored")
+eq(#ann.sent, 3, "an unknown action: ignored")
 ext.onExtendedOpcode(ann, 116, '{"action":"sync"}')
-eq(#ann.sent, 5, "sync: sent again even if unchanged")
+eq(#ann.sent, 4, "sync: sent again even if unchanged")
 local limited = 0
 ChaosRateLimit = {allow = function() limited = limited + 1 return false end}
 ext.onExtendedOpcode(ann, 116, '{"action":"sync"}')
-eq(#ann.sent, 5, "rate limited") eq(limited, 1, "one check")
+eq(#ann.sent, 4, "rate limited") eq(limited, 1, "one check")
 ChaosRateLimit = nil
 
 -- logout forgets, so the next login tells again

@@ -467,20 +467,20 @@ end
 -- change "kept the old spells"). The first vocation of a login (old vocation 0) is not a change.
 local function classListsSpell(player)
   return function(id)
-    local sp = spellEntry(id)
-    if not sp or sp.notOnServer then
-      return false
-    end
-    if ChaosSpellFix and ChaosSpellFix.allowsVocation then
-      return ChaosSpellFix.allowsVocation(sp, player:getVocation(), rawget(_G, 'translateVocation'))
-    end
-    return type(sp.vocations) ~= 'table' or table.contains(sp.vocations, player:getVocation())
+    -- an unknown spell or an unknown class stays in the lists
+    return A.classKeeps(spellEntry(id), player:getVocation(), function(sp)
+      if ChaosSpellFix and ChaosSpellFix.allowsVocation then
+        return ChaosSpellFix.allowsVocation(sp, player:getVocation(), rawget(_G, 'translateVocation'))
+      end
+      return type(sp.vocations) ~= 'table' or table.contains(sp.vocations, player:getVocation())
+    end)
   end
 end
 
 function U.dropOldClass(player)
   local H = helper()
   if not (H and player and H.getShooterProfile) then return 0 end
+  if (tonumber(player:getVocation()) or 0) <= 0 then return 0 end -- the login has not told the class yet
   local classOk = classListsSpell(player)
   local dropped = 0
   local profile = H.getShooterProfile()

@@ -34,7 +34,7 @@ Um caminho passo a passo para quem está começando: onde caçar em cada faixa d
 ## Nível 8-50: primeiros passos
 
 => @temple | Salão de teleportes | Os dois grandes teleportes 5 passos ao norte do templo levam ao salão de caçadas.
-=> @level | Placas de nível | Cada teleporte tem uma placa: "Nome, levels X-Y". O andar 7 é dos níveis 1-500.
+=> @level | Placas de nível | Cada teleporte tem uma placa: "Nome, levels X-Y". O andar 7 é dos níveis 1-560.
 => @reward | Primeiro contrato | Adventure > Bounty Board: aceite um contrato já no nível 8.
 => @level | Primeiro ponto | Seu primeiro ponto passivo chega no nível 12.
 
@@ -91,7 +91,7 @@ Um caminho passo a passo para quem está começando: onde caçar em cada faixa d
 
 ## Nível 500-750: endurecido
 
-- **Andar 6 do salão (níveis 500-1000).** Gloomtooth Caverns (500-615), Wyrmspine Hollows (500-640), Brackwater Sloughs (515-630), Pyrarch Crucible (520-690), Sablemourn Ossuary (530-645), Thornmantle Glade (545-660), Embergut Rift (560-675), Frostvein Reach (575-690), Graveknell Catacombs (590-705), Umbral Sink (605-720), Cinderscour Barrens (620-735), Bramblegrave Reach (630-770), Grimlock Vaults (635-750) e Blackmarble Halls (650-765).
+- **Salão, níveis 500-1000 (andar 7 até 560, andar 6 acima).** Gloomtooth Caverns (500-615), Wyrmspine Hollows (500-640), Brackwater Sloughs (515-630), Pyrarch Crucible (520-690), Sablemourn Ossuary (530-645), Thornmantle Glade (545-660), Embergut Rift (560-675), Frostvein Reach (575-690), Graveknell Catacombs (590-705), Umbral Sink (605-720), Cinderscour Barrens (620-735), Bramblegrave Reach (630-770), Grimlock Vaults (635-750) e Blackmarble Halls (650-765).
 - **Fendas.** Tier 6 no nível {{rift.level6}}, tier 7 no {{rift.level7}}, tier 8 no {{rift.level8}}.
 - **Objetivos do nível 500:** 5 chefes do mundo, um item com 5 modificadores, 25 andares da Infinity Tower, 10 criaturas completas no Bestiário.
 - **Facção:** Revered no nível 600.

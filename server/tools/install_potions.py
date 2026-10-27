@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Potions (server/README.md "Potions"): no empty flasks, the Everfull health and mana potions.
+"""Potions (server/README.md "Potions"): no empty flasks, the Everfull health, mana and spirit potions that never empty.
 
 usage: python3 -I install_potions.py DATA_DIR [--dry-run]
 
@@ -9,9 +9,9 @@ Lua side (potions.lua, data/lib/chaos_potions.lua) uses too.
 Ranges in use: Everfull 32085..32086 (tier 1), 32261..32267 (tiers 2 and up, O245) and 32268..32280 (the block set aside
 for them: 32268..32270 are the spirit potion of tier 1 and the supreme mana and spirit potions, O247), gems 32001..32035,
 salvage 32051, omens 32071..32072, pouches 32081..32083, supports 32101..32200, orbs v2 32251..32256; see install_omens.py
-for the rest. Only the tier 1 health and mana potions are sold by the potion sellers (steps 4 and 5): the others (the
-tiers 2+ and the tier 1 spirit potion, made from another one: `from` in the config) are earned from Veyra the Apothecary
-or bought in the store (ChaosPotions.upgrade), they replace the flask of their slot.
+for the rest. NO Everfull potion is sold (owner 2026-10-27, O273): the tier 1 health and mana potions come from the
+starter kit and the login grant (ChaosPotions.giveAll), the others are earned from Veyra the Apothecary or bought in
+the store (ChaosPotions.upgrade); Veyra gives a lost one back ({lost}).
 
 1. data/items/items.otb: per Everfull potion a copy of the stock node `sourceId` (7618 health potion, 7620 mana
    potion; the tiers 2+ copy the great / ultimate / supreme potion nodes 7591, 7590, 8472, 8473, 26029, 26030, 26031: group, flags, every attribute, the stock look) with the server id `id` (32085, 32086), stackable like the
@@ -24,10 +24,10 @@ or bought in the store (ChaosPotions.upgrade), they replace the flask of their s
    the new look, re-running the step on an installed server updates it); a server id that belongs to another client id
    (neither the stock one nor the entry's) stops the script (nothing is written), as does a client id another item has.
    items.otb.bak keeps the original the first time.
-2. data/items/items.xml: the entries (article, name, plural, description "A flask: kills and the temple refill its charges. ...", weight) between two
-   marker comments before </items>, rewritten when the config changed. An id with an entry outside the block stops the
-   script. The flask entries (7634-7636): a description sentence about a deposit is removed (the config's flaskText
-   when nothing is left).
+2. data/items/items.xml: the entries (article, name, plural, description "A flask that never empties. ...", weight) between
+   two marker comments before </items>, rewritten when the config changed (a server installed before O273 gets the new
+   descriptions without "charges"). An id with an entry outside the block stops the script. The flask entries
+   (7634-7636): a description sentence about a deposit is removed (the config's flaskText when nothing is left).
 3. No flasks: in every base Lua file under data/actions and data/scripts (not the Chaos folders) a statement that
    adds an empty flask (addItem / addItemEx / createItem / doPlayerAddItem with an argument named like `flask`, or a
    flask id) is commented out (marker "Chaos: no potion flasks"); inside a longer expression the call becomes nil.
@@ -35,14 +35,16 @@ or bought in the store (ChaosPotions.upgrade), they replace the flask of their s
 4. NPCs (data/npc/**/*.xml and *.lua): no NPC sells a flask any more (shop_buyable entries removed,
    addBuyableItem lines commented out, the `buy` of a {id = ..., buy = ...} row removed); NPCs still buy them
    (shop_sellable stays, at the price table's 5 gold). A string or attribute about a flask deposit (it says "deposit"
-   and names a flask, vial or potion) loses its deposit sentences (the config's flaskText when nothing is left). Every
-   potion seller (an NPC that sells 7618 or 7620 through shop_buyable or addBuyableItem) sells each Everfull potion at
-   its config price.
-5. data/npc/lib/npcsystem/modules.lua: ShopModule:callbackOnBuy hands an Everfull purchase to
-   ChaosPotions.npcBuy (data/lib/chaos_potions.lua): one store-bound copy, refused while the character has one.
+   and names a flask, vial or potion) loses its deposit sentences (the config's flaskText when nothing is left).
+   No NPC sells an Everfull potion either (O273): the entries an earlier install added to every potion seller (shop_buyable
+   items, the addBuyableItem lines marked "Chaos: Everfull potions") are REMOVED, and any other shop entry of an Everfull
+   id is taken out too (a line of a Lua NPC without the marker is commented out). Re-running on a live server cleans it.
+5. data/npc/lib/npcsystem/modules.lua: the ShopModule:callbackOnBuy hook an earlier install added (it handed an Everfull
+   purchase to ChaosPotions.npcBuy, gone since O273) is REMOVED. Nothing sells an Everfull potion and the engine only
+   sells what a shop list names, so no hook is needed. A hook the script cannot recognise is reported and left.
 
-Idempotent: a second run changes nothing. Exit 1 when the ShopModule hook cannot be placed or no potion seller is
-found (nothing is written then).
+Idempotent: a second run changes nothing. Exit 1 when the Everfull items.otb / items.xml part fails (nothing is
+written then).
 """
 import glob, os, re, sys
 
@@ -56,9 +58,9 @@ XML_BEGIN = '\t<!-- Chaos Everfull potions (server/tools/install_potions.py, do 
 XML_END = '\t<!-- end of the Chaos Everfull potions -->\n'
 FLAG_ANIMATION = 1 << 24   # items.otb: the server sends a phase byte; the new looks have one phase
 FLASK_MARK = 'Chaos: no potion flasks (install_potions.py): '
-SELL_MARK = '-- Chaos: Everfull potions (install_potions.py)'
-HOOK_MARK = '-- Chaos: Everfull potions (install_potions.py) v1'
-SELLER_IDS = (7618, 7620)
+SELL_MARK = '-- Chaos: Everfull potions (install_potions.py)'   # the addBuyableItem lines an install before O273 added
+EVER_MARK = 'Chaos: Everfull potions are not sold (install_potions.py): '
+HOOK_MARK = '-- Chaos: Everfull potions (install_potions.py) v1'     # the ShopModule hook an install before O273 added
 
 
 def read(path):
@@ -300,34 +302,32 @@ def deposit_text(s):
 
 
 def patch_shop_list(value, cfg):
-    """shop_buyable: flask entries out; a potion seller gets the Everfull potions. -> (value, removed, added, seller)"""
+    """shop_buyable: flask entries and Everfull entries out. -> (value, flasks removed, Everfull entries removed)"""
     flasks = set(cfg['flasks'])
+    ever = {r['id'] for r in cfg['everfull']}
     entries = [e for e in value.split(';')]
     ids = []
     for e in entries:
         m = re.match(r'\s*[^,]*,\s*(\d+)\s*,', e)
         ids.append(int(m.group(1)) if m else None)
-    keep = [e for e, i in zip(entries, ids) if i not in flasks]
-    removed = len(entries) - len(keep)
-    seller = any(i in SELLER_IDS for i in ids)
-    have = {i for i in ids if i is not None}
-    new = ['%s,%d,%d' % (r['name'], r['id'], r['price']) for r in cfg['everfull'] if seller and r['tier'] == 1 and not r['upgrade'] and r['id'] not in have]
-    if not removed and not new:
-        return value, 0, 0, seller
+    keep = [e for e, i in zip(entries, ids) if i not in flasks and i not in ever]
+    removed = sum(1 for i in ids if i in flasks)
+    gone = sum(1 for i in ids if i in ever)
+    if not removed and not gone:
+        return value, 0, 0
     tail = ''
     if keep and keep[-1].strip() == '':
         tail = keep.pop()
-    out = ';'.join(keep + new)
-    out += ';' + tail if (value.rstrip().endswith(';') or new) else tail
-    return out, removed, len(new), seller
+    out = ';'.join(keep)
+    out += ';' + tail if value.rstrip().endswith(';') else tail
+    return out, removed, gone
 
 
 def patch_npc_xml(text, cfg):
     m = SHOP_PARAM.search(text)
-    removed = added = 0
-    seller = False
+    removed = gone = 0
     if m:
-        val, removed, added, seller = patch_shop_list(m.group(2), cfg)
+        val, removed, gone = patch_shop_list(m.group(2), cfg)
         text = text[:m.start(2)] + val + text[m.end(2):]
     deposits = [0]
 
@@ -337,7 +337,7 @@ def patch_npc_xml(text, cfg):
         deposits[0] += 1
         return v.group(1) + xml_escape(drop_deposit(v.group(2), cfg['flaskText'])) + v.group(3)
     text = XML_VALUE.sub(attr, text)
-    return text, {'removed': removed, 'added': added, 'seller': seller, 'deposit': deposits[0]}
+    return text, {'removed': removed, 'ever': gone, 'deposit': deposits[0]}
 
 
 def patch_lua_deposits(text, cfg):
@@ -360,63 +360,56 @@ def patch_lua_deposits(text, cfg):
 
 def patch_npc_lua(text, cfg):
     flasks = set(cfg['flasks'])
+    ever = {r['id'] for r in cfg['everfull']}
     nl = '\r\n' if '\r\n' in text else '\n'
     lines = text.split(nl)
-    removed, last_seller, have, var = 0, None, set(), None
+    removed, gone = 0, 0
     for i, line in enumerate(lines):
         m = LUA_ADD_LINE.match(line)
         if not m:
             continue
         iid = int(m.group(3))
-        have.add(iid)
         if iid in flasks and FLASK_MARK not in line:
             lines[i] = m.group(1) + '-- ' + FLASK_MARK + line.strip()
             removed += 1
-        elif iid in SELLER_IDS:
-            last_seller, var = i, m.group(2)
-    added = 0
-    if last_seller is not None:
-        indent = LUA_ADD_LINE.match(lines[last_seller]).group(1)
-        new = ['%s%s:addBuyableItem({\'%s\'}, %d, %d, 1, \'%s\') %s' % (indent, var, r['name'], r['id'], r['price'],
-                                                                         r['name'], SELL_MARK)
-               for r in cfg['everfull'] if r['tier'] == 1 and not r['upgrade'] and r['id'] not in have]
-        lines[last_seller + 1:last_seller + 1] = new
-        added = len(new)
-    text = nl.join(lines)
+        elif iid in ever:
+            # a line an earlier install added (marked) goes; any other sale is commented out
+            lines[i] = None if SELL_MARK in line else m.group(1) + '-- ' + EVER_MARK + line.strip()
+            gone += 1
+    text = nl.join(l for l in lines if l is not None)
 
     rows = [0]
 
     def row(m):
-        if int(m.group(1)) not in flasks or not re.search(r'\bbuy\s*=', m.group(0)):
+        if int(m.group(1)) not in flasks | ever or not re.search(r'\bbuy\s*=', m.group(0)):
             return m.group(0)
         rows[0] += 1
         return re.sub(r',?\s*\bbuy\s*=\s*\d+', '', m.group(0), count=1)
     text = LUA_ROW.sub(row, text)
     removed += rows[0]
     text, deposits = patch_lua_deposits(text, cfg)
-    return text, {'removed': removed, 'added': added, 'seller': last_seller is not None, 'deposit': deposits}
+    return text, {'removed': removed, 'ever': gone, 'deposit': deposits}
 
 
 # ------------------------------------------------------------------------------------------------ 5. ShopModule
-SHOP_BUY = re.compile(r'^([ \t]*)function\s+ShopModule\s*:\s*callbackOnBuy\s*\(\s*(\w+)\s*,\s*(\w+)[^)]*\)[ \t]*\r?\n', re.M)
+# the hook an install before O273 wrote (HOOK_MARK line, the loader line, the `if ... everfull(...) then`, the return, `end`)
+HOOK_BLOCK = re.compile(r'[ \t]*' + re.escape(HOOK_MARK) + r'[^\r\n]*\r?\n'
+                        r'[ \t]*if ChaosPotions == nil then pcall\(dofile, "data/lib/chaos_potions\.lua"\) end\r?\n'
+                        r'[ \t]*if ChaosPotions and ChaosPotions\.everfull and ChaosPotions\.everfull\(\w+\) then\r?\n'
+                        r'[ \t]*return ChaosPotions\.npcBuy\(\w+, \w+\)\r?\n'
+                        r'[ \t]*end\r?\n')
 
 
 def patch_shop_module(text):
-    if HOOK_MARK in text:
-        return text, 'modules.lua: ShopModule hook present'
-    m = SHOP_BUY.search(text)
-    if not m:
-        return None, 'modules.lua: no ShopModule:callbackOnBuy'
-    nl = '\r\n' if '\r\n' in text else '\n'
-    ind = m.group(1) + '\t'
-    cid, iid = m.group(2), m.group(3)
-    hook = nl.join([
-        ind + HOOK_MARK + ': one store-bound copy (data/lib/chaos_potions.lua)',
-        ind + 'if ChaosPotions == nil then pcall(dofile, "data/lib/chaos_potions.lua") end',
-        ind + 'if ChaosPotions and ChaosPotions.everfull and ChaosPotions.everfull(%s) then' % iid,
-        ind + '\treturn ChaosPotions.npcBuy(%s, %s)' % (cid, iid),
-        ind + 'end']) + nl
-    return text[:m.end()] + hook + text[m.end():], 'modules.lua: ShopModule hook added'
+    """removes the ShopModule hook of an install before O273. -> (new text, note, ok); ok is False for a hook this
+    script cannot recognise (reported, nothing changed)"""
+    if HOOK_MARK not in text:
+        return text, 'modules.lua: no ShopModule hook', True
+    new, n = HOOK_BLOCK.subn('', text)
+    if n == 0 or HOOK_MARK in new:
+        return text, 'modules.lua: WARNING the ShopModule hook (%s) is not the one this script wrote: remove it by hand, ' \
+            'ChaosPotions.npcBuy is gone' % HOOK_MARK, False
+    return new, 'modules.lua: ShopModule hook removed', True
 
 
 # ------------------------------------------------------------------------------------------------ files
@@ -469,7 +462,7 @@ def main(argv=None):
     otb = os.path.join(data_dir, 'items', 'items.otb')
     xml = os.path.join(data_dir, 'items', 'items.xml')
     modules = os.path.join(data_dir, 'npc', 'lib', 'npcsystem', 'modules.lua')
-    for path in (otb, xml, modules):
+    for path in (otb, xml):
         if not os.path.exists(path):
             print('not found:', path)
             return 1
@@ -499,7 +492,7 @@ def main(argv=None):
     notes.append('lua: %d flask line(s) / deposit text(s) in %d file(s)' % (flask_n, flask_files) if flask_n
                  else 'lua: no potion makes a flask')
 
-    sellers, removed, added, deposits = [], 0, 0, 0
+    removed, gone, deposits = 0, 0, 0
     npc_dir = os.path.join(data_dir, 'npc')
     npc_files = sorted(glob.glob(os.path.join(npc_dir, '**', '*.xml'), recursive=True)
                        + [p for p in glob.glob(os.path.join(npc_dir, '**', '*.lua'), recursive=True)
@@ -507,17 +500,13 @@ def main(argv=None):
     for path in npc_files:
         t = changed.get(path, read(path))
         new, info = (patch_npc_xml if path.endswith('.xml') else patch_npc_lua)(t, cfg)
-        if info['seller']:
-            sellers.append(os.path.relpath(path, npc_dir))
         removed += info['removed']
-        added += info['added']
+        gone += info['ever']
         deposits += info['deposit']
         if new != read(path):
             changed[path] = new
-    notes.append('npc: %d potion seller(s); %d Everfull entr(ies) added, %d flask sale(s) removed, %d deposit text(s)'
-                 % (len(sellers), added, removed, deposits))
-    if not sellers:
-        errors.append('npc: no NPC sells the health or mana potion (7618 / 7620): nobody would sell the Everfull potions')
+    notes.append('npc: %d Everfull shop entr(ies) removed (nothing sells them), %d flask sale(s) removed, %d deposit text(s)'
+                 % (gone, removed, deposits))
 
     pot = os.path.join(data_dir, 'actions', 'scripts', 'other', 'potions.lua')
     if os.path.exists(pot):
@@ -530,13 +519,14 @@ def main(argv=None):
         if k == 0 and AMOUNT_MARK not in t:
             errors.append('potions.lua: no doTargetCombat(... potion.health[1], potion.health[2]) to patch')
 
-    mt = read(modules)
-    new_mt, mnote = patch_shop_module(mt)
-    notes.append(mnote)
-    if new_mt is None:
-        errors.append(mnote)
-    elif new_mt != mt:
-        changed[modules] = new_mt
+    if os.path.exists(modules):
+        mt = read(modules)
+        new_mt, mnote, ok = patch_shop_module(mt)
+        notes.append(mnote)
+        if new_mt != mt:
+            changed[modules] = new_mt
+    else:
+        notes.append('modules.lua: not found, no ShopModule hook to remove')
 
     for line in notes:
         print(line)

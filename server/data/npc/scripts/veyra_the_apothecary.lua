@@ -112,7 +112,7 @@ local function creatureSayCallback(cid, type, msg)
 				else
 					local ok, why, args = PT.upgrade(player, chosen.id, "quest")
 					if ok then
-						npcHandler:say(t(cid, "Done. Your flask is now an %s. Its charges are as you left them.", chosen.name), cid)
+						npcHandler:say(t(cid, "Done. Your flask is now an %s.", chosen.name), cid)
 					else
 						npcHandler:say(t(cid, why, unpack(args or {})), cid)
 					end
@@ -166,16 +166,16 @@ local function creatureSayCallback(cid, type, msg)
 		end
 	end
 	if has(text, "job", "name", "who") then
-		npcHandler:say(t(cid, "Veyra, apothecary. I sell potions of every tier one at a time, the runes hunters ask for most, and rope, shovel, torch and backpack. Ask for a {trade}."), cid)
+		npcHandler:say(t(cid, "Veyra, apothecary. I sell potions of every tier one at a time, the runes hunters ask for most, and rope, shovel, torch and backpack. Ask for a {trade}, or an {upgrade} for your Everfull flask."), cid)
 		return true
 	elseif has(text, "potion", "pack", "bulk") then
-		npcHandler:say(t(cid, "Health, mana and spirit draughts from the small to the supreme, each for a level. In bulk the store sells packs of one hundred for less. Ask for a {trade}."), cid)
+		npcHandler:say(t(cid, "Health, mana and spirit draughts from the small to the supreme, each for a level. In bulk the store sells packs of one hundred for less. Ask for a {trade}, or an {upgrade} for your Everfull flask."), cid)
 		return true
 	elseif has(text, "deck", "card") then
 		npcHandler:say(t(cid, "A deck holds your cards: five in the Bronze, ten in the Silver, twenty in the Golden. Carry it, then use a card to put it in and turn it on. Ask for a {trade}."), cid)
 		return true
 	elseif has(text, "flask", "vial", "empty") then
-		npcHandler:say(t(cid, "No potion leaves a flask now. Old empty ones I still buy, five gold each."), cid)
+		npcHandler:say(t(cid, "No potion leaves a flask now. Old empty ones I still buy, five gold each. An Everfull flask I can {upgrade}."), cid)
 		return true
 	end
 	return false

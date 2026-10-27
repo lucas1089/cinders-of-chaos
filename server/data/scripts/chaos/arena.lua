@@ -24,6 +24,9 @@ if not Chaos.t then
 	dofile("data/scripts/chaos/i18n_core.lua")
 end
 Chaos.arenaConfig = dofile("data/scripts/chaos/arena_config.lua")
+if not ChaosArenaLook then
+	dofile("data/scripts/chaos/arenalook_core.lua")
+end
 if not (ChaosArenaCore and ChaosArenaCore.rateMatch) then
 	dofile("data/scripts/chaos/arena_core.lua")
 end
@@ -405,7 +408,7 @@ function S.buildSlot(slot)
 		local pos = P(t)
 		local tile = Game.createTile(pos, true)
 		if tile then
-			if not tile:getGround() then
+			if (t.wall or t.gallery) and not tile:getGround() then -- the fighting floor gets its ground from the look (below)
 				Game.createItem(t.gallery and cfg.galleryGroundId or cfg.groundId, 1, pos)
 			end
 			if t.wall and not tile:getItemById(cfg.wallId) then
@@ -413,6 +416,26 @@ function S.buildSlot(slot)
 			end
 		end
 	end
+	-- O276: the look of the fighting room (arenalook_core.lua), turned 180 degrees for the other team so both sides have the
+	-- same cover; the spawns, the centre line and the fixtures stay open. A theme in turn per slot.
+	local lk = cfg.look or {}
+	local themes = lk.themes or {"stone"}
+	local ar = L.arena
+	local keep = {}
+	for team = 1, 2 do
+		for _, sp in ipairs(L.spawns[team]) do
+			keep[#keep + 1] = {x = sp.x, y = sp.y, r = 0}
+		end
+	end
+	for _, p in ipairs(L.pillars) do
+		keep[#keep + 1] = {x = p.x, y = p.y, r = 0}
+	end
+	for _, p in ipairs(L.basins) do
+		keep[#keep + 1] = {x = p.x, y = p.y, r = 0}
+	end
+	ChaosArenaLook.dress("pvparena" .. slot, {x1 = ar.x1 + 1, y1 = ar.y1 + 1, x2 = ar.x2 - 1, y2 = ar.y2 - 1}, L.z,
+		themes[slot % #themes + 1], {keep = keep, roads = {{from = L.spawns[1][1], to = L.spawns[2][1]}}, seed = lk.seed or 1,
+		cover = lk.cover, lights = lk.lights, mirror = true, groundIds = {[cfg.groundId] = true}, fallbackGround = cfg.groundId})
 	for _, p in ipairs(L.pillars) do
 		placeItem(P(p), cfg.pillarId)
 	end
@@ -436,7 +459,7 @@ local function cleanSlot(slot)
 					end
 				end
 				for _, item in ipairs(tile:getItems() or {}) do
-					if not keep[item:getId()] then
+					if not keep[item:getId()] and not ChaosArenaLook.isOwned(item:getId()) then
 						item:remove()
 					end
 				end

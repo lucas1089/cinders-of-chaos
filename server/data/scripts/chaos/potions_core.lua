@@ -2,27 +2,13 @@
 -- server/tests/potions_test.lua. README "Potions".
 --   ChaosPotionsCore.everfull(cfg, id)        the Everfull entry of a server id, or nil
 --   ChaosPotionsCore.isFlask(cfg, id)          an old empty flask id
---   ChaosPotionsCore.drink(cfg, s)             s = {id, exhausted, target[, charges]} -> {ok, health, mana, consume, flask}
---                                              | {ok = false, why, text}
---   ChaosPotionsCore.npcBuy(cfg, s)            s = {id, owned, money} -> {ok, price} | {ok = false, why, text}
+--   ChaosPotionsCore.drink(cfg, s)             s = {id, exhausted, target[, level]} -> {ok, health, mana, consume} | {ok = false, why, text}
+--                                              The flasks never empty (O273): a drink spends and needs nothing but the level and the wait.
 --   ChaosPotionsCore.amount(cfg, range, level, max, bonusPct[, rand, tier])  one drink: fixed roll + percent of max
 --   ChaosPotionsCore.grantDue(cfg, s)          s = {granted, lastLogin} -> true when a login grant is due
---   Flask charges (cfg.flask; hundredths of a charge, an unset storage value is a full flask):
---   ChaosPotionsCore.maxCharges(cfg, kind, treeExtra)      whole charges the flask holds
---   ChaosPotionsCore.read(cfg, kind, raw, treeExtra)       raw storage value -> hundredths (unset / bad = full)
---   ChaosPotionsCore.clampStored(cfg, kind, raw, extra)    the value to write back when a refund lowered the maximum, else nil
---   ChaosPotionsCore.canDrink(cfg, hundredths)             enough for one drink
---   ChaosPotionsCore.spend(cfg, hundredths)                after a drink
---   ChaosPotionsCore.killGain(cfg, s)                      s = {tier, xp, treeGainPct, kind} -> hundredths per kill
---   ChaosPotionsCore.add(cfg, kind, hundredths, gain, treeExtra)  capped at the maximum
---   ChaosPotionsCore.whole(hundredths) / K.label(...)      whole charges, "3/5"
---   ChaosPotionsCore.eligibleKill(cfg, s)                  s = {name, summon, husk, player} -> bool
---   ChaosPotionsCore.safeRefill(cfg, s)                    s = {safe, fighting} -> bool
---   ChaosPotionsCore.treeValues(cfg, bonuses)              the tree's extra charges and gain percent (capped)
---   ChaosPotionsCore.noticeDue(cfg, last, now)             at most one refill notice per noticeMs
 --   O245 tiers (README "Potions", "Higher tiers"): an entry has tier, level, line (health | mana | spirit), from (the
---   server ids it is made from) and pools (the charge pools a drink spends, default its key).
---   ChaosPotionsCore.poolsOf(cfg, entry)          the pools a drink of this entry spends
+--   server ids it is made from) and pools (the potion waits a drink sets, default its key).
+--   ChaosPotionsCore.poolsOf(cfg, entry)          the waits a drink of this entry sets and honours
 --   ChaosPotionsCore.upgradeTargets(cfg)           the entries made from another one (`from`: tier 2 and up, and the
 --                                                  tier 1 spirit potion), in config order = the order of their flags
 --   ChaosPotionsCore.materialOf(cfg, e)            {id, count, name}: what Veyra's task takes for an entry
@@ -30,7 +16,7 @@
 --   ChaosPotionsCore.upgradeCoins(cfg, id)         the store price of a tier
 --   ChaosPotionsCore.upgradeCheck(cfg, s)          s = {id, level, installed, done, held = {ids}, mode, materials}
 --                                                  -> {ok, from, materials} | {ok = false, why, text, args}
---   ChaosPotionsCore.restoreFor(cfg, slot, held, earned)  the entry a character that lost its flask gets back, or nil
+--   ChaosPotionsCore.restoreFor(cfg, slot, held, earned, granted)  the entry a character that lost its flask gets back, or nil
 --   O246 (client helper, opcode ChaosOpcodes.everfull): ChaosPotionsCore.heldView(cfg, s) / heldKey(view) / heldPayload(view):
 --                                                  the Everfull potion each slot carries, by its stock look, for the helper
 -- Lua 5.1 / LuaJIT and Lua 5.3 compatible.
@@ -55,21 +41,15 @@ function K.isFlask(cfg, id)
 	return false
 end
 
--- one drink of an Everfull potion. target: "self" (no target, an item, the drinker), "player" (another player) or
--- "creature" (a monster or an NPC: refused like the stock potion, the use goes on to the engine). The potion is never
--- consumed and never leaves a flask; the exhaust is the stock potions' one.
+-- the waits (health, mana) a drink of this entry sets and honours; a spirit potion has both
 function K.poolsOf(cfg, e)
 	return e.pools or {e.key}
 end
 
--- s.charges: hundredths of a charge, one number for every pool of the entry, or a table pool -> hundredths
-local function chargeOf(s, pool)
-	if type(s.charges) == "table" then
-		return s.charges[pool]
-	end
-	return s.charges
-end
-
+-- one drink of an Everfull potion. target: "self" (no target, an item, the drinker), "player" (another player) or
+-- "creature" (a monster or an NPC: refused like the stock potion, the use goes on to the engine). The potion is never
+-- consumed, spends nothing (the flasks never empty, O273) and never leaves a flask; the level gate and the exhaust
+-- are the stock potions' ones.
 function K.drink(cfg, s)
 	local e = K.everfull(cfg, s.id)
 	if not e then
@@ -83,22 +63,15 @@ function K.drink(cfg, s)
 		return {ok = false, why = "level", level = e.level,
 			text = "Only characters of level %d or above may drink this fluid.", args = {e.level}}
 	end
-	-- every pool the drink spends needs a whole charge (a spirit potion spends one of each)
-	for _, pool in ipairs(K.poolsOf(cfg, e)) do
-		local have = chargeOf(s, pool)
-		if have ~= nil and not K.canDrink(cfg, have) then
-			return {ok = false, why = "empty", kind = pool}
-		end
-	end
 	if s.exhausted then
 		return {ok = false, why = "exhausted", text = "You are exhausted."}
 	end
-	return {ok = true, kind = e.key, pools = K.poolsOf(cfg, e), health = e.health, mana = e.mana, consume = false, flask = nil}
+	return {ok = true, kind = e.key, pools = K.poolsOf(cfg, e), health = e.health, mana = e.mana, consume = false}
 end
 
 -- the amount of one potion drink: a roll inside range (the fixed part) + percent(level) of max, then x (1 + bonusPct)
 -- tier: an Everfull potion's tier (amount.everfullPct gives its percent, the same at every character level); nil for
--- a stock potion (and for a stock potion an empty flask drinks), which uses the level curve
+-- a stock potion, which uses the level curve
 function K.percent(cfg, level, tier)
 	local a = cfg.amount or {}
 	local own = tier and (a.everfullPct or {})[tier]
@@ -113,27 +86,6 @@ function K.amount(cfg, range, level, max, bonusPct, rand, tier)
 	local lo, hi = math.floor(range[1] or 0), math.floor(range[2] or range[1] or 0)
 	local v = (hi > lo and rand(lo, hi) or lo) + math.max(0, max or 0) * K.percent(cfg, level, tier) / 100
 	return math.floor(v * (1 + math.max(0, bonusPct or 0) / 100) + 0.5)
-end
-
--- a potion seller's replacement: tier 1 only, one at a time, refused while the character has an Everfull potion of the
--- same slot in any tier (backpack, inbox or depot: s.owned) and while it earned a better one (s.better: Veyra gives
--- that one back, K.restoreFor)
-function K.npcBuy(cfg, s)
-	local e = K.everfull(cfg, s.id)
-	if not e or (e.tier or 1) > 1 or K.isUpgrade(e) then
-		return {ok = false, why = "unknown"}
-	end
-	if s.owned then
-		return {ok = false, why = "owned", text = "You already have one. It refills as you kill monsters."}
-	end
-	if s.better then
-		return {ok = false, why = "better",
-			text = "You earned a better flask than that. Ask Veyra the Apothecary to give it back."}
-	end
-	if (s.money or 0) < e.price then
-		return {ok = false, why = "money", text = "You do not have enough money."}
-	end
-	return {ok = true, price = e.price}
 end
 
 -- the lock value an Everfull potion carries (cfg.bindLock: bound, not drawn grey), and whether an item's current value
@@ -155,127 +107,9 @@ function K.grantDue(cfg, s)
 	return (s.lastLogin or 0) > 0
 end
 
--- ---------------------------------------------------------------- flask charges (README "Potions", "Flask charges")
-local function flaskOf(cfg, kind)
-	return (cfg.flask or {})[kind]
-end
-
-function K.maxCharges(cfg, kind, treeExtra)
-	local f = flaskOf(cfg, kind)
-	if not f then
-		return 0
-	end
-	local cap = (cfg.flask.tree or {}).maxExtra or 0
-	local extra = math.max(0, math.min(cap, math.floor(tonumber(treeExtra) or 0)))
-	return (f.max or 0) + extra
-end
-
--- the raw storage value (-1 / nil: never set) -> hundredths of a charge, 0 .. max * 100. A value outside the range
--- (an old maximum, a hand edit) is clamped, never trusted.
-function K.read(cfg, kind, raw, treeExtra)
-	local top = K.maxCharges(cfg, kind, treeExtra) * 100
-	raw = tonumber(raw)
-	if raw == nil or raw < 0 or raw ~= raw then
-		return top
-	end
-	return math.min(top, math.floor(raw))
-end
-
--- a stored value above the flask's maximum (the tree's extra charges were refunded or respecced away) is cut to the
--- maximum, so a later re-buy of the node cannot bring the lost charges back. Returns the new raw value, or nil when
--- nothing has to change (unset, in range).
-function K.clampStored(cfg, kind, raw, treeExtra)
-	raw = tonumber(raw)
-	if raw == nil or raw < 0 or raw ~= raw then
-		return nil
-	end
-	local top = K.maxCharges(cfg, kind, treeExtra) * 100
-	if math.floor(raw) > top then
-		return top
-	end
-	return nil
-end
-
-function K.canDrink(cfg, hundredths)
-	return (tonumber(hundredths) or 0) >= (cfg.flask.cost or 1) * 100
-end
-
-function K.spend(cfg, hundredths)
-	return math.max(0, (tonumber(hundredths) or 0) - (cfg.flask.cost or 1) * 100)
-end
-
--- the refill of one kill for one flask, in whole hundredths of a charge. Zero for an unknown tier.
-function K.killGain(cfg, s)
-	local f = cfg.flask
-	local base = f.perKill[s.tier or "normal"]
-	local fl = flaskOf(cfg, s.kind)
-	if not base or not fl then
-		return 0
-	end
-	local factor = 1
-	if s.tier ~= "boss" then
-		local x = f.xp or {}
-		factor = (tonumber(s.xp) or 0) / math.max(1, x.ref or 1)
-		factor = math.max(x.min or 0, math.min(x.max or 1, factor))
-	end
-	local pct = math.max(0, math.min((f.tree or {}).gainPctCap or 0, tonumber(s.treeGainPct) or 0))
-	local v = base * factor * (fl.gain or 1) * (1 + pct / 100)
-	return math.max(0, math.min(f.killCap or v, math.floor(v + 0.5)))
-end
-
-function K.add(cfg, kind, hundredths, gain, treeExtra)
-	local top = K.maxCharges(cfg, kind, treeExtra) * 100
-	return math.min(top, math.max(0, math.floor(tonumber(hundredths) or 0)) + math.max(0, math.floor(tonumber(gain) or 0)))
-end
-
-function K.whole(hundredths)
-	return math.floor((tonumber(hundredths) or 0) / 100)
-end
-
-function K.label(cfg, kind, hundredths, treeExtra)
-	return K.whole(hundredths) .. "/" .. K.maxCharges(cfg, kind, treeExtra)
-end
-
--- a kill that refills: a monster with a name, not a summon of a player or a dissolved rift husk, not a training dummy.
--- A player never refills anything (no PvP refill): the death event is only put on monsters, and this refuses one.
-function K.eligibleKill(cfg, s)
-	if s.player or s.summon or s.husk then
-		return false
-	end
-	local name = tostring(s.name or ""):lower()
-	if name == "" then
-		return false
-	end
-	for _, w in ipairs(cfg.flask.skipWords or {}) do
-		if name:find(w, 1, true) then
-			return false
-		end
-	end
-	return true
-end
-
-function K.safeRefill(cfg, s)
-	if not s.safe then
-		return false
-	end
-	return not (cfg.flask.safeNeedsNoFight and s.fighting)
-end
-
-function K.treeValues(cfg, bonuses)
-	local t = cfg.flask.tree or {}
-	bonuses = bonuses or {}
-	local extra = math.max(0, math.min(t.maxExtra or 0, math.floor(tonumber(bonuses[t.maxStat or ""]) or 0)))
-	local gain = math.max(0, math.min(t.gainPctCap or 0, math.floor(tonumber(bonuses[t.gainStat or ""]) or 0)))
-	return extra, gain
-end
-
-function K.noticeDue(cfg, last, now)
-	return last == nil or now - last >= (cfg.flask.noticeMs or 0)
-end
-
 -- ---------------------------------------------------------------- higher tiers (README "Potions", "Higher tiers", O245)
 -- An entry made from another one (`from`) is an upgrade: tier 2 and up, and the tier 1 spirit potion (O247, made from the
--- tier 1 health potion). Only the others (the tier 1 health and mana potions) are sold and given.
+-- tier 1 health potion). Only the others (the tier 1 health and mana potions) are given: nothing is sold (O273).
 function K.isUpgrade(e)
 	return e ~= nil and type(e.from) == "table" and #e.from > 0
 end
@@ -367,9 +201,21 @@ function K.upgradeCheck(cfg, s)
 	return {ok = true, from = heldId, materials = need}
 end
 
--- A character that has earned a tier (earned: the entries whose storage flag is set) and no longer has any Everfull
--- item of that slot gets the highest tier it earned back. held: the server ids of every Everfull item it has.
-function K.restoreFor(cfg, slot, held, earned)
+-- The tier 1 potion of a slot (the one the starter kit and the login grant give), or nil.
+function K.baseFor(cfg, slot)
+	for _, e in ipairs(cfg.everfull or {}) do
+		if e.key == slot and (e.tier or 1) == 1 and not K.isUpgrade(e) then
+			return e
+		end
+	end
+	return nil
+end
+
+-- A character that no longer has any Everfull item of a slot (held: the server ids of every Everfull item it has) gets
+-- back the highest tier it earned (earned: the entries whose storage flag is set); without an earned tier, the tier 1
+-- potion of the slot when it was given in the first place (granted: the grant flag, set by the starter kit and by the
+-- login grant). A tier 1 potion is no longer sold (O273), so this is the way back when one is lost (a GM delete, a bug).
+function K.restoreFor(cfg, slot, held, earned, granted)
 	for _, id in ipairs(held or {}) do
 		local x = K.everfull(cfg, id)
 		if x and x.key == slot then
@@ -382,6 +228,9 @@ function K.restoreFor(cfg, slot, held, earned)
 			best = e
 		end
 	end
+	if not best and granted then
+		best = K.baseFor(cfg, slot)
+	end
 	return best
 end
 
@@ -389,8 +238,9 @@ end
 -- The client sees every tier under the stock potion's look, so the helper cannot tell which Everfull a character carries.
 -- The server tells it: per slot (health, mana) the carried Everfull's look, tier, level, line and whether a drink would
 -- work now. s.counts: server id -> how many the character carries (inventory and backpacks, as Player:getItemCount);
--- s.charges: pool -> hundredths; s.clientId(serverId) -> the client id (the look). A slot holding two items (a GM gift)
--- reports the highest tier: the engine's use by look picks one of them, and both are the same slot's pool anyway.
+-- s.clientId(serverId) -> the client id (the look). A slot holding two items (a GM gift) reports the highest tier: the
+-- engine's use by look picks one of them. `ready` is always true since O273 (no charges to run out); the field stays
+-- so the client's rule ("follow a ready, plain, allowed Everfull") needs no change.
 -- Returns { health = {look, tier, level, line, ready}, mana = {...} }, a slot with no Everfull left out.
 function K.heldView(cfg, s)
 	local view = {}
@@ -401,14 +251,7 @@ function K.heldView(cfg, s)
 			local slot = e.key
 			local best = view[slot]
 			if not best or (e.tier or 1) > best.tier then
-				local ready = true
-				for _, pool in ipairs(K.poolsOf(cfg, e)) do
-					local have = s.charges and s.charges[pool]
-					if have ~= nil and not K.canDrink(cfg, have) then
-						ready = false
-					end
-				end
-				view[slot] = {look = look, tier = e.tier or 1, level = e.level or 0, line = e.line or e.key, ready = ready}
+				view[slot] = {look = look, tier = e.tier or 1, level = e.level or 0, line = e.line or e.key, ready = true}
 			end
 		end
 	end

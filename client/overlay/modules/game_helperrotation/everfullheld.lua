@@ -2,10 +2,10 @@
 -- everfullheld_test.lua; client/MANIFEST.md "Helper"). The Everfull potions show under the stock potions' looks (tier 1 as the
 -- Health / Mana Potion, the upgrades as the great, ultimate and supreme potions), so the helper cannot tell them from stock
 -- potions by the item. The server tells it, per slot (health, mana): { look, tier, level, line, ready } -- the stock look the
--- Everfull shows under, the line (health | mana | spirit), and `ready` when the charges a drink needs are there. The helper
+-- Everfull shows under, the line (health | mana | spirit), and `ready` (always true since O273: the flasks never empty; kept for an older server). The helper
 -- (game_helper/helper_potions.lua P.resolve) follows an upgrade with it and Auto setup (autosetup.lua) picks it. Nothing here
 -- changes what the server does: a drink is a use by look, and the server's engine finds the Everfull of that look and
--- checks level and charges itself. A message that does not fit is dropped; before the first message, or without a server
+-- checks the level itself. A message that does not fit is dropped; before the first message, or without a server
 -- that sends it, nothing is held and the helper behaves as before.
 ChaosEverfullHeld = ChaosEverfullHeld or {}
 local E = ChaosEverfullHeld
@@ -14,6 +14,7 @@ E.OPCODE = 116
 E.LINES = { health = true, mana = true, spirit = true }
 
 local held = {}
+local received = false
 
 local function whole(v, lo, hi)
   v = tonumber(v)
@@ -35,6 +36,7 @@ end
 function E.apply(data)
   if type(data) ~= 'table' then return false end
   held = { health = E.clean('health', data.health), mana = E.clean('mana', data.mana) }
+  received = true
   return true
 end
 
@@ -49,12 +51,18 @@ end
 
 function E.reset()
   held = {}
+  received = false
+end
+
+-- has a `held` message arrived this session? (Auto setup asks with E.ask() and waits a moment when not)
+function E.received()
+  return received
 end
 
 -- ---------------------------------------------------------------- the connection (not run by the test)
 local handlers = {}
 
-local function ask()
+function E.ask()
   local protocol = g_game.getProtocolGame()
   if protocol and g_game.isOnline() then
     protocol:sendExtendedOpcode(E.OPCODE, json.encode({ action = 'sync' }))
@@ -67,7 +75,7 @@ end
 
 local function onGameStart()
   E.reset()
-  ask() -- the server also sends at login, which may come before this module listens
+  E.ask() -- the server also sends at login, which may come before this module listens
 end
 
 local function onGameEnd()

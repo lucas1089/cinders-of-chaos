@@ -34,6 +34,70 @@ return {
 		exitMark = 1436, -- castle flag beside an exit circle
 		pile = 2249 -- "ashes": the ember pile a defeated player leaves (a marker; the pile itself lives in the script)
 	},
+	-- the look of the field (build mode; pvpzone_core.lua K.layout, deterministic, the same in every slot). Every id is a
+	-- stock item the generated hunting areas use (areagen_config.lua grounds, borders, obstacles; areaplan/decor_kits.json
+	-- decoration). Local coordinates 1..innerW x 1..innerH; every list is laid in one half and turned 180 degrees for the
+	-- other, so both gates have the same cover (fair).
+	look = {
+		-- natural ground: scorched rock, basalt fields with their border pieces, crack patches (lava cracks) with the
+		-- rock's border over them (areagen families rockfloor / basalt / cracks)
+		rock = {9068, 9069, 9070, 9071, 9072, 9073},
+		basalt = {17625, 17626, 17627, 17628},
+		cracks = {5815},
+		-- border pieces (areagen_config.lua `pieces`): basalt over rock, rock over the cracks
+		basaltEdge = {n = 17630, e = 17631, s = 17629, w = 17632, cnw = 17639, cne = 17640, csw = 17638, cse = 17637,
+			dnw = 17635, dne = 17636, dsw = 17634, dse = 17633},
+		crackEdge = {n = 7079, e = 7080, s = 7081, w = 7082, cnw = 7083, cne = 7084, csw = 7085, cse = 7086,
+			dnw = 7087, dne = 7088, dsw = 7089, dse = 7090},
+		-- paved: the roads (flagstone, weighted), the plaza around the shrine and the gate yards, the ruined hall floor
+		road = {{3152, 25}, {3153, 25}, {3154, 5}, {3155, 5}, {3156, 3}, {3157, 1}},
+		hall = 414,
+		-- ground patches: ellipses (x, y = centre, rx, ry = radii) with a rough edge
+		patches = {
+			{kind = "basalt", x = 22, y = 16, rx = 9, ry = 6}, {kind = "basalt", x = 16, y = 42, rx = 5, ry = 4},
+			{kind = "basalt", x = 44, y = 8, rx = 6, ry = 4}, {kind = "basalt", x = 8, y = 26, rx = 4, ry = 5},
+			{kind = "cracks", x = 36, y = 8, rx = 5, ry = 3}, {kind = "cracks", x = 14, y = 32, rx = 5, ry = 4},
+			{kind = "cracks", x = 30, y = 46, rx = 6, ry = 3}, {kind = "cracks", x = 50, y = 22, rx = 4, ry = 5},
+			{kind = "cracks", x = 28, y = 20, rx = 3, ry = 2}
+		},
+		plazaRadius = 6, -- paved plaza around the shrine (Chebyshev)
+		-- roads from a gate yard to the shrine plaza and on to the ruins: 3 wide, a list of waypoints joined by straight
+		-- runs (local coordinates, one half; the other half is the turn)
+		roads = {
+			{{13, 50}, {27, 50}, {27, 42}, {36, 42}, {36, 34}},
+			{{30, 28}, {14, 28}}
+		},
+		-- blocking fixtures with light, beside the objectives: {dx, dy} from the shrine / the exit, and the item
+		shrineLights = {id = 1486, at = {{-3, -3}, {3, -3}, {-3, 3}, {3, 3}}}, -- big coal basins in the capture circle
+		shrineBeacons = {id = 7059, at = {{-7, -7}, {7, -7}, {-7, 7}, {7, 7}}}, -- glowing skull pillars, the shrine's beacons
+		gateLights = {id = 1481, at = {{-4, 4}, {4, 4}, {-4, -1}, {4, -1}}}, -- coal basins in the gate yard
+		-- cover: clumps of blocking pieces. Each clump {x, y, r, chance}: tiles within r of the centre get a piece with this
+		-- % chance when the field stays connected (checked tile by tile) and the tile is natural ground away from the
+		-- gates, the roads and the spawn points. `on = "cracks"`: only on crack ground.
+		cover = {
+			{name = "charred trees", ids = {2713, 2714, 2715, 2716, 2709, 2710, 2717, 2718}, clumps = {
+				{x = 10, y = 20, r = 5, chance = 38}, {x = 24, y = 8, r = 4, chance = 34}, {x = 46, y = 40, r = 5, chance = 36},
+				{x = 5, y = 36, r = 3, chance = 40}, {x = 40, y = 20, r = 4, chance = 32}, {x = 18, y = 52, r = 3, chance = 34}}},
+			{name = "scorched rock", ids = {24939, 24940, 24941, 24942, 24943, 24944, 22110, 22111, 22112, 22113}, clumps = {
+				{x = 33, y = 32, r = 3, chance = 30}, {x = 20, y = 30, r = 4, chance = 30}, {x = 8, y = 46, r = 4, chance = 36},
+				{x = 44, y = 26, r = 3, chance = 28}, {x = 38, y = 14, r = 3, chance = 30}, {x = 52, y = 46, r = 3, chance = 30}}},
+			{name = "bone fields", ids = {6395, 6396, 6398, 6400, 11253}, clumps = {
+				{x = 15, y = 20, r = 3, chance = 20}, {x = 28, y = 38, r = 3, chance = 18}}},
+			{name = "lava holes", ids = {389, 8575, 22571}, on = "cracks", clumps = {
+				{x = 36, y = 8, r = 4, chance = 28}, {x = 14, y = 32, r = 4, chance = 30}, {x = 30, y = 46, r = 5, chance = 26},
+				{x = 50, y = 22, r = 4, chance = 28}}}
+		},
+		-- decoration (never blocks): percent chance per natural tile
+		decor = {
+			cracks = {ids = {5840, 5841, 5842, 5843}, chance = 30}, -- lava cracks on crack ground
+			rock = {ids = {3610, 3611, 3613, 1320, 1325}, chance = 5},
+			bones = {ids = {3124, 3125, 3126, 6524, 7567}, chance = 1.5},
+			wall = {ids = {1308, 1311, 1313, 1315, 1320, 1325}, chance = 14}, -- rubble along the outer wall
+			plaza = {ids = {3124, 3125, 3126, 6524, 7567, 7568}, chance = 7} -- remains around the shrine
+		},
+		keepClear = 2 -- no cover within this many tiles of a gate yard
+	},
+
 	-- map mode: the rectangle (inclusive), its safe exits, the shrine, the spawn points (optional, the map's own spawns
 	-- are scaled anyway) and the realm allowed in (0 = standard characters)
 	area = nil, -- e.g. {x1 = 32000, y1 = 32000, x2 = 32080, y2 = 32060, z = 7, exits = {{x =, y =, z =}}, shrine = {x =, y =, z =},

@@ -1515,7 +1515,8 @@ function Gen.riftEntries(D)
 				{"Rift monsters", string.format("Rare %d%%, legendary %d%%: a key of the rift's tier.", cfg.eliteKeyChance.rare,
 					cfg.eliteKeyChance.legendary)},
 				{"Monsters", string.format("Tier-1 keys: %s per kill (%s) from monsters of hunting level %d or more and at least %d%% of yours.",
-					Gen.num(mk.chance / 1000) .. "%", table.concat(tierMult, ", "), mk.minMonsterLevel, floor(mk.levelShare * 100 + 0.5))},
+					Gen.num(mk.chance / 1000) .. "%", table.concat(tierMult, ", "), mk.minMonsterLevel * D.pace.baseLevelMult,
+					floor(mk.levelShare * D.pace.baseLevelMult * 100 + 0.5))},
 				{"Bounty board", string.format("Tier-1 key for a finished contract: hunt %d%%, elite %d%%, boss %d%%.", cfg.bountyKey.hunt,
 					cfg.bountyKey.elite, cfg.bountyKey.boss)}}},
 			{h = "Orbs on Rift Keys", cols = {"Orb", "On a key"}, w = {30, 70}, rows = orbRows, links = orbLinks}

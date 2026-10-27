@@ -338,6 +338,11 @@ function Item:getCustomAttribute(k) return self.custom[k] end
 function Item:setCustomAttribute(k, v) self.custom[k] = v end
 function Item:removeCustomAttribute(k) self.custom[k] = nil end
 function Item:getParent() return self.parent end
+function Item:getTopParent()
+	local it = self
+	while it.parent do it = it.parent end
+	return it
+end
 function Item:remove()
 	if self.parent then
 		for i, it in ipairs(self.parent.items) do
@@ -361,6 +366,9 @@ local player = {id = 1, guid = 7, effects = 0, messages = {}}
 function player:getId() return self.id end
 function player:getGuid() return self.guid end
 function player:getInbox() return inbox end
+function player:getSlotItem(slot) return self.slots and self.slots[slot] or nil end
+function player:getContainerById(cid) return self.open and self.open[cid] or nil end
+function player:getContainerIndex(cid) return self.pages and self.pages[cid] or 0 end
 function player:getPosition() return {sendMagicEffect = function() player.effects = player.effects + 1 end} end
 function player:sendTextMessage(_, text) self.messages[#self.messages + 1] = text end
 function player:addItemEx(item, drop)
@@ -684,6 +692,96 @@ do
 	for _, k in ipairs({"Salvage", "Lock", "Shards", "Recycle", "Item locked", "Item unlocked", "%s (level %d): %d %s", " + %d Conquest Tokens"}) do
 		assert(ChaosI18n.strings["pt-BR"][k], "pt-BR for " .. k)
 	end
+end
+
+-- ================================================================ lockAt: the item right-click menu (client position)
+do
+	backpack.parent = player -- the backpack hangs on the player (Item:getTopParent)
+	local function say() return player.messages[#player.messages] end
+	local function fresh(o) return put(backpack, newItem(o.id, {custom = o.custom or {}})) end
+	local gearItem = fresh({id = 2450, custom = {rarity = 2, combatPowerLevel = 20}})
+	local key = fresh({id = 10155})
+	local pebble = fresh({id = 3000})
+	local gearInBag = put(backpack, newItem(1987, {container = true}))
+	local inBag = put(gearInBag, newItem(2451, {custom = {rarity = 3}}))
+	local worn = newItem(2452, {custom = {rarity = 3}})
+	worn.parent = player
+	player.slots = {[1] = worn}
+	player.open = {[0] = backpack, [1] = gearInBag}
+	local function pos(y, z) return {x = 0xFFFF, y = y, z = z or 0} end
+	local function cidOf(it) return it.id - 1000 end
+	local function at(index) -- the slot of an item in the backpack
+		for i, it in ipairs(backpack.items) do if it == index then return i - 1 end end
+	end
+
+	-- a container slot, lock then unlock
+	act("lockAt", {pos = pos(0x40, at(gearItem)), cid = cidOf(gearItem), on = true})
+	eq(gearItem.custom.chaos_locked, 1, "lockAt: locked from the menu")
+	assert(say():find("is locked", 1, true), "lockAt: says so")
+	act("lockAt", {pos = pos(0x40, at(gearItem)), cid = cidOf(gearItem), on = false})
+	eq(gearItem.custom.chaos_locked, nil, "lockAt: unlocked from the menu")
+	act("lockAt", {pos = pos(0x40, at(gearItem)), cid = cidOf(gearItem)})
+	eq(gearItem.custom.chaos_locked, 1, "lockAt: no `on` flips it on")
+	act("lockAt", {pos = pos(0x40, at(gearItem)), cid = cidOf(gearItem)})
+	eq(gearItem.custom.chaos_locked, nil, "lockAt: and off again")
+	-- a Rift Key, a bag inside the backpack, a worn item
+	act("lockAt", {pos = pos(0x40, at(key)), cid = cidOf(key), on = true})
+	eq(key.custom.chaos_locked, 1, "lockAt: a Rift Key")
+	act("lockAt", {pos = pos(0x41, 0), cid = cidOf(inBag), on = true})
+	eq(inBag.custom.chaos_locked, 1, "lockAt: an item in an open bag")
+	act("lockAt", {pos = pos(1, 0), cid = cidOf(worn), on = true})
+	eq(worn.custom.chaos_locked, 1, "lockAt: an equipped item (inventory slot)")
+	-- the page offset of a container
+	player.pages = {[0] = 2}
+	act("lockAt", {pos = pos(0x40, at(gearItem) - 2), cid = cidOf(gearItem), on = true})
+	eq(gearItem.custom.chaos_locked, 1, "lockAt: slot on page 2 = first index + slot")
+	gearItem.custom.chaos_locked = nil
+	player.pages = nil
+	-- refusals leave everything as it was
+	local function refused(data, what)
+		local before = #queries
+		act("lockAt", data)
+		eq(#queries, before, "lockAt refused: " .. what .. " (no log row)")
+	end
+	act("lockAt", {pos = pos(0x40, at(pebble)), cid = cidOf(pebble), on = true})
+	eq(pebble.custom.chaos_locked, nil, "lockAt: not gear")
+	assert(say():find("Only gear", 1, true), "lockAt: says why")
+	act("lockAt", {pos = pos(0x40, at(gearItem)), cid = cidOf(gearItem) + 1, on = true})
+	eq(gearItem.custom.chaos_locked, nil, "lockAt: the id does not match")
+	assert(say():find("moved", 1, true), "lockAt: the item moved")
+	act("lockAt", {pos = pos(0x40, at(gearItem))})
+	eq(gearItem.custom.chaos_locked, nil, "lockAt: no id")
+	refused({pos = pos(0x42, 0), cid = 1450, on = true}, "a container that is not open")
+	refused({pos = {x = 100, y = 100, z = 7}, cid = cidOf(gearItem), on = true}, "a map position")
+	refused({pos = pos(11, 0), cid = cidOf(gearItem), on = true}, "slot 11 (the store inbox)")
+	refused({pos = pos(2, 0), cid = cidOf(gearItem), on = true}, "an empty slot")
+	refused({pos = pos(0x40, 99), cid = cidOf(gearItem), on = true}, "past the container")
+	refused({pos = {x = 0xFFFF, y = 0x40, z = -1}, cid = cidOf(gearItem), on = true}, "a negative slot")
+	refused({pos = {x = "a", y = 1, z = 0}, cid = 1, on = true}, "a malformed position")
+	refused({pos = "0.1", cid = 1, on = true}, "a position that is not a table")
+	refused({cid = 1, on = true}, "no position")
+	-- an item that hangs somewhere else than on the player (another player's container, a depot) is refused
+	local strange = newItem(2460, {custom = {rarity = 2}})
+	local foreign = newItem(1988, {container = true})
+	put(foreign, strange)
+	player.open[2] = foreign
+	refused({pos = pos(0x42, 0), cid = cidOf(strange), on = true}, "a container that is not the player's")
+	eq(strange.custom.chaos_locked, nil, "lockAt: kept unlocked")
+	-- the rate limit: the same action twice inside singleIntervalMs does the second one never
+	clock = clock + 5000
+	S.onAction(player, "lockAt", {pos = pos(0x40, at(gearItem)), cid = cidOf(gearItem), on = true})
+	clock = clock + cfg.singleIntervalMs + 1 -- past the 150 ms action limit and the single limit
+	eq(gearItem.custom.chaos_locked, 1, "lockAt: the first one counts")
+	S.onAction(player, "lockAt", {pos = pos(0x40, at(gearItem)), cid = cidOf(gearItem), on = false})
+	eq(gearItem.custom.chaos_locked, nil, "lockAt: after the interval the next one works")
+	S.onAction(player, "lockAt", {pos = pos(0x40, at(gearItem)), cid = cidOf(gearItem), on = true})
+	eq(gearItem.custom.chaos_locked, nil, "lockAt: inside the interval it is dropped")
+	-- the bench's own lock still works and takes only a real boolean
+	act("lock", {path = tostring(at(gearItem)), id = 2450, on = "false"})
+	eq(gearItem.custom.chaos_locked, nil, "lock: the string \"false\" is not true")
+	act("lock", {path = tostring(at(gearItem)), id = 2450, on = true})
+	eq(gearItem.custom.chaos_locked, 1, "lock: the bench path still works")
+	eq(S.actions.lockAt, true, "lockAt is a salvage action")
 end
 
 print("salvage_test: ok")

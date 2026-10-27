@@ -19,7 +19,7 @@ local P = ChaosHelperPotions
 -- exactly one server item, and the dropdown lists them. slot: the flask the item takes (health | mana); line: health | mana |
 -- spirit; kind: what a row of it heals (health | mana | both: the spirit flasks); level: the level it needs; rank: the look of
 -- the stock potion it is as good as (Auto setup's order, autosetup.lua); roll / rollMana: the fixed part of a drink (a spirit
--- flask gives both). The server drinks it at the use of its look and checks level and charges itself.
+-- flask gives both). The server drinks it at the use of its look and checks the level itself.
 P.EVERFULL_ITEMS = {
   { server = 32085, look = 38645, rank = 266,   slot = 'health', line = 'health', kind = 'health', tier = 1, level = 0,   name = 'Everfull Health Potion',          roll = { 125, 175 } },
   { server = 32261, look = 38646, rank = 239,   slot = 'health', line = 'health', kind = 'health', tier = 2, level = 80,  name = 'Everfull Great Health Potion',    roll = { 425, 575 } },
@@ -84,8 +84,8 @@ end
 -- pair 44, and the look Auto setup gives a plain flask) follows the Everfull the character carries in that slot: an upgrade replaces the item,
 -- so the row would otherwise drink stock potions or nothing. held: ChaosEverfullHeld.get() ({ health = {look, tier,
 -- level, line, ready}, mana = ... } or nil). Followed only when the carried one is a plain health / mana flask (a spirit
--- flask spends both pools and is chosen by a spirit row), known, ready (an empty flask would drink a dearer stock potion) and
--- allowed at `level`. The server checks level and charges again at the drink.
+-- flask heals both pools and is chosen by a spirit row), known, ready (always true since O273, an older server may say false) and
+-- allowed at `level`. The server checks the level again at the drink.
 function P.resolve(id, held, level)
   id = tonumber(id)
   local slot = id and P.FOLLOW[id]
@@ -191,6 +191,42 @@ function P.options()
     end
   end
   return out
+end
+
+-- Alphabetical order for a dropdown's options ({ text, data }): the option with data 0 ("(empty)") stays first, the rest by
+-- the shown text, case-insensitive, an accented letter as its base letter (pt-BR names). Stable; a saved selection maps by
+-- `data` (the key), never by position. Returns a new list.
+local FOLD = {
+  ['a'] = 'àáâãäå', ['c'] = 'ç', ['e'] = 'èéêë', ['i'] = 'ìíîï', ['n'] = 'ñ', ['o'] = 'òóôõö', ['u'] = 'ùúûü', ['y'] = 'ýÿ',
+}
+local foldMap = {}
+for base, chars in pairs(FOLD) do
+  for ch in chars:gmatch('[\192-\247][\128-\191]*') do
+    foldMap[ch] = base
+    foldMap[ch:upper()] = base
+  end
+end
+local UPPER_ACCENTS = { ['À']='a',['Á']='a',['Â']='a',['Ã']='a',['Ä']='a',['Å']='a',['Ç']='c',['È']='e',['É']='e',['Ê']='e',['Ë']='e',
+  ['Ì']='i',['Í']='i',['Î']='i',['Ï']='i',['Ñ']='n',['Ò']='o',['Ó']='o',['Ô']='o',['Õ']='o',['Ö']='o',['Ù']='u',['Ú']='u',['Û']='u',['Ü']='u',['Ý']='y' }
+for ch, base in pairs(UPPER_ACCENTS) do foldMap[ch] = base end
+
+function P.sortKey(text)
+  local s = tostring(text or '')
+  s = s:gsub('[\192-\247][\128-\191]*', function(ch) return foldMap[ch] end)
+  return s:lower()
+end
+
+function P.sortOptions(options)
+  local first, rest = {}, {}
+  for i, o in ipairs(options or {}) do
+    if o.data == 0 then first[#first + 1] = o else rest[#rest + 1] = { o = o, key = P.sortKey(o.text), i = i } end
+  end
+  table.sort(rest, function(a, b)
+    if a.key ~= b.key then return a.key < b.key end
+    return a.i < b.i
+  end)
+  for _, e in ipairs(rest) do first[#first + 1] = e.o end
+  return first
 end
 
 -- The rows due now. rows: the healing tab's potion rows ({ id, percent, priority }); ctx = { healthPct, manaPct,

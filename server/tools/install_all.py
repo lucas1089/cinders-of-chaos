@@ -283,7 +283,8 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                1000+), the base quests move to their own hall with their rewards, the daily/weekly reward chests of the
                plaza go and the low-level hunts are added, the ways back from the hunts and quests follow their
                teleports and the ground floor's wings get ground under every tile (README "Hall order"; re-run over
-               an earlier hall it repairs that one: rewards left in the old alcoves, lost quest teleports, holes);
+               an earlier hall it repairs that one: rewards left in the old alcoves, lost quest teleports, holes, stray
+               teleports left on the quest hall's carpet);
                also the fixed areas of tools/areaplan/chronicle/ (the Ashen Chronicle's two chapter
                areas, the Capital Memorial's plaza) and tools/areaplan/rooms/ (the Idle Hall, README "Idle Hall") and, only while
                ChaosHarvestArt.PAIR33 is on, tools/areaplan/events/ (the Haunted Harvest's two areas) at
@@ -298,6 +299,10 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                floor changes of the base map whose landing has no walkable ground (tools/dead_holes.csv, found by
                tools/check_dead_holes.py) lose their item or turn into plain ground; one that has a tile below now is
                kept (after mapfixes, before poi; with --dry-run it reads the real map and writes nothing)
+  startchest   tools/patch_start_chest.py         the owner's request of 2026-10-27 (README "Starter chest removed"): the base starter chest
+               ("Collect First Items!", action id 33735) is cut off the map and scripts/customs/actions/first_chest.lua is
+               renamed to *.chaos-off; the Chaos new-player kit gives the class kit at the first login (after deadholes,
+               before poi; with --dry-run it reads the real map and writes nothing)
   hubnpcs      tools/patch_hub_npcs.py           the stalls of the hub (the market of Cinderhold's teleport room,
                npc_booths_config.lua) cleared of the base server's NPCs: their spawn file entries on the stall tiles
                go, by position; the Chaos NPCs stand there from startup (README "Hub NPC booths"; before poi)
@@ -1277,6 +1282,20 @@ def step_deadholes(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('mapfixes') + 1, 'deadholes')  # after mapfixes (the hall and the earlier fixes), before poi
+
+
+def step_startchest(server, data, ctx):
+    if ctx['dry']:
+        # the dry copy has no map: read the real one, write nothing (the script rename is only listed)
+        real = os.path.join(ctx['server'], 'data')
+        mp = ctx.get('dry_map') or tool_map_path(real)
+        if not mp:
+            return tool_result((False, ['no map in %s/world' % real]))
+        return tool_result(run_tool([tool('patch_start_chest.py'), data, '--dry-run', '--map', mp], 'patch_start_chest.py'))
+    return tool_result(run_tool([tool('patch_start_chest.py'), data], 'patch_start_chest.py'))
+
+
+STEPS.insert(STEPS.index('deadholes') + 1, 'startchest')  # after deadholes (map steps), before poi
 
 
 def step_hubnpcs(server, data, ctx):

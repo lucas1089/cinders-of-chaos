@@ -780,7 +780,10 @@ Chaos.worldBoss = {
 		-- dark tile set (server/README.md "Dark tile set"): with the set installed, walls, pillars and lights use
 		-- these and both rooms are painted (data/lib/chaos_dark_paint.lua styles); else the ids above are used
 		dark = {enabled = true, wall = "dark_wall", pillar = "ruined_pillar", basin = "brazier",
-			arenaStyle = "arena", lobbyStyle = "lobby"}
+			arenaStyle = "arena", lobbyStyle = "lobby"},
+		-- O276 look (arenalook_core.lua): the theme follows the boss (themes[bossName] or theme overrides it); seed picks the
+		-- layout variant; cover = percent of the arena floor, lights = fixtures at most (nil: the theme's defaults)
+		look = {seed = 11}
 	},
 	-- action ids of the forcefields (handled by MoveEvent onStepIn, never by the teleport destination, so monsters
 	-- that step on them are not moved and the entry rules are checked)
@@ -2198,3 +2201,26 @@ ChaosOpcodes.unlocks = 115
 -- 7103020 - 7103029 (weeklychest_config.lua storage); no tables.
 ChaosOpcodes.weeklyChest = 117
 Chaos.storage.weeklyChest = 7103020
+-- Hunting level on screen (owner 2026-10-27): the bounty pool's level (ChaosLoot.monsterLevel) is half of the level
+-- players hunt a monster at; every text that prints a pool-scale level (monster level thresholds, map marks) prints
+-- Chaos.huntingLevel(n) = n x pace_config.lua baseLevelMult. Display only: the gates keep comparing pool levels.
+function Chaos.huntingMult()
+	local pc = ChaosPaceConfig
+	if type(pc) ~= "table" then
+		local ok, c = pcall(dofile, "data/scripts/chaos/pace_config.lua")
+		if not ok then
+			ok, c = pcall(dofile, "server/data/scripts/chaos/pace_config.lua")
+		end
+		pc = ok and type(c) == "table" and c or nil
+	end
+	local m = pc and tonumber(pc.baseLevelMult)
+	return (m and m >= 1) and m or 1
+end
+
+function Chaos.huntingLevel(poolLevel)
+	local n = tonumber(poolLevel)
+	if not n then
+		return poolLevel
+	end
+	return math.floor(n * Chaos.huntingMult() + 0.5)
+end

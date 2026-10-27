@@ -3,7 +3,12 @@
 -- Client contract (client/overlay/modules/game_infinitytower/infinity_tower.lua), flat JSON:
 --   client -> server  {"action":"request"}                       -> server replies "update"
 --                     {"action":"claim","milestoneIndex":N}      -> server replies "update"
---   server -> client  {"action":"open"|"update",
+--                     {"action":"skip"}                          -> "Next floor now" (infinitytower_run.lua), replies "state"
+--                     {"action":"state"}                         -> server replies "state"
+--   server -> client  {"action":"state","inRun":bool,"canSkip":bool,"floor":N,"nextBoss":bool,"isLeader":bool,
+--                      "cleared":N,"waiting":bool,"remaining":N,"total":N,"boss":bool,"nextIn":secs|"floorLeft":secs}
+--                     (pushed when a floor starts or ends, on entry and on leaving: enables the Next floor button)
+--                     {"action":"open"|"update",
 --                      "seasonNum":N, "seasonEnd":unix, "nextTry":unix, "playerPoints":N,
 --                      "milestones":[{"points":N,"claimed":bool,
 --                                     "items":[{"id":clientId,"count":N,"name":".."}]}],
@@ -426,6 +431,14 @@ function ExtendedEvent.onExtendedOpcode(player, opcode, buffer)
 	elseif msg.action == "leave" then
 		if ChaosTowerRun then
 			ChaosTowerRun.leave(player)
+		end
+	elseif msg.action == "skip" then
+		if ChaosTowerRun and ChaosTowerRun.skip then
+			ChaosTowerRun.skip(player)
+		end
+	elseif msg.action == "state" then
+		if ChaosTowerRun and ChaosTowerRun.sendState then
+			ChaosTowerRun.sendState(player)
 		end
 	end
 end

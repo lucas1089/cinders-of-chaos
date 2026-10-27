@@ -74,17 +74,37 @@ local function heldRank(h)
   return (e and e.rank) or (h and h.look)
 end
 
+-- The Everfull flasks seen in the open containers (has(look) on their own looks, O247): the highest tier per slot the level
+-- allows, for a slot the server's message says nothing about (before it arrives, or an older server). seen = true: the helper
+-- cannot follow an upgrade without the message, so the row is set on the flask's own look.
+local function seenFlasks(level, has, held)
+  local HP = ChaosHelperPotions
+  local out = {}
+  if not (HP and HP.EVERFULL_ITEMS and has) then return out end
+  for _, e in ipairs(HP.EVERFULL_ITEMS) do
+    local slot = e.slot
+    local best = out[slot]
+    if not (held and held[slot]) and (tonumber(level) or 0) >= (e.level or 0) and (not best or e.tier > best.tier) and has(e.look) then
+      out[slot] = { look = e.look, tier = e.tier, level = e.level, line = e.line, ready = true, seen = true }
+    end
+  end
+  return out
+end
+
 function S.potion(kind, vocId, level, has, held)
   local line = S.lineOf(vocId)
   local carried = {} -- rank (a stock look of the list) -> the held flask of it, at the character's level
+  local seen = seenFlasks(level, has, held)
   for _, slot in ipairs({ 'health', 'mana' }) do
-    local h = held and held[slot]
+    local h = (held and held[slot]) or seen[slot]
     if h and h.look and (tonumber(level) or 0) >= (tonumber(h.level) or 0) then carried[heldRank(h)] = h end
   end
   for _, p in ipairs(S.POTIONS[kind] or {}) do
     local h = carried[p.id]
     if h then
-      return h.line == kind and S.EVERFULL[kind] or h.look
+      -- a plain flask the server confirms ready: the Health / Mana Potion row follows it (P.resolve); else its own look
+      if h.line == kind and h.ready ~= false and not h.seen then return S.EVERFULL[kind] end
+      return h.look
     end
     if S.canDrink(p, line, level) and has and has(p.id) then return p.id end
   end

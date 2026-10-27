@@ -89,6 +89,27 @@ onOutlineOption('map', true) onOutlineOption('slots', true)
 eq(calls.enabled[1] and calls.enabled[2], true, 'options back on')
 Item = nil
 
+-- the stock value frame of container slots is switched off and reset
+do
+  local set = {}
+  local db = { setRarityItem = function(w, it) set[#set + 1] = { w, it } end }
+  local function slot(item) return { itemsDatabaseRarityClip = '32 0 32 32', itemsDatabaseRarityImageSource = '/images/ui/rarity_frames',
+    getItem = function() return item end, isDestroyed = function() return false end } end
+  local a, b = slot('potion'), slot(nil)
+  local panel = { getChildren = function() return { a, b } end, isDestroyed = function() return false end }
+  eq(silenceStockValueFrames(panel, db), true, 'first call sweeps')
+  eq(panel.drawRarity, false, 'panel drawRarity off')
+  eq(#set, 2, 'both slots reset, the empty one too')
+  eq(a.itemsDatabaseRarityClip, nil, 'remembered clip dropped (a stale frame is redrawn)')
+  eq(set[2][2], nil, 'empty slot redrawn without an item')
+  eq(silenceStockValueFrames(panel, db), false, 'already off: no sweep')
+  eq(silenceStockValueFrames(panel, db, true), true, 'force sweeps again (container reopened in the same window)')
+  eq(#set, 4, 'forced sweep reset both again')
+  eq(silenceStockValueFrames(nil, db), false, 'no panel')
+  eq(resetStockValueFrame(a, nil), false, 'no database')
+  eq(resetStockValueFrame(a, {}), false, 'database without setRarityItem')
+end
+
 if fails > 0 then
   print(fails .. ' failure(s)')
   os.exit(1)

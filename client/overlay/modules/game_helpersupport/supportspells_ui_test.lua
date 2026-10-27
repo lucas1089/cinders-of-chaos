@@ -197,5 +197,37 @@ else
   print('supportspells_ui_test: sanitize dropped the test spells, row checks skipped')
 end
 
+-- a death is a fast relog (owner 2026-10-27, "continua limpando a lista"): the login can come before the client's spell
+-- table is filled. The saved list is not cut by a table that is not known yet; it is checked once the table is there.
+do
+  local store = { chaos_helper_support = { Dead = { enabled = true, reserve = 20, slots = {
+    { id = 9301, enabled = true }, { id = 9302, enabled = false }, { id = 9303, enabled = true } } } } }
+  g_settings = { getNode = function(n) return store[n] end, setNode = function(n, v) store[n] = v end, save = function() end }
+  local name = 'Dead'
+  g_game.getLocalPlayer = function() return { getName = function() return name end } end
+  local table_ = {}
+  Spells = { getSpellList = function() return table_ end, getSpellDataById = function(id)
+    for _, e in pairs(table_) do if e.id == id then return e end end
+  end }
+  local function ids()
+    local out = {}
+    for _, sl in ipairs(U.slots()) do out[#out + 1] = sl.id .. (sl.enabled and '+' or '-') end
+    return table.concat(out, ',')
+  end
+  -- the death, then the relog: the table is still empty
+  U.onDeath()
+  U.onGameStart()
+  eq(ids(), '9301+,9302-,9303+', 'login with an empty spell table: the whole list stays')
+  U.prune()
+  eq(ids(), '9301+,9302-,9303+', 'still empty: still nothing cut')
+  eq(store.chaos_helper_support.Dead.slots[1].id, 9301, 'and nothing saved over it')
+  -- the full table arrives: the row of a retired spell goes, the rest stays
+  table_['Old Ward'] = { id = 9302, name = 'Old Ward', words = 'old ward', notOnServer = true }
+  table_['Live Ward'] = { id = 9301, name = 'Live Ward', words = 'live ward', group = { [3] = 2000 } }
+  U.prune()
+  eq(ids(), '9301+,9303+', 'the full table: only the retired spell leaves')
+  eq(#store.chaos_helper_support.Dead.slots, 2, 'saved without it')
+end
+
 if fails > 0 then error(fails .. ' failure(s)') end
 print('supportspells_ui_test: OK')

@@ -11,7 +11,7 @@
   "out": 38,
   "passive": 78,
   "place": 13,
-  "staff": 11
+  "staff": 12
  },
  "generated_by": "server/tools/gen_tester_scenarios.py",
  "keytest": {
@@ -6810,7 +6810,8 @@
   },
   {
    "keywords": [
-    "trade"
+    "trade",
+    "upgrade"
    ],
    "npc": "Veyra the Apothecary"
   },
@@ -7818,6 +7819,8 @@
   },
   "infinitytower": {
    "actions": [
+    "state",
+    "skip",
     "enter",
     "leave",
     "request",
@@ -8582,6 +8585,7 @@
     "faction",
     "haul",
     "hcAccept",
+    "id",
     "key",
     "kills",
     "piles",
@@ -9197,6 +9201,18 @@
    "talkactions": [],
    "why": "ranked PvP: a queue would match testers against real players"
   },
+  "arenalook": {
+   "files": [
+    "chaos_constants.lua",
+    "worldboss.lua"
+   ],
+   "kind": "staff",
+   "opcodes": [],
+   "talkactions": [
+    "/worldboss"
+   ],
+   "why": "staff command only (/worldboss); testers are never staff"
+  },
   "ascension_quest": {
    "files": [
     "ascension_quest.lua"
@@ -9373,8 +9389,7 @@
   "bounty": {
    "files": [
     "bounty.lua",
-    "bounty_pool.lua",
-    "potion_flasks.lua"
+    "bounty_pool.lua"
    ],
    "kind": "opcode",
    "opcodes": [
@@ -10583,7 +10598,6 @@
   "potions": {
    "files": [
     "chaos_constants.lua",
-    "potion_flasks.lua",
     "potions.lua",
     "potions_helper.lua"
    ],

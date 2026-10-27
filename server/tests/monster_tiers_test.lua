@@ -258,7 +258,26 @@ ChaosLoot = {monsterLevel = function(m) return 245.6 end}
 ChaosRift = {monsterRun = {[legend:getId()] = {bossIds = {[legend:getId()] = true}}}}
 creatureEvents.ChaosTierQuery.onExtendedOpcode(player, ChaosOpcodes.monsterbar, "query")
 eq(sent and sent.data.role, "guardian", "monster bar: rift guardian")
-eq(sent and sent.data.level, 245, "monster bar: level")
+eq(sent and sent.data.level, 245, "monster bar: level (legacy fallback, no monster_levels.lua)")
+-- with monster_levels.lua the chip never prints the raw pool level (ChaosLoot.monsterLevel is half the hunting level
+-- for a pool monster, a hunting level already for a waystone tier): "Lv 104" next to a name "[540]"
+ChaosMonsterLevels = {estimate = function() return 491.2, true end}
+creatureEvents.ChaosTierQuery.onExtendedOpcode(player, ChaosOpcodes.monsterbar, "query")
+eq(sent and sent.data.level, 491, "monster bar: the hunting estimate of monster_levels.lua, not the pool level")
+ChaosMonsterLevels = nil
+legend.getDisplayLevel = function() return 491 end
+creatureEvents.ChaosTierQuery.onExtendedOpcode(player, ChaosOpcodes.monsterbar, "query")
+eq(sent and sent.data.level, 491, "monster bar: the nameplate (hunting) level wins")
+-- the chip and the name come from one value: whatever the nameplate shows, the chip shows
+for _, shown in ipairs({1, 104, 540, 2200}) do
+	legend.getDisplayLevel = function() return shown end
+	creatureEvents.ChaosTierQuery.onExtendedOpcode(player, ChaosOpcodes.monsterbar, "query")
+	eq(sent and sent.data.level, shown, "monster bar: chip = nameplate level " .. shown)
+end
+legend.getDisplayLevel = function() return 0 end
+creatureEvents.ChaosTierQuery.onExtendedOpcode(player, ChaosOpcodes.monsterbar, "query")
+eq(sent and sent.data.level, 245, "monster bar: no nameplate level, the legacy fallback")
+legend.getDisplayLevel = nil
 ChaosRift.monsterRun[legend:getId()].omen = "storm"
 creatureEvents.ChaosTierQuery.onExtendedOpcode(player, ChaosOpcodes.monsterbar, "query")
 eq(sent and sent.data.role, "omen", "monster bar: omen guardian")

@@ -1,7 +1,7 @@
 -- Run from the server/ folder: luajit tests/potions_test.lua (and lua5.3; CI runs both)
 -- Potions (server/README.md "Potions"): potions_core.lua and potions_config.lua; potions.lua and
--- data/lib/chaos_potions.lua on a mocked engine (an Everfull potion heals, is never used up, leaves no flask and keeps
--- the potion exhaust; the kit / login grant; a potion seller's replacement); the stock potions.lua as
+-- data/lib/chaos_potions.lua on a mocked engine (an Everfull potion heals, is never used up, never runs out, leaves no
+-- flask and keeps the potion exhaust; the kit / login grant; Veyra's lost-flask restore; no seller); the stock potions.lua as
 -- tools/install_potions.py patches it (no flask, a higher tier still used up, the exhaust unchanged).
 local count, failures = 0, 0
 local function check(cond, label)
@@ -28,9 +28,19 @@ eq(K.poolsOf(cfg, HEALTH)[1], "health", "a tier spends its key's pool")
 check(HEALTH.id > 32084 and HEALTH.id <= 32090 and MANA.id > 32084 and MANA.id <= 32090,
 	"server ids in the free range after the Everfull Ration, before the faction tokens")
 check(HEALTH.id ~= MANA.id, "two ids")
-check(HEALTH.description:find("^A flask") ~= nil and MANA.description:find("^A flask") ~= nil,
-	"the descriptions say they are flasks")
-check(HEALTH.price > 0 and HEALTH.price <= 200 and MANA.price > 0 and MANA.price <= 200, "a cheap replacement")
+check(HEALTH.description:find("^A flask that never empties%.") ~= nil and MANA.description:find("^A flask that never empties%.") ~= nil,
+	"the descriptions say they never empty")
+check(HEALTH.price > 0 and HEALTH.price <= 200 and MANA.price > 0 and MANA.price <= 200, "a cheap lost-flask restore")
+-- O273: no charges anywhere in the config or in the descriptions
+eq(cfg.flask, nil, "no flask charge table any more")
+for _, e in ipairs(cfg.everfull) do
+	check(not e.description:lower():find("charge", 1, true) and not e.description:lower():find("refill", 1, true),
+		e.name .. ": the description says nothing of charges or refills")
+	check(e.description:find("Cannot be traded or sold.", 1, true) ~= nil, e.name .. ": still bound")
+end
+for _, k in ipairs({"healthCharges", "manaCharges", "treeMaxCharges", "treeGainPct"}) do
+	eq(cfg.storage[k], nil, "the retired storage key " .. k .. " is gone from the config")
+end
 for k, v in pairs(cfg.storage) do
 	if k == "upgradeBase" then
 		check(v == 7102510 and v + #K.upgradeTargets(cfg) - 1 <= 7102519, "the upgrade flags in their own block 7102510 - 7102519")
@@ -58,10 +68,14 @@ eq(K.drink(cfg, {id = 7591, target = "self"}).why, "unknown", "a stock potion is
 eq(K.everfull(cfg, 7618), nil, "the stock health potion stays a consumable")
 check(K.isFlask(cfg, 7636) and K.isFlask(cfg, 7634) and not K.isFlask(cfg, 7618), "flask ids")
 
-eq(K.npcBuy(cfg, {id = HEALTH.id, owned = false, money = 1000}).price, HEALTH.price, "a replacement")
-eq(K.npcBuy(cfg, {id = HEALTH.id, owned = true, money = 1000}).why, "owned", "one per character")
-eq(K.npcBuy(cfg, {id = HEALTH.id, owned = false, money = HEALTH.price - 1}).why, "money", "money")
-eq(K.npcBuy(cfg, {id = 7618, money = 1000}).why, "unknown", "not an Everfull id")
+-- O273: nobody sells them, the core has no seller rule and no charge rule left
+eq(K.npcBuy, nil, "no seller rule")
+for _, name in ipairs({"canDrink", "spend", "read", "maxCharges", "killGain", "add", "whole", "label", "eligibleKill", "safeRefill",
+	"treeValues", "noticeDue", "clampStored"}) do
+	eq(K[name], nil, "no charge rule: " .. name)
+end
+eq(K.baseFor(cfg, "health").id, HEALTH.id, "the tier 1 potion of the health slot") eq(K.baseFor(cfg, "mana").id, MANA.id, "and of the mana slot")
+eq(K.baseFor(cfg, "spirit"), nil, "no such slot")
 
 eq(K.grantDue(cfg, {granted = false, lastLogin = 0}), false, "brand new: the starter kit gives them")
 eq(K.grantDue(cfg, {granted = false, lastLogin = 1700000000}), true, "an older character: once at login")
@@ -181,7 +195,7 @@ eq(actions[7618], nil, "the stock potions keep the base script")
 eq(exhaustTicks, nil, "no CONDITION_EXHAUST_HEAL is built any more")
 check(registered.ChaosPotionsLogin ~= nil, "login grant registered")
 
--- drinking: healed, not used up, no flask, exhaust set; a second drink while exhausted is refused
+-- drinking: healed, not used up, no flask, exhaust set; a second drink while exhausted is refused. No charge anywhere.
 local ann = mkPlayer(1)
 local pot = mkItem(HEALTH.id)
 heals, created = {}, {}
@@ -252,18 +266,10 @@ local fay = mkPlayer(6)
 eq(PT.giveAll(fay), 0, "not installed: nothing")
 installed = true
 
--- a potion seller's replacement (ShopModule hook): one copy, paid, refused while owned or too poor
+-- O273: no potion seller: the library has no npcBuy (the ShopModule hook is gone) and says nothing of a seller
+eq(PT.npcBuy, nil, "no seller function in the library") eq(PT.charges, nil, "no charges in the library") eq(PT.findStock, nil, "no stock fallback")
 dan.money, dan.bank = 50, 100
-eq(PT.npcBuy(dan.id, HEALTH.id), true, "bought")
-eq(#dan.bp.kids, 1, "one copy")
-eq(dan.bp.kids[1].count, 1, "count 1 whatever amount was asked")
-eq(dan.bp.kids[1].attrs.chaos_storebound, 1, "the bought copy is store-bound too")
-eq(dan.money + dan.bank, 150 - HEALTH.price, "paid, the bank too")
-eq(PT.npcBuy(dan.id, HEALTH.id), false, "a second one refused")
-eq(dan.msgs[#dan.msgs], "You already have one. It refills as you kill monsters.", "told why")
-eq(PT.npcBuy(dan.id, MANA.id), false, "too poor for the mana one")
-eq(#dan.bp.kids, 1, "nothing given")
-eq(PT.npcBuy(999, MANA.id), false, "no such player")
+eq(PT.ownedSlot(dan, "health"), false, "dan lost his flask") eq(PT.restorable(dan)[1].slot, "health", "he can ask Veyra for it (the grant flag is set)")
 
 -- ---------------------------------------------------------------- the stock potions.lua, patched by install_potions.py
 -- condensed from the stock script: the exhaust, a potion of each tier with its flask, the stock onUse
@@ -395,282 +401,63 @@ do
 	eq(K.amount(cfg, {150, 150}, 80, 10000, 20, lo, 2), 1140, "everfull great mana, +20% tree Healing: (150 + 8%) x 1.2")
 end
 
--- ---------------------------------------------------------------- flask charges (O242)
+-- ---------------------------------------------------------------- unlimited flasks (O273)
 do
-	local F = cfg.flask
 	local keys = {}
 	for _, v in pairs(cfg.storage) do
 		check(not keys[v], "storage keys are distinct (" .. v .. ")") keys[v] = true
 	end
-	-- core
-	eq(K.maxCharges(cfg, "health", 0), 5, "health flask max") eq(K.maxCharges(cfg, "mana", 0), 8, "mana flask max")
-	eq(K.maxCharges(cfg, "health", 2), 7, "tree: two extra charges")
-	eq(K.maxCharges(cfg, "health", 999), 5 + F.tree.maxExtra, "tree: extra charges are capped")
-	eq(K.maxCharges(cfg, "health", -3), 5, "tree: never negative") eq(K.maxCharges(cfg, "spirit", 0), 0, "no such flask")
-	eq(K.read(cfg, "health", -1), 500, "never set = full") eq(K.read(cfg, "health", nil), 500, "nil = full")
-	eq(K.read(cfg, "health", 230), 230, "stored hundredths") eq(K.read(cfg, "health", 99999), 500, "above the maximum: clamped")
-	eq(K.read(cfg, "health", 0), 0, "empty is empty (0 is not unset)")
-	eq(K.read(cfg, "health", 0 / 0), 500, "NaN is not trusted")
-	check(K.canDrink(cfg, 100) and not K.canDrink(cfg, 99) and not K.canDrink(cfg, 0), "a drink costs one charge")
-	eq(K.spend(cfg, 250), 150, "spend") eq(K.spend(cfg, 40), 0, "never below zero")
-	local order = {"normal", "magic", "rare", "legendary", "boss"}
-	for i = 2, #order do
-		check(F.perKill[order[i]] > F.perKill[order[i - 1]], order[i] .. " refills more than " .. order[i - 1])
-	end
-	for _, t in ipairs(order) do
-		check(K.killGain(cfg, {tier = t, xp = 100000, kind = "health"}) <= F.killCap, t .. " respects the cap per kill")
-	end
-	eq(K.killGain(cfg, {tier = "normal", xp = 200, kind = "health"}), 8, "normal at the reference experience")
-	eq(K.killGain(cfg, {tier = "normal", xp = 5, kind = "health"}), 2, "a rat: a quarter")
-	eq(K.killGain(cfg, {tier = "normal", xp = 1e9, kind = "health"}), 24, "experience factor is capped")
-	eq(K.killGain(cfg, {tier = "boss", xp = 1, kind = "health"}), 300, "a boss ignores the experience factor")
-	eq(K.killGain(cfg, {tier = "normal", xp = 200, kind = "mana"}), 12, "the mana flask gets 1.5x")
-	eq(K.killGain(cfg, {tier = "normal", xp = 200, kind = "health", treeGainPct = 50}), 12, "tree charge gain")
-	eq(K.killGain(cfg, {tier = "normal", xp = 200, kind = "health", treeGainPct = 5000}), 16, "tree gain is capped at 100%")
-	eq(K.killGain(cfg, {tier = "mythic", xp = 200, kind = "health"}), 0, "unknown tier: nothing")
-	eq(K.killGain(cfg, {tier = "boss", xp = 1, kind = "mana", treeGainPct = 100}), F.killCap, "the cap holds with everything on")
-	eq(K.add(cfg, "health", 480, 300, 0), 500, "refill stops at the maximum") eq(K.add(cfg, "health", 0, -50, 0), 0, "no negative gain")
-	eq(K.label(cfg, "health", 399, 0), "3/5", "label shows whole charges")
-	check(K.eligibleKill(cfg, {name = "Dragon"}), "a monster refills")
-	check(not K.eligibleKill(cfg, {name = "Dragon", summon = true}), "no summon")
-	check(not K.eligibleKill(cfg, {name = "Dragon", husk = true}), "no husk")
-	check(not K.eligibleKill(cfg, {name = "Dragon", player = true}), "no PvP refill")
-	check(not K.eligibleKill(cfg, {name = "Training Dummy"}) and not K.eligibleKill(cfg, {name = ""}), "no dummy, no nameless")
-	check(K.safeRefill(cfg, {safe = true, fighting = false}) and not K.safeRefill(cfg, {safe = false})
-		and not K.safeRefill(cfg, {safe = true, fighting = true}), "safe zone, not in a fight")
-	local ex, gn = K.treeValues(cfg, {flaskMaxCharges = 2, flaskChargeGain = 30})
-	eq(ex, 2, "tree extra") eq(gn, 30, "tree gain")
-	ex, gn = K.treeValues(cfg, {flaskMaxCharges = 99, flaskChargeGain = 999})
-	eq(ex, F.tree.maxExtra, "tree extra capped") eq(gn, F.tree.gainPctCap, "tree gain capped")
-	ex, gn = K.treeValues(cfg, nil) eq(ex, 0, "no tree bonus") eq(gn, 0, "no tree gain")
-	check(K.noticeDue(cfg, nil, 0) and not K.noticeDue(cfg, 1000, 1000 + F.noticeMs - 1) and K.noticeDue(cfg, 1000, 1000 + F.noticeMs),
-		"notice rate limit")
-	eq(K.drink(cfg, {id = HEALTH.id, target = "self", charges = 0}).why, "empty", "an empty flask")
-	eq(K.drink(cfg, {id = HEALTH.id, target = "self", charges = 0, exhausted = true}).why, "empty", "empty before exhausted")
-	eq(K.drink(cfg, {id = HEALTH.id, target = "self", charges = 100}).ok, true, "one charge drinks")
-
-	-- drinking on the mocked engine
+	-- the old charge storage a live character may still hold is inert: set to 0 (an empty flask of before), the drink works
 	local gwen = mkPlayer(30)
+	local OLD = {7102482, 7102483, 7102484, 7102485}
+	for _, k in ipairs(OLD) do gwen.st[k] = 0 end
 	local flaskItem = mkItem(HEALTH.id)
 	heals = {}
-	eq(PT.charges(gwen, "health"), 500, "a new character has a full flask")
-	for i = 1, 5 do
-		os.mtime = function() return 100000 * i end -- the exhaust has passed between drinks
-		drink.onUse(gwen, flaskItem, {}, gwen, {}, true)
+	local writes = 0
+	local realSet = gwen.setStorageValue
+	gwen.setStorageValue = function(self, k, v) writes = writes + 1 return realSet(self, k, v) end
+	for i = 1, 40 do -- far past the old 5 charges, the wait passing between drinks
+		os.mtime = function() return 100000 * i end
+		eq(drink.onUse(gwen, flaskItem, {}, gwen, {}, true), true, "drink " .. i)
 	end
-	eq(#heals, 5, "five charges, five drinks")
-	eq(PT.charges(gwen, "health"), 0, "empty")
-	eq(gwen.st[cfg.storage.healthCharges], 0, "stored as 0, not as unset")
-	eq(PT.charges(gwen, "mana"), 800, "the mana flask is its own")
-	eq(gwen.msgs[#gwen.msgs], "Health flask: 0/5", "the status line after a drink")
-	os.mtime = function() return 900000 end
-	eq(drink.onUse(gwen, flaskItem, {}, gwen, {}, true), true, "an empty flask is handled")
-	eq(#heals, 5, "an empty flask does not heal")
-	eq(gwen.msgs[#gwen.msgs], "Your health flask is empty. Kill monsters or visit a temple to refill it.", "the empty message")
-	eq(flaskItem.removed, 0, "the flask item is never removed, empty or not")
-	-- stock fallback: a carried stock potion of the kind is drunk instead
-	local stockPot = mkItem(7618, 10)
-	gwen.bp.kids[#gwen.bp.kids + 1] = stockPot
-	os.mtime = function() return 950000 end
-	drink.onUse(gwen, flaskItem, {}, gwen, {}, true)
-	eq(#heals, 6, "the stock potion heals") eq(stockPot.removed, 1, "and is used up")
-	eq(PT.charges(gwen, "health"), 0, "the flask stays empty")
-	eq(gwen.msgs[#gwen.msgs], "Your health flask is empty: you drank a health potion from your backpack.", "told")
-	-- a second drink inside the exhaust (empty, with stock) is refused
-	drink.onUse(gwen, flaskItem, {}, gwen, {}, true)
-	eq(#heals, 6, "exhaust still applies to the fallback")
-	-- a drink on another player costs the drinker's charge
-	local hal = mkPlayer(31) local hanna = mkPlayer(32)
-	os.mtime = function() return 2000000 end
+	eq(#heals, 40, "forty drinks, forty heals: the flask never empties")
+	eq(writes, 0, "a drink writes no storage")
+	for _, k in ipairs(OLD) do eq(gwen.st[k], 0, "the leftover value " .. k .. " is untouched and harmless") end
+	eq(flaskItem.removed, 0, "the flask item is never removed")
+	check(not gwen.msgs[#gwen.msgs] or not gwen.msgs[#gwen.msgs]:find("flask", 1, true), "no flask status line")
+	local manaItem = mkItem(MANA.id)
+	os.mtime = function() return 9000000 end
+	drink.onUse(gwen, manaItem, {}, gwen, {}, true)
+	eq(heals[#heals].kind, COMBAT_MANADRAIN, "the mana flask drinks too (its own wait)")
+	-- the wait still applies: two drinks inside the wait heal once
+	local hal = mkPlayer(31)
+	heals = {}
+	os.mtime = function() return 20000000 end
+	drink.onUse(hal, flaskItem, {}, hal, {}, false)
+	os.mtime = function() return 20000000 + 100 end
+	drink.onUse(hal, flaskItem, {}, hal, {}, false)
+	eq(#heals, 1, "the exhaust still holds a second drink back") eq(hal.msgs[#hal.msgs], "You are exhausted.", "and says so")
+	os.mtime = function() return 20000000 + 2000 end
+	drink.onUse(hal, flaskItem, {}, hal, {}, false)
+	eq(#heals, 2, "after the wait it drinks again")
+	-- a drink on another player costs the drinker nothing
+	local hanna = mkPlayer(32)
+	os.mtime = function() return 30000000 end
 	drink.onUse(hal, flaskItem, {}, hanna, {}, false)
-	eq(PT.charges(hal, "health"), 400, "the drinker pays") eq(PT.charges(hanna, "health"), 500, "the target does not")
-	-- relog / item identity: a second flask item (a split or a copy) shares the same pool
+	eq(heals[#heals].target, hanna, "heals the other player")
+	-- another item of the same id works the same (no per-item state)
 	local copy = mkItem(HEALTH.id, 3)
-	os.mtime = function() return 3000000 end
-	drink.onUse(hal, copy, {}, hal, {}, false)
-	eq(PT.charges(hal, "health"), 300, "another item of the same id uses the same character pool")
-	-- never above the maximum, hand-edited storage clamps
-	hal.st[cfg.storage.healthCharges] = 10 ^ 9
-	eq(PT.charges(hal, "health"), 500, "an absurd stored value reads as the maximum")
-	-- the tree's extra charge raises the maximum
-	hal.st[cfg.storage.treeMaxCharges] = 2
-	eq(PT.maxCharges(hal, "health"), 7, "tree extra charges") PT.fill(hal) eq(PT.charges(hal, "health"), 700, "fill to the new maximum")
-	-- the flask nodes of the passive tree (O251, nodes 669-672): the stat keys are the hooks' names, the sums are in range
-	local tree = dofile("data/scripts/chaos/passivetree_data.lua")
-	local sum = {}
-	for id = 669, 672 do
-		local node = tree.nodes[id]
-		check(node ~= nil and node.s ~= nil, "flask node " .. id .. " exists with stats")
-		for stat, v in pairs(node and node.s or {}) do
-			check(stat == F.tree.maxStat or stat == F.tree.gainStat, "flask node " .. id .. " gives a hook stat: " .. stat)
-			sum[stat] = (sum[stat] or 0) + v
-		end
-	end
-	eq(sum[F.tree.maxStat], 3, "all four flask nodes: +3 charges") eq(sum[F.tree.gainStat], 45, "all four flask nodes: +45% gain")
-	local gex, ggn = K.treeValues(cfg, sum)
-	eq(gex, 3, "treeValues reads the node sums") eq(ggn, 45, "treeValues reads the node gain")
-	check(gex < F.tree.maxExtra and ggn < F.tree.gainPctCap, "the nodes stay under the hooks' caps")
-	local ivy = mkPlayer(40)
-	ivy.st[cfg.storage.treeMaxCharges], ivy.st[cfg.storage.treeGainPct] = 0, 0
-	eq(PT.maxCharges(ivy, "health"), 5, "without the nodes: health 5") eq(PT.maxCharges(ivy, "mana"), 8, "without the nodes: mana 8")
-	ivy.st[cfg.storage.treeMaxCharges], ivy.st[cfg.storage.treeGainPct] = gex, ggn
-	eq(PT.maxCharges(ivy, "health"), 8, "with the nodes: health 8") eq(PT.maxCharges(ivy, "mana"), 11, "with the nodes: mana 11")
-	PT.fill(ivy) eq(PT.charges(ivy, "health"), 800, "a filled flask holds the new maximum")
-	eq(K.killGain(cfg, {tier = "normal", xp = 200, kind = "health", treeGainPct = ggn}), 12, "8 x 1.45 = 11.6 rounds to 12")
-	-- a refund: the stored charges are cut to the lower maximum (K.clampStored), unset and in-range values stay
-	eq(K.clampStored(cfg, "health", 800, 0), 500, "800 stored, maximum 5: cut to 500")
-	eq(K.clampStored(cfg, "mana", 1100, 0), 800, "mana 1100 stored, maximum 8: cut to 800")
-	eq(K.clampStored(cfg, "health", 800, 3), nil, "still in range: no change")
-	eq(K.clampStored(cfg, "health", -1, 0), nil, "unset (full) stays unset") eq(K.clampStored(cfg, "health", nil, 0), nil, "nil stays")
-	eq(K.clampStored(cfg, "health", 0/0, 0), nil, "nan is left to the read")
+	os.mtime = function() return 31000000 end
+	eq(drink.onUse(hal, copy, {}, hal, {}, false), true, "a copy drinks") eq(copy.removed, 0, "and is not consumed")
 	os.mtime = nil
-end
-
--- kills, the safe zone and the look (potion_flasks.lua on the mocked engine)
-do
-	local callbacks, gevents, deathEvents = {}, {}, {}
-	EventCallback = {register = function(self)
-		callbacks[#callbacks + 1] = {onSpawn = self.onSpawn, onLook = self.onLook}
-		self.onSpawn, self.onLook = nil, nil
-	end}
-	local baseEvent = event
-	function GlobalEvent(name)
-		local e = baseEvent(name)
-		function e:interval(ms) self.ms = ms end
-		function e:register() gevents[name] = self end
-		return e
-	end
-	function CreatureEvent(name)
-		local e = baseEvent(name)
-		function e:register() deathEvents[name] = self end
-		return e
-	end
-	TILESTATE_PROTECTIONZONE, CONDITION_INFIGHT, CONDITIONID_DEFAULT = 1, 2, 3
-	local monsters = {}
-	Creature = function(id) return monsters[id] or players[id] end
-	local partyOf = {}
-	local function addParty(a, b)
-		local members = {a, b}
-		local party = {getMembers = function() local out = {} for _, m in ipairs(members) do out[#out + 1] = m end return out end,
-			getLeader = function() return a end}
-		partyOf[a], partyOf[b] = party, party
-	end
-	local function setup(p, x, pz, fighting)
-		p.pos = {x = x, y = 100, z = 7}
-		p.pz, p.fighting = pz, fighting
-		p.getPosition = function(self) return self.pos end
-		p.getParty = function(self) return partyOf[self] end
-		p.getTile = function(self) return {hasFlag = function(_, f) return f == TILESTATE_PROTECTIONZONE and self.pz end} end
-		p.getCondition = function(self, c) if c == CONDITION_INFIGHT and self.fighting then return {} end return self.conds[c] end
-		p.registerEvent = function() end
-		p.getTopParent = nil
-	end
+	-- the retired file registers nothing
+	local before = 0
+	for _ in pairs(registered) do before = before + 1 end
 	dofile("data/scripts/chaos/potion_flasks.lua")
-	local F = ChaosPotionFlasks
-	local spawnCb, lookCb
-	for _, c in ipairs(callbacks) do spawnCb = spawnCb or c.onSpawn lookCb = lookCb or c.onLook end
-	check(spawnCb ~= nil and lookCb ~= nil and deathEvents.ChaosFlaskDeath ~= nil, "death event, spawn and look registered")
-	eq(gevents.ChaosFlaskSafeThink.ms, cfg.flask.safeMs, "the safe zone think interval")
-	local registeredOn = {}
-	local function mkMonster(id, name, xp, master)
-		local m = {id = id, name = name, dmg = {}, events = registeredOn}
-		function m:getId() return self.id end
-		function m:isPlayer() return false end
-		function m:isMonster() return true end
-		function m:getMaster() return master end
-		function m:getName() return self.name end
-		function m:getType() return {name = function() return name end, getExperience = function() return xp end} end
-		function m:getDamageMap() return self.dmg end
-		function m:registerEvent(e) registeredOn[#registeredOn + 1] = e end
-		monsters[id] = m
-		return m
-	end
-	local function kill(m, killer, most)
-		return deathEvents.ChaosFlaskDeath.onDeath(m, nil, killer, most)
-	end
-	local ivy = mkPlayer(40) local jon = mkPlayer(41) local kai = mkPlayer(42) local lou = mkPlayer(43)
-	for i, p in ipairs({ivy, jon, kai, lou}) do setup(p, 100 + (i == 4 and 90 or 0), false, false) end
-	addParty(ivy, kai) addParty(jon, lou)
-	for _, p in ipairs({ivy, jon, kai, lou}) do
-		p.st[cfg.storage.healthCharges] = 0 p.st[cfg.storage.manaCharges] = 0
-	end
-	-- spawn: a monster carries the event, a summon does not
-	spawnCb(mkMonster(900, "Rat", 5), {}, false, false)
-	eq(registeredOn[1], "ChaosFlaskDeath", "a spawned monster gets the death event")
-	local tamed = mkMonster(901, "Rat", 5, ivy) spawnCb(tamed, {}, false, false)
-	eq(#registeredOn, 1, "a summon does not")
-	-- a normal kill: killer + near party member + damage map; not a far party member
-	local ogre = mkMonster(902, "Ogre", 200)
-	ogre.dmg = {[jon.id] = 50}
-	kill(ogre, ivy, ivy)
-	eq(PT.charges(ivy, "health"), 8, "the killer: 8 hundredths (normal at the reference experience)")
-	eq(PT.charges(kai, "health"), 8, "a party member of the killer, near")
-	eq(PT.charges(jon, "health"), 8, "someone in the damage map")
-	eq(PT.charges(lou, "health"), 0, "the damage dealer's party member 90 tiles away gets nothing")
-	eq(PT.charges(ivy, "mana"), 12, "mana flask 1.5x")
-	-- a boss and a rare
-	local boss = mkMonster(903, "Big Boss", 1)
-	ChaosTierOf = function(c) return c.id == 903 and "boss" or c.id == 904 and "rare" or "normal" end
-	kill(boss, ivy, ivy)
-	eq(PT.charges(ivy, "health"), 308, "a boss: 300 more")
-	ivy.st[cfg.storage.healthCharges] = 0
-	kill(mkMonster(904, "Ogre", 200), ivy, ivy)
-	eq(PT.charges(ivy, "health"), 60, "a rare: 60")
-	-- no refill: a summon's death, a training dummy, a player's death (no PvP refill)
-	ivy.st[cfg.storage.healthCharges] = 0
-	kill(mkMonster(905, "Rat", 200, jon), ivy, ivy) kill(mkMonster(906, "Training Dummy", 200), ivy, ivy)
-	local victim = mkPlayer(44) setup(victim, 100, false, false)
-	victim.isMonster = function() return false end
-	kill(victim, ivy, ivy)
-	eq(PT.charges(ivy, "health"), 0, "summon, dummy and a player's death refill nothing")
-	-- a rift husk refills nothing
-	ChaosRift = {isHusk = function(c) return c.id == 907 end}
-	kill(mkMonster(907, "Ogre", 200), ivy, ivy)
-	eq(PT.charges(ivy, "health"), 0, "a husk refills nothing")
-	ChaosRift = nil
-	-- full flask stays full; a kill by a non-player (a monster killed by another) does nothing
-	ivy.st[cfg.storage.healthCharges] = -1
-	kill(mkMonster(908, "Ogre", 200), ivy, ivy)
-	eq(PT.charges(ivy, "health"), 500, "a full flask stays at the maximum")
-	local env = mkMonster(909, "Ogre", 200)
-	kill(env, nil, nil) kill(env, monsters[900], monsters[900])
-	-- the notice: a whole charge more, rate limited
-	local mia = mkPlayer(45) setup(mia, 100, false, false)
-	mia.st[cfg.storage.healthCharges] = 95 mia.st[cfg.storage.manaCharges] = 0
-	os.mtime = function() return 10000 end
-	kill(mkMonster(910, "Ogre", 200), mia, mia)
-	eq(mia.msgs[#mia.msgs], "Flasks: health 1/5, mana 0/8", "the refill line when a whole charge came")
-	local n = #mia.msgs
-	mia.st[cfg.storage.healthCharges] = 95
-	os.mtime = function() return 10000 + 1000 end
-	kill(mkMonster(911, "Ogre", 200), mia, mia)
-	eq(#mia.msgs, n, "at most one refill line per noticeMs")
-	os.mtime = function() return 10000 + cfg.flask.noticeMs + 1 end
-	mia.st[cfg.storage.healthCharges] = 95
-	kill(mkMonster(912, "Ogre", 200), mia, mia)
-	eq(#mia.msgs, n + 1, "and one again later")
-	-- the safe zone
-	local nan = mkPlayer(46) setup(nan, 100, true, false)
-	nan.st[cfg.storage.healthCharges] = 0 nan.st[cfg.storage.manaCharges] = 100
-	local oto = mkPlayer(47) setup(oto, 100, false, false) oto.st[cfg.storage.healthCharges] = 0
-	local pam = mkPlayer(48) setup(pam, 100, true, true) pam.st[cfg.storage.healthCharges] = 0
-	eq(F.safePass({nan, oto, pam}), 1, "only the player in the zone and out of a fight is filled")
-	eq(PT.charges(nan, "health"), 500, "health full") eq(PT.charges(nan, "mana"), 800, "mana full")
-	eq(PT.charges(oto, "health"), 0, "outside: nothing") eq(PT.charges(pam, "health"), 0, "in the zone but fighting: nothing")
-	eq(nan.msgs[#nan.msgs], "Your flasks are full again.", "told")
-	eq(F.safePass({nan}), 0, "already full: no second message")
-	-- look: your own flask only
-	local own = mkItem(HEALTH.id)
-	own.isItem = function() return true end
-	own.getTopParent = function() return ivy end
-	ivy.isPlayer = function() return true end
-	ivy.st[cfg.storage.healthCharges] = 230
-	eq(lookCb(ivy, own, {}, 1, "You see an everfull health potion."), "You see an everfull health potion.\nCharges: 2/5",
-		"look shows your charges")
-	eq(lookCb(jon, own, {}, 1, "You see x."), "You see x.", "somebody else's flask shows none of yours")
-	local other = mkItem(7618) other.isItem = function() return true end other.getTopParent = function() return ivy end
-	eq(lookCb(ivy, other, {}, 1, "You see y."), "You see y.", "a stock potion is untouched")
-	os.mtime = nil
+	local after = 0
+	for _ in pairs(registered) do after = after + 1 end
+	eq(after, before, "potion_flasks.lua is a stub: it registers nothing") eq(ChaosPotionFlasks, nil, "and defines nothing")
+	eq(registered.ChaosFlaskDeath, nil, "no kill refill event") eq(registered.ChaosFlaskSafeThink, nil, "no temple refill think")
 end
 
 -- ---------------------------------------------------------------- higher tiers (O245)
@@ -748,14 +535,14 @@ do
 	eq(K.materialOf(cfg, byId[32270]).name, "ultimate spirit potions", "supreme spirit takes ultimate spirit potions")
 
 	-- the drink core
-	r = K.drink(cfg, {id = 32261, target = "self", level = 79, charges = 500})
+	r = K.drink(cfg, {id = 32261, target = "self", level = 79})
 	eq(r.why, "level", "below the stock potion's level: refused") eq(r.args[1], 80, "with its level")
-	eq(K.drink(cfg, {id = 32261, target = "self", level = 80, charges = 500}).ok, true, "at the level")
-	eq(K.drink(cfg, {id = 32261, target = "self", charges = 500}).ok, true, "no level given: not checked (the old callers)")
-	r = K.drink(cfg, {id = 32263, target = "self", level = 100, charges = {health = 500, mana = 50}})
-	eq(r.why, "empty", "a spirit drink needs a charge in BOTH pools") eq(r.kind, "mana", "and says which pool is short")
-	r = K.drink(cfg, {id = 32263, target = "self", level = 100, charges = {health = 500, mana = 100}})
-	check(r.ok and #r.pools == 2 and r.health ~= nil and r.mana ~= nil, "a spirit potion heals and restores mana, two pools")
+	eq(K.drink(cfg, {id = 32261, target = "self", level = 80}).ok, true, "at the level")
+	eq(K.drink(cfg, {id = 32261, target = "self"}).ok, true, "no level given: not checked (the old callers)")
+	r = K.drink(cfg, {id = 32263, target = "self", level = 100})
+	check(r.ok and #r.pools == 2 and r.health ~= nil and r.mana ~= nil, "a spirit potion heals and restores mana, two waits")
+	eq(r.consume, false, "never used up") eq(K.drink(cfg, {id = 32263, target = "self", level = 100, exhausted = true}).why, "exhausted", "the wait holds")
+	eq(K.drink(cfg, {id = 32263, target = "self", level = 100, charges = 0}).ok, true, "a leftover charge value in the input is ignored")
 
 	-- the check
 	local function chk(over)
@@ -795,9 +582,15 @@ do
 	eq(K.restoreFor(cfg, "mana", {}, earned).id, 32262, "per slot")
 	eq(K.restoreFor(cfg, "health", {32261}, earned), nil, "nothing while the slot holds a flask")
 	eq(K.restoreFor(cfg, "mana", {}, {}), nil, "nothing earned: nothing back")
-	eq(K.npcBuy(cfg, {id = 32261, owned = false, money = 1e9}).why, "unknown", "a seller never sells a higher tier")
-	eq(K.npcBuy(cfg, {id = 32268, owned = false, money = 1e9}).why, "unknown", "nor the spirit potion of tier 1 (made from the health potion)")
-	eq(K.npcBuy(cfg, {id = HEALTH.id, owned = false, better = true, money = 1000}).why, "better", "nor the starting one over an earned tier")
+	-- without an earned tier the granted character gets the tier 1 potion of the slot back; an ungranted one gets nothing
+	eq(K.restoreFor(cfg, "health", {}, {}, true).id, HEALTH.id, "granted, nothing earned: the tier 1 health potion")
+	eq(K.restoreFor(cfg, "mana", {}, {}, true).id, MANA.id, "and the tier 1 mana potion")
+	eq(K.restoreFor(cfg, "health", {}, {}, false), nil, "not granted: nothing (a new character waits for its kit)")
+	eq(K.restoreFor(cfg, "health", {}, {}), nil, "no flag given: nothing")
+	eq(K.restoreFor(cfg, "health", {32085}, {}, true), nil, "a flask held (any tier): nothing, granted or not")
+	eq(K.restoreFor(cfg, "health", {32264}, {}, true), nil, "a higher tier held: nothing")
+	eq(K.restoreFor(cfg, "health", {32086}, {}, true).id, HEALTH.id, "the other slot's flask does not count")
+	eq(K.restoreFor(cfg, "health", {}, {byId[32261]}, true).id, 32261, "an earned tier beats the tier 1 potion")
 
 	-- the engine side
 	local function bound(id, lock) local it = mkItem(id) it.attrs.chaos_storebound, it.attrs.chaos_locked = 1, lock or cfg.bindLock return it end
@@ -828,9 +621,9 @@ do
 	end
 	local flagH = K.upgradeStorage(cfg, 32261)
 
-	-- Veyra's task: the swap, atomic, the attributes and the charges kept
+	-- Veyra's task: the swap, atomic, the attributes kept. A leftover charge value of before O273 is neither read nor written.
 	local pl, fl = holder(60, 100, 5)
-	pl.st[cfg.storage.healthCharges] = 230 pl.st[cfg.storage.manaCharges] = 40
+	pl.st[7102482] = 230 pl.st[7102483] = 40
 	local st = stockStack(pl, 45)
 	eq(PT.upgradeCheck(pl, 32261, "quest").ok, true, "check: ready")
 	local ok, why, args = PT.upgrade(pl, 32261, "quest")
@@ -842,7 +635,7 @@ do
 	local new = pl.bp.kids[2]
 	eq(new.attrs.chaos_storebound, 1, "bound kept") eq(new.attrs.chaos_locked, 5, "the lock value kept")
 	eq(pl.st[flagH], 1, "the tier is marked done")
-	eq(pl.st[cfg.storage.healthCharges], 230, "the health charges are untouched") eq(pl.st[cfg.storage.manaCharges], 40, "and the mana ones")
+	eq(pl.st[7102482], 230, "a leftover charge value is untouched") eq(pl.st[7102483], 40, "and the other one")
 	ok, why = PT.upgrade(pl, 32261, "quest")
 	eq(ok, false, "a second time: refused") eq(why, "You already have this upgrade.", "because it is done")
 	ok, why = PT.upgrade(pl, 32261, "store")
@@ -923,15 +716,19 @@ do
 	local heal = {}
 	local action = actions[32266]
 	check(action ~= nil, "the new ids have the drink action")
-	sp.st[cfg.storage.healthCharges], sp.st[cfg.storage.manaCharges] = 300, 300
 	heals = {}
+	os.mtime = function() return 1000000 end
 	eq(action.onUse(sp, sp.bp.kids[1], {}, sp, {}, false), true, "a spirit drink")
-	eq(#heals, 2, "health and mana") eq(PT.charges(sp, "health"), 200, "one health charge") eq(PT.charges(sp, "mana"), 200, "and one mana charge")
-	eq(PT.labelOf(sp, byId[32266]), "2/5 + 2/8", "the label shows both pools")
-	sp.st[cfg.storage.manaCharges] = 50
-	heals = {}
+	eq(#heals, 2, "health and mana") eq(sp.bp.kids[1].removed, 0, "never used up")
+	eq(action.onUse(sp, sp.bp.kids[1], {}, sp, {}, false), true, "a second drink inside the wait: handled")
+	eq(#heals, 2, "held back by the wait (both kinds)")
+	os.mtime = function() return 2000000 end
 	action.onUse(sp, sp.bp.kids[1], {}, sp, {}, false)
-	eq(#heals, 0, "no mana charge: no drink") eq(PT.charges(sp, "health"), 200, "and the health charge is not spent either")
+	eq(#heals, 4, "after the wait it drinks again, any number of times")
+	-- a spirit drink sets both waits: the health flask cannot be drunk right after it (it is the same slot) and the wait
+	-- of the mana kind is set too
+	eq(sp.st[7102482], nil, "no charge storage written") eq(sp.st[7102483], nil, "none at all")
+	os.mtime = nil
 	-- a drink below the potion's level
 	local young = holder(72, 100)
 	PT.upgrade(young, 32261, "store")
@@ -940,21 +737,12 @@ do
 	action.onUse(young, young.bp.kids[1], {}, young, {}, false)
 	eq(#heals, 0, "below the stock potion's level: no drink") eq(young.msgs[#young.msgs], "Only characters of level 80 or above may drink this fluid.", "told")
 
-	-- charges are per pool: one kill refills each pool once, whatever flasks are held
-	local kill = holder(73, 100)
-	kill.st[cfg.storage.healthCharges], kill.st[cfg.storage.manaCharges] = 0, 0
-	PT.upgrade(kill, 32263, "store")
-	local gained, any = PT.addKill(kill, "normal", 200)
-	eq(PT.charges(kill, "health"), 8, "one kill refill for the health pool") eq(PT.charges(kill, "mana"), 12, "and the mana pool")
-	eq(any, true, "refilled")
-
-	-- the seller and the starter kit never make a second flask
+	-- the starter kit and the login grant never make a second flask of a slot
 	local up2 = holder(74, 100)
 	PT.upgrade(up2, 32261, "store")
-	up2.money, up2.bank = 500, 0
-	eq(PT.npcBuy(up2.id, HEALTH.id), false, "the seller will not sell a second health flask") eq(up2.money, 500, "no gold taken")
-	eq(PT.giveAll(up2), 1, "giveAll only fills the mana slot") eq(PT.ownedSlot(up2, "mana"), true, "the mana flask came") 
+	eq(PT.giveAll(up2), 1, "giveAll only fills the mana slot") eq(PT.ownedSlot(up2, "mana"), true, "the mana flask came")
 	eq(PT.owned(up2, HEALTH.id), false, "and no starting health flask beside the great one")
+	eq(PT.giveAll(up2), 0, "a second grant gives nothing at all")
 
 	-- a lost flask: the highest earned tier comes back for its price, once
 	local lost = holder(75, 130)
@@ -962,9 +750,6 @@ do
 	for i = #lost.bp.kids, 1, -1 do lost.bp.kids[i]:remove() end
 	eq(PT.ownedSlot(lost, "health"), false, "the flask is gone")
 	lost.money, lost.bank = 100, 0
-	lost.msgs = {}
-	eq(PT.npcBuy(lost.id, HEALTH.id), false, "the seller refuses the starting one") eq(lost.msgs[#lost.msgs],
-		"You earned a better flask than that. Ask Veyra the Apothecary to give it back.", "and points to Veyra")
 	local rOk, rWhy = PT.restore(lost.id, "health")
 	eq(rOk, false, "too poor") eq(rWhy, "You do not have enough money.", "says so")
 	lost.money, lost.bank = 10000, 5000
@@ -972,7 +757,31 @@ do
 	eq(rOk, true, "restored") eq(rWhy.id, 32264, "the ultimate flask") eq(lost.money + lost.bank, 15000 - byId[32264].price, "for its price")
 	eq(lost.bp.kids[1].attrs.chaos_storebound, 1, "bound")
 	eq(PT.restore(lost.id, "health"), false, "not again while it holds one")
-	eq(select(2, PT.restore(lost.id, "mana")), "I have nothing to give back.", "nothing earned for the mana slot")
+	eq(select(2, PT.restore(lost.id, "mana")), "I have nothing to give back.", "nothing earned for the mana slot, and no grant flag")
+
+	-- a lost tier 1 potion (Veyra's {lost}, O273: nobody sells it any more): only a character that was granted it, only
+	-- with no Everfull item of the slot anywhere, for its price, once
+	local gone = ext(mkPlayer(76)) gone.level = 10
+	eq(#PT.restorable(gone), 0, "a character never granted (a brand-new one, still on its kit) has nothing to restore")
+	eq(PT.restore(gone.id, "health"), false, "and cannot ask for one")
+	gone.st[cfg.storage.granted] = 1
+	eq(#PT.restorable(gone), 2, "granted and holding nothing: both slots")
+	gone.money, gone.bank = 60, 40
+	eq((PT.restore(gone.id, "mana")), true, "restore needs the price: exactly 100 gold is enough")
+	eq(gone.money + gone.bank, 0, "paid the plain price")
+	eq(gone.bp.kids[1].id, MANA.id, "the tier 1 mana potion") eq(gone.bp.kids[1].attrs.chaos_storebound, 1, "bound") eq(gone.bp.kids[1].attrs.chaos_locked, cfg.bindLock, "locked")
+	eq(PT.restore(gone.id, "mana"), false, "not a second one") eq(#PT.restorable(gone), 1, "only the health slot is left")
+	local rich = ext(mkPlayer(77)) rich.level = 10 rich.st[cfg.storage.granted] = 1 rich.money = 1000
+	local poorOk, poorWhy = PT.restore(ext(mkPlayer(78)).id, "health")
+	eq(poorOk, false, "a player with no grant flag: refused") eq(poorWhy, "I have nothing to give back.", "says so")
+	-- a flask held in the inbox, the store purse or a depot counts as held: no second one
+	rich.inbox.kids[1] = bound(HEALTH.id) rich.inbox.kids[1].parent = rich.inbox
+	eq(PT.restore(rich.id, "health"), false, "a flask in the inbox: nothing to restore") eq(rich.money, 1000, "nothing was paid")
+	-- a pile of items hides nothing: a flask behind thousands of items of a container is still found
+	for i = 1, 3000 do rich.bp.kids[#rich.bp.kids + 1] = mkItem(2148) end
+	rich.bp.kids[#rich.bp.kids + 1] = bound(MANA.id)
+	eq(PT.ownedSlot(rich, "mana"), true, "a flask past the 3000th item is found")
+	eq(PT.restore(rich.id, "mana"), false, "so no second mana flask")
 
 	-- the store service
 	ChaosShopServices = {services = {}}

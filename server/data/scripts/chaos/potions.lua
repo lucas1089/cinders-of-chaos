@@ -1,16 +1,17 @@
 -- Potions (server/README.md "Potions"): the Everfull health and mana potions (potions_config.lua; rules
--- potions_core.lua; helpers data/lib/chaos_potions.lua; items, flask removal and NPC shops by
+-- potions_core.lua; helpers data/lib/chaos_potions.lua; items, flask removal and NPC shop cleanup by
 -- server/tools/install_potions.py).
 --
 -- An Everfull potion drinks like the stock Health / Mana Potion (the same roll, on yourself or another player) and is
--- never used up and never leaves a flask. Since O242 it is a flask with charges (potion_flasks.lua refills them). The health and the mana potion each have their own wait (the action
+-- never used up, never leaves a flask and never runs out: it has no charges (O242 gave it some, O273 took them away
+-- again: "deixe-as ilimitadas"). The health and the mana potion each have their own wait (the action
 -- interval - 100 ms), so a mana potion right after a health potion works (owner 2026-10-17: it said "You are
 -- exhausted"); no CONDITION_EXHAUST_HEAL is added any more, so healing spells are not held up either. Each kind is
 -- not faster than a stack of stock potions. Store-bound and locked like the Everfull Ration:
 -- not traded, sold, dropped or lost on death (pouches.lua, engine patch 0009, death_keep.lua).
 -- Sources: the starter kit (newplayer.lua calls ChaosPotions.giveAll), a one-time grant at login for characters made
--- before them, and every potion seller's trade window (one copy, ChaosPotions.npcBuy). Stock potions of every tier
--- stay consumables; the base potions.lua no longer gives an empty flask (install_potions.py).
+-- before them, and Veyra the Apothecary's {lost} (a lost flask comes back for gold). No NPC sells them (O273). Stock
+-- potions of every tier stay consumables; the base potions.lua no longer gives an empty flask (install_potions.py).
 -- Lua 5.1 / LuaJIT and Lua 5.3 compatible.
 
 if not Chaos then
@@ -61,28 +62,7 @@ local function targetKind(player, target)
 end
 
 -- ---------------------------------------------------------------- drinking
--- The Everfull potions are flasks with charges (README "Flask charges"): a drink costs one, an empty flask cannot be
--- drunk (a carried stock potion of the same kind is drunk instead, used up), kills and the temple refill them
--- (potion_flasks.lua). The charges are the character's storage, not the item's.
-local function flaskStatus(player, e)
-	if e.line == "spirit" then
-		player:sendTextMessage(MESSAGE_STATUS_SMALL, Chaos.t(player, "Spirit flask: %s", PT.labelOf(player, e)))
-	elseif e.key == "mana" then
-		player:sendTextMessage(MESSAGE_STATUS_SMALL, Chaos.t(player, "Mana flask: %s", PT.label(player, "mana")))
-	else
-		player:sendTextMessage(MESSAGE_STATUS_SMALL, Chaos.t(player, "Health flask: %s", PT.label(player, "health")))
-	end
-end
-
--- the charges of every pool a drink of this entry spends: pool -> hundredths of a charge
-local function chargesOf(player, e)
-	local out = {}
-	for _, pool in ipairs(K.poolsOf(PT.cfg(), e)) do
-		out[pool] = PT.charges(player, pool)
-	end
-	return out
-end
-
+-- Unlimited (O273): a drink needs the level of the potion and the wait of its kinds, nothing else, and spends nothing.
 local drink = Action()
 function drink.onUse(player, item, fromPosition, target, toPosition, isHotkey)
 	local kind, who = targetKind(player, target)
@@ -91,7 +71,7 @@ function drink.onUse(player, item, fromPosition, target, toPosition, isHotkey)
 		return false
 	end
 	local pools = K.poolsOf(PT.cfg(), e)
-	-- the wait: a drink waits on every pool it spends (a spirit drink is no faster than a health and a mana drink)
+	-- the wait: a drink waits on every kind it sets (a spirit drink is no faster than a health and a mana drink)
 	local waiting = false
 	for _, pool in ipairs(pools) do
 		local last = lastDrink[player:getId() .. ":" .. pool]
@@ -99,9 +79,7 @@ function drink.onUse(player, item, fromPosition, target, toPosition, isHotkey)
 			waiting = true
 		end
 	end
-	local r = K.drink(PT.cfg(), {id = item:getId(), exhausted = waiting, target = kind,
-		charges = chargesOf(player, e), level = player:getLevel()})
-	local stock
+	local r = K.drink(PT.cfg(), {id = item:getId(), exhausted = waiting, target = kind, level = player:getLevel()})
 	if not r.ok then
 		if r.why == "exhausted" then
 			player:sendTextMessage(MESSAGE_STATUS_SMALL, Game.getReturnMessage(RETURNVALUE_YOUAREEXHAUSTED))
@@ -111,32 +89,9 @@ function drink.onUse(player, item, fromPosition, target, toPosition, isHotkey)
 			player:sendTextMessage(MESSAGE_STATUS_SMALL, Chaos.t(player, r.text, unpack(r.args)))
 			return true
 		end
-		if r.why ~= "empty" then
-			return false
-		end
-		if waiting then
-			player:sendTextMessage(MESSAGE_STATUS_SMALL, Game.getReturnMessage(RETURNVALUE_YOUAREEXHAUSTED))
-			return true
-		end
-		stock = PT.cfg().flask.stockFallback and PT.findStock(player, e.sourceId) or nil
-		if not stock then
-			if r.kind == "mana" then
-				player:sendTextMessage(MESSAGE_STATUS_SMALL,
-					Chaos.t(player, "Your mana flask is empty. Kill monsters or visit a temple to refill it."))
-			else
-				player:sendTextMessage(MESSAGE_STATUS_SMALL,
-					Chaos.t(player, "Your health flask is empty. Kill monsters or visit a temple to refill it."))
-			end
-			return true
-		end
-		r = {ok = true, health = e.health, mana = e.mana}
+		return false
 	end
-	if stock then
-		stock:remove(1) -- the empty flask drinks a stock potion of its kind from the backpack
-	elseif not PT.spendPools(player, pools) then -- every pool pays one charge or nothing is spent
-		return true
-	end
-	local tier = not stock and (e.tier or 1) or nil -- a flask drink: the Everfull percent of its tier
+	local tier = e.tier or 1 -- the Everfull percent of its tier
 	if r.health then
 		local v = ChaosPotions.amount(player, who, "health", r.health, e.level or 0, tier)
 		doTargetCombat(player, who, COMBAT_HEALING, v, v)
@@ -148,20 +103,6 @@ function drink.onUse(player, item, fromPosition, target, toPosition, isHotkey)
 	who:say(PT.cfg().sound, TALKTYPE_MONSTER_SAY)
 	for _, pool in ipairs(pools) do
 		lastDrink[player:getId() .. ":" .. pool] = nowMs()
-	end
-	if stock then
-		if e.line == "spirit" then
-			player:sendTextMessage(MESSAGE_STATUS_SMALL,
-				Chaos.t(player, "Your spirit flask is empty: you drank a spirit potion from your backpack."))
-		elseif e.key == "mana" then
-			player:sendTextMessage(MESSAGE_STATUS_SMALL,
-				Chaos.t(player, "Your mana flask is empty: you drank a mana potion from your backpack."))
-		else
-			player:sendTextMessage(MESSAGE_STATUS_SMALL,
-				Chaos.t(player, "Your health flask is empty: you drank a health potion from your backpack."))
-		end
-	else
-		flaskStatus(player, e)
 	end
 	return true -- the flask is never used up
 end
@@ -202,7 +143,7 @@ function login.onLogin(player)
 	end
 	if PT.giveAll(player) > 0 then
 		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player,
-			"You received an Everfull Health Potion and an Everfull Mana Potion. They refill as you kill monsters."))
+			"You received an Everfull Health Potion and an Everfull Mana Potion. They never run out."))
 	end
 	return true
 end

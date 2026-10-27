@@ -356,7 +356,8 @@ def floor_tile(templates, lay, p):
 def check_free(ed, lay, st):
     """the quest hall, its corridor and end wall may only take the place of decoration: a tile with an action id, a
     unique id or a teleport that is not one of the quests' own is refused; on a corridor of the plaza (layout_rows) a
-    tile with another teleport is left as it is (lay['keep']: the plaza's own teleports stay where they are)"""
+    tile with another teleport (no unique id) is a stray of an older layout (lay['strays']; owner, 2026-10-22, "lost
+    teleports" on the carpet): plan_move takes it off and gives the tile the carpet again"""
     mine = set()
     for a in lay['alcoves']:
         if st[a['id']] == 'annex':
@@ -365,7 +366,7 @@ def check_free(ed, lay, st):
     spots = list(lay['rect']) + [p for r in lay['connector'].values() for p in r] + list(lay['endwall'])
     corr = set(lay['corridor'][0]) if lay.get('corridor_rows') else set()
     alc = {p for a in lay['alcoves'] for p in a['tiles'].values()}
-    lay['keep'] = set()
+    lay['strays'] = set()
     for p in spots:
         if p in mine:
             continue
@@ -373,7 +374,7 @@ def check_free(ed, lay, st):
         for _iid, at in (t['items'] if t else []):
             foreign = at.get('tele') and tuple(at['tele']) not in quest_dest
             if foreign and p in corr and p not in alc and not at.get('uid'):
-                lay['keep'].add(p)
+                lay['strays'].add(p)
                 continue
             if at.get('aid') or at.get('uid') or foreign:
                 raise QuestError('the quest hall would replace a tile with an action id, unique id or teleport at '
@@ -451,8 +452,6 @@ def plan_move(ed, lay, room, portal, sign_id, templates, forward=True, models=No
                            for i, at in t['items']]
                     src[ns] = dict(flags=t['flags'], ground=t['ground'], items=its)
         for p in lay['rect']:
-            if p in lay.get('keep', ()):
-                continue
             t = src.get(p)
             writes[p] = t if t is not None else floor_tile(templates, lay, p)
         for r in range(3):
@@ -488,6 +487,8 @@ def plan_move(ed, lay, room, portal, sign_id, templates, forward=True, models=No
             t = ed.get(sign)
             if t is not None:
                 writes[sign] = blank_sign(t, sign_id)
+        for p in sorted(lay['strays']):
+            notes.append('stray teleport at %d,%d,%d taken off the carpet' % p)
     else:
         back = [a for a in lay['alcoves'] if st[a['id']] in ('annex', 'moved')]
         for a in back:
@@ -498,9 +499,33 @@ def plan_move(ed, lay, room, portal, sign_id, templates, forward=True, models=No
                     writes[old] = ed.get(new if st[a['id']] == 'annex' else a['prev_tiles'][old])
         if any(st[a['id']] == 'annex' for a in back):
             for p in lay['rect']:
-                if p not in lay.get('keep', ()):
-                    writes[p] = floor_tile(templates, lay, p)
+                writes[p] = floor_tile(templates, lay, p)
     return writes, notes
+
+
+def audit(ed, lay, grounds=None):
+    """[problem text] for the quest hall as `ed` holds it: a teleport on a corridor row that is not an alcove's own, a
+    teleport tile with no ground (first item a ground in `grounds`, else the ground attribute), a quest teleport that
+    leads anywhere but its quest's destination (the plan: hall_hunts.csv)"""
+    bad = []
+    own = {tuple(a['new']): tuple(a['dest']) for a in lay['alcoves']}
+    corr = set(lay['corridor'][0]) if lay.get('corridor_rows') else set()
+    for p in lay['rect']:
+        t = ed.get(p)
+        if t is None:
+            continue
+        tele = [(i, at) for i, at in t['items'] if at.get('tele')]
+        if not tele:
+            continue
+        if p in corr and p not in own:
+            bad.append('stray teleport on the carpet at %d,%d,%d' % p)
+        elif p not in own:
+            bad.append('teleport at %d,%d,%d is not a quest\'s' % p)
+        if grounds is not None and not (t['ground'] or (t['items'] and t['items'][0][0] in grounds)):
+            bad.append('teleport without ground at %d,%d,%d' % p)
+        if p in own and any(tuple(at['tele']) != own[p] for _i, at in tele):
+            bad.append('quest teleport at %d,%d,%d leads to %s, not its quest\'s destination' % (p + (tele[0][1]['tele'],)))
+    return bad
 
 
 # ------------------------------------------------------------------------------------------------ the ways back

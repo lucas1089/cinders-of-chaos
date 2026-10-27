@@ -61,6 +61,10 @@ return {
 	stoneId = 1560, -- obelisk: the Summoning Stone in every guild hall
 	stoneActionId = 47609,
 	dark = {enabled = true, style = "hall", wall = "obsidian_wall", basin = "brazier"},
+	-- O276 look (arenalook_core.lua; the theme of the boss by keyword, or fixed here): ground variants with borders, mirrored
+	-- cover that never touches the entry, the lane to the boss or the boss spot, lights against the wall. `cover` is the
+	-- percent of the arena floor (nil: the theme's 5), `lights` the fixtures at most (nil: 6), `seed` the layout variant.
+	look = {theme = "stone", seed = 5},
 	lives = {base = 3, perPlayers = 3, reenterSeconds = 8, shieldSeconds = 3}, -- base + 1 per perPlayers players
 
 	-- ------------------------------------------------------------------ telegraphs (uber_core.lua U.pattern / markPlan)

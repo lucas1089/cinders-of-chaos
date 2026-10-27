@@ -79,24 +79,121 @@ local RUIN_WALLS = {
 }
 local RUIN_PILLARS = {{24, 44}, {12, 24}, {33, 40}, {20, 18}, {46, 50}}
 
--- the layout of a slot (build mode): rectangles and positions in map coordinates
-function K.layout(cfg, slot)
+-- ---------------------------------------------------------------------- the look of the field
+-- Deterministic: the same field in LuaJIT and Lua 5.3, in every slot, on every run (integer hashes of the tile's
+-- coordinates, never the clock or math.random). Everything is laid in one half and turned 180 degrees for the other
+-- (the hash reads the lower of the two coordinates), so both gates have the same cover.
+if not ChaosAreaGenCore then
+	dofile("data/scripts/chaos/areagen_core.lua") -- borderPieces: the border piece names of one tile
+end
+
+local function hashN(a, b, c)
+	local h = (a * 73856093 + b * 19349663 + (c or 0) * 83492791) % 2147483629
+	h = (h * 48271) % 2147483629
+	return (h * 48271 + 12345) % 2147483629
+end
+
+-- 0 .. 99.99
+local function roll(a, b, c)
+	return hashN(a, b, c) % 10000 / 100
+end
+
+local D8 = {{0, -1}, {1, 0}, {0, 1}, {-1, 0}, {1, -1}, {-1, -1}, {1, 1}, {-1, 1}}
+
+-- the ring test: do the free cardinal neighbours of a tile stay joined without it? (then blocking the tile cannot cut
+-- the field in two). free(dx, dy) -> bool.
+local function ringJoined(free)
+	local card = {{0, -1}, {1, 0}, {0, 1}, {-1, 0}}
+	local corner = {{1, -1}, {1, 1}, {-1, 1}, {-1, -1}} -- between card[i] and card[i % 4 + 1]
+	local n, comps = 0, 0
+	local f = {}
+	for i = 1, 4 do
+		f[i] = free(card[i][1], card[i][2])
+		if f[i] then
+			n = n + 1
+		end
+	end
+	if n <= 1 then
+		return true
+	end
+	-- components of the free cardinals around the ring (neighbours joined through a free corner)
+	local joined = {}
+	for i = 1, 4 do
+		local j = i % 4 + 1
+		joined[i] = f[i] and f[j] and free(corner[i][1], corner[i][2])
+	end
+	local links = 0
+	for i = 1, 4 do
+		if joined[i] then
+			links = links + 1
+		end
+	end
+	comps = n - links
+	if n == 4 and links == 4 then
+		comps = 1
+	end
+	return comps <= 1
+end
+
+local function pick(list, a, b, c)
+	return list[hashN(a, b, c) % #list + 1]
+end
+
+local function weighted(list, a, b, c)
+	local total = 0
+	for _, e in ipairs(list) do
+		total = total + e[2]
+	end
+	local r = hashN(a, b, c) % total
+	for _, e in ipairs(list) do
+		if r < e[2] then
+			return e[1]
+		end
+		r = r - e[2]
+	end
+	return list[1][1]
+end
+
+-- the layout of a slot (build mode): rectangles and positions in map coordinates, the ground of every tile, the
+-- cover, the decoration, the lights
+local function buildLayout(cfg, slot)
 	local o = K.slotOrigin(cfg, slot)
 	local W, H = cfg.field.innerW, cfg.field.innerH
 	local z = o.z
+	local look = cfg.look
 	local function at(x, y)
 		return {x = o.x + x, y = o.y + y, z = z}
 	end
 	local function turn(x, y)
 		return W + 1 - x, H + 1 - y
 	end
+	local function canon(x, y)
+		local tx, ty = turn(x, y)
+		if x < tx or (x == tx and y <= ty) then
+			return x, y
+		end
+		return tx, ty
+	end
+	local function key(x, y)
+		return y * 128 + x
+	end
+	local function inside(x, y)
+		return x >= 1 and x <= W and y >= 1 and y <= H
+	end
 	local cx, cy = floor((W + 1) / 2), floor((H + 1) / 2)
 	local L = {slot = slot, z = z, x1 = o.x, y1 = o.y, x2 = o.x + W + 1, y2 = o.y + H + 1, shrine = at(cx, cy),
-		exits = {}, gates = {}, walls = {}, pillars = {}, flags = {}, spawns = {}, entrySpots = {}}
+		exits = {}, gates = {}, walls = {}, pillars = {}, flags = {}, spawns = {}, entrySpots = {}, cover = {},
+		decor = {}, fixtures = {}, tiles = {}}
+	local blocked = {} -- local key -> true (ruin walls, pillars, flags, fixtures, the shrine)
+	local function block(x, y)
+		blocked[key(x, y)] = true
+	end
 	-- two safe exits: south-west and (turned) north-east, each in a gate yard of 11 x 11
 	local ex, ey = 7, H - 6
+	local exitsLocal = {}
 	for i, p in ipairs({{ex, ey}, {turn(ex, ey)}}) do
 		local e = at(p[1], p[2])
+		exitsLocal[i] = p
 		L.exits[i] = e
 		L.gates[i] = {x1 = e.x - 5, y1 = e.y - 5, x2 = e.x + 5, y2 = e.y + 5}
 		L.flags[#L.flags + 1] = {x = e.x - 3, y = e.y - 3, z = z}
@@ -120,15 +217,31 @@ function K.layout(cfg, slot)
 		L.pillars[#L.pillars + 1] = at(q[1], q[2])
 		L.pillars[#L.pillars + 1] = at(turn(q[1], q[2]))
 	end
-	-- spawn points: a grid, away from the gates and the shrine, never on a wall or a pillar
-	local blocked = {}
-	for _, list in ipairs({L.walls, L.pillars, L.flags}) do
-		for _, p in ipairs(list) do
-			blocked[p.x .. "," .. p.y] = true
+	-- the lights beside the objectives (blocking, never in the way: the capture circle keeps its centre and sides free)
+	if look then
+		local sx, sy = cx, cy
+		local function fixture(def, bx, by)
+			for _, d in ipairs(def.at) do
+				local f = at(bx + d[1], by + d[2])
+				f.id = def.id
+				L.fixtures[#L.fixtures + 1] = f
+			end
+		end
+		fixture(look.shrineLights, sx, sy)
+		fixture(look.shrineBeacons, sx, sy)
+		for _, p in ipairs(exitsLocal) do
+			fixture(look.gateLights, p[1], p[2])
 		end
 	end
+	for _, list in ipairs({L.walls, L.pillars, L.flags, L.fixtures, {L.shrine}}) do
+		for _, p in ipairs(list) do
+			block(p.x - o.x, p.y - o.y)
+		end
+	end
+	-- spawn points: a grid, away from the gates and the shrine, never on a wall, a pillar or a light
 	local m = cfg.monsters
 	local step = m.spawnSpacing or 9
+	local spawnNear = {} -- tiles next to a spawn point stay free of cover
 	for y = 4, H - 3, step do
 		for x = 4, W - 3, step do
 			local p = at(x, y)
@@ -141,12 +254,316 @@ function K.layout(cfg, slot)
 			if max(abs(p.x - L.shrine.x), abs(p.y - L.shrine.y)) < (m.keepAway.shrine or 7) then
 				far = false
 			end
-			if far and not blocked[p.x .. "," .. p.y] then
+			if far and not blocked[key(x, y)] then
 				L.spawns[#L.spawns + 1] = p
+				for dx = -1, 1 do
+					for dy = -1, 1 do
+						spawnNear[key(x + dx, y + dy)] = true
+					end
+				end
+			end
+		end
+	end
+	if not look then
+		return L
+	end
+
+	-- ------------------------------------------------------------ ground: natural patches, paved places, roads
+	local nat = {} -- local key -> "rock" | "basalt" | "cracks"
+	local pav = {} -- local key -> "ring" | "gate" | "road" | "hall"
+	for y = 1, H do
+		for x = 1, W do
+			nat[key(x, y)] = "rock"
+		end
+	end
+	local function paintPatch(pt, px, py)
+		for y = max(1, floor(py - pt.ry - 2)), min(H, floor(py + pt.ry + 2)) do
+			for x = max(1, floor(px - pt.rx - 2)), min(W, floor(px + pt.rx + 2)) do
+				local kx, ky = canon(x, y)
+				local noise = (roll(kx, ky, 11) - 50) / 50 * 0.4
+				local ex2, ey2 = (x - px) / pt.rx, (y - py) / pt.ry
+				if ex2 * ex2 + ey2 * ey2 + noise < 1 then
+					nat[key(x, y)] = pt.kind
+				end
+			end
+		end
+	end
+	for _, pt in ipairs(look.patches) do
+		paintPatch(pt, pt.x, pt.y)
+		local tx, ty = turn(pt.x, pt.y)
+		paintPatch(pt, tx, ty)
+	end
+	-- a basalt field never touches the crack ground (no border piece joins them): the basalt tile gives way to rock
+	for y = 1, H do
+		for x = 1, W do
+			if nat[key(x, y)] == "basalt" then
+				for _, d in ipairs(D8) do
+					if nat[key(x + d[1], y + d[2])] == "cracks" then
+						nat[key(x, y)] = "rock"
+						break
+					end
+				end
+			end
+		end
+	end
+	for y = 1, H do
+		for x = 1, W do
+			local pos = at(x, y)
+			if K.inShrine(cfg, L, pos) or K.exitAt(cfg, L, pos) then
+				pav[key(x, y)] = "ring"
+			end
+		end
+	end
+	local function paveRect(x1, y1, x2, y2, kind)
+		for y = max(1, y1), min(H, y2) do
+			for x = max(1, x1), min(W, x2) do
+				if not pav[key(x, y)] then
+					pav[key(x, y)] = kind
+				end
+			end
+		end
+	end
+	for _, p in ipairs(exitsLocal) do
+		paveRect(p[1] - 5, p[2] - 5, p[1] + 5, p[2] + 5, "gate")
+	end
+	local pr = look.plazaRadius or 6
+	paveRect(cx - pr, cy - pr, cx + pr, cy + pr, "gate")
+	for _, w in ipairs({{11, 11, 14, 14}}) do -- the floor of the ruined hall (its turn is the other hall)
+		paveRect(w[1], w[2], w[3], w[4], "hall")
+		paveRect(W + 1 - w[3], H + 1 - w[4], W + 1 - w[1], H + 1 - w[2], "hall")
+	end
+	local function paveRoad(wp)
+		for i = 1, #wp - 1 do
+			local a, b = wp[i], wp[i + 1]
+			local dx, dy = b[1] > a[1] and 1 or (b[1] < a[1] and -1 or 0), b[2] > a[2] and 1 or (b[2] < a[2] and -1 or 0)
+			local x, y = a[1], a[2]
+			assert(dx == 0 or dy == 0, "roads run along one axis")
+			while true do
+				for w = -1, 1 do
+					local px, py = x + (dy ~= 0 and w or 0), y + (dx ~= 0 and w or 0)
+					if inside(px, py) and not pav[key(px, py)] and not blocked[key(px, py)] then
+						pav[key(px, py)] = "road"
+					end
+				end
+				if x == b[1] and y == b[2] then
+					break
+				end
+				x, y = x + dx, y + dy
+			end
+		end
+	end
+	for _, road in ipairs(look.roads) do
+		paveRoad(road)
+		local t = {}
+		for i, p in ipairs(road) do
+			local tx, ty = turn(p[1], p[2])
+			t[i] = {tx, ty}
+		end
+		paveRoad(t)
+	end
+
+	-- ------------------------------------------------------------ cover: clumps that never cut the field
+	local covered = {}
+	local freeTotal = 0
+	for y = 1, H do
+		for x = 1, W do
+			if not blocked[key(x, y)] then
+				freeTotal = freeTotal + 1
+			end
+		end
+	end
+	local function isFree(x, y)
+		return inside(x, y) and not blocked[key(x, y)]
+	end
+	local function reachable()
+		local seen, queue, head = {}, {}, 1
+		local sx, sy = exitsLocal[1][1], exitsLocal[1][2]
+		seen[key(sx, sy)] = true
+		queue[1] = key(sx, sy)
+		local n = 1
+		while queue[head] do
+			local k = queue[head]
+			head = head + 1
+			local x, y = k % 128, floor(k / 128)
+			for i = 1, 4 do
+				local d = D8[i]
+				local nx, ny = x + d[1], y + d[2]
+				local nk = key(nx, ny)
+				if isFree(nx, ny) and not seen[nk] then
+					seen[nk] = true
+					n = n + 1
+					queue[#queue + 1] = nk
+				end
+			end
+		end
+		return n
+	end
+	local keepClear = look.keepClear or 2
+	local function nearGate(x, y)
+		for _, p in ipairs(exitsLocal) do
+			if max(abs(x - p[1]), abs(y - p[2])) <= 5 + keepClear then
+				return true
+			end
+		end
+		return false
+	end
+	local function coverOk(x, y, grp)
+		local k = key(x, y)
+		if not inside(x, y) or blocked[k] or pav[k] or spawnNear[k] or nearGate(x, y) then
+			return false
+		end
+		if grp.on and nat[k] ~= grp.on then
+			return false
+		end
+		return true
+	end
+	local function tryBlock(x, y, tx, ty)
+		-- both tiles (a tile and its turn) or none
+		local was = {}
+		for _, p in ipairs({{x, y}, {tx, ty}}) do
+			local ok = ringJoined(function(dx, dy)
+				return isFree(p[1] + dx, p[2] + dy)
+			end)
+			was[#was + 1] = ok
+			block(p[1], p[2])
+		end
+		local joined = was[1] and was[2]
+		freeTotal = freeTotal - 2
+		if not joined and reachable() ~= freeTotal then
+			blocked[key(x, y)], blocked[key(tx, ty)] = nil, nil
+			freeTotal = freeTotal + 2
+			return false
+		end
+		return true
+	end
+	for gi, grp in ipairs(look.cover) do
+		local centres = {}
+		for _, cl in ipairs(grp.clumps) do
+			centres[#centres + 1] = cl
+			local tx, ty = turn(cl.x, cl.y)
+			centres[#centres + 1] = {x = tx, y = ty, r = cl.r, chance = cl.chance}
+		end
+		for _, cl in ipairs(centres) do
+			for dy = -cl.r, cl.r do
+				for dx = -cl.r, cl.r do
+					local x, y = cl.x + dx, cl.y + dy
+					if dx * dx + dy * dy <= cl.r * cl.r + 1 and not covered[key(x, y)] and coverOk(x, y, grp) then
+						local kx, ky = canon(x, y)
+						local tx, ty = turn(x, y)
+						if roll(kx, ky, 100 + gi) < cl.chance and (tx ~= x or ty ~= y) and not covered[key(tx, ty)]
+								and coverOk(tx, ty, grp) and tryBlock(x, y, tx, ty) then
+							local id = pick(grp.ids, kx, ky, 200 + gi)
+							covered[key(x, y)], covered[key(tx, ty)] = id, id
+							L.cover[#L.cover + 1] = {x = o.x + x, y = o.y + y, z = z, id = id}
+							L.cover[#L.cover + 1] = {x = o.x + tx, y = o.y + ty, z = z, id = id}
+						end
+					end
+				end
+			end
+		end
+	end
+
+	-- ------------------------------------------------------------ decoration (never blocks)
+	local dec = look.decor
+	local function decorate(x, y, set, salt)
+		local kx, ky = canon(x, y)
+		if set and roll(kx, ky, salt) < set.chance then
+			local id = pick(set.ids, kx, ky, salt + 1)
+			L.decor[#L.decor + 1] = {x = o.x + x, y = o.y + y, z = z, id = id}
+			return true
+		end
+		return false
+	end
+	for y = 1, H do
+		for x = 1, W do
+			local k = key(x, y)
+			if not blocked[k] then
+				local kind = pav[k]
+				if kind == "gate" then
+					local d = max(abs(x - cx), abs(y - cy))
+					if d <= pr then
+						decorate(x, y, dec.plaza, 300)
+					end
+				elseif not kind then
+					local n = nat[k]
+					local edge = x == 1 or x == W or y == 1 or y == H
+					if not (edge and decorate(x, y, dec.wall, 310)) then
+						if n == "cracks" then
+							decorate(x, y, dec.cracks, 320)
+						elseif not decorate(x, y, dec.rock, 330) then
+							decorate(x, y, dec.bones, 340)
+						end
+					end
+				end
+			end
+		end
+	end
+
+	-- ------------------------------------------------------------ the ground items of every tile
+	for y = 1, H do
+		for x = 1, W do
+			local k = key(x, y)
+			local kx, ky = canon(x, y)
+			local kind, gid, edges = pav[k], nil, {}
+			if kind == "ring" then
+				gid = cfg.ids.ring
+			elseif kind == "gate" then
+				gid = cfg.ids.gateGround
+			elseif kind == "road" then
+				gid = weighted(look.road, kx, ky, 400)
+			elseif kind == "hall" then
+				gid = look.hall
+			else
+				kind = "ground"
+				local n = nat[k]
+				gid = (n == "cracks" and look.cracks[1]) or (n == "basalt" and pick(look.basalt, kx, ky, 410)) or
+					pick(look.rock, kx, ky, 420)
+				local function is(fam, dx, dy)
+					return nat[key(x + dx, y + dy)] == fam and not pav[key(x + dx, y + dy)]
+				end
+				local higher, set
+				if n == "rock" then
+					higher, set = "basalt", look.basaltEdge
+				elseif n == "cracks" then
+					higher, set = "rock", look.crackEdge
+				end
+				if higher then
+					local names = ChaosAreaGenCore.borderPieces(is(higher, 0, -1), is(higher, 1, 0), is(higher, 0, 1),
+						is(higher, -1, 0), is(higher, 1, -1), is(higher, -1, -1), is(higher, 1, 1), is(higher, -1, 1))
+					for _, name in ipairs(names) do
+						if set[name] then
+							edges[#edges + 1] = set[name]
+						end
+					end
+				end
+				L.tiles[k] = {ground = kind, nat = n, gid = gid, edges = edges}
+				kind = nil
+			end
+			if kind then
+				L.tiles[k] = {ground = kind, gid = gid, edges = edges}
 			end
 		end
 	end
 	return L
+end
+
+local layoutCache = setmetatable({}, {__mode = "k"})
+
+-- the layout of a slot (build mode), cached per config
+function K.layout(cfg, slot)
+	local c = layoutCache[cfg]
+	if not c then
+		c = {}
+		layoutCache[cfg] = c
+	end
+	local m = cfg.monsters or {}
+	local ka = m.keepAway or {}
+	local k = table.concat({slot, cfg.field.innerW, cfg.field.innerH, cfg.grid.origin.x, cfg.grid.origin.y, cfg.grid.cols,
+		cfg.grid.spacing, m.spawnSpacing or 9, ka.exit or 9, ka.shrine or 7, tostring(cfg.look)}, ":")
+	if not c[k] then
+		c[k] = buildLayout(cfg, slot)
+	end
+	return c[k]
 end
 
 -- map mode: the configured rectangle of the loaded map
@@ -243,7 +660,8 @@ function K.inShrine(cfg, L, pos)
 		and abs(pos.y - L.shrine.y) <= cfg.contest.capture.radius
 end
 
--- every tile of a build-mode instance once: {x, y, z, wall = bool, ground = "ground" | "gate" | "ring"}
+-- every tile of a build-mode instance once: {x, y, z, wall = bool, ground = "ground" | "gate" | "ring" | "road" | "hall",
+-- gid = the ground item, edges = border pieces over it}
 function K.footprint(cfg, L)
 	local walls = {}
 	for _, w in ipairs(L.walls) do
@@ -252,22 +670,38 @@ function K.footprint(cfg, L)
 	local list = {}
 	for x = L.x1, L.x2 do
 		for y = L.y1, L.y2 do
-			local pos = {x = x, y = y, z = L.z}
 			local wall = x == L.x1 or x == L.x2 or y == L.y1 or y == L.y2 or walls[x .. "," .. y] == true
-			local ground = "ground"
-			if K.inShrine(cfg, L, pos) or K.exitAt(cfg, L, pos) then
-				ground = "ring"
+			local info = L.tiles and L.tiles[(y - L.y1) * 128 + (x - L.x1)]
+			local t = {x = x, y = y, z = L.z, wall = wall, ground = "ground", edges = {}}
+			if info then
+				t.ground, t.gid, t.edges = info.ground, info.gid, info.edges
 			else
-				for _, g in ipairs(L.gates) do
-					if inRect(g, L.z, pos) then
-						ground = "gate"
+				local pos = {x = x, y = y, z = L.z}
+				if K.inShrine(cfg, L, pos) or K.exitAt(cfg, L, pos) then
+					t.ground = "ring"
+				else
+					for _, g in ipairs(L.gates) do
+						if inRect(g, L.z, pos) then
+							t.ground = "gate"
+						end
 					end
 				end
 			end
-			list[#list + 1] = {x = x, y = y, z = L.z, wall = wall, ground = ground}
+			list[#list + 1] = t
 		end
 	end
 	return list
+end
+
+-- the tiles nothing can walk on: ruin walls, pillars, flags, lights, cover, the shrine (the outer wall is the footprint's)
+function K.blockedSet(L)
+	local set = {}
+	for _, list in ipairs({L.walls, L.pillars, L.flags, L.fixtures or {}, L.cover or {}, {L.shrine}}) do
+		for _, p in ipairs(list) do
+			set[p.x .. "," .. p.y] = true
+		end
+	end
+	return set
 end
 
 -- ====================================================================== entering, login, protection, exit

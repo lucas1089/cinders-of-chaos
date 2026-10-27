@@ -205,6 +205,18 @@ PzHud < ChaosPanelDark
     color: #ff7a2a
     phantom: true
 
+  PzWrap
+    id: goal
+    margin-top: 3
+    text-align: center
+    visible: false
+
+  PzWrap
+    id: goal2
+    margin-top: 2
+    text-align: center
+    visible: false
+
   ChaosProgressBar
     id: embers
     height: 16

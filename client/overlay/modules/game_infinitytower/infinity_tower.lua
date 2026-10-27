@@ -2,6 +2,13 @@ local infinityTowerWindow = nil
 local OPCODE_INFINITY_TOWER = 214
 local milestoneWidgets = {}
 local cachedTowerData = nil
+local skipPanel = nil       -- the tower panel (floor, monsters, countdown, Next floor now): shown only inside a run
+local skipButton = nil
+local stateAtMs = 0
+local tickEvent = nil
+local towerState = nil      -- the last {action = 'state'} of the server
+local lastSkipMs = nil
+local AUTO_SKIP_KEY = 'chaosTowerAutoSkip' -- global per client install (the module has no per-character setting)
 
 -- Milestones padrão espelhados do servidor, exibidos antes dos dados chegarem
 local DEFAULT_MILESTONES = {
@@ -20,6 +27,7 @@ function init()
     onGameEnd = onGameEnd
   })
 
+  bindSkipKey()
   if g_game.isOnline() then
     onGameStart()
   end
@@ -33,6 +41,12 @@ function terminate()
 
   ProtocolGame.unregisterExtendedOpcode(OPCODE_INFINITY_TOWER)
   onGameEnd()
+  unbindSkipKey()
+  if tickEvent then removeEvent(tickEvent); tickEvent = nil end
+  if skipPanel then
+    skipPanel:destroy()
+    skipPanel, skipButton = nil, nil
+  end
 
   if infinityTowerWindow then
     infinityTowerWindow:destroy()
@@ -46,18 +60,129 @@ function terminate()
 end
 
 function onGameStart()
+  towerState = nil
+  updateSkipButton()
+  -- a relog never happens inside a run, but ask: the server answers with the state
+  local protocol = g_game.getProtocolGame()
+  if protocol then protocol:sendExtendedOpcode(OPCODE_INFINITY_TOWER, '{"action":"state"}') end
 end
 
 function onGameEnd()
   cachedTowerData = nil
+  towerState = nil
   hide()
+  updateSkipButton()
+end
+
+-- ---- Next floor now (server: infinitytower_run.lua ChaosTowerRun.skip; pure part towerskip.lua)
+function gameRoot()
+  local gi = modules.game_interface
+  return gi and gi.getRootPanel and gi.getRootPanel() or nil
+end
+
+local function setLabel(id, text)
+  local w = skipPanel and skipPanel:getChildById(id)
+  if w then
+    w:setText(text or '')
+    w:setVisible(text ~= nil and text ~= '')
+  end
+end
+
+local function refreshPanel()
+  if not skipPanel then return end
+  local d = TowerSkip.panel(towerState, g_clock.millis() - stateAtMs)
+  if not d then return end
+  setLabel('floorLabel', tr(d.floor.key, d.floor.n))
+  setLabel('clearedLabel', tr(d.cleared.key, d.cleared.n))
+  setLabel('monstersLabel', d.monsters and tr(d.monsters.key, d.monsters.left, d.monsters.total) or nil)
+  local timerText
+  if d.timer then
+    timerText = d.timer.key == 'Floor time left: %s' and tr(d.timer.key, TowerSkip.clock(d.timer.secs)) or tr(d.timer.key, d.timer.secs)
+  end
+  setLabel('timerLabel', timerText)
+end
+
+local function tickPanel()
+  tickEvent = nil
+  if not skipPanel or not skipPanel:isVisible() then return end
+  refreshPanel()
+  tickEvent = scheduleEvent(tickPanel, 250)
+end
+
+function updateSkipButton()
+  local view = TowerSkip.view(towerState)
+  if view.visible and not skipPanel then
+    local root = gameRoot()
+    if not root then return end
+    skipPanel = g_ui.createWidget('TowerPanel', root)
+    skipButton = skipPanel:getChildById('skipButton')
+    skipButton.onClick = function() skipFloor() end
+    local autoBox = skipPanel:getChildById('autoSkipBox')
+    autoBox:setChecked(autoSkipOn())
+    autoBox.onCheckChange = function(_, checked)
+      g_settings.set(AUTO_SKIP_KEY, checked)
+      if checked then autoSkipCheck() end
+    end
+  end
+  if not skipPanel then return end
+  if not view.visible then
+    skipPanel:hide()
+    if tickEvent then removeEvent(tickEvent); tickEvent = nil end
+    return
+  end
+  skipButton:setText(tr(view.key) .. ' (' .. TowerSkip.HOTKEY .. ')')
+  skipButton:setTooltip(tr(view.tip))
+  skipButton:setEnabled(view.enabled)
+  skipPanel:show()
+  refreshPanel()
+  if not tickEvent then tickEvent = scheduleEvent(tickPanel, 250) end
+end
+
+function autoSkipOn()
+  local ok, v = pcall(g_settings.getBoolean, AUTO_SKIP_KEY, false)
+  return ok and v == true
+end
+
+-- once per pushed state (and when the box is ticked): send the skip if the pure rule allows it
+function autoSkipCheck()
+  local now = g_clock.millis()
+  if not g_game.isOnline() or not TowerSkip.shouldAutoSkip(towerState, autoSkipOn(), lastSkipMs, now) then return end
+  local protocol = g_game.getProtocolGame()
+  if protocol then
+    lastSkipMs = now
+    protocol:sendExtendedOpcode(OPCODE_INFINITY_TOWER, '{"action":"skip"}')
+  end
+end
+
+function skipFloor()
+  if not g_game.isOnline() or not TowerSkip.canPress(towerState, g_clock.millis(), lastSkipMs) then return end
+  local protocol = g_game.getProtocolGame()
+  if protocol then
+    lastSkipMs = g_clock.millis()
+    protocol:sendExtendedOpcode(OPCODE_INFINITY_TOWER, '{"action":"skip"}')
+  end
+end
+
+function bindSkipKey()
+  local root = gameRoot()
+  if root then g_keyboard.bindKeyDown(TowerSkip.HOTKEY, skipFloor, root) end
+end
+
+function unbindSkipKey()
+  local root = gameRoot()
+  if root then pcall(g_keyboard.unbindKeyDown, TowerSkip.HOTKEY, root) end
 end
 
 function onExtendedOpcode(protocol, opcode, buffer)
   local data = json.decode(buffer)
   if not data then return end
 
-  if data.action == "open" then
+  if data.action == "state" then
+    towerState = data
+    stateAtMs = g_clock.millis()
+    updateSkipButton()
+    autoSkipCheck()
+  elseif data.action == "open" then
     cachedTowerData = data
     show(data)
   elseif data.action == "update" then

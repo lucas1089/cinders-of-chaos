@@ -89,7 +89,7 @@ function S.globalText(p, tier, level)
 		text = text .. ", about 1 in " .. K.int(n) .. " " .. ((tier and tier ~= "normal") and (tier .. " monster kills") or "kills")
 	end
 	if level then
-		text = text .. ", level " .. level .. "+"
+		text = text .. ", level " .. Chaos.huntingLevel(level) .. "+"
 	end
 	return text
 end
@@ -179,7 +179,7 @@ function S.lootLayer(lootCfg, gems, uniques, emit, monsterName)
 			local p = p0 and p0 * best / #gems.types or nil
 			local level = minLevel and minLevel > 1 and minLevel or nil
 			local text = "global drop table: " .. S.tierText(gems.drop.chance) .. " a kill for a gem of a random type; " ..
-				"this quality from monster level " .. (minLevel or 1) ..
+				"this quality from monster level " .. Chaos.huntingLevel(minLevel or 1) ..
 				(gems.drop.tierUp and "; legendary and boss monsters may drop one quality better" or "")
 			for t = 1, #gems.types do
 				emit("drop", gems.firstId + (t - 1) * #gems.tiers + (q - 1), {n = "Any monster", d = text,
@@ -208,7 +208,7 @@ function S.lootLayer(lootCfg, gems, uniques, emit, monsterName)
 		end
 		local d = (where and (where .. "; ") or "any monster; ") ..
 			(u.bossOnly and "bosses only" or (from .. " and better")) ..
-			((tonumber(u.minMonsterLevel) or 0) > 0 and (", monster level " .. u.minMonsterLevel .. "+") or "") ..
+			((tonumber(u.minMonsterLevel) or 0) > 0 and (", monster level " .. Chaos.huntingLevel(u.minMonsterLevel) .. "+") or "") ..
 			(u.season and ", season characters" or "")
 		-- p: the chance per kill of the weakest tier that rolls it (the expected effort of the tooltip, K.brief)
 		local tier = u.bossOnly and "boss" or "legendary"
@@ -496,8 +496,8 @@ S.REWARDS[#S.REWARDS + 1] = {key = "rift", fn = function(D, emit)
 			local mk = r.monsterKey
 			local p = (tonumber(mk.chance) or 0) / 100000
 			emit("drop", r.key.itemId, {n = "Any monster", d = string.format("tier 1 key outside rifts, monster level %d+ " ..
-				"(and at least %d%% of yours), x%d legendary, x%d boss", mk.minMonsterLevel or 0,
-				math.floor((mk.levelShare or 0) * 100 + 0.5), (mk.tierMult or {}).legendary or 1, (mk.tierMult or {}).boss or 1),
+				"(and at least %d%% of yours), x%d legendary, x%d boss", Chaos.huntingLevel(mk.minMonsterLevel or 0),
+				math.floor((mk.levelShare or 0) * Chaos.huntingMult() * 100 + 0.5), (mk.tierMult or {}).legendary or 1, (mk.tierMult or {}).boss or 1),
 				v = S.globalText(p, "normal", mk.minMonsterLevel), o = 0, p = p, pk = "kill"})
 		end
 		if r.bountyKey then
@@ -1086,13 +1086,16 @@ S.REWARDS[#S.REWARDS + 1] = {key = "newplayer", fn = function(D, emit)
 		items(kit.backpack, function(id, n) reward(emit, id, n, "Starter kit", d, 0) end)
 	end
 	items(np.common and np.common.items, function(id, n) reward(emit, id, n, "Starter kit", "every new character", 0) end)
-	-- the Everfull potions (potions_config.lua everfull): the kit, and a one-time grant at login for older characters
+	-- the Everfull potions (potions_config.lua everfull): the kit, and a one-time grant at login for older characters;
+	-- no NPC sells them (O273). An entry with `from` (the tiers 2+ and the tier 1 spirit potion) is an upgrade.
 	for _, e in ipairs(D.potions and D.potions.everfull or {}) do
-		if (e.tier or 1) <= 1 then
+		if type(e.from) ~= "table" or #e.from == 0 then
 			reward(emit, e.id, 1, "Starter kit", "every character, once (new characters in their kit)", 0)
 		else -- O245: the upgrades (the store sells the same swap)
+			local count = e.materialCount or (D.potions.upgrade or {}).materials or 0
+			local what = e.materialName or ((tostring(e.name):gsub("^everfull ", "")) .. "s")
 			reward(emit, e.id, 1, "Veyra the Apothecary", "upgrade of your Everfull potion, level " .. (e.level or 0) ..
-				": " .. ((D.potions.upgrade or {}).materials or 0) .. " " .. tostring(e.name):gsub("^everfull ", "") .. "s", e.level or 0)
+				": " .. count .. " " .. what, e.level or 0)
 		end
 	end
 	for _, m in ipairs(np.milestones or {}) do

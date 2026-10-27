@@ -1,7 +1,7 @@
 -- The client's helper is told which Everfull potion each slot carries (README "Potions", "The helper and the tiers", O246).
 -- Rules: potions_core.lua heldView; send: data/lib/chaos_potions.lua PT.sendHeld; client: game_helperrotation/everfullheld.lua.
 -- The message goes out at login, when the client asks (`sync`, once its module is up), after an upgrade (ChaosPotions.upgrade),
--- and whenever a 3 s think finds it changed (a flask emptied or refilled, an item moved into or out of the backpacks).
+-- and whenever a 3 s think finds it changed (an item moved into or out of the backpacks).
 -- The only client input is `sync`: one per second, no data read from it. Lua 5.1 / LuaJIT and Lua 5.3 compatible.
 
 if not Chaos then

@@ -76,6 +76,10 @@ return {
 	portalId = 1387, -- magic forcefield, used as a tile with the action id below
 	portalActionId = 47411,
 	dark = {enabled = true, style = "hall", wall = "obsidian_wall", basin = "brazier"},
+	-- O276 look (arenalook_core.lua; the theme of the boss by keyword, or fixed here): ground variants with borders, mirrored
+	-- cover that never touches the entry, the lane to the boss or the boss spot, lights against the wall. `cover` is the
+	-- percent of the arena floor (nil: the theme's 5), `lights` the fixtures at most (nil: 6), `seed` the layout variant.
+	look = {themes = {bloodmoon = "dark", hollow = "crypt", storm = "stone", cinder = "ember"}, seed = 3},
 
 	-- ------------------------------------------------------------------ lives (shared, like the rift lives)
 	-- A lethal hit is caught: the player is thrown into the antechamber (no death, no loss), the run loses one life and

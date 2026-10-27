@@ -288,8 +288,8 @@ server/
                                       slot pool, run HUD; see "Rifts")
     crafting.lua (crafting bench and orbs; rules in data/lib/chaos_crafting.lua, installer tools/install_crafting.py)
     salvage.lua  salvage_core.lua  salvage_config.lua (salvage into rune shards, the item lock; installer tools/install_salvage.py)
-    potions.lua  potions_core.lua  potions_config.lua  potion_flasks.lua (no empty flasks, the Everfull health / mana potions
-                                      with refilling charges; helpers in
+    potions.lua  potions_core.lua  potions_config.lua  (no empty flasks, the Everfull potions that never empty;
+                                      potion_flasks.lua is a retired stub; helpers in
                                       data/lib/chaos_potions.lua, installer tools/install_potions.py, see "Potions")
     lootline.lua  lootline_core.lua (one loot line per kill: the stock "Loot of", the Chaos bonus and the pouch line
                                       merged, see "One loot line per kill" under the loot filter)
@@ -841,7 +841,7 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7102400 - 7102409 | time-friendly progression (`catchup_config.lua` `storage`): +0 rested pool (centi-minutes), +1 day of the last low stamina notice, +2 the returning boost this character was welcomed for; +3 bounty rerolls held (`bounty_config.lua` `rerollStorage`), +4 kill task board rerolls held, +5 the task day of +6, +6 the board rerolls used that day (`bestiary_config.lua` `rerollStorage`); +7..9 free |
 | 7102460 - 7102469 | Candlemarks (`candlemarks_config.lua` `storage`): +0 the id of the last Candlemark purchase delivered to the character (the crash-safe delivery mark); +1..9 free |
 | 7102490 - 7102499 | rarity migration (`rarity_migrate.lua`): +0 the version of the walk this character had; +1..9 free |
-| 7102480 - 7102489 | potions (`potions_config.lua` `storage`): +0 the Everfull potions were given (kit or login grant); +1 the tree's Healing percent for the potion scripts; +2 / +3 the health / mana flask's charges in hundredths of a charge (-1 = never set = full, O242); +4 the tree's extra flask charges; +5 the tree's charge gain percent; +6..9 free |
+| 7102480 - 7102489 | potions (`potions_config.lua` `storage`): +0 the Everfull potions were given (kit or login grant); +1 the tree's Healing percent for the potion scripts; +2 .. +5 retired (the flask charges, O242, gone in O273; a leftover value is never read); +6..9 free |
 | 7102510 - 7102519 | Everfull tier upgrades (`potions_config.lua` `storage.upgradeBase`, O245): +0 .. +9 the upgrade to the entry at that place among the entries with a `from` (great health, great mana, great spirit, ultimate health, ultimate mana, ultimate spirit, supreme health, spirit tier 1, supreme mana, supreme spirit: O247) was done (1); the block is full, a new upgrade needs a new block |
 | 7102800 - 7102810 | Haunted Harvest (`harvest_event_config.lua` `storage`): +0 the day, +1 hollow candy from pumpkins that day, +2 the day of the boss's first-kill candy; +3..9 free; 7102810 the GLOBAL forced state (0 window, 1 open, 2 shut) |
 | 7102820 | Infinity Tower first-clear floors (`infinitytower_balance_config.lua` `rewards.storage`): the tower season x 1000 + the highest milestone floor paid that season; 7102821 - 7102829 free |
@@ -2943,10 +2943,9 @@ effect. Rules in `passivetree_core.lua` (pure), numbers in `passivetree_config.l
   planned nodes, every planned mastery with a valid effect, no effect for a saved mastery. All of it is saved at once, or
   nothing, with the reason in `planResult {ok, message}`. Same rate limit as a save (one a second, key
   `passivetree.save`); the tree has no zone or combat rule today and the planner adds none.
-- **Flask nodes 669-672 (O251)**: four nodes in own groups 105-108 on a side branch of Mercy of Embers (358): Everfull flask
-  charges and refill, stats `flaskMaxCharges` / `flaskChargeGain` (node values, shown as "+N max charges on the health and
-  mana flasks" and "+N% flask charges from kills"). Flag stats (`flask` + capital): `tools/passivetree_lanes_lib.lua` never lets
-  a class lane re-skin them and they are neutral in `passivetree_stats_config.lua`. See "Potions", "Flask charges".
+- **Nodes 669-672 (O251, changed in O273)**: four nodes in own groups 105-108 on a side branch of Mercy of Embers (358). They gave
+  Everfull flask charges; the flasks never empty now, so they give vitality and spirit (669 and 671 +1 spirit, 670 +1 vitality,
+  672 "Bottomless Flasks" +2 vitality and +2 spirit). The class lanes never touch them (a dead-end branch). See "Potions".
 - **Mastery nodes 665-668** (one per class section, above its third line node; any class of the line may take it): 1
   point like every node; 3 or 4 effects of ordinary tree stats, about one notable each (no new combat code). The effect
   is picked while the node is planned (free, changeable until Apply). Changing the effect of a saved mastery
@@ -3559,9 +3558,27 @@ account, a tagged character with another name, any staff character and a tester 
 The price shown in the window is unchanged. Nothing sets the tag but `tools/testers.py setup`. No dev key is involved.
 Test: `tests/respec_test.lua`.
 
+## Arena looks (O276: `arenalook_core.lua`)
+
+Owner request 2026-10-27: "as arenas de bosses, infinity tower e tudo mais precisam de um rework". The runtime-built fight rooms were flat floors with a wall ring (the dark tile set, when installed, only scattered decoration with `math.random`). `arenalook_core.lua` is the shared, pure look generator, modelled on the Scorched Marches (`pvpzone_core.lua`).
+
+- **What it builds.** For a floor (any list of tiles): a base ground and patches of other grounds with border pieces (`ChaosAreaGenCore.borderPieces`), a rim of another ground along the wall plus rubble (the wall has depth), a paved lane between two points, lights (blocking braziers) standing against the wall, cover pieces and walkable decoration. Everything is a function of the coordinates (a hash, no `math.random`) and of the seed, so a look is the same in every slot and in every test; looks are cached.
+- **Guarantees** (`tests/arenalook_test.lua`): the free floor stays one 4-connected field; keep points (arrival, boss spot, gates, fixtures) and lanes stay open; no two solid pieces touch, not even on a diagonal, so a lane is never narrower than one tile; with `mirror` every solid piece has its image turned 180 degrees (fair for PvP and for the two ends of a hall).
+- **Themes.** `ember` (scorched rock, basalt, lava cracks), `stone` (flagstone and marble) and `crypt` (slate, rock, bones), all with stock ids that the generated hunting areas or the Marches already use (a test checks the ids against `areagen_config.lua`, `pvpzone_config.lua` and the arena configs). `dark` is the dark tile set (`data/lib/chaos_dark_tiles.lua`) as a fourth theme; without the set installed it falls back to `ember`. `ChaosArenaLook.themeFor(name)` picks by keyword (fire, lich, abyss...) and else by a hash of the name.
+- **Rooms.** `ChaosArenaLook.dress(roomKey, rect, z, theme, opts)` paints a rectangular room: it removes what a former painting left (only ids the looks own), paints the new look and gives any tile without a ground the plain one (never a hole). A room painted with the same theme and layout is left alone, so a slot that serves many bosses is repainted only when the theme changes. The caller places its fixtures (basins, pillars, gates) after the call.
+- **Where it is used.**
+  - Infinity Tower (`infinitytower_run.lua`, `cfg.look`): inner size 19 -> 25 (slot spacing 40 holds it), one theme and one of six layout variants per run in turn. The group starts in the open middle (keep radius 3); monsters appear around it and never on a cover piece; a paved lane runs from the south wall; each floor shows a floating label; the entry message states the goal. Before the first build of a slot the whole footprint is checked (a tile of the map refuses the run with a message instead of building over it); a slot stays "ours" across a script reload. After a run the slot is wiped (items, walls and ground) so the next run repaints. Balance numbers are untouched (`tools/tower_model.py --check`).
+  - World boss arena and lobby (`worldboss.lua`, `Chaos.worldBoss.arena.look`): theme by boss name, repainted when the boss changes; the arrival, boss spot, the lane between them (the boss sees the entry), the four pillars and the basins stay open. The lobby gets ground, rim and rubble only.
+  - Pocket boss, guild boss and Ascended arenas (`pocketboss.lua`, `guildboss.lua`, `uber.lua`; `look` in their configs; `ChaosArenaLook.dressBossArena`): theme per boss (the Ascended omens and the guild boss are set in the config), mirrored cover and lights, the arrival, starts, boss spot, middle, corner basins and the pocket's second gate open, a free lane from the entry to the boss. The footprint checks of the three also accept the looks' grounds, so a script reload cannot mark a built slot as foreign.
+  - Ranked PvP arena (`arena.lua`, `arena_config.lua` `look`): a theme per slot in turn, cover and lights mirrored for the two teams, spawns, the centre line and the stone pillars open.
+- **Clean-ups keep the look.** The `cleanSlot` / `cleanArena` of these systems keep every id `ChaosArenaLook.isOwned` returns true for.
+- **Not changed.** The Battleground, the Ember Descent hall, the Vocation Trials and the raid arenas keep the dark paint of their own (`data/lib/chaos_dark_paint.lua`); the rift, dungeon and waystone maps are generated by the area generator or are map areas of the base server; the Tower Defense room is a base map room. No VPS install step: the looks use stock items and are applied at runtime.
+- Tests: `tests/arenalook_test.lua` (generator), `tests/arenalook_arenas_test.lua` (Ascended, guild boss, pocket boss and PvP layouts for every theme and slot), plus blocks in `infinitytower_run_test.lua` and `worldboss_test.lua`.
+
 ## Infinity Tower gameplay (`infinitytower_run.lua`)
 The tower exists now. The Enter Tower button of the client window (action `enter`) takes you, or your party (leader only, members within 12 tiles, up to 4), into an arena that is built at runtime with `Game.createTile` in an empty part of the map (x from 2000, y 2000, z 7; sixteen arenas side by side), so no map editing is needed. Floors are waves: kill everything to open the next one (6 s pause, half of the missing health and mana restored, `floorGold` x floor gold); every 10th floor is a boss floor with its helpers (twice the floor time since 2026-10-13: 10 minutes). Pools get harder every 8 floors, and the chance of magic, rare and legendary monsters (with their modifiers and shaders) rises with the floor. A floor has a 300 s limit and a whole run 60 minutes (`runTimeLimit`, warnings at 5 min, 1 min and 10 s, the floor's at 1 min and 10 s; "Instance limits"); at most 16 arenas, the wait and the waiting line when all are busy. Dying, leaving (the Leave Tower button), logging out or running out of time ends your part of the run and records the cleared floors with `ChaosTower.recordRun` (points, best floor, ranking, milestones). Logging in inside an arena sends you to the temple. Milestone rewards now use item ids that exist (gold, Orbs of Upheaval and Fate, Soulreaper). Everything is configured at the top of the file (`ChaosTowerRunConfig`).
 - `server/tests/infinitytower_run_test.lua` covers the floor planner, entering, clearing floors, dying, leaving, the time limit, logout and login with a mocked engine; CI runs it with LuaJIT and Lua 5.3. The real `Game.createTile`, `Tile:addItem`, `Game.createMonster` and teleport calls are assumed from the engine sources, not run.
+- **Next floor now and the tower panel (O274).** Floors have no waves (all monsters of a floor appear together), so there is no "call next wave"; the button skips the wait. Opcode 214 got three actions, no new opcode: client `{"action":"skip"}` starts the next floor at once, `{"action":"state"}` asks for the state; the server pushes `{"action":"state", inRun, canSkip, isLeader, floor, nextBoss, boss, cleared, waiting, remaining, total, nextIn | floorLeft}` on entry, floor start, every kill, floor cleared and leaving (the client counts the countdowns on its own clock). `ChaosTowerRun.skip` (`infinitytower_run.lua`, config `ChaosTowerRunConfig.skip`) refuses unless: the player is in an active run and inside the arena; the run is waiting (start delay or pause, so the floor is cleared: never two floors alive, no kill skipped, nothing stacks); the player is the run leader (any member once the leader died or left, so a member cannot rush a group); the next floor is not a boss floor (`intoBoss = false`: the pause before a boss is kept); and `minInterval` (2 s) since the last press, on top of the 300 ms per-action limit of `infinitytower.lua`. A timer sequence number makes the skipped pause timer do nothing. Records and rewards: floor gold, rewards, the heal and `ChaosRecords.towerFloor` all run when a floor is cleared, before the pause, so a skip only drops the 6 s of regeneration; the run clock is real time, so a fast climb is faster by at most 6 s a floor, the same for everyone, and `tower_model.py` (which models the fight, not the pause) is unchanged and passes. Tests: `tests/infinitytower_run_test.lua` ("Next floor now"). Client: see `client/MANIFEST.md` game_infinitytower.
 - Not done: a visible ladder of floors in the client window (since O144 it shows the next reward, see "Infinity Tower balance and floor rewards"). Check that x 2000..2700, y 2000..2020, z 7 is really empty in your map (it is in the map analysed: the content starts at x 18992).
 
 ## Infinity Tower balance and floor rewards (O144: `infinitytower_balance_config.lua`, `infinitytower_balance_core.lua`, `tools/tower_model.py`)
@@ -5010,7 +5027,7 @@ Owner request 2026-10-16: "Remove the potion flasks and make the first pots infi
   1, every class) has an Everfull copy: **everfull health potion 32085** (125-175 health) and **everfull mana potion
   32086** (75-125 mana), the rolls of the stock potions. New items.otb nodes copied from 7618 / 7620 (flags, attributes,
   the stock look), stackable like them for the same reason as the Everfull Ration (count 1, never used up), items.xml
-  entries "A flask: kills and the temple refill its charges ..." (the item tooltip shows them; "Never runs out" until O242). No spirit potion at tier 1: the first one is the great spirit
+  entries "A flask that never empties. ..." (the item tooltip shows them). No spirit potion at tier 1: the first one is the great spirit
   potion (level 80, a higher tier below); the hybrid classes start on health and mana potions too (docs/CLASSES.md, `newplayer_config.lua`).
 - **Drinking.** On yourself or another player like the stock potion (not on a monster or an NPC). Never used up, no flask.
   The health and the mana potion each have their own wait (the action interval - 100 ms = 900 ms, a per-player timer in
@@ -5039,11 +5056,9 @@ Owner request 2026-10-16: "Remove the potion flasks and make the first pots infi
   and is unchanged. `tests/potions_test.lua`, client `game_shaderfx/shaderfx_test.lua`.
 - **Sources.** The starter kit, its wearable part on arrival at the tutorial island (`newplayer.lua` calls
   `ChaosPotions.giveAll` into the kit backpack; the only starting potions, no kit carries stock potions); a one-time grant at
-  login for characters made before (storage 7102480 = 1 once given; a brand-new character waits for its kit); and every
-  potion seller (an NPC that sells 7618 or 7620, such as Morora): its trade window lists both at `price` (100 gold).
-  `ShopModule:callbackOnBuy` (hook in `data/npc/lib/npcsystem/modules.lua`) hands such a purchase to
-  `ChaosPotions.npcBuy` in the NPC's Lua state: one store-bound copy whatever amount was asked, paid from hand and bank,
-  refused while the character has one (backpack, inbox, depot).
+  login for characters made before (storage 7102480 = 1 once given; a brand-new character waits for its kit); and the Veyra
+  quests below (O273: no NPC sells an Everfull potion any more; `install_potions.py` removes the entries it added before from the
+  trade window of every NPC and takes the `ShopModule` hook out of `modules.lua`, once, idempotent).
 - **Existing stock potions stay consumables.** Stacks of Health / Mana Potions are not converted: monsters, NPCs, the
   mentor shop and the milestone gifts still hand them out, so a login conversion would fight every source. They are
   still drunk and used up as before, and still sell to NPCs. The Everfull copies sit next to them.
@@ -5053,85 +5068,42 @@ Owner request 2026-10-16: "Remove the potion flasks and make the first pots infi
   level the potion needs, at most 10% (`potions_config.lua` `amount`; health potion 3%, great 3.8%, ultimate 4.3%,
   level 200 5%, 500 8%, 700 10%). **Everfull potions** (owner 2026-10-25: "faça as everfull recuperar um fixo + uma
   porcentagem") take the percent from their tier instead, at any character level: tier 1 6%, 2 8%, 3 10%, 4 12%
-  (`amount.everfullPct`; a spirit potion gives it on health and on mana; a stock potion an empty flask drinks keeps the
-  level curve). The tree's Healing (`incrementHealth`) raises both: health through the heal event like
+  (`amount.everfullPct`; a spirit potion gives it on health and on mana). The tree's Healing (`incrementHealth`) raises both: health through the heal event like
   every heal, mana in `ChaosPotions.amount` from the drinker's storage 7102481 (the tree writes it at every rebuild;
   the potion script runs in the actions' Lua state). `install_potions.py` rewrites the stock script's two
   `doTargetCombat(... potion.health[1], potion.health[2])` calls (marker "Chaos: potion amount", a loader line on top;
   it falls back to the stock roll when the library cannot load); the Everfull potions use the same rule. Tests:
   `tests/potions_test.lua`, `tools/install_potions_test.py`.
-- **Flask charges (O242).** Owner 2026-10-25: "Can potions refill as players kill monsters?"
-  The Everfull potions are flasks. `potions_config.lua` `flask`: the health flask holds 5 charges, the mana flask 8 (casters
-  drink more, so it also refills 1.5x as fast); a drink costs 1. Charges are kept in hundredths in the **character's
-  storage** (7102482 health, 7102483 mana; -1 = never set = full), never on the item, so a relog, a split or copied stack, a
-  moved or lost flask cannot reset them or add any (the flask is also store-bound, patch 0009). Every read clamps to
-  0..maximum, so an edited value is never trusted.
-  - **Kill refill** (`potion_flasks.lua`, a death event on every spawned monster that is not a summon, as `bestiary.lua`):
-    the last hit, the most damage, everybody in the damage map and their party members within 30 tiles on the same floor get
-    the refill. Per kill, in hundredths of a charge: normal 8, magic 25, rare 60, legendary 150, boss 300, times a factor from
-    the monster type's base experience (xp / 200, at least 0.25, at most 3; bosses skip it), times the flask's gain (mana
-    1.5), at most 300 (`killCap`: 3 charges). So 12 normal monsters of 200 experience fill one health charge, a rare 0.6, a
-    boss 3. The tier is `ChaosTierOf` (monster_tiers.lua). No refill from: a summon, a rift husk, a training dummy, **a
-    player's death** (no PvP refill: the death event is only put on monsters).
-  - **Town:** in a protection zone both flasks fill to full within 2 s (`safeMs`), not while the character is in a fight
-    (`CONDITION_INFIGHT`: no refill by shooting out of a temple tile).
-  - **Empty flask:** "Your health flask is empty. Kill monsters or visit a temple to refill it." A carried stock potion of the
-    same kind (7618 / 7620, inventory and backpacks) is drunk instead and used up (`stockFallback`), so a hotkey (patch 0043
-    picks the flask first) never dead-ends; the stock potions stay consumables and the backup, and the gold sink.
-  - **Showing the charges (server only, no client build):** Look at your own flask adds "Charges: 3/5" (an `onLook` callback,
-    not shown on somebody else's flask); each drink says "Health flask: 3/5"; a refill that adds a whole charge says "Flasks:
-    health 3/5, mana 4/8" at most every 4 s; the temple says "Your flasks are full again." Not done: a count on the item (the
-    flask is stackable, but a count of 0 would delete it, and a count of 1 cannot tell empty from one charge, and a split would
-    leave a second stack) and a HUD (needs a client build; `ChaosPotions.charges` is the one function it would read).
-  - **Passive tree hooks and nodes (O251).** The bonuses `flaskMaxCharges` (whole extra charges on both flasks, at most 5) and
-    `flaskChargeGain` (percent of every kill's refill, at most 100) are node stats like any other: `passivetree.lua` sums them
-    into the bonus table, `passivetree_effects.lua` (`applyAll`, after every save, reset and login) turns them into the
-    storage 7102484 / 7102485 through `ChaosPotionsCore.treeValues` (capped), and `ChaosPotions.treeExtra` / `treeGain`
-    (`data/lib/chaos_potions.lua`) read them for the maximum, the kill refill and the labels. The names match end to end
-    (node stat key = `flask.tree.maxStat` / `gainStat`; `tests/potions_test.lua` reads the four nodes from the generated tree
-    and checks that). Nodes, a side branch of Mercy of Embers (358, healing and vitality) with 1 point each:
-
-    | Node | Name | Gives |
-    |---|---|---|
-    | 669 | Attribute (mana icon) | +10% charge gain |
-    | 670 | Attribute (life icon) | +1 max charge, health and mana flask |
-    | 671 | Attribute (mana icon) | +10% charge gain |
-    | 672 | Bottomless Flasks (notable) | +2 max charges, +25% charge gain |
-
-    Numbers: health 5 / mana 8 charges, a kill gives 0.08 (normal) to 3 (boss) charges times the experience factor, so a
-    flask refills in about 12 normal 200-experience kills. All four nodes (4 points, plus the way to Mercy of Embers)
-    give health 8 and mana 11 charges (+60% / +38% buffer) and +45% refill (12 kills per health charge become 8.3). That
-    is a buffer and a throughput gain for one corner of the tree, not a heal: the amount per drink, the 1 s exhaust
-    and the stock-potion fallback are untouched, a boss still gives at most 3 charges (`killCap`), the caps (+5 charges,
-    +100%) are far above, and the mana flask already gains 1.5x so +45% matters more to casters. The notable is two thirds
-    of the whole bonus on purpose, the small nodes are a taste. Nothing measured on the live game; tune the node values in
-    the client's `treedata/nodes.lua` (then `gen_passivetree_data.lua`) or the caps in `potions_config.lua`.
-  - **Respec and refund.** Reads always clamp to the current maximum, but the raw storage value used to survive: refund the
-    nodes and the flask read 5/5, buy them again and it read 8/8 (the 3 lost charges came back). `applyAll` now cuts the
-    stored health / mana charges to the new maximum (`ChaosPotionsCore.clampStored`: unset -1 stays unset = full, a value in
-    range is not touched). Tests: `tests/passivetree_effects_test.lua`, `tests/potions_test.lua`.
-  - **No opcode and no client input**, so there is nothing to validate or rate-limit besides the refill message (4 s per player);
-    the only inputs are server events.
-  - **Balance:** the owner's infinite healing is now rationed; at about 20 kills a minute of 200-experience monsters a health
-    flask gains roughly 1.6 charges a minute plus the magic and rare monsters, so it covers the occasional heal and the stock
-    potions (or the town) cover the rest. Nothing was measured on the live game: tune `perKill`, `max` and `xp` in
-    `potions_config.lua`. The mana flask matters most (README "mana" report of a level 800 Juggernaut that lived on infinite
-    mana potions).
-  Tests: `tests/potions_test.lua` ("flask charges").
+- **The Everfull potions never empty (O273).** Owner 2026-10-27: "retire as everfull da veyra. retire tambem as cargas delas. deixe-as
+  ilimitadas mesmo." The charges of O242 are gone: a drink never spends or needs a charge, a kill and the temple refill nothing, and
+  there is no empty-flask fallback to a stock potion. What stays: the level gate of the tier and the wait of each pool (the health
+  pool, the mana pool, a spirit flask both), so a flask is no faster than a stack of stock potions. The amount of a drink is
+  unchanged (the roll plus `amount.everfullPct`, 6 / 8 / 10 / 12 percent of the maximum). **Not rebalanced:** the percents were set
+  when a flask held 5 to 8 charges; with unlimited drinks the wait and the 1 s potion cooldown (patch 0042) are the only limit.
+  Nothing was measured on the live game; tune `amount.everfullPct` in `potions_config.lua` if the owner finds it too strong.
+  - **Removed:** `potion_flasks.lua` (the kill and temple events, now a comment-only stub so an installed copy loads nothing), the
+    charge functions of `potions_core.lua` and `chaos_potions.lua`, the "Charges: x/y" look line, the drink and refill messages,
+    the passive tree hooks of `passivetree_effects.lua`, and `flask` in `potions_config.lua`. Storage 7102482 .. 7102485 is retired
+    (README "Storage keys"); a value a character still has is never read and does no harm.
+  - **The tree nodes 669-672** (O251) gave charges. They keep their place, name and art ("Bottomless Flasks" is still the notable) and
+    now give vitality and spirit: 669 and 671 +1 spirit, 670 +1 vitality, 672 +2 vitality and +2 spirit. Points already spent stay
+    valid. The stats `flaskMaxCharges` and `flaskChargeGain` no longer exist (config, texts, pt-BR).
+  - **`ready` of the held message** (opcode 116) is always true now; the client still reads it, so an older server that says false
+    keeps working.
 - **Higher tiers (O245).** Owner 2026-10-25: "Podemos vender everfull potion na store ou em quests também" (can we sell Everfull
   potions in the store, or give them through quests too). Seven more Everfull items, copies of the stock potions' nodes
   (`install_potions.py`, server ids **32261-32267**, the range the lead set aside: 32087-32100 belong to other work), each with
   the stock potion's roll and level and the same "fixed + percent of the maximum" amount (percent by the tier, `amount.everfullPct`):
 
-  | Id | Item | Stock potion | Level | Roll | Spends | Made from |
-  |---|---|---|---|---|---|---|
-  | 32261 | everfull great health potion | 7591 | 80 | 425-575 health | 1 health charge | 32085 |
-  | 32262 | everfull great mana potion | 7590 | 80 | 150-250 mana | 1 mana charge | 32086 |
-  | 32263 | everfull great spirit potion | 8472 | 80 | 250-350 health, 100-200 mana | 1 health + 1 mana | 32085 |
-  | 32264 | everfull ultimate health potion | 8473 | 130 | 650-850 health | 1 health | 32261 |
-  | 32265 | everfull ultimate mana potion | 26029 | 130 | 425-575 mana | 1 mana | 32262 |
-  | 32266 | everfull ultimate spirit potion | 26030 | 130 | 420-580 health, 200-350 mana | 1 health + 1 mana | 32263 |
-  | 32267 | everfull supreme health potion | 26031 | 200 | 875-1125 health | 1 health | 32264 |
+  | Id | Item | Stock potion | Level | Roll | Made from |
+  |---|---|---|---|---|---|
+  | 32261 | everfull great health potion | 7591 | 80 | 425-575 health | 32085 |
+  | 32262 | everfull great mana potion | 7590 | 80 | 150-250 mana | 32086 |
+  | 32263 | everfull great spirit potion | 8472 | 80 | 250-350 health, 100-200 mana | 32085 |
+  | 32264 | everfull ultimate health potion | 8473 | 130 | 650-850 health | 32261 |
+  | 32265 | everfull ultimate mana potion | 26029 | 130 | 425-575 mana | 32262 |
+  | 32266 | everfull ultimate spirit potion | 26030 | 130 | 420-580 health, 200-350 mana | 32263 |
+  | 32267 | everfull supreme health potion | 26031 | 200 | 875-1125 health | 32264 |
 
   Rolls and levels are the base server's `data/actions/scripts/other/potions.lua`. Its comments call 26030 "supreme spirit" and
   26031 "ultimate health"; this repository's names (the Apothecary table above, the store packs) are the real game's: 26030 ultimate
@@ -5143,17 +5115,13 @@ Owner request 2026-10-16: "Remove the potion flasks and make the first pots infi
     health slot has two lines from tier 1: health (great 32261, ultimate 32264, supreme 32267) and spirit (great 32263, ultimate
     32266). The choice is made at level 80 and the lines never cross (`from` in the config; a spirit flask cannot become a health
     flask: there is no downgrade, and `K.upgradeCheck` says "needs a different flask").
-  - **Charges stay shared.** The pools are `pools = {"health", "mana"}`, one per kind, in the character's storage (7102482 /
-    7102483), never per tier or per item. An upgrade does not read or write them (tested: they are the same before and after), so it
-    cannot refill or reset a flask. A kill refills each pool once whatever items are held (`PT.addKill` iterates the pools, not
-    the entries), and the temple fills the pools. The look and the drink line show the pool(s) of the item.
-  - **Spirit and double dipping.** A spirit potion draws from BOTH pools: one health charge and one mana charge a drink, and it
-    needs a whole charge in each (`K.drink`: `why = "empty"`, naming the short pool, nothing spent). So it costs exactly what a
-    health drink plus a mana drink cost, its mana never comes free from the health pool, and holding a spirit flask next to the
-    mana flask gives no second source. Its waits are both pools' waits (a spirit drink is no faster than the two flasks), and an empty
-    spirit flask falls back to the stock spirit potion of its tier like the others.
+  - **Pools are waits.** `pools = {"health", "mana"}`: one wait per kind and player, never per tier or item (`lastDrink`, forgotten at
+    logout). An upgrade does not touch them. A health flask waits on the health pool, a mana flask on the mana pool, a spirit flask on both.
+  - **Spirit and double dipping.** A spirit potion heals health and mana in one drink and waits on BOTH pools (`K.drink`), so it is no
+    faster than a health drink plus a mana drink, and holding a spirit flask next to the mana flask gives no second source: the
+    slot rule allows one Everfull item per slot, and the mana slot's wait is shared. Nothing is spent.
   - **Level.** Each tier keeps the stock potion's level: a drink below it is refused ("Only characters of level N or above may
-    drink this fluid", the stock script's text) before any charge is spent, and the upgrade is refused below it (both ways).
+    drink this fluid", the stock script's text), and the upgrade is refused below it (both ways).
   - **The quest: Veyra the Apothecary** (`data/npc/scripts/veyra_the_apothecary.lua`; no new NPC, no opcode). Ask her about an
     {upgrade} (also {everfull}, {task}). She lists what the previous tier the character holds can become and what it needs:
     **40 stock potions of the tier** (`upgrade.materials`; the stock potion of the item, in the backpack, 40 great health potions
@@ -5165,8 +5133,7 @@ Owner request 2026-10-16: "Remove the potion flasks and make the first pots infi
     Consumables > Convenience (`shop_config.lua`), registered into `ChaosShopServices.services` by `potions.lua` (as the Ration). 30
     coins for the great tier, 50 the ultimate, 70 the supreme (`upgrade.coins`; a spirit or health line costs 150 coins in all, the
     limit is 200). The same `ChaosPotions.upgrade(player, id, "store")` as the task, minus the materials, with the same level
-    gate, previous tier and once per tier. Pay to skip: it gives exactly what the task gives and nothing beyond (no better roll, no
-    charges). The offer key includes the tier (`shop_core.lua`), services are not giftable, and the service checks that the
+    gate, previous tier and once per tier. Pay to skip: it gives exactly what the task gives and nothing beyond (no better roll). The offer key includes the tier (`shop_core.lua`), services are not giftable, and the service checks that the
     offer's cost is the config's (`K.upgradeCoins`) before it does anything.
   - **Atomic, no duplicates.** `ChaosPotions.upgrade`: check everything (`K.upgradeCheck`: tier known and installed, not done, the
     ONE Everfull item of the slot is the tier's `from`, level, materials) -> place the new item (no room: nothing changed) -> take the
@@ -5175,19 +5142,19 @@ Owner request 2026-10-16: "Remove the potion flasks and make the first pots infi
     (flag set, old item gone) and is refused. The store takes coins before `apply` and refunds on any result but `true`
     (`shop.lua`), and `apply` changes nothing unless it returns true. Paths that could duplicate a flask: trade, mail, the market,
     the trash and the ground are refused for any `chaos_storebound` item (pouches.lua, engine patch 0009); death keeps it
-    (`death_keep.lua`); a relog changes nothing (the charges and the flags are storage); the stash is not used. A character
-    that holds two Everfull items of a slot (a GM gift, an old copy) is refused ("Keep only one"), never a third. A seller's
-    replacement (`PT.npcBuy`, and the starter kit / login grant `PT.giveAll`) now checks the SLOT, not the id: an upgraded character
-    never buys or is given a starting flask next to its great one.
+    (`death_keep.lua`); a relog changes nothing (the flags are storage); the stash is not used. A character
+    that holds two Everfull items of a slot (a GM gift, an old copy) is refused ("Keep only one"), never a third. The starter
+    kit and the login grant (`PT.giveAll`) check the SLOT, not the id: an upgraded character is never given a starting flask next to its
+    great one. A restore ({lost}) checks the slot too.
   - **Where the previous tier may be.** Equipped or in any backpack, the store purse, the inbox or a depot chest (`PT.everfullItems`
     walks them). Anywhere else (the floor, another player's container) it is not found and the swap is refused with "Carry your
     Everfull potion in your backpack, your inbox or a depot".
   - **A lost flask.** Flasks are bound and kept through death, so this should not happen (a GM delete, a bug). A character that
     earned a tier and holds no Everfull item of that slot says {lost} / {restore} to Veyra: she gives back the highest tier it earned
-    in that slot for `price` gold (the task's materials at her prices). The seller's trade window refuses the starting flask for such
-    a character ("You earned a better flask than that") so it cannot take the cheap path to a second item.
-  - **Not sold anywhere else.** Only tier 1 is added to the potion sellers (`install_potions.py`); the new ids are marked `bound`
-    in the item price table (no NPC pays for them), listed by the item finder (source "Veyra the Apothecary", the store service),
+    in that slot for `price` gold (the task's materials at her prices). Tier 1 is restorable the same way (it was
+    only sold before O273), so a character that lost its starting flask has a path back.
+  - **Not sold anywhere.** No NPC trade window lists an Everfull potion (O273); the ids are marked `bound`
+    in the item price table (no NPC pays for them), listed by the item finder (source "Veyra the Apothecary": the starter kit for tier 1, her upgrade quest and the store service for the rest),
     and have the potion cooldown channel like the others (`cooldown_channels.lua` reads the config). The engine's hotkey patch (0043)
     finds them by their look like the first two.
   - **The helper and the tiers (O246).** Owner 2026-10-25: "Lembre de colocar as everfull no helper tambem". How a drink reaches the
@@ -5200,22 +5167,19 @@ Owner request 2026-10-16: "Remove the potion flasks and make the first pots infi
     see the tier (a closed backpack is not counted, and the look is the stock potion's), so the server tells it:
     `ChaosPotions.heldView` (`potions_core.lua` `heldView`/`heldKey`/`heldPayload`, tested in `tests/potions_helper_test.lua`)
     reads `Player:getItemCount` of the nine ids (inventory and backpacks, the places the use by look searches; not the inbox, the
-    purse or the depots), the charge pools and `ItemType:getClientId`, and `potions_helper.lua` sends opcode **116** (`held`, per
+    purse or the depots) and `ItemType:getClientId`, and `potions_helper.lua` sends opcode **116** (`held`, per
     slot `{look, tier, level, line, ready}`; free in the "Opcode collision check", listed in the opcode table) at login (after 1.5 s),
-    after an upgrade, on the client's `sync` (one a second) and from a 3 s think when the view changed (a flask emptied or
-    refilled, an item moved), never otherwise. `ready` is false when a pool the drink spends is below a whole charge (a spirit
-    flask needs both). The client (`helper_potions.lua` `P.resolve`) lets a Health / Mana Potion row follow a ready, plain, allowed
-    Everfull of its slot; any other row keeps its look (the engine prefers the Everfull of that look). An empty flask is not
-    followed, because the server's empty-flask fallback drinks the stock potion of the flask's tier (dearer than the row's). Spirit
+    after an upgrade, on the client's `sync` (one a second) and from a 3 s think when the view changed (an item moved), never otherwise. `ready` is always true since O273 (it was false for an empty flask). The client (`helper_potions.lua` `P.resolve`) lets a Health / Mana Potion row follow a ready, plain, allowed
+    Everfull of its slot; any other row keeps its look (the engine prefers the Everfull of that look). Spirit
     flasks are chosen by a spirit row only. Auto setup counts the carried Everfull as carried. **Smallest design:** no engine change
-    and no new client input (`sync` reads nothing); the engine's drink already checks level and charges, so a client that lies
-    about a tier gets at most what it carries. **Audit:** the use finds only items the character carries; the level and the charges
-    are checked in `K.drink` and `PT.spendPools` from storage, not from the client; the stock fallback comes after the level
-    check; the per-pool wait table `lastDrink` was never cleaned (now forgotten at logout). **Unique looks later:** when the nine
+    and no new client input (`sync` reads nothing); the engine's drink already checks the level, so a client that lies
+    about a tier gets at most what it carries. **Audit:** the use finds only items the character carries; the level
+    is checked in `K.drink` from the character, not from the client; the per-pool wait table `lastDrink` was never cleaned (now forgotten at logout). **Unique looks later:** when the nine
     get client ids of their own, the held message already carries the real look; change `look` in the client table
-    `EVERFULL_ITEMS`, and then patch 0043's look preference, the follow rule for the 266 / 268 rows and the empty-flask caveat
-    are no longer needed (the use of a look maps to one server id).
-  - **Install:** the same step `potions` (nine nodes now; twelve since O247). New: the `tier` of each row, the store offers, no sellers for tier 2+.
+    `EVERFULL_ITEMS`, and then patch 0043's look preference, the follow rule for the 266 / 268 rows
+    is no longer needed (the use of a look maps to one server id).
+    Auto setup (owner 2026-10-27, "o auto setup nao coloca as everfull"): it also counts the flasks seen by their own O247 looks in open containers (for a slot the message says nothing about), asks `sync` and waits 0.6 s when no message has arrived yet, sets a row on the flask's own look when the row cannot follow it, and the potion and rune dropdowns of the helper are sorted alphabetically (`ChaosHelperPotions.sortOptions`).
+  - **Install:** the same step `potions` (nine nodes now; twelve since O247). New: the `tier` of each row, the store offers; no seller since O273.
   - **Texts:** English keys, pt-BR in `i18n_strings.lua` ("Everfull potion tiers"). The item descriptions are in items.xml.
   - **Not done / risks:** the new
     looks were the stock great, ultimate and supreme potions' (own art since O247, below). The levels and rolls of the stock potions are read from the
@@ -5229,11 +5193,11 @@ Owner request 2026-10-16: "Remove the potion flasks and make the first pots infi
   re-run on a server installed before O247 moves the nine flasks to their new looks). **Three new items** (server ids 32268-32270,
   nodes copied from stock nodes by `sourceId`, flags 7102517-7102519 appended last so the nine flags of O245 keep their place):
 
-  | Id | Item | Client | Level | Roll | Spends | Made from | Veyra's task | Coins |
-  |---|---|---|---|---|---|---|---|---|
-  | 32268 | everfull spirit potion (spirit tier 1) | 38653 | 0 | 75-105 health, 45-75 mana | 1 health + 1 mana | 32085 | 40 health potions (7618) | 20 |
-  | 32269 | everfull supreme mana potion | 38652 | 200 | 575-775 mana | 1 mana | 32265 | 60 ultimate mana potions (26029) | 70 |
-  | 32270 | everfull supreme spirit potion | 38656 | 200 | 560-760 health, 275-475 mana | 1 health + 1 mana | 32266 | 60 ultimate spirit potions (26030) | 70 |
+  | Id | Item | Client | Level | Roll | Made from | Veyra's task | Coins |
+  |---|---|---|---|---|---|---|---|
+  | 32268 | everfull spirit potion (spirit tier 1) | 38653 | 0 | 75-105 health, 45-75 mana | 32085 | 40 health potions (7618) | 20 |
+  | 32269 | everfull supreme mana potion | 38652 | 200 | 575-775 mana | 32265 | 60 ultimate mana potions (26029) | 70 |
+  | 32270 | everfull supreme spirit potion | 38656 | 200 | 560-760 health, 275-475 mana | 32266 | 60 ultimate spirit potions (26030) | 70 |
 
   The spirit rolls are about 60% of the health and mana rolls of the same tier, as in the lines of O245; supreme mana sits above
   ultimate mana by the factor supreme health sits above ultimate health. **The chain:** health 32085 -> 32261 -> 32264 -> 32267;
@@ -5248,12 +5212,12 @@ Owner request 2026-10-16: "Remove the potion flasks and make the first pots infi
   Tests: `tests/potions_test.lua`, `tests/veyra_upgrade_test.lua`, `tests/potions_helper_test.lua`, `tools/install_potions_test.py`,
   `gen_everfull_art_test.py`.
 - **Install:** `tools/install_potions.py DATA_DIR [--dry-run]` (step `potions` of `install_all.py`, after `runes`, before
-  `itemprices`; idempotent; `items.otb.bak` keeps the original; exit 1 with nothing written when the ShopModule hook
-  cannot be placed or no potion seller is found). `tools/gen_item_prices.py` marks both ids `bound` (never priced).
+  `itemprices`; idempotent; `items.otb.bak` keeps the original; it also removes the Everfull shop entries and the ShopModule hook
+  an earlier run added, and warns about a hook it does not know). `tools/gen_item_prices.py` marks both ids `bound` (never priced).
 - **Tests:** `tests/potions_test.lua` (the rules and the O245 tiers: config, check rules, swap, rollbacks, store service; drinking on a mocked engine: healed, not consumed, no flask, the exhaust;
-  the kit and login grant; the NPC replacement; the stock potions.lua patched by the tool: no flask, a higher tier still
-  used up, the exhaust unchanged), `tools/install_potions_test.py` (a synthetic base server: items, NPCs, the hook,
-  idempotent).
+  the kit and login grant; the restore; the stock potions.lua patched by the tool: no flask, a higher tier still
+  used up, the exhaust unchanged), `tools/install_potions_test.py` (a synthetic base server: items, NPCs, the old
+  entries and hook removed, idempotent).
 
 ## Stash (`stash.lua`, `stash_core.lua`, `stash_config.lua`, `item_codec.lua`, `sql/chaos_stash.sql`, `tools/migrate_depot_stash.py`, client `game_stash`)
 
@@ -7280,8 +7244,8 @@ Built on `loadtest.py` (login, client guard answer, 10.98 packets). Standard lib
   Characters "Tester Aaa" upward; a name a player owns is skipped. Levels 30/100/250/500/750/1000/1250/1500/1750/2000 in turn (each band 1/10 of the testers), the classes shifted
   by one each round (`plan_bots`).
   Rows: account type 1, group 1, the marker storage, the hunt spot (+2..+4) on a hunt of its level.
-  The hunt is chosen by `tester_core.safe_hunts`: the whole band of the map mark, in hunting levels (twice the pool level the
-  mark prints, `pace_config.lua` `baseLevelMult`), at or under the tester's level, and on a spawn centre whose monsters all
+  The hunt is chosen by `tester_core.safe_hunts`: the whole band of the map mark (hunting levels since 2026-10-27; the pool levels
+  of `bounty_pool.lua` still need `baseLevelMult`), at or under the tester's level, and on a spawn centre whose monsters all
   hunt at or under its level (`loadtest.spawn_levels`, from `bounty_pool.lua` and the spawn file); none within 30 sqm: the temple.
   State: `/var/lib/chaos/testers/state.json`, mode 0600, root. It holds the passwords.
 - `run`: every bot logs in from its own 127.1.x.y address (the 2-per-IP rule). Secure mode on.
@@ -11975,7 +11939,12 @@ previewed items (paths and item signatures); when anything changed in between th
 confirm again").
 
 **The item lock.** The bench's Lock / Unlock button (gear and Rift Keys in the backpack) sets the custom attribute
-`chaos_locked` = 1. **Locked items cannot be sold nor melted.** A locked item is refused by salvage, skipped by "salvage
+`chaos_locked` = 1. The game's item right-click menu has the same as "Lock item" / "Unlock item" (client `game_crafting`
+`lockmenu.lua`, two `addMenuHook` entries; the menu shows the one that fits the `chaos_locked` key 3 the item packet carries): action
+`lockAt {pos, cid, on}` on the salvage opcode. The server finds the item by its client position (inventory slot or open
+container, `ChaosItemTooltip.decodePos`; never the ground), requires that it hangs on the player himself (`getTopParent`), that
+its client id is `cid`, and that it is gear or a Rift Key (also when worn); it answers with a text message and one
+rate-limited action per `singleIntervalMs`. The bench's `lock` action only takes a real `on = true`. **Locked items cannot be sold nor melted.** A locked item is refused by salvage, skipped by "salvage
 all", and never sold by the **Auto Seller**, whatever rarities are ticked (`autosell.lua` reads the attribute,
 `ChaosShopServices.sellBlocked` returns "locked"; "Auto seller: kept a locked item."). The look text says "It is locked:
 it cannot be sold, salvaged or thrown away." (EventCallback onLook, index 120); the gear grid shows locked items dimmed,
@@ -14391,10 +14360,24 @@ same on the cropped test map and the live map. One instance per realm: standard 
 in its own slot (season id 1..3, then reused), so season and standard characters never meet here and embers, piles,
 the shrine and its buff never cross realms (the open-world rule of "Seasons" allows PvP between realms; here it is
 simply never possible). Grid x/y 13312 - 13823, z 7 (74 x 58 per instance with the wall), clear of every other runtime
-area (tested). The field: black marble ground, two gate yards (south-west and north-east, 180-degree fair) each with a
-safe exit (a white marble circle by two banners), the Cinder Shrine in the centre (a coal basin in a radius-3 circle),
-ruins and pillars as cover (turned copies, every walkable tile connected, tested), 37 spawn points away from the exits
-and the shrine. `mode = "map"` uses an existing rectangle of the loaded map instead (`area`: its exits, shrine and the
+area (tested). The field (O275, redesigned from a flat black marble plain): scorched rock ground in six variants with
+basalt fields and crack patches, the border pieces of the generated areas between them (basalt over rock, rock over the
+cracks: `areagen_config.lua` families and `pieces`, `ChaosAreaGenCore.borderPieces`), two gate yards (south-west and
+north-east, 180-degree fair) each with a safe exit (a white marble circle by two banners, four coal basins), flagstone
+roads 3 wide from each yard to the Cinder Shrine plaza (stone floor, radius 6) and through the gap of the broken wall
+beyond it, the Cinder Shrine in the centre (a coal basin in a radius-3 circle with four big coal basins at its corners and
+four glowing skull pillars around the plaza as beacons), the ruins (stone walls, pillars, a paved ruined hall in the
+corner) and about 300 pieces of cover in clumps: charred trees, scorched rock and rock spikes, bone fields, lava holes
+(only on the crack ground), with lava cracks, rubble, pebbles and bones as non-blocking decoration; 37 spawn points away
+from the exits and the shrine. All ids are stock items the generated hunting areas already use (grounds, borders,
+obstacles and `areaplan/decor_kits.json` decoration), listed in `pvpzone_config.lua` `look`; nothing is placed on the
+roads, the yards, the plaza, next to a spawn point or within 2 tiles of a gate yard. The cover is laid in one half and
+turned for the other (fair), and every piece is accepted only if the field stays connected (a neighbour-ring test, a
+flood fill when that is not enough), so every objective is reachable from the entry. The look is deterministic: integer
+hashes of the tile's coordinates (no clock, no `math.random`), the same in LuaJIT and Lua 5.3, in every slot, and the
+layout is cached per config. Built at startup by `buildTiles` (ground, border pieces, wall, decoration, cover, lights,
+landmarks), so the new look applies on the next server start: **no install step** (nothing in the otbm).
+`mode = "map"` uses an existing rectangle of the loaded map instead (`area`: its exits, shrine and the
 one realm let in; the map's own monsters inside are scaled when they spawn); not tried on a live map.
 
 **Entering.** Adventure > Scorched Marches: the window (rules, the shrine, the pledge, the vendor, the record), Enter
@@ -14473,8 +14456,38 @@ nothing above PvE gear (tested). Weekly board "Scorched Marches" (embers banked,
 rewards). Achievements: Ash in Hand, Ember Hoarder (10,000 banked), Heavy Pockets (1,000 at one exit), Blood on the Ash,
 Scourge of the Marches (100 counted defeats, title), Shrinebearer (in the circle at a capture).
 
-**Tests.** `tests/pvpzone_test.lua` (LuaJIT and Lua 5.3, 1222 checks): opcode and storages free, the layout (slots per
-realm, clear of every other area, paths, fairness, spawn points), entry rules (Hardcore refused, the confirmation),
+**What the player has to do (O275).** The goal is told four ways, all in English and pt-BR. (1) The window opens with
+"How it works", four numbered steps: pledge outside, enter and kill for embers (carry cap), carried embers are lost on a
+defeat (the killer takes up to the per-pile cap), bank them by standing in a white safe-exit circle for 5 s (vendor
+below). (2) On entering, two messages: "Goal: earn embers from monsters and rival players, then bank them at a safe exit
+before you are defeated." and "Embers carried: N. Bank them at a safe exit (the white circles by the banners, marked on
+your map) before you die." (also after a login inside). (3) The HUD has an objective line (client `PvpZoneView.goalLines`):
+embers carried and the way to the nearest safe exit ("23 tiles north-east"), "hold still" while leaving, and during the
+shrine event what to do at the shrine (slay the Warden, stand in the circle with your faction, only pledged players can
+take it). (4) The `enter` message carries `marks` (every safe exit and the shrine); the client puts them on the minimap
+as flags (`widget:addFlag`, as the Next Goals "where" buttons) and takes them off when the zone is left, at the game's end
+and, after a crash, at the next start (the flags it put are remembered in the setting `pvpzoneFlags`). Floating text
+(`ChaosCombatFx.label`, every 5 s while somebody is inside) hangs over the shrine ("Cinder Shrine", "Slay the Warden!"
+while the Warden lives, "Take the Shrine!" while it can be taken) and over both exits ("Safe exit: bank your embers"),
+with a fire effect on the shrine. Messages: "+N embers (carrying M)..." for every monster kill (the pile pickup message
+existed), a defeat says the embers fell where you stood, that the killer may take them and in how many seconds the rest
+burns out, banking says how many were banked and that the vendor is under Adventure > Scorched Marches. The POI marks of
+`game_mapmarkers` were not used: they are a fixed set of kinds for the map's own places (new kinds would touch the shared
+poi_core, art and tests); the flag is per client and per visit. Not verified in a client: the flag icon (index 0) and the
+minimap's `removeFlag` signature (the client tries `removeFlag(pos)` and then `removeFlag(pos, icon, text)`).
+**Fixed while there:** the vendor (`buy`) could be used from inside the zone, so 50 ultimate health potions could be
+bought in the middle of a fight; it is refused inside now ("Leave the Marches to use the vendor."). Looked at and fine:
+`enter` and `accept` are checked by the server (protection zone, level, cooldown, realm), `pledge` and `buy` keys are
+checked against the config, the opcode is rate limited per action, carried embers are zeroed before the pile is made and
+kept over a logout (no copy on a relog or a death), a pile of a defeat that does not count burns at once.
+
+**Tests.** `tests/pvpzone_test.lua` (LuaJIT and Lua 5.3, 9796 checks): opcode and storages free, the layout (slots per
+realm, clear of every other area, paths, fairness, spawn points; O275: every objective, arrival spot and shrine-circle
+tile reachable from the entry with the cover included, a paved road from the entry to the shrine and to the other exit,
+varied ground and border pieces, cover only on natural ground away from spawns and gates and lava only on cracks, cover
+and decoration turned, lights at the shrine and in both yards, the same field on a second run and in every slot, a
+solid block of cover still leaves the field connected; the goal messages, the marks, the floating text, the kill and
+bank and defeat messages, no vendor inside), entry rules (Hardcore refused, the confirmation),
 login hold and the exit channel, embers (caps, the pile, owner window, per-kill and daily caps, Self-Found, the own pile,
 banking), anti-farming, reputation and the pledge, PvP scaling equal to the battleground's, the shrine contest, vendor,
 cosmetics, board and achievements; then `pvpzone.lua` on a mocked engine (entering, protection, attack rules, secure mode
@@ -15989,7 +16002,15 @@ milestones, island layout, station state machine) in `newplayer_core.lua`, teste
 - **The base server's starting items:** `creaturescripts/firstitems.lua` only equips vocation 0, which the kit skips
   (`skipVocations`), so nothing is given twice. The base starter chest (`scripts/customs/actions/first_chest.lua`, action id
   and storage 33735, old vocation ids only) is marked as opened when the kit is given (`baseChestStorage`), so nobody collects
-  both. No base file is changed and no patch is needed.
+  both. **Starter chest removed (owner request 2026-10-27):** the chest is not needed any more, so `install_all.py` step
+  `startchest` (`tools/patch_start_chest.py`, test `patch_start_chest_test.py`) cuts every map item with action id 33735
+  (the chest, with its contents, whatever look it wears) off its tile and renames
+  `data/scripts/customs/actions/first_chest.lua` to `first_chest.lua.chaos-off`, so the base script and its floating "Collect
+  First Items!" text are not registered. Any other `.lua` / `.xml` file that still holds the text is only listed in the
+  step's output (hint, never changed). The base files are not in this repo, so the text's exact source could not be read:
+  the step finds it by scanning the installed data. Idempotent; `<map>.otbm.bak` is written first. `baseChestStorage` is
+  now moot and harmless. VPS: run the `startchest` step (`install_all.py SERVER_DIR --only startchest`), then restart
+  the server.
 - **Welcome** (one time, after the kit): a server modal window (client `game_modaldialog`) with the next steps (Character > Spellbook, the
   passive tree, Adventure > Bounty Board, the store, the top menu, the milestone gifts) and a toast through `game_chaosnotify` (action
   `newplayer`, type NEW_PLAYER, added to `notifications.lua`). The tutorial island is the starter quest line.
@@ -18747,8 +18768,9 @@ Tests: `tests/hunt_teleports_test.lua` (core and the engine file against a mock)
 
 ## Hall order (`tools/hall_order.py`, `tools/hall_quests.py`, `tools/hall_hunts.csv`, `install_content_areas.py`, `hunt_teleports.lua`)
 Owner, 2026-10-16: the teleport hall of Cinderhold ordered by level, floors going up as the monsters get stronger.
+Hunting levels (owner 2026-10-27): the base hunts of `hall_hunts.csv` are on the pool scale; the install multiplies their `level`, `lo` and `hi` by `baseLevelMult` (`hall_order.hunting_rows`), so signs, labels, the order and the floors use the hunting level like the plans. With them the 560 boundary below replaced 500 (z 6 would have needed 44 slots, it has 41).
 Owner, 2026-10-18 (after the first order overwrote some quest teleports of the ground floor): the **ground floor z 7
-holds the hunts of levels 1-500, z 6 of 500-1000, z 5 of 1000 and up** (`hall.levels` in the config), and the base
+holds the hunts of levels 1-560 (500 until 2026-10-27, see "Hunting levels in the hall"), z 6 of 560-1000, z 5 of 1000 and up** (`hall.levels` in the config), and the base
 quests are back, in their own hall. Every hunt teleport of the hall, the base server's and the planned hunts', takes a
 slot of the floor its level belongs on, by its level (below), then band floor, ceiling and id: along the corridor from
 west to east (north before south in a column). A floor with too few slots is grown (`room.wings`; below). A new hunt
@@ -18776,7 +18798,8 @@ west to east (north before south in a column). A floor with too few slots is gro
   ones two tiles off, so that no alcove's front is a tile of the plaza's two event teleports at 31634 and 31638,
   32269), the plaza's aisle between them (x 31628-31668, y 32266-32269) in the hall's carpet; the gap in the middle of
   both rows (x 31643-31653) keeps the way from the hall's south door to the island's garden path. The plaza's own
-  teleports on the aisle (31631, 32267; 31634 and 31638, 32269) stay where they are. The corridor keeps its protection
+  teleports on the aisle (31631, 32267; 31634 and 31638, 32269) are strays of an older layout and go (below,
+  "Stray teleports on the carpet"). The corridor keeps its protection
   zone; "Quests" ("Missões") floats over its middle (31648, 32267). The
   rewards stay behind the teleport in the same arrangement; no unique id is shared or changed (the teleports have
   none; the rewards keep theirs). The quest sites' own ways back (the teleports that lead in front of the old alcove,
@@ -18818,6 +18841,15 @@ west to east (north before south in a column). A floor with too few slots is gro
 
   The quest names are read from the signs and the quest teleports' destinations; `--remove-hall` puts every quest
   back in its old alcove (verified against the base map: no tile of the quest rows differs).
+- **Stray teleports on the carpet** (owner, 2026-10-27, "teleports perdidos"). The first quest hall left the plaza's own
+  teleports on the aisle where they were (three: 31631,32267 in the west part, 31634,32269 and 31638,32269 on the
+  south edge), on tiles that the carpet had not covered, so they showed as blue swirls on a blank or green tile and led
+  nowhere that the hall uses. `hall_quests.check_free` now marks any teleport (no unique id) on a corridor tile that is
+  not an alcove's own as a stray (`lay['strays']`), and `plan_move` writes the hall's carpet tile over it (idempotent:
+  a second run finds none). After the move `hall_quests.audit` checks the hall and the install stops if a teleport
+  stands on the corridor rows, a teleport tile has no ground, or a quest teleport does not lead to its quest's
+  destination in `hall_hunts.csv`. VPS step: `install_all.py SERVER_DIR --only contentareas`. Test:
+  `install_content_areas_test.py` (strays with a destination, with none and with no ground).
 - **Reward chests removed.** The four royal chests of the plaza (item 29327, unique ids 34801 daily reward, 34802 weekly
   Nightmare Coin, 34803 weekly Stamina Extension, 34804 weekly Star Inlay Stone; x 31639, 31633, 31657, 31663, y 32265
   with their booth tiles y 32263-32265) are taken away by the same step, after checking that the item there has the
@@ -19211,11 +19243,22 @@ level only for a monster type with both `min` and `max` of `<level>` in its XML 
 `<level>`. Giving them one would change them: the engine's level adds health (`monsterBonusHealth` x level), speed,
 damage and a skull colour. So patch 0040 adds a display level instead (`monster:setDisplayLevel` /
 `getDisplayLevel`), shown after the name and in the look text only. At every spawn (`onSpawn`, before the
-placement) `monster_levels.lua` gives a monster without a level of its own `ChaosLoot.monsterLevel`: the bounty pool's
-hunting level of its type, else the experience / health estimate; the same level item level, monster damage and pace
-use. Not for a player's summon (a Necromancer minion shows its owner's level, see "Summons: targets, walk-through,
+placement) `monster_levels.lua` gives a monster without a level of its own its **hunting level** (owner 2026-10-27, "O272"):
+`ChaosLoot.monsterLevel`, the bounty pool's "fair hunt" level of its type (else the experience / health estimate), times
+`pace_config.lua` `baseLevelMult` (2; `Chaos.huntingLevel`, `ChaosMonsterLevelsCore.huntingLevel`), the level pace
+uses to hunt it. Item level, monster damage and loot still read the pool level (display only). A generated area point's
+level and a waystone run's level are hunting levels already and are not multiplied. Not for a player's summon (a Necromancer minion shows its owner's level, see "Summons: targets, walk-through,
 levels"). Display monsters of the teleport room get it like any monster. Without patch 0040
 nothing changes.
+
+**Monsters outside the pool and summons in a high hunt (beta 2026-10-27).** A type that is not in `bounty_pool.lua` (fewer
+than six spawn entries, scenery, a boss: Sheep, Dog, Mirror Image, Tornado, Rift Lord ...) only had the estimate of its
+experience and health, so a Sheep stood in a level 240 hunt as "level 2". Now `ChaosMonsterLevels.apply` raises it to the
+lower end of the hunting area it stands in (the nearest hunt mark of `data/chaos_poi.lua` within 60 sqm on its floor,
+`ChaosMonsterLevelsCore.areaFloor`); a type of the pool is raised only when it shows less than a tenth of that lower end
+(`farBelow`: a Badger in a level 120 hunt). The summon of a monster shows at least its master's level. The monster bar
+(`monster_tiers.lua`) shows the nameplate level. `tests/hunt_display_levels_test.lua` crosses the pool, the spawn data and
+the marks and fails when a monster of a hunt of 100+ would show less than a tenth of its lower end.
 
 **Scaled monsters** show the level their system scaled them to, not their type's. The system passes it to
 `Chaos.createMonsterNamed(type, pos, extended, force, shownName, shownLevel)` (or sets `Chaos.spawnLevel` around
@@ -20534,7 +20577,7 @@ script answers its own part. Client: `client/overlay/modules/game_mapmarkers/` (
   crafting tables (action ids 38820-38826; three or more within 20 tiles are a "Crafting hall"), the service NPCs of the
   spawn file (travel, bank, blessings, shop, by their NPC file and script), hunting areas (the bounty pool's monsters at
   the busiest spots of the bestiary spawn data, spots within 40 tiles merged, the level band from the middle 70% of the
-  spawn entries, at least 12 entries, the 300 biggest) and the island, raid and lair bosses of `bossspawns_config.lua`.
+  spawn entries (printed as the **hunting level**, the pool level times `pace_config.lua` `baseLevelMult`, since 2026-10-27: "Terror Bird (level 40-60)"; `gen_poi.py` reads the multiplier, `data/chaos_poi.lua` was rewritten with the same transform), at least 12 entries, the 300 biggest) and the island, raid and lair bosses of `bossspawns_config.lua`.
   Every name is checked against the rename lists (sha256 of each phrase); a mark that would still carry an old-world
   name is left out. The committed `server/data/chaos_poi.lua` is the output for the shipped map (800 marks: 20 temples,
   45 depots, 4 crafting halls, 27 banks, 19 blessings, 63 travel, 272 shops, 50 bosses, 300 hunting areas);
@@ -24701,3 +24744,24 @@ your own was not kept. Rules in `retention_loot_core.lua` (tests `tests/retentio
 - **Assumptions, not run on a live server.** `Player:sendChannelMessage` and the channel id 21 are free on the base copy; a
   public channel with a script is listed to every player; the base `onDropLoot` pass finishes before `loot.lua` (it does, it
   is index 1). The item value of the record is `ChaosItemPrices.sellPrice` (0 when the file is not loaded).
+
+## Brand runes add damage (O277)
+
+Owner 2026-10-27 (pt-BR): "em vez de ser 30% se torna x elemento, faça que os 30% seja adicionais de tal elemento".
+The five brand supports (Emberbrand fire, Rimebrand ice, Dawnbrand holy, Gravebrand death, Stormbrand energy; 20/30/40/50/60%
+by rune level) no longer convert. Before: X% of the spell's primary damage moved to the element (the total stayed). Now: the
+hit stays whole and X% of it is added on top as extra damage of the element ("X% of the spell's damage is added as extra ice
+damage"). Same percentages.
+- Core: `ChaosSupports.addElement` (`data/lib/chaos_supports.lua`; `convert` stays for the spell cards); the event is `supports.lua` `ChaosSupportsHit`.
+- The extra goes into the hit's secondary slot (or onto the primary part when that already is the element), in the same combat
+  event: leech, crit and on-hit procs see one hit, nothing fires twice. Only when the secondary slot holds another element is the
+  extra dealt as a hit of its own from the flush (guarded like Echo, so it can trigger nothing).
+- Resistance: the extra part is X% of the hit with the primary element's resistance taken out and the brand element's put in.
+- Brands add up (the window still allows one per spell); each is a share of the original hit. Keen Edge crits both parts.
+- Monsters only: against a player nothing is added (PvP damage does not rise).
+- Balance: a buff of +X% of the spell's damage before resistances (+20 to +60%), on a rune that dropped as a total-neutral
+  rune. No balance model reads support values (store, roulette, weapon_power, skill, progression checks pass unchanged).
+  Echo at Mythic is about +17.5% expected, so Mythic brands are now the best damage rune; watch it and cut `values` in
+  `chaos_supports_config.lua` if hunts speed up.
+- Texts changed (item description, tooltip, supports window, codex, wiki): `pt_br.lua` keys, `gen_codex_data.lua`,
+  `gen_wiki_data.lua` regenerated. Tests: `tests/supports_test.lua`.

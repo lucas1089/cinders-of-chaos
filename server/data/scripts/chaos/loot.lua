@@ -999,6 +999,17 @@ function L.ownLevel(monster)
 	return lvl
 end
 
+-- the bounty pool's level of a monster (nil when its type is not in the pool: a map monster with fewer than six spawn
+-- entries, a scenery monster, a summon; its level is then only the experience / health estimate)
+function L.poolLevelOf(monster)
+	local okN, name = pcall(function() return typeNameOf(monster) end)
+	local pl = okN and poolLevel(name)
+	if pl and pl > 0 then
+		return pl
+	end
+	return nil
+end
+
 -- the monster's own level: Monster:getMonsterLevel (level-scaled monsters), else its hunting level from
 -- bounty_pool.lua, else the same estimate from its experience and health
 function L.baseMonsterLevel(monster)

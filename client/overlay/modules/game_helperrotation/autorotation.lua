@@ -255,6 +255,17 @@ function A.dropForeignRules(rules, classOk)
   return out, dropped
 end
 
+-- may the class-change cleanup keep this spell? It drops only when everything is known: the spell is in the client's
+-- table and the class is a real one. spell: the table entry or nil; vocation: the player's (0 or nil: the login
+-- has not told it yet); listed(spell) -> bool (the class lists it). A login, a relog after a death or a table not filled
+-- yet answers 'keep': the saved lists are never cut by a temporary gap (owner 2026-10-27).
+function A.classKeeps(spell, vocation, listed)
+  if type(spell) ~= 'table' then return true end
+  if spell.notOnServer then return false end -- fixed by the client build, not by the login: the server has no such spell
+  if (tonumber(vocation) or 0) <= 0 then return true end
+  return listed(spell) and true or false
+end
+
 -- the healing slots ({id, percent}): a slot of a spell the new class cannot cast is emptied (id 0). Returns how many.
 function A.dropForeignHeals(slots, classOk)
   local dropped = 0

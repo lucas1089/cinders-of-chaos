@@ -36,6 +36,9 @@ end
 dofile("data/scripts/chaos/uber_core.lua")
 ChaosUberConfig = dofile("data/scripts/chaos/uber_config.lua")
 dofile("data/lib/chaos_dark_paint.lua")
+if not ChaosArenaLook then
+	dofile("data/scripts/chaos/arenalook_core.lua")
+end
 
 ChaosAscended = ChaosAscended or {}
 local A = ChaosAscended
@@ -328,11 +331,23 @@ local function dark()
 	return cfg.darkActive
 end
 
-local function buildSlot(slot)
+-- O276: the look of the arena (arenalook_core.lua): the theme of the boss, varied ground, mirrored cover and lights that
+-- leave the lane from the entry to the boss, the arrival and the boss spot open. Repainted when the theme changes (a
+-- slot serves many bosses); the fixtures are placed after it.
+local function dressSlot(L, bossKey)
+	local cfg = C()
+	ChaosArenaLook.dressBossArena("uber", L, cfg, bossKey)
+	for _, t in ipairs(L.basins) do
+		placeItem(P(t), cfg.basinId)
+	end
+end
+
+local function buildSlot(slot, bossKey)
 	local cfg = C()
 	local isDark = dark()
 	local L = U.layout(cfg, slot)
 	if A.built[slot] then
+		dressSlot(L, bossKey)
 		return L
 	end
 	if A.bad[slot] then
@@ -346,7 +361,7 @@ local function buildSlot(slot)
 		for _, t in ipairs(list) do
 			local tile = Tile(P(t))
 			local gid = tile and groundId(tile)
-			if tile and ((gid ~= cfg.groundId and not (isDark and ChaosDarkPaint.isDark(gid))) or (tile.getHouse and tile:getHouse())) then
+			if tile and ((gid ~= cfg.groundId and not (isDark and ChaosDarkPaint.isDark(gid)) and not ChaosArenaLook.isOwned(gid)) or (tile.getHouse and tile:getHouse())) then
 				return nil, string.format("tile %d,%d,%d already exists in the map", t.x, t.y, t.z)
 			end
 		end
@@ -363,22 +378,7 @@ local function buildSlot(slot)
 	for _, t in ipairs(L.wallList) do
 		placeItem(P(t), cfg.wallId)
 	end
-	for _, t in ipairs(L.basins) do
-		placeItem(P(t), cfg.basinId)
-	end
-	if isDark then
-		local reserved = {L.entry, L.bossSpawn, L.portal, L.anteStart}
-		for _, b in ipairs(L.basins) do
-			reserved[#reserved + 1] = b
-		end
-		local all = {}
-		for _, list in ipairs({L.floorList, L.anteList}) do
-			for _, t in ipairs(list) do
-				all[#all + 1] = t
-			end
-		end
-		ChaosDarkPaint.apply(ChaosDarkPaint.plan(all, cfg.dark.style, rand, {walls = L.walls, reserved = reserved}), L.z)
-	end
+	dressSlot(L, bossKey)
 	local gate = placeItem(P(L.portal), cfg.portalId)
 	if gate then
 		gate:setActionId(cfg.portalActionId)
@@ -403,7 +403,7 @@ local function cleanSlot(L)
 				end
 				for _, item in ipairs(tile:getItems() or {}) do
 					local id = item:getId()
-					if not keep[id] and not (cfg.darkActive and ChaosDarkPaint.isDark(id)) then
+					if not keep[id] and not (cfg.darkActive and ChaosDarkPaint.isDark(id)) and not ChaosArenaLook.isOwned(id) then
 						item:remove()
 					end
 				end
@@ -423,7 +423,7 @@ local function timeLeft(run, nowMs)
 end
 A.timeLeft = timeLeft
 
-local function takeSlot(player)
+local function takeSlot(player, bossKey)
 	local cfg = C()
 	local IL = ChaosInstanceLimits
 	local running = 0
@@ -444,7 +444,7 @@ local function takeSlot(player)
 			player:sendCancelMessage(Chaos.tx(player, text))
 			return nil
 		end
-		local L, why = buildSlot(slot)
+		local L, why = buildSlot(slot, bossKey)
 		if L then
 			return slot, L
 		end
@@ -1324,7 +1324,7 @@ function A.open(player, item)
 		return false
 	end
 	local group = gather(player, def)
-	local slot, L = takeSlot(player)
+	local slot, L = takeSlot(player, def.key)
 	if not slot then
 		return false
 	end

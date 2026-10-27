@@ -54,7 +54,7 @@ try:
 finally:
     shutil.rmtree(root, ignore_errors=True)
 
-# the later steps on the real XML: the rune prices stay, she becomes a potion seller (Everfull added once), and the
+# the later steps on the real XML: the rune prices stay, no Everfull is sold (O273), and the
 # item price table changes none of her asking prices (every one is at least twice what an NPC pays)
 text = open(os.path.join(I.REPO_NPC, name + '.xml'), encoding='utf-8').read()
 rcfg = RS.load_config()
@@ -64,9 +64,9 @@ check(n == 0 and out == text, 'the rune installer finds every rune at the supply
 
 pcfg = POT.read_config()
 out, info = POT.patch_npc_xml(text, pcfg)
-check(info['seller'] and info['added'] == 2 and info['removed'] == 0, 'the potion installer adds the two Everfull potions: %s' % info)
+check(info['ever'] == 0, 'the potion installer finds no Everfull in her trade: %s' % info)
 out2, info2 = POT.patch_npc_xml(out, pcfg)
-check(info2['added'] == 0 and out2 == out, 'and only once')
+check(info2['ever'] == 0 and out2 == out, 'and changes nothing twice')
 
 ip_prices, share = IP.load_prices()
 stats = {'sell': 0, 'buy': 0}

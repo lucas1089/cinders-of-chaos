@@ -40,6 +40,9 @@ end
 dofile("data/scripts/chaos/pocketboss_core.lua")
 Chaos.pocketBossConfig = dofile("data/scripts/chaos/pocketboss_config.lua")
 pcall(dofile, "data/lib/chaos_dark_paint.lua")
+if not ChaosArenaLook then
+	dofile("data/scripts/chaos/arenalook_core.lua")
+end
 
 ChaosPocketBoss = ChaosPocketBoss or {}
 local PB = ChaosPocketBoss
@@ -289,12 +292,24 @@ local function dark()
 	return cfg.darkActive
 end
 
-local function buildSlot(slot)
+-- O276: the look of the arena (arenalook_core.lua): the theme of the boss, varied ground, mirrored cover and lights that
+-- leave the lane from the entry to the boss, the arrival and the boss spot open. Repainted when the theme changes (a
+-- slot serves many bosses); the fixtures are placed after it.
+local function dressSlot(L, bossKey, arenaGate)
+	local cfg = C()
+	ChaosArenaLook.dressBossArena("pocket", L, cfg, bossKey, arenaGate)
+	for _, t in ipairs(L.basins) do
+		placeItem(P(t), cfg.basinId)
+	end
+end
+
+local function buildSlot(slot, bossKey)
 	local cfg = C()
 	local isDark = dark()
 	local L = U.layout(cfg, slot)
 	if PB.built[slot] then
 		L.arenaGate = PB.gates[slot]
+		dressSlot(L, bossKey, L.arenaGate)
 		return L
 	end
 	if PB.bad[slot] then
@@ -308,7 +323,7 @@ local function buildSlot(slot)
 		for _, t in ipairs(list) do
 			local tile = Tile(P(t))
 			local gid = tile and groundIdOf(tile)
-			if tile and ((gid ~= cfg.groundId and not (isDark and ChaosDarkPaint.isDark(gid))) or (tile.getHouse and tile:getHouse())) then
+			if tile and ((gid ~= cfg.groundId and not (isDark and ChaosDarkPaint.isDark(gid)) and not ChaosArenaLook.isOwned(gid)) or (tile.getHouse and tile:getHouse())) then
 				return nil, string.format("tile %d,%d,%d already exists in the map", t.x, t.y, t.z)
 			end
 		end
@@ -325,9 +340,6 @@ local function buildSlot(slot)
 	for _, t in ipairs(L.wallList) do
 		placeItem(P(t), cfg.wallId)
 	end
-	for _, t in ipairs(L.basins) do
-		placeItem(P(t), cfg.basinId)
-	end
 	-- a second way out inside the arena, next to where the players arrive (beta 2026-10-20: a player was stuck at the
 	-- boss with the exit in the antechamber; closed boss rooms always get a portal). Chosen before the paint and kept
 	-- free of decoration (K.arenaGate; it was placed after the paint, on whatever the paint put there).
@@ -340,19 +352,7 @@ local function buildSlot(slot)
 	end
 	local best = K.arenaGate(L.floorList, (L.starts and L.starts[1]) or L.entry, taken)
 	L.arenaGate = best
-	if isDark then
-		local reserved = {L.entry, L.bossSpawn, L.portal, L.anteStart, best}
-		for _, b in ipairs(L.basins) do
-			reserved[#reserved + 1] = b
-		end
-		local all = {}
-		for _, list in ipairs({L.floorList, L.anteList}) do
-			for _, t in ipairs(list) do
-				all[#all + 1] = t
-			end
-		end
-		ChaosDarkPaint.apply(ChaosDarkPaint.plan(all, cfg.dark.style, math.random, {walls = L.walls, reserved = reserved}), L.z)
-	end
+	dressSlot(L, bossKey, best)
 	local gate = placeItem(P(L.portal), cfg.portalId)
 	if gate then
 		gate:setActionId(cfg.portalActionId)
@@ -383,7 +383,7 @@ local function cleanSlot(L)
 				end
 				for _, item in ipairs(tile:getItems() or {}) do
 					local id = item:getId()
-					if not keep[id] and not (cfg.darkActive and ChaosDarkPaint and ChaosDarkPaint.isDark(id)) then
+					if not keep[id] and not (cfg.darkActive and ChaosDarkPaint and ChaosDarkPaint.isDark(id)) and not ChaosArenaLook.isOwned(id) then
 						item:remove()
 					end
 				end
@@ -392,14 +392,14 @@ local function cleanSlot(L)
 	end
 end
 
-local function takeSlot()
+local function takeSlot(bossKey)
 	local cfg = C()
 	while true do
 		local slot = U.allocSlot(cfg, PB.runs, PB.bad)
 		if not slot then
 			return nil
 		end
-		local L, why = buildSlot(slot)
+		local L, why = buildSlot(slot, bossKey)
 		if L then
 			return slot, L
 		end
@@ -922,7 +922,7 @@ local function spawnBoss(run)
 	PB.creating = true
 	-- O177: created with the level the pocket is tuned for / its drops use (Chaos.spawnLevel, shown after the name), not
 	-- the experience / health estimate of the species ("Lv 10182" on a world boss type)
-	local level = K.bossLevel(run.boss, ChaosLoot and ChaosLoot.typeLevel and ChaosLoot.typeLevel(run.boss.monster),
+	local level = K.bossLevel(run.boss, ChaosLoot and ChaosLoot.typeLevel and Chaos.huntingLevel(ChaosLoot.typeLevel(run.boss.monster)),
 		ChaosMonsterLevelsCore and ChaosMonsterLevelsCore.maxEstimate)
 	local create = Chaos.createMonsterNamed or function(t, p, e, f) return Game.createMonster(t, p, e, f) end
 	local ok, m = pcall(create, run.boss.monster, P(run.L.bossSpawn), false, true, nil, level)
@@ -1081,7 +1081,7 @@ function PB.enter(player, key)
 	end
 	local slot, L
 	if not (IL and IL.capped("pocketboss", running, cfg.limits)) then
-		slot, L = takeSlot()
+		slot, L = takeSlot(tostring((boss and (boss.name or boss.monster)) or key))
 	end
 	if not slot then
 		if IL then

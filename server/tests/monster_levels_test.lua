@@ -4,6 +4,7 @@
 -- an engine without patch 0040 is left alone), the level a rift / invasion / generated area scaled a monster to
 -- (Chaos.spawnLevel through Chaos.createMonsterNamed, over its own level) and the engine patches 0040 and 0044.
 local failures, count = 0, 0
+local MULT = dofile("data/scripts/chaos/pace_config.lua").baseLevelMult -- owner 2026-10-27: pool level x this is shown
 local function check(cond, label)
 	count = count + 1
 	if not cond then
@@ -43,6 +44,10 @@ do
 	eq(K.maxEstimate, lim and lim.toLevel, "the clamp is the top level of progression_config.lua")
 end
 
+eq(K.huntingLevel(20, 2), 40, "pool level x baseLevelMult")
+eq(K.huntingLevel(0, 2), nil, "no pool level: none")
+eq(K.huntingLevel(20, nil), 20, "no multiplier: unchanged")
+
 -- ================================================================== the engine file
 Chaos = {}
 local registered
@@ -65,11 +70,67 @@ dofile("data/scripts/chaos/monster_levels.lua")
 check(type(registered) == "function", "onSpawn registered")
 local hellflayer = mon({pool = 257})
 registered(hellflayer, {x = 1, y = 1, z = 7}, false, false)
-eq(hellflayer.shown, 257, "Hellflayer [257]: a stock monster gets a level in its name")
+eq(hellflayer.shown, 257 * MULT, "Hellflayer: a stock monster shows its hunting level (pool x baseLevelMult)")
 -- O177: a world boss species whose estimate is 10182 shows the top hunting level at most (display only)
 local kaelgor = mon({pool = 10182})
 registered(kaelgor, {x = 1, y = 1, z = 7}, false, false)
 eq(kaelgor.shown, 2200, "Kaelgor's estimate 10182 is shown as 2200")
+-- Beta 2026-10-27: a monster that is not in the bounty pool, inside a high-level hunt, is shown at the lower end of the
+-- hunt (not "level 2"); a listed one keeps its own level; the summon of a monster is shown at least at its master's
+do
+	local K2 = ChaosMonsterLevelsCore
+	local idx = K2.indexHunts({{k = "hunt", x = 1000, y = 1000, z = 7, n = "Hunting: Bone Slicer, Bone Warrior (level 240-320)"},
+		{k = "temple", x = 1, y = 1, z = 7, n = "Temple"}})
+	eq(K2.areaFloor(idx, 1030, 990, 7), 240, "inside the hunt (60 squares)")
+	eq(K2.areaFloor(idx, 1100, 1000, 7), nil, "outside it")
+	eq(K2.areaFloor(idx, 1000, 1000, 8), nil, "another floor")
+	eq(K2.areaFloor(nil, 1, 1, 7), nil, "no index")
+	eq(K2.raise(4, 240), 240, "raised to the floor")
+	eq(K2.raise(500, 240), 500, "never lowered")
+	eq(K2.raise(4, nil), 4, "no floor")
+	eq(K2.bandOf("Hunting: Rat (level 1-20)"), 1, "band of a mark")
+	ML = ChaosMonsterLevels
+	ML.hunts() -- the real file: loads or stays off
+	local savedLoot = ChaosLoot
+	ChaosLoot = {monsterLevel = function(m) return m.pool end,
+		poolLevelOf = function(m) return m.listed and m.pool or nil end}
+	local function put(m, x, y, z)
+		m.getPosition = function() return {x = x, y = y, z = z} end
+		return m
+	end
+	-- inject the index through the engine file's own loader: a data file on disk
+	local tmp = os.tmpname()
+	local f = io.open(tmp, "w")
+	f:write('return {marks = {{k = "hunt", x = 1000, y = 1000, z = 7, n = "Hunting: Bone Slicer, Bone Warrior (level 240-320)"}}}')
+	f:close()
+	ChaosPoiConfig = {dataFile = tmp}
+	-- reload the engine file so its cached index is read from the new file
+	dofile("data/scripts/chaos/monster_levels.lua")
+	local sheep = put(mon({pool = 1}), 1010, 1005, 7)
+	registered(sheep, {x = 1010, y = 1005, z = 7}, false, false)
+	eq(sheep.shown, 240, "an unlisted monster in a level 240 hunt is shown at the hunt's lower end")
+	local listedMon = put(mon({pool = 40, listed = true}), 1010, 1005, 7)
+	registered(listedMon, {x = 1010, y = 1005, z = 7}, false, false)
+	eq(listedMon.shown, 40 * MULT, "a listed monster keeps its own hunting level")
+	local badger = put(mon({pool = 4, listed = true}), 1010, 1005, 7)
+	registered(badger, {x = 1010, y = 1005, z = 7}, false, false)
+	eq(badger.shown, 240, "a listed monster far below the hunt (under a tenth of its lower end) is raised to it")
+	local badger = put(mon({pool = 4, listed = true}), 1010, 1005, 7)
+	registered(badger, {x = 1010, y = 1005, z = 7}, false, false)
+	eq(badger.shown, 240, "a listed monster far below the hunt (under a tenth of its lower end) is raised to it")
+	local far = put(mon({pool = 1}), 5000, 5000, 7)
+	registered(far, {x = 5000, y = 5000, z = 7}, false, false)
+	eq(far.shown, 1 * MULT, "an unlisted monster far from any hunt: its estimate")
+	local boss = mon({own = 300, isMonsterMaster = true})
+	boss.isMonster = function() return true end
+	boss.getMonsterLevel = function() return 300 end
+	local minion2 = put(mon({pool = 6, listed = true, master = boss}), 5000, 5000, 7)
+	registered(minion2, {x = 5000, y = 5000, z = 7}, false, false)
+	eq(minion2.shown, 300, "the summon of a level 300 monster is shown at 300")
+	os.remove(tmp)
+	ChaosPoiConfig = nil
+	ChaosLoot = savedLoot
+end
 -- a system's own level (Chaos.spawnLevel: a pocket boss, a tower floor) is shown as given, over the estimate
 Chaos.spawnLevel = 300
 local pocketBoss = mon({pool = 10182})
@@ -80,6 +141,22 @@ local floorBoss = mon({pool = 10182})
 registered(floorBoss, {x = 1, y = 1, z = 7}, false, false)
 eq(floorBoss.shown, 3500, "a tower floor level above 2200 is kept")
 Chaos.spawnLevel = nil
+-- a generated area's point and a waystone tier are hunting levels already: not multiplied
+Mon.getId = function(self) return self.id end
+ChaosAreaGen = {pointOf = {[4242] = {level = 333}}}
+local pointMon = mon({id = 4242, pool = 20})
+registered(pointMon, {x = 1, y = 1, z = 7}, false, false)
+eq(pointMon.shown, 333, "a generated area monster shows its point's level, not x baseLevelMult")
+ChaosAreaGen = nil
+ChaosWaystoneTiers = {levelOf = function(m) return m.tierLevel end}
+local wayMon = mon({id = 1, pool = 20, tierLevel = 150})
+registered(wayMon, {x = 1, y = 1, z = 7}, false, false)
+eq(wayMon.shown, 150, "a waystone monster shows its run's level, not x baseLevelMult")
+-- the monster bar chip (monster_tiers.lua) reads ML.estimate when the nameplate level is not set: it must be the level
+-- the name would show, on the hunting scale, for a pool monster and a waystone monster alike
+eq((ChaosMonsterLevels.estimate(wayMon)), 150, "bar chip estimate: a waystone monster, not doubled")
+ChaosWaystoneTiers = nil
+eq((ChaosMonsterLevels.estimate(mon({id = 2, pool = 52}))), 52 * MULT, "bar chip estimate: a pool monster is on the hunting scale (Lv 104 vs [540])")
 local stag = mon({own = 777, pool = 790})
 registered(stag, {x = 1, y = 1, z = 7}, false, false)
 eq(stag.shown, nil, "Black Stag keeps the engine's own [777]")
@@ -88,7 +165,7 @@ registered(pet, {x = 1, y = 1, z = 7}, false, false)
 eq(pet.shown, nil, "a player's summon gets no level")
 local minion = mon({pool = 300, master = mon({})})
 registered(minion, {x = 1, y = 1, z = 7}, false, false)
-eq(minion.shown, 300, "a monster's summon shows its level like any monster")
+eq(minion.shown, 300 * MULT, "a monster's summon shows its level like any monster")
 local old = setmetatable({pool = 257}, {__index = function(t, k)
 	if k == "setDisplayLevel" then
 		return nil -- an engine without patch 0040
@@ -100,7 +177,7 @@ ChaosLoot = nil
 ChaosItemMods = {estimateMonsterLevel = function(exp, hp) return 1.6 * math.sqrt(exp) end}
 local bare = mon({})
 function bare:getType() return {getExperience = function() return 2500 end, getMaxHealth = function() return 3000 end} end
-eq(ChaosMonsterLevels.apply(bare), 80, "loot.lua not loaded: the experience estimate")
+eq(ChaosMonsterLevels.apply(bare), 80 * MULT, "loot.lua not loaded: the experience estimate")
 
 -- the scaled level of a rift / invasion / generated area monster: Chaos.spawnLevel, used once in onSpawn
 ChaosLoot = {monsterLevel = function(m) return m.pool end}
@@ -111,7 +188,7 @@ eq(riftStag.shown, 150, "a level-scaled type in a tier 1 rift shows [150], not i
 eq(Chaos.spawnLevel, nil, "the scaled level is used once")
 local next1 = mon({pool = 257})
 registered(next1, {x = 1, y = 1, z = 7}, false, false)
-eq(next1.shown, 257, "the next monster: its own estimate again")
+eq(next1.shown, 257 * MULT, "the next monster: its own estimate again")
 Chaos.spawnLevel = 300
 local riftPet = mon({pool = 40, master = mon({player = true})})
 registered(riftPet, {x = 1, y = 1, z = 7}, false, true)
@@ -151,7 +228,7 @@ eq(Chaos.spawnLevel, nil, "no level left over")
 Chaos.createMonsterNamed("Hellflayer", {x = 1, y = 1, z = 7}, true, false, "Hellflayer", 220)
 eq(placedLevel, 220, "the type's own name with a level: still goes through the level")
 Chaos.createMonsterNamed("Hellflayer", {x = 1, y = 1, z = 7}, true, false, nil, nil)
-eq(placedLevel, 257, "no level: the estimate as at any spawn")
+eq(placedLevel, 257 * MULT, "no level: the estimate as at any spawn")
 eq(Chaos.createMonsterNamed("Nothing", {}, true, false, nil, 300), nil, "not placed: nil")
 eq(Chaos.spawnLevel, nil, "not placed: no level left over")
 check(not pcall(Chaos.createMonsterNamed, "Boom", {}, true, false, nil, 300), "an engine error is passed on")

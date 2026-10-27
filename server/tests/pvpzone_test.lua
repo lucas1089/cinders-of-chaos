@@ -116,9 +116,7 @@ local grid = {}
 for _, t in ipairs(foot) do grid[t.x .. "," .. t.y] = t end
 local blocked = {}
 for _, t in ipairs(foot) do if t.wall then blocked[t.x .. "," .. t.y] = true end end
-for _, list in ipairs({L.pillars, L.flags, {L.shrine}}) do
-  for _, p in ipairs(list) do blocked[p.x .. "," .. p.y] = true end
-end
+for k in pairs(K.blockedSet(L)) do blocked[k] = true end -- ruin walls, pillars, flags, lights, cover, the shrine
 eq(#L.exits, 2, "two safe exits")
 for i, e in ipairs(L.exits) do
   check(not blocked[e.x .. "," .. e.y], "exit " .. i .. " walkable")
@@ -169,6 +167,158 @@ local free = 0
 for k in pairs(grid) do if not blocked[k] then free = free + 1 end end
 eq(head - 1, free, "every walkable tile is connected")
 eq(K.nearestExit(L, {x = L.exits[2].x - 3, y = L.exits[2].y + 2, z = 7}), 2, "nearest exit")
+
+-- ---------------------------------------------------------------- the look of the field (O275)
+-- every objective is reachable from the entry on the generated grid (4-neighbour steps, the cover included)
+for i, e in ipairs(L.exits) do
+  check(seen[e.x .. "," .. e.y], "exit " .. i .. " reachable from the entry")
+  for _, sp in ipairs(L.entrySpots[i]) do
+    check(seen[sp.x .. "," .. sp.y], "arrival spot reachable from the entry " .. sp.x .. "," .. sp.y)
+  end
+end
+local circle, circleOpen = 0, 0
+for dx = -cfg.contest.capture.radius, cfg.contest.capture.radius do
+  for dy = -cfg.contest.capture.radius, cfg.contest.capture.radius do
+    local k = (L.shrine.x + dx) .. "," .. (L.shrine.y + dy)
+    circle = circle + 1
+    if not blocked[k] then
+      circleOpen = circleOpen + 1
+      check(seen[k], "the shrine circle is reachable at " .. dx .. "," .. dy)
+    end
+  end
+end
+check(circleOpen >= circle - 5, "the capture circle stays open for the fight (" .. circleOpen .. " of " .. circle .. ")")
+for _, d in ipairs({{0, 1}, {1, 0}, {0, -1}, {-1, 0}}) do
+  check(not blocked[(L.shrine.x + d[1]) .. "," .. (L.shrine.y + d[2])], "the Warden has room beside the shrine")
+end
+-- the paved way: exit 1 to the shrine plaza over road and yard tiles only
+local paved = {}
+for _, t in ipairs(foot) do if t.ground ~= "ground" and not blocked[t.x .. "," .. t.y] then paved[t.x .. "," .. t.y] = true end end
+local pseen, pq, ph = {[L.exits[1].x .. "," .. L.exits[1].y] = true}, {L.exits[1]}, 1
+while pq[ph] do
+  local p = pq[ph]
+  ph = ph + 1
+  for _, d in ipairs({{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) do
+    local k = (p.x + d[1]) .. "," .. (p.y + d[2])
+    if paved[k] and not pseen[k] then
+      pseen[k] = true
+      pq[#pq + 1] = {x = p.x + d[1], y = p.y + d[2]}
+    end
+  end
+end
+check(pseen[(L.shrine.x + 1) .. "," .. L.shrine.y], "a paved road leads from the entry to the shrine")
+check(pseen[L.exits[2].x .. "," .. L.exits[2].y], "a paved road leads from the entry to the other exit")
+-- terrain: several kinds of ground with border pieces, cover with the right kinds, lights, decoration
+local kinds, edgeTiles, gids = {}, 0, {}
+for _, t in ipairs(foot) do
+  kinds[t.ground] = (kinds[t.ground] or 0) + 1
+  gids[t.gid or 0] = true
+  if #t.edges > 0 then edgeTiles = edgeTiles + 1 end
+  check(t.gid ~= nil or t.wall, "every inside tile has a ground item " .. t.x .. "," .. t.y)
+end
+for _, kind in ipairs({"ground", "gate", "ring", "road", "hall"}) do check((kinds[kind] or 0) > 0, "ground kind " .. kind) end
+local nGround = 0
+for _ in pairs(gids) do nGround = nGround + 1 end
+check(nGround >= 12, "varied ground (" .. nGround .. " different ground items)")
+check(edgeTiles >= 80, "border pieces between the terrains (" .. edgeTiles .. " tiles)")
+local spawnSet = {}
+for _, sp in ipairs(L.spawns) do spawnSet[sp.x .. "," .. sp.y] = true end
+local nearSpawn = function(x, y)
+  for dx = -1, 1 do for dy = -1, 1 do if spawnSet[(x + dx) .. "," .. (y + dy)] then return true end end end
+  return false
+end
+local lookIds, trees, rocks, lava = {}, 0, 0, 0
+for _, g in ipairs(cfg.look.cover) do for _, id in ipairs(g.ids) do lookIds[id] = g end end
+check(#L.cover >= 150, "cover: trees, rocks, bones and lava holes (" .. #L.cover .. ")")
+local crackAt = {}
+for _, t in ipairs(foot) do if t.gid == cfg.look.cracks[1] then crackAt[t.x .. "," .. t.y] = true end end
+local coverAt = {}
+for _, c in ipairs(L.cover) do
+  local k = c.x .. "," .. c.y
+  check(lookIds[c.id] ~= nil, "cover item " .. c.id .. " is from the config")
+  check(not coverAt[k], "one cover piece per tile " .. k)
+  coverAt[k] = true
+  eq(grid[k].ground, "ground", "cover only on natural ground " .. k)
+  check(not nearSpawn(c.x, c.y), "no cover next to a spawn point " .. k)
+  if lookIds[c.id].name == "lava holes" then
+    lava = lava + 1
+    check(crackAt[k], "lava holes only on crack ground " .. k)
+  end
+  if lookIds[c.id].name == "charred trees" then trees = trees + 1 end
+  if lookIds[c.id].name == "scorched rock" then rocks = rocks + 1 end
+  for _, g in ipairs(L.gates) do
+    check(not (c.x >= g.x1 - cfg.look.keepClear and c.x <= g.x2 + cfg.look.keepClear and c.y >= g.y1 - cfg.look.keepClear
+      and c.y <= g.y2 + cfg.look.keepClear), "no cover at the gate yards " .. k)
+  end
+end
+-- fairness: the turn of every piece is a piece too
+for _, c in ipairs(L.cover) do
+  local tx, ty = L.x1 + (W + 1) - (c.x - L.x1), L.y1 + (H + 1) - (c.y - L.y1)
+  check(coverAt[tx .. "," .. ty], "cover turned " .. c.x .. "," .. c.y)
+end
+check(trees >= 40 and rocks >= 30 and lava >= 10, "charred trees " .. trees .. ", rocks " .. rocks .. ", lava holes " .. lava)
+local decorBlock = {}
+for _, g in ipairs(cfg.look.cover) do for _, id in ipairs(g.ids) do decorBlock[id] = true end end
+for _, d in ipairs(L.decor) do
+  check(not decorBlock[d.id], "decoration never blocks " .. d.id)
+  check(d.id ~= cfg.ids.pile and d.id ~= 7349, "decoration is not the ember pile marker")
+  check(not blocked[d.x .. "," .. d.y], "decoration on an open tile " .. d.x .. "," .. d.y)
+end
+check(#L.decor >= 150, "decoration (" .. #L.decor .. ")")
+-- landmarks: lights at the shrine and in both gate yards
+local fixAt = {}
+for _, f in ipairs(L.fixtures) do fixAt[f.x .. "," .. f.y] = f.id end
+for _, d in ipairs(cfg.look.shrineLights.at) do
+  eq(fixAt[(L.shrine.x + d[1]) .. "," .. (L.shrine.y + d[2])], cfg.look.shrineLights.id, "coal basin in the capture circle")
+end
+for _, d in ipairs(cfg.look.shrineBeacons.at) do
+  eq(fixAt[(L.shrine.x + d[1]) .. "," .. (L.shrine.y + d[2])], cfg.look.shrineBeacons.id, "skull pillar beacon at the shrine")
+end
+for i, e in ipairs(L.exits) do
+  for _, d in ipairs(cfg.look.gateLights.at) do
+    eq(fixAt[(e.x + d[1]) .. "," .. (e.y + d[2])], cfg.look.gateLights.id, "coal basin in gate yard " .. i)
+  end
+end
+-- deterministic: the same field on a second run and in every slot (same offsets from the origin)
+local Lb = K.layout(cfg, 0)
+eq(Lb, L, "the layout is cached per config")
+local copy = {}
+for k2, v in pairs(cfg) do copy[k2] = v end
+local Lc = K.layout(copy, 0)
+check(Lc ~= L, "a second config builds again")
+eq(#Lc.cover, #L.cover, "a second run: the same cover")
+eq(#Lc.decor, #L.decor, "a second run: the same decoration")
+for i, c in ipairs(L.cover) do
+  eq(Lc.cover[i].x .. "," .. Lc.cover[i].y .. "," .. Lc.cover[i].id, c.x .. "," .. c.y .. "," .. c.id, "a second run: cover " .. i)
+end
+local L1 = K.layout(cfg, 1)
+eq(#L1.cover, #L.cover, "another slot: the same cover count")
+for i, c in ipairs(L.cover) do
+  eq((L1.cover[i].x - L1.x1) .. "," .. (L1.cover[i].y - L1.y1) .. "," .. L1.cover[i].id,
+    (c.x - L.x1) .. "," .. (c.y - L.y1) .. "," .. c.id, "another slot: cover " .. i)
+end
+-- a tiny field with the same look still keeps every tile connected (the cover check works on any size)
+local small = {}
+for k2, v in pairs(cfg) do small[k2] = v end
+small.field = {innerW = 72, innerH = 56}
+small.look = {}
+for k2, v in pairs(cfg.look) do small.look[k2] = v end
+small.look.cover = {{name = "wall of trees", ids = {2713}, clumps = {{x = 36, y = 40, r = 12, chance = 100}}}}
+local Ls = K.layout(small, 0)
+local sb = K.blockedSet(Ls)
+local sgrid = K.footprint(small, Ls)
+local sfree, sseen, sq, sh = 0, {[Ls.exits[1].x .. "," .. Ls.exits[1].y] = true}, {Ls.exits[1]}, 1
+local sg = {}
+for _, t in ipairs(sgrid) do sg[t.x .. "," .. t.y] = t; if not t.wall and not sb[t.x .. "," .. t.y] then sfree = sfree + 1 end end
+while sq[sh] do
+  local p = sq[sh]; sh = sh + 1
+  for _, d in ipairs({{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) do
+    local k = (p.x + d[1]) .. "," .. (p.y + d[2])
+    if sg[k] and not sg[k].wall and not sb[k] and not sseen[k] then sseen[k] = true; sq[#sq + 1] = {x = p.x + d[1], y = p.y + d[2]} end
+  end
+end
+eq(#sq, sfree, "even a solid block of cover leaves every tile connected")
+check(#Ls.cover > 100 and #Ls.cover < #L.cover * 4, "the dense test field has cover (" .. #Ls.cover .. ")")
 -- map mode
 local mcfg = {mode = "map", grid = cfg.grid, field = cfg.field, exit = cfg.exit, contest = cfg.contest,
   area = {x1 = 100, y1 = 100, x2 = 150, y2 = 140, z = 7, exits = {{x = 102, y = 102, z = 7}}, shrine = {x = 125, y = 120, z = 7},
@@ -471,7 +621,9 @@ json = {encode = function(x) return x end, decode = function(x) return x end}
 local function key(p) return p.x .. "," .. p.y .. "," .. p.z end
 Position = function(x, y, z) return {x = x, y = y, z = z, sendMagicEffect = function() end} end
 local tiles, creatures, players = {}, {}, {}
-local BLOCKING = {[cfg.ids.wall] = true, [cfg.ids.pillar] = true, [cfg.ids.exitMark] = true, [cfg.ids.shrine] = true}
+local BLOCKING = {[cfg.ids.wall] = true, [cfg.ids.pillar] = true, [cfg.ids.exitMark] = true, [cfg.ids.shrine] = true,
+  [cfg.look.shrineLights.id] = true, [cfg.look.shrineBeacons.id] = true, [cfg.look.gateLights.id] = true}
+for _, g in ipairs(cfg.look.cover) do for _, id in ipairs(g.ids) do BLOCKING[id] = true end end
 local function newTile(pos)
   local t = {pos = pos, items = {}, pz = false}
   function t:hasFlag(f) return f == TILESTATE_PROTECTIONZONE and self.pz end
@@ -640,6 +792,41 @@ eq(Z.inZone(ana:getPosition()), 0, "standard instance")
 eq(ana.st[cfg.storage.inside], 1, "inside marker")
 eq(ana.st[cfg.storage.retX], ana.home.x, "return position kept")
 check(lastSend(ana, "enter") ~= nil, "the client is told (secure mode off)")
+-- the goal is clear from the first second (O275): two messages, the map marks, floating text over the objectives
+local sawGoal, sawCarried = false, false
+for _, m in ipairs(ana.msgs) do
+  if m:find("Goal: earn embers", 1, true) then sawGoal = true end
+  if m:find("Embers carried: 0. Bank them at a safe exit", 1, true) and m:find("marked on your map", 1, true) then sawCarried = true end
+end
+check(sawGoal, "entering: the goal in one sentence")
+check(sawCarried, "entering: embers carried and where to bank them")
+local marks = lastSend(ana, "enter").marks
+eq(#marks, 3, "the enter message marks both safe exits and the shrine")
+eq(marks[1].kind, "exit", "mark 1 is an exit"); eq(marks[2].kind, "exit", "mark 2 is an exit"); eq(marks[3].kind, "shrine", "mark 3 is the shrine")
+for i, e in ipairs(Lz.exits) do
+  eq(marks[i].x .. "," .. marks[i].y .. "," .. marks[i].z, e.x .. "," .. e.y .. "," .. e.z, "mark " .. i .. " sits on the exit")
+end
+eq(marks[3].x .. "," .. marks[3].y, Lz.shrine.x .. "," .. Lz.shrine.y, "the shrine mark sits on the shrine")
+check(marks[1].name:find("bank your embers"), "the exit mark says what it is for")
+local labels = {}
+ChaosCombatFx = {label = function(pos, text, color)
+  labels[#labels + 1] = {x = pos.x, y = pos.y, text = type(text) == "function" and text(ana) or text, color = color}
+end}
+Z.beacons(Z.inst[0])
+eq(#labels, 3, "floating text over the shrine and both exits")
+eq(labels[1].x .. "," .. labels[1].y, Lz.shrine.x .. "," .. Lz.shrine.y, "the first label is over the shrine")
+eq(labels[1].text, "Cinder Shrine", "the shrine label")
+eq(labels[2].text, "Safe exit: bank your embers", "the exit label")
+labels = {}
+Z.inst[0].contest.phase = "warden"
+Z.beacons(Z.inst[0])
+eq(labels[1].text, "Slay the Warden!", "the label says what to do while the Warden lives")
+labels = {}
+Z.inst[0].contest.phase = "capture"
+Z.beacons(Z.inst[0])
+eq(labels[1].text, "Take the Shrine!", "the label says what to do while the shrine can be taken")
+Z.inst[0].contest.phase = "idle"
+ChaosCombatFx = nil
 eq(Z.targetCombat(ana, bo), RETURNVALUE_YOUMAYNOTATTACKTHISPLAYER, "protected after entering")
 eq(hit(bo, ana, 500), 0, "no damage while protected")
 advance((cfg.entry.protectSeconds + 1) * 1000)
@@ -680,6 +867,8 @@ eq(mon.maxHealth, math.floor(1000 * cfg.monsters.hpMult), "monster health scaled
 eq(hit(bo, mon, 100), math.floor(100 * cfg.monsters.damageMult + 0.5), "monster damage scaled")
 events.ChaosMarchesMonsterDeath.onDeath(mon, nil, bo, bo)
 eq(bo.st[cfg.storage.carried], cfg.monsterEmbers.normal, "embers for a monster kill")
+check(lastMsg(bo):find("+" .. cfg.monsterEmbers.normal .. " embers (carrying " .. cfg.monsterEmbers.normal .. ")", 1, true),
+  "a kill says how many embers it gave")
 near(Z.lootMult({monster = mon}), cfg.monsters.lootMult, 1e-9, "more loot from zone monsters")
 creatures[mon.id] = nil
 bo.st[cfg.storage.carried] = 1500
@@ -700,6 +889,8 @@ eq(bo.health, bo.maxHealth, "healed")
 eq(bo.st[cfg.storage.carried], 0, "his carried embers fell")
 eq(bo.st[cfg.storage.inside], 0, "marker cleared")
 check(lastMsg(bo):find("defeated by Ana"), "Bo is told")
+check(lastMsg(bo):find("carried embers fell where you stood", 1, true) and lastMsg(bo):find("burns out in " .. cfg.death.pileSeconds .. " seconds", 1, true),
+  "Bo is told what happened to his embers and for how long they lie there")
 check(not Z.enter(bo, {accept = true}), "defeat cooldown")
 local piles = {}
 for _, p2 in pairs(Z.inst[0].piles) do piles[#piles + 1] = p2 end
@@ -739,6 +930,14 @@ check(Z.enter(bo, {accept = true}), "Bo comes back")
 advance(25 * 1000)
 kill(bo, ana)
 eq(#gains, 1, "the same victim within 30 minutes: no reputation")
+-- the vendor is outside only: nobody buys 50 potions in the middle of a fight
+local wasBanked = Z.rowOf(ana.guid).banked
+Z.rowOf(ana.guid).banked = 600
+check(not Z.buy(ana, "upheaval"), "no vendor inside the Marches")
+eq(ana.items[29856], nil, "nothing was handed over")
+eq(Z.rowOf(ana.guid).banked, 600, "nothing was charged")
+check(lastSend(ana, "msg").text:find("Leave the Marches"), "the reason is sent")
+Z.rowOf(ana.guid).banked = wasBanked
 -- banking at a safe exit
 ana.pos = {x = Lz.exits[1].x, y = Lz.exits[1].y, z = 7}
 local before = ana.st[cfg.storage.carried]
@@ -751,6 +950,10 @@ check(Z.isInside(ana), "a hit restarted the channel")
 advance((cfg.exit.channelSeconds + 1) * 1000)
 check(not Z.isInside(ana), "Ana left through the exit")
 eq(Z.rowOf(ana.guid).banked, before, "the embers are banked")
+local bankMsg = ""
+for _, m in ipairs(ana.msgs) do if m:find("embers banked", 1, true) then bankMsg = m end end
+check(bankMsg:find(before .. " embers banked", 1, true) and bankMsg:find("Spend them at the vendor", 1, true),
+  "banking: how many, and what they are for")
 eq(ana.st[cfg.storage.carried], 0, "nothing carried")
 eq(records[#records] and records[#records][1], "marches", "weekly board")
 eq(records[#records] and records[#records][3], before, "board value: banked embers")

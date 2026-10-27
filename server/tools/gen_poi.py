@@ -24,6 +24,8 @@ What is read, and the kinds written:
            busiest spots of the bestiary spawn data (bestiary_spawns.lua), spots of one floor within HUNT_JOIN tiles
            merged, the level band from the middle 70 % of the spawn entries, the two most common monsters as the name;
            areas with fewer than HUNT_MIN entries are left out. r = 1.
+           The band is printed as the HUNTING level: the pool level times pace_config.lua baseLevelMult (owner 2026-10-27;
+           lo = max(1, lo10 * mult), hi = hi10 * mult).
   boss     the island, raid and lair bosses of bossspawns_config.lua (their places). r = 1.
 The Chaos NPCs, the portals next to the temples and the dungeons are added by poi.lua at runtime (they are placed when
 the server starts).
@@ -282,6 +284,19 @@ def hunting_data(chaos_dir):
     return levels, spawns
 
 
+def base_level_mult(chaos_dir):
+    """pace_config.lua baseLevelMult: the hunting level of a monster is the bounty pool level times it (the marks print
+    the hunting level, owner 2026-10-27); the installed copy first, else the repo's"""
+    for d in (chaos_dir, os.path.join(SERVER, 'data', 'scripts', 'chaos')):
+        f = os.path.join(d, 'pace_config.lua')
+        if os.path.isfile(f):
+            m = re.search(r'\bbaseLevelMult\s*=\s*(\d+(?:\.\d+)?)', read_text(f))
+            if m:
+                v = float(m.group(1))
+                return int(v) if v == int(v) else v
+    raise PoiError('pace_config.lua baseLevelMult not found')
+
+
 def boss_spots(chaos_dir):
     text = read_text(os.path.join(chaos_dir, 'bossspawns_config.lua'))
     out = []
@@ -341,8 +356,8 @@ def cluster(points, join):
     return out
 
 
-def level_band(pairs):
-    """(level, weight) pairs -> (lo, hi): the middle 70 % of the weight, lo rounded down and hi up to tens"""
+def level_band(pairs, mult=1):
+    """(level, weight) pairs -> (lo, hi): the middle 70 % of the weight, lo rounded down and hi up to tens, then times mult"""
     pairs = sorted(pairs)
     total = sum(w for _, w in pairs)
     if total <= 0:
@@ -355,14 +370,14 @@ def level_band(pairs):
         if hi is None and acc >= total * 0.85:
             hi = lv
     lo10 = (lo // 10) * 10
-    return max(1, lo10), max(lo10 + 10, -(-hi // 10) * 10)
+    return max(1, int(lo10 * mult)), int(max(lo10 + 10, -(-hi // 10) * 10) * mult)
 
 
 def title(name):
     return ' '.join(w[:1].upper() + w[1:] for w in name.split(' '))
 
 
-def hunting_areas(levels, spawns):
+def hunting_areas(levels, spawns, mult=1):
     points = []
     for name, lv in levels.items():
         for x, y, z, e in spawns.get(name.lower(), []):
@@ -371,7 +386,8 @@ def hunting_areas(levels, spawns):
     for g in cluster(points, HUNT_JOIN):
         if g['w'] < HUNT_MIN:
             continue
-        band = level_band([(it[4][1], it[3]) for it in g['items']])
+        # the mark prints the hunting level (pool level x baseLevelMult)
+        band = level_band([(it[4][1], it[3]) for it in g['items']], mult)
         names = {}
         for it in g['items']:
             names[it[4][0]] = names.get(it[4][0], 0) + it[3]
@@ -393,7 +409,7 @@ def nearest_town(pos, temples):
     return best, bd
 
 
-def build_marks(towns, depots, crafts, npcs, services, levels, spawns, bosses, town_names):
+def build_marks(towns, depots, crafts, npcs, services, levels, spawns, bosses, town_names, mult=1):
     """the marks from parsed inputs (pure; tested by gen_poi_test.py)
     towns [(id, name, x, y, z)], depots [(x, y, z)], crafts [(aid, (x, y, z))], npcs [(name, x, y, z)],
     services {lower name: kind}, levels / spawns (hunting_data), bosses [(cat, name, x, y, z)], town_names {id: name}"""
@@ -422,7 +438,7 @@ def build_marks(towns, depots, crafts, npcs, services, levels, spawns, bosses, t
                       'r': 0 if near else 1})
     for cat, name, x, y, z in bosses:
         marks.append({'k': 'boss', 'x': x, 'y': y, 'z': z, 'n': '%s (%s)' % (name, BOSS_LABEL[cat]), 'r': 1})
-    marks += hunting_areas(levels, spawns)
+    marks += hunting_areas(levels, spawns, mult)
     # one mark of a kind per tile
     seen, out = set(), []
     for m in marks:
@@ -497,7 +513,8 @@ def generate(server_dir, map_file=None):
     # a town name the map still has from the old world is not written: the temple is then just "Temple"
     towns = [(tid, name if not any(digest(p) in hashes for p in phrases(name, 4)) else '', x, y, z)
              for tid, name, x, y, z in towns]
-    marks = build_marks(towns, depots, crafts, npcs, services, levels, spawns, bosses, town_names)
+    marks = build_marks(towns, depots, crafts, npcs, services, levels, spawns, bosses, town_names,
+                        base_level_mult(chaos_dir))
     marks, dropped = drop_old_names(marks, hashes)
     stats = {'towns': len(towns), 'lockers': len(depots), 'tables': len(crafts), 'npcs': len(npcs), 'unrenamed': dropped}
     return marks, stats

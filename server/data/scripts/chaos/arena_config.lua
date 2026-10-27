@@ -63,5 +63,7 @@ return {
 	galleryGroundId = 413, -- stone floor
 	wallId = 5648, -- stone wall
 	pillarId = 1514, -- stone pillar (line-of-sight cover)
-	basinId = 1481 -- coal basin (light)
+	basinId = 1481, -- coal basin (light)
+	-- O276 look (arenalook_core.lua): a theme per slot in turn, cover and lights mirrored for the two teams
+	look = {themes = {"stone", "ember", "crypt"}, seed = 2, cover = 6, lights = 4}
 }

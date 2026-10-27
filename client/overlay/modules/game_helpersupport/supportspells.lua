@@ -428,7 +428,9 @@ local function active(st, info, spell, ctx, now)
     st.userOff = st.userOff or {}
     local was = st.barOn[spell.id]
     if fromBar ~= nil then st.barOn[spell.id] = fromBar end
-    if fromBar == false and was == true and (st.settleUntil[spell.id] or 0) <= now then
+    -- not within the grace of a death, a login or a teleport (H.noteClear): the buffs go and come back then, none of it
+    -- is the player's switch
+    if fromBar == false and was == true and (st.settleUntil[spell.id] or 0) <= now and (st.graceUntil or 0) <= now then
       st.userOff[spell.id] = now
     elseif fromBar == true then
       st.userOff[spell.id] = nil -- on again (the player's cast): the helper may keep it up once its row is ticked
@@ -570,7 +572,8 @@ function H.takeUserOff(st, cfg, now)
   local sameTick = {}
   for _, at in pairs(st.userOff) do sameTick[at] = (sameTick[at] or 0) + 1 end
   for id, at in pairs(st.userOff) do
-    local near = type(at) == 'number' and st.clearAt and math.abs(at - st.clearAt) <= H.USEROFF_CONFIRM_MS
+    local near = type(at) == 'number' and st.clearAt and at >= st.clearAt - H.USEROFF_CONFIRM_MS
+      and at <= math.max(st.clearAt + H.USEROFF_CONFIRM_MS, st.graceUntil or 0)
     if sameTick[at] > 1 or near then st.userOff[id] = nil end
   end
   for _, slot in ipairs(cfg.slots) do
@@ -605,8 +608,14 @@ function H.noteCast(st, spell, now)
 end
 
 -- a death or a teleport now: a vigil drop close to it is not the player's (H.takeUserOff)
-function H.noteClear(st, now)
+-- graceMs (default USEROFF_CONFIRM_MS): how long after it a bar drop is not read as the player's. A death is a fast
+-- relog (the state is made new at the logout and at the login), so the new state must be told too: the caller passes
+-- H.SESSION_GRACE_MS at the game start and at the death (owner 2026-10-27, "it keeps clearing the list on death": the
+-- relog lost the death's mark, and a vigil that dropped a few seconds after the login was unticked and saved).
+H.SESSION_GRACE_MS = 10000
+function H.noteClear(st, now, graceMs)
   st.clearAt = now
+  st.graceUntil = now + (tonumber(graceMs) or H.USEROFF_CONFIRM_MS)
 end
 
 function H.reset(st)

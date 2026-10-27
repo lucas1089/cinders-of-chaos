@@ -284,6 +284,28 @@ do
   eq(A.dropForeignHeals(slots, classOk), 0, 'idempotent')
 end
 
+-- a relog after a death: the class (0) or the spell table is not there yet, and nothing is cut from the saved lists
+-- (owner 2026-10-27, "continua limpando a lista")
+do
+  local lists = function(sp) return sp.vocations[1] == 5 end
+  local table_ = { [10] = { id = 10, vocations = { 5 } }, [99] = { id = 99, vocations = { 7 } } }
+  local function classOkAt(vocation, known)
+    return function(id) return A.classKeeps(known and table_[id] or nil, vocation, lists) end
+  end
+  local rules = { { type = 'spell', spellId = 10 }, { type = 'spell', spellId = 99 } }
+  local slots = { { id = 10, percent = 45 }, { id = 99, percent = 65 } }
+  local _, n = A.dropForeignRules(rules, classOkAt(0, true))
+  eq(n, 0, 'class not told yet (0): no rule dropped')
+  eq(A.dropForeignHeals(slots, classOkAt(0, true)), 0, 'class not told yet (0): no heal emptied')
+  _, n = A.dropForeignRules(rules, classOkAt(5, false))
+  eq(n, 0, 'spell table empty: no rule dropped')
+  eq(A.dropForeignHeals(slots, classOkAt(5, false)), 0, 'spell table empty: no heal emptied')
+  eq(slots[2].id, 99, 'the heal slot is still there')
+  _, n = A.dropForeignRules(rules, classOkAt(5, true))
+  eq(n, 1, 'class and table known: the foreign rule goes')
+  eq(A.classKeeps({ id = 1, notOnServer = true }, 5, lists), false, 'a spell the server lacks goes with a class change')
+end
+
 -- the Thief line's attack spells of the O133 kit (owner 2026-10-24: Auto setup did not add Gutting Slash, Razor Rain,
 -- Venom Spiral, Crescent Cut and Last Breath): the data knows each with its area rule, and a Thief who can cast
 -- everything gets them, up to the five slots

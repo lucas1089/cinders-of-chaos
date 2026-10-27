@@ -7,6 +7,11 @@
 -- Protocol, on top of crafting.lua's (JSON {action, data}); crafting.lua hands these actions here:
 --   client -> server  salvage {path, id, sig}                  salvage the item on the bench
 --                     lock {path, id, on}                      lock / unlock an item (gear or a Rift Key)
+--                     lockAt {pos = {x, y, z}, cid, on}        the same from the game's item right-click menu: pos is the
+--                                                              client position (inventory slot {0xFFFF, slot, 0} or open
+--                                                              container {0xFFFF, 0x40 + id, slot}), cid the client id,
+--                                                              on absent = flip. Own inventory / containers only, gear
+--                                                              or a Rift Key; answered with a text message
 --                     salvageScope {bag, maxRarity, mode}      the "salvage all" container and rarity, the bench mode
 --                                                              ("orbs" | "salvage"); answered with the state
 --                     salvageBatch {bag, maxRarity, sig}       salvage what the last preview listed (sig must match)
@@ -52,7 +57,7 @@ local OPCODE = ChaosOpcodes.crafting or 232
 local LOCK = cfg.lockAttr
 
 S.config = cfg
-S.actions = {salvage = true, lock = true, salvageScope = true, salvageBatch = true, combine = true, recycle = true}
+S.actions = {salvage = true, lock = true, lockAt = true, salvageScope = true, salvageBatch = true, combine = true, recycle = true}
 
 local scope = {} -- player id -> {bag, maxRarity, mode}
 local last = {} -- player id -> {single, batch, combine} time in ms
@@ -545,7 +550,7 @@ local function lockAction(player, data)
 	if not item or not b.inBackpack(player, item) or not (C.isGear(item) or C.isRiftKey(item)) then
 		return refuse(player, "Put the item from your backpack on the bench first.")
 	end
-	local on = data.on and true or false
+	local on = data.on == true or data.on == 1
 	S.setLocked(item, on)
 	local name = C.itemName(item)
 	logRows(player, {{orb = "Lock", item = name, text = on and "locked" or "unlocked"}})
@@ -553,6 +558,66 @@ local function lockAction(player, data)
 		or Chaos.t(player, "%s is unlocked.", name)
 	b.sendResult(player, true, "salvage", msg)
 	b.sendState(player, false)
+end
+
+-- the item at a client position of the player's own inventory slots or open containers (the shape of the tooltip and link
+-- scripts: ChaosItemTooltip.decodePos); never the ground, never another player's or a depot's container
+local function itemAtClientPos(player, pos)
+	if not ChaosItemTooltip then
+		dofile("data/scripts/chaos/item_tooltip_core.lua")
+	end
+	local p = ChaosItemTooltip.decodePos(pos)
+	if not p or p.kind == "map" then
+		return nil
+	end
+	local item
+	if p.kind == "slot" then
+		item = player:getSlotItem(p.slot)
+	else
+		local container = player:getContainerById(p.cid) -- only containers the engine has open for this player
+		if not container then
+			return nil
+		end
+		local first = tonumber(player:getContainerIndex(p.cid)) or 0
+		item = container:getItem(first + p.index)
+	end
+	if not item then
+		return nil
+	end
+	local ok, top = pcall(function() return item:getTopParent() end)
+	if not ok or top ~= player then
+		return nil
+	end
+	return item
+end
+
+local function lockAt(player, data)
+	if limited(player, "single", cfg.singleIntervalMs) then
+		return
+	end
+	local function say(text)
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, text))
+	end
+	local item = type(data.pos) == "table" and itemAtClientPos(player, data.pos) or nil
+	local cid = Chaos.toInt(data.cid, 1, 65535)
+	local okType, clientId = pcall(function() return item and ItemType(item:getId()):getClientId() end)
+	if not item or not cid or not okType or clientId ~= cid then
+		return say("The item moved. Try again.")
+	end
+	if not (C.isGear(item) or C.isRiftKey(item)) then
+		return say("Only gear and Rift Keys can be locked.")
+	end
+	local on
+	if data.on == nil then
+		on = not S.isLocked(item)
+	else
+		on = data.on == true or data.on == 1
+	end
+	S.setLocked(item, on)
+	local name = C.itemName(item)
+	logRows(player, {{orb = "Lock", item = name, text = on and "locked" or "unlocked"}})
+	player:sendTextMessage(MESSAGE_INFO_DESCR, on and Chaos.t(player, "%s is locked: it cannot be sold, salvaged or thrown away.", name)
+		or Chaos.t(player, "%s is unlocked.", name))
 end
 
 local function combine(player, data)
@@ -646,6 +711,8 @@ function S.onAction(player, action, data)
 		salvageBatch(player, data)
 	elseif action == "lock" then
 		lockAction(player, data)
+	elseif action == "lockAt" then
+		lockAt(player, data)
 	elseif action == "combine" then
 		combine(player, data)
 	elseif action == "recycle" then

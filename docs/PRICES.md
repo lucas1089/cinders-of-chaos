@@ -104,8 +104,7 @@ starts the spirit line) and the supreme mana and spirit tiers (60 ultimate potio
 now four tiers (20 + 30 + 50 + 70 = 170 coins), so the 200 coin cap holds. The task potions of these three are named in
 `potions_config.lua` (`materialId`, `materialCount`).
 
-A tier replaces the flask of its slot and the charges are shared, so what it sells is the hotter roll per drink, not more drinks:
-the health pool still holds 5 charges and the mana pool 8. A lost flask is given back by Veyra for the quest's gold (not coins).
+A tier replaces the flask of its slot. Since O273 no flask has charges, so what a tier sells is the hotter roll per drink, not more drinks. A lost flask is given back by Veyra for the quest's gold (not coins).
 
 ## Store balance (O140, 2026-10-23)
 

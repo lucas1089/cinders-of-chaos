@@ -239,9 +239,9 @@ local function onAttackingCreatureChange(creature)
   drawHealth(percent)
   place()
   window:show()
-  if not tierOf[creature:getId()] then
-    send('query', { cid = creature:getId() })
-  end
+  -- asked on every new target, not only the first: the level after the name can change after the first answer (a
+  -- waystone tier, a summon following its owner), and the chip must show the same level as the name
+  send('query', { cid = creature:getId() })
 end
 
 -- the boss cast bar: under the monster bar while it shows, else in its place

@@ -12974,10 +12974,9 @@ function getTreeNodes()
 			},
 			inputs = {658}, out = {}
 		},
-		--- 669-672: the flask branch (O251), a side branch of Mercy of Embers 358 in the healing corner. Four nodes in four own
-		--- groups (105-108, one node each, straight links). Their stats feed the Everfull flasks (potions_config.lua flask.tree):
-		--- flaskMaxCharges = whole extra charges on BOTH flasks, flaskChargeGain = percent of every kill's refill. Flag stats
-		--- (`flask...`): the class lanes never re-skin them. Numbers and reasons: server/README.md "Flask charges".
+		--- 669-672: the old flask branch (O251), a side branch of Mercy of Embers 358 in the healing corner. Four nodes in four own
+		--- groups (105-108, one node each, straight links). The Everfull flasks never empty (O273), so the charge stats are gone:
+		--- the nodes keep their place, name and art and give vitality and spirit. Points already spent stay valid.
 		--- 669 ---
 		{
 			orbit = 1,
@@ -12987,7 +12986,7 @@ function getTreeNodes()
 			group = 105,
 			icon = "mana",
 			customStats = {
-				flaskChargeGain = 10
+				spirit = 1
 			},
 			inputs = {
 				358
@@ -13005,7 +13004,7 @@ function getTreeNodes()
 			group = 106,
 			icon = "life",
 			customStats = {
-				flaskMaxCharges = 1
+				vitality = 1
 			},
 			inputs = {
 				669
@@ -13023,7 +13022,7 @@ function getTreeNodes()
 			group = 107,
 			icon = "mana",
 			customStats = {
-				flaskChargeGain = 10
+				spirit = 1
 			},
 			inputs = {
 				670
@@ -13042,8 +13041,8 @@ function getTreeNodes()
 			group = 108,
 			icon = "ntBottomlessFlasks",
 			customStats = {
-				flaskMaxCharges = 2,
-				flaskChargeGain = 25
+				vitality = 2,
+				spirit = 2
 			},
 			inputs = {
 				671

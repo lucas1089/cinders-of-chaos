@@ -1241,6 +1241,10 @@ def hall_edit(world, map_path, cfg, rows, hl, hall_on, new_tiles, log, wing_lays
                 ed.set(p, t)
             for n in notes:
                 log('quests: ' + n)
+            if hall_on and qlay.get('corridor_rows'):
+                bad = Q.audit(ed, qlay, grounds)
+                if bad:
+                    raise Q.QuestError('the quest hall is not clean: ' + '; '.join(bad[:5]))
             if qlay['prev'] and hall_on:
                 w = plan_prev_cleanup(ed, qlay, map_path, qcfg['previous'], log, moved)
                 for p, t in w.items():
@@ -1360,6 +1364,7 @@ def run(data_dir, dry=False, only=None, room_on=True, plans_dir=PLANS_DIR, confi
         rows = None
         if room_on and cfg.get('hall'):
             rows = hall_order.read_csv(hall_csv or hall_order.CSV_PATH)
+            rows = hall_order.hunting_rows(rows) if rows else rows  # the CSV is on the pool scale: the hall uses hunting levels
         if hall_on is None:
             hall_on = bool(cfg.get('hall', {}).get('enabled'))
         base_at = {(r['x'], r['y'], r['z']) for r in rows if r['x'] is not None} if rows else None

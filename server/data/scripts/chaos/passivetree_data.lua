@@ -646,9 +646,9 @@ ChaosPassiveTreeData = { root = 1, nodes = {
 [666]={n={638},c={bonelord=true,lich=true,necromancer=true},m={{incrementDeath=6,magicSkill=1},{absorbPhysical=3,vitality=3},{absorbDeath=2,spirit=5}}},
 [667]={n={648},c={ironsage=true,monk=true,shadowfist=true},m={{incrementPhysical=6,strength=2},{criticalHitAmount=4,criticalHitChance=2},{incrementHealth=6,spirit=3},{absorbPhysical=2,vitality=4}}},
 [668]={n={658},c={inquisitor=true,sentinel=true,templar=true},m={{incrementHoly=6,strength=2},{absorbAllElements=1,absorbPhysical=2,shieldingSkill=2},{incrementHealth=6,vitality=3}}},
-[669]={n={358,670},s={flaskChargeGain=10}},
-[670]={n={669,671},s={flaskMaxCharges=1}},
-[671]={n={670,672},s={flaskChargeGain=10}},
-[672]={n={671},s={flaskChargeGain=25,flaskMaxCharges=2}},
+[669]={n={358,670},s={spirit=1}},
+[670]={n={669,671},s={vitality=1}},
+[671]={n={670,672},s={spirit=1}},
+[672]={n={671},s={spirit=2,vitality=2}},
 } }
 return ChaosPassiveTreeData

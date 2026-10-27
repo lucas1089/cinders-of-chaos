@@ -836,6 +836,53 @@ function openSalvage()
   send('open')
 end
 
+-- the game's item right-click menu: Lock item / Unlock item (lockmenu.lua; server salvage.lua action lockAt)
+local ATTR = { RARITY = 1, LOCKED = 3, UNIQUE = 4 } -- ChaosItemAttr (game_itemrarity)
+local function itemFlag(thing, key)
+  local ok, v = pcall(function() return thing:getCustomAttribute(key) end)
+  return ok and (tonumber(v) or 0) or 0
+end
+
+local function menuInfo(lookThing, useThing)
+  local thing = useThing or lookThing
+  if not thing or not thing.isItem or not thing:isItem() then return nil end
+  local A = rawget(_G, 'ChaosItemAttr') or ATTR
+  local pos = thing:getPosition()
+  local okName, name = pcall(function() return thing:getName() end)
+  return { thing = thing, pos = pos and { x = pos.x, y = pos.y, z = pos.z } or nil,
+    stackable = thing.isStackable and thing:isStackable() or false,
+    container = thing.isContainer and thing:isContainer() or false,
+    rarity = itemFlag(thing, A.RARITY), unique = itemFlag(thing, A.UNIQUE) > 0,
+    locked = itemFlag(thing, A.LOCKED) > 0, name = okName and name or nil }
+end
+
+local function hookMenu()
+  local gi = modules.game_interface
+  if not gi or not gi.addMenuHook then return end
+  local K = CraftingLockMenu
+  local function entry(id, label, wantLocked)
+    gi.addMenuHook(id, label,
+      function(_, lookThing, useThing)
+        local ok, err = pcall(function()
+          local i = menuInfo(lookThing, useThing)
+          local req = i and K.request(i, i.thing:getId(), not wantLocked)
+          if req then send('lockAt', req) end
+        end)
+        if not ok then g_logger.warning('[crafting] lock menu: ' .. tostring(err)) end
+      end,
+      function(_, lookThing, useThing)
+        local ok, res = pcall(function() return K.show(menuInfo(lookThing, useThing), wantLocked) end)
+        return ok and res or false
+      end)
+  end
+  entry('chaosItemLock', tr('Lock item'), false)
+  entry('chaosItemUnlock', tr('Unlock item'), true)
+end
+
+local function onGameStart()
+  hookMenu()
+end
+
 local function onGameEnd()
   hide()
   state = nil
@@ -879,11 +926,12 @@ function init()
   end })
   showMode()
   ProtocolGame.registerExtendedOpcode(OPCODE, onExtendedOpcode)
-  connect(g_game, { onGameEnd = onGameEnd })
+  connect(g_game, { onGameStart = onGameStart, onGameEnd = onGameEnd })
+  if g_game.isOnline() then onGameStart() end
 end
 
 function terminate()
-  disconnect(g_game, { onGameEnd = onGameEnd })
+  disconnect(g_game, { onGameStart = onGameStart, onGameEnd = onGameEnd })
   ProtocolGame.unregisterExtendedOpcode(OPCODE)
   if window then
     window:destroy()

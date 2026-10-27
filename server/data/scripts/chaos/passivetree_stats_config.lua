@@ -42,7 +42,7 @@ ChaosPassiveStatsConfig = {
 
 	-- Stats that no class is judged on: utility and crafting. They are never tagged primary or secondary, and never
 	-- counted against a route.
-	neutral = {"@crafting", "experience", "loot", "rarityLoot", "wisdom", "speed", "flaskMaxCharges", "flaskChargeGain"},
+	neutral = {"@crafting", "experience", "loot", "rarityLoot", "wisdom", "speed"},
 
 	stats = {
 		strength = {"Strength", "Physical damage x (1 + value / 230). Value: 0.8 per point up to 60 points (+21%), then 0.2 per point up to 120 points (+26%). Past the cap the gain shrinks but never stops (soft cap)."},
@@ -55,8 +55,6 @@ ChaosPassiveStatsConfig = {
 		experience = {"Experience", "Experience from monsters, in the percent shown."},
 		loot = {"Item find", "Item find +0.2 per point (shown as the percent): scales the chance of better item rarities, +300 percent at most with everything else."},
 		rarityLoot = {"Item rarity", "Item find +1 per point (shown as the percent): scales the chance of better item rarities, +300 percent at most with everything else."},
-		flaskMaxCharges = {"Flask charges", "+1 maximum charge on the Everfull health flask and the Everfull mana flask per point, at most +5 (potions_config.lua flask.tree)."},
-		flaskChargeGain = {"Flask refill", "+percent of the charges every kill refills on both Everfull flasks, at most +100 percent (a kill still gives at most 3 charges)."},
 		swordSkill = {"Sword skill", "+1 sword skill level per point: sword hit damage and accuracy."},
 		axeSkill = {"Axe skill", "+1 axe skill level per point: axe hit damage and accuracy."},
 		clubSkill = {"Club skill", "+1 club skill level per point: club hit damage and accuracy."},
