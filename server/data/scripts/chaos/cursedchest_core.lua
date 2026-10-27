@@ -429,8 +429,9 @@ function K.claimDone(ev, nowMs)
 	return true
 end
 
--- The looks of the chest. cfg.chest.itemIds are the three own looks, cfg.chest.itemId the fallback (the Sealed Coffer's
--- chest). exists(id) -> true when the server has that item type (ItemType(id):getId() ~= 0).
+-- The looks of the chest. cfg.chest.itemIds are the looks a new chest may wear (the one-tile look since pair 53),
+-- cfg.chest.legacyItemIds the older looks that still count as a cursed chest when one is already on the map,
+-- cfg.chest.itemId the fallback (the Sealed Coffer's chest). exists(id) -> true when the server has that item type (ItemType(id):getId() ~= 0).
 -- chestIds: the looks a new chest may wear; the installed ones, else the fallback alone.
 function K.chestIds(cfg, exists)
 	local out = {}
@@ -451,13 +452,15 @@ function K.pickChestId(cfg, exists, rand)
 	return ids[rand(1, #ids)]
 end
 
--- every id that is a cursed chest, whatever look it wears (the looks and the fallback)
+-- every id that is a cursed chest, whatever look it wears (the looks, the older looks and the fallback)
 function K.allChestIds(cfg)
 	local out, seen = {}, {}
-	for _, id in ipairs(cfg.chest.itemIds or {}) do
-		if not seen[id] then
-			seen[id] = true
-			out[#out + 1] = id
+	for _, list in ipairs({cfg.chest.itemIds or {}, cfg.chest.legacyItemIds or {}}) do
+		for _, id in ipairs(list) do
+			if not seen[id] then
+				seen[id] = true
+				out[#out + 1] = id
+			end
 		end
 	end
 	if cfg.chest.itemId and not seen[cfg.chest.itemId] then

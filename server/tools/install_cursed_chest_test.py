@@ -2,8 +2,9 @@
 """python3 -I server/tools/install_cursed_chest_test.py: install_cursed_chest.py on a synthetic items.otb / items.xml with
 the stock chest node (server 12664, client 4073, container group): the three looks copy its group, flags and attributes
 with server ids 32281-32283 and client ids 38642-38644, agree with cursedchest_config.lua (ids) and the client things
-file (art_import/cursed_chest.csv), are verified and left alone on a second run; a taken id is refused; the items.xml
-block is added once and takes the stock entry's container size. No base server needed."""
+files (art_import/cursed_chest.csv, cursed_chest_k3.csv), are verified and left alone on a second run; the first look is a
+still since pair 53 (no animation flag) and a node an earlier run wrote with the flag is rewritten without it; a taken id
+is refused; the items.xml block is added once and takes the stock entry's container size. No base server needed."""
 import csv, os, re, shutil, struct, sys, tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -35,14 +36,19 @@ def otb(nodes):
 
 # the config and the client things file agree with the installer
 cfg = open(os.path.join(os.path.dirname(HERE), 'data', 'scripts', 'chaos', 'cursedchest_config.lua'), encoding='utf-8').read()
-m = re.search(r'itemIds\s*=\s*\{([^}]*)\}', cfg)
-check(m is not None and [int(x) for x in re.findall(r'\d+', m.group(1))] == [s for s, _c, _a in C.LOOKS],
-      'cursedchest_config.lua itemIds are the installer server ids')
+m = re.search(r'\bitemIds\s*=\s*\{([^}]*)\}', cfg)
+m2 = re.search(r'legacyItemIds\s*=\s*\{([^}]*)\}', cfg)
+check(m is not None and m2 is not None and [int(x) for x in re.findall(r'\d+', m.group(1) + ',' + m2.group(1))]
+      == [s for s, _c, _a in C.LOOKS], 'cursedchest_config.lua itemIds (the look) and legacyItemIds (the older looks) are the installer server ids')
+check([int(x) for x in re.findall(r'\d+', m.group(1))] == [32281], 'cursedchest_config.lua: one look, the one-tile one (32281)')
 check(re.search(r'itemId\s*=\s*%d\b' % C.STOCK_SID, cfg) is not None, 'the fallback itemId is the stock chest')
 things = os.path.join(os.path.dirname(os.path.dirname(HERE)), 'client', 'tools', 'sprites', 'art_import', 'cursed_chest.csv')
 rows = list(csv.DictReader(open(things, newline='')))
 check([int(r['server_id']) for r in rows] == [s for s, _c, _a in C.LOOKS], 'client things file: server ids')
-check([a for _s, _c, a in C.LOOKS] == [True, False, True], 'A and C are animated, B is a still')
+k3 = list(csv.DictReader(open(os.path.join(os.path.dirname(things), 'cursed_chest_k3.csv'), newline='')))
+check(len(k3) == 1 and (k3[0]['w'], k3[0]['h'], k3[0]['phases'], k3[0]['mode'], int(k3[0]['server_id'])) == ('1', '1', '1', 'redraw', 32281)
+      and k3[0]['extra'] == 'item=38642', 'client things file of the one-tile look: 1 x 1, one phase, redraws 38642 / server 32281')
+check([a for _s, _c, a in C.LOOKS] == [False, False, True], 'the first look (one tile, pair 53) and B are stills, C is animated')
 check(all(C.RANGE[0] <= s <= C.RANGE[1] for s, _c, _a in C.LOOKS), 'ids inside the reserved block')
 
 d = tempfile.mkdtemp()
@@ -74,6 +80,16 @@ try:
     check(C.main([d]) == 0, 'second run')
     check(open(os.path.join(d, 'items', 'items.otb'), 'rb').read() == data, 'second run: items.otb unchanged')
     check(open(os.path.join(d, 'items', 'items.xml')).read() == xml, 'second run: items.xml unchanged')
+    # a server that ran the install of pair 43 has the first look with FLAG_ANIMATION: the next run drops it
+    old = otb(base + [item_node(32281, 38642, flags=9 | (1 << 24), group=2, extra=((0x2A, b'\x03\x00\x1d\x00'),))])
+    open(os.path.join(d, 'items', 'items.otb'), 'wb').write(old)
+    check(C.main([d]) == 0, 'migration run')
+    kids2, _ = scan(open(os.path.join(d, 'items', 'items.otb'), 'rb').read())
+    by2 = {k[2]: k for k in kids2}
+    check(by2[32281][5] == 9 and by2[32283][5] == 9 | (1 << 24), 'the first look lost the animation flag, the third keeps it')
+    check([k[2] for k in kids2].count(32281) == 1, 'the first look was rewritten in place, not added twice')
+    migrated = open(os.path.join(d, 'items', 'items.otb'), 'rb').read()
+    check(C.main([d]) == 0 and open(os.path.join(d, 'items', 'items.otb'), 'rb').read() == migrated, 'idempotent after the migration')
     # a taken id
     open(os.path.join(d, 'items', 'items.otb'), 'wb').write(otb(base + [item_node(32282, 5000)]))
     try:

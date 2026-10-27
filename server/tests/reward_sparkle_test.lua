@@ -84,15 +84,17 @@ check(cfg.intervalMs >= 1000, "one shared timer, not faster than 1 s")
 check(type(cfg.effect) == "string" and cfg.effect:match("^CONST_ME_") ~= nil, "effect is a CONST_ME name")
 
 -- ---------------------------------------------------------------- the reward chest ids
--- 32310 "reward chest" (the chest's own look, pair 45; a copy of 21584: 2x2, container 32, not moveable / pickupable),
--- 21584 the stock reward chest it falls back to while 32310 is not installed
+-- 32311 "reward chest" (the one-tile look: client 38758, redrawn in pair 53; a copy of 21584: container 32, not moveable /
+-- pickupable); 32310 is its 2 x 2 look of pair 45, only a legacy id now (the map step moves its chests to 32311)
+-- 21584 the stock reward chest it falls back to while 32311 is not installed
 -- 12664 "treasure chest" (2x2, blue and silver, container 20, not moveable): the rift's sealed coffer (needs a container)
-local REWARD, STOCK, COFFER = 32310, 21584, 12664
+local REWARD, STOCK, COFFER = 32311, 21584, 12664
 local rift = dofile("data/scripts/chaos/rift_config.lua")
 eq(rift.chest.itemId, REWARD, "rift chest: the reward chest")
 eq(rift.chest.fallbackId, STOCK, "rift chest: falls back to the stock reward chest")
-eq(rift.chest.smallItemId, 32311, "rift chest: the one-tile look (the base map's quest chests; only the map patch reads it)")
-check(rift.chest.smallItemId ~= rift.chest.itemId and rift.chest.smallItemId ~= rift.chest.fallbackId, "the small look is a look of its own")
+eq(table.concat(rift.chest.legacyItemIds, ","), "32310", "rift chest: the 2 x 2 look is a legacy id (only the map patch reads it)")
+check(rift.chest.legacyItemIds[1] ~= rift.chest.itemId and rift.chest.legacyItemIds[1] ~= rift.chest.fallbackId, "the legacy look is not the reward chest")
+eq(rift.chest.smallItemId, nil, "no second look any more: every reward chest is the one-tile look")
 eq(rift.coffer.itemId, COFFER, "rift coffer: the big treasure chest")
 local descent = dofile("data/scripts/chaos/descent_config.lua")
 eq(descent.objects.chest, REWARD, "Descent treasure room chest: the reward chest")

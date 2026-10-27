@@ -46,6 +46,27 @@ one, so the flip makes it match the shipped one: ring and clasp side, lid openin
 art_import/reward_chest/reward_chest_small.png; outputs art_import/reward_chest_small.png (atlas, one 32 px cell),
 reward_chest_small.csv (things file: w = h = 1, one phase, flags copy:19250, mode new) and reward_chest_small.sums.
 `--check` (CI) rebuilds from the committed source and compares. The style check runs on the 32 px cell like the big one.
+
+The front look (client item 38758 again, pair 53). Owner pick 2026-10-27: a new one-tile, front-facing reward chest from a
+purchased prop sheet (docs/CREDITS.md), 35 x 38 px, the lid open with coins. It is drawn into the pair IN PLACE over item
+38758 (the same client and server id 32311: placed chests keep working; the PixelLab look above is what pair 47 held).
+Every reward chest wears this one-tile look now (server/README.md "Reward chests"); the 2 x 2 item 38657 / 32310 stays in the
+pair only as the old look of chests an earlier install placed.
+
+    python3 -I gen_reward_chest_art.py build-front [--src FILE] [--check]
+
+The pack's pixels never enter git (the licence: no sharing of the raw files, even modified). `build-front --src FILE` reads the
+one prop file (any canvas size: the art is cut out by its alpha bounding box), fits it to 32 x 32 and writes only
+art_import/reward_chest_front.csv (things file, mode redraw), .sums (sha256 of the cut-out source and of the fitted atlas) and
+the recipe line in the csv; the atlas art_import/reward_chest_front.png is git-ignored, the pair holds the pixels.
+Fit (`fit_front`): no resampling and no new colour. The cut-out is 35 x 38 px, so 3 columns and 6 rows go: the lines that
+differ least from a neighbour are taken out one by one (rows first, then columns; the first and last line, the outline, stay),
+which removes repeated bands of the lid and the front instead of cropping the lid or scaling every line. Compared on this
+chest with a lid crop, a trim of the outline margin, a nearest and a box downscale: the squeeze keeps all 40 colours, every edge
+pixel stays dark outline (121 of 121; a lid crop loses 25 of them and the scales change 3 to 5 colours) and only 94 of the 1,285 opaque source
+pixels read differently when the removed lines are put back. The result is bottom aligned on the 32 px canvas.
+`--check` (CI, no pack on disk) compares the csv and the sums with this tool and, when the atlas is on disk, its pixels with
+the sums and the style rules; with `--src` it also rebuilds from the pack file and compares everything.
 """
 import argparse, csv, hashlib, io, os, shutil, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -71,6 +92,11 @@ SMALL_SRC = os.path.join(SRC_DIR, 'reward_chest_small.png')
 SMALL_ATLAS = os.path.join(ART, 'reward_chest_small.png')
 SMALL_THINGS = os.path.join(ART, 'reward_chest_small.csv')
 SMALL_SUMS = os.path.join(ART, 'reward_chest_small.sums')
+# the front look (pair 53): the one-tile chest redrawn in place over client item 38758 / server 32311
+FRONT_ATLAS = os.path.join(ART, 'reward_chest_front.png')          # pack pixels: git-ignored, the pair holds them
+FRONT_THINGS = os.path.join(ART, 'reward_chest_front.csv')
+FRONT_SUMS = os.path.join(ART, 'reward_chest_front.sums')
+FRONT_KEY = 'reward_chest_front'
 MIRROR_SMALL = True   # the raw 32 px pick leans the other way from the shipped big look; see the module docstring
 MIRROR = True   # owner, 2026-10-26: the picked chest mirrored left-right (the committed source is PixelLab's, unflipped)
 
@@ -160,6 +186,126 @@ def build_small(src_path):
     return a, out.getvalue(), sums, errs, bad, warn, ncol
 
 
+def _line_cost(a, axis, k):
+    """pixels of line k (a row for axis 0, a column for axis 1) that differ from its better neighbour"""
+    get = (lambda i: a[i]) if axis == 0 else (lambda i: a[:, i])
+    return min(int((get(k) != get(k + d)).any(-1).sum()) for d in (-1, 1))
+
+
+def squeeze(a, rows, cols):
+    """take `rows` rows and `cols` columns out of a picture, one at a time, always the line that differs least from a
+    neighbour (ties: the lowest index); the first and last line of each axis stay. No pixel is resampled or recoloured.
+    -> (picture, kept row indices, kept column indices) of the input"""
+    kept = [list(range(a.shape[0])), list(range(a.shape[1]))]
+    for axis, n in ((0, rows), (1, cols)):
+        for _ in range(n):
+            size = a.shape[axis]
+            if size < 3:
+                raise ValueError('nothing left to take out')
+            best = min(range(1, size - 1), key=lambda k: (_line_cost(a, axis, k), k))
+            a = np.delete(a, best, axis)
+            del kept[axis][best]
+    return a, kept[0], kept[1]
+
+
+def fit_front(src):
+    """(32 x 32 canvas, removed row indices, removed column indices, cut-out) of the pack's chest: the art cut out by its
+    alpha bounding box, squeezed to at most 32 x 32 (module docstring), bottom aligned and centred on the canvas"""
+    ys, xs = np.nonzero(src[..., 3])
+    if not len(ys):
+        raise ValueError('empty picture')
+    cut = np.ascontiguousarray(src[ys.min():ys.max() + 1, xs.min():xs.max() + 1])
+    h, w = cut.shape[:2]
+    if h > 3 * SMALL_CELL or w > 3 * SMALL_CELL:
+        raise ValueError('%d x %d is too big to fit one tile' % (w, h))
+    fitted, kr, kc = squeeze(cut, max(0, h - SMALL_CELL), max(0, w - SMALL_CELL))
+    canvas = np.zeros((SMALL_CELL, SMALL_CELL, 4), np.uint8)
+    fh, fw = fitted.shape[:2]
+    canvas[SMALL_CELL - fh:, (SMALL_CELL - fw) // 2:(SMALL_CELL - fw) // 2 + fw] = fitted
+    return (canvas, [i for i in range(h) if i not in kr], [i for i in range(w) if i not in kc], cut)
+
+
+def front_texts(cut, canvas, rows, cols):
+    """(things text, sums text) of the front look: no pixels, only the recipe, the ids and the digests"""
+    out = io.StringIO()
+    w = csv.writer(out, lineterminator='\n')
+    w.writerow(HEADER)
+    extra = 'item=%d|cut=%dx%d|squeeze_rows=%s|squeeze_cols=%s' % (
+        SMALL_CLIENT_ID, cut.shape[1], cut.shape[0], '+'.join(map(str, rows)), '+'.join(map(str, cols)))
+    w.writerow([FRONT_KEY, 'item', 'chest', 'reward chest', FRONT_KEY, 0, 0, 1, 1, 1, 1, 'copy:%d' % STOCK_CLIENT_ID,
+                'redraw', SMALL_SERVER_ID, extra])
+    sums = '%s  source cut-out (not in git)\n%s  reward_chest_front.png (not in git)\n' % (digest(cut), digest(canvas))
+    return out.getvalue(), sums
+
+
+def main_front(args):
+    """build-front: see the module docstring"""
+    problems, ok = [], True
+    cut = canvas = None
+    if args.src:
+        src = read_rgba(args.src)
+        try:
+            canvas, rows, cols, cut = fit_front(src)
+        except ValueError as e:
+            sys.exit('%s: %s' % (args.src, e))
+        things, sums = front_texts(cut, canvas, rows, cols)
+    elif os.path.exists(FRONT_ATLAS):
+        canvas = read_rgba(FRONT_ATLAS)
+    if canvas is not None:
+        errs = problems_of(canvas, SMALL_CELL)
+        bad, warn, ncol = style_report(canvas) if not errs else ([], [], 0)
+        print('reward_chest_front: %s (%d colours)' % ('style PASS (own palette)' if not errs + bad else 'FAIL', ncol))
+        for r in errs + bad:
+            print('  ' + r)
+        for w_ in warn:
+            print('  warn ' + w_)
+        if errs or bad:
+            return 1
+    if not args.check:
+        if not args.src:
+            sys.exit('build-front needs --src FILE (the prop file); --check works without it')
+        os.makedirs(ART, exist_ok=True)
+        with open(FRONT_ATLAS, 'wb') as f:
+            f.write(png_bytes(canvas))
+        with open(FRONT_THINGS, 'w', encoding='utf-8', newline='') as f:
+            f.write(things)
+        with open(FRONT_SUMS, 'w', encoding='utf-8', newline='') as f:
+            f.write(sums)
+        print('atlas', FRONT_ATLAS, '(git-ignored); client id %d redrawn' % SMALL_CLIENT_ID)
+        return 0
+    # --check: the committed files against this tool
+    for path in (FRONT_THINGS, FRONT_SUMS):
+        if not os.path.exists(path):
+            print('missing:', os.path.relpath(path, HERE)); ok = False
+    if ok:
+        rows_ = list(csv.DictReader(open(FRONT_THINGS, encoding='utf-8')))
+        sums_ = open(FRONT_SUMS, encoding='utf-8').read().split('\n')
+        r = rows_[0] if len(rows_) == 1 else {}
+        ex = dict(kv.split('=', 1) for kv in (r.get('extra') or '').split('|') if '=' in kv)
+        want = [FRONT_KEY, 'item', 'chest', 'reward chest', FRONT_KEY, '0', '0', '1', '1', '1', '1', 'copy:%d' % STOCK_CLIENT_ID,
+                'redraw', str(SMALL_SERVER_ID)]
+        got = [r.get(k) for k in HEADER[:-1]]
+        if got != want or ex.get('item') != str(SMALL_CLIENT_ID):
+            print('stale:', os.path.relpath(FRONT_THINGS, HERE)); ok = False
+        n_rows, n_cols = (len(ex.get(k, '').split('+')) if ex.get(k) else 0 for k in ('squeeze_rows', 'squeeze_cols'))
+        try:
+            cw, ch = map(int, ex.get('cut', '').split('x'))
+        except ValueError:
+            cw = ch = 0
+        if (cw - n_cols, ch - n_rows) != (SMALL_CELL, SMALL_CELL) and not (cw <= SMALL_CELL and ch <= SMALL_CELL):
+            print('recipe does not fit the cut-out to one tile:', os.path.relpath(FRONT_THINGS, HERE)); ok = False
+        hexes = [l.split('  ')[0] for l in sums_ if l]
+        if len(hexes) != 2 or any(len(h) != 64 for h in hexes):
+            print('stale:', os.path.relpath(FRONT_SUMS, HERE)); ok = False
+        elif canvas is not None and hexes[1] != digest(canvas):
+            print('the atlas on disk does not match', os.path.relpath(FRONT_SUMS, HERE)); ok = False
+        if args.src:
+            if (things, sums) != (open(FRONT_THINGS, encoding='utf-8').read(), open(FRONT_SUMS, encoding='utf-8').read()):
+                print('stale (rebuilt from the pack file differs):', os.path.relpath(FRONT_THINGS, HERE)); ok = False
+    print('front reward chest recipe up to date' if ok else 'run: python3 -I gen_reward_chest_art.py build-front --src FILE')
+    return 0 if ok else 1
+
+
 def main_small(args):
     src = args.src or SMALL_SRC
     if args.src and args.check:
@@ -238,7 +384,7 @@ def preview(outdir, dat, spr, first=FIRST_CLIENT_ID, name='reward_chest_preview.
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
-    ap.add_argument('cmd', choices=['build', 'build-small'])
+    ap.add_argument('cmd', choices=['build', 'build-small', 'build-front'])
     ap.add_argument('--src', default=None, help='build: the PixelLab folder (pixellab-pip-generations/reward-chest); the frame '
                     'is copied to art_import/reward_chest/. build-small: the PixelLab PNG (reward-chest-32/pro_style32_13.png)')
     ap.add_argument('--check', action='store_true', help='compare with the committed files, write nothing')
@@ -248,6 +394,8 @@ def main():
     a = ap.parse_args()
     if a.cmd == 'build-small':   # --src is the PixelLab PNG itself here
         return main_small(a)
+    if a.cmd == 'build-front':   # --src is the prop file of the pack (never committed)
+        return main_front(a)
     if a.src and a.check:
         sys.exit('--check reads the committed source only; leave --src out')
     src = SRC_DIR

@@ -9,9 +9,11 @@ Pair 45 appends a look of its own (client id 38657, client/MANIFEST.md "Reward C
 item that wears it: server id 32310, "reward chest" (2 x 2 tiles).
 
 A second look, one tile big, is installed the same way: pair 47 appends client id 38758 (client/MANIFEST.md "Reward Chest
-look, one tile"), server id 32311, also named "reward chest" with the same attributes. The base map's quest chests and boxes
-sit in tight rooms where a 2 x 2 chest overlaps walls and neighbours; tools/patch_reward_chests.py gives them this one and
-the planned areas, the rift and the Descent keep the big one.
+look, one tile"), server id 32311, also named "reward chest" with the same attributes. Pair 53 redraws client 38758 in place
+as a new front-facing chest (client/MANIFEST.md "Reward Chest, front look"): the id stays, so a server that has 32311 needs
+nothing new here. Every reward chest is 32311 now (rift, Descent, planned areas, the base map's quest chests and boxes:
+rift_config.lua `chest.itemId`); 32310 stays installed as a legacy item type, and tools/patch_reward_chests.py moves the
+chests of it that an earlier run put on the map to 32311.
 
 1. data/items/items.otb: a copy of the node of server 21584 (group container, flags, every attribute) with server id 32310
    and client id 38657, and another one with server id 32311 and client id 38758 (both: LOOKS). Appended at the end of the root; a node already there with the same bytes is left alone, one with
@@ -39,8 +41,8 @@ from install_gems import scan, escape, attr, xml_escape, START, END, A_SERVERID,
 
 STOCK_SID = 21584                # the stock reward chest: container, blocks, not moveable, 2x2
 RANGE = (32310, 32319)           # reserved for this item
-LOOK = (32310, 38657)            # (server id, client id): pair 45, art_import/reward_chest.csv (2 x 2)
-LOOK_SMALL = (32311, 38758)      # pair 47, art_import/reward_chest_small.csv (1 x 1)
+LOOK = (32310, 38657)            # (server id, client id): pair 45, art_import/reward_chest.csv (2 x 2); a legacy look since pair 53
+LOOK_SMALL = (32311, 38758)      # pair 47, art_import/reward_chest_small.csv (1 x 1), redrawn in place by pair 53 (reward_chest_front.csv)
 LOOKS = (LOOK, LOOK_SMALL)
 NAME = 'reward chest'
 DEFAULT_ATTRS = (('description', 'This chest contains your rewards earned in battles.'), ('containersize', '32'),

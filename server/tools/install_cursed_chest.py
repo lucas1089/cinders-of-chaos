@@ -4,8 +4,10 @@
 usage: python3 -I install_cursed_chest.py DATA_DIR [--dry-run]
 
 The Cursed Chest used the Sealed Coffer's chest (server 12664, client 4073). Pair 43 appends three looks of its own
-(client ids 38642-38644, client/MANIFEST.md "Cursed Chest looks"); each chest that spawns shows one of them at random
-(data/scripts/chaos/cursedchest_config.lua `chest.itemIds`).
+(client ids 38642-38644, client/MANIFEST.md "Cursed Chest looks"). Pair 53 redraws the first one in place as a one-tile
+look (1 x 1, one phase, client/MANIFEST.md "Cursed Chest, one tile"); every chest that spawns wears it
+(data/scripts/chaos/cursedchest_config.lua `chest.itemIds`). The other two stay installed, so a chest placed before still has an
+item type, and are listed as `legacyItemIds` there.
 
 1. data/items/items.otb: per look a copy of the node of server 12664 (group container, flags, every attribute) with
    server id 32281 / 32282 / 32283 and client id 38642 / 38643 / 38644. Appended at the end of the root; a node already
@@ -33,9 +35,11 @@ from install_gems import scan, escape, attr, xml_escape, START, END, A_SERVERID,
 
 STOCK_SID = 12664                # the Sealed Coffer's treasure chest: container, blocks, not moveable, 2x2
 RANGE = (32281, 32299)           # reserved for this item set
-# (server id, client id, animated): pair 43, art_import/cursed_chest.csv. A (5 phases) and C (8 phases) idle-animate; B is a
-# still. An animated node carries FLAG_ANIMATION, so the server sends the phase byte the client reads for the item.
-LOOKS = ((32281, 38642, True), (32282, 38643, False), (32283, 38644, True))
+# (server id, client id, animated): pair 43, art_import/cursed_chest.csv. C (8 phases) idle-animates; B is a still; A was a
+# 5 phase loop until pair 53 redrew client 38642 as a one-tile still (art_import/cursed_chest_k3.csv), so it is not animated
+# any more. An animated node carries FLAG_ANIMATION, so the server sends the phase byte the client reads for the item; a still
+# must not carry it (the client would read a phase byte the item does not have).
+LOOKS = ((32281, 38642, False), (32282, 38643, False), (32283, 38644, True))
 FLAG_ANIMATION = 1 << 24
 NAME = 'cursed chest'
 DEFAULT_SIZE = 20                # containerSize of the stock entry (the base items.xml: 12664-12665 "treasure chest")
@@ -46,8 +50,7 @@ XML_END = '\t<!-- end of the Chaos Cursed Chest looks -->\n'
 def node(stock, sid, cid, animated=False):
     """a copy of the stock node (group, flags, every attribute) with the new server and client id"""
     _s, _e, _sid, _cid, group, flags, attrs = stock
-    if animated:
-        flags |= FLAG_ANIMATION
+    flags = flags | FLAG_ANIMATION if animated else flags & ~FLAG_ANIMATION
     body = struct.pack('<I', flags)
     for k, v in attrs:
         if k == A_SERVERID:
@@ -93,7 +96,7 @@ def verify_otb(data, wanted):
     for sid, (want, cid, anim) in wanted.items():
         k = by_sid.get(sid)
         assert k and k[3] == cid and data[k[0]:k[1]] == want, 'cursed chest node %d' % sid
-        assert k[4] == by_sid[STOCK_SID][4] and k[5] == by_sid[STOCK_SID][5] | (FLAG_ANIMATION if anim else 0), \
+        assert k[4] == by_sid[STOCK_SID][4] and k[5] == (by_sid[STOCK_SID][5] | FLAG_ANIMATION if anim else by_sid[STOCK_SID][5] & ~FLAG_ANIMATION), \
             'cursed chest %d keeps the stock group and flags (animated: %s)' % (sid, anim)
     sids = [k[2] for k in kids]
     assert len(sids) == len(set(sids)), 'duplicate server ids in items.otb'

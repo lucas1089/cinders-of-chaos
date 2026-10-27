@@ -13,14 +13,15 @@ return {
 	-- many modifiers an Orb of Gilding gives a key without any, {count, weight} (data/lib/chaos_crafting.lua)
 	key = {itemId = 10155, actionId = 47401, nameFormat = "Rift Key (Tier %d)", maxMods = 3,
 		alchemyCount = {{2, 60}, {3, 40}}},
-	-- the reward chest that appears where the rift boss died: 32310 "reward chest", the chest's own look (pair 45, client
-	-- 38657; tools/install_reward_chest.py: a copy of the stock reward chest 21584, a container, not moveable). It also is
-	-- the quest chest of the planned areas (tools/areaplan_build.lua) and the Descent's (descent_config.lua objects.chest);
-	-- tools/patch_reward_chests.py swaps the placed ones on the map. fallbackId is the stock chest (gold on a stone plinth;
-	-- the plain chest 1740 before 2026-10-20) used while 32310 is not installed. smallItemId is the same look in one tile
-	-- (32311, client 38758, pair 47): the base map's quest chests and boxes wear it (read by tools/patch_reward_chests.py
-	-- only; no script uses it). server/README.md "Reward chests"
-	chest = {itemId = 32310, fallbackId = 21584, smallItemId = 32311, actionId = 47402},
+	-- the reward chest that appears where the rift boss died: 32311 "reward chest", the one-tile look (client 38758, redrawn in
+	-- pair 53 as a front-facing chest with coins; tools/install_reward_chest.py: a copy of the stock reward chest 21584, a
+	-- container, not moveable). It also is the quest chest of the planned areas (tools/areaplan_build.lua), the Descent's
+	-- (descent_config.lua objects.chest) and of the base map's quest chests and boxes; tools/patch_reward_chests.py swaps the
+	-- placed ones on the map. fallbackId is the stock chest (gold on a stone plinth; the plain chest 1740 before 2026-10-20)
+	-- used while 32311 is not installed. legacyItemIds: the 2 x 2 look of pair 45 (32310, client 38657) that earlier installs
+	-- put on the map; it stays an item type, and the map step moves every chest of it to 32311 (read by
+	-- tools/patch_reward_chests.py only). server/README.md "Reward chests"
+	chest = {itemId = 32311, fallbackId = 21584, legacyItemIds = {32310}, actionId = 47402},
 	maxTier = 15,
 
 	-- ------------------------------------------------------------------ opening

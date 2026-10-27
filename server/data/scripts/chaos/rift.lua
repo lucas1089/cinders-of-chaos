@@ -1182,7 +1182,7 @@ local function success(run, pos)
 	-- the chest (on the boss's tile, or the guardian's spawn)
 	local chestPos = pos or P(run.L.bossSpawn)
 	run.chestPos = chestPos
-	-- the chest's own look while it is installed (32310), else the stock reward chest (cfg.chest.fallbackId)
+	-- the chest's own look while it is installed (32311), else the stock reward chest (cfg.chest.fallbackId)
 	local chestId = cfg.chest.itemId
 	do
 		local ok, tid = pcall(function() return ItemType(chestId):getId() end)

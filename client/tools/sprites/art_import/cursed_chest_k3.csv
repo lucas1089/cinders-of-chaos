@@ -1,0 +1,2 @@
+key,cat,kind,name,atlas,x,y,w,h,patterns,phases,flags,mode,server_id,extra
+cursed_chest_k3,item,chest,cursed chest,cursed_chest_k3,0,0,1,1,1,1,copy:4073,redraw,32281,item=38642

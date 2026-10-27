@@ -2,3 +2,4 @@ name,kind,pack,source,licence
 cursed_chest_a,item,PixelLab,"create image 64x64, our own prompt, then animate-with-text (5 frames); art_import/cursed_chest/cursed_chest_a_f0..4.png","made with our PixelLab subscription; docs/CREDITS.md"
 cursed_chest_b,item,PixelLab,"create image 64x64, our own prompt; art_import/cursed_chest/cursed_chest_b.png","made with our PixelLab subscription; docs/CREDITS.md"
 cursed_chest_c,item,PixelLab,"create image 64x64, our own prompt, then animate-with-text (5 frames, played as a ping-pong); art_import/cursed_chest/cursed_chest_c_f0..4.png","made with our PixelLab subscription; docs/CREDITS.md"
+cursed_chest_k3,item,PixelLab,"create image 32x32 (create-image-pixen, our own prompt, no background; owner pick K3, 2026-10-27); redrawn in place over client item 38642; art_import/cursed_chest/cursed_chest_k3.png","made with our PixelLab subscription; docs/CREDITS.md"

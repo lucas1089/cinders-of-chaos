@@ -49,9 +49,9 @@ return {
 	wallId = 5648, -- stone wall (the rift's), the obsidian wall of the dark tile set when it is installed
 	basinId = 1481, -- coal basin in the hub corners
 	aid = {portal = 47701, exit = 47702, chest = 47703, shrine = 47704, merchant = 47705},
-	-- forcefield, reward chest (32310, the rift's own look; chestFallback 21584, the stock one, while 32310 is not
+	-- forcefield, reward chest (32311, the rift's own one-tile look; chestFallback 21584, the stock one, while 32311 is not
 	-- installed; was the plain chest 1740), blazing altar basin, stand
-	objects = {exit = 1387, chest = 32310, chestFallback = 21584, shrine = 12458, merchant = 10014},
+	objects = {exit = 1387, chest = 32311, chestFallback = 21584, shrine = 12458, merchant = 10014},
 
 	-- ------------------------------------------------------------------ the run
 	rooms = {min = 8, max = 12},

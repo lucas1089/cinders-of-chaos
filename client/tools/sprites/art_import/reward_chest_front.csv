@@ -1,0 +1,2 @@
+key,cat,kind,name,atlas,x,y,w,h,patterns,phases,flags,mode,server_id,extra
+reward_chest_front,item,chest,reward chest,reward_chest_front,0,0,1,1,1,1,copy:19250,redraw,32311,item=38758|cut=35x38|squeeze_rows=3+4+7+8+10+11|squeeze_cols=10+11+22

@@ -15849,7 +15849,7 @@ storages 7100400-7100409, action ids 47401 (key), 47402 (reward chest) and 47403
   rift, legendary, with 3x its base health (+100% per extra player). With a party every pack monster gets more health
   too, so the rift's total monster health is +100% per extra player (see "Party scaling"). Time limit 12-15 minutes by the map's size. The HUD (top left, under the
   character plate) shows tier, theme, time left, kills / left, the guardian, the modifiers and the bonuses.
-- **End.** Guardian killed in time: the rift is sealed, the remaining monsters vanish, a reward chest (32310, the own look, falling back to 21584; action id 47402,
+- **End.** Guardian killed in time: the rift is sealed, the remaining monsters vanish, a reward chest (32311, the own look, falling back to 21584; action id 47402,
   "Reward chests") appears where it died and every finisher may open it once within 60 s; whoever did not gets it delivered at the exit
   (or at the next login when offline). Time up: "the rift collapses", everyone is sent back to where they used the key,
   the key is lost. Death inside: the normal death rules (temple, losses), the player is out of the run. Logout inside: the
@@ -18742,7 +18742,7 @@ sprite pair (gold and readable on dark floors, 2x2, not moveable, not pickupable
 
 | Chest | Item | Was | Where |
 |---|---|---|---|
-| reward chest (own look: a gold chest overflowing with coins and gems; container 32) | 32310 (client 38657, pair 45); falls back to 21584 (the stock gold chest on a stone plinth) while 32310 is not installed | 1740, then 21584 | the rift chest where the guardian died (`rift_config.lua` `chest`), the Ember Descent's treasure room chest (`descent_config.lua` `objects.chest`), the quest chests of every planned area (`tools/areaplan_build.lua` hands the rift chest to the planner), and every quest chest of the base server's map (see "Install") |
+| reward chest (own look: a gold chest overflowing with coins and gems; container 32) | 32311 (client 38758, pair 53; 32310 and client 38657 are the retired 2 x 2 look); falls back to 21584 (the stock gold chest on a stone plinth) while 32311 is not installed | 1740, then 21584 | the rift chest where the guardian died (`rift_config.lua` `chest`), the Ember Descent's treasure room chest (`descent_config.lua` `objects.chest`), the quest chests of every planned area (`tools/areaplan_build.lua` hands the rift chest to the planner), and every quest chest of the base server's map (see "Install") |
 | treasure chest (blue and silver, container 20) | 12664 | 1746 | the rift's Sealed Coffer (`rift_config.lua` `coffer`): it must be a container, its spoils go inside |
 
 **Own look (owner request 2026-10-26: "make a reward chest and give every quest chest this sprite"; pair 45).** The stock
@@ -18766,6 +18766,17 @@ tile") is a second copy of the 21584 node with the same attributes, installed by
 already); the small 32311 is what the base map's quest chests and quest boxes get (`rift_config.lua` `chest.smallItemId`,
 read only by `patch_reward_chests.py`; no script uses it). Ship pair 47 before the `rewardchest` step.
 
+**One look (2026-10-27, pair 53; O280).** Owner request: every reward chest wears the one-tile look. Client **38758** (server
+**32311**) is redrawn in place in pair 53 as a chest of a purchased prop sheet (docs/CREDITS.md), fitted to 32 x 32 by taking 6 rows and 3 columns out of the 35 x 38 cut-out (client/MANIFEST.md "Pair 53"; the pixels are
+not in git). The rift (`chest.itemId`), the Descent (`objects.chest`), the planned areas and every swapped chest of the base map use
+32311; `chest.fallbackId` (21584) stays for a server that has not run the `rewardchest` step. The 2 x 2 **32310** is retired:
+`install_reward_chest.py` still installs both nodes (a map or a character's history may hold 32310), `rift_config.lua`
+`chest.legacyItemIds` lists it, and `patch_reward_chests.py` moves every placed 32310 to 32311 on the next run (planned areas
+too; the `contentareas` step sees a changed plan and updates the placed area). The base's own 21584 chests are swapped to 32311
+(they were 32310). `smallItemId` no longer exists. The area planner leaves the 8 tiles around a chest empty
+(`area_plan_decor.Dresser.clear_around`, kept: floor, walls, path edging), so a chest never sits behind a statue or a barrel.
+Ship pair 53 with the client before the map step.
+
 The old ids could be moved and picked up (1740 and 1746 are pickupable in items.otb); the new ones cannot. Neither id
 is used by another system (the base server's own handler of 21584 is commented out in its actions.xml; the plaza's
 daily chests are 29327). The reward chests of the other systems are not map items: dungeon boss chests
@@ -18780,8 +18791,7 @@ inbox, so they keep their small looks.
   Rules: `reward_sparkle_core.lua`, `tests/reward_sparkle_test.lua` (also checks the ids of the configs).
 - **Install** (`install_all.py` step `rewardchests`, right before `contentareas`, after `rewardchest`): `tools/patch_reward_chests.py
   DATA_DIR [--dry-run] [--map FILE] [--out FILE] [--items-otb FILE]` turns the quest chests on the map into the reward chest
-  of `rift_config.lua` (the planned areas' and the base's 21584 chests: 32310, 2 x 2; the base map's quest chests and boxes:
-  `smallItemId` 32311, one tile). It rewrites only the item id of the node: action id, unique id, the contents (a quest chest
+  of `rift_config.lua` (`chest.itemId`, 32311, one tile, for every kind of chest below). It rewrites only the item id of the node: action id, unique id, the contents (a quest chest
   holds its rewards as child items), the tile and the rest stay, so the base quest scripts work as before (they look at the
   unique / action id, never at the item id; 21584 is a container like the old ones). What counts as a quest chest:
   1. **Planned areas:** a chest 1740 or 21584 with an action id of the quest chest block (47960-47999, or a plan's own
@@ -18806,15 +18816,14 @@ inbox, so they keep their small looks.
      41762 / 41763 / 12503 treasure chests: they trigger levers and doors, they hand out no reward), the plaza's royal
      chests (29327), the runtime chests (rift, coffer, Descent, Cursed Chest), and containers players keep things in
      (houses and depots carry no quest action id), a bare 21584 without an action id.
-  5. **Migration:** a server that ran the first version of this step has its base chests as 32310. The next run moves those
-     (32310 that match a base rule and carry no planned area's action id) to 32311, and swaps the boxes; planned areas keep
-     32310.
-  On the base map of 2026-10 the step finds **301** nodes: 4 starter / Soul War chests (21584 -> 32310, big) and **297** that
-  become 32311 (small): 265 by `system.lua` (140 x 1740, 3 x 1746, 7 x 1747, 6 x 1748, 18 x 1749, 3 x 8587, 5 x 12664, 3 x
+  5. **Migration:** a server that ran an earlier version of this step has chests as 32310 (and boxes as 1738 / 1741). The next
+     run moves every 32310 (`chest.legacyItemIds`) to 32311, planned areas included, and swaps the boxes.
+  On the base map of 2026-10 the step finds **301** nodes, all of which become 32311 (one tile): 4 starter / Soul War chests (21584) and **297**
+  more: 265 by `system.lua` (140 x 1740, 3 x 1746, 7 x 1747, 6 x 1748, 18 x 1749, 3 x 8587, 5 x 12664, 3 x
   18473 chests, plus 51 x 1738 and 29 x 1741 boxes), 11 by `system2.lua` (5 x 1740, 5 x 1738, 1 x 1741), 21 by a quest script
   (14 x 1740, 3 x 1748, 12664, 18472, 18473, 18474): 86 boxes and 211 chests in all. A simulated earlier run (215 as 32310)
-  followed by this one gives byte for byte the same map as one run (211 moved, 86 boxes swapped). The big look is 2 x 2 like
-  21584; the small one is exactly one tile, so nothing on the map shifts.
+  followed by this one gives byte for byte the same map as one run (211 moved, 86 boxes swapped). 32311 is exactly one tile,
+  so nothing on the map shifts (the earlier 2 x 2 chests of 21584 and 32310 are gone).
   Refused when either new id is not in `items/items.otb` (`--items-otb` names another file: `install_all.py --dry-run` reads its
   copy's, where the `rewardchest` step just ran). A second run changes nothing. `<map>.otbm.bak` is written first when
   missing. `tools/patch_reward_chests_test.py` (synthetic map with contents: every rule and every exception, boxes, the
@@ -18865,7 +18874,7 @@ docs/MAP_GUIDE.md "Content plans"). CI validates and compiles them with the exam
   its own because it is not the area: `install_content_areas.py` and `place` lay it only where the map has no tile and
   no area or room goes, so it never replaces a tile; the 66 plans of 2026-10-22 add 359,383 frame tiles and no frame
   touches another plan.
-- **Quest chests:** the reward chest (rift_config.lua `chest.itemId`, 32310; "Reward chests") with the area's action id (block **47960-47999**, plan `chest_action` or one from the
+- **Quest chests:** the reward chest (rift_config.lua `chest.itemId`, 32311; "Reward chests"; nothing else is placed on the 8 tiles around it, `Dresser.clear_around`) with the area's action id (block **47960-47999**, plan `chest_action` or one from the
   block by the area id) and one player storage per chest (block **7101200-7101299**, by the quest key). The compile
   writes `data/scripts/chaos_areaplan/<id>_chests.lua`: a revscript Action that gives the plan's `reward` (item names
   from our item tables, gold, experience) once per character, keyed by the chest's offset from the area's ORIGIN.
@@ -24825,6 +24834,12 @@ Owner request 2026-10-25: a chest that any monster can leave; opening it wakes 5
 
 - **Chance.** One roll per kill for the corpse owner (EventCallback onDropLoot, index 5): normal 0.3%, magic 0.8%, rare 1.5%, legendary 2.2%, boss 3% (`spawn.chance`, at most 6%). The Ember Blessings level rule applies (a monster 10 levels under the player counts in full; at 75% / 60% / 45% of the player's level the chance is x1 / x0.5 / x0.2, below nothing). One chest at a time per player, 360 s cooldown, at most 25 on the server, 150 s before an unopened one crumbles.
 - **No chest from:** summons, PvP places (battleground, arena, siege, PvP zones), any instance (`Chaos.instanceAt` / `inAnyInstance`, rift runs, areas the treasure goblin excludes), protection zones and houses, monsters under 40 max health, no stamina, `spawn.excludeNames` / `excludedAreas`, and monsters of other systems (treasure goblins, rifts, invasions, generated areas, this event's own).
+- **One look (2026-10-27, pair 53; O280).** Owner request: one look. A chest is now always server item **32281** (client 38642),
+  redrawn in place in pair 53 as K3, a 32 x 32 PixelLab chest of ours: 1 x 1, one phase, no animation (client/MANIFEST.md "Pair 53";
+  `chest.itemIds = {32281}`). `chest.legacyItemIds = {32282, 32283}` are never drawn but still count as a cursed chest
+  (`K.allChestIds`, `K.isChestId`), so a chest already on a map works. `install_cursed_chest.py` still installs all three nodes;
+  only 32283 keeps FLAG_ANIMATION, and a node that an older run wrote with the flag on 32281 is rewritten without it. With 32281 not
+  installed the chest is 12664 as before. The text below is the first version.
 - **Looks (pair 43).** Each chest wears one of three own looks at random, server items **32281-32283** (client 38642-38644, art from PixelLab, client/MANIFEST.md "Cursed Chest looks"; `chest.itemIds`): A idles in 5 phases, B is a still, C chews in 8. Installed by `tools/install_cursed_chest.py` (step `cursedchest`, test `tools/install_cursed_chest_test.py`): items.otb copies of node 12664 (container, blocks, not moveable; A and C with FLAG_ANIMATION) and items.xml entries "cursed chest". An id the server does not have (`ItemType(id):getId() == 0`) is left out of the draw; with none installed the chest is 12664 as before. All four ids count as a cursed chest (`K.isChestId`); the use is found by action id and tile. **Item id block 32281-32299 is reserved for this set** (32251-32270 are orbs and potions; 32271-32280 stay free; 32284-32299 free). Ship pair 43 before the install step: older clients draw nothing for the new ids.
 - **Chest.** The Sealed Coffer's item (12664, the fallback look, not moveable) with action id **47730** (free: 47720-47729 are the Harvest Portals), placed on the corpse's tile or the nearest free one. A dark loop (`CONST_ME_MORTAREA`, every third `CONST_ME_PURPLEENERGY`, 1.5 s) plays over it. The owner gets a text, a toast and a floating "CURSED CHEST" label (en and pt-BR). Only the owner and the owner's party may use it.
 - **Event.** The use locks the chest. The opener and the party members within 9 tiles take part. The hordes (all in `event.hordes`) are 4, 5, 6, 7 and 8 monsters (+35% per extra player, at most x2), health x1.0 / 1.1 / 1.2 / 1.35 / 1.5, damage x1.0 / 1.05 / 1.1 / 1.2 / 1.3; the share of magic and rare monsters grows from 0% to 70%, and horde 5 has a rare (70%) or legendary (30%) leader. The next horde comes 3 s after one is dead, or 45 s after the last came (not while 30 live). Progress "Horde 3/5" shows as a message, a toast and a label over the chest. Monsters are the killed monster and the non-boss monsters within 10 tiles (up to 4 kinds), padded from a themed list by level band; they are scaled to 90% of the opener's level (areagen's `levelScale`: health, damage; capped x3 / x2), paced like a hunt (`ChaosPace.apply`: experience as normal) and appear 2-5 tiles from the chest.
