@@ -440,6 +440,30 @@ function W.podiumLines(podium, pc)
 	return lines
 end
 
+-- the same lines as deferred texts (ChaosI18n.msg), read in each player's language: "Top damage: %s." per category key
+function W.podiumMsgs(podium, pc)
+	local lines = {}
+	for _, cat in ipairs((pc or {}).categories or {}) do
+		local names = {}
+		for _, s in ipairs(podium[cat.key] or {}) do
+			names[#names + 1] = s.name .. " " .. W.short(s[cat.key])
+		end
+		local top = {damage = "Top damage: %s.", healing = "Top healing: %s.", tanking = "Top tanking: %s."}
+		lines[#lines + 1] = ChaosI18n.msg(top[cat.key] or ("Top " .. (cat.name or cat.key):lower() .. ": %s."),
+			#names > 0 and table.concat(names, ", ") or ChaosI18n.msg("nobody"))
+	end
+	return lines
+end
+
+function W.podiumMsg(podium, pc)
+	local msgs = W.podiumMsgs(podium, pc)
+	local fmt = {}
+	for i = 1, #msgs do
+		fmt[i] = "%s"
+	end
+	return ChaosI18n.msg(table.concat(fmt, " "), (table.unpack or unpack)(msgs))
+end
+
 function W.podiumText(podium, pc)
 	return table.concat(W.podiumLines(podium, pc), " ")
 end
@@ -1051,7 +1075,7 @@ local function runPhase(token, i)
 		return
 	end
 	if phase.yell then
-		boss:say(phase.yell, TALKTYPE_MONSTER_YELL)
+		Chaos.yell(boss, phase.yell)
 	end
 	if phase.adds and MonsterType(phase.adds.name) then
 		local pos = boss:getPosition()
@@ -1166,7 +1190,7 @@ local function spawnBoss(token)
 	boss:registerEvent("ChaosWorldBossHealth")
 	boss:registerEvent("ChaosWorldBossDeath")
 	packFx(boss:getPosition(), "wb_arrives", CONST_ME_MORTAREA)
-	boss:say(b.intro, TALKTYPE_MONSTER_YELL)
+	Chaos.yell(boss, b.intro)
 	announce(ChaosI18n.msg("%s has appeared in the world boss arena! You have %d minutes to bring it down.", b.name, C().fightMinutes), true)
 	addEvent(function(t)
 		if state.token == t and state.phase == "fight" then
@@ -1212,17 +1236,31 @@ finish = function(victory, reason)
 		local secs = os.time() - (state.fightStart or os.time())
 		state.result = podium
 		announce(ChaosI18n.msg("%s has been slain by %d champion(s) in %dm %02ds! %s Everyone inside returns home in %d seconds.",
-			b.name, #shares, math.floor(secs / 60), secs % 60, W.podiumText(podium, C().reward.podium), delay), false)
-		-- the client toast has room for about two lines: one toast per category (it shows three at once)
+			b.name, #shares, math.floor(secs / 60), secs % 60, W.podiumMsg(podium, C().reward.podium), delay), false)
+		-- the client toast has room for about two lines: one toast per category (it shows three at once), in each
+		-- player's language
 		if ChaosNotify and ChaosNotify.gmBroadcast then
-			for _, line in ipairs(W.podiumLines(podium, C().reward.podium)) do
-				ChaosNotify.gmBroadcast(nil, "World boss slain! " .. line)
+			local msgs = W.podiumMsgs(podium, C().reward.podium)
+			local online, other = Game.getPlayers(), false
+			for _, p in ipairs(online) do
+				other = other or Chaos.lang(p) ~= ChaosI18n.DEFAULT
+			end
+			if other then
+				for _, p in ipairs(online) do
+					for _, line in ipairs(msgs) do
+						ChaosNotify.gmBroadcast(p, Chaos.t(p, "World boss slain! %s", line))
+					end
+				end
+			else
+				for _, line in ipairs(msgs) do
+					ChaosNotify.gmBroadcast(nil, ChaosI18n.resolve(ChaosI18n.msg("World boss slain! %s", line), ChaosI18n.DEFAULT))
+				end
 			end
 		end
 	else
 		local boss = state.bossId and Monster(state.bossId)
 		if boss then
-			boss:say("You are not worthy of my death.", TALKTYPE_MONSTER_YELL)
+			Chaos.yell(boss, "You are not worthy of my death.")
 			boss:getPosition():sendMagicEffect(CONST_ME_POFF)
 			boss:remove()
 		end

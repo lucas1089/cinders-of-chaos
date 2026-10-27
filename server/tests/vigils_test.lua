@@ -370,5 +370,12 @@ dofile("data/scripts/chaos/archetypes_config.lua")
 check(not subs[ChaosArchetypesConfig.arAetherEdge.subId] and not subs[ChaosArchetypesConfig.arHollowVessel.subId],
 	"the sub ids differ from the archetypes'")
 
+-- pt-BR: the buff bar line and the toggle text follow the language
+dofile("data/scripts/chaos/i18n_core.lua")
+local ptItem = V.buffItem("iron", {iron = 0.06 * 1.2}, nil, nil, nil, "pt-BR")
+check(ptItem.desc ~= "-7.2% damage taken. From a party member's vigil.", "the vigil buff line is translated to pt-BR")
+eq(V.buffItem("iron", {iron = 0.06 * 1.2}, nil, nil, nil, "en").desc, "-7.2% damage taken. From a party member's vigil.", "English stays")
+check(V.toggleText("wrath", true, 0.35, {}, "pt-BR") ~= V.toggleText("wrath", true, 0.35, {}, "en"), "the toggle text is translated to pt-BR")
+
 print(string.format("vigils_test: %d checks, %d failures", count, failures))
 if failures > 0 then os.exit(1) end

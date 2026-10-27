@@ -277,8 +277,8 @@ local function packChest(chest, season, place)
 	end
 	item:setAttribute(ITEM_ATTRIBUTE_NAME, chest.name)
 	if ITEM_ATTRIBUTE_DESCRIPTION then
-		item:setAttribute(ITEM_ATTRIBUTE_DESCRIPTION, string.format("Infinity Tower Season %d, %s place.", season,
-			K.placeNames[place] or ("#" .. place)))
+		-- translated when the chest is looked at (itemdesc_i18n.lua)
+		item:setAttribute(ITEM_ATTRIBUTE_DESCRIPTION, string.format("Infinity Tower Season %d, place %d.", season, place))
 	end
 	local container = Container(item:getUniqueId())
 	local loose = {}
@@ -319,8 +319,8 @@ function ChaosTower.deliverPending(player)
 			end
 		end
 		n = n + 1
-		local text = string.format("Infinity Tower Season %d has ended: %s place with floor %d. Your %s is in your inbox.",
-			r.season, K.placeNames[r.place] or ("#" .. r.place), r.best_floor, K.chestText(chest))
+		local text = Chaos.t(player, "Infinity Tower Season %d has ended: %s place with floor %d. Your %s is in your inbox.",
+			r.season, Chaos.tx(player, K.placeNames[r.place] or ("#" .. r.place)), r.best_floor, K.chestText(chest))
 		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, text)
 		if ChaosNotify and ChaosNotify.send then
 			pcall(ChaosNotify.send, player, "Infinity Tower", text, "achievement")
@@ -374,13 +374,15 @@ function ChaosTower.checkSeasons(startup, now)
 		end
 		setConfig(se.configKey, s)
 		paid = paid + 1
-		local names = {}
+		-- the rewards as one deferred text, so each player reads it in own language
+		local names
 		for _, a in ipairs(awards) do
-			names[#names + 1] = string.format("%s %s (floor %d)", K.placeNames[a.place] or ("#" .. a.place), a.name, a.floor)
+			local one = ChaosI18n.msg("%s %s (floor %d)", ChaosI18n.msg(K.placeNames[a.place] or ("#" .. a.place)), a.name, a.floor)
+			names = names and ChaosI18n.msg("%s, %s", names, one) or one
 		end
-		local text = string.format("Infinity Tower Season %d has ended.%s Season %d begins.", s,
-			#names > 0 and (" Top Rank Rewards: " .. table.concat(names, ", ") .. ".") or "", s + 1)
-		log(text)
+		local text = names and ChaosI18n.msg("Infinity Tower Season %d has ended. Top Rank Rewards: %s. Season %d begins.", s, names, s + 1)
+			or ChaosI18n.msg("Infinity Tower Season %d has ended. Season %d begins.", s, s + 1)
+		log(ChaosI18n.resolve(text, ChaosI18n.DEFAULT))
 		if not startup then
 			Chaos.broadcast(MESSAGE_EVENT_ADVANCE, text)
 		end

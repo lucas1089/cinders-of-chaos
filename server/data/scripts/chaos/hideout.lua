@@ -173,7 +173,7 @@ end
 
 -- ---------------------------------------------------------------- unlocks
 local factionsCfg
-local function factionNames()
+local function factionNames(player)
 	factionsCfg = factionsCfg or Chaos.factionsConfig or try(function()
 		return dofile("data/scripts/chaos/factions_config.lua")
 	end)
@@ -187,6 +187,11 @@ local function factionNames()
 	local data = ChaosAchievements and ChaosAchievements.data
 	for _, a in ipairs(data and data.list or {}) do
 		names.achievement[a.id] = a.name
+	end
+	if player then
+		names.tr = function(key, ...)
+			return Chaos.t(player, key, ...)
+		end
 	end
 	return names
 end
@@ -443,8 +448,11 @@ local function trophyText(d, ownerGuid)
 		return nil
 	end
 	local n = statOf(ownerGuid, d.trophy.stat)
-	return string.format("A trophy of %s: %s, slain %d time%s.", nameOf(ownerGuid) or "its owner", d.trophy.boss, n,
-		n == 1 and "" or "s")
+	-- one key per form (pt-BR has no "s" to add): the look of the item translates it (itemdesc_i18n.lua)
+	if n == 1 then
+		return string.format("A trophy of %s: %s, slain once.", nameOf(ownerGuid) or "its owner", d.trophy.boss)
+	end
+	return string.format("A trophy of %s: %s, slain %d times.", nameOf(ownerGuid) or "its owner", d.trophy.boss, n)
 end
 
 local function placeItems(slot, room, p)
@@ -889,7 +897,7 @@ function M.sendState(player, open)
 	local d = M.load(guid)
 	local facts = M.factsOf(player)
 	M.syncUnlocks(player, facts)
-	local names = factionNames()
+	local names = factionNames(player)
 	local theme = K.theme(cfg, d.theme) or K.defaultTheme(cfg)
 	local inside
 	local slot, room = M.roomAt(player:getPosition())
@@ -909,11 +917,20 @@ function M.sendState(player, open)
 	for i, p in ipairs(cfg.permissions) do
 		perms[i] = {id = p.id, name = p.name, desc = p.desc}
 	end
+	local themes = K.themesView(cfg, facts, names, theme.key, clientId)
+	local catalogue = K.catalogueView(cfg, facts, d.decor, names, clientId)
+	-- the window's texts (descriptions, how to unlock) in the player's language; names stay as they are
+	for _, t in ipairs(themes) do
+		t.desc = Chaos.tx(player, t.desc)
+	end
+	for _, p in ipairs(perms) do
+		p.name, p.desc = Chaos.tx(player, p.name), Chaos.tx(player, p.desc)
+	end
 	local data = {open = open == true, me = guid, inside = inside, layout = K.layoutView(cfg),
 		hideout = {theme = theme.key, themeName = theme.name, perm = d.perm, likes = d.likes, visits = d.visits,
 			count = #d.decor, max = theme.maxDecor},
-		themes = K.themesView(cfg, facts, names, theme.key, clientId),
-		catalogue = K.catalogueView(cfg, facts, d.decor, names, clientId), placed = placed, permissions = perms,
+		themes = themes,
+		catalogue = catalogue, placed = placed, permissions = perms,
 		categories = cats}
 	Chaos.sendChunked(player, OPCODE, json.encode({action = "state", data = data}))
 end
@@ -944,7 +961,7 @@ function M.place(player, key, x, y, rot)
 		return false, "Unknown decoration."
 	end
 	if not ownedNow(player, d) then
-		return false, d.name .. " is locked: " .. K.sourceText(cfg, d.source, factionNames()) .. "."
+		return false, Chaos.t(player, "%s is locked: %s.", d.name, K.sourceText(cfg, d.source, factionNames(player)))
 	end
 	local data = M.load(player:getGuid())
 	local cand = {key = d.key, x = Chaos.toInt(x, 0, 64) or -1, y = Chaos.toInt(y, 0, 64) or -1, rot = K.rot(d, rot)}
@@ -956,7 +973,7 @@ function M.place(player, key, x, y, rot)
 	data.decor[#data.decor + 1] = cand
 	persistDecor(player:getGuid(), cand, true)
 	placeItems(slot, room, cand)
-	return true, d.name .. " placed."
+	return true, Chaos.t(player, "%s placed.", d.name)
 end
 
 local function findDecor(data, id)
@@ -989,7 +1006,7 @@ function M.move(player, id, x, y, rot)
 	p.x, p.y, p.rot = cand.x, cand.y, cand.rot
 	persistDecor(player:getGuid(), p, false)
 	placeItems(slot, room, p)
-	return true, d.name .. " moved."
+	return true, Chaos.t(player, "%s moved.", d.name)
 end
 
 function M.remove(player, id)
@@ -1006,7 +1023,7 @@ function M.remove(player, id)
 		unplaceItems(M.rooms[slot], p.id)
 	end
 	local d = K.deco(cfg, p.key)
-	return true, (d and d.name or "The decoration") .. " removed."
+	return true, d and Chaos.t(player, "%s removed.", d.name) or Chaos.t(player, "The decoration was removed.")
 end
 
 function M.clear(player)
@@ -1029,12 +1046,12 @@ function M.setTheme(player, key)
 		return false, "Unknown theme."
 	end
 	if not ownedNow(player, t, true) then
-		return false, t.name .. " is locked: " .. K.sourceText(cfg, t.source, factionNames()) .. "."
+		return false, Chaos.t(player, "%s is locked: %s.", t.name, K.sourceText(cfg, t.source, factionNames(player)))
 	end
 	local guid = player:getGuid()
 	local data = M.load(guid)
 	if #data.decor > t.maxDecor then
-		return false, string.format("%s holds %d decorations; put %d away first.", t.name, t.maxDecor, #data.decor - t.maxDecor)
+		return false, Chaos.t(player, "%s holds %d decorations; put %d away first.", t.name, t.maxDecor, #data.decor - t.maxDecor)
 	end
 	data.theme = t.key
 	saveMeta(guid)
@@ -1055,7 +1072,7 @@ function M.setTheme(player, key)
 			fixtureItem(pos, t.light, A.fixture)
 		end
 	end
-	return true, "Your hideout is now the " .. t.name .. "."
+	return true, Chaos.t(player, "Your hideout is now the %s.", t.name)
 end
 
 function M.setPermission(player, level)
@@ -1070,7 +1087,7 @@ function M.setPermission(player, level)
 	if slot then
 		recheckVisitors(slot)
 	end
-	return true, "Visitors: " .. cfg.permissions[level + 1].name .. "."
+	return true, Chaos.t(player, "Visitors: %s.", Chaos.tx(player, cfg.permissions[level + 1].name))
 end
 
 function M.kick(player)

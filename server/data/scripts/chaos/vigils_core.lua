@@ -237,6 +237,17 @@ local EFFECT_TEXT = {
 	clarity = "%s%% of your maximum mana back every second",
 }
 
+-- the text in `lang` (ChaosI18n when it is loaded, English otherwise)
+local function TT(lang, key, ...)
+	if ChaosI18n and ChaosI18n.text then
+		return ChaosI18n.text(lang, key, ...)
+	end
+	if select("#", ...) == 0 then
+		return key
+	end
+	return string.format(key, ...)
+end
+
 local function wholePct(share)
 	return math.floor((share or 0) * 100 + 0.5)
 end
@@ -251,43 +262,43 @@ local function pctText(share)
 end
 V.pctText = pctText
 
-function V.buffItem(key, entry, mask, mods, parched)
+function V.buffItem(key, entry, mask, mods, parched, lang)
 	mods = mods or {}
 	if key == "tithe" then
 		if not mods.tithe or not mask or mask <= 0 then
 			return nil
 		end
 		local reserved = wholePct(math.min(V.totalReserve(mask, mods), cfg().maxReserve))
-		return {name = "Iron Tithe", stacks = reserved, desc = string.format("Your vigils reserve %d%% of your maximum " ..
-			"health instead of mana. They cover you alone, %d%% stronger.", reserved, wholePct(cfg().tithe.self - 1))}
+		return {name = "Iron Tithe", stacks = reserved, desc = TT(lang, "Your vigils reserve %d%% of your maximum health instead of mana. They cover you alone, %d%% stronger.",
+			reserved, wholePct(cfg().tithe.self - 1))}
 	end
 	local e = V.byKey[key]
 	local value = e and entry and entry[key] or 0
 	if value <= 0 then
 		return nil
 	end
-	local text = string.format(EFFECT_TEXT[key], pctText(value))
+	local text = TT(lang, EFFECT_TEXT[key], pctText(value))
 	if key == "clarity" and parched then
-		text = text .. " (none under Parched Veins)"
+		text = text .. " " .. TT(lang, "(none under Parched Veins)")
 	end
 	local tail
 	if mask and V.has(mask, key) then
-		tail = string.format("Your own: it reserves %d%% of your maximum %s.", wholePct(V.reserve(key, mods)),
-			mods.tithe and "health" or "mana")
+		tail = TT(lang, "Your own: it reserves %d%% of your maximum %s.", wholePct(V.reserve(key, mods)),
+			TT(lang, mods.tithe and "health" or "mana"))
 	else
-		tail = "From a party member's vigil."
+		tail = TT(lang, "From a party member's vigil.")
 	end
 	return {name = e.def.name, stacks = math.max(1, wholePct(value)), desc = text .. ". " .. tail}
 end
 
 -- the text of a toggle (the spell's message)
-function V.toggleText(key, on, total, mods)
+function V.toggleText(key, on, total, mods, lang)
 	local e = V.byKey[key]
-	local what = (mods and mods.tithe) and "health" or "mana"
+	local what = TT(lang, (mods and mods.tithe) and "health" or "mana")
 	if not on then
-		return string.format("%s ends. Reserved: %d%% of your %s.", e.def.name, math.floor(total * 100 + 0.5), what)
+		return TT(lang, "%s ends. Reserved: %d%% of your %s.", e.def.name, math.floor(total * 100 + 0.5), what)
 	end
-	return string.format("%s: on. It reserves %d%% of your maximum %s; %d%% in all.", e.def.name,
+	return TT(lang, "%s: on. It reserves %d%% of your maximum %s; %d%% in all.", e.def.name,
 		math.floor(V.reserve(key, mods) * 100 + 0.5), what, math.floor(total * 100 + 0.5))
 end
 

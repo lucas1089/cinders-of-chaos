@@ -138,7 +138,7 @@ function NP.buildIsland()
 		if t.sign then
 			local sign = placeItem(P(r.sign), t.sign, t.aid.statue)
 			if sign then
-				sign:setAttribute(ITEM_ATTRIBUTE_DESCRIPTION, string.format("%s Use it to read the lesson again.", t.lessons[i].title))
+				sign:setAttribute(ITEM_ATTRIBUTE_DESCRIPTION, string.format("%s\nUse it to read the lesson again.", t.lessons[i].title))
 			end
 		end
 	end

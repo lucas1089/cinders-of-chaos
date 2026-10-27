@@ -296,7 +296,7 @@ function M.buffItem(player, key, t)
 	if not entry and not mask then
 		return nil
 	end
-	return V.buffItem(key, entry, mask, mask and M.holderMods[pid] or nil, parched(pid))
+	return V.buffItem(key, entry, mask, mask and M.holderMods[pid] or nil, parched(pid), Chaos.lang and Chaos.lang(player))
 end
 
 -- is anyone covered at all (archetypes.lua skips the work otherwise)

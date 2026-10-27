@@ -53,7 +53,19 @@ local function describeFor(player, text)
 			memo[lang] = {n = 0}
 			m = memo[lang]
 		end
+		-- the whole text, else sentence by sentence and "Head: tail" (itemdesc_i18n_core.lua)
 		out = Chaos.tx(player, text)
+		if out == text then
+			if not ChaosItemDescI18n then
+				dofile("data/scripts/chaos/itemdesc_i18n_core.lua")
+			end
+			local ok, t = pcall(ChaosItemDescI18n.translate, text, function(s)
+				return Chaos.tx(player, s)
+			end)
+			if ok and type(t) == "string" then
+				out = t
+			end
+		end
 		m[text] = out
 		m.n = m.n + 1
 	end

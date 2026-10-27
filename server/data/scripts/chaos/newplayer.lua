@@ -135,9 +135,10 @@ local function makeScroll(player, container, uses)
 	item:setCustomAttribute("chaos_uses", uses)
 	item:setAttribute(ITEM_ATTRIBUTE_NAME, cfg.name)
 	item:setAttribute(ITEM_ATTRIBUTE_ARTICLE, "a")
-	item:setAttribute(ITEM_ATTRIBUTE_DESCRIPTION, string.format(
-		"Use it to return to your temple. Not usable in combat, dungeons, the tower or the world boss arena. %d use%s left.",
-		uses, uses == 1 and "" or "s"))
+	-- one key per form: the look of the item translates it (itemdesc_i18n.lua)
+	item:setAttribute(ITEM_ATTRIBUTE_DESCRIPTION, uses == 1 and
+		"Use it to return to your temple. Not usable in combat, dungeons, the tower or the world boss arena. 1 use left." or
+		string.format("Use it to return to your temple. Not usable in combat, dungeons, the tower or the world boss arena. %d uses left.", uses))
 	return item
 end
 

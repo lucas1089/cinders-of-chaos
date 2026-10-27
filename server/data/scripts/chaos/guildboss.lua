@@ -185,8 +185,17 @@ function GB.bannerText(gid)
 	if tier == 0 then
 		return string.format("The banner of %s.", G().nameOf(gid))
 	end
-	return string.format("The %s of %s: Gorvath the Banner-Eater slain %d time%s%s.", name, G().nameOf(gid), kills,
-		kills == 1 and "" or "s", nextAt and string.format(" (next tier at %d)", nextAt) or "")
+	-- one key per form (the look of the banner translates it, itemdesc_i18n.lua)
+	if kills == 1 then
+		if nextAt then
+			return string.format("The %s of %s: Gorvath the Banner-Eater slain once (next tier at %d).", name, G().nameOf(gid), nextAt)
+		end
+		return string.format("The %s of %s: Gorvath the Banner-Eater slain once.", name, G().nameOf(gid))
+	end
+	if nextAt then
+		return string.format("The %s of %s: Gorvath the Banner-Eater slain %d times (next tier at %d).", name, G().nameOf(gid), kills, nextAt)
+	end
+	return string.format("The %s of %s: Gorvath the Banner-Eater slain %d times.", name, G().nameOf(gid), kills)
 end
 
 -- after guild_hall.lua's G.furnish: the stone, the banner text, the trophy line
@@ -221,8 +230,8 @@ function GB.decorate(gid)
 		if statue then
 			local d = statue:getAttribute(ITEM_ATTRIBUTE_DESCRIPTION) or ""
 			if not d:find("Banner-Eater", 1, true) then
-				statue:setAttribute(ITEM_ATTRIBUTE_DESCRIPTION, d .. string.format(" Gorvath the Banner-Eater: slain %d time%s.", kills,
-					kills == 1 and "" or "s"))
+				statue:setAttribute(ITEM_ATTRIBUTE_DESCRIPTION, d .. (kills == 1 and " Gorvath the Banner-Eater: slain once." or
+					string.format(" Gorvath the Banner-Eater: slain %d times.", kills)))
 			end
 		end
 	end
@@ -1111,7 +1120,7 @@ local function startPhase(run, idx)
 	end
 	local boss = bossOf(run)
 	if boss and ph.yell then
-		boss:say(ph.yell, TALKTYPE_MONSTER_YELL)
+		Chaos.yell(boss, ph.yell)
 	end
 	if idx > 1 then
 		say(run, ChaosI18n.msg("%s enters phase %d of %d: %s.", def.boss, idx, #def.phases, ph.name),

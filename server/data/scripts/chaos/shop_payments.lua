@@ -80,7 +80,26 @@ local function status(accountId)
 	return {points = ChaosShop and ChaosShop.getCoins(accountId) or 0, buyUrl = shopCfg.buyUrl or "", ad = {}}
 end
 
+-- the texts the core returns are English: shown in the player's language (Chaos.tx; pt-BR entries in i18n_strings.lua)
+local function localize(player, v)
+	if type(v) == "table" then
+		for _, k in ipairs({"msg", "text"}) do
+			if type(v[k]) == "string" then
+				v[k] = Chaos.tx(player, v[k])
+			end
+		end
+		if type(v.order) == "table" then
+			localize(player, v.order)
+		end
+		if type(v.open) == "table" then
+			localize(player, v.open)
+		end
+	end
+	return v
+end
+
 local function send(player, action, data, withStatus)
+	localize(player, data)
 	local payload = {action = action, data = data}
 	if withStatus then
 		payload.status = status(player:getAccountId())
@@ -148,7 +167,7 @@ local function packsView(player)
 		end
 	end
 	local terms, termsPt = P.terms()
-	return {notice = P.NOTICE_EN, noticePt = P.NOTICE_PT, thanks = P.THANKS, terms = terms, termsPt = termsPt, methods = P.methods(coinsCfg), packs = packs,
+	return {notice = P.NOTICE_EN, noticePt = P.NOTICE_PT, thanks = Chaos.tx(player, P.THANKS), terms = terms, termsPt = termsPt, methods = P.methods(coinsCfg), packs = packs,
 		firstBonusPct = (coinsCfg.firstPurchase or {}).bonusPct or 0, firstBonusMax = (coinsCfg.firstPurchase or {}).maxBonus,
 		firstOpen = first, open = open}
 end
@@ -162,7 +181,7 @@ local function pickCreator(player, text)
 		cc = ok and type(c) == "table" and c or nil
 	end
 	if not cc or cc.enabled == false then
-		return "Creator codes are not available right now."
+		return Chaos.t(player, "Creator codes are not available right now.")
 	end
 	local code = P.creatorCode(text)
 	local T = cc.tables

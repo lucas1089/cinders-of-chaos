@@ -313,6 +313,13 @@ local REASONS = {
 	["../../lib/chaos_casting.lua"] = {"^ChaosCasting"}, ["../../lib/chaos_gems.lua"] = {}, ["../../lib/chaos_supports.lua"] = {},
 	["guildboss.lua"] = {"^The banner of ", "^The %%s of %%s: Gorvath", "^The Summoning Stone%. Feed", "^Game%.createTile", "^Guild boss run ",
 		"^No running guild boss", "^No guild boss arena"},
+	-- round 7: the item descriptions (translated at the look, itemdesc_i18n.lua), hideout, pocket boss, Tower, new player
+	["hideout.lua"] = {"^Game%.createTile", "^%%s%%s?$"},
+	["hideout_core.lua"] = {"^That would wall off the $", "^That tile is kept free %($"}, -- whole sentences are keys below
+	["pocketboss.lua"] = {"^Game%.createTile", "^Pocket run ", "^No pocket run ", "^A gamemaster closed the pocket", "^No pocket is open"},
+	["infinitytower.lua"] = {},
+	["newplayer.lua"] = {"^No kit: ", "^Welcome shown to ", "^Unknown milestone", "^New%-player flags of ", "^Unknown option "},
+	["community.lua"] = {"^The week's modifiers come", "^This week's modifiers: ", "^Community goal %(realm"},
 }
 local SQL = {"^SELECT", "^INSERT", "^UPDATE", "^DELETE", "^WHERE", "^FROM", "^ON DUP", "^CREATE", "^ALTER"}
 local nReason = 0
@@ -357,6 +364,22 @@ for f, skips in pairs(REASONS) do
 	end
 end
 check(nReason >= 80, "the returned reasons are found (" .. nReason .. ")")
+
+-- round 7: texts built from pieces (the whole sentences are the keys), and fixed texts with a literal percent sign
+for _, k in ipairs({"That would wall off the training dummies.", "That would wall off the %s.", "That tile is kept free (a light).",
+		"That tile is kept free (a dummy).", "That tile is kept free (the waystone).", "That tile is kept free (%s).",
+		"Under your %s aura: %d%% less damage taken", ", %.1f%% of your maximum health back every second", " (Bastion)",
+		"Your %s Aura", "%s's Aura", "Infinity Tower Season %d has ended. Top Rank Rewards: %s. Season %d begins.",
+		"Infinity Tower Season %d has ended. Season %d begins.", "1st", "2nd", "3rd", "%s is locked: %s.", "%s moved.", "%s removed.",
+		"Your hideout is now the %s.", "Visitors: %s.", "Prefixes:", "Suffixes:", "Item Level: %d", "Attack Speed +%d%%"}) do
+	check(pt[k] ~= nil, "round 7 key: " .. k)
+end
+eq(I.translate("pt-BR", "Under your Templar aura: 20% less damage taken"), "Sob a sua aura de Templar: 20% menos dano sofrido",
+	"translate: a template with a literal percent sign")
+eq(I.translate("pt-BR", "Under Ann's Sentinel aura: 25% less damage taken"), "Sob a aura de Ann (Sentinel): 25% menos dano sofrido",
+	"translate: the aura of another player")
+eq(I.text("pt-BR", "Under a Templar's %s aura: %d%% less damage taken", "Inquisitor", 18),
+	"Sob a aura de um Templar (Inquisitor): 18% menos dano sofrido", "text: the aura of an unknown Templar")
 
 -- translate: the formatted English text a core returned finds its pt-BR template
 eq(I.translate("pt-BR", "Unknown upgrade."), "Melhoria desconhecida.", "translate: an exact key")

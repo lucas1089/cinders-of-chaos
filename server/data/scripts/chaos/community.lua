@@ -634,10 +634,27 @@ function X.payload(player)
 		end
 	end
 	local w = X.currentWeek()
-	return K.payload(cfg, {now = now(), period = g.period, finish = g.finish, progress = g.progress, buffs = buffsOf(realm),
+	local data = K.payload(cfg, {now = now(), period = g.period, finish = g.finish, progress = g.progress, buffs = buffsOf(realm),
 		mods = w.mods, modSource = w.source, weekEnd = w.finish, entry = e, day = today(), rank = rank, top = top,
 		near = nearBrazier(player), gold = Chaos.totalMoney(player),
 		realm = realm, realmName = realmName(realm) and Chaos.t(player, realmName(realm)) or nil})
+	-- the window's texts in the player's language (the names of the goal, the stages and the modifiers stay as they are)
+	if Chaos.lang and Chaos.lang(player) ~= "en" then
+		data.goal.d = Chaos.tx(player, data.goal.d)
+		for _, s in ipairs(data.stages) do
+			s.d, s.s = Chaos.tx(player, s.d), Chaos.tx(player, s.s)
+		end
+		for _, s in ipairs(data.sources) do
+			s.n = Chaos.tx(player, s.n)
+		end
+		for _, m in ipairs(data.week.mods) do
+			m.d = Chaos.tx(player, m.d)
+		end
+		if data.mine.tokenText then
+			data.mine.tokenText = Chaos.tx(player, data.mine.tokenText)
+		end
+	end
+	return data
 end
 
 function X.send(player)

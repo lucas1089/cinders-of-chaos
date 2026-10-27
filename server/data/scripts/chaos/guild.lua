@@ -251,7 +251,7 @@ local function levelUp(gid, from, to)
 	G.tellGuild(gid, text)
 	for _, p in ipairs(G.onlineMembers(gid)) do
 		if ChaosNotify and ChaosNotify.send then
-			pcall(ChaosNotify.send, p, "Guild level " .. to, text)
+			pcall(ChaosNotify.send, p, Chaos.t(p, "Guild level %d", to), Chaos.tx(p, text))
 		end
 		G.applyAura(p)
 		G.sendState(p, false)
