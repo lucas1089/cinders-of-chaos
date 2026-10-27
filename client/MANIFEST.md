@@ -3251,6 +3251,75 @@ Output **pair 50**: dat f424805d2d93d1cb4fed89b342a418fc (12,906,936 bytes), spr
   (87,098,628 bytes, sha256 7954857b4b5cadf646ca1d95f25bf5c236d018eb73005db882a364a94d17b16b); the joined parts extract to the md5s
   above. Pushed to windows-assets as **87c4b09c** (parent 4fcb48ff); only the two part lines of SHA256SUMS.parts changed.
 
+## Retired art: unused items, outfits, effects and missiles of pair 50 (pair 51: `tools/sprites/prune_pair.py`; built 2026-10-27)
+Owner request 2026-10-27: "retire o que a gente nao usa dos nossos pares". Pair 51 is pair 50 minus the art nothing uses. No id moves:
+a retired thing is blanked (one 1x1 frame, sprite 0, flag bytes kept) and the spr is compacted. Items.otb, the Lua tables and the
+client id tables stay valid. The list is `tools/sprites/pair51_removed.csv` (kind,id,reason; 6,838 rows).
+- **Rules.** Kept: every pickupable, moveable, container, door, key, house, corpse, fluid, field, rune and light item; every item id on a
+  map (installed base map, the large test map, 7 small base maps); everything of pairs 49 and 50 that a script, kit, list or map names; outfits of
+  players, NPCs, monsters and client lists; every effect and missile a script, spell or catalog name uses, and the whole base protocol
+  range (effects 1-187, missiles 1-96). Retired: 3,803 items (base scenery 973, art_items 502, pack30 art about 1,700, ...), 44 outfits,
+  2,929 effects, 62 missiles above the base range.
+- **Tool.** `prune_pair.py prune` (streams the spr, pure Python), `restore` (puts archive things back at their ids, sprites appended),
+  `stats`, `check-map` (blanked item ids that stand on a given map; needs numpy). `--archive-dir` writes an archive pair with the original ids.
+  `prune_pair_test.py` (CI) runs on a synthetic pair.
+- **Missile slots.** 62 missile ids are blank and free: 147-152, 189-199, 201-204, 206, 207, 209-227, 230-248, 250 (limit 254, 254 is the weapon-type
+  constant). Refilled in place, see "Pair 51 missiles" below.
+
+```
+python3 -I client/tools/sprites/prune_pair.py prune --dat pair50/Tibia.dat --spr pair50/Tibia.spr \
+    --removed client/tools/sprites/pair51_removed.csv --out-dir pair51 --archive-dir pair51/removed
+python3 -I client/tools/sprites/check_pair.py pair51/Tibia.dat pair51/Tibia.spr
+```
+Input pair 50 (dat f424805d2d93d1cb4fed89b342a418fc, spr 30c6c17595f648683ea8b70a25b129d3).
+Output **pair 51**: dat a4d59922593fb779e00d4bfda34f5282 (8,822,068 bytes), spr a7acc5b88b310fa6984960a1553c4501 (1,126,785,830 bytes,
+943,002 sprites; pair 50 had 1,530,465), the same counts of things (44,395 items, 3,360 outfits, 4,701 effects, 253 missiles).
+Archive pair: dat a19ebfdf56b9970d4a3fafc7993bf125 (4,737,560 bytes), spr b54054364807a62cde4ae93635fa0f6a (658,187,234 bytes, 388,134 sprites).
+- `check_pair.py` (full): 0 errors, 4,045 warnings (thing-empty 3,868 are the blanks; the rest were in pair 50). `--old pair 50` fails by
+  design, the append-only guard sees the compaction. `gen_outfit_anchors.py` and `gen_info_lift.py` regenerated (md5, and 44 outfits fewer).
+  Not run in a client.
+- **Names.** Effects and missiles that scripts use by name are kept: a quoted catalog name (swap tables such as `chaos_pack27_fx.lua`
+  and `chaos_pack29_vfx.lua`, `CONST_ANI_` / `CONST_ME_` / `fx` keyed values), its base without a direction or number suffix, or a
+  prefix used in a concatenation. `prune_pair.py keep-names` applies it and `prune` refuses a list that breaks it (test in CI).
+  The first build missed this and blanked 127 effects and 29 missiles; the list was corrected and the pair rebuilt. A review then kept 105 more things (101 effects, 4 missiles: pack 36 names reserved for spells not written yet, and effect 560), listed with reasons in `pair51_keep.csv`. The removed-things
+  backup on windows-assets (`backup/removed-pair51.tar.xz`) was made from the first list: it is a superset and also holds those restored things.
+- **Ship order.** Server ids and items.otb do not change. Run `prune_pair.py check-map` on the live map first; a blanked item that stands
+  on it shows as an invisible tile object. Ship the client with pair 51 and its regenerated `outfit_anchors.lua` and `info_lifts.lua` together.
+
+### Pair 51 missiles (`tools/sprites/import_pair51_missiles.py`; built 2026-10-27, on the 62-id list)
+The 62 freed missile ids hold the best 62 of the 169 missiles of the two purchased sprite sources (source G 43, source F 126) that
+pair 50 had to skip. Choice and names: `tools/sprites/pair51_missiles.csv` (missile_id, source, src_id, name, element, size, phases;
+23 from source G, 39 from source F). Picked by looking at all 169 (candidate sheet, then the 8 directions of the final set): faint,
+tiny, broken, off-direction and near-duplicate missiles are out. Each blank entry is replaced entirely: flags light and displacement
+only, the source's 3x3 direction patterns, phases and animator; 2,170 new sprite records appended (8 slots reuse records of the input).
+No other entry changes (byte-identical, checked), no id moves. Counts: fire 12, ice 11, physical 9, energy 8, death 8, earth 6,
+holy 6, water 2. `pair51_removed.csv` keeps its 62 missile rows (what `prune_pair.py` blanks from pair 50); their reason says the slot is
+refilled. Run order: `prune_pair.py prune` (pair 50 -> pair 51 without missiles), then this importer.
+- **Names.** `tools/sprites/gen_pair51_missile_ids.py` (`--check` and test in CI) writes `server/data/lib/chaos_pair51_missile_ids.lua`:
+  `ChaosPair51Missile.<name> = id` and `ChaosVfxMissile.p51_<name> = {id, dx, dy}` (VfxShoot; dx, dy are half the size, untested for
+  the 2x2 ones in a client). Nothing in the game sends them yet.
+- **Old names on the same ids.** 56 of the 62 ids still carry a catalog name in the older pack libs (proj_* 189-203, mega_* 204-250:
+  names reserved for spells not written yet, kept by the name rule of the prune; no spell sends them today). A spell that sends one of
+  those names later draws the new missile of that id, so give that spell its own name or one of the p51_ names.
+- **Preview.** Every missile in its 8 directions (client mapping NW N NE E SE S SW W) was rendered from the new pair and looked at.
+```
+python3 -I client/tools/sprites/import_pair51_missiles.py --dat pair51/Tibia.dat --spr pair51/Tibia.spr --out-dir out \
+    --src-g-dat G.dat --src-g-spr G.spr --src-f-dat F.dat --src-f-spr F.spr
+python3 -I client/tools/sprites/check_pair.py out/Tibia.dat out/Tibia.spr
+```
+Input pair 51 without missiles (dat a4d59922593fb779e00d4bfda34f5282, spr a7acc5b88b310fa6984960a1553c4501).
+Output **pair 51 with missiles**: dat cc208f39fae3fa39857780599d4f2a4d (8,833,544 bytes), spr d13c71756ab3a126b640429b2e2d4e5e
+(1,129,542,372 bytes, 945,172 sprites: 2,170 appended), the same counts of things (44,395 items, 3,360 outfits, 4,701 effects, 253 missiles).
+- `check_pair.py` (full): 0 errors, 3,977 warnings (thing-empty 3,861 blanks, size-large 38, exact-size 63, missile-patterns 4 base ids, the rest as before).
+  `gen_outfit_anchors.py` and `gen_info_lift.py` regenerated against this pair (`--check` passes); `gen_fx_send_offsets.py --check` passes. Not run in a client.
+- **Archive parts** (windows-assets recipe: `tar --owner=0 --group=0 --numeric-owner --mtime='2026-10-22 00:00:00Z' --format=gnu` of
+  Tibia.dat + Tibia.spr as `things-1098.tar`, `xz -9 -T3`, `split -b 95M -d -a 2` to `things-1098.tar.xz.partNN`; pushed to windows-assets as **17f43b1d**, parent b3ed3a20):
+  - part00 99,614,720 bytes, sha256 `60f34021fe42c404ac8f55b7f445e93d89791c7f66e3e28ef4757c512e60f2fa`
+  - part01 28,947,064 bytes, sha256 `94a75e3287571c47a4d043ccaf1f24b64df3189286dac432b5d2394123097542`
+  - joined `things-1098.tar.xz` (128,561,784 bytes) sha256 `c3ae908859ff7e9670b43ead7f145778d8b57986e1a5a77d7dc3560e75597e42`;
+    `things-1098.tar` sha256 `86e58f4d3192bb382b657bd8cedd29e26893f24b5cabaf468e3940dfcb23bce0`.
+    Extracting gives the dat and spr md5 above.
+
 ## Owner art (things_custom26: outfits 2213-2233, items 33940-33985, `tools/sprites/gen_owner_art.py`, `art_import/owner_art.csv`; on windows-assets 50645056, switch on since 2026-10-15)
 **Source and licence.** The owner's Google Drive folder "ots", files added 2026-10-15. The owner confirmed the art is
 their own or commissioned and free to use for monsters and variants, outfits and wings as cosmetics, decoration and map
