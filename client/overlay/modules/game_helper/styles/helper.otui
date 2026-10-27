@@ -880,27 +880,29 @@ ChaosHelperWindow < ChaosMainWindow
 
         ChaosTextEdit
           id: followName
-          width: 190
           anchors.left: followMode.right
+          anchors.right: followDistanceLabel.left
           anchors.verticalCenter: parent.verticalCenter
           margin-left: 8
+          margin-right: 10
           max-length: 29
 
-        ChaosLabel
-          id: followDistanceLabel
-          anchors.left: followName.right
-          anchors.verticalCenter: parent.verticalCenter
-          margin-left: 10
-          text-auto-resize: true
-          !text: tr('Distance')
-
+        // anchored to the right edge so the distance box stays inside the window (owner 2026-10-27)
         ChaosComboBox
           id: followDistance
           width: 56
           height: 22
-          anchors.left: followDistanceLabel.right
+          anchors.right: parent.right
           anchors.verticalCenter: parent.verticalCenter
-          margin-left: 6
+          margin-right: 4
+
+        ChaosLabel
+          id: followDistanceLabel
+          anchors.right: followDistance.left
+          anchors.verticalCenter: parent.verticalCenter
+          margin-right: 6
+          text-auto-resize: true
+          !text: tr('Distance')
 
     // ------------------------------------------------------------ Support (game_helpersupport builds its panel here)
     Panel
