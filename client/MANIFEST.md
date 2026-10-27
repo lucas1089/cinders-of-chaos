@@ -3210,7 +3210,7 @@ Output **pair 49**: dat 546d0c6099c8a40505b8f32b7e6ca381 (11,282,963 bytes), spr
 - **Ship order.** Install `decor49items` on the server only together with a client on pair 49 or newer: a client on pair 48 or older
   draws nothing for 39111-39197. Ship pair 49 and a client build before placing the items on a map.
 
-## Ground, walls, stairs, decoration, monsters and effects of two purchased sources (pair 50: items 39198-44395, outfits 2682-3360, effects 4102-4701, `tools/sprites/import_pair50.py`; built 2026-10-27; not pushed to windows-assets)
+## Ground, walls, stairs, decoration, monsters and effects of two purchased sources (pair 50: items 39198-44395, outfits 2682-3360, effects 4102-4701, `tools/sprites/import_pair50.py`; built 2026-10-27; on windows-assets 87c4b09c)
 Owner request 2026-10-27: "take everything we can use, floor, wall, stairs, decoration and monsters" from two purchased sprite
 sources, called **source G** and **source F** in docs/CREDITS.md. Pair 50 is pair 49 plus this art. No archive or server names in
 the repo: the selections are `tools/sprites/pair50_G_selection.csv` and `pair50_F_selection.csv` (category, source id, name,
@@ -3244,7 +3244,12 @@ Output **pair 50**: dat f424805d2d93d1cb4fed89b342a418fc (12,906,936 bytes), spr
   thing-empty 34, missile-patterns 8, mask-empty 5, mask-not-mask 3, outfit-directions 2, displacement-range 1). `gen_outfit_anchors.py
   --check` and `gen_info_lift.py --check` pass on pair 50 (md5 only changed in `outfit_anchors.lua` and `info_lifts.lua`). Not run in a client.
 - **Ship order.** Install `pair50items` (README "Pair 50 items") only together with a client on pair 50 or newer. Outfits and
-  effects need the same client. No archive or windows-assets push was made.
+  effects need the same client.
+- Archive (the pair 41 recipe: `tar --owner=0 --group=0 --numeric-owner --mtime='2026-10-22 00:00:00Z' --format=gnu`, `xz -9 -T3`,
+  `split -b 95M -d -a 2`): 186,713,348 bytes, sha256 c51565a31fcffc14310deb2258b75b9a0f2345adc6172f61206ad8150d3716d3; parts
+  `things-1098.tar.xz.part00` (99,614,720 bytes, sha256 4704d407ee9646b119682bfdf910188418195080bf728a6d248ff47d8dbf7a33) and `.part01`
+  (87,098,628 bytes, sha256 7954857b4b5cadf646ca1d95f25bf5c236d018eb73005db882a364a94d17b16b); the joined parts extract to the md5s
+  above. Pushed to windows-assets as **87c4b09c** (parent 4fcb48ff); only the two part lines of SHA256SUMS.parts changed.
 
 ## Owner art (things_custom26: outfits 2213-2233, items 33940-33985, `tools/sprites/gen_owner_art.py`, `art_import/owner_art.csv`; on windows-assets 50645056, switch on since 2026-10-15)
 **Source and licence.** The owner's Google Drive folder "ots", files added 2026-10-15. The owner confirmed the art is
