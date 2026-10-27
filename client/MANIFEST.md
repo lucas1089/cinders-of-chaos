@@ -3258,7 +3258,7 @@ client id tables stay valid. The list is `tools/sprites/pair51_removed.csv` (kin
 - **Rules.** Kept: every pickupable, moveable, container, door, key, house, corpse, fluid, field, rune and light item; every item id on a
   map (installed base map, the large test map, 7 small base maps); everything of pairs 49 and 50 that a script, kit, list or map names; outfits of
   players, NPCs, monsters and client lists; every effect and missile a script, spell or catalog name uses, and the whole base protocol
-  range (effects 1-187, missiles 1-96). Retired: 3,803 items (base scenery 973, art_items 502, pack30 art about 1,700, ...), 44 outfits,
+  range (effects 1-187, missiles 1-96). Retired: 3,803 items (base scenery 973, art_items 502, pack30 art about 1,700, ...), 42 outfits,
   2,929 effects, 62 missiles above the base range.
 - **Tool.** `prune_pair.py prune` (streams the spr, pure Python), `restore` (puts archive things back at their ids, sprites appended),
   `stats`, `check-map` (blanked item ids that stand on a given map; needs numpy). `--archive-dir` writes an archive pair with the original ids.
@@ -3276,7 +3276,7 @@ Output **pair 51**: dat a4d59922593fb779e00d4bfda34f5282 (8,822,068 bytes), spr 
 943,002 sprites; pair 50 had 1,530,465), the same counts of things (44,395 items, 3,360 outfits, 4,701 effects, 253 missiles).
 Archive pair: dat a19ebfdf56b9970d4a3fafc7993bf125 (4,737,560 bytes), spr b54054364807a62cde4ae93635fa0f6a (658,187,234 bytes, 388,134 sprites).
 - `check_pair.py` (full): 0 errors, 4,045 warnings (thing-empty 3,868 are the blanks; the rest were in pair 50). `--old pair 50` fails by
-  design, the append-only guard sees the compaction. `gen_outfit_anchors.py` and `gen_info_lift.py` regenerated (md5, and 44 outfits fewer).
+  design, the append-only guard sees the compaction. `gen_outfit_anchors.py` and `gen_info_lift.py` regenerated (md5, and 42 outfits fewer).
   Not run in a client.
 - **Names.** Effects and missiles that scripts use by name are kept: a quoted catalog name (swap tables such as `chaos_pack27_fx.lua`
   and `chaos_pack29_vfx.lua`, `CONST_ANI_` / `CONST_ME_` / `fx` keyed values), its base without a direction or number suffix, or a
@@ -3308,16 +3308,16 @@ python3 -I client/tools/sprites/import_pair51_missiles.py --dat pair51/Tibia.dat
 python3 -I client/tools/sprites/check_pair.py out/Tibia.dat out/Tibia.spr
 ```
 Input pair 51 without missiles (dat a4d59922593fb779e00d4bfda34f5282, spr a7acc5b88b310fa6984960a1553c4501).
-Output **pair 51 with missiles**: dat cc208f39fae3fa39857780599d4f2a4d (8,833,544 bytes), spr d13c71756ab3a126b640429b2e2d4e5e
-(1,129,542,372 bytes, 945,172 sprites: 2,170 appended), the same counts of things (44,395 items, 3,360 outfits, 4,701 effects, 253 missiles).
+Output **pair 51 with missiles**: dat 603d31cdfca53e6a59d048fda262a8f5 (8,835,366 bytes), spr c4a23ac902a79dc0dd1307b7759ec409
+(1,129,930,429 bytes, 945,525 sprites: 2,170 appended for the missiles, 353 for the two restored recolour source looks), the same counts of things (44,395 items, 3,360 outfits, 4,701 effects, 253 missiles).
 - `check_pair.py` (full): 0 errors, 3,977 warnings (thing-empty 3,861 blanks, size-large 38, exact-size 63, missile-patterns 4 base ids, the rest as before).
   `gen_outfit_anchors.py` and `gen_info_lift.py` regenerated against this pair (`--check` passes); `gen_fx_send_offsets.py --check` passes. Not run in a client.
 - **Archive parts** (windows-assets recipe: `tar --owner=0 --group=0 --numeric-owner --mtime='2026-10-22 00:00:00Z' --format=gnu` of
-  Tibia.dat + Tibia.spr as `things-1098.tar`, `xz -9 -T3`, `split -b 95M -d -a 2` to `things-1098.tar.xz.partNN`; pushed to windows-assets as **17f43b1d**, parent b3ed3a20):
-  - part00 99,614,720 bytes, sha256 `60f34021fe42c404ac8f55b7f445e93d89791c7f66e3e28ef4757c512e60f2fa`
-  - part01 28,947,064 bytes, sha256 `94a75e3287571c47a4d043ccaf1f24b64df3189286dac432b5d2394123097542`
-  - joined `things-1098.tar.xz` (128,561,784 bytes) sha256 `c3ae908859ff7e9670b43ead7f145778d8b57986e1a5a77d7dc3560e75597e42`;
-    `things-1098.tar` sha256 `86e58f4d3192bb382b657bd8cedd29e26893f24b5cabaf468e3940dfcb23bce0`.
+  Tibia.dat + Tibia.spr as `things-1098.tar`, `xz -9 -T3`, `split -b 95M -d -a 2` to `things-1098.tar.xz.partNN`; pushed to windows-assets as **d7abd80b** (first push 17f43b1d without looks 2104 and 2108)):
+  - part00 99,614,720 bytes, sha256 `892d6b38cb3be597bac245791eafabf0aec9bc859da8f10bd02c66412b198a7a`
+  - part01 28,999,336 bytes, sha256 `7127091c06456c4e658cb913498d2f64dc23f780091f6895be0784cfcb54ec93`
+  - joined `things-1098.tar.xz` (128,614,056 bytes) sha256 `3c7ad78cdb379f7a49f2e31dda50ac37ee87638f03d55c101eb89f0b4ce6bca4`;
+    `things-1098.tar` sha256 `3f18fb2b7553fc80797735338a5fa73a02c7aa2706086529fb19dd6de9c8fd9b`.
     Extracting gives the dat and spr md5 above.
 
 ## Owner art (things_custom26: outfits 2213-2233, items 33940-33985, `tools/sprites/gen_owner_art.py`, `art_import/owner_art.csv`; on windows-assets 50645056, switch on since 2026-10-15)

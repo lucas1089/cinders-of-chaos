@@ -104,3 +104,5 @@ missile,186,potion_lava,kept on the owner-side review of 2026-10-27: pack 36 nam
 missile,187,potion_flask_lava,kept on the owner-side review of 2026-10-27: pack 36 name reserved for spells not written yet
 missile,188,potion_flask_poison,kept on the owner-side review of 2026-10-27: pack 36 name reserved for spells not written yet
 missile,200,proj_spirit_wisp,kept on the owner-side review of 2026-10-27: pack 36 name reserved for spells not written yet
+outfit,2104,obsidian_minion,source look of the frost/venom/void recolour variants (theme_recolour.py); CI rebuilds them from the live pair
+outfit,2108,crypt_minion,source look of the frost/venom/void recolour variants (theme_recolour.py); CI rebuilds them from the live pair
