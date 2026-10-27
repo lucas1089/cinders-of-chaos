@@ -6,6 +6,7 @@
 --   ChaosDiscordCore.enabled(cfg, kind)                 the switch of an event type
 --   ChaosDiscordCore.allow(state, cfg, kind, now)       the per-minute rate limit (state.window, state.dropped)
 --   ChaosDiscordCore.record / first / worldBossSpawn / bossKill / level / season / status   the events
+--   ChaosDiscordCore.patchnotes(cfg, title, text)      the patch note post (patchnotes.lua, English and pt-BR rows)
 --   ChaosDiscordCore.milestones(old, new, list)        the milestone levels crossed by a level up
 --   ChaosDiscordCore.saveTime(xml)                     hour, minute of the server save in globalevents.xml
 --   ChaosDiscordCore.isDailyRestart(now, hour, min, window)   a shutdown inside the window after the save time
@@ -143,6 +144,11 @@ function D.status(cfg, kind, serverName)
 end
 
 -- the milestone levels in list with old < m <= new (in order)
+-- a new patch note (patchnotes.lua; the text is a digest in one language, cut to the embed size by the caller)
+function D.patchnotes(cfg, title, text)
+	return event(cfg, "patchnotes", title, text)
+end
+
 function D.milestones(oldLevel, newLevel, list)
 	local out = {}
 	oldLevel, newLevel = tonumber(oldLevel) or 0, tonumber(newLevel) or 0
