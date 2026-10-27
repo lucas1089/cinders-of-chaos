@@ -19,6 +19,10 @@
 --   H.placeCounts(marks)               {kind = count} of the marks the helper can bring a tester to
 --   H.bagPlan(items, want, held)       the backpack clean-up: which top-level items to remove (every id not in `want`) and which
 --                                       supplies to add (an id of `want` held under half of its number, up to the number)
+--   H.targetKind(owner, target)       what a creature's target is, seen from `owner`: "none", "owner", "summon" (a summon of the
+--                                       owner or of its party), "ally" (a party member), "monster" (wild), "player" (a stranger)
+--   H.summonAnomalies(snap, now, seen) O86: the rules summon_targets_owner / summon_targets_ally / owner_targets_summon over a
+--                                       snapshot {who, ownerTarget, summons = {{name, id, target}}}, once per 30 s per rule
 --   H.onlineLine(count, last, minute)  the console line "[tester-helper] testers online: N" when the count changed
 --                                       since the last line, or every 5 minutes; nil otherwise
 -- Lua 5.1 / LuaJIT and 5.3 compatible.
@@ -29,7 +33,7 @@ local H = ChaosTesterHelperCore
 H.STORAGE = 7102900 -- Chaos.storage.tester (chaos_constants.lua; the test checks they agree)
 H.MARK = "[tester-helper]"
 H.ANOMALY = "[tester-anomaly]"
-H.COMMANDS = {town = true, depot = true, shop = true, hunt = true, info = true, enter = true, places = true, bag = true}
+H.COMMANDS = {town = true, depot = true, summons = true, party = true, chest = true, shop = true, hunt = true, info = true, enter = true, places = true, bag = true}
 
 -- numbers of the anomaly rules (a hit is "absurd" far above anything the game should do; tune with the report)
 H.limits = {
@@ -287,6 +291,55 @@ function H.itemAnomaly(item)
 		end
 	end
 	return nil
+end
+
+-- O86 (the Beastmaster wolf and its owner took each other for enemies; never reproduced): what a creature's target is,
+-- seen from `owner`. Both are plain tables {id, isPlayer, isMonster, masterId, ownerId, partyLeaderId}; ownerId is the
+-- player behind a summon. The test of the engine file builds them from creatures.
+function H.targetKind(owner, target)
+	if not target then
+		return "none"
+	end
+	if target.id == owner.id then
+		return "owner"
+	end
+	local side = target.isPlayer and target.id or target.ownerId
+	if side then
+		local ally = side == owner.id or (owner.partyLeaderId ~= nil and target.partyLeaderId == owner.partyLeaderId)
+		if ally then
+			return target.isPlayer and "ally" or "summon"
+		end
+		return target.isPlayer and "player" or "monster"
+	end
+	return "monster"
+end
+
+H.SUMMON_THROTTLE = 30 -- seconds between two lines of one rule for one tester
+-- snap: {who, ownerTarget (a targetKind), summons = {{name, id, target (a targetKind)}}}; seen: {key = time}, kept by the
+-- caller. Returns the list of {rule, who, summon, kind} that is new.
+function H.summonAnomalies(snap, now, seen)
+	local out = {}
+	local function report(rule, summon, kind)
+		local key = tostring(snap.who) .. "|" .. rule
+		if seen and seen[key] and now - seen[key] < H.SUMMON_THROTTLE then
+			return
+		end
+		if seen then
+			seen[key] = now
+		end
+		out[#out + 1] = {rule = rule, who = snap.who, summon = summon and summon.name or nil, id = summon and summon.id or nil, kind = kind}
+	end
+	for _, sm in ipairs(snap.summons or {}) do
+		if sm.target == "owner" then
+			report("summon_targets_owner", sm, sm.target)
+		elseif sm.target == "ally" or sm.target == "summon" then
+			report("summon_targets_ally", sm, sm.target)
+		end
+	end
+	if snap.ownerTarget == "summon" then
+		report("owner_targets_summon", nil, snap.ownerTarget)
+	end
+	return out
 end
 
 -- once a minute the helper counts the testers in game; the server console gets a line when it changed (or every

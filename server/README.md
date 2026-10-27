@@ -769,7 +769,23 @@ left open, now closed (`summons_core.lua`, `summons.lua`, `tests/summons_test.lu
   within 7 sqm when its target is an ally (or says "No enemy in range."); the companion's bite skips an ally target;
 - the Moonfang wolves now carry the companion guard too (the owner's area spells do not hurt them).
 Client side the Auto Target already skips summons and effigies (base patch 0076); its locked target and attack next
-followed in 2026-10-21 (base patch 0112, see "Summons: targets, walk-through, levels"). **To check live**: summon the wolf, stand
+followed in 2026-10-21 (base patch 0112, see "Summons: targets, walk-through, levels"). **Second pass (O86, 2026-10-27).**
+A likely engine cause, still a hypothesis (the engine source is not here; written from the TFS 1.4.2 code as remembered):
+`Monster::updateTargetList` only drops creatures that are dead or out of sight, never non-opponents, and `isOpponent` of a
+player's summon is "everybody but its master", so the owner, the party and the owner's other summons sit in the summon's
+target list and the engine's own `selectTarget` may pick them; the scripts only refused the *hit* (`onTargetCombat`), the
+wolf kept chasing. Closed in Lua, no engine patch (it cannot be compiled or tried here): `ChaosSummonsCore.purge(summon,
+owner)` removes every ally of the owner from the summon's engine target list (`getTargetList` / `removeTarget`) and drops an
+ally attack target, never the follow target (a summon follows its master); `bind` calls it, and the 0.5 s tick of
+`summons.lua` calls `purgeAll` for every player with summons or a party, so a relog, a teleport, a town portal, a party
+join and the move in or out of a PvP zone are covered within half a second. `sameParty` compares the party objects and,
+when the engine hands out a new object per `getParty()` call, the party leaders, so `isAlly` no longer depends on `==` of
+userdata. Every engine call is behind `pcall` (an engine without one of them is not an error). Mocked tests in
+`tests/summons_test.lua`: creation with the owner, a member and their summons in the list; a fresh party object per call;
+listed again after a relog or teleport; a member who joins later; a member who left (not purged any more); a skulled
+stranger and a wild monster (kept); failing and missing API. **Live check**: the tester bots (below, "System checks") run the
+wolf for 20 s and fail with `BUG beastmaster_wolf` on any wrong target or any ally left in its engine target list, and the
+helper reports `summon_targets_owner` for every tester with a summon, all the time. **To check live by hand**: summon the wolf, stand
 next to it with Auto Target on, hunt, press Feral Command with the wolf clicked (it should hit the nearest monster), and watch
 whether the wolf ever walks at the owner. If it still does, read `Monster::selectTarget` / `isOpponent` in the engine and
 tell me what the fork changed.
@@ -7525,7 +7541,8 @@ Not under `data/`, so no install step ships it. `chaos-ctl.sh testers start` cop
 - Gives a target: the nearest unowned monster within 5 tiles, then faces it. Never a player, never a summon.
 - Once: a backpack, the plain weapon of its class kit (`ChaosTestKit`, no unique roll), 100 health and mana
   potions, 20000 gold in the bank.
-- `!tester info | town | depot | hunt | shop | bag`: answers one line `[tester-helper] <kind> <json>`.
+- `!tester info | town | depot | hunt | shop | bag | summons | party | chest`: answers one line `[tester-helper] <kind> <json>`
+  (`summons`, `party` and `chest` are the probes of the system checks, below).
   Teleports to the temple, next to a depot locker, next to an NPC, back to the hunt spot.
 - `!tester places`: the map mark counts by kind (`ChaosPoi`). `!tester enter <kind> [N]`: next to the N-th mark of
   that kind (temple, depot, craft, bank, bless, travel, shop, boss, hunt, portal, dungeon; guild halls refused).
@@ -7623,8 +7640,10 @@ sudo /opt/chaos/repo/server/deploy/chaos-ctl.sh testers cleanup --yes    # delet
 ```
 
 The trial kit reads `/etc/chaos/ctl.conf` (`ctl.conf.trial.example`): server `/opt/chaos-trial/server`, log `/opt/chaos-trial/logs/server.log`.
-- `start [N] [MINUTES] [--restart SECONDS] [--keystones]`: default 100 bots, 60 minutes; at most 150 and 1440.
+- `start [N] [MINUTES] [--restart SECONDS] [--keystones] [--checks]`: default 100 bots, 60 minutes; at most 150 and 1440.
   `--keystones`: the keystone and mastery test first (below, "Keystones and masteries").
+  `--checks`: the system checks after it (below, "System checks"). Admin app: tab Comandos > card Testers > button
+  "Iniciar testando os sistemas".
   The helper loads at a server start. Without "[tester-helper] running" in the log since the newest start, `start`
   refuses, unless `--restart SECONDS`: the usual restart countdown; the bots start 30 s after it.
   First run: `testers.py setup`. Then the run, detached (`setsid`, own process group), log `/var/log/chaos/testers.log`.
@@ -7677,6 +7696,43 @@ Data keys are filled only from the bot's own earlier answers on that opcode. Nev
 Character keys (name, target, cid, ...) only get a tester. Owner, guid, gift, payment keys are never sent.
 Report: per system tried / ok / refused / log errors. A system never reached says why:
 out of scope with the reason, passive, or not picked in this run.
+
+### System checks (O110, `tools/tester_checks.py`, `tools/tester_checks_test.py`)
+
+`testers.py run --checks` (`chaos-ctl.sh testers start N M --checks`; the admin app button "Iniciar testando os sistemas"):
+after the keystone test (if asked) each bot runs, once, the checks that apply to its class. The coverage layer above only
+touches a system (a request, a place); a check asserts something about it. A failed check is a line `BUG <check>: <what>
+(<bot>, <class>)` in the report (section "System checks"), in `run.json` (`checks`) and in the testers log (`CHECK` and `BUG`).
+A check that cannot run is `skip` with the reason (no spell learned yet, no mana, no pet owned, no other bot in game,
+the system is not installed): never faked. A death in the middle drops the check it cut off; it is done again after the login.
+
+| Check | Classes | What it asserts |
+|---|---|---|
+| `beastmaster_wolf` | Beastmaster | casts Wild Bond (`vael ferh`), at most cap + 1 summons, then 20 s with the wolf: it never targets the owner, a party member or their summons; the owner never holds a summon as target; no ally stays in the wolf's engine target list. Then `!tester town` and back (teleport and leash), 6 s more |
+| `necro_minions` | Necromancer, Lich, Bone Lord | the same for Raise Dead (`vael oss`), at most 5 + 1 minions |
+| `pets` | all | the pets window answers; a pet the bot owns comes out as a summon, never targets its owner, is gone after `dismiss` |
+| `party` | all | the bot invites another bot (0xA3), the other joins (0xA4): the helper sees a party of 2; a summoner casts its summon in the party and keeps the sides rule; after leaving (0xA7) the helper sees no party |
+| `rift` | all | `!tester enter rift 1` (a key of tier 1, then the temple) answers without an error, the rift window answers |
+| `waystone` | all | the atlas (`waystoneAtlas` `open`) answers without an error |
+| `reward_chest` | all | the weekly chest (`weeklyChest` `open`) answers without an error, then `close` |
+| `cursed_chest` | all | `!tester chest spawn` puts a chest next to the bot (`idle`), `use` starts the event (`running`, monsters tagged), `abort` ends it and leaves no chest and no monster |
+| `auto_setup` | all | the preset of the client's Auto setup table (`autorotation_data.lua`) for the bot's class and level holds only spells that exist on the server (`spells_chaos.xml`, `stock_spells.csv`), are open to the class and are not gated higher (`auto_setup_problems`) |
+
+The helper commands (TEST ONLY, only for a `Tester Xxx` character with the tester storage): `!tester summons` answers the
+bot's summons with the target of each (`none`, `owner`, `summon`, `ally`, `monster`, `player`, seen from the owner), how
+many creatures are in each summon's engine target list and how many of them are allies; `!tester party` the party size,
+leader and members; `!tester chest [spawn | use | state | abort]` a cursed chest of the bot (`ChaosCursedChest.spawnChest`,
+`use`, `failEvent`).
+
+O86 rules, also in the helper's loop for every tester that has a summon (no check needed), one console line each,
+throttled to one per rule and tester per 30 s: `[tester-anomaly] {"rule":"summon_targets_owner"}`,
+`summon_targets_ally` (a party member, or the owner's or a member's summon) and `owner_targets_summon`. The report lists them
+under the anomalies. Pure rules: `ChaosTesterHelperCore.targetKind` and `summonAnomalies` (`tests/tester_helper_test.lua`).
+To run only what matters for the wolf: 20 or more testers (every class gets one), at least two in game at once for the party.
+
+Tests: `tools/tester_checks_test.py` (mocked game: every check passes, fails with its BUG line, and skips; the Auto setup
+rule against the real client data), `tests/tester_helper_test.lua` (the probes on a mocked engine, and a real player's
+summons are never probed), `testers_test.py` (flag, report section, flush).
 
 ### Keystones and masteries (O249, `tools/tester_keytree.py`, `tools/tester_keystones.py`)
 

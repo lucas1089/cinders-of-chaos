@@ -380,6 +380,130 @@ function commands.bag(player)
 	tell(player, "bag", {removed = #remove, topped = ok and added or 0})
 end
 
+-- ---------------------------------------------------------------- O86 / O110 probes: summons, party, cursed chest
+-- plain tables for H.targetKind / H.summonAnomalies
+local function sideOf(c)
+	if not c then
+		return nil
+	end
+	local t = {id = c:getId(), isPlayer = c:isPlayer()}
+	if not t.isPlayer then
+		local m = c.getMaster and c:getMaster()
+		if m and m:isPlayer() then
+			t.ownerId = m:getId()
+			c = m
+		end
+	end
+	local party = c.getParty and c:getParty()
+	local leader = party and party.getLeader and party:getLeader()
+	if leader then
+		t.partyLeaderId = leader:getId()
+	end
+	return t
+end
+
+local function summonSnapshot(player)
+	local owner = sideOf(player)
+	local snap = {who = player:getName(), ownerTarget = H.targetKind(owner, sideOf(player:getTarget())), summons = {}}
+	for _, sm in ipairs(player:getSummons() or {}) do
+		local row = {name = sm:getName(), id = sm:getId(), target = H.targetKind(owner, sideOf(sm:getTarget()))}
+		local list = sm.getTargetList and sm:getTargetList() or {}
+		row.listed = #list
+		local allies = 0
+		for _, c in ipairs(list) do
+			if H.targetKind(owner, sideOf(c)) ~= "monster" then
+				allies = allies + 1
+			end
+		end
+		row.listedAllies = allies
+		snap.summons[#snap.summons + 1] = row
+	end
+	return snap
+end
+
+function commands.summons(player)
+	local snap = summonSnapshot(player)
+	snap.count = #snap.summons
+	tell(player, "summons", snap)
+end
+
+function commands.party(player)
+	local party = player:getParty()
+	local data = {size = 0, members = {}}
+	if party then
+		local leader = party:getLeader()
+		data.leader = leader and leader:getName() or nil
+		data.size = #party:getMembers() + 1
+		for _, m in ipairs(party:getMembers()) do
+			data.members[#data.members + 1] = m:getName()
+		end
+	end
+	tell(player, "party", data)
+end
+
+local function ownChests(player)
+	local out = {}
+	local CC = ChaosCursedChest
+	for _, ch in pairs(CC and CC.chests or {}) do
+		if ch.ownerId == player:getGuid() then
+			out[#out + 1] = ch
+		end
+	end
+	return out
+end
+
+local function chestItemOf(ch)
+	local tile = Tile(Position(ch.pos.x, ch.pos.y, ch.pos.z))
+	return tile and tile:getItemById(ch.itemId)
+end
+
+-- !tester chest [spawn | use | state | abort]: a cursed chest next to the tester; use opens it (the horde starts), abort
+-- ends the event and removes the chest. Answers {state, left (chests of the tester still known), monsters}
+function commands.chest(player, arg)
+	local CC = ChaosCursedChest
+	if not CC or not CC.spawnChest then
+		tell(player, "chest", {err = "no cursed chest system"})
+		return
+	end
+	local what = (arg or "spawn"):lower()
+	local mine = ownChests(player)
+	local ch = mine[1]
+	if what == "spawn" then
+		if not ch then
+			local C, Kc = ChaosCursedChestConfig, ChaosCursedChestCore
+			local level = Kc.areaLevel(C, player:getLevel(), player:getLevel())
+			ch = CC.spawnChest(player, player:getPosition(), {name = "Tester Monster",
+				pool = Kc.buildPool(C, "Rotworm", {"Rotworm"}, level, {}), gear = {}, monsterLevel = level, tier = "normal"})
+			if ch then
+				ch.level = level
+			end
+		end
+	elseif what == "use" and ch then
+		local item = chestItemOf(ch)
+		if item then
+			CC.use(player, item)
+		end
+	elseif what == "abort" and ch then
+		if ch.state == "running" then
+			CC.failEvent(ch, "gone")
+		else
+			local item = chestItemOf(ch)
+			if item then
+				item:remove()
+			end
+			CC.chests[ch.key] = nil
+		end
+	end
+	mine = ownChests(player)
+	ch = mine[1]
+	local monsters = 0
+	for _ in pairs(CC.tagged or {}) do
+		monsters = monsters + 1
+	end
+	tell(player, "chest", {state = ch and ch.state or "none", left = #mine, monsters = monsters,
+		horde = ch and ch.ev and ch.ev.horde or 0})
+end
+
 -- ---------------------------------------------------------------- login: supplies once, hunt spot, info
 local BACKPACK = 1988
 
@@ -589,6 +713,16 @@ local function step()
 						monster:registerEvent("TesterHelperDealt")
 						player:setTarget(monster)
 						player:setDirection(H.directionTo(player:getPosition(), monster:getPosition()))
+					end
+				end
+				-- O86: a summon that targets its owner or an ally, or an owner stuck with its own summon
+				if player.getSummons and #(player:getSummons() or {}) > 0 then
+					local okS, snap = pcall(summonSnapshot, player)
+					if okS then
+						T.seen = T.seen or {}
+						for _, a in ipairs(H.summonAnomalies(snap, os.time(), T.seen)) do
+							anomaly(a.rule, {who = a.who, summon = a.summon, kind = a.kind, level = player:getLevel()})
+						end
 					end
 				end
 				if T.step % 120 == g then -- every minute

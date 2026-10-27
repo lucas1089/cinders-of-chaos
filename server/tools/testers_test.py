@@ -651,6 +651,29 @@ eq([r['status'] for r in resk.d['keytest']], ['not tested'], 'flushed at the end
 bk.flush_keytest('again')
 eq(len(resk.d['keytest']), 1, 'and only once')
 
+# --checks (O110, tester_checks.py): the flag, the BUG line in the report, the waiter wildcard, the checks flush
+eq(T.parse(['run', '--server-dir', '/x', '--key-file', '/k', '--checks']).checks, True, '--checks is a flag')
+eq(T.parse(['run', '--server-dir', '/x', '--key-file', '/k']).checks, False, 'off by default')
+rc = TC.build_report({'checks': [{'check': 'beastmaster_wolf', 'bot': 'Tester Abc', 'class': 'Beastmaster', 'status': 'fail',
+                                  'detail': 'war wolf #1 targets its owner'},
+                                 {'check': 'pets', 'bot': 'Tester Abd', 'class': 'Ninja', 'status': 'skip', 'detail': 'the bot owns no pet'}]},
+                     {'errors': {}, 'warnings': {}, 'anomalies': [], 'events': [], 'first': {}})
+ok('BUG beastmaster_wolf: war wolf #1 targets its owner (Tester Abc, Beastmaster)' in rc, 'the report prints the BUG line')
+ok('skip pets' in rc and '== System checks' in rc, 'and the skips with their reason')
+resc = T.Results(1)
+bc = T.TesterBot(8, dict(bot), A(), 1, resc, {'rotation': [], 'heal': None})
+bc.checks = T.TX.CheckRun(bc.name, bc.cls, bc.level, only=['waystone'])
+bc.flush_checks()
+eq(resc.d.get('checks'), None, 'checks that are not through are not flushed')
+bc.checks.done.add('waystone')
+bc.checks.results.append(T.TX.Result('waystone', bc.name, bc.cls, T.TX.PASS, 'x'))
+bc.flush_checks(); bc.flush_checks()
+eq([r['status'] for r in resc.d['checks']], ['pass'], 'flushed once when through')
+sp = T.load_check_spells(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'), {'Beastmaster': {'id': 15}, 'Ninja': {'id': 12}})
+eq(sp.get(248, {}).get('name'), 'Wild Bond', 'load_check_spells: a Chaos spell by its spellid')
+eq(sp.get(248, {}).get('vocations'), [15], 'its class')
+ok(236 in sp and 12 in sp[236]['vocations'], 'Shuriken Toss is open to the Ninja')
+
 for f in FAILS:
     print('FAIL ' + f)
 print('testers_test: %d checks, %d failures' % (CHECKS[0], len(FAILS)))

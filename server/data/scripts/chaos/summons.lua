@@ -4,6 +4,7 @@
 --     party's: the hit is refused and the attack target dropped;
 --   * a 0.5 s tick drops the attack target of a player holding one of its allies' summons as target (the client's click
 --     or auto target), so the owner is not stuck with its wolf and Feral Command and the companions' bites go at monsters.
+--   * the same tick purges allies (owner, party, their summons) from the engine target list of each summon (K.purge).
 -- Assumed engine API (TFS 1.4): EventCallback onTargetCombat, GlobalEvent think, Game.getPlayers, Player:getSummons,
 -- Creature:getTarget/setTarget/getMaster/getParty.
 if not ChaosSummonsCore then
@@ -65,6 +66,11 @@ function tick.onThink(interval)
 			local ok, err = pcall(S.dropAllyTarget, player)
 			if not ok then
 				print("[ChaosSummons] " .. tostring(err))
+			end
+			-- O86: allies listed as targets of the summons (the engine lists everybody in sight) go out of the list
+			local ok2, err2 = pcall(K.purgeAll, player)
+			if not ok2 then
+				print("[ChaosSummons] " .. tostring(err2))
 			end
 		end
 	end

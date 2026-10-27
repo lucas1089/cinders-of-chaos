@@ -1055,6 +1055,24 @@ def test_testers():
             pass
         check(run('testers', 'start', '--keystones', 'x').returncode != 0, 'start: a word that is not a number is refused')
 
+        # --checks (O110): the run gets the flag after the table; both flags together give both
+        before = tcalls()
+        r = run('testers', 'start', '2', '1', '--checks', extra={'STUB_BOTS': '5'})
+        check(r.returncode == 0 and 'system checks' in r.stdout, 'start --checks: ' + r.stdout + r.stderr)
+        pid = int(open(os.path.join(state, 'run.pid')).read())
+        for _ in range(50):
+            if 'run --key-file' in tcalls()[len(before):]:
+                break
+            time.sleep(0.1)
+        new = tcalls()[len(before):]
+        check('--scenarios' in new and new.split('--scenarios', 1)[1].split()[1:2] == ['--checks'],
+              'the run gets --checks after the table: ' + new)
+        run('testers', 'stop')
+        try:
+            os.killpg(pid, signal.SIGKILL)
+        except OSError:
+            pass
+
         # not loaded, with --restart: the restart countdown is queued, the bots wait for it
         with open(log, 'a') as f:
             f.write('Loading config\n')

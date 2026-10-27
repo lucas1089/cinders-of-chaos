@@ -589,6 +589,22 @@ final class CommandsTab {
                     () -> ctl("Iniciar testers (árvore)", "testers start " + n + " " + m + " --keystones --restart 300", 180, null));
         });
         b.addView(tree, ui.gap(6));
+        // O110: the same run, but every tester first runs the system checks of its class (summons, party, rift, chests, Auto setup)
+        MaterialButton checks = ui.secondary("Iniciar testando os sistemas", R.drawable.ic_play);
+        checks.setOnClickListener(v -> {
+            int n = number(count, 1, 150), m = number(minutes, 1, 1440);
+            if (n < 0 || m < 0) {
+                return;
+            }
+            a.confirm("Iniciar " + n + " testers por " + m + " min, testando os sistemas?", "Cada tester confere, uma vez, "
+                    + "invocações e pets (lobo do Beastmaster, lacaios do Necromancer), grupo, rift, atlas de waystones, "
+                    + "baú de recompensa, baú amaldiçoado e a lista do Auto setup da sua classe. Uma falha vira uma linha "
+                    + "\"BUG ...\" no Relatório; o que não deu para testar aparece como \"skip\" com o motivo. Vale 20 "
+                    + "testers ou mais, com pelo menos dois no jogo ao mesmo tempo. Se o ajudante de teste ainda não "
+                    + "carregou, o servidor reinicia com 5 minutos de aviso.", "Iniciar", true,
+                    () -> ctl("Iniciar testers (sistemas)", "testers start " + n + " " + m + " --checks --restart 300", 180, null));
+        });
+        b.addView(checks, ui.gap(6));
         MaterialButton status = ui.secondary("Status", R.drawable.ic_refresh);
         status.setOnClickListener(v -> a.ctlAction("testers status", 30, f -> {
             if (!f.ok) {
