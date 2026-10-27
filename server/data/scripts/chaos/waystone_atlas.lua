@@ -103,7 +103,7 @@ function WA.get(guid)
 end
 
 local function sendState(player, msg)
-	Chaos.send(player, OPCODE, "state", WC.statePayload(cfg, TC(), WA.get(player:getGuid()), msg))
+	Chaos.send(player, OPCODE, "state", WC.statePayload(cfg, TC(), WA.get(player:getGuid()), msg and Chaos.tx(player, msg) or msg))
 end
 
 -- ======================================================================== runs

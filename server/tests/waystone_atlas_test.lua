@@ -273,6 +273,7 @@ do
 	_G.Chaos = {
 		pay = function(player, n, quiet) return ChaosPay.pay(player, n, quiet) end,
 		t = function(_, f, ...) return string.format(f, ...) end,
+		tx = function(_, text) return text end,
 		send = function(player, op, action, data) sent[#sent + 1] = {p = player, op = op, action = action, data = data} end,
 		sendChunked = function(player, op, payload) sent[#sent + 1] = {p = player, op = op, action = payload.action, data = payload.data} end,
 		decode = function(b) return b end,

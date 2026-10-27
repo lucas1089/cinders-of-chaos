@@ -369,7 +369,7 @@ local function sendWallet(player)
 end
 
 local function refuse(player, text)
-	send(player, "error", {text = text})
+	send(player, "error", {text = Chaos.tx(player, text)})
 	return false
 end
 
@@ -477,16 +477,16 @@ function X.deliver(player, away)
 		local parts = {}
 		local list = X.orbs()
 		if gained[GOLD] then
-			parts[#parts + 1] = "+" .. C.money(gained[GOLD]) .. " gold in your bank"
+			parts[#parts + 1] = Chaos.t(player, "+%s gold in your bank", C.money(gained[GOLD]))
 		end
 		for _, o in ipairs(list) do
 			if gained[o.key] then
-				parts[#parts + 1] = "+" .. amountText(o.key, gained[o.key]) .. " in your inbox"
+				parts[#parts + 1] = Chaos.t(player, "+%s in your inbox", amountText(o.key, gained[o.key]))
 			end
 		end
 		local text = table.concat(parts, ", ") .. "."
 		tell(player, text)
-		local title, toastText, kind = ChaosMarketNotify.exchangeToast(text, traded, away)
+		local title, toastText, kind = ChaosMarketNotify.exchangeToast(text, traded, away, Chaos.lang(player))
 		if ChaosNotify and ChaosNotify.send then
 			ChaosNotify.send(player, title, toastText, kind)
 		else
@@ -584,7 +584,7 @@ local function matchOrder(row, t)
 end
 
 -- the text of what an order did at once, and the makers told
-local function afterFills(row, fills)
+local function afterFills(row, fills, lang)
 	if not fills or #fills == 0 then
 		return ""
 	end
@@ -600,22 +600,22 @@ local function afterFills(row, fills)
 			seen[m.player] = true
 			local p = Player(m.player)
 			if p then
-				tell(p, string.format("your order %d traded %s for %s.", m.id, amountText(m.give, f.a), amountText(m.want, f.b)))
+				tell(p, Chaos.t(p, "your order %d traded %s for %s.", m.id, amountText(m.give, f.a), amountText(m.want, f.b)))
 				X.deliver(p)
 			end
 		end
 	end
 	logRow("take", {order = row.id, player = row.player_id, asset = row.give_asset, amount = gave, text = string.format("%d fills: got %d %s, fee %d",
 		#fills, got, row.want_asset, fee)})
-	local text = string.format(" Traded at once: %s for %s%s.", amountText(row.give_asset, gave), amountText(row.want_asset, got),
-		fee > 0 and string.format(" (fee %s gold)", C.money(fee)) or "")
+	local text = ChaosI18n.text(lang, " Traded at once: %s for %s%s.", amountText(row.give_asset, gave), amountText(row.want_asset, got),
+		fee > 0 and ChaosI18n.text(lang, " (fee %s gold)", C.money(fee)) or "")
 	if C.isDone(taker) then
-		return text .. " The order is filled."
+		return text .. ChaosI18n.text(lang, " The order is filled.")
 	end
 	if C.isDust(taker) then
-		return text .. string.format(" The order is filled; %s left over come back to you.", amountText(row.give_asset, C.left(taker)))
+		return text .. ChaosI18n.text(lang, " The order is filled; %s left over come back to you.", amountText(row.give_asset, C.left(taker)))
 	end
-	return text .. string.format(" %s stays on the book.", amountText(row.give_asset, C.left(taker)))
+	return text .. ChaosI18n.text(lang, " %s stays on the book.", amountText(row.give_asset, C.left(taker)))
 end
 
 -- activates a pending order and matches it, in one transaction; returns true, the fills (nil = failed, stays pending)
@@ -708,7 +708,7 @@ function X.place(player, d)
 	local t = now()
 	local balance = player:getBankBalance()
 	local name = player:getName()
-	local head = string.format("Order placed: %s for at least %s.", amountText(o.give, o.giveQty), amountText(o.want, o.wantQty))
+	local head = Chaos.t(player, "Order placed: %s for at least %s.", amountText(o.give, o.giveQty), amountText(o.want, o.wantQty))
 	local id, fills, row
 
 	if o.give == GOLD then
@@ -789,14 +789,14 @@ function X.place(player, d)
 		if not okA then
 			log("order " .. id .. " stays pending (activated at the next login / startup)")
 			logRow("place", {order = id, player = guid, asset = o.give, amount = o.giveQty, text = "pending: activation failed"})
-			send(player, "done", {what = "place", id = id, text = head .. " " .. MSG.later})
+			send(player, "done", {what = "place", id = id, text = head .. " " .. Chaos.t(player, MSG.later)})
 			sendWallet(player)
 			return true
 		end
 	end
 	logRow("place", {order = id, player = guid, asset = o.give, amount = o.giveQty, text = string.format("want %d %s, days %d, realm %d, fee %d",
 		o.wantQty, o.want, o.days, realm, o.fee)})
-	local text = head .. (o.fee > 0 and string.format(" Fee: %s gold.", C.money(o.fee)) or "") .. afterFills(row, fills)
+	local text = head .. (o.fee > 0 and Chaos.t(player, " Fee: %s gold.", C.money(o.fee)) or "") .. afterFills(row, fills, Chaos.lang(player))
 	send(player, "done", {what = "place", id = id, text = text})
 	X.deliver(player)
 	sendWallet(player)
@@ -831,8 +831,8 @@ function X.cancel(player, d)
 	end
 	local left = o.give_qty - o.given
 	logRow("cancel", {order = id, player = o.player_id, asset = o.give_asset, amount = left})
-	send(player, "done", {what = "cancel", id = id, text = string.format("Order cancelled: %s come%s back to you.", amountText(o.give_asset, left),
-		left == 1 and "s" or "")})
+	send(player, "done", {what = "cancel", id = id, text = left == 1 and Chaos.t(player, "Order cancelled: %s comes back to you.", amountText(o.give_asset, left))
+		or Chaos.t(player, "Order cancelled: %s come back to you.", amountText(o.give_asset, left))})
 	X.deliver(player)
 	sendWallet(player)
 	return true
@@ -876,7 +876,7 @@ function X.sweep()
 			logRow("expire", {order = o.id, player = o.player_id, asset = o.give_asset, amount = o.give_qty - o.given})
 			local p = Player(o.player_id)
 			if p then
-				tell(p, string.format("your order %d expired (%s of %s traded).", o.id, C.money(o.given), amountText(o.give_asset, o.give_qty)))
+				tell(p, Chaos.t(p, "your order %d expired (%s of %s traded).", o.id, C.money(o.given), amountText(o.give_asset, o.give_qty)))
 				X.deliver(p)
 			end
 		end

@@ -1071,7 +1071,7 @@ local function startRun(dungeonId, difficulty, players)
 		p:registerEvent("ChaosDungeonMana")
 		p:teleportTo(dg.DungeonPos)
 		p:getPosition():sendMagicEffect(40)
-		p:say(baseMessage("ToEntry", "Welcome to Dungeon"), TALKTYPE_MONSTER_SAY)
+		p:say(Chaos.t(p, baseMessage("ToEntry", "Welcome to Dungeon")), TALKTYPE_MONSTER_SAY)
 	end
 
 	local monsters, bosses, _, monsterList = scanArea(dungeonId, dg, bossName)

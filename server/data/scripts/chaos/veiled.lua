@@ -15,6 +15,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 if not ChaosCrafting then
 	dofile("data/lib/chaos_crafting.lua") -- loads chaos_veiled.lua
 end
@@ -90,7 +93,7 @@ local function result(player, ok, text, item)
 	if veil then
 		veil.st = nil
 	end
-	Chaos.send(player, OPCODE, "result", {ok = ok and true or false, text = text, veil = veil})
+	Chaos.send(player, OPCODE, "result", {ok = ok and true or false, text = text and Chaos.tx(player, text) or text, veil = veil})
 end
 
 -- orb.dialog (crafting.lua craft): roll or read the three choices and open the window. Returns ok, text, item.

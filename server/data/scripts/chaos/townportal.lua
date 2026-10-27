@@ -260,7 +260,7 @@ function T.closePair(guid, why)
 	removePortal(pair, "back")
 	local owner = Player(pair.ownerName)
 	if owner and why then
-		owner:sendTextMessage(MESSAGE_STATUS_SMALL, why)
+		owner:sendTextMessage(MESSAGE_STATUS_SMALL, Chaos.tx(owner, why))
 	end
 end
 
@@ -343,7 +343,7 @@ local function endCast(player, result, text)
 	T.casts[player:getId()] = nil
 	Chaos.send(player, OPCODE, "castEnd", {result = result})
 	if text then
-		player:sendCancelMessage(text)
+		player:sendCancelMessage(Chaos.tx(player, text))
 	end
 end
 
@@ -416,7 +416,7 @@ end
 
 -- ---------------------------------------------------------------- stepping through
 local function pushBack(player, fromPosition, text)
-	player:sendCancelMessage(text)
+	player:sendCancelMessage(Chaos.tx(player, text))
 	player:teleportTo(fromPosition, true)
 end
 

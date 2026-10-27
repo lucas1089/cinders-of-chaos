@@ -16,6 +16,9 @@
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
+if not Chaos.t then
+	dofile("data/scripts/chaos/i18n_core.lua")
+end
 if not ChaosCrafting then
 	dofile("data/lib/chaos_crafting.lua")
 end
@@ -105,7 +108,7 @@ end
 local function register(player, data)
 	local n = Chaos.toInt(data.n) or 0 -- echoed: never inf
 	local function refuse(reason)
-		reply(player, "refused", {n = n, reason = reason})
+		reply(player, "refused", {n = n, reason = Chaos.tx(player, reason)})
 	end
 	local list = type(data.items) == "table" and data.items or {}
 	if #list == 0 then
