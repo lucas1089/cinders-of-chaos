@@ -11,6 +11,8 @@
 use serde_json::{json, Map, Value};
 use std::io::{BufRead, Read};
 
+pub mod fuzz_checks;
+
 /// The three parts the client asks for.
 pub const TYPES: [&str; 3] = ["boostedcreature", "eventschedule", "cacheinfo"];
 /// A POST body larger than this is refused with 413 (as the Python service).

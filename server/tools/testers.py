@@ -304,6 +304,25 @@ def setup_statements(bots, pw_hash_of):
     return st
 
 
+SNAP_REACH = 30  # sqm round a hunt mark in which a spawn centre safe for the level is looked for
+
+
+def place_testers(levels, hunts, temples, index=None, centres=None):
+    """one position per tester: in a hunt its level may hold (TC.safe_hunts: the whole band, in hunting levels, at or under
+    the level), on the nearest spawn centre whose monsters all hunt at or under the level (spawn_levels; none within SNAP_REACH:
+    the temple)"""
+    pos = LT.level_positions(hunts, temples, levels, 0.0, pick=TC.safe_hunts if hunts else None)
+    if index is None:
+        return pos
+    out = []
+    for i, (p, lv) in enumerate(zip(pos, levels)):
+        q = LT.snap_to_spawn(p, index, reach=SNAP_REACH if centres is not None else 12, centre_levels=centres, max_level=lv)
+        if centres is not None and centres.get(q, 10 ** 9) > lv and q not in temples:
+            q = tuple(temples[i % len(temples)])  # no safe spawn within reach: the temple, a player's start
+        out.append(q)
+    return out
+
+
 def setup(a):
     if not 1 <= a.count <= TC.MAX_BOTS:
         sys.exit('--count 1..%d' % TC.MAX_BOTS)
@@ -320,11 +339,15 @@ def setup(a):
     if not temples:
         sys.exit('no temple marks in data/chaos_poi.lua (install step poi)')
     plan = plan_bots(a.count, classes, levels)
-    positions = LT.level_positions(hunts, temples, [lv for _, lv in plan], 0.0)
     spawns = sorted(__import__('glob').glob(os.path.join(data, 'world', '*-spawn.xml')))[:1]
-    if spawns:
-        index = LT.spawn_index(LT.read_text(spawns[0]))
-        positions = [LT.snap_to_spawn(p, index) for p in positions]
+    index = LT.spawn_index(LT.read_text(spawns[0])) if spawns else None
+    centres = None
+    pool = os.path.join(data, 'scripts', 'chaos', 'bounty_pool.lua')
+    if spawns and os.path.isfile(pool):
+        centres = LT.spawn_levels(LT.read_text(spawns[0]), LT.pool_levels(LT.read_text(pool)))
+    elif spawns:
+        print('no data/scripts/chaos/bounty_pool.lua: the testers are not kept off spawns above their level')
+    positions = place_testers([lv for _, lv in plan], hunts, temples, index, centres)
     # names: the first free "Tester Xxx" (a name a player already has is skipped, never touched)
     taken = {r[0] for r in rows(sql(["SELECT `name` FROM `players` WHERE `name` LIKE 'Tester %';"]))}
     bots, i = [], 0
@@ -435,6 +458,10 @@ def cleanup_statements(tables, players, accounts, has_houses=False):
 
 # ------------------------------------------------------------------------------------------------ the bot
 SHOP_RE_CACHE = {}
+WALKED_INTO = 'not possible (a blind step into an obstacle)'  # expected (tester_core.EXPECTED)
+ROOM_AFTER_BAG = 'not enough room right after the bag was emptied'  # a bug if it happens
+NPC_CHANNEL = 12  # TALKTYPE_PRIVATE_PN: words to the NPC a player is talking to (the client's NPC channel)
+SHOP_NOTHING = 'shop: Loot Buyer buys nothing the tester carries'  # expected (tester_core.EXPECTED)
 
 
 def parse_shop(plain, npc):
@@ -522,7 +549,7 @@ class Results:
         self.first({'failures': 'fail:', 'lua_errors': 'lua:', 'kicks': 'kick:'}.get(table, table + ':') + key, bot)
 
     def behaviour(self, name, outcome, bot=None):
-        b = self.d['behaviours'].setdefault(name, {'tried': 0, 'ok': 0, 'failed': 0})
+        b = self.d['behaviours'].setdefault(name, {'tried': 0, 'ok': 0, 'failed': 0, 'expected': 0})
         b[outcome] = b.get(outcome, 0) + 1
         if bot is not None and outcome != 'tried':
             self.log(bot, 'do', '%s %s' % (name, outcome))
@@ -543,6 +570,14 @@ class KeyIO:
 
     def alive(self):
         return bool(self.bot.alive and not self.bot.died and not self.clock['stop'])
+
+    async def go(self, place):
+        """the temple ('town') or the hunt spot ('hunt') through the helper; True when it answered without an error"""
+        if not self.alive():
+            return False
+        self.bot.stay = place == 'town'
+        r = await self.bot.helper_says(place, place)
+        return bool(r and not r.get('err'))
 
     async def sleep(self, seconds):
         end = time.monotonic() + seconds
@@ -573,6 +608,9 @@ class KeyIO:
 
 
 ONLINE = LT.ONLINE  # creature id -> bot in game (loadtest's party_step reads the same table)
+BAG_EVERY = 240  # seconds between the bag clean-ups (and potion top-ups) of a bot
+ROOM_FAILS_BAG = 3  # "not enough room" messages that call a clean-up at once
+PING_EVERY = 2.0  # seconds between the pings of a session (the engine kicks 60 s after the last one)
 HEAL_SEEN = 3.0  # seconds: a heal or a potion counts ok when the health rises within them
 FLEE_AT = 20  # percent of health: under it, with the heal and the potion on cooldown, the bot leaves for the temple
 FLEE_REST = 15  # seconds in the temple after a flee, then back to the hunt
@@ -601,6 +639,8 @@ class TesterBot(LT.Bot):
         self.sched = TC.Scheduler(index)
         self.last = 'login'
         self.health = 100
+        self.health_at = None  # monotonic time of the last health update of its own creature (None: none seen yet)
+        self.deaths_at = []  # monotonic times of its deaths (TC.death_rest)
         self.helper = {}
         self.shop = None
         self.kills = []
@@ -611,9 +651,16 @@ class TesterBot(LT.Bot):
         self.pending = {}  # 'heal_spell' / 'potion' -> until when a health rise counts it as ok
         self.back_at = None  # after a flee: when to go back to the hunt
         self.npc_spoke = False
+        self.nothing_to_sell = False
+        self.walk_until = 0.0  # until when a blind walk is the likely cause of a "not possible"
+        self.room_fails = 0  # "not enough room" since the bag was last emptied (helper "bag")
+        self.bag_at = -999.0  # when the bag was last emptied
         self.waiters = []  # (opcode, {actions}, future): requests of the keystone scenario waiting for their answer
         self.class_index = 0  # this bot's place among the bots of its class (the keystone scenario starts there)
         self.keytest_done = False
+        self.keytest_flushed = False
+        self.stay = False  # the keystone scenario keeps the bot in the temple: no walk back to the hunt
+        self.keytest = None  # the KeyTest of this bot: it goes on after a death and a new login (O249)
 
     # ---------------------------------------------------------------- sessions until the end
     async def run(self, clock):
@@ -643,15 +690,18 @@ class TesterBot(LT.Bot):
             return False
         self.results.d['logins'] += 1
         self.results.log(self, 'login', 'in game')
-        self.alive, self.died, self.health = True, False, 100
+        self.alive, self.died, self.health, self.health_at = True, False, 100, None
         ONLINE[self.cid] = self
         reader = asyncio.ensure_future(self.drain())
         guard = asyncio.ensure_future(self.guard())
         self.conn.send(b'\xA0\x01\x01\x01\x00')  # offensive, chase on, secure mode on (never a player)
         self.say('!tester info')
-        if self.after_death:  # a dead tester wakes in the temple: back to its hunt
+        if self.after_death:  # a dead tester wakes in the temple and rests there before it goes back to its hunt
             self.after_death = False
-            self.say('!tester hunt')
+            rest = TC.death_rest(self.deaths_at, time.monotonic())
+            self.back_at = time.monotonic() + rest
+            self.results.log(self, 'do', 'rests %d s in the temple after %d deaths' % (
+                rest, len([t for t in self.deaths_at if time.monotonic() - t <= TC.DEATH_WINDOW])))
         if self.args.after_login:
             self.say(self.args.after_login)
         try:
@@ -707,7 +757,9 @@ class TesterBot(LT.Bot):
         if self.cid:
             for m in re.finditer(re.escape(b'\x8c' + struct.pack('<I', self.cid)) + rb'([\x00-\x64])', plain):
                 before, self.health = self.health, m.group(1)[0]
-                rule = TC.health_anomaly(before, self.health, False)
+                seen_at, self.health_at = self.health_at, time.monotonic()
+                rule = TC.health_anomaly(before, self.health, False,
+                                         None if seen_at is None else self.health_at - seen_at, seen_at is not None)
                 if rule:
                     self.results.anomaly(rule, self, health_before=before)
                 if self.health > before:
@@ -716,6 +768,8 @@ class TesterBot(LT.Bot):
                     self.pending.clear()
         if self.shop_npc and SPEAK_RE.search(plain) and self.shop_npc.encode('latin-1', 'replace') in plain:
             self.npc_spoke = True
+        if self.shop_npc and b'carry nothing I buy' in plain:
+            self.nothing_to_sell = True
         if self.shop_npc and b'\x7a' in plain:
             items = parse_shop(plain, self.shop_npc)
             if items is not None:
@@ -731,9 +785,15 @@ class TesterBot(LT.Bot):
         if self.died:
             return
         self.died = self.after_death = True
+        for kind in list(self.pending):  # dead before the heal or the potion could work: the deaths have their section
+            self.results.behaviour(kind, 'expected', self)
+        self.pending.clear()
+        self.deaths_at.append(time.monotonic())
+        del self.deaths_at[:-20]
         self.results.d['deaths'] += 1
         self.results.log(self, 'DEATH', 'died while %s' % self.last)
-        rule = TC.health_anomaly(self.health, 0, True)
+        age = None if self.health_at is None else time.monotonic() - self.health_at
+        rule = TC.health_anomaly(self.health, 0, True, age, self.health_at is not None)
         if rule:
             self.results.anomaly(rule, self, health_before=self.health)
 
@@ -756,6 +816,21 @@ class TesterBot(LT.Bot):
         elif kind == 'lua_error':
             self.results.count('lua_errors', text[:200], self)
         elif kind == 'failure':
+            now = time.monotonic()
+            if detail == 'not possible' and now < self.walk_until:
+                detail = WALKED_INTO  # a blind step into a wall, a counter or a creature: the engine says so
+            elif detail == 'not enough room':
+                self.room_fails += 1
+                if now - self.bag_at < 30:
+                    detail = ROOM_AFTER_BAG  # not expected: the bag was emptied a moment ago
+            elif detail in ('no mana', 'no soul', 'exhausted') and self.pending:
+                # the heal spell (no mana / exhausted) or the potion (exhausted) was not cast: expected, not a heal
+                # that did not heal. Exhausted: the newest of the two
+                kind_ = 'heal_spell' if detail != 'exhausted' and 'heal_spell' in self.pending else \
+                    max(self.pending, key=self.pending.get)
+                if detail == 'exhausted' or kind_ == 'heal_spell':
+                    del self.pending[kind_]
+                    self.results.behaviour(kind_, 'expected', self)
             self.results.count('failures', detail, self)
         elif kind == 'xp':
             rule = TC.xp_anomaly(self.level, detail)
@@ -801,24 +876,49 @@ class TesterBot(LT.Bot):
             hook(self, op, msg)
 
     # ---------------------------------------------------------------- what the bot does
+    async def tidy_bag(self):
+        """the helper empties the backpack of loot and tops up the potions (`!tester bag`): the bots loot and never sell,
+        so the bag fills and every pickup says "There is not enough room." (1225 times in the first live run); the
+        supplies were given once, a potion count of 100 does not last 29 deaths"""
+        self.results.behaviour('bag', 'tried')
+        r = await self.helper_says('bag', 'bag')
+        self.bag_at, self.room_fails = time.monotonic(), 0
+        if not r or r.get('err'):
+            if self.died or not self.alive:
+                self.results.behaviour('bag', 'expected', self)
+                return False
+            return self.failed('bag', r)
+        self.results.behaviour('bag', 'ok', self)
+        return True
+
     async def act(self, clock):
-        next_ping = next_pick = time.monotonic()
+        next_ping = next_pick = next_bag = time.monotonic()
+        next_bag += BAG_EVERY
         while self.alive and not self.died and time.monotonic() < clock['until'] and not clock['stop']:
             now = time.monotonic()
             if now >= next_ping:
                 self.conn.send(b'\x1E')
                 next_ping = now + 2
+            if (self.room_fails >= ROOM_FAILS_BAG or now >= next_bag) and self.cid:
+                next_bag = now + BAG_EVERY
+                try:
+                    await self.tidy_bag()
+                except (ConnectionError, OSError, asyncio.IncompleteReadError):
+                    break
             if now >= next_pick:
                 name = self.sched.next(now) or 'hunt'
                 if getattr(self.args, 'keystones', False) and not self.keytest_done:
-                    name, self.keytest_done = 'keytest', True  # once per bot per run, before anything else
+                    name = 'keytest'  # before anything else, until it is through (it goes on after a death and a new login)
                 self.last = name
                 self.results.behaviour(name, 'tried')
                 try:
                     ok = await getattr(self, 'do_' + name)(clock)
                 except (ConnectionError, OSError, asyncio.IncompleteReadError):
                     break
-                self.results.behaviour(name, 'ok' if ok else 'failed', self)
+                # a behaviour cut short by the bot's own death or a dropped connection is not a failure of the system
+                # it tried: the deaths and kicks have their sections
+                cut = not ok and (self.died or not self.alive)
+                self.results.behaviour(name, 'expected' if cut else 'ok' if ok else 'failed', self)
                 next_pick = time.monotonic() + 5 + random.random() * 10
             try:
                 await self.conn.w.drain()
@@ -831,10 +931,18 @@ class TesterBot(LT.Bot):
 
     async def guard(self):
         """keep_alive four times a second for the whole session, also while a behaviour waits (a shop visit, a coverage
-        scenario at the hunt): the bot heals in every fight, not only between behaviours"""
+        scenario at the hunt): the bot heals in every fight, not only between behaviours. Also the ping: the engine logs a
+        player out without a message 60 s after its last answer to a ping (Player::sendPing, "no-pong kick"), and
+        the ping of act() stops while one behaviour runs long (the keystone scenario waits for minutes): the 65
+        "connection closed without a message" of the first live run, the first after keytest"""
+        next_ping = 0.0
         while self.alive and not self.died:
             try:
-                self.keep_alive(time.monotonic())
+                now = time.monotonic()
+                if now >= next_ping:
+                    self.conn.send(b'\x1E')
+                    next_ping = now + PING_EVERY
+                self.keep_alive(now)
             except (ConnectionError, OSError):
                 return
             await asyncio.sleep(0.25)
@@ -848,7 +956,7 @@ class TesterBot(LT.Bot):
             if now > until:
                 del self.pending[kind]
                 self.results.behaviour(kind, 'failed', self)
-        if self.back_at and now >= self.back_at:
+        if self.back_at and now >= self.back_at and not self.stay:
             self.back_at = None
             self.say('!tester hunt')
         if self.health < 60 and self.heal and self.ready.get('heal', 0) <= now \
@@ -892,6 +1000,7 @@ class TesterBot(LT.Bot):
         return None
 
     def walk(self, steps):
+        self.walk_until = time.monotonic() + 3.0  # a "Sorry, not possible." in this time is a blind step into an obstacle
         for _ in range(steps):
             self.conn.send(bytes([random.choice((0x65, 0x66, 0x67, 0x68))]))
 
@@ -904,6 +1013,8 @@ class TesterBot(LT.Bot):
 
     def failed(self, behaviour, r):
         """False, and why in the failure list: no helper answer, or the helper's own err"""
+        if self.died or not self.alive:
+            return False  # the bot died (or lost its connection) while it waited: no answer to wait for
         why = r.get('err') if r else 'no helper answer'
         self.results.count('failures', '%s: %s' % (behaviour, why or 'incomplete answer'), self)
         return False
@@ -932,29 +1043,38 @@ class TesterBot(LT.Bot):
         r = await self.helper_says('shop', 'shop')
         if not r or r.get('err') or not r.get('npc'):
             return self.failed('shop', r)
-        self.shop_npc, self.shop, self.npc_spoke = r['npc'], None, False
-        for words in ('hi', 'trade'):
-            self.conn.send(b'\x96\x01' + LT.string(words))
-            await asyncio.sleep(1.5)
+        self.shop_npc, self.shop, self.npc_spoke, self.nothing_to_sell = r['npc'], None, False, False
+        self.say('hi')  # the greeting is a plain say; the NPC then focuses the player
+        await asyncio.sleep(1.5)
+        # what a player says to a focused NPC goes in the NPC channel (TALKTYPE_PRIVATE_PN): the NPC library
+        # (npchandler.lua onCreatureSay) takes a keyword from a focused player only from there, so a plain "trade"
+        # after "hi" was ignored and the window never opened (first live run: 0 of 164)
+        self.say('trade', NPC_CHANNEL)
+        await asyncio.sleep(1.5)
         ok = self.shop is not None  # the trade window opened: what the shop system must do
         if self.shop:
             buy = [i for i in self.shop if i['buy'] > 0]
             buy = [i for i in buy if 'potion' in i['name'].lower()] or buy
             if buy:
                 item = min(buy, key=lambda i: i['buy']) if random.random() < 0.5 else random.choice(buy)
-                # purchase: u16 id, u8 sub type, u16 amount, u8 ignore capacity, u8 in backpacks
-                self.conn.send(b'\x7a' + struct.pack('<HBHBB', item['id'], item['sub'], 1, 0, 0))
+                # purchase: u16 id, u8 sub type, u8 amount, u8 ignore capacity, u8 in backpacks
+                self.conn.send(b'\x7a' + struct.pack('<HBBBB', item['id'], item['sub'], 1, 0, 0))
             sell = [i for i in self.shop if i['sell'] > 0]
             if sell and random.random() < 0.5:
                 item = random.choice(sell)
-                # sale: u16 id, u8 sub type, u16 amount, u8 ignore equipped
-                self.conn.send(b'\x7b' + struct.pack('<HBHB', item['id'], item['sub'], 1, 1))
+                # sale: u16 id, u8 sub type, u8 amount, u8 ignore equipped
+                self.conn.send(b'\x7b' + struct.pack('<HBBB', item['id'], item['sub'], 1, 1))
             await asyncio.sleep(1)
             self.conn.send(b'\x7c')
+        elif self.nothing_to_sell:
+            # the Loot Buyer lists what the player carries and buys: a tester with potions and gold only gets his
+            # "You carry nothing I buy" (loot_buyer.lua onTradeRequest). Right answer, counted as expected
+            self.results.count('failures', SHOP_NOTHING, self)
+            ok = True
         else:
             self.results.count('failures', 'shop: no trade window from %s (%s)' % (
                 r['npc'], 'it answered' if self.npc_spoke else 'no answer to hi'), self)
-        self.conn.send(b'\x96\x01' + LT.string('bye'))
+        self.say('bye', NPC_CHANNEL)
         self.shop_npc = None
         await self.helper_says('hunt', 'hunt')
         return ok
@@ -1000,22 +1120,44 @@ class TesterBot(LT.Bot):
         return True
 
     async def do_keytest(self, clock):
-        """the keystone and mastery scenario (tester_keystones.py): True when no node failed"""
+        """the keystone and mastery scenario (tester_keystones.py): True when no node failed. The same KeyTest goes on
+        after a death and a new login (a node cut off by it is done again); the bot waits in the temple, and walks to
+        its hunt only for a keystone that needs hits. Done (keytest_done) when every node of its class has its result."""
         table = (getattr(self.args, 'keytest_table', None) or {})
         if not table.get('classes'):
+            self.keytest_done = True
             return self.failed('keytest', {'err': 'no keytest section in the scenarios file (gen_tester_scenarios.py)'})
-        await asyncio.sleep(15)  # the helper's supplies and the first target
+        first = self.keytest is None
+        if first:
+            self.keytest = TK.KeyTest(table, self.name, self.class_index)
+        test = self.keytest
         io = KeyIO(self, clock)
-        test = TK.KeyTest(table, self.name, self.class_index)
+        await asyncio.sleep(15 if first else 3)  # the helper's supplies; after a login the temple
+        await io.go('town')
+        mark, rmark = len(test.results), len(test.resets)
         try:
             await test.run(io)
         finally:
+            self.stay = False
+            for r in test.results[mark:]:
+                self.results.log(self, 'KEYTEST', '%s %s: %s' % (r['status'].upper(), r['what'], r['detail']))
+        if test.finished:
+            self.flush_keytest()
+            return not any(r['status'] == TK.FAIL for r in test.results)
+        return True  # cut off (died, left): the next pick continues; its results are kept in the KeyTest
+
+    def flush_keytest(self, why=None):
+        """the results of the KeyTest into the run's results, once; with why: the nodes it did not get to are not tested"""
+        test = self.keytest
+        if test is None or self.keytest_flushed:
+            return
+        if why and not test.finished:
+            test.finish(why)
+        if test.finished:
+            self.keytest_flushed = self.keytest_done = True
             d = self.results.d
             d.setdefault('keytest', []).extend(test.results)
             d.setdefault('keytest_resets', []).extend(test.resets)
-            for r in test.results:
-                self.results.log(self, 'KEYTEST', '%s %s: %s' % (r['status'].upper(), r['what'], r['detail']))
-        return not any(r['status'] == TK.FAIL for r in test.results)
 
     async def do_loot(self, clock):
         lf = self.args.ops.get('lootfilter')
@@ -1093,6 +1235,8 @@ async def run_bots(a, entries):
         tasks.append(asyncio.ensure_future(bot.run(clock)))
         await asyncio.sleep(a.ramp)
     await asyncio.gather(*tasks)
+    for bot in bots:
+        bot.flush_keytest('the run ended before the bot was through: it was out of the game or dead')
     saver.cancel()
     results.d['ended'] = time.strftime('%Y-%m-%d %H:%M:%S')
     save_results(a, results)

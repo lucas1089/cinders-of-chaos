@@ -87,7 +87,8 @@ FAILURES = [
 ]
 # expected in normal play: counted, not reported as bugs
 EXPECTED = {'exhausted', 'no mana', 'no soul', 'no target', 'too far', 'first go downstairs', 'level too low',
-            'not enough money'}
+            'not enough money', 'shop: Loot Buyer buys nothing the tester carries',
+            'not possible (a blind step into an obstacle)', 'not enough room'}
 LUA_ERROR = re.compile(r'Lua Script Error|stack traceback|attempt to (index|call|compare|perform|concatenate)'
                        r'|bad argument #\d|\.lua:\d+:', re.I)
 XP_RE = re.compile(r'You gained (-?\d+) experience points?\.')
@@ -171,11 +172,50 @@ def gold_anomaly(level, gold):
     return None
 
 
-def health_anomaly(before_pct, after_pct, died):
-    """a bot at full health dead (or at 0 %) at the next health update: one hit from full"""
+FRESH = 0.5  # seconds: the health the bot saw must be this young for "one hit from full health"
+
+
+def health_anomaly(before_pct, after_pct, died, age=None, seen=True):
+    """a bot at full health dead (or at 0 %) at the next health update: one hit from full. Only on health the bot really
+    saw (seen: an update of its own creature arrived) and saw just before (age: seconds since it; None = unknown = no):
+    the first live run (2026-10-27) filed 500 of these for bots that died one second after logging in, whose "100" was
+    the value they start with. The exact rule is the helper's (tester_helper_core.lua hitAnomaly: health, maximum and
+    damage of one hit on the server)."""
+    if not seen or age is None or age > FRESH:
+        return None
     if before_pct >= 100 and (died or after_pct <= 0):
         return 'death within one hit from full health'
     return None
+
+
+# ------------------------------------------------------------------------------------------------ where a bot hunts
+HUNT_MULT = 2  # the hunting level is twice the pool level that the map marks print (pace_config.lua baseLevelMult)
+DEATH_REST = 20.0     # seconds in the temple after the first death in a row, doubled for each one that follows
+DEATH_REST_MAX = 300.0
+DEATH_WINDOW = 300.0  # deaths this close together are "in a row"
+
+
+def safe_hunts(hunts, level):
+    """the hunts a tester of this level may be placed in: [(low, high, x, y, z)] of the map marks (loadtest.hunt_marks;
+    their band is in pool levels, so HUNT_MULT x it in hunting levels) whose whole band is at or under the level. The
+    first live run put level 30-45 testers into bands such as 20-30 or 20-90 (hunting level 40 to 180): 2998 deaths in 20
+    minutes, killers with a pool level of 20 to 284. Of those the ones with the highest top (at least 0.8 x the highest),
+    else, when no band is that low, the lowest ones."""
+    fit = [h for h in hunts if HUNT_MULT * h[1] <= level]
+    if fit:
+        top = max(h[1] for h in fit)
+        return [h for h in fit if h[1] >= top * 0.8]
+    low = min(h[1] for h in hunts)
+    return [h for h in hunts if h[1] == low]
+
+
+def death_rest(deaths, now):
+    """seconds a tester waits in the temple before it goes back to its hunt, from the times (monotonic) of its deaths so
+    far (the last one is now): DEATH_REST, doubled for each death within DEATH_WINDOW before it, at most DEATH_REST_MAX
+    (a player walks back from the temple; the first run's testers were teleported to the same pack at once, 17-35 s
+    between two deaths)"""
+    recent = [t for t in deaths if now - t <= DEATH_WINDOW]
+    return min(DEATH_REST_MAX, DEATH_REST * 2 ** max(0, len(recent) - 1))
 
 
 # ------------------------------------------------------------------------------------------------ the server log
@@ -278,6 +318,17 @@ def build_report(run, log):
             k = str(e.get(key, '?'))
             counts[k] = counts.get(k, 0) + 1
         L.append('  by %s: %s' % (title, ', '.join('%s %d' % kv for kv in group(counts, 10))))
+    rec = [e for e in deaths if 'hits' in e]
+    if rec:
+        # what killed: one hit or many (the helper's death record: the last 5 seconds, as a percent of the maximum health)
+        def med(key):
+            v = sorted(e.get(key) or 0 for e in rec)
+            return v[len(v) // 2]
+        one = sum(1 for e in rec if (e.get('biggestPct') or 0) >= 100)
+        quick = sum(1 for e in rec if e.get('online') is not None and e['online'] <= 5)
+        L.append('  last 5 s before the death (%d records): median %d hits, %d%% of the maximum health in all, the biggest hit '
+                 '%d%%; %d deaths by one hit of 100%% or more, %d within 5 s of the login' % (
+                     len(rec), med('hits'), med('damagePct'), med('biggestPct'), one, quick))
     anomalies = list(log['anomalies']) + list(run.get('anomalies', []))
     L.append('== Anomalies (%d)' % len(anomalies))
     by_rule = {}
@@ -294,9 +345,10 @@ def build_report(run, log):
     L.append('== Kicks and disconnects')
     for text, n in group(run.get('kicks', {})):
         L.append('%5dx %s%s' % (n, text, ctx('kick:' + text)))
-    L.append('== Behaviours (tried / ok / failed)')
+    L.append('== Behaviours (tried / ok / failed / expected: cut short by the bot\'s own death, no cast through exhaustion or mana)')
     for name, b in sorted(run.get('behaviours', {}).items()):
-        L.append('  %-10s %6d %6d %6d' % (name, b.get('tried', 0), b.get('ok', 0), b.get('failed', 0)))
+        L.append('  %-10s %6d %6d %6d %6d' % (name, b.get('tried', 0), b.get('ok', 0), b.get('failed', 0),
+                                              b.get('expected', 0)))
     if run.get('keytest') or run.get('keytest_resets'):
         import tester_keystones as TK  # the per-node results of the keystone and mastery scenario (O249)
         L.extend(TK.report_lines(run.get('keytest') or [], run.get('keytest_resets') or []))

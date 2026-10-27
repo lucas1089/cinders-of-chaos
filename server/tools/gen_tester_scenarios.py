@@ -76,6 +76,24 @@ OUT_OF_SCOPE = {
     'areagen': 'a map building tool, not run in game',
 }
 
+# requests the server answers with nothing, by design: {opcode name: {action: why}}. The bots count them as sent and fine
+# (the report's "no answer, no error" is for a request that should have been answered)
+SILENT = {
+    'castbar': {'cancel': 'ends the running cast of the player; there is nothing to say when none runs'},
+}
+# requests the server refuses when a bot sends them, by design: {opcode name: {action: why}}; the refusal is the right answer
+EXPECT_REFUSAL = {
+    'veiled': {'choose': 'answers a window the Orb of Unveiling opens (the signature of the item); the bots hold no veiled item'},
+}
+# data a bot cannot learn from an answer: {opcode name: {action: data}}. "$near" = the tiles around the bot (3 x 3)
+HINTS = {
+    'itemTooltip': {'get': {'items': [{'pos': {'x': 65535, 'y': slot, 'z': 0}} for slot in (6, 7, 4)]}},
+    'groundLoot': {'look': {'t': '$near'}},
+}
+# the data keys of an on / off switch the server reads as `data.x == true` (a map overlay's watch): sent as true, since
+# no answer ever carries them {opcode name: [keys]}. Hand-listed: other switches accept, allow or confirm something
+FLAGS = {'mapMarkers': ['party', 'poi'], 'mapmarks': ['on']}
+
 # systems the helper can bring a tester to: system -> the argument of "!tester enter"
 PLACES = {
     'rift': 'rift', 'pocketboss': 'boss', 'bossspawns': 'boss', 'boss_mechanics': 'boss', 'bosspoints': 'boss',
@@ -88,6 +106,7 @@ PLACES = {
 
 # `x == "a"` and the guard `x ~= "a"` (a handler of one action returns on any other)
 ACTION_RE = re.compile(r'\b(?:action|act|a|kind|cmd|what|op)\s*[~=]=\s*"([A-Za-z_][\w]*)"')
+DISPATCH_RE = re.compile(r'\b(\w+)\[\s*\w+\.action\s*\]')
 DATA_RE = re.compile(r'\b(?:data|d|msg\.data|payload)\.([a-z][A-Za-z0-9_]*)\b')
 LOCAL_OP_RE = re.compile(r'\blocal\s+(\w+)\s*=\s*\(?\s*(?:ChaosOpcodes\s+and\s+)?ChaosOpcodes\.(\w+)')
 COMPARE_RE = re.compile(r'\b(?:op|opcode|code)\s*[~=]=\s*([\w.]+)')
@@ -152,10 +171,37 @@ def handled_opcodes(text, ops):
     return out
 
 
+def dispatch_actions(text):
+    """the actions of the dispatch tables of an engine file: `actions[msg.action]` / `ACTIONS[m.action]` names a table whose
+    keys are the actions (`local actions = {\n\tname = fn,`, `actions.name = fn`, `function actions.name(`). The comparison
+    regex above sees none of these (charms.lua, loadouts.lua and pact.lua answer open / place / buildSave ... and it listed
+    other words of the file, so the bots sent requests no server answers: O262)"""
+    out = []
+    for var in sorted(set(DISPATCH_RE.findall(text))):
+        keys = []
+        for m in re.finditer(r'^([ \t]*)(?:local\s+)?%s\s*=\s*\{' % re.escape(var), text, re.M):
+            rest = text[m.end():]
+            depth, end = 1, 0
+            for i, ch in enumerate(rest):
+                depth += (ch == '{') - (ch == '}')
+                if depth == 0:
+                    end = i
+                    break
+            for k in re.findall(r'^%s\t(?:(\w+)|\["(\w+)"\])\s*=' % re.escape(m.group(1)), rest[:end], re.M):
+                keys.append(k[0] or k[1])
+        keys += re.findall(r'\b%s\.(\w+)\s*=[^=]' % re.escape(var), text)
+        keys += re.findall(r'\bfunction\s+%s\.(\w+)\s*\(' % re.escape(var), text)
+        keys += re.findall(r'\b%s\["(\w+)"\]\s*=[^=]' % re.escape(var), text)
+        for k in keys:
+            if k not in out:
+                out.append(k)
+    return out
+
+
 def file_requests(text):
     """(actions, data keys) an engine file answers"""
     actions, keys = [], []
-    for a in ACTION_RE.findall(text):
+    for a in dispatch_actions(text) or ACTION_RE.findall(text):
         if a not in actions:
             actions.append(a)
     for k in DATA_RE.findall(text):
@@ -260,6 +306,11 @@ def build():
         # `kind == "slot"` is a position kind, not an action); no client actions found: every server one
         t['actions'] = ordered if ordered else t['actions']
         t['client'] = [m for m, _ in mods]
+        if o in FLAGS:
+            t['flags'] = FLAGS[o]
+        for key, table_ in (('silent', SILENT), ('refuses', EXPECT_REFUSAL), ('hints', HINTS)):
+            if o in table_:
+                t[key] = table_[o]
         sub = {}
         for f in t['files']:
             for k, v in SUB_RE.findall(clean[f]):
@@ -302,6 +353,14 @@ def build():
     unused = sorted(set(OUT_OF_SCOPE) - set(systems))
     if unused:
         raise SystemExit('OUT_OF_SCOPE names no system: %s' % ', '.join(unused))
+    for o, keys in FLAGS.items():
+        if o not in table or sorted(set(keys) - set(table[o]['dataKeys'])):
+            raise SystemExit('FLAGS names an opcode or data key no server file reads: %s' % o)
+    for name, table_ in (('SILENT', SILENT), ('EXPECT_REFUSAL', EXPECT_REFUSAL), ('HINTS', HINTS)):
+        for o, acts in table_.items():
+            missing = sorted(a for a in acts if a not in table.get(o, {}).get('actions', []))
+            if o not in table or missing:
+                raise SystemExit('%s names an opcode or action no server file answers: %s %s' % (name, o, missing))
     counts = {}
     for s in systems.values():
         counts[s['kind']] = counts.get(s['kind'], 0) + 1

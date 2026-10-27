@@ -420,6 +420,13 @@
      "source": "https://github.com/serde-rs/json and https://github.com/BurntSushi/memchr and https://www.rust-lang.org/"
     },
     {
+     "name": "cargo-fuzz and libfuzzer-sys (Rust crates) with LLVM libFuzzer",
+     "author": "the Rust Fuzzing Authority and the cargo-fuzz contributors; the LLVM Project contributors",
+     "licence": "MIT or Apache-2.0 (cargo-fuzz, libfuzzer-sys); Apache-2.0 with LLVM exceptions (libFuzzer)",
+     "use": "fuzzing the Rust login-screen services (server/services/clientservices-rs/fuzz), a developer tool run by hand on nightly Rust, not built in CI, not shipped in the packages",
+     "source": "https://github.com/rust-fuzz/cargo-fuzz and https://github.com/rust-fuzz/libfuzzer"
+    },
+    {
      "name": "Helper module",
      "author": "R!ck, ZLukSrT#8740, Christianlb, worthdavi",
      "licence": "unknown; the owner supplied the file, no licence text came with it",

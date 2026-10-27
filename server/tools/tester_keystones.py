@@ -107,6 +107,9 @@ class KeyTest:
         self.nodes = []
         self.dirty = False  # something may be on the tree (a plan was accepted, or nodes were there at the start)
         self.stuck = None   # why the tree could not be cleared: every node after it is not tested
+        self.order = None   # the rows in this bot's order (set by the first run)
+        self.pos = 0        # the row the run is at: a run cut off by a death or a logout goes on there
+        self.finished = False
 
     # ------------------------------------------------------------------ results
     def add(self, node, kind, what, status, detail):
@@ -129,16 +132,27 @@ class KeyTest:
         return True
 
     async def totals(self, io):
-        await io.sleep(0.4)
-        a = await io.request(TREE, 'statTotals', {}, ['statTotals'], ANSWER)
-        return totals_of(a.get('data')) if a else None
+        """statTotals; asked a second time after a pause when the first got no answer (a read: it changes nothing)"""
+        for _ in range(2):
+            await io.sleep(0.4)
+            a = await io.request(TREE, 'statTotals', {}, ['statTotals'], ANSWER)
+            if a:
+                return totals_of(a.get('data'))
+            await io.sleep(2.0)
+        return None
 
     async def plan(self, io, nodes, masteries=None):
-        """planApply -> (ok, message)"""
+        """planApply -> (ok, message). No answer while the bot is in the game: the tree is read back, so the message says
+        whether the plan was saved (the reply was lost) or not (the request was dropped)"""
         await io.sleep(self.gap)
         a = await io.request(TREE, 'planApply', {'nodes': list(nodes), 'masteries': masteries or []}, ['planResult'], ANSWER)
         if not a:
-            return False, 'no answer to planApply'
+            if not io.alive():
+                return False, 'the bot left the game'
+            if await self.read_tree(io) and all(n in self.nodes for n in nodes):
+                self.dirty = True
+                return False, 'no answer to planApply in %d s, but the nodes are saved (the reply was lost)' % ANSWER
+            return False, 'no answer to planApply in %d s and nothing saved (the request was dropped)' % ANSWER
         d = a.get('data') or {}
         if d.get('ok'):
             self.dirty = True
@@ -208,7 +222,18 @@ class KeyTest:
             await self.reset(io)
 
     async def watch_log(self, io, nid, what, probe):
-        """the keystone's row of the combat log (its own tab) must grow while the bot hunts"""
+        """the keystone's row of the combat log (its own tab) must grow while the bot hunts: it walks to its hunt for it
+        (io.go('hunt'), when the io has one) and is back in the temple after"""
+        go = getattr(io, 'go', None)
+        if go and not await go('hunt'):
+            return self.add(nid, 'keystone', what, NOT_TESTED, 'the helper did not bring the bot to its hunt')
+        try:
+            await self._watch_log(io, nid, what, probe)
+        finally:
+            if go:
+                await go('town')
+
+    async def _watch_log(self, io, nid, what, probe):
         row_key = probe.get('row') or PROC_ROW
         tab = TABS.get(probe.get('tab'), 0)
         a = await io.request(LOG, 'open', {'seg': 's'}, ['state'], ANSWER)
@@ -291,31 +316,55 @@ class KeyTest:
     # ------------------------------------------------------------------ the run
     async def run(self, io):
         """every node of the bot's class, from its own start (self.index) around the list, so the bots of one class test
-        different nodes first"""
+        different nodes first. A bot that dies or leaves the game in the middle of a node says nothing about that node:
+        its partial results are dropped, run() returns with finished False and the next call (after the new login) goes
+        on at the same node. finished is True when every node has its result."""
+        if not io.alive():
+            return self.results
         if not await self.read_tree(io):
-            self.add(0, 'tree', 'passive tree', FAIL, 'no answer to requestNodesUnlocked')
+            if io.alive():
+                self.add(0, 'tree', 'passive tree', FAIL, 'no answer to requestNodesUnlocked')
+                self.finished = True
             return self.results
         self.dirty = bool(self.nodes)
-        rows = (self.table.get('classes') or {}).get(self.cls) or (self.table.get('classes') or {}).get(class_key(self.cls))
-        if not rows:
-            self.add(0, 'tree', 'passive tree', NOT_TESTED, 'no keystone or mastery in the table for the class %r' % self.cls)
-            return self.results
-        start = self.index % len(rows)
-        order = rows[start:] + rows[:start]
+        self.stuck = None
+        if self.order is None:
+            rows = (self.table.get('classes') or {}).get(self.cls) or (self.table.get('classes') or {}).get(class_key(self.cls))
+            if not rows:
+                self.add(0, 'tree', 'passive tree', NOT_TESTED, 'no keystone or mastery in the table for the class %r' % self.cls)
+                self.finished = True
+                return self.results
+            start = self.index % len(rows)
+            self.order = rows[start:] + rows[:start]
         elements = self.table.get('elements') or []
-        for i, row in enumerate(order):
+        while self.pos < len(self.order):
             if not io.alive():
-                for r in order[i:]:
-                    self.skip(r, 'the bot left the game')
-                break
+                return self.results
+            row = self.order[self.pos]
             if self.stuck:
                 self.skip(row, self.stuck_text()[len('not tested: '):])
+                self.pos += 1
                 continue
+            n, r = len(self.results), len(self.resets)
             if row['kind'] == 'mastery':
                 await self.mastery(io, row, elements)
             else:
                 await self.keystone(io, row)
+            if not io.alive():
+                del self.results[n:], self.resets[r:]  # cut off: timeouts of a dead connection are no result
+                return self.results
+            self.pos += 1
+        self.finished = True
         return self.results
+
+    def finish(self, why):
+        """the run is over for good: every node it did not get to is not tested"""
+        if self.order is None:
+            self.add(0, 'tree', 'passive tree', NOT_TESTED, why)
+        while self.order is not None and self.pos < len(self.order):
+            self.skip(self.order[self.pos], why)
+            self.pos += 1
+        self.finished = True
 
     def skip(self, row, why):
         if row['kind'] == 'mastery':

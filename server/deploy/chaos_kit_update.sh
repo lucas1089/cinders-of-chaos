@@ -12,7 +12,8 @@
 # check     key=value lines: branch, local_commit, remote_commit, behind, ahead, commit (one per new commit, newest
 #           first, at most 15: short hash and subject), installed_release, latest_release, needs_engine, map_master,
 #           installed_map, needs_map, published_client, needs_client, downloads_release, needs_downloads,
-#           website_changed, update_available, running, last_status, last_result. Fetches the branch and the map
+#           website_changed, update_available, running, last_status, last_result, last_time, runs_as_root (the unit
+#           runs the game server as root: chaos-ctl.sh server-user fix). Fetches the branch and the map
 #           master's metadata (CHAOS_MAP_BRANCH); changes nothing else.
 # apply     the update, in steps (each starts with a "STEP n/10 name" line; the last line is "RESULT status: text"):
 #            1 check      lock, clean checkout not ahead of the branch, the newest winpkg-N release of CHAOS_RELEASE_REPO
@@ -414,9 +415,22 @@ cmd_check() {
   say "last_status=$(state_get status)"
   say "last_result=$(state_get result)"
   say "last_time=$(state_get time)"
+  if [ "$(unit_runs_as)" = root ]; then say "runs_as_root=yes"; else say "runs_as_root=no"; fi
 }
 
 # ------------------------------------------------------------------------------------------------ the server
+# the user the unit runs the game server as; systemd's default (no User=) is root
+unit_runs_as() {
+  local u
+  u=$(systemctl show -p User --value "$UNIT" 2>/dev/null || true)
+  case $u in ''|0) u=root ;; esac
+  printf '%s' "$u"
+}
+# the engine warns "executed as root user" when the unit runs it as root; chaos-ctl.sh server-user fix is the repair
+warn_root_unit() {
+  [ "$(unit_runs_as)" = root ] || return 0
+  log "WARNING: the unit $UNIT runs the game server as root (the engine says so in its log). Update is not affected; fix it with the admin app, Comandos > Saúde e espaço > Servidor como usuário chaos > Corrigir (chaos-ctl.sh server-user fix)"
+}
 active() { systemctl is-active --quiet "$UNIT"; }
 log_size() { stat -c %s "$SLOG" 2>/dev/null || echo 0; }
 # the unit active and "Server Online" in the log after byte FROM, within BOOT_TIMEOUT seconds
@@ -708,6 +722,7 @@ cmd_apply() {
   stamp=$(date '+%Y%m%d-%H%M%S')
   state_set "status=running" "result=" "time=$(date '+%F %T')"
   say "STEP 1/10 check"
+  warn_root_unit
   for tool in git python3 curl systemctl tar sha256sum ldd; do
     command -v "$tool" >/dev/null || finish failed "$tool is missing" 1
   done

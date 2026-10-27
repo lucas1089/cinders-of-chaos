@@ -814,18 +814,45 @@ def spawn_index(spawn_text, cell=16):
     return out
 
 
-def snap_to_spawn(pos, index, reach=12, cell=16):
+def snap_to_spawn(pos, index, reach=12, cell=16, centre_levels=None, max_level=None):
     """the spawn centre nearest to pos on its floor within reach sqm (a tile a monster stands on, so not a wall: a
-    character placed on a wall goes to its temple), else pos"""
+    character placed on a wall goes to its temple), else pos. With centre_levels (spawn_levels) and max_level: only a
+    centre whose monsters all have a hunting level of at most max_level (an unknown centre never)"""
     x, y, z = pos
     best = None
     for cx in range((x - reach) // cell, (x + reach) // cell + 1):
         for cy in range((y - reach) // cell, (y + reach) // cell + 1):
             for p in index.get((cx, cy, z), ()):
                 d = max(abs(p[0] - x), abs(p[1] - y))
-                if d <= reach and (best is None or (d, p) < best):
-                    best = (d, p)
+                if d > reach or (best is not None and (d, p) >= best):
+                    continue
+                if centre_levels is not None and max_level is not None and centre_levels.get(p, 10 ** 9) > max_level:
+                    continue
+                best = (d, p)
     return best[1] if best else pos
+
+
+def pool_levels(pool_text):
+    """{lower monster name: level} of the hunting part of data/scripts/chaos/bounty_pool.lua (the fair-hunt level; the
+    hunting level is twice it, pace_config.lua baseLevelMult)"""
+    hunt = pool_text.split('bosses =')[0]
+    return {m.group(1).lower(): int(m.group(2))
+            for m in re.finditer(r'\{name = "([^"]+)", level = (\d+)', hunt)}
+
+
+def spawn_levels(spawn_text, levels, mult=2):
+    """{(x, y, z): the highest hunting level (mult x the pool level) of the monsters of the spawn at that centre}; a
+    monster the pool does not know counts as unknown (never safe)"""
+    out = {}
+    for m in re.finditer(r'<spawn\s+centerx="(\d+)"\s+centery="(\d+)"\s+centerz="(\d+)"[^>]*>(.*?)</spawn>',
+                         spawn_text, re.S):
+        centre = (int(m.group(1)), int(m.group(2)), int(m.group(3)))
+        top = 0
+        for name in re.findall(r'<monster\s+name="([^"]+)"', m.group(4)):
+            lv = levels.get(name.lower())
+            top = max(top, 10 ** 9 if lv is None else mult * lv)
+        out[centre] = max(out.get(centre, 0), top)
+    return out
 
 
 def hunts_for_level(hunts, level):
@@ -844,10 +871,10 @@ def hunts_for_level(hunts, level):
     return fit
 
 
-def level_positions(hunts, temples, levels_of_bots, town_share):
+def level_positions(hunts, temples, levels_of_bots, town_share, pick=None):
     """one position per bot: a town_share of them (spread evenly over the bots, so over every class and level) round
-    robin over the temples, the others over the hunts of their level (hunts_for_level), up to 3 tiles off the mark;
-    deterministic"""
+    robin over the temples, the others over the hunts of their level (hunts_for_level, or pick(hunts, level)), up to 3
+    tiles off the mark; deterministic"""
     out, used = [], {}
     for i, level in enumerate(levels_of_bots):
         rnd = random.Random(i)
@@ -855,7 +882,7 @@ def level_positions(hunts, temples, levels_of_bots, town_share):
             x, y, z = temples[i % len(temples)]
             off = 5
         else:
-            fit = hunts_for_level(hunts, level)
+            fit = (pick or hunts_for_level)(hunts, level)
             k = used.get(level, 0)
             used[level] = k + 1
             x, y, z = fit[(k * 7919 + level) % len(fit)][2:]

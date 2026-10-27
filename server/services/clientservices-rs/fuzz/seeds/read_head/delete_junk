@@ -1,0 +1,4 @@
+DELETE /x HTTP/1.1
+no colon line
+Content-Length: 3
+

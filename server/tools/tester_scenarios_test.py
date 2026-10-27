@@ -104,11 +104,15 @@ for _ in range(200):
     steps = S.next_request(me)
     ok(steps, 'a scenario')
     for st in steps:
-        ok(st[0] in ('op', 'say', 'check', 'usekey'), 'a known step: %r' % (st,))
+        ok(st[0] in ('op', 'say', 'npc', 'check', 'usekey'), 'a known step: %r' % (st,))
         if st[0] == 'op':
             ok(st[1] != 200, 'never the out-of-scope opcode')
-        if st[0] == 'say':
+        if st[0] in ('say', 'npc'):
             ok(st[1] in ('hi', 'bye', 'lore', 'tales') or st[1].startswith('!tester '), 'only helper words and NPC words')
+        if st[0] == 'npc':
+            ok(steps.index(st) > steps.index(('say', 'hi')), 'words to the NPC only after the greeting')
+        if st[0] == 'say':
+            ok(st[1] in ('hi',) or st[1].startswith('!tester '), 'the greeting and the helper are plain says')
 ops = S.opcode_steps(224)
 eq(ops[0], ('op', 224, 'open'), 'open first')
 ok([a for _, _, a in ops][1:] == [a for a in ['accept', 'abandon'] if a in [x for _, _, x in ops]], 'client order kept')
@@ -157,6 +161,9 @@ eq(me.results.d['coverage']['npc:Archivist Maelis'], {'tried': 1, 'ok': 0, 'refu
    'no answer: tried only')
 S.run_step(me, ('say', 'hi'), online, send, said.append, used.append)
 eq(said, ['hi'], 'say')
+said_kinds = []
+S.run_step(me, ('npc', 'lore'), online, send, lambda text, kind=1: said_kinds.append((text, kind)), used.append)
+eq(said_kinds, [('lore', 12)], 'words to a focused NPC go in the NPC channel (TALKTYPE_PRIVATE_PN 12)')
 
 # ---------------------------------------------------------------- the report merge
 log = TC.parse_log([
@@ -224,6 +231,50 @@ sub = TS.Scenarios({'opcodes': {'stash': {'opcode': 110, 'actions': ['Stash'], '
                                           'sub': {'make': ['Open']}}}, 'systems': {}, 'npcs': []}, {}, random.Random(1))
 eq(json.loads(sub.payload(Bot('Tester S', 9), 110, 'Stash', {})), {'action': 'Stash', 'data': {'make': 'Open'}},
    'a stash request names its make')
+
+# O262: dispatch tables, silent actions, expected refusals, switches and hints (the first live run: "no answer, no error")
+ops_ = table['opcodes']
+eq(sorted(ops_['pact']['actions']), sorted(['open', 'sync', 'claim', 'buildSave', 'buildLoad', 'buildDelete']),
+   'pact: the keys of its ACTIONS table, not the words of the file')
+ok({'open', 'place', 'take'} <= set(ops_['charms']['actions']), 'charms: the keys of its actions table')
+ok({'open', 'save', 'load'} <= set(ops_['loadouts']['actions']), 'loadouts: `actions.name = function` assignments')
+eq(G.dispatch_actions('local actions = {\n\topen = function() end,\n\tput = {1, {a = 2}},\n}\nlocal x = actions[msg.action]\n'),
+   ['open', 'put'], 'a dispatch table: its top-level keys only')
+eq(G.dispatch_actions('local t = {a = 1}\nlocal y = other[action]\n'), [], 'no `x[msg.action]`: no dispatch table')
+eq(ops_['castbar']['silent'], {'cancel': ops_['castbar']['silent']['cancel']}, 'castbar cancel is silent by design')
+eq(ops_['mapmarks']['flags'], ['on'], 'the map overlay switch is sent as true')
+eq(ops_['mapMarkers']['flags'], ['party', 'poi'], 'the party and poi switches are sent as true')
+ok('veiled' in ops_ and 'choose' in ops_['veiled']['refuses'], 'veiled: the refusal is the right answer')
+cap = TS.Scenarios(table, {}, random.Random(2))
+b2 = Bot('Tester Abe', 0x10000003)
+sent2 = []
+snd = (lambda op, p: sent2.append((op, json.loads(p))))
+cap.run_step(b2, ('op', ops_['mapmarks']['opcode'], 'watch'), {}, snd, None, None)
+eq(sent2[-1][1], {'action': 'watch', 'data': {'on': True}}, 'watch: on')
+cap.run_step(b2, ('op', ops_['castbar']['opcode'], 'cancel'), {}, snd, None, None)
+eq(b2.results.d['coverage']['castbar']['ok'], 1, 'a silent request counts ok when sent')
+ok((b2.results.d['coverage']['castbar']['tried'], (b2.results.d['coverage']['castbar']['refused'])) == (1, 0), 'and is tried once')
+cap.run_step(b2, ('op', ops_['itemTooltip']['opcode'], 'get'), {}, snd, None, None)
+eq([i['pos']['y'] for i in sent2[-1][1]['data']['items']], [6, 7, 4], 'item tooltip: three worn slots')
+n_before = len(sent2)
+cap.run_step(b2, ('op', ops_['groundLoot']['opcode'], 'look'), {}, snd, None, None)
+eq(len(sent2), n_before, 'ground loot look: no known position, nothing sent, nothing counted')
+b2.helper['hunt'] = {'pos': {'x': 100, 'y': 200, 'z': 7}}
+cap.run_step(b2, ('op', ops_['groundLoot']['opcode'], 'look'), {}, snd, None, None)
+eq(len(sent2[-1][1]['data']['t']), 9, 'ground loot look: the 3 x 3 tiles around the hunt spot')
+eq([100, 200, 7] in sent2[-1][1]['data']['t'], True, 'including the bot\'s own tile')
+n_before = len(sent2)
+cap.run_step(b2, ('op', ops_['groundLoot']['opcode'], 'tip'), {}, snd, None, None)
+eq(len(sent2), n_before, 'tip: no pile seen yet, nothing sent')
+cap.on_answer(b2, ops_['groundLoot']['opcode'], {'action': 'tiles', 'data': {'t': [
+    {'p': {'x': 100, 'y': 201, 'z': 7}, 'i': [{'s': 1, 'id': 2160, 'c': 3, 'nm': 'gold'}]}]}})
+cap.run_step(b2, ('op', ops_['groundLoot']['opcode'], 'tip'), {}, snd, None, None)
+eq(sent2[-1][1], {'action': 'tip', 'data': {'p': {'x': 100, 'y': 201, 'z': 7}, 's': 1, 'id': 2160, 'c': 3}},
+   'tip: an item of a pile the look was answered with')
+cap.run_step(b2, ('op', ops_['veiled']['opcode'], 'choose'), {}, snd, None, None)
+cap.on_answer(b2, ops_['veiled']['opcode'], {'action': 'result', 'data': {'ok': False, 'text': 'The item moved'}})
+eq(b2.results.d['coverage']['veiled']['refused'], 0, 'veiled: the expected refusal is not counted refused')
+eq(b2.results.d['coverage']['veiled']['ok'], 1, 'veiled: it counts ok')
 
 for f in FAILS:
     print('FAIL ' + f)

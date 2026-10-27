@@ -138,6 +138,10 @@ final class Friendly {
     /** The English answers of chaos-ctl.sh, in Portuguese. Unknown text is kept. */
     static String translate(String s) {
         String t = s.trim();
+        String su = ServerUserInfo.translateError(t);
+        if (su != null) {
+            return su;
+        }
         if (t.startsWith("queued:")) {
             return "Enviado. O servidor executa em alguns segundos.";
         }

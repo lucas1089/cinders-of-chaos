@@ -6,7 +6,10 @@
 # Install (as root), under the name chaos-server so chaos-ctl.sh and the admin app find it without settings:
 #   /opt/chaos-trial/stop-server.sh                 # stop a run started by hand first (start.pid would block this one)
 #   cp server/deploy/chaos-trial-server.service /etc/systemd/system/chaos-server.service
-#   edit User= and Group= below: the owner of /opt/chaos-trial (stat -c '%U %G' /opt/chaos-trial)
+#   keep User=chaos and Group=chaos: never the owner of /opt/chaos-trial (that is root when root extracted the kit, and the
+#   engine then warns "executed as root user"). chaos-ctl.sh server-user fix does the whole change (user, folder owners,
+#   the kit database's socket admin, this unit) and keeps the old unit: admin app, Comandos > Ações rápidas > Servidor como
+#   usuário chaos > Corrigir; server/README.md "Server user (O271)"
 #   systemctl daemon-reload && systemctl enable --now chaos-server
 #   cp server/deploy/ctl.conf.trial.example /etc/chaos/ctl.conf   # paths for chaos-ctl.sh (server/README.md)
 #

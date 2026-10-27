@@ -7162,15 +7162,20 @@
    ],
    "opcode": 231,
    "out": false,
+   "silent": {
+    "cancel": "ends the running cast of the player; there is nothing to say when none runs"
+   },
    "skip": [],
    "systems": []
   },
   "charms": {
    "actions": [
-    "container",
-    "activate",
-    "restore",
-    "drop"
+    "place",
+    "salvage",
+    "reforge",
+    "open",
+    "take",
+    "move"
    ],
    "client": [
     "game_charms"
@@ -7651,6 +7656,11 @@
    "files": [
     "groundloot.lua"
    ],
+   "hints": {
+    "look": {
+     "t": "$near"
+    }
+   },
    "opcode": 230,
    "out": false,
    "skip": [],
@@ -7947,6 +7957,33 @@
    "files": [
     "item_tooltip.lua"
    ],
+   "hints": {
+    "get": {
+     "items": [
+      {
+       "pos": {
+        "x": 65535,
+        "y": 6,
+        "z": 0
+       }
+      },
+      {
+       "pos": {
+        "x": 65535,
+        "y": 7,
+        "z": 0
+       }
+      },
+      {
+       "pos": {
+        "x": 65535,
+        "y": 4,
+        "z": 0
+       }
+      }
+     ]
+    }
+   },
    "opcode": 242,
    "out": false,
    "skip": [],
@@ -8008,11 +8045,11 @@
   },
   "loadouts": {
    "actions": [
-    "equip",
-    "clear",
-    "missing",
-    "rollback",
-    "adopt"
+    "save",
+    "load",
+    "rename",
+    "delete",
+    "open"
    ],
    "client": [
     "game_loadouts"
@@ -8086,6 +8123,10 @@
     "partymarkers.lua",
     "poi.lua"
    ],
+   "flags": [
+    "party",
+    "poi"
+   ],
    "opcode": 153,
    "out": false,
    "skip": [],
@@ -8106,6 +8147,9 @@
    ],
    "files": [
     "map_marks.lua"
+   ],
+   "flags": [
+    "on"
    ],
    "opcode": 245,
    "out": false,
@@ -8187,7 +8231,18 @@
    "opcode": 194,
    "out": true,
    "skip": [
-    "open"
+    "choose",
+    "accept",
+    "decline",
+    "release",
+    "buy",
+    "list",
+    "register",
+    "retire",
+    "dismiss",
+    "invite",
+    "open",
+    "seek"
    ],
    "systems": [
     "mentor"
@@ -8301,9 +8356,12 @@
   },
   "pact": {
    "actions": [
-    "days",
-    "extra",
-    "info"
+    "buildLoad",
+    "buildSave",
+    "buildDelete",
+    "open",
+    "claim",
+    "sync"
    ],
    "client": [
     "game_pact"
@@ -8317,10 +8375,7 @@
    ],
    "opcode": 222,
    "out": false,
-   "skip": [
-    "end",
-    "claimreset"
-   ],
+   "skip": [],
    "systems": [
     "pact"
    ]
@@ -8602,7 +8657,8 @@
    "opcode": 220,
    "out": true,
    "skip": [
-    "unlink"
+    "open",
+    "enter"
    ],
    "systems": [
     "referral"
@@ -9015,6 +9071,9 @@
    ],
    "opcode": 196,
    "out": false,
+   "refuses": {
+    "choose": "answers a window the Orb of Unveiling opens (the signature of the item); the bots hold no veiled item"
+   },
    "skip": [],
    "systems": []
   },

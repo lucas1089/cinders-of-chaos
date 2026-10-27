@@ -35,6 +35,24 @@ eq(H.hitAnomaly({kind = "taken", damage = 600, health = 300, maxHealth = 500, le
 eq(H.hitAnomaly({kind = "dealt", damage = 50000, level = 100}), "hit dealt far above the level", "absurd dealt")
 eq(H.hitAnomaly({kind = "dealt", damage = 40000, level = 100}), nil, "a strong hit of level 100")
 eq(H.hitAnomaly({kind = "dealt", damage = -5, level = 100}), "negative damage", "negative damage")
+-- the death record: hits of the last 5 seconds, their sum and the biggest, as a percent of the maximum health
+local hl = {}
+H.pushHit(hl, 100, {damage = 40, by = "wolf"})
+H.pushHit(hl, 103, {damage = 120, by = "bear"})
+H.pushHit(hl, 104, {damage = -5, by = "rat"})
+local rec = H.deathRecord(hl, 105, {who = "Tester Aaa", level = 30, killer = "bear", maxHealth = 400, online = 12})
+eq(rec.hits, 3, "death record: three hits")
+eq(rec.damage, 160, "their sum (a negative one counts 0)")
+eq(rec.damagePct, 40, "as a percent of the maximum")
+eq(rec.biggest, 120, "the biggest hit")
+eq(rec.biggestPct, 30, "its percent")
+eq(rec.biggestBy, "bear", "and who dealt it")
+eq(rec.online, 12, "seconds online")
+eq(H.deathRecord(hl, 109, {who = "x", maxHealth = 400}).hits, 1, "hits older than 5 seconds are not in the record")
+eq(H.deathRecord(nil, 109, {who = "x", maxHealth = 0}).hits, 0, "no hits: an empty record")
+eq(H.deathRecord({}, 1, {who = "x"}).killer, "?", "no killer: ?")
+for i = 1, 100 do H.pushHit(hl, 200 + i, {damage = 1}) end
+check(#hl <= H.HIT_KEEP, "the list stays short")
 eq(H.xpAnomaly(100, -1), "negative experience gain", "negative xp")
 eq(H.xpAnomaly(100, 300000000), "absurd experience gain", "absurd xp")
 eq(H.xpAnomaly(100, 50000), nil, "normal xp")
@@ -399,7 +417,11 @@ check(printed[#printed]:find('"rule":"hit dealt far above the level"', 1, true) 
 eq(callbacks.onGainExperience(tester, wolf, -5, -5), -5, "experience is not changed")
 check(printed[#printed]:find('"rule":"negative experience gain"', 1, true) ~= nil, "negative xp is logged")
 events.TesterHelperDeath.onDeath(tester, nil, wolf, wolf)
-check(printed[#printed]:find('[tester-event] {"killer":"wolf"', 1, true) ~= nil, "the death event")
+check(printed[#printed]:find('[tester-event] {', 1, true) ~= nil and printed[#printed]:find('"killer":"wolf"', 1, true) ~= nil,
+	"the death event")
+check(printed[#printed]:find('"hits":1', 1, true) ~= nil and printed[#printed]:find('"biggestBy":"wolf"', 1, true) ~= nil,
+	"with the hits of the last seconds (the 130M one)")
+check(T.hits[tester.id] == nil, "and the tester's hits are forgotten")
 
 -- stopped: chaos-ctl removed the file, the helper does nothing more
 T.present = function() return false end
@@ -412,6 +434,49 @@ for _ = 1, 20 do
 	if select(2, lastStep()) == i then break end
 end
 check(not T.started, "the loop ends once the file is gone")
+
+-- ------------------------------------------------------------------ the bag clean-up (`!tester bag`)
+do
+	T.present = function() return true end
+	local H = ChaosTesterHelperCore
+	local rm, add = H.bagPlan({{id = 7618, count = 90}, {id = 2160, count = 3}, {id = 1987, count = 1}, {id = 7620, count = 100}},
+		{[7618] = 100, [7620] = 100}, {[7618] = 90, [7620] = 100})
+	eq(#rm, 2, "bagPlan: the two loot slots go")
+	eq(rm[1] .. "," .. rm[2], "2,3", "bagPlan: by index")
+	eq(#add, 0, "bagPlan: 90 of 100 potions is enough")
+	rm, add = H.bagPlan({}, {[7618] = 100, [7620] = 100}, {[7618] = 49})
+	eq(#add, 2, "bagPlan: under half is topped up (and a missing kind)")
+	eq(add[1].id .. ":" .. add[1].count .. " " .. add[2].id .. ":" .. add[2].count, "7618:51 7620:100", "bagPlan: up to the number, by id")
+	check(H.parseCommand("bag") == "bag", "bag is a command")
+
+	local bt = creature(268435470, "Tester Abq", {store = {[ST] = 1}})
+	local removed, added = {}, {}
+	local function slot(id, n)
+		return {getId = function() return id end, getCount = function() return n end, remove = function() removed[#removed + 1] = id end}
+	end
+	bt.slots = {[CONST_SLOT_BACKPACK] = {getItems = function() return {slot(2160, 5), slot(7618, 30), slot(1987, 1)} end,
+		addItem = function(_, id, n) added[#added + 1] = id .. ":" .. n end}}
+	function bt:getItemCount(id) return id == 7618 and 30 or 0 end
+	check(talks["!tester"].onSay(bt, "!tester", "bag") == false, "bag: consumed")
+	eq(table.concat(removed, ","), "2160,1987", "bag: the loot is removed, the potions stay")
+	eq(table.concat(added, " "), "7618:70 7620:100", "bag: the potions topped up")
+	check(bt.log.msgs[#bt.log.msgs]:find('bag {"removed":2,"topped":2}', 1, true) ~= nil, "bag: the answer line")
+	for _, p in ipairs({ana, fake, marked}) do
+		removed = {}
+		check(talks["!tester"].onSay(p, "!tester", "bag") == true, p.name .. ": !tester bag is left to the game")
+		eq(#removed, 0, p.name .. ": nothing removed from a player")
+	end
+	-- a teleport the game refuses leaves the tester where it is: the answer says so
+	local lt = creature(268435471, "Tester Abr", {store = {[ST] = 1}})
+	function lt:teleportTo(p) end
+	npcs["Material Broker"] = {getName = function() return "Material Broker" end, isNpc = function() return true end,
+		getPosition = function() return {x = 70, y = 70, z = 7} end}
+	function Tile() return {getGround = function() return true end, hasFlag = function() return false end,
+		getTopCreature = function() return nil end} end
+	talks["!tester"].onSay(lt, "!tester", "shop")
+	check(lt.log.msgs[#lt.log.msgs]:find("shop {\"err\":\"the teleport next to the NPC was refused", 1, true) ~= nil,
+		"shop: a refused teleport is an error, not a window the bot cannot reach")
+end
 
 print = origPrint
 print(string.format("tester_helper_test: %d checks, %d failures", count, failures))

@@ -294,14 +294,72 @@ ok('needs: a second enemy' in r['detail'], 'the failure says what the hunt needs
 eq(s.nodes, [], 'tree clean after a failed keystone')
 eq([x[1] for x in s.requests if x[1] == 'resetPreset'], ['resetPreset', 'resetPreset'], 'reset after the failed one too')
 
-# the bot leaves the game while watching: not tested, and the reset is still tried
+# the bot leaves the game while watching: that says nothing about the node. Its partial results are dropped, the run is not
+# finished, and after the new login the same KeyTest goes on at the same node (the 1240 "not tested: the bot left the game"
+# of the first live run came from bots that died and never resumed)
 s = FakeServer(points=30)
 io = FakeIO(s, proc_after=10 ** 6)
 io.leave_after = 30
-t = run(KTABLE, s, io=io, window=100, poll=10)
-eq(by(t, 'keystone 631 ksShadowTwin')['status'], TK.NOT_TESTED, 'the bot left the game: not tested')
-eq(by(t, 'keystone 383 ksBlackbloodCreed')['status'], TK.NOT_TESTED, 'and the rest is not tested')
-eq(t.resets[0]['ok'], False, 'a reset from a bot out of the game is recorded as not done')
+t = TK.KeyTest(KTABLE, 'Tester Aaa', 0, window=100, poll=10)
+asyncio.run(t.run(io))
+eq(t.finished, False, 'cut off: not finished')
+eq(by(t, 'keystone 631 ksShadowTwin'), None, 'the cut-off node has no result')
+eq(t.pos, 0, 'and is still the one to do')
+eq(t.resets, [], 'a reset from a bot out of the game is no result either')
+s.alive, s.clock = True, 0
+asyncio.run(t.run(FakeIO(s, proc_after=40)))
+eq(t.finished, True, 'after the new login the run goes on and ends')
+eq(by(t, 'keystone 631 ksShadowTwin')['status'], TK.PASS, 'the cut-off node is done again')
+eq(s.nodes, [], 'tree clean')
+
+# the run ends for good while a bot is cut off: the nodes it did not get to are not tested, with the reason
+s = FakeServer(points=30)
+io = FakeIO(s)
+io.leave_after = 0
+t = TK.KeyTest(KTABLE, 'Tester Aaa', 0)
+asyncio.run(t.run(io))
+t.finish('the run ended')
+eq(t.finished, True, 'finish ends it')
+eq(by(t, 'keystone 631 ksShadowTwin')['status'], TK.NOT_TESTED, 'a node never reached: not tested')
+eq(by(t, 'keystone 383 ksBlackbloodCreed')['detail'], 'the run ended', 'with the reason')
+
+# no answer to planApply while the bot is in the game: the tree is read back to say what happened
+for saved, want in ((True, 'the reply was lost'), (False, 'nothing saved')):
+    s = FakeServer(points=30)
+    orig = s.handle
+
+    def silent(opname, action, data, s=s, orig=orig, saved=saved):
+        if action == 'planApply':
+            s.requests.append((opname, action, data))
+            if saved:
+                s.nodes = list(data['nodes'])
+            return None
+        return orig(opname, action, data)
+
+    s.handle = silent
+    t = run(KTABLE, s, io=FakeIO(s, proc_after=40), window=30, poll=10)
+    r = by(t, 'keystone 631 ksShadowTwin')
+    eq(r['status'], TK.FAIL, 'no answer to planApply fails (%s)' % want)
+    ok(want in r['detail'], 'and says %s: %s' % (want, r['detail']))
+
+# statTotals unanswered once: asked again
+s = FakeServer(points=60)
+s.mastery_effects[665] = MEFF
+orig = s.handle
+calls = {'n': 0}
+
+
+def flaky(opname, action, data):
+    if action == 'statTotals':
+        calls['n'] += 1
+        if calls['n'] == 1:
+            return None
+    return orig(opname, action, data)
+
+
+s.handle = flaky
+t = run(TABLE, s)
+eq(by(t, 'mastery 665 effect 1')['status'], TK.PASS, 'statTotals asked a second time')
 
 # the server refuses the keystone plan
 s = FakeServer(points=30)
@@ -508,6 +566,10 @@ async def play():
 
         async def sleep(self, seconds):
             await real_sleep(0)
+
+        async def go(self, place):
+            self.bot.stay = place == 'town'
+            return True
 
     orig_io, orig_sleep = T.KeyIO, T.asyncio.sleep
     T.KeyIO, T.asyncio.sleep = Io, fast

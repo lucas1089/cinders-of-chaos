@@ -17,6 +17,7 @@
 --     next to an NPC of the town, back to the hunt spot; each answer is a text line
 --     "[tester-helper] <kind> <json>" with the client ids and positions the bot needs (its own creature id, the potion
 --     client ids, the locker, the NPC's name)
+--   * "!tester bag": empties the tester's own backpack of loot (everything but the potions) and tops the potions up
 --   * once a minute it counts the testers in game; the server console gets "[tester-helper] testers online: N" when
 --     the count changed, and every 5 minutes anyway
 --   * anomalies (one console line each, "[tester-anomaly] <json>", testers.py report reads the server log): a hit taken
@@ -40,8 +41,9 @@ local LOCKER_SEARCH = 45 -- tiles around the temple for a depot locker (its floo
 -- NPCs with a trade window, tried first by "shop": the NPC nearest the temple may only talk
 local TRADERS = {"Material Broker", "Loot Buyer", "Wandering Merchant"}
 
-TesterHelper = TesterHelper or {ids = {}, step = 0}
+TesterHelper = TesterHelper or {ids = {}, step = 0, hits = {}, loginAt = {}}
 local T = TesterHelper
+T.hits, T.loginAt = T.hits or {}, T.loginAt or {} -- a reload keeps the table of an older version
 
 local function storageOf(player)
 	local ok, v = pcall(function() return player:getStorageValue(STORE) end)
@@ -130,6 +132,13 @@ local function freeNear(center, npc, reach)
 	return nil
 end
 
+-- did the teleport put the tester on the tile? (a tile that refuses it leaves the tester where it was, far from the
+-- locker or the NPC it is to use: the bot's "There is no way.")
+local function landed(player, spot)
+	local here = player:getPosition()
+	return here.x == spot.x and here.y == spot.y and here.z == spot.z
+end
+
 -- the nearest locker round the temple with a free tile next to it: {pos, id, stackpos, spot}
 local function findLocker(origin)
 	local found = {}
@@ -214,6 +223,10 @@ function commands.depot(player)
 		return
 	end
 	player:teleportTo(spot)
+	if not landed(player, spot) then
+		tell(player, "depot", {err = "the teleport next to the locker was refused", pos = posOf(player:getPosition())})
+		return
+	end
 	local it = ItemType(locker.id)
 	tell(player, "depot", {pos = posOf(player:getPosition()), locker = posOf(locker.pos), clientId = it:getClientId(),
 		stackpos = locker.stackpos})
@@ -237,6 +250,10 @@ function commands.shop(player)
 		return
 	end
 	player:teleportTo(spot)
+	if not landed(player, spot) then
+		tell(player, "shop", {err = "the teleport next to the NPC was refused", pos = posOf(player:getPosition())})
+		return
+	end
 	tell(player, "shop", {pos = posOf(player:getPosition()), npc = npc:getName(), npcPos = posOf(npc:getPosition())})
 end
 
@@ -318,6 +335,51 @@ end
 talk:separator(" ")
 talk:register()
 
+-- the supplies a tester keeps: id -> number (SUPPLIES)
+local WANT = {}
+for _, s in ipairs(SUPPLIES) do
+	WANT[s[1]] = s[2]
+end
+
+-- potions topped up to their number when under half of it (a tester dies about thirty times an hour and loses some)
+local function topUp(player)
+	local bag = player:getSlotItem(CONST_SLOT_BACKPACK)
+	if not bag then
+		return 0
+	end
+	local held = {}
+	for id in pairs(WANT) do
+		held[id] = player:getItemCount(id)
+	end
+	local _, add = H.bagPlan({}, WANT, held)
+	for _, a in ipairs(add) do
+		bag:addItem(a.id, a.count)
+	end
+	return #add
+end
+
+-- TEST ONLY: empties the backpack of loot (every slot of it that is not a supply; a bag goes with what it holds) and
+-- tops up the potions. Only this tester's own backpack. The bots loot and never sell, so the bag fills and every
+-- pickup says "There is not enough room."
+function commands.bag(player)
+	local bag = player:getSlotItem(CONST_SLOT_BACKPACK)
+	if not bag then
+		tell(player, "bag", {err = "no backpack"})
+		return
+	end
+	local list, rows = {}, {}
+	for _, item in ipairs(bag:getItems() or {}) do
+		list[#list + 1] = {id = item:getId(), count = item:getCount()}
+		rows[#rows + 1] = item
+	end
+	local remove = H.bagPlan(list, WANT, {})
+	for _, i in ipairs(remove) do
+		rows[i]:remove()
+	end
+	local ok, added = pcall(topUp, player)
+	tell(player, "bag", {removed = #remove, topped = ok and added or 0})
+end
+
 -- ---------------------------------------------------------------- login: supplies once, hunt spot, info
 local BACKPACK = 1988
 
@@ -358,6 +420,8 @@ function login.onLogin(player)
 	player:registerEvent("TesterHelperHealth")
 	player:registerEvent("TesterHelperDeath")
 	T.ids[player:getId()] = true
+	T.hits[player:getId()] = nil
+	T.loginAt[player:getId()] = os.time()
 	if not huntPos(player) then
 		local p = player:getPosition()
 		player:setStorageValue(STORE + 2, p.x)
@@ -365,6 +429,7 @@ function login.onLogin(player)
 		player:setStorageValue(STORE + 4, p.z)
 	end
 	pcall(supplies, player)
+	pcall(topUp, player)
 	local id = player:getId()
 	addEvent(function()
 		local p = Player(id)
@@ -380,6 +445,8 @@ login:register()
 local logout = CreatureEvent("TesterHelperLogout")
 function logout.onLogout(player)
 	T.ids[player:getId()] = nil
+	T.hits[player:getId()] = nil
+	T.loginAt[player:getId()] = nil
 	return true
 end
 logout:type("logout")
@@ -392,6 +459,9 @@ function health.onHealthChange(creature, attacker, primaryDamage, primaryType, s
 		local dmg = math.max(0, primaryDamage or 0) + math.max(0, secondaryDamage or 0)
 		local hit = {kind = "taken", damage = dmg, health = creature:getHealth(), maxHealth = creature:getMaxHealth(),
 			level = creature:getLevel()}
+		local id = creature:getId()
+		T.hits[id] = T.hits[id] or {}
+		H.pushHit(T.hits[id], os.time(), {damage = dmg, by = attacker and attacker:getName() or "?"})
 		local rule = H.hitAnomaly(hit)
 		if rule then
 			hit.who = creature:getName()
@@ -432,8 +502,12 @@ dealt:register()
 local death = CreatureEvent("TesterHelperDeath")
 function death.onDeath(creature, corpse, killer, mostDamageKiller)
 	if eligible(creature) then
-		print("[tester-event] " .. H.json({kind = "death", who = creature:getName(), level = creature:getLevel(),
-			killer = killer and killer:getName() or "?", t = os.time()}))
+		local id = creature:getId()
+		local started = T.loginAt[id]
+		print("[tester-event] " .. H.json(H.deathRecord(T.hits[id], os.time(), {who = creature:getName(),
+			level = creature:getLevel(), killer = killer and killer:getName() or "?", maxHealth = creature:getMaxHealth(),
+			online = started and os.time() - started or nil})))
+		T.hits[id] = nil
 	end
 	return true
 end

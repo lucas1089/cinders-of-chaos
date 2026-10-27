@@ -203,6 +203,8 @@ def test_update_and_rollback():
         rc = w.update('--ref', 'v2', '--now', '--yes')
         check(rc == 0, 'update v2 exits 0 (got %d)' % rc, w)
         check(w.head() == w.tag('v2'), 'checkout at v2 after the update', w)
+        check('WARNING: the unit chaos-server runs the game server as root' in w.out and 'server-user fix' in w.out,
+              'the update warns when the unit runs as root (no User=)', w)
         check(read(os.path.join(w.server, 'data/scripts/chaos/a.lua')) == '-- v2\n', 'v2 installed')
         order = [w.index('backup --save-service chaos-server'), w.index('install dry'),
                  w.index('systemctl stop chaos-server'), w.index('backup --no-data'), w.index('install real'),
