@@ -774,7 +774,7 @@ Chaos.worldBoss = {
 		groundId = 407, -- black marble floor (arena)
 		lobbyGroundId = 413, -- stone floor (lobby)
 		wallId = 5648, -- stone wall
-		pillarId = 1514, -- stone pillar (line-of-sight cover inside the arena)
+		pillarId = 1515, -- marble pillar (line-of-sight cover inside the arena)
 		basinId = 1481, -- coal basin (light, lobby corners and arena corners)
 		portalId = 1387, -- magic forcefield (type teleport in items.xml); used without destination + action id
 		-- dark tile set (server/README.md "Dark tile set"): with the set installed, walls, pillars and lights use

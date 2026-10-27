@@ -2,6 +2,7 @@
 -- hooks other modules call and the guards around g_sounds)
 local dir = (arg and arg[0] or ''):match('^(.*[/\\])') or './'
 local fails, checks = 0, 0
+local S
 local function eq(a, b, what)
   checks = checks + 1
   if a ~= b then print('FAIL ' .. what .. ': ' .. tostring(a) .. ' ~= ' .. tostring(b)); fails = fails + 1 end
@@ -15,6 +16,7 @@ g_game = { isOnline = function() return false end }
 modules = {}
 SoundChannels = { Music = 1, Ambient = 2, Effect = 3, Bot = 4 }
 dofile(dir .. 'soundlogic.lua')
+S = ChaosSoundLogic
 
 -- 1. a client without g_sounds: nothing plays, one warning
 g_sounds = nil
@@ -93,6 +95,34 @@ eq(#played, n + 1, 'junk data is ignored')
 now = 102000
 onGoalDone()
 eq(played[#played].file:find('goal', 1, true) ~= nil, true, 'the goal hook plays the goal sound')
+
+-- 4b. a file the client does not have is never handed to the engine; an ended source is let go, a stuck one stopped
+do
+  local asked, stopped = {}, 0
+  g_resources = { fileExists = function(path) asked[#asked + 1] = path; return path:find('hit_', 1, true) == nil end }
+  local n2 = #played
+  now = 120000
+  eq(playEvent('hit', 0), false, 'a missing file is not played')
+  local w0 = #warnings
+  eq(w0 > 0, true, 'and logged')
+  eq(#played, n2, 'and never reaches g_sounds.play')
+  now = 121000
+  playEvent('hit', 0)
+  local seen, dup = {}, false
+  for i = w0 + 1, #warnings do if seen[warnings[i]] then dup = true end seen[warnings[i]] = true end
+  eq(dup, false, 'a missing file is logged once')
+  g_resources = nil
+  local stuck = { isPlaying = function() return true end, stop = function() stopped = stopped + 1 end }
+  g_sounds.play = function() return stuck end
+  now = 130000
+  eq(playEvent('goal', 0), true, 'a source is returned')
+  g_sounds.play = function(file, fade, gain) played[#played + 1] = { file = file, fade = fade, gain = gain }; return {} end
+  now = 130000 + 500 + S.REAP_SLACK + 10
+  reapSources()
+  eq(stopped, 1, 'a source past its length is stopped')
+  reapSources()
+  eq(stopped, 1, 'and only once')
+end
 
 -- 5. the hooks other modules call are exported and the unknown event is harmless
 eq(playEvent('no_such_event', 0), false, 'an unknown event')

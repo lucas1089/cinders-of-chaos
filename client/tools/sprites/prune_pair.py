@@ -476,47 +476,41 @@ def restore(dat_path, spr_path, adat_path, aspr_path, ids, out_dir, log=print):
                     append.append(s)
     os.makedirs(out_dir, exist_ok=True)
     out_spr = os.path.join(out_dir, 'Tibia.spr')
-    with open(spr_path, 'rb') as src, open(out_spr, 'wb') as out:
-        while True:
-            chunk = src.read(1 << 22)
-            if not chunk:
-                break
-            out.write(chunk)
-    with open(out_spr, 'r+b') as out:
-        out.seek(0, 2)
-        pos = out.tell()
-        table_add = array.array('I')
-        shared = {}
-        for s in append:
-            o = aspr.offs[s - 1]
-            if o in shared:
-                table_add.append(shared[o])
-                continue
-            rec = aspr.record(s)
-            out.write(rec)
-            shared[o] = pos
-            table_add.append(pos)
-            pos += len(rec)
-        # the offset table grows by 4 bytes per new sprite: shift everything after it
-    # rebuild with the grown table (the records move by 4 * added bytes)
+    # one pass, no temporary copy (the spr is over 1 GiB): the new records are collected first, then the file is
+    # written as head, grown offset table, the old records and the new records
     grown = len(append)
-    tmp = out_spr + '.tmp'
-    with open(out_spr, 'rb') as src, open(tmp, 'wb') as out:
+    add = 4 * grown
+    old_size = os.path.getsize(spr_path)
+    new_recs = []
+    table_add = array.array('I')
+    shared = {}
+    pos = old_size + add
+    for s in append:
+        o = aspr.offs[s - 1]
+        if o in shared:
+            table_add.append(shared[o])
+            continue
+        rec = aspr.record(s)
+        new_recs.append(rec)
+        shared[o] = pos
+        table_add.append(pos)
+        pos += len(rec)
+    with open(spr_path, 'rb') as src, open(out_spr, 'wb') as out:
         head = src.read(SPR_HEAD + 4 * spr.count)
         sig, cnt = struct.unpack_from('<II', head, 0)
         offs = array.array('I')
         offs.frombytes(head[SPR_HEAD:])
-        add = 4 * grown
         offs = array.array('I', [o + add if o else 0 for o in offs])
         out.write(struct.pack('<II', sig, cnt + grown))
         out.write(offs.tobytes())
-        out.write(array.array('I', [o + add for o in table_add]).tobytes())
+        out.write(table_add.tobytes())
         while True:
             chunk = src.read(1 << 22)
             if not chunk:
                 break
             out.write(chunk)
-    os.replace(tmp, out_spr)
+        for rec in new_recs:
+            out.write(rec)
     parts = [data[:12]]
     for cat in CATS:
         for t in things[cat]:

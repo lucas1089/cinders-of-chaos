@@ -106,3 +106,14 @@ missile,188,potion_flask_poison,kept on the owner-side review of 2026-10-27: pac
 missile,200,proj_spirit_wisp,kept on the owner-side review of 2026-10-27: pack 36 name reserved for spells not written yet
 outfit,2104,obsidian_minion,source look of the frost/venom/void recolour variants (theme_recolour.py); CI rebuilds them from the live pair
 outfit,2108,crypt_minion,source look of the frost/venom/void recolour variants (theme_recolour.py); CI rebuilds them from the live pair
+item,38477,rusty_tin_interior_1,kept for the hunt roofs of server/tools/patch_hunt_roofs.py (the rusty tin roof pieces stand on the map)
+item,38478,rusty_tin_interior_2,kept for the hunt roofs of server/tools/patch_hunt_roofs.py (the rusty tin roof pieces stand on the map)
+item,38479,rusty_tin_interior_3,kept for the hunt roofs of server/tools/patch_hunt_roofs.py (the rusty tin roof pieces stand on the map)
+item,38480,rusty_tin_n,kept for the hunt roofs of server/tools/patch_hunt_roofs.py (the rusty tin roof pieces stand on the map)
+item,38481,rusty_tin_s,kept for the hunt roofs of server/tools/patch_hunt_roofs.py (the rusty tin roof pieces stand on the map)
+item,38482,rusty_tin_e,kept for the hunt roofs of server/tools/patch_hunt_roofs.py (the rusty tin roof pieces stand on the map)
+item,38483,rusty_tin_w,kept for the hunt roofs of server/tools/patch_hunt_roofs.py (the rusty tin roof pieces stand on the map)
+item,38484,rusty_tin_nw,kept for the hunt roofs of server/tools/patch_hunt_roofs.py (the rusty tin roof pieces stand on the map)
+item,38485,rusty_tin_ne,kept for the hunt roofs of server/tools/patch_hunt_roofs.py (the rusty tin roof pieces stand on the map)
+item,38486,rusty_tin_sw,kept for the hunt roofs of server/tools/patch_hunt_roofs.py (the rusty tin roof pieces stand on the map)
+item,38487,rusty_tin_se,kept for the hunt roofs of server/tools/patch_hunt_roofs.py (the rusty tin roof pieces stand on the map)

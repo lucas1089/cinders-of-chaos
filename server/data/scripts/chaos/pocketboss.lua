@@ -299,7 +299,7 @@ local function dressSlot(L, bossKey, arenaGate)
 	local cfg = C()
 	ChaosArenaLook.dressBossArena("pocket", L, cfg, bossKey, arenaGate)
 	for _, t in ipairs(L.basins) do
-		placeItem(P(t), cfg.basinId)
+		placeItem(P(ChaosArenaLook.fixtureSpot(t, {L.rect}, ChaosArenaLook.wallSizeOf(cfg.wallId))), cfg.basinId)
 	end
 end
 

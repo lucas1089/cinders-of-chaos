@@ -39,6 +39,8 @@ local lastLevel
 local themesCache
 local lastPlayed          -- {key, file, gain, at}: the last sound (for the in-game check)
 local preloaded = false
+local live = {}           -- sources started and not yet ended (S.track / S.reap)
+local missing = {}        -- files reported missing (logged once each)
 
 local function safe(name, fn)
   return function(...)
@@ -98,7 +100,20 @@ local function clientVolume(group)
   return 1
 end
 
-local function playFile(path, gain)
+-- false when the file is not in the client (a sound that is not shipped must not reach the engine: it logs an error for it)
+local function fileThere(path)
+  if not (g_resources and g_resources.fileExists) then return true end
+  local ok, there = pcall(g_resources.fileExists, path)
+  if not ok or there then return true end
+  if not missing[path] then
+    missing[path] = true
+    g_logger.warning('[chaossound] sound file missing: ' .. path)
+  end
+  return false
+end
+
+local function playFile(path, gain, ms)
+  if not fileThere(path) then return false end
   local ok, src = pcall(g_sounds.play, path, 0, gain)
   if not ok then
     if not reported[path] then
@@ -107,13 +122,25 @@ local function playFile(path, gain)
     end
     return false
   end
+  if src ~= nil then S.track(live, src, nowMs(), ms) end
   return src ~= nil
+end
+
+-- stop the sources that ran past their length, let the ended ones go
+function reapSources()
+  if #live == 0 then return end
+  local function alive(src) return src.isPlaying == nil or src:isPlaying() end
+  for _, src in ipairs(S.reap(live, nowMs(), alive)) do pcall(src.stop, src) end
 end
 
 local function preload()
   if preloaded or not hasSounds() or not g_sounds.preload then return end
   preloaded = true
-  for _, name in ipairs(S.allFiles()) do pcall(g_sounds.preload, S.DIR .. name .. '.ogg') end
+  -- the engine keeps only a file that decodes to 100000 bytes or less (gen_sfx.py checks it); anything longer is streamed
+  for _, name in ipairs(S.allFiles()) do
+    local path = S.DIR .. name .. '.ogg'
+    if fileThere(path) then pcall(g_sounds.preload, path) end
+  end
 end
 
 -- one event: the mixer decides, the engine plays. opts.dist: tiles from the player
@@ -127,7 +154,7 @@ local function fire(key, dist)
   local path, gain = S.request(mixer, key, nowMs(), { dist = dist, settings = settings, volume = volume })
   if not path then return false end
   lastPlayed = { key = key, file = path, gain = gain, at = nowMs() }
-  return playFile(path, gain)
+  return playFile(path, gain, set.ms)
 end
 
 -- ---------------------------------------------------------------- the player
@@ -326,9 +353,11 @@ end
 
 local function onGameEnd()
   reset()
+  reapSources()
 end
 
 local function tick()
+  reapSources()
   if not g_game.isOnline() then return end
   keepTileCallback()
   S.prune(myHits, nowMs())
@@ -377,6 +406,7 @@ function terminate()
   disconnect(UIButton, handlers.button)
   -- the tile callback switch belongs to game_tileoverlays when it is loaded; without it nothing else needs the switch
   if not modules.game_tileoverlays and g_game.enableTileThingLuaCallback then g_game.enableTileThingLuaCallback(false) end
+  for _, src in ipairs(S.reap(live, math.huge)) do pcall(src.stop, src) end
   if window then window:destroy() window = nil end
   handlers = {}
 end

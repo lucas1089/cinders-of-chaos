@@ -110,7 +110,7 @@ return {
 		baseGround = 413, -- stone floor (bases, graveyards)
 		ringGround = 406, -- white marble floor (the capture circle of a brazier)
 		wall = 5648, -- stone wall
-		pillar = 1514, -- stone pillar (cover)
+		pillar = 1515, -- marble pillar (cover)
 		brazier = 1481, -- coal basin (the brazier itself; unwalkable)
 		flag = 1436 -- castle flag (base decoration)
 	},

@@ -37,7 +37,7 @@ return {
 	warnEffect = "warning_zone", -- the danger pulse
 	fillEffect = "warning_fill", -- the last pulse before the hit
 	pulseMs = 600, fillMs = 900,
-	soakEffect = "holy_seal", losEffect = "big_shock_frost_7", pillarId = 1514, totemEffect = "teleport_in",
+	soakEffect = "holy_seal", losEffect = "big_shock_frost_7", pillarId = 1515, totemEffect = "teleport_in",
 	-- the default fairness: a level 300 player, half a second to react
 	fair = {refLevel = 300, reactionMs = 500, pulseMs = 600, fillMs = 900},
 

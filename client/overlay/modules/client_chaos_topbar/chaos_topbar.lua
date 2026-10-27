@@ -649,7 +649,15 @@ local function keepSideButtonsHidden()
 end
 
 -- ---------------------------------------------------------------- refresh
--- Shows the categories that have at least one usable entry.
+-- Shows the categories that have at least one usable entry. The client log (2026-10-27) showed this function taking 5 to
+-- 14 ms per call (every entry of every category is looked up, and every module that adds an entry asked for a refresh),
+-- so: the widget setters run only for what changed since the last call, the bar is raised only when something is above
+-- it, and the callers that can come in bursts (ChaosTopBar.addEntry at module load) go through requestRefresh, which
+-- runs one refresh for all of them.
+local shown = {}              -- category id -> {visible, color} as last set on its button
+local shownWidth, shownParent
+local refreshQueued
+
 function ChaosTopBar.refresh()
   if not isAlive(menuBar) then return end
   local width = 16
@@ -659,22 +667,40 @@ function ChaosTopBar.refresh()
       local items = availableEntries(category.entries)
       local show = #items > 0
       if show and category.admin then show = hasAdminAccess() end
-      button:setVisible(show)
       -- O259: the category with a newly unlocked entry the player has not opened yet is gold
-      pcall(function() button:setColor(subHasNew(items) and COLOR_NEW or COLOR_NORMAL) end)
+      local color = subHasNew(items) and COLOR_NEW or COLOR_NORMAL
+      local last = shown[category.id]
+      if not last or last.visible ~= show then button:setVisible(show) end
+      if not last or last.color ~= color then pcall(function() button:setColor(color) end) end
+      shown[category.id] = { visible = show, color = color }
       if show then width = width + button:getWidth() + 4 end
     end
   end
-  menuBar:setWidth(width)
+  if shownWidth ~= width then
+    menuBar:setWidth(width)
+    shownWidth = width
+  end
   -- in game the bar sits on the game root panel; on the login screen on the root widget
   local parent = isOnline() and gameParent or g_ui.getRootWidget()
-  if parent and menuBar:getParent() ~= parent then
+  local moved = parent and menuBar:getParent() ~= parent
+  if moved then
     menuBar:setParent(parent)
     menuBar:addAnchor(AnchorTop, 'parent', AnchorTop)
     menuBar:addAnchor(AnchorHorizontalCenter, 'parent', AnchorHorizontalCenter)
   end
-  menuBar:setVisible(true)
-  menuBar:raise()
+  if not menuBar:isVisible() then menuBar:setVisible(true) end
+  local p = menuBar:getParent()
+  local top = p and p.getLastChild and p:getLastChild() == menuBar
+  if moved or not top then menuBar:raise() end
+end
+
+-- one refresh for a burst of requests (every module that adds an entry at load asks for one)
+local function requestRefresh()
+  if refreshQueued then return end
+  refreshQueued = scheduleEvent(function()
+    refreshQueued = nil
+    ChaosTopBar.refresh()
+  end, 50)
 end
 
 function ChaosTopBar.setAdmin(value)
@@ -703,7 +729,7 @@ function ChaosTopBar.addEntry(categoryId, entry, under)
       else
         table.insert(target, entry)
       end
-      ChaosTopBar.refresh()
+      requestRefresh()
       return true
     end
   end
@@ -882,6 +908,7 @@ function terminate()
   if ChaosTopBarUnlocks then ChaosTopBarUnlocks.terminate() end
   unbindHotkeys()
   if refreshEvent then removeEvent(refreshEvent) refreshEvent = nil end
+  if refreshQueued then removeEvent(refreshQueued) refreshQueued = nil end
   closeMenu()
   if isAlive(menuBar) then menuBar:destroy() end
   if isAlive(stockTopMenu) then

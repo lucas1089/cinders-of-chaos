@@ -206,6 +206,11 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   gnometeleports tools/patch_gnome_teleports.py  the gnome city and warzone teleports of the base server open to every character
   annihilatorsolo tools/patch_annihilator_solo.py  the Annihilator lever lets one to four players in (demons scale with the team)
   astrodoor    tools/patch_astro_door.py           the Astro tower door (action id 13690) lets everybody through; its hall is a hunt spawn
+  huntroofs    tools/patch_hunt_roofs.py           the roofs of the Bone Slicer / Bone Warrior hunt next to the Astro tower (floors 5 and 6,
+               x 31575-31607, y 32996-33029) become the clean rusty tin roof of the pair 33 kit (items 41477-41487, install step
+               pack33items; one tile down and right of the old pieces, the red tile fill stays as the cover): the 2x2 wooden
+               frames, stone ledge spikes and oriel windows go (README "Hunt roofs"; after astrodoor; with --dry-run it reads
+               the real map and writes nothing)
   absorbceiling tools/patch_absorb_ceiling.py    the base absorb event limits the summed absorb storages to 75 percent per
                type (README "Absorb ceiling"; matches engine patch 0049)
   openpotions  tools/patch_open_potions.py       every class drinks every health, mana and spirit potion: the vocation lists
@@ -1061,6 +1066,21 @@ def step_astrodoor(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('annihilatorsolo') + 1, 'astrodoor')  # the Astro tower door open to everyone (a hunt spawn behind it)
+
+
+def step_huntroofs(server, data, ctx):
+    if ctx['dry']:
+        # the dry copy has no map: read the real one, write nothing
+        real = os.path.join(ctx['server'], 'data')
+        mp = ctx.get('dry_map') or tool_map_path(real)
+        if not mp:
+            return tool_result((False, ['no map in %s/world' % real]))
+        # the items come from the dry copy (pack33items has run on it), the map from the real server
+        return tool_result(run_tool([tool('patch_hunt_roofs.py'), data, '--dry-run', '--map', mp], 'patch_hunt_roofs.py'))
+    return tool_result(run_tool([tool('patch_hunt_roofs.py'), data], 'patch_hunt_roofs.py'))
+
+
+STEPS.insert(STEPS.index('astrodoor') + 1, 'huntroofs')  # the Bone hunt's roofs by the Astro tower (needs pack33items' roof items)
 
 
 def step_absorbceiling(server, data, ctx):

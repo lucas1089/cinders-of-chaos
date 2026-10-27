@@ -1,0 +1,53 @@
+# Chaos: the message boxes of the character list no longer destroy themselves twice (client/BASE.md "0158"; modules/client_entergame/characterlist.lua; after 0001-0157). Lua only.
+# Bug (client log, 2026-10-27): "WARNING: attempt to destroy widget 'widgetNNNN' two times" after the OK of a login error, a lost connection or "Update needed" box. The onOk callbacks of those boxes destroyed errorBox, and UIMessageBox:ok (corelib/ui/uimessagebox.lua) destroys the box itself right after the callback. Harmless (the engine ignores the second destroy) but it filled the log.
+# Fix: the four onOk callbacks only forget the box (errorBox = nil). The Cancel button of the "client too old" box calls its callback directly (not ok()), so that one keeps its destroy.
+--- a/modules/client_entergame/characterlist.lua
++++ b/modules/client_entergame/characterlist.lua
+@@ -419,10 +419,8 @@
+ 
+   errorBox = displayErrorBox(tr("Login Error"), message)
+   errorBox.onOk = function()
+-    -- I assume it wasn't destroyed before
+-    if errorBox then
+-      errorBox:destroy()
+-    end
++    -- Chaos: UIMessageBox:ok destroys the box right after this callback; destroying it here too logged
++    -- "attempt to destroy widget ... two times"
+     errorBox = nil
+     CharacterList.showAgain()
+   end
+@@ -437,10 +435,8 @@
+ 
+   errorBox = displayErrorBox(tr("Login Error"), "You have been disconnected")
+   errorBox.onOk = function()
+-    -- I assume it wasn't destroyed before
+-    if errorBox then
+-      errorBox:destroy()
+-    end
++    -- Chaos: UIMessageBox:ok destroys the box right after this callback; destroying it here too logged
++    -- "attempt to destroy widget ... two times"
+     errorBox = nil
+     CharacterList.showAgain()
+   end
+@@ -496,7 +492,7 @@
+ 
+   errorBox = displayErrorBox(title, text)
+   errorBox.onOk = function()
+-    if errorBox then errorBox:destroy() end
++    -- Chaos: UIMessageBox:ok destroys the box right after this callback (see onGameLoginError)
+     errorBox = nil
+     if code == 16655 then
+       CharacterList.hide(true)
+@@ -518,10 +514,8 @@
+   CharacterList.destroyLoadBox()
+   errorBox = displayErrorBox(tr("Update needed"), tr('Enter with your account again to update your client.'))
+   errorBox.onOk = function()
+-    -- I assume it wasn't destroyed before
+-    if errorBox then
+-      errorBox:destroy()
+-    end
++    -- Chaos: UIMessageBox:ok destroys the box right after this callback; destroying it here too logged
++    -- "attempt to destroy widget ... two times"
+     errorBox = nil
+     CharacterList.showAgain()
+   end
