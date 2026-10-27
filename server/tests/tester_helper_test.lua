@@ -478,6 +478,66 @@ do
 		"shop: a refused teleport is an error, not a window the bot cannot reach")
 end
 
+-- ------------------------------------------------------------------ O86: summons, party, cursed chest probes
+do
+	-- the pure rules
+	local owner = {id = 1, isPlayer = true, partyLeaderId = 9}
+	eq(H.targetKind(owner, nil), "none", "no target")
+	eq(H.targetKind(owner, {id = 1, isPlayer = true}), "owner", "the owner")
+	eq(H.targetKind(owner, {id = 2, isPlayer = true, partyLeaderId = 9}), "ally", "a party member")
+	eq(H.targetKind(owner, {id = 3, isPlayer = true}), "player", "a stranger")
+	eq(H.targetKind(owner, {id = 4, ownerId = 1}), "summon", "own summon")
+	eq(H.targetKind(owner, {id = 5, ownerId = 2, partyLeaderId = 9}), "summon", "a party member's summon")
+	eq(H.targetKind(owner, {id = 6}), "monster", "a wild monster")
+	local seen = {}
+	local snap = {who = "Tester Abc", ownerTarget = "summon", summons = {{name = "wolf", id = 4, target = "owner"},
+		{name = "wolf", id = 5, target = "monster"}, {name = "wolf", id = 6, target = "ally"}}}
+	local a = H.summonAnomalies(snap, 100, seen)
+	eq(#a, 3, "three rules fire once")
+	local rules = {}
+	for _, x in ipairs(a) do rules[x.rule] = true end
+	check(rules.summon_targets_owner and rules.summon_targets_ally and rules.owner_targets_summon, "the three rule names")
+	eq(#H.summonAnomalies(snap, 110, seen), 0, "throttled for 30 s")
+	eq(#H.summonAnomalies(snap, 131, seen), 3, "and again after")
+	eq(#H.summonAnomalies({who = "x", ownerTarget = "monster", summons = {{target = "monster"}, {target = "none"}}}, 1, {}), 0, "a healthy pack: nothing")
+	check(H.COMMANDS.summons and H.COMMANDS.party and H.COMMANDS.chest, "commands registered")
+
+	-- the engine file: a tester with a wolf that targets it, and a party
+	local t2 = creature(268435480, "Tester Abw", {store = {[ST] = 1}})
+	local mate = creature(268435481, "Tester Abx", {store = {[ST] = 1}})
+	local w1 = creature(1073741830, "wolf", {player = false, monster = true})
+	w1.master = t2
+	local party = {getLeader = function() return t2 end, getMembers = function() return {mate} end}
+	t2.getParty = function() return party end
+	mate.getParty = function() return party end
+	w1.getParty = function() return nil end
+	t2.getSummons = function() return {w1} end
+	w1.getTargetList = function() return {t2, mate, wolf} end
+	w1.target = t2
+	function Game.getPlayers() return {t2, mate} end
+	talks["!tester"].onSay(t2, "!tester", "summons")
+	local line = t2.log.msgs[#t2.log.msgs]
+	check(line:find("summons ", 1, true) ~= nil and line:find('"target":"owner"', 1, true) ~= nil, "summons: the wolf targets its owner")
+	check(line:find('"listedAllies":2', 1, true) ~= nil, "summons: two allies in the engine target list")
+	talks["!tester"].onSay(t2, "!tester", "party")
+	check(t2.log.msgs[#t2.log.msgs]:find('"size":2', 1, true) ~= nil, "party: size 2")
+	-- the loop reports the anomaly of a tester with a wolf on the console
+	T.ids[t2.id] = true
+	spectators = {}
+	local before = #printed
+	for _ = 1, 8 do lastStep().fn() end
+	local found
+	for i = before + 1, #printed do
+		if printed[i]:find("[tester-anomaly]", 1, true) and printed[i]:find("summon_targets_owner", 1, true) then found = true end
+	end
+	check(found, "the loop prints [tester-anomaly] summon_targets_owner")
+	-- a non-tester with summons is never probed
+	talks["!tester"].onSay(ana, "!tester", "summons")
+	eq(#ana.log.msgs, 0, "a real player's summons are not probed")
+	talks["!tester"].onSay(t2, "!tester", "chest")
+	check(t2.log.msgs[#t2.log.msgs]:find('chest {"err":"no cursed chest system"}', 1, true) ~= nil, "chest: no system, an error answer")
+end
+
 print = origPrint
 print(string.format("tester_helper_test: %d checks, %d failures", count, failures))
 os.exit(failures == 0 and 0 or 1)
