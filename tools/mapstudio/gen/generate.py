@@ -2013,6 +2013,7 @@ def build(p):
     plant_ids = {int(i) for t in (kit["flora"], kit["top_flora"], kit["bank_flora"]) for f in t.values() for i in f}
     plant_ids |= {int(i) for c in ("big", "small") for i in kit["clumps"][c]} | {int(i) for i in kit.get("hill_top", {})}
     plant_ids |= dressed | stamp_ids
+    plant_ids -= wallcheck.fence_ids(kit)  # round 10: the repair pass below clears plants; a fence or wall piece of a stamp is never one (it cut gaps into fenced outlines)
     # odd borders (tools/odd_borders.py): tiles where one set's pieces face opposite ways; every 12-piece set
     sets = [s for s, v in kit.items() if isinstance(v, dict) and "edge_n" in v and "inner_se" in v]
     piece_of = {int(i): (s, n.partition("_")[2]) for s in sets for n, i in kit[s].items()}
@@ -2070,6 +2071,8 @@ def build(p):
              **{k: sum(map(sum, m[k])) for k in ("water", "hill")}}
     if kit.get("wall_check"):  # kit key wall_check: void beside floor or walls, wrong or missing wall pieces (gen/wallcheck.py)
         stats["wall_check"] = wallcheck.summary(wallcheck.check(floors[Z], size, ORIGIN, items, kit, access.NO_WALK, edge_pieces, pool_ids=pool_ids))
+        if wallcheck.fence_ids(kit):  # round 10: loose ends of fence and wall lines (a corner cut out of a stamp outline, a lantern in its place)
+            stats["wall_check"]["fence_gaps"] = wallcheck.fence_gaps(floors[Z], size, ORIGIN, items, kit, access.NO_WALK)["fence_gaps"]
     if pool_ids:
         stats["pools"] = {"tiles": len(pool_tiles), "ids": sorted(pool_ids)}
     if stamps_placed:
@@ -2280,7 +2283,7 @@ def main():
           f"cut off {acc['cut_off']}, reached/walkable per floor {acc.get('reached/walkable')}")
     if "wall_check" in stats:
         w = stats["wall_check"]
-        print(f"  walls: void tiles touching floor or wall {w['void_touch']}, wrong wall pieces {w['wall_wrong']}, missing wall pieces {w['wall_missing']}")
+        print(f"  walls: void tiles touching floor or wall {w['void_touch']}, wrong wall pieces {w['wall_wrong']}, missing wall pieces {w['wall_missing']}" + (f", fence gaps {w['fence_gaps']}" if 'fence_gaps' in w else ""))
     if "cave" in stats:
         c = stats["cave"]
         print(f"  cave: wall style {c['style']}, nodes {c['nodes']}, loops {c['loops']}, spurs {c['spurs']}, stairs {c['stairs']}, "
