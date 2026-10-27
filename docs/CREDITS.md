@@ -361,6 +361,12 @@ Sources the art tools record in their `*sources.csv` files. `check_credits.py` c
 - **decoration source E**: a graveyard builder kit, the source of the dead trees of pair 49 (one tree sheet, read at native size).
   Purchased; use in games incl. commercial and modified is allowed, the raw files are not shared. Not shown in the game or on the
   website; its sprites ship only inside the pair.
+- **pair 50 source G**: a purchased sprite set (ground, walls, stairs, decoration, monsters and effects), the source of part of
+  pair 50 (`client/tools/sprites/pair50_G_selection.csv`, client/MANIFEST.md "pair 50"). Purchased; the owner approved using it
+  (2026-10-27). The raw files are not shared. Not shown in the game or on the website; its sprites ship only inside the pair.
+- **pair 50 source F**: a second purchased sprite set (ground, walls, stairs, decoration, monsters and effects), the other source
+  of pair 50 (`client/tools/sprites/pair50_F_selection.csv`). Purchased; the owner approved using it (2026-10-27). The raw files are
+  not shared. Not shown in the game or on the website; its sprites ship only inside the pair.
 - **set29 status**, **set29 projectile**, **set29 firework**, **set29 blood**, **set29 explosion**: the internal
   labels of the five MutterPixel Studio packs above, in the order of its Source line (status effects, projectiles,
   fireworks, blood, explosions). `client/tools/sprites/art_import/pack29_vfx_sources.csv` names each pick's pack by

@@ -1,0 +1,601 @@
+effect_id,key,name,size,phases,ms,light_level,light_color,dx,dy,biome,source,src_id
+4102,p50_grey_smoke_puff_1_4102,Grey smoke puff 1,1x1,4,400,0,0,0,0,generic,G,3
+4103,p50_blue_ice_ring_burst_4103,Blue ice ring burst,2x2,10,1060,0,0,1,1,generic,G,5
+4104,p50_ice_star_burst_4104,Ice star burst,1x1,6,600,0,0,0,0,generic,G,6
+4105,p50_ice_shards_1_4105,Ice shards 1,2x2,8,900,0,0,1,1,generic,G,7
+4106,p50_ice_drops_4106,Ice drops,2x2,8,820,0,0,1,1,generic,G,8
+4107,p50_ice_sparks_4107,Ice sparks,2x2,12,1200,0,0,1,1,generic,G,10
+4108,p50_small_ice_star_4108,Small ice star,2x2,18,1680,0,0,1,1,generic,G,11
+4109,p50_ice_star_flash_4109,Ice star flash,2x2,14,1275,0,0,1,1,generic,G,12
+4110,p50_small_fire_burst_4110,Small fire burst,2x2,5,500,4,215,1,1,generic,G,16
+4111,p50_red_maw_bite_4111,Red maw bite,1x1,8,800,0,0,0,0,generic,G,21
+4112,p50_blue_spiked_star_4112,Blue spiked star,1x1,6,600,0,0,0,0,generic,G,24
+4113,p50_dark_cage_rune_4113,Dark cage rune,1x1,4,400,0,0,0,0,generic,G,26
+4114,p50_grey_smoke_cloud_4114,Grey smoke cloud,1x1,8,400,0,0,0,0,generic,G,28
+4115,p50_orange_fire_puff_4115,Orange fire puff,2x2,9,900,0,0,1,1,generic,G,29
+4116,p50_white_smoke_puff_4116,White smoke puff,2x2,8,800,0,0,1,1,generic,G,30
+4117,p50_brown_fire_cloud_4117,Brown fire cloud,2x2,9,900,0,0,1,1,generic,G,31
+4118,p50_small_flame_4118,Small flame,2x2,8,800,0,0,1,1,generic,G,32
+4119,p50_green_poison_cloud_4119,Green poison cloud,1x1,8,800,0,0,0,0,generic,G,33
+4120,p50_fire_explosion_4120,Fire explosion,1x1,9,900,0,0,0,0,generic,G,35
+4121,p50_yellow_sparks_4121,Yellow sparks,2x2,7,700,0,0,1,1,generic,G,36
+4122,p50_blue_sparks_4122,Blue sparks,2x2,7,700,0,0,1,1,generic,G,37
+4123,p50_yellow_energy_glob_4123,Yellow energy glob,1x1,10,1000,0,0,0,0,generic,G,38
+4124,p50_blue_whirlpool_4124,Blue whirlpool,1x1,8,800,3,173,0,0,generic,G,40
+4125,p50_flame_burst_4125,Flame burst,2x2,5,500,4,215,1,1,generic,G,41
+4126,p50_white_arcane_rune_4126,White arcane rune,1x1,4,400,0,0,0,0,generic,G,42
+4127,p50_blue_white_rune_4127,Blue white rune,1x1,9,900,3,173,0,0,generic,G,45
+4128,p50_gold_swirl_sparks_4128,Gold swirl sparks,1x1,9,900,0,0,0,0,generic,G,49
+4129,p50_green_ring_1_4129,Green ring 1,1x1,9,900,0,0,0,0,generic,G,54
+4130,p50_cyan_ring_4130,Cyan ring,1x1,9,900,0,0,0,0,generic,G,55
+4131,p50_yellow_ring_4131,Yellow ring,1x1,9,900,0,0,0,0,generic,G,56
+4132,p50_red_orb_4132,Red orb,1x1,10,1000,0,0,0,0,generic,G,57
+4133,p50_gold_burst_1_4133,Gold burst 1,1x1,10,1000,0,0,0,0,generic,G,58
+4134,p50_rock_chunk_4134,Rock chunk,1x1,5,500,0,0,0,0,generic,G,64
+4135,p50_blue_crescent_slash_1_4135,Blue crescent slash 1,3x3,6,600,0,0,1,1,generic,G,68
+4136,p50_fire_crescent_slash_4136,Fire crescent slash,3x3,6,600,0,0,1,1,generic,G,69
+4137,p50_blue_crescent_slash_2_4137,Blue crescent slash 2,3x3,6,600,0,0,1,1,generic,G,70
+4138,p50_purple_lightning_4138,Purple lightning,1x1,5,410,3,173,0,0,generic,G,71
+4139,p50_white_wind_swirl_4139,White wind swirl,2x2,14,1400,0,0,1,1,generic,G,72
+4140,p50_green_puff_4140,Green puff,2x2,8,800,0,0,1,1,generic,G,73
+4141,p50_orange_explosion_4141,Orange explosion,1x1,6,600,0,0,0,0,generic,G,74
+4142,p50_white_ring_4142,White ring,1x1,6,600,0,0,0,0,generic,G,75
+4143,p50_white_smoke_cloud_4143,White smoke cloud,2x2,6,600,0,0,1,1,generic,G,78
+4144,p50_yellow_rune_ring_1_4144,Yellow rune ring 1,2x2,8,800,0,0,1,1,generic,G,79
+4145,p50_fire_blob_4145,Fire blob,1x1,11,1100,0,0,0,0,generic,G,80
+4146,p50_yellow_rune_ring_2_4146,Yellow rune ring 2,2x2,16,960,0,0,1,1,generic,G,82
+4147,p50_whirlwind_1_4147,Whirlwind 1,2x2,7,700,0,0,1,1,generic,G,83
+4148,p50_whirlwind_2_4148,Whirlwind 2,2x2,7,1540,0,0,1,1,generic,G,84
+4149,p50_blue_crystal_burst_4149,Blue crystal burst,2x2,8,3200,0,0,1,1,generic,G,103
+4150,p50_tan_dust_cloud_4150,Tan dust cloud,1x1,4,400,0,0,0,0,generic,G,106
+4151,p50_grey_smoke_puff_2_4151,Grey smoke puff 2,1x1,6,600,0,0,0,0,generic,G,117
+4152,p50_smoke_burst_4152,Smoke burst,1x1,6,910,0,0,0,0,generic,G,118
+4153,p50_white_flash_4153,White flash,1x1,7,770,0,0,0,0,generic,G,119
+4154,p50_gold_sparkle_star_4154,Gold sparkle star,1x1,9,1080,0,0,0,0,generic,G,120
+4155,p50_red_scratch_marks_4155,Red scratch marks,2x2,10,600,0,0,1,1,"bloodhospital,cursed",F,1
+4156,p50_grey_smoke_puff_4156,Grey smoke puff,1x1,8,400,0,0,0,0,"cave,cursed,asylum",F,3
+4157,p50_green_leaf_wreath_burst_4157,Green leaf wreath burst,1x1,8,600,0,0,0,0,"swamp,hauntedfarm,fungal",F,9
+4158,p50_white_swirl_wisps_4158,White swirl wisps,1x1,8,800,0,0,0,0,"celestial,cursed",F,10
+4159,p50_blue_flame_blob_4159,Blue flame blob,1x1,11,770,3,173,0,0,"ice,deepsea,celestial",F,11
+4160,p50_green_wisps_4160,Green wisps,1x1,6,600,0,0,0,0,"swamp,fungal,cursed",F,17
+4161,p50_ghost_skull_face_4161,Ghost skull face,1x1,11,890,0,0,0,0,"cursed,asylum,hauntedfarm",F,18
+4162,p50_grey_smoke_cloud_4162,Grey smoke cloud,1x1,11,660,0,0,0,0,"cave,cursed,asylum",F,35
+4163,p50_blue_glow_burst_4163,Blue glow burst,1x1,11,880,3,173,0,0,"celestial,ice,deepsea",F,38
+4164,p50_grey_storm_puff_4164,Grey storm puff,2x1,6,600,0,0,1,0,"cave,cursed,asylum",F,39
+4165,p50_storm_cloud_with_lightning_4165,Storm cloud with lightning,2x2,17,1850,5,167,1,1,"celestial,ice,cursed",F,41
+4166,p50_cyan_shard_spray_4166,Cyan shard spray,2x2,17,680,3,143,1,1,"ice,celestial",F,42
+4167,p50_cyan_swirl_4167,Cyan swirl,2x2,15,1125,5,143,1,1,"ice,deepsea,celestial",F,43
+4168,p50_snowflake_burst_4168,Snowflake burst,2x2,12,1000,4,143,1,1,ice,F,44
+4169,p50_green_vine_tentacles_brown_roots_4169,"Green vine tentacles, brown roots",2x2,12,1030,3,60,1,1,"swamp,fungal,hauntedfarm",F,46
+4170,p50_green_gem_slash_4170,Green gem slash,1x2,8,800,0,0,0,1,"swamp,fungal",F,47
+4171,p50_green_vine_tentacles_big_4171,"Green vine tentacles, big",2x2,17,1630,4,60,1,1,"swamp,fungal,hauntedfarm",F,51
+4172,p50_ice_crystal_burst_4172,Ice crystal burst,2x2,22,1200,4,143,1,1,ice,F,53
+4173,p50_blue_dragon_swirl_4173,Blue dragon swirl,2x2,9,900,0,0,1,1,"deepsea,ice,celestial",F,54
+4174,p50_red_claw_slashes_4174,Red claw slashes,1x1,7,700,6,180,0,0,"bloodhospital,cursed",F,167
+4175,p50_pink_crescent_slash_4175,Pink crescent slash,2x2,11,1100,6,202,1,1,"cursed,fungal",F,193
+4176,p50_cyan_swish_4176,Cyan swish,2x2,15,1500,0,0,1,1,"ice,deepsea",F,206
+4177,p50_brown_claw_swipe_4177,Brown claw swipe,2x1,12,900,0,0,1,0,"cave,hauntedfarm",F,210
+4178,p50_white_claw_swipe_4178,White claw swipe,1x2,7,700,0,0,0,1,"cursed,celestial",F,214
+4179,p50_red_triple_slash_4179,Red triple slash,2x2,7,560,0,0,1,1,"bloodhospital,cursed,lava",F,215
+4180,p50_blue_crescent_slash_big_4180,"Blue crescent slash, big",2x2,6,500,0,0,1,1,"ice,deepsea,celestial",F,216
+4181,p50_jaw_bite_4181,Jaw bite,2x2,10,1000,0,0,1,1,"cursed,cave",F,217
+4182,p50_purple_smoke_burst_4182,Purple smoke burst,1x1,11,770,3,165,0,0,"cursed,fungal,celestial",F,222
+4183,p50_red_smoke_burst_4183,Red smoke burst,1x1,11,770,3,158,0,0,"bloodhospital,lava,cursed",F,223
+4184,p50_orange_smoke_burst_4184,Orange smoke burst,1x1,11,770,3,166,0,0,lava,F,224
+4185,p50_pale_grey_smoke_burst_4185,Pale grey smoke burst,1x1,11,770,3,122,0,0,"cave,cursed",F,225
+4186,p50_blue_smoke_burst_4186,Blue smoke burst,1x1,11,770,3,137,0,0,"ice,deepsea",F,226
+4187,p50_cyan_spirit_spiral_4187,Cyan spirit spiral,2x2,9,900,4,179,1,1,"cursed,ice,celestial",F,241
+4188,p50_cyan_spiral_4188,Cyan spiral,2x2,6,600,3,179,1,1,"ice,deepsea,celestial",F,243
+4189,p50_grey_smoke_with_red_tongue_4189,Grey smoke with red tongue,2x2,11,900,3,179,1,1,"cursed,bloodhospital",F,244
+4190,p50_gold_sparkle_burst_4190,Gold sparkle burst,1x1,7,700,3,179,0,0,celestial,F,245
+4191,p50_green_rune_sparks_4191,Green rune sparks,2x2,8,800,0,0,1,1,"swamp,fungal",F,277
+4192,p50_magenta_rune_sparks_4192,Magenta rune sparks,2x2,8,800,0,0,1,1,"cursed,fungal,celestial",F,278
+4193,p50_green_energy_orb_4193,Green energy orb,1x1,11,880,3,66,0,0,"swamp,fungal,cursed",F,280
+4194,p50_magenta_energy_orb_4194,Magenta energy orb,1x1,11,880,3,184,0,0,"cursed,fungal,celestial",F,281
+4195,p50_white_lightning_web_4195,White lightning web,1x1,6,480,3,215,0,0,"celestial,ice",F,301
+4196,p50_green_lightning_web_4196,Green lightning web,1x1,6,480,3,25,0,0,"swamp,fungal,cursed",F,302
+4197,p50_purple_lightning_web_4197,Purple lightning web,1x1,6,480,3,148,0,0,"cursed,fungal,celestial",F,303
+4198,p50_pale_lightning_bolt_4198,Pale lightning bolt,2x2,12,1200,0,0,1,1,"ice,celestial",F,308
+4199,p50_dark_smoke_comet_4199,Dark smoke comet,2x2,9,900,0,0,1,1,"cursed,cave",F,309
+4200,p50_black_smoke_cloud_4200,Black smoke cloud,2x2,14,1400,0,0,1,1,"cursed,cave,asylum",F,310
+4201,p50_green_leaf_burst_4201,Green leaf burst,3x3,11,1100,0,0,1,1,"swamp,fungal",F,318
+4202,p50_ice_cube_4202,Ice cube,3x3,17,1700,0,0,1,1,ice,F,319
+4203,p50_root_tangle_4203,Root tangle,3x3,10,1200,0,0,1,1,"swamp,hauntedfarm,fungal",F,320
+4204,p50_red_rune_circle_glyph_4204,Red rune circle glyph,2x2,16,1600,0,0,1,1,"cursed,bloodhospital,lava",F,323
+4205,p50_blue_rune_circle_glyph_4205,Blue rune circle glyph,2x2,16,1600,0,0,1,1,"ice,deepsea,celestial",F,324
+4206,p50_red_tribal_sigil_big_4206,"Red tribal sigil, big",2x2,15,1500,0,0,1,1,"cursed,lava",F,325
+4207,p50_green_rune_circle_glyph_4207,Green rune circle glyph,2x2,16,1600,0,0,1,1,"swamp,fungal,cursed",F,326
+4208,p50_violet_rune_glow_4208,Violet rune glow,1x1,12,1200,0,0,0,0,"cursed,celestial",F,327
+4209,p50_gold_maze_circle_glyph_4209,Gold maze circle glyph,1x1,12,1200,0,0,0,0,"celestial,cursed",F,328
+4210,p50_white_sigil_glyph_4210,White sigil glyph,1x1,12,1200,0,0,0,0,"celestial,cursed",F,329
+4211,p50_gold_sigil_glyph_4211,Gold sigil glyph,1x1,11,1100,0,0,0,0,"celestial,cursed",F,330
+4212,p50_gold_rune_circle_glyph_4212,Gold rune circle glyph,2x2,16,1600,0,0,1,1,"celestial,cursed",F,338
+4213,p50_big_ice_block_4213,Big ice block,4x4,18,1800,0,0,2,2,ice,F,340
+4214,p50_blue_ring_swirl_4214,Blue ring swirl,2x2,16,1600,0,0,1,1,"deepsea,ice,celestial",F,341
+4215,p50_frost_web_ring_4215,Frost web ring,6x6,21,2260,0,0,3,3,ice,F,345
+4216,p50_red_dashed_ring_4216,Red dashed ring,2x2,6,600,0,0,1,1,"cursed,lava",F,347
+4217,p50_magenta_tentacle_4217,Magenta tentacle,3x3,16,1500,0,0,1,1,"cursed,fungal,deepsea",F,355
+4218,p50_magenta_tentacle_4218,Magenta tentacle,3x3,16,1600,0,0,1,1,"cursed,fungal,deepsea",F,356
+4219,p50_magenta_tentacle_4219,Magenta tentacle,3x3,16,1600,0,0,1,1,"cursed,fungal,deepsea",F,357
+4220,p50_magenta_tentacle_4220,Magenta tentacle,3x3,16,1600,0,0,1,1,"cursed,fungal,deepsea",F,358
+4221,p50_blue_rune_ring_4221,Blue rune ring,3x3,9,720,0,0,1,1,"celestial,ice",F,360
+4222,p50_magenta_ring_4222,Magenta ring,4x4,8,800,0,0,2,2,"cursed,fungal",F,362
+4223,p50_red_spore_orb_4223,Red spore orb,3x3,12,1200,0,0,1,1,"bloodhospital,cursed",F,368
+4224,p50_blue_rune_burst_4224,Blue rune burst,4x4,12,1200,0,0,2,2,"ice,celestial",F,370
+4225,p50_ice_crystal_4225,Ice crystal,3x3,21,2100,5,143,1,1,ice,F,372
+4226,p50_ice_spike_spray_4226,Ice spike spray,3x3,7,700,3,143,1,1,ice,F,374
+4227,p50_blue_spike_burst_4227,Blue spike burst,3x3,12,1200,5,143,1,1,"ice,celestial",F,375
+4228,p50_blue_rune_circle_4228,Blue rune circle,3x3,6,600,3,143,1,1,"ice,celestial",F,376
+4229,p50_fire_fist_4229,Fire fist,3x4,11,1100,6,186,1,2,lava,F,377
+4230,p50_purple_energy_orb_4230,Purple energy orb,2x2,7,660,0,0,1,1,"cursed,fungal,celestial",F,378
+4231,p50_spectral_scythe_swipe_4231,Spectral scythe swipe,4x4,7,700,6,167,2,2,"cursed,asylum",F,380
+4232,p50_green_ghost_4232,Green ghost,2x2,7,700,2,30,1,1,"cursed,swamp,hauntedfarm",F,381
+4233,p50_purple_crystal_burst_4233,Purple crystal burst,2x2,22,2200,7,192,1,1,"cursed,celestial,fungal",F,388
+4234,p50_magenta_vortex_4234,Magenta vortex,1x1,8,800,0,0,0,0,"cursed,celestial,fungal",F,391
+4235,p50_skull_ghost_4235,Skull ghost,2x2,8,800,0,0,1,1,"cursed,asylum,hauntedfarm",F,395
+4236,p50_dark_portal_smoke_ring_4236,Dark portal smoke ring,2x2,11,1100,0,0,1,1,"cursed,celestial,cave",F,396
+4237,p50_fire_pool_disc_4237,Fire pool disc,2x1,14,1400,0,0,1,0,lava,F,397
+4238,p50_flame_pillar_4238,Flame pillar,2x3,4,400,0,0,1,1,lava,F,398
+4239,p50_grey_skull_smoke_4239,Grey skull smoke,1x1,8,800,0,0,0,0,"cursed,asylum,hauntedfarm",F,404
+4240,p50_blue_rune_pool_4240,Blue rune pool,3x3,13,1300,0,0,1,1,"ice,celestial,deepsea",F,410
+4241,p50_gold_rune_pool_4241,Gold rune pool,3x3,8,800,0,0,1,1,"celestial,cave",F,411
+4242,p50_red_swipe_4242,Red swipe,2x2,8,800,4,208,1,1,"bloodhospital,lava,cursed",F,412
+4243,p50_red_swipe_b_4243,Red swipe B,2x2,8,800,4,208,1,1,"bloodhospital,lava,cursed",F,413
+4244,p50_pink_lightning_4244,Pink lightning,2x2,7,700,5,101,1,1,"cursed,fungal,celestial",F,419
+4245,p50_orange_squiggle_fire_4245,Orange squiggle fire,2x2,11,1100,5,101,1,1,lava,F,420
+4246,p50_vine_spiral_4246,Vine spiral,2x2,11,1100,5,101,1,1,"swamp,fungal,hauntedfarm",F,421
+4247,p50_fire_hand_4247,Fire hand,2x2,9,900,5,101,1,1,"lava,cursed",F,422
+4248,p50_blue_skull_spirit_4248,Blue skull spirit,1x1,8,1200,0,0,0,0,"cursed,ice,deepsea",F,424
+4249,p50_purple_blob_burst_4249,Purple blob burst,1x1,11,1150,0,0,0,0,"cursed,fungal",F,425
+4250,p50_blue_claw_slashes_4250,Blue claw slashes,1x1,12,1250,0,0,0,0,"ice,deepsea,cursed",F,426
+4251,p50_purple_vortex_4251,Purple vortex,1x1,8,800,0,0,0,0,"cursed,celestial,fungal",F,428
+4252,p50_blue_flame_4252,Blue flame,2x2,9,825,3,143,1,1,"ice,deepsea,celestial",F,433
+4253,p50_green_slime_blobs_4253,Green slime blobs,2x2,13,1250,1,132,1,1,"swamp,fungal",F,434
+4254,p50_gold_claw_swipe_4254,Gold claw swipe,2x2,8,800,0,0,1,1,"cave,celestial",F,436
+4255,p50_fire_ring_swipe_4255,Fire ring swipe,2x2,8,800,0,0,1,1,lava,F,437
+4256,p50_grey_web_4256,Grey web,2x2,13,1250,5,215,1,1,"cursed,cave,hauntedfarm",F,438
+4257,p50_purple_lightning_wisps_4257,Purple lightning wisps,2x2,4,350,3,148,1,1,"cursed,fungal,celestial",F,439
+4258,p50_red_sparks_4258,Red sparks,2x2,4,350,3,180,1,1,"bloodhospital,lava,cursed",F,440
+4259,p50_leaf_circle_4259,Leaf circle,2x2,3,300,1,215,1,1,"swamp,hauntedfarm,fungal",F,441
+4260,p50_gold_ring_pulse_4260,Gold ring pulse,2x2,16,1020,6,208,1,1,celestial,F,443
+4261,p50_red_swipe_c_4261,Red swipe C,2x2,8,800,4,208,1,1,"bloodhospital,lava,cursed",F,444
+4262,p50_red_swipe_d_4262,Red swipe D,2x2,8,800,4,208,1,1,"bloodhospital,lava,cursed",F,446
+4263,p50_red_cross_slash_4263,Red cross slash,2x2,8,800,4,208,1,1,"bloodhospital,lava,cursed",F,447
+4264,p50_red_swipe_e_4264,Red swipe E,2x2,8,800,0,144,1,1,"bloodhospital,lava,cursed",F,452
+4265,p50_purple_swirl_puff_4265,Purple swirl puff,2x2,12,1150,1,112,1,1,"cursed,fungal",F,454
+4266,p50_cyan_ooze_blob_4266,Cyan ooze blob,1x1,6,600,3,143,0,0,"deepsea,ice,fungal",F,458
+4267,p50_blue_shard_sparks_4267,Blue shard sparks,2x2,30,3000,3,143,1,1,"ice,deepsea",F,480
+4268,p50_blue_shard_sparks_b_4268,Blue shard sparks B,2x2,17,1700,3,143,1,1,"ice,deepsea",F,481
+4269,p50_red_ring_blob_4269,Red ring blob,2x2,9,900,0,0,1,1,"bloodhospital,lava,cursed",F,483
+4270,p50_orange_fire_burst_4270,Orange fire burst,2x2,9,900,0,0,1,1,lava,F,484
+4271,p50_red_slashes_small_4271,"Red slashes, small",2x2,7,700,0,0,1,1,"bloodhospital,cursed",F,489
+4272,p50_red_slashes_medium_4272,"Red slashes, medium",2x2,7,700,0,0,1,1,"bloodhospital,cursed",F,490
+4273,p50_red_slashes_big_4273,"Red slashes, big",2x2,7,700,0,0,1,1,"bloodhospital,cursed",F,491
+4274,p50_frost_burst_ring_4274,Frost burst ring,2x2,9,900,0,0,1,1,ice,F,493
+4275,p50_purple_crescent_slash_4275,Purple crescent slash,2x2,17,1250,0,0,1,1,"cursed,fungal,celestial",F,499
+4276,p50_purple_smoke_4276,Purple smoke,2x2,12,1200,0,0,1,1,"cursed,fungal",F,500
+4277,p50_purple_blobs_4277,Purple blobs,3x3,12,1200,0,0,1,1,"cursed,fungal",F,501
+4278,p50_purple_demon_claws_4278,Purple demon claws,2x2,9,680,0,0,1,1,"cursed,fungal,celestial",F,502
+4279,p50_purple_streak_4279,Purple streak,2x2,6,540,0,0,1,1,"cursed,fungal,celestial",F,503
+4280,p50_purple_demon_claws_b_4280,Purple demon claws B,2x2,8,720,0,0,1,1,"cursed,fungal,celestial",F,504
+4281,p50_red_claw_fan_4281,Red claw fan,9x9,10,1000,0,0,4,4,"bloodhospital,cursed",F,511
+4282,p50_cyan_arcs_4282,Cyan arcs,2x2,24,2400,0,0,1,1,"ice,celestial,deepsea",F,517
+4283,p50_green_leaf_ring_4283,Green leaf ring,3x3,9,900,0,0,1,1,"swamp,fungal",F,518
+4284,p50_gold_slash_4284,Gold slash,2x2,8,800,0,0,1,1,celestial,F,534
+4285,p50_cyan_big_ring_4285,Cyan big ring,7x7,3,300,0,0,3,3,"ice,celestial",F,535
+4286,p50_blue_rune_ring_b_4286,Blue rune ring B,3x3,8,620,0,0,1,1,"ice,celestial",F,536
+4287,p50_blue_swirl_4287,Blue swirl,5x5,14,1400,0,0,2,2,"deepsea,ice",F,537
+4288,p50_black_bat_swarm_4288,Black bat swarm,3x3,5,500,6,185,1,1,"cursed,cave,hauntedfarm",F,540
+4289,p50_red_crescent_slash_4289,Red crescent slash,4x3,7,560,0,0,2,1,"bloodhospital,cursed",F,541
+4290,p50_red_crescent_slash_4290,Red crescent slash,3x4,7,560,0,0,1,2,"bloodhospital,cursed",F,542
+4291,p50_red_crescent_slash_4291,Red crescent slash,4x3,7,560,0,0,2,1,"bloodhospital,cursed",F,543
+4292,p50_red_crescent_slash_4292,Red crescent slash,3x4,7,560,0,0,1,2,"bloodhospital,cursed",F,544
+4293,p50_gold_comet_burst_4293,Gold comet burst,2x2,8,800,6,208,1,1,celestial,F,550
+4294,p50_grey_shard_cluster_4294,Grey shard cluster,2x2,11,1100,0,0,1,1,"cave,cursed",F,553
+4295,p50_purple_dust_4295,Purple dust,3x3,12,1200,0,0,1,1,"cursed,fungal",F,554
+4296,p50_purple_sparks_4296,Purple sparks,3x3,12,1200,0,0,1,1,"cursed,fungal",F,555
+4297,p50_ice_crystal_burst_4297,Ice crystal burst,3x3,33,1380,0,0,1,1,ice,F,556
+4298,p50_dark_slash_spark_4298,Dark slash spark,3x3,18,580,0,0,1,1,cursed,F,557
+4299,p50_ember_burst_4299,Ember burst,2x2,23,920,0,0,1,1,"lava,cave",F,558
+4300,p50_white_cross_slashes_4300,White cross slashes,4x4,31,1240,0,0,2,2,"celestial,cursed",F,560
+4301,p50_gold_rune_circle_4301,Gold rune circle,3x3,26,1040,0,0,1,1,celestial,F,562
+4302,p50_explosion_spark_4302,Explosion spark,2x2,8,800,0,0,1,1,"lava,cave",F,570
+4303,p50_fire_burst_4303,Fire burst,1x1,8,800,6,208,0,0,lava,F,592
+4304,p50_blue_vortex_4304,Blue vortex,1x1,8,800,6,5,0,0,"deepsea,celestial",F,596
+4305,p50_black_smoke_ball_4305,Black smoke ball,1x1,6,600,0,0,0,0,"cursed,cave,asylum",F,604
+4306,p50_dark_blood_drops_4306,Dark blood drops,2x2,13,1300,0,0,1,1,"bloodhospital,cursed",F,606
+4307,p50_dark_blood_drops_b_4307,Dark blood drops B,2x2,13,1300,0,0,1,1,"bloodhospital,cursed",F,607
+4308,p50_white_ice_swirl_4308,White ice swirl,2x2,15,1500,0,0,1,1,"ice,celestial",F,608
+4309,p50_blue_water_swirl_4309,Blue water swirl,2x2,10,1000,0,0,1,1,"deepsea,ice",F,609
+4310,p50_fire_patch_small_4310,"Fire patch, small",2x2,5,500,0,0,1,1,lava,F,612
+4311,p50_fire_patch_large_4311,"Fire patch, large",2x2,7,700,0,0,1,1,lava,F,619
+4312,p50_fire_patch_large_b_4312,"Fire patch, large B",2x2,7,700,0,0,1,1,lava,F,620
+4313,p50_fire_patch_with_sparks_4313,Fire patch with sparks,2x2,7,700,0,0,1,1,lava,F,621
+4314,p50_fire_patch_with_sparks_b_4314,Fire patch with sparks B,2x2,7,700,0,0,1,1,lava,F,622
+4315,p50_fire_patch_with_trail_4315,Fire patch with trail,2x2,7,700,0,0,1,1,lava,F,623
+4316,p50_fire_patch_with_trail_b_4316,Fire patch with trail B,2x2,7,700,0,0,1,1,lava,F,624
+4317,p50_smoke_oval_4317,Smoke oval,3x3,8,600,0,0,1,1,"cursed,cave,fungal",F,625
+4318,p50_smoke_oval_4318,Smoke oval,3x3,8,600,0,0,1,1,"cursed,cave,fungal",F,626
+4319,p50_smoke_oval_4319,Smoke oval,3x3,8,600,0,0,1,1,"cursed,cave,fungal",F,627
+4320,p50_smoke_oval_4320,Smoke oval,3x3,8,600,0,0,1,1,"cursed,cave,fungal",F,628
+4321,p50_smoke_oval_4321,Smoke oval,3x3,8,600,0,0,1,1,"cursed,cave,fungal",F,629
+4322,p50_pink_crescent_sparks_4322,Pink crescent sparks,3x3,12,840,0,0,1,1,"cursed,fungal",F,636
+4323,p50_pink_crescent_sparks_4323,Pink crescent sparks,3x3,12,840,0,0,1,1,"cursed,fungal",F,637
+4324,p50_pink_crescent_sparks_4324,Pink crescent sparks,3x3,12,840,0,0,1,1,"cursed,fungal",F,639
+4325,p50_green_crescent_sparks_4325,Green crescent sparks,3x3,12,840,0,0,1,1,"swamp,fungal",F,640
+4326,p50_green_crescent_sparks_4326,Green crescent sparks,3x3,12,840,0,0,1,1,"swamp,fungal",F,641
+4327,p50_blue_swoosh_4327,Blue swoosh,3x3,14,1400,3,59,1,1,"ice,deepsea",F,642
+4328,p50_dust_cloud_4328,Dust cloud,3x3,7,700,0,0,1,1,cave,F,644
+4329,p50_fire_jet_4329,Fire jet,5x1,10,1000,0,0,2,0,lava,F,645
+4330,p50_black_web_4330,Black web,1x1,6,1200,3,8,0,0,"cursed,cave,hauntedfarm",F,655
+4331,p50_blue_ring_4331,Blue ring,7x7,5,500,0,0,3,3,"ice,celestial",F,661
+4332,p50_dark_rune_ring_4332,Dark rune ring,5x5,32,3200,0,0,2,2,cursed,F,667
+4333,p50_red_crystal_burst_4333,Red crystal burst,5x5,8,800,0,0,2,2,"bloodhospital,lava,cursed",F,669
+4334,p50_red_feather_burst_4334,Red feather burst,5x5,8,800,0,0,2,2,"bloodhospital,cursed",F,670
+4335,p50_black_thorn_ring_4335,Black thorn ring,7x7,10,1000,0,0,3,3,"cursed,hauntedfarm",F,671
+4336,p50_purple_web_lightning_4336,Purple web lightning,1x1,10,1000,0,0,0,0,"cursed,celestial,fungal",F,672
+4337,p50_purple_lightning_bolt_4337,Purple lightning bolt,9x6,10,1000,0,0,4,3,"cursed,celestial",F,673
+4338,p50_purple_lightning_bolt_4338,Purple lightning bolt,6x9,10,1000,0,0,3,4,"cursed,celestial",F,674
+4339,p50_purple_lightning_bolt_4339,Purple lightning bolt,6x9,10,1000,0,0,3,4,"cursed,celestial",F,675
+4340,p50_purple_lightning_bolt_4340,Purple lightning bolt,9x6,10,1000,0,0,4,3,"cursed,celestial",F,676
+4341,p50_blue_rune_dots_4341,Blue rune dots,7x7,9,900,0,0,3,3,"ice,celestial,deepsea",F,681
+4342,p50_blue_rune_dots_4342,Blue rune dots,7x7,9,900,0,0,3,3,"ice,celestial,deepsea",F,682
+4343,p50_blue_rune_dots_4343,Blue rune dots,9x9,9,900,0,0,4,4,"ice,celestial,deepsea",F,683
+4344,p50_blue_rune_dots_4344,Blue rune dots,7x7,9,900,0,0,3,3,"ice,celestial,deepsea",F,684
+4345,p50_blue_rune_dots_4345,Blue rune dots,7x7,9,900,0,0,3,3,"ice,celestial,deepsea",F,685
+4346,p50_purple_demon_head_4346,Purple demon head,2x2,11,1100,0,0,1,1,"cursed,celestial,fungal",F,686
+4347,p50_brown_flame_swirl_4347,Brown flame swirl,4x4,16,1600,0,0,2,2,"lava,cave",F,690
+4348,p50_olive_ring_4348,Olive ring,6x6,8,800,0,0,3,3,"swamp,cursed",F,691
+4349,p50_black_thorn_web_4349,Black thorn web,4x4,8,800,0,0,2,2,"cursed,cave,hauntedfarm",F,692
+4350,p50_ember_swirl_4350,Ember swirl,6x6,24,1440,0,0,3,3,lava,F,709
+4351,p50_blue_ring_swipe_4351,Blue ring swipe,7x7,55,5500,0,0,3,3,"ice,deepsea",F,710
+4352,p50_blue_ring_swipe_4352,Blue ring swipe,5x5,28,840,0,0,2,2,"ice,deepsea",F,711
+4353,p50_smoke_bolt_4353,Smoke bolt,4x4,12,1200,0,0,2,2,"cave,cursed",F,712
+4354,p50_cyan_flame_4354,Cyan flame,3x4,14,1400,0,0,1,2,"ice,deepsea",F,713
+4355,p50_red_rune_shatter_4355,Red rune shatter,4x4,12,720,0,0,2,2,"bloodhospital,cursed",F,714
+4356,p50_blue_whirlwind_4356,Blue whirlwind,5x5,14,560,0,0,2,2,"ice,celestial,deepsea",F,715
+4357,p50_red_blood_spray_4357,Red blood spray,7x7,10,1000,0,0,3,3,"bloodhospital,cursed",F,722
+4358,p50_violet_rune_diamond_4358,Violet rune diamond,7x7,7,700,0,0,3,3,"cursed,celestial",F,723
+4359,p50_blue_crystal_shards_4359,Blue crystal shards,4x4,13,1300,0,0,2,2,"ice,celestial,cave",F,724
+4360,p50_blue_crystal_shards_4360,Blue crystal shards,4x4,13,1300,0,0,2,2,"ice,celestial,cave",F,725
+4361,p50_blue_crystal_shards_4361,Blue crystal shards,4x4,13,1300,0,0,2,2,"ice,celestial,cave",F,726
+4362,p50_thorn_vine_wall_pieces_4362,Thorn vine wall pieces,3x3,14,1400,0,0,1,1,"cursed,hauntedfarm,swamp",F,731
+4363,p50_thorn_vine_wall_pieces_4363,Thorn vine wall pieces,3x3,14,1400,0,0,1,1,"cursed,hauntedfarm,swamp",F,732
+4364,p50_thorn_vine_wall_pieces_4364,Thorn vine wall pieces,3x3,14,1400,0,0,1,1,"cursed,hauntedfarm,swamp",F,733
+4365,p50_thorn_vine_wall_pieces_4365,Thorn vine wall pieces,3x3,14,1400,0,0,1,1,"cursed,hauntedfarm,swamp",F,734
+4366,p50_blue_spark_wisps_4366,Blue spark wisps,2x2,8,800,0,0,1,1,"ice,celestial",F,735
+4367,p50_blue_crystal_shards_4367,Blue crystal shards,4x4,13,1300,0,0,2,2,"ice,celestial,cave",F,746
+4368,p50_blue_crystal_shards_4368,Blue crystal shards,4x4,13,1300,0,0,2,2,"ice,celestial,cave",F,747
+4369,p50_blue_crystal_shards_4369,Blue crystal shards,4x4,13,1300,0,0,2,2,"ice,celestial,cave",F,748
+4370,p50_cyan_lightning_web_4370,Cyan lightning web,5x5,6,600,0,0,2,2,"ice,celestial",F,749
+4371,p50_cyan_lightning_web_4371,Cyan lightning web,5x5,6,600,0,0,2,2,"ice,celestial",F,750
+4372,p50_cyan_lightning_web_4372,Cyan lightning web,5x5,6,600,0,0,2,2,"ice,celestial",F,751
+4373,p50_cyan_lightning_web_4373,Cyan lightning web,5x5,6,600,0,0,2,2,"ice,celestial",F,752
+4374,p50_cyan_lightning_web_4374,Cyan lightning web,5x5,6,600,0,0,2,2,"ice,celestial",F,753
+4375,p50_blue_lightning_cluster_4375,Blue lightning cluster,5x5,6,600,0,0,2,2,"ice,celestial",F,754
+4376,p50_blue_lightning_cluster_4376,Blue lightning cluster,5x5,6,600,0,0,2,2,"ice,celestial",F,755
+4377,p50_blue_lightning_cluster_4377,Blue lightning cluster,5x5,6,600,0,0,2,2,"ice,celestial",F,756
+4378,p50_ghost_shroud_flame_4378,Ghost shroud flame,5x10,14,1400,0,0,2,5,"cursed,asylum,ice",F,757
+4379,p50_cyan_energy_dart_4379,Cyan energy dart,10x5,14,1400,0,0,5,2,"ice,celestial",F,758
+4380,p50_ghost_shroud_flame_4380,Ghost shroud flame,5x10,14,1400,0,0,2,5,"cursed,asylum,ice",F,759
+4381,p50_cyan_energy_dart_4381,Cyan energy dart,10x5,14,1400,0,0,5,2,"ice,celestial",F,760
+4382,p50_violet_fang_ring_4382,Violet fang ring,3x3,7,525,0,0,1,1,"cursed,fungal",F,763
+4383,p50_spiked_mine_4383,Spiked mine,5x5,16,1450,0,0,2,2,"cave,cursed",F,764
+4384,p50_fire_explosion_4384,Fire explosion,5x5,9,675,0,0,2,2,lava,F,766
+4385,p50_crimson_explosion_4385,Crimson explosion,5x5,9,675,0,0,2,2,"bloodhospital,lava,cursed",F,767
+4386,p50_gold_orbit_rings_4386,Gold orbit rings,5x5,14,700,0,0,2,2,celestial,F,768
+4387,p50_grey_ghost_smoke_4387,Grey ghost smoke,8x8,22,2200,0,0,4,4,"cursed,asylum,hauntedfarm",F,770
+4388,p50_red_rune_blob_4388,Red rune blob,3x2,9,585,0,0,1,1,"bloodhospital,cursed",F,771
+4389,p50_black_hole_smoke_4389,Black hole smoke,5x4,27,1755,6,208,2,2,"cursed,cave",F,772
+4390,p50_blood_pool_burst_4390,Blood pool burst,7x7,32,3200,0,0,3,3,"bloodhospital,cursed",F,782
+4391,p50_ice_dust_swirl_4391,Ice dust swirl,6x6,11,1100,0,0,3,3,ice,F,783
+4392,p50_blue_rune_dot_ring_4392,Blue rune dot ring,7x7,7,700,0,0,3,3,"ice,celestial",F,784
+4393,p50_blue_rune_dot_ring_4393,Blue rune dot ring,8x8,8,800,0,0,4,4,"ice,celestial",F,785
+4394,p50_red_rune_circle_4394,Red rune circle,7x7,7,700,0,0,3,3,"bloodhospital,cursed",F,790
+4395,p50_gold_rune_seal_4395,Gold rune seal,5x5,7,700,0,0,2,2,celestial,F,792
+4396,p50_gold_rune_seal_b_4396,Gold rune seal B,5x5,8,800,0,0,2,2,celestial,F,794
+4397,p50_ice_shard_ring_4397,Ice shard ring,7x7,9,900,0,0,3,3,ice,F,803
+4398,p50_ice_shard_ring_4398,Ice shard ring,7x7,6,600,0,0,3,3,ice,F,804
+4399,p50_ice_shard_sparks_4399,Ice shard sparks,3x3,2,200,0,0,1,1,ice,F,805
+4400,p50_ice_shard_sparks_4400,Ice shard sparks,3x3,4,400,0,0,1,1,ice,F,806
+4401,p50_frost_cloud_4401,Frost cloud,8x8,9,900,0,0,4,4,ice,F,813
+4402,p50_frost_cloud_4402,Frost cloud,4x4,9,900,0,0,2,2,ice,F,814
+4403,p50_ice_wave_4403,Ice wave,3x3,8,800,0,0,1,1,"ice,deepsea",F,815
+4404,p50_ice_wave_4404,Ice wave,3x3,8,800,0,0,1,1,"ice,deepsea",F,816
+4405,p50_ice_wave_4405,Ice wave,3x3,8,800,0,0,1,1,"ice,deepsea",F,817
+4406,p50_ice_wave_4406,Ice wave,3x3,8,800,0,0,1,1,"ice,deepsea",F,818
+4407,p50_ice_wave_4407,Ice wave,3x3,8,800,0,0,1,1,"ice,deepsea",F,819
+4408,p50_ice_wave_4408,Ice wave,3x3,8,800,0,0,1,1,"ice,deepsea",F,820
+4409,p50_ice_wave_4409,Ice wave,3x3,8,800,0,0,1,1,"ice,deepsea",F,821
+4410,p50_dark_bomb_4410,Dark bomb,4x4,10,1000,0,0,2,2,"cursed,cave",F,823
+4411,p50_ember_bomb_4411,Ember bomb,4x4,10,1000,0,0,2,2,"lava,cave",F,829
+4412,p50_purple_dust_4412,Purple dust,8x8,14,1400,0,0,4,4,"cursed,fungal",F,830
+4413,p50_purple_orbs_4413,Purple orbs,4x4,1,0,0,0,2,2,"cursed,fungal",F,831
+4414,p50_white_burst_4414,White burst,3x3,4,400,0,0,1,1,"celestial,ice",F,832
+4415,p50_white_arc_slash_4415,White arc slash,4x4,6,600,0,0,2,2,"celestial,cursed,asylum",F,834
+4416,p50_white_arc_slash_4416,White arc slash,4x4,6,600,0,0,2,2,"celestial,cursed,asylum",F,835
+4417,p50_white_arc_slash_4417,White arc slash,4x4,6,600,0,0,2,2,"celestial,cursed,asylum",F,836
+4418,p50_white_arc_slash_4418,White arc slash,4x4,6,600,0,0,2,2,"celestial,cursed,asylum",F,837
+4419,p50_red_ember_trail_4419,Red ember trail,6x6,18,1800,0,0,3,3,"lava,bloodhospital",F,841
+4420,p50_green_shards_4420,Green shards,3x3,25,2500,0,0,1,1,"swamp,fungal",F,847
+4421,p50_green_shards_4421,Green shards,4x4,25,2500,0,0,2,2,"swamp,fungal",F,848
+4422,p50_dust_whirlwind_4422,Dust whirlwind,3x3,8,800,0,0,1,1,"cave,hauntedfarm",F,849
+4423,p50_fire_tornado_4423,Fire tornado,3x3,16,1600,0,0,1,1,lava,F,850
+4424,p50_ice_tornado_4424,Ice tornado,3x3,16,1600,0,0,1,1,ice,F,851
+4425,p50_grey_smoke_ring_4425,Grey smoke ring,7x7,11,1100,0,0,3,3,"cave,cursed",F,852
+4426,p50_dust_burst_with_spark_4426,Dust burst with spark,5x5,13,1300,0,0,2,2,cave,F,853
+4427,p50_water_tornado_4427,Water tornado,3x3,16,1600,0,0,1,1,deepsea,F,854
+4428,p50_grey_tornado_4428,Grey tornado,3x3,16,1600,0,0,1,1,"cave,cursed",F,855
+4429,p50_black_tornado_4429,Black tornado,3x3,16,1600,0,0,1,1,"cursed,cave",F,856
+4430,p50_flame_tornado_4430,Flame tornado,3x3,16,1600,0,0,1,1,lava,F,857
+4431,p50_blood_tornado_4431,Blood tornado,3x3,16,1600,0,0,1,1,"bloodhospital,cursed",F,858
+4432,p50_storm_tornado_4432,Storm tornado,3x3,16,1600,0,0,1,1,"cursed,cave",F,859
+4433,p50_ember_sparks_tiny_4433,"Ember sparks, tiny",2x2,8,800,0,0,1,1,lava,F,866
+4434,p50_ember_sparks_4434,Ember sparks,2x2,7,700,0,0,1,1,lava,F,868
+4435,p50_ember_sparks_b_4435,Ember sparks B,2x2,7,700,0,0,1,1,lava,F,870
+4436,p50_ember_sparks_big_4436,"Ember sparks, big",2x2,7,700,0,0,1,1,lava,F,872
+4437,p50_frost_smoke_ring_4437,Frost smoke ring,3x3,4,400,0,0,1,1,ice,F,874
+4438,p50_ice_sparkle_4438,Ice sparkle,2x2,10,1000,0,0,1,1,"ice,celestial",F,876
+4439,p50_ice_chunk_burst_4439,Ice chunk burst,10x5,78,7800,0,0,5,2,ice,F,888
+4440,p50_cyan_serpent_coil_4440,Cyan serpent coil,2x2,8,800,0,0,1,1,"deepsea,ice,celestial",F,889
+4441,p50_cyan_serpent_coil_b_4441,Cyan serpent coil B,2x2,8,800,0,0,1,1,"deepsea,ice,celestial",F,890
+4442,p50_falling_ice_shards_over_rock_4442,Falling ice shards over rock,2x2,16,1600,0,0,1,1,"ice,cave",F,894
+4443,p50_falling_ice_shards_over_rock_4443,Falling ice shards over rock,2x2,16,1600,0,0,1,1,"ice,cave",F,895
+4444,p50_falling_ice_shards_over_rock_4444,Falling ice shards over rock,2x2,16,1600,0,0,1,1,"ice,cave",F,896
+4445,p50_falling_ice_shards_over_rock_4445,Falling ice shards over rock,2x2,16,1600,0,0,1,1,"ice,cave",F,897
+4446,p50_falling_ice_shards_over_rock_4446,Falling ice shards over rock,2x2,16,1600,0,0,1,1,"ice,cave",F,898
+4447,p50_falling_ice_shards_over_rock_4447,Falling ice shards over rock,2x2,16,1600,0,0,1,1,"ice,cave",F,899
+4448,p50_falling_ice_shards_over_rock_4448,Falling ice shards over rock,2x2,16,1600,0,0,1,1,"ice,cave",F,900
+4449,p50_falling_ice_shards_over_rock_4449,Falling ice shards over rock,2x2,16,1600,0,0,1,1,"ice,cave",F,901
+4450,p50_falling_ice_shards_over_rock_4450,Falling ice shards over rock,2x2,16,1600,0,0,1,1,"ice,cave",F,902
+4451,p50_green_comet_swirl_4451,Green comet swirl,2x2,7,700,0,0,1,1,"swamp,fungal",F,903
+4452,p50_pink_comet_swirl_4452,Pink comet swirl,2x2,7,700,0,0,1,1,"cursed,fungal",F,904
+4453,p50_orange_comet_swirl_4453,Orange comet swirl,2x2,7,700,0,0,1,1,lava,F,905
+4454,p50_blue_comet_swirl_4454,Blue comet swirl,2x2,7,700,0,0,1,1,"ice,deepsea",F,906
+4455,p50_yellow_comet_swirl_4455,Yellow comet swirl,2x2,7,700,0,0,1,1,celestial,F,907
+4456,p50_grey_comet_swirl_4456,Grey comet swirl,2x2,7,700,0,0,1,1,"cave,cursed",F,908
+4457,p50_ember_sparks_c_4457,Ember sparks C,4x4,12,1200,0,0,2,2,lava,F,911
+4458,p50_ember_sparks_c_4458,Ember sparks C,4x4,12,1200,0,0,2,2,lava,F,912
+4459,p50_purple_hex_shield_4459,Purple hex shield,4x4,8,800,0,0,2,2,"cursed,celestial,fungal",F,917
+4460,p50_purple_hex_shield_4460,Purple hex shield,4x4,8,800,0,0,2,2,"cursed,celestial,fungal",F,918
+4461,p50_purple_hex_shield_4461,Purple hex shield,4x4,8,800,0,0,2,2,"cursed,celestial,fungal",F,919
+4462,p50_green_thorn_swirl_4462,Green thorn swirl,4x4,8,800,0,0,2,2,"swamp,fungal",F,920
+4463,p50_red_droplets_4463,Red droplets,4x4,32,3200,0,0,2,2,"bloodhospital,cursed",F,921
+4464,p50_red_droplets_4464,Red droplets,4x4,32,3200,0,0,2,2,"bloodhospital,cursed",F,922
+4465,p50_blue_crystal_burst_4465,Blue crystal burst,2x2,9,630,0,0,1,1,"ice,deepsea",F,925
+4466,p50_blue_vortex_4466,Blue vortex,2x2,9,760,0,0,1,1,"deepsea,celestial,cursed",F,926
+4467,p50_gold_spark_4467,Gold spark,1x1,9,720,0,0,0,0,celestial,F,927
+4468,p50_gold_lightning_streak_4468,Gold lightning streak,2x2,20,1000,4,210,1,1,celestial,F,933
+4469,p50_red_rune_ring_4469,Red rune ring,2x2,13,700,4,210,1,1,"bloodhospital,cursed",F,935
+4470,p50_green_leaf_scatter_4470,Green leaf scatter,2x2,20,1200,0,0,1,1,"swamp,hauntedfarm,fungal",F,938
+4471,p50_green_skull_smoke_4471,Green skull smoke,2x2,14,900,3,98,1,1,"cursed,swamp,hauntedfarm",F,945
+4472,p50_dark_claw_smoke_4472,Dark claw smoke,2x2,11,880,3,98,1,1,"cursed,cave",F,946
+4473,p50_purple_smoke_curl_4473,Purple smoke curl,2x2,16,1120,0,0,1,1,"cursed,fungal",F,947
+4474,p50_blue_wisp_curl_4474,Blue wisp curl,2x2,15,1050,2,89,1,1,"ice,celestial",F,948
+4475,p50_blue_wisp_curl_b_4475,Blue wisp curl B,2x2,15,1050,2,89,1,1,"ice,celestial",F,949
+4476,p50_red_wisps_4476,Red wisps,2x2,11,780,0,0,1,1,"bloodhospital,cursed",F,954
+4477,p50_stone_swirl_with_colored_sparks_4477,Stone swirl with colored sparks,2x2,10,1000,0,0,1,1,"cave,cursed",F,963
+4478,p50_stone_swirl_with_colored_sparks_4478,Stone swirl with colored sparks,2x2,13,1040,0,0,1,1,"cave,cursed",F,964
+4479,p50_stone_swirl_with_colored_sparks_4479,Stone swirl with colored sparks,2x2,13,1040,0,0,1,1,"cave,cursed",F,965
+4480,p50_stone_swirl_with_colored_sparks_4480,Stone swirl with colored sparks,2x2,13,1040,0,0,1,1,"cave,cursed",F,966
+4481,p50_stone_swirl_with_colored_sparks_4481,Stone swirl with colored sparks,2x2,13,1040,0,0,1,1,"cave,cursed",F,967
+4482,p50_stone_swirl_with_colored_sparks_4482,Stone swirl with colored sparks,2x2,13,1040,0,0,1,1,"cave,cursed",F,968
+4483,p50_explosion_4483,Explosion,1x1,7,490,1,205,0,0,"lava,cave",F,969
+4484,p50_blue_ring_swipe_4484,Blue ring swipe,2x2,15,900,2,23,1,1,"deepsea,ice",F,971
+4485,p50_purple_lightning_crackle_4485,Purple lightning crackle,2x2,7,420,0,0,1,1,"cursed,fungal,celestial",F,972
+4486,p50_cyan_lightning_4486,Cyan lightning,1x1,9,630,4,17,0,0,"ice,celestial",F,973
+4487,p50_fire_swirl_4487,Fire swirl,1x1,11,660,4,199,0,0,lava,F,974
+4488,p50_blue_swirl_4488,Blue swirl,1x1,10,600,4,89,0,0,"deepsea,ice,celestial",F,977
+4489,p50_ice_shard_burst_4489,Ice shard burst,1x1,9,740,2,137,0,0,ice,F,978
+4490,p50_dark_vine_tendrils_4490,Dark vine tendrils,2x2,20,1000,4,210,1,1,"swamp,cursed,fungal",F,979
+4491,p50_cyan_sparks_4491,Cyan sparks,1x1,9,720,3,173,0,0,"ice,celestial",F,980
+4492,p50_cyan_rune_ring_4492,Cyan rune ring,4x4,16,1200,0,0,2,2,"ice,celestial",F,982
+4493,p50_moss_claw_swipe_4493,Moss claw swipe,4x4,8,800,0,0,2,2,"swamp,hauntedfarm,fungal",F,986
+4494,p50_red_claw_slashes_4494,Red claw slashes,6x6,19,1900,0,0,3,3,"bloodhospital,cursed",F,987
+4495,p50_white_whirl_4495,White whirl,3x3,13,845,0,0,1,1,"celestial,ice",F,988
+4496,p50_red_whirl_4496,Red whirl,3x3,13,845,0,0,1,1,"bloodhospital,cursed",F,989
+4497,p50_web_circle_4497,Web circle,8x8,9,900,0,0,4,4,"cursed,cave,hauntedfarm",F,992
+4498,p50_web_circle_4498,Web circle,10x10,8,800,0,0,5,5,"cursed,cave,hauntedfarm",F,993
+4499,p50_dark_purple_vortex_4499,Dark purple vortex,4x4,12,1200,0,0,2,2,"cursed,fungal",F,995
+4500,p50_red_orb_4500,Red orb,5x5,20,1500,0,0,2,2,"bloodhospital,cursed",F,999
+4501,p50_brown_swirl_4501,Brown swirl,5x5,5,375,0,0,2,2,"cave,hauntedfarm",F,1001
+4502,p50_amber_orb_4502,Amber orb,5x5,43,3225,4,198,2,2,"lava,cave,celestial",F,1002
+4503,p50_amber_orb_b_4503,Amber orb B,3x3,8,600,4,198,1,1,"lava,cave,celestial",F,1003
+4504,p50_pale_green_wisp_spirals_4504,Pale green wisp spirals,7x7,9,675,6,202,3,3,"swamp,cursed,hauntedfarm",F,1004
+4505,p50_pale_green_wisp_spirals_4505,Pale green wisp spirals,5x5,9,675,6,202,2,2,"swamp,cursed,hauntedfarm",F,1009
+4506,p50_dead_root_4506,Dead root,2x3,6,450,0,0,1,1,"swamp,hauntedfarm,cursed",F,1013
+4507,p50_ice_wisp_4507,Ice wisp,3x3,13,975,0,0,1,1,ice,F,1014
+4508,p50_orange_spark_cloud_4508,Orange spark cloud,5x6,8,600,5,198,2,3,lava,F,1015
+4509,p50_flame_column_4509,Flame column,3x3,15,1125,2,198,1,1,lava,F,1016
+4510,p50_red_demon_face_4510,Red demon face,1x3,9,675,3,186,0,1,"bloodhospital,cursed",F,1017
+4511,p50_magenta_sparkles_4511,Magenta sparkles,3x3,11,825,2,185,1,1,"cursed,fungal",F,1020
+4512,p50_magenta_sparkles_4512,Magenta sparkles,7x7,10,750,5,183,3,3,"cursed,fungal",F,1021
+4513,p50_red_void_rift_4513,Red void rift,3x3,13,975,0,0,1,1,"bloodhospital,cursed,lava",F,1026
+4514,p50_red_void_rift_4514,Red void rift,3x3,20,1500,0,0,1,1,"bloodhospital,cursed,lava",F,1033
+4515,p50_gold_rune_diamond_4515,Gold rune diamond,5x5,21,1575,4,213,2,2,celestial,F,1036
+4516,p50_cyan_lightning_bolt_4516,Cyan lightning bolt,5x6,12,900,3,101,2,3,"ice,celestial",F,1038
+4517,p50_grey_smoke_ball_big_4517,Grey smoke ball big,5x5,8,600,0,0,2,2,"cave,cursed",F,1039
+4518,p50_violet_rune_ring_4518,Violet rune ring,6x6,4,300,4,202,3,3,"cursed,celestial",F,1041
+4519,p50_orange_spark_ring_4519,Orange spark ring,4x4,11,825,4,202,2,2,lava,F,1043
+4520,p50_orange_spark_ring_4520,Orange spark ring,7x8,32,2400,4,198,3,4,lava,F,1044
+4521,p50_red_crack_scatter_4521,Red crack scatter,5x6,6,450,3,180,2,3,"bloodhospital,cursed",F,1045
+4522,p50_red_crack_scatter_4522,Red crack scatter,5x5,10,750,5,180,2,2,"bloodhospital,cursed",F,1046
+4523,p50_blue_arc_slash_4523,Blue arc slash,7x7,16,1200,4,101,3,3,"ice,celestial",F,1047
+4524,p50_rune_dot_ring_4524,Rune dot ring,5x5,7,525,0,0,2,2,"celestial,cursed",F,1048
+4525,p50_rune_dot_ring_4525,Rune dot ring,3x3,10,750,0,0,1,1,"celestial,cursed",F,1049
+4526,p50_rune_dot_ring_4526,Rune dot ring,3x3,10,750,2,195,1,1,"celestial,cursed",F,1050
+4527,p50_stone_swirl_ring_4527,Stone swirl ring,5x6,15,1125,4,198,2,3,"cave,cursed",F,1056
+4528,p50_stone_swirl_ring_4528,Stone swirl ring,7x8,15,1125,5,198,3,4,"cave,cursed",F,1057
+4529,p50_gold_web_circle_4529,Gold web circle,5x6,41,3075,4,198,2,3,"celestial,cave",F,1058
+4530,p50_gold_sparks_4530,Gold sparks,5x5,7,525,3,198,2,2,"celestial,lava",F,1059
+4531,p50_gold_sparks_4531,Gold sparks,5x4,7,525,3,198,2,2,"celestial,lava",F,1060
+4532,p50_gold_sparks_4532,Gold sparks,5x4,7,525,3,198,2,2,"celestial,lava",F,1061
+4533,p50_gold_sparks_4533,Gold sparks,5x4,7,525,3,198,2,2,"celestial,lava",F,1062
+4534,p50_orange_dot_ring_4534,Orange dot ring,7x7,8,600,5,198,3,3,lava,F,1063
+4535,p50_bone_swirl_4535,Bone swirl,5x4,11,825,0,0,2,2,"cave,cursed",F,1064
+4536,p50_red_dash_ring_4536,Red dash ring,5x6,10,750,4,180,2,3,"bloodhospital,cursed",F,1065
+4537,p50_white_scythe_slash_4537,White scythe slash,5x5,8,600,0,0,2,2,"cursed,asylum",F,1066
+4538,p50_cyan_rune_ring_4538,Cyan rune ring,5x6,5,375,6,202,2,3,"ice,celestial",F,1067
+4539,p50_cyan_cross_slashes_4539,Cyan cross slashes,5x5,6,450,0,0,2,2,"ice,celestial",F,1068
+4540,p50_cyan_rune_ring_4540,Cyan rune ring,5x6,5,375,6,202,2,3,"ice,celestial",F,1069
+4541,p50_orange_rune_ring_4541,Orange rune ring,5x5,10,750,5,198,2,2,lava,F,1070
+4542,p50_ice_ball_4542,Ice ball,5x5,19,1425,0,0,2,2,ice,F,1071
+4543,p50_red_cross_slashes_4543,Red cross slashes,5x5,15,750,0,0,2,2,"bloodhospital,cursed",F,1072
+4544,p50_red_spiked_eye_orb_4544,Red spiked eye orb,4x4,9,675,0,0,2,2,"bloodhospital,cursed",F,1073
+4545,p50_white_flare_4545,White flare,6x6,19,1140,0,0,3,3,celestial,F,1074
+4546,p50_ice_cloud_4546,Ice cloud,6x6,15,1125,0,0,3,3,ice,F,1075
+4547,p50_black_flame_pillar_red_edge_4547,"Black flame pillar, red edge",4x8,9,810,0,0,2,4,"cursed,bloodhospital,lava",F,1076
+4548,p50_black_flame_pillar_red_edge_4548,"Black flame pillar, red edge",4x10,9,810,0,0,2,5,"cursed,bloodhospital,lava",F,1077
+4549,p50_black_flame_strip_red_edge_4549,"Black flame strip, red edge",8x4,8,720,0,0,4,2,"cursed,bloodhospital,lava",F,1078
+4550,p50_black_flame_strip_red_edge_4550,"Black flame strip, red edge",10x4,9,795,0,0,5,2,"cursed,bloodhospital,lava",F,1079
+4551,p50_yellow_spike_burst_4551,Yellow spike burst,2x2,5,375,0,0,1,1,celestial,F,1086
+4552,p50_green_spike_ring_4552,Green spike ring,2x2,5,375,0,0,1,1,"swamp,fungal",F,1087
+4553,p50_spike_ring_4553,Spike ring,3x3,5,375,0,0,1,1,"celestial,ice,lava,cursed",F,1088
+4554,p50_spike_ring_4554,Spike ring,3x3,10,750,4,208,1,1,"celestial,ice,lava,cursed",F,1089
+4555,p50_spike_ring_4555,Spike ring,3x3,7,525,0,0,1,1,"celestial,ice,lava,cursed",F,1090
+4556,p50_spike_ring_4556,Spike ring,3x3,8,600,0,0,1,1,"celestial,ice,lava,cursed",F,1091
+4557,p50_spike_ring_4557,Spike ring,3x3,7,525,0,0,1,1,"celestial,ice,lava,cursed",F,1092
+4558,p50_blue_splash_burst_4558,Blue splash burst,2x2,9,675,0,0,1,1,"deepsea,ice",F,1093
+4559,p50_violet_petal_burst_4559,Violet petal burst,3x3,9,675,4,208,1,1,"cursed,fungal",F,1094
+4560,p50_orange_swirl_globe_4560,Orange swirl globe,3x3,10,750,0,0,1,1,lava,F,1095
+4561,p50_spike_ring_b_4561,Spike ring B,3x3,7,525,0,0,1,1,"celestial,lava",F,1098
+4562,p50_spike_ring_b_4562,Spike ring B,3x3,10,750,0,0,1,1,"celestial,lava",F,1099
+4563,p50_white_lightning_burst_4563,White lightning burst,2x2,9,675,0,0,1,1,"celestial,ice",F,1100
+4564,p50_green_slime_burst_4564,Green slime burst,2x2,10,750,0,0,1,1,"swamp,fungal",F,1104
+4565,p50_orange_fire_ring_4565,Orange fire ring,2x2,10,750,0,0,1,1,lava,F,1105
+4566,p50_blue_crescent_slash_4566,Blue crescent slash,1x1,8,600,4,208,0,0,"ice,deepsea,celestial",F,1108
+4567,p50_ice_burst_4567,Ice burst,1x1,9,675,0,0,0,0,ice,F,1109
+4568,p50_orange_flame_wisps_4568,Orange flame wisps,2x2,12,1200,3,204,1,1,lava,F,1127
+4569,p50_cyan_flame_wisps_4569,Cyan flame wisps,2x2,12,1200,0,0,1,1,"ice,deepsea",F,1128
+4570,p50_white_lightning_bolts_4570,White lightning bolts,1x1,13,1280,4,143,0,0,"celestial,ice",F,1132
+4571,p50_orange_glow_burst_4571,Orange glow burst,1x1,11,880,3,184,0,0,"lava,cave",F,1137
+4572,p50_grey_smoke_puff_big_4572,"Grey smoke puff, big",1x1,11,880,3,215,0,0,"cave,cursed",F,1138
+4573,p50_grey_smoke_ball_4573,Grey smoke ball,2x2,9,900,0,0,1,1,"cave,cursed",F,1139
+4574,p50_purple_flame_ball_4574,Purple flame ball,2x2,9,900,3,148,1,1,"cursed,fungal",F,1140
+4575,p50_purple_spark_4575,Purple spark,2x2,8,800,3,166,1,1,"cursed,fungal",F,1141
+4576,p50_orange_skull_smoke_4576,Orange skull smoke,1x1,11,890,6,180,0,0,"lava,cursed",F,1142
+4577,p50_pink_skull_smoke_4577,Pink skull smoke,1x1,11,890,6,185,0,0,"cursed,fungal,bloodhospital",F,1143
+4578,p50_dark_spark_4578,Dark spark,2x2,8,800,0,0,1,1,cursed,F,1144
+4579,p50_purple_cloud_4579,Purple cloud,2x2,14,820,4,71,1,1,"cursed,fungal",F,1145
+4580,p50_black_cloud_4580,Black cloud,2x2,14,820,4,190,1,1,"cursed,cave",F,1146
+4581,p50_fire_storm_cloud_4581,Fire storm cloud,2x2,16,1600,3,108,1,1,lava,F,1147
+4582,p50_grey_storm_cloud_4582,Grey storm cloud,2x2,16,1600,3,124,1,1,"cave,cursed",F,1148
+4583,p50_black_spiky_ring_4583,Black spiky ring,2x2,8,700,3,215,1,1,cursed,F,1151
+4584,p50_purple_spiky_ring_4584,Purple spiky ring,2x2,8,700,3,184,1,1,"cursed,fungal",F,1152
+4585,p50_orange_spiky_ring_4585,Orange spiky ring,2x2,8,700,3,66,1,1,lava,F,1153
+4586,p50_violet_sparkles_4586,Violet sparkles,5x5,9,900,0,0,2,2,"cursed,celestial",F,1154
+4587,p50_violet_sparkles_4587,Violet sparkles,3x3,16,1600,0,0,1,1,"cursed,celestial",F,1155
+4588,p50_violet_sparkles_4588,Violet sparkles,3x3,16,1600,0,0,1,1,"cursed,celestial",F,1156
+4589,p50_violet_sparkles_4589,Violet sparkles,3x3,16,1600,0,0,1,1,"cursed,celestial",F,1157
+4590,p50_violet_sparkles_4590,Violet sparkles,3x3,16,1600,0,0,1,1,"cursed,celestial",F,1158
+4591,p50_purple_sparkle_trail_4591,Purple sparkle trail,2x2,10,1000,0,0,1,1,"cursed,celestial",F,1159
+4592,p50_purple_meteor_trail_4592,Purple meteor trail,2x2,13,1300,0,0,1,1,"cursed,celestial",F,1160
+4593,p50_purple_star_burst_4593,Purple star burst,2x2,13,1300,0,0,1,1,"cursed,celestial",F,1162
+4594,p50_violet_sparkles_4594,Violet sparkles,4x4,19,1900,0,0,2,2,"cursed,celestial",F,1163
+4595,p50_dark_scythe_4595,Dark scythe,4x4,8,440,0,0,2,2,"cursed,asylum",F,1165
+4596,p50_black_drip_4596,Black drip,3x3,9,900,0,0,1,1,"cursed,bloodhospital",F,1166
+4597,p50_shadow_tentacles_4597,Shadow tentacles,8x8,16,1600,0,0,4,4,"cursed,deepsea",F,1167
+4598,p50_green_ghost_spirit_4598,Green ghost spirit,8x8,3,300,0,0,4,4,"cursed,swamp,hauntedfarm",F,1168
+4599,p50_green_ghost_spirit_4599,Green ghost spirit,8x8,7,700,0,0,4,4,"cursed,swamp,hauntedfarm",F,1169
+4600,p50_green_ghost_spirit_4600,Green ghost spirit,8x8,6,600,0,0,4,4,"cursed,swamp,hauntedfarm",F,1170
+4601,p50_gold_ghost_spirit_4601,Gold ghost spirit,8x8,8,800,0,0,4,4,"cursed,celestial",F,1171
+4602,p50_gold_ghost_spirit_4602,Gold ghost spirit,8x8,7,700,0,0,4,4,"cursed,celestial",F,1172
+4603,p50_gold_ghost_spirit_4603,Gold ghost spirit,8x8,9,900,0,0,4,4,"cursed,celestial",F,1173
+4604,p50_purple_winged_ghost_4604,Purple winged ghost,8x8,9,900,0,0,4,4,"cursed,celestial",F,1174
+4605,p50_purple_winged_ghost_4605,Purple winged ghost,8x8,10,1000,0,0,4,4,"cursed,celestial",F,1175
+4606,p50_purple_winged_ghost_4606,Purple winged ghost,8x8,6,600,0,0,4,4,"cursed,celestial",F,1176
+4607,p50_red_pentagram_4607,Red pentagram,4x4,10,1000,0,0,2,2,"cursed,bloodhospital,asylum",F,1185
+4608,p50_purple_lightning_bolt_4608,Purple lightning bolt,2x2,6,600,0,0,1,1,"cursed,celestial",F,1201
+4609,p50_red_ember_trail_b_4609,Red ember trail B,6x6,18,1800,0,0,3,3,"lava,bloodhospital",F,1208
+4610,p50_fire_ring_4610,Fire ring,7x7,6,600,8,206,3,3,lava,F,1226
+4611,p50_fire_ring_4611,Fire ring,10x10,8,800,8,206,5,5,lava,F,1227
+4612,p50_ember_sparks_d_4612,Ember sparks D,3x3,10,1000,4,206,1,1,lava,F,1231
+4613,p50_ember_sparks_d_4613,Ember sparks D,4x4,8,800,4,206,2,2,lava,F,1232
+4614,p50_ember_sparks_d_4614,Ember sparks D,4x4,8,800,4,206,2,2,lava,F,1233
+4615,p50_red_claw_arc_4615,Red claw arc,3x3,6,600,4,206,1,1,"bloodhospital,cursed",F,1234
+4616,p50_red_claw_arc_4616,Red claw arc,3x3,6,600,4,206,1,1,"bloodhospital,cursed",F,1235
+4617,p50_red_claw_arc_4617,Red claw arc,3x3,6,600,4,206,1,1,"bloodhospital,cursed",F,1236
+4618,p50_red_claw_arc_4618,Red claw arc,3x3,6,600,4,206,1,1,"bloodhospital,cursed",F,1237
+4619,p50_fire_spikes_4619,Fire spikes,5x5,6,600,4,206,2,2,lava,F,1238
+4620,p50_fire_spikes_4620,Fire spikes,5x5,6,600,4,206,2,2,lava,F,1239
+4621,p50_fire_spikes_4621,Fire spikes,5x5,6,600,4,206,2,2,lava,F,1240
+4622,p50_fire_spikes_4622,Fire spikes,5x5,6,600,4,206,2,2,lava,F,1241
+4623,p50_ember_sparks_d_4623,Ember sparks D,8x8,14,1400,4,206,4,4,lava,F,1243
+4624,p50_ember_sparks_d_4624,Ember sparks D,7x7,8,800,4,206,3,3,lava,F,1245
+4625,p50_purple_energy_orb_4625,Purple energy orb,5x5,3,300,6,191,2,2,"cursed,fungal,celestial",F,1262
+4626,p50_purple_energy_orb_4626,Purple energy orb,5x5,5,500,6,191,2,2,"cursed,fungal,celestial",F,1263
+4627,p50_purple_energy_orb_4627,Purple energy orb,5x5,16,1600,6,191,2,2,"cursed,fungal,celestial",F,1264
+4628,p50_purple_energy_orb_4628,Purple energy orb,5x5,8,800,6,191,2,2,"cursed,fungal,celestial",F,1265
+4629,p50_fire_orb_4629,Fire orb,5x5,3,300,6,206,2,2,lava,F,1266
+4630,p50_fire_orb_4630,Fire orb,5x5,5,500,6,206,2,2,lava,F,1267
+4631,p50_fire_orb_4631,Fire orb,5x5,16,1600,6,206,2,2,lava,F,1268
+4632,p50_fire_orb_4632,Fire orb,5x5,8,800,6,206,2,2,lava,F,1269
+4633,p50_cyan_energy_orb_4633,Cyan energy orb,5x5,3,300,6,95,2,2,"ice,celestial",F,1270
+4634,p50_ice_spike_burst_4634,Ice spike burst,5x5,5,500,6,95,2,2,ice,F,1271
+4635,p50_cyan_energy_orb_4635,Cyan energy orb,5x5,16,1600,6,95,2,2,"ice,celestial",F,1272
+4636,p50_cyan_energy_orb_4636,Cyan energy orb,5x5,8,800,6,95,2,2,"ice,celestial",F,1273
+4637,p50_white_energy_orb_4637,White energy orb,5x5,3,300,6,215,2,2,celestial,F,1274
+4638,p50_white_energy_orb_4638,White energy orb,5x5,5,500,6,215,2,2,celestial,F,1275
+4639,p50_white_energy_orb_4639,White energy orb,5x5,16,1600,6,215,2,2,celestial,F,1276
+4640,p50_white_energy_orb_4640,White energy orb,5x5,8,800,6,215,2,2,celestial,F,1277
+4641,p50_red_sparks_4641,Red sparks,7x7,7,700,4,144,3,3,"bloodhospital,cursed",F,1281
+4642,p50_red_sparks_4642,Red sparks,4x4,5,500,0,0,2,2,"bloodhospital,cursed",F,1282
+4643,p50_black_ring_4643,Black ring,1x1,10,730,2,77,0,0,"cursed,celestial",F,1312
+4644,p50_ice_spike_wave_4644,Ice spike wave,3x4,11,825,0,0,1,2,ice,F,1332
+4645,p50_ice_spike_wave_4645,Ice spike wave,4x3,11,825,0,0,2,1,ice,F,1333
+4646,p50_ice_spike_wave_4646,Ice spike wave,4x3,11,825,0,0,2,1,ice,F,1334
+4647,p50_ice_spike_wave_4647,Ice spike wave,3x4,11,825,0,0,1,2,ice,F,1335
+4648,p50_fire_swirl_cluster_4648,Fire swirl cluster,8x8,13,1300,0,0,4,4,lava,F,1345
+4649,p50_cyan_rune_ring_b_4649,Cyan rune ring B,3x3,5,375,0,0,1,1,"ice,celestial",F,1346
+4650,p50_white_web_burst_4650,White web burst,7x7,18,1350,0,0,3,3,"cursed,cave,hauntedfarm",F,1347
+4651,p50_blue_lightning_web_4651,Blue lightning web,7x7,7,525,0,0,3,3,"ice,celestial",F,1350
+4652,p50_blue_lightning_web_4652,Blue lightning web,5x5,10,750,0,0,2,2,"ice,celestial",F,1351
+4653,p50_blue_ring_burst_4653,Blue ring burst,7x7,7,525,0,0,3,3,"ice,deepsea",F,1352
+4654,p50_blue_ring_burst_4654,Blue ring burst,7x6,7,525,0,0,3,3,"ice,deepsea",F,1353
+4655,p50_blue_ring_burst_4655,Blue ring burst,8x8,9,675,0,0,4,4,"ice,deepsea",F,1354
+4656,p50_red_black_crack_with_violet_lightning_4656,Red-black crack with violet lightning,5x10,9,675,0,0,2,5,"cursed,bloodhospital",F,1360
+4657,p50_red_black_crack_with_violet_lightning_4657,Red-black crack with violet lightning,10x5,9,675,0,0,5,2,"cursed,bloodhospital",F,1361
+4658,p50_red_black_crack_with_violet_lightning_4658,Red-black crack with violet lightning,5x7,9,675,0,0,2,3,"cursed,bloodhospital",F,1362
+4659,p50_red_black_crack_with_violet_lightning_4659,Red-black crack with violet lightning,7x5,9,675,0,0,3,2,"cursed,bloodhospital",F,1363
+4660,p50_ground_crack_4660,Ground crack,3x7,31,2325,0,0,1,3,"cave,lava,cursed",F,1367
+4661,p50_ground_crack_4661,Ground crack,7x3,31,2325,0,0,3,1,"cave,lava,cursed",F,1368
+4662,p50_ground_crack_4662,Ground crack,3x7,31,2325,0,0,1,3,"cave,lava,cursed",F,1369
+4663,p50_ground_crack_4663,Ground crack,7x3,31,2325,0,0,3,1,"cave,lava,cursed",F,1370
+4664,p50_cyan_crescent_slash_4664,Cyan crescent slash,5x7,11,825,0,0,2,3,"ice,celestial",F,1373
+4665,p50_cyan_crescent_slash_4665,Cyan crescent slash,7x5,11,825,0,0,3,2,"ice,celestial",F,1374
+4666,p50_cyan_crescent_slash_4666,Cyan crescent slash,6x9,11,825,0,0,3,4,"ice,celestial",F,1375
+4667,p50_cyan_crescent_slash_4667,Cyan crescent slash,9x6,11,825,0,0,4,3,"ice,celestial",F,1376
+4668,p50_thin_slash_lines_4668,Thin slash lines,4x4,6,450,0,0,2,2,"ice,bloodhospital",F,1377
+4669,p50_thin_slash_lines_4669,Thin slash lines,4x4,6,450,0,0,2,2,"ice,bloodhospital",F,1378
+4670,p50_thin_slash_lines_4670,Thin slash lines,12x9,10,750,0,0,6,4,"ice,bloodhospital",F,1379
+4671,p50_white_blade_rain_4671,White blade rain,6x8,4,300,0,0,3,4,"celestial,asylum",F,1380
+4672,p50_white_blade_rain_4672,White blade rain,8x6,4,300,0,0,4,3,"celestial,asylum",F,1381
+4673,p50_white_blade_rain_4673,White blade rain,6x8,4,300,0,0,3,4,"celestial,asylum",F,1382
+4674,p50_white_blade_rain_4674,White blade rain,8x6,4,300,0,0,4,3,"celestial,asylum",F,1383
+4675,p50_ice_burst_4675,Ice burst,3x3,5,375,0,0,1,1,ice,F,1393
+4676,p50_ice_burst_4676,Ice burst,7x10,17,1275,0,0,3,5,ice,F,1394
+4677,p50_ice_burst_4677,Ice burst,8x10,17,1275,0,0,4,5,ice,F,1395
+4678,p50_ice_burst_4678,Ice burst,10x7,17,1275,0,0,5,3,ice,F,1396
+4679,p50_ice_burst_4679,Ice burst,10x8,17,1275,0,0,5,4,ice,F,1397
+4680,p50_grey_smoke_ring_b_4680,Grey smoke ring B,4x4,12,900,0,0,2,2,"cave,cursed",F,1398
+4681,p50_grey_smoke_ring_b_4681,Grey smoke ring B,7x7,19,1425,0,0,3,3,"cave,cursed",F,1399
+4682,p50_grey_smoke_ring_b_4682,Grey smoke ring B,11x10,4,300,0,0,5,5,"cave,cursed",F,1400
+4683,p50_red_black_claw_crack_4683,Red-black claw crack,8x6,7,525,0,0,4,3,"bloodhospital,cursed",F,1405
+4684,p50_red_black_claw_crack_4684,Red-black claw crack,6x8,7,525,0,0,3,4,"bloodhospital,cursed",F,1406
+4685,p50_red_black_claw_crack_4685,Red-black claw crack,8x5,7,525,0,0,4,2,"bloodhospital,cursed",F,1407
+4686,p50_red_black_claw_crack_4686,Red-black claw crack,5x8,7,525,0,0,2,4,"bloodhospital,cursed",F,1408
+4687,p50_red_black_claw_crack_4687,Red-black claw crack,5x3,4,300,0,0,2,1,"bloodhospital,cursed",F,1409
+4688,p50_orange_spark_ball_4688,Orange spark ball,9x9,14,1400,0,0,4,4,lava,F,1419
+4689,p50_blue_spark_ball_4689,Blue spark ball,9x9,14,1400,0,0,4,4,"ice,deepsea",F,1420
+4690,p50_violet_crescent_orb_4690,Violet crescent orb,3x3,14,1400,0,0,1,1,"cursed,celestial",F,1424
+4691,p50_cyan_ring_4691,Cyan ring,5x5,6,600,0,0,2,2,"ice,deepsea",F,1425
+4692,p50_ice_sparkle_burst_4692,Ice sparkle burst,4x4,9,900,0,0,2,2,ice,F,1426
+4693,p50_fire_crack_burst_4693,Fire crack burst,2x2,10,700,0,0,1,1,"lava,cave",F,1430
+4694,p50_colored_comet_trail_4694,Colored comet trail,5x5,32,3200,0,0,2,2,"celestial,lava,ice,cursed,fungal,swamp",F,1472
+4695,p50_colored_comet_trail_4695,Colored comet trail,5x5,32,3200,0,0,2,2,"celestial,lava,ice,cursed,fungal,swamp",F,1473
+4696,p50_colored_comet_trail_4696,Colored comet trail,5x5,32,3200,0,0,2,2,"celestial,lava,ice,cursed,fungal,swamp",F,1474
+4697,p50_colored_comet_trail_4697,Colored comet trail,5x5,32,3200,0,0,2,2,"celestial,lava,ice,cursed,fungal,swamp",F,1475
+4698,p50_colored_comet_trail_4698,Colored comet trail,5x5,32,3200,0,0,2,2,"celestial,lava,ice,cursed,fungal,swamp",F,1476
+4699,p50_colored_comet_trail_4699,Colored comet trail,5x5,32,3200,0,0,2,2,"celestial,lava,ice,cursed,fungal,swamp",F,1477
+4700,p50_colored_comet_trail_4700,Colored comet trail,5x5,32,3200,0,0,2,2,"celestial,lava,ice,cursed,fungal,swamp",F,1478
+4701,p50_colored_comet_trail_4701,Colored comet trail,5x5,32,3200,0,0,2,2,"celestial,lava,ice,cursed,fungal,swamp",F,1479
