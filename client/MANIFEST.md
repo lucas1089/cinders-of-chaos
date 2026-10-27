@@ -3210,6 +3210,42 @@ Output **pair 49**: dat 546d0c6099c8a40505b8f32b7e6ca381 (11,282,963 bytes), spr
 - **Ship order.** Install `decor49items` on the server only together with a client on pair 49 or newer: a client on pair 48 or older
   draws nothing for 39111-39197. Ship pair 49 and a client build before placing the items on a map.
 
+## Ground, walls, stairs, decoration, monsters and effects of two purchased sources (pair 50: items 39198-44395, outfits 2682-3360, effects 4102-4701, `tools/sprites/import_pair50.py`; built 2026-10-27; not pushed to windows-assets)
+Owner request 2026-10-27: "take everything we can use, floor, wall, stairs, decoration and monsters" from two purchased sprite
+sources, called **source G** and **source F** in docs/CREDITS.md. Pair 50 is pair 49 plus this art. No archive or server names in
+the repo: the selections are `tools/sprites/pair50_G_selection.csv` and `pair50_F_selection.csv` (category, source id, name,
+biome, size, notes), one row per chosen thing; no pixels are committed.
+- **Tool.** `import_pair50.py` reads both sources and both selections in one pass (no intermediate pair), maps their sprites onto
+  pair 49's records (identical records are reused by md5, the rest are appended, the spr offset table grows by 4 bytes per new
+  sprite), appends the things to the dat and checks the result with the append-only guard. A thing selected twice (eight source F
+  skull step pieces listed as wall and as stairs) is kept once, as stairs. Output tables: `pair50_import.csv` (one row per selected
+  thing: imported or skipped, new id, reason), `server/data/items/pair50_items.csv`, `pair50_outfits.csv`, `pair50_effects.csv`.
+  `import_pair50_test.py` (CI) tests the helpers and that the tables agree.
+- **Items (5198).** Client ids 39198-44395, server ids 43198-48395 (client id + 4000). The dat flags are copied from the source
+  (market, wrappable and unwrappable dropped). Counts: ground 1786, wall 1113, stairs 139, decoration 2021, corpses 139.
+- **Stairs.** Source F has roles: up stairs 73 (floor change north for horizontal treads, west for vertical treads, a guess from the art, which
+  climbs up and to the left), down stairs and holes 15 (down), ladders 2. Source G has no role in its selection: 8 ladders get the
+  ladder use (script `pair50_items.lua`), its other 41 steps and pits carry no floor change.
+- **Monsters (679).** Outfits 2682-3360 (G 282, F 397), four directions, frame groups kept. Corpses are container items.
+- **Effects (600).** Ids 4102-4701 (G 53, F 547). Effects above 255 work (u16 effect ids). Big ones carry a send offset (width / 2,
+  height / 2 tiles) in `server/data/lib/chaos_pair50_fx_ids.lua`, written by `gen_pair50_fx_ids.py` (`--check`, test in CI).
+- **Missiles: none.** The protocol sends the missile id in one byte, 254 is the weapon-type constant and the pair already holds 253
+  missiles. The 169 selected missiles (G 43, F 126) are skipped. An engine patch would be needed (not made).
+
+```
+python3 -I client/tools/sprites/import_pair50.py --help
+python3 -I client/tools/sprites/check_pair.py pair50/Tibia.dat pair50/Tibia.spr --old pair49/Tibia.dat pair49/Tibia.spr --new-only
+```
+Input pair 49 (dat 546d0c6099c8a40505b8f32b7e6ca381, spr f241c7a5a4a9784da19d5ade105544d9).
+Output **pair 50**: dat f424805d2d93d1cb4fed89b342a418fc (12,906,936 bytes), spr 30c6c17595f648683ea8b70a25b129d3
+(1,831,845,070 bytes, 1,530,465 sprites: 170,383 appended), 44,395 items (5198 appended), 3,360 outfits (679), 4,701 effects (600),
+253 missiles (0).
+- `check_pair.py --old --new-only`: 0 errors, 34 warnings. The full check: 0 errors, 240 warnings (size-large 122, exact-size 65,
+  thing-empty 34, missile-patterns 8, mask-empty 5, mask-not-mask 3, outfit-directions 2, displacement-range 1). `gen_outfit_anchors.py
+  --check` and `gen_info_lift.py --check` pass on pair 50 (md5 only changed in `outfit_anchors.lua` and `info_lifts.lua`). Not run in a client.
+- **Ship order.** Install `pair50items` (README "Pair 50 items") only together with a client on pair 50 or newer. Outfits and
+  effects need the same client. No archive or windows-assets push was made.
+
 ## Owner art (things_custom26: outfits 2213-2233, items 33940-33985, `tools/sprites/gen_owner_art.py`, `art_import/owner_art.csv`; on windows-assets 50645056, switch on since 2026-10-15)
 **Source and licence.** The owner's Google Drive folder "ots", files added 2026-10-15. The owner confirmed the art is
 their own or commissioned and free to use for monsters and variants, outfits and wings as cosmetics, decoration and map

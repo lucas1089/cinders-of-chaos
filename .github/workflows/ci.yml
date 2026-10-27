@@ -191,6 +191,11 @@ jobs:
           python3 -I client/tools/sprites/gen_decor49.py build --check
           python3 -I client/tools/sprites/gen_decor49_test.py
           python3 -I server/tools/install_decor49_items_test.py
+          # pair 50 (two purchased sprite sources): importer helpers, item install step, effect ids file
+          python3 -I client/tools/sprites/import_pair50_test.py
+          python3 -I client/tools/sprites/gen_pair50_fx_ids_test.py
+          python3 -I client/tools/sprites/gen_pair50_fx_ids.py --check
+          python3 -I server/tools/install_pair50_items_test.py
           python3 -I server/tools/patch_npc_currency_test.py
           python3 -I server/tools/check_dead_holes_test.py   # floor changes that lead nowhere (O263; needs a map to run for real)
           python3 -I server/tools/patch_dead_holes_test.py   # the install step deadholes on a synthetic map

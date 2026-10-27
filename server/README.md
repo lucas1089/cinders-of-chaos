@@ -18373,6 +18373,28 @@ client pair as items 38759-39110 (client/MANIFEST.md "Decoration of the ice, swa
 - **Tests.** `python3 -I server/tools/install_decor49_items_test.py` (the shipped manifest, id and biome rules, a clash with
   another manifest, nodes and XML on synthetic files, the command line twice).
 
+## Pair 50 items (`tools/install_pair50_items.py`, `data/items/pair50_items.csv`)
+5198 ground, wall, stairs, decoration and corpse items of two purchased sprite sources ("source G", "source F"), appended to the
+client pair as items 39198-44395 (client/MANIFEST.md "pair 50").
+- **Ids.** Server id = client id + 4000 (**43198-48395**), key `pair50_<category>_<client id>`, category ground, wall, stairs, decor
+  or corpse. They follow pair 49's block with no gap; the test reads every other manifest for clashes.
+- **Install.** Step `pair50items` of `install_all.py`, after `decor49items`: same rules as the other item steps (node of the same
+  bytes left alone, another client id on a server id stops it, `.bak`, written file parsed back, items.xml block between two marker
+  comments). Idempotent. Install only together with a client on pair 50 or newer.
+- **Floor changes.** Stairs up: `floorchange` north or west (the direction the treads climb on screen; a guess from the art).
+  Stairs down and holes: `down`. Ladders: no floor change; `data/scripts/chaos/pair50_items.lua` registers an Action on the ids of
+  `data/lib/chaos_pair50_items.lua` (written by `install_pair50_items.py --lua`) and calls `Position:moveUpstairs()` of the base lib
+  (protection zone rule kept). Source G has no role in its selection: its 41 steps and pits carry no floor change, so a map maker
+  must place a teleport or choose the pieces by hand. Doors are art only (no open / close script).
+- **Flags.** `notwalkable` is solid, a dat `blockpath` alone only asks the path finder to avoid the tile (stair pieces carry it and
+  stay walkable), borders sit on top, animated items carry the animation flag.
+- **Corpses (139).** Containers of 20 slots that decay to nothing after 600 s, set up like the pack corpses. A corpse placed on a
+  map as decoration decays too (one stage, no chain), so use them for monster corpses only.
+- **Monsters and effects.** Outfits 2682-3360 are listed in `data/items/pair50_outfits.csv`. Effects 4102-4701 are in
+  `data/items/pair50_effects.csv`; `data/lib/chaos_pair50_fx_ids.lua` (`client/tools/sprites/gen_pair50_fx_ids.py`) merges them into
+  `ChaosVfx` with their send offset. No missile fits (one byte, 254 is the weapon-type constant, 253 are in use).
+- **Tests.** `install_pair50_items_test.py`, `tests/pair50_items_test.lua`, `import_pair50_test.py`, `gen_pair50_fx_ids_test.py`.
+
 ## Reward chests (`rift_config.lua`, `descent_config.lua`, `reward_sparkle*.lua`, `tools/patch_reward_chests.py`)
 
 Owner request 2026-10-20: the plain wooden chest was hard to see on dark cave floors. Every chest a player takes a reward

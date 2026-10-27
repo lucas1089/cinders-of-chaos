@@ -1,0 +1,680 @@
+look_type,key,name,size,frame_groups,biome,source,src_id
+2682,pair50_monster_2682,Scythe reaper 1,2x2,L1P411F4,crypt,G,422
+2683,pair50_monster_2683,White ghost 1,2x2,L1P411F1 L1P411F2,crypt,G,426
+2684,pair50_monster_2684,Hooded wraith 1,2x2,L1P411F1 L1P411F2,crypt,G,421
+2685,pair50_monster_2685,Winged shadow wraith 1,2x2,L1P411F1 L1P411F2,crypt,G,944
+2686,pair50_monster_2686,Red flame spirit 1,2x2,L1P411F6,crypt,G,311
+2687,pair50_monster_2687,Pale ghost 1,2x2,L1P411F6,crypt,G,331
+2688,pair50_monster_2688,Cyan wisp 1,2x2,L1P411F8,crypt,G,361
+2689,pair50_monster_2689,Grey shade wisp 1,2x2,L1P411F8,crypt,G,788
+2690,pair50_monster_2690,Blue siren ghost 1,2x2,L1P411F1 L1P411F2,crypt,G,510
+2691,pair50_monster_2691,Gold mummy priest 1,2x2,L1P411F1 L1P411F2,crypt,G,429
+2692,pair50_monster_2692,Gold mummy 1,2x2,L1P411F1 L1P411F2,crypt,G,430
+2693,pair50_monster_2693,Gold mummy 2,2x2,L1P411F1 L1P411F2,crypt,G,431
+2694,pair50_monster_2694,Black skeleton 1,2x2,L1P411F1 L1P411F2,crypt,G,432
+2695,pair50_monster_2695,Yellow ghoul 1,2x2,L1P411F1 L1P411F2,crypt,G,433
+2696,pair50_monster_2696,Spotted ghoul 1,2x2,L1P411F1 L1P411F2,crypt,G,557
+2697,pair50_monster_2697,Horned ghoul 1,2x2,L1P411F1 L1P411F2,crypt,G,558
+2698,pair50_monster_2698,Red-eyed ghoul 1,2x2,L1P411F1 L1P411F2,crypt,G,559
+2699,pair50_monster_2699,Grey zombie 1,2x2,L1P411F1 L1P411F2,crypt,G,560
+2700,pair50_monster_2700,Skeleton warrior 1,2x2,L1P411F1 L1P411F2,crypt,G,561
+2701,pair50_monster_2701,Skeleton warrior 2,2x2,L1P411F1 L1P411F2,crypt,G,562
+2702,pair50_monster_2702,Horned skeleton knight 1,2x2,L1P411F1 L1P411F2,crypt,G,563
+2703,pair50_monster_2703,Crawling ghoul 1,2x2,L1P411F1 L1P411F2,crypt,G,584
+2704,pair50_monster_2704,Crawling ghoul 2,2x2,L1P411F1 L1P411F2,crypt,G,585
+2705,pair50_monster_2705,Pale cultist 1,2x2,L1P411F1 L1P411F2,asylum,G,293
+2706,pair50_monster_2706,Pale cultist 2,2x2,L1P411F1 L1P411F2,asylum,G,294
+2707,pair50_monster_2707,Red-hooded cultist 1,2x2,L1P411F1 L1P411F2,asylum,G,295
+2708,pair50_monster_2708,Red-hooded cultist 2,2x2,L1P411F1 L1P411F2,asylum,G,296
+2709,pair50_monster_2709,Gold-robed mage 1,2x2,L1P411F1 L1P411F2,asylum,G,299
+2710,pair50_monster_2710,Dark robed priest 1,2x2,L1P411F1 L1P411F2,asylum,G,300
+2711,pair50_monster_2711,Hooded sorcerer 1,2x2,L1P411F1 L1P411F2,asylum,G,472
+2712,pair50_monster_2712,Hooded sorcerer 2,2x2,L1P411F1 L1P411F2,asylum,G,473
+2713,pair50_monster_2713,Hooded sorcerer 3,2x2,L1P411F1 L1P411F2,asylum,G,474
+2714,pair50_monster_2714,Hooded sorcerer 4,2x2,L1P411F1 L1P411F2,asylum,G,475
+2715,pair50_monster_2715,Horned red demon 1,2x2,L1P411F1 L1P411F2,lava,G,107
+2716,pair50_monster_2716,Imp 1,2x2,L1P411F1 L1P411F2,lava,G,301
+2717,pair50_monster_2717,Imp 2,2x2,L1P411F1 L1P411F2,lava,G,302
+2718,pair50_monster_2718,Armoured demon 1,2x2,L1P411F1 L1P411F2,lava,G,303
+2719,pair50_monster_2719,Armoured demon 2,2x2,L1P411F1 L1P411F2,lava,G,304
+2720,pair50_monster_2720,Jester imp 1,2x2,L1P411F1 L1P411F2,lava,G,305
+2721,pair50_monster_2721,Imp 3,2x2,L1P411F1 L1P411F2,lava,G,341
+2722,pair50_monster_2722,Imp 4,2x2,L1P411F1 L1P411F2,lava,G,343
+2723,pair50_monster_2723,Winged devil 1,2x2,L1P411F1 L1P411F2,lava,G,348
+2724,pair50_monster_2724,Winged devil 2,2x2,L1P411F1 L1P411F2,lava,G,349
+2725,pair50_monster_2725,Horned red demon 2,2x2,L1P411F1 L1P411F2,lava,G,541
+2726,pair50_monster_2726,Horned red demon 3,2x2,L1P411F1 L1P411F2,lava,G,552
+2727,pair50_monster_2727,Magma demon 1,2x2,L1P411F1 L1P411F2,lava,G,777
+2728,pair50_monster_2728,Small purple imp 1,2x2,L1P411F1 L1P411F2,lava,G,779
+2729,pair50_monster_2729,Brown demon brute 1,2x2,L1P411F1 L1P411F2,lava,G,789
+2730,pair50_monster_2730,Brown demon brute 2,2x2,L1P411F1 L1P411F2,lava,G,790
+2731,pair50_monster_2731,Brown demon brute 3,2x2,L1P411F1 L1P411F2,lava,G,791
+2732,pair50_monster_2732,Magma demon 2,2x2,L1P411F1 L1P411F2,lava,G,792
+2733,pair50_monster_2733,Magma demon 3,2x2,L1P411F1 L1P411F2,lava,G,793
+2734,pair50_monster_2734,Magma demon 4,2x2,L1P411F1 L1P411F2,lava,G,794
+2735,pair50_monster_2735,Purple lion demon 1,2x2,L1P411F1 L1P411F2,lava,G,795
+2736,pair50_monster_2736,Purple octopus 1,2x2,L1P411F4,lava,G,785
+2737,pair50_monster_2737,Purple serpent mage 1,2x2,L1P411F6,lava,G,786
+2738,pair50_monster_2738,Hunched ape 1,2x2,L1P411F1 L1P411F2,cursed,G,193
+2739,pair50_monster_2739,Hunched ape 2,2x2,L1P411F1 L1P411F2,cursed,G,194
+2740,pair50_monster_2740,Hunched ape 3,2x2,L1P411F1 L1P411F2,cursed,G,195
+2741,pair50_monster_2741,Hunched ape 4,2x2,L1P411F1 L1P411F2,cursed,G,196
+2742,pair50_monster_2742,Hunched ape 5,2x2,L1P411F1 L1P411F2,cursed,G,353
+2743,pair50_monster_2743,Pink flesh hulk 1,2x2,L1P411F1 L1P411F2,cursed,G,522
+2744,pair50_monster_2744,Pink flesh hulk 2,2x2,L1P411F1 L1P411F2,cursed,G,523
+2745,pair50_monster_2745,Pink flesh hulk 3,2x2,L1P411F1 L1P411F2,cursed,G,524
+2746,pair50_monster_2746,Stone brute 1,2x2,L1P411F1 L1P411F2,cursed,G,335
+2747,pair50_monster_2747,Stone brute 2,2x2,L1P411F1 L1P411F2,cursed,G,336
+2748,pair50_monster_2748,Grey werewolf 1,3x3,L1P411F1 L1P411F2,cursed,G,553
+2749,pair50_monster_2749,Grey werewolf 2,3x3,L1P411F1 L1P411F2,cursed,G,554
+2750,pair50_monster_2750,Dark werewolf 1,3x3,L1P411F1 L1P411F2,cursed,G,555
+2751,pair50_monster_2751,Black crow 1,3x3,L1P411F3,cursed,G,556
+2752,pair50_monster_2752,Pink werewolf 1,3x3,L1P411F1 L1P411F2,cursed,G,722
+2753,pair50_monster_2753,Wolf or bear 1,2x2,L1P411F1 L1P411F2,cursed,G,87
+2754,pair50_monster_2754,Wolf or bear 2,2x2,L1P411F1 L1P411F2,cursed,G,88
+2755,pair50_monster_2755,Wolf or bear 3,2x2,L1P411F1 L1P411F2,cursed,G,89
+2756,pair50_monster_2756,Leopard 1,2x2,L1P411F1 L1P411F2,cursed,G,328
+2757,pair50_monster_2757,Wolf or bear 4,2x2,L1P411F1 L1P411F2,cursed,G,317
+2758,pair50_monster_2758,Wolf or bear 5,2x2,L1P411F1 L1P411F2,cursed,G,318
+2759,pair50_monster_2759,Rabbit 1,2x2,L1P411F1 L1P411F2,cursed,G,452
+2760,pair50_monster_2760,Dark wolf 1,3x3,L1P411F1 L1P411F2,cursed,G,542
+2761,pair50_monster_2761,Giant bat 1,3x3,L1P411F8,cursed,G,13
+2762,pair50_monster_2762,Giant bat 2,2x2,L1P411F8,cursed,G,14
+2763,pair50_monster_2763,Black bird 1,3x3,L1P411F3,cursed,G,548
+2764,pair50_monster_2764,Small bat 1,1x1,L1P411F3,cursed,G,549
+2765,pair50_monster_2765,Small bat 2,2x2,L1P411F2,cursed,G,397
+2766,pair50_monster_2766,Black winged beast 1,2x2,L1P411F1 L1P411F2,cursed,G,497
+2767,pair50_monster_2767,Armoured boar 1,2x2,L1P411F1 L1P411F2,cave,G,90
+2768,pair50_monster_2768,Armoured boar 2,2x2,L1P411F1 L1P411F2,cave,G,91
+2769,pair50_monster_2769,Armoured boar 3,2x2,L1P411F1 L1P411F2,cave,G,92
+2770,pair50_monster_2770,Bone plated beast 1,2x2,L1P411F1 L1P411F2,cave,G,494
+2771,pair50_monster_2771,Armoured beast 1,2x2,L1P411F1 L1P411F2,cave,G,357
+2772,pair50_monster_2772,Armoured beast 2,2x2,L1P411F1 L1P411F2,cave,G,358
+2773,pair50_monster_2773,Armoured beast 3,2x2,L1P411F1 L1P411F2,cave,G,359
+2774,pair50_monster_2774,Armoured beast 4,2x2,L1P411F1 L1P411F2,cave,G,360
+2775,pair50_monster_2775,Brown bear 1,2x2,L1P411F1 L1P411F2,cave,G,218
+2776,pair50_monster_2776,Brown bear 2,2x2,L1P411F1 L1P411F2,cave,G,219
+2777,pair50_monster_2777,Brown bear 3,2x2,L1P411F1 L1P411F2,cave,G,329
+2778,pair50_monster_2778,Brown bear 4,2x2,L1P411F1 L1P411F2,cave,G,330
+2779,pair50_monster_2779,Horned red beast 1,2x2,L1P411F1 L1P411F2,cave,G,356
+2780,pair50_monster_2780,Blue troll 1,2x2,L1P411F1 L1P411F2,cave,G,200
+2781,pair50_monster_2781,Blue troll 2,2x2,L1P411F1 L1P411F2,cave,G,201
+2782,pair50_monster_2782,Troll 1,2x2,L1P411F1 L1P411F2,cave,G,202
+2783,pair50_monster_2783,Troll 2,2x2,L1P411F1 L1P411F2,cave,G,203
+2784,pair50_monster_2784,Troll 3,2x2,L1P411F1 L1P411F2,cave,G,204
+2785,pair50_monster_2785,Troll 4,2x2,L1P411F1 L1P411F2,cave,G,205
+2786,pair50_monster_2786,Troll warrior 1,3x3,L1P411F1 L1P411F2,cave,G,206
+2787,pair50_monster_2787,Troll warrior 2,3x3,L1P411F1 L1P411F2,cave,G,207
+2788,pair50_monster_2788,Troll warrior 3,3x3,L1P411F1 L1P411F2,cave,G,208
+2789,pair50_monster_2789,Troll warrior 4,3x3,L1P411F1 L1P411F2,cave,G,209
+2790,pair50_monster_2790,Troll warrior 5,3x3,L1P411F1 L1P411F2,cave,G,210
+2791,pair50_monster_2791,Troll 5,2x2,L1P411F1 L1P411F2,cave,G,211
+2792,pair50_monster_2792,Troll 6,2x2,L1P411F1 L1P411F2,cave,G,212
+2793,pair50_monster_2793,Blue troll 3,2x2,L1P411F1 L1P411F2,cave,G,515
+2794,pair50_monster_2794,Troll warrior 6,3x3,L1P411F1 L1P411F2,cave,G,950
+2795,pair50_monster_2795,Troll warrior 7,3x3,L1P411F1 L1P411F2,cave,G,951
+2796,pair50_monster_2796,Troll warrior 8,2x2,L1P411F1 L1P411F2,cave,G,952
+2797,pair50_monster_2797,Bearded giant 1,3x3,L1P411F1 L1P411F2,cave,G,479
+2798,pair50_monster_2798,Frost giant 1,3x3,L1P411F1 L1P411F2,cave,G,480
+2799,pair50_monster_2799,Red minotaur 1,2x2,L1P411F1 L1P411F2,cave,G,392
+2800,pair50_monster_2800,Red minotaur 2,2x2,L1P411F1 L1P411F2,cave,G,297
+2801,pair50_monster_2801,Minotaur 1,2x2,L1P411F4 L1P411F2,cave,G,781
+2802,pair50_monster_2802,Minotaur 2,2x2,L1P411F1 L1P411F2,cave,G,782
+2803,pair50_monster_2803,Minotaur 3,2x2,L1P411F1 L1P411F2,cave,G,783
+2804,pair50_monster_2804,Minotaur 4,2x2,L1P411F1 L1P411F2,cave,G,784
+2805,pair50_monster_2805,Minotaur mage 1,3x3,L1P411F1 L1P411F2,cave,G,796
+2806,pair50_monster_2806,Minotaur mage 2,3x3,L1P411F1 L1P411F2,cave,G,797
+2807,pair50_monster_2807,Horned beast 1,3x3,L1P411F1 L1P411F2,cave,G,780
+2808,pair50_monster_2808,Horned beast 2,3x3,L1P411F1 L1P411F2,cave,G,539
+2809,pair50_monster_2809,Horned beast 3,3x3,L1P411F1 L1P411F2,cave,G,540
+2810,pair50_monster_2810,Orc or goblin 1,2x2,L1P411F1 L1P411F2,cave,G,312
+2811,pair50_monster_2811,Orc or goblin 2,2x2,L1P411F1 L1P411F2,cave,G,313
+2812,pair50_monster_2812,Orc or goblin 3,2x2,L1P411F1 L1P411F2,cave,G,314
+2813,pair50_monster_2813,Orc or goblin 4,2x2,L1P411F1 L1P411F2,cave,G,315
+2814,pair50_monster_2814,Orc or goblin 5,2x2,L1P411F1 L1P411F2,cave,G,316
+2815,pair50_monster_2815,Orc or goblin 6,2x2,L1P411F1 L1P411F2,cave,G,332
+2816,pair50_monster_2816,Orc or goblin 7,2x2,L1P411F1 L1P411F2,cave,G,333
+2817,pair50_monster_2817,Orc or goblin 8,2x2,L1P411F1 L1P411F2,cave,G,334
+2818,pair50_monster_2818,Orc or goblin 9,2x2,L1P411F1 L1P411F2,cave,G,337
+2819,pair50_monster_2819,Orc or goblin 10,2x2,L1P411F1 L1P411F2,cave,G,339
+2820,pair50_monster_2820,Orc or goblin 11,2x2,L1P411F1 L1P411F2,cave,G,340
+2821,pair50_monster_2821,Orc or goblin 12,2x2,L1P411F1 L1P411F2,cave,G,438
+2822,pair50_monster_2822,Orc or goblin 13,2x2,L1P411F1 L1P411F2,cave,G,439
+2823,pair50_monster_2823,Orc or goblin 14,2x2,L1P411F1 L1P411F2,cave,G,440
+2824,pair50_monster_2824,Orc or goblin 15,2x2,L1P411F1 L1P411F2,cave,G,442
+2825,pair50_monster_2825,Orc or goblin 16,2x2,L1P411F1 L1P411F2,cave,G,453
+2826,pair50_monster_2826,Orc or goblin 17,2x2,L1P411F1 L1P411F2,cave,G,454
+2827,pair50_monster_2827,Orc or goblin 18,2x2,L1P411F1 L1P411F2,cave,G,455
+2828,pair50_monster_2828,Giant spider 1,2x2,L1P411F1 L1P411F2,fungal,G,385
+2829,pair50_monster_2829,Beetle 1,2x2,L1P411F1 L1P411F2,fungal,G,393
+2830,pair50_monster_2830,Beetle 2,2x2,L1P411F1 L1P411F2,fungal,G,416
+2831,pair50_monster_2831,Giant spider 2,2x2,L1P411F1 L1P411F3,fungal,G,425
+2832,pair50_monster_2832,Ice spider 1,2x2,L1P411F1 L1P411F2,fungal,G,489
+2833,pair50_monster_2833,Scarab 1,2x2,L1P411F1 L1P411F2,fungal,G,322
+2834,pair50_monster_2834,Scarab 2,2x2,L1P411F1 L1P411F2,fungal,G,323
+2835,pair50_monster_2835,Scarab 3,2x2,L1P411F1 L1P411F2,fungal,G,324
+2836,pair50_monster_2836,Scarab 4,2x2,L1P411F1 L1P411F2,fungal,G,325
+2837,pair50_monster_2837,Scarab 5,2x2,L1P411F1 L1P411F2,fungal,G,326
+2838,pair50_monster_2838,Wasp 1,2x2,L1P411F1 L1P411F2,fungal,G,436
+2839,pair50_monster_2839,Giant spider 3,2x2,L1P411F1 L1P411F2,fungal,G,476
+2840,pair50_monster_2840,Sea serpent 1,2x2,L1P411F1 L1P411F2,deepsea,G,624
+2841,pair50_monster_2841,Sea serpent 2,2x2,L1P411F1 L1P411F2,deepsea,G,625
+2842,pair50_monster_2842,Sea serpent 3,2x2,L1P411F1 L1P411F2,deepsea,G,626
+2843,pair50_monster_2843,Sea serpent 4,2x2,L1P411F1 L1P411F2,deepsea,G,627
+2844,pair50_monster_2844,Sea serpent 5,2x2,L1P411F1 L1P411F2,deepsea,G,628
+2845,pair50_monster_2845,Naga 1,2x2,L1P411F1 L1P411F2,deepsea,G,630
+2846,pair50_monster_2846,Naga 2,2x2,L1P411F1 L1P411F2,deepsea,G,631
+2847,pair50_monster_2847,Naga 3,2x2,L1P411F1 L1P411F2,deepsea,G,632
+2848,pair50_monster_2848,Naga 4,2x2,L1P411F1 L1P411F2,deepsea,G,633
+2849,pair50_monster_2849,Naga 5,2x2,L1P411F1 L1P411F2,deepsea,G,634
+2850,pair50_monster_2850,Naga 6,2x2,L1P411F1 L1P411F2,deepsea,G,635
+2851,pair50_monster_2851,Naga 7,2x2,L1P411F1 L1P411F2,deepsea,G,636
+2852,pair50_monster_2852,Naga 8,2x2,L1P411F1 L1P411F2,deepsea,G,637
+2853,pair50_monster_2853,Naga 9,2x2,L1P411F1 L1P411F2,deepsea,G,638
+2854,pair50_monster_2854,Naga warrior 1,2x2,L1P411F1 L1P411F2,deepsea,G,663
+2855,pair50_monster_2855,Naga warrior 2,2x2,L1P411F1 L1P411F2,deepsea,G,664
+2856,pair50_monster_2856,Naga warrior 3,2x2,L1P411F1 L1P411F2,deepsea,G,665
+2857,pair50_monster_2857,Naga warrior 4,2x2,L1P411F1 L1P411F2,deepsea,G,666
+2858,pair50_monster_2858,Naga warrior 5,2x2,L1P411F1 L1P411F2,deepsea,G,667
+2859,pair50_monster_2859,Naga warrior 6,2x2,L1P411F1 L1P411F2,deepsea,G,668
+2860,pair50_monster_2860,Naga warrior 7,2x2,L1P411F1 L1P411F2,deepsea,G,669
+2861,pair50_monster_2861,Naga warrior 8,2x2,L1P411F1 L1P411F2,deepsea,G,670
+2862,pair50_monster_2862,Naga warrior 9,2x2,L1P411F1 L1P411F2,deepsea,G,671
+2863,pair50_monster_2863,Naga warrior 10,2x2,L1P411F1 L1P411F2,deepsea,G,672
+2864,pair50_monster_2864,Blue sea beast 1,2x2,L1P411F1 L1P411F2,deepsea,G,417
+2865,pair50_monster_2865,Blue sea beast 2,2x2,L1P411F1 L1P411F2,deepsea,G,418
+2866,pair50_monster_2866,Siren 1,2x2,L1P411F6,deepsea,G,936
+2867,pair50_monster_2867,Siren 2,2x2,L1P411F6,deepsea,G,937
+2868,pair50_monster_2868,Siren 3,2x2,L1P411F6,deepsea,G,938
+2869,pair50_monster_2869,Purple tentacle 1,2x2,L1P411F1 L1P411F2,deepsea,G,478
+2870,pair50_monster_2870,Lizard 1,2x2,L1P411F1 L1P411F2,swamp,G,365
+2871,pair50_monster_2871,Lizard 2,2x2,L1P411F1 L1P411F2,swamp,G,366
+2872,pair50_monster_2872,Lizard 3,2x2,L1P411F1 L1P411F2,swamp,G,367
+2873,pair50_monster_2873,Lizard 4,2x2,L1P411F1 L1P411F2,swamp,G,448
+2874,pair50_monster_2874,Lizard 5,2x2,L1P411F1 L1P411F2,swamp,G,449
+2875,pair50_monster_2875,Lizard 6,2x2,L1P411F1 L1P411F2,swamp,G,450
+2876,pair50_monster_2876,Green drake 1,2x2,L1P411F1 L1P411F2,swamp,G,537
+2877,pair50_monster_2877,Green drake 2,2x2,L1P411F1 L1P411F2,swamp,G,538
+2878,pair50_monster_2878,Winged lizard 1,2x2,L1P411F2,swamp,G,490
+2879,pair50_monster_2879,Crawler worm 1,2x2,L1P411F1 L1P411F2,swamp,G,491
+2880,pair50_monster_2880,Crawler worm 2,2x2,L1P411F1 L1P411F2,swamp,G,492
+2881,pair50_monster_2881,Flame dragon 1,2x2,L1P411F1 L1P411F2,swamp,G,493
+2882,pair50_monster_2882,Purple dragon 1,2x2,L1P411F1 L1P411F2,crypt,G,529
+2883,pair50_monster_2883,Bone dragon 1,2x2,L1P411F1 L1P411F2,crypt,G,530
+2884,pair50_monster_2884,Mushroom man 1,2x2,L1P411F1 L1P411F2,fungal,G,84
+2885,pair50_monster_2885,Mushroom man 2,2x2,L1P411F1 L1P411F2,fungal,G,85
+2886,pair50_monster_2886,Mushroom man 3,2x2,L1P411F1 L1P411F2,fungal,G,86
+2887,pair50_monster_2887,Thorn ball 1,2x2,L1P411F1 L1P411F2,fungal,G,198
+2888,pair50_monster_2888,Slime 1,2x2,L1P411F3,fungal,G,415
+2889,pair50_monster_2889,Slime 2,2x2,L1P411F3,fungal,G,477
+2890,pair50_monster_2890,Carnivorous plant 1,2x2,L1P411F5,fungal,G,536
+2891,pair50_monster_2891,Moss ghoul 1,2x2,L1P411F1 L1P411F2,fungal,G,618
+2892,pair50_monster_2892,Moss ghoul 2,2x2,L1P411F1 L1P411F2,fungal,G,619
+2893,pair50_monster_2893,Moss ghoul 3,2x2,L1P411F1 L1P411F2,fungal,G,620
+2894,pair50_monster_2894,Shadow blob 1,2x2,L1P411F3,fungal,G,775
+2895,pair50_monster_2895,Red knot 1,2x2,L1P411F4,fungal,G,926
+2896,pair50_monster_2896,Moss turtle 1,2x2,L1P411F1 L1P411F2,lava,G,306
+2897,pair50_monster_2897,Golem 1,2x2,L1P411F1 L1P411F2,lava,G,307
+2898,pair50_monster_2898,Golem 2,2x2,L1P411F1 L1P411F2,lava,G,338
+2899,pair50_monster_2899,Fire spirit 1,2x2,L1P411F6,lava,G,350
+2900,pair50_monster_2900,Golem 3,2x2,L1P411F1 L1P411F2,lava,G,351
+2901,pair50_monster_2901,Element spirit 1,2x2,L1P411F6,lava,G,354
+2902,pair50_monster_2902,Element spirit 2,2x2,L1P411F6,lava,G,355
+2903,pair50_monster_2903,Fire spirit 2,2x2,L1P411F8,lava,G,362
+2904,pair50_monster_2904,Dark spiked ball 1,2x2,L1P411F4,lava,G,927
+2905,pair50_monster_2905,Fire spirit 3,2x2,L1P411F1 L1P411F2,lava,G,928
+2906,pair50_monster_2906,Golem 4,2x2,L1P411F1 L1P411F2,lava,G,929
+2907,pair50_monster_2907,Element spirit 3,2x2,L1P411F4,lava,G,930
+2908,pair50_monster_2908,Element spirit 4,2x2,L1P411F1 L1P411F2,lava,G,931
+2909,pair50_monster_2909,Small brown beast 1,2x2,L1P411F1 L1P411F4,cave,G,942
+2910,pair50_monster_2910,Humanoid outfit 1,2x2,L2P411F1 L2P411F2,npc,G,344
+2911,pair50_monster_2911,Humanoid outfit 2,2x2,L2P411F1 L2P411F2,npc,G,345
+2912,pair50_monster_2912,Humanoid outfit 3,2x2,L2P411F1 L2P411F2,npc,G,346
+2913,pair50_monster_2913,Humanoid outfit 4,2x2,L2P411F1 L2P411F2,npc,G,347
+2914,pair50_monster_2914,Humanoid outfit 5,2x2,L2P411F1 L2P411F2,npc,G,402
+2915,pair50_monster_2915,Humanoid outfit 6,2x2,L2P411F1 L2P411F2,npc,G,403
+2916,pair50_monster_2916,Humanoid outfit 7,2x2,L2P411F1 L2P411F2,npc,G,404
+2917,pair50_monster_2917,Humanoid outfit 8,2x2,L2P411F1 L2P411F2,npc,G,405
+2918,pair50_monster_2918,Humanoid outfit 9,2x2,L2P411F1 L2P411F2,npc,G,406
+2919,pair50_monster_2919,Humanoid outfit 10,2x2,L2P411F1 L2P411F2,npc,G,407
+2920,pair50_monster_2920,Humanoid outfit 11,2x2,L2P411F1 L2P411F2,npc,G,408
+2921,pair50_monster_2921,Humanoid outfit 12,2x2,L2P411F1 L2P411F2,npc,G,409
+2922,pair50_monster_2922,Humanoid outfit 13,2x2,L2P411F1 L2P411F2,npc,G,410
+2923,pair50_monster_2923,Humanoid outfit 14,2x2,L2P411F1 L2P411F2,npc,G,411
+2924,pair50_monster_2924,Humanoid outfit 15,2x2,L2P411F1 L2P411F2,npc,G,412
+2925,pair50_monster_2925,Humanoid outfit 16,2x2,L2P411F1 L2P411F2,npc,G,413
+2926,pair50_monster_2926,Humanoid outfit 17,2x2,L2P411F1 L2P411F2,npc,G,414
+2927,pair50_monster_2927,Humanoid outfit 18,2x2,L2P411F1 L2P411F2,npc,G,456
+2928,pair50_monster_2928,Humanoid outfit 19,2x2,L2P411F1 L2P411F2,npc,G,457
+2929,pair50_monster_2929,Humanoid outfit 20,2x2,L2P411F1 L2P411F2,npc,G,458
+2930,pair50_monster_2930,Humanoid outfit 21,2x2,L2P411F1 L2P411F2,npc,G,459
+2931,pair50_monster_2931,Humanoid outfit 22,2x2,L2P411F1 L2P411F2,npc,G,460
+2932,pair50_monster_2932,Humanoid outfit 23,2x2,L2P411F1 L2P411F2,npc,G,461
+2933,pair50_monster_2933,Humanoid outfit 24,2x2,L2P411F1 L2P411F2,npc,G,462
+2934,pair50_monster_2934,Humanoid outfit 25,2x2,L2P411F1 L2P411F2,npc,G,470
+2935,pair50_monster_2935,Humanoid outfit 26,2x2,L2P411F1 L2P411F2,npc,G,471
+2936,pair50_monster_2936,Humanoid outfit 27,2x2,L2P411F1 L2P411F2,npc,G,481
+2937,pair50_monster_2937,Humanoid outfit 28,2x2,L2P411F1 L2P411F2,npc,G,482
+2938,pair50_monster_2938,Humanoid outfit 29,2x2,L2P411F1 L2P411F2,npc,G,484
+2939,pair50_monster_2939,Humanoid outfit 30,2x2,L2P411F1 L2P411F2,npc,G,485
+2940,pair50_monster_2940,Humanoid outfit 31,2x2,L2P411F1 L2P411F2,npc,G,486
+2941,pair50_monster_2941,Humanoid outfit 32,2x2,L2P411F1 L2P411F2,npc,G,487
+2942,pair50_monster_2942,Humanoid outfit 33,2x2,L2P411F1 L2P411F2,npc,G,488
+2943,pair50_monster_2943,Humanoid outfit 34,2x2,L2P411F1 L2P411F2,npc,G,500
+2944,pair50_monster_2944,Humanoid outfit 35,2x2,L2P411F1 L2P411F2,npc,G,501
+2945,pair50_monster_2945,Humanoid outfit 36,2x2,L2P411F1 L2P411F2,npc,G,502
+2946,pair50_monster_2946,Humanoid outfit 37,2x2,L2P411F1 L2P411F2,npc,G,503
+2947,pair50_monster_2947,Humanoid outfit 38,2x2,L2P411F1 L2P411F2,npc,G,504
+2948,pair50_monster_2948,Humanoid outfit 39,2x2,L2P411F1 L2P411F2,npc,G,505
+2949,pair50_monster_2949,Humanoid outfit 40,2x2,L2P411F1 L2P411F2,npc,G,506
+2950,pair50_monster_2950,Humanoid outfit 41,2x2,L2P411F1 L2P411F2,npc,G,507
+2951,pair50_monster_2951,Humanoid outfit 42,2x2,L2P411F1 L2P411F2,npc,G,508
+2952,pair50_monster_2952,Humanoid outfit 43,2x2,L2P411F1 L2P411F2,npc,G,509
+2953,pair50_monster_2953,Humanoid outfit 44,2x2,L2P411F1 L2P411F2,npc,G,512
+2954,pair50_monster_2954,Humanoid outfit 45,2x2,L2P411F1 L2P411F2,npc,G,513
+2955,pair50_monster_2955,Humanoid outfit 46,2x2,L2P411F1 L2P411F2,npc,G,514
+2956,pair50_monster_2956,Humanoid outfit 47,2x2,L2P411F1 L2P411F2,npc,G,520
+2957,pair50_monster_2957,Humanoid outfit 48,2x2,L2P411F1 L2P411F2,npc,G,521
+2958,pair50_monster_2958,Humanoid outfit 49,2x2,L2P411F1 L2P411F2,npc,G,532
+2959,pair50_monster_2959,Humanoid outfit 50,2x2,L2P411F1 L2P411F2,npc,G,533
+2960,pair50_monster_2960,Humanoid outfit 51,2x2,L2P411F1 L2P411F2,npc,G,543
+2961,pair50_monster_2961,Humanoid outfit 52,2x2,L2P411F1 L2P411F2,npc,G,544
+2962,pair50_monster_2962,Humanoid outfit 53,2x2,L2P411F1 L2P411F2,npc,G,545
+2963,pair50_monster_2963,Humanoid outfit 54,2x2,L2P411F1 L2P411F2,npc,G,546
+2964,pair50_monster_2964,Armoured orc champion,2x2,L1P411F12 L1P411F2,"cave,hauntedfarm",F,2
+2965,pair50_monster_2965,Hooded grave zombie,3x3,L1P411F12 L1P411F2,"cursed,hauntedfarm,bloodhospital",F,4
+2966,pair50_monster_2966,Orc,2x2,L1P411F12 L1P411F2,"cave,hauntedfarm",F,5
+2967,pair50_monster_2967,"Orc shaman, purple hood",2x2,L1P411F12 L1P411F2,"cave,hauntedfarm,cursed",F,6
+2968,pair50_monster_2968,Orc with shield and sword,2x2,L1P411F12 L1P411F2,"cave,hauntedfarm",F,7
+2969,pair50_monster_2969,Orc berserker with axe,2x2,L1P411F12 L1P411F2,"cave,hauntedfarm",F,8
+2970,pair50_monster_2970,Black hooded cultist,1x1,L1P411F1 L1P411F8,"cursed,asylum,bloodhospital",F,9
+2971,pair50_monster_2971,"Floating eye tyrant, yellow",2x2,L1P411F8 L1P411F8,"cave,fungal,cursed",F,17
+2972,pair50_monster_2972,Zombie,2x2,L1P411F10 L1P411F2,"cursed,hauntedfarm,bloodhospital",F,18
+2973,pair50_monster_2973,Minotaur archer,2x2,L1P411F12 L1P411F2,"cave,hauntedfarm",F,24
+2974,pair50_monster_2974,Minotaur,2x2,L1P411F12 L1P411F8,"cave,hauntedfarm",F,25
+2975,pair50_monster_2975,Skeleton,2x2,L1P411F12 L1P411F2,"cursed,asylum,library",F,33
+2976,pair50_monster_2976,Green dragon,3x3,L1P411F12 L1P411F2,"cave,swamp",F,34
+2977,pair50_monster_2977,Red demon,3x3,L1P411F12 L1P411F2,"lava,cursed",F,35
+2978,pair50_monster_2978,Bloody skeleton,2x2,L1P411F12 L1P411F2,"cursed,bloodhospital",F,37
+2979,pair50_monster_2979,Giant red spider,2x2,L1P411F12 L1P411F2,"cave,cursed,hauntedfarm",F,38
+2980,pair50_monster_2980,Red dragon,3x3,L1P411F12 L1P411F2,"lava,cave",F,39
+2981,pair50_monster_2981,Ghost,2x2,L1P411F8 L1P411F8,"cursed,asylum,hauntedfarm",F,48
+2982,pair50_monster_2982,Orc spearman,2x2,L1P411F12 L1P411F2,"cave,hauntedfarm",F,50
+2983,pair50_monster_2983,Pale ghoul,2x2,L1P411F1 L1P411F8,"cursed,bloodhospital,asylum",F,51
+2984,pair50_monster_2984,Giant cave ogre,2x2,L1P411F1 L1P411F8,"cave,hauntedfarm",F,55
+2985,pair50_monster_2985,Hooded monk in red and black,1x1,L1P411F1 L1P411F8,"cursed,asylum,library",F,58
+2986,pair50_monster_2986,Orc warlord,2x2,L1P411F12 L1P411F2,"cave,hauntedfarm",F,59
+2987,pair50_monster_2987,Mummy,1x1,L1P411F1 L1P411F8,"cursed,library",F,65
+2988,pair50_monster_2988,Grey stone giant,2x2,L1P411F1 L1P411F8,"cave,cursed,ice",F,67
+2989,pair50_monster_2989,Black wraith with hood,2x2,L1P411F1 L1P411F8,"cursed,asylum,hauntedfarm",F,68
+2990,pair50_monster_2990,"Bandaged giant, purple",2x2,L1P411F1 L1P411F8,"cursed,bloodhospital,asylum",F,80
+2991,pair50_monster_2991,Skeletal lich with green staff,2x2,L1P411F1 L1P411F8,"cursed,library,asylum",F,99
+2992,pair50_monster_2992,Bone creature,2x2,L1P411F1 L1P411F8,"cursed,cave,deepsea",F,101
+2993,pair50_monster_2993,"Floating eye tyrant, brown",2x2,L1P411F8 L1P411F8,"cave,fungal,cursed",F,108
+2994,pair50_monster_2994,Yeti,2x2,L1P411F1 L1P411F8,ice,F,110
+2995,pair50_monster_2995,Armoured skeleton,1x1,L2P411F1 L2P411F8,"cursed,asylum",F,194
+2996,pair50_monster_2996,Red cave spider,2x2,L1P411F1 L1P411F8,"cave,lava",F,200
+2997,pair50_monster_2997,Tarantula,2x2,L1P411F10 L1P411F2,"cave,hauntedfarm,cursed",F,219
+2998,pair50_monster_2998,Carnivorous plant,2x2,L1P411F8 L1P411F8,"swamp,hauntedfarm,fungal",F,221
+2999,pair50_monster_2999,Bone beast with antlers,2x2,L1P411F1 L1P411F8,"cursed,cave,hauntedfarm",F,231
+3000,pair50_monster_3000,Fur-hooded frost troll,2x2,L1P411F1 L1P411F8,ice,F,257
+3001,pair50_monster_3001,Grey ghost wolf,2x2,L1P411F1 L1P411F8,"cursed,ice,hauntedfarm",F,258
+3002,pair50_monster_3002,Ice golem,2x2,L1P411F1 L1P411F8,ice,F,261
+3003,pair50_monster_3003,Fur-hooded frost troll B,2x2,L1P411F1 L1P411F8,ice,F,265
+3004,pair50_monster_3004,Mossy earth golem,2x2,L1P411F1 L1P411F8,"cave,swamp,hauntedfarm",F,285
+3005,pair50_monster_3005,Mossy earth golem B,2x2,L1P411F1 L1P411F8,"cave,swamp,hauntedfarm",F,301
+3006,pair50_monster_3006,Winged bat demon,2x2,L1P411F8 L1P411F8,"cursed,cave,asylum",F,307
+3007,pair50_monster_3007,Rotting zombie,2x2,L1P411F1 L1P411F8,"cursed,hauntedfarm,bloodhospital",F,311
+3008,pair50_monster_3008,Purple shadow tentacles,2x2,L1P411F1 L1P411F8,"cursed,deepsea,fungal",F,320
+3009,pair50_monster_3009,Gorgon with snake hair,2x2,L1P411F12,"cursed,swamp,deepsea",F,330
+3010,pair50_monster_3010,Necromantic abomination,2x2,L1P411F1 L1P411F8,"cursed,bloodhospital,asylum",F,342
+3011,pair50_monster_3011,Red spider,2x2,L1P411F1 L1P411F8,"cave,lava",F,346
+3012,pair50_monster_3012,Black bat,1x1,L1P411F8 L1P411F8,"cave,cursed,asylum",F,363
+3013,pair50_monster_3013,Grey spider hydra,2x2,L1P411F1 L1P411F8,"cave,cursed",F,408
+3014,pair50_monster_3014,Lava golem,2x2,L1P411F8 L1P411F8,lava,F,491
+3015,pair50_monster_3015,"Dark armoured knight, red trim",1x1,L1P411F1 L1P411F8,"cursed,asylum",F,552
+3016,pair50_monster_3016,Red hooded cultist,1x1,L1P411F1 L1P411F8,"cursed,bloodhospital,asylum",F,553
+3017,pair50_monster_3017,Black three-headed hydra,2x2,L1P411F1 L1P411F8,"cursed,swamp,deepsea",F,563
+3018,pair50_monster_3018,Flesh blob with eye,2x2,L1P411F1 L1P411F8,"bloodhospital,cursed,fungal",F,564
+3019,pair50_monster_3019,Green ghoul,2x2,L1P411F12 L1P411F2,"cursed,swamp,hauntedfarm",F,565
+3020,pair50_monster_3020,Dark treant,2x2,L1P411F1 L1P411F8,"swamp,hauntedfarm,fungal",F,573
+3021,pair50_monster_3021,Brass cyclops golem,2x2,L1P411F1 L1P411F8,"asylum,lava",F,583
+3022,pair50_monster_3022,Giant toothy maw blob,2x2,L1P411F1 L1P411F8,"fungal,deepsea,cursed",F,584
+3023,pair50_monster_3023,Spindly clawed hands creature,2x2,L1P411F1 L1P411F8,"cursed,cave,fungal",F,586
+3024,pair50_monster_3024,Giant toothy maw blob with crest,2x2,L1P411F1 L1P411F8,"fungal,deepsea,cursed",F,595
+3025,pair50_monster_3025,Brown minotaur brute,2x2,L1P411F1 L1P411F8,"cave,hauntedfarm",F,607
+3026,pair50_monster_3026,Armoured skeleton warrior,2x2,L1P411F1 L1P411F8,"cursed,asylum",F,611
+3027,pair50_monster_3027,Grey skull demon,2x2,L2P431F1 L2P431F8,"cursed,celestial,cave",F,862
+3028,pair50_monster_3028,"Hooded tentacle horror, purple",2x2,L1P411F1 L1P411F8,"deepsea,cursed,fungal",F,905
+3029,pair50_monster_3029,"Hooded tentacle horror, brown",2x2,L1P411F1 L1P411F8,"deepsea,cursed,fungal",F,906
+3030,pair50_monster_3030,"Hooded tentacle horror, blue",2x2,L1P411F1 L1P411F8,"deepsea,cursed,fungal",F,907
+3031,pair50_monster_3031,Masked skeleton thief,2x2,L2P432F1 L2P432F8,"cursed,asylum",F,909
+3032,pair50_monster_3032,Black dragon,2x2,L1P411F1 L1P411F8,"cave,cursed,lava",F,927
+3033,pair50_monster_3033,Spiked dark beast,2x2,L1P411F1 L1P411F8,"cave,cursed",F,928
+3034,pair50_monster_3034,Spiked green ogre warlord,2x2,L1P411F1 L1P411F8,"cave,hauntedfarm,cursed",F,934
+3035,pair50_monster_3035,Grey rock beast,2x2,L1P411F1 L1P411F8,"cave,cursed",F,936
+3036,pair50_monster_3036,Grey rock beast with armour,2x2,L1P411F1 L1P411F8,"cave,cursed",F,937
+3037,pair50_monster_3037,Stone head golem,2x2,L1P411F8 L1P411F8,"cave,cursed,celestial",F,943
+3038,pair50_monster_3038,"Stone head golem, pink crystal",2x2,L1P411F8 L1P411F8,"cave,cursed,celestial",F,944
+3039,pair50_monster_3039,"Stone head golem, blue crystal",2x2,L1P411F8 L1P411F8,"cave,cursed,celestial",F,945
+3040,pair50_monster_3040,"Hunched hooded beast, teal",2x2,L1P411F1 L1P411F8,"cursed,cave,deepsea",F,959
+3041,pair50_monster_3041,"Hunched hooded beast, red",2x2,L1P411F1 L1P411F8,"cursed,cave,bloodhospital",F,960
+3042,pair50_monster_3042,"Hunched hooded beast, blue",2x2,L1P411F1 L1P411F8,"cursed,cave,deepsea",F,961
+3043,pair50_monster_3043,Purple horned demon,2x2,L1P411F8 L1P411F8,"cursed,celestial,fungal",F,985
+3044,pair50_monster_3044,"Spiked tentacle beast, purple",2x2,L1P411F1 L1P411F8,"cursed,fungal,deepsea",F,987
+3045,pair50_monster_3045,Teal tusked brute,2x2,L1P411F1 L1P411F8,"cave,cursed,deepsea",F,1011
+3046,pair50_monster_3046,Armoured scarab mantis,2x2,L1P411F1 L1P411F8,"cave,cursed",F,1013
+3047,pair50_monster_3047,"Fire elemental, hunched",2x2,L1P411F1 L1P411F8,lava,F,1017
+3048,pair50_monster_3048,"Ice elemental, hunched",2x2,L1P411F1 L1P411F8,ice,F,1018
+3049,pair50_monster_3049,"Skull-masked spider, purple",2x2,L1P411F1 L1P411F8,"cursed,cave,asylum",F,1025
+3050,pair50_monster_3050,"Skull-masked spider, brown",2x2,L1P411F1 L1P411F8,"cursed,cave,asylum",F,1026
+3051,pair50_monster_3051,"Skull-masked spider, dark",2x2,L1P411F1 L1P411F8,"cursed,cave,asylum",F,1027
+3052,pair50_monster_3052,Horned bat with red maw,2x2,L1P411F1 L1P411F8,"cursed,cave",F,1034
+3053,pair50_monster_3053,Eye spider with tentacle arms,2x2,L1P411F1 L1P411F8,"cursed,fungal,deepsea",F,1035
+3054,pair50_monster_3054,Yellow maw plant,2x2,L1P411F1 L1P411F8,"fungal,swamp",F,1036
+3055,pair50_monster_3055,Scorpion,2x2,L1P411F1 L1P411F8,"cave,lava",F,1037
+3056,pair50_monster_3056,Red ogre,2x2,L1P411F1 L1P411F8,"lava,cave",F,1039
+3057,pair50_monster_3057,Dark bear beast,2x2,L1P411F1 L1P411F8,"cave,cursed,hauntedfarm",F,1040
+3058,pair50_monster_3058,Purple spiked shell beast,2x2,L1P411F1 L1P411F8,"cursed,fungal,deepsea",F,1045
+3059,pair50_monster_3059,Armoured crab squid,2x2,L1P411F1 L1P411F8,deepsea,F,1046
+3060,pair50_monster_3060,Red tentacle serpent,2x2,L1P411F1 L1P411F8,"bloodhospital,cursed,deepsea",F,1047
+3061,pair50_monster_3061,Dark mole beast,2x2,L1P411F1 L1P411F8,"cave,cursed",F,1048
+3062,pair50_monster_3062,Lantern spider with gold carapace,2x2,L1P411F1 L1P411F2,"cave,cursed,celestial",F,1055
+3063,pair50_monster_3063,White bone crawler,2x2,L2P431F1 L2P431F8,"cursed,cave",F,1068
+3064,pair50_monster_3064,Dark green ogre with staff,2x2,L1P411F1 L1P411F8,"swamp,cursed",F,1073
+3065,pair50_monster_3065,Skeletal scythe beast,2x2,L1P411F1 L1P411F8,"cursed,cave",F,1079
+3066,pair50_monster_3066,Spiked dark orc lord with scepter,2x2,L1P411F1 L1P411F8,"cursed,cave",F,1088
+3067,pair50_monster_3067,"Horned armoured demon beast, red",2x2,L1P411F1 L1P411F8,"cursed,lava,cave",F,1091
+3068,pair50_monster_3068,"Horned armoured demon beast, teal",2x2,L1P411F1 L1P411F8,"cursed,deepsea,cave",F,1092
+3069,pair50_monster_3069,"Horned armoured demon beast, ghostly",2x2,L1P411F1 L1P411F8,"cursed,celestial,cave",F,1093
+3070,pair50_monster_3070,Grey ghost swirl,2x2,L2P411F8 L2P411F8,"cursed,asylum,hauntedfarm",F,1119
+3071,pair50_monster_3071,Green wyvern,2x2,L1P411F8 L1P411F8,"cave,swamp",F,1125
+3072,pair50_monster_3072,"Wrapped mummy, cream",2x2,L2P432F1 L2P432F8,"cursed,library",F,1127
+3073,pair50_monster_3073,"Wrapped mummy, cream B",2x2,L2P432F1 L2P432F8,"cursed,library",F,1128
+3074,pair50_monster_3074,"Winged tentacle demon, dark blue",2x2,L1P411F1 L1P411F8,"cursed,deepsea,celestial",F,1134
+3075,pair50_monster_3075,Black spider with open maw,2x2,L1P411F1 L1P411F8,"cursed,cave,fungal",F,1135
+3076,pair50_monster_3076,Spiked flesh ball with eyes,2x2,L1P411F1 L1P411F8,"bloodhospital,cursed,fungal",F,1144
+3077,pair50_monster_3077,Hunched bone and hair beast,2x2,L1P411F1 L1P411F8,"cursed,cave,hauntedfarm",F,1166
+3078,pair50_monster_3078,White skeletal hunched ghoul,2x2,L2P432F1 L2P432F8,"cursed,ice,cave",F,1173
+3079,pair50_monster_3079,White skeletal hunched ghoul B,2x2,L2P432F1 L2P432F8,"cursed,ice,cave",F,1174
+3080,pair50_monster_3080,"Horned bone-armoured knight, green",2x2,L1P411F1 L1P411F8,"cursed,celestial,cave",F,1247
+3081,pair50_monster_3081,"Horned bone-armoured knight, teal",2x2,L1P411F1 L1P411F8,"cursed,deepsea,cave",F,1248
+3082,pair50_monster_3082,"Horned bone-armoured knight, bronze",2x2,L1P411F1 L1P411F8,"cursed,cave",F,1249
+3083,pair50_monster_3083,Dark stone gorilla,2x2,L2P431F1 L2P431F8,"cave,cursed",F,1255
+3084,pair50_monster_3084,Green ogre with red tongue,2x2,L1P411F1 L1P411F8,"swamp,cave,cursed",F,1260
+3085,pair50_monster_3085,"Horned maggot demon, red",2x2,L1P411F8 L1P411F8,"cursed,bloodhospital,lava",F,1264
+3086,pair50_monster_3086,"Horned maggot demon, violet",2x2,L1P411F8 L1P411F8,"cursed,fungal",F,1265
+3087,pair50_monster_3087,"Horned maggot demon, dark",2x2,L1P411F8 L1P411F8,"cursed,cave",F,1266
+3088,pair50_monster_3088,Olive hooded worm serpent,2x2,L1P411F1 L1P411F8,"cursed,swamp",F,1275
+3089,pair50_monster_3089,Dark rider on beast,2x2,L1P411F1 L1P411F8,"cursed,hauntedfarm,cave",F,1281
+3090,pair50_monster_3090,Blue flame spirit on stick,2x2,L1P411F8 L1P411F8,"cursed,ice,celestial",F,1284
+3091,pair50_monster_3091,Ember flame spirit on stick,2x2,L1P411F8 L1P411F8,"cursed,lava",F,1285
+3092,pair50_monster_3092,Pale ember flame spirit on stick,2x2,L1P411F8 L1P411F8,"cursed,lava",F,1286
+3093,pair50_monster_3093,"Spiked crab demon, orange",2x2,L1P411F1 L1P411F8,"lava,cursed,deepsea",F,1309
+3094,pair50_monster_3094,"Spiked crab demon, pink",2x2,L1P411F1 L1P411F8,"cursed,deepsea,fungal",F,1310
+3095,pair50_monster_3095,"Spiked crab demon, dark",2x2,L1P411F1 L1P411F8,"cursed,deepsea",F,1311
+3096,pair50_monster_3096,"Armoured tusked beast, red",2x2,L1P411F1 L1P411F8,"cave,lava,cursed",F,1333
+3097,pair50_monster_3097,"Armoured tusked beast, teal",2x2,L1P411F1 L1P411F8,"cave,deepsea,cursed",F,1334
+3098,pair50_monster_3098,"Armoured tusked beast, brown",2x2,L1P411F1 L1P411F8,"cave,cursed",F,1335
+3099,pair50_monster_3099,Blue crystal spirit,2x2,L1P411F1 L1P411F8,"ice,celestial",F,1337
+3100,pair50_monster_3100,Giant teal spider,2x2,L1P411F1 L1P411F8,"cave,swamp,cursed",F,1344
+3101,pair50_monster_3101,Cave rat,2x2,L2P431F1 L2P431F8,"cave,hauntedfarm,asylum",F,1346
+3102,pair50_monster_3102,Grey octopus with mask,2x2,L2P411F1 L2P411F8,"deepsea,cursed",F,1363
+3103,pair50_monster_3103,Cyan wisp in glass,2x2,L1P411F8 L1P411F8,"cursed,ice,celestial",F,1389
+3104,pair50_monster_3104,Green wisp in glass,2x2,L1P411F8 L1P411F8,"cursed,swamp,fungal",F,1390
+3105,pair50_monster_3105,Violet wisp in glass,2x2,L1P411F8 L1P411F8,"cursed,celestial,fungal",F,1391
+3106,pair50_monster_3106,Writhing flesh mass,2x2,L1P411F1 L1P411F8,"bloodhospital,cursed,fungal",F,1393
+3107,pair50_monster_3107,Teal angler eel,2x2,L2P431F8 L2P431F8,deepsea,F,1396
+3108,pair50_monster_3108,Blue crystal bat,2x2,L1P411F1 L1P411F8,"ice,celestial,cave",F,1397
+3109,pair50_monster_3109,Red maw flower,2x2,L1P411F1 L1P411F8,"fungal,swamp,bloodhospital",F,1398
+3110,pair50_monster_3110,Purple maw plant,2x2,L1P411F1 L1P411F8,"fungal,swamp,cursed",F,1399
+3111,pair50_monster_3111,Rock golem ogre,2x2,L1P411F1 L1P411F8,"cave,hauntedfarm",F,1403
+3112,pair50_monster_3112,Mushroom crab,2x2,L1P411F1 L1P411F8,"fungal,swamp,deepsea",F,1405
+3113,pair50_monster_3113,Dark blue clawed horror,2x2,L2P431F1 L2P431F8,"cursed,deepsea,cave",F,1406
+3114,pair50_monster_3114,White bone scorpion,2x2,L2P431F1 L2P431F8,"cursed,cave,ice",F,1407
+3115,pair50_monster_3115,White serpent,2x2,L2P431F1 L2P431F8,"cursed,ice,cave",F,1408
+3116,pair50_monster_3116,Orange brain jelly,2x2,L1P411F1 L1P411F8,"lava,fungal,cursed",F,1412
+3117,pair50_monster_3117,Molten lava blob,2x2,L1P411F1 L1P411F8,lava,F,1413
+3118,pair50_monster_3118,Grey web weaver,2x2,L2P431F1 L2P431F8,"cave,cursed,hauntedfarm",F,1418
+3119,pair50_monster_3119,Armoured ogre with chained mace,2x2,L1P411F1 L1P411F8,"cave,cursed,asylum",F,1422
+3120,pair50_monster_3120,Dark horned beast,2x2,L1P411F1 L1P411F8,"cursed,cave,hauntedfarm",F,1423
+3121,pair50_monster_3121,Dark beast wreathed in fire,2x2,L1P411F8 L1P411F8,"lava,cursed",F,1431
+3122,pair50_monster_3122,"Winged mantis demon, red",2x2,L1P411F1 L1P411F8,"cursed,cave,lava",F,1446
+3123,pair50_monster_3123,"Winged mantis demon, green",2x2,L1P411F1 L1P411F8,"cursed,swamp,fungal",F,1447
+3124,pair50_monster_3124,"Winged mantis demon, dark",2x2,L1P411F1 L1P411F8,"cursed,cave,deepsea",F,1448
+3125,pair50_monster_3125,"Hooded armoured lizard knight, grey",2x2,L1P411F1 L1P411F8,"cave,cursed,deepsea",F,1526
+3126,pair50_monster_3126,"Hooded armoured lizard knight, green",2x2,L1P411F1 L1P411F8,"cave,swamp,cursed",F,1527
+3127,pair50_monster_3127,"Hooded armoured lizard knight, red",2x2,L1P411F1 L1P411F8,"cave,lava,cursed",F,1528
+3128,pair50_monster_3128,Grey sea serpent maiden,2x2,L2P431F1 L2P431F8,"deepsea,cursed",F,1537
+3129,pair50_monster_3129,Grey sea serpent,2x2,L2P431F1 L2P431F8,"deepsea,cursed",F,1538
+3130,pair50_monster_3130,Grey sea serpent rider,2x2,L2P431F1 L2P431F8,"deepsea,cursed",F,1539
+3131,pair50_monster_3131,Teal sea serpent,2x2,L1P431F1 L1P431F8,deepsea,F,1540
+3132,pair50_monster_3132,Blue sea serpent,2x2,L1P431F1 L1P431F8,deepsea,F,1541
+3133,pair50_monster_3133,Red sea serpent,2x2,L1P431F1 L1P431F8,"deepsea,lava",F,1542
+3134,pair50_monster_3134,Grey sea serpent B,2x2,L2P431F1 L2P431F8,"deepsea,cursed",F,1543
+3135,pair50_monster_3135,Teal slug beast,2x2,L1P411F1 L1P411F8,"swamp,deepsea,fungal",F,1548
+3136,pair50_monster_3136,Green spider with web egg,2x2,L1P411F1 L1P411F8,"swamp,cave,hauntedfarm",F,1551
+3137,pair50_monster_3137,Dark winged horned drake,2x2,L1P411F8 L1P411F8,"cave,cursed",F,1552
+3138,pair50_monster_3138,Giant green ogre,2x2,L1P411F1 L1P411F8,"swamp,cave",F,1553
+3139,pair50_monster_3139,Hanging seed pod plant,2x2,L1P411F1 L1P411F8,"swamp,fungal,hauntedfarm",F,1554
+3140,pair50_monster_3140,Coral crab,2x2,L1P411F1 L1P411F8,deepsea,F,1555
+3141,pair50_monster_3141,Brown carapace crawler,2x2,L1P411F1 L1P411F8,"cave,cursed,hauntedfarm",F,1556
+3142,pair50_monster_3142,Hooded angler,2x2,L1P411F1 L1P411F8,"deepsea,cursed",F,1559
+3143,pair50_monster_3143,Spiny coral urchin,2x2,L1P411F1 L1P411F8,deepsea,F,1567
+3144,pair50_monster_3144,"Armoured beast knight, grey",2x2,L1P411F1 L1P411F8,"cursed,asylum,cave",F,1578
+3145,pair50_monster_3145,"Armoured beast knight, purple",2x2,L1P411F1 L1P411F8,"cursed,celestial,cave",F,1579
+3146,pair50_monster_3146,"Armoured beast knight, blue",2x2,L1P411F1 L1P411F8,"cursed,deepsea,cave",F,1580
+3147,pair50_monster_3147,Dark rock golem with green eyes,2x2,L1P411F1 L1P411F8,"cave,cursed",F,1592
+3148,pair50_monster_3148,Red armoured demon beast,2x2,L1P411F1 L1P411F8,"lava,cursed",F,1600
+3149,pair50_monster_3149,"Tangled tree beast, dark teal",2x2,L1P411F1 L1P411F8,"swamp,cursed,fungal",F,1669
+3150,pair50_monster_3150,Dark tentacle beast,2x2,L1P411F1 L1P411F8,"cursed,deepsea,cave",F,1670
+3151,pair50_monster_3151,Pale bone dragon,2x2,L1P411F1 L1P411F8,"cursed,ice,cave",F,1683
+3152,pair50_monster_3152,Black panther,2x2,L1P411F1 L1P411F8,"cave,hauntedfarm,cursed",F,1684
+3153,pair50_monster_3153,Stone with teal flame wisp,2x2,L1P411F8 L1P411F8,"cursed,celestial,deepsea",F,1687
+3154,pair50_monster_3154,Grey armoured dragon skeleton,2x2,L2P411F8 L2P411F8,"cursed,cave,asylum",F,1724
+3155,pair50_monster_3155,Flowering bush beast,2x2,L1P411F1 L1P411F8,"swamp,fungal,hauntedfarm",F,1767
+3156,pair50_monster_3156,Tentacle plant with yellow claw hands,2x2,L1P411F1 L1P411F8,"swamp,fungal",F,1768
+3157,pair50_monster_3157,Tentacle plant with blue claw hands,2x2,L1P411F1 L1P411F8,"swamp,fungal,deepsea",F,1769
+3158,pair50_monster_3158,Red beetle,2x2,L1P411F1 L1P411F8,"cave,hauntedfarm,cursed",F,1770
+3159,pair50_monster_3159,Teal scarab spider,2x2,L1P411F1 L1P411F8,"cave,swamp,deepsea",F,1771
+3160,pair50_monster_3160,Red star flower plant,2x2,L1P411F1 L1P411F8,"swamp,fungal,bloodhospital",F,1772
+3161,pair50_monster_3161,Spore cluster plant,2x2,L1P411F8 L1P411F8,"fungal,swamp",F,1773
+3162,pair50_monster_3162,Grey spider beetle,2x2,L1P411F1 L1P411F8,"cave,cursed",F,1780
+3163,pair50_monster_3163,Purple horned demon hulk,2x2,L1P411F1 L1P411F8,"cursed,celestial,fungal",F,1799
+3164,pair50_monster_3164,Purple horned demon hulk B,2x2,L1P411F1 L1P411F8,"cursed,celestial,fungal",F,1800
+3165,pair50_monster_3165,Purple horned demon hulk C,2x2,L1P411F1 L1P411F8,"cursed,celestial,fungal",F,1801
+3166,pair50_monster_3166,"Horned many-armed beast, teal",2x2,L1P411F1 L1P411F8,"cursed,deepsea,cave",F,1803
+3167,pair50_monster_3167,Bone and cream beetle,2x2,L1P411F1 L1P411F8,"cursed,cave,library",F,1819
+3168,pair50_monster_3168,"Hooded crawler, red",2x2,L2P411F1 L2P411F8,"cursed,cave,bloodhospital",F,1826
+3169,pair50_monster_3169,"Hooded crawler, orange",2x2,L2P411F1 L2P411F8,"cursed,cave,lava",F,1827
+3170,pair50_monster_3170,"Horned many-armed beast, teal B",2x2,L1P411F1 L1P411F8,"cursed,deepsea,cave",F,1830
+3171,pair50_monster_3171,"Winged tentacle orchid, violet",2x2,L1P411F8 L1P411F8,"celestial,fungal,cursed",F,1833
+3172,pair50_monster_3172,"Winged tentacle orchid, green",2x2,L1P411F8 L1P411F8,"celestial,fungal,swamp",F,1834
+3173,pair50_monster_3173,"Winged tentacle orchid, teal",2x2,L1P411F8 L1P411F8,"celestial,fungal,deepsea",F,1835
+3174,pair50_monster_3174,Rune cocoon,2x2,L1P411F1 L1P411F8,"cursed,celestial,fungal",F,1836
+3175,pair50_monster_3175,Purple skull-marked demon bull,2x2,L1P411F1 L1P411F8,"cursed,celestial",F,1849
+3176,pair50_monster_3176,Spiked rock boar beast,2x2,L1P411F1 L1P411F3,"cave,hauntedfarm,cursed",F,1850
+3177,pair50_monster_3177,Bleeding red-eyed reaper,2x2,L1P411F8 L1P411F8,"cursed,bloodhospital,asylum",F,1853
+3178,pair50_monster_3178,Dark blue lion beast,2x2,L1P411F1 L1P411F2,"cursed,cave,celestial",F,1854
+3179,pair50_monster_3179,Red armoured horned bull,2x2,L1P411F1 L1P411F8,"lava,cursed,cave",F,1892
+3180,pair50_monster_3180,Dark beast with red collar,2x2,L1P411F8 L1P411F8,"cursed,cave,hauntedfarm",F,1895
+3181,pair50_monster_3181,Dark beast with red collar B,2x2,L1P411F8 L1P411F8,"cursed,cave,hauntedfarm",F,1896
+3182,pair50_monster_3182,Armoured beast with green eyes,2x2,L1P411F1 L1P411F8,"cave,cursed,asylum",F,1923
+3183,pair50_monster_3183,Fire wraith,2x2,L1P411F8 L1P411F8,"lava,cursed",F,1957
+3184,pair50_monster_3184,Purple flame wraith,2x2,L1P411F8 L1P411F8,"cursed,celestial,fungal",F,1958
+3185,pair50_monster_3185,Bone golem with green eyes,2x2,L1P411F1 L1P411F3,"cursed,cave,asylum",F,1991
+3186,pair50_monster_3186,"Grey stone golem, triple",3x3,L2P411F1 L2P411F2,"cave,cursed,celestial",F,1992
+3187,pair50_monster_3187,Blue tentacle giant,4x4,L1P411F1 L1P411F2,"deepsea,cursed,ice",F,1993
+3188,pair50_monster_3188,Purple shadow reaper,3x3,L1P411F8,"cursed,celestial,fungal",F,2039
+3189,pair50_monster_3189,"Flame raven reaper, purple",2x2,L1P411F8 L1P411F8,"cursed,celestial",F,2040
+3190,pair50_monster_3190,"Flame raven reaper, orange",2x2,L1P411F8 L1P411F8,"cursed,lava",F,2041
+3191,pair50_monster_3191,"Flame raven reaper, blue",2x2,L1P411F8 L1P411F8,"cursed,ice,celestial",F,2042
+3192,pair50_monster_3192,Grey antlered beast,2x2,L2P411F1 L2P411F8,"cursed,ice,hauntedfarm",F,2099
+3193,pair50_monster_3193,Vine-wrapped plant beast,2x2,L1P411F1 L1P411F8,"swamp,hauntedfarm,fungal",F,2102
+3194,pair50_monster_3194,Red gore blob,2x2,L1P411F1 L1P411F8,"bloodhospital,cursed",F,2109
+3195,pair50_monster_3195,"Giant scorpion, dark",2x2,L1P411F8 L1P411F8,"cave,cursed",F,2157
+3196,pair50_monster_3196,"Giant scorpion, green",2x2,L1P411F8 L1P411F8,"cave,swamp",F,2158
+3197,pair50_monster_3197,"Giant scorpion, red",2x2,L1P411F8 L1P411F8,"cave,lava",F,2159
+3198,pair50_monster_3198,Shadow shroud creature,2x2,L1P411F8,"cursed,asylum,hauntedfarm",F,2222
+3199,pair50_monster_3199,Red eye tyrant,2x2,L1P411F8 L1P411F8,"cursed,lava,fungal",F,2377
+3200,pair50_monster_3200,Blue crystal mass,2x2,L1P411F1 L1P411F8,"ice,celestial,cave",F,2378
+3201,pair50_monster_3201,"Crystal skeleton, blue",2x2,L1P411F1 L1P411F8,"ice,celestial,cursed",F,2382
+3202,pair50_monster_3202,"Crystal skeleton, blue B",2x2,L1P411F1 L1P411F8,"ice,celestial,cursed",F,2383
+3203,pair50_monster_3203,Bone beast,2x2,L1P411F1 L1P411F8,"cursed,cave",F,2385
+3204,pair50_monster_3204,Ice crystal ghost,2x2,L1P411F1 L1P411F8,"ice,celestial",F,2386
+3205,pair50_monster_3205,Grey hooded crawler,2x2,L2P411F1 L2P411F8,"cursed,cave,asylum",F,2391
+3206,pair50_monster_3206,Glowing green skeleton giant,2x2,L1P411F1 L1P411F8,"cursed,fungal,swamp",F,2393
+3207,pair50_monster_3207,"Antlered ghost horse, brown",2x2,L1P411F1 L1P411F8,"cursed,hauntedfarm",F,2400
+3208,pair50_monster_3208,"Antlered ghost horse, grey",2x2,L1P411F1 L1P411F8,"cursed,hauntedfarm,ice",F,2401
+3209,pair50_monster_3209,Ember cinder creature,3x3,L1P411F8 L1P411F8,"lava,cursed",F,2402
+3210,pair50_monster_3210,Skull-armoured beast,2x2,L1P411F8 L1P411F8,"cursed,cave,hauntedfarm",F,2403
+3211,pair50_monster_3211,Dark horned beast with violet glow,4x4,L1P411F8 L1P411F8,"cursed,celestial,fungal",F,2419
+3212,pair50_monster_3212,Dark horned beast with ember glow,4x4,L1P411F8 L1P411F8,"cursed,lava",F,2420
+3213,pair50_monster_3213,Fire head,2x2,L1P411F8 L1P411F8,"lava,cursed",F,2433
+3214,pair50_monster_3214,Skull scorpion,2x2,L1P411F8 L1P411F8,"cave,cursed,lava",F,2438
+3215,pair50_monster_3215,Hooded armoured crawler,2x2,L1P411F8 L1P411F8,"cursed,asylum,cave",F,2441
+3216,pair50_monster_3216,Dark winged creature,2x2,L1P411F8 L1P411F8,"cursed,cave",F,2442
+3217,pair50_monster_3217,Scythe spider machine,2x2,L1P411F8 L1P411F8,"asylum,cursed,cave",F,2443
+3218,pair50_monster_3218,Violet flame stalker,2x2,L1P411F8 L1P411F8,"cursed,celestial",F,2480
+3219,pair50_monster_3219,"Fire elemental, flowing",4x4,L1P411F8 L1P411F8,lava,F,2539
+3220,pair50_monster_3220,"Fire elemental, flowing B",4x4,L1P411F8 L1P411F8,lava,F,2540
+3221,pair50_monster_3221,"Horned bull beast, blue",5x5,L1P411F16 L1P411F16,"cursed,ice,deepsea",F,2541
+3222,pair50_monster_3222,"Horned bull beast, red",5x5,L1P411F16 L1P411F16,"lava,cursed",F,2542
+3223,pair50_monster_3223,"Horned bull beast, toxic green",5x5,L1P411F16 L1P411F16,"swamp,cursed,fungal",F,2543
+3224,pair50_monster_3224,Flame demon,2x2,L1P411F8 L1P411F8,"lava,cursed",F,2544
+3225,pair50_monster_3225,Blue wisp,2x2,L1P411F8 L1P411F8,"celestial,ice,deepsea",F,2610
+3226,pair50_monster_3226,Sculpted grey stone beast,2x2,L2P411F1 L2P411F8,"cursed,celestial,cave",F,2649
+3227,pair50_monster_3227,Ghostly armoured wraith,2x2,L2P432F4 L2P432F8,"cursed,celestial,asylum",F,2660
+3228,pair50_monster_3228,"Ghostly armoured wraith, white",2x2,L2P432F1 L2P432F8,"cursed,celestial,asylum",F,2661
+3229,pair50_monster_3229,Armoured stone beast with spear,2x2,L2P411F1 L2P411F8,"cave,cursed,celestial",F,2664
+3230,pair50_monster_3230,Armoured stone hound,2x2,L2P411F1 L2P411F8,"cave,cursed,celestial",F,2665
+3231,pair50_monster_3231,Armoured stone golem,2x2,L2P411F1 L2P411F8,"cave,cursed,celestial",F,2666
+3232,pair50_monster_3232,Magma elemental,2x2,L1P411F8 L1P411F8,lava,F,2668
+3233,pair50_monster_3233,"Horned demon skull, red glow",4x4,L1P411F8 L1P411F8,"cursed,lava,bloodhospital",F,2680
+3234,pair50_monster_3234,"Horned demon skull, blue glow",4x4,L1P411F8 L1P411F8,"cursed,ice,deepsea",F,2681
+3235,pair50_monster_3235,Small crimson imp,4x4,L1P411F8,"cursed,lava,bloodhospital",F,2682
+3236,pair50_monster_3236,Small blue imp,4x4,L1P411F8,"cursed,deepsea,ice",F,2683
+3237,pair50_monster_3237,Red-eyed shadow crawler,4x4,L1P412F24 L1P412F24,"cursed,bloodhospital",F,2684
+3238,pair50_monster_3238,Teal-eyed shadow crawler,4x4,L1P412F24 L1P412F24,"cursed,deepsea",F,2685
+3239,pair50_monster_3239,Cloaked white wolf,2x2,L1P411F1 L1P411F2,"cursed,ice,hauntedfarm",F,2824
+3240,pair50_monster_3240,Orc executioner with axe,2x2,L1P411F9,"cave,cursed",F,2834
+3241,pair50_monster_3241,Orc hunter,2x2,L1P411F9,"cave,hauntedfarm",F,2835
+3242,pair50_monster_3242,Orc in spiked armour,2x2,L1P411F9,"cave,cursed",F,2836
+3243,pair50_monster_3243,Orc brute,2x2,L1P411F9,"cave,hauntedfarm",F,2837
+3244,pair50_monster_3244,Orc warlock with fire staff,2x2,L1P411F9,"cave,cursed,lava",F,2838
+3245,pair50_monster_3245,"Orc spearman, tribal",2x2,L1P411F9,"cave,hauntedfarm",F,2839
+3246,pair50_monster_3246,"Orc chieftain, red crest",2x2,L1P411F9,"cave,lava,cursed",F,2840
+3247,pair50_monster_3247,Orc in black spiked armour,2x2,L1P411F9,"cave,cursed",F,2841
+3248,pair50_monster_3248,"Orc blademaster, red",2x2,L1P411F9,"cave,lava,cursed",F,2842
+3249,pair50_monster_3249,"Orc blademaster, blue",2x2,L1P411F9,"cave,ice,cursed",F,2843
+3250,pair50_monster_3250,Horned dark beast with tabard,2x2,L1P411F9,"cave,cursed",F,2844
+3251,pair50_monster_3251,Horned dark bull,2x2,L1P411F9,"cave,cursed",F,2845
+3252,pair50_monster_3252,"Horned dark bull knight, blue",2x2,L1P411F9,"cave,cursed,ice",F,2846
+3253,pair50_monster_3253,Horned bull brute,2x2,L1P411F9,"cave,cursed",F,2847
+3254,pair50_monster_3254,"Horned bull brute, ember",2x2,L1P411F9,"cave,lava,cursed",F,2848
+3255,pair50_monster_3255,Magenta glowing demon,3x3,L1P411F8,"cursed,fungal,celestial",F,2854
+3256,pair50_monster_3256,Vine troll,2x2,L1P411F9,"swamp,hauntedfarm,fungal",F,2855
+3257,pair50_monster_3257,Black tentacle reaper,2x2,L1P411F4,"cursed,deepsea,bloodhospital",F,2857
+3258,pair50_monster_3258,Purple tentacle reaper,2x2,L1P411F4,"cursed,fungal,celestial",F,2858
+3259,pair50_monster_3259,Dark spiked knight,2x2,L2P432F8 L2P432F8,"cursed,asylum,cave",F,2883
+3260,pair50_monster_3260,"Winged demon drake, violet",4x4,L1P411F8 L1P411F8,"cursed,celestial,cave",F,2893
+3261,pair50_monster_3261,"Winged demon drake, purple",4x4,L1P411F8 L1P411F8,"cursed,fungal,cave",F,2894
+3262,pair50_monster_3262,"Winged demon drake, olive",4x4,L1P411F8 L1P411F8,"cursed,swamp,cave",F,2895
+3263,pair50_monster_3263,"Winged demon drake, olive B",4x4,L1P411F8 L1P411F8,"cursed,swamp,cave",F,2896
+3264,pair50_monster_3264,Grey winged demon drake,4x4,L1P411F8 L1P411F8,"cursed,cave",F,2897
+3265,pair50_monster_3265,"Winged demon drake, blue glow",4x4,L1P411F8 L1P411F8,"cursed,deepsea,ice",F,2898
+3266,pair50_monster_3266,"Winged demon drake, red glow",4x4,L1P411F8 L1P411F8,"cursed,lava",F,2899
+3267,pair50_monster_3267,"Winged demon drake, green glow",4x4,L1P411F8 L1P411F8,"cursed,swamp",F,2900
+3268,pair50_monster_3268,"Winged demon drake, gold glow",4x4,L1P411F8 L1P411F8,"cursed,celestial",F,2901
+3269,pair50_monster_3269,Black winged drake,4x4,L1P411F8 L1P411F8,"cursed,cave",F,2906
+3270,pair50_monster_3270,"Spectral horse, blue",4x4,L1P411F8 L1P411F8,"cursed,ice,celestial",F,2909
+3271,pair50_monster_3271,Shadow beast with bone horns,4x4,L1P411F8 L1P411F8,"cursed,cave,hauntedfarm",F,2914
+3272,pair50_monster_3272,"Armoured skeletal knight, blue",2x2,L2P432F8 L2P432F8,"cursed,ice,asylum",F,2922
+3273,pair50_monster_3273,"Armoured skeletal knight, green",2x2,L2P432F8 L2P432F8,"cursed,swamp,asylum",F,2923
+3274,pair50_monster_3274,"Armoured skeletal knight, gold",2x2,L2P432F8 L2P432F8,"cursed,asylum,celestial",F,2924
+3275,pair50_monster_3275,"Armoured skeletal knight, red",2x2,L2P432F8 L2P432F8,"cursed,bloodhospital,lava",F,2925
+3276,pair50_monster_3276,"Armoured skeletal knight, grey",2x2,L2P432F8 L2P432F8,"cursed,asylum",F,2926
+3277,pair50_monster_3277,Grey skull golem with blue band,2x2,L1P411F8 L1P411F8,"cursed,cave,ice",F,2933
+3278,pair50_monster_3278,Red demon fist brute,4x4,L1P411F8 L1P411F8,"lava,cursed,cave",F,2953
+3279,pair50_monster_3279,"Crowned demon cat, brown",2x2,L1P411F1 L1P411F8,"cursed,cave",F,2974
+3280,pair50_monster_3280,"Crowned demon cat, dark",2x2,L1P411F1 L1P411F8,"cursed,cave,deepsea",F,2975
+3281,pair50_monster_3281,"Crowned demon cat, red",2x2,L1P411F1 L1P411F8,"cursed,lava,cave",F,2976
+3282,pair50_monster_3282,Grey armoured ghost,2x2,L2P432F1 L2P432F8,"cursed,asylum,celestial",F,2977
+3283,pair50_monster_3283,Grey armoured ghost B,2x2,L2P432F1 L2P432F8,"cursed,asylum,celestial",F,2978
+3284,pair50_monster_3284,Dark red maned lion beast,2x2,L1P411F1 L1P411F4,"cursed,cave,lava",F,3002
+3285,pair50_monster_3285,Black horned demon beast,2x2,L1P411F1 L1P411F2,"cursed,cave",F,3049
+3286,pair50_monster_3286,Ice spirit,2x2,L2P411F1 L2P411F8,ice,F,3121
+3287,pair50_monster_3287,Ice beast,2x2,L2P411F1 L2P411F8,ice,F,3122
+3288,pair50_monster_3288,"Mushroom tentacle monster, green",2x2,L1P411F1 L1P411F8,"fungal,swamp",F,3141
+3289,pair50_monster_3289,"Mushroom tentacle monster, violet",2x2,L1P411F1 L1P411F8,"fungal,cursed",F,3142
+3290,pair50_monster_3290,"Mushroom tentacle monster, red",2x2,L1P411F1 L1P411F8,"fungal,bloodhospital",F,3143
+3291,pair50_monster_3291,Red-eyed ogre brute,2x2,L1P411F1 L1P411F8,"cave,cursed",F,3153
+3292,pair50_monster_3292,Green horned imp,2x2,L1P411F1 L1P411F8,"cursed,swamp,cave",F,3155
+3293,pair50_monster_3293,Reaper with red orb,2x2,L1P411F1 L1P411F8,"cursed,bloodhospital,asylum",F,3157
+3294,pair50_monster_3294,Hooded shadow beast with gold,2x2,L1P411F8 L1P411F7,"cursed,celestial",F,3162
+3295,pair50_monster_3295,Armoured skull knight,2x2,L1P411F1 L1P411F8,"cursed,asylum,celestial",F,3163
+3296,pair50_monster_3296,Purple coiled dragon serpent,4x4,L1P411F8 L1P411F8,"cave,cursed,celestial",F,3164
+3297,pair50_monster_3297,Blue spectral dragon beast,2x2,L1P411F1 L1P411F8,"cursed,ice,celestial",F,3192
+3298,pair50_monster_3298,Black hooded reaper,2x2,L1P411F1 L1P411F8,"cursed,asylum,bloodhospital",F,3279
+3299,pair50_monster_3299,Black hooded reaper crawler,2x2,L1P411F1 L1P411F8,"cursed,asylum,bloodhospital",F,3280
+3300,pair50_monster_3300,"Curled pill bug, blue",2x2,L1P411F1 L1P411F8,"cave,deepsea,cursed",F,3295
+3301,pair50_monster_3301,"Curled pill bug, green",2x2,L1P411F1 L1P411F8,"cave,swamp",F,3296
+3302,pair50_monster_3302,"Curled pill bug, red",2x2,L1P411F1 L1P411F8,"cave,lava",F,3297
+3303,pair50_monster_3303,Dark armoured beast knight,2x2,L1P411F8 L1P411F8,"cursed,asylum,cave",F,3305
+3304,pair50_monster_3304,Stone head eye tyrant with green tentacles,2x2,L1P411F3,"cursed,fungal,cave",F,3312
+3305,pair50_monster_3305,Black armoured figure,2x2,L1P432F1 L1P432F7,"cursed,asylum,cave",F,3317
+3306,pair50_monster_3306,"Armoured beast, brown",2x2,L1P411F8 L1P411F8,"cave,cursed",F,3329
+3307,pair50_monster_3307,"Armoured beast, teal",2x2,L1P411F8 L1P411F8,"cave,deepsea,cursed",F,3330
+3308,pair50_monster_3308,"Armoured beast, purple",2x2,L1P411F8 L1P411F8,"cave,cursed,fungal",F,3331
+3309,pair50_monster_3309,"Armoured beast, golden",2x2,L1P411F8 L1P411F8,"cave,cursed,celestial",F,3332
+3310,pair50_monster_3310,"Ornate scorpion, purple",2x2,L1P411F16 L1P411F16,"cave,cursed",F,3339
+3311,pair50_monster_3311,"Ornate scorpion, gold",2x2,L1P411F16 L1P411F16,"cave,celestial",F,3341
+3312,pair50_monster_3312,"Ornate scorpion, black and gold",2x2,L1P411F16 L1P411F16,"cave,cursed,celestial",F,3342
+3313,pair50_monster_3313,Flaming scorpion,2x2,L1P411F8 L1P411F8,"lava,cave",F,3355
+3314,pair50_monster_3314,Blue spectral beast,2x2,L1P411F8 L1P411F8,"cursed,ice,deepsea",F,3356
+3315,pair50_monster_3315,Red and gold horned demon,2x2,L1P411F8 L1P411F8,"lava,cursed",F,3358
+3316,pair50_monster_3316,Ghostly purple apparition,2x2,L1P411F8 L1P411F8,"cursed,celestial,asylum",F,3368
+3317,pair50_monster_3317,Black wraith with red hood,2x2,L1P411F1 L1P411F8,"cursed,asylum,bloodhospital",F,3369
+3318,pair50_monster_3318,Black spider with red maw,2x2,L1P411F12 L1P411F8,"cursed,cave",F,3386
+3319,pair50_monster_3319,Small black spider with red maw,2x2,L1P411F12 L1P411F2,"cursed,cave",F,3387
+3320,pair50_monster_3320,Ice spirit knight,2x2,L1P411F12,"ice,celestial",F,3388
+3321,pair50_monster_3321,Blue frost beast,3x3,L1P411F12 L1P411F2,ice,F,3389
+3322,pair50_monster_3322,Blue serpent dragon,3x3,L1P411F12,"ice,deepsea,celestial",F,3390
+3323,pair50_monster_3323,Black spiked dragon wolf,3x3,L1P411F1 L1P411F2,"cursed,cave",F,3391
+3324,pair50_monster_3324,Green hulk,2x2,L1P411F1 L1P411F2,"swamp,cave,cursed",F,3392
+3325,pair50_monster_3325,Red and gold lizard demon,2x2,L1P411F1 L1P411F2,"lava,cursed",F,3393
+3326,pair50_monster_3326,Lava rock golem,3x3,L1P411F6,lava,F,3394
+3327,pair50_monster_3327,"Mossy rock golem, green",3x3,L1P411F1 L1P411F2,"swamp,cave,hauntedfarm",F,3395
+3328,pair50_monster_3328,Orc on lizard mount,2x2,L1P411F1 L1P411F2,"cave,swamp",F,3397
+3329,pair50_monster_3329,Purple hooded demon mage,2x2,L1P411F1 L1P411F2,"cursed,celestial,fungal",F,3398
+3330,pair50_monster_3330,Carved wooden sarcophagus,2x2,L1P411F1 L1P411F2,"cursed,library",F,3400
+3331,pair50_monster_3331,"Horned serpent, green",2x2,L1P411F4 L1P411F4,"swamp,cave",F,3401
+3332,pair50_monster_3332,"Horned serpent, purple",2x2,L1P411F4 L1P411F4,"cursed,fungal",F,3402
+3333,pair50_monster_3333,"Horned serpent, fire",2x2,L1P411F4 L1P411F4,lava,F,3403
+3334,pair50_monster_3334,"Horned serpent, blue",2x2,L1P411F4 L1P411F4,"deepsea,ice",F,3404
+3335,pair50_monster_3335,Horned spear beast,3x3,L1P411F1 L1P411F2,"cave,cursed,hauntedfarm",F,3424
+3336,pair50_monster_3336,Blue tentacle brutes,2x2,L1P411F1 L1P411F2,"deepsea,cursed,fungal",F,3425
+3337,pair50_monster_3337,"Medusa-haired eyeball, black",2x2,L1P411F56,"cursed,deepsea,fungal",F,3428
+3338,pair50_monster_3338,"Medusa-haired eyeball, red",2x2,L1P411F56,"cursed,bloodhospital,fungal",F,3429
+3339,pair50_monster_3339,"Medusa-haired eyeball, teal",2x2,L1P411F56,"cursed,deepsea,fungal",F,3430
+3340,pair50_monster_3340,"Medusa-haired eyeball, purple",2x2,L1P411F56,"cursed,fungal,celestial",F,3431
+3341,pair50_monster_3341,Black wolf beast with blade,2x2,L1P411F1 L1P411F2,"cursed,cave,hauntedfarm",F,3432
+3342,pair50_monster_3342,Red horned oni demon,2x2,L1P411F1 L1P411F2,"lava,cursed",F,3433
+3343,pair50_monster_3343,Red horned oni demon with scythe,2x2,L1P411F1 L1P411F2,"lava,cursed",F,3434
+3344,pair50_monster_3344,"Red horned oni demon, tattooed",2x2,L1P411F1 L1P411F2,"lava,cursed",F,3435
+3345,pair50_monster_3345,Dark spear stalker,3x3,L1P411F26 L1P411F8,"cursed,asylum",F,3480
+3346,pair50_monster_3346,Dark green spear stalker,3x3,L1P411F39 L1P411F8,"cursed,swamp",F,3481
+3347,pair50_monster_3347,Armoured bone-plated beast,2x2,L2P411F1 L2P411F8,"cursed,cave,celestial",F,3485
+3348,pair50_monster_3348,Purple dragon,2x2,L1P411F1 L1P411F8,"cave,cursed,celestial",F,3491
+3349,pair50_monster_3349,Molten demon dragon,2x2,L1P411F8 L1P411F8,"lava,cursed",F,3492
+3350,pair50_monster_3350,Red eyed crab,3x3,L1P411F12,"lava,cave,deepsea",F,3493
+3351,pair50_monster_3351,Red horned brute,3x3,L1P411F12 L1P411F2,"lava,cursed",F,3494
+3352,pair50_monster_3352,Chimera with serpent tail,2x2,L1P411F12 L1P411F10,"cursed,cave,hauntedfarm",F,3497
+3353,pair50_monster_3353,Ember winged wreck,2x2,L1P411F12,"lava,cursed",F,3498
+3354,pair50_monster_3354,Black raven with blue gem,2x2,L1P411F8 L1P411F8,"cursed,hauntedfarm,asylum",F,3499
+3355,pair50_monster_3355,Red armoured ogre,2x2,L1P411F8 L1P411F8,"lava,cave,cursed",F,3505
+3356,pair50_monster_3356,Spiked wood totem beast,2x2,L1P411F8 L1P411F8,"swamp,hauntedfarm,cursed",F,3510
+3357,pair50_monster_3357,Red hulk with green staff,2x2,L1P411F8 L1P411F8,"lava,cursed,cave",F,3518
+3358,pair50_monster_3358,"Hooded flame ghost, green",2x2,L1P411F8 L1P411F8,"cursed,swamp,fungal",F,3519
+3359,pair50_monster_3359,"Hooded flame ghost, red",2x2,L1P411F8 L1P411F8,"cursed,lava,bloodhospital",F,3520
+3360,pair50_monster_3360,"Hooded flame ghost, blue",2x2,L1P411F8 L1P411F8,"cursed,ice,deepsea",F,3521

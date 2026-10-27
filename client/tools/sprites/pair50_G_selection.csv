@@ -1,0 +1,2732 @@
+category,src_kind,src_id,name,biome,size,notes
+ground,item,8191,Olive stone floor 1,cursed,1x1,base ground tile (new art)
+ground,item,8192,Olive stone floor 2,cursed,1x1,base ground tile (new art)
+ground,item,8193,Olive stone floor 3,cursed,1x1,base ground tile (new art)
+ground,item,8194,Olive stone floor 4,cursed,1x1,base ground tile (new art)
+ground,item,9049,Wood plank floor 1,hauntedfarm,1x1,base ground tile (new art)
+ground,item,9050,Wood plank floor 2,hauntedfarm,1x1,base ground tile (new art)
+ground,item,9374,Wood plank floor 3,hauntedfarm,1x1,base ground tile (new art)
+ground,item,9377,Wood plank floor 4,hauntedfarm,1x1,base ground tile (new art)
+ground,item,6335,Inset rim frame 1,asylum,1x1,rim frame over floor; base=i9049
+ground,item,7676,Inset rim frame 2,asylum,1x1,rim frame over floor; base=i9049
+ground,item,11768,Inset rim frame 3,asylum,1x1,rim frame over floor; base=i9049
+ground,item,11769,Inset rim frame 4,asylum,1x1,rim frame over floor; base=i9049
+ground,item,11770,Inset rim frame 5,asylum,1x1,rim frame over floor; base=i9049
+ground,item,11771,Inset rim frame 6,asylum,1x1,rim frame over floor; base=i9049
+ground,item,5755,Grey stone edge 1,cave,1x1,overlay piece; base=i10456
+ground,item,5757,Grey stone edge 2,cave,1x1,overlay piece; base=i10456
+ground,item,5758,Grey stone edge 3,cave,1x1,overlay piece; base=i10456
+ground,item,5759,Grey stone edge 4,cave,1x1,overlay piece; base=i10456
+ground,item,5760,Grey stone edge 5,cave,1x1,overlay piece; base=i10456
+ground,item,5761,Grey stone edge 6,cave,1x1,overlay piece; base=i10456
+ground,item,5762,Grey stone edge 7,cave,1x1,overlay piece; base=i10456
+ground,item,5765,Grey stone edge 8,cave,1x1,overlay piece; base=i10456
+ground,item,6035,Grey gravel edge 1,cave,1x1,overlay piece; base=i11352
+ground,item,6036,Grey gravel edge 2,cave,1x1,overlay piece; base=i11352
+ground,item,6037,Grey gravel edge 3,cave,1x1,overlay piece; base=i11352
+ground,item,6038,Grey gravel edge 4,cave,1x1,overlay piece; base=i11352
+ground,item,6040,Grey gravel edge 5,cave,1x1,overlay piece; base=i11352
+ground,item,6042,Grey gravel edge 6,cave,1x1,overlay piece; base=i11352
+ground,item,6043,Grey gravel edge 7,cave,1x1,overlay piece; base=i11352
+ground,item,6045,Grey gravel edge 8,cave,1x1,overlay piece; base=i11352
+ground,item,6050,Grey gravel edge 9,cave,1x1,overlay piece; base=i11352
+ground,item,6051,Grey gravel edge 10,cave,1x1,overlay piece; base=i11352
+ground,item,6052,Grey gravel edge 11,cave,1x1,overlay piece; base=i11352
+ground,item,6053,Grey gravel edge 12,cave,1x1,overlay piece; base=i11352
+ground,item,6054,Grey gravel edge 13,cave,1x1,overlay piece; base=i11352
+ground,item,6055,Grey gravel edge 14,cave,1x1,overlay piece; base=i11352
+ground,item,6056,Grey gravel edge 15,cave,1x1,overlay piece; base=i11352
+ground,item,6057,Grey gravel edge 16,cave,1x1,overlay piece; base=i11352
+ground,item,6058,Grey gravel edge 17,cave,1x1,overlay piece; base=i11352
+ground,item,6059,Grey gravel edge 18,cave,1x1,overlay piece; base=i11352
+ground,item,6060,Grey gravel edge 19,cave,1x1,overlay piece; base=i11352
+ground,item,6061,Grey gravel edge 20,cave,1x1,overlay piece; base=i11352
+ground,item,6062,Grey gravel edge 21,cave,1x1,overlay piece; base=i11352
+ground,item,8057,Dark pebble edge 1,cursed,1x1,overlay piece; base=i6465
+ground,item,8058,Dark pebble edge 2,cursed,1x1,overlay piece; base=i6465
+ground,item,8061,Dark pebble edge 3,cursed,1x1,overlay piece; base=i6465
+ground,item,8062,Dark pebble edge 4,cursed,1x1,overlay piece; base=i6465
+ground,item,8069,Dark pebble edge 5,cursed,1x1,overlay piece; base=i6465
+ground,item,8070,Dark pebble edge 6,cursed,1x1,overlay piece; base=i6465
+ground,item,8071,Dark pebble edge 7,cursed,1x1,overlay piece; base=i6465
+ground,item,8072,Dark pebble edge 8,cursed,1x1,overlay piece; base=i6465
+ground,item,8073,Dark pebble edge 9,cursed,1x1,overlay piece; base=i6465
+ground,item,8074,Dark pebble edge 10,cursed,1x1,overlay piece; base=i6465
+ground,item,8076,Dark pebble edge 11,cursed,1x1,overlay piece; base=i6465
+ground,item,8077,Dark pebble edge 12,cursed,1x1,overlay piece; base=i6465
+ground,item,8078,Dark pebble edge 13,cursed,1x1,overlay piece; base=i6465
+ground,item,8079,Dark pebble edge 14,cursed,1x1,overlay piece; base=i6465
+ground,item,8080,Dark pebble edge 15,cursed,1x1,overlay piece; base=i6465
+ground,item,8106,Dark pebble edge 16,cursed,1x1,overlay piece; base=i6465
+ground,item,8107,Dark pebble edge 17,cursed,1x1,overlay piece; base=i6465
+ground,item,8108,Dark pebble edge 18,cursed,1x1,overlay piece; base=i6465
+ground,item,8109,Dark pebble edge 19,cursed,1x1,overlay piece; base=i6465
+ground,item,8110,Dark pebble edge 20,cursed,1x1,overlay piece; base=i6465
+ground,item,8111,Dark pebble edge 21,cursed,1x1,overlay piece; base=i6465
+ground,item,8113,Dark pebble edge 22,cursed,1x1,overlay piece; base=i6465
+ground,item,8114,Dark pebble edge 23,cursed,1x1,overlay piece; base=i6465
+ground,item,8115,Dark pebble edge 24,cursed,1x1,overlay piece; base=i6465
+ground,item,8116,Dark pebble edge 25,cursed,1x1,overlay piece; base=i6465
+ground,item,8117,Dark pebble edge 26,cursed,1x1,overlay piece; base=i6465
+ground,item,11097,Dark gravel patch 1,cursed,1x1,overlay piece; base=i10326
+ground,item,11098,Dark gravel patch 2,cursed,1x1,overlay piece; base=i10326
+ground,item,11099,Dark gravel patch 3,cursed,1x1,overlay piece; base=i10326
+ground,item,11100,Dark gravel patch 4,cursed,1x1,overlay piece; base=i10326
+ground,item,11101,Dark gravel patch 5,cursed,1x1,overlay piece; base=i10326
+ground,item,11102,Dark gravel patch 6,cursed,1x1,overlay piece; base=i10326
+ground,item,11103,Dark gravel patch 7,cursed,1x1,overlay piece; base=i10326
+ground,item,11104,Dark gravel patch 8,cursed,1x1,overlay piece; base=i10326
+ground,item,11105,Dark gravel patch 9,cursed,1x1,overlay piece; base=i10326
+ground,item,11106,Dark gravel patch 10,cursed,1x1,overlay piece; base=i10326
+ground,item,11107,Dark gravel patch 11,cursed,1x1,overlay piece; base=i10326
+ground,item,11108,Dark gravel patch 12,cursed,1x1,overlay piece; base=i10326
+ground,item,12793,Dark gravel patch 13,cursed,1x1,overlay piece; base=i10326
+ground,item,12794,Dark gravel patch 14,cursed,1x1,overlay piece; base=i10326
+ground,item,8164,Grey rock slab edge 1,cave,1x1,overlay piece; base=i8096
+ground,item,8165,Grey rock slab edge 2,cave,1x1,overlay piece; base=i8096
+ground,item,8166,Grey rock slab edge 3,cave,1x1,overlay piece; base=i8096
+ground,item,8167,Grey rock slab edge 4,cave,1x1,overlay piece; base=i8096
+ground,item,8168,Grey rock slab edge 5,cave,1x1,overlay piece; base=i8096
+ground,item,8169,Grey rock slab edge 6,cave,1x1,overlay piece; base=i8096
+ground,item,8170,Grey rock slab edge 7,cave,1x1,overlay piece; base=i8096
+ground,item,8171,Grey rock slab edge 8,cave,1x1,overlay piece; base=i8096
+ground,item,8172,Grey rock slab edge 9,cave,1x1,overlay piece; base=i8096
+ground,item,8173,Grey rock slab edge 10,cave,1x1,overlay piece; base=i8096
+ground,item,8174,Grey rock slab edge 11,cave,1x1,overlay piece; base=i8096
+ground,item,8175,Grey rock slab edge 12,cave,1x1,overlay piece; base=i8096
+ground,item,8176,Grey rock slab edge 13,cave,1x1,overlay piece; base=i8096
+ground,item,8177,Grey rock slab edge 14,cave,1x1,overlay piece; base=i8096
+ground,item,8178,Grey rock slab edge 15,cave,1x1,overlay piece; base=i8096
+ground,item,8179,Grey rock slab edge 16,cave,1x1,overlay piece; base=i8096
+ground,item,8180,Grey rock slab edge 17,cave,1x1,overlay piece; base=i8096
+ground,item,8181,Grey rock slab edge 18,cave,1x1,overlay piece; base=i8096
+ground,item,8182,Grey rock slab edge 19,cave,1x1,overlay piece; base=i8096
+ground,item,8183,Grey rock slab edge 20,cave,1x1,overlay piece; base=i8096
+ground,item,8184,Grey rock slab edge 21,cave,1x1,overlay piece; base=i8096
+ground,item,8185,Grey rock slab edge 22,cave,1x1,overlay piece; base=i8096
+ground,item,8186,Grey rock slab edge 23,cave,1x1,overlay piece; base=i8096
+ground,item,8187,Grey rock slab edge 24,cave,1x1,overlay piece; base=i8096
+ground,item,8257,Grey flagstone edge 1,cave,1x1,overlay piece; base=i10451
+ground,item,8258,Grey flagstone edge 2,cave,1x1,overlay piece; base=i10451
+ground,item,8259,Grey flagstone edge 3,cave,1x1,overlay piece; base=i10451
+ground,item,8260,Grey flagstone edge 4,cave,1x1,overlay piece; base=i10451
+ground,item,8261,Grey flagstone edge 5,cave,1x1,overlay piece; base=i10451
+ground,item,8262,Grey flagstone edge 6,cave,1x1,overlay piece; base=i10451
+ground,item,8263,Grey flagstone edge 7,cave,1x1,overlay piece; base=i10451
+ground,item,8264,Grey flagstone edge 8,cave,1x1,overlay piece; base=i10451
+ground,item,8265,Grey flagstone edge 9,cave,1x1,overlay piece; base=i10451
+ground,item,8266,Grey flagstone edge 10,cave,1x1,overlay piece; base=i10451
+ground,item,8267,Grey flagstone edge 11,cave,1x1,overlay piece; base=i10451
+ground,item,8268,Grey flagstone edge 12,cave,1x1,overlay piece; base=i10451
+ground,item,11340,Grey cobble edge 1,cave,1x1,overlay piece; base=i10452
+ground,item,11341,Grey cobble edge 2,cave,1x1,overlay piece; base=i10452
+ground,item,11342,Grey cobble edge 3,cave,1x1,overlay piece; base=i10452
+ground,item,11343,Grey cobble edge 4,cave,1x1,overlay piece; base=i10452
+ground,item,11344,Grey cobble edge 5,cave,1x1,overlay piece; base=i10452
+ground,item,11345,Grey cobble edge 6,cave,1x1,overlay piece; base=i10452
+ground,item,11346,Grey cobble edge 7,cave,1x1,overlay piece; base=i10452
+ground,item,11347,Grey cobble edge 8,cave,1x1,overlay piece; base=i10452
+ground,item,11348,Grey cobble edge 9,cave,1x1,overlay piece; base=i10452
+ground,item,11349,Grey cobble edge 10,cave,1x1,overlay piece; base=i10452
+ground,item,11350,Grey cobble edge 11,cave,1x1,overlay piece; base=i10452
+ground,item,11351,Grey cobble edge 12,cave,1x1,overlay piece; base=i10452
+ground,item,11353,Grey cobble edge 13,cave,1x1,overlay piece; base=i10452
+ground,item,11354,Grey cobble edge 14,cave,1x1,overlay piece; base=i10452
+ground,item,11355,Grey cobble edge 15,cave,1x1,overlay piece; base=i10452
+ground,item,11356,Grey cobble edge 16,cave,1x1,overlay piece; base=i10452
+ground,item,11357,Grey cobble edge 17,cave,1x1,overlay piece; base=i10452
+ground,item,11358,Grey cobble edge 18,cave,1x1,overlay piece; base=i10452
+ground,item,11359,Grey cobble edge 19,cave,1x1,overlay piece; base=i10452
+ground,item,11360,Grey cobble edge 20,cave,1x1,overlay piece; base=i10452
+ground,item,11361,Grey cobble edge 21,cave,1x1,overlay piece; base=i10452
+ground,item,11362,Grey cobble edge 22,cave,1x1,overlay piece; base=i10452
+ground,item,11363,Grey cobble edge 23,cave,1x1,overlay piece; base=i10452
+ground,item,11364,Grey cobble edge 24,cave,1x1,overlay piece; base=i10452
+ground,item,9661,Brown white cobble edge 1,cave,1x1,overlay piece; base=i11339
+ground,item,9662,Brown white cobble edge 2,cave,1x1,overlay piece; base=i11339
+ground,item,9663,Brown white cobble edge 3,cave,1x1,overlay piece; base=i11339
+ground,item,9664,Brown white cobble edge 4,cave,1x1,overlay piece; base=i11339
+ground,item,9665,Brown white cobble edge 5,cave,1x1,overlay piece; base=i11339
+ground,item,9666,Brown white cobble edge 6,cave,1x1,overlay piece; base=i11339
+ground,item,9667,Brown white cobble edge 7,cave,1x1,overlay piece; base=i11339
+ground,item,9668,Brown white cobble edge 8,cave,1x1,overlay piece; base=i11339
+ground,item,9669,Brown white cobble edge 9,cave,1x1,overlay piece; base=i11339
+ground,item,9670,Brown white cobble edge 10,cave,1x1,overlay piece; base=i11339
+ground,item,9671,Brown white cobble edge 11,cave,1x1,overlay piece; base=i11339
+ground,item,9672,Brown white cobble edge 12,cave,1x1,overlay piece; base=i11339
+ground,item,9673,Brown white cobble edge 13,cave,1x1,overlay piece; base=i11339
+ground,item,9674,Brown white cobble edge 14,cave,1x1,overlay piece; base=i11339
+ground,item,9675,Brown white cobble edge 15,cave,1x1,overlay piece; base=i11339
+ground,item,9676,Brown white cobble edge 16,cave,1x1,overlay piece; base=i11339
+ground,item,9677,Brown white cobble edge 17,cave,1x1,overlay piece; base=i11339
+ground,item,9678,Brown white cobble edge 18,cave,1x1,overlay piece; base=i11339
+ground,item,9679,Brown white cobble edge 19,cave,1x1,overlay piece; base=i11339
+ground,item,9680,Brown white cobble edge 20,cave,1x1,overlay piece; base=i11339
+ground,item,9681,Brown white cobble edge 21,cave,1x1,overlay piece; base=i11339
+ground,item,9682,Brown white cobble edge 22,cave,1x1,overlay piece; base=i11339
+ground,item,9683,Brown white cobble edge 23,cave,1x1,overlay piece; base=i11339
+ground,item,9684,Brown white cobble edge 24,cave,1x1,overlay piece; base=i11339
+ground,item,10463,Grey slab edge 1,cave,1x1,overlay piece; base=i10456
+ground,item,10466,Grey slab edge 2,cave,1x1,overlay piece; base=i10456
+ground,item,10468,Grey slab edge 3,cave,1x1,overlay piece; base=i10456
+ground,item,10473,Grey slab edge 4,cave,1x1,overlay piece; base=i10456
+ground,item,10474,Grey slab edge 5,cave,1x1,overlay piece; base=i10456
+ground,item,10475,Grey slab edge 6,cave,1x1,overlay piece; base=i10456
+ground,item,10476,Grey slab edge 7,cave,1x1,overlay piece; base=i10456
+ground,item,10477,Grey slab edge 8,cave,1x1,overlay piece; base=i10456
+ground,item,10478,Grey slab edge 9,cave,1x1,overlay piece; base=i10456
+ground,item,10479,Grey slab edge 10,cave,1x1,overlay piece; base=i10456
+ground,item,10480,Grey slab edge 11,cave,1x1,overlay piece; base=i10456
+ground,item,10481,Grey slab edge 12,cave,1x1,overlay piece; base=i10456
+ground,item,10482,Grey slab edge 13,cave,1x1,overlay piece; base=i10456
+ground,item,10483,Grey slab edge 14,cave,1x1,overlay piece; base=i10456
+ground,item,10484,Grey slab edge 15,cave,1x1,overlay piece; base=i10456
+ground,item,10485,Grey slab edge 16,cave,1x1,overlay piece; base=i10456
+ground,item,10486,Grey slab edge 17,cave,1x1,overlay piece; base=i10456
+ground,item,10487,Grey slab edge 18,cave,1x1,overlay piece; base=i10456
+ground,item,10488,Grey slab edge 19,cave,1x1,overlay piece; base=i10456
+ground,item,10489,Grey slab edge 20,cave,1x1,overlay piece; base=i10456
+ground,item,10490,Grey slab edge 21,cave,1x1,overlay piece; base=i10456
+ground,item,10491,Grey slab edge 22,cave,1x1,overlay piece; base=i10456
+ground,item,10492,Grey slab edge 23,cave,1x1,overlay piece; base=i10456
+ground,item,10493,Grey slab edge 24,cave,1x1,overlay piece; base=i10456
+ground,item,10494,Grey slab edge 25,cave,1x1,overlay piece; base=i10456
+ground,item,10495,Grey slab edge 26,cave,1x1,overlay piece; base=i10456
+ground,item,10496,Grey slab edge 27,cave,1x1,overlay piece; base=i10456
+ground,item,11258,Grey stepping stone 1,cave,1x1,overlay piece; base=i11496
+ground,item,11259,Grey stepping stone 2,cave,1x1,overlay piece; base=i11496
+ground,item,11260,Grey stepping stone 3,cave,1x1,overlay piece; base=i11496
+ground,item,11261,Grey stepping stone 4,cave,1x1,overlay piece; base=i11496
+ground,item,11262,Grey stepping stone 5,cave,1x1,overlay piece; base=i11496
+ground,item,11263,Grey stepping stone 6,cave,1x1,overlay piece; base=i11496
+ground,item,11264,Grey stepping stone 7,cave,1x1,overlay piece; base=i11496
+ground,item,11274,Grey stepping stone 8,cave,1x1,overlay piece; base=i11496
+ground,item,11882,Grey stepping stone 9,cave,1x1,overlay piece; base=i11496
+ground,item,11883,Grey stepping stone 10,cave,1x1,overlay piece; base=i11496
+ground,item,11884,Grey stepping stone 11,cave,1x1,overlay piece; base=i11496
+ground,item,11885,Grey stepping stone 12,cave,1x1,overlay piece; base=i11496
+ground,item,11886,Grey stepping stone 13,cave,1x1,overlay piece; base=i11496
+ground,item,11887,Grey stepping stone 14,cave,1x1,overlay piece; base=i11496
+ground,item,11888,Grey stepping stone 15,cave,1x1,overlay piece; base=i11496
+ground,item,7614,Brown flagstone edge 1,cave,1x1,overlay piece; base=i7622
+ground,item,7615,Brown flagstone edge 2,cave,1x1,overlay piece; base=i7622
+ground,item,7618,Brown flagstone edge 3,cave,1x1,overlay piece; base=i7622
+ground,item,7619,Brown flagstone edge 4,cave,1x1,overlay piece; base=i7622
+ground,item,7620,Brown flagstone edge 5,cave,1x1,overlay piece; base=i7622
+ground,item,7621,Brown flagstone edge 6,cave,1x1,overlay piece; base=i7622
+ground,item,6089,Dark rocky earth edge 1,cursed,1x1,overlay piece; base=i6915
+ground,item,6090,Dark rocky earth edge 2,cursed,1x1,overlay piece; base=i6915
+ground,item,6091,Dark rocky earth edge 3,cursed,1x1,overlay piece; base=i6915
+ground,item,6092,Dark rocky earth edge 4,cursed,1x1,overlay piece; base=i6915
+ground,item,6093,Dark rocky earth edge 5,cursed,1x1,overlay piece; base=i6915
+ground,item,6094,Dark rocky earth edge 6,cursed,1x1,overlay piece; base=i6915
+ground,item,6095,Dark rocky earth edge 7,cursed,1x1,overlay piece; base=i6915
+ground,item,6096,Dark rocky earth edge 8,cursed,1x1,overlay piece; base=i6915
+ground,item,6097,Dark rocky earth edge 9,cursed,1x1,overlay piece; base=i6915
+ground,item,6098,Dark rocky earth edge 10,cursed,1x1,overlay piece; base=i6915
+ground,item,6099,Dark rocky earth edge 11,cursed,1x1,overlay piece; base=i6915
+ground,item,6100,Dark rocky earth edge 12,cursed,1x1,overlay piece; base=i6915
+ground,item,6101,Dark rocky earth edge 13,cursed,1x1,overlay piece; base=i6915
+ground,item,6497,Dark earth edge 1,cursed,1x1,overlay piece; base=i6496
+ground,item,6498,Dark earth edge 2,cursed,1x1,overlay piece; base=i6496
+ground,item,6499,Dark earth edge 3,cursed,1x1,overlay piece; base=i6496
+ground,item,6500,Dark earth edge 4,cursed,1x1,overlay piece; base=i6496
+ground,item,6501,Dark earth edge 5,cursed,1x1,overlay piece; base=i6496
+ground,item,6502,Dark earth edge 6,cursed,1x1,overlay piece; base=i6496
+ground,item,6503,Dark earth edge 7,cursed,1x1,overlay piece; base=i6496
+ground,item,6504,Dark earth edge 8,cursed,1x1,overlay piece; base=i6496
+ground,item,6505,Dark earth edge 9,cursed,1x1,overlay piece; base=i6496
+ground,item,6506,Dark earth edge 10,cursed,1x1,overlay piece; base=i6496
+ground,item,6507,Dark earth edge 11,cursed,1x1,overlay piece; base=i6496
+ground,item,6508,Dark earth edge 12,cursed,1x1,overlay piece; base=i6496
+ground,item,6609,Dark earth edge 13,cursed,1x1,overlay piece; base=i6496
+ground,item,6610,Dark earth edge 14,cursed,1x1,overlay piece; base=i6496
+ground,item,6611,Dark earth edge 15,cursed,1x1,overlay piece; base=i6496
+ground,item,6612,Dark earth edge 16,cursed,1x1,overlay piece; base=i6496
+ground,item,6613,Dark earth edge 17,cursed,1x1,overlay piece; base=i6496
+ground,item,6614,Dark earth edge 18,cursed,1x1,overlay piece; base=i6496
+ground,item,6616,Dark earth edge 19,cursed,1x1,overlay piece; base=i6496
+ground,item,6617,Dark earth edge 20,cursed,1x1,overlay piece; base=i6496
+ground,item,6618,Dark earth edge 21,cursed,1x1,overlay piece; base=i6496
+ground,item,6619,Dark earth edge 22,cursed,1x1,overlay piece; base=i6496
+ground,item,6620,Dark earth edge 23,cursed,1x1,overlay piece; base=i6496
+ground,item,8922,Rust earth edge 1,lava,1x1,overlay piece; base=i11787
+ground,item,8923,Rust earth edge 2,lava,1x1,overlay piece; base=i11787
+ground,item,8924,Rust earth edge 3,lava,1x1,overlay piece; base=i11787
+ground,item,8925,Rust earth edge 4,lava,1x1,overlay piece; base=i11787
+ground,item,8926,Rust earth edge 5,lava,1x1,overlay piece; base=i11787
+ground,item,8927,Rust earth edge 6,lava,1x1,overlay piece; base=i11787
+ground,item,8928,Rust earth edge 7,lava,1x1,overlay piece; base=i11787
+ground,item,8929,Rust earth edge 8,lava,1x1,overlay piece; base=i11787
+ground,item,8930,Rust earth edge 9,lava,1x1,overlay piece; base=i11787
+ground,item,8931,Rust earth edge 10,lava,1x1,overlay piece; base=i11787
+ground,item,11788,Rust earth edge 11,lava,1x1,overlay piece; base=i11787
+ground,item,11789,Rust earth edge 12,lava,1x1,overlay piece; base=i11787
+ground,item,11790,Rust earth edge 13,lava,1x1,overlay piece; base=i11787
+ground,item,11791,Rust earth edge 14,lava,1x1,overlay piece; base=i11787
+ground,item,11792,Rust earth edge 15,lava,1x1,overlay piece; base=i11787
+ground,item,11793,Rust earth edge 16,lava,1x1,overlay piece; base=i11787
+ground,item,11794,Rust earth edge 17,lava,1x1,overlay piece; base=i11787
+ground,item,11795,Rust earth edge 18,lava,1x1,overlay piece; base=i11787
+ground,item,11796,Rust earth edge 19,lava,1x1,overlay piece; base=i11787
+ground,item,11797,Rust earth edge 20,lava,1x1,overlay piece; base=i11787
+ground,item,11798,Rust earth edge 21,lava,1x1,overlay piece; base=i11787
+ground,item,11799,Rust earth edge 22,lava,1x1,overlay piece; base=i11787
+ground,item,7492,Red clay edge 1,lava,1x1,overlay piece; base=i7489
+ground,item,7493,Red clay edge 2,lava,1x1,overlay piece; base=i7489
+ground,item,7494,Red clay edge 3,lava,1x1,overlay piece; base=i7489
+ground,item,7495,Red clay edge 4,lava,1x1,overlay piece; base=i7489
+ground,item,7500,Red clay edge 5,lava,1x1,overlay piece; base=i7489
+ground,item,7501,Red clay edge 6,lava,1x1,overlay piece; base=i7489
+ground,item,7502,Red clay edge 7,lava,1x1,overlay piece; base=i7489
+ground,item,7503,Red clay edge 8,lava,1x1,overlay piece; base=i7489
+ground,item,5924,Gold inlay strip 1,lava,1x1,overlay piece; base=i9616
+ground,item,5926,Gold inlay strip 2,lava,1x1,overlay piece; base=i9616
+ground,item,5927,Gold inlay strip 3,lava,1x1,overlay piece; base=i9616
+ground,item,5929,Gold inlay strip 4,lava,1x1,overlay piece; base=i9616
+ground,item,13060,Black floor crack 1,cursed,1x1,overlay piece; base=i10451
+ground,item,13061,Black floor crack 2,cursed,1x1,overlay piece; base=i10451
+ground,item,13062,Black floor crack 3,cursed,1x1,overlay piece; base=i10451
+ground,item,13064,Black floor crack 4,cursed,1x1,overlay piece; base=i10451
+ground,item,13065,Black floor crack 5,cursed,1x1,overlay piece; base=i10451
+ground,item,13066,Black floor crack 6,cursed,1x1,overlay piece; base=i10451
+ground,item,13067,Black floor crack 7,cursed,1x1,overlay piece; base=i10451
+ground,item,13072,Large black floor crack 1,cursed,2x2,overlay piece; base=i10451
+ground,item,13073,Large black floor crack 2,cursed,2x2,overlay piece; base=i10451
+ground,item,13074,Large black floor crack 3,cursed,2x2,overlay piece; base=i10451
+ground,item,13075,Large black floor crack 4,cursed,2x2,overlay piece; base=i10451
+ground,item,11109,Wood plank cut tile 1,hauntedfarm,1x1,overlay piece; base=i11072
+ground,item,11110,Wood plank cut tile 2,hauntedfarm,1x1,overlay piece; base=i11072
+ground,item,11111,Wood plank cut tile 3,hauntedfarm,1x1,overlay piece; base=i11072
+ground,item,11112,Wood plank cut tile 4,hauntedfarm,1x1,overlay piece; base=i11072
+ground,item,11113,Wood plank cut tile 5,hauntedfarm,1x1,overlay piece; base=i11072
+ground,item,11114,Wood plank cut tile 6,hauntedfarm,1x1,overlay piece; base=i11072
+ground,item,11115,Wood plank cut tile 7,hauntedfarm,1x1,overlay piece; base=i11072
+ground,item,11117,Wood plank cut tile 8,hauntedfarm,1x1,overlay piece; base=i11072
+ground,item,11119,Wood plank cut tile 9,hauntedfarm,1x1,overlay piece; base=i11072
+ground,item,11120,Wood plank cut tile 10,hauntedfarm,1x1,overlay piece; base=i11072
+ground,item,11121,Wood plank cut tile 11,hauntedfarm,1x1,overlay piece; base=i11072
+ground,item,11122,Wood plank cut tile 12,hauntedfarm,1x1,overlay piece; base=i11072
+ground,item,11123,Wood plank cut tile 13,hauntedfarm,1x1,overlay piece; base=i11072
+ground,item,11124,Wood plank cut tile 14,hauntedfarm,1x1,overlay piece; base=i11072
+ground,item,11125,Wood plank cut tile 15,hauntedfarm,1x1,overlay piece; base=i11072
+ground,item,11126,Wood plank cut tile 16,hauntedfarm,1x1,overlay piece; base=i11072
+ground,item,11127,Wood plank cut tile 17,hauntedfarm,1x1,overlay piece; base=i11072
+ground,item,11128,Wood plank cut tile 18,hauntedfarm,1x1,overlay piece; base=i11072
+ground,item,11129,Wood plank cut tile 19,hauntedfarm,1x1,overlay piece; base=i11072
+ground,item,11130,Wood plank cut tile 20,hauntedfarm,1x1,overlay piece; base=i11072
+ground,item,11131,Wood plank cut tile 21,hauntedfarm,1x1,overlay piece; base=i11072
+ground,item,11132,Wood plank cut tile 22,hauntedfarm,1x1,overlay piece; base=i11072
+ground,item,11133,Wood plank cut tile 23,hauntedfarm,1x1,overlay piece; base=i11072
+ground,item,11134,Wood plank cut tile 24,hauntedfarm,1x1,overlay piece; base=i11072
+ground,item,11135,Wood plank cut tile 25,hauntedfarm,1x1,overlay piece; base=i11072
+ground,item,11202,Wood plank cut tile 26,hauntedfarm,1x1,overlay piece; base=i11072
+ground,item,11203,Wood plank cut tile 27,hauntedfarm,1x1,overlay piece; base=i11072
+ground,item,11204,Wood plank cut tile 28,hauntedfarm,1x1,overlay piece; base=i11072
+ground,item,11205,Wood plank cut tile 29,hauntedfarm,1x1,overlay piece; base=i11072
+ground,item,11206,Wood plank cut tile 30,hauntedfarm,1x1,overlay piece; base=i11072
+ground,item,11207,Wood plank cut tile 31,hauntedfarm,1x1,overlay piece; base=i11072
+ground,item,11208,Wood plank cut tile 32,hauntedfarm,1x1,overlay piece; base=i11072
+ground,item,11209,Wood plank cut tile 33,hauntedfarm,1x1,overlay piece; base=i11072
+ground,item,11210,Wood plank cut tile 34,hauntedfarm,1x1,overlay piece; base=i11072
+ground,item,11211,Wood plank cut tile 35,hauntedfarm,1x1,overlay piece; base=i11072
+ground,item,11212,Wood plank cut tile 36,hauntedfarm,1x1,overlay piece; base=i11072
+ground,item,11213,Wood plank cut tile 37,hauntedfarm,1x1,overlay piece; base=i11072
+ground,item,11214,Wood plank cut tile 38,hauntedfarm,1x1,overlay piece; base=i11072
+ground,item,11215,Wood plank cut tile 39,hauntedfarm,1x1,overlay piece; base=i11072
+ground,item,11216,Wood plank cut tile 40,hauntedfarm,1x1,overlay piece; base=i11072
+ground,item,11218,Wood plank cut tile 41,hauntedfarm,1x1,overlay piece; base=i11072
+ground,item,11219,Wood plank cut tile 42,hauntedfarm,1x1,overlay piece; base=i11072
+ground,item,11220,Wood plank cut tile 43,hauntedfarm,1x1,overlay piece; base=i11072
+ground,item,11222,Wood plank cut tile 44,hauntedfarm,1x1,overlay piece; base=i11072
+ground,item,11223,Wood plank cut tile 45,hauntedfarm,1x1,overlay piece; base=i11072
+ground,item,11224,Wood plank cut tile 46,hauntedfarm,2x2,overlay piece; base=i11072
+ground,item,11225,Wood plank cut tile 47,hauntedfarm,2x2,overlay piece; base=i11072
+ground,item,11226,Wood plank cut tile 48,hauntedfarm,1x1,overlay piece; base=i11072
+ground,item,11227,Wood plank cut tile 49,hauntedfarm,1x1,overlay piece; base=i11072
+ground,item,11229,Wood plank cut tile 50,hauntedfarm,2x2,overlay piece; base=i11072
+ground,item,11230,Wood plank cut tile 51,hauntedfarm,2x1,overlay piece; base=i11072
+ground,item,11232,Wood plank cut tile 52,hauntedfarm,1x1,overlay piece; base=i11072
+ground,item,9686,Dark plank border 1,hauntedfarm,1x1,overlay piece; base=i11500
+ground,item,9687,Dark plank border 2,hauntedfarm,1x1,overlay piece; base=i11500
+ground,item,9688,Dark plank border 3,hauntedfarm,1x1,overlay piece; base=i11500
+ground,item,9689,Dark plank border 4,hauntedfarm,1x1,overlay piece; base=i11500
+ground,item,9690,Dark plank border 5,hauntedfarm,1x1,overlay piece; base=i11500
+ground,item,9691,Dark plank border 6,hauntedfarm,1x1,overlay piece; base=i11500
+ground,item,9692,Dark plank border 7,hauntedfarm,1x1,overlay piece; base=i11500
+ground,item,9695,Dark plank border 8,hauntedfarm,1x1,overlay piece; base=i11500
+ground,item,9696,Dark plank border 9,hauntedfarm,1x1,overlay piece; base=i11500
+ground,item,9697,Dark plank border 10,hauntedfarm,1x1,overlay piece; base=i11500
+ground,item,11073,Dark plank border 11,hauntedfarm,1x1,overlay piece; base=i11500
+ground,item,11074,Dark plank border 12,hauntedfarm,1x1,overlay piece; base=i11500
+ground,item,11077,Dark plank border 13,hauntedfarm,1x1,overlay piece; base=i11500
+ground,item,11078,Dark plank border 14,hauntedfarm,1x1,overlay piece; base=i11500
+ground,item,11079,Dark plank border 15,hauntedfarm,1x1,overlay piece; base=i11500
+ground,item,11080,Dark plank border 16,hauntedfarm,1x1,overlay piece; base=i11500
+ground,item,11081,Dark plank border 17,hauntedfarm,1x1,overlay piece; base=i11500
+ground,item,11082,Dark plank border 18,hauntedfarm,1x1,overlay piece; base=i11500
+ground,item,11083,Dark plank border 19,hauntedfarm,1x1,overlay piece; base=i11500
+ground,item,11085,Dark plank border 20,hauntedfarm,1x1,overlay piece; base=i11500
+ground,item,11086,Dark plank border 21,hauntedfarm,1x1,overlay piece; base=i11500
+ground,item,11087,Dark plank border 22,hauntedfarm,1x1,overlay piece; base=i11500
+ground,item,11088,Dark plank border 23,hauntedfarm,1x1,overlay piece; base=i11500
+ground,item,11089,Dark plank border 24,hauntedfarm,1x1,overlay piece; base=i11500
+ground,item,11091,Dark plank border 25,hauntedfarm,1x1,overlay piece; base=i11500
+ground,item,11092,Dark plank border 26,hauntedfarm,1x1,overlay piece; base=i11500
+ground,item,11093,Dark plank border 27,hauntedfarm,1x1,overlay piece; base=i11500
+ground,item,11094,Dark plank border 28,hauntedfarm,1x1,overlay piece; base=i11500
+ground,item,11095,Dark plank border 29,hauntedfarm,1x1,overlay piece; base=i11500
+ground,item,11096,Dark plank border 30,hauntedfarm,1x1,overlay piece; base=i11500
+ground,item,12593,Dark plank border 31,hauntedfarm,1x1,overlay piece; base=i11500
+ground,item,12594,Dark plank border 32,hauntedfarm,1x1,overlay piece; base=i11500
+ground,item,12595,Dark plank border 33,hauntedfarm,1x1,overlay piece; base=i11500
+ground,item,12596,Dark plank border 34,hauntedfarm,1x1,overlay piece; base=i11500
+ground,item,12597,Dark plank border 35,hauntedfarm,1x1,overlay piece; base=i11500
+ground,item,12598,Dark plank border 36,hauntedfarm,1x1,overlay piece; base=i11500
+ground,item,12599,Dark plank border 37,hauntedfarm,1x1,overlay piece; base=i11500
+ground,item,12601,Dark plank border 38,hauntedfarm,1x1,overlay piece; base=i11500
+ground,item,12602,Dark plank border 39,hauntedfarm,1x1,overlay piece; base=i11500
+ground,item,12603,Dark plank border 40,hauntedfarm,1x1,overlay piece; base=i11500
+ground,item,12604,Dark plank border 41,hauntedfarm,1x1,overlay piece; base=i11500
+ground,item,9781,Log plank edge 1,hauntedfarm,1x1,overlay piece; base=i9698
+ground,item,9782,Log plank edge 2,hauntedfarm,1x1,overlay piece; base=i9698
+ground,item,9783,Log plank edge 3,hauntedfarm,1x1,overlay piece; base=i9698
+ground,item,9784,Log plank edge 4,hauntedfarm,1x1,overlay piece; base=i9698
+ground,item,9786,Log plank edge 5,hauntedfarm,1x1,overlay piece; base=i9698
+ground,item,9787,Log plank edge 6,hauntedfarm,1x1,overlay piece; base=i9698
+ground,item,9788,Log plank edge 7,hauntedfarm,1x1,overlay piece; base=i9698
+ground,item,9789,Log plank edge 8,hauntedfarm,1x1,overlay piece; base=i9698
+ground,item,9790,Log plank edge 9,hauntedfarm,1x1,overlay piece; base=i9698
+ground,item,9791,Log plank edge 10,hauntedfarm,1x1,overlay piece; base=i9698
+ground,item,9792,Log plank edge 11,hauntedfarm,1x1,overlay piece; base=i9698
+ground,item,9798,Log plank edge 12,hauntedfarm,1x1,overlay piece; base=i9698
+ground,item,9799,Log plank edge 13,hauntedfarm,1x1,overlay piece; base=i9698
+ground,item,9800,Log plank edge 14,hauntedfarm,1x1,overlay piece; base=i9698
+ground,item,9801,Log plank edge 15,hauntedfarm,1x1,overlay piece; base=i9698
+ground,item,9802,Log plank edge 16,hauntedfarm,1x1,overlay piece; base=i9698
+ground,item,9804,Log plank edge 17,hauntedfarm,1x1,overlay piece; base=i9698
+ground,item,9805,Log plank edge 18,hauntedfarm,1x1,overlay piece; base=i9698
+ground,item,9806,Log plank edge 19,hauntedfarm,1x1,overlay piece; base=i9698
+ground,item,9807,Log plank edge 20,hauntedfarm,1x1,overlay piece; base=i9698
+ground,item,9813,Log plank edge 21,hauntedfarm,1x1,overlay piece; base=i9698
+ground,item,9815,Log plank edge 22,hauntedfarm,1x1,overlay piece; base=i9698
+ground,item,9816,Log plank edge 23,hauntedfarm,1x1,overlay piece; base=i9698
+ground,item,9817,Log plank edge 24,hauntedfarm,1x1,overlay piece; base=i9698
+ground,item,9818,Log plank edge 25,hauntedfarm,1x1,overlay piece; base=i9698
+ground,item,9820,Log plank edge 26,hauntedfarm,1x1,overlay piece; base=i9698
+ground,item,9821,Log plank edge 27,hauntedfarm,1x1,overlay piece; base=i9698
+ground,item,9822,Log plank edge 28,hauntedfarm,1x1,overlay piece; base=i9698
+ground,item,9823,Log plank edge 29,hauntedfarm,1x1,overlay piece; base=i9698
+ground,item,9824,Log plank edge 30,hauntedfarm,1x1,overlay piece; base=i9698
+ground,item,6537,Green carpet 1,asylum,1x1,"overlay piece, self-contained"
+ground,item,6538,Green carpet 2,asylum,1x1,"overlay piece, self-contained"
+ground,item,6539,Green carpet 3,asylum,1x1,"overlay piece, self-contained"
+ground,item,6540,Green carpet 4,asylum,1x1,"overlay piece, self-contained"
+ground,item,6541,Green carpet 5,asylum,1x1,"overlay piece, self-contained"
+ground,item,6542,Green carpet 6,asylum,1x1,"overlay piece, self-contained"
+ground,item,6543,Green carpet 7,asylum,1x1,"overlay piece, self-contained"
+ground,item,6544,Green carpet 8,asylum,1x1,"overlay piece, self-contained"
+ground,item,6546,Red carpet 1,bloodhospital,1x1,"overlay piece, self-contained"
+ground,item,6547,Red carpet 2,bloodhospital,1x1,"overlay piece, self-contained"
+ground,item,6548,Red carpet 3,bloodhospital,1x1,"overlay piece, self-contained"
+ground,item,6549,Red carpet 4,bloodhospital,1x1,"overlay piece, self-contained"
+ground,item,6550,Red carpet 5,bloodhospital,1x1,"overlay piece, self-contained"
+ground,item,6551,Red carpet 6,bloodhospital,1x1,"overlay piece, self-contained"
+ground,item,6552,Red carpet 7,bloodhospital,1x1,"overlay piece, self-contained"
+ground,item,6553,Red carpet 8,bloodhospital,1x1,"overlay piece, self-contained"
+ground,item,7623,Crimson carpet 1,library,1x1,"overlay piece, self-contained"
+ground,item,7624,Crimson carpet 2,library,1x1,"overlay piece, self-contained"
+ground,item,7625,Crimson carpet 3,library,1x1,"overlay piece, self-contained"
+ground,item,7626,Crimson carpet 4,library,1x1,"overlay piece, self-contained"
+ground,item,7628,Crimson carpet 5,library,1x1,"overlay piece, self-contained"
+ground,item,9542,Gold blue inlay trim 1,celestial,1x1,overlay piece; base=i6472
+ground,item,9544,Gold blue inlay trim 2,celestial,1x1,overlay piece; base=i6472
+ground,item,9545,Gold blue inlay trim 3,celestial,1x1,overlay piece; base=i6472
+ground,item,9546,Gold blue inlay trim 4,celestial,1x1,overlay piece; base=i6472
+ground,item,9548,Gold blue inlay trim 5,celestial,1x1,overlay piece; base=i6472
+ground,item,9550,Gold blue inlay trim 6,celestial,1x1,overlay piece; base=i6472
+ground,item,9552,Gold blue inlay trim 7,celestial,1x1,overlay piece; base=i6472
+ground,item,9554,Gold blue inlay trim 8,celestial,1x1,overlay piece; base=i6472
+ground,item,9555,Gold blue inlay trim 9,celestial,1x1,overlay piece; base=i6472
+ground,item,9556,Gold blue inlay trim 10,celestial,1x1,overlay piece; base=i6472
+ground,item,9558,Gold blue inlay trim 11,celestial,1x1,overlay piece; base=i6472
+ground,item,9560,Gold blue inlay trim 12,celestial,1x1,overlay piece; base=i6472
+ground,item,9624,Black marble gold tile 1,celestial,1x1,"overlay piece, self-contained"
+ground,item,9625,Black marble gold tile 2,celestial,1x1,"overlay piece, self-contained"
+ground,item,9626,Black marble gold tile 3,celestial,1x1,"overlay piece, self-contained"
+ground,item,9627,Black marble gold tile 4,celestial,1x1,"overlay piece, self-contained"
+ground,item,9628,Black marble gold tile 5,celestial,1x1,"overlay piece, self-contained"
+ground,item,9629,Black marble gold tile 6,celestial,1x1,"overlay piece, self-contained"
+ground,item,9630,Black marble gold tile 7,celestial,1x1,"overlay piece, self-contained"
+ground,item,9631,Black marble gold tile 8,celestial,1x1,"overlay piece, self-contained"
+ground,item,6237,Ice edge 1,ice,1x1,overlay piece; base=i6286
+ground,item,6238,Ice edge 2,ice,1x1,overlay piece; base=i6286
+ground,item,6239,Ice edge 3,ice,1x1,overlay piece; base=i6286
+ground,item,6240,Ice edge 4,ice,1x1,overlay piece; base=i6286
+ground,item,6241,Ice edge 5,ice,1x1,overlay piece; base=i6286
+ground,item,6242,Ice edge 6,ice,1x1,overlay piece; base=i6286
+ground,item,6243,Ice edge 7,ice,1x1,overlay piece; base=i6286
+ground,item,6244,Ice edge 8,ice,1x1,overlay piece; base=i6286
+ground,item,6245,Ice edge 9,ice,1x1,overlay piece; base=i6286
+ground,item,6246,Ice edge 10,ice,1x1,overlay piece; base=i6286
+ground,item,6247,Ice edge 11,ice,1x1,overlay piece; base=i6286
+ground,item,6248,Ice edge 12,ice,1x1,overlay piece; base=i6286
+ground,item,6250,Ice edge 13,ice,1x1,overlay piece; base=i6286
+ground,item,6251,Ice edge 14,ice,1x1,overlay piece; base=i6286
+ground,item,6252,Ice edge 15,ice,1x1,overlay piece; base=i6286
+ground,item,6253,Ice edge 16,ice,1x1,overlay piece; base=i6286
+ground,item,6254,Ice edge 17,ice,1x1,overlay piece; base=i6286
+ground,item,6255,Ice edge 18,ice,1x1,overlay piece; base=i6286
+ground,item,6256,Ice edge 19,ice,1x1,overlay piece; base=i6286
+ground,item,6257,Ice edge 20,ice,1x1,overlay piece; base=i6286
+ground,item,6258,Ice edge 21,ice,1x1,overlay piece; base=i6286
+ground,item,6259,Ice edge 22,ice,1x1,overlay piece; base=i6286
+ground,item,6260,Ice edge 23,ice,1x1,overlay piece; base=i6286
+ground,item,6261,Ice edge 24,ice,1x1,overlay piece; base=i6286
+ground,item,12417,Blue ice slab edge 1,ice,1x1,overlay piece; base=i12416
+ground,item,12418,Blue ice slab edge 2,ice,1x1,overlay piece; base=i12416
+ground,item,12419,Blue ice slab edge 3,ice,1x1,overlay piece; base=i12416
+ground,item,12420,Blue ice slab edge 4,ice,1x1,overlay piece; base=i12416
+ground,item,12421,Blue ice slab edge 5,ice,1x1,overlay piece; base=i12416
+ground,item,12422,Blue ice slab edge 6,ice,1x1,overlay piece; base=i12416
+ground,item,12423,Blue ice slab edge 7,ice,1x1,overlay piece; base=i12416
+ground,item,12424,Blue ice slab edge 8,ice,1x1,overlay piece; base=i12416
+ground,item,12425,Blue ice slab edge 9,ice,1x1,overlay piece; base=i12416
+ground,item,12426,Blue ice slab edge 10,ice,1x1,overlay piece; base=i12416
+ground,item,12427,Blue ice slab edge 11,ice,1x1,overlay piece; base=i12416
+ground,item,12428,Blue ice slab edge 12,ice,1x1,overlay piece; base=i12416
+ground,item,12491,Blue ice slab edge 13,ice,1x1,overlay piece; base=i12416
+ground,item,12492,Blue ice slab edge 14,ice,1x1,overlay piece; base=i12416
+ground,item,12493,Blue ice slab edge 15,ice,1x1,overlay piece; base=i12416
+ground,item,12494,Blue ice slab edge 16,ice,1x1,overlay piece; base=i12416
+ground,item,12495,Blue ice slab edge 17,ice,1x1,overlay piece; base=i12416
+ground,item,12496,Blue ice slab edge 18,ice,1x1,overlay piece; base=i12416
+ground,item,12497,Blue ice slab edge 19,ice,1x1,overlay piece; base=i12416
+ground,item,12498,Blue ice slab edge 20,ice,1x1,overlay piece; base=i12416
+ground,item,12499,Blue ice slab edge 21,ice,1x1,overlay piece; base=i12416
+ground,item,12500,Blue ice slab edge 22,ice,1x1,overlay piece; base=i12416
+ground,item,12501,Blue ice slab edge 23,ice,1x1,overlay piece; base=i12416
+ground,item,12502,Blue ice slab edge 24,ice,1x1,overlay piece; base=i12416
+ground,item,12503,Blue ice slab edge 25,ice,1x1,overlay piece; base=i12416
+ground,item,12504,Blue ice slab edge 26,ice,1x1,overlay piece; base=i12416
+ground,item,12505,Blue ice slab edge 27,ice,1x1,overlay piece; base=i12416
+ground,item,12506,Blue ice slab edge 28,ice,1x1,overlay piece; base=i12416
+ground,item,11389,Blue cobble edge 1,ice,1x1,overlay piece; base=i11460
+ground,item,11390,Blue cobble edge 2,ice,1x1,overlay piece; base=i11460
+ground,item,11391,Blue cobble edge 3,ice,1x1,overlay piece; base=i11460
+ground,item,11392,Blue cobble edge 4,ice,1x1,overlay piece; base=i11460
+ground,item,11393,Blue cobble edge 5,ice,1x1,overlay piece; base=i11460
+ground,item,11394,Blue cobble edge 6,ice,1x1,overlay piece; base=i11460
+ground,item,11395,Blue cobble edge 7,ice,1x1,overlay piece; base=i11460
+ground,item,11396,Blue cobble edge 8,ice,1x1,overlay piece; base=i11460
+ground,item,11397,Blue cobble edge 9,ice,1x1,overlay piece; base=i11460
+ground,item,11398,Blue cobble edge 10,ice,1x1,overlay piece; base=i11460
+ground,item,11399,Blue cobble edge 11,ice,1x1,overlay piece; base=i11460
+ground,item,11400,Blue cobble edge 12,ice,1x1,overlay piece; base=i11460
+ground,item,11402,Blue cobble edge 13,ice,1x1,overlay piece; base=i11460
+ground,item,11403,Blue cobble edge 14,ice,1x1,overlay piece; base=i11460
+ground,item,11404,Blue cobble edge 15,ice,1x1,overlay piece; base=i11460
+ground,item,11405,Blue cobble edge 16,ice,1x1,overlay piece; base=i11460
+ground,item,11406,Blue cobble edge 17,ice,1x1,overlay piece; base=i11460
+ground,item,11407,Blue cobble edge 18,ice,1x1,overlay piece; base=i11460
+ground,item,11408,Blue cobble edge 19,ice,1x1,overlay piece; base=i11460
+ground,item,11409,Blue cobble edge 20,ice,1x1,overlay piece; base=i11460
+ground,item,11410,Blue cobble edge 21,ice,1x1,overlay piece; base=i11460
+ground,item,11411,Blue cobble edge 22,ice,1x1,overlay piece; base=i11460
+ground,item,11412,Blue cobble edge 23,ice,1x1,overlay piece; base=i11460
+ground,item,11413,Blue cobble edge 24,ice,1x1,overlay piece; base=i11460
+stairs,item,11426,Blue cobble step 1,ice,2x1,-
+stairs,item,11427,Blue cobble step 2,ice,2x2,-
+stairs,item,11428,Blue cobble step 3,ice,2x2,-
+stairs,item,11429,Blue cobble step 4,ice,2x2,-
+stairs,item,11430,Blue cobble step 5,ice,1x2,-
+stairs,item,11431,Blue cobble step 6,ice,2x2,-
+stairs,item,11432,Blue cobble step 7,ice,2x2,-
+stairs,item,11433,Blue cobble step 8,ice,2x2,-
+ground,item,11434,Blue cobble edge 25,ice,1x1,overlay piece; base=i11460
+ground,item,11435,Blue cobble edge 26,ice,1x1,overlay piece; base=i11460
+ground,item,11436,Blue cobble edge 27,ice,1x1,overlay piece; base=i11460
+ground,item,11437,Blue cobble edge 28,ice,1x1,overlay piece; base=i11460
+ground,item,11438,Blue cobble edge 29,ice,1x1,overlay piece; base=i11460
+ground,item,11439,Blue cobble edge 30,ice,1x1,overlay piece; base=i11460
+ground,item,11441,Blue cobble edge 31,ice,1x1,overlay piece; base=i11460
+ground,item,11442,Blue cobble edge 32,ice,1x1,overlay piece; base=i11460
+ground,item,11443,Blue cobble edge 33,ice,1x1,overlay piece; base=i11460
+ground,item,11444,Blue cobble edge 34,ice,1x1,overlay piece; base=i11460
+ground,item,11445,Blue cobble edge 35,ice,1x1,overlay piece; base=i11460
+ground,item,6002,Moss and dirt edge 1,swamp,1x1,overlay piece; base=i6918
+ground,item,6004,Moss and dirt edge 2,swamp,1x1,overlay piece; base=i6918
+ground,item,6005,Moss and dirt edge 3,swamp,1x1,overlay piece; base=i6918
+ground,item,6006,Moss and dirt edge 4,swamp,1x1,overlay piece; base=i6918
+ground,item,6007,Moss and dirt edge 5,swamp,1x1,overlay piece; base=i6918
+ground,item,6010,Moss and dirt edge 6,swamp,1x1,overlay piece; base=i6918
+ground,item,6012,Moss and dirt edge 7,swamp,1x1,overlay piece; base=i6918
+ground,item,6013,Moss and dirt edge 8,swamp,1x1,overlay piece; base=i6918
+ground,item,6016,Moss and dirt edge 9,swamp,1x1,overlay piece; base=i6918
+ground,item,6017,Moss and dirt edge 10,swamp,1x1,overlay piece; base=i6918
+ground,item,6018,Moss and dirt edge 11,swamp,1x1,overlay piece; base=i6918
+ground,item,6019,Moss and dirt edge 12,swamp,1x1,overlay piece; base=i6918
+ground,item,6022,Moss and dirt edge 13,swamp,1x1,overlay piece; base=i6918
+ground,item,6024,Moss and dirt edge 14,swamp,1x1,overlay piece; base=i6918
+ground,item,6025,Moss and dirt edge 15,swamp,1x1,overlay piece; base=i6918
+ground,item,6028,Moss and dirt edge 16,swamp,1x1,overlay piece; base=i6918
+ground,item,6029,Moss and dirt edge 17,swamp,1x1,overlay piece; base=i6918
+ground,item,6150,Moss and dirt edge 18,swamp,1x1,overlay piece; base=i6918
+ground,item,6151,Moss and dirt edge 19,swamp,1x1,overlay piece; base=i6918
+ground,item,6152,Moss and dirt edge 20,swamp,1x1,overlay piece; base=i6918
+ground,item,6153,Moss and dirt edge 21,swamp,1x1,overlay piece; base=i6918
+ground,item,9056,Dark leaf edge 1,swamp,1x1,overlay piece; base=i9055
+ground,item,9057,Dark leaf edge 2,swamp,1x1,overlay piece; base=i9055
+ground,item,9058,Dark leaf edge 3,swamp,1x1,overlay piece; base=i9055
+ground,item,9059,Dark leaf edge 4,swamp,1x1,overlay piece; base=i9055
+ground,item,9060,Dark leaf edge 5,swamp,1x1,overlay piece; base=i9055
+ground,item,9061,Dark leaf edge 6,swamp,1x1,overlay piece; base=i9055
+ground,item,9062,Dark leaf edge 7,swamp,1x1,overlay piece; base=i9055
+ground,item,9063,Dark leaf edge 8,swamp,1x1,overlay piece; base=i9055
+ground,item,6875,Dark leaf edge 9,swamp,1x1,overlay piece; base=i9055
+ground,item,6877,Dark leaf edge 10,swamp,1x1,overlay piece; base=i9055
+ground,item,6879,Dark leaf edge 11,swamp,1x1,overlay piece; base=i9055
+ground,item,6880,Dark leaf edge 12,swamp,1x1,overlay piece; base=i9055
+ground,item,6882,Dark leaf edge 13,swamp,1x1,overlay piece; base=i9055
+ground,item,6883,Dark leaf edge 14,swamp,1x1,overlay piece; base=i9055
+decor,item,6884,Green olive tree 1,swamp,2x2,-
+decor,item,6885,Fern and reed 1,swamp,2x2,-
+decor,item,6886,Green olive tree 2,swamp,2x2,-
+decor,item,6887,Green olive tree 3,swamp,2x2,-
+decor,item,6888,Green olive tree 4,swamp,2x2,-
+ground,item,6889,Dark leaf edge 15,swamp,1x1,overlay piece; base=i9055
+ground,item,6890,Dark leaf edge 16,swamp,1x1,overlay piece; base=i9055
+ground,item,6891,Dark leaf edge 17,swamp,1x1,overlay piece; base=i9055
+ground,item,6892,Dark leaf edge 18,swamp,1x1,overlay piece; base=i9055
+ground,item,6893,Dark leaf edge 19,swamp,1x1,overlay piece; base=i9055
+ground,item,6894,Dark leaf edge 20,swamp,1x1,overlay piece; base=i9055
+ground,item,6895,Dark leaf edge 21,swamp,1x1,overlay piece; base=i9055
+ground,item,6896,Dark leaf edge 22,swamp,1x1,overlay piece; base=i9055
+ground,item,6897,Dark leaf edge 23,swamp,1x1,overlay piece; base=i9055
+ground,item,6900,Dark leaf edge 24,swamp,1x1,overlay piece; base=i9055
+ground,item,6901,Dark leaf edge 25,swamp,1x1,overlay piece; base=i9055
+ground,item,6902,Dark leaf edge 26,swamp,1x1,overlay piece; base=i9055
+ground,item,6903,Dark leaf edge 27,swamp,1x1,overlay piece; base=i9055
+ground,item,6976,Grass and dirt edge 1,swamp,1x1,overlay piece; base=i6919
+ground,item,6977,Grass and dirt edge 2,swamp,1x1,overlay piece; base=i6919
+ground,item,6979,Grass and dirt edge 3,swamp,1x1,overlay piece; base=i6919
+ground,item,6980,Grass and dirt edge 4,swamp,1x1,overlay piece; base=i6919
+ground,item,6982,Grass and dirt edge 5,swamp,1x1,overlay piece; base=i6919
+ground,item,6983,Grass and dirt edge 6,swamp,1x1,overlay piece; base=i6919
+ground,item,6984,Grass and dirt edge 7,swamp,1x1,overlay piece; base=i6919
+ground,item,6985,Grass and dirt edge 8,swamp,1x1,overlay piece; base=i6919
+decor,item,6986,Green olive tree 5,swamp,1x1,-
+decor,item,6987,Green olive tree 6,swamp,2x2,-
+decor,item,6988,Green olive tree 7,swamp,2x2,-
+ground,item,6989,Grass and dirt edge 9,swamp,1x1,overlay piece; base=i6919
+ground,item,6990,Grass and dirt edge 10,swamp,1x1,overlay piece; base=i6919
+ground,item,6991,Grass and dirt edge 11,swamp,1x1,overlay piece; base=i6919
+ground,item,6992,Grass and dirt edge 12,swamp,1x1,overlay piece; base=i6919
+ground,item,6993,Grass and dirt edge 13,swamp,1x1,overlay piece; base=i6919
+ground,item,6995,Grass and dirt edge 14,swamp,1x1,overlay piece; base=i6919
+ground,item,6996,Grass and dirt edge 15,swamp,1x1,overlay piece; base=i6919
+ground,item,6997,Grass and dirt edge 16,swamp,1x1,overlay piece; base=i6919
+ground,item,6998,Grass and dirt edge 17,swamp,1x1,overlay piece; base=i6919
+ground,item,6999,Grass and dirt edge 18,swamp,1x1,overlay piece; base=i6919
+ground,item,7000,Grass and dirt edge 19,swamp,1x1,overlay piece; base=i6919
+ground,item,7001,Grass and dirt edge 20,swamp,1x1,overlay piece; base=i6919
+ground,item,7002,Grass and dirt edge 21,swamp,1x1,overlay piece; base=i6919
+ground,item,7003,Grass and dirt edge 22,swamp,1x1,overlay piece; base=i6919
+ground,item,7004,Grass and dirt edge 23,swamp,1x1,overlay piece; base=i6919
+decor,item,7005,Fern and reed 2,swamp,2x2,-
+decor,item,7006,Fern and reed 3,swamp,1x1,-
+decor,item,7007,Fern and reed 4,swamp,1x1,-
+decor,item,7008,Fern and reed 5,swamp,1x1,-
+ground,item,7009,Grass and dirt edge 24,swamp,1x1,overlay piece; base=i6919
+ground,item,7010,Grass and dirt edge 25,swamp,1x1,overlay piece; base=i6919
+ground,item,7011,Grass and dirt edge 26,swamp,1x1,overlay piece; base=i6919
+ground,item,7012,Grass and dirt edge 27,swamp,1x1,overlay piece; base=i6919
+ground,item,7013,Grass and dirt edge 28,swamp,1x1,overlay piece; base=i6919
+ground,item,7014,Grass and dirt edge 29,swamp,1x1,overlay piece; base=i6919
+ground,item,7015,Grass and dirt edge 30,swamp,1x1,overlay piece; base=i6919
+decor,item,7016,Fern and reed 6,swamp,2x2,-
+ground,item,7017,Grass and dirt edge 31,swamp,1x1,overlay piece; base=i6919
+ground,item,7020,Grass and dirt edge 32,swamp,1x1,overlay piece; base=i6919
+ground,item,7021,Grass and dirt edge 33,swamp,1x1,overlay piece; base=i6919
+ground,item,7023,Grass and dirt edge 34,swamp,1x1,overlay piece; base=i6919
+ground,item,7024,Grass and dirt edge 35,swamp,1x1,overlay piece; base=i6919
+ground,item,7026,Grass and dirt edge 36,swamp,1x1,overlay piece; base=i6919
+ground,item,7027,Grass and dirt edge 37,swamp,1x1,overlay piece; base=i6919
+decor,item,7028,Fern and reed 7,swamp,2x2,-
+decor,item,7030,Fern and reed 8,swamp,2x2,-
+decor,item,7031,Twisted roots and branches 1,swamp,2x2,-
+decor,item,7032,Green olive tree 8,swamp,2x2,-
+ground,item,7033,Grass and dirt edge 38,swamp,1x1,overlay piece; base=i6919
+ground,item,7034,Grass and dirt edge 39,swamp,1x1,overlay piece; base=i6919
+ground,item,7035,Grass and dirt edge 40,swamp,1x1,overlay piece; base=i6919
+ground,item,7036,Grass and dirt edge 41,swamp,1x1,overlay piece; base=i6919
+decor,item,7037,Fern and reed 9,swamp,1x1,-
+ground,item,7038,Grass and dirt edge 42,swamp,1x1,overlay piece; base=i6919
+ground,item,7039,Grass and dirt edge 43,swamp,1x1,overlay piece; base=i6919
+ground,item,7040,Grass and dirt edge 44,swamp,1x1,overlay piece; base=i6919
+ground,item,7041,Grass and dirt edge 45,swamp,1x1,overlay piece; base=i6919
+decor,item,7042,Fern and reed 10,swamp,2x2,-
+ground,item,7044,Grass and dirt edge 46,swamp,1x1,overlay piece; base=i6919
+ground,item,7045,Grass and dirt edge 47,swamp,1x1,overlay piece; base=i6919
+ground,item,7046,Grass and dirt edge 48,swamp,1x1,overlay piece; base=i6919
+ground,item,7047,Grass and dirt edge 49,swamp,1x1,overlay piece; base=i6919
+ground,item,7048,Grass and dirt edge 50,swamp,1x1,overlay piece; base=i6919
+ground,item,7049,Grass and dirt edge 51,swamp,1x1,overlay piece; base=i6919
+ground,item,7050,Grass and dirt edge 52,swamp,1x1,overlay piece; base=i6919
+ground,item,7051,Grass and dirt edge 53,swamp,1x1,overlay piece; base=i6919
+ground,item,7052,Grass and dirt edge 54,swamp,1x1,overlay piece; base=i6919
+ground,item,7053,Grass and dirt edge 55,swamp,1x1,overlay piece; base=i6919
+ground,item,7054,Grass and dirt edge 56,swamp,1x1,overlay piece; base=i6919
+ground,item,7055,Grass and dirt edge 57,swamp,1x1,overlay piece; base=i6919
+ground,item,7056,Grass and dirt edge 58,swamp,1x1,overlay piece; base=i6919
+ground,item,7057,Grass and dirt edge 59,swamp,1x1,overlay piece; base=i6919
+ground,item,7058,Grass and dirt edge 60,swamp,1x1,overlay piece; base=i6919
+ground,item,7059,Grass and dirt edge 61,swamp,1x1,overlay piece; base=i6919
+ground,item,7060,Grass and dirt edge 62,swamp,1x1,overlay piece; base=i6919
+ground,item,7061,Grass and dirt edge 63,swamp,1x1,overlay piece; base=i6919
+ground,item,7062,Grass and dirt edge 64,swamp,1x1,overlay piece; base=i6919
+ground,item,7063,Grass and dirt edge 65,swamp,1x1,overlay piece; base=i6919
+ground,item,7064,Grass and dirt edge 66,swamp,1x1,overlay piece; base=i6919
+ground,item,7065,Grass and dirt edge 67,swamp,1x1,overlay piece; base=i6919
+decor,item,7066,Fern and reed 11,swamp,2x2,-
+ground,item,7067,Grass and dirt edge 68,swamp,1x1,overlay piece; base=i6919
+ground,item,7068,Grass and dirt edge 69,swamp,1x1,overlay piece; base=i6919
+ground,item,7069,Grass and dirt edge 70,swamp,1x1,overlay piece; base=i6919
+ground,item,7070,Grass and dirt edge 71,swamp,1x1,overlay piece; base=i6919
+ground,item,7071,Grass and dirt edge 72,swamp,1x1,overlay piece; base=i6919
+decor,item,7072,Twisted roots and branches 2,swamp,2x2,-
+decor,item,7073,Twisted roots and branches 3,swamp,2x2,-
+ground,item,7074,Grass and dirt edge 73,swamp,1x1,overlay piece; base=i6919
+ground,item,7075,Grass and dirt edge 74,swamp,1x1,overlay piece; base=i6919
+ground,item,7076,Grass and dirt edge 75,swamp,1x1,overlay piece; base=i6919
+decor,item,7077,Fern and reed 12,swamp,2x2,-
+decor,item,7078,Fern and reed 13,swamp,2x2,-
+ground,item,7079,Grass and dirt edge 76,swamp,1x1,overlay piece; base=i6919
+ground,item,7080,Grass and dirt edge 77,swamp,1x1,overlay piece; base=i6919
+ground,item,7081,Grass and dirt edge 78,swamp,1x1,overlay piece; base=i6919
+ground,item,7082,Grass and dirt edge 79,swamp,1x1,overlay piece; base=i6919
+ground,item,7083,Grass and dirt edge 80,swamp,1x1,overlay piece; base=i6919
+ground,item,7084,Grass and dirt edge 81,swamp,1x1,overlay piece; base=i6919
+ground,item,7085,Grass and dirt edge 82,swamp,1x1,overlay piece; base=i6919
+ground,item,7086,Grass and dirt edge 83,swamp,1x1,overlay piece; base=i6919
+ground,item,7087,Grass and dirt edge 84,swamp,1x1,overlay piece; base=i6919
+ground,item,7088,Grass and dirt edge 85,swamp,1x1,overlay piece; base=i6919
+ground,item,7089,Grass and dirt edge 86,swamp,1x1,overlay piece; base=i6919
+ground,item,7090,Grass and dirt edge 87,swamp,1x1,overlay piece; base=i6919
+ground,item,7091,Grass and dirt edge 88,swamp,1x1,overlay piece; base=i6919
+ground,item,7092,Grass and dirt edge 89,swamp,1x1,overlay piece; base=i6919
+decor,item,7093,Fern and reed 14,swamp,2x2,-
+decor,item,7094,Fern and reed 15,swamp,2x2,-
+ground,item,7095,Grass and dirt edge 90,swamp,1x1,overlay piece; base=i6919
+ground,item,7096,Grass and dirt edge 91,swamp,1x1,overlay piece; base=i6919
+ground,item,7097,Grass and dirt edge 92,swamp,1x1,overlay piece; base=i6919
+decor,item,7098,Fern and reed 16,swamp,1x1,-
+ground,item,7099,Grass and dirt edge 93,swamp,1x1,overlay piece; base=i6919
+ground,item,7100,Grass and dirt edge 94,swamp,1x1,overlay piece; base=i6919
+ground,item,7101,Grass and dirt edge 95,swamp,1x1,overlay piece; base=i6919
+ground,item,7102,Grass and dirt edge 96,swamp,1x1,overlay piece; base=i6919
+ground,item,7103,Grass and dirt edge 97,swamp,1x1,overlay piece; base=i6919
+ground,item,7104,Grass and dirt edge 98,swamp,1x1,overlay piece; base=i6919
+ground,item,7105,Grass and dirt edge 99,swamp,1x1,overlay piece; base=i6919
+ground,item,7106,Grass and dirt edge 100,swamp,1x1,overlay piece; base=i6919
+ground,item,7107,Grass and dirt edge 101,swamp,1x1,overlay piece; base=i6919
+ground,item,7108,Grass and dirt edge 102,swamp,1x1,overlay piece; base=i6919
+ground,item,7109,Grass and dirt edge 103,swamp,1x1,overlay piece; base=i6919
+ground,item,7110,Grass and dirt edge 104,swamp,1x1,overlay piece; base=i6919
+decor,item,7111,Green olive tree 9,swamp,2x2,-
+decor,item,7112,Green olive tree 10,swamp,1x1,-
+decor,item,7113,Green olive tree 11,swamp,2x2,-
+decor,item,7114,Green olive tree 12,swamp,2x2,-
+decor,item,7115,Green olive tree 13,swamp,2x2,-
+decor,item,7116,Green olive tree 14,swamp,2x2,-
+decor,item,7117,Green olive tree 15,swamp,2x2,-
+decor,item,7118,Green olive tree 16,swamp,2x2,-
+ground,item,7119,Grass and dirt edge 105,swamp,1x1,overlay piece; base=i6919
+ground,item,7120,Grass and dirt edge 106,swamp,1x1,overlay piece; base=i6919
+ground,item,7125,Grass and dirt edge 107,swamp,1x1,overlay piece; base=i6919
+ground,item,7126,Grass and dirt edge 108,swamp,1x1,overlay piece; base=i6919
+ground,item,7127,Grass and dirt edge 109,swamp,1x1,overlay piece; base=i6919
+ground,item,7128,Grass and dirt edge 110,swamp,1x1,overlay piece; base=i6919
+ground,item,7129,Grass and dirt edge 111,swamp,1x1,overlay piece; base=i6919
+ground,item,7130,Grass and dirt edge 112,swamp,1x1,overlay piece; base=i6919
+ground,item,7131,Grass and dirt edge 113,swamp,1x1,overlay piece; base=i6919
+ground,item,7132,Grass and dirt edge 114,swamp,1x1,overlay piece; base=i6919
+ground,item,7133,Grass and dirt edge 115,swamp,1x1,overlay piece; base=i6919
+decor,item,7140,Cupboard and chest 1,swamp,1x1,-
+decor,item,7141,Cupboard and chest 2,swamp,1x1,-
+ground,item,13040,Mud and water edge 1,swamp,1x1,"overlay piece, self-contained"
+ground,item,13041,Mud and water edge 2,swamp,1x1,"overlay piece, self-contained"
+ground,item,13042,Mud and water edge 3,swamp,1x1,"overlay piece, self-contained"
+ground,item,13043,Mud and water edge 4,swamp,1x1,"overlay piece, self-contained"
+ground,item,13044,Mud and water edge 5,swamp,1x1,"overlay piece, self-contained"
+ground,item,13045,Mud and water edge 6,swamp,1x1,"overlay piece, self-contained"
+ground,item,13046,Mud and water edge 7,swamp,1x1,"overlay piece, self-contained"
+ground,item,13047,Mud and water edge 8,swamp,1x1,"overlay piece, self-contained"
+ground,item,13048,Mud and water edge 9,swamp,1x1,"overlay piece, self-contained"
+ground,item,13049,Mud and water edge 10,swamp,1x1,"overlay piece, self-contained"
+ground,item,13050,Mud and water edge 11,swamp,1x1,"overlay piece, self-contained"
+ground,item,13051,Mud and water edge 12,swamp,1x1,"overlay piece, self-contained"
+ground,item,10708,Mud and water edge 13,swamp,1x1,"overlay piece, self-contained"
+ground,item,10709,Mud and water edge 14,swamp,1x1,"overlay piece, self-contained"
+ground,item,10710,Mud and water edge 15,swamp,1x1,"overlay piece, self-contained"
+ground,item,10711,Mud and water edge 16,swamp,1x1,"overlay piece, self-contained"
+ground,item,10712,Mud and water edge 17,swamp,1x1,"overlay piece, self-contained"
+ground,item,10713,Mud and water edge 18,swamp,1x1,"overlay piece, self-contained"
+ground,item,10714,Mud and water edge 19,swamp,1x1,"overlay piece, self-contained"
+ground,item,10715,Mud and water edge 20,swamp,1x1,"overlay piece, self-contained"
+ground,item,10716,Mud and water edge 21,swamp,1x1,"overlay piece, self-contained"
+ground,item,10717,Mud and water edge 22,swamp,1x1,"overlay piece, self-contained"
+ground,item,10718,Mud and water edge 23,swamp,1x1,"overlay piece, self-contained"
+ground,item,10719,Mud and water edge 24,swamp,1x1,"overlay piece, self-contained"
+stairs,item,6334,Ladder 1,generic,2x2,-
+stairs,item,7677,Ladder 2,generic,2x2,-
+stairs,item,10497,Ladder 3,generic,2x2,-
+stairs,item,10498,Ladder 4,generic,2x2,-
+stairs,item,10499,Ladder 5,generic,2x2,-
+stairs,item,10500,Ladder 6,generic,2x2,anim 2 frames
+stairs,item,10501,Ladder 7,generic,2x2,anim 2 frames
+stairs,item,10502,Ladder 8,generic,2x2,anim 2 frames
+stairs,item,5962,Wooden stairs 1,hauntedfarm,2x2,-
+stairs,item,5963,Wooden stairs 2,hauntedfarm,2x2,-
+stairs,item,12186,Wooden stairs 3,hauntedfarm,2x2,-
+stairs,item,12187,Wooden stairs 4,hauntedfarm,2x2,-
+stairs,item,10796,Wooden stairs 5,hauntedfarm,2x2,-
+stairs,item,10797,Wooden stairs 6,hauntedfarm,2x1,-
+stairs,item,10798,Wooden stairs 7,hauntedfarm,2x2,-
+stairs,item,10799,Wooden stairs 8,hauntedfarm,1x2,-
+stairs,item,12135,Stone stairs 1,crypt,2x2,-
+stairs,item,12136,Stone stairs 2,crypt,2x2,-
+stairs,item,12137,Stone stairs 3,crypt,2x2,-
+stairs,item,12138,Stone stairs 4,crypt,2x2,anim 2 frames
+stairs,item,8098,Cobble steps 1,cave,2x2,-
+stairs,item,8099,Cobble steps 2,cave,1x2,-
+stairs,item,8100,Cobble steps 3,cave,2x2,-
+stairs,item,8101,Cobble steps 4,cave,2x2,-
+stairs,item,8102,Cobble steps 5,cave,2x2,-
+stairs,item,8103,Cobble steps 6,cave,2x1,-
+stairs,item,8104,Cobble steps 7,cave,2x2,-
+stairs,item,8105,Cobble steps 8,cave,2x2,-
+stairs,item,11447,Ice steps 1,ice,1x1,-
+stairs,item,11448,Ice steps 2,ice,1x1,-
+stairs,item,11449,Ice steps 3,ice,1x1,-
+stairs,item,11450,Ice steps 4,ice,1x1,-
+ground,item,11451,Blue pebble frame 1,ice,1x1,rim frame over floor; base=i11460
+ground,item,11452,Blue pebble frame 2,ice,1x1,rim frame over floor; base=i11460
+ground,item,11453,Blue pebble frame 3,ice,1x1,rim frame over floor; base=i11460
+ground,item,11454,Blue pebble frame 4,ice,1x1,rim frame over floor; base=i11460
+ground,item,11455,Blue pebble frame 5,ice,1x1,rim frame over floor; base=i11460
+ground,item,11456,Blue pebble frame 6,ice,1x1,rim frame over floor; base=i11460
+ground,item,11457,Blue pebble frame 7,ice,1x1,rim frame over floor; base=i11460
+ground,item,11458,Blue pebble frame 8,ice,1x1,rim frame over floor; base=i11460
+stairs,item,11957,Ice steps 5,ice,1x1,anim 8 frames
+stairs,item,11958,Ice steps 6,ice,1x1,anim 8 frames
+ground,item,8055,Grey pebble frame 1,cave,1x1,rim frame over floor; base=i8096
+ground,item,8056,Grey pebble frame 2,cave,1x1,rim frame over floor; base=i8096
+ground,item,11766,Grey pebble frame 3,cave,1x1,rim frame over floor; base=i8096
+ground,item,11767,Grey pebble frame 4,cave,1x1,rim frame over floor; base=i8096
+stairs,item,12083,Stone ring pit 1,crypt,1x1,-
+stairs,item,12084,Stone ring pit 2,crypt,1x1,-
+stairs,item,12085,Stone ring pit 3,crypt,1x1,anim 8 frames
+stairs,item,12086,Stone ring pit 4,crypt,1x1,anim 8 frames
+stairs,item,12087,Stone ring pit 5,crypt,1x1,anim 8 frames
+stairs,item,12088,Stone ring pit 6,crypt,1x1,-
+stairs,item,7653,Iron floor grate 1,generic,1x1,-
+decor,item,10616,Stone monster statue 1,crypt,3x3,-
+decor,item,10617,Stone monster statue 2,crypt,3x3,-
+decor,item,10618,Stone monster statue 3,crypt,3x3,-
+decor,item,10619,Stone monster statue 4,crypt,3x3,-
+decor,item,10620,Stone monster statue 5,crypt,3x3,-
+decor,item,10621,Stone monster statue 6,crypt,3x3,-
+decor,item,10622,Stone monster statue 7,crypt,3x3,-
+decor,item,10623,Stone monster statue 8,crypt,3x3,-
+decor,item,10624,Stone monster statue 9,crypt,3x3,-
+decor,item,10625,Stone monster statue 10,crypt,3x3,-
+decor,item,10626,Stone monster statue 11,crypt,3x3,-
+decor,item,10627,Stone monster statue 12,crypt,3x3,-
+decor,item,10628,Stone monster statue 13,crypt,3x3,-
+decor,item,10629,Stone monster statue 14,crypt,3x3,-
+decor,item,10630,Stone monster statue 15,crypt,3x3,-
+decor,item,10631,Stone monster statue 16,crypt,3x3,-
+decor,item,10632,Stone monster statue 17,crypt,3x3,-
+decor,item,10633,Stone monster statue 18,crypt,3x3,-
+decor,item,10634,Stone monster statue 19,crypt,3x3,-
+decor,item,10635,Stone monster statue 20,crypt,3x3,-
+decor,item,10636,Stone monster statue 21,crypt,2x2,-
+decor,item,10637,Stone monster statue 22,crypt,2x2,-
+decor,item,10638,Stone monster statue 23,crypt,2x2,-
+decor,item,10639,Stone monster statue 24,crypt,2x2,-
+decor,item,10640,Stone monster statue 25,crypt,2x2,-
+decor,item,10641,Stone monster statue 26,crypt,2x2,-
+decor,item,10642,Stone monster statue 27,crypt,2x2,-
+decor,item,10643,Stone monster statue 28,crypt,2x2,-
+decor,item,10644,Stone monster statue 29,crypt,2x2,-
+decor,item,10645,Stone monster statue 30,crypt,2x2,-
+decor,item,10646,Stone monster statue 31,crypt,2x2,-
+decor,item,10647,Stone monster statue 32,crypt,2x2,-
+decor,item,10648,Stone monster statue 33,crypt,2x2,-
+decor,item,10649,Stone monster statue 34,crypt,2x2,-
+decor,item,10650,Stone monster statue 35,crypt,2x2,-
+decor,item,10651,Stone monster statue 36,crypt,2x2,-
+decor,item,10652,Stone monster statue 37,crypt,2x2,-
+decor,item,10653,Stone monster statue 38,crypt,2x2,-
+decor,item,10654,Stone monster statue 39,crypt,2x2,-
+decor,item,10655,Stone monster statue 40,crypt,2x2,-
+decor,item,10656,Stone monster statue 41,crypt,2x2,-
+decor,item,10657,Stone monster statue 42,crypt,2x2,-
+decor,item,10658,Stone monster statue 43,crypt,2x2,-
+decor,item,10659,Stone monster statue 44,crypt,2x2,-
+decor,item,10660,Stone monster statue 45,crypt,2x2,-
+decor,item,10661,Stone monster statue 46,crypt,2x2,-
+decor,item,10662,Stone monster statue 47,crypt,2x2,-
+decor,item,10663,Stone monster statue 48,crypt,2x2,-
+decor,item,10664,Stone monster statue 49,crypt,2x2,-
+decor,item,10665,Stone monster statue 50,crypt,2x2,-
+decor,item,12107,Large monster statue 1,crypt,3x2,-
+decor,item,12108,Large monster statue 2,crypt,2x3,-
+decor,item,12109,Large monster statue 3,crypt,2x2,-
+decor,item,12110,Large monster statue 4,crypt,2x2,-
+decor,item,12111,Large monster statue 5,crypt,2x3,-
+decor,item,12112,Large monster statue 6,crypt,3x2,-
+decor,item,12113,Large monster statue 7,crypt,2x3,-
+decor,item,12114,Large monster statue 8,crypt,3x2,-
+decor,item,12115,Large monster statue 9,crypt,3x3,-
+decor,item,12116,Large monster statue 10,crypt,3x3,-
+decor,item,12117,Large monster statue 11,crypt,2x3,-
+decor,item,12118,Large monster statue 12,crypt,3x2,-
+decor,item,5779,Gargoyle statue 1,crypt,2x2,-
+decor,item,5780,Gargoyle statue 2,crypt,2x2,-
+decor,item,8592,Gargoyle statue 3,crypt,2x2,-
+decor,item,8593,Gargoyle statue 4,crypt,2x2,-
+decor,item,8698,Gargoyle statue 5,crypt,2x2,-
+decor,item,8699,Gargoyle statue 6,crypt,2x2,-
+decor,item,8700,Gargoyle statue 7,crypt,2x2,-
+decor,item,9517,Gargoyle statue 8,crypt,2x2,-
+decor,item,9518,Gargoyle statue 9,crypt,2x2,-
+decor,item,7761,Gargoyle statue 10,crypt,2x2,-
+decor,item,8022,Gargoyle statue 11,crypt,2x2,-
+decor,item,8023,Gargoyle statue 12,crypt,2x2,-
+decor,item,6743,Gargoyle statue 13,crypt,2x2,-
+decor,item,9340,Dark pillar 1,asylum,3x3,-
+decor,item,9341,Dark pillar 2,asylum,3x3,-
+decor,item,9342,Dark pillar 3,asylum,3x3,-
+decor,item,9343,Dark pillar 4,asylum,3x3,-
+decor,item,1791,Crystal spire or cocoon 1,celestial,2x2,-
+decor,item,1840,Crystal spire or cocoon 2,celestial,2x2,-
+decor,item,1841,Crystal spire or cocoon 3,celestial,2x2,-
+decor,item,1842,Crystal spire or cocoon 4,celestial,2x2,-
+decor,item,5673,Crystal spire or cocoon 5,celestial,2x2,anim 9 frames
+decor,item,5674,Crystal spire or cocoon 6,celestial,2x2,anim 9 frames
+decor,item,5675,Crystal spire or cocoon 7,celestial,2x2,anim 9 frames
+decor,item,5691,Crystal spire or cocoon 8,celestial,2x2,anim 9 frames
+decor,item,5971,Crystal spire or cocoon 9,celestial,2x2,-
+decor,item,5972,Crystal spire or cocoon 10,celestial,2x2,-
+decor,item,5973,Crystal spire or cocoon 11,celestial,2x2,-
+decor,item,6128,Crystal spire or cocoon 12,celestial,2x2,-
+decor,item,12089,Crystal spire or cocoon 13,celestial,2x2,-
+decor,item,12090,Crystal spire or cocoon 14,celestial,2x2,-
+decor,item,12091,Crystal spire or cocoon 15,celestial,2x2,-
+decor,item,12092,Crystal spire or cocoon 16,celestial,2x2,-
+decor,item,6262,Coffin or gravestone 1,crypt,2x2,-
+decor,item,6263,Coffin or gravestone 2,crypt,2x2,-
+decor,item,6264,Coffin or gravestone 3,crypt,2x2,-
+decor,item,6265,Coffin or gravestone 4,crypt,2x2,-
+decor,item,6266,Coffin or gravestone 5,crypt,2x2,-
+decor,item,6267,Coffin or gravestone 6,crypt,2x2,-
+decor,item,6268,Coffin or gravestone 7,crypt,2x2,-
+decor,item,6269,Coffin or gravestone 8,crypt,2x2,-
+decor,item,6270,Coffin or gravestone 9,crypt,2x2,-
+decor,item,6271,Coffin or gravestone 10,crypt,2x2,-
+decor,item,6235,Coffin or gravestone 11,crypt,2x2,-
+decor,item,6275,Coffin or gravestone 12,crypt,2x1,-
+decor,item,6277,Coffin or gravestone 13,crypt,1x1,-
+decor,item,6278,Coffin or gravestone 14,crypt,1x1,-
+decor,item,6274,Coffin or gravestone 15,crypt,1x1,-
+decor,item,6276,Coffin or gravestone 16,crypt,1x1,-
+decor,item,11519,Coffin or gravestone 17,crypt,1x2,-
+decor,item,11520,Coffin or gravestone 18,crypt,1x1,-
+decor,item,6272,Coffin or gravestone 19,crypt,2x2,-
+decor,item,6273,Coffin or gravestone 20,crypt,2x1,-
+decor,item,7652,Coffin or gravestone 21,crypt,2x2,-
+decor,item,6145,Dead tree 1,cursed,2x2,-
+decor,item,6146,Dead tree 2,cursed,2x2,-
+decor,item,6147,Dead tree 3,cursed,2x2,-
+decor,item,6148,Dead tree 4,cursed,2x2,-
+decor,item,6279,Dead tree 5,cursed,2x2,-
+decor,item,6280,Dead tree 6,cursed,2x2,-
+decor,item,6281,Dead tree 7,cursed,2x2,-
+decor,item,6282,Dead tree 8,cursed,2x2,-
+decor,item,6283,Dead tree 9,cursed,2x2,-
+decor,item,6284,Dead tree 10,cursed,1x1,-
+decor,item,6285,Dead tree 11,cursed,2x2,-
+decor,item,7785,Dead tree 12,cursed,2x2,-
+decor,item,7786,Dead tree 13,cursed,2x2,-
+decor,item,7787,Dead tree 14,cursed,2x2,-
+decor,item,7788,Dead tree 15,cursed,2x2,-
+decor,item,7789,Dead tree 16,cursed,2x2,-
+decor,item,7790,Dead tree 17,cursed,2x2,-
+decor,item,7791,Dead tree 18,cursed,2x2,-
+decor,item,7792,Dead tree 19,cursed,2x2,-
+decor,item,11370,Dead tree 20,cursed,2x2,-
+decor,item,11371,Dead tree 21,cursed,2x2,-
+decor,item,11372,Dead tree 22,cursed,2x2,-
+decor,item,6149,Dead tree 23,cursed,1x1,-
+decor,item,7843,Dead tree 24,cursed,1x1,-
+decor,item,7968,Dead tree 25,cursed,1x1,-
+decor,item,8775,Twisted roots and branches 4,cursed,1x1,-
+decor,item,8776,Twisted roots and branches 5,cursed,1x1,-
+decor,item,8777,Twisted roots and branches 6,cursed,1x1,-
+decor,item,8778,Twisted roots and branches 7,cursed,1x1,-
+decor,item,8781,Twisted roots and branches 8,cursed,1x1,-
+decor,item,8782,Twisted roots and branches 9,cursed,1x1,-
+decor,item,8783,Twisted roots and branches 10,cursed,1x1,-
+decor,item,8784,Twisted roots and branches 11,cursed,1x1,-
+decor,item,8786,Twisted roots and branches 12,cursed,1x1,-
+decor,item,8787,Twisted roots and branches 13,cursed,1x1,-
+decor,item,8788,Twisted roots and branches 14,cursed,1x1,-
+decor,item,8789,Twisted roots and branches 15,cursed,1x1,-
+decor,item,8791,Twisted roots and branches 16,cursed,1x1,-
+decor,item,8792,Twisted roots and branches 17,cursed,1x1,-
+decor,item,8793,Twisted roots and branches 18,cursed,1x1,-
+decor,item,8794,Twisted roots and branches 19,cursed,1x1,-
+decor,item,8796,Twisted roots and branches 20,cursed,1x1,-
+decor,item,8797,Twisted roots and branches 21,cursed,1x1,-
+decor,item,8798,Twisted roots and branches 22,cursed,1x1,-
+decor,item,8799,Twisted roots and branches 23,cursed,1x1,-
+decor,item,8800,Twisted roots and branches 24,cursed,1x1,-
+decor,item,12143,Twisted roots and branches 25,cursed,1x1,-
+decor,item,12144,Twisted roots and branches 26,cursed,1x1,-
+decor,item,12145,Twisted roots and branches 27,cursed,1x1,-
+decor,item,7753,Twisted roots and branches 28,cursed,1x1,-
+decor,item,7754,Twisted roots and branches 29,cursed,1x1,-
+decor,item,7755,Twisted roots and branches 30,cursed,1x1,-
+decor,item,7756,Twisted roots and branches 31,cursed,1x1,-
+decor,item,7757,Twisted roots and branches 32,cursed,1x1,-
+decor,item,8295,Twisted roots and branches 33,cursed,1x1,-
+decor,item,8296,Twisted roots and branches 34,cursed,1x1,-
+decor,item,3703,Thorn vine 1,cursed,1x1,-
+decor,item,3704,Thorn vine 2,cursed,2x1,-
+decor,item,3705,Thorn vine 3,cursed,1x2,-
+decor,item,3706,Thorn vine 4,cursed,2x1,-
+decor,item,3707,Thorn vine 5,cursed,2x1,-
+decor,item,3708,Thorn vine 6,cursed,1x2,-
+decor,item,3709,Thorn vine 7,cursed,1x1,-
+decor,item,3710,Thorn vine 8,cursed,1x1,-
+decor,item,3711,Thorn vine 9,cursed,1x1,-
+decor,item,3712,Thorn vine 10,cursed,1x1,-
+decor,item,3713,Thorn vine 11,cursed,1x1,-
+decor,item,3714,Thorn vine 12,cursed,1x1,-
+decor,item,3715,Thorn vine 13,cursed,1x2,-
+decor,item,3716,Thorn vine 14,cursed,1x1,-
+decor,item,3717,Thorn vine 15,cursed,1x1,-
+decor,item,3718,Thorn vine 16,cursed,1x1,-
+decor,item,3719,Thorn vine 17,cursed,1x1,-
+decor,item,3720,Thorn vine 18,cursed,1x1,-
+decor,item,3721,Thorn vine 19,cursed,1x2,-
+decor,item,3722,Thorn vine 20,cursed,2x1,-
+decor,item,12028,Thorn vine 21,cursed,1x1,-
+decor,item,12029,Thorn vine 22,cursed,1x1,-
+decor,item,12030,Thorn vine 23,cursed,1x2,-
+decor,item,12031,Thorn vine 24,cursed,1x1,-
+decor,item,12032,Thorn vine 25,cursed,1x1,-
+decor,item,12033,Thorn vine 26,cursed,1x1,-
+decor,item,12034,Thorn vine 27,cursed,1x1,-
+decor,item,12035,Thorn vine 28,cursed,1x1,-
+decor,item,12036,Thorn vine 29,cursed,1x1,-
+decor,item,12037,Thorn vine 30,cursed,2x1,-
+decor,item,12038,Thorn vine 31,cursed,1x2,-
+decor,item,12039,Thorn vine 32,cursed,2x1,-
+decor,item,12040,Thorn vine 33,cursed,2x1,-
+decor,item,12041,Thorn vine 34,cursed,1x2,-
+decor,item,12042,Thorn vine 35,cursed,1x1,-
+decor,item,12043,Thorn vine 36,cursed,1x1,-
+decor,item,12044,Thorn vine 37,cursed,1x1,-
+decor,item,12045,Thorn vine 38,cursed,1x1,-
+decor,item,12046,Thorn vine 39,cursed,1x2,-
+decor,item,12047,Thorn vine 40,cursed,2x1,-
+decor,item,12048,Thorn vine 41,cursed,1x1,-
+decor,item,12049,Thorn vine 42,cursed,1x1,-
+decor,item,12050,Thorn vine 43,cursed,1x1,-
+decor,item,12051,Thorn vine 44,cursed,1x1,-
+decor,item,12052,Thorn vine 45,cursed,1x2,-
+decor,item,12053,Thorn vine 46,cursed,1x1,-
+decor,item,12054,Thorn vine 47,cursed,1x1,-
+decor,item,12055,Thorn vine 48,cursed,1x1,-
+decor,item,12056,Thorn vine 49,cursed,1x1,-
+decor,item,12057,Thorn vine 50,cursed,1x1,-
+decor,item,12058,Thorn vine 51,cursed,1x2,-
+decor,item,5603,Conifer or autumn tree 1,grass,2x2,-
+decor,item,5605,Conifer or autumn tree 2,grass,2x2,-
+decor,item,6232,Conifer or autumn tree 3,grass,2x2,-
+decor,item,6233,Conifer or autumn tree 4,grass,2x2,-
+decor,item,6234,Conifer or autumn tree 5,grass,2x2,-
+decor,item,11146,Conifer or autumn tree 6,grass,2x2,-
+decor,item,11147,Conifer or autumn tree 7,grass,1x1,-
+decor,item,11148,Conifer or autumn tree 8,grass,1x1,-
+decor,item,11149,Conifer or autumn tree 9,grass,1x1,-
+decor,item,11150,Conifer or autumn tree 10,grass,2x2,-
+decor,item,11151,Conifer or autumn tree 11,grass,2x2,-
+decor,item,11152,Conifer or autumn tree 12,grass,3x3,-
+decor,item,11153,Conifer or autumn tree 13,grass,3x3,-
+decor,item,11154,Conifer or autumn tree 14,grass,2x2,-
+decor,item,11155,Conifer or autumn tree 15,grass,1x1,-
+decor,item,11156,Conifer or autumn tree 16,grass,3x3,-
+decor,item,11157,Conifer or autumn tree 17,grass,3x3,-
+decor,item,11158,Conifer or autumn tree 18,grass,2x2,-
+decor,item,11159,Conifer or autumn tree 19,grass,1x1,-
+decor,item,11160,Conifer or autumn tree 20,grass,1x1,-
+decor,item,5905,Dark bush 1,swamp,2x2,-
+decor,item,5906,Dark bush 2,swamp,2x2,-
+decor,item,5907,Dark bush 3,swamp,2x2,-
+decor,item,5908,Dark bush 4,swamp,2x2,-
+decor,item,5909,Dark bush 5,swamp,2x2,-
+decor,item,5910,Dark bush 6,swamp,2x2,-
+decor,item,5911,Dark bush 7,swamp,2x1,-
+decor,item,5912,Dark bush 8,swamp,2x1,-
+decor,item,5913,Dark bush 9,swamp,2x1,-
+decor,item,12775,Dark bush 10,swamp,1x1,-
+decor,item,12776,Dark bush 11,swamp,1x1,anim 4 frames
+decor,item,12779,Dark bush 12,swamp,1x1,-
+decor,item,12780,Dark bush 13,swamp,1x1,anim 4 frames
+decor,item,10194,Giant mushroom 1,fungal,2x2,-
+decor,item,10195,Giant mushroom 2,fungal,2x2,-
+decor,item,10196,Giant mushroom 3,fungal,2x2,-
+decor,item,10197,Giant mushroom 4,fungal,2x2,-
+decor,item,10198,Giant mushroom 5,fungal,2x2,-
+decor,item,10199,Giant mushroom 6,fungal,2x2,-
+decor,item,10200,Giant mushroom 7,fungal,2x2,-
+decor,item,10201,Giant mushroom 8,fungal,2x2,-
+decor,item,10202,Giant mushroom 9,fungal,2x2,-
+decor,item,10203,Giant mushroom 10,fungal,2x2,-
+decor,item,12790,Giant mushroom 11,fungal,2x2,-
+decor,item,12791,Giant mushroom 12,fungal,2x2,-
+decor,item,12792,Giant mushroom 13,fungal,2x2,-
+decor,item,8292,Giant mushroom 14,fungal,1x1,-
+decor,item,8847,Creeper or seaweed 1,swamp,1x1,-
+decor,item,8848,Creeper or seaweed 2,swamp,1x1,-
+decor,item,8849,Creeper or seaweed 3,swamp,1x1,-
+decor,item,8850,Creeper or seaweed 4,swamp,1x1,-
+decor,item,8851,Creeper or seaweed 5,swamp,1x1,-
+decor,item,8852,Creeper or seaweed 6,swamp,1x1,-
+decor,item,8853,Creeper or seaweed 7,swamp,1x1,-
+decor,item,8854,Creeper or seaweed 8,swamp,1x1,-
+decor,item,8855,Creeper or seaweed 9,swamp,1x1,-
+decor,item,8856,Creeper or seaweed 10,swamp,1x1,-
+decor,item,8857,Creeper or seaweed 11,swamp,1x1,-
+decor,item,8858,Creeper or seaweed 12,swamp,1x1,-
+decor,item,8859,Creeper or seaweed 13,swamp,1x1,-
+decor,item,8860,Creeper or seaweed 14,swamp,1x1,-
+decor,item,8861,Creeper or seaweed 15,swamp,1x1,-
+decor,item,8862,Creeper or seaweed 16,swamp,1x1,-
+decor,item,8863,Creeper or seaweed 17,swamp,1x1,-
+decor,item,8864,Creeper or seaweed 18,swamp,1x1,-
+decor,item,8865,Creeper or seaweed 19,swamp,1x1,-
+decor,item,8866,Creeper or seaweed 20,swamp,1x1,-
+decor,item,8867,Creeper or seaweed 21,swamp,1x1,-
+decor,item,8881,Creeper or seaweed 22,swamp,1x1,-
+decor,item,8882,Creeper or seaweed 23,swamp,1x1,-
+decor,item,8884,Creeper or seaweed 24,swamp,1x1,-
+decor,item,8769,Creeper or seaweed 25,swamp,2x2,-
+decor,item,8770,Creeper or seaweed 26,swamp,3x3,-
+decor,item,12319,Creeper or seaweed 27,swamp,3x3,anim 28 frames
+decor,item,12320,Creeper or seaweed 28,swamp,2x2,anim 28 frames
+decor,item,12321,Creeper or seaweed 29,swamp,1x1,anim 14 frames
+decor,item,12327,Creeper or seaweed 30,swamp,2x2,anim 14 frames
+decor,item,12328,Creeper or seaweed 31,swamp,2x2,anim 14 frames
+decor,item,12329,Creeper or seaweed 32,swamp,2x2,anim 14 frames
+decor,item,12330,Creeper or seaweed 33,swamp,3x3,anim 28 frames
+decor,item,12331,Creeper or seaweed 34,swamp,3x3,anim 28 frames
+decor,item,12332,Creeper or seaweed 35,swamp,3x3,anim 28 frames
+decor,item,12333,Creeper or seaweed 36,swamp,3x3,anim 28 frames
+decor,item,10235,Carnivorous flower 1,swamp,1x1,-
+decor,item,10236,Carnivorous flower 2,swamp,1x1,-
+decor,item,10237,Carnivorous flower 3,swamp,1x1,-
+decor,item,10238,Carnivorous flower 4,swamp,1x1,-
+decor,item,10239,Carnivorous flower 5,swamp,1x1,-
+decor,item,10240,Carnivorous flower 6,swamp,1x1,-
+decor,item,10241,Carnivorous flower 7,swamp,1x1,-
+decor,item,10242,Carnivorous flower 8,swamp,1x1,-
+decor,item,10243,Carnivorous flower 9,swamp,1x1,-
+decor,item,10244,Carnivorous flower 10,swamp,1x1,-
+decor,item,10245,Carnivorous flower 11,swamp,1x1,-
+decor,item,10246,Carnivorous flower 12,swamp,1x1,-
+decor,item,10247,Carnivorous flower 13,swamp,1x1,-
+decor,item,10248,Carnivorous flower 14,swamp,1x1,-
+decor,item,10249,Carnivorous flower 15,swamp,1x1,-
+decor,item,10250,Carnivorous flower 16,swamp,1x1,-
+decor,item,10251,Carnivorous flower 17,swamp,1x1,-
+decor,item,10252,Carnivorous flower 18,swamp,1x1,-
+decor,item,10253,Carnivorous flower 19,swamp,1x1,-
+decor,item,10254,Carnivorous flower 20,swamp,1x1,-
+decor,item,10255,Carnivorous flower 21,swamp,1x1,-
+decor,item,10256,Carnivorous flower 22,swamp,1x1,-
+decor,item,10257,Carnivorous flower 23,swamp,1x1,-
+decor,item,10258,Carnivorous flower 24,swamp,1x1,-
+decor,item,10406,Pumpkin 1,hauntedfarm,1x1,anim 2 frames
+decor,item,10407,Pumpkin 2,hauntedfarm,1x1,-
+decor,item,10408,Pumpkin 3,hauntedfarm,1x1,-
+decor,item,10409,Pumpkin 4,hauntedfarm,1x1,anim 2 frames
+decor,item,10410,Pumpkin 5,hauntedfarm,1x1,-
+decor,item,10411,Pumpkin 6,hauntedfarm,2x2,-
+decor,item,10412,Pumpkin 7,hauntedfarm,2x2,anim 2 frames
+decor,item,10413,Pumpkin 8,hauntedfarm,2x2,-
+decor,item,12701,Pumpkin 9,hauntedfarm,2x2,anim 2 frames
+decor,item,10405,Pumpkin 10,hauntedfarm,1x1,-
+decor,item,5959,Scarecrow or hay bale 1,hauntedfarm,2x2,-
+decor,item,5960,Scarecrow or hay bale 2,hauntedfarm,2x2,-
+decor,item,12060,Scarecrow or hay bale 3,hauntedfarm,1x1,-
+decor,item,12061,Scarecrow or hay bale 4,hauntedfarm,1x1,-
+decor,item,12062,Scarecrow or hay bale 5,hauntedfarm,1x1,-
+decor,item,12063,Scarecrow or hay bale 6,hauntedfarm,1x1,-
+decor,item,12064,Scarecrow or hay bale 7,hauntedfarm,1x1,-
+decor,item,12065,Scarecrow or hay bale 8,hauntedfarm,1x1,-
+decor,item,12066,Scarecrow or hay bale 9,hauntedfarm,1x1,-
+decor,item,12067,Scarecrow or hay bale 10,hauntedfarm,1x1,-
+decor,item,6113,Grey boulder 1,cave,1x1,-
+decor,item,6114,Grey boulder 2,cave,1x1,-
+decor,item,6115,Grey boulder 3,cave,1x1,-
+decor,item,6116,Grey boulder 4,cave,1x1,-
+decor,item,6117,Grey boulder 5,cave,1x1,-
+decor,item,6122,Grey boulder 6,cave,1x1,-
+decor,item,6124,Grey boulder 7,cave,1x1,-
+decor,item,6125,Grey boulder 8,cave,1x1,-
+decor,item,6126,Grey boulder 9,cave,1x1,-
+decor,item,6127,Grey boulder 10,cave,1x1,-
+decor,item,6358,Grey boulder 11,cave,1x1,-
+decor,item,6359,Grey boulder 12,cave,1x1,-
+decor,item,6360,Grey boulder 13,cave,1x1,-
+decor,item,6361,Grey boulder 14,cave,1x1,-
+decor,item,6362,Grey boulder 15,cave,1x1,-
+decor,item,6363,Grey boulder 16,cave,1x1,-
+decor,item,6364,Grey boulder 17,cave,1x1,-
+decor,item,6365,Grey boulder 18,cave,1x1,-
+decor,item,6366,Grey boulder 19,cave,1x1,-
+decor,item,6367,Grey boulder 20,cave,1x1,-
+decor,item,6368,Grey boulder 21,cave,1x1,-
+decor,item,6369,Grey boulder 22,cave,1x1,-
+decor,item,6370,Grey boulder 23,cave,1x1,-
+decor,item,6371,Grey boulder 24,cave,1x1,-
+decor,item,6372,Grey boulder 25,cave,1x1,-
+decor,item,6373,Grey boulder 26,cave,1x1,-
+decor,item,6374,Grey boulder 27,cave,1x1,-
+decor,item,6375,Grey boulder 28,cave,1x1,-
+decor,item,6376,Grey boulder 29,cave,1x1,-
+decor,item,10209,Grey boulder 30,cave,1x1,-
+decor,item,10224,Grey boulder 31,cave,1x1,-
+decor,item,10225,Grey boulder 32,cave,1x1,-
+decor,item,10226,Grey boulder 33,cave,1x1,-
+decor,item,10227,Grey boulder 34,cave,1x1,-
+decor,item,10228,Grey boulder 35,cave,1x1,-
+decor,item,10229,Grey boulder 36,cave,1x1,-
+decor,item,10230,Grey boulder 37,cave,1x1,-
+decor,item,10231,Grey boulder 38,cave,1x1,-
+decor,item,10232,Grey boulder 39,cave,1x1,-
+decor,item,10233,Grey boulder 40,cave,1x1,-
+decor,item,6342,Mossy boulder 1,swamp,1x1,-
+decor,item,6343,Mossy boulder 2,swamp,1x1,-
+decor,item,6344,Mossy boulder 3,swamp,1x1,-
+decor,item,6345,Mossy boulder 4,swamp,1x1,-
+decor,item,6346,Mossy boulder 5,swamp,1x1,-
+decor,item,6347,Mossy boulder 6,swamp,1x1,-
+decor,item,6348,Mossy boulder 7,swamp,1x1,-
+decor,item,6349,Mossy boulder 8,swamp,1x1,-
+decor,item,6350,Mossy boulder 9,swamp,1x1,-
+decor,item,6351,Mossy boulder 10,swamp,1x1,-
+decor,item,6352,Mossy boulder 11,swamp,1x1,-
+decor,item,6353,Mossy boulder 12,swamp,1x1,-
+decor,item,7793,Rubble pile 1,cave,2x2,-
+decor,item,7794,Rubble pile 2,cave,1x1,-
+decor,item,7795,Rubble pile 3,cave,2x2,-
+decor,item,7796,Rubble pile 4,cave,2x2,-
+decor,item,7797,Rubble pile 5,cave,1x1,-
+decor,item,7798,Rubble pile 6,cave,2x2,-
+decor,item,7799,Rubble pile 7,cave,1x1,-
+decor,item,7800,Rubble pile 8,cave,2x2,-
+decor,item,7801,Rubble pile 9,cave,1x1,-
+decor,item,7802,Rubble pile 10,cave,2x2,-
+decor,item,7803,Rubble pile 11,cave,2x2,-
+decor,item,7804,Rubble pile 12,cave,1x1,-
+decor,item,7805,Rubble pile 13,cave,2x2,-
+decor,item,7806,Rubble pile 14,cave,1x1,-
+decor,item,7807,Rubble pile 15,cave,2x2,-
+decor,item,7808,Rubble pile 16,cave,1x1,-
+decor,item,7809,Rubble pile 17,cave,2x2,-
+decor,item,7810,Rubble pile 18,cave,2x2,-
+decor,item,7811,Rubble pile 19,cave,1x1,-
+decor,item,7812,Rubble pile 20,cave,2x2,-
+decor,item,7813,Rubble pile 21,cave,1x1,-
+decor,item,7814,Rubble pile 22,cave,2x2,-
+decor,item,7815,Rubble pile 23,cave,1x1,-
+decor,item,7817,Rubble pile 24,cave,1x1,-
+decor,item,7818,Rubble pile 25,cave,1x1,-
+decor,item,7819,Rubble pile 26,cave,1x1,-
+decor,item,7820,Rubble pile 27,cave,1x1,-
+decor,item,7821,Rubble pile 28,cave,1x1,-
+decor,item,7822,Rubble pile 29,cave,1x1,-
+decor,item,7823,Rubble pile 30,cave,1x1,-
+decor,item,7824,Rubble pile 31,cave,1x1,-
+decor,item,7825,Rubble pile 32,cave,1x1,-
+decor,item,7826,Rubble pile 33,cave,1x1,-
+decor,item,7827,Rubble pile 34,cave,1x1,-
+decor,item,7828,Rubble pile 35,cave,1x1,-
+decor,item,7829,Rubble pile 36,cave,1x1,-
+decor,item,7830,Rubble pile 37,cave,1x1,-
+decor,item,7831,Rubble pile 38,cave,1x1,-
+decor,item,7832,Rubble pile 39,cave,1x1,-
+decor,item,7528,Rubble pile 40,cave,2x2,-
+decor,item,7529,Rubble pile 41,cave,2x2,-
+decor,item,7530,Rubble pile 42,cave,2x2,-
+decor,item,7531,Rubble pile 43,cave,2x2,-
+decor,item,7532,Rubble pile 44,cave,2x2,-
+decor,item,7533,Rubble pile 45,cave,2x2,-
+decor,item,7534,Rubble pile 46,cave,2x2,-
+decor,item,7535,Rubble pile 47,cave,2x2,-
+decor,item,10949,Rubble pile 48,cave,1x1,-
+decor,item,10950,Rubble pile 49,cave,1x1,-
+decor,item,10951,Rubble pile 50,cave,1x1,-
+decor,item,10952,Rubble pile 51,cave,1x1,-
+decor,item,10953,Rubble pile 52,cave,1x1,-
+decor,item,10954,Rubble pile 53,cave,1x1,-
+decor,item,10955,Rubble pile 54,cave,1x1,-
+decor,item,10956,Rubble pile 55,cave,1x1,-
+decor,item,10957,Rubble pile 56,cave,1x1,-
+decor,item,10958,Rubble pile 57,cave,1x1,-
+decor,item,10959,Rubble pile 58,cave,1x1,-
+decor,item,10960,Rubble pile 59,cave,1x1,-
+decor,item,10962,Rubble pile 60,cave,1x1,-
+decor,item,10963,Rubble pile 61,cave,1x1,-
+decor,item,10964,Rubble pile 62,cave,1x1,-
+decor,item,10966,Rubble pile 63,cave,1x1,-
+decor,item,10967,Rubble pile 64,cave,1x1,-
+decor,item,10968,Rubble pile 65,cave,1x1,-
+decor,item,10970,Rubble pile 66,cave,1x1,-
+decor,item,10972,Rubble pile 67,cave,1x1,-
+decor,item,10974,Rubble pile 68,cave,1x1,-
+decor,item,10975,Rubble pile 69,cave,1x1,-
+decor,item,10976,Rubble pile 70,cave,1x1,-
+decor,item,10977,Rubble pile 71,cave,1x1,-
+decor,item,10978,Rubble pile 72,cave,1x1,-
+decor,item,10979,Rubble pile 73,cave,1x1,-
+decor,item,10984,Rubble pile 74,cave,1x1,-
+decor,item,10985,Rubble pile 75,cave,1x1,-
+decor,item,10986,Rubble pile 76,cave,1x1,-
+decor,item,10987,Rubble pile 77,cave,1x1,-
+decor,item,10988,Rubble pile 78,cave,1x1,-
+decor,item,10989,Rubble pile 79,cave,1x1,-
+decor,item,10991,Rubble pile 80,cave,1x1,-
+decor,item,11275,Rubble pile 81,cave,1x1,-
+decor,item,11276,Rubble pile 82,cave,1x1,-
+decor,item,11277,Rubble pile 83,cave,1x1,-
+decor,item,11278,Rubble pile 84,cave,1x1,-
+decor,item,11279,Rubble pile 85,cave,1x1,-
+decor,item,11280,Rubble pile 86,cave,1x1,-
+decor,item,11281,Rubble pile 87,cave,1x1,-
+decor,item,11282,Rubble pile 88,cave,1x1,-
+decor,item,11283,Rubble pile 89,cave,1x1,-
+decor,item,11284,Rubble pile 90,cave,1x1,-
+decor,item,11285,Rubble pile 91,cave,1x1,-
+decor,item,11286,Rubble pile 92,cave,1x1,-
+decor,item,11287,Rubble pile 93,cave,1x1,-
+decor,item,11288,Rubble pile 94,cave,1x1,-
+decor,item,11289,Rubble pile 95,cave,1x1,-
+decor,item,11874,Rubble pile 96,cave,1x1,-
+decor,item,11875,Rubble pile 97,cave,1x1,-
+decor,item,11876,Rubble pile 98,cave,1x1,-
+decor,item,11877,Rubble pile 99,cave,1x1,-
+decor,item,11878,Rubble pile 100,cave,1x1,-
+decor,item,11879,Rubble pile 101,cave,1x1,-
+decor,item,11880,Rubble pile 102,cave,1x1,-
+decor,item,11881,Rubble pile 103,cave,1x1,-
+decor,item,6303,Blood splatter 1,bloodhospital,1x1,-
+decor,item,6304,Blood splatter 2,bloodhospital,1x1,-
+decor,item,6305,Blood splatter 3,bloodhospital,1x1,-
+decor,item,6306,Blood splatter 4,bloodhospital,1x1,-
+decor,item,6307,Blood splatter 5,bloodhospital,1x1,-
+decor,item,6308,Blood splatter 6,bloodhospital,1x1,-
+decor,item,8520,Blood splatter 7,bloodhospital,1x1,-
+decor,item,8521,Blood splatter 8,bloodhospital,1x1,-
+decor,item,8522,Blood splatter 9,bloodhospital,1x1,-
+decor,item,8523,Blood splatter 10,bloodhospital,1x1,-
+decor,item,8524,Blood splatter 11,bloodhospital,1x1,-
+decor,item,8525,Blood splatter 12,bloodhospital,1x1,-
+decor,item,8583,Blood splatter 13,bloodhospital,1x1,-
+decor,item,8584,Blood splatter 14,bloodhospital,1x1,-
+decor,item,8585,Blood splatter 15,bloodhospital,1x1,-
+decor,item,8586,Blood splatter 16,bloodhospital,1x1,-
+decor,item,8587,Blood splatter 17,bloodhospital,1x1,-
+decor,item,8588,Blood splatter 18,bloodhospital,1x1,-
+decor,item,9216,Blood splatter 19,bloodhospital,1x1,-
+decor,item,9217,Blood splatter 20,bloodhospital,1x1,-
+decor,item,9218,Blood splatter 21,bloodhospital,1x1,-
+decor,item,9219,Blood splatter 22,bloodhospital,1x1,-
+decor,item,9220,Blood splatter 23,bloodhospital,1x1,-
+decor,item,9221,Blood splatter 24,bloodhospital,1x1,-
+decor,item,11630,Blood splatter 25,bloodhospital,1x1,-
+decor,item,11631,Blood splatter 26,bloodhospital,1x1,-
+decor,item,11632,Blood splatter 27,bloodhospital,1x1,-
+decor,item,11633,Blood splatter 28,bloodhospital,1x1,-
+decor,item,11634,Blood splatter 29,bloodhospital,1x1,-
+decor,item,11635,Blood splatter 30,bloodhospital,1x1,-
+decor,item,11752,Blood splatter 31,bloodhospital,1x1,-
+decor,item,11754,Blood splatter 32,bloodhospital,1x1,-
+decor,item,12119,Stone trough 1,bloodhospital,1x1,-
+decor,item,12120,Stone trough 2,bloodhospital,1x1,-
+decor,item,12121,Stone trough 3,bloodhospital,1x1,-
+decor,item,12123,Stone trough 4,bloodhospital,1x1,anim 8 frames
+decor,item,12124,Stone trough 5,bloodhospital,1x1,anim 8 frames
+decor,item,12125,Stone trough 6,bloodhospital,1x1,anim 8 frames
+decor,item,12127,Stone trough 7,bloodhospital,1x1,anim 8 frames
+decor,item,12128,Stone trough 8,bloodhospital,1x1,anim 8 frames
+decor,item,12129,Stone trough 9,bloodhospital,1x1,anim 8 frames
+decor,item,12131,Stone trough 10,bloodhospital,1x1,anim 8 frames
+decor,item,12132,Stone trough 11,bloodhospital,1x1,anim 8 frames
+decor,item,12133,Stone trough 12,bloodhospital,1x1,anim 8 frames
+decor,item,6170,Bones and skull 1,crypt,1x1,-
+decor,item,6171,Bones and skull 2,crypt,1x1,-
+decor,item,6172,Bones and skull 3,crypt,1x1,-
+decor,item,6173,Bones and skull 4,crypt,1x1,-
+decor,item,6174,Bones and skull 5,crypt,1x1,-
+decor,item,6175,Bones and skull 6,crypt,1x1,-
+decor,item,6176,Bones and skull 7,crypt,1x1,-
+decor,item,6177,Bones and skull 8,crypt,1x1,-
+decor,item,6178,Bones and skull 9,crypt,1x1,-
+decor,item,6179,Bones and skull 10,crypt,1x1,-
+decor,item,6180,Bones and skull 11,crypt,1x1,-
+decor,item,6181,Bones and skull 12,crypt,1x1,-
+decor,item,5961,Bones and skull 13,crypt,1x1,-
+decor,item,8973,Bones and skull 14,crypt,2x1,-
+decor,item,8976,Bones and skull 15,crypt,2x1,-
+decor,item,8991,Monster corpse 1,crypt,1x1,-
+decor,item,8992,Monster corpse 2,crypt,1x1,-
+decor,item,8993,Monster corpse 3,crypt,1x1,-
+decor,item,8994,Monster corpse 4,crypt,1x2,-
+decor,item,8995,Monster corpse 5,crypt,1x2,-
+decor,item,8996,Monster corpse 6,crypt,1x1,-
+decor,item,8997,Monster corpse 7,crypt,1x1,-
+decor,item,8998,Monster corpse 8,crypt,1x1,-
+decor,item,9008,Monster corpse 9,crypt,1x2,-
+decor,item,9009,Monster corpse 10,crypt,1x2,-
+decor,item,9010,Monster corpse 11,crypt,1x2,-
+decor,item,9011,Monster corpse 12,crypt,1x2,-
+decor,item,9012,Monster corpse 13,crypt,1x2,-
+decor,item,9013,Monster corpse 14,crypt,1x2,-
+decor,item,9014,Bone altar pool 1,crypt,1x1,anim 12 frames
+decor,item,9015,Bone altar pool 2,crypt,1x1,anim 12 frames
+decor,item,9016,Fire pot and cauldron 1,crypt,1x1,anim 12 frames
+decor,item,9017,Fire pot and cauldron 2,crypt,1x1,anim 12 frames
+decor,item,9018,Monster corpse 15,crypt,1x1,-
+decor,item,9019,Monster corpse 16,crypt,1x1,-
+decor,item,9020,Monster corpse 17,crypt,1x1,-
+decor,item,9021,Monster corpse 18,crypt,1x1,-
+decor,item,9022,Monster corpse 19,crypt,1x1,-
+decor,item,9023,Monster corpse 20,crypt,1x1,-
+decor,item,9024,Monster corpse 21,crypt,1x1,-
+decor,item,9025,Monster corpse 22,crypt,1x1,-
+decor,item,9026,Monster corpse 23,crypt,1x1,-
+decor,item,9027,Monster corpse 24,crypt,1x1,-
+decor,item,9028,Monster corpse 25,crypt,1x1,-
+decor,item,9240,Bones and skull 16,crypt,1x1,-
+decor,item,9241,Bones and skull 17,crypt,1x1,-
+decor,item,9242,Bones and skull 18,crypt,1x1,-
+decor,item,9243,Bones and skull 19,crypt,1x1,-
+decor,item,9195,Bones and skull 20,crypt,2x2,-
+decor,item,9198,Bones and skull 21,crypt,2x2,-
+decor,item,9255,Flame and brazier 1,crypt,2x2,anim 5 frames
+decor,item,9163,Fallen body 1,crypt,3x3,-
+decor,item,9164,Fallen body 2,crypt,3x3,-
+decor,item,9165,Fallen body 3,crypt,3x3,-
+decor,item,9170,Fallen body 4,crypt,3x3,-
+decor,item,9171,Fallen body 5,crypt,3x3,-
+decor,item,9172,Fallen body 6,crypt,3x3,-
+decor,item,11602,Fallen body 7,crypt,2x2,-
+decor,item,11603,Fallen body 8,crypt,2x2,-
+decor,item,11604,Fallen body 9,crypt,2x2,-
+decor,item,11605,Fallen body 10,crypt,2x2,-
+decor,item,11606,Fallen body 11,crypt,2x2,-
+decor,item,11607,Fallen body 12,crypt,2x2,-
+decor,item,11608,Fallen body 13,crypt,2x2,-
+decor,item,11609,Fallen body 14,crypt,2x2,-
+decor,item,11610,Fallen body 15,crypt,2x2,-
+decor,item,11611,Fallen body 16,crypt,2x2,-
+decor,item,11612,Fallen body 17,crypt,2x2,-
+decor,item,11613,Fallen body 18,crypt,2x2,-
+decor,item,11614,Fallen body 19,crypt,2x2,-
+decor,item,11615,Fallen body 20,crypt,2x2,-
+decor,item,11616,Fallen body 21,crypt,2x2,anim 10 frames
+decor,item,11617,Fallen body 22,crypt,2x2,-
+decor,item,11618,Fallen body 23,crypt,2x2,-
+decor,item,11619,Fallen body 24,crypt,2x2,-
+decor,item,11620,Fallen body 25,crypt,2x2,-
+decor,item,11621,Fallen body 26,crypt,2x2,-
+decor,item,11622,Fallen body 27,crypt,2x2,-
+decor,item,11623,Fallen body 28,crypt,2x2,-
+decor,item,11624,Fallen body 29,crypt,2x2,-
+decor,item,11625,Fallen body 30,crypt,2x2,-
+decor,item,9092,Monster corpse 26,crypt,2x2,-
+decor,item,9093,Monster corpse 27,crypt,2x2,-
+decor,item,9095,Monster corpse 28,crypt,2x2,-
+decor,item,9096,Monster corpse 29,crypt,2x2,-
+decor,item,9098,Monster corpse 30,crypt,2x2,-
+decor,item,9099,Monster corpse 31,crypt,2x2,-
+decor,item,9101,Monster corpse 32,crypt,2x2,-
+decor,item,9102,Monster corpse 33,crypt,2x2,-
+decor,item,9146,Monster corpse 34,crypt,2x2,-
+decor,item,9147,Monster corpse 35,crypt,2x2,-
+decor,item,9193,Monster corpse 36,crypt,2x2,-
+decor,item,9194,Monster corpse 37,crypt,2x2,-
+decor,item,9196,Monster corpse 38,crypt,2x2,-
+decor,item,9197,Monster corpse 39,crypt,2x2,-
+decor,item,9252,Monster corpse 40,crypt,1x2,-
+decor,item,9253,Monster corpse 41,crypt,1x2,-
+decor,item,9254,Monster corpse 42,crypt,1x2,-
+decor,item,9269,Monster corpse 43,crypt,2x2,-
+decor,item,9270,Monster corpse 44,crypt,2x2,-
+decor,item,9271,Monster corpse 45,crypt,2x2,-
+decor,item,9272,Monster corpse 46,crypt,1x2,-
+decor,item,9273,Monster corpse 47,crypt,1x2,-
+decor,item,9274,Monster corpse 48,crypt,1x2,-
+decor,item,9320,Monster corpse 49,crypt,2x2,-
+decor,item,9321,Monster corpse 50,crypt,2x2,-
+decor,item,9322,Monster corpse 51,crypt,2x2,-
+decor,item,9323,Monster corpse 52,crypt,2x2,-
+decor,item,9324,Monster corpse 53,crypt,2x2,-
+decor,item,9325,Monster corpse 54,crypt,2x2,-
+decor,item,9337,Monster corpse 55,crypt,2x2,-
+decor,item,9338,Monster corpse 56,crypt,2x2,-
+decor,item,9339,Monster corpse 57,crypt,2x2,-
+decor,item,9509,Monster corpse 58,crypt,2x2,-
+decor,item,9510,Monster corpse 59,crypt,2x2,-
+decor,item,9511,Monster corpse 60,crypt,2x2,-
+decor,item,7295,Monster corpse 61,crypt,2x2,-
+decor,item,7296,Monster corpse 62,crypt,2x2,-
+decor,item,7298,Monster corpse 63,crypt,2x2,-
+decor,item,7299,Monster corpse 64,crypt,2x2,-
+decor,item,6182,Cobweb or net 1,cursed,1x1,-
+decor,item,6183,Cobweb or net 2,cursed,1x1,-
+decor,item,6184,Cobweb or net 3,cursed,1x1,-
+decor,item,6185,Cobweb or net 4,cursed,1x1,-
+decor,item,6186,Cobweb or net 5,cursed,1x1,-
+decor,item,6187,Cobweb or net 6,cursed,1x1,-
+decor,item,6188,Cobweb or net 7,cursed,1x1,-
+decor,item,10414,Cobweb or net 8,cursed,1x2,-
+decor,item,10415,Cobweb or net 9,cursed,1x1,-
+decor,item,10416,Cobweb or net 10,cursed,1x1,-
+decor,item,10417,Cobweb or net 11,cursed,2x2,-
+decor,item,10418,Cobweb or net 12,cursed,2x2,-
+decor,item,10419,Cobweb or net 13,cursed,1x1,-
+decor,item,10420,Cobweb or net 14,cursed,2x2,-
+decor,item,10421,Cobweb or net 15,cursed,2x2,-
+decor,item,2745,Cobweb or net 16,cursed,2x1,-
+decor,item,2746,Cobweb or net 17,cursed,2x1,-
+decor,item,2747,Cobweb or net 18,cursed,2x1,-
+decor,item,2748,Cobweb or net 19,cursed,2x1,-
+decor,item,2749,Cobweb or net 20,cursed,1x2,-
+decor,item,2750,Cobweb or net 21,cursed,1x2,-
+decor,item,2751,Cobweb or net 22,cursed,1x2,-
+decor,item,2752,Cobweb or net 23,cursed,1x2,-
+decor,item,9434,Canopy bed 1,bloodhospital,2x1,-
+decor,item,9435,Canopy bed 2,bloodhospital,2x1,-
+decor,item,9436,Canopy bed 3,bloodhospital,2x1,-
+decor,item,9437,Canopy bed 4,bloodhospital,2x1,-
+decor,item,9438,Canopy bed 5,bloodhospital,2x1,-
+decor,item,9439,Canopy bed 6,bloodhospital,2x1,-
+decor,item,9440,Canopy bed 7,bloodhospital,1x2,-
+decor,item,9441,Canopy bed 8,bloodhospital,1x2,-
+decor,item,9442,Canopy bed 9,bloodhospital,1x2,-
+decor,item,9443,Canopy bed 10,bloodhospital,1x2,-
+decor,item,9444,Canopy bed 11,bloodhospital,1x2,-
+decor,item,9445,Canopy bed 12,bloodhospital,1x2,-
+decor,item,9446,Canopy bed 13,bloodhospital,2x1,-
+decor,item,9447,Canopy bed 14,bloodhospital,2x1,-
+decor,item,9448,Canopy bed 15,bloodhospital,2x1,-
+decor,item,9449,Canopy bed 16,bloodhospital,2x1,-
+decor,item,9450,Canopy bed 17,bloodhospital,2x1,-
+decor,item,9451,Canopy bed 18,bloodhospital,2x1,-
+decor,item,9452,Canopy bed 19,bloodhospital,1x2,-
+decor,item,9453,Canopy bed 20,bloodhospital,1x2,-
+decor,item,9454,Canopy bed 21,bloodhospital,1x2,-
+decor,item,9455,Canopy bed 22,bloodhospital,1x2,-
+decor,item,9456,Canopy bed 23,bloodhospital,1x2,-
+decor,item,9457,Canopy bed 24,bloodhospital,1x2,-
+decor,item,9458,Canopy bed 25,bloodhospital,2x1,-
+decor,item,9459,Canopy bed 26,bloodhospital,2x1,-
+decor,item,9460,Canopy bed 27,bloodhospital,2x1,-
+decor,item,9461,Canopy bed 28,bloodhospital,2x1,-
+decor,item,9462,Canopy bed 29,bloodhospital,2x1,-
+decor,item,9463,Canopy bed 30,bloodhospital,2x1,-
+decor,item,9464,Canopy bed 31,bloodhospital,1x2,-
+decor,item,9465,Canopy bed 32,bloodhospital,1x2,-
+decor,item,9466,Canopy bed 33,bloodhospital,1x2,-
+decor,item,9467,Canopy bed 34,bloodhospital,1x2,-
+decor,item,9468,Canopy bed 35,bloodhospital,1x2,-
+decor,item,9469,Canopy bed 36,bloodhospital,1x2,-
+decor,item,9470,Cupboard and chest 3,bloodhospital,2x2,-
+decor,item,9471,Cupboard and chest 4,bloodhospital,2x2,-
+decor,item,9472,Cupboard and chest 5,bloodhospital,2x2,-
+decor,item,9473,Cupboard and chest 6,bloodhospital,2x2,-
+decor,item,9474,Cupboard and chest 7,bloodhospital,2x2,-
+decor,item,9475,Cupboard and chest 8,bloodhospital,2x2,-
+decor,item,9476,Cupboard and chest 9,bloodhospital,2x1,-
+decor,item,9477,Cupboard and chest 10,bloodhospital,1x2,-
+decor,item,12822,Fur bed or bone stool 1,hauntedfarm,2x1,-
+decor,item,12823,Fur bed or bone stool 2,hauntedfarm,2x1,-
+decor,item,12824,Fur bed or bone stool 3,hauntedfarm,1x2,-
+decor,item,12825,Fur bed or bone stool 4,hauntedfarm,1x2,-
+decor,item,13095,Fur bed or bone stool 5,hauntedfarm,2x2,-
+decor,item,13096,Fur bed or bone stool 6,hauntedfarm,2x2,-
+decor,item,13097,Fur bed or bone stool 7,hauntedfarm,2x2,-
+decor,item,13098,Fur bed or bone stool 8,hauntedfarm,2x2,-
+decor,item,13099,Fur bed or bone stool 9,hauntedfarm,1x1,-
+decor,item,13100,Fur bed or bone stool 10,hauntedfarm,2x2,-
+decor,item,13101,Fur bed or bone stool 11,hauntedfarm,2x2,-
+decor,item,13102,Fur bed or bone stool 12,hauntedfarm,1x1,-
+decor,item,13103,Fur bed or bone stool 13,hauntedfarm,1x2,-
+decor,item,13104,Fur bed or bone stool 14,hauntedfarm,1x2,-
+decor,item,13105,Fur bed or bone stool 15,hauntedfarm,2x1,-
+decor,item,13106,Fur bed or bone stool 16,hauntedfarm,2x1,-
+decor,item,13107,Fur bed or bone stool 17,hauntedfarm,2x1,-
+decor,item,13108,Fur bed or bone stool 18,hauntedfarm,2x1,-
+decor,item,13109,Fur bed or bone stool 19,hauntedfarm,1x2,-
+decor,item,13110,Fur bed or bone stool 20,hauntedfarm,1x2,-
+decor,item,6562,"Table, chair or cupboard 1",library,1x1,-
+decor,item,6563,"Table, chair or cupboard 2",library,1x1,-
+decor,item,6564,"Table, chair or cupboard 3",library,1x1,-
+decor,item,6565,"Table, chair or cupboard 4",library,1x1,-
+decor,item,6566,"Table, chair or cupboard 5",library,1x1,-
+decor,item,6567,"Table, chair or cupboard 6",library,1x1,-
+decor,item,6568,"Table, chair or cupboard 7",library,1x1,-
+decor,item,6569,"Table, chair or cupboard 8",library,1x1,-
+decor,item,6570,"Table, chair or cupboard 9",library,1x1,-
+decor,item,6571,"Table, chair or cupboard 10",library,1x1,-
+decor,item,6572,"Table, chair or cupboard 11",library,1x1,-
+decor,item,6573,"Table, chair or cupboard 12",library,1x1,-
+decor,item,6574,"Table, chair or cupboard 13",library,1x1,-
+decor,item,6575,"Table, chair or cupboard 14",library,1x1,-
+decor,item,6576,"Table, chair or cupboard 15",library,1x1,-
+decor,item,6577,"Table, chair or cupboard 16",library,1x1,-
+decor,item,6578,"Table, chair or cupboard 17",library,1x1,-
+decor,item,10674,"Table, chair or cupboard 18",library,1x1,-
+decor,item,10675,"Table, chair or cupboard 19",library,1x1,-
+decor,item,10676,"Table, chair or cupboard 20",library,1x1,-
+decor,item,10677,"Table, chair or cupboard 21",library,1x1,-
+decor,item,10678,"Table, chair or cupboard 22",library,1x1,-
+decor,item,10679,"Table, chair or cupboard 23",library,1x1,-
+decor,item,10680,"Table, chair or cupboard 24",library,1x1,-
+decor,item,10681,"Table, chair or cupboard 25",library,1x1,-
+decor,item,10682,"Table, chair or cupboard 26",library,1x1,-
+decor,item,10683,Barrel 1,library,1x1,-
+decor,item,10684,Barrel 2,library,1x1,-
+decor,item,9276,"Table, chair or cupboard 27",library,1x1,-
+decor,item,9277,"Table, chair or cupboard 28",library,1x1,-
+decor,item,9278,"Table, chair or cupboard 29",library,1x1,-
+decor,item,9279,"Table, chair or cupboard 30",library,1x1,-
+decor,item,5821,"Table, chair or cupboard 31",library,2x2,-
+decor,item,5822,"Table, chair or cupboard 32",library,2x2,-
+decor,item,5874,"Table, chair or cupboard 33",library,2x2,-
+decor,item,5875,"Table, chair or cupboard 34",library,2x2,-
+decor,item,9487,"Table, chair or cupboard 35",library,2x2,-
+decor,item,9488,"Table, chair or cupboard 36",library,1x1,-
+decor,item,9489,"Table, chair or cupboard 37",library,1x1,-
+decor,item,9490,"Table, chair or cupboard 38",library,1x1,-
+decor,item,9491,"Table, chair or cupboard 39",library,1x1,-
+decor,item,5977,Barrel 3,generic,2x2,-
+decor,item,6483,Chest or crate 1,generic,1x1,-
+decor,item,6485,Chest or crate 2,generic,1x1,-
+decor,item,9481,Chest or crate 3,generic,1x2,-
+decor,item,9482,Chest or crate 4,generic,2x1,-
+decor,item,9483,Chest or crate 5,generic,1x2,-
+decor,item,9637,Chest or crate 6,generic,1x1,-
+decor,item,9638,Chest or crate 7,generic,1x1,-
+decor,item,9639,Chest or crate 8,generic,1x1,-
+decor,item,9640,Chest or crate 9,generic,1x1,-
+decor,item,10448,Chest or crate 10,generic,1x2,-
+decor,item,10449,Chest or crate 11,generic,2x1,-
+decor,item,10450,Chest or crate 12,generic,1x2,-
+decor,item,12871,Chest or crate 13,generic,1x1,-
+decor,item,10666,Chest or crate 14,generic,2x1,-
+decor,item,10992,Chest or crate 15,generic,1x1,-
+decor,item,10993,Chest or crate 16,generic,1x1,-
+decor,item,10994,Chest or crate 17,generic,1x1,-
+decor,item,10995,Chest or crate 18,generic,1x1,-
+decor,item,5817,Chest or crate 19,generic,1x1,-
+decor,item,7568,Barrel 4,generic,2x2,-
+decor,item,7569,Barrel 5,generic,2x2,-
+decor,item,7974,Barrel 6,generic,1x1,-
+decor,item,7975,Barrel 7,generic,1x1,-
+decor,item,7976,Barrel 8,generic,1x1,-
+decor,item,7977,Barrel 9,generic,1x1,-
+decor,item,7978,Barrel 10,generic,1x1,-
+decor,item,7979,Barrel 11,generic,1x1,-
+decor,item,7980,Barrel 12,generic,1x1,-
+decor,item,7981,Barrel 13,generic,1x1,-
+decor,item,7316,Red throne 1,celestial,2x2,-
+decor,item,7317,Red throne 2,celestial,2x2,-
+decor,item,9069,Red throne 3,celestial,2x2,-
+decor,item,11682,Mirror or painting 1,library,2x1,-
+decor,item,11683,Mirror or painting 2,library,1x2,-
+decor,item,11684,Mirror or painting 3,library,2x1,-
+decor,item,11685,Mirror or painting 4,library,1x2,-
+decor,item,12685,Mirror or painting 5,library,2x1,-
+decor,item,12686,Mirror or painting 6,library,2x1,-
+decor,item,12687,Mirror or painting 7,library,2x1,-
+decor,item,12688,Mirror or painting 8,library,2x1,-
+decor,item,12689,Mirror or painting 9,library,2x1,-
+decor,item,12690,Mirror or painting 10,library,2x1,-
+decor,item,12691,Mirror or painting 11,library,2x1,-
+decor,item,12692,Mirror or painting 12,library,2x1,-
+decor,item,11564,Weapon rack 1,generic,2x2,-
+decor,item,11565,Weapon rack 2,generic,2x2,-
+decor,item,11566,Weapon rack 3,generic,2x2,-
+decor,item,11567,Weapon rack 4,generic,2x2,-
+decor,item,11568,Weapon rack 5,generic,2x2,-
+decor,item,11569,Weapon rack 6,generic,2x2,-
+decor,item,11570,Weapon rack 7,generic,2x2,-
+decor,item,11571,Weapon rack 8,generic,2x2,-
+decor,item,11572,Weapon rack 9,generic,2x2,-
+decor,item,11573,Weapon rack 10,generic,2x2,-
+decor,item,11574,Weapon rack 11,generic,2x2,-
+decor,item,11575,Weapon rack 12,generic,2x2,-
+decor,item,11576,Weapon rack 13,generic,2x2,-
+decor,item,11577,Weapon rack 14,generic,2x2,-
+decor,item,11578,Weapon rack 15,generic,2x2,-
+decor,item,11579,Weapon rack 16,generic,2x2,-
+decor,item,11580,Weapon rack 17,generic,2x2,-
+decor,item,11581,Weapon rack 18,generic,2x2,-
+decor,item,11582,Weapon rack 19,generic,2x2,-
+decor,item,11583,Weapon rack 20,generic,2x2,-
+decor,item,11584,Hanging hide 1,generic,2x1,-
+decor,item,11585,Hanging hide 2,generic,1x2,-
+decor,item,11586,Hanging hide 3,generic,2x1,-
+decor,item,11587,Hanging hide 4,generic,1x2,-
+decor,item,11588,Hanging hide 5,generic,2x1,-
+decor,item,11589,Hanging hide 6,generic,1x2,-
+decor,item,7536,Wagon or wheel 1,hauntedfarm,2x2,-
+decor,item,7537,Wagon or wheel 2,hauntedfarm,2x2,-
+decor,item,7538,Wagon or wheel 3,hauntedfarm,2x2,-
+decor,item,7539,Wagon or wheel 4,hauntedfarm,2x2,-
+decor,item,7540,Wagon or wheel 5,hauntedfarm,2x2,-
+decor,item,7541,Wagon or wheel 6,hauntedfarm,2x2,-
+decor,item,7542,Wagon or wheel 7,hauntedfarm,2x2,-
+decor,item,7543,Wagon or wheel 8,hauntedfarm,2x2,-
+decor,item,12231,Wagon or wheel 9,hauntedfarm,2x2,anim 8 frames
+decor,item,12232,Wagon or wheel 10,hauntedfarm,2x2,anim 8 frames
+decor,item,12233,Wagon or wheel 11,hauntedfarm,2x2,anim 8 frames
+decor,item,12234,Wagon or wheel 12,hauntedfarm,1x2,anim 8 frames
+decor,item,12723,Stone fireplace 1,lava,2x2,-
+decor,item,12724,Stone fireplace 2,lava,2x2,anim 8 frames
+decor,item,12725,Stone fireplace 3,lava,2x2,-
+decor,item,12726,Stone fireplace 4,lava,2x2,anim 8 frames
+decor,item,12727,Stone fireplace 5,lava,2x2,-
+decor,item,12728,Stone fireplace 6,lava,2x2,anim 8 frames
+decor,item,12729,Stone fireplace 7,lava,2x2,-
+decor,item,12730,Stone fireplace 8,lava,2x2,anim 8 frames
+decor,item,12731,Stone fireplace 9,lava,2x2,-
+decor,item,12732,Stone fireplace 10,lava,2x2,anim 8 frames
+decor,item,12733,Stone fireplace 11,lava,2x2,-
+decor,item,12734,Stone fireplace 12,lava,2x2,anim 8 frames
+decor,item,12735,Stone fireplace 13,lava,2x2,-
+decor,item,12736,Stone fireplace 14,lava,2x2,anim 8 frames
+decor,item,12737,Stone fireplace 15,lava,2x2,-
+decor,item,12738,Stone fireplace 16,lava,2x2,anim 8 frames
+decor,item,12739,Stone fireplace 17,lava,2x2,-
+decor,item,12740,Stone fireplace 18,lava,2x2,anim 8 frames
+decor,item,12741,Stone fireplace 19,lava,2x2,-
+decor,item,12742,Stone fireplace 20,lava,2x2,anim 8 frames
+decor,item,12743,Stone fireplace 21,lava,2x2,-
+decor,item,12744,Stone fireplace 22,lava,2x2,anim 8 frames
+decor,item,12745,Stone fireplace 23,lava,2x2,-
+decor,item,12746,Stone fireplace 24,lava,2x2,anim 8 frames
+decor,item,12747,Stone fireplace 25,lava,2x2,-
+decor,item,12748,Stone fireplace 26,lava,2x2,anim 8 frames
+decor,item,12749,Stone fireplace 27,lava,2x2,-
+decor,item,12750,Stone fireplace 28,lava,2x2,anim 8 frames
+decor,item,8020,Flame and brazier 2,lava,2x2,anim 8 frames
+decor,item,8528,Flame and brazier 3,lava,2x2,anim 4 frames
+decor,item,8529,Flame and brazier 4,lava,2x2,-
+decor,item,8535,Flame and brazier 5,lava,2x2,anim 4 frames
+decor,item,8536,Flame and brazier 6,lava,2x2,-
+decor,item,8537,Flame and brazier 7,lava,2x2,anim 4 frames
+decor,item,8538,Flame and brazier 8,lava,2x2,-
+decor,item,8546,Flame and brazier 9,lava,2x2,anim 4 frames
+decor,item,8547,Flame and brazier 10,lava,2x2,-
+decor,item,8548,Flame and brazier 11,lava,2x2,anim 4 frames
+decor,item,8549,Flame and brazier 12,lava,2x2,-
+decor,item,8550,Flame and brazier 13,lava,2x2,anim 4 frames
+decor,item,8551,Flame and brazier 14,lava,2x2,-
+decor,item,8552,Flame and brazier 15,lava,2x2,anim 4 frames
+decor,item,8553,Flame and brazier 16,lava,2x2,-
+decor,item,8237,Flame and brazier 17,lava,2x2,anim 6 frames
+decor,item,8238,Flame and brazier 18,lava,1x1,anim 6 frames
+decor,item,8239,Flame and brazier 19,lava,2x2,anim 6 frames
+decor,item,8240,Flame and brazier 20,lava,2x2,anim 6 frames
+decor,item,8241,Flame and brazier 21,lava,1x1,anim 6 frames
+decor,item,8242,Flame and brazier 22,lava,2x2,anim 5 frames
+decor,item,8243,Flame and brazier 23,lava,2x2,anim 5 frames
+decor,item,11963,Flame and brazier 24,lava,2x1,anim 8 frames
+decor,item,11964,Flame and brazier 25,lava,1x2,anim 8 frames
+decor,item,11965,Flame and brazier 26,lava,2x2,anim 8 frames
+decor,item,11966,Flame and brazier 27,lava,2x1,anim 8 frames
+decor,item,11967,Flame and brazier 28,lava,2x1,anim 8 frames
+decor,item,11968,Flame and brazier 29,lava,1x2,anim 8 frames
+decor,item,11969,Flame and brazier 30,lava,1x2,anim 8 frames
+decor,item,5696,Flame and brazier 31,lava,2x2,anim 4 frames
+decor,item,5697,Flame and brazier 32,lava,2x2,anim 4 frames
+decor,item,10329,Torch or lamp 1,generic,2x2,-
+decor,item,10330,Torch or lamp 2,generic,2x2,-
+decor,item,10331,Torch or lamp 3,generic,2x2,-
+decor,item,10332,Torch or lamp 4,generic,2x2,-
+decor,item,10333,Torch or lamp 5,generic,2x2,-
+decor,item,10334,Torch or lamp 6,generic,2x2,-
+decor,item,10335,Torch or lamp 7,generic,2x2,-
+decor,item,10336,Torch or lamp 8,generic,2x2,-
+decor,item,10337,Torch or lamp 9,generic,2x2,-
+decor,item,10338,Torch or lamp 10,generic,2x2,-
+decor,item,10339,Torch or lamp 11,generic,2x2,-
+decor,item,10340,Torch or lamp 12,generic,2x2,-
+decor,item,10341,Torch or lamp 13,generic,2x1,-
+decor,item,10342,Torch or lamp 14,generic,2x1,anim 2 frames
+decor,item,10343,Torch or lamp 15,generic,2x1,-
+decor,item,10344,Torch or lamp 16,generic,2x1,anim 2 frames
+decor,item,10345,Torch or lamp 17,generic,2x1,-
+decor,item,10346,Torch or lamp 18,generic,2x1,anim 2 frames
+decor,item,10347,Torch or lamp 19,generic,2x1,-
+decor,item,10348,Torch or lamp 20,generic,2x1,anim 2 frames
+decor,item,10349,Torch or lamp 21,generic,1x2,-
+decor,item,10350,Torch or lamp 22,generic,1x2,anim 2 frames
+decor,item,10351,Torch or lamp 23,generic,1x2,-
+decor,item,10352,Torch or lamp 24,generic,1x2,anim 2 frames
+decor,item,10353,Torch or lamp 25,generic,1x2,-
+decor,item,10354,Torch or lamp 26,generic,1x2,anim 2 frames
+decor,item,10355,Torch or lamp 27,generic,1x2,-
+decor,item,10356,Torch or lamp 28,generic,1x2,anim 2 frames
+decor,item,10357,Fire pot and cauldron 3,generic,2x2,anim 6 frames
+decor,item,10358,Fire pot and cauldron 4,generic,1x1,anim 6 frames
+decor,item,10359,Fire pot and cauldron 5,generic,1x1,anim 6 frames
+decor,item,10394,Torch or lamp 29,generic,2x2,-
+decor,item,10395,Torch or lamp 30,generic,2x2,anim 8 frames
+decor,item,10398,Torch or lamp 31,generic,2x1,anim 8 frames
+decor,item,6425,Torch or lamp 32,generic,2x2,-
+decor,item,6426,Torch or lamp 33,generic,2x2,-
+decor,item,6427,Torch or lamp 34,generic,2x2,-
+decor,item,6428,Torch or lamp 35,generic,2x2,-
+decor,item,6461,Torch or lamp 36,generic,2x2,-
+decor,item,5695,Torch or lamp 37,generic,2x2,anim 4 frames
+decor,item,7424,Torch or lamp 38,generic,2x2,-
+decor,item,7425,Torch or lamp 39,generic,2x2,-
+decor,item,7426,Torch or lamp 40,generic,2x2,-
+decor,item,7427,Torch or lamp 41,generic,2x2,-
+decor,item,12683,Torch or lamp 42,generic,1x2,anim 8 frames
+decor,item,12684,Torch or lamp 43,generic,2x1,anim 8 frames
+decor,item,11323,Skeleton lamp 1,crypt,3x2,anim 2 frames
+decor,item,11324,Skeleton lamp 2,crypt,3x2,anim 2 frames
+decor,item,11325,Skeleton lamp 3,crypt,3x2,-
+decor,item,11326,Skeleton lamp 4,crypt,3x2,-
+decor,item,11327,Skeleton lamp 5,crypt,3x2,-
+decor,item,11328,Skeleton lamp 6,crypt,3x2,-
+decor,item,11329,Skeleton lamp 7,crypt,2x3,anim 2 frames
+decor,item,11330,Skeleton lamp 8,crypt,2x3,anim 2 frames
+decor,item,11331,Skeleton lamp 9,crypt,2x3,-
+decor,item,11332,Skeleton lamp 10,crypt,2x3,-
+decor,item,11333,Skeleton lamp 11,crypt,2x3,-
+decor,item,11971,Rope or noose 1,asylum,2x1,-
+decor,item,11972,Rope or noose 2,asylum,2x2,-
+decor,item,11973,Rope or noose 3,asylum,1x2,-
+decor,item,11991,Rope or noose 4,asylum,2x1,-
+decor,item,11992,Rope or noose 5,asylum,2x2,-
+decor,item,11993,Rope or noose 6,asylum,2x1,-
+decor,item,11994,Rope or noose 7,asylum,2x2,-
+decor,item,11995,Rope or noose 8,asylum,1x2,-
+decor,item,11996,Rope or noose 9,asylum,2x2,-
+decor,item,11997,Rope or noose 10,asylum,1x2,-
+decor,item,12241,Floor spike 1,asylum,1x1,-
+decor,item,12242,Floor spike 2,asylum,1x1,-
+decor,item,12243,Floor spike 3,asylum,1x1,-
+decor,item,12244,Floor spike 4,asylum,1x1,-
+decor,item,12246,Floor spike 5,asylum,1x1,-
+decor,item,12247,Floor spike 6,asylum,2x2,-
+decor,item,12248,Floor spike 7,asylum,1x1,-
+decor,item,7544,Banner 1,generic,2x2,-
+decor,item,7545,Banner 2,generic,2x2,-
+decor,item,7546,Banner 3,generic,2x2,-
+decor,item,7547,Banner 4,generic,2x2,-
+decor,item,7572,Banner 5,generic,2x2,-
+decor,item,7573,Banner 6,generic,2x2,-
+decor,item,8021,Portal or arcane rune 1,celestial,1x1,anim 4 frames
+decor,item,9516,Portal or arcane rune 2,celestial,1x1,anim 4 frames
+decor,item,12188,Portal or arcane rune 3,celestial,1x1,anim 4 frames
+decor,item,7973,Portal or arcane rune 4,celestial,1x1,anim 6 frames
+decor,item,8274,Portal or arcane rune 5,celestial,1x1,anim 6 frames
+decor,item,12585,Portal or arcane rune 6,celestial,1x1,anim 6 frames
+decor,item,9352,Timber beam 1,hauntedfarm,2x2,-
+decor,item,9353,Timber beam 2,hauntedfarm,1x1,-
+decor,item,9354,Timber beam 3,hauntedfarm,2x2,-
+decor,item,9356,Timber beam 4,hauntedfarm,2x2,-
+decor,item,9358,Timber beam 5,hauntedfarm,2x2,-
+decor,item,9359,Timber beam 6,hauntedfarm,2x2,-
+decor,item,9360,Timber beam 7,hauntedfarm,2x2,-
+decor,item,9361,Timber beam 8,hauntedfarm,2x2,-
+decor,item,9362,Timber beam 9,hauntedfarm,2x2,-
+decor,item,9363,Timber beam 10,hauntedfarm,2x2,-
+decor,item,9364,Timber beam 11,hauntedfarm,2x2,-
+decor,item,9365,Timber beam 12,hauntedfarm,2x2,-
+decor,item,9366,Timber beam 13,hauntedfarm,2x2,-
+decor,item,9367,Timber beam 14,hauntedfarm,2x2,-
+decor,item,9368,Timber beam 15,hauntedfarm,2x2,-
+decor,item,9369,Timber beam 16,hauntedfarm,2x2,-
+decor,item,9370,Timber beam 17,hauntedfarm,2x1,-
+decor,item,9373,Timber beam 18,hauntedfarm,1x1,-
+decor,item,9375,Timber beam 19,hauntedfarm,1x1,-
+decor,item,9376,Timber beam 20,hauntedfarm,1x1,-
+decor,item,9378,Timber beam 21,hauntedfarm,1x1,-
+decor,item,9380,Timber beam 22,hauntedfarm,2x1,-
+decor,item,9381,Timber beam 23,hauntedfarm,1x2,-
+decor,item,9384,Timber beam 24,hauntedfarm,2x2,-
+decor,item,9385,Timber beam 25,hauntedfarm,1x1,-
+decor,item,9386,Timber beam 26,hauntedfarm,1x1,-
+decor,item,9387,Timber beam 27,hauntedfarm,1x1,-
+decor,item,9388,Timber beam 28,hauntedfarm,1x1,-
+decor,item,9389,Timber beam 29,hauntedfarm,1x1,-
+decor,item,9391,Timber beam 30,hauntedfarm,2x2,-
+decor,item,9392,Timber beam 31,hauntedfarm,2x2,-
+decor,item,9393,Timber beam 32,hauntedfarm,1x1,-
+decor,item,9394,Timber beam 33,hauntedfarm,2x2,-
+decor,item,9396,Timber beam 34,hauntedfarm,1x1,-
+decor,item,9397,Timber beam 35,hauntedfarm,2x1,-
+decor,item,9398,Timber beam 36,hauntedfarm,2x2,-
+decor,item,9399,Timber beam 37,hauntedfarm,2x2,-
+decor,item,9401,Timber beam 38,hauntedfarm,1x1,-
+decor,item,9405,Timber beam 39,hauntedfarm,2x1,-
+decor,item,9406,Timber beam 40,hauntedfarm,2x2,-
+decor,item,9407,Timber beam 41,hauntedfarm,2x2,-
+decor,item,9408,Timber beam 42,hauntedfarm,2x2,-
+decor,item,9409,Timber beam 43,hauntedfarm,2x2,-
+decor,item,12371,Ice column 1,ice,2x2,-
+decor,item,12372,Ice column 2,ice,2x2,-
+decor,item,12373,Ice column 3,ice,2x2,-
+decor,item,12374,Ice column 4,ice,2x2,-
+decor,item,12375,Ice column 5,ice,2x2,-
+decor,item,12376,Ice column 6,ice,2x2,-
+decor,item,12377,Ice column 7,ice,2x2,-
+decor,item,12378,Ice column 8,ice,2x2,-
+decor,item,12379,Ice column 9,ice,2x2,-
+decor,item,12380,Ice column 10,ice,2x2,-
+decor,item,12381,Ice column 11,ice,2x2,-
+decor,item,12382,Ice column 12,ice,2x2,-
+decor,item,12448,Ice column 13,ice,1x2,-
+decor,item,12449,Ice column 14,ice,1x1,-
+decor,item,12450,Ice column 15,ice,2x1,-
+decor,item,12451,Ice column 16,ice,1x1,-
+decor,item,11521,Wall shield 1,generic,2x1,-
+decor,item,11522,Wall shield 2,generic,1x2,-
+decor,item,11523,Wall shield 3,generic,2x1,-
+decor,item,11524,Wall shield 4,generic,1x2,-
+decor,item,11525,Wall shield 5,generic,2x1,-
+decor,item,11526,Wall shield 6,generic,1x2,-
+decor,item,11527,Wall shield 7,generic,2x1,-
+decor,item,11528,Wall shield 8,generic,1x2,-
+decor,item,11529,Wall shield 9,generic,2x1,-
+decor,item,11530,Wall shield 10,generic,1x2,-
+decor,item,11531,Wall shield 11,generic,2x1,-
+decor,item,11532,Wall shield 12,generic,1x2,-
+decor,item,11533,Wall shield 13,generic,2x1,-
+decor,item,11534,Wall shield 14,generic,1x2,-
+decor,item,11535,Wall shield 15,generic,2x1,-
+decor,item,11536,Wall shield 16,generic,1x2,-
+decor,item,6321,Cave rock block 1,cave,2x2,"big rock block, blocks movement"
+decor,item,6322,Cave rock block 2,cave,2x2,"big rock block, blocks movement"
+decor,item,6323,Cave rock block 3,cave,2x2,"big rock block, blocks movement"
+decor,item,6324,Cave rock block 4,cave,2x2,"big rock block, blocks movement"
+decor,item,6326,Cave rock block 5,cave,2x2,"big rock block, blocks movement"
+decor,item,6327,Cave rock block 6,cave,2x2,"big rock block, blocks movement"
+decor,item,6328,Cave rock block 7,cave,2x2,"big rock block, blocks movement"
+decor,item,6330,Cave rock block 8,cave,2x2,"big rock block, blocks movement"
+decor,item,6331,Cave rock block 9,cave,2x2,"big rock block, blocks movement"
+decor,item,6333,Cave rock block 10,cave,2x2,"big rock block, blocks movement"
+decor,item,8121,Cave rock block 11,cave,2x2,"big rock block, blocks movement"
+decor,item,8122,Cave rock block 12,cave,2x2,"big rock block, blocks movement"
+decor,item,8123,Cave rock block 13,cave,2x2,"big rock block, blocks movement"
+decor,item,8126,Cave rock block 14,cave,2x2,"big rock block, blocks movement"
+decor,item,8129,Cave rock block 15,cave,2x2,"big rock block, blocks movement"
+decor,item,8130,Cave rock block 16,cave,2x2,"big rock block, blocks movement"
+decor,item,8131,Cave rock block 17,cave,2x2,"big rock block, blocks movement"
+decor,item,8135,Cave rock block 18,cave,2x2,"big rock block, blocks movement"
+decor,item,8136,Cave rock block 19,cave,2x2,"big rock block, blocks movement"
+decor,item,8140,Cave rock block 20,cave,2x2,"big rock block, blocks movement"
+decor,item,8143,Cave rock block 21,cave,2x2,"big rock block, blocks movement"
+decor,item,8146,Cave rock block 22,cave,2x2,"big rock block, blocks movement"
+decor,item,8149,Cave rock block 23,cave,2x2,"big rock block, blocks movement"
+decor,item,8152,Cave rock block 24,cave,2x2,"big rock block, blocks movement"
+decor,item,8155,Cave rock block 25,cave,2x2,"big rock block, blocks movement"
+decor,item,8158,Cave rock block 26,cave,2x2,"big rock block, blocks movement"
+decor,item,8161,Cave rock block 27,cave,2x2,"big rock block, blocks movement"
+decor,item,9723,Shingle roof piece 1,hauntedfarm,2x2,roof piece
+decor,item,9724,Shingle roof piece 2,hauntedfarm,2x2,roof piece
+decor,item,9726,Shingle roof piece 3,hauntedfarm,2x2,roof piece
+decor,item,9729,Shingle roof piece 4,hauntedfarm,2x2,roof piece
+decor,item,9736,Shingle roof piece 5,hauntedfarm,2x2,roof piece
+decor,item,9738,Shingle roof piece 6,hauntedfarm,2x2,roof piece
+decor,item,9829,Shingle roof piece 7,hauntedfarm,2x2,roof piece
+decor,item,9830,Shingle roof piece 8,hauntedfarm,2x2,roof piece
+decor,item,9831,Shingle roof piece 9,hauntedfarm,2x2,roof piece
+decor,item,9832,Shingle roof piece 10,hauntedfarm,2x2,roof piece
+decor,item,9833,Shingle roof piece 11,hauntedfarm,2x1,roof piece
+decor,item,9834,Shingle roof piece 12,hauntedfarm,2x2,roof piece
+decor,item,9740,Thatch roof piece 1,hauntedfarm,2x2,roof piece
+decor,item,9741,Thatch roof piece 2,hauntedfarm,2x2,roof piece
+decor,item,9742,Thatch roof piece 3,hauntedfarm,2x2,roof piece
+decor,item,9743,Thatch roof piece 4,hauntedfarm,2x1,roof piece
+decor,item,9744,Thatch roof piece 5,hauntedfarm,2x2,roof piece
+decor,item,9745,Thatch roof piece 6,hauntedfarm,2x2,roof piece
+decor,item,9746,Thatch roof piece 7,hauntedfarm,2x2,roof piece
+decor,item,9747,Thatch roof piece 8,hauntedfarm,1x2,roof piece
+decor,item,9748,Thatch roof piece 9,hauntedfarm,2x2,roof piece
+decor,item,9750,Thatch roof piece 10,hauntedfarm,2x2,roof piece
+decor,item,9752,Thatch roof piece 11,hauntedfarm,2x2,roof piece
+decor,item,9754,Thatch roof piece 12,hauntedfarm,2x2,roof piece
+decor,item,9760,Thatch roof piece 13,hauntedfarm,2x2,roof piece
+decor,item,9761,Thatch roof piece 14,hauntedfarm,2x2,roof piece
+decor,item,9762,Thatch roof piece 15,hauntedfarm,2x2,roof piece
+decor,item,9763,Thatch roof piece 16,hauntedfarm,2x2,roof piece
+wall,item,10290,Dark grey brick wall horizontal 1,asylum,2x2,role=H; set=Dark grey brick wall; floor=i6465
+wall,item,10291,Dark grey brick wall vertical 1,asylum,2x2,role=V; set=Dark grey brick wall; floor=i6465
+wall,item,10292,Dark grey brick wall corner 1,asylum,2x2,role=C; set=Dark grey brick wall; floor=i6465
+wall,item,10293,Dark grey brick wall post 1,asylum,2x2,role=P; set=Dark grey brick wall; floor=i6465
+wall,item,10300,Dark grey brick wall horizontal window 1,asylum,2x2,role=window_h; set=Dark grey brick wall; floor=i6465
+wall,item,10302,Dark grey brick wall vertical window 1,asylum,2x2,role=window_v; set=Dark grey brick wall; floor=i6465
+wall,item,10294,Dark grey brick wall special piece 1,asylum,2x2,role=other; set=Dark grey brick wall; floor=i6465; broken or special variant
+wall,item,10295,Dark grey brick wall special piece 2,asylum,2x2,role=other; set=Dark grey brick wall; floor=i6465; broken or special variant
+wall,item,10304,Dark grey brick wall special piece 3,asylum,2x2,role=other; set=Dark grey brick wall; floor=i6465; broken or special variant
+wall,item,10305,Dark grey brick wall special piece 4,asylum,2x2,role=other; set=Dark grey brick wall; floor=i6465; broken or special variant
+wall,item,10306,Dark grey brick wall special piece 5,asylum,2x2,role=other; set=Dark grey brick wall; floor=i6465; broken or special variant
+wall,item,10307,Dark grey brick wall special piece 6,asylum,2x2,role=other; set=Dark grey brick wall; floor=i6465; broken or special variant
+wall,item,10308,Dark grey brick wall special piece 7,asylum,2x2,role=other; set=Dark grey brick wall; floor=i6465; broken or special variant
+wall,item,10309,Dark grey brick wall special piece 8,asylum,2x2,role=other; set=Dark grey brick wall; floor=i6465; broken or special variant
+wall,item,10310,Dark grey brick wall special piece 9,asylum,1x2,role=other; set=Dark grey brick wall; floor=i6465; broken or special variant
+wall,item,10311,Dark grey brick wall special piece 10,asylum,1x2,role=other; set=Dark grey brick wall; floor=i6465; broken or special variant
+wall,item,10312,Dark grey brick wall special piece 11,asylum,1x2,role=other; set=Dark grey brick wall; floor=i6465; broken or special variant
+wall,item,10313,Dark grey brick wall special piece 12,asylum,1x2,role=other; set=Dark grey brick wall; floor=i6465; broken or special variant
+wall,item,10314,Dark grey brick wall special piece 13,asylum,2x2,role=other; set=Dark grey brick wall; floor=i6465; broken or special variant
+wall,item,10315,Dark grey brick wall special piece 14,asylum,2x2,role=other; set=Dark grey brick wall; floor=i6465; broken or special variant
+wall,item,10316,Dark grey brick wall special piece 15,asylum,2x2,role=other; set=Dark grey brick wall; floor=i6465; broken or special variant
+wall,item,10317,Dark grey brick wall special piece 16,asylum,2x2,role=other; set=Dark grey brick wall; floor=i6465; broken or special variant
+wall,item,10318,Dark grey brick wall special piece 17,asylum,2x1,role=other; set=Dark grey brick wall; floor=i6465; broken or special variant
+wall,item,10319,Dark grey brick wall special piece 18,asylum,2x1,role=other; set=Dark grey brick wall; floor=i6465; broken or special variant
+wall,item,10320,Dark grey brick wall special piece 19,asylum,2x1,role=other; set=Dark grey brick wall; floor=i6465; broken or special variant
+wall,item,10321,Dark grey brick wall special piece 20,asylum,2x1,role=other; set=Dark grey brick wall; floor=i6465; broken or special variant
+wall,item,7442,Blood red brick wall horizontal 1,bloodhospital,2x2,role=H; set=Blood red brick wall; floor=i9610
+wall,item,7857,Blood red brick wall horizontal 2,bloodhospital,2x2,role=H; set=Blood red brick wall; floor=i9610
+wall,item,7859,Blood red brick wall horizontal 3,bloodhospital,2x2,role=H; set=Blood red brick wall; floor=i9610
+wall,item,7865,Blood red brick wall horizontal 4,bloodhospital,2x2,role=H; set=Blood red brick wall; floor=i9610
+wall,item,7446,Blood red brick wall vertical 1,bloodhospital,2x2,role=V; set=Blood red brick wall; floor=i9610
+wall,item,7856,Blood red brick wall vertical 2,bloodhospital,2x2,role=V; set=Blood red brick wall; floor=i9610
+wall,item,7861,Blood red brick wall vertical 3,bloodhospital,2x2,role=V; set=Blood red brick wall; floor=i9610
+wall,item,7863,Blood red brick wall vertical 4,bloodhospital,2x2,role=V; set=Blood red brick wall; floor=i9610
+wall,item,7447,Blood red brick wall corner 1,bloodhospital,2x2,role=C; set=Blood red brick wall; floor=i9610
+wall,item,7860,Blood red brick wall corner 2,bloodhospital,2x2,role=C; set=Blood red brick wall; floor=i9610
+wall,item,7862,Blood red brick wall corner 3,bloodhospital,2x2,role=C; set=Blood red brick wall; floor=i9610
+wall,item,7864,Blood red brick wall corner 4,bloodhospital,2x2,role=C; set=Blood red brick wall; floor=i9610
+wall,item,7866,Blood red brick wall corner 5,bloodhospital,2x2,role=C; set=Blood red brick wall; floor=i9610
+wall,item,7441,Blood red brick wall post 1,bloodhospital,2x2,role=P; set=Blood red brick wall; floor=i9610
+wall,item,7858,Blood red brick wall post 2,bloodhospital,2x2,role=P; set=Blood red brick wall; floor=i9610
+wall,item,7428,Blood red brick wall horizontal end 1,bloodhospital,2x2,role=EH; set=Blood red brick wall; floor=i9610
+wall,item,7432,Blood red brick wall vertical end 1,bloodhospital,2x2,role=EV; set=Blood red brick wall; floor=i9610
+wall,item,7440,Blood red brick wall horizontal door 1,bloodhospital,2x2,role=door_h; set=Blood red brick wall; floor=i9610; closed
+wall,item,7436,Blood red brick wall horizontal door 2,bloodhospital,2x2,role=door_h; set=Blood red brick wall; floor=i9610; open leaf (walkable)
+wall,item,7445,Blood red brick wall vertical door 1,bloodhospital,2x2,role=door_v; set=Blood red brick wall; floor=i9610; closed
+wall,item,7437,Blood red brick wall vertical door 2,bloodhospital,2x2,role=door_v; set=Blood red brick wall; floor=i9610; open leaf (walkable)
+wall,item,7438,Blood red brick wall special piece 1,bloodhospital,2x2,role=other; set=Blood red brick wall; floor=i9610; broken or special variant
+wall,item,7439,Blood red brick wall special piece 2,bloodhospital,2x2,role=other; set=Blood red brick wall; floor=i9610; broken or special variant
+wall,item,7450,Blood red brick wall special piece 3,bloodhospital,2x2,role=other; set=Blood red brick wall; floor=i9610; broken or special variant
+wall,item,7453,Blood red brick wall special piece 4,bloodhospital,2x2,role=other; set=Blood red brick wall; floor=i9610; broken or special variant
+wall,item,7443,Blood red brick wall special piece 5,bloodhospital,2x2,role=other; set=Blood red brick wall; floor=i9610; broken or special variant
+wall,item,7444,Blood red brick wall special piece 6,bloodhospital,2x2,role=other; set=Blood red brick wall; floor=i9610; broken or special variant
+wall,item,7448,Blood red brick wall special piece 7,bloodhospital,2x2,role=other; set=Blood red brick wall; floor=i9610; broken or special variant
+wall,item,7449,Blood red brick wall special piece 8,bloodhospital,2x2,role=other; set=Blood red brick wall; floor=i9610; broken or special variant
+wall,item,7451,Blood red brick wall special piece 9,bloodhospital,2x2,role=other; set=Blood red brick wall; floor=i9610; broken or special variant
+wall,item,7452,Blood red brick wall special piece 10,bloodhospital,2x2,role=other; set=Blood red brick wall; floor=i9610; broken or special variant
+wall,item,7454,Blood red brick wall special piece 11,bloodhospital,2x2,role=other; set=Blood red brick wall; floor=i9610; broken or special variant
+wall,item,7455,Blood red brick wall special piece 12,bloodhospital,2x2,role=other; set=Blood red brick wall; floor=i9610; broken or special variant
+wall,item,7380,Ruined grey brick wall horizontal 1,cursed,2x2,role=H; set=Ruined grey brick wall; floor=i10451
+wall,item,7384,Ruined grey brick wall vertical 1,cursed,2x2,role=V; set=Ruined grey brick wall; floor=i10451
+wall,item,7385,Ruined grey brick wall corner 1,cursed,2x2,role=C; set=Ruined grey brick wall; floor=i10451
+wall,item,7379,Ruined grey brick wall post 1,cursed,2x2,role=P; set=Ruined grey brick wall; floor=i10451
+wall,item,7366,Ruined grey brick wall horizontal end 1,cursed,2x2,role=EH; set=Ruined grey brick wall; floor=i10451
+wall,item,7370,Ruined grey brick wall vertical end 1,cursed,2x2,role=EV; set=Ruined grey brick wall; floor=i10451
+wall,item,7377,Ruined grey brick wall horizontal door 1,cursed,2x2,role=door_h; set=Ruined grey brick wall; floor=i10451; closed
+wall,item,7376,Ruined grey brick wall horizontal door 2,cursed,2x2,role=door_h; set=Ruined grey brick wall; floor=i10451; open leaf (walkable)
+wall,item,7383,Ruined grey brick wall vertical door 1,cursed,2x2,role=door_v; set=Ruined grey brick wall; floor=i10451; closed
+wall,item,7378,Ruined grey brick wall vertical door 2,cursed,2x2,role=door_v; set=Ruined grey brick wall; floor=i10451; open leaf (walkable)
+wall,item,7374,Ruined grey brick wall special piece 1,cursed,2x2,role=other; set=Ruined grey brick wall; floor=i10451; broken or special variant
+wall,item,7375,Ruined grey brick wall special piece 2,cursed,2x2,role=other; set=Ruined grey brick wall; floor=i10451; broken or special variant
+wall,item,7388,Ruined grey brick wall special piece 3,cursed,2x2,role=other; set=Ruined grey brick wall; floor=i10451; broken or special variant
+wall,item,7381,Ruined grey brick wall special piece 4,cursed,2x2,role=other; set=Ruined grey brick wall; floor=i10451; broken or special variant
+wall,item,7382,Ruined grey brick wall special piece 5,cursed,2x2,role=other; set=Ruined grey brick wall; floor=i10451; broken or special variant
+wall,item,7386,Ruined grey brick wall special piece 6,cursed,2x2,role=other; set=Ruined grey brick wall; floor=i10451; broken or special variant
+wall,item,7387,Ruined grey brick wall special piece 7,cursed,2x2,role=other; set=Ruined grey brick wall; floor=i10451; broken or special variant
+wall,item,7389,Ruined grey brick wall special piece 8,cursed,2x2,role=other; set=Ruined grey brick wall; floor=i10451; broken or special variant
+wall,item,7390,Ruined grey brick wall special piece 9,cursed,2x2,role=other; set=Ruined grey brick wall; floor=i10451; broken or special variant
+wall,item,7391,Ruined grey brick wall special piece 10,cursed,2x2,role=other; set=Ruined grey brick wall; floor=i10451; broken or special variant
+wall,item,7392,Ruined grey brick wall special piece 11,cursed,2x2,role=other; set=Ruined grey brick wall; floor=i10451; broken or special variant
+wall,item,7393,Ruined grey brick wall special piece 12,cursed,2x2,role=other; set=Ruined grey brick wall; floor=i10451; broken or special variant
+wall,item,7200,Black edged grey brick wall horizontal 1,library,2x2,role=H; set=Black edged grey brick wall; floor=i6462
+wall,item,7210,Black edged grey brick wall horizontal 2,library,2x2,role=H; set=Black edged grey brick wall; floor=i6462
+wall,item,7199,Black edged grey brick wall vertical 1,library,2x2,role=V; set=Black edged grey brick wall; floor=i6462
+wall,item,7201,Black edged grey brick wall corner 1,library,2x2,role=C; set=Black edged grey brick wall; floor=i6462
+wall,item,7203,Black edged grey brick wall horizontal window 1,library,2x2,role=window_h; set=Black edged grey brick wall; floor=i6462
+wall,item,7205,Black edged grey brick wall horizontal window 2,library,2x2,role=window_h; set=Black edged grey brick wall; floor=i6462
+wall,item,7202,Black edged grey brick wall vertical window 1,library,2x2,role=window_v; set=Black edged grey brick wall; floor=i6462
+wall,item,7204,Black edged grey brick wall vertical window 2,library,2x2,role=window_v; set=Black edged grey brick wall; floor=i6462
+wall,item,7209,Black edged grey brick wall special piece 1,library,2x2,role=other; set=Black edged grey brick wall; floor=i6462; broken or special variant
+wall,item,7211,Black edged grey brick wall special piece 2,library,2x2,role=other; set=Black edged grey brick wall; floor=i6462; broken or special variant
+wall,item,7212,Black edged grey brick wall special piece 3,library,2x2,role=other; set=Black edged grey brick wall; floor=i6462; broken or special variant
+wall,item,7213,Black edged grey brick wall special piece 4,library,2x2,role=other; set=Black edged grey brick wall; floor=i6462; broken or special variant
+wall,item,12626,Dark brown stone wall horizontal 1,asylum,2x2,role=H; set=Dark brown stone wall; floor=i9049
+wall,item,12627,Dark brown stone wall horizontal 2,asylum,2x2,role=H; set=Dark brown stone wall; floor=i9049
+wall,item,12621,Dark brown stone wall vertical 1,asylum,2x2,role=V; set=Dark brown stone wall; floor=i9049
+wall,item,12622,Dark brown stone wall vertical 2,asylum,2x2,role=V; set=Dark brown stone wall; floor=i9049
+wall,item,12623,Dark brown stone wall corner 1,asylum,2x2,role=C; set=Dark brown stone wall; floor=i9049
+wall,item,12624,Dark brown stone wall corner 2,asylum,2x2,role=C; set=Dark brown stone wall; floor=i9049
+wall,item,12635,Dark brown stone wall post 1,asylum,2x2,role=P; set=Dark brown stone wall; floor=i9049
+wall,item,12636,Dark brown stone wall post 2,asylum,2x2,role=P; set=Dark brown stone wall; floor=i9049
+wall,item,12679,Dark brown stone wall horizontal door 1,asylum,2x2,role=door_h; set=Dark brown stone wall; floor=i9049; closed
+wall,item,12682,Dark brown stone wall horizontal door 2,asylum,2x2,role=door_h; set=Dark brown stone wall; floor=i9049; closed
+wall,item,12680,Dark brown stone wall horizontal door 3,asylum,2x2,role=door_h; set=Dark brown stone wall; floor=i9049; open leaf (walkable)
+wall,item,12677,Dark brown stone wall vertical door 1,asylum,2x2,role=door_v; set=Dark brown stone wall; floor=i9049; closed
+wall,item,12681,Dark brown stone wall vertical door 2,asylum,2x2,role=door_v; set=Dark brown stone wall; floor=i9049; closed
+wall,item,12678,Dark brown stone wall vertical door 3,asylum,2x2,role=door_v; set=Dark brown stone wall; floor=i9049; open leaf (walkable)
+wall,item,12637,Dark brown stone wall horizontal window 1,asylum,2x2,role=window_h; set=Dark brown stone wall; floor=i9049
+wall,item,12638,Dark brown stone wall horizontal window 2,asylum,2x2,role=window_h; set=Dark brown stone wall; floor=i9049
+wall,item,12639,Dark brown stone wall horizontal window 3,asylum,2x2,role=window_h; set=Dark brown stone wall; floor=i9049
+wall,item,12640,Dark brown stone wall horizontal window 4,asylum,2x2,role=window_h; set=Dark brown stone wall; floor=i9049
+wall,item,12641,Dark brown stone wall horizontal window 5,asylum,2x2,role=window_h; set=Dark brown stone wall; floor=i9049
+wall,item,12642,Dark brown stone wall horizontal window 6,asylum,2x2,role=window_h; set=Dark brown stone wall; floor=i9049
+wall,item,12643,Dark brown stone wall horizontal window 7,asylum,2x2,role=window_h; set=Dark brown stone wall; floor=i9049
+wall,item,12644,Dark brown stone wall horizontal window 8,asylum,2x2,role=window_h; set=Dark brown stone wall; floor=i9049
+wall,item,12645,Dark brown stone wall horizontal window 9,asylum,2x2,role=window_h; set=Dark brown stone wall; floor=i9049
+wall,item,12646,Dark brown stone wall horizontal window 10,asylum,2x2,role=window_h; set=Dark brown stone wall; floor=i9049
+wall,item,12657,Dark brown stone wall horizontal window 11,asylum,2x2,role=window_h; set=Dark brown stone wall; floor=i9049
+wall,item,12658,Dark brown stone wall horizontal window 12,asylum,2x2,role=window_h; set=Dark brown stone wall; floor=i9049
+wall,item,12659,Dark brown stone wall horizontal window 13,asylum,2x2,role=window_h; set=Dark brown stone wall; floor=i9049
+wall,item,12660,Dark brown stone wall horizontal window 14,asylum,2x2,role=window_h; set=Dark brown stone wall; floor=i9049
+wall,item,12661,Dark brown stone wall horizontal window 15,asylum,2x2,role=window_h; set=Dark brown stone wall; floor=i9049
+wall,item,12662,Dark brown stone wall horizontal window 16,asylum,2x2,role=window_h; set=Dark brown stone wall; floor=i9049
+wall,item,12663,Dark brown stone wall horizontal window 17,asylum,2x2,role=window_h; set=Dark brown stone wall; floor=i9049
+wall,item,12664,Dark brown stone wall horizontal window 18,asylum,2x2,role=window_h; set=Dark brown stone wall; floor=i9049
+wall,item,12665,Dark brown stone wall horizontal window 19,asylum,2x2,role=window_h; set=Dark brown stone wall; floor=i9049
+wall,item,12666,Dark brown stone wall horizontal window 20,asylum,2x2,role=window_h; set=Dark brown stone wall; floor=i9049
+wall,item,12647,Dark brown stone wall vertical window 1,asylum,2x2,role=window_v; set=Dark brown stone wall; floor=i9049
+wall,item,12648,Dark brown stone wall vertical window 2,asylum,2x2,role=window_v; set=Dark brown stone wall; floor=i9049
+wall,item,12649,Dark brown stone wall vertical window 3,asylum,2x2,role=window_v; set=Dark brown stone wall; floor=i9049
+wall,item,12650,Dark brown stone wall vertical window 4,asylum,2x2,role=window_v; set=Dark brown stone wall; floor=i9049
+wall,item,12651,Dark brown stone wall vertical window 5,asylum,2x2,role=window_v; set=Dark brown stone wall; floor=i9049
+wall,item,12652,Dark brown stone wall vertical window 6,asylum,2x2,role=window_v; set=Dark brown stone wall; floor=i9049
+wall,item,12653,Dark brown stone wall vertical window 7,asylum,2x2,role=window_v; set=Dark brown stone wall; floor=i9049
+wall,item,12654,Dark brown stone wall vertical window 8,asylum,2x2,role=window_v; set=Dark brown stone wall; floor=i9049
+wall,item,12655,Dark brown stone wall vertical window 9,asylum,2x2,role=window_v; set=Dark brown stone wall; floor=i9049
+wall,item,12656,Dark brown stone wall vertical window 10,asylum,2x2,role=window_v; set=Dark brown stone wall; floor=i9049
+wall,item,12667,Dark brown stone wall vertical window 11,asylum,2x2,role=window_v; set=Dark brown stone wall; floor=i9049
+wall,item,12668,Dark brown stone wall vertical window 12,asylum,2x2,role=window_v; set=Dark brown stone wall; floor=i9049
+wall,item,12669,Dark brown stone wall vertical window 13,asylum,2x2,role=window_v; set=Dark brown stone wall; floor=i9049
+wall,item,12670,Dark brown stone wall vertical window 14,asylum,2x2,role=window_v; set=Dark brown stone wall; floor=i9049
+wall,item,12671,Dark brown stone wall vertical window 15,asylum,2x2,role=window_v; set=Dark brown stone wall; floor=i9049
+wall,item,12672,Dark brown stone wall vertical window 16,asylum,2x2,role=window_v; set=Dark brown stone wall; floor=i9049
+wall,item,12673,Dark brown stone wall vertical window 17,asylum,2x2,role=window_v; set=Dark brown stone wall; floor=i9049
+wall,item,12674,Dark brown stone wall vertical window 18,asylum,2x2,role=window_v; set=Dark brown stone wall; floor=i9049
+wall,item,12675,Dark brown stone wall vertical window 19,asylum,2x2,role=window_v; set=Dark brown stone wall; floor=i9049
+wall,item,12676,Dark brown stone wall vertical window 20,asylum,2x2,role=window_v; set=Dark brown stone wall; floor=i9049
+wall,item,12608,Dark brown stone wall special piece 1,asylum,2x2,role=other; set=Dark brown stone wall; floor=i9049; broken or special variant
+wall,item,12609,Dark brown stone wall special piece 2,asylum,2x2,role=other; set=Dark brown stone wall; floor=i9049; broken or special variant
+wall,item,12610,Dark brown stone wall special piece 3,asylum,2x2,role=other; set=Dark brown stone wall; floor=i9049; broken or special variant
+wall,item,12611,Dark brown stone wall special piece 4,asylum,2x2,role=other; set=Dark brown stone wall; floor=i9049; broken or special variant
+wall,item,12612,Dark brown stone wall special piece 5,asylum,2x2,role=other; set=Dark brown stone wall; floor=i9049; broken or special variant
+wall,item,12613,Dark brown stone wall special piece 6,asylum,2x2,role=other; set=Dark brown stone wall; floor=i9049; broken or special variant
+wall,item,12614,Dark brown stone wall special piece 7,asylum,2x2,role=other; set=Dark brown stone wall; floor=i9049; broken or special variant
+wall,item,12615,Dark brown stone wall special piece 8,asylum,2x2,role=other; set=Dark brown stone wall; floor=i9049; broken or special variant
+wall,item,12616,Dark brown stone wall special piece 9,asylum,2x2,role=other; set=Dark brown stone wall; floor=i9049; broken or special variant
+wall,item,12617,Dark brown stone wall special piece 10,asylum,2x2,role=other; set=Dark brown stone wall; floor=i9049; broken or special variant
+wall,item,12618,Dark brown stone wall special piece 11,asylum,2x2,role=other; set=Dark brown stone wall; floor=i9049; broken or special variant
+wall,item,12619,Dark brown stone wall special piece 12,asylum,2x2,role=other; set=Dark brown stone wall; floor=i9049; broken or special variant
+wall,item,12620,Dark brown stone wall special piece 13,asylum,2x2,role=other; set=Dark brown stone wall; floor=i9049; broken or special variant
+wall,item,12625,Dark brown stone wall special piece 14,asylum,2x2,role=other; set=Dark brown stone wall; floor=i9049; broken or special variant
+wall,item,7412,Crimson carved stone wall horizontal 1,bloodhospital,2x2,role=H; set=Crimson carved stone wall; floor=i6933
+wall,item,7413,Crimson carved stone wall horizontal 2,bloodhospital,2x2,role=H; set=Crimson carved stone wall; floor=i6933
+wall,item,7414,Crimson carved stone wall horizontal 3,bloodhospital,2x2,role=H; set=Crimson carved stone wall; floor=i6933
+wall,item,7421,Crimson carved stone wall horizontal 4,bloodhospital,2x2,role=H; set=Crimson carved stone wall; floor=i6933
+wall,item,7422,Crimson carved stone wall horizontal 5,bloodhospital,2x2,role=H; set=Crimson carved stone wall; floor=i6933
+wall,item,7423,Crimson carved stone wall horizontal 6,bloodhospital,2x2,role=H; set=Crimson carved stone wall; floor=i6933
+wall,item,7845,Crimson carved stone wall horizontal 7,bloodhospital,2x2,role=H; set=Crimson carved stone wall; floor=i6933
+wall,item,7847,Crimson carved stone wall horizontal 8,bloodhospital,2x2,role=H; set=Crimson carved stone wall; floor=i6933
+wall,item,7853,Crimson carved stone wall horizontal 9,bloodhospital,2x2,role=H; set=Crimson carved stone wall; floor=i6933
+wall,item,7409,Crimson carved stone wall vertical 1,bloodhospital,2x2,role=V; set=Crimson carved stone wall; floor=i6933
+wall,item,7410,Crimson carved stone wall vertical 2,bloodhospital,2x2,role=V; set=Crimson carved stone wall; floor=i6933
+wall,item,7411,Crimson carved stone wall vertical 3,bloodhospital,2x2,role=V; set=Crimson carved stone wall; floor=i6933
+wall,item,7844,Crimson carved stone wall vertical 4,bloodhospital,2x2,role=V; set=Crimson carved stone wall; floor=i6933
+wall,item,7849,Crimson carved stone wall vertical 5,bloodhospital,2x2,role=V; set=Crimson carved stone wall; floor=i6933
+wall,item,7851,Crimson carved stone wall vertical 6,bloodhospital,2x2,role=V; set=Crimson carved stone wall; floor=i6933
+wall,item,7415,Crimson carved stone wall corner 1,bloodhospital,2x2,role=C; set=Crimson carved stone wall; floor=i6933
+wall,item,7416,Crimson carved stone wall corner 2,bloodhospital,2x2,role=C; set=Crimson carved stone wall; floor=i6933
+wall,item,7417,Crimson carved stone wall corner 3,bloodhospital,2x2,role=C; set=Crimson carved stone wall; floor=i6933
+wall,item,7848,Crimson carved stone wall corner 4,bloodhospital,2x2,role=C; set=Crimson carved stone wall; floor=i6933
+wall,item,7850,Crimson carved stone wall corner 5,bloodhospital,2x2,role=C; set=Crimson carved stone wall; floor=i6933
+wall,item,7852,Crimson carved stone wall corner 6,bloodhospital,2x2,role=C; set=Crimson carved stone wall; floor=i6933
+wall,item,7854,Crimson carved stone wall corner 7,bloodhospital,2x2,role=C; set=Crimson carved stone wall; floor=i6933
+wall,item,7418,Crimson carved stone wall post 1,bloodhospital,2x2,role=P; set=Crimson carved stone wall; floor=i6933
+wall,item,7419,Crimson carved stone wall post 2,bloodhospital,2x2,role=P; set=Crimson carved stone wall; floor=i6933
+wall,item,7420,Crimson carved stone wall post 3,bloodhospital,2x2,role=P; set=Crimson carved stone wall; floor=i6933
+wall,item,7846,Crimson carved stone wall post 4,bloodhospital,2x2,role=P; set=Crimson carved stone wall; floor=i6933
+wall,item,7397,Beige carved stone wall horizontal 1,library,2x2,role=H; set=Beige carved stone wall; floor=i6634
+wall,item,7398,Beige carved stone wall horizontal 2,library,2x2,role=H; set=Beige carved stone wall; floor=i6634
+wall,item,7399,Beige carved stone wall horizontal 3,library,2x2,role=H; set=Beige carved stone wall; floor=i6634
+wall,item,7406,Beige carved stone wall horizontal 4,library,2x2,role=H; set=Beige carved stone wall; floor=i6634
+wall,item,7407,Beige carved stone wall horizontal 5,library,2x2,role=H; set=Beige carved stone wall; floor=i6634
+wall,item,7408,Beige carved stone wall horizontal 6,library,2x2,role=H; set=Beige carved stone wall; floor=i6634
+wall,item,7394,Beige carved stone wall vertical 1,library,2x2,role=V; set=Beige carved stone wall; floor=i6634
+wall,item,7395,Beige carved stone wall vertical 2,library,2x2,role=V; set=Beige carved stone wall; floor=i6634
+wall,item,7396,Beige carved stone wall vertical 3,library,2x2,role=V; set=Beige carved stone wall; floor=i6634
+wall,item,7400,Beige carved stone wall corner 1,library,2x2,role=C; set=Beige carved stone wall; floor=i6634
+wall,item,7401,Beige carved stone wall corner 2,library,2x2,role=C; set=Beige carved stone wall; floor=i6634
+wall,item,7402,Beige carved stone wall corner 3,library,2x2,role=C; set=Beige carved stone wall; floor=i6634
+wall,item,7403,Beige carved stone wall post 1,library,2x2,role=P; set=Beige carved stone wall; floor=i6634
+wall,item,7404,Beige carved stone wall post 2,library,2x2,role=P; set=Beige carved stone wall; floor=i6634
+wall,item,7405,Beige carved stone wall post 3,library,2x2,role=P; set=Beige carved stone wall; floor=i6634
+wall,item,8082,Grey cobble wall horizontal 1,cave,2x2,role=H; set=Grey cobble wall; floor=i6459
+wall,item,8084,Grey cobble wall horizontal 2,cave,2x2,role=H; set=Grey cobble wall; floor=i6459
+wall,item,8090,Grey cobble wall horizontal 3,cave,2x2,role=H; set=Grey cobble wall; floor=i6459
+wall,item,8081,Grey cobble wall vertical 1,cave,2x2,role=V; set=Grey cobble wall; floor=i6459
+wall,item,8086,Grey cobble wall vertical 2,cave,2x2,role=V; set=Grey cobble wall; floor=i6459
+wall,item,8088,Grey cobble wall vertical 3,cave,2x2,role=V; set=Grey cobble wall; floor=i6459
+wall,item,8085,Grey cobble wall corner 1,cave,2x2,role=C; set=Grey cobble wall; floor=i6459
+wall,item,8087,Grey cobble wall corner 2,cave,2x2,role=C; set=Grey cobble wall; floor=i6459
+wall,item,8089,Grey cobble wall corner 3,cave,2x2,role=C; set=Grey cobble wall; floor=i6459
+wall,item,8091,Grey cobble wall corner 4,cave,2x2,role=C; set=Grey cobble wall; floor=i6459
+wall,item,8083,Grey cobble wall post 1,cave,2x2,role=P; set=Grey cobble wall; floor=i6459
+wall,item,8120,Grey cobble wall post 2,cave,2x2,role=P; set=Grey cobble wall; floor=i6459
+wall,item,8118,Grey cobble wall special piece 1,cave,2x2,role=other; set=Grey cobble wall; floor=i6459; broken or special variant
+wall,item,8119,Grey cobble wall special piece 2,cave,2x2,role=other; set=Grey cobble wall; floor=i6459; broken or special variant
+wall,item,8220,Olive carved ruin wall horizontal 1,cursed,2x2,role=H; set=Olive carved ruin wall; floor=i8188
+wall,item,8223,Olive carved ruin wall horizontal 2,cursed,2x2,role=H; set=Olive carved ruin wall; floor=i8188
+wall,item,8224,Olive carved ruin wall horizontal 3,cursed,2x2,role=H; set=Olive carved ruin wall; floor=i8188
+wall,item,8226,Olive carved ruin wall horizontal 4,cursed,2x2,role=H; set=Olive carved ruin wall; floor=i8188
+wall,item,8210,Olive carved ruin wall vertical 1,cursed,2x2,role=V; set=Olive carved ruin wall; floor=i8188
+wall,item,8219,Olive carved ruin wall vertical 2,cursed,2x2,role=V; set=Olive carved ruin wall; floor=i8188
+wall,item,8222,Olive carved ruin wall vertical 3,cursed,2x2,role=V; set=Olive carved ruin wall; floor=i8188
+wall,item,8225,Olive carved ruin wall vertical 4,cursed,2x2,role=V; set=Olive carved ruin wall; floor=i8188
+wall,item,8232,Olive carved ruin wall vertical 5,cursed,2x2,role=V; set=Olive carved ruin wall; floor=i8188
+wall,item,8218,Olive carved ruin wall corner 1,cursed,2x2,role=C; set=Olive carved ruin wall; floor=i8188
+wall,item,8217,Olive carved ruin wall post 1,cursed,2x2,role=P; set=Olive carved ruin wall; floor=i8188
+wall,item,8211,Olive carved ruin wall special piece 1,cursed,2x2,role=other; set=Olive carved ruin wall; floor=i8188; broken or special variant
+wall,item,8195,Olive carved ruin wall special piece 2,cursed,1x2,role=other; set=Olive carved ruin wall; floor=i8188; broken or special variant
+wall,item,8196,Olive carved ruin wall special piece 3,cursed,1x1,role=other; set=Olive carved ruin wall; floor=i8188; broken or special variant
+wall,item,8197,Olive carved ruin wall special piece 4,cursed,1x2,role=other; set=Olive carved ruin wall; floor=i8188; broken or special variant
+wall,item,8198,Olive carved ruin wall special piece 5,cursed,2x2,role=other; set=Olive carved ruin wall; floor=i8188; broken or special variant
+wall,item,8199,Olive carved ruin wall special piece 6,cursed,2x2,role=other; set=Olive carved ruin wall; floor=i8188; broken or special variant
+wall,item,8200,Olive carved ruin wall special piece 7,cursed,1x2,role=other; set=Olive carved ruin wall; floor=i8188; broken or special variant
+wall,item,8201,Olive carved ruin wall special piece 8,cursed,2x2,role=other; set=Olive carved ruin wall; floor=i8188; broken or special variant
+wall,item,8202,Olive carved ruin wall special piece 9,cursed,2x2,role=other; set=Olive carved ruin wall; floor=i8188; broken or special variant
+wall,item,8234,Olive carved ruin wall special piece 10,cursed,2x2,role=other; set=Olive carved ruin wall; floor=i8188; broken or special variant
+wall,item,8235,Olive carved ruin wall special piece 11,cursed,2x2,role=other; set=Olive carved ruin wall; floor=i8188; broken or special variant
+wall,item,12956,Sandstone ruin wall horizontal 1,cursed,2x2,role=H; set=Sandstone ruin wall; floor=i6634
+wall,item,12970,Sandstone ruin wall horizontal 2,cursed,2x2,role=H; set=Sandstone ruin wall; floor=i6634
+wall,item,12957,Sandstone ruin wall vertical 1,cursed,2x2,role=V; set=Sandstone ruin wall; floor=i6634
+wall,item,12971,Sandstone ruin wall vertical 2,cursed,2x2,role=V; set=Sandstone ruin wall; floor=i6634
+wall,item,12958,Sandstone ruin wall corner 1,cursed,2x2,role=C; set=Sandstone ruin wall; floor=i6634
+wall,item,12968,Sandstone ruin wall post 1,cursed,2x2,role=P; set=Sandstone ruin wall; floor=i6634
+wall,item,12969,Sandstone ruin wall post 2,cursed,2x2,role=P; set=Sandstone ruin wall; floor=i6634
+wall,item,12960,Sandstone ruin wall horizontal window 1,cursed,2x2,role=window_h; set=Sandstone ruin wall; floor=i6634
+wall,item,12972,Sandstone ruin wall horizontal window 2,cursed,2x2,role=window_h; set=Sandstone ruin wall; floor=i6634
+wall,item,12961,Sandstone ruin wall vertical window 1,cursed,2x2,role=window_v; set=Sandstone ruin wall; floor=i6634
+wall,item,12973,Sandstone ruin wall vertical window 2,cursed,2x2,role=window_v; set=Sandstone ruin wall; floor=i6634
+wall,item,7164,Grey stone block wall horizontal 1,cave,2x2,role=H; set=Grey stone block wall; floor=i8033
+wall,item,7163,Grey stone block wall vertical 1,cave,2x2,role=V; set=Grey stone block wall; floor=i8033
+wall,item,7166,Grey stone block wall corner 1,cave,2x2,role=C; set=Grey stone block wall; floor=i8033
+wall,item,7165,Grey stone block wall post 1,cave,2x2,role=P; set=Grey stone block wall; floor=i8033
+wall,item,7169,Grey stone block wall horizontal window 1,cave,2x2,role=window_h; set=Grey stone block wall; floor=i8033
+wall,item,7170,Grey stone block wall horizontal window 2,cave,2x2,role=window_h; set=Grey stone block wall; floor=i8033
+wall,item,7167,Grey stone block wall vertical window 1,cave,2x2,role=window_v; set=Grey stone block wall; floor=i8033
+wall,item,7168,Grey stone block wall vertical window 2,cave,2x2,role=window_v; set=Grey stone block wall; floor=i8033
+wall,item,7233,Mossy grey stone wall horizontal 1,cursed,2x2,role=H; set=Mossy grey stone wall; floor=i8190
+wall,item,7234,Mossy grey stone wall vertical 1,cursed,2x2,role=V; set=Mossy grey stone wall; floor=i8190
+wall,item,7235,Mossy grey stone wall corner 1,cursed,2x2,role=C; set=Mossy grey stone wall; floor=i8190
+wall,item,7236,Mossy grey stone wall post 1,cursed,2x2,role=P; set=Mossy grey stone wall; floor=i8190
+wall,item,6131,Low grey stone wall horizontal 1,cave,2x1,role=H; set=Low grey stone wall; floor=i10457
+wall,item,6168,Low grey stone wall horizontal 2,cave,2x1,role=H; set=Low grey stone wall; floor=i10457
+wall,item,6130,Low grey stone wall vertical 1,cave,1x2,role=V; set=Low grey stone wall; floor=i10457
+wall,item,6167,Low grey stone wall vertical 2,cave,1x2,role=V; set=Low grey stone wall; floor=i10457
+wall,item,6132,Low grey stone wall corner 1,cave,2x2,role=C; set=Low grey stone wall; floor=i10457
+wall,item,6169,Low grey stone wall corner 2,cave,2x2,role=C; set=Low grey stone wall; floor=i10457
+wall,item,6135,Low tan stone wall horizontal 1,library,2x1,role=H; set=Low tan stone wall; floor=i6446
+wall,item,6164,Low tan stone wall horizontal 2,library,2x1,role=H; set=Low tan stone wall; floor=i6446
+wall,item,6134,Low tan stone wall vertical 1,library,1x2,role=V; set=Low tan stone wall; floor=i6446
+wall,item,6163,Low tan stone wall vertical 2,library,1x2,role=V; set=Low tan stone wall; floor=i6446
+wall,item,6136,Low tan stone wall corner 1,library,2x2,role=C; set=Low tan stone wall; floor=i6446
+wall,item,6165,Low tan stone wall corner 2,library,2x2,role=C; set=Low tan stone wall; floor=i6446
+wall,item,12393,Ice block wall horizontal 1,ice,2x2,role=H; set=Ice block wall; floor=i6286
+wall,item,12394,Ice block wall vertical 1,ice,2x2,role=V; set=Ice block wall; floor=i6286
+wall,item,12395,Ice block wall corner 1,ice,2x2,role=C; set=Ice block wall; floor=i6286
+wall,item,12396,Ice block wall post 1,ice,2x2,role=P; set=Ice block wall; floor=i6286
+wall,item,12441,Ice block wall horizontal window 1,ice,2x2,role=window_h; set=Ice block wall; floor=i6286
+wall,item,12442,Ice block wall horizontal window 2,ice,2x2,role=window_h; set=Ice block wall; floor=i6286
+wall,item,12445,Ice block wall horizontal window 3,ice,2x2,role=window_h; set=Ice block wall; floor=i6286
+wall,item,12443,Ice block wall special piece 1,ice,2x2,role=other; set=Ice block wall; floor=i6286; broken or special variant
+wall,item,12444,Ice block wall special piece 2,ice,2x2,role=other; set=Ice block wall; floor=i6286; broken or special variant
+wall,item,12433,Ice block wall special piece 3,ice,2x1,role=other; set=Ice block wall; floor=i6286; broken or special variant
+wall,item,12434,Ice block wall special piece 4,ice,2x1,role=other; set=Ice block wall; floor=i6286; broken or special variant
+wall,item,12435,Ice block wall special piece 5,ice,2x2,role=other; set=Ice block wall; floor=i6286; broken or special variant
+wall,item,12436,Ice block wall special piece 6,ice,2x2,role=other; set=Ice block wall; floor=i6286; broken or special variant
+wall,item,12437,Ice block wall special piece 7,ice,2x2,role=other; set=Ice block wall; floor=i6286; broken or special variant
+wall,item,12438,Ice block wall special piece 8,ice,1x2,role=other; set=Ice block wall; floor=i6286; broken or special variant
+wall,item,12439,Ice block wall special piece 9,ice,2x2,role=other; set=Ice block wall; floor=i6286; broken or special variant
+wall,item,12440,Ice block wall special piece 10,ice,2x2,role=other; set=Ice block wall; floor=i6286; broken or special variant
+wall,item,9839,Dark log cabin wall horizontal 1,hauntedfarm,2x2,role=H; set=Dark log cabin wall; floor=i11231
+wall,item,9838,Dark log cabin wall vertical 1,hauntedfarm,2x2,role=V; set=Dark log cabin wall; floor=i11231
+wall,item,9840,Dark log cabin wall corner 1,hauntedfarm,2x2,role=C; set=Dark log cabin wall; floor=i11231
+wall,item,9841,Dark log cabin wall horizontal door 1,hauntedfarm,2x2,role=door_h; set=Dark log cabin wall; floor=i11231; closed
+wall,item,9843,Dark log cabin wall vertical door 1,hauntedfarm,2x2,role=door_v; set=Dark log cabin wall; floor=i11231; closed
+wall,item,9850,Dark log cabin wall horizontal window 1,hauntedfarm,2x2,role=window_h; set=Dark log cabin wall; floor=i11231
+wall,item,9851,Dark log cabin wall horizontal window 2,hauntedfarm,2x2,role=window_h; set=Dark log cabin wall; floor=i11231
+wall,item,9852,Dark log cabin wall horizontal window 3,hauntedfarm,2x2,role=window_h; set=Dark log cabin wall; floor=i11231
+wall,item,9847,Dark log cabin wall vertical window 1,hauntedfarm,2x2,role=window_v; set=Dark log cabin wall; floor=i11231
+wall,item,9848,Dark log cabin wall vertical window 2,hauntedfarm,2x2,role=window_v; set=Dark log cabin wall; floor=i11231
+wall,item,9849,Dark log cabin wall vertical window 3,hauntedfarm,2x2,role=window_v; set=Dark log cabin wall; floor=i11231
+wall,item,9876,Plank cabin wall horizontal 1,hauntedfarm,2x2,role=H; set=Plank cabin wall; floor=i9049
+wall,item,9877,Plank cabin wall horizontal 2,hauntedfarm,2x2,role=H; set=Plank cabin wall; floor=i9049
+wall,item,9878,Plank cabin wall vertical 1,hauntedfarm,2x2,role=V; set=Plank cabin wall; floor=i9049
+wall,item,9879,Plank cabin wall vertical 2,hauntedfarm,2x2,role=V; set=Plank cabin wall; floor=i9049
+wall,item,9881,Plank cabin wall corner 1,hauntedfarm,2x2,role=C; set=Plank cabin wall; floor=i9049
+wall,item,9868,Plank cabin wall post 1,hauntedfarm,2x2,role=P; set=Plank cabin wall; floor=i9049
+wall,item,9869,Plank cabin wall post 2,hauntedfarm,2x2,role=P; set=Plank cabin wall; floor=i9049
+wall,item,9872,Plank cabin wall horizontal door 1,hauntedfarm,2x2,role=door_h; set=Plank cabin wall; floor=i9049; closed
+wall,item,9855,Plank cabin wall horizontal window 1,hauntedfarm,2x2,role=window_h; set=Plank cabin wall; floor=i9049
+wall,item,9857,Plank cabin wall horizontal window 2,hauntedfarm,2x2,role=window_h; set=Plank cabin wall; floor=i9049
+wall,item,9858,Plank cabin wall vertical window 1,hauntedfarm,2x2,role=window_v; set=Plank cabin wall; floor=i9049
+wall,item,9860,Plank cabin wall vertical window 2,hauntedfarm,2x2,role=window_v; set=Plank cabin wall; floor=i9049
+wall,item,9880,Plank cabin wall special piece 1,hauntedfarm,2x2,role=other; set=Plank cabin wall; floor=i9049; broken or special variant
+wall,item,11952,Iron lattice fence horizontal 1,asylum,2x2,role=H; set=Iron lattice fence; floor=i10326
+wall,item,11312,Iron lattice fence horizontal 2,asylum,4x2,role=H; set=Iron lattice fence; floor=i10326
+wall,item,11316,Iron lattice fence horizontal 3,asylum,4x2,role=H; set=Iron lattice fence; floor=i10326
+wall,item,11317,Iron lattice fence horizontal 4,asylum,4x2,role=H; set=Iron lattice fence; floor=i10326
+wall,item,11951,Iron lattice fence vertical 1,asylum,2x2,role=V; set=Iron lattice fence; floor=i10326
+wall,item,11313,Iron lattice fence vertical 2,asylum,2x4,role=V; set=Iron lattice fence; floor=i10326
+wall,item,11314,Iron lattice fence vertical 3,asylum,2x4,role=V; set=Iron lattice fence; floor=i10326
+wall,item,11315,Iron lattice fence vertical 4,asylum,2x4,role=V; set=Iron lattice fence; floor=i10326
+wall,item,11953,Iron lattice fence corner 1,asylum,2x2,role=C; set=Iron lattice fence; floor=i10326
+wall,item,11318,Iron lattice fence post 1,asylum,2x2,role=P; set=Iron lattice fence; floor=i10326
+wall,item,11319,Iron lattice fence post 2,asylum,2x2,role=P; set=Iron lattice fence; floor=i10326
+wall,item,11501,Iron lattice fence horizontal end 1,asylum,2x2,role=EH; set=Iron lattice fence; floor=i10326
+wall,item,11321,Iron lattice fence vertical end 1,asylum,2x2,role=EV; set=Iron lattice fence; floor=i10326
+wall,item,11508,Log palisade horizontal 1,hauntedfarm,2x2,role=H; set=Log palisade; floor=i6210
+wall,item,11509,Log palisade horizontal 2,hauntedfarm,2x2,role=H; set=Log palisade; floor=i6210
+wall,item,11512,Log palisade vertical 1,hauntedfarm,2x2,role=V; set=Log palisade; floor=i6210
+wall,item,11513,Log palisade vertical 2,hauntedfarm,2x2,role=V; set=Log palisade; floor=i6210
+wall,item,11516,Log palisade corner 1,hauntedfarm,2x2,role=C; set=Log palisade; floor=i6210
+wall,item,11517,Log palisade corner 2,hauntedfarm,2x2,role=C; set=Log palisade; floor=i6210
+wall,item,11514,Log palisade corner 3,hauntedfarm,2x2,role=C; set=Log palisade; floor=i6210
+wall,item,11515,Log palisade corner 4,hauntedfarm,2x2,role=C; set=Log palisade; floor=i6210
+wall,item,11504,Log palisade post 1,hauntedfarm,2x2,role=P; set=Log palisade; floor=i6210
+wall,item,11505,Log palisade post 2,hauntedfarm,2x2,role=P; set=Log palisade; floor=i6210
+wall,item,11506,Log palisade horizontal end 1,hauntedfarm,2x1,role=EH; set=Log palisade; floor=i6210
+wall,item,11507,Log palisade horizontal end 2,hauntedfarm,2x1,role=EH; set=Log palisade; floor=i6210
+wall,item,11510,Log palisade vertical end 1,hauntedfarm,1x2,role=EV; set=Log palisade; floor=i6210
+wall,item,11511,Log palisade vertical end 2,hauntedfarm,1x2,role=EV; set=Log palisade; floor=i6210
+monster,outfit,422,Scythe reaper 1,crypt,2x2,animated; frames=4; size=2x2; dirs=4
+monster,outfit,426,White ghost 1,crypt,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,421,Hooded wraith 1,crypt,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,944,Winged shadow wraith 1,crypt,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,311,Red flame spirit 1,crypt,2x2,animated; frames=6; size=2x2; dirs=4
+monster,outfit,331,Pale ghost 1,crypt,2x2,animated; frames=6; size=2x2; dirs=4
+monster,outfit,361,Cyan wisp 1,crypt,2x2,animated; frames=8; size=2x2; dirs=4
+monster,outfit,788,Grey shade wisp 1,crypt,2x2,animated; frames=8; size=2x2; dirs=4
+monster,outfit,510,Blue siren ghost 1,crypt,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,429,Gold mummy priest 1,crypt,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,430,Gold mummy 1,crypt,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,431,Gold mummy 2,crypt,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,432,Black skeleton 1,crypt,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,433,Yellow ghoul 1,crypt,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,557,Spotted ghoul 1,crypt,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,558,Horned ghoul 1,crypt,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,559,Red-eyed ghoul 1,crypt,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,560,Grey zombie 1,crypt,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,561,Skeleton warrior 1,crypt,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,562,Skeleton warrior 2,crypt,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,563,Horned skeleton knight 1,crypt,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,584,Crawling ghoul 1,crypt,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,585,Crawling ghoul 2,crypt,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,293,Pale cultist 1,asylum,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,294,Pale cultist 2,asylum,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,295,Red-hooded cultist 1,asylum,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,296,Red-hooded cultist 2,asylum,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,299,Gold-robed mage 1,asylum,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,300,Dark robed priest 1,asylum,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,472,Hooded sorcerer 1,asylum,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,473,Hooded sorcerer 2,asylum,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,474,Hooded sorcerer 3,asylum,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,475,Hooded sorcerer 4,asylum,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,107,Horned red demon 1,lava,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,301,Imp 1,lava,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,302,Imp 2,lava,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,303,Armoured demon 1,lava,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,304,Armoured demon 2,lava,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,305,Jester imp 1,lava,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,341,Imp 3,lava,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,343,Imp 4,lava,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,348,Winged devil 1,lava,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,349,Winged devil 2,lava,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,541,Horned red demon 2,lava,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,552,Horned red demon 3,lava,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,777,Magma demon 1,lava,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,779,Small purple imp 1,lava,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,789,Brown demon brute 1,lava,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,790,Brown demon brute 2,lava,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,791,Brown demon brute 3,lava,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,792,Magma demon 2,lava,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,793,Magma demon 3,lava,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,794,Magma demon 4,lava,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,795,Purple lion demon 1,lava,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,785,Purple octopus 1,lava,2x2,animated; frames=4; size=2x2; dirs=4
+monster,outfit,786,Purple serpent mage 1,lava,2x2,animated; frames=6; size=2x2; dirs=4
+monster,outfit,193,Hunched ape 1,cursed,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,194,Hunched ape 2,cursed,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,195,Hunched ape 3,cursed,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,196,Hunched ape 4,cursed,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,353,Hunched ape 5,cursed,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,522,Pink flesh hulk 1,cursed,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,523,Pink flesh hulk 2,cursed,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,524,Pink flesh hulk 3,cursed,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,335,Stone brute 1,cursed,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,336,Stone brute 2,cursed,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,553,Grey werewolf 1,cursed,3x3,static; frames=1; size=3x3; dirs=4
+monster,outfit,554,Grey werewolf 2,cursed,3x3,static; frames=1; size=3x3; dirs=4
+monster,outfit,555,Dark werewolf 1,cursed,3x3,static; frames=1; size=3x3; dirs=4
+monster,outfit,556,Black crow 1,cursed,3x3,animated; frames=3; size=3x3; dirs=4
+monster,outfit,722,Pink werewolf 1,cursed,3x3,static; frames=1; size=3x3; dirs=4
+monster,outfit,87,Wolf or bear 1,cursed,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,88,Wolf or bear 2,cursed,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,89,Wolf or bear 3,cursed,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,328,Leopard 1,cursed,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,317,Wolf or bear 4,cursed,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,318,Wolf or bear 5,cursed,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,452,Rabbit 1,cursed,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,542,Dark wolf 1,cursed,3x3,static; frames=1; size=3x3; dirs=4
+monster,outfit,13,Giant bat 1,cursed,3x3,animated; frames=8; size=3x3; dirs=4
+monster,outfit,14,Giant bat 2,cursed,2x2,animated; frames=8; size=2x2; dirs=4
+monster,outfit,548,Black bird 1,cursed,3x3,animated; frames=3; size=3x3; dirs=4
+monster,outfit,549,Small bat 1,cursed,1x1,animated; frames=3; size=1x1; dirs=4
+monster,outfit,397,Small bat 2,cursed,2x2,animated; frames=2; size=2x2; dirs=4
+monster,outfit,497,Black winged beast 1,cursed,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,90,Armoured boar 1,cave,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,91,Armoured boar 2,cave,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,92,Armoured boar 3,cave,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,494,Bone plated beast 1,cave,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,357,Armoured beast 1,cave,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,358,Armoured beast 2,cave,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,359,Armoured beast 3,cave,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,360,Armoured beast 4,cave,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,218,Brown bear 1,cave,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,219,Brown bear 2,cave,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,329,Brown bear 3,cave,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,330,Brown bear 4,cave,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,356,Horned red beast 1,cave,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,200,Blue troll 1,cave,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,201,Blue troll 2,cave,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,202,Troll 1,cave,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,203,Troll 2,cave,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,204,Troll 3,cave,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,205,Troll 4,cave,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,206,Troll warrior 1,cave,3x3,static; frames=1; size=3x3; dirs=4
+monster,outfit,207,Troll warrior 2,cave,3x3,static; frames=1; size=3x3; dirs=4
+monster,outfit,208,Troll warrior 3,cave,3x3,static; frames=1; size=3x3; dirs=4
+monster,outfit,209,Troll warrior 4,cave,3x3,static; frames=1; size=3x3; dirs=4
+monster,outfit,210,Troll warrior 5,cave,3x3,static; frames=1; size=3x3; dirs=4
+monster,outfit,211,Troll 5,cave,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,212,Troll 6,cave,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,515,Blue troll 3,cave,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,950,Troll warrior 6,cave,3x3,static; frames=1; size=3x3; dirs=4
+monster,outfit,951,Troll warrior 7,cave,3x3,static; frames=1; size=3x3; dirs=4
+monster,outfit,952,Troll warrior 8,cave,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,479,Bearded giant 1,cave,3x3,static; frames=1; size=3x3; dirs=4
+monster,outfit,480,Frost giant 1,cave,3x3,static; frames=1; size=3x3; dirs=4
+monster,outfit,392,Red minotaur 1,cave,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,297,Red minotaur 2,cave,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,781,Minotaur 1,cave,2x2,animated; frames=4; size=2x2; dirs=4
+monster,outfit,782,Minotaur 2,cave,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,783,Minotaur 3,cave,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,784,Minotaur 4,cave,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,796,Minotaur mage 1,cave,3x3,static; frames=1; size=3x3; dirs=4
+monster,outfit,797,Minotaur mage 2,cave,3x3,static; frames=1; size=3x3; dirs=4
+monster,outfit,780,Horned beast 1,cave,3x3,static; frames=1; size=3x3; dirs=4
+monster,outfit,539,Horned beast 2,cave,3x3,static; frames=1; size=3x3; dirs=4
+monster,outfit,540,Horned beast 3,cave,3x3,static; frames=1; size=3x3; dirs=4
+monster,outfit,312,Orc or goblin 1,cave,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,313,Orc or goblin 2,cave,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,314,Orc or goblin 3,cave,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,315,Orc or goblin 4,cave,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,316,Orc or goblin 5,cave,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,332,Orc or goblin 6,cave,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,333,Orc or goblin 7,cave,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,334,Orc or goblin 8,cave,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,337,Orc or goblin 9,cave,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,339,Orc or goblin 10,cave,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,340,Orc or goblin 11,cave,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,438,Orc or goblin 12,cave,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,439,Orc or goblin 13,cave,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,440,Orc or goblin 14,cave,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,442,Orc or goblin 15,cave,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,453,Orc or goblin 16,cave,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,454,Orc or goblin 17,cave,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,455,Orc or goblin 18,cave,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,385,Giant spider 1,fungal,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,393,Beetle 1,fungal,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,416,Beetle 2,fungal,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,425,Giant spider 2,fungal,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,489,Ice spider 1,fungal,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,322,Scarab 1,fungal,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,323,Scarab 2,fungal,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,324,Scarab 3,fungal,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,325,Scarab 4,fungal,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,326,Scarab 5,fungal,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,436,Wasp 1,fungal,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,476,Giant spider 3,fungal,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,624,Sea serpent 1,deepsea,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,625,Sea serpent 2,deepsea,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,626,Sea serpent 3,deepsea,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,627,Sea serpent 4,deepsea,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,628,Sea serpent 5,deepsea,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,630,Naga 1,deepsea,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,631,Naga 2,deepsea,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,632,Naga 3,deepsea,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,633,Naga 4,deepsea,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,634,Naga 5,deepsea,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,635,Naga 6,deepsea,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,636,Naga 7,deepsea,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,637,Naga 8,deepsea,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,638,Naga 9,deepsea,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,663,Naga warrior 1,deepsea,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,664,Naga warrior 2,deepsea,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,665,Naga warrior 3,deepsea,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,666,Naga warrior 4,deepsea,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,667,Naga warrior 5,deepsea,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,668,Naga warrior 6,deepsea,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,669,Naga warrior 7,deepsea,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,670,Naga warrior 8,deepsea,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,671,Naga warrior 9,deepsea,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,672,Naga warrior 10,deepsea,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,417,Blue sea beast 1,deepsea,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,418,Blue sea beast 2,deepsea,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,936,Siren 1,deepsea,2x2,animated; frames=6; size=2x2; dirs=4
+monster,outfit,937,Siren 2,deepsea,2x2,animated; frames=6; size=2x2; dirs=4
+monster,outfit,938,Siren 3,deepsea,2x2,animated; frames=6; size=2x2; dirs=4
+monster,outfit,478,Purple tentacle 1,deepsea,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,365,Lizard 1,swamp,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,366,Lizard 2,swamp,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,367,Lizard 3,swamp,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,448,Lizard 4,swamp,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,449,Lizard 5,swamp,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,450,Lizard 6,swamp,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,537,Green drake 1,swamp,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,538,Green drake 2,swamp,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,490,Winged lizard 1,swamp,2x2,animated; frames=2; size=2x2; dirs=4
+monster,outfit,491,Crawler worm 1,swamp,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,492,Crawler worm 2,swamp,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,493,Flame dragon 1,swamp,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,529,Purple dragon 1,crypt,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,530,Bone dragon 1,crypt,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,84,Mushroom man 1,fungal,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,85,Mushroom man 2,fungal,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,86,Mushroom man 3,fungal,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,198,Thorn ball 1,fungal,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,415,Slime 1,fungal,2x2,animated; frames=3; size=2x2; dirs=4
+monster,outfit,477,Slime 2,fungal,2x2,animated; frames=3; size=2x2; dirs=4
+monster,outfit,536,Carnivorous plant 1,fungal,2x2,animated; frames=5; size=2x2; dirs=4
+monster,outfit,618,Moss ghoul 1,fungal,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,619,Moss ghoul 2,fungal,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,620,Moss ghoul 3,fungal,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,775,Shadow blob 1,fungal,2x2,animated; frames=3; size=2x2; dirs=4
+monster,outfit,926,Red knot 1,fungal,2x2,animated; frames=4; size=2x2; dirs=4
+monster,outfit,306,Moss turtle 1,lava,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,307,Golem 1,lava,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,338,Golem 2,lava,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,350,Fire spirit 1,lava,2x2,animated; frames=6; size=2x2; dirs=4
+monster,outfit,351,Golem 3,lava,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,354,Element spirit 1,lava,2x2,animated; frames=6; size=2x2; dirs=4
+monster,outfit,355,Element spirit 2,lava,2x2,animated; frames=6; size=2x2; dirs=4
+monster,outfit,362,Fire spirit 2,lava,2x2,animated; frames=8; size=2x2; dirs=4
+monster,outfit,927,Dark spiked ball 1,lava,2x2,animated; frames=4; size=2x2; dirs=4
+monster,outfit,928,Fire spirit 3,lava,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,929,Golem 4,lava,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,930,Element spirit 3,lava,2x2,animated; frames=4; size=2x2; dirs=4
+monster,outfit,931,Element spirit 4,lava,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,942,Small brown beast 1,cave,2x2,static; frames=1; size=2x2; dirs=4
+monster,outfit,344,Humanoid outfit 1,npc,2x2,static; frames=1; size=2x2; dirs=4; colourable template (2 layers)
+monster,outfit,345,Humanoid outfit 2,npc,2x2,static; frames=1; size=2x2; dirs=4; colourable template (2 layers)
+monster,outfit,346,Humanoid outfit 3,npc,2x2,static; frames=1; size=2x2; dirs=4; colourable template (2 layers)
+monster,outfit,347,Humanoid outfit 4,npc,2x2,static; frames=1; size=2x2; dirs=4; colourable template (2 layers)
+monster,outfit,402,Humanoid outfit 5,npc,2x2,static; frames=1; size=2x2; dirs=4; colourable template (2 layers)
+monster,outfit,403,Humanoid outfit 6,npc,2x2,static; frames=1; size=2x2; dirs=4; colourable template (2 layers)
+monster,outfit,404,Humanoid outfit 7,npc,2x2,static; frames=1; size=2x2; dirs=4; colourable template (2 layers)
+monster,outfit,405,Humanoid outfit 8,npc,2x2,static; frames=1; size=2x2; dirs=4; colourable template (2 layers)
+monster,outfit,406,Humanoid outfit 9,npc,2x2,static; frames=1; size=2x2; dirs=4; colourable template (2 layers)
+monster,outfit,407,Humanoid outfit 10,npc,2x2,static; frames=1; size=2x2; dirs=4; colourable template (2 layers)
+monster,outfit,408,Humanoid outfit 11,npc,2x2,static; frames=1; size=2x2; dirs=4; colourable template (2 layers)
+monster,outfit,409,Humanoid outfit 12,npc,2x2,static; frames=1; size=2x2; dirs=4; colourable template (2 layers)
+monster,outfit,410,Humanoid outfit 13,npc,2x2,static; frames=1; size=2x2; dirs=4; colourable template (2 layers)
+monster,outfit,411,Humanoid outfit 14,npc,2x2,static; frames=1; size=2x2; dirs=4; colourable template (2 layers)
+monster,outfit,412,Humanoid outfit 15,npc,2x2,static; frames=1; size=2x2; dirs=4; colourable template (2 layers)
+monster,outfit,413,Humanoid outfit 16,npc,2x2,static; frames=1; size=2x2; dirs=4; colourable template (2 layers)
+monster,outfit,414,Humanoid outfit 17,npc,2x2,static; frames=1; size=2x2; dirs=4; colourable template (2 layers)
+monster,outfit,456,Humanoid outfit 18,npc,2x2,static; frames=1; size=2x2; dirs=4; colourable template (2 layers)
+monster,outfit,457,Humanoid outfit 19,npc,2x2,static; frames=1; size=2x2; dirs=4; colourable template (2 layers)
+monster,outfit,458,Humanoid outfit 20,npc,2x2,static; frames=1; size=2x2; dirs=4; colourable template (2 layers)
+monster,outfit,459,Humanoid outfit 21,npc,2x2,static; frames=1; size=2x2; dirs=4; colourable template (2 layers)
+monster,outfit,460,Humanoid outfit 22,npc,2x2,static; frames=1; size=2x2; dirs=4; colourable template (2 layers)
+monster,outfit,461,Humanoid outfit 23,npc,2x2,static; frames=1; size=2x2; dirs=4; colourable template (2 layers)
+monster,outfit,462,Humanoid outfit 24,npc,2x2,static; frames=1; size=2x2; dirs=4; colourable template (2 layers)
+monster,outfit,470,Humanoid outfit 25,npc,2x2,static; frames=1; size=2x2; dirs=4; colourable template (2 layers)
+monster,outfit,471,Humanoid outfit 26,npc,2x2,static; frames=1; size=2x2; dirs=4; colourable template (2 layers)
+monster,outfit,481,Humanoid outfit 27,npc,2x2,static; frames=1; size=2x2; dirs=4; colourable template (2 layers)
+monster,outfit,482,Humanoid outfit 28,npc,2x2,static; frames=1; size=2x2; dirs=4; colourable template (2 layers)
+monster,outfit,484,Humanoid outfit 29,npc,2x2,static; frames=1; size=2x2; dirs=4; colourable template (2 layers)
+monster,outfit,485,Humanoid outfit 30,npc,2x2,static; frames=1; size=2x2; dirs=4; colourable template (2 layers)
+monster,outfit,486,Humanoid outfit 31,npc,2x2,static; frames=1; size=2x2; dirs=4; colourable template (2 layers)
+monster,outfit,487,Humanoid outfit 32,npc,2x2,static; frames=1; size=2x2; dirs=4; colourable template (2 layers)
+monster,outfit,488,Humanoid outfit 33,npc,2x2,static; frames=1; size=2x2; dirs=4; colourable template (2 layers)
+monster,outfit,500,Humanoid outfit 34,npc,2x2,static; frames=1; size=2x2; dirs=4; colourable template (2 layers)
+monster,outfit,501,Humanoid outfit 35,npc,2x2,static; frames=1; size=2x2; dirs=4; colourable template (2 layers)
+monster,outfit,502,Humanoid outfit 36,npc,2x2,static; frames=1; size=2x2; dirs=4; colourable template (2 layers)
+monster,outfit,503,Humanoid outfit 37,npc,2x2,static; frames=1; size=2x2; dirs=4; colourable template (2 layers)
+monster,outfit,504,Humanoid outfit 38,npc,2x2,static; frames=1; size=2x2; dirs=4; colourable template (2 layers)
+monster,outfit,505,Humanoid outfit 39,npc,2x2,static; frames=1; size=2x2; dirs=4; colourable template (2 layers)
+monster,outfit,506,Humanoid outfit 40,npc,2x2,static; frames=1; size=2x2; dirs=4; colourable template (2 layers)
+monster,outfit,507,Humanoid outfit 41,npc,2x2,static; frames=1; size=2x2; dirs=4; colourable template (2 layers)
+monster,outfit,508,Humanoid outfit 42,npc,2x2,static; frames=1; size=2x2; dirs=4; colourable template (2 layers)
+monster,outfit,509,Humanoid outfit 43,npc,2x2,static; frames=1; size=2x2; dirs=4; colourable template (2 layers)
+monster,outfit,512,Humanoid outfit 44,npc,2x2,static; frames=1; size=2x2; dirs=4; colourable template (2 layers)
+monster,outfit,513,Humanoid outfit 45,npc,2x2,static; frames=1; size=2x2; dirs=4; colourable template (2 layers)
+monster,outfit,514,Humanoid outfit 46,npc,2x2,static; frames=1; size=2x2; dirs=4; colourable template (2 layers)
+monster,outfit,520,Humanoid outfit 47,npc,2x2,static; frames=1; size=2x2; dirs=4; colourable template (2 layers)
+monster,outfit,521,Humanoid outfit 48,npc,2x2,static; frames=1; size=2x2; dirs=4; colourable template (2 layers)
+monster,outfit,532,Humanoid outfit 49,npc,2x2,static; frames=1; size=2x2; dirs=4; colourable template (2 layers)
+monster,outfit,533,Humanoid outfit 50,npc,2x2,static; frames=1; size=2x2; dirs=4; colourable template (2 layers)
+monster,outfit,543,Humanoid outfit 51,npc,2x2,static; frames=1; size=2x2; dirs=4; colourable template (2 layers)
+monster,outfit,544,Humanoid outfit 52,npc,2x2,static; frames=1; size=2x2; dirs=4; colourable template (2 layers)
+monster,outfit,545,Humanoid outfit 53,npc,2x2,static; frames=1; size=2x2; dirs=4; colourable template (2 layers)
+monster,outfit,546,Humanoid outfit 54,npc,2x2,static; frames=1; size=2x2; dirs=4; colourable template (2 layers)
+effect,effect,3,Grey smoke puff 1,generic,1x1,frames=4; size=1x1; readability=371
+effect,effect,5,Blue ice ring burst,generic,2x2,frames=10; size=2x2; readability=816
+effect,effect,6,Ice star burst,generic,1x1,frames=6; size=1x1; readability=200
+effect,effect,7,Ice shards 1,generic,2x2,frames=8; size=2x2; readability=724
+effect,effect,8,Ice drops,generic,2x2,frames=8; size=2x2; readability=259
+effect,effect,10,Ice sparks,generic,2x2,frames=12; size=2x2; readability=296
+effect,effect,11,Small ice star,generic,2x2,frames=18; size=2x2; readability=207
+effect,effect,12,Ice star flash,generic,2x2,frames=14; size=2x2; readability=356
+effect,effect,16,Small fire burst,generic,2x2,frames=5; size=2x2; readability=493
+effect,effect,21,Red maw bite,generic,1x1,frames=8; size=1x1; readability=195
+effect,effect,24,Blue spiked star,generic,1x1,frames=6; size=1x1; readability=111
+effect,effect,26,Dark cage rune,generic,1x1,frames=4; size=1x1; readability=201
+effect,effect,28,Grey smoke cloud,generic,1x1,frames=8; size=1x1; readability=340
+effect,effect,29,Orange fire puff,generic,2x2,frames=9; size=2x2; readability=794
+effect,effect,30,White smoke puff,generic,2x2,frames=8; size=2x2; readability=980
+effect,effect,31,Brown fire cloud,generic,2x2,frames=9; size=2x2; readability=510
+effect,effect,32,Small flame,generic,2x2,frames=8; size=2x2; readability=357
+effect,effect,33,Green poison cloud,generic,1x1,frames=8; size=1x1; readability=375
+effect,effect,35,Fire explosion,generic,1x1,frames=9; size=1x1; readability=351
+effect,effect,36,Yellow sparks,generic,2x2,frames=7; size=2x2; readability=182
+effect,effect,37,Blue sparks,generic,2x2,frames=7; size=2x2; readability=139
+effect,effect,38,Yellow energy glob,generic,1x1,frames=10; size=1x1; readability=272
+effect,effect,40,Blue whirlpool,generic,1x1,frames=8; size=1x1; readability=289
+effect,effect,41,Flame burst,generic,2x2,frames=5; size=2x2; readability=424
+effect,effect,42,White arcane rune,generic,1x1,frames=4; size=1x1; readability=189
+effect,effect,45,Blue white rune,generic,1x1,frames=9; size=1x1; readability=149
+effect,effect,49,Gold swirl sparks,generic,1x1,frames=9; size=1x1; readability=114
+effect,effect,54,Green ring 1,generic,1x1,frames=9; size=1x1; readability=169
+effect,effect,55,Cyan ring,generic,1x1,frames=9; size=1x1; readability=162
+effect,effect,56,Yellow ring,generic,1x1,frames=9; size=1x1; readability=191
+effect,effect,57,Red orb,generic,1x1,frames=10; size=1x1; readability=139
+effect,effect,58,Gold burst 1,generic,1x1,frames=10; size=1x1; readability=491
+effect,effect,64,Rock chunk,generic,1x1,frames=5; size=1x1; readability=157
+effect,effect,68,Blue crescent slash 1,generic,3x3,frames=6; size=3x3; readability=510
+effect,effect,69,Fire crescent slash,generic,3x3,frames=6; size=3x3; readability=870
+effect,effect,70,Blue crescent slash 2,generic,3x3,frames=6; size=3x3; readability=510
+effect,effect,71,Purple lightning,generic,1x1,frames=5; size=1x1; readability=186
+effect,effect,72,White wind swirl,generic,2x2,frames=14; size=2x2; readability=935
+effect,effect,73,Green puff,generic,2x2,frames=8; size=2x2; readability=375
+effect,effect,74,Orange explosion,generic,1x1,frames=6; size=1x1; readability=484
+effect,effect,75,White ring,generic,1x1,frames=6; size=1x1; readability=126
+effect,effect,78,White smoke cloud,generic,2x2,frames=6; size=2x2; readability=1275
+effect,effect,79,Yellow rune ring 1,generic,2x2,frames=8; size=2x2; readability=639
+effect,effect,80,Fire blob,generic,1x1,frames=11; size=1x1; readability=420
+effect,effect,82,Yellow rune ring 2,generic,2x2,frames=16; size=2x2; readability=639
+effect,effect,83,Whirlwind 1,generic,2x2,frames=7; size=2x2; readability=520
+effect,effect,84,Whirlwind 2,generic,2x2,frames=7; size=2x2; readability=520
+effect,effect,103,Blue crystal burst,generic,2x2,frames=8; size=2x2; readability=724
+effect,effect,106,Tan dust cloud,generic,1x1,frames=4; size=1x1; readability=390
+effect,effect,117,Grey smoke puff 2,generic,1x1,frames=6; size=1x1; readability=286
+effect,effect,118,Smoke burst,generic,1x1,frames=6; size=1x1; readability=422
+effect,effect,119,White flash,generic,1x1,frames=7; size=1x1; readability=558
+effect,effect,120,Gold sparkle star,generic,1x1,frames=9; size=1x1; readability=155
+missile,missile,1,White spear,generic,1x1,9 direction cells; frames=1
+missile,missile,2,Wood dart,generic,1x1,9 direction cells; frames=1
+missile,missile,3,Iron spear,generic,1x1,9 direction cells; frames=1
+missile,missile,5,Blue star,generic,1x1,9 direction cells; frames=1
+missile,missile,6,Green arrow,generic,1x1,9 direction cells; frames=1
+missile,missile,7,Red-feather arrow,generic,1x1,9 direction cells; frames=1
+missile,missile,9,Steel dagger,generic,1x1,9 direction cells; frames=1
+missile,missile,10,Pebble,generic,1x1,9 direction cells; frames=1
+missile,missile,11,Grey shuriken,generic,1x1,9 direction cells; frames=1
+missile,missile,12,Stone,generic,1x1,9 direction cells; frames=1
+missile,missile,13,Ice comet,generic,1x1,9 direction cells; frames=1
+missile,missile,14,Blue bolt,generic,1x1,9 direction cells; frames=1
+missile,missile,15,Green ring 2,generic,1x1,9 direction cells; frames=1
+missile,missile,16,Gold arrow,generic,1x1,9 direction cells; frames=1
+missile,missile,18,Fire comet,generic,1x1,9 direction cells; frames=1
+missile,missile,19,Blue drop,generic,1x1,9 direction cells; frames=1
+missile,missile,20,Dark orb,generic,1x1,9 direction cells; frames=1
+missile,missile,21,Red swirl,generic,1x1,9 direction cells; frames=1
+missile,missile,22,Red spear,generic,1x1,9 direction cells; frames=1
+missile,missile,23,Olive spear,generic,1x1,9 direction cells; frames=1
+missile,missile,24,Orange dart,generic,1x1,9 direction cells; frames=1
+missile,missile,25,Blue arrow,generic,1x1,9 direction cells; frames=1
+missile,missile,26,Fire streak,generic,1x1,9 direction cells; frames=1
+missile,missile,27,Fireball,generic,1x1,9 direction cells; frames=1
+missile,missile,28,Cyan streak,generic,1x1,9 direction cells; frames=1
+missile,missile,29,Clay pot,generic,1x1,9 direction cells; frames=1
+missile,missile,30,Violet star,generic,1x1,9 direction cells; frames=1
+missile,missile,31,Ice shards 2,generic,1x1,9 direction cells; frames=1
+missile,missile,32,Ice star trail,generic,1x1,9 direction cells; frames=1
+missile,missile,33,Ice streak,generic,1x1,9 direction cells; frames=1
+missile,missile,34,Snowflake,generic,1x1,9 direction cells; frames=1
+missile,missile,35,Gold streak,generic,1x1,9 direction cells; frames=1
+missile,missile,36,Gold burst 2,generic,1x1,9 direction cells; frames=1
+missile,missile,37,Smoke bolt,generic,1x1,9 direction cells; frames=1
+missile,missile,38,Smoke cloud,generic,1x1,9 direction cells; frames=1
+missile,missile,39,Small white streak,generic,1x1,9 direction cells; frames=1
+missile,missile,40,White streak,generic,1x1,9 direction cells; frames=1
+missile,missile,42,Purple energy bolt,generic,1x1,9 direction cells; frames=1
+missile,missile,45,Blue red bolt,generic,1x1,9 direction cells; frames=1
+missile,missile,46,Bomb,generic,1x1,9 direction cells; frames=1
+missile,missile,47,Dynamite,generic,1x1,9 direction cells; frames=1
+missile,missile,48,Rainbow dart,generic,1x1,9 direction cells; frames=1
+missile,missile,49,Green purple arrow,generic,1x1,9 direction cells; frames=1
+ground,item,10456,Grey stone edge 9,-,1x1,"base ground tile; shared, exact or same-shape tile already in pair 49"
+ground,item,11352,Grey gravel edge 22,-,1x1,"base ground tile; shared, exact or same-shape tile already in pair 49"
+ground,item,6465,Dark pebble edge 27,-,1x1,"base ground tile; shared, exact or same-shape tile already in pair 49"
+ground,item,10326,Dark gravel patch 15,-,1x1,"base ground tile; shared, exact or same-shape tile already in pair 49"
+ground,item,8096,Grey rock slab edge 25,-,1x1,"base ground tile; shared, exact or same-shape tile already in pair 49"
+ground,item,10451,Grey flagstone edge 13,-,1x1,"base ground tile; shared, exact or same-shape tile already in pair 49"
+ground,item,10452,Grey cobble edge 25,-,1x1,"base ground tile; shared, exact or same-shape tile already in pair 49"
+ground,item,11339,Brown white cobble edge 25,-,1x1,"base ground tile; shared, exact or same-shape tile already in pair 49"
+ground,item,11496,Grey stepping stone 16,-,1x1,"base ground tile; shared, exact or same-shape tile already in pair 49"
+ground,item,7622,Brown flagstone edge 7,-,1x1,"base ground tile; shared, exact or same-shape tile already in pair 49"
+ground,item,6915,Dark rocky earth edge 14,-,1x1,"base ground tile; shared, exact or same-shape tile already in pair 49"
+ground,item,6496,Dark earth edge 24,-,1x1,"base ground tile; shared, exact or same-shape tile already in pair 49"
+ground,item,11787,Rust earth edge 23,-,1x1,"base ground tile; shared, exact or same-shape tile already in pair 49"
+ground,item,7489,Red clay edge 9,-,1x1,"base ground tile; shared, exact or same-shape tile already in pair 49"
+ground,item,9616,Gold inlay strip 5,-,1x1,"base ground tile; shared, exact or same-shape tile already in pair 49"
+ground,item,11072,Wood plank cut tile 53,-,1x1,"base ground tile; shared, exact or same-shape tile already in pair 49"
+ground,item,11500,Dark plank border 42,-,1x1,"base ground tile; shared, exact or same-shape tile already in pair 49"
+ground,item,9698,Log plank edge 31,-,1x1,"base ground tile; shared, exact or same-shape tile already in pair 49"
+ground,item,6472,Gold blue inlay trim 13,-,1x1,"base ground tile; shared, exact or same-shape tile already in pair 49"
+ground,item,6286,Ice edge 25,-,1x1,"base ground tile; shared, exact or same-shape tile already in pair 49"
+ground,item,12416,Blue ice slab edge 29,-,1x1,"base ground tile; shared, exact or same-shape tile already in pair 49"
+ground,item,11460,Blue cobble edge 36,-,1x1,"base ground tile; shared, exact or same-shape tile already in pair 49"
+ground,item,6918,Moss and dirt edge 22,-,1x1,"base ground tile; shared, exact or same-shape tile already in pair 49"
+ground,item,9055,Dark leaf edge 28,-,1x1,"base ground tile; shared, exact or same-shape tile already in pair 49"
+ground,item,6919,Grass and dirt edge 116,-,1x1,"base ground tile; shared, exact or same-shape tile already in pair 49"
