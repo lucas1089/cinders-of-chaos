@@ -492,7 +492,7 @@ function C.depotPutError(info, cfg)
 	-- store-bound one (pouches, Everfull Ration, Nemesis items), a locked one or a quest item would come out
 	-- tradable (the player market refuses all of these, market_core.lua C.itemRefusal)
 	if info.store or info.storeBound then
-		return "Store items cannot go into the guild depot."
+		return "That cannot go into the guild depot."
 	end
 	if info.locked then
 		return "The item is locked. Unlock it first."
