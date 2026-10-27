@@ -38,11 +38,11 @@ sid, cid = C.LOOK
 sid2, cid2 = C.LOOK_SMALL
 # the configs and the client things file agree with the installer
 rift = open(os.path.join(CHAOS, 'rift_config.lua'), encoding='utf-8').read()
-check(re.search(r'chest\s*=\s*\{\s*itemId\s*=\s*%d\b' % sid, rift) is not None, 'rift_config.lua chest.itemId is the new id')
-check(re.search(r'chest\s*=\s*\{[^}]*smallItemId\s*=\s*%d\b' % sid2, rift) is not None, 'rift_config.lua chest.smallItemId is the one-tile id')
+
+check(re.search(r'chest\s*=\s*\{[^}]*legacyItemIds\s*=\s*\{\s*%d\s*\}' % sid, rift) is not None, 'rift_config.lua chest.legacyItemIds is the 2 x 2 id')
 check(re.search(r'chest\s*=\s*\{[^}]*fallbackId\s*=\s*%d\b' % C.STOCK_SID, rift) is not None, 'rift_config.lua fallbackId is the stock chest')
 descent = open(os.path.join(CHAOS, 'descent_config.lua'), encoding='utf-8').read()
-check(re.search(r'chest\s*=\s*%d\b' % sid, descent) is not None, 'descent_config.lua objects.chest is the new id')
+check(re.search(r'chest\s*=\s*%d\b' % sid2, descent) is not None, 'descent_config.lua objects.chest is the one-tile id')
 check(re.search(r'chestFallback\s*=\s*%d\b' % C.STOCK_SID, descent) is not None, 'descent_config.lua chestFallback is the stock chest')
 things = os.path.join(os.path.dirname(os.path.dirname(HERE)), 'client', 'tools', 'sprites', 'art_import', 'reward_chest.csv')
 rows = list(csv.DictReader(open(things, newline='')))
@@ -54,6 +54,10 @@ rows2 = list(csv.DictReader(open(things2, newline='')))
 check([int(r['server_id']) for r in rows2] == [sid2] and (rows2[0]['w'], rows2[0]['h']) == ('1', '1'), 'small things file: server id, 1 x 1')
 check(rows2[0]['flags'] == 'copy:19250', 'small things file copies the stock client id 19250')
 check((sid2, cid2) == (32311, 38758) and C.RANGE[0] <= sid2 <= C.RANGE[1] and sid2 != sid, 'small look: 32311 / 38758 inside the block')
+check(re.search(r'chest\s*=\s*\{\s*itemId\s*=\s*%d\b' % sid2, rift) is not None, 'the rift chest is the one-tile look since pair 53')
+front = list(csv.DictReader(open(os.path.join(os.path.dirname(things), 'reward_chest_front.csv'), newline='')))
+check(len(front) == 1 and (front[0]['w'], front[0]['h'], front[0]['phases'], front[0]['mode'], int(front[0]['server_id'])) == ('1', '1', '1', 'redraw', sid2)
+      and front[0]['extra'].split('|')[0] == 'item=%d' % cid2, 'client things file of the front look: 1 x 1, redraws 38758 / 32311')
 
 d = tempfile.mkdtemp()
 try:

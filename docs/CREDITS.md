@@ -116,7 +116,7 @@ ask for credit (appreciated, not required). Listed here as thanks.
   - Author: MutterPixel Studio
   - Licence: purchased; use in games incl. commercial, modified or recoloured; no resale or sharing of the raw files (they ship only inside the compiled game); never AI or NFT training data or a style reference
   - Credit: Art by MutterPixel Studio
-  - Used for: monsters, tiles, buildings, decoration, portals, magic effects
+  - Used for: monsters, tiles, buildings, decoration, portals, magic effects, the one-tile Reward Chest look
   - Source: Frozen Ruins, Classic Horror Monsters, Trick-or-Treaters, Autumn Graveyard Builder, RPG Magic Shops, Big RPG Portal Gates, Survivor Base, Zombie City, Gothic Buildings, Animated Cult NPCs, Lava Islands, Animated Goblins, Wasteland City Buildings, Castle Throne Room, Dwarven Mountain, Fantasy Wall Decorations, Roman Battle Arenas, Medieval Castle Builder Kit, Ruined Medieval Buildings, Animated Volcano Pack, Pirate Ships Pack, Fantasy Portal Gates, Pixel Icebergs, Cozy Halloween Market, RPG Castle Buildings, Haunted Ghosts, Ghost Town Builder, Zombie Outbreak Response, Desert Campsite, Haunted Manor Builder Kit, Dark Worship Interior, Animated War Beasts 1, Goblin Camp, Wasteland Town Buildings, Mushroom Buildings, Wizard Buildings, Roman Vineyards & Wineries, Orchard Trees Pack, Medieval War Machines, Colossal Ruined Towers, Ancient Pyramid Pack, Desert World Builder Kit, Magic Forest Ancient Ruins & Mystic Flora, Demon Creatures, Magic Effects, Summoning Circles, Haunted Graveyard Builder Kit, Castle Dungeon, Mineshaft Builder Kit, Ruined Village Builder Kit, Ancient & Mysterious Landmarks, Animated Skeleton NPC Pack, Vermin Pro Expansion, Giant Squid Boss, Animated Trees, Medieval War Camp, RPG Guard Buildings, Desert Village Buildings, Roman Temples & Shrines, RPG Weapons, Castle Royal Bedroom, Survivor Characters, Zombie Civilians, Dinosaur Fossil Dig Site, Roman City Builder
 - **Pocket Cozy Pixels packs**
   - Author: BloomPixle / Pocket Cozy Pixels
@@ -333,7 +333,7 @@ Game sounds (game_chaossound, O238): short picks from four packs, cut, set to mo
 
 - **PixelLab**
   - Licence: paid subscription
-  - Used for: painting the themed item sets, the three looks of the Cursed Chest, the twelve Everfull potion flasks, the Reward Chest and the hundred support rune stones (also the support icons)
+  - Used for: painting the themed item sets, the three looks of the Cursed Chest and its one-tile look, the twelve Everfull potion flasks, the Reward Chest and the hundred support rune stones (also the support icons)
 - **NexaMap Editor**
   - Author: Mateuzkl, Skyyzyy and SoyFabi
   - Licence: freeware end-user licence in the source's LICENSE.rtf: free to use; copies may be passed on only unmodified, with that licence text and without a fee. Not part of our downloads: the owner downloads it from its source

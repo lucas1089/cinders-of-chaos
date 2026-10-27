@@ -2875,6 +2875,7 @@ Output **pair 42**: dat 6a7cba691029a95689e23426de75b225 (11,260,478 bytes), spr
   names are sent by nothing. Ship pair 42 with the server. Previews: scratchpad only. Not run in a client.
 
 ## Cursed Chest looks (pair 43: items 38642-38644, `tools/sprites/gen_cursed_chest_art.py`, `art_import/cursed_chest.*`; built 2026-10-25, on windows-assets f7a4e023)
+Pair 53 (2026-10-27) redraws 38642 in place as one 32 x 32 still (K3) and a chest rolls only that look: see "Pair 53". 38643 / 38644 stay in the pair for chests already on a map.
 Owner request 2026-10-25: the Cursed Chest borrowed the Sealed Coffer's chest (server 12664, client 4073); it gets art of
 its own. The owner picked three PixelLab results (64 x 64 RGBA, alpha 0 / 255): A (lava cracks and chains, the main
 look), B (purple flame, faces on the lid), C (open maw with iron teeth). Each chest that spawns wears one at random.
@@ -3088,6 +3089,8 @@ quest rooms (31 of about 297 sit next to another chest). The owner picked a one-
 | Client id | Look | Server id |
 |---|---|---|
 | 38758 | reward chest, one tile | 32311 |
+
+Pair 53 (2026-10-27) redraws 38758 in place from a purchased prop, and the one-tile look is now the only reward chest look: see "Pair 53". The PixelLab pixels above are no longer drawn.
 
 - **Server.** `tools/install_reward_chest.py` installs it beside 32310 (same node copy of 21584, same items.xml attributes);
   `rift_config.lua` `chest.smallItemId`; `tools/patch_reward_chests.py` gives it to the base map's quest chests and boxes.
@@ -3349,6 +3352,38 @@ Output **pair 52**: dat 7046ab6e35a08b2289699f95323fd506 (8,835,509 bytes), spr 
   - part01 29,008,688 bytes, sha256 `accbbabe723dec098884bde2682043770b85f6426154caec6c91c6447c1d6474`
   - joined `things-1098.tar.xz` (128,623,408 bytes) sha256 `e843f4be939e5358b17c320168e9aef71ba71d1bb47b7da29cb93e609d0dd5e1`;
     `things-1098.tar` sha256 `9d4d2245e34ae184cab0f07d569b1e66d0769b5e8d6bcc0f7a51d92d0599fcf3`.
+    Extracting the parts gives the dat and spr md5 above (checked).
+
+### Pair 53: pair 52 with two items redrawn in place (`redraw_items.py`; built 2026-10-27)
+Owner request 2026-10-27 (O280): every reward chest wears one one-tile look, and the cursed chest gets a one-tile look too.
+Pair 53 redraws two existing items; no id moves, no thing is added.
+- **Item 38758 (server 32311), the reward chest.** Was the PixelLab one-tile look of pair 47 (candidate 15). Now a chest of a purchased
+  prop sheet set (docs/CREDITS.md): the 64 px canvas file is cut out by alpha to 35 x 38 px and fitted
+  to 32 x 32 by taking out the 6 rows and 3 columns that differ least from a neighbour (no resampling, no recolouring; `fit_front` in `gen_reward_chest_art.py`; the options tried are previewed in the git-ignored scratch folder, not committed). **The pixels are not in git**: `art_import/reward_chest_front.png` is git-ignored, and `art_import/reward_chest_front.csv`
+  and `.sums` hold only the recipe and the sha256 sums. `build-front --check` (CI) checks them against themselves, and against the atlas when it is on disk.
+- **Item 38642 (server 32281), the cursed chest.** Was look A, a 2 x 2 with a 5 phase loop. Now K3, a 32 x 32 PixelLab picture of ours
+  (`art_import/cursed_chest/cursed_chest_k3.png`, committed): 1 x 1, one phase, no animation. `build-k3 --check` (CI) rebuilds the atlas,
+  things file and sums from the committed source. Items 38643 / 38644 (server 32282 / 32283) stay in the pair for chests already on a map.
+- **How.** `redraw_items.py` keeps the item's flag bytes, replaces its frame group with one 1 x 1 still and appends the sprite record
+  (the offset table grows by 4 bytes per new sprite; the old sprites stay in the file, unused). Every other dat entry is byte for byte the same.
+```
+python3 -I client/tools/sprites/redraw_items.py --dat pair52/Tibia.dat --spr pair52/Tibia.spr --out-dir pair53 \
+    --item 38758=client/tools/sprites/art_import/reward_chest_front.png --item 38642=client/tools/sprites/art_import/cursed_chest_k3.png
+python3 -I client/tools/sprites/check_pair.py pair53/Tibia.dat pair53/Tibia.spr --old pair52/Tibia.dat pair52/Tibia.spr --allow-changed 'item:38758,38642'
+python3 -I client/tools/sprites/gen_outfit_anchors.py pair53/Tibia.dat pair53/Tibia.spr
+python3 -I client/tools/sprites/gen_info_lift.py pair53/Tibia.dat pair53/Tibia.spr
+```
+Input pair 52 (dat 7046ab6e35a08b2289699f95323fd506, spr d12d3c2ee3a4f4c0424a4e0aa10f339d).
+Output **pair 53**: dat ed39f8452177e0ef503c97fd5f7df764 (8,835,386 bytes), spr 971ba1f67b7a07cd05a5416ad285ba0c
+(1,129,950,436 bytes, 945,536 sprites: 2 appended), the same counts of things (44,395 items, 3,360 outfits, 4,701 effects, 253 missiles).
+- **Checked.** `check_pair.py` against pair 52: 0 errors, 3,966 warnings (the same as pair 52); append-only: 52,610 old things and 945,534 old sprites
+  compared, 2 allowed entry changes, 2 new sprites (ids 945,535 and 945,536). `redraw_items.py` verifies its own output (re-parse, flags, new sprites
+  pixel-identical to the PNGs, 3,000 sampled old sprites unchanged). `gen_outfit_anchors.py` and `gen_info_lift.py` regenerated against pair 53
+  (only the dat md5 line changed), `gen_fx_send_offsets.py --check` passes. Not run in a client. Ship the client with pair 53 and these two regenerated files together.
+- **Archive parts** (same recipe as pair 52; pushed to windows-assets as **dbe0410a**, only the two part files and their lines of `SHA256SUMS.parts` changed):
+  - part00 99,614,720 bytes, sha256 `ccf17e53f2832d2071ecec9110fa6b0871f6e8675d20204aab3646f999ac6250`
+  - part01 29,009,040 bytes, sha256 `44959c5c33719fabffdd956b5ad1fbf761356be0f9eae2ae72d5929d24105355`
+  - joined `things-1098.tar.xz` (128,623,760 bytes) sha256 `50668667915e2fa6373308ff1c4a021543a82a4fc612db43b496822d9f003e99`; `things-1098.tar` sha256 `8f8621f7a10613b52f47c132a587379add5c077d941e266b8e1e2783646620e5`.
     Extracting the parts gives the dat and spr md5 above (checked).
 
 ## Owner art (things_custom26: outfits 2213-2233, items 33940-33985, `tools/sprites/gen_owner_art.py`, `art_import/owner_art.csv`; on windows-assets 50645056, switch on since 2026-10-15)

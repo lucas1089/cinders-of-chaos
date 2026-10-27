@@ -28,6 +28,20 @@ blood red, none of them one of the seven themes, and the owner approved the pixe
 runs the style check on each canvas (cell 64) against its own colours: every rule but the theme palette (outline,
 light, noise, colour count, alpha, scale) must pass or `build` refuses.
 Deterministic: numpy and Pillow only.
+
+The one-tile look (pair 53). Owner pick 2026-10-27: candidate K3 of a PixelLab sheet (our own prompts, `create-image-pixen`, 32 x 32,
+no background, a dark chest seen from the front with a skull and a purple glow; raw file K3.png of the git-ignored
+pixellab-pip-generations/chest-candidates/) replaces the three 2 x 2 looks. It is drawn IN PLACE over client item 38642 (server
+32281, the first look, formerly look A): a 1 x 1 still, one phase, no idle animation (so the server no longer sets the animation flag
+on it, install_cursed_chest.py). Items 38643 / 38644 (server 32282 / 32283) stay in the pair untouched as the old looks.
+
+    python3 -I gen_cursed_chest_art.py build-k3 [--src K3.png] [--check]
+
+PixelLab's pixels, owner approved, not repainted, snapped or recoloured (only the colour under fully transparent pixels is cleared).
+`build-k3 --src FILE` copies it to art_import/cursed_chest/cursed_chest_k3.png (the committed source, 1 KB) and writes the atlas
+art_import/cursed_chest_k3.png (the same 32 px cell), art_import/cursed_chest_k3.csv (things file, mode redraw: flags
+copy:4073 stay the entry's own flags) and art_import/cursed_chest_k3.sums. `--check` (CI) rebuilds from the committed source.
+Credit: docs/CREDITS.md "Tools" (PixelLab; art_import/cursed_chest_sources.csv).
 """
 import argparse, csv, hashlib, io, os, shutil, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -45,6 +59,13 @@ FIRST_CLIENT_ID = 38642   # after the last item of pair 42 (38641, the Orb of So
 STOCK_CLIENT_ID = 4073    # client id of server 12664, the Sealed Coffer chest: container, notwalkable, notmoveable, 2x2
 SERVER_FIRST = 32281      # server ids 32281-32283 (server/tools/install_cursed_chest.py, server/README.md "Cursed Chest")
 CELL = 64
+# the one-tile look (pair 53): redrawn in place over the first look's client item
+K3_CELL = 32
+K3_SRC = os.path.join(SRC_DIR, 'cursed_chest_k3.png')
+K3_ATLAS = os.path.join(ART, 'cursed_chest_k3.png')
+K3_THINGS = os.path.join(ART, 'cursed_chest_k3.csv')
+K3_SUMS = os.path.join(ART, 'cursed_chest_k3.sums')
+K3_KEY = 'cursed_chest_k3'
 
 # key, [(committed file, PixelLab file) per distinct frame], sequence (frame indices, one per phase), ms per phase,
 # server id. One frame and sequence (0,) = a still item. The atlas holds one 64 px cell per phase, side by side; a
@@ -187,16 +208,87 @@ def preview(outdir, dat, spr, first=FIRST_CLIENT_ID):
     print('preview', p)
 
 
+def problems_k3(a):
+    """why a picture cannot be the 32 x 32 one-tile canvas ([] = fine)"""
+    out = []
+    if a.shape[:2] != (K3_CELL, K3_CELL):
+        return ['size %d x %d, not %d x %d' % (a.shape[1], a.shape[0], K3_CELL, K3_CELL)]
+    al = a[..., 3]
+    if ((al != 0) & (al != 255)).any():
+        out.append('semi-transparent pixels (alpha must be 0 or 255)')
+    if not (al == 255).any():
+        out.append('empty')
+    else:
+        ys, xs = np.nonzero(al)
+        if ys.min() > 6 or xs.min() > 6 or ys.max() < K3_CELL - 7 or xs.max() < K3_CELL - 7:
+            out.append('the art does not fill the canvas (a chest is about 28 px wide)')
+    if (a[al == 0][:, :3] != 0).any():
+        out.append('colour under transparent pixels')
+    return out
+
+
+def build_k3(src_path):
+    """(canvas RGBA, things text, sums text, errors, style bad, warnings, colours) of the one-tile look"""
+    a = read_rgba(src_path)
+    errs = problems_k3(a)
+    bad, warn, ncol = style_report(a) if not errs else ([], [], 0)
+    out = io.StringIO()
+    w = csv.writer(out, lineterminator='\n')
+    w.writerow(HEADER)
+    w.writerow([K3_KEY, 'item', 'chest', 'cursed chest', K3_KEY, 0, 0, 1, 1, 1, 1, 'copy:%d' % STOCK_CLIENT_ID, 'redraw',
+                SERVER_FIRST, 'item=%d' % FIRST_CLIENT_ID])
+    sums = '%s  cursed_chest/cursed_chest_k3.png\n%s  cursed_chest_k3.png\n' % (digest(a), digest(a))
+    return a, out.getvalue(), sums, errs, bad, warn, ncol
+
+
+def main_k3(args):
+    src = args.src or K3_SRC
+    if args.src and args.check:
+        sys.exit('--check reads the committed source only; leave --src out')
+    if not os.path.exists(src):
+        sys.exit('missing %s' % src)
+    atlas, things, sums, errs, bad, warn, ncol = build_k3(src)
+    print('cursed_chest_k3: %s (%d colours)' % ('style PASS (own palette)' if not errs + bad else 'FAIL', ncol))
+    for r in errs + bad:
+        print('  ' + r)
+    for w_ in warn:
+        print('  warn ' + w_)
+    if errs or bad:
+        return 1
+    if args.check:
+        ok = True
+        for path, want in ((K3_THINGS, things), (K3_SUMS, sums)):
+            if not os.path.exists(path) or open(path, encoding='utf-8').read() != want:
+                print('stale:', os.path.relpath(path, HERE)); ok = False
+        if not os.path.exists(K3_ATLAS) or not np.array_equal(read_rgba(K3_ATLAS), atlas):
+            print('stale:', os.path.relpath(K3_ATLAS, HERE)); ok = False
+        print('one-tile cursed chest art up to date' if ok else 'run: python3 -I gen_cursed_chest_art.py build-k3')
+        return 0 if ok else 1
+    if args.src:   # the committed source: the PixelLab file, transparent colour cleared
+        with open(K3_SRC, 'wb') as f:
+            f.write(png_bytes(read_rgba(src)))
+    for path, data in ((K3_ATLAS, png_bytes(atlas)),):
+        with open(path, 'wb') as f:
+            f.write(data)
+    for path, text in ((K3_THINGS, things), (K3_SUMS, sums)):
+        with open(path, 'w', encoding='utf-8', newline='') as f:
+            f.write(text)
+    print('atlas', K3_ATLAS, '; client id %d redrawn' % FIRST_CLIENT_ID)
+    return 0
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
-    ap.add_argument('cmd', choices=['build'])
-    ap.add_argument('--src', default=None, help='the PixelLab folder (pixellab-pip-generations: cursed-chest/ and '
-                    'cursed-chest-idle/ inside); the frames are copied to art_import/cursed_chest/')
+    ap.add_argument('cmd', choices=['build', 'build-k3'])
+    ap.add_argument('--src', default=None, help='build: the PixelLab folder (pixellab-pip-generations: cursed-chest/ and '
+                    'cursed-chest-idle/ inside), the frames are copied to art_import/cursed_chest/. build-k3: the PixelLab PNG (chest-candidates/K3.png)')
     ap.add_argument('--check', action='store_true', help='compare with the committed files, write nothing')
     ap.add_argument('--preview', default=None, help='a folder for cursed_chest_looks.png (needs --dat / --spr of pair 43)')
     ap.add_argument('--dat')
     ap.add_argument('--spr')
     a = ap.parse_args()
+    if a.cmd == 'build-k3':   # --src is the PixelLab PNG itself here
+        return main_k3(a)
     if a.src and a.check:
         sys.exit('--check reads the committed sources only; leave --src out')
     src = SRC_DIR

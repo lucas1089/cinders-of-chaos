@@ -86,5 +86,19 @@ check(_a.shape == (64, 192, 4) and len(rep) == 3, 'two frames and a still: three
 check((r2[0]['phases'], r2[0]['extra'], r2[1]['x'], r2[1]['phases'], r2[1]['extra']) == ('2', 'ms=300', '128', '1', ''),
       'phases, columns, ms')
 
+# the one-tile look K3 (pair 53)
+k3 = G.read_rgba(G.K3_SRC)
+check(G.problems_k3(k3) == [], 'K3 source is a valid 32 x 32 canvas')
+check(G.problems_k3(np.zeros((32, 32, 4), np.uint8)) == ['empty'], 'an empty canvas is refused')
+check(G.problems_k3(np.zeros((64, 64, 4), np.uint8))[0].startswith('size'), 'a 64 px canvas is refused')
+semi = k3.copy(); semi[10, 10] = (5, 5, 5, 100)
+check(any('semi' in p for p in G.problems_k3(semi)), 'semi-transparent pixels are refused')
+k3a, k3t, k3s, k3e, k3b, _w, _n = G.build_k3(G.K3_SRC)
+check(not k3e and not k3b, 'K3 passes the style check')
+check(np.array_equal(k3a, k3), 'the atlas is the source')
+check(open(G.K3_THINGS, encoding='utf-8').read() == k3t and open(G.K3_SUMS, encoding='utf-8').read() == k3s, 'K3 files up to date')
+check(np.array_equal(G.read_rgba(G.K3_ATLAS), k3a), 'K3 atlas on disk is up to date')
+check('redraw' in k3t and 'item=38642' in k3t and '32281' in k3t, 'K3 row: redraw of 38642 / 32281')
+
 print('gen_cursed_chest_art_test: %s' % ('OK' if not failed else 'FAILED %d' % failed))
 sys.exit(1 if failed else 0)

@@ -439,6 +439,12 @@ for name, res in results.items():
     ok(not any(t in res['dresser'].protected for t, _i, _g, _c in res['dresser'].placed),
        name + ': nothing on a spawn, teleport, link, chest, NPC or the boss')
     ok(not any('decoration' in m for m in PC.qa_errors(res)), name + ': decoration cuts no path')
+    # nothing else next to a quest chest: no decoration piece of the dresser and no kit item on the eight tiles around it
+    kit_ids = D.all_ids()
+    ring = {(c['at'][0] + dx, c['at'][1] + dy, c['at'][2]) for c in res['chests'] for dx, dy in C.D8}
+    ok(not any(t in ring for t, _i, _g, _c in res['dresser'].placed), name + ': the dresser put nothing next to a chest')
+    ok(not any(i in kit_ids for t in ring if t in res['tiles'] for i, _a in res['tiles'][t]['items']),
+       name + ': no decoration item next to a chest')
     raw = PC.compile_plan(examples[name], pair24=False, cat=cat, dress=False)
     ok(set(res['zone_steps'] if 'zone_steps' in res else res['stats']['zone_steps']) == set(raw['stats']['zone_steps']),
        name + ': the same zones reached with and without decoration')
@@ -501,7 +507,7 @@ ok(all(C.CHEST_ACTION_BLOCK[0] <= c['aid'] <= C.CHEST_ACTION_BLOCK[1] for r in r
    'chests: the action id in the block')
 ok(all(C.CHEST_STORAGE_BLOCK[0] <= c['storage'] <= C.CHEST_STORAGE_BLOCK[1] for r in results.values() for c in r['chests']),
    'chests: the storage in the block')
-ok(cat['items']['chest'] == 32310, 'chests: the reward chest of rift_config.lua (32310, README "Reward chests")')
+ok(cat['items']['chest'] == 32311, 'chests: the reward chest of rift_config.lua (32311, the one-tile look, README "Reward chests")')
 ok(all(dict(temple['tiles'][c['at']]['items']).get(cat['items']['chest'], {}).get('aid') == c['aid'] for c in temple['chests']),
    'chests: the chest item carries the action id')
 p = copy.deepcopy(examples['temple_throne'])

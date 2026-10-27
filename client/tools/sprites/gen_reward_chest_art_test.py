@@ -89,5 +89,27 @@ check(G.MIRROR_SMALL and np.array_equal(satlas, ssrc[:, ::-1]) and not np.array_
       'the small atlas is the source mirrored')
 check(np.array_equal(sfr[(0, 0, 0)], satlas), 'the importer reads the small atlas')
 
+# the front look (pair 53): squeeze fit, recipe files without pixels
+sq = np.zeros((6, 8, 4), np.uint8); sq[..., 3] = 255
+sq[..., 0] = np.arange(8)[None, :] * 10; sq[..., 1] = np.arange(6)[:, None] * 10
+sq[2, :, 1] = sq[1, :, 1]; sq[:, 3, 0] = sq[:, 2, 0]   # row 2 repeats row 1, column 3 repeats column 2
+sqz, kr, kc = G.squeeze(sq, 1, 1)
+check(sqz.shape == (5, 7, 4) and kr == [0, 2, 3, 4, 5] and kc == [0, 1, 3, 4, 5, 6, 7] and kc[-1] == 7, 'squeeze drops the duplicate lines')
+check(all(any((sqz[i, j] == sq[a_, b_]).all() for a_ in kr for b_ in kc) for i in range(5) for j in range(7)), 'squeeze keeps source pixels')
+check(np.array_equal(G.squeeze(sq, 0, 0)[0], sq), 'squeeze 0 changes nothing')
+big = np.zeros((38, 35, 4), np.uint8); big[..., 3] = 255
+big[..., 0] = rng.randint(0, 256, (38, 35)); big[..., 1] = rng.randint(0, 256, (38, 35))
+cv, rr, cc = G.fit_front(np.pad(big, ((5, 5), (6, 6), (0, 0))))[:3]
+check(cv.shape == (32, 32, 4) and len(rr) == 6 and len(cc) == 3, 'fit_front: 35 x 38 -> 32 x 32 (3 columns, 6 rows out)')
+check((cv[-1, :, 3] > 0).any(), 'fit_front is bottom aligned')
+try:
+    G.fit_front(np.zeros((40, 40, 4), np.uint8)); check(False, 'an empty picture is refused')
+except ValueError:
+    pass
+th, sm = G.front_texts(big, cv, rr, cc)
+check('redraw' in th and 'item=38758' in th and '32311' in th and 'squeeze_rows=' in th, 'front things row: redraw, ids, recipe')
+check(sm.count('\n') == 2, 'front sums: two digests')
+check(os.path.exists(G.FRONT_THINGS) and os.path.exists(G.FRONT_SUMS), 'front recipe files are committed')
+
 print('gen_reward_chest_art_test: %s' % ('OK' if not failed else 'FAILED %d' % failed))
 sys.exit(1 if failed else 0)

@@ -90,11 +90,12 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                in data/npc (README "Haunted Harvest")
   waystoneitems tools/install_waystone_items.py  the Waystone Tier VII-XV items (copies of the base tablets' nodes, server ids
                41951..41959, monster level 1700-2500) in items.otb / items.xml (README "Waystone tiers")
-  cursedchest  tools/install_cursed_chest.py     the Cursed Chest's three own looks of pair 43 (copies of the Sealed Coffer chest's
-               node with client ids 38642..38644, server ids 32281..32283) in items.otb / items.xml (README "Cursed Chest")
+  cursedchest  tools/install_cursed_chest.py     the Cursed Chest's looks (copies of the Sealed Coffer chest's node with client ids
+               38642..38644, server ids 32281..32283; a chest rolls only 32281, one tile since pair 53, the others are legacy) in
+               items.otb / items.xml (README "Cursed Chest")
   rewardchest  tools/install_reward_chest.py    the Reward Chest's own looks (copies of the stock reward chest 21584's node: client id
-               38657 / server id 32310, 2 x 2, pair 45; client id 38758 / server id 32311, one tile, pair 47) in items.otb /
-               items.xml (README "Reward chests"; before rewardchests)
+               38758 / server id 32311, one tile, the look every reward chest wears since pair 53; client id 38657 / server id 32310,
+               the retired 2 x 2 look of pair 45) in items.otb / items.xml (README "Reward chests"; before rewardchests)
   decor48items tools/install_decor48_items.py    the 352 ice, swamp, lava and cave decoration items of client pair 48 (props of a
                donor pair, "source B") in items.otb / items.xml (server ids 42759..43110 = client id + 4000, from
                data/items/decor48_items.csv; used by the map studio kits and map makers; README "Decoration of pair 48")
@@ -277,9 +278,9 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   houses       tools/patch_base_houses.py        Chaos street names of the houses by house id (tools/base_house_names.csv)
                in the map's house file (README "Base houses")
   rewardchests tools/patch_reward_chests.py     the quest chests already on the map become the reward chest of rift_config.lua
-               (32310): the planned areas' (chest 1740 or 21584 with an action id of 47960-47999) so the contentareas step
+               (32311): the planned areas' (chest 1740 or 21584 with an action id of 47960-47999) so the contentareas step
                sees its placed areas unchanged; the base server's own quest chests and quest boxes (the base quest system's
-               action ids and quest unique ids) become its one-tile look 32311, README "Reward chests"; right before
+               action ids and quest unique ids); every placed 32310 moves to 32311, README "Reward chests"; right before
                contentareas)
   contentareas tools/install_content_areas.py   the planned content hunts (tools/areaplan/plans/) into the map at their
                origins, their spawns and chest scripts; the teleport room of Cinderhold grows by copies of its alcove

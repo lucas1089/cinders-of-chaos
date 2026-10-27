@@ -572,6 +572,8 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
                         boss=(boss_out['x'], boss_out['y'], boss_out['z']) if boss_out else None)
     if dress:
         dresser.run(wall_ids)
+        if chest_out:   # nothing else next to a quest chest (owner request 2026-10-27; area_plan_decor.Dresser.clear_around)
+            dresser.clear_around([c['at'] for c in chest_out], plain | wall_ids | {meta['chest']})
     reach_after = set(C.tile_reach(walk, arrival, (), edges))
     cut = reach_before - reach_after - dresser.blocked
     if cut:

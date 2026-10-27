@@ -44,10 +44,13 @@ return {
 
 	-- ------------------------------------------------------------------ the chest
 	chest = {
-		-- the looks: each chest that spawns wears one of these at random (client items 38642-38644 of pair 43, server
-		-- items 32281-32283 from tools/install_cursed_chest.py: 2x2, not moveable, a container); an id that is not
-		-- installed on the server is left out of the draw
-		itemIds = {32281, 32282, 32283},
+		-- the look: every chest that spawns wears the one-tile look (client item 38642 redrawn in pair 53, server item 32281
+		-- from tools/install_cursed_chest.py: 1x1, one phase, not moveable, a container); an id that is not installed on the
+		-- server is left out of the draw. Pair 43's three 2x2 looks (32281-32283) were drawn at random before.
+		itemIds = {32281},
+		-- the other two looks of pair 43 (still in the pair and in items.otb): never drawn now, but a chest that already
+		-- wears one (placed before the change) is still a cursed chest until it opens or crumbles
+		legacyItemIds = {32282, 32283},
 		-- the fallback while none of the looks is installed: the treasure chest of the Sealed Coffer (rift_config.lua
 		-- coffer): 2x2, not moveable, a container. A chest wearing this id still counts as a cursed chest.
 		itemId = 12664,

@@ -161,6 +161,9 @@ jobs:
           # the Cursed Chest looks of pair 43 (three PixelLab chests, 2 x 2 items): committed sources, atlas, things file
           # and sums match the generator, and each look passes style_check on its own colours
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_cursed_chest_art.py build --check
+          # pair 53 redraws the cursed chest 38642 as one 32 x 32 tile (PixelLab file K3, ours): source, atlas, things
+          # file and sums match the generator, and the look passes style_check on its own colours
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_cursed_chest_art.py build-k3 --check
           python3 -I client/tools/sprites/gen_cursed_chest_art_test.py
           # the Everfull potion looks of pair 44 (twelve PixelLab flasks, 1 x 1 items): committed sources, atlas, things file
           # and sums match the generator, each look passes style_check, and the ids agree with potions_config.lua
@@ -170,7 +173,12 @@ jobs:
           # sums match the generator, and the look passes style_check on its own colours
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_reward_chest_art.py build --check
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_reward_chest_art.py build-small --check
+          # pair 53 redraws the reward chest 38758 from a purchased pack (O256): the atlas is not in git, so --check
+          # verifies the recipe and the sums against themselves
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_reward_chest_art.py build-front --check
           python3 -I client/tools/sprites/gen_reward_chest_art_test.py
+          # in-place item redraw (redraw_items.py on a synthetic pair, pair 53)
+          /tmp/fxenv/bin/python -I client/tools/sprites/redraw_items_test.py
           # the support rune looks of pair 46 (100 PixelLab rune stones, 1 x 1 items) and the support icons: committed sources,
           # atlas, things file and sums match the generator, each look passes style_check, ids agree with the config
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_support_runes_art.py build --check

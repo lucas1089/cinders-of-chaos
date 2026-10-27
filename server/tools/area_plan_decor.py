@@ -10,6 +10,8 @@ instead of a uniform scatter:
   * light props against the walls (braziers, lava holes, glowing mushrooms, crystals);
   * corner pieces, wall-hugging props, clusters of 2-5 small items around an anchor piece, edging along paths;
   * floor detail on a gradient: dense along the walls, sparse in the middle so fights stay readable.
+  * nothing else next to a quest chest (`clear_around`, run last): the reward chest is one tile, front facing, and stands
+    alone; every decoration item, hung wall piece and loose scatter on the eight tiles around it is taken off again.
 Rules: never on a protected tile (spawn, teleport, its landing, link, chest, NPC, boss, arrival), nothing blocking on a
 route the area needs (the shortest walks from the arrival to every zone, spawn and special tile) or inside a planned
 path, a blocking piece only where its walkable neighbours stay joined, one decoration item per tile. The QA of the
@@ -178,6 +180,37 @@ class Dresser:
 
     def free(self, t):
         return t in self.walk and t not in self.protected and t in self.tiles and not self.occupied(t)
+
+    def clear_around(self, centers, keep_ids):
+        """take everything but the ids in keep_ids (grounds' borders, wall pieces, the chest) and items with attributes
+        (portals, teleports, anything an action id marks) off the eight tiles around each centre; a blocking piece that
+        goes makes its tile walkable again. -> number of items taken off. The decoration lists and counters follow."""
+        ring = {(c[0] + dx, c[1] + dy, c[2]) for c in centers for dx, dy in C.D8} - set(centers)
+        gone = 0
+        for t in sorted(ring):
+            if t not in self.tiles:
+                continue
+            items = self.tiles[t]['items']
+            kept = [it for it in items if it[0] in keep_ids or it[1]]
+            if len(kept) == len(items):
+                continue
+            gone += len(items) - len(kept)
+            self.tiles[t]['items'] = kept
+        if not gone:
+            return 0
+        placed, dropped = [], []
+        for p in self.placed:
+            t, iid, _g, _c = p
+            (dropped if t in ring and t in self.tiles and all(i != iid for i, _a in self.tiles[t]['items']) else placed).append(p)
+        self.placed = placed
+        for t, _iid, g, cat in dropped:
+            self.counts[cat] = self.counts.get(cat, 1) - 1
+            if not self.counts[cat]:
+                del self.counts[cat]
+            if self.groups[g]['block'] and t in self.blocked:
+                self.blocked.discard(t)
+                self.walk.add(t)
+        return gone
 
     def can_block(self, t, spacing=1, lanes=True):
         # set pieces of a hall may stand on a route: a blocking piece is only placed where its neighbours stay
