@@ -95,6 +95,9 @@ local function mkPlayer(id, name, level)
   function p:sendCancelMessage(t) self.cancel = t end
   function p:getCondition() return nil end
   function p:addMoney(m) self.money = self.money + m end
+  p.bank = 0
+  function p:getBankBalance() return self.bank end
+  function p:setBankBalance(v) self.bank = v end
   p.items, p.storage = {}, {}
   function p:getStorageValue(k) return self.storage[k] or -1 end
   function p:setStorageValue(k, v) self.storage[k] = v end

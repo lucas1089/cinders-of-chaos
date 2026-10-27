@@ -2,10 +2,10 @@
 -- everfullheld_test.lua; client/MANIFEST.md "Helper"). The Everfull potions show under the stock potions' looks (tier 1 as the
 -- Health / Mana Potion, the upgrades as the great, ultimate and supreme potions), so the helper cannot tell them from stock
 -- potions by the item. The server tells it, per slot (health, mana): { look, tier, level, line, ready } -- the stock look the
--- Everfull shows under, the line (health | mana | spirit), and `ready` when the charges a drink needs are there. The helper
+-- Everfull shows under, the line (health | mana | spirit), and `ready` (always true since O273: the flasks never empty; kept for an older server). The helper
 -- (game_helper/helper_potions.lua P.resolve) follows an upgrade with it and Auto setup (autosetup.lua) picks it. Nothing here
 -- changes what the server does: a drink is a use by look, and the server's engine finds the Everfull of that look and
--- checks level and charges itself. A message that does not fit is dropped; before the first message, or without a server
+-- checks the level itself. A message that does not fit is dropped; before the first message, or without a server
 -- that sends it, nothing is held and the helper behaves as before.
 ChaosEverfullHeld = ChaosEverfullHeld or {}
 local E = ChaosEverfullHeld

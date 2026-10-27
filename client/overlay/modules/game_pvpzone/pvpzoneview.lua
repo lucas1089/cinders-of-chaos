@@ -154,4 +154,118 @@ function V.recordLine(s)
     V.number(s.banked), V.number(s.weekBanked), V.number(s.total), V.number(s.kills), V.number(s.defeats), V.number(s.captures))
 end
 
+-- ---------------------------------------------------------------- how it works, the goal and the map marks
+-- the four numbered steps at the top of the window
+function V.steps(s)
+  s = s or {}
+  local list = {
+    tr('Pledge to a faction in this window, outside the zone. Pledged players earn reputation and can take the shrine.'),
+    tr('Enter from a protection zone. Kill monsters and rival players: every kill gives embers, which you carry (at most %s).',
+      V.number(s.carryMax or 2500)),
+    tr('Carried embers are at risk. If you are defeated you drop them all and your killer may take up to %s. Equipment and experience are never lost.',
+      V.number(s.pickup and s.pickup.perKill or 800)),
+    tr('Bank them: stand %ds in a white safe-exit circle without fighting (the circles are marked on your map). Banked embers are safe and buy orbs, potions and cosmetics from the vendor below.',
+      s.exitSeconds or 5),
+  }
+  for i, text in ipairs(list) do
+    list[i] = string.format('%d. %s', i, text)
+  end
+  return list
+end
+
+local KINDS = { exit = true, shrine = true }
+local ICON = { exit = 0, shrine = 0 }
+V.ICON = ICON
+
+-- the marks the server sends on entering: only exits and the shrine, with numbers and a name, at most 8
+function V.cleanMarks(list)
+  local out = {}
+  if type(list) ~= 'table' then return out end
+  for _, m in ipairs(list) do
+    if type(m) == 'table' and KINDS[m.kind] and tonumber(m.x) and tonumber(m.y) and tonumber(m.z) and #out < 8 then
+      out[#out + 1] = { kind = m.kind, x = floor(m.x), y = floor(m.y), z = floor(m.z), name = tostring(m.name or '') }
+    end
+  end
+  return out
+end
+
+-- distance (the larger of the two axes) and the compass sector from one position to another: 'n', 'ne', ... or nil
+-- when standing on it. Plain integer comparisons, no trigonometry.
+function V.compass(from, to)
+  local dx, dy = to.x - from.x, to.y - from.y
+  local ax, ay = math.abs(dx), math.abs(dy)
+  local dist = math.max(ax, ay)
+  if dist == 0 then return 0, nil end
+  local ns = dy < 0 and 'n' or 's'
+  local ew = dx > 0 and 'e' or 'w'
+  if ay * 2 <= ax then return dist, ew end
+  if ax * 2 <= ay then return dist, ns end
+  return dist, ns .. ew
+end
+
+-- "23 tiles north-east"
+function V.whereText(dist, dir)
+  dist = floor(tonumber(dist) or 0)
+  if not dir then return tr('you are here') end
+  if dir == 'n' then return tr('%d tiles north', dist) end
+  if dir == 'ne' then return tr('%d tiles north-east', dist) end
+  if dir == 'e' then return tr('%d tiles east', dist) end
+  if dir == 'se' then return tr('%d tiles south-east', dist) end
+  if dir == 's' then return tr('%d tiles south', dist) end
+  if dir == 'sw' then return tr('%d tiles south-west', dist) end
+  if dir == 'w' then return tr('%d tiles west', dist) end
+  return tr('%d tiles north-west', dist)
+end
+
+-- the nearest mark of a kind on the player's floor: mark, text; nil when there is none
+function V.nearest(marks, kind, pos)
+  local best, bd, bdir
+  for _, m in ipairs(marks or {}) do
+    if m.kind == kind and pos and m.z == pos.z then
+      local d, dir = V.compass(pos, m)
+      if not bd or d < bd then best, bd, bdir = m, d, dir end
+    end
+  end
+  if not best then return nil end
+  return best, V.whereText(bd, bdir)
+end
+
+-- the objective lines of the HUD (what to do now): a list of { text, color }. exitWhere / shrineWhere: "23 tiles north"
+-- or nil. d is the server's HUD data.
+function V.goalLines(d, exitWhere, shrineWhere)
+  d = d or {}
+  local lines = {}
+  local carried = tonumber(d.embers) or 0
+  if tonumber(d.exit) then
+    lines[1] = { tr('Leaving... hold still, do not fight. Your %s embers are banked when the bar is full.', V.number(carried)), '#9fd89f' }
+    return lines
+  end
+  if carried > 0 then
+    if exitWhere then
+      lines[1] = { tr('Embers carried: %s. Bank them at the nearest safe exit (%s, marked on your map) before you are defeated.',
+        V.number(carried), exitWhere), '#f6cf72' }
+    else
+      lines[1] = { tr('Embers carried: %s. Bank them at a safe exit (marked on your map) before you are defeated.',
+        V.number(carried)), '#f6cf72' }
+    end
+  else
+    lines[1] = { tr('Goal: kill monsters and rival players for embers, then bank them at a safe exit (marked on your map).'),
+      '#b8ab92' }
+  end
+  local c = d.contest or {}
+  local pledged = d.pledge ~= nil
+  if c.phase == 'warden' then
+    lines[2] = { shrineWhere and tr('Shrine event: slay the Shrine Warden at the shrine (%s, marked on your map).', shrineWhere)
+      or tr('Shrine event: slay the Shrine Warden at the shrine (marked on your map).'), '#ff7040' }
+  elseif c.phase == 'capture' then
+    if pledged then
+      lines[2] = { shrineWhere and tr('Shrine event: stand in the shrine circle with your faction to take it (%s, marked on your map).', shrineWhere)
+        or tr('Shrine event: stand in the shrine circle with your faction to take it (marked on your map).'), '#ff7040' }
+    else
+      lines[2] = { tr('Shrine event: only players pledged to a faction can take the shrine.'), '#8c8070' }
+    end
+  end
+  return lines
+end
+
 return V

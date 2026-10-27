@@ -112,7 +112,7 @@ local function creatureSayCallback(cid, type, msg)
 				else
 					local ok, why, args = PT.upgrade(player, chosen.id, "quest")
 					if ok then
-						npcHandler:say(t(cid, "Done. Your flask is now an %s. Its charges are as you left them.", chosen.name), cid)
+						npcHandler:say(t(cid, "Done. Your flask is now an %s.", chosen.name), cid)
 					else
 						npcHandler:say(t(cid, why, unpack(args or {})), cid)
 					end

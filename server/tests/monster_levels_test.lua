@@ -152,7 +152,11 @@ ChaosWaystoneTiers = {levelOf = function(m) return m.tierLevel end}
 local wayMon = mon({id = 1, pool = 20, tierLevel = 150})
 registered(wayMon, {x = 1, y = 1, z = 7}, false, false)
 eq(wayMon.shown, 150, "a waystone monster shows its run's level, not x baseLevelMult")
+-- the monster bar chip (monster_tiers.lua) reads ML.estimate when the nameplate level is not set: it must be the level
+-- the name would show, on the hunting scale, for a pool monster and a waystone monster alike
+eq((ChaosMonsterLevels.estimate(wayMon)), 150, "bar chip estimate: a waystone monster, not doubled")
 ChaosWaystoneTiers = nil
+eq((ChaosMonsterLevels.estimate(mon({id = 2, pool = 52}))), 52 * MULT, "bar chip estimate: a pool monster is on the hunting scale (Lv 104 vs [540])")
 local stag = mon({own = 777, pool = 790})
 registered(stag, {x = 1, y = 1, z = 7}, false, false)
 eq(stag.shown, nil, "Black Stag keeps the engine's own [777]")

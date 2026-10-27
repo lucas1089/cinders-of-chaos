@@ -7819,6 +7819,8 @@
   },
   "infinitytower": {
    "actions": [
+    "state",
+    "skip",
     "enter",
     "leave",
     "request",
@@ -8583,6 +8585,7 @@
     "faction",
     "haul",
     "hcAccept",
+    "id",
     "key",
     "kills",
     "piles",
@@ -9374,8 +9377,7 @@
   "bounty": {
    "files": [
     "bounty.lua",
-    "bounty_pool.lua",
-    "potion_flasks.lua"
+    "bounty_pool.lua"
    ],
    "kind": "opcode",
    "opcodes": [
@@ -10584,7 +10586,6 @@
   "potions": {
    "files": [
     "chaos_constants.lua",
-    "potion_flasks.lua",
     "potions.lua",
     "potions_helper.lua"
    ],

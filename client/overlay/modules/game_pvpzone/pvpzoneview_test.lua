@@ -65,5 +65,64 @@ eq(btn, 'Owned', 'owned'); eq(can, false, 'owned disabled')
 eq(V.recordLine({ banked = 1500, weekBanked = 300, total = 9000, kills = 3, defeats = 1, captures = 2 }),
   'Banked 1,500 (this week 300, all time 9,000)   Defeats dealt 3, taken 1   Shrines 2', 'record line')
 
+-- how it works: four numbered steps
+local steps = V.steps({ carryMax = 2500, pickup = { perKill = 800 }, exitSeconds = 5 })
+eq(#steps, 4, 'four steps')
+for i, line in ipairs(steps) do eq(line:sub(1, 3), i .. '. ', 'step ' .. i .. ' numbered') end
+eq(steps[2]:find('2,500', 1, true) ~= nil, true, 'step 2 names the carry cap')
+eq(steps[3]:find('800', 1, true) ~= nil, true, 'step 3 names what a killer takes')
+eq(steps[4]:find('5s', 1, true) ~= nil, true, 'step 4 names the exit time')
+eq(#V.steps(nil), 4, 'steps without a state')
+
+-- map marks from the server
+local clean = V.cleanMarks({ { kind = 'exit', x = 13319, y = 13362, z = 7, name = 'Safe exit' }, { kind = 'shrine', x = 13348, y = 13340, z = 7 },
+  { kind = 'door', x = 1, y = 1, z = 7 }, { kind = 'exit', x = 'a', y = 1, z = 7 }, 'x' })
+eq(#clean, 2, 'only exits and the shrine with numbers')
+eq(clean[2].name, '', 'a missing name is empty')
+eq(#V.cleanMarks('nope'), 0, 'not a list')
+local many = {}
+for i = 1, 20 do many[i] = { kind = 'exit', x = i, y = i, z = 7 } end
+eq(#V.cleanMarks(many), 8, 'at most 8 marks')
+
+-- the compass and the nearest mark
+local d, dir = V.compass({ x = 100, y = 100, z = 7 }, { x = 100, y = 80, z = 7 })
+eq(d, 20, 'distance north'); eq(dir, 'n', 'north')
+d, dir = V.compass({ x = 100, y = 100, z = 7 }, { x = 130, y = 70, z = 7 })
+eq(d, 30, 'distance north-east'); eq(dir, 'ne', 'north-east')
+_, dir = V.compass({ x = 100, y = 100, z = 7 }, { x = 140, y = 105, z = 7 }); eq(dir, 'e', 'east (flat angle)')
+_, dir = V.compass({ x = 100, y = 100, z = 7 }, { x = 90, y = 130, z = 7 }); eq(dir, 's', 'south (steep angle)')
+_, dir = V.compass({ x = 100, y = 100, z = 7 }, { x = 70, y = 120, z = 7 }); eq(dir, 'sw', 'south-west')
+_, dir = V.compass({ x = 100, y = 100, z = 7 }, { x = 70, y = 100, z = 7 }); eq(dir, 'w', 'west')
+_, dir = V.compass({ x = 100, y = 100, z = 7 }, { x = 80, y = 80, z = 7 }); eq(dir, 'nw', 'north-west')
+_, dir = V.compass({ x = 100, y = 100, z = 7 }, { x = 110, y = 110, z = 7 }); eq(dir, 'se', 'south-east')
+d, dir = V.compass({ x = 5, y = 5, z = 7 }, { x = 5, y = 5, z = 7 }); eq(d, 0, 'on the spot'); eq(dir, nil, 'no direction')
+eq(V.whereText(23, 'ne'), '23 tiles north-east', 'where text'); eq(V.whereText(0, nil), 'you are here', 'where, on it')
+local mk = { { kind = 'exit', x = 100, y = 140, z = 7 }, { kind = 'exit', x = 160, y = 100, z = 7 }, { kind = 'shrine', x = 130, y = 120, z = 7 },
+  { kind = 'exit', x = 101, y = 101, z = 8 } }
+local m, where = V.nearest(mk, 'exit', { x = 110, y = 130, z = 7 })
+eq(m.x, 100, 'nearest exit'); eq(where, '10 tiles south-west', 'nearest exit text')
+_, where = V.nearest(mk, 'shrine', { x = 130, y = 100, z = 7 }); eq(where, '20 tiles south', 'shrine text')
+eq(V.nearest(mk, 'shrine', { x = 130, y = 100, z = 9 }), nil, 'another floor: no mark')
+eq(V.nearest(nil, 'exit', { x = 1, y = 1, z = 7 }), nil, 'no marks')
+
+-- the objective line
+local g = V.goalLines({ embers = 12 }, '23 tiles north', nil)
+eq(#g, 1, 'one line without an event')
+eq(g[1][1], 'Embers carried: 12. Bank them at the nearest safe exit (23 tiles north, marked on your map) before you are defeated.', 'carrying: bank them')
+g = V.goalLines({ embers = 1500 }, nil, nil)
+eq(g[1][1], 'Embers carried: 1,500. Bank them at a safe exit (marked on your map) before you are defeated.', 'carrying, no mark known')
+g = V.goalLines({ embers = 0 }, '5 tiles east', nil)
+eq(g[1][1], 'Goal: kill monsters and rival players for embers, then bank them at a safe exit (marked on your map).', 'empty hands: the goal')
+g = V.goalLines({ embers = 30, exit = 40 }, '5 tiles east', nil)
+eq(#g, 1, 'leaving: one line'); eq(g[1][1]:find('hold still', 1, true) ~= nil, true, 'leaving: hold still')
+g = V.goalLines({ embers = 30, contest = { phase = 'warden' } }, '5 tiles east', '12 tiles west')
+eq(#g, 2, 'a shrine line during the warden')
+eq(g[2][1], 'Shrine event: slay the Shrine Warden at the shrine (12 tiles west, marked on your map).', 'warden line')
+g = V.goalLines({ embers = 0, contest = { phase = 'capture' }, pledge = { key = 'vigil' } }, nil, '3 tiles north')
+eq(g[2][1], 'Shrine event: stand in the shrine circle with your faction to take it (3 tiles north, marked on your map).', 'capture line')
+g = V.goalLines({ embers = 0, contest = { phase = 'capture' } }, nil, nil)
+eq(g[2][1], 'Shrine event: only players pledged to a faction can take the shrine.', 'capture, unpledged')
+eq(#V.goalLines(nil, nil, nil), 1, 'no data: the goal')
+
 print(string.format('pvpzoneview_test: %d checks, %d failed', checks, fails))
 if fails > 0 then os.exit(1) end

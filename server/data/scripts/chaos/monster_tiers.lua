@@ -299,6 +299,14 @@ local function levelOf(creature)
 			return math.floor(tonumber(shown))
 		end
 	end
+	-- ChaosLoot.monsterLevel mixes scales (the bounty POOL level is half the hunting level; a waystone tier or generated
+	-- area level is a hunting level already), so the one place that knows which is which decides: monster_levels.lua
+	-- (owner 2026-10-27: the chip said "Lv 104" next to a name "[540]")
+	local ML = ChaosMonsterLevels
+	if ML and ML.estimate then
+		local okE, lv = pcall(ML.estimate, creature)
+		return okE and tonumber(lv) and math.floor(lv) or nil
+	end
 	if not (ChaosLoot and ChaosLoot.monsterLevel) then
 		return nil
 	end

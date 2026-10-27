@@ -4,7 +4,9 @@
 -- Server: server/data/scripts/chaos/pvpzone.lua, extended opcode 193 (JSON {action, data}, chunked by Chaos.sendChunked
 -- and joined by ProtocolGame.registerExtendedJSONOpcode).
 --   client -> server  open | query | enter {accept, hcAccept} | pledge {faction} | buy {key}
---   server -> client  state {...} (open, confirm) | hud {...} | hide {why} | enter {} | msg {text, ok}
+--   server -> client  state {...} (open, confirm) | hud {...} | hide {why} | enter {marks = [{kind, x, y, z, name}]} | msg {text, ok}
+-- On entering the safe exits and the Cinder Shrine are put on the minimap as flags (taken off when the zone is left, at
+-- the game's end and, after a crash, at the next start); the HUD's objective line says what to do and where.
 -- Pure helpers: pvpzoneview.lua (pvpzoneview_test.lua). The top menu: Adventure > Scorched Marches.
 
 local OPCODE = 193
@@ -14,6 +16,7 @@ local window, confirm, hud
 local state
 local hudData, hudAt = nil, 0
 local secureBefore
+local marks, flags = {}, {} -- the exits and the shrine of the zone (server), the minimap flags put on the map
 local tickEvent
 local handlers = {}
 local reported = {}
@@ -78,6 +81,10 @@ local function render()
   local list = child(window, 'list')
   list:destroyChildren()
   local s = state
+  addLabel(list, 'PzHead', tr('How it works'), '#ff7a2a')
+  for _, line in ipairs(V.steps(s)) do
+    addLabel(list, 'PzWrap', line, '#e8dcc2')
+  end
   addLabel(list, 'PzHead', tr('Open PvP, risk and reward'), '#ff7a2a')
   addLabel(list, 'PzWrap', tr('Level %d+. Everyone in the Marches can attack you, whatever the world\'s rules. Nobody dies: a ' ..
     'defeat throws you out and drops the embers you carry; your killer may take them. Bank them by standing %ds in a safe exit ' ..
@@ -177,6 +184,62 @@ function confirmEnter()
   hideConfirm()
 end
 
+-- ---------------------------------------------------------------- the map marks
+local function minimapWidget()
+  local mm = modules.game_minimap
+  return mm and rawget(mm, 'minimapWidget') or nil
+end
+
+local function saveFlags()
+  local list = {}
+  for _, f in ipairs(flags) do list[#list + 1] = { x = f.x, y = f.y, z = f.z, icon = f.icon, name = f.name } end
+  pcall(g_settings.setNode, 'pvpzoneFlags', { list = list })
+end
+
+-- take our flags off the minimap (the server's marks stay known for the objective line until the zone is left)
+local function clearFlags()
+  local w = minimapWidget()
+  for _, f in ipairs(flags) do
+    if w then
+      local pos = { x = f.x, y = f.y, z = f.z }
+      if not pcall(function() w:removeFlag(pos) end) then
+        pcall(function() w:removeFlag(pos, f.icon, f.name) end)
+      end
+    end
+  end
+  flags = {}
+  saveFlags()
+end
+
+-- after a crash the flags of the last visit are still on the map: take them off at the next start
+local function clearOldFlags()
+  local node = nil
+  pcall(function() node = g_settings.getNode('pvpzoneFlags') end)
+  flags = {}
+  if type(node) == 'table' and type(node.list) == 'table' then
+    for _, f in ipairs(node.list) do
+      if tonumber(f.x) and tonumber(f.y) and tonumber(f.z) then
+        flags[#flags + 1] = { x = f.x, y = f.y, z = f.z, icon = f.icon or 0, name = tostring(f.name or '') }
+      end
+    end
+  end
+  clearFlags()
+end
+
+local function setMarks(list)
+  clearFlags()
+  marks = V.cleanMarks(list)
+  local w = minimapWidget()
+  if not w then return end
+  for _, m in ipairs(marks) do
+    local icon = V.ICON[m.kind] or 0
+    if pcall(function() w:addFlag({ x = m.x, y = m.y, z = m.z }, icon, m.name) end) then
+      flags[#flags + 1] = { x = m.x, y = m.y, z = m.z, icon = icon, name = m.name }
+    end
+  end
+  saveFlags()
+end
+
 -- ---------------------------------------------------------------- the HUD
 local function renderHud()
   if not hud or not hudData then return end
@@ -205,6 +268,21 @@ local function renderHud()
   text, color = V.statusLine(st)
   child(hud, 'status'):setText(text)
   child(hud, 'status'):setColor(color)
+  -- the objective: what to do now, with the way to the nearest safe exit and to the shrine
+  local me = g_game.getLocalPlayer()
+  local pos = me and me:getPosition() or nil
+  local _, exitWhere = V.nearest(marks, 'exit', pos)
+  local _, shrineWhere = V.nearest(marks, 'shrine', pos)
+  local lines = V.goalLines(d, exitWhere, shrineWhere)
+  for i, id in ipairs({ 'goal', 'goal2' }) do
+    local label = child(hud, id)
+    local line = lines[i]
+    label:setVisible(line ~= nil)
+    if line then
+      label:setText(line[1])
+      label:setColor(line[2])
+    end
+  end
 end
 
 local function stopTick()
@@ -275,9 +353,12 @@ local function onMessage(protocol, opcode, msg)
   elseif a == 'enter' then
     secureOff()
     hide()
+    setMarks(d.marks)
   elseif a == 'hide' then
     hideHud()
     secureRestore()
+    clearFlags()
+    marks = {}
   elseif a == 'msg' then
     message(d.text, d.ok)
   end
@@ -304,6 +385,7 @@ end
 
 local function onGameStart()
   addMenu()
+  clearOldFlags()
   send('query')
 end
 
@@ -311,6 +393,8 @@ local function onGameEnd()
   hide()
   hideConfirm()
   hideHud()
+  clearFlags()
+  marks = {}
   state, secureBefore = nil, nil
 end
 

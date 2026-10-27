@@ -2,8 +2,8 @@
 <!-- Veyra the Apothecary: the supplies seller of the hub (server/data/scripts/chaos/apothecary_config.lua, apothecary.lua;
      server/README.md "The Apothecary"). Potions of every tier, the runes the store sells in packs, rope, shovel, torch
      backpack, and the decks that hold the cards; she buys the old empty flasks. The lists below must match apothecary_config.lua (tests/apothecary_test.lua).
-     The potion installer (install_potions.py) adds the Everfull potions to this list, the rune installer
-     (install_rune_supply.py) keeps the rune prices at the supply table's. Stands in a stall of the hub
+     No Everfull potion is sold here or anywhere (install_potions.py takes them out of every shop list; O273), the rune
+     installer (install_rune_supply.py) keeps the rune prices at the supply table's. Stands in a stall of the hub
      (npc_booths_config.lua); installed by server/tools/install_apothecary.py.
      module_shop is what makes the base library read the two shop lists: without it the trade window is empty and she
      answers "Sorry, I'm not offering anything." (O188). -->

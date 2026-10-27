@@ -22,7 +22,9 @@
 --
 -- Protocol (JSON {action, data}; server -> client through Chaos.sendChunked):
 --   client -> server  open | query | enter {accept, hcAccept} | pledge {faction} | buy {key}
---   server -> client  state {...window...} | hud {...} | hide {} | enter {} | msg {text, ok}
+--   server -> client  state {...window...} | hud {...} | hide {} | enter {marks = [{kind exit|shrine, x, y, z, name}]} | msg {text, ok}
+--   (the client puts the marks on the minimap while the player is inside; floating text over the shrine and the exits
+--   every few seconds: beacons())
 -- Exports: ChaosPvpZone.isInside(player), .inZone(pos), .targetCombat(creature, target) (the base Creature:onTargetCombat
 -- asks it first: tools/patch_base_events.py step 11), .canAttack(caster, target) (ChaosSpell.canAttack),
 -- .lootMult(ctx) (loot_config.lua rateMult), .holderOf(realm). Staff: /marches. Lua 5.1 / LuaJIT compatible.
@@ -334,6 +336,12 @@ local function placeItem(pos, id)
 	end
 end
 
+-- one item at a tile; a failed placement never stops the build (the field plays without a decoration)
+local function putItem(pos, id)
+	local ok, item = pcall(Game.createItem, id, 1, pos)
+	return ok and item or nil
+end
+
 local function buildTiles(slot)
 	local cfg = C()
 	local L = K.layout(cfg, slot)
@@ -344,18 +352,31 @@ local function buildTiles(slot)
 		end
 	end
 	local ids = cfg.ids
-	local grounds = {ground = ids.ground, gate = ids.gateGround, ring = ids.ring}
+	local fallback = cfg.look and cfg.look.rock[1] or ids.ground
 	for _, t in ipairs(foot) do
 		local pos = P(t)
 		local tile = Game.createTile(pos, true)
 		if tile then
 			if not tile:getGround() then
-				Game.createItem(grounds[t.ground] or ids.ground, 1, pos)
+				Game.createItem(t.gid or fallback, 1, pos)
+			end
+			for _, edge in ipairs(t.edges or {}) do
+				putItem(pos, edge)
 			end
 			if t.wall and not tile:getItemById(ids.wall) then
 				Game.createItem(ids.wall, 1, pos)
 			end
 		end
+	end
+	-- decoration under the things that block, then cover, lights and landmarks
+	for _, d in ipairs(L.decor or {}) do
+		putItem(P(d), d.id)
+	end
+	for _, c in ipairs(L.cover or {}) do
+		putItem(P(c), c.id)
+	end
+	for _, f in ipairs(L.fixtures or {}) do
+		putItem(P(f), f.id)
 	end
 	for _, p in ipairs(L.pillars) do
 		placeItem(P(p), ids.pillar)
@@ -691,6 +712,28 @@ local function arrivalSpot(L, exitIndex)
 	return P(L.exits[exitIndex])
 end
 
+-- the places a player is sent to, for the client's minimap flags: every safe exit and the Cinder Shrine, named in the
+-- player's language (the client draws them on the map while the player is inside)
+local function marksOf(player, inst)
+	local out = {}
+	for _, e in ipairs(inst.L.exits) do
+		out[#out + 1] = {kind = "exit", x = e.x, y = e.y, z = e.z, name = Chaos.t(player, "Safe exit: bank your embers")}
+	end
+	local s = inst.L.shrine
+	if s then
+		out[#out + 1] = {kind = "shrine", x = s.x, y = s.y, z = s.z,
+			name = Chaos.t(player, "Cinder Shrine: slay the Warden, hold the circle")}
+	end
+	return out
+end
+
+-- the goal, in two plain messages: what the player is here to do, and what he carries now
+local function goalMessages(player)
+	msg(player, Chaos.t(player, "Goal: earn embers from monsters and rival players, then bank them at a safe exit before you are defeated."))
+	msg(player, Chaos.t(player, "Embers carried: %d. Bank them at a safe exit (the white circles by the banners, marked on your map) before you die.",
+		getCarried(player)))
+end
+
 local function newState(player, slot)
 	local st = {guid = player:getGuid(), slot = slot, since = now(), lastCombat = 0, hudAt = 0}
 	Z.state[player:getId()] = st
@@ -728,9 +771,9 @@ function Z.enter(player, data)
 	here:sendMagicEffect(CONST_ME_TELEPORT)
 	player:teleportTo(arrivalSpot(inst.L, math.random(math.max(1, #inst.L.exits))))
 	player:getPosition():sendMagicEffect(CONST_ME_FIREAREA)
-	msg(player, string.format("You enter %s. Protected for %d seconds. Bank your embers at a safe exit (the white circles by the banners).",
-		cfg.name, cfg.entry.protectSeconds))
-	send(player, "enter", {})
+	msg(player, Chaos.t(player, "You enter %s. Protected for %d seconds.", cfg.name, cfg.entry.protectSeconds))
+	goalMessages(player)
+	send(player, "enter", {marks = marksOf(player, inst)})
 	Z.sendHud(player, s)
 	return true
 end
@@ -745,7 +788,8 @@ function Z.adopt(player, slot)
 	player:setStorageValue(ST().inside, 1)
 	player:setStorageValue(ST().protect, protectUntil)
 	msg(player, string.format("You wake in %s. You are protected while you are brought to a safe exit.", C().name))
-	send(player, "enter", {})
+	goalMessages(player)
+	send(player, "enter", {marks = inst and marksOf(player, inst) or {}})
 	return s, inst
 end
 
@@ -814,8 +858,8 @@ local function leaveSafe(player, st)
 	end
 	release(player, "exit")
 	if moved > 0 or lostN > 0 then
-		msg(player, Chaos.t(player, "You leave %s. %d embers banked (%d in total)%s.", cfg.name, moved, r.banked,
-			lostN > 0 and Chaos.t(player, ", %d lost over the bank limit", lostN) or ""))
+		msg(player, Chaos.t(player, "You leave %s. %d embers banked (%d in total)%s. Spend them at the vendor: Adventure > Scorched Marches.",
+			cfg.name, moved, r.banked, lostN > 0 and Chaos.t(player, ", %d lost over the bank limit", lostN) or ""))
 	else
 		msg(player, string.format("You leave %s.", cfg.name))
 	end
@@ -963,8 +1007,8 @@ local function defeat(player, st, killer)
 	local by = kp and kp:getName() or (killer and killer:getName()) or "the Marches"
 	local fell = ""
 	if carried > 0 then
-		fell = pile.amount > 0 and Chaos.t(player, " Your %d carried embers fell where you stood.", carried) or
-			Chaos.t(player, " Your %d carried embers burned.", carried)
+		fell = pile.amount > 0 and Chaos.t(player, " Your %d carried embers fell where you stood: your killer may take them, the rest burns out in %d seconds.",
+			carried, cfg.death.pileSeconds) or Chaos.t(player, " Your %d carried embers burned.", carried)
 	end
 	msg(player, Chaos.t(player, "You were defeated by %s in %s.%s You can enter again in %d seconds.", by, cfg.name, fell,
 		cfg.entry.cooldownSeconds))
@@ -1226,6 +1270,11 @@ function Z.buy(player, key)
 	if ChaosRateLimit and not ChaosRateLimit.allow(player, "marches.buy", 500) then
 		return false
 	end
+	if Z.isInside(player) or Z.inZone(player:getPosition()) ~= nil then
+		-- 50 ultimate health potions in the middle of a fight would make a defeat a choice: the vendor is outside only
+		send(player, "msg", {text = "Leave the Marches to use the vendor."})
+		return false
+	end
 	local guid = player:getGuid()
 	local r = Z.rowOf(guid)
 	local owns = function(k)
@@ -1265,6 +1314,35 @@ end
 
 -- ======================================================================== the tick
 local tickAt = 0
+
+-- floating text over the objectives, for everyone who sees them: the shrine says what to do with it now, the safe exits
+-- say what they are for. Every few seconds, and only while somebody is inside.
+local function beacons(inst)
+	local Fx = ChaosCombatFx
+	if not (Fx and Fx.label) then
+		return
+	end
+	local anyone = false
+	eachInside(inst.slot, function()
+		anyone = true
+	end)
+	if not anyone then
+		return
+	end
+	local phase = inst.contest and inst.contest.phase
+	local shrineText = phase == "warden" and "Slay the Warden!" or (phase == "capture" and "Take the Shrine!" or "Cinder Shrine")
+	local sp = P(inst.L.shrine)
+	Fx.label(sp, function(pl)
+		return Chaos.tx(pl, shrineText)
+	end, "#ff7a2a")
+	sp:sendMagicEffect(CONST_ME_FIREAREA)
+	for _, e in ipairs(inst.L.exits) do
+		Fx.label(P(e), function(pl)
+			return Chaos.tx(pl, "Safe exit: bank your embers")
+		end, "#9fd89f")
+	end
+end
+Z.beacons = beacons
 
 function Z.tick()
 	local cfg = C()
@@ -1340,6 +1418,7 @@ function Z.tick()
 			contestTick(inst, t)
 			if slow then
 				refill(inst, t)
+				pcall(beacons, inst)
 			end
 		end
 	end
@@ -1538,6 +1617,7 @@ function mdeath.onDeath(creature, corpse, killer, mostDamageKiller, lastHitUnjus
 		note(p, string.format("You cannot carry more than %d embers. Bank them at a safe exit.", cfg.carry.max))
 	end
 	if added > 0 then
+		note(p, Chaos.t(p, "+%d embers (carrying %d). Bank them at a safe exit before you are defeated.", added, nc))
 		Z.sendHud(p, st, true)
 	end
 	return true

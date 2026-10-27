@@ -79,6 +79,9 @@ local function mkPlayer(id, name, level)
   function p:sendCancelMessage(t) self.cancel = t end
   function p:getCondition() return nil end
   function p:addMoney(m) self.money = self.money + m end
+  p.bank = 0
+  function p:getBankBalance() return self.bank end
+  function p:setBankBalance(v) self.bank = v end
   p.items, p.storage = {}, {}
   function p:getStorageValue(k) return self.storage[k] or -1 end
   function p:setStorageValue(k, v) self.storage[k] = v end
@@ -138,7 +141,8 @@ assertEq(#created, 4, "floor 1 spawned 4 monsters")
 for _, m in ipairs(created) do assert(m.events["ChaosTowerMonsterDeath"], "monster hook") end
 local ev = registry["ChaosTowerMonsterDeath"]
 for i = 1, 4 do ev.onDeath(created[i]) end
-assertEq(a.money, 50, "floor gold")
+assertEq(a.bank, 50, "floor gold goes to the bank")
+assertEq(a.money, 0, "no floor gold in the backpack")
 assertEq(a.hp, 75, "half the missing health back after a floor")
 -- Chaos.heal: at most the missing health, the stock one-argument signature as the fallback, nothing at full health
 local s = {hp = 90}
@@ -275,7 +279,8 @@ do
     for _, m in ipairs(list) do m.dead = true; registry["ChaosTowerMonsterDeath"].onDeath(m) end
   end
   -- floor 5 is a milestone: 1 Crystal Coin every time and 5 more for the first clear this season
-  assertEq(h.items[2160], 6, "O144: floor 5 pays 1 (every time) + 5 (first clear) crystal coins")
+  assertEq(h.items[2160], nil, "coins never go to the backpack")
+  assertEq(h.bank, 6 * 10000 + 50 * (1 + 2 + 3 + 4 + 5), "O144: floor 5 pays 1 (every time) + 5 (first clear) crystal coins, into the bank with the floor gold")
   assertEq(h.storage[BC.rewards.storage], 7005, "O144: the first clear is kept as season x 1000 + floor")
   local said5 = table.concat(h.msgs, "|")
   assert(said5:find("First clear of floor 5 this season: 5 Crystal Coin.", 1, true), "O144: first clear text")
@@ -285,12 +290,13 @@ do
   ChaosTowerRun.leave(h)
   -- the second run: the repeatable reward only
   h.items = {}
+  h.bank = 0
   assertEq(ChaosTowerRun.start(h), true, "O144: second run")
   for floor = 1, 5 do
     advance(floor == 1 and 6000 or 7000)
     for _, m in ipairs(alive()) do m.dead = true; registry["ChaosTowerMonsterDeath"].onDeath(m) end
   end
-  assertEq(h.items[2160], 1, "O144: the second clear pays the repeatable reward only")
+  assertEq(h.bank, 10000 + 50 * (1 + 2 + 3 + 4 + 5), "O144: the second clear pays the repeatable reward only")
   ChaosTowerRun.leave(h)
   -- the damage factor and the drops
   advance(1000)
@@ -320,5 +326,124 @@ do
   ChaosTowerRun.leave(h2)
   local _ = first
 end
+-- ---- "Next floor now" (action skip): between floors only, leader, boss floors, rate limit, no stale timer
+do
+  advance(30000)
+  local alive = function(from) local out = {} for i = from + 1, #created do local m = created[i]; if not m.removed and not m.dead then out[#out + 1] = m end end return out end
+  local cfg = ChaosTowerRunConfig
+  local base = 5000000
+  local now = base
+  os.time = function() return now end -- luacheck: ignore
+  local function said(p, text) for _, m in ipairs(p.msgs) do if m:find(text, 1, true) then return true end end return false end
+  local k = mkPlayer(20, "Kay", 300); players[20] = k
+  local out = mkPlayer(21, "Out", 300); players[21] = out
+  assertEq(ChaosTowerRun.skip(out), false, "skip: refused outside a run")
+  assert(out.cancel:find("not inside the tower", 1, true), "skip: told")
+  local first = #created
+  assertEq(ChaosTowerRun.start(k), true, "skip: start")
+  -- the start delay can be skipped
+  assertEq(ChaosTowerRun.skip(k), true, "skip: the start delay")
+  assertEq(#alive(first), 4, "skip: floor 1 began at once")
+  -- while monsters are alive: refused, nothing stacks
+  now = now + 10
+  assertEq(ChaosTowerRun.skip(k), false, "skip: refused while the floor is alive")
+  assertEq(#alive(first), 4, "skip: no second floor on top")
+  advance(6000) -- the start timer that was skipped fires: it must do nothing
+  assertEq(#alive(first), 4, "skip: the old start timer is dead")
+  for _, m in ipairs(alive(first)) do m.dead = true; registry["ChaosTowerMonsterDeath"].onDeath(m) end
+  local mark = #created
+  -- cleared: skip between floors, then the pause timer of floor 1 must not start floor 3
+  now = now + 10
+  assertEq(ChaosTowerRun.skip(k), true, "skip: the pause between floors")
+  assertEq(#alive(mark), 4, "skip: floor 2 began at once")
+  assert(said(k, "Floor 2"), "skip: floor 2 announced")
+  advance(7000)
+  assertEq(#alive(mark), 4, "skip: the stale pause timer started nothing")
+  -- rate limit: a press right after a skip is refused even if the floor is clear
+  for _, m in ipairs(alive(mark)) do m.dead = true; registry["ChaosTowerMonsterDeath"].onDeath(m) end
+  mark = #created
+  now = now + 1
+  assertEq(ChaosTowerRun.skip(k), false, "skip: rate limit")
+  assert(k.cancel:find("Wait a moment", 1, true), "skip: rate limit text")
+  now = now + 5
+  -- floor 3 -> the next after floor 9 is a boss floor: refused (floor 10)
+  assertEq(ChaosTowerRun.skip(k), true, "skip: floor 3")
+  for f = 3, 8 do
+    for _, m in ipairs(alive(mark)) do m.dead = true; registry["ChaosTowerMonsterDeath"].onDeath(m) end
+    mark = #created
+    now = now + 5
+    assertEq(ChaosTowerRun.skip(k), true, "skip: floor " .. (f + 1))
+  end
+  for _, m in ipairs(alive(mark)) do m.dead = true; registry["ChaosTowerMonsterDeath"].onDeath(m) end -- floor 9 cleared
+  mark = #created
+  now = now + 5
+  assertEq(ChaosTowerRun.skip(k), false, "skip: the pause before a boss floor is kept")
+  assert(k.cancel:find("boss floor", 1, true), "skip: boss text")
+  cfg.skip.intoBoss = true
+  assertEq(ChaosTowerRun.skip(k), true, "skip: intoBoss allows it")
+  cfg.skip.intoBoss = false
+  ChaosTowerRun.leave(k)
+  assertEq(ChaosTowerRun.skip(k), false, "skip: refused after leaving")
+  -- the records see the run's real clock, and a disabled switch refuses
+  cfg.skip.enabled = false
+  local k2 = mkPlayer(22, "Kim", 300); players[22] = k2
+  ChaosTowerRun.start(k2)
+  assertEq(ChaosTowerRun.skip(k2), false, "skip: switched off")
+  cfg.skip.enabled = true
+  ChaosTowerRun.leave(k2)
+  -- a group: the leader presses, a member cannot while the leader is in, anyone once the leader is out
+  local l, m1 = mkPlayer(23, "Lea", 300), mkPlayer(24, "Max", 300); players[23] = l; players[24] = m1
+  l.getParty = function() return {getLeader = function() return l end, getMembers = function() return {l, m1} end} end
+  m1.getParty = l.getParty
+  l.pos = Position(10, 10, 7); m1.pos = Position(11, 10, 7)
+  assertEq(ChaosTowerRun.start(l), true, "skip: group start")
+  now = now + 5
+  assertEq(ChaosTowerRun.skip(m1), false, "skip: a member cannot while the leader is in")
+  assert(m1.cancel:find("run leader", 1, true), "skip: leader text")
+  local gm = #created
+  assertEq(ChaosTowerRun.skip(l), true, "skip: the leader")
+  for _, m in ipairs(alive(gm)) do m.dead = true; registry["ChaosTowerMonsterDeath"].onDeath(m) end
+  registry["ChaosTowerPlayerDeath"].onDeath(l) -- the leader falls
+  now = now + 5
+  assertEq(ChaosTowerRun.skip(m1), true, "skip: a member once the leader is out")
+  ChaosTowerRun.leave(m1)
+  assertEq(ChaosTowerRun.activeRuns(), 0, "skip: all closed")
+  -- a player that is in a run but not in the arena is refused
+  local z = mkPlayer(25, "Zed", 300); players[25] = z
+  ChaosTowerRun.start(z)
+  z.pos = Position(10, 10, 7)
+  assertEq(ChaosTowerRun.skip(z), false, "skip: not in the tower area")
+  ChaosTowerRun.leave(z)
+  -- the state pushed to the client enables the button
+  local sent = {}
+  ChaosOpcodes.infinitytower = 214
+  json = {encode = function(t) return t end}
+  local w = mkPlayer(26, "Wyn", 300); players[26] = w
+  w.sendExtendedOpcode = function(self, op, st) sent[#sent + 1] = st end
+  ChaosTowerRun.start(w)
+  assertEq(sent[#sent].inRun, true, "state: in a run")
+  assertEq(sent[#sent].canSkip, true, "state: the start delay can be skipped")
+  now = now + 5
+  ChaosTowerRun.skip(w)
+  assertEq(sent[#sent].canSkip, false, "state: a live floor cannot")
+  assertEq(sent[#sent].floor, 1, "panel: floor")
+  assertEq(sent[#sent].total, 4, "panel: monsters of the floor")
+  assertEq(sent[#sent].remaining, 4, "panel: monsters left")
+  assertEq(sent[#sent].floorLeft, 300, "panel: floor time left")
+  assertEq(sent[#sent].nextIn, nil, "panel: no next-floor countdown while it is alive")
+  local live = {}
+  for i = 1, #created do local m = created[i]; if not m.removed and not m.dead then live[#live + 1] = m end end
+  live[1].dead = true; registry["ChaosTowerMonsterDeath"].onDeath(live[1])
+  assertEq(sent[#sent].remaining, 3, "panel: pushed on a kill")
+  for i = 2, #live do live[i].dead = true; registry["ChaosTowerMonsterDeath"].onDeath(live[i]) end
+  assertEq(sent[#sent].waiting, true, "panel: waiting after the clear")
+  assertEq(sent[#sent].cleared, 1, "panel: cleared floors")
+  assertEq(sent[#sent].nextIn, 6, "panel: countdown to the next floor")
+  assertEq(sent[#sent].remaining, 0, "panel: nothing left")
+  ChaosTowerRun.leave(w)
+  assertEq(sent[#sent].inRun, false, "state: left")
+  json = nil
+end
+print("infinity tower run: next floor now passed")
 print("infinity tower run: O144 floor health, rewards and drops passed")
 print("infinity tower run: all asserts passed")

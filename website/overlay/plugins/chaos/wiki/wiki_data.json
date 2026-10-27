@@ -6901,14 +6901,11 @@
 				{
 					"id": "tree:672",
 					"name": "Bottomless Flasks",
-					"sub": "Notable. +2 max charges on the health and mana flasks. +25% flask charges from kills.",
+					"sub": "Notable. +2.0 spirit. +2.0 vitality.",
 					"color": "#c8b890",
 					"group": "notable",
 					"sections": [
-						{
-							"h": "Effect",
-							"p": ["+2 max charges on the health and mana flasks. +25% flask charges from kills."]
-						},
+						{"h": "Effect", "p": ["+2.0 spirit. +2.0 vitality."]},
 						{"h": "Who", "p": ["Classes: every class."]}
 					],
 					"icon": "wiki/i/k-light-nodes.png"

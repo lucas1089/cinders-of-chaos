@@ -405,6 +405,40 @@ w.bar = {}
 H.pick(st, cfg, w.ctx())
 eq(#H.takeUserOff(st, cfg, now + 5000), 1, 'a teleport 20 s before: unticked')
 
+-- a death is a fast relog (owner 2026-10-27, "continua limpando a lista"): the state is made new at the logout and at the
+-- login, so the death's mark was lost and a vigil that dropped a few seconds after the login was unticked and saved
+do
+  local st, w = H.newState(), world({ bar = { ['vigil of clarity'] = true } })
+  local cfg = cfgOf({ 162 })
+  H.pick(st, cfg, w.ctx())
+  now = now + 20000
+  H.reset(st)
+  H.noteClear(st, now, H.SESSION_GRACE_MS) -- the death
+  -- the relog: a new state, the caller notes the game start too
+  st, w = H.newState(), world({ bar = { ['vigil of clarity'] = true } }) -- the bar still lists it for a moment
+  H.noteClear(st, now, H.SESSION_GRACE_MS)
+  H.pick(st, cfg, w.ctx())
+  now = now + 3000
+  w.bar = {} -- ... and drops: one vigil only, 3 s after the login
+  H.pick(st, cfg, w.ctx())
+  now = now + 3000
+  w.bar = { ['vigil of clarity'] = true }
+  H.pick(st, cfg, w.ctx())
+  now = now + 3000
+  w.bar = {}
+  H.pick(st, cfg, w.ctx())
+  eq(#H.takeUserOff(st, cfg, now + 5000), 0, 'a vigil dropping after a relog is not the player')
+  eq(cfg.slots[1].enabled, true, 'the row stays ticked after the death')
+  -- long after the login, a real switch-off still unticks
+  now = now + H.SESSION_GRACE_MS + 5000
+  w.bar = { ['vigil of clarity'] = true }
+  H.pick(st, cfg, w.ctx())
+  now = now + 20000
+  w.bar = {}
+  H.pick(st, cfg, w.ctx())
+  eq(#H.takeUserOff(st, cfg, now + 5000), 1, 'a real switch-off after the grace: unticked')
+end
+
 -- the utility spells under their Chaos words (owner 2026-10-22: Lantern and Ghost Rope went into Support)
 H.addRenamedWords({ ['utevo vis lux'] = { name = 'Radiant Lantern', words = 'vael zhul lyss' },
   ['exani tera'] = { name = 'Ghost Rope', words = 'ash gor' }, ['utamo vita'] = { name = 'Ward', words = 'tor ael' } })

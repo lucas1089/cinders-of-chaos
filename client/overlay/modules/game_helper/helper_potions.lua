@@ -19,7 +19,7 @@ local P = ChaosHelperPotions
 -- exactly one server item, and the dropdown lists them. slot: the flask the item takes (health | mana); line: health | mana |
 -- spirit; kind: what a row of it heals (health | mana | both: the spirit flasks); level: the level it needs; rank: the look of
 -- the stock potion it is as good as (Auto setup's order, autosetup.lua); roll / rollMana: the fixed part of a drink (a spirit
--- flask gives both). The server drinks it at the use of its look and checks level and charges itself.
+-- flask gives both). The server drinks it at the use of its look and checks the level itself.
 P.EVERFULL_ITEMS = {
   { server = 32085, look = 38645, rank = 266,   slot = 'health', line = 'health', kind = 'health', tier = 1, level = 0,   name = 'Everfull Health Potion',          roll = { 125, 175 } },
   { server = 32261, look = 38646, rank = 239,   slot = 'health', line = 'health', kind = 'health', tier = 2, level = 80,  name = 'Everfull Great Health Potion',    roll = { 425, 575 } },
@@ -84,8 +84,8 @@ end
 -- pair 44, and the look Auto setup gives a plain flask) follows the Everfull the character carries in that slot: an upgrade replaces the item,
 -- so the row would otherwise drink stock potions or nothing. held: ChaosEverfullHeld.get() ({ health = {look, tier,
 -- level, line, ready}, mana = ... } or nil). Followed only when the carried one is a plain health / mana flask (a spirit
--- flask spends both pools and is chosen by a spirit row), known, ready (an empty flask would drink a dearer stock potion) and
--- allowed at `level`. The server checks level and charges again at the drink.
+-- flask heals both pools and is chosen by a spirit row), known, ready (always true since O273, an older server may say false) and
+-- allowed at `level`. The server checks the level again at the drink.
 function P.resolve(id, held, level)
   id = tonumber(id)
   local slot = id and P.FOLLOW[id]

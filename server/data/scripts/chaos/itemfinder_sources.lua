@@ -1086,13 +1086,16 @@ S.REWARDS[#S.REWARDS + 1] = {key = "newplayer", fn = function(D, emit)
 		items(kit.backpack, function(id, n) reward(emit, id, n, "Starter kit", d, 0) end)
 	end
 	items(np.common and np.common.items, function(id, n) reward(emit, id, n, "Starter kit", "every new character", 0) end)
-	-- the Everfull potions (potions_config.lua everfull): the kit, and a one-time grant at login for older characters
+	-- the Everfull potions (potions_config.lua everfull): the kit, and a one-time grant at login for older characters;
+	-- no NPC sells them (O273). An entry with `from` (the tiers 2+ and the tier 1 spirit potion) is an upgrade.
 	for _, e in ipairs(D.potions and D.potions.everfull or {}) do
-		if (e.tier or 1) <= 1 then
+		if type(e.from) ~= "table" or #e.from == 0 then
 			reward(emit, e.id, 1, "Starter kit", "every character, once (new characters in their kit)", 0)
 		else -- O245: the upgrades (the store sells the same swap)
+			local count = e.materialCount or (D.potions.upgrade or {}).materials or 0
+			local what = e.materialName or ((tostring(e.name):gsub("^everfull ", "")) .. "s")
 			reward(emit, e.id, 1, "Veyra the Apothecary", "upgrade of your Everfull potion, level " .. (e.level or 0) ..
-				": " .. ((D.potions.upgrade or {}).materials or 0) .. " " .. tostring(e.name):gsub("^everfull ", "") .. "s", e.level or 0)
+				": " .. count .. " " .. what, e.level or 0)
 		end
 	end
 	for _, m in ipairs(np.milestones or {}) do

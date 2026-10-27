@@ -2423,14 +2423,6 @@ function getCustomStatString(t, withKeystones)
 		table.insert(texts, tr("+%.1f%% Rarity Loot Increased.", t.rarityLoot * 1.0))
 	end
 
-	if t.flaskMaxCharges then
-		table.insert(texts, tr("+%d max charges on the health and mana flasks.", math.floor(t.flaskMaxCharges)))
-	end
-
-	if t.flaskChargeGain then
-		table.insert(texts, tr("+%d%% flask charges from kills.", math.floor(t.flaskChargeGain)))
-	end
-
 	if t.speed then
 		table.insert(texts, tr("+%.1f Increased Speed.", t.speed / 10))
 	end

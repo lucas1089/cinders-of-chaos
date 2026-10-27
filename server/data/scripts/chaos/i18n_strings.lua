@@ -1413,27 +1413,9 @@ return {
 			"A Everfull Ration está na sua %s. Use como comida: ela nunca acaba.",
 		["Back after your death: your Everfull Ration."] = "De volta depois da sua morte: sua Everfull Ration.",
 		-- Everfull potions (potions.lua, data/lib/chaos_potions.lua)
-		["You received an Everfull Health Potion and an Everfull Mana Potion. They refill as you kill monsters."] =
-			"Você recebeu uma Everfull Health Potion e uma Everfull Mana Potion. Elas se recarregam quando você mata monstros.",
-		["You already have an Everfull flask of that kind, in your backpack, inbox or depot. It refills as you kill monsters. For a better one, ask Veyra for an {upgrade}."] =
-			"Você já tem um frasco Everfull desse tipo, na mochila, na caixa de entrada ou no depot. Ele se recarrega quando você mata monstros. Para um melhor, peça um {upgrade} à Veyra.",
-		-- flask charges (potions.lua, potion_flasks.lua)
-		["Health flask: %s"] = "Frasco de vida: %s",
-		["Mana flask: %s"] = "Frasco de mana: %s",
-		["Flasks: health %s, mana %s"] = "Frascos: vida %s, mana %s",
-		["Your health flask is empty. Kill monsters or visit a temple to refill it."] =
-			"Seu frasco de vida está vazio. Mate monstros ou visite um templo para recarregá-lo.",
-		["Your mana flask is empty. Kill monsters or visit a temple to refill it."] =
-			"Seu frasco de mana está vazio. Mate monstros ou visite um templo para recarregá-lo.",
-		["Your health flask is empty: you drank a health potion from your backpack."] =
-			"Seu frasco de vida está vazio: você bebeu uma poção de vida da mochila.",
-		["Your mana flask is empty: you drank a mana potion from your backpack."] =
-			"Seu frasco de mana está vazio: você bebeu uma poção de mana da mochila.",
-		["Charges: %s"] = "Cargas: %s",
+		["You received an Everfull Health Potion and an Everfull Mana Potion. They never run out."] =
+			"Você recebeu uma Everfull Health Potion e uma Everfull Mana Potion. Elas nunca acabam.",
 		-- Everfull potion tiers (potions.lua, data/lib/chaos_potions.lua, Veyra the Apothecary; O245)
-		["Spirit flask: %s"] = "Frasco de espírito: %s",
-		["Your spirit flask is empty: you drank a spirit potion from your backpack."] =
-			"Seu frasco de espírito está vazio: você bebeu uma poção de espírito da mochila.",
 		["Only characters of level %d or above may drink this fluid."] =
 			"Só personagens de nível %d ou mais podem beber este líquido.",
 		["You already have this upgrade."] = "Você já tem este upgrade.",
@@ -1446,14 +1428,11 @@ return {
 		["This flask is for level %d and up, and you are not there yet."] =
 			"Este frasco é para nível %d ou mais, e você ainda não chegou lá.",
 		["Bring me %d %s and your flask."] = "Traga-me %d %s e o seu frasco.",
-		["You earned a better flask than that. Ask Veyra the Apothecary to give it back."] =
-			"Você ganhou um frasco melhor que esse. Peça à Veyra the Apothecary para devolvê-lo.",
 		["Something went wrong. Nothing was taken."] = "Algo deu errado. Nada foi levado.",
 		["I have nothing to give back."] = "Não tenho nada para devolver.",
 		["%s Your coins were refunded."] = "%s Suas moedas foram devolvidas.",
 		["Your Everfull potion is now an %s."] = "Sua poção Everfull agora é uma %s.",
-		["Done. Your flask is now an %s. Its charges are as you left them."] =
-			"Pronto. Seu frasco agora é uma %s. As cargas estão como você as deixou.",
+		["Done. Your flask is now an %s."] = "Pronto. Seu frasco agora é uma %s.",
 		["Here is your %s again. Keep it safe."] = "Aqui está sua %s de novo. Guarde bem.",
 		["I have no upgrade for your flask now. Carry your Everfull potion, and come at level 80, 130 or 200 for the next one."] =
 			"Não tenho upgrade para o seu frasco agora. Leve sua poção Everfull e volte no nível 80, 130 ou 200 para o próximo.",
@@ -1467,11 +1446,8 @@ return {
 		["I can give you back your %s for %d gold. Say {yes}."] = "Posso devolver sua %s por %d de ouro. Diga {yes}.",
 		["I can give back your {health} or your {mana} flask. Which one?"] =
 			"Posso devolver seu frasco de {health} ou de {mana}. Qual?",
-		["Your flasks are full again."] = "Seus frascos estão cheios de novo.",
 		["You do not have enough money."] = "Você não tem dinheiro suficiente.",
 		["You have no room for it."] = "Você não tem espaço para ela.",
-		["Kills and the temple refill its charges: each drink costs one."] =
-			"Mortes e o templo recarregam as cargas dela: cada gole custa uma.",
 		["%d days of the Chaos Pact added: it runs until %s."] = "%d dias de Chaos Pact adicionados: ele vale até %s.",
 		["Your Chaos Pact runs until %s. Claim your %d Chaos Coins every day in Character > Chaos Pact."] =
 			"Seu Chaos Pact vale até %s. Pegue suas %d Chaos Coins todo dia em Character > Chaos Pact.",
@@ -1622,6 +1598,12 @@ return {
 		["Welcome to the Infinity Tower. Floor 1 starts in %d seconds. Leave Tower (Adventure > Infinity Tower) takes you out."] =
 			"Bem-vindo à Infinity Tower. O andar 1 começa em %d segundos. Leave Tower (Adventure > Infinity Tower) te tira de lá.",
 		["You are not inside the tower."] = "Você não está dentro da torre.",
+		["Next floor now is not available."] = "Próximo andar agora não está disponível.",
+		["The next floor can be called only when this one is cleared."] = "O próximo andar só pode ser chamado quando este estiver limpo.",
+		["Only the run leader can call the next floor."] = "Só o líder da corrida pode chamar o próximo andar.",
+		["A boss floor is next: get ready, it starts by itself."] = "O próximo andar é de chefe: prepare-se, ele começa sozinho.",
+		["Wait a moment before calling the next floor again."] = "Espere um momento antes de chamar o próximo andar de novo.",
+		["%s calls the next floor now."] = "%s chama o próximo andar agora.",
 		["Floor %d cleared! Next floor in %d seconds."] = "Andar %d concluído! O próximo andar começa em %d segundos.",
 		["Floor %d reward: %s."] = "Recompensa do andar %d: %s.",
 		["First clear of floor %d this season: %s."] = "Primeira conclusão do andar %d nesta temporada: %s.",
@@ -2639,14 +2621,6 @@ return {
 			"Item find",
 		["Item rarity"] =
 			"Raridade de item",
-		["Flask charges"] =
-			"Cargas dos frascos",
-		["+1 maximum charge on the Everfull health flask and the Everfull mana flask per point, at most +5 (potions_config.lua flask.tree)."] =
-			"+1 carga máxima no frasco Everfull de vida e no de mana por ponto, no máximo +5 (potions_config.lua flask.tree).",
-		["Flask refill"] =
-			"Recarga dos frascos",
-		["+percent of the charges every kill refills on both Everfull flasks, at most +100 percent (a kill still gives at most 3 charges)."] =
-			"+percent das cargas que cada abate recarrega nos dois frascos Everfull, no máximo +100 por cento (um abate ainda dá no máximo 3 cargas).",
 		["Sword skill"] =
 			"Skill de espada",
 		["Axe skill"] =
@@ -2930,8 +2904,6 @@ return {
 			"Item find %",
 		["Item rarity %"] =
 			"Raridade de item %",
-		["Flask refill %"] =
-			"Recarga dos frascos %",
 		["Healing spells"] =
 			"Magias de cura",
 		["Slayer"] =
@@ -4699,16 +4671,34 @@ return {
 			"acabou de chegar",
 		["The Marches cannot be reached right now."] =
 			"As Marches não podem ser alcançadas agora.",
-		["You enter %s. Protected for %d seconds. Bank your embers at a safe exit (the white circles by the banners)."] =
-			"Você entra em %s. Protegido por %d segundos. Guarde suas embers em uma saída segura (os círculos brancos junto às bandeiras).",
+		["You enter %s. Protected for %d seconds."] =
+			"Você entra em %s. Protegido por %d segundos.",
+		["Goal: earn embers from monsters and rival players, then bank them at a safe exit before you are defeated."] =
+			"Objetivo: ganhe embers de monstros e de jogadores rivais e depois guarde-as em uma saída segura antes de ser derrotado.",
+		["Embers carried: %d. Bank them at a safe exit (the white circles by the banners, marked on your map) before you die."] =
+			"Embers carregadas: %d. Guarde-as em uma saída segura (os círculos brancos junto às bandeiras, marcados no seu mapa) antes de morrer.",
+		["+%d embers (carrying %d). Bank them at a safe exit before you are defeated."] =
+			"+%d embers (carregando %d). Guarde-as em uma saída segura antes de ser derrotado.",
+		["Leave the Marches to use the vendor."] =
+			"Saia das Marches para usar o vendedor.",
+		["Safe exit: bank your embers"] =
+			"Saída segura: guarde suas embers",
+		["Cinder Shrine: slay the Warden, hold the circle"] =
+			"Cinder Shrine: derrote o Warden, segure o círculo",
+		["Cinder Shrine"] =
+			"Cinder Shrine",
+		["Slay the Warden!"] =
+			"Derrote o Warden!",
+		["Take the Shrine!"] =
+			"Tome o Shrine!",
 		["You wake in %s. You are protected while you are brought to a safe exit."] =
 			"Você acorda em %s. Você está protegido enquanto é levado a uma saída segura.",
 		["%s are a PvP zone: enter through Adventure > Scorched Marches and accept the rules first."] =
 			"%s são uma zona de PvP: entre por Adventure > Scorched Marches e aceite as regras primeiro.",
 		["You left the Marches without a safe exit: your %d carried embers burned."] =
 			"Você saiu das Marches sem uma saída segura: suas %d embers carregadas queimaram.",
-		["You leave %s. %d embers banked (%d in total)%s."] =
-			"Você sai de %s. %d embers guardadas (%d no total)%s.",
+		["You leave %s. %d embers banked (%d in total)%s. Spend them at the vendor: Adventure > Scorched Marches."] =
+			"Você sai de %s. %d embers guardadas (%d no total)%s. Gaste-as no vendedor: Adventure > Scorched Marches.",
 		[", %d lost over the bank limit"] =
 			", %d perdidas acima do limite do banco",
 		["You leave %s."] =
@@ -4735,8 +4725,8 @@ return {
 			"Você derrotou %s, mas não conta (%s): as embers queimam.",
 		["You were defeated by %s in %s.%s You can enter again in %d seconds."] =
 			"Você foi derrotado por %s em %s.%s Você poderá entrar de novo em %d segundos.",
-		[" Your %d carried embers fell where you stood."] =
-			" Suas %d embers carregadas caíram onde você estava.",
+		[" Your %d carried embers fell where you stood: your killer may take them, the rest burns out in %d seconds."] =
+			" Suas %d embers carregadas caíram onde você estava: quem te derrotou pode pegá-las, o resto queima em %d segundos.",
 		[" Your %d carried embers burned."] =
 			" Suas %d embers carregadas queimaram.",
 		["The Cinder Shrine stirs in %s: its Warden has risen. Slay it and hold the circle for your faction."] =

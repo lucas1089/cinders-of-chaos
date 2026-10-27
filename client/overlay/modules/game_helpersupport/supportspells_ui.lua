@@ -60,6 +60,7 @@ local function spellEntry(id)
   return nil
 end
 
+local pruned = false      -- the saved list was checked against the spell table
 local save
 local function load()
   local name = charName()
@@ -70,14 +71,26 @@ local function load()
   cfgFor = name
   state = S.newState()
   userOffNote = false
-  -- rows that can never work again leave the list: utilities (Lantern, Ghost Rope...), retired spells (Galeborne Stride)
-  -- and ids that are attack spells now (S.deadReason)
+  pruned = false
+  U.prune()
+  return true
+end
+
+-- rows that can never work again leave the list: utilities (Lantern, Ghost Rope...), retired spells (Galeborne Stride)
+-- and ids that are attack spells now (S.deadReason). Only once the client's spell table is there: a login (a death is a
+-- fast relog) can come before it is filled, and a list is never cut by a table that is not known yet. Tried again at
+-- every tick until it ran once.
+function U.prune()
+  if pruned or cfgFor == nil then return end
+  local list = Spells and Spells.getSpellList and Spells.getSpellList() or nil
+  if type(list) ~= 'table' or next(list) == nil then list = SpellInfo and SpellInfo.Default or nil end
+  if type(list) ~= 'table' or next(list) == nil then return end
+  pruned = true
   local slots, dropped = S.dropUtilities(cfg.slots, spellEntry)
   if dropped > 0 then
     cfg.slots = slots
     save()
   end
-  return true
 end
 
 save = function()
@@ -229,13 +242,14 @@ end
 local function tick()
   if not g_game.isOnline() then overall = '' return end
   if not load() then return end
+  U.prune()
   -- dead (the death screen): every buff drops at once, which read as the player switching the vigils off (their rows
   -- were unticked and saved, owner 2026-10-22: "after dying the list is gone"). Nothing is cast or tracked until the
   -- next login (onGameStart starts a new state).
   local me = g_game.getLocalPlayer()
   if not me or (me.isDead and me:isDead()) or (tonumber(me:getHealth()) or 1) <= 0 then
     S.reset(state)
-    S.noteClear(state, g_clock.millis())
+    S.noteClear(state, g_clock.millis(), S.SESSION_GRACE_MS)
     overall = ''
     return
   end
@@ -467,14 +481,18 @@ local function onGameStart()
   timers = nil
   if ChaosHelperTimers and ChaosHelperTimers.new then timers = ChaosHelperTimers.new() end
   load()
+  -- the buffs of the last session are gone or come back in a moment (a death is a fast relog): none of it is the
+  -- player's switch
+  S.noteClear(state, g_clock.millis(), S.SESSION_GRACE_MS)
   U.rebuild()
 end
 
 -- the death packet: every buff goes, none of it is the player's switch
 local function onDeath()
   S.reset(state)
-  S.noteClear(state, g_clock.millis())
+  S.noteClear(state, g_clock.millis(), S.SESSION_GRACE_MS)
 end
+U.onGameStart, U.onDeath = onGameStart, onDeath -- for the tests
 
 local function onGameEnd()
   lastPos = nil

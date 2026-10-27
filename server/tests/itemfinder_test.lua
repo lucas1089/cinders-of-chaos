@@ -616,6 +616,25 @@ do
 	has(2120, "reward", "Starter kit", "the starter kit")
 	has(32085, "reward", "Starter kit", "the Everfull health potion")
 	has(32086, "reward", "Starter kit", "the Everfull mana potion")
+	-- O273: no NPC sells an Everfull potion; the tier 1 potions come from the kit only, the upgrades from Veyra and the store
+	do
+		local function sources(id, kind)
+			local out = {}
+			for _, row in ipairs(idx.items[id] and idx.items[id].rows[kind] or {}) do out[#out + 1] = row.n end
+			return table.concat(out, "|")
+		end
+		for _, id in ipairs({32085, 32086}) do
+			eq(sources(id, "shop"), "", "Everfull " .. id .. ": no NPC shop lists it")
+			eq(sources(id, "reward"), "Starter kit", "Everfull " .. id .. ": the kit is its only source")
+			eq(sources(id, "store"), "", "Everfull " .. id .. ": not in the store")
+		end
+		eq(sources(32268, "reward"), "Veyra the Apothecary", "the spirit potion of tier 1 is an upgrade, not a kit item")
+		eq(sources(32263, "reward"), "Veyra the Apothecary", "so is the great spirit potion")
+		local up = idx.items[32268].rows.reward[1]
+		check(tostring(up.d):find("40 health potions", 1, true) ~= nil, "the spirit potion of tier 1 names its materials: " .. tostring(up.d))
+		up = idx.items[32269].rows.reward[1]
+		check(tostring(up.d):find("60 ultimate mana potions", 1, true) ~= nil, "the supreme mana potion names its 60 ultimate mana potions: " .. tostring(up.d))
+	end
 	has(32257, "store", "Raid vendor", "the raid vendor (found by the audit)")
 
 	-- the global drop tables (live test winpkg-35: an Orb of Awakening from a Rat; the tooltip said "Drops from: Embermaw

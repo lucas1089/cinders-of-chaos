@@ -289,7 +289,17 @@ eq(callbacks[CALLBACK_ONBUY](1, 26031, 0, 1), false, "nor a supreme health potio
 check(said[#said]:find("level 200", 1, true) ~= nil, "she says level 200")
 playerLevel = 200
 eq(callbacks[CALLBACK_ONBUY](1, 26031, 0, 1), true, "a level 200 buys the supreme one")
-eq(callbacks[CALLBACK_ONBUY](1, 32085, 0, 1), true, "the Everfull potion (added by the installer) has no gate")
+-- O273: she sells no Everfull potion (install_potions.py takes them out of every shop list); her trade window has none
+do
+	local ever = dofile("data/scripts/chaos/potions_config.lua")
+	local isEver = {}
+	for _, e in ipairs(ever.everfull) do isEver[e.id] = true end
+	local n = 0
+	for _, it in ipairs(shopItems) do
+		if isEver[it.id] then n = n + 1 end
+	end
+	eq(n, 0, "no Everfull potion in her trade window")
+end
 -- every gated potion refuses a buyer one level below and sells at its level
 for _, p in ipairs(cfg.potions) do
 	if p.level > 0 then
