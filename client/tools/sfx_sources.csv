@@ -36,7 +36,7 @@ physical_3,sfx rpg,drawKnife3,0,-8,0,214b3d60cc10abbc4df82c563fc1491872a13f26955
 heal_1,sfx interface,confirmation_002,0,-12,0,4f64114f55a971e67c94d2eed200fe1a74f87bc73330cfbf69277272166a02a7
 heal_2,sfx interface,confirmation_003,0,-12,0,d2662f09e34d23cae82901001aa5faa2de291a0287cc02486b1facd42004c850
 heal_3,sfx interface,confirmation_001,0,-12,0,1b741c1ab0c96a8946fcf93ddc9b80be1efb4b97408534b3a8c75912c0eb5437
-levelup,sfx impact,impactBell_heavy_001,1300,-4,0,e24471916bcd04228e522d57ec8d59f1a50aa1a83e4eb8e520264c4e89469d1c
+levelup,sfx impact,impactBell_heavy_001,1000,-4,0,bb1ffb6fc6099dc277fd7b926e4db465fbc2f9014611794d02f85c02499acda0
 loot_rare,sfx rpg,handleCoins2,0,-8,0,416d6f37b0e1cd42f97c893c643fece63f62284596e2b91ed7cf6a1c2ee0926c
 loot_great,sfx rpg,handleCoins,0,-6,0,84b847d6878302c0966429af1fb887b6eb6231a7ad4ab15d257ddb8c095af20e
 loot_unique,sfx impact,impactBell_heavy_004,900,-4,0,1d9cd858883492108e75fc1361a982b09035c65eca4e81d53a7b1026dfa70aa1

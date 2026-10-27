@@ -427,6 +427,33 @@ end
 
 -- ---------------------------------------------------------------- rule counters and sounds
 local noSoundLogged = false
+local missingSound = {}
+local soundsPreloaded = false
+
+-- true when the file ships in the client; a missing one is logged once and never handed to the engine
+local function soundThere(file)
+  if not (g_resources and g_resources.fileExists) then return true end
+  local ok, there = pcall(g_resources.fileExists, file)
+  if not ok or there then return true end
+  if not missingSound[file] then
+    missingSound[file] = true
+    g_logger.warning('[lootfilter] sound file missing: ' .. file)
+  end
+  return false
+end
+
+-- The engine plays a sound that was not preloaded by streaming it through refilled buffers, which is what logged
+-- "unable to refill audio buffer ... Invalid Name" (and kept a source alive) in the field. These files are small
+-- (a few KB, decoded under the engine's 100000 byte cache), so load them once into buffers and every play is a plain one.
+local function preloadSounds()
+  if soundsPreloaded or not (g_sounds and g_sounds.preload) then return end
+  soundsPreloaded = true
+  for i = 1, #L.SOUNDS do
+    local file = L.soundFile(i)
+    if file and soundThere(file) then pcall(g_sounds.preload, file) end
+  end
+end
+
 local function playFile(file, gain, rule)
   if not file then return false end
   lastPlayed = { file = file, gain = gain, rule = rule, at = os.time(), played = false }
@@ -438,6 +465,8 @@ local function playFile(file, gain, rule)
     end
     return false
   end
+  if not soundThere(file) then return false end
+  preloadSounds()
   local channel = g_sounds.getChannel and SoundChannels and g_sounds.getChannel(SoundChannels.Effect)
   local ok, err
   if channel then
@@ -784,6 +813,7 @@ function openStore()
 end
 
 local function onGameStart()
+  preloadSounds()
   peekData = {}
   clearRows()
   ensureLootPanel()

@@ -271,5 +271,35 @@ do
   eq(#m.active, 0, 'new mixer: nothing active')
 end
 
+-- live sources: a stuck one is stopped after its length + slack, an ended one is let go, the list is bounded
+do
+  local list = {}
+  local a, b, c = { n = 'a' }, { n = 'b' }, { n = 'c' }
+  S.track(list, a, 1000, 500)
+  S.track(list, b, 1000, 5000)
+  S.track(list, nil, 1000, 5000)
+  eq(#list, 2, 'a nil source is not tracked')
+  eq(#S.reap(list, 2000, nil), 0, 'nothing is due inside length + slack')
+  local due = S.reap(list, 1000 + 500 + S.REAP_SLACK, nil)
+  eq(#due, 1, 'one is due after its length + slack')
+  eq(due[1], a, 'the short one')
+  eq(#list, 1, 'the other stays')
+  S.track(list, c, 1000, 100)
+  local ended = { [c] = true }
+  eq(#S.reap(list, 1200, function(src) return not ended[src] end), 0, 'an ended source is let go, not stopped')
+  eq(#list, 1, 'only the running one is left')
+  eq(#S.reap(list, 0, function() error('boom') end), 0, 'a failing probe keeps the source')
+  eq(#list, 1, 'still tracked after a failing probe')
+  for i = 1, S.MAX_TRACKED + 10 do S.track(list, { i }, 1000, 100) end
+  eq(#list, S.MAX_TRACKED, 'the list is bounded')
+end
+
+-- every sound decodes to the engine's cache size or less (mono 16 bit): the engine streams a longer one
+do
+  for key, set in pairs(S.SETS) do
+    eq(set.ms / 1000 * 44100 * 2 <= 100000, true, key .. ' fits the engine cache (MAX_CACHE_SIZE 100000 bytes)')
+  end
+end
+
 print(string.format('soundlogic_test: %d checks, %d failed', checks, fails))
 os.exit(fails == 0 and 0 or 1)

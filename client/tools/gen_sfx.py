@@ -12,7 +12,7 @@ level (the peak, dBFS) and the sha256 of the file made.
                                                       # sha256 column (needs ffmpeg with libvorbis)
 
 --check fails when a csv row has no file, a file has no row, a hash differs, a file is not mono Ogg Vorbis at 44100 Hz,
-a sound is longer than MAX_SECONDS, or the folder is over MAX_BYTES (the whole set must stay small: it ships in the
+a sound is longer than MAX_SECONDS (or decodes to more than the engine's 100000 byte cache), or the folder is over MAX_BYTES (the whole set must stay small: it ships in the
 client). The files are not rebuilt in CI: another ffmpeg build gives other bytes; the hash pins what was reviewed."""
 import csv
 import hashlib
@@ -25,7 +25,11 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 CSV = os.path.join(HERE, 'sfx_sources.csv')
 OUT = os.path.join(HERE, '..', 'overlay', 'modules', 'game_chaossound', 'sounds')
 RATE = 44100
-MAX_SECONDS = 1.6
+MAX_SECONDS = 1.1
+# The engine (SoundManager) keeps a sound in a preloaded buffer only when it is at most MAX_CACHE_SIZE = 100000 bytes decoded
+# (16 bit PCM). A longer one is streamed through 4 refilled buffers per play, which failed in the field ("unable to refill
+# audio buffer", OpenAL Invalid Name / Out of Memory, a source that never ended). Mono 44100 Hz is 88200 bytes a second.
+MAX_CACHE_BYTES = 100000
 MAX_BYTES = 1_000_000
 FIELDS = ['file', 'pack', 'source', 'trim_ms', 'peak_db', 'lowpass_hz', 'sha256']
 PACK_DIR = {'sfx impact': 'impact', 'sfx rpg': 'rpg', 'sfx interface': 'interface', 'sfx scifi': 'scifi'}
@@ -80,6 +84,9 @@ def check():
             errs.append('%s: %d channel(s) at %d Hz (want mono, %d Hz)' % (name, ch, rate, RATE))
         if secs > MAX_SECONDS:
             errs.append('%s: %.2f s is over %.1f s' % (name, secs, MAX_SECONDS))
+        if int(round(secs * rate)) * 2 * ch > MAX_CACHE_BYTES:
+            errs.append('%s: decodes to %d bytes, over the engine cache of %d (it would be streamed)'
+                        % (name, int(round(secs * rate)) * 2 * ch, MAX_CACHE_BYTES))
     for f in sorted(os.listdir(OUT)):
         if f.endswith('.ogg') and f not in names:
             errs.append('%s: file has no csv row' % f)

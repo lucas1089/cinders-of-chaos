@@ -1,0 +1,19 @@
+# Chaos: game_walking's disableWSAD no longer fails when game_skills is already unloaded (client/BASE.md "0157"; modules/game_walking/walking.lua; after 0001-0156). Lua only.
+# Bug (client log, build of 2026-10-26): "ERROR: Lua error /modules/game_walking/walking.lua:361: attempt to index field 'game_skills' (a nil value)" in disableWSAD, called from terminate at onUnload. disableWSAD puts Ctrl+S back on the Skills window with modules.game_skills.toggle; on a reload or at exit the modules unload in an order where game_skills is gone, so the index raised and the rest of terminate (the diagonal key binds) did not run.
+# Fix: look the module up once and bind Ctrl+S only when it and its toggle exist.
+--- a/modules/game_walking/walking.lua
++++ b/modules/game_walking/walking.lua
+@@ -358,7 +358,12 @@
+   end
+ 
+   wsadWalking = false
+-  g_keyboard.bindKeyDown('Ctrl+S', modules.game_skills.toggle)
++  -- Chaos: at unload game_skills may be gone already (terminate -> disableWSAD raised "attempt to index field
++  -- 'game_skills' (a nil value)"); then there is no Ctrl+S to give back
++  local skills = modules.game_skills
++  if skills and skills.toggle then
++    g_keyboard.bindKeyDown('Ctrl+S', skills.toggle)
++  end
+ 
+   local keybindEast = KeyBind:getKeyBind("Movement", "Go East")
+   local keybindNorth = KeyBind:getKeyBind("Movement", "Go North")

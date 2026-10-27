@@ -37,7 +37,7 @@ S.SETS = {
   earth    = { group = 'spells', files = { 'earth_1', 'earth_2', 'earth_3' },          gain = 0.60, gap = 160, ms = 600, prio = 1 },
   physical = { group = 'spells', files = { 'physical_1', 'physical_2', 'physical_3' }, gain = 0.70, gap = 160, ms = 480, prio = 1 },
   heal     = { group = 'spells', files = { 'heal_1', 'heal_2', 'heal_3' },             gain = 0.70, gap = 300, ms = 540, prio = 1 },
-  levelup     = { group = 'events', files = { 'levelup' },     gain = 0.90, gap = 3000, ms = 1300, prio = 5 },
+  levelup     = { group = 'events', files = { 'levelup' },     gain = 0.90, gap = 3000, ms = 1000, prio = 5 },
   loot_rare   = { group = 'events', files = { 'loot_rare' },   gain = 0.70, gap = 400,  ms = 850,  prio = 4 },
   loot_great  = { group = 'events', files = { 'loot_great' },  gain = 0.80, gap = 400,  ms = 850,  prio = 4 },
   loot_unique = { group = 'events', files = { 'loot_unique' }, gain = 0.90, gap = 400,  ms = 900,  prio = 4 },
@@ -230,6 +230,39 @@ function S.request(m, key, now, opts)
   m.active[#m.active + 1] = { at = now + set.ms }
   local gain = math.max(0, math.min(1, set.gain * level * fade))
   return S.DIR .. set.files[pick] .. '.ogg', gain
+end
+
+-- ---------------------------------------------------------------- live sources
+-- The engine ends a sound when its file ends. One that does not (a streamed source whose buffers failed keeps
+-- re-asking for data every 100 ms and logs an error each time) would sound and log until the client closes, so every
+-- source we start is tracked with a latest end (its length + REAP_SLACK) and stopped when that passes; an ended one is let go.
+S.REAP_SLACK = 1500   -- ms past the length of the file
+S.MAX_TRACKED = 24    -- sources held; more than the mixer allows at once, so only a stuck run reaches it
+
+function S.track(list, src, now, ms)
+  if src == nil then return end
+  list[#list + 1] = { src = src, stop = now + (tonumber(ms) or 0) + S.REAP_SLACK }
+  while #list > S.MAX_TRACKED do table.remove(list, 1) end
+end
+
+-- One pass over the list. A source that ended (alive(src) is false) is dropped, so the engine can free its OpenAL source
+-- and buffers; one past its time is dropped and returned for the caller to stop. alive: function(src) -> boolean
+-- (default: every source is alive).
+function S.reap(list, now, alive)
+  local out, keep = {}, {}
+  for _, t in ipairs(list) do
+    local live = true
+    if alive then
+      local ok, res = pcall(alive, t.src)
+      live = not ok or res ~= false
+    end
+    if live then
+      if now >= t.stop then out[#out + 1] = t.src else keep[#keep + 1] = t end
+    end
+  end
+  for i = #list, 1, -1 do list[i] = nil end
+  for _, t in ipairs(keep) do list[#list + 1] = t end
+  return out
 end
 
 -- tiles between two positions (the biggest of the x and y distance); a different floor is out of reach

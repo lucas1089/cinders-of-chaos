@@ -1,0 +1,11 @@
+Module
+  name: game_lootscreen
+  description: Keeps the "Loot of a ..." line off the game screen (console, Server Log and Loot tab only)
+  author: Cinders of Chaos
+  sandboxed: true
+  autoload: true
+  autoload-priority: 1011
+  dependencies: [ game_textmessage ]
+  scripts: [ lootscreen_core, lootscreen ]
+  @onLoad: init()
+  @onUnload: terminate()
