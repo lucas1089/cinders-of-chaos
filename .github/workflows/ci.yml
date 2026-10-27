@@ -980,6 +980,9 @@ jobs:
       - name: Tester bots keystone and mastery scenario (mocked server, route and probe table)
         run: python3 -I server/tools/tester_keystones_test.py
 
+      - name: Tester bots system checks (mocked game; summons, party, chests, Auto setup list; O110, O86)
+        run: python3 -I server/tools/tester_checks_test.py
+
       - name: Network message buffer stays unzeroed (server src-patch 0032)
         run: python3 -I server/tools/netmsg_buffer_patch_test.py
 

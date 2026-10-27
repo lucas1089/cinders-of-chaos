@@ -115,7 +115,7 @@
 #   install-admin [--full] KEYFILE|-
 #                               creates the user "chaosadmin" with that ssh public key (a file, or - for stdin) and the
 #                               right to run this script as root; --full also gives it passwordless sudo for everything
-#   testers start [N] [MINUTES] [--restart SECONDS] [--keystones]
+#   testers start [N] [MINUTES] [--restart SECONDS] [--keystones] [--checks]
 #                               tester bots (server/README.md "Tester bots"): N characters "Tester Xxx" (default 100, at
 #                               most 150) play for MINUTES (default 60, at most 1440), then stop by themselves. Copies the
 #                               TEST ONLY helper into data/scripts; it loads at a server start, so without one since the
@@ -125,6 +125,9 @@
 #                               first tests the passive tree keystones and masteries of its class (O249: allocates them as
 #                               a player does, checks the effect shows, says "not observable" where a client cannot see it,
 #                               resets the tree; the per-node result is a section of testers report)
+#                               --checks: every bot then runs the system checks of its class once (O110: summons and pets,
+#                               party, rift, waystone atlas, reward and cursed chest, Auto setup list; a failure is a BUG
+#                               line in testers report)
 #   testers stop                ends the bots (they log out) and removes the helper from data/scripts
 #   testers status              key=value lines: running, pid, started, bots, minutes, online (bots in game now),
 #                               online_peak, logins, deaths, online_server (the helper's last console count), helper,
@@ -1975,18 +1978,19 @@ print("pbkdf2-sha256$%d$%s$%s" % (n, base64.b64encode(salt).decode(), base64.b64
     [ $# -gt 0 ] && shift
     case $sub in
       start)
-        n=100 minutes=60 rsecs="" pos=0 keyarg=""
+        n=100 minutes=60 rsecs="" pos=0 keyarg="" checkarg=""
         while [ $# -gt 0 ]; do
           case $1 in
             --keystones) keyarg=--keystones; shift ;;
+            --checks) checkarg=--checks; shift ;;
             --restart)
               rsecs=${2:-}
               num "$rsecs" || die "--restart SECONDS"
               [ "$rsecs" -le 900 ] || die "at most 900 seconds"
               shift 2 ;;
             *)
-              num "$1" || die "testers start [N] [MINUTES] [--restart SECONDS] [--keystones]"
-              [ $pos -lt 2 ] || die "testers start [N] [MINUTES] [--restart SECONDS] [--keystones]"
+              num "$1" || die "testers start [N] [MINUTES] [--restart SECONDS] [--keystones] [--checks]"
+              [ $pos -lt 2 ] || die "testers start [N] [MINUTES] [--restart SECONDS] [--keystones] [--checks]"
               if [ $pos -eq 0 ]; then n=$1; else minutes=$1; fi
               pos=$((pos + 1)); shift ;;
           esac
@@ -2029,17 +2033,17 @@ print("pbkdf2-sha256$%d$%s$%s" % (n, base64.b64encode(salt).decode(), base64.b64
         ( set -a; . "$ENVFILE"; [ -n "$DBSOCK" ] && CHAOS_DB_SOCKET=$DBSOCK; CHAOS_MYSQL=$MYSQL; set +a
           # shellcheck disable=SC2016
           exec setsid bash -c 'sleep "$1"; python3 -I "$2" run --key-file "$3" --server-dir "$4" --state "$5" \
-            --minutes "$6" --count "$7" --log "$8" --scenarios "${10}" ${11:+"${11}"}; CHAOS_CTL_NO_SUDO=1 "$9" testers stop --finished' _ \
+            --minutes "$6" --count "$7" --log "$8" --scenarios "${10}" ${11:+"${11}"} ${12:+"${12}"}; CHAOS_CTL_NO_SUDO=1 "$9" testers stop --finished' _ \
             "$delay" "$REPO/server/tools/testers.py" "$TKEY" "$SERVER" "$TSTATE" "$minutes" "$n" "$LOG" "$SELF" \
-            "$REPO/server/tools/tester_scenarios.json" "$keyarg" \
+            "$REPO/server/tools/tester_scenarios.json" "$keyarg" "$checkarg" \
             >> "$TLOG" 2>&1 < /dev/null ) &
         echo $! > "$TSTATE/run.pid"
         date +%s > "$TSTATE/started"
         rm -f "$TSTATE/stopped"
         if [ "$delay" -gt 0 ]; then
-          echo "tester bots: $n for $minutes minutes${keyarg:+, keystones and masteries first}, starting in $delay s, after the restart (log $TLOG)"
+          echo "tester bots: $n for $minutes minutes${keyarg:+, keystones and masteries first}${checkarg:+, system checks}, starting in $delay s, after the restart (log $TLOG)"
         else
-          echo "tester bots: $n for $minutes minutes${keyarg:+, keystones and masteries first} (log $TLOG)"
+          echo "tester bots: $n for $minutes minutes${keyarg:+, keystones and masteries first}${checkarg:+, system checks} (log $TLOG)"
         fi
         ;;
       stop)
@@ -2100,7 +2104,7 @@ print("pbkdf2-sha256$%d$%s$%s" % (n, base64.b64encode(salt).decode(), base64.b64
           echo "(nothing deleted: chaos-ctl.sh testers cleanup --yes)"
         fi
         ;;
-      *) die "testers start [N] [MINUTES] [--restart SECONDS] [--keystones] | stop | status | report | log [N] | cleanup [--yes]" ;;
+      *) die "testers start [N] [MINUTES] [--restart SECONDS] [--keystones] [--checks] | stop | status | report | log [N] | cleanup [--yes]" ;;
     esac
     ;;
   ''|help|-h|--help)

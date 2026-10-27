@@ -353,6 +353,9 @@ def build_report(run, log):
     if run.get('keytest') or run.get('keytest_resets'):
         import tester_keystones as TK  # the per-node results of the keystone and mastery scenario (O249)
         L.extend(TK.report_lines(run.get('keytest') or [], run.get('keytest_resets') or []))
+    if run.get('checks'):
+        import tester_checks as TX  # the system checks, BUG lines first-class (O110)
+        L.extend(TX.report_lines(run.get('checks') or []))
     cov = run.get('coverage')
     if cov:
         # short enough to paste: only what needs a look; the fine, out of scope and passive systems are counted

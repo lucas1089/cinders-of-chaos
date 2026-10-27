@@ -68,26 +68,48 @@ local function wordsOf(id)
   return (s and s.words) or (d and d.words) or ''
 end
 
--- the character can cast the spell: the server has it, the class is listed, the level is met, the player knows it
-local function canCastFor(player)
-  local H = helper()
-  local voc, level = player:getVocation(), player:getLevel()
-  return function(id)
-    local s = spellEntry(id)
-    if not s or s.notOnServer then
-      return false
-    end
-    if type(s.vocations) == 'table' and #s.vocations > 0 and not table.contains(s.vocations, voc) then
-      return false
-    end
-    if (tonumber(s.level) or 0) > level then
-      return false
-    end
-    if H and H.playerHasSpell and not H.playerHasSpell(player, id) then
-      return false
-    end
+-- the character can cast the spell: the server has it, the class is listed, the level is met, the player knows it.
+-- A second result names the reason of a no ('server', 'class', 'level', 'learned'); U.run logs them, so an owner log
+-- of "Auto setup puts only 2 spells for the Ninja" (O186) says which rule dropped which spell.
+local function classAllows(s, voc)
+  if type(s.vocations) ~= 'table' or #s.vocations == 0 then
     return true
   end
+  -- the same rule as the pickers (ChaosSpellFix.allowsVocation: the server id, also through the client's fold)
+  if ChaosSpellFix and ChaosSpellFix.allowsVocation then
+    return ChaosSpellFix.allowsVocation({ vocations = s.vocations }, voc, rawget(_G, 'translateVocation'))
+  end
+  return table.contains(s.vocations, voc)
+end
+
+local function whyNot(player, id)
+  local H = helper()
+  local s = spellEntry(id)
+  if not s or s.notOnServer then
+    return 'server'
+  end
+  if not classAllows(s, player:getVocation()) then
+    return 'class'
+  end
+  if (tonumber(s.level) or 0) > player:getLevel() then
+    return 'level'
+  end
+  if H and H.playerHasSpell and not H.playerHasSpell(player, id) then
+    return 'learned'
+  end
+  return nil
+end
+
+local function canCastFor(player)
+  local seen = {}
+  local f = function(id)
+    local why = whyNot(player, id)
+    if why and not seen[id] then
+      seen[id] = why
+    end
+    return why == nil, why
+  end
+  return f, seen
 end
 
 local function closeBox()
@@ -220,7 +242,7 @@ function U.run(quiet)
   if not (H and player and H.getShooterProfile) then
     return false
   end
-  local canCast = canCastFor(player)
+  local canCast, refused = canCastFor(player)
   -- the top-up to 5 spells only on a click; the opt-in level-up update keeps the class preset
   local sel, why = A.select(player:getVocation(), player:getLevel(), canCast, { topUp = not quiet })
   if not sel then
@@ -244,6 +266,13 @@ function U.run(quiet)
     save()
     local text = A.message(sel, nameOf)
     g_logger.info('[auto rotation] ' .. text)
+    local why = {}
+    for id, r in pairs(refused) do
+      why[#why + 1] = id .. ':' .. r
+    end
+    table.sort(why)
+    g_logger.info('[auto rotation] vocation ' .. tostring(player:getVocation()) .. ' level ' .. tostring(player:getLevel()) ..
+      ' picked ' .. #(sel.ids or {}) .. ', refused ' .. table.concat(why, ' '))
     if quiet then
       say(text)
     else

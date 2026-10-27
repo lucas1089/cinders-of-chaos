@@ -10,7 +10,7 @@ by hand, as root:
   run      log them in and play until --minutes are over (default 60), then log out
              python3 -I testers.py run --key-file /etc/chaos/tester-client-key --server-dir SERVER
                  [--state DIR] [--minutes 60] [--count N] [--host 127.0.0.1] [--port 7171] [--log SERVER_LOG]
-                 [--scenarios FILE] [--ramp 1.0] [--keystones]
+                 [--scenarios FILE] [--ramp 1.0] [--keystones] [--checks]
   report   the bug harvest of the last run (the bots' results and the server log since the run started)
              python3 -I testers.py report [--state DIR] [--log SERVER_LOG] [--scenarios FILE]
   cleanup  delete the tester accounts, their characters and every database row of them; nothing else
@@ -37,6 +37,9 @@ retried with a growing pause, so the bots come back after a restart.
 --keystones (needs --scenarios): each bot first runs the keystone and mastery scenario of its class once (tester_keystones.py,
 O249): allocates every node of its class the points allow, as the tree window does, checks that the effect shows (the
 totals of the tree window, the keystone's own row of the combat log) or says it cannot be seen, and resets the tree.
+--checks: each bot then runs the system checks of its class once (tester_checks.py, O110): pets, the Necromancer's minions,
+the Beastmaster's wolf (O86: no summon takes its owner or a party member for a target), party play, a rift, the waystone
+atlas, the reward chest, the cursed chest and the Auto setup spell list. A failed check is a "BUG ..." line in the report.
 """
 import asyncio
 import base64
@@ -60,6 +63,7 @@ sys.path.insert(0, HERE)
 import loadtest as LT  # noqa: E402
 import tester_core as TC  # noqa: E402
 import tester_keystones as TK  # noqa: E402  (the keystone and mastery scenario, O249)
+import tester_checks as TX  # noqa: E402  (the system checks, O110)
 
 DEFAULT_STATE = '/var/lib/chaos/testers'
 LETTERS = 'abcdefghijklmnopqrstuvwxyz'
@@ -607,6 +611,74 @@ class KeyIO:
                 bot.waiters.remove(waiter)
 
 
+class CheckIO(KeyIO):
+    """what tester_checks.CheckRun needs of a bot in game (KeyIO's requests and pauses, plus the helper, speech and parties)"""
+
+    async def helper(self, command, kind, wait=4.0):
+        if not self.alive():
+            return None
+        return await self.bot.helper_says(command, kind, wait)
+
+    async def say(self, text):
+        if self.alive():
+            self.bot.say(text)
+            await self.bot.conn.w.drain()
+
+    async def partner(self):
+        for cid, other in sorted(ONLINE.items()):
+            if cid != self.bot.cid and other is not self.bot and other.alive and not other.died:
+                return other.name
+        return None
+
+    async def party(self, action, other_name):
+        other = next((b for b in ONLINE.values() if b.name == other_name), None)
+        bot = self.bot
+        if other is None or not self.alive() or not other.alive or not bot.cid or not other.cid:
+            return False
+        if action == 'form':
+            bot.conn.send(b'\xA3' + struct.pack('<I', other.cid))      # invite
+            await bot.conn.w.drain()
+            await asyncio.sleep(1.0)
+            other.conn.send(b'\xA4' + struct.pack('<I', bot.cid))       # join the leader
+            await other.conn.w.drain()
+        else:
+            other.conn.send(b'\xA7')                                    # leave
+            bot.conn.send(b'\xA7')
+            await other.conn.w.drain()
+            await bot.conn.w.drain()
+        return True
+
+    def autosetup(self):
+        return getattr(self.bot.args, 'checks_rotation', None)
+
+    def spells(self):
+        return getattr(self.bot.args, 'checks_spells', None) or {}
+
+
+def load_check_spells(server_dir, vocs):
+    """{spell id: {name, level, vocations: [vocation ids]}} of the Chaos spells (spells_chaos.xml) and the stock ones
+    (stock_spells.csv): what Auto setup's presets are held against"""
+    out = {}
+    data = os.path.join(server_dir, 'data', 'spells')
+    chaos = os.path.join(data, 'chaos', 'spells_chaos.xml')
+    if os.path.exists(chaos):
+        text = re.sub(r'<!--.*?-->', '', LT.read_text(chaos), flags=re.S)
+        for m in re.finditer(r'<instant\b([^>]*?)(/>|>(.*?)</instant>)', text, flags=re.S):
+            a = LT._attrs(m.group(1))
+            if 'spellid' in a:
+                names = re.findall(r'<vocation\s+name="([^"]+)"', m.group(3) or '')
+                out[int(a['spellid'])] = {'name': a.get('name', ''), 'level': int(a.get('level', 0) or 0),
+                                          'vocations': [vocs[n]['id'] for n in names if n in vocs]}
+    stock = os.path.join(data, 'stock_spells.csv')
+    if os.path.exists(stock):
+        for line in LT.read_text(stock).splitlines()[1:]:
+            c = line.split(',')
+            if len(c) > 11 and c[0].isdigit() and int(c[0]) not in out:
+                names = [n for n in c[11].split(';') if n]
+                out[int(c[0])] = {'name': c[1], 'level': int(c[4] or 0), 'vocations': [vocs[n]['id'] for n in names if n in vocs]}
+    return out
+
+
 ONLINE = LT.ONLINE  # creature id -> bot in game (loadtest's party_step reads the same table)
 BAG_EVERY = 240  # seconds between the bag clean-ups (and potion top-ups) of a bot
 ROOM_FAILS_BAG = 3  # "not enough room" messages that call a clean-up at once
@@ -661,6 +733,9 @@ class TesterBot(LT.Bot):
         self.keytest_flushed = False
         self.stay = False  # the keystone scenario keeps the bot in the temple: no walk back to the hunt
         self.keytest = None  # the KeyTest of this bot: it goes on after a death and a new login (O249)
+        self.checks = None  # the CheckRun of this bot (O110): it goes on after a death and a new login
+        self.checks_done = False
+        self.checks_flushed = False
 
     # ---------------------------------------------------------------- sessions until the end
     async def run(self, clock):
@@ -869,7 +944,7 @@ class TesterBot(LT.Bot):
                 self.kills.append(data)
                 del self.kills[:-5]
         for w_op, w_actions, fut in list(self.waiters):
-            if w_op == op and msg.get('action') in w_actions and not fut.done():
+            if w_op == op and ('*' in w_actions or msg.get('action') in w_actions) and not fut.done():
                 fut.set_result(msg)
         hook = getattr(self.args, 'on_answer', None)
         if hook:
@@ -909,6 +984,8 @@ class TesterBot(LT.Bot):
                 name = self.sched.next(now) or 'hunt'
                 if getattr(self.args, 'keystones', False) and not self.keytest_done:
                     name = 'keytest'  # before anything else, until it is through (it goes on after a death and a new login)
+                elif getattr(self.args, 'checks', False) and not self.checks_done:
+                    name = 'checks'  # then the system checks (tester_checks.py)
                 self.last = name
                 self.results.behaviour(name, 'tried')
                 try:
@@ -1159,6 +1236,38 @@ class TesterBot(LT.Bot):
             d.setdefault('keytest', []).extend(test.results)
             d.setdefault('keytest_resets', []).extend(test.resets)
 
+    async def do_checks(self, clock):
+        """the system checks of the bot's class (tester_checks.py): True when none failed. Goes on after a death and a new
+        login; a failed check is logged as a BUG line at once"""
+        first = self.checks is None
+        if first:
+            self.checks = TX.CheckRun(self.name, self.cls, self.level)
+        run = self.checks
+        io = CheckIO(self, clock)
+        await asyncio.sleep(10 if first else 3)
+        mark = len(run.results)
+        try:
+            await run.run(io)
+        finally:
+            self.stay = False
+            for r in run.results[mark:]:
+                self.results.log(self, 'CHECK', '%s %s%s' % (r.status.upper(), r.check, ': ' + r.detail if r.detail else ''))
+                line = r.bug_line()
+                if line:
+                    self.results.log(self, 'BUG', line)
+        if run.finished:
+            self.flush_checks()
+            return not any(r.status == TX.FAIL for r in run.results)
+        return True
+
+    def flush_checks(self):
+        run = self.checks
+        if run is None or self.checks_flushed:
+            return
+        if run.finished:
+            self.checks_flushed = self.checks_done = True
+            self.results.d.setdefault('checks', []).extend(r.as_dict() for r in run.results)
+
     async def do_loot(self, clock):
         lf = self.args.ops.get('lootfilter')
         if self.kills and lf:
@@ -1237,6 +1346,9 @@ async def run_bots(a, entries):
     await asyncio.gather(*tasks)
     for bot in bots:
         bot.flush_keytest('the run ended before the bot was through: it was out of the game or dead')
+        if bot.checks is not None and not bot.checks_flushed:
+            bot.checks_flushed = True   # what it got through is kept; the rest was not run
+            results.d.setdefault('checks', []).extend(r.as_dict() for r in bot.checks.results)
     saver.cancel()
     results.d['ended'] = time.strftime('%Y-%m-%d %H:%M:%S')
     save_results(a, results)
@@ -1294,6 +1406,14 @@ def run(a):
     a.on_answer = None
     a.scenarios_runner = None
     a.keytest_table = {}
+    a.checks_rotation = None
+    a.checks_spells = {}
+    if a.checks:
+        rot = os.path.join(HERE, '..', '..', 'client', 'overlay', 'modules', 'game_helperrotation', 'autorotation_data.lua')
+        if os.path.exists(rot):
+            a.checks_rotation = TX.load_table(rot)
+        vocs = LT.parse_vocations(LT.read_text(os.path.join(a.server_dir, 'data', 'XML', 'vocations.xml')))
+        a.checks_spells = load_check_spells(a.server_dir, vocs)
     a.backpack_client_id = 0
     a.after_login = ''
     if a.scenarios:
@@ -1419,7 +1539,7 @@ def parse(argv):
                 '--key-file': '', '--rsa-key': '', '--scenarios': '', '--ramp': 1.0}
     types = {'--count': int, '--hash-iterations': int, '--town': int, '--minutes': int, '--port': int, '--ramp': float}
     vals = dict(defaults)
-    flags = {'--yes': False, '--dry-run': False, '--keystones': False}
+    flags = {'--yes': False, '--dry-run': False, '--keystones': False, '--checks': False}
     i = 1
     while i < len(argv):
         k = argv[i]
@@ -1438,7 +1558,7 @@ def parse(argv):
         i += 1
     for k, v in vals.items():
         setattr(a, k.lstrip('-').replace('-', '_'), v)
-    a.yes, a.dry, a.keystones = flags['--yes'], flags['--dry-run'], flags['--keystones']
+    a.yes, a.dry, a.keystones, a.checks = flags['--yes'], flags['--dry-run'], flags['--keystones'], flags['--checks']
     if a.hash_iterations < 1:
         sys.exit('--hash-iterations: at least 1 (as the server passwordHashIterations); testers never use SHA-1')
     if a.cmd in ('setup', 'run') and not a.server_dir:

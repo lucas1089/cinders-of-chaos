@@ -94,6 +94,38 @@ for name, id in pairs(CLASSES) do
 end
 eq(classes, 21, '21 classes')
 
+-- O186 low levels: at every level the rotation holds min(castable attack spells not cast by hand, 5), for every class
+-- (a gap between that and the shooter would be a bug in the selection). A Ninja below level 100 has Shuriken Toss (8) and
+-- Blade Flurry (20) as its only rotation spells (Snare Trap and Seeker Mine are cast by hand), so "2 spells" there is the
+-- data, not the selection; the first extra spells come at 100 (Shadow Step, Gutting Slash).
+local fold = function(v) return v == 12 and 11 or (v == 13 and 11 or 0) end
+for name, id in pairs(CLASSES) do
+  for level = 1, 300 do
+    local can = canCastFor(id, level, fold)
+    local castable = 0
+    for sid in pairs(attack[id]) do if not CAST_BY_HAND[sid] and can(sid) then castable = castable + 1 end end
+    local sel = A.select(id, level, can, { topUp = true })
+    eq(sel and #sel.ids or 0, math.min(castable, A.MAX_SPELLS), name .. ' level ' .. level .. ': rotation size')
+  end
+end
+for _, level in ipairs({ 20, 60, 99 }) do
+  local sel = A.select(12, level, canCastFor(12, level, fold), { topUp = true })
+  eq(sel and #sel.ids or 0, 2, 'Ninja level ' .. level .. ': Shuriken Toss and Blade Flurry (the rest is level 100+)')
+end
+local n100 = A.select(12, 100, canCastFor(12, 100, fold), { topUp = true })
+eq(n100 and #n100.ids or 0, 4, 'Ninja level 100: Shadow Step and Gutting Slash join')
+
+-- O186: a preset holds only spells the class can cast at the preset's own level (a spell gated higher would be refused by
+-- canCastFor and leave the shooter short), for the class as the server numbers it
+for name, id in pairs(CLASSES) do
+  for _, p in ipairs(D.classes[id].presets) do
+    local can = canCastFor(id, p.level, fold)
+    for _, sid in ipairs(p.spells) do
+      eq(can(sid), true, name .. ': preset of level ' .. p.level .. ' holds spell ' .. sid .. ' the class cannot cast then')
+    end
+  end
+end
+
 if fails > 0 then
   print(fails .. ' failed')
   os.exit(1)

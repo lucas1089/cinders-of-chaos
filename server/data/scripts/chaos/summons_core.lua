@@ -40,6 +40,27 @@ function M.ownerOf(creature)
 	return nil
 end
 
+-- two players in one party. The engine hands out a fresh userdata per getParty() call, so `==` alone may say no for
+-- the same party (O86 hypothesis): equal objects, or the same leader.
+function M.sameParty(a, b)
+	local pa = a and a.getParty and a:getParty()
+	local pb = b and b.getParty and b:getParty()
+	if not pa or not pb then
+		return false
+	end
+	if pa == pb then
+		return true
+	end
+	if pa.getLeader and pb.getLeader then
+		local ok1, la = pcall(pa.getLeader, pa)
+		local ok2, lb = pcall(pb.getLeader, pb)
+		if ok1 and ok2 and la and lb then
+			return same(la, lb)
+		end
+	end
+	return false
+end
+
 -- `other` stands on the side of `player`: the player, its summons, its party and the party's summons
 function M.isAlly(player, other)
 	if not player or not other then
@@ -55,8 +76,7 @@ function M.isAlly(player, other)
 	if same(owner, player) then
 		return true
 	end
-	local party = player.getParty and player:getParty()
-	return party ~= nil and party == (owner.getParty and owner:getParty())
+	return M.sameParty(player, owner)
 end
 
 -- is `creature` a summon of `player` or of a party member (a creature the player must never target)
@@ -102,5 +122,54 @@ function M.bind(player, monster)
 	if monster.setFollowCreature then
 		pcall(monster.setFollowCreature, monster, nil)
 	end
+	M.purge(monster, player)
 	return monster
+end
+
+-- Removes the allies of `owner` (the owner, its party, their summons) from the engine target list of `summon` and drops
+-- an ally attack target. The engine lists every player in sight of a monster as a target and a player's summon takes
+-- everybody but its master for an opponent, so the owner, its party and its other summons stay listed (O86). The follow
+-- target is left alone (a summon follows its master). Returns how many entries went. Every call is guarded.
+function M.purge(summon, owner)
+	if not summon or not owner then
+		return 0
+	end
+	local removed = 0
+	if summon.getTarget then
+		local ok, t = pcall(summon.getTarget, summon)
+		if ok and t and M.isAlly(owner, t) and summon.setTarget then
+			pcall(summon.setTarget, summon, nil)
+			removed = removed + 1
+		end
+	end
+	if summon.getTargetList and summon.removeTarget then
+		local ok, list = pcall(summon.getTargetList, summon)
+		if ok and type(list) == "table" then
+			local copy = {}
+			for _, c in ipairs(list) do
+				copy[#copy + 1] = c
+			end
+			for _, c in ipairs(copy) do
+				if M.isAlly(owner, c) and pcall(summon.removeTarget, summon, c) then
+					removed = removed + 1
+				end
+			end
+		end
+	end
+	return removed
+end
+
+-- purge for every summon of `player`
+function M.purgeAll(player)
+	local n = 0
+	if not player or not player.getSummons then
+		return 0
+	end
+	local ok, list = pcall(player.getSummons, player)
+	if ok and type(list) == "table" then
+		for _, s in ipairs(list) do
+			n = n + M.purge(s, player)
+		end
+	end
+	return n
 end
