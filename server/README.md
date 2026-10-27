@@ -23907,7 +23907,7 @@ server step runs, else the new pieces are invisible and only the red fill is lef
 `python3 -I client/tools/sprites/prune_pair.py restore --dat pair51/Tibia.dat --spr pair51/Tibia.spr --archive-dat pair51/removed/Tibia.dat
 --archive-spr pair51/removed/Tibia.spr --ids item:38477-38487 --out-dir NEXT` (the archive pair, or `backup/removed-pair51.tar.xz` on
 windows-assets), `check_pair.py`, then the new md5s into `client/MANIFEST.md`. `prune_pair.py check-map` on the new map finds no blanked
-item. Before and after pictures were rendered from the installed map with the pair 50 art (not committed, they show the base map).
+item. Done: pair 52 (dat 7046ab6e35a08b2289699f95323fd506) is pair 51 with missiles plus these 11 items, on windows-assets (MANIFEST.md "Pair 52"). Before and after pictures were rendered from the installed map with the pair 50 art (not committed, they show the base map).
 
 ## Temple cleanse (`temple_cleanse.lua`, `temple_cleanse_core.lua`)
 

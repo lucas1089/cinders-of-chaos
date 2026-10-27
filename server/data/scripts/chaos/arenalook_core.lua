@@ -102,10 +102,10 @@ A.THEMES = {
 	-- flagstone halls and marble: castles, guardians, stone giants
 	stone = {
 		wall = 5648,
-		base = {{414, 5}, {413, 3}},
-		patches = {{grounds = {{407, 1}}, count = {3, 5}, r = {2, 4}}, {grounds = {{415, 1}}, count = {1, 2}, r = {2, 3}}},
+		base = {{413, 8}, {407, 1}},
+		patches = {{grounds = {{407, 1}}, count = {3, 5}, r = {2, 4}}, {grounds = {{414, 1}}, count = {1, 2}, r = {2, 3}}},
 		rim = {407}, road = FLAGSTONE,
-		cover = {percent = 5, ids = {1514, 1514, 24939, 24940}},
+		cover = {percent = 5, ids = {1515, 1515, 24939, 24940}},
 		light = {1481, 1486},
 		decor = {percent = 5, ids = {1308, 1311, 1313, 1315, 3610, 3611}},
 		wallDecor = {percent = 12, ids = {1308, 1311, 1313, 1315}}
@@ -157,6 +157,7 @@ local function darkTheme(darkIds)
 		light = {id.brazier, id.standing_torch},
 		decor = {percent = 6, ids = {id.rubble, id.bone_pile}},
 		wallDecor = {percent = 12, ids = {id.rubble, id.bone_pile}},
+		wallSize = 2, -- obsidian_wall is a 2x2 sprite
 		dark = true
 	}
 end
@@ -177,6 +178,18 @@ function A.theme(name, darkIds)
 	end
 	t.name = name
 	return t
+end
+
+-- the walls of the dark set are 2x2 sprites (drawn one tile up and left of their tile): a look made for such a wall keeps
+-- lights and decoration off the floor row / column in front of it (spec.wallSize)
+local DARK_WALL_NAMES = {"dark_wall", "ruined_wall", "obsidian_wall"}
+function A.wallSizeOf(wallId)
+	for _, n in ipairs(DARK_WALL_NAMES) do
+		if wallId ~= nil and A.darkIds(n) == wallId then
+			return 2
+		end
+	end
+	return 1
 end
 
 local KEYWORDS = {
@@ -275,10 +288,28 @@ function A.generate(spec)
 		end
 	end
 
+	-- a wall sprite of size n (2 = 2x2) is drawn n-1 tiles up and left of its tile, so it overdraws the floor tiles to
+	-- the north and west of it. Floor tiles with a wall to the south or east (or both) are `covered`: no light and no
+	-- decoration stands there, or the wall hides it.
+	local wallSize = spec.wallSize or theme.wallSize or 1
+	local covered = {}
+	if wallSize > 1 then
+		for k, t in pairs(floor) do
+			for dx = 0, wallSize - 1 do
+				for dy = 0, wallSize - 1 do
+					if (dx > 0 or dy > 0) and not isFloor(t.x + dx, t.y + dy) then
+						covered[k] = true
+					end
+				end
+			end
+		end
+	end
+
 	local keeps = {}
 	for _, p in ipairs(spec.keep or {}) do
 		keeps[#keeps + 1] = {x = p.x, y = p.y, r = p.r or 1}
 	end
+	local keepGap = spec.keepGap or 1 -- extra tiles around a keep point that solid pieces stay away from
 	local function nearKeep(x, y, extra)
 		for _, p in ipairs(keeps) do
 			if math.max(math.abs(x - p.x), math.abs(y - p.y)) <= p.r + (extra or 0) then
@@ -432,7 +463,8 @@ function A.generate(spec)
 		end
 		for _, c in ipairs(cells) do
 			local k = key(c[1], c[2])
-			if blocked[k] or road[k] or nearKeep(c[1], c[2], 1) or touchesSolid(c[1], c[2], reach) then
+			if blocked[k] or road[k] or nearKeep(c[1], c[2], keepGap) or touchesSolid(c[1], c[2], reach)
+				or (field == "light" and covered[k]) then
 				return false, 0
 			end
 		end
@@ -464,7 +496,9 @@ function A.generate(spec)
 		for k in pairs(rim) do
 			local t = floor[k]
 			local cx, cy = canon(t.x, t.y)
-			cands[#cands + 1] = {t.x, t.y, hashN(cx, cy, seed + 500)}
+			if not covered[k] then
+				cands[#cands + 1] = {t.x, t.y, hashN(cx, cy, seed + 500)}
+			end
 		end
 		table.sort(cands, function(a, b)
 			if a[3] ~= b[3] then
@@ -500,7 +534,9 @@ function A.generate(spec)
 		end
 	end
 
-	-- cover: single pieces away from the wall's foot (so the lane along the wall stays), never touching each other
+	-- cover: single pieces away from the wall's foot (so the lane along the wall stays), never touching each other.
+	-- First a thinned raster pass (the roll spreads the pieces); a small room that falls short of its share then gets a
+	-- second pass over every free tile in hash order, so the pieces still come out scattered.
 	local percent = spec.cover or (theme.cover and theme.cover.percent) or 0
 	local wanted = math.floor(floorCount * percent / 100)
 	if wanted > 0 and theme.cover then
@@ -517,13 +553,43 @@ function A.generate(spec)
 				end
 			end
 		end
+		if look.covers < wanted then
+			local rest = {}
+			for _, k in ipairs(look.order) do
+				local t = floor[k]
+				if not rim[k] and not blocked[k] then
+					local cx, cy = canon(t.x, t.y)
+					rest[#rest + 1] = {t, hashN(cx, cy, seed + 620)}
+				end
+			end
+			table.sort(rest, function(a, b)
+				if a[2] ~= b[2] then
+					return a[2] < b[2]
+				end
+				if a[1].y ~= b[1].y then
+					return a[1].y < b[1].y
+				end
+				return a[1].x < b[1].x
+			end)
+			for _, e in ipairs(rest) do
+				if look.covers >= wanted then
+					break
+				end
+				local t = e[1]
+				local cx, cy = canon(t.x, t.y)
+				local ok, n = place(t.x, t.y, 1, "cover", pick(theme.cover.ids, cx, cy, seed + 610))
+				if ok then
+					look.covers = look.covers + n
+				end
+			end
+		end
 	end
 
 	-- ------------------------------------------------------------ decoration (walkable, never on keep zones)
 	local dec = theme.decor
 	for _, k in ipairs(look.order) do
 		local tile = look.tiles[k]
-		if not blocked[k] and not tile.road and not nearKeep(tile.x, tile.y, 0) then
+		if not blocked[k] and not tile.road and not covered[k] and not nearKeep(tile.x, tile.y, 0) then
 			local cx, cy = canon(tile.x, tile.y)
 			local chance = dec and dec.percent or 0
 			local ids = dec and dec.ids
@@ -633,6 +699,7 @@ function A.isOwned(id)
 			add(t.base); add(t.patches); add(t.rim); add(t.road); add(t.cover.ids); add(t.light); add(t.decor.ids)
 			add(t.wallDecor.ids)
 		end
+		ownedSet[1514] = true -- the stone pillar the stone theme used before the marble pillar
 		if ChaosDarkTiles and ChaosDarkTiles.ids then
 			add(ChaosDarkTiles.ids)
 		end
@@ -676,10 +743,10 @@ function A.dress(roomKey, rect, z, themeName, o)
 	end
 	local w, h = rect.x2 - rect.x1 + 1, rect.y2 - rect.y1 + 1
 	local sig = table.concat({theme.name, seed, w, h, o.cover or "", o.lights or "", o.mirror == false and "n" or "m",
-		table.concat(kparts, ";"), table.concat(rparts, ";")}, "|")
+		o.keepGap or "", o.wallSize or "", table.concat(kparts, ";"), table.concat(rparts, ";")}, "|")
 	local look = A.cached("room:" .. sig, function()
 		return {tiles = A.rectTiles(1, 1, w, h), theme = theme, seed = seed, mirror = o.mirror ~= false, keep = keep,
-			roads = roads, cover = o.cover, lights = o.lights}
+			roads = roads, cover = o.cover, lights = o.lights, keepGap = o.keepGap, wallSize = o.wallSize}
 	end)
 	if A.painted[roomKey] == sig then
 		return look, false
@@ -738,7 +805,8 @@ function A.bossArenaSpec(L, cfg, bossKey, extraKeep)
 		keep[#keep + 1] = {x = extraKeep.x, y = extraKeep.y, r = 1}
 	end
 	return theme, {keep = keep, roads = {{from = L.entry, to = L.bossSpawn}}, seed = lk.seed or 1, cover = lk.cover,
-		lights = lk.lights, groundIds = {[cfg.groundId] = true}, fallbackGround = cfg.groundId}
+		lights = lk.lights, wallSize = A.wallSizeOf(cfg.wallId), groundIds = {[cfg.groundId] = true},
+		fallbackGround = cfg.groundId}
 end
 
 function A.dressBossArena(roomName, L, cfg, bossKey, extraKeep)

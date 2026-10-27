@@ -603,7 +603,7 @@ local function dressRooms(L, bossName)
 	local grounds = {[a.groundId] = true, [a.lobbyGroundId] = true}
 	local arenaLook = ChaosArenaLook.dress("world-arena", {x1 = L.arena.x1 + 1, y1 = L.arena.y1 + 1, x2 = L.arena.x2 - 1, y2 = L.arena.y2 - 1},
 		L.z, theme, {keep = keep, roads = {{from = L.arenaEntry, to = L.bossSpawn}}, seed = lk.seed or 1, cover = lk.cover,
-		lights = lk.lights, groundIds = grounds, fallbackGround = a.groundId})
+		lights = lk.lights, wallSize = ChaosArenaLook.wallSizeOf(a.wallId), groundIds = grounds, fallbackGround = a.groundId})
 	local lkeep = keepOf({L.lobbyArrival, L.lobbyToArena}, 2)
 	for _, p in ipairs(L.lobbyExits) do
 		lkeep[#lkeep + 1] = {x = p.x, y = p.y, r = 1}
@@ -613,7 +613,7 @@ local function dressRooms(L, bossName)
 	end
 	local lobbyLook = ChaosArenaLook.dress("world-lobby", {x1 = L.lobby.x1 + 1, y1 = L.lobby.y1 + 1, x2 = L.lobby.x2 - 1, y2 = L.lobby.y2 - 1},
 		L.z, theme, {keep = lkeep, roads = {{from = L.lobbyArrival, to = L.lobbyToArena}}, seed = (lk.seed or 1) + 1, cover = 0,
-		lights = 0, groundIds = grounds, fallbackGround = a.lobbyGroundId})
+		lights = 0, wallSize = ChaosArenaLook.wallSizeOf(a.wallId), groundIds = grounds, fallbackGround = a.lobbyGroundId})
 	W.looks = {arena = arenaLook, lobby = lobbyLook, theme = theme}
 end
 ChaosWorldBoss.dressRooms = dressRooms

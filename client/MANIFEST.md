@@ -3291,7 +3291,7 @@ Archive pair: dat a19ebfdf56b9970d4a3fafc7993bf125 (4,737,560 bytes), spr b54054
 - **Roofs put back (2026-10-27, owner "Trocar por telhado bonito").** Items 38477-38487 (the rusty tin roof pieces of the pair 33 kit:
   interior 1-3, n, s, e, w, nw, ne, sw, se) stand on the installed map now (server/README.md "Hunt roofs", install step `huntroofs`), so
   their 11 rows left `pair51_removed.csv` and are in `pair51_keep.csv`. The built pair 51 still has them blank: `prune_pair.py restore ...
-  --ids item:38477-38487` on it (command in the README section) before the server step runs; the new pair's md5s go here. Not run.
+  --ids item:38477-38487` on it (command in the README section) before the server step runs. Done: see "Pair 52" below.
 
 ### Pair 51 missiles (`tools/sprites/import_pair51_missiles.py`; built 2026-10-27, on the 62-id list)
 The 62 freed missile ids hold the best 62 of the 169 missiles of the two purchased sprite sources (source G 43, source F 126) that
@@ -3326,6 +3326,30 @@ Output **pair 51 with missiles**: dat 603d31cdfca53e6a59d048fda262a8f5 (8,835,36
   - joined `things-1098.tar.xz` (128,614,056 bytes) sha256 `3c7ad78cdb379f7a49f2e31dda50ac37ee87638f03d55c101eb89f0b4ce6bca4`;
     `things-1098.tar` sha256 `3f18fb2b7553fc80797735338a5fa73a02c7aa2706086529fb19dd6de9c8fd9b`.
     Extracting gives the dat and spr md5 above.
+
+### Pair 52: pair 51 with missiles plus the hunt roofs (`prune_pair.py restore`; built 2026-10-27)
+Items 38477-38487 (rusty tin roof, server/README.md "Hunt roofs") were blank in pair 51. Pair 52 puts them back from the pair 51
+archive pair; nothing else changes.
+```
+python3 -I client/tools/sprites/prune_pair.py restore --dat pair51r/Tibia.dat --spr pair51r/Tibia.spr \
+    --archive-dat pair51/removed/Tibia.dat --archive-spr pair51/removed/Tibia.spr --ids item:38477-38487 --out-dir pair52
+```
+Input pair 51 with missiles (dat 603d31cdfca53e6a59d048fda262a8f5, spr c4a23ac902a79dc0dd1307b7759ec409).
+Output **pair 52**: dat 7046ab6e35a08b2289699f95323fd506 (8,835,509 bytes), spr d12d3c2ee3a4f4c0424a4e0aa10f339d
+(1,129,942,570 bytes, 945,534 sprites: 9 appended for the 11 roof pieces, which share records), the same counts of things (44,395 items, 3,360 outfits, 4,701 effects, 253 missiles).
+- **Checked.** `check_pair.py` (full): 0 errors, 3,966 warnings (11 fewer than pair 51, the roofs are no longer `thing-empty`).
+  Every dat entry other than the 11 is byte for byte the same as pair 51, and so are the 945,525 sprite records that pair 51 had. The 11 items
+  draw the same records as in pair 50 (nonblank sprites per item 1, 1, 1, 1, 2, 2, 1, 1, 2, 2, 4). `gen_outfit_anchors.py` and
+  `gen_info_lift.py` regenerated against pair 52 (only the dat md5 line changed; `--check` passes), `gen_fx_send_offsets.py --check` passes.
+  Not run in a client. Ship the client with pair 52 and these two regenerated files together.
+- **Tool change.** `prune_pair.py restore` wrote the spr twice (a copy, then a rewrite with the grown offset table), which needs
+  about 2.3 GiB of free disk. It now writes the final file in one pass (head, grown table, old records, new records): same bytes, about 1.1 GiB.
+- **Archive parts** (same recipe as pair 51; pushed to windows-assets as **1db4ab09**, parent d7abd80b, only the two part files and their lines of `SHA256SUMS.parts` changed):
+  - part00 99,614,720 bytes, sha256 `efce22ec94e0affd6a600d062bd6c3ef837eee6aa3a8bbc34b3eb81cea838efd`
+  - part01 29,008,688 bytes, sha256 `accbbabe723dec098884bde2682043770b85f6426154caec6c91c6447c1d6474`
+  - joined `things-1098.tar.xz` (128,623,408 bytes) sha256 `e843f4be939e5358b17c320168e9aef71ba71d1bb47b7da29cb93e609d0dd5e1`;
+    `things-1098.tar` sha256 `9d4d2245e34ae184cab0f07d569b1e66d0769b5e8d6bcc0f7a51d92d0599fcf3`.
+    Extracting the parts gives the dat and spr md5 above (checked).
 
 ## Owner art (things_custom26: outfits 2213-2233, items 33940-33985, `tools/sprites/gen_owner_art.py`, `art_import/owner_art.csv`; on windows-assets 50645056, switch on since 2026-10-15)
 **Source and licence.** The owner's Google Drive folder "ots", files added 2026-10-15. The owner confirmed the art is
