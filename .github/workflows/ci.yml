@@ -1105,7 +1105,11 @@ jobs:
       - name: Unique item specs are up to date with chaos_items.xml
         run: |
           cd server && python3 -I tools/gen_unique_specs.py
-          git diff --exit-code data/lib/chaos_unique_specs.lua
+          git diff --exit-code data/lib/chaos_unique_specs.lua ../client/overlay/modules/client_chaos_locale/pt_br.lua
+
+      - name: Unique passives balance model (O278)
+        run: |
+          cd server && luajit tools/unique_passives_model.lua --check && lua5.3 tools/unique_passives_model.lua --check
 
       - name: Codex data is up to date with the server data files
         run: |

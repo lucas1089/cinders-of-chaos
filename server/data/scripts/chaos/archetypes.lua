@@ -1446,6 +1446,16 @@ function thinkEvent.onThink(interval)
 			cleanup(pid)
 		end
 	end
+	-- the worn archetype uniques are checked again every think (an item that left its slot without a move event kept
+	-- its effect until the next login; found while adding the unique passives, O278)
+	for pid in pairs(M.uniques) do
+		local player = Player(pid)
+		if player then
+			pcall(M.refreshUniques, player)
+		else
+			M.uniques[pid] = nil
+		end
+	end
 	-- the Hollowglass Diadem without a keystone: the early recharge only
 	for pid, u in pairs(M.uniques) do
 		if u.hollowglass and not M.flags[pid] then

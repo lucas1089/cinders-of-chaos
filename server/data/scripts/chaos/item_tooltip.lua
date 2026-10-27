@@ -157,6 +157,19 @@ local function answer(player, data)
 				if ChaosCardsCore and type(tip) == "table" and ChaosCardsCore.isCard(item:getId()) then
 					tip.desc = ChaosCardsCore.description(Chaos.lang and Chaos.lang(player) or nil, item:getId())
 				end
+				-- a unique's passive line in the player's language (unique_passives_text.lua; the description holds the English one)
+				if type(tip) == "table" and type(tip.desc) == "string" and ChaosUniquePassivesCore and ChaosUniquePassivesConfig
+						and Chaos.lang and Chaos.lang(player) == "pt-BR" then
+					local e = ChaosUniquePassivesCore.entry(ChaosUniquePassivesConfig, item:getId())
+					if e then
+						local en = ChaosUniquePassivesCore.text(ChaosUniquePassivesConfig, e, "en")
+						local from, to = tip.desc:find(en, 1, true)
+						if from then
+							tip.desc = tip.desc:sub(1, from - 1) .. ChaosUniquePassivesCore.text(ChaosUniquePassivesConfig, e, "pt-BR")
+								.. tip.desc:sub(to + 1)
+						end
+					end
+				end
 				-- the display scale of the item's level requirement (display_scale_core.lua DS.itemTip)
 				row.tip = (ChaosDisplayScale and ChaosDisplayScale.itemTip and ChaosDisplayScale.itemTip(tip) or tip)
 				-- where it comes from (itemfinder.lua F.brief): the first two sources, the expected effort, a token price

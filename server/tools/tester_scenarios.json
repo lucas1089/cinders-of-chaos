@@ -9,7 +9,7 @@
  "counts": {
   "opcode": 63,
   "out": 38,
-  "passive": 78,
+  "passive": 79,
   "place": 13,
   "staff": 12
  },
@@ -11161,6 +11161,16 @@
     "/ascended"
    ],
    "why": "staff command only (/ascended); testers are never staff"
+  },
+  "unique_passives": {
+   "files": [
+    "unique_passives.lua",
+    "unique_passives_text.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
   },
   "unlocks": {
    "files": [
