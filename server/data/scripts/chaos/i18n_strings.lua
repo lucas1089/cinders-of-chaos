@@ -995,6 +995,10 @@ return {
 		["ice"] = "gelo",
 		["energy"] = "energia",
 		["earth"] = "terra",
+		["FIRE"] = "FOGO",
+		["ICE"] = "GELO",
+		["ENERGY"] = "ENERGIA",
+		["EARTH"] = "TERRA",
 		["The wrong seal rebukes you!"] = "O selo errado te castiga!",
 		["The mark got away! %d seconds are lost."] = "A marca escapou! %d segundos foram perdidos.",
 		["First clear on %s: the %s pair of nodes opens (%s or %s)."] =

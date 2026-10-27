@@ -440,7 +440,7 @@ function PN.discordPosts(note, lang, opts)
 			if (it.level or 1) <= 1 then
 				local bullet
 				if it.lead then
-					bullet = "- **" .. it.lead .. "**" .. (it.text ~= "" and (" " .. clipWords(it.text, o.bulletChars - #it.lead)) or "")
+					bullet = "- **" .. it.lead .. "**" .. (it.text ~= "" and (" " .. clipWords(it.text, math.max(40, o.bulletChars - #it.lead))) or "")
 				else
 					bullet = "- " .. clipWords(it.text, o.bulletChars)
 				end

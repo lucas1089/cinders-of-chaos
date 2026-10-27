@@ -473,6 +473,8 @@ discord_prepare_env() {
     site=$(sed -n 's/^CHAOS_SITE_URL=\([^ #]*\).*/\1/p' "$senv" 2>/dev/null | head -n 1)
     site=${site%/}
     if [[ $site =~ ^https?://[A-Za-z0-9.-]+(:[0-9]{1,5})?$ ]]; then
+      # a hand-edited file may end without a newline: never glue the line onto the last webhook
+      if [ -s "$real" ] && [ -n "$(tail -c 1 "$real")" ]; then echo >> "$real" || return 1; fi
       printf 'CHAOS_SITE_URL=%s\n' "$site" >> "$real" || return 1
     fi
   fi
@@ -1367,6 +1369,9 @@ print("pbkdf2-sha256$%d$%s$%s" % (n, base64.b64encode(salt).decode(), base64.b64
           die "that is not a Discord webhook URL (https://discord.com/api/webhooks/ID/TOKEN); nothing changed"
         fi
         discord_prepare_env || die "cannot prepare $DENV"
+        # one writer at a time: two quick saves of different channels must not drop each other's line
+        exec 9<"$(dirname -- "$(readlink -m -- "$DENV")")" || die "cannot lock $DENV"
+        flock -w 10 9 || die "another discord-set is running; try again"
         dkey="CHAOS_DISCORD_WEBHOOK_$(printf '%s' "$dch" | tr '[:lower:]' '[:upper:]')"
         dreal=$(readlink -m -- "$DENV")
         dtmp=$(mktemp "$dreal.XXXXXX") || die "cannot write next to $DENV"
@@ -1463,8 +1468,11 @@ print("pbkdf2-sha256$%d$%s$%s" % (n, base64.b64encode(salt).decode(), base64.b64
         echo "@log"
         if [ -r "$DLOG" ]; then tail -n 8 "$DLOG" 2>/dev/null | discord_redact; else echo "(no $DLOG yet)"; fi
         echo "@queue"
-        mysql_q "SELECT id, kind, status, attempts, LEFT(error, 120) FROM chaos_discord_queue ORDER BY id DESC LIMIT 10" \
-          2>/dev/null | discord_redact || echo "(the queue could not be read: is the database up?)"
+        if dq=$(mysql_q "SELECT id, kind, status, attempts, LEFT(error, 120) FROM chaos_discord_queue ORDER BY id DESC LIMIT 10" 2>/dev/null); then
+          printf '%s\n' "$dq" | discord_redact
+        else
+          echo "(the queue could not be read: is the database up?)"
+        fi
         ;;
     esac
     ;;

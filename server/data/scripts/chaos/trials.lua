@@ -692,7 +692,7 @@ end
 local function sealNote(tr)
 	local idx = math.min(tr.seal.index, #tr.sealOrder)
 	local el = M.SEAL_ELEMENTS[tr.sealOrder[idx]]
-	tr.notes = {ChaosI18n.msg("Seal %d of %d: break the %s seal.", idx, #tr.sealOrder, ChaosI18n.msg(el))}
+	tr.notes = {ChaosI18n.msg("Seal %d of %d: break the %s seal.", idx, #tr.sealOrder, ChaosI18n.msg(el:upper()))}
 end
 
 local function tickSeals(tr, player, ms, pos)

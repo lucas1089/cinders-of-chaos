@@ -1418,6 +1418,15 @@ exit 0
         r = run('discord-set', 'bosses', stdin='')
         check(r.returncode == 0 and 'WEBHOOK_BOSSES' not in text(), 'discord-set: closed stdin removes')
         run('discord-set', 'bosses', stdin=hook2 + '\n')
+        # a hand-edited file without a trailing newline and without the site url: the url gets its own line
+        saved = text()
+        with open(denv, 'w') as f:
+            f.write('CHAOS_DISCORD_WEBHOOK_DEFAULT=' + hook)
+        r = run('discord-set', 'status', stdin=hook2 + '\n')
+        check(r.returncode == 0 and 'CHAOS_DISCORD_WEBHOOK_DEFAULT=' + hook + '\n' in text() and 'CHAOS_SITE_URL=https://example.org\n' in text(),
+              'discord-set: no line glued onto an unterminated last line: ' + repr(text()))
+        with open(denv, 'w') as f:
+            f.write(saved)
         # a rejected URL leaves the file as it was
         before = text()
         check(run('discord-set', 'bosses', stdin='nonsense\n').returncode != 0 and text() == before, 'discord-set: a bad URL leaves the file')
