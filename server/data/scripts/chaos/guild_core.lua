@@ -488,6 +488,18 @@ function C.depotPutError(info, cfg)
 	if not info.pickupable then
 		return "That cannot go into the guild depot."
 	end
+	-- the depot gives back a plain copy that keeps only the attributes of cfg.depot.customKeys: a store item, a
+	-- store-bound one (pouches, Everfull Ration, Nemesis items), a locked one or a quest item would come out
+	-- tradable (the player market refuses all of these, market_core.lua C.itemRefusal)
+	if info.store or info.storeBound then
+		return "That cannot go into the guild depot."
+	end
+	if info.locked then
+		return "The item is locked. Unlock it first."
+	end
+	if (info.uniqueId or 0) > 0 or info.decaying then
+		return "That cannot go into the guild depot."
+	end
 	if (info.count or 1) > (cfg.depot.maxStack or 100) then
 		return "That stack is too large."
 	end

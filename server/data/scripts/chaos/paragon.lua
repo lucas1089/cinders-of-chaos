@@ -335,7 +335,7 @@ end
 
 -- ---------------------------------------------------------------- protocol
 local function message(player, title, text)
-	Chaos.send(player, OPCODE, "sendMessage", {title = title, message = text})
+	Chaos.send(player, OPCODE, "sendMessage", {title = title, message = text and Chaos.tx(player, text) or text})
 end
 
 function P.state(player)

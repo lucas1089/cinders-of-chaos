@@ -323,7 +323,7 @@ local function refusal(player, ignoreQueue)
 	end
 	local where = insideOther(player)
 	if where then
-		return "You cannot queue for the battleground while in " .. where .. "."
+		return "You cannot queue for the battleground while in " .. where .. "." -- a sentence per place in i18n_strings.lua
 	end
 	if inCombat(player) then
 		return "You cannot queue for the battleground while in combat."
@@ -419,7 +419,7 @@ function B.join(player, role)
 	local cfg = C()
 	local members, err = membersOf(player)
 	if not members then
-		player:sendCancelMessage(err)
+		player:sendCancelMessage(Chaos.tx(player, err))
 		return false
 	end
 	local bracket = K.bracketOf(cfg, player:getLevel())
@@ -429,12 +429,13 @@ function B.join(player, role)
 		if not why then
 			local b = K.bracketOf(cfg, m:getLevel())
 			if not b or not bracket or b.key ~= bracket.key then
-				why = "is in another level bracket (" .. (b and b.name or "below the minimum") .. ")."
+				why = b and string.format("is in another level bracket (%s).", b.name) or "is in another level bracket (below the minimum)."
 			elseif realmOf(m) ~= realm then
 				why = "plays in another realm."
 			end
 		end
 		if why then
+			why = Chaos.tx(player, why)
 			if m ~= player then
 				why = m:getName() .. ": " .. why
 			end
@@ -706,9 +707,20 @@ local function board(m, p)
 	end)
 end
 
-local function announce(m, text, kind)
+-- key and its arguments: every fighter reads the line in their own language (an argument {"key"} is a short text of
+-- its own, like a reason, translated for the reader too)
+local unpack = unpack or table.unpack
+local function announce(m, kind, key, ...)
+	local args = {...}
+	local n = select("#", ...)
 	eachOnline(m, function(p)
-		p:sendTextMessage(MESSAGE_STATUS_WARNING, "Battleground: " .. text)
+		local shown = {}
+		for i = 1, n do
+			local a = args[i]
+			shown[i] = type(a) == "table" and Chaos.t(p, a[1]) or a
+		end
+		local text = Chaos.t(p, key, unpack(shown, 1, n))
+		p:sendTextMessage(MESSAGE_STATUS_WARNING, Chaos.t(p, "Battleground: %s", text))
 		send(p, "alert", {text = text, kind = kind or "info"})
 	end)
 end
@@ -738,7 +750,11 @@ function B.down(m, e, by)
 		end
 	end
 	e.hitBy = {}
-	announce(m, string.format("%s was downed%s.", e.name, killer and (" by " .. killer.name) or ""), "down")
+	if killer then
+		announce(m, "down", "%s was downed by %s.", e.name, killer.name)
+	else
+		announce(m, "down", "%s was downed.", e.name)
+	end
 	addEvent(function(id, matchId)
 		local p = Player(id)
 		local mm = p and B.matchOf[id]
@@ -775,7 +791,7 @@ local function leave(m, e, p, reason)
 			msg(p, ChaosI18n.msg("Battleground: you left the match early (%s). Deserter: no queue for %d minute(s).",
 				reason, minutes))
 		end
-		announce(m, string.format("%s left the battleground (%s).", e.name, reason), "left")
+		announce(m, "left", "%s left the battleground (%s).", e.name, {reason})
 	end
 	if p then
 		release(p, e)
@@ -882,10 +898,10 @@ finish = function(m, winner, reason)
 		local s = e.season
 		local text
 		if rated then
-			text = string.format("Battleground %s: %s (%d - %d). Honor +%d%s.%s", reason == "time" and "(time)" or "",
-				e.result == "win" and "victory" or (e.result == "loss" and "defeat" or "draw"), m.score[e.team], m.score[3 - e.team],
-				e.honorGained or 0, e.firstWin and " (first win of the week)" or "",
-				s and string.format(" Rating %d -> %d (%s%d).", s.before, s.after, s.delta >= 0 and "+" or "", s.delta) or "")
+			text = Chaos.t(p, "Battleground%s: %s (%d - %d). Honor +%d%s.%s", reason == "time" and Chaos.t(p, " (time)") or "",
+				Chaos.t(p, e.result == "win" and "victory" or (e.result == "loss" and "defeat" or "draw")), m.score[e.team],
+				m.score[3 - e.team], e.honorGained or 0, e.firstWin and Chaos.t(p, " (first win of the week)") or "",
+				s and Chaos.t(p, " Rating %d -> %d (%s%d).", s.before, s.after, s.delta >= 0 and "+" or "", s.delta) or "")
 		else
 			text = "Battleground: the match was stopped by the staff and is not rated."
 		end
@@ -934,13 +950,14 @@ local function startMatch(found)
 			if p then
 				why = refusal(p, true)
 			end
+			local whyKey = why
 			if why then
 				removeEntry(entry)
 				for _, other in ipairs(entry.members) do
 					local o = Player(other.cid)
 					if o then
 						msg(o, ChaosI18n.msg("Battleground: a match was found but could not start, you were removed from the queue: %s",
-							o == p and why or (mem.name .. ": " .. why)))
+							o == p and Chaos.tx(o, whyKey) or (mem.name .. ": " .. Chaos.tx(o, whyKey))))
 						stateLater(other.cid)
 					end
 				end
@@ -1040,10 +1057,10 @@ local function captureTick(m, L, now)
 					e.lastActive = now
 				end
 			end
-			announce(m, string.format("The %s took the %s!", cfg.teams[who].name, b.name), "capture" .. who)
+			announce(m, "capture" .. who, "The %s took the %s!", cfg.teams[who].name, b.name)
 			Position(spot.x, spot.y, spot.z):sendMagicEffect(effect(cfg.teams[who].effect))
 		elseif event == "lost" then
-			announce(m, string.format("The %s lost the %s.", cfg.teams[who].name, b.name), "lost")
+			announce(m, "lost", "The %s lost the %s.", cfg.teams[who].name, b.name)
 		end
 		if (counts[i][1] > 0) ~= (counts[i][2] > 0) then
 			for _, e in ipairs(inside[i]) do
@@ -1073,7 +1090,7 @@ local function tickMatch(m)
 		Chaos.sweepIntruders(function(pos) return K.inSlot(L, pos) end, function(p)
 			local e = m.players[p:getId()]
 			return e ~= nil and not e.gone
-		end, "You are not playing on this battlefield: you were sent to your temple.")
+		end, "You are not playing on this battlefield: you were sent to your temple.") -- sweepIntruders translates it
 	end
 	for _, cid in ipairs(m.order) do
 		local e = m.players[cid]
@@ -1129,7 +1146,7 @@ local function tickMatch(m)
 	if m.phase == "prep" and now >= m.fightAt then
 		m.phase = "fight"
 		m.nextWave = K.nextWave(cfg, m.fightAt, now)
-		announce(m, "The wells are open: take the braziers!", "start")
+		announce(m, "start", "The wells are open: take the braziers!")
 		eachOnline(m, function(p)
 			p:getPosition():sendMagicEffect(CONST_ME_FIREAREA)
 		end)
@@ -1408,7 +1425,7 @@ local function vendorView(player, row)
 	for _, o in ipairs(C().vendor) do
 		local ok, why = K.vendorCheck(C(), o.key, row.honor, owns)
 		local itype = o.kind == "item" and ItemType(o.id) or nil
-		out[#out + 1] = {key = o.key, name = o.name, cost = o.cost, kind = o.kind, can = ok ~= nil, why = why,
+		out[#out + 1] = {key = o.key, name = o.name, cost = o.cost, kind = o.kind, can = ok ~= nil, why = why and Chaos.tx(player, why),
 			owned = o.kind == "cosmetic" and owns(o.cosmetic) or nil,
 			item = itype and itype.getClientId and itype:getClientId() or nil}
 	end
@@ -1471,18 +1488,18 @@ local function buy(player, key)
 	end
 	local offer, why = K.vendorCheck(C(), key, row.honor, owns)
 	if not offer then
-		send(player, "msg", {text = why, ok = false})
+		send(player, "msg", {text = Chaos.tx(player, why), ok = false})
 		return false
 	end
 	if offer.kind == "cosmetic" then
 		local CM = ChaosCosmetics
 		if not (CM and CM.grant) then
-			send(player, "msg", {text = "Cosmetics are not available on this server.", ok = false})
+			send(player, "msg", {text = Chaos.t(player, "Cosmetics are not available on this server."), ok = false})
 			return false
 		end
 		local ok, err = CM.grant(player:getAccountId(), offer.cosmetic, "pvp")
 		if not ok then
-			send(player, "msg", {text = err or "Could not unlock it.", ok = false})
+			send(player, "msg", {text = Chaos.tx(player, err or "Could not unlock it."), ok = false})
 			return false
 		end
 	else
@@ -1498,7 +1515,7 @@ local function buy(player, key)
 	B.saveRow(player:getGuid())
 	db.query(string.format("INSERT INTO `%s` (`player_id`, `offer`, `cost`, `at`) VALUES (%d, %s, %d, %d)", T("purchases"),
 		player:getGuid(), db.escapeString(offer.key), offer.cost, os.time()))
-	send(player, "msg", {text = string.format("Bought: %s for %d honor.", offer.name, offer.cost), ok = true})
+	send(player, "msg", {text = Chaos.t(player, "Bought: %s for %d honor.", offer.name, offer.cost), ok = true})
 	return true
 end
 B.buy = buy

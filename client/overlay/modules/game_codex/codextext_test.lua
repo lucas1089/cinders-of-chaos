@@ -76,12 +76,16 @@ local function need(text, what)
   if not translated(text) and not kept[norm(text)] then missing[#missing + 1] = what .. ': ' .. text end
 end
 local prose, prose_ok, cells, cells_ok = 0, 0, 0, 0
+local inLore = false
 local function section(s)
   if s.ref then return end
   need(s.h, 'heading')
+  -- the Lore tab carries its own pt-BR text ("Em português" section next to the English one): not counted
   for _, p in ipairs(s.p or {}) do
-    prose = prose + 1
-    if translated(p) then prose_ok = prose_ok + 1 end
+    if not inLore then
+      prose = prose + 1
+      if translated(p) then prose_ok = prose_ok + 1 end
+    end
   end
   for _, c in ipairs(s.cols or {}) do need(c, 'column') end
   for _, row in ipairs(s.rows or {}) do
@@ -94,6 +98,7 @@ end
 for _, s in pairs(CodexData.shared) do section(s) end
 for _, tab in ipairs(CodexData.tabs) do
   need(tab.name, 'tab')
+  inLore = (tab.name == 'Lore')
   for _, f in ipairs(tab.filters or {}) do
     need(f.label, 'filter')
     for _, o in ipairs(f.options or {}) do need(o[2], 'option') end
@@ -105,7 +110,7 @@ end
 for i = 1, math.min(#missing, 20) do print('no pt-BR entry for ' .. missing[i]) end
 eq(#missing, 0, 'every tab, filter, option, heading and column head of the data has a pt-BR entry')
 ok(prose > 1000 and cells > 5000, 'the data has the expected size: ' .. prose .. ' paragraphs, ' .. cells .. ' cells')
-ok(prose_ok / prose >= 0.70, 'paragraphs translated: ' .. prose_ok .. ' of ' .. prose)
+ok(prose_ok / prose >= 0.99, 'paragraphs translated: ' .. prose_ok .. ' of ' .. prose)
 ok(cells_ok / cells >= 0.40, 'table cells translated: ' .. cells_ok .. ' of ' .. cells .. ' (the rest are names)')
 
 if fails > 0 then print(fails .. ' of ' .. count .. ' FAILED'); os.exit(1) end

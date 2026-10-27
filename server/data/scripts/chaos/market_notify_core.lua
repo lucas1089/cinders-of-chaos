@@ -10,7 +10,7 @@
 --   ChaosMarketNotify.add(batch, sale)           false when the same sale was added before (deduped by its key)
 --   ChaosMarketNotify.summary(batch, away)       {title, text, lines} for the toast and the chat, or nil
 --   ChaosMarketNotify.totalText(batch)           "4.2M gold and 95 Chaos Coins"
---   ChaosMarketNotify.exchangeToast(gains, traded, away)  the Orb Exchange delivery toast: title, text, kind
+--   ChaosMarketNotify.exchangeToast(gains, traded, away, lang)  the Orb Exchange delivery toast: title, text, kind
 -- Lua 5.1 / LuaJIT and Lua 5.3 compatible.
 
 ChaosMarketNotify = ChaosMarketNotify or {}
@@ -215,21 +215,21 @@ function N.summary(batch, away, lang)
 		list = T(lang, "%s and %d more", list, rest)
 	end
 	local text = T(lang, "%d items sold for %s: %s.", batch.count, N.totalText(batch, lang), list)
-	return {title = away and "While you were away" or "Market sales", text = text, lines = lines}
+	return {title = away and T(lang, "While you were away") or T(lang, "Market sales"), text = text, lines = lines}
 end
 
 -- The Orb Exchange (orbexchange.lua) delivers with the same rows-and-deliverSeq method (chaos_orbx_deliveries). gains =
 -- "+1,200 gold in your bank, +3 Orb of Fate in your inbox"; traded = a row of this delivery was a fill (an order of the
 -- player traded: a sale), else only refunds (cancel, expiry). Returns title, text, kind for ChaosNotify.send.
-function N.exchangeToast(gains, traded, away)
+function N.exchangeToast(gains, traded, away, lang)
 	gains = tostring(gains or "")
 	if not traded then
 		return "Orb Exchange", gains, "market"
 	end
 	if away then
-		return "While you were away", "your Orb Exchange orders traded: " .. gains, "sale"
+		return T(lang, "While you were away"), T(lang, "your Orb Exchange orders traded: %s", gains), "sale"
 	end
-	return "Orb Exchange", "your orders traded: " .. gains, "sale"
+	return "Orb Exchange", T(lang, "your orders traded: %s", gains), "sale"
 end
 
 return N

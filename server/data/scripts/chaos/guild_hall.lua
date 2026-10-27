@@ -914,9 +914,24 @@ function G.depotPut(player, item)
 		return false, blocked
 	end
 	local count = it:isStackable() and item:getCount() or 1
+	local pouch = false
+	if ChaosPouches and ChaosPouches.isPouch then
+		local okP, isP = pcall(ChaosPouches.isPouch, item)
+		pouch = okP and isP == true
+	end
+	local okS, isStore = pcall(function() return item:isStoreItem() end)
+	local uniqueId = 0
+	if ITEM_ATTRIBUTE_UNIQUEID and item:hasAttribute(ITEM_ATTRIBUTE_UNIQUEID) then
+		uniqueId = tonumber(item:getAttribute(ITEM_ATTRIBUTE_UNIQUEID)) or 0
+	end
+	local decaying = ITEM_ATTRIBUTE_DECAYSTATE and item:hasAttribute(ITEM_ATTRIBUTE_DECAYSTATE)
+		and (tonumber(item:getAttribute(ITEM_ATTRIBUTE_DECAYSTATE)) or 0) > 0 or false
 	local err = C.depotPutError({member = gid ~= nil and gid == hallGid and slot ~= nil, active = gid and G.activeOf(gid).depot ~= nil,
 		used = gid and depotUsed(gid) or 0, capacity = gid and C.depotCapacity(G.levelOf(gid), cfg) or 0,
-		container = item:isContainer(), pickupable = it:isPickupable(), count = count}, cfg)
+		container = item:isContainer(), pickupable = it:isPickupable(), count = count,
+		store = okS and isStore == true, storeBound = pouch or item:getCustomAttribute("chaos_storebound") ~= nil,
+		locked = (ChaosCrafting and ChaosCrafting.customNumber and ChaosCrafting.customNumber(item, "chaos_locked") or 0) ~= 0,
+		uniqueId = uniqueId, decaying = decaying}, cfg)
 	if err then
 		return false, err
 	end

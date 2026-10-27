@@ -5369,5 +5369,88 @@ return {
 		["Recycle"] = "Reciclar",
 		["Item locked"] = "Item trancado",
 		["Item unlocked"] = "Item destrancado",
+		-- More player texts (O147): exchange, arena, battleground, descent
+		[" %s stays on the book."] =
+			" %s fica no livro de ordens.",
+		[" (fee %s gold)"] =
+			" (taxa de %s de ouro)",
+		[" (first win of the day)"] =
+			" (primeira vitória do dia)",
+		[" (first win of the week)"] =
+			" (primeira vitória da semana)",
+		[" (stopped by the staff, not rated)"] =
+			" (encerrada pela equipe, sem pontuação)",
+		[" (time ran out: remaining health decided)"] =
+			" (o tempo acabou: a vida restante decidiu)",
+		[" (time)"] =
+			" (tempo)",
+		[" Fee: %s gold."] =
+			" Taxa: %s de ouro.",
+		[" Rating %d -> %d (%s%d)."] =
+			" Rating %d -> %d (%s%d).",
+		[" Reward: %s%s."] =
+			" Recompensa: %s%s.",
+		[" The order is filled."] =
+			" A ordem foi preenchida.",
+		[" The order is filled; %s left over come back to you."] =
+			" A ordem foi preenchida; %s que sobraram voltam para você.",
+		[" Traded at once: %s for %s%s."] =
+			" Negociado na hora: %s por %s%s.",
+		["%s is out of the Descent."] =
+			"%s saiu da Descent.",
+		["%s rises from the embers!"] =
+			"%s ressurge das brasas!",
+		["+%s gold in your bank"] =
+			"+%s de ouro no seu banco",
+		["+%s in your inbox"] =
+			"+%s na sua caixa de entrada",
+		["Arena %s: %s%s. Rating %d -> %d (%s%d).%s"] =
+			"Arena %s: %s%s. Rating %d -> %d (%s%d).%s",
+		["Battleground%s: %s (%d - %d). Honor +%d%s.%s"] =
+			"Battleground%s: %s (%d - %d). Honra +%d%s.%s",
+		["Bought: %s for %d honor."] =
+			"Comprado: %s por %d de honra.",
+		["Cosmetics are not available on this server."] =
+			"Cosméticos não estão disponíveis neste servidor.",
+		["Market sales"] =
+			"Vendas no mercado",
+		["Order cancelled: %s come back to you."] =
+			"Ordem cancelada: %s voltam para você.",
+		["Order cancelled: %s comes back to you."] =
+			"Ordem cancelada: %s volta para você.",
+		["Order placed: %s for at least %s."] =
+			"Ordem criada: %s por no mínimo %s.",
+		["Room %d of %d cleared. Choose a boon."] =
+			"Sala %d de %d concluída. Escolha uma bênção.",
+		["Room %d of %d: a Shrine. Use the altar: %d%% of your health for a boon. Step into the gate (or press Continue) to go on."] =
+			"Sala %d de %d: um Santuário. Use o altar: %d%% da sua vida por uma bênção. Entre no portão (ou clique em Continuar) para seguir.",
+		["Room %d of %d: the Merchant. Use the stand to spend your embers. Step into the gate (or press Continue) to go on."] =
+			"Sala %d de %d: o Mercador. Use a banca para gastar suas brasas. Entre no portão (ou clique em Continuar) para seguir.",
+		["Room %d of %d: the last hall."] =
+			"Sala %d de %d: o último salão.",
+		["While you were away"] =
+			"Enquanto você esteve fora",
+		["your Orb Exchange orders traded: %s"] =
+			"suas ordens da Orb Exchange foram negociadas: %s",
+		["your order %d expired (%s of %s traded)."] =
+			"sua ordem %d expirou (%s de %s negociados).",
+		["your order %d traded %s for %s."] =
+			"sua ordem %d negociou %s por %s.",
+		["your orders traded: %s"] =
+			"suas ordens foram negociadas: %s",
+		["your partner"] =
+			"seu parceiro",
+		["%s left the battleground (%s)."] =
+			"%s saiu do battleground (%s).",
+		["logged out"] =
+			"saiu do jogo",
+		["left the field"] =
+			"deixou o campo",
+		["lost connection"] =
+			"perdeu a conexão",
+		["inactive"] =
+			"inativo",
+		["left"] =
+			"saiu",
 	},
 }

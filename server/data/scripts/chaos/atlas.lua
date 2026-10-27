@@ -111,7 +111,7 @@ ChaosRiftCore.hooks.atlasMods = function(player, ctx)
 end
 
 local function sendState(player, msg)
-	Chaos.send(player, OPCODE, "state", A.statePayload(cfg, RC(), S.get(player:getGuid()), msg))
+	Chaos.send(player, OPCODE, "state", A.statePayload(cfg, RC(), S.get(player:getGuid()), msg and Chaos.tx(player, msg) or msg))
 end
 
 -- credit of a sealed rift (every finisher; one who is offline is written straight to the database)

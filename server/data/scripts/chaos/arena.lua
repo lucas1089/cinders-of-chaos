@@ -316,7 +316,7 @@ function S.join(player, mode)
 	if cfg.modes[mode].size > 1 then
 		local list, err = partyPair(player, cfg.modes[mode].size)
 		if not list then
-			player:sendCancelMessage(err)
+			player:sendCancelMessage(Chaos.tx(player, err))
 			return false
 		end
 		members = list
@@ -324,6 +324,7 @@ function S.join(player, mode)
 	for _, m in ipairs(members) do
 		local why = refusal(m)
 		if why then
+			why = Chaos.tx(player, why)
 			if m ~= player then
 				why = m:getName() .. ": " .. why
 			end
@@ -556,18 +557,22 @@ function S.defeat(m, e, reason, by)
 	e.defeated = true
 	e.reason = reason
 	local cid = e.cid
-	local text
+	local key, arg2
 	if reason == "defeated" then
-		text = string.format("%s was defeated%s.", e.name, by and (" by " .. by) or "")
+		if by then
+			key, arg2 = "%s was defeated by %s.", by
+		else
+			key = "%s was defeated."
+		end
 	elseif reason == "secure" then
-		text = string.format("%s kept secure mode on and is out of the fight.", e.name)
+		key = "%s kept secure mode on and is out of the fight."
 	elseif reason == "mc" then
-		text = string.format("%s left the fight (another character from the same connection logged in).", e.name)
+		key = "%s left the fight (another character from the same connection logged in)."
 	else
-		text = string.format("%s left the arena.", e.name)
+		key = "%s left the arena."
 	end
 	eachOnline(m, function(p)
-		p:sendTextMessage(MESSAGE_STATUS_WARNING, "Arena: " .. text)
+		p:sendTextMessage(MESSAGE_STATUS_WARNING, Chaos.t(p, "Arena: %s", Chaos.t(p, key, e.name, arg2)))
 	end)
 	if reason == "defeated" or reason == "secure" or reason == "mc" then
 		-- moved out of the fight after the hit is done (never inside the combat handler)
@@ -617,7 +622,7 @@ local function startMatch(a, b)
 					local o = Player(other)
 					if o then
 						msg(o, ChaosI18n.msg("Arena: a match was found but could not start, you were removed from the queue: %s",
-							o == p and why or ((p and p:getName() or "your partner") .. ": " .. why)))
+							o == p and Chaos.tx(o, why) or ((p and p:getName() or Chaos.t(o, "your partner")) .. ": " .. Chaos.tx(o, why))))
 						stateLater(other)
 					end
 				end
@@ -797,11 +802,13 @@ finish = function(m, winner, reason)
 		if rated and e.result == "win" then
 			reward, first = giveReward(p)
 		end
-		local how = reason == "timeout" and " (time ran out: remaining health decided)" or (reason == "stop" and " (stopped by the staff, not rated)" or "")
+		local how = reason == "timeout" and Chaos.t(p, " (time ran out: remaining health decided)") or
+			(reason == "stop" and Chaos.t(p, " (stopped by the staff, not rated)") or "")
 		if rated then
-			text = string.format("Arena %s: %s%s. Rating %d -> %d (%s%d).%s", m.mode, e.result == "win" and "victory" or
-				(e.result == "loss" and "defeat" or "draw"), how, e.before, e.after, e.delta >= 0 and "+" or "", e.delta,
-				(reward and reward ~= "") and (" Reward: " .. reward .. (first and " (first win of the day)" or "") .. ".") or "")
+			text = Chaos.t(p, "Arena %s: %s%s. Rating %d -> %d (%s%d).%s", m.mode,
+				Chaos.t(p, e.result == "win" and "victory" or (e.result == "loss" and "defeat" or "draw")), how, e.before, e.after,
+				e.delta >= 0 and "+" or "", e.delta,
+				(reward and reward ~= "") and Chaos.t(p, " Reward: %s%s.", reward, first and Chaos.t(p, " (first win of the day)") or "") or "")
 		else
 			text = "Arena: the match was stopped by the staff and is not rated."
 		end

@@ -154,11 +154,12 @@ local function send(player, action, data)
 	end
 end
 
-local function say(run, text)
+-- key and arguments: every player of the run reads the line in their own language
+local function say(run, key, ...)
 	for id in pairs(run.players) do
 		local p = Player(id)
 		if p then
-			p:sendTextMessage(MESSAGE_EVENT_ADVANCE, text)
+			p:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(p, key, ...))
 		end
 	end
 end
@@ -786,7 +787,7 @@ local function spawnBoss(run)
 			run.bossId = m:getId()
 			run.bossName = name
 			P(run.L.center):sendMagicEffect(CONST_ME_MORTAREA)
-			say(run, string.format("%s rises from the embers!", name))
+			say(run, "%s rises from the embers!", name)
 			return 1
 		end
 		log(string.format("run %d: the boss (%s) could not be created", run.id, e.name))
@@ -851,7 +852,7 @@ local function roomCleared(run)
 		end
 	end
 	run.state = "choose"
-	say(run, string.format("Room %d of %d cleared. Choose a boon.", run.idx, run.plan.count))
+	say(run, "Room %d of %d cleared. Choose a boon.", run.idx, run.plan.count)
 	for pid in pairs(run.players) do
 		offer(run, pid, "room")
 	end
@@ -923,11 +924,13 @@ startRoom = function(run)
 		run.restUntil = os.time() + cfg.readySeconds
 		placeObject(run, run.L.center, room.type)
 		placeObject(run, run.L.exit, "exit")
-		say(run, room.type == "shrine"
-			and string.format("Room %d of %d: a Shrine. Use the altar: %d%% of your health for a boon. Step into the gate (or press Continue) to go on.",
+		if room.type == "shrine" then
+			say(run, "Room %d of %d: a Shrine. Use the altar: %d%% of your health for a boon. Step into the gate (or press Continue) to go on.",
 				run.idx, run.plan.count, cfg.shrine.healthCost)
-			or string.format("Room %d of %d: the Merchant. Use the stand to spend your embers. Step into the gate (or press Continue) to go on.",
-				run.idx, run.plan.count))
+		else
+			say(run, "Room %d of %d: the Merchant. Use the stand to spend your embers. Step into the gate (or press Continue) to go on.",
+				run.idx, run.plan.count)
+		end
 		if room.type == "merchant" then
 			for pid in pairs(run.players) do
 				X.sendShop(Player(pid), run)
@@ -940,7 +943,7 @@ startRoom = function(run)
 	if room.type == "boss" then
 		run.waves = 1
 		run.wave = 1
-		say(run, string.format("Room %d of %d: the last hall.", run.idx, run.plan.count))
+		say(run, "Room %d of %d: the last hall.", run.idx, run.plan.count)
 		if #run.types == 0 then
 			abortRun(run, string.format("no monster type in the window %d-%d", run.esc.window[1], run.esc.window[2]))
 			return
@@ -952,8 +955,8 @@ startRoom = function(run)
 		sendHud(run)
 		return
 	end
-	say(run, string.format("Room %d of %d: %s (%s), %d wave%s.", run.idx, run.plan.count, name, th.name, run.waves,
-		run.waves == 1 and "" or "s"))
+	say(run, run.waves == 1 and "Room %d of %d: %s (%s), %d wave." or "Room %d of %d: %s (%s), %d waves.",
+		run.idx, run.plan.count, name, th.name, run.waves)
 	if #run.types == 0 then
 		abortRun(run, string.format("no monster type in the window %d-%d", run.esc.window[1], run.esc.window[2]))
 		return
@@ -1213,7 +1216,7 @@ removePlayer = function(run, pid, result)
 	if not run.ended and next(run.players) == nil then
 		finish(run, result == "cleared" and "cleared" or "fallen")
 	elseif not run.ended then
-		say(run, string.format("%s is out of the Descent.", pe.name))
+		say(run, "%s is out of the Descent.", pe.name)
 		checkAdvance(run)
 		sendHud(run)
 	end
@@ -1414,8 +1417,8 @@ function X.start(player, weekly)
 	end
 	log(string.format("%s opened run %d: slot %d, seed %d%s, %d player(s), rooms %s", player:getName(), run.id, slot,
 		seed, run.weekly and " (weekly)" or "", #group, table.concat(kinds, "/")))
-	say(run, string.format("You enter %s%s: %d rooms, %d minutes.", cfg.name, run.weekly and " (weekly descent)" or "",
-		run.plan.count, math.floor(cfg.timeLimit / 60)))
+	say(run, run.weekly and "You enter %s (weekly descent): %d rooms, %d minutes." or "You enter %s: %d rooms, %d minutes.",
+		cfg.name, run.plan.count, math.floor(cfg.timeLimit / 60))
 	startRoom(run)
 	addEvent(X.tick, 1000, slot, run.id)
 	return true
@@ -1806,7 +1809,7 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 	elseif a == "craft" then
 		if rate(player, "craft", 1000) then
 			local _, text = X.craft(player)
-			send(player, "msg", {text = text})
+			send(player, "msg", {text = text and Chaos.tx(player, text) or text})
 			X.sendInfo(player)
 		end
 	elseif a == "pick" then
