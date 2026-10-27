@@ -23870,6 +23870,45 @@ lever room are unchanged. Run it with the install (`install_all.py --only astrod
 `tools/patch_astro_door_test.py`. Other custom quest gates of the base were checked: the Yalahari crystal door steps far from any
 hunt mark and is left alone.
 
+## Hunt roofs (`tools/patch_hunt_roofs.py`, install_all step `huntroofs`)
+
+Owner 2026-10-27 ("Trocar por telhado bonito"): in the Bone Slicer / Bone Warrior / Bone Mage hunt next to the Astro tower (hunt
+marks 31583,33009,7 and 31566,33004,8 of `chaos_poi.lua`) the base map's roofs look wrong: red tile fill, 2x2 wooden-frame gables,
+grey "stone ledge" spikes along the edges, oriel windows and edge pieces stacked on each other. The cave holds the cabins of floor 7;
+their roofs are on floors 6 and 5 inside the box x 31575-31607, y 32996-33029 (566 roof tiles: 293 fill or inner corner, 273 edge).
+The roofs south of it (a farm, y 33031 and more) and every other building of the map keep their pieces: the patch works only inside
+the box.
+
+| Old piece (server id) | New |
+|---|---|
+| 9535, 9536 red tile fill (a ground) | stays on its tile (it is what hides the roof when a player stands under it); a new interior piece, 41477, 41478 or 41479 by position, covers it |
+| 9537 NW, 9538 N, 9539 NE, 9543 W, 9544 E, 9540 SW, 9541 S, 9542 SE edges | 41484 nw, 41480 n, 41485 ne, 41483 w, 41482 e, 41486 sw, 41481 s, 41487 se |
+| 9545-9548 inner corners (the stair step along the cave wall) | the interior piece |
+| 9092-9099 red tile roof with wooden frame (2x2), 9100-9101 stone ledge, 9102-9103 oriel window | gone |
+
+The new pieces are the "rusty tin" roof of the pair 33 kit (client ids 38477-38487, server ids +3000, `pack33_kit.csv`, installed by
+step `pack33items`, which the patch requires): a flat brown-grey tin with a thin shaded edge, chosen over the kit's dark shingle
+(blue) for the cave's brown and grey palette. The kit art is drawn one tile up and left of the tile it stands on (64x64 pictures,
+the tile is the bottom right quarter), so each new piece stands one tile down and right of the old piece it replaces (same floor):
+on screen the roof covers the same spot as before, and the client's floor shift (one tile up and left per floor) is the same for
+old and new. The covering rule of the client (a ground on the floor above hides the roof) is unchanged: the fill ground of the
+roof is the same tile as before. A ring tile left empty is cut out of the map, a tile the roof needs that the map has not is added
+(no ground, so nothing walks there; the edge pieces were not walkable either). A tile with a container, a house tile or an unknown
+attribute is left alone and listed. The result is flat: the kit's ridge, dormer and chimney pieces are not used.
+
+Idempotent: a tile that already holds the piece wanted from its old tile is left alone; a second run says "nothing to do". The map
+goes through `<map>.otbm.tmp`, its tile count is checked, `<map>.otbm.bak` is written first when missing. `--dry-run` lists and
+writes nothing, `--out FILE` writes the map there. Run it with the install (`install_all.py --only huntroofs`; needs the map and
+the roof items of `pack33items`), then restart the server (the map loads at start). Test: `tools/patch_hunt_roofs_test.py`.
+
+**Client side, ship first.** Pair 51 blanked the roof pieces of the kit ("unused pack33_kit art"). The 11 things (items 38477-38487)
+are off `client/tools/sprites/pair51_removed.csv` and listed in `pair51_keep.csv`; the built pair must get them back before the
+server step runs, else the new pieces are invisible and only the red fill is left:
+`python3 -I client/tools/sprites/prune_pair.py restore --dat pair51/Tibia.dat --spr pair51/Tibia.spr --archive-dat pair51/removed/Tibia.dat
+--archive-spr pair51/removed/Tibia.spr --ids item:38477-38487 --out-dir NEXT` (the archive pair, or `backup/removed-pair51.tar.xz` on
+windows-assets), `check_pair.py`, then the new md5s into `client/MANIFEST.md`. `prune_pair.py check-map` on the new map finds no blanked
+item. Before and after pictures were rendered from the installed map with the pair 50 art (not committed, they show the base map).
+
 ## Temple cleanse (`temple_cleanse.lua`, `temple_cleanse_core.lua`)
 
 Beta report 2026-10-20: a boss's 10-minute fire kept characters in battle mode, so they could not use the town portal or

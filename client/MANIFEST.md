@@ -3288,6 +3288,10 @@ Archive pair: dat a19ebfdf56b9970d4a3fafc7993bf125 (4,737,560 bytes), spr b54054
   backup on windows-assets (`backup/removed-pair51.tar.xz`) was made from the first list: it is a superset and also holds those restored things.
 - **Ship order.** Server ids and items.otb do not change. Run `prune_pair.py check-map` on the live map first; a blanked item that stands
   on it shows as an invisible tile object. Ship the client with pair 51 and its regenerated `outfit_anchors.lua` and `info_lifts.lua` together.
+- **Roofs put back (2026-10-27, owner "Trocar por telhado bonito").** Items 38477-38487 (the rusty tin roof pieces of the pair 33 kit:
+  interior 1-3, n, s, e, w, nw, ne, sw, se) stand on the installed map now (server/README.md "Hunt roofs", install step `huntroofs`), so
+  their 11 rows left `pair51_removed.csv` and are in `pair51_keep.csv`. The built pair 51 still has them blank: `prune_pair.py restore ...
+  --ids item:38477-38487` on it (command in the README section) before the server step runs; the new pair's md5s go here. Not run.
 
 ### Pair 51 missiles (`tools/sprites/import_pair51_missiles.py`; built 2026-10-27, on the 62-id list)
 The 62 freed missile ids hold the best 62 of the 169 missiles of the two purchased sprite sources (source G 43, source F 126) that
