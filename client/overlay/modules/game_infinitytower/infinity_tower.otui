@@ -1,7 +1,7 @@
 // The tower panel (O274), created by infinity_tower.lua inside a run: floor, floors cleared, monsters left, the countdown
 // and the Next floor now button. Hidden outside a run.
 TowerPanel < UIWidget
-  width: 210
+  width: 290
   height: 108
   anchors.top: parent.top
   anchors.horizontalCenter: parent.horizontalCenter
@@ -44,11 +44,20 @@ TowerPanel < UIWidget
     margin: 2 6 0 6
     text-align: center
     color: #f0e4c8
+  CheckBox
+    id: autoSkipBox
+    width: 84
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    margin: 0 6 9 0
+    !text: tr('Automatic')
+    !tooltip: tr('Start each next floor by itself as soon as the server allows it. In a group, Automatic only works for the run leader.')
+    focusable: false
   Button
     id: skipButton
     anchors.bottom: parent.bottom
     anchors.left: parent.left
-    anchors.right: parent.right
+    anchors.right: prev.left
     margin: 0 6 6 6
     height: 22
     focusable: false

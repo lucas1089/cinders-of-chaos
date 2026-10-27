@@ -23,6 +23,17 @@ eq(M.canPress({ inRun = true, canSkip = true }, 5500, 5000), false, 'too soon')
 eq(M.canPress({ inRun = true, canSkip = true }, 6000, 5000), true, 'old enough')
 eq(M.canPress({ inRun = true, canSkip = false }, 9000, nil), false, 'server flag off')
 
+-- auto skip
+local ok = { inRun = true, canSkip = true }
+eq(M.shouldAutoSkip(ok, false, nil, 9000), false, 'auto off')
+eq(M.shouldAutoSkip(ok, true, nil, 9000), true, 'auto on, allowed')
+eq(M.shouldAutoSkip(ok, true, 8000, 9000), false, 'auto debounce: under 2 s')
+eq(M.shouldAutoSkip(ok, true, 7000, 9000), true, 'auto: 2 s passed')
+eq(M.shouldAutoSkip({ inRun = false, canSkip = true }, true, nil, 9000), false, 'auto: not in a run')
+eq(M.shouldAutoSkip({ inRun = true, canSkip = false }, true, nil, 9000), false, 'auto: canSkip false')
+eq(M.shouldAutoSkip({ inRun = true, canSkip = false, nextBoss = true }, true, nil, 9000), false, 'auto: boss pause')
+eq(M.shouldAutoSkip(nil, true, nil, 9000), false, 'auto: no state')
+
 -- the panel
 eq(M.panel(nil, 0), nil, 'panel: no state')
 eq(M.panel({ inRun = false }, 0), nil, 'panel: not in a run')

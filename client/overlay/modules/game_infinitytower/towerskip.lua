@@ -30,6 +30,19 @@ function M.canPress(state, nowMs, lastMs)
   return lastMs == nil or (nowMs - lastMs) >= M.MIN_PRESS_MS
 end
 
+M.AUTO_GAP_MS = 2000 -- the server lets a run skip once every 2 s: auto never sends closer than this
+
+-- Auto "Next floor now": send one skip for a state that arrives with inRun and canSkip while the box is ticked.
+-- `lastSentAt` is the clock (ms) of the last skip sent, nil if none. The caller calls it once per state pushed, so a
+-- refusal (the server pushes canSkip false) ends the attempt and the client waits for the next allowed state.
+-- Boss floors are not special-cased: the server sends canSkip false there.
+function M.shouldAutoSkip(state, autoOn, lastSentAt, now)
+  if not autoOn then return false end
+  if type(state) ~= 'table' or not state.inRun or not state.canSkip then return false end
+  if lastSentAt ~= nil and (now - lastSentAt) < M.AUTO_GAP_MS then return false end
+  return true
+end
+
 -- The tower panel (O274): { floor = {key, n}, cleared = {key, n}, monsters = {key, left, total} | nil,
 -- timer = {key, secs} | nil, boss = bool }. `elapsedMs` is the time since the state arrived: the countdowns run on the
 -- client's clock from the seconds the server sent.

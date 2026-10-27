@@ -8,6 +8,7 @@ local stateAtMs = 0
 local tickEvent = nil
 local towerState = nil      -- the last {action = 'state'} of the server
 local lastSkipMs = nil
+local AUTO_SKIP_KEY = 'chaosTowerAutoSkip' -- global per client install (the module has no per-character setting)
 
 -- Milestones padrão espelhados do servidor, exibidos antes dos dados chegarem
 local DEFAULT_MILESTONES = {
@@ -116,6 +117,12 @@ function updateSkipButton()
     skipPanel = g_ui.createWidget('TowerPanel', root)
     skipButton = skipPanel:getChildById('skipButton')
     skipButton.onClick = function() skipFloor() end
+    local autoBox = skipPanel:getChildById('autoSkipBox')
+    autoBox:setChecked(autoSkipOn())
+    autoBox.onCheckChange = function(_, checked)
+      g_settings.set(AUTO_SKIP_KEY, checked)
+      if checked then autoSkipCheck() end
+    end
   end
   if not skipPanel then return end
   if not view.visible then
@@ -129,6 +136,22 @@ function updateSkipButton()
   skipPanel:show()
   refreshPanel()
   if not tickEvent then tickEvent = scheduleEvent(tickPanel, 250) end
+end
+
+function autoSkipOn()
+  local ok, v = pcall(g_settings.getBoolean, AUTO_SKIP_KEY, false)
+  return ok and v == true
+end
+
+-- once per pushed state (and when the box is ticked): send the skip if the pure rule allows it
+function autoSkipCheck()
+  local now = g_clock.millis()
+  if not g_game.isOnline() or not TowerSkip.shouldAutoSkip(towerState, autoSkipOn(), lastSkipMs, now) then return end
+  local protocol = g_game.getProtocolGame()
+  if protocol then
+    lastSkipMs = now
+    protocol:sendExtendedOpcode(OPCODE_INFINITY_TOWER, '{"action":"skip"}')
+  end
 end
 
 function skipFloor()
@@ -158,6 +181,7 @@ function onExtendedOpcode(protocol, opcode, buffer)
     towerState = data
     stateAtMs = g_clock.millis()
     updateSkipButton()
+    autoSkipCheck()
   elseif data.action == "open" then
     cachedTowerData = data
     show(data)

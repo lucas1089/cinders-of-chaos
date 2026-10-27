@@ -740,7 +740,9 @@ function init()
 	connect(UIItem, { onItemChange = onItemChange })
 	connect(g_game, { onGameEnd = onGameEnd })
 	connect(LocalPlayer, { onInventoryChange = onInventoryChange })
-	connect(Container, containerHandlers)
+	if Container then -- absent in the slot harness (client/tools/slot_clear_test.py)
+		connect(Container, containerHandlers)
+	end
 	if g_game.isOnline() then
 		for _, c in pairs(g_game.getContainers() or {}) do
 			silenceContainer(c, true)
@@ -755,7 +757,9 @@ function terminate()
 	disconnect(UIItem, { onItemChange = onItemChange })
 	disconnect(g_game, { onGameEnd = onGameEnd })
 	disconnect(LocalPlayer, { onInventoryChange = onInventoryChange })
-	disconnect(Container, containerHandlers)
+	if Container then
+		disconnect(Container, containerHandlers)
+	end
 	if prismaticEvent then
 		removeEvent(prismaticEvent)
 		prismaticEvent = nil
