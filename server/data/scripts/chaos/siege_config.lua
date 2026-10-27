@@ -66,7 +66,7 @@ return {
 		baseGroundId = 413, -- stone floor (bases)
 		wallId = 5648, -- stone wall
 		obeliskId = 1560, -- obelisk (the "Chaos Obelisk")
-		pillarId = 1515, -- marble pillar (cover)
+		pillarId = 1514, -- stone pillar (cover)
 		basinId = 1481, -- coal basin (light)
 		flagId = 1436, -- castle flag (base decoration)
 		portalId = 1387 -- magic forcefield (type teleport in items.xml), used without destination + action id

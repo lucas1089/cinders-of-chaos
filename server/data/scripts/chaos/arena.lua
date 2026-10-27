@@ -435,7 +435,7 @@ function S.buildSlot(slot)
 	end
 	ChaosArenaLook.dress("pvparena" .. slot, {x1 = ar.x1 + 1, y1 = ar.y1 + 1, x2 = ar.x2 - 1, y2 = ar.y2 - 1}, L.z,
 		themes[slot % #themes + 1], {keep = keep, roads = {{from = L.spawns[1][1], to = L.spawns[2][1]}}, seed = lk.seed or 1,
-		cover = lk.cover, lights = lk.lights, keepGap = lk.keepGap, mirror = true, groundIds = {[cfg.groundId] = true}, fallbackGround = cfg.groundId})
+		cover = lk.cover, lights = lk.lights, mirror = true, groundIds = {[cfg.groundId] = true}, fallbackGround = cfg.groundId})
 	for _, p in ipairs(L.pillars) do
 		placeItem(P(p), cfg.pillarId)
 	end

@@ -29,7 +29,7 @@ return {
 		gateGround = 413, -- stone floor: the gate yards around the safe exits
 		ring = 406, -- white marble floor: the shrine circle and the exit circles
 		wall = 5648, -- stone wall (outer wall and ruins)
-		pillar = 1515, -- marble pillar (cover)
+		pillar = 1514, -- stone pillar (cover)
 		shrine = 1481, -- coal basin: the Cinder Shrine itself (unwalkable)
 		exitMark = 1436, -- castle flag beside an exit circle
 		pile = 2249 -- "ashes": the ember pile a defeated player leaves (a marker; the pile itself lives in the script)
