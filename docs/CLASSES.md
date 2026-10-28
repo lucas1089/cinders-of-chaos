@@ -19,13 +19,19 @@ unlocked for the account once one of its characters reaches level 200 (see "Clas
 Agreed with the owner (2026-10, the role rebalance): the Iron Sage is the second healer, the Samurai a duelist off-tank.
 
 - Tank: Juggernaut (the tankiest); Sentinel (tank-support: a little less tough, the party takes less damage); Samurai (duelist
-  off-tank: parries, a guard while countering, taunts; below the Juggernaut and the Sentinel)
-- Single target: Deadeye (the best), Ninja, Lich, Shadowfist (the burst classes lead), Beastmaster
-- Area damage: Elementalist (the best), Berserker, Bone Lord, Inquisitor
-- Healer: Illusionist (the best healer, for one ally and for the party, plus party attack buffs); Iron Sage (the second
-  healer: a melee chi healer, below the Illusionist and above every non-healer); the Templar line's aura (all three: party
-  damage reduction; the Sentinel's also heals, and Lay on Hands is the biggest emergency heal)
+  off-tank: parries, a guard while countering, taunts; below the Juggernaut and the Sentinel; since 2026-10-28 also a burst
+  class on one target)
+- Single target: Deadeye (the best), Ninja, Lich, Shadowfist (the burst classes lead), Thief, Ranger, Inquisitor; the burst
+  classes farm packs slowest
+- Area damage: Elementalist (the best), Berserker, Bone Lord, Beastmaster (the pure area classes farm packs fastest and give up
+  single target damage); the Mystic is the area base class
+- Healer: Illusionist (the best healer, for one ally and for the party, plus party attack buffs; the lowest single target
+  damage of the damage classes); Iron Sage (the second healer: a melee chi healer, below the Illusionist and above every
+  non-healer); the Templar line's aura (all three: party damage reduction; the Sentinel's also heals, and Lay on Hands is the
+  biggest emergency heal)
 - Pets: Beastmaster, Bone Lord (the army)
+
+Strength and weakness of every class: "Class identity (2026-10-28)" below.
 
 Balance target, as today: Deadeye best single target, Elementalist best area damage, Juggernaut the tankiest;
 a party with an Illusionist out-damages the same party without one.
@@ -289,6 +295,21 @@ Kept: every heal, the tank and party auras (Ironhold, Rebuke, Aegis of Faith, Ha
 the Necromancer's two other summons. The Necromancer line summons Raise Bone Warrior and Raise Bone Mage now (the
 Risen Archer is gone; the best build is two warriors and a mage). Numbers, balance and the retune:
 server/data/spells/README.md "Support to attack (O254)".
+
+**Line spell quests, phase 4 (2026-10-28)**: the level 800 buff of each line, taught by the quest, shared by the base class and both
+ascensions. A support spell (support group, cooldown 90 s, group cooldown 2 s), not an attack: the attack count stays 13, it takes no
+slot in a rotation of 5 and the helper keeps it up in fights from its Timer section. Numbers: server/data/spells/README.md "Line spell
+quests, level 800 buffs".
+
+| Line | Buff (id) | Time | Effect |
+|---|---|---|---|
+| Warrior | Ironbound Oath (143) | 20 s | melee skill +20%, shielding +25% |
+| Ranger | Unblinking Gaze (150) | 20 s | distance skill +25%, critical chance +10 points |
+| Mystic | Veil of Whispers (153) | 20 s | magic level +15%, 1% of the maximum mana back every second |
+| Thief | Shroud of Knives (156) | 15 s | melee and distance skill +20%, evasion +10 points |
+| Necromancer | Dirge of the Legion (159) | 20 s | minion hits +25%, death spell damage +10% |
+| Monk | Lotus Stance (173) | 15 s | +1 chi on a weapon or fist hit, evasion +10 points |
+| Templar | Mantle of Dawn (178) | 20 s | damage taken -15%, the holy strike after a melee hit +20% |
 
 **Line spell quests, phase 3 (2026-10-28)**: the level 1200 ultimate of each line, taught by the quest, shared by the base class and
 both ascensions. Every class and ascension has **13 attack spells** now (`ATTACK_SPELLS` 13). Cooldown 35 to 50 s, group cooldown 2 s,
@@ -1099,6 +1120,7 @@ Beastmaster -44% / -16%); Illusionist the best healer (1985 / 3007 per second on
 +20% / +24% over the Mystic's 1473 / 2039; group +20% / +22%); Samurai a bit under the Juggernaut's damage with off-tank toughness
 (about 15.4 effective health per level, Sentinel 17.3, Juggernaut 19.6). Table: `server/data/spells/README.md` "Classes with the
 passive trees"; the harness spread is about +-5% per run, so the leads are on means of several runs.
+The factors above are the state of 2026-10-12; the class identity pass of 2026-10-28 moved most of them ("Class identity (2026-10-28)" below).
 
 ### Pack cleave (2026-10-14, pack combat)
 
@@ -1124,6 +1146,82 @@ its master's class. Experience per hour in packs (`server/tools/pack_model.py`):
 Elementalist at 300, 800 and 1000 (was 0.47-1.00); leveling 1-1000 of the median class 169 h -> 132 h. Single-target and
 PvP damage unchanged (the cleave never hits a boss or a player; the new spells hit a lone target like the filler).
 Table: `server/data/spells/README.md` "Pack farming for every class".
+The cleave shares above are the state of 2026-10-15; the class identity pass (2026-10-28) changed every one of them: "Class
+identity (2026-10-28)" below.
+
+### Class identity (2026-10-28)
+
+Owner approved: every class has a clear strength and a real weakness. Until now every class farmed packs at about 1.00 of the
+median class (the Elementalist 1.07) while the boss ratios against the Deadeye ran from 0.43 to 1.00, so a burst class paid
+twice: the slowest on a boss and no faster in a pack. Now the pack rate and the boss damage trade against each other by role.
+Computed, not measured in game: `server/tools/pack_model.py` and `server/tools/boss_model.py`, limits in
+`server/data/scripts/chaos/boss_balance_config.lua` (`--check` of both is in CI).
+
+Bands. The pack ratio is kills per hour in packs against the median class before the pass (the fixed reference of
+`pack_model.py`, so a band does not move when the classes around the median do). The boss ratio is damage per second on one boss
+against the Deadeye. Level 800 lies between the measured 300 and 1000 and 1200 is extrapolated, so both have a window
+(`bossWindows`, `packWindows`).
+
+| Role | Classes | Pack | Boss |
+|---|---|---|---|
+| Pure area | Elementalist, Berserker, Bone Lord, Beastmaster | 1.00-1.10 | 0.64-0.80 |
+| Area caster base | Mystic | 0.95-1.05 | 0.55-0.68 |
+| Mixed | Warrior, Ranger, Necromancer, Monk, Inquisitor | 0.88-0.95 (Necromancer to 0.96) | 0.62-0.78 (Ranger 0.78-0.90, Inquisitor 0.76-0.88) |
+| Burst | Deadeye, Ninja, Shadowfist, Lich, Thief | 0.80-0.86 (Ninja to 0.88) | 0.75-1.0 |
+| Burst duelist | Samurai | 0.80-0.86 | 0.68-0.80 |
+| Tank | Juggernaut, Sentinel, Templar | 0.88-0.95 | 0.55-0.70 |
+| Healer | Illusionist, Iron Sage | 0.85-0.93 | 0.55-0.65, 0.58-0.68 |
+
+Why these. Tanks pull packs safely, so they farm like mixed classes and give up single target damage. The Illusionist is the
+best healer and gets the lowest boss band of all damage classes. The Bone Lord was 0.88-0.91 of the Deadeye on a boss and is a
+pure area class now (0.75). The Samurai stays the duelist off-tank and now also hits like a burst class on one target; its
+toughness is unchanged. Deadeye stays the best single target and the Elementalist the best area class, each at least 8% ahead
+of the next class at 300, 800, 1000 and 1200 (checked).
+
+Levers, smallest first.
+- Pack cleave share (`pace_config.lua` `cleave`): every class changed. The burst classes keep 0-18%, the mixed, tank and healer
+  classes 0-20%, the Berserker none, the Bone Lord 10-12% (the minions' hits too). It never touches a boss.
+- Pack tool multiples: Fan of Knives (Thief) 1.0 to 0.5 and Iaido Sweep (Samurai) 1.5 to 0.9 on the rest of the pack. The
+  target takes what it took. Both rows of `rotation_model.csv` follow (1 + 4 x pack).
+- Class damage factor knots (`class_tree.lua` `classDamage`, all damage of the class, level 300, 800 and 1000, a point at 250
+  with the old level 300 value so the levels under 250 play as before): the Warrior, Juggernaut, Mystic, Elementalist and
+  Illusionist have entries now (a class entry wins over its line's). Used instead of `spell_factor_config.lua` because it
+  scales the minions, the auto attacks and the pets too, and because it leaves the rotation simulator's best sets (and so the
+  helper's Auto setup data) where they were. A class that rises on one target rises on a pack too, so the cleave and the tools
+  take the pack rate back down.
+
+Final table, pack ratio against the reference and boss ratio against the Deadeye (computed). The "was" columns are the state
+before the pass.
+
+| Class | Pack 300 | Pack 1000 | Pack 1200 | Boss 300 | Boss 1000 | Boss 1200 | Was pack 1000 | Was boss 1000 |
+|---|---|---|---|---|---|---|---|---|
+| Elementalist | 1.07 | 1.08 | 1.08 | 0.70 | 0.65 | 0.68 | 1.08 | 0.65 |
+| Berserker | 1.03 | 1.03 | 1.02 | 0.74 | 0.70 | 0.73 | 1.01 | 0.58 |
+| Bone Lord | 1.01 | 1.02 | 1.00 | 0.76 | 0.75 | 0.77 | 1.00 | 0.90 |
+| Beastmaster | 1.03 | 1.01 | 1.00 | 0.72 | 0.71 | 0.74 | 0.99 | 0.71 |
+| Mystic | 1.01 | 1.04 | 1.03 | 0.61 | 0.61 | 0.65 | 1.00 | 0.53 |
+| Warrior | 0.94 | 0.94 | 0.93 | 0.68 | 0.68 | 0.71 | 1.00 | 0.51 |
+| Ranger | 0.93 | 0.94 | 0.92 | 0.82 | 0.80 | 0.82 | 1.00 | 0.80 |
+| Necromancer | 0.96 | 0.94 | 0.92 | 0.74 | 0.71 | 0.74 | 0.99 | 0.57 |
+| Monk | 0.93 | 0.93 | 0.92 | 0.69 | 0.69 | 0.72 | 0.99 | 0.51 |
+| Inquisitor | 0.93 | 0.94 | 0.92 | 0.83 | 0.78 | 0.80 | 1.00 | 0.78 |
+| Juggernaut | 0.94 | 0.94 | 0.93 | 0.60 | 0.56 | 0.60 | 1.00 | 0.56 |
+| Sentinel | 0.94 | 0.94 | 0.93 | 0.59 | 0.60 | 0.64 | 1.00 | 0.43 |
+| Templar | 0.94 | 0.93 | 0.92 | 0.62 | 0.60 | 0.64 | 1.00 | 0.46 |
+| Illusionist | 0.91 | 0.91 | 0.91 | 0.60 | 0.60 | 0.64 | 1.00 | 0.44 |
+| Iron Sage | 0.91 | 0.92 | 0.91 | 0.63 | 0.63 | 0.67 | 1.00 | 0.45 |
+| Deadeye | 0.83 | 0.83 | 0.80 | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 |
+| Lich | 0.84 | 0.85 | 0.83 | 0.89 | 0.84 | 0.85 | 1.01 | 0.88 |
+| Shadowfist | 0.84 | 0.85 | 0.82 | 0.90 | 0.81 | 0.82 | 1.00 | 0.81 |
+| Ninja | 0.86 | 0.87 | 0.85 | 0.86 | 0.76 | 0.78 | 1.00 | 0.79 |
+| Thief | 0.85 | 0.85 | 0.83 | 0.77 | 0.77 | 0.79 | 1.00 | 0.52 |
+| Samurai | 0.85 | 0.85 | 0.83 | 0.72 | 0.72 | 0.75 | 1.00 | 0.44 |
+
+Side effects. The classes that rose hit harder in PvP and in the arena by the same factor (the Warrior line and the
+Illusionist most, the Thief and Samurai a lot). The Bone Lord and the Necromancer are lower. Infinity Tower health was re-derived
+(`tower_model.py --derive`, about 9% less: the classes in the middle of the field have a smaller cleave on a pack now), the
+minion model's level 50 floor on 5 targets went from 0.85 to 0.84 (the median class rose), and the quest spell factors moved:
+"Line spell quests" in `server/data/spells/README.md`.
 
 ### Late spells, levels 340-460 (C6, 2026-10-20)
 

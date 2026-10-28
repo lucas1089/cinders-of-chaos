@@ -376,13 +376,18 @@ do
 	-- pack class, has none; every other class cleaves 4 monsters, its share growing from level 300 to 1000
 	ok(P.cleaveOf(cfg, 5) == nil, "Elementalist: no cleave")
 	local c = P.cleaveOf(cfg, 7)
-	ok(c and c.percent == 28 and c.high == 21 and c.targets == 4, "Deadeye: 28% at 300, 21% at 1000, to 4")
+	-- 28 / 21 until the class identity pass (2026-10-28: the Deadeye is a burst class, pack farming 0.80-0.86 of the reference)
+	ok(c and c.percent == 18 and c.high == 11 and c.targets == 4, "Deadeye: 18% at 300, 11% at 1000, to 4")
 	ok(P.cleaveOf(cfg, nil) == nil, "no vocation: none")
 	ok(P.cleaveOf(off, 7) == nil, "layer off: no cleave")
 	ok(P.cleaveOf({enabled = true, cleave = {enabled = false, byVocation = {[7] = {percent = 1, targets = 1}}}}, 7) == nil,
 		"cleave off")
 	for _, v in ipairs({4, 8, 14, 3, 7, 15, 1, 10, 11, 12, 13, 20, 21, 22, 17, 18, 19, 23, 24, 25}) do
 		local e = P.cleaveOf(cfg, v)
+		local row = cfg.cleave.byVocation[v]
+		if e == nil and row and row.percent == 0 and (row.high or 0) == 0 then -- the Berserker: none (class identity pass, 2026-10-28)
+			e = {percent = 0, high = 0, targets = 4}
+		end
 		ok(e and e.percent >= 0 and e.percent <= 70 and (e.high or e.percent) <= 70 and e.targets == 4,
 			"cleave of " .. v .. " sane")
 	end
@@ -645,7 +650,11 @@ do
 	combats = {}
 	player._level = 1000
 	events.ChaosPaceCleave.onHealthChange(m, player, 1000, COMBAT_PHYSICALDAMAGE, 0, 0, ORIGIN_MELEE)
-	eq(combats[1] and combats[1].dmg, -math.floor(1000 * thief.high / 100), "level 1000: the high share")
+	if thief.high > 0 then
+		eq(combats[1] and combats[1].dmg, -math.floor(1000 * thief.high / 100), "level 1000: the high share")
+	else
+		eq(#combats, 0, "level 1000: the Thief's share is 0 (class identity pass): no cleave")
+	end
 	combats = {}
 	events.ChaosPaceCleave.onHealthChange(m, player, 1000, COMBAT_PHYSICALDAMAGE, 0, 0, ORIGIN_CONDITION)
 	eq(#combats, 0, "damage over time: no cleave")
@@ -664,11 +673,11 @@ do
 	-- a summon's hit cleaves by its master's class and level (the Necromancer's minions)
 	combats = {}
 	player._voc = 20
-	player._level = 300
+	player._level = 1000 -- the Necromancer's share is 0 up to level 300 since the class identity pass
 	local nec = ChaosPaceConfig.cleave.byVocation[20]
 	events.ChaosPaceCleave.onHealthChange(m, pet, 1000, COMBAT_PHYSICALDAMAGE, 0, 0, ORIGIN_MELEE)
 	eq(#combats, 3, "a minion's hit cleaves the 3 around (never the pet itself)")
-	eq(combats[1] and combats[1].dmg, -math.floor(1000 * nec.percent / 100), "by the master's class")
+	eq(combats[1] and combats[1].dmg, -math.floor(1000 * nec.high / 100), "by the master's class")
 	combats = {}
 	player._voc = 5
 	events.ChaosPaceCleave.onHealthChange(m, pet, 1000, COMBAT_PHYSICALDAMAGE, 0, 0, ORIGIN_MELEE)

@@ -250,7 +250,8 @@ do
 		ok(strikes[i].min == math.floor(smin2 * B.cfg.sweep.pack) and strikes[i].max == math.floor(smax2 * B.cfg.sweep.pack),
 			"a monster of the pack: pack x the hit")
 	end
-	ok(B.cfg.sweep.pack > 1, "the pack takes more than the target")
+	-- 1.5 until the class identity pass (2026-10-28): the Samurai is a burst duelist, the pack takes 0.9 of the hit
+	ok(B.cfg.sweep.pack >= 0.5 and B.cfg.sweep.pack <= 1.5, "the pack takes a share of the target's hit")
 	eq(effects[1] and effects[1].kind, "vfxDir", "a directional cut")
 	eq(effects[1] and effects[1].name, "heavy_cleave", "the heavy cleave")
 	ok(effects[1] and effects[1].pos.x == 101 and effects[1].pos.y == 100, "on the first tile of the cut")

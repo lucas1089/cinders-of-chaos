@@ -452,8 +452,14 @@ near(CT.damageFactor("ninja", "thief", 300), 0.5, "the line's factor"); near(CT.
 near(CT.damageFactor("ninja", "thief", 100), 0.5, "below the first point"); near(CT.damageFactor("ninja", "thief", 2000), 0.4)
 near(CT.damageFactor("samurai", "thief", 1000), 0.2, "a class entry wins"); near(CT.damageFactor("warrior", "warrior", 1000), 1)
 CT.classDamage = saved
--- the trims of 2026-10-12 (Covenant path builds at level 300); level 1000 unchanged
-near(CT.damageFactor("necromancer", "necromancer", 300), 0.93, "Necromancer 300"); near(CT.damageFactor("necromancer", nil, 1000), 0.64)
-near(CT.damageFactor("bonelord", "necromancer", 300), 0.63, "Bone Lord 300"); near(CT.damageFactor("bonelord", nil, 1000), 0.61)
+-- the trims of 2026-10-12 (Covenant path builds at level 300), moved by the class identity pass (2026-10-28)
+near(CT.damageFactor("necromancer", "necromancer", 250), 0.93, "Necromancer 250: as before the identity pass")
+near(CT.damageFactor("necromancer", "necromancer", 300), 0.89, "Necromancer 300"); near(CT.damageFactor("necromancer", nil, 1000), 0.80)
+near(CT.damageFactor("bonelord", "necromancer", 300), 0.54, "Bone Lord 300"); near(CT.damageFactor("bonelord", nil, 1000), 0.51)
+near(CT.damageFactor("bonelord", "necromancer", 100), 0.63, "Bone Lord below 250: as before")
+-- the identity pass: a point at 800, a class entry wins over its line's (the Juggernaut and the Elementalist are flat 1)
+near(CT.damageFactor("warrior", "warrior", 800), 1.24, "Warrior 800"); near(CT.damageFactor("juggernaut", "warrior", 1000), 1.0, "Juggernaut: its own entry")
+near(CT.damageFactor("elementalist", "mystic", 1000), 1.0, "Elementalist: its own entry"); near(CT.damageFactor("mystic", "mystic", 1000), 1.14)
+near(CT.damageFactor("deadeye", "ranger", 1000), 0.95, "Deadeye keeps the Ranger line's 0.95")
 
 print("class_tree_test: " .. checks .. " checks, OK")

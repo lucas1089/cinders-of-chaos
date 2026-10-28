@@ -9,7 +9,7 @@
  "counts": {
   "opcode": 64,
   "out": 38,
-  "passive": 80,
+  "passive": 81,
   "place": 13,
   "staff": 13
  },
@@ -10684,6 +10684,17 @@
   "pz_guard": {
    "files": [
     "chaos_constants.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "quest_buffs": {
+   "files": [
+    "monk_combat.lua",
+    "templar_combat.lua",
+    "thief_combat.lua"
    ],
    "kind": "passive",
    "opcodes": [],

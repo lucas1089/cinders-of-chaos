@@ -215,6 +215,24 @@ tp.conds[cfg.ids.subId.aegis] = true
 p = onHealth(tp, mob, 1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE)
 eq(p, 1000, "a Templar with the condition from elsewhere gets nothing")
 
+-- Mantle of Dawn (the level 800 line spell quest buff, quest_buffs_core.lua): 15% less damage taken, a Radiant Strike 20% stronger
+local mantle = creature({id = 16, voc = TEMPLAR, player = true})
+mantle.conds[ChaosQuestBuffsConfig.subId.mantle] = true
+p = onHealth(mantle, mob, 1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE)
+eq(p, 850, "Mantle: -15% taken")
+mantle.conds[cfg.ids.subId.aegis] = true
+p = onHealth(mantle, mob, 1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE)
+eq(p, 850, "Mantle: Aegis of Faith is the Sentinel's only")
+mantle.conds[cfg.ids.subId.aegis] = nil
+p = onHealth(mantle, mob, 1000, COMBAT_HEALING, 0, COMBAT_NONE, ORIGIN_NONE)
+eq(p, 1000, "Mantle: healing untouched")
+scheduled, strikes = {}, {}
+onHealth(mob, mantle, 1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE)
+eq(#scheduled, 1, "Mantle: a holy strike follows")
+scheduled[1].fn((unpack or table.unpack)(scheduled[1].args))
+eq(strikes[1].min, -180, "Mantle: 15% x 1.2 of the hit")
+scheduled, strikes = {}, {}
+
 -- the target callback hands the event to what a Templar attacks
 eq(callbacks.onTargetCombat(tp, mob), RETURNVALUE_NOERROR)
 

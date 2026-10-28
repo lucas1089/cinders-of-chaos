@@ -204,26 +204,26 @@ return {
 		fromLevel = 300,
 		toLevel = 1000,
 		byVocation = {
-			[4] = {percent = 6, high = 11, targets = 4}, -- Warrior
-			[8] = {percent = 15, high = 26, targets = 4}, -- Juggernaut
-			[14] = {percent = 0, high = 3, targets = 4}, -- Berserker
-			[3] = {percent = 23, high = 20, targets = 4}, -- Ranger
-			[7] = {percent = 28, high = 21, targets = 4}, -- Deadeye
-			[15] = {percent = 9, high = 0, targets = 4}, -- Beastmaster (the companion's hits too)
-			[1] = {percent = 0, high = 2, targets = 4}, -- Mystic
-			[10] = {percent = 12, high = 17, targets = 4}, -- Illusionist
-			[11] = {percent = 10, high = 11, targets = 4}, -- Thief
-			[12] = {percent = 12, high = 6, targets = 4}, -- Ninja
-			[13] = {percent = 17, high = 19, targets = 4}, -- Samurai
-			[20] = {percent = 2, high = 14, targets = 4}, -- Necromancer (the minions' hits too)
-			[21] = {percent = 10, high = 7, targets = 4}, -- Lich
-			[22] = {percent = 6, high = 6, targets = 4}, -- Bone Lord (the minions' hits too)
-			[17] = {percent = 6, high = 12, targets = 4}, -- Monk
-			[18] = {percent = 16, high = 16, targets = 4}, -- Shadowfist
-			[19] = {percent = 11, high = 15, targets = 4}, -- Iron Sage
-			[23] = {percent = 3, high = 16, targets = 4}, -- Templar
-			[24] = {percent = 8, high = 13, targets = 4}, -- Inquisitor
-			[25] = {percent = 6, high = 16, targets = 4} -- Sentinel
+			[4] = {percent = 1, high = 0, targets = 4}, -- Warrior
+			[8] = {percent = 8, high = 20, targets = 4}, -- Juggernaut
+			[14] = {percent = 0, high = 0, targets = 4}, -- Berserker
+			[3] = {percent = 19, high = 15, targets = 4}, -- Ranger
+			[7] = {percent = 18, high = 11, targets = 4}, -- Deadeye
+			[15] = {percent = 9, high = 1, targets = 4}, -- Beastmaster (the companion's hits too)
+			[1] = {percent = 0, high = 1, targets = 4}, -- Mystic
+			[10] = {percent = 3, high = 2, targets = 4}, -- Illusionist
+			[11] = {percent = 5, high = 0, targets = 4}, -- Thief
+			[12] = {percent = 5, high = 0, targets = 4}, -- Ninja
+			[13] = {percent = 6, high = 1, targets = 4}, -- Samurai
+			[20] = {percent = 0, high = 4, targets = 4}, -- Necromancer (the minions' hits too)
+			[21] = {percent = 3, high = 0, targets = 4}, -- Lich
+			[22] = {percent = 10, high = 12, targets = 4}, -- Bone Lord (the minions' hits too)
+			[17] = {percent = 2, high = 0, targets = 4}, -- Monk
+			[18] = {percent = 8, high = 6, targets = 4}, -- Shadowfist
+			[19] = {percent = 3, high = 0, targets = 4}, -- Iron Sage
+			[23] = {percent = 0, high = 3, targets = 4}, -- Templar
+			[24] = {percent = 5, high = 9, targets = 4}, -- Inquisitor
+			[25] = {percent = 0, high = 2, targets = 4} -- Sentinel
 		}
 	},
 

@@ -389,7 +389,7 @@
 		"siege.on": true,
 		"siege.when": "Saturday 20:00",
 		"siege.whenPt": "sábado às 20:00",
-		"spell.count": 162,
+		"spell.count": 169,
 		"store.categories": 37,
 		"store.cosmetic": 627,
 		"store.offers": 763,
@@ -517,6 +517,7 @@
 								["Anvil Fall", "kah gal brak thun", "380", "270", "9 s", "Juggernaut"],
 								["Rampage Leap", "drai skai hrun vas", "380", "240", "10 s", "Berserker"],
 								["Keepfall", "vok aeg thun brak", "500", "72", "13 s", "whole line"],
+								["Ironbound Oath", "vok brak ael ruun", "800", "150", "90 s", "whole line"],
 								["Judgment of Iron", "vok aeg mor thun", "1200", "720", "45 s", "whole line"]
 							],
 							"links": [
@@ -544,6 +545,7 @@
 								"spell:58",
 								"spell:145",
 								"spell:142",
+								"spell:143",
 								"spell:148"
 							]
 						},
@@ -666,6 +668,7 @@
 								["Pack Frenzy", "kah ferh vas", "320", "270", "6 s", "Beastmaster"],
 								["Twin Verdict", "kah gal sol judh vael", "400", "540", "13 s", "Deadeye"],
 								["Moonshard Rain", "drai lun sag vex", "500", "576", "13 s", "whole line"],
+								["Unblinking Gaze", "vyr oth sag ael", "800", "300", "90 s", "whole line"],
 								["Dawnbreaker Shot", "drai sol aur vyx", "1200", "345", "40 s", "whole line"]
 							],
 							"links": [
@@ -695,6 +698,7 @@
 								"spell:147",
 								"spell:144",
 								"spell:149",
+								"spell:150",
 								"spell:151"
 							]
 						},
@@ -824,6 +828,7 @@
 								["Doomtide", "drai zhul infr doma", "300", "900", "13 s", "Elementalist"],
 								["Glacial Doom", "drai hyr infr doma", "420", "1320", "13 s", "Elementalist"],
 								["Prismatic Rupture", "drai zhul prys vael", "500", "504", "13 s", "whole line"],
+								["Veil of Whispers", "tor zhul vael nyx", "800", "400", "90 s", "whole line"],
 								["Eclipse of Ruin", "drai ecl zhul vorn", "1200", "3960", "50 s", "whole line"]
 							],
 							"links": [
@@ -863,6 +868,7 @@
 								"spell:206",
 								"spell:146",
 								"spell:152",
+								"spell:153",
 								"spell:154"
 							]
 						},
@@ -1001,6 +1007,7 @@
 								["Last Breath", "kah nyx kaen", "230", "150", "13 s", "Thief, Samurai"],
 								["Shuriken Tempest", "kah sai vas hyr", "270", "360", "13 s", "Ninja"],
 								["Eclipse Edge", "kah ecl nyx kaen", "500", "180", "13 s", "whole line"],
+								["Shroud of Knives", "fen nyx kaen umh", "800", "200", "90 s", "whole line"],
 								[
 									"Death Between Heartbeats",
 									"kah nyx mor kaen",
@@ -1043,6 +1050,7 @@
 								"spell:80",
 								"spell:164",
 								"spell:155",
+								"spell:156",
 								"spell:157"
 							]
 						},
@@ -1159,6 +1167,7 @@
 								["Tidal Palm", "drai hyr dhun", "190", "75", "9 s", "Monk, Iron Sage"],
 								["Skysplitter Fist", "kah gal sol dhun", "250", "220", "13 s", "Monk, Shadowfist"],
 								["Thousand-Echo Palm", "kah mil ech dhun", "500", "264", "13 s", "whole line"],
+								["Lotus Stance", "saen qhal mil dhun", "800", "200", "90 s", "whole line"],
 								["Heaven's Ninth Gate", "kah nin dhun sol", "1200", "660", "40 s", "whole line"]
 							],
 							"links": [
@@ -1191,6 +1200,7 @@
 								"spell:89",
 								"spell:90",
 								"spell:172",
+								"spell:173",
 								"spell:174"
 							]
 						},
@@ -1309,6 +1319,7 @@
 								["Ossuary Surge", "drai oss vael", "250", "365", "11 s", "Bone Lord"],
 								["Splinter Volley", "vael oss sag", "270", "400", "13 s", "whole line"],
 								["Soulflay Wave", "drai oss flay vael", "500", "498", "13 s", "whole line"],
+								["Dirge of the Legion", "tor oss vael kyng", "800", "300", "90 s", "whole line"],
 								["Funeral of Kings", "drai oss mor kyng", "1200", "1200", "50 s", "whole line"]
 							],
 							"links": [
@@ -1343,6 +1354,7 @@
 								"spell:120",
 								"spell:193",
 								"spell:158",
+								"spell:159",
 								"spell:160"
 							]
 						},
@@ -1478,6 +1490,7 @@
 								["Sanctum Verdict", "kah sol judh brak", "230", "290", "13 s", "Templar, Sentinel"],
 								["Crusader's Sweep", "vyr sol zel", "250", "230", "13 s", "whole line"],
 								["Pyre of Absolution", "kah sol pyr absl", "500", "348", "13 s", "whole line"],
+								["Mantle of Dawn", "tor sol aur emb", "800", "250", "90 s", "whole line"],
 								["Hammer of Ember Dawn", "kah sol emb hamr", "1200", "870", "45 s", "whole line"]
 							],
 							"links": [
@@ -1513,6 +1526,7 @@
 								"spell:131",
 								"spell:250",
 								"spell:177",
+								"spell:178",
 								"spell:237"
 							]
 						},
@@ -5899,6 +5913,202 @@
 					"icon": "wiki/i/k-holy-flame.png"
 				},
 				{
+					"id": "spell:143",
+					"name": "Ironbound Oath",
+					"sub": "\"vok brak ael ruun\", level 800, 150 mana, cooldown 90 s",
+					"color": "#9fdc7f",
+					"sections": [
+						{
+							"h": "Effect",
+							"p": [
+								"A vow sworn in iron. For 20 s your melee skill is 20% higher and your shielding 25% higher. The level 800 buff of the Warrior line's spell quest (needlearn, taught by Archivist Odrenna; numbers in data/scripts/chaos/quest_buffs_config.lua). No pacify and no lock on other spells."
+							]
+						},
+						{
+							"h": "Spell",
+							"cols": ["", ""],
+							"w": [35, 65],
+							"rows": [
+								["Words", "vok brak ael ruun"],
+								["Level", "800"],
+								["Mana", "150"],
+								["Cooldown", "90 s"],
+								["Kind", "Support"],
+								["Classes", "Warrior, Juggernaut, Berserker"]
+							]
+						}
+					],
+					"icon": "wiki/i/k-steel-shield.png"
+				},
+				{
+					"id": "spell:150",
+					"name": "Unblinking Gaze",
+					"sub": "\"vyr oth sag ael\", level 800, 300 mana, cooldown 90 s",
+					"color": "#9fdc7f",
+					"sections": [
+						{
+							"h": "Effect",
+							"p": [
+								"The hunt narrows to one point. For 20 s your distance skill is 25% higher and you crit 10 points more often. The level 800 buff of the Ranger line's spell quest (needlearn, taught by Archivist Odrenna; numbers in data/scripts/chaos/quest_buffs_config.lua)."
+							]
+						},
+						{
+							"h": "Spell",
+							"cols": ["", ""],
+							"w": [35, 65],
+							"rows": [
+								["Words", "vyr oth sag ael"],
+								["Level", "800"],
+								["Mana", "300"],
+								["Cooldown", "90 s"],
+								["Kind", "Support"],
+								["Classes", "Ranger, Deadeye, Beastmaster"]
+							]
+						}
+					],
+					"icon": "wiki/i/k-nature-eye.png"
+				},
+				{
+					"id": "spell:153",
+					"name": "Veil of Whispers",
+					"sub": "\"tor zhul vael nyx\", level 800, 400 mana, cooldown 90 s",
+					"color": "#9fdc7f",
+					"sections": [
+						{
+							"h": "Effect",
+							"p": [
+								"Secrets lend power. For 20 s your magic level is 15% higher and 1% of your maximum mana comes back every second. The level 800 buff of the Mystic line's spell quest (needlearn, taught by Archivist Odrenna; numbers in data/scripts/chaos/quest_buffs_config.lua). The regeneration is a second condition (sub id + regenOffset) beside the buff's own."
+							]
+						},
+						{
+							"h": "Spell",
+							"cols": ["", ""],
+							"w": [35, 65],
+							"rows": [
+								["Words", "tor zhul vael nyx"],
+								["Level", "800"],
+								["Mana", "400"],
+								["Cooldown", "90 s"],
+								["Kind", "Support"],
+								["Classes", "Mystic, Elementalist, Illusionist"]
+							]
+						}
+					],
+					"icon": "wiki/i/k-arcane-ghost.png"
+				},
+				{
+					"id": "spell:156",
+					"name": "Shroud of Knives",
+					"sub": "\"fen nyx kaen umh\", level 800, 200 mana, cooldown 90 s",
+					"color": "#9fdc7f",
+					"sections": [
+						{
+							"h": "Effect",
+							"p": [
+								"Steel you do not see. For 15 s your melee and distance skill are 20% higher and you dodge 10 points more weapon hits (data/scripts/chaos/thief_combat.lua adds the evasion). The level 800 buff of the Thief line's spell quest (needlearn, taught by Archivist Odrenna; numbers in data/scripts/chaos/quest_buffs_config.lua). The caster stays visible: no stealth, no lock on other spells."
+							]
+						},
+						{
+							"h": "Spell",
+							"cols": ["", ""],
+							"w": [35, 65],
+							"rows": [
+								["Words", "fen nyx kaen umh"],
+								["Level", "800"],
+								["Mana", "200"],
+								["Cooldown", "90 s"],
+								["Kind", "Support"],
+								["Classes", "Thief, Ninja, Samurai"]
+							]
+						}
+					],
+					"icon": "wiki/i/k-shadow-knives.png"
+				},
+				{
+					"id": "spell:159",
+					"name": "Dirge of the Legion",
+					"sub": "\"tor oss vael kyng\", level 800, 300 mana, cooldown 90 s",
+					"color": "#9fdc7f",
+					"sections": [
+						{
+							"h": "Effect",
+							"p": [
+								"A funeral song that wakes. For 20 s your minions hit 25% harder and your death spells deal 10% more. The level 800 buff of the Necromancer line's spell quest (needlearn, taught by Archivist Odrenna; numbers in data/scripts/chaos/quest_buffs_config.lua). A timer condition: data/scripts/chaos/necro_minions.lua (minions) and passivetree_effects.lua (death spells) read it. It works without minions out: the death spells still gain."
+							]
+						},
+						{
+							"h": "Spell",
+							"cols": ["", ""],
+							"w": [35, 65],
+							"rows": [
+								["Words", "tor oss vael kyng"],
+								["Level", "800"],
+								["Mana", "300"],
+								["Cooldown", "90 s"],
+								["Kind", "Support"],
+								["Classes", "Necromancer, Lich, Bone Lord"]
+							]
+						}
+					],
+					"icon": "wiki/i/k-necrotic-skull.png"
+				},
+				{
+					"id": "spell:173",
+					"name": "Lotus Stance",
+					"sub": "\"saen qhal mil dhun\", level 800, 200 mana, cooldown 90 s",
+					"color": "#9fdc7f",
+					"sections": [
+						{
+							"h": "Effect",
+							"p": [
+								"Stillness that blooms. For 15 s every weapon or fist hit gives one more chi and you dodge 10 points more weapon hits. The level 800 buff of the Monk line's spell quest (needlearn, taught by Archivist Odrenna; numbers in data/scripts/chaos/quest_buffs_config.lua). A timer condition: data/scripts/chaos/monk_combat.lua reads it."
+							]
+						},
+						{
+							"h": "Spell",
+							"cols": ["", ""],
+							"w": [35, 65],
+							"rows": [
+								["Words", "saen qhal mil dhun"],
+								["Level", "800"],
+								["Mana", "200"],
+								["Cooldown", "90 s"],
+								["Kind", "Support"],
+								["Classes", "Monk, Shadowfist, Iron Sage"]
+							]
+						}
+					],
+					"icon": "wiki/i/k-ember-ring.png"
+				},
+				{
+					"id": "spell:178",
+					"name": "Mantle of Dawn",
+					"sub": "\"tor sol aur emb\", level 800, 250 mana, cooldown 90 s",
+					"color": "#9fdc7f",
+					"sections": [
+						{
+							"h": "Effect",
+							"p": [
+								"Light worn as armour. For 20 s you take 15% less damage and the holy strike after your melee hits is 20% stronger. The level 800 buff of the Templar line's spell quest (needlearn, taught by Archivist Odrenna; numbers in data/scripts/chaos/quest_buffs_config.lua). A timer condition: data/scripts/chaos/templar_combat.lua reads it."
+							]
+						},
+						{
+							"h": "Spell",
+							"cols": ["", ""],
+							"w": [35, 65],
+							"rows": [
+								["Words", "tor sol aur emb"],
+								["Level", "800"],
+								["Mana", "250"],
+								["Cooldown", "90 s"],
+								["Kind", "Support"],
+								["Classes", "Templar, Inquisitor, Sentinel"]
+							]
+						}
+					],
+					"icon": "wiki/i/k-holy-shield.png"
+				},
+				{
 					"id": "spell:148",
 					"name": "Judgment of Iron",
 					"sub": "\"vok aeg mor thun\", level 1200, 720 mana, cooldown 45 s",
@@ -8936,26 +9146,26 @@
 							"cols": ["Class", "Share", "Monsters"],
 							"w": [50, 25, 25],
 							"rows": [
-								["Warrior", "6% -> 11%", "4"],
-								["Juggernaut", "15% -> 26%", "4"],
-								["Berserker", "0% -> 3%", "4"],
-								["Ranger", "23% -> 20%", "4"],
-								["Deadeye", "28% -> 21%", "4"],
-								["Beastmaster", "9% -> 0%", "4"],
-								["Mystic", "0% -> 2%", "4"],
-								["Illusionist", "12% -> 17%", "4"],
-								["Thief", "10% -> 11%", "4"],
-								["Ninja", "12% -> 6%", "4"],
-								["Samurai", "17% -> 19%", "4"],
-								["Necromancer", "2% -> 14%", "4"],
-								["Lich", "10% -> 7%", "4"],
-								["Bone Lord", "6%", "4"],
-								["Monk", "6% -> 12%", "4"],
-								["Shadowfist", "16%", "4"],
-								["Iron Sage", "11% -> 15%", "4"],
-								["Templar", "3% -> 16%", "4"],
-								["Inquisitor", "8% -> 13%", "4"],
-								["Sentinel", "6% -> 16%", "4"]
+								["Warrior", "1% -> 0%", "4"],
+								["Juggernaut", "8% -> 20%", "4"],
+								["Berserker", "0%", "4"],
+								["Ranger", "19% -> 15%", "4"],
+								["Deadeye", "18% -> 11%", "4"],
+								["Beastmaster", "9% -> 1%", "4"],
+								["Mystic", "0% -> 1%", "4"],
+								["Illusionist", "3% -> 2%", "4"],
+								["Thief", "5% -> 0%", "4"],
+								["Ninja", "5% -> 0%", "4"],
+								["Samurai", "6% -> 1%", "4"],
+								["Necromancer", "0% -> 4%", "4"],
+								["Lich", "3% -> 0%", "4"],
+								["Bone Lord", "10% -> 12%", "4"],
+								["Monk", "2% -> 0%", "4"],
+								["Shadowfist", "8% -> 6%", "4"],
+								["Iron Sage", "3% -> 0%", "4"],
+								["Templar", "0% -> 3%", "4"],
+								["Inquisitor", "5% -> 9%", "4"],
+								["Sentinel", "0% -> 2%", "4"]
 							]
 						}
 					],

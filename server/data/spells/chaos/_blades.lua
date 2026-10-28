@@ -35,7 +35,8 @@ B.cfg = {
 		scale = 0.8,
 		-- every monster in the cut but the target takes `pack` x the hit (second pass, 2026-10-15; the target, and a
 		-- player, the plain hit)
-		pack = 1.5,
+		-- class identity pass (2026-10-28): 1.5 -> 0.9, the Samurai is a burst duelist (pack farming 0.80-0.86 of the reference)
+		pack = 0.9,
 	},
 }
 

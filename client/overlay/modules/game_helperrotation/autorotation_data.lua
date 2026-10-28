@@ -166,10 +166,9 @@ ChaosAutoRotationData = {
       { level = 130, gap = 2.00, spells = { 136, 73, 56, 45, 236 }, creatures = { 2, 2, 2, 1, 1 } },
       { level = 150, gap = 2.00, spells = { 136, 73, 56, 57, 236 }, creatures = { 2, 2, 2, 1, 1 } },
       { level = 170, gap = 2.00, spells = { 136, 73, 62, 56, 57 }, creatures = { 2, 2, 2, 2, 1 } },
-      { level = 230, gap = 2.00, spells = { 241, 136, 73, 56, 236 }, creatures = { 2, 2, 2, 2, 1 } },
-      { level = 500, gap = 3.00, spells = { 241, 73, 62, 56, 155 }, creatures = { 2, 2, 2, 2, 1 } },
-      { level = 1000, gap = 2.00, spells = { 136, 73, 56, 155, 236 }, creatures = { 2, 2, 2, 1, 1 } },
-    }, extras = { 80 }, ultimate = 157, heals = {
+      { level = 230, gap = 3.00, spells = { 241, 73, 62, 56, 80 }, creatures = { 2, 2, 2, 2, 1 } },
+      { level = 500, gap = 2.00, spells = { 241, 73, 56, 155, 236 }, creatures = { 2, 2, 2, 1, 1 } },
+    }, ultimate = 157, heals = {
       { id = 98, level = 25 },
     } },
     [12] = { name = "Ninja", presets = {
@@ -191,8 +190,10 @@ ChaosAutoRotationData = {
       { level = 120, gap = 2.00, spells = { 73, 244, 45, 236 }, creatures = { 2, 1, 1, 1 } },
       { level = 130, gap = 2.00, spells = { 73, 56, 244, 45, 236 }, creatures = { 2, 2, 1, 1, 1 } },
       { level = 170, gap = 2.00, spells = { 73, 62, 56, 244, 236 }, creatures = { 2, 2, 2, 1, 1 } },
-      { level = 200, gap = 2.00, spells = { 74, 73, 56, 244, 236 }, creatures = { 2, 2, 2, 1, 1 } },
-    }, extras = { 155, 80, 241 }, ultimate = 157, heals = {
+      { level = 200, gap = 2.00, spells = { 241, 74, 73, 56, 236 }, creatures = { 2, 2, 2, 2, 1 } },
+      { level = 230, gap = 2.00, spells = { 74, 73, 56, 244, 236 }, creatures = { 2, 2, 2, 1, 1 } },
+      { level = 1000, gap = 2.00, spells = { 74, 73, 56, 155, 236 }, creatures = { 2, 2, 2, 1, 1 } },
+    }, extras = { 80 }, ultimate = 157, heals = {
       { id = 98, level = 25 },
     } },
     [20] = { name = "Necromancer", presets = {
@@ -207,7 +208,7 @@ ChaosAutoRotationData = {
       { level = 170, gap = 2.00, spells = { 182, 112, 107, 113, 118 }, creatures = { 1, 2, 2, 1, 1 } },
       { level = 210, gap = 2.00, spells = { 182, 119, 112, 107, 113 }, creatures = { 1, 2, 2, 2, 1 } },
       { level = 270, gap = 2.00, spells = { 182, 119, 193, 197, 113 }, creatures = { 1, 2, 2, 2, 1 } },
-      { level = 600, gap = 2.00, spells = { 182, 119, 112, 107, 113 }, creatures = { 1, 2, 2, 2, 1 } },
+      { level = 500, gap = 2.00, spells = { 182, 119, 112, 107, 113 }, creatures = { 1, 2, 2, 2, 1 } },
       { level = 1000, gap = 2.00, spells = { 182, 119, 193, 197, 113 }, creatures = { 1, 2, 2, 2, 1 } },
     }, extras = { 158 }, ultimate = 160, heals = {
       { id = 103, level = 300 },
@@ -242,8 +243,8 @@ ChaosAutoRotationData = {
       { level = 210, gap = 2.00, spells = { 182, 119, 112, 107, 118 }, creatures = { 1, 2, 2, 2, 1 } },
       { level = 250, gap = 2.00, spells = { 182, 120, 112, 107, 118 }, creatures = { 1, 2, 2, 2, 1 } },
       { level = 270, gap = 5.00, spells = { 182, 119, 193, 120, 188 }, creatures = { 1, 2, 2, 2, 2 } },
-      { level = 1000, gap = 2.00, spells = { 182, 119, 188, 112, 181 }, creatures = { 1, 2, 2, 2, 1 } },
-    }, extras = { 158 }, ultimate = 160, heals = {
+      { level = 1000, gap = 5.00, spells = { 182, 158, 119, 120, 188 }, creatures = { 1, 2, 2, 2, 2 } },
+    }, ultimate = 160, heals = {
       { id = 103, level = 300 },
       { id = 3, level = 30 },
       { id = 1, level = 8 },

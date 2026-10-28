@@ -229,8 +229,9 @@ end
 
 -- the factor on damage a player takes: the aura and Aegis of Faith multiply. aegisShare: the share of Aegis of Faith
 -- that counts (1 = the Sentinel's own; Bastion's party cover: partyShare)
-function M.damageTakenFactor(aura, aegisActive, aegisShare)
-	local f = 1
+-- extra: another factor that multiplies (Mantle of Dawn, quest_buffs_core.lua), nil = 1
+function M.damageTakenFactor(aura, aegisActive, aegisShare, extra)
+	local f = extra or 1
 	if aura then
 		f = f * (1 - aura.reduction)
 	end
@@ -262,14 +263,15 @@ end
 -- ------------------------------------------------------------------------------------------------ weapon hits
 -- the holy strike after a melee weapon hit of `hit`. The engine halves damage between players before
 -- onHealthChange sees it and halves the scripted strike again, so against a player it is computed from the unhalved hit.
-function M.radiantDamage(vocId, hit, targetIsPlayer, extraShare)
+-- mult: a factor on the strike (Mantle of Dawn, quest_buffs_core.lua), nil = 1
+function M.radiantDamage(vocId, hit, targetIsPlayer, extraShare, mult)
 	local share = cfg().radiant.share[vocId]
 	hit = math.abs(hit or 0)
 	if not share or hit <= 0 then
 		return 0
 	end
 	share = share + (extraShare or 0)
-	local value = hit * share
+	local value = hit * share * (mult or 1)
 	if targetIsPlayer then
 		value = value * 2
 	end

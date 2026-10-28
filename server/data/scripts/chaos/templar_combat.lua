@@ -33,6 +33,10 @@ local function cfg()
 	return T.cfg
 end
 local SUB = T.cfg.ids.subId
+if not ChaosQuestBuffs then
+	dofile("data/scripts/chaos/quest_buffs_core.lua") -- Mantle of Dawn (level 800 line spell quest buff)
+end
+local QB = ChaosQuestBuffs
 
 local scripted = false -- guard: true while this file deals its own strikes
 
@@ -198,7 +202,8 @@ local function onOffence(creature, player, primaryDamage, secondaryDamage, origi
 	end
 	local isMeleeHit = origin == ORIGIN_MELEE and not scripted
 	if isMeleeHit then
-		local value = T.radiantDamage(voc, amount, creature:isPlayer(), CT.value(player, "ctBurningZeal", "share"))
+		local value = T.radiantDamage(voc, amount, creature:isPlayer(), CT.value(player, "ctBurningZeal", "share"),
+			QB.holyFactor(hasTimer(player, QB.cfg().subId.mantle)))
 		if value > 0 then
 			addEvent(radiantStrike, cfg().radiant.delayMs, player:getId(), creature:getId(), value)
 		end
@@ -236,7 +241,7 @@ function event.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 					aegis, share = true, CT.fx.ksBastion.partyShare
 				end
 			end
-			local f = T.damageTakenFactor(aura, aegis, share)
+			local f = T.damageTakenFactor(aura, aegis, share, QB.takenFactor(hasTimer(creature, QB.cfg().subId.mantle)))
 			if f ~= 1 then
 				p, s = T.scale(p, f), T.scale(s, f)
 			end

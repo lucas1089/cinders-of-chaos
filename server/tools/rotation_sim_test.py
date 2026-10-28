@@ -181,8 +181,23 @@ for cls, _, _ in R.CLASSES:
 check(R.quest_bad(spells, model) == [], 'the quest gains are in bounds: %s' % R.quest_bad(spells, model)[:3])
 sc = R.quest_scales()
 check(set(sc) == QUEST, 'quest_spell_scale_config.lua lists exactly the 14 quest spells')
-check(all(0.1 <= f <= 2.0 for row in sc.values() for f in row.values()) and all(len(row) == 3 for row in sc.values()),
-      'every quest spell has a factor (0.1 to 2) for its three classes')
+def _vals(f):
+    return [v for _, v in f] if isinstance(f, list) else [f]
+check(all(0.1 <= v <= 2.0 for row in sc.values() for f in row.values() for v in _vals(f)) and all(len(row) == 3 for row in sc.values()),
+      'every quest spell has a factor (0.1 to 2) for its three classes (a number or a curve)')
+check(isinstance(sc['Soulflay Wave']['Bone Lord'], list) and isinstance(sc['Moonshard Rain']['Beastmaster'], list),
+      'the Bone Lord and the Beastmaster have a factor curve (class identity pass 2026-10-28)')
+curve = sc['Soulflay Wave']['Necromancer']
+check(R.quest_factor('Soulflay Wave', 'Necromancer', curve[0][0] - 100) == curve[0][1] and
+      R.quest_factor('Soulflay Wave', 'Necromancer', curve[-1][0] + 500) == curve[-1][1] and
+      abs(R.quest_factor('Soulflay Wave', 'Necromancer', (curve[0][0] + curve[1][0]) / 2) - (curve[0][1] + curve[1][1]) / 2) < 1e-9,
+      'a factor curve is flat outside its points and linear between them')
+check(R.quest_factor('Soulflay Wave', 'Lich', 900) == sc['Soulflay Wave']['Lich'] and R.quest_factor('Keepfall', 'Mystic', 900) == 1.0,
+      'a number is the factor at every level, a class that lacks the spell has 1')
+for cls, _, _ in R.CLASSES:
+    q1, q3 = R.quest_gain(spells, model, cls, 1200)
+    check(R.Q_BOTH[0] <= q1 + q3 <= R.Q_BOTH[1] and R.Q1_EDGE[0] <= q1 <= R.Q1_EDGE[1],
+          '%s: both quests add %.1f%% at level 1200, the attack %.1f%%' % (cls, 100 * (q1 + q3), 100 * q1))
 # the net gain: the cast takes one attack group cooldown from the set
 u = R.with_ultimates({'dps1': 100.0, 'dps5': 100.0}, [type('U', (), {'dmg': 1000.0, 'dmg5': 1000.0, 'cd': 40.0, 'chi': False})()])
 check(abs(u['ult1'] - (1000 - 2 * 100) / 40.0) < 1e-9, 'the ultimate adds (hit - 2 s of the set) / cooldown')

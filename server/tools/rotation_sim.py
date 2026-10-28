@@ -47,7 +47,8 @@ fixed mana cost of spells_chaos.xml, the base health of the data.
 first to the strongest; O176, 2026-10-24: 2, 4, 6, 7 ... 13 s, LADDER_COOLDOWNS; ladder() below, server/data/spells/README.md "Cooldown ladder"); --check exits 1 when a spell's
 cooldown or group cooldown is off it.
 --quest: per class the gain of the level 500 attack (Q1) and of the level 1200 ultimate (Q3) over a character without the line spell
-quests; --check also fails when Q1 adds less than 3% or more than 6% (levels 500-1000) or Q3 less than 6% or more than 12% (level 1200).
+quests; --check also fails when Q1 adds less than 3% or more than 6% (mean of levels 500-800), less than 1.5% or more than 9% at any of
+500, 600, 800, 1000 and 1200, Q3 less than 6% or more than 12% (level 1200), or both together less than 12% or more than 15% at 1200.
 Every other number of this tool (best sets, reports, mana) is that character without quests; the helper data holds the presets of a
 character with all of them.
 --write / --check: client/overlay/modules/game_helperrotation/autorotation_data.lua (the helper's "Auto rotation"
@@ -377,12 +378,23 @@ class Spell(object):
 @functools.lru_cache(maxsize=None)
 def quest_scales():
     """{spell name: {class name: factor}} of quest_spell_scale_config.lua: the class factor of a line spell quest spell (the spell
-    is shared by three classes whose best sets differ; the factors put the gain of each class in bounds)"""
+    is shared by three classes whose best sets differ; the factors put the gain of each class in bounds). A factor is a number or
+    a curve [(level, factor), ...] (flat below the first point, linear between points, the last point's value above it), for a
+    class whose best set drifts away from the spell with the level (the Necromancer line, the Beastmaster)"""
     text = open(QUEST_SCALE, encoding='utf-8').read() if os.path.isfile(QUEST_SCALE) else ''
     out = {}
-    for name, body in re.findall(r'\["([^"]+)"\]\s*=\s*\{([^}]*)\}', text):
-        out[name] = {c: float(f) for c, f in re.findall(r'\["([^"]+)"\]\s*=\s*([0-9.]+)', body)}
+    for name, body in re.findall(r'(?m)^\t\["([^"]+)"\]\s*=\s*\{(.*)\},?\s*$', text):
+        row = {}
+        for c, v in re.findall(r'\["([^"]+)"\]\s*=\s*(\{\{[^=]*?\}\}|[0-9.]+)', body):
+            row[c] = [(float(a), float(b)) for a, b in re.findall(r'\{([0-9.]+),\s*([0-9.]+)\}', v)] if v.startswith('{') else float(v)
+        out[name] = row
     return out
+
+
+def quest_factor(name, cls, level):
+    """the class factor of a quest spell at a level (quest_scales: a number, or a curve)"""
+    f = quest_scales().get(name, {}).get(cls, 1.0)
+    return interp(f, level) if isinstance(f, list) else f
 
 
 def prepare(spells, model, cls, level, ultimates=False):
@@ -403,7 +415,7 @@ def prepare(spells, model, cls, level, ultimates=False):
         p.cast = s['cast'] / 1000.0
         p.dmg = evaluate(m['dmg'], env) * spell_factor(cls, level)  # the class spell factor (spell_factor_config.lua)
         if s.get('quest'):
-            p.dmg *= quest_scales().get(s['name'], {}).get(cls, 1.0)  # quest_spell_scale_config.lua
+            p.dmg *= quest_factor(s['name'], cls, level)  # quest_spell_scale_config.lua
         p.dmg5 = p.dmg * m['t5']
         p.chi = 'chi' in m['flags']
         p.gain = 2 if 'chi2' in m['flags'] else (1 if 'chi1' in m['flags'] else 0)
@@ -944,8 +956,11 @@ def report(spells, model, only_cls=None, only_level=None):
 QUEST1_LEVELS = (500, 600, 800, 1000)   # the levels the level 500 attack's gain is printed at
 QUEST1_CHECK = (500, 600, 800)          # and checked at: the mean of these is in Q1_GAIN and none is outside Q1_EDGE
 Q1_GAIN = (0.03, 0.06)                  # the level 500 attack adds this much of the baseline best-set score (--check)
-Q1_EDGE = (0.015, 0.09)                 # no single level is further out than this (the gain drifts with the level: a class set at 1000
-                                        # often has no slot a 13 s attack can take without a gap, so 1000 is printed, not checked)
+Q1_EDGE = (0.015, 0.09)                 # no single level of QUEST1_EDGE_LEVELS is further out than this (class identity pass 2026-10-28: 1000
+                                        # and 1200 count too; a class whose best set drifts away from the spell has a factor curve, see
+                                        # quest_spell_scale_config.lua)
+QUEST1_EDGE_LEVELS = (500, 600, 800, 1000, 1200)
+Q_BOTH = (0.12, 0.15)                   # both quests together at level 1200 add this much (a full quester; --check)
 Q3_GAIN = (0.06, 0.12)                  # the level 1200 ultimate adds this much on top (--check)
 
 
@@ -979,7 +994,7 @@ def quest_report(spells, model, only_cls=None, check=False):
         for lv in QUEST1_LEVELS:
             q1, _ = quest_gain(spells, model, cls, lv)
             row.append(q1)
-            if lv in QUEST1_CHECK and not Q1_EDGE[0] <= q1 <= Q1_EDGE[1]:
+            if lv in QUEST1_EDGE_LEVELS and not Q1_EDGE[0] <= q1 <= Q1_EDGE[1]:
                 bad.append('%s level %d: the level 500 attack adds %.1f%%, not %.1f-%.1f%%' % (
                     cls, lv, 100 * q1, 100 * Q1_EDGE[0], 100 * Q1_EDGE[1]))
         mean = sum(g for g, lv in zip(row, QUEST1_LEVELS) if lv in QUEST1_CHECK) / len(QUEST1_CHECK)
@@ -987,6 +1002,12 @@ def quest_report(spells, model, only_cls=None, check=False):
             bad.append('%s: the level 500 attack adds %.1f%% on average (levels %s), not %d-%d%%' % (
                 cls, 100 * mean, ', '.join(map(str, QUEST1_CHECK)), 100 * Q1_GAIN[0], 100 * Q1_GAIN[1]))
         q1, q3 = quest_gain(spells, model, cls, ULT_LEVEL)
+        if not Q1_EDGE[0] <= q1 <= Q1_EDGE[1]:
+            bad.append('%s level %d: the level 500 attack adds %.1f%%, not %.1f-%.1f%%' % (
+                cls, ULT_LEVEL, 100 * q1, 100 * Q1_EDGE[0], 100 * Q1_EDGE[1]))
+        if not Q_BOTH[0] <= q1 + q3 <= Q_BOTH[1]:
+            bad.append('%s level %d: both quests add %.1f%%, not %d-%d%%' % (
+                cls, ULT_LEVEL, 100 * (q1 + q3), 100 * Q_BOTH[0], 100 * Q_BOTH[1]))
         if not Q3_GAIN[0] <= q3 <= Q3_GAIN[1]:
             bad.append('%s level %d: the ultimate adds %.1f%%, not %d-%d%%' % (cls, ULT_LEVEL, 100 * q3, 100 * Q3_GAIN[0], 100 * Q3_GAIN[1]))
         print('%-12s Q1 %s   level %d: Q1 %+5.1f%%  Q3 %+5.1f%%  both %+5.1f%%' % (

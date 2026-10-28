@@ -17066,11 +17066,11 @@ Choose your ascended class (0/1). The quest's stages and storages (7101000 block
 
 ## Line spell quests (`spellquest.lua`, `spellquest_core.lua`, `spellquest_config.lua`, `spellquest_tracker*.lua`)
 
-Phases 1 and 2 of the 21 line spells (design: three quests per class line at level 500 attack, 800 buff or utility, 1200 ultimate).
-Built so far: the quest machine, the hunt, the fragments, the trial hook, the reward, the tracker, the NPC and the seven level 500
-attack spells and the seven level 1200 ultimates (below). Not built yet: the level 800 buffs (their ids are reserved in
-`spell_id_pool_config.lua`): until a quest's spell exists `learnSpell` finds nothing, the reward is logged ("could not teach") and
-the login sync teaches the spell as soon as it is in the book.
+Phases 1 to 5 of the 21 line spells (design: three quests per class line at level 500 attack, 800 buff, 1200 ultimate).
+Built: the quest machine, the hunt, the fragments, the trial hook, the reward, the tracker, the NPC, the seven level 500 attack spells,
+the seven level 1200 ultimates and the seven level 800 buffs (below), and the client's locked spells in the Spellbook. All 21 spell ids
+of `spell_id_pool_config.lua` are in use. Left for later phases: NPC placement tests in game and the tester bot checks (phase 6), the
+drawn icons and the balance from play data (phase 7).
 
 - **Level 500 spells (phase 2).** Keepfall 142, Moonshard Rain 149, Prismatic Rupture 152, Eclipse Edge 155, Soulflay Wave 158,
   Thousand-Echo Palm 172, Pyre of Absolution 177: the first id of each line's triple in the pool (quest 2 and 3 take the next two of
@@ -17121,6 +17121,32 @@ the login sync teaches the spell as soon as it is in the book.
   `data/spells/chaos/<folder>/`, big effect swaps in `chaos_big_fx.lua`. Every class has 13 attack spells. Numbers per spell, the shapes
   by role (boss bursts for the Thief, Monk and Ranger lines, area for the Mystic and Necromancer, mixed for the Warrior and Templar)
   and the gain per class: server/data/spells/README.md "Line spell quests, level 1200 ultimates".
+- **Level 800 buffs (phase 4).** Ironbound Oath 143, Unblinking Gaze 150, Veil of Whispers 153, Shroud of Knives 156, Dirge of the
+  Legion 159, Lotus Stance 173, Mantle of Dawn 178: the second id of each line's triple. Support group, level 800, `needlearn="1"`
+  (taught by the quest, never by the level), cooldown 90 s, group cooldown 2 s, a self buff with no pacify and no lock, the base class
+  and both ascensions; `chaos_supports_config.lua` `kindOverride` = buff. Every number is in `quest_buffs_config.lua` (rules in
+  `quest_buffs_core.lua`, the cast in `data/spells/chaos/_questbuffs.lua`, one script per spell in the line's folder). Each buff is a
+  `CONDITION_ATTRIBUTES` on the caster with its own sub id 71075 - 71081 (`ChaosSpell.SUBID`, a buff bar row each in `chaos_buffs.lua`,
+  icon `buff:<key>`); the skill parts are condition parameters, the rest is read from that condition by the combat scripts:
+
+  | Buff | Time | Effect | Where it is read |
+  |---|---|---|---|
+  | Ironbound Oath (Warrior) | 20 s | melee skill +20%, shielding +25% | condition parameters |
+  | Unblinking Gaze (Ranger) | 20 s | distance skill +25%, critical chance +10 points | condition parameters (the special skill) |
+  | Veil of Whispers (Mystic) | 20 s | magic level +15%, 1% of the maximum mana every second | magic level parameter, plus a `CONDITION_REGENERATION` of sub id 72077 |
+  | Shroud of Knives (Thief) | 15 s | melee and distance skill +20%, evasion +10 points | condition parameters; `thief_combat.lua` adds the evasion to the line's (the Blackblood Creed still halves the sum) |
+  | Dirge of the Legion (Necromancer) | 20 s | minion hits +25%, death spell damage +10% | `necro_lib.lua` `hitBonus` (with Banner of Bones' bonus), `passivetree_effects.lua` `ChaosPassiveDealt` (death damage of a spell, not a minion hit or a proc) |
+  | Lotus Stance (Monk) | 15 s | +1 chi on a weapon or fist hit, evasion +10 points | `monk_combat.lua` (chi), `monk_chi_core.lua` `dodges(..., extra)` (Scarred Discipline still removes the evasion) |
+  | Mantle of Dawn (Templar) | 20 s | damage taken -15%, the holy strike after a melee hit +20% | `templar_combat.lua`: `damageTakenFactor(..., extra)` and `radiantDamage(..., mult)` |
+
+  The evasion is added to the line's chance (Thief 8%, Ninja 12%, Samurai 5%, Monk 6%, Shadowfist 8%, Iron Sage 4%). The buffs are
+  outside the models: `rotation_sim.py` reads attack spells only (a support spell has no row in `rotation_model.csv`), every balance
+  model measures a character without quest spells, and a buff of 15 to 20 s every 90 s is up for about a fifth of the time. Helper:
+  `game_helpersupport/supportspells.lua` `KINDS` lists the seven as `auto = 'timer'`, so Auto setup puts the buff the character knows in
+  its Timer section (first among the buffs: the highest level), cast in fights every 91 s. Test: `tests/quest_buffs_test.lua`.
+- **Spellbook (phase 5).** The client's Spellbook shows an unlearned quest spell as locked: the row says "Locked", the tooltip and the
+  description name Archivist Odrenna and the level of the quest, the detail panel has a "Quest" row; locked quest spells of the
+  character's line are always in "Available soon", "My vocation" and "All spells" (client/MANIFEST.md `game_spellbook`).
 - **Rotation cap exemption.** The ultimate is not one of the 5 attack spells of a rotation (owner 2026-10-28). The model flag
   `ultimate` (rotation_sim.py) keeps it out of every set and preset and adds its gain on top; `autorotation_data.lua` lists it per class as
   `ultimate = id`; the helper (`game_helperrotation/autorotation.lua`) puts it first, for one monster, when the character can cast
@@ -17131,7 +17157,8 @@ the login sync teaches the spell as soon as it is in the book.
   set at levels 500-800, Q3 about 9% on top at 1200. `python3 -I server/tools/rotation_sim.py --quest` prints the gains, `--check` keeps
   them in bounds (server/data/spells/README.md).
 - Tests: `tests/spellquest_test.lua` (rules and the engine file on a mocked engine), `tests/spellquest_tracker_test.lua`,
-  `tests/trials_test.lua` (spell tiers), `tests/class_spells_test.lua` (quest spells), client `goalsview_test.lua`.
+  `tests/trials_test.lua` (spell tiers), `tests/class_spells_test.lua` (quest spells), `tests/quest_buffs_test.lua` (the level 800
+  buffs), client `goalsview_test.lua`, `spellbook_core_test.lua`, `supportspells_test.lua`.
 
 ## Base scripts and the classes (`tools/patch_base_classes.py`)
 
@@ -18173,6 +18200,15 @@ QA of the twelve plans pass; the dry run on the live map is the owner's first st
 Owner request (pt-BR, paraphrased): players must feel strong and kill several monsters at once, not one by one, with
 some danger left; more monsters, experience compensated; dungeons at most 10-15 minutes. Design and model:
 `scratchpad/rebal/DESIGN.md` of the session (not in the repo); this section is what was built.
+
+**Class identity pass (2026-10-28).** The pack cleave shares below `pace_config.lua` `cleave.byVocation` were all changed so that the
+classes farm packs by role (pure area 1.00-1.10, mixed and tanks 0.88-0.95, healers 0.85-0.93, burst 0.80-0.86 of the median class
+before the pass): docs/CLASSES.md "Class identity (2026-10-28)", `tools/pack_model.py --check` (`packLimits` in
+`data/scripts/chaos/boss_balance_config.lua`). The Berserker has none (`percent = 0, high = 0`: `P.cleaveOf` returns nil). Fan of
+Knives (`_packtools.lua` `fan.pack` 0.5) and Iaido Sweep (`_blades.lua` `sweep.pack` 0.9) hit the rest of the pack for less, and
+`rotation_model.csv` follows (t5 = 1 + 4 x pack): run `python3 -I server/tools/rotation_sim.py --write` after changing a pack tool, it
+rewrites the helper's Auto rotation data. The class damage factors that came with the pass are in `class_tree.lua` `classDamage`; the
+Infinity Tower health lines were re-derived (`tools/tower_model.py --derive`).
 
 **Rebalance 2026-10-20 (beta feedback).** (1) `scaled` curves: a level-scaled monster gave 1/15 of the experience and had
   1/4.6 of the health of a base monster of the same hunting level, so lvl 500 spiders (base) paid more than lvl 800

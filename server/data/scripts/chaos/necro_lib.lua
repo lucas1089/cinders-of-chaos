@@ -19,6 +19,9 @@ if not ChaosClassTree then
 	dofile("data/scripts/chaos/class_tree.lua") -- the class nodes of the passive tree
 end
 local CT = ChaosClassTree
+if not ChaosQuestBuffs then
+	dofile("data/scripts/chaos/quest_buffs_core.lua") -- Dirge of the Legion (level 800 line spell quest buff)
+end
 
 ChaosNecro = ChaosNecro or {}
 local M = ChaosNecro
@@ -373,6 +376,14 @@ end
 -- the Banner of Bones bonus of this owner's minions (the banner's, + Banner Bearer)
 function M.bannerBonus(player)
 	return cfg().bannerOfBones.damage + CT.value(player, "ctBannerBearer", "damage")
+end
+
+-- the bonus on a minion hit: Banner of Bones (`banner` = it is up) plus Dirge of the Legion while it lasts; false for none
+-- (N.minionHit takes a number or false)
+function M.hitBonus(player, banner)
+	local b = banner and M.bannerBonus(player) or 0
+	b = b + ChaosQuestBuffs.minionBonus(ChaosQuestBuffs.has(player, "dirge"))
+	return b > 0 and b or false
 end
 
 -- Covenant of the Grave (the line keystone): its numbers when the player holds it, else nil

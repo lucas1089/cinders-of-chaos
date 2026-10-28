@@ -110,7 +110,7 @@ end
 -- other damage rule never saw a minion hit (found in game: no onHealthChange event saw them)
 local function hit(owner, classKey, minion, kind, target, aura)
 	local level, ml = owner:getLevel(), owner:getMagicLevel()
-	local min, max = N.minionHit(cfg(), classKey, kind, level, ml, aura and L.bannerBonus(owner) or false,
+	local min, max = N.minionHit(cfg(), classKey, kind, level, ml, L.hitBonus(owner, aura),
 		L.minionFactor(owner, kind, "hit"))
 	if max <= 0 then
 		return
@@ -152,7 +152,7 @@ end
 -- a minion spell (necro_config.lua minionSpells[kind][which]) on `target`, dealt as the owner
 local function cast(owner, classKey, minion, kind, target, aura, which)
 	local level, ml = owner:getLevel(), owner:getMagicLevel()
-	local min, max = N.minionHit(cfg(), classKey, kind, level, ml, aura and L.bannerBonus(owner) or false,
+	local min, max = N.minionHit(cfg(), classKey, kind, level, ml, L.hitBonus(owner, aura),
 		L.minionFactor(owner, kind, "hit"))
 	if max <= 0 then
 		return

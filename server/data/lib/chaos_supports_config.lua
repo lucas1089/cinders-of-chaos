@@ -62,6 +62,9 @@ return {
 		[142] = "area", [149] = "area", [152] = "area", [155] = "area", [158] = "area", [172] = "area", [177] = "area",
 		-- the level 1200 ultimates (`quest = 3`): Death Between Heartbeats and Heaven's Ninth Gate hit one target
 		[148] = "area", [151] = "area", [154] = "area", [157] = "single", [160] = "area", [174] = "single", [237] = "area",
+		-- the level 800 buffs (no damage; the parse would call them buffs too): Ironbound Oath, Unblinking Gaze, Veil of Whispers,
+		-- Shroud of Knives, Dirge of the Legion, Lotus Stance, Mantle of Dawn
+		[143] = "buff", [150] = "buff", [153] = "buff", [156] = "buff", [159] = "buff", [173] = "buff", [178] = "buff",
 	},
 
 	-- ------------------------------------------------------------------ the supports

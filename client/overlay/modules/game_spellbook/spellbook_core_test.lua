@@ -305,4 +305,59 @@ do
   eq(shown(flist), 'Any Light,Own Bolt', 'folding never widens the list on its own')
 end
 
+-- the line spell quest spells: not learned = locked ('quest'), with the quest number and the level Archivist Odrenna opens it at
+do
+  C.setLearned({})
+  C.questByName = nil
+  local qs = {
+    { name = 'Keepfall', words = 'q1', level = 500, vocations = { 4, 8, 14 }, needLearn = true },
+    { name = 'Ironbound Oath', words = 'q2', level = 800, vocations = { 4, 8, 14 }, needLearn = true },
+    { name = 'Judgment of Iron', words = 'q3', level = 1200, vocations = { 4, 8, 14 }, needLearn = true },
+    { name = 'Old Secret', words = 'g', level = 5, vocations = { 4 }, needLearn = true },
+    { name = 'Row Quest', words = 'r', level = 800, vocations = { 4 }, needLearn = true, quest = 2 }
+  }
+  local data = { { name = 'Keepfall', quest = 1 }, { name = 'Ironbound Oath', quest = 2 }, { name = 'Judgment of Iron', quest = 3 },
+    { name = 'Old Secret' } }
+  eq(C.questOf(qs[1]), nil, 'no spell data loaded yet: not a quest spell, asked again later')
+  eq(C.questByName, nil, 'and nothing cached')
+  C.setQuestSpells(data)
+  eq(C.QUEST_NPC, 'Archivist Odrenna', 'the NPC')
+  eq(C.questOf(qs[1]), 1, 'Keepfall is quest 1'); eq(C.questOf(qs[2]), 2, 'Ironbound Oath is quest 2')
+  eq(C.questOf(qs[3]), 3, 'Judgment of Iron is quest 3'); eq(C.questOf(qs[4]), nil, 'a plain needlearn spell is no quest spell')
+  eq(C.questOf(qs[5]), 2, 'a row may carry its quest itself')
+  eq(C.questLevel(qs[1]), 500, 'quest 1 opens at 500'); eq(C.questLevel(qs[2]), 800, 'quest 2 at 800')
+  eq(C.questLevel(qs[3]), 1200, 'quest 3 at 1200'); eq(C.questLevel(qs[4]), nil, 'no level for a plain spell')
+  eq(C.questOf(nil), nil, 'nil spell')
+  local qctx = { vocation = 4, level = 900, magicLevel = 0, learned = {} }
+  eq(C.status(qs[1], qctx), 'quest', 'not learned: locked')
+  eq(C.status(qs[3], qctx), 'quest', 'locked even below the level (the hint names the level)')
+  eq(C.status(qs[4], qctx), 'learn', 'a plain needlearn spell is still just "learn"')
+  eq(C.status(qs[1], { vocation = 11, level = 900, learned = {} }), 'vocation', 'another line: not its spell')
+  eq(C.status(qs[1], { vocation = 4, level = 900, learned = { keepfall = true } }), 'ready', 'learned: castable')
+  eq(C.status(qs[2], { vocation = 4, level = 300, learned = { ['ironbound oath'] = true } }), 'level', 'learned but the level was lowered')
+  eq(C.filterMatches(qs[1], qctx, 'learned'), false, 'locked is not in Learned')
+  eq(C.filterMatches(qs[3], { vocation = 4, level = 10, learned = {} }, 'soon'), true, 'locked quest spells are always in Available soon')
+  eq(C.filterMatches({ name = 'Far Secret', level = 50, vocations = { 4 }, needLearn = true }, { vocation = 4, level = 10, learned = {} }, 'soon'), false, 'a far plain spell is not')
+  eq(C.filterMatches(qs[1], { vocation = 11, level = 10, learned = {} }, 'soon'), false, 'another line stays out of soon')
+  eq(C.filterMatches(qs[3], qctx, 'vocation'), true, 'locked is in My vocation'); eq(C.filterMatches(qs[3], qctx, 'all'), true, 'and in All')
+  eq(C.kindOf({ name = 'Ironbound Oath', group = 3 }), 'support', 'the buff is a support spell')
+  -- a server that is slow to learn: the learned reply unlocks it
+  C.setLearned({ 'Keepfall' })
+  eq(C.status(qs[1], { vocation = 4, level = 900 }), 'ready', 'the shared learned list unlocks it')
+  C.setLearned({})
+  -- the real data: every quest spell of the client has a number 1..3 and a level of the quest
+  C.questByName = nil
+  dofile(here .. '../game_chaosspells/spelldata.lua')
+  local count = { 0, 0, 0 }
+  for _, s in ipairs(ChaosSpellData) do
+    local q = C.questOf(s)
+    if q then
+      count[q] = count[q] + 1
+      eq(s.level, C.QUEST_LEVELS[q], s.name .. ': the spell level is the quest level')
+    end
+  end
+  eq(count[1] .. '/' .. count[2] .. '/' .. count[3], '7/7/7', 'seven quest spells per quest in the spell data')
+  C.questByName = nil
+end
+
 print('spellbook_core_test: ' .. n .. ' checks ok')

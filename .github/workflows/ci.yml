@@ -804,10 +804,10 @@ jobs:
       - name: Waystone map audit parsers and rules (audit_waystone_maps.py; the base map itself is checked by hand)
         run: python3 -I server/tools/audit_waystone_maps_test.py
 
-      - name: Late packs die in at most 3x a base hunt pack (pack_model.py --check; pace_config.lua scaled.health)
+      - name: Pack bands per role, Elementalist ahead on a pack, late packs die in at most 3x a base hunt pack (pack_model.py --check; boss_balance_config.lua packLimits, pace_config.lua scaled.health)
         run: python3 -I server/tools/pack_model.py --check
 
-      - name: Boss damage per class stays inside its limits (boss_model.py --check and its test; boss_balance_config.lua)
+      - name: Boss damage per class stays inside its limits, Deadeye ahead (boss_model.py --check and its test; boss_balance_config.lua)
         run: python3 -I server/tools/boss_model.py --check && python3 -I server/tools/boss_model_test.py
 
       - name: Infinity Tower floors clear in bounded time, level 800 reaches floor 30-40 (tower_model.py --check and its test; infinitytower_balance_config.lua)

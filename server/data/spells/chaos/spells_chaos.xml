@@ -855,4 +855,40 @@
 		<vocation name="Inquisitor" />
 		<vocation name="Sentinel" />
 	</instant>
+	<!-- Line spell quest spells, level 800, the buffs (server/README.md "Line spell quests"): needlearn="1", taught by the quest only; support group, cooldown 90 s -->
+	<instant group="support" spellid="143" name="Ironbound Oath" words="vok brak ael ruun" level="800" mana="150" premium="0" aggressive="0" selftarget="1" cooldown="90000" groupcooldown="2000" needlearn="1" script="chaos/knight/ironbound_oath.lua">
+		<vocation name="Warrior" />
+		<vocation name="Juggernaut" />
+		<vocation name="Berserker" />
+	</instant>
+	<instant group="support" spellid="150" name="Unblinking Gaze" words="vyr oth sag ael" level="800" mana="300" premium="0" aggressive="0" selftarget="1" cooldown="90000" groupcooldown="2000" needlearn="1" script="chaos/paladin/unblinking_gaze.lua">
+		<vocation name="Ranger" />
+		<vocation name="Deadeye" />
+		<vocation name="Beastmaster" />
+	</instant>
+	<instant group="support" spellid="153" name="Veil of Whispers" words="tor zhul vael nyx" level="800" mana="400" premium="0" aggressive="0" selftarget="1" cooldown="90000" groupcooldown="2000" needlearn="1" script="chaos/sorcerer/veil_of_whispers.lua">
+		<vocation name="Mystic" />
+		<vocation name="Elementalist" />
+		<vocation name="Illusionist" />
+	</instant>
+	<instant group="support" spellid="156" name="Shroud of Knives" words="fen nyx kaen umh" level="800" mana="200" premium="0" aggressive="0" selftarget="1" cooldown="90000" groupcooldown="2000" needlearn="1" script="chaos/thief/shroud_of_knives.lua">
+		<vocation name="Thief" />
+		<vocation name="Ninja" />
+		<vocation name="Samurai" />
+	</instant>
+	<instant group="support" spellid="159" name="Dirge of the Legion" words="tor oss vael kyng" level="800" mana="300" premium="0" aggressive="0" selftarget="1" cooldown="90000" groupcooldown="2000" needlearn="1" script="chaos/necromancer/dirge_of_the_legion.lua">
+		<vocation name="Necromancer" />
+		<vocation name="Lich" />
+		<vocation name="Bone Lord" />
+	</instant>
+	<instant group="support" spellid="173" name="Lotus Stance" words="saen qhal mil dhun" level="800" mana="200" premium="0" aggressive="0" selftarget="1" cooldown="90000" groupcooldown="2000" needlearn="1" script="chaos/monk/lotus_stance.lua">
+		<vocation name="Monk" />
+		<vocation name="Shadowfist" />
+		<vocation name="Iron Sage" />
+	</instant>
+	<instant group="support" spellid="178" name="Mantle of Dawn" words="tor sol aur emb" level="800" mana="250" premium="0" aggressive="0" selftarget="1" cooldown="90000" groupcooldown="2000" needlearn="1" script="chaos/templar/mantle_of_dawn.lua">
+		<vocation name="Templar" />
+		<vocation name="Inquisitor" />
+		<vocation name="Sentinel" />
+	</instant>
 <!-- END attack kit -->

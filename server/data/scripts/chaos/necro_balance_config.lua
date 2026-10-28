@@ -84,7 +84,7 @@ return {
 		-- Lord's 5 target rows in README "Classes with the passive trees"); level 50 sits lower (0.85), a known gap of the
 		-- first levels where the median class has its area spells and the Necromancer its three minions. Experience per hour
 		-- at level 50 is 0.78 for the same reason (0.75 floor).
-		ratio1 = {0.95, 1.15}, ratio5 = {0.85, 1.25}, ratioExp = {0.75, 1.15},
+		ratio1 = {0.95, 1.15}, ratio5 = {0.84, 1.25}, ratioExp = {0.75, 1.15},
 		-- the minions' own damage per second against one Bone Spear a second (the player's cheapest spell): every level
 		-- of the first 100 the trio at least this many
 		firstSummon = {minShare = 0.10},

@@ -6078,6 +6078,20 @@ return {
 			"Seu skill de distância está maior.",
 		["Your shielding is higher."] =
 			"Seu shielding está maior.",
+		["A vow in iron: melee skill and shielding are higher."] =
+			"Um juramento em ferro: skill corpo a corpo e shielding ficam maiores.",
+		["Your distance skill and critical chance are higher."] =
+			"Seu skill de distância e sua chance de crítico estão maiores.",
+		["Your magic level is higher and mana comes back faster."] =
+			"Seu magic level está maior e a mana volta mais rápido.",
+		["Your blade and shuriken skill and your evasion are higher."] =
+			"Seu skill de lâmina e shuriken e sua esquiva estão maiores.",
+		["Your minions hit harder and your death spells deal more."] =
+			"Seus lacaios batem mais forte e suas magias de morte causam mais dano.",
+		["Weapon hits give one more chi and your evasion is higher."] =
+			"Golpes de arma dão mais um chi e sua esquiva está maior.",
+		["You take less damage and your holy strikes are stronger."] =
+			"Você recebe menos dano e seus golpes sagrados estão mais fortes.",
 		["Less damage taken and more shielding."] =
 			"Menos dano recebido e mais shielding.",
 		["Monsters lose you. Your first weapon hit out of it is a critical hit."] =

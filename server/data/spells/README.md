@@ -826,40 +826,52 @@ in game: a hit of 727 -> 509) and taunts: about 15.4 effective health per level 
 
 `server/tools/boss_model.py` (the mirror of `pack_model.py`; limits in `data/scripts/chaos/boss_balance_config.lua`).
 Boss damage per second is the class's 1-target number of `pack_model.py` (C4 measurement plus the kit change, linear
-between 300 and 1000, plus 2.41 a level above 1000), so the tree, gear, spell factor and the Necromancer line's minions
-are in it. The pack cleave never hits a boss and the pack tools hit a lone target like the filler. No existing model has
-boss uptime, so every class has full uptime. Ratio is to the Deadeye. `--check` (CI) keeps each class inside its
-`limits` row at 300, 800, 1000 and 1200 (today's state with a 0.03 margin); `--proposed` prints who is outside the plan.
+between 300 and 1000, plus 2.41 a level above 1000, times the class identity pass: `class_tree.lua` `classDamage` now over then,
+`pack_model.tuning`), so the tree, gear, spell factor and the Necromancer line's minions are in it. The pack cleave never hits a boss
+and the pack tools hit a lone target like the filler. No existing model has boss uptime, so every class has full uptime. Ratio is to the
+Deadeye. `--check` (CI) keeps each class inside its `limits` row at 300, 800, 1000 and 1200 (the window at 800 is 0.03 below) and the
+Deadeye at least 8% ahead of every other class.
 
-| Class | Boss 300 | Pack 300 | Boss 1000 | Pack 1000 | Proposed boss |
-|---|---|---|---|---|---|
-| Warrior | 0.68 | 1.00 | 0.51 | 1.00 | 0.75-0.85 |
-| Juggernaut | 0.60 | 1.00 | 0.56 | 1.00 | 0.60-0.70 |
-| Berserker | 0.74 | 1.03 | 0.58 | 1.01 | 0.70-0.80 |
-| Ranger | 0.82 | 1.00 | 0.80 | 1.00 | 0.85-0.95 |
-| Deadeye | 1.00 | 1.00 | 1.00 | 1.00 | 1.0 |
-| Beastmaster | 0.63 | 1.00 | 0.71 | 0.99 | 0.70-0.80 |
-| Mystic | 0.61 | 1.01 | 0.53 | 1.00 | 0.75-0.85 |
-| Elementalist | 0.70 | 1.07 | 0.65 | 1.08 | 0.70-0.80 |
-| Illusionist | 0.58 | 1.00 | 0.44 | 1.00 | 0.80-0.90 |
-| Thief | 0.66 | 1.00 | 0.52 | 1.00 | 0.85-0.95 |
-| Ninja | 0.86 | 1.01 | 0.79 | 1.00 | 0.90-0.95 |
-| Samurai | 0.57 | 1.00 | 0.44 | 1.00 | 0.85-0.95 |
-| Necromancer | 0.77 | 1.00 | 0.57 | 0.99 | 0.75-0.85 |
-| Lich | 0.89 | 1.01 | 0.88 | 1.01 | 0.90-0.95 |
-| Bone Lord | 0.88 | 1.01 | 0.90 | 1.00 | 0.70-0.80 |
-| Monk | 0.73 | 1.00 | 0.51 | 0.99 | 0.75-0.85 |
-| Shadowfist | 0.90 | 1.01 | 0.81 | 1.00 | 0.90-0.95 |
-| Iron Sage | 0.63 | 1.00 | 0.45 | 1.00 | 0.75-0.85 |
-| Templar | 0.69 | 1.00 | 0.46 | 1.00 | 0.60-0.70 |
-| Inquisitor | 0.83 | 1.00 | 0.78 | 1.00 | 0.85-0.95 |
-| Sentinel | 0.57 | 1.00 | 0.43 | 1.00 | 0.60-0.70 |
+The state before the class identity pass (the final table is in docs/CLASSES.md "Class identity (2026-10-28)"):
 
-Pack is against the median class (`pack_model.py`). The proposed column is the plan (Deadeye 1.0; Ninja, Shadowfist and
-Lich 0.9-0.95; burst classes that lose packs gain here; pure area classes 0.7-0.8; tanks and healers lower), not
-enforced; which class is burst or mixed is a first guess. Step 2 of the class identity plan; the pack bands are step 1.
+| Class | Boss 300 | Boss 1000 | Pack 300 | Pack 1000 |
+|---|---|---|---|---|
+| Warrior | 0.68 | 0.51 | 1.00 | 1.00 |
+| Juggernaut | 0.60 | 0.56 | 1.00 | 1.00 |
+| Berserker | 0.74 | 0.58 | 1.03 | 1.01 |
+| Ranger | 0.82 | 0.80 | 1.00 | 1.00 |
+| Deadeye | 1.00 | 1.00 | 1.00 | 1.00 |
+| Beastmaster | 0.63 | 0.71 | 1.00 | 0.99 |
+| Mystic | 0.61 | 0.53 | 1.01 | 1.00 |
+| Elementalist | 0.70 | 0.65 | 1.07 | 1.08 |
+| Illusionist | 0.58 | 0.44 | 1.00 | 1.00 |
+| Thief | 0.66 | 0.52 | 1.00 | 1.00 |
+| Ninja | 0.86 | 0.79 | 1.01 | 1.00 |
+| Samurai | 0.57 | 0.44 | 1.00 | 1.00 |
+| Necromancer | 0.77 | 0.57 | 1.00 | 0.99 |
+| Lich | 0.89 | 0.88 | 1.01 | 1.01 |
+| Bone Lord | 0.88 | 0.90 | 1.01 | 1.00 |
+| Monk | 0.73 | 0.51 | 1.00 | 0.99 |
+| Shadowfist | 0.90 | 0.81 | 1.01 | 1.00 |
+| Iron Sage | 0.63 | 0.45 | 1.00 | 1.00 |
+| Templar | 0.69 | 0.46 | 1.00 | 1.00 |
+| Inquisitor | 0.83 | 0.78 | 1.00 | 1.00 |
+| Sentinel | 0.57 | 0.43 | 1.00 | 1.00 |
+
+**Class identity pass (2026-10-28).** Boss and pack bands per role, levers and the final table: docs/CLASSES.md "Class identity
+(2026-10-28)". The model gained two things here. `pack_model.tuning(class, level)` multiplies the C4 + KIT numbers by the class damage
+factor now over then (`DAMAGE_BASE` holds the state before the pass) and the KIT area gain by the tool scale (`TOOL_WEIGHT`: Fan of
+Knives holds 0.7 and Iaido Sweep 0.75 of its class's area gain, measured with `rotation_sim.py` by taking the tool's t5 to 1; a tool counts
+from its level, 80 and 200). `pack_model.reference()` is the median class before the pass (untuned numbers, `BASE_CLEAVE`): the yardstick
+of every pack band and of the base hunt pack (`pack_clear`), so the tower, the late sets and the pace curves stay where they were. A band
+is `packLimits` of `boss_balance_config.lua`, a boss band `limits`; `pack_model.py --check` also keeps the Elementalist 8% ahead of every
+class on a pack of 5 with the cleave.
 
 ### Pack farming for every class (2026-10-15; computed, not measured in game)
+
+Superseded in part (2026-10-28, class identity pass): every class's cleave share changed, Fan of Knives is 0.5x and Iaido Sweep 0.9x on the
+rest of the pack, and the goal of one rate for all classes is gone (bands per role: docs/CLASSES.md "Class identity (2026-10-28)"). The
+model, the pack tools and the method below stand.
 
 Owner goal: every class farms packs comfortably (the game is a grind: many monsters at once, with some danger); RNG and
 min-maxing decide the top, not whether a class can farm. Owner decision (2026-10-15): the strongest pack classes keep
@@ -882,8 +894,8 @@ than about 25% at level 1000 get pack tools of their lore and a cleave of at mos
 
 | Spell | Class | Level, cooldown | What the pack takes | On the target |
 |---|---|---|---|---|
-| Fan of Knives (136) | Thief | 80, 6 s | the nearest 5 monsters within 4 sqm of the Thief, 1x | a Shuriken Toss of the Thief |
-| Iaido Sweep (74, changed) | Samurai | 200, 8 s (was 12) | the 3 x 2 tiles in front, 1.5x | half an Iaijutsu |
+| Fan of Knives (136) | Thief | 80, 6 s | the nearest 5 monsters within 4 sqm of the Thief, 1x (0.5x since 2026-10-28) | a Shuriken Toss of the Thief |
+| Iaido Sweep (74, changed) | Samurai | 200, 8 s (was 12) | the 3 x 2 tiles in front, 1.5x (0.9x since 2026-10-28) | half an Iaijutsu |
 | Blade Flurry (73, changed) | Thief, Ninja, Samurai | 50, 8 s | every monster within 2 sqm (was 1), 1x | a Shuriken Toss of the class |
 | Palm Shockwave (194) | Monk, Shadowfist, Iron Sage | 50, 4 s | every monster within 2 sqm of the target, 2x | an Ashen Fist, +2 chi |
 | Shadow Ricochet (195) | Shadowfist | 150, 8 s | 4 jumps, each within 3 sqm of the last, 2.5x | an Ashen Fist, +2 chi |
@@ -3431,8 +3443,8 @@ character **without** quest spells: `analyse(..., quest=0)`, `weapon_power_confi
 reported on its own: `python3 -I server/tools/rotation_sim.py --quest` prints per class the gain of the level 500 attack (Q1) at levels
 500, 600, 800 and 1000 and of the ultimate (Q3) at 1200 over the baseline best-set score; `--check` fails when the mean of Q1 at 500,
 600 and 800 is outside 3-6%, a single one of those levels outside 1.5-9%, or Q3 outside 6-12%. Q1 is a fixed swap into the baseline
-set (the set search jumps between sets, so a new search made the gain noise); level 1000 is printed, not checked, because a 13 s
-attack often finds no slot there that keeps the 2 s rhythm.
+set (the set search jumps between sets, so a new search made the gain noise); level 1000 was printed, not checked, because a 13 s
+attack often finds no slot there that keeps the 2 s rhythm (checked since 2026-10-28, with a factor curve where one number cannot hold it).
 
 **Trimmed Q1, class factors.** Q1 at 1.25 x the reference added 8 to 33% to the best set; the coefficients were cut to about a half
 (Keepfall scale 1.6 -> 0.98, Moonshard Rain 27.5 -> 9.4, Prismatic Rupture 1.5 -> 1.18, Eclipse Edge 1.25 -> 1, Soulflay Wave 1.25 ->
@@ -3441,35 +3453,87 @@ coefficient added 0 to 12% inside a line; `quest_spell_scale_config.lua` holds a
 kit applies it, `A.classFactor`; the tool reads it). Q1 is fitted to about 4.5% of the class at levels 500-800, Q3 to about 9% at
 1200 on top of Q1. The factor of the Beastmaster's Dawnbreaker Shot is 0.39 (its set is the weakest of the Ranger line), the
 Shadowfist's Thousand-Echo Palm 0.25 (a finisher the small Shadowfist set uses very well). Gains (percent of the baseline best-set
-score; the Necromancer and Bone Lord have no free slot for Soulflay Wave at 1200, so their full quester is +9%):
+score; the table is the state after the class identity pass of 2026-10-28, see below the table):
 
 | Class | Q1 at 500 / 600 / 800 / 1000 | Q1 at 1200 | Q3 | Both |
 |---|---|---|---|---|
 | Warrior | 5.1% / 4.6% / 4.0% / 3.8% | +3.5% | +9.0% | +12.5% |
 | Juggernaut | 4.8% / 4.5% / 4.0% / 5.8% | +5.5% | +9.0% | +14.6% |
 | Berserker | 3.8% / 3.6% / 6.2% / 5.8% | +5.3% | +9.0% | +14.3% |
-| Ranger | 3.8% / 4.3% / 5.3% / 5.8% | +6.8% | +9.0% | +15.8% |
+| Ranger | 3.2% / 3.7% / 4.7% / 5.2% | +6.1% | +7.5% | +13.7% |
 | Deadeye | 4.4% / 4.5% / 4.7% / 4.8% | +4.9% | +9.0% | +13.9% |
-| Beastmaster | 3.3% / 4.4% / 6.4% / 7.9% | +10.1% | +8.9% | +19.0% |
-| Mystic | 5.0% / 4.6% / 3.8% / 3.2% | +2.6% | +8.9% | +11.6% |
+| Beastmaster | 4.5% / 4.6% / 4.4% / 4.4% | +4.6% | +9.2% | +13.8% |
+| Mystic | 5.9% / 5.4% / 4.7% / 4.1% | +3.4% | +10.2% | +13.6% |
 | Elementalist | 4.8% / 4.5% / 4.1% / 3.8% | +3.5% | +9.0% | +12.4% |
-| Illusionist | 3.8% / 4.4% / 5.2% / 5.9% | +6.1% | +8.9% | +15.0% |
-| Thief | 4.9% / 4.5% / 4.2% / 3.9% | +3.5% | +9.0% | +12.5% |
-| Ninja | 5.2% / 5.0% / 3.6% / 3.4% | +3.0% | +9.0% | +12.0% |
-| Samurai | 4.9% / 4.7% / 4.4% / 4.1% | +3.7% | +9.1% | +12.7% |
-| Necromancer | 6.3% / 4.8% / 1.9% / 0.0% | +0.0% | +8.9% | +8.9% |
+| Illusionist | 3.8% / 4.4% / 5.2% / 5.9% | +6.1% | +7.6% | +13.6% |
+| Thief | 6.1% / 5.8% / 5.2% / 4.8% | +4.1% | +9.7% | +13.8% |
+| Ninja | 5.2% / 5.0% / 3.6% / 3.4% | +3.0% | +10.5% | +13.5% |
+| Samurai | 5.2% / 5.0% / 4.6% / 3.0% | +2.7% | +10.4% | +13.1% |
+| Necromancer | 4.5% / 4.5% / 4.5% / 4.6% | +4.5% | +8.7% | +13.3% |
 | Lich | 4.9% / 4.7% / 4.2% / 3.9% | +3.4% | +9.0% | +12.4% |
-| Bone Lord | 6.4% / 5.0% / 2.5% / 0.0% | +0.0% | +9.0% | +9.0% |
+| Bone Lord | 4.5% / 4.5% / 4.5% / 4.4% | +4.6% | +8.8% | +13.4% |
 | Monk | 4.6% / 4.6% / 4.6% / 4.5% | +4.3% | +8.9% | +13.2% |
 | Shadowfist | 4.6% / 4.6% / 4.6% / 4.6% | +4.6% | +9.1% | +13.6% |
 | Iron Sage | 4.6% / 4.5% / 4.3% / 3.9% | +3.4% | +9.0% | +12.4% |
-| Templar | 5.0% / 4.7% / 4.0% / 3.4% | +2.6% | +9.0% | +11.5% |
+| Templar | 5.0% / 4.7% / 4.0% / 3.4% | +2.6% | +10.4% | +12.9% |
 | Inquisitor | 5.0% / 4.7% / 4.2% / 3.8% | +3.2% | +9.0% | +12.2% |
 | Sentinel | 4.7% / 4.6% / 4.3% / 4.1% | +3.8% | +9.1% | +12.9% |
 
-A full quester is about +12 to 15% at level 1200 (Beastmaster +19%, Necromancer and Bone Lord +9%). Cleave and pack targets were not
-touched. The numbers above in this section for the ultimates' scales (4.7, 6.6, 6.4, 1.2, 2, 2.5, 1) are the line coefficients; the
+A full quester is +12 to 15% at level 1200 for every class (the pass of 2026-10-28; before it the Beastmaster was +19%, the Necromancer and
+the Bone Lord +9% with 0% from Q1 at 1000 and 1200: Soulflay Wave found no slot, and the Bone Lord's best set changes between levels 880
+and 900). Cleave and pack targets were not touched in phase 3. The numbers above in this section for the ultimates' scales (4.7, 6.6, 6.4, 1.2, 2, 2.5, 1) are the line coefficients; the
 class factor is on top (about 0.8 to 1.0 for most classes).
+
+**Quest gains after the class identity pass (2026-10-28).** A factor in `quest_spell_scale_config.lua` is a number or a curve `{{level,
+factor}, ...}` (flat below the first point, linear between points, the last point's value above it; `A.classFactor` and
+`rotation_sim.py` `quest_factor`). One number could not hold a class whose best set drifts away from the spell as the level grows:
+Soulflay Wave needs 0.29 / 0.44 / 0.53 / 0.65 for the Necromancer at levels 500 / 800 / 1000 / 1200 and 0.17 / 0.32 / 0.36 (at 880) /
+1.26 (at 900) / 1.30 / 1.45 for the Bone Lord (Q1 about 4.5% at every level from 500 to 1200 now), Moonshard Rain 0.77 / 0.67 / 0.63 /
+0.58 for the Beastmaster (it gained 3% at 500 and 10% at 1200). Flat changes: the Ranger Moonshard Rain 0.81 -> 0.77 and Dawnbreaker
+Shot 0.87 -> 0.78, the Mystic Prismatic Rupture 0.85 -> 0.89 and Eclipse of Ruin 0.71 -> 0.78, the Illusionist Eclipse of Ruin 0.97 ->
+0.87, the Ninja Death Between Heartbeats 0.81 -> 0.89, the Templar Hammer of Ember Dawn 0.88 -> 0.97. `rotation_sim.py --check` now
+holds Q1 at 1.5-9% at levels 500, 600, 800, 1000 and 1200 (was 500-800), both quests at 12-15% at level 1200, Q3 at 6-12%. The Thief's
+and the Samurai's gains moved a little with the pack tool change of the same pass.
+
+### Line spell quests, level 800 buffs (phase 4, 2026-10-28; computed, not measured in game)
+
+Seven buffs, one per line, `needlearn="1"`, level 800, support group, cooldown 90 s, group cooldown 2 s, no pacify and no lock on other
+spells (`quest = 2` in `spellquest_config.lua`). They are no attack spells: the count of 13 stays, `rotation_model.csv` has no row (the
+simulator reads attack spells only) and every balance model measures a character without quest spells, so no model moves. The
+numbers are the spec's and live in `data/scripts/chaos/quest_buffs_config.lua`.
+
+| Buff (id) | Line | Time | Mana | Effect |
+|---|---|---|---|---|
+| Ironbound Oath (143) | Warrior | 20 s | 150 | melee skill +20%, shielding +25% |
+| Unblinking Gaze (150) | Ranger | 20 s | 300 | distance skill +25%, critical chance +10 points |
+| Veil of Whispers (153) | Mystic | 20 s | 400 | magic level +15%, 1% of the maximum mana every second |
+| Shroud of Knives (156) | Thief | 15 s | 200 | melee and distance skill +20%, evasion +10 points |
+| Dirge of the Legion (159) | Necromancer | 20 s | 300 | minion hits +25%, death spell damage +10% |
+| Lotus Stance (173) | Monk | 15 s | 200 | +1 chi on a weapon or fist hit, evasion +10 points |
+| Mantle of Dawn (178) | Templar | 20 s | 250 | damage taken -15%, the holy strike after a melee hit +20% |
+
+**How big.** Each buff is up 15 to 20 s of every 90 s, about a fifth of the time when the helper recasts it at the cooldown. The
+percents are the spec's and were not cut; their effect on damage was not measured (the models do not see support spells). The skill
+percents act through the skill level, the critical chance of the Gaze is +10 points on the x1.5 hit. The evasion is added to the line's
+(Thief 8, Ninja 12, Samurai 5, Monk 6, Shadowfist 8, Iron Sage 4 percent). If play data says a buff is too strong, the knobs are the
+numbers in `quest_buffs_config.lua`; a change needs no other file.
+
+**Mechanics that were missing and their hooks.**
+- Evasion on top of the line's: `ChaosClasses.dodges(voc, isWeapon, roll, extra, scale)` (the Thief line) already took `extra`; the
+  caller adds `ChaosQuestBuffs.evadeBonus(player)`. `ChaosMonk.dodges(voc, isWeapon, roll, noDodge, extra)` gained `extra` (Scarred
+  Discipline still removes the evasion, buff included).
+- Chi: `monk_combat.lua` gives `perWeaponHit` plus Lotus Stance's 1 on a melee weapon or fist hit (the same interval rule).
+  "Basic strikes" are the auto attack; the builder spell is as before.
+- Minions: `ChaosNecro.hitBonus(player, banner)` is Banner of Bones' bonus plus Dirge's, passed to `ChaosNecroCore.minionHit`.
+- Death spells: `ChaosPassiveDealt` (`passivetree_effects.lua`) multiplies the death part of an `ORIGIN_SPELL` hit of a caster under
+  Dirge by 1.1, never inside the spell factor guard (minion hits) or a keystone proc. One condition lookup, only for death spell hits.
+- Templar: `ChaosTemplar.damageTakenFactor(aura, aegis, share, extra)` and `radiantDamage(vocation, hit, isPlayer, share, mult)`.
+  "Holy strike" is the Radiant Strike after a melee hit, not the line's holy spells.
+- Veil of Whispers adds a regeneration condition (sub id 72077) beside the buff's own; the buff bar shows the buff only.
+
+**Helper.** `game_helpersupport/supportspells.lua` `KINDS` lists the seven as `auto = 'timer'`: Auto setup writes a Timer rule for the
+buff the character knows, first among the class buffs (the highest level), cooldown 91 s, cast in fights. The 5-spell attack rotation
+is not touched.
 
 ### Support to attack (O254, 2026-10-26; owner: faster, more fluid fights, more attack spells and fewer support spells; computed, not measured in game)
 

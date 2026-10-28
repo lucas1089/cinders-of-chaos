@@ -261,7 +261,7 @@ def c4_totals(data, key, level):
     """the class's C4 totals (pack_model.py: measured, kit changes) at a level x today's class damage factor over the
     C4 day's"""
     bal = data['balance']
-    t1, t5 = P.damage(CLASSES[key], level, kit=True)
+    t1, t5 = P.damage(CLASSES[key], level, kit=True, tune=False)  # the class damage factor is applied below
     fix = lin(data['classDamage'][key], level) / lin(bal['c4']['classDamage'][key], level)
     return t1 * fix, t5 * fix
 
@@ -318,10 +318,10 @@ def kills_per_hour(cls, level, d1, d5):
     health = lin(P.SCALED_HEALTH, level) if scaled else P.median_health(c['mons'], level)
     real = P.damage
 
-    def patched(name, L, kit=True):
+    def patched(name, L, kit=True, tune=True):
         if name == cls and L == level:
             return d1, d5
-        return real(name, L, kit)
+        return real(name, L, kit, tune)
     P.damage = patched
     try:
         mine = P.kills_per_hour(cls, level, scaled, c['cfg'], health)[0]

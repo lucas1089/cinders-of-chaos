@@ -471,16 +471,17 @@ function M.critGivesChi(id, now, icdMs)
 end
 
 -- dodge chance of a Monk
-function M.dodgeChance(vocId)
-	return cfg().evasion[vocId] or 0
+-- extra: evasion from a buff (Lotus Stance, quest_buffs_core.lua)
+function M.dodgeChance(vocId, extra)
+	return (cfg().evasion[vocId] or 0) + (extra or 0)
 end
 
 -- noDodge: Scarred Discipline (the line keystone) takes the evasion away
-function M.dodges(vocId, isWeaponAttack, roll, noDodge)
+function M.dodges(vocId, isWeaponAttack, roll, noDodge, extra)
 	if noDodge then
 		return false
 	end
-	return isWeaponAttack and roll < M.dodgeChance(vocId) or false
+	return isWeaponAttack and roll < M.dodgeChance(vocId, extra) or false
 end
 
 -- Scarred Discipline (the line keystone, class_tree.lua fx.ksScarredDiscipline): a hit taken gives fx.chi when the last

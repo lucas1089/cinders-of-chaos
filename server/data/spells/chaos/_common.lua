@@ -652,6 +652,10 @@ ChaosSpell.SUBID = {
 	divine_ward = 71005, soul_aegis = 71006, phantom_veil = 71007, dash = 71008, iron_will = 71009,
 	tautstring = 71072, -- Tautstring (the Ranger line, in place of the stock Hawkeye)
 	ironhold = 71073, -- Ironhold (the Warrior line, in place of the stock Bulwark / Protector)
+	-- the level 800 buffs of the line spell quests (scripts/chaos/quest_buffs_config.lua subId; Veil of Whispers' regeneration
+	-- condition is veil + 1000)
+	ironbound_oath = 71075, unblinking_gaze = 71076, veil_of_whispers = 71077, shroud_of_knives = 71078,
+	dirge_of_the_legion = 71079, lotus_stance = 71080, mantle_of_dawn = 71081,
 	-- timer-only conditions (no attributes) that stand for a summon / decoy spell on the buff bar (chaos_buffs.lua)
 	moonfang_pack = 71070, mirror_image = 71071,
 }

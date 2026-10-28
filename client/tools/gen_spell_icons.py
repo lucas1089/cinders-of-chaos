@@ -452,7 +452,11 @@ ICONS = [  # (spell name, theme, glyph)
     # the level 1200 ultimates of the line spell quests (2026-10-28, cells 356-362): placeholder glyphs until the PixelLab art
     ('Judgment of Iron', 'steel', 'hammer'), ('Dawnbreaker Shot', 'holy', 'ricochet'), ('Eclipse of Ruin', 'frost', 'gravenova'),
     ('Death Between Heartbeats', 'shadow', 'knives'), ('Funeral of Kings', 'necrotic', 'gravenova'),
-    ("Heaven's Ninth Gate", 'ember', 'gate'), ('Hammer of Ember Dawn', 'ember', 'hammer')]
+    ("Heaven's Ninth Gate", 'ember', 'gate'), ('Hammer of Ember Dawn', 'ember', 'hammer'),
+    # the level 800 buffs of the line spell quests (2026-10-28, cells 363-369): placeholder glyphs until the PixelLab art
+    ('Ironbound Oath', 'steel', 'shield'), ('Unblinking Gaze', 'nature', 'eye'), ('Veil of Whispers', 'arcane', 'ghost'),
+    ('Shroud of Knives', 'shadow', 'knives'), ('Dirge of the Legion', 'necrotic', 'skull'), ('Lotus Stance', 'ember', 'ring'),
+    ('Mantle of Dawn', 'holy', 'shield')]
 
 def render(theme, glyph):
     c = COL[theme]

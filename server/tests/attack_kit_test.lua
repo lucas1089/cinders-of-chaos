@@ -683,7 +683,16 @@ do
 			local row = F[s.name]
 			ok(row ~= nil, key .. " has class factors")
 			for _, v in ipairs(s.vocations) do
-				ok(row and row[v] and row[v] >= 0.1 and row[v] <= 2, key .. ": a factor for " .. v)
+				local f = row and row[v]
+				if type(f) == "table" then -- a curve {{level, factor}, ...} (class identity pass 2026-10-28)
+					local good = #f >= 2
+					for i, pt in ipairs(f) do
+						good = good and pt[2] >= 0.1 and pt[2] <= 2 and (i == 1 or pt[1] > f[i - 1][1])
+					end
+					ok(good, key .. ": a factor curve for " .. v)
+				else
+					ok(f and f >= 0.1 and f <= 2, key .. ": a factor for " .. v)
+				end
 			end
 			local n = 0
 			for _ in pairs(row or {}) do n = n + 1 end
@@ -707,6 +716,18 @@ do
 	near(w.lo, math.floor(lo * F["Keepfall"].Warrior), 1.5, "the hit is the kit hit times the class factor")
 	-- a spell outside the quests ignores the table
 	eq(A.classFactor(pw, cfg.spells.gorehook), 1, "other spells: factor 1")
+	-- a factor curve: flat below the first point, linear between points, the last point's value above it
+	local saved = F["Keepfall"].Warrior
+	F["Keepfall"].Warrior = {{500, 0.4}, {1000, 0.9}}
+	local function at(level)
+		local pl = player({level = level})
+		function pl:getVocation() return {getName = function() return "Warrior" end} end
+		return A.classFactor(pl, cfg.spells.keepfall)
+	end
+	near(at(300), 0.4, 0.0001, "a curve: flat below the first point")
+	near(at(750), 0.65, 0.0001, "a curve: linear between points")
+	near(at(1500), 0.9, 0.0001, "a curve: the last point's value above it")
+	F["Keepfall"].Warrior = saved
 end
 
 -- every kit spell casts cleanly against a crowd, on a mocked engine

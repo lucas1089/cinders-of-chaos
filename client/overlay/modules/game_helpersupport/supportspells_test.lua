@@ -684,5 +684,28 @@ do
   eq(H.unanswered(st, 6), 0, 'a seen haste clears the misses')
 end
 
+-- the level 800 buffs of the line spell quests (2026-10-28): a character that knows one keeps it up in the fights (the Timer
+-- section, first among the buffs: the highest level), one per line
+do
+  local Q2 = { { 143, 4, 'Ironbound Oath', 20 }, { 150, 3, 'Unblinking Gaze', 20 }, { 153, 1, 'Veil of Whispers', 20 },
+    { 156, 11, 'Shroud of Knives', 15 }, { 159, 20, 'Dirge of the Legion', 20 }, { 173, 17, 'Lotus Stance', 15 },
+    { 178, 23, 'Mantle of Dawn', 20 } }
+  for _, q in ipairs(Q2) do
+    local id, voc, name, dur = q[1], q[2], q[3], q[4]
+    eq(byId[id] and byId[id].name, name, name .. ': in the spell data')
+    ok(H.eligible(byId[id]), name .. ': a support spell the helper may cast')
+    eq(H.KINDS[id] and H.KINDS[id].auto, 'timer', name .. ': Auto setup puts it in the Timer section')
+    eq(H.KINDS[id] and H.KINDS[id].dur, dur, name .. ': its duration')
+    local plan = H.autoPlan(entries, canCastFor(voc, 1300))
+    ok(has(plan.timer, id), name .. ': planned for a character of its line that can cast it')
+    eq(plan.timer[1] and plan.timer[1].id, id, name .. ': the first timer rule (the highest level buff)')
+    local rule
+    for _, r in ipairs(plan.timer) do if r.id == id then rule = r end end
+    eq(rule and rule.cooldown, 91, name .. ': the rule waits the 90 s cooldown plus one second')
+    ok(not has(H.autoPlan(entries, canCastFor(voc, 799)).timer, id), name .. ': not before level 800')
+    ok(not has(H.autoPlan(entries, canCastFor(2, 1300)).timer, id), name .. ': not for a character of no line')
+  end
+end
+
 if fails > 0 then error(fails .. ' failure(s)') end
 print('supportspells_test: OK')

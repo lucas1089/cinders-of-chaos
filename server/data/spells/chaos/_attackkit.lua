@@ -87,7 +87,23 @@ function A.classFactor(player, spec)
 	end
 	local row = ChaosQuestSpellScale and ChaosQuestSpellScale[spec.name]
 	local okVoc, voc = pcall(function() return player:getVocation():getName() end)
-	return row and okVoc and row[voc] or 1
+	local f = row and okVoc and row[voc]
+	if type(f) == "table" then
+		-- a curve {{level, factor}, ...}: flat below the first point, linear between, the last point's value above it
+		local okLv, level = pcall(function() return player:getLevel() end)
+		level = okLv and tonumber(level) or 0
+		if level <= f[1][1] then
+			return f[1][2]
+		end
+		for i = 2, #f do
+			if level <= f[i][1] then
+				local a, b = f[i - 1], f[i]
+				return a[2] + (b[2] - a[2]) * (level - a[1]) / (b[1] - a[1])
+			end
+		end
+		return f[#f][2]
+	end
+	return f or 1
 end
 
 -- positive min, max of one hit (one tick of a DoT) for the caster; `chiScale` is the finisher scale of a Monk finisher
