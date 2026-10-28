@@ -3386,6 +3386,40 @@ Output **pair 53**: dat ed39f8452177e0ef503c97fd5f7df764 (8,835,386 bytes), spr 
   - joined `things-1098.tar.xz` (128,623,760 bytes) sha256 `50668667915e2fa6373308ff1c4a021543a82a4fc612db43b496822d9f003e99`; `things-1098.tar` sha256 `8f8621f7a10613b52f47c132a587379add5c077d941e266b8e1e2783646620e5`.
     Extracting the parts gives the dat and spr md5 above (checked).
 
+
+### Pair 54: pair 53 with the Verdant Eye Demon look (`gen_eye_demon_art.py`; built 2026-10-28, not pushed yet)
+Owner request 2026-10-28: the owner's AutoSprite character "Verdant Eye Demon" walking in the game, as the boss
+Vharzul the Verdant Eye (server/README.md "Vharzul the Verdant Eye (pair 54)"). One outfit is appended; nothing else changes.
+- **Art.** AutoSprite's eight-direction walk of the character (one render, 25 frames of 256 px per direction). `gen_eye_demon_art.py`
+  takes up, right, down and left (the diagonals are not used), halves each frame to 128 px (2 x 2 block mean in premultiplied alpha,
+  numpy only), moves each direction as a whole so its lowest row sits on y 125 and the feet of frame 0 on x 96 (where the 4x4 lions
+  of pair 26 stand), and picks 8 walk phases evenly from the 25 (idle = frame 0). The render's PNGs are pinned by md5 (`SOURCES`);
+  they and the zip are not in git. Committed: `art_import/eye_demon/eye_demon.png` (the look sheet), `art_import/eye_demon.csv`
+  (outfit 3361: 4x4, layers 1, idle 1 phase + walk 8 phases at 100 ms), `art_import/eye_demon_sources.csv`,
+  `monster_looks/eye_demon_picks.csv` (family `lairboss`). `build --check` (CI) checks the committed files against the spec.
+```
+python3 -I client/tools/sprites/gen_eye_demon_art.py build --src RENDER_DIR
+python3 -I client/tools/sprites/import_art_things.py --ours-dat pair53/Tibia.dat --ours-spr pair53/Tibia.spr --out-dir pair54 \
+    --things client/tools/sprites/art_import/eye_demon.csv --first-item 44396 --first-outfit 3361 --expect-items 44395
+python3 -I client/tools/sprites/check_pair.py pair54/Tibia.dat pair54/Tibia.spr --old pair53/Tibia.dat pair53/Tibia.spr
+```
+Input pair 53 (dat ed39f8452177e0ef503c97fd5f7df764, spr 971ba1f67b7a07cd05a5416ad285ba0c).
+Output **pair 54**: dat e7410f855a913e1e046479371527e022 (8,837,780 bytes), spr cf8704fe8f3f40bf1151f228b6da94bc
+(1,130,629,049 bytes, 945,921 sprites: 385 appended), 44,395 items, 3,361 outfits.
+- **Checked.** The importer: the output parses, 576 sprite slots pixel-identical to the art, every other thing byte-identical,
+  3,000 sampled old sprites unchanged, append-only guard passed. `check_pair.py --old pair53`: 0 errors, 3,966 warnings (the same
+  as pair 53). `gen_outfit_anchors.py` and `gen_info_lift.py` against pair 54 give look 3361 an anchor (4x4) and change the dat md5
+  line (not committed yet: CI checks them against the pair on windows-assets); `gen_fx_send_offsets.py --check` passes. Not run in a client.
+- **Archive parts** (same recipe as pair 53; not pushed to windows-assets yet, waiting for the owner's approval):
+  - part00 99,614,720 bytes, sha256 `c21f1e52010044814e834d93a9f38879a9c40afadbabc6625aa4d8111650d1ea`
+  - part01 29,431,916 bytes, sha256 `96074400f8ea85855f516e94a12a445626466179ae10a1f99ffabbbd5cf06706`
+  - joined `things-1098.tar.xz` (129,046,636 bytes) sha256 `903e1081bbe0131ccc0543d8d1bebe19e80cad68cb12c878d6ae804bcf80e7fd`;
+    `things-1098.tar` sha256 `c9bc598aa7bf7203b91c0615c91a6896a72086197bf22227094db72841b3a636`.
+- **To ship** (one change, after the push): `ChaosEyeDemonArt.PAIR54 = true` (server/data/lib/chaos_eye_demon_art.lua), the row of
+  `monster_looks/eye_demon_picks.csv` appended to `picks.csv` and `server/tools/apply_monster_looks.py` run (look 3361 into Vharzul's
+  file), `tools/ci/check_content.py` `PAIR_NAME, PAIR_OUTFITS` to pair 54 / 3361, `outfit_anchors.lua` and `info_lifts.lua`
+  regenerated from pair 54. Until then the boss wears the stock demon look 35 and a client on pair 53 needs nothing new.
+
 ## Owner art (things_custom26: outfits 2213-2233, items 33940-33985, `tools/sprites/gen_owner_art.py`, `art_import/owner_art.csv`; on windows-assets 50645056, switch on since 2026-10-15)
 **Source and licence.** The owner's Google Drive folder "ots", files added 2026-10-15. The owner confirmed the art is
 their own or commissioned and free to use for monsters and variants, outfits and wings as cosmetics, decoration and map

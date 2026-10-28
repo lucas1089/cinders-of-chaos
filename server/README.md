@@ -10859,6 +10859,27 @@ Things of the owner's licensed monster and tile kit in the client pair 27 trial 
 - Tests: `tests/assets_art_test.lua` (switch off, decoration ids against the manifest, the picks row, lookOf),
   `tools/install_assets_decor_test.py`, `client/tools/sprites/gen_assets_art_test.py`.
 
+
+## Vharzul the Verdant Eye (pair 54) (`data/lib/chaos_eye_demon_art.lua`, switch `ChaosEyeDemonArt.PAIR54`, off)
+
+Owner request 2026-10-28: the owner's AutoSprite demon in the game as a boss with its own loot and a rare spawn, in the Embergut Rift.
+- **Monster.** `data/monster/monsters/chaos/vharzul_the_verdant_eye.xml`: level 690-710 (the rift is 560-675; the planner allows a boss
+  up to 1.5x the band's top), 96,000 health, 32,000 experience, boss flag (never paced). Melee and a claw rake (physical), a green
+  gaze at range (earth), a fire burst around it, a slow; heals; strong to fire and earth, weak to ice and holy. Loot like the
+  Hollow Rider's (crystal and platinum coins, royal helmet, dragon shield, golden armor and legs, terra mantle, medusa shield,
+  boots of haste) with more coins. The install step `monsters` registers it with the rest of the folder.
+- **Place.** `tools/areaplan/plans/embergut_rift.json`: the Scorched Pools (the dead end off the Ember Terrace, one way in) is now
+  the boss room (was the treasure room; its quest chest stays, behind the boss); `boss` block: Vharzul, respawn 14,400 s (4 hours).
+  The compiled frame is the same as before; the spawn file gets one block (16542, 14381, 10) and the decoration near the new spawn
+  point moves, so the next `install_all.py --only contentareas` marks the rift `update` and writes its tiles and spawns again.
+  `validate`: 0 errors, the same warning as the Hollow Crypt's boss (a boss in our own folder, not in a `boss` folder).
+- **Boss Spawns window.** `bossspawns_config.lua` lists it with the lair bosses (`lair_vharzul`, Embergut Rift, timer 4 hours).
+- **Look.** Until the switch goes on the boss wears the stock demon look 35. Pair 54 (client/MANIFEST.md "Pair 54") adds look 3361,
+  a 4x4 walk in four directions from our AutoSprite render. Switching on is one change: `M.PAIR54 = true`, the row of
+  `client/tools/sprites/monster_looks/eye_demon_picks.csv` into `picks.csv`, `tools/apply_monster_looks.py` (family `lairboss`),
+  `tools/ci/check_content.py` to pair 54 / 3361 outfits, the two client files regenerated from the pair.
+- **Tests.** `tests/eye_demon_art_test.lua` (luajit and lua5.3): the picks row, the switch against picks.csv and the boss file's
+  look, `lookOf` on and off, the boss and room in the plan; `tests/bossspawns_test.lua` covers the new row. Not run live.
 ## Themed sets, auras and grounds (`data/lib/chaos_theme_art.lua`, `data/lib/chaos_theme_items.lua`, `tools/install_theme_items.py`)
 
 Our own art of client pair things_custom24 (client/MANIFEST.md "Themed sets, auras and grounds"): ten equipment sets,

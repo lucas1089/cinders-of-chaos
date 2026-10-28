@@ -116,7 +116,7 @@
       "id": "scorched_pools",
       "floor": 1,
       "size": "small",
-      "role": "treasure"
+      "role": "boss"
     }
   ],
   "paths": [
@@ -482,5 +482,11 @@
     }
   ],
   "chest_action": 47965,
-  "notes": "Content plan (hall fill, 2026-10-22): a lava hunt for levels 560-675 on floor 6 of the teleport hall (server/README.md \"Hall order\"). 12 hunting zones in loops; monsters Mercenary, Orclops Ravager, Shaper Matriarch, Ashmaw Warlord, Slagborer Queen. Display monster: Mercenary."
+  "boss": {
+    "zone": "scorched_pools",
+    "monster": "Vharzul the Verdant Eye",
+    "respawn": 14400,
+    "title": "Vharzul the Verdant Eye"
+  },
+  "notes": "Content plan (hall fill, 2026-10-22): a lava hunt for levels 560-675 on floor 6 of the teleport hall (server/README.md \"Hall order\"). 12 hunting zones in loops; monsters Mercenary, Orclops Ravager, Shaper Matriarch, Ashmaw Warlord, Slagborer Queen. Display monster: Mercenary. Boss (owner request 2026-10-28): Vharzul the Verdant Eye holds the Scorched Pools, the one-way dead end off the Ember Terrace (was the treasure room; its chest stays, behind the boss), respawn 4 hours."
 }
