@@ -1770,7 +1770,7 @@ function Gen.basicsEntries(D)
 		for _, L in ipairs({20, 50, 100, 200, 300, 450, 600}) do
 			prow[#prow + 1] = {Gen.num(L), pct(lin(pc.base.health, L)), pct(math.min(1, lin(pc.base.xp, L) * sx)),
 				pct(math.min(1, lin(pc.base.loot, L) * sl)),
-				pct(lin(pc.damage, L))}
+				pct(lin(pc.base.damage or pc.damage, L))}
 		end
 		for _, L in ipairs({650, 1000, 1300, 2000}) do
 			prow[#prow + 1] = {Gen.num(L) .. " (own level)", pct(lin(pc.scaled.health, L)),

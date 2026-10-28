@@ -18057,9 +18057,11 @@ ambush and goblin chances, kill goals, multikill, cleave); the spawn side (fill,
   curve up to level 400, 7-17% shorter at 450-650); the goals did not change (the kills per hour did not). Levels
   under 10 (health) and 6 (xp) stay untouched, as the pool levels under 10 / 5 were. The base set ends at the pool's
   highest level (657): above it only level-scaled monsters are hunted, so `tools/pack_model.py --check` compares the late
-  packs (670+) with a base pack of the top monsters whose health grows with the level, 2.0-2.7x (limit 3.0). The `damage`
-  curve was not touched (one curve for all sets): a base monster at hunting level L is now a pool L one, which hits
-  harder than the pool L/2 one it replaced; open for the owner.
+  packs (670+) with a base pack of the top monsters whose health grows with the level, 2.0-2.7x (limit 3.0). O297: the shared
+  `damage` curve was left as it was, so every base monster hit up to 41% harder than before (pool 450: x0.425 -> x0.60).
+  `base.damage` is that curve at twice the level, so a base monster of pool level P hits as before O285 (`tests/pace_test.lua`
+  pins P = 10 to 657); level-scaled and generated monsters keep the shared curve. A base hunt at hunting level L now has
+  pool L monsters, whose stock hits are harder than the pool L/2 ones of before: that is the monsters' own strength.
 - **Which monsters**: natural map spawns (`onSpawn` with `artificial = false`), generated areas and dungeons (their
   boss never), base dungeon monsters (`dungeons.lua` marks them) and ambush copies of a paced monster
   (`monster_tiers.lua`). Never: bosses (isboss, rewardboss, the tier list), summons, and every script-made monster of the

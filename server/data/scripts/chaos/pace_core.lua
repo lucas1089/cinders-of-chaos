@@ -121,7 +121,8 @@ function P.factors(cfg, level, scaled, generated)
 		-- O285: junk that is worth at most this per unit (NPC price) stays whole (nil: no such rule)
 		cheap = set.cheapPrice and P.smooth(set.cheapPrice, level, 0) or nil,
 		goal = P.lin(set.goal, level, 1),
-		damage = P.lin(cfg.damage, level, 1)
+		-- O297: base monsters have their own curve (`base.damage`); scaled and generated ones share `cfg.damage`
+		damage = P.lin(set.damage or cfg.damage, level, 1)
 	}
 end
 

@@ -51,6 +51,9 @@ return {
 		cheapPrice = {{50, 21.13}, {100, 25.22}, {150, 51.42}, {200, 535.2}, {250, 62.23}, {300, 11.42}, {350, 143.1},
 			{400, 240.7}, {450, 300}, {500, 602.7}, {550, 433.3}, {600, 150}, {650, 228}},
 		goal = {{20, 1.0}, {35, 1.7}, {60, 1.8}, {100, 2.7}, {175, 3.8}, {250, 5.0}},
+		-- damage to players by pool level (O297): the shared `damage` curve below at twice the level, so a base monster
+		-- hits as hard as before O285 (baseLevelMult 2 -> 1 had raised it up to 41% at pool level 450)
+		damage = {{10, 1.00}, {25, 0.85}, {75, 0.75}, {150, 0.65}, {300, 0.55}, {400, 0.45}, {500, 0.40}},
 		-- Loot by monster level (owner 2026-10-21; `lootLevel` below, pace_core.lua P.levelPlan, server/README.md "Loot
 		-- by monster level"). Smooth curves (monotone cubic through the points, flat beyond the ends) by the monster's
 		-- level only. coins: the share of the value of coins and NPC-sellable non-gear items, on top of `loot` (it
@@ -167,8 +170,9 @@ return {
 		crystalOnly = {} -- empty since O285: the widows paid 3,170 a kill at level 1018, 730-860 at their pool level (509 / 480), a 7% chance of one whole crystal coin
 	},
 
-	-- damage to players by a paced monster (all elements, conditions and mana shield hits included), by its hunting
-	-- level; the late-game physical boost (monster_damage_config.lua) stays on top. Bosses and player summons: never.
+	-- damage to players by a paced monster with a level of its own (base monsters: `base.damage`; all elements,
+	-- conditions and mana shield hits included), by its hunting level; the late-game physical boost (monster_damage_config.lua)
+	-- stays on top. Bosses and player summons: never.
 	damage = {{20, 1.00}, {50, 0.85}, {150, 0.75}, {300, 0.65}, {600, 0.55}, {800, 0.45}, {1000, 0.40}},
 
 	-- multikill: kills of one player, each within windowMs of the one before, form a chain. The experience of the whole
