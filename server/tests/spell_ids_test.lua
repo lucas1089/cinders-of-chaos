@@ -27,8 +27,8 @@ local OTHER_CONJURE = {42, 92, 110}
 -- Break Glamour 164. The Chaos block uses them for the new late spells of the ascended classes. The same tool retires
 -- the stock Sharpshooter (Hawkeye, 135; owner 2026-10-20: its slow kept the Ranger's bow from firing): Tautstring has it;
 -- and the stock Protector (Bulwark, 132) and Swift Foot (Windrunner, 134), which pacified the caster: Ironhold and
--- Wildstride have them.
-local RETIRED = {29, 58, 132, 134, 135, 144, 145, 146, 147, 164}
+-- Wildstride have them. And the three stock light spells (owner 2026-10-28): Lantern 10, Greater Lantern 11, Radiant Lantern 75.
+local RETIRED = {10, 11, 29, 58, 75, 132, 134, 135, 144, 145, 146, 147, 164}
 do
 	local tool = io.open("tools/retire_cure_spells.py"):read("*a")
 	local rows = {}

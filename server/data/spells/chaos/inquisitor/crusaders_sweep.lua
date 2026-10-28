@@ -1,4 +1,4 @@
--- Crusader's Sweep: a holy sweep 3 sqm ahead.
+-- Crusader's Sweep: a holy sweep 3 sqm ahead, on a target within 2 sqm.
 --
 -- One of the attack kit's spells (data/scripts/chaos/attack_kit_config.lua, key crusaderssweep): the numbers, the shape and
 -- the effects are there, the cast is data/spells/chaos/_attackkit.lua.

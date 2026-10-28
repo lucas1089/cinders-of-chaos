@@ -337,20 +337,22 @@ attacks are not ranked by the cooldown ladder: they are the last rung of their c
 
 | Line | Spell (id) | Reference | Shape | Mana |
 |---|---|---|---|---|
-| Warrior, Juggernaut, Berserker | Keepfall (142) | Headsman's Hurl | circle 2 sqm, range 3 | 72 |
+| Warrior, Juggernaut, Berserker | Keepfall (142) | Headsman's Hurl | circle 2 sqm, range 3 | 36 |
 | Ranger, Deadeye, Beastmaster | Moonshard Rain (149) | one volley of Hail of Dawn | circle 3 sqm, range 7 | 576 |
-| Mystic, Elementalist, Illusionist | Prismatic Rupture (152) | Falling Pyre | circle 2 sqm, range 7 | 504 |
+| Mystic, Elementalist, Illusionist | Prismatic Rupture (152) | Falling Pyre | circle 2 sqm, range 7 | 840 |
 | Thief, Ninja, Samurai | Eclipse Edge (155) | Last Breath | line 5 sqm | 180 |
 | Necromancer, Lich, Bone Lord | Soulflay Wave (158) | Crypt Collapse | wave 4 deep, 5 wide | 498 |
 | Monk, Shadowfist, Iron Sage | Thousand-Echo Palm (172) | Skysplitter Fist | wave 3 deep, 5 wide, chi finisher | 264 |
-| Templar, Inquisitor, Sentinel | Pyre of Absolution (177) | Sanctum Verdict | circle 2 sqm, range 5 | 348 |
+| Templar, Inquisitor, Sentinel | Pyre of Absolution (177) | Sanctum Verdict | circle 2 sqm, range 5 | 192 |
 
 **15 spells per class (2026-10-20, owner: "mysthic tem magias demais. abaixe pra 15. faça isso pra todas as classes")**:
 every class and ascension can learn and cast at most 15 spells of its own: attack, healing and support, the stock spells
 it kept and the Chaos spells. An ascension's 15 include the base spells it keeps (an ascension may drop a base spell).
-Not counted: the 15 spells every character shares (Lantern, Greater Lantern, Bloodtrail, Ghost Rope, Wraith Step,
-Fleetfoot, Town Portal, Flickerdash, Hunter's Instinct, Vigil of Clarity / Haste / Iron / Wrath, Banner Call, Soulward)
-and Radiant Lantern (a light spell of the casters). They are the same for everyone, so they say nothing about a kit.
+Not counted: the 12 spells every character shares (Bloodtrail, Ghost Rope, Wraith Step, Fleetfoot, Town Portal,
+Flickerdash, Hunter's Instinct, Vigil of Clarity / Haste / Iron / Wrath, Banner Call) and the two mana shields (below). They are the
+same for everyone or for a whole kind of class, so they say nothing about a kit. The three light spells (Lantern, Greater Lantern,
+Radiant Lantern) were retired for every class on 2026-10-28 (owner: "Tire também as magias de luz, já que são inúteis"); torches and
+light items stay.
 Runes are items, not spells. How the kits were cut: a filler single-target spell, one or two area spells, the big
 cooldowns, the heals, the class's signature spells, a haste where the class had one, and every spell the helper's Auto
 rotation presets used; out went the near-duplicate elemental variants (the stock strike, wave, beam and supreme
@@ -390,7 +392,10 @@ Counts before (stock and Chaos spells the class could learn, without the shared 
 
 * Ward of the Mind (stock Magic Shield, the classic one: the mana takes a hit first, the health only the rest) is
   outside the 15 (`patch_spell_cap.py` `OUTSIDE_CAP`, owner 2026-10-21: "somente pra mages e rangers", the
-  Necromancer counted as a mage): the Mystic, Necromancer and Ranger lines have it, no other class. Soulward (level 80, 15 s) stays every class's short mana shield.
+  Necromancer counted as a mage): the Mystic, Necromancer and Ranger lines have it, no other class. Soulward (level 80, 15 s, with mana
+  regeneration) is the short mana shield of the magic and hybrid lines only (owner 2026-10-28: "Deixe o mana shield somente pra classes de magia e híbridas"): the
+  Mystic and Necromancer lines (magic), the Ranger line (an archer with spells) and the Templar line (holy melee with spells), ascensions included.
+  The Warrior, Thief and Monk lines have no mana shield at all. The Templar line does not get Ward of the Mind. Both shields are outside the 24 (`patch_spell_cap.py` `OUTSIDE_CAP`).
 
 Dropped, per line (each spell left the classes named; "retired" = no class keeps it):
 - Warrior line: Minor Mending, Warhorse Rush, Cyclone Hurl, Martial Communion, Earthrend, Reaver's Spin, Rending Mark,
@@ -646,7 +651,7 @@ Limits of phase 1:
   | 15 | Beastmaster | 3 | (new) | 22 | 11 / 14 / 21 | distance 0.9 | paladin |
   | 1 | Mystic | 1 | Sorcerer | 3 | 5 / 30 / 10 | 1.0 | sorcerer |
   | 5 | Elementalist | 1 | Master Sorcerer | 13 | 5 / 30 / 10 | 1.0 | sorcerer |
-  | 10 | Illusionist | 1 | Arch Illusionist | 23 | 7 / 27 / 12 | 1.0 | illusionist |
+  | 10 | Illusionist | 1 | Arch Illusionist | 23 | 6 / 27 / 12 | 1.0 | illusionist |
   | 11 / 12 / 13 | Thief / Ninja / Samurai | 11 | (phase 1) | 6 / 16 / 26 | see phase 1 | | none yet |
   | 2, 6, 9 | retired (Druid, Elder Druid, Illusionist) | | | | | | |
 
@@ -1226,40 +1231,44 @@ minion model's level 50 floor on 5 targets went from 0.85 to 0.84 (the median cl
 ### Class weaknesses (measured) (2026-10-28)
 
 Step 3 of the class identity plan. Steps 1 and 2 measure the strengths, `server/tools/weakness_model.py` measures the price: mana
-pressure, ramp-up and exposure per class at levels 300, 800, 1000 and 1200. Computed from existing models, no balance number moved.
+pressure, ramp-up and exposure per class at levels 300, 800, 1000 and 1200. Computed from existing models, not measured in game.
 Method, per-class table and findings: `server/data/spells/README.md` "Class weaknesses (measured)". Inputs and the pinned facts:
 `server/data/scripts/chaos/weakness_config.lua` (`--check` and the test are in CI).
 
-Line means at levels 300 and 1000:
+The first measurement found four intended weaknesses that did not hold. The owner asked to apply the recommended changes (2026-10-28), so
+all of them hold now. Line means at levels 300 and 1000:
 
-| Line | Runway s 300 / 1000 | Ramp s 300 / 1000 | Far share 300 / 1000 | Health per level |
+| Line | Runway s 300 / 1000 | Ramp s 300 / 1000 | Far share 300 / 1000 (spells alone) | Health per level |
 |---|---|---|---|---|
-| Warrior | 35 / 87 | 0.0 / 0.0 | 41% / 44% | 16.2 |
-| Ranger | 64 / 164 | 3.3 / 2.7 | 94% / 91% | 10.3 |
-| Mystic | 56 / 176 | 1.8 / 0.0 | 100% / 100% | 5.7 |
+| Warrior | 70 / 182 | 0.0 / 0.0 | 17% / 17% (26% / 27%) | 16.2 |
+| Ranger | 64 / 164 | 3.3 / 2.7 | 94% / 91% (91% / 87%) | 10.3 |
+| Mystic | 43 / 138 | 1.8 / 0.0 | 100% / 100% | 5.3 |
 | Thief | 60 / 220 | 0.0 / 0.0 | 27% / 42% | 13.1 |
-| Necromancer | 84 / 282 | 4.9 / 5.0 | 94% / 94% | 8.0 |
+| Necromancer | 84 / 282 | 8.9 / 10.3 | 94% / 94% | 8.0 |
 | Monk | 62 / 207 | 7.3 / 7.3 | 24% / 23% | 12.7 |
-| Templar | 34 / 113 | 0.0 / 0.0 | 39% / 37% | 14.8 |
+| Templar | 64 / 214 | 0.0 / 0.0 | 17% / 17% (27% / 26%) | 14.8 |
 
-What holds today.
-- Health: the Mystic line has the least, 5.7 per level, the Necromancer line 8.0, the Ranger line 10.3. The tanks have the most: Juggernaut
-  19.6, Sentinel 17.3, Samurai 15.4.
-- Range: the Mystic, Necromancer and Ranger lines deal 91-100% of their damage from reach 3 or more, the Warrior and Templar lines 37-44%
-  with their weapon, the Monk line 23% and the Thief line 27-42%.
-- Ramp-up: the Monk line 7.3 s, the Necromancer line 5.0 s, every other line 3.3 s or less. The Bone Lord needs 13 s to raise its army and the
-  Shadowfist builds chi for 14 s.
-
-What does not hold, and the lever for each. None is applied.
-- Mystic line the most mana pressure. Its runway is the third shortest of the seven lines at 300 and the fourth at 1000, 56 s and 176 s,
-  against 34 s (Templar) and 87 s (Warrior) for the shortest.
-  Lever: a Mystic line spend of 1.8-2.2 times the mana a minute, or a lower mana gain than 30 a level.
-- Warrior and Templar with little range holds only through the weapon. Their spells reach 3 or more for 57-68% of the damage. Lever: cut the
-  range of Rift Cleaver, Bastion Cry, Crusader's Sweep, Sanctum Verdict and Lance of Vigil to 1 or 2.
-- The Necromancer and the Lich do not ramp up. The spell opening pays for the minions. Lever: a first hit delay or a longer Raise cooldown.
-- The Illusionist has the Lich's 7 health per level. Lever: 5 or 6, only if the line must be lowest class by class.
+What holds, and what changed to make it hold (before, in brackets):
+- Mana: the Mystic line has the shortest mana runway of the seven lines at every level (56 s at 300 and 176 s at 1000, third and fourth
+  shortest before). The big area spells of the line cost more (Falling Pyre 420 to 700, Doomtide 900 to 1150, Glacial Doom 1320 to 1650,
+  Frozen Crypt 540 to 650, Crimson Covenant 350 to 450, Briar Prison 145 to 200, Arcane Ripple 105 to 150, Blightswarm 65 to 90). The Warrior
+  line spells cost half and the Templar line spells 55% (Colossus Fall 240 to 120, Bastion Cry 200 to 100, Sanctum Verdict 290 to 160,
+  Crusader's Sweep 230 to 125, Lance of Vigil 185 to 100 and the rest of the best sets), so their runway is 70 s and 64 s at level 300 (35 s and 34 s, the
+  two shortest) and they are no longer among the two shortest lines. The level 500 and 1200 quest spells follow their references (1.2 x and 3 x).
+  No class runs under 30 s at level 300 (the Illusionist 34 s). The mana gain and the regeneration are untouched.
+- Health: the Mystic line has the least, 5.3 per level; the Illusionist now has 6 (7), below every class outside the line (Lich 7,
+  Necromancer 8). The tanks have the most: Juggernaut 19.6, Sentinel 17.3, Samurai 15.4.
+- Range: the spells of the Warrior and Templar lines deal 26-31% of their damage from reach 3 or more (57-68% before), 17-21% with the weapon. Rift Cleaver
+  cast range 4 to 2 (its line 4 to 3 tiles), Crusader's Sweep 3 to 2, Sanctum Verdict 3 to 2, Colossus Fall area 7x7 to 5x5, Lance of Vigil 5 to 3 as the Templar's one reach
+  tool. Bastion Cry is a wave of 3 in front of the caster, not a self nova, and keeps range 3. The Mystic, Necromancer and Ranger lines
+  deal 91-100% of their damage from reach 3 or more.
+- Ramp-up: a freshly raised minion waits before its first hit (`necro_config.lua` `minions.firstStrikeMs`: Necromancer 2 s, Lich 6 s, Bone Lord 0),
+  so the Necromancer reaches 80% of its steady damage after 4-8 s and the Lich after 8 s (both 0 s before). The Bone Lord 15 s and the
+  Shadowfist 14 s are still the slowest classes, the Monk line 7.3 s. The steady damage is unchanged.
 
 ### Late spells, levels 340-460 (C6, 2026-10-20)
+
+(The mana and cooldown columns are the C6 values. The spells' current costs are in `spells_chaos.xml`; the cost changes of 2026-10-28 are in "Class weaknesses (measured)" below.)
 
 (O254: Bastion Cry is an attack spell now, level 340, a wave of 3 sqm; the taunt, the slow and the heal are gone.)
 

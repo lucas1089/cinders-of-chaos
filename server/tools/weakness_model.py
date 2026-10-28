@@ -18,7 +18,7 @@ Per class and level it reports three things, from the models and data that alrea
     at 80% or more from that second on. The rotation is rotation_sim.simulate (its chi: +1 a 2 s auto attack hit, a finisher
     waits for 4 chi); the Necromancer line adds its minions: raised one by one by the support group (2 s) and each spell's own
     cooldown (Raise Bone Warrior / Mage 4 s, Raise Dead 2 s with no corpse to raise from, one minion a cast, Bone Golem 30 s), each
-    hitting `minionTravel` seconds after it arrives, weighted by minion_model.py (the tree factor, the alive share, the wand).
+    hitting `minionTravel` seconds plus its class's first strike delay (necro_config.lua minions.firstStrikeMs) after it arrives, weighted by minion_model.py (the tree factor, the alive share, the wand).
     Damage buffs are cast before the pull in every balance model and the auto attack is not in rotation_sim, so both stay out.
   * Exposure. The share of the class's damage on one target that is dealt from a reach of 1 (melee exposure), of 2 and of 3 or
     more (ranged): the best rotation's spell hits, plus the weapon (`autoShare` of weakness_config.lua of the damage, the share
@@ -50,11 +50,13 @@ import minion_model as MM  # noqa: E402
 SERVER = os.path.normpath(os.path.join(HERE, '..'))
 CONFIG = os.path.join(SERVER, 'data', 'scripts', 'chaos', 'weakness_config.lua')
 KIT_CONFIG = os.path.join(SERVER, 'data', 'scripts', 'chaos', 'attack_kit_config.lua')
+NECRO_CONFIG = os.path.join(SERVER, 'data', 'scripts', 'chaos', 'necro_config.lua')
 DEFAULT_LEVELS = (300, 800, 1000, 1200)
 CLASSES = [c for c, _, _ in R.CLASSES]
 LINE = {c: l for c, l, _ in R.CLASSES}
 LINES = ['Warrior', 'Ranger', 'Mystic', 'Thief', 'Necromancer', 'Monk', 'Templar']
 MINION_KEY = {'Necromancer': 'necromancer', 'Lich': 'lich', 'Bone Lord': 'bonelord'}
+LIMITS = ('atleast', 'atmost')   # pin kinds with a value instead of a rank
 GRID = 0.25            # seconds between two points of the ramp curve
 RAMP_FROM = 2.0        # the curve starts after one attack group cooldown: one cast does not decide a ramp
 RAMP_TO = 60.0         # a class that is still under the share here has no ramp the model can name (reported as this)
@@ -80,8 +82,16 @@ def config(text=None):
     out['pins'] = []
     for s in re.findall(r'"([^"]+)"', pins):
         rank, measure, scope, n, names = s.split(' ', 4)
-        out['pins'].append((rank, measure, scope, int(n), [x.strip() for x in names.split(',')]))
+        out['pins'].append((rank, measure, scope, float(n) if rank in LIMITS else int(n), [x.strip() for x in names.split(',')]))
     return out
+
+
+@functools.lru_cache(maxsize=None)
+def first_strike():
+    """{class key: seconds a freshly raised minion waits before its first hit} of necro_config.lua minions.firstStrikeMs"""
+    text = open(NECRO_CONFIG, encoding='utf-8').read()
+    block = re.search(r'firstStrikeMs = \{([^}]*)\}', text).group(1)
+    return {k: int(v) / 1000.0 for k, v in re.findall(r'(\w+) = (\d+)', block)}
 
 
 @functools.lru_cache(maxsize=None)
@@ -190,7 +200,8 @@ def ramp_of(cls, level, conf):
         m = MM.model_class(MINION_KEY[cls], level, levels=DEFAULT_LEVELS)
         wand = m['wand']
         rates = [m['tree'] * m['rows'][k]['dps1'] * m['fight']['alive'] for k in m['kinds']]
-        minion = [(a + conf['minionTravel'], r) for a, r in minion_arrivals(m['kinds'], rates, conf)]
+        delay = conf['minionTravel'] + first_strike().get(MINION_KEY[cls], 0.0)
+        minion = [(a + delay, r) for a, r in minion_arrivals(m['kinds'], rates, conf)]
     run, tot = [], 0.0
     for tt, h in hits:
         tot += h
@@ -288,6 +299,7 @@ MEASURES = {
     'health': lambda r: r['hp']['per_level'],
     'ramp': lambda r: r['ramp'],
     'far': lambda r: r['exp']['far'],
+    'farspells': lambda r: r['exp']['spells']['far'],
     'near': lambda r: r['exp']['near'],
     'runway': lambda r: r['mana']['runway_own'],
     'drain': lambda r: r['mana']['drain'],
@@ -315,9 +327,17 @@ def ranked(t, scope, i, measure, rank):
 
 def check_facts(t, levels, pins):
     """[failure text] of the pins against the tables. A pin is "rank measure scope N names": every name is among the N
-    lowest (or highest) classes (or lines) of the measure at every level"""
+    lowest (or highest) classes (or lines) of the measure at every level; or "atleast|atmost measure scope VALUE names": every
+    name's measure is at least (at most) the value at every level"""
     bad = []
     for rank, measure, scope, n, names in pins:
+        if rank in LIMITS:
+            for i, L in enumerate(levels):
+                for name in names:
+                    v = score(t, scope, name, i, measure)
+                    if (rank == 'atleast' and v < n) or (rank == 'atmost' and v > n):
+                        bad.append('%d: %s %s %s is %.3f, %s %s' % (L, name, scope, measure, v, 'under' if rank == 'atleast' else 'over', n))
+            continue
         for i, L in enumerate(levels):
             top = ranked(t, scope, i, measure, rank)[:n]
             for name in names:
@@ -339,11 +359,14 @@ def intended(t, levels, conf):
 
     out = []
     low = [ranked(t, 'line', i, 'runway', 'lowest') for i in n]
-    out.append(('Mystic line: the most mana pressure', all(r[0] == 'Mystic' for r in low),
+    out.append(('Mystic line: the most mana pressure', all(r[0] == 'Mystic' and 'Warrior' not in r[:2] and 'Templar' not in r[:2]
+                                                              for r in low),
                 'line mean runway in seconds (vocation regeneration, as rotation_sim.py --mana) at %s, shortest first at %d: %s; Mystic line %s' % (
                     lv, levels[0], ', '.join('%s %.0f' % (x, score(t, 'line', x, 0, 'runway')) for x in low[0][:3]),
                     '/'.join('%.0f' % score(t, 'line', 'Mystic', i, 'runway') for i in n))))
-    hp = all(ranked(t, 'line', i, 'health', 'lowest')[0] == 'Mystic' for i in n)
+    hp = all(ranked(t, 'line', i, 'health', 'lowest')[0] == 'Mystic' and
+             ranked(t, 'class', i, 'health', 'lowest')[:3] == sorted(['Mystic', 'Elementalist', 'Illusionist'], key=lambda c: (score(t, 'class', c, i, 'health'), c))
+             for i in n)
     out.append(('Mystic line: the least effective health', hp,
                 'health per level: Mystic %.1f, Elementalist %.1f, Illusionist %.1f; the next classes Lich %.1f, Necromancer %.1f; line means %s' % (
                     score(t, 'class', 'Mystic', 0, 'health'), score(t, 'class', 'Elementalist', 0, 'health'),
@@ -356,7 +379,7 @@ def intended(t, levels, conf):
                     score(t, 'line', 'Ranger', 0, 'health'), ', '.join(ranked(t, 'line', 0, 'health', 'lowest')[:4]),
                     '/'.join('%.0f' % (100 * score(t, 'line', 'Ranger', i, 'far')) for i in n),
                     ', '.join(ranked(t, 'line', 0, 'far', 'highest')[:4]))))
-    ok = all(score(t, 'line', x, i, 'far') < 0.5 and all(score(t, 'line', x, i, 'far') < score(t, 'line', y, i, 'far')
+    ok = all(score(t, 'line', x, i, 'farspells') <= 0.45 and score(t, 'line', x, i, 'far') < 0.5 and all(score(t, 'line', x, i, 'far') < score(t, 'line', y, i, 'far')
                                                           for y in ('Ranger', 'Mystic', 'Necromancer'))
              for x in ('Warrior', 'Templar') for i in n)
     out.append(('Warrior and Templar lines: melee with little range', ok,
@@ -365,7 +388,8 @@ def intended(t, levels, conf):
                     '; '.join('%s %s' % (x, '/'.join('%.0f' % (100 * mean(t[c][i]['exp']['spells']['far'] for c in CLASSES if LINE[c] == x))
                                                       for i in n)) for x in ('Warrior', 'Templar')))))
     slow = [ranked(t, 'line', i, 'ramp', 'highest') for i in n]
-    ok = all(set(s[:2]) == {'Monk', 'Necromancer'} for s in slow)
+    ok = all(set(s[:2]) == {'Monk', 'Necromancer'} for s in slow) and all(
+        t[c][i]['ramp'] >= 3.0 for c in ('Necromancer', 'Lich') for i in n)
 
     def cls_ramp(c):
         return '%s %s' % (c, '/'.join('%.1f' % t[c][i]['ramp'] for i in n))

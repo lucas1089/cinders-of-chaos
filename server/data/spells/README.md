@@ -86,7 +86,7 @@ All have `groupcooldown=2000`, `needlearn=0` (everyone of the vocation and level
 | 132 | Ironhold | `tor brak` | W, J, B | 55 | 200 | 30s | +40% shielding for 12s; no pacify, no lock. In place of the stock Bulwark, retired 2026-10-20 ("Ironhold and Wildstride" below). |
 | 223 | Iron Bellow | `vok vas rhov` | W, J | 120 | 200 | 20s | Taunts all monsters within 4 sqm and slows them 25% for 6s; Iron Will: you take 25% less damage and get +15% shielding for 8s. |
 | 224 | Vaulting Cleave | `kah brak skai` | W, J, B | 170 | 250 | 7s | Jump next to the target and strike it with weapon attack and skill. |
-| 225 | Colossus Fall | `kah gal vas tyr` | W, J, B | 260 | 400 | 10s | **Cast time 1 s** (wind-up). Two crushing blows (0/0.6s) in a 7x7 circle; enemies slowed 70% for 4s. |
+| 225 | Colossus Fall | `kah gal vas tyr` | W, J, B | 260 | 400 | 10s | **Cast time 1 s** (wind-up). Two crushing blows (0/0.6s) in a 5x5 circle (7x7 before 2026-10-28); enemies slowed 70% for 4s. |
 | **illusionist** | | | | | | | |
 | 226 | Hall of Mirrors | `drai spek` | M, I | 40 | 250 | 30s | Up to 3 decoy clones in your outfit for 10s (needs the Clone monster). |
 | 227 | Umbral Stride | `ruan nyx umh` | M, I | 70 | 120 | 10s | Teleport to the far side of the target and stab it for death damage. |
@@ -880,7 +880,7 @@ and sets no balance number. Per class at 300, 800, 1000 and 1200 (`--levels` pic
 - Ramp-up. Seconds until the damage dealt since the pull stays at 80% or more of the damage of an average span of the same
   length in the steady fight. Cold start: no buff, no chi, no minion. Chi comes from `rotation_sim.simulate` (+1 per 2 s auto attack
   hit, a finisher waits for 4). The Necromancer line adds its minions from `minion_model.py`, raised in the best order by the support
-  group (2 s) and each spell's cooldown, with no corpse around and 1 s to walk to the target. Damage buffs are cast before the pull in every
+  group (2 s) and each spell's cooldown, with no corpse around, 1 s to walk to the target and the class's first strike delay (`necro_config.lua` `minions.firstStrikeMs`). Damage buffs are cast before the pull in every
   balance model, so they stay out. "Minions out" is the second the last minion stands next to the caster.
 - Exposure. Share of the damage on one target dealt from reach 1 (near) and 3 or more (far): the best rotation's hits by the reach of each
   spell, plus the weapon (35% of the damage for melee, fist and distance classes, 13% for a wand; reach 1 for the sword, fist and dagger,
@@ -889,77 +889,89 @@ and sets no balance number. Per class at 300, 800, 1000 and 1200 (`--levels` pic
   (Juggernaut 0.765, Sentinel 0.81, Samurai 0.844 from "Templar line" and "Classes with the passive trees"; every other class has no
   toughness number and counts 1.0). No gear, tree or evasion.
 
-Table, base values of the class (levels 300 and 1000; the model also prints 800 and 1200):
+Table, base values of the class after the second identity pass (below; levels 300 and 1000, the model also prints 800 and 1200):
 
 | Class | Runway s 300 / 1000 | Pools a min 300 / 1000 | Ramp s 300 / 1000 | Minions out s | Near / far 300 | Near / far 1000 | Health per level | Health 300 / 1000 |
 |---|---|---|---|---|---|---|---|---|
-| Warrior | 30 / 82 | 2.03 / 0.74 | 0.0 / 0.0 | - | 59% / 41% | 61% / 39% | 15.0 | 4670 / 15170 |
-| Juggernaut | 31 / 77 | 2.03 / 0.81 | 0.0 / 0.0 | - | 59% / 41% | 50% / 50% | 19.6 | 6104 / 19830 |
-| Berserker | 42 / 101 | 1.50 / 0.62 | 0.0 / 0.0 | - | 59% / 41% | 56% / 44% | 14.0 | 4371 / 14171 |
+| Warrior | 59 / 161 | 1.05 / 0.38 | 0.0 / 0.0 | - | 58% / 14% | 60% / 13% | 15.0 | 4670 / 15170 |
+| Juggernaut | 63 / 181 | 1.05 / 0.36 | 0.0 / 0.0 | - | 58% / 14% | 46% / 15% | 19.6 | 6104 / 19830 |
+| Berserker | 87 / 204 | 0.77 / 0.32 | 0.0 / 0.0 | - | 59% / 22% | 55% / 25% | 14.0 | 4371 / 14171 |
 | Ranger | 63 / 180 | 0.97 / 0.34 | 5.0 / 5.0 | - | 0% / 100% | 0% / 94% | 10.0 | 3155 / 10155 |
 | Deadeye | 49 / 122 | 1.28 / 0.51 | 5.0 / 3.0 | - | 0% / 94% | 0% / 95% | 10.0 | 3155 / 10155 |
 | Beastmaster | 81 / 189 | 0.78 / 0.33 | 0.0 / 0.0 | - | 0% / 87% | 0% / 85% | 11.0 | 3454 / 11154 |
-| Mystic | 85 / 281 | 0.72 / 0.22 | 0.0 / 0.0 | - | 0% / 100% | 0% / 100% | 5.0 | 1645 / 5145 |
-| Elementalist | 49 / 136 | 1.25 / 0.45 | 0.0 / 0.0 | - | 0% / 100% | 0% / 100% | 5.0 | 1645 / 5145 |
-| Illusionist | 34 / 112 | 1.81 / 0.55 | 5.5 / 0.0 | - | 0% / 100% | 0% / 100% | 7.0 | 2243 / 7143 |
+| Mystic | 58 / 191 | 1.05 / 0.32 | 0.0 / 0.0 | - | 0% / 100% | 0% / 100% | 5.0 | 1645 / 5145 |
+| Elementalist | 37 / 110 | 1.63 / 0.55 | 0.0 / 0.0 | - | 0% / 100% | 0% / 100% | 5.0 | 1645 / 5145 |
+| Illusionist | 34 / 112 | 1.81 / 0.55 | 5.5 / 0.0 | - | 0% / 100% | 0% / 100% | 6.0 | 1944 / 6144 |
 | Thief | 66 / 256 | 0.94 / 0.24 | 0.0 / 0.0 | - | 79% / 10% | 47% / 41% | 12.0 | 3763 / 12163 |
 | Ninja | 62 / 209 | 1.03 / 0.31 | 0.0 / 0.0 | - | 56% / 44% | 47% / 53% | 12.0 | 3763 / 12163 |
 | Samurai | 54 / 195 | 1.19 / 0.33 | 0.0 / 0.0 | - | 47% / 28% | 60% / 30% | 15.4 | 4812 / 15594 |
-| Necromancer | 87 / 288 | 0.70 / 0.21 | 0.0 / 0.0 | 5 | 0% / 100% | 0% / 100% | 8.0 | 2547 / 8147 |
-| Lich | 88 / 292 | 0.72 / 0.22 | 0.0 / 0.0 | 1 | 0% / 100% | 0% / 100% | 7.0 | 2248 / 7148 |
+| Necromancer | 87 / 288 | 0.70 / 0.21 | 4.0 / 8.0 | 7 | 0% / 100% | 0% / 100% | 8.0 | 2547 / 8147 |
+| Lich | 88 / 292 | 0.72 / 0.22 | 8.0 / 8.0 | 7 | 0% / 100% | 0% / 100% | 7.0 | 2248 / 7148 |
 | Bone Lord | 78 / 265 | 0.81 / 0.24 | 14.8 / 15.0 | 13 | 0% / 83% | 0% / 81% | 9.0 | 2846 / 9146 |
 | Monk | 74 / 245 | 0.83 / 0.25 | 4.0 / 4.0 | - | 78% / 13% | 78% / 13% | 12.0 | 3763 / 12163 |
 | Shadowfist | 54 / 188 | 1.17 / 0.34 | 14.0 / 14.0 | - | 75% / 25% | 76% / 24% | 12.0 | 3763 / 12163 |
 | Iron Sage | 57 / 187 | 1.13 / 0.34 | 4.0 / 4.0 | - | 67% / 33% | 67% / 33% | 14.0 | 4361 / 14161 |
-| Templar | 32 / 108 | 1.93 / 0.56 | 0.0 / 0.0 | - | 35% / 43% | 35% / 42% | 14.0 | 4366 / 14166 |
-| Inquisitor | 43 / 143 | 1.45 / 0.44 | 0.0 / 0.0 | - | 35% / 35% | 35% / 33% | 13.0 | 4067 / 13167 |
-| Sentinel | 26 / 86 | 2.37 / 0.72 | 0.0 / 0.0 | - | 50% / 38% | 49% / 37% | 17.3 | 5390 / 17488 |
+| Templar | 59 / 203 | 1.04 / 0.31 | 0.0 / 0.0 | - | 35% / 10% | 35% / 10% | 14.0 | 4366 / 14166 |
+| Inquisitor | 84 / 277 | 0.78 / 0.24 | 0.0 / 0.0 | - | 35% / 35% | 35% / 33% | 13.0 | 4067 / 13167 |
+| Sentinel | 49 / 163 | 1.29 / 0.39 | 0.0 / 0.0 | - | 50% / 7% | 49% / 7% | 17.3 | 5390 / 17488 |
 
-Lines, the mean of the line's three classes:
+Lines, the mean of the line's three classes (far share: weapon included, then the spells alone in brackets):
 
-| Line | Runway s 300 / 1000 | Ramp s 300 / 1000 | Far share 300 / 1000 | Health per level |
+| Line | Runway s 300 / 1000 | Ramp s 300 / 1000 | Far share 300 / 1000 (spells alone) | Health per level |
 |---|---|---|---|---|
-| Warrior | 35 / 87 | 0.0 / 0.0 | 41% / 44% | 16.2 |
-| Ranger | 64 / 164 | 3.3 / 2.7 | 94% / 91% | 10.3 |
-| Mystic | 56 / 176 | 1.8 / 0.0 | 100% / 100% | 5.7 |
-| Thief | 60 / 220 | 0.0 / 0.0 | 27% / 42% | 13.1 |
-| Necromancer | 84 / 282 | 4.9 / 5.0 | 94% / 94% | 8.0 |
-| Monk | 62 / 207 | 7.3 / 7.3 | 24% / 23% | 12.7 |
-| Templar | 34 / 113 | 0.0 / 0.0 | 39% / 37% | 14.8 |
+| Warrior | 70 / 182 | 0.0 / 0.0 | 17% / 17% (26% / 27%) | 16.2 |
+| Ranger | 64 / 164 | 3.3 / 2.7 | 94% / 91% (91% / 87%) | 10.3 |
+| Mystic | 43 / 138 | 1.8 / 0.0 | 100% / 100% (100% / 100%) | 5.3 |
+| Thief | 60 / 220 | 0.0 / 0.0 | 27% / 42% (42% / 64%) | 13.1 |
+| Necromancer | 84 / 282 | 8.9 / 10.3 | 94% / 94% (94% / 93%) | 8.0 |
+| Monk | 62 / 207 | 7.3 / 7.3 | 24% / 23% (37% / 36%) | 12.7 |
+| Templar | 64 / 214 | 0.0 / 0.0 | 17% / 17% (27% / 26%) | 14.8 |
 
-Intended weaknesses against the numbers, judged on the lines at all four levels:
+Line runway at 800 / 1200 (seconds): Warrior 146 / 209, Ranger 131 / 196, Mystic 110 / 165, Thief 171 / 263, Necromancer 224 / 338, Monk 166 / 248, Templar 171 / 257.
 
-| Intended weakness | Verdict |
-|---|---|
-| Mystic line: the most mana pressure | does not hold: runway 56 s at 300, third shortest of seven lines, against the Templar line 34 s and the Warrior line 35 s; 176 s at 1000, fourth shortest, against 113 s and 87 s |
-| Mystic line: the least effective health | holds: 5, 5 and 7 health per level, line mean 5.7 against the Necromancer line 8.0 |
-| Ranger line: low effective health but ranged | holds: 10.3 health per level, third lowest line; 91-94% of the damage from reach 3 or more |
-| Warrior and Templar lines: melee with little range | holds through the weapon: far share 41-44% and 37-39%, with the Monk (24%) and Thief (27-42%) the least ranged; their spells alone reach 3 or more for 57-68% of the damage |
-| Monk and Necromancer lines: the slowest ramp-up | holds on the line means: Monk line 7.3 s, Necromancer line 5.0 s, the rest 3.3 s or less; by class the slowest are the Bone Lord 15 s and the Shadowfist 14 s, the Necromancer and Lich 0 s |
-| Thief line: low sustained mana efficiency | not checked, burst classes may be mana-light; the Thief line runs 60 s at 300 and 220 s at 1000 |
+Intended weaknesses against the numbers, judged on the lines at all four levels. First measurement (2026-10-28, nothing applied) and now:
 
-Findings, with the lever for each (not applied):
+| Intended weakness | First measurement | Now |
+|---|---|---|
+| Mystic line: the most mana pressure | did not hold: runway 56 s at 300, third shortest, against the Templar line 34 s and the Warrior line 35 s; 176 s at 1000 against 113 s and 87 s | holds: shortest of the seven lines at all four levels, 43 / 110 / 138 / 165 s; the Warrior line 70 / 146 / 182 / 209 s and the Templar line 64 / 171 / 214 / 257 s are no longer among the two shortest |
+| Mystic line: the least effective health | held: 5, 5 and 7 health per level, line mean 5.7 | holds: 5, 5 and 6, line mean 5.3; the Illusionist is below every class outside the line (Lich 7, Necromancer 8) |
+| Ranger line: low effective health but ranged | held | holds: 10.3 health per level, third lowest line; 91-94% of the damage from reach 3 or more |
+| Warrior and Templar lines: melee with little range | held only through the weapon; their spells reached 3 or more for 57-68% of the damage | holds: spells alone 26-31% (Warrior line) and 26-27% (Templar line) at reach 3 or more, with the weapon 17-21% |
+| Monk and Necromancer lines: the slowest ramp-up | held on the Monk line (7.3 s) and the Bone Lord and Shadowfist; the Necromancer and the Lich did not ramp (0 s) | holds: Necromancer line 8.9-10.3 s, Monk line 7.3 s, the rest 3.3 s or less; the Necromancer 4 / 8 / 8 / 8 s and the Lich 8 s |
+| Thief line: low sustained mana efficiency | not checked, burst classes may be mana-light | not checked; the Thief line runs 60 s at 300 and 220 s at 1000 |
 
-1. The Mystic line has no mana pressure. Its pools are the biggest (30 mana a level), so its best set runs 56 s from a full pool at level 300
-   and the Templar line 34 s. Lever: the Mystic line best sets would have to spend 1.8-2.2 times the mana a minute to be the shortest runway of
-   the lines. Raise the fixed cost of the Mystic area spells (Falling Pyre, Doomtide, Glacial Doom in `spells_chaos.xml` and
-   `rotation_model.csv`) or cut the Mystic line mana gain in `start_stats.lua`. `rotation_sim.py --mana` keeps its 15 s floor.
-2. The Illusionist has 7 health per level, as the Lich. The Mystic line is lowest on its mean and on the base class and the Elementalist.
-   Lever: the Illusionist to 5 or 6 in `start_stats.lua` and `chaos_vocations.xml`, only if the line must be lowest class by class.
-3. The Warrior and Templar spells are not short. Rift Cleaver 4, Bastion Cry 3, Crusader's Sweep 3, Sanctum Verdict 3, Lance of Vigil 5 and the
-   areas of 3 around the caster put 57-68% of their spell damage at reach 3 or more. Lever: cut those ranges to 1 or 2 in `spells_chaos.xml`
-   and `attack_kit_config.lua` together, then `rotation_sim.py --write`.
-4. The Necromancer and the Lich do not ramp up. The trio is out at 5 s and the shade at 1 s, and the spell opening (every cooldown ready at the
-   pull) pays for it. Only the Bone Lord ramps up, its six skeletons and golem need 13 s. Lever: a first hit delay or a longer Raise cooldown on the
-   minions in `necro_config.lua`, a finisher at 5 chi for the Monk line.
-5. The Ranger and the Deadeye show a 3-5 s ramp that is an artifact of the opening order, not a weakness. Do not tune it.
+What was applied (owner 2026-10-28, "apply the recommended changes so gameplay is more fun and balanced"):
+
+1. Mana identity. The Mystic line spells that fill its best sets cost more (Falling Pyre 420 to 700, Crimson Covenant 350 to 450, Briar Prison 145
+   to 200, Arcane Ripple 105 to 150, Blightswarm 65 to 90, Frozen Crypt 540 to 650, Doomtide 900 to 1150, Glacial Doom 1320 to 1650). The
+   Illusionist's sets are not touched (34 s at 300, the floor is 30 s). The Warrior line spells in its best sets cost half (Colossus Fall 240 to 120,
+   Bastion Cry 200 to 100, Gorehook 115 to 60, Rift Cleaver 135 to 70, Vaulting Cleave 150 to 75, Anvil Fall 270 to 135, Rampage Leap 240 to 120,
+   Skyfall Cleave 60 to 30, Headsman's Hurl 60 to 30, Scything Arc 35 to 20, Butcher's Gyre 60 to 30) and the Templar line spells 55%
+   (Crusader's Sweep 230 to 125, Sanctum Verdict 290 to 160, Lance of Vigil 185 to 100, Martyr's Pyre 145 to 80, Consecration and Sanctified Ground 95 to 50,
+   Judgement 150 to 80, Zealot's Wrath 170 to 95, Bell of Reckoning 165 to 90, Censer Swing 135 to 75, Shield Wave 150 to 80, Bulwark Slam 125 to 70,
+   Rampart Quake 175 to 95, Hallowed Cut 115 to 65, Penitent Lash 145 to 80, Purging Nova 210 to 115, Heretic's Brand 175 to 95). The mana gain per level and the
+   regeneration are untouched. `rotation_sim.py --mana --check`: no row under 15 s; no class under 30 s at level 300 (Illusionist 34 s the lowest).
+   The Mystic base class gets 58 / 153 / 191 / 229 s, the Elementalist 37 / 88 / 110 / 132 s.
+2. Ramp-up. A freshly raised minion waits `minions.firstStrikeMs` before its first hit: Necromancer 2000, Lich 6000, Bone Lord 0 (its army takes 13 s). A hunt
+   pays it once, the minions persist between packs; a boss pull, a death or a rest in a protection zone pays it again. The steady damage and
+   `minion_model.py` are unchanged.
+3. Range. Rift Cleaver cast range 4 to 2 (line 4 to 3 tiles), Crusader's Sweep 3 to 2, Sanctum Verdict 3 to 2, Lance of Vigil 5 to 3 (line 5 to 3 tiles), Colossus Fall area 7x7 to 5x5.
+   Bastion Cry is a wave of 3 in front of the caster, not a self nova, and keeps range 3. Compensation where the area shrank: Lance of Vigil x1.1
+   (`scale` 1.1 and the `*1.1` of its `rotation_model.csv` row). Rift Cleaver and Colossus Fall got none: a pack of 5 takes the same hits in the model (`t5` is an integer:
+   2, 2, 5) and a raise would have reordered the damage per cast the cooldown ladder ranks by (`rotation_sim_test.py` failed with x1.1 on both). Pack, boss
+   and quest bands hold with no other change.
+4. Health. Illusionist 7 to 6 health per level (`start_stats.lua`, `chaos_vocations.xml`). A character already past its level keeps its health: the login
+   correction (`newplayer_core.lua` `statsFix`) only raises a character below its class.
+
+Findings that were not changed: the Ranger and the Deadeye show a 3-5 s ramp that is an artifact of the opening order, not a weakness. Do not tune it.
 
 Limits of the model. The weapon share is one number per kind of stats, not a measurement per class. The stock spells of the Warrior, Ranger and
 Mystic lines are not in the repo, their reach is a table in `weakness_config.lua`. A self-cast area counts at its radius, so a Mystic nova
-of 6 is far. No fight length, no healing, no potion, no mana for replacing a dead minion. `--check` pins orders only: the two base Mystic classes
-the least health, the Mystic line lowest and the Ranger line third lowest, the tanks the most, the Mystic, Necromancer and Ranger lines the three
+of 6 is far. No fight length, no healing, no potion, no mana for replacing a dead minion. `--check` pins orders and four limits: the two base Mystic classes
+the least health and the Illusionist third lowest, the Mystic line lowest and the Ranger line third lowest, the tanks the most, the Mystic, Necromancer and Ranger lines the three
 most ranged, the Warrior, Templar, Monk and Thief lines the four least ranged, the Monk and Necromancer lines the two slowest ramp lines, the Bone
-Lord and the Shadowfist the two slowest classes.
+Lord and the Shadowfist the two slowest classes, the Mystic line the shortest runway with the Warrior and Templar lines outside the two shortest, the
+Necromancer and the Lich a ramp of at least 3 s, the Warrior and Templar lines at most 45% of their spell damage from reach 3 or more.
 
 ### Pack farming for every class (2026-10-15; computed, not measured in game)
 
@@ -3459,19 +3471,19 @@ its reference is the Ranger rotation, which changed.
 ### Line spell quests, level 500 attacks (phase 2, 2026-10-28; computed, not measured in game)
 
 Seven attack spells, one per line, `needlearn="1"` and level 500: only the quest teaches them (server/README.md "Line spell quests").
-Every class and ascension has 12 attack spells; cooldown 13 s, group cooldown 2 s, mana 1.2 x the reference spell, coefficients 1.25 x it
+Every class and ascension has 12 attack spells; cooldown 13 s, group cooldown 2 s, mana 1.2 x the reference spell (the costs in the table follow the references of 2026-10-28), coefficients 1.25 x it
 (`attack_kit_config.lua`, `quest = 1`; `rotation_model.csv` has the matching rows; `attack_kit_test.lua` checks both). The reference
 and the numbers:
 
 | Spell (id) | Reference | Kit terms | Mana |
 |---|---|---|---|
-| Keepfall (142) | Headsman's Hurl | P 0.17-0.20, base 17-40, scale 1.6 (1.28 x 1.25) | 72 |
+| Keepfall (142) | Headsman's Hurl | P 0.17-0.20, base 17-40, scale 1.6 (1.28 x 1.25) | 36 (72 before 2026-10-28) |
 | Moonshard Rain (149) | one volley of Hail of Dawn (4 arrows x 1.1) | scale 27.5 (4 x 1.1 x 1.25 x 5: the kit's level term is level / 5), P 0.0042-0.0068, ML 0.1-0.16, base 3-6 | 576 |
-| Prismatic Rupture (152) | Falling Pyre, without its burn | ML 6.6-10.8, base 145-265, scale 1.5 (1.2 x 1.25) | 504 |
+| Prismatic Rupture (152) | Falling Pyre, without its burn | ML 6.6-10.8, base 145-265, scale 1.5 (1.2 x 1.25) | 840 (504) |
 | Eclipse Edge (155) | Last Breath | P 0.1808-0.2893, base 20-40, scale 1.25 | 180 |
 | Soulflay Wave (158) | Crypt Collapse | ML 15.325-24.52, base 20-40, scale 1.25 | 498 |
 | Thousand-Echo Palm (172) | Skysplitter Fist | P 0.3086-0.4938, base 20-40, scale 1.25, finisher | 264 |
-| Pyre of Absolution (177) | Sanctum Verdict | P 0.3565-0.5704, ML 0.5-0.8, base 20-40, scale 1.25 | 348 |
+| Pyre of Absolution (177) | Sanctum Verdict | P 0.3565-0.5704, ML 0.5-0.8, base 20-40, scale 1.25 | 192 (348) |
 
 Deviation: the spec says 1.25 x Hail of Dawn for the Ranger. Hail of Dawn is three volleys and already about 64% of the Ranger's
 best set at level 300; 1.25 x the whole cast as a circle would raise that set by about 80% and the distance weapon power to 2.1 at
@@ -3489,13 +3501,13 @@ best set's score at level 1200 (score = 1 target + 0.25 x pack, `rotation_sim.py
 
 | Spell (id) | Line, role | Reference (x 3.5 would add) | Kit terms | Shape | Cooldown | Mana |
 |---|---|---|---|---|---|---|
-| Judgment of Iron (148) | Warrior, mixed | Colossus Fall, two blows (15.5%) | P 0.052-0.093, base 20-40, scale 4.7 | around, radius 3 | 45 s | 720 |
+| Judgment of Iron (148) | Warrior, mixed | Colossus Fall, two blows (15.5%) | P 0.052-0.093, base 20-40, scale 4.7 | around, radius 3 | 45 s | 360 (720) |
 | Dawnbreaker Shot (151) | Ranger, boss burst | Sunspear (3.5%) | P 0.1235-0.1976, base 20-40, scale 6.6 | piercing line of 8 | 40 s | 345 |
-| Eclipse of Ruin (154) | Mystic, area | Glacial Doom, three waves of x 1.9 (37%) | ML 3.5-6.5, base 80-160, scale 6.4 | circle radius 5, range 7 | 50 s | 3960 |
+| Eclipse of Ruin (154) | Mystic, area | Glacial Doom, three waves of x 1.9 (37%) | ML 3.5-6.5, base 80-160, scale 6.4 | circle radius 5, range 7 | 50 s | 4950 (3960) |
 | Death Between Heartbeats (157) | Thief, boss burst | Last Breath (19%) | P 0.1808-0.2893, base 20-40, scale 1.2, critical x 1.75 | single, melee | 35 s | 450 |
 | Funeral of Kings (160) | Necromancer, area | Splinter Volley (18%) | ML 15.85-25.36, base 20-40, scale 2 | circle radius 5, range 6 | 50 s | 1200 |
 | Heaven's Ninth Gate (174) | Monk, boss burst | Skysplitter Fist (14.5%) | P 0.3086-0.4938, base 20-40, scale 2.5, finisher | single, melee | 40 s | 660 |
-| Hammer of Ember Dawn (237) | Templar, mixed | Sanctum Verdict (19%) | P 0.3565-0.5704, ML 0.5-0.8, base 20-40, scale 1, main 2 | circle radius 2, range 3 | 45 s | 870 |
+| Hammer of Ember Dawn (237) | Templar, mixed | Sanctum Verdict (19%) | P 0.3565-0.5704, ML 0.5-0.8, base 20-40, scale 1, main 2 | circle radius 2, range 3 | 45 s | 480 (870) |
 
 Scales below 3.5 x overshot (measured as a fixed share of the best set, before the class factors) (the percentages in the table are what 3.5 x added to the line's mean); the Ranger line is the one that
 needed more (the line's sets are the strongest of the game and Sunspear is a 10 s single hit).

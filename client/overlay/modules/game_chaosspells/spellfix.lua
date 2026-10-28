@@ -39,7 +39,7 @@ F.STOCK = {
   ["saen tin brak"] = { id = 175 },                                 -- Salve of Scars (170)
   ["drai ira vas sol"] = { id = 34, level = 300, range = 7, needTarget = true, vocations = { 3, mana = 95 }, exhaustion = 9000 }, -- Radiant Shard (258)
   ["drai zar nyx"] = { id = 35, level = 300, group = { [1] = 2000 }, vocations = { 1, 5 } }, -- Lance of the Grave (260)
-  ["kah rek sang"] = { id = 37, level = 300, mana = 60, range = 7, vocations = { 4, 8, 14 }, exhaustion = 13000 }, -- Headsman's Hurl (261)
+  ["kah rek sang"] = { id = 37, level = 300, mana = 30, range = 7, vocations = { 4, 8, 14 }, exhaustion = 13000 }, -- Headsman's Hurl (261)
   ["drai orr hyr"] = { id = 40, level = 300, group = { [1] = 2000 }, vocations = { 1, 10 } }, -- Shatterfrost (263/262)
   ["drai orr gor"] = { id = 41, level = 300, group = { [1] = 2000 }, vocations = { 1, 10 } }, -- Quakeburst (262/263)
   ["vael mur sol"] = { id = 46, level = 300, vocations = { 3 } },                 -- Hallowed Ground (268)
@@ -62,8 +62,8 @@ F.STOCK = {
   ["kah sag"] = { level = 8, mana = 20 },                           -- Phantom Javelin: level 8, 20 mana (server patch_spell_timings.py)
   ["kah vas"] = { mana = 60 },                                      -- Earthrend: the Warrior line's mana runway
   ["kah"] = { mana = 40 },                                          -- Reaver's Spin
-  ["kah ti"] = { mana = 35, exhaustion = 4000 },                    -- Scything Arc (cooldown ladder, 2026-10-20)
-  ["kah gal"] = { mana = 60, exhaustion = 9000 },                  -- Butcher's Gyre (cooldown ladder, 9 s since O176)
+  ["kah ti"] = { mana = 20, exhaustion = 4000 },                    -- Scything Arc (cooldown ladder, 2026-10-20)
+  ["kah gal"] = { mana = 30, exhaustion = 9000 },                  -- Butcher's Gyre (cooldown ladder, 9 s since O176)
   ["drai vas sol"] = { exhaustion = 7000, mana = 95, level = 20 },             -- Sanctum Burst (cooldown ladder, 7 s since O176; level 20 since O250)
   ["drai zhul ul"] = { exhaustion = 9000, mana = 100 },                         -- Tempest Fan (cooldown ladder, 9 s since O176)
   ["hesh sol"] = { exhaustion = 40000 },                            -- Glare of Dawn
@@ -86,7 +86,7 @@ F.STOCK = {
 -- (2026-10-14): the Auto rotation of a Mystic picked Bewitching Hex and Arcane Ripple and the helper had no entry.
 -- Riftbolt, Crossfire Hex, Fading Step and Gravity Snare left with the 15-spell cap (2026-10-20: no class keeps them).
 F.EXTRA = {
-  { id = 85, name = "Arcane Ripple", words = "drai ondr", level = 14, mana = 105, cooldown = 4000, groupCooldown = 2000,
+  { id = 85, name = "Arcane Ripple", words = "drai ondr", level = 14, mana = 150, cooldown = 4000, groupCooldown = 2000,
     needTarget = true, range = 4, vocations = { 1, 10 }, icon = 43 },
   { id = 53, name = "Bewitching Hex", words = "drai glam", level = 60, mana = 45, cooldown = 6000, groupCooldown = 2000,
     needTarget = true, range = 4, vocations = { 1, 10 }, icon = 56 },

@@ -18,7 +18,8 @@ CLIENT_ONLY_REMOVED = [('exevo gran mort', 'Conjure Wand of Darkness')]
 # stock spells the server retired (server/tools/retire_cure_spells.py OTHERS; old words, client name). Unlike the removed
 # ones they keep no id: spellfix.lua moves them off the server's ids like every stock entry the server does not know
 # (Tautstring has Hawkeye's id 135 now, Ironhold Bulwark's 132, Wildstride Windrunner's 134). The spell list leaves them out (chaosspells.lua hideRemovedSpells).
-RETIRED_STOCK = [('utito tempo san', 'Sharpshooter'), ('utamo tempo', 'Protector'), ('utamo tempo san', 'Swift Foot')]
+RETIRED_STOCK = [('utito tempo san', 'Sharpshooter'), ('utamo tempo', 'Protector'), ('utamo tempo san', 'Swift Foot'),
+                 ('utevo lux', 'Lantern'), ('utevo gran lux', 'Greater Lantern'), ('utevo vis lux', 'Radiant Lantern')]
 
 def quest_numbers():
     """{spell name: 1..3} of the line spell quests' spells (server spellquest_config.lua `spells = {quest 1, 2, 3}` per line)"""

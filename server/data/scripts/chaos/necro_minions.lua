@@ -284,6 +284,10 @@ local function think(player, t)
 			M.nextTaunt[id] = t + k.tauntMs
 			taunt(player, c, kind)
 		end
+		if M.nextHit[id] == nil then
+			-- a freshly raised minion: its first hit comes after the class's first strike delay
+			M.nextHit[id] = t + N.firstStrike(cfg(), classKey)
+		end
 		if (M.nextHit[id] or 0) <= t then
 			local target = N.minionTarget(cpos, k.range, ownerTarget, info(c:getTarget()))
 			if target and target.creature ~= c and not (target.creature:getMaster() == player) then

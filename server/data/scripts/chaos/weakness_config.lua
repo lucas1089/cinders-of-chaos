@@ -51,10 +51,11 @@ return {
 		["Sanctified Ground"] = 2,
 	},
 
-	-- ENFORCED: the identity facts that hold today (orders, no values)
+	-- ENFORCED: the identity facts that hold today (orders, and four limits)
 	-- "rank measure scope N names": every name is among the N lowest (or highest) classes (or lines, the mean of the line's three
 	-- classes) of the measure at EVERY level above. Measures: health (effective health per level), ramp (seconds to 80%),
-	-- far (share of the damage dealt from reach 3+), near (reach 1), runway, drain.
+	-- far (share of the damage dealt from reach 3+, weapon included), farspells (the same, spells alone), near (reach 1),
+	-- runway, drain. "atleast|atmost measure scope VALUE names": every name's measure is at least (at most) VALUE at every level.
 	pins = {
 		-- the Mystic line is the frailest: the two base classes have the least health, the line the lowest mean
 		"lowest health class 2 Mystic,Elementalist",
@@ -69,5 +70,17 @@ return {
 		-- the Monk line (chi build, Shadowfist's stacks) and the Necromancer line (the Bone Lord's army) are the two slowest to start
 		"highest ramp line 2 Monk,Necromancer",
 		"highest ramp class 2 Bone Lord,Shadowfist",
+		-- class identity pass 2 (owner, 2026-10-28), the four weaknesses that did not hold and now do:
+		-- 1. mana: the Mystic line has the shortest mana runway of the seven lines and the Warrior and Templar lines are not among
+		--    the two shortest (they were the two shortest, 34 s and 35 s at level 300)
+		"lowest runway line 1 Mystic",
+		"highest runway line 5 Warrior,Templar",
+		-- 2. ramp-up: the Necromancer and the Lich need at least 3 s to reach 80% of their steady damage (first strike delay of
+		--    the minions, necro_config.lua minions.firstStrikeMs); the Necromancer line is the slowest with the Monk line (above)
+		"atleast ramp class 3 Necromancer,Lich",
+		-- 3. range: the spells of the Warrior and Templar lines deal at most 45% of their damage from reach 3 or more
+		"atmost farspells line 0.45 Warrior,Templar",
+		-- 4. health: the Illusionist (6 a level) is below every class outside the Mystic line (Lich 7)
+		"lowest health class 3 Mystic,Elementalist,Illusionist",
 	},
 }

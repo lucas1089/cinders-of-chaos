@@ -153,7 +153,7 @@ drai sol hrak,Censer Swing,"avg(l+P*0.1246+ML*0.5+20,l+P*0.1994+ML*0.8+40)",3,,c
 kah sol vael,Penitent Lash,"avg(l+P*0.1345+ML*0.5+20,l+P*0.2152+ML*0.8+40)",3,,chaos/templar/penitent_lash.lua (attack_kit_config.lua penitentlash: wave)
 kah sol pyr,Martyr's Pyre,"5*avg(l+P*0.0258+ML*0.5+8,l+P*0.0413+ML*0.8+16)",1,,chaos/templar/martyrs_pyre.lua (attack_kit_config.lua martyrspyre: dot)
 drai sol krak,Bell of Reckoning,"avg(l+P*0.1542+ML*0.5+20,l+P*0.2467+ML*0.8+40)",5,,chaos/templar/bell_of_reckoning.lua (attack_kit_config.lua bellofreckoning: circle)
-kah sol sag lanc,Lance of Vigil,"avg(l+P*0.1739+ML*0.5+20,l+P*0.2782+ML*0.8+40)",2,,chaos/templar/lance_of_vigil.lua (attack_kit_config.lua lanceofvigil: line)
+kah sol sag lanc,Lance of Vigil,"avg(l+P*0.1739+ML*0.5+20,l+P*0.2782+ML*0.8+40)*1.1",2,,chaos/templar/lance_of_vigil.lua (attack_kit_config.lua lanceofvigil: line)
 kah sol judh brak,Sanctum Verdict,"avg(l+P*0.3565+ML*0.5+20,l+P*0.5704+ML*0.8+40)",1,,chaos/templar/sanctum_verdict.lua (attack_kit_config.lua sanctumverdict: single)
 kah sol putr,Heretic's Brand,"avg(l+P*0.2085+ML*0.5+20,l+P*0.3336+ML*0.8+40)",1,,chaos/inquisitor/heretics_brand.lua (attack_kit_config.lua hereticsbrand: single)
 drai sol vael,Zealot's Wrath,"avg(l+P*0.1591+ML*0.5+20,l+P*0.2546+ML*0.8+40)",5,,chaos/inquisitor/zealots_wrath.lua (attack_kit_config.lua zealotswrath: around)

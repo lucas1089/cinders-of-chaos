@@ -162,8 +162,9 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                the small fire without damage, on the map: no monster is immune to fire since C7, so the start could not
                place them ("Couldn't spawn monster", README "Spawns on fire fields"; with --dry-run it reads the real
                map and writes nothing)
-  spells       tools/retire_cure_spells.py       the stock cure (status cleansing) spells, Hawkeye, Bulwark and
-                                                 Windrunner go; their ids are free (C6, 2026-10-20)
+  spells       tools/retire_cure_spells.py       the stock cure (status cleansing) spells, Hawkeye, Bulwark,
+                                                 Windrunner and the three light spells go; their ids are free
+                                                 (C6, 2026-10-20; the light spells 2026-10-28)
                tools/patch_spell_cap.py          the 15-spell cap: classes leave the stock spells they no longer
                                                  have, stock spells no class keeps are retired (docs/CLASSES.md
                                                  "Spell cap", 2026-10-20)

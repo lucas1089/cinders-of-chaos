@@ -74,7 +74,7 @@ local function runPatch(text)
 end
 
 local patched, n = runPatch(STOCK)
-eq(n, 7, "stock utility spells patched (the cure spells are retired, C6)")
+eq(n, 5, "stock utility spells patched (the cure spells are retired, C6; the light spells too, 2026-10-28)")
 local again, n2 = runPatch(patched)
 eq(n2, 0, "second run: nothing to do")
 eq(again, patched, "second run changes nothing")
@@ -96,7 +96,7 @@ local function hasLine(set, line)
 end
 local THIEF, MONK, TEMPLAR = {"Thief", "Ninja", "Samurai"}, {"Monk", "Shadowfist", "Iron Sage"}, {"Templar", "Inquisitor", "Sentinel"}
 local expect = {
-	["Light"] = {true, true, true}, ["Great Light"] = {true, true, true}, ["Haste"] = {true, true, true},
+	["Light"] = {false, false, false}, ["Great Light"] = {false, false, false}, ["Haste"] = {true, true, true},
 	["Find Person"] = {true, true, true}, ["Levitate"] = {true, true, true}, ["Magic Rope"] = {true, true, true},
 	["Strong Haste"] = {true, true, false}, ["Food"] = {false, false, false}, ["Energy Strike"] = {false, false, false},
 	["Chaos Light"] = {false, false, false}
@@ -133,7 +133,9 @@ if f then
 	end
 	local light, strong, curse = ids("vael lyss"), ids("ruan gal ul"), ids("puir nyx")
 	ok(next(curse) == nil, "client: no cure spell in the stock lines (retired)")
-	ok(light[11] and light[13] and light[17] and light[19] and light[23] and light[25], "client: Lantern for the three lines")
+	ok(next(light) == nil, "client: no light spell in the stock lines (retired, 2026-10-28)")
+	local retired = env.ChaosRetiredSpells or {}
+	ok(retired["utevo lux"] and retired["utevo gran lux"] and retired["utevo vis lux"], "client: the three light spells are retired")
 	ok(strong[11] and strong[17] and not strong[23], "client: Galeborne Stride for the Thief and Monk lines only")
 end
 

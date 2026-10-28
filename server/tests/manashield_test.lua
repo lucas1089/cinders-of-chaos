@@ -252,6 +252,37 @@ local lines = spelldata:match('ChaosStockSpellLines = {.-%["tor ael"%] = (%b{})'
 eq(capped and luaIds(capped), want, "client: the cap keeps the nine (spelldata.lua)")
 eq(lines and luaIds(lines), want, "client: the nine get it (spelldata.lua)")
 
+-- ------------------------------------------------------------------ Soulward: magic and hybrid lines only (owner 2026-10-28)
+do
+	local want2 = {}
+	for _, v in ipairs(S.cfg.soulwardVocations) do want2[#want2 + 1] = v end
+	table.sort(want2)
+	local wantS = table.concat(want2, ",")
+	eq(wantS, "1,3,5,7,10,15,20,21,22,23,24,25", "Soulward: Mystic, Ranger, Necromancer and Templar lines")
+	local ward = {}
+	for _, v in ipairs(S.cfg.vocations) do ward[v] = true end
+	eq(ward[23] or ward[24] or ward[25], nil, "Ward of the Mind is not given to the Templar line")
+	for _, v in ipairs(S.cfg.vocations) do
+		local inSoul = false
+		for _, w in ipairs(S.cfg.soulwardVocations) do if w == v then inSoul = true end end
+		eq(inSoul, true, "every Ward of the Mind class has Soulward (" .. v .. ")")
+	end
+	local ID = {Warrior = 4, Juggernaut = 8, Berserker = 14, Ranger = 3, Deadeye = 7, Beastmaster = 15, Mystic = 1,
+		Elementalist = 5, Illusionist = 10, Thief = 11, Ninja = 12, Samurai = 13, Monk = 17, Shadowfist = 18,
+		["Iron Sage"] = 19, Necromancer = 20, Lich = 21, ["Bone Lord"] = 22, Templar = 23, Inquisitor = 24, Sentinel = 25}
+	local xml = read("data/spells/chaos/spells_chaos.xml")
+	local tag = xml:match('<instant [^>]*name="Soulward".-</instant>')
+	local ids = {}
+	for name in tag:gmatch('<vocation name="([^"]+)"') do ids[#ids + 1] = ID[name] or -1 end
+	table.sort(ids)
+	eq(table.concat(ids, ","), wantS, "spells_chaos.xml: Soulward lists the same classes")
+	eq(tag:find('spellid="234"', 1, true) ~= nil and tag:find('words="tor anh"', 1, true) ~= nil, true, "Soulward is spell 234, tor anh")
+	local entry = spelldata:match('id = 234, name = "Soulward".-vocations = (%b{})')
+	eq(entry and luaIds(entry), wantS, "client: Soulward vocations (spelldata.lua)")
+	eq(entry ~= nil and not entry:find("%f[%d]4%f[%D]") and not entry:find("%f[%d]11%f[%D]") and not entry:find("%f[%d]17%f[%D]"), true,
+		"client: no Warrior, Thief or Monk class has Soulward")
+end
+
 if failures > 0 then
 	print(string.format("manashield_test: %d of %d checks FAILED", failures, count))
 	os.exit(1)

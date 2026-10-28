@@ -29,7 +29,7 @@ return {
 		[15] = {health = 165, mana = 60, cap = 440, soul = 100, gainhp = 11, gainmana = 14, gaincap = 21}, -- Beastmaster
 		[1] = {health = 150, mana = 90, cap = 400, soul = 100, gainhp = 5, gainmana = 30, gaincap = 10}, -- Mystic
 		[5] = {health = 150, mana = 90, cap = 400, soul = 100, gainhp = 5, gainmana = 30, gaincap = 10}, -- Elementalist
-		[10] = {health = 150, mana = 90, cap = 400, soul = 100, gainhp = 7, gainmana = 27, gaincap = 12}, -- Illusionist
+		[10] = {health = 150, mana = 90, cap = 400, soul = 100, gainhp = 6, gainmana = 27, gaincap = 12}, -- Illusionist
 		[11] = {health = 175, mana = 45, cap = 455, soul = 100, gainhp = 12, gainmana = 10, gaincap = 22}, -- Thief
 		[12] = {health = 175, mana = 45, cap = 455, soul = 100, gainhp = 12, gainmana = 10, gaincap = 22}, -- Ninja
 		[13] = {health = 175, mana = 45, cap = 455, soul = 100, gainhp = 13, gainmana = 9, gaincap = 24}, -- Samurai

@@ -16,15 +16,15 @@ ChaosAttackKit = ChaosAttackKit or {}
 ChaosAttackKit.cfg = {
 	spells = {
 		gorehook = {
-			id = 2, name = "Gorehook", words = "kah sang hrak", level = 130, mana = 115,
+			id = 2, name = "Gorehook", words = "kah sang hrak", level = 130, mana = 60,
 			vocations = {"Warrior", "Juggernaut", "Berserker"}, school = "melee", power = "melee", ctype = "physical",
 			pMin = 0.0199, pMax = 0.0318, mMin = 0, mMax = 0, bMin = 8, bMax = 16, scale = 1, shape = "dot", range = 1,
 			ticks = 5, tickMs = 1000, melee = true, fx = "blood_slash", vfx = "claw_rake", hitFx = "CONST_ME_DRAWBLOOD"
 		},
 		riftcleaver = {
-			id = 9, name = "Rift Cleaver", words = "kah rhim brak", level = 220, mana = 135,
+			id = 9, name = "Rift Cleaver", words = "kah rhim brak", level = 220, mana = 70,
 			vocations = {"Warrior", "Juggernaut"}, school = "melee", power = "melee", ctype = "physical", pMin = 0.1271,
-			pMax = 0.2034, mMin = 0, mMax = 0, bMin = 20, bMax = 40, scale = 1, shape = "line", range = 4, length = 4,
+			pMax = 0.2034, mMin = 0, mMax = 0, bMin = 20, bMax = 40, scale = 1, shape = "line", range = 2, length = 3,
 			fx = "ground_slam", vfx = "heavy_cleave"
 		},
 		sunspear = {
@@ -172,67 +172,67 @@ ChaosAttackKit.cfg = {
 			fx = "necro_skull", vfx = "bone_aura"
 		},
 		hallowedcut = {
-			id = 121, name = "Hallowed Cut", words = "kah sol brak", level = 80, mana = 115,
+			id = 121, name = "Hallowed Cut", words = "kah sol brak", level = 80, mana = 65,
 			vocations = {"Templar", "Inquisitor", "Sentinel"}, school = "templar", power = "melee", ctype = "holy",
 			pMin = 0.1345, pMax = 0.2152, mMin = 0.5, mMax = 0.8, bMin = 20, bMax = 40, scale = 1, shape = "single",
 			range = 1, melee = true, fx = "holy_smite", vfx = "holy_hit"
 		},
 		censerswing = {
-			id = 122, name = "Censer Swing", words = "drai sol hrak", level = 100, mana = 135,
+			id = 122, name = "Censer Swing", words = "drai sol hrak", level = 100, mana = 75,
 			vocations = {"Templar", "Sentinel"}, school = "templar", power = "melee", ctype = "holy", pMin = 0.1246,
 			pMax = 0.1994, mMin = 0.5, mMax = 0.8, bMin = 20, bMax = 40, scale = 1, shape = "around", radius = 1,
 			fx = "holy_spiral", vfx = "holy_seal"
 		},
 		penitentlash = {
-			id = 126, name = "Penitent Lash", words = "kah sol vael", level = 120, mana = 145,
+			id = 126, name = "Penitent Lash", words = "kah sol vael", level = 120, mana = 80,
 			vocations = {"Templar", "Inquisitor"}, school = "templar", power = "melee", ctype = "holy", pMin = 0.1345,
 			pMax = 0.2152, mMin = 0.5, mMax = 0.8, bMin = 20, bMax = 40, scale = 1, shape = "wave", range = 2,
 			depth = 2, halfWidth = 1, fx = "holy_cross", vfx = "holy_smite"
 		},
 		martyrspyre = {
-			id = 127, name = "Martyr's Pyre", words = "kah sol pyr", level = 140, mana = 145,
+			id = 127, name = "Martyr's Pyre", words = "kah sol pyr", level = 140, mana = 80,
 			vocations = {"Templar", "Sentinel"}, school = "templar", power = "melee", ctype = "holy", pMin = 0.0258,
 			pMax = 0.0413, mMin = 0.5, mMax = 0.8, bMin = 8, bMax = 16, scale = 1, shape = "dot", range = 3, ticks = 5,
 			tickMs = 1000, fx = "fire_ring", hitFx = "CONST_ME_HOLYDAMAGE"
 		},
 		bellofreckoning = {
-			id = 128, name = "Bell of Reckoning", words = "drai sol krak", level = 160, mana = 165,
+			id = 128, name = "Bell of Reckoning", words = "drai sol krak", level = 160, mana = 90,
 			vocations = {"Templar", "Inquisitor", "Sentinel"}, school = "templar", power = "melee", ctype = "holy",
 			pMin = 0.1542, pMax = 0.2467, mMin = 0.5, mMax = 0.8, bMin = 20, bMax = 40, scale = 1, shape = "circle",
 			range = 5, radius = 2, fx = "holy_cross", vfx = "dome_blast_holy"
 		},
 		lanceofvigil = {
-			id = 129, name = "Lance of Vigil", words = "kah sol sag lanc", level = 190, mana = 185,
+			id = 129, name = "Lance of Vigil", words = "kah sol sag lanc", level = 190, mana = 100,
 			vocations = {"Templar", "Inquisitor"}, school = "templar", power = "melee", ctype = "holy", pMin = 0.1739,
-			pMax = 0.2782, mMin = 0.5, mMax = 0.8, bMin = 20, bMax = 40, scale = 1, shape = "line", range = 5,
-			length = 5, shot = "holy_spear", fx = "holy_smite", vfx = "holy_hit"
+			pMax = 0.2782, mMin = 0.5, mMax = 0.8, bMin = 20, bMax = 40, scale = 1.1, shape = "line", range = 3,
+			length = 3, shot = "holy_spear", fx = "holy_smite", vfx = "holy_hit"
 		},
 		sanctumverdict = {
-			id = 131, name = "Sanctum Verdict", words = "kah sol judh brak", level = 230, mana = 290,
+			id = 131, name = "Sanctum Verdict", words = "kah sol judh brak", level = 230, mana = 160,
 			vocations = {"Templar", "Sentinel"}, school = "templar", power = "melee", ctype = "holy", pMin = 0.3565,
-			pMax = 0.5704, mMin = 0.5, mMax = 0.8, bMin = 20, bMax = 40, scale = 1, shape = "single", range = 3,
+			pMax = 0.5704, mMin = 0.5, mMax = 0.8, bMin = 20, bMax = 40, scale = 1, shape = "single", range = 2,
 			fx = "holy_smite", vfx = "aura_burst_gold"
 		},
 		hereticsbrand = {
-			id = 138, name = "Heretic's Brand", words = "kah sol putr", level = 90, mana = 175,
+			id = 138, name = "Heretic's Brand", words = "kah sol putr", level = 90, mana = 95,
 			vocations = {"Inquisitor"}, school = "templar", power = "melee", ctype = "holy", pMin = 0.2085,
 			pMax = 0.3336, mMin = 0.5, mMax = 0.8, bMin = 20, bMax = 40, scale = 1, shape = "single", range = 3,
 			shot = "holy_spear", fx = "holy_smite", vfx = "holy_hit"
 		},
 		zealotswrath = {
-			id = 139, name = "Zealot's Wrath", words = "drai sol vael", level = 200, mana = 170,
+			id = 139, name = "Zealot's Wrath", words = "drai sol vael", level = 200, mana = 95,
 			vocations = {"Inquisitor"}, school = "templar", power = "melee", ctype = "holy", pMin = 0.1591,
 			pMax = 0.2546, mMin = 0.5, mMax = 0.8, bMin = 20, bMax = 40, scale = 1, shape = "around", radius = 2,
 			fx = "holy_spiral", vfx = "aura_burst_gold"
 		},
 		bulwarkslam = {
-			id = 140, name = "Bulwark Slam", words = "kah sol aeg", level = 110, mana = 125, vocations = {"Sentinel"},
+			id = 140, name = "Bulwark Slam", words = "kah sol aeg", level = 110, mana = 70, vocations = {"Sentinel"},
 			school = "templar", power = "melee", ctype = "holy", pMin = 0.1443, pMax = 0.2309, mMin = 0.5, mMax = 0.8,
 			bMin = 20, bMax = 40, scale = 1, shape = "single", range = 1, melee = true, fx = "ground_slam",
 			vfx = "blunt_smash"
 		},
 		rampartquake = {
-			id = 141, name = "Rampart Quake", words = "drai sol aeg krak", level = 210, mana = 175,
+			id = 141, name = "Rampart Quake", words = "drai sol aeg krak", level = 210, mana = 95,
 			vocations = {"Sentinel"}, school = "templar", power = "melee", ctype = "holy", pMin = 0.1641, pMax = 0.2626,
 			mMin = 0.5, mMax = 0.8, bMin = 20, bMax = 40, scale = 1, shape = "around", radius = 2, fx = "shockwave",
 			vfx = "dome_blast_holy"
@@ -241,7 +241,7 @@ ChaosAttackKit.cfg = {
 		-- spells). Each took the spell id of a weak support, so its icon cell stays; see server/data/spells/README.md
 		-- "Support to attack (O254)". The coefficients are scaled from the class's comparable spell at the same level.
 		bastioncry = {
-			id = 29, name = "Bastion Cry", words = "vok gal rhov kor", level = 340, mana = 200,
+			id = 29, name = "Bastion Cry", words = "vok gal rhov kor", level = 340, mana = 100,
 			vocations = {"Warrior", "Juggernaut", "Berserker"}, school = "melee", power = "melee", ctype = "physical",
 			pMin = 0.1538, pMax = 0.2461, mMin = 0, mMax = 0, bMin = 20, bMax = 40, scale = 1, shape = "wave", range = 3,
 			depth = 3, halfWidth = 1, fx = "shockwave", vfx = "aura_burst_gold"
@@ -253,7 +253,7 @@ ChaosAttackKit.cfg = {
 			length = 6, shot = "gale_arrow", fx = "crit_burst"
 		},
 		crimsoncovenant = {
-			id = 203, name = "Crimson Covenant", words = "tor nyx cruor", level = 200, mana = 350,
+			id = 203, name = "Crimson Covenant", words = "tor nyx cruor", level = 200, mana = 450,
 			vocations = {"Mystic", "Elementalist", "Illusionist"}, school = "magic", power = "magic", ctype = "death",
 			pMin = 0, pMax = 0, mMin = 1.626, mMax = 2.602, bMin = 8, bMax = 16, scale = 1, shape = "dot", range = 6,
 			ticks = 6, tickMs = 1000, pshot = "proj_shadow_bolt_blood", fx = "blood_nova", hitFx = "CONST_ME_DRAWBLOOD"
@@ -277,9 +277,9 @@ ChaosAttackKit.cfg = {
 			depth = 3, halfWidth = 1, finisher = true, fx = "shadow_cloud", vfx = "ki_hit_blue"
 		},
 		crusaderssweep = {
-			id = 250, name = "Crusader's Sweep", words = "vyr sol zel", level = 250, mana = 230,
+			id = 250, name = "Crusader's Sweep", words = "vyr sol zel", level = 250, mana = 125,
 			vocations = {"Templar", "Inquisitor", "Sentinel"}, school = "templar", power = "melee", ctype = "holy",
-			pMin = 0.2154, pMax = 0.3446, mMin = 0.5, mMax = 0.8, bMin = 20, bMax = 40, scale = 1, shape = "wave", range = 3,
+			pMin = 0.2154, pMax = 0.3446, mMin = 0.5, mMax = 0.8, bMin = 20, bMax = 40, scale = 1, shape = "wave", range = 2,
 			depth = 3, halfWidth = 1, fx = "holy_cross", vfx = "holy_smite"
 		},
 		-- the level 500 spells of the line spell quests (spellquest_config.lua, server/README.md "Line spell quests"): one per class
@@ -292,7 +292,7 @@ ChaosAttackKit.cfg = {
 		-- Absolution 1.25 -> 0.62) and each class has a factor on top (quest_spell_scale_config.lua).
 		-- Keepfall: Headsman's Hurl x 1.28 x 1.25 = scale 1.6, trimmed
 		keepfall = {
-			id = 142, name = "Keepfall", words = "vok aeg thun brak", level = 500, mana = 72, quest = 1,
+			id = 142, name = "Keepfall", words = "vok aeg thun brak", level = 500, mana = 36, quest = 1,
 			vocations = {"Warrior", "Juggernaut", "Berserker"}, school = "melee", power = "melee", ctype = "physical",
 			pMin = 0.17, pMax = 0.2, mMin = 0, mMax = 0, bMin = 17, bMax = 40, scale = 0.98, shape = "circle", range = 3,
 			radius = 2, fx = "ground_slam", vfx = "heavy_cleave"
@@ -309,7 +309,7 @@ ChaosAttackKit.cfg = {
 		},
 		-- Prismatic Rupture: Falling Pyre x 1.2 x 1.25 = scale 1.5 (its burn is not part of it)
 		prismaticrupture = {
-			id = 152, name = "Prismatic Rupture", words = "drai zhul prys vael", level = 500, mana = 504, quest = 1,
+			id = 152, name = "Prismatic Rupture", words = "drai zhul prys vael", level = 500, mana = 840, quest = 1,
 			vocations = {"Mystic", "Elementalist", "Illusionist"}, school = "magic", power = "magic", ctype = "energy",
 			pMin = 0, pMax = 0, mMin = 6.6, mMax = 10.8, bMin = 145, bMax = 265, scale = 1.18, shape = "circle", range = 7,
 			radius = 2, fx = "arcane_burst", vfx = "arcane_hit"
@@ -337,7 +337,7 @@ ChaosAttackKit.cfg = {
 		},
 		-- Pyre of Absolution: Sanctum Verdict x 1.25
 		pyreofabsolution = {
-			id = 177, name = "Pyre of Absolution", words = "kah sol pyr absl", level = 500, mana = 348, quest = 1,
+			id = 177, name = "Pyre of Absolution", words = "kah sol pyr absl", level = 500, mana = 192, quest = 1,
 			vocations = {"Templar", "Inquisitor", "Sentinel"}, school = "templar", power = "melee", ctype = "holy",
 			pMin = 0.3565, pMax = 0.5704, mMin = 0.5, mMax = 0.8, bMin = 20, bMax = 40, scale = 0.62, shape = "circle",
 			range = 5, radius = 2, fx = "fire_ring", vfx = "dome_blast_holy"
@@ -349,7 +349,7 @@ ChaosAttackKit.cfg = {
 		-- `ultimate`). Scales fitted so that an ultimate adds 8 to 10% of the class's best-set damage per second at level 1200.
 		-- Judgment of Iron: Colossus Fall (two blows) x 3.5 = one blow of scale 7 would add 15.5% of the best sets at level 1200: scale 4.7
 		judgmentofiron = {
-			id = 148, name = "Judgment of Iron", words = "vok aeg mor thun", level = 1200, mana = 720, quest = 3,
+			id = 148, name = "Judgment of Iron", words = "vok aeg mor thun", level = 1200, mana = 360, quest = 3,
 			vocations = {"Warrior", "Juggernaut", "Berserker"}, school = "melee", power = "melee", ctype = "physical",
 			pMin = 0.052, pMax = 0.093, mMin = 0, mMax = 0, bMin = 20, bMax = 40, scale = 4.7, shape = "around", radius = 3,
 			fx = "ground_slam", vfx = "aura_burst_red"
@@ -364,7 +364,7 @@ ChaosAttackKit.cfg = {
 		-- Eclipse of Ruin: Glacial Doom (three waves of x 1.9) x 3.5 = one hit of scale 19.95 would add 37% (a circle of radius 4 on a
 		-- 50 s cooldown, on the line with the weakest rotations): scale 6.4
 		eclipseofruin = {
-			id = 154, name = "Eclipse of Ruin", words = "drai ecl zhul vorn", level = 1200, mana = 3960, quest = 3,
+			id = 154, name = "Eclipse of Ruin", words = "drai ecl zhul vorn", level = 1200, mana = 4950, quest = 3,
 			vocations = {"Mystic", "Elementalist", "Illusionist"}, school = "magic", power = "magic", ctype = "ice",
 			pMin = 0, pMax = 0, mMin = 3.5, mMax = 6.5, bMin = 80, bMax = 160, scale = 6.4, shape = "circle", range = 7,
 			radius = 5, vfx = "frost_nova", vfx2 = "storm_ring"
@@ -393,7 +393,7 @@ ChaosAttackKit.cfg = {
 		-- Hammer of Ember Dawn: Sanctum Verdict x 3.5 on the target (main = 2 x scale 1.75) would add 19%: the target takes 2 x scale 1 =
 		-- 2 x Sanctum Verdict, every other enemy within 2 sqm of it half of that
 		hammerofemberdawn = {
-			id = 237, name = "Hammer of Ember Dawn", words = "kah sol emb hamr", level = 1200, mana = 870, quest = 3,
+			id = 237, name = "Hammer of Ember Dawn", words = "kah sol emb hamr", level = 1200, mana = 480, quest = 3,
 			vocations = {"Templar", "Inquisitor", "Sentinel"}, school = "templar", power = "melee", ctype = "holy",
 			pMin = 0.3565, pMax = 0.5704, mMin = 0.5, mMax = 0.8, bMin = 20, bMax = 40, scale = 1, shape = "circle", range = 3,
 			radius = 2, main = 2, vfx = "dome_blast_holy", vfx2 = "aura_burst_gold"

@@ -37,13 +37,12 @@ usage: python3 -I add_vocations.py DATA_DIR [--dry-run]
    clubs, the Templar line one-handed swords and clubs.)
    The Necromancer line (Necromancer, Lich, Bone Lord) wields and wears what the Mystic does: every <wand> and every
    equip event whose list names a caster (Mystic, Elementalist, Illusionist). The stock healing and support instants
-   of the Mystic in spells.xml get it too (healing, haste, light, cures, party spells; not rune conjuring, not the
+   of the Mystic in spells.xml get it too (healing, haste, cures, party spells; not rune conjuring, not the
    stock summon, which would bypass the minion caps, not the magic shield, not other classes' custom spells).
    A list that already names the line's base class is left as it is, so every run after the first changes nothing.
    The quiver block of movements.xml (patch_base_archery.py) is left alone: only the launcher classes wear a quiver.
    So is the unique equip block (install_unique_equip.py): its lists come from the uniques' own rules.
-   The Thief, Monk and Templar lines get the stock utility spells every other class has (LINE_STOCK_SPELLS: light, great
-   light, haste, find person, levitate, magic rope, the poison / splash / bewitched cures); the Thief and Monk lines also
+   The Thief, Monk and Templar lines get the stock utility spells every other class has (LINE_STOCK_SPELLS: haste, find person, levitate, magic rope, the poison / splash / bewitched cures); the Thief and Monk lines also
    strong haste, the Monk and Templar lines cure bleeding (as the Warrior), the Templar line cure curse (as the Ranger).
    The magic shield (Ward of the Mind) gets the Mystic, Necromancer and Ranger lines (owner 2026-10-21; the
    Necromancer counts as a mage), through LINE_STOCK_SPELLS only.
@@ -87,12 +86,10 @@ CASTERS = ('Mystic', 'Elementalist', 'Illusionist', 'Sorcerer', 'Master Sorcerer
 NECRO_SPELL_FROM = ('Mystic', 'Sorcerer')
 NECRO_SPELL_SKIP = ('conjuring/', 'summon_creature', 'custom/', 'magic_shield')  # magic shield: LINE_STOCK_SPELLS
 # the stock utility spells of the Thief, Monk and Templar lines (the Warrior, Ranger, Mystic and Necromancer all have
-# the first six; the cure spells were retired, retire_cure_spells.py): (spells.xml script, stock words, lines). client/tools/gen_spell_data.py writes the same table into
+# the first four; the light spells and the cure spells were retired, retire_cure_spells.py): (spells.xml script, stock words, lines). client/tools/gen_spell_data.py writes the same table into
 # the client's spelldata.lua (ChaosStockSpellLines), so the client's spell list shows them for the three lines.
 THIEF_MONK_TEMPLAR = (LINE, MONK_LINE, TEMPLAR_LINE)
 LINE_STOCK_SPELLS = [
-    ('support/light.lua', 'utevo lux', THIEF_MONK_TEMPLAR),
-    ('support/great_light.lua', 'utevo gran lux', THIEF_MONK_TEMPLAR),
     ('support/haste.lua', 'utani hur', THIEF_MONK_TEMPLAR),
     ('support/find_person.lua', 'exiva', THIEF_MONK_TEMPLAR),
     ('support/levitate.lua', 'exani hur', THIEF_MONK_TEMPLAR),

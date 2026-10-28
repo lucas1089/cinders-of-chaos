@@ -484,13 +484,13 @@ do
 	ok(not seen[out.id] and not seen[p.id], "not the far monster, not the caster")
 end
 
--- a line (Rift Cleaver, 4 tiles) goes from the caster toward the target
+-- a line (Rift Cleaver, 3 tiles) goes from the caster toward the target
 do
 	reset()
 	local p = player()
 	local t = creature(102, 100)
-	local inLine = creature(104, 100)
-	local beyond = creature(105, 100)
+	local inLine = creature(103, 100)
+	local beyond = creature(104, 100)
 	local side = creature(103, 101)
 	ok(A.cast("riftcleaver", p, {target = t}), "Rift Cleaver casts")
 	local seen = {}

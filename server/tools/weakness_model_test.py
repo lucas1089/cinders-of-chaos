@@ -26,15 +26,15 @@ ok(cfg['rampShare'] == 0.8 and cfg['minionTravel'] > 0 and cfg['raisePerCast'] =
 ok(set(cfg['autoShare']) == {'melee', 'fist', 'distance', 'caster'}, 'config: an auto share for every kind of stats')
 ok(set(cfg['toughness']) == {'Juggernaut', 'Sentinel', 'Samurai'} and all(0 < v < 1 for v in cfg['toughness'].values()),
    'config: the toughness model has the three classes the docs give')
-ok(len(cfg['pins']) >= 6 and all(p[0] in ('lowest', 'highest') and p[1] in W.MEASURES and p[2] in ('class', 'line')
+ok(len(cfg['pins']) >= 13 and all(p[0] in ('lowest', 'highest') + W.LIMITS and p[1] in W.MEASURES and p[2] in ('class', 'line')
                                   for p in cfg['pins']), 'config: pins parse into rank, measure, scope')
 ok(all(n in W.CLASSES for p in cfg['pins'] if p[2] == 'class' for n in p[4]) and
    all(n in W.LINES for p in cfg['pins'] if p[2] == 'line' for n in p[4]), 'config: every pinned name is a class or a line')
 
 # reach: the xml range, the script's area, the kit radius, the config table
-ok(W.reach('Rift Cleaver', 'kah rhim brak', cfg) == 4, 'reach: the xml range')
+ok(W.reach('Rift Cleaver', 'kah rhim brak', cfg) == 2, 'reach: the xml range')
 titan = next(w for w, (rg, sc) in W.spell_attrs().items() if sc.endswith('knight/titans_wrath.lua'))
-ok(W.reach('Colossus Fall', titan, cfg) == 3, 'reach: AREA_CIRCLE3X3 is radius 3')
+ok(W.reach('Colossus Fall', titan, cfg) == 2, 'reach: AREA_CIRCLE2X2 is radius 2')
 ok(W.kit_radius('Censer Swing') == 1 and W.kit_radius('No Such Spell') == 0, 'reach: the attack kit radius')
 ok(W.reach('Blade Flurry', 'none', cfg) == 1 and W.reach('Nothing', 'none', cfg) is None, 'reach: the config table, else unknown')
 
@@ -81,7 +81,7 @@ ok(abs(m['spent'] - r[3] * 60) < 1e-9 and abs(m['drain'] - r[3] * 60 / r[1]) < 1
 # lines and ranks
 ok(W.ranked(t, 'line', 0, 'health', 'lowest')[0] == 'Mystic', 'rank: the Mystic line has the lowest mean health per level')
 ok(W.ranked(t, 'class', 0, 'ramp', 'highest')[0] in ('Bone Lord', 'Shadowfist'), 'rank: the slowest classes')
-ok(abs(W.score(t, 'line', 'Mystic', 0, 'health') - (5 + 5 + 7) / 3.0) < 1e-9, 'score: a line is the mean of its classes')
+ok(abs(W.score(t, 'line', 'Mystic', 0, 'health') - (5 + 5 + 6) / 3.0) < 1e-9, 'score: a line is the mean of its classes')
 
 # the intended weaknesses and their levers: five statements, a lever for each
 found = W.intended(t, cfg['levels'], cfg)
@@ -89,11 +89,27 @@ lev = W.levers(t, cfg['levels'])
 ok(len(found) == 5 and all(isinstance(h, bool) for _, h, _ in found) and all(s in lev for s, _, _ in found), 'findings: five statements, each with a lever')
 ok(all(1.0 <= f for f in W.mana_factor(t, cfg['levels'])), 'lever: the mana factor is at least 1')
 
+# the four weaknesses of the second identity pass hold, as facts of the tables
+n = range(len(cfg['levels']))
+ok(all(W.ranked(t, 'line', i, 'runway', 'lowest')[0] == 'Mystic' for i in n), 'weakness: the Mystic line has the shortest runway')
+ok(all('Warrior' not in W.ranked(t, 'line', i, 'runway', 'lowest')[:2] and 'Templar' not in W.ranked(t, 'line', i, 'runway', 'lowest')[:2]
+       for i in n), 'weakness: Warrior and Templar lines are not the two shortest')
+ok(all(t[c][i]['mana']['runway_own'] >= 30 for c in W.CLASSES for i in range(1) if True), 'weakness: no runway under 30 s at level 300')
+ok(all(t[c][i]['ramp'] >= 3 for c in ('Necromancer', 'Lich') for i in n), 'weakness: the Necromancer and the Lich ramp up for 3 s or more')
+ok(all(W.score(t, 'line', x, i, 'farspells') <= 0.45 for x in ('Warrior', 'Templar') for i in n), 'weakness: spells of Warrior and Templar are 45% far at most')
+ok(all(W.score(t, 'class', 'Illusionist', i, 'health') < min(W.score(t, 'class', c, i, 'health') for c in W.CLASSES if W.LINE[c] != 'Mystic')
+       for i in n), 'weakness: the Illusionist has less health a level than every class outside the Mystic line')
+ok(abs(W.first_strike()['lich'] - 6.0) < 1e-9 and W.first_strike()['bonelord'] == 0.0, 'minions: first strike delays are read from necro_config.lua')
+ok(all(f for _, f, _ in found), 'findings: every intended weakness holds')
+
 # the check
 ok(W.check() == 0, 'check: the current state passes')
 ok(W.check(text.replace('"lowest health line 1 Mystic"', '"lowest health line 1 Warrior"')) == 1, 'check: a wrong health pin fails')
 ok(W.check(text.replace('"highest ramp line 2 Monk,Necromancer"', '"highest ramp line 2 Mystic,Thief"')) == 1, 'check: a wrong ramp pin fails')
 ok(W.check(text.replace('"highest health class 3 Juggernaut,Sentinel,Samurai"', '"highest health class 3 Mystic"')) == 1, 'check: a wrong class pin fails')
+ok(W.check(text.replace('"atleast ramp class 3 Necromancer,Lich"', '"atleast ramp class 9 Necromancer,Lich"')) == 1, 'check: a ramp limit that is missed fails')
+ok(W.check(text.replace('"atmost farspells line 0.45 Warrior,Templar"', '"atmost farspells line 0.2 Warrior,Templar"')) == 1, 'check: a far share limit that is missed fails')
+ok(W.check(text.replace('"lowest runway line 1 Mystic"', '"lowest runway line 1 Warrior"')) == 1, 'check: a wrong runway pin fails')
 ok(W.check_facts(t, cfg['levels'], [('lowest', 'health', 'line', 1, ['Mystic'])]) == [], 'facts: a held pin has no failure')
 ok(len(W.check_facts(t, [300], [('highest', 'health', 'class', 1, ['Mystic'])])) == 1, 'facts: a missed pin names the class')
 

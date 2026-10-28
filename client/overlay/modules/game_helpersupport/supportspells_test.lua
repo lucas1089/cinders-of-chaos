@@ -60,11 +60,17 @@ ok(has(p.timer, 233), 'Berserker: Banner Call in the Timer section')
 ok(has(p.timer, 223) == false, 'Berserker: Iron Bellow is not his (Juggernaut line)')
 ok(not has(p.timer, 247) and not has(p.support, 247), 'Bloodrage costs health: not set up')
 ok(has(p.support, 162), 'Berserker: the Vigil of Clarity in the support section')
-ok(has(p.support, 234), 'Berserker: Soulward in the support section')
+ok(not has(p.support, 234), 'Berserker: no Soulward (only the magic and hybrid lines have a mana shield, 2026-10-28)')
 ok(not has(p.support, 161) and not has(p.support, 179) and not has(p.support, 255), 'only one vigil is set up')
 ok(not has(p.support, 254) and not has(p.support, 232), 'no teleport, no dash')
 eq(p.support[1], 162, 'the vigil first')
-eq(p.support[2], 234, 'then the shield')
+for _, vid in ipairs({ 3, 20, 23 }) do   -- Ranger, Necromancer, Templar: the shield stays for them
+  local q = H.autoPlan(entries, canCastFor(vid, 200))
+  ok(has(q.support, 234), 'class ' .. vid .. ': Soulward in the support section')
+end
+for _, vid in ipairs({ 4, 11, 17 }) do   -- Warrior, Thief, Monk: no mana shield at all
+  ok(not has(H.autoPlan(entries, canCastFor(vid, 200)).support, 234), 'class ' .. vid .. ': no Soulward')
+end
 local red
 for _, r in ipairs(p.timer) do if r.id == 222 then red = r end end
 eq(red.words, 'vyr ira cruor', 'timer rule: the words')

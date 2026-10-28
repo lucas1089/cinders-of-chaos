@@ -1967,7 +1967,7 @@ lost its attacks for 10 s of every cast; Swift Foot was never offered (`NEVER_WO
 ### Spell cap (owner 2026-10-20: "mysthic tem magias demais. abaixe pra 15. faça isso pra todas as classes")
 
 Every class and ascension has at most 15 spells of its own (kits, counts and what each class dropped: docs/CLASSES.md
-"Spell cap"; the 15 spells every character shares and Radiant Lantern are not counted).
+"Spell cap"; the 12 spells every character shares and the two mana shields are not counted; the three light spells are retired).
 
 * `tools/patch_spell_cap.py DATA_DIR [--dry-run|--list]` (install step `spells`, right after `retire_cure_spells.py`,
   idempotent): `CAP` names the 79 stock instants the cap changes, by script, with the classes that keep each one. Every
@@ -1975,8 +1975,14 @@ Every class and ascension has at most 15 spells of its own (kits, counts and wha
   `Chaos: spell cap`, the tag kept in the comment). The Chaos block is never touched: the Chaos spells' class lists are
   in `data/spells/chaos/spells_chaos.xml` (14 lists changed, no Chaos spell lost its last class). It must run after
   `add_vocations.py` (vocations step), which writes the class lists it cuts; on a re-run the vocations step adds nothing
-  back (its conversion runs once). `OUTSIDE_CAP` names the stock spells kept outside the 15: Ward of the Mind (stock
-  Magic Shield, see "Magic Shield" below) for the Mystic, Necromancer and Ranger lines.
+  back (its conversion runs once). `OUTSIDE_CAP` names the spells kept outside the 15: Ward of the Mind (stock
+  Magic Shield, see "Magic Shield" below) for the Mystic, Necromancer and Ranger lines, and Soulward for those lines and the Templar line.
+  `retire_cure_spells.py` also retires the three stock light spells (Light "utevo lux" = Lantern, Great Light = Greater Lantern, Ultimate Light =
+  Radiant Lantern; ids 10, 11 and 75 free; owner 2026-10-28, "Tire também as magias de luz, já que são inúteis"): found by script, commented out
+  with every vocation row, on an existing server too (the tool runs on every install). Torches and light items stay. A character that knew a
+  light spell has nothing left to cast: the instant is gone and the words are unknown to the server (the spells need no learning, nothing is stored
+  per character). The client hides them (`ChaosRetiredSpells`, `gen_spell_data.py` `RETIRED_STOCK`) and the Helper never lists them. No quest,
+  tutorial text or achievement uses a light spell (checked in the data).
 * `patch_spell_ids.py` skips the retired scripts of its table (Lance of the Grave, Shatterfrost, Quakeburst, Fading Step,
   Crossfire Hex, Dread, Gravity Snare, Riftbolt, Sunder Guard); `spell_timings.csv` lost the rows of Sunder Guard,
   Earthrend, Reaver's Spin and Bramble Fan (patch_spell_timings.py refuses a script it cannot find). `spell_names.csv`
@@ -2019,7 +2025,13 @@ split (`Game::combatChangeHealth`); no Chaos patch changes it.
   The vocations step adds only the classes a list lacks, so an install the cap already cut is repaired with no
   duplicate. Client: `ChaosCappedSpells["tor ael"]` and `ChaosStockSpellLines["tor ael"]` (`gen_spell_data.py`); the
   helper's Magic Shield panel follows the spell's classes.
-* Soulward (spell 234) still gives every class 15 s of the same condition (docs/CLASSES.md).
+* Soulward (spell 234, "tor anh", level 80) gives 15 s of the same condition, since 2026-10-28 only to the magic and hybrid lines (owner:
+  "Deixe o mana shield somente pra classes de magia e híbridas"): the Mystic, Necromancer, Ranger and Templar lines, ascensions included
+  (`manashield_config.lua` `soulwardVocations`; `spells_chaos.xml` lists the same twelve classes). The Warrior, Thief and Monk lines have no mana
+  shield at all; the Templar line does not get Ward of the Mind. `tests/manashield_test.lua` pins the list against the xml and `spelldata.lua`. A character
+  of another line who knew Soulward (it needs no learning, `needlearn="0"`): the spellbook and the Helper no longer list it, and a cast by its words
+  fails with the engine's "You have the wrong vocation to cast this spell." (`Spell::playerSpellCheck` tests the vocation list on every cast); a shield
+  already running ends by its own timer. Reload spells (or restart); the `spells` install step rewrites the Chaos block from the xml.
 * Parity (`manashield_core.lua`, `manashield_config.lua`, glue `manashield.lua`): the engine runs the onManaChange events
   on the whole hit and the onHealthChange events only on what the mana could not take. The Chaos systems that scale a
   monster's hit on a player do it in onHealthChange, so a mana shield skipped all of them. Each now registers a provider
@@ -2277,6 +2289,12 @@ deals to the owner), and minions regenerate (`minions.incoming`, `minions.regen`
 is 0.5% of maximum health per second in a fight, 10% per second once no minion was hit for 2 s and the owner has no
 target. The Necromancer's class hit is 0.92. Balance model: `server/tools/minion_model.py --check`; method and numbers in
 `data/spells/README.md` "Necromancer minions (O160)". Assumption: the model is computed, not measured in game.
+
+* **First strike delay (class identity pass, 2026-10-28).** A freshly raised minion waits `minions.firstStrikeMs` before its first hit:
+  Necromancer 2000 ms, Lich 6000 ms, Bone Lord 0 (its army takes 13 s to raise). `necro_minions.lua` sets the first `nextHit` when it first sees a
+  minion (`ChaosNecroCore.firstStrike`, tested in `necro_test.lua`), so a pull, a replacement after a death and a wake from a protection zone rest
+  all pay it, while minions that persist between packs do not. The class reaches 80% of its steady damage after 4-8 s (Necromancer) and 8 s (Lich) in
+  `weakness_model.py`; the steady damage and `minion_model.py` are unchanged. Reload scripts.
 
 ## Summons: targets, walk-through, levels (2026-10-21)
 
