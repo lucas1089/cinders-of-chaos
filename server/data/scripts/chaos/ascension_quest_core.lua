@@ -157,7 +157,7 @@ function M.proofText(points, lang)
 end
 
 -- ------------------------------------------------------------------------------------------------ Proof of Strength
--- the hunting level of a monster, as tools/gen_bounty_pool.py estimates it for monsters without a level range
+-- the bounty-pool level of a monster, as tools/gen_bounty_pool.py estimates it for monsters without a level range
 function M.estimateLevel(experience, health)
 	local byExp = 1.6 * math.sqrt(math.max(tonumber(experience) or 0, 1))
 	local byHp = (tonumber(health) or 0) / 60
@@ -171,21 +171,14 @@ function M.minHuntingLevel(playerLevel)
 	return math.max(p.minMonsterLevel or 0, math.floor((p.levelShare or 0) * (tonumber(playerLevel) or 0)))
 end
 
--- the same bar in bounty-pool levels, the scale monsterLevel and proofPoints compare: hunting level = pool level x
--- Chaos.huntingMult(). Before 2026-10-28 the hunting bar was compared with pool levels, so a level 202 player was
--- asked for monsters of hunting level 242 (1.2 x) instead of 121.
-function M.minMonsterLevel(playerLevel)
-	local mult = Chaos.huntingMult and Chaos.huntingMult() or 1
-	return math.ceil(M.minHuntingLevel(playerLevel) / mult)
-end
-
--- points a kill is worth: tier = "normal" | "magic" | "rare" | "legendary" | "boss"
+-- points a kill is worth: tier = "normal" | "magic" | "rare" | "legendary" | "boss"; monsterLevel = its hunting level
+-- (before 2026-10-28 the pool level, half of it, so a level 202 player was asked for 242, 1.2 x its level; O284)
 function M.proofPoints(tier, monsterLevel, playerLevel)
 	local pts = M.cfg().proof.points[tier]
 	if not pts or pts <= 0 then
 		return 0, "tier"
 	end
-	if (tonumber(monsterLevel) or 0) < M.minMonsterLevel(playerLevel) then
+	if (tonumber(monsterLevel) or 0) < M.minHuntingLevel(playerLevel) then
 		return 0, "level"
 	end
 	return pts

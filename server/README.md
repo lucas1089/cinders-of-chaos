@@ -16129,8 +16129,9 @@ storages 7100400-7100409, action ids 47401 (key), 47402 (reward chest) and 47403
   modifier (max 60%); of those 50% + 10% per modifier are the next tier (with more modifiers), the rest the same tier.
   Rare / legendary monsters inside a rift carry a key of its tier 2% / 6% of the time. Tier-1 keys: normal kills outside
   rifts (EventCallback onDropLoot, after the Chaos loot layer, before autoloot) with 50 in 100,000 per kill x (magic 3,
-  rare 8, legendary 20, boss 40) when the monster's pool level is at least max(60, killer level x 0.4) and the killer is
-  level 100+; completed bounty contracts give one 25% (hunt) / 50% (elite) / 100% (boss) of the time (`bounty.lua` calls
+  rare 8, legendary 20, boss 40) when the monster (one of the bounty pool) has a hunting level (`Chaos.monsterHuntingLevel`)
+  of at least max(120, killer level x 0.4) and the killer is level 100+ (O284: before 2026-10-28 the pool level, half,
+  was compared, so the share was 0.8 x in effect); completed bounty contracts give one 25% (hunt) / 50% (elite) / 100% (boss) of the time (`bounty.lua` calls
   `ChaosRift.onBountyPaid`).
 - **Crafting.** Every crafting orb works on a key (Awakening / Gilding on a key without modifiers, Grafting up to
   `key.maxMods` = 3, Unmaking, Erasure, Upheaval rerolls them, Fate rerolls their values; Tempering and Excision work on a key too), by "Use with" or on the
@@ -16790,8 +16791,9 @@ of every line are read at run time from `Chaos.classes.ascension`, so a new clas
   `7101003` attempts, `7101004` Trial won): 1 the Calling (talk at level 100 as a base class: the two paths of the class),
   2 Proof of Strength (10 points: a rare monster 1, a legendary 3, counted when the monster's hunting level, from
   `bounty_pool.lua` or estimated from experience and health as `tools/gen_bounty_pool.py` does, is at least 0.6 x the player's
-  level, min 40; `Q.minHuntingLevel`, converted to bounty-pool levels by `Q.minMonsterLevel` = ceil(bar / `Chaos.huntingMult()`).
-  Before 2026-10-28 the bar was compared with pool levels, so it was 1.2 x the player's level: a level 202 Monk saw 242),
+  level, min 40; `Q.minHuntingLevel`, against the kill's `Chaos.monsterHuntingLevel`: its own level, else the pool level
+  x `Chaos.huntingMult()`. Before 2026-10-28 the pool level was compared, so the bar was 1.2 x the player's level: a
+  level 202 Monk saw 242),
   3 the Trial, 4 the Choice (a list of the two classes, then a confirmation; near the Oracle, no PvP lock).
 - **The Trial**: "trial" at the Oracle -> a modal -> a runtime-built room (13 x 13, slots at x/y 7000+, `Game.createTile`,
   refused when the footprint is not empty; 8 slots) with the class's guardian: `Ascension Warden` renamed and dressed per line
@@ -21485,7 +21487,7 @@ talks, offers contracts and takes tokens; only its quartermaster's rank offers w
 |---|---|---|
 | Daily contracts (2 per faction) | 300 each | kill N (120-200) of one of the faction's families at 40%+ of your level; seal a rift of its theme at (your top tier - 1)+; deliver 15-25 rune shards and gold (150 per level, 20k-150k): a material and gold sink |
 | Weekly contract (1 per faction) | 1,200 | take part in a world boss kill; stand against an invasion; seal 3 rifts of its theme at (top tier - 2)+; deliver 60-90 shards and gold (500 per level, 60k-500k) |
-| Kills of its families | 1 per 10 points | points by tier: normal 1, magic 3, rare 8, legendary 25; monster level at least 40% of yours; party members in range share it (the bestiary rule) |
+| Kills of its families | 1 per 10 points | points by tier: normal 1, magic 3, rare 8, legendary 25; monster hunting level at least 40% of yours (O284: the pool level, half, before 2026-10-28, so 80% in effect); party members in range share it (the bestiary rule) |
 | Bounty contract | 60 | the contract's monster's family decides the faction |
 | Rift seal of its theme | 30 + 6 x tier | not Omen guardians |
 | Invasion reward | 100 | the factions that fight that invader |
@@ -21506,7 +21508,7 @@ week's cap is at most 22,500; a player who misses two weeks catches up in the th
 The window gets the faction's own cap (`wc`). Tests: `tests/factions_test.lua`, client `factionsview_test.lua`. Every gain lowers the rival by a quarter of it (fractions carry), never
 below -2,000 (Wary) and never once the rival holds you Exalted (sworn): choosing a side costs, both sides stay possible.
 
-**Tokens** (`tokenDrop`): per kill of the faction's families at monster level 60+ (and the 40% rule), per 10,000: normal 4,
+**Tokens** (`tokenDrop`): per kill of the faction's families at hunting level 120+ (and the 40% rule), per 10,000: normal 4,
 magic 25, rare 120, legendary 600, into the corpse (the loot owner's); a rift seal of its theme gives 1 + tier / 5; its
 world boss 5; an invasion of its invaders 2. Tokens are stackable items (copies of stock stackable nodes, client sprites
 unchanged) and can be traded.
@@ -21847,7 +21849,7 @@ the goal, the open buff windows, every contribution and the week.
 
 | Source | Points | Daily cap (per character) | Hook |
 |---|---|---|---|
-| Monsters slain | 1 (magic 2, rare 4, legendary 8) | 4,000 | a `kill` event on every player; summons and monsters under 40% of the character's level (bestiary level) give nothing |
+| Monsters slain | 1 (magic 2, rare 4, legendary 8) | 4,000 | a `kill` event on every player; summons and monsters with a hunting level under 40% of the character's level give nothing (O284: the bestiary pool level, half, before 2026-10-28) |
 | Rifts sealed | 120 + 15 x tier | 3,000 | `ChaosLeaderboard.record("rift", ...)` wrapped (every finisher) |
 | Invasion waves repelled | 40 per wave of a won invasion | 2,500 | `ChaosLeaderboard.record("defender", ...)` wrapped (every rewarded defender; liberations do not count) |
 | World bosses slain | 400 | 2,000 | `ChaosLeaderboard.recordShares` wrapped (every share) |

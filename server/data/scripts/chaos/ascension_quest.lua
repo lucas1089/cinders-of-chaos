@@ -226,6 +226,7 @@ end
 
 -- ======================================================================== Proof of Strength
 local poolLevels
+-- the hunting level of a monster (O284)
 local function monsterLevel(monster)
 	if not poolLevels then
 		poolLevels = {}
@@ -241,14 +242,11 @@ local function monsterLevel(monster)
 		end
 	end
 	local lvl = poolLevels[typeNameOf(monster):lower()]
-	if lvl then
-		return lvl
+	if not lvl then
+		local mt = monster:getType()
+		lvl = mt and Q.estimateLevel(mt:experience(), mt:maxHealth()) or 0
 	end
-	local mt = monster:getType()
-	if not mt then
-		return 0
-	end
-	return Q.estimateLevel(mt:experience(), mt:maxHealth())
+	return Chaos.monsterHuntingLevel(monster, Chaos.huntingLevel(lvl))
 end
 
 function S.creditProof(player, tier, level)

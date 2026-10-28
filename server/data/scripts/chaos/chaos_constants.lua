@@ -2203,7 +2203,9 @@ ChaosOpcodes.weeklyChest = 117
 Chaos.storage.weeklyChest = 7103020
 -- Hunting level on screen (owner 2026-10-27): the bounty pool's level (ChaosLoot.monsterLevel) is half of the level
 -- players hunt a monster at; every text that prints a pool-scale level (monster level thresholds, map marks) prints
--- Chaos.huntingLevel(n) = n x pace_config.lua baseLevelMult. Display only: the gates keep comparing pool levels.
+-- Chaos.huntingLevel(n) = n x pace_config.lua baseLevelMult. A gate that compares a monster with a share of the
+-- player's level compares hunting levels (Chaos.monsterHuntingLevel, Chaos.entryHuntingLevel; O284): before
+-- 2026-10-28 those compared pool levels, so a share of 0.4 asked for 0.8 x the player's level.
 function Chaos.huntingMult()
 	local pc = ChaosPaceConfig
 	if type(pc) ~= "table" then
@@ -2223,4 +2225,27 @@ function Chaos.huntingLevel(poolLevel)
 		return poolLevel
 	end
 	return math.floor(n * Chaos.huntingMult() + 0.5)
+end
+
+-- the hunting level of a bestiary entry (bestiary_core.lua: the middle of a stock level range, else the pool estimate)
+function Chaos.entryHuntingLevel(e)
+	if type(e) ~= "table" then
+		return 0
+	end
+	if (tonumber(e.minLevel) or 0) > 0 then
+		return tonumber(e.level) or 0
+	end
+	return Chaos.huntingLevel(tonumber(e.level) or 0)
+end
+
+-- the hunting level of a live monster (pace.lua: its own level, a generated area point's, else the pool level x the
+-- multiplier); `fallback` (a hunting level) without pace.lua
+function Chaos.monsterHuntingLevel(monster, fallback)
+	if ChaosLoot and ChaosLoot.huntLevel then
+		local ok, lv = pcall(ChaosLoot.huntLevel, monster, fallback)
+		if ok and tonumber(lv) then
+			return tonumber(lv)
+		end
+	end
+	return tonumber(fallback) or 0
 end

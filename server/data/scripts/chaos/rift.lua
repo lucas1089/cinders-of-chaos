@@ -3053,7 +3053,8 @@ drop.onDropLoot = function(monster, corpse)
 		end
 		local dead = ChaosTierDead and ChaosTierDead[monster:getId()]
 		local tierName = dead and dead.tier or (ChaosTierOf and ChaosTierOf(monster)) or "normal"
-		local chance = R.monsterKeyChance(C(), level, owner:getLevel(), tierName)
+		local chance = R.monsterKeyChance(C(), Chaos.monsterHuntingLevel(monster, Chaos.huntingLevel(level)),
+			owner:getLevel(), tierName)
 		if chance > 0 and math.random(100000) <= chance then
 			local key = R.rollKey(C(), 1, rand)
 			local item = corpse:addItem(C().key.itemId, 1)

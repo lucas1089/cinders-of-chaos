@@ -96,18 +96,18 @@ assert(Q.proofText(3):find("3 of 10"), Q.proofText(3))
 eq(Q.estimateLevel(700, 1000), 42, "dragon"); eq(Q.estimateLevel(2100, 1450), 73, "hydra"); eq(Q.estimateLevel(6000, 7000), 124, "demon"); eq(Q.estimateLevel(6000, 8200), 137, "raised by health")
 eq(Q.estimateLevel(0, 0), 2, "nothing"); eq(Q.estimateLevel(10, 6000), 8, "health raises at most x1.5")
 eq(Q.minHuntingLevel(100), 60); eq(Q.minHuntingLevel(50), 40, "floor"); eq(Q.minHuntingLevel(500), 300)
--- the bar in pool levels (hunting level = pool x 2): the owner's level 202 Monk was asked for 242, 1.2 x its level
-eq(Chaos.huntingMult(), 2, "pace_config.baseLevelMult")
-eq(Q.minMonsterLevel(100), 30); eq(Q.minMonsterLevel(50), 20, "floor"); eq(Q.minMonsterLevel(500), 150)
-eq(Q.minHuntingLevel(202), 121, "level 202: hunting 121"); eq(Q.minMonsterLevel(202), 61, "pool 61 = hunting 122")
-assert(Chaos.huntingLevel(Q.minMonsterLevel(202)) < 202, "the bar is below the player's level")
-for lvl = 100, 3000, 7 do
-	local pool = Q.minMonsterLevel(lvl)
-	assert(Chaos.huntingLevel(pool) >= Q.minHuntingLevel(lvl), "pool bar reaches the hunting bar " .. lvl)
-	assert(Chaos.huntingLevel(pool - 1) < Q.minHuntingLevel(lvl), "pool bar is the lowest " .. lvl)
-end
-eq(Q.proofPoints("rare", 37, 100), 1, "rare hydra"); eq(Q.proofPoints("legendary", 30, 100), 3, "legendary at the bar")
-eq(Q.proofPoints("rare", 29, 100), 0, "too weak"); eq(select(2, Q.proofPoints("rare", 29, 100)), "level")
+-- hunting levels (O284): the owner's level 202 Monk was asked for 242, the pool level (half) against 0.6 x its level
+eq(Q.minHuntingLevel(202), 121, "level 202: hunting 121")
+eq(Q.proofPoints("rare", 121, 202), 1, "hunting 121 counts at 202"); eq(Q.proofPoints("rare", 120, 202), 0)
+eq(Q.proofPoints("rare", 73, 100), 1, "rare hydra"); eq(Q.proofPoints("legendary", 60, 100), 3, "legendary at the bar")
+eq(Q.proofPoints("rare", 59, 100), 0, "too weak"); eq(select(2, Q.proofPoints("rare", 59, 100)), "level")
+-- the hunting level of a kill: its own level (pace.lua) wins over the pool level x the multiplier
+local savedLoot = ChaosLoot
+ChaosLoot = {huntLevel = function(m, fallback) return m.own or fallback end}
+eq(Chaos.monsterHuntingLevel({own = 700}, 300), 700, "own level"); eq(Chaos.monsterHuntingLevel({}, 300), 300, "fallback")
+ChaosLoot = savedLoot
+eq(Chaos.entryHuntingLevel({level = 60}), 60 * Chaos.huntingMult(), "pool entry x mult")
+eq(Chaos.entryHuntingLevel({level = 600, minLevel = 590}), 600, "level range: as is")
 eq(Q.proofPoints("magic", 200, 100), 0, "magic does not count"); eq(Q.proofPoints("normal", 200, 100), 0)
 eq(Q.proofPoints("boss", 200, 100), 0, "bosses do not count")
 local pts, done = Q.addProof(-1, 1); eq(pts, 1); eq(done, false)

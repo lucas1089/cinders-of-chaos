@@ -773,7 +773,8 @@ function kill.onKill(player, target)
 		local cat = B and B.cat and B.cat()
 		local name = (Chaos.monsterTypeName and Chaos.monsterTypeName(target) or target:getName()):lower()
 		local entry = cat and cat.byKey and cat.byKey[name]
-		if entry and (entry.level or 0) < player:getLevel() * (src.minLevelShare or 0) then
+		-- hunting levels (O284: the pool level, half, before 2026-10-28)
+		if entry and Chaos.monsterHuntingLevel(target, Chaos.entryHuntingLevel(entry)) < player:getLevel() * (src.minLevelShare or 0) then
 			return -- far below the character: nothing
 		end
 		-- pack combat (pace.lua): a paced monster counts 1 / its kill-goal factor (summed per player)
