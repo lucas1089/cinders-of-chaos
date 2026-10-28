@@ -22,6 +22,7 @@ end
 local archery = dofile("data/lib/chaos_archery_config.lua")
 local gearCfg = dofile("tools/gear_coverage_config.lua")
 dofile("data/lib/chaos_fist_weapons.lua")
+local W800 = dofile("data/lib/chaos_weapons800.lua")
 local isBook = {}
 for _, id in ipairs(gearCfg.books) do
 	isBook[id] = true
@@ -60,6 +61,12 @@ for _, kind in ipairs(L.KINDS) do
 			eq(it ~= nil, true, "fist " .. b[1] .. " is a fist weapon")
 			eq(it.level, b[2], "fist " .. b[1] .. " level")
 			eq(it.unique, nil, "fist " .. b[1] .. " is no unique")
+		elseif W800.items[b[1]] then
+			-- the weapons above level 800 (data/lib/chaos_weapons800.lua): same family, same level, wielded by the classes of the kind
+			local it = W800.items[b[1]]
+			eq(it.family, kind, "weapons800 " .. b[1] .. " family")
+			eq(it.level, b[2], "weapons800 " .. b[1] .. " level")
+			eq(#it.classes > 0, true, "weapons800 " .. b[1] .. " has a class list")
 		else
 			local w = weapons[b[1]]
 			eq(w ~= nil, true, kind .. " " .. b[1] .. " is in base_weapons.csv")
@@ -87,6 +94,16 @@ for _, kind in ipairs(L.KINDS) do
 	end
 end
 -- the Ranger starts with a bow and a crossbow at level 0, the casters with wands at level 1
+-- every weapon above level 800 is a base of its family, and only those families carry them
+local inBases = {}
+for _, kind in ipairs(L.KINDS) do
+	for _, b in ipairs(L.bases[kind]) do
+		inBases[b[1]] = kind
+	end
+end
+for _, id in ipairs(W800.ids) do
+	eq(inBases[id], W800.items[id].family, "weapons800 " .. id .. " is in its class loot family")
+end
 eq(L.bases.bow[1][2], 0, "a bow from level 0")
 eq(L.bases.crossbow[1][2], 0, "a crossbow from level 0")
 eq(L.bases.wand[1][2] <= 1, true, "a wand from level 1")
@@ -111,12 +128,12 @@ for _, b in ipairs(L.eligible("bow", 200)) do
 	eq(b[2] >= 50 and b[2] <= 220, true, "bow window at 200: " .. b[1])
 end
 -- above every base the highest three, but only those within fallbackSpan of the highest (2026-10-24: a hunt of level
--- 2000 no longer drops the level 400 bows a hunt of 800 does; the sets' level gear carries the levels above 1000)
-eq(#L.eligible("bow", 800), 3, "the three highest bows at 800: 400, 400, 600")
-eq(ids(L.eligible("bow", 800)), "27383,28052,27471", "the bows at 800")
+-- 2000 no longer drops the level 400 bows a hunt of 800 does; the sets' level gear carries the levels above 1000). Since the
+-- weapons above level 800 (2026-10-28) every window up to 2150 holds a bow; the fallback only works above the last one
+eq(ids(L.eligible("bow", 800)), "48412", "the bows at 800: the level 820 bow")
 eq(#L.eligible("bow", 5000), 1, "the best bow only at 5000")
-eq(L.eligible("bow", 5000)[1][1], 29874, "the highest bow")
-eq(ids(L.eligible("bow", 1100)), "29874", "the bows at 1100")
+eq(L.eligible("bow", 5000)[1][1], 48420, "the highest bow")
+eq(ids(L.eligible("bow", 1100)), "48414,29874,48415", "the bows at 1100")
 eq(L.config.fallbackSpan, 200, "the span of the fallback")
 -- above the last base only the three highest bases within fallbackSpan of the top are left
 for _, kind in ipairs(L.KINDS) do

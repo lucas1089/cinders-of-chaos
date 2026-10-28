@@ -17,6 +17,8 @@
 --   data/lib/chaos_gear_sets.lua      the equipment sets of pair 28 (+ chaos_gear_sets_items.lua): weapons, loot rows
 --   data/lib/chaos_unique_items.lua   the uniques: slot, level, drop tier, monsters; chaos_unique_specs.lua: attack, equip rule
 --   data/lib/chaos_fist_weapons.lua   the Monk line's fist weapons
+--   data/lib/chaos_weapons800.lua     the 34 weapons above level 800 (their own monster loot rows are the source counted; the
+--                                     class loot families carry them too, which this audit does not read)
 --   data/monster/monsters/chaos/**    the Chaos monsters' loot (stock weapons some of them drop)
 --   data/lib/chaos_archery_config.lua which launchers are bows and which crossbows
 -- A weapon counts for a class when its class list holds the class and its family suits the class (config `lines`), and
@@ -367,6 +369,39 @@ function C.load(cfg)
 		local w = newWeapon({id = id, name = it.name, kind = "fist", family = "fist", hands = 1, level = it.level,
 			power = it.attack, classes = nil, origin = "fist"})
 		w.sources.drop = fistDrop[id] or (it.unique and {level = it.level, chance = 1, unique = true}) or nil
+		D.weapons[#D.weapons + 1] = w
+	end
+
+	-- the weapons above level 800: own monster loot rows (data/scripts/chaos/weapons800.lua) are the source counted here
+	local W8 = dofile("data/lib/chaos_weapons800.lua")
+	local w8Drop = {}
+	for _, row in ipairs(W8.loot) do
+		local d = w8Drop[row[2]]
+		if not d then
+			w8Drop[row[2]] = {level = 0, chance = row[3]}
+		else
+			d.chance = math.max(d.chance, row[3])
+		end
+	end
+	local W8KIND = {sword2 = "sword", axe2 = "axe", club2 = "club"}
+	for _, id in ipairs(W8.ids) do
+		local it = W8.items[id]
+		local kind = W8KIND[it.type] or (it.type == "rod" and "wand" or it.type)
+		local st = it.stats
+		local power
+		if kind == "wand" then
+			power = (st.wandMin + st.wandMax) / 2
+		else
+			power = (st.attack or 0) + (st.elementFire or 0) + (st.elementIce or 0) + (st.elementEarth or 0)
+				+ (st.elementEnergy or 0) + (st.elementDeath or 0) + (st.elementHoly or 0)
+		end
+		local hands = (W8KIND[it.type] or kind == "bow" or kind == "crossbow") and 2 or 1
+		local w = newWeapon({id = id, name = it.name, kind = kind, rodOrWand = it.type, family = FAMILY[kind], hands = hands,
+			level = it.level, power = power, classes = set(it.classes), origin = "weapons800"})
+		local d = w8Drop[id]
+		if d and d.chance >= cfg.minDropChance then
+			w.sources.drop = d
+		end
 		D.weapons[#D.weapons + 1] = w
 	end
 

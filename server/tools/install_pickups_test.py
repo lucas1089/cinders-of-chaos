@@ -113,8 +113,10 @@ try:
 except SystemExit:
     check(True, '')
 
-with tempfile.TemporaryDirectory() as d:
+with tempfile.TemporaryDirectory() as srv:
+    d = os.path.join(srv, 'data')  # the step reads the recorded client pair from SERVER/config.lua (client_pair.py)
     os.makedirs(os.path.join(d, 'items'))
+    open(os.path.join(srv, 'config.lua'), 'w').write('chaosClientPair = 55\n')
     open(os.path.join(d, 'items', 'items.otb'), 'wb').write(base)
     open(os.path.join(d, 'items', 'items.xml'), 'w').write(xml)
     check(T.main([d, '--dry-run']) == 0 and open(os.path.join(d, 'items', 'items.otb'), 'rb').read() == base, 'dry run writes nothing')

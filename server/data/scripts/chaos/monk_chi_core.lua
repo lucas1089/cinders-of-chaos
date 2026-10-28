@@ -85,10 +85,11 @@ M.cfg = {
 		-- fist weapons: hand items with an attack and no weapon type (the engine still fights with fists); their
 		-- attack counts when it is higher than the level value. Server ids of the fist weapons (shield-type hand items
 		-- with an attack; server/tools/install_fist_weapons.py, data/lib/chaos_fist_weapons.lua, tests/fist_weapons_test.lua).
-		-- 19 of them, by level: 13 on the claw looks the pair already had (40000-40012: 9 plain tiers from level 1 to 2200
-		-- and 4 uniques) and the first six (36654-36659). Same order as ChaosFistWeapons.ids (the test compares them)
-		fistWeapons = {40000, 36654, 40009, 40010, 40001, 36655, 40002, 36656, 36657, 36658, 36659, 40003, 40004, 40005,
-			40011, 40006, 40007, 40012, 40008}
+		-- 22 of them, by level: 13 claws and uniques (40000-40012: 9 plain tiers from level 1 to 2200 and 4 uniques; since
+		-- pair 56 only 40000-40002 wear donor looks), the first six (36654-36659) and the three of pair 56 (48409-48411).
+		-- Same order as ChaosFistWeapons.ids (the test compares them)
+		fistWeapons = {40000, 36654, 40009, 40010, 40001, 36655, 40002, 36656, 36657, 36658, 36659, 48409, 40003, 48410,
+			40004, 48411, 40005, 40011, 40006, 40007, 40012, 40008}
 	},
 	-- (spellLevelScale, a level factor of the strikes that stood in for the passive tree, was dropped with the class trees:
 	-- M.levelScale is 1 unless one is set here or in Chaos.classes)

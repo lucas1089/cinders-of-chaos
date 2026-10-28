@@ -173,6 +173,17 @@ jobs:
           # sums match the generator, the look passes style_check, and the ids agree with pickups_config.lua
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_portal_art.py build --check
           python3 -I client/tools/sprites/gen_portal_art_test.py
+          # the Monk fist weapon looks of pair 56 (thirteen PixelLab 32 x 32 items: six claws, four uniques, three new
+          # weapons): committed sources, atlas, things file and sums match the generator, each look passes style_check
+          # on its own colours, and the ids agree with server/data/items/fist_claws.csv
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_fist2_art.py build --check
+          python3 -I client/tools/sprites/gen_fist2_art_test.py
+          # the 34 weapons above level 800 of pair 56 (nine bows, four crossbows, nine wands, nine rods, a two-handed sword, axe
+          # and maul; PixelLab 32 x 32 items, client ids 44412-44445): committed sources, atlas, things file, credits and sums
+          # match the generator, each look passes style_check on its own colours, and the ids agree with
+          # server/data/items/weapons800.csv
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_weapons800_art.py build --check
+          python3 -I client/tools/sprites/gen_weapons800_art_test.py
           # the Reward Chest look of pair 45 (one PixelLab chest, a 2 x 2 item): committed source, atlas, things file and
           # sums match the generator, and the look passes style_check on its own colours
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_reward_chest_art.py build --check
@@ -921,6 +932,12 @@ jobs:
 
       - name: Ground pickups install (globes and ember items, synthetic items.otb / items.xml)
         run: python3 -I server/tools/install_pickups_test.py
+
+      - name: Client pair guard and the pair 55 / 56 item installs (chaosClientPair in config.lua: pickups 55, fist weapons 56, weapons above level 800 56)
+        run: |
+          python3 -I server/tools/client_pair_test.py
+          python3 -I server/tools/install_fist_weapons_test.py
+          python3 -I server/tools/install_weapons800_test.py
 
       - name: Base NPC script names (patch_base_npcs.py step 5, the letter case of the script file)
         run: python3 -I server/tools/patch_base_npcs_test.py

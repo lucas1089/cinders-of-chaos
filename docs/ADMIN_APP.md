@@ -84,6 +84,11 @@ instalada é desconhecida: o passo 2 baixa a mais nova e, se o `tfs` for igual a
 
 - **Taxa de XP** (`xp-rate show | set N | reset [restart]`): x1 a x100 sobre os estágios da release, com backup do
   `config.lua` (`config.lua.before-xp-DATA`). Gravar vale no próximo reinício; Gravar e reiniciar reinicia já.
+- **Par do cliente** (`client-pair show | set N`; ainda sem botão no app, use o comando; botão proposto: aba Comandos > cartão
+  "Par do cliente" > Ver / Gravar): grava no `config.lua` (`chaosClientPair`) o par de sprites do cliente já publicado. O
+  Atualizar servidor só instala os itens de um par novo (par 55: globos e brasa; par 56: armas de punho novas e as armas acima
+  do nível 800) depois de gravar o número do par, depois de publicar a atualização do cliente. Número menor que o gravado é
+  recusado. server/README.md "Client pair guard".
 - **Modo beta (testes)** (`beta-mode status | on | off [restart]`, aba Comandos > cartão Modo beta (testes) > Ver / Ligar /
   Desligar / Ligar e reiniciar / Desligar e reiniciar): tira os limites semanais e diários do jogo para os testers
   (trava semanal do raide e do chefe da guilda, tarefas de caça, ofertas semanais do Candlemarks e das facções, teto de
@@ -225,7 +230,7 @@ terminal do app ser root de verdade (instalar pacotes, mexer no sistema), rode n
 `panel NOME ACAO JSON`, `update TAG now|at-save` e `rollback now|at-save` (layout padrão; no kit, `rollback now` é
 `update-rollback`), `update-check`, `update-apply [--no-client] [--no-downloads] [--no-site] [--no-map]`, `update-status`,
 `update-rollback`, `update-log`, `publish-update TAG` (atualização do cliente, docs/LAUNCH.md "Publishing a client
-update"), `publish-log`, `site-install`, `site-log`, `areas-publish [--pictures] [--rotate]`, `xp-rate`, `beta-mode [status | on | off] [restart]`, `clientservices-impl [status | rust | python]`, `health`, `cleanup [--yes]`, `account-create NOME`,
+update"), `publish-log`, `site-install`, `site-log`, `areas-publish [--pictures] [--rotate]`, `xp-rate`, `client-pair [show | set N]`, `beta-mode [status | on | off] [restart]`, `clientservices-impl [status | rust | python]`, `health`, `cleanup [--yes]`, `account-create NOME`,
 `account-password NOME`, `discord-set CANAL` (URL no stdin) | `discord-enable` | `discord-disable` | `discord-test [CANAL|all]` | `discord-status`, `install-admin`, `spectate NOME`, `spectate-pair [status | fetch | log [N]]`. Todos com argumentos conferidos (números, nomes, tags de release), nada de
 shell livre. Rode `chaos-ctl.sh help`. Aviso, expulsar, abrir, fechar e salvar passam pelo arquivo `remote.cmd`
 (`server/README.md`, "Remote admin commands"): o servidor do jogo precisa estar com os scripts novos.

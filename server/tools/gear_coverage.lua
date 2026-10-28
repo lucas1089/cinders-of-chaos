@@ -668,13 +668,15 @@ end
 --   class   the class loot rows (data/lib/chaos_class_loot.lua): bows, crossbows, wands, rods
 --   melee, fist, throw   the same file's rows for the melee, the Monk line's fist and the Thief line's throwing weapons
 --   fist    the Monk line's fist weapons (data/lib/chaos_fist_weapons.lua loot, data/scripts/chaos/fist_weapons.lua)
+--   w800    the weapons above level 800 (data/lib/chaos_weapons800.lua loot, data/scripts/chaos/weapons800.lua); their bases are
+--           class loot rows too (counted as "class", the scaled roll included)
 -- A weapon counts for a class when the class can wield it (the weapon audit's families and class lists), its power is at
 -- least cfg.fairPower of the weapon audit's curve at the band, and its required level is within cfg.fairWindow of the
 -- band (a club of level 25 is no drop at hunting level 300). The bands the monsters of the pool do not reach (hunting
 -- level above the highest base monster, 657) are scaled monsters: they drop the sets' level gear only (the class rows
 -- are keyed to the pool level of the monster type), counted for 1000 kills of a normal monster.
 -- ---------------------------------------------------------------------------------------------------------------
-C.SOURCES = {"stock", "set", "level", "class", "fist"}
+C.SOURCES = {"stock", "set", "level", "class", "fist", "w800"}
 
 -- the loadouts an item belongs to (cfg.loadouts names them per class): melee by hands, fist, bow, crossbow, wand and rod.
 -- A stock wand or rod is told apart by its class list like the sets do: a wand is one the Elementalist wields, a rod one it
@@ -751,6 +753,17 @@ function C.fairness(cfg, wcfg, opt)
 	local G = dofile("data/lib/chaos_gear_sets.lua")
 	dofile("data/lib/chaos_fist_weapons.lua")
 	local FIST = ChaosFistWeapons
+	-- the weapons above level 800 as the sets' pieces the audit reads (kind, fit, level, classes, stats)
+	local W800 = dofile("data/lib/chaos_weapons800.lua")
+	local W800KIND = {sword2 = "sword", axe2 = "axe", club2 = "club"}
+	local function w800Piece(id)
+		local it = W800.items[id]
+		if not it then
+			return nil
+		end
+		return {id = id, kind = W800KIND[it.type] or it.type, fit = W800KIND[it.type] and "2" or "", level = it.level,
+			classes = it.classes, stats = it.stats}
+	end
 	local CL = opt.classLoot or dofile("data/lib/chaos_class_loot.lua")
 	local extra = {}
 	local function addExtra(name, row)
@@ -763,6 +776,8 @@ function C.fairness(cfg, wcfg, opt)
 			addExtra(row[1], {r = r, chance = row[3], source = "class"})
 		elseif FIST.items[row[2]] then
 			addExtra(row[1], {fist = FIST.items[row[2]], id = row[2], chance = row[3], source = "class"})
+		elseif W800.items[row[2]] then
+			addExtra(row[1], {piece = w800Piece(row[2]), id = row[2], chance = row[3], source = "class"})
 		end
 	end
 	if G.PAIR28 then
@@ -777,6 +792,11 @@ function C.fairness(cfg, wcfg, opt)
 		local it = FIST.items[row[2]]
 		if it then
 			addExtra(row[1], {fist = it, id = row[2], chance = row[3], source = "fist"})
+		end
+	end
+	for _, row in ipairs(W800.loot) do
+		if W800.items[row[2]] then
+			addExtra(row[1], {piece = w800Piece(row[2]), id = row[2], chance = row[3], source = "w800"})
 		end
 	end
 	local SET_FAMILY = {sword = "melee", axe = "melee", club = "melee", bow = "launcher", crossbow = "launcher",
@@ -818,7 +838,7 @@ function C.fairness(cfg, wcfg, opt)
 					cs[c] = true
 				end
 			end
-			return {family = fam, kind = piece.kind, exact = true,
+			return {id = piece.id, family = fam, kind = piece.kind, exact = true,
 				hands = (piece.fit == "2" or piece.kind == "bow" or piece.kind == "crossbow") and 2 or 1, classes = cs,
 				level = piece.level, power = power}
 		end
@@ -923,6 +943,8 @@ function C.fairness(cfg, wcfg, opt)
 							spec = specOf({r = r})
 						elseif FIST.items[b[1]] then
 							spec = specOf({fist = FIST.items[b[1]], id = b[1]})
+						elseif W800.items[b[1]] then
+							spec = specOf({piece = w800Piece(b[1])})
 						end
 						if spec and has[class.name] and has[class.name][kind] and W.suits(class, spec) and relevant(edge, spec) then
 							add(a, class.name, kind, "class", chance / #list * a.w)

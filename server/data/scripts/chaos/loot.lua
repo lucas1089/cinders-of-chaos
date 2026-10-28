@@ -1138,7 +1138,22 @@ function L.classWeapons(monster, owner, tier, ctx)
 	end
 	local scale = rateMult(ctx) * (ctx.itemFind or 1) * (ctx.pace or 1)
 	local ok, ids = pcall(CL.rollScaled, ctx.huntLevel or 0, className, tier, scale, rnd)
-	return ok and ids or {}
+	if not ok or not ids then
+		return {}
+	end
+	-- client pair guard (README "Client pair guard"): a base the server has no item for (a step held back by the recorded
+	-- client pair) is not dropped
+	if ItemType then
+		local kept = {}
+		for _, id in ipairs(ids) do
+			local okT, it = pcall(ItemType, id)
+			if okT and it and it:getId() == id then
+				kept[#kept + 1] = id
+			end
+		end
+		ids = kept
+	end
+	return ids
 end
 
 -- text, nearMessage: deferred texts (ChaosI18n.msg), each player reads them in their own language

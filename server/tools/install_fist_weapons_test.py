@@ -32,13 +32,20 @@ def raises(fn, what):
 rows = T.rows_of(T.DEFAULT_MANIFESTS)
 ids = [r['server_id'] for r in rows]
 by_id = {r['server_id']: r for r in rows}
-check(len(rows) == 19 and len(set(ids)) == 19, 'nineteen fist weapons, no duplicate id')
+check(len(rows) == 22 and len(set(ids)) == 22, 'twenty-two fist weapons, no duplicate id')
 lv = [int(r['ex']['level']) for r in rows]
 check(lv == sorted(lv), 'rows sorted by level')
 check(lv[0] == 1 and lv[-1] >= 2000, 'a fist weapon from level 1 to the endgame')
-check(sum(1 for r in rows if r['mode'] == 'donor') == 13, 'thirteen claw rows')
+check(sum(1 for r in rows if r['mode'] == 'donor') == 3, 'three claws on donor looks')
+check(sorted(r['server_id'] for r in rows if r['mode'] == 'repoint') == list(range(40003, 40013)), 'ten repointed claws and uniques')
+check(sorted(r['server_id'] for r in rows if r['mode'] == 'new4') == [48409, 48410, 48411], 'three new weapons of pair 56')
 for r in rows:
-    check(r['server_id'] == r['client_id'] + T.ID_OFFSET[r['mode']], 'id offset of ' + r['key'])
+    if T.ID_OFFSET[r['mode']] is not None:
+        check(r['server_id'] == r['client_id'] + T.ID_OFFSET[r['mode']], 'id offset of ' + r['key'])
+    else:
+        check(r['client_id'] >= 44399 and r['server_id'] < 40013, r['key'] + ': repointed to a pair 56 look')
+    if r['mode'] in ('repoint', 'new4'):
+        check(44399 <= r['client_id'] <= 44411, r['key'] + ': a pair 56 client id')
 uniq = [r for r in rows if r['ex'].get('unique')]
 check(len(uniq) == 5, 'five uniques (Pyre plus four)')
 for r in uniq:
@@ -65,6 +72,14 @@ with tempfile.TemporaryDirectory() as td:
     raises(lambda: T.rows_of([b]), 'a wrong id offset refused')
     open(b, 'w').write(HEAD + base % (33654, 36654, 5, 'new', 5, 9))
     check(T.rows_of([b])[0]['server_id'] == 36654, 'mode new: +3000')
+    open(b, 'w').write(HEAD + base % (44409, 48409, 6, 'new4', 6, 9))
+    check(T.rows_of([b])[0]['server_id'] == 48409, 'mode new4: +4000')
+    open(b, 'w').write(HEAD + base % (44409, 48410, 6, 'new4', 6, 9))
+    raises(lambda: T.rows_of([b]), 'new4 with a wrong offset refused')
+    open(b, 'w').write(HEAD + base % (44399, 40003, 7, 'repoint', 7, 9))
+    check(T.rows_of([b])[0]['client_id'] == 44399, 'mode repoint: any rule-free client id')
+    open(b, 'w').write(HEAD + base % (28003, 40003, 7, 'repoint', 7, 9))
+    raises(lambda: T.rows_of([b]), 'repoint onto a donor look refused')
 
 # items.xml: add, keep, rewrite
 two = rows[:2]
@@ -90,7 +105,8 @@ check('itemid="40001"' in mv and 'level="35"' in mv and mv.count('<vocation') ==
       'Monk line only, at the level')
 
 # the donor step leaves the claimed ids to this tool
-check(D.claimed_ids() == {r['server_id'] for r in rows if r['mode'] == 'donor'}, 'donor step claims the claw ids')
+check(D.claimed_ids() == {r['server_id'] for r in rows if r['mode'] != 'new'}, 'donor step claims the ids of fist_claws.csv')
+check(D.repointed_ids() == set(range(40003, 40013)), 'donor step leaves the items.otb nodes of the repointed claws to this tool')
 dx, _ = D.patch_xml('<items>\n</items>\n', [{'server_id': 40000, 'name': 'claw 1'}, {'server_id': 40014, 'name': 'claw 15'}])
 check('id="40000"' not in dx and 'id="40014"' in dx, 'donor xml skips the claimed ids')
 
@@ -101,6 +117,9 @@ from install_dark_tiles import node_bytes as donor_node  # noqa: E402
 with open(os.path.join(HERE, '..', 'data', 'items', 'donor_items.csv'), newline='') as f:
     donor = {int(r['server_id']): r for r in csv.DictReader(f)}
 for r in rows:
+    if r['mode'] == 'repoint':
+        check(donor.get(r['server_id']) is not None and r['client_id'] != int(donor[r['server_id']]['client_id']),
+              r['key'] + ': a donor item whose node is now this tool\'s, with a new client id')
     if r['mode'] != 'donor':
         continue
     d = donor.get(r['server_id'])

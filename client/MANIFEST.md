@@ -944,8 +944,9 @@ and four shards rise from a violet ground ring, circle once, sink, 14 x 90 ms). 
 + (1, 1); nothing is repainted per frame (the pieces are moved, flipped and turned), alpha 0 / 255, last frame empty.
 - Client ids: items 33654..33659 (charred hand wraps, ashbound cestus, ember knuckles, ossuary gauntlet, cinderforged
   talons, pyre saint's grasp; server ids +3000, `server/data/items/fist_items.csv`, `server/tools/install_fist_weapons.py`);
-  the Monk's thirteen claw weapons (2026-10-23, `server/data/items/fist_claws.csv`) use donor B looks that the pair already
-  holds (client ids 28000..28012, "Donor art libraries"), so they need no new art and no client update;
+  the Monk's thirteen claw weapons (2026-10-23, `server/data/items/fist_claws.csv`) used donor B looks that the pair already
+  holds (client ids 28000..28012, "Donor art libraries"); since pair 56 only the first three do, the other ten wear the new
+  looks of "Pair 56" (client ids 44399..44408) and the donor slots 28003..28012 stay unused;
   effects 583..585 (bone_spear, bone_burst, bone_aura), missile 153 (bone_spear); Lua names
   `server/data/lib/chaos_vfx_art.lua`, catalogue `server/data/spells/vfx_art_catalog.csv` (both written by the import).
 - Two steps, last in the rebuild chain (after the store pouch looks); `import_fx_art.py` is new (effects and missiles
@@ -3465,6 +3466,120 @@ Output **pair 55**: dat 26670034d86dab36a59ecd955bb158c7 (8,842,607 bytes), spr 
   sampled old sprites unchanged, append-only guard passed. `check_pair.py --old pair54`: 0 errors, 3,964 warnings (the same as pair 54).
   `gen_outfit_anchors.py` and `gen_info_lift.py` against pair 55 change only the dat md5 line (not committed yet, as for pair 54: CI checks
   them against the pair on windows-assets). `gen_fx_send_offsets.py --check`: up to date. Not run in a client.
+- **Archive parts.** Not built, not pushed to windows-assets: waiting for the owner's approval of the pair.
+
+### Pair 56: pair 55 with the Monk fist weapon looks and the 34 weapons above level 800 (`gen_fist2_art.py`, `gen_weapons800_art.py`; built 2026-10-28, not pushed yet)
+Owner 2026-10-28 ("me mande fotos das armas do monk", approved all with "aprovo todas"): redraws of the six claws and the four
+uniques of the Monk line, and three new fist weapons. 13 items are appended (client ids 44399-44411); then, owner 2026-10-28
+("pode criar mais armas pros levels acima de 800"), 34 weapons above level 800 (client ids 44412-44445, below). 47 items in all; nothing else changes.
+- **Art.** Thirteen PixelLab pictures, owner approved (32 x 32 RGBA, alpha 0 / 255), the top picks of the phase 1 sheets (the 8 x 8
+  `create_image_pro` sheets re-cut over the cell seam; the job ids were not kept, the candidate set and tile number are in
+  `art_import/fist2_sources.csv`). Pixels are PixelLab's: not repainted or snapped (only the colour under fully transparent
+  pixels is cleared). `gen_fist2_art.py build --src KEY=FILE` (repeatable) copies each to `art_import/fist2/<key>.png`; committed
+  too: `art_import/fist2.png` (atlas, 416 x 32, 13 cells), `fist2.csv` (things file, 1 x 1, one phase, flags `copy:3412` like
+  `fist_weapons.csv`, mode new), `fist2.sums`, `fist2_sources.csv` (credit: docs/CREDITS.md "Tools", PixelLab). `build --check`
+  and `gen_fist2_art_test.py` (CI) rebuild from the committed sources; each look passes `style_check.py` on its own colours (not
+  snapped to a theme palette); two rules are waived, listed in `WAIVED` and printed: stormforged claws (8 one-pixel holes, max 6)
+  and gravewind talons (27% near-black rim, min 30%). The generator is table driven (`LOOKS`, `NAME`): a later look set copies it.
+
+  | Client id | Key | Item | Server id | Look (candidate set, tile) |
+  |---|---|---|---|---|
+  | 44399 | fist_c4 | pair of emberhide claws (800) | 40003 | scorched hide mitt, horn claws, lava seams (ember2, 27) |
+  | 44400 | fist_c5 | pair of voidglass claws (1000) | 40004 | black glass shards, violet crystal (void2, 18) |
+  | 44401 | fist_c6 | pair of stormforged claws (1250) | 40005 | blue steel gauntlet, yellow lightning (storm, 21) |
+  | 44402 | fist_c7 | pair of wyrmbone claws (1500) | 40006 | ivory ribbed dragon-bone, fangs (wyrm, 4) |
+  | 44403 | fist_c8 | pair of gravewrought claws (1800) | 40007 | moss-green grave iron, one big claw (grave, 33) |
+  | 44404 | fist_c9 | pair of last-dawn claws (2200) | 40008 | white-gold gauntlet, golden claws (dawn, 21) |
+  | 44405 | fist_u1 | vigil-knot wraps (14, unique) | 40009 | knotted linen, red sigil, candle flame (vigil, 12) |
+  | 44406 | fist_u2 | chapel-iron knuckles (26, unique) | 40010 | iron knuckle-duster, white-gold cross (chapel2, 56) |
+  | 44407 | fist_u3 | gravewind talons (1400, unique) | 40011 | bone-grey gauntlet, teal wind claws (gwind, 21) |
+  | 44408 | fist_u4 | dawnless gauntlets (2000, unique) | 40012 | black plate, gold trim, eclipse ring (dawnless, 18) |
+  | 44409 | fist_t6 | gravetooth cestus (750, new) | 48409 | grey-green iron cestus, bone teeth (cestus, 0) |
+  | 44410 | fist_t7 | pair of hollowfang katars (950, new) | 48410 | two steel punch daggers, red edge (katar2, 0) |
+  | 44411 | fist_t8 | wardenplate gauntlet (1150, new) | 48411 | teal steel gauntlet, bronze-bossed plate (war, 5) |
+- **Server.** `server/data/items/fist_claws.csv`: rows 40003-40012 mode `repoint` (their server ids stay, the client ids move off the
+  donor looks 28003-28012, which stay in the pair untouched), three new rows mode `new4` (server id = client id + 4000, the pair 50
+  rule). `install_fist_weapons.py` writes the nodes (an older node on the donor look is rewritten), `install_donor_items.py` skips the
+  repointed ids, `install_fist_weapons.py --lua` regenerates `chaos_fist_weapons.lua`. The `fistweapons` and `weapons800` steps
+  wait for `config.lua` `chaosClientPair >= 56` (the client pair guard, server/README.md "Client pair guard"): until the owner
+  records the pair they keep the claws on the donor looks and install none of the new items.
+- **Weapons above level 800 (`gen_weapons800_art.py`, `art_import/weapons800*`).** 34 PixelLab pictures, owner approved the
+  top picks of the phase 1 sheets on 2026-10-28 (32 x 32 RGBA, alpha 0 / 255, `create_image_pro` 8 x 8 sheets re-cut over the cell
+  seam; candidate set and tile of each in `art_import/weapons800_sources.csv`; pixels not repainted, snapped or mirrored; the two-handed
+  melee looks keep the grip bottom-left). Appended after the fist looks: client ids 44412-44445, server ids = client id + 4000
+  (48412-48445, free: checked against every csv of `server/data/items`, the `chaos_*.lua` libs and the id tables of server/README.md).
+  Committed: `art_import/weapons800/<key>.png` (sources), `weapons800.png` (atlas, 1088 x 32, 34 cells), `weapons800.csv` (things file,
+  flags copied from the stock item of the kind as for the gear sets: sword 3264, axe 3274, club 3270, bow 3350, crossbow 3349,
+  wand and rod 3066; `extra` = type, level, element, loot, description), `weapons800.sums`, `weapons800_sources.csv`.
+  `build --check` and `gen_weapons800_art_test.py` (CI) rebuild from the committed sources; every look passes `style_check.py` on its
+  own colours, one rule is waived and printed (`WAIVED`: mirrorbark staff, 28% near-black rim, min 30%). The server manifest
+  `server/data/items/weapons800.csv` is the importer's `--manifest-out` of the things file with `--server-offset 4000`.
+
+| Client id | Key | Item | Server id | Type, level, element |
+|---|---|---|---|---|
+| 44412 | w800_gravesong_bow | gravesong bow | 48412 | bow, 820, death |
+| 44413 | w800_emberthorn_longbow | emberthorn longbow | 48413 | bow, 885, fire |
+| 44414 | w800_hollowreed_recurve | hollowreed recurve | 48414 | bow, 950, earth |
+| 44415 | w800_stormlace_bow | stormlace bow | 48415 | bow, 1120, energy |
+| 44416 | w800_veilpiercer_bow | veilpiercer bow | 48416 | bow, 1235, holy |
+| 44417 | w800_duskpetal_longbow | duskpetal longbow | 48417 | bow, 1420, earth |
+| 44418 | w800_ashen_halo_bow | ashen halo bow | 48418 | bow, 1580, holy |
+| 44419 | w800_throneseeker_bow | throneseeker bow | 48419 | bow, 1850, energy |
+| 44420 | w800_last_ember_recurve | last-ember recurve | 48420 | bow, 2150, fire |
+| 44421 | w800_bonehinge_arbalest | bonehinge arbalest | 48421 | crossbow, 840, death |
+| 44422 | w800_cindergut_crossbow | cindergut crossbow | 48422 | crossbow, 930, fire |
+| 44423 | w800_frostlatch_arbalest | frostlatch arbalest | 48423 | crossbow, 1150, ice |
+| 44424 | w800_thornwarden_crossbow | thornwarden crossbow | 48424 | crossbow, 1480, earth |
+| 44425 | w800_cinderbloom_wand | cinderbloom wand | 48425 | wand, 830, fire |
+| 44426 | w800_mirewhisper_spire | mirewhisper spire | 48426 | wand, 890, earth |
+| 44427 | w800_stormglass_scepter | stormglass scepter | 48427 | wand, 960, energy |
+| 44428 | w800_hoarwick_wand | hoarwick wand | 48428 | wand, 1080, ice |
+| 44429 | w800_sunscar_focus | sunscar focus | 48429 | wand, 1200, holy |
+| 44430 | w800_thunderwake_scepter | thunderwake scepter | 48430 | wand, 1400, energy |
+| 44431 | w800_emberveil_spire | emberveil spire | 48431 | wand, 1560, fire |
+| 44432 | w800_rotcrown_wand | rotcrown wand | 48432 | wand, 1780, death |
+| 44433 | w800_wyrmtongue_focus | wyrmtongue focus | 48433 | wand, 2100, energy |
+| 44434 | w800_hushwood_rod | hushwood rod | 48434 | rod, 825, death |
+| 44435 | w800_mirrorbark_staff | mirrorbark staff | 48435 | rod, 885, ice |
+| 44436 | w800_dreamthorn_branch | dreamthorn branch | 48436 | rod, 955, earth |
+| 44437 | w800_veilhollow_crook | veilhollow crook | 48437 | rod, 1100, death |
+| 44438 | w800_glimmerbough_rod | glimmerbough rod | 48438 | rod, 1210, holy |
+| 44439 | w800_gloamroot_staff | gloamroot staff | 48439 | rod, 1390, earth |
+| 44440 | w800_wraithwillow_rod | wraithwillow rod | 48440 | rod, 1590, ice |
+| 44441 | w800_nightbloom_crook | nightbloom crook | 48441 | rod, 1820, death |
+| 44442 | w800_eventide_branch | eventide branch | 48442 | rod, 2080, holy |
+| 44443 | w800_gravewrought_greatsword | gravewrought greatsword | 48443 | sword2, 850, death |
+| 44444 | w800_ashmaw_greataxe | ashmaw greataxe | 48444 | axe2, 910, fire |
+| 44445 | w800_dirgebell_maul | dirgebell maul | 48445 | club2, 975, holy |
+- **Rebuild** (the steps are reproducible; later look sets append after client id 44445 the same way, `--first-item` the next id and
+  `--expect-items` the last id of the pair before):
+```
+python3 -I client/tools/sprites/gen_fist2_art.py build [--src fist_c4=PICK.png ...] [--preview DIR --dat pair55/Tibia.dat --spr pair55/Tibia.spr]
+python3 -I client/tools/sprites/import_art_things.py --ours-dat pair55/Tibia.dat --ours-spr pair55/Tibia.spr --out-dir pair56 \
+    --things client/tools/sprites/art_import/fist2.csv --first-item 44399 --expect-items 44398
+# then the 34 weapons above level 800, appended to that output (a different out-dir; the result is the final pair 56):
+python3 -I client/tools/sprites/gen_weapons800_art.py build [--src KEY=FILE ...] [--preview DIR --dat pair56/Tibia.dat --spr pair56/Tibia.spr]
+python3 -I client/tools/sprites/import_art_things.py --ours-dat pair56/Tibia.dat --ours-spr pair56/Tibia.spr --out-dir pair56final \
+    --things client/tools/sprites/art_import/weapons800.csv --first-item 44412 --expect-items 44411 --server-offset 4000 \
+    --manifest-out server/data/items/weapons800.csv
+python3 -I client/tools/sprites/check_pair.py pair56final/Tibia.dat pair56final/Tibia.spr --old pair55/Tibia.dat pair55/Tibia.spr
+python3 -I client/tools/sprites/gen_outfit_anchors.py --out /scratch/anch56.lua pair56final/Tibia.dat pair56final/Tibia.spr
+python3 -I client/tools/sprites/gen_info_lift.py --out /scratch/lift56.lua pair56final/Tibia.dat pair56final/Tibia.spr
+python3 -I client/tools/sprites/gen_fx_send_offsets.py --check
+```
+Input pair 55 (dat 26670034d86dab36a59ecd955bb158c7, spr c0b3de1122ca4db658915ca077ae9d6f).
+Output after the fist looks (the first build of pair 56): dat ade572a4b128115ee41a1793dec130e9 (8,842,815 bytes), spr
+4747b22003e4782d7901212be6e93e39 (1,131,917,248 bytes, 946,744 sprites: 13 appended), 44,411 items. Superseded by the final pair below.
+Output **pair 56** (final, with the 34 weapons): dat cafd10c030c87eeab28ec4ca0e4806b8 (8,843,365 bytes), spr
+875ead25023f579ba30e925f3d3b608d (1,131,969,510 bytes, 946,778 sprites: 47 appended to pair 55), 44,445 items (47 appended), 3,363
+outfits, 4,701 effects, 253 missiles. Built, not pushed yet.
+- **Checked.** The importer: the output parses, the 13 sprite slots are pixel-identical to the art, every other thing byte-identical,
+  3,000 sampled old sprites unchanged, append-only guard passed. `check_pair.py --old pair55`: 0 errors, 3,964 warnings (the same as
+  pair 55). `gen_outfit_anchors.py` and `gen_info_lift.py` against pair 56 change only the dat md5 line (written to the scratchpad,
+  not committed, as for pairs 54 and 55). `gen_fx_send_offsets.py --check`: up to date. Rendered from the pair
+  (`gen_fist2_art.py --preview`, `gen_weapons800_art.py --preview`): all 47 draw as in the tables. The second import (34 items, 34 sprites
+  appended): output parses, the 34 slots are pixel-identical to the art, every other thing byte-identical, append-only guard passed;
+  `check_pair.py --old pair55` again 0 errors and 3,964 warnings; `gen_fx_send_offsets.py --check` up to date. Not run in a client.
 - **Archive parts.** Not built, not pushed to windows-assets: waiting for the owner's approval of the pair.
 
 ## Owner art (things_custom26: outfits 2213-2233, items 33940-33985, `tools/sprites/gen_owner_art.py`, `art_import/owner_art.csv`; on windows-assets 50645056, switch on since 2026-10-15)

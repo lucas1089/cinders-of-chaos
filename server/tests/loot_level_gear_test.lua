@@ -16,8 +16,9 @@ end
 Chaos = {}
 MAX_LOOTCHANCE = 100000
 EventCallback = setmetatable({register = function() end}, {__newindex = rawset})
+MISSING_ITEMS = {}
 function ItemType(id)
-	return {isStackable = function() return false end, getName = function() return "item " .. id end}
+	return {getId = function() return MISSING_ITEMS[id] and 0 or id end, isStackable = function() return false end, getName = function() return "item " .. id end}
 end
 dofile("data/scripts/chaos/loot.lua")
 local L = ChaosLoot
@@ -103,6 +104,14 @@ ok(#L.classWeapons(monster(false), owner("Monk"), "normal", {huntLevel = 400, it
 	"a base hunt rolls none here")
 L.setRandom(function(a, b) return b end)
 ok(#L.classWeapons(monster(false), owner("Monk"), "normal", {huntLevel = 1000, itemFind = 1, pace = 1}) == 0, "a miss rolls none")
+
+-- client pair guard: a base the server has no item for is not dropped
+L.setRandom(function(a) return a end)
+local all = L.classWeapons(monster(false), owner("Monk"), "normal", {huntLevel = 1000, itemFind = 1, pace = 1})
+MISSING_ITEMS[all[1]] = true
+ok(#L.classWeapons(monster(false), owner("Monk"), "normal", {huntLevel = 1000, itemFind = 1, pace = 1}) == #all - 1,
+	"a base with no item on the server is not dropped")
+MISSING_ITEMS = {}
 
 if fails > 0 then
 	error(fails .. " of " .. checks .. " checks failed")

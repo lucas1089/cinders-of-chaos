@@ -63,7 +63,13 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                products, food, corpses, trees, grounds, water, shores, lake objects) in items.otb / items.xml and the
                products in Grimgan's shop (README "Pack items and monsters")
   fistweapons  tools/install_fist_weapons.py     the Monk line's fist weapons in items.otb / items.xml, their Monk-only equip
-               entries in movements.xml and the weapon dealers' / Grimgan's shops (README "Fist weapons")
+               entries in movements.xml and the weapon dealers' / Grimgan's shops (README "Fist weapons"); the rows of
+               client pair 56 (new looks of ten claws, three new weapons) wait for config.lua chaosClientPair >= 56
+               (README "Client pair guard"; before it the claws keep their donor looks and a warning is printed)
+  weapons800   tools/install_weapons800.py       the 34 weapons above level 800 (nine bows, four crossbows, nine wands, nine rods, a
+               two-handed sword, axe and maul; client pair 56, client ids 44412-44445, server ids 48412-48445) in items.otb /
+               items.xml, their equip entries in movements.xml and weapon entries in weapons.xml (README "Weapons above level
+               800"; after vocations; waits for config.lua chaosClientPair >= 56, README "Client pair guard"; nothing is sold)
   themeitems   tools/install_theme_items.py      the themed set pieces and grounds of client pair things_custom24 in
                items.otb / items.xml (server ids 36660..36903; no stats, shops or loot; used since
                ChaosThemeArt.PAIR24 is on, 2026-10-13; README "Themed sets, auras and grounds")
@@ -259,7 +265,8 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                the Everfull health and mana potions in items.otb / items.xml, sold by every potion seller through the
                ShopModule hook (README "Potions"; after runes, before itemprices)
   pickups      tools/install_pickups.py          the health globe, mana globe and ember (ground pickups) in items.otb / items.xml,
-               never pickupable or moveable (README "Ground pickups and globes")
+               never pickupable or moveable (README "Ground pickups and globes"); skipped with a warning while config.lua
+               chaosClientPair is below 55 or missing (README "Client pair guard")
   itemprices   tools/install_item_prices.py      the item price table (data/lib/chaos_item_prices_data.lua): the Loot Buyer NPC
                in data/npc, every NPC's sell price of a priced item set to the table, NPC buy prices below twice the
                sell price raised (no arbitrage; README "Item prices"; after packitems, fistweapons and runes, which
@@ -736,7 +743,7 @@ def step_packitems(server, data, ctx):
 
 
 def step_fistweapons(server, data, ctx):
-    return tool_result(run_tool([tool('install_fist_weapons.py'), data], 'install_fist_weapons.py'))
+    return tool_result_warn(run_tool([tool('install_fist_weapons.py'), data], 'install_fist_weapons.py'))  # pair guard warnings
 
 
 def step_themeitems(server, data, ctx):
@@ -744,6 +751,14 @@ def step_themeitems(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('fistweapons') + 1, 'themeitems')  # after the fist weapons (client ids appended after theirs)
+
+
+def step_weapons800(server, data, ctx):
+    # the client pair guard (config.lua chaosClientPair >= 56) is in the tool; its warning reaches the report
+    return tool_result_warn(run_tool([tool('install_weapons800.py'), data], 'install_weapons800.py'))
+
+
+STEPS.insert(STEPS.index('fistweapons') + 1, 'weapons800')  # right after the fist weapons (client ids appended after theirs, pair 56)
 
 
 def step_ownerdecor(server, data, ctx):
@@ -1219,7 +1234,7 @@ STEPS.insert(STEPS.index('itemprices'), 'potions')
 
 
 def step_pickups(server, data, ctx):
-    return tool_result(run_tool([tool('install_pickups.py'), data], 'install_pickups.py'))
+    return tool_result_warn(run_tool([tool('install_pickups.py'), data], 'install_pickups.py'))  # client pair guard warning
 
 
 STEPS.insert(STEPS.index('potions') + 1, 'pickups')  # the globes and the ember: own ids, no shop entries

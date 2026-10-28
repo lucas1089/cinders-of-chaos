@@ -554,6 +554,10 @@ server/
    dungeon entry".
 8. Client: apply the client-side gaps listed below, otherwise bank, autoloot, daily and stash
    cannot talk to the server at all.
+9. Client pair guard: `config.lua` records the sprite pair the shipped client is on (`chaosClientPair = 54`). Items of a
+   newer pair (the pickups of pair 55, the fist weapon looks and the weapons above level 800 of pair 56) are installed only
+   once the record is that number or more; before, `install_all.py` skips those rows and prints a warning. The owner raises
+   the record when a client update ships: see "Client pair guard" (admin app first, then `chaos-ctl.sh client-pair set N`).
 
 `data/scripts/chaos/admin/` and `sql/chaos_admin.sql` are the in-game admin panel (client `game_admin`, extended opcode
 120, which does not collide with any opcode below); its own README (`admin/README.md`) has the files, the permission
@@ -13180,7 +13184,7 @@ Owner question: does every class have enough weapons? The audit answers it from 
   `python3 -I tools/survey_base_weapons.py INSTALLED_DATA` (like `base_item_values.csv`, so CI needs no game data; run it
   again when `install_all.py` changes a weapon). The rest is in the repo: `chaos_items.xml`, `chaos_unique_specs.lua`,
   `chaos_unique_items.lua` (drops), `chaos_gear_sets_items.lua` and `chaos_gear_sets.lua` (sources), `chaos_fist_weapons.lua`,
-  the base recipes and the Chaos monster loot.
+  `chaos_weapons800.lua` (the 34 weapons above level 800, their own monster rows are the source it counts), the base recipes and the Chaos monster loot.
 - **Check (CI).** `cd server && luajit tools/weapon_coverage.lua --check` (and `lua5.3`) fails when a class has fewer than
   `minOptions` (3) weapons in a band, or its best one is under `minPower` (80%) of the tier, unless the cell is listed in
   `weapon_coverage_config.lua` (`knownGaps`, `handledElsewhere`). It fails too when the table below is out of date. Tighten
@@ -13203,27 +13207,27 @@ Owner question: does every class have enough weapons? The audit answers it from 
 
 | Class | 1-20 | 20-50 | 50-100 | 100-200 | 200-400 | 400-700 | 700-1000 | 1000-1300 | 1300-1700 | 1700-2400+ |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Warrior | 55/325 | 66/136 | 69/121 | 42/135 | 56/111 | 24/113 | 8/99 | 24/122 | 18/114 | 23/113 |
-| Juggernaut | 55/325 | 66/136 | 69/121 | 42/135 | 56/111 | 24/113 | 8/99 | 24/122 | 18/114 | 23/113 |
-| Berserker | 8/147 | 29/136 | 34/121 | 18/135 | 22/111 | 10/101 | 4/99 | 12/122 | 7/107 | 9/108 |
-| Ranger | 6/114 | 4/110 | 12/111 | 16/121 | 24/101 | 12/101 | 4/106 | 10/101 | 9/107 | 11/107 |
-| Deadeye | 6/114 | 4/110 | 12/111 | 16/121 | 24/101 | 12/101 | 4/106 | 10/101 | 9/107 | 11/107 |
-| Beastmaster | 4/114 | 3/110 | 5/108 | 9/110 | 15/101 | 6/101 | 3/106 | 6/101 | 6/107 | 6/107 |
-| Mystic | 9/135 | 13/215 | 6/182 | 16/253 | 30/131 | 16/145 | 6/100 | 13/153 | 12/100 | 14/100 |
-| Elementalist | 5/135 | 6/215 | 4/182 | 10/253 | 16/131 | 9/145 | 3/100 | 7/153 | 6/100 | 7/100 |
-| Illusionist | 8/135 | 11/215 | 4/182 | 11/253 | 26/131 | 10/145 | 3/100 | 7/153 | 6/100 | 7/100 |
-| Thief * | 60/325 | 68/140 | 73/149 | 43/142 | 56/111 | 25/113 | 8/99 | 25/122 | 17/114 | 21/113 |
-| Ninja * | 60/325 | 68/140 | 73/149 | 43/142 | 56/111 | 25/113 | 8/99 | 25/122 | 17/114 | 21/113 |
-| Samurai * | 55/325 | 66/136 | 69/121 | 42/135 | 56/111 | 25/113 | 8/99 | 25/122 | 17/114 | 21/113 |
-| Necromancer | 9/135 | 13/215 | 6/182 | 16/253 | 30/131 | 16/145 | 6/100 | 13/153 | 12/100 | 14/100 |
-| Lich | 9/135 | 13/215 | 6/182 | 16/253 | 30/131 | 16/145 | 6/100 | 13/153 | 12/100 | 14/100 |
-| Bone Lord | 9/135 | 13/215 | 6/182 | 16/253 | 30/131 | 16/145 | 6/100 | 13/153 | 12/100 | 14/100 |
-| Monk * | 57/325 | 67/167 | 70/121 | 44/135 | 57/111 | 26/113 | 9/106 | 26/122 | 19/114 | 24/113 |
-| Shadowfist * | 57/325 | 67/167 | 70/121 | 44/135 | 57/111 | 26/113 | 9/106 | 26/122 | 19/114 | 24/113 |
-| Iron Sage * | 57/325 | 67/167 | 70/121 | 44/135 | 57/111 | 26/113 | 9/106 | 26/122 | 19/114 | 24/113 |
-| Templar | 55/325 | 66/136 | 69/121 | 42/135 | 56/111 | 24/113 | 8/99 | 24/122 | 18/114 | 23/113 |
-| Inquisitor | 55/325 | 66/136 | 69/121 | 42/135 | 56/111 | 24/113 | 8/99 | 24/122 | 18/114 | 23/113 |
-| Sentinel | 55/325 | 66/136 | 69/121 | 42/135 | 56/111 | 24/113 | 8/99 | 24/122 | 18/114 | 23/113 |
+| Warrior | 55/325 | 66/136 | 69/121 | 42/135 | 56/111 | 24/113 | 11/101 | 24/122 | 18/114 | 23/113 |
+| Juggernaut | 55/325 | 66/136 | 69/121 | 42/135 | 56/111 | 24/113 | 11/101 | 24/122 | 18/114 | 23/113 |
+| Berserker | 8/147 | 29/136 | 34/121 | 18/135 | 22/111 | 10/101 | 7/101 | 12/122 | 7/107 | 9/108 |
+| Ranger | 6/114 | 4/110 | 12/111 | 16/121 | 24/101 | 12/101 | 9/106 | 13/101 | 12/107 | 13/107 |
+| Deadeye | 6/114 | 4/110 | 12/111 | 16/121 | 24/101 | 12/101 | 9/106 | 13/101 | 12/107 | 13/107 |
+| Beastmaster | 4/114 | 3/110 | 5/108 | 9/110 | 15/101 | 6/101 | 6/106 | 8/101 | 8/107 | 8/107 |
+| Mystic | 9/135 | 13/215 | 6/182 | 16/253 | 30/131 | 16/145 | 12/100 | 17/153 | 16/100 | 18/100 |
+| Elementalist | 5/135 | 6/215 | 4/182 | 10/253 | 16/131 | 9/145 | 6/100 | 9/153 | 8/100 | 9/100 |
+| Illusionist | 8/135 | 11/215 | 4/182 | 11/253 | 26/131 | 10/145 | 6/100 | 9/153 | 8/100 | 9/100 |
+| Thief * | 60/325 | 68/140 | 73/149 | 43/142 | 56/111 | 25/113 | 11/101 | 25/122 | 17/114 | 21/113 |
+| Ninja * | 60/325 | 68/140 | 73/149 | 43/142 | 56/111 | 25/113 | 11/101 | 25/122 | 17/114 | 21/113 |
+| Samurai * | 55/325 | 66/136 | 69/121 | 42/135 | 56/111 | 25/113 | 11/101 | 25/122 | 17/114 | 21/113 |
+| Necromancer | 9/135 | 13/215 | 6/182 | 16/253 | 30/131 | 16/145 | 12/100 | 17/153 | 16/100 | 18/100 |
+| Lich | 9/135 | 13/215 | 6/182 | 16/253 | 30/131 | 16/145 | 12/100 | 17/153 | 16/100 | 18/100 |
+| Bone Lord | 9/135 | 13/215 | 6/182 | 16/253 | 30/131 | 16/145 | 12/100 | 17/153 | 16/100 | 18/100 |
+| Monk * | 57/325 | 67/167 | 70/121 | 44/135 | 57/111 | 26/113 | 14/106 | 27/122 | 19/114 | 24/113 |
+| Shadowfist * | 57/325 | 67/167 | 70/121 | 44/135 | 57/111 | 26/113 | 14/106 | 27/122 | 19/114 | 24/113 |
+| Iron Sage * | 57/325 | 67/167 | 70/121 | 44/135 | 57/111 | 26/113 | 14/106 | 27/122 | 19/114 | 24/113 |
+| Templar | 55/325 | 66/136 | 69/121 | 42/135 | 56/111 | 24/113 | 11/101 | 24/122 | 18/114 | 23/113 |
+| Inquisitor | 55/325 | 66/136 | 69/121 | 42/135 | 56/111 | 24/113 | 11/101 | 24/122 | 18/114 | 23/113 |
+| Sentinel | 55/325 | 66/136 | 69/121 | 42/135 | 56/111 | 24/113 | 11/101 | 24/122 | 18/114 | 23/113 |
 
 <!-- weapon-coverage:end -->
 
@@ -13264,7 +13268,7 @@ above does the weapons. This audit does the rest of the slots and adds a fairnes
 - **Fix 1: class loot** (`data/lib/chaos_class_loot.lua`, `data/scripts/chaos/class_loot.lua`, test
   `tests/class_loot_test.lua`). The bounty pool monsters and bosses get one-handed and two-handed melee, fist, bow,
   crossbow, wand, rod, quiver and spellbook rows from the stock bases (`base_weapons.csv`, the Monk line's
-  `chaos_fist_weapons.lua`, the archery quivers and the spellbook list; set looks of `transmog_config.lua` are left out),
+  `chaos_fist_weapons.lua`, `chaos_weapons800.lua`'s bases (bow, crossbow, wand, rod and two-handed melee above level 800, "Weapons above level 800"), the archery quivers and the spellbook list; set looks of `transmog_config.lua` are left out),
   by hunting level, as `jewelry.lua` does for rings. The chance per kill of a weapon family is a curve of the monster's
   hunting level (`config.chance`, anchors at 100, 300 and 500, flat outside; derived, see below), shared by the bases within
   150 levels below and 20 above the monster (the three highest below that, within 200 of the top). Quivers and spellbooks
@@ -20738,10 +20742,42 @@ little lower attack. The Pyre Saint's base is 62 / 22.)
   weapon equip entry (rule `fist`), so a re-run never changes these entries. The `donoritems` step runs before
   `fistweapons`; a server that ran the old donor step has bare claw entries, which this tool replaces.
 * Loot: `fist_weapons.lua` adds the rows of `ChaosFistWeapons.loot` to the monster types at startup
-  (`MonsterType:addLoot`, chance per 100,000); no monster file changes. The console prints `[Chaos fist weapons] 34 loot
+  (`MonsterType:addLoot`, chance per 100,000); no monster file changes. The console prints `[Chaos fist weapons] 43 loot
   rows added to the monster types (0 skipped)`.
-* Client: **no client update and no new sprites.** The claws use looks that the current pair already holds (donor B claws,
-  client/MANIFEST.md "Donor art libraries"); names and stats come from the server.
+* Client: the first three claws (40000-40002) use looks that the old pair already holds (donor B claws, client/MANIFEST.md
+  "Donor art libraries"); names and stats come from the server. The other claws, the four uniques and the three weapons
+  of O293 below wear new looks: see "Looks of pair 56".
+* **Looks of pair 56 and three new fist weapons (O293).** Owner 2026-10-28 ("me mande fotos das armas do monk", then "aprovo
+  todas"): 13 PixelLab looks (`client/tools/sprites/gen_fist2_art.py`, `art_import/fist2*`, client/MANIFEST.md "Pair 56"),
+  client ids 44399-44411.
+  * Redraws, same items and stats, new client ids (the donor sprite slots 28003-28012 stay untouched): emberhide 40003 ->
+    44399, voidglass 40004 -> 44400, stormforged 40005 -> 44401, wyrmbone 40006 -> 44402, gravewrought 40007 -> 44403,
+    last-dawn 40008 -> 44404, vigil-knot wraps 40009 -> 44405, chapel-iron knuckles 40010 -> 44406, gravewind talons 40011
+    -> 44407, dawnless gauntlets 40012 -> 44408 (manifest mode `repoint` in `fist_claws.csv`). The `donoritems` step no
+    longer writes the items.otb nodes of these ten (`install_donor_items.py repointed_ids()`); `fistweapons` writes them
+    with the new client ids and rewrites an older node (same group and flags) that still points at the donor look.
+  * New items (mode `new4`, server id = client id + 4000 as pair 50, free 48396-51999; ids 48409-48411 checked against every
+    csv of `data/items`, the id tables of this README and the `chaos_*.lua` libs):
+
+    | Item | Server id | Client id | Level | Attack / defense | Weight | Sell | Loot (per 100,000) |
+    |---|---|---|---|---|---|---|---|
+    | gravetooth cestus | 48409 | 44409 | 750 | 61 / 25 | 1800 | 30,500 | Frost Maiden 150, Glacial Hellcharger 150, Plague Warbringer 120 |
+    | pair of hollowfang katars | 48410 | 44410 | 950 | 63 / 27 | 1500 | 31,500 | Dawn Strayer 150, Spirit of Purity 150, Ossivane the Gravecage 1500 |
+    | wardenplate gauntlet | 48411 | 44411 | 1150 | 64 / 29 | 2800 | 33,834 | Celestial Wyrm 120, Golden Dragon 120, Winterstride 120 |
+
+    Stats lie on the fist curve between the claws (500 55/20, 800 62/26, 1000 63/28, 1250 64/30), defense a little under the
+    next claw so the curve stays monotonic. Sell prices follow the claws' (cap 33,834). They sit in the fist family of
+    `chaos_class_loot.lua` `L.bases.fist` ({48409, 750}, {48410, 950}, {48411, 1150}: the family's chance is shared, the
+    window [level - 150, level + 20] now holds 6 weapons in the 700-1300 band instead of 3 claws, so each is rarer, not
+    the family) and in `ChaosMonk.cfg.unarmed.fistWeapons` / `ChaosFistWeapons.ids` (22 fist weapons, 3 above level 700 in
+    the new band). `weapon_coverage.lua --write` (the Monk rows gain 2 options in the 700-1000 band, 9 -> 11, and 1 in the next, 26 -> 27)
+    and `gear_coverage.lua --check` pass without a new anchor.
+  * The same pair 56 also carries the 34 weapons above level 800 (client ids 44412-44445, "Weapons above level 800").
+  * **The `fistweapons` step is held by the client pair guard** (as `pickups` is, for pair 55; "Client pair guard"): below
+    the recorded pair 56 the ten repointed items keep the donor looks (client ids 28003-28012, as before pair 56) and the
+    three new weapons are not installed, with a printed warning; at pair 56 or newer the nodes move to the new looks and the
+    new weapons come in. A server already installed keeps working until the owner records pair 56. The pair is built in the
+    scratchpad and not pushed (`windows-assets` is owner-gated).
 * Tested (`tests/fist_weapons_test.lua`, `tests/weapon_power_test.lua`, `tests/newplayer_test.lua`,
   `tools/install_fist_weapons_test.py`; earlier tiers in game on a test server with the pair `things_custom9_fx`): equip in
   the shield hand, the look text ("It can only be wielded properly by monks of level 300 or higher"), the unique given with
@@ -22570,8 +22606,9 @@ tiles tried), creates the item, starts a glow. Rules:
 | 32088 | health globe | a red glass globe on a dark base (client item 44397 of pair 55, `gen_portal_art.py`; the node is copied from the stock health potion node of client id 7618 with the client id 44397 written, `stockClientId` in `pickups_config.lua`; stackable) |
 | 32089 | mana globe | the same globe in blue (client item 44398, the owner-approved recolour of the health globe, red hues turned to blue; node copied from client id 7620; stackable) |
 | 32090 | ember | the violet portal in a stone ring (client item 44396 of pair 55, `gen_portal_art.py`; the node is copied from the Ember Orb node of client id 25045 with the client id 44396 written, `stockClientId` in `pickups_config.lua`), the name and text per blessing (item attributes); glow `CONST_ME_PURPLEENERGY` |
-All three pickups wear looks of ours (pair 55, client/MANIFEST.md "Pair 55"; PixelLab art, `gen_portal_art.py`): **install
-`pickups` only together with a client on pair 55 or newer**, else they show as unknown items. An older install's nodes (the
+All three pickups wear looks of ours (pair 55, client/MANIFEST.md "Pair 55"; PixelLab art, `gen_portal_art.py`): **the step
+installs only while `chaosClientPair` is 55 or more** ("Client pair guard"; below it the step prints a warning and writes
+nothing), else they would show as unknown items. An older install's nodes (the
 globes on the potion looks 7618 / 7620, the ember on 25045) are rewritten to the new client ids by the same step. The potion
 items and the Ember Orb (server 32258) keep their own client ids. The glow is a magic effect pulsing on the tile (red, blue, violet). The pickup effect is a magic effect and
 the heal number is the game's own (green for health, blue for mana). A pickup sound would need an event in `game_chaossound`
@@ -25476,3 +25513,134 @@ damage"). Same percentages.
   `chaos_supports_config.lua` if hunts speed up.
 - Texts changed (item description, tooltip, supports window, codex, wiki): `pt_br.lua` keys, `gen_codex_data.lua`,
   `gen_wiki_data.lua` regenerated. Tests: `tests/supports_test.lua`.
+
+## Client pair guard (`config.lua` `chaosClientPair`, `tools/client_pair.py`, `chaos-ctl.sh client-pair`)
+
+Why: the owner's admin app "Update" runs every `install_all.py` step. Steps that write `items.otb` nodes pointing at client
+ids of a sprite pair the players' client does not have yet (the pair ships only when the owner publishes the client update;
+the pair archive is owner-gated on `windows-assets`) would make those items show as unknown things. Before the guard only this
+README warned.
+
+* **The record.** One line in the server's `config.lua`: `chaosClientPair = 54`, the number of the sprite pair
+  (client/MANIFEST.md "Pair N") that the SHIPPED client is on. The engine ignores the key (as `castPort` on an older engine).
+  `update-apply` and `install_all.py` keep `config.lua`, so the number stays. A missing key counts as "unknown": every guarded
+  row is held back until the owner sets it.
+* **The rule.** A step that needs pair N reads the record (`client_pair.allows(data_dir, N, label)`; the tools get the data
+  folder, `config.lua` is its parent's). Record lower than N or missing: the rows are skipped, `install_all.py` prints a
+  warning line (`WARNING: ... skipped, it needs client pair N or newer and the recorded pair is ...`, always shown in the
+  report), the step succeeds. Record N or more: the step runs as normal. Skipping never removes anything an install already has;
+  a second run changes nothing in either state. Guarded today:
+
+  | Step | Needs | Below it |
+  |---|---|---|
+  | `pickups` (health / mana globe, ember portal) | 55 | the whole step is skipped (the globes and the ember are not installed; `pickups.lua` already does nothing for a missing item) |
+  | `fistweapons`, rows of mode `repoint` (claws and uniques 40003-40012) | 56 | written with the donor looks (client id = server id - 12000, as before pair 56): the items keep working on a pair 54 / 55 client |
+  | `fistweapons`, rows of mode `new4` (48409-48411) | 56 | not installed (no node, no `items.xml` entry, no shop, no equip entry) |
+  | `weapons800` (the 34 weapons above level 800, "Weapons above level 800") | 56 | the whole step is skipped |
+
+  The Lua side needs no switch: the loot layers (`fist_weapons.lua`, `class_loot.lua`, `weapons800.lua`) add a row only when
+  `ItemType(id)` exists, and the scaled class roll (`loot.lua` `classWeapons`) drops an id the server has no item for.
+* **Setting it (owner).** When a client update with a new pair is published, record the pair, then run the update:
+  1. **Admin app** (docs/ADMIN_APP.md): there is no button yet. Proposed: tab Comandos > card "Par do cliente" > field
+     "Número do par" > **Ver** (`client-pair show`) / **Gravar** (`client-pair set N`), the card pattern of "Taxa de XP". Not built:
+     the Android build is not part of this change's checks and the card would be untested UI.
+  2. **Shell fallback** on the VPS: `chaos-ctl.sh client-pair set 56` (`client-pair show` prints `chaosClientPair=56` or
+     `chaosClientPair=missing`); a number lower than the record is refused. Without the kit: `python3 -I
+     server/tools/client_pair.py set SERVER_DIR 56 [--force] [--dry-run]`.
+  3. Then the admin app **Update** (or `install_all.py`) installs the held rows; no restart is needed for the record itself.
+* **Adding a guard.** A new step with items of pair N: `import client_pair`, `ok, why = client_pair.allows(data_dir, N, 'step')`,
+  print `why`, return 0 when not `ok`; in `install_all.py` run the tool with `tool_result_warn` so the warning reaches the
+  report; add the row to the table above and to `tools/client_pair_test.py`.
+* Tests: `tools/client_pair_test.py` (key read / written, lowering refused, a missing or low record skips and writes nothing, a
+  high enough one installs, a second run changes nothing; pickups and fist weapons end to end on a synthetic server),
+  `deploy/chaos_ctl_test.py` (the `client-pair` command and its refusals), `tools/install_pickups_test.py`.
+
+## Weapons above level 800 (`install_weapons800.py`, `chaos_weapons800.lua`, `weapons800.lua`, O295)
+
+Owner 2026-10-28 ("pode criar mais armas pros levels acima de 800"; phase 1 spec and art approved the same day): 34 weapons that
+fill every level band from 700 up to at least six options for every class (`tools/weapon_coverage.lua`: before, Ranger and
+Deadeye had 4 in the 700-1000 band, the Beastmaster, Elementalist and Illusionist 3, the Berserker 4). Nine bows, four crossbows,
+nine wands, nine rods and three two-handed melee weapons (a greatsword, a greataxe, a maul).
+
+* **Art and ids.** PixelLab 32 x 32 looks, client ids 44412-44445 appended to pair 56 (`client/tools/sprites/gen_weapons800_art.py`,
+  `art_import/weapons800*`, client/MANIFEST.md "Pair 56": the final pair 56 now holds 47 appended items). Server ids = client id +
+  4000 = **48412-48445** (the pair 50 rule; free: checked against every csv of `data/items`, the `chaos_*.lua` libs and the id tables
+  of this README). The server manifest `data/items/weapons800.csv` is the importer's `--manifest-out` of the things file; the
+  generated lib is `data/lib/chaos_weapons800.lua` (`install_weapons800.py --lua`).
+* **Numbers.** Every weapon is 100% of the tier of its own level: `install_weapons800.py` calls `install_gear_sets.py`'s
+  `stats_of` (the same CURVES: bow / crossbow attack and hit chance, wand and rod damage and mana, melee attack with 35% as the
+  element, the skill and wand magic level steps, 3000 ms interval for launchers and two-handed weapons; one pseudo set per element
+  gives the damage element and the missile of the set that has it). The weapon audit's 80% rule and the weapon_sim power factors
+  (`weapon_power_config.lua`) need nothing new: both are by level.
+* **Who wields what** (`install_gear_sets.py` FITS): bows the Ranger, Deadeye and Beastmaster; crossbows the Ranger and Deadeye;
+  wands the Mystic, Elementalist, Necromancer, Lich and Bone Lord; rods the Mystic, Illusionist, Necromancer, Lich and Bone Lord;
+  the two-handed melee weapons all twelve melee classes (Warrior, Juggernaut, Berserker, Templar, Inquisitor, Sentinel, Thief, Ninja,
+  Samurai, Monk, Shadowfist, Iron Sage). Bows and crossbows fire without ammunition like every launcher (no `ammoType`, so
+  `patch_base_archery.py` leaves them alone); the entry in `weapons.xml` is a `distance`, `wand` or `melee` entry with the level and
+  the classes.
+* **Items.**
+
+| Server id | Item | Type | Level | Element | Stats | Own monster drops (per 100,000) |
+|---|---|---|---|---|---|---|
+| 48412 | gravesong bow | bow | 820 | death | attack 77, hit 96%, range 6, skill +3 | Frost Maiden 150, Dawn Strayer 150 |
+| 48413 | emberthorn longbow | bow | 885 | fire | attack 78, hit 97%, range 6, skill +3 | Dawn Strayer 150, Ice Lich 150 |
+| 48414 | hollowreed recurve | bow | 950 | earth | attack 79, hit 97%, range 6, skill +3 | Dawn Strayer 150, Ice Lich 150 |
+| 48415 | stormlace bow | bow | 1120 | energy | attack 80, hit 97%, range 6, skill +4 | Ossivane the Gravecage 1200, Celestial Wyrm 150 |
+| 48416 | veilpiercer bow | bow | 1235 | holy | attack 80, hit 97%, range 6, skill +4 | Winterstride 150 |
+| 48417 | duskpetal longbow | bow | 1420 | earth | attack 82, hit 97%, range 6, skill +4 | Bloodantler Fiend 150, Vaelith the Fallen Seraph 1200 |
+| 48418 | ashen halo bow | bow | 1580 | holy | attack 82, hit 97%, range 6, skill +4 | Bloodantler Fiend 150, Vaelith the Fallen Seraph 1200 |
+| 48419 | throneseeker bow | bow | 1850 | energy | attack 84, hit 98%, range 6, skill +5 | Mirecoil Wyrm 150, Pyrewing Tyrant 150 |
+| 48420 | last-ember recurve | bow | 2150 | fire | attack 85, hit 98%, range 6, skill +5 | Azhkarrath the Chained Wyrm 1200 |
+| 48421 | bonehinge arbalest | crossbow | 840 | death | attack 80, hit 96%, range 6, skill +3 | Frost Maiden 150, Dawn Strayer 150 |
+| 48422 | cindergut crossbow | crossbow | 930 | fire | attack 81, hit 97%, range 6, skill +3 | Dawn Strayer 150, Ice Lich 150 |
+| 48423 | frostlatch arbalest | crossbow | 1150 | ice | attack 83, hit 97%, range 6, skill +4 | Ossivane the Gravecage 1200, Winterstride 150 |
+| 48424 | thornwarden crossbow | crossbow | 1480 | earth | attack 85, hit 97%, range 6, skill +4 | Bloodantler Fiend 150, Vaelith the Fallen Seraph 1200 |
+| 48425 | cinderbloom wand | wand | 830 | fire | damage 95-129 fire, mana 25, magic level +3 | Frost Maiden 150, Dawn Strayer 150 |
+| 48426 | mirewhisper spire | wand | 890 | earth | damage 97-131 earth, mana 26, magic level +3 | Dawn Strayer 150, Ice Lich 150 |
+| 48427 | stormglass scepter | wand | 960 | energy | damage 99-134 energy, mana 27, magic level +3 | Dawn Strayer 150, Ice Lich 150 |
+| 48428 | hoarwick wand | wand | 1080 | ice | damage 102-138 ice, mana 27, magic level +3 | Celestial Wyrm 150, Ossivane the Gravecage 1200 |
+| 48429 | sunscar focus | wand | 1200 | holy | damage 104-140 holy, mana 28, magic level +3 | Winterstride 150 |
+| 48430 | thunderwake scepter | wand | 1400 | energy | damage 107-145 energy, mana 29, magic level +3 | Bloodantler Fiend 150, Vaelith the Fallen Seraph 1200 |
+| 48431 | emberveil spire | wand | 1560 | fire | damage 110-149 fire, mana 30, magic level +4 | Bloodantler Fiend 150, Vaelith the Fallen Seraph 1200 |
+| 48432 | rotcrown wand | wand | 1780 | death | damage 114-154 death, mana 32, magic level +4 | Mirecoil Wyrm 150, Pyrewing Tyrant 150 |
+| 48433 | wyrmtongue focus | wand | 2100 | energy | damage 117-159 energy, mana 33, magic level +4 | Azhkarrath the Chained Wyrm 1200 |
+| 48434 | hushwood rod | rod | 825 | death | damage 95-129 death, mana 25, magic level +3 | Frost Maiden 150, Dawn Strayer 150 |
+| 48435 | mirrorbark staff | rod | 885 | ice | damage 97-131 ice, mana 26, magic level +3 | Dawn Strayer 150, Ice Lich 150 |
+| 48436 | dreamthorn branch | rod | 955 | earth | damage 99-134 earth, mana 27, magic level +3 | Dawn Strayer 150, Ice Lich 150 |
+| 48437 | veilhollow crook | rod | 1100 | death | damage 102-138 death, mana 28, magic level +3 | Ossivane the Gravecage 1200, Celestial Wyrm 150 |
+| 48438 | glimmerbough rod | rod | 1210 | holy | damage 104-141 holy, mana 28, magic level +3 | Winterstride 150 |
+| 48439 | gloamroot staff | rod | 1390 | earth | damage 107-145 earth, mana 29, magic level +3 | Bloodantler Fiend 150 |
+| 48440 | wraithwillow rod | rod | 1590 | ice | damage 110-149 ice, mana 31, magic level +4 | Bloodantler Fiend 150, Vaelith the Fallen Seraph 1200 |
+| 48441 | nightbloom crook | rod | 1820 | death | damage 114-155 death, mana 32, magic level +4 | Mirecoil Wyrm 150, Pyrewing Tyrant 150 |
+| 48442 | eventide branch | rod | 2080 | holy | damage 117-159 holy, mana 33, magic level +4 | Azhkarrath the Chained Wyrm 1200 |
+| 48443 | gravewrought greatsword | sword2 | 850 | death | attack 40 + death 22, defense 37, skill +3 | Frost Maiden 150, Dawn Strayer 150 |
+| 48444 | ashmaw greataxe | axe2 | 910 | fire | attack 41 + fire 22, defense 37, skill +3 | Dawn Strayer 150, Ice Lich 150 |
+| 48445 | dirgebell maul | club2 | 975 | holy | attack 42 + holy 22, defense 38, skill +3 | Dawn Strayer 150, Ice Lich 150 |
+
+* **Drops, in two ways, and not in the sets' level gear pool.**
+  1. The bases are in the class loot families of `data/lib/chaos_class_loot.lua` (`L.bases`: bow, crossbow, wand, rod, melee2h):
+     the rows of the pool monsters and the scaled hunt roll (hunting level 658 and up, `loot.lua` `classWeapons`) pick among the
+     bases of the window [level - 150, level + 20] with the family's fixed chance, so the new bases share the family and no other
+     drop gets rarer. `tests/class_loot_test.lua` checks the bases against `chaos_weapons800.lua`.
+  2. Own rows on high monsters (the table: 150 per 100,000 on a hunt monster, 1,200 on a boss, window monster level - 300 .. + 50 as
+     the sets use), added at startup by `data/scripts/chaos/weapons800.lua` (`MonsterType:addLoot`; the console prints `[Chaos
+     weapons 800] 61 loot rows added ...`). `tools/weapon_coverage.lua` counts these as the source (it does not read class loot) and
+     `tools/gear_coverage.lua` reads both for the fairness rule.
+  They are NOT in `ChaosGearSets.levelDrop`: that pool gives 1600 / n per kill (n = the pieces of the window), already 20 per 100,000
+  (the audit's `minDropChance`) at hunting level 1000 and 15-16 at 1200-1400, so more pieces there would push every set weapon under
+  the counted threshold.
+* **Install.** `install_all.py` step `weapons800` (right after `fistweapons`, after `vocations`): the `items.otb` nodes, the
+  `items.xml` entries, the Equip / DeEquip entries of `movements.xml` (slot hand, level, classes) and the `weapons.xml` entries, in
+  marked blocks (an id with an entry outside a block stops the script). **It waits for the client pair guard** ("Client pair
+  guard"): `config.lua` `chaosClientPair` must be 56 or more, else the step prints a warning and writes nothing (the loot rows and the
+  class loot skip an item the server does not have). No NPC sells or buys them. Prices: `gen_item_prices.py` reads the manifest
+  (all 34 are at the gear cap 33,834 gp for the Auto Seller; docs/PRICES.md).
+* **Audit after the change** (`weapon_coverage.lua --write`, table above): every class has at least 6 weapons in every band from
+  700 up. Obtainable weapons per band (700-1000 / 1000-1300 / 1300-1700 / 1700-2400+): Warrior line 11 / 24 / 18 / 23, Berserker
+  7 / 12 / 7 / 9, Thief line 11 / 25 / 17 / 21, Monk line 14 / 27 / 19 / 24, Ranger and Deadeye 9 / 13 / 12 / 13, Beastmaster
+  6 / 8 / 8 / 8, Mystic and the Necromancer line 12 / 17 / 16 / 18, Elementalist 6 / 9 / 8 / 9, Illusionist 6 / 9 / 8 / 9, the best
+  of each at 100-106% of the tier of the band. `gear_coverage.lua --check` (fairness, every class and loadout 28.0 usable weapons per
+  1,000 kills in every band) passes without a new anchor.
+* Tests: `tools/install_weapons800_test.py` (rows, ids, the curve, the class lists, the three xml blocks, the guard end to end),
+  `tests/weapons800_test.lua`, `tests/class_loot_test.lua`, `tests/loot_level_gear_test.lua` (the scaled roll skips a base with no item),
+  `client/tools/sprites/gen_weapons800_art_test.py`. Not tested live: the looks in a client (pair 56 is not shipped), the drops.

@@ -20,6 +20,9 @@ Everything is read from server/data/scripts/chaos/pickups_config.lua (`items`, `
    `failsafeSeconds`, so an item left by a crash goes away by itself) between two marker comments before </items>,
    rewritten when the config changed. An id with an entry outside the block stops the script.
 
+Client pair guard (README "Client pair guard"): the three looks are pair 55 client ids, so the step does nothing (and says
+so) while config.lua's chaosClientPair is lower than 55 or missing; an install that already has the nodes keeps them.
+
 The rules (who takes it, how long it lasts) are Lua (pickups.lua); a pickup with no record grants nothing.
 Idempotent: a second run changes nothing. --dry-run changes nothing at all.
 """
@@ -27,6 +30,7 @@ import os, re, struct, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+import client_pair  # noqa: E402
 from install_gems import (scan, escape, attr, xml_escape, START, END, A_SERVERID, A_CLIENTID, FLAG_STACKABLE,  # noqa: E402
                           FLAG_PICKUPABLE, FLAG_MOVEABLE)
 
@@ -192,6 +196,10 @@ def main(argv=None):
         print(__doc__)
         return 1
     data_dir = args[0]
+    ok, why = client_pair.allows(data_dir, client_pair.PAIR_PICKUPS, 'pickups')
+    print(why)
+    if not ok:
+        return 0
     cfg = read_config()
     otb = os.path.join(data_dir, 'items', 'items.otb')
     xml = os.path.join(data_dir, 'items', 'items.xml')

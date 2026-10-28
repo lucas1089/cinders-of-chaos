@@ -19,6 +19,8 @@ one: nothing to do (exit 0).
    </items>; rewritten when the manifest changed; an id with an entry outside the block stops the script.
    Exception: the ids of data/items/fist_claws.csv (the Monk's claw weapons, server ids 40000..40012) get their items.otb
    node here but no bare items.xml entry; install_fist_weapons.py writes their full entries (and drops an old bare one).
+   The rows of mode `repoint` (40003-40012, new looks since pair 56) get no node here either: install_fist_weapons.py writes
+   those nodes with the new client ids.
 
 Idempotent: a second run changes nothing.
 """
@@ -76,6 +78,15 @@ def claimed_ids(path=FIST_CLAWS):
         return {int(r['server_id']) for r in csv.DictReader(f)}
 
 
+def repointed_ids(path=FIST_CLAWS):
+    """server ids of the claws that wear a look of their own since pair 56 (mode `repoint` in fist_claws.csv): this tool no
+    longer writes their items.otb nodes either (they would point at the old donor look); install_fist_weapons.py does"""
+    if not os.path.exists(path):
+        return set()
+    with open(path, newline='') as f:
+        return {int(r['server_id']) for r in csv.DictReader(f) if r['mode'] == 'repoint'}
+
+
 def patch_xml(text, rows):
     claimed = claimed_ids()
     rows = [r for r in rows if r['server_id'] not in claimed]
@@ -124,6 +135,9 @@ def main():
         return 0
     sids = [r['server_id'] for r in rows]
     assert len(set(sids)) == len(sids), 'duplicate server ids in the manifest'
+    if manifest == DEFAULT_MANIFEST:
+        skip = repointed_ids()
+        rows = [r for r in rows if r['server_id'] not in skip]
     for r in rows:
         assert 0 < r['client_id'] < r['server_id'] <= 0xFFFF, r['key']
     otb = os.path.join(data_dir, 'items', 'items.otb')

@@ -1,13 +1,14 @@
 -- The Monk line's fist weapons (server/tools/install_fist_weapons.py --lua, from server/data/items/fist_items.csv and
 -- fist_claws.csv). Generated; do not edit by hand. The items exist after the "fistweapons" install step and need
 -- the matching client pair (client/tools/sprites/import_art_things.py with art_import/fist_weapons.csv for the
--- 3665x items; the 4000x claws use looks the pair has already: donor B claws 1-13).
+-- 3665x items; the first three claws 40000-40002 use looks the pair has already (donor B); the other claws, the uniques and
+-- the three new weapons 4840x are the pair 56 looks, client ids 44399-44411, gen_fist2_art.py).
 -- ids: the server ids by level (the same list as ChaosMonk.cfg.unarmed.fistWeapons); items[id]: key, name, attack,
 -- defense, level; loot: {monster, item id, chance per 100000} added to the monster types at startup
 -- (data/scripts/chaos/fist_weapons.lua).
 
 ChaosFistWeapons = {
-	ids = {40000, 36654, 40009, 40010, 40001, 36655, 40002, 36656, 36657, 36658, 36659, 40003, 40004, 40005, 40011, 40006, 40007, 40012, 40008},
+	ids = {40000, 36654, 40009, 40010, 40001, 36655, 40002, 36656, 36657, 36658, 36659, 48409, 40003, 48410, 40004, 48411, 40005, 40011, 40006, 40007, 40012, 40008},
 	items = {
 		[40000] = {key = "fist_c1", name = "pair of splinter claws", attack = 41, defense = 2, level = 1},
 		[36654] = {key = "fist_t1", name = "pair of charred hand wraps", attack = 42, defense = 4, level = 8},
@@ -20,8 +21,11 @@ ChaosFistWeapons = {
 		[36657] = {key = "fist_t4", name = "ossuary gauntlet", attack = 50, defense = 16, level = 300},
 		[36658] = {key = "fist_t5", name = "pair of cinderforged talons", attack = 55, defense = 20, level = 500},
 		[36659] = {key = "fist_pyre", name = "pyre saint's grasp", attack = 62, defense = 22, level = 650, unique = "Grasp of the Pyre Saint"},
+		[48409] = {key = "fist_t6", name = "gravetooth cestus", attack = 61, defense = 25, level = 750},
 		[40003] = {key = "fist_c4", name = "pair of emberhide claws", attack = 62, defense = 26, level = 800},
+		[48410] = {key = "fist_t7", name = "pair of hollowfang katars", attack = 63, defense = 27, level = 950},
 		[40004] = {key = "fist_c5", name = "pair of voidglass claws", attack = 63, defense = 28, level = 1000},
+		[48411] = {key = "fist_t8", name = "wardenplate gauntlet", attack = 64, defense = 29, level = 1150},
 		[40005] = {key = "fist_c6", name = "pair of stormforged claws", attack = 64, defense = 30, level = 1250},
 		[40011] = {key = "fist_u3", name = "gravewind talons", attack = 68, defense = 38, level = 1400, unique = "Gravewind Talons"},
 		[40006] = {key = "fist_c7", name = "pair of wyrmbone claws", attack = 65, defense = 32, level = 1500},
@@ -48,13 +52,22 @@ ChaosFistWeapons = {
 		{"Nightflare Dreadknight", 36658, 150},
 		{"Orclops Ravager", 36658, 120},
 		{"Grindmaw the Mauler", 36658, 150},
+		{"Frost Maiden", 48409, 150},
+		{"Glacial Hellcharger", 48409, 150},
+		{"Plague Warbringer", 48409, 120},
 		{"Frost Maiden", 40003, 150},
 		{"Glacial Hellcharger", 40003, 150},
 		{"Plague Warbringer", 40003, 120},
+		{"Dawn Strayer", 48410, 150},
+		{"Spirit of Purity", 48410, 150},
+		{"Ossivane the Gravecage", 48410, 1500},
 		{"Dawn Strayer", 40004, 150},
 		{"Spirit of Purity", 40004, 150},
 		{"Celestial Wyrm", 40004, 150},
 		{"Ossivane the Gravecage", 40004, 1500},
+		{"Celestial Wyrm", 48411, 120},
+		{"Golden Dragon", 48411, 120},
+		{"Winterstride", 48411, 120},
 		{"Golden Dragon", 40005, 120},
 		{"Winterstride", 40005, 120},
 		{"Bloodantler Fiend", 40006, 100},
