@@ -7595,7 +7595,7 @@ full health" anomalies. Causes found:
   bot-side anomaly now needs an update seen less than 0.5 s before; the helper's death line carries the last hits.
 - Keystone test: 1240 nodes "not tested: the bot left the game" and the FAILs "no answer to planApply / statTotals" were
   bots that died in the middle. The scenario now goes on after the login and drops the node it was cut off in.
-  Open for the owner: whether a hunt mark's band should be printed in hunting levels (see ROADMAP O110).
+  A hunt mark's band is the pool level, which is the hunting level since O285.
 
 ### The helper (TEST ONLY: `tools/tester_helper.lua`, `tools/tester_helper_core.lua`)
 
@@ -25541,9 +25541,8 @@ README warned.
   The Lua side needs no switch: the loot layers (`fist_weapons.lua`, `class_loot.lua`, `weapons800.lua`) add a row only when
   `ItemType(id)` exists, and the scaled class roll (`loot.lua` `classWeapons`) drops an id the server has no item for.
 * **Setting it (owner).** When a client update with a new pair is published, record the pair, then run the update:
-  1. **Admin app** (docs/ADMIN_APP.md): there is no button yet. Proposed: tab Comandos > card "Par do cliente" > field
-     "Número do par" > **Ver** (`client-pair show`) / **Gravar** (`client-pair set N`), the card pattern of "Taxa de XP". Not built:
-     the Android build is not part of this change's checks and the card would be untested UI.
+  1. **Admin app** (docs/ADMIN_APP.md): tab Comandos > card "Par do cliente" > field "Par" > **Ver** (`client-pair show`) /
+     **Gravar** (`client-pair set N`, asks to confirm), the card pattern of "Taxa de XP".
   2. **Shell fallback** on the VPS: `chaos-ctl.sh client-pair set 56` (`client-pair show` prints `chaosClientPair=56` or
      `chaosClientPair=missing`); a number lower than the record is refused. Without the kit: `python3 -I
      server/tools/client_pair.py set SERVER_DIR 56 [--force] [--dry-run]`.
