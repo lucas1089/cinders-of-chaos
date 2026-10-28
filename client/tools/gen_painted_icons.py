@@ -28,6 +28,9 @@ Outputs:
   overlay/data/images/game/spells_painted/<clientId>.png  32 x 32 (the spellbook's icon size)
   overlay/data/images/passivetree/painted_nodes.png       64 x 64 cells, keystones then masteries
   overlay/modules/game_passivetree/treedata/painted.lua   icon key -> clip of painted_nodes.png
+  The 21 line spell quest spells (client ids 349-369, gen_quest_spell_icons.py) are not in the sheet: their finished 32 px
+      art (quest_spell_art/quest_spell_32.png, centre 28 x 28, no repaint, no palette clamp) goes straight into our buff
+      frame as spells_painted/<id>.png, and the 7 level 800 buffs as buffs_painted/<name>.png (box-reduced to 22 px).
 A name with no painted icon keeps its normal icon in the client (each module falls back). Needs Pillow."""
 import csv, io, os, sys
 
@@ -47,6 +50,8 @@ NODES = os.path.join(IMAGES, 'passivetree', 'painted_nodes.png')
 NODES_LUA = os.path.join(ROOT, 'client', 'overlay', 'modules', 'game_passivetree', 'treedata', 'painted.lua')
 SPELLDATA = gb.SPELLDATA
 CELL, COLS = 64, 16
+QUEST_SRC = os.path.join(HERE, 'quest_spell_art', 'quest_spell_32.png')
+QUEST_CSV = os.path.join(HERE, 'quest_spell_art', 'quest_spell_icons.csv')
 FIELDS = ['index', 'kind', 'name', 'frame', 'element', 'job', 'seed']
 
 # ---------------------------------------------------------------- palettes, one per element
@@ -173,6 +178,33 @@ def framed(cell, size, kind, element):
     return frame(im, kind)
 
 
+def quest_art():
+    """client id -> the centre 28 x 28 of the quest spell's finished 32 px art (gen_quest_spell_icons.py)"""
+    ids = set(spell_ids().values())
+    with open(QUEST_CSV, newline='', encoding='utf-8') as fh:
+        rows = list(csv.DictReader(fh))
+    src = Image.open(QUEST_SRC).convert('RGBA')
+    out = {}
+    for i, r in enumerate(rows):
+        cid = int(r['cell'])
+        if cid not in ids:
+            raise SystemExit('quest spell %s: no Chaos spell with client id %d' % (r['spell'], cid))
+        x, y = (i % 7) * 32, (i // 7) * 32
+        out[cid] = src.crop((x + 2, y + 2, x + 30, y + 30))
+    return out
+
+
+def quest_framed(art, size):
+    """the quest art as drawn (no repaint, no palette clamp: it is finished pixel art) in the buff frame; below 32 px
+    the 28 x 28 art is box-reduced like gen_buff_icons.from_spell"""
+    inner = size - 4
+    if inner != art.width:
+        art = art.resize((inner, inner), Image.BOX)
+    im = Image.new('RGBA', (size, size), (0, 0, 0, 0))
+    im.paste(art, (2, 2))
+    return frame(im, 'buff')
+
+
 def spell_ids():
     """the spell's words -> its client id (game_chaosspells/spelldata.lua)"""
     return gb.spell_cells()
@@ -196,10 +228,15 @@ def build(sheet=None, rows=None):
             nodes.append((r['name'], painted(cell, CELL, r['element'])))
         else:
             raise SystemExit('painted_icons.csv: unknown kind %s' % r['kind'])
+    quest = quest_art()
+    for cid, art in sorted(quest.items()):
+        out[os.path.join(SPELL_DIR, '%d.png' % cid)] = quest_framed(art, 32)
     ids = spell_ids()
     for name, words in sorted(gb.SPELL_ICONS.items()):
         cid = ids.get(words)
-        if cid in spells:
+        if cid in quest:
+            out[os.path.join(BUFF_DIR, name + '.png')] = quest_framed(quest[cid], gb.N)
+        elif cid in spells:
             cell, element = spells[cid]
             out[os.path.join(BUFF_DIR, name + '.png')] = framed(cell, gb.N, 'buff', element)
     if nodes:

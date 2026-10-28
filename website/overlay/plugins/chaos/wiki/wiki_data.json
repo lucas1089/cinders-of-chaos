@@ -5742,7 +5742,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-steel-slam.png"
+					"icon": "wiki/i/sp-349.png"
 				},
 				{
 					"id": "spell:149",
@@ -5770,7 +5770,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-frost-shrapnel.png"
+					"icon": "wiki/i/sp-350.png"
 				},
 				{
 					"id": "spell:152",
@@ -5798,7 +5798,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-arcane-burst.png"
+					"icon": "wiki/i/sp-351.png"
 				},
 				{
 					"id": "spell:155",
@@ -5826,7 +5826,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-shadow-sweep.png"
+					"icon": "wiki/i/sp-352.png"
 				},
 				{
 					"id": "spell:158",
@@ -5854,7 +5854,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-necrotic-wave.png"
+					"icon": "wiki/i/sp-353.png"
 				},
 				{
 					"id": "spell:172",
@@ -5882,7 +5882,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-ember-palmwave.png"
+					"icon": "wiki/i/sp-354.png"
 				},
 				{
 					"id": "spell:177",
@@ -5910,7 +5910,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-holy-flame.png"
+					"icon": "wiki/i/sp-355.png"
 				},
 				{
 					"id": "spell:143",
@@ -5938,7 +5938,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-steel-shield.png"
+					"icon": "wiki/i/sp-363.png"
 				},
 				{
 					"id": "spell:150",
@@ -5966,7 +5966,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-nature-eye.png"
+					"icon": "wiki/i/sp-364.png"
 				},
 				{
 					"id": "spell:153",
@@ -5994,7 +5994,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-arcane-ghost.png"
+					"icon": "wiki/i/sp-365.png"
 				},
 				{
 					"id": "spell:156",
@@ -6022,7 +6022,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-shadow-knives.png"
+					"icon": "wiki/i/sp-366.png"
 				},
 				{
 					"id": "spell:159",
@@ -6050,7 +6050,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-necrotic-skull.png"
+					"icon": "wiki/i/sp-367.png"
 				},
 				{
 					"id": "spell:173",
@@ -6078,7 +6078,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-ember-ring.png"
+					"icon": "wiki/i/sp-368.png"
 				},
 				{
 					"id": "spell:178",
@@ -6106,7 +6106,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-holy-shield.png"
+					"icon": "wiki/i/sp-369.png"
 				},
 				{
 					"id": "spell:148",
@@ -6132,7 +6132,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-steel-hammer.png"
+					"icon": "wiki/i/sp-356.png"
 				},
 				{
 					"id": "spell:151",
@@ -6160,7 +6160,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-holy-ricochet.png"
+					"icon": "wiki/i/sp-357.png"
 				},
 				{
 					"id": "spell:154",
@@ -6186,7 +6186,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-frost-gravenova.png"
+					"icon": "wiki/i/sp-358.png"
 				},
 				{
 					"id": "spell:157",
@@ -6214,7 +6214,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-shadow-knives.png"
+					"icon": "wiki/i/sp-359.png"
 				},
 				{
 					"id": "spell:160",
@@ -6240,7 +6240,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-necrotic-gravenova.png"
+					"icon": "wiki/i/sp-360.png"
 				},
 				{
 					"id": "spell:174",
@@ -6266,7 +6266,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-ember-gate.png"
+					"icon": "wiki/i/sp-361.png"
 				},
 				{
 					"id": "spell:237",
@@ -6294,7 +6294,7 @@
 							]
 						}
 					],
-					"icon": "wiki/i/k-ember-hammer.png"
+					"icon": "wiki/i/sp-362.png"
 				}
 			],
 			"banner": "wiki/hero/tab-spells.webp",
