@@ -933,7 +933,7 @@ jobs:
       - name: Ground pickups install (globes and ember items, synthetic items.otb / items.xml)
         run: python3 -I server/tools/install_pickups_test.py
 
-      - name: Client pair guard and the pair 55 / 56 item installs (chaosClientPair in config.lua: pickups 55, fist weapons 56, weapons above level 800 56)
+      - name: Client pair guard and the pair 55 and 56 item installs (chaosClientPair in config.lua, pickups 55, fist weapons and weapons above level 800 56)
         run: |
           python3 -I server/tools/client_pair_test.py
           python3 -I server/tools/install_fist_weapons_test.py
