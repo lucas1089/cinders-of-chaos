@@ -9,9 +9,9 @@
  "counts": {
   "opcode": 64,
   "out": 38,
-  "passive": 79,
+  "passive": 80,
   "place": 13,
-  "staff": 12
+  "staff": 13
  },
  "generated_by": "server/tools/gen_tester_scenarios.py",
  "keytest": {
@@ -6705,6 +6705,13 @@
   },
   {
    "keywords": [
+    "spell",
+    "quest"
+   ],
+   "npc": "Archivist Ysolde"
+  },
+  {
+   "keywords": [
     "ascension"
    ],
    "npc": "Ascendant Oracle"
@@ -10980,6 +10987,27 @@
   "spell_factor": {
    "files": [
     "templar_combat.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "spellquest": {
+   "files": [
+    "chaos_constants.lua",
+    "spellquest.lua"
+   ],
+   "kind": "staff",
+   "opcodes": [],
+   "talkactions": [
+    "/spellquest"
+   ],
+   "why": "staff command only (/spellquest); testers are never staff"
+  },
+  "spellquest_tracker": {
+   "files": [
+    "spellquest_tracker.lua"
    ],
    "kind": "passive",
    "opcodes": [],
