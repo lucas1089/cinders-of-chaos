@@ -20,6 +20,9 @@ dofile("data/scripts/chaos/pace_core.lua")
 local P = ChaosPaceCore
 local cfg = dofile("data/scripts/chaos/pace_config.lua")
 local ll = cfg.lootLevel
+ChaosLootModelLib = true
+local LM = dofile("tools/loot_model.lua")
+ChaosLootModelLib = nil
 
 -- ---------------------------------------------------------------- P.smooth
 do
@@ -77,14 +80,16 @@ for L = 20, 2000, 10 do
 		check(f.notable >= f.loot - 1e-12 and f.notable <= 1, tag .. ": notable between loot and 1")
 		check(f.junkKeep and f.junkKeep > 0, tag .. ": junkKeep set")
 		eq(f.gold, f.coins, tag .. ": gold is the coins share (old readers)")
-		-- O285: the base set has no monster above 657 and its `notable` curve is the pre-O285 loot factor (0.2-0.5); the
-		-- scaled set keeps the old rule
+		-- O285: the base set's `notable` curve is the rule from before the pool scale (tools/loot_model.lua M.OLD_RULE: the old
+		-- loot share below pool level 325, every notable drop from 350), the scaled set keeps its own
 		if scaled and L <= 650 then
 			near(f.notable, f.loot, 1e-9, tag .. ": below 650 the notable drops keep the loot factor")
 		elseif scaled and L >= 700 then
 			eq(f.notable, 1, tag .. ": from 700 every notable drop stays")
-		elseif not scaled and L >= 100 then
-			check(f.notable >= 0.18 and f.notable <= 0.4, tag .. ": base notable drops at the pre-O285 rate (" .. f.notable .. ")")
+		elseif not scaled and L >= 50 and L <= 360 then
+			near(f.notable, LM.oldNotable(cfg, L), 0.03, tag .. ": base notable drops at the rate from before the pool scale")
+		elseif not scaled and L >= 350 then
+			eq(f.notable, 1, tag .. ": from pool level 350 every notable drop stays")
 		end
 	end
 	-- the generated set has no curves of its own: the 2026-10-20 thinning
@@ -97,7 +102,7 @@ end
 -- lootLevel.goldPerHour holds the bands to (re-fitted on the pool monsters at their own level: loot per kill is thinned to
 -- 0.12 at 50 and 0.016 at 600, the coins stay at 0.82-1.0); the scaled set keeps its own points, with the old 0.30 plateau
 -- from 650 on
-check(math.abs(P.factors(cfg, 100, false).coins - 0.5725) < 1e-9, "base 100: coins 0.5725")
+check(math.abs(P.factors(cfg, 100, false).coins - 0.7459) < 1e-9, "base 100: coins 0.7459")
 for L = 50, 650, 25 do
 	local c = P.factors(cfg, L, false).coins
 	check(c >= 0.003 and c <= 1, "base " .. L .. ": coins in (0, 1] (" .. c .. ")")
@@ -234,8 +239,7 @@ do
 end
 
 -- ---------------------------------------------------------------- the economy model, band by band
-ChaosLootModelLib = true
-local M = dofile("tools/loot_model.lua")
+local M = LM
 local ctx = M.load()
 local text, rows = M.report(ctx)
 if os.getenv("LOOT_MODEL_SHOW") then print(text) end
@@ -258,18 +262,51 @@ for _, r in ipairs(rows) do
 	end
 end
 -- O141: gold per hour grows with the level from 300 to 650 (no dip at 400-600) by at most M.MAX_STEP between bands (O285:
--- the bands above 650 have no base monster; the late levels are the scaled sets)
+-- the bands above 650 have no base monster; the late levels are the scaled sets). The no-dip rule reads the gold without
+-- the Rare+ gear and rare drops (the stock gear of the pool levels 350-410 is worth 0.5-1M an hour on its own)
 do
 	local prev
 	for _, b in ipairs({300, 350, 400, 450, 500, 550, 600, 650}) do
 		M.RANGES[b] = M.RANGES[b] or {math.floor(b * 0.85), math.ceil(b * 1.15)}
-		local g = M.band(ctx, b).newGold
+		local r = M.band(ctx, b)
+		local g, trade = r.newGold, r.newGold - r.notableGold
 		if prev then
-			check(g >= prev[2] and g / prev[2] <= M.MAX_STEP, "gold per hour " .. prev[1] .. " -> " .. b .. " smooth (" ..
+			check(trade >= prev[3], "trade gold per hour " .. prev[1] .. " -> " .. b .. " grows (" .. M.fmt(prev[3]) .. " -> " ..
+				M.fmt(trade) .. ")")
+			check(g / prev[2] <= M.MAX_STEP, "gold per hour " .. prev[1] .. " -> " .. b .. " smooth (" ..
 				M.fmt(prev[2]) .. " -> " .. M.fmt(g) .. ")")
 		end
-		prev = {b, g}
+		prev = {b, g, trade}
 	end
+end
+-- O285 (owner: "Restore items", rare rates as before): the Rare+ gear per hour of a hunt does not thin out with the move to
+-- the pool scale. The shipped figures of lootLevel.rarePerHour are the rule from before it on the same monsters; the old
+-- model (hunting level = 2 x pool level, bands 200 / 600 / 1000 / 1300) gave 11.3 / 24.8 / 5.5 at 600 / 1000 / 1300 (the
+-- new data has 373 monsters, the old 225, so 300 reads 9.7 against 11.3), and the shipped curves must keep them
+do
+	local want = ctx.ll.rarePerHour
+	check(type(want) == "table", "lootLevel.rarePerHour is set")
+	for _, b in ipairs({100, 300, 500, 650}) do
+		local r = M.band(ctx, b)
+		near(r.oldRare / want[b], 1, 0.02, b .. ": the figure of rarePerHour is the old rule's (" .. r.oldRare .. ")")
+		near(r.newRare / want[b], 1, M.TOL.rare, b .. ": Rare+ gear per hour kept (" .. r.newRare .. " against " .. want[b] .. ")")
+	end
+	near(M.band(ctx, 500).newRare / 24.8, 1, 0.06, "500 = old band 1000: 24.8 Rare+ pieces an hour")
+	near(M.band(ctx, 650).newRare / 5.5, 1, 0.06, "650 = old band 1300: 5.5 Rare+ pieces an hour")
+	-- no band between leaves the old rule either (the gear of the pool levels 350-410 is the richest)
+	for _, b in ipairs({350, 400, 450, 550, 600}) do
+		M.RANGES[b] = M.RANGES[b] or {math.floor(b * 0.85), math.ceil(b * 1.15)}
+		local r = M.band(ctx, b)
+		near(r.newRare / r.oldRare, 1, M.TOL.rare, b .. ": Rare+ gear per hour like the old rule's (" .. r.newRare .. " vs " ..
+			r.oldRare .. ")")
+	end
+	-- a notable curve that thins out again (the O285 regression: ~0.2 from 250 to 650) must fail the pin
+	local thin = {}
+	for _, pt in ipairs(ctx.cfg.base.notable) do thin[#thin + 1] = {pt[1], pt[1] >= 350 and 0.2 or pt[2]} end
+	local saved = ctx.cfg.base.notable
+	ctx.cfg.base.notable = thin
+	check(M.band(ctx, 500).newRare / want[500] < 1 - M.TOL.rare, "a thinned notable curve is caught by the pin")
+	ctx.cfg.base.notable = saved
 end
 -- the model's own rule matches the core: the shipped factors of a level
 do

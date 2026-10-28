@@ -8894,6 +8894,21 @@ of `items.xml` stay. Names the data looks things up by stay too: item, monster a
 NPC yields where the NPC is meant, written with a capital letter). Our own files are skipped (`data/scripts/chaos`,
 `data/spells/chaos`, `data/lib/chaos_*.lua`, the Chaos monster folders, `server/data/npc`).
 
+**Raid spawns (O294).** Owner log 2026-10-27: `[Error] Raids: Cant create monster <name>`. A raid file names its boss in
+`<singlespawn name="..."/>` and `<areaspawn><monster name="..."/>`; that is a monster type name, and the monster files
+keep their base name. When the tool did not find the monster type (a boss defined where `monster/` scans do not look),
+the spawn name was read as an old person's name and renamed, so the raid asked the engine for a monster that does not
+exist. Now the spawn names (`singlespawn`, `monster`, `npc` tags of `data/raids/*.xml`) are never renamed, only the
+announcement texts; Lua strings given to `createMonster(...)`, `doCreateMonster`, `doSummonCreature`, `summonCreature`
+and `createMonsterType` stay too (`base_rename_lib.py` `patch_lua(skip_monsters=True)`). The step also repairs a server
+an older run already changed: a raid spawn name that is the replacement of a row and that no monster type has (monsters.xml,
+monster files, `createMonsterType`, the `-spawn.xml` files of `data/world`) goes back to the monster name whose sha256
+the row has (`restore_raid_spawns`, printed as `raids: N spawn name(s) put back`). Idempotent. Test:
+`tests/base_world_names_patch_test.lua`. Other file kinds: NPC scripts, quest and achievement Lua and the spawn files
+(`data/world` is not touched) had the same weakness only for Lua strings that name a monster to create, now guarded;
+other strings are prose and stay renamed. Install: stop the server, `install_all.py SERVER_DIR --only worldtexts
+--dry-run`, then without `--dry-run`, start the server. The admin app's Update button runs every step, `worldtexts` included, so Update does it; no SQL, no client change.
+
 **The map.** Item texts and descriptions are attributes of item nodes in the `.otbm`. The tool finds item nodes with
 attributes by their marker bytes, parses each node's attributes (a node with an attribute it does not know is left
 alone), rewrites the strings with their new lengths, escapes the bytes again and splices the node back; the rest of the
@@ -15815,12 +15830,12 @@ the audit by hand after a map or `clearPath` change. The generated rift layouts 
 "Forsaken Sanctum") are validated for every theme and size band by `tests/rift_layout_test.lua`.
 
 **The model (`tools/content_reward_model.lua --check`, both interpreters).** Per hour at the pack model's kills (x0.85
-waystone, x0.8 rift for the walking), against the richest stock hunting band (1000; the 1500 band's stock tables hold no
-gear):
+waystone, x0.8 rift for the walking), against the richest stock hunting band (`richestBand`: the loot model's band with the most Rare+ gear an hour; 500 since
+O285, 24.8 an hour at the old band 1000 before, 25.7 now; the base set ends at pool level 657):
 
 | Content | Tier 1 | Tier 15 | With +60% quantity |
 |---|---|---|---|
-| Waystone Rare+ gear/h (hunting 24.8) | 43.5 (x2.8) | 132.9 (x6.4) | x3.8 / x9.3 |
+| Waystone Rare+ gear/h (hunting 25.7) | 43.5 (x2.7) | 132.9 (x6.2) | x3.7 / x9.0 |
 | Rift orbs/h (hunting 69 / 51) | 47.8 (x1.7) | 135.1 (x3.7) | x2.1 / x5.2 |
 
 `bounds` in `content_rewards_config.lua`: waystone gear gain at least x2 with no modifiers and at most x14 with them, rift
@@ -18366,7 +18381,9 @@ it (its own chances, low stamina) and the Chaos extra rolls after it are unchang
 - *Notable drops* stay whole with the `notable` share: gear the stock roll made Rare or better (stored rarity >=
   `lootLevel.notableRarity` 4, so Legendary and Divine too; 7.72% of stock gear drops) and any item whose loot-table
   chance is at most `lootLevel.notableChance` (1000 per 100000: 1% or rarer). `notable` is the loot factor up to monster
-  level 650 and 1 from 700 (smooth in between).
+  level 650 and 1 from 700 (smooth in between) in the scaled set; in the base set (O285) it is its own curve: the rule
+  from before the pool scale (the old loot share, 0.44 at pool level 50, 0.32 at 88, 0.24 at 125-225, 0.23 at 300-325)
+  and 1 from level 350 (hunting 700 before).
 - *Coins*: their value x `loot` x `coins` comes back as coins (`P.coinStacks`, crystal / platinum / gold, through
   `L.addToCorpse`), rounded at random to whole gold. A corpse that had coins shows coins (before: 4 crystal coins x
   0.07 rounded to nothing 71% of the time).
@@ -18390,23 +18407,42 @@ owner (2026-10-28) asked for the items per hour back at the same gold, so the tw
 `cheapPrice` (a curve of the base set, `pace_core.lua` `P.factors` `cheap`, `P.levelPlan`): junk worth at most that many
 gold a unit (its NPC price) stays in the corpse whole, whatever `loot` and `coins` say. The items per hour come from the
 cheap junk (potions, pearls, trinkets, 20-600 gold), the orbs and the notable drops; the gold from the dearer junk and the
-coins, which `coins` pays thin. `notable` is the pre-O285 loot curve (0.37 at 100, 0.2 from 250), so Rare+ gear and rare
-drops are as frequent as before. `loot` (plain gear, orbs, gems) and `coins` were fitted band by band with
-`tools/loot_model.lua`; `lootLevel.itemsPerHour` holds the bands to 539 / 692 / 380 / 540 an hour at 100 / 300 / 500 / 650
-(the figures from before, `--check` and `tests/loot_by_level_test.lua`); between them the bands are what the curves give
-(350 -> 503, 400 -> 436, 450 -> 436, 550 -> 368, 600 -> 444). The gold per hour is unchanged except the top band: 650 is
-held to 1.34M (it was 1.5M in the first O285 fit): bands 600 and 650 are the same 9-16 monsters of the pool's top, so
-their gold cannot differ by more than 1.28x. The scaled set keeps its own points. The weapon drops of the weapon fairness
-work start at hunting level 658 (`loot.lua` step 1e), above every base monster, so they are not in these bands.
+coins, which `coins` pays thin. `notable` is the rule from before the pool scale on the pool scale (first O285 fit: it was
+set to the new `loot` curve, 0.2 from 250 to 650, which cut every monster of pool level 350-657 from every drop to a fifth
+of its Rare+ gear: the owner's "rare rates as before" was broken, 24.8 Rare+ pieces an hour at the old band 1000 became
+about 1-5). Now `notable` follows the old rule point by point (`loot_model.lua` `M.OLD_RULE`: the old base `loot` curve
+x `scale.loot` 1.2 at 2 x the pool level, and 1 from hunting level 700 = pool level 350, a ramp from 325 to 350), so the
+Rare+ gear per hour of a band is the old rule's on the same monsters: `lootLevel.rarePerHour` 3.9 / 9.65 / 25.7 / 5.5 at
+100 / 300 / 500 / 650, held within 5% by `--check` (every band of the check, also 350 / 400 / 450 / 550 / 600, is held to
+the old rule's figure) and pinned in `tests/loot_by_level_test.lua` (24.8 and 5.5 are what the old model gave for the old
+bands 1000 and 1300; a thinned `notable` curve fails the test). `loot` (plain gear, orbs, gems) is capped at 0.19 at 250
+and 300 so that it stays under `notable` there (a `loot` above the notable share would raise the Rare+ gear), `coins`,
+`junkKeep` and `cheapPrice` were fitted again band by band (`tools/loot_model.lua`, coins for the gold per hour, `cheapPrice`
+and `junkKeep` for the items per hour; `--derive` solves the constant per band). `lootLevel.itemsPerHour` holds the bands to
+539 / 692 / 380 / 540 an hour at 100 / 300 / 500 / 650 (the figures from before, `--check` and
+`tests/loot_by_level_test.lua`); between them the bands are 350 -> 503, 400 -> 436, 450 -> 400, 550 -> 368, 600 -> 490.
+The gold per hour at 100 / 300 / 500 / 650 is unchanged (138k / 469k / 860k / 1.34M; 650 was 1.5M in the first O285
+fit): bands 600 and 650 are the same 9-16 monsters of the pool's top, so their gold cannot differ by more than 1.28x.
+The bands in between could not keep the 600k / 625k / 785k / 1.005M / 1.055M they had at 350 / 400 / 450 / 550 / 600:
+with the Rare+ gear back the stock gear of the pool levels 350-410 (Apparitions, Courage Leech, Branchy Crawler ...) is
+worth 0.5-1M gold an hour on its own, so even with no coins at all the band 400 pays 1.03M. They are 965k / 1.215M / 1.015M
+/ 945k / 1.315M now (`goldPerHour`). The no-dip rule of O141 reads the gold without the notable drops (the "trade gold"
+of the model: 363k at 300, 523k at 350, 531k at 400, 583k at 450, 711k at 500, 851k at 550, 1.05M at 600, 1.26M at 650,
+growing); the whole gold per hour may fall from 400 to 500 (1.22M to 860k) because of the luck-driven Rare+ gear, and
+never rises by more than 2.3x from one band to the next 150 levels up. The scaled set keeps its own points. The weapon
+drops of the weapon fairness work start at hunting level 658 (`loot.lua` step 1e), above every base monster, so they are
+not in these bands.
 
 | Monster level (base) | 100 | 300 | 500 | 650 |
 |---|---|---|---|---|
-| Plain gear, orbs (`loot`) | 0.110 | 0.348 | 0.107 | 0.298 |
-| Notable drops kept | 0.37 | 0.35 | 0.20 | 0.30 |
-| `coins` curve | 0.573 | 0.121 | 0.117 | 0.200 |
-| Junk worth at most this stays whole (`cheapPrice`) | 25 | 8 | 603 | 228 |
-| Items per hour | 539 | 695 | 368 | 536 |
-| Gold per hour | 137,598 | 471,819 | 857,430 | 1,341,522 |
+| Plain gear, orbs (`loot`) | 0.110 | 0.228 | 0.107 | 0.298 |
+| Notable drops kept | 0.29 | 0.23 | 1.00 | 1.00 |
+| `coins` curve | 0.746 | 0.220 | 0.114 | 0.106 |
+| `junkKeep` curve | 1.05 | 2.00 | 2.70 | 1.09 |
+| Junk worth at most this stays whole (`cheapPrice`) | 25 | 11 | 603 | 228 |
+| Items per hour | 542 | 688 | 378 | 547 |
+| Gold per hour | 137,999 | 468,999 | 859,800 | 1,339,802 |
+| Rare+ gear pieces per hour | 3.8 | 9.6 | 25.7 | 5.5 |
 
 
 **The economy model** (`tools/loot_model.lua`; `luajit tools/loot_model.lua` prints it, `--check` is in CI, `--fit`
@@ -18420,29 +18456,34 @@ level; weights the pool's spawn counts. Gold is coins plus plain NPC prices (the
 the Chaos extra rolls, gold finds and item find are left out, the same under both rules), so the absolute gold per hour
 is the stock corpse's only and lower than the "Respec" column; the economy target is the ratio: the 2026-10-20 rule is
 what the beta calibrated (16M -> the 5.5-6.3M model at 450-600), and the new curves keep it. Tolerances of `--check`:
-gold per hour 5%, items (non-coin corpse entries) per hour 7%, at the four bands (100, 300, 500, 650) and every fit point
-(100 ... 650, 350 / 400 / 600 on top).
+gold per hour 5%, items (non-coin corpse entries) per hour 7%, Rare+ gear per hour 5% (O285), at the four bands (100, 300,
+500, 650) and every fit point (100 ... 650 in steps of 50, 350 / 400 / 600 on top). The Rare+ gear per hour is the stock
+gear chances x the Rare+ share x the `notable` share of the monster's level; the check holds every band to
+`lootLevel.rarePerHour` or, for the bands between, to the rule from before the pool scale on the same monsters.
 
-| Band | Monsters | Kills/h | Gold/h before | Gold/h after | Items/h before | Items/h after | Per kill: gold, items before / after | Empty corpse before / after | "Respec" gold/h |
-|---|---|---|---|---|---|---|---|---|---|
-| 100 | 40 | 1,574 | 128,252 | 137,598 (+7.3%) | 261 | 539 (+106.8%) | 81, 0.17 / 87, 0.34 | 21% / 6% | 358,839 |
-| 300 | 48 | 1,285 | 1,496,183 | 471,819 (-68.5%) | 1,101 | 695 (-36.8%) | 1,164, 0.86 / 367, 0.54 | 12% / 5% | 881,866 |
-| 500 | 44 | 1,211 | 1,420,818 | 857,430 (-39.7%) | 307 | 368 (+19.9%) | 1,173, 0.25 / 708, 0.30 | 65% / 7% | 5,548,330 |
-| 650 | 9 | 1,210 | 3,256,841 | 1,341,522 (-58.8%) | 606 | 536 (-11.5%) | 2,692, 0.50 / 1,109, 0.44 | 51% / 4% | 6,739,744 |
+| Band | Monsters | Kills/h | Gold/h before | Gold/h after | Items/h before | Items/h after | Per kill: gold, items before / after | Empty corpse before / after | Rare+ gear/h before / after | "Respec" gold/h |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 100 | 40 | 1,574 | 128,252 | 137,999 (+7.6%) | 261 | 542 (+107.7%) | 81, 0.17 / 88, 0.34 | 21% / 6% | 3.9 / 3.8 | 358,839 |
+| 300 | 48 | 1,285 | 1,088,012 | 468,999 (-56.9%) | 875 | 688 (-21.4%) | 847, 0.68 / 365, 0.54 | 15% / 5% | 9.7 / 9.6 | 881,866 |
+| 500 | 44 | 1,211 | 1,420,818 | 859,800 (-39.5%) | 307 | 378 (+22.9%) | 1,173, 0.25 / 710, 0.31 | 65% / 7% | 25.7 / 25.7 | 5,548,330 |
+| 650 | 9 | 1,210 | 3,256,841 | 1,339,802 (-58.9%) | 606 | 547 (-9.8%) | 2,692, 0.50 / 1,107, 0.45 | 51% / 4% | 5.5 / 5.5 | 6,739,744 |
 
-("Before" is the 2026-10-20 rule at the new loot factor, no longer the reference: the targets are `lootLevel.goldPerHour`
-(100 -> 138k, 300 -> 469k, 500 -> 860k, 650 -> 1.34M) and `lootLevel.itemsPerHour` (539 / 692 / 380 / 540).)
+("Before" is the 2026-10-20 rule at the new loot factor, no longer the reference, except in the Rare+ column where it is the
+rule from before the pool scale (`M.OLD_RULE`): the targets are `lootLevel.goldPerHour` (100 -> 138k, 300 -> 469k, 500 ->
+860k, 650 -> 1.34M), `lootLevel.itemsPerHour` (539 / 692 / 380 / 540) and `lootLevel.rarePerHour` (3.9 / 9.65 / 25.7 / 5.5).
+The old model, on its 225 monsters and bands 200 / 600 / 1000 / 1300, gave 11.3 / 24.8 / 5.5 Rare+ pieces an hour at 600 /
+1000 / 1300 and no monster at 200.)
 
 The widows per kill (their real loot tables: crystal coins 60% x 1-7, potions, pearls, a ring, 1950-75,000 gold junk,
 six orb entries; no gear and no drop under 7%, so nothing notable):
 
 | Monster | Level | Gold / kill before / after | Items / kill before / after | Coins shown | Empty corpse before / after |
 |---|---|---|---|---|---|
-| Nightfang Widow | 509 | 1,265 / 466 | 0.19 / 0.15 | 7% / 86% | 77% / 8% |
-| Shadowcrystal Widow | 480 | 1,344 / 832 | 0.20 / 0.17 | 7% / 86% | 75% / 8% |
+| Nightfang Widow | 509 | 1,265 / 550 | 0.19 / 0.15 | 7% / 86% | 77% / 8% |
+| Shadowcrystal Widow | 480 | 1,344 / 620 | 0.20 / 0.16 | 7% / 86% | 75% / 8% |
 
 (Before O285 the widows stood at level 1018 / 960 and paid 3,170 gold and 0.47 items a kill. At their pool level they pay
-like the monsters of the band 500 (466 and 832 gold against 708) and are off `lootLevel.crystalOnly` (owner 2026-10-28:
+like the monsters of the band 500 (550 and 620 gold against 710) and are off `lootLevel.crystalOnly` (owner 2026-10-28:
 the least code; with a pay of a few hundred a crystal coin of 10,000 is a 5% chance). Their own loot level would have
 needed a lookup in `pace.lua` and in the model.)
 

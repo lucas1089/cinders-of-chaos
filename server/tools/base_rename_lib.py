@@ -380,9 +380,14 @@ SPELL_WORDS = re.compile(r'(?:words|Words)\s*(?:\(|=)\s*$')
 FILE_KEY = re.compile(r'(?i)\b(?:map|file|path|dir|folder|script)\w*\s*=\s*$')
 
 
-def patch_lua(text, fn, skip_words=False):
+# the monster type name given to a call that creates a monster: a lookup key, the monster files keep their base name
+MONSTER_CALL = re.compile(r'(?i)\b(?:createMonster|doCreateMonster|doSummonCreature|summonCreature|createMonsterType)\s*\(\s*$')
+
+
+def patch_lua(text, fn, skip_words=False, skip_monsters=False):
     """fn(value) for the contents of every string literal (paths left alone, and strings assigned to a key that names a
-    file, map, path or folder such as mapName = 'x'; with skip_words, spell and talkaction words: a string right after
+    file, map, path or folder such as mapName = 'x'; with skip_monsters, the monster name given to createMonster(...) and
+    the like; with skip_words, spell and talkaction words: a string right after
     `words(` or `words =`)"""
     out, last = [], 0
     for a, b, q in lua_string_spans_q(text):
@@ -390,7 +395,8 @@ def patch_lua(text, fn, skip_words=False):
         if is_path(value):
             continue
         before = text[max(0, a - 40):a - len(q)]
-        if FILE_KEY.search(before) or (skip_words and SPELL_WORDS.search(before)):
+        if (FILE_KEY.search(before) or (skip_words and SPELL_WORDS.search(before))
+                or (skip_monsters and MONSTER_CALL.search(before))):
             continue
         new = fn(value)
         if new != value:

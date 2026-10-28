@@ -75,7 +75,9 @@ writeFile(root .. "/world.csv", "sha256,name,kind,match\n"
 	.. "7b474e2f2f687b2b15cc4b2554eadc3b7e573d038824c151334ce2f41004c1aa,Embertest,town,word\n"
 	.. "6651f1d8a403214cd5ea1590feafbcf424fe65dba998619f20ac2d14d31172a2,Testgloom,place,word\n"
 	.. "008f6bc279134ae8bea9a67d3a5f2f82eb25064a03ed2cf373235af37268dc41,the Tester,god,word\n"
-	.. "648639d746a6db964ee9da969f9fe422354323c2723847b7b260bf21426a21c2,O'Testfolk,demonym,word\n")
+	.. "648639d746a6db964ee9da969f9fe422354323c2723847b7b260bf21426a21c2,O'Testfolk,demonym,word\n"
+	.. "ff627b684246e47dfbfc0b63166e1125fc9e80e1fdb1f3d32ae7afadf2b7b35a,Gloomtest,person,word\n"
+	.. "f0dd58ff085f09a0cea80da67e2bbc8f5383f7462989ae1ef0d4b643f3714fa6,Duskrow,person,word\n")
 writeFile(root .. "/monster.csv", "sha256,name,kind\n"
 	.. "dbafe04e9269d73a1891761e14098a0c4fc742aed12a76348cd2cbb72bafad72,Ember Test Beast,monster\n")
 writeFile(root .. "/houses.csv", "id,name\n1,Tallow Test Row 1\n2,\"Tallow Test Row 2, Flat\"\n")
@@ -147,10 +149,21 @@ writeFile(data .. "/items/items.xml", [[
 	</item>
 </items>
 ]])
-writeFile(data .. "/monster/monsters.xml", '<monsters><monster name="Copper Golem" file="x.xml" /></monsters>\n')
+writeFile(data .. "/monster/monsters.xml",
+	'<monsters><monster name="Copper Golem" file="x.xml" /><monster name="Vexmaw" file="v.xml" /></monsters>\n')
+-- raid spawn names are monster type names: "Vexmaw" is a registered monster, "Zapholdt" is not found by the tool (a
+-- raid boss defined where the tool does not look), both stay in the spawn tags; the messages of the second are renamed
+writeFile(data .. "/raids/east/boss.xml", '<raid><announce message="Zapholdt rises!" /><singlespawn name="Zapholdt" x="1" y="2" z="7" />'
+	.. '<areaspawn fromx="1" fromy="1" fromz="7" tox="2" toy="2" toz="7"><monster name="Zapholdt" minamount="1" maxamount="2" /></areaspawn></raid>\n')
+-- left by an older run: the spawn was renamed although the monster Vexmaw exists
+writeFile(data .. "/raids/east/damaged.xml", '<raid><singlespawn name="Gloomtest" x="1" y="2" z="7" />'
+	.. '<areaspawn fromx="1" fromy="1" fromz="7" tox="2" toy="2" toz="7"><monster name="gloomtest" minamount="1" maxamount="2" /></areaspawn>'
+	.. '<singlespawn name="Duskrow" x="3" y="2" z="7" /></raid>\n')
 local effect = '<monster name="Copper Golem"><attribute key="areaEffect" value="placeholder beast" /></monster>\n'
 writeFile(data .. "/monster/x.xml", effect)
 os.execute("mkdir -p '" .. data .. "/monster/lua'")
+local spawnLua = 'local boss = Game.createMonster("Zapholdt", Position(1, 1, 7))\nlocal say = "Zapholdt rises"\n'
+writeFile(data .. "/lib/core/spawnboss.lua", spawnLua)
 local luaMonster = 'local mType = Game.createMonsterType("Grumtest")\nmonster.voices = {{text = "Grumtest smashes!"}}\n'
 writeFile(data .. "/monster/lua/grumtest.lua", luaMonster)
 writeFile(data .. "/lib/core/achievements.lua",
@@ -213,6 +226,7 @@ has(spawn, '<monster name="Placeholder Beast"', "monster spawns are not this too
 -- texts
 out = tool("patch_base_texts.py", textArgs)
 has(out, "map: 2 item text(s) rewritten", "map counts: " .. out)
+has(out, "raids: 2 spawn name(s) put back", "raid repair count: " .. out)
 local t = readFile(data .. "/npc/scripts/travel.lua")
 has(t, "-- Oldtown Xy travel, a comment that stays", "comments untouched")
 has(t, "local OldtownXy = Storage.OldtownXy", "identifiers untouched")
@@ -237,6 +251,16 @@ has(x, 'value="Hello |PLAYERNAME|, welcome to Embertest. Brindle and Ashtest are
 has(x, 'value="job;brindle;embertest;"', "XML keywords")
 eq(readFile(data .. "/npc/Material Broker.xml"), ownNpc, "the repository's NPCs untouched by texts")
 has(readFile(data .. "/raids/east/raid.xml"), 'message="Embertest is under attack!"', "raid message")
+has(readFile(data .. "/lib/core/spawnboss.lua"), 'Game.createMonster("Zapholdt", Position', "createMonster name stays")
+has(readFile(data .. "/lib/core/spawnboss.lua"), 'local say = "Duskrow rises"', "other strings are renamed")
+local boss = readFile(data .. "/raids/east/boss.xml")
+has(boss, '<singlespawn name="Zapholdt" x="1"', "raid spawn name stays")
+has(boss, '<monster name="Zapholdt" minamount', "raid area spawn name stays")
+has(boss, 'message="Duskrow rises!"', "raid message is renamed")
+local dmg = readFile(data .. "/raids/east/damaged.xml")
+has(dmg, '<singlespawn name="Vexmaw" x="1"', "a renamed spawn is put back")
+has(dmg, '<monster name="Vexmaw" minamount', "a renamed area spawn is put back")
+has(dmg, '<singlespawn name="Duskrow" x="3"', "a replacement name no hash of a monster gives stays")
 local q = readFile(data .. "/XML/quests.xml")
 has(q, 'name="The Embertest Errand"', "quest name")
 has(q, 'description="Ask Brindle in Embertest about Testgloom."', "mission text")
@@ -270,7 +294,7 @@ has(h, '<house name="Oldtown Xy Lane 3" houseid="3"', "a house without a row kee
 -- second runs: nothing to change
 local snap = {}
 local files = {"/npc/scripts/travel.lua", "/npc/Kesra Test.xml", "/world/map-spawn.xml", "/world/map.otbm",
-	"/world/map-house.xml", "/XML/quests.xml", "/items/items.xml", "/raids/east/raid.xml"}
+	"/world/map-house.xml", "/XML/quests.xml", "/items/items.xml", "/raids/east/raid.xml", "/raids/east/boss.xml", "/raids/east/damaged.xml"}
 for _, p in ipairs(files) do
 	snap[p] = readFile(data .. p)
 end

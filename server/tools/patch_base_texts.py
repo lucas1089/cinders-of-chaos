@@ -16,10 +16,14 @@ list wins, then the NPC list, then the monster list.
 
 Where:
 1. XML files of the base data (data/npc, data/XML with the quest log, outfits and mounts, data/raids, data/items with
-   the item descriptions but not the item names, data/monster and the other lists): attribute values. Paths,
+   the item descriptions but not the item names, data/monster and the other lists): attribute values. The spawn
+   names of the raids (<singlespawn>, <monster>, <npc> in data/raids) stay: they are monster type names, and a
+   raid whose spawn was renamed by an older run gets its monster name back (hashing the monster names of the data;
+   a name that a monster type has stays). Paths,
    file / script attributes, spell / talkaction words and engine effect names (key="...Effect") stay.
 2. Lua files of the base data: the contents of string literals (dialogue, keywords, travel destinations, messages,
-   achievement texts), never identifiers or comments. Paths and spell words (`words("...")`, `words = "..."`) stay.
+   achievement texts), never identifiers or comments. The monster name given to createMonster(...) and the like
+   stays (a monster type key). Paths and spell words (`words("...")`, `words = "..."`) stay.
 3. The map (.otbm, as the towns step finds it, or --map): the texts and descriptions of items (signs, books, plaques).
    Item nodes are parsed attribute by attribute; a node with an attribute this tool does not know is left alone. The
    rebuilt file is checked (same item nodes, the new texts read back) before it replaces the map through a temporary
@@ -51,6 +55,79 @@ SKIP_DIRS = (os.path.join('scripts', 'chaos'), os.path.join('spells', 'chaos'), 
 ITEM_OWN_ATTRS = ('name', 'article', 'plural')
 # <attribute key="areaEffect" value="..."/>: engine effect names, some spelled like an old monster
 EFFECT_KEY = re.compile(r'\bkey="[^"]*effect[^"]*"', re.I)
+
+
+# ------------------------------------------------------------------------------------------------ raid spawns
+# <singlespawn name="X"/>, <monster name="X"/>, <npc name="X"/> of data/raids/*.xml name a monster type of the server:
+# the monster files keep their base name, so the name is a lookup key and is never renamed (only the messages are)
+RAID_SPAWN_TAG = re.compile(r'<(?:singlespawn|monster|npc)\s', re.I)
+RAID_SPAWN_NAME = re.compile(r'(<(?:singlespawn|monster|npc)\s[^<>]*?\bname\s*=\s*")([^"]*)(")', re.I)
+
+
+def is_raid_file(data, p):
+    rel = os.path.relpath(p, data).replace(os.sep, '/')
+    return rel.startswith('raids/') and p.endswith('.xml')
+
+
+def monster_names_cased(data):
+    """monster type names as written (monsters.xml, monster files, createMonsterType, the spawn files of data/world)"""
+    out = {}
+
+    def add(n):
+        if n.strip():
+            out.setdefault(n.strip().lower(), n.strip())
+    mdir = os.path.join(data, 'monster')
+    mxml = os.path.join(mdir, 'monsters.xml')
+    if os.path.isfile(mxml):
+        for m in re.findall(r'<monster\s+name="([^"]*)"', L.read(mxml)):
+            add(m)
+    for dirpath, dirs, files in os.walk(mdir):
+        for f in files:
+            if f.endswith('.xml') and f != 'monsters.xml':
+                m = re.search(r'<monster\s[^>]*?\bname="([^"]*)"', L.read(os.path.join(dirpath, f)))
+                if m:
+                    add(m.group(1))
+            elif f.endswith('.lua'):
+                for m in re.finditer(r'createMonsterType\(\s*["\']([^"\']*)["\']', L.read(os.path.join(dirpath, f))):
+                    add(m.group(1))
+    for dirpath, dirs, files in os.walk(os.path.join(data, 'world')):
+        for f in files:
+            if f.endswith('-spawn.xml'):
+                for m in re.findall(r'<monster\s[^>]*?\bname="([^"]*)"', L.read(os.path.join(dirpath, f))):
+                    add(m)
+    return out
+
+
+def restore_raid_spawns(data, rows, pending=None):
+    """-> ({path: new text}, count) for raid files whose spawn name is a replacement name that no monster type has (an
+    older run of this tool renamed it): the base name is put back, found by hashing the monster names of the data
+    against the rows whose replacement is that spawn name. A spawn whose monster type exists stays. pending: texts
+    already due to be written, {path: text}, which the restore builds on."""
+    pending = pending or {}
+    cased = monster_names_cased(data)
+    back = {}
+    for low, name in cased.items():
+        row = rows.get(L.digest(low))
+        if row and row[0].lower() != low:
+            back.setdefault(row[0].lower(), name)
+    writes, count = {}, [0]
+    if not back:
+        return writes, 0
+    for p in text_files(data):
+        if not is_raid_file(data, p):
+            continue
+        t = pending.get(p) or L.read(p)
+
+        def fix(m):
+            low = re.sub(r'\s+', ' ', L.norm(m.group(2))).strip().lower()
+            if low in cased or low not in back:
+                return m.group(0)
+            count[0] += 1
+            return m.group(1) + back[low] + m.group(3)
+        new = RAID_SPAWN_NAME.sub(fix, t)
+        if new != t:
+            writes[p] = new
+    return writes, count[0]
 
 
 # ------------------------------------------------------------------------------------------------ the data files
@@ -137,10 +214,14 @@ def patch_files(data, ren, titles=None):
     for p in text_files(data):
         t = L.read(p)
         if p.endswith('.xml'):
+            skip = EFFECT_KEY.search
+            if is_raid_file(data, p):
+                def skip(tag):
+                    return bool(EFFECT_KEY.search(tag) or RAID_SPAWN_TAG.match(tag))
             new = L.patch_xml(t, titles if (titles and p in looks) else ren, skip_attrs=(ITEM_OWN_ATTRS if p == ixml else ()) + ('words',),
-                              skip_tag=EFFECT_KEY.search)
+                              skip_tag=skip)
         else:
-            new = L.patch_lua(t, ren, skip_words=True)
+            new = L.patch_lua(t, ren, skip_words=True, skip_monsters=True)
         if new != t:
             writes[p] = new
     return writes
@@ -330,6 +411,11 @@ def main(argv):
     ren = L.Renamer(names, keep=keep, soft=keep - hard)
     titles = L.Renamer(names, keep=keep, soft=keep - hard, titles=True)
     writes = {} if map_only else patch_files(data, ren, titles)
+    if not map_only:
+        fixed, n_fixed = restore_raid_spawns(data, rows, writes)
+        writes.update(fixed)
+        if n_fixed:
+            print('raids: %d spawn name(s) put back to their monster type (an older run renamed them)' % n_fixed)
     ren.count += titles.count
     for k, v in titles.by_kind.items():
         ren.by_kind[k] = ren.by_kind.get(k, 0) + v

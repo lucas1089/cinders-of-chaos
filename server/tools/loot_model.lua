@@ -3,7 +3,7 @@
 -- under the rule by monster level (pace_core.lua P.levelPlan), at the pack model's kills per hour.
 --
 --     cd server && luajit tools/loot_model.lua            the table (also lua5.3)
---     cd server && luajit tools/loot_model.lua --derive   the coins / junkKeep points that hold the 2026-10-20 economy
+--     cd server && luajit tools/loot_model.lua --derive   the coins / junkKeep (constant per band) that hold `lootLevel` targets
 --     cd server && luajit tools/loot_model.lua --check    exit 1 when a band leaves the tolerances (CI)
 --
 -- Inputs, all in the repository: tools/loot_bands_data.lua (the stock loot tables of the bands' monsters, written by
@@ -30,8 +30,23 @@ M.RANGES = {[100] = {85, 115}, [300] = {255, 345}, [500] = {425, 575}, [650] = {
 -- the rule of 2026-10-20 (pace_config.lua `gold`, linear), the reference the new curves keep
 M.OLD_GOLD = {base = {{250, 1.0}, {450, 0.30}, {1000, 0.30}}, scaled = {{100, 1.0}, {450, 0.30}, {2000, 0.30}}}
 -- tolerances of --check: gold per hour and items per hour of the new rule against the old, per band
-M.TOL = {gold = 0.05, items = 0.07}
--- O141 (2026-10-23): the gold per hour must grow with the level (no dip) and by at most this factor from one checked
+M.TOL = {gold = 0.05, items = 0.07, rare = 0.05}
+-- O285: the notable rule from before the monsters stood at their pool level (hunting level = 2 x pool level, base `loot`
+-- points of that day, `notable` {{650, 0}, {700, 1}}, scale.loot on the loot points): the Rare+ gear per hour of a band
+-- under it is the figure the curves of pace_config.lua must keep (`rarePerHour`, tolerance M.TOL.rare)
+M.OLD_RULE = {mult = 2,
+	loot = {{20, 1.00}, {35, 0.59}, {60, 0.54}, {100, 0.37}, {175, 0.27}, {250, 0.20}, {450, 0.20}, {600, 0.19},
+		{800, 0.19}, {1000, 0.20}},
+	notable = {{650, 0}, {700, 1}}}
+
+-- the notable share of a base monster of pool level `level` under the rule of before
+function M.oldNotable(cfg, level)
+	local r = M.OLD_RULE
+	local hl = level * r.mult
+	local loot = math.min(1, P.lin(r.loot, hl, 1) * (tonumber((cfg.scale or {}).loot) or 1))
+	return math.max(loot, P.smooth(r.notable, hl, loot))
+end
+-- O141 (2026-10-23): the gold per hour must grow with the level (no dip; O285: the gold without the notable drops) and by at most this factor from one checked
 -- band to the next one up to 150 levels higher, from level 300 on (before: 469k at 300, 325-537k at 400-600, 1.8M at
 -- 650, 2.5M at 800). The bands 350, 400 and 600 are checked on top of the table's and of `--derive`'s.
 M.MAX_STEP = 2.3
@@ -105,6 +120,7 @@ end
 function M.perKill(mon, rule)
 	local mult = mon.scaled and M.countMult(mon.level) or 1
 	local gold, items, pNoCoin, pEmpty = 0, 0, 1, 1
+	local ngold = 0 -- the part of `gold` that is Rare+ gear and rare drops at their notable share (new rule)
 	local f = rule.f
 	local loot = f.loot
 	-- new rule: P(no coin dropped), P(no non-coin non-junk entry shows), the junk entries
@@ -147,6 +163,7 @@ function M.perKill(mon, rule)
 				newC = newC * (1 - p)
 			elseif notableByChance then
 				gold = gold + p * mean * price * f.notable
+				ngold = ngold + p * mean * price * f.notable
 				show = f.notable
 			elseif cls == "junk" and f.cheap and f.cheap > 0 and price <= f.cheap then
 				-- O285: cheap junk stays whole (P.levelPlan `cheap`)
@@ -173,6 +190,7 @@ function M.perKill(mon, rule)
 			elseif cls == "gear" then
 				show = rule.rare * f.notable + (1 - rule.rare) * loot
 				gold = gold + p * price * show
+				ngold = ngold + p * price * rule.rare * f.notable
 			else -- other: P.thinPlan with loot
 				show = 0
 				if stack then
@@ -212,7 +230,8 @@ function M.perKill(mon, rule)
 	end
 	gold = gold + newC * newN * floorGold
 	local pFloor = newC * newN * (allQuiet - noneDropped)
-	return {gold = gold, items = items, coins = 1 - (newC * noPaid - pFloor), empty = newC * newN * noneDropped}
+	return {gold = gold, items = items, coins = 1 - (newC * noPaid - pFloor), empty = newC * newN * noneDropped,
+		notableGold = ngold}
 end
 
 function M.load(opts)
@@ -245,7 +264,7 @@ end
 function M.band(ctx, band, override)
 	local lo, hi = M.RANGES[band][1], M.RANGES[band][2]
 	local acc = {w = 0, kills = 0, oldGold = 0, newGold = 0, oldItems = 0, newItems = 0, oldEmpty = 0, newEmpty = 0,
-		n = 0}
+		oldRare = 0, newRare = 0, notableGold = 0, n = 0}
 	for _, mon in ipairs(ctx.data) do
 		if mon.level >= lo and mon.level <= hi then
 			local w = mon.spawns
@@ -258,21 +277,39 @@ function M.band(ctx, band, override)
 			acc.oldGold, acc.newGold = acc.oldGold + w * k * a.gold, acc.newGold + w * k * b.gold
 			acc.oldItems, acc.newItems = acc.oldItems + w * k * a.items, acc.newItems + w * k * b.items
 			acc.oldEmpty, acc.newEmpty = acc.oldEmpty + w * a.empty, acc.newEmpty + w * b.empty
+			acc.notableGold = acc.notableGold + w * k * b.notableGold
+			-- Rare+ gear drops per kill that show: the stock gear chances x the Rare+ share x the notable share
+			local gear = 0
+			for _, e in ipairs(mon.loot) do
+				if e[4] == "gear" then
+					gear = gear + e[2] / 100000
+				end
+			end
+			local share = gear * ctx.rare
+			acc.newRare = acc.newRare + w * k * share * n.f.notable
+			acc.oldRare = acc.oldRare + w * k * share * (mon.scaled and n.f.notable or M.oldNotable(ctx.cfg, mon.level))
 		end
 	end
 	local w = math.max(acc.w, 1)
 	return {band = band, monsters = acc.n, kills = acc.kills / w, oldGold = acc.oldGold / w, newGold = acc.newGold / w,
 		oldItems = acc.oldItems / w, newItems = acc.newItems / w, oldEmpty = acc.oldEmpty / w,
-		newEmpty = acc.newEmpty / w}
+		newEmpty = acc.newEmpty / w, oldRare = acc.oldRare / w, newRare = acc.newRare / w, notableGold = acc.notableGold / w}
 end
 
--- the shares (constant over the band) that hold the old gold and items per hour: the highest notable share (steps of
--- 0.05 from 1 down) with which both can be met, the coins that give the old gold per hour, then the junkKeep that gives
--- the old items per hour (bisection: gold rises with coins, items with junkKeep up to KEEP_MAX)
+-- the shares (constant over the band) that hold the gold and items per hour a band is held to (`lootLevel.goldPerHour`
+-- / `itemsPerHour`, else the 2026-10-20 rule's): the coins that give the gold, then the junkKeep that gives the items
+-- (bisection: gold rises with coins, items with junkKeep up to KEEP_MAX), solved in turn until they settle. The notable
+-- share is the curve of pace_config.lua (O285: the old rule on the pool scale, `rarePerHour` is held by --check), not a
+-- parameter. junkKeep only bites below the coins share (above it every junk item that shows stays in kind), so a band
+-- whose items are too high at junkKeep 6 needs a lower `cheapPrice` instead (bisection on the cheapPrice point: items
+-- rise with it); the cheapPrice points of pace_config.lua were fitted that way (O285).
 M.KEEP_MAX = 6
--- the levels --derive solves (the curve points of pace_config.lua from 650 on; below it the notable drops keep `loot`,
--- the coins follow the old gold points and junk stays as before, junkKeep >= 1 / loot)
-M.POINTS = {100, 300, 450, 550, 650}
+-- the levels --derive solves (the bands of the table and the curve points of pace_config.lua)
+M.POINTS = {100, 300, 350, 400, 450, 500, 550, 600, 650}
+function M.targets(ctx, band)
+	local ref = M.band(ctx, band)
+	return (ctx.ll.goldPerHour or {})[band] or ref.oldGold, (ctx.ll.itemsPerHour or {})[band] or ref.oldItems
+end
 function M.derive(ctx, band)
 	local function solve(fn, target, hi)
 		local lo = 0
@@ -282,28 +319,17 @@ function M.derive(ctx, band)
 		end
 		return (lo + hi) / 2
 	end
-	local ref = M.band(ctx, band)
-	local n, coins = 1, 0
-	while true do
-		coins = solve(function(c) return M.band(ctx, band, {coins = c, junkKeep = 0, notable = n}).newGold end,
-			ref.oldGold, 2)
-		local most = M.band(ctx, band, {coins = coins, junkKeep = M.KEEP_MAX, notable = n}).newItems
-		if most >= ref.oldItems * (1 - 1e-6) or n <= 0 then
-			break
-		end
-		n = math.max(0, n - 0.05)
-	end
-	-- the floor pays more the more junk stays in kind: solve the two in turn until they settle
-	local keep = 0
+	local gold, items = M.targets(ctx, band)
+	local coins, keep = 0.1, 2
 	for _ = 1, 12 do
 		keep = solve(function(k)
-			return M.band(ctx, band, {coins = coins, junkKeep = k, notable = n}).newItems
-		end, ref.oldItems * (1 - 1e-6), M.KEEP_MAX)
+			return M.band(ctx, band, {coins = coins, junkKeep = k}).newItems
+		end, items * (1 - 1e-6), M.KEEP_MAX)
 		coins = solve(function(c)
-			return M.band(ctx, band, {coins = c, junkKeep = keep, notable = n}).newGold
-		end, ref.oldGold, 2)
+			return M.band(ctx, band, {coins = c, junkKeep = keep}).newGold
+		end, gold, 2)
 	end
-	return coins, keep, n
+	return coins, keep, nil
 end
 
 -- --fit: the curve points themselves (every band of M.POINTS reads the smooth curve at each monster's level, not a
@@ -389,16 +415,16 @@ end
 M.fmt = fmt
 
 function M.report(ctx)
-	local lines = {"| Band | Monsters | Kills/h | Gold/h before | Gold/h after | Items/h before | Items/h after | Per kill: gold, items before / after | Empty corpse before / after | \"Respec\" gold/h |",
-		"|---|---|---|---|---|---|---|---|---|---|"}
+	local lines = {"| Band | Monsters | Kills/h | Gold/h before | Gold/h after | Items/h before | Items/h after | Per kill: gold, items before / after | Empty corpse before / after | Rare+ gear/h before / after | \"Respec\" gold/h |",
+		"|---|---|---|---|---|---|---|---|---|---|---|"}
 	local rows = {}
 	for _, b in ipairs(M.BANDS) do
 		local r = M.band(ctx, b)
 		rows[#rows + 1] = r
-		lines[#lines + 1] = string.format("| %d | %d | %s | %s | %s (%+.1f%%) | %s | %s (%+.1f%%) | %s, %.2f / %s, %.2f | %.0f%% / %.0f%% | %s |",
+		lines[#lines + 1] = string.format("| %d | %d | %s | %s | %s (%+.1f%%) | %s | %s (%+.1f%%) | %s, %.2f / %s, %.2f | %.0f%% / %.0f%% | %.1f / %.1f | %s |",
 			b, r.monsters, fmt(r.kills), fmt(r.oldGold), fmt(r.newGold), 100 * (r.newGold / r.oldGold - 1), fmt(r.oldItems),
 			fmt(r.newItems), 100 * (r.newItems / r.oldItems - 1), fmt(r.oldGold / r.kills), r.oldItems / r.kills,
-			fmt(r.newGold / r.kills), r.newItems / r.kills, 100 * r.oldEmpty, 100 * r.newEmpty, fmt(M.respec(b)))
+			fmt(r.newGold / r.kills), r.newItems / r.kills, 100 * r.oldEmpty, 100 * r.newEmpty, r.oldRare, r.newRare, fmt(M.respec(b)))
 	end
 	return table.concat(lines, "\n"), rows
 end
@@ -432,8 +458,9 @@ function M.main(args)
 			M.RANGES[b] = M.RANGES[b] or {math.floor(b * 0.85), math.ceil(b * 1.15)}
 			local c, k, n = M.derive(ctx, b)
 			local r = M.band(ctx, b, {coins = c, junkKeep = k, notable = n})
-			print(string.format("band %4d  notable %.2f  coins %.4f  junkKeep %.4f  gold %+.1f%%  items %+.1f%%", b, n, c, k,
-				100 * (r.newGold / r.oldGold - 1), 100 * (r.newItems / r.oldItems - 1)))
+			local g, i = M.targets(ctx, b)
+			print(string.format("band %4d  coins %.4f  junkKeep %.4f  gold %+.1f%%  items %+.1f%%  Rare+ gear/h %.1f", b, c, k,
+				100 * (r.newGold / g - 1), 100 * (r.newItems / i - 1), r.newRare))
 		end
 		return 0
 	end
@@ -469,7 +496,16 @@ function M.main(args)
 		-- O285: the items per hour a band is held to (`lootLevel.itemsPerHour`, the 2026-10-20 values of before the monsters
 		-- stood at their pool level), else the 2026-10-20 rule's at the same loot factor
 		local wantItems = ctx.ll.itemsPerHour or {}
+		-- the Rare+ gear per hour a band is held to: `lootLevel.rarePerHour` {band = pieces} where it lists the band, else
+		-- the rule of before's (M.OLD_RULE) on the same monsters: the notable drops must not thin out with the pool scale
+		local wantRare = ctx.ll.rarePerHour or {}
 		for _, r in ipairs(rows) do
+			local rref = wantRare[r.band] or r.oldRare
+			if rref > 0 and math.abs(r.newRare / rref - 1) > M.TOL.rare then
+				bad = bad + 1
+				print(string.format("band %d out of tolerance: Rare+ gear per hour %.2f against %.2f (%+.1f%%)", r.band,
+					r.newRare, rref, 100 * (r.newRare / rref - 1)))
+			end
 			local ref = want[r.band] or r.oldGold
 			local iref = wantItems[r.band] or r.oldItems
 			local dg, di = math.abs(r.newGold / ref - 1), math.abs(r.newItems / iref - 1)
@@ -484,11 +520,14 @@ function M.main(args)
 		for i = 2, #rows do
 			local a, b = rows[i - 1], rows[i]
 			if a.band >= M.SMOOTH_FROM and b.band - a.band <= M.SMOOTH_SPAN then
+				-- O285: the Rare+ gear and rare drops (`notableGold`) are luck, and the pool levels 350-410 hold the richest
+				-- stock gear: the no-dip rule reads the gold without them (the trade gold), the step bound the whole
 				local step = b.newGold / a.newGold
-				if step < 1 or step > M.MAX_STEP then
+				local tradeStep = (b.newGold - b.notableGold) / (a.newGold - a.notableGold)
+				if tradeStep < 1 or step > M.MAX_STEP then
 					bad = bad + 1
-					print(string.format("gold per hour from band %d to %d: x%.2f (%s to %s), allowed 1 to %.1f", a.band, b.band,
-						step, fmt(a.newGold), fmt(b.newGold), M.MAX_STEP))
+					print(string.format("gold per hour from band %d to %d: x%.2f (%s to %s), trade gold x%.2f, allowed 1 to %.1f",
+						a.band, b.band, step, fmt(a.newGold), fmt(b.newGold), tradeStep, M.MAX_STEP))
 				end
 			end
 		end

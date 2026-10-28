@@ -377,6 +377,10 @@ local function real(coins) return string.format("R$ %.2f", coins / 10):gsub("%."
 function M.report(env)
 	local R = env.rules
 	local PM
+	-- the levels of the table: the loot model's bands (O285: 100 / 300 / 500 / 650, the pool ends at hunting level 657)
+	ChaosLootModelLib = true
+	local okL, LM = pcall(dofile, "tools/loot_model.lua")
+	local bands = okL and LM.BANDS or {100, 300, 500, 650}
 	ChaosProgressionLib = true
 	local okP, mod = pcall(dofile, "tools/progression_model.lua")
 	local levelsPerHour = {}
@@ -384,14 +388,12 @@ function M.report(env)
 		PM = mod
 		local penv = PM.load()
 		local curve = PM.curve(penv, 1500)
-		for _, L in ipairs({100, 300, 500, 800, 1000}) do levelsPerHour[L] = 60 / curve[L].min end
+		for _, L in ipairs(bands) do levelsPerHour[L] = 60 / curve[L].min end
 	end
 	local goldPerHour = {}
-	ChaosLootModelLib = true
-	local okL, LM = pcall(dofile, "tools/loot_model.lua")
 	if okL then
 		local ctx = LM.load()
-		for _, b in ipairs({100, 300, 500, 800, 1000}) do if LM.RANGES[b] then goldPerHour[b] = LM.band(ctx, b).newGold end end
+		for _, b in ipairs(bands) do goldPerHour[b] = LM.band(ctx, b).newGold end
 	end
 	local function line(...) print(string.format(...)) end
 
@@ -448,7 +450,7 @@ function M.report(env)
 		print("\nWhat one hour of x2 experience is worth by level (progression_model.lua)")
 		print("| Level | Levels gained in 1 extra hour | Coins per level (potion) | Gold per hour (loot_model.lua) | Potion in hours of gold |")
 		print("|---|---|---|---|---|")
-		for _, L in ipairs({100, 300, 500, 800, 1000}) do
+		for _, L in ipairs(bands) do
 			line("| %d | %.2f | %.0f | %s | %.3f |", L, levelsPerHour[L], 50 / levelsPerHour[L], goldPerHour[L] and string.format("%d", math.floor(goldPerHour[L] + 0.5)) or "-",
 				goldPerHour[L] and (50 * R.goldPerCoin / goldPerHour[L]) or 0)
 		end

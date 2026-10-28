@@ -48,9 +48,11 @@ for name, e in pairs(widows) do
 	-- on before), with the coins share of the O141 gold curve
 	check(f.loot > 0.05 and f.loot < 0.15, name .. ": about a tenth of the plain stock items stay (" .. f.loot .. ")")
 	-- loot by monster level (2026-10-21, server/README.md "Loot by monster level"): the coins curve replaced the flat
-	-- 0.30 of `gold`; the notable drops keep the loot factor below level 650
+	-- 0.30 of `gold`
 	check(f.coins > 0.003 and f.coins < 0.3, name .. ": coins and sellables worth x" .. f.coins .. " on top")
-	check(f.notable > 0.15 and f.notable < 0.25, name .. ": the notable drops stay at the pre-O285 rate (" .. f.notable .. ")")
+	-- O285: the base notable curve is the rule from before the pool scale: every notable drop stays from pool level 350 (hunting
+	-- 700 before), and a widow at 509 / 480 had been at 1018 / 960
+	check(f.notable == 1, name .. ": every notable drop stays, as at hunting level 1018 / 960 before (" .. f.notable .. ")")
 end
 eq(PCore.entryLevel(paceCfg, widows["Nightfang Widow"]), 509, "Nightfang Widow: hunting level (the pool level)")
 eq(PCore.entryLevel(paceCfg, widows["Shadowcrystal Widow"]), 480, "Shadowcrystal Widow: hunting level (the pool level)")
