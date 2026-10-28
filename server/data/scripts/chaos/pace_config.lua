@@ -45,11 +45,10 @@ return {
 			{300, 0.082}, {350, 0.072}, {400, 0.085}, {450, 0.098}, {500, 0.102}, {550, 0.100}, {600, 0.105}, {650, 0.110}},
 		xp = {{6, 1.00}, {10, 0.20}, {20, 0.20}, {35, 0.14}, {50, 0.098}, {60, 0.108}, {100, 0.082}, {175, 0.072},
 			{250, 0.075}, {350, 0.068}, {450, 0.060}, {600, 0.066}},
-		loot = {{10, 1}, {50, 0.04722}, {100, 0.09142}, {150, 0.1162}, {200, 0.1589}, {250, 0.19}, {300, 0.19},
-			{350, 0.06753}, {400, 0.03169}, {450, 0.07779}, {500, 0.08933}, {550, 0.03608}, {600, 0.0907},
-			{650, 0.2482}},
-		cheapPrice = {{50, 21.13}, {100, 25.22}, {150, 51.42}, {200, 535.2}, {250, 62.23}, {300, 11.42}, {350, 143.1},
-			{400, 240.7}, {450, 300}, {500, 602.7}, {550, 433.3}, {600, 150}, {650, 228}},
+		loot = {{10, 1}, {50, 0.04722}, {100, 0.09142}, {150, 0.08716}, {200, 0.1097}, {250, 0.1482}, {300, 0.1509}, {350, 0.05982},
+			{400, 0.05235}, {450, 0.0676}, {500, 0.08254}, {550, 0.08399}, {600, 0.09863}, {650, 0.1004}},
+		cheapPrice = {{50, 21.13}, {100, 25.22}, {150, 23.68}, {200, 21.94}, {250, 20.37}, {300, 19.97}, {350, 23.68}, {400, 31.33}, {450, 43.69},
+			{500, 60.7}, {550, 78.94}, {600, 96.73}, {650, 115.4}},
 		goal = {{20, 1.0}, {35, 1.7}, {60, 1.8}, {100, 2.7}, {175, 3.8}, {250, 5.0}},
 		-- damage to players by pool level (O297): the shared `damage` curve below at twice the level, so a base monster
 		-- hits as hard as before O285 (baseLevelMult 2 -> 1 had raised it up to 41% at pool level 450)
@@ -63,13 +62,17 @@ return {
 		-- drops kept (Rare+ gear, rare drops), never below `loot`. O285 (pool scale): the points of `coins`, `junkKeep` and
 		-- `cheapPrice` below were fitted again with tools/loot_model.lua for the gold per hour and items per hour of
 		-- `lootLevel` (100 / 300 / 500 / 650 are held within 5% / 7%; the bands between are what the curves give);
-		-- `cheapPrice` and `junkKeep` hold the items, `coins` the gold. The `loot` points at 250 and 300 are capped at
-		-- 0.19 (x scale.loot 1.2 = the `notable` share there), a `loot` above `notable` would raise the Rare+ gear.
+		-- `cheapPrice` and `junkKeep` hold the items, `coins` the gold. The `loot` points up to 325 stay under 0.19
+		-- (x scale.loot 1.2 = the `notable` share there), a `loot` above `notable` would raise the Rare+ gear.
+		-- O298 (owner: smooth): `loot`, `coins`, `cheapPrice` and `junkKeep` were re-fitted from level 150 on as smooth
+		-- curves, one point per 50 levels (the O285 points zigzagged: loot 0.19 / 0.068 / 0.032 / 0.078 at 300-450, cheapPrice
+		-- 535 / 62 / 11 at 200-300). Same bands: gold within 4% and items within 6% of the targets below.
 		-- O141 (2026-10-23): the first fit of the points 400-600 was to the smooth gold curve of `lootLevel.goldPerHour`
 		-- (the gold per hour at 400-600 had been under the level 300 band's: 469k at 300, 325-537k at 400-600, 1.8M at 650)
-		coins = {{35, 1}, {50, 0.275}, {100, 0.7459}, {150, 0.1451}, {200, 0.1281}, {250, 0.07365}, {300, 0.2196}, {500, 0.1144},
-			{650, 0.1059}},
-		junkKeep = {{50, 2}, {100, 1.049}, {300, 2}, {350, 2}, {400, 2}, {500, 2.704}, {550, 0.5626}, {650, 1.093}},
+		coins = {{35, 1}, {50, 0.275}, {100, 0.7459}, {150, 0.4764}, {200, 0.3336}, {250, 0.2688}, {300, 0.2697}, {350, 0.1832},
+			{400, 0.1174}, {450, 0.1221}, {500, 0.1195}, {550, 0.1064}, {600, 0.1129}, {650, 0.1144}},
+		junkKeep = {{50, 2}, {100, 1.049}, {150, 0.834}, {200, 0.7964}, {250, 0.8246}, {300, 0.8859}, {350, 0.9684}, {400, 1.042}, {450, 1.093},
+			{500, 1.16}, {550, 1.208}, {600, 1.243}, {650, 1.267}},
 		-- O285: `notable` is the rule from before the pool scale (hunting level = 2 x pool level then), as a curve of the
 		-- pool level: below hunting 650 (pool 325) a notable drop kept the old `loot` share (the old loot curve x
 		-- scale.loot 1.2 at 2 x the pool level: 1 to pool 13, 0.71 at 17, 0.44 at 50, 0.32 at 88, 0.24 at 125-225, 0.23 at

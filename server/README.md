@@ -18201,6 +18201,23 @@ ambush and goblin chances, kill goals, multikill, cleave); the spawn side (fill,
   `base.damage` is that curve at twice the level, so a base monster of pool level P hits as before O285 (`tests/pace_test.lua`
   pins P = 10 to 657); level-scaled and generated monsters keep the shared curve. A base hunt at hunting level L now has
   pool L monsters, whose stock hits are harder than the pool L/2 ones of before: that is the monsters' own strength.
+- **O298: loot curves smoothed (2026-10-28).** The O285 re-fit left `base.loot`, `base.coins`, `base.cheapPrice` and
+  `base.junkKeep` zigzagging (loot 0.19 / 0.068 / 0.032 / 0.078 at 300 / 350 / 400 / 450, coins one point at 550, cheapPrice
+  535 at 200 then 62 at 250 and 11 at 300). They are now smooth, one point per 50 levels from 150 on: loot {150: 0.116 ->
+  0.087, 200: 0.159 -> 0.110, 250: 0.19 -> 0.148, 300: 0.19 -> 0.151, 350: 0.068 -> 0.060, 400: 0.032 -> 0.052, 450: 0.078 ->
+  0.068, 500: 0.089 -> 0.083, 550: 0.036 -> 0.084, 600: 0.091 -> 0.099, 650: 0.248 -> 0.100}; cheapPrice {200: 535 -> 22,
+  250: 62 -> 20, 300: 11 -> 20, 400: 241 -> 31, 500: 603 -> 61, 600: 150 -> 97, 650: 228 -> 115}; coins {150: 0.145 -> 0.476,
+  200: 0.128 -> 0.334, 250: 0.074 -> 0.269, 300: 0.220 -> 0.270, 350: 0.18, 400: 0.117, 500: 0.114 -> 0.120, 650: 0.106 ->
+  0.114} (a smaller loot x a larger coins share: the same value of coins and junk); junkKeep 0.83-1.27, rising from 200 on.
+  The band models still hold (`tools/loot_model.lua --check`, no tolerance changed): gold an hour at 100 / 300 / 500 / 650
+  138.0k / 469.0k / 859.8k / 1.340M -> 137.8k / 456.5k / 836.6k / 1.293M (and 350 / 400 / 450 / 550 / 600 966k / 1.216M / 1.014M /
+  943k / 1.317M -> 937k / 1.257M / 1.045M / 920k / 1.367M, the targets are 965k / 1.215M / 1.015M / 945k / 1.315M); items an
+  hour 541 / 688 / 377 / 546 -> 555 / 700 / 354 / 508; Rare+ gear an hour 3.8 / 9.6 / 25.7 / 5.5 as before. Outside the
+  checked bands (unpinned) the gold an hour at 125-275 moves by at most 10%, the items an hour at 175 / 200 / 225 fall from
+  610 / 409 / 453 to 388 / 190 / 225: the 535 `cheapPrice` spike at 200 was what held them up (the 2026-10-20 rule had 420 /
+  294 / 304 there), and the stock loot of the pool levels 200-230 has little cheap junk. The cliff of `loot` from 300 to 350
+  stays (0.151 -> 0.060): from 350 the Rare+ gear and rare drops stay whole and are worth 0.4-0.7M gold an hour on their own,
+  so the thinned share must fall there to keep the gold targets.
 - **Which monsters**: natural map spawns (`onSpawn` with `artificial = false`), generated areas and dungeons (their
   boss never), base dungeon monsters (`dungeons.lua` marks them) and ambush copies of a paced monster
   (`monster_tiers.lua`). Never: bosses (isboss, rewardboss, the tier list), summons, and every script-made monster of the
@@ -18560,8 +18577,8 @@ x `scale.loot` 1.2 at 2 x the pool level, and 1 from hunting level 700 = pool le
 Rare+ gear per hour of a band is the old rule's on the same monsters: `lootLevel.rarePerHour` 3.9 / 9.65 / 25.7 / 5.5 at
 100 / 300 / 500 / 650, held within 5% by `--check` (every band of the check, also 350 / 400 / 450 / 550 / 600, is held to
 the old rule's figure) and pinned in `tests/loot_by_level_test.lua` (24.8 and 5.5 are what the old model gave for the old
-bands 1000 and 1300; a thinned `notable` curve fails the test). `loot` (plain gear, orbs, gems) is capped at 0.19 at 250
-and 300 so that it stays under `notable` there (a `loot` above the notable share would raise the Rare+ gear), `coins`,
+bands 1000 and 1300; a thinned `notable` curve fails the test). `loot` (plain gear, orbs, gems) stays under 0.19 up to
+level 325 so that it is under `notable` there (a `loot` above the notable share would raise the Rare+ gear; O298 smoothed the curve), `coins`,
 `junkKeep` and `cheapPrice` were fitted again band by band (`tools/loot_model.lua`, coins for the gold per hour, `cheapPrice`
 and `junkKeep` for the items per hour; `--derive` solves the constant per band). `lootLevel.itemsPerHour` holds the bands to
 539 / 692 / 380 / 540 an hour at 100 / 300 / 500 / 650 (the figures from before, `--check` and
@@ -18580,13 +18597,13 @@ not in these bands.
 
 | Monster level (base) | 100 | 300 | 500 | 650 |
 |---|---|---|---|---|
-| Plain gear, orbs (`loot`) | 0.110 | 0.228 | 0.107 | 0.298 |
+| Plain gear, orbs (`loot`) | 0.110 | 0.181 | 0.099 | 0.120 |
 | Notable drops kept | 0.29 | 0.23 | 1.00 | 1.00 |
-| `coins` curve | 0.746 | 0.220 | 0.114 | 0.106 |
-| `junkKeep` curve | 1.05 | 2.00 | 2.70 | 1.09 |
-| Junk worth at most this stays whole (`cheapPrice`) | 25 | 11 | 603 | 228 |
-| Items per hour | 542 | 688 | 378 | 547 |
-| Gold per hour | 137,999 | 468,999 | 859,800 | 1,339,802 |
+| `coins` curve | 0.746 | 0.270 | 0.120 | 0.114 |
+| `junkKeep` curve | 1.05 | 0.89 | 1.16 | 1.27 |
+| Junk worth at most this stays whole (`cheapPrice`) | 25 | 20 | 61 | 115 |
+| Items per hour | 556 | 700 | 355 | 509 |
+| Gold per hour | 137,765 | 456,516 | 836,645 | 1,293,173 |
 | Rare+ gear pieces per hour | 3.8 | 9.6 | 25.7 | 5.5 |
 
 
