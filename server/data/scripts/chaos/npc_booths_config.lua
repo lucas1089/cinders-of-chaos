@@ -30,13 +30,13 @@ return {
 		{x = 31666, y = 32230, z = 7, npc = "Tavish Coldhand"},
 		{x = 31672, y = 32230, z = 7, npc = "Halvard Deedkeeper"},
 		{x = 31622, y = 32236, z = 7, npc = "Warden Ysolde"},
-		{x = 31628, y = 32236, z = 7, npc = "Archivist Maelis"},
+		{x = 31628, y = 32236, z = 7, npc = "Archivist Odrenna"},
 		{x = 31636, y = 32236, z = 7, npc = "Keeper of Trials"},
 		{x = 31642, y = 32236, z = 7, npc = "Ascendant Oracle"},
 		{x = 31653, y = 32236, z = 7, npc = "Pell Ashmere"},
 		{x = 31660, y = 32236, z = 7, npc = "Vessa Hollowmark"},
 		{x = 31666, y = 32236, z = 7, npc = "Veyra the Apothecary"},
-		{x = 31672, y = 32236, z = 7, npc = "Archivist Odrenna"}
+		{x = 31672, y = 32236, z = 7, npc = "Archivist Maelis"}
 	},
 
 	-- The Halls of Services (2026-10-15 to 2026-10-22) are gone: no portal leads there any more. Their tiles may still

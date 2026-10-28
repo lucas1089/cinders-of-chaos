@@ -8340,7 +8340,7 @@ tiles away. Mirewake had the Chaos anchors; those are configuration, so they mov
 - `tests/newplayer_test.lua` checks `homeTownFor` and that every temple anchor lists the main city first.
 
 **Slots for NPCs.** A Chaos NPC that serves every character gets a stall in the hub: name it in a free stall of
-`npc_booths_config.lua` (`npc = false`: 31672, 32236, 7) and place it with `ChaosNpcPlace.place`
+`npc_booths_config.lua` (`npc = false`) and place it with `ChaosNpcPlace.place`
 (`npc_place.lua`) for town 2; the stall is used instead of the temple.
 
 ## Hub NPC booths (`npc_booths.lua`, `npc_booths_core.lua`, `npc_booths_config.lua`, `tools/patch_hub_npcs.py`)
@@ -8356,13 +8356,13 @@ the stalls are 6 apart, so in front of a stall its own NPC is the nearest (`chao
 | Stall (z 7) | North row, y 32230 | | Stall | South row, y 32236 |
 |---|---|---|---|---|
 | 31622 | Iselde Varrow | | 31622 | Warden Ysolde |
-| 31628 | Osric the Chandler | | 31628 | Archivist Maelis |
+| 31628 | Osric the Chandler | | 31628 | Archivist Odrenna |
 | 31636 | Material Broker | | 31636 | Keeper of Trials |
 | 31642 | Loot Buyer | | 31642 | Ascendant Oracle |
 | 31654 | Cassian Auric | | 31653 | Pell Ashmere |
 | 31660 | Mordecai Ashwager | | 31660 | Vessa Hollowmark |
 | 31666 | Tavish Coldhand | | 31666 | Veyra the Apothecary |
-| 31672 | Halvard Deedkeeper | | 31672 | Archivist Odrenna |
+| 31672 | Halvard Deedkeeper | | 31672 | Archivist Maelis |
 
 Trade and the bank on the north row, progression and the menu services on the south row (the Apothecary, 2026-10-23, in the south row's first free stall); the busiest stand next to the
 gap in the middle of the walk (x 31646-31650), where players come in from the south. Every tile is the base NPC's own
@@ -8390,7 +8390,7 @@ sparkle, neither blocks).
   (`poi_config.lua` `hubRadius`) and marks every NPC there that the stall names ("Map markers"; `P.hubMarks`).
 - `tests/npc_booths_test.lua`: the config (16 stalls, two rows, each NPC once and an NPC of `data/npc`, nobody at the
   temple), the spots by town and temple, the retired halls, the login relocation (and an error caught), and
-  `ChaosNpcPlace.place` into the stall and next to another town's temple. Since 2026-10-23 one of the two empty stalls is the Apothecary's (15 NPCs, one stall free; "The Apothecary"); on 2026-10-28 Archivist Odrenna took the last one (16 NPCs, every stall filled).
+  `ChaosNpcPlace.place` into the stall and next to another town's temple. Since 2026-10-23 one of the two empty stalls is the Apothecary's (15 NPCs, one stall free; "The Apothecary"); on 2026-10-28 Archivist Odrenna took the last one (16 NPCs, every stall filled) and moved the same day to 31628, next to the Keeper of Trials, swapping with Archivist Maelis (now 31672).
 
 Not seen in a client or on a live server: our NPCs in the stalls, the labels over them.
 
@@ -17138,11 +17138,11 @@ quest icons"); no server file changed.
   at startup in the hub stall (`npc_booths_config.lua`). Test: `tools/install_class_ascension_test.py`.
 - **Quests.** Quest n needs quest n - 1 done on the same line and the level (500 / 800 / 1200, checked at every step, so a
   level lowered by death stops it). Steps: 0 none, 1 hunt, 2 trial open, 3 done. Hunt 400 / 700 / 1000 kills and 20 / 30 / 40
-  fragments; trial s1 / s2 / s3. Talk to **Archivist Odrenna** (her stall is the last free one of the hub's south row,
+  fragments; trial s1 / s2 / s3. Talk to **Archivist Odrenna** (her stall is next to the Keeper of Trials in the hub's south row, x 31628 y 32236,
   `npc_booths_config.lua`) to start; ask her again for the count and the trial. All numbers: `spellquest_config.lua`.
 - **NPC in the game (phase 6).** Checked statically end to end: `spellquest.lua` places her at startup (1.1 s) with
   `ChaosNpcPlace.place(name, temple, offsets, opts)`; for the main city's temple that is her stall in the hub
-  (`ChaosNpcBoothsCore.spotForTemple`, `npc_booths_config.lua`, the last one of the south row, x 31672 y 32236), where
+  (`ChaosNpcBoothsCore.spotForTemple`, `npc_booths_config.lua`, the second stall of the south row, x 31628 y 32236, next to the Keeper of Trials), where
   `patch_hub_npcs.py` has cleared the base NPC (it clears every tile of `booths`); `data/npc/Archivist Odrenna.xml` and
   `scripts/archivist_odrenna.lua` follow the Keeper of Trials (same script header, the nearest-NPC focus rule, greeting and farewell in the
   player's language). She was missing from the POI list of the map (`poi_config.lua` `npcs`, where the Keeper and Maelis are): added,

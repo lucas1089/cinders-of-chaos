@@ -163,8 +163,10 @@ dofile("data/scripts/chaos/npc_booths.lua")
 local X = ChaosNpcBooths
 
 local s = X.spot("Archivist Maelis", 2)
-check(s and s.x == 31628 and s.y == 32236, "the Archivist's stall (a Position)")
+check(s and s.x == 31672 and s.y == 32236, "the Archivist's stall (a Position)")
 eq(X.spot("Archivist Maelis", 1), nil, "none in Mirewake")
+s = X.spot("Archivist Odrenna", 2)
+check(s and s.x == 31628 and s.y == 32236, "Odrenna's stall, next to the Keeper of Trials")
 eq(X.spotForTemple("Keeper of Trials", temples[2]).x, 31636, "the Keeper by the temple position")
 
 -- relocation at login
@@ -202,7 +204,7 @@ for dx = -4, 4 do
 end
 dofile("data/scripts/chaos/npc_place.lua")
 local npc = ChaosNpcPlace.place("Archivist Maelis", temples[2], {{1, 1}})
-check(npc and npc.pos.x == 31628 and npc.pos.y == 32236, "ChaosNpcPlace.place puts the NPC in its stall")
+check(npc and npc.pos.x == 31672 and npc.pos.y == 32236, "ChaosNpcPlace.place puts the NPC in its stall")
 eq(ChaosNpcPlace.place("Archivist Maelis", temples[2], {{1, 1}}), npc, "found again in its stall (no second NPC)")
 local other = ChaosNpcPlace.place("Loot Buyer", temples[1], {{2, 2}})
 check(other and other.pos.x == 32959 and other.pos.y == 32078, "another town: next to its temple")
