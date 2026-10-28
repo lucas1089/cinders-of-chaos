@@ -3,8 +3,8 @@
 # config.lua does not name it), readable from Lua as configManager.getNumber(configKeys.<KEY>):
 #  1. minPlayerAttackInterval = 1000: no player swings faster than once per 1000 ms, whatever the vocation, the weapon,
 #     its Chaos attack speed modifier and topaz gems (data/lib/chaos_item_mods.lua M.syncAttackSpeed) and dexterity.
-#  2. maxPlayerAttackSpeedBonus = 25: every attack speed bonus together (the weapon's attribute against its type's own
-#     interval, or 2000 without one; the stat window's dexterity) shortens the vocation-scaled interval by at most 25%.
+#  2. maxPlayerAttackSpeedBonus = 40: every attack speed bonus together (the weapon's attribute against its type's own
+#     interval, or 2000 without one; the stat window's dexterity) shortens the vocation-scaled interval by at most 40% (25% until 2026-10-28, owner: 40).
 #  3. minPlayerLeechInterval = 900: life leech heals at most once per 900 ms, mana leech too (each its own timer). A roll
 #     inside the window is skipped. Covers every extra hit at once: the Ninja off-hand, Bloodrage and keystone cleaves,
 #     ricochets and echoes, Flurry, pets / companions / minions hitting as their owner, support repeats.
@@ -33,7 +33,7 @@
 +	// shorten the weapon's interval by at most maxPlayerAttackSpeedBonus %, and life / mana leech heal at most once per
 +	// minPlayerLeechInterval ms each (0 turns a rule off)
 +	integer[MIN_PLAYER_ATTACK_INTERVAL] = getGlobalNumber(L, "minPlayerAttackInterval", 1000);
-+	integer[MAX_PLAYER_ATTACK_SPEED_BONUS] = getGlobalNumber(L, "maxPlayerAttackSpeedBonus", 25);
++	integer[MAX_PLAYER_ATTACK_SPEED_BONUS] = getGlobalNumber(L, "maxPlayerAttackSpeedBonus", 40);
 +	integer[MIN_PLAYER_LEECH_INTERVAL] = getGlobalNumber(L, "minPlayerLeechInterval", 900);
  
  	expStages = loadXMLStages();

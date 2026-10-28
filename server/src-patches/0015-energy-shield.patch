@@ -42,7 +42,7 @@
 +++ b/src/configmanager.cpp
 @@ -299,6 +299,10 @@ bool ConfigManager::load()
  	integer[MIN_PLAYER_ATTACK_INTERVAL] = getGlobalNumber(L, "minPlayerAttackInterval", 1000);
- 	integer[MAX_PLAYER_ATTACK_SPEED_BONUS] = getGlobalNumber(L, "maxPlayerAttackSpeedBonus", 25);
+ 	integer[MAX_PLAYER_ATTACK_SPEED_BONUS] = getGlobalNumber(L, "maxPlayerAttackSpeedBonus", 40);
  	integer[MIN_PLAYER_LEECH_INTERVAL] = getGlobalNumber(L, "minPlayerLeechInterval", 900);
 +	// Chaos (patch 0015): a player's energy shield starts recharging energyShieldRechargeDelay ms after the last hit taken;
 +	// its value goes to the client on extended opcode energyShieldOpcode (0: not sent)

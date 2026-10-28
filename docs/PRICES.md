@@ -190,6 +190,7 @@ hours, 30 to 80 hunting hours. Coins per hunting hour saved at skill 100 and 130
 | Weapon (charges) | Coins | Dummy hours | Coins per hunting hour |
 |---|---|---|---|
 | Melee, bow (500 / 1800 / 14400) | 25 / 75 / 450 | 0.10 / 0.38 / 3.00 | 9-18 / 7.5-15 / 5.6-11 |
+| Fist (Monk line only; same prices, 2026-10-28) | 25 / 75 / 450 | 0.10 / 0.38 / 3.00 | 12-18 / 10-15 / 7.5-11 |
 | Rod, wand (500 / 1800 / 14400) | 25 / 75 / 450 | 0.10 / 0.38 / 3.00 | 16-24 / 13-20 / 10-15 |
 | Shield | 25 / 75 / 450 | same | not valued: blocked hits an hour have no model |
 
@@ -267,6 +268,7 @@ refuses a file of another shape.
 | Referral main reward (`referral_config.lua`, key `l250`) | level 250 | 150 | With pack combat level 150 takes 1.5-3 hours: too easy to farm with fresh accounts. Level 250 (about 3-6 hours) is a friend who stayed. |
 | `brlPerUsd` | 5 | same | Gives round Pix prices with the .98 USD prices. |
 | Monk fist weapons, gold (`data/items/fist_items.csv`, `fist_claws.csv`; `gen_item_prices.py` reads both) | dealers sell 150 / 400 / 2,800 / 7,000 / 12,000 gp (levels 1, 8, 35, 60, 100) and buy back at a fifth to a quarter; the rest only drops and sells for 4,500 up to 33,834 gp | 400 / 7,000 for two tiers | Owner 2026-10-23, the Monk had no weapons from level 100 on. NPC buy is at least twice the sell (no buy-below-sell loop), the gear cap 33,834 holds, a unique's base is in no shop. |
+| Weapons above level 800, gold (`data/items/weapons800.csv`; `gen_item_prices.py` reads it) | no NPC sells or buys them (only drops); the Auto Seller pays the equipment formula at their level, which is the gear cap 33,834 gp for all 34 (levels 820-2150, as the set weapons of those levels) | none | Owner 2026-10-28 ("pode criar mais armas pros levels acima de 800"). A copy's rarity and item level scale the price as for any gear drop. |
 | Thief dagger uniques (2026-10-23, `chaos_items.xml`) | no NPC price | n/a | Uniques are never sold to an NPC (`reasons.unique`); the 5 new daggers are 5 more of the 153. The shop dagger (2379, 5 gold to buy, 2 to sell) is unchanged, so no buy-below-sell loop exists. |
 | Gear coverage uniques and class loot (2026-10-23) | not sold, not bought | new | 17 uniques (server/README.md "Gear coverage") are drops only: no NPC floor, salvage or market. The class loot rows drop stock bows, crossbows, wands, rods, quivers and spellbooks, which keep their existing prices; `gen_item_prices.py` found 0 failures and no buy below sell loop. No shop price changed. |
 | Weapon coverage uniques (2026-10-23) | not sold, not bought | new | Seven uniques (server/README.md "Weapon coverage") are drops only, like every unique: no NPC floor, salvage or market. `gen_item_prices.py` lists them as `unique` and found no buy below sell loop (0 failures). No shop price changed. |

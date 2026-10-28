@@ -17,6 +17,10 @@
 --   * experience: EventCallback onGainExperience
 --   * loot / rarity loot: the item-find storage that loot.lua reads
 --   * speed: Creature:changeSpeed by the difference to what was applied before
+--   * attackSpeed: a real attack speed percent (engine patch 0078, Player:setAttackSpeedBonus through
+--     ChaosItemMods.setPlayerAttackSpeed), at most cfg.maxAttackSpeed from the tree, summed with the worn pieces' Attack
+--     Speed under the player cap; the engine's rules of patch 0011 hold on top (all attack speed bonuses together shorten
+--     the interval by at most 40%, one attack per second at most). Dexterity stays the damage equal above.
 -- Paragon (paragon.lua) adds its percentages to the same bonus table (keys paragonX) and they are summed here with the
 -- tree's, never applied on their own: damage (a multiplier after the tree's), crit damage (+ criticalHitAmount, one
 -- condition), max health / mana (+ vitality / spirit, one condition each, sub ids 7220 / 7221), damage reduction
@@ -38,6 +42,7 @@ local cfg = {
 	rarityLootPerPoint = 1.0, -- node value 10 = +10% (added to item find)
 	speedPerPoint = 0.1,      -- node value 600 = +60 speed, before the cap
 	maxSpeed = 80,
+	maxAttackSpeed = 8,       -- percent (12 before 2026-10-28: the 40% total cap is reached only min-maxed), attackSpeed nodes of the tree (item pieces add under ChaosItemMods playerSpeedCap)
 	maxAbsorb = 75,           -- percent, passive absorbs only (equipment adds on top)
 	maxDamagePercent = 150,
 	-- the stat window formulas are percentages (vitality = % health, dexterity = % damage taken less).
@@ -197,6 +202,11 @@ end
 
 function ChaosPassiveSpeed(bonuses)
 	return clamp(math.floor((bonuses.speed or 0) * cfg.speedPerPoint), 0, cfg.maxSpeed)
+end
+
+-- the tree's attack speed percent (whole points, held at maxAttackSpeed)
+function ChaosPassiveAttackSpeed(bonuses)
+	return clamp(math.floor((bonuses.attackSpeed or 0) + 1e-6), 0, cfg.maxAttackSpeed)
 end
 
 -- Paragon speed: percent of the base speed (vocation base + 2 per level), added to the tree's flat speed
@@ -371,6 +381,9 @@ local function applyAll(player, bonuses)
 		player:setStorageValue(find, ChaosPassiveItemFind(bonuses))
 	end
 	applyCharStats(player, bonuses)
+	if ChaosItemMods and ChaosItemMods.setPlayerAttackSpeed then
+		ChaosItemMods.setPlayerAttackSpeed(player, "tree", ChaosPassiveAttackSpeed(bonuses))
+	end
 	local speed = totalSpeed(player, bonuses)
 	if speed ~= state.speed then
 		player:changeSpeed(speed - state.speed)

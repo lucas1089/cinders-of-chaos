@@ -226,6 +226,7 @@ end
 
 -- ======================================================================== Proof of Strength
 local poolLevels
+-- the hunting level of a monster (O284)
 local function monsterLevel(monster)
 	if not poolLevels then
 		poolLevels = {}
@@ -241,14 +242,11 @@ local function monsterLevel(monster)
 		end
 	end
 	local lvl = poolLevels[typeNameOf(monster):lower()]
-	if lvl then
-		return lvl
+	if not lvl then
+		local mt = monster:getType()
+		lvl = mt and Q.estimateLevel(mt:experience(), mt:maxHealth()) or 0
 	end
-	local mt = monster:getType()
-	if not mt then
-		return 0
-	end
-	return Q.estimateLevel(mt:experience(), mt:maxHealth())
+	return Chaos.monsterHuntingLevel(monster, Chaos.huntingLevel(lvl))
 end
 
 function S.creditProof(player, tier, level)
@@ -907,7 +905,7 @@ function status.onSay(player, words, param)
 	local lines = {
 		[0] = Chaos.t(player, "not begun. Speak with the %s in the teleport room's market.", npc),
 		[1] = Chaos.t(player, "Proof of Strength, %d / %d (rare and legendary monsters of level %d+).",
-			math.max(0, getS(player, K().proof)), C().proof.needed, Chaos.huntingLevel(Q.minMonsterLevel(player:getLevel()))),
+			math.max(0, getS(player, K().proof)), C().proof.needed, Q.minHuntingLevel(player:getLevel())),
 		[2] = Chaos.t(player, "the Trial. Ask the %s for the trial.", npc),
 		[3] = Chaos.t(player, "the Choice. Tell the %s your choice.", npc),
 		[4] = Chaos.t(player, "complete.")

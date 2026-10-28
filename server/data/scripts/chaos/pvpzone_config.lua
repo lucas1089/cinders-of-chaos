@@ -89,7 +89,7 @@ return {
 		},
 		-- decoration (never blocks): percent chance per natural tile
 		decor = {
-			cracks = {ids = {5840, 5841, 5842, 5843}, chance = 30}, -- lava cracks on crack ground
+			cracks = {ids = {22509, 25834}, chance = 30}, -- thin floor cracks on crack ground (5840-5843 are lava edge strips)
 			rock = {ids = {3610, 3611, 3613, 1320, 1325}, chance = 5},
 			bones = {ids = {3124, 3125, 3126, 6524, 7567}, chance = 1.5},
 			wall = {ids = {1308, 1311, 1313, 1315, 1320, 1325}, chance = 14}, -- rubble along the outer wall

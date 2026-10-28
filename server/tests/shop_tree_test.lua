@@ -110,7 +110,7 @@ eq(#problems, 0, "shop_config.lua validates")
 local PARENT = {
 	["Premium & Services"] = {"Premium Time", "Chaos Pact", "Storage & Slots", "Season Pass", "Services", "XP Boosts",
 		"Blessings", "World Buffs"},
-	["Consumables"] = {"Potions", "Runes", "Training", "Convenience"},
+	["Consumables"] = {"Potions", "Runes", "Training", "Everfull Potions", "Convenience"},
 	["Cosmetics"] = {"Outfits", "Outfit Addons", "Mounts", "Wings", "Auras", "Outfit Shaders", "Footprints", "Outlines",
 		"Kill Effects", "Spell Effects", "Loot Labels", "Chat Colours", "Name Plates", "Pets", "Appearances",
 		"Portal Styles", "Hideout Decorations"}

@@ -116,7 +116,7 @@
       "id": "scorched_pools",
       "floor": 1,
       "size": "small",
-      "role": "treasure"
+      "role": "boss"
     }
   ],
   "paths": [
@@ -235,7 +235,7 @@
   "spawns": [
     {
       "zone": "ember_terrace",
-      "monster": "Mercenary",
+      "monster": "Ashbound Thrall",
       "count": 4,
       "respawn": 75,
       "pack": 3
@@ -270,7 +270,7 @@
     },
     {
       "zone": "ashen_chimney",
-      "monster": "Mercenary",
+      "monster": "Slagback Hound",
       "count": 4,
       "respawn": 75,
       "pack": 3
@@ -305,7 +305,7 @@
     },
     {
       "zone": "molten_vents",
-      "monster": "Mercenary",
+      "monster": "Ashbound Thrall",
       "count": 6,
       "respawn": 75,
       "pack": 3
@@ -340,7 +340,7 @@
     },
     {
       "zone": "smoking_pit",
-      "monster": "Mercenary",
+      "monster": "Slagback Hound",
       "count": 4,
       "respawn": 75,
       "pack": 3
@@ -375,7 +375,7 @@
     },
     {
       "zone": "slag_furnace",
-      "monster": "Mercenary",
+      "monster": "Ashbound Thrall",
       "count": 4,
       "respawn": 75,
       "pack": 3
@@ -403,7 +403,7 @@
     },
     {
       "zone": "sulphur_channel",
-      "monster": "Mercenary",
+      "monster": "Slagback Hound",
       "count": 3,
       "respawn": 75,
       "pack": 3
@@ -424,14 +424,14 @@
     },
     {
       "zone": "glowing_shelf",
-      "monster": "Mercenary",
+      "monster": "Ashbound Thrall",
       "count": 4,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "cracked_basin",
-      "monster": "Mercenary",
+      "monster": "Slagback Hound",
       "count": 6,
       "respawn": 75,
       "pack": 3
@@ -459,7 +459,7 @@
     },
     {
       "zone": "magma_forge",
-      "monster": "Mercenary",
+      "monster": "Ashbound Thrall",
       "count": 7,
       "respawn": 75,
       "pack": 3
@@ -482,5 +482,11 @@
     }
   ],
   "chest_action": 47965,
-  "notes": "Content plan (hall fill, 2026-10-22): a lava hunt for levels 560-675 on floor 6 of the teleport hall (server/README.md \"Hall order\"). 12 hunting zones in loops; monsters Mercenary, Orclops Ravager, Shaper Matriarch, Ashmaw Warlord, Slagborer Queen. Display monster: Mercenary."
+  "boss": {
+    "zone": "scorched_pools",
+    "monster": "Vharzul the Verdant Eye",
+    "respawn": 14400,
+    "title": "Vharzul the Verdant Eye"
+  },
+  "notes": "Content plan (hall fill, 2026-10-22): a lava hunt for levels 560-675 on floor 6 of the teleport hall (server/README.md \"Hall order\"). 12 hunting zones in loops; monsters Ashbound Thrall, Slagback Hound, Orclops Ravager, Shaper Matriarch, Ashmaw Warlord, Slagborer Queen (the thralls and hounds took the Mercenary spawns, owner request 2026-10-28). Display monster: Slagback Hound. Boss (owner request 2026-10-28): Vharzul the Verdant Eye holds the Scorched Pools, the one-way dead end off the Ember Terrace (was the treasure room; its chest stays, behind the boss), respawn 4 hours."
 }

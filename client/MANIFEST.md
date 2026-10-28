@@ -56,7 +56,7 @@ Protocol target is 10.98 on the base server (TFS 1.4.2). The sources are mostly 
 | game_pouches | extended opcode 226 (JSON: `open` / `sync` / `set {rules}`, Auto Seller `as_open` / `as_sync` / `sell` / `asrar {tier, on}` / `asevery {minutes}` (sell the Loot Bag every 5/10/15/30/60 minutes, off by default) / `aslist {op, item}` / `aspause {on}` out; `settings {rules, ids, titles, owned, rarities, open}` and `autoseller {unlocked, needs, paused, tiers, list, slots, cooldown, cooldownMax, last, notice, open}` back) | none (uses `game_interface.addMenuHook`) | The Loot Bag rules window (Chaos skin) of the store pouches (server `data/scripts/chaos/pouches.lua`): items on the autoloot list, coins, uniques, gear from a rarity (combo), supplies, gems, everything else; saved on the character at once (the server's defaults: everything, gear of any rarity); an "Auto Seller" button that opens the Auto Seller window (`getAutoSeller()` / `syncAutoSeller()` / `sellAll()` are for the helper's Auto sell, see "Helper"); status line and Open Store when the character has no Loot Bag. Opened by right-clicking the Loot Bag > "Pouch settings" (shown only for the Loot Bag's look with the item lock flag the server sets on every pouch) or by the Loot Filter's "Loot Bag" button (`game_lootfilter/lootfilter.otui`). The pouches are ordinary containers (use = open); their tooltip lines "Store item: cannot be traded" and what it collects come from the server (`tip.store`, `tip.collects` in `game_itemtooltip/tooltiplogic.lua`). Logic `pouchesview.lua` (tested by `pouchesview_test.lua`); tested in game (server/README.md "Store pouches"). **Auto Seller window** (`autoseller.otui`, logic `autosellerview.lua` tested by `autosellerview_test.lua`; owner 2026-10-13: "Tire os comandos do autosell e coloque no topmenu"): top menu Economy > Auto Seller (`client_chaos_topbar`, `toggleAutoSeller`, icon `topbutton_autoseller` from `tools/gen_theme_art.py icons=autoseller`: a loot sack, an arrow, a coin stack); Sell all (the Loot Bag) with the server's 30 s cooldown counted down on the button, the last sale's total, five rarity checkboxes in the loot filter's colours (Common, Uncommon, Rare, Epic, Legendary+; default Common and Uncommon), the corpse selling on / off, the list (item name, Add / Remove / Clear). Greyed out with the reason as tooltip without the Auto Seller or an active Pact. The client only sends choices; the server checks them (server/README.md "Store services", Auto Seller window). Run in a client (live test 2026-10-14): Sell all, the 30 s countdown, the rarity checkboxes saved on the server; fixed there: the item row's buttons were anchored to the edit box that was anchored to them (an anchor cycle, "layout update aborted" in the log; `tools/ci/check_layouts.py` now reports anchor cycles), and the rarity checkboxes are as wide as their text (`AutoSellerView.checkWidth`; a fixed 72 px clipped the names; window 460 px wide). **Loot Bag window while auto loot runs** (owner 2026-10-23: the client stuttered when the open Loot Bag took many items at once): the window is a stock container window, not this module. A kill burst now reaches it as one full container packet (server/README.md "Loot burst: one update"), and base patch `0122` keeps the slot widgets of an open window instead of rebuilding all 255 for each packet (`BASE.md` 69n; model test `tools/slot_reuse_test.py`). |
 | game_transmog | extended opcode 212 (JSON: `open` / `looks {kind}` / `apply {slot, look}` / `remove {slot}` out; `state {money, fee, slots, kinds, total, sets}`, `looks {kind, rows}`, `result {ok, text}` back, long ones joined by `registerExtendedJSONOpcode`) | base patch 0030 (`item:setAppearanceId`) | The Transmog window (Chaos skin): the six equipment slots with their current look, own look and preview side by side, the account wardrobe of the selected item's kind as a searchable grid, Apply (gold fee) and Remove look; Collection tab with progress bars per kind and the appearance sets (owned, or how to get them: store, achievement, season, exclusive). Character > Transmog, or right-click an equipped item > "Transmog". The look itself is drawn everywhere by base patch 0030 (item custom attribute 8); tooltips add "Appearance: <look>" (`game_itemtooltip/tooltiplogic.lua`, `tip.look`); `game_market` rows and the sell picker and `game_playerinspect` slots draw the look from server data. Logic `transmogview.lua` (tested by `transmogview_test.lua`); tested in game (server/README.md "Transmog") |
 | game_cosmetics | extended opcode 225 (JSON: `open` / `select {kind, id, line}` / `preview {id}` / `hello` out; `state {line, lineName, rows, collection}`, `style {accent}`, `colors {names, full}`, `looks {names, full}`, `tryfx {kind, art, pulse}`, `result {ok, text}` back, joined by `registerExtendedJSONOpcode`), server `cosmetics.lua`, `exclusives.lua` | none | The Cosmetics window (Character > Cosmetics, Chaos skin, 720 x 480): tabs Spell Effects (the skins of the character's class line first, other lines dimmed), Kill Effects, Loot Labels, Chat Colours, Footprints, Outlines, Collection; a Default row per tab, Use, Preview (effects only the player sees, sent by the server; footprints and outlines drawn here by `game_cosmeticfx`), Open the Store; a sample per colour (the player's own chat line, rarity labels on the accent) and per footprint (its prints); the outline and the Collection's looks on the character in the shared look preview (`game_lookpreview`, "Look preview"; window 930 x 480); a "Show other players' footprints / outlines" box on those two tabs. Since 2026-10-16 the list icons of spell skins and kill effects are a picture of the row's main effect (`images/fx/`, `tools/sprites/gen_cosmetic_fx_icons.py`; the sprites themselves when a picture is missing) and a footprint's print; the detail shows it at 64 px; the preview panel plays the row's effects (`play` of the state rows); every tab follows `game_unlocks` (locked rows greyed with their source, "Only mine"), and the server's `wardrobe` answer is handed to `game_unlocks` ("Cosmetics effect previews", "Owned and locked lists"). Collection: the exclusives of every visual kind (server `exclusives.lua`), owned first, kind, "Achievement: X" or "Boss: Y, rare drop", where it is chosen, the look on the own character (outfit, mount, wings, aura, shader). Once in the game it asks the server for the full style, colours and looks (`hello`: a send from the server's login event can arrive before the client is in the game, and a reconnect runs no login event). Colours the speaker's name in chat for player lines only (wraps the stock `game_console` `Message:updateLabel` after `game_chatlinks`; loads at priority 1003), hands the label accent to `game_groundlabels` and `looks` / `tryfx` to `game_cosmeticfx`. Logic `cosmeticslogic.lua` (tested by `cosmeticslogic_test.lua`); tested in game with two clients (server/README.md "Cosmetics", "Footprints and outlines", "Exclusives") |
-| game_shaderfx | none | base patch 0044 (`UIWidget:setUiShader` / `setUiShaderParams`, `u_Params` in the shader); without it every call is skipped and the images stay plain | UI widget shaders, all GLSL written for this client (`data/shaders/chaos_ui_*.frag`, compile-checked by `tools/check_shaders.py`). Liquid health and mana orbs (`chaos_ui_orb`: layered sine surface, own value noise for the swirl, round bubbles in a cell grid, a fake sphere normal for the shading, a foam line; the value change makes it slosh, eased back in about 2 s) at the bottom corners of the game window, option `liquidOrbs` (off by default); a light sweep across the rarity frame of Legendary-and-up and unique items in inventory and container slots (`chaos_ui_shine`, a slanted band every 3.5 s, each slot at its own phase; option `rarityFrameShine`); greyscale for items their player locked (custom attribute 3 = 1; `chaos_ui_grey` as the slot's item shader, and only our grey is taken back; a bound item such as the Everfull potions carries 2 and keeps its colours: with 1 the red and purple flasks showed as dark, empty-looking ones, live screenshot 2026-10-16) and `setGreyed(widget, on)` for any widget. Art from `tools/gen_orb_art.py` (`--check` in CI): per orb size a ring `images/orb_ring_<size>.png` and a mask `images/orb_mask_<liquid>.png` at twice the drawn size (`L.orbArt`, set by `applyOrbSize`). Owner screenshot 2026-10-21: the one 76 px ring and 64 px mask stretched to the 150 / 190 px orbs drew a blurred, stepped ring with square rivets, and the bubbles (the peaks of a 22 x 14 value noise) read as upright pixel blocks; now 2x art (round, soft-edged rivets), round bubbles in a square cell grid and the swirl's noise grid turned off the screen axes (before / after rendered with a numpy port of the shader, not seen in a client). Pure helpers `shaderfxlogic.lua` (fill, slosh, phase, shine rule, locked rule, `applyItemGrey`), tested by `shaderfx_test.lua`. Live test 2026-10-14: a container holding a locked item (the Loot Bag, the Everfull Ration) overflowed the Lua stack at every open: `setItemShader` calls the slot's onItemChange, `game_itemrarity` answers with `onSlotItem` and the slot was marked grey only after the call, so each re-entry greyed again; `L.applyItemGrey` marks it first (a re-entrant mock slot in the test). |
+| game_shaderfx | none | base patch 0044 (`UIWidget:setUiShader` / `setUiShaderParams`, `u_Params` in the shader); without it every call is skipped and the images stay plain | UI widget shaders, all GLSL written for this client (`data/shaders/chaos_ui_*.frag`, compile-checked by `tools/check_shaders.py`). Liquid health and mana orbs (`chaos_ui_orb`: layered sine surface, own value noise for the swirl, round bubbles in a cell grid, a fake sphere normal for the shading, a foam line; a glass globe since 2026-10-28, owner pick of a numpy preview: the liquid seen through a lens, its surface curving with the ball, light from the upper left, a fresnel rim light, a sharp window highlight with a glint and a crescent reflection at the bottom; the value change makes it slosh, eased back in about 2 s) at the bottom corners of the game window, option `liquidOrbs` (off by default); a light sweep across the rarity frame of Legendary-and-up and unique items in inventory and container slots (`chaos_ui_shine`, a slanted band every 3.5 s, each slot at its own phase; option `rarityFrameShine`); greyscale for items their player locked (custom attribute 3 = 1; `chaos_ui_grey` as the slot's item shader, and only our grey is taken back; a bound item such as the Everfull potions carries 2 and keeps its colours: with 1 the red and purple flasks showed as dark, empty-looking ones, live screenshot 2026-10-16) and `setGreyed(widget, on)` for any widget. Art from `tools/gen_orb_art.py` (`--check` in CI): per orb size a ring `images/orb_ring_<size>.png` and a mask `images/orb_mask_<liquid>.png` at twice the drawn size (`L.orbArt`, set by `applyOrbSize`). Owner screenshot 2026-10-21: the one 76 px ring and 64 px mask stretched to the 150 / 190 px orbs drew a blurred, stepped ring with square rivets, and the bubbles (the peaks of a 22 x 14 value noise) read as upright pixel blocks; now 2x art (round, soft-edged rivets), round bubbles in a square cell grid and the swirl's noise grid turned off the screen axes (before / after rendered with a numpy port of the shader, not seen in a client). Pure helpers `shaderfxlogic.lua` (fill, slosh, phase, shine rule, locked rule, `applyItemGrey`), tested by `shaderfx_test.lua`. Live test 2026-10-14: a container holding a locked item (the Loot Bag, the Everfull Ration) overflowed the Lua stack at every open: `setItemShader` calls the slot's onItemChange, `game_itemrarity` answers with `onSlotItem` and the slot was marked grey only after the call, so each re-entry greyed again; `L.applyItemGrey` marks it first (a re-entrant mock slot in the test). |
 | game_helper | none | none (overlay only; the base `mods/game_helper` is removed by `assemble_client.sh` after the patches) | The helper window and its loop: healing, potions, mana training, haste, the five-slot spell rotation, Auto Target, runes, Auto sell, Follow, party and friend heals, food and exercise; see "Helper" |
 | game_helperhud | none | base patch 0056 (the helper calls `ChaosBotHud` when its cavebot file is left out) | The helper's bot HUD (Tools > Bot HUD), see "Helper bot HUD" |
 | game_targetguard | none | base patch 0112 (the helper's locked target and the battle list's attack next call `ChaosTargetGuard`) | Which creatures the player's own targeting may pick, see "Target guard" |
@@ -944,8 +944,9 @@ and four shards rise from a violet ground ring, circle once, sink, 14 x 90 ms). 
 + (1, 1); nothing is repainted per frame (the pieces are moved, flipped and turned), alpha 0 / 255, last frame empty.
 - Client ids: items 33654..33659 (charred hand wraps, ashbound cestus, ember knuckles, ossuary gauntlet, cinderforged
   talons, pyre saint's grasp; server ids +3000, `server/data/items/fist_items.csv`, `server/tools/install_fist_weapons.py`);
-  the Monk's thirteen claw weapons (2026-10-23, `server/data/items/fist_claws.csv`) use donor B looks that the pair already
-  holds (client ids 28000..28012, "Donor art libraries"), so they need no new art and no client update;
+  the Monk's thirteen claw weapons (2026-10-23, `server/data/items/fist_claws.csv`) used donor B looks that the pair already
+  holds (client ids 28000..28012, "Donor art libraries"); since pair 56 only the first three do, the other ten wear the new
+  looks of "Pair 56" (client ids 44399..44408) and the donor slots 28003..28012 stay unused;
   effects 583..585 (bone_spear, bone_burst, bone_aura), missile 153 (bone_spear); Lua names
   `server/data/lib/chaos_vfx_art.lua`, catalogue `server/data/spells/vfx_art_catalog.csv` (both written by the import).
 - Two steps, last in the rebuild chain (after the store pouch looks); `import_fx_art.py` is new (effects and missiles
@@ -3385,6 +3386,201 @@ Output **pair 53**: dat ed39f8452177e0ef503c97fd5f7df764 (8,835,386 bytes), spr 
   - part01 29,009,040 bytes, sha256 `44959c5c33719fabffdd956b5ad1fbf761356be0f9eae2ae72d5929d24105355`
   - joined `things-1098.tar.xz` (128,623,760 bytes) sha256 `50668667915e2fa6373308ff1c4a021543a82a4fc612db43b496822d9f003e99`; `things-1098.tar` sha256 `8f8621f7a10613b52f47c132a587379add5c077d941e266b8e1e2783646620e5`.
     Extracting the parts gives the dat and spr md5 above (checked).
+
+
+### Pair 54: pair 53 with three AutoSprite looks (`gen_autosprite_art.py`; built 2026-10-28, not pushed yet)
+Owner requests 2026-10-28: the owner's AutoSprite character "Verdant Eye Demon" in the game as the boss Vharzul the Verdant Eye,
+then "mais 2 monstros ... pra hunt" that fit the game: the Ashbound Thrall and the Slagback Hound (server/README.md "AutoSprite
+looks (pair 54)"). Three outfits are appended; nothing else changes.
+- **Art.** Our AutoSprite characters (pixel art), each with AutoSprite's eight-direction walk (one render, 25 frames of 256 px per
+  direction). `gen_autosprite_art.py` takes all eight directions (owner request 2026-10-28, O283: the looks have 8 x patterns, north,
+  east, south, west, then north-east, south-east, south-west, north-west; client base patch 0160 draws the diagonals, a client
+  without it the first four), shrinks each frame to the look's
+  cell (block mean in premultiplied alpha, numpy only), moves each direction as a whole so the walk does not jitter (4x4: feet x 96,
+  lowest row 125, where the 4x4 lions of pair 26 stand; 2x2: feet x 44, lowest row 62, where the 2x2 looks of pair 26 stand) and
+  picks 8 walk phases evenly from the 25 (idle = frame 0). Every frame stands on the bottom tile row and every idle frame reaches
+  the creature's own tile (a diagonal stride of the 4x4 demon leaves it in two walk frames). The four straight columns are the
+  same pixels as the first build. The render's PNGs are pinned by md5 (`LOOKS`); they are not in git.
+  Committed: `art_import/autosprite/<key>.png`, `art_import/autosprite.csv` (layers 1, patterns 8, idle 1 phase + walk 8 phases at
+  100 ms; `import_art_things.py` takes outfit rows with patterns 4 or 8),
+  `art_import/autosprite_sources.csv`, `monster_looks/autosprite_picks.csv`. `build --check` (CI) checks them against the spec.
+  - 3361 `eye_demon`, 4x4: Vharzul the Verdant Eye (family `lairboss`).
+  - 3362 `ashbound_thrall`, 2x2: the Ashbound Thrall (family `hunt`).
+  - 3363 `slagback_hound`, 2x2: the Slagback Hound (family `hunt`).
+```
+python3 -I client/tools/sprites/gen_autosprite_art.py build --src RENDER_DIR      # RENDER_DIR/<key>/ the eight PNGs of FILES
+python3 -I client/tools/sprites/import_art_things.py --ours-dat pair53/Tibia.dat --ours-spr pair53/Tibia.spr --out-dir pair54 \
+    --things client/tools/sprites/art_import/autosprite.csv --first-item 44396 --first-outfit 3361 --expect-items 44395
+python3 -I client/tools/sprites/check_pair.py pair54/Tibia.dat pair54/Tibia.spr --old pair53/Tibia.dat pair53/Tibia.spr
+```
+Input pair 53 (dat ed39f8452177e0ef503c97fd5f7df764, spr 971ba1f67b7a07cd05a5416ad285ba0c).
+Output **pair 54** (8 directions; rebuilt 2026-10-28): dat bd8d87f8b4950e01e65ee1ed288c4998 (8,842,568 bytes), spr
+222435122aba68d77f8a1772aa69ddf6 (1,131,883,560 bytes, 946,728 sprites: 1,192 appended), 44,395 items, 3,363 outfits.
+- **Checked.** The importer: the output parses, 1,728 sprite slots pixel-identical to the art, every other thing byte-identical,
+  3,000 sampled old sprites unchanged, append-only guard passed. `check_pair.py --old pair53`: 0 errors, 3,964 warnings (the same
+  as pair 53; `outfit-directions` accepts 8). `gen_outfit_anchors.py` and `gen_info_lift.py` against pair 54 change only the dat
+  md5 line (not committed yet: CI checks them against the pair on windows-assets). Not run in a client.
+- **Archive parts** (same recipe as pair 53; not pushed to windows-assets yet, waiting for the owner's approval):
+  - part00 99,614,720 bytes, sha256 `2f0d08946c9a91db611e7931e9dd24c08cf8cb2734c0ab796885088f933adfcd`
+  - part01 30,155,764 bytes, sha256 `5136b1ae07bbe2a1f553cc40fa53f88c3f511829345f47bec18ec090d8b246d3`
+  - joined `things-1098.tar.xz` (129,770,484 bytes) sha256 `e0ec06cdf8834789ae2016993ee40a1666c0f78bdf297471fc1ff351198b23d2`;
+    `things-1098.tar` sha256 `ec9bb5cbed28f3b0e9f0a472873d890b732be5a46cde581449ab7f668ece061a`.
+- **To ship** (one change, after the push): `ChaosAutospriteArt.PAIR54 = true` (server/data/lib/chaos_autosprite_art.lua), the rows of
+  `monster_looks/autosprite_picks.csv` appended to `picks.csv` and `server/tools/apply_monster_looks.py` run (looks 3361-3363 into
+  the three files), `tools/ci/check_content.py` `PAIR_NAME, PAIR_OUTFITS` to pair 54 / 3363, `outfit_anchors.lua` and
+  `info_lifts.lua` regenerated from pair 54. Until then the three wear stock looks and a client on pair 53 needs nothing new.
+
+### Pair 55: pair 54 with the pickup looks, Ember portal and health / mana globes (`gen_portal_art.py`; built 2026-10-28, not pushed yet)
+Owner requests 2026-10-28: the Ember Blessing ground pickup (server 32090) wore the Ember Orb sprite (client id 25045); it gets a
+violet arcane portal in a carved stone ring. Then the health and mana globes (server 32088 / 32089, they wore the stock potion
+looks 7618 / 7620) get looks of their own (option 3 of the owner's pick). Three items are appended; nothing else changes. The Ember Orb
+item (server 32258) keeps 25045.
+- **Art.** Three PixelLab pictures, owner approved (32 x 32 RGBA, alpha 0 / 255). Pixels are PixelLab's: not repainted or snapped
+  (only the colour under fully transparent pixels is cleared). `gen_portal_art.py build --src KEY=FILE` (repeatable) copies each to
+  `art_import/portal/<key>.png`; committed too: `art_import/portal.png` (atlas, 96 x 32, three cells), `portal.csv` (things file),
+  `portal.sums`, `portal_sources.csv` (credit: docs/CREDITS.md "Tools", PixelLab). `build --check` and `gen_portal_art_test.py` (CI)
+  rebuild from the committed sources; each look passes `style_check.py` on its own colours (not snapped to a theme palette).
+  - `ember_portal`: `create_image_pro` job 66b816c8-5244-4cc7-b765-b7903d98ba81, index 11 (a violet / magenta arcane rift in a stone
+    ring, style reference the old ember sprite).
+  - `health_globe`: job 453273cc-5c1c-4f4e-862d-4a30a4e27ef1, index 0 (a red glass globe on a dark base, style reference the portal).
+  - `mana_globe`: the health globe with its red hues turned to blue, owner approved so both globes match: per pixel HLS, hue + 0.62
+    where saturation > 0.25 and hue < 0.08 or > 0.9 (`recolour_blue`; the committed picture is within 1 per channel of it, the test checks).
+- **Items**, each 1 x 1, one phase, flags `stackable` only (not copied from the stock looks: those are also multi-use and pickupable; the
+  pickup nodes are stackable and neither pickupable nor moveable): **44396** ember portal, **44397** health globe, **44398** mana globe.
+- **Server.** `pickups_config.lua`: ember `clientId = 44396`, `stockClientId = 25045`; health_globe `clientId = 44397`, `stockClientId = 7618`;
+  mana_globe `clientId = 44398`, `stockClientId = 7620` (no stock node has those client ids: `install_pickups.py` copies the lowest stock
+  node of the stock client id and writes the new one; an older node on the stock look is rewritten; a client id of another server id stops it),
+  all `stackable = true`, ember glow `CONST_ME_PURPLEENERGY` (was `CONST_ME_FIREAREA`). Install `pickups` only with a client on pair 55 or newer.
+```
+python3 -I client/tools/sprites/gen_portal_art.py build [--src health_globe=pick3_hp.png --src mana_globe=pick3_mp.png] [--preview DIR --dat pair55/Tibia.dat --spr pair55/Tibia.spr]
+python3 -I client/tools/sprites/import_art_things.py --ours-dat pair54/Tibia.dat --ours-spr pair54/Tibia.spr --out-dir pair55 \
+    --things client/tools/sprites/art_import/portal.csv --first-item 44396 --expect-items 44395
+python3 -I client/tools/sprites/check_pair.py pair55/Tibia.dat pair55/Tibia.spr --old pair54/Tibia.dat pair54/Tibia.spr
+python3 -I client/tools/sprites/gen_outfit_anchors.py pair55/Tibia.dat pair55/Tibia.spr
+python3 -I client/tools/sprites/gen_info_lift.py pair55/Tibia.dat pair55/Tibia.spr
+```
+Input pair 54 (dat bd8d87f8b4950e01e65ee1ed288c4998, spr 222435122aba68d77f8a1772aa69ddf6).
+Output **pair 55**: dat 26670034d86dab36a59ecd955bb158c7 (8,842,607 bytes), spr c0b3de1122ca4db658915ca077ae9d6f
+(1,131,891,475 bytes, 946,731 sprites: 3 appended), 44,398 items (3 appended), 3,363 outfits, 4,701 effects, 253 missiles. Built, not pushed yet.
+- **Checked.** The importer: the output parses, the 3 sprite slots are pixel-identical to the art, every other thing byte-identical, 3,000
+  sampled old sprites unchanged, append-only guard passed. `check_pair.py --old pair54`: 0 errors, 3,964 warnings (the same as pair 54).
+  `gen_outfit_anchors.py` and `gen_info_lift.py` against pair 55 change only the dat md5 line (not committed yet, as for pair 54: CI checks
+  them against the pair on windows-assets). `gen_fx_send_offsets.py --check`: up to date. Not run in a client.
+- **Archive parts.** Not built, not pushed to windows-assets: waiting for the owner's approval of the pair.
+
+### Pair 56: pair 55 with the Monk fist weapon looks and the 34 weapons above level 800 (`gen_fist2_art.py`, `gen_weapons800_art.py`; built 2026-10-28, not pushed yet)
+Owner 2026-10-28 ("me mande fotos das armas do monk", approved all with "aprovo todas"): redraws of the six claws and the four
+uniques of the Monk line, and three new fist weapons. 13 items are appended (client ids 44399-44411); then, owner 2026-10-28
+("pode criar mais armas pros levels acima de 800"), 34 weapons above level 800 (client ids 44412-44445, below). 47 items in all; nothing else changes.
+- **Art.** Thirteen PixelLab pictures, owner approved (32 x 32 RGBA, alpha 0 / 255), the top picks of the phase 1 sheets (the 8 x 8
+  `create_image_pro` sheets re-cut over the cell seam; the job ids were not kept, the candidate set and tile number are in
+  `art_import/fist2_sources.csv`). Pixels are PixelLab's: not repainted or snapped (only the colour under fully transparent
+  pixels is cleared). `gen_fist2_art.py build --src KEY=FILE` (repeatable) copies each to `art_import/fist2/<key>.png`; committed
+  too: `art_import/fist2.png` (atlas, 416 x 32, 13 cells), `fist2.csv` (things file, 1 x 1, one phase, flags `copy:3412` like
+  `fist_weapons.csv`, mode new), `fist2.sums`, `fist2_sources.csv` (credit: docs/CREDITS.md "Tools", PixelLab). `build --check`
+  and `gen_fist2_art_test.py` (CI) rebuild from the committed sources; each look passes `style_check.py` on its own colours (not
+  snapped to a theme palette); two rules are waived, listed in `WAIVED` and printed: stormforged claws (8 one-pixel holes, max 6)
+  and gravewind talons (27% near-black rim, min 30%). The generator is table driven (`LOOKS`, `NAME`): a later look set copies it.
+
+  | Client id | Key | Item | Server id | Look (candidate set, tile) |
+  |---|---|---|---|---|
+  | 44399 | fist_c4 | pair of emberhide claws (800) | 40003 | scorched hide mitt, horn claws, lava seams (ember2, 27) |
+  | 44400 | fist_c5 | pair of voidglass claws (1000) | 40004 | black glass shards, violet crystal (void2, 18) |
+  | 44401 | fist_c6 | pair of stormforged claws (1250) | 40005 | blue steel gauntlet, yellow lightning (storm, 21) |
+  | 44402 | fist_c7 | pair of wyrmbone claws (1500) | 40006 | ivory ribbed dragon-bone, fangs (wyrm, 4) |
+  | 44403 | fist_c8 | pair of gravewrought claws (1800) | 40007 | moss-green grave iron, one big claw (grave, 33) |
+  | 44404 | fist_c9 | pair of last-dawn claws (2200) | 40008 | white-gold gauntlet, golden claws (dawn, 21) |
+  | 44405 | fist_u1 | vigil-knot wraps (14, unique) | 40009 | knotted linen, red sigil, candle flame (vigil, 12) |
+  | 44406 | fist_u2 | chapel-iron knuckles (26, unique) | 40010 | iron knuckle-duster, white-gold cross (chapel2, 56) |
+  | 44407 | fist_u3 | gravewind talons (1400, unique) | 40011 | bone-grey gauntlet, teal wind claws (gwind, 21) |
+  | 44408 | fist_u4 | dawnless gauntlets (2000, unique) | 40012 | black plate, gold trim, eclipse ring (dawnless, 18) |
+  | 44409 | fist_t6 | gravetooth cestus (750, new) | 48409 | grey-green iron cestus, bone teeth (cestus, 0) |
+  | 44410 | fist_t7 | pair of hollowfang katars (950, new) | 48410 | two steel punch daggers, red edge (katar2, 0) |
+  | 44411 | fist_t8 | wardenplate gauntlet (1150, new) | 48411 | teal steel gauntlet, bronze-bossed plate (war, 5) |
+- **Server.** `server/data/items/fist_claws.csv`: rows 40003-40012 mode `repoint` (their server ids stay, the client ids move off the
+  donor looks 28003-28012, which stay in the pair untouched), three new rows mode `new4` (server id = client id + 4000, the pair 50
+  rule). `install_fist_weapons.py` writes the nodes (an older node on the donor look is rewritten), `install_donor_items.py` skips the
+  repointed ids, `install_fist_weapons.py --lua` regenerates `chaos_fist_weapons.lua`. The `fistweapons` and `weapons800` steps
+  wait for `config.lua` `chaosClientPair >= 56` (the client pair guard, server/README.md "Client pair guard"): until the owner
+  records the pair they keep the claws on the donor looks and install none of the new items.
+- **Weapons above level 800 (`gen_weapons800_art.py`, `art_import/weapons800*`).** 34 PixelLab pictures, owner approved the
+  top picks of the phase 1 sheets on 2026-10-28 (32 x 32 RGBA, alpha 0 / 255, `create_image_pro` 8 x 8 sheets re-cut over the cell
+  seam; candidate set and tile of each in `art_import/weapons800_sources.csv`; pixels not repainted, snapped or mirrored; the two-handed
+  melee looks keep the grip bottom-left). Appended after the fist looks: client ids 44412-44445, server ids = client id + 4000
+  (48412-48445, free: checked against every csv of `server/data/items`, the `chaos_*.lua` libs and the id tables of server/README.md).
+  Committed: `art_import/weapons800/<key>.png` (sources), `weapons800.png` (atlas, 1088 x 32, 34 cells), `weapons800.csv` (things file,
+  flags copied from the stock item of the kind as for the gear sets: sword 3264, axe 3274, club 3270, bow 3350, crossbow 3349,
+  wand and rod 3066; `extra` = type, level, element, loot, description), `weapons800.sums`, `weapons800_sources.csv`.
+  `build --check` and `gen_weapons800_art_test.py` (CI) rebuild from the committed sources; every look passes `style_check.py` on its
+  own colours, one rule is waived and printed (`WAIVED`: mirrorbark staff, 28% near-black rim, min 30%). The server manifest
+  `server/data/items/weapons800.csv` is the importer's `--manifest-out` of the things file with `--server-offset 4000`.
+
+| Client id | Key | Item | Server id | Type, level, element |
+|---|---|---|---|---|
+| 44412 | w800_gravesong_bow | gravesong bow | 48412 | bow, 820, death |
+| 44413 | w800_emberthorn_longbow | emberthorn longbow | 48413 | bow, 885, fire |
+| 44414 | w800_hollowreed_recurve | hollowreed recurve | 48414 | bow, 950, earth |
+| 44415 | w800_stormlace_bow | stormlace bow | 48415 | bow, 1120, energy |
+| 44416 | w800_veilpiercer_bow | veilpiercer bow | 48416 | bow, 1235, holy |
+| 44417 | w800_duskpetal_longbow | duskpetal longbow | 48417 | bow, 1420, earth |
+| 44418 | w800_ashen_halo_bow | ashen halo bow | 48418 | bow, 1580, holy |
+| 44419 | w800_throneseeker_bow | throneseeker bow | 48419 | bow, 1850, energy |
+| 44420 | w800_last_ember_recurve | last-ember recurve | 48420 | bow, 2150, fire |
+| 44421 | w800_bonehinge_arbalest | bonehinge arbalest | 48421 | crossbow, 840, death |
+| 44422 | w800_cindergut_crossbow | cindergut crossbow | 48422 | crossbow, 930, fire |
+| 44423 | w800_frostlatch_arbalest | frostlatch arbalest | 48423 | crossbow, 1150, ice |
+| 44424 | w800_thornwarden_crossbow | thornwarden crossbow | 48424 | crossbow, 1480, earth |
+| 44425 | w800_cinderbloom_wand | cinderbloom wand | 48425 | wand, 830, fire |
+| 44426 | w800_mirewhisper_spire | mirewhisper spire | 48426 | wand, 890, earth |
+| 44427 | w800_stormglass_scepter | stormglass scepter | 48427 | wand, 960, energy |
+| 44428 | w800_hoarwick_wand | hoarwick wand | 48428 | wand, 1080, ice |
+| 44429 | w800_sunscar_focus | sunscar focus | 48429 | wand, 1200, holy |
+| 44430 | w800_thunderwake_scepter | thunderwake scepter | 48430 | wand, 1400, energy |
+| 44431 | w800_emberveil_spire | emberveil spire | 48431 | wand, 1560, fire |
+| 44432 | w800_rotcrown_wand | rotcrown wand | 48432 | wand, 1780, death |
+| 44433 | w800_wyrmtongue_focus | wyrmtongue focus | 48433 | wand, 2100, energy |
+| 44434 | w800_hushwood_rod | hushwood rod | 48434 | rod, 825, death |
+| 44435 | w800_mirrorbark_staff | mirrorbark staff | 48435 | rod, 885, ice |
+| 44436 | w800_dreamthorn_branch | dreamthorn branch | 48436 | rod, 955, earth |
+| 44437 | w800_veilhollow_crook | veilhollow crook | 48437 | rod, 1100, death |
+| 44438 | w800_glimmerbough_rod | glimmerbough rod | 48438 | rod, 1210, holy |
+| 44439 | w800_gloamroot_staff | gloamroot staff | 48439 | rod, 1390, earth |
+| 44440 | w800_wraithwillow_rod | wraithwillow rod | 48440 | rod, 1590, ice |
+| 44441 | w800_nightbloom_crook | nightbloom crook | 48441 | rod, 1820, death |
+| 44442 | w800_eventide_branch | eventide branch | 48442 | rod, 2080, holy |
+| 44443 | w800_gravewrought_greatsword | gravewrought greatsword | 48443 | sword2, 850, death |
+| 44444 | w800_ashmaw_greataxe | ashmaw greataxe | 48444 | axe2, 910, fire |
+| 44445 | w800_dirgebell_maul | dirgebell maul | 48445 | club2, 975, holy |
+- **Rebuild** (the steps are reproducible; later look sets append after client id 44445 the same way, `--first-item` the next id and
+  `--expect-items` the last id of the pair before):
+```
+python3 -I client/tools/sprites/gen_fist2_art.py build [--src fist_c4=PICK.png ...] [--preview DIR --dat pair55/Tibia.dat --spr pair55/Tibia.spr]
+python3 -I client/tools/sprites/import_art_things.py --ours-dat pair55/Tibia.dat --ours-spr pair55/Tibia.spr --out-dir pair56 \
+    --things client/tools/sprites/art_import/fist2.csv --first-item 44399 --expect-items 44398
+# then the 34 weapons above level 800, appended to that output (a different out-dir; the result is the final pair 56):
+python3 -I client/tools/sprites/gen_weapons800_art.py build [--src KEY=FILE ...] [--preview DIR --dat pair56/Tibia.dat --spr pair56/Tibia.spr]
+python3 -I client/tools/sprites/import_art_things.py --ours-dat pair56/Tibia.dat --ours-spr pair56/Tibia.spr --out-dir pair56final \
+    --things client/tools/sprites/art_import/weapons800.csv --first-item 44412 --expect-items 44411 --server-offset 4000 \
+    --manifest-out server/data/items/weapons800.csv
+python3 -I client/tools/sprites/check_pair.py pair56final/Tibia.dat pair56final/Tibia.spr --old pair55/Tibia.dat pair55/Tibia.spr
+python3 -I client/tools/sprites/gen_outfit_anchors.py --out /scratch/anch56.lua pair56final/Tibia.dat pair56final/Tibia.spr
+python3 -I client/tools/sprites/gen_info_lift.py --out /scratch/lift56.lua pair56final/Tibia.dat pair56final/Tibia.spr
+python3 -I client/tools/sprites/gen_fx_send_offsets.py --check
+```
+Input pair 55 (dat 26670034d86dab36a59ecd955bb158c7, spr c0b3de1122ca4db658915ca077ae9d6f).
+Output after the fist looks (the first build of pair 56): dat ade572a4b128115ee41a1793dec130e9 (8,842,815 bytes), spr
+4747b22003e4782d7901212be6e93e39 (1,131,917,248 bytes, 946,744 sprites: 13 appended), 44,411 items. Superseded by the final pair below.
+Output **pair 56** (final, with the 34 weapons): dat cafd10c030c87eeab28ec4ca0e4806b8 (8,843,365 bytes), spr
+875ead25023f579ba30e925f3d3b608d (1,131,969,510 bytes, 946,778 sprites: 47 appended to pair 55), 44,445 items (47 appended), 3,363
+outfits, 4,701 effects, 253 missiles. Built, not pushed yet.
+- **Checked.** The importer: the output parses, the 13 sprite slots are pixel-identical to the art, every other thing byte-identical,
+  3,000 sampled old sprites unchanged, append-only guard passed. `check_pair.py --old pair55`: 0 errors, 3,964 warnings (the same as
+  pair 55). `gen_outfit_anchors.py` and `gen_info_lift.py` against pair 56 change only the dat md5 line (written to the scratchpad,
+  not committed, as for pairs 54 and 55). `gen_fx_send_offsets.py --check`: up to date. Rendered from the pair
+  (`gen_fist2_art.py --preview`, `gen_weapons800_art.py --preview`): all 47 draw as in the tables. The second import (34 items, 34 sprites
+  appended): output parses, the 34 slots are pixel-identical to the art, every other thing byte-identical, append-only guard passed;
+  `check_pair.py --old pair55` again 0 errors and 3,964 warnings; `gen_fx_send_offsets.py --check` up to date. Not run in a client.
+- **Archive parts.** Not built, not pushed to windows-assets: waiting for the owner's approval of the pair.
 
 ## Owner art (things_custom26: outfits 2213-2233, items 33940-33985, `tools/sprites/gen_owner_art.py`, `art_import/owner_art.csv`; on windows-assets 50645056, switch on since 2026-10-15)
 **Source and licence.** The owner's Google Drive folder "ots", files added 2026-10-15. The owner confirmed the art is

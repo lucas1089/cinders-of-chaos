@@ -81,7 +81,7 @@ return {
 	hall = {
 		enabled = true,
 		floors = {7, 6, 5},
-		levels = {{z = 7, max = 560}, {z = 6, max = 1000}, {z = 5}},
+		levels = {{z = 7, max = 500}, {z = 6, max = 1000}, {z = 5}},
 		-- the hunt slots of each floor as the install counts them on the live map (2 a module a side, plus the base
 		-- room's); install_content_areas_test.py refuses more hunts on a floor (the base hunts of hall_hunts.csv and every
 		-- plan, by `levels`) than it has, so CI says "grow it" before an update fails on the server. Raise it with the room.
@@ -185,7 +185,7 @@ return {
 		{id = "brackwater_sloughs", monster = "Ashmaw Bonecaller"},
 		{id = "sablemourn_ossuary", monster = "Mange Hound"},
 		{id = "thornmantle_glade", monster = "Slagborer"},
-		{id = "embergut_rift", monster = "Mercenary"},
+		{id = "embergut_rift", monster = "Slagback Hound"}, -- the rift's own hound (pair 54 look 3363 once ChaosAutospriteArt.PAIR54 is on)
 		{id = "frostvein_reach", monster = "Orclops Ravager"},
 		{id = "graveknell_catacombs", monster = "Mercenary Ranger"},
 		{id = "umbral_sink", monster = "Garack"},

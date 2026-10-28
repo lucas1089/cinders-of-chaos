@@ -371,9 +371,9 @@ one- or two-handed, is open to the Warrior, Thief, Monk and Templar lines (the B
 class rule); armour, shields, launchers, wands and rods keep their lists. Of the same tier, a two-handed melee weapon deals 1.07x the
 damage per second of one hand + shield at every level (it was +28% at level 8 and +13% from level 75); launchers and the Monk's
 early fists are still ahead (server/data/spells/README.md "Weapon damage per second": owner decision).
-**Training weapons (owner, 2026-10-23)**: the exercise weapons on a training dummy: one **melee** weapon (the sword, axe and club
-ones are the same item now) for the Warrior, Thief, Monk and Templar lines, which trains the melee skill, and **fist fighting for the
-Monk line**; a bow for the Ranger and Thief lines (distance); a rod and a wand for the Mystic, Necromancer and Templar lines
+**Training weapons (owner, 2026-10-23)**: the exercise weapons on a training dummy: one **melee** weapon (the sword and club
+ones are the same item now) for the Warrior, Thief and Templar lines, which trains the melee skill; a **fist** weapon for the Monk
+line only (owner 2026-10-28: "monk também não tem training weapon"), which trains fist fighting; a bow for the Ranger and Thief lines (distance); a rod and a wand for the Mystic, Necromancer and Templar lines
 (magic level); a shield for every class (shielding). Server/README.md "Training weapons".
 **Weapon coverage (owner, 2026-10-23, "veja se todas as classes tem armas o suficiente")**: every class has at least three
 weapons it can wield and obtain in each of the nine level bands (1-20, 20-50, 50-100, 100-200, 200-400, 400-700, 700-1000,
@@ -384,6 +384,13 @@ the Berserker (two-handed melee only) had nothing at 1500+, the Elementalist and
 seven uniques (Berserker: Hollow Throne Claymore 1550, Emberhowl Greataxe 1950, Bellringer of the Last Vigil 2200; Ranger
 line: Hoarfen Bow 40, Moonlit Gallows Bow 900, Gravetide Arbalest 1800, Wake-Heron Longbow 2100) and by making the level 2000
 Gildcrown pieces droppable (wands and rods got their third piece by moving the set to 1250-2000).
+**Weapons above level 800 (owner 2026-10-28, "pode criar mais armas pros levels acima de 800")**: 34 more weapons so every class has at
+least six in every band from 700 up (Ranger and Deadeye 9 / 13 / 12 / 13 in the bands 700-1000 / 1000-1300 / 1300-1700 / 1700-2400+,
+Beastmaster 6 / 8 / 8 / 8, Mystic and the Necromancer line 12 / 17 / 16 / 18, Elementalist and Illusionist 6 / 9 / 8 / 9, the Berserker
+7 / 12 / 7 / 9): nine bows (Ranger, Deadeye, Beastmaster), four crossbows (Ranger, Deadeye), nine wands (Mystic, Elementalist and the
+Necromancer line), nine rods (Mystic, Illusionist and the Necromancer line) and a two-handed sword, axe and maul (every melee class,
+the Berserker included), levels 820-2150, each on the equipment sets' curve of its level. They drop from the class loot families and
+from high monsters, not from the sets' level gear. server/README.md "Weapons above level 800".
 Every auto attack scales with its skill (owner, 2026-10-20): swords, axes, clubs, distance weapons and fists by the engine's
 formula (the skill is 79-94% of the hit), wands and rods by the magic level since 2026-10-20 (before: a flat roll whatever the
 magic level; at the typical magic level of a level the hit is the same as before). server/README.md "Weapon damage scales
@@ -698,11 +705,12 @@ Open for the Necromancer:
   vocation's meleeDamage multiplier, and there is no "fist" weapon type in the item types. So the Monk's unarmed damage is scripted on the
   weapon hook, without an engine patch: `monk_combat.lua` scales a Monk's fist hit (melee origin, nothing in the hands) by (formula with
   the Monk's fist attack x meleeDamage) / (formula with attack 7). The fist attack grows with level: 40 + level x 0.025, at most 60
-  (level 300: 47.5). Fist weapons (`ChaosMonk.cfg.unarmed.fistWeapons`, server/README.md "Fist weapons"): nineteen hand items of weaponType
+  (level 300: 47.5). Fist weapons (`ChaosMonk.cfg.unarmed.fistWeapons`, server/README.md "Fist weapons"): twenty-two hand items of weaponType
   "shield" with an attack, worn in the shield hand by the Monk line only, from level 1 to 2200; their attack replaces the level
   value when higher. Plain tiers: splinter claws 41 / level 1 (the starter kit), charred hand wraps 42 / 8, rustiron claws 43 / 35,
   ashbound cestus 44 / 60, ashen steel claws 45 / 100, ember knuckles 46 / 150, ossuary gauntlet 50 / 300, cinderforged talons 55 /
-  500, emberhide claws 62 / 800, voidglass claws 63 / 1000, stormforged claws 64 / 1250, wyrmbone claws 65 / 1500, gravewrought claws
+  500, gravetooth cestus 61 / 750, emberhide claws 62 / 800, hollowfang katars 63 / 950, voidglass claws 63 / 1000, wardenplate
+  gauntlet 64 / 1150, stormforged claws 64 / 1250, wyrmbone claws 65 / 1500, gravewrought claws
   66 / 1800, last-dawn claws 67 / 2200. Uniques: Vigil-Knot Wraps 43 / 14 and Chapel-Iron Knuckles 44 / 26 (leveling, magic), Grasp
   of the Pyre Saint 64 / 650 (legendary), Gravewind Talons 68 / 1400 and Dawnless Gauntlets 70 / 2000 (endgame, rare or better,
   strong monsters), each with Chaos modifiers built in. A plain tier is x1.00 .. x1.12 damage over bare fists (cap 60) at its

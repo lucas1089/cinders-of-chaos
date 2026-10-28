@@ -496,9 +496,10 @@ S.REWARDS[#S.REWARDS + 1] = {key = "rift", fn = function(D, emit)
 			local mk = r.monsterKey
 			local p = (tonumber(mk.chance) or 0) / 100000
 			emit("drop", r.key.itemId, {n = "Any monster", d = string.format("tier 1 key outside rifts, monster level %d+ " ..
-				"(and at least %d%% of yours), x%d legendary, x%d boss", Chaos.huntingLevel(mk.minMonsterLevel or 0),
-				math.floor((mk.levelShare or 0) * Chaos.huntingMult() * 100 + 0.5), (mk.tierMult or {}).legendary or 1, (mk.tierMult or {}).boss or 1),
-				v = S.globalText(p, "normal", mk.minMonsterLevel), o = 0, p = p, pk = "kill"})
+				"(and at least %d%% of yours), x%d legendary, x%d boss", mk.minMonsterLevel or 0,
+				math.floor((mk.levelShare or 0) * 100 + 0.5), (mk.tierMult or {}).legendary or 1, (mk.tierMult or {}).boss or 1),
+				-- globalText takes a pool level
+				v = S.globalText(p, "normal", (mk.minMonsterLevel or 0) / Chaos.huntingMult()), o = 0, p = p, pk = "kill"})
 		end
 		if r.bountyKey then
 			reward(emit, r.key.itemId, nil, "Bounty contract", string.format("a tier 1 key: hunt %d%%, elite %d%%, boss %d%%",

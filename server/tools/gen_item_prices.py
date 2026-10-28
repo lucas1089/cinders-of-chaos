@@ -18,7 +18,7 @@ Inputs (all in the repo; the base server is read only by `survey`, `income` and 
                                     sources (no names: the base names are not ours)
   data/items/base_recipes.csv       the base crafting recipes (product, count, gold cost, materials)
   data/items/item_price_rules.csv   overrides: id, category, price, note (a fixed price or a category such as quest)
-  the Chaos sources: art_items.csv (creature products, food), fist_items.csv and fist_claws.csv, gear_sets.csv (pair 28), the gems, supports and charms configs,
+  the Chaos sources: art_items.csv (creature products, food), fist_items.csv and fist_claws.csv, gear_sets.csv (pair 28), weapons800.csv (the weapons above level 800), the gems, supports and charms configs,
   the uniques (chaos_items.xml), the professions, orbs, omens, Ascended items, faction tokens, pouches, the Everfull
   Ration, the store's items (shop_config.lua) and every Chaos monster's loot (monsters/chaos, monster/lua/chaos)
 Outputs (generated, committed, CI diffs them):
@@ -431,6 +431,11 @@ def chaos_items():
         slot = {'helmet': 'head', 'armor': 'body', 'legs': 'legs', 'boots': 'feet', 'amulet': 'necklace', 'ring': 'ring',
                 'shield': 'shield', 'spellbook': 'shield'}.get(k, 'two-handed' if two else 'weapon')
         put(r['server_id'], r['name'], 'equip', None, slot, r['level'], 'gear_sets.csv')
+    # the 34 weapons above level 800 (pair 56): plain gear, the equipment formula at their level
+    import install_weapons800 as W8
+    for r in W8.rows_of(os.path.join(DATA, 'items', 'weapons800.csv')):
+        two = r['type'] in ('bow', 'crossbow', 'sword2', 'axe2', 'club2')
+        put(r['server_id'], r['name'], 'equip', None, 'two-handed' if two else 'weapon', r['level'], 'weapons800.csv')
     gem = read(os.path.join(DATA, 'lib', 'chaos_gems_config.lua'))
     first = int(re.search(r'firstId\s*=\s*(\d+)', gem).group(1))
     gem_types = len(re.findall(r'clientIdHigh\s*=', gem)) or 7
@@ -510,6 +515,11 @@ def build():
         if ex.get('loot'):
             for part in ex['loot'].split(';'):
                 cloot.setdefault(int(r['server_id']), []).append((int(ex.get('level', 0)), int(part.split(':')[1])))
+    # the weapons above level 800 are added to monsters' loot by data/scripts/chaos/weapons800.lua (their own rows)
+    import install_weapons800 as W8
+    for r in W8.rows_of(os.path.join(DATA, 'items', 'weapons800.csv')):
+        for _mon, chance in r['loot']:
+            cloot.setdefault(r['server_id'], []).append((r['level'], chance))
     table = {}
 
     def entry(iid):

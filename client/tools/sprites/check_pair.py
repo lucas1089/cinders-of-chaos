@@ -330,8 +330,9 @@ def check_thing(t, rep, spr_count, empty_slots, auras):
         if (g.w > 1 or g.h > 1) and not (32 <= g.exact <= 32 * max(g.w, g.h)) and g.exact != 255:
             rep.warn('exact-size', gref, f'exact size {g.exact} for {g.w}x{g.h}')
         if t.cat == 'outfit':
-            if g.px not in (1, 4):
-                rep.warn('outfit-directions', gref, f'{g.px} x patterns (4 directions expected)')
+            if g.px not in (1, 4, 8):
+                # 8: the diagonals after the four directions (client base patch 0160)
+                rep.warn('outfit-directions', gref, f'{g.px} x patterns (4 or 8 directions expected)')
             if g.py > 3:
                 rep.warn('outfit-addons', gref, f'{g.py} addon patterns')
             if g.pz > 2:

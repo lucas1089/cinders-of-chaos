@@ -7,6 +7,7 @@
 -- is written to storages, so nothing can stack across logins.
 --   movement speed     Creature:changeSpeed by the difference to what was applied before (% of the base speed)
 --   attack speed       none here: it is the weapon's own attack interval (chaos_item_mods.lua M.syncAttackSpeed)
+--   gearspeed          Attack Speed of worn pieces: the player-level bonus (M.setPlayerAttackSpeed, engine patch 0078)
 --   elites and bosses  damage dealt to magic / rare / legendary monsters and bosses (onHealthChange on the target,
 --                      registered by onTargetCombat, like passivetree_effects.lua)
 --   life / mana on kill  CreatureEvent onKill, monsters only
@@ -163,6 +164,7 @@ function M.refresh(player, force)
 	if ChaosEnergyShield and ChaosEnergyShield.apply then
 		ChaosEnergyShield.apply(player, totals) -- maximum and recharge of the energy shield (engine patch 0015)
 	end
+	M.setPlayerAttackSpeed(player, "gear", totals.gearspeed or 0) -- Attack Speed of worn pieces (engine patch 0078)
 	if ChaosArchery and ChaosArchery.apply then
 		ChaosArchery.apply(player, totals) -- the quiver's Distance Fighting and Attack Speed with Bows (archery.lua)
 	end

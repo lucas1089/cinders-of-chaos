@@ -1,0 +1,4 @@
+name,kind,pack,source,licence
+ember_portal,item,PixelLab,"create image pro 32x32 (job 66b816c8-5244-4cc7-b765-b7903d98ba81, index 11), our own prompt; art_import/portal/ember_portal.png","made with our PixelLab subscription; docs/CREDITS.md"
+health_globe,item,PixelLab,"create image pro 32x32 (job 453273cc-5c1c-4f4e-862d-4a30a4e27ef1, index 0), our own prompt, style reference the portal art; art_import/portal/health_globe.png","made with our PixelLab subscription; docs/CREDITS.md"
+mana_globe,item,PixelLab,"the health globe with its red hues turned to blue (per pixel HLS, hue + 0.62 where saturation > 0.25 and hue < 0.08 or > 0.9), owner approved 2026-10-28; art_import/portal/mana_globe.png","made with our PixelLab subscription; docs/CREDITS.md"

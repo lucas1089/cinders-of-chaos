@@ -44,7 +44,7 @@ local FOOD_IDS = { 3577, 3578, 3579, 3581, 3582, 3583, 3585, 3586, 3587, 3588, 3
   3606, 3607, 3723, 3724, 3725, 3728, 3731, 3732, 8011, 8014, 8016, 8017, 12310, 14085, 17457, 17820, 17821, 21143, 21144,
   21146, 23535, 23545 }
 -- the server's exercise weapons (client ids) and training dummies (server/README.md "Exercise weapons")
-local EXERCISE = { { 27732, 'Exercise Sword' }, { 27733, 'Exercise Axe' }, { 27734, 'Exercise Club' },
+local EXERCISE = { { 27732, 'Exercise Sword' }, { 27733, 'Exercise Fist Weapon' }, { 27734, 'Exercise Club' },
   { 27735, 'Exercise Bow' }, { 27736, 'Exercise Rod' }, { 27737, 'Exercise Wand' }, { 27738, 'Durable Exercise Sword' },
   { 27758, 'Exercise Shield' } }
 local DUMMIES = { 27751, 27752 }

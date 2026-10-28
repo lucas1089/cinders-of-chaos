@@ -555,10 +555,10 @@ def _PACE_DAMAGE():
 
 
 def _pool_level(names):
-    """the median hunting level (2 x the bounty pool's estimate) of a band's species"""
+    """the median hunting level (the bounty pool's estimate, baseLevelMult 1 since O285) of a band's species"""
     pool = dict((n.lower(), int(l)) for n, l in re.findall(r'\{name = "([^"]+)", level = (\d+),',
                                                           read(POOL).split('\tbosses = ')[0]))
-    lv = sorted(2 * pool[n] for n in names if n in pool and n != 'demon')
+    lv = sorted(pool[n] for n in names if n in pool and n != 'demon')
     return lv[len(lv) // 2]
 
 

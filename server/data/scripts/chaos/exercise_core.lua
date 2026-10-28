@@ -2,15 +2,17 @@
 -- numbers and lists: exercise_config.lua; tests: server/tests/exercise_test.lua; overview: server/README.md "Training
 -- weapons"). Lua 5.1 / LuaJIT and Lua 5.3.
 --
---   E.kindOf(itemId)                      "melee" | "ranged" | "rod" | "wand" | "shield" | nil
+--   E.kindOf(itemId)                      "melee" | "fist" | "ranged" | "rod" | "wand" | "shield" | nil
 --   E.lineOf(vocationId)                  "warrior" | "ranger" | ... | nil
 --   E.allowed(kind, vocationId)           may this class use that kind?
 --   E.skillFor(kind, vocationId, levels, percents) -> name
 --                                         the skill that trains: "fist" | "sword" | "club" | "axe" | "distance" | "magic" |
 --                                         "shield". levels / percents = {sword =, club =, axe =}: the melee kind trains the best
---                                         of the three (one melee skill, melee_skill_core.lua); the Monk line trains "fist"
+--                                         of the three (one melee skill, melee_skill_core.lua); the fist kind (Monk line) "fist"
 --   E.refusal(kind, vocationId) -> key, args   the text of a refusal (a key of i18n_strings.lua)
---   E.convertTo(itemId)                   the item an old axe / club weapon turns into, or nil
+--   E.convertTo(itemId [, vocationId])    the item a weapon the class cannot use turns into (same tier, charges kept), or nil:
+--                                         an old club weapon -> sword (fist for the Monk line), a sword weapon held by a Monk ->
+--                                         fist, a fist weapon (the old axe) held by any other class -> sword
 --   E.isRetiredChest(itemId)              a chest that is not sold any more
 --   E.dummyKind(itemId) -> "bonus" | "plain" | nil
 --   E.rate(stages, level, default)        the stage's rate for a skill level
@@ -105,8 +107,32 @@ function E.refusal(kind, vocationId)
 	return "Your class cannot train with this item. It is for: %s.", {table.concat(E.lineNames(kind), ", ")}
 end
 
-function E.convertTo(itemId)
-	return cfg().convert[itemId]
+-- the weapon of the tier an item belongs to, of a kind ("melee" | "fist"); nil for an item of no tier
+local function tierOf(itemId)
+	for _, tier in ipairs(cfg().tiers or {}) do
+		if tier.melee == itemId or tier.fist == itemId or tier.club == itemId then
+			return tier
+		end
+	end
+	return nil
+end
+
+function E.convertTo(itemId, vocationId)
+	local tier = tierOf(itemId)
+	local kind = cfg().items[itemId]
+	if not tier or (kind ~= "melee" and kind ~= "fist") then
+		return nil
+	end
+	local want = E.lineOf(vocationId) == "monk" and "fist" or "melee"
+	if vocationId == nil or E.lineOf(vocationId) == nil then
+		-- no class to go by: only the club weapon of before becomes the sword one
+		want = itemId == tier.club and "melee" or kind
+	end
+	local to = tier[want]
+	if to == itemId then
+		return nil
+	end
+	return to
 end
 
 function E.isRetiredChest(itemId)
@@ -237,9 +263,19 @@ function E.validate()
 			problems[#problems + 1] = "item " .. id .. ": unknown kind " .. tostring(kind)
 		end
 	end
-	for from, to in pairs(c.convert) do
-		if c.items[from] ~= "melee" or c.items[to] ~= "melee" then
-			problems[#problems + 1] = "convert " .. from .. " -> " .. to .. ": not a melee weapon"
+	for i, tier in ipairs(c.tiers or {}) do
+		for _, key in ipairs({"melee", "fist", "club"}) do
+			local want = key == "fist" and "fist" or "melee"
+			if c.items[tier[key]] ~= want then
+				problems[#problems + 1] = "tier " .. i .. ": " .. key .. " is not a " .. want .. " weapon"
+			end
+		end
+	end
+	for _, id in ipairs(c.retiredChests or {}) do
+		for _, ch in ipairs(c.chests or {}) do
+			if ch.melee == id or ch.fist == id then
+				problems[#problems + 1] = "chest " .. id .. " is both sold and retired"
+			end
 		end
 	end
 	return problems

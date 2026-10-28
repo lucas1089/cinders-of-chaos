@@ -62,7 +62,12 @@ for name in ('exercise', 'premium', 'crystal'):
     check(title == name and ids and token, '%s: title, actionIds and token are read (%s %s %s)' % (name, title, ids, token))
     check(not [e for e in ents if e[0] in all_retired], '%s: no deck, ship, belt or gloves in the pool' % name)
     check(not [e for e in ents if 28373 <= e[0] <= 28393], '%s: none of the fixed Moist gear' % name)
-    check(not [e for e in ents if e[0] in (27762, 27763, 27769, 27770, 27776, 27777)], '%s: no retired axe or club chest' % name)
+    check(not [e for e in ents if e[0] in (27763, 27770, 27777)], '%s: no retired club chest' % name)
+    if name == 'exercise':
+        # the old axe chests hand out the Monk line's fist weapon since 2026-10-28 (O287)
+        check({27762, 27769, 27776} <= {e[0] for e in ents}, 'exercise: the three fist weapon chests are in the pool')
+    else:
+        check(not [e for e in ents if e[0] in (27762, 27769, 27776)], '%s: no exercise fist chest' % name)
 check(OTHERS['crystal'][3] == [18565, 18566] and OTHERS['exercise'][3] == [18563] and OTHERS['premium'][3] == [18564],
       'the actionIds of the base roulettes')
 check(R.parse_meta(config_text) == ([18562], 'boss', 28033), 'the boss config: actionId 18562, token 28033')

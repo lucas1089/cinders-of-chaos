@@ -6,7 +6,7 @@ adapter's fix loop on a fake endpoint. Needs LuaJIT (LUAJIT=... to point elsewhe
 
     python3 -I server/tools/area_planner_test.py
 """
-import copy, json, os, sys, tempfile
+import copy, json, os, re, sys, tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -651,6 +651,66 @@ for i, p in enumerate(placed):
         if gx < 10 and gy < 10:
             near.append('%s/%s' % (p['id'], q['id']))
 ok(len(placed) >= 58 and not near, 'placed areas: %d, each 10+ tiles from the others %s' % (len(placed), near[:3]))
+
+# ground, border and shore pieces never stand alone as decoration (owner report 2026-10-28: the lava kit laid "small lava
+# cracks" 5840-5843, the old lava edge pieces, on bare floor: brown strips with a crack line and an ochre bar)
+import csv as _csv, re as _re
+SERVER = os.path.dirname(HERE)
+PLACE_KINDS = {'ground', 'border', 'shore', 'lake', 'water', 'dock'}
+EDGE_STOCK = {5840: 'small lava cracks (lava edge strip)', 5841: 'small lava cracks (lava edge strip)',
+              5842: 'small lava cracks (lava edge bar)', 5843: 'small lava cracks (lava edge strip)'}
+placing = dict(EDGE_STOCK)
+for f in sorted(os.listdir(os.path.join(SERVER, 'data', 'items'))):
+    if not f.endswith('.csv'):
+        continue
+    with open(os.path.join(SERVER, 'data', 'items', f), encoding='utf-8') as fh:
+        for row in _csv.DictReader(l for l in fh if not l.startswith('#')):
+            sid = row.get('server_id') or ''
+            if not sid.isdigit():
+                continue
+            if row.get('kind') == 'border' and _re.search(r'family=(decals|cata_ground)\b', row.get('extra') or ''):
+                continue  # floor decals drawn as top order 1 items (bones, puddles): meant to lie alone
+            if row.get('kind') in PLACE_KINDS or (row.get('role') or '').startswith('blend'):
+                placing[int(sid)] = '%s %s' % (f, row.get('key') or row.get('name'))
+cfg = open(os.path.join(SERVER, 'data', 'scripts', 'chaos', 'areagen_config.lua'), encoding='utf-8').read()
+pieces_txt = cfg[cfg.index('pieces = {'):cfg.index('walls = {')]
+for n in _re.findall(r'\b(\d{3,5})\b', pieces_txt):
+    placing.setdefault(int(n), 'areagen_config border piece')
+fam_txt = cfg[cfg.index('families = {'):cfg.index('borders = {')]
+for n in _re.findall(r'\{(\d{3,5}), \d+\}', fam_txt):
+    placing.setdefault(int(n), 'areagen_config ground')
+ok(len(placing) > 500, 'edge check: %d ground / border ids known' % len(placing))
+kit_bad = []
+for f in ('decor_kits', 'decor_owner_art', 'decor_assets_art', 'decor_pack33_kit'):
+    kd = json.load(open(os.path.join(HERE, 'areaplan', f + '.json'), encoding='utf-8'))
+    for gname, g in kd['groups'].items():
+        for i in g['ids']:
+            if i in placing:
+                kit_bad.append('%s %s %d (%s)' % (f, gname, i, placing[i]))
+ok(not kit_bad, 'decor kits hold no ground, border or edge piece as a standalone item: %s' % kit_bad[:6])
+sc_bad = []
+th = cfg[cfg.index('themes = {'):]
+for n in _re.findall(r'\{(\d{3,5}), \d+\}', th):
+    if int(n) in placing:
+        sc_bad.append('%s %s' % (n, placing[int(n)]))
+ok(not sc_bad, 'areagen themes scatter no ground or border piece as decor: %s' % sc_bad[:6])
+
+# one ground family per corridor floor (owner report 2026-10-28, Hollow Crypt: the crypt family laid 13189 "dark sandy floor"
+# and 12237, a round-pebble patch tile of the stain family 12234-12237, by weight, tile by tile)
+STAIN_PATCH = {12234, 12235, 12236, 12237}
+crypt_fam = re.search(r'crypt = \{z = 1500, grounds = \{(.*?)\}\},\n', cfg).group(1)
+ok(set(re.findall(r'\{(\d+), \d+\}', crypt_fam)) == {'13189'}, 'areagen crypt family: 13189 only (%s)' % crypt_fam)
+crypt_bad = []
+for pid in ('hollow_crypt', 'bonechoir_catacomb', 'bonewright_galleries', 'graveknell_catacombs', 'lanternless_catacombs'):
+    pl = json.load(open(os.path.join(HERE, 'areaplan', 'plans', pid + '.json'), encoding='utf-8'))
+    _h, tl, _pr = PC.read_otbm_full(PC.compile_plan(pl, pair24=False)['otbm'])
+    seen = {}
+    for t_ in tl.values():
+        g = t_['ground'] if isinstance(t_, dict) else t_[0]
+        seen[g] = seen.get(g, 0) + 1
+    if STAIN_PATCH & set(seen) or not seen.get(13189):
+        crypt_bad.append('%s %s' % (pid, sorted(STAIN_PATCH & set(seen))))
+ok(not crypt_bad, 'catacomb hunts: crypt corridors are 13189 only, no stain patch tile: %s' % crypt_bad)
 
 print('area planner: %d checks, %d failed' % (checks, fails))
 sys.exit(1 if fails else 0)

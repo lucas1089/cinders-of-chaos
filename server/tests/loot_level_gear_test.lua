@@ -16,8 +16,9 @@ end
 Chaos = {}
 MAX_LOOTCHANCE = 100000
 EventCallback = setmetatable({register = function() end}, {__newindex = rawset})
+MISSING_ITEMS = {}
 function ItemType(id)
-	return {isStackable = function() return false end, getName = function() return "item " .. id end}
+	return {getId = function() return MISSING_ITEMS[id] and 0 or id end, isStackable = function() return false end, getName = function() return "item " .. id end}
 end
 dofile("data/scripts/chaos/loot.lua")
 local L = ChaosLoot
@@ -92,6 +93,25 @@ G.PAIR28 = false
 L.setRandom(function(a) return a end)
 ok(L.levelGear(monster(false), owner("Warrior"), "normal", {huntLevel = 2000, itemFind = 1, pace = 1}) == nil, "switch off: nothing")
 G.PAIR28 = true
+
+-- class weapons of a scaled hunt (L.classWeapons, step 1e): the killer's class picks the families
+L.setRandom(function(a) return a end)
+ok(#L.classWeapons(monster(false), owner("Monk"), "normal", {huntLevel = 1000, itemFind = 1, pace = 1}) == 3,
+	"a Monk at 1000 rolls fist, one- and two-handed melee")
+ok(#L.classWeapons(monster(false), owner("Berserker"), "normal", {huntLevel = 1000, itemFind = 1, pace = 1}) == 1,
+	"a Berserker at 1000 rolls two-handed melee")
+ok(#L.classWeapons(monster(false), owner("Monk"), "normal", {huntLevel = 400, itemFind = 1, pace = 1}) == 0,
+	"a base hunt rolls none here")
+L.setRandom(function(a, b) return b end)
+ok(#L.classWeapons(monster(false), owner("Monk"), "normal", {huntLevel = 1000, itemFind = 1, pace = 1}) == 0, "a miss rolls none")
+
+-- client pair guard: a base the server has no item for is not dropped
+L.setRandom(function(a) return a end)
+local all = L.classWeapons(monster(false), owner("Monk"), "normal", {huntLevel = 1000, itemFind = 1, pace = 1})
+MISSING_ITEMS[all[1]] = true
+ok(#L.classWeapons(monster(false), owner("Monk"), "normal", {huntLevel = 1000, itemFind = 1, pace = 1}) == #all - 1,
+	"a base with no item on the server is not dropped")
+MISSING_ITEMS = {}
 
 if fails > 0 then
 	error(fails .. " of " .. checks .. " checks failed")

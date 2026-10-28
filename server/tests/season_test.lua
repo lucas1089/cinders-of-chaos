@@ -300,7 +300,7 @@ local CATEGORY = {
 	-- the Chaos shaders are in Outfit Shaders since 2026-10-21; Supplies is Potions, Boosts is XP Boosts and Blessings
 	["Starter"] = false, ["Crafting"] = false, ["Potions"] = false, ["XP Boosts"] = false, ["Blessings"] = false,
 	["World Buffs"] = false,
-	["Convenience"] = false, ["Training"] = false, ["Pets"] = false, ["Services"] = "mixed",
+	["Convenience"] = false, ["Everfull Potions"] = false, ["Training"] = false, ["Pets"] = false, ["Services"] = "mixed",
 	["Runes"] = false -- the rune packs: items
 }
 -- the pair 33 head accessories and capes (chaos_pack33.lua auras): looks only, sold while ChaosPack33.PAIR33 is on

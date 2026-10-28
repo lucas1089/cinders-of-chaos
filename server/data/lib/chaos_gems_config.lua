@@ -94,7 +94,7 @@ return {
 		-- engine life leech: chance (%) to leech amount (%) of the damage
 		leech = {label = "Life Leech Chance", label2 = "Life Leech Amount", fmt = "pair", cap = 20, cap2 = 15},
 		-- local to the weapon, like the Attack Speed modifier: the weapon's attack interval (mod + gems, at most this)
-		attackspeed = {label = "Attack Speed", fmt = "pct", cap = 20}
+		attackspeed = {label = "Attack Speed", fmt = "pct", cap = 15} -- 20 before 2026-10-28 (40% total cap, min-maxed)
 	},
 
 	-- ------------------------------------------------------------------ sockets

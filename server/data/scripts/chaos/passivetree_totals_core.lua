@@ -65,4 +65,16 @@ function M.crit(bonuses, gearChance, gearAmount)
 	}
 end
 
+-- Attack speed (engine patch 0078): the percent the tree and the worn pieces give as a player-level bonus, each under its own
+-- cap, together under the player cap; the engine adds its own rules on top (all bonuses together at most 40% shorter
+-- interval, one attack per second at most). nil when neither gives any.
+function M.attackSpeed(bonuses, gear, treeCap, playerCap)
+  local tree = math.min(treeCap or 12, math.max(0, math.floor((bonuses.attackSpeed or 0) + 1e-6)))
+  gear = math.max(0, math.floor(tonumber(gear) or 0))
+  if tree <= 0 and gear <= 0 then
+    return nil
+  end
+  return {total = math.min(playerCap or 20, tree + gear), tree = tree, gear = gear, cap = playerCap or 20}
+end
+
 return M

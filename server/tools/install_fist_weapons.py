@@ -9,10 +9,14 @@ The manifests (default server/data/items/fist_items.csv and fist_claws.csv; --ma
   fist_items.csv   written by client/tools/sprites/import_art_things.py (--manifest-out) from
                    client/tools/sprites/art_import/fist_weapons.csv: mode `new`, client ids 33654..33659 (appended after the
                    store pouch looks), server id = client id + 3000 (36654..36659)
-  fist_claws.csv   written by hand (owner 2026-10-23, "o monk nao tem armas"): mode `donor`, the 15 "claw" looks that the
-                   donor B import already put in the pair (client ids 28000.., server id = client id + 12000, 40000..;
-                   install_donor_items.py keeps their items.otb nodes and leaves their items.xml entries to this tool), so
-                   the Monk's claw weapons need no new sprites and no client update
+  fist_claws.csv   written by hand (owner 2026-10-23, "o monk nao tem armas"): mode `donor`, the first three claws and the
+                   "claw" looks that the donor B import already put in the pair (client ids 28000.., server id = client id +
+                   12000, 40000..; install_donor_items.py keeps their items.otb nodes and leaves their items.xml entries to
+                   this tool), so they need no new sprites and no client update. Since pair 56 (owner 2026-10-28, "aprovo
+                   todas", art/gen_fist2_art.py): mode `repoint`, the ten claws and uniques 40003-40012 keep their server ids
+                   and wear new looks, client ids 44399-44408 (install_donor_items.py leaves their nodes to this tool); mode
+                   `new4`, three new weapons, client ids 44409-44411, server id = client id + 4000 (48409-48411).
+                   These 13 need a client on pair 56 or newer (an older client draws other things or nothing for them)
 Both: name, and in `extra`: article, plural, weight, attack, defense, level, NPC prices (buy: NPCs sell it; sell: NPCs buy
 it), loot (monster:chance per 100000; ...), description, unique (the item is the base of a unique of
 data/items/chaos_items.xml and is in no shop or loot).
@@ -39,6 +43,10 @@ modifiers on it.
    `sell` price; the desert trader Grimgan buys every row with a `sell` price that no weapon dealer buys. Entries are added once (found by
    their id) and never changed afterwards. tools/gen_sell_prices.py picks the prices up for the Auto Seller.
 
+Client pair guard (README "Client pair guard"): while config.lua's chaosClientPair is lower than 56 or missing, the repoint
+rows are written with their old donor looks (client id = server id - 12000) and the new4 rows are skipped, with a printed
+message; from 56 on all 22 rows are written as the manifest says. A second run changes nothing in either state.
+
 Loot: data/scripts/chaos/fist_weapons.lua adds the `loot` rows to the monster types at startup (MonsterType:addLoot,
 from data/lib/chaos_fist_weapons.lua); no monster file is changed. Idempotent: a second run changes nothing.
 """
@@ -46,6 +54,7 @@ import os, re, shutil, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+import client_pair  # noqa: E402
 from install_pack_items import read_manifest, patch_otb, verify_otb  # noqa: E402
 from install_dark_tiles import xml_escape  # noqa: E402
 
@@ -53,7 +62,9 @@ REPO_DATA = os.path.join(os.path.dirname(HERE), 'data')
 DEFAULT_MANIFESTS = [os.path.join(REPO_DATA, 'items', 'fist_items.csv'), os.path.join(REPO_DATA, 'items', 'fist_claws.csv')]
 DEFAULT_MANIFEST = DEFAULT_MANIFESTS[0]
 # server id = client id + this, by manifest mode (new: the pack importer's items; donor: the donor B looks of the pair)
-ID_OFFSET = {'new': 3000, 'donor': 12000}
+# repoint: a fist weapon of the donor block (server ids 40003-40012, set by hand) that wears a new look of its own since pair 56
+# (client ids 44399-44408), so no rule; new4: the new items of pair 56 on, the pair 50 rule (server id = client id + 4000)
+ID_OFFSET = {'new': 3000, 'donor': 12000, 'new4': 4000, 'repoint': None}
 LUA_OUT = os.path.join(REPO_DATA, 'lib', 'chaos_fist_weapons.lua')
 XML_BEGIN = '\t<!-- Chaos fist weapons (server/tools/install_fist_weapons.py, do not edit by hand) -->\n'
 XML_END = '\t<!-- end of the Chaos fist weapons -->\n'
@@ -77,8 +88,12 @@ def rows_of(paths):
     assert len(ids) == len(set(ids)), 'duplicate server ids in the fist weapon manifests'
     for r in rows:
         assert r['mode'] in ID_OFFSET and r['kind'] == 'weapon', r['key']
-        assert r['server_id'] == r['client_id'] + ID_OFFSET[r['mode']], \
-            'server id must be client id + %d (%s)' % (ID_OFFSET[r['mode']], r['key'])
+        if ID_OFFSET[r['mode']] is not None:
+            assert r['server_id'] == r['client_id'] + ID_OFFSET[r['mode']], \
+                'server id must be client id + %d (%s)' % (ID_OFFSET[r['mode']], r['key'])
+        else:
+            assert 40000 <= r['server_id'] <= 40012 and r['client_id'] >= 44399, \
+                'a repointed claw keeps its donor server id and wears a pair 56 look (%s)' % r['key']
         for k in ('weight', 'attack', 'defense', 'level'):
             assert r['ex'].get(k, '').isdigit(), '%s: %s missing' % (r['key'], k)
         r['loot'] = []
@@ -129,7 +144,7 @@ def drop_donor_entries(text, rows):
     """the donor step's bare `<item id=".." name="claw N" />` entries of the claw rows leave the donor block (a server that
     ran the donor step before this tool took them over); the donor step no longer writes them"""
     for r in rows:
-        if r['mode'] == 'donor':
+        if r['mode'] in ('donor', 'repoint'):
             text = re.sub(r'[ \t]*<item id="%d" name="[^"]*" />\n' % r['server_id'], '', text)
     return text
 
@@ -218,7 +233,8 @@ def lua_text(rows):
     L = ['-- The Monk line\'s fist weapons (server/tools/install_fist_weapons.py --lua, from server/data/items/fist_items.csv and',
          '-- fist_claws.csv). Generated; do not edit by hand. The items exist after the "fistweapons" install step and need',
          '-- the matching client pair (client/tools/sprites/import_art_things.py with art_import/fist_weapons.csv for the',
-         '-- 3665x items; the 4000x claws use looks the pair has already: donor B claws 1-13).',
+         '-- 3665x items; the first three claws 40000-40002 use looks the pair has already (donor B); the other claws, the uniques and',
+         '-- the three new weapons 4840x are the pair 56 looks, client ids 44399-44411, gen_fist2_art.py).',
          '-- ids: the server ids by level (the same list as ChaosMonk.cfg.unarmed.fistWeapons); items[id]: key, name, attack,',
          '-- defense, level; loot: {monster, item id, chance per 100000} added to the monster types at startup',
          '-- (data/scripts/chaos/fist_weapons.lua).', '', 'ChaosFistWeapons = {', '\tids = {%s},' % ', '.join(
@@ -233,6 +249,32 @@ def lua_text(rows):
             L.append('\t\t{"%s", %d, %d},' % (mon, r['server_id'], chance))
     L += ['\t}', '}', '']
     return '\n'.join(L)
+
+
+# ------------------------------------------------------------------------------------------------ client pair guard
+def apply_pair_guard(rows, pair):
+    """(rows, notes) for the client pair the shipped client is on (`pair`: the recorded chaosClientPair, None = missing).
+    Rows of mode new4 and repoint need pair 56 (client_pair.PAIR_FIST). Below it a repoint row keeps its donor look (client id
+    = server id - 12000, the look the item had before pair 56) and a new4 row is not installed at all. Nothing else changes."""
+    need = client_pair.PAIR_FIST
+    if pair is not None and pair >= need:
+        return rows, []
+    out, held, kept = [], [], []
+    for r in rows:
+        if r['mode'] == 'new4':
+            held.append(r['name'])
+        elif r['mode'] == 'repoint':
+            r = dict(r)
+            r['client_id'] = r['server_id'] - ID_OFFSET['donor']
+            kept.append(r['name'])
+            out.append(r)
+        else:
+            out.append(r)
+    notes = ['WARNING: fistweapons: client pair %s recorded, the new looks need pair %d: %d claws and uniques stay on their donor '
+             'looks (%s), %d new weapons are not installed (%s). %s' % (
+                 'missing' if pair is None else pair, need, len(kept), ', '.join(kept), len(held), ', '.join(held),
+                 client_pair.lift_hint(need))]
+    return out, notes
 
 
 def main():
@@ -251,6 +293,9 @@ def main():
         print(__doc__)
         return 1
     data_dir = args[0]
+    rows, gnotes = apply_pair_guard(rows, client_pair.recorded(data_dir))
+    for x in gnotes:
+        print(x)
     otb = os.path.join(data_dir, 'items', 'items.otb')
     xml = os.path.join(data_dir, 'items', 'items.xml')
     moves = os.path.join(data_dir, 'movements', 'movements.xml')

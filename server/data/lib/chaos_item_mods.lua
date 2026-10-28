@@ -50,6 +50,7 @@ M.IMPLICIT = "chaos_cimp"
 M.RAW_PREFIX = "cv_"
 M.BIND_PREFIX = "cb_"
 M.QUIVER_SPEED = "chaos_qspd" -- on a launcher: the Attack Speed with Bows of the quiver worn with it (archery.lua)
+M.NAME_MARK = "chaos_aname" -- = 1 on an item whose name ChaosCrafting.applyName wrote (a name of another script is left alone)
 
 -- ---------------------------------------------------------------------------------------------------------------
 -- configuration
@@ -68,6 +69,8 @@ M.config = {
 	-- src-patches/0049-absorb-ceiling.patch (tests/absorb_ceiling_test.lua keeps the two equal).
 	absorbCeiling = 75,
 	maxTier = 8,
+	-- the most the passive tree and the worn pieces give together as a player-level attack speed (M.setPlayerAttackSpeed)
+	playerSpeedCap = 12, -- tree + worn pieces (20 before 2026-10-28: the 40% total cap is reached only min-maxed)
 	-- the item level a tier needs (T1 .. T8)
 	tierLevels = {1, 15, 30, 50, 70, 95, 120, 140},
 	-- roll weight of each tier: higher tiers are rarer
@@ -177,9 +180,14 @@ M.config = {
 			tiers = {{4, 7}, {7, 11}, {10, 15}, {14, 20}, {18, 26}, {23, 32}, {29, 39}, {36, 48}}},
 
 		-- suffixes: utility, resistances and speed
-		{key = "attackspeed", label = "Attack Speed", fmt = "pct", side = "suffix", weight = 8, cap = 15,
+		{key = "attackspeed", label = "Attack Speed", fmt = "pct", side = "suffix", weight = 20, cap = 15,
 			kinds = {weapon = true},
 			tiers = {{2, 3}, {3, 4}, {4, 6}, {5, 7}, {7, 9}, {9, 11}, {11, 13}, {13, 15}}},
+		-- worn pieces (rings, amulets, belts and the like): a player-level bonus, the weapon's own modifier above stays
+		-- local to the weapon. Summed with the passive tree's attackSpeed under config.playerSpeedCap (M.setPlayerAttackSpeed)
+		{key = "gearspeed", label = "Attack Speed", fmt = "pct", side = "suffix", weight = 16, cap = 10,
+			kinds = {jewel = true, other = true},
+			tiers = {{1, 1}, {1, 2}, {2, 2}, {2, 3}, {3, 4}, {3, 5}, {4, 6}, {5, 7}}},
 		{key = "movespeed", label = "Movement Speed", fmt = "pct", side = "suffix", weight = 10, cap = 12,
 			kinds = {boots = true},
 			tiers = {{2, 3}, {3, 4}, {4, 5}, {5, 7}, {6, 8}, {8, 10}, {9, 11}, {10, 12}}},
@@ -224,6 +232,115 @@ M.config = {
 		{key = "manacost", label = "Mana Cost Reduction", fmt = "pct", side = "suffix", weight = 4, cap = 25,
 			kinds = {helmet = true, armor = true, jewel = true},
 			tiers = {{2, 3}, {3, 5}, {5, 7}, {7, 10}, {9, 12}, {11, 15}, {14, 18}, {17, 21}}}
+	},
+
+	-- item names (owner 2026-10-28): a rolled item is named after its best prefix and best suffix, "Vicious Longsword of
+	-- Haste" (ChaosCrafting.affixName). One entry per affix of ChaosCrafting.affixes(), keyed by the Chaos modifier key or
+	-- the lower case attribute key of an engine one: {word, top word}. The word of a prefix is an adjective, the word of
+	-- a suffix an "of ..." phrase. The top word replaces the plain one from tier `topTier` on (optional). No word may
+	-- contain "orb" (the market files an unknown item with such a name under Orbs) or a bracket; tests/item_names_test.lua
+	-- checks that every affix has a word and that no two affixes of a side share one.
+	names = {
+		topTier = 7,
+		words = {
+			-- the engine's modifiers: absorbs (suffix)
+			rarity_physicalabsorb = {"of the Bulwark", "of the Juggernaut"},
+			rarity_energyabsorb = {"of Grounding", "of the Stormward"},
+			rarity_earthabsorb = {"of Stonehide", "of the Mountain"},
+			rarity_fireabsorb = {"of Cinders", "of Ashen Ward"},
+			rarity_drownabsorb = {"of the Deep", "of the Abyss"},
+			rarity_iceabsorb = {"of Rime", "of the Glacier"},
+			rarity_holyabsorb = {"of Sanctity", "of Divinity"},
+			rarity_deathabsorb = {"of the Grave", "of the Crypt"},
+			rarity_waterabsorb = {"of the Tide", "of the Maelstrom"},
+			rarity_arcaneabsorb = {"of the Veil", "of the Aegis"},
+			-- combat skills (prefix); sword, axe and club are one Melee modifier
+			rarity_fistskill = {"Brawling", "Ironfisted"},
+			rarity_clubskill = {"Brutal", "Savage"},
+			rarity_swordskill = {"Brutal", "Savage"},
+			rarity_axeskill = {"Brutal", "Savage"},
+			rarity_distanceskill = {"Farseeing", "Deadeye"},
+			rarity_shieldskill = {"Stalwart", "Unbreaking"},
+			rarity_maglevelskill = {"Occult", "Sorcerous"},
+			-- professions (suffix)
+			rarity_fishingskill = {"of the Angler"},
+			rarity_craftingskill = {"of the Artisan"},
+			rarity_woodcuttingskill = {"of the Woodsman"},
+			rarity_miningskill = {"of the Delver"},
+			rarity_herbalistskill = {"of the Herbalist"},
+			rarity_armorsmithskill = {"of the Armorer"},
+			rarity_weaponsmithskill = {"of the Bladesmith"},
+			rarity_jewelsmithskill = {"of the Gemcutter"},
+			-- critical hits (prefix), life and mana leech (suffix); keyed by the chance attribute
+			rarity_criticalhitchance = {"Vicious", "Murderous"},
+			rarity_lifeleechchance = {"of the Leech", "of the Vampire"},
+			rarity_manaleechchance = {"of the Siphon", "of the Wraith"},
+			-- weapon elements (prefix)
+			rarity_elementfire = {"Searing", "Infernal"},
+			rarity_elementice = {"Frigid", "Glacial"},
+			rarity_elementenergy = {"Galvanic", "Stormforged"},
+			rarity_elementdeath = {"Withering", "Gravebound"},
+			rarity_elementearth = {"Gnarled", "Overgrown"},
+			rarity_elementwater = {"Tidal", "Torrential"},
+			rarity_elementarcane = {"Eldritch", "Astral"},
+			rarity_elementholy = {"Hallowed", "Radiant"},
+			-- the Chaos modifiers: prefixes
+			bossdamage = {"Slaying", "Kingslaying"},
+			dodge = {"Elusive", "Phantom"},
+			reflect = {"Mirrored", "Avenging"},
+			thorns = {"Thorned", "Briarbound"},
+			monsterreduction = {"Steadfast", "Unyielding"},
+			block = {"Guarded", "Impregnable"},
+			bleedchance = {"Serrated", "Flaying"},
+			ignitechance = {"Smoldering", "Cindering"},
+			poisonchance = {"Venomous", "Noxious"},
+			chillchance = {"Chilling", "Rimebound"},
+			shockchance = {"Sparking", "Stormcharged"},
+			physpen = {"Rending", "Sundering"},
+			elepen = {"Unraveling", "Veilrending"},
+			execute = {"Ruthless", "Merciless"},
+			dot = {"Festering", "Putrid"},
+			deathblast = {"Cataclysmic", "Apocalyptic"},
+			frostward = {"Winterwarded", "Icebound"},
+			echoshot = {"Echoing", "Resounding"},
+			critecho = {"Reverberant", "Haunting"},
+			arclightning = {"Forking", "Thunderous"},
+			bloodrush = {"Ravenous", "Bloodmad"},
+			shattersplash = {"Shattering", "Splintering"},
+			bowdistance = {"Sharpsighted", "Hawkeyed"},
+			bowcrit = {"Piercing", "Heartseeking"},
+			multishot = {"Twinned", "Manifold"},
+			arrowfire = {"Flaming", "Wildfire"},
+			arrowice = {"Frostfletched", "Hailstruck"},
+			arrowenergy = {"Crackling", "Thunderstruck"},
+			arrowearth = {"Thornfletched", "Stonebarbed"},
+			energyshield = {"Shielded", "Bastioned"},
+			energyshieldpct = {"Fortified", "Ensorcelled"},
+			-- the Chaos modifiers: suffixes
+			attackspeed = {"of Haste", "of Frenzy"},
+			gearspeed = {"of Swiftstrikes", "of the Whirlwind"},
+			movespeed = {"of the Fleet", "of the Gale"},
+			lifeonkill = {"of Carnage", "of Slaughter"},
+			manaonkill = {"of Reaping", "of the Soulreaper"},
+			lifeonhit = {"of Bloodthirst", "of Bloodlust"},
+			manaonhit = {"of Tapping", "of the Wellspring"},
+			regen = {"of Mending", "of Regrowth"},
+			experience = {"of the Scholar", "of Ascension"},
+			goldfind = {"of Greed", "of the Hoard"},
+			itemfind = {"of Plunder", "of Pillage"},
+			rarityfind = {"of Fortune", "of Providence"},
+			healing = {"of Mercy", "of Succor"},
+			goblinchance = {"of the Magpie", "of the Gilded Magpie"},
+			cdr = {"of Alacrity", "of Quickening"},
+			manacost = {"of Thrift", "of Austerity"},
+			crimsonburst = {"of Red Ruin", "of the Bloodmoon"},
+			lastbreath = {"of Defiance", "of the Undying"},
+			emberstep = {"of the Emberstep", "of the Phoenix"},
+			hunterrush = {"of the Hunt", "of the Wild Hunt"},
+			smolderaura = {"of Smoulder", "of the Pyre"},
+			bowspeed = {"of the Quickdraw", "of the Rapid Volley"},
+			esrecharge = {"of Renewal", "of the Wellwarden"}
+		}
 	},
 
 	-- what the new modifiers do (item_mods.lua): an ailment deals `share` % of the hit that caused it over `rounds`
@@ -310,6 +427,20 @@ end
 
 function M.attr(key)
 	return M.PREFIX .. key
+end
+
+-- the name word of an affix (config.names): `key` is the Chaos modifier key or the attribute key of an engine modifier,
+-- `tier` picks the top word from config.names.topTier on; nil when the affix has none
+function M.nameWord(key, tier)
+	local n = M.config.names
+	local w = n.words[tostring(key):lower()]
+	if not w then
+		return nil
+	end
+	if w[2] and (tonumber(tier) or 0) >= n.topTier then
+		return w[2]
+	end
+	return w[1]
 end
 
 -- the attribute that holds the tier of the modifier stored under attribute `attrKey`
@@ -806,7 +937,7 @@ end
 
 -- Attack speed cap (engine patch 0011; server/README.md "Attack speed cap"). The engine owns the numbers (config.lua
 -- minPlayerAttackInterval, maxPlayerAttackSpeedBonus); these are its defaults, used where configManager is missing.
-M.attackCap = {minInterval = 1000, maxBonus = 25}
+M.attackCap = {minInterval = 1000, maxBonus = 40} -- 40 since 2026-10-28 (owner; 25 before)
 
 function M.attackCapConfig()
 	local cap = {minInterval = M.attackCap.minInterval, maxBonus = M.attackCap.maxBonus}
@@ -821,9 +952,10 @@ end
 
 -- the interval (ms) a character swings at, as the engine's Player::getAttackSpeed computes it: typeSpeed = the weapon
 -- type's own interval (0 = none), itemSpeed = the weapon's interval (its attribute, else typeSpeed; 0 / nil = no
--- weapon or none), vocSpeed = the vocation's attackspeed, dexterity = the stat window's points. Returns the interval,
+-- weapon or none), vocSpeed = the vocation's attackspeed, dexterity = the stat window's points, bonus = the player's
+-- attack speed bonus % (tree + gloves / rings / amulets, never below 1000 ms: one attack per second at most). Returns the interval,
 -- whether the cap raised it, and the interval without the cap.
-function M.effectiveInterval(typeSpeed, itemSpeed, vocSpeed, dexterity, cap)
+function M.effectiveInterval(typeSpeed, itemSpeed, vocSpeed, dexterity, cap, bonus)
 	cap = cap or M.attackCapConfig()
 	vocSpeed = tonumber(vocSpeed) or 2000
 	itemSpeed, typeSpeed = tonumber(itemSpeed) or 0, tonumber(typeSpeed) or 0
@@ -832,7 +964,9 @@ function M.effectiveInterval(typeSpeed, itemSpeed, vocSpeed, dexterity, cap)
 		ret = floor(itemSpeed * vocSpeed / 2000)
 		base = floor((typeSpeed > 0 and typeSpeed or M.config.defaultAttackSpeed) * vocSpeed / 2000)
 	end
+	-- the player-level attack speed bonus (engine patch 0078, Player:setAttackSpeedBonus) counts like dexterity points
 	local dex = math.min(100, math.max(0, tonumber(dexterity) or 0))
+	dex = math.min(100, dex + math.min(100, math.max(0, tonumber(bonus) or 0)))
 	local uncapped = floor(ret - ret * dex / 100 + 1e-9)
 	local interval = ret - ret * dex / 100
 	local maxBonus = tonumber(cap.maxBonus) or 0
@@ -864,6 +998,56 @@ function M.syncAttackSpeed(item)
 		item:setAttribute(ITEM_ATTRIBUTE_ATTACK_SPEED, M.attackInterval(it and typeNumber(it, "getAttackSpeed") or 0, pct))
 	else
 		pcall(function() item:removeAttribute(ITEM_ATTRIBUTE_ATTACK_SPEED) end)
+	end
+end
+
+-- The player-level attack speed (engine patch 0078, Player:setAttackSpeedBonus): the passive tree's "attackSpeed" stat
+-- and the "gearspeed" modifier of rings, amulets and other worn pieces (the weapon's own "attackspeed" stays on the
+-- weapon, M.syncAttackSpeed). Each source reports its percent here; the sum is held at M.config.playerSpeedCap and handed
+-- to the engine, whose rules of patch 0011 still apply on top: all attack speed bonuses together shorten the interval by at
+-- most 40% and no player swings faster than once per second (minPlayerAttackInterval = 1000 ms), whatever the sources.
+M.playerSpeed = M.playerSpeed or {} -- player id -> {tree = pct, gear = pct, total = pct}
+
+function M.playerSpeedTotal(sources)
+	local sum = 0
+	for _, v in pairs(sources or {}) do
+		if type(v) == "number" then
+			sum = sum + math.max(0, v)
+		end
+	end
+	return math.min(M.config.playerSpeedCap, floor(sum + 1e-9))
+end
+
+-- source = "tree" or "gear"; returns the total handed to the engine. Without the engine patch the call does nothing.
+function M.setPlayerAttackSpeed(player, source, pct)
+	if not player then
+		return 0
+	end
+	local ok, id = pcall(function() return player:getId() end)
+	if not ok then
+		return 0
+	end
+	local row = M.playerSpeed[id] or {}
+	M.playerSpeed[id] = row
+	row[source] = tonumber(pct) or 0
+	row.total = M.playerSpeedTotal(row)
+	if type(player.setAttackSpeedBonus) == "function" then
+		pcall(player.setAttackSpeedBonus, player, row.total)
+	end
+	return row.total
+end
+
+-- the total of a player (the tooltips' "Your Attack Interval")
+function M.playerAttackSpeed(player)
+	local ok, id = pcall(function() return player:getId() end)
+	local row = ok and M.playerSpeed[id]
+	return row and row.total or 0
+end
+
+function M.clearPlayerAttackSpeed(player)
+	local ok, id = pcall(function() return player:getId() end)
+	if ok then
+		M.playerSpeed[id] = nil
 	end
 end
 

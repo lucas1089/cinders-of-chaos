@@ -133,6 +133,11 @@ eq(c.chance.total, 28, "total chance is the engine's"); eq(c.chance.tree, 12, "t
 eq(c.amount.total, 40, "total damage"); eq(c.amount.tree, 20, "tree damage"); eq(c.amount.paragon, 5, "Paragon damage"); eq(c.amount.other, 15, "gear damage")
 c = PassiveTotalsCore.crit(bon, nil, nil)
 eq(c.chance.total, 12, "no engine value: the tree only"); eq(c.chance.other, 0, "nothing else known"); eq(c.amount.total, 25, "tree + Paragon")
+local sp = PassiveTotalsCore.attackSpeed({attackSpeed = 9}, 5, 12, 20)
+eq(sp.total, 14, "attack speed: tree + gear"); eq(sp.tree, 9, "tree share"); eq(sp.gear, 5, "gear share")
+sp = PassiveTotalsCore.attackSpeed({attackSpeed = 30}, 15, 12, 20)
+eq(sp.total, 20, "held at the player cap"); eq(sp.tree, 12, "tree share held at its cap")
+eq(PassiveTotalsCore.attackSpeed({}, 0, 12, 20), nil, "no attack speed, no row")
 c = PassiveTotalsCore.crit({}, 0, 0); eq(c.chance.total, 0, "no crit"); eq(c.amount.total, 0, "no damage")
 c = PassiveTotalsCore.crit(bon, 5, 5); eq(c.chance.total, 12, "never below what the tree itself gives"); eq(c.amount.other, 0, "never negative")
 

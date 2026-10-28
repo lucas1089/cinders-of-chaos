@@ -260,7 +260,9 @@ do
 	end
 	-- tier-1 keys from normal kills
 	eq(R.monsterKeyChance(cfg, 200, 99, "normal"), 0, "killer below level 100")
+	-- hunting levels (O284, O285: baseLevelMult 1, so the pool level)
 	eq(R.monsterKeyChance(cfg, 50, 120, "normal"), 0, "monster below level 60")
+	eq(R.monsterKeyChance(cfg, 120, 300, "normal"), 250, "level 120 at killer 300 (0.4 x)")
 	eq(R.monsterKeyChance(cfg, 300, 1000, "normal"), 0, "monster far below the killer (level x 0.4)")
 	eq(R.monsterKeyChance(cfg, 400, 1000, "normal"), 250, "level-appropriate kill")
 	eq(R.monsterKeyChance(cfg, 400, 1000, "legendary"), 5000, "legendary x20")

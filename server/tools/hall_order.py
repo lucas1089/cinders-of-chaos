@@ -60,7 +60,7 @@ class HallError(Exception):
 # ------------------------------------------------------------------------------------------------ the data file
 def base_level_mult(path=None):
     """pace_config.lua baseLevelMult: the CSV's levels are on the bounty pool scale (hunt_band), the hall shows and orders
-    by the HUNTING level, pool x this (owner 2026-10-27)"""
+    by the HUNTING level, pool x this (owner 2026-10-27; baseLevelMult is 1 since 2026-10-28, O285, so the pool level)"""
     path = path or os.path.join(os.path.dirname(HERE), 'data', 'scripts', 'chaos', 'pace_config.lua')
     with open(path, encoding='utf-8') as f:
         m = re.search(r'\bbaseLevelMult\s*=\s*(\d+)', f.read())

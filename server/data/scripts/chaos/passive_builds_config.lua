@@ -81,8 +81,8 @@ ChaosPassiveBuildsConfig = {
 				magicSkill = 0.8, intelligence = 0.4}},
 		{key = "defense", name = "Defense", text = "Health, resistances to every damage type and the shielding skill.",
 			stats = {vitality = 1, absorbs = 1, skillShield = 1}, shield = true},
-		{key = "mobility", name = "Speed", text = "Movement speed first; attack speed (dexterity) and evasion nodes on the way.",
-			stats = {speed = 3, dexterity = 0.5}, minNodes = 8},
+		{key = "mobility", name = "Speed", text = "Movement speed first; attack speed nodes and dexterity on the way.",
+			stats = {speed = 3, attackSpeed = 2, dexterity = 0.5}, minNodes = 8},
 		{key = "loot", name = "Loot", text = "Item find and item rarity: more drops, better drops.",
 			stats = {loot = 1, rarityLoot = 1}, minNodes = 8},
 		{key = "experience", name = "Experience", text = "Experience gained from monsters.",
@@ -239,7 +239,7 @@ ChaosPassiveBuildsConfig = {
 	-- the one-line summary of a build: its top three stats, "<label> +<value>" ({scale} = node value to shown value)
 	statLabels = {
 		strength = {"Strength", 1}, dexterity = {"Dexterity", 1}, intelligence = {"Intelligence", 1}, vitality = {"Vitality", 1},
-		spirit = {"Spirit", 1}, speed = {"Speed", 0.1}, experience = {"Experience %", 0.1}, loot = {"Item find %", 0.2},
+		spirit = {"Spirit", 1}, speed = {"Speed", 0.1}, attackSpeed = {"Attack speed %", 1}, experience = {"Experience %", 0.1}, loot = {"Item find %", 0.2},
 		rarityLoot = {"Item rarity %", 1}, criticalHitChance = {"Crit chance", 1}, criticalHitAmount = {"Crit amount", 1},
 		lifeLeechChance = {"Life leech chance", 1}, lifeLeechAmount = {"Life leech amount", 1},
 		manaLeechChance = {"Mana leech chance", 1}, manaLeechAmount = {"Mana leech amount", 1},

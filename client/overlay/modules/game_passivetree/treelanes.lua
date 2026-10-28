@@ -12,7 +12,7 @@ TreeLanes = {}
 local ELEMENTS = {Physical = true, Fire = true, Ice = true, Energy = true, Earth = true, Death = true, Holy = true,
 	Arcane = true, Water = true, Drown = true}
 local LABELS = {
-	strength = "Strength", dexterity = "Dexterity", intelligence = "Intelligence", vitality = "Vitality", spirit = "Spirit",
+	strength = "Strength", dexterity = "Dexterity", attackSpeed = "Attack Speed", intelligence = "Intelligence", vitality = "Vitality", spirit = "Spirit",
 	wisdom = "Wisdom", incrementHealth = "Health Spells", multiIncrement = "All Damage",
 	absorbAllElements = "Elemental Absorption", swordSkill = "Sword Skill", axeSkill = "Axe Skill", clubSkill = "Club Skill",
 	distanceSkill = "Distance Skill", magicSkill = "Magic Level", shielding = "Shielding", craftingSkill = "Crafting Skill",

@@ -169,6 +169,21 @@ jobs:
           # and sums match the generator, each look passes style_check, and the ids agree with potions_config.lua
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_everfull_art.py build --check
           python3 -I client/tools/sprites/gen_everfull_art_test.py
+          # the Ember pickup look of pair 55 (one PixelLab portal, a 1 x 1 item): committed source, atlas, things file and
+          # sums match the generator, the look passes style_check, and the ids agree with pickups_config.lua
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_portal_art.py build --check
+          python3 -I client/tools/sprites/gen_portal_art_test.py
+          # the Monk fist weapon looks of pair 56 (thirteen PixelLab 32 x 32 items: six claws, four uniques, three new
+          # weapons): committed sources, atlas, things file and sums match the generator, each look passes style_check
+          # on its own colours, and the ids agree with server/data/items/fist_claws.csv
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_fist2_art.py build --check
+          python3 -I client/tools/sprites/gen_fist2_art_test.py
+          # the 34 weapons above level 800 of pair 56 (nine bows, four crossbows, nine wands, nine rods, a two-handed sword, axe
+          # and maul; PixelLab 32 x 32 items, client ids 44412-44445): committed sources, atlas, things file, credits and sums
+          # match the generator, each look passes style_check on its own colours, and the ids agree with
+          # server/data/items/weapons800.csv
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_weapons800_art.py build --check
+          python3 -I client/tools/sprites/gen_weapons800_art_test.py
           # the Reward Chest look of pair 45 (one PixelLab chest, a 2 x 2 item): committed source, atlas, things file and
           # sums match the generator, and the look passes style_check on its own colours
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_reward_chest_art.py build --check
@@ -190,6 +205,8 @@ jobs:
           # the owner's art of pair 26 (monster looks, wings, decoration): sheets, things file and picks match the spec
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_owner_art.py build --check
           python3 -I client/tools/sprites/gen_owner_art_test.py
+          # the AutoSprite looks of pair 54 (Vharzul, Ashbound Thrall, Slagback Hound): sheets, things file, picks and sources match the spec
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_autosprite_art.py build --check
           python3 -I server/tools/install_owner_decor.py --lua --check
           python3 -I server/tools/install_owner_decor_test.py
           # pair 48 decoration (O266): the donor importer's wide-header reader and key prefix, the install step on synthetic files
@@ -211,6 +228,8 @@ jobs:
           python3 -I server/tools/patch_npc_currency_test.py
           python3 -I server/tools/check_dead_holes_test.py   # floor changes that lead nowhere (O263; needs a map to run for real)
           python3 -I server/tools/patch_dead_holes_test.py   # the install step deadholes on a synthetic map
+          python3 -I server/tools/patch_lava_edges_test.py   # the install step lavaedges on a synthetic map (O288)
+          python3 -I server/tools/patch_crypt_floors_test.py   # the install step cryptfloors on a synthetic map (O288)
           python3 -I server/tools/patch_drops_channel_test.py  # the Drops channel of the drop feed (O260)
           # catacomb kit (pair 27 trial): spec, sources and picks match gen_assets_art.py's tables (kit files not in git)
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_assets_art.py build --check
@@ -384,6 +403,23 @@ jobs:
             server/src-patches/0060-fx-send-offsets.patch > "$d/chaosfxoffsets.h"
           g++ -std=c++17 -Wall -Wextra -I "$d" server/tools/chaosfxoffsets_test.cpp -o "$d/chaosfxoffsets_test"
           "$d/chaosfxoffsets_test"
+
+      - name: Eight-direction facing (C++; header from server src-patch 0077)
+        run: |
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/chaosfacing\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            server/src-patches/0077-eight-direction-facing.patch > "$d/chaosfacing.h"
+          g++ -std=c++17 -O1 -Wall -Wextra -I "$d" server/tools/chaosfacing_test.cpp -o "$d/chaosfacing_test"
+          "$d/chaosfacing_test"
+          g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" server/tools/chaosfacing_test.cpp -o "$d/chaosfacing_asan"
+          "$d/chaosfacing_asan"
+          awk '/^\+\+\+ b\/src\/client\/chaosfacing\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            client/base-patches/0160-eight-direction-looks.patch > "$d/client_chaosfacing.h"
+          mkdir "$d/client" && mv "$d/client_chaosfacing.h" "$d/client/chaosfacing.h"
+          g++ -std=c++17 -O1 -Wall -Wextra -I "$d/client" client/tools/chaosfacing_test.cpp -o "$d/client_facing_test"
+          "$d/client_facing_test"
+          g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d/client" client/tools/chaosfacing_test.cpp -o "$d/client_facing_asan"
+          "$d/client_facing_asan"
 
       - name: Live cast, pure parts (C++; header from server src-patch 0064)
         run: |
@@ -897,6 +933,12 @@ jobs:
       - name: Ground pickups install (globes and ember items, synthetic items.otb / items.xml)
         run: python3 -I server/tools/install_pickups_test.py
 
+      - name: Client pair guard and the pair 55 and 56 item installs (chaosClientPair in config.lua, pickups 55, fist weapons and weapons above level 800 56)
+        run: |
+          python3 -I server/tools/client_pair_test.py
+          python3 -I server/tools/install_fist_weapons_test.py
+          python3 -I server/tools/install_weapons800_test.py
+
       - name: Base NPC script names (patch_base_npcs.py step 5, the letter case of the script file)
         run: python3 -I server/tools/patch_base_npcs_test.py
 
@@ -1051,6 +1093,9 @@ jobs:
       - name: Combat numbers in the viewer's display scale (server src-patch 0037, guard)
         run: python3 -I server/tools/display_scale_patch_test.py
 
+      - name: Player attack speed bonus, one attack per second (patch 0078)
+        run: python3 -I server/tools/attack_speed_bonus_patch_test.py
+
       - name: Tester bots out of the base player lists (patch_tester_filters.py)
         run: python3 -I server/tools/patch_tester_filters_test.py
 
@@ -1145,6 +1190,12 @@ jobs:
           cd server
           luajit tools/gen_wiki_data.lua --check
           lua5.3 tools/gen_wiki_data.lua --check  # Lua 5.3 must give the same bytes
+
+      - name: Attack speed lanes of the passive tree are in classlanes.lua (gen_class_lanes.lua --attack-speed)
+        run: |
+          cd server
+          luajit tools/gen_class_lanes.lua --attack-speed --check
+          lua5.3 tools/gen_class_lanes.lua --attack-speed --check
 
       - name: Passive tree data is up to date with the client tree (Lua 5.3 and LuaJIT write the same file)
         run: |

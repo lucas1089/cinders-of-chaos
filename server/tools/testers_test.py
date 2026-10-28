@@ -618,20 +618,20 @@ SP = ('<spawn centerx="100" centery="100" centerz="7" radius="3">\n<monster name
       '<spawn centerx="108" centery="100" centerz="7" radius="3">\n<monster name="Juggernaut" x="1" y="1"/>\n</spawn>\n'
       '<spawn centerx="112" centery="100" centerz="7" radius="3">\n<monster name="Nameless" x="1" y="1"/>\n</spawn>\n')
 CL = LT.spawn_levels(SP, LT.pool_levels(POOL))
-eq(CL, {(100, 100, 7): 10, (104, 100, 7): 40, (108, 100, 7): 568, (112, 100, 7): 10 ** 9},
-   'a spawn centre counts at its highest monster, twice the pool level; an unknown monster never safe')
-eq(LT.base_level_mult(), 2, 'baseLevelMult read from pace_config.lua')
+eq(CL, {(100, 100, 7): 5, (104, 100, 7): 20, (108, 100, 7): 284, (112, 100, 7): 10 ** 9},
+   'a spawn centre counts at its highest monster, the pool level (baseLevelMult 1); an unknown monster never safe')
+eq(LT.base_level_mult(), 1, 'baseLevelMult read from pace_config.lua (1 since 2026-10-28, O285)')
 eq(LT.spawn_levels(SP, LT.pool_levels(POOL), 3)[(104, 100, 7)], 60, 'the multiplier is a parameter')
 IDX = LT.spawn_index(SP)
-eq(LT.snap_to_spawn((107, 100, 7), IDX, reach=12, centre_levels=CL, max_level=30), (100, 100, 7),
-   'level 30 passes the Terror Bird (40) and the Juggernaut: the quiet centre')
-eq(LT.snap_to_spawn((107, 100, 7), IDX, reach=12, centre_levels=CL, max_level=45), (104, 100, 7), 'level 45: the Terror Bird one')
+eq(LT.snap_to_spawn((107, 100, 7), IDX, reach=12, centre_levels=CL, max_level=15), (100, 100, 7),
+   'level 15 passes the Terror Bird (20) and the Juggernaut (284): the quiet centre')
+eq(LT.snap_to_spawn((107, 100, 7), IDX, reach=12, centre_levels=CL, max_level=30), (104, 100, 7), 'level 30: the Terror Bird one')
 eq(LT.snap_to_spawn((107, 100, 7), IDX, reach=12), (108, 100, 7), 'no levels: the nearest, as before')
 HUNTS2 = [(1, 10, 100, 100, 7), (20, 30, 108, 100, 7)]
-pos = T.place_testers([30, 45], HUNTS2, [(50, 50, 7)], IDX, CL)
-ok(all(CL.get(p, 10 ** 9) <= lv for p, lv in zip(pos, [30, 45])), 'no tester on a spawn above its level: %r' % pos)
+pos = T.place_testers([15, 30], HUNTS2, [(50, 50, 7)], IDX, CL)
+ok(all(CL.get(p, 10 ** 9) <= lv for p, lv in zip(pos, [15, 30])), 'no tester on a spawn above its level: %r' % pos)
 eq(T.place_testers([30], HUNTS2, [(50, 50, 7)], LT.spawn_index('<spawn centerx="108" centery="100" centerz="7" radius="3">'),
-                   {(108, 100, 7): 568}), [(50, 50, 7)], 'no safe spawn within reach: the temple')
+                   {(108, 100, 7): 284}), [(50, 50, 7)], 'no safe spawn within reach: the temple')
 eq(T.place_testers([30], [], [(50, 50, 7)])[0][2], 7, 'no hunting marks: round the temple')
 dead = [{'kind': 'death', 'who': 'Tester Aaa', 'level': 30, 'killer': 'Wiggler', 'hits': 4, 'damage': 300, 'damagePct': 75,
          'biggest': 90, 'biggestPct': 22, 'online': 3},

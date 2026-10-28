@@ -306,6 +306,10 @@ def test_creatures(items, dims):
     expect(w.walks[0][5] == cr.step_ms(80, 100, True, False), 'a diagonal monster step')
     expect(w.frame(u8(0x6B) + pos(PX + 3, PY + 1, PZ) + u8(1) + u16(0x63) + u32(rat) + u8(3) + u8(1)), 'a turn')
     expect(w.creatures[rat]['d'] == 3 and w.creatures[rat]['p'] == (PX + 3, PY + 1, PZ), 'faces west, same tile')
+    for byte, col in ((4, 1), (5, 1), (6, 3), (7, 3)):
+        expect(w.frame(u8(0x6B) + pos(PX + 3, PY + 1, PZ) + u8(1) + u16(0x63) + u32(rat) + u8(byte) + u8(1)),
+               'a diagonal turn (src-patch 0077)')
+        expect(w.creatures[rat]['d'] == col, 'diagonal %d draws as column %d' % (byte, col))
     expect(w.frame(u8(0x8C) + u32(rat) + u8(40)), 'health')
     expect(w.creatures[rat]['hp'] == 40, 'health 40')
     expect(w.frame(u8(0x8D) + u32(rat) + u8(3) + u8(215)), 'creature light')

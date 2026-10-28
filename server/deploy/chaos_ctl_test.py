@@ -599,6 +599,7 @@ def test_admin_commands():
         os.makedirs(os.path.join(repo, 'server', 'tools'))
         shutil.copy(os.path.join(HERE, 'chaos_config_rates.py'), os.path.join(repo, 'server', 'deploy'))
         shutil.copy(os.path.join(repo_root, 'server', 'tools', 'late_game.py'), os.path.join(repo, 'server', 'tools'))
+        shutil.copy(os.path.join(repo_root, 'server', 'tools', 'client_pair.py'), os.path.join(repo, 'server', 'tools'))
         for name, body in (('systemctl', SYSTEMCTL), ('mysql', MYSQL)):
             p = os.path.join(stub, name)
             with open(p, 'w') as f:
@@ -645,6 +646,20 @@ def test_admin_commands():
         for bad in (('xp-rate', 'set', '0'), ('xp-rate', 'set', '101'), ('xp-rate', 'set', '5;x'),
                     ('xp-rate', 'set', '5', 'now'), ('xp-rate', 'bogus'), ('xp-rate', 'reset', 'x')):
             check(run(*bad).returncode != 0, 'xp-rate refuses %r' % (bad,))
+
+        # client-pair: the record of the shipped client's sprite pair in config.lua (server/README.md "Client pair guard")
+        r = run('client-pair')
+        check(r.returncode == 0 and 'chaosClientPair=missing' in r.stdout, 'client-pair: missing by default: ' + r.stdout + r.stderr)
+        r = run('client-pair', 'set', '55')
+        check(r.returncode == 0 and 'chaosClientPair=55' in run('client-pair', 'show').stdout, 'client-pair set 55: ' + r.stdout + r.stderr)
+        check(run('client-pair', 'set', '54').returncode != 0 and 'chaosClientPair=55' in run('client-pair', 'show').stdout,
+              'client-pair: lowering refused')
+        check(run('client-pair', 'set', '56').returncode == 0 and 'chaosClientPair=56' in run('client-pair', 'show').stdout,
+              'client-pair set 56')
+        check('rateExp = 5' in open(cfg).read(), 'client-pair leaves the rest of config.lua alone')
+        for bad in (('client-pair', 'set'), ('client-pair', 'set', 'x'), ('client-pair', 'set', '5;x'), ('client-pair', 'set', '1000'),
+                    ('client-pair', 'set', '5', '6'), ('client-pair', 'bogus')):
+            check(run(*bad).returncode != 0, 'client-pair refuses %r' % (bad,))
 
         # beta-mode: the `enabled` line of beta_mode_config.lua (sed --follow-symlinks, backup, checked), restart on request
         sdir = os.path.join(server, 'data', 'scripts', 'chaos')

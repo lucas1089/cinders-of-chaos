@@ -64,7 +64,7 @@ end
 -- a family task: a base monster at the window's middle (the bestiary's level, x2 for the hunting level)
 cfg.familyGoalOf = function(level)
 	local pc = paceCfg()
-	return ChaosPaceCore.factors(pc, (tonumber(level) or 0) * (pc.baseLevelMult or 2), false).goal
+	return ChaosPaceCore.factors(pc, (tonumber(level) or 0) * (pc.baseLevelMult or 1), false).goal
 end
 local bountyCfg = Chaos.bountyConfig or dofile("data/scripts/chaos/bounty_config.lua")
 local C = ChaosBestiaryCore
@@ -380,7 +380,7 @@ local function shownLevel(e)
 	if (e.minLevel or 0) > 0 then
 		return e.level
 	end
-	return e.level * ((ChaosPaceConfig and ChaosPaceConfig.baseLevelMult) or 2)
+	return e.level * ((ChaosPaceConfig and ChaosPaceConfig.baseLevelMult) or 1)
 end
 
 local function rowOf(e, st)

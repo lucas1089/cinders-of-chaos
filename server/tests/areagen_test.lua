@@ -247,7 +247,7 @@ eq(table.concat(levels, ","), "800,1000,1300,1600,2000", "the dungeons follow th
 -- ====================================================================== the configured areas
 -- Fixed checksums: change them together with the config (python3 -I server/tools/areagen_export.py summary prints them).
 local SUMS = {emberdeep = 283372836, ossuary = 1221939955, cinderfall = 766991134, vault = 2125522065,
-	marrow = 1923860382, crucible = 26295666, sanctum = 1321453866, throne = 1082124787}
+	marrow = 1928818675, crucible = 26295666, sanctum = 1321453866, throne = 1082124787}
 
 -- ground id -> family (stock and dark)
 local famOf = {}

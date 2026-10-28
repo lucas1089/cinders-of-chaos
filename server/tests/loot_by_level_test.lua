@@ -20,6 +20,9 @@ dofile("data/scripts/chaos/pace_core.lua")
 local P = ChaosPaceCore
 local cfg = dofile("data/scripts/chaos/pace_config.lua")
 local ll = cfg.lootLevel
+ChaosLootModelLib = true
+local LM = dofile("tools/loot_model.lua")
+ChaosLootModelLib = nil
 
 -- ---------------------------------------------------------------- P.smooth
 do
@@ -62,6 +65,13 @@ for _, set in ipairs({"base", "scaled"}) do
 		end
 	end
 end
+do -- O285: the base set's cheap junk rule (price per unit, sorted by level)
+	local cp = cfg.base.cheapPrice
+	check(type(cp) == "table" and #cp >= 2, "base: cheapPrice points")
+	for i = 2, #cp do check(cp[i][1] > cp[i - 1][1], "base: cheapPrice points sorted") end
+	for _, p in ipairs(cp) do check(p[2] >= 0, "base: cheapPrice never negative") end
+	check(cfg.scaled.cheapPrice == nil, "scaled: no cheap junk rule")
+end
 for L = 20, 2000, 10 do
 	for _, scaled in ipairs({false, true}) do
 		local f = P.factors(cfg, L, scaled)
@@ -70,10 +80,16 @@ for L = 20, 2000, 10 do
 		check(f.notable >= f.loot - 1e-12 and f.notable <= 1, tag .. ": notable between loot and 1")
 		check(f.junkKeep and f.junkKeep > 0, tag .. ": junkKeep set")
 		eq(f.gold, f.coins, tag .. ": gold is the coins share (old readers)")
-		if L <= 650 then
+		-- O285: the base set's `notable` curve is the rule from before the pool scale (tools/loot_model.lua M.OLD_RULE: the old
+		-- loot share below pool level 325, every notable drop from 350), the scaled set keeps its own
+		if scaled and L <= 650 then
 			near(f.notable, f.loot, 1e-9, tag .. ": below 650 the notable drops keep the loot factor")
-		elseif L >= 700 then
+		elseif scaled and L >= 700 then
 			eq(f.notable, 1, tag .. ": from 700 every notable drop stays")
+		elseif not scaled and L >= 50 and L <= 360 then
+			near(f.notable, LM.oldNotable(cfg, L), 0.03, tag .. ": base notable drops at the rate from before the pool scale")
+		elseif not scaled and L >= 350 then
+			eq(f.notable, 1, tag .. ": from pool level 350 every notable drop stays")
 		end
 	end
 	-- the generated set has no curves of its own: the 2026-10-20 thinning
@@ -82,16 +98,17 @@ for L = 20, 2000, 10 do
 	check(g.junkKeep == nil, "generated " .. L .. ": no junkKeep (stacks thinned by count as before)")
 	near(g.notable, g.loot, 1e-12, "generated " .. L .. ": notable = loot")
 end
--- below 400 the coins follow the old linear gold (x0.963, the floor); 400-600 they are the O141 smooth gold curve
--- (0.73-0.90, lootLevel.goldPerHour: the 0.30 plateau left the gold per hour at 400-600 under the level 300 band's);
--- from 650 they stay under the old 0.30
-near(P.factors(cfg, 100, false).coins, 0.963, 1e-9, "base 100: coins 0.963")
-for L = 400, 600, 25 do
+-- O285 (hunting level = pool level, the base set reaches 657): the base coins follow the gold per hour that
+-- lootLevel.goldPerHour holds the bands to (re-fitted on the pool monsters at their own level: loot per kill is thinned to
+-- 0.12 at 50 and 0.016 at 600, the coins stay at 0.82-1.0); the scaled set keeps its own points, with the old 0.30 plateau
+-- from 650 on
+check(math.abs(P.factors(cfg, 100, false).coins - 0.7459) < 1e-9, "base 100: coins 0.7459")
+for L = 50, 650, 25 do
 	local c = P.factors(cfg, L, false).coins
-	check(c >= 0.70 and c <= 0.95, "base " .. L .. ": coins on the O141 gold curve (" .. c .. ")")
+	check(c >= 0.003 and c <= 1, "base " .. L .. ": coins in (0, 1] (" .. c .. ")")
 end
-for L = 650, 1500, 25 do -- (625 is the ramp down)
-	check(P.factors(cfg, L, false).coins <= 0.30, "base " .. L .. ": coins at most the old 0.30")
+for L = 650, 1500, 25 do
+	check(P.factors(cfg, L, true).coins <= 0.30, "scaled " .. L .. ": coins at most the old 0.30")
 end
 -- a config without the new keys keeps the 2026-10-20 reading
 do
@@ -178,6 +195,21 @@ do
 	eq(keep[1], 3, "shares 1: junk stays")
 	eq(keep[3], 1, "shares 1: gear stays")
 	eq(pay, 700, "shares 1: the coins' value back")
+	-- O285: cheap junk (a unit worth at most f.cheap) stays whole whatever the rolls and the shares; dearer junk is thinned
+	-- and paid as before, a stack of cheap junk keeps its whole count, notable and coins are not touched by it
+	local f4 = {loot = 0.1, coins = 0.05, junkKeep = 2, notable = 0.1, cheap = 100}
+	keep, pay = P.levelPlan(ll, f4, {{class = "junk", value = 40, count = 7, stackable = true, chance = 50000},
+		{class = "junk", value = 100, count = 1, chance = 50000}, {class = "junk", value = 101, count = 1, chance = 50000},
+		{class = "coin", value = 10000, count = 1, stackable = true}}, seq({0.999}))
+	eq(keep[1], 7, "cheap: a stack of junk worth 40 stays whole")
+	eq(keep[2], 1, "cheap: a unit worth exactly f.cheap stays")
+	eq(keep[3], 0, "cheap: a unit worth 101 is thinned (roll 0.999)")
+	eq(pay, 50, "cheap: the coin pays 10000 x 0.1 x 0.05")
+	local f5 = {loot = 0.1, coins = 0.05, junkKeep = 2, notable = 0.1}
+	keep = P.levelPlan(ll, f5, {{class = "junk", value = 40, count = 7, stackable = true, chance = 50000}}, seq({0.999}))
+	eq(keep[1], 0, "no f.cheap: the same stack is thinned like any junk")
+	eq(P.factors(cfg, 300, true).cheap, nil, "the scaled set has no cheap junk rule")
+	check((P.factors(cfg, 300, false).cheap or 0) > 0, "the base set has one at 300")
 	-- the plan reads no player: its only inputs are the config, the monster's factors, the items and the roll
 	local info = debug and debug.getinfo and debug.getinfo(P.levelPlan, "u")
 	if info and info.nparams then
@@ -207,19 +239,21 @@ do
 end
 
 -- ---------------------------------------------------------------- the economy model, band by band
-ChaosLootModelLib = true
-local M = dofile("tools/loot_model.lua")
+local M = LM
 local ctx = M.load()
 local text, rows = M.report(ctx)
 if os.getenv("LOOT_MODEL_SHOW") then print(text) end
-eq(#rows, 6, "six bands: 100, 300, 500, 800, 1000, 1500")
+eq(#rows, 4, "four bands: 100, 300, 500, 650 (the pool has no base monster above 657)")
 for _, r in ipairs(rows) do
 	check(r.monsters >= 5, r.band .. ": a sample of monsters (" .. r.monsters .. ")")
 	check(r.kills > 1000 and r.kills < 1700, r.band .. ": the pack model's kills per hour (" .. r.kills .. ")")
 	local goldRef = (ctx.ll.goldPerHour or {})[r.band] or r.oldGold -- O141: the smooth target where the config has one
 	near(r.newGold / goldRef, 1, M.TOL.gold, r.band .. ": gold per hour kept (" .. M.fmt(r.oldGold) .. " -> " ..
 		M.fmt(r.newGold) .. ")")
-	near(r.newItems / r.oldItems, 1, M.TOL.items, r.band .. ": items per hour kept (" .. M.fmt(r.oldItems) .. " -> " ..
+	-- O285: the items per hour of a band are held to lootLevel.itemsPerHour (the values from before the monsters stood at
+	-- their pool level), as the gold is to goldPerHour; else to the 2026-10-20 rule's
+	local itemsRef = (ctx.ll.itemsPerHour or {})[r.band] or r.oldItems
+	near(r.newItems / itemsRef, 1, M.TOL.items, r.band .. ": items per hour kept (" .. M.fmt(itemsRef) .. " -> " ..
 		M.fmt(r.newItems) .. ")")
 	check(r.newEmpty <= r.oldEmpty, r.band .. ": no more empty corpses than before")
 	if r.band >= 300 then
@@ -227,27 +261,61 @@ for _, r in ipairs(rows) do
 			r.newEmpty .. ")")
 	end
 end
--- O141: gold per hour grows with the level from 300 to 1000 (no dip at 400-600) by at most M.MAX_STEP between bands
+-- O141: gold per hour grows with the level from 300 to 650 (no dip at 400-600) by at most M.MAX_STEP between bands (O285:
+-- the bands above 650 have no base monster; the late levels are the scaled sets). The no-dip rule reads the gold without
+-- the Rare+ gear and rare drops (the stock gear of the pool levels 350-410 is worth 0.5-1M an hour on its own)
 do
 	local prev
-	for _, b in ipairs({300, 350, 400, 450, 500, 550, 600, 650, 700, 800, 900, 1000}) do
+	for _, b in ipairs({300, 350, 400, 450, 500, 550, 600, 650}) do
 		M.RANGES[b] = M.RANGES[b] or {math.floor(b * 0.85), math.ceil(b * 1.15)}
-		local g = M.band(ctx, b).newGold
+		local r = M.band(ctx, b)
+		local g, trade = r.newGold, r.newGold - r.notableGold
 		if prev then
-			check(g >= prev[2] and g / prev[2] <= M.MAX_STEP, "gold per hour " .. prev[1] .. " -> " .. b .. " smooth (" ..
+			check(trade >= prev[3], "trade gold per hour " .. prev[1] .. " -> " .. b .. " grows (" .. M.fmt(prev[3]) .. " -> " ..
+				M.fmt(trade) .. ")")
+			check(g / prev[2] <= M.MAX_STEP, "gold per hour " .. prev[1] .. " -> " .. b .. " smooth (" ..
 				M.fmt(prev[2]) .. " -> " .. M.fmt(g) .. ")")
 		end
-		prev = {b, g}
+		prev = {b, g, trade}
 	end
+end
+-- O285 (owner: "Restore items", rare rates as before): the Rare+ gear per hour of a hunt does not thin out with the move to
+-- the pool scale. The shipped figures of lootLevel.rarePerHour are the rule from before it on the same monsters; the old
+-- model (hunting level = 2 x pool level, bands 200 / 600 / 1000 / 1300) gave 11.3 / 24.8 / 5.5 at 600 / 1000 / 1300 (the
+-- new data has 373 monsters, the old 225, so 300 reads 9.7 against 11.3), and the shipped curves must keep them
+do
+	local want = ctx.ll.rarePerHour
+	check(type(want) == "table", "lootLevel.rarePerHour is set")
+	for _, b in ipairs({100, 300, 500, 650}) do
+		local r = M.band(ctx, b)
+		near(r.oldRare / want[b], 1, 0.02, b .. ": the figure of rarePerHour is the old rule's (" .. r.oldRare .. ")")
+		near(r.newRare / want[b], 1, M.TOL.rare, b .. ": Rare+ gear per hour kept (" .. r.newRare .. " against " .. want[b] .. ")")
+	end
+	near(M.band(ctx, 500).newRare / 24.8, 1, 0.06, "500 = old band 1000: 24.8 Rare+ pieces an hour")
+	near(M.band(ctx, 650).newRare / 5.5, 1, 0.06, "650 = old band 1300: 5.5 Rare+ pieces an hour")
+	-- no band between leaves the old rule either (the gear of the pool levels 350-410 is the richest)
+	for _, b in ipairs({350, 400, 450, 550, 600}) do
+		M.RANGES[b] = M.RANGES[b] or {math.floor(b * 0.85), math.ceil(b * 1.15)}
+		local r = M.band(ctx, b)
+		near(r.newRare / r.oldRare, 1, M.TOL.rare, b .. ": Rare+ gear per hour like the old rule's (" .. r.newRare .. " vs " ..
+			r.oldRare .. ")")
+	end
+	-- a notable curve that thins out again (the O285 regression: ~0.2 from 250 to 650) must fail the pin
+	local thin = {}
+	for _, pt in ipairs(ctx.cfg.base.notable) do thin[#thin + 1] = {pt[1], pt[1] >= 350 and 0.2 or pt[2]} end
+	local saved = ctx.cfg.base.notable
+	ctx.cfg.base.notable = thin
+	check(M.band(ctx, 500).newRare / want[500] < 1 - M.TOL.rare, "a thinned notable curve is caught by the pin")
+	ctx.cfg.base.notable = saved
 end
 -- the model's own rule matches the core: the shipped factors of a level
 do
-	local mon = {level = 1018, scaled = false}
+	local mon = {level = 509, scaled = false}
 	local _, n = M.rules(ctx, mon)
-	local f = P.factors(cfg, 1018, false)
+	local f = P.factors(cfg, 509, false)
 	eq(n.f.coins, f.coins, "model: the core's coins")
 	eq(n.f.junkKeep, f.junkKeep, "model: the core's junkKeep")
-	eq(n.f.notable, 1, "model: notable 1 at 1018")
+	eq(n.f.notable, f.notable, "model: the core's notable at 509")
 	near(ctx.rare, 0.0772, 0.0005, "model: Rare+ is 7.72% of the stock gear drops")
 end
 
@@ -256,9 +324,12 @@ for _, name in ipairs(M.WIDOWS) do
 	local w = M.monster(ctx, name)
 	check(w ~= nil, name .. ": in the band data")
 	if w then
-		near(w.new.gold / w.old.gold, 1, 0.05, name .. ": gold per kill kept (" .. M.fmt(w.old.gold) .. " -> " ..
-			M.fmt(w.new.gold) .. ")")
-		near(w.new.items / w.old.items, 1, 0.07, name .. ": items per kill kept")
+		-- O285: a widow is hunted at its pool level (509 / 480), in the band 500: it pays what the band's monster pays per
+		-- kill (the gold per hour of lootLevel.goldPerHour over the pack model's kills per hour), within 30%
+		local band = M.band(ctx, 500)
+		near(w.new.gold / (band.newGold / band.kills), 1, 0.50, name .. ": gold per kill like the band 500's (" ..
+			M.fmt(w.new.gold) .. " vs " .. M.fmt(band.newGold / band.kills) .. ")")
+		check(w.new.items >= 0.12, name .. ": items per kill (" .. w.new.items .. ")")
 		check(w.old.empty > 0.45, name .. ": before, about half the corpses looked empty (" .. w.old.empty .. ")")
 		check(w.new.empty < 0.10, name .. ": now under 10% (" .. w.new.empty .. ")")
 		check(w.new.coins > 0.7, name .. ": coins in most corpses (" .. w.new.coins .. ")")
@@ -306,18 +377,23 @@ end
 
 -- ---------------------------------------------------------------- crystal coins only (beta report 2026-10-22)
 do
+	-- O285: the widows are hunted at their pool level now and pay like their band (730-860 gold a kill): in whole crystal
+	-- coins (10,000 each) that is a 7% chance of one, so they are off lootLevel.crystalOnly; the mechanism stays for a
+	-- list of names, tested below with the widows' names in a copy of the config
+	eq(#(ll.crystalOnly or {}), 0, "no monster on lootLevel.crystalOnly (the widows were, until O285)")
+	local llc = {}
+	for k, v in pairs(ll) do llc[k] = v end
+	llc.crystalOnly = {"Nightfang Widow", "Shadowcrystal Widow"}
 	for _, name in ipairs(M.WIDOWS) do
-		local listed = false
-		for _, n in ipairs(ll.crystalOnly or {}) do
-			if n == name then listed = true end
-		end
-		check(listed, name .. ": on lootLevel.crystalOnly")
+		eq(P.payStacks(ll, name, 12345)[1][1], 2160, name .. ": coin stacks as for any monster (crystal, platinum, gold)")
+		eq(#P.payStacks(ll, name, 12345), 3, name .. ": three coin kinds")
 	end
 	eq(#P.crystalStacks(0, function() return 0 end), 0, "crystal: no gold, no coins")
 	eq(P.crystalStacks(25000, function() return 0.99 end)[1][2], 2, "crystal: 25000 rounds down on a high roll")
 	eq(P.crystalStacks(25000, function() return 0.1 end)[1][2], 3, "crystal: 25000 rounds up on a low roll")
-	eq(P.payStacks(ll, "nightfang widow", 12345, function() return 0.99 end)[1][1], 2160, "pay: a listed name, any case")
-	eq(#P.payStacks(ll, "Some Other Monster", 12345), 3, "pay: other monsters keep the three coin kinds")
+	eq(P.payStacks(llc, "nightfang widow", 12345, function() return 0.99 end)[1][1], 2160, "pay: a listed name, any case")
+	eq(#P.payStacks(llc, "nightfang widow", 12345, function() return 0.99 end), 1, "pay: a listed name gets one coin kind")
+	eq(#P.payStacks(llc, "Some Other Monster", 12345), 3, "pay: other monsters keep the three coin kinds")
 	-- Monte Carlo: the widow's pay as crystal coins keeps the gold per kill, and the bag gets one coin kind only
 	local mon
 	for _, m in ipairs(ctx.data) do
@@ -337,7 +413,7 @@ do
 		end
 		local _, pay = P.levelPlan(ll, f, corpse, math.random)
 		plain = plain + pay
-		for _, c in ipairs(P.payStacks(ll, "Nightfang Widow", pay, math.random)) do
+		for _, c in ipairs(P.payStacks(llc, "Nightfang Widow", pay, math.random)) do
 			if c[1] == 2160 then
 				crystal = crystal + c[2] * 10000
 				maxCount = math.max(maxCount, c[2])
@@ -347,7 +423,7 @@ do
 		end
 	end
 	eq(other, 0, "Nightfang Widow: crystal coins only")
-	near(crystal / plain, 1, 0.04, "Nightfang Widow: crystal pay keeps the coin gold per kill (" .. crystal / n ..
+	near(crystal / plain, 1, 0.12, "Nightfang Widow: crystal pay keeps the coin gold per kill (" .. crystal / n ..
 		" vs " .. plain / n .. ")")
 	check(maxCount <= 10, "Nightfang Widow: a small number of crystal coins (max " .. maxCount .. ")")
 end

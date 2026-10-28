@@ -202,6 +202,9 @@ return {
 			pos = {x = 32028, y = 31817, z = 8}, radius = 12, rule = {type = "timer", seconds = 60}},
 		{key = "lair_tibb", category = "lair", name = "Tibb the Butcher", monster = "Tibb the Butcher", loc = "Orc fortress",
 			pos = {x = 32622, y = 31826, z = 7}, radius = 20, rule = {type = "timer", seconds = 3600}},
+		-- our area plans (server/tools/areaplan/plans/, "boss" block: the spawn the planner writes, its respawn)
+		{key = "lair_vharzul", category = "lair", name = "Vharzul the Verdant Eye", monster = "Vharzul the Verdant Eye",
+			loc = "Embergut Rift", pos = {x = 16542, y = 14381, z = 10}, radius = 12, rule = {type = "timer", seconds = 14400}},
 
 		-- ------------------------------------------------------------------ rifts and omens (rift_config.lua)
 		{key = "rift_guardian", category = "omen", name = "Rift Guardian", loc = "Rift (instance)", level = 100,

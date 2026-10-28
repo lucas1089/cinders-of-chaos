@@ -302,16 +302,17 @@ do
 			end
 		end
 	end
-	local troll, swamp = entry("Tundra Troll"), entry("Swamp Monster")
+	local troll, swamp = entry("Tundra Troll"), entry("Pyrrhaxis Master")
 	assert(troll and swamp, "pool entries")
 	local lvl, scaled = P.entryLevel(pcfg, troll)
 	assert(scaled and lvl == 830, "Tundra Troll: level-scaled, level 830")
 	eq(B.monsterKillBase(troll, P, pcfg), troll.exp * lvl * 0.03 * P.factors(pcfg, lvl, true).xp,
 		"level-scaled: x0.03 L x the scaled curve")
 	local blvl, bscaled = P.entryLevel(pcfg, swamp)
-	assert(not bscaled and blvl == 846, "Swamp Monster: a base monster of hunting level 846")
+	assert(not bscaled and blvl == 657, "Pyrrhaxis Master: a base monster of hunting level 657 (O285: the pool level, the highest base monster)")
 	local ratio = B.monsterKillBase(troll, P, pcfg) / B.monsterKillBase(swamp, P, pcfg)
-	assert(ratio > 1.5 and ratio < 8, "a level-scaled kill pays 1.5-8x a base kill of the same hunting level: " .. ratio)
+	-- (O285: no base monster is hunted above 657 any more, so the level-scaled 830 is compared with the highest base one)
+	assert(ratio > 1.5 and ratio < 8, "a level-scaled kill pays 1.5-8x the kill of the highest base monster: " .. ratio)
 end
 for d = 1, 30 do
 	local bd = B.roll(20261000 + d, rc, pool)

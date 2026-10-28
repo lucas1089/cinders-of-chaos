@@ -40,7 +40,7 @@ end
 
 -- ------------------------------------------------------------------ config
 ok(cfg.enabled == true, "on by default")
-eq(cfg.baseLevelMult, 2, "hunting level = 2 x the pool estimate")
+eq(cfg.baseLevelMult, 1, "hunting level = the pool estimate (O285: the x2 rule is gone)")
 for _, set in ipairs({"base", "scaled", "generated"}) do
 	for _, k in ipairs({"health", "xp", "loot", "goal"}) do
 		local pts = cfg[set][k]
@@ -60,18 +60,31 @@ end
 for i = 2, #cfg.damage do
 	ok(cfg.damage[i][2] <= cfg.damage[i - 1][2], "damage curve falls with the level")
 end
--- the base curves start at 1 (levels 1-20 untouched: new players)
-eq(cfg.base.health[1][1], 20, "health curve starts at 20")
+-- the base curves start at 1 (the first levels untouched: new players; with the hunting level = the pool level the
+-- health curve starts at 10, experience at 6, loot at 10, goals at 20)
+eq(cfg.base.health[1][1], 10, "health curve starts at 10")
+eq(cfg.base.xp[1][1], 6, "xp curve starts at 6")
 for _, k in ipairs({"health", "xp", "loot", "goal"}) do
-	eq(cfg.base[k][1][2], 1, "base " .. k .. " is 1 at level 20")
+	eq(cfg.base[k][1][2], 1, "base " .. k .. " is 1 at its first point")
 end
 eq(cfg.damage[1][2], 1, "damage 1 at level 20")
 -- experience per health point stays about the same (xp follows kills): xp / health within 0.6-1.0 from level 35
-for _, L in ipairs({35, 60, 100, 175, 250, 450, 800, 1000, 1500}) do
+-- (O285: the base set ends at the pool's highest level, 657; the points up to 600 are what a base hunt reads)
+for _, L in ipairs({35, 60, 100, 175, 250, 450, 600, 1500}) do
 	local f = P.factors(cfg, L, false)
 	ok(f.xp / f.health >= 0.6 and f.xp / f.health <= 1.0, "base xp per health at " .. L)
-	-- gold per kill a little above xp per kill (the multikill bonus is experience only)
+end
+-- loot per kill: gold per kill a little above xp per kill up to level 100 (the multikill bonus is experience only); from
+-- there on the items of a kill do not grow with the level like its experience does (a level 500 monster carries about 8x
+-- the gold of a level 250 one, the same number of items), so the loot curve falls with the level and the coins pay the
+-- gold (lootLevel.goldPerHour)
+for _, L in ipairs({10, 35}) do
+	local f = P.factors(cfg, L, false)
 	ok(f.loot >= f.xp, "loot >= xp at " .. L)
+end
+-- (O285: the items per hour are restored, the loot curve follows the monsters' loot tables band by band and no longer falls)
+for i = 1, #cfg.base.loot do
+	ok(cfg.base.loot[i][2] >= 0.02 and cfg.base.loot[i][2] <= 1, "base loot in [0.02, 1] at " .. cfg.base.loot[i][1])
 end
 -- level-scaled and generated monsters: the engine adds x0.03 L experience and x(1 + 0.0074 L) health on top of the
 -- curves (base player.lua; server/README.md "Late game", O108). With both counted, a scaled monster's experience per
@@ -132,23 +145,25 @@ eq(P.lin(pts, "x"), 1, "a bad level counts as 0")
 
 -- ------------------------------------------------------------------ factors at the design points
 local f = P.factors(cfg, 20, false)
-eq(f.health, 1, "level 20 health")
-eq(f.xp, 1, "level 20 xp")
+near(f.health, 0.28, 1e-9, "level 20 health")
+near(f.xp, 0.20, 1e-9, "level 20 xp")
+eq(f.damage, 1, "level 20 damage")
 f = P.factors(cfg, 5, false)
 eq(f.health, 1, "level 5 untouched")
+eq(f.xp, 1, "level 5 xp untouched")
 eq(f.goal, 1, "level 5 goal 1")
 f = P.factors(cfg, 300, false)
-near(f.health, 0.21, 1e-9, "300 health")
-near(f.xp, 0.17, 1e-9, "300 xp")
-near(f.loot, 0.20, 1e-9, "300 loot")
+near(f.health, 0.082, 1e-9, "300 health")
+near(f.xp, 0.0715, 1e-9, "300 xp")
+near(f.loot, 0.19, 1e-9, "300 loot (O285: capped at the notable share, 0.19 x scale.loot 1.2 = 0.228)")
 near(f.goal, 5, 1e-9, "300 goal")
 near(f.damage, 0.65, 1e-9, "300 damage")
 f = P.factors(cfg, 100, false)
-near(f.health, 0.36, 1e-9, "100 health")
+near(f.health, 0.105, 1e-9, "100 health")
 near(f.damage, 0.85 + (0.75 - 0.85) * 50 / 100, 1e-9, "100 damage between 50 and 150")
 f = P.factors(cfg, 3000, false)
-near(f.health, 0.21, 1e-9, "flat health past 250")
-near(f.xp, 0.17, 1e-9, "flat xp past 1000")
+near(f.health, 0.11, 1e-9, "flat health past 650")
+near(f.xp, 0.066, 1e-9, "flat xp past 600")
 near(f.damage, 0.40, 1e-9, "flat damage past 1000")
 f = P.factors(cfg, 1000, true)
 near(f.health, 0.08, 1e-9, "scaled 1000 health (O138)")
@@ -168,10 +183,10 @@ eq(f.health, 1, "no config: 1")
 do
 	local c2 = {enabled = true, base = cfg.base, scaled = cfg.scaled, damage = cfg.damage, scale = {xp = 1.3, loot = 2}}
 	local f2 = P.factors(c2, 300, false)
-	near(f2.xp, 0.17 * 1.3, 1e-9, "scale.xp")
-	near(f2.loot, 0.40, 1e-9, "scale.loot")
-	near(f2.health, 0.21, 1e-9, "scale leaves health")
-	eq(P.factors(c2, 10, false).xp, 1, "scale never above 1 per kill")
+	near(f2.xp, 0.0715 * 1.3, 1e-9, "scale.xp")
+	near(f2.loot, 0.19 * 2, 1e-9, "scale.loot")
+	near(f2.health, 0.082, 1e-9, "scale leaves health")
+	eq(P.factors(c2, 5, false).xp, 1, "scale never above 1 per kill")
 	eq(cfg.scale.xp, 1.0, "shipped: xp scale 1")
 	eq(cfg.scale.loot, 1.0, "shipped: loot scale 1")
 end
@@ -186,7 +201,7 @@ ok(gen == true, "a point is generated")
 L, s = P.levelOf(cfg, {point = 1100, native = 830})
 eq(L, 1100, "the point wins over the native level")
 L, s = P.levelOf(cfg, {native = 0, pool = 125})
-ok(L == 250 and s == false, "base monster: 2 x the pool estimate")
+ok(L == 125 and s == false, "base monster: the pool estimate")
 L, s = P.levelOf(cfg, {})
 ok(L == 0 and s == false, "unknown: 0")
 L = P.levelOf({baseLevelMult = 3}, {pool = 10})
@@ -196,14 +211,14 @@ eq(L, 30, "baseLevelMult")
 eq(P.estimateLevel(6000, 6000), 124, "estimate: 1.6 sqrt(exp)")
 eq(P.estimateLevel(0, 0), 2, "estimate floor (sqrt of 1)")
 L, s = P.entryLevel(cfg, {level = 124, exp = 6000, health = 6000})
-ok(L == 248 and s == false, "pool entry that is its estimate: base, x2")
+ok(L == 124 and s == false, "pool entry that is its estimate: base, the pool level")
 L, s = P.entryLevel(cfg, {level = 980, exp = 13900, health = 22000})
 ok(L == 980 and s == true, "pool entry of a level-scaled monster (the range middle)")
 L, s = P.entryLevel(cfg, {minLevel = 900, maxLevel = 1000, exp = 1, health = 1})
 ok(L == 950 and s == true, "bestiary entry with a level range")
 L, s = P.entryLevel(cfg, {exp = 6000, health = 6000})
-ok(L == 248 and s == false, "bestiary entry without a level")
-near(P.goalOfEntry(cfg, {level = 124, exp = 6000, health = 6000}), 5, 0.05, "goal of a level-248 base monster")
+ok(L == 124 and s == false, "bestiary entry without a level")
+near(P.goalOfEntry(cfg, {level = 250, exp = 24414, health = 15000}), 5, 0.05, "goal of a level-250 base monster")
 near(P.goalOfEntry(cfg, {level = 980, exp = 13900, health = 22000}), P.lin(cfg.scaled.goal, 980), 1e-9,
 	"goal of a scaled monster")
 eq(P.goalOfEntry(off, {level = 980, exp = 13900, health = 22000}), 1, "off: goal 1")
@@ -494,23 +509,25 @@ do
 	end
 
 	-- a natural map spawn: paced at its first think
-	local m = monster({max = 1000, pool = 150})
+	local m = monster({max = 1000, pool = 300})
 	onSpawn(m, {}, false, false)
 	ok(m._events.ChaosPaceInit, "a map spawn gets the first-think event")
 	eq(m._max, 1000, "nothing changes before the first think")
 	think(m)
-	eq(m._max, 210, "level 300 monster: x0.21 at the first think")
-	eq(m._hp, 210, "full health")
+	local want300 = P.scaleHealth(1000, P.factors(cfg, 300, false).health)
+	eq(want300, 82, "(level 300: x0.082)")
+	eq(m._max, want300, "level 300 monster: x0.082 at the first think")
+	eq(m._hp, want300, "full health")
 	ok(not m._events.ChaosPaceInit, "the event removes itself")
 	ok(PC.isPaced(m), "marked as paced")
 	think(m)
-	eq(m._max, 210, "never twice")
-	near(PC.lootMultOf(m), 0.20 * (shippedScale.loot or 1), 1e-9, "loot factor (x the shipped calibration)")
+	eq(m._max, want300, "never twice")
+	near(PC.lootMultOf(m), 0.19 * (shippedScale.loot or 1), 1e-9, "loot factor (x the shipped calibration)")
 	near(PC.damageMultOf(m), 0.65, 1e-9, "damage factor")
 	near(PC.goalMultOf(m), 5, 1e-9, "goal factor")
 
 	-- a script-made monster (artificial) is not paced
-	local a = monster({})
+	local a = monster({pool = 300})
 	onSpawn(a, {}, false, true)
 	ok(not a._events.ChaosPaceInit, "artificial spawn not paced")
 	eq(PC.lootMultOf(a), 1, "unpaced: loot 1")
@@ -518,7 +535,7 @@ do
 	-- unless marked (a base dungeon, an ambush copy)
 	PC.mark(a)
 	think(a)
-	eq(a._max, 210, "marked artificial monster paced")
+	eq(a._max, want300, "marked artificial monster paced")
 	-- bosses and summons never
 	local b = monster({boss = true})
 	onSpawn(b, {}, false, false)
@@ -552,7 +569,7 @@ do
 	local low = monster({max = 50, pool = 5})
 	onSpawn(low, {}, false, false)
 	think(low)
-	eq(low._max, 50, "level 10 untouched")
+	eq(low._max, 50, "level 5 untouched")
 	-- the skip list
 	ChaosPaceConfig.skip["skipme"] = true
 	local sk = monster({name = "SkipMe"})
@@ -573,8 +590,8 @@ do
 	function player:sendTextMessage() end
 	function player:isMonster() return false end
 	local e = onXp(player, m, 1000, 1000)
-	local first = math.floor(1000 * 0.17 * (shippedScale.xp or 1) + 0.5)
-	ok(math.abs(e - first) <= 1, "first kill: x0.17 x calibration (" .. tostring(e) .. ")")
+	local first = math.floor(1000 * 0.0715 * (shippedScale.xp or 1) + 0.5)
+	ok(math.abs(e - first) <= 1, "first kill: x0.0715 x calibration (" .. tostring(e) .. ")")
 	local total = e
 	for i = 2, 6 do
 		now = now + 500

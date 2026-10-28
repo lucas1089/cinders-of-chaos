@@ -536,18 +536,6 @@
    "name": "large black crystal",
    "size": 2
   },
-  "lava_cracks": {
-   "block": false,
-   "ids": [
-    5840,
-    5841,
-    5842,
-    5843
-   ],
-   "light": 0,
-   "name": "small lava cracks",
-   "size": 2
-  },
   "lava_holes": {
    "block": true,
    "ids": [
@@ -1785,7 +1773,7 @@
   "lava": {
    "around": [
     [
-     "lava_cracks",
+     "cracks",
      2
     ],
     [
@@ -1835,10 +1823,6 @@
    ],
    "floor": [
     [
-     "lava_cracks",
-     3
-    ],
-    [
      "debris_red",
      3
     ],
@@ -1852,7 +1836,7 @@
     ],
     [
      "cracks",
-     2
+     4
     ],
     [
      "sulphur_small",

@@ -118,6 +118,8 @@ function P.factors(cfg, level, scaled, generated)
 		coins = coins,
 		junkKeep = junkKeep,
 		notable = notable,
+		-- O285: junk that is worth at most this per unit (NPC price) stays whole (nil: no such rule)
+		cheap = set.cheapPrice and P.smooth(set.cheapPrice, level, 0) or nil,
 		goal = P.lin(set.goal, level, 1),
 		damage = P.lin(cfg.damage, level, 1)
 	}
@@ -135,7 +137,7 @@ function P.levelOf(cfg, info)
 	if native > 0 then
 		return native, true
 	end
-	return num(info.pool, 0) * num(cfg and cfg.baseLevelMult, 2), false
+	return num(info.pool, 0) * num(cfg and cfg.baseLevelMult, 1), false
 end
 
 -- the bounty pool's / bestiary's level estimate from experience and health (gen_bounty_pool.estimate_level)
@@ -161,7 +163,7 @@ function P.entryLevel(cfg, e)
 	if lvl <= 0 then
 		lvl = P.estimateLevel(e.exp, e.health)
 	end
-	return lvl * num(cfg and cfg.baseLevelMult, 2), false
+	return lvl * num(cfg and cfg.baseLevelMult, 1), false
 end
 
 -- the kill-goal multiplier of a monster known by its data (1 when the layer is off)
@@ -271,6 +273,8 @@ end
 --   junk     (NPC-sellable, not gear) is worth sv = loot x coins of its value. It stays in kind with chance sk = loot x
 --            junkKeep (a single item: at most sv); a stack that stays keeps count x min(1, sv / sk), rounded at random.
 --            Taken out, it pays its value x (sv - sk) / (1 - sk) as coins when sk < sv. The expected value is sv either way.
+--   cheap    (O285, f.cheap) junk worth at most f.cheap gold a unit stays whole, whatever sv: the items per hour of a
+--            band come from the cheap junk, the gold from the dear junk and the coins (the two are decoupled)
 --   notable  stays whole with chance f.notable
 --   gear, other (orbs, gems, keys, unsellables): P.thinPlan with loot, as before
 --   floor    a corpse that would show nothing (no item kept, no coin) although junk dropped is paid sv x the value of
@@ -294,6 +298,8 @@ function P.levelPlan(ll, f, items, rnd)
 			pay = pay + count * value * sv
 		elseif P.isNotable(ll, it) then
 			keep[i] = (notable >= 1 or rnd() < notable) and count or 0
+		elseif it.class == "junk" and f.cheap and f.cheap > 0 and value <= f.cheap then
+			keep[i] = count
 		elseif it.class == "junk" then
 			local sk = it.stackable and skStack or math.min(sv, skStack)
 			if sv >= 1 then

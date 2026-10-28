@@ -66,6 +66,11 @@
 #                               the XP multiplier of config.lua (experienceStages = the release's stages x N, N 1..100);
 #                               set / reset keep a backup and apply at the next restart, or at once with "restart".
 #                               update-apply keeps it.
+#   client-pair [show | set N] the client sprite pair the SHIPPED client is on (config.lua chaosClientPair, server/README.md
+#                               "Client pair guard"): install_all.py installs the items of a newer pair (pickups: 55; fist
+#                               weapons and the weapons above level 800: 56) only once this is N or more. set N after the
+#                               client update with pair N is published, then update-apply (or install_all.py) installs them;
+#                               a lower N is refused. Applies at the next install, no restart. show prints chaosClientPair=N|missing
 #   beta-mode [status | on | off] [restart]
 #                               beta test mode (server/README.md "Beta test mode"): the `enabled = ...` line of
 #                               SERVER/data/scripts/chaos/beta_mode_config.lua (sed --follow-symlinks, backup .before-beta,
@@ -1245,6 +1250,17 @@ print(s.strip()[:200].encode("utf-8").hex())') || die "could not read the note"
     else
       echo "applies at the next restart"
     fi
+    ;;
+  client-pair)
+    tool="$REPO/server/tools/client_pair.py"
+    [ -f "$tool" ] || die "no $tool (CHAOS_REPO)"
+    [ -f "$SERVER/config.lua" ] || die "no $SERVER/config.lua (CHAOS_SERVER_DIR)"
+    case ${1:-show}:$# in
+      show:0|show:1) exec python3 -I "$tool" show "$SERVER" ;;
+      set:2) { num "$2" && [ "${#2}" -le 3 ]; } || die "client-pair set N (the pair number, 1..999)"
+             exec python3 -I "$tool" set "$SERVER" "$2" ;;
+      *) die "client-pair [show | set N]" ;;
+    esac
     ;;
   beta-mode)
     bcfg="$SERVER/data/scripts/chaos/beta_mode_config.lua"

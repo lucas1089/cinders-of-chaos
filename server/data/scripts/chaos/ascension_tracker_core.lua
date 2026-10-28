@@ -52,7 +52,7 @@ function M.rows(ctx, lang)
 		row("calling", "Hear the Calling of the Ascendant Oracle", stage >= S.PROOF and 1 or 0, 1),
 		-- the lowest monster level that counts, in the title (owner 2026-10-24): it moves with the player's level
 		row("proof", string.format(T(lang, "Slay rare and legendary beasts of level %d or higher"),
-			Chaos.huntingLevel(Q.minMonsterLevel(ctx.level))), proof, need),
+			Q.minHuntingLevel(ctx.level)), proof, need),
 		row("trial", "Win the Ascension Trial", stage >= S.CHOICE and 1 or 0, 1),
 		-- the Choice is never done while the rows show: ascending hides them
 		row("choice", "Choose your ascended class", 0, 1)

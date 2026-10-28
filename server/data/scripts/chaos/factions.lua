@@ -146,7 +146,7 @@ local function families(cat, minLevel, level)
 		for _, e in pairs(catalogue.byKey) do
 			if (e.spawns or 0) > 0 and not e.boss then
 				familyCache[e.cat] = familyCache[e.cat] or {}
-				table.insert(familyCache[e.cat], e.level or 0)
+				table.insert(familyCache[e.cat], Chaos.entryHuntingLevel(e))
 			end
 		end
 	end
@@ -552,7 +552,8 @@ end
 -- reputation points, summed per player)
 local function onKillFor(player, e, fkey, tier, monster)
 	local share = cfg.sources.kill.minLevelShare
-	local info = {cat = e.cat, level = e.level or 0}
+	-- hunting levels against the player's (O284: the pool level, half, before 2026-10-28)
+	local info = {cat = e.cat, level = Chaos.monsterHuntingLevel(monster, Chaos.entryHuntingLevel(e))}
 	local goal = monster and ChaosPace and ChaosPace.goalMultOf and ChaosPace.goalMultOf(monster) or 1
 	local n = (goal > 1 and ChaosPace.killCredit) and ChaosPace.killCredit(player, monster, "faction") or 1
 	if n > 0 then
@@ -594,7 +595,8 @@ function F.onKill(creature, corpse, killer, mostDamage)
 	-- the token: one roll per kill, into the corpse (the loot owner's)
 	local owner = playerOf(mostDamage) or playerOf(killer)
 	local td = cfg.tokenDrop
-	if owner and (e.level or 0) >= td.minMonsterLevel and (e.level or 0) >= math.floor(owner:getLevel() * cfg.sources.kill.minLevelShare)
+	local hunt = Chaos.monsterHuntingLevel(creature, Chaos.entryHuntingLevel(e))
+	if owner and hunt >= td.minMonsterLevel and hunt >= math.floor(owner:getLevel() * cfg.sources.kill.minLevelShare)
 			and math.random(1, 10000) <= K.tokenChance(cfg, tier)
 				* (ChaosPace and ChaosPace.lootMultOf and ChaosPace.lootMultOf(creature) or 1)
 				* (ChaosCatchup and ChaosCatchup.tokenMult and ChaosCatchup.tokenMult(owner) or 1) then

@@ -7,45 +7,64 @@ Owner request 2026-10-23: the Monk could use none that helped it, and the axe, s
 weapon. data/scripts/chaos/exercise_training.lua (rules: exercise_core.lua, lists: exercise_config.lua) now runs all 21
 weapons; this tool does the base data's half:
 
+Owner request 2026-10-28 ("monk tambem nao tem training weapon"): the Monk line has its own fist weapon. It lives on the item
+ids of the retired exercise axe (27733 / 27739 / 27745, chests 27762 / 27769 / 27776), so no new item, sprite or chest
+script is needed; item 4 below gives those weapons the look of a pair of hand wraps, a cestus and ember knuckles.
+
 1. data/actions/actions.xml: the 21 lines `<action itemid="277nn" script="other/exercise_weapons.lua" />` are commented out
    (a marker comment says why), so the revscript owns the item ids (an id registered twice would keep the XML one). The
    stock script and the edits of patch_base_classes.py / patch_base_events.py stay in the folder, unused.
 2. data/items/items.xml: the description of each of the 21 weapons says what it trains and who may use it, and the three
-   sword chests (27761, 27768, 27775: the melee chests now) say they give the melee weapon. The names come from
+   sword chests (27761, 27768, 27775: the melee chests now) say they give the melee weapon, the three fist chests (27762,
+   27769, 27776) the fist weapon. The names come from
    data/items/base_item_names.csv (patch_base_item_names.py: "exercise melee weapon", ...). The axe and club weapons and
    chests keep their names and still work; an old axe or club weapon turns into the melee one on its first use.
 3. data/npc/*.xml: the NPC shop lists lose the exercise axe and club chests (27762, 27763, 27769, 27770, 27776, 27777, one
    line each); the sword chests (the melee ones), the bow, rod, wand and shield chests stay. Chests bought before still
-   open.
+   open. The fist chests are store only (item_price_rules.csv), like the others.
+4. data/items/items.otb: the fist weapons (27733, 27739, 27745) get the client look of the Monk's first three fist weapons
+   (client ids 33654, 33655, 33656, the pair of install_fist_weapons.py); the server id and every attribute stay. items.otb.bak
+   keeps the original the first time. A server without that client pair would show them as nothing: install both.
 
 Idempotent: a second run changes nothing. Run it after the base files are replaced. --dry-run writes nothing.
 """
 import glob
 import os
 import re
+import shutil
 import sys
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
 
 MARK = 'Chaos: exercise weapons run by exercise_training.lua (patch_exercise_weapons.py)'
 
 # item id -> what it trains and who may use it (kept in step with data/scripts/chaos/exercise_config.lua; the test reads both)
-MELEE = 'Trains the melee skill on a training dummy (fist fighting for the Monk line). For the Warrior, Thief, Monk and Templar lines.'
+MELEE = 'Trains the melee skill on a training dummy. For the Warrior, Thief and Templar lines.'
+FIST = 'Trains fist fighting on a training dummy. For the Monk line.'
 RANGED = 'Trains distance fighting on a training dummy. For the Ranger and Thief lines.'
 MAGIC = 'Trains the magic level on a training dummy. For the Mystic, Necromancer and Templar lines.'
 SHIELD = 'Trains shielding on a training dummy. For every class.'
 WEAPONS = {}
-for i in (27732, 27733, 27734, 27738, 27739, 27740, 27744, 27745, 27746):
+for i in (27732, 27734, 27738, 27740, 27744, 27746):
     WEAPONS[i] = MELEE
+for i in (27733, 27739, 27745):
+    WEAPONS[i] = FIST
 for i in (27735, 27741, 27747):
     WEAPONS[i] = RANGED
 for i in (27736, 27737, 27742, 27743, 27748, 27749):
     WEAPONS[i] = MAGIC
 for i in (27758, 27759, 27760):
     WEAPONS[i] = SHIELD
-CHEST = 'Use the chest to obtain 1 melee training weapon. It trains the melee skill (fist fighting for the Monk line).'
-CHESTS = {27761: CHEST, 27768: CHEST, 27775: CHEST}
+CHEST = 'Use the chest to obtain 1 melee training weapon. It trains the melee skill.'
+CHEST_FIST = 'Use the chest to obtain 1 fist training weapon. It trains fist fighting (Monk line).'
+CHESTS = {27761: CHEST, 27768: CHEST, 27775: CHEST, 27762: CHEST_FIST, 27769: CHEST_FIST, 27776: CHEST_FIST}
+# server id -> client id of the look (the Monk's wraps, cestus and ember knuckles: fist_items.csv fist_t1..t3)
+FIST_LOOKS = {27733: 33654, 27739: 33655, 27745: 33656}
 DESCRIPTIONS = dict(WEAPONS)
 DESCRIPTIONS.update(CHESTS)
 
+# no NPC sells these six (store only): the old axe chests, which are the fist chests now, and the club chests
 RETIRED_CHESTS = (27762, 27763, 27769, 27770, 27776, 27777)
 
 ACTION_LINE = re.compile(r'^([ \t]*)(<action\b[^>\n]*\bscript="other/exercise_weapons\.lua"[^>\n]*/>)[ \t]*(\r?)$', re.M)
@@ -101,6 +120,14 @@ def patch_npc(text):
     return new, n
 
 
+def patch_otb_looks(raw):
+    """returns (new bytes, count of nodes that changed look); a missing node is an error (SystemExit)"""
+    from install_pack_items import patch_otb
+    rows = [{'mode': 'replace', 'server_id': sid, 'client_id': cid} for sid, cid in sorted(FIST_LOOKS.items())]
+    out, counts = patch_otb(raw, rows)
+    return out, counts['look']
+
+
 def read(path):
     with open(path, encoding='utf-8', errors='surrogateescape', newline='') as f:
         return f.read()
@@ -143,6 +170,26 @@ def main(argv):
         if changed and not dry:
             write(path, new)
         print('items/items.xml: %d description(s) %s' % (changed, 'would change' if dry else 'changed'))
+    else:
+        print('%s: not found' % path)
+        ok = False
+
+    path = os.path.join(data, 'items', 'items.otb')
+    if os.path.isfile(path):
+        with open(path, 'rb') as f:
+            raw = f.read()
+        try:
+            new_otb, looks = patch_otb_looks(raw)
+        except SystemExit as e:
+            print('items/items.otb: %s' % e)
+            ok = False
+        else:
+            if looks and not dry:
+                if not os.path.exists(path + '.bak'):
+                    shutil.copy2(path, path + '.bak')
+                with open(path, 'wb') as f:
+                    f.write(new_otb)
+            print('items/items.otb: %d fist weapon look(s) %s' % (looks, 'would change' if dry else 'changed'))
     else:
         print('%s: not found' % path)
         ok = False

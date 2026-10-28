@@ -4,6 +4,7 @@
 --   1. extra loot rolls from the monster's own loot table by tier (magic x1, rare x2, legendary x3, boss x2)
 --   1c. charged items (amulets with charges, exercise weapons) get the item type's full charges (L.restoreCharges)
 --   1d. level gear: a piece of an equipment set near the level of this kill (L.levelGear, ChaosGearSets.rollLevelGear)
+--   1e. class weapons of a scaled hunt: the weapons of the killer's class (L.classWeapons, ChaosClassLoot.rollScaled)
 --   2. gear quality: floor + bonus rarity per tier (the "rarity" attribute)
 --   2b. item level and modifiers: every gear drop gets the item level of this kill (L.dropLevel: the monster's level,
 --       its tier, boss, rift tier, Omen guardian, world boss; chaos_item_mods.lua M.sourceLevel); drops with a rarity
@@ -1114,6 +1115,47 @@ function L.levelGear(monster, owner, tier, ctx)
 	return ok and piece or nil
 end
 
+-- class weapons of a scaled hunt (data/lib/chaos_class_loot.lua L.rollScaled; server/README.md "Gear coverage"): a monster
+-- type carries the class loot rows of its pool level, so a kill hunted above the pool (hunting level 658 and up) rolls the
+-- weapons of the killer's class here, per family it wields, so every class finds as many as any other. Returns a list of
+-- base ids (possibly empty).
+function L.classWeapons(monster, owner, tier, ctx)
+	local CL = ChaosClassLoot
+	if not CL then
+		local okL, lib = pcall(dofile, "data/lib/chaos_class_loot.lua")
+		CL = okL and lib or nil
+	end
+	if not (CL and CL.rollScaled) then
+		return {}
+	end
+	local okB, boss = pcall(function() return monster:getType():isBoss() end)
+	if okB and boss then
+		tier = "boss"
+	end
+	local okV, className = pcall(function() return owner:getVocation():getName() end)
+	if not okV then
+		return {}
+	end
+	local scale = rateMult(ctx) * (ctx.itemFind or 1) * (ctx.pace or 1)
+	local ok, ids = pcall(CL.rollScaled, ctx.huntLevel or 0, className, tier, scale, rnd)
+	if not ok or not ids then
+		return {}
+	end
+	-- client pair guard (README "Client pair guard"): a base the server has no item for (a step held back by the recorded
+	-- client pair) is not dropped
+	if ItemType then
+		local kept = {}
+		for _, id in ipairs(ids) do
+			local okT, it = pcall(ItemType, id)
+			if okT and it and it:getId() == id then
+				kept[#kept + 1] = id
+			end
+		end
+		ids = kept
+	end
+	return ids
+end
+
 -- text, nearMessage: deferred texts (ChaosI18n.msg), each player reads them in their own language
 local function announce(owner, corpsePos, text, nearMessage)
 	local u = cfg().unique
@@ -1294,6 +1336,18 @@ local function processKill(monster, corpse)
 				end
 				bonus[#bonus + 1] = itemName(piece.id)
 			end
+		end
+	end
+
+	-- 1e. class weapons of a scaled hunt (L.classWeapons)
+	for _, id in ipairs(L.classWeapons(monster, owner, tier, ctx)) do
+		local item = L.addToCorpse(corpse, id, 1)
+		if item then
+			local r = L.stockRarity()
+			if r > 0 then
+				item:setCustomAttribute("rarity", r)
+			end
+			bonus[#bonus + 1] = itemName(id)
 		end
 	end
 
@@ -1518,7 +1572,7 @@ function L.corpseFactors(monster, pocket)
 	end
 	f = f or {}
 	local out = {loot = (tonumber(f.loot) or 1) * pocket, coins = tonumber(f.coins) or 1, junkKeep = f.junkKeep,
-		notable = (tonumber(f.notable) or tonumber(f.loot) or 1) * pocket}
+		notable = (tonumber(f.notable) or tonumber(f.loot) or 1) * pocket, cheap = pocket >= 1 and f.cheap or nil}
 	if out.loot >= 1 and out.coins >= 1 and out.notable >= 1 then
 		return nil
 	end

@@ -1,0 +1,244 @@
+# Eight-direction facing (O283; server/README.md "Eight-direction facing (O283)"). Owner request 2026-10-28: creatures
+# turn and walk on the diagonals too, for looks drawn in 8 directions (client base patch 0160 draws them).
+# The server keeps its four-way Creature::direction for everything it decides with it (spell areas and waves, the
+# tile in front, Lua getDirection). Next to it:
+#   * src/chaosfacing.h (new, header only, no engine types; server/tools/chaosfacing_test.cpp builds it alone):
+#     ofStep (the diagonal of a diagonal step), toward (the diagonal of a target that lies nearer a diagonal than an
+#     axis: the smaller offset over 0.4 of the larger) and wire (the server's diagonals in the client's order:
+#     north-east 4, south-east 5, south-west 6, north-west 7; the server's own values differ).
+#   * creature.h: Creature::facing, set with the direction by setDirection; getFacing / setFacing.
+#   * map.cpp: Map::moveCreature gives a diagonal step its diagonal facing (the direction stays east or west).
+#   * monster.cpp: Monster::updateLookDirection turns to the same four-way direction as before and faces the target's
+#     diagonal; with no target it does nothing (stock: a turn to the same direction, a no-op).
+#   * game.cpp / game.h: Game::internalCreatureTurn(creature, dir, facing = DIRECTION_NONE) sends a turn when the
+#     direction or the facing changes; a plain turn faces `dir`.
+#   * protocolgame.cpp: the turn packet (0x6B) and the creature description (AddCreature) send wire(facing).
+# A client without base patch 0160, or a look without diagonal columns, draws a diagonal east or west: what it drew
+# before. The client already draws a diagonal walk from the move packet; this patch keeps the facing when a creature
+# comes into view and turns monsters to a diagonal target. The web cast viewer (server/tools/cast_relay.py) draws a
+# diagonal east or west the same way.
+--- /dev/null
++++ b/src/chaosfacing.h
+@@ -0,0 +1,79 @@
++// Copyright 2022 The Forgotten Server Authors. All rights reserved.
++// Use of this source code is governed by the GPL-2.0 License that can be found in the LICENSE file.
++
++#ifndef FS_CHAOSFACING_H
++#define FS_CHAOSFACING_H
++
++// Eight-direction facing (patch 0077, server/README.md "Eight-direction facing (O283)"). Header only, no engine
++// types: server/tools/chaosfacing_test.cpp builds it alone.
++//   A creature keeps its four-way direction for everything the server decides with it (spell areas, waves, the
++//   tile in front). Next to it, Creature::facing is the way the clients draw it: a diagonal after a diagonal step, or
++//   when a monster turns to a target that stands nearer a diagonal than an axis. The client draws a diagonal with the
++//   look's diagonal columns when the look has 8 (client base patch 0160), else east or west as before.
++
++#include <cstdint>
++#include <cstdlib>
++
++namespace ChaosFacing {
++
++// the server's Direction values (position.h)
++enum : uint8_t {
++	NORTH = 0,
++	EAST = 1,
++	SOUTH = 2,
++	WEST = 3,
++	SOUTHWEST = 4,
++	SOUTHEAST = 5,
++	NORTHWEST = 6,
++	NORTHEAST = 7,
++	NONE = 8,
++};
++
++// the facing of a step by (dx, dy) (y grows to the south): its diagonal, or `straight` for a straight step
++inline uint8_t ofStep(int dx, int dy, uint8_t straight)
++{
++	if (dx == 0 || dy == 0) {
++		return straight;
++	}
++	if (dy < 0) {
++		return dx > 0 ? NORTHEAST : NORTHWEST;
++	}
++	return dx > 0 ? SOUTHEAST : SOUTHWEST;
++}
++
++// the facing toward a target at offset (dx, dy): its diagonal when the target lies nearer a diagonal than an axis
++// (the smaller offset over 0.4 of the larger; tan 22.5 degrees = 0.414), else `straight` (the four-way turn the engine
++// chose)
++inline uint8_t toward(int dx, int dy, uint8_t straight)
++{
++	const int ax = std::abs(dx);
++	const int ay = std::abs(dy);
++	const int lo = ax < ay ? ax : ay;
++	const int hi = ax < ay ? ay : ax;
++	if (lo == 0 || 5 * lo <= 2 * hi) {
++		return straight;
++	}
++	return ofStep(dx, dy, straight);
++}
++
++// the direction byte of the creature packets: the client's order is north, east, south, west, north-east,
++// south-east, south-west, north-west (the server's diagonals are south-west, south-east, north-west, north-east)
++inline uint8_t wire(uint8_t facing)
++{
++	switch (facing) {
++		case NORTHEAST:
++			return 4;
++		case SOUTHEAST:
++			return 5;
++		case SOUTHWEST:
++			return 6;
++		case NORTHWEST:
++			return 7;
++		default:
++			return facing <= WEST ? facing : static_cast<uint8_t>(SOUTH);
++	}
++}
++
++} // namespace ChaosFacing
++
++#endif
+--- a/src/creature.h
++++ b/src/creature.h
+@@ -165,6 +165,14 @@ class Creature : virtual public Thing
+ 		}
+ 		void setDirection(Direction dir) {
+ 			direction = dir;
++			facing = dir; // Chaos (patch 0077)
++		}
++		// Chaos (patch 0077): the way the clients draw the creature, a diagonal or the direction (chaosfacing.h)
++		Direction getFacing() const {
++			return facing;
++		}
++		void setFacing(Direction dir) {
++			facing = dir;
+ 		}
+ 
+ 		bool isHealthHidden() const {
+@@ -553,6 +561,7 @@ class Creature : virtual public Thing
+ 		LightInfo internalLight;
+ 
+ 		Direction direction = DIRECTION_SOUTH;
++		Direction facing = DIRECTION_SOUTH; // Chaos (patch 0077)
+ 		Skulls_t skull = SKULL_NONE;
+ 		GuildEmblems_t emblem = GUILDEMBLEM_NONE;
+ 		int32_t level = 0;
+--- a/src/game.cpp
++++ b/src/game.cpp
+@@ -4115,13 +4115,18 @@ bool Game::isSightClear(const Position& fromPos, const Position& toPos, bool sam
+ 	return map.isSightClear(fromPos, toPos, sameFloor);
+ }
+ 
+-bool Game::internalCreatureTurn(Creature* creature, Direction dir)
++bool Game::internalCreatureTurn(Creature* creature, Direction dir, Direction facing/* = DIRECTION_NONE*/)
+ {
+-	if (creature->getDirection() == dir) {
++	// Chaos (patch 0077): `facing` is the way the clients draw the creature (a diagonal); a plain turn faces `dir`
++	if (facing == DIRECTION_NONE) {
++		facing = dir;
++	}
++	if (creature->getDirection() == dir && creature->getFacing() == facing) {
+ 		return false;
+ 	}
+ 
+ 	creature->setDirection(dir);
++	creature->setFacing(facing);
+ 
+ 	//send to client
+ 	SpectatorVec spectators;
+--- a/src/game.h
++++ b/src/game.h
+@@ -292,7 +292,7 @@ class Game
+ 		  * \param creature Creature to change the direction
+ 		  * \param dir Direction to turn to
+ 		  */
+-		bool internalCreatureTurn(Creature* creature, Direction dir);
++		bool internalCreatureTurn(Creature* creature, Direction dir, Direction facing = DIRECTION_NONE);
+ 
+ 		/**
+ 		  * Creature wants to say something.
+--- a/src/map.cpp
++++ b/src/map.cpp
+@@ -10,6 +10,7 @@
+ #include "game.h"
+ #include "monster.h"
+ #include "chaossight.h"
++#include "chaosfacing.h"
+ 
+ extern Game g_game;
+ 
+@@ -296,6 +297,10 @@ void Map::moveCreature(Creature& creature, Tile& newTile, bool forceTeleport/* =
+ 		} else if (oldPos.x > newPos.x) {
+ 			creature.setDirection(DIRECTION_WEST);
+ 		}
++
++		// Chaos (patch 0077): a diagonal step faces its diagonal on the clients; the direction stays four-way
++		creature.setFacing(static_cast<Direction>(ChaosFacing::ofStep(newPos.x - oldPos.x, newPos.y - oldPos.y,
++		                                                               creature.getDirection())));
+ 	}
+ 
+ 	//send to client
+--- a/src/monster.cpp
++++ b/src/monster.cpp
+@@ -9,6 +9,7 @@
+ #include "events.h"
+ 
+ #include "configmanager.h"
++#include "chaosfacing.h"
+ #include <vector>
+ #include <list>
+ #include <tuple>
+@@ -1983,6 +1984,8 @@ bool Monster::getCombatValues(int32_t& min, int32_t& max)
+ void Monster::updateLookDirection()
+ {
+ 	Direction newDir = getDirection();
++	// Chaos (patch 0077): no target keeps the direction and the facing (stock: a turn to the same direction, no-op)
++	Direction facing = DIRECTION_NONE;
+ 
+ 	if (attackedCreature) {
+ 		const Position& pos = getPosition();
+@@ -2042,9 +2045,14 @@ void Monster::updateLookDirection()
+ 				}
+ 			}
+ 		}
++
++		// Chaos (patch 0077): the clients draw it facing the target's diagonal; newDir stays the four-way direction
++		facing = static_cast<Direction>(ChaosFacing::toward(offsetx, offsety, newDir));
++	} else {
++		return;
+ 	}
+ 
+-	g_game.internalCreatureTurn(this, newDir);
++	g_game.internalCreatureTurn(this, newDir, facing);
+ }
+ 
+ struct RarityAttributes {
+--- a/src/protocolgame.cpp
++++ b/src/protocolgame.cpp
+@@ -26,6 +26,7 @@
+ #include "chaoscast.h"
+ #include "chaosmapdesc.h"
+ #include "chaoscastserver.h"
++#include "chaosfacing.h"
+ #include <fmt/format.h>
+ 
+ extern ConfigManager g_config;
+@@ -2581,7 +2582,7 @@ void ProtocolGame::sendCreatureTurn(const Creature* creature, uint32_t stackPos)
+ 
+ 	msg.add<uint16_t>(0x63);
+ 	msg.add<uint32_t>(creature->getID());
+-	msg.addByte(creature->getDirection());
++	msg.addByte(ChaosFacing::wire(creature->getFacing())); // Chaos (patch 0077)
+ 	msg.addByte(player->canWalkthroughEx(creature) ? 0x00 : 0x01);
+ 	writeToOutputBuffer(msg);
+ }
+@@ -3441,7 +3442,7 @@ void ProtocolGame::AddCreature(NetworkMessage& msg, const Creature* creature, bo
+ 		msg.addByte(std::ceil((static_cast<double>(creature->getHealth()) / std::max<int32_t>(creature->getMaxHealth(), 1)) * 100));
+ 	}
+ 
+-	msg.addByte(creature->getDirection());
++	msg.addByte(ChaosFacing::wire(creature->getFacing())); // Chaos (patch 0077)
+ 
+ 	if (!creature->isInGhostMode() && !creature->isInvisible()) {
+ 		AddOutfit(msg, creature->getCurrentOutfit());

@@ -1275,7 +1275,7 @@ function R.rollKeyDrop(cfg, tier, modCount, rand, am, who)
 	return R.rollKey(cfg, up and tier + 1 or tier, rand, up or (am and am.betterMods) or false)
 end
 
--- per 100000 chance of a tier-1 key from a normal kill (0 when the kill does not qualify)
+-- per 100000 chance of a tier-1 key from a normal kill (0 when the kill does not qualify); monsterLevel = its hunting level
 function R.monsterKeyChance(cfg, monsterLevel, killerLevel, tierName)
 	local mk = cfg.monsterKey
 	if not monsterLevel or not killerLevel then

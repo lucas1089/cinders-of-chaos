@@ -100,7 +100,7 @@ local function creatureSayCallback(cid, type, msg)
 		}, cid)
 	elseif stage == Q.STAGE.PROOF then
 		npcHandler:say(Q.proofText(player:getStorageValue(storage().proof), lang) .. t(cid,
-			" Only beasts of level %d and above are worthy of you.", Q.minMonsterLevel(player:getLevel())), cid)
+			" Only beasts of level %d and above are worthy of you.", Q.minHuntingLevel(player:getLevel())), cid)
 	elseif stage == Q.STAGE.TRIAL then
 		local wait = player:getStorageValue(storage().cooldown) - os.time()
 		if wait > 0 then

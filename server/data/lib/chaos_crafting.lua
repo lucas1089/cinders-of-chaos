@@ -27,6 +27,8 @@
 --
 -- A "modifier" here is one line of the description: one absorb, one skill, one leech/critical pair, one element or
 -- one Chaos modifier. Uniques (custom attribute "chaos_unique", data/lib/chaos_unique_items.lua) are never touched.
+-- Item names: C.rewriteDescription also names the item after its best prefix and suffix (C.affixName, C.applyName; the
+-- words are ChaosItemMods.config.names), "Vicious Longsword of Haste"; the mark chaos_aname = 1 says the name is ours.
 --
 -- Rift Keys (rift.lua: item 10155 with action id 47401, custom attributes "rift_tier" and "rift_mods") are craftable
 -- too, the map way: the orbs change the key's modifiers inside the rift's own pool and ranges (rift_core.lua), see
@@ -266,7 +268,7 @@ end
 -- every custom attribute key a rolled item may carry (rarity, item level, each modifier and its tier mark): what a
 -- script that copies an item by hand (the guild depot) must copy
 function C.attributeKeys()
-	local out = {"rarity", M.ILVL, "combatPowerLevel", M.QUALITY, M.RUINED, M.EXTRA, M.CORRUPTED, M.IMPLICIT}
+	local out = {"rarity", M.ILVL, "combatPowerLevel", M.QUALITY, M.RUINED, M.EXTRA, M.CORRUPTED, M.IMPLICIT, M.NAME_MARK}
 	for _, a in ipairs(C.affixes()) do
 		out[#out + 1] = a.key
 		if a.key2 then
@@ -1124,6 +1126,99 @@ local function descriptionOf(item)
 	return ""
 end
 
+-- ---------------------------------------------------------------------------------------------------------------
+-- item names: "Vicious Longsword of Haste" (owner 2026-10-28; words: ChaosItemMods.config.names)
+-- ---------------------------------------------------------------------------------------------------------------
+local SMALL_WORDS = {of = true, the = true, ["and"] = true}
+
+-- "plate armor" -> "Plate Armor", "ring of healing" -> "Ring of Healing"
+function C.titleCase(text)
+	local n = 0
+	return (tostring(text):gsub("%a[%w']*", function(w)
+		n = n + 1
+		if n > 1 and SMALL_WORDS[w] then
+			return w
+		end
+		return w:sub(1, 1):upper() .. w:sub(2)
+	end))
+end
+
+-- "an" before a vowel sound, else "a" (the article attribute of the name)
+function C.articleOf(name)
+	local w = tostring(name):lower():match("^%s*(%a+)") or ""
+	if w:find("^hour") or w:find("^honest") or w:find("^honor") or w:find("^heir") then
+		return "an"
+	end
+	if w:find("^uni") or w:find("^use") or w:find("^usu") or w:find("^uti") or w:find("^ur") or w:find("^one")
+		or w:find("^eu") then
+		return "a"
+	end
+	return w:find("^[aeiou]") and "an" or "a"
+end
+
+-- the best modifier of a side that has a name word: the highest tier, then the larger value, then the earlier one in
+-- the list (the affix order of C.readMods); returns the word
+local function bestWord(mods, side)
+	local best, word
+	for _, m in ipairs(mods) do
+		local w = m.side == side and M.nameWord(m.chaosKey or m.key, m.tier)
+		if w then
+			local tier, value = tonumber(m.tier) or 0, tonumber(m.value) or 0
+			if not best or tier > best.tier or (tier == best.tier and value > best.value) then
+				best, word = {tier = tier, value = value}, w
+			end
+		end
+	end
+	return word
+end
+
+-- the name of an item from its stock name and its modifiers (C.readMods): [best prefix] Base [best suffix]; nil when
+-- neither side has a word (a normal item keeps its stock name). Pure.
+function C.affixName(baseName, mods)
+	local prefix, suffix = bestWord(mods or {}, "prefix"), bestWord(mods or {}, "suffix")
+	if not (prefix or suffix) or tostring(baseName or "") == "" then
+		return nil
+	end
+	return (prefix and (prefix .. " ") or "") .. C.titleCase(baseName) .. (suffix and (" " .. suffix) or "")
+end
+
+-- name the item after its modifiers, or give it back the stock name when it has none left. Uniques, waystones, rift keys
+-- and an item another script named (no chaos_aname mark) are left alone. Returns the name set, else nil.
+function C.applyName(item)
+	if not (ITEM_ATTRIBUTE_NAME and item) or C.isUnique(item) or C.isWaystone(item) or C.isRiftKey(item) then
+		return nil
+	end
+	local marked = C.customNumber(item, M.NAME_MARK) ~= 0
+	local okC, current = pcall(function() return item:getAttribute(ITEM_ATTRIBUTE_NAME) end)
+	current = (okC and type(current) == "string") and current or ""
+	if current ~= "" and not marked then
+		return nil
+	end
+	local it = itemType(item)
+	local okB, base = pcall(function() return it:getName() end) -- the stock name, never the current one: idempotent
+	local name = okB and C.affixName(base, C.readMods(item)) or nil
+	if not name then
+		if marked then
+			pcall(function() item:removeAttribute(ITEM_ATTRIBUTE_NAME) end)
+			if ITEM_ATTRIBUTE_ARTICLE then
+				pcall(function() item:removeAttribute(ITEM_ATTRIBUTE_ARTICLE) end)
+			end
+			removeCustom(item, M.NAME_MARK)
+		end
+		return nil
+	end
+	if current ~= name then
+		item:setAttribute(ITEM_ATTRIBUTE_NAME, name)
+	end
+	if ITEM_ATTRIBUTE_ARTICLE then
+		item:setAttribute(ITEM_ATTRIBUTE_ARTICLE, C.articleOf(name))
+	end
+	if not marked then
+		item:setCustomAttribute(M.NAME_MARK, 1)
+	end
+	return name
+end
+
 -- rewrite the rarity part of the description from the item's attributes. Text in front of "Item Level: N" (or an
 -- old item's "Level: N") and bracketed upgrade slots behind it ("[Attack+2]", customs/upgrade) are kept.
 function C.rewriteDescription(item)
@@ -1163,6 +1258,7 @@ function C.rewriteDescription(item)
 	end
 	text = G.append(text, item)
 	item:setAttribute(ITEM_ATTRIBUTE_DESCRIPTION, text)
+	pcall(C.applyName, item) -- the name follows the modifiers
 	M.sendUpdate(item) -- every change of the modifiers ends here: the client gets the new attributes
 	return text
 end

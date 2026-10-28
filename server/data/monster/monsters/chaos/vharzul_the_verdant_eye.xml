@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Boss of the Embergut Rift (server/tools/areaplan/plans/embergut_rift.json, levels 560-675): a horned demon of red
+     hide and black spikes whose pale green eyes see through smoke; it guards the Scorched Pools at the end of the
+     terrace path. Never paced (boss flag). Look 3361: our own AutoSprite render, 4x4, of pair 54 (data/lib/
+     chaos_autosprite_art.lua: the stock demon look 35 until ChaosAutospriteArt.PAIR54 goes on; then the row of
+     client/tools/sprites/monster_looks/autosprite_picks.csv goes into picks.csv and server/tools/apply_monster_looks.py
+     writes 3361 here; server/README.md "AutoSprite looks (pair 54)"). -->
+<monster name="Vharzul the Verdant Eye" nameDescription="Vharzul the Verdant Eye" race="fire" experience="32000" speed="70" manacost="0">
+	<health now="96000" max="96000"/>
+	<look type="35" corpse="6068"/>
+	<level min="690" max="710"/>
+	<targetchange interval="4000" chance="12"/>
+	<flags>
+		<flag isboss="1"/>
+		<flag summonable="0"/>
+		<flag attackable="1"/>
+		<flag hostile="1"/>
+		<flag illusionable="0"/>
+		<flag convinceable="0"/>
+		<flag pushable="0"/>
+		<flag canpushitems="1"/>
+		<flag canpushcreatures="1"/>
+		<flag targetdistance="1"/>
+		<flag staticattack="90"/>
+		<flag runonhealth="0"/>
+		<flag canwalkonenergy="1"/>
+		<flag canwalkonfire="1"/>
+		<flag canwalkonpoison="1"/>
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="-1100" max="-1700"/>
+		<!-- the claws: a wide rake in front of it -->
+		<attack name="physical" interval="2000" chance="20" length="5" spread="3" min="-1150" max="-1800">
+			<attribute key="areaEffect" value="redspark"/>
+		</attack>
+		<!-- the verdant eye: a green gaze thrown at range -->
+		<attack name="earth" interval="2000" chance="18" range="7" radius="2" target="1" min="-950" max="-1500">
+			<attribute key="shootEffect" value="poison"/>
+			<attribute key="areaEffect" value="greenshimmer"/>
+		</attack>
+		<!-- the pit flame: fire bursts out of the ground around it -->
+		<attack name="fire" interval="2000" chance="14" radius="3" target="0" min="-850" max="-1350">
+			<attribute key="areaEffect" value="firearea"/>
+		</attack>
+		<attack name="speed" interval="4000" chance="10" range="7" duration="6000" speedchange="-450">
+			<attribute key="areaEffect" value="smallclouds"/>
+		</attack>
+	</attacks>
+	<defenses armor="80" defense="80">
+		<defense name="healing" interval="2000" chance="10" min="1200" max="2100">
+			<attribute key="areaEffect" value="greenshimmer"/>
+		</defense>
+		<defense name="speed" interval="3000" chance="8" speedchange="300" duration="4000">
+			<attribute key="areaEffect" value="redshimmer"/>
+		</defense>
+	</defenses>
+	<elements>
+		<element physicalPercent="15"/>
+		<element firePercent="60"/>
+		<element earthPercent="30"/>
+		<element deathPercent="20"/>
+		<element energyPercent="5"/>
+		<element icePercent="-15"/>
+		<element holyPercent="-20"/>
+	</elements>
+	<immunities>
+		<immunity paralyze="1"/>
+		<immunity invisible="1"/>
+		<immunity drown="1"/>
+		<immunity lifedrain="1"/>
+	</immunities>
+	<voices interval="5000" chance="10">
+		<voice sentence="The smoke hides nothing from my eye."/>
+		<voice sentence="Your ash will cool in my pools."/>
+		<voice sentence="Kneel in the embers."/>
+	</voices>
+	<loot>
+		<item id="2160" countmax="4" chance="100000"/><!-- crystal coin -->
+		<item id="2152" countmax="60" chance="100000"/><!-- platinum coin -->
+		<item id="2498" chance="4500"/><!-- royal helmet -->
+		<item id="2516" chance="4500"/><!-- dragon shield -->
+		<item id="2466" chance="4000"/><!-- golden armor -->
+		<item id="2470" chance="3000"/><!-- golden legs -->
+		<item id="7884" chance="2500"/><!-- terra mantle -->
+		<item id="2536" chance="2500"/><!-- medusa shield -->
+		<item id="2195" chance="2000"/><!-- boots of haste -->
+	</loot>
+</monster>

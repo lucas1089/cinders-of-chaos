@@ -1,7 +1,7 @@
 -- Run from the server/ folder: luajit tests/exercise_test.lua (no engine needed; CI runs it with luajit and lua5.3)
 -- The exercise (training) weapons (owner request 2026-10-23; server/README.md "Training weapons"):
 --   * exercise_core.lua: item -> kind, class -> line, vocation -> allowed item -> skill (every class has a weapon for the
---     skills it uses; the Monk line trains fist with the melee weapon; the melee kind trains the best melee skill, so the
+--     skills it uses; the Monk line has its own fist weapon; the melee kind trains the best melee skill, so the
 --     stage rate follows it), the refusal texts, the stage rate, the chain guard, the config check
 --   * exercise_training.lua (the action) against a mocked engine: a charge only for a step that trains, the tries land on
 --     the right skill, a refused class loses nothing, range / floor / protection zone, a second click starts no second
@@ -49,7 +49,10 @@ eq(E.lineOf(0), nil, "no vocation: no line")
 eq(E.lineOf(2), nil, "a retired stock vocation: no line")
 
 -- every item id has a kind; the nine melee ids (sword, axe, club x 3 tiers) are one kind
-local melee = {27732, 27733, 27734, 27738, 27739, 27740, 27744, 27745, 27746}
+local melee = {27732, 27734, 27738, 27740, 27744, 27746}
+for _, id in ipairs({27733, 27739, 27745}) do
+	eq(E.kindOf(id), "fist", "item " .. id .. " is the fist weapon")
+end
 for _, id in ipairs(melee) do
 	eq(E.kindOf(id), "melee", "item " .. id .. " is the melee weapon")
 end
@@ -63,7 +66,8 @@ eq(n, 21, "21 exercise weapons")
 
 -- who may use what
 local WHO = {
-	melee = {warrior = true, thief = true, monk = true, templar = true},
+	melee = {warrior = true, thief = true, templar = true},
+	fist = {monk = true},
 	ranged = {ranger = true, thief = true},
 	rod = {mystic = true, necromancer = true, templar = true},
 	wand = {mystic = true, necromancer = true, templar = true},
@@ -82,10 +86,14 @@ local LEVELS = {sword = 10, club = 20, axe = 80}
 local PERCENTS = {sword = 0, club = 0, axe = 0}
 for _, id in ipairs(ids) do
 	if E.allowed("melee", id) then
-		local skill = E.skillFor("melee", id, LEVELS, PERCENTS)
-		eq(skill, LINE[id] == "monk" and "fist" or "axe", NAME[id] .. ": melee weapon trains " .. tostring(skill))
+		eq(E.skillFor("melee", id, LEVELS, PERCENTS), "axe", NAME[id] .. ": melee weapon trains the best melee skill")
 	else
 		eq(E.skillFor("melee", id, LEVELS, PERCENTS), nil, NAME[id] .. ": no melee skill")
+	end
+	if E.allowed("fist", id) then
+		eq(E.skillFor("fist", id, LEVELS, PERCENTS), "fist", NAME[id] .. ": the fist weapon trains fist fighting")
+	else
+		eq(E.skillFor("fist", id), nil, NAME[id] .. ": no fist weapon")
 	end
 	if E.allowed("ranged", id) then eq(E.skillFor("ranged", id), "distance", NAME[id] .. ": distance") end
 	if E.allowed("rod", id) then eq(E.skillFor("rod", id), "magic", NAME[id] .. ": rod trains the magic level") end
@@ -96,19 +104,21 @@ end
 eq(E.skillFor("melee", 4, {sword = 50, club = 50, axe = 50}, {sword = 0, club = 0, axe = 0}), "sword", "melee: a tie")
 eq(E.skillFor("melee", 4, {sword = 50, club = 50, axe = 50}, {sword = 0, club = 30, axe = 10}), "club", "melee: percent decides")
 eq(E.skillFor("melee", 4, nil, nil), "sword", "melee: no levels")
-eq(E.skillFor("melee", 17, {sword = 500, club = 500, axe = 500}), "fist", "the Monk trains fist whatever its sword is")
+eq(E.skillFor("fist", 17, {sword = 500, club = 500, axe = 500}), "fist", "the Monk trains fist whatever its sword is")
+eq(E.skillFor("melee", 17, {sword = 500}), nil, "the Monk has no use for the sword weapon")
 
 -- every skill a class uses has at least one weapon it may use
 local USES = {warrior = {"melee", "shield"}, ranger = {"ranged", "shield"}, mystic = {"wand", "rod", "shield"},
-	thief = {"melee", "ranged", "shield"}, monk = {"melee", "shield"}, necromancer = {"wand", "rod", "shield"},
+	thief = {"melee", "ranged", "shield"}, monk = {"fist", "shield"}, necromancer = {"wand", "rod", "shield"},
 	templar = {"melee", "shield", "wand"}}
 for _, id in ipairs(ids) do
 	for _, kind in ipairs(USES[LINE[id]]) do
 		ok(E.allowed(kind, id), NAME[id] .. " has a " .. kind .. " weapon")
 	end
 end
--- the Monk's old weapon (the club) trained a skill it does not use; its melee weapon trains fist now, and it has shielding
-ok(E.allowed("melee", 17) and E.allowed("shield", 17), "the Monk has the melee and the shield weapon")
+-- the Monk's old weapon (the club) trained a skill it does not use; its own fist weapon trains fist, and it has shielding
+ok(E.allowed("fist", 17) and E.allowed("shield", 17), "the Monk has the fist and the shield weapon")
+ok(not E.allowed("melee", 17) and not E.allowed("fist", 4), "the sword weapon is not the Monk's, the fist weapon is only its")
 ok(not E.allowed("rod", 17) and not E.allowed("wand", 17), "the Monk's spells do not use the magic level: no rod, no wand")
 
 -- refusals
@@ -116,16 +126,25 @@ local key, args = E.refusal("ranged", 17)
 eq(key, "Your class cannot train with this item. It is for: %s.", "refusal key")
 eq(args[1], "Ranger, Thief", "refusal names the lines")
 eq((E.refusal("melee", 0)), "Your vocation cannot use this item.", "no vocation: the plain refusal")
-eq(table.concat(E.lineNames("melee"), ","), "Monk,Templar,Thief,Warrior", "melee lines")
+eq(table.concat(E.lineNames("melee"), ","), "Templar,Thief,Warrior", "melee lines")
+eq(table.concat(E.lineNames("fist"), ","), "Monk", "fist lines")
 
 -- old axe / club weapons and the retired chests
-eq(E.convertTo(27733), 27732, "axe -> sword"); eq(E.convertTo(27734), 27732, "club -> sword")
-eq(E.convertTo(27739), 27738, "durable axe"); eq(E.convertTo(27746), 27744, "lasting club")
-eq(E.convertTo(27732), nil, "the sword stays"); eq(E.convertTo(27735), nil, "the bow stays")
-for _, id in ipairs({27762, 27763, 27769, 27770, 27776, 27777}) do
+eq(E.convertTo(27733, 4), 27732, "an old axe weapon (the fist one now) in a Warrior's hands -> sword")
+eq(E.convertTo(27734, 4), 27732, "club -> sword")
+eq(E.convertTo(27739, 11), 27738, "durable fist weapon in a Thief's hands -> durable sword")
+eq(E.convertTo(27746, 23), 27744, "lasting club -> lasting sword")
+eq(E.convertTo(27732, 4), nil, "the sword stays"); eq(E.convertTo(27735, 4), nil, "the bow stays")
+eq(E.convertTo(27733, 17), nil, "the fist weapon stays in a Monk's hands")
+eq(E.convertTo(27732, 17), 27733, "a Monk's sword weapon -> fist"); eq(E.convertTo(27738, 18), 27739, "durable sword -> durable fist")
+eq(E.convertTo(27746, 19), 27745, "a Monk's lasting club -> lasting fist")
+eq(E.convertTo(27735, 17), nil, "a Monk's bow is not converted (refused)")
+eq(E.convertTo(27734), 27732, "no class: the club still becomes the sword")
+eq(E.convertTo(27733), nil, "no class: the fist weapon stays")
+for _, id in ipairs({27763, 27770, 27777}) do
 	ok(E.isRetiredChest(id), "chest " .. id .. " is retired")
 end
-for _, id in ipairs({27761, 27768, 27775, 27764, 27767, 27781}) do
+for _, id in ipairs({27762, 27769, 27776, 27761, 27768, 27775, 27764, 27767, 27781}) do
 	ok(not E.isRetiredChest(id), "chest " .. id .. " is still sold")
 end
 
@@ -323,9 +342,9 @@ local function use(p, item, tgt)
 end
 local DUMMY = function() return target(27751, 101, 100, 7) end
 
--- the Monk with the melee weapon: fist tries, a charge a step, the flag set, a step every 750 ms
+-- the Monk with the fist weapon: fist tries, a charge a step, the flag set, a step every 750 ms
 do
-	local p, item = setup(17, 27732, 500, {levels = {[SKILL_FIST] = 30, [SKILL_SWORD] = 150, [SKILL_AXE] = 5}})
+	local p, item = setup(17, 27733, 500, {levels = {[SKILL_FIST] = 30, [SKILL_SWORD] = 150, [SKILL_AXE] = 5}})
 	ok(use(p, item, DUMMY()), "Monk: used")
 	eq(p.tries[SKILL_FIST], 39, "Monk: first step trains fist at stage 1 (7 x 5, +10%, rounded up)")
 	eq(p.tries[SKILL_SWORD], nil, "Monk: nothing for the sword")
@@ -354,11 +373,11 @@ end
 
 -- the Warrior with the melee weapon: the best skill (the axe) is trained at its stage rate, not the weak sword's
 do
-	local p, item = setup(4, 27733, 500, {levels = {[SKILL_SWORD] = 10, [SKILL_CLUB] = 20, [SKILL_AXE] = 80}})
-	ok(use(p, item, DUMMY()), "Warrior: used an axe weapon")
+	local p, item = setup(4, 27734, 500, {levels = {[SKILL_SWORD] = 10, [SKILL_CLUB] = 20, [SKILL_AXE] = 80}})
+	ok(use(p, item, DUMMY()), "Warrior: used a club weapon")
 	eq(p.tries[SKILL_AXE], 24, "Warrior: the axe (best) trains, at stage 2 (7 x 3, +10%)")
 	eq(p.tries[SKILL_SWORD], nil, "Warrior: not the weak sword at its fast stage")
-	eq(item.id, 27732, "the old axe weapon became the sword (melee) one")
+	eq(item.id, 27732, "the old club weapon became the sword (melee) one")
 	eq(item.attrs[ITEM_ATTRIBUTE_CHARGES], 499, "its charges are kept (and one taken)")
 	advance(750)
 	eq(item.attrs[ITEM_ATTRIBUTE_CHARGES], 498, "the converted weapon keeps training")
@@ -368,6 +387,42 @@ do
 	use(p, item, DUMMY())
 	eq(item.id, 27744, "a lasting club becomes the lasting melee weapon")
 	eq(item.attrs[ITEM_ATTRIBUTE_CHARGES], 14399, "lasting charges kept")
+end
+
+-- the fist weapon and the conversions between it and the sword one (the old exercise axe is the fist weapon now)
+do
+	local p, item = setup(18, 27739, 1800, {levels = {[SKILL_FIST] = 120}})
+	ok(use(p, item, DUMMY()), "Shadowfist: used the durable fist weapon")
+	eq(p.tries[SKILL_FIST], 16, "Shadowfist: fist at stage 3 (7 x 2, +10%)")
+	eq(item.id, 27739, "the fist weapon stays")
+	eq(item.attrs[ITEM_ATTRIBUTE_CHARGES], 1799, "one charge")
+end
+do
+	local p, item = setup(17, 27732, 500)
+	ok(use(p, item, DUMMY()), "Monk: used a sword weapon")
+	eq(item.id, 27733, "a Monk's sword weapon became the fist one")
+	eq(item.attrs[ITEM_ATTRIBUTE_CHARGES], 499, "charges kept, one taken")
+	ok(p.tries[SKILL_FIST] ~= nil and p.tries[SKILL_SWORD] == nil, "Monk: it trains fist")
+	eq(#queue > 0, true, "Monk: the chain runs")
+end
+do
+	local p, item = setup(19, 27746, 14400)
+	use(p, item, DUMMY())
+	eq(item.id, 27745, "a Monk's old lasting club became the lasting fist weapon")
+	eq(item.attrs[ITEM_ATTRIBUTE_CHARGES], 14399, "lasting charges kept")
+end
+do
+	local p, item = setup(4, 27733, 500, {levels = {[SKILL_SWORD] = 40}})
+	ok(use(p, item, DUMMY()), "Warrior: used an old exercise axe")
+	eq(item.id, 27732, "a Warrior's old exercise axe (the fist weapon now) became the sword one")
+	ok(p.tries[SKILL_SWORD] ~= nil and p.tries[SKILL_FIST] == nil, "Warrior: melee, not fist")
+	eq(item.attrs[ITEM_ATTRIBUTE_CHARGES], 499, "its charges are kept")
+end
+do
+	local p, item = setup(3, 27733, 500)
+	use(p, item, DUMMY())
+	eq(item.attrs[ITEM_ATTRIBUTE_CHARGES], 500, "Ranger: the fist weapon is refused, no charge")
+	eq(p.msgs[#p.msgs], "Your class cannot train with this item. It is for: Templar, Thief, Warrior.", "Ranger: told the sword weapon's lines")
 end
 
 -- a plain dummy gives no bonus; the magic level and distance
@@ -415,7 +470,7 @@ do
 	ok(p.tries[SKILL_SHIELD] ~= nil, "Necromancer trains shielding")
 end
 do
-	local p, item = setup(25, 27745, 500, {levels = {[SKILL_SWORD] = 40, [SKILL_AXE] = 60}})
+	local p, item = setup(25, 27744, 500, {levels = {[SKILL_SWORD] = 40, [SKILL_AXE] = 60}})
 	use(p, item, DUMMY())
 	ok(p.tries[SKILL_AXE] ~= nil and p.tries[SKILL_FIST] == nil, "Sentinel: the melee skill, not fist")
 end
@@ -426,7 +481,7 @@ do
 	ok(use(p, item, DUMMY()), "Ranger: used the melee weapon")
 	eq(item.attrs[ITEM_ATTRIBUTE_CHARGES], 500, "a refused click takes no charge")
 	ok(next(p.tries) == nil and p.mana == 0, "a refused click trains nothing")
-	eq(p.msgs[#p.msgs], "Your class cannot train with this item. It is for: Monk, Templar, Thief, Warrior.", "the refusal names the classes")
+	eq(p.msgs[#p.msgs], "Your class cannot train with this item. It is for: Templar, Thief, Warrior.", "the refusal names the classes")
 	eq(#queue, 0, "no chain")
 	local q, wand = setup(4, 27737, 500)
 	use(q, wand, DUMMY())
@@ -555,22 +610,39 @@ if type(shopCfg) == "table" then
 	for _, id in ipairs(cfg.retiredChests) do
 		ok(offered[id] == nil, "the store no longer sells chest " .. id)
 	end
-	for _, id in ipairs({27761, 27768, 27775, 27764, 27765, 27766, 27767, 27771, 27772, 27773, 27774, 27778, 27779, 27780, 27781}) do
+	for _, id in ipairs({27761, 27762, 27768, 27769, 27775, 27776, 27764, 27765, 27766, 27767, 27771, 27772, 27773, 27774, 27778, 27779, 27780, 27781}) do
 		ok(offered[id] ~= nil, "the store still sells chest " .. id)
 	end
 	ok(offered[27761].name:find("Melee", 1, true) ~= nil, "the sword chest is the melee one in the store")
+	-- the Monk line has its own offer in each tier, at the price of the melee one, and no melee offer names the Monk
+	for _, pair in ipairs({{27761, 27762}, {27768, 27769}, {27775, 27776}}) do
+		local melee, fist = offered[pair[1]], offered[pair[2]]
+		ok(fist.name:find("Fist", 1, true) ~= nil, "chest " .. pair[2] .. " is the fist offer")
+		eq(fist.cost, melee.cost, "the fist offer " .. pair[2] .. " costs what the melee one does")
+		ok(fist.description:find("Monk", 1, true) ~= nil and fist.description:find("fist", 1, true) ~= nil,
+			"the fist offer " .. pair[2] .. " says it is for the Monk and trains fist")
+		ok(melee.description:find("Monk", 1, true) == nil and melee.description:find("fist", 1, true) == nil,
+			"the melee offer " .. pair[1] .. " does not name the Monk or fist")
+		for _, line in ipairs(cfg.kinds.fist.lines) do
+			ok(line == "monk", "the fist kind is the Monk's only")
+		end
+	end
+	-- the weapon each chest of the config belongs to has an offer
+	for _, ch in ipairs(cfg.chests) do
+		ok(offered[ch.melee] ~= nil and offered[ch.fist] ~= nil, "both chests of a tier are sold")
+	end
 end
 
 -- the Ancestral Store hides the retired chests (commands_ui_core.lua)
 dofile("data/scripts/chaos/commands_ui_core.lua")
 local K = ChaosCommandsCore
 if type(K) == "table" and K.storeEntries then
-	local scripts = {["a.lua"] = "local ITEM_PRICE = 10\nItemType(27762)", ["b.lua"] = "local ITEM_PRICE = 10\nItemType(27761)"}
+	local scripts = {["a.lua"] = "local ITEM_PRICE = 10\nItemType(27763)", ["b.lua"] = "local ITEM_PRICE = 10\nItemType(27761)"}
 	local out = K.storeEntries({{id = 1, param = "3, 1", group = 3, label = "A", script = "a.lua"},
 		{id = 2, param = "3, 2", group = 3, label = "B", script = "b.lua"}},
 		function(s) return scripts[s] end, function(id) return {name = "x" .. id, clientId = 1} end)
 	eq(#out, 1, "the Ancestral Store lists one of the two")
-	eq(out[1] and out[1].itemId, 27761, "the sword (melee) chest stays, the axe chest is hidden")
+	eq(out[1] and out[1].itemId, 27761, "the sword (melee) chest stays, the club chest is hidden")
 end
 
 print(string.format("exercise_test: %d checks, %d failed", checks, fails))

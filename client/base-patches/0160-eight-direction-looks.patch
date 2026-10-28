@@ -1,0 +1,100 @@
+# Chaos: creature looks with 8 directions (O283; client/BASE.md "0160"; src/client/chaosfacing.h (new, pure), outfit.cpp;
+# after 0001-0159).
+# Owner request 2026-10-28: monsters walk and turn on the diagonals. A creature already faces a diagonal after a
+# diagonal step (Creature::walk sets m_direction from the two positions), and server src-patch 0077 also sends a
+# diagonal in the turn packet and the creature description; Outfit::draw folded it to east or west.
+# Now a look may have 8 x patterns: north, east, south, west, then north-east, south-east, south-west, north-west (the
+# order of Otc::Direction). Outfit::draw keeps its folded four-way direction for the mount, wings, aura, bones and the
+# rider seat, and draws the body from chaos::facing::bodyColumn: the diagonal when the creature faces one, the look has
+# 8 columns and no mount is drawn under it; else the folded direction, as before. Looks with 4 columns draw exactly what
+# they drew. Map, ghost (death fade) and UI draws all pass through Outfit::draw.
+--- /dev/null
++++ b/src/client/chaosfacing.h
+@@ -0,0 +1,34 @@
++// Cinders of Chaos (base patch 0160): the column a creature's body is drawn from, pure and header-only so
++// client/tools/chaosfacing_test.cpp can run it without the engine. A look has 4 columns (north, east, south, west) or 8
++// (then north-east, south-east, south-west, north-west follow, the order of Otc::Direction). A creature faces a
++// diagonal after a diagonal step and when the server turns it to one (server src-patch 0077): a look with 8 columns
++// draws that diagonal, any other look east or west as before. Mounts, wings and auras keep the four directions, so a
++// rider is drawn four-way.
++#ifndef CHAOSFACING_H
++#define CHAOSFACING_H
++
++namespace chaos {
++namespace facing {
++
++constexpr int kNorthEast = 4;
++constexpr int kNorthWest = 7;
++constexpr int kDiagonalColumns = 8;
++
++inline bool isDiagonal(int direction)
++{
++    return direction >= kNorthEast && direction <= kNorthWest;
++}
++
++// `facing`: the creature's direction (0-7); `folded`: the four-way direction the outfit draws its other parts with;
++// `columns`: the look's x patterns; `riding`: a mount is drawn under the body
++inline int bodyColumn(int facing, int folded, int columns, bool riding)
++{
++    if (isDiagonal(facing) && columns >= kDiagonalColumns && !riding)
++        return facing;
++    return folded;
++}
++
++} // namespace facing
++} // namespace chaos
++
++#endif
+--- a/src/client/outfit.cpp
++++ b/src/client/outfit.cpp
+@@ -25,6 +25,7 @@
+ #include "lightview.h"
+ #include "negativeoffset.h"
+ #include "spritemanager.h"
++#include "chaosfacing.h"
+ 
+ #include <framework/graphics/painter.h>
+ #include <framework/graphics/drawcache.h>
+@@ -55,6 +56,8 @@ void Outfit::draw(Point dest, Otc::Direction direction, uint walkAnimationPhase,
+ {
+     const Point logicalCreatureCenter = dest + Point(g_sprites.spriteSize() / 2, g_sprites.spriteSize() / 2);
+ 
++    // Cinders of Chaos (base patch 0160): the way the creature faces, a diagonal included (chaosfacing.h)
++    const int facing = direction;
+     // direction correction
+     if (m_category != ThingCategoryCreature)
+         direction = Otc::North;
+@@ -155,6 +158,9 @@ void Outfit::draw(Point dest, Otc::Direction direction, uint walkAnimationPhase,
+     // drawn and the standing figure is lifted onto it by the shift a stock seated frame has (client/BASE.md).
+     const bool unseatedRider = m_mount > 0 && zPattern == 0 && m_category == ThingCategoryCreature;
+     const bool riding = zPattern > 0 || unseatedRider;
++    // Cinders of Chaos (base patch 0160): the body's column; a look with 8 columns draws a diagonal facing
++    const int bodyColumn = m_category == ThingCategoryCreature
++        ? chaos::facing::bodyColumn(facing, direction, type->getNumPatternX(), riding) : direction;
+     // Cinders of Chaos: the silhouette outline, queued under the mount and the body; collects their parts
+     DrawQueueItemOutfitOutline* outline = nullptr;
+     auto addOutlinePart = [&](DrawQueueItem* item, ThingType* partType, int partPhase) {
+@@ -428,7 +434,7 @@ void Outfit::draw(Point dest, Otc::Direction direction, uint walkAnimationPhase,
+ 
+         if (type->getLayers() <= 1) {
+             if (!m_shader.empty()) {
+-                std::shared_ptr<DrawOutfitParams> outfitParams = type->drawOutfit(dest, 0, direction, yPattern, zPattern, animationPhase, Color::white, baseLightView);
++                std::shared_ptr<DrawOutfitParams> outfitParams = type->drawOutfit(dest, 0, bodyColumn, yPattern, zPattern, animationPhase, Color::white, baseLightView);
+                 if (!outfitParams)
+                     continue;
+                 if (yPattern == 0)
+@@ -438,12 +444,12 @@ void Outfit::draw(Point dest, Otc::Direction direction, uint walkAnimationPhase,
+                 g_drawQueue->add(std::move(shaded));
+                 continue;
+             }
+-            addOutlinePart(type->draw(dest, 0, direction, yPattern, zPattern, animationPhase, Color::white, baseLightView), type, animationPhase);
++            addOutlinePart(type->draw(dest, 0, bodyColumn, yPattern, zPattern, animationPhase, Color::white, baseLightView), type, animationPhase);
+             continue;
+         }
+ 
+         uint32_t colors = m_head + (m_body << 8) + (m_legs << 16) + (m_feet << 24);
+-        std::shared_ptr<DrawOutfitParams> outfitParams = type->drawOutfit(dest, 1, direction, yPattern, zPattern, animationPhase, Color::white, baseLightView);
++        std::shared_ptr<DrawOutfitParams> outfitParams = type->drawOutfit(dest, 1, bodyColumn, yPattern, zPattern, animationPhase, Color::white, baseLightView);
+         if (!outfitParams)
+             continue;
+ 

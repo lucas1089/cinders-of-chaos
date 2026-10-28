@@ -284,7 +284,7 @@ do
 
 	-- the entries: every piece, in the slot of its kind, inside its set's band, none while a switch is off
 	local entries = K.setEntries(cfg, G)
-	eq(#entries, 640, "sets: all 640 pieces are on offer")
+	eq(#entries, 643, "sets: all 643 pieces are on offer")
 	local slots = {}
 	for _, e in ipairs(entries) do
 		local piece = G.piece(e.id)
@@ -308,7 +308,7 @@ do
 	eq(#K.setEntries(cfg, nil), 0, "sets: none without the library")
 	local half = cfg.sets.weight.gildcrown
 	cfg.sets.weight.gildcrown = 0
-	eq(#K.setEntries(cfg, G), 640 - 64, "sets: weight 0 leaves a set out")
+	eq(#K.setEntries(cfg, G), 643 - 64, "sets: weight 0 leaves a set out")
 	cfg.sets.weight.gildcrown = half
 
 	-- candidates: the character's level and class, the highest levels first
@@ -957,7 +957,7 @@ eq(#sent, 0, "another opcode ignored")
 -- the engine part reads the library itself: the entries follow the switch
 do
 	ChaosGearSets = nil
-	eq(#P.setEntries(), 640, "engine: set pieces on offer with the switch on")
+	eq(#P.setEntries(), 643, "engine: set pieces on offer with the switch on")
 	ChaosGearSets.PAIR28 = false
 	eq(#P.setEntries(), 0, "engine: none with the switch off")
 	ChaosGearSets.PAIR28 = true

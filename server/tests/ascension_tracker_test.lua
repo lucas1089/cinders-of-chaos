@@ -36,17 +36,21 @@ eq(r[3].state, "done"); eq(r[4].state, "open", "choice open")
 r = K.rows({vocId = 4, level = 200, stage = 4, proof = 0})
 eq(r[4].state, "open", "vocation changed back: choose again"); eq(r[1].state, "done")
 for _, row in ipairs(r) do assert(row.title ~= "" and row.target >= 1) end
+-- the proof title names the hunting level the player sees, 0.6 x the player's level (was 1.2 x: 242 at level 202)
+r = K.rows({vocId = 4, level = 202, stage = 1, proof = 0})
+assert(r[2].title:find("level 121 or higher"), r[2].title)
 
 -- texts in both languages
 local pt = K.rows({vocId = 4, level = 200, stage = 0, proof = 0}, "pt-BR")
 local en = K.rows({vocId = 4, level = 200, stage = 0, proof = 0}, "en")
 for i = 1, 4 do assert(pt[i].title ~= en[i].title, "pt-BR title " .. i) end
 eq(pt[3].title, "Vença a Prova de Ascensão")
--- the lowest monster level that counts is in the proof row (0.6 x 200 = 120 on the pool scale, x baseLevelMult shown) and in the sig, so a level-up resends it
-eq(en[2].title, "Slay rare and legendary beasts of level " .. 120 * Chaos.huntingMult() .. " or higher")
-eq(pt[2].title, "Derrote feras raras e lendárias de nível " .. 120 * Chaos.huntingMult() .. " ou mais")
+-- the lowest monster level that counts is in the proof row (0.6 x 200 = 120, the hunting level the player sees; before
+-- 2026-10-28 it was 120 pool levels, shown as 240) and in the sig, so a level-up resends it
+eq(en[2].title, "Slay rare and legendary beasts of level 120 or higher")
+eq(pt[2].title, "Derrote feras raras e lendárias de nível 120 ou mais")
 eq(K.rows({vocId = 4, level = min, stage = 0, proof = 0}, "en")[2].title:match("%d+"),
-	tostring(Chaos.huntingLevel(math.max(40, math.floor(0.6 * min)))), "at the quest level")
+	tostring(math.max(40, math.floor(0.6 * min))), "at the quest level")
 assert(K.sig(en, "en") ~= K.sig(K.rows({vocId = 4, level = 210, stage = 0, proof = 0}, "en"), "en"), "sig moves with the level")
 
 -- signature

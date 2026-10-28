@@ -80,6 +80,20 @@ function M.huntRareGear(ctx, band)
 	return rare / math.max(w, 1), kills / math.max(w, 1)
 end
 
+-- the richest stock hunting band: the band of the loot model's table (LM.BANDS) with the most Rare+ gear an hour. It was the
+-- band 1000 (24.8 an hour; the 1500 band's stock tables hold no gear) before the monsters stood at their pool level, it is
+-- the band 500 now (O285: 25.7 an hour; the base set ends at pool level 657; server/README.md "Loot by monster level")
+function M.richestBand(ctx)
+	local best, most = nil, -1
+	for _, b in ipairs(LM.BANDS) do
+		local per = M.huntRareGear(ctx, b)
+		if per > most then
+			best, most = b, per
+		end
+	end
+	return best, most
+end
+
 local function killsAt(ctx, level)
 	return P.lin(ctx.kills.scaled, level, 800)
 end
@@ -96,8 +110,7 @@ end
 -- one waystone tier: {level, hunt = rare gear / h, content = rare+ pieces / h (kills + bosses), gain}
 function M.waystone(ctx, tier, quantity)
 	local level = wtCfg.tiers[tier].level
-	local band = 1000 -- the richest stock hunting band (the 1500 band's stock tables hold no gear: server/README.md "Loot by monster level")
-	local hunt, huntKills = M.huntRareGear(ctx, band)
+	local band, hunt = M.richestBand(ctx)
 	local shares = M.tierShares(tier)
 	local kills = killsAt(ctx, level) * M.EFFICIENCY.waystone
 	local q = K.waystoneQuantity(cfg, tier) * (quantity or 1)

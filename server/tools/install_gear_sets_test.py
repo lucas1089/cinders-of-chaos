@@ -33,9 +33,9 @@ def otb(nodes):
 
 rows = T.rows_of(T.DEFAULT_MANIFEST)
 by = {r['key']: r for r in rows}
-check(len(rows) == 640, 'manifest: 448 art pieces + 192 later-tier pieces')
+check(len(rows) == 643, 'manifest: 448 art pieces + 192 later-tier pieces + 3 extra legs of Rimewraith (O285)')
 check([r['server_id'] for r in rows[:448]] == list(range(36995, 37443)), 'manifest: server ids 36995..37442 in order')
-check([r['server_id'] for r in rows[448:]] == list(range(52000, 52192)), 'later tiers: server ids 52000..52191 in order')
+check([r['server_id'] for r in rows[448:]] == list(range(52000, 52195)), 'later tiers and extra legs: server ids 52000..52194 in order')
 orig = {r['server_id']: r for r in rows[:448]}
 by_cid = {}
 for r in rows:
@@ -48,8 +48,13 @@ for key, name, _band, *_x, source, first in T.TIER2:
     check(all(r['server_id'] != r['client_id'] + 3000 for r in own), key + ': ids of their own, not client id + 3000')
     check(all(r['name'].startswith(name.lower() + ' ') for r in own), key + ': named for the set')
     check(all(r['ex']['fit'] == 'A' for r in own if r['kind'] == 'legs'), key + ': legs fit anyone')
-check(all(len(v) in (1, 2) for v in by_cid.values()), 'a look is worn by at most one copy')
-check(len({r['key'] for r in rows}) == 640, 'keys are unique')
+check(all(len(v) in (1, 2, 3) for v in by_cid.values()) and sum(len(v) == 3 for v in by_cid.values()) == 3,
+      'a look is worn by at most one copy (the three Rimewraith legs of O285 by two)')
+extra = rows[640:]
+check([(r['key'], r['ex']['fit'], r['level'], r['server_id']) for r in extra] == [('rimewraith_legs_5', 'H', 800, 52192),
+      ('rimewraith_legs_6', 'M', 800, 52193), ('rimewraith_legs_7', 'C', 800, 52194)], 'extra legs: Rimewraith H / M / C at level 800')
+check(all(r['ex']['set'] == 'rimewraith' and r['kind'] == 'legs' for r in extra), 'extra legs belong to Rimewraith')
+check(len({r['key'] for r in rows}) == 643, 'keys are unique')
 check(T.pair28_on(), 'switch ChaosGearSets.PAIR28 is on as shipped (pair 28 is live)')
 with tempfile.TemporaryDirectory() as td:
     off = os.path.join(td, 'chaos_gear_sets.lua')
@@ -61,7 +66,7 @@ check(T.curve('armor', 8) == 7 and T.curve('armor', 5000) == 31 and T.curve('arm
 check(T.steps('skill', 49) == 0 and T.steps('skill', 50) == 1 and T.steps('skill', 2000) == 5, 'steps')
 for key, _name, (lo, hi), *_r in T.SETS:
     own = [r for r in rows if r['ex']['set'] == key]
-    check(len(own) == 64, key + ': 64 pieces')
+    check(len(own) == (67 if key == 'rimewraith' else 64), key + ': 64 pieces (Rimewraith 67 with its extra legs)')
     check(min(r['level'] for r in own) == lo and max(r['level'] for r in own) == hi, key + ': levels span the band')
     check(all(r['level'] % 5 == 0 or r['level'] == lo for r in own), key + ': levels rounded to 5')
 h = [by['blightfang_helmet_%d' % i] for i in (1, 3, 6)]
@@ -90,14 +95,14 @@ check(voc.count('showInDescription="0"') == 4, 'ascended classes hidden next to 
 # items.otb
 base = otb([item_node(2671, 3582)])
 new, c = patch_otb(base, rows)
-check(c['new'] == 640 and verify_otb(new, rows) >= 640, 'otb: 640 nodes added and verified')
+check(c['new'] == 643 and verify_otb(new, rows) >= 643, 'otb: 643 nodes added and verified')
 again, c2 = patch_otb(new, rows)
 check(again == new and c2['new'] == 0, 'otb: a second run changes nothing')
 
 # items.xml, movements.xml, weapons.xml
 xml = '<?xml version="1.0"?>\n<items>\n\t<item id="2671" name="a ham" />\n</items>\n'
 x1, note = T.patch_xml(xml, rows)
-check('added' in note and x1.count('<item id="3') == 448 and x1.count('<item id="52') == 192, 'xml: block added')
+check('added' in note and x1.count('<item id="3') == 448 and x1.count('<item id="52') == 195, 'xml: block added')
 check(T.patch_xml(x1, rows) == (x1, 'items.xml: equipment set block up to date'), 'xml: a second run keeps it')
 check('<item id="37011" name="cinderwrought legplates">' in x1, 'xml: no article for a plural noun')
 try:
@@ -107,7 +112,7 @@ except SystemExit as e:
     check('equipment set block' in str(e), 'xml: the refusal names the block')
 mv = '<?xml version="1.0"?>\n<movements>\n</movements>\n'
 m1, _n = T.patch_moves(mv, rows)
-check(m1.count('event="Equip"') == 640 and m1.count('event="DeEquip"') == 640, 'movements: a pair per piece')
+check(m1.count('event="Equip"') == 643 and m1.count('event="DeEquip"') == 643, 'movements: a pair per piece')
 check('itemid="36995" slot="head" level="120"' in m1, 'movements: slot and level')
 wp = '<?xml version="1.0"?>\n<weapons>\n</weapons>\n'
 w1, _n = T.patch_weapons(wp, rows)

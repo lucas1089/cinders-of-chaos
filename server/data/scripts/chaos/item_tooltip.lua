@@ -118,7 +118,8 @@ local function answer(player, data)
 	-- the viewer's attack speed inputs for "Your Attack Interval" on weapons (attack speed cap, engine patch 0011)
 	local voc = player:getVocation()
 	local wielder = {voc = voc and voc:getAttackSpeed() or 2000,
-		dex = CHARSTAT_DEXTERITY and player.getCharacterStat and player:getCharacterStat(CHARSTAT_DEXTERITY) or 0}
+		dex = CHARSTAT_DEXTERITY and player.getCharacterStat and player:getCharacterStat(CHARSTAT_DEXTERITY) or 0,
+		bonus = ChaosItemMods and ChaosItemMods.playerAttackSpeed and ChaosItemMods.playerAttackSpeed(player) or 0}
 	-- and the inputs of the "Estimated DPS" line (weapon_dps_core.lua): level, best melee skill (one melee skill), distance skill
 	local okSkill = pcall(function()
 		local best = 0

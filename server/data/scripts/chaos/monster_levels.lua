@@ -2,7 +2,7 @@
 -- level-scaled monsters showed "[level]" after the name; stock monsters (no <level> in their XML) showed none.
 -- At every spawn (EventCallback onSpawn, before the placement, so the first creature packet carries it) a monster
 -- without a level of its own gets a display level (engine patch 0040, monster:setDisplayLevel): its HUNTING level
--- (ChaosLoot's pool level x pace_config.lua baseLevelMult, owner 2026-10-27; loot, damage and pace keep the pool level). Display only: health, speed, damage, experience,
+-- (ChaosLoot's pool level; pace_config.lua baseLevelMult is 1 since 2026-10-28, O285, so the shown level is the pool level; the x2 rule of O272 is retired). Display only: health, speed, damage, experience,
 -- skull and getMonsterLevel() stay as they were. The decision is monster_levels_core.lua.
 -- Rift, invasion and generated area / dungeon monsters show the level their system scaled them to instead: the system
 -- passes it as Chaos.spawnLevel (Chaos.createMonsterNamed's shownLevel); with engine patch 0044 it wins over a level of
@@ -38,7 +38,7 @@ end
 
 -- the level a monster without a level of its own is shown at: its HUNTING level (owner 2026-10-27). A generated
 -- area / dungeon point and a waystone tier give the hunting level already; the bounty pool's level (ChaosLoot) or the
--- experience / health estimate is on the pool scale and is multiplied by pace_config.lua baseLevelMult. Second result:
+-- experience / health estimate is on the pool scale and is multiplied by pace_config.lua baseLevelMult (1 since 2026-10-28, O285). Second result:
 -- false for a monster that is not in the bounty pool (its level is then raised to its hunt's, see ML.apply)
 function ML.estimate(monster)
 	local id = try(function() return monster:getId() end)

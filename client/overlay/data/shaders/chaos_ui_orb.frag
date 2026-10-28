@@ -2,6 +2,9 @@
 // cuts the orb); image-color tints the liquid. u_Params: x = fill 0..1, y = slosh 0..1 (raised by Lua when the value
 // changes, then eased back), z = phase offset (two orbs do not move together), w = 1 for a bright foam line.
 // Own math: a layered sine surface, a small value-noise field for the swirl, a fake sphere normal for the shading.
+// A glass globe (owner 2026-10-28, preview option 2): the liquid is seen through a lens (it bulges toward the middle),
+// its surface curves with the ball, light from the upper left, a darker rim, a fresnel rim light, a sharp window
+// highlight with a small glint and a soft crescent reflection at the bottom.
 uniform sampler2D u_Tex0;
 uniform vec4 u_Color;
 uniform vec4 u_Params;
@@ -60,11 +63,12 @@ void main()
     if (mask.a < 0.01)
         discard;
     float t = u_Time + u_Params.z * 7.0;
-    vec2 uv = v_TexCoord;
-    vec2 c = uv - vec2(0.5);
+    vec2 c = v_TexCoord - vec2(0.5);
     float r = clamp(length(c) * 2.0, 0.0, 1.0);
     // a sphere seen from the front: the normal's z falls off to the rim
     float nz = sqrt(max(0.0, 1.0 - r * r));
+    // the lens: the liquid is read nearer the middle toward the rim, so it bulges like seen through glass
+    vec2 uv = vec2(0.5) + c * (1.0 - 0.3 * (1.0 - nz));
 
     float fill = clamp(u_Params.x, 0.0, 1.0);
     float slosh = clamp(u_Params.y, 0.0, 1.0);
@@ -74,6 +78,8 @@ void main()
                + sin(uv.x * 4.0 + t * 0.9 + 1.7) * amp * 0.8;
     // at 0 or 1 the surface sits outside the orb, so an empty orb is empty and a full one full
     float level = 1.0 - mix(-0.04, 1.04, fill) + wave * step(0.001, fill) * step(fill, 0.999);
+    // the surface is a disc seen a little from above: it curves down at the sides, most at half full
+    level += 0.06 * (1.0 - (uv.x - 0.5) * (uv.x - 0.5) * 4.0) * sin(3.14159 * fill);
     float below = smoothstep(level - 0.006, level + 0.006, uv.y);
 
     vec3 tint = u_Color.rgb;
@@ -86,13 +92,25 @@ void main()
     float foam = smoothstep(0.03, 0.0, abs(uv.y - level - 0.012));
     liquid = mix(liquid, mix(tint, vec3(1.0), 0.55), foam * (0.35 + 0.5 * u_Params.w) * below);
 
-    vec3 glass = vec3(0.05, 0.045, 0.06) + tint * 0.06;
+    vec3 glass = vec3(0.05, 0.045, 0.06) + tint * (0.06 + 0.05 * (1.0 - nz));
     vec3 col = mix(glass, liquid, below);
-    // sphere shading, a darker rim and a soft highlight at the upper left
-    col *= 0.45 + 0.55 * nz;
-    float spec = smoothstep(0.24, 0.0, length(uv - vec2(0.36, 0.28)));
-    col += vec3(1.0) * spec * 0.35;
-    float rim = smoothstep(0.80, 1.0, r);
-    col = mix(col, col * 0.35, rim);
+    // the ball lit from the upper left, an inner shadow at the rim
+    vec2 p = v_TexCoord;
+    float lit = clamp(dot(vec3(c * 2.0, nz), vec3(-0.45, -0.55, 0.7)), 0.0, 1.0);
+    col *= 0.35 + 0.75 * lit;
+    col *= 1.0 - 0.65 * smoothstep(0.72, 1.0, r);
+    // fresnel rim light, stronger at the top
+    float fres = pow(1.0 - nz, 3.0) * (0.6 + 0.4 * (1.0 - p.y));
+    col += mix(tint, vec3(1.0), 0.5) * fres * 0.5;
+    // the window highlight: a sharp oval at the upper left, turned like the noise grid, and a small glint under it
+    vec2 e = vec2((p.x - 0.34) / 0.13, (p.y - 0.27) / 0.085);
+    e = vec2(0.8 * e.x + 0.6 * e.y, -0.6 * e.x + 0.8 * e.y);
+    col += vec3(1.0) * (1.0 - smoothstep(0.75, 1.0, length(e))) * 0.9;
+    col += vec3(1.0) * (1.0 - smoothstep(0.012, 0.03, length(p - vec2(0.25, 0.38)))) * 0.8;
+    // a soft crescent reflection along the bottom of the rim
+    float crescent = smoothstep(0.86, 0.92, r) * (1.0 - smoothstep(0.92, 0.98, r)) * smoothstep(0.55, 0.85, p.y)
+                   * (1.0 - smoothstep(0.2, 0.45, abs(p.x - 0.5)));
+    col += mix(tint, vec3(1.0), 0.6) * crescent * 0.5;
+    col = clamp(col, 0.0, 1.0);
     gl_FragColor = vec4(col, mask.a * u_Color.a);
 }

@@ -5,7 +5,9 @@ not measured; server/README.md "Pack combat (pace)", data/spells/README.md "Pack
 usage: python3 -I server/tools/pack_model.py [--levels 300,800,1000] [--no-cleave] [--no-kit] [--rounded] [--top] [--check]
 
 --check (CI, O138): the pack of the median class in the level-scaled late sets (hunting level 670 and up) dies in at most
-LATE_MAX (3.0) times the time of a base hunt's pack at the same level (at most level 1000); prints the table.
+LATE_MAX (3.0) times the time of a base hunt's pack at the same level (at most level 1000); prints the table. O285: the
+hunting level of a base monster is its pool level, so no base monster is above 657; above it the base pack is the top
+monsters' with their health grown with the level (median_health).
 
 Prints experience per hour against the median class; --top prints each class's kills per hour (experience per kill is
 the same for every class, so this is its experience per hour up to one factor) and its share of the top class's.
@@ -114,13 +116,18 @@ def monsters():
         est = max(1, int(round(max(by_exp, min(hp / 60.0, by_exp * 1.5)))))
         if name.lower() in scaled or est != lv or hp <= 0 or exp <= 0:
             continue  # a level-scaled monster: the late sets below
-        out.append((2 * lv, hp, sp))  # hunting level = 2 x the pool's fair-hunt estimate
+        out.append((lv, hp, sp))  # hunting level = the pool's fair-hunt estimate (pace_config baseLevelMult 1 since O285)
     return out
 
 
 def median_health(mons, L):
-    hs = sorted(h for hl, h, sp in mons if L * 0.75 <= hl < L * 1.33 for _ in range(sp))
-    return hs[len(hs) // 2] * TIER_HEALTH
+    # no base monster is hunted above the pool's highest level (O285: hunting level = pool level, 657). The base hunt that
+    # the late sets are compared with above it is the top one's monsters with their health grown with the level (the
+    # pool's health is about 65 a level there)
+    top = max(hl for hl, h, sp in mons)
+    Lh = min(L, top)
+    hs = sorted(h for hl, h, sp in mons if Lh * 0.75 <= hl < Lh * 1.33 for _ in range(sp))
+    return hs[len(hs) // 2] * TIER_HEALTH * max(1.0, L / float(top))
 
 
 # ------------------------------------------------------------------------------------------------ the model

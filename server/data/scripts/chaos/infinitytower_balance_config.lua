@@ -91,7 +91,7 @@ return {
 	-- maximum health of the boss by boss floor (tower_model.py --derive)
 	bossHealth = {[10] = 31300, [20] = 53400, [30] = 79400, [40] = 99000, [50] = 126000, [60] = 155000, [70] = 177000, [80] = 207000, [90] = 239000, [100] = 277000, [110] = 278000, [120] = 279000},
 	-- damage of a floor's monsters to players (the pace_config.lua damage curve at the pool's hunting level)
-	damage = {{1, 0.99}, {12, 0.9}, {20, 0.8}, {28, 0.76}, {36, 0.71}, {44, 0.67}, {52, 0.72}, {120, 0.78}},
+	damage = {{1, 1.0}, {12, 1.0}, {20, 0.86}, {28, 0.83}, {36, 0.79}, {44, 0.76}, {52, 0.8}, {120, 0.86}},
 
 	-- Above maxFloor (O172, owner 2026-10-24: "the higher the floor, the stronger the monsters, without end"): every value
 	-- keeps rising with the floor, never flat and never a repeat of an old boss. d = floor - maxFloor. `level` grows linearly

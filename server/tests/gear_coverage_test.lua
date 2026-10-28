@@ -97,12 +97,40 @@ eq(C.readmeReplace("a\n" .. one .. "\nb", "NEW"), "a\nNEW\nb", "the block is rep
 
 -- ---------------------------------------------------------------- fairness
 local F = C.fairness(cfg, wcfg)
-eq(#F.fails, 0, "no class is left behind in weapon drops")
-eq(#F.rows, 21, "21 classes")
-for _, r in ipairs(F.rows) do
+eq(#F.fails, 0, "every loadout of every class finds as many weapons as any other")
+local perClass = {}
+for _, r in ipairs(F.cells) do
+	perClass[r.class] = (perClass[r.class] or 0) + 1
 	for i, v in ipairs(r.cells) do
-		eq(v > 0, true, r.class .. " finds a usable weapon in the hunting band " .. F.edges[i])
+		eq(v > 0, true, r.class .. " " .. r.key .. " finds a usable weapon in the hunting band " .. F.edges[i])
 	end
 end
+eq(#F.classes, 21, "21 classes")
+for _, c in ipairs(F.classes) do
+	eq((perClass[c.name] or 0) >= 1, true, c.name .. " has a loadout")
+end
+eq(perClass["Monk"], 3, "the Monk wields fists and both kinds of melee weapon")
+for i, edge in ipairs(F.edges) do
+	eq(F.agg[edge].ratio >= cfg.fairRatio, true, "the least loadout is " .. cfg.fairRatio .. " of the most at " .. edge)
+end
+-- the rule bites: a class loot without the Monk's fists leaves the Monk behind
+local CL = dofile("data/lib/chaos_class_loot.lua")
+local noFist = setmetatable({lootRows = function(pool, levelOf)
+	local out = {}
+	for _, row in ipairs(CL.lootRows(pool, levelOf)) do
+		if not CL.fistIds[row[2]] then
+			out[#out + 1] = row
+		end
+	end
+	return out
+end}, {__index = CL})
+local G2 = C.fairness(cfg, wcfg, {classLoot = noFist})
+local monkFails = 0
+for _, f in ipairs(G2.fails) do
+	if f.class == "Monk" and f.key == "fist" then
+		monkFails = monkFails + 1
+	end
+end
+eq(monkFails >= 3, true, "without the fist rows the Monk's fists fall behind in every fitted band")
 
 print("gear_coverage_test: " .. n .. " checks ok")

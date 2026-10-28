@@ -125,7 +125,8 @@ local function readCorpse(corpse, out, depth)
 			rarity = 0
 		end
 		local unique = customAttr(item, "chaos_unique") ~= nil
-		local name = item:getName()
+		-- gear named after its modifiers (chaos_aname) is listed under its stock name: one row counts every copy
+		local name = customAttr(item, "chaos_aname") ~= nil and itemType:getName() or item:getName()
 		local lname = (name or ""):lower()
 		local orb = ORBS[id] or (not unique and rarity == 0 and itemType:isStackable()
 			and (lname:find("%f[%a]orb$") or lname:find("^orb of ")) and true) or false

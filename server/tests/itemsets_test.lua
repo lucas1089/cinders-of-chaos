@@ -717,7 +717,7 @@ for _, set in ipairs(S.sets) do
 		open = open + 1
 		eq(set.total, 6, set.key .. ": six pieces reach the last bonus")
 		eq(#set.bonuses, 3, set.key .. ": tiers 2, 4, 6")
-		eq(#set.pieces, 64, set.key .. ": every piece of the set counts")
+		eq(#set.pieces, set.key == "rimewraith" and 67 or 64, set.key .. ": every piece of the set counts")
 		for i, b in ipairs(set.bonuses) do
 			eq(b.n, 2 * i, set.key .. ": thresholds")
 			for k, v in pairs(b.stats) do

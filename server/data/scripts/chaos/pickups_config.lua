@@ -8,18 +8,22 @@ return {
 	enabled = true,
 
 	-- The items. id: the new server id (32087 is left to the potions); sourceId: copy the look of that stock node, or
-	-- clientId: the look of the stock node with that client id; stackable = true forces the flag (a stackable client
-	-- look needs it), nil copies the stock flags. The nodes are never pickupable or moveable (install_pickups.py).
+	-- clientId: the look of the stock node with that client id; stockClientId: copy the lowest stock node of that
+	-- client id and write clientId (a look of ours with no stock node, pair 55 of client/MANIFEST.md: the ember is the
+	-- portal, client item 44396, made from the Ember Orb node of client id 25045; the health globe is 44397 and the
+	-- mana globe 44398, made from the stock potion nodes of client ids 7618 / 7620); stackable = true forces the flag
+	-- (a stackable client look needs it), nil copies the stock flags.
+	-- The nodes are never pickupable or moveable (install_pickups.py).
 	-- glow: the magic effect that pulses on the tile while the pickup lies there.
 	items = {
-		{key = "health_globe", id = 32088, sourceId = 7618, article = "a", name = "health globe", plural = "health globes",
-			weight = 0, glow = "CONST_ME_MAGIC_RED", take = "CONST_ME_HEARTS",
+		{key = "health_globe", id = 32088, clientId = 44397, stockClientId = 7618, stackable = true, article = "a",
+			name = "health globe", plural = "health globes", weight = 0, glow = "CONST_ME_MAGIC_RED", take = "CONST_ME_HEARTS",
 			description = "A red glowing orb. Step on it to restore health. It fades quickly."},
-		{key = "mana_globe", id = 32089, sourceId = 7620, article = "a", name = "mana globe", plural = "mana globes",
-			weight = 0, glow = "CONST_ME_MAGIC_BLUE", take = "CONST_ME_STUN",
+		{key = "mana_globe", id = 32089, clientId = 44398, stockClientId = 7620, stackable = true, article = "a",
+			name = "mana globe", plural = "mana globes", weight = 0, glow = "CONST_ME_MAGIC_BLUE", take = "CONST_ME_STUN",
 			description = "A blue glowing orb. Step on it to restore mana. It fades quickly."},
-		{key = "ember", id = 32090, clientId = 25045, stackable = true, article = "an", name = "ember",
-			plural = "embers", weight = 0, glow = "CONST_ME_FIREAREA", take = "CONST_ME_HITBYFIRE",
+		{key = "ember", id = 32090, clientId = 44396, stockClientId = 25045, stackable = true, article = "an", name = "ember",
+			plural = "embers", weight = 0, glow = "CONST_ME_PURPLEENERGY", take = "CONST_ME_HITBYFIRE",
 			description = "A dying ember. Step on it to be blessed. It goes out quickly."}
 	},
 

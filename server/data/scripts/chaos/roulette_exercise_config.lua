@@ -31,18 +31,21 @@ return {
 	rareThreshold = 160,
 
 	pool = {
-		-- exercise chests: the three tiers of the five kinds; the class rule below turns a dead one into a usable one
+		-- exercise chests: the three tiers of the six kinds (the fist chest is the Monk's); the class rule below turns a dead one into a usable one
 		{id = 27761, name = "Exercise Melee Chest (500)", count = {1, 1}, chance = 450, kind = "chest"},
+		{id = 27762, name = "Exercise Fist Chest (500)", count = {1, 1}, chance = 450, kind = "chest"},
 		{id = 27764, name = "Exercise Bow Chest (500)", count = {1, 1}, chance = 450, kind = "chest"},
 		{id = 27765, name = "Exercise Rod Chest (500)", count = {1, 1}, chance = 450, kind = "chest"},
 		{id = 27766, name = "Exercise Wand Chest (500)", count = {1, 1}, chance = 450, kind = "chest"},
 		{id = 27767, name = "Exercise Shield Chest (500)", count = {1, 1}, chance = 450, kind = "chest"},
 		{id = 27768, name = "Durable Exercise Melee Chest (1800)", count = {1, 1}, chance = 300, kind = "chest"},
+		{id = 27769, name = "Durable Exercise Fist Chest (1800)", count = {1, 1}, chance = 300, kind = "chest"},
 		{id = 27771, name = "Durable Exercise Bow Chest (1800)", count = {1, 1}, chance = 300, kind = "chest"},
 		{id = 27772, name = "Durable Exercise Rod Chest (1800)", count = {1, 1}, chance = 300, kind = "chest"},
 		{id = 27773, name = "Durable Exercise Wand Chest (1800)", count = {1, 1}, chance = 300, kind = "chest"},
 		{id = 27774, name = "Durable Exercise Shield Chest (1800)", count = {1, 1}, chance = 300, kind = "chest"},
 		{id = 27775, name = "Lasting Exercise Melee Chest (14400)", count = {1, 1}, chance = 120, kind = "chest"},
+		{id = 27776, name = "Lasting Exercise Fist Chest (14400)", count = {1, 1}, chance = 120, kind = "chest"},
 		{id = 27778, name = "Lasting Exercise Bow Chest (14400)", count = {1, 1}, chance = 120, kind = "chest"},
 		{id = 27779, name = "Lasting Exercise Rod Chest (14400)", count = {1, 1}, chance = 120, kind = "chest"},
 		{id = 27780, name = "Lasting Exercise Wand Chest (14400)", count = {1, 1}, chance = 120, kind = "chest"},
@@ -70,13 +73,14 @@ return {
 	},
 
 	-- the exercise chests of a tier, by kind (exercise_config.lua kinds): the chest a class cannot use becomes the one of the
-	-- same tier of a kind it can (the axe and club chests are retired and not in the pool)
+	-- same tier of a kind it can (the club chests are retired and not in the pool). The fist chest (27762, 27769, 27776, the
+	-- ids of the old axe chests) is the Monk's: a Monk's melee chest becomes a fist or a shield chest
 	chests = {
-		kinds = {"melee", "ranged", "rod", "wand", "shield"},
+		kinds = {"melee", "fist", "ranged", "rod", "wand", "shield"},
 		tiers = {
-			{melee = 27761, ranged = 27764, rod = 27765, wand = 27766, shield = 27767},
-			{melee = 27768, ranged = 27771, rod = 27772, wand = 27773, shield = 27774},
-			{melee = 27775, ranged = 27778, rod = 27779, wand = 27780, shield = 27781},
+			{melee = 27761, fist = 27762, ranged = 27764, rod = 27765, wand = 27766, shield = 27767},
+			{melee = 27768, fist = 27769, ranged = 27771, rod = 27772, wand = 27773, shield = 27774},
+			{melee = 27775, fist = 27776, ranged = 27778, rod = 27779, wand = 27780, shield = 27781},
 		},
 	},
 
@@ -92,6 +96,6 @@ return {
 	-- shared with the Boss Roulette: the gold per unit (the hunting gold curve) and the unique chest's level band
 	gold = boss.gold,
 	unique = boss.unique,
-	-- never in the pool: decks, ships, belts, gloves, and the retired axe and club chests
-	retired = {27632, 27633, 27634, 27796, 27797, 27798, 27799, 27800, 27801, 27802, 27762, 27763, 27769, 27770, 27776, 27777},
+	-- never in the pool: decks, ships, belts, gloves, and the retired club chests
+	retired = {27632, 27633, 27634, 27796, 27797, 27798, 27799, 27800, 27801, 27802, 27763, 27770, 27777},
 }
