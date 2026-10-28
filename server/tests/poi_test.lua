@@ -95,6 +95,7 @@ eq(#view, 3, "and what it discovered")
 eq(view[1].r, nil, "the view does not tell the reveal flag")
 eq(P.npcName(cfg, "Material Broker"), "Material Broker (professions)", "a Chaos NPC, any case")
 eq(P.npcName(cfg, "Some Guard"), nil, "not ours")
+eq(P.npcName(cfg, "Archivist Odrenna"), "Archivist Odrenna (line spell quests)", "the spell quest NPC is a map mark like the other hub NPCs")
 
 -- ------------------------------------------------------------------ the committed data and the config
 local data = dofile("data/chaos_poi.lua")

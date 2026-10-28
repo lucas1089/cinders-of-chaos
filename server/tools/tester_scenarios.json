@@ -10,8 +10,8 @@
   "opcode": 64,
   "out": 38,
   "passive": 81,
-  "place": 13,
-  "staff": 13
+  "place": 14,
+  "staff": 12
  },
  "generated_by": "server/tools/gen_tester_scenarios.py",
  "keytest": {
@@ -11009,12 +11009,12 @@
     "chaos_constants.lua",
     "spellquest.lua"
    ],
-   "kind": "staff",
+   "kind": "place",
    "opcodes": [],
+   "place": "npc Archivist Odrenna",
    "talkactions": [
     "/spellquest"
-   ],
-   "why": "staff command only (/spellquest); testers are never staff"
+   ]
   },
   "spellquest_tracker": {
    "files": [

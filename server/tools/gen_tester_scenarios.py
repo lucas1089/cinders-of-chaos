@@ -100,6 +100,7 @@ PLACES = {
     'arena': 'npc Arena Master', 'trials': 'npc Keeper of Trials', 'infinitytower': 'temple',
     'descent': 'temple', 'cityportals': 'travel', 'hunt_teleports': 'travel', 'townportal': 'temple',
     'idlehall': 'temple', 'hideout': 'temple', 'raid': 'hunt', 'invasion': 'hunt', 'ascension_quest': 'npc Ascendant Oracle',
+    'spellquest': 'npc Archivist Odrenna',
     'blessings': 'bless', 'bank': 'bank', 'depot': 'depot', 'craft_bonus': 'craft', 'professions': 'craft',
     'service_npcs': 'shop', 'npc_booths': 'shop', 'npc_place': 'shop',
 }

@@ -24,7 +24,8 @@ return {
 		["cantor velith"] = "Cantor Velith (faction quartermaster)",
 		["elder bramwyn"] = "Elder Bramwyn (faction quartermaster)",
 		["wandering merchant"] = "Wandering Merchant",
-		["archivist maelis"] = "Archivist Maelis (tales and lore)"
+		["archivist maelis"] = "Archivist Maelis (tales and lore)",
+		["archivist odrenna"] = "Archivist Odrenna (line spell quests)"
 	},
 
 	-- the portals the systems put next to the temples, found by their action id, read from the owning system's config

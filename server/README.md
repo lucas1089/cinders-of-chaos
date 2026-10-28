@@ -7670,7 +7670,7 @@ Not under `data/`, so no install step ships it. `chaos-ctl.sh testers start` cop
 - Gives a target: the nearest unowned monster within 5 tiles, then faces it. Never a player, never a summon.
 - Once: a backpack, the plain weapon of its class kit (`ChaosTestKit`, no unique roll), 100 health and mana
   potions, 20000 gold in the bank.
-- `!tester info | town | depot | hunt | shop | bag | summons | party | chest`: answers one line `[tester-helper] <kind> <json>`
+- `!tester info | town | depot | hunt | shop | bag | summons | party | chest | spellquest`: answers one line `[tester-helper] <kind> <json>`
   (`summons`, `party` and `chest` are the probes of the system checks, below).
   Teleports to the temple, next to a depot locker, next to an NPC, back to the hunt spot.
 - `!tester places`: the map mark counts by kind (`ChaosPoi`). `!tester enter <kind> [N]`: next to the N-th mark of
@@ -7859,12 +7859,19 @@ the system is not installed): never faked. A death in the middle drops the check
 | `reward_chest` | all | the weekly chest (`weeklyChest` `open`) answers without an error, then `close` |
 | `cursed_chest` | all | `!tester chest spawn` puts a chest next to the bot (`idle`), `use` starts the event (`running`, monsters tagged), `abort` ends it and leaves no chest and no monster |
 | `auto_setup` | all | the preset of the client's Auto setup table (`autorotation_data.lua`) for the bot's class and level holds only spells that exist on the server (`spells_chaos.xml`, `stock_spells.csv`), are open to the class and are not gated higher (`auto_setup_problems`) |
+| `spell_quest` | all, level 500 and up | the line spell quest end to end on the game's own code (`!tester spellquest`, below): reset, `set 1 1 0 0`, 3 kills count, 45 more count and the pity of 40 gives a fragment, a boss counts 25, `set 1 2` fills the counters, `!tester enter npc Archivist Odrenna` (a bot cannot reach her if she was not placed at startup or her XML did not load: BUG), the trial opens at her and is left again, the reward teaches the first spell of the line and pays 2000 gold a level; then the spell is in the server's spell list, open to the class, not gated higher, and in the class's Auto setup data (a preset, the extras or the ultimate; `quest_spell_problems`). The quest is reset at the end (the spell is forgotten again) and the bot goes back to the hunt. A level under 500 is a skip |
 
 The helper commands (TEST ONLY, only for a `Tester Xxx` character with the tester storage): `!tester summons` answers the
 bot's summons with the target of each (`none`, `owner`, `summon`, `ally`, `monster`, `player`, seen from the owner), how
 many creatures are in each summon's engine target list and how many of them are allies; `!tester party` the party size,
 leader and members; `!tester chest [spawn | use | state | abort]` a cursed chest of the bot (`ChaosCursedChest.spawnChest`,
-`use`, `failEvent`).
+`use`, `failEvent`); `!tester spellquest [state | reset | set Q STEP [KILLS [FRAGMENTS]] | kill [N] [boss] | trial | leave |
+complete]` the line spell quests of the bot (`ChaosSpellQuest`; the staff command `/spellquest` is not open to a tester, so
+the helper writes the same storages with `ChaosSpellQuestCore.applySet`). `kill` credits N hunt kills of the bot's own level
+through `ChaosSpellQuest.credit` (the real counting, the fragment roll and the pity), at most 60 a call; `trial` is
+`ChaosSpellQuest.enterTrial` (needs Archivist Odrenna within 6 tiles) and `leave` ends the run; `complete` is the reward
+(`ChaosSpellQuest.complete`, only on the trial step). Every answer is the state: quest, step, code, kills, fragments, pity, the
+quest's needs, the spell and whether it is learned. Rules of the words: `ChaosTesterHelperCore.parseSpellQuest`.
 
 O86 rules, also in the helper's loop for every tester that has a summon (no check needed), one console line each,
 throttled to one per rule and tester per 30 s: `[tester-anomaly] {"rule":"summon_targets_owner"}`,
@@ -7873,8 +7880,9 @@ under the anomalies. Pure rules: `ChaosTesterHelperCore.targetKind` and `summonA
 To run only what matters for the wolf: 20 or more testers (every class gets one), at least two in game at once for the party.
 
 Tests: `tools/tester_checks_test.py` (mocked game: every check passes, fails with its BUG line, and skips; the Auto setup
-rule against the real client data), `tests/tester_helper_test.lua` (the probes on a mocked engine, and a real player's
-summons are never probed), `testers_test.py` (flag, report section, flush).
+rule against the real client data; the spell quest on a stateful mock with a switch per rule, and the first quest spell of
+every class against the real Auto setup data), `tests/tester_helper_test.lua` (the probes on a mocked engine, a real player's
+summons are never probed, and `!tester spellquest` on the real `spellquest.lua`), `testers_test.py` (flag, report section, flush).
 
 ### Keystones and masteries (O249, `tools/tester_keytree.py`, `tools/tester_keystones.py`)
 
@@ -17069,8 +17077,8 @@ Choose your ascended class (0/1). The quest's stages and storages (7101000 block
 Phases 1 to 5 of the 21 line spells (design: three quests per class line at level 500 attack, 800 buff, 1200 ultimate).
 Built: the quest machine, the hunt, the fragments, the trial hook, the reward, the tracker, the NPC, the seven level 500 attack spells,
 the seven level 1200 ultimates and the seven level 800 buffs (below), and the client's locked spells in the Spellbook. All 21 spell ids
-of `spell_id_pool_config.lua` are in use. Left for later phases: NPC placement tests in game and the tester bot checks (phase 6), the
-drawn icons and the balance from play data (phase 7).
+of `spell_id_pool_config.lua` are in use. Phase 6 (2026-10-28) is the NPC in the game and the tester bot check `spell_quest` (below);
+left for later: a live run of both, the drawn icons and the balance from play data (phase 7).
 
 - **Level 500 spells (phase 2).** Keepfall 142, Moonshard Rain 149, Prismatic Rupture 152, Eclipse Edge 155, Soulflay Wave 158,
   Thousand-Echo Palm 172, Pyre of Absolution 177: the first id of each line's triple in the pool (quest 2 and 3 take the next two of
@@ -17088,6 +17096,14 @@ drawn icons and the balance from play data (phase 7).
   level lowered by death stops it). Steps: 0 none, 1 hunt, 2 trial open, 3 done. Hunt 400 / 700 / 1000 kills and 20 / 30 / 40
   fragments; trial s1 / s2 / s3. Talk to **Archivist Odrenna** (her stall is the last free one of the hub's south row,
   `npc_booths_config.lua`) to start; ask her again for the count and the trial. All numbers: `spellquest_config.lua`.
+- **NPC in the game (phase 6).** Checked statically end to end: `spellquest.lua` places her at startup (1.1 s) with
+  `ChaosNpcPlace.place(name, temple, offsets, opts)`; for the main city's temple that is her stall in the hub
+  (`ChaosNpcBoothsCore.spotForTemple`, `npc_booths_config.lua`, the last one of the south row, x 31672 y 32236), where
+  `patch_hub_npcs.py` has cleared the base NPC (it clears every tile of `booths`); `data/npc/Archivist Odrenna.xml` and
+  `scripts/archivist_odrenna.lua` follow the Keeper of Trials (same script header, the nearest-NPC focus rule, greeting and farewell in the
+  player's language). She was missing from the POI list of the map (`poi_config.lua` `npcs`, where the Keeper and Maelis are): added,
+  test in `tests/poi_test.lua`; `patch_hub_npcs_test.py` now requires her stall; the tester coverage table (`tester_scenarios.json`)
+  brings a bot to her (`PLACES`, kind place) instead of calling the system staff only.
 - **Lines.** Warrior, Ranger, Mystic, Thief, Necromancer, Monk, Templar, by the base class of `Chaos.classes`; the base class and
   both ascended classes share the three spells (their names are in the config, ids belong to the spell registration).
 - **Kills.** A death event on every monster that is not a summon. A kill counts when the monster's hunting level

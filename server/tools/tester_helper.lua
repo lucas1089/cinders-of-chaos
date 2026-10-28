@@ -17,6 +17,8 @@
 --     next to an NPC of the town, back to the hunt spot; each answer is a text line
 --     "[tester-helper] <kind> <json>" with the client ids and positions the bot needs (its own creature id, the potion
 --     client ids, the locker, the NPC's name)
+--   * "!tester spellquest <state | reset | set | kill | trial | leave | complete>": the line spell quests of the tester (the
+--     checks of tools/tester_checks.py spell_quest; the staff command /spellquest is closed to testers)
 --   * "!tester bag": empties the tester's own backpack of loot (everything but the potions) and tops the potions up
 --   * once a minute it counts the testers in game; the server console gets "[tester-helper] testers online: N" when
 --     the count changed, and every 5 minutes anyway
@@ -323,6 +325,112 @@ function commands.enter(player, arg)
 	end
 	player:teleportTo(spot)
 	tell(player, "enter", {kind = place.kind, name = mark.n, count = count, pos = posOf(player:getPosition())})
+end
+
+-- !tester spellquest <state | reset | set | kill | trial | leave | complete> (H.parseSpellQuest): the line spell quests
+-- (spellquest.lua) for the tester itself, on the same code the game runs: the same storages as the staff's /spellquest, a
+-- credited death through ChaosSpellQuest.credit, the trial question through ChaosSpellQuest.enterTrial (needs Archivist
+-- Odrenna within range: `!tester enter npc Archivist Odrenna` first), the reward through ChaosSpellQuest.complete.
+-- Answers {quest, step, code, kills, fragments, need = {kills, fragments, level}, spell, learned, ...}.
+local function spellQuestState(player, extra)
+	local S, Q = ChaosSpellQuest, ChaosSpellQuestCore
+	local n, step, code = S.current(player)
+	local data = {level = player:getLevel(), quest = n, step = step, code = code}
+	local idx = Q.lineOf(player:getVocation():getId())
+	if n and idx then
+		local k = Q.keys(n)
+		local qc = Q.quest(n)
+		data.kills, data.fragments = Q.count0(player:getStorageValue(k.kills)), Q.count0(player:getStorageValue(k.fragments))
+		data.pity = Q.count0(player:getStorageValue(k.pity))
+		data.need = {kills = qc.kills, fragments = qc.fragments, level = qc.level}
+		data.spell = Q.spellName(idx, n)
+		data.learned = data.spell and player:hasLearnedSpell(data.spell) and true or false
+	end
+	for key, v in pairs(extra or {}) do
+		data[key] = v
+	end
+	return data
+end
+
+function commands.spellquest(player, arg)
+	local S, Q = ChaosSpellQuest, ChaosSpellQuestCore
+	if not (S and Q and S.credit and S.complete and S.enterTrial) then
+		tell(player, "spellquest", {err = "no spell quest system"})
+		return
+	end
+	local a, why = H.parseSpellQuest(arg)
+	if not a then
+		tell(player, "spellquest", {err = why})
+		return
+	end
+	local idx = Q.lineOf(player:getVocation():getId())
+	if not idx then
+		tell(player, "spellquest", {err = "no class line", code = "noline"})
+		return
+	end
+	if a.sub == "state" then
+		tell(player, "spellquest", spellQuestState(player))
+	elseif a.sub == "reset" then
+		for n = 1, Q.count() do
+			for _, key in pairs(Q.keys(n)) do
+				player:setStorageValue(key, -1)
+			end
+		end
+		S.sync(player)
+		tell(player, "spellquest", spellQuestState(player))
+	elseif a.sub == "set" then
+		if not Q.quest(a.quest) then
+			tell(player, "spellquest", {err = "no such quest", quest = a.quest})
+			return
+		end
+		local k = Q.keys(a.quest)
+		local out = Q.applySet({mask = player:getStorageValue(k.lines), pity = player:getStorageValue(k.pity)}, idx, a.quest,
+			a.step, a.kills, a.fragments)
+		player:setStorageValue(k.step, out.step)
+		player:setStorageValue(k.kills, out.kills)
+		player:setStorageValue(k.fragments, out.fragments)
+		player:setStorageValue(k.pity, out.pity)
+		player:setStorageValue(k.lines, out.mask)
+		player:setStorageValue(k.cooldown, 0)
+		S.sync(player)
+		tell(player, "spellquest", spellQuestState(player))
+	elseif a.sub == "kill" then
+		local weight, counted = 0, 0
+		local fragments = {}
+		for _ = 1, a.n do
+			local before = spellQuestState(player)
+			local w = S.credit(player, {boss = a.boss, monsterLevel = player:getLevel(), hunt = true, tier = "normal"})
+			if w > 0 then
+				counted = counted + 1
+				weight = weight + w
+			end
+			local after = spellQuestState(player)
+			if after.quest == before.quest and (after.fragments or 0) > (before.fragments or 0) then
+				fragments[#fragments + 1] = after.fragments
+			end
+		end
+		tell(player, "spellquest", spellQuestState(player, {counted = counted, weight = weight, rolled = #fragments}))
+	elseif a.sub == "trial" then
+		local ok, text = S.enterTrial(player)
+		local running = ChaosTrials and ChaosTrials.runs and ChaosTrials.runs[player:getId()] ~= nil
+		tell(player, "spellquest", spellQuestState(player, {entered = ok and true or false, text = text, running = running,
+			near = S.archivistNear(player) ~= nil}))
+	elseif a.sub == "leave" then
+		local left = ChaosTrials and ChaosTrials.leave and ChaosTrials.leave(player) or false
+		tell(player, "spellquest", spellQuestState(player, {left = left,
+			running = ChaosTrials and ChaosTrials.runs and ChaosTrials.runs[player:getId()] ~= nil or false}))
+	elseif a.sub == "complete" then
+		local n, step, code = S.current(player)
+		if code ~= "ok" or step ~= Q.STEP.TRIAL then
+			tell(player, "spellquest", spellQuestState(player, {err = "the quest is not on its trial step"}))
+			return
+		end
+		local spell = Q.spellName(idx, n)
+		local gold = player:getBankBalance()
+		local lines = S.complete(player, n)
+		tell(player, "spellquest", spellQuestState(player, {completed = n, taught = spell,
+			taughtKnown = player:hasLearnedSpell(spell) and true or false, gold = player:getBankBalance() - gold, lines = #lines}))
+	end
 end
 
 T.commands = commands

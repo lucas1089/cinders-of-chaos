@@ -15,6 +15,8 @@
 --   H.xpAnomaly(level, gained)         an experience gain that is negative or absurd for the level
 --   H.itemAnomaly(item)                an item with an impossible count or stat
 --   H.parsePlace(arg)                  "enter <kind> [N]" / "enter npc <name>" / "enter rift [tier]" -> a place, or nil
+--   H.parseSpellQuest(arg)             "spellquest <sub> ..." -> {sub, quest, step, kills, fragments, n, boss} (state | reset | set Q STEP
+--                                       [KILLS [FRAGMENTS]] | kill [N] [boss] | trial | leave | complete), or nil and the reason
 --   H.pickMark(marks, kind, n)         the n-th map mark of a kind (data/chaos_poi.lua marks; wraps), and the count
 --   H.placeCounts(marks)               {kind = count} of the marks the helper can bring a tester to
 --   H.bagPlan(items, want, held)       the backpack clean-up: which top-level items to remove (every id not in `want`) and which
@@ -33,7 +35,7 @@ local H = ChaosTesterHelperCore
 H.STORAGE = 7102900 -- Chaos.storage.tester (chaos_constants.lua; the test checks they agree)
 H.MARK = "[tester-helper]"
 H.ANOMALY = "[tester-anomaly]"
-H.COMMANDS = {town = true, depot = true, summons = true, party = true, chest = true, shop = true, hunt = true, info = true, enter = true, places = true, bag = true}
+H.COMMANDS = {town = true, depot = true, summons = true, party = true, chest = true, shop = true, hunt = true, info = true, enter = true, places = true, bag = true, spellquest = true}
 
 -- numbers of the anomaly rules (a hit is "absurd" far above anything the game should do; tune with the report)
 H.limits = {
@@ -141,6 +143,61 @@ function H.parsePlace(arg)
 		return nil
 	end
 	return {kind = kind, n = n}
+end
+
+-- the line spell quests (spellquest.lua): what the checks of tester_checks.py ask of the helper. Numbers are whole and bounded:
+-- quest 1..9, step 0..3, counters up to 100000, a run of kills up to KILL_MAX
+H.KILL_MAX = 60
+function H.parseSpellQuest(arg)
+	local words = {}
+	for w in tostring(arg or ""):gmatch("%S+") do
+		words[#words + 1] = w:lower()
+	end
+	local sub = words[1] or "state"
+	local function int(i, lo, hi)
+		local v = tonumber(words[i])
+		if not v or v ~= math.floor(v) or v < lo or v > hi then
+			return nil
+		end
+		return v
+	end
+	if sub == "state" or sub == "reset" or sub == "trial" or sub == "leave" or sub == "complete" then
+		if #words > 1 then
+			return nil, sub .. " takes no argument"
+		end
+		return {sub = sub}
+	elseif sub == "set" then
+		local quest, step = int(2, 1, 9), int(3, 0, 3)
+		if not quest or not step then
+			return nil, "set <quest> <step 0-3> [kills [fragments]]"
+		end
+		local out = {sub = sub, quest = quest, step = step}
+		if words[4] then
+			out.kills = int(4, 0, 100000)
+			if not out.kills then
+				return nil, "kills must be a whole number"
+			end
+		end
+		if words[5] then
+			out.fragments = int(5, 0, 100000)
+			if not out.fragments then
+				return nil, "fragments must be a whole number"
+			end
+		end
+		return out
+	elseif sub == "kill" then
+		local boss = words[#words] == "boss"
+		local nw = #words - (boss and 1 or 0)
+		local n = 1
+		if nw >= 2 then
+			n = int(2, 1, H.KILL_MAX)
+			if not n then
+				return nil, "kill [1-" .. H.KILL_MAX .. "] [boss]"
+			end
+		end
+		return {sub = sub, n = n, boss = boss}
+	end
+	return nil, "unknown spellquest command"
 end
 
 function H.pickMark(marks, kind, n)

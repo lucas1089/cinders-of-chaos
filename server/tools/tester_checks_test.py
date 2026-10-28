@@ -98,7 +98,7 @@ class Pure(unittest.TestCase):
         self.assertNotIn('necro_minions', keys('Beastmaster'))
         self.assertIn('necro_minions', keys('Lich'))
         self.assertNotIn('beastmaster_wolf', keys('Ninja'))
-        for k in ('pets', 'party', 'rift', 'waystone', 'reward_chest', 'cursed_chest', 'auto_setup'):
+        for k in ('pets', 'party', 'rift', 'waystone', 'reward_chest', 'cursed_chest', 'auto_setup', 'spell_quest'):
             self.assertIn(k, keys('Ninja'))
 
 
@@ -304,6 +304,192 @@ class AutoSetup(unittest.TestCase):
         self.assertEqual(run(TX.check_auto_setup(FakeIO(table=table, spells={}), 'a', 'Ninja', 50)).status, TX.FAIL)
         self.assertEqual(run(TX.check_auto_setup(FakeIO(table=None), 'a', 'Ninja', 50)).status, TX.SKIP)
         self.assertEqual(run(TX.check_auto_setup(FakeIO(table=table), 'a', 'Samurai', 50)).status, TX.SKIP)
+
+
+class QuestIO(FakeIO):
+    """a mocked helper for `!tester spellquest`: the rules of the game's quest 1 (400 kills, 20 fragments, pity 40, a boss = 25
+    kills and a sure fragment, 2000 gold a level) as a small state machine; `faults` switch single rules off"""
+
+    NEED = {'kills': 400, 'fragments': 20, 'level': 500}
+
+    def __init__(self, level=600, spell='Keepfall', faults=(), odrenna=True, **kw):
+        FakeIO.__init__(self, **kw)
+        self.level, self.spell, self.faults, self.odrenna = level, spell, set(faults), odrenna
+        self.q = {'step': 0, 'kills': 0, 'fragments': 0, 'pity': 0}
+        self.known, self.near, self.running, self.cmds = False, False, False, []
+
+    def state(self, **extra):
+        code = 'ok' if self.level >= 500 else 'level'
+        d = {'level': self.level, 'quest': 1, 'step': self.q['step'], 'code': code, 'kills': self.q['kills'],
+             'fragments': self.q['fragments'], 'pity': self.q['pity'], 'need': dict(self.NEED), 'spell': self.spell,
+             'learned': self.known}
+        d.update(extra)
+        return d
+
+    def credit(self, boss):
+        if self.q['step'] != 1 or self.level < 500 or 'nokill' in self.faults:
+            return 0
+        w = 25 if boss else 1
+        self.q['kills'] = min(400, self.q['kills'] + w)
+        if boss:
+            self.q['fragments'] += 1
+        elif self.q['pity'] + 1 > 40 and 'nopity' not in self.faults:
+            self.q['fragments'], self.q['pity'] = self.q['fragments'] + 1, 0
+        else:
+            self.q['pity'] += 1
+        return w
+
+    async def go(self, place):
+        self.moves.append(place)
+        self.near = False
+        return True
+
+    async def helper(self, command, kind, wait=4.0):
+        self.cmds.append(command)
+        if command == 'enter npc Archivist Odrenna':
+            if not self.odrenna:
+                return {'kind': 'npc', 'err': 'no such NPC', 'name': 'Archivist Odrenna'}
+            self.near = True
+            return {'kind': 'npc', 'npc': 'Archivist Odrenna'}
+        if not command.startswith('spellquest'):
+            return await FakeIO.helper(self, command, kind, wait)
+        sub = command.split()[1:]
+        if not sub or sub[0] == 'state':
+            return self.state()
+        if sub[0] == 'reset':
+            self.q, self.known, self.running = {'step': 0, 'kills': 0, 'fragments': 0, 'pity': 0}, False, False
+            return self.state()
+        if sub[0] == 'set':
+            step = int(sub[2])
+            self.q = {'step': step, 'kills': 400 if step >= 2 else 0, 'fragments': 20 if step >= 2 else 0, 'pity': 0}
+            return self.state()
+        if sub[0] == 'kill':
+            boss = sub[-1] == 'boss'
+            n = 1 if len(sub) == 1 or sub[1] == 'boss' else int(sub[1])
+            weight = sum(self.credit(boss) for _ in range(n))
+            return self.state(counted=n if weight else 0, weight=weight)
+        if sub[0] == 'trial':
+            ok = self.near and self.q['step'] == 2 and 'notrial' not in self.faults
+            self.running = ok
+            return self.state(entered=ok, running=ok, near=self.near, text='' if ok else 'The trial is entered at Archivist Odrenna.')
+        if sub[0] == 'leave':
+            was, self.running = self.running, False
+            return self.state(left=was, running=self.running)
+        if sub[0] == 'complete':
+            if self.q['step'] != 2:
+                return self.state(err='the quest is not on its trial step')
+            self.q['step'], self.known = 3, 'noteach' not in self.faults
+            return self.state(completed=1, taught=self.spell, taughtKnown=self.known, gold=0 if 'nogold' in self.faults else 2000 * self.level)
+        return {'err': 'unknown spellquest command'}
+
+
+def quest_table(voc=4):
+    return {'Warrior': {'voc': voc, 'presets': [{'level': 500, 'spells': [142, 225]}], 'extras': [], 'ultimate': 148}}
+
+
+KEEPFALL = {142: {'name': 'Keepfall', 'level': 500, 'vocations': [4, 8, 14]}}
+
+
+class SpellQuest(unittest.TestCase):
+    def go(self, io, cls='Warrior', level=600):
+        return run(TX.check_spell_quest(io, 'Tester Aaa', cls, level))
+
+    def test_the_whole_quest_passes(self):
+        io = QuestIO(table=quest_table(), spells=KEEPFALL)
+        r = self.go(io)
+        self.assertEqual(r.status, TX.PASS, r.detail)
+        self.assertIn('Keepfall learned', r.detail)
+        self.assertIn('in the Auto setup data', r.detail)
+        self.assertEqual(io.cmds[0], 'spellquest reset')
+        self.assertEqual(io.cmds[-1], 'spellquest reset', 'the quest is reset at the end')
+        self.assertIn('enter npc Archivist Odrenna', io.cmds)
+        self.assertEqual(io.moves, ['hunt'], 'back to the hunt spot')
+        self.assertFalse(io.known)
+
+    def test_low_level_is_a_skip(self):
+        io = QuestIO(level=499)
+        self.assertEqual(self.go(io, level=499).status, TX.SKIP)
+        self.assertEqual(io.cmds, [])
+        # the game says the level is lower now (a death): skip, and the quest is reset
+        io = QuestIO(level=480)
+        r = self.go(io, level=600)
+        self.assertEqual(r.status, TX.SKIP)
+        self.assertIn('bot is level 480 now', r.detail)
+
+    def test_no_system_no_answer_no_line(self):
+        self.assertEqual(self.go(FakeIO()).status, TX.SKIP)
+        self.assertEqual(self.go(FakeIO({'spellquest reset': {'err': 'no spell quest system'}})).status, TX.SKIP)
+        self.assertEqual(self.go(FakeIO({'spellquest reset': {'err': 'no class line', 'code': 'noline'}})).status, TX.SKIP)
+
+    def test_kills_that_do_not_count(self):
+        r = self.go(QuestIO(faults=['nokill']))
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertTrue(r.bug_line().startswith('BUG spell_quest: kills do not count'))
+
+    def test_no_fragment_from_the_pity(self):
+        r = self.go(QuestIO(faults=['nopity']))
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('no fragment within 41 counted kills', r.detail)
+
+    def test_odrenna_missing_from_the_world(self):
+        io = QuestIO(odrenna=False)
+        r = self.go(io)
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('Archivist Odrenna is not in the game', r.detail)
+        self.assertEqual(io.cmds[-1], 'spellquest reset')
+        self.assertEqual(self.go(FakeIO({'spellquest reset': {'level': 600, 'quest': 1, 'step': 0, 'code': 'ok', 'spell': 'Keepfall',
+                                                              'need': QuestIO.NEED}, 'spellquest state': {
+            'level': 600, 'quest': 1, 'step': 0, 'code': 'ok', 'spell': 'Keepfall', 'need': QuestIO.NEED}, 'spellquest set 1 1 0 0': {
+            'step': 1, 'kills': 0, 'fragments': 0}, 'spellquest kill 3': {'counted': 3, 'kills': 3}, 'spellquest kill 45': {
+            'counted': 45, 'kills': 48, 'fragments': 2}, 'spellquest kill boss': {'weight': 25, 'kills': 73},
+            'spellquest set 1 2': {'step': 2, 'kills': 400, 'fragments': 20}})).status, TX.SKIP,
+            'no answer to the NPC walk is a skip, not a bug')
+
+    def test_trial_that_does_not_open(self):
+        r = self.go(QuestIO(faults=['notrial']))
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('the trial does not open at Odrenna', r.detail)
+
+    def test_reward_rules(self):
+        self.assertIn('the reward', self.go(QuestIO(faults=['noteach'])).detail)
+        r = self.go(QuestIO(faults=['nogold']))
+        self.assertEqual(r.status, TX.FAIL)
+        self.assertIn('gold', r.detail)
+
+    def test_spell_data(self):
+        # the spell is not on the server, not open to the class, gated too high, missing from Auto setup
+        r = self.go(QuestIO(table=quest_table(), spells={1: {'name': 'Other', 'level': 1, 'vocations': []}}))
+        self.assertEqual((r.status, 'not in the server\'s spell list' in r.detail), (TX.FAIL, True))
+        r = self.go(QuestIO(table=quest_table(), spells={142: {'name': 'Keepfall', 'level': 500, 'vocations': [5]}}))
+        self.assertIn('is not open to Warrior', r.detail)
+        r = self.go(QuestIO(table=quest_table(), spells={142: {'name': 'Keepfall', 'level': 900, 'vocations': [4]}}))
+        self.assertIn('needs level 900', r.detail)
+        table = quest_table()
+        table['Warrior']['presets'] = [{'level': 500, 'spells': [225]}]
+        table['Warrior']['ultimate'] = None
+        r = self.go(QuestIO(table=table, spells=KEEPFALL))
+        self.assertIn('no preset or extras of the Auto setup', r.detail)
+        table['Warrior']['extras'] = [142]
+        self.assertEqual(self.go(QuestIO(table=table, spells=KEEPFALL)).status, TX.PASS, 'extras count')
+        # nothing to compare with: the flow still passes
+        self.assertEqual(self.go(QuestIO()).status, TX.PASS)
+
+    def test_the_real_first_spell_of_every_class_is_in_the_auto_setup_data(self):
+        table = TX.load_table(os.path.join(MODULES, 'game_helperrotation', 'autorotation_data.lua'))
+        with open(os.path.join(MODULES, 'game_chaosspells', 'spelldata.lua'), encoding='utf-8') as f:
+            text = f.read()
+        quest1 = [(m.group(2), int(m.group(1))) for m in re.finditer(r'\{ id = (\d+), name = "([^"]+)"[^\n]*? quest = 1 \}', text)]
+        self.assertEqual(len(quest1), 7, 'one level 500 quest spell per line')
+        spells = client_spells()
+        for cls, row in table.items():
+            mine = [n for n, sid in quest1 if row['voc'] in spells[sid]['vocations']]
+            self.assertEqual(len(mine), 1, '%s: exactly one quest 1 spell, got %s' % (cls, mine))
+            self.assertEqual(TX.quest_spell_problems(mine[0], cls, 500, spells, table), [], cls)
+
+    def test_load_table_reads_extras_and_the_ultimate(self):
+        table = TX.load_table(os.path.join(MODULES, 'game_helperrotation', 'autorotation_data.lua'))
+        self.assertTrue(all(row.get('ultimate') for row in table.values()), 'every class lists its ultimate')
+        self.assertTrue(any(row['extras'] for row in table.values()), 'some class has extras')
 
 
 class Runner(unittest.TestCase):
