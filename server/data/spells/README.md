@@ -822,6 +822,43 @@ Mystic's 3363 / 4812; "Healing" above). The Samurai deals a bit less than the Ju
 in game: a hit of 727 -> 509) and taunts: about 15.4 effective health per level against the Sentinel's 17.3 and the Juggernaut's
 19.6 (21.3 with Immovable) in the toughness model of "Templar line". The Iron Sage's damage is below the Warrior's.
 
+### Boss damage per class (2026-10-28; computed, not measured in game)
+
+`server/tools/boss_model.py` (the mirror of `pack_model.py`; limits in `data/scripts/chaos/boss_balance_config.lua`).
+Boss damage per second is the class's 1-target number of `pack_model.py` (C4 measurement plus the kit change, linear
+between 300 and 1000, plus 2.41 a level above 1000), so the tree, gear, spell factor and the Necromancer line's minions
+are in it. The pack cleave never hits a boss and the pack tools hit a lone target like the filler. No existing model has
+boss uptime, so every class has full uptime. Ratio is to the Deadeye. `--check` (CI) keeps each class inside its
+`limits` row at 300, 800, 1000 and 1200 (today's state with a 0.03 margin); `--proposed` prints who is outside the plan.
+
+| Class | Boss 300 | Pack 300 | Boss 1000 | Pack 1000 | Proposed boss |
+|---|---|---|---|---|---|
+| Warrior | 0.68 | 1.00 | 0.51 | 1.00 | 0.75-0.85 |
+| Juggernaut | 0.60 | 1.00 | 0.56 | 1.00 | 0.60-0.70 |
+| Berserker | 0.74 | 1.03 | 0.58 | 1.01 | 0.70-0.80 |
+| Ranger | 0.82 | 1.00 | 0.80 | 1.00 | 0.85-0.95 |
+| Deadeye | 1.00 | 1.00 | 1.00 | 1.00 | 1.0 |
+| Beastmaster | 0.63 | 1.00 | 0.71 | 0.99 | 0.70-0.80 |
+| Mystic | 0.61 | 1.01 | 0.53 | 1.00 | 0.75-0.85 |
+| Elementalist | 0.70 | 1.07 | 0.65 | 1.08 | 0.70-0.80 |
+| Illusionist | 0.58 | 1.00 | 0.44 | 1.00 | 0.80-0.90 |
+| Thief | 0.66 | 1.00 | 0.52 | 1.00 | 0.85-0.95 |
+| Ninja | 0.86 | 1.01 | 0.79 | 1.00 | 0.90-0.95 |
+| Samurai | 0.57 | 1.00 | 0.44 | 1.00 | 0.85-0.95 |
+| Necromancer | 0.77 | 1.00 | 0.57 | 0.99 | 0.75-0.85 |
+| Lich | 0.89 | 1.01 | 0.88 | 1.01 | 0.90-0.95 |
+| Bone Lord | 0.88 | 1.01 | 0.90 | 1.00 | 0.70-0.80 |
+| Monk | 0.73 | 1.00 | 0.51 | 0.99 | 0.75-0.85 |
+| Shadowfist | 0.90 | 1.01 | 0.81 | 1.00 | 0.90-0.95 |
+| Iron Sage | 0.63 | 1.00 | 0.45 | 1.00 | 0.75-0.85 |
+| Templar | 0.69 | 1.00 | 0.46 | 1.00 | 0.60-0.70 |
+| Inquisitor | 0.83 | 1.00 | 0.78 | 1.00 | 0.85-0.95 |
+| Sentinel | 0.57 | 1.00 | 0.43 | 1.00 | 0.60-0.70 |
+
+Pack is against the median class (`pack_model.py`). The proposed column is the plan (Deadeye 1.0; Ninja, Shadowfist and
+Lich 0.9-0.95; burst classes that lose packs gain here; pure area classes 0.7-0.8; tanks and healers lower), not
+enforced; which class is burst or mixed is a first guess. Step 2 of the class identity plan; the pack bands are step 1.
+
 ### Pack farming for every class (2026-10-15; computed, not measured in game)
 
 Owner goal: every class farms packs comfortably (the game is a grind: many monsters at once, with some danger); RNG and
