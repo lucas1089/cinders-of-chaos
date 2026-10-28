@@ -44,7 +44,7 @@ return {
 		{key = "cactus_35", id = 36974, block = true, name = "barrel cactus"},
 		{key = "cactus_36", id = 36975, block = true, name = "flowering barrel cactus"},
 		{key = "cactus_37", id = 36976, block = true, name = "flowering prickly cactus"},
-		{key = "cactus_38", id = 36977, block = true, name = "prickly pear"},
+		{key = "cactus_38", id = 36977, block = true, name = "prickly pear cactus"},
 		{key = "cactus_39", id = 36978, block = true, name = "round cactus"},
 		{key = "cactus_40", id = 36979, block = true, name = "round cactus"},
 		{key = "cactus_41", id = 36980, block = false, name = "thorn sprout"},

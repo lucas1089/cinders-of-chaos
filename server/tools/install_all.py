@@ -136,6 +136,8 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                Candlemarks (the stock 15 kicks them after 16 minutes; README "Candlemarks")
   baserain     tools/patch_base_rain.py          config.lua weatherRain = false: the base weather's rain (an effect per player every 100 ms) is
                off; the Chaos weather (weather.lua, client game_chaosweather) replaces it (README "Weather on the client (O208)")
+  baseraids    tools/patch_base_raids.py         the Thais orc raid's three single spawns name monsters that do not exist ("Cant create
+               monster Orc Armor"): they name the Orc Leader (README "Base raid fixes"; after monsternames)
   widespellids tools/patch_wide_spell_ids.py     config.lua chaosWideSpellIds = false when the key is missing (the owner's value is kept): 16-bit spell
                ids on the wire for a client that asks, engine src-patch 0079 (README "Wide spell ids")
   shopprices   tools/patch_shop_prices.py        modules.lua ShopModule.requestTrade: the trade window gets 0, not -1 (sent as 4294967295), for "not sold" /
@@ -935,6 +937,14 @@ def step_baserain(server, data, ctx):
 STEPS.insert(STEPS.index('idlekick') + 1, 'baserain')  # config.lua: the base weather's rain off (the Chaos weather replaces it)
 
 
+def step_baseraids(server, data, ctx):
+    args = [tool('patch_base_raids.py'), data] + (['--dry-run'] if ctx['dry'] else [])
+    return tool_result(run_tool(args, 'patch_base_raids.py'))
+
+
+STEPS.insert(STEPS.index('baserain') + 1, 'baseraids')  # raids that name a monster the server does not have
+
+
 def step_shopprices(server, data, ctx):
     return tool_result(run_tool([tool('patch_shop_prices.py'), server], 'patch_shop_prices.py'))
 
@@ -943,7 +953,7 @@ def step_widespellids(server, data, ctx):
     return tool_result(run_tool([tool('patch_wide_spell_ids.py'), server], 'patch_wide_spell_ids.py'))
 
 
-STEPS.insert(STEPS.index('baserain') + 1, 'widespellids')  # config.lua: chaosWideSpellIds = false is written once, never overwritten
+STEPS.insert(STEPS.index('baseraids') + 1, 'widespellids')  # config.lua: chaosWideSpellIds = false is written once, never overwritten
 
 
 STEPS.insert(STEPS.index('widespellids') + 1, 'shopprices')  # modules.lua: the trade window prices -1 as 0

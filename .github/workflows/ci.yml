@@ -962,6 +962,9 @@ jobs:
       - name: Base rain off in config.lua (patch_base_rain.py, install_all step baserain)
         run: python3 -I server/tools/patch_base_rain_test.py
 
+      - name: Base raids with unknown monsters (patch_base_raids.py, install_all step baseraids)
+        run: python3 -I server/tools/patch_base_raids_test.py
+
       - name: NPC shop prices of -1 sent as 0 (patch_shop_prices.py, install_all step shopprices)
         run: python3 -I server/tools/patch_shop_prices_test.py
 

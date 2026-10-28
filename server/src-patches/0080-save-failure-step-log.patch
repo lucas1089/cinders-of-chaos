@@ -1,0 +1,177 @@
+# Player save failure says where (server/README.md "A save that fails for one character"). IOLoginData::savePlayer
+# returned false at 17 places, and only the SQL ones print a line of their own. The owner's live log had one tester
+# character that failed every incremental save ("Could not save player Tester Ach.", at shutdown "Error while saving
+# player") with no SQL error line: the first query, SELECT `save` FROM `players` WHERE `id` = guid, found no row (the
+# character had been deleted while it was online), which returns false without a word. Now each failing step logs one
+# line, once per character and step (at most 64 lines per run): "[Error - IOLoginData::savePlayer] NAME (guid N): failed
+# at: STEP." Nothing else changes: the same transaction, the same results. Applies after 0001-0079.
+diff --git a/src/iologindata.cpp b/src/iologindata.cpp
+--- a/src/iologindata.cpp
++++ b/src/iologindata.cpp
+@@ -11,6 +11,8 @@
+ 
+ #include <fmt/format.h>
+ 
++#include <set>
++
+ extern ConfigManager g_config;
+ extern Game g_game;
+ 
+@@ -708,6 +710,25 @@
+ 	return query_insert.execute();
+ }
+ 
++namespace {
++
++// Chaos (patch 0080): a failed player save said only "Could not save player X" and, when the failure was not a SQL
++// error (those print their own line), nothing else. Which step failed is logged once per character and step, so the
++// log of a live server tells (server/README.md "Tester bots", "A save that fails for one character"). At most 64
++// different lines per run. Always returns false.
++bool chaosSaveFailed(const Player* player, const char* step)
++{
++	static std::set<std::string> seen;
++	const std::string key = std::to_string(player->getGUID()) + '|' + step;
++	if (seen.size() < 64 && seen.insert(key).second) {
++		std::cout << "[Error - IOLoginData::savePlayer] " << player->getName() << " (guid " << player->getGUID()
++			<< "): failed at: " << step << '.' << std::endl;
++	}
++	return false;
++}
++
++}
++
+ bool IOLoginData::savePlayer(Player* player)
+ {
+ 	if (player->getHealth() <= 0) {
+@@ -718,7 +739,7 @@
+ 
+ 	DBResult_ptr result = db.storeQuery(fmt::format("SELECT `save` FROM `players` WHERE `id` = {:d}", player->getGUID()));
+ 	if (!result) {
+-		return false;
++		return chaosSaveFailed(player, "no players row for this guid (character deleted while online?)");
+ 	}
+ 
+ 	if (result->getNumber<uint16_t>("save") == 0) {
+@@ -844,32 +865,32 @@
+ 
+ 	DBTransaction transaction;
+ 	if (!transaction.begin()) {
+-		return false;
++		return chaosSaveFailed(player, "BEGIN");
+ 	}
+ 
+ 	if (!db.executeQuery(query.str())) {
+-		return false;
++		return chaosSaveFailed(player, "UPDATE players");
+ 	}
+ 
+ 	// learned spells
+ 	if (!db.executeQuery(fmt::format("DELETE FROM `player_spells` WHERE `player_id` = {:d}", player->getGUID()))) {
+-		return false;
++		return chaosSaveFailed(player, "DELETE player_spells");
+ 	}
+ 
+ 	DBInsert spellsQuery("INSERT INTO `player_spells` (`player_id`, `name` ) VALUES ");
+ 	for (const std::string& spellName : player->learnedInstantSpellList) {
+ 		if (!spellsQuery.addRow(fmt::format("{:d}, {:s}", player->getGUID(), db.escapeString(spellName)))) {
+-			return false;
++			return chaosSaveFailed(player, "player_spells row");
+ 		}
+ 	}
+ 
+ 	if (!spellsQuery.execute()) {
+-		return false;
++		return chaosSaveFailed(player, "INSERT player_spells");
+ 	}
+ 
+ 	//item saving
+ 	if (!db.executeQuery(fmt::format("DELETE FROM `player_items` WHERE `player_id` = {:d}", player->getGUID()))) {
+-		return false;
++		return chaosSaveFailed(player, "DELETE player_items");
+ 	}
+ 
+ 	DBInsert itemsQuery("INSERT INTO `player_items` (`player_id`, `pid`, `sid`, `itemtype`, `count`, `attributes`) VALUES ");
+@@ -883,13 +904,13 @@
+ 	}
+ 
+ 	if (!saveItems(player, itemList, itemsQuery, propWriteStream)) {
+-		return false;
++		return chaosSaveFailed(player, "player_items rows");
+ 	}
+ 
+ 	if (player->lastDepotId != -1) {
+ 		//save depot items
+ 		if (!db.executeQuery(fmt::format("DELETE FROM `player_depotitems` WHERE `player_id` = {:d}", player->getGUID()))) {
+-			return false;
++			return chaosSaveFailed(player, "DELETE player_depotitems");
+ 		}
+ 
+ 		DBInsert depotQuery("INSERT INTO `player_depotitems` (`player_id`, `pid`, `sid`, `itemtype`, `count`, `attributes`) VALUES ");
+@@ -902,13 +923,13 @@
+ 		}
+ 
+ 		if (!saveItems(player, itemList, depotQuery, propWriteStream)) {
+-			return false;
++			return chaosSaveFailed(player, "player_depotitems rows");
+ 		}
+ 	}
+ 
+ 	//save inbox items
+ 	if (!db.executeQuery(fmt::format("DELETE FROM `player_inboxitems` WHERE `player_id` = {:d}", player->getGUID()))) {
+-		return false;
++		return chaosSaveFailed(player, "DELETE player_inboxitems");
+ 	}
+ 
+ 	DBInsert inboxQuery("INSERT INTO `player_inboxitems` (`player_id`, `pid`, `sid`, `itemtype`, `count`, `attributes`) VALUES ");
+@@ -919,12 +940,12 @@
+ 	}
+ 
+ 	if (!saveItems(player, itemList, inboxQuery, propWriteStream)) {
+-		return false;
++		return chaosSaveFailed(player, "player_inboxitems rows");
+ 	}
+ 
+ 	//save store inbox items
+ 	if (!db.executeQuery(fmt::format("DELETE FROM `player_storeinboxitems` WHERE `player_id` = {:d}", player->getGUID()))) {
+-		return false;
++		return chaosSaveFailed(player, "DELETE player_storeinboxitems");
+ 	}
+ 
+ 	DBInsert storeInboxQuery("INSERT INTO `player_storeinboxitems` (`player_id`, `pid`, `sid`, `itemtype`, `count`, `attributes`) VALUES ");
+@@ -935,11 +956,11 @@
+ 	}
+ 
+ 	if (!saveItems(player, itemList, storeInboxQuery, propWriteStream)) {
+-		return false;
++		return chaosSaveFailed(player, "player_storeinboxitems rows");
+ 	}
+ 
+ 	if (!db.executeQuery(fmt::format("DELETE FROM `player_storage` WHERE `player_id` = {:d}", player->getGUID()))) {
+-		return false;
++		return chaosSaveFailed(player, "DELETE player_storage");
+ 	}
+ 
+ 	DBInsert storageQuery("INSERT INTO `player_storage` (`player_id`, `key`, `value`) VALUES ");
+@@ -947,16 +968,19 @@
+ 
+ 	for (const auto& it : player->storageMap) {
+ 		if (!storageQuery.addRow(fmt::format("{:d}, {:d}, {:d}", player->getGUID(), it.first, it.second))) {
+-			return false;
++			return chaosSaveFailed(player, "player_storage row");
+ 		}
+ 	}
+ 
+ 	if (!storageQuery.execute()) {
+-		return false;
++		return chaosSaveFailed(player, "INSERT player_storage");
+ 	}
+ 
+ 	//End the transaction
+-	return transaction.commit();
++	if (!transaction.commit()) {
++		return chaosSaveFailed(player, "COMMIT");
++	}
++	return true;
+ }
+ 
+ std::string IOLoginData::getNameByGuid(uint32_t guid)

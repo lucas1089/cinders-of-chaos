@@ -7659,6 +7659,28 @@ full health" anomalies. Causes found:
   bots that died in the middle. The scenario now goes on after the login and drops the node it was cut off in.
   A hunt mark's band is the pool level, which is the hunting level since O285.
 
+### A save that fails for one character (`src-patches/0080`, `tools/testers.py cleanup`)
+
+Owner log 2026-10-28: every autosave printed `[Error - Game::saveIncremental] Could not save player Tester Ach.` (summary
+`1 failed`) and the shutdown `Error while saving player: Tester Ach`, with no SQL error line.
+- **Cause.** `IOLoginData::savePlayer` starts with `SELECT save FROM players WHERE id = <guid>`; an empty result returns false
+  without a word (SQL errors print their own `[Error - mysql_real_query]` line, none was in the log). So the `players` row of
+  Tester Ach was gone while the character was still in game. The only writer of such a delete is `testers.py cleanup`
+  (`chaos-ctl.sh testers cleanup --yes`, the admin app's Apagar): it waits for the bots to log out, but a tester that stays in
+  game (a fight, a stuck connection) lost its rows under the engine. It could not be saved at all after that, and the
+  progress of that character was dropped. Other candidates (a column out of range, a storage value over 32 bits) all end in an
+  SQL error line and are not it.
+- **Fix, tool.** `cleanup` now kicks the testers it is about to delete: `kick NAME` lines in `remote.cmd` of the server folder
+  (`remote_cmd.lua` runs them every 2.5 s; the logout saves a character whose row is still there), waits `--kick-wait` seconds
+  (default 8), then deletes. `chaos-ctl.sh testers cleanup --yes` passes `--server-dir`. The admin app needs no change: its
+  button "Apagar os testers" (Comandos tab, card Testers) runs this command (limit 240 s, the stop wait is 120 s). Tests: `tools/testers_test.py`
+  (`kick_lines`, `kick_online`), `deploy/chaos_ctl_test.py`.
+- **Fix, engine log.** `src-patches/0080-save-failure-step-log.patch`: every `return false` of `savePlayer` logs one line,
+  once per character and step (at most 64 per run): `[Error - IOLoginData::savePlayer] NAME (guid N): failed at: STEP.`
+  The missing row says `no players row for this guid (character deleted while online?)`. Needs an engine rebuild.
+- **Owner, VPS.** Nothing to repair: the character is gone with its rows (a restart already dropped the ghost). Update from the
+  admin app (Update button) for the tool, rebuild the engine for the log line. To get rid of the old testers: Comandos > Testers > Apagar os testers; fallback `chaos-ctl.sh testers cleanup --yes`. Checked on a mocked database only, not on the live server.
+
 ### The helper (TEST ONLY: `tools/tester_helper.lua`, `tools/tester_helper_core.lua`)
 
 Not under `data/`, so no install step ships it. `chaos-ctl.sh testers start` copies both into `data/scripts` as
@@ -25874,3 +25896,30 @@ nine wands, nine rods and three two-handed melee weapons (a greatsword, a greata
 * Tests: `tools/install_weapons800_test.py` (rows, ids, the curve, the class lists, the three xml blocks, the guard end to end),
   `tests/weapons800_test.lua`, `tests/class_loot_test.lua`, `tests/loot_level_gear_test.lua` (the scaled roll skips a base with no item),
   `client/tools/sprites/gen_weapons800_art_test.py`. Not tested live: the looks in a client (pair 56 is not shipped), the drops.
+
+## Base raid fixes (`tools/patch_base_raids.py`, install step `baseraids`)
+
+Owner log 2026-10-28: `[Error] Raids: Cant create monster Orc Armor`. `data/raids/thais/orcs.xml` has three `<singlespawn>` lines
+for "Orc Helmet", "Orc Shield" and "Orc Armor". No monsters.xml line and no Lua monster has those names (base or installed), so
+the engine refuses each spawn (the first failing event is the one the log shows). `patch_base_raids.py DATA_DIR [--dry-run]`
+points the three at the "Orc Leader" (registered in the base), only while the old name is not a known monster and the new one is;
+with no known replacement the line becomes an XML comment. Idempotent; `FIXES` in the tool is the place for more. Test:
+`tools/patch_base_raids_test.py` (CI). Install: Update in the admin app (all steps), or `install_all.py SERVER_DIR --only
+baseraids`. The same scan lists "Orc Sambackpack", "White Pale", "Chayenne", "Ocyakao" and "Hirintror" as raid names that
+`monsters.xml` and the Lua monsters of the base do not register; the live log did not show them (their raids may not have run yet,
+or the names are made elsewhere): add them to `FIXES` if `Cant create monster` names one.
+
+## Unique loot names (`tools/install_decor49_items.py`, `tools/install_owner_decor.py`)
+
+Owner log 2026-10-28: `Non-unique loot item "witch broom"` / `"witch hat"`, then `Cant load loot. witch.xml`: the Witch had no loot at
+all. Monster XML names loot by item name, and the engine refuses a name that more than one item has. The stock items 10569 and 10570
+are "witch broom" and "witch hat"; the pair 49 decoration manifest (`decor49_items.csv`, written by `gen_decor49.py`) named items
+43171 and 43174 the same. The pair 33 kit had hit the same problem once (`witch_hat` -> "crooked witch hat"). Two more clashes of
+the same kind were found by comparing every manifest name with the loot names of the monster files: the decor49 "Pumpkin" (43194,
+loot of the Mutated Pumpkin) and the owner art "prickly pear" (36977, loot of the Ogre Shaman); they would have broken those two
+loots the same way. The installs now rename them: `RENAMES` in `install_decor49_items.py` ("Cursed witch broom", "Cursed witch hat",
+"Cursed pumpkin") and in `install_owner_decor.py` ("prickly pear cactus"; `data/lib/chaos_owner_decor.lua` regenerated). The art
+sheets and manifests keep their names. Tests: `install_decor49_items_test.py` (the renames, and no manifest name equals a loot name
+of our monsters), `install_owner_decor_test.py`. Owner, VPS: Update in the admin app, or `install_all.py SERVER_DIR --only
+decor49items,ownerdecor` and a restart; the blocks in items.xml are rewritten, no SQL, no client change (the names show in the
+client tooltips only).

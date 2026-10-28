@@ -36,6 +36,9 @@ SWITCH = os.path.join(REPO_DATA, 'lib', 'chaos_owner_art.lua')
 XML_BEGIN = '\t<!-- Chaos owner decoration (server/tools/install_owner_decor.py, do not edit by hand) -->\n'
 XML_END = '\t<!-- end of the Chaos owner decoration -->\n'
 FIRST, LAST = 36940, 36985
+# a stock item is "prickly pear" (loot of the Ogre Shaman, named by item name in monster XML): a second item of that name
+# makes the engine refuse the whole loot ("Non-unique loot item"). The art sheet names stay, the install renames.
+RENAMES = {'cactus_38': 'prickly pear cactus'}
 
 
 def pair26_on(path=SWITCH):
@@ -48,6 +51,7 @@ def pair26_on(path=SWITCH):
 def rows_of(path):
     rows = read_manifest(path)
     for r in rows:
+        r['name'] = RENAMES.get(r['key'], r['name'])
         assert r['mode'] == 'new', r['key']
         assert r['server_id'] == r['client_id'] + 3000, 'server id must be client id + 3000 (%s)' % r['key']
         assert FIRST <= r['server_id'] <= LAST, '%s: server id %d outside %d..%d' % (r['key'], r['server_id'], FIRST, LAST)

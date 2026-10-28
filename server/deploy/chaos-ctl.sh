@@ -2122,7 +2122,7 @@ print("pbkdf2-sha256$%d$%s$%s" % (n, base64.b64encode(salt).decode(), base64.b64
           fi
         fi
         if [ $yes -eq 1 ]; then
-          testers_py cleanup --state "$TSTATE"
+          testers_py cleanup --state "$TSTATE" --server-dir "$SERVER"
         else
           testers_py cleanup --state "$TSTATE" --dry-run
           echo "(nothing deleted: chaos-ctl.sh testers cleanup --yes)"

@@ -293,6 +293,16 @@ ok(stmts[-1].startswith('DELETE FROM `accounts` WHERE `id` IN (5,6) AND NOT EXIS
 ok(not any('LIKE' in x for x in stmts), 'no LIKE in the cleanup')
 eq(T.cleanup_statements([], set(), set())[0], 'DELETE FROM `players` WHERE `id` IN (NULL);', 'nothing: deletes nothing')
 
+# a tester still in game is kicked (and saved) before its rows go: a deleted `players` row makes the engine's save fail
+eq(T.kick_lines(['Tester Aab', "Tester A'a", 'Ana', 'Tester Aaa', 'Tester Aab']), ['kick Tester Aaa', 'kick Tester Aab'],
+   'only exact tester names, once, sorted')
+eq(T.kick_online('', ['Tester Aaa'], 0), 0, 'no server folder: nothing written')
+with tempfile.TemporaryDirectory() as d:
+    eq(T.kick_online(d, ['Tester Aaa', 'Ana'], 0), 1, 'one kick queued')
+    with open(os.path.join(d, 'remote.cmd')) as f:
+        eq(f.read(), 'kick Tester Aaa\n', 'remote.cmd line')
+    eq(T.kick_online(d, [], 0), 0, 'no names: nothing')
+
 # ---------------------------------------------------------------- the private state file
 sp = os.path.join(tmp, 'state')
 T.save_state(sp, {'bots': [bot]})

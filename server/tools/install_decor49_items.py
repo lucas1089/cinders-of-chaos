@@ -39,11 +39,18 @@ XML_BEGIN = '\t<!-- Chaos decoration of pair 49 (server/tools/install_decor49_it
 XML_END = '\t<!-- end of the Chaos decoration of pair 49 -->\n'
 BIOMES = ('celestial', 'cursed')
 KEY = re.compile(r'^decor49_(celestial|cursed)_(\d+)$')
+# Stock items called "witch broom" and "witch hat" (ids 10569, 10570) are the Witch's loot, which monster XML names by
+# item name: a second item of the same name made the engine refuse the whole loot of the Witch ("Non-unique loot item").
+# The manifest is written by gen_decor49.py, so the install gives these (and the stock "pumpkin", loot of the Mutated Pumpkin) their own names (server/README.md
+# "Pair 49 items", "Unique loot names").
+RENAMES = {'decor49_cursed_39171': 'Cursed witch broom', 'decor49_cursed_39174': 'Cursed witch hat',
+           'decor49_cursed_39194': 'Cursed pumpkin'}
 
 
 def rows_of(path):
     rows = read_manifest(path)
     for r in rows:
+        r['name'] = RENAMES.get(r['key'], r['name'])
         m = KEY.match(r['key'])
         assert m, 'key %r is not decor49_<biome>_<client id>' % r['key']
         assert int(m.group(2)) == r['client_id'], '%s: key and client id differ' % r['key']
