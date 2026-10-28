@@ -686,9 +686,9 @@ final class CommandsTab {
                 + "o relatório no fim. Ficam as 20 últimas rodadas na VPS."), ui.gap(4));
         MaterialButton clean = ui.flat("Apagar os testers", 0);
         clean.setOnClickListener(v -> a.confirm("Apagar todas as contas de tester?", "Apaga as contas, os "
-                + "personagens e tudo deles. Precisa de 2 minutos desde que pararam (se rodando, para agora: toque "
-                + "de novo depois). O próximo Iniciar cria novos, com os níveis atuais.", "Apagar", true,
-                () -> ctl("Apagar testers", "testers cleanup --yes", 120, null)));
+                + "personagens e tudo deles. Se estão rodando, para agora e espera 2 minutos antes de apagar (um "
+                + "toque só). O próximo Iniciar cria novos, com os níveis atuais.", "Apagar", true,
+                () -> ctl("Apagar testers", "testers cleanup --yes", 240, null)));
         b.addView(clean, ui.gap(6));
         quick.addView(c, ui.gap(10));
     }
