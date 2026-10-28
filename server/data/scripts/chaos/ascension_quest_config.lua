@@ -31,7 +31,8 @@ return {
 
 	-- stage 2, Proof of Strength: rare and legendary monsters at the player's level. A kill counts when the monster's
 	-- hunting level (bounty_pool.lua, else 1.6 x sqrt(experience) raised by health / 60, as tools/gen_bounty_pool.py
-	-- estimates it) is at least levelShare x the player's level (and at least minMonsterLevel).
+	-- estimates it, times pace_config.baseLevelMult) is at least levelShare x the player's level (and at least
+	-- minMonsterLevel). Both numbers are hunting levels, the ones the player sees.
 	proof = {
 		needed = 10,
 		points = {rare = 1, legendary = 3},

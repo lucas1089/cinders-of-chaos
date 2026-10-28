@@ -165,10 +165,18 @@ function M.estimateLevel(experience, health)
 	return math.max(1, math.floor(lvl + 0.5))
 end
 
--- the lowest monster level that counts for a player of this level
-function M.minMonsterLevel(playerLevel)
+-- the lowest hunting level (the level the player sees) of a monster that counts for a player of this level
+function M.minHuntingLevel(playerLevel)
 	local p = M.cfg().proof
 	return math.max(p.minMonsterLevel or 0, math.floor((p.levelShare or 0) * (tonumber(playerLevel) or 0)))
+end
+
+-- the same bar in bounty-pool levels, the scale monsterLevel and proofPoints compare: hunting level = pool level x
+-- Chaos.huntingMult(). Before 2026-10-28 the hunting bar was compared with pool levels, so a level 202 player was
+-- asked for monsters of hunting level 242 (1.2 x) instead of 121.
+function M.minMonsterLevel(playerLevel)
+	local mult = Chaos.huntingMult and Chaos.huntingMult() or 1
+	return math.ceil(M.minHuntingLevel(playerLevel) / mult)
 end
 
 -- points a kill is worth: tier = "normal" | "magic" | "rare" | "legendary" | "boss"

@@ -16790,7 +16790,9 @@ of every line are read at run time from `Chaos.classes.ascension`, so a new clas
   `7101003` attempts, `7101004` Trial won): 1 the Calling (talk at level 100 as a base class: the two paths of the class),
   2 Proof of Strength (10 points: a rare monster 1, a legendary 3, counted when the monster's hunting level, from
   `bounty_pool.lua` or estimated from experience and health as `tools/gen_bounty_pool.py` does, is at least 0.6 x the player's
-  level, min 40), 3 the Trial, 4 the Choice (a list of the two classes, then a confirmation; near the Oracle, no PvP lock).
+  level, min 40; `Q.minHuntingLevel`, converted to bounty-pool levels by `Q.minMonsterLevel` = ceil(bar / `Chaos.huntingMult()`).
+  Before 2026-10-28 the bar was compared with pool levels, so it was 1.2 x the player's level: a level 202 Monk saw 242),
+  3 the Trial, 4 the Choice (a list of the two classes, then a confirmation; near the Oracle, no PvP lock).
 - **The Trial**: "trial" at the Oracle -> a modal -> a runtime-built room (13 x 13, slots at x/y 7000+, `Game.createTile`,
   refused when the footprint is not empty; 8 slots) with the class's guardian: `Ascension Warden` renamed and dressed per line
   (Warden of Iron, of the Hunt, of the Veil, of Shadows, of the Still Fist, of Bones, of Dawn; a default for new lines), health
