@@ -841,6 +841,7 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7100000 - 7100999 | `Chaos.storage` in `chaos_constants.lua` and the `*_config.lua` blocks it lists (daily, stash, passive tree, bounty, rifts, new player, monk, market, store cosmetics, ...) |
 | 7100011 - 7100019 | the stash (`stash_config.lua` `storage`): 7100011 the journal serial, 7100012 the depot -> stash migration version done (retired), 7100013 the stash -> depot migration version done; +3..+8 free |
 | 7101000 - 7101004 | ascension quest (`ascension_quest_config.lua`) |
+| 7101040 - 7101069 | line spell quests (`Chaos.storage.spellQuest`, `spellquest_core.lua` `keys(n)`; 10 per quest n = 1..3): +0 step (0 none, 1 hunt, 2 trial open, 3 done), +1 kills, +2 fragments, +3 pity, +4 trial attempts, +5 trial cooldown, +6 done time, +7 lines done (a bit per line), +8 and +9 free. 7101070 - 7101099 stays free |
 | 7101100 - 7101109 | infinite arrows (`data/lib/chaos_archery_config.lua` `storage`): +0 the ammunition sweep is done, +1 its stash part is done |
 | 7101200 - 7101299 | quest chests of planned areas (`tools/area_planner.py`, one per quest key; action ids 47960-47999) |
 | 7101300 - 7101309 | guilds (`guild_config.lua`; 7101302 guild boss lockout) |
@@ -8312,7 +8313,7 @@ the stalls are 6 apart, so in front of a stall its own NPC is the nearest (`chao
 | 31654 | Cassian Auric | | 31653 | Pell Ashmere |
 | 31660 | Mordecai Ashwager | | 31660 | Vessa Hollowmark |
 | 31666 | Tavish Coldhand | | 31666 | Veyra the Apothecary |
-| 31672 | Halvard Deedkeeper | | 31672 | (free) |
+| 31672 | Halvard Deedkeeper | | 31672 | Archivist Ysolde |
 
 Trade and the bank on the north row, progression and the menu services on the south row (the Apothecary, 2026-10-23, in the south row's first free stall); the busiest stand next to the
 gap in the middle of the walk (x 31646-31650), where players come in from the south. Every tile is the base NPC's own
@@ -8338,7 +8339,7 @@ sparkle, neither blocks).
   server are harmless (`install_all.py` lists them, never deletes): `temple_npcs_config.lua` returns a table.
 - `tests/npc_booths_test.lua`: the config (16 stalls, two rows, each NPC once and an NPC of `data/npc`, nobody at the
   temple), the spots by town and temple, the retired halls, the login relocation (and an error caught), and
-  `ChaosNpcPlace.place` into the stall and next to another town's temple. Since 2026-10-23 one of the two empty stalls is the Apothecary's (15 NPCs, one stall free; "The Apothecary").
+  `ChaosNpcPlace.place` into the stall and next to another town's temple. Since 2026-10-23 one of the two empty stalls is the Apothecary's (15 NPCs, one stall free; "The Apothecary"); on 2026-10-28 Archivist Ysolde took the last one (16 NPCs, every stall filled).
 
 Not seen in a client or on a live server: our NPCs in the stalls, the labels over them.
 
@@ -17061,6 +17062,48 @@ Choose your ascended class (0/1). The quest's stages and storages (7101000 block
   with "Done"). It shares the fold and the Goal Tracker switch (Adventure > Goal Tracker); with no open goals the panel is
   titled "Ascension".
 - Tests: `tests/ascension_tracker_test.lua` (rules, languages, signature, mocked engine), client `goalsview_test.lua`.
+
+## Line spell quests (`spellquest.lua`, `spellquest_core.lua`, `spellquest_config.lua`, `spellquest_tracker*.lua`)
+
+Phase 1 of the 21 line spells (design: three quests per class line at level 500 attack, 800 buff or utility, 1200 ultimate).
+Built so far: the quest machine, the hunt, the fragments, the trial hook, the reward, the tracker, the NPC. Not built yet: the
+spells themselves (ids, `spells_chaos.xml` rows, kits, rotation data, icons): until they exist `learnSpell` finds nothing, the
+reward is logged ("could not teach") and the login sync teaches the spell as soon as it is in the book.
+
+- **Quests.** Quest n needs quest n - 1 done on the same line and the level (500 / 800 / 1200, checked at every step, so a
+  level lowered by death stops it). Steps: 0 none, 1 hunt, 2 trial open, 3 done. Hunt 400 / 700 / 1000 kills and 20 / 30 / 40
+  fragments; trial s1 / s2 / s3. Talk to **Archivist Ysolde** (her stall is the last free one of the hub's south row,
+  `npc_booths_config.lua`) to start; ask her again for the count and the trial. All numbers: `spellquest_config.lua`.
+- **Lines.** Warrior, Ranger, Mystic, Thief, Necromancer, Monk, Templar, by the base class of `Chaos.classes`; the base class and
+  both ascended classes share the three spells (their names are in the config, ids belong to the spell registration).
+- **Kills.** A death event on every monster that is not a summon. A kill counts when the monster's hunting level
+  (`Chaos.monsterHuntingLevel`: the level players see, the native level of a level-scaled monster, a generated area's point,
+  else the pool level x `baseLevelMult`; the Proof of Strength's measure) and the killer's level are at least the quest's.
+  Not counted: summons, monsters of rifts (and dense-rift husks), Trials, dungeons, Ascension guardians, monsters the pace layer
+  does not know (event spawns), kills within 4 tiles of a protection zone. A boss kill counts 25 kills. Credit: the killers
+  (last hit, most damage, summons resolved) and party members within 30 tiles who dealt damage.
+- **Fragments.** A counter in storage, never an item. Each counted kill rolls 6% (rare x2, legendary x5, from the monster tier), a
+  boss drops one for sure, the 41st counted kill without one is sure (pity 40). The chat message "Quest fragment found: n of N".
+  The hunt is done with both the kills and the fragments; then the trial opens.
+- **Trial.** The Trials engine (`trials.lua`, `trials_config.lua` `spellTiers`): the family and mechanics of the character's own
+  line, one stage plus the guardian, `opts.spell = "s1"`. Guardian health = the Merciless hp x 0.8 / 1.0 / 1.2 x (level /
+  tier level) ^ 1.5, the level clamped to 500-800 / 800-1200 / 1200-1600; hits 9 / 12 / 15% of the player's max health, thralls
+  3.5 / 5 / 6.5%; 5 / 6 / 7 minutes, 3 / 3 / 2 lives. `ChaosTrials.spellHook` (set by `spellquest.lua`): `won` completes the quest,
+  `failed` closes the door 60 s (not after a logout, abort or error). The run needs no tier cleared and pays no tier reward.
+- **Reward.** The spell, a message, a toast, 2000 x level gold to the bank, once per quest (done time in +6; a second line later
+  gets the spell but no gold).
+- **Vocation Change.** The done flag is a bit per line in +7. `class_spells_core.lua` never teaches a quest spell (the `quest` hook of
+  `plan`), forgets the ones of another line, and `ChaosSpellQuest.sync` (login, class change) teaches the done ones of the new line
+  again for free. A change to another line shows quest 1 of that line (its own quest); the way back finds it done. A running hunt
+  continues after a change (progress is per character).
+- **Staff.** `/spellquest set <player>, <quest>, <step>[, kills[, fragments]]`, `show <player>`, `reset <player>` (staff only, like
+  every talkaction; step 3 marks the line done without gold).
+- **Tracker.** Rows on the Next Goals channel (opcode 178, `spellquest {rows}`), a third section of the client panel, titled
+  "Spell Quest". Shown while the character can work on a quest (the next one not done on its line, its level reached).
+- **Flag for phase 3.** `rotationCapExempt = {false, false, true}`: quest 3's spell does not count against the 5-spell rotation cap
+  (nothing reads it yet).
+- Tests: `tests/spellquest_test.lua` (rules and the engine file on a mocked engine), `tests/spellquest_tracker_test.lua`,
+  `tests/trials_test.lua` (spell tiers), `tests/class_spells_test.lua` (quest spells), client `goalsview_test.lua`.
 
 ## Base scripts and the classes (`tools/patch_base_classes.py`)
 

@@ -201,7 +201,7 @@ local SITES = {
 	["ascension.lua"] = {}, ["season_modes.lua"] = {}, ["shop_services.lua"] = {},
 	-- the store, quests, achievements, new players, instances and the systems' chat lines
 	["shop.lua"] = {"message%(player,%s*"}, ["shop_core.lua"] = CORE_T, ["ascension_quest.lua"] = {},
-	["ascension_quest_core.lua"] = CORE_T, ["trials.lua"] = {"say%(tr,%s*", "box%(player,%s*"}, ["trials_core.lua"] = CORE_T,
+	["ascension_quest_core.lua"] = CORE_T, ["spellquest.lua"] = {}, ["spellquest_core.lua"] = CORE_T, ["spellquest_tracker_core.lua"] = CORE_T, ["trials.lua"] = {"say%(tr,%s*", "box%(player,%s*"}, ["trials_core.lua"] = CORE_T,
 	["achievements_core.lua"] = CORE_T, ["daily_core.lua"] = CORE_T, ["newplayer.lua"] = {}, ["newplayer_core.lua"] = CORE_T,
 	["newplayer_tutorial.lua"] = {}, ["instance_limits.lua"] = {}, ["instance_limits_core.lua"] = CORE_T, ["stash.lua"] = {},
 	["bank.lua"] = {}, ["townportal.lua"] = {}, ["pouches.lua"] = {}, ["store_food.lua"] = {}, ["potions.lua"] = {},
@@ -540,7 +540,7 @@ for k, v in pairs(dofile("data/scripts/chaos/stash_config.lua").reasons) do
 end
 
 -- the NPCs: their XML greet / farewell / walk away / trade lines (ChaosI18n.npcMessages) and their scripts' lines
-local NPC_XML = {"Ascendant Oracle", "Loot Buyer", "Material Broker", "Mordecai Ashwager", "Keeper of Trials",
+local NPC_XML = {"Ascendant Oracle", "Archivist Ysolde", "Loot Buyer", "Material Broker", "Mordecai Ashwager", "Keeper of Trials",
 	"Wandering Merchant", "Warden Ysolde", "Forgemaster Brannoc", "Cantor Velith", "Elder Bramwyn",
 	"Osric the Chandler", "Iselde Varrow", "Widow Hessa", "Veyra the Apothecary"}
 for _, name in ipairs(NPC_XML) do

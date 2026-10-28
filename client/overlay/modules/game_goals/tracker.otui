@@ -2,7 +2,7 @@
 // half way down (the other HUDs: top left character plate, rift and invasion; top centre siege, arena and monster bar;
 // top right toasts; bottom right the task tracker; bottom centre monk chi). Click the title to fold it, a row to open
 // the Next Goals window; below the goals the Ascension section (the steps of the ascension quest, same rows) shows
-// while the character can ascend; the window's "Tracker on screen" box (or Adventure > Goal Tracker) hides it.
+// while the character can ascend, then the Spell Quest section (the line spell quest the character is on); the window's "Tracker on screen" box (or Adventure > Goal Tracker) hides it.
 GoalTrackerRow < UIWidget
   height: 26
   phantom: false
@@ -70,6 +70,24 @@ ChaosPanelDark
 
   UIWidget
     id: ascRows
+    phantom: true
+    layout:
+      type: verticalBox
+      fit-children: true
+
+  UILabel
+    id: sqTitle
+    height: 16
+    margin-top: 4
+    font: verdana-11px-rounded
+    color: #e8b84a
+    text-align: left
+    visible: false
+    !text: tr('Spell Quest')
+    phantom: true
+
+  UIWidget
+    id: sqRows
     phantom: true
     layout:
       type: verticalBox

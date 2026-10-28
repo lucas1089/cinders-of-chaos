@@ -6,6 +6,79 @@
 
 return {
 	["pt-BR"] = {
+		-- Line spell quests (spellquest.lua, spellquest_core.lua, spellquest_tracker_core.lua, Archivist Ysolde)
+		["Your trial awaits."] =
+			"Sua prova aguarda.",
+		["That quest does not exist."] =
+			"Essa missão não existe.",
+		["You have passed this trial already."] =
+			"Você já passou nesta prova.",
+		["The trial is closed to you until the hunt is done."] =
+			"A prova está fechada para você até a caçada terminar.",
+		["The door stays shut for now. Return in %s."] =
+			"A porta continua fechada por ora. Volte em %s.",
+		["Hunt monsters of level %d or higher: %d of %d kills, %d of %d fragments."] =
+			"Cace monstros de nível %d ou mais: %d de %d mortes, %d de %d fragmentos.",
+		["Your trial: %d minutes, %d lives, alone. If you fall, nothing is lost; the door stays shut for %s."] =
+			"Sua prova: %d minutos, %d vidas, sozinho. Se cair, nada é perdido; a porta fica fechada por %s.",
+		["%s waits at the end of the trial.\n\n%s\n\nYou go alone. Enter?"] =
+			"%s espera no fim da prova.\n\n%s\n\nVocê vai sozinho. Entrar?",
+		["The Archivist's Trial"] =
+			"A Prova da Arquivista",
+		["Quest fragment found: %d of %d."] =
+			"Fragmento de missão encontrado: %d de %d.",
+		["The hunt is done. Return to %s and ask for the trial."] =
+			"A caçada terminou. Volte a %s e peça a prova.",
+		["The hunt is done: the trial awaits."] =
+			"A caçada terminou: a prova aguarda.",
+		["You have no trial to enter."] =
+			"Você não tem prova para entrar.",
+		["The trial is entered at %s."] =
+			"A prova é iniciada com %s.",
+		["Trial passed. You have learned %s."] =
+			"Prova vencida. Você aprendeu %s.",
+		["%d gold coins to your bank."] =
+			"%d moedas de ouro para o seu banco.",
+		["New spell: %s"] =
+			"Nova magia: %s",
+		["The trial is not yours to finish."] =
+			"Esta prova não é sua para concluir.",
+		["The archive is closed for now. Come back later."] =
+			"O arquivo está fechado por ora. Volte mais tarde.",
+		["Your path holds no spell for me to give, wanderer."] =
+			"Seu caminho não tem magia que eu possa dar, viajante.",
+		["You have earned every spell of your line. The archive has nothing more for you."] =
+			"Você conquistou toda magia da sua linha. O arquivo não tem mais nada para você.",
+		["%s is not for you yet. Return when you have reached level %d."] =
+			"%s ainda não é para você. Volte quando chegar ao nível %d.",
+		["The archive keeps %s, a spell of your line. It is earned, not bought."] =
+			"O arquivo guarda %s, uma magia da sua linha. Ela se conquista, não se compra.",
+		["First the hunt. %s"] =
+			"Primeiro a caçada. %s",
+		["Then the trial. Ask me about your {quest} at any time."] =
+			"Depois a prova. Pergunte sobre sua {quest} quando quiser.",
+		["The hunt is done. %s Step through when you are ready."] =
+			"A caçada terminou. %s Entre quando estiver pronto.",
+		["Welcome, |PLAYERNAME|. The archive keeps what the great classes once knew. Ask me about a {spell} or a {quest}."] =
+			"Bem-vindo, |PLAYERNAME|. O arquivo guarda o que as grandes classes já souberam. Pergunte-me sobre uma {spell} ou uma {quest}.",
+		["May your pages never burn, |PLAYERNAME|."] =
+			"Que suas páginas nunca queimem, |PLAYERNAME|.",
+		["The archive is patient."] =
+			"O arquivo é paciente.",
+		["Learn %s: speak with %s"] =
+			"Aprenda %s: fale com %s",
+		["Slay monsters of level %d or higher"] =
+			"Derrote monstros de nível %d ou mais",
+		["Gather quest fragments from your kills"] =
+			"Reúna fragmentos de missão com suas mortes",
+		["Win the Archivist's trial"] =
+			"Vença a prova da Arquivista",
+		["Spell Trial I"] =
+			"Prova de Magia I",
+		["Spell Trial II"] =
+			"Prova de Magia II",
+		["Spell Trial III"] =
+			"Prova de Magia III",
 		-- Gold payments from carried coins and the bank (data/lib/chaos_pay.lua)
 		["Paid %d gold: %d carried and %d from your bank. Bank balance: %d gold."] =
 			"Pago %d de ouro: %d da mochila e %d do seu banco. Saldo no banco: %d de ouro.",

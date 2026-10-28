@@ -5,7 +5,8 @@
 --   * needlearn spells: forgotten when the new class does not list them, learned when it does and the level allows;
 --   * the Spellbook window of that client gets the new vocation at once (ChaosSpellbook.refresh), so its list, the
 --     pickers' "learned" box and the helper do not show the old class until a relog.
--- Every Chaos spell is needlearn="0": the engine lets the new vocation cast them straight away and the old class's
+-- The line spell quests' spells (spellquest.lua) are the exception: needlearn="1", taught by the quest only (plan() skips them).
+-- Every other Chaos spell is needlearn="0": the engine lets the new vocation cast them straight away and the old class's
 -- spells are refused by the vocation check; only the client's views needed the refresh.
 -- Tests: server/tests/class_spells_test.lua.
 if not ChaosClassSpellsCore then
@@ -23,10 +24,11 @@ function S.sync(player, quiet)
 	end
 	local book = ChaosSpellbook
 	local spells = book and book.get and book.get() or {}
+	local quest = ChaosSpellQuest and ChaosSpellQuest.isQuestSpell and {isQuest = ChaosSpellQuest.isQuestSpell} or nil
 	local plan = ChaosClassSpellsCore.plan(spells, player:getVocation():getId(), player:getLevel(), function(name)
 		local ok, has = pcall(player.hasLearnedSpell, player, name)
 		return ok and has
-	end)
+	end, quest)
 	for _, name in ipairs(plan.forget) do
 		if pcall(player.forgetSpell, player, name) then
 			result.forget = result.forget + 1
@@ -36,6 +38,12 @@ function S.sync(player, quiet)
 		if pcall(player.learnSpell, player, name) then
 			result.learn = result.learn + 1
 		end
+	end
+	-- the line spell quests' spells: the ones of the new line that are done come back free, the others of the old line go
+	-- (spellquest.lua; ChaosClassSpells runs on every class change, the quest sync only touches its own spells)
+	if ChaosSpellQuest and ChaosSpellQuest.sync then
+		local q = ChaosSpellQuest.sync(player)
+		result.forget, result.learn = result.forget + q.forget, result.learn + q.learn
 	end
 	if not quiet and book and book.refresh then
 		book.refresh(player)

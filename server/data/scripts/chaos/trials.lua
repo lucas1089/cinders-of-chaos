@@ -72,6 +72,7 @@ T.bad = T.bad or {}
 T.monsterRun = T.monsterRun or {} -- monster id -> player id
 T.fast = T.fast or {} -- player id -> true: a GM shortened the next run (boss health 1)
 T.hooks = T.hooks or {}
+T.spellHook = T.spellHook -- {won = function(player, run) -> {lines}, failed = function(player, run, how)}; set by spellquest.lua
 
 local function C()
 	return Chaos.trials
@@ -985,7 +986,26 @@ function finish(pid, how, text)
 		heal(player)
 		player:removeCondition(CONDITION_INFIGHT, CONDITIONID_DEFAULT)
 		clearMarker(player)
-		if how == "won" then
+		if how == "won" and tr.spell then
+			-- a spell trial: the quest pays (spellquest.lua sets the hook), not the tiers
+			local hook = T.spellHook
+			local lines = {}
+			if hook and hook.won then
+				local ok, res = pcall(hook.won, player, tr)
+				if ok and type(res) == "table" then
+					lines = res
+				else
+					log("spell hook won: " .. tostring(res))
+				end
+			end
+			for _, l in ipairs(lines) do
+				player:sendTextMessage(MESSAGE_EVENT_ADVANCE, l)
+			end
+			player:getPosition():sendMagicEffect(CONST_ME_HOLYAREA)
+			exitDelay = C().exitSeconds * 1000
+			T.sendState(player)
+			Chaos.send(player, RIFT_OPCODE, "end", {result = "success", text = lines[1] or "", exitIn = C().exitSeconds})
+		elseif how == "won" then
 			local out = reward(player, tr)
 			local lines = {}
 			if out.first then
@@ -1012,7 +1032,15 @@ function finish(pid, how, text)
 		else
 			local fail = how == "error" and Chaos.t(player, text or "The trial could not begin. Nothing is lost.")
 				or Chaos.t(player, "%s Nothing is lost.", Chaos.t(player, text or "You have failed the trial."))
-			if how ~= "error" and how ~= "logout" and how ~= "abort" then
+			if tr.spell then
+				local hook = T.spellHook
+				if hook and hook.failed then
+					local ok, err = pcall(hook.failed, player, tr, how)
+					if not ok then
+						log("spell hook failed: " .. tostring(err))
+					end
+				end
+			elseif how ~= "error" and how ~= "logout" and how ~= "abort" then
 				player:setStorageValue(S().cooldown, os.time() + C().enter.failCooldownSeconds)
 			end
 			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, fail)
@@ -1203,9 +1231,19 @@ function T.enter(player, tierIdx, opts)
 	if not c.enabled then
 		return false, Chaos.t(player, "The Vocation Trials are closed.")
 	end
-	tierIdx = Chaos.toInt(tierIdx, 1, #c.tiers)
-	if not tierIdx then
-		return false, Chaos.t(player, "That difficulty does not exist.")
+	-- opts.spell = the key of a spell trial (trials_config.lua spellTiers; spellquest.lua checked the quest already and has
+	-- set ChaosTrials.spellHook): no tier, no repeat rules, no reward of the tiers
+	local spellKey = opts.spell
+	if spellKey then
+		tierIdx = 0
+		if not M.spellTier(spellKey) then
+			return false, Chaos.t(player, "That difficulty does not exist.")
+		end
+	else
+		tierIdx = Chaos.toInt(tierIdx, 1, #c.tiers)
+		if not tierIdx then
+			return false, Chaos.t(player, "That difficulty does not exist.")
+		end
 	end
 	local voc = vocId(player)
 	local fam, famKey = M.family(voc)
@@ -1220,8 +1258,8 @@ function T.enter(player, tierIdx, opts)
 	if other then
 		return false, Chaos.t(player, "You are busy in %s.", other)
 	end
-	local problem = M.enterProblem(tierIdx, player:getLevel(), T.tierCleared(player, voc), os.time(), getS(player, S().cooldown),
-		Chaos.lang(player))
+	local problem = not spellKey and M.enterProblem(tierIdx, player:getLevel(), T.tierCleared(player, voc), os.time(),
+		getS(player, S().cooldown), Chaos.lang(player)) or nil
 	if problem then
 		return false, problem
 	end
@@ -1263,9 +1301,13 @@ function T.enter(player, tierIdx, opts)
 		end
 	end
 	cleanSlot(L)
-	local tierDef = c.tiers[tierIdx]
-	local scale = M.scale(tierIdx, player:getLevel(), voc)
-	local stages = M.stages(famKey, tierIdx)
+	local tierDef, scale, stages
+	if spellKey then
+		local _, def = M.spellTier(spellKey)
+		tierDef, scale, stages = def, M.spellScale(spellKey, player:getLevel(), voc), M.spellStages(famKey, spellKey)
+	else
+		tierDef, scale, stages = c.tiers[tierIdx], M.scale(tierIdx, player:getLevel(), voc), M.stages(famKey, tierIdx)
+	end
 	local total, waves = 0, 0
 	for _, s in ipairs(stages) do
 		if s.kind == "wave" then
@@ -1276,13 +1318,14 @@ function T.enter(player, tierIdx, opts)
 		end
 	end
 	local famCopy = setmetatable({key = famKey}, {__index = fam})
-	local tr = {pid = pid, slot = slot, L = L, voc = voc, famKey = famKey, fam = famCopy, tier = tierIdx, tierDef = tierDef,
+	local tr = {pid = pid, slot = slot, L = L, voc = voc, famKey = famKey, fam = famCopy, tier = tierIdx, tierDef = tierDef, spell = spellKey,
 		scale = scale, stages = stages, stageIdx = 0, waveCount = waves, total = total, killed = 0, bossState = "waiting",
 		lives = scale.lives, livesMax = scale.lives, limit = tierDef.time, adds = {}, risen = {}, still = {},
 		phase = "countdown", back = player:getPosition(), notes = {}, deadline = mnow() + tierDef.time * 1000}
 	T.runs[pid] = tr
 	T.slotBusy[slot] = pid
-	player:setStorageValue(S().marker, tierIdx * 100 + voc)
+	-- the marker of an interrupted run: tier x 100 + vocation id; a spell trial is 10 + its index (login clears either)
+	player:setStorageValue(S().marker, (spellKey and 10 + (M.spellTier(spellKey)) or tierIdx) * 100 + voc)
 	player:save()
 	player:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
 	player:teleportTo(P(L.playerStart))

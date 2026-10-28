@@ -3,7 +3,7 @@
 -- parts: goalsview.lua (GoalsView, tested by goalsview_test.lua). Menu: Adventure > Next Goals and Adventure > Goal
 -- Tracker (added with ChaosTopBar.addEntry). The "where" buttons open a window or put a mark on the minimap.
 --   client -> server  open | close | tracker
---   server -> client  goals {...} (chunked) | tracker {rows} | ascension {rows} | done {text}
+--   server -> client  goals {...} (chunked) | tracker {rows} | ascension {rows} | spellquest {rows} | done {text}
 
 local OPCODE = 178
 local V = GoalsView
@@ -155,25 +155,43 @@ local TRACKER_CHARS, TRACKER_LINE = 28, 14
 
 local function renderTracker()
   if not tracker then return end
-  local shown = trackerEnabled() and (#st.tracker > 0 or #st.ascension > 0) and g_game.isOnline()
+  local shown = trackerEnabled() and (#st.tracker > 0 or #st.ascension > 0 or #st.spellquest > 0) and g_game.isOnline()
   tracker:setVisible(shown)
   if not shown then return end
   local folded = g_settings.getBoolean(SETTING_FOLDED, false)
-  local hasGoals, hasAsc = #st.tracker > 0, #st.ascension > 0
+  local hasGoals, hasAsc, hasSq = #st.tracker > 0, #st.ascension > 0, #st.spellquest > 0
   if hasGoals then
     tracker.title:setText(folded and tr('Next Goals (%d) +', #st.tracker) or tr('Next Goals'))
-  else
+  elseif hasAsc then
     tracker.title:setText(folded and tr('Ascension (%d) +', #st.ascension) or tr('Ascension'))
+  else
+    tracker.title:setText(folded and tr('Spell Quest (%d) +', #st.spellquest) or tr('Spell Quest'))
   end
   tracker.rows:destroyChildren()
   tracker.ascRows:destroyChildren()
+  tracker.sqRows:destroyChildren()
   tracker.rows:setVisible(not folded)
   tracker.ascTitle:setVisible(hasAsc and hasGoals and not folded)
   tracker.ascRows:setVisible(not folded)
+  tracker.sqTitle:setVisible(hasSq and (hasGoals or hasAsc) and not folded)
+  tracker.sqRows:setVisible(not folded)
   if folded then
     tracker.rows:setHeight(0)
     tracker.ascRows:setHeight(0)
+    tracker.sqRows:setHeight(0)
     return
+  end
+  for _, r in ipairs(st.spellquest) do
+    local w = g_ui.createWidget('GoalTrackerRow', tracker.sqRows)
+    local text, pct, color = V.ascensionLine(r)
+    local wrapped, lines = V.wrapLine(text, TRACKER_CHARS)
+    w.label:setText(wrapped)
+    w.label:setColor(color)
+    w.label:setHeight(lines * TRACKER_LINE)
+    w:setHeight(lines * TRACKER_LINE + 12)
+    w.bar:setPercent(pct)
+    w.bar:setBackgroundColor(pct >= 100 and '#3f6e24' or '#a3844b')
+    w.onClick = function() show() end
   end
   for _, r in ipairs(st.ascension) do
     local w = g_ui.createWidget('GoalTrackerRow', tracker.ascRows)
@@ -250,6 +268,9 @@ local function onMessage(msg)
     renderTracker()
   elseif msg.action == 'ascension' then
     V.onAscension(st, msg.data)
+    renderTracker()
+  elseif msg.action == 'spellquest' then
+    V.onSpellQuest(st, msg.data)
     renderTracker()
   elseif msg.action == 'done' then
     status(V.doneText(msg.data))

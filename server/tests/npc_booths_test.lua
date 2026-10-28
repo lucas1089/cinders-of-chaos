@@ -51,10 +51,10 @@ do
 	eq(rows[32236], 8, "eight stalls on the south row")
 	for _, n in ipairs({"Ascendant Oracle", "Keeper of Trials", "Archivist Maelis", "Warden Ysolde", "Loot Buyer",
 		"Material Broker", "Osric the Chandler", "Iselde Varrow", "Mordecai Ashwager", "Cassian Auric", "Tavish Coldhand",
-		"Halvard Deedkeeper", "Vessa Hollowmark", "Pell Ashmere", "Veyra the Apothecary"}) do
+		"Halvard Deedkeeper", "Vessa Hollowmark", "Pell Ashmere", "Veyra the Apothecary", "Archivist Ysolde"}) do
 		check(names[n], n .. " has a stall in the hub")
 	end
-	eq(#K.booths(cfg), 15, "fifteen NPCs, one empty stall")
+	eq(#K.booths(cfg), 16, "sixteen NPCs, every stall filled (Archivist Ysolde took the last one, 2026-10-28)")
 	-- the temple's portal gallery holds no NPC any more
 	local gallery = dofile("data/scripts/chaos/temple_portals_config.lua")
 	for _, t in ipairs(gallery.towns) do

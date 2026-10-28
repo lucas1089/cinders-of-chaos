@@ -114,5 +114,17 @@ V.onAscension(st, nil)
 eq(#st.ascension, 0, 'nil payload')
 eq(#V.new().ascension, 0, 'new state')
 
+-- the spell quest section (server spellquest_tracker.lua): same rows as the ascension section
+V.onSpellQuest(st, { rows = {
+  { key = 'kills', title = 'Slay monsters of level 500 or higher', progress = 100, target = 400, state = 'open' }, 'junk' } })
+eq(#st.spellquest, 1, 'spellquest rows')
+local qt, qp = V.ascensionLine(st.spellquest[1])
+eq(qt, 'Slay monsters of level 500 or higher  100/400', 'spellquest count'); eq(qp, 25, 'spellquest percent')
+V.onSpellQuest(st, { rows = {} })
+eq(#st.spellquest, 0, 'spellquest: no rows hides')
+V.onSpellQuest(st, nil)
+eq(#st.spellquest, 0, 'spellquest: nil payload')
+eq(#V.new().spellquest, 0, 'new state has the section')
+
 if fails > 0 then print('goalsview_test: ' .. fails .. ' failure(s)'); os.exit(1) end
 print('goalsview_test: ' .. checks .. ' checks OK')

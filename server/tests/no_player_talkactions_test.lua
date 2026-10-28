@@ -32,7 +32,7 @@ local STAFF = {
 	["/poi"] = "poi.lua", ["/professions"] = "professions.lua", ["/marches"] = "pvpzone.lua", ["/raid"] = "raid.lua",
 	["/records"] = "records.lua", ["/referral"] = "referral.lua", ["/reports"] = "reports.lua", ["/rift"] = "rift.lua",
 	["/season"] = "season.lua", ["/journey"] = "season_journey.lua", ["/seasonpass"] = "seasonpass.lua",
-	["/coins"] = "shop.lua", ["/siege"] = "siege.lua", ["/spells"] = "spellbook.lua", ["/supports"] = "supports.lua",
+	["/coins"] = "shop.lua", ["/siege"] = "siege.lua", ["/spells"] = "spellbook.lua", ["/spellquest"] = "spellquest.lua", ["/supports"] = "supports.lua",
 	["/telemetry"] = "telemetry.lua", ["/transmog"] = "transmog.lua", ["/goblin"] = "treasure_goblin.lua",
 	["/treestats"] = "treestats.lua", ["/trial"] = "trials.lua", ["/ascended"] = "uber.lua",
 	["/weather"] = "weather.lua", ["/worldboss"] = "worldboss.lua",
