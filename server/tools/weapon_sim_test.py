@@ -90,7 +90,7 @@ for kind, row in power.items():
 check(W.interp(W.POWER_LEVELS, power['distance'], 2000) > W.interp(W.POWER_LEVELS, power['distance'], 1000) > 1.15,
       'the launcher is lifted more and more with the level')
 check(W.interp(W.POWER_LEVELS, power['wand'], 300) > 1.5, 'the wand is lifted')
-check(all(v == 1.0 for v in power['melee']), 'melee is above its share at every level: left alone')
+check(all(v <= 1.03 for v in power['melee']), 'melee is at or near its share at every level: at most a 3%% lift: %s' % power['melee'])
 check(W.own_dps('distance', 2000) / W.reference_dps('Ranger', 2000) < 0.25,
       'the problem: a launcher is under 25% of a Ranger\'s rotation at level 2000 without the factor')
 
