@@ -1,7 +1,7 @@
 -- spellquest.lua: the line spell quests (server/README.md "Line spell quests"). Three quests per class line: level 500 an
 -- attack, 800 a buff or utility, 1200 an ultimate attack. Settings: spellquest_config.lua (Chaos.spellQuest); pure rules:
--- spellquest_core.lua; tracker: spellquest_tracker.lua; the NPC: Archivist Ysolde (data/npc/Archivist Ysolde.xml,
--- data/npc/scripts/archivist_ysolde.lua), placed at startup in her stall in the hub (npc_booths_config.lua).
+-- spellquest_core.lua; tracker: spellquest_tracker.lua; the NPC: Archivist Odrenna (data/npc/Archivist Odrenna.xml,
+-- data/npc/scripts/archivist_odrenna.lua), placed at startup in her stall in the hub (npc_booths_config.lua).
 --
 --   step 1 the hunt    counted kills and fragments in storage (a death event on the monsters; party members who dealt damage
 --                      count; hunt monsters of the quest's level only, bosses count 25 kills and drop a fragment for sure)
@@ -494,7 +494,7 @@ end
 cmd:separator(" ")
 cmd:register()
 
--- ======================================================================== startup: Archivist Ysolde
+-- ======================================================================== startup: Archivist Odrenna
 local function placed(pos)
 	local name = C().npc.name
 	for _, c in ipairs(Game.getSpectators(pos, false, false, 8, 8, 8, 8) or {}) do

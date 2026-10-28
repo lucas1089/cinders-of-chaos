@@ -1,6 +1,7 @@
 -- attack_kit_config.lua: the numbers of the attack kit (ChaosAttackKit): 37 attack spells that give every class
 -- line the same count of attack spells (10 per class; owner 2026-10-23, "devem ter a mesma quantidade"), and 7 more (O254)
--- that took over the ids of weak support spells, so every class has 11.
+-- that took over the ids of weak support spells, so every class has 11, and the 7 level 500 spells of the line spell
+-- quests (`quest = 1`), so every class has 12.
 -- The numbers were fitted with server/tools/rotation_sim.py. Change one here, in spells_chaos.xml and in
 -- rotation_model.csv together: tests/attack_kit_test.lua checks all three. Rules and shapes: attack_kit_core.lua; the cast:
 -- data/spells/chaos/_attackkit.lua; the balance: server/data/spells/README.md "Attack spell parity".
@@ -281,6 +282,62 @@ ChaosAttackKit.cfg = {
 			pMin = 0.2154, pMax = 0.3446, mMin = 0.5, mMax = 0.8, bMin = 20, bMax = 40, scale = 1, shape = "wave", range = 3,
 			depth = 3, halfWidth = 1, fx = "holy_cross", vfx = "holy_smite"
 		},
+		-- the level 500 spells of the line spell quests (spellquest_config.lua, server/README.md "Line spell quests"): one per class
+		-- line, shared by the base class and both ascensions, needlearn="1" (only the quest teaches them, class_spells skips
+		-- them). `quest = 1` marks them. Coefficients 1.25 x the line's 13 s spell, cooldown 13 s, mana 1.2 x; the ids are the
+		-- first of each line's triple in spell_id_pool_config.lua (quest 2 and 3 take the next two).
+		-- Keepfall: Headsman's Hurl x 1.28 x 1.25 = scale 1.6
+		keepfall = {
+			id = 142, name = "Keepfall", words = "vok aeg thun brak", level = 500, mana = 72, quest = 1,
+			vocations = {"Warrior", "Juggernaut", "Berserker"}, school = "melee", power = "melee", ctype = "physical",
+			pMin = 0.17, pMax = 0.2, mMin = 0, mMax = 0, bMin = 17, bMax = 40, scale = 1.6, shape = "circle", range = 3,
+			radius = 2, fx = "ground_slam", vfx = "heavy_cleave"
+		},
+		-- Moonshard Rain: 1.25 x ONE volley of Hail of Dawn (4 arrows x 1.1), not its whole cast of three: the whole cast, as an
+		-- area, put the Ranger's best set +80% and pushed the distance weapon power to 2.1 (weapon_sim.py --power). Hail of Dawn
+		-- is (level + ...) x 12 x 1.1, the level term at full level; the kit's level term is level / 5, so the scale carries the
+		-- factor 5: 4 x 1.1 x 1.25 x 5 = 27.5 and every other term is the ref's divided by 5
+		moonshardrain = {
+			id = 149, name = "Moonshard Rain", words = "drai lun sag vex", level = 500, mana = 576, quest = 1,
+			vocations = {"Ranger", "Deadeye", "Beastmaster"}, school = "distance", power = "distance", ctype = "physical",
+			pMin = 0.0042, pMax = 0.0068, mMin = 0.1, mMax = 0.16, bMin = 3, bMax = 6, scale = 27.5, shape = "circle",
+			range = 7, radius = 3, shot = "gale_arrow", fx = "crit_burst"
+		},
+		-- Prismatic Rupture: Falling Pyre x 1.2 x 1.25 = scale 1.5 (its burn is not part of it)
+		prismaticrupture = {
+			id = 152, name = "Prismatic Rupture", words = "drai zhul prys vael", level = 500, mana = 504, quest = 1,
+			vocations = {"Mystic", "Elementalist", "Illusionist"}, school = "magic", power = "magic", ctype = "energy",
+			pMin = 0, pMax = 0, mMin = 6.6, mMax = 10.8, bMin = 145, bMax = 265, scale = 1.5, shape = "circle", range = 7,
+			radius = 2, fx = "arcane_burst", vfx = "arcane_hit"
+		},
+		-- Eclipse Edge: Last Breath x 1.25
+		eclipseedge = {
+			id = 155, name = "Eclipse Edge", words = "kah ecl nyx kaen", level = 500, mana = 180, quest = 1,
+			vocations = {"Thief", "Ninja", "Samurai"}, school = "blade", power = "blade", ctype = "physical",
+			pMin = 0.1808, pMax = 0.2893, mMin = 0, mMax = 0, bMin = 20, bMax = 40, scale = 1.25, shape = "line", range = 5,
+			length = 5, fx = "blood_slash", vfx = "heavy_cleave", hitFx = "CONST_ME_DRAWBLOOD"
+		},
+		-- Soulflay Wave: Crypt Collapse x 1.25
+		soulflaywave = {
+			id = 158, name = "Soulflay Wave", words = "drai oss flay vael", level = 500, mana = 498, quest = 1,
+			vocations = {"Necromancer", "Lich", "Bone Lord"}, school = "necro", power = "magic", ctype = "death",
+			pMin = 0, pMax = 0, mMin = 15.325, mMax = 24.52, bMin = 20, bMax = 40, scale = 1.25, shape = "wave", range = 4,
+			depth = 4, halfWidth = 2, fx = "shadow_cloud", vfx = "plague_mist"
+		},
+		-- Thousand-Echo Palm: Skysplitter Fist x 1.25, a finisher
+		thousandechopalm = {
+			id = 172, name = "Thousand-Echo Palm", words = "kah mil ech dhun", level = 500, mana = 264, quest = 1,
+			vocations = {"Monk", "Shadowfist", "Iron Sage"}, school = "monk", power = "monk", ctype = "physical",
+			pMin = 0.3086, pMax = 0.4938, mMin = 0, mMax = 0, bMin = 20, bMax = 40, scale = 1.25, shape = "wave", range = 3,
+			depth = 3, halfWidth = 2, finisher = true, fx = "shockwave", vfx = "ki_hit_gold"
+		},
+		-- Pyre of Absolution: Sanctum Verdict x 1.25
+		pyreofabsolution = {
+			id = 177, name = "Pyre of Absolution", words = "kah sol pyr absl", level = 500, mana = 348, quest = 1,
+			vocations = {"Templar", "Inquisitor", "Sentinel"}, school = "templar", power = "melee", ctype = "holy",
+			pMin = 0.3565, pMax = 0.5704, mMin = 0.5, mMax = 0.8, bMin = 20, bMax = 40, scale = 1.25, shape = "circle",
+			range = 5, radius = 2, fx = "fire_ring", vfx = "dome_blast_holy"
+		},
 	},
-	order = {"gorehook", "riftcleaver", "sunspear", "arrowstorm", "packdart", "phantomneedles", "mirrorshards", "dreamrot", "guttingslash", "razorrain", "venomspiral", "crescentcut", "lastbreath", "hollowknuckle", "quakingstomp", "chilance", "cleavingheel", "tidalpalm", "skysplitter", "marrowbolt", "wraithwind", "gravewail", "blightbrand", "soulrendbeam", "cryptcollapse", "ossuarysurge", "hallowedcut", "censerswing", "penitentlash", "martyrspyre", "bellofreckoning", "lanceofvigil", "sanctumverdict", "hereticsbrand", "zealotswrath", "bulwarkslam", "rampartquake", "bastioncry", "galevolley", "crimsoncovenant", "smokebomb", "splintervolley", "mistbornestrike", "crusaderssweep"},
+	order = {"gorehook", "riftcleaver", "sunspear", "arrowstorm", "packdart", "phantomneedles", "mirrorshards", "dreamrot", "guttingslash", "razorrain", "venomspiral", "crescentcut", "lastbreath", "hollowknuckle", "quakingstomp", "chilance", "cleavingheel", "tidalpalm", "skysplitter", "marrowbolt", "wraithwind", "gravewail", "blightbrand", "soulrendbeam", "cryptcollapse", "ossuarysurge", "hallowedcut", "censerswing", "penitentlash", "martyrspyre", "bellofreckoning", "lanceofvigil", "sanctumverdict", "hereticsbrand", "zealotswrath", "bulwarkslam", "rampartquake", "bastioncry", "galevolley", "crimsoncovenant", "smokebomb", "splintervolley", "mistbornestrike", "crusaderssweep", "keepfall", "moonshardrain", "prismaticrupture", "eclipseedge", "soulflaywave", "thousandechopalm", "pyreofabsolution"},
 }

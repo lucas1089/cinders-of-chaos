@@ -3,7 +3,7 @@
   * patch(): classes a spell lost leave its <vocation> lines, a spell no class keeps becomes a marked comment (or the
     monster-only form when a monster names it, monster_spells.py), the
     Chaos block and comments stay, a second run changes nothing, --dry-run writes nothing;
-  * the repo data: every class and ascension has at most 20 spells of its own, counted from
+  * the repo data: every class and ascension has at most 24 spells of its own, counted from
     data/spells/chaos/spells_chaos.xml, data/spells/stock_spells.csv (stock attack and healing spells as installed)
     and CAP (the stock support spells the classes keep), without UNIVERSAL and OUTSIDE_CAP; the counts are pinned (docs/CLASSES.md
     "Spell cap": update both when a kit changes).
@@ -78,10 +78,11 @@ ORDER = ['Warrior', 'Juggernaut', 'Berserker', 'Ranger', 'Deadeye', 'Beastmaster
 # spells of its own per class after the cap (docs/CLASSES.md "Spell cap")
 # O136 (2026-10-23): Galeborne Stride retired, minus one in the 11 classes that had it
 # O254 (2026-10-26): a converted support goes to its whole line, plus one in the 8 classes that lacked it
-PINNED = {'Warrior': 18, 'Juggernaut': 17, 'Berserker': 17, 'Ranger': 17, 'Deadeye': 16, 'Beastmaster': 17,
-          'Mystic': 15, 'Elementalist': 13, 'Illusionist': 19, 'Thief': 15, 'Ninja': 15, 'Samurai': 17, 'Monk': 12,
-          'Shadowfist': 12, 'Iron Sage': 14, 'Necromancer': 17, 'Lich': 17, 'Bone Lord': 19, 'Templar': 12,
-          'Inquisitor': 12, 'Sentinel': 15}
+# line spell quests, phase 2 (2026-10-28): the level 500 attack of the line, plus one in every class
+PINNED = {'Warrior': 19, 'Juggernaut': 18, 'Berserker': 18, 'Ranger': 18, 'Deadeye': 17, 'Beastmaster': 18,
+          'Mystic': 16, 'Elementalist': 14, 'Illusionist': 20, 'Thief': 16, 'Ninja': 16, 'Samurai': 18, 'Monk': 13,
+          'Shadowfist': 13, 'Iron Sage': 15, 'Necromancer': 18, 'Lich': 18, 'Bone Lord': 20, 'Templar': 13,
+          'Inquisitor': 13, 'Sentinel': 16}
 kit = {v: set() for v in ORDER}
 xml = re.sub(r'<!--.*?-->', '', open(os.path.join(SPELLS, 'chaos', 'spells_chaos.xml'), encoding='utf-8').read(), flags=re.S)
 for m in re.finditer(r'<instant ([^>]*)>(.*?)</instant>', xml, re.S):

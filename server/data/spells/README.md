@@ -3313,6 +3313,30 @@ Lich, Bone Lord, Templar and Sentinel. `rotation_sim.py --ladder --check` and `-
 `weapon_power_config.lua` `distance` row fell at levels 500 and up when regenerated (`weapon_sim.py --power --write`):
 its reference is the Ranger rotation, which changed.
 
+### Line spell quests, level 500 attacks (phase 2, 2026-10-28; computed, not measured in game)
+
+Seven attack spells, one per line, `needlearn="1"` and level 500: only the quest teaches them (server/README.md "Line spell quests").
+Every class and ascension has 12 attack spells; cooldown 13 s, group cooldown 2 s, mana 1.2 x the reference spell, coefficients 1.25 x it
+(`attack_kit_config.lua`, `quest = 1`; `rotation_model.csv` has the matching rows; `attack_kit_test.lua` checks both). The reference
+and the numbers:
+
+| Spell (id) | Reference | Kit terms | Mana |
+|---|---|---|---|
+| Keepfall (142) | Headsman's Hurl | P 0.17-0.20, base 17-40, scale 1.6 (1.28 x 1.25) | 72 |
+| Moonshard Rain (149) | one volley of Hail of Dawn (4 arrows x 1.1) | scale 27.5 (4 x 1.1 x 1.25 x 5: the kit's level term is level / 5), P 0.0042-0.0068, ML 0.1-0.16, base 3-6 | 576 |
+| Prismatic Rupture (152) | Falling Pyre, without its burn | ML 6.6-10.8, base 145-265, scale 1.5 (1.2 x 1.25) | 504 |
+| Eclipse Edge (155) | Last Breath | P 0.1808-0.2893, base 20-40, scale 1.25 | 180 |
+| Soulflay Wave (158) | Crypt Collapse | ML 15.325-24.52, base 20-40, scale 1.25 | 498 |
+| Thousand-Echo Palm (172) | Skysplitter Fist | P 0.3086-0.4938, base 20-40, scale 1.25, finisher | 264 |
+| Pyre of Absolution (177) | Sanctum Verdict | P 0.3565-0.5704, ML 0.5-0.8, base 20-40, scale 1.25 | 348 |
+
+Deviation: the spec says 1.25 x Hail of Dawn for the Ranger. Hail of Dawn is three volleys and already about 64% of the Ranger's
+best set at level 300; 1.25 x the whole cast as a circle would raise that set by about 80% and the distance weapon power to 2.1 at
+level 500. Moonshard Rain takes one volley (a third). Effect on the rest, all regenerated: the distance weapon power at level 500
+1.25 -> 1.40, the wand 1.92 -> 2.07, melee 1.00 -> 1.01 (`weapon_power_config.lua`); one knot {500, 0.55} for the Necromancer in
+`spell_factor_config.lua` (its 5-target total at level 500 was 1.26 of the median class, limit 1.25). The class factor knots from 500
+up are refit in phase 3 with the ultimates. The ladder does not rank these spells (`rotation_sim.py` `QUEST_COOLDOWN`).
+
 ### Support to attack (O254, 2026-10-26; owner: faster, more fluid fights, more attack spells and fewer support spells; computed, not measured in game)
 
 **Counts.** One weak support per class line became an attack spell, so every class and ascension has **11** attack spells

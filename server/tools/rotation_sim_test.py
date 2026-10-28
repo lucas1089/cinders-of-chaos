@@ -141,7 +141,11 @@ for s in spells:
         check(s['groupcooldown'] == 2000, '%s: group cooldown 2 s' % s['name'])
 for cls, rows in per_class.items():
     check(final[rows[0][0]] == 2000, '%s: the first spell %s is 2 s' % (cls, rows[0][0]))
-    check(all(rows[i][2] <= rows[i + 1][2] for i in range(1, len(rows) - 1)), '%s: weakest to strongest' % cls)
+    # the line spell quest attacks come last whatever they deal, all at QUEST_COOLDOWN
+    ranked = [r for r in rows if final[r[0]] != R.QUEST_COOLDOWN or r[0] not in {s['name'] for s in spells if s.get('quest')}]
+    check(all(ranked[i][2] <= ranked[i + 1][2] for i in range(1, len(ranked) - 1)), '%s: weakest to strongest' % cls)
+    check(all(final[r[0]] == R.QUEST_COOLDOWN for r in rows if r[0] in {s['name'] for s in spells if s.get('quest')}),
+          '%s: its quest spell is at %d ms' % (cls, R.QUEST_COOLDOWN))
 
 # the class spell factor (spell_factor_config.lua): read from the server's table, applied to every spell of the class
 check(R.spell_factors() == {1: 0.99, 3: 0.93, 4: 0.99, 5: 0.64, 7: 1.01, 8: 1.05, 10: 0.74, 11: 0.94, 12: 1.14, 13: 1.15, 14: 1.06, 15: 1.07, 17: 0.9,

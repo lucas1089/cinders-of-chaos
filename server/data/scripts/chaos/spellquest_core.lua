@@ -1,6 +1,6 @@
 -- spellquest_core.lua: the rules of the line spell quests that need no engine (ChaosSpellQuestCore). Used by
 -- spellquest.lua (kills, storage, the trial, the reward), spellquest_tracker_core.lua and the NPC script of Archivist
--- Ysolde (data/npc/scripts/archivist_ysolde.lua, its own Lua state). Tests: server/tests/spellquest_test.lua
+-- Odrenna (data/npc/scripts/archivist_odrenna.lua, its own Lua state). Tests: server/tests/spellquest_test.lua
 -- (luajit and lua5.3). Settings: spellquest_config.lua. Lua 5.1 / LuaJIT and Lua 5.3 compatible.
 --
 -- Steps of a quest (storage +0): 0 none -> 1 hunt (counted kills and fragments) -> 2 the trial is open -> 3 done.

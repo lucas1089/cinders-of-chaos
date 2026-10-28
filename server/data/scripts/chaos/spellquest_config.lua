@@ -7,15 +7,15 @@
 return {
 	enabled = true,
 
-	-- the NPC (server/data/npc/Archivist Ysolde.xml + scripts/archivist_ysolde.lua), in its stall in the hub
+	-- the NPC (server/data/npc/Archivist Odrenna.xml + scripts/archivist_odrenna.lua), in its stall in the hub
 	-- (npc_booths_config.lua) for the main city, as the Keeper of Trials and the Ascendant Oracle
 	npc = {
-		name = "Archivist Ysolde",
+		name = "Archivist Odrenna",
 		spawn = true,
 		townIds = {2},
 		positions = {},
 		offsets = {{3, -2}, {-3, -2}, {3, 2}, {-3, 2}, {4, 0}, {-4, 0}, {0, -4}, {0, 4}},
-		-- the confirmations (modal windows) only work this close to Ysolde
+		-- the confirmations (modal windows) only work this close to Odrenna
 		range = 6
 	},
 	modal = {trial = 7160}, -- modal window of the trial question (answered in spellquest.lua)

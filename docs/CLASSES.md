@@ -290,6 +290,23 @@ the Necromancer's two other summons. The Necromancer line summons Raise Bone War
 Risen Archer is gone; the best build is two warriors and a mage). Numbers, balance and the retune:
 server/data/spells/README.md "Support to attack (O254)".
 
+**Line spell quests, phase 2 (2026-10-28)**: the level 500 attack of each line, taught by the quest (`needlearn="1"`, never by the
+level), shared by the base class and both ascensions. Every class and ascension has **12 attack spells** now
+(`ATTACK_SPELLS` 12; 13 after the level 1200 ultimates). The cap `MAX_SPELLS` is 24 (the Bone Lord has 20, 22 with its
+three quest spells). Cooldown 13 s, group cooldown 2 s, mana 1.2 x the reference spell, coefficients 1.25 x it. The quest
+attacks are not ranked by the cooldown ladder: they are the last rung of their classes at 13 s (`rotation_sim.py`
+`QUEST_COOLDOWN`).
+
+| Line | Spell (id) | Reference | Shape | Mana |
+|---|---|---|---|---|
+| Warrior, Juggernaut, Berserker | Keepfall (142) | Headsman's Hurl | circle 2 sqm, range 3 | 72 |
+| Ranger, Deadeye, Beastmaster | Moonshard Rain (149) | one volley of Hail of Dawn | circle 3 sqm, range 7 | 576 |
+| Mystic, Elementalist, Illusionist | Prismatic Rupture (152) | Falling Pyre | circle 2 sqm, range 7 | 504 |
+| Thief, Ninja, Samurai | Eclipse Edge (155) | Last Breath | line 5 sqm | 180 |
+| Necromancer, Lich, Bone Lord | Soulflay Wave (158) | Crypt Collapse | wave 4 deep, 5 wide | 498 |
+| Monk, Shadowfist, Iron Sage | Thousand-Echo Palm (172) | Skysplitter Fist | wave 3 deep, 5 wide, chi finisher | 264 |
+| Templar, Inquisitor, Sentinel | Pyre of Absolution (177) | Sanctum Verdict | circle 2 sqm, range 5 | 348 |
+
 **15 spells per class (2026-10-20, owner: "mysthic tem magias demais. abaixe pra 15. faça isso pra todas as classes")**:
 every class and ascension can learn and cast at most 15 spells of its own: attack, healing and support, the stock spells
 it kept and the Chaos spells. An ascension's 15 include the base spells it keeps (an ascension may drop a base spell).

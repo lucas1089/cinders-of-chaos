@@ -33,8 +33,9 @@ F.STOCK = {
   ["kah gro"] = { id = 171, group = { [1] = 2000 }, vocations = { 1, 5 } }, -- Sunder Guard (243; server 106 -> 171;
                                                                     -- attack group 2 s, server patch_spell_timings.py)
   ["drai gal pyr ul"] = { id = 163, mana = 70 },                               -- Pyre Torrent (240)
-  ["kah tin gor"] = { id = 172 },                                   -- Bog Splatter (174)
-  ["saen tin"] = { id = 174 },                                      -- Arcane Stitch (172)
+  -- Bog Splatter (client 174, server 172) and Arcane Stitch (client 172, server 174) were swapped here until the line spell
+  -- quests took the ids 172 and 174 (server spell_id_pool_config.lua). The server retires both (patch_spell_cap.py CAP), so
+  -- they have no fix now: the removed-spell rule keeps their entries off the Chaos ids.
   ["saen tin brak"] = { id = 175 },                                 -- Salve of Scars (170)
   ["drai ira vas sol"] = { id = 34, level = 300, range = 7, needTarget = true, vocations = { 3, mana = 95 }, exhaustion = 9000 }, -- Radiant Shard (258)
   ["drai zar nyx"] = { id = 35, level = 300, group = { [1] = 2000 }, vocations = { 1, 5 } }, -- Lance of the Grave (260)

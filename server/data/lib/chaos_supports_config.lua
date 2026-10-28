@@ -58,6 +58,8 @@ return {
 		[126] = "area", [128] = "area", [129] = "area", [139] = "area", [141] = "area",
 		-- the attack kit (O254): seven support ids turned into attack spells
 		[203] = "single", [134] = "area", [29] = "area", [241] = "area", [193] = "area", [67] = "area", [250] = "area",
+		-- the level 500 line spell quest spells (attack_kit_config.lua, `quest = 1`): a circle, a line or a wave each
+		[142] = "area", [149] = "area", [152] = "area", [155] = "area", [158] = "area", [172] = "area", [177] = "area",
 	},
 
 	-- ------------------------------------------------------------------ the supports

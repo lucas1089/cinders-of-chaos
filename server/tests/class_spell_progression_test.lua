@@ -42,7 +42,10 @@ local xml = io.open("data/spells/chaos/spells_chaos.xml"):read("*a"):gsub("<!%-%
 for block in xml:gmatch("<instant.-</instant>") do
 	local head = block:match("<instant([^>]*)>")
 	local name, level = head:match('name="([^"]+)"'), tonumber(head:match('level="(%d+)"'))
-	for voc in block:gmatch('<vocation name="([^"]+)"') do add(voc, name, level) end
+	-- the line spell quests' spells (needlearn="1", level 500 / 800 / 1200) are the whole line's reward, not a class's
+	-- progression: left out of the audit (they belong to the base class and both ascensions alike)
+	if head:match('needlearn="1"') then level = nil end
+	for voc in block:gmatch('<vocation name="([^"]+)"') do if level then add(voc, name, level) end end
 end
 local first = true
 for line in io.lines("data/spells/stock_spells.csv") do

@@ -6,7 +6,7 @@
 
 return {
 	["pt-BR"] = {
-		-- Line spell quests (spellquest.lua, spellquest_core.lua, spellquest_tracker_core.lua, Archivist Ysolde)
+		-- Line spell quests (spellquest.lua, spellquest_core.lua, spellquest_tracker_core.lua, Archivist Odrenna)
 		["Your trial awaits."] =
 			"Sua prova aguarda.",
 		["That quest does not exist."] =

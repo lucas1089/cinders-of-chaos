@@ -783,4 +783,40 @@
 	<instant group="attack" spellid="141" name="Rampart Quake" words="drai sol aeg krak" level="210" mana="175" premium="0" selftarget="1" cooldown="10000" groupcooldown="2000" needlearn="0" script="chaos/sentinel/rampart_quake.lua">
 		<vocation name="Sentinel" />
 	</instant>
+	<!-- Line spell quest spells, level 500 (server/README.md "Line spell quests"): needlearn="1", taught by the quest only -->
+	<instant group="attack" spellid="142" name="Keepfall" words="vok aeg thun brak" level="500" mana="72" premium="0" range="3" needtarget="1" blockwalls="1" cooldown="13000" groupcooldown="2000" needlearn="1" script="chaos/knight/keepfall.lua">
+		<vocation name="Warrior" />
+		<vocation name="Juggernaut" />
+		<vocation name="Berserker" />
+	</instant>
+	<instant group="attack" spellid="149" name="Moonshard Rain" words="drai lun sag vex" level="500" mana="576" premium="0" range="7" needtarget="1" blockwalls="1" cooldown="13000" groupcooldown="2000" needlearn="1" script="chaos/paladin/moonshard_rain.lua">
+		<vocation name="Ranger" />
+		<vocation name="Deadeye" />
+		<vocation name="Beastmaster" />
+	</instant>
+	<instant group="attack" spellid="152" name="Prismatic Rupture" words="drai zhul prys vael" level="500" mana="504" premium="0" range="7" needtarget="1" blockwalls="1" cooldown="13000" groupcooldown="2000" needlearn="1" script="chaos/sorcerer/prismatic_rupture.lua">
+		<vocation name="Mystic" />
+		<vocation name="Elementalist" />
+		<vocation name="Illusionist" />
+	</instant>
+	<instant group="attack" spellid="155" name="Eclipse Edge" words="kah ecl nyx kaen" level="500" mana="180" premium="0" range="5" needtarget="1" blockwalls="1" cooldown="13000" groupcooldown="2000" needlearn="1" script="chaos/thief/eclipse_edge.lua">
+		<vocation name="Thief" />
+		<vocation name="Ninja" />
+		<vocation name="Samurai" />
+	</instant>
+	<instant group="attack" spellid="158" name="Soulflay Wave" words="drai oss flay vael" level="500" mana="498" premium="0" range="4" needtarget="1" blockwalls="1" cooldown="13000" groupcooldown="2000" needlearn="1" script="chaos/necromancer/soulflay_wave.lua">
+		<vocation name="Necromancer" />
+		<vocation name="Lich" />
+		<vocation name="Bone Lord" />
+	</instant>
+	<instant group="attack" spellid="172" name="Thousand-Echo Palm" words="kah mil ech dhun" level="500" mana="264" premium="0" range="3" needtarget="1" blockwalls="1" cooldown="13000" groupcooldown="2000" needlearn="1" script="chaos/monk/thousand_echo_palm.lua">
+		<vocation name="Monk" />
+		<vocation name="Shadowfist" />
+		<vocation name="Iron Sage" />
+	</instant>
+	<instant group="attack" spellid="177" name="Pyre of Absolution" words="kah sol pyr absl" level="500" mana="348" premium="0" range="5" needtarget="1" blockwalls="1" cooldown="13000" groupcooldown="2000" needlearn="1" script="chaos/templar/pyre_of_absolution.lua">
+		<vocation name="Templar" />
+		<vocation name="Inquisitor" />
+		<vocation name="Sentinel" />
+	</instant>
 <!-- END attack kit -->

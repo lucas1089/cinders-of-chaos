@@ -1,6 +1,6 @@
 -- Run from the server/ folder: luajit tests/attack_kit_test.lua && lua5.3 tests/attack_kit_test.lua (CI runs both)
 -- The attack kit (owner 2026-10-23: every class has the same number of attack spells; docs/CLASSES.md "Attack spell
--- parity"): the 44 spells of attack_kit_config.lua against spells_chaos.xml and rotation_model.csv, the pure rules of
+-- parity"): the 51 spells of attack_kit_config.lua against spells_chaos.xml and rotation_model.csv, the pure rules of
 -- attack_kit_core.lua (damage, shapes) and the cast of _attackkit.lua on a mocked engine.
 local n = 0
 setmetatable(_G, {__index = function(t, k)
@@ -47,20 +47,21 @@ eq(#problems, 0, "config problems: " .. table.concat(problems, "; "))
 local keys = {}
 for k in pairs(cfg.spells) do keys[#keys + 1] = k end
 table.sort(keys)
-eq(#keys, 44, "44 kit spells")
-eq(#cfg.order, 44, "the order lists every spell")
+eq(#keys, 51, "51 kit spells")
+eq(#cfg.order, 51, "the order lists every spell")
 local ordered = {}
 for _, k in ipairs(cfg.order) do ordered[k] = true; ok(cfg.spells[k], "order key " .. k) end
 for _, k in ipairs(keys) do ok(ordered[k], k .. " is in the order") end
 
 -- every class line gets what it needs: the per-vocation kit counts
-local COUNT = {Warrior = 3, Juggernaut = 3, Berserker = 2, Ranger = 3, Deadeye = 2, Beastmaster = 4, Illusionist = 4,
-	Mystic = 1, Elementalist = 1, Thief = 6, Ninja = 4, Samurai = 5, Monk = 7, Shadowfist = 4, ["Iron Sage"] = 5,
-	Necromancer = 7, Lich = 6, ["Bone Lord"] = 8, Templar = 8, Inquisitor = 7, Sentinel = 8}
-do -- 98 class slots: the shortfall to 11 attack spells per class (docs/CLASSES.md "Attack spell parity")
+-- (+1 everywhere since the level 500 line quest spells, phase 2 of the line spell quests)
+local COUNT = {Warrior = 4, Juggernaut = 4, Berserker = 3, Ranger = 4, Deadeye = 3, Beastmaster = 5, Illusionist = 5,
+	Mystic = 2, Elementalist = 2, Thief = 7, Ninja = 5, Samurai = 6, Monk = 8, Shadowfist = 5, ["Iron Sage"] = 6,
+	Necromancer = 8, Lich = 7, ["Bone Lord"] = 9, Templar = 9, Inquisitor = 8, Sentinel = 9}
+do -- 119 class slots: the shortfall to 12 attack spells per class (docs/CLASSES.md "Attack spell parity")
 	local total = 0
 	for _, v in pairs(COUNT) do total = total + v end
-	eq(total, 98, "the kit fills 98 class slots")
+	eq(total, 119, "the kit fills 119 class slots")
 end
 local byVoc = K.byVocation(cfg)
 for voc, want in pairs(COUNT) do
@@ -136,7 +137,12 @@ for _, key in ipairs(keys) do
 		local cd = tonumber(t:match('%scooldown="(%d+)"'))
 		-- 2, 4, 6 s, then one second a rung up to 13 s (O176, rotation_sim.py LADDER_COOLDOWNS)
 		ok(cd and cd >= 2000 and cd <= 13000 and cd % 1000 == 0 and (cd > 6000 or cd % 2000 == 0), key .. " cooldown on the ladder")
-		eq(t:match('needlearn="(%d)"'), "0", key .. " needlearn")
+		-- a line spell quest spell (quest = 1..3) is taught by its quest only
+		eq(t:match('needlearn="(%d)"'), s.quest and "1" or "0", key .. " needlearn")
+		if s.quest then
+			eq(s.level, ({500, 800, 1200})[s.quest], key .. " quest level")
+			if s.quest == 1 then eq(tonumber(t:match('%scooldown="(%d+)"')), 13000, key .. " quest 1 cooldown") end
+		end
 		if s.shape == "around" then
 			eq(t:match('selftarget="1"') ~= nil, true, key .. " is self-targeted")
 			eq(t:match('needtarget') == nil, true, key .. " needs no target")

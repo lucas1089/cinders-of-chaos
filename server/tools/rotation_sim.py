@@ -275,6 +275,8 @@ def spell_row(a, vocs, chaos):
         'groupcooldown': int(a.get('groupcooldown') or 0), 'secondarygroup': a.get('secondarygroup', ''),
         'secondarygroupcooldown': int(a.get('secondarygroupcooldown') or 0),
         'params': a.get('params') == '1', 'vocations': vocs, 'chaos': chaos,
+        # a line spell quest spell (needlearn="1": only its quest teaches it; server/README.md "Line spell quests")
+        'quest': chaos and a.get('needlearn') == '1',
         'cast': cast_ms(a.get('script', '')) if chaos else 0,
     }
 
@@ -854,6 +856,9 @@ LADDER_STEP = 2000   # ms between two rungs of the first LADDER_FLAT rungs
 LADDER_COOLDOWNS = (2000, 4000, 6000, 7000, 8000, 9000, 10000, 11000, 12000, 13000)
 
 
+QUEST_COOLDOWN = 13000   # a line spell quest attack (level 500) is not ranked: it sits above the ladder at the last rung's 13 s
+
+
 def rung_cooldown(rung):
     """the cooldown (ms) of rung `rung` (1 = the first spell); a class has at most 10 attack spells (O133)"""
     return LADDER_COOLDOWNS[min(rung, len(LADDER_COOLDOWNS)) - 1]
@@ -865,8 +870,9 @@ def ladder(spells, model, level=LADDER_LEVEL):
     attack spell (the lowest level, the class's level 8 spell) is rung 1, the others follow from the weakest to the
     strongest by the damage of one cast on one target at `level` (rotation_model.csv with the class's stats; an area
     spell by its main-target hit). A spell several classes share has one cooldown: the rung most of them give it (a tie:
-    the lower). The cooldown of a rung is LADDER_COOLDOWNS (O176). Returns ({name: cooldown ms}, {class: [(name, rung, damage)]}, [(name, {class: rung}, rung)])."""
-    attack = [s for s in spells if s['group'] == 'attack']
+    the lower). The cooldown of a rung is LADDER_COOLDOWNS (O176). The line spell quest attacks (needlearn="1") are not ranked: they are the last rung of their classes at QUEST_COOLDOWN. Returns ({name: cooldown ms}, {class: [(name, rung, damage)]}, [(name, {class: rung}, rung)])."""
+    attack = [s for s in spells if s['group'] == 'attack' and not s.get('quest')]
+    quest = [s for s in spells if s['group'] == 'attack' and s.get('quest')]
     rungs, per_class = {}, {}
     for cls, _, _ in CLASSES:
         env = stats(cls, level)
@@ -876,6 +882,10 @@ def ladder(spells, model, level=LADDER_LEVEL):
         first = min(rows, key=lambda r: (r[1], r[0]))
         rows = [first] + sorted(r for r in rows if r is not first)
         per_class[cls] = [(n, i + 1, d) for i, (d, _, n) in enumerate(rows)]
+        # the quest spells (level 500) come last whatever they deal: the line's reward is above its whole ladder
+        for s in quest:
+            if cls in s['vocations']:
+                per_class[cls].append((s['name'], len(per_class[cls]) + 1, evaluate(model[s['words']]['dmg'], env)))
         for n, rung, _ in per_class[cls]:
             rungs.setdefault(n, {})[cls] = rung
     final, conflicts = {}, []
@@ -884,7 +894,7 @@ def ladder(spells, model, level=LADDER_LEVEL):
         for r in by.values():
             counts[r] = counts.get(r, 0) + 1
         rung = sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))[0][0]
-        final[n] = rung_cooldown(rung)
+        final[n] = QUEST_COOLDOWN if n in {s['name'] for s in quest} else rung_cooldown(rung)
         if len(counts) > 1:
             conflicts.append((n, by, rung))
     return final, per_class, sorted(conflicts)

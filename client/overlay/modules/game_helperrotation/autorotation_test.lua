@@ -335,7 +335,8 @@ do
   -- that fill every 2 s slot, Razor Rain among them; Last Breath (one target, 12 s) scores less than any of them
   -- (rotation_sim.py), so it is an extra: it joins the rotation as soon as a slot is free
   ok(got[56], 'Razor Rain is in the level 230 Thief rotation')
-  local free = A.select(11, 230, function(id) return thiefSpells[id] and id ~= 57 and id ~= 62 and id ~= 236 and id ~= 45 end)
+  -- (155, Eclipse Edge, is a level 500 quest spell: a level 230 Thief does not know it)
+  local free = A.select(11, 230, function(id) return thiefSpells[id] and id ~= 57 and id ~= 62 and id ~= 236 and id ~= 45 and id ~= 155 end)
   local gotFree = {}
   for _, id in ipairs(free.ids) do gotFree[id] = true end
   ok(gotFree[80] and gotFree[56], 'Last Breath fills a free slot of the level 230 Thief rotation')

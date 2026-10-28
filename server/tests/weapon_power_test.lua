@@ -100,7 +100,7 @@ near(P.hitFactor("distance", 300, S.typical("skill", 300)), 1.08, 1e-9, "level 3
 -- a wand: no skill factor (the magic level's own factor in weapon_skill_core), only the level
 near(P.hitFactor("wand", 300, 999), P.levelFactor("wand", 300), 1e-9, "a wand ignores the skill argument")
 near(P.hitFactor("wand", 300), P.levelFactor("wand", 300), 1e-9, "a wand without a skill")
-near(P.hitFactor("melee", 500), 1, 1e-9, "melee without a skill: the level factor, 1")
+near(P.hitFactor("melee", 400), 1, 1e-9, "melee without a skill: the level factor, 1 (level 400; 500 and up is 1.01 since the quest spells)")
 -- a Monk's fists: the fist kind scales with the fist skill like melee, 1 at the typical skill, and never cuts the level factor
 for _, lv in ipairs({50, 300, 1000, 2000}) do
 	near(P.hitFactor("fist", lv, S.typical("skill", lv)), P.levelFactor("fist", lv), 1e-9, "level " .. lv .. ": typical fist skill is the level factor")

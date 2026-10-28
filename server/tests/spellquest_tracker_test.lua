@@ -30,7 +30,7 @@ Q.cfg().enabled = false; eq(#K.rows({vocId = JUGG, level = 900, q = qs()}), 0, "
 local r = K.rows({vocId = JUGG, level = 600, q = qs({step = -1, kills = -1, fragments = -1})})
 eq(r[1].key, "talk"); eq(r[1].progress, 0); eq(r[1].state, "open"); eq(r[2].key, "kills"); eq(r[2].target, 400); eq(r[2].progress, 0, "-1 storage")
 eq(r[3].key, "fragments"); eq(r[3].target, 20); eq(r[4].key, "trial")
-check(r[1].title:find("Keepfall") and r[1].title:find("Archivist Ysolde"), r[1].title)
+check(r[1].title:find("Keepfall") and r[1].title:find("Archivist Odrenna"), r[1].title)
 check(r[2].title:find("level 500"), r[2].title)
 r = K.rows({vocId = JUGG, level = 600, q = qs({step = 1, kills = 150, fragments = 7})})
 eq(r[1].state, "done"); eq(r[2].progress, 150); eq(r[2].state, "open"); eq(r[3].progress, 7)

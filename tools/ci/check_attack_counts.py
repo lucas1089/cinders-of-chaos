@@ -7,7 +7,7 @@ cooldown ladder, the rotation model, the helper and the spellbook already use, s
 Command, Corpse Explosion and the strikes that carry a debuff. Minions, supports and healing are not counted.
 
 Checks:
- - every one of the 21 vocations has exactly ATTACK_SPELLS (11) attack spells;
+ - every one of the 21 vocations has exactly ATTACK_SPELLS (12) attack spells;
  - the three classes of a line (a base class and its two ascensions) have the same count, and every line the same as
    the others (this follows from the first check but names the line that is off);
  - every attack spell has a vocation list and no vocation outside the 21.
@@ -21,7 +21,7 @@ REPO = os.path.dirname(os.path.dirname(HERE))
 sys.path.insert(0, os.path.join(REPO, 'server', 'tools'))
 import rotation_sim as R  # noqa: E402
 
-ATTACK_SPELLS = 11
+ATTACK_SPELLS = 12
 
 
 def counts(spells):

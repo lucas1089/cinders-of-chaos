@@ -36,7 +36,7 @@ return {
 		{x = 31653, y = 32236, z = 7, npc = "Pell Ashmere"},
 		{x = 31660, y = 32236, z = 7, npc = "Vessa Hollowmark"},
 		{x = 31666, y = 32236, z = 7, npc = "Veyra the Apothecary"},
-		{x = 31672, y = 32236, z = 7, npc = "Archivist Ysolde"}
+		{x = 31672, y = 32236, z = 7, npc = "Archivist Odrenna"}
 	},
 
 	-- The Halls of Services (2026-10-15 to 2026-10-22) are gone: no portal leads there any more. Their tiles may still

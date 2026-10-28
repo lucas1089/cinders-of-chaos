@@ -21,16 +21,10 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 REPO_NPC = os.path.join(os.path.dirname(HERE), 'data', 'npc')
 
 
-def main():
-    args = [a for a in sys.argv[1:] if not a.startswith('--')]
-    if len(args) != 1:
-        print(__doc__)
-        return 2
-    data = args[0]
-    dry = '--dry-run' in sys.argv
-    if not os.path.isdir(os.path.join(data, 'npc')):
-        print('%s: no npc folder (is this a server data folder?)' % data)
-        return 1
+def copy_npcs(data, dry):
+    """copy every NPC file of server/data/npc (the Ascendant Oracle, Keeper of Trials, Archivist Maelis, Archivist Odrenna ...
+    and their scripts) that is new or different; returns the relative paths written (or that a dry run would write)"""
+    written = []
     for root, dirs, files in os.walk(REPO_NPC):
         dirs.sort()
         rel = os.path.relpath(root, REPO_NPC)
@@ -45,7 +39,22 @@ def main():
             if not dry:
                 os.makedirs(os.path.dirname(dst), exist_ok=True)
                 shutil.copyfile(src, dst)
+            written.append(os.path.relpath(dst, os.path.join(data, 'npc')))
             print('npc/%s: copied%s' % (os.path.relpath(dst, os.path.join(data, 'npc')), ' (dry run)' if dry else ''), flush=True)
+    return written
+
+
+def main():
+    args = [a for a in sys.argv[1:] if not a.startswith('--')]
+    if len(args) != 1:
+        print(__doc__)
+        return 2
+    data = args[0]
+    dry = '--dry-run' in sys.argv
+    if not os.path.isdir(os.path.join(data, 'npc')):
+        print('%s: no npc folder (is this a server data folder?)' % data)
+        return 1
+    copy_npcs(data, dry)
     cmd = [sys.executable, '-I', os.path.join(HERE, 'patch_promotion.py'), data] + (['--dry-run'] if dry else [])
     return subprocess.call(cmd)
 

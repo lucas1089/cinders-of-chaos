@@ -2201,6 +2201,7 @@ retired stock attack and healing spells, as the attack kit did before) and `spar
 stock spell, no Chaos spell, freed by a retiring tool. A phase that adds a spell takes the next id of `ids` and writes
 it in `spells_chaos.xml`, `attack_kit_config.lua` (a kit spell) and nowhere else; `register_spells.py` refuses a taken
 id, the client moves a stock entry that held it (`spellfix.lua` `chaosIds`).
+Used by phase 2 (2026-10-28), in the order line by line (quest 1, 2, 3 of the Warrior line = the first three of `ids`, then the Ranger line, ...): the level 500 spells took 142, 149, 152, 155, 158, 172 and 177; the next free are 143 and 148 (Warrior), 150 and 151 (Ranger), 153 and 154 (Mystic), 156 and 157 (Thief), 159 and 160 (Necromancer), 173 and 174 (Monk), 178 and 237 (Templar). `spell_ids_test.lua` lets a quest spell (name in `spellquest_config.lua`) use a pool id and nothing else. The client's `spellfix.lua` lost its entries for the retired Bog Splatter (172) and Arcane Stitch (174).
 
 **Wide ids (later, off by default).** The spell id is 16 bits in the engine now and on the wire when the owner turns it on.
 * `Spell::spellId`, `getId` / `setId` and `spell:id()` are `uint16_t` (a spells.xml `spellid` was read as 16 bits and
@@ -8313,7 +8314,7 @@ the stalls are 6 apart, so in front of a stall its own NPC is the nearest (`chao
 | 31654 | Cassian Auric | | 31653 | Pell Ashmere |
 | 31660 | Mordecai Ashwager | | 31660 | Vessa Hollowmark |
 | 31666 | Tavish Coldhand | | 31666 | Veyra the Apothecary |
-| 31672 | Halvard Deedkeeper | | 31672 | Archivist Ysolde |
+| 31672 | Halvard Deedkeeper | | 31672 | Archivist Odrenna |
 
 Trade and the bank on the north row, progression and the menu services on the south row (the Apothecary, 2026-10-23, in the south row's first free stall); the busiest stand next to the
 gap in the middle of the walk (x 31646-31650), where players come in from the south. Every tile is the base NPC's own
@@ -8339,7 +8340,7 @@ sparkle, neither blocks).
   server are harmless (`install_all.py` lists them, never deletes): `temple_npcs_config.lua` returns a table.
 - `tests/npc_booths_test.lua`: the config (16 stalls, two rows, each NPC once and an NPC of `data/npc`, nobody at the
   temple), the spots by town and temple, the retired halls, the login relocation (and an error caught), and
-  `ChaosNpcPlace.place` into the stall and next to another town's temple. Since 2026-10-23 one of the two empty stalls is the Apothecary's (15 NPCs, one stall free; "The Apothecary"); on 2026-10-28 Archivist Ysolde took the last one (16 NPCs, every stall filled).
+  `ChaosNpcPlace.place` into the stall and next to another town's temple. Since 2026-10-23 one of the two empty stalls is the Apothecary's (15 NPCs, one stall free; "The Apothecary"); on 2026-10-28 Archivist Odrenna took the last one (16 NPCs, every stall filled).
 
 Not seen in a client or on a live server: our NPCs in the stalls, the labels over them.
 
@@ -17065,14 +17066,27 @@ Choose your ascended class (0/1). The quest's stages and storages (7101000 block
 
 ## Line spell quests (`spellquest.lua`, `spellquest_core.lua`, `spellquest_config.lua`, `spellquest_tracker*.lua`)
 
-Phase 1 of the 21 line spells (design: three quests per class line at level 500 attack, 800 buff or utility, 1200 ultimate).
-Built so far: the quest machine, the hunt, the fragments, the trial hook, the reward, the tracker, the NPC. Not built yet: the
-spells themselves (ids, `spells_chaos.xml` rows, kits, rotation data, icons): until they exist `learnSpell` finds nothing, the
-reward is logged ("could not teach") and the login sync teaches the spell as soon as it is in the book.
+Phases 1 and 2 of the 21 line spells (design: three quests per class line at level 500 attack, 800 buff or utility, 1200 ultimate).
+Built so far: the quest machine, the hunt, the fragments, the trial hook, the reward, the tracker, the NPC and the seven level 500
+attack spells (below). Not built yet: the level 800 buffs and the level 1200 ultimates (their ids are reserved in
+`spell_id_pool_config.lua`): until a quest's spell exists `learnSpell` finds nothing, the reward is logged ("could not teach") and
+the login sync teaches the spell as soon as it is in the book.
 
+- **Level 500 spells (phase 2).** Keepfall 142, Moonshard Rain 149, Prismatic Rupture 152, Eclipse Edge 155, Soulflay Wave 158,
+  Thousand-Echo Palm 172, Pyre of Absolution 177: the first id of each line's triple in the pool (quest 2 and 3 take the next two of
+  the line). Rows in `attack_kit_config.lua` (`quest = 1`), `spells_chaos.xml` (`needlearn="1"`, level 500, cooldown 13 s, the base
+  class and both ascensions), `chaos_supports_config.lua` `kindOverride` (all area), `rotation_model.csv`, scripts in
+  `data/spells/chaos/<folder>/`. Numbers and the reference of each: server/data/spells/README.md "Line spell quests, level 500
+  attacks" and docs/CLASSES.md. Every class has 12 attack spells (`check_attack_counts.py`), the spell cap is 24
+  (`patch_spell_cap.py`). The cooldown ladder does not rank these (`rotation_sim.py` `QUEST_COOLDOWN`). Client: `spelldata.lua`
+  `quest = 1`, icon cells 349-355 (placeholder glyphs), the helper's Auto setup data.
+- **NPC install.** The NPC files (`data/npc/Archivist Odrenna.xml`, `scripts/archivist_odrenna.lua`; renamed from Archivist Ysolde on
+  2026-10-28, a Warden Ysolde already exists) reach the server with every other NPC of `server/data/npc`: the class hook
+  `tools/install_class_ascension.py` (install step `spells`) copies that whole folder, new or different files only. The NPC is placed
+  at startup in the hub stall (`npc_booths_config.lua`). Test: `tools/install_class_ascension_test.py`.
 - **Quests.** Quest n needs quest n - 1 done on the same line and the level (500 / 800 / 1200, checked at every step, so a
   level lowered by death stops it). Steps: 0 none, 1 hunt, 2 trial open, 3 done. Hunt 400 / 700 / 1000 kills and 20 / 30 / 40
-  fragments; trial s1 / s2 / s3. Talk to **Archivist Ysolde** (her stall is the last free one of the hub's south row,
+  fragments; trial s1 / s2 / s3. Talk to **Archivist Odrenna** (her stall is the last free one of the hub's south row,
   `npc_booths_config.lua`) to start; ask her again for the count and the trial. All numbers: `spellquest_config.lua`.
 - **Lines.** Warrior, Ranger, Mystic, Thief, Necromancer, Monk, Templar, by the base class of `Chaos.classes`; the base class and
   both ascended classes share the three spells (their names are in the config, ids belong to the spell registration).

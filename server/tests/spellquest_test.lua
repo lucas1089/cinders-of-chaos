@@ -41,7 +41,7 @@ for i, line in ipairs(cfg.lines) do
 end
 eq(Q.spellInfo("Keepfall").quest, 1); eq(Q.spellInfo("Heaven's Ninth Gate").quest, 3); eq(Q.spellInfo("Fireball"), nil)
 eq(cfg.lines[1].spells[1], "Keepfall"); eq(cfg.lines[2].spells[2], "Unblinking Gaze"); eq(cfg.lines[6].spells[3], "Heaven's Ninth Gate")
-eq(cfg.npc.name, "Archivist Ysolde")
+eq(cfg.npc.name, "Archivist Odrenna")
 
 -- ------------------------------------------------------------------ storage keys
 local seen = {}
@@ -299,7 +299,7 @@ eq(p:getStorageValue(k1.kills), before + 25); eq(p:getStorageValue(k1.fragments)
 -- the hunt ends
 p:setStorageValue(k1.kills, 399); p:setStorageValue(k1.fragments, 19)
 S.credit(p, hunt, rng(0.0))
-eq(p:getStorageValue(k1.step), 2, "the trial is open"); check(p.msgs[#p.msgs]:find("Archivist Ysolde"), p.msgs[#p.msgs])
+eq(p:getStorageValue(k1.step), 2, "the trial is open"); check(p.msgs[#p.msgs]:find("Archivist Odrenna"), p.msgs[#p.msgs])
 eq(S.credit(p, hunt, rng(0.0)), 0, "after the hunt nothing more is counted")
 
 -- the trial: the hook completes the quest once
@@ -333,8 +333,8 @@ local entered = 0
 ChaosTrials.enter = function(player, tier, opts) entered = entered + 1; return true end
 local p2 = newPlayer(JUGG, 600)
 p2:setStorageValue(k1.step, 2)
-local okE, why = S.enterTrial(p2); eq(okE, false); check(why:find("Archivist Ysolde"), why); eq(entered, 0, "no Archivist near")
-Game.getSpectators = function() return {{isNpc = function() return true end, getName = function() return "Archivist Ysolde" end}} end
+local okE, why = S.enterTrial(p2); eq(okE, false); check(why:find("Archivist Odrenna"), why); eq(entered, 0, "no Archivist near")
+Game.getSpectators = function() return {{isNpc = function() return true end, getName = function() return "Archivist Odrenna" end}} end
 okE = S.enterTrial(p2); eq(okE, true); eq(entered, 1); eq(p2:getStorageValue(k1.attempts), 1, "attempt counted")
 p2:setStorageValue(k1.step, 1)
 okE, why = S.enterTrial(p2); eq(okE, false); eq(entered, 1, "step 1: no trial")

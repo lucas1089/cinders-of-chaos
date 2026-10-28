@@ -1,4 +1,4 @@
--- Archivist Ysolde (server/README.md "Line spell quests"): starts the three spell quests of the character's line, tells how
+-- Archivist Odrenna (server/README.md "Line spell quests"): starts the three spell quests of the character's line, tells how
 -- the hunt stands and opens the question for the trial. This script runs in the NPC's own Lua state: it reads and writes the
 -- quest storages and opens the modal window; the answer (enter the trial) is handled and checked again by
 -- data/scripts/chaos/spellquest.lua. Rules and texts: spellquest_core.lua, settings: spellquest_config.lua.

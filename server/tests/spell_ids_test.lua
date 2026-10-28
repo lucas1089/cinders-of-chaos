@@ -118,6 +118,11 @@ for _, id in ipairs(RETIRED) do freed[id] = true end
 for _, id in ipairs(CAP_RETIRED) do freed[id] = true end
 local pool = dofile("data/scripts/chaos/spell_id_pool_config.lua")
 if #pool.ids ~= 21 then error("spell_ids_test: the pool holds " .. #pool.ids .. " ids, 21 expected") end
+-- the quest spells take their ids from the pool (phase 2: the level 500 attacks; 3 per line in the order of the pool)
+local questName = {}
+for _, line in ipairs(dofile("data/scripts/chaos/spellquest_config.lua").lines) do
+	for _, name in ipairs(line.spells) do questName[name] = true end
+end
 local inPool = {}
 for _, group in ipairs({{"ids", pool.ids}, {"spare", pool.spare}}) do
 	for _, id in ipairs(group[2]) do
@@ -127,9 +132,15 @@ for _, group in ipairs({{"ids", pool.ids}, {"spare", pool.spare}}) do
 		if inPool[id] then error("spell_ids_test: pool id " .. id .. " listed twice") end
 		inPool[id] = group[1]
 		if taken[id] then error("spell_ids_test: pool id " .. id .. " is used by " .. taken[id]) end
-		if seen[id] then error("spell_ids_test: pool id " .. id .. " is used by the Chaos spell " .. seen[id]) end
+		if seen[id] and not (group[1] == "ids" and questName[seen[id]]) then
+			error("spell_ids_test: pool id " .. id .. " is used by the Chaos spell " .. seen[id])
+		end
 		if not freed[id] then error("spell_ids_test: pool id " .. id .. " is not freed by a retiring tool") end
 	end
+end
+-- a quest spell uses an id of the pool, never another one
+for id, name in pairs(seen) do
+	if questName[name] and inPool[id] ~= "ids" then error("spell_ids_test: the quest spell " .. name .. " has id " .. id .. ", not a pool id") end
 end
 local free = 0
 for id = 1, 255 do
