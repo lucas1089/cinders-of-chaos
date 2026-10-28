@@ -237,6 +237,20 @@ end
 -- the last hits a tester took, for its death record (the first live run, 2026-10-27: 2998 deaths and nobody could say whether one
 -- hit or a pack did it). list: {{t, damage, by}}, newest last; the helper keeps one per tester.
 H.HIT_WINDOW = 5 -- seconds a death record looks back
+
+-- the size of one onHealthChange call. The engine passes damage as NEGATIVE numbers (healing positive; every other
+-- onHealthChange script of the repo takes math.abs), so max(0, value) read every hit as 0: the first death records of
+-- 2026-10-28 had hits > 0 but damage 0 and biggest 0. A healing part counts 0.
+function H.damageOf(primary, primaryType, secondary, secondaryType)
+	local function part(v, t)
+		v = tonumber(v) or 0
+		if t == COMBAT_HEALING or v ~= v then
+			return 0
+		end
+		return math.abs(v)
+	end
+	return part(primary, primaryType) + part(secondary, secondaryType)
+end
 H.HIT_KEEP = 40
 
 function H.pushHit(list, now, hit)
@@ -246,7 +260,7 @@ function H.pushHit(list, now, hit)
 	end
 end
 
--- d: {who, level, killer, maxHealth, online (seconds since the login)}; the record the console line carries: how many hits
+-- d: {who, level, killer, maxHealth, secsOnline (seconds since the login)}; the record the console line carries: how many hits
 -- in the last HIT_WINDOW seconds, their sum, the biggest one and the monster that dealt it, both as a percent of the maximum
 function H.deathRecord(list, now, d)
 	local hits, sum, big, bigBy = 0, 0, 0, nil
@@ -262,7 +276,19 @@ function H.deathRecord(list, now, d)
 	local maxH = math.max(1, tonumber(d.maxHealth) or 1)
 	return {kind = "death", who = d.who, level = d.level, killer = d.killer or "?", t = now, maxHealth = maxH,
 		hits = hits, damage = sum, damagePct = math.floor(100 * sum / maxH), biggest = big,
-		biggestPct = math.floor(100 * big / maxH), biggestBy = bigBy or "?", online = d.online}
+		biggestPct = math.floor(100 * big / maxH), biggestBy = bigBy or "?", secsOnline = d.secsOnline}
+end
+
+-- the first monster of a hunt spot above the tester: levels = {{name, level}} (hunting levels of the monsters round the spot).
+-- A tester set up before the safe-spawn fix keeps its old hunt spot, so "!tester hunt" checks the spot itself.
+function H.hotSpot(level, monsters)
+	local worst
+	for _, m in ipairs(monsters or {}) do
+		if (tonumber(m[2]) or 0) > (tonumber(level) or 0) and (not worst or m[2] > worst[2]) then
+			worst = m
+		end
+	end
+	return worst
 end
 
 function H.xpAnomaly(level, gained)

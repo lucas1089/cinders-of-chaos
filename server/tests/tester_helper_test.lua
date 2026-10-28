@@ -40,19 +40,22 @@ local hl = {}
 H.pushHit(hl, 100, {damage = 40, by = "wolf"})
 H.pushHit(hl, 103, {damage = 120, by = "bear"})
 H.pushHit(hl, 104, {damage = -5, by = "rat"})
-local rec = H.deathRecord(hl, 105, {who = "Tester Aaa", level = 30, killer = "bear", maxHealth = 400, online = 12})
+local rec = H.deathRecord(hl, 105, {who = "Tester Aaa", level = 30, killer = "bear", maxHealth = 400, secsOnline = 12})
 eq(rec.hits, 3, "death record: three hits")
 eq(rec.damage, 160, "their sum (a negative one counts 0)")
 eq(rec.damagePct, 40, "as a percent of the maximum")
 eq(rec.biggest, 120, "the biggest hit")
 eq(rec.biggestPct, 30, "its percent")
 eq(rec.biggestBy, "bear", "and who dealt it")
-eq(rec.online, 12, "seconds online")
+eq(rec.secsOnline, 12, "seconds online")
 eq(H.deathRecord(hl, 109, {who = "x", maxHealth = 400}).hits, 1, "hits older than 5 seconds are not in the record")
 eq(H.deathRecord(nil, 109, {who = "x", maxHealth = 0}).hits, 0, "no hits: an empty record")
 eq(H.deathRecord({}, 1, {who = "x"}).killer, "?", "no killer: ?")
 for i = 1, 100 do H.pushHit(hl, 200 + i, {damage = 1}) end
 check(#hl <= H.HIT_KEEP, "the list stays short")
+eq(H.hotSpot(40, {{"a", 30}, {"b", 90}, {"c", 500}})[1], "c", "hotSpot: the highest above the level")
+eq(H.hotSpot(40, {{"a", 30}, {"b", 40}}), nil, "hotSpot: nothing above")
+eq(H.hotSpot(40, nil), nil, "hotSpot: no monsters")
 eq(H.xpAnomaly(100, -1), "negative experience gain", "negative xp")
 eq(H.xpAnomaly(100, 300000000), "absurd experience gain", "absurd xp")
 eq(H.xpAnomaly(100, 50000), nil, "normal xp")
@@ -132,6 +135,12 @@ eq(H.directionTo(o, {x = 95, y = 101}), 3, "west")
 
 -- ------------------------------------------------------------------ a mocked engine
 MESSAGE_INFO_DESCR, COMBAT_HEALING, COMBAT_PHYSICALDAMAGE = 22, 128, 1
+-- the engine passes damage negative: the record must still see it
+eq(H.damageOf(-40, COMBAT_PHYSICALDAMAGE, -10, COMBAT_FIREDAMAGE), 50, "negative engine damage counts as its size")
+eq(H.damageOf(40, COMBAT_HEALING, 0, 0), 0, "healing is no damage")
+eq(H.damageOf(-40, COMBAT_PHYSICALDAMAGE, 15, COMBAT_HEALING), 40, "a healing second part is left out")
+eq(H.damageOf(nil, 0, 0 / 0, 0), 0, "nothing, nan: 0")
+COMBAT_FIREDAMAGE = COMBAT_FIREDAMAGE or 2
 CONST_SLOT_BACKPACK, CONST_SLOT_LEFT, CONST_SLOT_RIGHT = 3, 6, 5
 TILESTATE_BLOCKSOLID = 1
 TILESTATE_FLOORCHANGE = 2
@@ -323,6 +332,17 @@ eq(tester.log.teleports[#tester.log.teleports].x, 50, "town: to the temple")
 check(tester.log.msgs[#tester.log.msgs]:find('^%[tester%-helper%] town {"pos":') ~= nil, "town: the answer line")
 talks["!tester"].onSay(tester, "!tester", "hunt")
 eq(tester.pos.x, 100, "hunt: back to the hunt spot")
+-- a hunt spot with a monster above the tester (a spot from before the safe-spawn fix): the tester stays where it is
+local lvl = {wolf = 9999}
+local realMhl = Chaos.monsterHuntingLevel
+Chaos.monsterHuntingLevel = function(m) return lvl[m:getName()] or 0 end
+talks["!tester"].onSay(tester, "!tester", "town")
+talks["!tester"].onSay(tester, "!tester", "hunt")
+eq(tester.pos.x, 50, "hunt spot with a monster far above the level: no teleport")
+check(tester.log.msgs[#tester.log.msgs]:find('"err":"hunt spot too high: ', 1, true) ~= nil, "and the answer names it")
+Chaos.monsterHuntingLevel = realMhl
+talks["!tester"].onSay(tester, "!tester", "hunt")
+eq(tester.pos.x, 100, "a spot within the level: teleport")
 talks["!tester"].onSay(tester, "!tester", "fly")
 check(tester.log.msgs[#tester.log.msgs]:find("unknown command", 1, true) ~= nil, "an unknown command answers an error")
 talks["!tester"].onSay(tester, "!tester", "depot")
@@ -421,6 +441,15 @@ check(printed[#printed]:find('[tester-event] {', 1, true) ~= nil and printed[#pr
 	"the death event")
 check(printed[#printed]:find('"hits":1', 1, true) ~= nil and printed[#printed]:find('"biggestBy":"wolf"', 1, true) ~= nil,
 	"with the hits of the last seconds (the 130M one)")
+-- the engine's negative damage reaches the death record (the bug of the first live death lines: hits 2, damage 0)
+T.hits[tester.id] = nil
+events.TesterHelperHealth.onHealthChange(tester, wolf, -30, COMBAT_PHYSICALDAMAGE, -20, COMBAT_FIREDAMAGE, 0)
+events.TesterHelperHealth.onHealthChange(tester, wolf, -70, COMBAT_PHYSICALDAMAGE, 0, 0, 0)
+before = #printed
+events.TesterHelperDeath.onDeath(tester, nil, wolf, wolf)
+local line = printed[before + 1] or ""
+check(line:find('"hits":2', 1, true) and line:find('"damage":120', 1, true) and line:find('"biggest":70', 1, true)
+	and line:find('"biggestBy":"wolf"', 1, true), "death line of negative engine damage: " .. line)
 check(T.hits[tester.id] == nil, "and the tester's hits are forgotten")
 
 -- stopped: chaos-ctl removed the file, the helper does nothing more

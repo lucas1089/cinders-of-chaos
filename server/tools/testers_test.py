@@ -307,6 +307,12 @@ items = T.parse_shop(b'\x10' + shop + b'\x00', 'Ulla')
 eq([(i['id'], i['name'], i['buy'], i['sell']) for i in items], [(7876, 'health potion', 45, 0), (3000, 'rope', 0, 8)],
    'the NPC trade window')
 eq(T.parse_shop(shop, 'Other'), None, 'another NPC')
+# -1 as u32 is no price: not bought / not sold; flagged so the visit reports the unpatched server
+shop2 = (b'\x7a' + LT.string('Ulla') + struct.pack('<H', 2) + struct.pack('<HB', 2553, 0) + LT.string('pick')
+         + struct.pack('<III', 50, 50, 0xFFFFFFFF) + struct.pack('<HB', 3000, 0) + LT.string('rope') + struct.pack('<III', 100, 0xFFFFFFFF, 8))
+items2 = T.parse_shop(shop2, 'Ulla')
+eq([(i['buy'], i['sell'], i['unset']) for i in items2], [(50, 0, True), (0, 8, True)], '4294967295 is no price')
+eq([i['unset'] for i in items], [False, False], 'a clean window is not flagged')
 payload = json.dumps({'action': 'kill', 'data': {'k': 3, 'items': [{'id': 1, 'n': 1}]}})
 eq(T.extended_messages(b'\x32\xee' + LT.string(payload)), [(0xee, payload)], 'an extended opcode message')
 
@@ -484,8 +490,33 @@ sent_ = q2.conn.sent
 eq(sent_[0], b'\x96\x01' + LT.string('hi'), 'hi: a plain say')
 eq(sent_[1], b'\x96\x0c' + LT.string('trade'), 'trade: in the NPC channel (TALKTYPE_PRIVATE_PN)')
 eq(sent_[-1], b'\x96\x0c' + LT.string('bye'), 'bye: in the NPC channel')
+eq(q2.results.d['failures'], {}, 'a clean window: no failure')
 buys = [m for m in sent_ if m[:1] == b'\x7a']
 eq(buys, [b'\x7a' + struct.pack('<HBBBB', 7618, 0, 1, 0, 0)], 'the purchase: u16 id, sub type, u8 amount, two flags')
+# an unpatched server (prices -1 as 4294967295): no purchase of a sell-only item, no sale of a buy-only one, one failure
+q2b = T.TesterBot(7, dict(bot), A(), 1, T.Results(1), {'rotation': [], 'heal': None})
+q2b.conn, q2b.cid, q2b.alive = C(), 0x10000007, True
+q2b.helper['shop'] = {'npc': 'Loot Buyer'}
+
+
+async def _says_q2b(command, kind, wait=4.0):
+    return q2b.helper.get(kind)
+q2b.helper_says = _says_q2b
+naps = []
+
+
+async def _nap3(t):
+    naps.append(t)
+    if len(naps) == 2:
+        q2b.shop = T.parse_shop(b'\x7a' + LT.string('Loot Buyer') + struct.pack('<H', 1) + struct.pack('<HB', 3000, 0)
+                                + LT.string('rope') + struct.pack('<III', 100, 0xFFFFFFFF, 8), 'Loot Buyer')
+T.asyncio.sleep = _nap3
+try:
+    asyncio.run(q2b.do_shop({}))
+finally:
+    T.asyncio.sleep = T_sleep
+eq([m for m in q2b.conn.sent if m[:1] == b'\x7a'], [], 'no purchase of an item with no buy price')
+eq(q2b.results.d['failures'], {T.SHOP_UNSET: 1}, 'the unpatched window is one failure')
 # the Loot Buyer without anything to buy: his answer is the right one
 q3 = T.TesterBot(5, dict(bot), A(), 1, T.Results(1), {'rotation': [], 'heal': None})
 q3.conn, q3.cid, q3.alive = C(), 0x10000005, True
@@ -627,9 +658,13 @@ eq(LT.snap_to_spawn((107, 100, 7), IDX, reach=12, centre_levels=CL, max_level=15
    'level 15 passes the Terror Bird (20) and the Juggernaut (284): the quiet centre')
 eq(LT.snap_to_spawn((107, 100, 7), IDX, reach=12, centre_levels=CL, max_level=30), (104, 100, 7), 'level 30: the Terror Bird one')
 eq(LT.snap_to_spawn((107, 100, 7), IDX, reach=12), (108, 100, 7), 'no levels: the nearest, as before')
+eq(LT.snap_to_spawn((107, 100, 7), IDX, reach=12, centre_levels=CL, max_level=30, clear=6), (100, 100, 7),
+   'level 30, clear 6: the Terror Bird centre has the Juggernaut spawn 4 sqm away, so the Rat one (8 away from it)')
+eq(LT.snap_to_spawn((101, 100, 7), IDX, reach=3, centre_levels=CL, max_level=30, clear=3), (100, 100, 7), 'a quiet corner passes the clearance')
 HUNTS2 = [(1, 10, 100, 100, 7), (20, 30, 108, 100, 7)]
 pos = T.place_testers([15, 30], HUNTS2, [(50, 50, 7)], IDX, CL)
-ok(all(CL.get(p, 10 ** 9) <= lv for p, lv in zip(pos, [15, 30])), 'no tester on a spawn above its level: %r' % pos)
+ok(all(CL.get(p, 0) <= lv for p, lv in zip(pos, [15, 30])), 'no tester on a spawn above its level: %r' % pos)
+eq(pos[1], (50, 50, 7), 'level 30: the Terror Bird centre has the Juggernaut spawn 4 sqm off, so the temple')
 eq(T.place_testers([30], HUNTS2, [(50, 50, 7)], LT.spawn_index('<spawn centerx="108" centery="100" centerz="7" radius="3">'),
                    {(108, 100, 7): 284}), [(50, 50, 7)], 'no safe spawn within reach: the temple')
 eq(T.place_testers([30], [], [(50, 50, 7)])[0][2], 7, 'no hunting marks: round the temple')

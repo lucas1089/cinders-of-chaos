@@ -327,7 +327,9 @@ def build_report(run, log):
             v = sorted(e.get(key) or 0 for e in rec)
             return v[len(v) // 2]
         one = sum(1 for e in rec if (e.get('biggestPct') or 0) >= 100)
-        quick = sum(1 for e in rec if e.get('online') is not None and e['online'] <= 5)
+        def secs(e):  # 'online' of the first run was the seconds since the login, not a player count
+            return e.get('secsOnline', e.get('online'))
+        quick = sum(1 for e in rec if secs(e) is not None and secs(e) <= 5)
         L.append('  last 5 s before the death (%d records): median %d hits, %d%% of the maximum health in all, the biggest hit '
                  '%d%%; %d deaths by one hit of 100%% or more, %d within 5 s of the login' % (
                      len(rec), med('hits'), med('damagePct'), med('biggestPct'), one, quick))

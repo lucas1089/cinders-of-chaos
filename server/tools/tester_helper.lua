@@ -36,6 +36,7 @@ local GROUPS, STEP_MS, RANGE = 4, 500, 5
 local SUPPLIES = {{7618, 100}, {7620, 100}} -- stock health / mana potion
 local GOLD = 20000 -- into the bank: NPC purchases pay from it (Chaos.pay)
 local LOCKERS = {2589, 2590, 2591, 2592} -- depot_config.lua lockerIds
+local HUNT_CHECK = 7 -- tiles round the hunt spot checked for monsters above the tester's level
 local SEARCH = 30 -- tiles around the temple for an NPC
 local LOCKER_SEARCH = 45 -- tiles around the temple for a depot locker (its floor and the ones above and below)
 -- NPCs with a trade window, tried first by "shop": the NPC nearest the temple may only talk
@@ -209,6 +210,17 @@ function commands.hunt(player)
 	local p = huntPos(player)
 	if not p then
 		tell(player, "hunt", {err = "no hunt spot"})
+		return
+	end
+	local near = {}
+	for _, c in ipairs(Game.getSpectators(p, false, false, HUNT_CHECK, HUNT_CHECK, HUNT_CHECK, HUNT_CHECK) or {}) do
+		if c:isMonster() and not c:getMaster() then
+			near[#near + 1] = {c:getName(), Chaos.monsterHuntingLevel(c, 0)}
+		end
+	end
+	local hot = H.hotSpot(player:getLevel(), near)
+	if hot then -- stale spot from before the safe-spawn fix: stay in the temple, the report shows it
+		tell(player, "hunt", {err = "hunt spot too high: " .. hot[1] .. " level " .. hot[2]})
 		return
 	end
 	player:teleportTo(p)
@@ -580,7 +592,7 @@ logout:register()
 local health = CreatureEvent("TesterHelperHealth")
 function health.onHealthChange(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin)
 	if primaryType ~= COMBAT_HEALING and eligible(creature) then
-		local dmg = math.max(0, primaryDamage or 0) + math.max(0, secondaryDamage or 0)
+		local dmg = H.damageOf(primaryDamage, primaryType, secondaryDamage, secondaryType)
 		local hit = {kind = "taken", damage = dmg, health = creature:getHealth(), maxHealth = creature:getMaxHealth(),
 			level = creature:getLevel()}
 		local id = creature:getId()
@@ -608,7 +620,7 @@ function dealt.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 			p = p:getMaster()
 		end
 		if eligible(p) then
-			local dmg = math.max(0, primaryDamage or 0) + math.max(0, secondaryDamage or 0)
+			local dmg = H.damageOf(primaryDamage, primaryType, secondaryDamage, secondaryType)
 			local hit = {kind = "dealt", damage = dmg, level = p:getLevel()}
 			local rule = H.hitAnomaly(hit)
 			if rule then
@@ -630,7 +642,7 @@ function death.onDeath(creature, corpse, killer, mostDamageKiller)
 		local started = T.loginAt[id]
 		print("[tester-event] " .. H.json(H.deathRecord(T.hits[id], os.time(), {who = creature:getName(),
 			level = creature:getLevel(), killer = killer and killer:getName() or "?", maxHealth = creature:getMaxHealth(),
-			online = started and os.time() - started or nil})))
+			secsOnline = started and os.time() - started or nil})))
 		T.hits[id] = nil
 	end
 	return true

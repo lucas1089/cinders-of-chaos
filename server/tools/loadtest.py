@@ -815,11 +815,22 @@ def spawn_index(spawn_text, cell=16):
     return out
 
 
-def snap_to_spawn(pos, index, reach=12, cell=16, centre_levels=None, max_level=None):
+def snap_to_spawn(pos, index, reach=12, cell=16, centre_levels=None, max_level=None, clear=0):
     """the spawn centre nearest to pos on its floor within reach sqm (a tile a monster stands on, so not a wall: a
     character placed on a wall goes to its temple), else pos. With centre_levels (spawn_levels) and max_level: only a
-    centre whose monsters all have a hunting level of at most max_level (an unknown centre never)"""
+    centre whose monsters all have a hunting level of at most max_level (an unknown centre never). With `clear` sqm: the
+    spawn centres within `clear` of the candidate on its floor must be at or under max_level too (monsters of the next spawn
+    walk over and aggro: the first live run of 2026-10-28 died to pool levels 89 to 509 at level 30-63)"""
     x, y, z = pos
+
+    def calm(p):
+        for gx in range((p[0] - clear) // cell, (p[0] + clear) // cell + 1):
+            for gy in range((p[1] - clear) // cell, (p[1] + clear) // cell + 1):
+                for o in index.get((gx, gy, z), ()):
+                    if max(abs(o[0] - p[0]), abs(o[1] - p[1])) <= clear and centre_levels.get(o, 10 ** 9) > max_level:
+                        return False
+        return True
+
     best = None
     for cx in range((x - reach) // cell, (x + reach) // cell + 1):
         for cy in range((y - reach) // cell, (y + reach) // cell + 1):
@@ -828,6 +839,8 @@ def snap_to_spawn(pos, index, reach=12, cell=16, centre_levels=None, max_level=N
                 if d > reach or (best is not None and (d, p) >= best):
                     continue
                 if centre_levels is not None and max_level is not None and centre_levels.get(p, 10 ** 9) > max_level:
+                    continue
+                if clear and centre_levels is not None and max_level is not None and not calm(p):
                     continue
                 best = (d, p)
     return best[1] if best else pos

@@ -7607,6 +7607,14 @@ full health" anomalies. Causes found:
 - The anomaly was the bot's own: health starts at 100 % in the bot and a tester that died one second after the login never saw
   an update. The server side rule (helper `hitAnomaly`, exact numbers) fired 0 times: no single hit reached the maximum health. A
   bot-side anomaly now needs an update seen less than 0.5 s before; the helper's death line carries the last hits.
+- Second live run (2026-10-28, after O285): every death line had `damage` 0 and `biggest` 0 with `hits` > 0. The engine passes
+  `onHealthChange` damage as negative numbers and the helper summed `max(0, value)`; `H.damageOf` (`tester_helper_core.lua`) takes the
+  size and leaves healing out, which also lets the "hit taken / dealt far above the level" rules fire at last. `online` in a death
+  line is the seconds since the login, not a player count: now `secsOnline` (the report reads both). The killers (pool level 16 to
+  509, tester level 30-63) stood next to testers because `snap_to_spawn` checked only the chosen spawn centre: now every spawn
+  centre within `SNAP_CLEAR` (14 sqm) must be at or under the level too, and `!tester hunt` stays in the temple (answer
+  "hunt spot too high") when a monster within 7 tiles of the hunt spot has a hunting level above the tester's (`H.hotSpot`), as a
+  tester set up before the fix keeps its old spot. After a fix run `chaos-ctl.sh testers cleanup` and `setup` again.
 - Keystone test: 1240 nodes "not tested: the bot left the game" and the FAILs "no answer to planApply / statTotals" were
   bots that died in the middle. The scenario now goes on after the login and drops the node it was cut off in.
   A hunt mark's band is the pool level, which is the hunting level since O285.
@@ -7685,6 +7693,19 @@ systems that never answered, with no refusal and no log error, on one line "no a
   Now `trade` and `bye` go there (`NPC_CHANNEL`; the coverage NPC dialogs too, step `npc`). Purchase and sale packets used a
   16-bit amount where 10.98 reads one byte. The Loot Buyer lists only what a tester carries; with nothing he buys he says
   "You carry nothing I buy" (counted, expected).
+- *Lua errors "attempt to sell a non-sellable item" (64) and "attempt to buy a non-buyable item" (4), 2026-10-28, 48 bots.*
+  A real server bug, players could hit it. The stock ShopModule marks "not sold" and "not bought" with a price of -1
+  (`addBuyableItem` leaves `sell = -1`, the Loot Buyer's list has `buy = -1`). The engine writes a price as
+  `std::max<uint32_t>(price, 0)` (`ProtocolGame::AddShopItem`): the -1 goes out as 4294967295, and `sendSaleItemList` skips
+  only a price of 0. So every window offered every item in both tabs, and a carried buy-only item (a pick at the Material
+  Broker, the Wandering Merchant's orbs) was offered for sale; `callbackOnBuy` / `callbackOnSell` then raise the error (the
+  buy one is worded "ShopModule.onSell" in the base). The bot read 4294967295 as a price, so it bought at the Loot Buyer and
+  sold at the Material Broker and the Merchant every visit. Not an id clash: the shop items of the traders have unique
+  client ids in `items.otb` (checked against the reverse map, first server id wins), and the sale of an item the bot does
+  not carry reaches the same check. Fixed in the data: `tools/patch_shop_prices.py` (install step `shopprices`, test
+  `patch_shop_prices_test.py`) makes `ShopModule.requestTrade` send 0 for a negative price (a copy; the shop list and
+  `getShopItem` keep -1). The bot treats 4294967295 as no price, never trades on it and counts one failure
+  `shop: the trade window prices an item ...` per visit while the server is not patched.
 - *Connection closed without a message (65).* The engine logs a player out without a message 60 s after its last ping
   answer (`Player::sendPing`, see src-patch 0034). The bot pinged in its behaviour loop, which stops while the keystone
   scenario waits for minutes. The ping now runs in the always-on guard task as well.
