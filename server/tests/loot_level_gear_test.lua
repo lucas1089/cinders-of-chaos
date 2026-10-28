@@ -93,6 +93,17 @@ L.setRandom(function(a) return a end)
 ok(L.levelGear(monster(false), owner("Warrior"), "normal", {huntLevel = 2000, itemFind = 1, pace = 1}) == nil, "switch off: nothing")
 G.PAIR28 = true
 
+-- class weapons of a scaled hunt (L.classWeapons, step 1e): the killer's class picks the families
+L.setRandom(function(a) return a end)
+ok(#L.classWeapons(monster(false), owner("Monk"), "normal", {huntLevel = 1000, itemFind = 1, pace = 1}) == 3,
+	"a Monk at 1000 rolls fist, one- and two-handed melee")
+ok(#L.classWeapons(monster(false), owner("Berserker"), "normal", {huntLevel = 1000, itemFind = 1, pace = 1}) == 1,
+	"a Berserker at 1000 rolls two-handed melee")
+ok(#L.classWeapons(monster(false), owner("Monk"), "normal", {huntLevel = 400, itemFind = 1, pace = 1}) == 0,
+	"a base hunt rolls none here")
+L.setRandom(function(a, b) return b end)
+ok(#L.classWeapons(monster(false), owner("Monk"), "normal", {huntLevel = 1000, itemFind = 1, pace = 1}) == 0, "a miss rolls none")
+
 if fails > 0 then
 	error(fails .. " of " .. checks .. " checks failed")
 end

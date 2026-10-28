@@ -93,6 +93,20 @@ local found = false
 for _, t in ipairs(p) do if t:find("cheaper per charge", 1, true) then found = true end end
 check(found, "a tier discount over 40% is caught")
 
+-- the Monk's fist weapon (2026-10-28): valued as fist fighting, for the Monk line only
+do
+	local fist = {{kind = "item", name = "Exercise Fist Weapon (500)", cost = 25},
+		{kind = "item", name = "Lasting Exercise Fist Weapon (14400)", cost = 450}}
+	check(#M.exerciseProblems(env, fist, 8.33, 50) == 0, "the fist weapon prices pass")
+	local rows = M.exerciseRows(env, fist)
+	check(#rows == 2 and rows[1].kind == "fist", "the fist offers are read as the fist kind")
+	local only = true
+	for _, c in ipairs(rows[1].cells) do
+		if c.voc.line ~= "monk" or c.skill ~= "fist" then only = false end
+	end
+	check(only and #rows[1].cells > 0, "the fist weapon is valued for the Monk line, as fist fighting")
+end
+
 if failures > 0 then
 	print(string.format("skill_model_test: %d of %d checks FAILED", failures, checks))
 	os.exit(1)

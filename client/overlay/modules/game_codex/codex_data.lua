@@ -145,14 +145,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "3 of 165", "1.8%"},
+								{"Weapon", "3 of 177", "1.7%"},
 								{"Shield", "3 of 128", "2.3%"},
 								{"Helmet", "3 of 139", "2.2%"},
 								{"Armour", "3 of 119", "2.5%"},
 								{"Legs", "3 of 101", "3%"},
 								{"Boots", "3 of 88", "3.4%"},
-								{"Jewel", "3 of 166", "1.8%"},
-								{"Other", "3 of 121", "2.5%"}
+								{"Jewel", "3 of 182", "1.6%"},
+								{"Other", "3 of 137", "2.2%"}
 							}
 						},
 						{
@@ -200,14 +200,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "2 of 165", "1.2%"},
+								{"Weapon", "2 of 177", "1.1%"},
 								{"Shield", "2 of 128", "1.6%"},
 								{"Helmet", "2 of 139", "1.4%"},
 								{"Armour", "2 of 119", "1.7%"},
 								{"Legs", "2 of 101", "2%"},
 								{"Boots", "2 of 88", "2.3%"},
-								{"Jewel", "2 of 166", "1.2%"},
-								{"Other", "2 of 121", "1.7%"}
+								{"Jewel", "2 of 182", "1.1%"},
+								{"Other", "2 of 137", "1.5%"}
 							}
 						},
 						{
@@ -259,14 +259,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "1 of 165", "0.6%"},
+								{"Weapon", "1 of 177", "0.6%"},
 								{"Shield", "1 of 128", "0.8%"},
 								{"Helmet", "1 of 139", "0.7%"},
 								{"Armour", "1 of 119", "0.8%"},
 								{"Legs", "1 of 101", "1%"},
 								{"Boots", "1 of 88", "1.1%"},
-								{"Jewel", "1 of 166", "0.6%"},
-								{"Other", "1 of 121", "0.8%"}
+								{"Jewel", "1 of 182", "0.5%"},
+								{"Other", "1 of 137", "0.7%"}
 							}
 						},
 						{
@@ -313,11 +313,57 @@ CodexData = {
 							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {{"Weapon", "8 of 165", "4.8%"}}
+							rows = {{"Weapon", "20 of 177", "11.3%"}}
 						},
 						{
 							h = "Rules",
-							p = {"A suffix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most.", "Local to the weapon: it shortens that weapon's attack interval. With topaz gems at most 20% on one weapon."}
+							p = {"A suffix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most.", "Local to the weapon: it shortens that weapon's attack interval. With topaz gems at most 15% on one weapon."}
+						},
+						{ref = "orbs:suffix"}
+					}
+				},
+				{
+					id = "mod:chaos_mod_gearspeed",
+					name = "Attack Speed",
+					color = "#ff70c0",
+					sub = "Suffix, Jewel, Other. +1% (T1) to +5-7% (T8)",
+					group = "chaos",
+					side = "suffix",
+					f = {group = "chaos", side = "suffix", kind = {"jewel", "other"}},
+					tiers = {{1, 1}, {1, 2}, {2, 2}, {2, 3}, {3, 4}, {3, 5}, {4, 6}, {5, 7}},
+					tv = {"+1%", "+1-2%", "+2%", "+2-3%", "+3-4%", "+3-5%", "+4-6%", "+5-7%"},
+					sections = {
+						{
+							h = "Overview",
+							p = {"Chaos modifier, suffix.", "On an item: Attack Speed +5-7% (T8).", "Cap: at most 10% from all equipped items together."}
+						},
+						{
+							h = "Tiers",
+							cols = {"Tier", "Item level", "Value", "Tier weight"},
+							w = {14, 22, 40, 24},
+							rows = {
+								{"T1", "1+", "+1%", "100"},
+								{"T2", "15+", "+1-2%", "90"},
+								{"T3", "30+", "+2%", "80"},
+								{"T4", "50+", "+2-3%", "65"},
+								{"T5", "70+", "+3-4%", "50"},
+								{"T6", "95+", "+3-5%", "35"},
+								{"T7", "120+", "+4-6%", "22"},
+								{"T8", "140+", "+5-7%", "12"}
+							},
+							tiers = true
+						},
+						{h = "Rolls on", p = {"Jewellery (amulets, rings) and Other gear (gloves, belts...)."}},
+						{
+							h = "Chance per roll on a fresh item",
+							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
+							cols = {"Kind", "Weight", "Chance"},
+							w = {30, 40, 30},
+							rows = {{"Jewel", "16 of 182", "8.8%"}, {"Other", "16 of 137", "11.7%"}}
+						},
+						{
+							h = "Rules",
+							p = {"A suffix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most."}
 						},
 						{ref = "orbs:suffix"}
 					}
@@ -455,8 +501,8 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "4 of 165", "2.4%"},
-								{"Other", "4 of 121", "3.3%"},
+								{"Weapon", "4 of 177", "2.3%"},
+								{"Other", "4 of 137", "2.9%"},
 								{"Quiver", "4 of 85", "4.7%"}
 							}
 						},
@@ -504,7 +550,7 @@ CodexData = {
 							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {{"Weapon", "4 of 165", "2.4%"}, {"Other", "4 of 121", "3.3%"}}
+							rows = {{"Weapon", "4 of 177", "2.3%"}, {"Other", "4 of 137", "2.9%"}}
 						},
 						{
 							h = "Rules",
@@ -550,7 +596,7 @@ CodexData = {
 							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {{"Weapon", "4 of 165", "2.4%"}, {"Other", "4 of 121", "3.3%"}}
+							rows = {{"Weapon", "4 of 177", "2.3%"}, {"Other", "4 of 137", "2.9%"}}
 						},
 						{
 							h = "Rules",
@@ -600,8 +646,8 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "4 of 165", "2.4%"},
-								{"Other", "4 of 121", "3.3%"},
+								{"Weapon", "4 of 177", "2.3%"},
+								{"Other", "4 of 137", "2.9%"},
 								{"Quiver", "4 of 85", "4.7%"}
 							}
 						},
@@ -649,7 +695,7 @@ CodexData = {
 							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {{"Weapon", "4 of 165", "2.4%"}, {"Other", "4 of 121", "3.3%"}}
+							rows = {{"Weapon", "4 of 177", "2.3%"}, {"Other", "4 of 137", "2.9%"}}
 						},
 						{
 							h = "Rules",
@@ -700,8 +746,8 @@ CodexData = {
 							w = {30, 40, 30},
 							rows = {
 								{"Helmet", "4 of 139", "2.9%"},
-								{"Jewel", "4 of 166", "2.4%"},
-								{"Other", "4 of 121", "3.3%"}
+								{"Jewel", "4 of 182", "2.2%"},
+								{"Other", "4 of 137", "2.9%"}
 							}
 						},
 						{
@@ -753,14 +799,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "1 of 165", "0.6%"},
+								{"Weapon", "1 of 177", "0.6%"},
 								{"Shield", "1 of 128", "0.8%"},
 								{"Helmet", "1 of 139", "0.7%"},
 								{"Armour", "1 of 119", "0.8%"},
 								{"Legs", "1 of 101", "1%"},
 								{"Boots", "1 of 88", "1.1%"},
-								{"Jewel", "1 of 166", "0.6%"},
-								{"Other", "1 of 121", "0.8%"}
+								{"Jewel", "1 of 182", "0.5%"},
+								{"Other", "1 of 137", "0.7%"}
 							}
 						},
 						{
@@ -812,14 +858,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "8 of 165", "4.8%"},
+								{"Weapon", "8 of 177", "4.5%"},
 								{"Shield", "8 of 128", "6.3%"},
 								{"Helmet", "8 of 139", "5.8%"},
 								{"Armour", "8 of 119", "6.7%"},
 								{"Legs", "8 of 101", "7.9%"},
 								{"Boots", "8 of 88", "9.1%"},
-								{"Jewel", "8 of 166", "4.8%"},
-								{"Other", "8 of 121", "6.6%"}
+								{"Jewel", "8 of 182", "4.4%"},
+								{"Other", "8 of 137", "5.8%"}
 							}
 						},
 						{
@@ -967,9 +1013,9 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "4 of 165", "2.4%"},
-								{"Jewel", "4 of 166", "2.4%"},
-								{"Other", "4 of 121", "3.3%"}
+								{"Weapon", "4 of 177", "2.3%"},
+								{"Jewel", "4 of 182", "2.2%"},
+								{"Other", "4 of 137", "2.9%"}
 							}
 						},
 						{
@@ -1020,8 +1066,8 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "6 of 165", "3.6%"},
-								{"Jewel", "6 of 166", "3.6%"},
+								{"Weapon", "6 of 177", "3.4%"},
+								{"Jewel", "6 of 182", "3.3%"},
 								{"Quiver", "6 of 85", "7.1%"}
 							}
 						},
@@ -1074,14 +1120,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "3 of 165", "1.8%"},
+								{"Weapon", "3 of 177", "1.7%"},
 								{"Shield", "3 of 128", "2.3%"},
 								{"Helmet", "3 of 139", "2.2%"},
 								{"Armour", "3 of 119", "2.5%"},
 								{"Legs", "3 of 101", "3%"},
 								{"Boots", "3 of 88", "3.4%"},
-								{"Jewel", "3 of 166", "1.8%"},
-								{"Other", "3 of 121", "2.5%"}
+								{"Jewel", "3 of 182", "1.6%"},
+								{"Other", "3 of 137", "2.2%"}
 							}
 						},
 						{
@@ -1129,14 +1175,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "2 of 165", "1.2%"},
+								{"Weapon", "2 of 177", "1.1%"},
 								{"Shield", "2 of 128", "1.6%"},
 								{"Helmet", "2 of 139", "1.4%"},
 								{"Armour", "2 of 119", "1.7%"},
 								{"Legs", "2 of 101", "2%"},
 								{"Boots", "2 of 88", "2.3%"},
-								{"Jewel", "2 of 166", "1.2%"},
-								{"Other", "2 of 121", "1.7%"}
+								{"Jewel", "2 of 182", "1.1%"},
+								{"Other", "2 of 137", "1.5%"}
 							}
 						},
 						{
@@ -1237,7 +1283,7 @@ CodexData = {
 								{"Armour", "5 of 119", "4.2%"},
 								{"Legs", "5 of 101", "5%"},
 								{"Boots", "5 of 88", "5.7%"},
-								{"Other", "5 of 121", "4.1%"}
+								{"Other", "5 of 137", "3.6%"}
 							}
 						},
 						{
@@ -1289,14 +1335,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "3 of 165", "1.8%"},
+								{"Weapon", "3 of 177", "1.7%"},
 								{"Shield", "3 of 128", "2.3%"},
 								{"Helmet", "3 of 139", "2.2%"},
 								{"Armour", "3 of 119", "2.5%"},
 								{"Legs", "3 of 101", "3%"},
 								{"Boots", "3 of 88", "3.4%"},
-								{"Jewel", "3 of 166", "1.8%"},
-								{"Other", "3 of 121", "2.5%"}
+								{"Jewel", "3 of 182", "1.6%"},
+								{"Other", "3 of 137", "2.2%"}
 							}
 						},
 						{
@@ -1348,14 +1394,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "3 of 165", "1.8%"},
+								{"Weapon", "3 of 177", "1.7%"},
 								{"Shield", "3 of 128", "2.3%"},
 								{"Helmet", "3 of 139", "2.2%"},
 								{"Armour", "3 of 119", "2.5%"},
 								{"Legs", "3 of 101", "3%"},
 								{"Boots", "3 of 88", "3.4%"},
-								{"Jewel", "3 of 166", "1.8%"},
-								{"Other", "3 of 121", "2.5%"}
+								{"Jewel", "3 of 182", "1.6%"},
+								{"Other", "3 of 137", "2.2%"}
 							}
 						},
 						{
@@ -1449,14 +1495,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "2 of 165", "1.2%"},
+								{"Weapon", "2 of 177", "1.1%"},
 								{"Shield", "2 of 128", "1.6%"},
 								{"Helmet", "2 of 139", "1.4%"},
 								{"Armour", "2 of 119", "1.7%"},
 								{"Legs", "2 of 101", "2%"},
 								{"Boots", "2 of 88", "2.3%"},
-								{"Jewel", "2 of 166", "1.2%"},
-								{"Other", "2 of 121", "1.7%"}
+								{"Jewel", "2 of 182", "1.1%"},
+								{"Other", "2 of 137", "1.5%"}
 							}
 						},
 						{
@@ -1507,8 +1553,8 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "4 of 165", "2.4%"},
-								{"Jewel", "4 of 166", "2.4%"},
+								{"Weapon", "4 of 177", "2.3%"},
+								{"Jewel", "4 of 182", "2.2%"},
 								{"Quiver", "4 of 85", "4.7%"}
 							}
 						},
@@ -1561,14 +1607,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "3 of 165", "1.8%"},
+								{"Weapon", "3 of 177", "1.7%"},
 								{"Shield", "3 of 128", "2.3%"},
 								{"Helmet", "3 of 139", "2.2%"},
 								{"Armour", "3 of 119", "2.5%"},
 								{"Legs", "3 of 101", "3%"},
 								{"Boots", "3 of 88", "3.4%"},
-								{"Jewel", "3 of 166", "1.8%"},
-								{"Other", "3 of 121", "2.5%"}
+								{"Jewel", "3 of 182", "1.6%"},
+								{"Other", "3 of 137", "2.2%"}
 							}
 						},
 						{
@@ -1662,14 +1708,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "2 of 165", "1.2%"},
+								{"Weapon", "2 of 177", "1.1%"},
 								{"Shield", "2 of 128", "1.6%"},
 								{"Helmet", "2 of 139", "1.4%"},
 								{"Armour", "2 of 119", "1.7%"},
 								{"Legs", "2 of 101", "2%"},
 								{"Boots", "2 of 88", "2.3%"},
-								{"Jewel", "2 of 166", "1.2%"},
-								{"Other", "2 of 121", "1.7%"}
+								{"Jewel", "2 of 182", "1.1%"},
+								{"Other", "2 of 137", "1.5%"}
 							}
 						},
 						{
@@ -1716,7 +1762,7 @@ CodexData = {
 							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {{"Weapon", "3 of 165", "1.8%"}}
+							rows = {{"Weapon", "3 of 177", "1.7%"}}
 						},
 						{
 							h = "Rules",
@@ -1762,7 +1808,7 @@ CodexData = {
 							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {{"Helmet", "4 of 139", "2.9%"}, {"Jewel", "4 of 166", "2.4%"}}
+							rows = {{"Helmet", "4 of 139", "2.9%"}, {"Jewel", "4 of 182", "2.2%"}}
 						},
 						{
 							h = "Rules",
@@ -1858,7 +1904,7 @@ CodexData = {
 								{"Shield", "4 of 128", "3.1%"},
 								{"Helmet", "4 of 139", "2.9%"},
 								{"Armour", "4 of 119", "3.4%"},
-								{"Jewel", "4 of 166", "2.4%"}
+								{"Jewel", "4 of 182", "2.2%"}
 							}
 						},
 						{
@@ -1910,14 +1956,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "3 of 165", "1.8%"},
+								{"Weapon", "3 of 177", "1.7%"},
 								{"Shield", "3 of 128", "2.3%"},
 								{"Helmet", "3 of 139", "2.2%"},
 								{"Armour", "3 of 119", "2.5%"},
 								{"Legs", "3 of 101", "3%"},
 								{"Boots", "3 of 88", "3.4%"},
-								{"Jewel", "3 of 166", "1.8%"},
-								{"Other", "3 of 121", "2.5%"}
+								{"Jewel", "3 of 182", "1.6%"},
+								{"Other", "3 of 137", "2.2%"}
 							}
 						},
 						{
@@ -2011,14 +2057,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "2 of 165", "1.2%"},
+								{"Weapon", "2 of 177", "1.1%"},
 								{"Shield", "2 of 128", "1.6%"},
 								{"Helmet", "2 of 139", "1.4%"},
 								{"Armour", "2 of 119", "1.7%"},
 								{"Legs", "2 of 101", "2%"},
 								{"Boots", "2 of 88", "2.3%"},
-								{"Jewel", "2 of 166", "1.2%"},
-								{"Other", "2 of 121", "1.7%"}
+								{"Jewel", "2 of 182", "1.1%"},
+								{"Other", "2 of 137", "1.5%"}
 							}
 						},
 						{
@@ -2070,14 +2116,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "1 of 165", "0.6%"},
+								{"Weapon", "1 of 177", "0.6%"},
 								{"Shield", "1 of 128", "0.8%"},
 								{"Helmet", "1 of 139", "0.7%"},
 								{"Armour", "1 of 119", "0.8%"},
 								{"Legs", "1 of 101", "1%"},
 								{"Boots", "1 of 88", "1.1%"},
-								{"Jewel", "1 of 166", "0.6%"},
-								{"Other", "1 of 121", "0.8%"}
+								{"Jewel", "1 of 182", "0.5%"},
+								{"Other", "1 of 137", "0.7%"}
 							}
 						},
 						{
@@ -2126,14 +2172,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "3 of 165", "1.8%"},
+								{"Weapon", "3 of 177", "1.7%"},
 								{"Shield", "3 of 128", "2.3%"},
 								{"Helmet", "3 of 139", "2.2%"},
 								{"Armour", "3 of 119", "2.5%"},
 								{"Legs", "3 of 101", "3%"},
 								{"Boots", "3 of 88", "3.4%"},
-								{"Jewel", "3 of 166", "1.8%"},
-								{"Other", "3 of 121", "2.5%"}
+								{"Jewel", "3 of 182", "1.6%"},
+								{"Other", "3 of 137", "2.2%"}
 							}
 						},
 						{
@@ -2186,8 +2232,8 @@ CodexData = {
 							rows = {
 								{"Helmet", "5 of 139", "3.6%"},
 								{"Legs", "5 of 101", "5%"},
-								{"Jewel", "5 of 166", "3%"},
-								{"Other", "5 of 121", "4.1%"}
+								{"Jewel", "5 of 182", "2.7%"},
+								{"Other", "5 of 137", "3.6%"}
 							}
 						},
 						{
@@ -2235,9 +2281,9 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "5 of 165", "3%"},
+								{"Weapon", "5 of 177", "2.8%"},
 								{"Shield", "5 of 128", "3.9%"},
-								{"Jewel", "5 of 166", "3%"}
+								{"Jewel", "5 of 182", "2.7%"}
 							}
 						},
 						{
@@ -2292,7 +2338,7 @@ CodexData = {
 								{"Helmet", "6 of 139", "4.3%"},
 								{"Armour", "6 of 119", "5%"},
 								{"Legs", "6 of 101", "5.9%"},
-								{"Jewel", "6 of 166", "3.6%"}
+								{"Jewel", "6 of 182", "3.3%"}
 							}
 						},
 						{
@@ -2343,9 +2389,9 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "5 of 165", "3%"},
-								{"Jewel", "5 of 166", "3%"},
-								{"Other", "5 of 121", "4.1%"},
+								{"Weapon", "5 of 177", "2.8%"},
+								{"Jewel", "5 of 182", "2.7%"},
+								{"Other", "5 of 137", "3.6%"},
 								{"Quiver", "5 of 85", "5.9%"}
 							}
 						},
@@ -2398,14 +2444,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "1 of 165", "0.6%"},
+								{"Weapon", "1 of 177", "0.6%"},
 								{"Shield", "1 of 128", "0.8%"},
 								{"Helmet", "1 of 139", "0.7%"},
 								{"Armour", "1 of 119", "0.8%"},
 								{"Legs", "1 of 101", "1%"},
 								{"Boots", "1 of 88", "1.1%"},
-								{"Jewel", "1 of 166", "0.6%"},
-								{"Other", "1 of 121", "0.8%"}
+								{"Jewel", "1 of 182", "0.5%"},
+								{"Other", "1 of 137", "0.7%"}
 							}
 						},
 						{
@@ -2457,14 +2503,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "3 of 165", "1.8%"},
+								{"Weapon", "3 of 177", "1.7%"},
 								{"Shield", "3 of 128", "2.3%"},
 								{"Helmet", "3 of 139", "2.2%"},
 								{"Armour", "3 of 119", "2.5%"},
 								{"Legs", "3 of 101", "3%"},
 								{"Boots", "3 of 88", "3.4%"},
-								{"Jewel", "3 of 166", "1.8%"},
-								{"Other", "3 of 121", "2.5%"}
+								{"Jewel", "3 of 182", "1.6%"},
+								{"Other", "3 of 137", "2.2%"}
 							}
 						},
 						{
@@ -2512,14 +2558,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "2 of 165", "1.2%"},
+								{"Weapon", "2 of 177", "1.1%"},
 								{"Shield", "2 of 128", "1.6%"},
 								{"Helmet", "2 of 139", "1.4%"},
 								{"Armour", "2 of 119", "1.7%"},
 								{"Legs", "2 of 101", "2%"},
 								{"Boots", "2 of 88", "2.3%"},
-								{"Jewel", "2 of 166", "1.2%"},
-								{"Other", "2 of 121", "1.7%"}
+								{"Jewel", "2 of 182", "1.1%"},
+								{"Other", "2 of 137", "1.5%"}
 							}
 						},
 						{
@@ -2571,14 +2617,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "3 of 165", "1.8%"},
+								{"Weapon", "3 of 177", "1.7%"},
 								{"Shield", "3 of 128", "2.3%"},
 								{"Helmet", "3 of 139", "2.2%"},
 								{"Armour", "3 of 119", "2.5%"},
 								{"Legs", "3 of 101", "3%"},
 								{"Boots", "3 of 88", "3.4%"},
-								{"Jewel", "3 of 166", "1.8%"},
-								{"Other", "3 of 121", "2.5%"}
+								{"Jewel", "3 of 182", "1.6%"},
+								{"Other", "3 of 137", "2.2%"}
 							}
 						},
 						{
@@ -2672,14 +2718,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "2 of 165", "1.2%"},
+								{"Weapon", "2 of 177", "1.1%"},
 								{"Shield", "2 of 128", "1.6%"},
 								{"Helmet", "2 of 139", "1.4%"},
 								{"Armour", "2 of 119", "1.7%"},
 								{"Legs", "2 of 101", "2%"},
 								{"Boots", "2 of 88", "2.3%"},
-								{"Jewel", "2 of 166", "1.2%"},
-								{"Other", "2 of 121", "1.7%"}
+								{"Jewel", "2 of 182", "1.1%"},
+								{"Other", "2 of 137", "1.5%"}
 							}
 						},
 						{
@@ -2726,7 +2772,7 @@ CodexData = {
 							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {{"Helmet", "4 of 139", "2.9%"}, {"Jewel", "4 of 166", "2.4%"}}
+							rows = {{"Helmet", "4 of 139", "2.9%"}, {"Jewel", "4 of 182", "2.2%"}}
 						},
 						{
 							h = "Rules",
@@ -2777,14 +2823,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "1 of 165", "0.6%"},
+								{"Weapon", "1 of 177", "0.6%"},
 								{"Shield", "1 of 128", "0.8%"},
 								{"Helmet", "1 of 139", "0.7%"},
 								{"Armour", "1 of 119", "0.8%"},
 								{"Legs", "1 of 101", "1%"},
 								{"Boots", "1 of 88", "1.1%"},
-								{"Jewel", "1 of 166", "0.6%"},
-								{"Other", "1 of 121", "0.8%"}
+								{"Jewel", "1 of 182", "0.5%"},
+								{"Other", "1 of 137", "0.7%"}
 							}
 						},
 						{
@@ -2836,14 +2882,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "6 of 165", "3.6%"},
+								{"Weapon", "6 of 177", "3.4%"},
 								{"Shield", "6 of 128", "4.7%"},
 								{"Helmet", "6 of 139", "4.3%"},
 								{"Armour", "6 of 119", "5%"},
 								{"Legs", "6 of 101", "5.9%"},
 								{"Boots", "6 of 88", "6.8%"},
-								{"Jewel", "6 of 166", "3.6%"},
-								{"Other", "6 of 121", "5%"}
+								{"Jewel", "6 of 182", "3.3%"},
+								{"Other", "6 of 137", "4.4%"}
 							}
 						},
 						{
@@ -2894,9 +2940,9 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "6 of 165", "3.6%"},
+								{"Weapon", "6 of 177", "3.4%"},
 								{"Helmet", "6 of 139", "4.3%"},
-								{"Jewel", "6 of 166", "3.6%"},
+								{"Jewel", "6 of 182", "3.3%"},
 								{"Quiver", "6 of 85", "7.1%"}
 							}
 						},
@@ -2946,14 +2992,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "3 of 165", "1.8%"},
+								{"Weapon", "3 of 177", "1.7%"},
 								{"Shield", "3 of 128", "2.3%"},
 								{"Helmet", "3 of 139", "2.2%"},
 								{"Armour", "3 of 119", "2.5%"},
 								{"Legs", "3 of 101", "3%"},
 								{"Boots", "3 of 88", "3.4%"},
-								{"Jewel", "3 of 166", "1.8%"},
-								{"Other", "3 of 121", "2.5%"}
+								{"Jewel", "3 of 182", "1.6%"},
+								{"Other", "3 of 137", "2.2%"}
 							}
 						},
 						{
@@ -3003,7 +3049,7 @@ CodexData = {
 							rows = {
 								{"Helmet", "4 of 139", "2.9%"},
 								{"Armour", "4 of 119", "3.4%"},
-								{"Jewel", "4 of 166", "2.4%"}
+								{"Jewel", "4 of 182", "2.2%"}
 							}
 						},
 						{
@@ -3055,14 +3101,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "6 of 165", "3.6%"},
+								{"Weapon", "6 of 177", "3.4%"},
 								{"Shield", "6 of 128", "4.7%"},
 								{"Helmet", "6 of 139", "4.3%"},
 								{"Armour", "6 of 119", "5%"},
 								{"Legs", "6 of 101", "5.9%"},
 								{"Boots", "6 of 88", "6.8%"},
-								{"Jewel", "6 of 166", "3.6%"},
-								{"Other", "6 of 121", "5%"}
+								{"Jewel", "6 of 182", "3.3%"},
+								{"Other", "6 of 137", "4.4%"}
 							}
 						},
 						{
@@ -3113,9 +3159,9 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "5 of 165", "3%"},
-								{"Jewel", "5 of 166", "3%"},
-								{"Other", "5 of 121", "4.1%"},
+								{"Weapon", "5 of 177", "2.8%"},
+								{"Jewel", "5 of 182", "2.7%"},
+								{"Other", "5 of 137", "3.6%"},
 								{"Quiver", "5 of 85", "5.9%"}
 							}
 						},
@@ -3167,9 +3213,9 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "6 of 165", "3.6%"},
+								{"Weapon", "6 of 177", "3.4%"},
 								{"Helmet", "6 of 139", "4.3%"},
-								{"Jewel", "6 of 166", "3.6%"},
+								{"Jewel", "6 of 182", "3.3%"},
 								{"Quiver", "6 of 85", "7.1%"}
 							}
 						},
@@ -3221,7 +3267,7 @@ CodexData = {
 								{"Shield", "6 of 128", "4.7%"},
 								{"Helmet", "6 of 139", "4.3%"},
 								{"Armour", "6 of 119", "5%"},
-								{"Jewel", "6 of 166", "3.6%"}
+								{"Jewel", "6 of 182", "3.3%"}
 							}
 						},
 						{
@@ -3272,7 +3318,7 @@ CodexData = {
 								{"Shield", "4 of 128", "3.1%"},
 								{"Helmet", "4 of 139", "2.9%"},
 								{"Armour", "4 of 119", "3.4%"},
-								{"Jewel", "4 of 166", "2.4%"}
+								{"Jewel", "4 of 182", "2.2%"}
 							}
 						},
 						{
@@ -3321,14 +3367,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "3 of 165", "1.8%"},
+								{"Weapon", "3 of 177", "1.7%"},
 								{"Shield", "3 of 128", "2.3%"},
 								{"Helmet", "3 of 139", "2.2%"},
 								{"Armour", "3 of 119", "2.5%"},
 								{"Legs", "3 of 101", "3%"},
 								{"Boots", "3 of 88", "3.4%"},
-								{"Jewel", "3 of 166", "1.8%"},
-								{"Other", "3 of 121", "2.5%"}
+								{"Jewel", "3 of 182", "1.6%"},
+								{"Other", "3 of 137", "2.2%"}
 							}
 						},
 						{
@@ -3380,14 +3426,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "1 of 165", "0.6%"},
+								{"Weapon", "1 of 177", "0.6%"},
 								{"Shield", "1 of 128", "0.8%"},
 								{"Helmet", "1 of 139", "0.7%"},
 								{"Armour", "1 of 119", "0.8%"},
 								{"Legs", "1 of 101", "1%"},
 								{"Boots", "1 of 88", "1.1%"},
-								{"Jewel", "1 of 166", "0.6%"},
-								{"Other", "1 of 121", "0.8%"}
+								{"Jewel", "1 of 182", "0.5%"},
+								{"Other", "1 of 137", "0.7%"}
 							}
 						},
 						{
@@ -3485,14 +3531,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "3 of 165", "1.8%"},
+								{"Weapon", "3 of 177", "1.7%"},
 								{"Shield", "3 of 128", "2.3%"},
 								{"Helmet", "3 of 139", "2.2%"},
 								{"Armour", "3 of 119", "2.5%"},
 								{"Legs", "3 of 101", "3%"},
 								{"Boots", "3 of 88", "3.4%"},
-								{"Jewel", "3 of 166", "1.8%"},
-								{"Other", "3 of 121", "2.5%"}
+								{"Jewel", "3 of 182", "1.6%"},
+								{"Other", "3 of 137", "2.2%"}
 							}
 						},
 						{
@@ -3543,8 +3589,8 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "4 of 165", "2.4%"},
-								{"Jewel", "4 of 166", "2.4%"},
+								{"Weapon", "4 of 177", "2.3%"},
+								{"Jewel", "4 of 182", "2.2%"},
 								{"Quiver", "4 of 85", "4.7%"}
 							}
 						},
@@ -3594,14 +3640,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "3 of 165", "1.8%"},
+								{"Weapon", "3 of 177", "1.7%"},
 								{"Shield", "3 of 128", "2.3%"},
 								{"Helmet", "3 of 139", "2.2%"},
 								{"Armour", "3 of 119", "2.5%"},
 								{"Legs", "3 of 101", "3%"},
 								{"Boots", "3 of 88", "3.4%"},
-								{"Jewel", "3 of 166", "1.8%"},
-								{"Other", "3 of 121", "2.5%"}
+								{"Jewel", "3 of 182", "1.6%"},
+								{"Other", "3 of 137", "2.2%"}
 							}
 						},
 						{
@@ -3648,7 +3694,7 @@ CodexData = {
 							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {{"Helmet", "4 of 139", "2.9%"}, {"Jewel", "4 of 166", "2.4%"}}
+							rows = {{"Helmet", "4 of 139", "2.9%"}, {"Jewel", "4 of 182", "2.2%"}}
 						},
 						{
 							h = "Rules",
@@ -3745,14 +3791,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "3 of 165", "1.8%"},
+								{"Weapon", "3 of 177", "1.7%"},
 								{"Shield", "3 of 128", "2.3%"},
 								{"Helmet", "3 of 139", "2.2%"},
 								{"Armour", "3 of 119", "2.5%"},
 								{"Legs", "3 of 101", "3%"},
 								{"Boots", "3 of 88", "3.4%"},
-								{"Jewel", "3 of 166", "1.8%"},
-								{"Other", "3 of 121", "2.5%"}
+								{"Jewel", "3 of 182", "1.6%"},
+								{"Other", "3 of 137", "2.2%"}
 							}
 						},
 						{
@@ -3849,7 +3895,7 @@ CodexData = {
 							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {{"Helmet", "3 of 139", "2.2%"}, {"Jewel", "3 of 166", "1.8%"}}
+							rows = {{"Helmet", "3 of 139", "2.2%"}, {"Jewel", "3 of 182", "1.6%"}}
 						},
 						{
 							h = "Rules",
@@ -3900,14 +3946,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "3 of 165", "1.8%"},
+								{"Weapon", "3 of 177", "1.7%"},
 								{"Shield", "3 of 128", "2.3%"},
 								{"Helmet", "3 of 139", "2.2%"},
 								{"Armour", "3 of 119", "2.5%"},
 								{"Legs", "3 of 101", "3%"},
 								{"Boots", "3 of 88", "3.4%"},
-								{"Jewel", "3 of 166", "1.8%"},
-								{"Other", "3 of 121", "2.5%"}
+								{"Jewel", "3 of 182", "1.6%"},
+								{"Other", "3 of 137", "2.2%"}
 							}
 						},
 						{
@@ -3955,14 +4001,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "2 of 165", "1.2%"},
+								{"Weapon", "2 of 177", "1.1%"},
 								{"Shield", "2 of 128", "1.6%"},
 								{"Helmet", "2 of 139", "1.4%"},
 								{"Armour", "2 of 119", "1.7%"},
 								{"Legs", "2 of 101", "2%"},
 								{"Boots", "2 of 88", "2.3%"},
-								{"Jewel", "2 of 166", "1.2%"},
-								{"Other", "2 of 121", "1.7%"}
+								{"Jewel", "2 of 182", "1.1%"},
+								{"Other", "2 of 137", "1.5%"}
 							}
 						},
 						{
@@ -4014,14 +4060,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "1 of 165", "0.6%"},
+								{"Weapon", "1 of 177", "0.6%"},
 								{"Shield", "1 of 128", "0.8%"},
 								{"Helmet", "1 of 139", "0.7%"},
 								{"Armour", "1 of 119", "0.8%"},
 								{"Legs", "1 of 101", "1%"},
 								{"Boots", "1 of 88", "1.1%"},
-								{"Jewel", "1 of 166", "0.6%"},
-								{"Other", "1 of 121", "0.8%"}
+								{"Jewel", "1 of 182", "0.5%"},
+								{"Other", "1 of 137", "0.7%"}
 							}
 						},
 						{
@@ -4073,14 +4119,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "1 of 165", "0.6%"},
+								{"Weapon", "1 of 177", "0.6%"},
 								{"Shield", "1 of 128", "0.8%"},
 								{"Helmet", "1 of 139", "0.7%"},
 								{"Armour", "1 of 119", "0.8%"},
 								{"Legs", "1 of 101", "1%"},
 								{"Boots", "1 of 88", "1.1%"},
-								{"Jewel", "1 of 166", "0.6%"},
-								{"Other", "1 of 121", "0.8%"}
+								{"Jewel", "1 of 182", "0.5%"},
+								{"Other", "1 of 137", "0.7%"}
 							}
 						},
 						{
@@ -4188,7 +4234,7 @@ CodexData = {
 							p = {"Among every modifier a Legendary item of that kind may roll (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {{"Weapon", "3 of 185", "1.6%"}, {"Jewel", "3 of 192", "1.6%"}}
+							rows = {{"Weapon", "3 of 197", "1.5%"}, {"Jewel", "3 of 208", "1.4%"}}
 						},
 						{
 							h = "Rules",
@@ -4238,9 +4284,9 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "3 of 185", "1.6%"},
-								{"Jewel", "3 of 192", "1.6%"},
-								{"Other", "3 of 133", "2.3%"}
+								{"Weapon", "3 of 197", "1.5%"},
+								{"Jewel", "3 of 208", "1.4%"},
+								{"Other", "3 of 149", "2%"}
 							}
 						},
 						{
@@ -4288,9 +4334,9 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "3 of 185", "1.6%"},
+								{"Weapon", "3 of 197", "1.5%"},
 								{"Helmet", "3 of 150", "2%"},
-								{"Jewel", "3 of 192", "1.6%"}
+								{"Jewel", "3 of 208", "1.4%"}
 							}
 						},
 						{
@@ -4337,7 +4383,7 @@ CodexData = {
 							p = {"Among every modifier a Legendary item of that kind may roll (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {{"Weapon", "3 of 185", "1.6%"}, {"Jewel", "3 of 192", "1.6%"}}
+							rows = {{"Weapon", "3 of 197", "1.5%"}, {"Jewel", "3 of 208", "1.4%"}}
 						},
 						{
 							h = "Rules",
@@ -4383,7 +4429,7 @@ CodexData = {
 							p = {"Among every modifier a Legendary item of that kind may roll (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {{"Weapon", "3 of 185", "1.6%"}, {"Jewel", "3 of 192", "1.6%"}}
+							rows = {{"Weapon", "3 of 197", "1.5%"}, {"Jewel", "3 of 208", "1.4%"}}
 						},
 						{
 							h = "Rules",
@@ -4429,7 +4475,7 @@ CodexData = {
 							p = {"Among every modifier a Legendary item of that kind may roll (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {{"Weapon", "2 of 185", "1.1%"}}
+							rows = {{"Weapon", "2 of 197", "1%"}}
 						},
 						{
 							h = "Rules",
@@ -4479,7 +4525,7 @@ CodexData = {
 								{"Armour", "3 of 130", "2.3%"},
 								{"Legs", "3 of 112", "2.7%"},
 								{"Boots", "3 of 97", "3.1%"},
-								{"Jewel", "3 of 192", "1.6%"}
+								{"Jewel", "3 of 208", "1.4%"}
 							}
 						},
 						{
@@ -4534,7 +4580,7 @@ CodexData = {
 								{"Armour", "3 of 130", "2.3%"},
 								{"Legs", "3 of 112", "2.7%"},
 								{"Boots", "3 of 97", "3.1%"},
-								{"Other", "3 of 133", "2.3%"}
+								{"Other", "3 of 149", "2%"}
 							}
 						},
 						{
@@ -4587,8 +4633,8 @@ CodexData = {
 							rows = {
 								{"Helmet", "3 of 150", "2%"},
 								{"Boots", "3 of 97", "3.1%"},
-								{"Jewel", "3 of 192", "1.6%"},
-								{"Other", "3 of 133", "2.3%"}
+								{"Jewel", "3 of 208", "1.4%"},
+								{"Other", "3 of 149", "2%"}
 							}
 						},
 						{
@@ -4643,7 +4689,7 @@ CodexData = {
 								{"Helmet", "2 of 150", "1.3%"},
 								{"Armour", "2 of 130", "1.5%"},
 								{"Legs", "2 of 112", "1.8%"},
-								{"Jewel", "2 of 192", "1%"}
+								{"Jewel", "2 of 208", "1%"}
 							}
 						},
 						{
@@ -4690,7 +4736,7 @@ CodexData = {
 							p = {"Among every modifier a Legendary item of that kind may roll (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {{"Weapon", "3 of 185", "1.6%"}}
+							rows = {{"Weapon", "3 of 197", "1.5%"}}
 						},
 						{
 							h = "Rules",
@@ -4743,8 +4789,8 @@ CodexData = {
 								{"Helmet", "3 of 150", "2%"},
 								{"Armour", "3 of 130", "2.3%"},
 								{"Legs", "3 of 112", "2.7%"},
-								{"Jewel", "3 of 192", "1.6%"},
-								{"Other", "3 of 133", "2.3%"}
+								{"Jewel", "3 of 208", "1.4%"},
+								{"Other", "3 of 149", "2%"}
 							}
 						},
 						{
@@ -5793,7 +5839,7 @@ CodexData = {
 						},
 						{
 							h = "Caps (all gems together)",
-							p = {"Attack Speed at most 20%.", "Energy Resistance at most 30%.", "Energy Damage at most 40%."}
+							p = {"Attack Speed at most 15%.", "Energy Resistance at most 30%.", "Energy Damage at most 40%."}
 						},
 						{
 							h = "Combining",
@@ -14203,9 +14249,12 @@ CodexData = {
 								{"rimewraith rod", "Weapon", "450"},
 								{"rimewraith staff", "Weapon", "635"},
 								{"rimewraith branch", "Weapon", "815"},
-								{"rimewraith crook", "Weapon", "1000"}
+								{"rimewraith crook", "Weapon", "1000"},
+								{"rimewraith greaves", "Legs", "800"},
+								{"rimewraith chausses", "Legs", "800"},
+								{"rimewraith skirt", "Legs", "800"}
 							},
-							links = {"", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""}
+							links = {"", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""}
 						},
 						{
 							h = "Bonuses",
@@ -15532,7 +15581,7 @@ CodexData = {
 							rows = {
 								{"Finished rift", "45% + 10% per modifier (at most 75%) for a next key; 60% + 10% per modifier of those are one tier higher."},
 								{"Rift monsters", "Rare 4%, legendary 10%: a key of the rift's tier."},
-								{"Monsters", "Tier-1 keys: 0.25% per kill (Normal x1, Magic x3, Rare x8, Legendary x20, Boss x40) from monsters of hunting level 120 or more and at least 40% of yours."},
+								{"Monsters", "Tier-1 keys: 0.25% per kill (Normal x1, Magic x3, Rare x8, Legendary x20, Boss x40) from monsters of hunting level 60 or more and at least 40% of yours."},
 								{"Bounty board", "Tier-1 key for a finished contract: hunt 25%, elite 50%, boss 100%."}
 							}
 						},
@@ -17275,13 +17324,13 @@ CodexData = {
 							cols = {"Level", "Health", "Experience", "Loot", "Damage"},
 							w = {28, 18, 18, 18, 18},
 							rows = {
-								{"20", "100%", "100%", "100%", "100%"},
-								{"50", "54%", "62%", "67%", "85%"},
-								{"100", "36%", "42%", "44%", "80%"},
-								{"200", "24%", "26%", "30%", "72%"},
-								{"300", "21%", "22%", "24%", "65%"},
-								{"600", "21%", "21%", "23%", "55%"},
-								{"1000", "21%", "22%", "24%", "40%"},
+								{"20", "28%", "26%", "91%", "100%"},
+								{"50", "16%", "13%", "6%", "85%"},
+								{"100", "11%", "11%", "11%", "80%"},
+								{"200", "9%", "9%", "19%", "72%"},
+								{"300", "8%", "9%", "35%", "65%"},
+								{"600", "11%", "9%", "11%", "55%"},
+								{"1000", "11%", "9%", "30%", "40%"},
 								{"650 (own level)", "14%", "6%", "58%", "53%"},
 								{"1000 (own level)", "8%", "4%", "28%", "40%"},
 								{"1300 (own level)", "7%", "4%", "22%", "40%"},

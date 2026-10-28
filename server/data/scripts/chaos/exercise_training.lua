@@ -4,8 +4,9 @@
 -- tests/exercise_test.lua, overview: server/README.md "Training weapons". Lua 5.1 / LuaJIT compatible.
 --
 -- What it does differently from the base script (owner request 2026-10-23, and the review that followed):
---   * one melee weapon: the sword, axe and club ones work the same, for the Warrior, Thief, Monk and Templar lines; the
---     Monk line trains fist fighting, the others the melee skill that counts (the best of sword / club / axe)
+--   * one melee weapon: the sword and club ones work the same, for the Warrior, Thief and Templar lines (the melee
+--     skill that counts: the best of sword / club / axe); the Monk line has its own fist weapon (owner 2026-10-28), which
+--     trains fist fighting, the skill its hits and spells use
 --   * the Monk (fist, shielding), the Templar (magic level) and every class (shielding) have a weapon of their own
 --   * a charge is taken only for a step that trains (the base script took it before the vocation check, so a refused
 --     click used a charge); a locked class, a tile outside a protection zone or a dummy out of reach trains nothing
@@ -14,7 +15,7 @@
 --     client could train on a dummy anywhere on its floor
 --   * the training flag (Exercise_Training.isTraining, read by the Idle Hall) is cleared whenever a chain ends and at
 --     login (the base script left it at 1 after a logout, which kept the character out of the Idle Hall for good)
---   * the axe and club weapons of before turn into the melee one on first use, charges kept
+--   * a weapon the class cannot use turns into the one it can on first use, charges kept (exercise_config.lua tiers)
 
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
@@ -162,10 +163,11 @@ local function step(pid, gen, startPos, itemId, dummyPos, dummyId)
 	addEvent(step, cfg.tickMs, pid, gen, startPos, itemId, dummyPos, dummyId)
 end
 
--- the axe and club weapons of before become the melee (sword) one of the same tier, charges kept; any failure leaves
--- the item as it was (it works all the same)
+-- a weapon the class cannot train with becomes the one it can, of the same tier, charges kept (E.convertTo: the club
+-- weapon of before and the fist weapon of a non-Monk become the sword one, a Monk's sword or club one the fist one); any
+-- failure leaves the item as it was
 local function convert(player, item)
-	local to = E.convertTo(item:getId())
+	local to = E.convertTo(item:getId(), player:getVocation():getId())
 	if not to then
 		return item:getId()
 	end
@@ -192,6 +194,12 @@ local function onUse(player, item, fromPosition, target, toPosition, isHotkey)
 		return true
 	end
 	local vocation = player:getVocation():getId()
+	if not E.allowed(kind, vocation) and E.convertTo(itemId, vocation) and not restricted(player) then
+		-- the right weapon of the tier for this class (a Monk's sword weapon, a Warrior's old exercise axe): turn it now
+		itemId = convert(player, item)
+		kind = E.kindOf(itemId)
+		item = player:getItemById(itemId, true) or item
+	end
 	if not E.allowed(kind, vocation) then
 		local key, args = E.refusal(kind, vocation)
 		say(player, key, unpack(args))
@@ -226,7 +234,7 @@ local function onUse(player, item, fromPosition, target, toPosition, isHotkey)
 		say(player, "You are already training.")
 		return true
 	end
-	itemId = convert(player, item)
+	itemId = convert(player, item) -- an old club weapon (already the right one for the class otherwise)
 	say(player, "You started training.")
 	step(pid, gen, {x = pos.x, y = pos.y, z = pos.z}, itemId, {x = dummyPos.x, y = dummyPos.y, z = dummyPos.z}, dummyId)
 	return true

@@ -3193,6 +3193,12 @@ One minion now (class hit 0.92 included), damage per second with both spells on 
 | 500 | archer | 202 | 3227 | 101.2 | 136.7 | 221.1 |
 | 1000 | mage | 385 | 6024 | 192.5 | 259.9 | 436.1 |
 
+O285 (2026-10-28, hunting level = pool level; the base health curve was re-fitted, `minion_model.py` prints the same table
+except the pack): a hunt pack at level 8 now deals 409 to the set (it was 148; the pack is a pool level 8 one, whose
+health the curve leaves whole under level 10), the set survives 3.9 packs there (10.8), experience per hour 0.59 of the
+median (0.64 above) and all the other levels within 0.02 of the table (pack damage on the set 751 / 1482 / 3873 against 642 /
+1557 / 4186 at 50 / 200 / 500). `minion_model.py --check` passes with its limits unchanged.
+
 The 5 target ratio sits
 at 1.2 from level 200: the minion area spells. Level 50 on 5 targets (0.86) and level 8 are the known low gap: the
 median class has its area spells and the Necromancer has not. A nominal raise would run ahead at 200.

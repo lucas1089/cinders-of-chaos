@@ -190,6 +190,7 @@ hours, 30 to 80 hunting hours. Coins per hunting hour saved at skill 100 and 130
 | Weapon (charges) | Coins | Dummy hours | Coins per hunting hour |
 |---|---|---|---|
 | Melee, bow (500 / 1800 / 14400) | 25 / 75 / 450 | 0.10 / 0.38 / 3.00 | 9-18 / 7.5-15 / 5.6-11 |
+| Fist (Monk line only; same prices, 2026-10-28) | 25 / 75 / 450 | 0.10 / 0.38 / 3.00 | 12-18 / 10-15 / 7.5-11 |
 | Rod, wand (500 / 1800 / 14400) | 25 / 75 / 450 | 0.10 / 0.38 / 3.00 | 16-24 / 13-20 / 10-15 |
 | Shield | 25 / 75 / 450 | same | not valued: blocked hits an hour have no model |
 

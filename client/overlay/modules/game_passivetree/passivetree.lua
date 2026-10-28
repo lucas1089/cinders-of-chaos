@@ -2295,6 +2295,10 @@ function getCustomStatString(t, withKeystones)
 		table.insert(texts, tr("+%.1f dexterity.", t.dexterity/1))
 	end
 
+	if t.attackSpeed then
+		table.insert(texts, tr("+%.1f%% Attack Speed (at most 1 attack per second).", t.attackSpeed/1))
+	end
+
 	if t.spirit then
 		table.insert(texts, tr("+%.1f spirit.", t.spirit/1))
 	end

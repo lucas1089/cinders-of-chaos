@@ -65,8 +65,8 @@ return {
 	-- categories (per 10000, by tier; only at or above the kill's level rule), its world boss and rift seals
 	-- (count), invasion rewards of its invaders (count). install_factions.py adds them to items.otb / items.xml
 	-- (stackable copies of the stock node sourceId; the client keeps the stock sprite).
-	-- minMonsterLevel: a hunting level (O284; 60 pool levels before 2026-10-28)
-	tokenDrop = {chance = {normal = 4, magic = 25, rare = 120, legendary = 600}, minMonsterLevel = 120,
+	-- minMonsterLevel: a hunting level (O284)
+	tokenDrop = {chance = {normal = 4, magic = 25, rare = 120, legendary = 600}, minMonsterLevel = 60,
 		worldBoss = 5, riftSeal = 1, riftSealPerTiers = 5, invasion = 2},
 
 	-- contracts: per faction `daily` contracts each faction day and `weekly` each week, generated from a seed (character,

@@ -51,7 +51,7 @@ LUA_OUT = os.path.join(REPO_DATA, 'lib', 'chaos_gear_sets_items.lua')
 SWITCH = os.path.join(REPO_DATA, 'lib', 'chaos_gear_sets.lua')
 FIRST, LAST = 36995, 37442
 # the three later-tier sets (2026-10-24): copies of a set above with their own ids, names, level band and stats
-TIER2_FIRST, TIER2_LAST = 52000, 52191
+TIER2_FIRST, TIER2_LAST = 52000, 52194
 BEGIN = {'xml': '\t<!-- Chaos equipment sets of pair 28 (server/tools/install_gear_sets.py, do not edit by hand) -->\n'}
 END = '\t<!-- end of the Chaos equipment sets of pair 28 -->\n'
 for _k in ('moves', 'weapons'):
@@ -80,6 +80,15 @@ TIER2 = [
      'vortexbolt', 'gildcrown', 52128),
 ]
 SETS += [t[:9] for t in TIER2]
+# O285 (2026-10-28): three more legs of Rimewraith, one per armour weight, at level 800 (the art set has one or two legs of
+# a weight, all at 450 or 1000, so the band 700-1000 had two options for medium and cloth: tools/gear_coverage.lua). Each
+# copies the look (client id) of a piece of the set: key, source key, fit, name, server id
+EXTRA_LEGS = [
+    ('rimewraith_legs_5', 'rimewraith_legs_1', 'H', 'rimewraith greaves', 52192),
+    ('rimewraith_legs_6', 'rimewraith_legs_2', 'M', 'rimewraith chausses', 52193),
+    ('rimewraith_legs_7', 'rimewraith_legs_3', 'C', 'rimewraith skirt', 52194),
+]
+EXTRA_LEGS_LEVEL = 800
 SET_BY_KEY = {s[0]: s for s in SETS}
 TIER2_BY_KEY = {t[0]: t for t in TIER2}
 ELEMENT_KEY = {'fire': 'Fire', 'ice': 'Ice', 'earth': 'Earth', 'energy': 'Energy', 'death': 'Death', 'holy': 'Holy'}
@@ -203,6 +212,7 @@ def rows_of(path):
         assert r['ex']['set'] in SET_BY_KEY and r['kind'] == r['ex']['kind'], r['key']
     rows = rows + tier2_rows(rows)
     assign_levels(rows)
+    rows = rows + extra_rows(rows)
     for r in rows:
         r['stats'] = stats_of(r)
         r['classes'] = classes_of(r)
@@ -227,6 +237,23 @@ def tier2_rows(rows):
             n['key'] = key + r['key'][len(source):]
             n['name'] = name.lower() + ' ' + r['name'][len(old):]
             out.append(n)
+    return out
+
+
+def extra_rows(rows):
+    """the extra legs of EXTRA_LEGS: a copy of a Rimewraith legs piece (same client id, so the same look) with a server id
+    of the later tiers' block, its own name and level EXTRA_LEGS_LEVEL; called after assign_levels, which would spread them"""
+    out = []
+    for key, source, fit, name, sid in EXTRA_LEGS:
+        src = [r for r in rows if r['key'] == source]
+        assert len(src) == 1 and src[0]['ex']['fit'] == fit and TIER2_FIRST <= sid <= TIER2_LAST, key
+        n = dict(src[0])
+        n['ex'] = dict(src[0]['ex'])
+        n['server_id'] = sid
+        n['key'] = key
+        n['name'] = name
+        n['level'] = EXTRA_LEGS_LEVEL
+        out.append(n)
     return out
 
 

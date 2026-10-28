@@ -9315,7 +9315,8 @@
   "bestiary": {
    "files": [
     "bestiary.lua",
-    "bestiary_spawns.lua"
+    "bestiary_spawns.lua",
+    "chaos_constants.lua"
    ],
    "kind": "opcode",
    "opcodes": [

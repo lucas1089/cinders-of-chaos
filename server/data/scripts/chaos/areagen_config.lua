@@ -51,7 +51,12 @@ return {
 		-- the rift themes (rift_layout_core.lua): the old rift floors (rift floor, dark sandy and rutted stone, gilded
 		-- stone) and two more dark grounds
 		riftfloor = {z = 2100, grounds = {{25549, 6}, {25704, 1}, {25705, 1}, {25706, 1}, {25707, 1}, {25708, 1}, {25709, 1}}},
-		crypt = {z = 1500, grounds = {{13189, 3}, {12237, 2}}},
+		-- one ground only (13189, listed twice with the old weights 3 and 2 so the seeded draws, and with them every
+		-- layout, spawn and prop of the Marrow Crypts, the rifts and the placed plans, stay as they were): 12237 ("rutted
+		-- stone floor") is a round-pebble patch tile of the stain family 12234-12237 that does not tile with 13189;
+		-- laid by weight beside it the corridors read as two unrelated floors (owner report 2026-10-28, Hollow Crypt;
+		-- README "Crypt floor (O288)")
+		crypt = {z = 1500, grounds = {{13189, 3}, {13189, 2}}},
 		gilded = {z = 1, grounds = {{415, 1}}, indoor = true},
 		obsidian = {z = 2800, grounds = {{"obsidian_floor", 9}, {"magma_floor", 1}}},
 		wetrock = {z = 2600, grounds = {{"wet_rock", 7}, {"mossy_rock", 3}}}

@@ -230,7 +230,7 @@ local function contractView(player, c, st)
 			outfit[k] = v
 		end
 	end
-	-- the level shown is the HUNTING level (owner 2026-10-27): the pool level x baseLevelMult, as the pace layer reads it
+	-- the level shown is the HUNTING level (owner 2026-10-27): the pool level x baseLevelMult (1 since 2026-10-28, O285), as the pace layer reads it
 	local shown = c.level
 	if tonumber(c.level) and ChaosPaceCore and ChaosPaceCore.entryLevel then
 		local okL, lv = pcall(ChaosPaceCore.entryLevel, ChaosPaceConfig or dofile("data/scripts/chaos/pace_config.lua"), c)

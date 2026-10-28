@@ -2,6 +2,8 @@
 -- Run from the server/ folder:
 --   luajit tools/gen_class_lanes.lua            write the file, print the before / after report
 --   luajit tools/gen_class_lanes.lua --check    exit 1 when the file differs (CI); lua5.3 gives the same bytes
+--   luajit tools/gen_class_lanes.lua --attack-speed [--check]   only add the attackSpeed lanes (Gen.ATTACK_SPEED) on top of
+--       the file as it is (a full run would drop the hand trims of the eight class keystone nodes, server/README.md)
 -- Then regenerate the tree data: lua5.3 ../server/tools/gen_passivetree_data.lua (it merges the lanes into `v`).
 --
 -- What a lane is: the tree is one graph shared by 21 classes, so the plain nodes on the way to a class's keystones were
@@ -190,6 +192,7 @@ end
 function Gen.targets(tree)
 	dofile(NODES)
 	local nodes = getTreeNodes()
+	Gen.nodes = nodes
 	local out = {}
 	for id = 1, #nodes do
 		local nd = nodes[id]
@@ -261,6 +264,99 @@ Gen.OVERRIDES = {
 		[173] = {absorbAllElements = 2}, [238] = {absorbAllElements = 2}},
 	ninja = {[130] = {absorbAllElements = 2}, [132] = {absorbAllElements = 2}, [238] = {absorbAllElements = 2}}
 }
+
+-- Attack speed lanes (owner 2026-10-28, "no attack speed node on the tree"; engine patch 0078). The tree has no attack speed
+-- node of its own: the classes that fight with weapon hits get attackSpeed on nodes that gave them dexterity only (a lane
+-- never takes a stat from a node that has others). Per class: `small` plain Attribute nodes (+1%, +2% on a node that gave
+-- 3 dexterity or more) on the routes the class walks most, and `notables` named or big nodes (+4%, +5% from 6 dexterity)
+-- that nothing else is on. The tree caps the stat at passivetree_effects.lua maxAttackSpeed (12); the engine keeps
+-- one attack per second as the floor whatever the sources (minPlayerAttackInterval = 1000, patch 0011).
+Gen.ATTACK_SPEED = {
+	classes = {"beastmaster", "berserker", "deadeye", "juggernaut", "knight", "monk", "ninja", "paladin", "samurai",
+		"shadowfist", "templar", "thief"},
+	small = 10, notables = 2, smallMaxDex = 3, notableMinDex = 4
+}
+
+local function onlyDexterity(stats)
+	local v
+	for stat, value in pairs(stats) do
+		if stat ~= "dexterity" then return nil end
+		v = value
+	end
+	return v
+end
+
+-- lane: the lane of the key so far (modified); keys: class keys of the variant key
+function Gen.attackSpeedLane(tree, lane, vk, keys, info, targets, uni, nodes)
+	local A = Gen.ATTACK_SPEED
+	local wanted = false
+	for _, k in ipairs(A.classes) do wanted = wanted or k == vk end
+	if not wanted then return end
+	for _, stats in pairs(lane) do
+		if stats.attackSpeed then return end -- done already: a second run adds nothing
+	end
+	local use = {}
+	local routes = Lanes.routes(tree, keys[1], info, vk, targets, lane)
+	for _, t in ipairs(targets) do
+		local r = routes[t]
+		if r then
+			for _, id in ipairs(r.path) do use[id] = (use[id] or 0) + 1 end
+		end
+	end
+	local small, big = {}, {}
+	for _, id in ipairs(sortedKeys(tree.nodes)) do
+		local node = tree.nodes[id]
+		local mayHold = true
+		for _, classKey in ipairs(keys) do mayHold = mayHold and Lanes.allowed(node, classKey) end
+		if uni.plain[id] and mayHold and not node.m then
+			local dex = onlyDexterity(lane[id] or (node.v and node.v[vk]) or node.s)
+			local named = nodes[id] and nodes[id].name and nodes[id].name ~= "Attribute"
+			if dex and dex >= A.notableMinDex then
+				big[#big + 1] = {id = id, dex = dex, named = named and 1 or 0}
+			elseif dex and not named and dex <= A.smallMaxDex then
+				small[#small + 1] = {id = id, dex = dex}
+			end
+		end
+	end
+	table.sort(big, function(a, b)
+		if a.named ~= b.named then return a.named > b.named end
+		if (use[a.id] or 0) ~= (use[b.id] or 0) then return (use[a.id] or 0) > (use[b.id] or 0) end
+		return a.id < b.id
+	end)
+	table.sort(small, function(a, b)
+		if (use[a.id] or 0) ~= (use[b.id] or 0) then return (use[a.id] or 0) > (use[b.id] or 0) end
+		return a.id < b.id
+	end)
+	for i = 1, math.min(A.notables, #big) do
+		local d = big[i].dex
+		lane[big[i].id] = {attackSpeed = d >= 6 and 5 or 4}
+	end
+	for i = 1, math.min(A.small, #small) do
+		lane[small[i].id] = {attackSpeed = small[i].dex >= 3 and 2 or 1}
+	end
+end
+
+-- the attack speed lanes only, on top of the lanes in classlanes.lua as they are (they were trimmed by hand after the last full
+-- run, README "the eight nodes" note: a full run would throw that away). Idempotent: a node that already gives attackSpeed is
+-- not dexterity-only any more, so a second run finds the same nodes taken and adds nothing.
+function Gen.attackSpeedOnly(tree, cfg, targets, lanes)
+	setup()
+	local uni = Gen.universe(tree)
+	local groups = {}
+	local ids = Chaos.classes.ids
+	for _, classKey in ipairs(sortedKeys(ids)) do
+		local vk = ChaosClasses.keystoneKey(ids[classKey])
+		groups[vk] = groups[vk] or {}
+		table.insert(groups[vk], classKey)
+	end
+	for _, vk in ipairs(Gen.ATTACK_SPEED.classes) do
+		if groups[vk] then
+			lanes[vk] = lanes[vk] or {}
+			Gen.attackSpeedLane(tree, lanes[vk], vk, groups[vk], mergedInfo(cfg, groups[vk]), targets, uni, Gen.nodes)
+		end
+	end
+	return uni
+end
 
 -- lanes[variantKey] = {[node id] = stats}; report[classKey] = {before = summary, after = summary, changed = n}
 function Gen.build(tree, cfg, targets)
@@ -378,6 +474,7 @@ function Gen.build(tree, cfg, targets)
 		for id, stats in pairs(Gen.OVERRIDES[vk] or {}) do
 			lane[id] = stats
 		end
+		Gen.attackSpeedLane(tree, lane, vk, keys, info, targets, uni, Gen.nodes)
 		lanes[vk] = lane
 		for _, classKey in ipairs(keys) do
 			local after = Lanes.summary(Lanes.routes(tree, classKey, info, vk, targets, lane), targets, minShare)
@@ -444,7 +541,7 @@ local ICON = {strength = "strength", dexterity = "dexterity", intelligence = "in
 	incrementHoly = "holyDamage", incrementArcane = "arcaneDamage", incrementWater = "waterDamage",
 	incrementHealth = "healthDamage", incrementLifeDrain = "lifeManaDrain", incrementManaDrain = "lifeManaDrain",
 	multiIncrement = "multiStat", absorbAllElements = "multiStat", absorbLife = "absorbLife", absorbMana = "absorbMana",
-	speed = "speed", loot = "loot", rarityLoot = "rarityLoot", experience = "experience"}
+	attackSpeed = "dexterity", speed = "speed", loot = "loot", rarityLoot = "rarityLoot", experience = "experience"}
 local function iconOf(uni, stats)
 	local best, bestScore
 	for _, stat in ipairs(sortedKeys(stats)) do
@@ -495,8 +592,31 @@ function Gen.main(args)
 	end
 	local cfg = dofile("data/scripts/chaos/passivetree_stats_config.lua")
 	local targets = Gen.targets(tree)
-	local lanes, report, order = Gen.build(tree, cfg, targets)
-	local text = Gen.render(lanes, Gen.icons(tree, lanes, Gen.universe(tree)))
+	local lanes, report, order, text
+	if args[1] == "--attack-speed" or args[2] == "--attack-speed" then
+		-- on top of the file as it is: lanes and icons read back, attackSpeed lanes added
+		dofile(OUT)
+		lanes = getClassLanes()
+		local icons = getClassLaneIcons()
+		local before = {}
+		for vk, lane in pairs(lanes) do
+			before[vk] = {}
+			for id in pairs(lane) do before[vk][id] = true end
+		end
+		local uni = Gen.attackSpeedOnly(tree, cfg, targets, lanes)
+		local fresh = Gen.icons(tree, lanes, uni)
+		for vk, lane in pairs(lanes) do
+			icons[vk] = icons[vk] or {}
+			for id, stats in pairs(lane) do
+				if stats.attackSpeed and not before[vk][id] and fresh[vk] and fresh[vk][id] then icons[vk][id] = fresh[vk][id] end
+			end
+		end
+		text = Gen.render(lanes, icons)
+		args = {args[1] == "--check" and "--check" or args[2] == "--check" and "--check" or nil}
+	else
+		lanes, report, order = Gen.build(tree, cfg, targets)
+		text = Gen.render(lanes, Gen.icons(tree, lanes, Gen.universe(tree)))
+	end
 	if args[1] == "--check" then
 		if readFile(OUT) ~= text then
 			io.stderr:write("classlanes.lua is stale: run luajit tools/gen_class_lanes.lua\n")
@@ -508,6 +628,10 @@ function Gen.main(args)
 	local f = assert(io.open(OUT, "wb"))
 	f:write(text)
 	f:close()
+	if not report then
+		print("classlanes.lua: attack speed lanes added")
+		return
+	end
 	local ids = Chaos.classes.ids
 	local names = Gen.sortedKeys(ids)
 	table.sort(names, function(a, b) return ids[a] < ids[b] end)

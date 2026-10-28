@@ -279,7 +279,7 @@ eq(res.added.key, "rarity_physicalAbsorb")
 eq(res.added.tier, 3, "T3: the best tier item level 42 allows (lowest dice)")
 eq(armor:getCustomAttribute("ct_rarity_physicalabsorb"), 3, "tier stored")
 eq(armor:getCustomAttribute("rarity_physicalAbsorb"), 3, "the lowest value of T3 (3-5 since the ranges were raised)")
-eq(res.text, "golden armor gained Physical +3% (T3) (suffix).")
+eq(res.text, "Golden Armor of Sanctity gained Physical +3% (T3) (suffix).")
 eq(armor:getAttribute(ITEM_ATTRIBUTE_DESCRIPTION), "Item Level: 42. Suffixes: Physical +3% (T3); Holy +2% (T2)")
 -- the tier roll: highest dice = the last row (T1)
 dice = {1, 270, 1}
@@ -356,7 +356,7 @@ eq(res.item.removed, false)
 eq(res.item.parent, bag, "new copy in the same container")
 eq(C.isNormal(res.item), true, "normal now")
 eq(C.levelOf(res.item), 42, "the item level stays")
-eq(res.text, "golden armor is now a normal item (item level 42).")
+eq(res.text, "Golden Armor of the Grave is now a normal item (item level 42).")
 
 -- ---------------------------------------------------------------- Awakening / Gilding / Upheaval / Fate
 local tr = put(newItem(2466))

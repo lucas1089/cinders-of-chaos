@@ -23,6 +23,10 @@ eq(lines[3].text, 'Physical damage: +300% -> +225.2% effective (full value up to
 eq(lines[4].text, 'Fire damage: +30% (full value up to +150%)', 'damage under')
 eq(lines[5].text, 'Critical chance: 28% (tree 12%, gear and other 16%)', 'crit chance with gear')
 eq(lines[6].text, 'Critical damage: +40% (tree 20%, Paragon 5%, gear and other 15%)', 'crit damage with gear')
+data.attackSpeed = {total = 14, tree = 9, gear = 5, cap = 20}
+lines = V.lines(data)
+eq(#lines, 7, 'attack speed line')
+eq(lines[7].text, 'Attack speed: +14% (tree 9%, gear 5%; at most 1 attack per second)', 'attack speed text')
 eq(#V.lines({crit = {chance = {total = 1}}}), 0, 'a half crit block is ignored')
 if fails > 0 then os.exit(1) end
 print('totals view tests OK')

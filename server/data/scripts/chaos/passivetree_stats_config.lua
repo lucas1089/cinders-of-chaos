@@ -51,6 +51,7 @@ ChaosPassiveStatsConfig = {
 		vitality = {"Vitality", "+0.8 percent maximum health per point up to 50 points (+40%), then +0.2 per point up to 100 points (+50%). Past the cap the gain shrinks but never stops (soft cap)."},
 		spirit = {"Spirit", "+0.8 percent maximum mana per point up to 50 points (+40%), then +0.2 per point up to 100 points (+50%). Past the cap the gain shrinks but never stops (soft cap)."},
 		wisdom = {"Wisdom", "No effect yet: the game gives wisdom no use."},
+		attackSpeed = {"Attack speed", "Shortens the time between your attacks by this percent (the weapon's own Attack Speed and dexterity count with it). The tree gives at most +12, the tree and the worn pieces together +20; the game never lets you attack more than once per second, whatever you stack."},
 		speed = {"Speed", "Walking speed. The tooltip shows the speed you gain; at most +80."},
 		experience = {"Experience", "Experience from monsters, in the percent shown."},
 		loot = {"Item find", "Item find +0.2 per point (shown as the percent): scales the chance of better item rarities, +300 percent at most with everything else."},
@@ -108,33 +109,33 @@ ChaosPassiveStatsConfig = {
 		-- Warrior line: melee, heavy armour, most health
 		warrior = {
 			primary = {"strength", "vitality", "incrementPhysical", "@meleeSkills", "absorbPhysical"},
-			secondary = {"@leech", "@crit", "@shield", "absorbAllElements", "dexterity"},
+			secondary = {"@leech", "@crit", "@shield", "absorbAllElements", "dexterity", "attackSpeed"},
 			irrelevant = {"magicSkill", "distanceSkill", "incrementManaDrain", "@manaLeech"}
 		},
 		juggernaut = {
 			primary = {"vitality", "absorbPhysical", "absorbAllElements", "@shield", "strength"},
-			secondary = {"incrementPhysical", "@meleeSkills", "@leech", "@elementResists"},
+			secondary = {"incrementPhysical", "@meleeSkills", "@leech", "@elementResists", "attackSpeed"},
 			irrelevant = {"magicSkill", "distanceSkill", "incrementManaDrain", "@manaLeech"}
 		},
 		berserker = {
 			primary = {"strength", "incrementPhysical", "@meleeSkills", "@crit"},
-			secondary = {"vitality", "@leech", "dexterity", "absorbPhysical"},
+			secondary = {"vitality", "@leech", "dexterity", "absorbPhysical", "attackSpeed"},
 			irrelevant = {"magicSkill", "distanceSkill", "incrementManaDrain", "@manaLeech"}
 		},
 		-- Ranger line: bows and crossbows
 		ranger = {
-			primary = {"dexterity", "distanceSkill", "incrementPhysical", "@crit"},
+			primary = {"dexterity", "distanceSkill", "incrementPhysical", "@crit", "attackSpeed"},
 			secondary = {"speed", "vitality", "@leech", "strength"},
 			irrelevant = {"@meleeSkills", "magicSkill", "@shield"}
 		},
 		deadeye = {
-			primary = {"dexterity", "distanceSkill", "@crit", "incrementPhysical"},
+			primary = {"dexterity", "distanceSkill", "@crit", "incrementPhysical", "attackSpeed"},
 			secondary = {"@leech", "strength", "vitality", "speed"},
 			irrelevant = {"@meleeSkills", "magicSkill", "@shield"}
 		},
 		beastmaster = {
 			primary = {"distanceSkill", "dexterity", "incrementPhysical", "vitality", "spirit"},
-			secondary = {"@crit", "@leech", "absorbPhysical", "speed"},
+			secondary = {"@crit", "@leech", "absorbPhysical", "speed", "attackSpeed"},
 			irrelevant = {"@meleeSkills", "magicSkill", "@shield"}
 		},
 		-- Mystic line: spells, wands and rods
@@ -155,18 +156,18 @@ ChaosPassiveStatsConfig = {
 		},
 		-- Thief line: fast light weapons, shurikens, evasion
 		thief = {
-			primary = {"dexterity", "swordSkill", "distanceSkill", "@crit", "speed"},
+			primary = {"dexterity", "swordSkill", "distanceSkill", "@crit", "speed", "attackSpeed"},
 			secondary = {"incrementPhysical", "incrementEarth", "@leech", "absorbPhysical", "absorbAllElements"},
 			irrelevant = {"axeSkill", "clubSkill", "magicSkill", "@shield"}
 		},
 		ninja = {
-			primary = {"dexterity", "swordSkill", "@crit", "speed", "incrementPhysical"},
+			primary = {"dexterity", "swordSkill", "@crit", "speed", "incrementPhysical", "attackSpeed"},
 			secondary = {"distanceSkill", "strength", "incrementEarth", "@leech", "absorbAllElements"},
 			irrelevant = {"axeSkill", "clubSkill", "magicSkill", "@shield"}
 		},
 		samurai = {
 			primary = {"swordSkill", "strength", "@shield", "vitality", "absorbPhysical"},
-			secondary = {"dexterity", "@crit", "@leech", "incrementPhysical"},
+			secondary = {"dexterity", "@crit", "@leech", "incrementPhysical", "attackSpeed"},
 			irrelevant = {"axeSkill", "clubSkill", "magicSkill", "distanceSkill"}
 		},
 		-- Necromancer line: summoner, curses
@@ -188,11 +189,11 @@ ChaosPassiveStatsConfig = {
 		-- Monk line: unarmed, chi, evasion
 		monk = {
 			primary = {"strength", "dexterity", "incrementPhysical", "vitality", "@crit"},
-			secondary = {"speed", "absorbPhysical", "@leech", "spirit"},
+			secondary = {"speed", "absorbPhysical", "@leech", "spirit", "attackSpeed"},
 			irrelevant = {"@meleeSkills", "distanceSkill", "magicSkill", "@shield"}
 		},
 		shadowfist = {
-			primary = {"strength", "dexterity", "@crit", "incrementPhysical", "speed"},
+			primary = {"strength", "dexterity", "@crit", "incrementPhysical", "speed", "attackSpeed"},
 			secondary = {"vitality", "@leech", "absorbPhysical"},
 			irrelevant = {"@meleeSkills", "distanceSkill", "magicSkill", "@shield"}
 		},
@@ -205,7 +206,7 @@ ChaosPassiveStatsConfig = {
 		-- Lay on Hands and Aegis of Faith all cost mana and the melee hits can leech it (owner: it was marked wasted by mistake).
 		templar = {
 			primary = {"strength", "swordSkill", "clubSkill", "@shield", "vitality", "incrementHoly", "absorbPhysical"},
-			secondary = {"magicSkill", "intelligence", "spirit", "@leech", "@manaLeech", "incrementPhysical"},
+			secondary = {"magicSkill", "intelligence", "spirit", "@leech", "@manaLeech", "incrementPhysical", "attackSpeed"},
 			irrelevant = {"axeSkill", "distanceSkill"}
 		},
 		inquisitor = {

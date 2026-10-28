@@ -80,7 +80,7 @@ for id = 28373, 28393 do
 		MOIST[id] = true
 	end
 end
-local RETIRED_CHESTS = {[27762] = true, [27763] = true, [27769] = true, [27770] = true, [27776] = true, [27777] = true}
+local RETIRED_CHESTS = {[27763] = true, [27770] = true, [27777] = true} -- the club chests (the axe ids are the fist chests since 2026-10-28)
 
 local KINDS = {
 	exercise = {orb = true, material = true, gold = true, unique = true, chest = true},

@@ -30,11 +30,11 @@ for line in f:lines() do
 end
 f:close()
 eq(#rows, 448, "448 pieces in the manifest")
-eq(#P.pieces, 640, "640 pieces in chaos_gear_sets_items.lua: 448 of the art sets and 192 of the later tiers")
+eq(#P.pieces, 643, "643 pieces in chaos_gear_sets_items.lua: 448 of the art sets, 192 of the later tiers and 3 extra Rimewraith legs (O285)")
 eq(P.first, 36995, "first server id")
 eq(P.last, 37442, "last server id")
 eq(P.tier2First, 52000, "first server id of the later tiers")
-eq(P.tier2Last, 52191, "last server id of the later tiers")
+eq(P.tier2Last, 52194, "last server id of the later tiers block (52192..52194: the extra Rimewraith legs of O285, level 800)")
 for i, r in ipairs(rows) do
 	local p = P.pieces[i]
 	eq(r.sid, r.cid + 3000, r.key .. ": server id = client id + 3000")
@@ -68,8 +68,10 @@ for key, s in pairs(P.sets) do
 		if p.set == key then
 			eq(p.level >= s.band[1] and p.level <= s.band[2], true, p.key .. ": level inside the band")
 			local tr = p.kind .. "/" .. p.fit
-			eq((lastOfTrack[tr] or 0) <= p.level, true, p.key .. ": levels only go up along a track")
-			lastOfTrack[tr] = p.level
+			if p.id < 52192 then -- (52192..52194: the extra Rimewraith legs of O285, level 800, after the track's 1000)
+				eq((lastOfTrack[tr] or 0) <= p.level, true, p.key .. ": levels only go up along a track")
+				lastOfTrack[tr] = p.level
+			end
 			has[p.kind] = true
 			if p.kind == "helmet" or p.kind == "armor" or p.kind == "legs" or p.kind == "boots" then
 				eq((p.stats.armor or 0) > 0, true, p.key .. ": armour")

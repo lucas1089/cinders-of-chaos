@@ -2618,6 +2618,10 @@ return {
 			"Sabedoria",
 		["Speed"] =
 			"Velocidade",
+		["Attack speed"] =
+			"Velocidade de ataque",
+		["Shortens the time between your attacks by this percent (the weapon's own Attack Speed and dexterity count with it). The tree gives at most +12, the tree and the worn pieces together +20; the game never lets you attack more than once per second, whatever you stack."] =
+			"Encurta o tempo entre os seus ataques nesta porcentagem (o Attack Speed da própria arma e a destreza contam junto). A árvore dá no máximo +12, a árvore e as peças usadas juntas +20; o jogo nunca deixa você atacar mais de uma vez por segundo, não importa o quanto acumule.",
 		["Experience"] =
 			"Experiência",
 		["Item find"] =
@@ -2839,8 +2843,8 @@ return {
 			"Defesa",
 		["Health, resistances to every damage type and the shielding skill."] =
 			"Vida, resistência a todo tipo de dano e o skill de escudo.",
-		["Movement speed first; attack speed (dexterity) and evasion nodes on the way."] =
-			"Velocidade de movimento primeiro; velocidade de ataque (destreza) e nós de esquiva pelo caminho.",
+		["Movement speed first; attack speed nodes and dexterity on the way."] =
+			"Velocidade de movimento primeiro; nós de velocidade de ataque e destreza pelo caminho.",
 		["Loot"] =
 			"Loot",
 		["Item find and item rarity: more drops, better drops."] =
@@ -2901,6 +2905,8 @@ return {
 			"Um elemento: seus nós de dano e de resistência.",
 		["All damage"] =
 			"Todo dano",
+		["Attack speed %"] =
+			"Velocidade de ataque %",
 		["Experience %"] =
 			"Experiência %",
 		["Item find %"] =

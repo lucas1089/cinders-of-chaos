@@ -305,7 +305,7 @@
 		"invasion.minLevel": 30,
 		"invasion.on": true,
 		"item.maxItemLevel": 150,
-		"item.modifiers": 75,
+		"item.modifiers": 76,
 		"item.powers": 12,
 		"item.powersFrom": "Legendary",
 		"item.qualityCap": 20,
@@ -390,9 +390,9 @@
 		"siege.when": "Saturday 20:00",
 		"siege.whenPt": "sábado às 20:00",
 		"spell.count": 148,
-		"store.categories": 36,
+		"store.categories": 37,
 		"store.cosmetic": 627,
-		"store.offers": 759,
+		"store.offers": 762,
 		"store.service": 36,
 		"store.unlockCost": 0,
 		"support.count": 20,
@@ -8496,13 +8496,13 @@
 							"cols": ["Level", "Health", "Experience", "Loot", "Damage"],
 							"w": [28, 18, 18, 18, 18],
 							"rows": [
-								["20", "100%", "100%", "100%", "100%"],
-								["50", "54%", "62%", "67%", "85%"],
-								["100", "36%", "42%", "44%", "80%"],
-								["200", "24%", "26%", "30%", "72%"],
-								["300", "21%", "22%", "24%", "65%"],
-								["600", "21%", "21%", "23%", "55%"],
-								["1000", "21%", "22%", "24%", "40%"],
+								["20", "28%", "26%", "91%", "100%"],
+								["50", "16%", "13%", "6%", "85%"],
+								["100", "11%", "11%", "11%", "80%"],
+								["200", "9%", "9%", "19%", "72%"],
+								["300", "8%", "9%", "35%", "65%"],
+								["600", "11%", "9%", "11%", "55%"],
+								["1000", "11%", "9%", "30%", "40%"],
 								["650 (own level)", "14%", "6%", "58%", "53%"],
 								["1000 (own level)", "8%", "4%", "28%", "40%"],
 								["1300 (own level)", "7%", "4%", "22%", "40%"],
@@ -8645,14 +8645,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "3 of 165", "1.8%"],
+								["Weapon", "3 of 177", "1.7%"],
 								["Shield", "3 of 128", "2.3%"],
 								["Helmet", "3 of 139", "2.2%"],
 								["Armour", "3 of 119", "2.5%"],
 								["Legs", "3 of 101", "3%"],
 								["Boots", "3 of 88", "3.4%"],
-								["Jewel", "3 of 166", "1.8%"],
-								["Other", "3 of 121", "2.5%"]
+								["Jewel", "3 of 182", "1.6%"],
+								["Other", "3 of 137", "2.2%"]
 							]
 						},
 						{
@@ -8763,14 +8763,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "2 of 165", "1.2%"],
+								["Weapon", "2 of 177", "1.1%"],
 								["Shield", "2 of 128", "1.6%"],
 								["Helmet", "2 of 139", "1.4%"],
 								["Armour", "2 of 119", "1.7%"],
 								["Legs", "2 of 101", "2%"],
 								["Boots", "2 of 88", "2.3%"],
-								["Jewel", "2 of 166", "1.2%"],
-								["Other", "2 of 121", "1.7%"]
+								["Jewel", "2 of 182", "1.1%"],
+								["Other", "2 of 137", "1.5%"]
 							]
 						},
 						{
@@ -8882,14 +8882,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "1 of 165", "0.6%"],
+								["Weapon", "1 of 177", "0.6%"],
 								["Shield", "1 of 128", "0.8%"],
 								["Helmet", "1 of 139", "0.7%"],
 								["Armour", "1 of 119", "0.8%"],
 								["Legs", "1 of 101", "1%"],
 								["Boots", "1 of 88", "1.1%"],
-								["Jewel", "1 of 166", "0.6%"],
-								["Other", "1 of 121", "0.8%"]
+								["Jewel", "1 of 182", "0.5%"],
+								["Other", "1 of 137", "0.7%"]
 							]
 						},
 						{
@@ -9003,14 +9003,127 @@
 							"p": ["Among every modifier an item of that kind may roll, powers not counted (weights):"],
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
-							"rows": [["Weapon", "8 of 165", "4.8%"]]
+							"rows": [["Weapon", "20 of 177", "11.3%"]]
 						},
 						{
 							"h": "Rules",
 							"p": [
 								"A suffix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).",
 								"An item carries each modifier once at most.",
-								"Local to the weapon: it shortens that weapon's attack interval. With topaz gems at most 20% on one weapon."
+								"Local to the weapon: it shortens that weapon's attack interval. With topaz gems at most 15% on one weapon."
+							]
+						},
+						{
+							"h": "Orbs",
+							"cols": ["Orb", "What it does to this modifier"],
+							"w": [30, 70],
+							"rows": [
+								["Orb of Awakening", "Can roll it on a normal item (Common 65%, Uncommon 35%)."],
+								[
+									"Orb of Gilding",
+									"Can roll it on a normal item (Magic 60%, Rare 30%, Legendary 10%)."
+								],
+								[
+									"Orb of Grafting",
+									"Adds it at random when the item has an open suffix and suits it."
+								],
+								["Orb of Upheaval", "Rolls every unbound modifier again: it may come or go."],
+								[
+									"Orb of Fate",
+									"Rarity one step up, new modifiers (Legendary: small chance of Divine)."
+								],
+								["Orb of Unmaking", "May remove it (one random unbound modifier)."],
+								["Orb of Excision", "Removes it when you pick it on the bench."],
+								["Orb of Erasure", "Removes it with the rarity and every other modifier."],
+								["Orb of Tempering", "New value inside its tier (unless bound)."],
+								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
+								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
+									"Orb of Binding",
+									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
+								],
+								[
+									"Orb of Ruin",
+									"40% improve (60% of those: one tier more on every unbound modifier), 60% nothing; it never ruins the item."
+								],
+								[
+									"Whetstone",
+									"Quality multiplies its value: +1% per stone, up to 20% (30% from Divine)."
+								]
+							],
+							"links": [
+								"orb:transmutation",
+								"orb:alchemy",
+								"orb:exalted",
+								"orb:chaos",
+								"orb:divine",
+								"orb:annulment",
+								"orb:excision",
+								"orb:scouring",
+								"orb:tempering",
+								"orb:reforging",
+								"orb:ember",
+								"orb:void",
+								"orb:binding",
+								"orb:ruin",
+								"orb:whetstone"
+							]
+						}
+					],
+					"icon": "wiki/i/k-arcane-rift.png",
+					"side": "suffix"
+				},
+				{
+					"id": "mod:chaos_mod_gearspeed",
+					"name": "Attack Speed",
+					"sub": "Suffix, Jewel, Other. +1% (T1) to +5-7% (T8)",
+					"color": "#ff70c0",
+					"group": "chaos",
+					"sections": [
+						{
+							"h": "Overview",
+							"p": [
+								"Chaos modifier, suffix.",
+								"On an item: Attack Speed +5-7% (T8).",
+								"Cap: at most 10% from all equipped items together."
+							]
+						},
+						{
+							"h": "Tiers",
+							"cols": ["Tier", "Item level", "Value", "Tier weight"],
+							"w": [14, 22, 40, 24],
+							"rows": [
+								["T1", "1+", "+1%", "100"],
+								["T2", "15+", "+1-2%", "90"],
+								["T3", "30+", "+2%", "80"],
+								["T4", "50+", "+2-3%", "65"],
+								["T5", "70+", "+3-4%", "50"],
+								["T6", "95+", "+3-5%", "35"],
+								["T7", "120+", "+4-6%", "22"],
+								["T8", "140+", "+5-7%", "12"]
+							],
+							"tiers": true
+						},
+						{"h": "Rolls on", "p": ["Jewellery (amulets, rings) and Other gear (gloves, belts...)."]},
+						{
+							"h": "Chance per roll on a fresh item",
+							"p": ["Among every modifier an item of that kind may roll, powers not counted (weights):"],
+							"cols": ["Kind", "Weight", "Chance"],
+							"w": [30, 40, 30],
+							"rows": [["Jewel", "16 of 182", "8.8%"], ["Other", "16 of 137", "11.7%"]]
+						},
+						{
+							"h": "Rules",
+							"p": [
+								"A suffix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).",
+								"An item carries each modifier once at most."
 							]
 						},
 						{
@@ -9347,8 +9460,8 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "4 of 165", "2.4%"],
-								["Other", "4 of 121", "3.3%"],
+								["Weapon", "4 of 177", "2.3%"],
+								["Other", "4 of 137", "2.9%"],
 								["Quiver", "4 of 85", "4.7%"]
 							]
 						},
@@ -9464,7 +9577,7 @@
 							"p": ["Among every modifier an item of that kind may roll, powers not counted (weights):"],
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
-							"rows": [["Weapon", "4 of 165", "2.4%"], ["Other", "4 of 121", "3.3%"]]
+							"rows": [["Weapon", "4 of 177", "2.3%"], ["Other", "4 of 137", "2.9%"]]
 						},
 						{
 							"h": "Rules",
@@ -9578,7 +9691,7 @@
 							"p": ["Among every modifier an item of that kind may roll, powers not counted (weights):"],
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
-							"rows": [["Weapon", "4 of 165", "2.4%"], ["Other", "4 of 121", "3.3%"]]
+							"rows": [["Weapon", "4 of 177", "2.3%"], ["Other", "4 of 137", "2.9%"]]
 						},
 						{
 							"h": "Rules",
@@ -9696,8 +9809,8 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "4 of 165", "2.4%"],
-								["Other", "4 of 121", "3.3%"],
+								["Weapon", "4 of 177", "2.3%"],
+								["Other", "4 of 137", "2.9%"],
 								["Quiver", "4 of 85", "4.7%"]
 							]
 						},
@@ -9813,7 +9926,7 @@
 							"p": ["Among every modifier an item of that kind may roll, powers not counted (weights):"],
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
-							"rows": [["Weapon", "4 of 165", "2.4%"], ["Other", "4 of 121", "3.3%"]]
+							"rows": [["Weapon", "4 of 177", "2.3%"], ["Other", "4 of 137", "2.9%"]]
 						},
 						{
 							"h": "Rules",
@@ -9932,8 +10045,8 @@
 							"w": [30, 40, 30],
 							"rows": [
 								["Helmet", "4 of 139", "2.9%"],
-								["Jewel", "4 of 166", "2.4%"],
-								["Other", "4 of 121", "3.3%"]
+								["Jewel", "4 of 182", "2.2%"],
+								["Other", "4 of 137", "2.9%"]
 							]
 						},
 						{
@@ -10044,14 +10157,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "1 of 165", "0.6%"],
+								["Weapon", "1 of 177", "0.6%"],
 								["Shield", "1 of 128", "0.8%"],
 								["Helmet", "1 of 139", "0.7%"],
 								["Armour", "1 of 119", "0.8%"],
 								["Legs", "1 of 101", "1%"],
 								["Boots", "1 of 88", "1.1%"],
-								["Jewel", "1 of 166", "0.6%"],
-								["Other", "1 of 121", "0.8%"]
+								["Jewel", "1 of 182", "0.5%"],
+								["Other", "1 of 137", "0.7%"]
 							]
 						},
 						{
@@ -10165,14 +10278,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "8 of 165", "4.8%"],
+								["Weapon", "8 of 177", "4.5%"],
 								["Shield", "8 of 128", "6.3%"],
 								["Helmet", "8 of 139", "5.8%"],
 								["Armour", "8 of 119", "6.7%"],
 								["Legs", "8 of 101", "7.9%"],
 								["Boots", "8 of 88", "9.1%"],
-								["Jewel", "8 of 166", "4.8%"],
-								["Other", "8 of 121", "6.6%"]
+								["Jewel", "8 of 182", "4.4%"],
+								["Other", "8 of 137", "5.8%"]
 							]
 						},
 						{
@@ -10522,9 +10635,9 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "4 of 165", "2.4%"],
-								["Jewel", "4 of 166", "2.4%"],
-								["Other", "4 of 121", "3.3%"]
+								["Weapon", "4 of 177", "2.3%"],
+								["Jewel", "4 of 182", "2.2%"],
+								["Other", "4 of 137", "2.9%"]
 							]
 						},
 						{
@@ -10642,8 +10755,8 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "6 of 165", "3.6%"],
-								["Jewel", "6 of 166", "3.6%"],
+								["Weapon", "6 of 177", "3.4%"],
+								["Jewel", "6 of 182", "3.3%"],
 								["Quiver", "6 of 85", "7.1%"]
 							]
 						},
@@ -10758,14 +10871,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "3 of 165", "1.8%"],
+								["Weapon", "3 of 177", "1.7%"],
 								["Shield", "3 of 128", "2.3%"],
 								["Helmet", "3 of 139", "2.2%"],
 								["Armour", "3 of 119", "2.5%"],
 								["Legs", "3 of 101", "3%"],
 								["Boots", "3 of 88", "3.4%"],
-								["Jewel", "3 of 166", "1.8%"],
-								["Other", "3 of 121", "2.5%"]
+								["Jewel", "3 of 182", "1.6%"],
+								["Other", "3 of 137", "2.2%"]
 							]
 						},
 						{
@@ -10876,14 +10989,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "2 of 165", "1.2%"],
+								["Weapon", "2 of 177", "1.1%"],
 								["Shield", "2 of 128", "1.6%"],
 								["Helmet", "2 of 139", "1.4%"],
 								["Armour", "2 of 119", "1.7%"],
 								["Legs", "2 of 101", "2%"],
 								["Boots", "2 of 88", "2.3%"],
-								["Jewel", "2 of 166", "1.2%"],
-								["Other", "2 of 121", "1.7%"]
+								["Jewel", "2 of 182", "1.1%"],
+								["Other", "2 of 137", "1.5%"]
 							]
 						},
 						{
@@ -11119,7 +11232,7 @@
 								["Armour", "5 of 119", "4.2%"],
 								["Legs", "5 of 101", "5%"],
 								["Boots", "5 of 88", "5.7%"],
-								["Other", "5 of 121", "4.1%"]
+								["Other", "5 of 137", "3.6%"]
 							]
 						},
 						{
@@ -11233,14 +11346,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "3 of 165", "1.8%"],
+								["Weapon", "3 of 177", "1.7%"],
 								["Shield", "3 of 128", "2.3%"],
 								["Helmet", "3 of 139", "2.2%"],
 								["Armour", "3 of 119", "2.5%"],
 								["Legs", "3 of 101", "3%"],
 								["Boots", "3 of 88", "3.4%"],
-								["Jewel", "3 of 166", "1.8%"],
-								["Other", "3 of 121", "2.5%"]
+								["Jewel", "3 of 182", "1.6%"],
+								["Other", "3 of 137", "2.2%"]
 							]
 						},
 						{
@@ -11354,14 +11467,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "3 of 165", "1.8%"],
+								["Weapon", "3 of 177", "1.7%"],
 								["Shield", "3 of 128", "2.3%"],
 								["Helmet", "3 of 139", "2.2%"],
 								["Armour", "3 of 119", "2.5%"],
 								["Legs", "3 of 101", "3%"],
 								["Boots", "3 of 88", "3.4%"],
-								["Jewel", "3 of 166", "1.8%"],
-								["Other", "3 of 121", "2.5%"]
+								["Jewel", "3 of 182", "1.6%"],
+								["Other", "3 of 137", "2.2%"]
 							]
 						},
 						{
@@ -11585,14 +11698,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "2 of 165", "1.2%"],
+								["Weapon", "2 of 177", "1.1%"],
 								["Shield", "2 of 128", "1.6%"],
 								["Helmet", "2 of 139", "1.4%"],
 								["Armour", "2 of 119", "1.7%"],
 								["Legs", "2 of 101", "2%"],
 								["Boots", "2 of 88", "2.3%"],
-								["Jewel", "2 of 166", "1.2%"],
-								["Other", "2 of 121", "1.7%"]
+								["Jewel", "2 of 182", "1.1%"],
+								["Other", "2 of 137", "1.5%"]
 							]
 						},
 						{
@@ -11711,8 +11824,8 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "4 of 165", "2.4%"],
-								["Jewel", "4 of 166", "2.4%"],
+								["Weapon", "4 of 177", "2.3%"],
+								["Jewel", "4 of 182", "2.2%"],
 								["Quiver", "4 of 85", "4.7%"]
 							]
 						},
@@ -11827,14 +11940,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "3 of 165", "1.8%"],
+								["Weapon", "3 of 177", "1.7%"],
 								["Shield", "3 of 128", "2.3%"],
 								["Helmet", "3 of 139", "2.2%"],
 								["Armour", "3 of 119", "2.5%"],
 								["Legs", "3 of 101", "3%"],
 								["Boots", "3 of 88", "3.4%"],
-								["Jewel", "3 of 166", "1.8%"],
-								["Other", "3 of 121", "2.5%"]
+								["Jewel", "3 of 182", "1.6%"],
+								["Other", "3 of 137", "2.2%"]
 							]
 						},
 						{
@@ -12058,14 +12171,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "2 of 165", "1.2%"],
+								["Weapon", "2 of 177", "1.1%"],
 								["Shield", "2 of 128", "1.6%"],
 								["Helmet", "2 of 139", "1.4%"],
 								["Armour", "2 of 119", "1.7%"],
 								["Legs", "2 of 101", "2%"],
 								["Boots", "2 of 88", "2.3%"],
-								["Jewel", "2 of 166", "1.2%"],
-								["Other", "2 of 121", "1.7%"]
+								["Jewel", "2 of 182", "1.1%"],
+								["Other", "2 of 137", "1.5%"]
 							]
 						},
 						{
@@ -12180,7 +12293,7 @@
 							"p": ["Among every modifier an item of that kind may roll, powers not counted (weights):"],
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
-							"rows": [["Weapon", "3 of 165", "1.8%"]]
+							"rows": [["Weapon", "3 of 177", "1.7%"]]
 						},
 						{
 							"h": "Rules",
@@ -12293,7 +12406,7 @@
 							"p": ["Among every modifier an item of that kind may roll, powers not counted (weights):"],
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
-							"rows": [["Helmet", "4 of 139", "2.9%"], ["Jewel", "4 of 166", "2.4%"]]
+							"rows": [["Helmet", "4 of 139", "2.9%"], ["Jewel", "4 of 182", "2.2%"]]
 						},
 						{
 							"h": "Rules",
@@ -12523,7 +12636,7 @@
 								["Shield", "4 of 128", "3.1%"],
 								["Helmet", "4 of 139", "2.9%"],
 								["Armour", "4 of 119", "3.4%"],
-								["Jewel", "4 of 166", "2.4%"]
+								["Jewel", "4 of 182", "2.2%"]
 							]
 						},
 						{
@@ -12637,14 +12750,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "3 of 165", "1.8%"],
+								["Weapon", "3 of 177", "1.7%"],
 								["Shield", "3 of 128", "2.3%"],
 								["Helmet", "3 of 139", "2.2%"],
 								["Armour", "3 of 119", "2.5%"],
 								["Legs", "3 of 101", "3%"],
 								["Boots", "3 of 88", "3.4%"],
-								["Jewel", "3 of 166", "1.8%"],
-								["Other", "3 of 121", "2.5%"]
+								["Jewel", "3 of 182", "1.6%"],
+								["Other", "3 of 137", "2.2%"]
 							]
 						},
 						{
@@ -12868,14 +12981,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "2 of 165", "1.2%"],
+								["Weapon", "2 of 177", "1.1%"],
 								["Shield", "2 of 128", "1.6%"],
 								["Helmet", "2 of 139", "1.4%"],
 								["Armour", "2 of 119", "1.7%"],
 								["Legs", "2 of 101", "2%"],
 								["Boots", "2 of 88", "2.3%"],
-								["Jewel", "2 of 166", "1.2%"],
-								["Other", "2 of 121", "1.7%"]
+								["Jewel", "2 of 182", "1.1%"],
+								["Other", "2 of 137", "1.5%"]
 							]
 						},
 						{
@@ -12987,14 +13100,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "1 of 165", "0.6%"],
+								["Weapon", "1 of 177", "0.6%"],
 								["Shield", "1 of 128", "0.8%"],
 								["Helmet", "1 of 139", "0.7%"],
 								["Armour", "1 of 119", "0.8%"],
 								["Legs", "1 of 101", "1%"],
 								["Boots", "1 of 88", "1.1%"],
-								["Jewel", "1 of 166", "0.6%"],
-								["Other", "1 of 121", "0.8%"]
+								["Jewel", "1 of 182", "0.5%"],
+								["Other", "1 of 137", "0.7%"]
 							]
 						},
 						{
@@ -13102,14 +13215,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "3 of 165", "1.8%"],
+								["Weapon", "3 of 177", "1.7%"],
 								["Shield", "3 of 128", "2.3%"],
 								["Helmet", "3 of 139", "2.2%"],
 								["Armour", "3 of 119", "2.5%"],
 								["Legs", "3 of 101", "3%"],
 								["Boots", "3 of 88", "3.4%"],
-								["Jewel", "3 of 166", "1.8%"],
-								["Other", "3 of 121", "2.5%"]
+								["Jewel", "3 of 182", "1.6%"],
+								["Other", "3 of 137", "2.2%"]
 							]
 						},
 						{
@@ -13229,8 +13342,8 @@
 							"rows": [
 								["Helmet", "5 of 139", "3.6%"],
 								["Legs", "5 of 101", "5%"],
-								["Jewel", "5 of 166", "3%"],
-								["Other", "5 of 121", "4.1%"]
+								["Jewel", "5 of 182", "2.7%"],
+								["Other", "5 of 137", "3.6%"]
 							]
 						},
 						{
@@ -13345,9 +13458,9 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "5 of 165", "3%"],
+								["Weapon", "5 of 177", "2.8%"],
 								["Shield", "5 of 128", "3.9%"],
-								["Jewel", "5 of 166", "3%"]
+								["Jewel", "5 of 182", "2.7%"]
 							]
 						},
 						{
@@ -13469,7 +13582,7 @@
 								["Helmet", "6 of 139", "4.3%"],
 								["Armour", "6 of 119", "5%"],
 								["Legs", "6 of 101", "5.9%"],
-								["Jewel", "6 of 166", "3.6%"]
+								["Jewel", "6 of 182", "3.3%"]
 							]
 						},
 						{
@@ -13590,9 +13703,9 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "5 of 165", "3%"],
-								["Jewel", "5 of 166", "3%"],
-								["Other", "5 of 121", "4.1%"],
+								["Weapon", "5 of 177", "2.8%"],
+								["Jewel", "5 of 182", "2.7%"],
+								["Other", "5 of 137", "3.6%"],
 								["Quiver", "5 of 85", "5.9%"]
 							]
 						},
@@ -13704,14 +13817,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "1 of 165", "0.6%"],
+								["Weapon", "1 of 177", "0.6%"],
 								["Shield", "1 of 128", "0.8%"],
 								["Helmet", "1 of 139", "0.7%"],
 								["Armour", "1 of 119", "0.8%"],
 								["Legs", "1 of 101", "1%"],
 								["Boots", "1 of 88", "1.1%"],
-								["Jewel", "1 of 166", "0.6%"],
-								["Other", "1 of 121", "0.8%"]
+								["Jewel", "1 of 182", "0.5%"],
+								["Other", "1 of 137", "0.7%"]
 							]
 						},
 						{
@@ -13825,14 +13938,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "3 of 165", "1.8%"],
+								["Weapon", "3 of 177", "1.7%"],
 								["Shield", "3 of 128", "2.3%"],
 								["Helmet", "3 of 139", "2.2%"],
 								["Armour", "3 of 119", "2.5%"],
 								["Legs", "3 of 101", "3%"],
 								["Boots", "3 of 88", "3.4%"],
-								["Jewel", "3 of 166", "1.8%"],
-								["Other", "3 of 121", "2.5%"]
+								["Jewel", "3 of 182", "1.6%"],
+								["Other", "3 of 137", "2.2%"]
 							]
 						},
 						{
@@ -13943,14 +14056,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "2 of 165", "1.2%"],
+								["Weapon", "2 of 177", "1.1%"],
 								["Shield", "2 of 128", "1.6%"],
 								["Helmet", "2 of 139", "1.4%"],
 								["Armour", "2 of 119", "1.7%"],
 								["Legs", "2 of 101", "2%"],
 								["Boots", "2 of 88", "2.3%"],
-								["Jewel", "2 of 166", "1.2%"],
-								["Other", "2 of 121", "1.7%"]
+								["Jewel", "2 of 182", "1.1%"],
+								["Other", "2 of 137", "1.5%"]
 							]
 						},
 						{
@@ -14065,14 +14178,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "3 of 165", "1.8%"],
+								["Weapon", "3 of 177", "1.7%"],
 								["Shield", "3 of 128", "2.3%"],
 								["Helmet", "3 of 139", "2.2%"],
 								["Armour", "3 of 119", "2.5%"],
 								["Legs", "3 of 101", "3%"],
 								["Boots", "3 of 88", "3.4%"],
-								["Jewel", "3 of 166", "1.8%"],
-								["Other", "3 of 121", "2.5%"]
+								["Jewel", "3 of 182", "1.6%"],
+								["Other", "3 of 137", "2.2%"]
 							]
 						},
 						{
@@ -14296,14 +14409,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "2 of 165", "1.2%"],
+								["Weapon", "2 of 177", "1.1%"],
 								["Shield", "2 of 128", "1.6%"],
 								["Helmet", "2 of 139", "1.4%"],
 								["Armour", "2 of 119", "1.7%"],
 								["Legs", "2 of 101", "2%"],
 								["Boots", "2 of 88", "2.3%"],
-								["Jewel", "2 of 166", "1.2%"],
-								["Other", "2 of 121", "1.7%"]
+								["Jewel", "2 of 182", "1.1%"],
+								["Other", "2 of 137", "1.5%"]
 							]
 						},
 						{
@@ -14418,7 +14531,7 @@
 							"p": ["Among every modifier an item of that kind may roll, powers not counted (weights):"],
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
-							"rows": [["Helmet", "4 of 139", "2.9%"], ["Jewel", "4 of 166", "2.4%"]]
+							"rows": [["Helmet", "4 of 139", "2.9%"], ["Jewel", "4 of 182", "2.2%"]]
 						},
 						{
 							"h": "Rules",
@@ -14528,14 +14641,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "1 of 165", "0.6%"],
+								["Weapon", "1 of 177", "0.6%"],
 								["Shield", "1 of 128", "0.8%"],
 								["Helmet", "1 of 139", "0.7%"],
 								["Armour", "1 of 119", "0.8%"],
 								["Legs", "1 of 101", "1%"],
 								["Boots", "1 of 88", "1.1%"],
-								["Jewel", "1 of 166", "0.6%"],
-								["Other", "1 of 121", "0.8%"]
+								["Jewel", "1 of 182", "0.5%"],
+								["Other", "1 of 137", "0.7%"]
 							]
 						},
 						{
@@ -14649,14 +14762,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "6 of 165", "3.6%"],
+								["Weapon", "6 of 177", "3.4%"],
 								["Shield", "6 of 128", "4.7%"],
 								["Helmet", "6 of 139", "4.3%"],
 								["Armour", "6 of 119", "5%"],
 								["Legs", "6 of 101", "5.9%"],
 								["Boots", "6 of 88", "6.8%"],
-								["Jewel", "6 of 166", "3.6%"],
-								["Other", "6 of 121", "5%"]
+								["Jewel", "6 of 182", "3.3%"],
+								["Other", "6 of 137", "4.4%"]
 							]
 						},
 						{
@@ -14775,9 +14888,9 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "6 of 165", "3.6%"],
+								["Weapon", "6 of 177", "3.4%"],
 								["Helmet", "6 of 139", "4.3%"],
-								["Jewel", "6 of 166", "3.6%"],
+								["Jewel", "6 of 182", "3.3%"],
 								["Quiver", "6 of 85", "7.1%"]
 							]
 						},
@@ -14889,14 +15002,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "3 of 165", "1.8%"],
+								["Weapon", "3 of 177", "1.7%"],
 								["Shield", "3 of 128", "2.3%"],
 								["Helmet", "3 of 139", "2.2%"],
 								["Armour", "3 of 119", "2.5%"],
 								["Legs", "3 of 101", "3%"],
 								["Boots", "3 of 88", "3.4%"],
-								["Jewel", "3 of 166", "1.8%"],
-								["Other", "3 of 121", "2.5%"]
+								["Jewel", "3 of 182", "1.6%"],
+								["Other", "3 of 137", "2.2%"]
 							]
 						},
 						{
@@ -15013,7 +15126,7 @@
 							"rows": [
 								["Helmet", "4 of 139", "2.9%"],
 								["Armour", "4 of 119", "3.4%"],
-								["Jewel", "4 of 166", "2.4%"]
+								["Jewel", "4 of 182", "2.2%"]
 							]
 						},
 						{
@@ -15127,14 +15240,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "6 of 165", "3.6%"],
+								["Weapon", "6 of 177", "3.4%"],
 								["Shield", "6 of 128", "4.7%"],
 								["Helmet", "6 of 139", "4.3%"],
 								["Armour", "6 of 119", "5%"],
 								["Legs", "6 of 101", "5.9%"],
 								["Boots", "6 of 88", "6.8%"],
-								["Jewel", "6 of 166", "3.6%"],
-								["Other", "6 of 121", "5%"]
+								["Jewel", "6 of 182", "3.3%"],
+								["Other", "6 of 137", "4.4%"]
 							]
 						},
 						{
@@ -15255,9 +15368,9 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "5 of 165", "3%"],
-								["Jewel", "5 of 166", "3%"],
-								["Other", "5 of 121", "4.1%"],
+								["Weapon", "5 of 177", "2.8%"],
+								["Jewel", "5 of 182", "2.7%"],
+								["Other", "5 of 137", "3.6%"],
 								["Quiver", "5 of 85", "5.9%"]
 							]
 						},
@@ -15376,9 +15489,9 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "6 of 165", "3.6%"],
+								["Weapon", "6 of 177", "3.4%"],
 								["Helmet", "6 of 139", "4.3%"],
-								["Jewel", "6 of 166", "3.6%"],
+								["Jewel", "6 of 182", "3.3%"],
 								["Quiver", "6 of 85", "7.1%"]
 							]
 						},
@@ -15497,7 +15610,7 @@
 								["Shield", "6 of 128", "4.7%"],
 								["Helmet", "6 of 139", "4.3%"],
 								["Armour", "6 of 119", "5%"],
-								["Jewel", "6 of 166", "3.6%"]
+								["Jewel", "6 of 182", "3.3%"]
 							]
 						},
 						{
@@ -15615,7 +15728,7 @@
 								["Shield", "4 of 128", "3.1%"],
 								["Helmet", "4 of 139", "2.9%"],
 								["Armour", "4 of 119", "3.4%"],
-								["Jewel", "4 of 166", "2.4%"]
+								["Jewel", "4 of 182", "2.2%"]
 							]
 						},
 						{
@@ -15726,14 +15839,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "3 of 165", "1.8%"],
+								["Weapon", "3 of 177", "1.7%"],
 								["Shield", "3 of 128", "2.3%"],
 								["Helmet", "3 of 139", "2.2%"],
 								["Armour", "3 of 119", "2.5%"],
 								["Legs", "3 of 101", "3%"],
 								["Boots", "3 of 88", "3.4%"],
-								["Jewel", "3 of 166", "1.8%"],
-								["Other", "3 of 121", "2.5%"]
+								["Jewel", "3 of 182", "1.6%"],
+								["Other", "3 of 137", "2.2%"]
 							]
 						},
 						{
@@ -15844,14 +15957,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "1 of 165", "0.6%"],
+								["Weapon", "1 of 177", "0.6%"],
 								["Shield", "1 of 128", "0.8%"],
 								["Helmet", "1 of 139", "0.7%"],
 								["Armour", "1 of 119", "0.8%"],
 								["Legs", "1 of 101", "1%"],
 								["Boots", "1 of 88", "1.1%"],
-								["Jewel", "1 of 166", "0.6%"],
-								["Other", "1 of 121", "0.8%"]
+								["Jewel", "1 of 182", "0.5%"],
+								["Other", "1 of 137", "0.7%"]
 							]
 						},
 						{
@@ -16079,14 +16192,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "3 of 165", "1.8%"],
+								["Weapon", "3 of 177", "1.7%"],
 								["Shield", "3 of 128", "2.3%"],
 								["Helmet", "3 of 139", "2.2%"],
 								["Armour", "3 of 119", "2.5%"],
 								["Legs", "3 of 101", "3%"],
 								["Boots", "3 of 88", "3.4%"],
-								["Jewel", "3 of 166", "1.8%"],
-								["Other", "3 of 121", "2.5%"]
+								["Jewel", "3 of 182", "1.6%"],
+								["Other", "3 of 137", "2.2%"]
 							]
 						},
 						{
@@ -16204,8 +16317,8 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "4 of 165", "2.4%"],
-								["Jewel", "4 of 166", "2.4%"],
+								["Weapon", "4 of 177", "2.3%"],
+								["Jewel", "4 of 182", "2.2%"],
 								["Quiver", "4 of 85", "4.7%"]
 							]
 						},
@@ -16317,14 +16430,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "3 of 165", "1.8%"],
+								["Weapon", "3 of 177", "1.7%"],
 								["Shield", "3 of 128", "2.3%"],
 								["Helmet", "3 of 139", "2.2%"],
 								["Armour", "3 of 119", "2.5%"],
 								["Legs", "3 of 101", "3%"],
 								["Boots", "3 of 88", "3.4%"],
-								["Jewel", "3 of 166", "1.8%"],
-								["Other", "3 of 121", "2.5%"]
+								["Jewel", "3 of 182", "1.6%"],
+								["Other", "3 of 137", "2.2%"]
 							]
 						},
 						{
@@ -16438,7 +16551,7 @@
 							"p": ["Among every modifier an item of that kind may roll, powers not counted (weights):"],
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
-							"rows": [["Helmet", "4 of 139", "2.9%"], ["Jewel", "4 of 166", "2.4%"]]
+							"rows": [["Helmet", "4 of 139", "2.9%"], ["Jewel", "4 of 182", "2.2%"]]
 						},
 						{
 							"h": "Rules",
@@ -16661,14 +16774,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "3 of 165", "1.8%"],
+								["Weapon", "3 of 177", "1.7%"],
 								["Shield", "3 of 128", "2.3%"],
 								["Helmet", "3 of 139", "2.2%"],
 								["Armour", "3 of 119", "2.5%"],
 								["Legs", "3 of 101", "3%"],
 								["Boots", "3 of 88", "3.4%"],
-								["Jewel", "3 of 166", "1.8%"],
-								["Other", "3 of 121", "2.5%"]
+								["Jewel", "3 of 182", "1.6%"],
+								["Other", "3 of 137", "2.2%"]
 							]
 						},
 						{
@@ -16899,7 +17012,7 @@
 							"p": ["Among every modifier an item of that kind may roll, powers not counted (weights):"],
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
-							"rows": [["Helmet", "3 of 139", "2.2%"], ["Jewel", "3 of 166", "1.8%"]]
+							"rows": [["Helmet", "3 of 139", "2.2%"], ["Jewel", "3 of 182", "1.6%"]]
 						},
 						{
 							"h": "Rules",
@@ -17012,14 +17125,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "3 of 165", "1.8%"],
+								["Weapon", "3 of 177", "1.7%"],
 								["Shield", "3 of 128", "2.3%"],
 								["Helmet", "3 of 139", "2.2%"],
 								["Armour", "3 of 119", "2.5%"],
 								["Legs", "3 of 101", "3%"],
 								["Boots", "3 of 88", "3.4%"],
-								["Jewel", "3 of 166", "1.8%"],
-								["Other", "3 of 121", "2.5%"]
+								["Jewel", "3 of 182", "1.6%"],
+								["Other", "3 of 137", "2.2%"]
 							]
 						},
 						{
@@ -17130,14 +17243,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "2 of 165", "1.2%"],
+								["Weapon", "2 of 177", "1.1%"],
 								["Shield", "2 of 128", "1.6%"],
 								["Helmet", "2 of 139", "1.4%"],
 								["Armour", "2 of 119", "1.7%"],
 								["Legs", "2 of 101", "2%"],
 								["Boots", "2 of 88", "2.3%"],
-								["Jewel", "2 of 166", "1.2%"],
-								["Other", "2 of 121", "1.7%"]
+								["Jewel", "2 of 182", "1.1%"],
+								["Other", "2 of 137", "1.5%"]
 							]
 						},
 						{
@@ -17249,14 +17362,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "1 of 165", "0.6%"],
+								["Weapon", "1 of 177", "0.6%"],
 								["Shield", "1 of 128", "0.8%"],
 								["Helmet", "1 of 139", "0.7%"],
 								["Armour", "1 of 119", "0.8%"],
 								["Legs", "1 of 101", "1%"],
 								["Boots", "1 of 88", "1.1%"],
-								["Jewel", "1 of 166", "0.6%"],
-								["Other", "1 of 121", "0.8%"]
+								["Jewel", "1 of 182", "0.5%"],
+								["Other", "1 of 137", "0.7%"]
 							]
 						},
 						{
@@ -17367,14 +17480,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "1 of 165", "0.6%"],
+								["Weapon", "1 of 177", "0.6%"],
 								["Shield", "1 of 128", "0.8%"],
 								["Helmet", "1 of 139", "0.7%"],
 								["Armour", "1 of 119", "0.8%"],
 								["Legs", "1 of 101", "1%"],
 								["Boots", "1 of 88", "1.1%"],
-								["Jewel", "1 of 166", "0.6%"],
-								["Other", "1 of 121", "0.8%"]
+								["Jewel", "1 of 182", "0.5%"],
+								["Other", "1 of 137", "0.7%"]
 							]
 						},
 						{
@@ -17499,7 +17612,7 @@
 							"p": ["Among every modifier a Legendary item of that kind may roll (weights):"],
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
-							"rows": [["Weapon", "3 of 185", "1.6%"], ["Jewel", "3 of 192", "1.6%"]]
+							"rows": [["Weapon", "3 of 197", "1.5%"], ["Jewel", "3 of 208", "1.4%"]]
 						},
 						{
 							"h": "Rules",
@@ -17619,9 +17732,9 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "3 of 185", "1.6%"],
-								["Jewel", "3 of 192", "1.6%"],
-								["Other", "3 of 133", "2.3%"]
+								["Weapon", "3 of 197", "1.5%"],
+								["Jewel", "3 of 208", "1.4%"],
+								["Other", "3 of 149", "2%"]
 							]
 						},
 						{
@@ -17739,9 +17852,9 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "3 of 185", "1.6%"],
+								["Weapon", "3 of 197", "1.5%"],
 								["Helmet", "3 of 150", "2%"],
-								["Jewel", "3 of 192", "1.6%"]
+								["Jewel", "3 of 208", "1.4%"]
 							]
 						},
 						{
@@ -17858,7 +17971,7 @@
 							"p": ["Among every modifier a Legendary item of that kind may roll (weights):"],
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
-							"rows": [["Weapon", "3 of 185", "1.6%"], ["Jewel", "3 of 192", "1.6%"]]
+							"rows": [["Weapon", "3 of 197", "1.5%"], ["Jewel", "3 of 208", "1.4%"]]
 						},
 						{
 							"h": "Rules",
@@ -17974,7 +18087,7 @@
 							"p": ["Among every modifier a Legendary item of that kind may roll (weights):"],
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
-							"rows": [["Weapon", "3 of 185", "1.6%"], ["Jewel", "3 of 192", "1.6%"]]
+							"rows": [["Weapon", "3 of 197", "1.5%"], ["Jewel", "3 of 208", "1.4%"]]
 						},
 						{
 							"h": "Rules",
@@ -18090,7 +18203,7 @@
 							"p": ["Among every modifier a Legendary item of that kind may roll (weights):"],
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
-							"rows": [["Weapon", "2 of 185", "1.1%"]]
+							"rows": [["Weapon", "2 of 197", "1%"]]
 						},
 						{
 							"h": "Rules",
@@ -18210,7 +18323,7 @@
 								["Armour", "3 of 130", "2.3%"],
 								["Legs", "3 of 112", "2.7%"],
 								["Boots", "3 of 97", "3.1%"],
-								["Jewel", "3 of 192", "1.6%"]
+								["Jewel", "3 of 208", "1.4%"]
 							]
 						},
 						{
@@ -18335,7 +18448,7 @@
 								["Armour", "3 of 130", "2.3%"],
 								["Legs", "3 of 112", "2.7%"],
 								["Boots", "3 of 97", "3.1%"],
-								["Other", "3 of 133", "2.3%"]
+								["Other", "3 of 149", "2%"]
 							]
 						},
 						{
@@ -18458,8 +18571,8 @@
 							"rows": [
 								["Helmet", "3 of 150", "2%"],
 								["Boots", "3 of 97", "3.1%"],
-								["Jewel", "3 of 192", "1.6%"],
-								["Other", "3 of 133", "2.3%"]
+								["Jewel", "3 of 208", "1.4%"],
+								["Other", "3 of 149", "2%"]
 							]
 						},
 						{
@@ -18584,7 +18697,7 @@
 								["Helmet", "2 of 150", "1.3%"],
 								["Armour", "2 of 130", "1.5%"],
 								["Legs", "2 of 112", "1.8%"],
-								["Jewel", "2 of 192", "1%"]
+								["Jewel", "2 of 208", "1%"]
 							]
 						},
 						{
@@ -18701,7 +18814,7 @@
 							"p": ["Among every modifier a Legendary item of that kind may roll (weights):"],
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
-							"rows": [["Weapon", "3 of 185", "1.6%"]]
+							"rows": [["Weapon", "3 of 197", "1.5%"]]
 						},
 						{
 							"h": "Rules",
@@ -18826,8 +18939,8 @@
 								["Helmet", "3 of 150", "2%"],
 								["Armour", "3 of 130", "2.3%"],
 								["Legs", "3 of 112", "2.7%"],
-								["Jewel", "3 of 192", "1.6%"],
-								["Other", "3 of 133", "2.3%"]
+								["Jewel", "3 of 208", "1.4%"],
+								["Other", "3 of 149", "2%"]
 							]
 						},
 						{
@@ -32524,9 +32637,15 @@
 								["rimewraith rod", "Weapon", "450"],
 								["rimewraith staff", "Weapon", "635"],
 								["rimewraith branch", "Weapon", "815"],
-								["rimewraith crook", "Weapon", "1000"]
+								["rimewraith crook", "Weapon", "1000"],
+								["rimewraith greaves", "Legs", "800"],
+								["rimewraith chausses", "Legs", "800"],
+								["rimewraith skirt", "Legs", "800"]
 							],
 							"links": [
+								"",
+								"",
+								"",
 								"",
 								"",
 								"",
@@ -34720,7 +34839,7 @@
 						{
 							"h": "Caps (all gems together)",
 							"p": [
-								"Attack Speed at most 20%.",
+								"Attack Speed at most 15%.",
 								"Energy Resistance at most 30%.",
 								"Energy Damage at most 40%."
 							]
@@ -37420,7 +37539,7 @@
 								["Rift monsters", "Rare 4%, legendary 10%: a key of the rift's tier."],
 								[
 									"Monsters",
-									"Tier-1 keys: 0.25% per kill (Normal x1, Magic x3, Rare x8, Legendary x20, Boss x40) from monsters of hunting level 120 or more and at least 40% of yours."
+									"Tier-1 keys: 0.25% per kill (Normal x1, Magic x3, Rare x8, Legendary x20, Boss x40) from monsters of hunting level 60 or more and at least 40% of yours."
 								],
 								[
 									"Bounty board",
@@ -43709,8 +43828,9 @@
 								["World Buffs", "4", "250-300", "Boost"],
 								["Potions", "18", "15-135", "Consumable item"],
 								["Runes", "29", "3-108", "Consumable item"],
-								["Training", "15", "25-450", "Consumable item"],
-								["Convenience", "17", "20-400", "Convenience, Service"],
+								["Training", "18", "25-450", "Consumable item"],
+								["Everfull Potions", "10", "20-70", "Service"],
+								["Convenience", "7", "50-400", "Convenience"],
 								["Outfits", "60", "300-750", "Cosmetic"],
 								["Costumes", "6", "300", "Cosmetic"],
 								["Outfit Addons", "9", "150", "Cosmetic"],
@@ -43770,7 +43890,8 @@
 								"store:33",
 								"store:34",
 								"store:35",
-								"store:36"
+								"store:36",
+								"store:37"
 							]
 						},
 						{
@@ -43786,7 +43907,7 @@
 								["Chaos Pact", "1"],
 								["Season pass", "4"],
 								["Boost", "7"],
-								["Consumable item", "62"],
+								["Consumable item", "65"],
 								["Crafting item", "3"],
 								["Premium time", "3"],
 								["Bundle", "9"]
@@ -44565,11 +44686,11 @@
 				{
 					"id": "store:13",
 					"name": "Training",
-					"sub": "15 offers, 25-450 coins. Consumable item.",
+					"sub": "18 offers, 25-450 coins. Consumable item.",
 					"color": "#ff70c0",
 					"group": "category",
 					"sections": [
-						{"h": "Category", "p": ["15 offers, 25-450 Chaos Coins. Consumable item."]},
+						{"h": "Category", "p": ["18 offers, 25-450 Chaos Coins. Consumable item."]},
 						{
 							"h": "Offers",
 							"cols": ["Offer", "Coins", "Type", "What it is"],
@@ -44579,7 +44700,13 @@
 									"Exercise Melee Weapon (500)",
 									"25",
 									"Consumable item",
-									"Use the chest to get a melee training weapon with 500 charges. Trains melee (fist for the Monk line). Warrior, Thief, Monk and Templar lines."
+									"Use the chest to get a melee training weapon with 500 charges. Trains melee. Warrior, Thief and Templar lines."
+								],
+								[
+									"Exercise Fist Weapon (500)",
+									"25",
+									"Consumable item",
+									"Use the chest to get a fist training weapon with 500 charges. Trains fist fighting. Monk line."
 								],
 								[
 									"Exercise Bow (500)",
@@ -44609,7 +44736,13 @@
 									"Durable Exercise Melee Weapon (1800)",
 									"75",
 									"Consumable item",
-									"Use the chest to get a melee training weapon with 1800 charges. Trains melee (fist for the Monk line). Warrior, Thief, Monk and Templar lines."
+									"Use the chest to get a melee training weapon with 1800 charges. Trains melee. Warrior, Thief and Templar lines."
+								],
+								[
+									"Durable Exercise Fist Weapon (1800)",
+									"75",
+									"Consumable item",
+									"Use the chest to get a fist training weapon with 1800 charges. Trains fist fighting. Monk line."
 								],
 								[
 									"Durable Exercise Bow (1800)",
@@ -44639,7 +44772,13 @@
 									"Lasting Exercise Melee Weapon (14400)",
 									"450",
 									"Consumable item",
-									"Use the chest to get a melee training weapon with 14400 charges. Trains melee (fist for the Monk line). Warrior, Thief, Monk and Templar lines."
+									"Use the chest to get a melee training weapon with 14400 charges. Trains melee. Warrior, Thief and Templar lines."
+								],
+								[
+									"Lasting Exercise Fist Weapon (14400)",
+									"450",
+									"Consumable item",
+									"Use the chest to get a fist training weapon with 14400 charges. Trains fist fighting. Monk line."
 								],
 								[
 									"Lasting Exercise Bow (14400)",
@@ -44668,16 +44807,19 @@
 							],
 							"sprites": [
 								{"item": 27761},
+								{"item": 27762},
 								{"item": 27764},
 								{"item": 27765},
 								{"item": 27766},
 								{"item": 27767},
 								{"item": 27768},
+								{"item": 27769},
 								{"item": 27771},
 								{"item": 27772},
 								{"item": 27773},
 								{"item": 27774},
 								{"item": 27775},
+								{"item": 27776},
 								{"item": 27778},
 								{"item": 27779},
 								{"item": 27780},
@@ -44689,12 +44831,102 @@
 				},
 				{
 					"id": "store:14",
-					"name": "Convenience",
-					"sub": "17 offers, 20-400 coins. Convenience, Service.",
+					"name": "Everfull Potions",
+					"sub": "10 offers, 20-70 coins. Service.",
 					"color": "#ff70c0",
 					"group": "category",
 					"sections": [
-						{"h": "Category", "p": ["17 offers, 20-400 Chaos Coins. Convenience, Service."]},
+						{"h": "Category", "p": ["10 offers, 20-70 Chaos Coins. Service."]},
+						{
+							"h": "Offers",
+							"cols": ["Offer", "Coins", "Type", "What it is"],
+							"w": [24, 10, 16, 50],
+							"rows": [
+								[
+									"Everfull Spirit Potion",
+									"20",
+									"Service",
+									"Upgrade of your Everfull Health Potion: health and mana a drink, one health and one mana charge. The charges stay."
+								],
+								[
+									"Everfull Great Health Potion",
+									"30",
+									"Service",
+									"Upgrade of your Everfull Health Potion (level 80): 425-575 health a drink. The charges stay."
+								],
+								[
+									"Everfull Great Mana Potion",
+									"30",
+									"Service",
+									"Upgrade of your Everfull Mana Potion (level 80): 150-250 mana a drink. The charges stay."
+								],
+								[
+									"Everfull Great Spirit Potion",
+									"30",
+									"Service",
+									"Upgrade of your Everfull Spirit Potion (level 80): health and mana a drink. The charges stay."
+								],
+								[
+									"Everfull Ultimate Health Potion",
+									"50",
+									"Service",
+									"Upgrade of your Everfull Great Health Potion (level 130): 650-850 health a drink. The charges stay."
+								],
+								[
+									"Everfull Ultimate Mana Potion",
+									"50",
+									"Service",
+									"Upgrade of your Everfull Great Mana Potion (level 130): 425-575 mana a drink. The charges stay."
+								],
+								[
+									"Everfull Ultimate Spirit Potion",
+									"50",
+									"Service",
+									"Upgrade of your Everfull Great Spirit Potion (level 130): health and mana a drink. The charges stay."
+								],
+								[
+									"Everfull Supreme Health Potion",
+									"70",
+									"Service",
+									"Upgrade of your Everfull Ultimate Health Potion (level 200): 875-1125 health a drink. The charges stay."
+								],
+								[
+									"Everfull Supreme Mana Potion",
+									"70",
+									"Service",
+									"Upgrade of your Everfull Ultimate Mana Potion (level 200): 575-775 mana a drink. The charges stay."
+								],
+								[
+									"Everfull Supreme Spirit Potion",
+									"70",
+									"Service",
+									"Upgrade of your Everfull Ultimate Spirit Potion (level 200): health and mana a drink. The charges stay."
+								]
+							],
+							"sprites": [
+								{"item": 32268},
+								{"item": 32261},
+								{"item": 32262},
+								{"item": 32263},
+								{"item": 32264},
+								{"item": 32265},
+								{"item": 32266},
+								{"item": 32267},
+								{"item": 32269},
+								{"item": 32270}
+							]
+						}
+					],
+					"icon": "wiki/i/top-vip.png"
+				},
+				{
+					"id": "store:15",
+					"name": "Convenience",
+					"sub": "7 offers, 50-400 coins. Convenience.",
+					"color": "#ff70c0",
+					"group": "category",
+					"sections": [
+						{"h": "Category", "p": ["7 offers, 50-400 Chaos Coins. Convenience."]},
 						{
 							"h": "Offers",
 							"cols": ["Offer", "Coins", "Type", "What it is"],
@@ -44725,66 +44957,6 @@
 									"Food that never runs out: 12 minutes of regeneration a bite, like the best food, until you are full. Store-bound."
 								],
 								[
-									"Everfull Spirit Potion",
-									"20",
-									"Service",
-									"Swaps your Everfull Health Potion for the spirit one: health and mana a drink, one health and one mana charge. The charges stay. Veyra the Apothecary does the same for 40 health potions. It starts the spirit line: great, ultimate and supreme follow from it."
-								],
-								[
-									"Everfull Great Health Potion",
-									"30",
-									"Service",
-									"Swaps your Everfull Health Potion for the great one (level 80): 425-575 health a drink. Needs your Everfull Health Potion in your backpack, inbox or depot. The charges stay. Veyra the Apothecary does the same for 40 great health potions."
-								],
-								[
-									"Everfull Great Mana Potion",
-									"30",
-									"Service",
-									"Swaps your Everfull Mana Potion for the great one (level 80): 150-250 mana a drink. Needs your Everfull Mana Potion in your backpack, inbox or depot. The charges stay. Veyra the Apothecary does the same for 40 great mana potions."
-								],
-								[
-									"Everfull Great Spirit Potion",
-									"30",
-									"Service",
-									"Swaps your Everfull Spirit Potion for the great spirit one (level 80): health and mana a drink, one health and one mana charge. The charges stay. Veyra the Apothecary does the same for 40 great spirit potions."
-								],
-								[
-									"Everfull Ultimate Health Potion",
-									"50",
-									"Service",
-									"Swaps your Everfull Great Health Potion for the ultimate one (level 130): 650-850 health a drink. The charges stay. Veyra the Apothecary does the same for 40 ultimate health potions."
-								],
-								[
-									"Everfull Ultimate Mana Potion",
-									"50",
-									"Service",
-									"Swaps your Everfull Great Mana Potion for the ultimate one (level 130): 425-575 mana a drink. The charges stay. Veyra the Apothecary does the same for 40 ultimate mana potions."
-								],
-								[
-									"Everfull Ultimate Spirit Potion",
-									"50",
-									"Service",
-									"Swaps your Everfull Great Spirit Potion for the ultimate one (level 130): health and mana a drink, one health and one mana charge. The charges stay. Veyra the Apothecary does the same for 40 ultimate spirit potions."
-								],
-								[
-									"Everfull Supreme Health Potion",
-									"70",
-									"Service",
-									"Swaps your Everfull Ultimate Health Potion for the supreme one (level 200): 875-1125 health a drink. The charges stay. Veyra the Apothecary does the same for 40 supreme health potions."
-								],
-								[
-									"Everfull Supreme Mana Potion",
-									"70",
-									"Service",
-									"Swaps your Everfull Ultimate Mana Potion for the supreme one (level 200): 575-775 mana a drink. The charges stay. Veyra the Apothecary does the same for 60 ultimate mana potions."
-								],
-								[
-									"Everfull Supreme Spirit Potion",
-									"70",
-									"Service",
-									"Swaps your Everfull Ultimate Spirit Potion for the supreme one (level 200): health and mana a drink, one health and one mana charge. The charges stay. Veyra the Apothecary does the same for 60 ultimate spirit potions."
-								],
-								[
 									"Auto Seller",
 									"400",
 									"Convenience",
@@ -44808,16 +44980,6 @@
 								{"item": 32082},
 								{"item": 32083},
 								{"item": 32084},
-								{"item": 32268},
-								{"item": 32261},
-								{"item": 32262},
-								{"item": 32263},
-								{"item": 32264},
-								{"item": 32265},
-								{"item": 32266},
-								{"item": 32267},
-								{"item": 32269},
-								{"item": 32270},
 								{"item": 2160},
 								{"item": 2472},
 								{"item": 2365}
@@ -44827,7 +44989,7 @@
 					"icon": "wiki/i/top-autoloot.png"
 				},
 				{
-					"id": "store:15",
+					"id": "store:16",
 					"name": "Outfits",
 					"sub": "60 offers, 300-750 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -45267,7 +45429,7 @@
 					"icon": "wiki/i/k-arcane-hood.png"
 				},
 				{
-					"id": "store:16",
+					"id": "store:17",
 					"name": "Costumes",
 					"sub": "6 offers, 300 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -45329,7 +45491,7 @@
 					"icon": "wiki/i/top-vip.png"
 				},
 				{
-					"id": "store:17",
+					"id": "store:18",
 					"name": "Outfit Addons",
 					"sub": "9 offers, 150 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -45412,7 +45574,7 @@
 					"icon": "wiki/i/k-holy-hood.png"
 				},
 				{
-					"id": "store:18",
+					"id": "store:19",
 					"name": "Mounts",
 					"sub": "125 offers, 350-690 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -45947,7 +46109,7 @@
 					"icon": "wiki/i/k-nature-paw.png"
 				},
 				{
-					"id": "store:19",
+					"id": "store:20",
 					"name": "Wings",
 					"sub": "110 offers, 200-350 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -45964,7 +46126,7 @@
 					"icon": "wiki/i/k-holy-arrowup.png"
 				},
 				{
-					"id": "store:20",
+					"id": "store:21",
 					"name": "Auras",
 					"sub": "24 offers, 150-300 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -45979,7 +46141,7 @@
 					"icon": "wiki/i/k-light-ring.png"
 				},
 				{
-					"id": "store:21",
+					"id": "store:22",
 					"name": "Head Accessories",
 					"sub": "90 offers, 150-200 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -45994,7 +46156,7 @@
 					"icon": "wiki/i/k-holy-burst.png"
 				},
 				{
-					"id": "store:22",
+					"id": "store:23",
 					"name": "Capes",
 					"sub": "88 offers, 200-250 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -46009,7 +46171,7 @@
 					"icon": "wiki/i/k-arcane-hood.png"
 				},
 				{
-					"id": "store:23",
+					"id": "store:24",
 					"name": "Outfit Shaders",
 					"sub": "22 offers, 120-300 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -46103,7 +46265,7 @@
 					"icon": "wiki/i/k-arcane-swirl.png"
 				},
 				{
-					"id": "store:24",
+					"id": "store:25",
 					"name": "Footprints",
 					"sub": "9 offers, 200 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -46186,7 +46348,7 @@
 					"icon": "wiki/i/k-ember-kick.png"
 				},
 				{
-					"id": "store:25",
+					"id": "store:26",
 					"name": "Outlines",
 					"sub": "9 offers, 250 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -46269,7 +46431,7 @@
 					"icon": "wiki/i/k-light-shield.png"
 				},
 				{
-					"id": "store:26",
+					"id": "store:27",
 					"name": "Kill Effects",
 					"sub": "5 offers, 200 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -46318,7 +46480,7 @@
 					"icon": "wiki/i/k-blood-skull.png"
 				},
 				{
-					"id": "store:27",
+					"id": "store:28",
 					"name": "Spell Effects",
 					"sub": "12 offers, 250 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -46422,7 +46584,7 @@
 					"icon": "wiki/i/k-fire-burst.png"
 				},
 				{
-					"id": "store:28",
+					"id": "store:29",
 					"name": "Loot Labels",
 					"sub": "4 offers, 150 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -46465,7 +46627,7 @@
 					"icon": "wiki/i/k-light-eye.png"
 				},
 				{
-					"id": "store:29",
+					"id": "store:30",
 					"name": "Chat Colours",
 					"sub": "5 offers, 200 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -46514,7 +46676,7 @@
 					"icon": "wiki/i/top-console.png"
 				},
 				{
-					"id": "store:30",
+					"id": "store:31",
 					"name": "Name Plates",
 					"sub": "13 offers, 200 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -46625,7 +46787,7 @@
 					"icon": "wiki/i/k-steel-banner.png"
 				},
 				{
-					"id": "store:31",
+					"id": "store:32",
 					"name": "Pets",
 					"sub": "7 offers, 400 coins. Pet (small abilities).",
 					"color": "#ff70c0",
@@ -46694,7 +46856,7 @@
 					"icon": "wiki/i/k-nature-fang.png"
 				},
 				{
-					"id": "store:32",
+					"id": "store:33",
 					"name": "Appearances",
 					"sub": "9 offers, 300-400 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -46777,7 +46939,7 @@
 					"icon": "wiki/i/k-arcane-twin.png"
 				},
 				{
-					"id": "store:33",
+					"id": "store:34",
 					"name": "Portal Styles",
 					"sub": "6 offers, 250-300 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -46839,7 +47001,7 @@
 					"icon": "wiki/i/k-arcane-gate.png"
 				},
 				{
-					"id": "store:34",
+					"id": "store:35",
 					"name": "Hideout Decorations",
 					"sub": "9 offers, 80-300 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -46922,7 +47084,7 @@
 					"icon": "wiki/i/k-ember-banner.png"
 				},
 				{
-					"id": "store:35",
+					"id": "store:36",
 					"name": "Themed Sets",
 					"sub": "12 offers, 250-350 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -47026,7 +47188,7 @@
 					"icon": "wiki/i/top-vip.png"
 				},
 				{
-					"id": "store:36",
+					"id": "store:37",
 					"name": "Crafting",
 					"sub": "3 offers, 20-30 coins. Crafting item.",
 					"color": "#ff70c0",

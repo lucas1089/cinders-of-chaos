@@ -377,8 +377,8 @@ return {
 	-- tier-1 keys from normal monsters (any map hunt, not inside a rift): per 100000 per kill, x tierMult of the
 	-- monster's tier, when the monster (one of the bounty pool) has a hunting level of at least max(minMonsterLevel,
 	-- killer level x levelShare) and the killer is at least minKillerLevel (tier 1 minLevel). Hunting levels since
-	-- 2026-10-28 (O284): before, the pool level (half) was compared, so the rule was 120 and 0.8 x the killer's level.
-	monsterKey = {chance = 250, minMonsterLevel = 120, levelShare = 0.4,
+	-- 2026-10-28 (O284, O285: baseLevelMult 1, so hunting level = pool level).
+	monsterKey = {chance = 250, minMonsterLevel = 60, levelShare = 0.4,
 		tierMult = {normal = 1, magic = 3, rare = 8, legendary = 20, boss = 40}},
 	-- completed bounty contracts give a tier-1 key with this percent chance (players at tier 1 minLevel or more)
 	bountyKey = {hunt = 25, elite = 50, boss = 100},

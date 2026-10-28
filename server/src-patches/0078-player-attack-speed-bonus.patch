@@ -1,0 +1,101 @@
+# Player attack speed bonus (server/README.md "Attack speed cap", "Passive tree: attack speed"): a percent that does not come
+# from the weapon, shortening the swing interval like dexterity points do.
+#  1. Player::attackSpeedBonus (0 .. 100, not saved: the scripts set it again on login), Player:getAttackSpeedBonus() /
+#     Player:setAttackSpeedBonus(percent) in Lua. data/scripts/chaos/passivetree_effects.lua writes the passive tree's
+#     "attackSpeed" stat plus the Chaos attack speed modifiers of gloves, rings and amulets (data/lib/chaos_item_mods.lua
+#     M.playerBonus).
+#  2. Player::getAttackSpeed adds it to the dexterity points before the 0011 rules, so every attack speed bonus together
+#     (weapon attribute, dexterity, this one) still shortens the interval by at most maxPlayerAttackSpeedBonus % and no
+#     swing is faster than minPlayerAttackInterval ms. Lua mirror: ChaosItemMods.effectiveInterval (bonus argument).
+# Apply in the server source root after 0001-0077: patch -p1 < 0078-player-attack-speed-bonus.patch, then rebuild.
+--- a/src/luascript.cpp
++++ b/src/luascript.cpp
+@@ -2720,6 +2720,8 @@
+ 	registerMethod("Player", "setCharacterStat", LuaScriptInterface::luaPlayerSetCharacterStat);
+ 	registerMethod("Player", "addCharacterStat", LuaScriptInterface::luaPlayerAddCharacterStat);
+ 	registerMethod("Player", "getCharacterStat", LuaScriptInterface::luaPlayerGetCharacterStat);
++	registerMethod("Player", "getAttackSpeedBonus", LuaScriptInterface::luaPlayerGetAttackSpeedBonus); // Chaos (patch 0078)
++	registerMethod("Player", "setAttackSpeedBonus", LuaScriptInterface::luaPlayerSetAttackSpeedBonus);
+ 	// Monster
+ 	registerClass("Monster", "Creature", LuaScriptInterface::luaMonsterCreate);
+ 	registerMethod("Player", "addAura", LuaScriptInterface::luaPlayerAddAura);
+@@ -11470,6 +11472,30 @@
+ 	}
+ 	return 1;
+ }
++// Chaos (patch 0078): player:getAttackSpeedBonus() / player:setAttackSpeedBonus(percent), 0 .. 100
++int LuaScriptInterface::luaPlayerGetAttackSpeedBonus(lua_State* L)
++{
++	Player* player = getUserdata<Player>(L, 1);
++	if (player) {
++		lua_pushnumber(L, player->getAttackSpeedBonus());
++	} else {
++		lua_pushnil(L);
++	}
++	return 1;
++}
++
++int LuaScriptInterface::luaPlayerSetAttackSpeedBonus(lua_State* L)
++{
++	Player* player = getUserdata<Player>(L, 1);
++	if (player) {
++		player->setAttackSpeedBonus(static_cast<int16_t>(std::min<int32_t>(100, std::max<int32_t>(0, getNumber<int32_t>(L, 2)))));
++		pushBoolean(L, true);
++	} else {
++		lua_pushnil(L);
++	}
++	return 1;
++}
++
+ int LuaScriptInterface::luaPlayerAddWings(lua_State* L) {
+     // player:addWing(wingId or wingName)
+     Player* player = getUserdata<Player>(L, 1);
+--- a/src/luascript.h
++++ b/src/luascript.h
+@@ -1084,6 +1084,8 @@
+ 		static int luaPlayerSetCharacterStat(lua_State* L);
+ 		static int luaPlayerAddCharacterStat(lua_State* L);
+ 		static int luaPlayerGetCharacterStat(lua_State* L);
++		static int luaPlayerGetAttackSpeedBonus(lua_State* L); // Chaos (patch 0078)
++		static int luaPlayerSetAttackSpeedBonus(lua_State* L);
+ 		static int luaPlayerGetItem(lua_State* L);
+ 
+ 		static int luaPlayerAddAura(lua_State* L);
+--- a/src/player.cpp
++++ b/src/player.cpp
+@@ -384,7 +384,9 @@
+ 		uint32_t typeSpeed = Item::items[weapon->getID()].attackSpeed;
+ 		base = (typeSpeed != 0 ? typeSpeed : 2000) * vocation->getAttackSpeed() / 2000;
+ 	}
++	// Chaos (patch 0078): the player-level attack speed bonus (Player:setAttackSpeedBonus) counts like dexterity points
+ 	int32_t dexterity = std::min<int32_t>(100, std::max<int32_t>(0, getCharacterStat(CHARSTAT_DEXTERITY)));
++	dexterity = std::min<int32_t>(100, dexterity + attackSpeedBonus);
+ 	double interval = ret - (ret * dexterity / 100.0);
+ 	int32_t maxBonus = g_config.getNumber(ConfigManager::MAX_PLAYER_ATTACK_SPEED_BONUS);
+ 	if (maxBonus > 0 && maxBonus < 100) {
+--- a/src/player.h
++++ b/src/player.h
+@@ -778,6 +778,15 @@
+ 		int16_t getCharacterStat(CharacterStats_t stat) const {
+ 			return charStats[stat];
+ 		}
++		// Chaos (patch 0078): attack speed % from outside the weapon (the passive tree, Chaos item modifiers on
++		// gloves / rings / amulets), set from Lua, not saved (the scripts set it again on login). Counts with
++		// dexterity in Player::getAttackSpeed, inside the 0011 cap.
++		int16_t getAttackSpeedBonus() const {
++			return attackSpeedBonus;
++		}
++		void setAttackSpeedBonus(int16_t value) {
++			attackSpeedBonus = std::min<int16_t>(100, std::max<int16_t>(0, value));
++		}
+ 
+ 
+ 		//tile
+@@ -1439,6 +1448,7 @@
+ 		fightMode_t fightMode = FIGHTMODE_ATTACK;
+ 		AccountType_t accountType = ACCOUNT_TYPE_NORMAL;
+ 		int16_t charStats[CHARSTAT_LAST + 1] = {};
++		int16_t attackSpeedBonus = 0; // Chaos (patch 0078)
+ 		int64_t lastLifeLeech = 0; // Chaos (patch 0011)
+ 		int64_t lastManaLeech = 0;
+ 		int64_t lastEnergyShieldHit = 0; // Chaos (patch 0015)

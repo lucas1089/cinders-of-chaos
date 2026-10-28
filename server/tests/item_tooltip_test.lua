@@ -394,7 +394,7 @@ eq(y.v, 1.6) eq(y.l, "Your Attack Interval") eq(y.low, true)
 y = yours(T.build(fast, {wielder = {voc = 1300, dex = 20}}))
 eq(y.v, 1.0, "Shadowfist with dexterity: the floor") eq(y.l, "Your Attack Interval (capped)")
 y = yours(T.build(fast, {wielder = {voc = 2000, dex = 20}}))
-eq(y.v, 1.5, "weapon + dexterity: at most -25%") eq(y.l, "Your Attack Interval (capped)")
+eq(y.v, 1.28, "weapon + dexterity: -36%, under the 40% cap") eq(y.l, "Your Attack Interval")
 eq(yours(T.build(armor, {wielder = {voc = 2000, dex = 0}})), nil, "only weapons")
 
 -- the estimated DPS of a weapon (weapon_dps_core.lua): from the wielder's level and best skill

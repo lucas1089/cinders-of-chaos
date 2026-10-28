@@ -2,7 +2,7 @@
 -- Owner 2026-10-27 (bug B): no monster standing in a hunt shows a nameplate level far below the hunt's band. Crosses the
 -- bounty pool, the bestiary spawn data and the map marks (hunting levels): every monster that spawns within the
 -- area radius of a hunt mark with a lower end of 100 or more is shown (monster_levels.lua rules: the pool level x
--- baseLevelMult, a monster outside the pool raised to its hunt's lower end) at no less than K.farBelow x that lower end.
+-- baseLevelMult (1 since 2026-10-28, O285), a monster outside the pool raised to its hunt's lower end) at no less than K.farBelow x that lower end.
 local failures, count = 0, 0
 local function check(cond, label)
 	count = count + 1

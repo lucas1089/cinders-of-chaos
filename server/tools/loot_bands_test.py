@@ -120,7 +120,7 @@ with tempfile.TemporaryDirectory() as tmp:
     check(prices[2392] == 4000 and 29851 in unsellable, "price tables read")
 
     check(B.estimate_level(45000, 40000) == 509, "the pool's level estimate: %d" % B.estimate_level(45000, 40000))
-    check(B.hunt_level(509, 45000, 40000, 0, 0) == (1018, False), "a base monster: twice the pool level")
+    check(B.hunt_level(509, 45000, 40000, 0, 0) == (509, False), "a base monster: the pool level (baseLevelMult 1, O285)")
     check(B.hunt_level(300, 100, 100, 0, 0) == (300, True), "a pool level that is not the estimate: level-scaled")
     check(B.hunt_level(0, 0, 0, 640, 660) == (650, True), "min / max level: the middle")
 
@@ -130,14 +130,14 @@ with tempfile.TemporaryDirectory() as tmp:
     check(B.classify(29851, 4, prices, unsellable, gear) == ("other", 0), "an orb is other")
     check(B.classify(5021, 1, prices, unsellable, gear) == ("other", 0), "no price: other")
 
-    check(B.in_band(1018) and B.in_band(100) and B.in_band(1300), "band ranges (1500: the top of the pool)")
-    check(not B.in_band(200) and not B.in_band(6), "outside every band")
+    check(B.in_band(509) and B.in_band(100) and B.in_band(657), "band ranges (every base monster from 40)")
+    check(not B.in_band(39) and not B.in_band(6), "outside every band")
 
     rows = B.build(data, POOL, PRICES)
     names = [r[0] for r in rows]
     check(names == ["Nightfang Widow", "Test Spider"], "the band monsters with a loot file, sorted: %s" % names)
     spider = dict((r[0], r) for r in rows)["Test Spider"]
-    check(spider[1] == 1018 and spider[2] is False and spider[3] == 47, "level, kind, spawns")
+    check(spider[1] == 509 and spider[2] is False and spider[3] == 47, "level, kind, spawns")
     ids = [e[0] for e in spider[4]]
     check(2544 not in ids, "a chance of 0 is left out")
     check((7590, 19000, 2, "junk", 120) in spider[4], "a name resolved to its id")
@@ -146,7 +146,7 @@ with tempfile.TemporaryDirectory() as tmp:
 
     text = B.render(rows)
     check(text.startswith("-- Loot of the hunting bands") and text.endswith("}\n"), "the Lua file's frame")
-    check('{name = "Test Spider", level = 1018, scaled = false, spawns = 47, loot = {' in text, "a row")
+    check('{name = "Test Spider", level = 509, scaled = false, spawns = 47, loot = {' in text, "a row")
     check(B.render(B.build(data, POOL, PRICES)) == text, "a rerun gives the same text")
 
     out = os.path.join(tmp, "bands.lua")

@@ -3,7 +3,8 @@
 -- Protocol (opcode 65, through ChaosPassiveTree.extraActions, passivetree.lua):
 --   client -> server  statTotals              -> statTotals (the window asks when it opens and after a save / Paragon change)
 --   server -> client  {"action":"statTotals","data":{attributes = [{k, n, raw, eff, cap, effect}], damage = [{k, n, raw, eff, cap}],
---                      crit = {chance = {total, tree, other}, amount = {total, tree, paragon, other}}}}
+--                      crit = {chance = {total, tree, other}, amount = {total, tree, paragon, other}},
+--                      attackSpeed = {total, tree, gear, cap} (only with a bonus)}}
 --                     n = the stat name in the player's language (Chaos.t); raw = what the nodes give, eff = after the soft cap
 --                     (passivetree_effects.lua ChaosSoftCap), crit totals are the engine's own value: tree, Paragon, gear, gems,
 --                     blessings and every other source together.
@@ -69,7 +70,11 @@ function TT.build(player, bonuses)
 	return {
 		attributes = named(player, PassiveTotalsCore.attributes(bonuses, a)),
 		damage = named(player, PassiveTotalsCore.damage(bonuses, a)),
-		crit = PassiveTotalsCore.crit(bonuses, chance, amount)
+		crit = PassiveTotalsCore.crit(bonuses, chance, amount),
+		attackSpeed = PassiveTotalsCore.attackSpeed(bonuses, ChaosItemMods and ChaosItemMods.playerBonus and
+			ChaosItemMods.playerBonus(player, "gearspeed") or 0,
+			ChaosPassiveEffectsConfig and ChaosPassiveEffectsConfig.maxAttackSpeed,
+			ChaosItemMods and ChaosItemMods.config and ChaosItemMods.config.playerSpeedCap)
 	}
 end
 

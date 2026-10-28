@@ -262,6 +262,9 @@ server/
                                       header src/chaosfacing.h, tools/chaosfacing_test.cpp)
                                       per 8x8 block the line crosses, not once per tile; same answers (see "Cheaper line of
                                       sight (O218)"; header src/chaossight.h, tools/chaossight_test.cpp, tools/sight_bench.cpp)
+  src-patches/0078-player-attack-speed-bonus.patch   engine: Player:getAttackSpeedBonus / setAttackSpeedBonus, a percent counted with
+                                      the dexterity points in Player::getAttackSpeed inside the 0011 cap and floor (see "Attack
+                                      speed cap"; tools/attack_speed_bonus_patch_test.py)
     remote_cmd.lua    remote_cmd_core.lua    remote_cmd_config.lua  (remote admin commands by file, see "Remote admin commands")
     spectate.lua      spectate_core.lua      spectate_config.lua    (the admin app's live view of a character, see "Live spectator")
     helpai.lua  helpai_core.lua  helpai_config.lua (Ember answers questions in the Help channel through the sidecar
@@ -1639,7 +1642,7 @@ per second meant more healing per second. Every source of extra or faster hits, 
 | Source | Max |
 |---|---|
 | Vocation attack speed (patch 0002 scales a weapon's own interval by it) | Shadowfist 1300, Ninja 1400, Monk 1500, Thief 1600, Iron Sage 1700, Samurai 1800, others 2000 ms |
-| Weapon: Chaos `attackspeed` modifier + topaz gems (`M.syncAttackSpeed`) | -20% of the weapon's own interval (2000 without one) |
+| Weapon: Chaos `attackspeed` modifier + topaz gems (`M.syncAttackSpeed`) | -15% of the weapon's own interval (2000 without one; -20% before 2026-10-28) |
 | Dexterity of the stat window (engine: interval - dex%) | 20 points = -20% (the passive tree's dexterity is a damage multiplier only) |
 | Ninja off-hand strike (`thief_combat.lua`) | +1 hit per melee hit |
 | Bloodrage cleave / Cleaving Arc keystone | +4 / +3 hits per melee hit |
@@ -1653,13 +1656,29 @@ hits and 2.2 leech heals per second. Three engine rules (config.lua; 0 turns one
 
 - `minPlayerAttackInterval = 1000`: no player swings faster than once a second. The fastest vocation unbuffed is 1300 ms,
   so 1000 is reached only by the fastest classes with most of the bonuses; everyone else never sees it.
-- `maxPlayerAttackSpeedBonus = 25`: all bonuses together (weapon attribute against its type's interval, dexterity) shorten
-  the vocation-scaled interval by at most 25% (they used to multiply to -36%). Gear alone (-20%) or dexterity alone
-  (-20%) stay under it. A 2000 class bottoms out at 1500 ms, a Ninja at 1050, a Thief at 1200.
+- `maxPlayerAttackSpeedBonus = 40` (25 until 2026-10-28; owner: "40%, reachable but min-maxed"): all bonuses together
+  (weapon attribute against its type's interval, dexterity, the player bonus of patch 0078) shorten the vocation-scaled
+  interval by at most 40%. A 2000 class bottoms out at 1200 ms; the Shadowfist and the Ninja reach the 1000 ms floor first.
+  Reachable only min-maxed: weapon modifier and topaz together at most 15% (gems config `attackspeed` cap, 20 before),
+  dexterity 20 (the stat window), passive tree and worn pieces together at most 12% (`playerSpeedCap`, 20 before; tree
+  `maxAttackSpeed` 8, 12 before). All at their maximum reach -40%; a weapon 4 short, dexterity 5 short or tree and gear 3
+  short miss it (`tests/attack_speed_cap_test.lua` "only min-maxed").
 - `minPlayerLeechInterval = 900`: life leech heals at most once per 900 ms, mana leech too; a roll inside the window is
   skipped. One rule for every extra-hit source above (off-hands, cleaves, procs, pets, multi-hit spells), so leech is
   about one heal per second however many hits land. 900 rather than 1000 so a swing at the 1000 ms floor that the
   timer fires a few ms early still leeches.
+
+**Maximum attack speed: one attack per second** (owner 2026-10-28). `minPlayerAttackInterval = 1000` is the hard floor for every
+source together (vocation, weapon modifier, gems, dexterity, the passive tree, worn pieces) and is never lowered;
+`tests/attack_speed_cap_test.lua` sweeps the combinations and asserts none goes under 1000 ms.
+
+**Player attack speed bonus (patch 0078).** `Player:setAttackSpeedBonus(percent)` (0 .. 100, not saved) is counted like
+dexterity points before the rules above, so it only shortens the interval inside the 40% cap and above the 1000 ms floor.
+Sources, summed by `ChaosItemMods.setPlayerAttackSpeed` and held at `config.playerSpeedCap` (12): the passive tree's
+`attackSpeed` stat (at most `maxAttackSpeed` = 8 in `passivetree_effects.lua`, see "Passive tree: attack speed nodes") and
+the `gearspeed` modifier of rings, amulets and other worn pieces (cap 10). The weapon's own `attackspeed` modifier stays local
+to the weapon (`M.syncAttackSpeed`). Without the patch the Lua call does nothing. Item share among suffix rolls (before ->
+after): weapon 9.1% -> 20.0%; jewel 0% -> 11.0%; other (belts, gloves..) 0% -> 17.6%; the other kinds 0%.
 
 Lua mirror: `ChaosItemMods.effectiveInterval` / `attackCapConfig` (`data/lib/chaos_item_mods.lua`, reads the config
 keys through `configManager`); weapon tooltips add "Your Attack Interval" for the viewer's vocation and dexterity,
@@ -3696,6 +3715,17 @@ generator `tools/gen_class_lanes.lua` (+ `tools/passivetree_lanes_lib.lua`, clie
   client's `treelanes.lua` now names every re-skinned named node after the stats the class gets ("Physical Damage and
   Vitality", "Strength"); the generic "Attribute" stays. The server tree has no names; the data files did not change.
   `treelanes_test.lua` checks every node of every class.
+- **Passive tree: attack speed nodes (2026-10-28, patch 0078).** New stat `attackSpeed` (percent, a real attack speed; the
+  stat help and the totals panel say "at most 1 attack per second"). No new node ids: `gen_class_lanes.lua --attack-speed`
+  (only the attack speed lanes, on top of `classlanes.lua` as it is; a full run would drop the hand trims) gives the classes
+  that fight with weapon hits (Warrior, Juggernaut, Berserker, Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai, Monk,
+  Shadowfist, Templar; `Gen.ATTACK_SPEED`) 10 small nodes (+1%, +2% from 3 dexterity) on the plain Attribute nodes that gave
+  them dexterity and are walked most, and up to 2 notable nodes (+4%, +5% from 6 dexterity) from the named or big
+  dexterity-only nodes (a Juggernaut has one). The other classes see no attack speed. Cap: the tree counts at most +8
+  (`maxAttackSpeed`), tree plus worn pieces +12 (`playerSpeedCap`), then the engine rules (40% together, 1000 ms floor).
+  The stat is a primary (Ranger, Deadeye, Thief, Ninja, Shadowfist) or secondary (others) stat in
+  `passivetree_stats_config.lua`; the Speed Focus build (`mobility`) values it. Client: the node tooltip line, the totals
+  panel line ("Attack speed: +N% (tree, gear)", `totalsview.lua`). Dexterity keeps its damage equal.
 - Regenerate in this order after a tree or config change: `gen_class_lanes.lua`, `gen_passivetree_data.lua` (from the client
   treedata folder), `gen_passive_builds.lua`, `gen_wiki_data.lua`, `gen_codex_data.lua`.
 - Tests: `passive_builds_test`, `passivetree_stats_test`, `passivetree_paths_test`, `passivetree_plan_test`; client
@@ -3892,8 +3922,15 @@ on floor 40) is meant to be slow. `python3 -I server/tools/tower_model.py` print
 one, `--levels` and `--floors` pick columns and rows.
 
 **Where a player gets to** (floors cleared within 1.1 x the time of a hunt pack of the player's level, median class):
-level 100 floor 1, 300 floor 12, 500 floor 21, 800 floor 38 (was 29), 1000 floor 44 (was 29), 1500 floor 64, 2000 floor 93
+level 100 floor 1, 300 floor 12, 500 floor 18 (21 until O285), 800 floor 38 (was 29), 1000 floor 44 (was 29), 1500 floor 64, 2000 floor 93
 (was 40). The weakest class at level 800 reaches floor 34.
+
+**O285 (2026-10-28, hunting level = pool level).** The hunt pack a floor is compared with is the base pack at the floor's level, and
+the species of a band are read at their pool level (`_pool_level` no longer doubles it). The floors did not change; the
+tower `damage` line did, to the `--derive` line (the pace damage curve at the half level: 1.0 / 1.0 / 0.86 / 0.83 / 0.79 /
+0.76 / 0.8 / 0.86 at floors 1 / 12 / 20 / 28 / 36 / 44 / 52 / 120, it was 0.99 ... 0.78). The base health curve of `pace_config.lua`
+was re-fitted to the old pack times (README "Pack combat (pace)"), which keeps the three floors the new pool levels had
+pushed out of the 0.6-1.7 band (6, 11, 25: 0.56, 0.56, 1.90) inside it.
 
 **CI (`python3 -I server/tools/tower_model.py --check`, limits in `infinitytower_balance_config.lua` `limits`).** Bounds, per
 floor: the seconds a group of the meant level needs (1.5-24), the ratio to a base hunt pack of that level (0.6-1.7), the
@@ -4105,8 +4142,8 @@ parents are left out):
 - **Premium & Services**: Premium Time, Chaos Pact, Storage & Slots, Season Pass, Services (name, vocation and sex
   change, skull remover, passive reset), XP Boosts (the Double Experience Potions), Blessings (All Blessings, Eternal
   Blessing), World Buffs; Depot Tabs only while the depot takes items (below)
-- **Consumables**: Potions, Runes, Training (exercise weapons), Convenience (the three pouches, the Everfull Ration,
-  Auto Seller, Rarity Autoloot, Backpack of Holding)
+- **Consumables**: Potions, Runes, Training (exercise weapons), Everfull Potions (the ten Everfull upgrades, one page,
+  O286), Convenience (the three pouches, the Everfull Ration, Auto Seller, Rarity Autoloot, Backpack of Holding)
 - **Cosmetics**: Outfits, Outfit Addons, Mounts, Wings, Auras, Outfit Shaders (the base shaders and the six Chaos
   shaders), Footprints, Outlines, Kill Effects, Spell Effects, Loot Labels, Chat Colours, Name Plates, Pets,
   Appearances (the transmog store sets), Portal Styles, Hideout Decorations
@@ -4433,7 +4470,7 @@ client module needed no change.
 | | Loot Bag / Orbs Pouch / Rift Key Pouch | 250 / 200 / 150 | store pouch items, one of each per character ("Store pouches" below) |
 | | Auto Seller | 400 | unlock (also lent by an active Chaos Pact), see below |
 | | Rarity Autoloot / Everfull Ration | 300 / 100 | per character, see "Store pouches and the Everfull Ration" |
-| Training | 15 exercise weapon chests | 25 / 75 / 450 | the base server's chests: melee (the one sword / axe / club weapon since 2026-10-23), bow, rod, wand, shield with 500 / 1800 / 14400 charges ("Training weapons") |
+| Training | 18 exercise weapon chests | 25 / 75 / 450 | the base server's chests: melee (the one sword / club weapon since 2026-10-23; Warrior, Thief, Templar), fist (Monk line only since 2026-10-28), bow, rod, wand, shield with 500 / 1800 / 14400 charges ("Training weapons") |
 
 Premium (250 for 30 days) stays where it was.
 
@@ -5379,7 +5416,7 @@ Owner request 2026-10-16: "Remove the potion flasks and make the first pots infi
     says which. {yes} does it. The same code runs again at {yes}, nothing is trusted from the first answer. Anybody can say any
     words; the only inputs are the NPC's keywords and a word match, and an unknown word does nothing.
   - **The store sells the same swap.** `{kind = "service", service = "everfullUpgrade", upgrade = <id>, cost = coins}` in
-    Consumables > Convenience (`shop_config.lua`), registered into `ChaosShopServices.services` by `potions.lua` (as the Ration). 30
+    Consumables > Everfull Potions (`shop_config.lua`; Convenience until O286, where the last four were on page 2), registered into `ChaosShopServices.services` by `potions.lua` (as the Ration). 30
     coins for the great tier, 50 the ultimate, 70 the supreme (`upgrade.coins`; a spirit or health line costs 150 coins in all, the
     limit is 200). The same `ChaosPotions.upgrade(player, id, "store")` as the task, minus the materials, with the same level
     gate, previous tier and once per tier. Pay to skip: it gives exactly what the task gives and nothing beyond (no better roll). The offer key includes the tier (`shop_core.lua`), services are not giftable, and the service checks that the
@@ -6544,7 +6581,8 @@ sword, axe and club weapons were three items for one skill (since "One melee ski
 
 | Kind | Items (500 / 1800 / 14400) | Classes | Trains |
 |---|---|---|---|
-| melee | sword 27732 / 27738 / 27744 (axe 27733 / 27739 / 27745 and club 27734 / 27740 / 27746 work the same) | Warrior, Thief, Monk, Templar lines | the best of sword / club / axe (one melee skill); **fist fighting for the Monk line** |
+| melee | sword 27732 / 27738 / 27744 (club 27734 / 27740 / 27746 works the same) | Warrior, Thief, Templar lines | the best of sword / club / axe (one melee skill) |
+| fist | 27733 / 27739 / 27745 (the ids of the old exercise axe), chests 27762 / 27769 / 27776 | Monk line only | **fist fighting** |
 | ranged | bow 27735 / 27741 / 27747 | Ranger, Thief lines | distance |
 | rod, wand | 27736 / 27742 / 27748 and 27737 / 27743 / 27749 | Mystic, Necromancer, Templar lines | magic level |
 | shield | 27758 / 27759 / 27760 | every class | shielding |
@@ -6554,6 +6592,27 @@ trains the **best** melee skill, not the skill of its own look: the stage rate (
 rate) is that of the skill that gets the tries, so a character with a weak sword and a strong axe is not trained at the weak
 skill's fast rate (the old script did that for any weapon whose skill was low). `melee_skill.lua` would have rerouted the tries to
 the best skill anyway, but after the wrong multiplier. A Monk who wields a staff still trains fist: fist is the skill its spells use.
+
+**The Monk's own weapon (owner 2026-10-28: "monk também não tem training weapon").** What was wrong: nothing was broken in the
+code (a Monk using the melee weapon trained fist fighting, `exercise_test.lua` walked it), but the store sold one "Exercise Melee
+Weapon" with a sword look and a line in its text, so no offer, chest or item looked like the Monk's, and the Monk saw a sword.
+Now the Monk line has a **fist** kind: Exercise Fist Weapon (500), Durable (1800) and Lasting (14400) in the store, same prices
+as the others (25 / 75 / 450), text "Trains fist fighting. Monk line.". The melee offers no longer name the Monk and the melee
+kind is closed to the Monk line. **No new item id, sprite or chest script:** the fist weapon lives on the item ids of the
+retired exercise axe (weapons 27733 / 27739 / 27745, chests 27762 / 27769 / 27776), whose base chest script and charges already
+work; `patch_exercise_weapons.py` (step `exercise`) renames them (`base_item_names.csv`), describes them and gives the three weapons
+the look of the Monk's first fist weapons (items.otb client ids 33654 / 33655 / 33656: wraps, cestus, ember knuckles; the chests keep
+the chest look; needs the client pair of `install_fist_weapons.py`, which every client has). **Nothing bought is lost**
+(`exercise_config.lua` `tiers`, `E.convertTo(itemId, vocationId)`, tests in `exercise_test.lua`): on first use a sword or club
+weapon in a Monk's hands turns into the fist weapon of its tier, and an old exercise axe (the fist weapon now) in the hands of
+any other class turns into the sword one, charges kept; chests bought before open as before (an old axe chest gives a fist
+weapon, which a Warrior turns into a sword one). The Exercise Roulette pool is unchanged (15 chests); a Monk who wins a melee
+chest gets the fist chest or the shield chest of the tier (`roulette_exercise_config.lua` `chests`, the fist ids are not retired
+any more). The client helper's Exercise list shows the fist weapon in place of the axe. `skill_model.lua` reads the fist offers
+(`kindOfName`): 7.5 to 18 coins per hunting hour (Monk), inside the same bounds. Deploy: `install_all.py SERVER_DIR --only
+itemnames,exercise,itemprices` (the admin app's Update button runs every step) and a restart; no SQL, no client change besides the
+helper label. Not run on a live engine: check in game that the three fist chests give the wraps / cestus / knuckles weapon and that a
+Monk trains fist on a dummy with it.
 **Old items.** The store, the NPCs and the Ancestral Store no longer sell the axe and club chests (27762, 27763, 27769, 27770,
 27776, 27777); chests bought before still open (they give an axe or club weapon), and the roulette prizes still hand them out.
 An axe or club weapon turns into the sword (melee) one of the same tier **the first time it is used, charges kept** (`E.convertTo`,
@@ -7493,8 +7552,8 @@ Built on `loadtest.py` (login, client guard answer, 10.98 packets). Standard lib
   Characters "Tester Aaa" upward; a name a player owns is skipped. Levels 30/100/250/500/750/1000/1250/1500/1750/2000 in turn (each band 1/10 of the testers), the classes shifted
   by one each round (`plan_bots`).
   Rows: account type 1, group 1, the marker storage, the hunt spot (+2..+4) on a hunt of its level.
-  The hunt is chosen by `tester_core.safe_hunts`: the whole band of the map mark (hunting levels since 2026-10-27; the pool levels
-  of `bounty_pool.lua` still need `baseLevelMult`), at or under the tester's level, and on a spawn centre whose monsters all
+  The hunt is chosen by `tester_core.safe_hunts`: the whole band of the map mark (hunting levels since 2026-10-27; `baseLevelMult` is 1 since 2026-10-28, O285,
+  so the pool levels of `bounty_pool.lua` are hunting levels too), at or under the tester's level, and on a spawn centre whose monsters all
   hunt at or under its level (`loadtest.spawn_levels`, from `bounty_pool.lua` and the spawn file); none within 30 sqm: the temple.
   State: `/var/lib/chaos/testers/state.json`, mode 0600, root. It holds the passwords.
 - `run`: every bot logs in from its own 127.1.x.y address (the 2-per-IP rule). Secure mode on.
@@ -7521,7 +7580,7 @@ the NPC trade window, extended opcode answers (chunked S/P/E joined).
 **First live run (2026-10-27, 100 testers of level 30 to 99, 20 minutes).** 2998 deaths and 500 "death within one hit from
 full health" anomalies. Causes found:
 - The testers stood on the wrong ground. The map marks print the pool level of a band ("level 20-30"; the middle 70 % of its
-  monsters, so up to 15 % are above it), the hunting level is twice that, and `snap_to_spawn` moved a tester to the nearest
+  monsters, so up to 15 % are above it), the hunting level was twice that (until 2026-10-28, O285: `baseLevelMult` is 1 now and the tools read it), and `snap_to_spawn` moved a tester to the nearest
   spawn centre of any monster within 12 sqm. The killers had pool levels of 20 (Terror Bird, Frost Giant) to 284 (Juggernaut),
   hunting levels 40 to 568, for characters of 295 to 515 health with a plain weapon and no armour. Now `safe_hunts`, `spawn_levels`
   and `place_testers` (see "The bots").
@@ -11063,6 +11122,14 @@ Fix, three parts:
 | Lumenhallow | 1300-1750 | holy, death, earth | Azurevigil | 52064-52127 |
 | Sunderthrone | 1700-2050 | energy | Gildcrown | 52128-52191 |
 
+- **Three more Rimewraith legs (O285, 2026-10-28).** The art sets have one or two legs of a weight, at 450 or 1000, so the
+  band 700-1000 held two options for the medium and cloth classes (`tools/gear_coverage.lua --check`, 15 gaps once the base
+  monsters stood at their pool level). `tools/install_gear_sets.py` `EXTRA_LEGS` adds one per armour weight at level 800
+  with the look (client id) of the Rimewraith legs of that weight: 52192 rimewraith greaves (heavy, armor 13, ice 4%),
+  52193 rimewraith chausses (medium, armor 11, ice 4%), 52194 rimewraith skirt (cloth, armor 10, magic level 2, ice 4%);
+  the stats are the curve's at 800, the same as Azure Vigil's legs. The Rimewraith monsters (Frost Maiden 820) drop them
+  and level gear may. No new sprite. The block of the later tiers is 52000..52194.
+
 - **Level gear** (`loot.lua` step 1d, `ChaosGearSets.rollLevelGear`). Every kill at hunting level 700 or more may add one
   piece of a set whose level is within 200 below and 50 above that level. A boss rolls more often. The class's own pieces
   weigh 3x. Config: `ChaosGearSets.config.open`. The window has a top cap, so level 2400 still drops the highest pieces.
@@ -11391,6 +11458,24 @@ new items. All numbers are in `ChaosItemMods.config`; tests: `tests/item_mods_te
 counts, every effect against a mocked engine), `tests/crafting_test.lua` (forge, orbs, prefix / suffix rules, orbs v2 API),
 `tests/item_tooltip_test.lua`, `tests/salvage_test.lua`, `tests/lootfilter_test.lua`, `tests/supports_test.lua`.
 
+**Item names** (owner 2026-10-28): a rolled item is named after its modifiers, "Vicious Longsword of Haste". Name = best
+prefix word + stock name + best suffix phrase; best = highest tier, then the larger value, then the earlier affix
+(deterministic); one side only gives one word. The words are `ChaosItemMods.config.names` (one `{word, top word}` per
+affix, keyed by the Chaos key or the lower case engine attribute key; the top word shows from tier 7; prefixes are
+adjectives, suffixes "of ..." phrases; a new affix needs a word, `tests/item_names_test.lua` fails without one and checks
+the words are unique per side and hold no "orb"). `C.affixName(base, mods)` is the pure part; `C.applyName(item)` runs
+at the end of `C.rewriteDescription` (so every orb, forge and quality change renames): it sets `ITEM_ATTRIBUTE_NAME`
+and `ITEM_ATTRIBUTE_ARTICLE` ("an" before a vowel sound) from the **stock** name (`ItemType:getName()`, so it is
+idempotent, title-cased), marks the item `chaos_aname = 1` (copied by the guild depot and the item codec through
+`C.attributeKeys`), and removes name, article and mark when the item has no modifier left. Normal items, uniques,
+waystones, rift keys and an item another script named (no mark) keep their name. Existing items get their name the next
+time a modifier changes (there is no login pass). Readers audited: market (offer name and search use the new name; the
+category comes from the gear kind), item links (name limit 56), tooltips, loot line and pouch line (one id with
+different names merges into "2 longswords"), hunt summary (lists the stock name, one row per base), loot filter,
+autosell (rarity items go by rarity, not by name), jewelry (name only matters for uniques), guild depot and codec (copy
+name, article and mark). Item names are not translated to pt-BR (see "Still English on purpose" under internationalisation), so the
+names stay English.
+
 Kinds (`M.kindOf`): weapon, shield, helmet, armor, legs, boots, jewel, other, and **quiver** (the quiver bases of
 `data/lib/chaos_archery_config.lua`, off-hand equipment). A quiver rolls only modifiers whose `kinds` name it
 (its eight of `chaos_archery_config.lua` `mods`, added to the catalogue by `chaos_archery_core.lua`, and the shared ones);
@@ -11474,7 +11559,8 @@ other = gloves, belts and the like; cap = the most a character gets from everyth
 | elepen | Elemental Penetration +N% | prefix | jewel, weapon | 2-4 | 3-5 | 5-7 | 7-10 | 9-13 | 11-15 | 14-18 | 17-22 | 25 |
 | execute | Executes Monsters below N% Health | prefix | weapon | 1-2 | 2-3 | 3 | 3-4 | 4-5 | 5-6 | 6-7 | 7-9 | 10 |
 | dot | Damage over Time +N% | prefix | jewel, other, weapon | 4-7 | 7-11 | 10-15 | 14-20 | 18-26 | 23-32 | 29-39 | 36-48 | 60 |
-| attackspeed | Attack Speed +N% | suffix | weapon | 2-3 | 3-4 | 4-6 | 5-7 | 7-9 | 9-11 | 11-13 | 13-15 | 15 |
+| attackspeed | Attack Speed +N% | suffix | weapon (weight 20, was 8) | 2-3 | 3-4 | 4-6 | 5-7 | 7-9 | 9-11 | 11-13 | 13-15 | 15 |
+| gearspeed | Attack Speed +N% (worn: player bonus, patch 0078) | suffix | jewel, other (weight 16) | 1 | 1-2 | 2 | 2-3 | 3-4 | 3-5 | 4-6 | 5-7 | 10 |
 | movespeed | Movement Speed +N% | suffix | boots | 2-3 | 3-4 | 4-5 | 5-7 | 6-8 | 8-10 | 9-11 | 10-12 | 12 |
 | lifeonkill | Life on Kill +N | suffix | helmet, jewel, weapon | 4-9 | 9-18 | 18-36 | 36-70 | 60-100 | 85-150 | 120-200 | 160-260 | 300 |
 | manaonkill | Mana on Kill +N | suffix | helmet, jewel, weapon | 2-5 | 5-10 | 10-20 | 20-40 | 35-65 | 50-95 | 80-130 | 110-170 | 200 |
@@ -12049,7 +12135,7 @@ most a character gets from all gems.
 
 Caps: element damage 40% each, physical damage 12%, element resistances 30% each, physical resistance 10%, max health
 2000, max mana 1500, critical 10% chance / 75% damage, life leech 20% / 15%, movement speed 12% (together with the
-Movement Speed modifier, whose cap it shares), attack speed 20% on the weapon (modifier and gems together).
+Movement Speed modifier, whose cap it shares), attack speed 15% on the weapon (modifier and gems together; 20% before 2026-10-28).
 An offensive theme (critical, life leech, attack speed) sits in weapons with the gem's element damage in jewellery;
 otherwise the element damage sits in weapons and the theme in armour.
 
@@ -13133,26 +13219,60 @@ above does the weapons. This audit does the rest of the slots and adds a fairnes
   quiver, amulet and ring. An item counts for a class when the class wears it (armor weight, shield and spellbook hand,
   quiver for the launcher line, unique `equipLines`), when it has at least one way in (a shop, a monster drop of 0.01%
   or more per kill, the Gambler, a recipe, a reward), and from the level it can be had at: its required level, or the level
-  of its easiest source when higher. A drop counts from the **hunting** level of its monster (twice the pool level for a
-  base monster, `pace_config.lua`). Power = armor or defense against the gear sets' curve of the class's weight. The
+  of its easiest source when higher. A drop counts from the **hunting** level of its monster (the pool level for a
+  base monster since O285, `pace_config.lua` `baseLevelMult` 1; twice it before). Power = armor or defense against the gear sets' curve of the class's weight. The
   stock items carry no armor value, so their power is unknown and counts as full strength.
 - **Check (CI).** `cd server && luajit tools/gear_coverage.lua --check` (and `lua5.3`) fails when a class has fewer than
-  `min` options in a band (3; quivers 2), when the table below is out of date, or when a class finds fewer than 20% of the
-  usable weapons per kill of the median class (`--fairness`; the bands 100, 300, 500, 800 and 1000, a weapon counts from
-  60% of the curve). Allowances go in `gear_coverage_config.lua` `knownGaps`. Other commands: `--md`, `--list SLOT [Class]`,
-  `--fairness`, `--write`.
+  `min` options in a band (3; quivers 2), when the table below is out of date, or when the weapon drops are not equal
+  (next bullet). Allowances go in `gear_coverage_config.lua` `knownGaps`. Other commands: `--md`, `--list SLOT [Class]`,
+  `--fairness [--detail]`, `--derive`, `--write`.
+- **Equal weapon drops (owner, 2026-10-28: "Monk weapons are very rare to drop, they must all be equal").** `--fairness`
+  counts, per class and **loadout**, the usable weapons dropped per 1000 kills in the hunting bands 100, 300, 500, 800,
+  1000 and 1200 (a band is +-15% of the number; 800 and up are scaled hunts). A loadout is one kind of weapon a build
+  wields: `melee1h`, `melee2h`, `fist`, `bow`, `crossbow`, `wand`, `rod` (`gear_coverage_config.lua` `loadouts`: the Warrior,
+  Templar and Thief lines and the Samurai 1h and 2h, the Berserker 2h, the Monk line fist plus both melee, the Ranger and
+  Deadeye bow and crossbow, the Beastmaster bow, the Elementalist wand, the Illusionist rod, the other casters both). Every
+  real source counts: the stock loot tables of the pool monsters, the equipment sets' loot rows, the sets' level gear
+  (from hunting level 700, the killer's class weighs 3x), the class loot rows and rolls below, and the fist weapons' loot.
+  A weapon counts when its power is 60% of the weapon audit's curve and its required level is within 150 below and 20
+  above the band (or the class loot picks it there), so a level 25 club is no drop at hunting level 300. **Rule: in every
+  band the loadout that finds the fewest is at least 90% of the one that finds the most** (`fairRatio`; it was "no class
+  below 20% of the median", which let a Beastmaster find a third of a Warrior). Throwing weapons are no loadout:
+  stackable throws are out of the game (`chaos_throwables.lua`). Monks can wield melee weapons (docs/CLASSES.md "Skills
+  and weapons"), so the old model did not mislabel them; it counted no fist drop and, with the old window, 129 stock
+  melee drops per 1000 kills at hunting level 300, nearly all of them weapons of level 25 to 40.
 - **What it found.** Before: no quiver at 1-20, 700-1000 and 1500+ (the stock quivers run 20 to 1000), one at 20-50 and
   1000-1500; two spellbooks at 1-20 and 1500+; helmet, armor and legs at 1500+ one or two options (the sets stop
   at 2000 and some pieces were out of reach); one amulet at 400-700; two rings at 20-50. The stock monsters never dropped
   a bow, a crossbow or a quiver, so a Ranger found 0 usable weapons per 1000 kills in every band while a Warrior found 12
   to 230. A caster found 1 to 54. Stock wands, rods and spellbooks dropped from few monsters.
 - **Fix 1: class loot** (`data/lib/chaos_class_loot.lua`, `data/scripts/chaos/class_loot.lua`, test
-  `tests/class_loot_test.lua`). The bounty pool monsters and bosses get bow, crossbow, wand and rod, quiver and spellbook
-  rows from the stock bases (`base_weapons.csv`, the archery quivers and the spellbook list), by hunting level, as
-  `jewelry.lua` does for rings. Per kill: bow 1.6%, crossbow 1.2%, wand and rod 2%, quiver and spellbook 0.8%, times
-  `1 + level / 400` up to 3, shared by the bases within 150 levels below and 20 above the monster (the three highest
-  below that). Bosses: 4%, 3%, 5%, 2%, 2%. The loot layer rolls rarity, item level and modifiers as for any gear drop. A
-  Ranger now finds 10 to 84 usable weapons per 1000 kills, a caster 10 to 112, a Warrior 12 to 229.
+  `tests/class_loot_test.lua`). The bounty pool monsters and bosses get one-handed and two-handed melee, fist, bow,
+  crossbow, wand, rod, quiver and spellbook rows from the stock bases (`base_weapons.csv`, the Monk line's
+  `chaos_fist_weapons.lua`, the archery quivers and the spellbook list; set looks of `transmog_config.lua` are left out),
+  by hunting level, as `jewelry.lua` does for rings. The chance per kill of a weapon family is a curve of the monster's
+  hunting level (`config.chance`, anchors at 100, 300 and 500, flat outside; derived, see below), shared by the bases within
+  150 levels below and 20 above the monster (the three highest below that, within 200 of the top). Quivers and spellbooks
+  keep 0.8% rising to 2.4% at 800. Bosses: 4% melee and fist and bows, 3% crossbows, 2.5% wands and rods, 2% quivers and
+  books. The loot layer rolls rarity, item level and modifiers as for any gear drop.
+- **Scaled hunts** (`config.scaled`, `loot.lua` step 1e `L.classWeapons`, `ChaosClassLoot.rollScaled`). A monster type has
+  one loot table, so a kill hunted above the pool (hunting level 658 and up) would carry the rows of its pool level. It
+  rolls the weapons of the killer's class instead, once per family the class wields (`L.classKinds`, equal to the
+  audit's loadouts, tested), with the chance of `config.scaled.chance` (anchors 800, 1000, 1200) x rate x item find x pack
+  scale (at most 3) x tier (magic 1.5, rare 2, legendary 3, boss 3).
+- **Derived numbers.** `luajit tools/gear_coverage.lua --derive` fits the anchors of `config.chance` and
+  `config.scaled.chance` so that every loadout finds `fairTarget` = 28 usable weapons per 1000 kills (2.8%) in the fitted
+  bands (the classes whose sets or stock drops add more are fitted for the one that needs most). Paste its output into
+  the file when a base, a set or the pool changes; `--check` fails when a loadout falls behind.
+- **Result** (usable weapons per 1000 kills, every loadout of every class, bands 100 / 300 / 500 / 800 / 1000 / 1200).
+  After: 28.0 to 28.4 everywhere (least / most 0.99 to 1.00). Before (same model, old rows): Warrior 1h/2h 15.6 / 13.8 at 100
+  and 0.0 at 300 and 500 (stock melee drops of level 25 to 40 do not count at those levels), 2.5 / 2.1 at 800; Berserker
+  13.8, 0.0, 0.1; Ranger bow 10.4 / 26.0 / 28.3 and crossbow 10.6 / 18.6 / 21.2; Beastmaster bow 10.4 / 26.0 / 28.3;
+  Mystic and Necromancer line wand 37 / 34 / 34 and rod 18 / 21 / 27; Elementalist 18 / 21 / 27; Illusionist 36 / 34 / 27;
+  **Monk, Shadowfist and Iron Sage fist 0.0 / 0.2 / 0.0** (nine boss and rare rows); at 800 to 1200 every loadout 0.0 to
+  2.7 (level gear only; fists none). All weapons dropped by the monsters of the bands per 1000 kills (any weapon, usable or
+  not): 116 / 237 / 243 before, 263 / 366 / 409 after at 100 / 300 / 500. A class sees two to three loadouts, so a Warrior
+  finds a usable weapon on about 5.6% of the kills, a Monk on 8.4%.
 - **Fix 2: 17 uniques** (`chaos_items.xml`, `chaos_unique_items.lua`). Quivers for the Ranger line at levels 6, 14, 38, 750,
   900, 1200, 1600 and 1900 (built-in modifiers from the shared catalogue: life on hit, physical penetration, boss damage).
   Spellbooks at 12 and 1650. A ring at 30. Amulets at 450 and 600. Helmets at 1550 and 1800, armor at 1600, legs at 1650,
@@ -13171,27 +13291,27 @@ above does the weapons. This audit does the rest of the slots and adds a fairnes
 
 | Slot | Classes | 1-20 | 20-50 | 50-100 | 100-200 | 200-400 | 400-700 | 700-1000 | 1000-1300 | 1300-1700 | 1700-2400+ |
 |---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Helmet | Warrior, Juggernaut, Berserker | 19/100 | 12/187 | 19/243 | 15/215 | 25/133 | 10/114 | 8/100 | 16/114 | 6/105 | 6/103 |
-| Helmet | Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai | 19/100 | 12/207 | 19/255 | 15/250 | 24/150 | 10/127 | 8/100 | 16/123 | 6/119 | 6/117 |
-| Helmet | Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord | 19/100 | 12/255 | 18/295 | 14/255 | 25/171 | 10/149 | 6/100 | 14/145 | 5/135 | 5/129 |
-| Helmet | Monk, Shadowfist, Iron Sage | 19/100 | 12/207 | 19/255 | 15/250 | 26/150 | 10/127 | 8/100 | 16/123 | 6/119 | 6/117 |
-| Helmet | Templar, Inquisitor, Sentinel | 19/100 | 12/187 | 19/243 | 15/215 | 26/133 | 10/114 | 8/100 | 16/114 | 6/105 | 6/103 |
-| Armor | Warrior, Juggernaut, Berserker | 24/100 | 7/126 | 21/144 | 21/185 | 26/106 | 12/100 | 29/100 | 10/100 | 7/100 | 6/106 |
-| Armor | Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai | 24/100 | 7/141 | 21/160 | 21/209 | 26/119 | 12/100 | 29/100 | 10/100 | 7/109 | 5/100 |
-| Armor | Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord | 24/100 | 7/156 | 20/182 | 20/234 | 26/136 | 12/100 | 27/100 | 8/100 | 5/123 | 5/112 |
-| Armor | Monk, Shadowfist, Iron Sage | 24/100 | 7/141 | 21/160 | 21/209 | 27/119 | 12/100 | 29/100 | 10/100 | 7/109 | 5/100 |
-| Armor | Templar, Inquisitor, Sentinel | 24/100 | 7/126 | 21/144 | 21/185 | 27/106 | 12/100 | 29/100 | 10/100 | 7/100 | 6/106 |
-| Legs | Warrior, Juggernaut, Berserker, Templar, Inquisitor, Sentinel | 14/166 | 7/100 | 7/186 | 8/257 | 16/122 | 9/100 | 5/100 | 10/100 | 7/107 | 5/107 |
-| Legs | Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai, Monk, Shadowfist, Iron Sage | 14/166 | 7/100 | 7/217 | 8/257 | 16/138 | 9/104 | 3/100 | 9/100 | 7/107 | 5/107 |
-| Legs | Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord | 14/229 | 7/100 | 6/260 | 7/300 | 16/157 | 9/117 | 3/100 | 9/100 | 6/107 | 5/107 |
-| Boots | Warrior, Juggernaut, Berserker, Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord, Monk, Shadowfist, Iron Sage, Templar, Inquisitor, Sentinel | 3 | 8/150 | 9/200 | 9/200 | 10/100 | 11/100 | 11/100 | 12/120 | 6/100 | 10/100 |
-| Boots | Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai | 3 | 8/150 | 9/200 | 10/200 | 10/100 | 11/100 | 11/100 | 12/120 | 6/100 | 10/100 |
-| Shield | Warrior, Juggernaut, Templar, Inquisitor, Sentinel | 16/100 | 15/142 | 7/118 | 11/125 | 12/100 | 5/100 | 17/100 | 12/100 | 8/113 | 9/100 |
-| Spellbook | Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord | 3/107 | 3/100 | 5/100 | 8/125 | 7/125 | 3/100 | 9/100 | 7/100 | 7/106 | 5/100 |
+| Helmet | Warrior, Juggernaut, Berserker | 25/100 | 20/187 | 13/243 | 11/215 | 27/133 | 11/114 | 4/100 | 13/114 | 6/105 | 6/103 |
+| Helmet | Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai | 25/100 | 20/207 | 13/255 | 11/250 | 26/150 | 11/127 | 4/100 | 13/123 | 6/119 | 6/117 |
+| Helmet | Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord | 25/100 | 20/255 | 12/295 | 10/255 | 27/171 | 10/149 | 3/100 | 11/145 | 5/135 | 5/129 |
+| Helmet | Monk, Shadowfist, Iron Sage | 25/100 | 20/207 | 13/255 | 11/250 | 28/150 | 11/127 | 4/100 | 13/123 | 6/119 | 6/117 |
+| Helmet | Templar, Inquisitor, Sentinel | 25/100 | 20/187 | 13/243 | 11/215 | 28/133 | 11/114 | 4/100 | 13/114 | 6/105 | 6/103 |
+| Armor | Warrior, Juggernaut, Berserker | 26/100 | 13/126 | 23/144 | 19/185 | 31/106 | 13/100 | 17/100 | 9/100 | 6/100 | 6/106 |
+| Armor | Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai | 26/100 | 13/141 | 23/160 | 19/209 | 31/119 | 13/100 | 17/100 | 9/100 | 6/109 | 5/100 |
+| Armor | Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord | 26/100 | 13/156 | 22/182 | 18/234 | 31/136 | 12/100 | 16/100 | 7/100 | 4/123 | 5/112 |
+| Armor | Monk, Shadowfist, Iron Sage | 26/100 | 13/141 | 23/160 | 19/209 | 32/119 | 13/100 | 17/100 | 9/100 | 6/109 | 5/100 |
+| Armor | Templar, Inquisitor, Sentinel | 26/100 | 13/126 | 23/144 | 19/185 | 32/106 | 13/100 | 17/100 | 9/100 | 6/100 | 6/106 |
+| Legs | Warrior, Juggernaut, Berserker, Templar, Inquisitor, Sentinel | 15/166 | 8/100 | 8/186 | 7/257 | 18/122 | 7/100 | 4/100 | 10/100 | 7/107 | 5/107 |
+| Legs | Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai, Monk, Shadowfist, Iron Sage | 15/166 | 8/100 | 8/217 | 7/257 | 18/138 | 6/104 | 3/100 | 9/100 | 7/107 | 5/107 |
+| Legs | Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord | 15/229 | 8/100 | 7/260 | 6/300 | 18/157 | 6/117 | 3/100 | 9/100 | 6/107 | 5/107 |
+| Boots | Warrior, Juggernaut, Berserker, Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord, Monk, Shadowfist, Iron Sage, Templar, Inquisitor, Sentinel | 6 | 8/150 | 8/200 | 8/200 | 14/100 | 12/100 | 5/100 | 12/120 | 6/100 | 10/100 |
+| Boots | Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai | 6 | 8/150 | 8/200 | 9/200 | 14/100 | 12/100 | 5/100 | 12/120 | 6/100 | 10/100 |
+| Shield | Warrior, Juggernaut, Templar, Inquisitor, Sentinel | 23/100 | 13/142 | 5/118 | 15/125 | 11/100 | 9/100 | 8/100 | 11/100 | 8/113 | 9/100 |
+| Spellbook | Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord | 3/107 | 3/100 | 5/100 | 10/125 | 7/125 | 6/100 | 4/100 | 7/100 | 7/106 | 5/100 |
 | Quiver | Ranger, Deadeye, Beastmaster | 2 | 2 | 2 | 2 | 4 | 2 | 2 | 2 | 2 | 2 |
-| Amulet | Warrior, Juggernaut, Berserker, Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord, Monk, Shadowfist, Iron Sage, Templar, Inquisitor, Sentinel | 14 | 5 | 17 | 15 | 10 | 3 | 11 | 10 | 6 | 8 |
-| Amulet | Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai | 14 | 5 | 17 | 16 | 10 | 3 | 11 | 10 | 6 | 8 |
-| Ring | all 21 | 21 | 4 | 6 | 11 | 10 | 4 | 11 | 11 | 6 | 8 |
+| Amulet | Warrior, Juggernaut, Berserker, Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord, Monk, Shadowfist, Iron Sage, Templar, Inquisitor, Sentinel | 16 | 8 | 15 | 14 | 10 | 7 | 5 | 10 | 6 | 8 |
+| Amulet | Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai | 16 | 8 | 15 | 15 | 10 | 7 | 5 | 10 | 6 | 8 |
+| Ring | all 21 | 21 | 5 | 7 | 13 | 8 | 8 | 5 | 11 | 6 | 8 |
 
 <!-- gear-coverage:end -->
 
@@ -16130,8 +16250,8 @@ storages 7100400-7100409, action ids 47401 (key), 47402 (reward chest) and 47403
   Rare / legendary monsters inside a rift carry a key of its tier 2% / 6% of the time. Tier-1 keys: normal kills outside
   rifts (EventCallback onDropLoot, after the Chaos loot layer, before autoloot) with 50 in 100,000 per kill x (magic 3,
   rare 8, legendary 20, boss 40) when the monster (one of the bounty pool) has a hunting level (`Chaos.monsterHuntingLevel`)
-  of at least max(120, killer level x 0.4) and the killer is level 100+ (O284: before 2026-10-28 the pool level, half,
-  was compared, so the share was 0.8 x in effect); completed bounty contracts give one 25% (hunt) / 50% (elite) / 100% (boss) of the time (`bounty.lua` calls
+  of at least max(60, killer level x 0.4) and the killer is level 100+ (O284; O285: `baseLevelMult` 1, so the pool
+  level for a base monster); completed bounty contracts give one 25% (hunt) / 50% (elite) / 100% (boss) of the time (`bounty.lua` calls
   `ChaosRift.onBountyPaid`).
 - **Crafting.** Every crafting orb works on a key (Awakening / Gilding on a key without modifiers, Grafting up to
   `key.maxMods` = 3, Unmaking, Erasure, Upheaval rerolls them, Fate rerolls their values; Tempering and Excision work on a key too), by "Use with" or on the
@@ -17905,9 +18025,22 @@ ambush and goblin chances, kill goals, multikill, cleave); the spawn side (fill,
 `scale` (`{xp = 1.0, loot = 1.0}`) multiplies the experience and loot curves for calibration (see the live check).
 
 - **Hunting level** (`pace_core.lua` `P.levelOf`): `Monster:getMonsterLevel()` for a level-scaled monster; the spawn
-  point's level for a generated area or dungeon monster (`ChaosAreaGen.pointOf`); else `baseLevelMult` (2) x
-  `ChaosLoot.monsterLevel` (the bounty pool's fair-hunt estimate; "Level bands and capacity": the hunting level is twice
-  it). A monster with a level of its own uses the `scaled` curves.
+  point's level for a generated area or dungeon monster (`ChaosAreaGen.pointOf`); else `baseLevelMult` (1 since O285,
+  2026-10-28; 2 before) x `ChaosLoot.monsterLevel` (the bounty pool's fair-hunt estimate: the hunting level of a base
+  monster is its pool level, "Level bands and capacity"). A monster with a level of its own uses the `scaled` curves.
+- **O285: the base curves re-fitted to the pool level (2026-10-28).** With the x2 rule a pack at hunting level L was made
+  of pool level L/2 monsters; now it is made of pool level L ones, whose stock health is about 2.5-3.5x and experience
+  about 3-4x (the pool: health about 65 a level from level 300, experience about (level / 1.6)^2). The `base` health, xp
+  and loot points were re-fitted so that, at every hunting level, what the models measure is what they measured before:
+  health {20: 1.00 -> 0.28, 100: 0.36 -> 0.105, 250: 0.21 -> 0.095, 600: 0.21 -> 0.105} (`tools/pack_model.py`: the median
+  class's pack dies in 2.3-4.6 s from level 20 to 600, as before, within 10%); xp {20: 1.00 -> 0.20, 100: 0.32 -> 0.082,
+  250: 0.17 -> 0.075, 600: 0.16 -> 0.066} (`tools/progression_model.lua`: minutes per level within 0.93-1.08 of the old
+  curve up to level 400, 7-17% shorter at 450-650); the goals did not change (the kills per hour did not). Levels
+  under 10 (health) and 6 (xp) stay untouched, as the pool levels under 10 / 5 were. The base set ends at the pool's
+  highest level (657): above it only level-scaled monsters are hunted, so `tools/pack_model.py --check` compares the late
+  packs (670+) with a base pack of the top monsters whose health grows with the level, 2.0-2.7x (limit 3.0). The `damage`
+  curve was not touched (one curve for all sets): a base monster at hunting level L is now a pool L one, which hits
+  harder than the pool L/2 one it replaced; open for the owner.
 - **Which monsters**: natural map spawns (`onSpawn` with `artificial = false`), generated areas and dungeons (their
   boss never), base dungeon monsters (`dungeons.lua` marks them) and ambush copies of a paced monster
   (`monster_tiers.lua`). Never: bosses (isboss, rewardboss, the tier list), summons, and every script-made monster of the
@@ -18223,7 +18356,7 @@ nothing dropped from Nightfang Widow and Shadowcrystal Widow (monster level 1018
 about half their corpses came out empty.
 
 **What decides.** Only the monster: its level (`P.levelOf`: its own level for a level-scaled monster, a generated
-point's, else 2 x the pool estimate, read at its first think) and its kind (the `base` / `scaled` / `generated` curve
+point's, else the pool estimate (2 x until O285), read at its first think) and its kind (the `base` / `scaled` / `generated` curve
 set), times a pocket's factor (`pocketboss.lua`, a property of the monster). The killer's level, party, stamina and
 place are not read (`P.levelPlan(ll, f, items, rnd)` has no player argument; `tests/lootline_corpse_test.lua` gives a
 level 100 hunter alone and a level 1500 hunter in a party the same corpse with the same rolls). The stock pass before
@@ -18249,23 +18382,37 @@ it (its own chances, low stamina) and the Chaos extra rolls after it are unchang
 has the same points from 450 on and the old ramp x 0.963 below; the generated set keeps the 2026-10-20 shares (its
 queue model is calibrated on them) with the coin pay and the floor:
 
-| Monster level (base) | 100 | 300 | 500 | 650 | 700 | 800 | 900 | 1000 | 1250+ |
-|---|---|---|---|---|---|---|---|---|---|
-| Items, orbs, plain gear (`loot`) | 0.444 | 0.240 | 0.236 | 0.228 | 0.228 | 0.228 | 0.234 | 0.240 | 0.240 |
-| Notable drops kept | 0.44 | 0.24 | 0.24 | 0.23 | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 |
-| Coins and junk value, old (`loot` x `gold`) | 0.444 | 0.198 | 0.071 | 0.068 | 0.068 | 0.068 | 0.070 | 0.072 | 0.072 |
-| `coins` curve | 0.963 | 0.828 | 0.283 | 0.176 | 0.179 | 0.133 | 0.252 | 0.271 | 0.290 |
-| Coins and junk value, new (`loot` x `coins`) | 0.428 | 0.199 | 0.067 | 0.040 | 0.041 | 0.030 | 0.059 | 0.065 | 0.070 |
-| A junk stack stays in kind (`loot` x `junkKeep`) | 1.000 | 0.881 | 0.866 | 0.837 | 0.071 | 0.026 | 0.143 | 0.828 | 0.828 |
+**O285 (2026-10-28): the base curves re-fitted to the pool level, items per hour restored.** The pool's base monsters now
+stand at their own level (the highest is 657) and a level 500 monster carries about 8.5x the NPC gold of the level 250
+monster that stood there before (and 1.8x the items: 0.6 a kill against 0.33). Holding the gold per hour
+(`lootLevel.goldPerHour`) with the old knobs would have cut the items per hour by half (100-300) to four fifths (450+). The
+owner (2026-10-28) asked for the items per hour back at the same gold, so the two are decoupled with one new knob:
+`cheapPrice` (a curve of the base set, `pace_core.lua` `P.factors` `cheap`, `P.levelPlan`): junk worth at most that many
+gold a unit (its NPC price) stays in the corpse whole, whatever `loot` and `coins` say. The items per hour come from the
+cheap junk (potions, pearls, trinkets, 20-600 gold), the orbs and the notable drops; the gold from the dearer junk and the
+coins, which `coins` pays thin. `notable` is the pre-O285 loot curve (0.37 at 100, 0.2 from 250), so Rare+ gear and rare
+drops are as frequent as before. `loot` (plain gear, orbs, gems) and `coins` were fitted band by band with
+`tools/loot_model.lua`; `lootLevel.itemsPerHour` holds the bands to 539 / 692 / 380 / 540 an hour at 100 / 300 / 500 / 650
+(the figures from before, `--check` and `tests/loot_by_level_test.lua`); between them the bands are what the curves give
+(350 -> 503, 400 -> 436, 450 -> 436, 550 -> 368, 600 -> 444). The gold per hour is unchanged except the top band: 650 is
+held to 1.34M (it was 1.5M in the first O285 fit): bands 600 and 650 are the same 9-16 monsters of the pool's top, so
+their gold cannot differ by more than 1.28x. The scaled set keeps its own points. The weapon drops of the weapon fairness
+work start at hunting level 658 (`loot.lua` step 1e), above every base monster, so they are not in these bands.
 
-From 700 the notable drops are paid for by the coins and the junk; the 800 band is gear-heavy (its Rare+ gear is worth
-more than its coins), so there most junk is paid as coins. Below 650 the notable drops keep the loot factor: the model
-found no share there that holds both gold and items per hour (a 1% drop of those bands is worth up to 115,800).
+| Monster level (base) | 100 | 300 | 500 | 650 |
+|---|---|---|---|---|
+| Plain gear, orbs (`loot`) | 0.110 | 0.348 | 0.107 | 0.298 |
+| Notable drops kept | 0.37 | 0.35 | 0.20 | 0.30 |
+| `coins` curve | 0.573 | 0.121 | 0.117 | 0.200 |
+| Junk worth at most this stays whole (`cheapPrice`) | 25 | 8 | 603 | 228 |
+| Items per hour | 539 | 695 | 368 | 536 |
+| Gold per hour | 137,598 | 471,819 | 857,430 | 1,341,522 |
+
 
 **The economy model** (`tools/loot_model.lua`; `luajit tools/loot_model.lua` prints it, `--check` is in CI, `--fit`
 proposes the points). Input: `tools/loot_bands_data.lua`, the stock loot tables of the bounty pool monsters of each band
-(+-15% of the band level on the hunting scale; 1500 hunts the top of the pool, 1150+, since no base monster is above
-1314), written by `python3 -I server/tools/loot_bands.py BASE_DATA` from an installed base server (`--check` compares;
+(+-15% of the band level on the hunting scale, which is the pool level since O285; no base monster is above 657, so the
+bands stop at 650 and the data holds every base monster from level 40), written by `python3 -I server/tools/loot_bands.py BASE_DATA` from an installed base server (`--check` compares;
 coin / gear / junk / other by `items.xml` and the item price table). Per entry the chance, the stock count (uniform
 1..max, x the stock level multiplier of a level-scaled monster) and both rules' shares, as expected values; the Rare+
 share from `ChaosRarity.stockRolls`; kills per hour from `spawn_tuning.json` `model.paceKillsPerHour` by the monster's
@@ -18273,30 +18420,37 @@ level; weights the pool's spawn counts. Gold is coins plus plain NPC prices (the
 the Chaos extra rolls, gold finds and item find are left out, the same under both rules), so the absolute gold per hour
 is the stock corpse's only and lower than the "Respec" column; the economy target is the ratio: the 2026-10-20 rule is
 what the beta calibrated (16M -> the 5.5-6.3M model at 450-600), and the new curves keep it. Tolerances of `--check`:
-gold per hour 5%, items (non-coin corpse entries) per hour 7%, at the six bands and every fit point (100 ... 1000).
+gold per hour 5%, items (non-coin corpse entries) per hour 7%, at the four bands (100, 300, 500, 650) and every fit point
+(100 ... 650, 350 / 400 / 600 on top).
 
 | Band | Monsters | Kills/h | Gold/h before | Gold/h after | Items/h before | Items/h after | Per kill: gold, items before / after | Empty corpse before / after | "Respec" gold/h |
 |---|---|---|---|---|---|---|---|---|---|
-| 100 | 41 | 1,576 | 137,941 | 137,933 (-0.0%) | 553 | 539 (-2.5%) | 88, 0.35 / 88, 0.34 | 17% / 12% | 358,839 |
-| 300 | 45 | 1,290 | 468,681 | 468,756 (+0.0%) | 718 | 692 (-3.6%) | 363, 0.56 / 363, 0.54 | 16% / 5% | 881,866 |
-| 500 | 32 | 1,211 | 393,565 | 392,093 (-0.4%) | 396 | 380 (-4.0%) | 325, 0.33 / 324, 0.31 | 23% / 7% | 5,548,330 |
-| 800 | 62 | 1,157 | 2,461,771 | 2,483,009 (+0.9%) | 700 | 703 (+0.5%) | 2,128, 0.60 / 2,146, 0.61 | 26% / 5% | 7,931,159 |
-| 1000 | 50 | 1,170 | 3,347,910 | 3,358,953 (+0.3%) | 706 | 697 (-1.3%) | 2,863, 0.60 / 2,872, 0.60 | 38% / 6% | 9,519,711 |
-| 1500 | 7 | 1,201 | 6,504,843 | 6,493,444 (-0.2%) | 1,249 | 1,238 (-0.9%) | 5,416, 1.04 / 5,407, 1.03 | 26% / 4% | 9,519,711 |
+| 100 | 40 | 1,574 | 128,252 | 137,598 (+7.3%) | 261 | 539 (+106.8%) | 81, 0.17 / 87, 0.34 | 21% / 6% | 358,839 |
+| 300 | 48 | 1,285 | 1,496,183 | 471,819 (-68.5%) | 1,101 | 695 (-36.8%) | 1,164, 0.86 / 367, 0.54 | 12% / 5% | 881,866 |
+| 500 | 44 | 1,211 | 1,420,818 | 857,430 (-39.7%) | 307 | 368 (+19.9%) | 1,173, 0.25 / 708, 0.30 | 65% / 7% | 5,548,330 |
+| 650 | 9 | 1,210 | 3,256,841 | 1,341,522 (-58.8%) | 606 | 536 (-11.5%) | 2,692, 0.50 / 1,109, 0.44 | 51% / 4% | 6,739,744 |
+
+("Before" is the 2026-10-20 rule at the new loot factor, no longer the reference: the targets are `lootLevel.goldPerHour`
+(100 -> 138k, 300 -> 469k, 500 -> 860k, 650 -> 1.34M) and `lootLevel.itemsPerHour` (539 / 692 / 380 / 540).)
 
 The widows per kill (their real loot tables: crystal coins 60% x 1-7, potions, pearls, a ring, 1950-75,000 gold junk,
 six orb entries; no gear and no drop under 7%, so nothing notable):
 
 | Monster | Level | Gold / kill before / after | Items / kill before / after | Coins shown | Empty corpse before / after |
 |---|---|---|---|---|---|
-| Nightfang Widow | 1018 | 3,173 / 3,186 | 0.48 / 0.47 | 17% / 78% | 50% / 6% |
-| Shadowcrystal Widow | 960 | 3,141 / 3,102 | 0.48 / 0.46 | 17% / 78% | 51% / 6% |
+| Nightfang Widow | 509 | 1,265 / 466 | 0.19 / 0.15 | 7% / 86% | 77% / 8% |
+| Shadowcrystal Widow | 480 | 1,344 / 832 | 0.20 / 0.17 | 7% / 86% | 75% / 8% |
+
+(Before O285 the widows stood at level 1018 / 960 and paid 3,170 gold and 0.47 items a kill. At their pool level they pay
+like the monsters of the band 500 (466 and 832 gold against 708) and are off `lootLevel.crystalOnly` (owner 2026-10-28:
+the least code; with a pay of a few hundred a crystal coin of 10,000 is a 5% chance). Their own loot level would have
+needed a lookup in `pace.lua` and in the model.)
 
 A Monte Carlo of the core plan on the Nightfang Widow's table matches the model (gold within 4%, items within 0.03 a
 kill, empty corpses within 2 points: `tests/loot_by_level_test.lua`).
 
 **Crystal coins only** (beta report 2026-10-22: the widows filled the loot bag with gold, platinum and crystal coins).
-A monster on `lootLevel.crystalOnly` (the two widows) gets its coin pay as crystal coins only: pay / 10000, the rest
+A monster on `lootLevel.crystalOnly` (none since O285; the two widows were) gets its coin pay as crystal coins only: pay / 10000, the rest
 rounded at random to one more coin (`P.crystalStacks`, picked by `P.payStacks` on the monster's type name). The expected
 gold per kill is the same (the Monte Carlo in `tests/loot_by_level_test.lua`: within 4%), but most kills pay no coin and
 some pay one: at about 3,100 gold a kill that is one crystal coin in about three kills. Other monsters keep
@@ -18351,8 +18505,10 @@ Measured on 2026-10-11 on the loaded map and its spawn file after `late_game.py`
 
 Spawn blocks on one floor within 12 sqm of each other and of a similar level form an area. Areas with 12+ monsters are
 hunting areas (1,195, with 42,300 monsters that load); the other 28,100 are scattered single spawns. A monster's hunting
-level is twice the bounty pool's "fair hunt" estimate (`gen_bounty_pool.estimate_level`), or the middle of its range for
-a level-scaled monster. That puts the leveling model's hunts at about 85, 250 and 650. Density is monsters per 100
+level is the bounty pool's "fair hunt" estimate (`gen_bounty_pool.estimate_level`), or the middle of its range for
+a level-scaled monster (twice the estimate from 2026-10-14 to 2026-10-28, O285: the owner retired the x2 rule; the base
+monsters now end at level 657). That puts the leveling model's hunts at about 40, 125 and 325 for the hunts that were
+at 85, 250 and 650 before, and the late levels are the level-scaled sets'. Density is monsters per 100
 walkable tiles within 6 sqm of a spawn, as in docs/MAP_GUIDE.md (2.7-4.4 is normal).
 
 Capacity is a simple model: a spot holds N hunters while N x one hunter's kills per hour stays at or below the kills
@@ -19106,9 +19262,9 @@ Tests: `tests/hunt_teleports_test.lua` (core and the engine file against a mock)
 
 ## Hall order (`tools/hall_order.py`, `tools/hall_quests.py`, `tools/hall_hunts.csv`, `install_content_areas.py`, `hunt_teleports.lua`)
 Owner, 2026-10-16: the teleport hall of Cinderhold ordered by level, floors going up as the monsters get stronger.
-Hunting levels (owner 2026-10-27): the base hunts of `hall_hunts.csv` are on the pool scale; the install multiplies their `level`, `lo` and `hi` by `baseLevelMult` (`hall_order.hunting_rows`), so signs, labels, the order and the floors use the hunting level like the plans. With them the 560 boundary below replaced 500 (z 6 would have needed 44 slots, it has 41).
+Hunting levels (owner 2026-10-27): the base hunts of `hall_hunts.csv` are on the pool scale; the install multiplies their `level`, `lo` and `hi` by `baseLevelMult` (`hall_order.hunting_rows`), so signs, labels, the order and the floors use the hunting level like the plans. **Retired 2026-10-28 (O285):** `baseLevelMult` is 1, so the shown level is the pool level again and the multiplication changes nothing; the floor boundary is back at 500 (560 was only needed for the doubled levels).
 Owner, 2026-10-18 (after the first order overwrote some quest teleports of the ground floor): the **ground floor z 7
-holds the hunts of levels 1-560 (500 until 2026-10-27, see "Hunting levels in the hall"), z 6 of 560-1000, z 5 of 1000 and up** (`hall.levels` in the config), and the base
+holds the hunts of levels 1-500 (560 on 2026-10-27 only, see "Hunting levels in the hall"), z 6 of 500-1000, z 5 of 1000 and up** (`hall.levels` in the config), and the base
 quests are back, in their own hall. Every hunt teleport of the hall, the base server's and the planned hunts', takes a
 slot of the floor its level belongs on, by its level (below), then band floor, ceiling and id: along the corridor from
 west to east (north before south in a column). A floor with too few slots is grown (`room.wings`; below). A new hunt
@@ -19443,6 +19599,48 @@ parts in one pass after `contentareas` (before `poi`), idempotent like the other
 Checked on the copy (not on a live server, not in a client): the scan again (no destination without a tile), both
 checkers, the display cells of all 62 rooms, renders of the hub and the temple before and after.
 
+## Lava edge strips (`tools/patch_lava_edges.py`, install step `lavaedges`, O288)
+
+Owner, 2026-10-28: "some hunts have wrong floors", brown strips and an ochre bar on the grey rock of Ironhorn Slagworks.
+
+- **Cause.** The lava decoration kit (`areaplan/decor_kits.json`, group `lava_cracks`) held the stock items 5840 to 5843,
+  named "small lava cracks". They are the old lava edge pieces: a narrow brown strip with a crack line (5840, 5841, 5843)
+  and a flat bar (5842), made to sit on the rim of a lava pool, not alone on a floor. The kit laid them as floor detail
+  in every lava or waste hunt (`lava`, `waste` biomes): all 12 plans use the kit. The PvP zone (`pvpzone_config.lua`
+  `decor.cracks`) used them too, now the thin cracks 22509 and 25834.
+- **Fix.** The group is gone, the kit uses `cracks` (22509, 25834) instead. `area_planner_test.py` rejects any id of
+  the four decoration kits or of the `areagen_config.lua` themes that is a ground, border, shore or lake piece (the
+  `data/items/*.csv` tables, the area generator's own pieces and grounds, the stock edge items above); floor decals the
+  tables mark `family=decals` or `cata_ground` are meant to lie alone and pass.
+- **Placed hunts.** A placed area keeps its tiles (`install_content_areas.py` never replaces one), so a rerun of
+  `contentareas` does not clean the live map. Step `lavaedges` (`patch_lava_edges.py`, after `deadholes`) takes the
+  items 5840 to 5843 off every tile of a lava or waste plan (all its floors); ground and other items stay. Idempotent,
+  writes `<map>.otbm.bak` first. Test `tools/patch_lava_edges_test.py`.
+- **Owner step.** On the VPS: `python3 -I server/tools/install_all.py SERVER_DIR --only lavaedges` with the server
+  stopped (`--dry-run` first lists the count). The admin app (`android/`) has no button for install steps.
+
+## Crypt floor (`tools/patch_crypt_floors.py`, install step `cryptfloors`, O288)
+
+Owner, 2026-10-28, with a screenshot of the Hollow Crypt hunt: the corridor floor alternates tile by tile between dark
+streaked tiles and round reddish-brown pebble discs, so it reads as broken.
+
+- **Cause.** The area generator's `crypt` ground family (`areagen_config.lua`, used by the themes `rift_crypt` and
+  `marrow`) held `{13189, 3}` and `{12237, 2}`: 13189 "dark sandy floor" and 12237 "rutted stone floor". 12237 is one
+  of the stain family 12234 to 12237 (the Map Studio cave kit lays them as small `stain` patches); it is a round pebble
+  tile that does not tile with 13189, so a weighted pick laid the two side by side. The planner's `catacomb` biome
+  (theme `rift_crypt`) put it on every corridor and floor stretch of 5 hunts: Hollow Crypt, Bonechoir Catacomb, Bonewright
+  Galleries, Graveknell Catacombs, Lanternless Catacombs. The Marrow Crypts dungeon and the Ashen Crypt rifts build from
+  the same family at run time and are fixed by the same change. The `crypt` biome (theme `ossuary`: slate) and
+  `harvest_crypt` (pair 33 kit floors) never used it.
+- **Fix.** The family is 13189 only (listed twice with the old weights so the seeded draws, and every layout, stay). `area_planner_test.py` checks the family and that the five catacomb plans
+  compile with no 12234 to 12237 ground. The Ember Descent's Ashen Crypt look (`rift_config.lua` themes) and the arena
+  look's small crypt patches (`arenalook_core.lua`) still use 12237 as patches, not as the floor.
+- **Placed hunts.** A placed area keeps its tiles. Step `cryptfloors` (`patch_crypt_floors.py`, after `lavaedges`)
+  sets the ground of every 12237 tile inside a catacomb plan (all its floors) to 13189; items stay. Idempotent, writes
+  `<map>.otbm.bak` first, leaves house tiles alone. Test `tools/patch_crypt_floors_test.py`.
+- **Owner step.** On the VPS, server stopped: `python3 -I server/tools/install_all.py SERVER_DIR --only cryptfloors
+  --dry-run`, then the same without `--dry-run`. The admin app (`android/`) has no button for install steps.
+
 ## Dead holes (`tools/check_dead_holes.py`, `tools/patch_dead_holes.py`, `tools/dead_holes.csv`, install step `deadholes`, O264)
 Owner report of 2026-10-26 with a screenshot: "esse buraco nao leva a lugar nenhum" (this hole leads nowhere): a dirt hole
 on a patch of grass beside grey stone ruins and jungle plants. No coordinates. The checker and the patch below came out
@@ -19583,8 +19781,9 @@ damage and a skull colour. So patch 0040 adds a display level instead (`monster:
 `getDisplayLevel`), shown after the name and in the look text only. At every spawn (`onSpawn`, before the
 placement) `monster_levels.lua` gives a monster without a level of its own its **hunting level** (owner 2026-10-27, "O272"):
 `ChaosLoot.monsterLevel`, the bounty pool's "fair hunt" level of its type (else the experience / health estimate), times
-`pace_config.lua` `baseLevelMult` (2; `Chaos.huntingLevel`, `ChaosMonsterLevelsCore.huntingLevel`), the level pace
-uses to hunt it. Item level, monster damage and loot still read the pool level (display only). A generated area point's
+`pace_config.lua` `baseLevelMult` (`Chaos.huntingLevel`, `ChaosMonsterLevelsCore.huntingLevel`), the level pace
+uses to hunt it. **Since 2026-10-28 (O285) `baseLevelMult` is 1** (the owner retired the x2 rule: the planned hunts pick
+monsters by pool level and showed double), so the shown level is the pool level; the multiplication stays in the code. Item level, monster damage and loot still read the pool level (display only). A generated area point's
 level and a waystone run's level are hunting levels already and are not multiplied. Not for a player's summon (a Necromancer minion shows its owner's level, see "Summons: targets, walk-through,
 levels"). Display monsters of the teleport room get it like any monster. Without patch 0040
 nothing changes.
@@ -20915,7 +21114,7 @@ script answers its own part. Client: `client/overlay/modules/game_mapmarkers/` (
   crafting tables (action ids 38820-38826; three or more within 20 tiles are a "Crafting hall"), the service NPCs of the
   spawn file (travel, bank, blessings, shop, by their NPC file and script), hunting areas (the bounty pool's monsters at
   the busiest spots of the bestiary spawn data, spots within 40 tiles merged, the level band from the middle 70% of the
-  spawn entries (printed as the **hunting level**, the pool level times `pace_config.lua` `baseLevelMult`, since 2026-10-27: "Terror Bird (level 40-60)"; `gen_poi.py` reads the multiplier, `data/chaos_poi.lua` was rewritten with the same transform), at least 12 entries, the 300 biggest) and the island, raid and lair bosses of `bossspawns_config.lua`.
+  spawn entries (printed as the **hunting level**, the pool level times `pace_config.lua` `baseLevelMult`, since 2026-10-27; `baseLevelMult` is 1 since 2026-10-28, O285, so the pool level: "Terror Bird (level 20-30)"; `gen_poi.py` reads the multiplier, `data/chaos_poi.lua` was halved back with the reverse transform and is byte-identical to its state before O272), at least 12 entries, the 300 biggest) and the island, raid and lair bosses of `bossspawns_config.lua`.
   Every name is checked against the rename lists (sha256 of each phrase); a mark that would still carry an old-world
   name is left out. The committed `server/data/chaos_poi.lua` is the output for the shipped map (800 marks: 20 temples,
   45 depots, 4 crafting halls, 27 banks, 19 blessings, 63 travel, 272 shops, 50 bosses, 300 hunting areas);
@@ -21487,7 +21686,7 @@ talks, offers contracts and takes tokens; only its quartermaster's rank offers w
 |---|---|---|
 | Daily contracts (2 per faction) | 300 each | kill N (120-200) of one of the faction's families at 40%+ of your level; seal a rift of its theme at (your top tier - 1)+; deliver 15-25 rune shards and gold (150 per level, 20k-150k): a material and gold sink |
 | Weekly contract (1 per faction) | 1,200 | take part in a world boss kill; stand against an invasion; seal 3 rifts of its theme at (top tier - 2)+; deliver 60-90 shards and gold (500 per level, 60k-500k) |
-| Kills of its families | 1 per 10 points | points by tier: normal 1, magic 3, rare 8, legendary 25; monster hunting level at least 40% of yours (O284: the pool level, half, before 2026-10-28, so 80% in effect); party members in range share it (the bestiary rule) |
+| Kills of its families | 1 per 10 points | points by tier: normal 1, magic 3, rare 8, legendary 25; monster hunting level at least 40% of yours (O284); party members in range share it (the bestiary rule) |
 | Bounty contract | 60 | the contract's monster's family decides the faction |
 | Rift seal of its theme | 30 + 6 x tier | not Omen guardians |
 | Invasion reward | 100 | the factions that fight that invader |
@@ -21508,7 +21707,7 @@ week's cap is at most 22,500; a player who misses two weeks catches up in the th
 The window gets the faction's own cap (`wc`). Tests: `tests/factions_test.lua`, client `factionsview_test.lua`. Every gain lowers the rival by a quarter of it (fractions carry), never
 below -2,000 (Wary) and never once the rival holds you Exalted (sworn): choosing a side costs, both sides stay possible.
 
-**Tokens** (`tokenDrop`): per kill of the faction's families at hunting level 120+ (and the 40% rule), per 10,000: normal 4,
+**Tokens** (`tokenDrop`): per kill of the faction's families at hunting level 60+ (and the 40% rule), per 10,000: normal 4,
 magic 25, rare 120, legendary 600, into the corpse (the loot owner's); a rift seal of its theme gives 1 + tier / 5; its
 world boss 5; an invasion of its invaders 2. Tokens are stackable items (copies of stock stackable nodes, client sprites
 unchanged) and can be traded.
@@ -21849,7 +22048,7 @@ the goal, the open buff windows, every contribution and the week.
 
 | Source | Points | Daily cap (per character) | Hook |
 |---|---|---|---|
-| Monsters slain | 1 (magic 2, rare 4, legendary 8) | 4,000 | a `kill` event on every player; summons and monsters with a hunting level under 40% of the character's level give nothing (O284: the bestiary pool level, half, before 2026-10-28) |
+| Monsters slain | 1 (magic 2, rare 4, legendary 8) | 4,000 | a `kill` event on every player; summons and monsters with a hunting level under 40% of the character's level give nothing (O284) |
 | Rifts sealed | 120 + 15 x tier | 3,000 | `ChaosLeaderboard.record("rift", ...)` wrapped (every finisher) |
 | Invasion waves repelled | 40 per wave of a won invasion | 2,500 | `ChaosLeaderboard.record("defender", ...)` wrapped (every rewarded defender; liberations do not count) |
 | World bosses slain | 400 | 2,000 | `ChaosLeaderboard.recordShares` wrapped (every share) |
@@ -22315,7 +22514,7 @@ tiles tried), creates the item, starts a glow. Rules:
   The callback may refuse (it returns false): the record goes back and the pickup stays. The globes refuse a full bar, so
   it stays for a hurt party member; the ember refuses a PvP place.
 - **Lifetime.** A half-second look-out (`tickMs`) ends a pickup at its time: the item goes with a fade effect
-  (`CONST_ME_POFF`) and grants nothing. The glow pulses (a red, blue or fire magic effect) every 1.5 s so it is easy to see.
+  (`CONST_ME_POFF`) and grants nothing. The glow pulses (a red, blue or violet magic effect) every 1.5 s so it is easy to see.
 - **Not an item to keep.** The nodes are neither pickupable nor moveable (`install_pickups.py`), so they cannot go into a
   bag, be pushed, traded or sold; they hold no game value. Nothing is saved: the record is in memory, and a map save does
   not keep ground items outside houses. **After a restart or a reload** the record is gone; an item that is still on a tile
@@ -22327,11 +22526,13 @@ tiles tried), creates the item, starts a glow. Rules:
 `install_all.py`, idempotent, test `tools/install_pickups_test.py`; server ids 32088-32090, 32087 stays free):
 | id | item | look |
 |---|---|---|
-| 32088 | health globe | the stock health potion flask (7618) |
-| 32089 | mana globe | the stock mana potion flask (7620) |
-| 32090 | ember | the stock Ember Orb sprite (client id 25045), the name and text per blessing (item attributes) |
-The looks are existing sprites, so no new client files are needed. A drawn orb would need a sprite pair (a client build);
-until then the glow comes from a magic effect pulsing on the tile (red, blue, fire). The pickup effect is a magic effect and
+| 32088 | health globe | a red glass globe on a dark base (client item 44397 of pair 55, `gen_portal_art.py`; the node is copied from the stock health potion node of client id 7618 with the client id 44397 written, `stockClientId` in `pickups_config.lua`; stackable) |
+| 32089 | mana globe | the same globe in blue (client item 44398, the owner-approved recolour of the health globe, red hues turned to blue; node copied from client id 7620; stackable) |
+| 32090 | ember | the violet portal in a stone ring (client item 44396 of pair 55, `gen_portal_art.py`; the node is copied from the Ember Orb node of client id 25045 with the client id 44396 written, `stockClientId` in `pickups_config.lua`), the name and text per blessing (item attributes); glow `CONST_ME_PURPLEENERGY` |
+All three pickups wear looks of ours (pair 55, client/MANIFEST.md "Pair 55"; PixelLab art, `gen_portal_art.py`): **install
+`pickups` only together with a client on pair 55 or newer**, else they show as unknown items. An older install's nodes (the
+globes on the potion looks 7618 / 7620, the ember on 25045) are rewritten to the new client ids by the same step. The potion
+items and the Ember Orb (server 32258) keep their own client ids. The glow is a magic effect pulsing on the tile (red, blue, violet). The pickup effect is a magic effect and
 the heal number is the game's own (green for health, blue for mana). A pickup sound would need an event in `game_chaossound`
 (its heal sounds are keyed by magic effect themes); none is added.
 

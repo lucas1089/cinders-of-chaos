@@ -4,7 +4,8 @@
 --   luajit tools/gear_coverage.lua                  the table (plain text) and the flags
 --   luajit tools/gear_coverage.lua --md             the markdown tables of server/README.md
 --   luajit tools/gear_coverage.lua --list SLOT [Class]  every option of a slot, by band
---   luajit tools/gear_coverage.lua --fairness       how much of the gear a band's monsters drop each class can use
+--   luajit tools/gear_coverage.lua --derive         the class loot anchors that equalize the weapon drops (data/lib/chaos_class_loot.lua)
+--   luajit tools/gear_coverage.lua --fairness [--detail]  how much of the gear a band's monsters drop each class can use
 --   luajit tools/gear_coverage.lua --check          exit 1 when a class has a slot with too few options in a band, or only
 --                                                    weak ones, or the README tables are out of date (CI, both interpreters)
 --   luajit tools/gear_coverage.lua --write          rewrite the README tables between their marker lines
@@ -658,11 +659,54 @@ function C.list(cfg, wcfg, A, slot, only)
 end
 
 -- ---------------------------------------------------------------------------------------------------------------
--- fairness: the weapons the monsters of a hunting band drop, per 1000 kills, that each class can use. The stock tables
--- (tools/loot_bands_data.lua) plus the class loot rows (data/lib/chaos_class_loot.lua). A weapon counts when its power
--- is at least cfg.fairPower of the weapon audit's curve at the band.
+-- fairness: the weapons the monsters of a hunting band drop, per 1000 kills, that each class can use (owner, 2026-10-28:
+-- "monk weapons are very rare to drop, they must all be equal"). Every real source of a weapon drop is counted:
+--   stock   the stock loot tables of the bounty pool monsters (tools/loot_bands_data.lua), weapons only
+--   set     the loot rows of the equipment sets (data/lib/chaos_gear_sets.lua M.lootRows) on those monsters
+--   level   the sets' level gear (M.rollLevelGear: from hunting level 700, any monster; a piece the killer's class wears
+--           weighs classWeight times as much)
+--   class   the class loot rows (data/lib/chaos_class_loot.lua): bows, crossbows, wands, rods
+--   melee, fist, throw   the same file's rows for the melee, the Monk line's fist and the Thief line's throwing weapons
+--   fist    the Monk line's fist weapons (data/lib/chaos_fist_weapons.lua loot, data/scripts/chaos/fist_weapons.lua)
+-- A weapon counts for a class when the class can wield it (the weapon audit's families and class lists), its power is at
+-- least cfg.fairPower of the weapon audit's curve at the band, and its required level is within cfg.fairWindow of the
+-- band (a club of level 25 is no drop at hunting level 300). The bands the monsters of the pool do not reach (hunting
+-- level above the highest base monster, 657) are scaled monsters: they drop the sets' level gear only (the class rows
+-- are keyed to the pool level of the monster type), counted for 1000 kills of a normal monster.
 -- ---------------------------------------------------------------------------------------------------------------
-function C.fairness(cfg, wcfg)
+C.SOURCES = {"stock", "set", "level", "class", "fist"}
+
+-- the loadouts an item belongs to (cfg.loadouts names them per class): melee by hands, fist, bow, crossbow, wand and rod.
+-- A stock wand or rod is told apart by its class list like the sets do: a wand is one the Elementalist wields, a rod one it
+-- does not (the Illusionist's).
+local function loadoutKeys(spec)
+	if spec.family == "melee" then
+		return {spec.hands == 2 and "melee2h" or "melee1h"}
+	elseif spec.family == "fist" then
+		return {"fist"}
+	elseif spec.family == "throw" then
+		return {"throw"}
+	elseif spec.family == "launcher" then
+		return {spec.kind == "crossbow" and "crossbow" or "bow"}
+	elseif spec.family == "wand" then
+		if spec.exact then
+			return {spec.kind == "rod" and "rod" or "wand"}
+		end
+		local keys = {}
+		if not spec.classes or spec.classes.Elementalist then
+			keys[#keys + 1] = "wand"
+		end
+		if not spec.classes or not spec.classes.Elementalist then
+			keys[#keys + 1] = "rod"
+		end
+		return keys
+	end
+	return {}
+end
+C.loadoutKeys = loadoutKeys
+
+function C.fairness(cfg, wcfg, opt)
+	opt = opt or {}
 	local bands = dofile("tools/loot_bands_data.lua")
 	local weapons = {}
 	for _, r in ipairs(W.csv("data/items/base_weapons.csv")) do
@@ -675,6 +719,20 @@ function C.fairness(cfg, wcfg)
 			classes[#classes + 1] = c
 		end
 	end
+	-- loadouts[class name][key] = true
+	local has, keyList, seenKey = {}, {}, {}
+	for _, g in ipairs(cfg.loadouts) do
+		for _, name in ipairs(g.classes) do
+			has[name] = has[name] or {}
+			for _, key in ipairs(g.keys) do
+				has[name][key] = true
+				if not seenKey[key] then
+					seenKey[key] = true
+					keyList[#keyList + 1] = key
+				end
+			end
+		end
+	end
 	local edges = cfg.fairEdges
 	local function edgeOf(level)
 		local best
@@ -685,133 +743,385 @@ function C.fairness(cfg, wcfg)
 		end
 		return best
 	end
-	-- the class rows by monster name
+	-- the rows by monster name: class loot (the pool, by hunting level), the sets' loot and the fist weapons' loot
 	dofile("data/scripts/chaos/pace_core.lua")
 	local pcfg = dofile("data/scripts/chaos/pace_config.lua")
 	local pool = dofile("data/scripts/chaos/bounty_pool.lua")
 	local levelOf = function(e) return (ChaosPaceCore.entryLevel(pcfg, e)) end
+	local G = dofile("data/lib/chaos_gear_sets.lua")
+	dofile("data/lib/chaos_fist_weapons.lua")
+	local FIST = ChaosFistWeapons
+	local CL = opt.classLoot or dofile("data/lib/chaos_class_loot.lua")
 	local extra = {}
-	for _, row in ipairs(dofile("data/lib/chaos_class_loot.lua").lootRows(pool, levelOf)) do
-		extra[row[1]] = extra[row[1]] or {}
-		table.insert(extra[row[1]], {row[2], row[3], 1, "gear", 0})
+	local function addExtra(name, row)
+		extra[name] = extra[name] or {}
+		table.insert(extra[name], row)
+	end
+	for _, row in ipairs(CL.lootRows(pool, levelOf)) do
+		local r = weapons[row[2]]
+		if r then
+			addExtra(row[1], {r = r, chance = row[3], source = "class"})
+		elseif FIST.items[row[2]] then
+			addExtra(row[1], {fist = FIST.items[row[2]], id = row[2], chance = row[3], source = "class"})
+		end
+	end
+	if G.PAIR28 then
+		for _, row in ipairs(G.lootRows()) do
+			local p = G.piece(row[2])
+			if p then
+				addExtra(row[1], {piece = p, chance = row[3], source = "set"})
+			end
+		end
+	end
+	for _, row in ipairs(FIST.loot) do
+		local it = FIST.items[row[2]]
+		if it then
+			addExtra(row[1], {fist = it, id = row[2], chance = row[3], source = "fist"})
+		end
+	end
+	local SET_FAMILY = {sword = "melee", axe = "melee", club = "melee", bow = "launcher", crossbow = "launcher",
+		wand = "wand", rod = "wand"}
+	-- a drop as the weapon audit sees it: family, kind, hands, class list, power, required level
+	local function specOf(e)
+		if e.r then
+			local r = e.r
+			local cs
+			if r.classes ~= "*" then
+				cs = {}
+				for c in r.classes:gmatch("[^|]+") do
+					cs[c] = true
+				end
+			end
+			return {id = tonumber(r.id), family = FAMILY[r.kind], kind = r.kind, hands = tonumber(r.hands), classes = cs,
+				level = tonumber(r.level), power = r.kind == "wand" and (tonumber(r.wmin) + tonumber(r.wmax)) / 2 or tonumber(r.attack) + tonumber(r.element)}
+		elseif e.piece then
+			local piece = e.piece
+			local fam = SET_FAMILY[piece.kind]
+			if not fam then
+				return nil
+			end
+			local power
+			if fam == "wand" then
+				power = W.curve(wcfg, "wand", piece.level)
+			else
+				power = 0
+				for k, v in pairs(piece.stats) do
+					if k == "attack" or k:match("^element") then
+						power = power + v
+					end
+				end
+			end
+			local cs
+			if #piece.classes > 0 then
+				cs = {}
+				for _, c in ipairs(piece.classes) do
+					cs[c] = true
+				end
+			end
+			return {family = fam, kind = piece.kind, exact = true,
+				hands = (piece.fit == "2" or piece.kind == "bow" or piece.kind == "crossbow") and 2 or 1, classes = cs,
+				level = piece.level, power = power}
+		end
+		return {id = e.id, family = "fist", kind = "fist", hands = 1, level = e.fist.level, power = e.fist.attack}
 	end
 	local agg = {}
 	for _, e in ipairs(edges) do
-		agg[e] = {w = 0, all = 0, rate = {}}
+		agg[e] = {w = 0, all = 0, cell = {}, by = {}}
 	end
-	-- level gear (data/lib/chaos_gear_sets.lua M.rollLevelGear): a kill at the monster's level drops one weapon of the
-	-- sets near it with the chance per piece below (the classes of the piece, its power against the tier of the edge)
-	local G = dofile("data/lib/chaos_gear_sets.lua")
-	local SET_FAMILY = {sword = "melee", axe = "melee", club = "melee", bow = "launcher", crossbow = "launcher",
-		wand = "wand", rod = "wand"}
+	-- power and level of a drop against the band: its power is at least cfg.fairPower of the curve and its required level
+	-- is in the window around the band, or the class loot picks it for a monster of the band (above the highest base the
+	-- rule takes the best ones, L.eligible)
+	local eligibleIds = {}
+	local function picked(key, edge, id)
+		local ck = key .. ":" .. edge
+		if not eligibleIds[ck] then
+			eligibleIds[ck] = {}
+			for _, b in ipairs(CL.eligible and CL.bases[key] and CL.eligible(key, edge, CL.config) or {}) do
+				eligibleIds[ck][b[1]] = true
+			end
+		end
+		return eligibleIds[ck][id]
+	end
+	local function relevant(edge, spec)
+		local tier = W.tier(wcfg, spec.kind == "fist" and "sword" or spec.kind, spec.hands, edge)
+		local win = cfg.fairWindow
+		if spec.power < cfg.fairPower * tier then
+			return false
+		end
+		if spec.level <= edge + win.above and spec.level >= edge - win.below then
+			return true
+		end
+		for _, key in ipairs(loadoutKeys(spec)) do
+			if spec.id and picked(key, edge, spec.id) then
+				return true
+			end
+		end
+		return false
+	end
+	local function add(a, class, key, source, p)
+		a.cell[class] = a.cell[class] or {}
+		a.cell[class][key] = (a.cell[class][key] or 0) + p
+		a.by[class] = a.by[class] or {}
+		a.by[class][key] = a.by[class][key] or {}
+		a.by[class][key][source] = (a.by[class][key][source] or 0) + p
+	end
+	local function credit(a, edge, spec, p, source)
+		a.all = a.all + p
+		if not relevant(edge, spec) then
+			return
+		end
+		local keys = loadoutKeys(spec)
+		for _, class in ipairs(classes) do
+			if W.suits(class, spec) then
+				for _, key in ipairs(keys) do
+					if has[class.name] and has[class.name][key] then
+						add(a, class.name, key, source, p)
+					end
+				end
+			end
+		end
+	end
+	local sawEdge = {}
 	for _, m in ipairs(bands) do
 		local edge = edgeOf(m.level)
 		if edge then
+			sawEdge[edge] = true
 			local a = agg[edge]
 			a.w = a.w + m.spawns
-			local near = G.PAIR28 and G.levelPieces(m.level) or {}
-			for _, piece in ipairs(near) do
-				local fam = SET_FAMILY[piece.kind]
-				if fam then
-					local p = G.levelChance("normal") / #near / 100000 * m.spawns
-					local hands = (piece.fit == "2" or piece.kind == "bow" or piece.kind == "crossbow") and 2 or 1
-					local power
-					if fam == "wand" then
-						power = W.curve(wcfg, "wand", piece.level)
-					else
-						power = 0
-						for k, v in pairs(piece.stats) do
-							if k == "attack" or k:match("^element") then
-								power = power + v
-							end
-						end
-					end
-					local tier = W.tier(wcfg, piece.kind == "rod" and "wand" or piece.kind, hands, edge)
-					local cs = {}
-					for _, c in ipairs(piece.classes) do
-						cs[c] = true
-					end
-					a.all = a.all + p
-					for _, class in ipairs(classes) do
-						if W.suits(class, {family = fam, kind = piece.kind == "rod" and "wand" or piece.kind, hands = hands,
-							classes = #piece.classes > 0 and cs or nil}) and power >= cfg.fairPower * tier then
-							a.rate[class.name] = (a.rate[class.name] or 0) + p
-						end
-					end
+			for _, entry in ipairs(m.loot) do
+				local r = weapons[entry[1]]
+				if r and entry[4] == "gear" and tonumber(r.charges) == 0 then
+					credit(a, edge, specOf({r = r}), entry[2] / 100000 * m.spawns, "stock")
 				end
 			end
-			for _, list in ipairs({m.loot, extra[m.name] or {}}) do
-				for _, entry in ipairs(list) do
-					local r = weapons[entry[1]]
-					if r and entry[4] == "gear" and tonumber(r.charges) == 0 then
-						local p = entry[2] / 100000 * m.spawns
-						local power = r.kind == "wand" and (tonumber(r.wmin) + tonumber(r.wmax)) / 2 or
-							tonumber(r.attack) + tonumber(r.element)
-						local tier = W.tier(wcfg, r.kind, tonumber(r.hands), edge)
-						local cs
-						if r.classes ~= "*" then
-							cs = {}
-							for c in r.classes:gmatch("[^|]+") do
-								cs[c] = true
-							end
-						end
-						a.all = a.all + p
-						for _, class in ipairs(classes) do
-							if W.suits(class, {family = FAMILY[r.kind], kind = r.kind, hands = tonumber(r.hands), classes = cs}) and
-								power >= cfg.fairPower * tier then
-								a.rate[class.name] = (a.rate[class.name] or 0) + p
-							end
-						end
-					end
+			for _, e in ipairs(extra[m.name] or {}) do
+				local spec = specOf(e)
+				if spec then
+					credit(a, edge, spec, e.chance / 100000 * m.spawns, e.source)
 				end
 			end
 		end
 	end
-	local out = {edges = edges, classes = classes, agg = agg, rows = {}, fails = {}}
+	-- level gear: a kill at hunting level `edge` rolls one weapon of the sets near it (the killer's class weighs more)
+	local o = G.config.open
 	for _, edge in ipairs(edges) do
 		local a = agg[edge]
-		local rates = {}
-		for _, c in ipairs(classes) do
-			rates[#rates + 1] = a.rate[c.name] or 0
+		if not sawEdge[edge] then
+			a.w = 1000
 		end
-		table.sort(rates)
-		a.mean = rates[math.ceil(#rates / 2)] -- the median class
-	end
-	for _, c in ipairs(classes) do
-		local row = {class = c.name, cells = {}}
-		for i, edge in ipairs(edges) do
-			local a = agg[edge]
-			local rate = (a.rate[c.name] or 0) / a.w * 1000
-			row.cells[i] = rate
-			if (a.rate[c.name] or 0) < cfg.fairShare * a.mean then
-				out.fails[#out.fails + 1] = {class = c.name, edge = edge, rate = rate, mean = a.mean / a.w * 1000}
+		-- the class weapons of a scaled hunt (CL.rollScaled): per family the class wields, the chance spread over the bases
+		local sc = CL.config and CL.config.scaled
+		if sc and edge >= sc.minLevel and not sawEdge[edge] then
+			for _, class in ipairs(classes) do
+				for _, kind in ipairs(CL.classKinds and CL.classKinds[class.name] or {}) do
+					local list = CL.eligible(kind, edge, CL.config)
+					local chance = CL.scaledChanceAt(kind, edge, CL.config) / 100000
+					for _, b in ipairs(list) do
+						local r = weapons[b[1]]
+						local spec
+						if r then
+							spec = specOf({r = r})
+						elseif FIST.items[b[1]] then
+							spec = specOf({fist = FIST.items[b[1]], id = b[1]})
+						end
+						if spec and has[class.name] and has[class.name][kind] and W.suits(class, spec) and relevant(edge, spec) then
+							add(a, class.name, kind, "class", chance / #list * a.w)
+						end
+					end
+				end
 			end
 		end
-		out.rows[#out.rows + 1] = row
+		local near = G.PAIR28 and G.levelPieces(edge) or {}
+		if #near > 0 then
+			local chance = G.levelChance("normal") / 100000
+			for _, class in ipairs(classes) do
+				local total = 0
+				local wear = {}
+				for i, piece in ipairs(near) do
+					local wears = #piece.classes == 0
+					for _, c in ipairs(piece.classes) do
+						wears = wears or c == class.name
+					end
+					wear[i] = wears
+					total = total + (wears and o.classWeight or 1)
+				end
+				for i, piece in ipairs(near) do
+					local spec = SET_FAMILY[piece.kind] and specOf({piece = piece})
+					if spec and wear[i] and relevant(edge, spec) and W.suits(class, spec) then
+						local p = chance * (o.classWeight / total) * a.w
+						for _, key in ipairs(loadoutKeys(spec)) do
+							if has[class.name] and has[class.name][key] then
+								add(a, class.name, key, "level", p)
+							end
+						end
+					end
+				end
+			end
+		end
+	end
+	local out = {edges = edges, classes = classes, agg = agg, keys = keyList, has = has, cells = {}, fails = {}}
+	for _, edge in ipairs(edges) do
+		local a = agg[edge]
+		local hi, lo = 0, math.huge
+		for _, c in ipairs(classes) do
+			for key in pairs(has[c.name] or {}) do
+				local v = ((a.cell[c.name] or {})[key] or 0) / a.w * 1000
+				hi, lo = math.max(hi, v), math.min(lo, v)
+			end
+		end
+		a.max, a.min = hi, lo
+		a.ratio = hi > 0 and lo / hi or 0
+	end
+	for _, c in ipairs(classes) do
+		for _, key in ipairs(keyList) do
+			if has[c.name][key] then
+				local row = {class = c.name, key = key, cells = {}, by = {}}
+				for i, edge in ipairs(edges) do
+					local a = agg[edge]
+					row.cells[i] = ((a.cell[c.name] or {})[key] or 0) / a.w * 1000
+					row.by[i] = {}
+					for src, v in pairs(((a.by[c.name] or {})[key]) or {}) do
+						row.by[i][src] = v / a.w * 1000
+					end
+					if a.max > 0 and row.cells[i] < cfg.fairRatio * a.max then
+						out.fails[#out.fails + 1] = {class = c.name, key = key, edge = edge, rate = row.cells[i], best = a.max,
+							ratio = row.cells[i] / a.max}
+					end
+				end
+				out.cells[#out.cells + 1] = row
+			end
+		end
 	end
 	return out
 end
 
-function C.fairnessText(F)
-	local out = {string.format("%-14s", "per 1000 kills") .. string.rep("", 0)}
-	local head = string.format("%-14s", "usable weapons")
+function C.fairnessText(F, detail)
+	local head = string.format("%-26s", "usable weapons per 1000")
 	for _, e in ipairs(F.edges) do
 		head = head .. string.format("%9d", e)
 	end
-	out[1] = head
-	local all = string.format("%-14s", "all weapons")
-	for _, e in ipairs(F.edges) do
-		all = all .. string.format("%9.1f", F.agg[e].all / F.agg[e].w * 1000)
-	end
-	out[#out + 1] = all
-	for _, row in ipairs(F.rows) do
-		local s = string.format("%-14s", row.class)
+	local out = {head}
+	for _, row in ipairs(F.cells) do
+		local s = string.format("%-16s%-10s", row.class, row.key)
 		for _, v in ipairs(row.cells) do
 			s = s .. string.format("%9.1f", v)
 		end
 		out[#out + 1] = s
+		if detail then
+			for _, src in ipairs({"stock", "set", "level", "class", "fist"}) do
+				local line, any = string.format("    %-22s", src), false
+				for i = 1, #F.edges do
+					local v = row.by[i][src] or 0
+					any = any or v > 0
+					line = line .. string.format("%9.1f", v)
+				end
+				if any then
+					out[#out + 1] = line
+				end
+			end
+		end
 	end
+	local all = string.format("%-26s", "all weapons dropped")
+	for _, e in ipairs(F.edges) do
+		all = all .. string.format("%9.1f", F.agg[e].all / F.agg[e].w * 1000)
+	end
+	out[#out + 1] = all
+	for _, name in ipairs({"max", "min"}) do
+		local line = string.format("%-26s", name .. " of the cells")
+		for _, e in ipairs(F.edges) do
+			line = line .. string.format("%9.1f", F.agg[e][name])
+		end
+		out[#out + 1] = line
+	end
+	local ratio = string.format("%-26s", "least / most")
+	for _, e in ipairs(F.edges) do
+		ratio = ratio .. string.format("%9.2f", F.agg[e].ratio)
+	end
+	out[#out + 1] = ratio
 	return table.concat(out, "\n") .. "\n"
+end
+
+-- the anchors of data/lib/chaos_class_loot.lua config.chance that give every loadout cfg.fairTarget usable weapons per
+-- 1000 kills in the fitted bands. The model is run with the rows of the anchors tried; each round scales an anchor by
+-- what the loadout's weakest class still misses of the target (the class part of a cell is linear in the anchor).
+function C.derive(cfg, wcfg)
+	local CL = dofile("data/lib/chaos_class_loot.lua")
+	local kinds = {"melee1h", "melee2h", "fist", "bow", "crossbow", "wand", "rod"}
+	local fit = cfg.fairFit
+	local fitScaled = cfg.fairFitScaled
+	local chance, scaled = {}, {}
+	for _, kind in ipairs(kinds) do
+		chance[kind], scaled[kind] = {}, {}
+		for _, edge in ipairs(fit) do
+			chance[kind][#chance[kind] + 1] = {edge, 3000}
+		end
+		for _, edge in ipairs(fitScaled) do
+			scaled[kind][#scaled[kind] + 1] = {edge, 3000}
+		end
+	end
+	local function run()
+		local config = {}
+		for k, v in pairs(CL.config) do
+			config[k] = v
+		end
+		config.chance, config.scaled = {}, {}
+		for k, v in pairs(CL.config.chance) do
+			config.chance[k] = v
+		end
+		for k, v in pairs(CL.config.scaled) do
+			config.scaled[k] = v
+		end
+		config.scaled.chance = {}
+		for k, v in pairs(CL.config.scaled.chance) do
+			config.scaled.chance[k] = v
+		end
+		for _, kind in ipairs(kinds) do
+			config.chance[kind] = chance[kind]
+			config.scaled.chance[kind] = scaled[kind]
+		end
+		local mod = setmetatable({config = config, lootRows = function(pool, levelOf) return CL.lootRows(pool, levelOf, config) end},
+			{__index = CL})
+		return C.fairness(cfg, wcfg, {classLoot = mod})
+	end
+	local groups = {{edges = fit, store = chance}, {edges = fitScaled, store = scaled}}
+	for _ = 1, 12 do
+		local F = run()
+		for _, g in ipairs(groups) do
+			local need = {}
+			for _, row in ipairs(F.cells) do
+				for i, edge in ipairs(F.edges) do
+					for k, fitEdge in ipairs(g.edges) do
+						if edge == fitEdge and row.by[i].class and row.by[i].class > 0 then
+							local other = row.cells[i] - row.by[i].class
+							local want = (cfg.fairTarget[edge] - other) / row.by[i].class
+							local key = row.key .. ":" .. k
+							need[key] = need[key] and math.max(need[key], want) or want
+						end
+					end
+				end
+			end
+			for _, kind in ipairs(kinds) do
+				for k = 1, #g.edges do
+					local n = need[kind .. ":" .. k]
+					if n then
+						g.store[kind][k][2] = math.max(0, g.store[kind][k][2] * n)
+					end
+				end
+			end
+		end
+	end
+	local out = {}
+	for gi, g in ipairs(groups) do
+		out[#out + 1] = gi == 1 and "chance" or "scaled.chance"
+		for _, kind in ipairs(kinds) do
+			local pts = {}
+			for _, a in ipairs(g.store[kind]) do
+				pts[#pts + 1] = string.format("{%d, %d}", a[1], math.floor(a[2] + 0.5))
+			end
+			out[#out + 1] = string.format("%s = {%s},", kind, table.concat(pts, ", "))
+		end
+	end
+	return table.concat(out, "\n") .. "\n", groups
 end
 
 -- ---------------------------------------------------------------------------------------------------------------
@@ -847,7 +1157,9 @@ function C.main(args)
 	if mode == "--md" then
 		io.write(C.markdown(cfg, wcfg, A))
 	elseif mode == "--fairness" then
-		io.write(C.fairnessText(C.fairness(cfg, wcfg)))
+		io.write(C.fairnessText(C.fairness(cfg, wcfg), args[2] == "--detail"))
+	elseif mode == "--derive" then
+		io.write((C.derive(cfg, wcfg)))
 	elseif mode == "--list" then
 		io.write(C.list(cfg, wcfg, A, args[2] or "armor", args[3]))
 	elseif mode == "--write" or mode == "--check" then
@@ -872,8 +1184,8 @@ function C.main(args)
 		end
 		for _, f in ipairs(C.fairness(cfg, wcfg).fails) do
 			bad = true
-			io.stderr:write(string.format("gear coverage: %s finds %.1f usable weapons per 1000 kills at hunting level %d; the median class %.1f (least share %.2f)\n",
-				f.class, f.rate, f.edge, f.mean, cfg.fairShare))
+			io.stderr:write(string.format("gear coverage: %s finds %.1f usable weapons per 1000 kills at hunting level %d; the best class %.1f (%.2f of it, least %.2f)\n",
+				f.class, f.rate, f.edge, f.best, f.ratio, cfg.fairRatio))
 		end
 		if new ~= text then
 			bad = true

@@ -38,17 +38,49 @@ return {
 	-- a drop must be at least this likely to count (loot chance per 100000; 10 = 0.01%, the floor of the set rows; the
 	-- weapon audit takes 20)
 	minDropChance = 10,
-	-- a drop counts from the level its monster is hunted at (pace_config.lua baseLevelMult: twice the "fair hunt" level of
-	-- a base monster; maxBaseRaw = the highest base monster of the bounty pool, above it the level is a scaled monster's)
-	baseLevelMult = 2,
+	-- a drop counts from the level its monster is hunted at (pace_config.lua baseLevelMult, 1 since 2026-10-28: the "fair
+	-- hunt" level of a base monster; maxBaseRaw = the highest base monster of the bounty pool, above it the level is a
+	-- scaled monster's)
+	baseLevelMult = 1,
 	maxBaseRaw = 657,
 
-	-- fairness of the weapon drops (--fairness): the hunting bands that are compared (a band is +-15% around the number),
-	-- the least share of the mean usable weapons per kill any class may have, and the power a weapon needs to count as
-	-- usable (a share of the weapon audit's curve; the audit's own minimum is 0.80)
+	-- fairness of the weapon drops (--fairness; owner, 2026-10-28: "they must all be equal"): the hunting bands that are
+	-- compared (a band is +-15% around the number; above the highest base monster, 657, only the sets' level gear drops
+	-- and it is counted for 1000 kills of a normal monster), the power a weapon needs to count as usable (a share of the
+	-- weapon audit's curve), the levels around the band a weapon may require (below: a club of level 25 is no drop at
+	-- hunting level 300; the class loot window of data/lib/chaos_class_loot.lua is 150 below and 20 above), and the rule:
+	-- the class that finds the fewest usable weapons per kill has at least fairRatio of what the class that finds the
+	-- most does, in every band
 	fairEdges = {100, 300, 500, 800, 1000, 1200},
-	fairShare = 0.20,
+	fairRatio = 0.90,
+	-- what the class loot rows are derived for (--derive): usable weapons per 1000 kills of one loadout in a fitted band
+	fairFit = {100, 300, 500},
+	-- ... and in the bands of the scaled hunts (class loot config.scaled; no monster of the pool is hunted there)
+	fairFitScaled = {800, 1000, 1200},
+	fairTarget = {[100] = 28, [300] = 28, [500] = 28, [800] = 28, [1000] = 28, [1200] = 28},
 	fairPower = 0.60,
+	fairWindow = {below = 150, above = 20},
+
+	-- the loadouts of each class: a build wields one kind of weapon at a time, so the weapons a class can wield are counted
+	-- per loadout (melee1h / melee2h by hands, fist, bow, crossbow, wand, rod) and every loadout of every class must find
+	-- the same number of weapons (fairRatio): a Warrior's one-handed weapons and a Berserker's two-handed ones, a Ranger's
+	-- bows and its crossbows, a Monk's fists. The sets split the casters: the wands are the Elementalist's (and the
+	-- Mystic's and the Necromancer line's), the rods the Illusionist's (the same). A stock wand-type item is a wand when
+	-- the Elementalist wields it, else a rod (class lists of data/items/base_weapons.csv: the Elementalist wields 36 of the
+	-- 62, the Illusionist 59 but its sets are rods). The Monk line wields melee weapons too (docs/CLASSES.md "Skills and
+	-- weapons") and fists are what it fights with, so both count. The Thief line has no throwing weapon loadout:
+	-- stackable throwing weapons are out of the game (data/lib/chaos_throwables.lua; the shurikens are spells).
+	loadouts = {
+		{classes = {"Warrior", "Juggernaut", "Templar", "Inquisitor", "Sentinel", "Samurai"}, keys = {"melee1h", "melee2h"}},
+		{classes = {"Berserker"}, keys = {"melee2h"}},
+		{classes = {"Thief", "Ninja"}, keys = {"melee1h", "melee2h"}},
+		{classes = {"Monk", "Shadowfist", "Iron Sage"}, keys = {"fist", "melee1h", "melee2h"}},
+		{classes = {"Ranger", "Deadeye"}, keys = {"bow", "crossbow"}},
+		{classes = {"Beastmaster"}, keys = {"bow"}},
+		{classes = {"Mystic", "Necromancer", "Lich", "Bone Lord"}, keys = {"wand", "rod"}},
+		{classes = {"Elementalist"}, keys = {"wand"}},
+		{classes = {"Illusionist"}, keys = {"rod"}}
+	},
 
 	-- the stock spellbooks (items.xml has no names to tell them apart: the base names are not ours): ids of the stock
 	-- items in the shield slot that only casters wear. The Gambler's pool (gamble_config.lua) names the same ones.

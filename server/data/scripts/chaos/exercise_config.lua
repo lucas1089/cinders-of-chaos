@@ -6,9 +6,11 @@
 -- the stock Knights, Paladins, Sorcerers and Druids only; patch_base_classes.py gave the classes lists of those. Owner
 -- request 2026-10-23: the Monk could use none that helps it, and axe, sword and club should be one melee weapon.
 -- Now there are four kinds, and a kind lists the class lines that may use it:
---   melee   sword, axe and club (all nine ids work the same): Warrior, Thief, Monk, Templar lines. Trains the one melee
---           skill (the best of sword / club / axe, so the tries and the training rate follow the skill that counts); the
---           Monk line trains FIST FIGHTING instead, the skill its hits and spells use (docs/CLASSES.md "Monk").
+--   melee   the sword weapon (the club ones work the same): Warrior, Thief, Templar lines. Trains the one melee skill (the
+--           best of sword / club / axe, so the tries and the training rate follow the skill that counts)
+--   fist    the fist weapon (owner 2026-10-28, "monk tambem nao tem training weapon"): Monk line only. Trains FIST FIGHTING,
+--           the skill its hits and spells use (docs/CLASSES.md "Monk"). It lives on the item ids of the retired exercise
+--           axe (their look is a pair of hand wraps now): see `tiers` for how the old items turn into the right one
 --   ranged  bow: Ranger and Thief lines (distance skill)
 --   magic   rod and wand: Mystic, Necromancer and Templar lines (magic level; the Templar's Rebuke, Thorns and Penitent's
 --           Wrath scale with it. The Monk's spells scale with fist fighting, not the magic level)
@@ -30,7 +32,8 @@ return {
 	-- kind -> the lines that may use it, the skill it trains (a line in `skillBy` trains that one instead), and how the
 	-- hit looks (ani = the name of the CONST_ANI_ the glue resolves; none = melee, the player stands next to the dummy)
 	kinds = {
-		melee = {lines = {"warrior", "thief", "monk", "templar"}, skill = "melee", skillBy = {monk = "fist"}, range = 1},
+		melee = {lines = {"warrior", "thief", "templar"}, skill = "melee", range = 1},
+		fist = {lines = {"monk"}, skill = "fist", range = 1},
 		ranged = {lines = {"ranger", "thief"}, skill = "distance", ani = "CONST_ANI_SIMPLEARROW", range = 7},
 		rod = {lines = {"mystic", "necromancer", "templar"}, skill = "magic", ani = "CONST_ANI_SMALLICE", range = 7},
 		wand = {lines = {"mystic", "necromancer", "templar"}, skill = "magic", ani = "CONST_ANI_FIRE", range = 7},
@@ -40,26 +43,32 @@ return {
 
 	-- the weapons: item id -> kind. Charges are the item type's (500 / 1800 / 14400), set by the chest scripts.
 	items = {
-		[27732] = "melee", [27733] = "melee", [27734] = "melee", -- exercise sword, axe, club (500)
-		[27738] = "melee", [27739] = "melee", [27740] = "melee", -- durable (1800)
-		[27744] = "melee", [27745] = "melee", [27746] = "melee", -- lasting (14400)
+		[27732] = "melee", [27734] = "melee", -- exercise sword, club (500)
+		[27738] = "melee", [27740] = "melee", -- durable (1800)
+		[27744] = "melee", [27746] = "melee", -- lasting (14400)
+		[27733] = "fist", [27739] = "fist", [27745] = "fist", -- exercise fist weapon (500 / 1800 / 14400; was the axe)
 		[27735] = "ranged", [27741] = "ranged", [27747] = "ranged", -- bow
 		[27736] = "rod", [27742] = "rod", [27748] = "rod",
 		[27737] = "wand", [27743] = "wand", [27749] = "wand",
 		[27758] = "shield", [27759] = "shield", [27760] = "shield"
 	},
 
-	-- the axe and club weapons of before turn into the sword one (the one melee weapon, sword look) the first time they
-	-- are used, with their charges; no purchase is lost. Maps to the same tier.
-	convert = {
-		[27733] = 27732, [27734] = 27732,
-		[27739] = 27738, [27740] = 27738,
-		[27745] = 27744, [27746] = 27744
+	-- the weapon of each charge tier, by kind: a weapon the user's class cannot train with turns into the one it can, with
+	-- its charges (E.convertTo): the old club weapon into the sword one, an old exercise axe (now the fist weapon) held by a
+	-- Warrior, Thief or Templar into the sword one, a sword weapon held by a Monk into the fist one. No purchase is lost.
+	tiers = {
+		{melee = 27732, fist = 27733, club = 27734}, -- 500
+		{melee = 27738, fist = 27739, club = 27740}, -- 1800
+		{melee = 27744, fist = 27745, club = 27746} -- 14400
 	},
 
-	-- the chests the store, the NPCs and the Ancestral Store no longer sell (they still open: a chest bought before gives
-	-- an axe or a club weapon, which turns into the melee one on first use)
-	retiredChests = {27762, 27763, 27769, 27770, 27776, 27777},
+	-- the chest of each kind and tier (the store sells these; the base server's chest script gives the weapon of the same
+	-- id order: chest 27761 -> 27732, 27762 -> 27733, ...). The old club chests are not sold any more (a club chest bought
+	-- before gives a club weapon, which turns into the sword one, or the fist one for a Monk, on first use)
+	chests = {
+		{melee = 27761, fist = 27762}, {melee = 27768, fist = 27769}, {melee = 27775, fist = 27776}
+	},
+	retiredChests = {27763, 27770, 27777},
 
 	-- the dummies (base server): house dummies give 10% more, free ones are plain
 	dummies = {

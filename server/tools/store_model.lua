@@ -308,7 +308,7 @@ function M.problems(env)
 				else
 					local o = offers[1]
 					if o.cost ~= coins then bad("%s: the store asks %s coins, potions_config.lua upgrade.coins[%d] is %s", e.name, tostring(o.cost), e.tier, tostring(coins)) end
-					if o.kind ~= "service" or env.catOf[o] ~= "Convenience" then bad("%s: not a Convenience service", e.name) end
+					if o.kind ~= "service" or env.catOf[o] ~= "Everfull Potions" then bad("%s: not an Everfull Potions service", e.name) end
 					local mat = M.materialOf(PC, e)
 					local ask = M.askOf(env, mat.id)
 					if not ask then
@@ -391,7 +391,7 @@ function M.report(env)
 	local okL, LM = pcall(dofile, "tools/loot_model.lua")
 	if okL then
 		local ctx = LM.load()
-		for _, b in ipairs({100, 300, 500, 800, 1000}) do goldPerHour[b] = LM.band(ctx, b).newGold end
+		for _, b in ipairs({100, 300, 500, 800, 1000}) do if LM.RANGES[b] then goldPerHour[b] = LM.band(ctx, b).newGold end end
 	end
 	local function line(...) print(string.format(...)) end
 
@@ -449,7 +449,7 @@ function M.report(env)
 		print("| Level | Levels gained in 1 extra hour | Coins per level (potion) | Gold per hour (loot_model.lua) | Potion in hours of gold |")
 		print("|---|---|---|---|---|")
 		for _, L in ipairs({100, 300, 500, 800, 1000}) do
-			line("| %d | %.2f | %.0f | %s | %.3f |", L, levelsPerHour[L], 50 / levelsPerHour[L], goldPerHour[L] and string.format("%d", goldPerHour[L]) or "-",
+			line("| %d | %.2f | %.0f | %s | %.3f |", L, levelsPerHour[L], 50 / levelsPerHour[L], goldPerHour[L] and string.format("%d", math.floor(goldPerHour[L] + 0.5)) or "-",
 				goldPerHour[L] and (50 * R.goldPerCoin / goldPerHour[L]) or 0)
 		end
 	end

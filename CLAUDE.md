@@ -78,6 +78,7 @@ python3 -I client/tools/sprites/gen_owner_art.py build --check  # owner art of p
 python3 -I server/tools/install_owner_decor.py --lua --check     # -> data/lib/chaos_owner_decor.lua
 python3 -I client/tools/sprites/style_check.py build-palettes --check  # -> style_palettes.json; check new sprites: docs/SPRITE_STYLE.md
 python3 -I client/tools/sprites/gen_fx_send_offsets.py --check       # -> data/lib/chaos_fx_send_offsets.lua (pair 36 in-place fx centring)
+python3 -I client/tools/sprites/gen_portal_art.py build --check && python3 -I client/tools/sprites/gen_portal_art_test.py  # pickup looks of pair 55: Ember portal, health and mana globe (CI uses the fx venv)
 ```
 
 Every `.lua` must parse in Lua 5.3 and LuaJIT. Run Python tools with `-I`.

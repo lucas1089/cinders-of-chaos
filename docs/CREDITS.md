@@ -333,7 +333,7 @@ Game sounds (game_chaossound, O238): short picks from four packs, cut, set to mo
 
 - **PixelLab**
   - Licence: paid subscription
-  - Used for: painting the themed item sets, the three looks of the Cursed Chest and its one-tile look, the twelve Everfull potion flasks, the Reward Chest and the hundred support rune stones (also the support icons)
+  - Used for: painting the themed item sets, the three looks of the Cursed Chest and its one-tile look, the twelve Everfull potion flasks, the Ember pickup portal, the health and mana globe pickups, the Reward Chest and the hundred support rune stones (also the support icons)
 - **AutoSprite**
   - Licence: paid account
   - Used for: drawing and animating the boss Vharzul the Verdant Eye and the Ashbound Thrall and Slagback Hound of the Embergut Rift

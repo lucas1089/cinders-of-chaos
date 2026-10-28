@@ -127,9 +127,9 @@ K.STORE = {
 	maxCount = 10,      -- pieces per purchase
 	maxPrice = 1000000, -- a parsed price above this is a broken script: the entry is left out
 	maxEntries = 64,    -- keeps the store answer far below the 8192-byte extended opcode limit
-	-- chests that are no longer sold (exercise axe and club chests, 3 tiers: the sword chest is the one melee weapon,
-	-- since 2026-10-23); kept in step with exercise_config.lua retiredChests (tests/exercise_test.lua)
-	retiredItems = {[27762] = true, [27763] = true, [27769] = true, [27770] = true, [27776] = true, [27777] = true},
+	-- chests that are no longer sold (the exercise club chests, 3 tiers: the sword chest is the one melee weapon since
+	-- 2026-10-23; the old axe chests are the Monk's fist chests since 2026-10-28, sold); kept in step with exercise_config.lua retiredChests (tests/exercise_test.lua)
+	retiredItems = {[27763] = true, [27770] = true, [27777] = true},
 }
 -- entry group of the XML (the comments of talkactions.xml) -> what it gives
 K.STORE_KIND = {[1] = "Aura", [2] = "Wings", [3] = "Exercise Chest"}

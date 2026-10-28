@@ -9,7 +9,8 @@
 --
 -- Pace level of a monster = its hunting level: Monster:getMonsterLevel() for a level-scaled monster, the spawn point's
 -- level for a generated area or dungeon monster (areagen.lua), else baseLevelMult x ChaosLoot.monsterLevel (the
--- bounty pool's "fair hunt" estimate; README "Level bands and capacity": the hunting level is twice it).
+-- bounty pool's "fair hunt" estimate; README "Level bands and capacity": the hunting level of a base monster is its pool
+-- level since O285, it was twice it).
 -- Curves are linear between the points and flat beyond the ends. A monster with a level of its own (level-scaled, or a
 -- generated area's point) uses the "scaled" curves: those monsters carry the engine's x(1 + 0.0074 L) health and
 -- x0.03 L experience.
@@ -23,19 +24,32 @@ return {
 	-- false: the whole layer is off (health, experience, loot, damage, ambush and goblin chances, kill goals, multikill)
 	enabled = true,
 
-	-- hunting level of a monster without a level of its own = this x ChaosLoot.monsterLevel
-	baseLevelMult = 2,
+	-- hunting level of a monster without a level of its own = this x ChaosLoot.monsterLevel. 1 since 2026-10-28 (owner:
+	-- "retire essa regra como um todo"): it was 2 from 2026-10-14, and from 2026-10-27 every shown level was doubled
+	-- too, but the planned hunts (tools/areaplan/plans) pick monsters whose pool level is the hunt's band, so a level 474
+	-- Waterglow Conjurer of a 450-506 hunt was shown and paced as 948 (O285)
+	baseLevelMult = 1,
 
+	-- O285 (2026-10-28, baseLevelMult 1): a base pack at hunting level L is made of pool level L monsters now, they had
+	-- pool level L/2. The health, xp, loot, coins and junkKeep points below were re-fitted to what the models measure
+	-- (tools/pack_model.py: the median class's pack dies in as long as before; tools/progression_model.lua: the same minutes
+	-- per level; tools/loot_model.lua: the same gold per hour, `lootLevel.goldPerHour`): at level 250 health 0.21 -> 0.095,
+	-- xp 0.17 -> 0.075, loot 0.20 -> 0.067. The goal points did not change (the kills per hour did not). Under level 10
+	-- (health, loot) and 6 (xp) a monster is untouched, as the pool levels under 10 / 5 were. The pool ends at level 657.
 	-- base monsters, by hunting level. health: max health x; xp: experience per kill x (the multikill bonus below comes
 	-- on top; the curve is already divided by 1.30, the median pack's bonus); loot: loot per kill x (stock loot thinned,
 	-- Chaos rolls, currency, gems, supports, uniques, ambush and goblin chances); goal: kill-count goals x (bounties,
 	-- bestiary, the season pass, achievements and journey kill counts)
 	base = {
-		health = {{20, 1.00}, {35, 0.60}, {60, 0.50}, {100, 0.36}, {175, 0.26}, {250, 0.21}},
-		xp = {{20, 1.00}, {35, 0.50}, {60, 0.46}, {100, 0.32}, {175, 0.22}, {250, 0.17}, {450, 0.17}, {600, 0.16},
-			{800, 0.16}, {1000, 0.17}},
-		loot = {{20, 1.00}, {35, 0.59}, {60, 0.54}, {100, 0.37}, {175, 0.27}, {250, 0.20}, {450, 0.20}, {600, 0.19},
-			{800, 0.19}, {1000, 0.20}},
+		health = {{10, 1.00}, {20, 0.280}, {35, 0.200}, {60, 0.136}, {100, 0.105}, {150, 0.092}, {200, 0.089}, {250, 0.095},
+			{300, 0.082}, {350, 0.072}, {400, 0.085}, {450, 0.098}, {500, 0.102}, {550, 0.100}, {600, 0.105}, {650, 0.110}},
+		xp = {{6, 1.00}, {10, 0.20}, {20, 0.20}, {35, 0.14}, {50, 0.098}, {60, 0.108}, {100, 0.082}, {175, 0.072},
+			{250, 0.075}, {350, 0.068}, {450, 0.060}, {600, 0.066}},
+		loot = {{10, 1}, {50, 0.04722}, {100, 0.09142}, {150, 0.1162}, {200, 0.1589}, {250, 0.2125}, {300, 0.2898},
+			{350, 0.06753}, {400, 0.03169}, {450, 0.07779}, {500, 0.08933}, {550, 0.03608}, {600, 0.0907},
+			{650, 0.2482}},
+		cheapPrice = {{50, 21.13}, {100, 25.22}, {150, 51.42}, {200, 535.2}, {250, 62.23}, {300, 8.202}, {350, 164.9},
+			{400, 654.1}, {450, 637.5}, {500, 602.7}, {550, 433.3}, {600, 315.2}, {650, 228}},
 		goal = {{20, 1.0}, {35, 1.7}, {60, 1.8}, {100, 2.7}, {175, 3.8}, {250, 5.0}},
 		-- Loot by monster level (owner 2026-10-21; `lootLevel` below, pace_core.lua P.levelPlan, server/README.md "Loot
 		-- by monster level"). Smooth curves (monotone cubic through the points, flat beyond the ends) by the monster's
@@ -49,11 +63,12 @@ return {
 		-- O141 (2026-10-23): the points 400-600 are fitted to the smooth gold curve of `lootLevel.goldPerHour` (they were
 		-- 0.291 at 450 and 0.280 at 550, which put the gold per hour at 400-600 under the level 300 band's: 469k at 300,
 		-- 325-537k at 400-600, 1.8M at 650); junkKeep holds the items per hour of the 2026-10-20 rule there
-		coins = {{35, 1.00}, {100, 0.963}, {300, 0.828}, {400, 0.730}, {450, 0.740}, {500, 0.880}, {550, 0.900},
-			{600, 0.900}, {650, 0.176}, {700, 0.179}, {800, 0.133}, {900, 0.252}, {1000, 0.271}, {1250, 0.290}},
-		junkKeep = {{300, 3.67}, {400, 0.700}, {450, 0.500}, {500, 0.720}, {550, 0.800}, {600, 0.880}, {650, 3.67},
-			{700, 0.312}, {800, 0.114}, {900, 0.613}, {1000, 3.45}},
-		notable = {{650, 0}, {700, 1}}
+		coins = {{35, 1}, {50, 0.275}, {100, 0.5725}, {150, 0.1451}, {200, 0.1281}, {250, 0.07365}, {300, 0.1208},
+			{350, 0.0361}, {400, 0.00866}, {450, 0.2031}, {500, 0.117}, {550, 0.006373}, {575, 0.03}, {600, 0.06},
+			{625, 0.2}, {650, 0.2}},
+		junkKeep = {{50, 2}, {650, 2}},
+		notable = {{50, 0.56}, {100, 0.37}, {150, 0.303}, {200, 0.247}, {250, 0.2}, {300, 0.2}, {350, 0.2}, {400, 0.2},
+			{450, 0.2}, {500, 0.197}, {550, 0.193}, {600, 0.19}, {650, 0.19}}
 	},
 
 	-- level-scaled Chaos monsters and generated area / dungeon monsters, by level. The engine gives a level-scaled monster
@@ -125,10 +140,16 @@ return {
 		notableChance = 1000,
 		-- O141: the gold per hour (tools/loot_model.lua) the bands 350-600 are held to by `--check` (the other bands keep
 		-- the 2026-10-20 rule's within 5%); `base.coins` / `base.junkKeep` points 400-600 are fitted to it
-		goldPerHour = {[350] = 600000, [400] = 625000, [450] = 785000, [500] = 860000, [550] = 1005000, [600] = 1055000},
+		goldPerHour = {[100] = 138000, [300] = 469000, [350] = 600000, [400] = 625000, [450] = 785000, [500] = 860000,
+			[550] = 1005000, [600] = 1055000, [650] = 1340000},
+		-- O285: the items per hour the bands are held to (--check): 100 / 300 / 500 / 650 are the figures from before the
+		-- monsters stood at their pool level; the bands between are what the curves give (the pool cannot do more at the
+		-- gold above)
+		itemsPerHour = {[100] = 539, [300] = 692, [350] = 503, [400] = 436, [450] = 436, [500] = 380, [550] = 368, [600] = 444,
+			[650] = 540},
 		-- these monsters pay their coins as crystal coins only, a random whole number with the same expected value
 		-- (pace_core.lua P.crystalStacks; beta report 2026-10-22: their pay filled the bag with three coin kinds)
-		crystalOnly = {"Nightfang Widow", "Shadowcrystal Widow"}
+		crystalOnly = {} -- empty since O285: the widows paid 3,170 a kill at level 1018, 730-860 at their pool level (509 / 480), a 7% chance of one whole crystal coin
 	},
 
 	-- damage to players by a paced monster (all elements, conditions and mana shield hits included), by its hunting

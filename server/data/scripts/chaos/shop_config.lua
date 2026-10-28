@@ -386,24 +386,58 @@ local cfg = {
 		},
 		{
 			-- the exercise axe and club chests are gone (2026-10-23, owner: one melee training weapon; 27761 / 27768 / 27775
-			-- are the melee chests now); chests bought before still open (exercise_config.lua)
+			-- are the melee chests now); chests bought before still open (exercise_config.lua). The Monk line has its own
+			-- fist weapon since 2026-10-28 (27762 / 27769 / 27776: the ids of the old axe chests, same prices)
 			name = "Training", parent = P_CONSUMABLES, icon = {item = 27732},
 			offers = {
-				{kind = "item", id = 27761, count = 1, cost = 25, name = "Exercise Melee Weapon (500)", description = "Use the chest to get a melee training weapon with 500 charges. Trains melee (fist for the Monk line). Warrior, Thief, Monk and Templar lines."},
+				{kind = "item", id = 27761, count = 1, cost = 25, name = "Exercise Melee Weapon (500)", description = "Use the chest to get a melee training weapon with 500 charges. Trains melee. Warrior, Thief and Templar lines."},
+				{kind = "item", id = 27762, count = 1, cost = 25, name = "Exercise Fist Weapon (500)", description = "Use the chest to get a fist training weapon with 500 charges. Trains fist fighting. Monk line."},
 				{kind = "item", id = 27764, count = 1, cost = 25, name = "Exercise Bow (500)", description = "Use the chest to get a bow with 500 charges. Trains distance. Ranger and Thief lines."},
 				{kind = "item", id = 27765, count = 1, cost = 25, name = "Exercise Rod (500)", description = "Use the chest to get a rod with 500 charges. Trains magic level. Mystic, Necromancer and Templar lines."},
 				{kind = "item", id = 27766, count = 1, cost = 25, name = "Exercise Wand (500)", description = "Use the chest to get a wand with 500 charges. Trains magic level. Mystic, Necromancer and Templar lines."},
 				{kind = "item", id = 27767, count = 1, cost = 25, name = "Exercise Shield (500)", description = "Use the chest to get a shield with 500 charges. Trains shielding. Every class."},
-				{kind = "item", id = 27768, count = 1, cost = 75, name = "Durable Exercise Melee Weapon (1800)", description = "Use the chest to get a melee training weapon with 1800 charges. Trains melee (fist for the Monk line). Warrior, Thief, Monk and Templar lines."},
+				{kind = "item", id = 27768, count = 1, cost = 75, name = "Durable Exercise Melee Weapon (1800)", description = "Use the chest to get a melee training weapon with 1800 charges. Trains melee. Warrior, Thief and Templar lines."},
+				{kind = "item", id = 27769, count = 1, cost = 75, name = "Durable Exercise Fist Weapon (1800)", description = "Use the chest to get a fist training weapon with 1800 charges. Trains fist fighting. Monk line."},
 				{kind = "item", id = 27771, count = 1, cost = 75, name = "Durable Exercise Bow (1800)", description = "Use the chest to get a bow with 1800 charges. Trains distance. Ranger and Thief lines."},
 				{kind = "item", id = 27772, count = 1, cost = 75, name = "Durable Exercise Rod (1800)", description = "Use the chest to get a rod with 1800 charges. Trains magic level. Mystic, Necromancer and Templar lines."},
 				{kind = "item", id = 27773, count = 1, cost = 75, name = "Durable Exercise Wand (1800)", description = "Use the chest to get a wand with 1800 charges. Trains magic level. Mystic, Necromancer and Templar lines."},
 				{kind = "item", id = 27774, count = 1, cost = 75, name = "Durable Exercise Shield (1800)", description = "Use the chest to get a shield with 1800 charges. Trains shielding. Every class."},
-				{kind = "item", id = 27775, count = 1, cost = 450, name = "Lasting Exercise Melee Weapon (14400)", description = "Use the chest to get a melee training weapon with 14400 charges. Trains melee (fist for the Monk line). Warrior, Thief, Monk and Templar lines."},
+				{kind = "item", id = 27775, count = 1, cost = 450, name = "Lasting Exercise Melee Weapon (14400)", description = "Use the chest to get a melee training weapon with 14400 charges. Trains melee. Warrior, Thief and Templar lines."},
+				{kind = "item", id = 27776, count = 1, cost = 450, name = "Lasting Exercise Fist Weapon (14400)", description = "Use the chest to get a fist training weapon with 14400 charges. Trains fist fighting. Monk line."},
 				{kind = "item", id = 27778, count = 1, cost = 450, name = "Lasting Exercise Bow (14400)", description = "Use the chest to get a bow with 14400 charges. Trains distance. Ranger and Thief lines."},
 				{kind = "item", id = 27779, count = 1, cost = 450, name = "Lasting Exercise Rod (14400)", description = "Use the chest to get a rod with 14400 charges. Trains magic level. Mystic, Necromancer and Templar lines."},
 				{kind = "item", id = 27780, count = 1, cost = 450, name = "Lasting Exercise Wand (14400)", description = "Use the chest to get a wand with 14400 charges. Trains magic level. Mystic, Necromancer and Templar lines."},
 				{kind = "item", id = 27781, count = 1, cost = 450, name = "Lasting Exercise Shield (14400)", description = "Use the chest to get a shield with 14400 charges. Trains shielding. Every class."}
+			}
+		},
+		{
+			-- the ten Everfull upgrades on one page of their own (owner 2026-10-28: the ultimate spirit and supreme
+			-- offers were on the second page of Convenience, behind the pouches)
+			name = "Everfull Potions", parent = P_CONSUMABLES, icon = {item = 32264},
+			offers = {
+				-- the Everfull potion tiers (potions.lua, potions_config.lua upgrade): the same swap Veyra's task does, for
+				-- coins. Needs the previous tier and the stock potion's level, once per tier and character, nothing beyond
+				-- what the task gives (pay to skip the hunt for the potions, docs/PRICES.md)
+				{kind = "service", service = "everfullUpgrade", upgrade = 32268, icon = 32268, cost = 20, name = "Everfull Spirit Potion",
+					description = "Upgrade of your Everfull Health Potion: health and mana a drink, one health and one mana charge. The charges stay."},
+				{kind = "service", service = "everfullUpgrade", upgrade = 32261, icon = 32261, cost = 30, name = "Everfull Great Health Potion",
+					description = "Upgrade of your Everfull Health Potion (level 80): 425-575 health a drink. The charges stay."},
+				{kind = "service", service = "everfullUpgrade", upgrade = 32262, icon = 32262, cost = 30, name = "Everfull Great Mana Potion",
+					description = "Upgrade of your Everfull Mana Potion (level 80): 150-250 mana a drink. The charges stay."},
+				{kind = "service", service = "everfullUpgrade", upgrade = 32263, icon = 32263, cost = 30, name = "Everfull Great Spirit Potion",
+					description = "Upgrade of your Everfull Spirit Potion (level 80): health and mana a drink. The charges stay."},
+				{kind = "service", service = "everfullUpgrade", upgrade = 32264, icon = 32264, cost = 50, name = "Everfull Ultimate Health Potion",
+					description = "Upgrade of your Everfull Great Health Potion (level 130): 650-850 health a drink. The charges stay."},
+				{kind = "service", service = "everfullUpgrade", upgrade = 32265, icon = 32265, cost = 50, name = "Everfull Ultimate Mana Potion",
+					description = "Upgrade of your Everfull Great Mana Potion (level 130): 425-575 mana a drink. The charges stay."},
+				{kind = "service", service = "everfullUpgrade", upgrade = 32266, icon = 32266, cost = 50, name = "Everfull Ultimate Spirit Potion",
+					description = "Upgrade of your Everfull Great Spirit Potion (level 130): health and mana a drink. The charges stay."},
+				{kind = "service", service = "everfullUpgrade", upgrade = 32267, icon = 32267, cost = 70, name = "Everfull Supreme Health Potion",
+					description = "Upgrade of your Everfull Ultimate Health Potion (level 200): 875-1125 health a drink. The charges stay."},
+				{kind = "service", service = "everfullUpgrade", upgrade = 32269, icon = 32269, cost = 70, name = "Everfull Supreme Mana Potion",
+					description = "Upgrade of your Everfull Ultimate Mana Potion (level 200): 575-775 mana a drink. The charges stay."},
+				{kind = "service", service = "everfullUpgrade", upgrade = 32270, icon = 32270, cost = 70, name = "Everfull Supreme Spirit Potion",
+					description = "Upgrade of your Everfull Ultimate Spirit Potion (level 200): health and mana a drink. The charges stay."}
 			}
 		},
 		{
@@ -422,29 +456,6 @@ local cfg = {
 				-- price decided 2026-10-14 (docs/PRICES.md)
 				{kind = "service", service = "storeFood", icon = 32084, cost = 100, name = "Everfull Ration",
 					description = "Food that never runs out: 12 minutes of regeneration a bite, like the best food, until you are full. Store-bound."},
-				-- the Everfull potion tiers (potions.lua, potions_config.lua upgrade): the same swap Veyra's task does, for
-				-- coins. Needs the previous tier and the stock potion's level, once per tier and character, nothing beyond
-				-- what the task gives (pay to skip the hunt for the potions, docs/PRICES.md)
-				{kind = "service", service = "everfullUpgrade", upgrade = 32268, icon = 32268, cost = 20, name = "Everfull Spirit Potion",
-					description = "Swaps your Everfull Health Potion for the spirit one: health and mana a drink, one health and one mana charge. The charges stay. Veyra the Apothecary does the same for 40 health potions. It starts the spirit line: great, ultimate and supreme follow from it."},
-				{kind = "service", service = "everfullUpgrade", upgrade = 32261, icon = 32261, cost = 30, name = "Everfull Great Health Potion",
-					description = "Swaps your Everfull Health Potion for the great one (level 80): 425-575 health a drink. Needs your Everfull Health Potion in your backpack, inbox or depot. The charges stay. Veyra the Apothecary does the same for 40 great health potions."},
-				{kind = "service", service = "everfullUpgrade", upgrade = 32262, icon = 32262, cost = 30, name = "Everfull Great Mana Potion",
-					description = "Swaps your Everfull Mana Potion for the great one (level 80): 150-250 mana a drink. Needs your Everfull Mana Potion in your backpack, inbox or depot. The charges stay. Veyra the Apothecary does the same for 40 great mana potions."},
-				{kind = "service", service = "everfullUpgrade", upgrade = 32263, icon = 32263, cost = 30, name = "Everfull Great Spirit Potion",
-					description = "Swaps your Everfull Spirit Potion for the great spirit one (level 80): health and mana a drink, one health and one mana charge. The charges stay. Veyra the Apothecary does the same for 40 great spirit potions."},
-				{kind = "service", service = "everfullUpgrade", upgrade = 32264, icon = 32264, cost = 50, name = "Everfull Ultimate Health Potion",
-					description = "Swaps your Everfull Great Health Potion for the ultimate one (level 130): 650-850 health a drink. The charges stay. Veyra the Apothecary does the same for 40 ultimate health potions."},
-				{kind = "service", service = "everfullUpgrade", upgrade = 32265, icon = 32265, cost = 50, name = "Everfull Ultimate Mana Potion",
-					description = "Swaps your Everfull Great Mana Potion for the ultimate one (level 130): 425-575 mana a drink. The charges stay. Veyra the Apothecary does the same for 40 ultimate mana potions."},
-				{kind = "service", service = "everfullUpgrade", upgrade = 32266, icon = 32266, cost = 50, name = "Everfull Ultimate Spirit Potion",
-					description = "Swaps your Everfull Great Spirit Potion for the ultimate one (level 130): health and mana a drink, one health and one mana charge. The charges stay. Veyra the Apothecary does the same for 40 ultimate spirit potions."},
-				{kind = "service", service = "everfullUpgrade", upgrade = 32267, icon = 32267, cost = 70, name = "Everfull Supreme Health Potion",
-					description = "Swaps your Everfull Ultimate Health Potion for the supreme one (level 200): 875-1125 health a drink. The charges stay. Veyra the Apothecary does the same for 40 supreme health potions."},
-				{kind = "service", service = "everfullUpgrade", upgrade = 32269, icon = 32269, cost = 70, name = "Everfull Supreme Mana Potion",
-					description = "Swaps your Everfull Ultimate Mana Potion for the supreme one (level 200): 575-775 mana a drink. The charges stay. Veyra the Apothecary does the same for 60 ultimate mana potions."},
-				{kind = "service", service = "everfullUpgrade", upgrade = 32270, icon = 32270, cost = 70, name = "Everfull Supreme Spirit Potion",
-					description = "Swaps your Everfull Ultimate Spirit Potion for the supreme one (level 200): health and mana a drink, one health and one mana charge. The charges stay. Veyra the Apothecary does the same for 60 ultimate spirit potions."},
 				{kind = "unlock", unlock = "autoSeller", icon = 2160, iconCount = 100, cost = 400, name = "Auto Seller",
 					description = "Permanent: loot on your auto-sell list (Economy > Auto Seller) is sold at NPC prices, gold to your bank."},
 				{kind = "unlock", unlock = "rarityAutoloot", icon = 2472, cost = 300, name = "Rarity Autoloot",

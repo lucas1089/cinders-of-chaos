@@ -169,6 +169,10 @@ jobs:
           # and sums match the generator, each look passes style_check, and the ids agree with potions_config.lua
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_everfull_art.py build --check
           python3 -I client/tools/sprites/gen_everfull_art_test.py
+          # the Ember pickup look of pair 55 (one PixelLab portal, a 1 x 1 item): committed source, atlas, things file and
+          # sums match the generator, the look passes style_check, and the ids agree with pickups_config.lua
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_portal_art.py build --check
+          python3 -I client/tools/sprites/gen_portal_art_test.py
           # the Reward Chest look of pair 45 (one PixelLab chest, a 2 x 2 item): committed source, atlas, things file and
           # sums match the generator, and the look passes style_check on its own colours
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_reward_chest_art.py build --check
@@ -213,6 +217,8 @@ jobs:
           python3 -I server/tools/patch_npc_currency_test.py
           python3 -I server/tools/check_dead_holes_test.py   # floor changes that lead nowhere (O263; needs a map to run for real)
           python3 -I server/tools/patch_dead_holes_test.py   # the install step deadholes on a synthetic map
+          python3 -I server/tools/patch_lava_edges_test.py   # the install step lavaedges on a synthetic map (O288)
+          python3 -I server/tools/patch_crypt_floors_test.py   # the install step cryptfloors on a synthetic map (O288)
           python3 -I server/tools/patch_drops_channel_test.py  # the Drops channel of the drop feed (O260)
           # catacomb kit (pair 27 trial): spec, sources and picks match gen_assets_art.py's tables (kit files not in git)
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_assets_art.py build --check
@@ -1070,6 +1076,9 @@ jobs:
       - name: Combat numbers in the viewer's display scale (server src-patch 0037, guard)
         run: python3 -I server/tools/display_scale_patch_test.py
 
+      - name: Player attack speed bonus, one attack per second (patch 0078)
+        run: python3 -I server/tools/attack_speed_bonus_patch_test.py
+
       - name: Tester bots out of the base player lists (patch_tester_filters.py)
         run: python3 -I server/tools/patch_tester_filters_test.py
 
@@ -1164,6 +1173,12 @@ jobs:
           cd server
           luajit tools/gen_wiki_data.lua --check
           lua5.3 tools/gen_wiki_data.lua --check  # Lua 5.3 must give the same bytes
+
+      - name: Attack speed lanes of the passive tree are in classlanes.lua (gen_class_lanes.lua --attack-speed)
+        run: |
+          cd server
+          luajit tools/gen_class_lanes.lua --attack-speed --check
+          lua5.3 tools/gen_class_lanes.lua --attack-speed --check
 
       - name: Passive tree data is up to date with the client tree (Lua 5.3 and LuaJIT write the same file)
         run: |

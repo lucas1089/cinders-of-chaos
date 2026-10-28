@@ -371,9 +371,9 @@ one- or two-handed, is open to the Warrior, Thief, Monk and Templar lines (the B
 class rule); armour, shields, launchers, wands and rods keep their lists. Of the same tier, a two-handed melee weapon deals 1.07x the
 damage per second of one hand + shield at every level (it was +28% at level 8 and +13% from level 75); launchers and the Monk's
 early fists are still ahead (server/data/spells/README.md "Weapon damage per second": owner decision).
-**Training weapons (owner, 2026-10-23)**: the exercise weapons on a training dummy: one **melee** weapon (the sword, axe and club
-ones are the same item now) for the Warrior, Thief, Monk and Templar lines, which trains the melee skill, and **fist fighting for the
-Monk line**; a bow for the Ranger and Thief lines (distance); a rod and a wand for the Mystic, Necromancer and Templar lines
+**Training weapons (owner, 2026-10-23)**: the exercise weapons on a training dummy: one **melee** weapon (the sword and club
+ones are the same item now) for the Warrior, Thief and Templar lines, which trains the melee skill; a **fist** weapon for the Monk
+line only (owner 2026-10-28: "monk também não tem training weapon"), which trains fist fighting; a bow for the Ranger and Thief lines (distance); a rod and a wand for the Mystic, Necromancer and Templar lines
 (magic level); a shield for every class (shielding). Server/README.md "Training weapons".
 **Weapon coverage (owner, 2026-10-23, "veja se todas as classes tem armas o suficiente")**: every class has at least three
 weapons it can wield and obtain in each of the nine level bands (1-20, 20-50, 50-100, 100-200, 200-400, 400-700, 700-1000,

@@ -1,8 +1,9 @@
--- class_loot.lua: bows, crossbows, wands, rods, quivers and spellbooks in the loot of the bounty pool monsters (server/README.md
--- "Gear coverage"). The rules and numbers are data/lib/chaos_class_loot.lua. At startup every row of
--- ChaosClassLoot.lootRows (the hunt monsters and bosses by their hunting level) is added to that monster type with
--- MonsterType:addLoot, as gear_sets.lua and jewelry.lua do, so no monster file changes. The chaos loot layer then rolls
--- rarity, item level and modifiers as for any gear drop.
+-- class_loot.lua: one-handed and two-handed melee weapons, the Monk line's fist weapons, bows, crossbows, wands, rods,
+-- quivers and spellbooks in the loot of the bounty pool monsters (server/README.md "Gear coverage"). The rules and
+-- numbers are data/lib/chaos_class_loot.lua. At startup every row of ChaosClassLoot.lootRows (the hunt monsters and
+-- bosses by their hunting level) is added to that monster type with MonsterType:addLoot, as gear_sets.lua and
+-- jewelry.lua do, so no monster file changes. The chaos loot layer then rolls rarity, item level and modifiers as for
+-- any gear drop.
 ChaosClassLoot = ChaosClassLoot or dofile("data/lib/chaos_class_loot.lua")
 
 ChaosClassLootAdd = ChaosClassLootAdd or {}
@@ -19,7 +20,7 @@ local function levelOf(e)
 			return level
 		end
 	end
-	return (tonumber(e.level) or 1) * 2
+	return tonumber(e.level) or 1
 end
 
 -- adds the loot rows once per server run; returns added, skipped
@@ -65,7 +66,7 @@ end
 local startup = GlobalEvent("ChaosClassLoot")
 function startup.onStartup()
 	local added, skipped = ChaosClassLootAdd.addAll()
-	print(string.format("[Chaos class loot] %d launcher, wand, quiver and spellbook loot rows added (%d skipped)", added,
+	print(string.format("[Chaos class loot] %d melee, fist, launcher, wand, quiver and spellbook loot rows added (%d skipped)", added,
 		skipped))
 	return true
 end

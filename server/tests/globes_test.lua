@@ -36,6 +36,11 @@ do
 		ids[row.id], keys[row.key] = true, true
 		ok(row.id >= 32088 and row.id <= 32090, row.key .. " id in the block")
 		ok(row.glow and row.take, row.key .. " has glow and take effects")
+		if row.key == "ember" then eq(row.glow, "CONST_ME_PURPLEENERGY", "the ember glows violet, like its portal look") end
+		local want = {health_globe = {44397, 7618}, mana_globe = {44398, 7620}, ember = {44396, 25045}}
+		eq(row.clientId, want[row.key][1], row.key .. " wears its own look (pair 55)")
+		eq(row.stockClientId, want[row.key][2], row.key .. " node is copied from the stock client id")
+		eq(row.stackable, true, row.key .. " is stackable (the look reads a count)")
 	end
 	ok(keys.health_globe and keys.mana_globe and keys.ember, "three items")
 	ok(pcfg.failsafeSeconds > gcfg.lifetimeMs / 1000, "the failsafe outlasts a globe")
@@ -142,7 +147,7 @@ end
 local T = 1000000
 os.mtime = function() return T end
 local n = 0
-for _, name in ipairs({"CONST_ME_MAGIC_RED", "CONST_ME_MAGIC_BLUE", "CONST_ME_HEARTS", "CONST_ME_STUN", "CONST_ME_FIREAREA",
+for _, name in ipairs({"CONST_ME_MAGIC_RED", "CONST_ME_MAGIC_BLUE", "CONST_ME_HEARTS", "CONST_ME_STUN", "CONST_ME_FIREAREA", "CONST_ME_PURPLEENERGY",
 	"CONST_ME_HITBYFIRE", "CONST_ME_POFF", "MESSAGE_STATUS_SMALL", "MESSAGE_INFO_DESCR", "MESSAGE_STATUS_DEFAULT",
 	"TILESTATE_BLOCKSOLID", "TILESTATE_PVPZONE", "COMBAT_HEALING", "COMBAT_MANADRAIN", "ITEM_ATTRIBUTE_NAME",
 	"ITEM_ATTRIBUTE_DESCRIPTION"}) do

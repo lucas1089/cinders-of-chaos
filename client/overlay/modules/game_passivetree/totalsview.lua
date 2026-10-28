@@ -47,5 +47,9 @@ function V.lines(data)
     add(tr('Critical damage: +%s%% (tree %s%%, Paragon %s%%, gear and other %s%%)', V.num(c.amount.total), V.num(c.amount.tree),
       V.num(c.amount.paragon), V.num(c.amount.other)), V.HEAD)
   end
+  local a = data.attackSpeed
+  if type(a) == 'table' and tonumber(a.total) then
+    add(tr('Attack speed: +%s%% (tree %s%%, gear %s%%; at most 1 attack per second)', V.num(a.total), V.num(a.tree), V.num(a.gear)), V.HEAD)
+  end
   return out
 end

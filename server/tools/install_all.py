@@ -74,7 +74,7 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                in items.otb / items.xml (server ids 36986..36994; used only once ChaosAssetsArt.PAIR27 is on)
   gearsets     tools/install_gear_sets.py        the seven equipment sets of client pair 28 (448 pieces, server ids
                36995..37442) and three later-tier sets that copy the looks of three of them (192 pieces, server ids
-               52000..52191, gear beyond level 1000) in items.otb / items.xml, their equip entries in movements.xml and
+               52000..52191, gear beyond level 1000; plus 3 extra Rimewraith legs, 52192..52194) in items.otb / items.xml, their equip entries in movements.xml and
                weapon entries in weapons.xml (levels, classes, stats; after vocations, whose class names the lists use);
                dropped only once ChaosGearSets.PAIR28 is on (README "Equipment sets (pair 28)", "Gear beyond level 1000")
   pack30items  tools/install_pack30_items.py     the third-party pack art items of client pair 30 (weapons, flasks, corpses,
@@ -306,6 +306,13 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                floor changes of the base map whose landing has no walkable ground (tools/dead_holes.csv, found by
                tools/check_dead_holes.py) lose their item or turn into plain ground; one that has a tile below now is
                kept (after mapfixes, before poi; with --dry-run it reads the real map and writes nothing)
+  lavaedges    tools/patch_lava_edges.py         the owner's report of 2026-10-28 ("some hunts have wrong floors", README "Lava edge strips (O288)"): the
+               lava edge items 5840-5843 the old lava decoration kit laid on the placed lava hunts' floors are taken off
+               (after deadholes, before poi; with --dry-run it reads the real map and writes nothing)
+  cryptfloors  tools/patch_crypt_floors.py       the owner's report of 2026-10-28 (README "Crypt floor (O288)"): the catacomb hunts' corridors
+               (Hollow Crypt, Bonechoir Catacomb, Bonewright Galleries, Graveknell Catacombs, Lanternless Catacombs) lose
+               the stain patch ground 12237 for the crypt ground 13189 (after lavaedges, before poi; with --dry-run it
+               reads the real map and writes nothing)
   startchest   tools/patch_start_chest.py         the owner's request of 2026-10-27 (README "Starter chest removed"): the base starter chest
                ("Collect First Items!", action id 33735) is cut off the map and scripts/customs/actions/first_chest.lua is
                renamed to *.chaos-off; the Chaos new-player kit gives the class kit at the first login (after deadholes,
@@ -353,8 +360,8 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   waystonebosses tools/patch_waystone_bosses.py  the Waystone III Frostreaver room's entrance off its tar tile, and the
                tier V / VI pillar bosses keep a share of a hit away from their pillar instead of nothing (README
                "Waystone tiers")
-  exercise     tools/patch_exercise_weapons.py   the exercise (training) weapons: one melee weapon for every melee class
-                                                 (the Monk trains fist), data/scripts/chaos/exercise_training.lua owns the
+  exercise     tools/patch_exercise_weapons.py   the exercise (training) weapons: one melee weapon for every melee class,
+                                                 a fist weapon for the Monk line (items.otb looks), data/scripts/chaos/exercise_training.lua owns the
                                                  21 item ids (their stock lines in actions.xml are commented out), item
                                                  descriptions, the exercise axe and club chests leave the NPC shop lists
                                                  (README "Training weapons"; after runes, before itemprices)
@@ -1312,6 +1319,33 @@ def step_deadholes(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('mapfixes') + 1, 'deadholes')  # after mapfixes (the hall and the earlier fixes), before poi
+
+
+def step_lavaedges(server, data, ctx):
+    if ctx['dry']:
+        # the dry copy has no map: read the real one, write nothing
+        real = os.path.join(ctx['server'], 'data')
+        mp = ctx.get('dry_map') or tool_map_path(real)
+        if not mp:
+            return tool_result((False, ['no map in %s/world' % real]))
+        return tool_result(run_tool([tool('patch_lava_edges.py'), real, '--dry-run', '--map', mp], 'patch_lava_edges.py'))
+    return tool_result(run_tool([tool('patch_lava_edges.py'), data], 'patch_lava_edges.py'))
+
+
+STEPS.insert(STEPS.index('deadholes') + 1, 'lavaedges')  # after deadholes (map steps), before poi
+
+
+def step_cryptfloors(server, data, ctx):
+    if ctx['dry']:
+        real = os.path.join(ctx['server'], 'data')
+        mp = ctx.get('dry_map') or tool_map_path(real)
+        if not mp:
+            return tool_result((False, ['no map in %s/world' % real]))
+        return tool_result(run_tool([tool('patch_crypt_floors.py'), real, '--dry-run', '--map', mp], 'patch_crypt_floors.py'))
+    return tool_result(run_tool([tool('patch_crypt_floors.py'), data], 'patch_crypt_floors.py'))
+
+
+STEPS.insert(STEPS.index('lavaedges') + 1, 'cryptfloors')  # after lavaedges (map steps), before poi
 
 
 def step_startchest(server, data, ctx):

@@ -480,11 +480,11 @@ function T.build(item, opts)
 		tip.note = T.QUIVER_NOTE
 	end
 	-- weapons: the interval the viewer swings this one at (vocation, dexterity), with the attack speed cap of engine
-	-- patch 0011; "(capped)" when the cap raised it. opts.wielder = {voc = vocation attackspeed, dex = dexterity}
+	-- patch 0011; "(capped)" when the cap raised it. opts.wielder = {voc = vocation attackspeed, dex = dexterity, bonus = player attack speed bonus %}
 	local w = opts.wielder
 	if w and kind == "weapon" and M and M.effectiveInterval then
 		local own = attrOr(item, ITEM_ATTRIBUTE_ATTACK_SPEED, call(it, "getAttackSpeed"))
-		local ms, capped = M.effectiveInterval(int(call(it, "getAttackSpeed")), own, w.voc, w.dex, w.cap)
+		local ms, capped = M.effectiveInterval(int(call(it, "getAttackSpeed")), own, w.voc, w.dex, w.cap, w.bonus)
 		tip.base[#tip.base + 1] = {k = "yourinterval", l = capped and "Your Attack Interval (capped)" or
 			"Your Attack Interval", v = floor(ms / 10 + 0.5) / 100, fmt = "sec", low = true}
 		-- the estimated damage per second of the auto attack with this weapon (weapon_dps_core.lua; an estimate)

@@ -6,8 +6,8 @@
 
 BASE_DATA is the data folder of an installed base server (items/items.xml, monster/monsters.xml and monster/lua; the
 loot tables are not in this repository). For every bounty pool monster (data/scripts/chaos/bounty_pool.lua, the hunt
-list) whose level on the hunting scale (pace_core.lua P.entryLevel: its own level for a level-scaled monster, else 2 x
-the pool level) is within a band's range (BANDS), and for the two widows of the beta report, it writes the stock
+list) whose level on the hunting scale (pace_core.lua P.entryLevel: its own level for a level-scaled monster, else
+the pool level; 2 x before O285) is within a band's range (BANDS), and for the two widows of the beta report, it writes the stock
 loot table as rows {item id, chance per 100000, max count, class, NPC price}:
 
   coin   gold, platinum and crystal coins (value 1 / 100 / 10000)
@@ -29,9 +29,10 @@ SERVER = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
 import respec_income as R  # noqa: E402  (its monster and item parsers)
 
-# band level -> (lowest, highest) level on the hunting scale of the monsters it hunts: +-15%; the pool has no base monster
-# above 1314, so 1500 hunts the top of it (tools/loot_model.lua reads the same ranges)
-BANDS = {100: (85, 115), 300: (255, 345), 500: (425, 575), 800: (680, 920), 1000: (850, 1150), 1500: (1150, 100000)}
+# band level -> (lowest, highest) level on the hunting scale of the monsters it hunts: every base monster of the pool from
+# level 40 (tools/loot_model.lua reads +-15% of a band, 100 to 650; the pool has no base monster above 657, O285: hunting
+# level = pool level, so the old bands 800 to 1500 are gone)
+BANDS = {40: (40, 100000)}
 EXTRA = ["Nightfang Widow", "Shadowcrystal Widow"]
 COINS = {2148: 1, 2152: 100, 2160: 10000}
 GEAR_SLOTS = {"head", "body", "legs", "feet", "ring", "necklace", "two-handed", "shield", "hand"}
@@ -87,12 +88,12 @@ def estimate_level(exp, health):
 
 
 def hunt_level(level, exp, health, min_l, max_l):
-    """pace_core.lua P.entryLevel with baseLevelMult 2: (level on the hunting scale, level-scaled)"""
+    """pace_core.lua P.entryLevel with baseLevelMult 1 (O285): (level on the hunting scale, level-scaled)"""
     if min_l > 0 and max_l >= min_l:
         return (min_l + max_l) // 2, True
     if level > 0 and estimate_level(exp, health) != level:
         return level, True
-    return 2 * (level or estimate_level(exp, health)), False
+    return level or estimate_level(exp, health), False
 
 
 def classify(iid, cmax, prices, unsellable, gear):

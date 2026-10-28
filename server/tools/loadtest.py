@@ -770,7 +770,7 @@ def class_stats(vocation, level, gains, power=1.0):
 
 def hunt_marks(text):
     """[(low, high, x, y, z)] of the hunt marks of a data/chaos_poi.lua that name a level band (hunting levels since
-    2026-10-27, gen_poi.py)"""
+    2026-10-27, gen_poi.py; the pool level since 2026-10-28, O285: baseLevelMult 1)"""
     out = []
     for m in re.finditer(r'\{k = "hunt", x = (\d+), y = (\d+), z = (\d+), n = "([^"]*)"', text):
         band = re.search(r'\(level (\d+)-(\d+)\)', m.group(4))
@@ -835,7 +835,7 @@ def snap_to_spawn(pos, index, reach=12, cell=16, centre_levels=None, max_level=N
 
 def pool_levels(pool_text):
     """{lower monster name: level} of the hunting part of data/scripts/chaos/bounty_pool.lua (the fair-hunt level; the
-    hunting level is twice it, pace_config.lua baseLevelMult)"""
+    hunting level is this times pace_config.lua baseLevelMult, which is 1 since 2026-10-28, O285)"""
     hunt = pool_text.split('bosses =')[0]
     return {m.group(1).lower(): int(m.group(2))
             for m in re.finditer(r'\{name = "([^"]+)", level = (\d+)', hunt)}

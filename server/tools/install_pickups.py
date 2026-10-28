@@ -7,8 +7,11 @@ Everything is read from server/data/scripts/chaos/pickups_config.lua (`items`, `
 (pickups.lua) uses too.
 
 1. data/items/items.otb: per item a copy of a stock node (`sourceId`: that server id; `clientId`: the lowest stock
-   server id of that client id), with the new server id and the flags NOT pickupable and NOT moveable (a pickup can
-   never go into a bag, be pushed or traded). The stackable flag is copied from the stock node, or forced when the
+   server id of that client id; with `stockClientId` too: a look of ours that has no stock node, e.g. the ember's
+   portal, client item 44396 of pair 55, and the globes, 44397 / 44398: the lowest stock node of `stockClientId` is
+   copied and `clientId` written, and a client id that belongs to another server id stops the script), with the new
+   server id and the flags NOT pickupable and NOT moveable (a pickup can never go into a bag, be pushed or traded; an
+   older node of the ember on 25045 or of a globe on the potion look 7618 / 7620 is rewritten). The stackable flag is copied from the stock node, or forced when the
    row says `stackable = true` (the 10.98 client reads a count for a stackable look). A node already there with the
    same bytes is left alone, one with other bytes is replaced; a server id that belongs to another client id stops
    the script (nothing is written). items.otb.bak keeps the original the first time; the written file is parsed again
@@ -24,7 +27,7 @@ import os, re, struct, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-from install_gems import (scan, escape, attr, xml_escape, START, END, A_SERVERID, FLAG_STACKABLE,  # noqa: E402
+from install_gems import (scan, escape, attr, xml_escape, START, END, A_SERVERID, A_CLIENTID, FLAG_STACKABLE,  # noqa: E402
                           FLAG_PICKUPABLE, FLAG_MOVEABLE)
 
 CONFIG = os.path.join(os.path.dirname(HERE), 'data', 'scripts', 'chaos', 'pickups_config.lua')
@@ -48,13 +51,14 @@ def read_config(path=CONFIG):
             return int(m.group(1)) if m else None
         stackable = re.search(r'\bstackable\s*=\s*(true|false)', chunk)
         rows.append({'key': lua_string(chunk, 'key'), 'id': num('id'), 'sourceId': num('sourceId', False),
-                     'clientId': num('clientId', False), 'weight': num('weight'),
+                     'clientId': num('clientId', False), 'stockClientId': num('stockClientId', False),
+                     'weight': num('weight'),
                      'stackable': None if not stackable else stackable.group(1) == 'true',
                      'article': lua_string(chunk, 'article'), 'name': lua_string(chunk, 'name'),
                      'plural': lua_string(chunk, 'plural'), 'description': lua_string(chunk, 'description')})
     fs = re.search(r'\bfailsafeSeconds\s*=\s*(\d+)', text)
     cfg = {'items': rows, 'failsafe': int(fs.group(1)) if fs else 0}
-    assert len(rows) >= 3 and all(r['key'] and r['id'] and r['name'] and (r['sourceId'] or r['clientId']) for r in rows), \
+    assert len(rows) >= 3 and all(r['key'] and r['id'] and r['name'] and (r['sourceId'] or r['clientId'] or r['stockClientId']) for r in rows), \
         'pickups_config.lua: items incomplete'
     ids = [r['id'] for r in rows]
     assert len(ids) == len(set(ids)), 'pickups_config.lua: duplicate item ids'
@@ -74,6 +78,8 @@ def pickup_node(stock, row):
     for k, v in attrs:
         if k == A_SERVERID:
             v = struct.pack('<H', row['id'])
+        elif k == A_CLIENTID and row.get('stockClientId'):
+            v = struct.pack('<H', row['clientId'])
         body += attr(k, v)
     return bytes([START]) + escape(bytes([group])) + escape(body) + bytes([END])
 
@@ -83,7 +89,7 @@ def stock_of(kids, row, ours):
         return next((k for k in kids if k[2] == row['sourceId']), None)
     best = None
     for k in kids:
-        if k[3] == row['clientId'] and k[2] not in ours and (best is None or k[2] < best[2]):
+        if k[3] == (row.get('stockClientId') or row['clientId']) and k[2] not in ours and (best is None or k[2] < best[2]):
             best = k
     return best
 
@@ -100,14 +106,20 @@ def patch_otb(data, cfg):
             raise SystemExit('items.otb: no stock node for %s (source %s / client %s); nothing written'
                              % (row['name'], row['sourceId'], row['clientId']))
         want = pickup_node(stock, row)
-        wanted.append((row, want, stock[3]))
+        cid = row['clientId'] if row.get('stockClientId') else stock[3]
+        if row.get('stockClientId'):
+            other = [x[2] for x in kids if x[3] == cid and x[2] != row['id']]
+            if other:
+                raise SystemExit('items.otb: client id %d (the look of %s) belongs to server id %d; nothing written'
+                                 % (cid, row['name'], other[0]))
+        wanted.append((row, want, cid))
         k = by_sid.get(row['id'])
         if k is None:
             append += want
-            notes.append('items.otb: %s added (server id %d, client id %d)' % (row['name'], row['id'], stock[3]))
-        elif k[3] != stock[3]:
+            notes.append('items.otb: %s added (server id %d, client id %d)' % (row['name'], row['id'], cid))
+        elif k[3] not in (stock[3], cid):
             raise SystemExit('items.otb: server id %d already belongs to client id %s, not %d; nothing written'
-                             % (row['id'], k[3], stock[3]))
+                             % (row['id'], k[3], cid))
         elif data[k[0]:k[1]] != want:
             replace.append((k[0], k[1], want))
             notes.append('items.otb: %s updated' % row['name'])

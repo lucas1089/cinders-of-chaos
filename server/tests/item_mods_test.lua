@@ -176,7 +176,7 @@ local M = ChaosItemMods
 local C = ChaosCrafting
 
 -- ---------------------------------------------------------------- catalogue
-eq(#M.config.mods, 53, "fifty-three modifiers (fifteen old, fifteen new, twelve legendary powers, three energy shield, eight quiver)")
+eq(#M.config.mods, 54, "fifty-four modifiers (fifteen old, fifteen new, one worn attack speed, twelve legendary powers, three energy shield, eight quiver)")
 local sides = {prefix = 0, suffix = 0}
 for _, def in ipairs(M.config.mods) do
 	eq(#def.tiers, 8, def.key .. ": eight tiers")
@@ -193,7 +193,7 @@ for _, def in ipairs(M.config.mods) do
 	assert(next(def.kinds), def.key .. ": allowed somewhere")
 end
 eq(sides.prefix, 31, "fifteen prefixes, seven prefix powers, two energy shield, seven quiver prefixes")
-eq(sides.suffix, 22, "fifteen suffixes, five suffix powers, energy shield recharge, quiver attack speed")
+eq(sides.suffix, 23, "sixteen suffixes (one worn attack speed), five suffix powers, energy shield recharge, quiver attack speed")
 -- the five tiers of before are T2 .. T6, so old items keep their meaning
 local OLD = {attackspeed = {{2, 3}, {3, 5}, {4, 6}, {5, 8}, {7, 10}}, lifeonkill = {{5, 10}, {10, 20}, {20, 40}, {35, 60},
 	{50, 90}}, goblinchance = {{10, 15}, {14, 20}, {18, 27}, {22, 33}, {28, 40}}, dodge = {{1, 1}, {1, 2}, {1, 2}, {2, 3},
@@ -267,6 +267,18 @@ eq(addableKeys(newItem(2195)).movespeed, true, "movement speed on boots")
 eq(addableKeys(newItem(2466)).movespeed, nil, "not on armor")
 eq(addableKeys(newItem(2400)).attackspeed, true, "attack speed on weapons")
 eq(addableKeys(newItem(2514)).attackspeed, nil, "not on shields")
+-- owner 2026-10-28, "few attack speed on items": a worn piece (ring, amulet, belt..) rolls Attack Speed too, as a player-level
+-- bonus (engine patch 0078), the weapon's own modifier stays local to the weapon
+eq(addableKeys(newItem(2123)).gearspeed, true, "worn attack speed on rings")
+eq(addableKeys(newItem(2171)).gearspeed, true, "worn attack speed on amulets")
+eq(addableKeys(newItem(2400)).gearspeed, nil, "not on weapons (they have attackspeed)")
+eq(addableKeys(newItem(2466)).gearspeed, nil, "not on armor")
+eq(addableKeys(newItem(2123)).attackspeed, nil, "the weapon's own modifier is not on rings")
+eq(M.byKey.gearspeed.cap, 10, "worn attack speed cap") eq(M.byKey.gearspeed.label, "Attack Speed")
+eq(M.byKey.attackspeed.weight, 20, "weapon attack speed weight (was 8)")
+eq(M.totals({}, {gearspeed = 30}).gearspeed, 10, "the pieces together are held at the cap")
+-- the weapon's modifier does not count as a player bonus, and gear speed does not touch the weapon's interval
+eq(M.totals({}, {attackspeed = 9}).gearspeed, 0)
 eq(addableKeys(newItem(2514)).block, true, "block on shields")
 eq(addableKeys(newItem(2400)).block, nil, "not on weapons")
 eq(addableKeys(newItem(2400)).execute, true, "execute on weapons")

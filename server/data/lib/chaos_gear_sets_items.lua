@@ -9,7 +9,7 @@ return {
 	first = 36995,
 	last = 37442,
 	tier2First = 52000,
-	tier2Last = 52191,
+	tier2Last = 52194,
 	sets = {
 		cinderwrought = {name = "Cinderwrought", band = {120, 450}, element = "fire", resist = "fire"},
 		wyrmscale = {name = "Wyrmscale", band = {40, 220}, element = "earth", resist = "fire"},
@@ -1303,5 +1303,11 @@ return {
 			stats = {shootType = "energy", range = 6, magiclevelpoints = 4, wandMin = 116, wandMax = 157, mana = 33}},
 		{id = 52191, key = "sunderthrone_rod_4", set = "sunderthrone", kind = "rod", fit = "", level = 2050, name = "sunderthrone crook", classes = {"Mystic", "Illusionist", "Necromancer", "Lich", "Bone Lord"},
 			stats = {shootType = "energy", range = 6, magiclevelpoints = 4, wandMin = 117, wandMax = 159, mana = 33}},
+		{id = 52192, key = "rimewraith_legs_5", set = "rimewraith", kind = "legs", fit = "H", level = 800, name = "rimewraith greaves", classes = {"Warrior", "Juggernaut", "Berserker", "Templar", "Inquisitor", "Sentinel"},
+			stats = {armor = 13, absorbPercentIce = 4}},
+		{id = 52193, key = "rimewraith_legs_6", set = "rimewraith", kind = "legs", fit = "M", level = 800, name = "rimewraith chausses", classes = {"Ranger", "Deadeye", "Beastmaster", "Thief", "Ninja", "Samurai", "Monk", "Shadowfist", "Iron Sage"},
+			stats = {armor = 11, absorbPercentIce = 4}},
+		{id = 52194, key = "rimewraith_legs_7", set = "rimewraith", kind = "legs", fit = "C", level = 800, name = "rimewraith skirt", classes = {"Mystic", "Elementalist", "Illusionist", "Necromancer", "Lich", "Bone Lord"},
+			stats = {armor = 10, magiclevelpoints = 2, absorbPercentIce = 4}},
 	}
 }

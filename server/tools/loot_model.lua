@@ -23,10 +23,10 @@ end
 local P = ChaosPaceCore
 
 local M = {}
-M.BANDS = {100, 300, 500, 800, 1000, 1500}
--- tools/loot_bands.py BANDS: the monsters' levels each band hunts
-M.RANGES = {[100] = {85, 115}, [300] = {255, 345}, [500] = {425, 575}, [800] = {680, 920}, [1000] = {850, 1150},
-	[1500] = {1150, 100000}}
+-- O285: the hunting level of a base monster is its pool level (baseLevelMult 1), the pool has none above 657, so the bands
+-- stop at 650 (they were 800, 1000 and 1500 with the level twice the pool's); a band hunts +-15% of its level
+M.BANDS = {100, 300, 500, 650}
+M.RANGES = {[100] = {85, 115}, [300] = {255, 345}, [500] = {425, 575}, [650] = {552, 748}}
 -- the rule of 2026-10-20 (pace_config.lua `gold`, linear), the reference the new curves keep
 M.OLD_GOLD = {base = {{250, 1.0}, {450, 0.30}, {1000, 0.30}}, scaled = {{100, 1.0}, {450, 0.30}, {2000, 0.30}}}
 -- tolerances of --check: gold per hour and items per hour of the new rule against the old, per band
@@ -148,6 +148,10 @@ function M.perKill(mon, rule)
 			elseif notableByChance then
 				gold = gold + p * mean * price * f.notable
 				show = f.notable
+			elseif cls == "junk" and f.cheap and f.cheap > 0 and price <= f.cheap then
+				-- O285: cheap junk stays whole (P.levelPlan `cheap`)
+				gold = gold + p * mean * price
+				show = 1
 			elseif cls == "junk" then
 				gold = gold + p * mean * price * sv
 				local sk = stack and skStack or math.min(sv, skStack)
@@ -228,7 +232,7 @@ function M.rules(ctx, mon, override)
 	local f = P.factors(ctx.cfg, mon.level, mon.scaled)
 	local setName = mon.scaled and "scaled" or "base"
 	local old = {kind = "old", f = f, g = P.lin(M.OLD_GOLD[setName], mon.level, 1)}
-	local nf = {loot = f.loot, coins = f.coins, junkKeep = f.junkKeep, notable = f.notable}
+	local nf = {loot = f.loot, coins = f.coins, junkKeep = f.junkKeep, notable = f.notable, cheap = f.cheap}
 	if override then
 		nf.coins = override.coins or nf.coins
 		nf.junkKeep = override.junkKeep or nf.junkKeep
@@ -268,7 +272,7 @@ end
 M.KEEP_MAX = 6
 -- the levels --derive solves (the curve points of pace_config.lua from 650 on; below it the notable drops keep `loot`,
 -- the coins follow the old gold points and junk stays as before, junkKeep >= 1 / loot)
-M.POINTS = {100, 300, 450, 550, 650, 700, 800, 900, 1000}
+M.POINTS = {100, 300, 450, 550, 650}
 function M.derive(ctx, band)
 	local function solve(fn, target, hi)
 		local lo = 0
@@ -462,14 +466,18 @@ function M.main(args)
 		-- the gold per hour a band is held to: the smooth curve of pace_config.lua lootLevel.goldPerHour {band = gold}
 		-- where it lists the band, else the 2026-10-20 rule's
 		local want = ctx.ll.goldPerHour or {}
+		-- O285: the items per hour a band is held to (`lootLevel.itemsPerHour`, the 2026-10-20 values of before the monsters
+		-- stood at their pool level), else the 2026-10-20 rule's at the same loot factor
+		local wantItems = ctx.ll.itemsPerHour or {}
 		for _, r in ipairs(rows) do
 			local ref = want[r.band] or r.oldGold
-			local dg, di = math.abs(r.newGold / ref - 1), math.abs(r.newItems / r.oldItems - 1)
+			local iref = wantItems[r.band] or r.oldItems
+			local dg, di = math.abs(r.newGold / ref - 1), math.abs(r.newItems / iref - 1)
 			if dg > M.TOL.gold or di > M.TOL.items then
 				bad = bad + 1
 				print(string.format("band %d out of tolerance: gold %+.1f%% (of %s), items %+.1f%%", r.band,
 					100 * (r.newGold / ref - 1), want[r.band] and "the goldPerHour target" or "the 2026-10-20 rule",
-					100 * (r.newItems / r.oldItems - 1)))
+					100 * (r.newItems / iref - 1)))
 			end
 		end
 		table.sort(rows, function(a, b) return a.band < b.band end)

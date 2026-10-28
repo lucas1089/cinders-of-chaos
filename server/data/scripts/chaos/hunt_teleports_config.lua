@@ -81,7 +81,7 @@ return {
 	hall = {
 		enabled = true,
 		floors = {7, 6, 5},
-		levels = {{z = 7, max = 560}, {z = 6, max = 1000}, {z = 5}},
+		levels = {{z = 7, max = 500}, {z = 6, max = 1000}, {z = 5}},
 		-- the hunt slots of each floor as the install counts them on the live map (2 a module a side, plus the base
 		-- room's); install_content_areas_test.py refuses more hunts on a floor (the base hunts of hall_hunts.csv and every
 		-- plan, by `levels`) than it has, so CI says "grow it" before an update fails on the server. Raise it with the room.

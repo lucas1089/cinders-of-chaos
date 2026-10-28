@@ -25,7 +25,7 @@ What is read, and the kinds written:
            merged, the level band from the middle 70 % of the spawn entries, the two most common monsters as the name;
            areas with fewer than HUNT_MIN entries are left out. r = 1.
            The band is printed as the HUNTING level: the pool level times pace_config.lua baseLevelMult (owner 2026-10-27;
-           lo = max(1, lo10 * mult), hi = hi10 * mult).
+           lo = max(1, lo10 * mult), hi = hi10 * mult). baseLevelMult is 1 since 2026-10-28 (O285): the pool level.
   boss     the island, raid and lair bosses of bossspawns_config.lua (their places). r = 1.
 The Chaos NPCs, the portals next to the temples and the dungeons are added by poi.lua at runtime (they are placed when
 the server starts).

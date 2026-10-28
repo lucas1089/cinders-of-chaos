@@ -25,7 +25,7 @@ end
 K.maxEstimate = 2200
 
 -- Owner 2026-10-27: a pool-derived estimate is the bounty pool's "fair hunt" level; the level players hunt the monster
--- at (and the map marks, the Codex and the wiki print) is `mult` times it (pace_config.lua baseLevelMult). A level a
+-- at (and the map marks, the Codex and the wiki print) is `mult` times it (pace_config.lua baseLevelMult, 1 since 2026-10-28, O285: the pool level; the x2 rule of O272 is retired). A level a
 -- system or the engine gave the monster (waystone tier, generated area point, level-scaled) is already a hunting level.
 -- Display only: loot, damage and pace keep reading the pool level.
 function K.huntingLevel(poolLevel, mult)

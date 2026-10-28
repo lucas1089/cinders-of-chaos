@@ -162,6 +162,7 @@ end
 
 local function kindOfName(name)
 	if name:find("Melee", 1, true) then return "melee" end
+	if name:find("Fist", 1, true) then return "fist" end
 	if name:find("Bow", 1, true) then return "ranged" end
 	if name:find("Rod", 1, true) then return "rod" end
 	if name:find("Wand", 1, true) then return "wand" end
