@@ -40,6 +40,9 @@ end
 -- the whole damage of one cast on one target: a DoT adds up its ticks
 function K.total(spec, level, ml, power)
 	local avg = K.average(spec, level, ml, power)
+	-- an ultimate's extras (line spell quests, level 1200): the main target of an area takes `main` x the hit, and a hit on a
+	-- target above `critAbove.hp` percent health is a critical hit (x `critAbove.mult`); the model counts both
+	avg = avg * (spec.main or 1) * (spec.critAbove and spec.critAbove.mult or 1)
 	if spec.shape == "dot" then
 		return avg * spec.ticks
 	end
@@ -209,6 +212,15 @@ function K.validate(cfg)
 		end
 		if s.shape == "wave" and ((s.depth or 0) < 1 or (s.halfWidth or 0) < 0) then
 			add(key, "a wave needs depth and halfWidth")
+		end
+		if s.main and (s.main <= 1 or s.shape ~= "circle") then
+			add(key, "main must be above 1 and belongs to a circle")
+		end
+		if s.critAbove and (not s.critAbove.hp or s.critAbove.hp <= 0 or s.critAbove.hp >= 100 or (s.critAbove.mult or 0) <= 1) then
+			add(key, "critAbove needs hp 1..99 and mult above 1")
+		end
+		if s.quest and s.quest ~= 1 and s.quest ~= 3 then
+			add(key, "quest must be 1 or 3 (quest 2 is a support, not an attack kit spell)")
 		end
 		if s.chi and s.finisher then
 			add(key, "a spell either builds chi or spends it")

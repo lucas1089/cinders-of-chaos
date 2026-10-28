@@ -1,7 +1,7 @@
 -- attack_kit_config.lua: the numbers of the attack kit (ChaosAttackKit): 37 attack spells that give every class
 -- line the same count of attack spells (10 per class; owner 2026-10-23, "devem ter a mesma quantidade"), and 7 more (O254)
 -- that took over the ids of weak support spells, so every class has 11, and the 7 level 500 spells of the line spell
--- quests (`quest = 1`), so every class has 12.
+-- quests (`quest = 1`), so every class has 12, and the 7 level 1200 ultimates (`quest = 3`), so every class has 13.
 -- The numbers were fitted with server/tools/rotation_sim.py. Change one here, in spells_chaos.xml and in
 -- rotation_model.csv together: tests/attack_kit_test.lua checks all three. Rules and shapes: attack_kit_core.lua; the cast:
 -- data/spells/chaos/_attackkit.lua; the balance: server/data/spells/README.md "Attack spell parity".
@@ -286,11 +286,15 @@ ChaosAttackKit.cfg = {
 		-- line, shared by the base class and both ascensions, needlearn="1" (only the quest teaches them, class_spells skips
 		-- them). `quest = 1` marks them. Coefficients 1.25 x the line's 13 s spell, cooldown 13 s, mana 1.2 x; the ids are the
 		-- first of each line's triple in spell_id_pool_config.lua (quest 2 and 3 take the next two).
-		-- Keepfall: Headsman's Hurl x 1.28 x 1.25 = scale 1.6
+		-- Trimmed 2026-10-28 (phase 3): the coefficients below were 1.25 x the reference and added 8 to 33% to the best set of a class; the
+		-- owner wants about 4.5% (rotation_sim.py --quest), so each scale was cut (Keepfall 1.6 -> 0.98, Moonshard Rain 27.5 -> 9.4,
+		-- Prismatic Rupture 1.5 -> 1.18, Eclipse Edge 1.25 -> 1, Soulflay Wave 1.25 -> 1.1, Thousand-Echo Palm 1.25 -> 0.65, Pyre of
+		-- Absolution 1.25 -> 0.62) and each class has a factor on top (quest_spell_scale_config.lua).
+		-- Keepfall: Headsman's Hurl x 1.28 x 1.25 = scale 1.6, trimmed
 		keepfall = {
 			id = 142, name = "Keepfall", words = "vok aeg thun brak", level = 500, mana = 72, quest = 1,
 			vocations = {"Warrior", "Juggernaut", "Berserker"}, school = "melee", power = "melee", ctype = "physical",
-			pMin = 0.17, pMax = 0.2, mMin = 0, mMax = 0, bMin = 17, bMax = 40, scale = 1.6, shape = "circle", range = 3,
+			pMin = 0.17, pMax = 0.2, mMin = 0, mMax = 0, bMin = 17, bMax = 40, scale = 0.98, shape = "circle", range = 3,
 			radius = 2, fx = "ground_slam", vfx = "heavy_cleave"
 		},
 		-- Moonshard Rain: 1.25 x ONE volley of Hail of Dawn (4 arrows x 1.1), not its whole cast of three: the whole cast, as an
@@ -300,44 +304,100 @@ ChaosAttackKit.cfg = {
 		moonshardrain = {
 			id = 149, name = "Moonshard Rain", words = "drai lun sag vex", level = 500, mana = 576, quest = 1,
 			vocations = {"Ranger", "Deadeye", "Beastmaster"}, school = "distance", power = "distance", ctype = "physical",
-			pMin = 0.0042, pMax = 0.0068, mMin = 0.1, mMax = 0.16, bMin = 3, bMax = 6, scale = 27.5, shape = "circle",
+			pMin = 0.0042, pMax = 0.0068, mMin = 0.1, mMax = 0.16, bMin = 3, bMax = 6, scale = 9.4, shape = "circle",
 			range = 7, radius = 3, shot = "gale_arrow", fx = "crit_burst"
 		},
 		-- Prismatic Rupture: Falling Pyre x 1.2 x 1.25 = scale 1.5 (its burn is not part of it)
 		prismaticrupture = {
 			id = 152, name = "Prismatic Rupture", words = "drai zhul prys vael", level = 500, mana = 504, quest = 1,
 			vocations = {"Mystic", "Elementalist", "Illusionist"}, school = "magic", power = "magic", ctype = "energy",
-			pMin = 0, pMax = 0, mMin = 6.6, mMax = 10.8, bMin = 145, bMax = 265, scale = 1.5, shape = "circle", range = 7,
+			pMin = 0, pMax = 0, mMin = 6.6, mMax = 10.8, bMin = 145, bMax = 265, scale = 1.18, shape = "circle", range = 7,
 			radius = 2, fx = "arcane_burst", vfx = "arcane_hit"
 		},
 		-- Eclipse Edge: Last Breath x 1.25
 		eclipseedge = {
 			id = 155, name = "Eclipse Edge", words = "kah ecl nyx kaen", level = 500, mana = 180, quest = 1,
 			vocations = {"Thief", "Ninja", "Samurai"}, school = "blade", power = "blade", ctype = "physical",
-			pMin = 0.1808, pMax = 0.2893, mMin = 0, mMax = 0, bMin = 20, bMax = 40, scale = 1.25, shape = "line", range = 5,
+			pMin = 0.1808, pMax = 0.2893, mMin = 0, mMax = 0, bMin = 20, bMax = 40, scale = 1, shape = "line", range = 5,
 			length = 5, fx = "blood_slash", vfx = "heavy_cleave", hitFx = "CONST_ME_DRAWBLOOD"
 		},
 		-- Soulflay Wave: Crypt Collapse x 1.25
 		soulflaywave = {
 			id = 158, name = "Soulflay Wave", words = "drai oss flay vael", level = 500, mana = 498, quest = 1,
 			vocations = {"Necromancer", "Lich", "Bone Lord"}, school = "necro", power = "magic", ctype = "death",
-			pMin = 0, pMax = 0, mMin = 15.325, mMax = 24.52, bMin = 20, bMax = 40, scale = 1.25, shape = "wave", range = 4,
+			pMin = 0, pMax = 0, mMin = 15.325, mMax = 24.52, bMin = 20, bMax = 40, scale = 1.1, shape = "wave", range = 4,
 			depth = 4, halfWidth = 2, fx = "shadow_cloud", vfx = "plague_mist"
 		},
 		-- Thousand-Echo Palm: Skysplitter Fist x 1.25, a finisher
 		thousandechopalm = {
 			id = 172, name = "Thousand-Echo Palm", words = "kah mil ech dhun", level = 500, mana = 264, quest = 1,
 			vocations = {"Monk", "Shadowfist", "Iron Sage"}, school = "monk", power = "monk", ctype = "physical",
-			pMin = 0.3086, pMax = 0.4938, mMin = 0, mMax = 0, bMin = 20, bMax = 40, scale = 1.25, shape = "wave", range = 3,
+			pMin = 0.3086, pMax = 0.4938, mMin = 0, mMax = 0, bMin = 20, bMax = 40, scale = 0.65, shape = "wave", range = 3,
 			depth = 3, halfWidth = 2, finisher = true, fx = "shockwave", vfx = "ki_hit_gold"
 		},
 		-- Pyre of Absolution: Sanctum Verdict x 1.25
 		pyreofabsolution = {
 			id = 177, name = "Pyre of Absolution", words = "kah sol pyr absl", level = 500, mana = 348, quest = 1,
 			vocations = {"Templar", "Inquisitor", "Sentinel"}, school = "templar", power = "melee", ctype = "holy",
-			pMin = 0.3565, pMax = 0.5704, mMin = 0.5, mMax = 0.8, bMin = 20, bMax = 40, scale = 1.25, shape = "circle",
+			pMin = 0.3565, pMax = 0.5704, mMin = 0.5, mMax = 0.8, bMin = 20, bMax = 40, scale = 0.62, shape = "circle",
 			range = 5, radius = 2, fx = "fire_ring", vfx = "dome_blast_holy"
 		},
+		-- the level 1200 ultimates of the line spell quests (`quest = 3`; server/README.md "Line spell quests", server/data/spells/README.md
+		-- "Line spell quests, level 1200 ultimates"): one per class line, shared by the base class and both ascensions, needlearn="1".
+		-- the coefficients of the line's 13 s spell (the whole cast) x 3.5 first, cooldown 35 to 50 s, mana 3 x, off the cooldown ladder; the
+		-- ids are the third of each line's triple in spell_id_pool_config.lua. They take no slot of the helper's 5 (rotation_sim.py
+		-- `ultimate`). Scales fitted so that an ultimate adds 8 to 10% of the class's best-set damage per second at level 1200.
+		-- Judgment of Iron: Colossus Fall (two blows) x 3.5 = one blow of scale 7 would add 15.5% of the best sets at level 1200: scale 4.7
+		judgmentofiron = {
+			id = 148, name = "Judgment of Iron", words = "vok aeg mor thun", level = 1200, mana = 720, quest = 3,
+			vocations = {"Warrior", "Juggernaut", "Berserker"}, school = "melee", power = "melee", ctype = "physical",
+			pMin = 0.052, pMax = 0.093, mMin = 0, mMax = 0, bMin = 20, bMax = 40, scale = 4.7, shape = "around", radius = 3,
+			fx = "ground_slam", vfx = "aura_burst_red"
+		},
+		-- Dawnbreaker Shot: Sunspear x 3.5 added only 3.5% (the Ranger line's best sets are the strongest of the game): scale 6.6, a piercing line of 8
+		dawnbreakershot = {
+			id = 151, name = "Dawnbreaker Shot", words = "drai sol aur vyx", level = 1200, mana = 345, quest = 3,
+			vocations = {"Ranger", "Deadeye", "Beastmaster"}, school = "distance", power = "distance", ctype = "holy",
+			pMin = 0.1235, pMax = 0.1976, mMin = 0, mMax = 0, bMin = 20, bMax = 40, scale = 6.6, shape = "line", range = 8,
+			length = 8, shot = "holy_spear", fx = "holy_smite", vfx = "holy_hit", vfx2 = "holy_smite"
+		},
+		-- Eclipse of Ruin: Glacial Doom (three waves of x 1.9) x 3.5 = one hit of scale 19.95 would add 37% (a circle of radius 4 on a
+		-- 50 s cooldown, on the line with the weakest rotations): scale 6.4
+		eclipseofruin = {
+			id = 154, name = "Eclipse of Ruin", words = "drai ecl zhul vorn", level = 1200, mana = 3960, quest = 3,
+			vocations = {"Mystic", "Elementalist", "Illusionist"}, school = "magic", power = "magic", ctype = "ice",
+			pMin = 0, pMax = 0, mMin = 3.5, mMax = 6.5, bMin = 80, bMax = 160, scale = 6.4, shape = "circle", range = 7,
+			radius = 5, vfx = "frost_nova", vfx2 = "storm_ring"
+		},
+		-- Death Between Heartbeats: Last Breath x 3.5 would add 19% (scale 2 x the critical hit 1.75); scale 1.2 x 1.75 = 2.1
+		deathbetweenheartbeats = {
+			id = 157, name = "Death Between Heartbeats", words = "kah nyx mor kaen", level = 1200, mana = 450, quest = 3,
+			vocations = {"Thief", "Ninja", "Samurai"}, school = "blade", power = "blade", ctype = "physical",
+			pMin = 0.1808, pMax = 0.2893, mMin = 0, mMax = 0, bMin = 20, bMax = 40, scale = 1.2, shape = "single", range = 1,
+			melee = true, critAbove = {hp = 50, mult = 1.75}, fx = "crit_burst", vfx = "thrust", hitFx = "CONST_ME_DRAWBLOOD"
+		},
+		-- Funeral of Kings: Splinter Volley x 3.5 would add 18%: scale 2, a circle of radius 4
+		funeralofkings = {
+			id = 160, name = "Funeral of Kings", words = "drai oss mor kyng", level = 1200, mana = 1200, quest = 3,
+			vocations = {"Necromancer", "Lich", "Bone Lord"}, school = "necro", power = "magic", ctype = "death",
+			pMin = 0, pMax = 0, mMin = 15.85, mMax = 25.36, bMin = 20, bMax = 40, scale = 2, shape = "circle", range = 6,
+			radius = 5, vfx = "bone_burst"
+		},
+		-- Heaven's Ninth Gate: Skysplitter Fist x 3.5 would add 14.5%: scale 2.5, a finisher: the fist hits with the chi spent
+		heavensninthgate = {
+			id = 174, name = "Heaven's Ninth Gate", words = "kah nin dhun sol", level = 1200, mana = 660, quest = 3,
+			vocations = {"Monk", "Shadowfist", "Iron Sage"}, school = "monk", power = "monk", ctype = "physical",
+			pMin = 0.3086, pMax = 0.4938, mMin = 0, mMax = 0, bMin = 20, bMax = 40, scale = 2.5, shape = "single", range = 1,
+			melee = true, finisher = true, fx = "meteor_strike", vfx = "aura_burst_red"
+		},
+		-- Hammer of Ember Dawn: Sanctum Verdict x 3.5 on the target (main = 2 x scale 1.75) would add 19%: the target takes 2 x scale 1 =
+		-- 2 x Sanctum Verdict, every other enemy within 2 sqm of it half of that
+		hammerofemberdawn = {
+			id = 237, name = "Hammer of Ember Dawn", words = "kah sol emb hamr", level = 1200, mana = 870, quest = 3,
+			vocations = {"Templar", "Inquisitor", "Sentinel"}, school = "templar", power = "melee", ctype = "holy",
+			pMin = 0.3565, pMax = 0.5704, mMin = 0.5, mMax = 0.8, bMin = 20, bMax = 40, scale = 1, shape = "circle", range = 3,
+			radius = 2, main = 2, vfx = "dome_blast_holy", vfx2 = "aura_burst_gold"
+		},
 	},
-	order = {"gorehook", "riftcleaver", "sunspear", "arrowstorm", "packdart", "phantomneedles", "mirrorshards", "dreamrot", "guttingslash", "razorrain", "venomspiral", "crescentcut", "lastbreath", "hollowknuckle", "quakingstomp", "chilance", "cleavingheel", "tidalpalm", "skysplitter", "marrowbolt", "wraithwind", "gravewail", "blightbrand", "soulrendbeam", "cryptcollapse", "ossuarysurge", "hallowedcut", "censerswing", "penitentlash", "martyrspyre", "bellofreckoning", "lanceofvigil", "sanctumverdict", "hereticsbrand", "zealotswrath", "bulwarkslam", "rampartquake", "bastioncry", "galevolley", "crimsoncovenant", "smokebomb", "splintervolley", "mistbornestrike", "crusaderssweep", "keepfall", "moonshardrain", "prismaticrupture", "eclipseedge", "soulflaywave", "thousandechopalm", "pyreofabsolution"},
+	order = {"gorehook", "riftcleaver", "sunspear", "arrowstorm", "packdart", "phantomneedles", "mirrorshards", "dreamrot", "guttingslash", "razorrain", "venomspiral", "crescentcut", "lastbreath", "hollowknuckle", "quakingstomp", "chilance", "cleavingheel", "tidalpalm", "skysplitter", "marrowbolt", "wraithwind", "gravewail", "blightbrand", "soulrendbeam", "cryptcollapse", "ossuarysurge", "hallowedcut", "censerswing", "penitentlash", "martyrspyre", "bellofreckoning", "lanceofvigil", "sanctumverdict", "hereticsbrand", "zealotswrath", "bulwarkslam", "rampartquake", "bastioncry", "galevolley", "crimsoncovenant", "smokebomb", "splintervolley", "mistbornestrike", "crusaderssweep", "keepfall", "moonshardrain", "prismaticrupture", "eclipseedge", "soulflaywave", "thousandechopalm", "pyreofabsolution", "judgmentofiron", "dawnbreakershot", "eclipseofruin", "deathbetweenheartbeats", "funeralofkings", "heavensninthgate", "hammerofemberdawn"},
 }

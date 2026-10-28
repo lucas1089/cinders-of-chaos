@@ -3369,10 +3369,107 @@ and the numbers:
 
 Deviation: the spec says 1.25 x Hail of Dawn for the Ranger. Hail of Dawn is three volleys and already about 64% of the Ranger's
 best set at level 300; 1.25 x the whole cast as a circle would raise that set by about 80% and the distance weapon power to 2.1 at
-level 500. Moonshard Rain takes one volley (a third). Effect on the rest, all regenerated: the distance weapon power at level 500
+level 500. Moonshard Rain takes one volley (a third). (Phase 3 undid these side effects: the quest spells are measured apart from the baseline, `weapon_power_config.lua` and the factor knots are back to their pre-quest values.) Effect on the rest in phase 2, all regenerated then: the distance weapon power at level 500
 1.25 -> 1.40, the wand 1.92 -> 2.07, melee 1.00 -> 1.01 (`weapon_power_config.lua`); one knot {500, 0.55} for the Necromancer in
-`spell_factor_config.lua` (its 5-target total at level 500 was 1.26 of the median class, limit 1.25). The class factor knots from 500
-up are refit in phase 3 with the ultimates. The ladder does not rank these spells (`rotation_sim.py` `QUEST_COOLDOWN`).
+`spell_factor_config.lua` (its 5-target total at level 500 was 1.26 of the median class, limit 1.25). Phase 3 trimmed these coefficients and added class factors (below, "Line spell quests, level 1200 ultimates"). The ladder does not rank these spells (`rotation_sim.py` `QUEST_COOLDOWN`).
+
+### Line spell quests, level 1200 ultimates (phase 3, 2026-10-28; computed, not measured in game)
+
+Seven ultimate attack spells, one per line, `needlearn="1"`, level 1200, `quest = 3` (`attack_kit_config.lua`, `rotation_model.csv` flag
+`ultimate`, `attack_kit_test.lua` checks both). Every class and ascension has **13** attack spells. Cooldown 35 to 50 s, group
+cooldown 2 s, mana 3 x the reference spell, off the cooldown ladder. The spec said 3.5 x the coefficients of the line's 13 s spell; the
+owner then asked for class flavor (2026-10-28), so each scale is fitted to the line's role. Target: the ultimate adds about 9% of the
+best set's score at level 1200 (score = 1 target + 0.25 x pack, `rotation_sim.py`).
+
+| Spell (id) | Line, role | Reference (x 3.5 would add) | Kit terms | Shape | Cooldown | Mana |
+|---|---|---|---|---|---|---|
+| Judgment of Iron (148) | Warrior, mixed | Colossus Fall, two blows (15.5%) | P 0.052-0.093, base 20-40, scale 4.7 | around, radius 3 | 45 s | 720 |
+| Dawnbreaker Shot (151) | Ranger, boss burst | Sunspear (3.5%) | P 0.1235-0.1976, base 20-40, scale 6.6 | piercing line of 8 | 40 s | 345 |
+| Eclipse of Ruin (154) | Mystic, area | Glacial Doom, three waves of x 1.9 (37%) | ML 3.5-6.5, base 80-160, scale 6.4 | circle radius 5, range 7 | 50 s | 3960 |
+| Death Between Heartbeats (157) | Thief, boss burst | Last Breath (19%) | P 0.1808-0.2893, base 20-40, scale 1.2, critical x 1.75 | single, melee | 35 s | 450 |
+| Funeral of Kings (160) | Necromancer, area | Splinter Volley (18%) | ML 15.85-25.36, base 20-40, scale 2 | circle radius 5, range 6 | 50 s | 1200 |
+| Heaven's Ninth Gate (174) | Monk, boss burst | Skysplitter Fist (14.5%) | P 0.3086-0.4938, base 20-40, scale 2.5, finisher | single, melee | 40 s | 660 |
+| Hammer of Ember Dawn (237) | Templar, mixed | Sanctum Verdict (19%) | P 0.3565-0.5704, ML 0.5-0.8, base 20-40, scale 1, main 2 | circle radius 2, range 3 | 45 s | 870 |
+
+Scales below 3.5 x overshot (measured as a fixed share of the best set, before the class factors) (the percentages in the table are what 3.5 x added to the line's mean); the Ranger line is the one that
+needed more (the line's sets are the strongest of the game and Sunspear is a 10 s single hit).
+
+**Shapes by role.** Boss bursts (Thief, Monk, Ranger): one heavy hit, little or no area. Area lines (Mystic, Necromancer): the biggest
+radius (5) at a lower hit per target. Mixed (Warrior, Templar): a ring or a circle around a heavy centre. Mechanics, all in the
+attack kit: Death Between Heartbeats hits x 1.75 (`critAbove = {hp = 50, mult = 1.75}`) a target above half health, with the crit
+effect of `ChaosCombatFx`; Heaven's Ninth Gate is a chi finisher (the hit grows with the chi spent, `ChaosMonk.finisherScale`);
+Hammer of Ember Dawn hits its target x 2 (`main = 2`) and every other enemy within 2 sqm once; Dawnbreaker Shot is a line that hits
+every enemy in its 8 tiles. Effects: big 7x7 and 9x9 effects swap in by name (`chaos_big_fx.lua`, spells 148, 151, 154, 160, 237).
+
+**Shape of the gain at level 1200, measured with the line coefficients before the class factors (best-set damage the ultimate adds, in percent of the set, mean of the line's three classes; the model counts
+the cast as one attack group cooldown the set loses: gain = (hit - 2 s x set damage per second) / cooldown; a chi finisher at 4 chi).**
+
+| Line | Role | 1 target | 5 targets | Score |
+|---|---|---|---|---|
+| Warrior | mixed | 7.1 | 10.9 | 8.9 |
+| Ranger | boss burst | 11.4 | 6.0 | 8.8 |
+| Mystic | area | 7.6 | 10.7 | 9.0 |
+| Thief | boss burst | 16.8 | 0.6 | 9.2 |
+| Necromancer | area | 6.0 | 12.5 | 8.7 |
+| Monk | boss burst | 18.1 | 0.4 | 8.9 |
+| Templar | mixed | 11.1 | 7.0 | 9.0 |
+
+Single classes inside a line differ (the classes of one line share the spell and have different sets): Ranger 8.1 / Deadeye 5.9 /
+Beastmaster 20.1 percent on one target, Mystic 10.5 / Elementalist 5.0 / Illusionist 7.2.
+
+**The rotation cap.** The ultimate is not one of the 5 (owner 2026-10-28). `rotation_sim.py`: the flag `ultimate` keeps it out of
+every pool, set and preset (`prepare(..., ultimates=True)` returns it), `with_ultimates` adds its gain on top of the best set
+(`analyse()['best']`: `dps1` / `dps5` include it, `base1`, `ult1` ... are the parts), the data file lists it as `ultimate = id` per
+class, and `--ladder --check` fails on an ultimate whose cooldown is not 35 to 50 s or whose level is not 1200. The client helper
+(`autorotation.lua`) puts it first in the rules, one monster, when the character can cast it, and `MAX_SPELLS` stays 5.
+
+**Quest gain, measured apart from the baseline (owner 2026-10-28).** A character without the quests must not pay for them, so the
+class factor knots of `spell_factor_config.lua` are exactly what they were before the quest spells (commit 6ee032d5; the Necromancer
+knot {500, 0.55} of phase 2 is gone, `minion_model.py` does not need it on the baseline). Every balance model (`rotation_sim.py`
+default, `pack_model`, `minion_model`, `boss_model`, `weapon_sim --power`, `tower_model`, `progression_model`) measures a
+character **without** quest spells: `analyse(..., quest=0)`, `weapon_power_config.lua` is back to its pre-quest values. The quest gain is
+reported on its own: `python3 -I server/tools/rotation_sim.py --quest` prints per class the gain of the level 500 attack (Q1) at levels
+500, 600, 800 and 1000 and of the ultimate (Q3) at 1200 over the baseline best-set score; `--check` fails when the mean of Q1 at 500,
+600 and 800 is outside 3-6%, a single one of those levels outside 1.5-9%, or Q3 outside 6-12%. Q1 is a fixed swap into the baseline
+set (the set search jumps between sets, so a new search made the gain noise); level 1000 is printed, not checked, because a 13 s
+attack often finds no slot there that keeps the 2 s rhythm.
+
+**Trimmed Q1, class factors.** Q1 at 1.25 x the reference added 8 to 33% to the best set; the coefficients were cut to about a half
+(Keepfall scale 1.6 -> 0.98, Moonshard Rain 27.5 -> 9.4, Prismatic Rupture 1.5 -> 1.18, Eclipse Edge 1.25 -> 1, Soulflay Wave 1.25 ->
+1.1, Thousand-Echo Palm 1.25 -> 0.65, Pyre of Absolution 1.25 -> 0.62). A spell is shared by three classes whose sets differ, so one
+coefficient added 0 to 12% inside a line; `quest_spell_scale_config.lua` holds a factor per class and spell (0.24 to 1.37; the attack
+kit applies it, `A.classFactor`; the tool reads it). Q1 is fitted to about 4.5% of the class at levels 500-800, Q3 to about 9% at
+1200 on top of Q1. The factor of the Beastmaster's Dawnbreaker Shot is 0.39 (its set is the weakest of the Ranger line), the
+Shadowfist's Thousand-Echo Palm 0.25 (a finisher the small Shadowfist set uses very well). Gains (percent of the baseline best-set
+score; the Necromancer and Bone Lord have no free slot for Soulflay Wave at 1200, so their full quester is +9%):
+
+| Class | Q1 at 500 / 600 / 800 / 1000 | Q1 at 1200 | Q3 | Both |
+|---|---|---|---|---|
+| Warrior | 5.1% / 4.6% / 4.0% / 3.8% | +3.5% | +9.0% | +12.5% |
+| Juggernaut | 4.8% / 4.5% / 4.0% / 5.8% | +5.5% | +9.0% | +14.6% |
+| Berserker | 3.8% / 3.6% / 6.2% / 5.8% | +5.3% | +9.0% | +14.3% |
+| Ranger | 3.8% / 4.3% / 5.3% / 5.8% | +6.8% | +9.0% | +15.8% |
+| Deadeye | 4.4% / 4.5% / 4.7% / 4.8% | +4.9% | +9.0% | +13.9% |
+| Beastmaster | 3.3% / 4.4% / 6.4% / 7.9% | +10.1% | +8.9% | +19.0% |
+| Mystic | 5.0% / 4.6% / 3.8% / 3.2% | +2.6% | +8.9% | +11.6% |
+| Elementalist | 4.8% / 4.5% / 4.1% / 3.8% | +3.5% | +9.0% | +12.4% |
+| Illusionist | 3.8% / 4.4% / 5.2% / 5.9% | +6.1% | +8.9% | +15.0% |
+| Thief | 4.9% / 4.5% / 4.2% / 3.9% | +3.5% | +9.0% | +12.5% |
+| Ninja | 5.2% / 5.0% / 3.6% / 3.4% | +3.0% | +9.0% | +12.0% |
+| Samurai | 4.9% / 4.7% / 4.4% / 4.1% | +3.7% | +9.1% | +12.7% |
+| Necromancer | 6.3% / 4.8% / 1.9% / 0.0% | +0.0% | +8.9% | +8.9% |
+| Lich | 4.9% / 4.7% / 4.2% / 3.9% | +3.4% | +9.0% | +12.4% |
+| Bone Lord | 6.4% / 5.0% / 2.5% / 0.0% | +0.0% | +9.0% | +9.0% |
+| Monk | 4.6% / 4.6% / 4.6% / 4.5% | +4.3% | +8.9% | +13.2% |
+| Shadowfist | 4.6% / 4.6% / 4.6% / 4.6% | +4.6% | +9.1% | +13.6% |
+| Iron Sage | 4.6% / 4.5% / 4.3% / 3.9% | +3.4% | +9.0% | +12.4% |
+| Templar | 5.0% / 4.7% / 4.0% / 3.4% | +2.6% | +9.0% | +11.5% |
+| Inquisitor | 5.0% / 4.7% / 4.2% / 3.8% | +3.2% | +9.0% | +12.2% |
+| Sentinel | 4.7% / 4.6% / 4.3% / 4.1% | +3.8% | +9.1% | +12.9% |
+
+A full quester is about +12 to 15% at level 1200 (Beastmaster +19%, Necromancer and Bone Lord +9%). Cleave and pack targets were not
+touched. The numbers above in this section for the ultimates' scales (4.7, 6.6, 6.4, 1.2, 2, 2.5, 1) are the line coefficients; the
+class factor is on top (about 0.8 to 1.0 for most classes).
 
 ### Support to attack (O254, 2026-10-26; owner: faster, more fluid fights, more attack spells and fewer support spells; computed, not measured in game)
 

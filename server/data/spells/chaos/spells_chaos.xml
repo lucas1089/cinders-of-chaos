@@ -819,4 +819,40 @@
 		<vocation name="Inquisitor" />
 		<vocation name="Sentinel" />
 	</instant>
+	<!-- Line spell quest spells, level 1200, the ultimates (server/README.md "Line spell quests"): needlearn="1", taught by the quest only; off the cooldown ladder -->
+	<instant group="attack" spellid="148" name="Judgment of Iron" words="vok aeg mor thun" level="1200" mana="720" premium="0" selftarget="1" cooldown="45000" groupcooldown="2000" needlearn="1" script="chaos/knight/judgment_of_iron.lua">
+		<vocation name="Warrior" />
+		<vocation name="Juggernaut" />
+		<vocation name="Berserker" />
+	</instant>
+	<instant group="attack" spellid="151" name="Dawnbreaker Shot" words="drai sol aur vyx" level="1200" mana="345" premium="0" range="8" needtarget="1" blockwalls="1" cooldown="40000" groupcooldown="2000" needlearn="1" script="chaos/paladin/dawnbreaker_shot.lua">
+		<vocation name="Ranger" />
+		<vocation name="Deadeye" />
+		<vocation name="Beastmaster" />
+	</instant>
+	<instant group="attack" spellid="154" name="Eclipse of Ruin" words="drai ecl zhul vorn" level="1200" mana="3960" premium="0" range="7" needtarget="1" blockwalls="1" cooldown="50000" groupcooldown="2000" needlearn="1" script="chaos/sorcerer/eclipse_of_ruin.lua">
+		<vocation name="Mystic" />
+		<vocation name="Elementalist" />
+		<vocation name="Illusionist" />
+	</instant>
+	<instant group="attack" spellid="157" name="Death Between Heartbeats" words="kah nyx mor kaen" level="1200" mana="450" premium="0" range="1" needtarget="1" blockwalls="1" cooldown="35000" groupcooldown="2000" needlearn="1" script="chaos/thief/death_between_heartbeats.lua">
+		<vocation name="Thief" />
+		<vocation name="Ninja" />
+		<vocation name="Samurai" />
+	</instant>
+	<instant group="attack" spellid="160" name="Funeral of Kings" words="drai oss mor kyng" level="1200" mana="1200" premium="0" range="6" needtarget="1" blockwalls="1" cooldown="50000" groupcooldown="2000" needlearn="1" script="chaos/necromancer/funeral_of_kings.lua">
+		<vocation name="Necromancer" />
+		<vocation name="Lich" />
+		<vocation name="Bone Lord" />
+	</instant>
+	<instant group="attack" spellid="174" name="Heaven's Ninth Gate" words="kah nin dhun sol" level="1200" mana="660" premium="0" range="1" needtarget="1" blockwalls="1" cooldown="40000" groupcooldown="2000" needlearn="1" script="chaos/monk/heavens_ninth_gate.lua">
+		<vocation name="Monk" />
+		<vocation name="Shadowfist" />
+		<vocation name="Iron Sage" />
+	</instant>
+	<instant group="attack" spellid="237" name="Hammer of Ember Dawn" words="kah sol emb hamr" level="1200" mana="870" premium="0" range="3" needtarget="1" blockwalls="1" cooldown="45000" groupcooldown="2000" needlearn="1" script="chaos/templar/hammer_of_ember_dawn.lua">
+		<vocation name="Templar" />
+		<vocation name="Inquisitor" />
+		<vocation name="Sentinel" />
+	</instant>
 <!-- END attack kit -->

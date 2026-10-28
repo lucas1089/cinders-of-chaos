@@ -36,6 +36,7 @@ C.spells = {
 	[206] = {dome_blast_fire = "big_nova_fire_9", storm_ring = "big_shock_lightning_7",
 		fire_explosion = "big_shock_fire_7"},                            -- Doomtide (Elementalist), its three waves
 	[213] = {earth_spikes = "big_nova_poison_7", frost_nova = "big_nova_frost_7"}, -- Primordial Squall, its waves
+	[154] = {frost_nova = "big_nova_frost_7", storm_ring = "big_shock_lightning_7"}, -- Eclipse of Ruin (ultimate)
 	[204] = {meteor_strike = "big_meteor_fire_7"},                         -- Falling Pyre: lands on the impact
 	[202] = {lightning_hit = "big_lightning_burst_7"},                     -- Forked Storm, each jump
 	[231] = {void_rift = "big_rift_void_7", arcane_circle = "big_nova_arcane_7"}, -- Tear in the Weave: the rift under
@@ -44,18 +45,22 @@ C.spells = {
 	                                                                       -- gather, stays the pack effect)
 	-- Warrior line
 	[225] = {earth_spikes = "big_shock_fire_7"},                           -- Colossus Fall
+	[148] = {aura_burst_red = "big_shock_blood_9"},                      -- Judgment of Iron (ultimate, quest 3)
 	-- Ranger line
 	[216] = {holy_seal = "big_sanctum_holy_5"},                            -- Blessed Earth
 	[218] = {holy_smite = "big_pillar_holy_5"},                            -- Final Verdict (Deadeye)
+	[151] = {holy_smite = "big_pillar_holy_5"},                            -- Dawnbreaker Shot (ultimate): at the target
 	-- Necromancer line
 	[185] = {px633_indigo = "big_geyser_blood_5"},                         -- Corpse Explosion (Lich), each corpse
 	[188] = {px633_indigo = "big_geyser_blood_5"},                         -- Bone Offering (Bone Lord)
+	[160] = {bone_burst = "big_nova_void_7"},                             -- Funeral of Kings (ultimate)
 	-- Monk line
 	[65] = {whirlwind = "big_shock_holy_5"},                               -- Whirling Heel
 	-- Templar line
 	[199] = {dome_blast_holy = "big_nova_holy_7"},                         -- Purging Nova (Inquisitor)
 	[190] = {holy_seal = "big_sanctum_holy_5"},                            -- Consecration
 	[198] = {holy_smite = "big_pillar_holy_5"},                            -- Judgement (Inquisitor)
+	[237] = {dome_blast_holy = "big_nova_holy_7", aura_burst_gold = "big_shock_holy_5"}, -- Hammer of Ember Dawn (ultimate)
 }
 
 -- ChaosPackFx use -> big effect (sent before the pack / stock effect of that use)

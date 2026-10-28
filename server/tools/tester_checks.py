@@ -379,7 +379,7 @@ def load_table(path):
         text = f.read()
     head, _, _ = text.partition('  spells = {')
     out = {}
-    for m in re.finditer(r'\[(\d+)\] = \{ name = "([^"]+)", presets = \{(.*?)\}, (?:extras = \{ ([\d, ]*) \}, )?heals', head, re.S):
+    for m in re.finditer(r'\[(\d+)\] = \{ name = "([^"]+)", presets = \{(.*?)\}, (?:extras = \{ ([\d, ]*) \}, )?(?:ultimate = \d+, )?heals', head, re.S):
         presets = []
         for p in re.finditer(r'\{ level = (\d+), gap = [\d.]+, spells = \{ ([\d, ]+) \}', m.group(3)):
             presets.append({'level': int(p.group(1)), 'spells': [int(x) for x in p.group(2).split(',')]})

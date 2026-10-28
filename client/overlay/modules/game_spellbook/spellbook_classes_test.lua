@@ -14,7 +14,7 @@ local CLASSES = {
   Thief = 11, Ninja = 12, Samurai = 13, Berserker = 14, Beastmaster = 15, Monk = 17, Shadowfist = 18,
   ['Iron Sage'] = 19, Necromancer = 20, Lich = 21, ['Bone Lord'] = 22, Templar = 23, Inquisitor = 24, Sentinel = 25
 }
-local ATTACK_SPELLS = 12
+local ATTACK_SPELLS = 13
 local GROUP = { attack = 1, healing = 2, support = 3 }
 
 dofile(here .. '../game_chaosspells/spelldata.lua')

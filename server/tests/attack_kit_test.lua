@@ -1,6 +1,6 @@
 -- Run from the server/ folder: luajit tests/attack_kit_test.lua && lua5.3 tests/attack_kit_test.lua (CI runs both)
 -- The attack kit (owner 2026-10-23: every class has the same number of attack spells; docs/CLASSES.md "Attack spell
--- parity"): the 51 spells of attack_kit_config.lua against spells_chaos.xml and rotation_model.csv, the pure rules of
+-- parity"): the 58 spells of attack_kit_config.lua against spells_chaos.xml and rotation_model.csv, the pure rules of
 -- attack_kit_core.lua (damage, shapes) and the cast of _attackkit.lua on a mocked engine.
 local n = 0
 setmetatable(_G, {__index = function(t, k)
@@ -47,21 +47,22 @@ eq(#problems, 0, "config problems: " .. table.concat(problems, "; "))
 local keys = {}
 for k in pairs(cfg.spells) do keys[#keys + 1] = k end
 table.sort(keys)
-eq(#keys, 51, "51 kit spells")
-eq(#cfg.order, 51, "the order lists every spell")
+eq(#keys, 58, "58 kit spells")
+eq(#cfg.order, 58, "the order lists every spell")
 local ordered = {}
 for _, k in ipairs(cfg.order) do ordered[k] = true; ok(cfg.spells[k], "order key " .. k) end
 for _, k in ipairs(keys) do ok(ordered[k], k .. " is in the order") end
 
 -- every class line gets what it needs: the per-vocation kit counts
--- (+1 everywhere since the level 500 line quest spells, phase 2 of the line spell quests)
-local COUNT = {Warrior = 4, Juggernaut = 4, Berserker = 3, Ranger = 4, Deadeye = 3, Beastmaster = 5, Illusionist = 5,
-	Mystic = 2, Elementalist = 2, Thief = 7, Ninja = 5, Samurai = 6, Monk = 8, Shadowfist = 5, ["Iron Sage"] = 6,
-	Necromancer = 8, Lich = 7, ["Bone Lord"] = 9, Templar = 9, Inquisitor = 8, Sentinel = 9}
-do -- 119 class slots: the shortfall to 12 attack spells per class (docs/CLASSES.md "Attack spell parity")
+-- (+1 everywhere since the level 500 line quest spells, phase 2 of the line spell quests, and +1 again with the level 1200
+-- ultimates, phase 3)
+local COUNT = {Warrior = 5, Juggernaut = 5, Berserker = 4, Ranger = 5, Deadeye = 4, Beastmaster = 6, Illusionist = 6,
+	Mystic = 3, Elementalist = 3, Thief = 8, Ninja = 6, Samurai = 7, Monk = 9, Shadowfist = 6, ["Iron Sage"] = 7,
+	Necromancer = 9, Lich = 8, ["Bone Lord"] = 10, Templar = 10, Inquisitor = 9, Sentinel = 10}
+do -- 140 class slots: the shortfall to 13 attack spells per class (docs/CLASSES.md "Attack spell parity")
 	local total = 0
 	for _, v in pairs(COUNT) do total = total + v end
-	eq(total, 119, "the kit fills 119 class slots")
+	eq(total, 140, "the kit fills 140 class slots")
 end
 local byVoc = K.byVocation(cfg)
 for voc, want in pairs(COUNT) do
@@ -95,6 +96,7 @@ do
 				if ChaosVfx[s.vfx .. "_" .. d] ~= nil then found = true end
 			end
 			ok(found, key .. ": ChaosVfx has " .. s.vfx)
+			if s.vfx2 then ok(ChaosVfx[s.vfx2] ~= nil, key .. ": ChaosVfx has " .. s.vfx2) end
 		end
 		if s.hitFx then
 			ok(s.hitFx:match("^CONST_ME_[A-Z_]+$") ~= nil, key .. ": hitFx " .. s.hitFx .. " is a magic effect constant")
@@ -136,7 +138,12 @@ for _, key in ipairs(keys) do
 		eq(tonumber(t:match('groupcooldown="(%d+)"')), 2000, key .. " group cooldown")
 		local cd = tonumber(t:match('%scooldown="(%d+)"'))
 		-- 2, 4, 6 s, then one second a rung up to 13 s (O176, rotation_sim.py LADDER_COOLDOWNS)
-		ok(cd and cd >= 2000 and cd <= 13000 and cd % 1000 == 0 and (cd > 6000 or cd % 2000 == 0), key .. " cooldown on the ladder")
+		if s.quest == 3 then
+			-- an ultimate has no rung: one fixed cooldown of 35 to 50 s (rotation_sim.py ULT_COOLDOWN)
+			ok(cd and cd >= 35000 and cd <= 50000 and cd % 5000 == 0, key .. " ultimate cooldown 35 to 50 s")
+		else
+			ok(cd and cd >= 2000 and cd <= 13000 and cd % 1000 == 0 and (cd > 6000 or cd % 2000 == 0), key .. " cooldown on the ladder")
+		end
 		-- a line spell quest spell (quest = 1..3) is taught by its quest only
 		eq(t:match('needlearn="(%d)"'), s.quest and "1" or "0", key .. " needlearn")
 		if s.quest then
@@ -195,7 +202,8 @@ for _, key in ipairs(keys) do
 	if row then
 		eq(row.words, s.words, key .. " model words")
 		if s.chi then eq(row.flags, "chi1", key .. " builder flag") end
-		if s.finisher then eq(row.flags, "chi", key .. " finisher flag") end
+		if s.finisher then eq(row.flags:match("^chi"), "chi", key .. " finisher flag") end
+		eq(row.flags:find("ultimate", 1, true) ~= nil, s.quest == 3, key .. " ultimate flag in the model")
 		local f = evaluator(row.expr)
 		for _, p in ipairs({{300, 100, 6050}, {600, 120, 12000}, {1000, 150, 20000}, {120, 40, 900}}) do
 			near(f(p[1], p[2], p[3]), K.total(s, p[1], p[2], p[3]), 0.012, key .. " model vs core at level " .. p[1])
@@ -287,6 +295,7 @@ local function creature(x, y, props)
 	function c:getId() return self.id end
 	function c:getPosition() return Position(self.pos) end
 	function c:getHealth() return self.health end
+	function c:getMaxHealth() return self.maxHealth or 1000 end
 	function c:isPlayer() return self.player == true end
 	function c:getPlayer() return self.player and self or nil end
 	world[c.id] = c
@@ -571,6 +580,133 @@ do
 	ok(A.cast("quakingstomp", p, {}), "Quaking Stomp casts")
 	eq(p.chi, cfg.spells.quakingstomp.chi, "the area builder gives chi too")
 	eq(#hits(), 1, "hits the neighbour")
+end
+
+-- the level 1200 ultimates (line spell quests, quest = 3)
+do
+	-- Death Between Heartbeats: a critical hit on a target above half health, none at half or below
+	local s = cfg.spells.deathbetweenheartbeats
+	reset()
+	local p = player()
+	local t = creature(101, 100)
+	ok(A.cast("deathbetweenheartbeats", p, {target = t}), "Death Between Heartbeats casts")
+	local w = hits("weapon")
+	eq(#w, 1, "one blade strike")
+	local lo = K.range(s, p.level, p.ml, 6050)
+	near(w[1].lo, lo * s.critAbove.mult, 0.001, "a target at full health takes the critical hit")
+	reset()
+	p = player()
+	t = creature(101, 100, {maxHealth = 1000, health = 500})
+	ok(A.cast("deathbetweenheartbeats", p, {target = t}), "casts on a target at half health")
+	near(hits("weapon")[1].lo, lo, 0.001, "no critical hit at 50% health or below")
+	reset()
+	p = player()
+	t = creature(101, 100, {maxHealth = 1000, health = 501})
+	A.cast("deathbetweenheartbeats", p, {target = t})
+	near(hits("weapon")[1].lo, lo * s.critAbove.mult, 0.001, "51% health is above the line")
+
+	-- Hammer of Ember Dawn: the target takes `main` x the hit, the others within 2 sqm one hit
+	local h = cfg.spells.hammerofemberdawn
+	reset()
+	p = player()
+	t = creature(103, 100)
+	local near1 = creature(104, 101)
+	local far = creature(106, 100)
+	ok(A.cast("hammerofemberdawn", p, {target = t}), "Hammer of Ember Dawn casts")
+	local strikes = hits("holy")
+	eq(#strikes, 2, "the target and its neighbour")
+	local byTarget = {}
+	for _, x in ipairs(strikes) do byTarget[x.target.id] = x end
+	ok(byTarget[t.id] and byTarget[near1.id] and not byTarget[far.id], "a far monster is not hit")
+	near(byTarget[t.id].lo, byTarget[near1.id].lo * h.main, 0.001, "the target takes the heavy hit")
+
+	-- Heaven's Ninth Gate: a finisher, the hit grows with the chi spent
+	local g = cfg.spells.heavensninthgate
+	local function gate(chi)
+		reset()
+		local pl = player()
+		pl.chi = chi
+		local tg = creature(101, 100)
+		local cast = A.cast("heavensninthgate", pl, {target = tg})
+		return cast, hits()[1], pl
+	end
+	local cast0 = gate(0)
+	eq(cast0, false, "no chi, no cast")
+	local c2, h2 = gate(2)
+	local c5, h5, p5 = gate(5)
+	ok(c2 and c5, "casts with chi")
+	eq(p5.chi, 0, "spends all of it")
+	near(h5.lo / h2.lo, (0.3 + 0.14 * 5) / (0.3 + 0.14 * 2), 0.001, "5 chi hits harder than 2 chi in proportion")
+
+	-- Dawnbreaker Shot: a line that pierces every enemy in it
+	reset()
+	p = player()
+	t = creature(102, 100)
+	local a = creature(105, 100)
+	local b = creature(108, 100)
+	local beyond = creature(109, 100)
+	ok(A.cast("dawnbreakershot", p, {target = t}), "Dawnbreaker Shot casts")
+	local seen = {}
+	for _, x in ipairs(hits()) do seen[x.target.id] = true end
+	ok(seen[t.id] and seen[a.id] and seen[b.id], "the arrow hits every enemy in the 8 tiles")
+	ok(not seen[beyond.id], "not past the 8th tile")
+
+	-- Judgment of Iron: around the caster, radius 3, needs no target
+	reset()
+	p = player()
+	local inner = creature(103, 101)
+	local outer = creature(105, 100)
+	ok(A.cast("judgmentofiron", p, {}), "Judgment of Iron casts without a target")
+	seen = {}
+	for _, x in ipairs(hits()) do seen[x.target.id] = true end
+	ok(seen[inner.id] and not seen[outer.id] and not seen[p.id], "radius 3, never the caster")
+
+	-- the second effect (vfx2) plays at the target
+	reset()
+	p = player()
+	t = creature(103, 100)
+	A.cast("eclipseofruin", p, {target = t})
+	local names = {}
+	for _, c in ipairs(calls) do if c.kind == "vfx" then names[c.name] = true end end
+	ok(names.frost_nova and names.storm_ring, "Eclipse of Ruin plays both of its effects (the big ones swap in by name)")
+end
+
+-- the class factor of a quest spell (quest_spell_scale_config.lua): one factor per class of the line, 1 for any other spell
+do
+	dofile("data/scripts/chaos/quest_spell_scale_config.lua")
+	local F = ChaosQuestSpellScale
+	local quest = {}
+	for _, key in ipairs(keys) do
+		local s = cfg.spells[key]
+		if s.quest then
+			quest[s.name] = s
+			local row = F[s.name]
+			ok(row ~= nil, key .. " has class factors")
+			for _, v in ipairs(s.vocations) do
+				ok(row and row[v] and row[v] >= 0.1 and row[v] <= 2, key .. ": a factor for " .. v)
+			end
+			local n = 0
+			for _ in pairs(row or {}) do n = n + 1 end
+			eq(n, #s.vocations, key .. ": no factor for a class that lacks the spell")
+		end
+	end
+	for name in pairs(F) do ok(quest[name], name .. " in the factor table is a quest spell") end
+	-- the cast applies it: a Warrior (Keepfall 0.95) against a Juggernaut (0.89)
+	local function keepfall(voc)
+		reset()
+		local pl = player()
+		function pl:getVocation() return {getName = function() return voc end} end
+		local tg = creature(103, 100)
+		A.cast("keepfall", pl, {target = tg})
+		return hits()[1], pl
+	end
+	local w, pw = keepfall("Warrior")
+	local j = keepfall("Juggernaut")
+	near(w.lo / j.lo, F["Keepfall"].Warrior / F["Keepfall"].Juggernaut, 0.01, "the hit follows the class factor")
+	local lo = calc("keepfall", pw)
+	near(w.lo, math.floor(lo * F["Keepfall"].Warrior), 1.5, "the hit is the kit hit times the class factor")
+	-- a spell outside the quests ignores the table
+	eq(A.classFactor(pw, cfg.spells.gorehook), 1, "other spells: factor 1")
 end
 
 -- every kit spell casts cleanly against a crowd, on a mocked engine

@@ -134,8 +134,16 @@ check(R.LADDER_COOLDOWNS == (2000, 4000, 6000, 7000, 8000, 9000, 10000, 11000, 1
 check(all(a < b for a, b in zip(R.LADDER_COOLDOWNS, R.LADDER_COOLDOWNS[1:])) and R.LADDER_COOLDOWNS[0] >= int(R.GCD * 1000),
       'the ladder rises and starts at the attack group cooldown')
 final, per_class, _ = R.ladder(spells, model)
+ULT = {s['name'] for s in spells if s.get('ultimate')}
+check(len(ULT) == 7, 'seven ultimates (one per class line)')
 for s in spells:
-    if s['group'] == 'attack':
+    if s['group'] == 'attack' and s['name'] in ULT:
+        # an ultimate has no rung: a fixed cooldown of 35 to 50 s, at level 1200, taught by its quest
+        check(s['name'] not in final, '%s: no ladder rung' % s['name'])
+        check(R.ULT_COOLDOWN[0] <= s['cooldown'] <= R.ULT_COOLDOWN[1], '%s: cooldown 35 to 50 s' % s['name'])
+        check(s['level'] == R.ULT_LEVEL and s['quest'], '%s: level 1200 and a quest spell' % s['name'])
+        check(s['groupcooldown'] == 2000, '%s: group cooldown 2 s' % s['name'])
+    elif s['group'] == 'attack':
         check(s['cooldown'] == final[s['name']], '%s: cooldown %d, the ladder %d' % (s['name'], s['cooldown'],
                                                                                     final[s['name']]))
         check(s['groupcooldown'] == 2000, '%s: group cooldown 2 s' % s['name'])
@@ -144,8 +152,41 @@ for cls, rows in per_class.items():
     # the line spell quest attacks come last whatever they deal, all at QUEST_COOLDOWN
     ranked = [r for r in rows if final[r[0]] != R.QUEST_COOLDOWN or r[0] not in {s['name'] for s in spells if s.get('quest')}]
     check(all(ranked[i][2] <= ranked[i + 1][2] for i in range(1, len(ranked) - 1)), '%s: weakest to strongest' % cls)
-    check(all(final[r[0]] == R.QUEST_COOLDOWN for r in rows if r[0] in {s['name'] for s in spells if s.get('quest')}),
+    check(all(final[r[0]] == R.QUEST_COOLDOWN for r in rows if r[0] in {s['name'] for s in spells if s.get('quest')} - ULT),
           '%s: its quest spell is at %d ms' % (cls, R.QUEST_COOLDOWN))
+
+# the ultimates (owner 2026-10-28: exempt from the 5-spell cap): in no set, no preset, on top of the best set of a character with
+# the quests; the baseline (quest 0, what every balance model measures) has no quest spell at all
+QUEST = {s['name'] for s in spells if s.get('quest')}
+check(len(QUEST) == 14, 'fourteen quest spells (7 attacks, 7 ultimates)')
+for cls, _, _ in R.CLASSES:
+    pool = R.prepare(R.class_spells(spells, cls, 1200), model, cls, 1200)
+    check(not any(p.name in ULT for p in pool), '%s: the ultimate is not in the pool of the sets' % cls)
+    ults = R.prepare(R.class_spells(spells, cls, 1200), model, cls, 1200, True)
+    check(len(ults) == 1 and ults[0].name in ULT, '%s: exactly one ultimate' % cls)
+    base = R.analyse(spells, model, cls, 1200)['best']
+    check(not any(p.name in QUEST for p in base['spells']) and base['ult1'] == 0 and base['dps1'] == base['base1'],
+          '%s: the baseline set has no quest spell' % cls)
+    full = R.analyse(spells, model, cls, 1200, 3)['best']
+    check(len(full['spells']) <= R.MAX_SPELLS and not any(p.name in ULT for p in full['spells']), '%s: 5 spells and no ultimate among them' % cls)
+    check(full['ult1'] > 0 and full['dps1'] == full['base1'] + full['ult1'], '%s: the ultimate adds to the damage per second' % cls)
+    low = R.analyse(spells, model, cls, 1199, 3)['best']
+    check(low['ult1'] == 0 and low['dps1'] == low['base1'], '%s: no ultimate at level 1199' % cls)
+    one = R.analyse(spells, model, cls, 1200, 1)['best']
+    check(one['ult1'] == 0 and R.score(one['dps1'], one['dps5']) >= R.score(base['dps1'], base['dps5']) - 1e-9,
+          '%s: the level 500 attack never lowers the set' % cls)
+    check(R.score(full['dps1'], full['dps5']) >= R.score(one['dps1'], one['dps5']) - 1e-9, '%s: the ultimate never lowers it either' % cls)
+    q1, q3 = R.quest_gain(spells, model, cls, 1200)
+    check(R.Q3_GAIN[0] <= q3 <= R.Q3_GAIN[1], '%s: the ultimate adds %.1f%% at level 1200' % (cls, 100 * q3))
+check(R.quest_bad(spells, model) == [], 'the quest gains are in bounds: %s' % R.quest_bad(spells, model)[:3])
+sc = R.quest_scales()
+check(set(sc) == QUEST, 'quest_spell_scale_config.lua lists exactly the 14 quest spells')
+check(all(0.1 <= f <= 2.0 for row in sc.values() for f in row.values()) and all(len(row) == 3 for row in sc.values()),
+      'every quest spell has a factor (0.1 to 2) for its three classes')
+# the net gain: the cast takes one attack group cooldown from the set
+u = R.with_ultimates({'dps1': 100.0, 'dps5': 100.0}, [type('U', (), {'dmg': 1000.0, 'dmg5': 1000.0, 'cd': 40.0, 'chi': False})()])
+check(abs(u['ult1'] - (1000 - 2 * 100) / 40.0) < 1e-9, 'the ultimate adds (hit - 2 s of the set) / cooldown')
+check(R.with_ultimates(None, []) is None, 'no set, no ultimate')
 
 # the class spell factor (spell_factor_config.lua): read from the server's table, applied to every spell of the class
 check(R.spell_factors() == {1: 0.99, 3: 0.93, 4: 0.99, 5: 0.64, 7: 1.01, 8: 1.05, 10: 0.74, 11: 0.94, 12: 1.14, 13: 1.15, 14: 1.06, 15: 1.07, 17: 0.9,

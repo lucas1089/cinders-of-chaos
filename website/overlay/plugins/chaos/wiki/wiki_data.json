@@ -389,7 +389,7 @@
 		"siege.on": true,
 		"siege.when": "Saturday 20:00",
 		"siege.whenPt": "sábado às 20:00",
-		"spell.count": 155,
+		"spell.count": 162,
 		"store.categories": 37,
 		"store.cosmetic": 627,
 		"store.offers": 763,
@@ -516,7 +516,8 @@
 								["Bastion Cry", "vok gal rhov kor", "340", "200", "13 s", "whole line"],
 								["Anvil Fall", "kah gal brak thun", "380", "270", "9 s", "Juggernaut"],
 								["Rampage Leap", "drai skai hrun vas", "380", "240", "10 s", "Berserker"],
-								["Keepfall", "vok aeg thun brak", "500", "72", "13 s", "whole line"]
+								["Keepfall", "vok aeg thun brak", "500", "72", "13 s", "whole line"],
+								["Judgment of Iron", "vok aeg mor thun", "1200", "720", "45 s", "whole line"]
 							],
 							"links": [
 								"spell:254",
@@ -542,7 +543,8 @@
 								"spell:29",
 								"spell:58",
 								"spell:145",
-								"spell:142"
+								"spell:142",
+								"spell:148"
 							]
 						},
 						{
@@ -663,7 +665,8 @@
 								["Hail of Dawn", "drai gal vas sol volv", "280", "480", "13 s", "Ranger, Deadeye"],
 								["Pack Frenzy", "kah ferh vas", "320", "270", "6 s", "Beastmaster"],
 								["Twin Verdict", "kah gal sol judh vael", "400", "540", "13 s", "Deadeye"],
-								["Moonshard Rain", "drai lun sag vex", "500", "576", "13 s", "whole line"]
+								["Moonshard Rain", "drai lun sag vex", "500", "576", "13 s", "whole line"],
+								["Dawnbreaker Shot", "drai sol aur vyx", "1200", "345", "40 s", "whole line"]
 							],
 							"links": [
 								"spell:254",
@@ -691,7 +694,8 @@
 								"spell:219",
 								"spell:147",
 								"spell:144",
-								"spell:149"
+								"spell:149",
+								"spell:151"
 							]
 						},
 						{
@@ -819,7 +823,8 @@
 								["Tear in the Weave", "drai zhul riv", "280", "780", "13 s", "Illusionist"],
 								["Doomtide", "drai zhul infr doma", "300", "900", "13 s", "Elementalist"],
 								["Glacial Doom", "drai hyr infr doma", "420", "1320", "13 s", "Elementalist"],
-								["Prismatic Rupture", "drai zhul prys vael", "500", "504", "13 s", "whole line"]
+								["Prismatic Rupture", "drai zhul prys vael", "500", "504", "13 s", "whole line"],
+								["Eclipse of Ruin", "drai ecl zhul vorn", "1200", "3960", "50 s", "whole line"]
 							],
 							"links": [
 								"spell:254",
@@ -857,7 +862,8 @@
 								"spell:231",
 								"spell:206",
 								"spell:146",
-								"spell:152"
+								"spell:152",
+								"spell:154"
 							]
 						},
 						{
@@ -994,7 +1000,15 @@
 								["Smoke Bomb", "drai nebh", "200", "150", "12 s", "whole line"],
 								["Last Breath", "kah nyx kaen", "230", "150", "13 s", "Thief, Samurai"],
 								["Shuriken Tempest", "kah sai vas hyr", "270", "360", "13 s", "Ninja"],
-								["Eclipse Edge", "kah ecl nyx kaen", "500", "180", "13 s", "whole line"]
+								["Eclipse Edge", "kah ecl nyx kaen", "500", "180", "13 s", "whole line"],
+								[
+									"Death Between Heartbeats",
+									"kah nyx mor kaen",
+									"1200",
+									"450",
+									"35 s",
+									"whole line"
+								]
 							],
 							"links": [
 								"spell:254",
@@ -1028,7 +1042,8 @@
 								"spell:241",
 								"spell:80",
 								"spell:164",
-								"spell:155"
+								"spell:155",
+								"spell:157"
 							]
 						},
 						{
@@ -1143,7 +1158,8 @@
 								["Mistborne Strike", "ash qhal", "190", "150", "12 s", "whole line"],
 								["Tidal Palm", "drai hyr dhun", "190", "75", "9 s", "Monk, Iron Sage"],
 								["Skysplitter Fist", "kah gal sol dhun", "250", "220", "13 s", "Monk, Shadowfist"],
-								["Thousand-Echo Palm", "kah mil ech dhun", "500", "264", "13 s", "whole line"]
+								["Thousand-Echo Palm", "kah mil ech dhun", "500", "264", "13 s", "whole line"],
+								["Heaven's Ninth Gate", "kah nin dhun sol", "1200", "660", "40 s", "whole line"]
 							],
 							"links": [
 								"spell:254",
@@ -1174,7 +1190,8 @@
 								"spell:67",
 								"spell:89",
 								"spell:90",
-								"spell:172"
+								"spell:172",
+								"spell:174"
 							]
 						},
 						{
@@ -1291,7 +1308,8 @@
 								["Crypt Collapse", "drai gal oss", "210", "415", "13 s", "Necromancer, Bone Lord"],
 								["Ossuary Surge", "drai oss vael", "250", "365", "11 s", "Bone Lord"],
 								["Splinter Volley", "vael oss sag", "270", "400", "13 s", "whole line"],
-								["Soulflay Wave", "drai oss flay vael", "500", "498", "13 s", "whole line"]
+								["Soulflay Wave", "drai oss flay vael", "500", "498", "13 s", "whole line"],
+								["Funeral of Kings", "drai oss mor kyng", "1200", "1200", "50 s", "whole line"]
 							],
 							"links": [
 								"spell:254",
@@ -1324,7 +1342,8 @@
 								"spell:119",
 								"spell:120",
 								"spell:193",
-								"spell:158"
+								"spell:158",
+								"spell:160"
 							]
 						},
 						{
@@ -1458,7 +1477,8 @@
 								["Rampart Quake", "drai sol aeg krak", "210", "175", "10 s", "Sentinel"],
 								["Sanctum Verdict", "kah sol judh brak", "230", "290", "13 s", "Templar, Sentinel"],
 								["Crusader's Sweep", "vyr sol zel", "250", "230", "13 s", "whole line"],
-								["Pyre of Absolution", "kah sol pyr absl", "500", "348", "13 s", "whole line"]
+								["Pyre of Absolution", "kah sol pyr absl", "500", "348", "13 s", "whole line"],
+								["Hammer of Ember Dawn", "kah sol emb hamr", "1200", "870", "45 s", "whole line"]
 							],
 							"links": [
 								"spell:254",
@@ -1492,7 +1512,8 @@
 								"spell:141",
 								"spell:131",
 								"spell:250",
-								"spell:177"
+								"spell:177",
+								"spell:237"
 							]
 						},
 						{
@@ -5876,6 +5897,194 @@
 						}
 					],
 					"icon": "wiki/i/k-holy-flame.png"
+				},
+				{
+					"id": "spell:148",
+					"name": "Judgment of Iron",
+					"sub": "\"vok aeg mor thun\", level 1200, 720 mana, cooldown 45 s",
+					"color": "#9fdc7f",
+					"sections": [
+						{
+							"h": "Effect",
+							"p": ["The ground answers for every wall: a blow to every enemy within 3 sqm of you."]
+						},
+						{
+							"h": "Spell",
+							"cols": ["", ""],
+							"w": [35, 65],
+							"rows": [
+								["Words", "vok aeg mor thun"],
+								["Level", "1200"],
+								["Mana", "720"],
+								["Cooldown", "45 s"],
+								["Kind", "Attack"],
+								["Classes", "Warrior, Juggernaut, Berserker"]
+							]
+						}
+					],
+					"icon": "wiki/i/k-steel-hammer.png"
+				},
+				{
+					"id": "spell:151",
+					"name": "Dawnbreaker Shot",
+					"sub": "\"drai sol aur vyx\", level 1200, 345 mana, cooldown 40 s",
+					"color": "#9fdc7f",
+					"sections": [
+						{
+							"h": "Effect",
+							"p": [
+								"One arrow that ends the night: a holy shot that pierces every enemy in a line of 8 sqm."
+							]
+						},
+						{
+							"h": "Spell",
+							"cols": ["", ""],
+							"w": [35, 65],
+							"rows": [
+								["Words", "drai sol aur vyx"],
+								["Level", "1200"],
+								["Mana", "345"],
+								["Cooldown", "40 s"],
+								["Kind", "Attack"],
+								["Classes", "Ranger, Deadeye, Beastmaster"]
+							]
+						}
+					],
+					"icon": "wiki/i/k-holy-ricochet.png"
+				},
+				{
+					"id": "spell:154",
+					"name": "Eclipse of Ruin",
+					"sub": "\"drai ecl zhul vorn\", level 1200, 3960 mana, cooldown 50 s",
+					"color": "#9fdc7f",
+					"sections": [
+						{
+							"h": "Effect",
+							"p": ["Daylight dies over the pack: ice in a circle of radius 4 around the target."]
+						},
+						{
+							"h": "Spell",
+							"cols": ["", ""],
+							"w": [35, 65],
+							"rows": [
+								["Words", "drai ecl zhul vorn"],
+								["Level", "1200"],
+								["Mana", "3960"],
+								["Cooldown", "50 s"],
+								["Kind", "Attack"],
+								["Classes", "Mystic, Elementalist, Illusionist"]
+							]
+						}
+					],
+					"icon": "wiki/i/k-frost-gravenova.png"
+				},
+				{
+					"id": "spell:157",
+					"name": "Death Between Heartbeats",
+					"sub": "\"kah nyx mor kaen\", level 1200, 450 mana, cooldown 35 s",
+					"color": "#9fdc7f",
+					"sections": [
+						{
+							"h": "Effect",
+							"p": [
+								"The shortest wait in the world: a melee blade strike that crits a target above half health."
+							]
+						},
+						{
+							"h": "Spell",
+							"cols": ["", ""],
+							"w": [35, 65],
+							"rows": [
+								["Words", "kah nyx mor kaen"],
+								["Level", "1200"],
+								["Mana", "450"],
+								["Cooldown", "35 s"],
+								["Kind", "Attack"],
+								["Classes", "Thief, Ninja, Samurai"]
+							]
+						}
+					],
+					"icon": "wiki/i/k-shadow-knives.png"
+				},
+				{
+					"id": "spell:160",
+					"name": "Funeral of Kings",
+					"sub": "\"drai oss mor kyng\", level 1200, 1200 mana, cooldown 50 s",
+					"color": "#9fdc7f",
+					"sections": [
+						{
+							"h": "Effect",
+							"p": ["Every grave opens at once: death in a circle of radius 4 around the target."]
+						},
+						{
+							"h": "Spell",
+							"cols": ["", ""],
+							"w": [35, 65],
+							"rows": [
+								["Words", "drai oss mor kyng"],
+								["Level", "1200"],
+								["Mana", "1200"],
+								["Cooldown", "50 s"],
+								["Kind", "Attack"],
+								["Classes", "Necromancer, Lich, Bone Lord"]
+							]
+						}
+					],
+					"icon": "wiki/i/k-necrotic-gravenova.png"
+				},
+				{
+					"id": "spell:174",
+					"name": "Heaven's Ninth Gate",
+					"sub": "\"kah nin dhun sol\", level 1200, 660 mana, cooldown 40 s",
+					"color": "#9fdc7f",
+					"sections": [
+						{
+							"h": "Effect",
+							"p": ["The last door opens inward: a melee chi finisher that hits with the chi it spends."]
+						},
+						{
+							"h": "Spell",
+							"cols": ["", ""],
+							"w": [35, 65],
+							"rows": [
+								["Words", "kah nin dhun sol"],
+								["Level", "1200"],
+								["Mana", "660"],
+								["Cooldown", "40 s"],
+								["Kind", "Attack"],
+								["Classes", "Monk, Shadowfist, Iron Sage"]
+							]
+						}
+					],
+					"icon": "wiki/i/k-ember-gate.png"
+				},
+				{
+					"id": "spell:237",
+					"name": "Hammer of Ember Dawn",
+					"sub": "\"kah sol emb hamr\", level 1200, 870 mana, cooldown 45 s",
+					"color": "#9fdc7f",
+					"sections": [
+						{
+							"h": "Effect",
+							"p": [
+								"The sun lands: a heavy holy blow on the target and half of it on every enemy within 2 sqm."
+							]
+						},
+						{
+							"h": "Spell",
+							"cols": ["", ""],
+							"w": [35, 65],
+							"rows": [
+								["Words", "kah sol emb hamr"],
+								["Level", "1200"],
+								["Mana", "870"],
+								["Cooldown", "45 s"],
+								["Kind", "Attack"],
+								["Classes", "Templar, Inquisitor, Sentinel"]
+							]
+						}
+					],
+					"icon": "wiki/i/k-ember-hammer.png"
 				}
 			],
 			"banner": "wiki/hero/tab-spells.webp",

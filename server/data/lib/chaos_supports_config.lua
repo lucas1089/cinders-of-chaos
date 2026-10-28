@@ -60,6 +60,8 @@ return {
 		[203] = "single", [134] = "area", [29] = "area", [241] = "area", [193] = "area", [67] = "area", [250] = "area",
 		-- the level 500 line spell quest spells (attack_kit_config.lua, `quest = 1`): a circle, a line or a wave each
 		[142] = "area", [149] = "area", [152] = "area", [155] = "area", [158] = "area", [172] = "area", [177] = "area",
+		-- the level 1200 ultimates (`quest = 3`): Death Between Heartbeats and Heaven's Ninth Gate hit one target
+		[148] = "area", [151] = "area", [154] = "area", [157] = "single", [160] = "area", [174] = "single", [237] = "area",
 	},
 
 	-- ------------------------------------------------------------------ the supports

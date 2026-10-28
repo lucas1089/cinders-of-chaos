@@ -57,7 +57,8 @@ return {
 	-- (never again for another line or a repeat)
 	reward = {goldPerLevel = 2000},
 
-	-- the third quest's spell is exempt from the 5-spell rotation cap (phase 3 reads this flag; nothing here uses it)
+	-- the third quest's spell is exempt from the 5-spell rotation cap (phase 3: rotation_sim.py flag `ultimate` and the helper's
+	-- autorotation.lua do it; nothing reads this flag, it documents the rule)
 	rotationCapExempt = {false, false, true},
 
 	-- the lines in order (their bit in storage +7 is 2 ^ (index - 1)), base class key of Chaos.classes.ids and the

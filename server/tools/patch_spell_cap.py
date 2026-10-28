@@ -37,7 +37,7 @@ MARK = 'Chaos: spell cap (patch_spell_cap.py): '
 UNIVERSAL = ("Town Portal", "Bloodtrail", "Lantern", "Greater Lantern", "Ghost Rope", "Wraith Step", "Fleetfoot",
              "Hunter's Instinct", "Flickerdash", "Vigil of Clarity", "Vigil of Haste", "Vigil of Iron", "Vigil of Wrath",
              "Banner Call", "Soulward", "Radiant Lantern")
-MAX_SPELLS = 24  # was 20 (2026-10-23): the biggest kit, Bone Lord, has 20 now and 22 with its three line quest spells
+MAX_SPELLS = 24  # was 20 (2026-10-23): the biggest kit, Bone Lord, has 21 now (22 with its level 800 buff)
 # kept by some classes but not counted in their 15 (owner 2026-10-21: the classic Magic Shield back "somente pra mages e
 # rangers", the Necromancer counted as a mage; add_vocations.py LINE_STOCK_SPELLS gives it to the Mystic, Necromancer
 # and Ranger lines, CAP keeps exactly those nine)

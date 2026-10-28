@@ -78,11 +78,12 @@ ORDER = ['Warrior', 'Juggernaut', 'Berserker', 'Ranger', 'Deadeye', 'Beastmaster
 # spells of its own per class after the cap (docs/CLASSES.md "Spell cap")
 # O136 (2026-10-23): Galeborne Stride retired, minus one in the 11 classes that had it
 # O254 (2026-10-26): a converted support goes to its whole line, plus one in the 8 classes that lacked it
-# line spell quests, phase 2 (2026-10-28): the level 500 attack of the line, plus one in every class
-PINNED = {'Warrior': 19, 'Juggernaut': 18, 'Berserker': 18, 'Ranger': 18, 'Deadeye': 17, 'Beastmaster': 18,
-          'Mystic': 16, 'Elementalist': 14, 'Illusionist': 20, 'Thief': 16, 'Ninja': 16, 'Samurai': 18, 'Monk': 13,
-          'Shadowfist': 13, 'Iron Sage': 15, 'Necromancer': 18, 'Lich': 18, 'Bone Lord': 20, 'Templar': 13,
-          'Inquisitor': 13, 'Sentinel': 16}
+# line spell quests, phase 2 (2026-10-28): the level 500 attack of the line, plus one in every class; phase 3: the level 1200
+# ultimate, plus one again
+PINNED = {'Warrior': 20, 'Juggernaut': 19, 'Berserker': 19, 'Ranger': 19, 'Deadeye': 18, 'Beastmaster': 19,
+          'Mystic': 17, 'Elementalist': 15, 'Illusionist': 21, 'Thief': 17, 'Ninja': 17, 'Samurai': 19, 'Monk': 14,
+          'Shadowfist': 14, 'Iron Sage': 16, 'Necromancer': 19, 'Lich': 19, 'Bone Lord': 21, 'Templar': 14,
+          'Inquisitor': 14, 'Sentinel': 17}
 kit = {v: set() for v in ORDER}
 xml = re.sub(r'<!--.*?-->', '', open(os.path.join(SPELLS, 'chaos', 'spells_chaos.xml'), encoding='utf-8').read(), flags=re.S)
 for m in re.finditer(r'<instant ([^>]*)>(.*?)</instant>', xml, re.S):

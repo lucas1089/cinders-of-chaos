@@ -17068,7 +17068,7 @@ Choose your ascended class (0/1). The quest's stages and storages (7101000 block
 
 Phases 1 and 2 of the 21 line spells (design: three quests per class line at level 500 attack, 800 buff or utility, 1200 ultimate).
 Built so far: the quest machine, the hunt, the fragments, the trial hook, the reward, the tracker, the NPC and the seven level 500
-attack spells (below). Not built yet: the level 800 buffs and the level 1200 ultimates (their ids are reserved in
+attack spells and the seven level 1200 ultimates (below). Not built yet: the level 800 buffs (their ids are reserved in
 `spell_id_pool_config.lua`): until a quest's spell exists `learnSpell` finds nothing, the reward is logged ("could not teach") and
 the login sync teaches the spell as soon as it is in the book.
 
@@ -17114,8 +17114,22 @@ the login sync teaches the spell as soon as it is in the book.
   every talkaction; step 3 marks the line done without gold).
 - **Tracker.** Rows on the Next Goals channel (opcode 178, `spellquest {rows}`), a third section of the client panel, titled
   "Spell Quest". Shown while the character can work on a quest (the next one not done on its line, its level reached).
-- **Flag for phase 3.** `rotationCapExempt = {false, false, true}`: quest 3's spell does not count against the 5-spell rotation cap
-  (nothing reads it yet).
+- **Level 1200 ultimates (phase 3).** Judgment of Iron 148, Dawnbreaker Shot 151, Eclipse of Ruin 154, Death Between Heartbeats 157,
+  Funeral of Kings 160, Heaven's Ninth Gate 174, Hammer of Ember Dawn 237: the third id of each line's triple. Rows in
+  `attack_kit_config.lua` (`quest = 3`; extras `main` and `critAbove`, a second effect `vfx2`), `spells_chaos.xml` (`needlearn="1"`,
+  level 1200, cooldown 35 to 50 s, mana 3 x the reference), `kindOverride`, `rotation_model.csv` (flag `ultimate`), scripts in
+  `data/spells/chaos/<folder>/`, big effect swaps in `chaos_big_fx.lua`. Every class has 13 attack spells. Numbers per spell, the shapes
+  by role (boss bursts for the Thief, Monk and Ranger lines, area for the Mystic and Necromancer, mixed for the Warrior and Templar)
+  and the gain per class: server/data/spells/README.md "Line spell quests, level 1200 ultimates".
+- **Rotation cap exemption.** The ultimate is not one of the 5 attack spells of a rotation (owner 2026-10-28). The model flag
+  `ultimate` (rotation_sim.py) keeps it out of every set and preset and adds its gain on top; `autorotation_data.lua` lists it per class as
+  `ultimate = id`; the helper (`game_helperrotation/autorotation.lua`) puts it first, for one monster, when the character can cast
+  it, and still fills the 5 below. `spellquest_config.lua` `rotationCapExempt = {false, false, true}` documents it (nothing reads it).
+- **Quest gain, not a tax.** The class factor knots (`spell_factor_config.lua`) and the weapon power are the ones from before the quest
+  spells: a character without quests keeps its damage, and every balance model measures that baseline. The quest spells are strengthened
+  per class by `quest_spell_scale_config.lua` (a factor per class and spell, applied by the attack kit): Q1 adds about 4.5% to the best
+  set at levels 500-800, Q3 about 9% on top at 1200. `python3 -I server/tools/rotation_sim.py --quest` prints the gains, `--check` keeps
+  them in bounds (server/data/spells/README.md).
 - Tests: `tests/spellquest_test.lua` (rules and the engine file on a mocked engine), `tests/spellquest_tracker_test.lua`,
   `tests/trials_test.lua` (spell tiers), `tests/class_spells_test.lua` (quest spells), client `goalsview_test.lua`.
 

@@ -290,9 +290,26 @@ the Necromancer's two other summons. The Necromancer line summons Raise Bone War
 Risen Archer is gone; the best build is two warriors and a mage). Numbers, balance and the retune:
 server/data/spells/README.md "Support to attack (O254)".
 
+**Line spell quests, phase 3 (2026-10-28)**: the level 1200 ultimate of each line, taught by the quest, shared by the base class and
+both ascensions. Every class and ascension has **13 attack spells** now (`ATTACK_SPELLS` 13). Cooldown 35 to 50 s, group cooldown 2 s,
+mana 3 x the reference spell, off the cooldown ladder, and **not one of the 5 spells of a rotation**: the helper casts it when it is ready
+on top of the 5. Each adds about 9% of the best set's score at level 1200 (the level 500 attack about 4.5%, so a full quester is about 13 to 15% stronger; a character without the quests is unchanged) (boss bursts for the Thief, Monk and Ranger lines, area for
+the Mystic and Necromancer, mixed for the Warrior and Templar). Numbers: server/data/spells/README.md "Line spell quests, level 1200
+ultimates".
+
+| Line | Spell (id) | Reference | Shape | Cooldown |
+|---|---|---|---|---|
+| Warrior | Judgment of Iron (148) | Colossus Fall | around, radius 3 | 45 s |
+| Ranger | Dawnbreaker Shot (151) | Sunspear | piercing line of 8 | 40 s |
+| Mystic | Eclipse of Ruin (154) | Glacial Doom | circle radius 5, range 7 | 50 s |
+| Thief | Death Between Heartbeats (157) | Last Breath | single, melee, critical on a target above half health | 35 s |
+| Necromancer | Funeral of Kings (160) | Splinter Volley | circle radius 5, range 6 | 50 s |
+| Monk | Heaven's Ninth Gate (174) | Skysplitter Fist | single, melee, chi finisher | 40 s |
+| Templar | Hammer of Ember Dawn (237) | Sanctum Verdict | heavy hit on the target, a circle of radius 2 | 45 s |
+
 **Line spell quests, phase 2 (2026-10-28)**: the level 500 attack of each line, taught by the quest (`needlearn="1"`, never by the
 level), shared by the base class and both ascensions. Every class and ascension has **12 attack spells** now
-(`ATTACK_SPELLS` 12; 13 after the level 1200 ultimates). The cap `MAX_SPELLS` is 24 (the Bone Lord has 20, 22 with its
+(`ATTACK_SPELLS` 12; 13 with the level 1200 ultimates, below). The cap `MAX_SPELLS` is 24 (the Bone Lord has 20, 22 with its
 three quest spells). Cooldown 13 s, group cooldown 2 s, mana 1.2 x the reference spell, coefficients 1.25 x it. The quest
 attacks are not ranked by the cooldown ladder: they are the last rung of their classes at 13 s (`rotation_sim.py`
 `QUEST_COOLDOWN`).

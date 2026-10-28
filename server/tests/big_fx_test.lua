@@ -110,6 +110,11 @@ for id, swaps in pairs(C.spells) do
 		ok(inSet[big], id .. ": " .. big .. " is in the set")
 		local direct = s:find('ChaosSpell.vfx%(.-"' .. name .. '"') or s:find('ChaosSpell.vfxOr%(.-"' .. name .. '"')
 		local waves = s:find('"' .. name .. '"%s*}') and s:find("ChaosSpell.vfx%(%a+, w%[4%]%)")
+		-- an attack kit spell (the line spell quests' ultimates) sends the effects its attack_kit_config.lua row names
+		local key = s:match("AttackKit%.cast%('(%w+)'")
+		if key and not (ChaosAttackKit and ChaosAttackKit.cfg) then dofile("data/scripts/chaos/attack_kit_config.lua") end
+		local kit = key and ChaosAttackKit.cfg.spells[key]
+		if kit and (kit.vfx == name or kit.vfx2 == name) then direct = true end
 		ok(direct or waves, script .. " sends " .. name)
 		eq(C.pick(id, name), big, "pick " .. id .. " " .. name)
 	end
@@ -124,6 +129,7 @@ local lineOf = {
 	[206] = "mystic", [213] = "mystic", [204] = "mystic", [202] = "mystic", [231] = "mystic", [230] = "mystic",
 	[225] = "warrior", [216] = "ranger", [218] = "ranger", [185] = "necromancer", [188] = "necromancer",
 	[65] = "monk", [199] = "templar", [190] = "templar", [198] = "templar",
+	[148] = "warrior", [151] = "ranger", [154] = "mystic", [160] = "necromancer", [237] = "templar", -- the level 1200 ultimates
 }
 local lines = {}
 for id in pairs(C.spells) do

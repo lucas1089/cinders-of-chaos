@@ -1,8 +1,8 @@
 -- luajit autosetup_classes_test.lua && lua5.3 autosetup_classes_test.lua (from the repository root or this folder)
 -- O186: Auto setup / Auto rotation of every class. Owner report 2026-10-24: a Ninja got 2 attack spells in the shooter
 -- although all of them were listed. At a high level every one of the 21 classes must get a full rotation (5 attack
--- spells, no repeats, every one an attack spell of the class), and the class's 12 attack spells must all be reachable
--- (a preset or the extras), as check_rotation_kit.py expects. The spell checks are the ones of autorotation_ui.lua's
+-- spells, no repeats, every one an attack spell of the class), and the class's 13 attack spells must all be reachable
+-- (a preset, the extras or the ultimate), as check_rotation_kit.py expects. The spell checks are the ones of autorotation_ui.lua's
 -- canCastFor: the spell lists the vocation id as the server sends it (also through the client's translateVocation fold),
 -- the level is met.
 local dir = (arg and arg[0] or ''):match('^(.*[/\\])') or './'
@@ -64,13 +64,17 @@ for name, id in pairs(CLASSES) do
   classes = classes + 1
   local want = 0
   for _ in pairs(attack[id]) do want = want + 1 end
-  eq(want, 12, name .. ': 12 attack spells in the data')
+  eq(want, 13, name .. ': 13 attack spells in the data')
   -- the rotation at a high level, with and without the client folding ascension ids onto a base class
   for _, translate in ipairs({ false, function(v) return v == 12 and 11 or (v == 13 and 11 or 0) end }) do
     local sel = A.select(id, 2000, canCastFor(id, 2000, translate or function() return 0 end), { topUp = true })
     eq(sel ~= nil, true, name .. ': a rotation')
     if sel then
-      eq(#sel.ids, A.MAX_SPELLS, name .. ': ' .. A.MAX_SPELLS .. ' spells in the rotation')
+      -- the class's ultimate (level 1200) comes first and takes no slot of the 5 (owner 2026-10-28)
+      eq(#sel.ids, A.MAX_SPELLS + 1, name .. ': ' .. A.MAX_SPELLS .. ' spells and the ultimate in the rotation')
+      eq(sel.ultimate, D.classes[id].ultimate, name .. ': the ultimate of the class')
+      eq(sel.ids[1], sel.ultimate, name .. ': the ultimate is the first rule')
+      eq(sel.creatures[1], 1, name .. ': the ultimate needs one monster')
       local seen = {}
       for _, sid in ipairs(sel.ids) do
         eq(seen[sid], nil, name .. ': ' .. sid .. ' twice')
@@ -84,6 +88,8 @@ for name, id in pairs(CLASSES) do
   local c = D.classes[id]
   for _, p in ipairs(c.presets) do for _, sid in ipairs(p.spells) do reach[sid] = true end end
   for _, sid in ipairs(c.extras or {}) do reach[sid] = true end
+  eq(reach[c.ultimate], nil, name .. ': the ultimate is in no preset and not in the extras (it takes no slot)')
+  reach[c.ultimate] = true
   for sid in pairs(attack[id]) do if not CAST_BY_HAND[sid] then eq(reach[sid], true, name .. ': attack spell ' .. sid .. ' reachable by Auto setup') end end
   for sid in pairs(reach) do eq(attack[id][sid], true, name .. ': preset spell ' .. sid .. ' is an attack spell of the class') end
   -- a character that can cast only some (not learned yet) still gets what it can, never fewer than it can cast up to 5
@@ -91,6 +97,12 @@ for name, id in pairs(CLASSES) do
   for sid in pairs(attack[id]) do if entries[sid].level <= 150 then low = low + 1 end end
   local sel = A.select(id, 150, canCastFor(id, 150, function() return 0 end), { topUp = true })
   eq(sel and #sel.ids or 0, math.min(low, A.MAX_SPELLS), name .. ': level 150 rotation holds what the class can cast')
+  -- the ultimate is learned at level 1200: not before, then on top of the 5 at any level above (also without topping up)
+  local before = A.select(id, 1199, canCastFor(id, 1199, function() return 0 end), { topUp = true })
+  eq(before.ultimate, nil, name .. ': no ultimate at level 1199')
+  eq(#before.ids, A.MAX_SPELLS, name .. ': 5 spells at level 1199')
+  local at = A.select(id, 1200, canCastFor(id, 1200, function() return 0 end), { topUp = false })
+  eq(at.ultimate, c.ultimate, name .. ': the ultimate at level 1200, also without topping up')
 end
 eq(classes, 21, '21 classes')
 
