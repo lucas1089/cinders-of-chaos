@@ -436,8 +436,9 @@ def order(spells):
     return sorted(spells, key=lambda s: (not s.keep, not s.area, -s.cd, -score(s.dmg, s.dmg5), s.words))
 
 
-def simulate(rotation, horizon=HORIZON):
-    """cast times of a priority rotation; returns (casts, gap, dmg1 per second, dmg5 per second)"""
+def simulate(rotation, horizon=HORIZON, hits=None):
+    """cast times of a priority rotation; returns (casts, gap, dmg1 per second, dmg5 per second). `hits`, a list, collects
+    (landing time, hit on 1 target, hit on 5 targets, words) of every cast that lands inside the horizon (weakness_model.py)"""
     ready = [0.0] * len(rotation)
     group = {}
     t = 0.0
@@ -478,6 +479,8 @@ def simulate(rotation, horizon=HORIZON):
         if t + s.cast <= horizon:
             d1 += hit
             d5 += hit * (s.dmg5 / s.dmg if s.dmg else 0)
+            if hits is not None:
+                hits.append((t + s.cast, hit, hit * (s.dmg5 / s.dmg if s.dmg else 0), s.words))
         t = t + max(s.gcd, s.cast, 1e-3)
     times = [c[0] for c in casts]
     gaps = [b - a for a, b in zip(times, times[1:])]

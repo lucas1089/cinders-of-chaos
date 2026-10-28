@@ -867,6 +867,100 @@ of every pack band and of the base hunt pack (`pack_clear`), so the tower, the l
 is `packLimits` of `boss_balance_config.lua`, a boss band `limits`; `pack_model.py --check` also keeps the Elementalist 8% ahead of every
 class on a pack of 5 with the cleave.
 
+### Class weaknesses (measured) (2026-10-28; computed, not measured in game)
+
+`server/tools/weakness_model.py` (step 3 of the class identity plan; inputs and pins in `data/scripts/chaos/weakness_config.lua`,
+`--check` and `weakness_model_test.py` are in CI). It measures what a class pays for its strength from models and data that exist,
+and sets no balance number. Per class at 300, 800, 1000 and 1200 (`--levels` picks others, `--findings` prints the verdicts):
+
+- Mana pressure. The best rotation of `rotation_sim.py` spends so much mana a minute. The vocation regenerates its own
+  amount (`chaos_vocations*.xml`), the level mana flow (`mana_flow_config.lua`) comes on top. Runway is the pool
+  (`start_stats.lua`) over the net drain, seconds from a full pool. "Runway own" is the number of `rotation_sim.py --mana`. No potion is
+  assumed, as that check assumes none. "Pools a min" is mana spent a minute over the pool.
+- Ramp-up. Seconds until the damage dealt since the pull stays at 80% or more of the damage of an average span of the same
+  length in the steady fight. Cold start: no buff, no chi, no minion. Chi comes from `rotation_sim.simulate` (+1 per 2 s auto attack
+  hit, a finisher waits for 4). The Necromancer line adds its minions from `minion_model.py`, raised in the best order by the support
+  group (2 s) and each spell's cooldown, with no corpse around and 1 s to walk to the target. Damage buffs are cast before the pull in every
+  balance model, so they stay out. "Minions out" is the second the last minion stands next to the caster.
+- Exposure. Share of the damage on one target dealt from reach 1 (near) and 3 or more (far): the best rotation's hits by the reach of each
+  spell, plus the weapon (35% of the damage for melee, fist and distance classes, 13% for a wand; reach 1 for the sword, fist and dagger,
+  far for bow, crossbow and wand). A spell's reach is its `range` in `spells_chaos.xml`; a spell cast on the caster's tile has the
+  radius of its area. Effective health per level is the vocation's health gain over the damage taken factor of the toughness model
+  (Juggernaut 0.765, Sentinel 0.81, Samurai 0.844 from "Templar line" and "Classes with the passive trees"; every other class has no
+  toughness number and counts 1.0). No gear, tree or evasion.
+
+Table, base values of the class (levels 300 and 1000; the model also prints 800 and 1200):
+
+| Class | Runway s 300 / 1000 | Pools a min 300 / 1000 | Ramp s 300 / 1000 | Minions out s | Near / far 300 | Near / far 1000 | Health per level | Health 300 / 1000 |
+|---|---|---|---|---|---|---|---|---|
+| Warrior | 30 / 82 | 2.03 / 0.74 | 0.0 / 0.0 | - | 59% / 41% | 61% / 39% | 15.0 | 4670 / 15170 |
+| Juggernaut | 31 / 77 | 2.03 / 0.81 | 0.0 / 0.0 | - | 59% / 41% | 50% / 50% | 19.6 | 6104 / 19830 |
+| Berserker | 42 / 101 | 1.50 / 0.62 | 0.0 / 0.0 | - | 59% / 41% | 56% / 44% | 14.0 | 4371 / 14171 |
+| Ranger | 63 / 180 | 0.97 / 0.34 | 5.0 / 5.0 | - | 0% / 100% | 0% / 94% | 10.0 | 3155 / 10155 |
+| Deadeye | 49 / 122 | 1.28 / 0.51 | 5.0 / 3.0 | - | 0% / 94% | 0% / 95% | 10.0 | 3155 / 10155 |
+| Beastmaster | 81 / 189 | 0.78 / 0.33 | 0.0 / 0.0 | - | 0% / 87% | 0% / 85% | 11.0 | 3454 / 11154 |
+| Mystic | 85 / 281 | 0.72 / 0.22 | 0.0 / 0.0 | - | 0% / 100% | 0% / 100% | 5.0 | 1645 / 5145 |
+| Elementalist | 49 / 136 | 1.25 / 0.45 | 0.0 / 0.0 | - | 0% / 100% | 0% / 100% | 5.0 | 1645 / 5145 |
+| Illusionist | 34 / 112 | 1.81 / 0.55 | 5.5 / 0.0 | - | 0% / 100% | 0% / 100% | 7.0 | 2243 / 7143 |
+| Thief | 66 / 256 | 0.94 / 0.24 | 0.0 / 0.0 | - | 79% / 10% | 47% / 41% | 12.0 | 3763 / 12163 |
+| Ninja | 62 / 209 | 1.03 / 0.31 | 0.0 / 0.0 | - | 56% / 44% | 47% / 53% | 12.0 | 3763 / 12163 |
+| Samurai | 54 / 195 | 1.19 / 0.33 | 0.0 / 0.0 | - | 47% / 28% | 60% / 30% | 15.4 | 4812 / 15594 |
+| Necromancer | 87 / 288 | 0.70 / 0.21 | 0.0 / 0.0 | 5 | 0% / 100% | 0% / 100% | 8.0 | 2547 / 8147 |
+| Lich | 88 / 292 | 0.72 / 0.22 | 0.0 / 0.0 | 1 | 0% / 100% | 0% / 100% | 7.0 | 2248 / 7148 |
+| Bone Lord | 78 / 265 | 0.81 / 0.24 | 14.8 / 15.0 | 13 | 0% / 83% | 0% / 81% | 9.0 | 2846 / 9146 |
+| Monk | 74 / 245 | 0.83 / 0.25 | 4.0 / 4.0 | - | 78% / 13% | 78% / 13% | 12.0 | 3763 / 12163 |
+| Shadowfist | 54 / 188 | 1.17 / 0.34 | 14.0 / 14.0 | - | 75% / 25% | 76% / 24% | 12.0 | 3763 / 12163 |
+| Iron Sage | 57 / 187 | 1.13 / 0.34 | 4.0 / 4.0 | - | 67% / 33% | 67% / 33% | 14.0 | 4361 / 14161 |
+| Templar | 32 / 108 | 1.93 / 0.56 | 0.0 / 0.0 | - | 35% / 43% | 35% / 42% | 14.0 | 4366 / 14166 |
+| Inquisitor | 43 / 143 | 1.45 / 0.44 | 0.0 / 0.0 | - | 35% / 35% | 35% / 33% | 13.0 | 4067 / 13167 |
+| Sentinel | 26 / 86 | 2.37 / 0.72 | 0.0 / 0.0 | - | 50% / 38% | 49% / 37% | 17.3 | 5390 / 17488 |
+
+Lines, the mean of the line's three classes:
+
+| Line | Runway s 300 / 1000 | Ramp s 300 / 1000 | Far share 300 / 1000 | Health per level |
+|---|---|---|---|---|
+| Warrior | 35 / 87 | 0.0 / 0.0 | 41% / 44% | 16.2 |
+| Ranger | 64 / 164 | 3.3 / 2.7 | 94% / 91% | 10.3 |
+| Mystic | 56 / 176 | 1.8 / 0.0 | 100% / 100% | 5.7 |
+| Thief | 60 / 220 | 0.0 / 0.0 | 27% / 42% | 13.1 |
+| Necromancer | 84 / 282 | 4.9 / 5.0 | 94% / 94% | 8.0 |
+| Monk | 62 / 207 | 7.3 / 7.3 | 24% / 23% | 12.7 |
+| Templar | 34 / 113 | 0.0 / 0.0 | 39% / 37% | 14.8 |
+
+Intended weaknesses against the numbers, judged on the lines at all four levels:
+
+| Intended weakness | Verdict |
+|---|---|
+| Mystic line: the most mana pressure | does not hold: runway 56 s at 300, third shortest of seven lines, against the Templar line 34 s and the Warrior line 35 s; 176 s at 1000, fourth shortest, against 113 s and 87 s |
+| Mystic line: the least effective health | holds: 5, 5 and 7 health per level, line mean 5.7 against the Necromancer line 8.0 |
+| Ranger line: low effective health but ranged | holds: 10.3 health per level, third lowest line; 91-94% of the damage from reach 3 or more |
+| Warrior and Templar lines: melee with little range | holds through the weapon: far share 41-44% and 37-39%, with the Monk (24%) and Thief (27-42%) the least ranged; their spells alone reach 3 or more for 57-68% of the damage |
+| Monk and Necromancer lines: the slowest ramp-up | holds on the line means: Monk line 7.3 s, Necromancer line 5.0 s, the rest 3.3 s or less; by class the slowest are the Bone Lord 15 s and the Shadowfist 14 s, the Necromancer and Lich 0 s |
+| Thief line: low sustained mana efficiency | not checked, burst classes may be mana-light; the Thief line runs 60 s at 300 and 220 s at 1000 |
+
+Findings, with the lever for each (not applied):
+
+1. The Mystic line has no mana pressure. Its pools are the biggest (30 mana a level), so its best set runs 56 s from a full pool at level 300
+   and the Templar line 34 s. Lever: the Mystic line best sets would have to spend 1.8-2.2 times the mana a minute to be the shortest runway of
+   the lines. Raise the fixed cost of the Mystic area spells (Falling Pyre, Doomtide, Glacial Doom in `spells_chaos.xml` and
+   `rotation_model.csv`) or cut the Mystic line mana gain in `start_stats.lua`. `rotation_sim.py --mana` keeps its 15 s floor.
+2. The Illusionist has 7 health per level, as the Lich. The Mystic line is lowest on its mean and on the base class and the Elementalist.
+   Lever: the Illusionist to 5 or 6 in `start_stats.lua` and `chaos_vocations.xml`, only if the line must be lowest class by class.
+3. The Warrior and Templar spells are not short. Rift Cleaver 4, Bastion Cry 3, Crusader's Sweep 3, Sanctum Verdict 3, Lance of Vigil 5 and the
+   areas of 3 around the caster put 57-68% of their spell damage at reach 3 or more. Lever: cut those ranges to 1 or 2 in `spells_chaos.xml`
+   and `attack_kit_config.lua` together, then `rotation_sim.py --write`.
+4. The Necromancer and the Lich do not ramp up. The trio is out at 5 s and the shade at 1 s, and the spell opening (every cooldown ready at the
+   pull) pays for it. Only the Bone Lord ramps up, its six skeletons and golem need 13 s. Lever: a first hit delay or a longer Raise cooldown on the
+   minions in `necro_config.lua`, a finisher at 5 chi for the Monk line.
+5. The Ranger and the Deadeye show a 3-5 s ramp that is an artifact of the opening order, not a weakness. Do not tune it.
+
+Limits of the model. The weapon share is one number per kind of stats, not a measurement per class. The stock spells of the Warrior, Ranger and
+Mystic lines are not in the repo, their reach is a table in `weakness_config.lua`. A self-cast area counts at its radius, so a Mystic nova
+of 6 is far. No fight length, no healing, no potion, no mana for replacing a dead minion. `--check` pins orders only: the two base Mystic classes
+the least health, the Mystic line lowest and the Ranger line third lowest, the tanks the most, the Mystic, Necromancer and Ranger lines the three
+most ranged, the Warrior, Templar, Monk and Thief lines the four least ranged, the Monk and Necromancer lines the two slowest ramp lines, the Bone
+Lord and the Shadowfist the two slowest classes.
+
 ### Pack farming for every class (2026-10-15; computed, not measured in game)
 
 Superseded in part (2026-10-28, class identity pass): every class's cleave share changed, Fan of Knives is 0.5x and Iaido Sweep 0.9x on the

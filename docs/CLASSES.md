@@ -1223,6 +1223,42 @@ Illusionist most, the Thief and Samurai a lot). The Bone Lord and the Necromance
 minion model's level 50 floor on 5 targets went from 0.85 to 0.84 (the median class rose), and the quest spell factors moved:
 "Line spell quests" in `server/data/spells/README.md`.
 
+### Class weaknesses (measured) (2026-10-28)
+
+Step 3 of the class identity plan. Steps 1 and 2 measure the strengths, `server/tools/weakness_model.py` measures the price: mana
+pressure, ramp-up and exposure per class at levels 300, 800, 1000 and 1200. Computed from existing models, no balance number moved.
+Method, per-class table and findings: `server/data/spells/README.md` "Class weaknesses (measured)". Inputs and the pinned facts:
+`server/data/scripts/chaos/weakness_config.lua` (`--check` and the test are in CI).
+
+Line means at levels 300 and 1000:
+
+| Line | Runway s 300 / 1000 | Ramp s 300 / 1000 | Far share 300 / 1000 | Health per level |
+|---|---|---|---|---|
+| Warrior | 35 / 87 | 0.0 / 0.0 | 41% / 44% | 16.2 |
+| Ranger | 64 / 164 | 3.3 / 2.7 | 94% / 91% | 10.3 |
+| Mystic | 56 / 176 | 1.8 / 0.0 | 100% / 100% | 5.7 |
+| Thief | 60 / 220 | 0.0 / 0.0 | 27% / 42% | 13.1 |
+| Necromancer | 84 / 282 | 4.9 / 5.0 | 94% / 94% | 8.0 |
+| Monk | 62 / 207 | 7.3 / 7.3 | 24% / 23% | 12.7 |
+| Templar | 34 / 113 | 0.0 / 0.0 | 39% / 37% | 14.8 |
+
+What holds today.
+- Health: the Mystic line has the least, 5.7 per level, the Necromancer line 8.0, the Ranger line 10.3. The tanks have the most: Juggernaut
+  19.6, Sentinel 17.3, Samurai 15.4.
+- Range: the Mystic, Necromancer and Ranger lines deal 91-100% of their damage from reach 3 or more, the Warrior and Templar lines 37-44%
+  with their weapon, the Monk line 23% and the Thief line 27-42%.
+- Ramp-up: the Monk line 7.3 s, the Necromancer line 5.0 s, every other line 3.3 s or less. The Bone Lord needs 13 s to raise its army and the
+  Shadowfist builds chi for 14 s.
+
+What does not hold, and the lever for each. None is applied.
+- Mystic line the most mana pressure. Its runway is the third shortest of the seven lines at 300 and the fourth at 1000, 56 s and 176 s,
+  against 34 s (Templar) and 87 s (Warrior) for the shortest.
+  Lever: a Mystic line spend of 1.8-2.2 times the mana a minute, or a lower mana gain than 30 a level.
+- Warrior and Templar with little range holds only through the weapon. Their spells reach 3 or more for 57-68% of the damage. Lever: cut the
+  range of Rift Cleaver, Bastion Cry, Crusader's Sweep, Sanctum Verdict and Lance of Vigil to 1 or 2.
+- The Necromancer and the Lich do not ramp up. The spell opening pays for the minions. Lever: a first hit delay or a longer Raise cooldown.
+- The Illusionist has the Lich's 7 health per level. Lever: 5 or 6, only if the line must be lowest class by class.
+
 ### Late spells, levels 340-460 (C6, 2026-10-20)
 
 (O254: Bastion Cry is an attack spell now, level 340, a wave of 3 sqm; the taunt, the slow and the heal are gone.)
