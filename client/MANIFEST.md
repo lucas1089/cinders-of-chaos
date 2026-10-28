@@ -3387,38 +3387,42 @@ Output **pair 53**: dat ed39f8452177e0ef503c97fd5f7df764 (8,835,386 bytes), spr 
     Extracting the parts gives the dat and spr md5 above (checked).
 
 
-### Pair 54: pair 53 with the Verdant Eye Demon look (`gen_eye_demon_art.py`; built 2026-10-28, not pushed yet)
-Owner request 2026-10-28: the owner's AutoSprite character "Verdant Eye Demon" walking in the game, as the boss
-Vharzul the Verdant Eye (server/README.md "Vharzul the Verdant Eye (pair 54)"). One outfit is appended; nothing else changes.
-- **Art.** AutoSprite's eight-direction walk of the character (one render, 25 frames of 256 px per direction). `gen_eye_demon_art.py`
-  takes up, right, down and left (the diagonals are not used), halves each frame to 128 px (2 x 2 block mean in premultiplied alpha,
-  numpy only), moves each direction as a whole so its lowest row sits on y 125 and the feet of frame 0 on x 96 (where the 4x4 lions
-  of pair 26 stand), and picks 8 walk phases evenly from the 25 (idle = frame 0). The render's PNGs are pinned by md5 (`SOURCES`);
-  they and the zip are not in git. Committed: `art_import/eye_demon/eye_demon.png` (the look sheet), `art_import/eye_demon.csv`
-  (outfit 3361: 4x4, layers 1, idle 1 phase + walk 8 phases at 100 ms), `art_import/eye_demon_sources.csv`,
-  `monster_looks/eye_demon_picks.csv` (family `lairboss`). `build --check` (CI) checks the committed files against the spec.
+### Pair 54: pair 53 with three AutoSprite looks (`gen_autosprite_art.py`; built 2026-10-28, not pushed yet)
+Owner requests 2026-10-28: the owner's AutoSprite character "Verdant Eye Demon" in the game as the boss Vharzul the Verdant Eye,
+then "mais 2 monstros ... pra hunt" that fit the game: the Ashbound Thrall and the Slagback Hound (server/README.md "AutoSprite
+looks (pair 54)"). Three outfits are appended; nothing else changes.
+- **Art.** Our AutoSprite characters (pixel art), each with AutoSprite's eight-direction walk (one render, 25 frames of 256 px per
+  direction). `gen_autosprite_art.py` takes up, right, down and left (the diagonals are not used), shrinks each frame to the look's
+  cell (block mean in premultiplied alpha, numpy only), moves each direction as a whole so the walk does not jitter (4x4: feet x 96,
+  lowest row 125, where the 4x4 lions of pair 26 stand; 2x2: feet x 44, lowest row 62, where the 2x2 looks of pair 26 stand) and
+  picks 8 walk phases evenly from the 25 (idle = frame 0). The render's PNGs are pinned by md5 (`LOOKS`); they are not in git.
+  Committed: `art_import/autosprite/<key>.png`, `art_import/autosprite.csv` (layers 1, idle 1 phase + walk 8 phases at 100 ms),
+  `art_import/autosprite_sources.csv`, `monster_looks/autosprite_picks.csv`. `build --check` (CI) checks them against the spec.
+  - 3361 `eye_demon`, 4x4: Vharzul the Verdant Eye (family `lairboss`).
+  - 3362 `ashbound_thrall`, 2x2: the Ashbound Thrall (family `hunt`).
+  - 3363 `slagback_hound`, 2x2: the Slagback Hound (family `hunt`).
 ```
-python3 -I client/tools/sprites/gen_eye_demon_art.py build --src RENDER_DIR
+python3 -I client/tools/sprites/gen_autosprite_art.py build --src RENDER_DIR      # RENDER_DIR/<key>/{up,right,down,left}.png
 python3 -I client/tools/sprites/import_art_things.py --ours-dat pair53/Tibia.dat --ours-spr pair53/Tibia.spr --out-dir pair54 \
-    --things client/tools/sprites/art_import/eye_demon.csv --first-item 44396 --first-outfit 3361 --expect-items 44395
+    --things client/tools/sprites/art_import/autosprite.csv --first-item 44396 --first-outfit 3361 --expect-items 44395
 python3 -I client/tools/sprites/check_pair.py pair54/Tibia.dat pair54/Tibia.spr --old pair53/Tibia.dat pair53/Tibia.spr
 ```
 Input pair 53 (dat ed39f8452177e0ef503c97fd5f7df764, spr 971ba1f67b7a07cd05a5416ad285ba0c).
-Output **pair 54**: dat e7410f855a913e1e046479371527e022 (8,837,780 bytes), spr cf8704fe8f3f40bf1151f228b6da94bc
-(1,130,629,049 bytes, 945,921 sprites: 385 appended), 44,395 items, 3,361 outfits.
-- **Checked.** The importer: the output parses, 576 sprite slots pixel-identical to the art, every other thing byte-identical,
+Output **pair 54**: dat fc4b72300ddb6dfe7b59767f69c7c896 (8,839,112 bytes), spr b941aa0fa26aed2f159e0a32049434a1
+(1,130,908,345 bytes, 946,121 sprites: 585 appended), 44,395 items, 3,363 outfits.
+- **Checked.** The importer: the output parses, 864 sprite slots pixel-identical to the art, every other thing byte-identical,
   3,000 sampled old sprites unchanged, append-only guard passed. `check_pair.py --old pair53`: 0 errors, 3,966 warnings (the same
-  as pair 53). `gen_outfit_anchors.py` and `gen_info_lift.py` against pair 54 give look 3361 an anchor (4x4) and change the dat md5
-  line (not committed yet: CI checks them against the pair on windows-assets); `gen_fx_send_offsets.py --check` passes. Not run in a client.
+  as pair 53). `gen_outfit_anchors.py` and `gen_info_lift.py` against pair 54 add the three looks and change the dat md5 line (not
+  committed yet: CI checks them against the pair on windows-assets); `gen_fx_send_offsets.py --check` passes. Not run in a client.
 - **Archive parts** (same recipe as pair 53; not pushed to windows-assets yet, waiting for the owner's approval):
-  - part00 99,614,720 bytes, sha256 `c21f1e52010044814e834d93a9f38879a9c40afadbabc6625aa4d8111650d1ea`
-  - part01 29,431,916 bytes, sha256 `96074400f8ea85855f516e94a12a445626466179ae10a1f99ffabbbd5cf06706`
-  - joined `things-1098.tar.xz` (129,046,636 bytes) sha256 `903e1081bbe0131ccc0543d8d1bebe19e80cad68cb12c878d6ae804bcf80e7fd`;
-    `things-1098.tar` sha256 `c9bc598aa7bf7203b91c0615c91a6896a72086197bf22227094db72841b3a636`.
-- **To ship** (one change, after the push): `ChaosEyeDemonArt.PAIR54 = true` (server/data/lib/chaos_eye_demon_art.lua), the row of
-  `monster_looks/eye_demon_picks.csv` appended to `picks.csv` and `server/tools/apply_monster_looks.py` run (look 3361 into Vharzul's
-  file), `tools/ci/check_content.py` `PAIR_NAME, PAIR_OUTFITS` to pair 54 / 3361, `outfit_anchors.lua` and `info_lifts.lua`
-  regenerated from pair 54. Until then the boss wears the stock demon look 35 and a client on pair 53 needs nothing new.
+  - part00 99,614,720 bytes, sha256 `ac315fed7d4753b79bd7b2db172175ff50611d8a0b7391a5d6006c81b660c8cd`
+  - part01 29,576,236 bytes, sha256 `265f4b5387b4fd8a83703393b2840b01cc8853050c8db00b393f75f45c20a9f5`
+  - joined `things-1098.tar.xz` (129,190,956 bytes) sha256 `5041bd0bfa2d801ce7f3b308fcfe99b4f2930bdd352b3a838560deabcc448fff`;
+    `things-1098.tar` sha256 `377a5dac3f7177c6918609460e43008b3dfbe648992d0cf927c3e43366054c5a`.
+- **To ship** (one change, after the push): `ChaosAutospriteArt.PAIR54 = true` (server/data/lib/chaos_autosprite_art.lua), the rows of
+  `monster_looks/autosprite_picks.csv` appended to `picks.csv` and `server/tools/apply_monster_looks.py` run (looks 3361-3363 into
+  the three files), `tools/ci/check_content.py` `PAIR_NAME, PAIR_OUTFITS` to pair 54 / 3363, `outfit_anchors.lua` and
+  `info_lifts.lua` regenerated from pair 54. Until then the three wear stock looks and a client on pair 53 needs nothing new.
 
 ## Owner art (things_custom26: outfits 2213-2233, items 33940-33985, `tools/sprites/gen_owner_art.py`, `art_import/owner_art.csv`; on windows-assets 50645056, switch on since 2026-10-15)
 **Source and licence.** The owner's Google Drive folder "ots", files added 2026-10-15. The owner confirmed the art is

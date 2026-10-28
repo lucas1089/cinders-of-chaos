@@ -185,7 +185,7 @@ return {
 		{id = "brackwater_sloughs", monster = "Ashmaw Bonecaller"},
 		{id = "sablemourn_ossuary", monster = "Mange Hound"},
 		{id = "thornmantle_glade", monster = "Slagborer"},
-		{id = "embergut_rift", monster = "Mercenary"},
+		{id = "embergut_rift", monster = "Slagback Hound"}, -- the rift's own hound (pair 54 look 3363 once ChaosAutospriteArt.PAIR54 is on)
 		{id = "frostvein_reach", monster = "Orclops Ravager"},
 		{id = "graveknell_catacombs", monster = "Mercenary Ranger"},
 		{id = "umbral_sink", monster = "Garack"},

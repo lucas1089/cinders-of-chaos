@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Hunt monster of the Embergut Rift (server/tools/areaplan/plans/embergut_rift.json, levels 560-675): a lean black
+     hound with plates of cooling slag on its back, hunting in packs between the vents. Fast; numbers on the pack 30
+     template at its level (server/tools/tune_monsters.py; loot of the band). Look 3363: our own AutoSprite render, 2x2,
+     of pair 54 (data/lib/chaos_autosprite_art.lua: the stock look 240 until ChaosAutospriteArt.PAIR54 goes on). -->
+<monster name="Slagback Hound" nameDescription="a slagback hound" race="blood" experience="3550" speed="72" manacost="0">
+	<health now="11440" max="11440"/>
+	<look type="240" corpse="6068"/>
+	<level min="580" max="600"/>
+	<targetchange interval="4000" chance="20"/>
+	<flags>
+		<flag summonable="0"/>
+		<flag attackable="1"/>
+		<flag hostile="1"/>
+		<flag illusionable="0"/>
+		<flag convinceable="0"/>
+		<flag pushable="0"/>
+		<flag canpushitems="1"/>
+		<flag canpushcreatures="1"/>
+		<flag targetdistance="1"/>
+		<flag staticattack="90"/>
+		<flag runonhealth="0"/>
+		<flag canwalkonfire="1"/>
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="-580" max="-890"/>
+		<!-- the slag breath: a short cone of molten spit -->
+		<attack name="fire" interval="2000" chance="25" length="4" spread="2" min="-520" max="-850">
+			<attribute key="areaEffect" value="firearea"/>
+		</attack>
+		<!-- the pounce: it leaps on a target at range -->
+		<attack name="physical" interval="2000" chance="20" range="4" target="1" min="-500" max="-800">
+			<attribute key="areaEffect" value="blackspark"/>
+		</attack>
+	</attacks>
+	<defenses armor="80" defense="80">
+		<defense name="speed" interval="4000" chance="20" speedchange="300" duration="5000">
+			<attribute key="areaEffect" value="redshimmer"/>
+		</defense>
+	</defenses>
+	<elements>
+		<element physicalPercent="5"/>
+		<element firePercent="50"/>
+		<element earthPercent="10"/>
+		<element icePercent="-15"/>
+	</elements>
+	<immunities>
+		<immunity invisible="1"/>
+	</immunities>
+	<voices interval="5000" chance="10">
+		<voice sentence="Grrrrrr!"/>
+		<voice sentence="Hssss..."/>
+	</voices>
+	<loot>
+		<item id="2148" countmax="90" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="80" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="100" chance="43750"/><!-- gold coin -->
+		<item id="2152" countmax="50" chance="65000"/><!-- Platinum Coin -->
+        <item id="11302" chance="375"/><!-- jadefen helmet -->
+        <item id="11301" chance="375"/>
+        <item id="11304" chance="375"/>
+        <item id="11303" chance="375"/>
+        <item id="8891" chance="375"/>
+        <item id="9931" chance="375"/>
+        <item id="11356" chance="375"/>
+        <item id="2645" chance="375"/>
+		<item id="8889" chance="250"/><!-- skullcrackerarmor;frozen plate;elite wyrmblood mail;swamplair armor -->
+		<item id="8887" chance="250"/>
+		<item id="12607" chance="250"/>
+		<item id="8880" chance="250"/>
+		<item id="2522" chance="250"/>
+		<item id="2520" chance="250"/>
+		<item id="11117" chance="250"/>
+		<item id="5741" chance="250"/>
+	</loot>
+</monster>

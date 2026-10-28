@@ -118,7 +118,7 @@ ChaosCreditsData = {
     note = "",
     entries = {
       { name = "PixelLab", licence = "paid subscription", use = "painting the themed item sets, the three looks of the Cursed Chest and its one-tile look, the twelve Everfull potion flasks, the Reward Chest and the hundred support rune stones (also the support icons)" },
-      { name = "AutoSprite", licence = "paid account", use = "animating the boss Vharzul the Verdant Eye (its walk in four directions)" },
+      { name = "AutoSprite", licence = "paid account", use = "drawing and animating the boss Vharzul the Verdant Eye and the Ashbound Thrall and Slagback Hound of the Embergut Rift" },
       { name = "NexaMap Editor", author = "Mateuzkl, Skyyzyy and SoyFabi", licence = "freeware end-user licence in the source's LICENSE.rtf: free to use; copies may be passed on only unmodified, with that licence text and without a fee. Not part of our downloads: the owner downloads it from its source", use = "editing the game map (the Windows package sets its client and server folders)", source = "https://github.com/Mateuzkl/NexaMap-Editor" },
     },
   },

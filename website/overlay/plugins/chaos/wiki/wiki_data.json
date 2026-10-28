@@ -39648,7 +39648,11 @@
 								["skull helmet", "1.2%", "1"],
 								["demon shield", "0.8%", "1"],
 								["Jadefen robe", "0.75%", "1"],
-								["skullcracker armor", "0.71%", "1"],
+								[
+									"skullcrackerarmor;frozen plate;elite wyrmblood mail;swamplair armor",
+									"0.71%",
+									"1"
+								],
 								["Jadefen armor", "0.6%", "1"],
 								["Jadefen helmet", "0.6%", "1"],
 								["Jadefen legs", "0.6%", "1"],
@@ -39803,7 +39807,11 @@
 								["frozen plate", "0.25%", "1"],
 								["great shield", "0.25%", "1"],
 								["skull helmet", "0.25%", "1"],
-								["skullcracker armor", "0.25%", "1"],
+								[
+									"skullcrackerarmor;frozen plate;elite wyrmblood mail;swamplair armor",
+									"0.25%",
+									"1"
+								],
 								["swamplair armor: the Mirecoil Wyrm's own drop", "0.25%", "1"]
 							]
 						}
@@ -39884,7 +39892,11 @@
 								["frozen plate", "0.25%", "1"],
 								["great shield", "0.25%", "1"],
 								["skull helmet", "0.25%", "1"],
-								["skullcracker armor", "0.25%", "1"],
+								[
+									"skullcrackerarmor;frozen plate;elite wyrmblood mail;swamplair armor",
+									"0.25%",
+									"1"
+								],
 								["swamplair armor: the Mirecoil Wyrm's own drop", "0.25%", "1"]
 							]
 						}
@@ -40015,7 +40027,11 @@
 								["frozen plate", "0.25%", "1"],
 								["great shield", "0.25%", "1"],
 								["skull helmet", "0.25%", "1"],
-								["skullcracker armor", "0.25%", "1"],
+								[
+									"skullcrackerarmor;frozen plate;elite wyrmblood mail;swamplair armor",
+									"0.25%",
+									"1"
+								],
 								["swamplair armor: the Mirecoil Wyrm's own drop", "0.25%", "1"]
 							]
 						}
@@ -40058,7 +40074,11 @@
 								["frozen plate", "0.562%", "1"],
 								["great shield", "0.562%", "1"],
 								["skull helmet", "0.562%", "1"],
-								["skullcracker armor", "0.562%", "1"],
+								[
+									"skullcrackerarmor;frozen plate;elite wyrmblood mail;swamplair armor",
+									"0.562%",
+									"1"
+								],
 								["swamplair armor: the Mirecoil Wyrm's own drop", "0.562%", "1"],
 								["Jadefen armor", "0.375%", "1"],
 								["Jadefen helmet", "0.375%", "1"],
@@ -40670,7 +40690,11 @@
 								["frozen plate", "0.25%", "1"],
 								["great shield", "0.25%", "1"],
 								["skull helmet", "0.25%", "1"],
-								["skullcracker armor", "0.25%", "1"],
+								[
+									"skullcrackerarmor;frozen plate;elite wyrmblood mail;swamplair armor",
+									"0.25%",
+									"1"
+								],
 								["swamplair armor: the Mirecoil Wyrm's own drop", "0.25%", "1"]
 							]
 						}
@@ -40839,7 +40863,11 @@
 								["frozen plate", "0.25%", "1"],
 								["great shield", "0.25%", "1"],
 								["skull helmet", "0.25%", "1"],
-								["skullcracker armor", "0.25%", "1"],
+								[
+									"skullcrackerarmor;frozen plate;elite wyrmblood mail;swamplair armor",
+									"0.25%",
+									"1"
+								],
 								["swamplair armor: the Mirecoil Wyrm's own drop", "0.25%", "1"],
 								["forbidden fruit", "0.01%", "1"]
 							]
@@ -40942,7 +40970,11 @@
 								["frozen plate", "0.562%", "1"],
 								["great shield", "0.562%", "1"],
 								["skull helmet", "0.562%", "1"],
-								["skullcracker armor", "0.562%", "1"],
+								[
+									"skullcrackerarmor;frozen plate;elite wyrmblood mail;swamplair armor",
+									"0.562%",
+									"1"
+								],
 								["swamplair armor: the Mirecoil Wyrm's own drop", "0.562%", "1"],
 								["Jadefen armor", "0.375%", "1"],
 								["Jadefen helmet", "0.375%", "1"],
@@ -41033,7 +41065,11 @@
 								["frozen plate", "0.25%", "1"],
 								["great shield", "0.25%", "1"],
 								["skull helmet", "0.25%", "1"],
-								["skullcracker armor", "0.25%", "1"],
+								[
+									"skullcrackerarmor;frozen plate;elite wyrmblood mail;swamplair armor",
+									"0.25%",
+									"1"
+								],
 								["swamplair armor: the Mirecoil Wyrm's own drop", "0.25%", "1"]
 							]
 						}
@@ -41084,7 +41120,7 @@
 								["Jadefen shoes", "1.5%", "1"],
 								["elite wyrmblood mail", "1.2%", "1"],
 								["frozen plate", "1.2%", "1"],
-								["skullcracker armor", "1.2%", "1"],
+								["skullcrackerarmor;frozen plate;elite wyrmblood mail;swamplair armor", "1.2%", "1"],
 								["swamplair armor: the Mirecoil Wyrm's own drop", "1.2%", "1"]
 							]
 						}
@@ -41135,7 +41171,11 @@
 								["frozen plate", "0.25%", "1"],
 								["great shield", "0.25%", "1"],
 								["skull helmet", "0.25%", "1"],
-								["skullcracker armor", "0.25%", "1"],
+								[
+									"skullcrackerarmor;frozen plate;elite wyrmblood mail;swamplair armor",
+									"0.25%",
+									"1"
+								],
 								["swamplair armor: the Mirecoil Wyrm's own drop", "0.25%", "1"]
 							]
 						}
@@ -41397,7 +41437,11 @@
 								["frozen plate", "0.562%", "1"],
 								["great shield", "0.562%", "1"],
 								["skull helmet", "0.562%", "1"],
-								["skullcracker armor", "0.562%", "1"],
+								[
+									"skullcrackerarmor;frozen plate;elite wyrmblood mail;swamplair armor",
+									"0.562%",
+									"1"
+								],
 								["swamplair armor: the Mirecoil Wyrm's own drop", "0.562%", "1"],
 								["Jadefen armor", "0.375%", "1"],
 								["Jadefen helmet", "0.375%", "1"],
@@ -41509,7 +41553,7 @@
 								["paladin armor", "4%", "1"],
 								["elite wyrmblood mail", "2.4%", "1"],
 								["frozen plate", "2.4%", "1"],
-								["skullcracker armor", "2.4%", "1"],
+								["skullcrackerarmor;frozen plate;elite wyrmblood mail;swamplair armor", "2.4%", "1"],
 								["crystal boots", "1.7%", "1"],
 								["demon shield", "1.7%", "1"],
 								["great shield", "1.7%", "1"],
@@ -41596,7 +41640,11 @@
 								["frozen plate", "0.562%", "1"],
 								["great shield", "0.562%", "1"],
 								["skull helmet", "0.562%", "1"],
-								["skullcracker armor", "0.562%", "1"],
+								[
+									"skullcrackerarmor;frozen plate;elite wyrmblood mail;swamplair armor",
+									"0.562%",
+									"1"
+								],
 								["swamplair armor: the Mirecoil Wyrm's own drop", "0.562%", "1"],
 								["Jadefen armor", "0.375%", "1"],
 								["Jadefen helmet", "0.375%", "1"],
@@ -41730,7 +41778,11 @@
 								["frozen plate", "0.562%", "1"],
 								["great shield", "0.562%", "1"],
 								["skull helmet", "0.562%", "1"],
-								["skullcracker armor", "0.562%", "1"],
+								[
+									"skullcrackerarmor;frozen plate;elite wyrmblood mail;swamplair armor",
+									"0.562%",
+									"1"
+								],
 								["swamplair armor: the Mirecoil Wyrm's own drop", "0.562%", "1"],
 								["Jadefen armor", "0.375%", "1"],
 								["Jadefen helmet", "0.375%", "1"],
@@ -41904,7 +41956,11 @@
 								["frozen plate", "0.25%", "1"],
 								["great shield", "0.25%", "1"],
 								["skull helmet", "0.25%", "1"],
-								["skullcracker armor", "0.25%", "1"],
+								[
+									"skullcrackerarmor;frozen plate;elite wyrmblood mail;swamplair armor",
+									"0.25%",
+									"1"
+								],
 								["swamplair armor: the Mirecoil Wyrm's own drop", "0.25%", "1"]
 							]
 						}

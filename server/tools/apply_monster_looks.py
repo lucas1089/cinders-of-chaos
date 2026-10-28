@@ -6,8 +6,8 @@ usage: python3 -I apply_monster_looks.py [MONSTER_DIR] [--picks CSV] [--check]
 MONSTER_DIR defaults to server/data/monster. Rows of picks.csv with family "world", "omen", "raid", "hunt", "dungeonboss" or
 "catacombs" (the Hollow Rider of pair 27, client/tools/sprites/monster_looks/assets_art_picks.csv), "harvest" (the
 Haunted Harvest of pair 33, client/tools/sprites/monster_looks/harvest_picks.csv, appended when ChaosHarvestArt.PAIR33 goes on),
-"lairboss" (Vharzul the Verdant Eye of pair 54, client/tools/sprites/monster_looks/eye_demon_picks.csv, appended when
-ChaosEyeDemonArt.PAIR54 goes on)
+"lairboss" (Vharzul the Verdant Eye of pair 54, client/tools/sprites/monster_looks/autosprite_picks.csv, appended when
+ChaosAutospriteArt.PAIR54 goes on)
 (the owner's art of pair 26, client/tools/sprites/monster_looks/owner_art_picks.csv) name one monster (column
 `monsters`, the exact <monster name>); its XML gets <look type="LOOK" .../> with LOOK from the `look` column. The
 colour attributes (head, body, legs, feet, addons) are removed: these looks have no colour template, so the client

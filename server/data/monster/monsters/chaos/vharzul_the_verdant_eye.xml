@@ -2,9 +2,9 @@
 <!-- Boss of the Embergut Rift (server/tools/areaplan/plans/embergut_rift.json, levels 560-675): a horned demon of red
      hide and black spikes whose pale green eyes see through smoke; it guards the Scorched Pools at the end of the
      terrace path. Never paced (boss flag). Look 3361: our own AutoSprite render, 4x4, of pair 54 (data/lib/
-     chaos_eye_demon_art.lua: the stock demon look 35 until ChaosEyeDemonArt.PAIR54 goes on; then the row of
-     client/tools/sprites/monster_looks/eye_demon_picks.csv goes into picks.csv and server/tools/apply_monster_looks.py
-     writes 3361 here; server/README.md "Vharzul the Verdant Eye (pair 54)"). -->
+     chaos_autosprite_art.lua: the stock demon look 35 until ChaosAutospriteArt.PAIR54 goes on; then the row of
+     client/tools/sprites/monster_looks/autosprite_picks.csv goes into picks.csv and server/tools/apply_monster_looks.py
+     writes 3361 here; server/README.md "AutoSprite looks (pair 54)"). -->
 <monster name="Vharzul the Verdant Eye" nameDescription="Vharzul the Verdant Eye" race="fire" experience="32000" speed="70" manacost="0">
 	<health now="96000" max="96000"/>
 	<look type="35" corpse="6068"/>

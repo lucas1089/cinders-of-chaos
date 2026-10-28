@@ -1,0 +1,4 @@
+key,cat,kind,name,atlas,x,y,w,h,patterns,phases,flags,mode,server_id,extra
+eye_demon,outfit,creature,Verdant Eye Demon,autosprite/eye_demon,0,0,4,4,4,1+8,,new,,layers=1|gtypes=0+1|exact=128+128|durs1=100/100/100/100/100/100/100/100|anim1=0:0:0
+ashbound_thrall,outfit,creature,Ashbound Thrall,autosprite/ashbound_thrall,0,0,2,2,4,1+8,,new,,layers=1|gtypes=0+1|exact=64+64|durs1=100/100/100/100/100/100/100/100|anim1=0:0:0
+slagback_hound,outfit,creature,Slagback Hound,autosprite/slagback_hound,0,0,2,2,4,1+8,,new,,layers=1|gtypes=0+1|exact=64+64|durs1=100/100/100/100/100/100/100/100|anim1=0:0:0
