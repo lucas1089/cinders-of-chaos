@@ -174,6 +174,25 @@ function P.npcName(cfg, name)
 	return cfg and cfg.npcs and cfg.npcs[tostring(name or ""):lower()] or nil
 end
 
+-- the Chaos NPCs in the stalls of the hub (npc_booths_config.lua), 700 tiles from the temple, so the temple scan
+-- cannot see them. booths: {{name, x, y, z}} (ChaosNpcBoothsCore.booths); find(booth) -> {{name, x, y, z}} the NPCs
+-- standing at the stall. An NPC counts when its name is the stall's. The shown name is cfg.npcs, else the NPC's name.
+function P.hubMarks(cfg, booths, find)
+	local out = {}
+	for _, b in ipairs(booths or {}) do
+		local want = tostring(b.name or ""):lower()
+		for _, c in ipairs(find(b) or {}) do
+			if tostring(c.name or ""):lower() == want then
+				local m = P.mark("npc", c.x, c.y, c.z, P.npcName(cfg, c.name) or c.name, 0)
+				if m then
+					out[#out + 1] = m
+				end
+			end
+		end
+	end
+	return out
+end
+
 -- a value inside nested tables by a path of keys (nil when a step is missing)
 function P.dig(t, path)
 	for _, k in ipairs(path or {}) do

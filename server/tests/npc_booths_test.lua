@@ -55,6 +55,12 @@ do
 		check(names[n], n .. " has a stall in the hub")
 	end
 	eq(#K.booths(cfg), 16, "sixteen NPCs, every stall filled (Archivist Odrenna took the last one, 2026-10-28)")
+	-- every stall's NPC gets a map mark (poi.lua looks at the stall tiles; the temple scan is 700 tiles away)
+	dofile("data/scripts/chaos/poi_core.lua")
+	local marks = ChaosPoi.hubMarks(dofile("data/scripts/chaos/poi_config.lua"), K.booths(cfg), function(b)
+		return {{name = b.name, x = b.x, y = b.y, z = b.z}}
+	end)
+	eq(#marks, 16, "all sixteen hub NPCs get a map mark")
 	-- the temple's portal gallery holds no NPC any more
 	local gallery = dofile("data/scripts/chaos/temple_portals_config.lua")
 	for _, t in ipairs(gallery.towns) do

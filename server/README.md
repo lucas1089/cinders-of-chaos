@@ -8346,6 +8346,8 @@ sparkle, neither blocks).
   `retiredHalls` lists their rectangles and a character who logs in inside one is sent to the temple of the hall's town
   with a message (`ChaosRetiredHallLogin`, pt-BR in `i18n_strings.lua`). The old copies of the deleted scripts on a
   server are harmless (`install_all.py` lists them, never deletes): `temple_npcs_config.lua` returns a table.
+- **Map marks.** The temple scan of `poi.lua` (12 tiles) cannot see the stalls, so `poi.lua` also looks at each stall tile
+  (`poi_config.lua` `hubRadius`) and marks every NPC there that the stall names ("Map markers"; `P.hubMarks`).
 - `tests/npc_booths_test.lua`: the config (16 stalls, two rows, each NPC once and an NPC of `data/npc`, nobody at the
   temple), the spots by town and temple, the retired halls, the login relocation (and an error caught), and
   `ChaosNpcPlace.place` into the stall and next to another town's temple. Since 2026-10-23 one of the two empty stalls is the Apothecary's (15 NPCs, one stall free; "The Apothecary"); on 2026-10-28 Archivist Odrenna took the last one (16 NPCs, every stall filled).
@@ -21424,6 +21426,9 @@ script answers its own part. Client: `client/overlay/modules/game_mapmarkers/` (
   `tools/gen_poi_test.py` (CI) builds a small map and checks the generator. At runtime `poi.lua` adds what the systems
   place at startup (found 20 s after the start and every 5 minutes, `poi_config.lua`): the Chaos NPCs within 12 tiles
   of a temple (Material Broker, the Gambler, the Keeper of Trials, the Ascendant Oracle, the faction quartermasters),
+  the Chaos NPCs in the stalls of the hub (`npc_booths_config.lua`, looked for `hubRadius` = 1 tile around each stall; the
+  temple scan cannot reach them, the stalls are about 700 tiles away; fixed 2026-10-28: before, the 16 hub NPCs had no
+  mark; `P.hubMarks`, name from `npcs` else the NPC's own),
   the portals there by action id (hideout, guild hall, the Ember Descent, the Ashen Sepulchre, the Ember Gate, the world
   boss and siege portals while they stand) and the dungeons of the base dungeon system at their entry point. On the
   shipped map: 90 runtime marks. The Marches, the battleground, rifts, the arena and the tower have no place on the map

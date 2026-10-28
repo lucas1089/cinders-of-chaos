@@ -97,6 +97,34 @@ eq(P.npcName(cfg, "Material Broker"), "Material Broker (professions)", "a Chaos 
 eq(P.npcName(cfg, "Some Guard"), nil, "not ours")
 eq(P.npcName(cfg, "Archivist Odrenna"), "Archivist Odrenna (line spell quests)", "the spell quest NPC is a map mark like the other hub NPCs")
 
+-- the hub's stalls (about 700 tiles from the temple) get their NPCs' marks too
+dofile("data/scripts/chaos/npc_booths_core.lua")
+do
+	local stalls = ChaosNpcBoothsCore.booths(ChaosNpcBoothsCore.cfg())
+	eq(#stalls, 16, "sixteen hub stalls")
+	local temple = ChaosNpcBoothsCore.cfg().temple
+	local asked = 0
+	local marks = P.hubMarks(cfg, stalls, function(b)
+		asked = asked + 1
+		return {{name = b.name:upper(), x = b.x, y = b.y, z = b.z}, {name = "Some Guard", x = b.x, y = b.y, z = b.z}}
+	end)
+	eq(asked, 16, "every stall is looked at")
+	eq(#marks, 16, "one mark per hub NPC, other creatures left out")
+	local names = {}
+	for _, m in ipairs(marks) do
+		eq(m.k, "npc", "an NPC mark")
+		eq(m.r, 0, "always on the map")
+		ok(math.abs(m.x - temple.x) > 100, "far from the temple scan: " .. m.n)
+		names[m.n] = true
+	end
+	ok(names["Archivist Odrenna (line spell quests)"], "Archivist Odrenna has a mark")
+	ok(names["Material Broker (professions)"], "a configured name is used")
+	ok(names["LOOT BUYER"], "an NPC with no configured name is shown by its own")
+	eq(#P.hubMarks(cfg, stalls, function() return {} end), 0, "an empty stall has no mark")
+	eq(#P.hubMarks(cfg, nil, function() return {} end), 0, "no stalls")
+	ok(cfg.hubRadius >= 0 and cfg.hubRadius <= 3, "hub radius is small")
+end
+
 -- ------------------------------------------------------------------ the committed data and the config
 local data = dofile("data/chaos_poi.lua")
 local loaded, ver = P.load(data)
