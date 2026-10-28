@@ -109,7 +109,7 @@ eq(N.minionIdle(cfg, cfg.minions.regen.idleAfterMs - 1), false, "idle: just hit"
 eq(N.minionIdle(cfg, cfg.minions.regen.idleAfterMs), true, "idle: after the wait")
 eq(N.minionIdle({minions = {}}, 99999), false, "idle: absent config")
 eq(N.firstStrike(cfg, "necromancer"), 2000, "first strike: Necromancer")
-eq(N.firstStrike(cfg, "lich"), 6000, "first strike: Lich")
+eq(N.firstStrike(cfg, "lich"), 4000, "first strike: Lich")
 eq(N.firstStrike(cfg, "bonelord"), 0, "first strike: Bone Lord has none")
 eq(N.firstStrike({minions = {}}, "lich"), 0, "first strike: absent config")
 ok(cfg.minions.incoming.pace and cfg.minions.regen.idle > cfg.minions.regen.combat, "config: idle regen beats combat regen")

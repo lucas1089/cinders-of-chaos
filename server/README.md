@@ -2291,10 +2291,10 @@ target. The Necromancer's class hit is 0.92. Balance model: `server/tools/minion
 `data/spells/README.md` "Necromancer minions (O160)". Assumption: the model is computed, not measured in game.
 
 * **First strike delay (class identity pass, 2026-10-28).** A freshly raised minion waits `minions.firstStrikeMs` before its first hit:
-  Necromancer 2000 ms, Lich 6000 ms, Bone Lord 0 (its army takes 13 s to raise). `necro_minions.lua` sets the first `nextHit` when it first sees a
+  Necromancer 2000 ms, Lich 4000 ms, Bone Lord 0 (its army takes 13 s to raise). `necro_minions.lua` sets the first `nextHit` when it first sees a
   minion (`ChaosNecroCore.firstStrike`, tested in `necro_test.lua`), so a pull, a replacement after a death and a wake from a protection zone rest
-  all pay it, while minions that persist between packs do not. The class reaches 80% of its steady damage after 4-8 s (Necromancer) and 8 s (Lich) in
-  `weakness_model.py`; the steady damage and `minion_model.py` are unchanged. Reload scripts.
+  all pay it, while minions that persist between packs do not. The class reaches 80% of its steady damage after 4-8 s (Necromancer) (the Lich ramp is 0 s, its shade strikes 5 s after the raise) in
+  `weakness_model.py` (the Lich ramp stays 0 s: its shade strikes 5 s after the raise, pinned on that); the steady damage and `minion_model.py` are unchanged. Reload scripts.
 
 ## Summons: targets, walk-through, levels (2026-10-21)
 

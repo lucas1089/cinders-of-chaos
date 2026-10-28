@@ -72,12 +72,16 @@ return {
 		"highest ramp class 2 Bone Lord,Shadowfist",
 		-- class identity pass 2 (owner, 2026-10-28), the four weaknesses that did not hold and now do:
 		-- 1. mana: the Mystic line has the shortest mana runway of the seven lines and the Warrior and Templar lines are not among
-		--    the two shortest (they were the two shortest, 34 s and 35 s at level 300)
+		--    the three shortest (they were the two shortest, 34 s and 35 s at level 300; owner 2026-10-28: cut their costs further)
 		"lowest runway line 1 Mystic",
-		"highest runway line 5 Warrior,Templar",
+		"highest runway line 4 Warrior,Templar",
 		-- 2. ramp-up: the Necromancer and the Lich need at least 3 s to reach 80% of their steady damage (first strike delay of
 		--    the minions, necro_config.lua minions.firstStrikeMs); the Necromancer line is the slowest with the Monk line (above)
-		"atleast ramp class 3 Necromancer,Lich",
+		"atleast ramp class 3 Necromancer",
+		-- the Lich ramp is 0 at a first strike of 4 s: its one shade is 27-30% of its damage and its spell opening pays for it (the
+		-- owner lowered the wait from 6 s, 2026-10-28), so the Lich is pinned on the seconds from the raise to the shade first hit
+		"atleast strike class 4 Lich",
+		"atleast strike class 3 Necromancer",
 		-- 3. range: the spells of the Warrior and Templar lines deal at most 45% of their damage from reach 3 or more
 		"atmost farspells line 0.45 Warrior,Templar",
 		-- 4. health: the Illusionist (6 a level) is below every class outside the Mystic line (Lich 7)

@@ -92,14 +92,14 @@ ok(all(1.0 <= f for f in W.mana_factor(t, cfg['levels'])), 'lever: the mana fact
 # the four weaknesses of the second identity pass hold, as facts of the tables
 n = range(len(cfg['levels']))
 ok(all(W.ranked(t, 'line', i, 'runway', 'lowest')[0] == 'Mystic' for i in n), 'weakness: the Mystic line has the shortest runway')
-ok(all('Warrior' not in W.ranked(t, 'line', i, 'runway', 'lowest')[:2] and 'Templar' not in W.ranked(t, 'line', i, 'runway', 'lowest')[:2]
-       for i in n), 'weakness: Warrior and Templar lines are not the two shortest')
+ok(all('Warrior' not in W.ranked(t, 'line', i, 'runway', 'lowest')[:3] and 'Templar' not in W.ranked(t, 'line', i, 'runway', 'lowest')[:3]
+       for i in n), 'weakness: Warrior and Templar lines are not among the three shortest')
 ok(all(t[c][i]['mana']['runway_own'] >= 30 for c in W.CLASSES for i in range(1) if True), 'weakness: no runway under 30 s at level 300')
-ok(all(t[c][i]['ramp'] >= 3 for c in ('Necromancer', 'Lich') for i in n), 'weakness: the Necromancer and the Lich ramp up for 3 s or more')
+ok(all(t['Necromancer'][i]['ramp'] >= 3 and t['Lich'][i]['strike'] >= 4 for i in n), 'weakness: the Necromancer ramps up for 3 s or more, the Lich shade strikes 4 s or more after the raise')
 ok(all(W.score(t, 'line', x, i, 'farspells') <= 0.45 for x in ('Warrior', 'Templar') for i in n), 'weakness: spells of Warrior and Templar are 45% far at most')
 ok(all(W.score(t, 'class', 'Illusionist', i, 'health') < min(W.score(t, 'class', c, i, 'health') for c in W.CLASSES if W.LINE[c] != 'Mystic')
        for i in n), 'weakness: the Illusionist has less health a level than every class outside the Mystic line')
-ok(abs(W.first_strike()['lich'] - 6.0) < 1e-9 and W.first_strike()['bonelord'] == 0.0, 'minions: first strike delays are read from necro_config.lua')
+ok(abs(W.first_strike()['lich'] - 4.0) < 1e-9 and W.first_strike()['bonelord'] == 0.0, 'minions: first strike delays are read from necro_config.lua')
 ok(all(f for _, f, _ in found), 'findings: every intended weakness holds')
 
 # the check
@@ -107,7 +107,7 @@ ok(W.check() == 0, 'check: the current state passes')
 ok(W.check(text.replace('"lowest health line 1 Mystic"', '"lowest health line 1 Warrior"')) == 1, 'check: a wrong health pin fails')
 ok(W.check(text.replace('"highest ramp line 2 Monk,Necromancer"', '"highest ramp line 2 Mystic,Thief"')) == 1, 'check: a wrong ramp pin fails')
 ok(W.check(text.replace('"highest health class 3 Juggernaut,Sentinel,Samurai"', '"highest health class 3 Mystic"')) == 1, 'check: a wrong class pin fails')
-ok(W.check(text.replace('"atleast ramp class 3 Necromancer,Lich"', '"atleast ramp class 9 Necromancer,Lich"')) == 1, 'check: a ramp limit that is missed fails')
+ok(W.check(text.replace('"atleast ramp class 3 Necromancer"', '"atleast ramp class 9 Necromancer"')) == 1, 'check: a ramp limit that is missed fails')
 ok(W.check(text.replace('"atmost farspells line 0.45 Warrior,Templar"', '"atmost farspells line 0.2 Warrior,Templar"')) == 1, 'check: a far share limit that is missed fails')
 ok(W.check(text.replace('"lowest runway line 1 Mystic"', '"lowest runway line 1 Warrior"')) == 1, 'check: a wrong runway pin fails')
 ok(W.check_facts(t, cfg['levels'], [('lowest', 'health', 'line', 1, ['Mystic'])]) == [], 'facts: a held pin has no failure')

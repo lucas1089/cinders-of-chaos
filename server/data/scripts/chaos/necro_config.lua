@@ -116,7 +116,7 @@ return {
 		-- class, so the minion classes start slower and win long fights (a ramp of 4-8 s; weakness_model.py reads it). The Bone
 		-- Lord needs none: its army takes 13 s to raise. Minions persist between packs, so a hunt pays it once; a boss pull, a
 		-- death or a protection zone rest pays it again.
-		firstStrikeMs = {necromancer = 2000, lich = 6000, bonelord = 0},
+		firstStrikeMs = {necromancer = 2000, lich = 4000, bonelord = 0},
 		-- leash: a minion farther than this from its owner, or on another floor, is brought next to it
 		leashRange = 7,
 		thinkMs = 500,

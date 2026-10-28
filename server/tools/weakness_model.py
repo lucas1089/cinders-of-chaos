@@ -217,7 +217,8 @@ def ramp_of(cls, level, conf):
         t += GRID
     ramp = 0.0 if last_below is None else min(RAMP_TO, last_below + GRID)
     total = (sum(h for _, h in hits) / R.HORIZON + wand + mrate) or 1.0
-    return {'ramp': ramp, 'out': max([a for a, _ in minion] or [0.0]), 'share': mrate / total}
+    return {'ramp': ramp, 'out': max([a for a, _ in minion] or [0.0]), 'share': mrate / total,
+            'strike': first_strike().get(MINION_KEY.get(cls), 0.0) + (conf['minionTravel'] if cls in MINION_KEY else 0.0)}
 
 
 # ------------------------------------------------------------------------------------------------ the three measures
@@ -289,7 +290,7 @@ def rows(levels, conf_text=None):
         out[c] = []
         for L in levels:
             rp = ramp_of(c, L, conf)
-            out[c].append({'mana': mana_row(c, L), 'ramp': rp['ramp'], 'out': rp['out'], 'minion_share': rp['share'],
+            out[c].append({'mana': mana_row(c, L), 'ramp': rp['ramp'], 'out': rp['out'], 'strike': rp['strike'], 'minion_share': rp['share'],
                            'exp': exposure_row(c, L, conf), 'hp': health_row(c, L, conf)})
     return out
 
@@ -298,6 +299,7 @@ def rows(levels, conf_text=None):
 MEASURES = {
     'health': lambda r: r['hp']['per_level'],
     'ramp': lambda r: r['ramp'],
+    'strike': lambda r: r['strike'],
     'far': lambda r: r['exp']['far'],
     'farspells': lambda r: r['exp']['spells']['far'],
     'near': lambda r: r['exp']['near'],
@@ -359,7 +361,7 @@ def intended(t, levels, conf):
 
     out = []
     low = [ranked(t, 'line', i, 'runway', 'lowest') for i in n]
-    out.append(('Mystic line: the most mana pressure', all(r[0] == 'Mystic' and 'Warrior' not in r[:2] and 'Templar' not in r[:2]
+    out.append(('Mystic line: the most mana pressure', all(r[0] == 'Mystic' and 'Warrior' not in r[:3] and 'Templar' not in r[:3]
                                                               for r in low),
                 'line mean runway in seconds (vocation regeneration, as rotation_sim.py --mana) at %s, shortest first at %d: %s; Mystic line %s' % (
                     lv, levels[0], ', '.join('%s %.0f' % (x, score(t, 'line', x, 0, 'runway')) for x in low[0][:3]),
@@ -389,7 +391,7 @@ def intended(t, levels, conf):
                                                       for i in n)) for x in ('Warrior', 'Templar')))))
     slow = [ranked(t, 'line', i, 'ramp', 'highest') for i in n]
     ok = all(set(s[:2]) == {'Monk', 'Necromancer'} for s in slow) and all(
-        t[c][i]['ramp'] >= 3.0 for c in ('Necromancer', 'Lich') for i in n)
+        t['Necromancer'][i]['ramp'] >= 3.0 and t['Lich'][i]['strike'] >= 4.0 for i in n)
 
     def cls_ramp(c):
         return '%s %s' % (c, '/'.join('%.1f' % t[c][i]['ramp'] for i in n))
