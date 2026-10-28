@@ -387,6 +387,23 @@ jobs:
           g++ -std=c++17 -Wall -Wextra -I "$d" server/tools/chaosfxoffsets_test.cpp -o "$d/chaosfxoffsets_test"
           "$d/chaosfxoffsets_test"
 
+      - name: Eight-direction facing (C++; header from server src-patch 0077)
+        run: |
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/chaosfacing\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            server/src-patches/0077-eight-direction-facing.patch > "$d/chaosfacing.h"
+          g++ -std=c++17 -O1 -Wall -Wextra -I "$d" server/tools/chaosfacing_test.cpp -o "$d/chaosfacing_test"
+          "$d/chaosfacing_test"
+          g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d" server/tools/chaosfacing_test.cpp -o "$d/chaosfacing_asan"
+          "$d/chaosfacing_asan"
+          awk '/^\+\+\+ b\/src\/client\/chaosfacing\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            client/base-patches/0160-eight-direction-looks.patch > "$d/client_chaosfacing.h"
+          mkdir "$d/client" && mv "$d/client_chaosfacing.h" "$d/client/chaosfacing.h"
+          g++ -std=c++17 -O1 -Wall -Wextra -I "$d/client" client/tools/chaosfacing_test.cpp -o "$d/client_facing_test"
+          "$d/client_facing_test"
+          g++ -std=c++17 -O1 -fsanitize=address,undefined -I "$d/client" client/tools/chaosfacing_test.cpp -o "$d/client_facing_asan"
+          "$d/client_facing_asan"
+
       - name: Live cast, pure parts (C++; header from server src-patch 0064)
         run: |
           d=$(mktemp -d)

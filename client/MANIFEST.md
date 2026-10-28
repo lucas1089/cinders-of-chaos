@@ -3392,33 +3392,38 @@ Owner requests 2026-10-28: the owner's AutoSprite character "Verdant Eye Demon" 
 then "mais 2 monstros ... pra hunt" that fit the game: the Ashbound Thrall and the Slagback Hound (server/README.md "AutoSprite
 looks (pair 54)"). Three outfits are appended; nothing else changes.
 - **Art.** Our AutoSprite characters (pixel art), each with AutoSprite's eight-direction walk (one render, 25 frames of 256 px per
-  direction). `gen_autosprite_art.py` takes up, right, down and left (the diagonals are not used), shrinks each frame to the look's
+  direction). `gen_autosprite_art.py` takes all eight directions (owner request 2026-10-28, O283: the looks have 8 x patterns, north,
+  east, south, west, then north-east, south-east, south-west, north-west; client base patch 0160 draws the diagonals, a client
+  without it the first four), shrinks each frame to the look's
   cell (block mean in premultiplied alpha, numpy only), moves each direction as a whole so the walk does not jitter (4x4: feet x 96,
   lowest row 125, where the 4x4 lions of pair 26 stand; 2x2: feet x 44, lowest row 62, where the 2x2 looks of pair 26 stand) and
-  picks 8 walk phases evenly from the 25 (idle = frame 0). The render's PNGs are pinned by md5 (`LOOKS`); they are not in git.
-  Committed: `art_import/autosprite/<key>.png`, `art_import/autosprite.csv` (layers 1, idle 1 phase + walk 8 phases at 100 ms),
+  picks 8 walk phases evenly from the 25 (idle = frame 0). Every frame stands on the bottom tile row and every idle frame reaches
+  the creature's own tile (a diagonal stride of the 4x4 demon leaves it in two walk frames). The four straight columns are the
+  same pixels as the first build. The render's PNGs are pinned by md5 (`LOOKS`); they are not in git.
+  Committed: `art_import/autosprite/<key>.png`, `art_import/autosprite.csv` (layers 1, patterns 8, idle 1 phase + walk 8 phases at
+  100 ms; `import_art_things.py` takes outfit rows with patterns 4 or 8),
   `art_import/autosprite_sources.csv`, `monster_looks/autosprite_picks.csv`. `build --check` (CI) checks them against the spec.
   - 3361 `eye_demon`, 4x4: Vharzul the Verdant Eye (family `lairboss`).
   - 3362 `ashbound_thrall`, 2x2: the Ashbound Thrall (family `hunt`).
   - 3363 `slagback_hound`, 2x2: the Slagback Hound (family `hunt`).
 ```
-python3 -I client/tools/sprites/gen_autosprite_art.py build --src RENDER_DIR      # RENDER_DIR/<key>/{up,right,down,left}.png
+python3 -I client/tools/sprites/gen_autosprite_art.py build --src RENDER_DIR      # RENDER_DIR/<key>/ the eight PNGs of FILES
 python3 -I client/tools/sprites/import_art_things.py --ours-dat pair53/Tibia.dat --ours-spr pair53/Tibia.spr --out-dir pair54 \
     --things client/tools/sprites/art_import/autosprite.csv --first-item 44396 --first-outfit 3361 --expect-items 44395
 python3 -I client/tools/sprites/check_pair.py pair54/Tibia.dat pair54/Tibia.spr --old pair53/Tibia.dat pair53/Tibia.spr
 ```
 Input pair 53 (dat ed39f8452177e0ef503c97fd5f7df764, spr 971ba1f67b7a07cd05a5416ad285ba0c).
-Output **pair 54**: dat fc4b72300ddb6dfe7b59767f69c7c896 (8,839,112 bytes), spr b941aa0fa26aed2f159e0a32049434a1
-(1,130,908,345 bytes, 946,121 sprites: 585 appended), 44,395 items, 3,363 outfits.
-- **Checked.** The importer: the output parses, 864 sprite slots pixel-identical to the art, every other thing byte-identical,
-  3,000 sampled old sprites unchanged, append-only guard passed. `check_pair.py --old pair53`: 0 errors, 3,966 warnings (the same
-  as pair 53). `gen_outfit_anchors.py` and `gen_info_lift.py` against pair 54 add the three looks and change the dat md5 line (not
-  committed yet: CI checks them against the pair on windows-assets); `gen_fx_send_offsets.py --check` passes. Not run in a client.
+Output **pair 54** (8 directions; rebuilt 2026-10-28): dat bd8d87f8b4950e01e65ee1ed288c4998 (8,842,568 bytes), spr
+222435122aba68d77f8a1772aa69ddf6 (1,131,883,560 bytes, 946,728 sprites: 1,192 appended), 44,395 items, 3,363 outfits.
+- **Checked.** The importer: the output parses, 1,728 sprite slots pixel-identical to the art, every other thing byte-identical,
+  3,000 sampled old sprites unchanged, append-only guard passed. `check_pair.py --old pair53`: 0 errors, 3,964 warnings (the same
+  as pair 53; `outfit-directions` accepts 8). `gen_outfit_anchors.py` and `gen_info_lift.py` against pair 54 change only the dat
+  md5 line (not committed yet: CI checks them against the pair on windows-assets). Not run in a client.
 - **Archive parts** (same recipe as pair 53; not pushed to windows-assets yet, waiting for the owner's approval):
-  - part00 99,614,720 bytes, sha256 `ac315fed7d4753b79bd7b2db172175ff50611d8a0b7391a5d6006c81b660c8cd`
-  - part01 29,576,236 bytes, sha256 `265f4b5387b4fd8a83703393b2840b01cc8853050c8db00b393f75f45c20a9f5`
-  - joined `things-1098.tar.xz` (129,190,956 bytes) sha256 `5041bd0bfa2d801ce7f3b308fcfe99b4f2930bdd352b3a838560deabcc448fff`;
-    `things-1098.tar` sha256 `377a5dac3f7177c6918609460e43008b3dfbe648992d0cf927c3e43366054c5a`.
+  - part00 99,614,720 bytes, sha256 `2f0d08946c9a91db611e7931e9dd24c08cf8cb2734c0ab796885088f933adfcd`
+  - part01 30,155,764 bytes, sha256 `5136b1ae07bbe2a1f553cc40fa53f88c3f511829345f47bec18ec090d8b246d3`
+  - joined `things-1098.tar.xz` (129,770,484 bytes) sha256 `e0ec06cdf8834789ae2016993ee40a1666c0f78bdf297471fc1ff351198b23d2`;
+    `things-1098.tar` sha256 `ec9bb5cbed28f3b0e9f0a472873d890b732be5a46cde581449ab7f668ece061a`.
 - **To ship** (one change, after the push): `ChaosAutospriteArt.PAIR54 = true` (server/data/lib/chaos_autosprite_art.lua), the rows of
   `monster_looks/autosprite_picks.csv` appended to `picks.csv` and `server/tools/apply_monster_looks.py` run (looks 3361-3363 into
   the three files), `tools/ci/check_content.py` `PAIR_NAME, PAIR_OUTFITS` to pair 54 / 3363, `outfit_anchors.lua` and

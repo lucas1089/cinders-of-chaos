@@ -256,6 +256,10 @@ server/
                                       column of 25 tiles per step) with one quad tree walk per 8x8 block, not per tile; same
                                       tiles (see "Cheaper walk map refresh (O225)"; header src/chaosstrip.h,
                                       tools/chaosstrip_test.cpp, tools/strip_bench.cpp)
+  src-patches/0077-eight-direction-facing.patch   engine: the turn packet and the creature description carry a diagonal
+                                      facing (after a diagonal step, a monster facing a diagonal target) for looks with 8
+                                      directions; combat keeps the four-way direction (see "Eight-direction facing (O283)";
+                                      header src/chaosfacing.h, tools/chaosfacing_test.cpp)
                                       per 8x8 block the line crosses, not once per tile; same answers (see "Cheaper line of
                                       sight (O218)"; header src/chaossight.h, tools/chaossight_test.cpp, tools/sight_bench.cpp)
     remote_cmd.lua    remote_cmd_core.lua    remote_cmd_config.lua  (remote admin commands by file, see "Remote admin commands")
@@ -10885,7 +10889,9 @@ Rift; then two hunt monsters that fit the game. All three live in the Embergut R
 - **Boss Spawns window.** `bossspawns_config.lua` lists Vharzul with the lair bosses (`lair_vharzul`, Embergut Rift, timer 4 hours).
 - **Teleport display.** `hunt_teleports_config.lua` shows the Slagback Hound at the rift's teleport (was the Mercenary, which no
   longer spawns there; `tests/hunt_teleports_test.lua` checks the display monster spawns in the plan).
-- **Looks.** Pair 54 (client/MANIFEST.md "Pair 54") adds looks 3361-3363 from our AutoSprite renders. Switching on is one change:
+- **Looks.** Pair 54 (client/MANIFEST.md "Pair 54") adds looks 3361-3363 from our AutoSprite renders, in all 8 directions (the
+  diagonals need client base patch 0160 and src-patch 0077, "Eight-direction facing (O283)"; without them the first four draw).
+  Switching on is one change:
   `M.PAIR54 = true`, the rows of `client/tools/sprites/monster_looks/autosprite_picks.csv` into `picks.csv`,
   `tools/apply_monster_looks.py` (families `lairboss` and `hunt`), `tools/ci/check_content.py` to pair 54 / 3363 outfits, the two
   client files regenerated from the pair.
@@ -24952,6 +24958,41 @@ created after a read is seen by the next reader, and that two floors with the sa
 1.15x faster (CI "Native checks"). It reuses `tools/sight_world.h`. The patch chain 0001-0076 applies to the base source
 with 0 FAILED and 0 fuzz; `creature.cpp` passes `g++ -fsyntax-only` on the patched source. Not built or linked, not run
 on a live server.
+
+## Eight-direction facing (O283) (engine `src-patches/0077-eight-direction-facing.patch`, `src/chaosfacing.h`, `tools/chaosfacing_test.cpp`)
+
+Owner request 2026-10-28: "pode fazer o patch de 8 direções do motor e fazer as gerações em 8 direções". The client half is
+base patch 0160 (client/BASE.md): it draws a look's diagonal columns when the look has 8. The looks of pair 54 (3361-3363,
+"AutoSprite looks (pair 54)") are the first with 8.
+
+**What the server sends.** `Creature::direction` stays four-way: spell areas and waves, the tile in front, `getDirection` in
+Lua and everything else the server decides with it are unchanged. Next to it, `Creature::facing` is the way the clients draw
+the creature:
+- `setDirection` sets both, so every stock turn faces its direction.
+- `Map::moveCreature`: a diagonal step faces its diagonal (`ChaosFacing::ofStep`); the direction stays east or west as before.
+  The client already draws a diagonal walk from the move packet; the facing matters when the creature comes into view later
+  (the creature description carries it).
+- `Monster::updateLookDirection`: the same four-way turn as before, and the facing of the target's diagonal when the target
+  stands nearer a diagonal than an axis (`ChaosFacing::toward`: the smaller offset over 0.4 of the larger, tan 22.5 degrees =
+  0.414; 2 by 1 faces the diagonal, 3 by 1 the axis). With no target it does nothing (stock: a turn to the same direction).
+- `Game::internalCreatureTurn(creature, dir, facing = DIRECTION_NONE)` sends the turn when the direction or the facing changes.
+  A plain turn (a player, an NPC, Lua `setDirection`, a teleport) faces `dir`, so it also clears a diagonal.
+- The turn packet (0x6B) and `AddCreature` send `ChaosFacing::wire(facing)`: the client's order is north-east 4, south-east 5,
+  south-west 6, north-west 7 (the server's own diagonal values are south-west 4, south-east 5, north-west 6, north-east 7).
+  Lua `setDirection` with a diagonal now reaches the client as that diagonal (stock sent the server value, which the client
+  read as another diagonal).
+
+**Old clients and other looks.** A client without base patch 0160, and a look with 4 columns, draw a diagonal east or west:
+what they drew before. The web cast viewer (`tools/cast_relay.py`) draws the client's diagonals east or west the same way
+(`facing4`; it took the low two bits before, which turned north-east into north).
+
+**Checked.** `tools/chaosfacing_test.cpp` (CI "Eight-direction facing", also under ASan and UBSan): the 8 steps, that a
+diagonal step keeps the stock east or west direction and that a 4-column look draws what it drew before, `toward` on and
+around the 0.4 line and for every offset up to 8 tiles, the wire bytes. `tools/cast_relay_test.py`: the four diagonal turns.
+The chain 0001-0077 applies to the base source with `patch -p1 --fuzz=0`, 0 FAILED; `map.cpp`, `monster.cpp`, `game.cpp` and
+`protocolgame.cpp` pass `g++ -std=c++20 -fsyntax-only -Wall` on the patched source with no new warning. Not built or linked,
+not run on a live server: in game, confirm a monster of looks 3361-3363 walks and stands on the diagonals and turns to a
+diagonal target, and that spells still point the four ways.
 
 ## Cursed Chest (`cursedchest.lua`, `cursedchest_core.lua`, `cursedchest_config.lua`; O244)
 

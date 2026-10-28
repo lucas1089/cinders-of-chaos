@@ -229,6 +229,15 @@ def step_ms(speed_half, ground, diagonal, player):
     return max(step, min(5000, int(-(-ms // step) * step)))
 
 
+def facing4(d):
+    """the column of a creature's direction byte in the viewer's four-direction looks: the client's diagonals
+    (4 north-east, 5 south-east, 6 south-west, 7 north-west; server src-patch 0077 sends them) draw east or west, as the
+    client draws a look without diagonal columns"""
+    if d <= 3:
+        return d
+    return 1 if d in (4, 5) else 3
+
+
 def missile_pattern(fx, fy, tx, ty):
     """(x, y) pattern of a missile flying from (fx, fy) to (tx, ty): the client's eight directions"""
     dx, dy = tx - fx, ty - fy
@@ -551,7 +560,7 @@ class World:
             m.u8()                      # unpassable
             if c is None:
                 raise ParseError('turn of an unknown creature')
-            c['d'] = d & 3
+            c['d'] = facing4(d)
             self.ch_cr.add(cid)
             return ('c', cid)
         if op == 0x61:
@@ -576,7 +585,7 @@ class World:
             if c is None:
                 raise ParseError('a known creature the view does not know')
         c['hp'] = min(100, m.u8())
-        c['d'] = m.u8() & 3
+        c['d'] = facing4(m.u8())
         c['o'] = self.outfit(m)
         c['lt'] = [m.u8(), m.u8()]
         c['sp'] = m.u16()

@@ -2,11 +2,11 @@
 """Creature looks from our own AutoSprite renders (owner requests 2026-10-28), ready for import_art_things.py.
 
 Source and licence: characters made with the owner's paid AutoSprite account (docs/CREDITS.md "Tools"), each animated
-with AutoSprite's eight-direction walk (one render, 25 frames of 256 px per direction, 5 x 5 cells per PNG). SOURCES
-pins the four PNGs of each look we use (up, right, down, left) by md5; the diagonal ones are not used (our looks have
-four directions). The renders are not in git.
+with AutoSprite's eight-direction walk (one render, 25 frames of 256 px per direction, 5 x 5 cells per PNG). LOOKS pins
+the eight PNGs of each look by md5. The looks have 8 directions (owner request 2026-10-28, O283): the client draws the
+diagonal columns with base patch 0160, a client without it the first four. The renders are not in git.
 
-    python3 -I gen_autosprite_art.py build --src DIR     # DIR/<key>/ holds up.png, right.png, down.png, left.png
+    python3 -I gen_autosprite_art.py build --src DIR     # DIR/<key>/ holds the eight PNGs of FILES
     python3 -I gen_autosprite_art.py build --check       # CI: the committed sheets, things file, picks and sources match
     python3 -I gen_autosprite_art.py build --src DIR --check   # rebuild from the renders, compare pixel for pixel
 
@@ -21,7 +21,8 @@ Phases: idle = walk frame 0, then WALK frames picked evenly from the 25 (the ren
 
 Outputs (committed):
   art_import/autosprite/<key>.png      one sheet per look in import_art_things.py's outfit layout (layers=1: one row
-                                       per phase, idle first; one column per direction north, east, south, west)
+                                       per phase, idle first; one column per direction north, east, south, west,
+                                       north-east, south-east, south-west, north-west: patterns=8)
   art_import/autosprite.csv            the things file: outfits 3361.. (after pair 53's 3360), in LOOKS order
   art_import/autosprite_sources.csv    where the art comes from (check_credits.py)
   monster_looks/autosprite_picks.csv   the picks.csv rows of the looks (appended to picks.csv with pair 54)
@@ -56,25 +57,30 @@ WALK = 8
 MS = 100
 ALPHA_MIN = 12
 FOOT = {128: (96, 125), 64: (44, 62)}   # cell px -> (feet x, lowest row)
-DIRS = ('north', 'east', 'south', 'west')
-FILES = ('up.png', 'right.png', 'down.png', 'left.png')   # the render's names, in DIRS order
+# the look's columns: the four of every look, then the diagonals in the client's order (Otc::Direction 4-7)
+DIRS = ('north', 'east', 'south', 'west', 'northeast', 'southeast', 'southwest', 'northwest')
+FILES = ('up.png', 'right.png', 'down.png', 'left.png', 'northeast.png', 'southeast.png', 'southwest.png',
+         'northwest.png')   # the render's names, in DIRS order
 
 # the looks in look-id order (FIRST_OUTFIT + index):
 # key, AutoSprite character id, cell px, look name, family, monster (exact <monster name>), description,
-# md5 of up / right / down / left
+# md5 of the FILES in DIRS order
 LOOKS = [
     ('eye_demon', 'cmvrcd1w20014jc1opt6ib6ox', 128, 'Verdant Eye Demon', 'lairboss', 'Vharzul the Verdant Eye',
      'horned red and black demon with pale green eyes, claws and spiked shoulders, 4x4',
      ('8e9ae2853610c7ee4741910e3652f76e', 'afd3ec641ee7dfeab404a53e8290f492', 'aa39ff22aa86fa4793fa716bff2626df',
-      '0c82bf8a09d725baea2e990f8ddaf005')),
+      '0c82bf8a09d725baea2e990f8ddaf005', '94cde1f66ca3ecd56cf40dfd07f3fdd4', '0c3c8aa89fee7b62645693f799e36d78',
+      'bcebe5ea95acb26af0c56b65a40a98c1', 'f84212ea9e9f4290f54ed12702482569')),
     ('ashbound_thrall', 'cmvre826d00ezz6z1fg72bkp8', 64, 'Ashbound Thrall', 'hunt', 'Ashbound Thrall',
      'hunched chained demonic thrall, charred hide cracked with ember veins, small horns',
      ('4e105e83487eb1318fae139b5b8764b3', '4d46fb98b76d591e99bee068df7f1c0f', '99c71f7af5d29d30c7d8dcffcc13b92a',
-      '8789f0464ae9085087e0f3b66bdb84ad')),
+      '8789f0464ae9085087e0f3b66bdb84ad', '78361d9990349fe35e82edca35513a8a', 'dc1981fdf0bb54dbf2f2a18c9a345a9c',
+      '3a0dd056bf9858de83418dd1e137efb7', 'bc79286fad7d8e34aebc524303a118c1')),
     ('slagback_hound', 'cmvre8d91006k4v8d5v9j0xc9', 64, 'Slagback Hound', 'hunt', 'Slagback Hound',
      'black hellhound with glowing slag plates on its back and a smoking mane',
      ('2bf262f1b48e0021476d56eda14d20e1', '50b63c78cb9691733941e5fc1f40041f', 'fd56cf8779cbd0e65314730aa1406dc0',
-      'bd7ee0920b392a259fb04c899bb8fd9d')),
+      'bd7ee0920b392a259fb04c899bb8fd9d', '39af60e28ecaa233a5d0fd1e4e64e2dd', 'ce71a15f3833628d72494001ad84bf07',
+      '9c0aafbdc0244fa2ca8ff9565c4369b5', '44913638c1825e5e247bc5555ae63c61')),
 ]
 FIELDS = ['key', 'cat', 'kind', 'name', 'atlas', 'x', 'y', 'w', 'h', 'patterns', 'phases', 'flags', 'mode', 'server_id',
           'extra']
@@ -157,7 +163,7 @@ def build_look(src, key, c, md5s):
         placed, sh = place(cells, c)
         cols.append([placed[0]] + [placed[i] for i in walk_frames()])
         shifts.append(sh)
-    rows = [np.concatenate([cols[d][r] for d in range(4)], axis=1) for r in range(1 + WALK)]
+    rows = [np.concatenate([cols[d][r] for d in range(len(DIRS))], axis=1) for r in range(1 + WALK)]
     return np.concatenate(rows, axis=0), shifts
 
 
@@ -174,7 +180,8 @@ def things_rows():
     durs = '/'.join(['%d' % MS] * WALK)
     for key, _cid, c, name, *_r in LOOKS:
         t = c // 32
-        rows.append([key, 'outfit', 'creature', name, 'autosprite/' + key, 0, 0, t, t, 4, '1+%d' % WALK, '', 'new', '',
+        rows.append([key, 'outfit', 'creature', name, 'autosprite/' + key, 0, 0, t, t, len(DIRS), '1+%d' % WALK, '', 'new',
+                     '',
                      'layers=1|gtypes=0+1|exact=%d+%d|durs1=%s|anim1=0:0:0' % (c, c, durs)])
     return rows
 
@@ -191,8 +198,8 @@ def sources_rows():
     out = []
     for key, cid, c, *_r in LOOKS:
         out.append([key, 'outfit', 'AutoSprite',
-                    'character %s, eight-direction walk (one render, 25 frames of 256 px); up/right/down/left shrunk '
-                    'to %d px' % (cid, c), 'made with the owner\'s AutoSprite account; docs/CREDITS.md'])
+                    'character %s, eight-direction walk (one render, 25 frames of 256 px); all eight directions '
+                    'shrunk to %d px' % (cid, c), 'made with the owner\'s AutoSprite account; docs/CREDITS.md'])
     return out
 
 
@@ -217,7 +224,7 @@ def check_rules(sheets):
         if sheet is None:
             bad.append(key + ' missing')
             continue
-        want = (c * (1 + WALK), c * 4)
+        want = (c * (1 + WALK), c * len(DIRS))
         if sheet.shape[:2] != want:
             bad.append('%s: %s, the spec gives %s' % (key, sheet.shape[:2], want))
             continue
@@ -227,13 +234,17 @@ def check_rules(sheets):
         if (sheet[al == 0][:, :3] != 0).any():
             bad.append(key + ': colour under alpha 0')
         for r in range(1 + WALK):
-            for d in range(4):
+            for d in range(len(DIRS)):
                 cell = sheet[r * c:(r + 1) * c, d * c:(d + 1) * c]
                 if not cell[..., 3].any():
                     bad.append('%s: empty frame (row %d, %s)' % (key, r, DIRS[d]))
-                elif not cell[c - 32:, c - 32:, 3].any():
-                    # the creature's own tile (bottom right 32 x 32) must hold some of the body
-                    bad.append('%s: nothing on the creature tile (row %d, %s)' % (key, r, DIRS[d]))
+                elif not cell[c - 32:, :, 3].any():
+                    # every frame stands on the bottom row of tiles
+                    bad.append('%s: nothing on the bottom tile row (row %d, %s)' % (key, r, DIRS[d]))
+                elif r == 0 and not cell[c - 32:, c - 32:, 3].any():
+                    # the idle frame holds some of the body on the creature's own tile (bottom right 32 x 32); a
+                    # diagonal stride may leave it in a walk frame
+                    bad.append('%s: nothing on the creature tile (idle, %s)' % (key, DIRS[d]))
     return bad
 
 

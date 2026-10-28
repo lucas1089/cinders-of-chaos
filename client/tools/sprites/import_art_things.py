@@ -18,14 +18,15 @@ to an earlier output, e.g. art_import/pouches.csv: --first-item 33651 --expect-i
 minimap:colour, the rest without data) or copy:<client id> (the flags of an existing item, market data dropped: used for
 the new looks of existing server items, so stackable / multi-use / light stay as they were).
 Outfits (cat=outfit): appended after the last outfit, --first-outfit pads with blank outfits the same way. Two frame
-groups (idle: 2 phases, walking: 4 phases; per-phase ms from the row), 4 directions, 2 layers (base + colour mask:
+groups (idle: 2 phases, walking: 4 phases; per-phase ms from the row), 4 directions (patterns=8: 8, the diagonals
+north-east, south-east, south-west, north-west after them; client base patch 0160), 2 layers (base + colour mask:
 yellow head, red body, green legs, blue feet, the client's template layer), size w x h tiles.
 Other outfit layouts (compose_outfit.py writes them; every key is optional and the defaults are the layout above):
 the phases column lists the phases per frame group ("2+4", "1+8", or "8" for one group); extra keys gtypes=0+1
 (group types), layers=1|2, addons=N (pattern y), mounts=N (pattern z), exact=46+46 (exact size per group), durs<g>=
 min:max/min:max/... (per-phase ms of group g), anim<g>=async:loop:start; the flags column takes 10.98 flag names as
 for items (displacement:x:y may be negative) and bones:nx:ny:sx:sy:ex:ey:wx:wy (byte 39, the rider seat). The sheet has
-one row per group and phase (group 0's phases first) and one column per ((z * addons + y) * layers + layer) * 4 +
+one row per group and phase (group 0's phases first) and one column per ((z * addons + y) * layers + layer) * patterns +
 direction, each cell w x h tiles; the row's x / y are the sheet's top-left corner.
 Atlas names are paths without .png relative to the directory of the --things file.
 An outfit row with mode=replace and extra look=ID rewrites the existing outfit ID in place instead of appending one
@@ -175,7 +176,9 @@ class OutfitLayout:
         self.layers = int(e.get('layers', 2))
         self.py = int(e.get('addons', 1))
         self.pz = int(e.get('mounts', 1))
-        assert int(r['patterns'] or 4) == 4, (r['key'], 'outfits have 4 directions')
+        # 4 directions, or 8 (then north-east, south-east, south-west, north-west: client base patch 0160)
+        self.px = int(r['patterns'] or 4)
+        assert self.px in (4, 8), (r['key'], 'outfits have 4 or 8 directions')
         assert len(self.gtypes) == n and self.layers in (1, 2) and 1 <= self.py <= 4 and 1 <= self.pz <= 2, r['key']
         big = r['w'] > 1 or r['h'] > 1
         self.exact = (tuple(int(x) for x in e['exact'].split('+')) if 'exact' in e
@@ -200,7 +203,7 @@ class OutfitLayout:
             self.anim.append((asyn, loop, start, tuple(durs)))
 
     def column(self, z, y, layer, d):
-        return ((z * self.py + y) * self.layers + layer) * 4 + d
+        return ((z * self.py + y) * self.layers + layer) * self.px + d
 
 
 def outfit_frames(r, lay=None):
@@ -215,7 +218,7 @@ def outfit_frames(r, lay=None):
             y0 = r['y'] + row * H
             for z in range(lay.pz):
                 for y in range(lay.py):
-                    for d in range(4):
+                    for d in range(lay.px):
                         for layer in range(lay.layers):
                             x0 = r['x'] + lay.column(z, y, layer, d) * W
                             cell = a[y0:y0 + H, x0:x0 + W]
@@ -294,7 +297,7 @@ def outfit_entry(w, h, lay, sids_by_group, flags=b''):
         e += bytes([lay.gtypes[g], w, h])
         if w > 1 or h > 1:
             e += bytes([lay.exact[g]])
-        e += bytes([lay.layers, 4, lay.py, lay.pz, n])
+        e += bytes([lay.layers, lay.px, lay.py, lay.pz, n])
         if n > 1:
             asyn, loop, start, durs = lay.anim[g]
             e += struct.pack('<Bib', asyn, loop, start) + struct.pack('<' + 'II' * n, *durs)
@@ -369,9 +372,9 @@ def main():
         frames = outfit_frames(r, lay)
         groups = []
         for g, n in enumerate(lay.phases):
-            shp = Shape(r['w'], r['h'], lay.layers, 4, lay.py, n)
+            shp = Shape(r['w'], r['h'], lay.layers, lay.px, lay.py, n)
             shp.pz = lay.pz
-            ids = [None] * (r['w'] * r['h'] * lay.layers * 4 * lay.py * lay.pz * n)
+            ids = [None] * (r['w'] * r['h'] * lay.layers * lay.px * lay.py * lay.pz * n)
             for (g_, ph, d, layer, y, z), img in frames.items():
                 if g_ != g:
                     continue
@@ -498,7 +501,7 @@ def main():
         for g, (shp, ids) in enumerate(groups):
             h = mg[g]
             assert (h.gtype, h.w, h.h, h.layers, h.px, h.py, h.pz, h.phases, h.anim) == \
-                   (lay.gtypes[g], r['w'], r['h'], lay.layers, 4, lay.py, lay.pz, lay.phases[g], lay.anim[g]), r['key']
+                   (lay.gtypes[g], r['w'], r['h'], lay.layers, lay.px, lay.py, lay.pz, lay.phases[g], lay.anim[g]), r['key']
             for (g_, ph, dd, layer, y, z), img in frames.items():
                 if g_ != g:
                     continue
