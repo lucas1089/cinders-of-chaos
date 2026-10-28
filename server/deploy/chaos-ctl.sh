@@ -1257,7 +1257,7 @@ print(s.strip()[:200].encode("utf-8").hex())') || die "could not read the note"
     [ -f "$SERVER/config.lua" ] || die "no $SERVER/config.lua (CHAOS_SERVER_DIR)"
     case ${1:-show}:$# in
       show:0|show:1) exec python3 -I "$tool" show "$SERVER" ;;
-      set:2) num "$2" && [ "${#2}" -le 3 ] || die "client-pair set N (the pair number, 1..999)"
+      set:2) { num "$2" && [ "${#2}" -le 3 ]; } || die "client-pair set N (the pair number, 1..999)"
              exec python3 -I "$tool" set "$SERVER" "$2" ;;
       *) die "client-pair [show | set N]" ;;
     esac
