@@ -819,6 +819,9 @@ jobs:
       - name: Painted icons are up to date with their source sheet (gen_painted_icons.py)
         run: python3 client/tools/gen_painted_icons.py --check  # not -I: Pillow from the user site (installed above)
 
+      - name: Quest spell icons match their source sheet (gen_quest_spell_icons.py, cells 349-369 of the spell icon sheets)
+        run: python3 client/tools/gen_quest_spell_icons.py --check  # not -I: Pillow from the user site (installed above)
+
       - name: Rain art is up to date (gen_rain_art.py, three seamless tiles of game_chaosweather)
         run: python3 client/tools/gen_rain_art.py --check  # not -I: Pillow from the user site (installed above)
 

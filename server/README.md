@@ -17078,7 +17078,9 @@ Phases 1 to 5 of the 21 line spells (design: three quests per class line at leve
 Built: the quest machine, the hunt, the fragments, the trial hook, the reward, the tracker, the NPC, the seven level 500 attack spells,
 the seven level 1200 ultimates and the seven level 800 buffs (below), and the client's locked spells in the Spellbook. All 21 spell ids
 of `spell_id_pool_config.lua` are in use. Phase 6 (2026-10-28) is the NPC in the game and the tester bot check `spell_quest` (below);
-left for later: a live run of both, the drawn icons and the balance from play data (phase 7).
+left for later: a live run of both and the balance from play data. Phase 7 (2026-10-28) is the drawn icons: the 21 spells have PixelLab
+art in the Chaos frame in cells 349-369 of the three spell icon sheets and in the seven buff bar icons (client/MANIFEST.md "Line spell
+quest icons"); no server file changed.
 
 - **Level 500 spells (phase 2).** Keepfall 142, Moonshard Rain 149, Prismatic Rupture 152, Eclipse Edge 155, Soulflay Wave 158,
   Thousand-Echo Palm 172, Pyre of Absolution 177: the first id of each line's triple in the pool (quest 2 and 3 take the next two of
