@@ -14,16 +14,14 @@ local BASE = {
 -- Ids of the base's ammunition conjure spells (Arrow Call 176, Fletch Crystal Arrows 192, Fletch Wraith Bolts 193). The
 -- "archery" step (patch_base_archery.py) comments them out of spells.xml and tools/register_spells.py does not count them
 -- as taken, so the Chaos block may reuse them (the Necromancer's Raise Bone Warrior / Archer / Mage, 2026-10-18): every
--- other id below 256 was in use until the cure spells were retired (RETIRED below). The client's stock entry of Arrow Call is moved off the byte range by spellfix.lua.
+-- other id below 256 was in use until the cure spells were retired (RETIRED below). The ids the tools freed and nothing uses
+-- are the pool of data/scripts/chaos/spell_id_pool_config.lua (checked at the end of this test). The client's stock entry of Arrow Call is moved off the byte range by spellfix.lua.
 local AMMO_CONJURE = {176, 192, 193}
 -- Ids of the other conjure spells the "runes" step (install_rune_supply.py, chaos_rune_supply.lua R.otherConjures)
 -- removes: Conjure Rations 42, Charge Staff 92, Hallow Spear 110. No rune carries them (a rune's cooldown icon uses its
 -- conjure spell's id), so register_spells.py does not count them as taken either; Grave Nova (Necromancer line,
 -- 2026-10-22) uses 42. The client's stock Conjure Rations entry moves off it (spellfix.lua, chaosIds).
 local OTHER_CONJURE = {42, 92, 110}
-local PATCHED = { -- tools/patch_spell_ids.py NEW_IDS (Wash Taint 58 and Break Glamour 164 went with the cure spells)
-	34, 35, 37, 40, 41, 46, 47, 52, 53, 60, 85, 165, 168, 171
-}
 -- Ids of the stock cure (status cleansing) spells that tools/retire_cure_spells.py comments out of spells.xml (owner
 -- 2026-10-20, C6): Purge Venom 29, Wash Taint 58, Staunch Blood 144, Douse Embers 145, Ground Static 146, Lift Hex 147,
 -- Break Glamour 164. The Chaos block uses them for the new late spells of the ascended classes. The same tool retires
@@ -69,7 +67,26 @@ do
 	if #CAP_RETIRED < 40 then error("spell_ids_test: only " .. #CAP_RETIRED .. " retired ids parsed from CAP") end
 	for _, id in ipairs(CAP_RETIRED) do taken[id] = nil end
 end
-for _, id in ipairs(PATCHED) do taken[id] = "patch_spell_ids.py" end
+-- Ids tools/patch_spell_ids.py gives to the base spells over 255 (NEW_IDS), read from the tool: a spell that the cap
+-- retired (a CAP row with no class, CAP_RETIRED_SCRIPTS) keeps no id, so only the others are taken. Before 2026-10-28 the
+-- test counted all 14 as taken, which hid nine free ids (35 40 41 47 52 60 165 168 171).
+do
+	local tool = io.open("tools/patch_spell_ids.py"):read("*a")
+	local block = tool:match("\nNEW_IDS = {(.-)\n}\n")
+	if not block then error("spell_ids_test: NEW_IDS table not found in patch_spell_ids.py") end
+	local cap = io.open("tools/patch_spell_cap.py"):read("*a"):match("\nCAP = {(.-)\n}\n")
+	local n, live = 0, 0
+	for script, id in block:gmatch("'([^']+)': (%d+),") do
+		n = n + 1
+		if cap:find("'" .. script .. "': %(%d+, [^\n]-, %(%)%)") then
+			-- retired by the cap: no id
+		else
+			taken[tonumber(id)] = "patch_spell_ids.py"; live = live + 1
+		end
+	end
+	if n ~= 14 then error("spell_ids_test: " .. n .. " NEW_IDS rows parsed, 14 expected") end
+	if live ~= 5 then error("spell_ids_test: " .. live .. " moved spells keep an id, 5 expected (34 37 46 53 85)") end
+end
 -- the three ids are really switched off: their conjure scripts are in the archery config
 local arch = io.open("data/lib/chaos_archery_config.lua"):read("*a")
 for _, name in ipairs({"arrow_call.lua", "conjure_diamond_arrow.lua", "spectral_bolt.lua"}) do
@@ -93,4 +110,30 @@ for tag in xml:gmatch("<instant[^>]*>") do
 	if id then seen[id] = name end
 end
 if fails > 0 then error("spell_ids_test: " .. fails .. " failure(s)") end
-print("spell_ids_test: " .. n .. " Chaos spells, no id taken by the base server")
+
+-- The pool for the 21 line-quest spells (data/scripts/chaos/spell_id_pool_config.lua): every id is free in the install.
+-- freed = ids a retiring tool took out of the install (not an id of the conjure lists, which the client keeps for icons)
+local freed = {}
+for _, id in ipairs(RETIRED) do freed[id] = true end
+for _, id in ipairs(CAP_RETIRED) do freed[id] = true end
+local pool = dofile("data/scripts/chaos/spell_id_pool_config.lua")
+if #pool.ids ~= 21 then error("spell_ids_test: the pool holds " .. #pool.ids .. " ids, 21 expected") end
+local inPool = {}
+for _, group in ipairs({{"ids", pool.ids}, {"spare", pool.spare}}) do
+	for _, id in ipairs(group[2]) do
+		if type(id) ~= "number" or id < 1 or id > 255 or id ~= math.floor(id) then
+			error("spell_ids_test: pool " .. group[1] .. " " .. tostring(id) .. " is not a spell id of one byte")
+		end
+		if inPool[id] then error("spell_ids_test: pool id " .. id .. " listed twice") end
+		inPool[id] = group[1]
+		if taken[id] then error("spell_ids_test: pool id " .. id .. " is used by " .. taken[id]) end
+		if seen[id] then error("spell_ids_test: pool id " .. id .. " is used by the Chaos spell " .. seen[id]) end
+		if not freed[id] then error("spell_ids_test: pool id " .. id .. " is not freed by a retiring tool") end
+	end
+end
+local free = 0
+for id = 1, 255 do
+	if not taken[id] and not seen[id] then free = free + 1 end
+end
+print("spell_ids_test: " .. n .. " Chaos spells, no id taken by the base server; " .. free .. " ids free, pool " ..
+	#pool.ids .. " + " .. #pool.spare .. " spare")

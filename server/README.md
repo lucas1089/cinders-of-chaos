@@ -2185,6 +2185,44 @@ the event on a mocked engine, the guards).
   presets did not change. Numbers: `data/spells/README.md` "Class spell factor".
 * Live server: the `files` step (copies the scripts) and a restart. No database change. Not run on a live server.
 
+## Wide spell ids and the spell id pool (2026-10-28, engine src-patch 0079)
+
+Two measures for the 21 line-quest spells (spec: three quests per class line; the spells are added by the next phases).
+
+**The pool (now).** "All 255 ids are taken" was wrong. `tests/spell_ids_test.lua` counted the 14 ids of
+`patch_spell_ids.py` as taken, but nine of those spells are retired by the cap (`patch_spell_cap.py` `CAP` rows with no
+class). Read from the tools, 34 ids of 1-255 are free in the install after the Chaos block (a run of the `spells`,
+`vocations`, `runes` and `archery` steps on a copy of the base server also showed 41, because the ammunition conjure
+spells 48, 49, 51, 79, 95, 108 and 109 are commented out too; they are not counted, the client keeps them for icons).
+No stock spell needed retiring: nothing is left that no class uses and the tools already retire it. The pool is
+`data/scripts/chaos/spell_id_pool_config.lua`: `ids` (21: 142 143 148-160 172 173 174 177 178 237, the ids of the
+retired stock attack and healing spells, as the attack kit did before) and `spare` (11: 35 39 40 41 47 52 60 101 165 168 171). The test checks that every pool id is free: no live
+stock spell, no Chaos spell, freed by a retiring tool. A phase that adds a spell takes the next id of `ids` and writes
+it in `spells_chaos.xml`, `attack_kit_config.lua` (a kit spell) and nowhere else; `register_spells.py` refuses a taken
+id, the client moves a stock entry that held it (`spellfix.lua` `chaosIds`).
+
+**Wide ids (later, off by default).** The spell id is 16 bits in the engine now and on the wire when the owner turns it on.
+* `Spell::spellId`, `getId` / `setId` and `spell:id()` are `uint16_t` (a spells.xml `spellid` was read as 16 bits and
+  cut to 8 when stored). Conditions held a u32 sub id already.
+* The 10.98 cooldown packet `0xA4` has one id byte. With the gate on it is `0xA4`, u16 id, u32 time.
+* **Gate.** The client sets bit 6 of the capability byte of its login packet (the byte that has bit 7 for typed impact
+  numbers, 0051). The server answers with feature 152 in the `0x43` features packet only when the bit is set AND
+  `config.lua` has `chaosWideSpellIds = true`. The client clears feature 152 before every login and reads a u16 only
+  while it has it. Default `false`: nothing changes on the wire; an old client never sets the bit, a new client against
+  an old or off server never gets the feature. With the gate off an id above 255 sends no packet (stock sent its low
+  byte and put the icon on another spell).
+* Not widened: the group cooldown `0xA5` (group ids 1-4), the known spells list of the `0x9F` packet (a fixed 0-254 list
+  nothing reads), the live cast (it forwards no `0xA4`).
+* `tools/patch_wide_spell_ids.py SERVER_DIR [--on | --off] [--dry-run]` (install step `widespellids`, after `baserain`)
+  appends `chaosWideSpellIds = false` when the key is missing and keeps an existing value. Turn it on by hand: run the
+  tool with `--on` (or edit `config.lua`) and restart; the admin app has no button for it. Only do it when the
+  shipped client has the feature (client/BASE.md "Wide spell ids"), then ids above 255 may be used in `spells_chaos.xml`;
+  until then `spell_ids_test.lua` still refuses them. Spell ids must stay below 1000 on the client (`spellfix.lua`
+  `OFF_SERVER`).
+* Tests: `tools/patch_wide_spell_ids_test.py` (CI: the tool, the patch text, the install step), `tests/spell_ids_test.lua`.
+  The patch applies on top of 0001-0078 and compiles (syntax check of the six changed translation units). Not run on a
+  live server.
+
 ## Necromancer summons and the summon cap (2026-10-18)
 
 Raise Bone Warrior / Archer / Mage (`data/spells/chaos/necromancer/raise_*.lua`, helper `NecroSpell.summon` in `_necro.lua`),

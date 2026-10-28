@@ -1,0 +1,193 @@
+# Wide spell ids (server/README.md "Wide spell ids", client/BASE.md "Wide spell ids"). Every spell id is one byte: Spell::spellId
+# was uint8_t (spellid in spells.xml was read as a number and cut to 8 bits) and the 0xA4 spell cooldown packet carried
+# it as one byte, so the 255 ids were all used (server/tests/spell_ids_test.lua) and a spellid of 258 was spell 2 for the
+# engine. Now Spell::spellId, Spell::getId / setId and spell:id() are 16 bits (a Lua cooldown condition already held a
+# u32 sub id), and the packet is gated: a client sets bit 6 of the capability byte it sends after its markers in the login
+# packet (the same byte that carries bit 7 of 0051; every build of our client sets bit 6), and sendFeatures answers with
+# feature 152 (GameChaosExtendedSpellIds) only when config.lua has chaosWideSpellIds = true (default false, so nothing
+# changes on the wire until the owner turns it on). With the feature the 0xA4 packet is: 0xA4, u16 spell id, u32 time. Without
+# it: 0xA4, u8 spell id, u32 time, as before; an id above 255 then sends no packet (stock sent its low byte and put the
+# cooldown icon on another spell). The client reads the u16 through the feature it already has (client/BASE.md), so no
+# client patch is needed. Not widened on purpose: the 0xA5 group cooldown (group ids are 1..4), the known spells list of
+# the 0x9F packet (a fixed list of 0..254 that no Chaos code reads) and the spell group conditions. The live cast
+# (0064) forwards no 0xA4, so its hello flags are unchanged. Config key: configKeys.WIDE_SPELL_IDS (tools/patch_wide_spell_ids.py
+# writes the default into config.lua). Guard: tools/patch_wide_spell_ids_test.py (CI). Applies after 0001-0078.
+diff --git a/src/configmanager.cpp b/src/configmanager.cpp
+--- a/src/configmanager.cpp
++++ b/src/configmanager.cpp
+@@ -279,6 +279,10 @@
+ 	integer[MOVE_ITEM_DELAY] = getGlobalNumber(L, "moveItemDelay", 50);
+ 	integer[RUNE_CHANNEL_DELAY] = getGlobalNumber(L, "runeChannelDelay", 1000);
+ 	integer[POTION_CHANNEL_DELAY] = getGlobalNumber(L, "potionChannelDelay", 1000);
++	// Chaos (patch 0079): wide spell ids (server/README.md "Wide spell ids"). true: a client that asks for it (login
++	// capability bit 6) gets feature 152 and reads the spell id of the 0xA4 cooldown packet as a u16, so spell ids
++	// above 255 work. false (default): the one-byte id of the 10.98 packet; a spell id above 255 sends no cooldown icon
++	boolean[WIDE_SPELL_IDS] = getGlobalBoolean(L, "chaosWideSpellIds", false);
+ 	integer[MAX_MESSAGEBUFFER] = getGlobalNumber(L, "maxMessageBuffer", 4);
+ 	integer[KICK_AFTER_MINUTES] = getGlobalNumber(L, "kickIdlePlayerAfterMinutes", 15);
+ 	integer[PROTECTION_LEVEL] = getGlobalNumber(L, "protectionLevel", 1);
+diff --git a/src/configmanager.h b/src/configmanager.h
+--- a/src/configmanager.h
++++ b/src/configmanager.h
+@@ -39,6 +39,7 @@
+ 			CLASSIC_EQUIPMENT_SLOTS,
+ 			CLASSIC_ATTACK_SPEED,
+ 			COOLDOWN_CHANNELS, // Chaos (patch 0042): cooldown channels
++			WIDE_SPELL_IDS, // Chaos (patch 0079): 16-bit spell ids on the wire
+ 			SCRIPTS_CONSOLE_LOGS,
+ 			SERVER_SAVE_NOTIFY_MESSAGE,
+ 			SERVER_SAVE_CLEAN_MAP,
+diff --git a/src/const.h b/src/const.h
+--- a/src/const.h
++++ b/src/const.h
+@@ -700,6 +700,11 @@
+ 	// (x100), u8 type (ChaosImpactType) and u32 creature id after its value / colour pairs. Announced only to our client
+ 	// when it set CHAOS_CAPABILITY_IMPACT_TEXT in its login capability byte; same number in the client's const.h.
+ 	GameChaosImpactText = 155,
++
++	// Chaos (patch 0079): the 0xA4 spell cooldown packet carries a u16 spell id. Announced only to a client that set
++	// CHAOS_CAPABILITY_WIDE_SPELL_IDS in its login capability byte, and only with chaosWideSpellIds = true in config.lua.
++	// The client's own feature number is the same (its const.lua / const.h).
++	GameChaosExtendedSpellIds = 152,
+ };
+ 
+ // Chaos (patch 0051): the type of an impact number (TextMessage::typeId). Same numbers in the client module
+@@ -716,6 +721,10 @@
+ // Chaos (patch 0051): the bit of our client's login capability byte that asks for GameChaosImpactText
+ static constexpr uint8_t CHAOS_CAPABILITY_IMPACT_TEXT = 1 << 7;
+ 
++// Chaos (patch 0079): the bit of the same capability byte that asks for GameChaosExtendedSpellIds (the client sets it
++// in every build; the server answers only with chaosWideSpellIds = true)
++static constexpr uint8_t CHAOS_CAPABILITY_WIDE_SPELL_IDS = 1 << 6;
++
+ // Chaos: keys of the custom attributes written after each item (u16 count, then u16 key + u64 value per entry).
+ // Same numbers in data/scripts/chaos/chaos_constants.lua (Chaos.itemAttr) and in the client
+ // (modules/game_itemrarity, ChaosItemAttr); server/tests/item_tooltip_test.lua checks that the three agree.
+diff --git a/src/luascript.cpp b/src/luascript.cpp
+--- a/src/luascript.cpp
++++ b/src/luascript.cpp
+@@ -2135,6 +2135,7 @@
+ 	registerEnumIn("configKeys", ConfigManager::ACTIONS_DELAY_INTERVAL)
+ 	registerEnumIn("configKeys", ConfigManager::EX_ACTIONS_DELAY_INTERVAL)
+ 	registerEnumIn("configKeys", ConfigManager::COOLDOWN_CHANNELS) // Chaos (src-patch 0042)
++	registerEnumIn("configKeys", ConfigManager::WIDE_SPELL_IDS) // Chaos (src-patch 0079)
+ 	registerEnumIn("configKeys", ConfigManager::MOVE_ITEM_DELAY)
+ 	registerEnumIn("configKeys", ConfigManager::RUNE_CHANNEL_DELAY)
+ 	registerEnumIn("configKeys", ConfigManager::POTION_CHANNEL_DELAY)
+@@ -16549,7 +16550,7 @@
+ 		if (lua_gettop(L) == 1) {
+ 			lua_pushnumber(L, spell->getId());
+ 		} else {
+-			spell->setId(getNumber<uint8_t>(L, 2));
++			spell->setId(getNumber<uint16_t>(L, 2)); // Chaos (patch 0079): was uint8_t
+ 			pushBoolean(L, true);
+ 		}
+ 	} else {
+diff --git a/src/player.h b/src/player.h
+--- a/src/player.h
++++ b/src/player.h
+@@ -928,7 +928,7 @@
+ 				client->sendCreatureHelpers(creatureId, helpers);
+ 			}
+ 		}
+-		void sendSpellCooldown(uint8_t spellId, uint32_t time) {
++		void sendSpellCooldown(uint32_t spellId, uint32_t time) {
+ 			if (client) {
+ 				client->sendSpellCooldown(spellId, time);
+ 			}
+diff --git a/src/protocolgame.cpp b/src/protocolgame.cpp
+--- a/src/protocolgame.cpp
++++ b/src/protocolgame.cpp
+@@ -608,7 +608,10 @@
+ 		if (chaosClient) {
+ 			msg.get<uint32_t>();
+ 			if (msg.getString() == "C") {
+-				chaosImpactTextAsked = (msg.getByte() & CHAOS_CAPABILITY_IMPACT_TEXT) != 0;
++				const uint8_t capabilities = msg.getByte();
++				chaosImpactTextAsked = (capabilities & CHAOS_CAPABILITY_IMPACT_TEXT) != 0;
++				// Chaos (patch 0079): bit 6 asks for 16-bit spell ids; honoured only with chaosWideSpellIds = true
++				chaosWideSpellIdsAsked = (capabilities & CHAOS_CAPABILITY_WIDE_SPELL_IDS) != 0;
+ 			}
+ 		}
+ 	}
+@@ -3367,11 +3370,20 @@
+ 	}
+ }
+ 
+-void ProtocolGame::sendSpellCooldown(uint8_t spellId, uint32_t time)
++void ProtocolGame::sendSpellCooldown(uint32_t spellId, uint32_t time)
+ {
++	// Chaos (patch 0079): a client that was announced feature 152 reads the id as a u16; every other client reads one
++	// byte; an id that does not fit has no icon (stock cut it to its low byte and showed the cooldown on another spell)
++	if (spellId > (chaosWideSpellIds ? 0xFFFFu : 0xFFu)) {
++		return;
++	}
+ 	NetworkMessage msg;
+ 	msg.addByte(0xA4);
+-	msg.addByte(spellId);
++	if (chaosWideSpellIds) {
++		msg.add<uint16_t>(static_cast<uint16_t>(spellId));
++	} else {
++		msg.addByte(static_cast<uint8_t>(spellId));
++	}
+ 	msg.add<uint32_t>(time);
+ 	writeToOutputBuffer(msg);
+ }
+@@ -3766,6 +3778,11 @@
+ 	if (chaosClient) {
+ 		features[GameItemCustomAttributes] = true;
+ 		chaosItemAttributes = true;
++		// Chaos (patch 0079): 16-bit spell ids, only to a client that asked (capability bit 6) on a server that allows it
++		if (chaosWideSpellIdsAsked && g_config.getBoolean(ConfigManager::WIDE_SPELL_IDS)) {
++			features[GameChaosExtendedSpellIds] = true;
++			chaosWideSpellIds = true;
++		}
+ 		// Chaos (patch 0051): only a client that asked for it: an older client has no room for feature 155
+ 		if (chaosImpactTextAsked) {
+ 			features[GameChaosImpactText] = true;
+diff --git a/src/protocolgame.h b/src/protocolgame.h
+--- a/src/protocolgame.h
++++ b/src/protocolgame.h
+@@ -257,7 +257,7 @@
+ 
+ 		void sendCreatureSquare(const Creature* creature, SquareColor_t color);
+ 
+-		void sendSpellCooldown(uint8_t spellId, uint32_t time);
++		void sendSpellCooldown(uint32_t spellId, uint32_t time); // Chaos (patch 0079): was uint8_t
+ 		void sendSpellGroupCooldown(SpellGroup_t groupId, uint32_t time);
+ 
+ 		//tiles
+@@ -365,6 +365,8 @@
+ 		uint16_t otclientV8 = 0;
+ 		bool chaosClient = false; // the client sent the markers of our client after its version (see onRecvFirstMessage)
+ 		bool chaosItemAttributes = false; // GameItemCustomAttributes announced: every item carries its custom attributes
++		bool chaosWideSpellIdsAsked = false; // patch 0079: the login capability byte of our client asked for 16-bit spell ids
++		bool chaosWideSpellIds = false; // patch 0079: GameChaosExtendedSpellIds announced: the 0xA4 packet carries a u16 id
+ 		bool chaosImpactTextAsked = false; // patch 0051: the login capability byte of our client asked for typed numbers
+ 		bool chaosImpactText = false; // patch 0051: GameChaosImpactText announced: text messages carry the new fields
+ 		std::vector<std::string>* castCapture = nullptr; // Chaos (patch 0064): writeCastView collects here
+diff --git a/src/spells.h b/src/spells.h
+--- a/src/spells.h
++++ b/src/spells.h
+@@ -117,10 +117,10 @@
+ 		void setName(std::string n) {
+ 			name = n;
+ 		}
+-		uint8_t getId() const {
++		uint16_t getId() const { // Chaos (patch 0079): was uint8_t
+ 			return spellId;
+ 		}
+-		void setId(uint8_t id) {
++		void setId(uint16_t id) {
+ 			spellId = id;
+ 		}
+ 
+@@ -296,7 +296,7 @@
+ 		uint32_t magLevel = 0;
+ 		int32_t range = -1;
+ 
+-		uint8_t spellId = 0;
++		uint16_t spellId = 0; // Chaos (patch 0079): was uint8_t
+ 
+ 		bool selfTarget = false;
+ 		bool needTarget = false;

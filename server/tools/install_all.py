@@ -136,6 +136,8 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                Candlemarks (the stock 15 kicks them after 16 minutes; README "Candlemarks")
   baserain     tools/patch_base_rain.py          config.lua weatherRain = false: the base weather's rain (an effect per player every 100 ms) is
                off; the Chaos weather (weather.lua, client game_chaosweather) replaces it (README "Weather on the client (O208)")
+  widespellids tools/patch_wide_spell_ids.py     config.lua chaosWideSpellIds = false when the key is missing (the owner's value is kept): 16-bit spell
+               ids on the wire for a client that asks, engine src-patch 0079 (README "Wide spell ids")
   shopprices   tools/patch_shop_prices.py        modules.lua ShopModule.requestTrade: the trade window gets 0, not -1 (sent as 4294967295), for "not sold" /
                "not bought": no buy or sell click on an item the NPC does not trade (README "NPC trade windows")
   castport     tools/patch_cast_port.py          config.lua castPort = 7179: the live cast for the admin app on 127.0.0.1 only
@@ -937,7 +939,14 @@ def step_shopprices(server, data, ctx):
     return tool_result(run_tool([tool('patch_shop_prices.py'), server], 'patch_shop_prices.py'))
 
 
-STEPS.insert(STEPS.index('baserain') + 1, 'shopprices')  # modules.lua: the trade window prices -1 as 0
+def step_widespellids(server, data, ctx):
+    return tool_result(run_tool([tool('patch_wide_spell_ids.py'), server], 'patch_wide_spell_ids.py'))
+
+
+STEPS.insert(STEPS.index('baserain') + 1, 'widespellids')  # config.lua: chaosWideSpellIds = false is written once, never overwritten
+
+
+STEPS.insert(STEPS.index('widespellids') + 1, 'shopprices')  # modules.lua: the trade window prices -1 as 0
 
 
 def step_castport(server, data, ctx):

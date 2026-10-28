@@ -736,6 +736,7 @@ jobs:
           python3 -I server/tools/retire_cure_spells_test.py  # the stock cure spells and Hawkeye leave spells.xml
           python3 -I server/tools/patch_spell_cap_test.py  # the 15-spell cap: kits of at most 15 spells per class
           python3 -I server/tools/monster_spells_test.py  # retired spells a monster names stay, monster-only
+          python3 -I server/tools/patch_wide_spell_ids_test.py  # config key chaosWideSpellIds and engine src-patch 0079 (16-bit spell ids, gated)
           python3 -I server/tools/patch_spell_timings_test.py  # stock cooldowns (the ladder) and the two script cooldowns
           python3 -I server/tools/patch_badges_test.py  # the badge slot; retired slots: hooks, descriptions, death loss
           python3 -I server/tools/patch_prizes_test.py  # base prizes into the backpack: roulettes, task rewards, crafting, ship NPC

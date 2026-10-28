@@ -1326,3 +1326,7 @@ obfuscation, not protection: whoever has the binary can recover the key with a d
   publish, confirm: the client mounts the overlay after an update (`updater: N encrypted update files mounted` in
   the log), the updated module is used, `chaos_update/files/` holds only `CHUB` files, and a hand-changed file there
   makes the client fetch the update again instead of loading it.
+
+## Wide spell ids (no patch needed)
+
+Server src-patch `0079` (server/README.md "Wide spell ids and the spell id pool") sends the spell id of the `0xA4` cooldown packet as 16 bits. The base client already reads it: its login packet sets bit 6 of the capability byte (`EXTENDED_SPELL_IDS`), it clears feature 152 before every login and `SpellCooldownProtocol::read` takes a u16 only while the server has announced the feature (`parseSpellCooldown`, `modules/game_features`). So there is no `base-patches/` row: a client patch would repeat that code. What the client does not do: the group cooldown `0xA5` and the known spells list of the `0x9F` packet stay one byte (patch 0008). The overlay keeps spell ids below 1000 (`game_chaosspells/spellfix.lua` `OFF_SERVER`). Before the server turns `chaosWideSpellIds` on, check a build against it: log in, cast a spell with an id above 255 and watch its cooldown icon. Not yet done on a live client.
