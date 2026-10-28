@@ -5108,15 +5108,16 @@ game: two players (visits and likes), the depot window, the store purchase scree
 
 ## Store pouches (`pouches.lua`, `pouches_core.lua`, `pouches_config.lua`, `tools/install_pouches.py`, client `game_pouches`)
 
-Three containers sold in the store (Convenience), each collecting its own kind of loot from the corpses the character owns,
+Four containers sold in the store (Convenience), each collecting its own kind of loot from the corpses the character owns,
 **while the character carries it** (in the backpack or a bag inside it, any depth; not in the depot or inbox). No base
 autoloot list is needed.
 
 | Pouch | Item id (look) | Slots | Coins | Collects |
 |---|---|---|---|---|
 | Loot Bag | 32081 (client 38608: a leather sack, gold coins spilling) | 255, weightless | 250 | all the loot of your kills by default (its rules, below, can narrow it); the Auto Seller sells what is in it |
-| Orbs Pouch | 32082 (client 38609: a violet pouch with a glowing orb) | 40 | 200 | every orb (the currency orbs 29851-29859, Erasure, Gilding, Sockets, Unmaking, orbs v2, the Whetstone, every `loot_config.lua` currency entry), rune shards (32051) and gems (32001-32035) |
-| Rift Key Pouch | 32083 (client 38610: an iron strongbox, gold key, key ring) | 30 | 150 | Rift Keys (item 10155 with action id 47401; tier and modifiers kept), Omen Keys (32072) and omen fragments (32071) |
+| Orbs Pouch | 32082 (client 38609: a violet pouch with a glowing orb) | 100 (was 40) | 200 | every orb (the currency orbs 29851-29859, Erasure, Gilding, Sockets, Unmaking, orbs v2, the Whetstone, every `loot_config.lua` currency entry), rune shards (32051) and gems (32001-32035), the gems only while no Gem Pouch is carried |
+| Rift Key Pouch | 32083 (client 38610: an iron strongbox, gold key, key ring) | 100 (was 30) | 150 | Rift Keys (item 10155 with action id 47401; tier and modifiers kept), Omen Keys (32072) and omen fragments (32071) |
+| Gem Pouch | 32095 (the stock jewelled backpack's own look, no new sprite) | 100 | 150 | gems (32001-32035) only |
 
 - **Items.** New items.otb nodes, copies of stock bags (group and flags of the expedition bag, the brocade bag and the fur bag)
   with their own looks: three item things of our own art, drawn by `client/tools/sprites/gen_pouch_art.py`, snapped to theme
@@ -5130,6 +5131,19 @@ autoloot list is needed.
   `tools/install_pouches.py` (step `pouches` of `install_all.py`, after `omens`; idempotent; `items.otb.bak` keeps the original).
   Weight 1 oz. The Orbs Pouch and the Rift Key Pouch carry their contents with their weight; a full pouch, or one the character
   cannot carry more in, passes the item on.
+- **Bigger pouches and the Gem Pouch** (tester feedback 2026-10-28: "aumentar o espaco das bags de Rift/Orb e talvez criar uma
+  outra so pra gema, que nao misturasse com orb"). `capacity` of the Orbs Pouch and the Rift Key Pouch is 100 now:
+  `install_pouches.py` rewrites its marked block of items.xml when the config changed, so a second run on an installed server
+  sets `containerSize` 100 (a restart loads it; pouches already owned have the new size, their contents stay;
+  `tools/install_pouches_test.py` checks the rewrite of an old 40 / 30 block). The **Gem Pouch** is a fourth kind (`gems`,
+  id 32095, free of every id table: pouches 32081-32083, Everfull Ration 32084, potions 32085-32086, globes 32088-32090,
+  faction tokens 32091-32094), a copy of the stock jewelled backpack (5801; `clientId = 0` in `pouches_config.lua` means "keep the
+  stock bag's client id", so no sprite is added). Store-bound, `bindLock`, one per character, regrant bit 8, Convenience offer at
+  150 coins (like the Rift Key Pouch; `perCharacterConvenienceMax` 1,400 -> 1,550, `docs/PRICES.md`). Routing
+  (`ChaosPouchesCore.plan`): `priority = {"gems", "orbs", "keys"}`; an item goes to the first **carried** pouch of that list that
+  wants it. A gem is wanted by the Gem Pouch and the Orbs Pouch, so with a Gem Pouch carried it never reaches the Orbs Pouch,
+  even when the Gem Pouch is full (the overflow then is the Loot Bag, as for every specialist); without a Gem Pouch the Orbs
+  Pouch takes gems as before. The Gem Pouch takes nothing but gems.
 - **The Loot Bag** (owner 2026-10-13: "uma bag sem fundo que pode carregar todo o loot que o jogador recebe automaticamente";
   called Loot Pouch before). Bottomless: 255 slots (`capacity`; the 10.98 protocol sends a container's size as one byte, so
   255 is the most a container can have) and **weightless** (`weightless = true`): engine src-patch 0038 keeps the weight of
@@ -12362,10 +12376,18 @@ replacing the orb drops, and it competes with selling the item: salvage is a sin
 `tests/salvage_test.lua` checks the average (2.2-3.5 shards, about 1% orbs) and that an Orb of Upheaval takes at least 8 rolled
 items.
 
-**Salvage all.** Choose a container (the backpack or one bag in it, its direct contents) and the highest rarity; the bench
-shows how many items it takes, the shards, the summed orb chance and what it skips (locked, unique, with gems, above the
-rarity, over the limit) and marks the items in the gear grid. The button asks for a confirmation. At most **50 items per
-action** (`batchCap`); the rest is listed as over the limit for the next one. The confirmation carries a signature of the
+**Salvage all.** Choose a container (the backpack, the Loot Bag or one bag in the backpack, its direct contents) and the
+highest rarity; the bench shows how many items it takes, the shards, the summed orb chance and what it skips (locked, unique,
+with gems, above the rarity, over the limit) and marks the items in the gear grid. The button asks for a confirmation. At most
+**255 items per action** (`batchCap`, was 50): a full Loot Bag in one click. One action removes up to 255 items in one tick and
+writes up to 255 rows in one `INSERT` into `chaos_crafting_log`, with `batchIntervalMs` (2 s) between two actions; nothing in
+the code needs a smaller number. The rest, if any, is listed as over the limit for the next one.
+**The Loot Bag** (tester feedback 2026-10-28: "Salvage All por qualidade na Loot Bag"): the bench only knew paths inside the
+main backpack (`ChaosCraftingBench.walk` / `itemAt`), but the Loot Bag lives in the purse (the store inbox) and never leaves it,
+so it was never in the container list and its items failed the backpack check, and the only way was to move them out one by
+one. Now `bagList` offers it second (after the main backpack, when `ChaosPouches.carried` finds it) under the bag key `loot`
+(items are addressed `loot.N`), and the "in the backpack" check of `S.inScope` also accepts a direct child of the carried Loot
+Bag. Locked, unique, socketed and above-rarity items are still kept. The confirmation carries a signature of the
 previewed items (paths and item signatures); when anything changed in between the server refuses ("check the list and
 confirm again").
 

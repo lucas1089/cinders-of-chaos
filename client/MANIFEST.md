@@ -2404,6 +2404,9 @@ pixel-identical to the sheets and every old thing byte-identical. Built twice: i
   tool). Not run in a client.
 
 ## Store item looks (pair 34: items 38608-38611, `tools/sprites/gen_store_items_art.py`, `art_import/store_items.*`; on windows-assets 584dab51 since 2026-10-21)
+The Gem Pouch (server id 32095, 2026-10-28) adds no sprite: `pouches_config.lua` `clientId = 0` keeps the stock jewelled
+backpack's own client id on its node (`install_pouches.py`).
+
 Owner report 2026-10-22 with screenshots: the Loot Bag, Orbs Pouch, Rift Key Pouch and Everfull Ration showed grey in the
 backpack and the purse ("ícones ainda estão cinzas"), while the store window drew them in colour.
 - **Cause.** Not the art and not the client ids: the store window draws the same sprites (33651-33653, 33904). The

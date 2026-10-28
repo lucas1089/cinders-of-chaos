@@ -27,6 +27,8 @@
 --                                      mode}
 --                     state.items[i].locked, state.item.locked, state.item.salvage = {ok, why, shards, orbChance}
 --                     result {ok, orb = "salvage", text}
+-- Salvage all also offers the Loot Bag (bag key "loot", paths "loot.N"): the store pouch lives in the purse, out of reach
+-- of the backpack paths, and its direct contents are salvaged like a bag's.
 -- Server checks: the item is found by path + id (+ signature) in the player's own backpack tree, never equipped, never
 -- the ground; locked / unique / socketed gems / no rarity are refused; one action per singleIntervalMs, a batch per
 -- batchIntervalMs and at most batchCap items. Every salvaged item is a row in chaos_crafting_log (orb = "Salvage").
@@ -132,6 +134,36 @@ function S.uniqueTokens(item)
 	return o and ChaosConquestCore.salvageTokens(CQ.cfg, o.price) or nil
 end
 
+-- the Loot Bag (store pouch) the character carries, or nil. It lives in the purse, outside the main backpack, so the
+-- bench's backpack paths never reach it: the batch addresses it by the bag key LOOT_BAG instead.
+local LOOT_BAG = "loot"
+local function lootBagOf(player)
+	local PO = ChaosPouches
+	if not (PO and PO.carried) then
+		return nil
+	end
+	local ok, found = pcall(PO.carried, player)
+	local bag = ok and found and found.loot or nil
+	if bag and bag:isContainer() then
+		return bag
+	end
+	return nil
+end
+
+-- the item hangs in the backpack (or a bag in it) or directly in the carried Loot Bag: salvage may take it
+function S.inScope(player, item)
+	local b = bench()
+	if b and b.inBackpack(player, item) then
+		return true
+	end
+	local bag = lootBagOf(player)
+	if bag then
+		local ok, parent = pcall(function() return item:getParent() end)
+		return ok and parent == bag or false
+	end
+	return false
+end
+
 -- the info table of salvage_core.lua for an engine item
 function S.infoOf(player, item)
 	local s = ChaosGems and ChaosGems.read(item) or {count = 0, filled = 0}
@@ -144,7 +176,7 @@ function S.infoOf(player, item)
 	local b = bench()
 	local inBackpack
 	if player and b then
-		inBackpack = b.inBackpack(player, item) and true or false
+		inBackpack = S.inScope(player, item)
 	end
 	return {
 		gear = C.isGear(item),
@@ -281,6 +313,9 @@ local function containerAt(player, bag)
 	if bag == nil or bag == "" then
 		return b.backpackOf(player)
 	end
+	if bag == LOOT_BAG then
+		return lootBagOf(player)
+	end
 	local c = b.itemAt(player, bag)
 	if c and c:isContainer() then
 		return c
@@ -296,8 +331,13 @@ local function bagList(player)
 		return out
 	end
 	out[1] = {path = "", name = "Main backpack", clientId = clientIdOf(bp:getId())}
+	-- the Loot Bag first after the main backpack (owner feedback 2026-10-28: salvage straight from it)
+	local loot = lootBagOf(player)
+	if loot then
+		out[2] = {path = LOOT_BAG, name = Chaos.t(player, "Loot Bag"), clientId = clientIdOf(loot:getId())}
+	end
 	b.walk(player, function(item, path)
-		if #out < 16 and item:isContainer() then
+		if #out < 16 and item:isContainer() and item ~= loot then
 			out[#out + 1] = {path = path, name = C.itemName(item), clientId = clientIdOf(item:getId())}
 		end
 	end)
@@ -316,7 +356,7 @@ local function batchOf(player, bag, maxRarity)
 		if item and not item:isContainer() then
 			items[#items + 1] = item
 			infos[#infos + 1] = S.infoOf(player, item)
-			paths[#paths + 1] = (bag == nil or bag == "") and tostring(i) or (bag .. "." .. i)
+			paths[#paths + 1] = (bag == nil or bag == "") and tostring(i) or (bag .. "." .. i) -- "loot.N": the Loot Bag
 		end
 	end
 	local res = K.batch(infos, maxRarity, cfg)
@@ -511,7 +551,7 @@ local function salvageBatch(player, data)
 	for n = #res.picked, 1, -1 do
 		local i = res.picked[n]
 		local item, info = res.items[i], res.infos[i]
-		if b.inBackpack(player, item) and not K.check(S.infoOf(player, item), cfg) then
+		if S.inScope(player, item) and not K.check(S.infoOf(player, item), cfg) then
 			local roll, name = breakItem(item, info)
 			if roll then
 				shards = shards + roll.shards

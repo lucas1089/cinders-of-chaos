@@ -461,7 +461,7 @@ def chaos_items():
         put(int(i), 'orb', 'currency', src='pouches_config.lua orbIds')
     for i in re.findall(r'\d{5}', re.search(r'coinIds\s*=\s*\{(.*?)\}', po, re.S).group(1)):
         put(int(i), 'coin', 'currency', src='pouches_config.lua coinIds')
-    for key in ('loot', 'orbs', 'keys'):
+    for key in ('loot', 'orbs', 'keys', 'gems'):
         m = re.search(r'\b%s = \{id = (\d+)' % key, po)
         if m:
             put(int(m.group(1)), key + ' pouch', 'bound', src='pouches_config.lua')

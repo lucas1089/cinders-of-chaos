@@ -44,7 +44,7 @@ show".
 | Convenience | Loot Bag (per character) | 250 | R$ 25 | was 350 |
 | Convenience | Auto Seller (per character; also lent by the Pact) | 400 | R$ 40 | was 500 |
 | Convenience | Rarity Autoloot (per character) | 300 | R$ 30 | was 400 |
-| Convenience | Orbs Pouch / Rift Key Pouch (per character) | 200 / 150 | R$ 20 / 15 | was 300 / 250 |
+| Convenience | Orbs Pouch / Rift Key Pouch / Gem Pouch (per character) | 200 / 150 / 150 | R$ 20 / 15 / 15 | was 300 / 250 for the first two; 100 slots each since 2026-10-28, the Gem Pouch (gems only, so they stay apart from orbs) is new, priced like the Rift Key Pouch |
 | Convenience | Everfull Ration (per character) | 100 | R$ 10 | was 150 |
 | Convenience | Everfull potion tiers (per character, once per tier): spirit tier 1 20, great health / mana / spirit 30, ultimate health / mana / spirit 50, supreme health / mana / spirit 70 | 20 / 30 / 50 / 70 | R$ 2 / 3 / 5 / 7 | new (O245), spirit tier 1 and the supreme mana and spirit added in O247. The same swap Veyra the Apothecary does for 40 stock potions of the tier (4,800-20,000 gold at her prices) and the previous flask; a whole line costs 150 coins |
 | Convenience | depot tab 150, 4 tabs 500, stash tabs 150-200, character slot 250, build slot 100 | | | kept |
@@ -142,7 +142,7 @@ computed numbers, not measured in game: nobody has played the store yet (payment
 | Potion and rune packs | 767 to 1,852 gold per coin | All between 700 and 2,000 (2x of 1,000) at any size; a coin buys 0.8 to 1.9x its gold in supplies. NPC bid per coin stays under 500 (buy at least twice sell). |
 | Blessings | 60, Eternal 750 | Eternal is 12.5 purchases. The gold way (!bless) is 100,000 at level 120, 290,000 at 500 and 500,000 from level 920; late characters could pay that in 10 minutes, so the coins are only a shortcut. |
 | Services | 100 / 150 / 250 / 400 | Sex change, skull remover, name change, vocation change. No gold way exists to compare. |
-| Per-character convenience | 1,400 for all six | Loot Bag 250, Auto Seller 400, Rarity Autoloot 300, Orbs Pouch 200, Key Pouch 150, Ration 100. The limit is pinned at 1,400. |
+| Per-character convenience | 1,550 for all seven | Loot Bag 250, Auto Seller 400, Rarity Autoloot 300, Orbs Pouch 200, Key Pouch 150, Gem Pouch 150, Ration 100. The limit is pinned at 1,550 (it was 1,400 before the Gem Pouch). |
 | Storage and slots | 100 to 300 | Stash tab 150, orbs / gems 200, keys and the affinity tabs 150, collectibles 100, remote deposit 300 (the Pact lends it), character slot 250, build slot 100. Placeholders of 2026-10-15 reviewed: same range as the depot tab (150) and the character slot. |
 | Cosmetics | 80 to 750 | Wings 200-350, auras 150-300, shaders 120-300, head accessories 150-200, capes 200-250, outfits 300 / 500 / 750, mounts 350-690. Pinned between 80 and 800. |
 | Bundles | 20-25% sets | Starter packs 23-43% off their parts (limit 55%). |

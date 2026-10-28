@@ -1408,6 +1408,8 @@ return {
 			"todo o loot das suas mortes, como as regras dela escolhem (Loot Filter > Loot Bag)",
 		["orbs, whetstones, rune shards and gems"] = "orbes, whetstones, fragmentos de runa e gemas",
 		["Rift Keys, Omen Keys and omen fragments"] = "Rift Keys, Omen Keys e fragmentos de omen",
+		["gems"] = "gemas",
+		["Loot Bag"] = "Loot Bag",
 		["Back after your death, empty: your %s (%s)."] = "De volta depois da sua morte, vazios: %s (%s).",
 		["The Everfull Ration is in your %s. Use it like food: it never runs out."] =
 			"A Everfull Ration está na sua %s. Use como comida: ela nunca acaba.",

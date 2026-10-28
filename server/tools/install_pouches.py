@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Install the store pouches (the Loot Pouch, the Orbs Pouch and the Rift Key Pouch) into a base server: three
-items.otb nodes, three items.xml entries and the move hook in data/events/scripts/player.lua.
+"""Install the store pouches (the Loot Bag, the Orbs Pouch, the Rift Key Pouch and the Gem Pouch) into a base server:
+four items.otb nodes, four items.xml entries and the move hook in data/events/scripts/player.lua.
 
 usage: python3 -I install_pouches.py DATA_DIR [--dry-run] [--stock-looks]
 
@@ -8,19 +8,20 @@ Everything is read from server/data/scripts/chaos/pouches_config.lua (`kinds`: i
 weight, article, name, plural, description), the same file the Lua side uses.
 
 1. data/items/items.otb: per pouch a copy of the stock container node `sourceId` (loot 32081: the expedition bag,
-   orbs 32082: the brocade bag, keys 32083: the fur bag; group, flags, every attribute; containers, not stackable)
+   orbs 32082: the brocade bag, keys 32083: the fur bag, gems 32095: the jewelled backpack; group, flags, every
+   attribute; containers, not stackable)
    with the server id `id` and the client id `clientId`: our own pouch looks (loot 38608, orbs 38609, keys 38610 of
-   pair 34), appended to the client pair by client/tools/sprites/import_art_things.py with art_import/store_items.csv
+   pair 34; the Gem Pouch has `clientId = 0`: it keeps its stock bag's own look, no new sprite), appended to the client pair by client/tools/sprites/import_art_things.py with art_import/store_items.csv
    (client MANIFEST.md "Store item looks"). --stock-looks keeps the stock bags' client ids instead (for clients whose
    pair does not have the pouch looks yet). The nodes are appended at the end of the root; a node already there with
    the same bytes is left alone, one with other bytes (a changed config, or the stock look or the `oldClientId` look
    33651-33653 of an earlier install: only its client id changes, so existing pouches show the new look at once) is
    replaced, and a server id that belongs to any other client id stops the script (nothing is written).
    items.otb.bak keeps the original the first time; the written file is parsed again and the nodes checked.
-   Ranges in use: gems 32001..32035, salvage 32051, omens 32071..32072, pouches 32081..32083, supports 32101..32200,
+   Ranges in use: gems 32001..32035, salvage 32051, omens 32071..32072, pouches 32081..32083 and 32095, supports 32101..32200,
    orbs v2 32251..32256, Everfull tiers 32261..32267, dark tiles 30484..30557, art 33000.., pack items 36000.., donor items 40000...
 2. data/items/items.xml: the entries (name, plural, description, weight, containerSize = capacity) between two marker
-   comments before </items>, rewritten when the config changed. An id that already has an entry outside the block
+   comments before </items>, rewritten when the config changed (a new capacity reaches an installed server this way). An id that already has an entry outside the block
    stops the script.
 3. data/events/scripts/player.lua: Player:onMoveItem asks ChaosPouches.onMoveItem first (a pouch, or a container
    holding one, stays in the character's inventory or depot). A script callback cannot refuse a move reliably: the
@@ -39,7 +40,7 @@ from install_gems import (scan, escape, attr, xml_escape, START, END, A_SERVERID
 CONFIG = os.path.join(os.path.dirname(HERE), 'data', 'scripts', 'chaos', 'pouches_config.lua')
 XML_BEGIN = '\t<!-- Chaos store pouches (server/tools/install_pouches.py, do not edit by hand) -->\n'
 XML_END = '\t<!-- end of the Chaos store pouches -->\n'
-NAMES = ('loot', 'orbs', 'keys')
+NAMES = ('loot', 'orbs', 'keys', 'gems')
 GROUP_CONTAINER = 2
 
 HOOK_MARKER = '-- Chaos: store pouches stay with their owner (install_pouches.py)'
@@ -74,7 +75,7 @@ def read_config(path=CONFIG):
                'name': string('name'), 'plural': string('plural'), 'article': string('article'),
                'description': string('description')}
         assert cfg['id'] > 0 and cfg['sourceId'] > 0 and cfg['name'], 'pouches_config.lua: kinds.%s incomplete' % name
-        assert 1 <= cfg['capacity'] <= 255, 'pouches_config.lua: kinds.%s capacity 1..255 (one byte in the protocol)' % name
+        assert cfg['clientId'] >= 0 and 1 <= cfg['capacity'] <= 255, 'pouches_config.lua: kinds.%s capacity 1..255 (one byte in the protocol)' % name
         out[name] = cfg
     ids = [out[n]['id'] for n in NAMES]
     assert len(set(ids)) == len(ids), 'pouches_config.lua: the pouches need three ids'
@@ -82,8 +83,8 @@ def read_config(path=CONFIG):
 
 
 def look_of(stock, cfg, stock_looks=False):
-    """the client id the pouch node gets: its own look, or the stock bag's with --stock-looks"""
-    return stock[3] if stock_looks else cfg['clientId']
+    """the client id the pouch node gets: its own look, or the stock bag's with --stock-looks (or clientId 0)"""
+    return stock[3] if stock_looks or not cfg['clientId'] else cfg['clientId']
 
 
 def node(stock, cfg, client_id):
@@ -191,7 +192,7 @@ def patch_xml(text, items):
     end = text.rfind('</items>')
     if end < 0:
         raise SystemExit('items.xml: no </items>')
-    return text[:end] + block + text[end:], 'items.xml: pouch block added (Loot, Orbs and Rift Key Pouch)'
+    return text[:end] + block + text[end:], 'items.xml: pouch block added (Loot Bag, Orbs, Rift Key and Gem Pouch)'
 
 
 def patch_player(text):

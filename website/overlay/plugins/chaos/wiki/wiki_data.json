@@ -392,8 +392,8 @@
 		"spell.count": 148,
 		"store.categories": 37,
 		"store.cosmetic": 627,
-		"store.offers": 762,
-		"store.service": 36,
+		"store.offers": 763,
+		"store.service": 37,
 		"store.unlockCost": 0,
 		"support.count": 20,
 		"support.sockets": 3,
@@ -43830,7 +43830,7 @@
 								["Runes", "29", "3-108", "Consumable item"],
 								["Training", "18", "25-450", "Consumable item"],
 								["Everfull Potions", "10", "20-70", "Service"],
-								["Convenience", "7", "50-400", "Convenience"],
+								["Convenience", "8", "50-400", "Convenience"],
 								["Outfits", "60", "300-750", "Cosmetic"],
 								["Costumes", "6", "300", "Cosmetic"],
 								["Outfit Addons", "9", "150", "Cosmetic"],
@@ -43901,7 +43901,7 @@
 							"rows": [
 								["Cosmetic", "627"],
 								["Pet (small abilities)", "7"],
-								["Convenience", "7"],
+								["Convenience", "8"],
 								["Service", "16"],
 								["Account storage", "13"],
 								["Chaos Pact", "1"],
@@ -44922,11 +44922,11 @@
 				{
 					"id": "store:15",
 					"name": "Convenience",
-					"sub": "7 offers, 50-400 coins. Convenience.",
+					"sub": "8 offers, 50-400 coins. Convenience.",
 					"color": "#ff70c0",
 					"group": "category",
 					"sections": [
-						{"h": "Category", "p": ["7 offers, 50-400 Chaos Coins. Convenience."]},
+						{"h": "Category", "p": ["8 offers, 50-400 Chaos Coins. Convenience."]},
 						{
 							"h": "Offers",
 							"cols": ["Offer", "Coins", "Type", "What it is"],
@@ -44942,13 +44942,19 @@
 									"Orbs Pouch",
 									"200",
 									"Convenience",
-									"40 slots, store-bound. Collects orbs, whetstones, rune shards and gems while carried."
+									"100 slots, store-bound. Collects orbs, whetstones, rune shards and gems while carried (no gems with a Gem Pouch)."
 								],
 								[
 									"Rift Key Pouch",
 									"150",
 									"Convenience",
-									"30 slots, store-bound. Collects Rift Keys, Omen Keys and omen fragments while carried."
+									"100 slots, store-bound. Collects Rift Keys, Omen Keys and omen fragments while carried."
+								],
+								[
+									"Gem Pouch",
+									"150",
+									"Convenience",
+									"100 slots, store-bound. Collects only gems while carried, so they stay apart from your orbs."
 								],
 								[
 									"Everfull Ration",
@@ -44979,6 +44985,7 @@
 								{"item": 32081},
 								{"item": 32082},
 								{"item": 32083},
+								{"item": 32095},
 								{"item": 32084},
 								{"item": 2160},
 								{"item": 2472},

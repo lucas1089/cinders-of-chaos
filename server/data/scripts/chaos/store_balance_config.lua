@@ -47,6 +47,6 @@ return {
 	-- it (checked with goldPerCoin), and a whole line (health, mana or spirit) costs at most maxLineCoins in all.
 	-- Nothing a tier gives is for sale to an NPC (no coin -> gold loop).
 	everfull = {maxLineCoins = 200},
-	perCharacterConvenienceMax = 1400,  -- Loot Bag + Auto Seller + Rarity Autoloot + pouches + Ration for one character
+	perCharacterConvenienceMax = 1550,  -- Loot Bag + Auto Seller + Rarity Autoloot + pouches (Orbs, Rift Key, Gem) + Ration for one character
 	cosmetics = {min = 80, max = 800}  -- every cosmetic offer; a static plate frame costs no more than the cheapest wings
 }
