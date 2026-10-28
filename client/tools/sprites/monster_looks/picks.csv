@@ -171,3 +171,6 @@ base_restore_carrion_worm,192,stock,,,base,base,Carrion Worm,"Carrion Worm: its 
 base_restore_skeleton_warrior,298,stock,,,base,base,Skeleton Warrior,"Skeleton Warrior: its stock look again (owner 2026-10-22: the pack art looks were bad)",restores the base file
 base_restore_ghost,48,stock,,,base,base,Ghost,"Ghost: its stock look again (owner 2026-10-22: the pack art looks were bad)",restores the base file
 base_restore_witch,54,stock,,,base,base,Witch,"Witch: its stock look again (owner 2026-10-22: the pack art looks were bad)",restores the base file
+eye_demon,3361,autosprite,cmvrcd1w20014jc1opt6ib6ox,,lairboss,boss,Vharzul the Verdant Eye,"Verdant Eye Demon: horned red and black demon with pale green eyes, claws and spiked shoulders, 4x4","autosprite walk, 256 px shrunk to 128"
+ashbound_thrall,3362,autosprite,cmvre826d00ezz6z1fg72bkp8,,hunt,hunt,Ashbound Thrall,"Ashbound Thrall: hunched chained demonic thrall, charred hide cracked with ember veins, small horns","autosprite walk, 256 px shrunk to 64"
+slagback_hound,3363,autosprite,cmvre8d91006k4v8d5v9j0xc9,,hunt,hunt,Slagback Hound,Slagback Hound: black hellhound with glowing slag plates on its back and a smoking mane,"autosprite walk, 256 px shrunk to 64"

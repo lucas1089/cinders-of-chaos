@@ -10942,7 +10942,7 @@ Things of the owner's licensed monster and tile kit in the client pair 27 trial 
   `tools/install_assets_decor_test.py`, `client/tools/sprites/gen_assets_art_test.py`.
 
 
-## AutoSprite looks (pair 54) (`data/lib/chaos_autosprite_art.lua`, switch `ChaosAutospriteArt.PAIR54`, off)
+## AutoSprite looks (pair 54) (`data/lib/chaos_autosprite_art.lua`, switch `ChaosAutospriteArt.PAIR54`, on)
 
 Owner requests 2026-10-28: the owner's AutoSprite demon in the game as a boss with its own loot and a rare spawn, in the Embergut
 Rift; then two hunt monsters that fit the game. All three live in the Embergut Rift (levels 560-675).
@@ -10969,10 +10969,11 @@ Rift; then two hunt monsters that fit the game. All three live in the Embergut R
   longer spawns there; `tests/hunt_teleports_test.lua` checks the display monster spawns in the plan).
 - **Looks.** Pair 54 (client/MANIFEST.md "Pair 54") adds looks 3361-3363 from our AutoSprite renders, in all 8 directions (the
   diagonals need client base patch 0160 and src-patch 0077, "Eight-direction facing (O283)"; without them the first four draw).
-  Switching on is one change:
+  Switched on 2026-10-28 with pair 56 on windows-assets (79be63dc; pair 56 holds pair 54), in one change:
   `M.PAIR54 = true`, the rows of `client/tools/sprites/monster_looks/autosprite_picks.csv` into `picks.csv`,
-  `tools/apply_monster_looks.py` (families `lairboss` and `hunt`), `tools/ci/check_content.py` to pair 54 / 3363 outfits, the two
-  client files regenerated from the pair.
+  `tools/apply_monster_looks.py` (families `lairboss` and `hunt`), `tools/ci/check_content.py` to pair 56 / 3363 outfits, the two
+  client files regenerated from the pair. A client on pair 53 or older must update before the server: publish the client
+  update first, then Atualizar servidor.
 - **Tests.** `tests/autosprite_art_test.lua` (luajit and lua5.3): the picks rows in look order, the switch against picks.csv and
   each file's look, `lookOf` on and off, the boss flag, the boss room and both hunt monsters in the plan; `tests/bossspawns_test.lua`
   covers the new row. Not run live.

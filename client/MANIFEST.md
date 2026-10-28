@@ -3388,7 +3388,7 @@ Output **pair 53**: dat ed39f8452177e0ef503c97fd5f7df764 (8,835,386 bytes), spr 
     Extracting the parts gives the dat and spr md5 above (checked).
 
 
-### Pair 54: pair 53 with three AutoSprite looks (`gen_autosprite_art.py`; built 2026-10-28, not pushed yet)
+### Pair 54: pair 53 with three AutoSprite looks (`gen_autosprite_art.py`; built 2026-10-28, shipped inside pair 56)
 Owner requests 2026-10-28: the owner's AutoSprite character "Verdant Eye Demon" in the game as the boss Vharzul the Verdant Eye,
 then "mais 2 monstros ... pra hunt" that fit the game: the Ashbound Thrall and the Slagback Hound (server/README.md "AutoSprite
 looks (pair 54)"). Three outfits are appended; nothing else changes.
@@ -3420,7 +3420,7 @@ Output **pair 54** (8 directions; rebuilt 2026-10-28): dat bd8d87f8b4950e01e65ee
   3,000 sampled old sprites unchanged, append-only guard passed. `check_pair.py --old pair53`: 0 errors, 3,964 warnings (the same
   as pair 53; `outfit-directions` accepts 8). `gen_outfit_anchors.py` and `gen_info_lift.py` against pair 54 change only the dat
   md5 line (not committed yet: CI checks them against the pair on windows-assets). Not run in a client.
-- **Archive parts** (same recipe as pair 53; not pushed to windows-assets yet, waiting for the owner's approval):
+- **Archive parts** (same recipe as pair 53; built, never pushed: pair 56 holds pair 54 and went up instead):
   - part00 99,614,720 bytes, sha256 `2f0d08946c9a91db611e7931e9dd24c08cf8cb2734c0ab796885088f933adfcd`
   - part01 30,155,764 bytes, sha256 `5136b1ae07bbe2a1f553cc40fa53f88c3f511829345f47bec18ec090d8b246d3`
   - joined `things-1098.tar.xz` (129,770,484 bytes) sha256 `e0ec06cdf8834789ae2016993ee40a1666c0f78bdf297471fc1ff351198b23d2`;
@@ -3430,7 +3430,7 @@ Output **pair 54** (8 directions; rebuilt 2026-10-28): dat bd8d87f8b4950e01e65ee
   the three files), `tools/ci/check_content.py` `PAIR_NAME, PAIR_OUTFITS` to pair 54 / 3363, `outfit_anchors.lua` and
   `info_lifts.lua` regenerated from pair 54. Until then the three wear stock looks and a client on pair 53 needs nothing new.
 
-### Pair 55: pair 54 with the pickup looks, Ember portal and health / mana globes (`gen_portal_art.py`; built 2026-10-28, not pushed yet)
+### Pair 55: pair 54 with the pickup looks, Ember portal and health / mana globes (`gen_portal_art.py`; built 2026-10-28, shipped inside pair 56)
 Owner requests 2026-10-28: the Ember Blessing ground pickup (server 32090) wore the Ember Orb sprite (client id 25045); it gets a
 violet arcane portal in a carved stone ring. Then the health and mana globes (server 32088 / 32089, they wore the stock potion
 looks 7618 / 7620) get looks of their own (option 3 of the owner's pick). Three items are appended; nothing else changes. The Ember Orb
@@ -3466,9 +3466,9 @@ Output **pair 55**: dat 26670034d86dab36a59ecd955bb158c7 (8,842,607 bytes), spr 
   sampled old sprites unchanged, append-only guard passed. `check_pair.py --old pair54`: 0 errors, 3,964 warnings (the same as pair 54).
   `gen_outfit_anchors.py` and `gen_info_lift.py` against pair 55 change only the dat md5 line (not committed yet, as for pair 54: CI checks
   them against the pair on windows-assets). `gen_fx_send_offsets.py --check`: up to date. Not run in a client.
-- **Archive parts.** Not built, not pushed to windows-assets: waiting for the owner's approval of the pair.
+- **Archive parts.** Not built: pair 56 holds pair 55 and went up instead (owner approved 2026-10-28).
 
-### Pair 56: pair 55 with the Monk fist weapon looks and the 34 weapons above level 800 (`gen_fist2_art.py`, `gen_weapons800_art.py`; built 2026-10-28, not pushed yet)
+### Pair 56: pair 55 with the Monk fist weapon looks and the 34 weapons above level 800 (`gen_fist2_art.py`, `gen_weapons800_art.py`; built 2026-10-28, on windows-assets 79be63dc)
 Owner 2026-10-28 ("me mande fotos das armas do monk", approved all with "aprovo todas"): redraws of the six claws and the four
 uniques of the Monk line, and three new fist weapons. 13 items are appended (client ids 44399-44411); then, owner 2026-10-28
 ("pode criar mais armas pros levels acima de 800"), 34 weapons above level 800 (client ids 44412-44445, below). 47 items in all; nothing else changes.
@@ -3580,7 +3580,16 @@ outfits, 4,701 effects, 253 missiles. Built, not pushed yet.
   (`gen_fist2_art.py --preview`, `gen_weapons800_art.py --preview`): all 47 draw as in the tables. The second import (34 items, 34 sprites
   appended): output parses, the 34 slots are pixel-identical to the art, every other thing byte-identical, append-only guard passed;
   `check_pair.py --old pair55` again 0 errors and 3,964 warnings; `gen_fx_send_offsets.py --check` up to date. Not run in a client.
-- **Archive parts.** Not built, not pushed to windows-assets: waiting for the owner's approval of the pair.
+- **Archive parts** (same recipe as pair 53; owner approved 2026-10-28, pushed to windows-assets as **79be63dc**, only the two part
+  files and their lines of `SHA256SUMS.parts` changed):
+  - part00 99,614,720 bytes, sha256 `6d403b3f7c12a775432db340ddc78b497f4147f08713f36191d5f5c6bd10eed5`
+  - part01 30,170,616 bytes, sha256 `f7e358eab54ed39b9d94c3a508400ff3f511c1ed490758a295d1d856ab0a35ae`
+  - joined `things-1098.tar.xz` (129,785,336 bytes) sha256 `0241527e754920b6c93a168c4ca2f8bbc5f7feb5ba89ff6ba20e25ce13dbed33`;
+    `things-1098.tar` sha256 `4e4b9d586c36566dc947bf0fd31bce5f7b08ef6ab8da7fafcd38b3f62e5cb58b`. Extracting the parts gives the dat and spr md5 above (checked).
+- **Switched on** with the push: `ChaosAutospriteArt.PAIR54 = true`, the AutoSprite rows in `picks.csv` (looks 3361-3363 in the three
+  monster files), `check_content.py` at pair 56 / 3363 outfits (blank set recounted), `outfit_anchors.lua` and `info_lifts.lua` from pair 56.
+  Against pair 56: `check_pair.py` 0 errors, recolour, anchors, lifts, dungeon banners and site images pass. The pickups, fist weapons and
+  weapons above 800 still wait for `chaosClientPair` 56 (server/README.md "Client pair guard"): record it once the client update is out.
 
 ## Owner art (things_custom26: outfits 2213-2233, items 33940-33985, `tools/sprites/gen_owner_art.py`, `art_import/owner_art.csv`; on windows-assets 50645056, switch on since 2026-10-15)
 **Source and licence.** The owner's Google Drive folder "ots", files added 2026-10-15. The owner confirmed the art is
