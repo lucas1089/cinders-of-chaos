@@ -836,6 +836,12 @@ jobs:
 
       - name: Hunt transition audit rules on synthetic spawns (audit_hunt_transitions.py; the base map itself is audited by hand, docs/HUNT_TRANSITIONS.md; O323)
         run: python3 -I server/tools/audit_hunt_transitions_test.py
+      - name: Hunt band audit rules on synthetic data and the install step huntgates (audit_hunt_bands.py, patch_hunt_gates.py; the base map itself is audited by hand, docs/HUNT_BANDS.md; O333)
+        run: |
+          python3 -I server/tools/audit_hunt_bands_test.py
+          # system numpy: patch_hunt_gates.py reads the map with tools/map/otbm.py (python3 -I does not see pip's user site)
+          sudo apt-get install -y -qq python3-numpy
+          python3 -I server/tools/patch_hunt_gates_test.py
 
       - name: Pack bands per role, Elementalist ahead on a pack, late packs die in at most 3x a base hunt pack (pack_model.py --check; boss_balance_config.lua packLimits, pace_config.lua scaled.health)
         run: python3 -I server/tools/pack_model.py --check

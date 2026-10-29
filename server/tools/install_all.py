@@ -324,6 +324,10 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                floor changes of the base map whose landing has no walkable ground (tools/dead_holes.csv, found by
                tools/check_dead_holes.py) lose their item or turn into plain ground; one that has a tile below now is
                kept (after mapfixes, before poi; with --dry-run it reads the real map and writes nothing)
+  huntgates    tools/patch_hunt_gates.py         the tester's report of 2026-10-29 (README "Hunt bands (O333)"): the stock
+               portals (teleports, holes, stairs) in reach of a base hunt's arrival whose far side has monsters far above
+               the hunt's band (tools/hunt_gates.csv, found by tools/audit_hunt_bands.py) lose their item or turn into
+               plain ground (after deadholes, before poi; with --dry-run it reads the real map and writes nothing)
   lavaedges    tools/patch_lava_edges.py         the owner's report of 2026-10-28 ("some hunts have wrong floors", README "Lava edge strips (O288)"): the
                lava edge items 5840-5843 the old lava decoration kit laid on the placed lava hunts' floors are taken off
                (after deadholes, before poi; with --dry-run it reads the real map and writes nothing)
@@ -1380,6 +1384,20 @@ def step_deadholes(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('mapfixes') + 1, 'deadholes')  # after mapfixes (the hall and the earlier fixes), before poi
+
+
+def step_huntgates(server, data, ctx):
+    if ctx['dry']:
+        # the dry copy has no map: read the real one, write nothing
+        real = os.path.join(ctx['server'], 'data')
+        mp = ctx.get('dry_map') or tool_map_path(real)
+        if not mp:
+            return tool_result((False, ['no map in %s/world' % real]))
+        return tool_result(run_tool([tool('patch_hunt_gates.py'), real, '--dry-run', '--map', mp], 'patch_hunt_gates.py'))
+    return tool_result(run_tool([tool('patch_hunt_gates.py'), data], 'patch_hunt_gates.py'))
+
+
+STEPS.insert(STEPS.index('deadholes') + 1, 'huntgates')  # after deadholes (the map's own dead ends), before poi
 
 
 def step_lavaedges(server, data, ctx):

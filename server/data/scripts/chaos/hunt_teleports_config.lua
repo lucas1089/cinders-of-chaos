@@ -260,7 +260,18 @@ return {
 			{id = "base_5_31642_32254", at = {x = 33897, y = 31155, z = 9}}, -- Skeleton Elite Warrior
 			{id = "base_5_31658_32254", at = {x = 32188, y = 31428, z = 7}}, -- Frost Dragon
 			{id = "base_6_31654_32258", at = {x = 33193, y = 31776, z = 12}}, -- Blightwalker
-			{id = "base_6_31662_32258", at = {x = 33634, y = 31689, z = 13}} -- Rustheap Golem
+			{id = "base_6_31662_32258", at = {x = 33634, y = 31689, z = 13}}, -- Rustheap Golem
+			-- hunts whose arrival moved to a monster area of their band (O333, tools/audit_hunt_bands.py --apply: a mixed
+			-- band, few monsters or a stock portal into far stronger ones); the base way back stays at the old arrival
+			{id = "base_5_31630_32258", at = {x = 32600, y = 31345, z = 15}}, -- Fire Elemental
+			{id = "base_5_31634_32254", at = {x = 33025, y = 32417, z = 11}}, -- Demon Skeleton
+			{id = "base_5_31638_32258", at = {x = 32260, y = 32479, z = 10}}, -- Sandcrawler
+			{id = "base_5_31662_32258", at = {x = 33019, y = 31932, z = 7}}, -- Scaledrake
+			{id = "base_6_31634_32254", at = {x = 32629, y = 31691, z = 9}}, -- Elephant
+			{id = "base_6_31637_32258", at = {x = 33210, y = 32726, z = 11}}, -- Cave Rat
+			{id = "base_6_31642_32254", at = {x = 32795, y = 32546, z = 11}}, -- Dawnfire Asura
+			{id = "base_6_31666_32254", at = {x = 33261, y = 31645, z = 10}}, -- Behemoth
+			{id = "base_6_31666_32258", at = {x = 33356, y = 31601, z = 14}} -- Hellspawn
 		}
 	},
 
