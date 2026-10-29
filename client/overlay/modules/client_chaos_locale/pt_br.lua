@@ -5817,5 +5817,14 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Badge"] = "Insígnia",
   -- Crafting table (craftingtableview.lua)
   ["General Crafting"] = "Fabricação geral",
+  -- game_helper/spellinfo_logic.lua (the spell lists of the helper: data on each row and in the tooltip)
+  ["%s mana"] = "%s mana",
+  ["AOE"] = "AOE",
+  ["circle"] = "círculo",
+  ["around"] = "ao redor",
+  ["wave"] = "onda",
+  ["of your maximum"] = "do seu máximo",
+  ["Spell range"] = "Alcance",
+  ["%d tiles"] = "%d casas",
 }
 return ChaosLocaleStrings['pt-BR']

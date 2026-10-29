@@ -4410,6 +4410,20 @@ hint above it; a click on it ends the blink and runs Auto setup as usual. Nothin
 helpers `O.plan` / `O.blinkFrames`, `onboarding_test.lua`. Server side: `newplayer.lua` `NP.showWelcome`,
 `newplayer_config.lua` `welcome.helper`.
 
+### Helper spell lists (`game_helper/spellinfo_logic.lua`, O311)
+The helper's spell pickers (shooter slots, healing rows, mana training, haste) list a spell as `Name   120 mana | AOE circle 3 | 4 s`
+(mana or its share of the maximum, single target / AOE with the shape and size / self, cooldown) and show the whole data in a
+tooltip: mana, target (`Area (circle 3)`, shapes circle, around, line, wave `3x3`), cooldown, group cooldown, range, level,
+element, kind. The tooltip is on each popup row, on the closed box (the chosen spell) and on the slot icon. The closed box keeps
+the plain name (it is 170 wide); `helper.lua` `decoratePopup` widens the combo box's own popup after it opens and sets each row's
+text and tooltip. A field the spell entry lacks (a stock spell has no shape or element) is left out without a word.
+`spellinfo_logic.lua` (`ChaosHelperSpellInfo`: `compact`, `lines`, `tooltip`, `optionText`, `area`) is pure Lua with `tr` passed in;
+`spellinfo_logic_test.lua` covers single target, every shape, missing fields, pt-BR and every spell of `spelldata.lua`.
+Data: `gen_spell_data.py` writes `areaShape` (single, self, circle, around, wave, line), `areaSize` (radius, length or depth),
+`areaWidth` (a wave's tiles across) and `element` per spell, from the attack kit (`attack_kit_config.lua`), the Spellbook's area
+rows (`spellbook_areas_config.lua`), the area the spell script creates and its damage type; `game_chaosspells/chaosspells.lua` copies
+them into the spell entries. The popup is as wide as its widest row (text width plus 24, kept on the screen). Not run live.
+
 ### Helper Auto setup (`game_helperrotation/autosetup.lua`, `autosetup_ui.lua`)
 The "Auto setup" button sits in the top row of the helper window (`autoSetupHost`). One click,
 for the character's class and level (`ChaosAutoSetup.plan`, tested per class in `autosetup_test.lua`):

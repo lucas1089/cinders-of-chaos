@@ -25,6 +25,7 @@ H._suppressMessages = false
 local Cfg = ChaosHelperCfg
 local Logic = ChaosHelperLogic
 local Spl = ChaosHelperSpells
+local Info = ChaosHelperSpellInfo
 local Pot = ChaosHelperPotions
 local Runes = ChaosHelperRunes
 local Sell = ChaosHelperSell
@@ -417,7 +418,8 @@ local function setIcon(widget, id)
   end
   widget:setImageSource(source)
   widget:setImageClip(clip)
-  widget:setTooltip(tr('Spell: %s\nWords: %s', spell.name or '', spell.words or ''))
+  -- the name and words, then what the spell costs and hits (spellinfo_logic.lua; what the entry lacks is left out)
+  widget:setTooltip(Info.tooltip(spell, tr))
 end
 
 local function percentOptions(from, to, step)
@@ -426,11 +428,69 @@ local function percentOptions(from, to, step)
   return o
 end
 
+-- A spell picker lists "Name   120 mana | AOE circle 3 | 4 s" with the whole data in a tooltip on each row; the closed box
+-- keeps the plain name (it is only 170 wide) and its tooltip says the data of the chosen spell. The popup is the combo
+-- box's own (UIComboBox.onMousePress); it is widened and its rows get their text and tooltip right after it opens.
+local POPUP_PAD = 24
+local function spellTip(combo)
+  local option = combo:getCurrentOption()
+  local spell = option and combo.spellOf and combo.spellOf[option.text]
+  combo:setTooltip(spell and Info.tooltip(spell, tr) or '')
+end
+
+local function decoratePopup(combo)
+  local root = g_ui.getRootWidget()
+  local menu = root and root:recursiveGetChildById(combo:getId() .. 'PopupMenu')
+  if not menu or not combo.spellOf then return end
+  local widest = combo:getWidth()
+  for _, row in ipairs(menu:getChildren()) do
+    local spell = combo.spellOf[row:getText()]
+    if spell then
+      row:setText(Info.optionText(row:getText(), spell, tr))
+      row:setTooltip(Info.tooltip(spell, tr))
+      local ok, size = pcall(function() return row:getTextSize() end)
+      widest = math.max(widest, (ok and size and size.width or #row:getText() * 6) + POPUP_PAD)
+    end
+  end
+  menu:setWidth(widest)
+  -- stay on the screen
+  local rootWidth = root:getWidth()
+  if menu:getX() + widest > rootWidth then menu:setX(math.max(0, rootWidth - widest)) end
+end
+
+local function hookSpellCombo(combo)
+  if combo.chaosSpellInfo then return end
+  combo.chaosSpellInfo = true
+  local baseChange = combo.onOptionChange
+  combo.onOptionChange = function(c, text, data)
+    if baseChange then baseChange(c, text, data) end
+    spellTip(c)
+  end
+  combo.onMousePress = function(c, pos, button)
+    local base = UIComboBox and UIComboBox.onMousePress
+    local result = base and base(c, pos, button)
+    pcall(decoratePopup, c)
+    return result
+  end
+end
+
 local function setOptions(combo, options, selected)
   if not combo then return end
   combo:clearOptions()
-  for _, o in ipairs(options) do combo:addOption(o.text, o.data, true) end
+  local spellOf = nil
+  for _, o in ipairs(options) do
+    combo:addOption(o.text, o.data, true)
+    if o.spell then
+      spellOf = spellOf or {}
+      spellOf[o.text] = o.spell
+    end
+  end
   combo:setCurrentOptionByData(selected, true)
+  combo.spellOf = spellOf
+  if spellOf then
+    hookSpellCombo(combo)
+    spellTip(combo)
+  end
 end
 
 -- the pickers' spells, rebuilt on a level, class or login change
@@ -448,13 +508,13 @@ local function spellOptions(kind, currentId)
   local o = { { text = tr('(empty)'), data = 0 } }
   local seen = {}
   for _, e in ipairs(spellLists()[kind] or {}) do
-    o[#o + 1] = { text = e.name, data = e.spell.id }
+    o[#o + 1] = { text = e.name, data = e.spell.id, spell = e.spell }
     seen[e.spell.id] = true
   end
   currentId = tonumber(currentId) or 0
   if currentId > 0 and not seen[currentId] then
     local s = spellById(currentId)
-    o[#o + 1] = { text = s and s.name or tostring(currentId), data = currentId }
+    o[#o + 1] = { text = s and s.name or tostring(currentId), data = currentId, spell = s }
   end
   return o
 end
