@@ -205,9 +205,42 @@ function M.gameIndicator(me, e, vd, rect, keepAspect, margin)
            side = (x > cx) and 'left' or 'right' }
 end
 
--- the label next to a game view arrow: name and distance in tiles
-function M.gameText(name, dist)
-  return string.format('%s %d', tostring(name or '?'), dist)
+-- floors between the viewer and a member as a signed number: +1 one floor up (a lower z), -2 two floors down, 0 same floor
+function M.floorDelta(me, e)
+  return (me.z or 0) - (e.z or 0)
+end
+
+-- the hint for a member e on ANOTHER floor than me, on a game map panel (same arguments as gameIndicator). nil on the
+-- same floor (gameIndicator draws those). Inside the view: {kind = 'tile', x, y (centre of the member's tile, rect
+-- coordinates), floor ('up' / 'down'), delta (see floorDelta), dist}. Outside: {kind = 'edge', x, y, dir, dist, side,
+-- floor, delta} like gameIndicator, plus the floor.
+function M.gameFloorHint(me, e, vd, rect, keepAspect, margin)
+  if e.z == me.z then return nil end
+  local delta = M.floorDelta(me, e)
+  local floor = M.floorArrow(e.z, me.z)
+  local dx, dy = e.x - me.x, e.y - me.y
+  local tw, th = M.tileSize(rect, vd, keepAspect)
+  local cx, cy = rect.x + rect.width / 2, rect.y + rect.height / 2
+  local dist = math.max(math.abs(dx), math.abs(dy))
+  if M.inView(dx, dy, vd) then
+    return { kind = 'tile', x = math.floor(cx + dx * tw + 0.5), y = math.floor(cy + dy * th + 0.5), floor = floor,
+             delta = delta, dist = dist }
+  end
+  local _, x, y, dir = M.edge(cx + dx * tw, cy + dy * th, rect, margin or M.GAME_MARGIN)
+  return { kind = 'edge', x = x, y = y, dir = dir or M.dir8(dx, dy), dist = dist, side = (x > cx) and 'left' or 'right',
+           floor = floor, delta = delta }
+end
+
+-- the label next to a game view hint: name and distance in tiles; for another floor the floors as +1 / -2 (up / down),
+-- and the distance only when it is not zero
+function M.gameText(name, dist, delta)
+  name = tostring(name or '?')
+  if delta and delta ~= 0 then
+    local f = string.format('%+d', delta)
+    if dist and dist > 0 then return string.format('%s %d %s', name, dist, f) end
+    return string.format('%s %s', name, f)
+  end
+  return string.format('%s %d', name, dist)
 end
 
 -- the party list without the viewer and without broken entries
