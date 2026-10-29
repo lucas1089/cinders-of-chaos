@@ -323,6 +323,31 @@ do
   local before = #corpse.added
   lootCallbacks[#lootCallbacks](other, corpse)
   assertEq(#corpse.added, before, "O144: other monsters get no tower drops")
+  -- O328: loot follows the floor: the loot level, the pace factors of that level x lootShare, the floor's gold in coins
+  assertEq(ChaosTowerRun.lootLevelOf(mon), ChaosTowerBalanceCore.lootLevel(BC, 1), "O328: a floor 1 monster loots at level 100")
+  assertEq(ChaosTowerRun.lootLevelOf(other), nil, "O328: any other monster has no tower loot level")
+  assertEq(ChaosTowerRun.lootFactorsOf(mon), nil, "O328: without pace_core.lua there are no loot factors")
+  local seen
+  ChaosPaceConfig = {}
+  ChaosPaceCore = {
+    factors = function(cfg, level, scaled, generated) seen = {level, scaled, generated}; return {loot = 0.5, notable = 0.6, coins = 0.3} end,
+    coinStacks = function(gold) return {{2152, math.floor(gold / 100)}, {2148, gold % 100}} end
+  }
+  local lf = ChaosTowerRun.lootFactorsOf(mon)
+  assertEq(seen[1], 100, "O328: the factors are those of the floor's level")
+  assertEq(seen[2], false, "O328: a base hunt set below lootScaledFrom")
+  assertEq(seen[3], false, "O328: never a generated area's set")
+  assertEq(lf.loot, 0.5 * ChaosTowerBalanceCore.lootShare(BC, 1), "O328: loot x lootShare")
+  assertEq(lf.coins, 0.3, "O328: the other factors stay the pace set's")
+  local gcorpse = {added = {}}
+  function gcorpse:addItem(id, n) self.added[#self.added + 1] = {id, n} end
+  math.random = function(a2, b2) if b2 then return b2 + 1 end return 0 end -- the item drops roll in (not counted below); the gold is a whole number
+  lootCallbacks[#lootCallbacks](mon, gcorpse)
+  math.random = old
+  local coins = 0
+  for _, a2 in ipairs(gcorpse.added) do coins = coins + (a2[1] == 2152 and a2[2] * 100 or a2[1] == 2148 and a2[2] or 0) end
+  assertEq(coins, math.floor(BC.killGold[1][2]), "O328: the corpse holds the floor's gold in coins")
+  ChaosPaceCore, ChaosPaceConfig = nil, nil
   ChaosTowerRun.leave(h2)
   local _ = first
 end

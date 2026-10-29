@@ -144,5 +144,22 @@ eq(lad[4].reached, true, 'Trusted reached')
 eq(lad[5].reached, false, 'Honored not')
 eq(V.resetText(data), 'Daily contracts in 5h 12m, weekly in 2d 1h', 'reset text')
 
+-- where to hand in, and the Go to NPC button
+local away = V.faction(data, 'choir')
+eq(away.near, nil, 'choir is away')
+eq(V.handInText(away):find('Use Go to NPC', 1, true) ~= nil, true, 'hand-in line sends to the button')
+eq(V.handInText(away):find(away.npc, 1, true) ~= nil, true, 'hand-in line names the NPC')
+away.at = 'Cantor Velith, next to the temple of Bellwatch'
+eq(V.handInText(away):find('next to the temple of Bellwatch', 1, true) ~= nil, true, 'hand-in line names the place')
+eq(V.handInText(vigil):find('is listening', 1, true) ~= nil, true, 'hand-in line near the NPC')
+local goOn, goTip = V.goButton(away)
+eq(goOn, true, 'go button enabled away')
+eq(goTip:find(away.npc, 1, true) ~= nil, true, 'go tooltip names the NPC')
+goOn, goTip = V.goButton(vigil)
+eq(goOn, false, 'go button off next to the NPC')
+eq(goTip:find('already next to', 1, true) ~= nil, true, 'go tooltip next to the NPC')
+eq(V.handInText(nil), '', 'no faction')
+eq((V.goButton(nil)), false, 'no faction, no button')
+
 print(string.format('factionsview_test: %s (%d checks)', fails == 0 and 'OK' or (fails .. ' FAILED'), checks))
 if fails > 0 then os.exit(1) end

@@ -1435,6 +1435,7 @@ end
 
 function init()
   window = g_ui.displayUI('market')
+  pcall(function() modules.game_howitworks.attach(window, 'market') end) -- game_howitworks: the ? button
   window:hide()
   for i, name in ipairs({ tr('Browse'), tr('Sell'), tr('My Offers'), tr('History'), tr('Buy Orders') }) do
     local b = g_ui.createWidget('ChaosTabButton', window.tabBar)

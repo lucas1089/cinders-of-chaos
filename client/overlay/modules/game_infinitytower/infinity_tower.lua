@@ -285,6 +285,7 @@ end
 function show(data)
   if not infinityTowerWindow then
     infinityTowerWindow = g_ui.displayUI('infinity_tower')
+    pcall(function() modules.game_howitworks.attach(infinityTowerWindow, 'tower') end) -- game_howitworks: the ? button
     if not infinityTowerWindow then return end
     setupDescription()
     populatePodium()

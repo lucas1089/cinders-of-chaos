@@ -8,7 +8,7 @@
   "game_npctradewindow"
  ],
  "counts": {
-  "opcode": 64,
+  "opcode": 65,
   "out": 38,
   "passive": 85,
   "place": 15,
@@ -7589,6 +7589,7 @@
    ],
    "dataKeys": [
     "f",
+    "factions",
     "gold",
     "key",
     "n",
@@ -8340,6 +8341,26 @@
    "out": false,
    "skip": [],
    "systems": []
+  },
+  "npcTravel": {
+   "actions": [
+    "travel"
+   ],
+   "client": [
+    "game_npctravel"
+   ],
+   "dataKeys": [
+    "k"
+   ],
+   "files": [
+    "npc_travel.lua"
+   ],
+   "opcode": 121,
+   "out": false,
+   "skip": [],
+   "systems": [
+    "npc_travel"
+   ]
   },
   "orbExchange": {
    "actions": [],
@@ -10461,6 +10482,17 @@
    "kind": "place",
    "opcodes": [],
    "place": "shop",
+   "talkactions": []
+  },
+  "npc_travel": {
+   "files": [
+    "chaos_constants.lua",
+    "npc_travel.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "npcTravel"
+   ],
    "talkactions": []
   },
   "orbexchange": {

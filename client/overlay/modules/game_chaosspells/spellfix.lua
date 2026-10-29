@@ -368,8 +368,8 @@ end
 -- translateVocation(vocation), which folds the Chaos classes onto old ids (Beastmaster / Deadeye / Ranger 7, Illusionist
 -- 6, Mystic / Elementalist 5, ...). A Chaos spell lists the server ids (Moonfang Pack {10}, Wild Bond {15}), so it never
 -- matched and the Beastmaster saw only the stock "Summon Paladin Familiar" (owner report 2026-10-17: "the wolf is not
--- in the hotbar list, only a paladin summon that does not work"). A spell matches by the server id or the folded id (so
--- nothing the base listed disappears); an entry the server does not have (notOnServer) never matches.
+-- in the hotbar list, only a paladin summon that does not work"). A spell matches by the server id only (O329: the fold
+-- leaked sibling classes' spells); an entry the server does not have (notOnServer) never matches.
 -- spell: a SpellInfo entry; vocation: the player's server vocation id; translate: translateVocation (default: the global)
 local chaosIdSet, chaosIdSource = nil, nil
 function F.isChaosSpell(spell)
@@ -400,15 +400,14 @@ function F.allowsVocation(spell, vocation, translate)
   if type(list) ~= 'table' then
     return true
   end
-  translate = translate or rawget(_G, 'translateVocation')
-  local folded = translate and translate(vocation) or nil
-  -- a Chaos spell lists exact server ids: the fold would hand it to the sibling class that shares the folded id (the
-  -- Beastmaster folds to 7, the Deadeye's id: Final Verdict, Twin Verdict; O307). Only stock entries use the fold.
-  if F.isChaosSpell(spell) then
-    folded = nil
-  end
+  -- The list holds exact server ids (a Chaos spell's own, a stock entry's after remapStockVocations, which keeps the old
+  -- ids and adds the Chaos classes, then cuts it to the 15-spell cap). The client's translateVocation fold is NOT used
+  -- any more (O329): it hands a spell to every sibling class that shares the folded id (the Beastmaster, Ranger and
+  -- Deadeye fold to 7, the Warrior line to 8, the Mystic and Elementalist to 5), so the Beastmaster was offered Hail of
+  -- Dawn, Twin Verdict, Final Verdict and Skewering Line, the Berserker Anvil Fall, the Mystic Glacial Doom, and the
+  -- server refused the cast ("not for your class"). `translate` is kept for the callers' signature.
   for _, v in ipairs(list) do
-    if v == vocation or (folded ~= nil and folded ~= 0 and v == folded) then
+    if v == vocation then
       return true
     end
   end

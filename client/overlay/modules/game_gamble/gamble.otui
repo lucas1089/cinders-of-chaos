@@ -109,13 +109,24 @@ GambleWindow < ChaosMainWindow
     height: 16
     text-align: left
 
+  ChaosButton
+    id: goNpcButton
+    anchors.top: header.bottom
+    anchors.right: parent.right
+    margin-top: 2
+    size: 110 20
+    !text: tr('Go to NPC')
+    !tooltip: tr('Takes you in front of Mordecai Ashwager, the Gambler, in the market of the teleport room. Not in combat; a short wait between two trips.')
+    @onClick: modules.game_npctravel.travel('gambler')
+
   ChaosLabel
     id: nearLabel
     anchors.top: header.bottom
     anchors.left: parent.left
-    anchors.right: parent.right
+    anchors.right: goNpcButton.left
     margin-top: 2
-    height: 16
+    margin-right: 6
+    height: 20
     text-align: left
 
   ChaosTitlePlate

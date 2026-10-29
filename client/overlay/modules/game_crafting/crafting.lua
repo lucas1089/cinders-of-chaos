@@ -894,6 +894,7 @@ end
 
 function init()
   window = g_ui.displayUI('crafting')
+  pcall(function() modules.game_howitworks.attach(window, 'crafting') end) -- game_howitworks: the ? button
   window:hide()
   -- the Chaos fonts (client_chaos_theme ChaosTheme.fonts): the name of the item on the bench
   local theme = modules.client_chaos_theme and modules.client_chaos_theme.ChaosTheme

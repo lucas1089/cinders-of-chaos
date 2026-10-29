@@ -342,6 +342,12 @@ function F.payload(player, sel)
 		end})
 	data.gold = Chaos.totalMoney(player)
 	data.sel = sel
+	-- where to hand tokens in, in the player's language ("Warden Ysolde, in the market of the teleport room in Cinderhold";
+	-- npc_travel_config.lua); the window's Go to NPC button sends travel {k = "faction_" .. key}
+	local NT = ChaosNpcTravel
+	for _, row in ipairs(data.factions or {}) do
+		row.at = NT and NT.where and NT.where(player, "faction_" .. row.k) or nil
+	end
 	return data
 end
 

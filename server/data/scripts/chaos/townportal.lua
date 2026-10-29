@@ -203,6 +203,9 @@ local function blockFacts(player)
 	}
 end
 
+-- the facts of the places that hold a player, for the other systems that refuse the same places (npc_travel.lua)
+T.blockFacts = blockFacts
+
 function T.blockReason(player)
 	return K.blockReason(blockFacts(player), function(k, ...) return Chaos.t(player, k, ...) end)
 end

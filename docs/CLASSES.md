@@ -365,6 +365,12 @@ last class). Client: `ChaosCappedSpells` (spelldata.lua) cuts the stock entries'
 ones. A character that learned a dropped spell keeps the learned row; the server refuses the cast and the spellbook no
 longer lists it.
 
+**Who may be offered what (O329, 2026-10-29)**: a class is offered exactly the spells its server lists (spell XML and
+`stock_spells.csv`, exact vocation ids); the client no longer folds sibling classes onto one id, so a Beastmaster is not shown
+Hail of Dawn, Twin Verdict, Final Verdict or Skewering Line, a Berserker not Anvil Fall, a Mystic not Glacial Doom. Weapons: a class
+list must hold every class that uses the family (`weapon_coverage.lua --access`); the Beastmaster wields bows, not crossbows.
+Checks: `tools/ci/check_class_access.py`, `spellbook_access_test.lua`. server/README.md "Class access audit".
+
 Counts before (stock and Chaos spells the class could learn, without the shared ones) and after; levels after the names:
 
 | Class | Before | After | Attack | Healing | Support |

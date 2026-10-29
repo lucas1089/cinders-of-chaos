@@ -239,6 +239,7 @@ function init()
   if ok and ui then
     window = ui
     window:hide()
+    pcall(function() modules.game_howitworks.attach(window, 'bosses') end) -- game_howitworks: the ? button
     window.searchEdit.onTextChange = safe('search', function(_, text)
       window.searchHint:setVisible((text or '') == '')
       render()

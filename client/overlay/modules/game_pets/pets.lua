@@ -237,6 +237,7 @@ end
 
 function init()
   window = g_ui.displayUI('pets')
+  pcall(function() modules.game_howitworks.attach(window, 'pets') end) -- game_howitworks: the ? button
   window:hide()
   local lp = modules.game_lookpreview
   preview = lp and type(lp.create) == 'function' and lp.create(window.lookPreview) or nil

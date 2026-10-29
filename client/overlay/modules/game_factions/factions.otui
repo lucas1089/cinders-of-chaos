@@ -347,17 +347,29 @@ ChaosMainWindow
       !text: tr('Turn in')
       @onClick: modules.game_factions.turnIn()
 
-    UILabel
-      id: npcLabel
+    ChaosButton
+      id: goNpcButton
       anchors.verticalCenter: tokenItem.verticalCenter
       anchors.right: parent.right
-      text-auto-resize: true
+      size: 110 22
+      !text: tr('Go to NPC')
+      @onClick: modules.game_factions.goToNpc()
+
+    UILabel
+      id: handInLabel
+      anchors.top: tokenItem.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin-top: 4
       font: verdana-11px-antialised
       color: #8c8070
+      text-wrap: true
+      text-auto-resize: true
+      text-align: topLeft
 
     ChaosTabButton
       id: contractsTab
-      anchors.top: tokenItem.bottom
+      anchors.top: handInLabel.bottom
       anchors.left: parent.left
       margin-top: 6
       width: 130

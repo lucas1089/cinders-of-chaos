@@ -199,6 +199,16 @@ ChaosMainWindow
     text-auto-resize: true
     color: #8c8070
 
+  ChaosButton
+    id: goNpcButton
+    anchors.verticalCenter: searchEdit.verticalCenter
+    anchors.right: countLabel.left
+    margin-right: 10
+    width: 110
+    !text: tr('Go to NPC')
+    !tooltip: tr('Takes you in front of Vessa Hollowmark, the pocket boss NPC, in the market of the teleport room. Not in combat; a short wait between two trips.')
+    @onClick: modules.game_npctravel.travel('pocketboss')
+
   UIWidget
     id: header
     anchors.top: searchEdit.bottom

@@ -318,12 +318,22 @@ ProfessionsWindow < ChaosMainWindow
   ChaosLabel
     id: status
     anchors.left: parent.left
-    anchors.right: sellAllButton.left
+    anchors.right: goNpcButton.left
     anchors.bottom: parent.bottom
     margin-right: 6
     height: 24
     text-wrap: true
     text-align: left
+
+  ChaosButton
+    id: goNpcButton
+    anchors.right: sellAllButton.left
+    anchors.bottom: parent.bottom
+    margin-right: 6
+    size: 110 24
+    !text: tr('Go to NPC')
+    !tooltip: tr('Takes you in front of the Material Broker, in the market of the teleport room. Not in combat; a short wait between two trips.')
+    @onClick: modules.game_npctravel.travel('materials')
 
   ChaosButton
     id: sellAllButton

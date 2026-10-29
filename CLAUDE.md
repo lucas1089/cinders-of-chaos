@@ -46,6 +46,7 @@ python3 -I tools/ci/check_credits_test.py && python3 -I client/tools/gen_credits
 cd server && luajit tools/weapon_coverage.lua --check && lua5.3 tools/weapon_coverage.lua --check  # every class has 3+ weapons per level band (thresholds: tools/weapon_coverage_config.lua); table in server/README.md (--write)
 cd server && luajit tools/gear_coverage.lua --check && lua5.3 tools/gear_coverage.lua --check  # every class has 3+ pieces per slot and level band, weapon drops are fair (thresholds: tools/gear_coverage_config.lua); table in server/README.md (--write)
 python3 -I tools/ci/check_attack_counts.py   # every class and ascension has the same number of attack spells
+python3 -I tools/ci/check_class_access.py && python3 -I tools/ci/check_class_access_test.py   # the client offers what the server casts: spell lists of all 21 classes, cap table, Auto setup spells (O329; the client logic with the real vocation fold: client/overlay/modules/game_spellbook/spellbook_access_test.lua in the client loop; weapon class lists: cd server && luajit tools/weapon_coverage.lua --access, also part of --check)
 python3 -I tools/ci/check_spell_icons.py && python3 -I tools/ci/check_spell_icons_test.py   # every spell of spelldata.lua has a drawn cell in the 3 spell icon sheets (O157)
 python3 -I tools/ci/check_rotation_kit.py && python3 -I tools/ci/check_rotation_kit_test.py   # every attack spell of the kit and of each class is in Auto setup's rotation data, area rule by shape (O157)
 cd server && luajit tools/progression_model.lua --check && lua5.3 tools/progression_model.lua --check  # smooth leveling: stages, minutes per level 8-2200, hunts in reach (limits: data/scripts/chaos/progression_config.lua); no flag prints the table, --spells the unlock gaps
@@ -85,6 +86,8 @@ cd server && luajit tools/gen_codex_data.lua                 # -> client game_co
 cd server && lua5.3 tools/gen_codex_data.lua --check
 cd server && luajit tools/gen_wiki_data.lua                  # -> website wiki/wiki_data.json
 cd server && lua5.3 tools/gen_wiki_data.lua --check
+cd server && luajit tools/gen_howitworks_data.lua             # -> client game_howitworks/howitworks_data.lua (How it works cards, O331; sentences: tools/howitworks_config.lua)
+cd server && lua5.3 tools/gen_howitworks_data.lua --check
 python3 -I server/tools/weapon_sim.py --power --check             # -> data/scripts/chaos/weapon_power_config.lua (--power --write)
 python3 -I website/tools/gen_wiki_art.py                     # -> website wiki icons, heroes (--check in CI)
 python3 -I website/tools/gen_streamer_kit.py                  # -> website plugins/chaos/assets/streamer: OBS overlays, Twitch panels, banners, Discord icon (--check in CI with the fx venv; O320)

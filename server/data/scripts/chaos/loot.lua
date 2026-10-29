@@ -1049,6 +1049,14 @@ end
 -- (waystone_tiers.lua)
 function L.monsterLevel(monster)
 	local base = L.baseMonsterLevel(monster)
+	-- an Infinity Tower monster counts at the level of its floor, capped at maxFloor's (O328: its drops were those of its level
+	-- 7 troll on floor 1 and on floor 100 alike)
+	if ChaosTowerRun and ChaosTowerRun.lootLevelOf then
+		local okT, tl = pcall(ChaosTowerRun.lootLevelOf, monster)
+		if okT and tonumber(tl) and tonumber(tl) > base then
+			base = tonumber(tl)
+		end
+	end
 	if ChaosWaystoneTiers and ChaosWaystoneTiers.levelOf then
 		local ok, lv = pcall(ChaosWaystoneTiers.levelOf, monster, base)
 		if ok and tonumber(lv) then
@@ -1205,6 +1213,12 @@ local function processKill(monster, corpse)
 	end
 	-- pack combat (pace.lua): loot per kill x the monster's loot factor (1 when it is not paced)
 	local pace = ChaosPace and ChaosPace.lootMultOf and ChaosPace.lootMultOf(monster) or 1
+	-- the Infinity Tower (infinitytower_run.lua, O328): a normal tower monster pays like a hunt monster of its floor's level
+	-- x the tower's lootShare
+	local tower = ChaosTowerRun and ChaosTowerRun.lootFactorsOf and ChaosTowerRun.lootFactorsOf(monster)
+	if tower then
+		pace = pace * (tonumber(tower.loot) or 1)
+	end
 	-- pocket bosses (pocketboss.lua): the corpse of a pocket boss and its adds x the pocket's lootMult, through the same
 	-- thinning as the pack factor (so even the always-dropped items are not guaranteed there)
 	local pocket = ChaosPocketBoss and ChaosPocketBoss.lootMultOf and ChaosPocketBoss.lootMultOf(monster) or 1
@@ -1571,6 +1585,11 @@ function L.corpseFactors(monster, pocket)
 	end
 	pocket = tonumber(pocket) or 1
 	local f = ChaosPace and ChaosPace.factorsOf and ChaosPace.factorsOf(monster)
+	-- a tower monster has no pace factors of its own: its floor's (infinitytower_run.lua ChaosTowerRun.lootFactorsOf, O328)
+	if not f and ChaosTowerRun and ChaosTowerRun.lootFactorsOf then
+		local okT, tf = pcall(ChaosTowerRun.lootFactorsOf, monster)
+		f = okT and tf or nil
+	end
 	if not f and pocket >= 1 then
 		return nil
 	end

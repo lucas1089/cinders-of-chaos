@@ -126,3 +126,13 @@ ChaosUnlockWindow < UIWidget
     anchors.right: prev.left
     margin-bottom: 8
     margin-right: 6
+
+  ChaosMenuButton
+    id: how
+    width: 110
+    text-align: center
+    text-offset: 0 1
+    anchors.bottom: parent.bottom
+    anchors.right: close.left
+    margin-bottom: 8
+    margin-right: 6

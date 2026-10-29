@@ -384,6 +384,7 @@ function init()
   hud = make('RaidHud', map)
   callout = make('RaidCallout', map)
   window = make('RaidWindow', rootWidget)
+  pcall(function() modules.game_howitworks.attach(window, 'raid') end) -- game_howitworks: the ? button
   ProtocolGame.registerExtendedJSONOpcode(OPCODE, handlers.opcode)
   connect(g_game, handlers.game)
   if g_game.isOnline() then onGameStart() end

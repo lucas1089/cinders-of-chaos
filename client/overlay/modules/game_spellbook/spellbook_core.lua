@@ -111,14 +111,14 @@ local function vocationList(spell)
 end
 
 -- ctx.vocation nil: the caller already kept only the character's spells (the pickers)
--- fold: the vocation as the client folds it (translateVocation), also accepted when it is not 0
+-- fold: ignored (O329). The client's translateVocation fold maps sibling classes onto one id (Beastmaster, Ranger, Deadeye
+-- -> 7), so accepting it listed the Deadeye's spells for the Beastmaster. The spell lists hold exact server ids.
 function Core.vocationOk(spell, vocation, fold)
   if vocation == nil then return true end
   local ids = vocationList(spell)
   if #ids == 0 then return true end
-  fold = tonumber(fold)
   for _, id in ipairs(ids) do
-    if id == tonumber(vocation) or (fold and fold ~= 0 and id == fold) then return true end
+    if id == tonumber(vocation) then return true end
   end
   return false
 end

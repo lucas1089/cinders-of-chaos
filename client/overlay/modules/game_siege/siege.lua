@@ -185,6 +185,7 @@ end
 
 function init()
   window = g_ui.displayUI('siege')
+  pcall(function() modules.game_howitworks.attach(window, 'siege') end) -- game_howitworks: the ? button
   window:hide()
   -- in the game root panel (the map panel itself reaches above the visible area), centred on the map
   hud = g_ui.loadUI('siegehud', modules.game_interface.getRootPanel())

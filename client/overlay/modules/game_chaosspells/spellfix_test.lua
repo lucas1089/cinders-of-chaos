@@ -386,7 +386,7 @@ do
   local stock = { vocations = { 3, 7, 15 } }
   eq(F.allowsVocation(wild, 15, fold), true, 'Wild Bond is offered to the Beastmaster (server id, not the folded 7)')
   eq(F.allowsVocation(wild, 7, fold), false, 'Wild Bond not offered to the Deadeye')
-  eq(F.allowsVocation({ vocations = { 7 } }, 15, fold), true, 'a spell listed under the folded id 7 is still offered (base behaviour kept)')
+  eq(F.allowsVocation({ vocations = { 7 } }, 15, fold), false, 'a spell listed under the folded id 7 only is not the Beastmaster\'s (O329: no fold)')
   eq(F.allowsVocation(wild, 4, fold), false, 'Wild Bond not offered to the Warrior')
   eq(F.allowsVocation(moon, 10, fold), true, 'Moonfang Pack is offered to the Illusionist (folded 6 is not in its list)')
   eq(F.allowsVocation(moon, 1, fold), false, 'Moonfang Pack not offered to the Mystic')

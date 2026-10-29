@@ -75,7 +75,7 @@ return {
 			go = {open = "game_siege"}},
 		{key = "tower", level = 100, menu = "Infinity Tower", source = "infinitytower_run.lua cfg.minLevel",
 			title = {"Infinity Tower", "Infinity Tower"},
-			why = {{"Climb floor after floor; a boss every fifth.", "Suba andar após andar; um chefe a cada cinco."},
+			why = {{"Climb floor after floor; a boss every tenth, a prize every fifth.", "Suba andar após andar; um chefe a cada dez, um prêmio a cada cinco."},
 				{"Go alone or with a party of up to four.", "Vá sozinho ou com um grupo de até quatro."}},
 			go = {open = "game_infinitytower"}},
 		{key = "dungeons", level = 150, menu = "Dungeons", source = "bossspawns_config.lua dungeons.defaults[1].level",

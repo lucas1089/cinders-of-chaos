@@ -46,6 +46,7 @@ server/
     monk_chi_core.lua  monk_combat.lua             the Monk line: ids, numbers, chi; unarmed combat, evasion, focus, stun
     templar_aura_core.lua  templar_combat.lua      the Templar line: ids, numbers, rules; the aura, Radiant Strikes
     combat_stats_core.lua  combat_stats.lua        the combat stat rows of the client's Skills window (opcode 119)
+    npc_travel_core.lua  npc_travel.lua  npc_travel_config.lua   Go to NPC: the teleport button of the NPC panels (opcode 121)
     class_unlocks_core.lua  class_unlocks.lua      the class lock (store unlock per account; sql/chaos_class_unlocks.sql)
     ascension_quest.lua  ascension_quest_core.lua  ascension_quest_config.lua
                                                    the ascension quest (the Oracle's stages, the Trial, ChaosAscension.ascend)
@@ -672,6 +673,7 @@ collision check") and be added here.
 | 117 | `weeklyChest` | `weeklychest.lua`, `weeklychest_core.lua` | `game_weeklychest` | client -> server `open` / `close` / `get`, server -> client `state {open?, endsIn, acts = [{k, done, open, lv}], got, need, bonusNeed, open, chest = {given, gold, it}, bonus = {given, lo, hi}, chests}` (see "The Weekly Chest (O261)") |
 | 118 | `templarAura` | `templar_combat.lua`, `templar_aura_core.lua` | `game_chestaura` | server -> client `sync {t = [{i = creature id, l = 1 Templar / 2 Inquisitor / 3 Sentinel, r = radius, p = 1 when the viewer is that Templar or shares its party and the Templar is in one, else 0}]}`, only when the list a player sees changed, at most once a second, only to players within 16 sqm of a Templar-line player; an empty `t` clears the list (see "Templar aura on the client (O315)") |
 | 119 | `combatStats` | `combat_stats.lua`, `combat_stats_core.lua` | `game_skillstats` | client -> server `get`; server -> client `stats {damage?, attack?, defense, armor, mitigation}` (mitigation a share 0 .. 1), at login, after an equip, a level or skill advance or a passive tree change, only when a number changed (see "Combat stat rows of the Skills window") |
+| 121 | `npcTravel` | `npc_travel.lua`, `npc_travel_core.lua`, `npc_travel_config.lua` | `game_npctravel` | client -> server `travel {k}` (a key of `npc_travel_config.lua` `npcs`); the answer is a game message (status line, or the reason as a cancel message), see "Travel to an NPC (O330)" |
 | 120 | none (`CHAOS_ADMIN_OPCODE`) | `admin/core.lua` | `game_admin` | big payloads through `Chaos.sendChunked` |
 | 125 | `monsterbar` | `monster_tiers.lua`, `worldboss.lua` | `game_monsterbar` | server -> client |
 | 151 | `notificationsAction` | `notifications.lua` | `game_chaosnotify` | client -> server: party invite answer, catacomb start |
@@ -822,7 +824,7 @@ constant. Opcodes in use there: 1, 67, 73, 89, 91, 92, 99, 106, 107, 136, 181, 2
 `ServerOpcodes` 125/126 in `global.lua` were first read as game-protocol opcodes, a different number space. They are not:
 the base NPC scripts send them with `player:sendExtendedOpcode`, and 125 is the monster bar's. O189 moved them to 126 / 127
 and gave the custom currencies their own opcode 113, see "NPC currencies".)
-No other Chaos opcode collides. The combat stat rows of the Skills window took **119**, the next number after 118 that nothing uses (`tests/combat_stats_test.lua` checks it against the reference lists, every Chaos script and every client module, and that no two `ChaosOpcodes` share a number). The Templar aura (O315) took **118**, the next number after the weekly chest's 117 that nothing uses (`tests/templar_aura_sync_test.lua` checks it against the reference lists and every client module). Weather (O208) took **114**: not in the reference server's list above, not one of the base client's `ExtendedIds`, not a `ChaosOpcodes` value, not named by any client module (`tests/weather_test.lua` checks all four, and that no two `ChaosOpcodes` share a number); it is the smallest number above 113 (the NPC currency opcode) that nothing else uses; 188-254 are all taken. Hideouts (192) also checked the reference client's own opcodes (`gamelib`
+No other Chaos opcode collides. Travel to an NPC (O330) took **121**, the next number after the admin app's 120 that nothing uses (`tests/npc_travel_test.lua` checks it against the reference lists, every Chaos script and every client module, and that no two `ChaosOpcodes` share a number). The combat stat rows of the Skills window took **119**, the next number after 118 that nothing uses (`tests/combat_stats_test.lua` checks it against the reference lists, every Chaos script and every client module, and that no two `ChaosOpcodes` share a number). The Templar aura (O315) took **118**, the next number after the weekly chest's 117 that nothing uses (`tests/templar_aura_sync_test.lua` checks it against the reference lists and every client module). Weather (O208) took **114**: not in the reference server's list above, not one of the base client's `ExtendedIds`, not a `ChaosOpcodes` value, not named by any client module (`tests/weather_test.lua` checks all four, and that no two `ChaosOpcodes` share a number); it is the smallest number above 113 (the NPC currency opcode) that nothing else uses; 188-254 are all taken. Hideouts (192) also checked the reference client's own opcodes (`gamelib`
 `ExtendedIds` 144-146, 210, 212, 213, 230, 246 and 0x8C = 140): 145 was taken there by the skill wheel. 110 was chosen for the stash because
 the client has no fixed value and 110 is free. Storage keys (see "Storage keys" below) and DB tables
 `chaos_*` are new; the one deliberate overlap is autoloot's storage base 80000 (shared on purpose).
@@ -4169,6 +4171,72 @@ cap with the legendary tier), and the clear time at the floor's own level rising
 unit test (`tower_model_test.py`) breaks each of them. Lua: `tests/infinitytower_balance_test.lua` (floors 1-1200 strictly, caps,
 floors up to 1e12, nan, rewards) and `tests/infinitytower_floor_test.lua` (plans at floors 121 to 100000 fit int32 with every tier).
 Not measured live; a level 2000 median class gets about 93 floors deep (unchanged), so floors above 120 are for the future.
+
+## Infinity Tower: damage and loot follow the floor, O328
+
+Tester report of 2026-10-29: at floors that show level ~1200 "the level scales but it is fake: it hits like its level 100 version, only
+its health grows", "the drops are those of the original level 100 version", so the tower was only good for AFK farming.
+
+**Damage.** The pool species keeps its own attacks, so the floor's `damage` factor has to carry the level. It is now per floor,
+in `tower_model.py dmg_target`, the pace damage curve at the shown level L, times `hit`(L) over `hit` at the band's hunting level, the
+median bounty pool level of the five species. `hit`, in `infinitytower_balance_config.lua`, is the stock hit of a monster by hunting
+level; only the ratio is used. Below level 140 its points are the stock species: troll 25 at level 7, dragon 160 at 42, demon 500 at
+137. From 300 they are the median attack maximum of the imported level-scaled monsters, about 780-900 up to level 900 and 1150 above 1000. The
+points 1300 and 2200 extend the slope. `monster_damage.lua` still adds the late-game physical boost of the floor's level on top.
+`tower_model.py --derive` prints the `damage` line, with both edges of every band and every fourth floor; `--check` requires every
+floor within `damageTol`, 12%, of the formula; `--damage` prints this table. **The climb** (owner 2026-10-29): on top of the hunt match every floor from the first hits
+`climb` (1.5%) more than the one below it, `B.climb` = 1 + climb x (floor - 1) on every floor, never held (above maxFloor the
+`beyond` growth multiplies it): the tower is a challenge,
+harder than a hunt of the same level, and inside a band no floor hits softer than the one before. The hit of a band species
+at its hunting level x the factor: floor 1 293, floor 30 653, floor 58 958, floor 120 2006 (was 293 / 455 / 516 / 720 with the
+hunt match alone). The damage cap (`damageMax` 1000, the int32 hit limit) now starts at floor 1024 (`dmg_cap_floor`). Bosses are unchanged up to floor 120. They are named bosses with
+their own attacks, ordered by the floor they stand on. Above 120 they they grow with `damageRate` as before. The int32 and `damageMax` caps
+are unchanged; the damage cap now starts at floor 1024 (with the climb below).
+
+| Floor | Shown level | Band level | Factor before | Factor after | Stock hit x factor before | after |
+|---|---|---|---|---|---|---|
+| 1 | 100 | 11 | 1.00 | 7.27 | 40 | 293 |
+| 19 | 516 | 48 | 0.88 | 2.65 | 159 | 479 |
+| 58 | 1215 | 100 | 0.81 | 1.40 | 296 | 516 |
+| 104 | 2000 | 100 | 0.85 | 1.85 | 310 | 680 |
+| 120 | 2200 | 100 | 0.86 | 1.96 | 316 | 720 |
+
+A level 1200 monster now hits about 1.8 times a level 100 one, which is the hunt curve itself. The hunt pace damage falls from 1.0
+at level 20 to 0.40 at level 1000, and the stock hit of the late monsters is nearly flat, about 900-1150 from level 650 to 1000. A
+hunt monster of level 1200 hits no more than that. The damage factor falls at each change of band, because the new species are stronger
+stock, and rises inside the last band from floor 48, where `--check` requires it to rise on every floor to 1000. Floors 1-7 hit
+about 7-10 times their stock species, as a level 100 monster of the hunts does. The player's armour and
+resistances are not modeled, as before.
+
+**Loot.** Three parts, all keyed to the floor.
+- Level. `ChaosTowerRun.lootLevelOf(monster)` is the floor's shown level, never above the level of floor 120, which is 2200, and a boss has it too. `ChaosLoot.monsterLevel` takes at least it now, so the item level of drops, gear by level (`rollLevelGear`), class weapons, the rarity
+  roll, and the orb, waystone and unique gates read the floor and not the level 7 troll. The displayed level is unchanged, it reads
+  `baseMonsterLevel`.
+- Thinning. `ChaosTowerRun.lootFactorsOf(monster)` serves normal monsters only. It gives the pace factors of that level, the base sets up to
+  `lootScaledFrom` 650 and the scaled sets above, with `loot` and `notable` times `lootShare`. `loot.lua` uses them like a paced
+  monster's, for the corpse in `corpseFactors` and for the extra rolls in `pace`. `lootShare` is the hunt's kills an hour over the tower's
+  kills an hour, at most 1, smoothed by the least within 5 floors. The tower's kills an hour are 3600 x monsters over the floor seconds plus engage plus the 6 s pause.
+  It is 1.00 up to floor 40 and 0.86-0.96 above, so the items an hour of the tower are at most those of a hunt of the same level.
+- Gold. `killGold` is 55 gold on floor 1, 270 on floor 20, 420 on floor 40 and 350-390 from floor 50. It is added to the corpse of a normal
+  monster as coins in `infinitytower_run.lua` onDropLoot, after `loot.lua`. It is `goldShare`, 0.5, of the gold an hour of a hunt
+  at that level over the tower's kills an hour. The hunt figure is `pace_config.lua` `lootLevel.goldPerHour`, flat above level 650. The floor gold
+  `floorGold` x floor of a floor above 120 is that of 120.
+- The tower drops (orbs, crystal coins) keep their chances; above floor 120 everything is at floor 120 (no inflation).
+
+`tower_model.py --derive` prints `lootShare` and `killGold`; `--check` bounds the items an hour, `lootRatio` 1.05 of a hunt at the
+loot level, and the gold an hour, `goldRatio` 1.05 of `goldShare` x a hunt, on every normal floor. The roulette, store, skill,
+progression, gear and weapon models do not read the tower and still pass. Tests: `tests/infinitytower_balance_test.lua`,
+`infinitytower_run_test.lua`, `loot_tower_test.lua`, `tools/tower_model_test.py`.
+
+**Experience (checked, not changed).** Tower kills pay the stock experience of the species, unthinned, times the stage. Per hour,
+before the stage, that is 0.06 M at floor 1, 3 M at floor 19 and 5 M from floor 40. A hunt at
+the same level pays about 1.9 M, 16 M and 35 M, from the median pool monster of the level, the pace xp curve, x0.03 L above 650 and the multikill bonus. The tower pays 0.03 to 0.35 of a
+hunt. The progression model (`tools/progression_model.lua`) needs about 63 hours of hunting for levels 8 to 750. The experience cap
+`xpcap_config.lua` holds a kill at 4x its base experience after every bonus, event, potion and world buff. So 750 in 7 hours is 2.3 times
+the pace of the model's median class even at the cap. That is a class or kill-rate question, or other sources such as contracts and quests, not the
+tower. No change; ask the tester for the hunt tracker and the class.
+
+**Deploy.** `files` step and a script reload or restart. No SQL, no engine patch, no client change.
 
 ## Infinity Tower season rewards (`infinitytower.lua`, `infinitytower_core.lua`, `Chaos.tower` in `chaos_constants.lua`)
 
@@ -26541,6 +26609,39 @@ equipment sets, the uniques and the stock equipment of `data/items/base_item_val
 spell matches the exact server vocation ids (`ChaosSpellFix.allowsVocation`); `tools/ci/check_rotation_kit.py` compares
 spelldata.lua with the server spell XML.
 
+## Class access audit: spells and weapons (O329)
+
+Tester report 2026-10-29 (Beastmaster, level 750, the same hole as O307): the spell pickers listed Hail of Dawn, Twin Verdict,
+Final Verdict and Skewering Line, and the server refused each cast ("not for your class"); he asked for a review of all classes.
+
+- **Cause.** The server was right: the spell XML lists exact vocation ids (`spells_chaos.xml`, `stock_spells.csv`). The client
+  decided with `translateVocation` (base patch 0016), which folds sibling classes onto one id (Beastmaster, Ranger, Deadeye to 7;
+  Warrior, Juggernaut, Berserker to 8; Mystic, Elementalist to 5). O307 removed the fold from `ChaosSpellFix.allowsVocation` for
+  Chaos spells only; `ChaosSpellCore.vocationOk` (the Spellbook window's picker context, `pickerContext`) and the stock entries
+  kept it. Leaks, by class: Beastmaster 4 (Skewering Line, Final Verdict, Hail of Dawn, Twin Verdict), Ranger 2 (Final Verdict,
+  Twin Verdict), Berserker 4 (Iron Bellow, Ironhold, Anvil Fall, Rift Cleaver), Warrior 1 (Anvil Fall), Mystic 4 (Forked Storm,
+  Frozen Crypt, Doomtide, Glacial Doom) and the stock Pyre Torrent and Tempest Fan (Elementalist only after the cap). The Thief,
+  Monk, Necromancer and Templar lines fold to themselves, the Deadeye, Juggernaut, Elementalist and Illusionist to ids their own
+  lists name, so they had no leak.
+- **Fix.** Both functions match the exact server id only. `remapStockVocations` (chaosspells.lua) already rewrites every stock entry
+  to server ids (old ids kept, the Chaos classes added, then the 15-spell cap), so the fold added nothing legitimate. The line
+  spell quests (Moonshard Rain level 500, Unblinking Gaze 800 ...) are `needlearn` spells and stay listed under "Available soon" for
+  the line, as designed.
+- **Weapons.** The installed class lists were already right: all 32 stock bows list Ranger, Deadeye and Beastmaster, the
+  Beastmaster has bows in every level band (`weapon_coverage.lua`). The tester's bow was most likely a crossbow, which is for the
+  Ranger and the Deadeye only (docs/CLASSES.md; the tooltip names the classes since O307). New `weapon_coverage.lua --access`
+  (also part of `--check`) fails when a stock, set or 800+ weapon with a class list leaves out a class that uses its family, or when
+  the Berserker (two-handed only) or the Beastmaster (bows only) is listed on a weapon the rule excludes. Uniques are skipped (their
+  equip lines are narrower by design; unique 25886 lists the Beastmaster on a crossbow and three one-handed uniques list the
+  Berserker, extra access, not a missing one). `accessExceptions` in `weapon_coverage_config.lua` holds the stock rook wand 19391.
+- **Checks.** `client/overlay/modules/game_spellbook/spellbook_access_test.lua` runs every path (Spellbook window and pickers,
+  action bar and hotkeys, Auto setup, helper pickers) for all 21 classes at levels 100, 750 and 1500 against the server lists, with the
+  real `translateVocation` read from base patch 0016 (81921 checks; it fails on the old code).
+  `tools/ci/check_class_access.py` compares the client's copy of the Chaos spells with the server XML (name, words, level, classes),
+  the installer's cap table with `stock_spells.csv` and with the client's `ChaosCappedSpells`, and every spell of Auto setup
+  (presets, extras, ultimate, heals) with the class lists.
+  Not checked in a live client.
+
 ## Templar aura on the client (`templar_combat.lua`, `templar_aura_core.lua`, client `game_chestaura`, O315)
 
 Owner request 2026-10-29: the Templar line's aura showed as a holy_spiral map effect on the Templar's tile every 4 s (`aura.fxMs`),
@@ -26649,3 +26750,90 @@ Value 0, Defence Value 0, Armor Value 0, Mantra Value 0 and Mitigation +0% whate
 - **Tests.** `tests/combat_stats_test.lua` (opcode uniqueness, the pure rules, the glue against a mocked player: weapon, shield,
   armour, tree factor, wand, bare hands, when a message goes out); client `skillstatsview_test.lua`, `skillstats_glue_test.lua`.
   Not checked in a live client or on a live server.
+
+## Travel to an NPC (O330) (`npc_travel.lua`, `npc_travel_core.lua`, `npc_travel_config.lua`, client `game_npctravel`)
+
+Tester feedback 2026-10-29: new players cannot find the NPCs. One of them never found a faction NPC, picked up faction
+tokens in the Rift, could not hand them in and threw them away; he asked for a button in the faction window that takes
+him in front of the NPC, "like the Pocket Boss panel already teleports". Every panel that shows an NPC's service but
+cannot do it alone now has a **Go to NPC** button.
+
+- **One helper, one line per panel.** Opcode **121** (`ChaosOpcodes.npcTravel`), client -> server `travel {k}`. The key
+  names an entry of `npc_travel_config.lua` `npcs` (19 NPCs: the hub's service and progression NPCs, the four faction
+  NPCs). A panel adds `@onClick: modules.game_npctravel.travel('<key>')` to a button of its `.otui`; the key list is
+  `npctravellogic.lua` `KEYS` (the test holds it equal to the config). The answer is an ordinary game message, so no
+  panel needs a handler. No storage key, no table; the cooldown is in memory.
+- **Where the NPC is (never typed in).** `T.locate` / `K.resolve`, in this order: (1) the live NPC (`Creature(name)`, any
+  town); (2) its stall in the hub (`npc_booths_config.lua`), with the carpet tile in front of it worked out from
+  `hub.walkY` (north row: the tile two south, south row: two north: players talk across the counter); (3) an optional
+  `pos` of the entry (none set); (4) the temple of its `townId` (`Town(id):getTemplePosition()`, the same temples as
+  `data/chaos_poi.lua`). With none of them the player reads "X is not at their post right now" and the server logs the key.
+  The landing tile is the best free standable tile within `maxRing` 2 of the NPC (`K.candidates`: for a stall by the distance to
+  the carpet, otherwise the nearest ring first, then toward the temple; no house, wall, field, stairs or creature).
+  Every service range is 3 or more (Osric 3, Gambler / Iselde / Material Broker 4, factions 6), so the landing tile is in range.
+- **Safety, the rules of the Town Portal and the Pocket Boss.** Refused: the tutorial island, an arena match, the world boss
+  arena, a guild siege, a rift, a dungeon, the Infinity Tower, a hideout, the Scorched Marches, any other registered instance
+  (`Chaos.inAnyInstance`, same facts as `townportal.lua`, which now exports `T.blockFacts`), while the Town Portal channels, in
+  combat (pz lock or `CONDITION_INFIGHT`, as `pocketboss.lua` `inCombat`), with a skull. A **30 second cooldown** after a journey
+  (`cooldownSeconds`; a refusal never starts it), a request limit of one a second per player (`ChaosRateLimit`), and no journey
+  (and no cooldown) when the player stands within 2 tiles of the NPC already. Unlike the Pocket Boss it needs no protection zone:
+  the point is to get a player out of the wild to the NPC. All texts have pt-BR (`i18n_strings.lua`).
+- **Panels with the button (6):** Factions (per faction, in the detail next to Turn in: key `faction_<key>`), the Gambler
+  (`gambler`), the Supply Stash (`stash`), Boss Spawns (`pocketboss`: the pocket boss NPC), Candlemarks (`candlemarks`:
+  Osric, buying needs him within 3 tiles) and Professions (`materials`: selling needs the Material Broker within 4). The config
+  also lists the banker, house broker, services clerk, Conquest vendor, Loot Buyer, Keeper of Trials, Ascendant Oracle, both
+  Archivists and the Apothecary for the next panel. Not given a button on purpose: the Bank (works from the panel), Conquest
+  (buying works in any protection zone, "or next to Iselde Varrow"), the Auto Seller (sells from anywhere), the Info & Services
+  pages.
+- **Factions: what was wrong.** The four faction NPCs are placed at startup by `factions.lua` `F.placeNpcs`: Warden Ysolde in
+  Cinderhold (a stall of the hub, `npc_booths_config.lua`), Forgemaster Brannoc next to the temple of Mirewake (town 1),
+  Cantor Velith next to the temple of Bellwatch (town 11), Elder Bramwyn next to the temple of Thornmere (town 4). The repo
+  has no placement bug: the XML, the script and the install (`install_factions.py`, step `factions`) are in place, and the test
+  now checks that the names, towns and stalls of `npc_travel_config.lua` equal `factions_config.lua`, that every NPC has its XML and
+  script, and that every town has a temple in `data/chaos_poi.lua` (the town ids and names of `tools/base_towns.csv`). What was
+  wrong for a player: three of the four NPCs stand in other towns, the window only said "Find <name>", nothing said which
+  town, and the tokens (which drop from rift seals, invasion rewards, world bosses and monsters) can only be turned in
+  next to the NPC (`factions.lua` `needNpc`, `npcRange` 6). The window now has a line "Hand in <tokens> and deliveries to
+  <NPC, place>. Use Go to NPC to be taken there." (the place text is `row.at` in the payload, from `T.where`) and the
+  button. Not verified on a running server: that the startup placement found a free tile in Mirewake, Bellwatch and
+  Thornmere (the server log says "could not place <name>" when it did not); with the NPC missing the button takes the
+  player to the town's temple and says so.
+- **After a server update.** Reload the scripts (or restart) for the server side, and update the client (a new module
+  `game_npctravel` and changed `.otui` files). No install step, no SQL, no engine patch. A player who threw tokens away does not get them back.
+- **Tests.** `tests/npc_travel_test.lua` (config against the hub stalls, the factions, the temples, the XML files; the client key
+  list; pt-BR; resolve, tiles, refusals, cooldown; the glue on a mocked engine), `game_npctravel/npctravellogic_test.lua`,
+  `game_factions/factionsview_test.lua` (the hand-in line and the button).
+- **Not done / risks.** The landing tile is chosen from the tiles around the NPC and is not checked for a path to it (a tile behind
+  a wall is possible in a town whose NPC stands next to a building; the first choice is the side of the temple). The 30 seconds
+  and the no-protection-zone rule are a proposal: a free trip to the hub from anywhere out of combat competes with the Town
+  Portal (its own cooldown and cast); raise `cooldownSeconds` or add a cast if that matters.
+## How it works cards (O331) (`tools/gen_howitworks_data.lua`, `tools/howitworks_config.lua`, client `game_howitworks`)
+
+Tester feedback: a feature opens at a level, but its screen did not say who it is for, which monster levels it has, what drops,
+what a death costs or how often it can be done. Every feature window now has a `?` button with a card of five short rows (who,
+monster levels, what drops, if you die, how often); the Next Goals rows and the "New" unlock window open the same card.
+
+- **Install.** Nothing on the server: the generator writes a client file. `cd server && luajit tools/gen_howitworks_data.lua` writes
+  `client/overlay/modules/game_howitworks/howitworks_data.lua` (commit it); `--check` exits 1 when it is stale (CI, LuaJIT and Lua 5.3,
+  the output is byte-identical). Run it again after any change to a config below.
+- **Derived from the configs (never typed).** Unlock levels (`unlocks_config.lua`, tied to each system's gate by `tests/unlocks_test.lua`);
+  Infinity Tower monster level per floor (`infinitytower_balance_config.lua` `level` curve), boss and prize floors, party size and time
+  limits (`infinitytower_run.lua`, read by pattern: it needs the engine to load); Rift tier levels, monster level window per tier, lives,
+  party bonus, time by map size (`rift_config.lua`); arena, battleground, Descent, raid, siege, invasion, bounty, daily, weekly chest, Ember
+  Cache, season, factions and Gambler numbers, weekdays and times; world boss hours (`Chaos.worldBoss`), pocket boss tries; the death rule
+  (`gentledeath_config.lua`: items kept, experience loss by level, first death of the day). The generator refuses to run when
+  `keepItems` is off, because the cards say nobody loses items.
+- **Hand-written** (`tools/howitworks_config.lua`): the plain sentences in English and pt-BR with `{name}` places, which client window gets
+  the `?`, which unlock keys and goal keys open the card, and the "no real death" lines of the modes that catch a lethal hit (arena,
+  battleground, Descent, raid, siege, pocket boss; see "Instance limits" and "Death recap"). These claims are checked by reading the code
+  and README, not by a test: when a mode's death rule changes, change its sentence.
+- **Cards without a hand-written one.** An unlock entry that no card claims (crafting, salvage, pets, market, passive tree) gets a card made
+  from the entry: its level and its own two lines (en and pt-BR).
+- **Not covered, on purpose.** Tower Defense and the roulette have no window of their own (a base event room and an NPC), so no `?`.
+  The Rift card sits on the Rift Atlas window (the rift itself only has a HUD).
+- **Known mismatch found.** The unlock card of the Infinity Tower says "a boss every fifth" floor; `bossEvery` is 10 (`milestoneEvery` 5 is
+  the prize floor). The How it works card uses the config.
+- **Tests.** `tests/howitworks_gen_test.lua` (helpers, placeholder rules, every unlock entry and window module has a card, en and pt-BR use the
+  same places, a changed config changes the text, byte stability, the committed file is current); client `howcore_test.lua` (real data: rows,
+  order, no leftover `{`, pt-BR converts to cp1252, lookups) and `howitworks_test.lua` (mocked widgets). Not run in a client.
+

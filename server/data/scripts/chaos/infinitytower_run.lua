@@ -499,7 +499,7 @@ local function floorCleared(run)
 		local player = Player(p.id)
 		if player then
 			if cfg.floorGold > 0 then
-				bankGold(player, cfg.floorGold * run.floor)
+				bankGold(player, cfg.floorGold * math.min(run.floor, BC.maxFloor)) -- the gold of a floor above maxFloor is that of maxFloor (O328)
 			end
 			Chaos.heal(player, (player:getMaxHealth() - player:getHealth()) * cfg.healBetweenFloors)
 			player:addMana(math.floor((player:getMaxMana() - player:getMana()) * cfg.healBetweenFloors))
@@ -913,9 +913,54 @@ function ChaosTowerRun.levelOf(monster)
 	return info and info.level or nil
 end
 
--- tower drops (infinitytower_balance_config.lua `drops`): orbs and crystal coins on top of the monster's own loot
+-- the monster-info of a tower monster or its summon (nil for anything else)
+local function infoOf(monster)
+	if not monster or not monster.getId then
+		return nil
+	end
+	local info = monsterInfo[monster:getId()]
+	if not info then
+		local master = monster.getMaster and monster:getMaster()
+		info = master and master.getId and monsterInfo[master:getId()]
+	end
+	return info
+end
+
+-- the level the loot of a tower monster counts at (O328, infinitytower_balance_config.lua): the level of its floor, never above
+-- the level of maxFloor. loot.lua ChaosLoot.monsterLevel takes at least this (item level, gear by level, class weapons,
+-- rarity, orb and unique gates). A boss counts too. nil for anything that is not a tower monster.
+function ChaosTowerRun.lootLevelOf(monster)
+	local info = infoOf(monster)
+	return info and info.floor and B.lootLevel(BC, info.floor) or nil
+end
+
+-- the loot factors of a normal tower monster (pace factors of its loot level x lootShare), the way pace.lua gives a hunt
+-- monster its own; loot.lua reads them for the corpse and the extra rolls. nil for a boss (bosses are never thinned), a
+-- summon of anything else or when pace_core.lua is not loaded.
+function ChaosTowerRun.lootFactorsOf(monster)
+	local info = monster and monster.getId and monsterInfo[monster:getId()]
+	if not info or info.boss or not info.floor or not ChaosPaceCore or not ChaosPaceCore.factors or not ChaosPaceConfig then
+		return nil
+	end
+	local ok, f = pcall(B.lootFactors, BC, info.floor, function(level, scaled)
+		return ChaosPaceCore.factors(ChaosPaceConfig, level, scaled, false)
+	end)
+	return ok and f or nil
+end
+
+-- tower drops (infinitytower_balance_config.lua `drops`): orbs and crystal coins on top of the monster's own loot, and the
+-- floor's gold (`killGold`, O328) in coins
 if EventCallback then
 	local lootCb = EventCallback
+	local function addStacked(corpse, id, count)
+		local stackable = ItemType(id):isStackable()
+		local n = count
+		while n > 0 do
+			local k = stackable and math.min(n, 100) or 1
+			corpse:addItem(id, k, INDEX_WHEREEVER or -1, FLAG_NOLIMIT)
+			n = n - k
+		end
+	end
 	lootCb.onDropLoot = function(monster, corpse)
 		local info = monster and monster.getId and monsterInfo[monster:getId()]
 		if not info or info.boss or not corpse then
@@ -923,12 +968,12 @@ if EventCallback then
 		end
 		local ok, err = pcall(function()
 			for _, d in ipairs(B.dropRolls(BC, info.floor, info.tier, math.random)) do
-				local stackable = ItemType(d.id):isStackable()
-				local n = d.count
-				while n > 0 do
-					local k = stackable and math.min(n, 100) or 1
-					corpse:addItem(d.id, k, INDEX_WHEREEVER or -1, FLAG_NOLIMIT)
-					n = n - k
+				addStacked(corpse, d.id, d.count)
+			end
+			local gold = B.goldRoll(BC, info.floor, math.random)
+			if gold > 0 and ChaosPaceCore and ChaosPaceCore.coinStacks then
+				for _, c in ipairs(ChaosPaceCore.coinStacks(gold)) do
+					addStacked(corpse, c[1], c[2])
 				end
 			end
 		end)
