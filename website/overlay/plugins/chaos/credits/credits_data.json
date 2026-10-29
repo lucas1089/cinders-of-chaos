@@ -353,6 +353,27 @@
      "source": "https://sourceforge.net/projects/xbrz/"
     },
     {
+     "name": "eframe and egui",
+     "author": "Emil Ernerfeldt, Rerun and the egui contributors",
+     "licence": "MIT or Apache-2.0",
+     "use": "the window of the desktop admin app (with their dependencies, each under its own permissive licence in the crate's metadata)",
+     "source": "https://github.com/emilk/egui"
+    },
+    {
+     "name": "serde_json",
+     "author": "David Tolnay and the serde contributors",
+     "licence": "MIT or Apache-2.0",
+     "use": "JSON in the desktop admin app",
+     "source": "https://github.com/serde-rs/json"
+    },
+    {
+     "name": "sha2 (RustCrypto)",
+     "author": "RustCrypto developers",
+     "licence": "MIT or Apache-2.0",
+     "use": "the SHA-256 check of the desktop admin app's updates",
+     "source": "https://github.com/RustCrypto/hashes"
+    },
+    {
      "name": "json.lua",
      "author": "rxi",
      "licence": "MIT",

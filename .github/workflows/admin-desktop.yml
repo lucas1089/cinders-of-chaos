@@ -1,0 +1,54 @@
+# Desktop admin app for the PC (O312, desktop/): builds cinders-admin.exe on Windows and publishes it as the release
+# admin-desktop-vX.Y.Z with cinders-admin.exe and cinders-admin.exe.sha256. The app checks these releases at start
+# (desktop/src/update.rs) and replaces itself.
+#
+# MANUAL ONLY (workflow_dispatch), like windows-package.yml: it never runs on push or pull_request.
+# To publish: raise `version` in desktop/Cargo.toml (and desktop/Cargo.lock by building once), commit, then run this
+# workflow with the same version as input. It refuses a version that differs from Cargo.toml or a tag that exists.
+name: admin-desktop
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version, as in desktop/Cargo.toml (for example 0.1.0)"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Version matches Cargo.toml
+        shell: bash
+        run: |
+          want="${{ inputs.version }}"
+          have=$(sed -n 's/^version = "\(.*\)"/\1/p' desktop/Cargo.toml | head -1)
+          [ "$want" = "$have" ] || { echo "input $want differs from desktop/Cargo.toml $have"; exit 1; }
+          if git ls-remote --tags origin "admin-desktop-v$want" | grep -q .; then echo "tag exists"; exit 1; fi
+      - name: Test and build
+        shell: bash
+        run: |
+          cd desktop
+          cargo test --locked
+          cargo build --locked --release
+      - name: Checksum
+        shell: bash
+        run: |
+          cd desktop/target/release
+          cp cinders-admin.exe ../../../cinders-admin.exe
+          cd ../../..
+          sha256sum cinders-admin.exe > cinders-admin.exe.sha256
+          cat cinders-admin.exe.sha256
+      - name: Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          gh release create "admin-desktop-v${{ inputs.version }}" cinders-admin.exe cinders-admin.exe.sha256 \
+            --title "Cinders Admin for the PC ${{ inputs.version }}" \
+            --notes "Desktop admin app (desktop/README.md). The app updates itself from this release." \
+            --target "${{ github.sha }}"

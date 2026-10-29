@@ -20347,6 +20347,21 @@ server folder (the engine's working folder), the same idea as the stop request f
   `server/deploy/chaos_ctl_test.py` for the script that writes the lines. Untested: the engine calls (`Player(name)`,
   `player:remove()`, `Game.setGameState`) have not run on a real server.
 
+## Desktop admin app (O312) (`desktop/`)
+Owner, 2026-10-29: the Android admin app's job on the PC, live where possible, self-updating. Phase 1 is a Rust egui app
+in `desktop/` (README there). It adds nothing to the server: it runs the system `ssh` with the phone's key and user and
+calls `chaos-ctl.sh`, so the commands, `remote.cmd` and the audit log stay the only way in.
+- **Live apply.** Actions are marked live, needs restart, restarts the server or next install. "Apply live" runs the
+  admin panel action `reload` (`chaos-ctl.sh panel ACTOR reload '{"system":"scripts"}'`) after a command that only
+  wrote a file (beta mode). The `reload` action reloads a whole system; there is no per-file reload yet, and the XP
+  rate buttons stay "needs restart" until `Game.reload(config)` is checked on a live server.
+- **Command table.** `desktop/src/commands.rs`; `tools/ci/check_desktop_commands.py` compares it with the commands the
+  Android app calls and with `chaos-ctl.sh`.
+- **Updates.** Releases `admin-desktop-vX.Y.Z` made by `.github/workflows/admin-desktop.yml` (manual); the app checks
+  them at start and swaps its own `.exe` after a SHA-256 check.
+- **Untested.** Not run against a live VPS, not built on Windows, the workflow has not run. `cargo test` covers the
+  command table, quoting, settings, version compare, update choice, checksum and the swap.
+
 ## Live spectator (`spectate.lua`, `spectate_core.lua`, `spectate_config.lua`, `tools/spectate_render.py`)
 Owner, 2026-10-20 (ROADMAP "Open decisions": a live view of a player in the admin app). Phase 1: the owner watches one
 online character from the phone (docs/ADMIN_APP.md "Assistir jogador"), drawn with the real client sprites. Read only:

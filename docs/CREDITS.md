@@ -269,6 +269,21 @@ Game sounds (game_chaossound, O238): short picks from four packs, cut, set to mo
   - Licence: GPL-3.0
   - Used for: HD sprite upscaling in the client
   - Source: https://sourceforge.net/projects/xbrz/
+- **eframe and egui**
+  - Author: Emil Ernerfeldt, Rerun and the egui contributors
+  - Licence: MIT or Apache-2.0
+  - Used for: the window of the desktop admin app (with their dependencies, each under its own permissive licence in the crate's metadata)
+  - Source: https://github.com/emilk/egui
+- **serde_json**
+  - Author: David Tolnay and the serde contributors
+  - Licence: MIT or Apache-2.0
+  - Used for: JSON in the desktop admin app
+  - Source: https://github.com/serde-rs/json
+- **sha2 (RustCrypto)**
+  - Author: RustCrypto developers
+  - Licence: MIT or Apache-2.0
+  - Used for: the SHA-256 check of the desktop admin app's updates
+  - Source: https://github.com/RustCrypto/hashes
 - **json.lua**
   - Author: rxi
   - Licence: MIT
