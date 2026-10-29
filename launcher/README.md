@@ -22,7 +22,9 @@ Status: done in code and tests (Linux). Not run on Windows. Open: code-signing c
    again. The same staged rename as the desktop admin app (`crates/selfupdate`).
 7. Shows progress and errors in pt-BR or en (`CINDERS_LANG`, `LC_ALL`, `LANG`; pt-BR when none is set), with the
    buttons Jogar, Tentar de novo and Jogar assim mesmo. When the server is unreachable the player can still play.
-8. The in-game Lua updater stays for module-only updates (`files` of the manifest). The two do not overlap: the
+8. Shows News and a Changelog under the Play button (tabs "Notícias" / "News" and "Changelog"), from the website's
+   launcher feed. See "News and Changelog" below.
+9. The in-game Lua updater stays for module-only updates (`files` of the manifest). The two do not overlap: the
    launcher never touches `modules/`, `data/` and so on, the Lua updater never touches native files.
 
 The launcher never replaces a file the manifest does not name, and only `.exe`, `.dll` and `.pack` in the install
@@ -34,13 +36,37 @@ folder itself (no sub-folders). It never deletes files. It refuses a manifest ol
 - `launcher.json` (beside the exe, written by `client/tools/set_launcher_config.py` from the `Services.update`
   settings of `init.lua`, so the key, the manifest URL and the baseline cannot differ from the game's):
   `{"manifest": "https://.../updates/live/manifest.json", "public_key": "<64 hex>", "baseline": 47, "game": "Chaos.exe"}`.
-  Optional `args`: extra arguments for the game.
-- `.cinders_launcher/` in the install folder: `state.json`, `hashcache.txt`, and while a run is on `stage/`, `backup/`,
+  Optional `args`: extra arguments for the game. `feed`: URL of the website's launcher feed. The tool writes
+  `https://<site>/chaos_launcher_feed.php` (the site of the manifest); `--feed URL` sets another, `--no-feed` writes
+  `""`. An old `launcher.json` without `feed` gets the same address derived from the manifest URL (when it has
+  `/updates/` in it, else no panels). An empty, non-https or odd `feed` hides the panels and is never an error.
+- `.cinders_launcher/` in the install folder: `state.json`, `hashcache.txt`, `feed.json` (last good feed), and while a run is on `stage/`, `backup/`,
   `journal.json`.
 - `src/`: `manifest.rs` (envelope, signature, `native` rules), `install.rs` (diff, download, swap, rollback, recovery),
-  `selfupdate.rs`, `net.rs` (the system `curl`, built into Windows 10 and 11), `config.rs`, `i18n.rs`, `launch.rs`,
+  `selfupdate.rs`, `net.rs` (the system `curl`, built into Windows 10 and 11), `config.rs`, `feed.rs` (News and Changelog), `i18n.rs`, `launch.rs`,
   `main.rs` (egui window, or `--cli [--no-start] [--dir DIR] [--lang pt|en]` for tests and scripts).
 - `../crates/selfupdate/`: SHA-256, version compare and the staged rename, shared with `desktop/`.
+
+## News and Changelog
+
+The website serves one small public JSON, `chaos_launcher_feed.php` (website/README.md "Launcher feed"): the latest
+news of the site (ZnoteX news, the front page's) and the changelog, which is the weekly patch notes
+(`server/data/patchnotes/*.md` and their `.pt-br.md` twins), in pt-BR and en. There is no second source to keep.
+
+- **Fetch.** `feed.rs` uses the same system `curl` (`Fetch::get_small`): 5 s to connect, 10 s in all, 128 KiB at most.
+  It runs on its own thread after the window opens. It never gates the update, `Jogar` or `Jogar assim mesmo`, and a
+  retry of the update fetches it again only when the panels show no fresh feed.
+- **Cache.** A good feed is saved as `.cinders_launcher/feed.json` (temporary file, rename). When the fetch fails or
+  the answer is broken, too big, not JSON or not format 1, the saved copy is shown with the note "Sem conexão com o
+  site. Mostrando a última cópia salva." With no copy the panel says that the news could not be loaded and that the
+  player can still play. No error dialog, no log to the player.
+- **Plain text.** Everything is shown as text: control, direction and zero-width characters are removed, spaces
+  squeezed, counts (10 items, 12 lines) and lengths capped. An item of the wrong shape is dropped, the rest is shown.
+  The window has no HTML or Markdown rendering.
+- **Links.** "Abrir no site" opens the item's page in the browser (egui `open_url`). Only `https://` addresses
+  without spaces, non-ASCII or `user@` open (a loopback `http://` only in tests); any other link is dropped from the item.
+- **Language.** The same pick as the rest of the window (`CINDERS_LANG`, `LC_ALL`, `LANG`; pt-BR when none).
+  The feed has one block per language; a missing block falls back to the other one.
 
 ## The manifest side
 
@@ -69,6 +95,10 @@ A new launcher or a new engine build goes out like any client release. No manual
    the native file count and package.
 5. Players with an old client (no launcher) still see "A new client download is required" for a new `min_package`.
    Their one manual download is the zip that has the launcher.
+
+The feed is tested in `src/feed.rs` (parsing, both languages, size limit, odd items, link rules, cache fallback) and in
+`tests/mass_update.rs` (the feed served by the local HTTP server: fresh, 404, server down, oversize, HTML, and a dead
+feed that leaves the update untouched).
 
 Local checks: `cd launcher && cargo fmt --check && cargo clippy --locked --all-targets -- -D warnings && cargo test
 --locked`. The test `tests/mass_update.rs` serves a fake manifest and files from `127.0.0.1` and updates a fake install

@@ -24,7 +24,7 @@ function chaos_h($value): string {
  */
 function chaos_clean_url(string $url): string {
 	if (!preg_match('~^(/?)([A-Za-z0-9_-]+)\.php([?#].*)?$~s', $url, $m)
-			|| in_array($m[2], array('chaos_client_api', 'chaos_pay_webhook', 'chaos_outfit'), true)) {
+			|| in_array($m[2], array('chaos_client_api', 'chaos_pay_webhook', 'chaos_outfit', 'chaos_launcher_feed'), true)) {
 		return $url;
 	}
 	$rest = $m[3] ?? '';
@@ -1045,6 +1045,10 @@ function chaos_patchnotes(): array {
 	foreach ((array)scandir($dir) as $name) {
 		$name = (string)$name;
 		if (strtolower(substr($name, -3)) !== '.md' || strtolower($name) === 'readme.md' || $name[0] === '_') {
+			continue;
+		}
+		// The pt-BR twin of a note is not a note of its own.
+		if (strtolower(substr($name, -9)) === '.pt-br.md') {
 			continue;
 		}
 		$id = substr($name, 0, -3);

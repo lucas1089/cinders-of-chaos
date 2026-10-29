@@ -18,7 +18,7 @@ if (preg_match('#(^|/)(\.[^/]*|SQL|Lua|tests|docker|tools|special|backups|cache|
 // endpoints), and /page runs page.php
 $method = (string)($_SERVER['REQUEST_METHOD'] ?? 'GET');
 if (($method === 'GET' || $method === 'HEAD') && preg_match('#^/([A-Za-z0-9_-]+)\.php$#', $uri, $m)
-	&& !in_array($m[1], array('chaos_client_api', 'chaos_pay_webhook', 'chaos_outfit'), true) && is_file($root . $uri)) {
+	&& !in_array($m[1], array('chaos_client_api', 'chaos_pay_webhook', 'chaos_outfit', 'chaos_launcher_feed'), true) && is_file($root . $uri)) {
 	$q = (string)parse_url($_SERVER['REQUEST_URI'], PHP_URL_QUERY);
 	header('Location: ' . ($m[1] === 'index' ? '/' : '/' . $m[1]) . ($q !== '' ? '?' . $q : ''), true, 301);
 	exit;

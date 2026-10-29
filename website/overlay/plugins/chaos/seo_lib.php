@@ -368,7 +368,7 @@ function chaos_seo_context(): array {
 /** True for a request whose output may be an HTML page (the machine endpoints never are). */
 function chaos_seo_wanted(array $server): bool {
 	$script = strtolower(basename((string)($server['SCRIPT_FILENAME'] ?? '')));
-	return !in_array($script, array('chaos_client_api.php', 'chaos_pay_webhook.php', 'chaos_outfit.php'), true);
+	return !in_array($script, array('chaos_client_api.php', 'chaos_pay_webhook.php', 'chaos_outfit.php', 'chaos_launcher_feed.php'), true);
 }
 
 /** The output buffer callback (plugin.php): the page with its head rewritten, or the output as it was. */

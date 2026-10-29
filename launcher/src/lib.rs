@@ -5,6 +5,7 @@
 //! launcher reads only its `native` section (exe, DLLs, chaos.pack, itself); the Lua updater reads `files` and ignores
 //! `native`, so old clients are not affected by it.
 pub mod config;
+pub mod feed;
 pub mod i18n;
 pub mod install;
 pub mod launch;

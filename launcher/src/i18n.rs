@@ -90,6 +90,41 @@ pub fn title(l: Lang) -> &'static str {
     }
 }
 
+/// Texts of the News and Changelog panels (src/feed.rs).
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum FeedText {
+    TabNews,
+    TabChangelog,
+    Loading,
+    Unavailable,
+    SavedCopy,
+    NoNews,
+    NoChanges,
+    ReadMore,
+}
+
+pub fn feed_text(t: FeedText, l: Lang) -> &'static str {
+    match (t, l) {
+        (FeedText::TabNews, Lang::Pt) => "Notícias",
+        (FeedText::TabNews, Lang::En) => "News",
+        (FeedText::TabChangelog, _) => "Changelog",
+        (FeedText::Loading, Lang::Pt) => "Carregando...",
+        (FeedText::Loading, Lang::En) => "Loading...",
+        (FeedText::Unavailable, Lang::Pt) => {
+            "Não foi possível carregar as novidades agora. Você pode jogar normalmente."
+        }
+        (FeedText::Unavailable, Lang::En) => "The latest news could not be loaded now. You can still play.",
+        (FeedText::SavedCopy, Lang::Pt) => "Sem conexão com o site. Mostrando a última cópia salva.",
+        (FeedText::SavedCopy, Lang::En) => "Cannot reach the website. Showing the last saved copy.",
+        (FeedText::NoNews, Lang::Pt) => "Nenhuma notícia por enquanto.",
+        (FeedText::NoNews, Lang::En) => "No news yet.",
+        (FeedText::NoChanges, Lang::Pt) => "Nenhuma mudança publicada ainda.",
+        (FeedText::NoChanges, Lang::En) => "No changes published yet.",
+        (FeedText::ReadMore, Lang::Pt) => "Abrir no site",
+        (FeedText::ReadMore, Lang::En) => "Open on the website",
+    }
+}
+
 /// Everything that can stop an update. Nothing here leaves the install half changed: files are staged and checked
 /// first, then swapped with a rollback.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -204,6 +239,24 @@ mod tests {
             let (pt, en) = (e.text(Lang::Pt), e.text(Lang::En));
             assert!(!pt.is_empty() && !en.is_empty() && pt != en, "{e:?}");
         }
+    }
+
+    #[test]
+    fn feed_texts_have_both_languages() {
+        for t in [
+            FeedText::TabNews,
+            FeedText::Loading,
+            FeedText::Unavailable,
+            FeedText::SavedCopy,
+            FeedText::NoNews,
+            FeedText::NoChanges,
+            FeedText::ReadMore,
+        ] {
+            assert_ne!(feed_text(t, Lang::Pt), feed_text(t, Lang::En), "{t:?}");
+        }
+        // "Changelog" is the same word in both
+        assert_eq!(feed_text(FeedText::TabChangelog, Lang::Pt), "Changelog");
+        assert_eq!(feed_text(FeedText::TabNews, Lang::Pt), "Notícias");
     }
 
     #[test]

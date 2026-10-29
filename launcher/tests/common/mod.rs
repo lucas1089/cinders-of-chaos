@@ -214,6 +214,7 @@ impl World {
             baseline: 0,
             game: "Chaos.exe".into(),
             args: vec![],
+            feed: Some(format!("{}/{}", srv.base, cinders_launcher::config::FEED_NAME)),
             dir: dir.clone(),
         };
         let exe = dir.join("CindersLauncher.exe");

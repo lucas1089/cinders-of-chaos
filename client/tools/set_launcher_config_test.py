@@ -48,7 +48,8 @@ class SetLauncherConfig(unittest.TestCase):
         self.assertEqual(code, 0, err)
         cfg = json.load(open(os.path.join(self.d, 'launcher.json')))
         self.assertEqual(cfg, {'manifest': 'https://site.test/updates/live/manifest.json', 'public_key': KEY,
-                               'game': 'Chaos.exe', 'baseline': 47})
+                               'game': 'Chaos.exe', 'baseline': 47,
+                               'feed': 'https://site.test/chaos_launcher_feed.php'})
 
     def test_no_baseline_is_left_out(self):
         self.init(baseline='')
@@ -68,6 +69,23 @@ class SetLauncherConfig(unittest.TestCase):
         self.assertNotEqual(self.run_tool()[0], 0)
         self.init()
         self.assertNotEqual(self.run_tool('--game', '..\\x.exe')[0], 0)
+        self.assertFalse(os.path.exists(os.path.join(self.d, 'launcher.json')))
+
+    def test_feed_default_override_and_off(self):
+        self.init(manifest='https://site.test:8443/updates/live/manifest.json')
+        self.assertEqual(self.run_tool()[0], 0)
+        cfg = json.load(open(os.path.join(self.d, 'launcher.json')))
+        self.assertEqual(cfg['feed'], 'https://site.test:8443/chaos_launcher_feed.php')
+        self.assertEqual(self.run_tool('--feed', 'https://other.test/f.php')[0], 0)
+        self.assertEqual(json.load(open(os.path.join(self.d, 'launcher.json')))['feed'], 'https://other.test/f.php')
+        self.assertEqual(self.run_tool('--no-feed')[0], 0)
+        self.assertEqual(json.load(open(os.path.join(self.d, 'launcher.json')))['feed'], '')
+
+    def test_refuses_odd_feeds(self):
+        self.init()
+        os.path.exists(os.path.join(self.d, 'launcher.json')) and os.remove(os.path.join(self.d, 'launcher.json'))
+        for bad in ('http://site.test/f.php', 'https://site.test/a b', 'javascript:alert(1)', 'https://u@site.test/f'):
+            self.assertNotEqual(self.run_tool('--feed', bad)[0], 0, bad)
         self.assertFalse(os.path.exists(os.path.join(self.d, 'launcher.json')))
 
     def test_game_name(self):

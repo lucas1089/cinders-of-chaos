@@ -33,7 +33,7 @@ RewriteRule "^index\.php$" / [R=301,L]
 RewriteCond %{REQUEST_METHOD} ^(GET|HEAD)$
 RewriteCond %{THE_REQUEST} "^[A-Z]+\s/[A-Za-z0-9_-]+\.php(\?\S*)?\s"
 RewriteCond %{REQUEST_FILENAME} -f
-RewriteCond $1 !^(chaos_client_api|chaos_pay_webhook|chaos_outfit)$
+RewriteCond $1 !^(chaos_client_api|chaos_pay_webhook|chaos_outfit|chaos_launcher_feed)$
 RewriteRule "^([A-Za-z0-9_-]+)\.php$" /$1 [R=301,L]
 # 2. /page serves page.php when it exists, the query kept ([END]: no further rewriting of the result).
 RewriteCond %{REQUEST_FILENAME} !-f

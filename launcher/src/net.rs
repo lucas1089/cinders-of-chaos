@@ -8,6 +8,10 @@ use std::time::Duration;
 pub trait Fetch {
     /// Small answer in memory (the manifest).
     fn get(&self, url: &str) -> Result<Vec<u8>, String>;
+    /// A small optional answer (the launcher feed): a short time limit and a size limit. Never used for the update.
+    fn get_small(&self, url: &str, _max_secs: u32, _max_bytes: u64) -> Result<Vec<u8>, String> {
+        self.get(url)
+    }
     /// Appends to `part` from the byte it already holds (a `Range` request), calls `progress` with the size of `part`.
     /// Ok means the transfer ended without error; the caller still checks size and hash.
     fn download(&self, url: &str, part: &Path, progress: &mut dyn FnMut(u64)) -> Result<(), String>;
@@ -52,6 +56,24 @@ impl Fetch for Curl {
     fn get(&self, url: &str) -> Result<Vec<u8>, String> {
         let mut c = base(url);
         c.args(["--max-time", "60", "--max-filesize", "4194304"]);
+        let o = c.output().map_err(|e| format!("cannot start curl: {e}"))?;
+        if o.status.success() {
+            Ok(o.stdout)
+        } else {
+            Err(failure(o.status.code(), &o.stderr))
+        }
+    }
+
+    fn get_small(&self, url: &str, max_secs: u32, max_bytes: u64) -> Result<Vec<u8>, String> {
+        let mut c = base(url);
+        c.args([
+            "--connect-timeout",
+            "5",
+            "--max-time",
+            &max_secs.to_string(),
+            "--max-filesize",
+            &max_bytes.to_string(),
+        ]);
         let o = c.output().map_err(|e| format!("cannot start curl: {e}"))?;
         if o.status.success() {
             Ok(o.stdout)

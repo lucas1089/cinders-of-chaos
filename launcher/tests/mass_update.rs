@@ -567,3 +567,68 @@ fn mass_update_many_rounds() {
     w.assert_is(&last);
     assert_eq!(w.applied_version(), rounds + 1);
 }
+
+// ---------------------------------------------------------------- News and Changelog (the website's launcher feed)
+
+const FEED: &str = r#"{"format":1,"generated":1,
+  "en":{"news":[{"id":1,"date":"2026-10-29","title":"Season two","text":"Join now.","url":"https://site.test/?view=1"}],
+        "changelog":[{"id":"2026-10-22","date":"2026-10-22","title":"Wings","lines":["One."],"url":"https://site.test/p"}]},
+  "pt-BR":{"news":[{"id":1,"date":"2026-10-29","title":"Temporada dois","text":"Entre agora.","url":"https://site.test/?view=1"}],
+        "changelog":[]}}"#;
+
+#[test]
+fn feed_comes_from_the_server_and_survives_it_going_away() {
+    use cinders_launcher::feed::{self, Panel};
+    use cinders_launcher::i18n::Lang;
+    use cinders_launcher::net::Curl;
+    let w = World::new("feed");
+    let path = format!("/{}", cinders_launcher::config::FEED_NAME);
+    w.srv.set(&path, FEED.as_bytes().to_vec());
+    match feed::load(&Curl, &w.cfg, Lang::Pt) {
+        Panel::Ready { feed, cached: false } => assert_eq!(feed.news[0].title, "Temporada dois"),
+        other => panic!("{other:?}"),
+    }
+    assert_eq!(w.srv.hits_for("chaos_launcher_feed").len(), 1);
+    assert!(feed::cache_path(&w.dir).exists());
+    // the server answers 404 (feed not installed yet), then is unreachable: the saved copy is shown
+    w.srv.state.lock().unwrap().routes.remove(&path);
+    assert!(matches!(
+        feed::load(&Curl, &w.cfg, Lang::En),
+        Panel::Ready { cached: true, .. }
+    ));
+    w.srv.state.lock().unwrap().offline = true;
+    match feed::load(&Curl, &w.cfg, Lang::En) {
+        Panel::Ready { feed, cached: true } => assert_eq!(feed.changelog[0].title, "Wings"),
+        other => panic!("{other:?}"),
+    }
+    // a feed that is too big (curl stops at the size limit) or HTML keeps the saved copy as well
+    w.srv.state.lock().unwrap().offline = false;
+    w.srv.set(&path, vec![b'x'; feed::MAX_BYTES + 5000]);
+    assert!(matches!(
+        feed::load(&Curl, &w.cfg, Lang::En),
+        Panel::Ready { cached: true, .. }
+    ));
+    w.srv.set(&path, b"<html>maintenance</html>".to_vec());
+    assert!(matches!(
+        feed::load(&Curl, &w.cfg, Lang::En),
+        Panel::Ready { cached: true, .. }
+    ));
+    // no saved copy and no feed: a short message state, no error
+    let _ = std::fs::remove_file(feed::cache_path(&w.dir));
+    assert_eq!(feed::load(&Curl, &w.cfg, Lang::En), Panel::Unavailable);
+}
+
+#[test]
+fn a_dead_feed_does_not_touch_the_update() {
+    use cinders_launcher::feed;
+    use cinders_launcher::i18n::Lang;
+    use cinders_launcher::net::Curl;
+    let w = World::new("deadfeed");
+    let r1 = rel(1, &[("Chaos.exe", b"exe v1"), ("chaos.pack", &[3u8; 5000])]);
+    r1.publish(&w.srv, &w.kp);
+    // the feed path is not served at all: the update runs and the panel is only unavailable
+    assert_eq!(feed::load(&Curl, &w.cfg, Lang::Pt), feed::Panel::Unavailable);
+    run(&w, World::fast()).unwrap();
+    w.assert_is(&r1);
+    w.assert_clean();
+}
