@@ -98,6 +98,13 @@ def stock_of(kids, row, ours):
     return best
 
 
+def older_look(by_sid, row):
+    """the look an older install gave this node: the stock server node of the same number (the real potion 7618 shows
+    client item 266, not 7618)"""
+    k = by_sid.get(row.get('stockClientId') or -1)
+    return k[3] if k else None
+
+
 def patch_otb(data, cfg):
     kids, root_end = scan(data)
     ours = {r['id'] for r in cfg['items']}
@@ -121,7 +128,7 @@ def patch_otb(data, cfg):
         if k is None:
             append += want
             notes.append('items.otb: %s added (server id %d, client id %d)' % (row['name'], row['id'], cid))
-        elif k[3] not in (stock[3], cid):
+        elif k[3] not in (stock[3], cid, older_look(by_sid, row)):
             raise SystemExit('items.otb: server id %d already belongs to client id %s, not %d; nothing written'
                              % (row['id'], k[3], cid))
         elif data[k[0]:k[1]] != want:

@@ -125,5 +125,15 @@ with tempfile.TemporaryDirectory() as srv:
     first = open(os.path.join(d, 'items', 'items.otb'), 'rb').read()
     check(T.main([d]) == 0 and open(os.path.join(d, 'items', 'items.otb'), 'rb').read() == first, 'second run: no change')
 
+# the real items.otb: server 7618 / 7620 show client items 266 / 268, and an older install copied those looks
+real = otb([item_node(7618, 266, FLAG_PICKUPABLE | FLAG_MOVEABLE | FLAG_STACKABLE), item_node(7620, 268),
+            item_node(31000, 7618), item_node(31001, 7620), item_node(30000, 25045),
+            item_node(32088, 266, FLAG_STACKABLE), item_node(32089, 268, FLAG_STACKABLE)])
+rf, rnotes, rw = T.patch_otb(real, cfg)
+rby = {k[2]: k for k in scan(rf)[0]}
+check(rby[32088][3] == 44397 and rby[32089][3] == 44398 and rby[7618][3] == 266 and T.verify_otb(rf, rw),
+      'older globe nodes on the real potion looks 266 / 268 are rewritten to 44397 / 44398')
+
+
 print('install_pickups_test: OK' if failed == 0 else 'install_pickups_test: %d failed' % failed)
 sys.exit(1 if failed else 0)
