@@ -48,6 +48,9 @@
 --                  ms and slides down in 300 ms (O229, base patch 0146): this file only calls Creature.setSmoothBars; the maths is
 --                  in the engine (chaosbars.h), computed from the clock at draw time. The character plate does the same in Lua
 --                  (game_chaoshud, hudbars_logic.lua), told by the settings option's apply.
+--   cooldown pulse a slot of the action bar gives a 280 ms pale flash when its cooldown (3 s or more) ends (O229, base patch
+--                  0161): the base action bar calls ChaosCooldownPulse.onEnd (cooldownpulse.lua, timing in cooldownpulse_logic.lua);
+--                  one layer per slot, one 16 ms timer only while a pulse runs. Option cooldownPulse.
 -- A client without base patch 0126 has none of the C++ functions: the flash, shake and shadow do nothing, the grade (shader
 -- only) still works. Every engine call is guarded.
 local L = VisualFxLogic
@@ -252,6 +255,11 @@ end
 -- ---------------------------------------------------------------- smooth health bars (O229)
 local function applySmoothBars()
   if Creature and Creature.setSmoothBars then pcall(Creature.setSmoothBars, optionValue('smoothBars')) end
+end
+
+-- ---------------------------------------------------------------- action bar cooldown pulse (O229, base patch 0161)
+local function applyCooldownPulse()
+  if ChaosCooldownPulse then ChaosCooldownPulse.setEnabled(optionValue('cooldownPulse')) end
 end
 
 -- ---------------------------------------------------------------- light flicker (O228)
@@ -595,6 +603,8 @@ function onOption(name, value)
     applySmoothBars()
   elseif name == 'lightFlicker' then
     applyLightFlicker()
+  elseif name == 'cooldownPulse' then
+    applyCooldownPulse()
   elseif name == 'screenShake' and value == false then
     stopShake()
   end
@@ -616,6 +626,7 @@ function reapply()
   applySmoothBars()
   applyMissileTrails()
   applyLightFlicker()
+  applyCooldownPulse()
 end
 
 -- ---------------------------------------------------------------- lifecycle
@@ -631,6 +642,7 @@ local function onGameStart()
 end
 
 local function onGameEnd()
+  if ChaosCooldownPulse then ChaosCooldownPulse.clear() end
   moodClear()
   stopShake()
   sceneFadeEnd()
@@ -650,6 +662,7 @@ end
 
 function init()
   g_ui.importStyle('scenefade')
+  g_ui.importStyle('cooldownpulse')
   createFlashShaders()
   handlers.game = { onGameStart = onGameStart, onGameEnd = onGameEnd,
                     onAttackingCreatureChange = onAttackingChange, onFollowingCreatureChange = onFollowingChange }
@@ -660,6 +673,7 @@ function init()
 end
 
 function terminate()
+  if ChaosCooldownPulse then ChaosCooldownPulse.terminate() end
   if handlers.game then disconnect(g_game, handlers.game) end
   if handlers.map then disconnect(g_map, handlers.map) end
   stopShake()

@@ -9,7 +9,7 @@ local function eq(a, b, what)
 end
 
 -- options: the grade is off by default (it shifts the biome colours), the rest on; a boolean wins, junk is the default
-local wantDefault = { hitFlash = true, screenShake = true, creatureShadow = true, screenGrade = false, spellLight = true, liquidShimmer = true, weather = true, bloom = false, numberMotion = true, targetOutline = true, hoverOutline = false, sceneFade = true, deathFade = true, ambientParticles = true, smoothBars = true, missileTrails = true, lightFlicker = true }
+local wantDefault = { hitFlash = true, screenShake = true, creatureShadow = true, screenGrade = false, spellLight = true, liquidShimmer = true, weather = true, bloom = false, numberMotion = true, targetOutline = true, hoverOutline = false, sceneFade = true, deathFade = true, ambientParticles = true, smoothBars = true, missileTrails = true, lightFlicker = true, cooldownPulse = true }
 
 for _, name in ipairs(L.OPTIONS) do
   local d = wantDefault[name]
@@ -19,7 +19,14 @@ for _, name in ipairs(L.OPTIONS) do
   eq(L.optionOn(name, 'no'), d, name .. ' junk -> default')
   eq(L.optionOn(name, 0), d, name .. ' number -> default')
 end
-eq(#L.OPTIONS, 17, 'seventeen options')
+eq(#L.OPTIONS, 18, 'eighteen options')
+do
+  local f = io.open(dir .. 'visualfx.lua'); local src = f:read('*a'); f:close()
+  eq(src:find("name == 'cooldownPulse'", 1, true) ~= nil, true, 'onOption handles cooldownPulse')
+  eq(src:find("optionValue('cooldownPulse')", 1, true) ~= nil, true, 'the pulse option value is read')
+  eq(src:find('ChaosCooldownPulse.terminate()', 1, true) ~= nil, true, 'terminate removes the pulse hook')
+  eq(L.DEFAULTS.cooldownPulse, true, 'the cooldown pulse is on by default')
+end
 eq(L.optionOn('nothing', nil), false, 'an unknown option is off')
 eq(L.DEFAULTS.numberMotion, true, 'soft damage numbers are on by default (purely visual, a few float operations per text)')
 do
@@ -445,7 +452,7 @@ do -- O235: DEFAULTS match the value of each option in the base patches' dataset
     ok:close()
     for _, pf in ipairs({ '0126-visual-effects', '0127-spell-light', '0128-living-liquids', '0130-weather-option', '0132-map-bloom',
       '0134-soft-damage-numbers', '0136-target-outline-options', '0138-scene-fade-option', '0139-death-fade',
-      '0144-ambient-particles-option', '0146-smooth-bars', '0147-missile-trails', '0149-light-flicker' }) do
+      '0144-ambient-particles-option', '0146-smooth-bars', '0147-missile-trails', '0149-light-flicker', '0161-cooldown-pulse' }) do
       local h = io.open(root .. pf .. '.patch', 'r')
       local text = h and h:read('*a') or ''
       if h then h:close() end
@@ -499,7 +506,7 @@ do
     eq(seen[id], nil, 'skipped id ' .. id .. ' is not listed')
   end
   -- wired: tied to the spell light option, sent once, switched off at terminate, no new option
-  eq(#L.OPTIONS, 17, 'still seventeen options (no new checkbox)')
+  eq(#L.OPTIONS, 18, 'still eighteen options (the glow work adds no checkbox)')
   local f = io.open(dir .. 'visualfx.lua', 'r')
   local src = f and f:read('*a') or ''
   if f then f:close() end
