@@ -105,7 +105,8 @@ def make_packed_zip(path, tmp, public, url, key_hex=CLIENT_KEY, dev=False, packa
     line = '' if baseline is None else '    baseline = %d,\n' % baseline
     files = {'init.lua': (INIT % (url, public, package, line)).encode(), 'modules/client_x/x.lua': b'print(1)\n',
              'mods/readme.txt': b'mods\n', 'data/things/1098/Tibia.dat': os.urandom(4000),
-             'data/things/1098/Tibia.spr': spr_bytes()}
+             'data/things/1098/Tibia.spr': spr_bytes(),
+             'layouts/mobile/styles/10-panels.otui': b'MobilePanel < UIWidget\n'}
     for rel, data in files.items():
         full = os.path.join(tree, rel)
         os.makedirs(os.path.dirname(full), exist_ok=True)
@@ -400,6 +401,20 @@ exec %s "$@"
         check(all(paths.get('data/things/1098/' + fn) == sha for _, _, fn, _, sha in idx['shards']),
               'sharded: the shards as the pack holds them')
         check('sprites:' not in r.stdout, 'sharded: nothing to split')
+        # phone data (O313): the "android" section lists what a phone downloads; layouts/mobile stays out, the shards are in
+        a = m.get('android') or {}
+        by = {f['path']: f for f in m['files']}
+        check(a.get('version') == 1 and a.get('files') == sorted(a.get('files') or []), 'android: section, sorted list')
+        check('layouts/mobile/styles/10-panels.otui' in by and 'layouts/mobile/styles/10-panels.otui' not in a.get('files', []),
+              'android: layouts/mobile is published but not on the phone list')
+        check(SHARDED <= set(a.get('files', [])) and 'data/things/1098/Tibia.dat' in a.get('files', []),
+              'android: the dat and the shard set are on the phone list')
+        check(set(a.get('files', [])) == set(by) - {'layouts/mobile/styles/10-panels.otui'}, 'android: every other file')
+        check(a.get('count') == len(a.get('files', [])) and
+              a.get('bytes') == sum({by[p]['blob']: by[p]['blob_size'] for p in a.get('files', [])}.values()),
+              'android: count and download bytes')
+        check('phone files' in subprocess.run([sys.executable, '-I', TOOL, 'verify', live, '--public', public],
+                                              capture_output=True, text=True).stdout, 'android: verify reports the section')
         # a pack with both: the shards are published, the single file is left out
         both = os.path.join(zips, 'both.zip')
         make_packed_zip(both, tmp, public, url, package=15, shards='both')

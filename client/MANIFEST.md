@@ -145,6 +145,7 @@ Protocol target is 10.98 on the base server (TFS 1.4.2). The sources are mostly 
 | client_chaos_charselect | none (HTTPS to the website's account API) | base patch 0050 (`Services.account`); base patch 0025 (the 10.98 list's outfits) | The character select and Create character (see "Character select" below); `charselect_core_test.lua` runs in CI; art from `tools/gen_charselect_art.py`; tested in the Linux client at 1280x720 and 1920x1080. A locked class now says "Reach level 200 with any character of your account to unlock it." (classes are not sold since 2026-10-15) |
 | client_chaos_infolift | none | base patch 0111 (`Creature.setInformationLift`) | Names and bars over the head of tall looks (see "Name over tall looks" below): hands the per-look lifts of `info_lifts.lua` (generated from the pair by `tools/sprites/gen_info_lift.py`) to the engine once at start; `infolift_core_test.lua` runs in CI. Without the patch it does nothing |
 | client_chaos_updater | none (HTTPS from the website) | base patches 0031, 0101, 0103 | Signed updater on the login screen (see "Signed updater" below), encrypted update files (base patch 0103); `updater_core_test.lua` runs in CI; tested in the Linux client (before the encryption) |
+| client_chaos_firststart | none (HTTPS from the website) | base patches 0031, 0103, 0167 | Android only: the first-start screen of the phone client (see "Phone data" below): downloads the game data through the signed manifest's `android` section, unpacks it into the app folder, restarts; `firststart_core_test.lua` and `boot_test.lua` run in CI; not run on a phone |
 | game_chaosguard | extended opcode 190 (JSON `hello {build, modules}`, client -> server, once per login) | base patch 0035 (`g_game.getChaosClientBuild`; the HMAC answer on opcode 189 is C++ only) | The client guard's Lua hello (server/README.md "Client guard"): the build and how many of our modules (`game_*`, `client_chaos_*`) are loaded; the server expects it within 30 s and at least 20 modules. `guardhello_test.lua` runs in CI; tested in the Linux client. Also holds `opcode_fuzz_test.lua`, the client half of the protocol fuzz test (every module's opcode handlers through base patch 0043's dispatcher, server/README.md "Protocol fuzz test") |
 
 Opcode numbers above do not collide with the ones the base server already uses (106, 91, 181, 107, 202, 1, 136, 99, 201, 92, 89). The stash uses 110 and the season pass (game_battlepass) 227.
@@ -3952,6 +3953,51 @@ Checked in the Linux build at 1280x720 and 1920x1080 (login splash, Codex, craft
 Glyphs 32..255 and patch 0028 checked in the Linux client at 1280x720: every role with accents and cp1252 symbols, the
 ASCII lines compared pixel by pixel with the previous sheets, a server modal dialog (title in the title font) and an
 NPC line in the bubble's style through `InputMessage::getString` (no server: the bytes were fed in from Lua).
+
+## Phone data (new, `client_chaos_firststart`, base patch 0167, O313)
+
+The Android client has no sprite pair in its APK. On first start it downloads the game data through the same signed
+manifest as the desktop updater (docs/ANDROID_CLIENT.md section 3). Desktop clients are unchanged.
+
+**Manifest key `android`.** `make_update_manifest.py build` writes it into the signed payload next to `files` (and `native`):
+`{"version": 1, "files": [paths], "count": N, "bytes": B}`. `files` lists, sorted, every path of the update except
+`layouts/mobile/` (the APK leaves that folder out on purpose) and the prefixes given with `--android-exclude` (desktop-only
+art; none is set today). The paths refer to the `files` entries, so hashes and sizes stay under the same signature and
+nothing is listed twice. `bytes` is the size of the distinct encrypted blobs (the download), `count` the number of paths.
+`--no-android` leaves the section out. Old clients and the launcher ignore the key. `check_payload` (publisher) and
+`firststart_core.lua androidEntries` (phone) apply the same rules: an object of version 1, a non-empty list of strings that
+are files of the update, no duplicate, nothing under `layouts/mobile/`; the publisher also checks `count` and `bytes`.
+A publish with no `data/things/*.dat` in the list warns.
+
+**Flow.** `init.lua` Services.update (manifest URL and public key, set by `android-client.yml` with
+`set_update_config.py`, same production defaults as the Windows package) gives the manifest. On Android:
+1. `bootstrap.lua` calls `boot.lua`: a finished apply (`chaos_update/android_state.txt` `status=ok`) is mounted through
+   `g_resources.mountDataFolder` in front of `data.zip`; a new APK removes the old APK's Lua and art in that folder first
+   (data/things stays). `cleanup_boot.lua` keeps `chaos_update` on a phone. The desktop updater (`updater.lua`) is off.
+2. After the module loads, `firststart.lua` fetches the manifest, checks the Ed25519 signature and the payload with the
+   desktop code (`ChaosUpdateCore`), refuses a `min_package` above the APK's build ("A new client download is required"),
+   takes the phone list and compares it with the phone: a file placed in the tree is compared by
+   `chaos_update/android_index.txt` (path, SHA-256, size; no hashing of a gigabyte), any other by the SHA-256 of what the client
+   sees (`data.zip`). A manifest older than the APK's baseline brings only `data/things` (the APK's Lua is newer).
+3. Game data missing (no `data/things/1098/Tibia.dat`): a screen blocks the login. It shows the size of the download, a Wi-Fi
+   advice, the free space against the need (the data plus 0.5 GB staging, less what is already staged) and a Download button;
+   not enough space shows how much to free and a Retry. An update over 100 MB asks too; a smaller one starts by itself.
+4. Download: `ChaosUpdateCore.download` (at most 4 parallel requests on a phone, 8 MB ranged parts, retries, blob and plaintext
+   hash checks, finished parts kept). Pause cancels the requests and keeps what is on disk; Resume goes on. A failure shows
+   Retry (and Play when the game data is already there).
+5. Unpack: each verified blob goes through `g_resources.unpackUpdateBlob` into `chaos_update/android/<path>` (the GCM tag
+   and the signed plaintext hash are checked, the file gets its name only when complete), the index line is appended, the
+   staged blob is removed after its last path. State `applying` then `ok`; a stop in between resumes from the index.
+6. `g_app.restart()` restarts through the Java shell; the next start mounts the folder.
+Logcat lines start with `firststart:`; `firststart: screen shown (...)` is what the emulator smoke test of
+`android-client.yml` waits for.
+
+**Files.** `firststart_core.lua` (phone list, index, decide, summary, space check, phases, prune on a new APK, unpack; tests
+`firststart_core_test.lua`, 122 checks), `boot.lua` (+ `boot_test.lua`, 42 checks, also runs `bootstrap.lua` on a fake phone and
+a fake desktop), `firststart.lua` + `firststart.otui` (screen), `client_chaos_firststart.otmod`.
+
+**Not checked.** Everything on a real phone: the download over a mobile network, the free-space call on Android, the PhysFS
+mount of the folder, the unpack time of 1 GB on a phone, the restart helper.
 
 ## Sharded sprites (new, base patch 0048, `tools/sprites/spr_shards.py`)
 The 600 MB `Tibia.spr` can ship as shard files that the client reads on several threads and the updater replaces one

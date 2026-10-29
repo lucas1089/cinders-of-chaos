@@ -21010,6 +21010,12 @@ script re-runs itself with `sudo -n`, which drops the environment.
   (client/BASE.md "Encrypted updates"): the script needs the client guard key `CHAOS_CLIENT_KEY`, read from the
   `CHAOS_CLIENT_KEY=` line of `/etc/chaos/chaos.env` (the game server's own; never printed), opens a packed package's
   `chaos.pack` with it and encrypts every blob; without it nothing is published, and min_package must be 13 or more.
+  **Phone data (O313, 2026-10-29):** every publish also writes the payload key `android`, the list of the files an Android
+  phone downloads on first start (every file of the update except `layouts/mobile/`; `make_update_manifest.py build` options
+  `--android-exclude PREFIX` and `--no-android`; client/MANIFEST.md "Phone data"). It adds nothing to the web folder (the
+  phone fetches the same encrypted blobs) and old clients ignore it, so no step changes for the operator: the next
+  `publish-update` of a newer release writes it. `publish_client_update_test.py` checks it on a sharded package
+  (layouts/mobile on the site but not on the phone list, the shard set and the dat on it, count and download bytes).
   Tests: `chaos_ctl_test.py` (refusals, the arguments and settings reaching a stub) and `publish_client_update_test.py`
   (the real script on synthetic loose and packed packages with throwaway keys: the manifest verifies, every blob is
   ciphertext that decrypts to its signed content, version and min_package, unsafe zips, key mismatches, a missing or

@@ -402,6 +402,15 @@ function M.restartMode(app)
   return (ok and yes == true) and 'restart' or 'manual'
 end
 
+-- Android phone (O313): the update does not go through this module. client_chaos_firststart downloads the same signed
+-- files, unpacks them into a plain folder and mounts it (client/MANIFEST.md "Phone data"); bootstrap.lua, cleanup_boot.lua
+-- and updater.lua step aside there. app: g_app.
+function M.onAndroid(app)
+  if type(app) ~= 'table' and type(app) ~= 'userdata' then return false end
+  local ok, os_ = pcall(function() return app.getOs() end)
+  return ok and tostring(os_):lower() == 'android'
+end
+
 -- ---------------------------------------------------------------- diff
 
 -- what to do with one manifest file. treeHash: sha256 of chaos_update/files/<path> as it is on disk, i.e. of the

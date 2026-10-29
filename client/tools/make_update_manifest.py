@@ -10,6 +10,7 @@
   build   CLIENT_DIR --out PUBLISH_DIR [--key PATH] [--version N] [--min-version N] [--min-package N]
           [--parallel N] [--channel NAME] [--roots modules,mods,data,layouts] [--dry-run] [--dev] [--key-index N]
           [--with-single-spr] [--native-dir DIR --native-package N [--native-game NAME] [--native-launcher NAME]]
+          [--no-android] [--android-exclude PREFIX ...]
           Hashes every file under the roots of an assembled client folder (client/tools/assemble_client.sh, with
           the Tibia.dat/.spr pair in data/things/1098/; or a packed package unpacked with `unpack`), ENCRYPTS each
           distinct file once (update_crypt.py: AES-256-GCM, key = HKDF of the client guard secret CHAOS_CLIENT_KEY,
@@ -37,6 +38,12 @@
           builds already out refuses a whole manifest that lists a bigger file, so the limit cannot grow): a bigger
           .spr is refused with a hint to ship it as shards. All files together must fit the engine's update overlay,
           a ZIP without ZIP64 (base patch 0103: below 4 GiB).
+          Phone data (O313, client/MANIFEST.md "Phone data"): the payload also gets an "android" section, the list of
+          the files an Android phone downloads on first start: {"version": 1, "files": [paths of "files"], "count",
+          "bytes"}. It lists every file of the update except layouts/mobile/ (the APK leaves that folder out on
+          purpose) and the prefixes given with --android-exclude (desktop-only art); "bytes" is the size of the
+          distinct encrypted blobs (the download). The paths refer to the "files" entries, so the sizes and hashes
+          stay under the same signature. Clients built before the key existed ignore it. --no-android leaves it out.
           Native files for the game launcher (O314, client/MANIFEST.md "Game launcher"): --native-dir is a folder with
           the program files of the package (Chaos.exe, its DLLs, chaos.pack, the launcher exe; only .exe .dll .pack, no
           sub-folders). They go into the signed payload as a separate "native" section and are published as PLAIN
@@ -96,6 +103,11 @@ NATIVE_DIR = 'native'
 NATIVE_MAX_FILES = 64
 NATIVE_MAX_FILE_SIZE = 2 * 1024 ** 3  # chaos.pack is about 0.9 GB
 NATIVE_NAME = re.compile(r'^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$')
+# phone data (O313): the "android" section of the signed payload lists the "files" an Android phone downloads on first start
+ANDROID_SECTION_VERSION = 1
+# never on a phone: the APK leaves layouts/mobile out on purpose (client/android/tools/make_assets.sh; its console style
+# has no readOnly widget and stopped game_console at start), so the phone keeps the default layout
+ANDROID_EXCLUDE = ('layouts/mobile/',)
 
 
 # ---------------------------------------------------------------- Ed25519
@@ -391,14 +403,58 @@ def check_native(n):
     return None
 
 
+def android_excluded(path, extra=()):
+    """True when the phone does not download this path (ANDROID_EXCLUDE plus the extra prefixes)."""
+    return any(path.startswith(x) for x in ANDROID_EXCLUDE + tuple(extra))
+
+
+def make_android(entries, extra_exclude=()):
+    """entries: (path, plaintext sha256, plaintext size, blob sha256, blob size). The "android" payload section."""
+    chosen = sorted((e for e in entries if not android_excluded(e[0], extra_exclude)), key=lambda e: e[0])
+    blobs = {}
+    for _, _, _, b, bs in chosen:
+        blobs[b] = bs
+    return {'version': ANDROID_SECTION_VERSION, 'files': [e[0] for e in chosen], 'count': len(chosen),
+            'bytes': sum(blobs.values())}
+
+
+def check_android(a, files):
+    """None when the phone client accepts the decoded "android" section (same rules as firststart_core.lua
+    androidEntries); files: the decoded "files" list of the same payload."""
+    if not isinstance(a, dict):
+        return 'android is not an object'
+    if a.get('version') != ANDROID_SECTION_VERSION:
+        return 'android: bad version'
+    listed = a.get('files')
+    if not isinstance(listed, list) or not listed:
+        return 'android: bad file list'
+    by_path = {f['path']: f for f in files}
+    seen, blobs = set(), {}
+    for p in listed:
+        if not isinstance(p, str) or p not in by_path:
+            return f'android: {p!r} is not a file of the update'
+        if p in seen:
+            return 'android: duplicate path ' + p
+        seen.add(p)
+        if android_excluded(p):
+            return 'android: ' + p + ' is never on a phone'
+        blobs[by_path[p]['blob']] = by_path[p]['blob_size']
+    if a.get('count') != len(listed):
+        return 'android: bad count'
+    if a.get('bytes') != sum(blobs.values()):
+        return 'android: bad bytes'
+    return None
+
+
 def native_blob_path(out_dir, sha):
     return os.path.join(out_dir, NATIVE_DIR, sha[:2], sha)
 
 
 # ---------------------------------------------------------------- manifest
 
-def make_payload(entries, version, min_version, min_package, parallel, channel, created, native=None):
-    """entries: (path, plaintext sha256, plaintext size, blob sha256, blob size)"""
+def make_payload(entries, version, min_version, min_package, parallel, channel, created, native=None, android=None):
+    """entries: (path, plaintext sha256, plaintext size, blob sha256, blob size). android: None leaves the phone
+    section out, a tuple of extra path prefixes (maybe empty) writes it."""
     payload = {
         'format': 1, 'product': PRODUCT, 'channel': channel, 'version': version, 'created': created,
         'min_version': min_version, 'min_package': min_package, 'parallel': parallel, 'files_url': 'files/',
@@ -407,6 +463,8 @@ def make_payload(entries, version, min_version, min_package, parallel, channel, 
     }
     if native is not None:
         payload['native'] = native
+    if android is not None:
+        payload['android'] = make_android(entries, android)
     return json.dumps(payload, sort_keys=True, separators=(',', ':'), ensure_ascii=True)
 
 
@@ -449,6 +507,10 @@ def check_payload(m, last_version=None):
             return 'bad blob for ' + f['path']
         if f.get('blob_size') != f['size'] + BLOB_OVERHEAD:
             return 'bad blob_size for ' + f['path']
+    if 'android' in m:
+        err = check_android(m['android'], files)
+        if err:
+            return err
     if 'native' in m:
         return check_native(m['native'])
     return None
@@ -576,15 +638,25 @@ def build(args):
     created = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
     native = (make_native(native_entries, args.native_package, args.native_game, args.native_launcher)
               if native_entries is not None else None)
+    android = None if args.no_android else tuple(args.android_exclude or ())
+    for x in android or ():
+        if not re.fullmatch(r'(modules|mods|data|layouts)/[A-Za-z0-9 ._()+,/-]*/', x) or '..' in x:
+            sys.exit(f'--android-exclude {x!r}: a folder prefix like data/images/streamer/ (with the final slash)')
+    if android is not None and not any(e[0].startswith('data/things/') and e[0].lower().endswith('.dat')
+                                       and not android_excluded(e[0], android) for e in entries):
+        print('warning: no data/things/*.dat in the phone data list (a phone could not start from this update)',
+              file=sys.stderr)
     summary = (f'{len(entries)} files, {len(blobs)} distinct, {total / 1024 / 1024:.1f} MB, version {version}'
                + (f', native package {args.native_package} ({len(native_entries)} files)' if native else '')
                + (f' (package baseline {baseline})' if baseline else '') + ', '
-               f'min_version {min_version}, min_package {args.min_package}, parallel {args.parallel}')
+               f'min_version {min_version}, min_package {args.min_package}, parallel {args.parallel}'
+               + (f', phone data {sum(1 for e in entries if not android_excluded(e[0], android))} files'
+                  if android is not None else ''))
     if args.dry_run:
         # the blob hashes need the key: the payload rules are checked with stand-ins
         stand_in = [(p, h, s, h, s + BLOB_OVERHEAD) for p, h, s in entries]
         err = check_payload(json.loads(make_payload(stand_in, version, min_version, args.min_package, args.parallel,
-                                                    args.channel, created, native)))
+                                                    args.channel, created, native, android)))
         if err:
             sys.exit('internal: ' + err)
         print('dry run (unsigned, unencrypted, nothing written):', summary)
@@ -627,7 +699,8 @@ def build(args):
             raise
         enc[h] = (c, csize)
     full = [(p, h, s) + enc[h] for p, h, s in entries]
-    payload = make_payload(full, version, min_version, args.min_package, args.parallel, args.channel, created, native)
+    payload = make_payload(full, version, min_version, args.min_package, args.parallel, args.channel, created, native,
+                           android)
     err = check_payload(json.loads(payload))
     if err:
         sys.exit('internal: ' + err)
@@ -762,7 +835,8 @@ def verify(args):
     if bad:
         sys.exit(f'{bad} blob(s) missing or changed')
     print(f'ok: version {m["version"]}, {len(m["files"])} files, '
-          + (f'{len(nat["files"])} native files (package {nat["package"]}), ' if nat else '') + 'signature good, '
+          + (f'{len(nat["files"])} native files (package {nat["package"]}), ' if nat else '')
+          + (f'{m["android"]["count"]} phone files, ' if m.get('android') else '') + 'signature good, '
           + ('every blob decrypts to its signed content' if found else
              f'blobs checked as ciphertext only (no {KEY_ENV}: plaintext not checked)'))
     return 0
@@ -878,6 +952,9 @@ def main(argv=None):
     b.add_argument('--native-package', type=int, help='package number of the native files')
     b.add_argument('--native-game', default='Chaos.exe')
     b.add_argument('--native-launcher', help='file name of the launcher itself in --native-dir')
+    b.add_argument('--no-android', action='store_true', help='leave the "android" (phone data) section out')
+    b.add_argument('--android-exclude', action='append', metavar='PREFIX',
+                   help='a folder the phone does not download, e.g. data/images/streamer/ (repeatable; desktop-only art)')
     b.add_argument('--dev', action='store_true',
                    help='encrypt with the public development key (tests, allow_dev_key packages; never for players)')
     b.add_argument('--key-index', type=int, help=f'which key of {KEY_ENV} ("old,new"), 1-based')

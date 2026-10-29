@@ -107,6 +107,19 @@ boot()
 eq(ChaosCleanBoot.ran, true, 'stale tree: ran'); eq(files['/chaos_update/files/data/x.png'], nil, 'tree older than baseline removed')
 eq(unmounted, true, 'and unmounted')
 
+-- a phone: the downloaded game data (chaos_update/android) is the player's gigabyte and always stays, the rest is cleaned
+reset()
+files['/chaos_update/android/data/things/1098/Tibia.dat'] = { 'write', 'dat' }
+files['/chaos_update/state.txt'] = nil
+g_app = { getOs = function() return 'android' end }
+boot({ mounted = false })
+eq(ChaosCleanBoot.ran, true, 'phone: a new package cleans'); eq(files['/downloads/a.zip'], nil, 'phone: old download removed')
+eq(files['/chaos_update/android/data/things/1098/Tibia.dat'] ~= nil, true, 'phone: the game data stays')
+eq(files['/config.otml'] ~= nil, true, 'phone: settings kept')
+boot({ mounted = false })
+eq(ChaosCleanBoot.ran, false, 'phone: the next start does nothing'); eq(files['/chaos_update/android/data/things/1098/Tibia.dat'] ~= nil, true, 'phone: still there')
+g_app = nil
+
 -- switches
 reset(); envOff = '1'; boot()
 eq(ChaosCleanBoot.ran, false, 'CHAOS_CLEAN_OFF'); eq(files['/downloads/a.zip'] ~= nil, true, 'nothing removed when off')

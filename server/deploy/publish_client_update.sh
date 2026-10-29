@@ -22,7 +22,10 @@
 #   (launcher, O314) a packed client folder that also holds CindersLauncher.exe: its .exe, .dll and chaos.pack files are
 #                     published as the manifest's "native" section (client/MANIFEST.md "Game launcher"), plain blobs
 #                     under updates/live/native/, for the launcher; the Lua updater never reads that section.
-#   --check-only      no publish: only the web server check of the published manifest (below)
+#   (phone, O313)     every publish also writes the manifest's "android" section: the list of files the Android client
+#                     downloads on first start (all but layouts/mobile/; client/MANIFEST.md "Phone data"). No option
+#                     here; make_update_manifest.py build has --android-exclude and --no-android.
+#   --check-only     no publish: only the web server check of the published manifest (below)
 #   --no-check        skip the web server check
 #   --keep            keep the work folder (the download and the extracted client) for a look afterwards
 #

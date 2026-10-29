@@ -31,5 +31,15 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <!-- no screen, own process: starts the game again after the game data download and ends the old game process
+             (ChaosActivity.restartApp, client base patch 0167) -->
+        <activity
+            android:name=".RestartActivity"
+            android:exported="false"
+            android:process=":restart"
+            android:taskAffinity=""
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"/>
     </application>
 </manifest>

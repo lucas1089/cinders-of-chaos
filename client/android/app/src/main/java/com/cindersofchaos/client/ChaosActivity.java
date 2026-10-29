@@ -24,6 +24,7 @@ import java.util.concurrent.Semaphore;
  * bars, the soft keyboard, a text dialog for text fields, a fatal error dialog and opening a link. The engine calls
  * showTextEdit, displayFatalError, openUrl, showKeyboard and hideKeyboard by name through JNI
  * (src/framework/platform/androidwindow.cpp); commitText is the way back (patch 0164 names its C function).
+ * restartApp is called after the game data download (patch 0167): it starts the game again in a new process.
  */
 public class ChaosActivity extends android.app.NativeActivity {
     static {
@@ -147,6 +148,24 @@ public class ChaosActivity extends android.app.NativeActivity {
                 activeDialog = builder.show();
             }
         });
+    }
+
+    // The restart (client base patch 0167). The engine ends its process after every thread is joined (g_app.restart on
+    // Android only asks for it and closes the client the normal way, then main() calls this over JNI). A new
+    // process has to be started by someone who outlives this one, so a helper activity in its own process
+    // (RestartActivity) starts the game again and ends this process. Called on the engine thread, which exits right
+    // after: nothing here waits for the UI thread.
+    public void restartApp() {
+        Intent launch = getPackageManager().getLaunchIntentForPackage(getPackageName());
+        if (launch == null) {
+            return;
+        }
+        launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        Intent helper = new Intent(this, RestartActivity.class);
+        helper.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_NO_ANIMATION);
+        helper.putExtra(RestartActivity.EXTRA_NEXT, launch);
+        helper.putExtra(RestartActivity.EXTRA_PID, android.os.Process.myPid());
+        startActivity(helper);
     }
 
     public void openUrl(String url) {

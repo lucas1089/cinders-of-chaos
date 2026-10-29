@@ -1,11 +1,14 @@
-# Android game client (O313 phase 2, docs/ANDROID_CLIENT.md): the engine for android arm64 with the NDK and CMake
-# (client base patches 0163 and 0164), packed into an APK by the Gradle project client/android/.
+# Android game client (O313, docs/ANDROID_CLIENT.md): the engine for android arm64 with the NDK and CMake
+# (client base patches 0163 to 0167), packed into an APK by the Gradle project client/android/.
 #   workflow_dispatch only: nothing runs on push or pull request, and nothing is published. The APK is a workflow
 #   artifact (kept 14 days) with its SHA-256.
 #
 # Inputs of the base client come from the private branch windows-assets, as in windows-package.yml (client/base-client
-# tar parts and SHA256SUMS.parts). The sprite pair is NOT put into the APK: the phone downloads it on first start (a later
-# phase), so this APK starts without game data and shows the engine's missing-data error until that exists.
+# tar parts and SHA256SUMS.parts). The sprite pair is NOT put into the APK: the phone downloads it on first start through
+# the signed update manifest (module client_chaos_firststart, client base patch 0167), from update_manifest with the key
+# update_public_key, the same inputs and production defaults as windows-package.yml. The live manifest needs its "android"
+# section (a publish with the current tools writes it, docs/ANDROID_CLIENT.md section 3); without it the first-start
+# screen says the update was refused.
 #
 # Libraries: vcpkg, triplet arm64-android-chaos (client/android/triplets), manifest client/android/vcpkg/vcpkg.json
 # (builtin-baseline pins the registry; the vcpkg tool is checked out at the same commit). Binary cache: actions/cache.
@@ -28,10 +31,22 @@ on:
         description: "Branch of the base client (and server, dat/spr)"
         required: false
         default: "windows-assets"
-      client_build:
-        description: "Client build number 1-65535 (CHAOS_CLIENT_BUILD and the APK versionCode). Raise it for every APK you give out"
+      update_manifest:
+        description: "Signed updater: https URL of updates/live/manifest.json on the website (empty: no game data download, the APK cannot enter the game)"
         required: false
-        default: "1"
+        default: "https://www.cindersofchaos.com/updates/live/manifest.json"
+      update_public_key:
+        description: "Signed updater: the operator's Ed25519 public key, 64 hex digits (never the private key)"
+        required: false
+        default: "7f4ae1b812e3ca86ac4551683b987b8bf68d2256b36b1785c07cb4f3ffb72224"
+      update_baseline:
+        description: "Optional: the release number the Lua and art in this APK are (the winpkg-N number whose files it was built from). With it, a live update below N only brings the game data and never puts older Lua over the APK's. Empty: any live update applies"
+        required: false
+        default: ""
+      client_build:
+        description: "Client build number 1-65535 (CHAOS_CLIENT_BUILD, the APK versionCode and Services.update.package). At least the live manifest's min_package (the windows-package.yml default is the live build), else the phone asks for a new download. Raise it for every APK you give out"
+        required: false
+        default: "30"
       server_host:
         description: "Server address (DNS name or IPv4)"
         required: false
@@ -60,7 +75,10 @@ concurrency:
 
 env:
   ASSETS_REF: ${{ inputs.assets_ref || 'windows-assets' }}
-  CLIENT_BUILD: ${{ inputs.client_build || '1' }}
+  CLIENT_BUILD: ${{ inputs.client_build || '30' }}
+  UPDATE_MANIFEST: ${{ inputs.update_manifest }}
+  UPDATE_PUBLIC_KEY: ${{ inputs.update_public_key }}
+  UPDATE_BASELINE: ${{ inputs.update_baseline }}
   SERVER_HOST: ${{ inputs.server_host || '127.0.0.1' }}
   SITE_URL: ${{ inputs.site_url }}
   ALLOW_DEV_KEY: ${{ inputs.allow_dev_key && 'true' || 'false' }}
@@ -102,8 +120,10 @@ jobs:
           mv base/*/ base-client
           # no things dir: the sprite pair is not part of the APK
           bash chaos/client/tools/assemble_client.sh "$GITHUB_WORKSPACE/base-client" "$GITHUB_WORKSPACE/game"
-          # the patches 0163 and 0164 are in: the Android CMake branch exists
+          # the patches 0163 to 0167 are in: the Android CMake branch exists, and so do the phone data functions and module
           grep -q 'Android (O313' game/CMakeLists.txt
+          grep -q 'unpackUpdateBlob' game/src/framework/luafunctions.cpp
+          test -f game/modules/client_chaos_firststart/firststart.lua
 
       - name: Client guard inputs and settings
         env:
@@ -128,6 +148,14 @@ jobs:
           python3 -I chaos/client/tools/set_server_host.py game "$SERVER_HOST" --site-url "$SITE_URL"
           python3 -I chaos/client/tools/set_rsa_key.py game --from-env CHAOS_RSA_PUBLIC \
             $([ "$ALLOW_DEV_KEY" = true ] && echo --allow-default)
+          # the first-start download of the game data: the signed manifest and the operator's public key (O313)
+          if [ -n "$UPDATE_MANIFEST" ]; then
+            python3 -I chaos/client/tools/set_update_config.py game --manifest "$UPDATE_MANIFEST" \
+              --public-key "$UPDATE_PUBLIC_KEY" --package "$CLIENT_BUILD" \
+              $([ -n "$UPDATE_BASELINE" ] && echo --baseline "$UPDATE_BASELINE")
+          else
+            echo "::warning::No update_manifest: this APK cannot download the game data and cannot enter the game."
+          fi
 
       - name: data.zip for the APK assets
         run: bash chaos/client/android/tools/make_assets.sh game "$GITHUB_WORKSPACE/apk-assets"
@@ -271,7 +299,10 @@ jobs:
           target: google_apis
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
-          script: bash -c 'adb logcat -c; adb install -r apk/CindersOfChaos-Android.apk && adb shell am start -W -n com.cindersofchaos.client/.ChaosActivity; sleep 150; adb shell pidof com.cindersofchaos.client && echo STILL RUNNING || echo NOT RUNNING; adb logcat -d -v threadtime > logcat.txt; grep -E "CindersOfChaos|AndroidRuntime|DEBUG|libc|linker|cindersofchaos|F/|E/" logcat.txt | tail -n 300'
+          # the last command checks the first-start screen (client_chaos_firststart logs "firststart: screen shown" when it
+          # appears: the APK holds no sprite pair, so it always shows, with or without a network to the update server)
+          script: |
+            bash -c 'adb logcat -c; adb install -r apk/CindersOfChaos-Android.apk && adb shell am start -W -n com.cindersofchaos.client/.ChaosActivity; sleep 150; adb shell pidof com.cindersofchaos.client && echo STILL RUNNING || echo NOT RUNNING; adb logcat -d -v threadtime > logcat.txt; grep -E "CindersOfChaos|AndroidRuntime|DEBUG|libc|linker|cindersofchaos|F/|E/" logcat.txt | tail -n 300; grep -E "CindersOfChaos.*firststart: " logcat.txt | tail -n 20; grep -q "firststart: screen shown" logcat.txt && echo "FIRST START SCREEN: ok" || { echo "FIRST START SCREEN: not shown"; exit 1; }'
 
       - name: Upload the logcat
         if: always()
