@@ -1786,7 +1786,13 @@ def test_server_user():
             f.write('#!/bin/sh\n')
         os.chmod(os.path.join(kit, 'start-server.sh'), 0o755)
         with open(os.path.join(kit, 'chaos.env'), 'w') as f:
-            f.write('CHAOS_DB_USER=chaos\nCHAOS_DB_PASS=secret\n')
+            f.write('CHAOS_DB_USER=chaos\nCHAOS_DB_PASS=secret\nCHAOS_RSA_KEY_FILE="%s, key.pem,%s"\n'
+                    % (os.path.join(kit, 'rsa', 'login-1.pem'), os.path.join(kit, 'etc', 'login-2.pem')))
+        # the login keys: one in a folder of keys only (rsa_key.py gen), one beside another file, key.pem in the server folder
+        os.makedirs(os.path.join(kit, 'rsa'))
+        os.makedirs(os.path.join(kit, 'etc'))
+        for k in ('rsa/login-1.pem', 'etc/login-2.pem', 'etc/other.txt', 'server/key.pem'):
+            open(os.path.join(kit, k), 'w').close()
         os.chmod(os.path.join(kit, 'chaos.env'), 0o600)
         ufile = os.path.join(sysd, 'chaos-server.service')
 
@@ -1906,6 +1912,7 @@ def test_server_user():
                 f.write('%d\n' % proc.pid)
             r = run('server-user')
             st = kv(r)
+            check(st.get('login_keys') == '3', 'status: the login keys named in chaos.env: %r' % st)
             check(st.get('engine_pid') == str(proc.pid) and st.get('engine_user') == 'root' and st.get('runs_as_root') == 'yes'
                   and st.get('restart_needed') == 'yes', 'status: the live engine process runs as root: ' + r.stdout)
             check(kv(run('status')).get('engine_user') == 'root', 'status: engine_user line')
@@ -1921,6 +1928,11 @@ def test_server_user():
             for d in ('server', 'database', 'run', 'logs', 'crashes'):
                 check('chown -R -h chaostest:chaostest -- %s' % os.path.join(kit, d) in c, 'fix: chown of %s' % d)
             check('chown -h chaostest -- %s' % os.path.join(kit, 'chaos.env') in c, 'fix: chaos.env owned by the service user')
+            for k in ('rsa/login-1.pem', 'etc/login-2.pem', 'server/key.pem', 'rsa'):
+                check('chown -h chaostest:chaostest -- %s\n' % os.path.join(kit, k) in c, 'fix: the login key %s owned by the service user: %s' % (k, c))
+            check('chown -h chaostest:chaostest -- %s\n' % os.path.join(kit, 'etc') not in c and 'other.txt' not in c,
+                  'fix: a folder with other files in it is not given away')
+            check('login keys owned by chaostest' in r.stdout, 'fix: says which keys: ' + r.stdout)
             check(repo not in ''.join(l for l in c.splitlines() if l.startswith('chown')) and 'chown -R -h chaostest:chaostest -- %s\n' % kit not in c,
                   'fix: never the checkout or the whole kit folder')
             check(('runuser -u' in c or os.stat(os.path.join(kit, 'database')).st_uid == 0) and "CREATE USER IF NOT EXISTS 'chaostest'@'localhost' IDENTIFIED VIA unix_socket" in c
@@ -2017,7 +2029,8 @@ def test_server_user():
         # the repo layout (/opt/chaos): only the server folder, no database step, the repo unit
         rserver = os.path.join(tmp, 'rserver')
         os.makedirs(rserver)
-        renv = dict(env, CHAOS_SERVER_DIR=rserver, CHAOS_ROOT='/opt/chaos', CHAOS_PID_FILE=os.path.join(tmp, 'none.pid'))
+        renv = dict(env, CHAOS_SERVER_DIR=rserver, CHAOS_ROOT='/opt/chaos', CHAOS_PID_FILE=os.path.join(tmp, 'none.pid'),
+                    CHAOS_ENV=os.path.join(tmp, 'none.env'))
         renv.pop('CHAOS_KIT_DIR')
         with open(ufile, 'w') as f:
             f.write(repo_body.replace('User=chaos', 'User=root'))

@@ -399,6 +399,35 @@ su_targets() {
   fi
   return 0
 }
+# the RSA login keys the engine reads at start (CHAOS_RSA_KEY_FILE in the env file, comma separated, relative to the server
+# folder): a key the service user cannot read stops the start ("Missing file"). The files, and a folder that holds only
+# .pem files (rsa_key.py gen makes one, mode 700), belong to it too. Never a folder with anything else in it.
+su_keyfiles() {
+  local line f
+  local -a v
+  [ -f "$ENVFILE" ] || return 0
+  line=$(sed -n -E 's/^CHAOS_RSA_KEY_FILE=["'\'']?([^"'\'']*)["'\'']?[[:space:]]*$/\1/p' "$ENVFILE" | tail -n 1)
+  IFS=',' read -r -a v <<< "$line"
+  for f in "${v[@]}"; do
+    f=$(printf '%s' "$f" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+    [ -n "$f" ] || continue
+    case $f in /*) ;; *) f="$SERVER/$f" ;; esac
+    { [ -f "$f" ] && [ ! -L "$f" ]; } && echo "$f"
+  done
+  return 0
+}
+su_keytargets() {
+  local f d seen=""
+  while IFS= read -r f; do
+    echo "$f"
+    d=$(dirname -- "$f")
+    case " $seen " in *" $d "*) continue ;; esac
+    seen="$seen $d"
+    [ ! -L "$d" ] || continue
+    if [ -z "$(find "$d" -mindepth 1 -maxdepth 1 ! \( -type f -name '*.pem' \) -print -quit 2>/dev/null)" ]; then echo "$d"; fi
+  done < <(su_keyfiles)
+  return 0
+}
 su_envfile() { if [ -n "$KIT" ] && [ -f "$ENVFILE" ] && [ "$(dirname -- "$ENVFILE")" = "${KIT%/}" ]; then echo "$ENVFILE"; fi; return 0; }
 # the checkout must stay root-owned: not owned by chaos, no write for group or others (the ExecStopPost guard of chaos-server.service)
 su_repo_ok() {
@@ -428,6 +457,9 @@ su_foreign() {  # number of entries of the writable folders not owned by chaos (
     c=$(find "$t" -printf '%u\n' 2>/dev/null | grep -v -x -c -- "$SUSER" || true)
     n=$((n + c))
   done < <(su_targets)
+  while IFS= read -r t; do
+    [ "$(stat -c %U "$t" 2>/dev/null)" = "$SUSER" ] || n=$((n + 1))
+  done < <(su_keytargets)
   echo "$n"
 }
 su_chown() {
@@ -437,6 +469,9 @@ su_chown() {
   done < <(su_targets)
   f=$(su_envfile)
   [ -z "$f" ] || chown -h "$SUSER" -- "$f" || return 1
+  while IFS= read -r t; do
+    chown -h "$SUSER:$SUSER" -- "$t" || return 1
+  done < <(su_keytargets)
   return 0
 }
 su_db_sock() {
@@ -503,6 +538,7 @@ su_status() {
   echo "server_dir=$SERVER"
   echo "server_owner=$owner"
   echo "foreign_files=$foreign"
+  echo "login_keys=$(su_keyfiles | wc -l)"
   echo "repo_root_owned=$repo"
   echo "db_admin=$db"
   echo "unit_backup=$backup"
@@ -2048,6 +2084,8 @@ print("pbkdf2-sha256$%d$%s$%s" % (n, base64.b64encode(salt).decode(), base64.b64
         if [ "$foreign" != 0 ] || [ "$uuser" != "$SUSER" ]; then
           su_chown || die "chown failed; nothing else changed (root can still run the server)"
           echo "folders owned by $SUSER: $(su_targets | tr '\n' ' ')$(su_envfile)"
+          k=$(su_keytargets | tr '\n' ' ')
+          [ -z "$k" ] || echo "login keys owned by $SUSER: $k"
           changed=yes
         else
           echo "folders: already owned by $SUSER"
