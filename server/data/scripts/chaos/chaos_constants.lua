@@ -1251,19 +1251,32 @@ Chaos.classes = {
 	-- Beastmaster companion: a real monster type (the first of `monsters` that exists), summoned by Wild Bond.
 	-- Health base + perLevel x level; a bite every biteMs on the owner's target when next to it, physical damage
 	-- dealt as the owner: avg = level x biteLevel + distance skill x biteSkill, min/max = avg x (1 -/+ spread).
-	-- Feral Command: every companion leaps to the target and mauls it for mauls x a bite (biteLevel / biteSkill: the
-	-- spells' bite, unchanged since O160). O306: the companion's own bite every biteMs uses autoLevel / autoSkill (a
-	-- real share of the Beastmaster's damage, tools/companion_model.py), its health is base + perLevel x level (shown
-	-- level and health are set the same way at every spawn and kept in step with the owner's level:
+	-- The wolf spells (Feral Command, Pack Frenzy, Pack Howl, Rending Pounce) leap every companion to the target and
+	-- maul it: a companion deals `mauls` x a bite (biteLevel / biteSkill: the spells' bite, unchanged since O160) to
+	-- what the spell hits (`spells`; O332). Pack Howl hits every monster within `radius` of the target, Rending Pounce
+	-- those within its tighter one. O306: the companion's own bite every biteMs uses autoLevel / autoSkill (a real
+	-- share of the Beastmaster's damage, tools/companion_model.py), its health is base + perLevel x level (shown level
+	-- and health are set the same way at every spawn and kept in step with the owner's level:
 	-- ChaosClasses.syncCompanion) and a hit on it is x taken (before the Pack Alpha keystone's cut).
+	-- O332: every wolf hit, the companion's own bites and the spells' mauls, is x the owner's wolf factor
+	-- (ChaosClasses.wolfFactor): Pack Alpha and the Vocation Trials' minion damage. The passive state mirrors the Trials'
+	-- percent into the player storage `minionStorage` because the spell scripts run in another Lua state. Tester report
+	-- 2026-10-29 (level 750): the Trials' +65% minion damage never reached a wolf. A bite and a maul are dealt as the
+	-- owner; the Trials count a hit as a minion's only when its attacker is the summon itself.
 	companion = {
 		monsters = {"War Wolf", "Wolf"},
 		caps = {{level = 0, count = 1}, {level = 400, count = 2}},
 		health = {base = 800, perLevel = 30},
 		taken = 0.6,
 		biteMs = 2000, biteLevel = 0.12, biteSkill = 0.6, spread = 0.2,
-		autoLevel = 1.1, autoSkill = 2.0,
-		mauls = 1.5,
+		autoLevel = 0.75, autoSkill = 1.35,
+		minionStorage = 7100041,
+		spells = {
+			feral = {mauls = 1.5},
+			frenzy = {mauls = 3.3},
+			howl = {mauls = 3, radius = 2},
+			pounce = {mauls = 2.5, radius = 1}
+		},
 		leashRange = 7, -- a companion farther than this from its owner (or on another floor) is brought back
 		thinkMs = 500
 	}

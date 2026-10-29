@@ -349,10 +349,35 @@ function M.biteValues(level, distanceSkill, factor)
 	return math.floor(avg * (1 - c.spread)), math.floor(avg * (1 + c.spread))
 end
 
--- the bite of this owner's companions: level, distance skill and the Pack Alpha keystone (class_tree.lua)
+-- O332: the factor on every hit of this owner's wolves, bites and spells' mauls: the Pack Alpha keystone (class_tree.lua)
+-- times the Vocation Trials' minion damage (percent, mirrored by passivetree_effects.lua into the storage `minionStorage`:
+-- the spell scripts run in another Lua state and cannot read the passive cache). 1 without either. Tester report
+-- 2026-10-29: the Trials' minion damage never reached a wolf (a bite and a maul are dealt as the owner, and the Trials
+-- count a hit as a minion's only when its attacker is the summon itself).
+function M.wolfFactor(player)
+	local f = 1 + ChaosClassTree.value(player, "ksPackAlpha", "bonus")
+	local key = cfg().companion.minionStorage
+	if key and player.getStorageValue then
+		local ok, pct = pcall(player.getStorageValue, player, key)
+		pct = ok and tonumber(pct) or 0
+		if pct > 0 then
+			f = f * (1 + math.min(pct, 150) / 100) -- the Trials' own bound: at most x2.5
+		end
+	end
+	return f
+end
+
+-- the bite of this owner's companions in a spell's maul: level, distance skill and the wolf factor
 function M.biteValuesFor(player)
-	return M.biteValues(player:getLevel(), player:getEffectiveSkillLevel(SKILL_DISTANCE),
-		1 + ChaosClassTree.value(player, "ksPackAlpha", "bonus"))
+	return M.biteValues(player:getLevel(), player:getEffectiveSkillLevel(SKILL_DISTANCE), M.wolfFactor(player))
+end
+
+-- the maul of one companion for a wolf spell (Chaos.classes.companion.spells[key]): the spell's bite x its mauls
+function M.maulValuesFor(player, key)
+	local s = cfg().companion.spells[key]
+	local lo, hi = M.biteValuesFor(player)
+	local n = s and s.mauls or 0
+	return lo * n, hi * n
 end
 
 -- O306: the companion's own bite (beastmaster.lua): the same shape on autoLevel / autoSkill. Feral Command and Pack
@@ -364,8 +389,7 @@ function M.autoBiteValues(level, distanceSkill, factor)
 end
 
 function M.autoBiteValuesFor(player)
-	return M.autoBiteValues(player:getLevel(), player:getEffectiveSkillLevel(SKILL_DISTANCE),
-		1 + ChaosClassTree.value(player, "ksPackAlpha", "bonus"))
+	return M.autoBiteValues(player:getLevel(), player:getEffectiveSkillLevel(SKILL_DISTANCE), M.wolfFactor(player))
 end
 
 -- the level shown after a companion's name: its owner's (a spawned wolf got the wild War Wolf's level, 12, or the level

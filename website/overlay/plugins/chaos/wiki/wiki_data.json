@@ -389,7 +389,7 @@
 		"siege.on": true,
 		"siege.when": "Saturday 20:00",
 		"siege.whenPt": "sábado às 20:00",
-		"spell.count": 169,
+		"spell.count": 171,
 		"store.categories": 41,
 		"store.cosmetic": 637,
 		"store.offers": 778,
@@ -656,14 +656,16 @@
 								["Blessed Earth", "drai vas sol hal", "100", "210", "9 s", "whole line"],
 								["Wild Bond", "vael ferh", "100", "180", "10 s", "Beastmaster"],
 								["Feral Command", "kah ferh", "110", "120", "4 s", "Beastmaster"],
-								["Packhunter's Dart", "kah ferh sag", "140", "50", "10 s", "Beastmaster"],
+								["Packhunter's Dart", "kah ferh sag", "140", "50", "12 s", "Beastmaster"],
 								["Lightward", "tor sol ghar", "140", "180", "30 s", "whole line"],
 								["Sunspear", "kah aur lanc", "160", "115", "10 s", "whole line"],
 								["Final Verdict", "kah gal sol judh", "200", "270", "12 s", "Deadeye"],
-								["Arrowstorm", "drai sag vex", "220", "85", "10 s", "Ranger, Beastmaster"],
-								["Gale Volley", "ruan vert", "240", "110", "11 s", "whole line"],
+								["Arrowstorm", "drai sag vex", "220", "85", "10 s", "Ranger"],
+								["Pack Howl", "drai ferh ulv", "220", "160", "7 s", "Beastmaster"],
+								["Rending Pounce", "kah ferh rax", "240", "200", "6 s", "Beastmaster"],
+								["Gale Volley", "ruan vert", "240", "110", "11 s", "Ranger, Deadeye"],
 								["Hail of Dawn", "drai gal vas sol volv", "280", "480", "13 s", "Ranger, Deadeye"],
-								["Pack Frenzy", "kah ferh vas", "320", "270", "6 s", "Beastmaster"],
+								["Pack Frenzy", "kah ferh vas", "320", "270", "8 s", "Beastmaster"],
 								["Twin Verdict", "kah gal sol judh vael", "400", "540", "13 s", "Deadeye"],
 								["Moonshard Rain", "drai lun sag vex", "500", "576", "13 s", "whole line"],
 								["Unblinking Gaze", "vyr oth sag ael", "800", "300", "90 s", "whole line"],
@@ -691,6 +693,8 @@
 								"spell:19",
 								"spell:218",
 								"spell:22",
+								"spell:35",
+								"spell:39",
 								"spell:134",
 								"spell:219",
 								"spell:147",
@@ -3610,7 +3614,7 @@
 						{
 							"h": "Effect",
 							"p": [
-								"Your companions leap at the target (range 7) and maul it, each for 1.5 bites at once. The Beastmaster's command. A bite is physical damage dealt as you, from your level and distance skill (ChaosClasses.biteValues, Chaos.classes.companion); it needs a companion out (Wild Bond)."
+								"Your companions leap at the target (range 7) and maul it, each for 1.5 bites at once. The Beastmaster's command. A bite is physical damage dealt as you, from your level and distance skill, times the wolf factor (Pack Alpha, the Trials' minion damage, O332): ChaosClasses.maulValuesFor, Chaos.classes.companion.spells.feral. It needs a companion out (Wild Bond). Cast: data/spells/chaos/_wolves.lua."
 							]
 						},
 						{
@@ -4080,7 +4084,7 @@
 				{
 					"id": "spell:23",
 					"name": "Packhunter's Dart",
-					"sub": "\"kah ferh sag\", level 140, 50 mana, cooldown 10 s",
+					"sub": "\"kah ferh sag\", level 140, 50 mana, cooldown 12 s",
 					"color": "#9fdc7f",
 					"sections": [
 						{
@@ -4097,7 +4101,7 @@
 								["Words", "kah ferh sag"],
 								["Level", "140"],
 								["Mana", "50"],
-								["Cooldown", "10 s"],
+								["Cooldown", "12 s"],
 								["Kind", "Attack"],
 								["Classes", "Beastmaster"]
 							]
@@ -5116,11 +5120,39 @@
 								["Mana", "85"],
 								["Cooldown", "10 s"],
 								["Kind", "Attack"],
-								["Classes", "Ranger, Beastmaster"]
+								["Classes", "Ranger"]
 							]
 						}
 					],
 					"icon": "wiki/i/k-nature-arrows.png"
+				},
+				{
+					"id": "spell:35",
+					"name": "Pack Howl",
+					"sub": "\"drai ferh ulv\", level 220, 160 mana, cooldown 7 s",
+					"color": "#9fdc7f",
+					"sections": [
+						{
+							"h": "Effect",
+							"p": [
+								"A howl calls the pack down on the quarry. Your companions leap at the target (range 7) and each bites every monster within 2 sqm of it, 3 bites apiece. O332: the Beastmaster's pack spell, level 220 (it took Arrowstorm's place): the wolves clear a pack, not one monster. A bite is physical damage dealt as you, from your level and distance skill, times the wolf factor (Pack Alpha, the Trials' minion damage): ChaosClasses.maulValuesFor, Chaos.classes.companion.spells.howl. It needs a companion out (Wild Bond). Cast: data/spells/chaos/_wolves.lua."
+							]
+						},
+						{
+							"h": "Spell",
+							"cols": ["", ""],
+							"w": [35, 65],
+							"rows": [
+								["Words", "drai ferh ulv"],
+								["Level", "220"],
+								["Mana", "160"],
+								["Cooldown", "7 s"],
+								["Kind", "Attack"],
+								["Classes", "Beastmaster"]
+							]
+						}
+					],
+					"icon": "wiki/i/k-frost-howl.png"
 				},
 				{
 					"id": "spell:205",
@@ -5235,6 +5267,34 @@
 					"icon": "wiki/i/k-holy-hammer.png"
 				},
 				{
+					"id": "spell:39",
+					"name": "Rending Pounce",
+					"sub": "\"kah ferh rax\", level 240, 200 mana, cooldown 6 s",
+					"color": "#9fdc7f",
+					"sections": [
+						{
+							"h": "Effect",
+							"p": [
+								"The pack pounces. Your companions leap at the target (range 7) and each rends every monster within 1 sqm of it, 2 bites apiece. O332: the Beastmaster's cluster spell, level 240 (it took Gale Volley's place): a tight circle around the quarry, harder on the ones at its side than Pack Howl. A bite is physical damage dealt as you, from your level and distance skill, times the wolf factor (Pack Alpha, the Trials' minion damage): ChaosClasses.maulValuesFor, Chaos.classes.companion.spells.pounce. It needs a companion out (Wild Bond). Cast: data/spells/chaos/_wolves.lua."
+							]
+						},
+						{
+							"h": "Spell",
+							"cols": ["", ""],
+							"w": [35, 65],
+							"rows": [
+								["Words", "kah ferh rax"],
+								["Level", "240"],
+								["Mana", "200"],
+								["Cooldown", "6 s"],
+								["Kind", "Attack"],
+								["Classes", "Beastmaster"]
+							]
+						}
+					],
+					"icon": "wiki/i/k-blood-pounce.png"
+				},
+				{
 					"id": "spell:134",
 					"name": "Gale Volley",
 					"sub": "\"ruan vert\", level 240, 110 mana, cooldown 11 s",
@@ -5256,7 +5316,7 @@
 								["Mana", "110"],
 								["Cooldown", "11 s"],
 								["Kind", "Attack"],
-								["Classes", "Ranger, Deadeye, Beastmaster"]
+								["Classes", "Ranger, Deadeye"]
 							]
 						}
 					],
@@ -5545,13 +5605,13 @@
 				{
 					"id": "spell:147",
 					"name": "Pack Frenzy",
-					"sub": "\"kah ferh vas\", level 320, 270 mana, cooldown 6 s",
+					"sub": "\"kah ferh vas\", level 320, 270 mana, cooldown 8 s",
 					"color": "#9fdc7f",
 					"sections": [
 						{
 							"h": "Effect",
 							"p": [
-								"Feral Command's late sibling. Your companions leap at the target (range 7) and maul it in a frenzy, each for 3.3 bites at once (Feral Command: 1.5). 6 s cooldown (the cooldown ladder, 2026-10-20; was 20 s). The Beastmaster's command. A bite is physical damage dealt as you, from your level and distance skill (ChaosClasses.biteValues, Chaos.classes.companion); it needs a companion out (Wild Bond)."
+								"Feral Command's late sibling. Your companions leap at the target (range 7) and maul it in a frenzy, each for 3.3 bites at once (Feral Command: 1.5). 8 s cooldown (the cooldown ladder). The Beastmaster's command. A bite is physical damage dealt as you, from your level and distance skill, times the wolf factor (Pack Alpha, the Trials' minion damage, O332): ChaosClasses.maulValuesFor, Chaos.classes.companion.spells.frenzy. It needs a companion out (Wild Bond). Cast: data/spells/chaos/_wolves.lua."
 							]
 						},
 						{
@@ -5562,7 +5622,7 @@
 								["Words", "kah ferh vas"],
 								["Level", "320"],
 								["Mana", "270"],
-								["Cooldown", "6 s"],
+								["Cooldown", "8 s"],
 								["Kind", "Attack"],
 								["Classes", "Beastmaster"]
 							]
@@ -6943,7 +7003,7 @@
 						{
 							"h": "Effect",
 							"p": [
-								"Your companions' bites and Feral Command deal +35% damage, and companions take 20% less."
+								"Your companions' bites and wolf spells deal +35% damage, and companions take 20% less."
 							]
 						},
 						{"h": "Who", "p": ["Classes: Beastmaster."]}
@@ -9145,7 +9205,7 @@
 								["Berserker", "0%", "4"],
 								["Ranger", "19% -> 15%", "4"],
 								["Deadeye", "18% -> 11%", "4"],
-								["Beastmaster", "9% -> 2%", "4"],
+								["Beastmaster", "9% -> 0%", "4"],
 								["Mystic", "0% -> 1%", "4"],
 								["Illusionist", "3% -> 2%", "4"],
 								["Thief", "5% -> 0%", "4"],

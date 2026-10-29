@@ -3689,6 +3689,37 @@ legacy numbers test builds `mages`.
 sub ids **71001, 71033, 71051 and 71074 stay reserved and are never reused** (nothing sets them; a character online
 during the update may still carry one until it runs out, the bar just does not show it). `raise_archer` had no buff row.
 
+### Wolf spells (O332, 2026-10-29; tester: "a necromancer, but with wolves"; computed with rotation_sim.py and companion_model.py, not measured in game)
+
+The Beastmaster's two arrow area spells, Arrowstorm (220) and Gale Volley (240), became Ranger and Deadeye spells only; the Beastmaster has
+**Pack Howl** (id 35, `drai ferh ulv`, level 220, 7 s, 160 mana: every companion leaps to the target and bites every monster within 2 sqm of it,
+3 mauls each) and **Rending Pounce** (id 39, `kah ferh rax`, level 240, 6 s, 200 mana: the monsters within 1 sqm, 2.5 mauls each) in their
+places. A maul is the spell's bite (`0.12 x level + 0.6 x distance skill`, unchanged since O160) x the mauls x the wolf factor (Pack Alpha x
+the Trials' minion damage, `ChaosClasses.wolfFactor`). Feral Command (1.5 mauls) and Pack Frenzy (3.3) keep their numbers and get the
+wolf factor too. The kit count stays 13 per class (the Beastmaster has two kit spells fewer and two of its own more,
+`tests/attack_kit_test.lua`); the cooldowns follow the ladder (`rotation_sim.py --ladder --check`), which moved Pack Frenzy 6 -> 8 s and
+Packhunter's Dart 10 -> 12 s. Damage of one cast on one target with no wolf factor (rotation_sim.py units; two companions from level 400,
+a class spell factor of the level in them), and the Ranger's Arrowstorm for comparison:
+
+| Level | Feral Command | Pack Howl (x targets) | Rending Pounce (x targets) | Pack Frenzy | Ranger's Arrowstorm (x5) |
+|---|---|---|---|---|---|
+| 300 | 130 | 260 (5) | 217 (3) | not yet | 611 |
+| 750 | 534 | 1068 (5) | 890 (3) | 1175 | 934 |
+| 1000 | 655 | 1310 (5) | 1091 (3) | 1441 | 1086 |
+
+The wolf spells hit for the least per cast, so they sit on the short ladder rungs and are cast the most. Auto setup (`autorotation_data.lua`,
+`rotation_sim.py --write`): 220-399 Blessed Earth, Sanctum Burst, Pack Howl, Sunspear, Dawnpiercer; from 400 (the second companion is a rotation
+breakpoint, `WOLF_LEVEL`) Blessed Earth, Pack Howl, Sanctum Burst, Rending Pounce, Sunspear. Best 5 against the measured kit
+(`rotation_sim.py --report`): 1 target / 5 targets +1.2% / +18.9% at 600, +0.0% / +16.9% at 1000 (the old kit: -8.4% / +5.9% at 750).
+
+Class balance (the numbers of server/README.md "Wolves as the main damage (O332)"): the share of the damage that is wolves (bites and wolf
+spells) at 750 is 47% / 54% / 66% for a Beastmaster with neither keystone nor Trials / Pack Alpha / Pack Alpha and both Trials nodes; the class
+total of the tree build, the state every band is about, is 2532 a second on one target at 750 (2711 before: the boss ratio 0.74 of the Deadeye,
+band 0.67-0.80 at 800) and the same on a pack; `classDamage.beastmaster` was refitted (0.97 ... 0.73), the cleave `high` went 2 -> 0. Pack
+bands at 300 / 800 / 1000 / 1200: 1.02 / 1.03 / 1.03 / 1.00 of the reference (band 1.00-1.10), the Elementalist stays 8% ahead on a pack.
+The quest spell factors of the Beastmaster (Moonshard Rain 0.70 -> 0.54 by level, Dawnbreaker Shot 0.43) were refitted because the best set
+changed: Q1 4.7 / 4.7 / 4.0 / 3.5% at 500 / 600 / 800 / 1000, Q3 +10.2% and both +13.4% at 1200.
+
 ### Mana cut (2026-10-22; owner: "custo de mana do ranger ainda está alto", "reveja o custo de mana das outras classes também"; computed with rotation_sim.py)
 
 Every spell above 20 mana now costs **60%** of its cost before, rounded to 5 (at least 20): all 110 Chaos spells

@@ -19,7 +19,7 @@
 --   juggernaut   ksImmovable    damage taken -8%, -16% while below 50% health (and Bulwark, as the knight)
 --   berserker    ksUndyingRage  melee weapon hits heal 4% of the damage dealt, 8% below 50% health (and Cleaving Arc)
 --   deadeye      ksHuntersFocus bow / crossbow hits on the same target +4% each, up to +20% (and Deadeye)
---   beastmaster  ksPackAlpha    companions: bites and Feral Command +35%, 20% less damage taken (beastmaster.lua,
+--   beastmaster  ksPackAlpha    companions: bites and the wolf spells +35% (O332), 20% less damage taken (beastmaster.lua,
 --                               classes.lua biteValues; and Ricochet). Numbers of these four: class_tree.lua (fx).
 --   illusionist  (support: makes the party hit harder, never the illusionist)
 --                ksSharedPhantasm    the illusionist's hits mark the enemy for 6 s: other party members deal +12% to it

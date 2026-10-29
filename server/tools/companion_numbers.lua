@@ -2,7 +2,7 @@
 -- server/tools/companion_model.py (the companion balance model, O306; server/README.md "Beastmaster companion (O306)").
 -- Run from server/: luajit tools/companion_numbers.lua [LEVEL:DISTANCESKILL ...]
 -- Prints {"rows": [...], "config": {...}, "balance": {...}, "necro": {...}}: a row is one level: the health, the bites
--- (the companion's own, the spells'), the cap and what a 1000 point hit becomes on the companion.
+-- (the companion's own, the same bite x 1.5), the cap and what a 1000 point hit becomes on the companion.
 -- Lua 5.1 / LuaJIT and Lua 5.3 compatible.
 dofile("data/scripts/chaos/chaos_constants.lua")
 dofile("data/scripts/chaos/classes.lua")
@@ -58,13 +58,14 @@ for i = 1, #arg do
 	local level, skill = arg[i]:match("^(%d+):([%d%.]+)$")
 	level, skill = tonumber(level), tonumber(skill)
 	local alo, ahi = C.autoBiteValues(level, skill)
-	local mlo, mhi = C.biteValues(level, skill)
+	local mlo, mhi = C.biteValues(level, skill, 1)
+	local wlo, whi = C.biteValues(level, skill, 1.5)
 	rows[#rows + 1] = {
 		level = level, skill = skill, health = C.companionHealth(level), cap = C.companionCap(level),
-		autoMin = alo, autoMax = ahi, mulMin = mlo, mulMax = mhi, shown = C.companionLevel(level),
+		autoMin = alo, autoMax = ahi, mulMin = mlo, mulMax = mhi, wolfMin = wlo, wolfMax = whi, shown = C.companionLevel(level),
 		taken = C.companionDamageTaken(1000, 0), takenAlpha = C.companionDamageTaken(1000, 0.25)
 	}
 end
 
 print(json({rows = rows, config = Chaos.classes.companion, balance = balance, necro = {monsterDps = necro.monsterDps},
-	classDamage = ChaosClassTree.classDamage}))
+	classDamage = ChaosClassTree.classDamage, packAlpha = ChaosClassTree.fx.ksPackAlpha}))

@@ -845,6 +845,7 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 80000 + n | autoloot list, shared on purpose with the base autoloot (`Chaos.storage.autolootBase`) |
 | 7100000 - 7100999 | `Chaos.storage` in `chaos_constants.lua` and the `*_config.lua` blocks it lists (daily, stash, passive tree, bounty, rifts, new player, monk, market, store cosmetics, ...) |
 | 7100011 - 7100019 | the stash (`stash_config.lua` `storage`): 7100011 the journal serial, 7100012 the depot -> stash migration version done (version 2 since O316), 7100013 the stash -> depot migration version done (off), 7100014 the grandfather version done (O316); +4..+8 free |
+| 7100040 - 7100041 | mirrors of the passive state for the spell scripts (another Lua state): 7100040 the tree's item find (`loot_config.lua` `itemFindStorage`), 7100041 the Vocation Trials' minion damage in whole percent (`Chaos.classes.companion.minionStorage`, O332, "Wolves as the main damage") |
 | 7101000 - 7101004 | ascension quest (`ascension_quest_config.lua`) |
 | 7101040 - 7101069 | line spell quests (`Chaos.storage.spellQuest`, `spellquest_core.lua` `keys(n)`; 10 per quest n = 1..3): +0 step (0 none, 1 hunt, 2 trial open, 3 done), +1 kills, +2 fragments, +3 pity, +4 trial attempts, +5 trial cooldown, +6 done time, +7 lines done (a bit per line), +8 and +9 free. 7101070 - 7101099 stays free |
 | 7101100 - 7101109 | infinite arrows (`data/lib/chaos_archery_config.lua` `storage`): +0 the ammunition sweep is done, +1 its stash part is done |
@@ -2241,7 +2242,7 @@ class). Read from the tools, 34 ids of 1-255 are free in the install after the C
 spells 48, 49, 51, 79, 95, 108 and 109 are commented out too; they are not counted, the client keeps them for icons).
 No stock spell needed retiring: nothing is left that no class uses and the tools already retire it. The pool is
 `data/scripts/chaos/spell_id_pool_config.lua`: `ids` (21: 142 143 148-160 172 173 174 177 178 237, the ids of the
-retired stock attack and healing spells, as the attack kit did before) and `spare` (11: 35 39 40 41 47 52 60 101 165 168 171). The test checks that every pool id is free: no live
+retired stock attack and healing spells, as the attack kit did before) and `spare` (9 since O332: 40 41 47 52 60 101 165 168 171; 35 and 39 went to Pack Howl and Rending Pounce, "Wolves as the main damage (O332)"). The test checks that every pool id is free: no live
 stock spell, no Chaos spell, freed by a retiring tool. A phase that adds a spell takes the next id of `ids` and writes
 it in `spells_chaos.xml`, `attack_kit_config.lua` (a kit spell) and nowhere else; `register_spells.py` refuses a taken
 id, the client moves a stock entry that held it (`spellfix.lua` `chaosIds`).
@@ -2999,7 +3000,7 @@ variant the server applies (the client's own vocation number did not match: an E
   `juggernaut` (Immovable: -8% damage taken, -16% below 50% health; Bulwark), Berserker `berserker` (Cleaving Arc; Undying Rage:
   melee weapon hits heal 4% of the damage, 8% below 50% health), Ranger `paladin` (Ricochet, Deadeye), Deadeye `deadeye`
   (Hunter's Focus: bow / crossbow hits on the same target +4% each, at most +20%, reset by another target or 6 s; Deadeye),
-  Beastmaster `beastmaster` (Ricochet; Pack Alpha: companion bites and Feral Command +35%, companions take 20% less), Mystic /
+  Beastmaster `beastmaster` (Ricochet; Pack Alpha: companion bites and wolf spells +35% since O332, companions take 20% less), Mystic /
   Elementalist `sorcerer`, Illusionist `illusionist`. Since 2026-10-12 also the Iron Sage `ironsage` (621 only:
   **Overgrowth**, heals on others heal 10% more over 6 s) and the Sentinel `sentinel` (624 only: **Thorns**, melee and
   ranged attackers take 30% of their hit + 2 x magic level as earth damage), the old druid pair. Only these eleven classes
@@ -21214,6 +21215,97 @@ Class total with the change, against before: 1 target +9..+15%, pack of 5 within
 fitted to the report (the old model said 6% and 7 s, the tester saw 4% and under 5 s); the model counts the companion's own bites only
 (the spells' mauls are in the rotation model). Needs a live check: the shown level on a spawn, a level-up and Wild Bond
 on a wolf already out; a hunt of 2 attackers at level 400.
+
+O332 (below, "Wolves as the main damage") changed the numbers of this section: the own bite is `0.75 x level + 1.35 x skill`, every wolf hit
+takes the wolf factor (Pack Alpha, the Trials' minion damage), the share limits are per build (plain, tree, full) and the model
+counts the wolf spells. The table above is as of O306 (survival numbers unchanged).
+
+## Wolves as the main damage (O332, 2026-10-29; `classes.lua`, `_wolves.lua`, `companion_balance_config.lua`, `companion_model.py`)
+
+Tester report (Beastmaster, level 750, paraphrased): every passive that raises minion damage taken (about +12%, +40%, +75%, and tree passives that
+roughly double it), both wolves, three support runes on the main wolf skill, and the wolves' main skill is still 10-12% of his damage,
+where a Ranger's full-investment arrow line is 60-70%. Both wolf skills were single target, there was no area skill for the wolves, the
+rest of the kit was arrow skills that felt unrelated. Wanted: "a necromancer, but with wolves".
+
+* **Root cause 1: the minion damage never reached a wolf.** The only "minion damage" in the game is the Vocation Trials' `dealMinion` key
+  (Beastmaster: Alpha Bond +25%, Apex Predator +40%). `trials_effects.lua` counts a hit as a minion's only when its attacker is the summon
+  itself (its own melee); a wolf's bite is dealt as the owner with `ORIGIN_NONE` (no event sees it at all) and a maul of Feral Command
+  or Pack Frenzy is dealt as the owner with `ORIGIN_SPELL` (the Trials' spell bonus, not the minion one). The Necromancer's minions are
+  dealt the same way, but they have the Covenant keystone, the unique passive and Banner of Bones in their own formulas. The tree has
+  no generic minion node; the only other wolf multiplier was Pack Alpha (+35% on bites and Feral Command).
+* **Fix 1: one wolf factor.** `ChaosClasses.wolfFactor(player)` = Pack Alpha x (1 + the Trials' minion damage, at most x2.5). Every wolf
+  hit takes it: the companion's own bite (`autoBiteValuesFor`) and every wolf spell (`maulValuesFor`; Pack Frenzy and the new spells
+  were not under Pack Alpha before, only Feral Command). The spell scripts run in another Lua state, so `passivetree_effects.lua`
+  `applyAll` mirrors the Trials' percent into the player storage `Chaos.classes.companion.minionStorage` (7100041, whole percent;
+  the existing mirror pattern of `itemFindStorage` 7100040). Pack Alpha's tooltip says "bites and wolf spells" now.
+* **Root cause 2: no area, no weight.** The wolf spells were 1.5 and 3.3 spell bites of 0.12 x level + 0.6 x skill on one target, 6-17%
+  of the kit, and the kit's two arrow area spells (Arrowstorm, Gale Volley) were the Ranger's. **Fix 2:** the new Beastmaster
+  spells below took the places of Arrowstorm (220) and Gale Volley (240) (they no longer list the Beastmaster; the count of 13
+  attack spells per class holds, `check_attack_counts.py`), cast by one shared script `data/spells/chaos/_wolves.lua`
+  (Feral Command and Pack Frenzy are three lines now): every companion leaps next to the target (the old rule), then each deals its
+  mauls to every monster the spell hits.
+
+  | Spell (id) | Words | Level | Cooldown | Mana | Hits | Mauls per companion |
+  |---|---|---|---|---|---|---|
+  | Feral Command (249) | kah ferh | 110 | 4 s | 120 | the target | 1.5 (unchanged) |
+  | Pack Howl (35, new) | drai ferh ulv | 220 | 7 s | 160 | every monster within 2 sqm of the target (circle) | 3 |
+  | Rending Pounce (39, new) | kah ferh rax | 240 | 6 s | 200 | every monster within 1 sqm of the target (circle) | 2.5 |
+  | Pack Frenzy (147) | kah ferh vas | 320 | 8 s (was 6) | 270 | the target | 3.3 (unchanged) |
+
+  A maul is the spell's bite (0.12 x level + 0.6 x distance skill, `biteLevel` / `biteSkill`, unchanged) x the mauls x the wolf factor.
+  The two new ids are the first two of the spell id pool's `spare` list (`spell_id_pool_config.lua`), both free in the install;
+  `spellfix.lua` lost its fix for the retired Lance of the Grave (client stock id 35). The cooldowns follow the ladder
+  (`rotation_sim.py --ladder --check`): the wolf spells hit for the least per cast, so they take the short rungs, which moved Pack
+  Frenzy 6 -> 8 s and Packhunter's Dart 10 -> 12 s (its level and damage unchanged). Auto setup (`autorotation_data.lua`, written by
+  `rotation_sim.py --write`): 220-399 Blessed Earth, Sanctum Burst, Pack Howl, Sunspear, Dawnpiercer; from 400 (the second wolf is a
+  rotation breakpoint now, `WOLF_LEVEL`) Blessed Earth, Pack Howl, Sanctum Burst, Rending Pounce, Sunspear; Pack Frenzy and Moonshard
+  Rain are in the extras. The Spellbook draws both circles (`spellbook_areas_config.lua`); the supports treat them as area spells.
+* **Class totals.** The class stays in its pack and boss bands (the Beastmaster is a pure area class: boss ratio 0.70-0.80 of the
+  Deadeye, pack 1.00-1.10, the Elementalist 8% ahead on a pack). The model (`companion_model.py`) takes the measured total (C4) of the
+  old kit, scales its spell part by the rotation of today over the rotation of the old kit (`companion_balance_config.lua before.sim`,
+  the method of `pack_model.py` KIT), adds the bites as they are (dealt without an event: no class factor), and
+  `classDamage.beastmaster` (class_tree.lua) puts the rest back: 0.97 / 0.97 / 1.09 / 1.17 / 0.84 / 0.81 / 0.78 / 0.75 / 0.78 /
+  0.73 at 50 / 100 / 200 / 300 / 400 / 550 / 700 / 800 / 1000 / 1200 (was 0.90 / 0.90 / 0.92 / 1.05 / 0.99 / 0.95 / 0.91 / 0.87 /
+  0.85 / 0.81); the Beastmaster's pack cleave `high` went 2 -> 0 (`pace_config.lua`: the wolves have area spells now; the
+  Elementalist's lead on a pack needs it). The own bite is `0.75 x level + 1.35 x skill` (was 1.1 and 2.0: the spells carry more of the
+  wolves' damage now and the bites are a smaller share). `pack_model.apply()` calls `companion_model.apply` (the tree build).
+  Quest spells: Moonshard Rain and Dawnbreaker Shot factors of the Beastmaster refitted (`quest_spell_scale_config.lua`,
+  `rotation_sim.py --quest`: Q1 3.5-4.7%, Q3 10%, both 13% at 1200).
+* **The numbers (computed, `companion_model.py`; `--compare` prints the reference classes).** Wolves = the bites plus the wolf spells in
+  the Auto setup rotation, share of the damage in a hunt, for three builds: plain (no keystone, no Trials), tree (Pack Alpha, the state
+  every band and model is about) and full (Pack Alpha and both Trials nodes, the tester's build; the wolf factor 1.35 x 1.65 = 2.23):
+
+  | Level | Wolves plain | tree | full | Main wolf spell, full | Ranger's Hail of Dawn (of its spells) | Necromancer minions (minion_model.py) | Total full / tree | Total plain / tree |
+  |---|---|---|---|---|---|---|---|---|
+  | 400 | 49% | 56% | 68% | 19% | 66% | 46% | 1.37 | 0.85 |
+  | 750 | 47% | 54% | 66% | 20% | 69% | 48% | 1.35 | 0.86 |
+  | 1000 | 46% | 53% | 65% | 21% | 70% | 49% | 1.35 | 0.86 |
+
+  Before O332 (the same method, the tester's build: Pack Alpha on the bites and Pack Frenzy only, no Trials): the wolves were 45% at 750
+  and Pack Frenzy 17% of the damage (the tester saw 10-12% with his gear, which the model's average build lacks); the class
+  total of that build 3131 a second on one target, with the fixes 3424 (+9%) and the wolves 66%. The tree build (the state of every band)
+  is 2711 -> 2532 on one target (-7%) and the same on a pack of 5 with the cleave (+0.3%). The plain Beastmaster
+  loses 14% of its damage when it takes neither keystone nor Trials (0.86 of the tree build, 2178) and stays a bow class (the bows
+  are 53%); a full build is 35% ahead for what it invested. A hand-built all-wolf rotation (Pack Frenzy, Pounce, Howl, Feral Command)
+  goes above 80%; Auto setup does not build it.
+  `--check` (CI, `companion_balance_config.lua limits`): the wolves' share by build (plain 25-50%, tree 35-60%, full 55-70% from level
+  400; before level 220 the bites and Feral Command only: 12-35%, 15-45%), the plain build at least 0.75 and the full build at most
+  1.40 of the tree build, the tree build's total against the state before O332 (1 target -12..+8%, a pack of 5 with each state's
+  cleave at most 8%), and the O306 limits (alive 15 s, 8 hits, uptime 85%). Computed, not measured in game.
+* **Assumptions and what needs a live check.** The wolf spells and the bites are scaled by the owner's level, skill and the wolf factor
+  only: the bites are dealt without an event, so the tree's weapon damage nodes and gear modifiers do not reach them (a maul does get
+  the spell events), which is why the Trials' and Pack Alpha's wolf factor is the whole of the wolves' scaling; the model's
+  spell-to-total factor (3.7 at 750) is the C4 total over the old rotation; the contact and burst numbers of O306 are unchanged. Needs
+  a live check: a Pack Howl on a pack of 8 (damage per monster against `Chaos.classes.companion.spells`), the storage mirror after a
+  Trials change (`7100041`), Auto setup at 220 / 400, the icons (cells 370 and 371).
+* **After the update** a Beastmaster loses Arrowstorm and Gale Volley from its spell list and gets Pack Howl at 220 and Rending Pounce at
+  240 (no learning: spells come with the level). A hotkey or action bar slot on Arrowstorm or Gale Volley is empty (the server refuses
+  them: "not for your class"); the Helper's rotation list needs one press of Auto setup (the new presets), or the player adds the two
+  spells by hand. Pack Frenzy is 8 s, Packhunter's Dart 12 s. Nothing to relearn in the passive tree (Pack Alpha is the same node).
+
+Tests: `tests/wolf_spells_test.lua` (numbers against the XML, the model CSV, the kit and the id pool; the wolf factor; the cast on a
+mocked engine: circle membership, one hit per companion, allies, no companion), `tests/passivetree_effects_test.lua` (the storage
+mirror), `tests/classes_test.lua`, `tests/class_tree_test.lua`, `tests/attack_kit_test.lua`, `server/tools/companion_model_test.py`.
 
 ## Pets (`pets.lua`, `pets_core.lua`, `pets_config.lua`, `sql/chaos_pets.sql`, client `game_pets`)
 

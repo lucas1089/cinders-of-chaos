@@ -22,7 +22,7 @@ local BASE_OF = {
 -- (counts and top levels include the attack kit, 2026-10-23, and its seven converted supports, O254: Bastion Cry,
 -- Crimson Covenant, Smoke Bomb and Crusader's Sweep are the base class's spells too now, so the ascension's own count drops)
 local PINNED = {
-	Juggernaut = {1, 380}, Berserker = {3, 380}, Deadeye = {2, 400}, Beastmaster = {4, 320}, Elementalist = {6, 420},
+	Juggernaut = {1, 380}, Berserker = {3, 380}, Deadeye = {2, 400}, Beastmaster = {6, 320}, Elementalist = {6, 420},
 	Illusionist = {12, 280}, Ninja = {3, 270}, Samurai = {4, 230}, Lich = {3, 300}, ["Bone Lord"] = {4, 300},
 	Shadowfist = {3, 250}, ["Iron Sage"] = {4, 190}, Inquisitor = {4, 250}, Sentinel = {6, 250},
 }

@@ -173,6 +173,20 @@ def fang(d, c):
         d.polygon([(x, 50), (x + 16, 50), (x + 8, 120)], fill=c)
     d.ellipse((36, 30, 52, 46), fill=(20, 10, 30)); d.ellipse((76, 30, 92, 46), fill=(20, 10, 30))
 
+# the Beastmaster's wolf spells (O332): a wolf head howling at the moon, and three claw marks
+def howl(d, c):
+    d.polygon([(30, 114), (26, 72), (36, 46), (42, 16), (56, 38), (70, 44), (104, 24), (112, 36), (90, 62), (88, 74),
+               (100, 82), (86, 94), (82, 114)], fill=c)
+    d.ellipse((50, 58, 62, 68), fill=(20, 10, 30))
+    d.arc((66, 0, 122, 52), 280, 20, fill=c, width=6)
+    d.arc((82, 0, 134, 40), 290, 10, fill=c, width=5)
+
+def pounce(d, c):
+    for k in range(3):
+        o = 28 * k
+        d.polygon([(14 + o, 14), (30 + o, 8), (52 + o, 114), (44 + o, 120)], fill=c)
+    d.ellipse((6, 92, 32, 122), fill=c)
+
 # the Necromancer line
 def skull(d, c):
     d.ellipse((24, 14, 104, 88), fill=c)
@@ -366,7 +380,7 @@ GLYPH = {k: v for k, v in globals().items() if callable(v) and k in (
     'ring', 'sword', 'slam', 'wave', 'arrowup', 'hammer', 'twin', 'dash', 'eye', 'ghost', 'rift', 'missile',
     'shuriken', 'daggers', 'smoke', 'katana', 'hood', 'greataxe', 'fang', 'skull', 'bonespear', 'golem', 'banner', 'ribs',
     'fist', 'palm', 'kick', 'flame', 'nodes', 'mountain', 'gate', 'flurry', 'sweep', 'palmwave',
-    'ricochet', 'chain', 'shrapnel', 'shieldwave', 'knives', 'gravenova')}
+    'ricochet', 'chain', 'shrapnel', 'shieldwave', 'knives', 'gravenova', 'howl', 'pounce')}
 
 ICONS = [  # (spell name, theme, glyph)
     ('Rime Bloom', 'frost', 'burst'), ('Witchfire Bolt', 'fire', 'missile'), ('Forked Storm', 'light', 'bolt'),
@@ -456,7 +470,9 @@ ICONS = [  # (spell name, theme, glyph)
     # the level 800 buffs of the line spell quests (2026-10-28, cells 363-369): placeholder glyphs until the PixelLab art
     ('Ironbound Oath', 'steel', 'shield'), ('Unblinking Gaze', 'nature', 'eye'), ('Veil of Whispers', 'arcane', 'ghost'),
     ('Shroud of Knives', 'shadow', 'knives'), ('Dirge of the Legion', 'necrotic', 'skull'), ('Lotus Stance', 'ember', 'ring'),
-    ('Mantle of Dawn', 'holy', 'shield')]
+    ('Mantle of Dawn', 'holy', 'shield'),
+    # the Beastmaster's wolf spells (O332, cells 370-371; they took the free spell ids 35 and 39)
+    ('Pack Howl', 'frost', 'howl'), ('Rending Pounce', 'blood', 'pounce')]
 
 def render(theme, glyph):
     c = COL[theme]

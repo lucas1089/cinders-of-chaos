@@ -24,5 +24,7 @@ ChaosSpellbookAreas = {
 	["Sanctified Ground"] = {shape = "around", radius = 2},   -- everything within 2 sqm of you
 	["Shield Wave"] = {shape = "wave", depth = 3, halfWidth = 1}, -- the 3 x 3 tiles in front of you
 	["Snare Trap"] = {shape = "circle", radius = 2},          -- the burst within 2 sqm of the trap
-	["Seeker Mine"] = {shape = "circle", radius = 2}          -- the burst within 2 sqm of the mine
+	["Seeker Mine"] = {shape = "circle", radius = 2},         -- the burst within 2 sqm of the mine
+	["Pack Howl"] = {shape = "circle", radius = 2},           -- every monster within 2 sqm of the target (O332, Chaos.classes.companion.spells.howl)
+	["Rending Pounce"] = {shape = "circle", radius = 1}       -- every monster within 1 sqm of the target (O332, spells.pounce)
 }

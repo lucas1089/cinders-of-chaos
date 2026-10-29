@@ -209,7 +209,7 @@ return {
 			[14] = {percent = 0, high = 0, targets = 4}, -- Berserker
 			[3] = {percent = 19, high = 15, targets = 4}, -- Ranger
 			[7] = {percent = 18, high = 11, targets = 4}, -- Deadeye
-			[15] = {percent = 9, high = 2, targets = 4}, -- Beastmaster (the companion's hits too; high 1 -> 2, O306)
+			[15] = {percent = 9, high = 0, targets = 4}, -- Beastmaster (the companion's hits too; high 1 -> 2 in O306, 2 -> 0 in O332: the wolves have area spells now)
 			[1] = {percent = 0, high = 1, targets = 4}, -- Mystic
 			[10] = {percent = 3, high = 2, targets = 4}, -- Illusionist
 			[11] = {percent = 5, high = 0, targets = 4}, -- Thief

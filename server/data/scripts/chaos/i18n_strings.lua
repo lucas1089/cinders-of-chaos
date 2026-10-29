@@ -6773,8 +6773,12 @@ return {
 		-- Spellbook: the Chaos spells' own descriptions (the first comment of each spell script; spellbook.lua)
 		["Your companions leap at the target (range 7) and maul it, each for 1.5 bites at once."] =
 			"Seus companheiros saltam sobre o alvo (alcance 7) e o dilaceram, cada um com 1,5 mordida de uma vez.",
-		["Feral Command's late sibling. Your companions leap at the target (range 7) and maul it in a frenzy, each for 3.3 bites at once (Feral Command: 1.5). 6 s cooldown (the cooldown ladder, 2026-10-20; was 20 s)."] =
-			"A irmã tardia de Feral Command. Seus companheiros saltam sobre o alvo (alcance 7) e o dilaceram em frenesi, cada um com 3,3 mordidas de uma vez (Feral Command: 1,5). Recarga de 6 s (a escada de recargas, 2026-10-20; antes eram 20 s).",
+		["Feral Command's late sibling. Your companions leap at the target (range 7) and maul it in a frenzy, each for 3.3 bites at once (Feral Command: 1.5). 8 s cooldown (the cooldown ladder)."] =
+			"A irmã tardia de Feral Command. Seus companheiros saltam sobre o alvo (alcance 7) e o dilaceram em frenesi, cada um com 3,3 mordidas de uma vez (Feral Command: 1,5). Recarga de 8 s (a escada de recargas).",
+		["A howl calls the pack down on the quarry. Your companions leap at the target (range 7) and each bites every monster within 2 sqm of it, 3 bites apiece."] =
+			"Um uivo chama a matilha sobre a presa. Seus companheiros saltam sobre o alvo (alcance 7) e cada um morde todos os monstros a até 2 sqm dele, 3 mordidas cada.",
+		["The pack pounces. Your companions leap at the target (range 7) and each rends every monster within 1 sqm of it, 2 bites apiece."] =
+			"A matilha ataca de salto. Seus companheiros saltam sobre o alvo (alcance 7) e cada um dilacera todos os monstros a até 1 sqm dele, 2 mordidas cada.",
 		["A venom dart at the quarry the pack is circling."] =
 			"Um dardo de veneno na presa que a matilha está cercando.",
 		["Call your companion (a war wolf; 2 from level 400). Companions already out are called back to your side and healed for half their health."] =

@@ -58,6 +58,15 @@ assert(added[7221] == nil, "no spirit, no mana condition")
 assertEq(st[977562], 15, "storage fire")
 assertEq(st[977563], 75, "storage phys")
 assertEq(st[7100040], 14, "item find storage")
+-- O332: the Trials' minion damage (a percent) is mirrored for the wolf spells (another Lua state); no config, no storage
+assertEq(st[7100041], nil, "no companion config: no minion storage")
+Chaos.classes = {companion = {minionStorage = 7100041}}
+applyAll(p, {dealMinion = 65.7})
+assertEq(st[7100041], 65, "the Trials' minion damage mirrored (whole percent)")
+applyAll(p, {})
+assertEq(st[7100041], 0, "no Trials: 0")
+Chaos.classes = nil
+applyAll(p, b)
 assertEq(speed(), 80, "speed")
 assert(added[7200] and added[7200].p[CONDITION_PARAM_SKILL_SWORD] == 4, "sword condition")
 assert(added[7214].p[CONDITION_PARAM_SPECIALSKILL_CRITICALHITCHANCE] == 5, "crit condition")
