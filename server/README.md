@@ -24103,7 +24103,7 @@ and the Item Finder) and `nextspells` (16, the next spells at about level 25); (
 level 25: new spells", opens the Spellbook), so the tracker has a next step between the passive point and level 20; (4) the
 Portuguese hints used `Aventura >`, `Economia >` and an English `Next Goals`: they now use the menu names the client shows.
 Left alone on purpose: spell unlock levels (spells_chaos.xml, rotation data, icons and tests change together), the top menu
-(shows every system from the start), and the milestone gifts (10 of 10 storages used).
+(then showed every system from the start; O259 and O262 hide entries below their level, see "The top menu reveals systems by level"), and the milestone gifts (10 of 10 storages used).
 
 **O241 (2026-10-25): a spell between levels 12 and 20 for every class.** The O240 audit left the unlock levels alone; this
 moves them. Chaos spells (`spells_chaos.xml`): Reaping Gyre 30 -> 16 (Warrior, Juggernaut, Berserker), Dawnpiercer 30 -> 12

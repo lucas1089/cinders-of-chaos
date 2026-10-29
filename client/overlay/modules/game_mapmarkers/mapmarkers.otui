@@ -32,6 +32,25 @@ MapMarkerParty < UIWidget
     image-smooth: true
     visible: false
 
+// the game view: arrows on the edge of the map panel toward party members out of view (layer, arrow, label)
+MapMarkerGameLayer < UIWidget
+  phantom: true
+  focusable: false
+
+MapMarkerGameArrow < UIWidget
+  size: 12 12
+  phantom: true
+  focusable: false
+  image-smooth: true
+  visible: false
+
+MapMarkerGameLabel < UILabel
+  phantom: true
+  focusable: false
+  font: Verdana-9px-antialiased
+  text-auto-resize: true
+  visible: false
+
 MapMarkerCheck < ChaosCheckBox
   anchors.left: parent.left
   anchors.right: parent.right
@@ -47,7 +66,7 @@ MapMarkerCategory < ChaosCheckBox
 MapMarkerSettings < ChaosMainWindow
   id: mapMarkerSettings
   !text: tr('Map Markers')
-  size: 320 440
+  size: 320 470
 
   MapMarkerCheck
     id: partyBox
@@ -66,6 +85,13 @@ MapMarkerSettings < ChaosMainWindow
     text-auto-resize: true
     text-align: left
     !text: tr('A pin per member, an arrow on the edge when out of view, a triangle when on another floor.')
+
+  MapMarkerCheck
+    id: gameBox
+    anchors.top: partyNote.bottom
+    margin-top: 8
+    !text: tr('Arrows on the game view')
+    @onCheckChange: modules.game_mapmarkers.setGame(self:isChecked())
 
   ChaosSeparator
     id: sep1
